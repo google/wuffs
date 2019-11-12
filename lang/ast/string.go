@@ -149,10 +149,6 @@ func opString(x t.ID) string {
 }
 
 var opStrings = [...]string{
-	t.IDXUnaryPlus:  "+",
-	t.IDXUnaryMinus: "-",
-	t.IDXUnaryNot:   "not ",
-
 	t.IDXBinaryPlus:           " + ",
 	t.IDXBinaryMinus:          " - ",
 	t.IDXBinaryStar:           " * ",
@@ -163,9 +159,10 @@ var opStrings = [...]string{
 	t.IDXBinaryPipe:           " | ",
 	t.IDXBinaryHat:            " ^ ",
 	t.IDXBinaryPercent:        " % ",
-	t.IDXBinaryTildeModShiftL: " ~mod<< ",
 	t.IDXBinaryTildeModPlus:   " ~mod+ ",
 	t.IDXBinaryTildeModMinus:  " ~mod- ",
+	t.IDXBinaryTildeModStar:   " ~mod* ",
+	t.IDXBinaryTildeModShiftL: " ~mod<< ",
 	t.IDXBinaryTildeSatPlus:   " ~sat+ ",
 	t.IDXBinaryTildeSatMinus:  " ~sat- ",
 	t.IDXBinaryNotEq:          " <> ",
@@ -185,6 +182,10 @@ var opStrings = [...]string{
 	t.IDXAssociativeHat:  " ^ ",
 	t.IDXAssociativeAnd:  " and ",
 	t.IDXAssociativeOr:   " or ",
+
+	t.IDXUnaryPlus:  "+",
+	t.IDXUnaryMinus: "-",
+	t.IDXUnaryNot:   "not ",
 }
 
 // Str returns a string form of n.

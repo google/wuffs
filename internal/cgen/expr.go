@@ -487,18 +487,15 @@ var cOpNames = [...]string{
 	t.IDPipeEq:           " |= ",
 	t.IDHatEq:            " ^= ",
 	t.IDPercentEq:        " %= ",
-	t.IDTildeModShiftLEq: " <<= ",
 	t.IDTildeModPlusEq:   " += ",
 	t.IDTildeModMinusEq:  " -= ",
+	t.IDTildeModStarEq:   " *= ",
+	t.IDTildeModShiftLEq: " <<= ",
 	t.IDTildeSatPlusEq:   noSuchCOperator,
 	t.IDTildeSatMinusEq:  noSuchCOperator,
 
 	t.IDEq:         " = ",
 	t.IDEqQuestion: " = ",
-
-	t.IDXUnaryPlus:  " + ",
-	t.IDXUnaryMinus: " - ",
-	t.IDXUnaryNot:   " ! ",
 
 	t.IDXBinaryPlus:           " + ",
 	t.IDXBinaryMinus:          " - ",
@@ -510,9 +507,10 @@ var cOpNames = [...]string{
 	t.IDXBinaryPipe:           " | ",
 	t.IDXBinaryHat:            " ^ ",
 	t.IDXBinaryPercent:        " % ",
-	t.IDXBinaryTildeModShiftL: " << ",
 	t.IDXBinaryTildeModPlus:   " + ",
 	t.IDXBinaryTildeModMinus:  " - ",
+	t.IDXBinaryTildeModStar:   " * ",
+	t.IDXBinaryTildeModShiftL: " << ",
 	t.IDXBinaryTildeSatPlus:   noSuchCOperator,
 	t.IDXBinaryTildeSatMinus:  noSuchCOperator,
 	t.IDXBinaryNotEq:          " != ",
@@ -532,4 +530,8 @@ var cOpNames = [...]string{
 	t.IDXAssociativeHat:  " ^ ",
 	t.IDXAssociativeAnd:  " && ",
 	t.IDXAssociativeOr:   " || ",
+
+	t.IDXUnaryPlus:  " + ",
+	t.IDXUnaryMinus: " - ",
+	t.IDXUnaryNot:   " ! ",
 }

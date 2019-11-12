@@ -244,6 +244,7 @@ const (
 
 	IDTildeModPlusEq   = ID(0x20)
 	IDTildeModMinusEq  = ID(0x21)
+	IDTildeModStarEq   = ID(0x22)
 	IDTildeModShiftLEq = ID(0x24)
 
 	IDTildeSatPlusEq  = ID(0x28)
@@ -274,6 +275,7 @@ const (
 
 	IDTildeModPlus   = ID(0x40)
 	IDTildeModMinus  = ID(0x41)
+	IDTildeModStar   = ID(0x42)
 	IDTildeModShiftL = ID(0x44)
 
 	IDTildeSatPlus  = ID(0x48)
@@ -308,6 +310,7 @@ const (
 
 	IDXBinaryTildeModPlus   = ID(0x70)
 	IDXBinaryTildeModMinus  = ID(0x71)
+	IDXBinaryTildeModStar   = ID(0x72)
 	IDXBinaryTildeModShiftL = ID(0x74)
 
 	IDXBinaryTildeSatPlus  = ID(0x78)
@@ -642,6 +645,7 @@ var builtInsByID = [nBuiltInIDs]string{
 
 	IDTildeModPlusEq:   "~mod+=",
 	IDTildeModMinusEq:  "~mod-=",
+	IDTildeModStarEq:   "~mod*=",
 	IDTildeModShiftLEq: "~mod<<=",
 
 	IDTildeSatPlusEq:  "~sat+=",
@@ -663,6 +667,7 @@ var builtInsByID = [nBuiltInIDs]string{
 
 	IDTildeModPlus:   "~mod+",
 	IDTildeModMinus:  "~mod-",
+	IDTildeModStar:   "~mod*",
 	IDTildeModShiftL: "~mod<<",
 
 	IDTildeSatPlus:  "~sat+",
@@ -1044,6 +1049,8 @@ var lexers = [256][]suffixLexer{
 		{"mod+", IDTildeModPlus},
 		{"mod-=", IDTildeModMinusEq},
 		{"mod-", IDTildeModMinus},
+		{"mod*=", IDTildeModStarEq},
+		{"mod*", IDTildeModStar},
 		{"sat+=", IDTildeSatPlusEq},
 		{"sat+", IDTildeSatPlus},
 		{"sat-=", IDTildeSatMinusEq},
@@ -1064,6 +1071,7 @@ var ambiguousForms = [nBuiltInSymbolicIDs]ID{
 	IDXBinaryPercent:        IDPercent,
 	IDXBinaryTildeModPlus:   IDTildeModPlus,
 	IDXBinaryTildeModMinus:  IDTildeModMinus,
+	IDXBinaryTildeModStar:   IDTildeModStar,
 	IDXBinaryTildeModShiftL: IDTildeModShiftL,
 	IDXBinaryTildeSatPlus:   IDTildeSatPlus,
 	IDXBinaryTildeSatMinus:  IDTildeSatMinus,
@@ -1129,6 +1137,7 @@ var binaryForms = [nBuiltInSymbolicIDs]ID{
 	IDPercentEq:        IDXBinaryPercent,
 	IDTildeModPlusEq:   IDXBinaryTildeModPlus,
 	IDTildeModMinusEq:  IDXBinaryTildeModMinus,
+	IDTildeModStarEq:   IDXBinaryTildeModStar,
 	IDTildeModShiftLEq: IDXBinaryTildeModShiftL,
 	IDTildeSatPlusEq:   IDXBinaryTildeSatPlus,
 	IDTildeSatMinusEq:  IDXBinaryTildeSatMinus,
@@ -1145,6 +1154,7 @@ var binaryForms = [nBuiltInSymbolicIDs]ID{
 	IDPercent:        IDXBinaryPercent,
 	IDTildeModPlus:   IDXBinaryTildeModPlus,
 	IDTildeModMinus:  IDXBinaryTildeModMinus,
+	IDTildeModStar:   IDXBinaryTildeModStar,
 	IDTildeModShiftL: IDXBinaryTildeModShiftL,
 	IDTildeSatPlus:   IDXBinaryTildeSatPlus,
 	IDTildeSatMinus:  IDXBinaryTildeSatMinus,
