@@ -10,8 +10,9 @@ zero-initialized), for performance reasons:
 uint32_t flags = 0;
 etc
 
-// Uncomment this line to take the option.
-// flags |= WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED;
+// Setting this flag bit takes the option. Its presence or absence has no
+// effect if the WUFFS_INITIALIZE__ALREADY_ZEROED flag bit is also set.
+flags |= WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED;
 
 wuffs_foo__bar__initialize(etc, flags);
 ```
