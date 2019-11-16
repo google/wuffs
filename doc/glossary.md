@@ -22,6 +22,20 @@ Arithmetic that wraps around at a certain modulus, such as `256` for the
 `base.u8` type. For example, if `x` is a `base.u8` with value `200`, then `(x +
 70)` has value `270` and would overflow, but `(x ~mod+ 70)` has value `14`.
 
+#### Operator Precedence
+
+A ranking of arithmetic operators so that an expression like `a + b * c` is
+unambiguous (for the computer), equivalent to exactly one of `(a + b) * c` or,
+more conventionally, `a + (b * c)`. While good for brevity, Wuffs does not have
+operator precedence: the bare `a + b * c` is an invalid Wuffs expression and
+the parentheses must be explicit. The ambiguity (for the human) can be a source
+of bugs in other [security-concious file format
+parsers](https://github.com/jbangert/nail/issues/7).
+
+Some binary operators (`+`, `*`, `&`, `|`, `^`, `and`, `or`) are also
+associative: `(a + b) + c` and `a + (b + c)` are equivalent, and can be written
+in Wuffs as `a + b + c`.
+
 #### Refinement Type
 
 A basic type further constrained to a subset of its natural
