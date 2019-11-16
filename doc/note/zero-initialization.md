@@ -20,8 +20,7 @@ wuffs_foo__bar__initialize(etc, flags);
 With or without this flag bit set, the Wuffs compiler still enforces bounds and
 arithmetic overflow checks. It's just that for potentially-uninitialized struct
 fields, the compiler has weaker starting assumptions: their numeric types
-cannot be
-[refined](https://github.com/google/wuffs/blob/master/doc/glossary.md#refinement-type).
+cannot be [refined](/doc/glossary.md#refinement-type).
 
 Even with this flag bit set, the Wuffs standard library also considers reading
 from an uninitialized buffer to be a bug, and strives to never do so, but
@@ -36,8 +35,7 @@ Setting this flag bit (avoiding a fixed-size cost) gives a small absolute
 improvement on micro-benchmarks, mostly noticable (in relative terms) only when
 the actual work to do (the input) is also small. Look for
 `WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED` in the
-[benchmarks](https://github.com/google/wuffs/blob/master/doc/benchmarks.md) for
-performance numbers.
+[benchmarks](/doc/benchmarks.md) for performance numbers.
 
 In Wuffs code, a struct definition has two parts, although the second part's
 `()` parentheses may be omitted if empty:
