@@ -1,9 +1,5 @@
 # Glossary
 
-#### Arithmetic
-
-Addition `(x + y)`, multiplication `(x * y)`, etc.
-
 #### Dependent Type
 
 A type that depends on another value. For example, a variable `n`'s type might
@@ -12,9 +8,15 @@ be "the length of `s`", for some other
 types are *a* way to implement [bounds checking](/doc/note/bounds-checking.md),
 but they're not the only way. Wuffs does not use them.
 
+#### Fact
+
+A boolean expression (e.g. `x > y`) that happens to be true at a given point in
+a program. See the [facts](/doc/note/facts.md) note for more details.
+
 #### Interval Arithmetic
 
-See the [interval arithmetic](/doc/note/interval-arithmetic.md) note.
+Arithmetic on numerical ranges. See the [interval
+arithmetic](/doc/note/interval-arithmetic.md) note for more details.
 
 #### Modular Arithmetic
 
@@ -54,3 +56,7 @@ types, where the refined range excludes the `nullptr` value.
 Arithmetic that stops at certain bounds, such as `0` and `255` for the
 `base.u8` type. For example, if `x` is a `base.u8` with value `200`, then `(x +
 70)` has value `270` and would overflow, but `(x ~sat+ 70)` has value `255`.
+
+#### Situation
+
+The set of [facts](/doc/note/facts.md) at a given point in a program.
