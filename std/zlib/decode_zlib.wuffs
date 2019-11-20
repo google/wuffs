@@ -53,7 +53,7 @@ pub func decoder.add_dictionary!(dict: slice base.u8) {
 	if this.header_complete {
 		this.bad_call_sequence = true
 	} else {
-		this.dict_id_got = this.dict_id_hasher.update!(x: args.dict)
+		this.dict_id_got = this.dict_id_hasher.update_u32!(x: args.dict)
 		this.flate.add_history!(hist: args.dict)
 	}
 	this.got_dictionary = true
@@ -111,7 +111,7 @@ pub func decoder.decode_io_writer?(dst: base.io_writer, src: base.io_reader, wor
 		mark = args.dst.mark()
 		status =? this.flate.decode_io_writer?(dst: args.dst, src: args.src, workbuf: args.workbuf)
 		if not this.ignore_checksum {
-			checksum_got = this.checksum.update!(x: args.dst.since(mark: mark))
+			checksum_got = this.checksum.update_u32!(x: args.dst.since(mark: mark))
 		}
 		if status.is_ok() {
 			break

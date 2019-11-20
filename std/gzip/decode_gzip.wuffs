@@ -115,7 +115,7 @@ pub func decoder.decode_io_writer?(dst: base.io_writer, src: base.io_reader, wor
 		mark = args.dst.mark()
 		status =? this.flate.decode_io_writer?(dst: args.dst, src: args.src, workbuf: args.workbuf)
 		if not this.ignore_checksum {
-			checksum_got = this.checksum.update!(x: args.dst.since(mark: mark))
+			checksum_got = this.checksum.update_u32!(x: args.dst.since(mark: mark))
 			decoded_length_got ~mod+= ((args.dst.count_since(mark: mark) & 0xFFFFFFFF) as base.u32)
 		}
 		if status.is_ok() {

@@ -149,7 +149,7 @@ const char* test_wuffs_adler32_golden() {
         if ((j > 0) && (data.len > limit)) {
           data.len = limit;
         }
-        got = wuffs_adler32__hasher__update(&checksum, data);
+        got = wuffs_adler32__hasher__update_u32(&checksum, data);
         num_fragments++;
         num_bytes += data.len;
       } while (num_bytes < src.meta.wi);
@@ -207,11 +207,11 @@ const char* test_wuffs_adler32_pi() {
     if (status) {
       RETURN_FAIL("initialize: \"%s\"", status);
     }
-    uint32_t got =
-        wuffs_adler32__hasher__update(&checksum, ((wuffs_base__slice_u8){
-                                                     .ptr = (uint8_t*)(digits),
-                                                     .len = i,
-                                                 }));
+    uint32_t got = wuffs_adler32__hasher__update_u32(
+        &checksum, ((wuffs_base__slice_u8){
+                       .ptr = (uint8_t*)(digits),
+                       .len = i,
+                   }));
     if (got != wants[i]) {
       RETURN_FAIL("i=%d: got 0x%08" PRIX32 ", want 0x%08" PRIX32, i, got,
                   wants[i]);
@@ -239,7 +239,7 @@ const char* wuffs_bench_adler32(wuffs_base__io_buffer* dst,
   if (status) {
     return status;
   }
-  global_wuffs_adler32_unused_u32 = wuffs_adler32__hasher__update(
+  global_wuffs_adler32_unused_u32 = wuffs_adler32__hasher__update_u32(
       &checksum, ((wuffs_base__slice_u8){
                      .ptr = src->data.ptr + src->meta.ri,
                      .len = len,

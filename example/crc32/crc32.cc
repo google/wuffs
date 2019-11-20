@@ -66,7 +66,7 @@ int main(int argc, char** argv) {
 
   while (true) {
     size_t n = fread(src_buffer, sizeof(uint8_t), SRC_BUFFER_SIZE, stdin);
-    uint32_t checksum = h.update(wuffs_base__make_slice_u8(src_buffer, n));
+    uint32_t checksum = h.update_u32(wuffs_base__make_slice_u8(src_buffer, n));
     if (feof(stdin)) {
       printf("%08" PRIx32 "\n", checksum);
       return 0;
