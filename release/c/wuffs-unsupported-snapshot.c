@@ -110,7 +110,7 @@ extern "C" {
 // passed as a separately allocated "work buffer".
 //
 // For more detail, see:
-// https://github.com/google/wuffs/blob/master/doc/note/zero-initialization.md
+// https://github.com/google/wuffs/blob/master/doc/note/initialization.md
 #define WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED \
   ((uint32_t)0x00000002)
 
