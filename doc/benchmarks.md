@@ -123,7 +123,7 @@ The `1k`, `10k`, etc. numbers are approximately how many bytes there in the
 decoded output.
 
 The `full_init` vs `part_init` suffixes are whether
-[`WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED`](https://github.com/google/wuffs/blob/4080840928c0b05a80cda0d14ac2e2615f679f1a/internal/cgen/base/core-public.h#L83)
+[`WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED`](/doc/note/initialization.md#partial-zero-initialization)
 is unset or set.
 
     name                                             speed     vs_mimic
@@ -216,7 +216,7 @@ RGBA) or 1 byte (a palette index) per pixel, even if the underlying file format
 gives 1 byte per pixel.
 
 The `full_init` vs `part_init` suffixes are whether
-[`WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED`](https://github.com/google/wuffs/blob/4080840928c0b05a80cda0d14ac2e2615f679f1a/internal/cgen/base/core-public.h#L83)
+[`WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED`](/doc/note/initialization.md#partial-zero-initialization)
 is unset or set.
 
 The libgif library doesn't export any API for decode-to-BGRA or decode-to-RGBA,
