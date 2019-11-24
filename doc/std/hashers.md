@@ -25,3 +25,8 @@ reset the state.
 ## Examples
 
 - [example/crc32](/example/crc32)
+
+
+---
+
+See also the general remarks on [Wuffs' standard library](/doc/std/README.md).
