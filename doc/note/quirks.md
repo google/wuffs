@@ -32,3 +32,8 @@ For example, the base38 encoding of `"gif "` is `0xF8586`, so that the
 GIF-specific quirks have a `uint32_t` value of `((0xF8586 << 10) | n)`, for
 some small integer `n`. The generated `C` language file defines human-readable
 names for those constant values.
+
+
+## Listing
+
+- [GIF image decoder quirks](std/gif/decode_quirks.wuffs)
