@@ -1,5 +1,11 @@
 # Glossary
 
+#### Coroutine
+
+A function that can suspend execution and, when called again later, resume
+where it left off, in the middle of the function body. See the
+[coroutines](/doc/note/coroutines.md) note for more details.
+
 #### Dependent Type
 
 A type that depends on another value. For example, a variable `n`'s type might
@@ -8,10 +14,26 @@ be "the length of `s`", for some other
 types are *a* way to implement [bounds checking](/doc/note/bounds-checking.md),
 but they're not the only way. Wuffs does not use them.
 
+#### Effect
+
+An extension of the type system, applied to functions. Wuffs has three effect
+categories: pure, impure and coroutine. Pure means that the function has no
+side effects - it does not change any observable state. The other two
+categories may have side effects, with [coroutines](/doc/note/coroutines.md)
+also being able to suspend and resume.
+
+Impure functions are marked with a `!` at their definition and at call sites.
+Coroutines are similarly marked, with a `?`. Pure functions have no mark.
+
 #### Fact
 
 A boolean expression (e.g. `x > y`) that happens to be true at a given point in
 a program. See the [facts](/doc/note/facts.md) note for more details.
+
+#### Flick
+
+A unit of time. One [flick](https://github.com/OculusVR/Flicks) (frame-tick) is
+`1 / 705_600_000` of a second.
 
 #### Interval Arithmetic
 
