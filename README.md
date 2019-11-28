@@ -317,7 +317,6 @@ Measurements:
 
 - [Benchmarks](./doc/benchmarks.md)
 - [Binary Size](./doc/binary-size.md)
-- [Compatibility](./doc/compatibility.md)
 
 
 # Status
