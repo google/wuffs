@@ -123,7 +123,7 @@ caller can go back to the `decode_image_config` method.
 
 ## [Quirks](/doc/note/quirks.md)
 
-- [GIF decoder quirks](std/gif/decode_quirks.wuffs)
+- [GIF decoder quirks](/std/gif/decode_quirks.wuffs)
 
 
 ---

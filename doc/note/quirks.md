@@ -36,4 +36,4 @@ names for those constant values.
 
 ## Listing
 
-- [GIF image decoder quirks](std/gif/decode_quirks.wuffs)
+- [GIF image decoder quirks](/std/gif/decode_quirks.wuffs)
