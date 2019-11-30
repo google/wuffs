@@ -96,7 +96,7 @@ func doBenchTest1(filename string, bench bool, ccompilers string, focus string,
 	if bench {
 		ccArgs = append(ccArgs, "-O3")
 	}
-	ccArgs = append(ccArgs, "-Wall", "-Werror", "-std=c99", "-o", out, in)
+	ccArgs = append(ccArgs, "-Wall", "-std=c99", "-o", out, in)
 	if mimic {
 		extra, err := findWuffsMimicCflags(in)
 		if err != nil {
