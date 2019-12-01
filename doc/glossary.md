@@ -82,3 +82,14 @@ Arithmetic that stops at certain bounds, such as `0` and `255` for the
 #### Situation
 
 The set of [facts](/doc/note/facts.md) at a given point in a program.
+
+#### Utility Type
+
+An empty struct (with no fields) used as a placeholder. Every written-in-Wuffs
+function is a method: the receiver is mandatory. A Wuffs utility type's methods
+are to its package what C++ or Java's static methods are to its class.
+
+"Utility type" is merely a Wuffs naming convention. For example, Wuffs' `base`
+package has a type called `base.utility`, similar to how the `zlib` package has
+a type called `zlib.decoder`. Unlike "dependent type" or "refinement type",
+"utility type" is not a phrase used in programming language type theory.
