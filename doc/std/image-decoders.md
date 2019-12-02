@@ -126,6 +126,11 @@ caller can go back to the `decode_image_config` method.
 - [GIF decoder quirks](/std/gif/decode_quirks.wuffs)
 
 
----
+## Related Documentation
+
+- [I/O (Input / Output)](/doc/note/io-input-output.md)
+- [Pixel Formats](/doc/note/pixel-formats.md)
+- [Pixel Subsampling](/doc/note/pixel-subsampling.md)
+- [Ranges and Rects](/doc/note/ranges-and-rects.md)
 
 See also the general remarks on [Wuffs' standard library](/doc/std/README.md).

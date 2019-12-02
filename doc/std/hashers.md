@@ -27,6 +27,8 @@ reset the state.
 - [example/crc32](/example/crc32)
 
 
----
+## Related Documentation
+
+- [I/O (Input / Output)](/doc/note/io-input-output.md)
 
 See also the general remarks on [Wuffs' standard library](/doc/std/README.md).

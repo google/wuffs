@@ -36,6 +36,8 @@ TODO: standardize the various dictionary APIs, after Wuffs v0.2 is released.
 - [example/zcat](/example/zcat)
 
 
----
+## Related Documentation
+
+- [I/O (Input / Output)](/doc/note/io-input-output.md)
 
 See also the general remarks on [Wuffs' standard library](/doc/std/README.md).
