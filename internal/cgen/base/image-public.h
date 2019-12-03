@@ -796,10 +796,12 @@ typedef struct {
   } private_impl;
 
 #ifdef __cplusplus
-  inline wuffs_base__status set_from_slice(wuffs_base__pixel_config* pixcfg,
-                                           wuffs_base__slice_u8 pixbuf_memory);
-  inline wuffs_base__status set_from_table(wuffs_base__pixel_config* pixcfg,
-                                           wuffs_base__table_u8 pixbuf_memory);
+  inline wuffs_base__status set_from_slice(
+      const wuffs_base__pixel_config* pixcfg,
+      wuffs_base__slice_u8 pixbuf_memory);
+  inline wuffs_base__status set_from_table(
+      const wuffs_base__pixel_config* pixcfg,
+      wuffs_base__table_u8 pixbuf_memory);
   inline wuffs_base__slice_u8 palette();
   inline wuffs_base__pixel_format pixel_format() const;
   inline wuffs_base__table_u8 plane(uint32_t p);
@@ -820,7 +822,7 @@ wuffs_base__null_pixel_buffer() {
 
 static inline wuffs_base__status  //
 wuffs_base__pixel_buffer__set_from_slice(wuffs_base__pixel_buffer* b,
-                                         wuffs_base__pixel_config* pixcfg,
+                                         const wuffs_base__pixel_config* pixcfg,
                                          wuffs_base__slice_u8 pixbuf_memory) {
   if (!b) {
     return wuffs_base__error__bad_receiver;
@@ -885,7 +887,7 @@ wuffs_base__pixel_buffer__set_from_slice(wuffs_base__pixel_buffer* b,
 
 static inline wuffs_base__status  //
 wuffs_base__pixel_buffer__set_from_table(wuffs_base__pixel_buffer* b,
-                                         wuffs_base__pixel_config* pixcfg,
+                                         const wuffs_base__pixel_config* pixcfg,
                                          wuffs_base__table_u8 pixbuf_memory) {
   if (!b) {
     return wuffs_base__error__bad_receiver;
@@ -955,13 +957,13 @@ wuffs_base__pixel_buffer__plane(wuffs_base__pixel_buffer* b, uint32_t p) {
 #ifdef __cplusplus
 
 inline wuffs_base__status  //
-wuffs_base__pixel_buffer::set_from_slice(wuffs_base__pixel_config* pixcfg,
+wuffs_base__pixel_buffer::set_from_slice(const wuffs_base__pixel_config* pixcfg,
                                          wuffs_base__slice_u8 pixbuf_memory) {
   return wuffs_base__pixel_buffer__set_from_slice(this, pixcfg, pixbuf_memory);
 }
 
 inline wuffs_base__status  //
-wuffs_base__pixel_buffer::set_from_table(wuffs_base__pixel_config* pixcfg,
+wuffs_base__pixel_buffer::set_from_table(const wuffs_base__pixel_config* pixcfg,
                                          wuffs_base__table_u8 pixbuf_memory) {
   return wuffs_base__pixel_buffer__set_from_table(this, pixcfg, pixbuf_memory);
 }
