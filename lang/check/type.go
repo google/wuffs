@@ -268,6 +268,9 @@ func (q *checker) tcheckAssign(n *a.Assign) error {
 	rTyp := rhs.MType()
 
 	if op := n.Operator(); op == t.IDEq || op == t.IDEqQuestion {
+		if (op == t.IDEqQuestion) && !rTyp.Eq(typeExprStatus) {
+			return fmt.Errorf("check: =? only works with the base.status type")
+		}
 		return q.tcheckEq(0, lhs, lTyp, rhs, rTyp)
 	}
 
