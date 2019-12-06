@@ -16,14 +16,9 @@ but they're not the only way. Wuffs does not use them.
 
 #### Effect
 
-An extension of the type system, applied to functions. Wuffs has three effect
-categories: pure, impure and coroutine. Pure means that the function has no
-side effects - it does not change any observable state. The other two
-categories may have side effects, with [coroutines](/doc/note/coroutines.md)
-also being able to suspend and resume.
-
-Impure functions are marked with a `!` at their definition and at call sites.
-Coroutines are similarly marked, with a `?`. Pure functions have no mark.
+An extension of the type system, such as purity (freedom from side effects),
+applied to functions. See the [effects](/doc/note/effects.md) note for more
+details.
 
 #### Fact
 
