@@ -69,8 +69,8 @@ For those paranoid about security, leave this flag bit unset, so that
 `WUFFS_INITIALIZE__ALREADY_ZEROED` flag bit is also set).
 
 Setting this flag bit (avoiding a fixed-size cost) gives a small absolute
-improvement on micro-benchmarks, mostly noticable (in relative terms) only when
-the actual work to do (the input) is also small. Look for
+improvement on micro-benchmarks, mostly noticeable (in relative terms) only
+when the actual work to do (the input) is also small. Look for
 `WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED` in the
 [benchmarks](/doc/benchmarks.md) for performance numbers.
 

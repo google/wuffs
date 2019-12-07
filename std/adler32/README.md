@@ -84,7 +84,7 @@ program](https://play.golang.org/p/SkPVp0tBnDl) shows:
     7  0x00070001  0x9D6CDF7E  "\x00\x00\x00\x00\x00\x00\x00"
 
 Adler-32 is a simpler algorithm than CRC-32. At the time Adler-32 was invented,
-it had noticably higher throughput. With modern SIMD implementations, that
+it had noticeably higher throughput. With modern SIMD implementations, that
 performance difference has largely disappeared.
 
 

@@ -229,7 +229,7 @@ pri func decoder.decode_blocks?(dst: base.io_writer, src: base.io_reader) {
 		} else if type == 1 {
 			status = this.init_fixed_huffman!()
 			// TODO: "if status.is_error()" is probably more idiomatic, but for
-			// some mysterious, idiosyncratic reason, performs noticably worse
+			// some mysterious, idiosyncratic reason, performs noticeably worse
 			// for gcc (but not for clang).
 			//
 			// See git commit 3bf9573 "Work around strange status.is_error

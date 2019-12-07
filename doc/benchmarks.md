@@ -65,7 +65,7 @@ or
 
 ## Clang versus GCC
 
-On some of the benchmarks below, clang performs noticably worse (e.g. 1.3x
+On some of the benchmarks below, clang performs noticeably worse (e.g. 1.3x
 slower) than gcc, on the same C code. A relatively simple reproduction was
 filed as [LLVM bug 35567](https://bugs.llvm.org/show_bug.cgi?id=35567).
 
