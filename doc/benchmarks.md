@@ -147,6 +147,29 @@ is unset or set.
     mimic_deflate_decode_100k_just_one_read           329MB/s  1.00x
     mimic_deflate_decode_100k_many_big_reads          256MB/s  1.00x
 
+32-bit ARMv7 (2012 era Samsung Exynos 5 Chromebook), Debian Stretch (2017):
+
+    name                                             speed     vs_mimic
+
+    wuffs_deflate_decode_1k_full_init/clang5         30.4MB/s  0.60x
+    wuffs_deflate_decode_1k_part_init/clang5         37.9MB/s  0.74x
+    wuffs_deflate_decode_10k_full_init/clang5        72.8MB/s  0.81x
+    wuffs_deflate_decode_10k_part_init/clang5        76.2MB/s  0.85x
+    wuffs_deflate_decode_100k_just_one_read/clang5   96.5MB/s  0.82x
+    wuffs_deflate_decode_100k_many_big_reads/clang5  81.1MB/s  0.90x
+
+    wuffs_deflate_decode_1k_full_init/gcc6           31.6MB/s  0.62x
+    wuffs_deflate_decode_1k_part_init/gcc6           39.9MB/s  0.78x
+    wuffs_deflate_decode_10k_full_init/gcc6          69.6MB/s  0.78x
+    wuffs_deflate_decode_10k_part_init/gcc6          72.4MB/s  0.81x
+    wuffs_deflate_decode_100k_just_one_read/gcc6     87.3MB/s  0.74x
+    wuffs_deflate_decode_100k_many_big_reads/gcc6    73.8MB/s  0.82x
+
+    mimic_deflate_decode_1k                          51.0MB/s  1.00x
+    mimic_deflate_decode_10k                         89.7MB/s  1.00x
+    mimic_deflate_decode_100k_just_one_read           118MB/s  1.00x
+    mimic_deflate_decode_100k_many_big_reads         90.0MB/s  1.00x
+
 
 ## Deflate (C, miniz)
 
@@ -257,6 +280,43 @@ so there are no mimic numbers to compare to for the `bgra` suffix.
     mimic_gif_decode_1000k                           98.4MB/s  1.00x
     mimic_gif_decode_anim_screencap                   178MB/s  1.00x
 
+32-bit ARMv7 (2012 era Samsung Exynos 5 Chromebook), Debian Stretch (2017):
+
+    name                                             speed     vs_mimic
+
+    wuffs_gif_decode_1k_bw/clang5                    49.1MB/s  1.76x
+    wuffs_gif_decode_1k_color_full_init/clang5       22.3MB/s  1.35x
+    wuffs_gif_decode_1k_color_part_init/clang5       27.4MB/s  1.66x
+    wuffs_gif_decode_10k_bgra/clang5                  157MB/s  n/a
+    wuffs_gif_decode_10k_indexed/clang5              42.0MB/s  1.79x
+    wuffs_gif_decode_20k/clang5                      49.3MB/s  1.68x
+    wuffs_gif_decode_100k_artificial/clang5           132MB/s  2.62x
+    wuffs_gif_decode_100k_realistic/clang5           47.8MB/s  1.62x
+    wuffs_gif_decode_1000k_full_init/clang5          46.4MB/s  1.62x
+    wuffs_gif_decode_1000k_part_init/clang5          46.4MB/s  1.62x
+    wuffs_gif_decode_anim_screencap/clang5            243MB/s  4.03x
+
+    wuffs_gif_decode_1k_bw/gcc6                      46.6MB/s  1.67x
+    wuffs_gif_decode_1k_color_full_init/gcc6         20.1MB/s  1.22x
+    wuffs_gif_decode_1k_color_part_init/gcc6         24.2MB/s  1.47x
+    wuffs_gif_decode_10k_bgra/gcc6                    124MB/s  n/a
+    wuffs_gif_decode_10k_indexed/gcc6                34.8MB/s  1.49x
+    wuffs_gif_decode_20k/gcc6                        43.8MB/s  1.49x
+    wuffs_gif_decode_100k_artificial/gcc6             123MB/s  2.44x
+    wuffs_gif_decode_100k_realistic/gcc6             42.7MB/s  1.44x
+    wuffs_gif_decode_1000k_full_init/gcc6            41.6MB/s  1.45x
+    wuffs_gif_decode_1000k_part_init/gcc6            41.7MB/s  1.45x
+    wuffs_gif_decode_anim_screencap/gcc6              227MB/s  3.76x
+
+    mimic_gif_decode_1k_bw                           27.9MB/s  1.00x
+    mimic_gif_decode_1k_color                        16.5MB/s  1.00x
+    mimic_gif_decode_10k_indexed                     23.4MB/s  1.00x
+    mimic_gif_decode_20k                             29.4MB/s  1.00x
+    mimic_gif_decode_100k_artificial                 50.4MB/s  1.00x
+    mimic_gif_decode_100k_realistic                  29.5MB/s  1.00x
+    mimic_gif_decode_1000k                           28.7MB/s  1.00x
+    mimic_gif_decode_anim_screencap                  60.3MB/s  1.00x
+
 
 ## GIF (Go)
 
@@ -360,4 +420,4 @@ decoded output.
 
 ---
 
-Updated on October 2019.
+Updated on December 2019.
