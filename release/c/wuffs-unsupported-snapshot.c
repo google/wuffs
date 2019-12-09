@@ -1525,38 +1525,12 @@ wuffs_base__pixel_format__num_planes(wuffs_base__pixel_format f) {
 
 // --------
 
-// wuffs_base__pixel_subsampling encodes the mapping of pixel space coordinates
-// (x, y) to pixel buffer indices (i, j). That mapping can differ for each
-// plane p. For a depth of 8 bits (1 byte), the p'th plane's sample starts at
-// (planes[p].ptr + (j * planes[p].stride) + i).
+// wuffs_base__pixel_subsampling encodes whether sample values cover one pixel
+// or cover multiple pixels.
 //
-// For interleaved pixel formats, the mapping is trivial: i = x and j = y. For
-// planar pixel formats, the mapping can differ due to chroma subsampling. For
-// example, consider a three plane YCbCr pixel format with 4:2:2 subsampling.
-// For the luma (Y) channel, there is one sample for every pixel, but for the
-// chroma (Cb, Cr) channels, there is one sample for every two pixels: pairs of
-// horizontally adjacent pixels form one macropixel, i = x / 2 and j == y. In
-// general, for a given p:
-//  - i = (x + bias_x) >> shift_x.
-//  - j = (y + bias_y) >> shift_y.
-// where biases and shifts are in the range 0..3 and 0..2 respectively.
+// See https://github.com/google/wuffs/blob/master/doc/note/pixel-subsampling.md
 //
-// In general, the biases will be zero after decoding an image. However, making
-// a sub-image may change the bias, since the (x, y) coordinates are relative
-// to the sub-image's top-left origin, but the backing pixel buffers were
-// created relative to the original image's origin.
-//
-// For each plane p, each of those four numbers (biases and shifts) are encoded
-// in two bits, which combine to form an 8 bit unsigned integer:
-//
-//  e_p = (bias_x << 6) | (shift_x << 4) | (bias_y << 2) | (shift_y << 0)
-//
-// Those e_p values (e_0 for the first plane, e_1 for the second plane, etc)
-// combine to form a wuffs_base__pixel_subsampling value:
-//
-//  pixsub = (e_3 << 24) | (e_2 << 16) | (e_1 << 8) | (e_0 << 0)
-//
-// Do not manipulate these bits directly; they are private implementation
+// Do not manipulate its bits directly; they are private implementation
 // details. Use methods such as wuffs_base__pixel_subsampling__bias_x instead.
 typedef uint32_t wuffs_base__pixel_subsampling;
 
