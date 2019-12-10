@@ -150,9 +150,9 @@ typedef uint32_t wuffs_base__pixel_subsampling;
 #define WUFFS_BASE__PIXEL_SUBSAMPLING__420 \
   ((wuffs_base__pixel_subsampling)0x111100)
 #define WUFFS_BASE__PIXEL_SUBSAMPLING__411 \
-  ((wuffs_base__pixel_subsampling)0x202000)
+  ((wuffs_base__pixel_subsampling)0x303000)
 #define WUFFS_BASE__PIXEL_SUBSAMPLING__410 \
-  ((wuffs_base__pixel_subsampling)0x212100)
+  ((wuffs_base__pixel_subsampling)0x313100)
 
 static inline uint32_t  //
 wuffs_base__pixel_subsampling__bias_x(wuffs_base__pixel_subsampling s,
@@ -162,10 +162,10 @@ wuffs_base__pixel_subsampling__bias_x(wuffs_base__pixel_subsampling s,
 }
 
 static inline uint32_t  //
-wuffs_base__pixel_subsampling__shift_x(wuffs_base__pixel_subsampling s,
-                                       uint32_t plane) {
+wuffs_base__pixel_subsampling__denominator_x(wuffs_base__pixel_subsampling s,
+                                             uint32_t plane) {
   uint32_t shift = ((plane & 0x03) * 8) + 4;
-  return (s >> shift) & 0x03;
+  return ((s >> shift) & 0x03) + 1;
 }
 
 static inline uint32_t  //
@@ -176,10 +176,10 @@ wuffs_base__pixel_subsampling__bias_y(wuffs_base__pixel_subsampling s,
 }
 
 static inline uint32_t  //
-wuffs_base__pixel_subsampling__shift_y(wuffs_base__pixel_subsampling s,
-                                       uint32_t plane) {
+wuffs_base__pixel_subsampling__denominator_y(wuffs_base__pixel_subsampling s,
+                                             uint32_t plane) {
   uint32_t shift = ((plane & 0x03) * 8) + 0;
-  return (s >> shift) & 0x03;
+  return ((s >> shift) & 0x03) + 1;
 }
 
 // --------
