@@ -97,7 +97,7 @@ Encode-Related Flags:
     -cchunksize
         the chunk size (in CSpace)
     -codec
-        the compression codec (default "zlib")
+        the compression codec (default "zstd")
     -cpagesize
         the page size (in CSpace)
     -dchunksize

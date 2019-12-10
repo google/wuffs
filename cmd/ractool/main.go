@@ -98,7 +98,7 @@ Encode-Related Flags:
     -cchunksize
         the chunk size (in CSpace)
     -codec
-        the compression codec (default "zlib")
+        the compression codec (default "zstd")
     -cpagesize
         the page size (in CSpace)
     -dchunksize
@@ -275,7 +275,7 @@ var (
 		"whether to decode on a single execution thread")
 
 	// Encode-related flags.
-	codecFlag         = flag.String("codec", "zlib", "the compression codec")
+	codecFlag         = flag.String("codec", "zstd", "the compression codec")
 	cpagesizeFlag     = flag.String("cpagesize", "0", "the page size (in CSpace)")
 	cchunksizeFlag    = flag.String("cchunksize", "0", "the chunk size (in CSpace)")
 	dchunksizeFlag    = flag.String("dchunksize", "0", "the chunk size (in DSpace)")
