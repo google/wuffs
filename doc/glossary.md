@@ -20,6 +20,10 @@ An extension of the type system, such as purity (freedom from side effects),
 applied to functions. See the [effects](/doc/note/effects.md) note for more
 details.
 
+Syntactically, effects are the exclamation and question marks, `!` and `?`, at
+function definitions and function calls. These denote impure and
+[coroutine](/doc/note/coroutines.md) functions.
+
 #### Fact
 
 A boolean expression (e.g. `x > y`) that happens to be true at a given point in
