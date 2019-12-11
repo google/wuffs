@@ -15,6 +15,9 @@ twice with two different slices should be equivalent to calling it once on
 their concatenation. [Re-initialize](/doc/note/initialization.md) the object to
 reset the state.
 
+Wuffs' hasher implementations are not cryptographic. They make no attempt to
+resist timing attacks.
+
 
 ## Implementations
 
