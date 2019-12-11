@@ -8,14 +8,24 @@ function on the same receiver, whilst it is suspended, will result in an error.
 
 Unlike coroutines in other programming languages, Wuffs coroutines cannot
 return other values in addition to that status, and statuses don't carry
-additional fields. Wuffs coroutines cannot be used as generators. The built-in
-I/O types (`base.io_reader` and `base.io_writer`) are exceptions to this rule.
+additional fields. Wuffs coroutines cannot be used as generators directly,
+although they can produce to and consume from buffers as side effects. The
+built-in I/O types (`base.io_reader` and `base.io_writer`) have coroutine
+methods that are exceptions to this "no additional return value" rule, and are
+special-cased by the Wuffs compiler.
 
-As of Wuffs version 0.2 (December 2019), the language and standard library uses
+Another difference with other programming languages is that Wuffs coroutines'
+arguments can change across a suspension and resumption. The mechanism for
+resuming a coroutine, for C code that calls into Wuffs-transpiled-to-C, is to
+simply call the C function again, with the same `self` receiver (the first
+argument), but with potentially different other arguments.
+
+As of Wuffs version 0.2 (December 2019), the language and standard library use
 only two suspension status values, both [I/O](/doc/note/io-input-output.md)
 related: `"$short read"` and `"$short write"` are used when a source buffer is
-full (and needs re-filling) or a destination buffer is full (and needs
-flushing). These I/O related suspensions are how [compression
+empty (and needs re-filling) or a destination buffer is full (and needs
+flushing). These I/O related suspensions, together with the I/O buffer
+arguments' contents and read/write indexes changing, are how [compression
 decoders](/doc/std/compression-decoders.md) are able to decompress from
 arbitrarily long inputs to arbitrarily long outputs with fixed sized buffers.
 
