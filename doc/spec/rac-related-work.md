@@ -1,8 +1,9 @@
 # Random Access Compression (RAC) Related Work
 
 This is a companion document to the [Random Access Compression (RAC)
-Specification](./rac-spec.md). Its contents aren't necessary for implementing
-the RAC file format, but gives further context on what RAC is and is not.
+Specification](/doc/spec/rac-spec.md). Its contents aren't necessary for
+implementing the RAC file format, but gives further context on what RAC is and
+is not.
 
 In general, RAC differs from most other archive or compression formats in a
 number of ways. This doesn't mean that RAC is necessarily better or worse than

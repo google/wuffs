@@ -96,7 +96,7 @@ not useful, just different, with different trade-offs.
 Simpler languages are easier to prove things about. Macros, inheritance,
 closures, generics, operator overloading, goto's and built-in container types
 are all useful features, but as mentioned in the top-level
-[README](../README.md), Wuffs is not a general purpose programming language.
+[README](/README.md), Wuffs is not a general purpose programming language.
 Instead, its focus is on compile-time provable memory safety, with C-like
 performance, for CPU-intensive file format decoders.
 

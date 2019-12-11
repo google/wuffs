@@ -46,7 +46,7 @@ Non-goals in general include:
   - Streaming decompression.
 
 A companion document has further discussion of [RAC related
-work](./rac-related-work.md).
+work](/doc/spec/rac-related-work.md).
 
 
 ### Glossary

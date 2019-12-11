@@ -1,8 +1,9 @@
 # Naïve Image Formats (NIE, NII, NIA) Related Work
 
 This is a companion document to the [Naïve Image Formats (NIE, NII, NIA)
-Specification](./nie-spec.md). Its contents aren't necessary for implementing
-the NIE file format, but gives further context on what NIE is and is not.
+Specification](/doc/spec/nie-spec.md). Its contents aren't necessary for
+implementing the NIE file format, but gives further context on what NIE is and
+is not.
 
 In general, being uncompressed, NIE/NII/NIA is not intended for long term
 storage or for delivery over a network. Alternative lossless image formats like

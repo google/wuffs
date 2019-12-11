@@ -3,7 +3,7 @@
 Status: Draft (as of August 2019). There is no compatibility guarantee yet.
 
 A companion document has further discussion of [NIE related
-work](./nie-related-work.md).
+work](/doc/spec/nie-related-work.md).
 
 
 ## NIE: Still Images
