@@ -3,7 +3,7 @@
 Wuffs is an industrial project, not an academic project, and this Related Work
 section is not as extensive or as rigorous as would be found in an academic
 thesis or journal article. The underlying goal is usefulness, not novelty. For
-Wuffs' users, it'd perfectly fine to have multiple implementations of a good
+Wuffs' users, it'd be perfectly fine to have multiple implementations of a good
 idea, even if the later ones wouldn't earn a Ph. D.
 
 A number of other projects are listed below. Wuffs is not exactly like any of
