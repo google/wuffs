@@ -39,6 +39,17 @@ A unit of time. One [flick](https://github.com/OculusVR/Flicks) (frame-tick) is
 Arithmetic on numerical ranges. See the [interval
 arithmetic](/doc/note/interval-arithmetic.md) note for more details.
 
+#### Method
+
+A function whose first argument (the receiver) has special syntactic support.
+For example, an expression like `foo.bar(etc)` might effectively be a function
+call whose first argument is `foo` and whose remaining arguments are the `etc`.
+It is syntactic sugar for `type_of_foo__bar(self: foo, etc)`. On the callee
+(not the caller) side, that implicit argument is often named `self` or `this`,
+depending on the language (e.g. Wuffs per se uses `this`, but Wuffs transpiled
+to C uses `self` to avoid confusion with C++'s `this`). Wuffs has no free
+standing functions, only methods.
+
 #### Modular Arithmetic
 
 Arithmetic that wraps around at a certain modulus, such as `256` for the
