@@ -156,24 +156,7 @@ typedef struct {
 
 // --------
 
-// A status is either NULL (meaning OK) or a string message. That message is
-// human-readable, for programmers, but it is not for end users. It is not
-// localized, and does not contain additional contextual information such as a
-// source filename.
-//
-// Status strings are statically allocated and should never be free'd. They can
-// be compared by the == operator and not just by strcmp.
-//
-// Statuses come in four categories:
-//  - OK:          the request was completed, successfully.
-//  - Warnings:    the request was completed, unsuccessfully.
-//  - Suspensions: the request was not completed, but can be re-tried.
-//  - Errors:      the request was not completed, permanently.
-//
-// When a function returns an incomplete status, a suspension means that that
-// function should be called again within a new context, such as after flushing
-// or re-filling an I/O buffer. An error means that an irrecoverable failure
-// state was reached.
+// See https://github.com/google/wuffs/blob/master/doc/note/statuses.md
 typedef const char* wuffs_base__status;
 
 extern const char* wuffs_base__warning__end_of_data;
