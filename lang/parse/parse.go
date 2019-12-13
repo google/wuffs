@@ -32,6 +32,14 @@ func isDoubleUnderscore(s string) bool {
 	return len(s) >= 2 && s[0] == '_' && s[1] == '_'
 }
 
+func isStatusMessage(s string) bool {
+	if s == "" {
+		return false
+	}
+	c := s[0]
+	return (c == '@') || (c == '#') || (c == '$')
+}
+
 func Parse(tm *t.Map, filename string, src []t.Token, opts *Options) (*a.File, error) {
 	p := &parser{
 		tm:       tm,
@@ -219,6 +227,10 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			if !message.IsStrLiteral(p.tm) {
 				got := p.tm.ByID(message)
 				return nil, fmt.Errorf(`parse: expected string literal, got %q at %s:%d`, got, p.filename, p.line())
+			}
+			if s, _ := t.Unescape(p.tm.ByID(message)); !isStatusMessage(s) {
+				return nil, fmt.Errorf(`parse: status message %q does not start with `+
+					`@, # or $ at %s:%d`, s, p.filename, p.line())
 			}
 			p.src = p.src[1:]
 			if x := p.peek1(); x != t.IDSemicolon {
