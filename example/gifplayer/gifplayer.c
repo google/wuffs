@@ -295,7 +295,7 @@ const char* play() {
   wuffs_base__status status =
       wuffs_gif__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
   if (status) {
-    return status;
+    return wuffs_base__status__message(status);
   }
 
   if (quirk_honor_background_color_flag) {
@@ -315,7 +315,7 @@ const char* play() {
     wuffs_base__image_config ic = {0};
     status = wuffs_gif__decoder__decode_image_config(&dec, &ic, &src);
     if (status) {
-      return status;
+      return wuffs_base__status__message(status);
     }
     if (!wuffs_base__image_config__is_valid(&ic)) {
       return "invalid image configuration";
@@ -337,7 +337,7 @@ const char* play() {
     }
     status = wuffs_base__pixel_buffer__set_from_slice(&pb, &ic.pixcfg, pixbuf);
     if (status) {
-      return status;
+      return wuffs_base__status__message(status);
     }
     memset(pixbuf.ptr, 0, pixbuf.len);
   }
@@ -350,7 +350,7 @@ const char* play() {
       if (status == wuffs_base__warning__end_of_data) {
         break;
       }
-      return status;
+      return wuffs_base__status__message(status);
     }
 
     if (wuffs_base__frame_config__index(&fc) == 0) {
@@ -423,7 +423,7 @@ const char* play() {
     // TODO: should a zero duration mean to show this frame forever?
 
     if (decode_frame_status) {
-      return decode_frame_status;
+      return wuffs_base__status__message(decode_frame_status);
     }
   }
 

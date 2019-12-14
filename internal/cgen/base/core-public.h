@@ -164,6 +164,17 @@ wuffs_base__status__is_warning(wuffs_base__status z) {
   return z && (*z != '$') && (*z != '#');
 }
 
+// wuffs_base__status__message strips the leading '$', '#' or '@'.
+static inline const char*  //
+wuffs_base__status__message(wuffs_base__status z) {
+  if (z) {
+    if ((*z == '$') || (*z == '#') || (*z == '@')) {
+      return z + 1;
+    }
+  }
+  return z;
+}
+
 // --------
 
 // FourCC constants.

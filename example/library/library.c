@@ -98,19 +98,19 @@ static const char* decode() {
   if (!dec) {
     return "out of memory";
   }
-  const char* status = wuffs_gzip__decoder__initialize(
+  wuffs_base__status status = wuffs_gzip__decoder__initialize(
       dec, sizeof__wuffs_gzip__decoder(), WUFFS_VERSION,
       WUFFS_INITIALIZE__ALREADY_ZEROED);
   if (status) {
     free(dec);
-    return status;
+    return wuffs_base__status__message(status);
   }
   status = wuffs_gzip__decoder__decode_io_writer(
       dec, &dst, &src,
       wuffs_base__make_slice_u8(work_buffer, WORK_BUFFER_SIZE));
   if (status) {
     free(dec);
-    return status;
+    return wuffs_base__status__message(status);
   }
   fwrite(dst.data.ptr, sizeof(uint8_t), dst.meta.wi, stdout);
   free(dec);

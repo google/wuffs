@@ -86,3 +86,7 @@ When that Wuffs code is compiled to C, it produces:
 const char* wuffs_deflate__error__bad_huffman_code =
     "#deflate: bad Huffman code";
 ```
+
+When printing a status message, the `wuffs_base__status__message` function will
+advance a (non null) pointer by 1 byte, skipping that leading `'@'`, `'#'` or
+`'$'`.

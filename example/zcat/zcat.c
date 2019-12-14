@@ -85,10 +85,10 @@ static void ignore_return_value(int ignored) {}
 
 static const char* decode() {
   wuffs_gzip__decoder dec;
-  const char* status =
+  wuffs_base__status status =
       wuffs_gzip__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
   if (status) {
-    return status;
+    return wuffs_base__status__message(status);
   }
 
   wuffs_base__io_buffer dst;
@@ -141,7 +141,7 @@ static const char* decode() {
       if (status == wuffs_base__suspension__short_write) {
         continue;
       }
-      return status;
+      return wuffs_base__status__message(status);
     }
 
     wuffs_base__io_buffer__compact(&src);
