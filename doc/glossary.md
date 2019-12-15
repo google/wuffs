@@ -26,8 +26,8 @@ function definitions and function calls. These denote impure and
 
 #### Fact
 
-A boolean expression (e.g. `x > y`) that happens to be true at a given point in
-a program. See the [facts](/doc/note/facts.md) note for more details.
+A boolean expression (e.g. `x > y`) that is guaranteed to be true at a given
+point in a program. See the [facts](/doc/note/facts.md) note for more details.
 
 #### Flick
 
