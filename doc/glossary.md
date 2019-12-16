@@ -11,8 +11,10 @@ where it left off, in the middle of the function body. See the
 A type that depends on another value. For example, a variable `n`'s type might
 be "the length of `s`", for some other
 [slice](/doc/note/slices-arrays-and-tables.md)-typed variable `s`. Dependent
-types are *a* way to implement [bounds checking](/doc/note/bounds-checking.md),
-but they're not the only way. Wuffs does not use them.
+types are *a* way to implement compile-time [bounds
+checking](/doc/note/bounds-checking.md), but they're not the only way, and
+there's more to programming languages than their type systems. Wuffs does not
+use dependent types.
 
 #### Effect
 
