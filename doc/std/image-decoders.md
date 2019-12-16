@@ -120,6 +120,12 @@ caller can go back to the `decode_image_config` method.
 
 - [example/gifplayer](/example/gifplayer)
 
+Examples in other repositories:
+
+- [Skia](https://skia.googlesource.com/skia/+/refs/heads/master/src/codec/SkWuffsCodec.cpp),
+  a 2-D graphics library used by the Android operating system and the Chromium
+  web browser.
+
 
 ## [Quirks](/doc/note/quirks.md)
 
