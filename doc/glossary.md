@@ -79,8 +79,12 @@ A basic type further constrained to a subset of its natural
 ..= 99]` then it is an unsigned 8-bit integer whose value must be less than
 `100`. Without the refinement, `x` could be as high as `255`.
 
-`base.u8[0 ..= 99]` and `base.u32[0 ..= 99]` are two different types. They can
-have different run-time representations.
+Bounds may be omitted, where the base integer type provides the implicit bound.
+`base.u8[0 ..= 99]` and `base.u8[..= 99]` are the same type.
+
+`base.u8[0 ..= 99]` and `base.u32[0 ..= 99]` are two different types, as they
+have different unrefined types. They can have different run-time
+representations.
 
 Non-nullable pointer types can be thought of as a refinement of regular pointer
 types, where the refined range excludes the `nullptr` value.
