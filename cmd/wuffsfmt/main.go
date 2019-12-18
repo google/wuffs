@@ -16,8 +16,8 @@
 //
 // Without explicit paths, it rewrites the standard input to standard output.
 // Otherwise, the -l or -w or both flags must be given. Given a file path, it
-// operates on that file; given a directory path, it operates on all .wuffs
-// files in that directory, recursively. Files starting with a period are
+// operates on that file; given a directory path, it operates on all *.wuffs
+// files in that directory, recursively. File paths starting with a period are
 // ignored.
 package main
 
