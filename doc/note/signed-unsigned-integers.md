@@ -31,7 +31,7 @@ checking](/doc/note/bounds-checking.md) a slice or array expression like
 
 Wuffs programs therefore usually work with unsigned integer types: `base.u32`
 instead of `base.i32`. In fact, Wuffs' standard library, as of version 0.2
-(November 2019), uses *only* unsigned integer types, yet still implements
+(December 2019), uses *only* unsigned integer types, yet still implements
 full-featured decoders for e.g. the GIF and ZLIB formats.
 
 
