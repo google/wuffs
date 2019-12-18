@@ -1,17 +1,12 @@
-# Axioms
+# Axiom Listing
 
-This file lists Wuffs' axioms: a fixed list of built-in, self-evident rules to
-combine existing facts to create new facts. For example, given numerical-typed
-expressions `a`, `b` and `c`, the two facts that `a < c` and `c <= b` together
-imply that `a < b`: less-than-ness is transitive.
+This file lists Wuffs' [axioms](/doc/note/assertions.md#axioms): a fixed list
+of built-in, self-evident rules to create new facts by combining existing
+facts. For example, given numerical-typed expressions `a`, `b` and `c`, the two
+facts that `a < c` and `c <= b` together imply that `a < b`: less-than-ness is
+transitive. That rule is named by the string "a < b: a < c; c <= b"`.
 
-Wuffs code represents this axiom by the string `"a < b: a < c; c <= b"`, and it
-is invoked by the `assert` and `via` keywords, naming the rule and [binding the
-expressions `a`, `b` and
-`c`](https://github.com/google/wuffs/blob/4080840928c0b05a80cda0d14ac2e2615f679f1a/std/lzw/decode_lzw.wuffs#L99).
-
-This file is not just documentation. It is
-[parsed](https://github.com/google/wuffs/blob/master/lang/check/gen.go) to give
+This file is not just documentation. It is [parsed](/lang/check/gen.go) to give
 the list of axioms built into the Wuffs compiler. Run `go generate` after
 editing this list.
 
