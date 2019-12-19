@@ -1,5 +1,21 @@
 # Glossary
 
+#### Axiom
+
+A named rule for asserting new facts. See the
+[assertions](/doc/note/assertions.md#axioms) note for more details.
+
+#### Assertion
+
+A compile-time directive that introduces a new fact (or fails to compile, if
+the assertion cannot be proved). See the [assertions](/doc/note/assertions.md)
+note for more details.
+
+#### Call Sequence
+
+An API restriction that e.g. the `foo` method needs to be called before the
+`bar` method. Out of order calls may result in a `"#bad call sequence"` error.
+
 #### Coroutine
 
 A function that can suspend execution and, when called again later, resume
@@ -99,6 +115,13 @@ Arithmetic that stops at certain bounds, such as `0` and `255` for the
 
 The set of [facts](/doc/note/facts.md) at a given point in a program.
 
+#### Unsafe
+
+A programming language mechanism (e.g. an `unsafe` keyword or package) to
+circumvent the language's safety enforcement, typically used for performance or
+very low level programming. Unlike some other memory-safe languages, Wuffs
+doesn't have such an 'escape hatch'.
+
 #### Utility Type
 
 An empty struct (with no fields) used as a placeholder. Every written-in-Wuffs
@@ -109,3 +132,14 @@ are to its package what C++ or Java's static methods are to its class.
 package has a type called `base.utility`, similar to how the `zlib` package has
 a type called `zlib.decoder`. Unlike "dependent type" or "refinement type",
 "utility type" is not a phrase used in programming language type theory.
+
+#### Work Buffer
+
+Scratch space in addition to the primary destination buffer. For example, in
+image decoding, the primary destination buffer holds the decoded pixels, but
+while decoding is in progress, a decoder might want to store additonal state
+per image column.
+
+Wuffs' codecs can state the (input dependent) size of their work buffer needs
+as a range, not just a single value. Callers then have the option to trade off
+memory for performance.
