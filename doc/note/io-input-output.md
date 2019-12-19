@@ -210,5 +210,28 @@ methods. Wuffs code does not reference an `io_buffer` directly.
 
 ## Binding
 
-TODO: discuss `io_bind`, which temporarily adapts a slice of bytes into an
-`io_buffer`.
+An `io_bind` block temporarily adapts a slice of bytes as an `io_reader` or
+`io_writer`. This is typically done to call other functions that take an
+`io_reader` or `io_writer` as an argument.
+
+```
+var r : base.io_reader
+var s : slice base.u8
+
+etc
+
+// Just before the io_bind, r's state is saved.
+
+io_bind (io: r, data: s) {
+    // At the top of the block, r's data slice is set to s, and r's metadata is
+    // set so that ri = 0, pos = 0 and closed = false.
+    //
+    // Because r is an io_reader, not an io_writer, the wi metadata field is
+    // set to the slice length, not 0.
+    //
+    // r must be a local variable, but s can be an expression.
+    etc
+}
+
+// Just after the io_bind, r's state is restored.
+```
