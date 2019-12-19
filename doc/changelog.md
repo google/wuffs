@@ -1,7 +1,7 @@
 # Changelog
 
 
-## 2019-12-20 version 0.2.0
+## 2019-12-19 version 0.2.0
 
 The headline feature is that the GIF decoder is now of production quality.
 There is now API for overall metadata (e.g. ICCP color profiles) and to
