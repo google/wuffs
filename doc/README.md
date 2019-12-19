@@ -4,4 +4,5 @@ This directory contains documentation about Wuffs' two aspects:
 - A [standard library](/doc/wuffs-the-library.md) written in that programming
   language.
 
-The [top level README](/README.md) also has some general remarks.
+"[Getting Started](/doc/getting-started.md)" has some suggestions if you're
+new. The [top level README](/README.md) also has some general remarks.

@@ -16,7 +16,7 @@ It is perfectly feasible to use Wuffs the Library as a C library, without
 depending on Wuffs the Language tools (such as its compiler). Although the
 standard library's source code is in Wuffs the Language, the transpiled form is
 also checked into the repository. Using the standard library's C form would be
-like using any other third party C library. It's just not hand written C.
+like using any other third party C library. It's just not hand-written C.
 
 To do so, you need to download only one file, from the
 [`/release/c`](/release/c) directory. Wuffs the Library' C form ships as a
