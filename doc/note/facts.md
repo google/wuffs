@@ -54,15 +54,21 @@ pub func foo.bar!(ic: nptr base.image_config) {
 
 ## Creating Facts
 
-One way to create a fact is by assignment. Immediately after the statement `a =
-rhs`, the boolean expression `a == rhs` is a true fact, provided that `rhs` is
-an expression with no [side effects](/doc/note/effects.md). That assignment
-also either removes or updates any other fact involving `a`.
+Every fact is true (at its point in the program), but not every truth is a
+fact. For example, if `x < 5` is true then `x < 6`, `x < 7`, `x < 8`, etc are
+an infinite sequence of truths, but the Wuffs tools only track a finite number
+of facts at any given point. Some facts are explicitly created and some facts
+are implicitly created. But all facts are created by specific means.
+
+One way to implicitly create a fact is by assignment. Immediately after the
+statement `a = rhs`, the boolean expression `a == rhs` is a true fact, provided
+that `rhs` is an expression with no [side effects](/doc/note/effects.md). That
+assignment also either removes or updates any other fact involving `a`.
 
 TODO: specify exactly when and how facts are removed or updated.
 
-As alluded to above, another way to create a fact is to explicitly check if it
-is true, using an `if` or `while` statement:
+As alluded to above, another way to implicitly create a fact is to explicitly
+check if it is true, using an `if` or `while` statement:
 
 ```
 // "x < (y + z)" isn't necessarily true here...
@@ -85,8 +91,8 @@ if x < (y + z) {
 }
 ```
 
-Facts are also created by compile-time [assertions](/doc/note/assertions.md),
-discussed in a separate document.
+Facts are also explicitly created by compile-time
+[assertions](/doc/note/assertions.md), discussed in a separate document.
 
 
 ## Situations and Reconciliation
