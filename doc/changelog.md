@@ -1,7 +1,7 @@
 # Changelog
 
 
-## Work In Progress
+## 2019-12-20 version 0.2.0
 
 The headline feature is that the GIF decoder is now of production quality.
 There is now API for overall metadata (e.g. ICCP color profiles) and to
@@ -12,6 +12,15 @@ a variety of GIF images that are invalid, when strictly following the GIF
 specifiction, but are nonetheless accepted by other real world GIF
 implementations. The Wuffs GIF decoder has also been optimized to be about 1.5x
 faster than Wuffs version 0.1 and about 2x faster than giflib (the C library).
+
+The Wuffs GIF decoder is being trialled by Skia, the 2-D graphics library used
+by both the Android operating system and the Chromium web browser.
+
+Work also proceeds on the NIE and RAC file formats, but both are still
+experimental and may change later in backwards incompatible ways.
+
+The dot points below probably aren't of interest unless you're upgrading from
+Wuffs version 0.1.
 
 - Renamed Puffs to Wuffs.
 - Ship as a "single file C library"
@@ -78,7 +87,7 @@ faster than Wuffs version 0.1 and about 2x faster than giflib (the C library).
 - Added RAC file format spec and Go implementation.
 
 
-## 2017-11-16
+## 2017-11-16 version 0.1.0
 
 - [Initial open source
   release](https://groups.google.com/d/topic/puffslang/2z61mNTAMns/discussion),
@@ -87,4 +96,4 @@ faster than Wuffs version 0.1 and about 2x faster than giflib (the C library).
 
 ---
 
-Updated on August 2019.
+Updated on December 2019.
