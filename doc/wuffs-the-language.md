@@ -85,3 +85,9 @@ not compile if overflow is possible. Some of these operators have alternative
 definition, these never overflow.
 
 The `as` operator, e.g. `x as T`, converts an expression `x` to the type `T`.
+
+
+## Introductory Example
+
+A simple Wuffs the Language program, unrelated to Wuffs the Library, is
+discussed in [/hello-wuffs-c](/hello-wuffs-c).

@@ -1,0 +1,49 @@
+// Copyright 2019 The Wuffs Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+pri status "#not a digit"
+pri status "#too large"
+
+pub struct parser?(
+	val : base.u32,
+)
+
+pub func parser.parse?(src: base.io_reader) {
+	var c : base.u8
+	while true {
+		c = args.src.read_u8?()
+		if c == 0 {
+			return ok
+		}
+		if (c < 0x30) or (0x39 < c) {  // '0' and '9' are ASCII 0x30 and 0x39.
+			return "#not a digit"
+		}
+		// Rebase from ASCII (0x30 ..= 0x39) to the value (0 ..= 9).
+		c -= 0x30
+
+		if this.val < 429496729 {
+			this.val = (10 * this.val) + (c as base.u32)
+			continue
+		} else if (this.val > 429496729) or (c > 5) {
+			return "#too large"
+		}
+		// Uncomment this assertion to see what facts are known here.
+		// assert false
+		this.val = (10 * this.val) + (c as base.u32)
+	}
+}
+
+pub func parser.value() base.u32 {
+	return this.val
+}
