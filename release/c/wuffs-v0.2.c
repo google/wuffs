@@ -60,15 +60,15 @@ extern "C" {
 // each major.minor branch, the commit count should increase monotonically.
 //
 // WUFFS_VERSION was overridden by "wuffs gen -version" based on revision
-// e7d30aa3bdc3568b60eb303295b742712b15a740 committed on 2019-11-02.
+// b36c9f019f2908639b0bb4dd5b8337bb3daf3271 committed on 2019-12-19.
 #define WUFFS_VERSION ((uint64_t)0x0000000000020000)
 #define WUFFS_VERSION_MAJOR ((uint64_t)0x00000000)
 #define WUFFS_VERSION_MINOR ((uint64_t)0x0002)
 #define WUFFS_VERSION_PATCH ((uint64_t)0x0000)
-#define WUFFS_VERSION_PRE_RELEASE_LABEL "rc.3"
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 2007
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20191102
-#define WUFFS_VERSION_STRING "0.2.0-rc.3+2007.20191102"
+#define WUFFS_VERSION_PRE_RELEASE_LABEL ""
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 2078
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20191219
+#define WUFFS_VERSION_STRING "0.2.0+2078.20191219"
 
 // Define WUFFS_CONFIG__STATIC_FUNCTIONS to make all of Wuffs' functions have
 // static storage. The motivation is discussed in the "ALLOW STATIC
@@ -110,21 +110,8 @@ extern "C" {
 // that the buffer is contained by the receiver struct, as opposed to being
 // passed as a separately allocated "work buffer".
 //
-// With or without this bit set, the Wuffs compiler still enforces that no
-// reads or writes will overflow internal buffers' bounds. Even with this bit
-// set, the Wuffs standard library also considers reading from an uninitialized
-// buffer to be a bug, and strives to never do so, but unlike buffer overflows,
-// it is not a bug class that the Wuffs compiler eliminates.
-//
-// For those paranoid about security, leave this bit unset, so that
-// wuffs_foo__bar__initialize will initialize the entire struct value to zeroes
-// (unless WUFFS_INITIALIZE__ALREADY_ZEROED is set).
-//
-// Setting this bit (avoiding a fixed-size cost) gives a small absolute
-// improvement on micro-benchmarks, mostly noticable (in relative terms) only
-// when the actual work to do (i.e. the input) is also small. Look for
-// WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED in
-// https://github.com/google/wuffs/blob/master/doc/benchmarks.md for numbers.
+// For more detail, see:
+// https://github.com/google/wuffs/blob/master/doc/note/initialization.md
 #define WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED \
   ((uint32_t)0x00000002)
 
@@ -170,24 +157,7 @@ typedef struct {
 
 // --------
 
-// A status is either NULL (meaning OK) or a string message. That message is
-// human-readable, for programmers, but it is not for end users. It is not
-// localized, and does not contain additional contextual information such as a
-// source filename.
-//
-// Status strings are statically allocated and should never be free'd. They can
-// be compared by the == operator and not just by strcmp.
-//
-// Statuses come in four categories:
-//  - OK:          the request was completed, successfully.
-//  - Warnings:    the request was completed, unsuccessfully.
-//  - Suspensions: the request was not completed, but can be re-tried.
-//  - Errors:      the request was not completed, permanently.
-//
-// When a function returns an incomplete status, a suspension means that that
-// function should be called again within a new context, such as after flushing
-// or re-filling an I/O buffer. An error means that an irrecoverable failure
-// state was reached.
+// See https://github.com/google/wuffs/blob/master/doc/note/statuses.md
 typedef const char* wuffs_base__status;
 
 extern const char* wuffs_base__warning__end_of_data;
@@ -235,6 +205,17 @@ wuffs_base__status__is_suspension(wuffs_base__status z) {
 static inline bool  //
 wuffs_base__status__is_warning(wuffs_base__status z) {
   return z && (*z != '$') && (*z != '#');
+}
+
+// wuffs_base__status__message strips the leading '$', '#' or '@'.
+static inline const char*  //
+wuffs_base__status__message(wuffs_base__status z) {
+  if (z) {
+    if ((*z == '$') || (*z == '#') || (*z == '@')) {
+      return z + 1;
+    }
+  }
+  return z;
 }
 
 // --------
@@ -1433,121 +1414,11 @@ typedef uint32_t wuffs_base__color_u32_argb_premul;
 // --------
 
 // wuffs_base__pixel_format encodes the format of the bytes that constitute an
-// image frame's pixel data. Its bits:
-//  - bit        31  is reserved.
-//  - bits 30 .. 28 encodes color (and channel order, in terms of memory).
-//  - bit        27  is reserved.
-//  - bits 26 .. 24 encodes transparency.
-//  - bits 23 .. 21 are reserved.
-//  - bit        20 indicates big-endian/MSB-first (as opposed to little/LSB).
-//  - bit        19 indicates floating point (as opposed to integer).
-//  - bit        18 indicates palette-indexed. The number-of-planes (the next
-//                  field) will be 0, as the format is considered interleaved,
-//                  but the 8-bit N-BGRA color data is stored in plane 3.
-//  - bits 17 .. 16 are the number of planes, minus 1. Zero means interleaved.
-//  - bits 15 .. 12 encodes the number of bits (depth) in the 3rd channel.
-//  - bits 11 ..  8 encodes the number of bits (depth) in the 2nd channel.
-//  - bits  7 ..  4 encodes the number of bits (depth) in the 1st channel.
-//  - bits  3 ..  0 encodes the number of bits (depth) in the 0th channel.
+// image frame's pixel data.
 //
-// The bit fields of a wuffs_base__pixel_format are not independent. For
-// example, the number of planes should not be greater than the number of
-// channels. Similarly, bits 15..4 are unused (and should be zero) if bits
-// 31..24 (color and transparency) together imply only 1 channel (gray, no
-// alpha) and floating point samples should mean a bit depth of 16, 32 or 64.
+// See https://github.com/google/wuffs/blob/master/doc/note/pixel-formats.md
 //
-// Formats hold between 1 and 4 channels. For example: Y (1 channel: gray), YA
-// (2 channels: gray and alpha), BGR (3 channels: blue, green, red) or CMYK (4
-// channels: cyan, magenta, yellow, black).
-//
-// For direct formats with N > 1 channels, those channels can be laid out in
-// either 1 (interleaved) or N (planar) planes. For example, RGBA data is
-// usually interleaved, but YCbCr data is usually planar, due to chroma
-// subsampling (for details, see the wuffs_base__pixel_subsampling type).
-//
-// For indexed formats, the palette (always 256 × 4 bytes) holds 8 bits per
-// channel non-alpha-premultiplied BGRA color data. There is only 1 plane (for
-// the index), as the format is considered interleaved. Plane 0 holds the
-// per-pixel indices. Plane 3 is re-purposed to hold the per-index colors.
-//
-// The color field is encoded in 3 bits:
-//  - 0 means                   A (Alpha).
-//  - 1 means Y         or     YA (Gray, Alpha).
-//  - 2 means YCbCr     or YCbCrA (Luma, Chroma-blue, Chroma-red, Alpha).
-//  - 3 means YCoCg     or YCoCgA (Luma, Chroma-orange, Chroma-green, Alpha).
-//  - 4 means BGR, BGRX or   BGRA (Blue, Green, Red, X-padding or Alpha).
-//  - 5 means RGB, RGBX or   RGBA (Red, Green, Blue, X-padding or Alpha).
-//  - 6 means CMY       or   CMYK (Cyan, Magenta, Yellow, Black).
-//  - all other values are reserved.
-//
-// In Wuffs, channels are given in memory order (also known as byte order),
-// regardless of endianness, since the C type for the pixel data is an array of
-// bytes, not an array of uint32_t. For example, interleaved BGRA with 8 bits
-// per channel means that the bytes in memory are always Blue, Green, Red then
-// Alpha. On big-endian systems, that is the uint32_t 0xBBGGRRAA. On
-// little-endian, 0xAARRGGBB.
-//
-// When the color field (3 bits) encodes multiple options, the transparency
-// field (3 bits) distinguishes them:
-//  - 0 means fully opaque, no extra channels
-//  - 1 means fully opaque, one extra channel (X or K, padding or black).
-//  - 5 means one extra alpha channel, other channels are non-premultiplied.
-//  - 6 means one extra alpha channel, other channels are     premultiplied.
-//  - 7 means one extra alpha channel, binary alpha.
-//  - all other values are reserved.
-//
-// Binary alpha means that if a color is not completely opaque, it is
-// completely transparent black. As a source pixel format, it can therefore be
-// treated as either non-premultiplied or premultiplied.
-//
-// The zero wuffs_base__pixel_format value is an invalid pixel format, as it is
-// invalid to combine the zero color (alpha only) with the zero transparency.
-//
-// Bit depth is encoded in 4 bits:
-//  -  0 means the channel or index is unused.
-//  -  x means a bit depth of  x, for x in the range 1..8.
-//  -  9 means a bit depth of 10.
-//  - 10 means a bit depth of 12.
-//  - 11 means a bit depth of 16.
-//  - 12 means a bit depth of 24.
-//  - 13 means a bit depth of 32.
-//  - 14 means a bit depth of 48.
-//  - 15 means a bit depth of 64.
-//
-// For example, wuffs_base__pixel_format 0x5510BBBB is a natural format for
-// decoding a PNG image - network byte order (also known as big-endian),
-// interleaved, non-premultiplied alpha - that happens to be 16-bit-depth
-// truecolor with alpha (RGBA). In memory order:
-//
-//  ptr+0  ptr+1  ptr+2  ptr+3  ptr+4  ptr+5  ptr+6  ptr+7
-//  Rhi    Rlo    Ghi    Glo    Bhi    Blo    Ahi    Alo
-//
-// For example, the value wuffs_base__pixel_format 0x40000565 means BGR with no
-// alpha or padding, 5/6/5 bits for blue/green/red, interleaved 2 bytes per
-// pixel, laid out LSB-first in memory order:
-//
-//  ptr+0...........  ptr+1...........
-//  MSB          LSB  MSB          LSB
-//  G₂G₁G₀B₄B₃B₂B₁B₀  R₄R₃R₂R₁R₀G₅G₄G₃
-//
-// On little-endian systems (but not big-endian), this Wuffs pixel format value
-// (0x40000565) corresponds to the Cairo library's CAIRO_FORMAT_RGB16_565, the
-// SDL2 (Simple DirectMedia Layer 2) library's SDL_PIXELFORMAT_RGB565 and the
-// Skia library's kRGB_565_SkColorType. Note BGR in Wuffs versus RGB in the
-// other libraries.
-//
-// Regardless of endianness, this Wuffs pixel format value (0x40000565)
-// corresponds to the V4L2 (Video For Linux 2) library's V4L2_PIX_FMT_RGB565
-// and the Wayland-DRM library's WL_DRM_FORMAT_RGB565.
-//
-// Different software libraries name their pixel formats (and especially their
-// channel order) either according to memory layout or as bits of a native
-// integer type like uint32_t. The two conventions differ because of a system's
-// endianness. As mentioned earlier, Wuffs pixel formats are always in memory
-// order. More detail of other software libraries' naming conventions is in the
-// Pixel Format Guide at https://afrantzis.github.io/pixel-format-guide/
-//
-// Do not manipulate these bits directly; they are private implementation
+// Do not manipulate its bits directly; they are private implementation
 // details. Use methods such as wuffs_base__pixel_format__num_planes instead.
 typedef uint32_t wuffs_base__pixel_format;
 
@@ -1649,38 +1520,12 @@ wuffs_base__pixel_format__num_planes(wuffs_base__pixel_format f) {
 
 // --------
 
-// wuffs_base__pixel_subsampling encodes the mapping of pixel space coordinates
-// (x, y) to pixel buffer indices (i, j). That mapping can differ for each
-// plane p. For a depth of 8 bits (1 byte), the p'th plane's sample starts at
-// (planes[p].ptr + (j * planes[p].stride) + i).
+// wuffs_base__pixel_subsampling encodes whether sample values cover one pixel
+// or cover multiple pixels.
 //
-// For interleaved pixel formats, the mapping is trivial: i = x and j = y. For
-// planar pixel formats, the mapping can differ due to chroma subsampling. For
-// example, consider a three plane YCbCr pixel format with 4:2:2 subsampling.
-// For the luma (Y) channel, there is one sample for every pixel, but for the
-// chroma (Cb, Cr) channels, there is one sample for every two pixels: pairs of
-// horizontally adjacent pixels form one macropixel, i = x / 2 and j == y. In
-// general, for a given p:
-//  - i = (x + bias_x) >> shift_x.
-//  - j = (y + bias_y) >> shift_y.
-// where biases and shifts are in the range 0..3 and 0..2 respectively.
+// See https://github.com/google/wuffs/blob/master/doc/note/pixel-subsampling.md
 //
-// In general, the biases will be zero after decoding an image. However, making
-// a sub-image may change the bias, since the (x, y) coordinates are relative
-// to the sub-image's top-left origin, but the backing pixel buffers were
-// created relative to the original image's origin.
-//
-// For each plane p, each of those four numbers (biases and shifts) are encoded
-// in two bits, which combine to form an 8 bit unsigned integer:
-//
-//  e_p = (bias_x << 6) | (shift_x << 4) | (bias_y << 2) | (shift_y << 0)
-//
-// Those e_p values (e_0 for the first plane, e_1 for the second plane, etc)
-// combine to form a wuffs_base__pixel_subsampling value:
-//
-//  pixsub = (e_3 << 24) | (e_2 << 16) | (e_1 << 8) | (e_0 << 0)
-//
-// Do not manipulate these bits directly; they are private implementation
+// Do not manipulate its bits directly; they are private implementation
 // details. Use methods such as wuffs_base__pixel_subsampling__bias_x instead.
 typedef uint32_t wuffs_base__pixel_subsampling;
 
@@ -1695,9 +1540,9 @@ typedef uint32_t wuffs_base__pixel_subsampling;
 #define WUFFS_BASE__PIXEL_SUBSAMPLING__420 \
   ((wuffs_base__pixel_subsampling)0x111100)
 #define WUFFS_BASE__PIXEL_SUBSAMPLING__411 \
-  ((wuffs_base__pixel_subsampling)0x202000)
+  ((wuffs_base__pixel_subsampling)0x303000)
 #define WUFFS_BASE__PIXEL_SUBSAMPLING__410 \
-  ((wuffs_base__pixel_subsampling)0x212100)
+  ((wuffs_base__pixel_subsampling)0x313100)
 
 static inline uint32_t  //
 wuffs_base__pixel_subsampling__bias_x(wuffs_base__pixel_subsampling s,
@@ -1707,10 +1552,10 @@ wuffs_base__pixel_subsampling__bias_x(wuffs_base__pixel_subsampling s,
 }
 
 static inline uint32_t  //
-wuffs_base__pixel_subsampling__shift_x(wuffs_base__pixel_subsampling s,
-                                       uint32_t plane) {
+wuffs_base__pixel_subsampling__denominator_x(wuffs_base__pixel_subsampling s,
+                                             uint32_t plane) {
   uint32_t shift = ((plane & 0x03) * 8) + 4;
-  return (s >> shift) & 0x03;
+  return ((s >> shift) & 0x03) + 1;
 }
 
 static inline uint32_t  //
@@ -1721,10 +1566,10 @@ wuffs_base__pixel_subsampling__bias_y(wuffs_base__pixel_subsampling s,
 }
 
 static inline uint32_t  //
-wuffs_base__pixel_subsampling__shift_y(wuffs_base__pixel_subsampling s,
-                                       uint32_t plane) {
+wuffs_base__pixel_subsampling__denominator_y(wuffs_base__pixel_subsampling s,
+                                             uint32_t plane) {
   uint32_t shift = ((plane & 0x03) * 8) + 0;
-  return (s >> shift) & 0x03;
+  return ((s >> shift) & 0x03) + 1;
 }
 
 // --------
@@ -2315,10 +2160,12 @@ typedef struct {
   } private_impl;
 
 #ifdef __cplusplus
-  inline wuffs_base__status set_from_slice(wuffs_base__pixel_config* pixcfg,
-                                           wuffs_base__slice_u8 pixbuf_memory);
-  inline wuffs_base__status set_from_table(wuffs_base__pixel_config* pixcfg,
-                                           wuffs_base__table_u8 pixbuf_memory);
+  inline wuffs_base__status set_from_slice(
+      const wuffs_base__pixel_config* pixcfg,
+      wuffs_base__slice_u8 pixbuf_memory);
+  inline wuffs_base__status set_from_table(
+      const wuffs_base__pixel_config* pixcfg,
+      wuffs_base__table_u8 pixbuf_memory);
   inline wuffs_base__slice_u8 palette();
   inline wuffs_base__pixel_format pixel_format() const;
   inline wuffs_base__table_u8 plane(uint32_t p);
@@ -2339,7 +2186,7 @@ wuffs_base__null_pixel_buffer() {
 
 static inline wuffs_base__status  //
 wuffs_base__pixel_buffer__set_from_slice(wuffs_base__pixel_buffer* b,
-                                         wuffs_base__pixel_config* pixcfg,
+                                         const wuffs_base__pixel_config* pixcfg,
                                          wuffs_base__slice_u8 pixbuf_memory) {
   if (!b) {
     return wuffs_base__error__bad_receiver;
@@ -2404,7 +2251,7 @@ wuffs_base__pixel_buffer__set_from_slice(wuffs_base__pixel_buffer* b,
 
 static inline wuffs_base__status  //
 wuffs_base__pixel_buffer__set_from_table(wuffs_base__pixel_buffer* b,
-                                         wuffs_base__pixel_config* pixcfg,
+                                         const wuffs_base__pixel_config* pixcfg,
                                          wuffs_base__table_u8 pixbuf_memory) {
   if (!b) {
     return wuffs_base__error__bad_receiver;
@@ -2474,13 +2321,13 @@ wuffs_base__pixel_buffer__plane(wuffs_base__pixel_buffer* b, uint32_t p) {
 #ifdef __cplusplus
 
 inline wuffs_base__status  //
-wuffs_base__pixel_buffer::set_from_slice(wuffs_base__pixel_config* pixcfg,
+wuffs_base__pixel_buffer::set_from_slice(const wuffs_base__pixel_config* pixcfg,
                                          wuffs_base__slice_u8 pixbuf_memory) {
   return wuffs_base__pixel_buffer__set_from_slice(this, pixcfg, pixbuf_memory);
 }
 
 inline wuffs_base__status  //
-wuffs_base__pixel_buffer::set_from_table(wuffs_base__pixel_config* pixcfg,
+wuffs_base__pixel_buffer::set_from_table(const wuffs_base__pixel_config* pixcfg,
                                          wuffs_base__table_u8 pixbuf_memory) {
   return wuffs_base__pixel_buffer__set_from_table(this, pixcfg, pixbuf_memory);
 }
@@ -2620,8 +2467,8 @@ sizeof__wuffs_adler32__hasher();
 // ---------------- Public Function Prototypes
 
 WUFFS_BASE__MAYBE_STATIC uint32_t  //
-wuffs_adler32__hasher__update(wuffs_adler32__hasher* self,
-                              wuffs_base__slice_u8 a_x);
+wuffs_adler32__hasher__update_u32(wuffs_adler32__hasher* self,
+                                  wuffs_base__slice_u8 a_x);
 
 // ---------------- Struct Definitions
 
@@ -2684,8 +2531,8 @@ struct wuffs_adler32__hasher__struct {
   }
 
   inline uint32_t  //
-  update(wuffs_base__slice_u8 a_x) {
-    return wuffs_adler32__hasher__update(this, a_x);
+  update_u32(wuffs_base__slice_u8 a_x) {
+    return wuffs_adler32__hasher__update_u32(this, a_x);
   }
 
 #if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
@@ -2737,8 +2584,8 @@ sizeof__wuffs_crc32__ieee_hasher();
 // ---------------- Public Function Prototypes
 
 WUFFS_BASE__MAYBE_STATIC uint32_t  //
-wuffs_crc32__ieee_hasher__update(wuffs_crc32__ieee_hasher* self,
-                                 wuffs_base__slice_u8 a_x);
+wuffs_crc32__ieee_hasher__update_u32(wuffs_crc32__ieee_hasher* self,
+                                     wuffs_base__slice_u8 a_x);
 
 // ---------------- Struct Definitions
 
@@ -2800,8 +2647,8 @@ struct wuffs_crc32__ieee_hasher__struct {
   }
 
   inline uint32_t  //
-  update(wuffs_base__slice_u8 a_x) {
-    return wuffs_crc32__ieee_hasher__update(this, a_x);
+  update_u32(wuffs_base__slice_u8 a_x) {
+    return wuffs_crc32__ieee_hasher__update_u32(this, a_x);
   }
 
 #if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
@@ -4959,11 +4806,11 @@ sizeof__wuffs_adler32__hasher() {
 
 // ---------------- Function Implementations
 
-// -------- func adler32.hasher.update
+// -------- func adler32.hasher.update_u32
 
 WUFFS_BASE__MAYBE_STATIC uint32_t  //
-wuffs_adler32__hasher__update(wuffs_adler32__hasher* self,
-                              wuffs_base__slice_u8 a_x) {
+wuffs_adler32__hasher__update_u32(wuffs_adler32__hasher* self,
+                                  wuffs_base__slice_u8 a_x) {
   if (!self) {
     return 0;
   }
@@ -5969,11 +5816,11 @@ sizeof__wuffs_crc32__ieee_hasher() {
 
 // ---------------- Function Implementations
 
-// -------- func crc32.ieee_hasher.update
+// -------- func crc32.ieee_hasher.update_u32
 
 WUFFS_BASE__MAYBE_STATIC uint32_t  //
-wuffs_crc32__ieee_hasher__update(wuffs_crc32__ieee_hasher* self,
-                                 wuffs_base__slice_u8 a_x) {
+wuffs_crc32__ieee_hasher__update_u32(wuffs_crc32__ieee_hasher* self,
+                                     wuffs_base__slice_u8 a_x) {
   if (!self) {
     return 0;
   }
@@ -11465,7 +11312,7 @@ wuffs_gzip__decoder__decode_io_writer(wuffs_gzip__decoder* self,
         v_status = t_7;
       }
       if (!self->private_impl.f_ignore_checksum) {
-        v_checksum_got = wuffs_crc32__ieee_hasher__update(
+        v_checksum_got = wuffs_crc32__ieee_hasher__update_u32(
             &self->private_data.f_checksum,
             wuffs_base__io__since(v_mark, ((uint64_t)(iop_a_dst - io0_a_dst)),
                                   io0_a_dst));
@@ -11710,7 +11557,7 @@ wuffs_zlib__decoder__add_dictionary(wuffs_zlib__decoder* self,
   if (self->private_impl.f_header_complete) {
     self->private_impl.f_bad_call_sequence = true;
   } else {
-    self->private_impl.f_dict_id_got = wuffs_adler32__hasher__update(
+    self->private_impl.f_dict_id_got = wuffs_adler32__hasher__update_u32(
         &self->private_data.f_dict_id_hasher, a_dict);
     wuffs_deflate__decoder__add_history(&self->private_data.f_flate, a_dict);
   }
@@ -11927,7 +11774,7 @@ wuffs_zlib__decoder__decode_io_writer(wuffs_zlib__decoder* self,
         v_status = t_2;
       }
       if (!self->private_impl.f_ignore_checksum) {
-        v_checksum_got = wuffs_adler32__hasher__update(
+        v_checksum_got = wuffs_adler32__hasher__update_u32(
             &self->private_data.f_checksum,
             wuffs_base__io__since(v_mark, ((uint64_t)(iop_a_dst - io0_a_dst)),
                                   io0_a_dst));
