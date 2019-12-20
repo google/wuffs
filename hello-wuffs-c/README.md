@@ -76,7 +76,7 @@ run-time checks for integer overflow, but these are typically disabled by
 default because of the performance impact. Having these checks enabled for
 developer builds are better than nothing, but it still isn't a complete
 solution. We don't ship developer builds to our users, and while computer
-programmers are better than the average person at e.g. spotting phising
+programmers are better than the average person at e.g. spotting phishing
 attempts, that also means that they can be less likely than the average person
 to 'test' their developer builds on the malicious input that users encounter.
 
