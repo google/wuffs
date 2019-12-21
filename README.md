@@ -23,31 +23,32 @@ and operating systems (using that term to include desktop and mobile user
 interfaces, not just the kernel).
 
 [Wuffs the Library](/doc/wuffs-the-library.md) is [available](/release/c) as
-transpiled C code. Other C/C++ projects can use that library without requiring
-the [Wuffs the Language](/doc/wuffs-the-language.md) toolchain. Those projects
-can use Wuffs the Library like using any other third party C library. It's just
-not hand-written C.
+transpiled C code. Other C/C++ projects can **use that library without
+requiring the [Wuffs the Language](/doc/wuffs-the-language.md) toolchain**.
+Those projects can use Wuffs the Library like using any other third party C
+library. It's just not hand-written C.
 
 However, unlike hand-written C, Wuffs the Language is safe with respect to
 buffer overflows, integer arithmetic overflows and null pointer dereferences. A
-key difference between Wuffs and other memory-safe languages is that all such
-checks are done at compile time, not at run time. *If it compiles, it is safe*,
+key difference between Wuffs and other memory-safe languages is that **all such
+checks are done at compile time, not at run time**. If it compiles, it is safe,
 with respect to those three bug classes.
 
 The trade-off in aiming for both safety and speed is that Wuffs programs take
-longer for a programmer to write, as they have to explicitly annotate their
-programs with proofs of safety. A statement like `x += 1` unsurprisingly means
-to increment the variable `x` by `1`. However, in Wuffs, such a statement is a
-compile time error unless the compiler can also prove that `x` is not the
+longer for a programmer to write, as they have to **explicitly annotate their
+programs with proofs of safety**. A statement like `x += 1` unsurprisingly
+means to increment the variable `x` by `1`. However, in Wuffs, such a statement
+is a compile time error unless the compiler can also prove that `x` is not the
 maximal value of `x`'s type (e.g. `x` is not `255` if `x` is a `base.u8`), as
 the increment would otherwise overflow. Similarly, an integer arithmetic
 expression like `x / y` is a compile time error unless the compiler can also
 prove that `y` is not zero.
 
-Wuffs is not a general purpose programming language. It is for writing
-libraries, especially ones that run in security-concious contexts, not
-programs. While technically possible, it is unlikely that a Wuffs compiler
-would be worth writing in Wuffs.
+Wuffs is not a general purpose programming language. **It is for writing
+libraries, not programs**. The idea isn't to write your whole program in Wuffs,
+only the **parts that are both performance-concious and security-concious**.
+For example, while technically possible, it is unlikely that a Wuffs compiler
+would be worth writing entirely in Wuffs.
 
 
 ## What Does Wuffs Code Look Like?
