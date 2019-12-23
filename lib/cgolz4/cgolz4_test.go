@@ -89,3 +89,9 @@ func TestRoundTrip(tt *testing.T) {
 		}
 	}
 }
+
+func TestWriterBufIsLargeEnough(tt *testing.T) {
+	if m := minDstLenForBlockMaxLen(); writerBufLen < m {
+		tt.Fatalf("writerBufLen: got %d, want >= %d", writerBufLen, m)
+	}
+}

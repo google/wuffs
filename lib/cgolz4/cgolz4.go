@@ -346,6 +346,12 @@ func (c *WriterRecycler) Close() error {
 	return nil
 }
 
+func minDstLenForBlockMaxLen() uint64 {
+	return uint64(C.cgolz4_compress_min_dst_len(C.uint32_t(blockMaxLen)))
+}
+
+const writerBufLen = 2*blockMaxLen + 16
+
 // Writer compresses to the lz4 format.
 //
 // Compressed bytes may be buffered and not sent to the underlying io.Writer
@@ -353,7 +359,7 @@ func (c *WriterRecycler) Close() error {
 //
 // The zero value is not usable until Reset is called.
 type Writer struct {
-	buf   [2 * blockMaxLen]byte
+	buf   [writerBufLen]byte
 	j     uint32
 	w     io.Writer
 	begun bool
