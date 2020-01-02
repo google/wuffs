@@ -118,9 +118,9 @@ static const char* decode() {
 }
 
 int main(int argc, char** argv) {
-  const char* status = decode();
-  if (status) {
-    fprintf(stderr, "%s\n", status);
+  const char* status_msg = decode();
+  if (status_msg) {
+    fprintf(stderr, "%s\n", status_msg);
     return 1;
   }
   return 0;

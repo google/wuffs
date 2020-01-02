@@ -122,15 +122,15 @@ const char* test_wuffs_crc32_ieee_golden() {
     wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
         .data = global_src_slice,
     });
-    const char* status = read_file(&src, test_cases[i].filename);
-    if (status) {
-      return status;
+    const char* status_msg = read_file(&src, test_cases[i].filename);
+    if (status_msg) {
+      return status_msg;
     }
 
     int j;
     for (j = 0; j < 2; j++) {
       wuffs_crc32__ieee_hasher checksum;
-      status = wuffs_crc32__ieee_hasher__initialize(
+      wuffs_base__status status = wuffs_crc32__ieee_hasher__initialize(
           &checksum, sizeof checksum, WUFFS_VERSION,
           WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
       if (status) {

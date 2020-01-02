@@ -273,8 +273,8 @@ const char* try_allocate(wuffs_gif__decoder* dec,
 }
 
 const char* allocate(wuffs_gif__decoder* dec, wuffs_base__image_config* ic) {
-  const char* status = try_allocate(dec, ic);
-  if (status) {
+  const char* status_msg = try_allocate(dec, ic);
+  if (status_msg) {
     free(printbuf.ptr);
     printbuf = wuffs_base__make_slice_u8(NULL, 0);
     free(workbuf.ptr);
@@ -287,7 +287,7 @@ const char* allocate(wuffs_gif__decoder* dec, wuffs_base__image_config* ic) {
     curr_dst_buffer = NULL;
     dst_len = 0;
   }
-  return status;
+  return status_msg;
 }
 
 const char* play() {
@@ -446,16 +446,16 @@ int main(int argc, char** argv) {
     }
   }
 
-  const char* status = read_stdin();
-  if (status) {
-    fprintf(stderr, "%s\n", status);
+  const char* status_msg = read_stdin();
+  if (status_msg) {
+    fprintf(stderr, "%s\n", status_msg);
     return 1;
   }
 
   while (true) {
-    status = play();
-    if (status) {
-      fprintf(stderr, "%s\n", status);
+    status_msg = play();
+    if (status_msg) {
+      fprintf(stderr, "%s\n", status_msg);
       return 1;
     }
     if (num_loops_remaining == 0) {

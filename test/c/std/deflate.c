@@ -230,11 +230,11 @@ const char* test_wuffs_deflate_decode_deflate_huffman_primlen_9() {
   CHECK_FOCUS(__func__);
 
   // First, treat this like any other compare-to-golden test.
-  const char* status = do_test_io_buffers(wuffs_deflate_decode,
-                                          &deflate_deflate_huffman_primlen_9_gt,
-                                          UINT64_MAX, UINT64_MAX);
-  if (status) {
-    return status;
+  const char* status_msg = do_test_io_buffers(
+      wuffs_deflate_decode, &deflate_deflate_huffman_primlen_9_gt, UINT64_MAX,
+      UINT64_MAX);
+  if (status_msg) {
+    return status_msg;
   }
 
   // Second, check that the decoder's huffman table sizes match those predicted
@@ -247,13 +247,13 @@ const char* test_wuffs_deflate_decode_deflate_huffman_primlen_9() {
   });
 
   golden_test* gt = &deflate_deflate_huffman_primlen_9_gt;
-  status = read_file(&src, gt->src_filename);
-  if (status) {
-    return status;
+  status_msg = read_file(&src, gt->src_filename);
+  if (status_msg) {
+    return status_msg;
   }
 
   wuffs_deflate__decoder dec;
-  status = wuffs_deflate__decoder__initialize(
+  wuffs_base__status status = wuffs_deflate__decoder__initialize(
       &dec, sizeof dec, WUFFS_VERSION, WUFFS_INITIALIZE__DEFAULT_OPTIONS);
   if (status) {
     RETURN_FAIL("initialize: \"%s\"", status);
@@ -337,15 +337,15 @@ const char* test_wuffs_deflate_decode_split_src() {
       .data = global_want_slice,
   });
 
-  const char* status;
+  const char* status_msg;
   golden_test* gt = &deflate_256_bytes_gt;
-  status = read_file(&src, gt->src_filename);
-  if (status) {
-    return status;
+  status_msg = read_file(&src, gt->src_filename);
+  if (status_msg) {
+    return status_msg;
   }
-  status = read_file(&want, gt->want_filename);
-  if (status) {
-    return status;
+  status_msg = read_file(&want, gt->want_filename);
+  if (status_msg) {
+    return status_msg;
   }
 
   int i;
@@ -357,7 +357,7 @@ const char* test_wuffs_deflate_decode_split_src() {
     got.meta.wi = 0;
 
     wuffs_deflate__decoder dec;
-    status = wuffs_deflate__decoder__initialize(
+    wuffs_base__status status = wuffs_deflate__decoder__initialize(
         &dec, sizeof dec, WUFFS_VERSION,
         WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
     if (status) {
@@ -387,9 +387,9 @@ const char* test_wuffs_deflate_decode_split_src() {
 
     char prefix[64];
     snprintf(prefix, 64, "i=%d: ", i);
-    status = check_io_buffers_equal(prefix, &got, &want);
-    if (status) {
-      return status;
+    status_msg = check_io_buffers_equal(prefix, &got, &want);
+    if (status_msg) {
+      return status_msg;
     }
   }
   return NULL;
@@ -436,33 +436,33 @@ const char* test_wuffs_deflate_history_full() {
       .data = global_want_slice,
   });
 
-  const char* status;
+  const char* status_msg;
   golden_test* gt = &deflate_pi_gt;
-  status = read_file(&src, gt->src_filename);
-  if (status) {
-    return status;
+  status_msg = read_file(&src, gt->src_filename);
+  if (status_msg) {
+    return status_msg;
   }
-  status = read_file(&want, gt->want_filename);
-  if (status) {
-    return status;
+  status_msg = read_file(&want, gt->want_filename);
+  if (status_msg) {
+    return status_msg;
   }
 
   const int full_history_size = 0x8000;
   int i;
   for (i = -2; i <= +2; i++) {
     wuffs_deflate__decoder dec;
-    status = wuffs_deflate__decoder__initialize(
+    wuffs_base__status status = wuffs_deflate__decoder__initialize(
         &dec, sizeof dec, WUFFS_VERSION,
         WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
     if (status) {
       RETURN_FAIL("initialize: \"%s\"", status);
     }
 
-    status = do_test_wuffs_deflate_history(
+    status_msg = do_test_wuffs_deflate_history(
         i, gt, &src, &got, &dec, 0, want.meta.wi + i,
         i >= 0 ? NULL : wuffs_base__suspension__short_write);
-    if (status) {
-      return status;
+    if (status_msg) {
+      return status_msg;
     }
 
     uint32_t want_history_index = i >= 0 ? 0 : full_history_size;
@@ -492,9 +492,9 @@ const char* test_wuffs_deflate_history_full() {
     });
     history_want.meta.wi = full_history_size;
 
-    status = check_io_buffers_equal("", &history_got, &history_want);
-    if (status) {
-      return status;
+    status_msg = check_io_buffers_equal("", &history_got, &history_want);
+    if (status_msg) {
+      return status_msg;
     }
   }
   return NULL;
@@ -511,9 +511,9 @@ const char* test_wuffs_deflate_history_partial() {
   });
 
   golden_test* gt = &deflate_pi_gt;
-  const char* status = read_file(&src, gt->src_filename);
-  if (status) {
-    return status;
+  const char* status_msg = read_file(&src, gt->src_filename);
+  if (status_msg) {
+    return status_msg;
   }
 
   uint32_t starting_history_indexes[] = {
@@ -532,18 +532,18 @@ const char* test_wuffs_deflate_history_partial() {
     wuffs_deflate__decoder dec;
     memset(&(dec.private_data.f_history), 0,
            sizeof(dec.private_data.f_history));
-    status = wuffs_deflate__decoder__initialize(
+    wuffs_base__status status = wuffs_deflate__decoder__initialize(
         &dec, sizeof dec, WUFFS_VERSION,
         WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
     if (status) {
       RETURN_FAIL("initialize: \"%s\"", status);
     }
 
-    status = do_test_wuffs_deflate_history(
+    status_msg = do_test_wuffs_deflate_history(
         i, gt, &src, &got, &dec, starting_history_index, fragment_length,
         wuffs_base__suspension__short_write);
-    if (status) {
-      return status;
+    if (status_msg) {
+      return status_msg;
     }
 
     bool got_full = dec.private_impl.f_history_index >= 0x8000;

@@ -135,9 +135,9 @@ const char* do_test_wuffs_zlib_checksum(bool ignore_checksum,
       .data = global_src_slice,
   });
 
-  const char* status = read_file(&src, zlib_midsummer_gt.src_filename);
-  if (status) {
-    return status;
+  const char* status_msg = read_file(&src, zlib_midsummer_gt.src_filename);
+  if (status_msg) {
+    return status_msg;
   }
   // Flip a bit in the zlib checksum, which is in the last 4 bytes of the file.
   if (src.meta.wi < 4) {
@@ -150,7 +150,7 @@ const char* do_test_wuffs_zlib_checksum(bool ignore_checksum,
   int end_limit;  // The rlimit, relative to the end of the data.
   for (end_limit = 0; end_limit < 10; end_limit++) {
     wuffs_zlib__decoder dec;
-    status = wuffs_zlib__decoder__initialize(
+    wuffs_base__status status = wuffs_zlib__decoder__initialize(
         &dec, sizeof dec, WUFFS_VERSION,
         WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
     if (status) {

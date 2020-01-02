@@ -163,8 +163,8 @@ int main(int argc, char** argv) {
   prctl(PR_SET_SECCOMP, SECCOMP_MODE_STRICT);
 #endif
 
-  const char* status = decode();
-  int status_code = status ? fail(status) : 0;
+  const char* status_msg = decode();
+  int status_code = status_msg ? fail(status_msg) : 0;
 
 #if defined(WUFFS_EXAMPLE_USE_SECCOMP)
   // Call SYS_exit explicitly instead of SYS_exit_group implicitly.

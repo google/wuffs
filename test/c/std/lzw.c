@@ -82,9 +82,9 @@ const char* do_test_wuffs_lzw_decode(const char* src_filename,
       .data = global_src_slice,
   });
 
-  const char* status = read_file(&src, src_filename);
-  if (status) {
-    return status;
+  const char* status_msg = read_file(&src, src_filename);
+  if (status_msg) {
+    return status_msg;
   }
   if (src.meta.wi != src_size) {
     RETURN_FAIL("src size: got %d, want %d", (int)(src.meta.wi),
@@ -98,9 +98,9 @@ const char* do_test_wuffs_lzw_decode(const char* src_filename,
   }
   src.meta.ri++;
 
-  status = read_file(&want, want_filename);
-  if (status) {
-    return status;
+  status_msg = read_file(&want, want_filename);
+  if (status_msg) {
+    return status_msg;
   }
   if (want.meta.wi != want_size) {
     RETURN_FAIL("want size: got %d, want %d", (int)(want.meta.wi),
@@ -108,7 +108,7 @@ const char* do_test_wuffs_lzw_decode(const char* src_filename,
   }
 
   wuffs_lzw__decoder dec;
-  status = wuffs_lzw__decoder__initialize(
+  wuffs_base__status status = wuffs_lzw__decoder__initialize(
       &dec, sizeof dec, WUFFS_VERSION,
       WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
   if (status) {
@@ -388,9 +388,9 @@ const char* do_bench_wuffs_lzw_decode(const char* filename,
       .data = global_src_slice,
   });
 
-  const char* status = read_file(&src, filename);
-  if (status) {
-    return status;
+  const char* status_msg = read_file(&src, filename);
+  if (status_msg) {
+    return status_msg;
   }
   if (src.meta.wi <= 0) {
     RETURN_FAIL("src size: got %d, want > 0", (int)(src.meta.wi));
@@ -409,7 +409,7 @@ const char* do_bench_wuffs_lzw_decode(const char* filename,
     got.meta.wi = 0;
     src.meta.ri = 1;  // Skip the literal width.
     wuffs_lzw__decoder dec;
-    status = wuffs_lzw__decoder__initialize(
+    wuffs_base__status status = wuffs_lzw__decoder__initialize(
         &dec, sizeof dec, WUFFS_VERSION,
         WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
     if (status) {

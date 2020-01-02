@@ -124,9 +124,9 @@ const char* do_test_wuffs_gzip_checksum(bool ignore_checksum,
       .data = global_src_slice,
   });
 
-  const char* status = read_file(&src, gzip_midsummer_gt.src_filename);
-  if (status) {
-    return status;
+  const char* status_msg = read_file(&src, gzip_midsummer_gt.src_filename);
+  if (status_msg) {
+    return status_msg;
   }
 
   // Flip a bit in the gzip checksum, which is in the last 8 bytes of the file.
@@ -140,7 +140,7 @@ const char* do_test_wuffs_gzip_checksum(bool ignore_checksum,
   int end_limit;  // The rlimit, relative to the end of the data.
   for (end_limit = 0; end_limit < 10; end_limit++) {
     wuffs_gzip__decoder dec;
-    status = wuffs_gzip__decoder__initialize(
+    wuffs_base__status status = wuffs_gzip__decoder__initialize(
         &dec, sizeof dec, WUFFS_VERSION,
         WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
     if (status) {
