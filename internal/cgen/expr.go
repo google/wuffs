@@ -30,8 +30,10 @@ func (g *gen) writeExpr(b *buffer, n *a.Expr, depth uint32) error {
 	if cv := n.ConstValue(); cv != nil {
 		if typ := n.MType(); typ.IsNumTypeOrIdeal() {
 			b.writes(cv.String())
-		} else if typ.IsNullptr() || typ.IsStatus() {
+		} else if typ.IsNullptr() {
 			b.writes("NULL")
+		} else if typ.IsStatus() {
+			b.writes("wuffs_base__make_status(NULL)")
 		} else if cv.Cmp(zero) == 0 {
 			b.writes("false")
 		} else if cv.Cmp(one) == 0 {
@@ -70,7 +72,9 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, depth uint32) error {
 
 		} else if ident.IsStrLiteral(g.tm) {
 			if z := g.statusMap[n.StatusQID()]; z.cName != "" {
+				b.writes("wuffs_base__make_status(")
 				b.writes(z.cName)
+				b.writes(")")
 			} else {
 				return fmt.Errorf("unrecognized status %s", n.StatusQID().Str(g.tm))
 			}

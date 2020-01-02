@@ -573,7 +573,7 @@ func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error
 			g.currFunk.tempW++
 
 			b.printf("if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {" +
-				"status = wuffs_base__suspension__short_read; goto suspend; }")
+				"status = wuffs_base__make_status(wuffs_base__suspension__short_read); goto suspend; }")
 
 			// TODO: watch for passing an array type to writeCTypeName? In C, an
 			// array type can decay into a pointer.
@@ -590,7 +590,7 @@ func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error
 					return err
 				}
 				b.printf("if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {" +
-					"status = wuffs_base__suspension__short_read; goto suspend; }")
+					"status = wuffs_base__make_status(wuffs_base__suspension__short_read); goto suspend; }")
 				b.printf("iop_a_src++;\n")
 				return nil
 			}
@@ -614,7 +614,7 @@ func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error
 			b.printf("%s -= ((uint64_t)(io2_a_src - iop_a_src));\n", scratchName)
 			b.printf("iop_a_src = io2_a_src;\n")
 
-			b.writes("status = wuffs_base__suspension__short_read; goto suspend; }\n")
+			b.writes("status = wuffs_base__make_status(wuffs_base__suspension__short_read); goto suspend; }\n")
 			b.printf("iop_a_src += %s;\n", scratchName)
 			return nil
 		}
@@ -637,7 +637,7 @@ func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error
 				return err
 			}
 			b.writes("if (iop_a_dst == io2_a_dst) {\n" +
-				"status = wuffs_base__suspension__short_write; goto suspend; }\n" +
+				"status = wuffs_base__make_status(wuffs_base__suspension__short_write); goto suspend; }\n" +
 				"*iop_a_dst++ = ")
 			x := n.Args()[0].AsArg().Value()
 			if err := g.writeExpr(b, x, depth); err != nil {
@@ -693,7 +693,7 @@ func (g *gen) writeReadUxxAsUyy(b *buffer, n *a.Expr, preName string, xx uint8, 
 	b.printf("while (true) {")
 
 	b.printf("if (WUFFS_BASE__UNLIKELY(iop_%s == io2_%s)) {"+
-		"status = wuffs_base__suspension__short_read; goto suspend; }",
+		"status = wuffs_base__make_status(wuffs_base__suspension__short_read); goto suspend; }",
 		preName, preName)
 
 	b.printf("uint64_t *scratch = &%s;", scratchName)

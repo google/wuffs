@@ -438,7 +438,7 @@ func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 		isOK := false
 		b.writes("status = ")
 		if retExpr.Operator() == 0 && retExpr.Ident() == t.IDOk {
-			b.writes("NULL")
+			b.writes("wuffs_base__make_status(NULL)")
 			isOK = true
 		} else {
 			if retExpr.Ident().IsStrLiteral(g.tm) {
@@ -466,7 +466,7 @@ func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 			// TODO: the "goto exit"s can be "goto ok".
 			b.writes("if (wuffs_base__status__is_error(status)) { goto exit; }" +
 				"else if (wuffs_base__status__is_suspension(status)) { " +
-				"status = wuffs_base__error__cannot_return_a_suspension; goto exit; } goto ok;")
+				"status = wuffs_base__make_status(wuffs_base__error__cannot_return_a_suspension); goto exit; } goto ok;")
 		}
 		return nil
 	}

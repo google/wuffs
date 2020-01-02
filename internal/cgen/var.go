@@ -287,7 +287,7 @@ func (g *gen) writeVars(b *buffer, f *funk, inStructDecl bool) error {
 		} else if typ.IsBool() {
 			b.writes(" = false;\n")
 		} else if typ.IsStatus() {
-			b.writes(" = NULL;\n")
+			b.writes(" = wuffs_base__make_status(NULL);\n")
 		} else if typ.IsIOType() {
 			b.printf(" = &%s%s;\n", uPrefix, name)
 		} else {

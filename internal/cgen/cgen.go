@@ -995,14 +995,14 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 		return err
 	}
 	b.writes("{\n")
-	b.writes("if (!self) { return wuffs_base__error__bad_receiver; }\n")
+	b.writes("if (!self) { return wuffs_base__make_status(wuffs_base__error__bad_receiver); }\n")
 
 	b.writes("if (sizeof(*self) != sizeof_star_self) {\n")
-	b.writes("  return wuffs_base__error__bad_sizeof_receiver;\n")
+	b.writes("  return wuffs_base__make_status(wuffs_base__error__bad_sizeof_receiver);\n")
 	b.writes("}\n")
 	b.writes("if (((wuffs_version >> 32) != WUFFS_VERSION_MAJOR) || " +
 		"(((wuffs_version >> 16) & 0xFFFF) > WUFFS_VERSION_MINOR)) {\n")
-	b.writes("  return wuffs_base__error__bad_wuffs_version;\n")
+	b.writes("  return wuffs_base__make_status(wuffs_base__error__bad_wuffs_version);\n")
 	b.writes("}\n\n")
 
 	b.writes("if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) != 0) {\n")
@@ -1013,7 +1013,7 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 	b.writes("  #pragma GCC diagnostic ignored \"-Wmaybe-uninitialized\"\n")
 	b.writes("  #endif\n")
 	b.writes("  if (self->private_impl.magic != 0) {\n")
-	b.writes("    return wuffs_base__error__initialize_falsely_claimed_already_zeroed;\n")
+	b.writes("    return wuffs_base__make_status(wuffs_base__error__initialize_falsely_claimed_already_zeroed);\n")
 	b.writes("  }\n")
 	b.writes("  #if !defined(__clang__) && defined(__GNUC__)\n")
 	b.writes("  #pragma GCC diagnostic pop\n")
@@ -1058,7 +1058,7 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 	}
 
 	b.writes("self->private_impl.magic = WUFFS_BASE__MAGIC;\n")
-	b.writes("return NULL;\n")
+	b.writes("return wuffs_base__make_status(NULL);\n")
 	b.writes("}\n\n")
 
 	if n.Public() {

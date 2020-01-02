@@ -799,21 +799,21 @@ wuffs_base__pixel_buffer__set_from_slice(wuffs_base__pixel_buffer* b,
                                          const wuffs_base__pixel_config* pixcfg,
                                          wuffs_base__slice_u8 pixbuf_memory) {
   if (!b) {
-    return wuffs_base__error__bad_receiver;
+    return wuffs_base__make_status(wuffs_base__error__bad_receiver);
   }
   memset(b, 0, sizeof(*b));
   if (!pixcfg) {
-    return wuffs_base__error__bad_argument;
+    return wuffs_base__make_status(wuffs_base__error__bad_argument);
   }
   if (wuffs_base__pixel_format__is_planar(pixcfg->private_impl.pixfmt)) {
     // TODO: support planar pixel formats, concious of pixel subsampling.
-    return wuffs_base__error__unsupported_option;
+    return wuffs_base__make_status(wuffs_base__error__unsupported_option);
   }
   uint32_t bits_per_pixel =
       wuffs_base__pixel_format__bits_per_pixel(pixcfg->private_impl.pixfmt);
   if ((bits_per_pixel == 0) || ((bits_per_pixel % 8) != 0)) {
     // TODO: support fraction-of-byte pixels, e.g. 1 bit per pixel?
-    return wuffs_base__error__unsupported_option;
+    return wuffs_base__make_status(wuffs_base__error__unsupported_option);
   }
   uint64_t bytes_per_pixel = bits_per_pixel / 8;
 
@@ -825,7 +825,8 @@ wuffs_base__pixel_buffer__set_from_slice(wuffs_base__pixel_buffer* b,
     // that the both chunks' pointers have the same alignment as the original
     // pointer, up to an alignment of 1024.
     if (len < 1024) {
-      return wuffs_base__error__bad_argument_length_too_short;
+      return wuffs_base__make_status(
+          wuffs_base__error__bad_argument_length_too_short);
     }
     wuffs_base__table_u8* tab =
         &b->private_impl.planes[WUFFS_BASE__PIXEL_FORMAT__INDEXED__COLOR_PLANE];
@@ -842,12 +843,13 @@ wuffs_base__pixel_buffer__set_from_slice(wuffs_base__pixel_buffer* b,
   size_t width = (size_t)(pixcfg->private_impl.width);
   if ((wh > (UINT64_MAX / bytes_per_pixel)) ||
       (width > (SIZE_MAX / bytes_per_pixel))) {
-    return wuffs_base__error__bad_argument;
+    return wuffs_base__make_status(wuffs_base__error__bad_argument);
   }
   wh *= bytes_per_pixel;
   width *= bytes_per_pixel;
   if (wh > len) {
-    return wuffs_base__error__bad_argument_length_too_short;
+    return wuffs_base__make_status(
+        wuffs_base__error__bad_argument_length_too_short);
   }
 
   b->pixcfg = *pixcfg;
@@ -856,7 +858,7 @@ wuffs_base__pixel_buffer__set_from_slice(wuffs_base__pixel_buffer* b,
   tab->width = width;
   tab->height = pixcfg->private_impl.height;
   tab->stride = width;
-  return NULL;
+  return wuffs_base__make_status(NULL);
 }
 
 static inline wuffs_base__status  //
@@ -864,18 +866,18 @@ wuffs_base__pixel_buffer__set_from_table(wuffs_base__pixel_buffer* b,
                                          const wuffs_base__pixel_config* pixcfg,
                                          wuffs_base__table_u8 pixbuf_memory) {
   if (!b) {
-    return wuffs_base__error__bad_receiver;
+    return wuffs_base__make_status(wuffs_base__error__bad_receiver);
   }
   memset(b, 0, sizeof(*b));
   if (!pixcfg ||
       wuffs_base__pixel_format__is_planar(pixcfg->private_impl.pixfmt)) {
-    return wuffs_base__error__bad_argument;
+    return wuffs_base__make_status(wuffs_base__error__bad_argument);
   }
   uint32_t bits_per_pixel =
       wuffs_base__pixel_format__bits_per_pixel(pixcfg->private_impl.pixfmt);
   if ((bits_per_pixel == 0) || ((bits_per_pixel % 8) != 0)) {
     // TODO: support fraction-of-byte pixels, e.g. 1 bit per pixel?
-    return wuffs_base__error__unsupported_option;
+    return wuffs_base__make_status(wuffs_base__error__unsupported_option);
   }
   uint64_t bytes_per_pixel = bits_per_pixel / 8;
 
@@ -883,12 +885,12 @@ wuffs_base__pixel_buffer__set_from_table(wuffs_base__pixel_buffer* b,
       ((uint64_t)pixcfg->private_impl.width) * bytes_per_pixel;
   if ((width_in_bytes > pixbuf_memory.width) ||
       (pixcfg->private_impl.height > pixbuf_memory.height)) {
-    return wuffs_base__error__bad_argument;
+    return wuffs_base__make_status(wuffs_base__error__bad_argument);
   }
 
   b->pixcfg = *pixcfg;
   b->private_impl.planes[0] = pixbuf_memory;
-  return NULL;
+  return wuffs_base__make_status(NULL);
 }
 
 // wuffs_base__pixel_buffer__palette returns the palette color data. If

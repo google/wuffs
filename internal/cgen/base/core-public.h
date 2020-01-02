@@ -139,6 +139,11 @@ typedef const char* wuffs_base__status;
 
 // !! INSERT wuffs_base__status names.
 
+static inline wuffs_base__status  //
+wuffs_base__make_status(const char* repr) {
+  return repr;
+}
+
 static inline bool  //
 wuffs_base__status__is_complete(wuffs_base__status z) {
   return (z == NULL) || ((*z != '$') && (*z != '#'));

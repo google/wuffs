@@ -261,7 +261,7 @@ func (g *gen) writeFuncImplPrologue(b *buffer) error {
 
 		b.writes("if (!self) { return ")
 		if g.currFunk.returnsStatus {
-			b.writes("wuffs_base__error__bad_receiver")
+			b.writes("wuffs_base__make_status(wuffs_base__error__bad_receiver)")
 		} else if err := g.writeOutParamZeroValue(b, out); err != nil {
 			return err
 		}
@@ -275,9 +275,10 @@ func (g *gen) writeFuncImplPrologue(b *buffer) error {
 		}
 		b.writes("return ")
 		if g.currFunk.returnsStatus {
-			b.writes("(self->private_impl.magic == WUFFS_BASE__DISABLED) " +
+			b.writes("wuffs_base__make_status(" +
+				"(self->private_impl.magic == WUFFS_BASE__DISABLED) " +
 				"? wuffs_base__error__disabled_by_previous_error " +
-				": wuffs_base__error__initialize_not_called")
+				": wuffs_base__error__initialize_not_called)")
 		} else if err := g.writeOutParamZeroValue(b, out); err != nil {
 			return err
 		}
@@ -298,7 +299,7 @@ func (g *gen) writeFuncImplPrologue(b *buffer) error {
 			b.printf("if ((self->private_impl.active_coroutine != 0) && "+
 				"(self->private_impl.active_coroutine != %d)) {\n", g.currFunk.coroID)
 			b.writes("self->private_impl.magic = WUFFS_BASE__DISABLED;\n")
-			b.writes("return wuffs_base__error__interleaved_coroutine_calls;\n")
+			b.writes("return wuffs_base__make_status(wuffs_base__error__interleaved_coroutine_calls);\n")
 			b.writes("}\n")
 			b.writes("self->private_impl.active_coroutine = 0;\n")
 		}
@@ -307,7 +308,7 @@ func (g *gen) writeFuncImplPrologue(b *buffer) error {
 	if g.currFunk.astFunc.Effect().Coroutine() ||
 		(g.currFunk.returnsStatus && (len(g.currFunk.derivedVars) > 0)) {
 		// TODO: rename the "status" variable to "ret"?
-		b.printf("wuffs_base__status status = NULL;\n")
+		b.printf("wuffs_base__status status = wuffs_base__make_status(NULL);\n")
 	}
 	b.writes("\n")
 
@@ -473,7 +474,7 @@ func (g *gen) writeFuncImplArgChecks(b *buffer, n *a.Func) error {
 	b.writes(") {")
 	b.writes("self->private_impl.magic = WUFFS_BASE__DISABLED;\n")
 	if g.currFunk.astFunc.Effect().Coroutine() {
-		b.writes("return wuffs_base__error__bad_argument;\n\n")
+		b.writes("return wuffs_base__make_status(wuffs_base__error__bad_argument);\n\n")
 	} else {
 		// TODO: don't assume that the return type is empty.
 		b.printf("return wuffs_base__make_empty_struct();\n")
