@@ -124,6 +124,6 @@ Cb, Cr) and a `denominator_y` of 1, 1 and 1. The `uint32_t` encoding is
 ## API Stability
 
 The `wuffs_base__pixel_subsampling` bit packing is documented for explanation
-and to assist in debugging (e.g. `printf`'ing the bits in `%x` format).
+and to assist in debugging (e.g. `printf`ing the bits in `%x` format).
 However, do not manipulate its bits directly; they are private implementation
 details. Use functions such as `wuffs_base__pixel_subsampling__bias_x` instead.

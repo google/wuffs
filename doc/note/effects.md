@@ -11,7 +11,7 @@ Impure functions are marked with a `!` at their definition and at call sites.
 Coroutines are similarly marked, with a `?`. Pure functions have no mark.
 
 For those used to C/C++ syntax, in Wuffs, the unary not operator is spelled
-`not` instead of `!`, and Wuffs has no ternary operator like C/C++'s `?`.
+`not` instead of `!`, and Wuffs has no ternary operator like C/C++'s `?:`.
 
 Sub-expressions in Wuffs must be pure. Only the outermost function call can
 have a `!` or `?` mark. You can't write:

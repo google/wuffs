@@ -5,7 +5,7 @@ Outside of the Wuffs base package, every Wuffs struct has an implicit
 Wuffs' C language form, the `initialize` function for the `foo` package's `bar`
 struct is called `wuffs_foo__bar__initialize`. The function takes four
 arguments (or, in C++, the `initialize` method takes three arguments, with the
-implicit `this` pointer argument);
+implicit `this` pointer argument):
 
 - A pointer to the `wuffs_foo__bar` object: the `this` pointer.
 - The size (in bytes) of that object. Conceptually, this is

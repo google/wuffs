@@ -15,7 +15,7 @@ entire image, and different implementations choose a different default color
 for the outside pixels: opaque black, transparent black, or something else.
 
 Wuffs, out of the box, makes particular choices (typically mimicking the de
-facto canonical implementation), but enabling various quirks result in
+facto canonical implementation), but enabling various quirks results in
 different choices. In particular, quirks are useful in regression testing that
 Wuffs and another implementation produce the same output for the same input,
 even for malformed input.

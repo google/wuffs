@@ -17,8 +17,8 @@ copy the elements. It has O(1) algorithmic complexity. Assigning to an
 array-typed variable copies the elements. It has O(length) algorithmic
 complexity.
 
-Both `s[i .. j]` and `a[i .. j]` refer to slices, ranging from the `i`'th
-element (inclusive) to the `j`'th element (exclusive). `i` can be omitted,
+Both `s[i .. j]` and `a[i .. j]` refer to slices, ranging from the `i`th
+element (inclusive) to the `j`th element (exclusive). `i` can be omitted,
 implicitly equalling zero. `j` can be omitted, implicitly equalling the length.
 For example, `s[.. 5]` contains the first five elements of `s`.
 

@@ -19,7 +19,7 @@ also checked into the repository. Using the standard library's C form would be
 like using any other third party C library. It's just not hand-written C.
 
 To do so, you need to download only one file, from the
-[`/release/c`](/release/c) directory. Wuffs the Library' C form ships as a
+[`/release/c`](/release/c) directory. Wuffs the Library's C form ships as a
 [single file C
 library](https://github.com/nothings/stb/blob/master/docs/stb_howto.txt),
 targeting the C99 standard. That file acts as either a traditional `.c` or `.h`

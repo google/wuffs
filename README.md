@@ -46,7 +46,7 @@ prove that `y` is not zero.
 
 Wuffs is not a general purpose programming language. **It is for writing
 libraries, not programs**. The idea isn't to write your whole program in Wuffs,
-only the **parts that are both performance-concious and security-concious**.
+only the **parts that are both performance-conscious and security-conscious**.
 For example, while technically possible, it is unlikely that a Wuffs compiler
 would be worth writing entirely in Wuffs.
 
@@ -221,4 +221,4 @@ owned by Google.
 
 ---
 
-Updated on December 2019.
+Updated on December 2020.

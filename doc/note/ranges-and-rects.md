@@ -1,7 +1,7 @@
 # Ranges and Rects
 
 Ranges are finite numerical intervals, e.g. "all integers `i` such that `(m <=
-i)` and `(i < n)`. The high end bound is sometimes exclusive, `(i < n)`, and
+i)` and `(i < n)`". The high end bound is sometimes exclusive, `(i < n)`, and
 sometimes inclusive, `(i <= n)`.
 
 In Wuffs syntax, similar to Rust syntax, the exclusive range is `m .. n` and

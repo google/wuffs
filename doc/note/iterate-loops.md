@@ -1,7 +1,7 @@
 # Iterate Loops
 
-Iterate loops are syntactic sugar for partitioning a variable sized input slice
-into fixed sized chunk slices (with possible smaller-sized remainders).
+Iterate loops are syntactic sugar for partitioning a variable-sized input slice
+into fixed-sized chunk slices (with possible smaller-sized remainders).
 Individual chunks' fixed sizes are typically easier for
 [bounds-checking](/doc/note/bounds-checking.md).
 

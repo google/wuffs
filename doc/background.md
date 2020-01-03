@@ -1,6 +1,6 @@
 # Background
 
-Decoding untrusted data, such as images downloaded from across the web, have a
+Decoding untrusted data, such as images downloaded from across the web, has a
 long history of security vulnerabilities. As of 2019, libpng is over 20 years
 old, and the [PNG specification is dated 2003](https://www.w3.org/TR/PNG/), but
 that well examined C library is still getting [CVE's published in
