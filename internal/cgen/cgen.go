@@ -1053,7 +1053,7 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 		b.printf("wuffs_base__status z = %s%s__initialize("+
 			"&self->private_data.%s%s, sizeof(self->private_data.%s%s), WUFFS_VERSION, initialize_flags);\n",
 			prefix, qid[1].Str(g.tm), fPrefix, f.Name().Str(g.tm), fPrefix, f.Name().Str(g.tm))
-		b.printf("if (z) { return z; }\n")
+		b.printf("if (z.repr) { return z; }\n")
 		b.printf("}\n")
 	}
 

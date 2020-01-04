@@ -276,12 +276,22 @@ func (g *gen) writeExprBinaryOp(b *buffer, n *a.Expr, depth uint32) error {
 	if err := g.writeExpr(b, n.LHS().AsExpr(), depth); err != nil {
 		return err
 	}
+	if g.hasRepr(n.LHS().AsExpr()) {
+		b.writes(".repr")
+	}
 	b.writes(opName)
 	if err := g.writeExpr(b, n.RHS().AsExpr(), depth); err != nil {
 		return err
 	}
+	if g.hasRepr(n.RHS().AsExpr()) {
+		b.writes(".repr")
+	}
 	b.writeb(')')
 	return nil
+}
+
+func (g *gen) hasRepr(n *a.Expr) bool {
+	return n.MType().IsStatus()
 }
 
 func (g *gen) writeExprAs(b *buffer, lhs *a.Expr, rhs *a.TypeExpr, depth uint32) error {
@@ -325,8 +335,6 @@ func (g *gen) writeExprUserDefinedCall(b *buffer, n *a.Expr, depth uint32) error
 	recvTyp, addr := recv.MType(), "&"
 	if p := recvTyp.Decorator(); p == t.IDNptr || p == t.IDPtr {
 		recvTyp, addr = recvTyp.Inner(), ""
-	} else if recvTyp.IsStatus() {
-		addr = ""
 	}
 	if recvTyp.Decorator() != 0 {
 		return fmt.Errorf("cannot generate user-defined method call %q for receiver type %q",

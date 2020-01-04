@@ -294,8 +294,8 @@ const char* play() {
   wuffs_gif__decoder dec;
   wuffs_base__status status =
       wuffs_gif__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
-  if (status) {
-    return wuffs_base__status__message(status);
+  if (!wuffs_base__status__is_ok(&status)) {
+    return wuffs_base__status__message(&status);
   }
 
   if (quirk_honor_background_color_flag) {
@@ -314,8 +314,8 @@ const char* play() {
   if (first_play) {
     wuffs_base__image_config ic = {0};
     status = wuffs_gif__decoder__decode_image_config(&dec, &ic, &src);
-    if (status) {
-      return wuffs_base__status__message(status);
+    if (!wuffs_base__status__is_ok(&status)) {
+      return wuffs_base__status__message(&status);
     }
     if (!wuffs_base__image_config__is_valid(&ic)) {
       return "invalid image configuration";
@@ -336,8 +336,8 @@ const char* play() {
       return msg;
     }
     status = wuffs_base__pixel_buffer__set_from_slice(&pb, &ic.pixcfg, pixbuf);
-    if (status) {
-      return wuffs_base__status__message(status);
+    if (!wuffs_base__status__is_ok(&status)) {
+      return wuffs_base__status__message(&status);
     }
     memset(pixbuf.ptr, 0, pixbuf.len);
   }
@@ -346,11 +346,11 @@ const char* play() {
     wuffs_base__frame_config fc = {0};
     wuffs_base__status status =
         wuffs_gif__decoder__decode_frame_config(&dec, &fc, &src);
-    if (status) {
-      if (status == wuffs_base__warning__end_of_data) {
+    if (!wuffs_base__status__is_ok(&status)) {
+      if (status.repr == wuffs_base__warning__end_of_data) {
         break;
       }
-      return wuffs_base__status__message(status);
+      return wuffs_base__status__message(&status);
     }
 
     if (wuffs_base__frame_config__index(&fc) == 0) {
@@ -372,7 +372,7 @@ const char* play() {
 
     wuffs_base__status decode_frame_status =
         wuffs_gif__decoder__decode_frame(&dec, &pb, &src, workbuf, NULL);
-    if (decode_frame_status == wuffs_base__warning__end_of_data) {
+    if (decode_frame_status.repr == wuffs_base__warning__end_of_data) {
       break;
     }
 
@@ -422,8 +422,8 @@ const char* play() {
 
     // TODO: should a zero duration mean to show this frame forever?
 
-    if (decode_frame_status) {
-      return wuffs_base__status__message(decode_frame_status);
+    if (!wuffs_base__status__is_ok(&decode_frame_status)) {
+      return wuffs_base__status__message(&decode_frame_status);
     }
   }
 

@@ -89,10 +89,10 @@ const char* wuffs_gzip_decode(wuffs_base__io_buffer* dst,
                               uint64_t wlimit,
                               uint64_t rlimit) {
   wuffs_gzip__decoder dec;
-  const char* status = wuffs_gzip__decoder__initialize(
+  wuffs_base__status status = wuffs_gzip__decoder__initialize(
       &dec, sizeof dec, WUFFS_VERSION, wuffs_initialize_flags);
-  if (status) {
-    return status;
+  if (!wuffs_base__status__is_ok(&status)) {
+    return wuffs_base__status__message(&status);
   }
 
   while (true) {
@@ -106,12 +106,12 @@ const char* wuffs_gzip_decode(wuffs_base__io_buffer* dst,
     src->meta.ri += limited_src.meta.ri;
 
     if (((wlimit < UINT64_MAX) &&
-         (status == wuffs_base__suspension__short_write)) ||
+         (status.repr == wuffs_base__suspension__short_write)) ||
         ((rlimit < UINT64_MAX) &&
-         (status == wuffs_base__suspension__short_read))) {
+         (status.repr == wuffs_base__suspension__short_read))) {
       continue;
     }
-    return status;
+    return wuffs_base__status__message(&status);
   }
 }
 
@@ -143,8 +143,8 @@ const char* do_test_wuffs_gzip_checksum(bool ignore_checksum,
     wuffs_base__status status = wuffs_gzip__decoder__initialize(
         &dec, sizeof dec, WUFFS_VERSION,
         WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
-    if (status) {
-      RETURN_FAIL("initialize: \"%s\"", status);
+    if (!wuffs_base__status__is_ok(&status)) {
+      RETURN_FAIL("initialize: \"%s\"", wuffs_base__status__message(&status));
     }
     wuffs_gzip__decoder__set_ignore_checksum(&dec, ignore_checksum);
     got.meta.wi = 0;
@@ -172,12 +172,12 @@ const char* do_test_wuffs_gzip_checksum(bool ignore_checksum,
       }
 
       wuffs_base__io_buffer limited_src = make_limited_reader(src, rlimit);
-      const char* got_z = wuffs_gzip__decoder__decode_io_writer(
+      wuffs_base__status got_z = wuffs_gzip__decoder__decode_io_writer(
           &dec, &got, &limited_src, global_work_slice);
       src.meta.ri += limited_src.meta.ri;
-      if (got_z != want_z) {
-        RETURN_FAIL("end_limit=%d: got \"%s\", want \"%s\"", end_limit, got_z,
-                    want_z);
+      if (got_z.repr != want_z) {
+        RETURN_FAIL("end_limit=%d: got \"%s\", want \"%s\"", end_limit,
+                    got_z.repr, want_z);
       }
     }
   }

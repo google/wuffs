@@ -133,8 +133,8 @@ const char* test_wuffs_adler32_golden() {
       wuffs_base__status status = wuffs_adler32__hasher__initialize(
           &checksum, sizeof checksum, WUFFS_VERSION,
           WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
-      if (status) {
-        RETURN_FAIL("initialize: \"%s\"", status);
+      if (!wuffs_base__status__is_ok(&status)) {
+        RETURN_FAIL("initialize: \"%s\"", wuffs_base__status__message(&status));
       }
 
       uint32_t got = 0;
@@ -201,11 +201,11 @@ const char* test_wuffs_adler32_pi() {
   int i;
   for (i = 0; i < 100; i++) {
     wuffs_adler32__hasher checksum;
-    const char* status = wuffs_adler32__hasher__initialize(
+    wuffs_base__status status = wuffs_adler32__hasher__initialize(
         &checksum, sizeof checksum, WUFFS_VERSION,
         WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
-    if (status) {
-      RETURN_FAIL("initialize: \"%s\"", status);
+    if (!wuffs_base__status__is_ok(&status)) {
+      RETURN_FAIL("initialize: \"%s\"", wuffs_base__status__message(&status));
     }
     uint32_t got = wuffs_adler32__hasher__update_u32(
         &checksum, ((wuffs_base__slice_u8){
@@ -234,10 +234,10 @@ const char* wuffs_bench_adler32(wuffs_base__io_buffer* dst,
     len = wuffs_base__u64__min(len, rlimit);
   }
   wuffs_adler32__hasher checksum;
-  const char* status = wuffs_adler32__hasher__initialize(
+  wuffs_base__status status = wuffs_adler32__hasher__initialize(
       &checksum, sizeof checksum, WUFFS_VERSION, wuffs_initialize_flags);
-  if (status) {
-    return status;
+  if (!wuffs_base__status__is_ok(&status)) {
+    return wuffs_base__status__message(&status);
   }
   global_wuffs_adler32_unused_u32 = wuffs_adler32__hasher__update_u32(
       &checksum, ((wuffs_base__slice_u8){

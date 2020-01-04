@@ -135,50 +135,98 @@ typedef struct {
 // --------
 
 // See https://github.com/google/wuffs/blob/master/doc/note/statuses.md
-typedef const char* wuffs_base__status;
+typedef struct {
+  const char* repr;
+
+#ifdef __cplusplus
+  inline bool is_complete() const;
+  inline bool is_error() const;
+  inline bool is_ok() const;
+  inline bool is_suspension() const;
+  inline bool is_warning() const;
+  inline const char* message() const;
+#endif  // __cplusplus
+
+} wuffs_base__status;
 
 // !! INSERT wuffs_base__status names.
 
 static inline wuffs_base__status  //
 wuffs_base__make_status(const char* repr) {
-  return repr;
+  wuffs_base__status z;
+  z.repr = repr;
+  return z;
 }
 
 static inline bool  //
-wuffs_base__status__is_complete(wuffs_base__status z) {
-  return (z == NULL) || ((*z != '$') && (*z != '#'));
+wuffs_base__status__is_complete(const wuffs_base__status* z) {
+  return (z->repr == NULL) || ((*z->repr != '$') && (*z->repr != '#'));
 }
 
 static inline bool  //
-wuffs_base__status__is_error(wuffs_base__status z) {
-  return z && (*z == '#');
+wuffs_base__status__is_error(const wuffs_base__status* z) {
+  return z->repr && (*z->repr == '#');
 }
 
 static inline bool  //
-wuffs_base__status__is_ok(wuffs_base__status z) {
-  return z == NULL;
+wuffs_base__status__is_ok(const wuffs_base__status* z) {
+  return z->repr == NULL;
 }
 
 static inline bool  //
-wuffs_base__status__is_suspension(wuffs_base__status z) {
-  return z && (*z == '$');
+wuffs_base__status__is_suspension(const wuffs_base__status* z) {
+  return z->repr && (*z->repr == '$');
 }
 
 static inline bool  //
-wuffs_base__status__is_warning(wuffs_base__status z) {
-  return z && (*z != '$') && (*z != '#');
+wuffs_base__status__is_warning(const wuffs_base__status* z) {
+  return z->repr && (*z->repr != '$') && (*z->repr != '#');
 }
 
 // wuffs_base__status__message strips the leading '$', '#' or '@'.
 static inline const char*  //
-wuffs_base__status__message(wuffs_base__status z) {
-  if (z) {
-    if ((*z == '$') || (*z == '#') || (*z == '@')) {
-      return z + 1;
+wuffs_base__status__message(const wuffs_base__status* z) {
+  if (z->repr) {
+    if ((*z->repr == '$') || (*z->repr == '#') || (*z->repr == '@')) {
+      return z->repr + 1;
     }
   }
-  return z;
+  return z->repr;
 }
+
+#ifdef __cplusplus
+
+inline bool  //
+wuffs_base__status::is_complete() const {
+  return wuffs_base__status__is_complete(this);
+}
+
+inline bool  //
+wuffs_base__status::is_error() const {
+  return wuffs_base__status__is_error(this);
+}
+
+inline bool  //
+wuffs_base__status::is_ok() const {
+  return wuffs_base__status__is_ok(this);
+}
+
+inline bool  //
+wuffs_base__status::is_suspension() const {
+  return wuffs_base__status__is_suspension(this);
+}
+
+inline bool  //
+wuffs_base__status::is_warning() const {
+  return wuffs_base__status__is_warning(this);
+}
+
+inline const char*  //
+wuffs_base__status::message() const {
+  return wuffs_base__status__message(this);
+}
+
+#endif  // __cplusplus
 
 // --------
 

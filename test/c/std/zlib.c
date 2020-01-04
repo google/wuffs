@@ -100,10 +100,10 @@ const char* wuffs_zlib_decode(wuffs_base__io_buffer* dst,
                               uint64_t wlimit,
                               uint64_t rlimit) {
   wuffs_zlib__decoder dec;
-  const char* status = wuffs_zlib__decoder__initialize(
+  wuffs_base__status status = wuffs_zlib__decoder__initialize(
       &dec, sizeof dec, WUFFS_VERSION, wuffs_initialize_flags);
-  if (status) {
-    return status;
+  if (!wuffs_base__status__is_ok(&status)) {
+    return wuffs_base__status__message(&status);
   }
 
   while (true) {
@@ -117,12 +117,12 @@ const char* wuffs_zlib_decode(wuffs_base__io_buffer* dst,
     src->meta.ri += limited_src.meta.ri;
 
     if (((wlimit < UINT64_MAX) &&
-         (status == wuffs_base__suspension__short_write)) ||
+         (status.repr == wuffs_base__suspension__short_write)) ||
         ((rlimit < UINT64_MAX) &&
-         (status == wuffs_base__suspension__short_read))) {
+         (status.repr == wuffs_base__suspension__short_read))) {
       continue;
     }
-    return status;
+    return wuffs_base__status__message(&status);
   }
 }
 
@@ -153,8 +153,8 @@ const char* do_test_wuffs_zlib_checksum(bool ignore_checksum,
     wuffs_base__status status = wuffs_zlib__decoder__initialize(
         &dec, sizeof dec, WUFFS_VERSION,
         WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
-    if (status) {
-      RETURN_FAIL("initialize: \"%s\"", status);
+    if (!wuffs_base__status__is_ok(&status)) {
+      RETURN_FAIL("initialize: \"%s\"", wuffs_base__status__message(&status));
     }
     wuffs_zlib__decoder__set_ignore_checksum(&dec, ignore_checksum);
     got.meta.wi = 0;
@@ -183,12 +183,12 @@ const char* do_test_wuffs_zlib_checksum(bool ignore_checksum,
 
       wuffs_base__io_buffer limited_src = make_limited_reader(src, rlimit);
 
-      const char* got_z = wuffs_zlib__decoder__decode_io_writer(
+      wuffs_base__status got_z = wuffs_zlib__decoder__decode_io_writer(
           &dec, &got, &limited_src, global_work_slice);
       src.meta.ri += limited_src.meta.ri;
-      if (got_z != want_z) {
-        RETURN_FAIL("end_limit=%d: got \"%s\", want \"%s\"", end_limit, got_z,
-                    want_z);
+      if (got_z.repr != want_z) {
+        RETURN_FAIL("end_limit=%d: got \"%s\", want \"%s\"", end_limit,
+                    got_z.repr, want_z);
       }
     }
   }
@@ -236,10 +236,10 @@ const char* test_wuffs_zlib_decode_sheep() {
       make_io_buffer_from_string(zlib_sheep_src_ptr, zlib_sheep_src_len);
 
   wuffs_zlib__decoder dec;
-  const char* status = wuffs_zlib__decoder__initialize(
+  wuffs_base__status status = wuffs_zlib__decoder__initialize(
       &dec, sizeof dec, WUFFS_VERSION, WUFFS_INITIALIZE__DEFAULT_OPTIONS);
-  if (status) {
-    RETURN_FAIL("initialize: %s", status);
+  if (!wuffs_base__status__is_ok(&status)) {
+    RETURN_FAIL("initialize: %s", wuffs_base__status__message(&status));
   }
 
   int i;
@@ -247,9 +247,9 @@ const char* test_wuffs_zlib_decode_sheep() {
     status = wuffs_zlib__decoder__decode_io_writer(&dec, &got, &src,
                                                    global_work_slice);
 
-    if (status != wuffs_zlib__warning__dictionary_required) {
+    if (status.repr != wuffs_zlib__warning__dictionary_required) {
       RETURN_FAIL("decode_io_writer (before dict): got \"%s\", want \"%s\"",
-                  status, wuffs_zlib__warning__dictionary_required);
+                  status.repr, wuffs_zlib__warning__dictionary_required);
     }
 
     uint32_t dict_id_got = wuffs_zlib__decoder__dictionary_id(&dec);
@@ -268,8 +268,9 @@ const char* test_wuffs_zlib_decode_sheep() {
 
   status = wuffs_zlib__decoder__decode_io_writer(&dec, &got, &src,
                                                  global_work_slice);
-  if (status) {
-    RETURN_FAIL("decode_io_writer (after dict): %s", status);
+  if (!wuffs_base__status__is_ok(&status)) {
+    RETURN_FAIL("decode_io_writer (after dict): %s",
+                wuffs_base__status__message(&status));
   }
 
   wuffs_base__io_buffer want =

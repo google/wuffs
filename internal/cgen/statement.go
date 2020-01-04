@@ -162,7 +162,7 @@ func (g *gen) writeStatementAssign0(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr
 		}
 
 		if op != t.IDEqQuestion && rhs.Effect().Coroutine() {
-			b.writes("if (status) { goto suspend; }\n")
+			b.writes("if (status.repr) { goto suspend; }\n")
 		}
 	}
 
@@ -464,8 +464,8 @@ func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 		} else {
 			g.currFunk.hasGotoOK = true
 			// TODO: the "goto exit"s can be "goto ok".
-			b.writes("if (wuffs_base__status__is_error(status)) { goto exit; }" +
-				"else if (wuffs_base__status__is_suspension(status)) { " +
+			b.writes("if (wuffs_base__status__is_error(&status)) { goto exit; }" +
+				"else if (wuffs_base__status__is_suspension(&status)) { " +
 				"status = wuffs_base__make_status(wuffs_base__error__cannot_return_a_suspension); goto exit; } goto ok;")
 		}
 		return nil

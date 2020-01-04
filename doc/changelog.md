@@ -1,6 +1,11 @@
 # Changelog
 
 
+## Work In Progress
+
+- Made `wuffs_base__status` a struct.
+
+
 ## 2019-12-19 version 0.2.0
 
 The headline feature is that the GIF decoder is now of production quality.
@@ -96,4 +101,4 @@ Wuffs version 0.1.
 
 ---
 
-Updated on December 2019.
+Updated on January 2020.
