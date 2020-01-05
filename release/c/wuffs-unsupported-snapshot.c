@@ -1528,41 +1528,41 @@ typedef uint32_t wuffs_base__pixel_format;
 extern const uint32_t wuffs_base__pixel_format__bits_per_channel[16];
 
 static inline bool  //
-wuffs_base__pixel_format__is_valid(wuffs_base__pixel_format f) {
-  return f != 0;
+wuffs_base__pixel_format__is_valid(const wuffs_base__pixel_format* f) {
+  return *f != 0;
 }
 
 // wuffs_base__pixel_format__bits_per_pixel returns the number of bits per
 // pixel for interleaved pixel formats, and returns 0 for planar pixel formats.
 static inline uint32_t  //
-wuffs_base__pixel_format__bits_per_pixel(wuffs_base__pixel_format f) {
-  if (((f >> 16) & 0x03) != 0) {
+wuffs_base__pixel_format__bits_per_pixel(const wuffs_base__pixel_format* f) {
+  if (((*f >> 16) & 0x03) != 0) {
     return 0;
   }
-  return wuffs_base__pixel_format__bits_per_channel[0x0F & (f >> 0)] +
-         wuffs_base__pixel_format__bits_per_channel[0x0F & (f >> 4)] +
-         wuffs_base__pixel_format__bits_per_channel[0x0F & (f >> 8)] +
-         wuffs_base__pixel_format__bits_per_channel[0x0F & (f >> 12)];
+  return wuffs_base__pixel_format__bits_per_channel[0x0F & (*f >> 0)] +
+         wuffs_base__pixel_format__bits_per_channel[0x0F & (*f >> 4)] +
+         wuffs_base__pixel_format__bits_per_channel[0x0F & (*f >> 8)] +
+         wuffs_base__pixel_format__bits_per_channel[0x0F & (*f >> 12)];
 }
 
 static inline bool  //
-wuffs_base__pixel_format__is_indexed(wuffs_base__pixel_format f) {
-  return (f >> 18) & 0x01;
+wuffs_base__pixel_format__is_indexed(const wuffs_base__pixel_format* f) {
+  return (*f >> 18) & 0x01;
 }
 
 static inline bool  //
-wuffs_base__pixel_format__is_interleaved(wuffs_base__pixel_format f) {
-  return ((f >> 16) & 0x03) == 0;
+wuffs_base__pixel_format__is_interleaved(const wuffs_base__pixel_format* f) {
+  return ((*f >> 16) & 0x03) == 0;
 }
 
 static inline bool  //
-wuffs_base__pixel_format__is_planar(wuffs_base__pixel_format f) {
-  return ((f >> 16) & 0x03) != 0;
+wuffs_base__pixel_format__is_planar(const wuffs_base__pixel_format* f) {
+  return ((*f >> 16) & 0x03) != 0;
 }
 
 static inline uint32_t  //
-wuffs_base__pixel_format__num_planes(wuffs_base__pixel_format f) {
-  return ((f >> 16) & 0x03) + 1;
+wuffs_base__pixel_format__num_planes(const wuffs_base__pixel_format* f) {
+  return ((*f >> 16) & 0x03) + 1;
 }
 
 #define WUFFS_BASE__PIXEL_FORMAT__NUM_PLANES_MAX 4
@@ -1597,31 +1597,33 @@ typedef uint32_t wuffs_base__pixel_subsampling;
   ((wuffs_base__pixel_subsampling)0x313100)
 
 static inline uint32_t  //
-wuffs_base__pixel_subsampling__bias_x(wuffs_base__pixel_subsampling s,
+wuffs_base__pixel_subsampling__bias_x(const wuffs_base__pixel_subsampling* s,
                                       uint32_t plane) {
   uint32_t shift = ((plane & 0x03) * 8) + 6;
-  return (s >> shift) & 0x03;
+  return (*s >> shift) & 0x03;
 }
 
 static inline uint32_t  //
-wuffs_base__pixel_subsampling__denominator_x(wuffs_base__pixel_subsampling s,
-                                             uint32_t plane) {
+wuffs_base__pixel_subsampling__denominator_x(
+    const wuffs_base__pixel_subsampling* s,
+    uint32_t plane) {
   uint32_t shift = ((plane & 0x03) * 8) + 4;
-  return ((s >> shift) & 0x03) + 1;
+  return ((*s >> shift) & 0x03) + 1;
 }
 
 static inline uint32_t  //
-wuffs_base__pixel_subsampling__bias_y(wuffs_base__pixel_subsampling s,
+wuffs_base__pixel_subsampling__bias_y(const wuffs_base__pixel_subsampling* s,
                                       uint32_t plane) {
   uint32_t shift = ((plane & 0x03) * 8) + 2;
-  return (s >> shift) & 0x03;
+  return (*s >> shift) & 0x03;
 }
 
 static inline uint32_t  //
-wuffs_base__pixel_subsampling__denominator_y(wuffs_base__pixel_subsampling s,
-                                             uint32_t plane) {
+wuffs_base__pixel_subsampling__denominator_y(
+    const wuffs_base__pixel_subsampling* s,
+    uint32_t plane) {
   uint32_t shift = ((plane & 0x03) * 8) + 0;
-  return ((s >> shift) & 0x03) + 1;
+  return ((*s >> shift) & 0x03) + 1;
 }
 
 // --------
@@ -1753,12 +1755,12 @@ wuffs_base__pixel_config__pixbuf_len(const wuffs_base__pixel_config* c) {
   if (!c) {
     return 0;
   }
-  if (wuffs_base__pixel_format__is_planar(c->private_impl.pixfmt)) {
+  if (wuffs_base__pixel_format__is_planar(&c->private_impl.pixfmt)) {
     // TODO: support planar pixel formats, concious of pixel subsampling.
     return 0;
   }
   uint32_t bits_per_pixel =
-      wuffs_base__pixel_format__bits_per_pixel(c->private_impl.pixfmt);
+      wuffs_base__pixel_format__bits_per_pixel(&c->private_impl.pixfmt);
   if ((bits_per_pixel == 0) || ((bits_per_pixel % 8) != 0)) {
     // TODO: support fraction-of-byte pixels, e.g. 1 bit per pixel?
     return 0;
@@ -1772,7 +1774,7 @@ wuffs_base__pixel_config__pixbuf_len(const wuffs_base__pixel_config* c) {
   }
   n *= bytes_per_pixel;
 
-  if (wuffs_base__pixel_format__is_indexed(c->private_impl.pixfmt)) {
+  if (wuffs_base__pixel_format__is_indexed(&c->private_impl.pixfmt)) {
     if (n > (UINT64_MAX - 1024)) {
       return 0;
     }
@@ -1882,7 +1884,7 @@ wuffs_base__image_config__set(wuffs_base__image_config* c,
   if (!c) {
     return;
   }
-  if (wuffs_base__pixel_format__is_valid(pixfmt)) {
+  if (wuffs_base__pixel_format__is_valid(&pixfmt)) {
     c->pixcfg.private_impl.pixfmt = pixfmt;
     c->pixcfg.private_impl.pixsub = pixsub;
     c->pixcfg.private_impl.width = width;
@@ -2247,12 +2249,12 @@ wuffs_base__pixel_buffer__set_from_slice(wuffs_base__pixel_buffer* b,
   if (!pixcfg) {
     return wuffs_base__make_status(wuffs_base__error__bad_argument);
   }
-  if (wuffs_base__pixel_format__is_planar(pixcfg->private_impl.pixfmt)) {
+  if (wuffs_base__pixel_format__is_planar(&pixcfg->private_impl.pixfmt)) {
     // TODO: support planar pixel formats, concious of pixel subsampling.
     return wuffs_base__make_status(wuffs_base__error__unsupported_option);
   }
   uint32_t bits_per_pixel =
-      wuffs_base__pixel_format__bits_per_pixel(pixcfg->private_impl.pixfmt);
+      wuffs_base__pixel_format__bits_per_pixel(&pixcfg->private_impl.pixfmt);
   if ((bits_per_pixel == 0) || ((bits_per_pixel % 8) != 0)) {
     // TODO: support fraction-of-byte pixels, e.g. 1 bit per pixel?
     return wuffs_base__make_status(wuffs_base__error__unsupported_option);
@@ -2261,7 +2263,7 @@ wuffs_base__pixel_buffer__set_from_slice(wuffs_base__pixel_buffer* b,
 
   uint8_t* ptr = pixbuf_memory.ptr;
   uint64_t len = pixbuf_memory.len;
-  if (wuffs_base__pixel_format__is_indexed(pixcfg->private_impl.pixfmt)) {
+  if (wuffs_base__pixel_format__is_indexed(&pixcfg->private_impl.pixfmt)) {
     // Split a 1024 byte chunk (256 palette entries × 4 bytes per entry) from
     // the start of pixbuf_memory. We split from the start, not the end, so
     // that the both chunks' pointers have the same alignment as the original
@@ -2312,11 +2314,11 @@ wuffs_base__pixel_buffer__set_from_table(wuffs_base__pixel_buffer* b,
   }
   memset(b, 0, sizeof(*b));
   if (!pixcfg ||
-      wuffs_base__pixel_format__is_planar(pixcfg->private_impl.pixfmt)) {
+      wuffs_base__pixel_format__is_planar(&pixcfg->private_impl.pixfmt)) {
     return wuffs_base__make_status(wuffs_base__error__bad_argument);
   }
   uint32_t bits_per_pixel =
-      wuffs_base__pixel_format__bits_per_pixel(pixcfg->private_impl.pixfmt);
+      wuffs_base__pixel_format__bits_per_pixel(&pixcfg->private_impl.pixfmt);
   if ((bits_per_pixel == 0) || ((bits_per_pixel % 8) != 0)) {
     // TODO: support fraction-of-byte pixels, e.g. 1 bit per pixel?
     return wuffs_base__make_status(wuffs_base__error__unsupported_option);
@@ -2340,7 +2342,7 @@ wuffs_base__pixel_buffer__set_from_table(wuffs_base__pixel_buffer* b,
 static inline wuffs_base__slice_u8  //
 wuffs_base__pixel_buffer__palette(wuffs_base__pixel_buffer* b) {
   if (b &&
-      wuffs_base__pixel_format__is_indexed(b->pixcfg.private_impl.pixfmt)) {
+      wuffs_base__pixel_format__is_indexed(&b->pixcfg.private_impl.pixfmt)) {
     wuffs_base__table_u8* tab =
         &b->private_impl.planes[WUFFS_BASE__PIXEL_FORMAT__INDEXED__COLOR_PLANE];
     if ((tab->width == 1024) && (tab->height == 1)) {

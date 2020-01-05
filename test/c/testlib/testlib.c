@@ -443,12 +443,12 @@ const char* copy_to_io_buffer_from_pixel_buffer(wuffs_base__io_buffer* dst,
 
   wuffs_base__pixel_format pixfmt =
       wuffs_base__pixel_config__pixel_format(&src->pixcfg);
-  if (wuffs_base__pixel_format__is_planar(pixfmt)) {
+  if (wuffs_base__pixel_format__is_planar(&pixfmt)) {
     // If we want to support planar pixel buffers, in the future, be concious
     // of pixel subsampling.
     return "copy_to_io_buffer_from_pixel_buffer: cannot copy from planar src";
   }
-  uint32_t bits_per_pixel = wuffs_base__pixel_format__bits_per_pixel(pixfmt);
+  uint32_t bits_per_pixel = wuffs_base__pixel_format__bits_per_pixel(&pixfmt);
   if (bits_per_pixel == 0) {
     return "copy_to_io_buffer_from_pixel_buffer: invalid bits_per_pixel";
   } else if ((bits_per_pixel % 8) != 0) {
