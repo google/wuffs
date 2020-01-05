@@ -127,12 +127,10 @@ const char* test_wuffs_crc32_ieee_golden() {
     int j;
     for (j = 0; j < 2; j++) {
       wuffs_crc32__ieee_hasher checksum;
-      wuffs_base__status status = wuffs_crc32__ieee_hasher__initialize(
-          &checksum, sizeof checksum, WUFFS_VERSION,
-          WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
-      if (!wuffs_base__status__is_ok(&status)) {
-        RETURN_FAIL("initialize: \"%s\"", wuffs_base__status__message(&status));
-      }
+      CHECK_STATUS("initialize",
+                   wuffs_crc32__ieee_hasher__initialize(
+                       &checksum, sizeof checksum, WUFFS_VERSION,
+                       WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
 
       uint32_t got = 0;
       size_t num_fragments = 0;
@@ -219,12 +217,10 @@ const char* do_test_xxxxx_crc32_ieee_pi(bool mimic) {
 
     } else {
       wuffs_crc32__ieee_hasher checksum;
-      wuffs_base__status status = wuffs_crc32__ieee_hasher__initialize(
-          &checksum, sizeof checksum, WUFFS_VERSION,
-          WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
-      if (!wuffs_base__status__is_ok(&status)) {
-        RETURN_FAIL("initialize: \"%s\"", wuffs_base__status__message(&status));
-      }
+      CHECK_STATUS("initialize",
+                   wuffs_crc32__ieee_hasher__initialize(
+                       &checksum, sizeof checksum, WUFFS_VERSION,
+                       WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
       got = wuffs_crc32__ieee_hasher__update_u32(&checksum, data);
     }
 
@@ -266,11 +262,9 @@ const char* wuffs_bench_crc32_ieee(wuffs_base__io_buffer* dst,
     len = wuffs_base__u64__min(len, rlimit);
   }
   wuffs_crc32__ieee_hasher checksum;
-  wuffs_base__status status = wuffs_crc32__ieee_hasher__initialize(
-      &checksum, sizeof checksum, WUFFS_VERSION, wuffs_initialize_flags);
-  if (!wuffs_base__status__is_ok(&status)) {
-    return wuffs_base__status__message(&status);
-  }
+  CHECK_STATUS("initialize", wuffs_crc32__ieee_hasher__initialize(
+                                 &checksum, sizeof checksum, WUFFS_VERSION,
+                                 wuffs_initialize_flags));
   global_wuffs_crc32_unused_u32 = wuffs_crc32__ieee_hasher__update_u32(
       &checksum, ((wuffs_base__slice_u8){
                      .ptr = src->data.ptr + src->meta.ri,

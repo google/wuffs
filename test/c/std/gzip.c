@@ -89,17 +89,15 @@ const char* wuffs_gzip_decode(wuffs_base__io_buffer* dst,
                               uint64_t wlimit,
                               uint64_t rlimit) {
   wuffs_gzip__decoder dec;
-  wuffs_base__status status = wuffs_gzip__decoder__initialize(
-      &dec, sizeof dec, WUFFS_VERSION, wuffs_initialize_flags);
-  if (!wuffs_base__status__is_ok(&status)) {
-    return wuffs_base__status__message(&status);
-  }
+  CHECK_STATUS("initialize",
+               wuffs_gzip__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION,
+                                               wuffs_initialize_flags));
 
   while (true) {
     wuffs_base__io_buffer limited_dst = make_limited_writer(*dst, wlimit);
     wuffs_base__io_buffer limited_src = make_limited_reader(*src, rlimit);
 
-    status = wuffs_gzip__decoder__decode_io_writer(
+    wuffs_base__status status = wuffs_gzip__decoder__decode_io_writer(
         &dec, &limited_dst, &limited_src, global_work_slice);
 
     dst->meta.wi += limited_dst.meta.wi;
@@ -137,12 +135,10 @@ const char* do_test_wuffs_gzip_checksum(bool ignore_checksum,
   int end_limit;  // The rlimit, relative to the end of the data.
   for (end_limit = 0; end_limit < 10; end_limit++) {
     wuffs_gzip__decoder dec;
-    wuffs_base__status status = wuffs_gzip__decoder__initialize(
-        &dec, sizeof dec, WUFFS_VERSION,
-        WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
-    if (!wuffs_base__status__is_ok(&status)) {
-      RETURN_FAIL("initialize: \"%s\"", wuffs_base__status__message(&status));
-    }
+    CHECK_STATUS("initialize",
+                 wuffs_gzip__decoder__initialize(
+                     &dec, sizeof dec, WUFFS_VERSION,
+                     WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
     wuffs_gzip__decoder__set_ignore_checksum(&dec, ignore_checksum);
     got.meta.wi = 0;
     src.meta.ri = 0;

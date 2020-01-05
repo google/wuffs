@@ -161,17 +161,15 @@ const char* wuffs_deflate_decode(wuffs_base__io_buffer* dst,
                                  uint64_t wlimit,
                                  uint64_t rlimit) {
   wuffs_deflate__decoder dec;
-  wuffs_base__status status = wuffs_deflate__decoder__initialize(
-      &dec, sizeof dec, WUFFS_VERSION, wuffs_initialize_flags);
-  if (!wuffs_base__status__is_ok(&status)) {
-    RETURN_FAIL("initialize: \"%s\"", wuffs_base__status__message(&status));
-  }
+  CHECK_STATUS("initialize",
+               wuffs_deflate__decoder__initialize(
+                   &dec, sizeof dec, WUFFS_VERSION, wuffs_initialize_flags));
 
   while (true) {
     wuffs_base__io_buffer limited_dst = make_limited_writer(*dst, wlimit);
     wuffs_base__io_buffer limited_src = make_limited_reader(*src, rlimit);
 
-    status = wuffs_deflate__decoder__decode_io_writer(
+    wuffs_base__status status = wuffs_deflate__decoder__decode_io_writer(
         &dec, &limited_dst, &limited_src, global_work_slice);
 
     dst->meta.wi += limited_dst.meta.wi;
@@ -249,17 +247,11 @@ const char* test_wuffs_deflate_decode_deflate_huffman_primlen_9() {
   CHECK_STRING(read_file(&src, gt->src_filename));
 
   wuffs_deflate__decoder dec;
-  wuffs_base__status status = wuffs_deflate__decoder__initialize(
-      &dec, sizeof dec, WUFFS_VERSION, WUFFS_INITIALIZE__DEFAULT_OPTIONS);
-  if (!wuffs_base__status__is_ok(&status)) {
-    RETURN_FAIL("initialize: \"%s\"", wuffs_base__status__message(&status));
-  }
-  status = wuffs_deflate__decoder__decode_io_writer(&dec, &got, &src,
-                                                    global_work_slice);
-  if (!wuffs_base__status__is_ok(&status)) {
-    RETURN_FAIL("decode_io_writer: \"%s\"",
-                wuffs_base__status__message(&status));
-  }
+  CHECK_STATUS("initialize", wuffs_deflate__decoder__initialize(
+                                 &dec, sizeof dec, WUFFS_VERSION,
+                                 WUFFS_INITIALIZE__DEFAULT_OPTIONS));
+  CHECK_STATUS("decode_io_writer", wuffs_deflate__decoder__decode_io_writer(
+                                       &dec, &got, &src, global_work_slice));
 
   int i;
   for (i = 0; i < 2; i++) {
@@ -347,12 +339,10 @@ const char* test_wuffs_deflate_decode_split_src() {
     got.meta.wi = 0;
 
     wuffs_deflate__decoder dec;
-    wuffs_base__status status = wuffs_deflate__decoder__initialize(
-        &dec, sizeof dec, WUFFS_VERSION,
-        WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
-    if (!wuffs_base__status__is_ok(&status)) {
-      RETURN_FAIL("initialize: \"%s\"", wuffs_base__status__message(&status));
-    }
+    CHECK_STATUS("initialize",
+                 wuffs_deflate__decoder__initialize(
+                     &dec, sizeof dec, WUFFS_VERSION,
+                     WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
 
     src.meta.closed = false;
     src.meta.ri = gt->src_offset0;
@@ -432,12 +422,10 @@ const char* test_wuffs_deflate_history_full() {
   int i;
   for (i = -2; i <= +2; i++) {
     wuffs_deflate__decoder dec;
-    wuffs_base__status status = wuffs_deflate__decoder__initialize(
-        &dec, sizeof dec, WUFFS_VERSION,
-        WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
-    if (!wuffs_base__status__is_ok(&status)) {
-      RETURN_FAIL("initialize: \"%s\"", wuffs_base__status__message(&status));
-    }
+    CHECK_STATUS("initialize",
+                 wuffs_deflate__decoder__initialize(
+                     &dec, sizeof dec, WUFFS_VERSION,
+                     WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
 
     CHECK_STRING(do_test_wuffs_deflate_history(
         i, gt, &src, &got, &dec, 0, want.meta.wi + i,
@@ -504,12 +492,10 @@ const char* test_wuffs_deflate_history_partial() {
     wuffs_deflate__decoder dec;
     memset(&(dec.private_data.f_history), 0,
            sizeof(dec.private_data.f_history));
-    wuffs_base__status status = wuffs_deflate__decoder__initialize(
-        &dec, sizeof dec, WUFFS_VERSION,
-        WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
-    if (!wuffs_base__status__is_ok(&status)) {
-      RETURN_FAIL("initialize: \"%s\"", wuffs_base__status__message(&status));
-    }
+    CHECK_STATUS("initialize",
+                 wuffs_deflate__decoder__initialize(
+                     &dec, sizeof dec, WUFFS_VERSION,
+                     WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
 
     CHECK_STRING(do_test_wuffs_deflate_history(
         i, gt, &src, &got, &dec, starting_history_index, fragment_length,
@@ -589,12 +575,10 @@ const char* test_wuffs_deflate_table_redirect() {
   // 2nd is the key in the second level table (variable bits).
 
   wuffs_deflate__decoder dec;
-  wuffs_base__status status = wuffs_deflate__decoder__initialize(
-      &dec, sizeof dec, WUFFS_VERSION,
-      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
-  if (!wuffs_base__status__is_ok(&status)) {
-    RETURN_FAIL("initialize: \"%s\"", wuffs_base__status__message(&status));
-  }
+  CHECK_STATUS("initialize",
+               wuffs_deflate__decoder__initialize(
+                   &dec, sizeof dec, WUFFS_VERSION,
+                   WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
   memset(&(dec.private_data.f_huffs), 0, sizeof(dec.private_data.f_huffs));
 
   int i;
@@ -614,10 +598,8 @@ const char* test_wuffs_deflate_table_redirect() {
   dec.private_data.f_code_lengths[n++] = 13;
   dec.private_data.f_code_lengths[n++] = 13;
 
-  status = wuffs_deflate__decoder__init_huff(&dec, 0, 0, n, 257);
-  if (!wuffs_base__status__is_ok(&status)) {
-    RETURN_FAIL("init_huff: \"%s\"", wuffs_base__status__message(&status));
-  }
+  CHECK_STATUS("init_huff",
+               wuffs_deflate__decoder__init_huff(&dec, 0, 0, n, 257));
 
   // There is one 1st-level table (9 bits), and three 2nd-level tables (3, 3
   // and 4 bits). f_huffs[0]'s elements should be non-zero for those tables and
