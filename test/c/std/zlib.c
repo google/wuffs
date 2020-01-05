@@ -120,7 +120,7 @@ const char* wuffs_zlib_decode(wuffs_base__io_buffer* dst,
          (status.repr == wuffs_base__suspension__short_read))) {
       continue;
     }
-    return wuffs_base__status__message(&status);
+    return status.repr;
   }
 }
 

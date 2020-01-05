@@ -65,12 +65,12 @@ char fail_msg[65536] = {0};
 #define INCR_FAIL(msg, ...) \
   msg += snprintf(msg, sizeof(fail_msg) - (msg - fail_msg), ##__VA_ARGS__)
 
-#define CHECK_STATUS(prefix, status)                                      \
-  {                                                                       \
-    wuffs_base__status z = status;                                        \
-    if (!wuffs_base__status__is_ok(&z)) {                                 \
-      RETURN_FAIL("%s: \"%s\"", prefix, wuffs_base__status__message(&z)); \
-    }                                                                     \
+#define CHECK_STATUS(prefix, status)             \
+  {                                              \
+    wuffs_base__status z = status;               \
+    if (z.repr) {                                \
+      RETURN_FAIL("%s: \"%s\"", prefix, z.repr); \
+    }                                            \
   }
 
 #define CHECK_STRING(string) \

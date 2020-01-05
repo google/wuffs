@@ -596,8 +596,7 @@ const char* do_test_wuffs_gif_decode_animated(
     wuffs_base__status status =
         wuffs_gif__decoder__decode_frame_config(&dec, &fc, &src);
     if (!wuffs_base__status__is_ok(&status)) {
-      RETURN_FAIL("decode_frame_config #%" PRIu32 ": got \"%s\"", i,
-                  wuffs_base__status__message(&status));
+      RETURN_FAIL("decode_frame_config #%" PRIu32 ": \"%s\"", i, status.repr);
     }
 
     if (want_frame_config_bounds) {
@@ -616,8 +615,7 @@ const char* do_test_wuffs_gif_decode_animated(
     status = wuffs_gif__decoder__decode_frame(&dec, &pb, &src,
                                               global_work_slice, NULL);
     if (!wuffs_base__status__is_ok(&status)) {
-      RETURN_FAIL("decode_frame #%" PRIu32 ": got \"%s\"", i,
-                  wuffs_base__status__message(&status));
+      RETURN_FAIL("decode_frame #%" PRIu32 ": \"%s\"", i, status.repr);
     }
 
     wuffs_base__rect_ie_u32 frame_rect = wuffs_base__frame_config__bounds(&fc);
@@ -749,16 +747,14 @@ const char* test_wuffs_gif_decode_empty_palette() {
     wuffs_base__status status =
         wuffs_gif__decoder__decode_image_config(&dec, &ic, &src);
     if (!wuffs_base__status__is_ok(&status)) {
-      RETURN_FAIL("q=%d: decode_image_config: \"%s\"", q,
-                  wuffs_base__status__message(&status));
+      RETURN_FAIL("q=%d: decode_image_config: \"%s\"", q, status.repr);
     }
 
     wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
     status = wuffs_base__pixel_buffer__set_from_slice(&pb, &ic.pixcfg,
                                                       global_pixel_slice);
     if (!wuffs_base__status__is_ok(&status)) {
-      RETURN_FAIL("q=%d: set_from_slice: \"%s\"", q,
-                  wuffs_base__status__message(&status));
+      RETURN_FAIL("q=%d: set_from_slice: \"%s\"", q, status.repr);
     }
 
     int i;
@@ -773,8 +769,7 @@ const char* test_wuffs_gif_decode_empty_palette() {
         break;
       }
       if (!wuffs_base__status__is_ok(&status)) {
-        RETURN_FAIL("q=%d: i=%d: decode_frame: \"%s\"", q, i,
-                    wuffs_base__status__message(&status));
+        RETURN_FAIL("q=%d: i=%d: decode_frame: \"%s\"", q, i, status.repr);
       }
 
       wuffs_base__slice_u8 pal = wuffs_base__pixel_buffer__palette(&pb);
@@ -819,8 +814,7 @@ const char* test_wuffs_gif_decode_background_color() {
     wuffs_base__status status =
         wuffs_gif__decoder__decode_frame_config(&dec, &fc, &src);
     if (!wuffs_base__status__is_ok(&status)) {
-      RETURN_FAIL("q=%d: decode_frame_config: \"%s\"", q,
-                  wuffs_base__status__message(&status));
+      RETURN_FAIL("q=%d: decode_frame_config: \"%s\"", q, status.repr);
     }
 
     wuffs_base__color_u32_argb_premul got =
@@ -857,8 +851,7 @@ const char* test_wuffs_gif_decode_first_frame_is_opaque() {
     wuffs_base__status status =
         wuffs_gif__decoder__decode_image_config(&dec, &ic, &src);
     if (!wuffs_base__status__is_ok(&status)) {
-      RETURN_FAIL("q=%d: decode_image_config: \"%s\"", q,
-                  wuffs_base__status__message(&status));
+      RETURN_FAIL("q=%d: decode_image_config: \"%s\"", q, status.repr);
     }
 
     bool got = wuffs_base__image_config__first_frame_is_opaque(&ic);
@@ -895,8 +888,7 @@ const char* test_wuffs_gif_decode_frame_out_of_bounds() {
     wuffs_base__status status =
         wuffs_gif__decoder__decode_image_config(&dec, &ic, &src);
     if (!wuffs_base__status__is_ok(&status)) {
-      RETURN_FAIL("q=%d: decode_image_config: \"%s\"", q,
-                  wuffs_base__status__message(&status));
+      RETURN_FAIL("q=%d: decode_image_config: \"%s\"", q, status.repr);
     }
 
     // The nominal width and height for the overall image is 2×2, but its first
@@ -924,8 +916,7 @@ const char* test_wuffs_gif_decode_frame_out_of_bounds() {
     status = wuffs_base__pixel_buffer__set_from_slice(&pb, &five_by_five,
                                                       global_pixel_slice);
     if (!wuffs_base__status__is_ok(&status)) {
-      RETURN_FAIL("q=%d: set_from_slice: \"%s\"", q,
-                  wuffs_base__status__message(&status));
+      RETURN_FAIL("q=%d: set_from_slice: \"%s\"", q, status.repr);
     }
 
     // See test/data/artificial/gif-frame-out-of-bounds.gif.make-artificial.txt
@@ -960,7 +951,7 @@ const char* test_wuffs_gif_decode_frame_out_of_bounds() {
         }
         if (!wuffs_base__status__is_ok(&status)) {
           RETURN_FAIL("q=%d: decode_frame_config #%" PRIu32 ": \"%s\"", q, i,
-                      wuffs_base__status__message(&status));
+                      status.repr);
         }
 
         wuffs_base__rect_ie_u32 got = wuffs_base__frame_config__bounds(&fc);
@@ -994,7 +985,7 @@ const char* test_wuffs_gif_decode_frame_out_of_bounds() {
                                                   global_work_slice, NULL);
         if (!wuffs_base__status__is_ok(&status)) {
           RETURN_FAIL("q=%d: decode_frame #%" PRIu32 ": \"%s\"", q, i,
-                      wuffs_base__status__message(&status));
+                      status.repr);
         }
 
         for (y = 0; y < 5; y++) {
@@ -1080,16 +1071,14 @@ const char* test_wuffs_gif_decode_zero_width_frame() {
     wuffs_base__status status =
         wuffs_gif__decoder__decode_image_config(&dec, &ic, &src);
     if (!wuffs_base__status__is_ok(&status)) {
-      RETURN_FAIL("q=%d: decode_image_config: \"%s\"", q,
-                  wuffs_base__status__message(&status));
+      RETURN_FAIL("q=%d: decode_image_config: \"%s\"", q, status.repr);
     }
 
     wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
     status = wuffs_base__pixel_buffer__set_from_slice(&pb, &ic.pixcfg,
                                                       global_pixel_slice);
     if (!wuffs_base__status__is_ok(&status)) {
-      RETURN_FAIL("q=%d: set_from_slice: \"%s\"", q,
-                  wuffs_base__status__message(&status));
+      RETURN_FAIL("q=%d: set_from_slice: \"%s\"", q, status.repr);
     }
 
     wuffs_base__status got = wuffs_gif__decoder__decode_frame(
@@ -1396,7 +1385,7 @@ const char* do_test_wuffs_gif_decode_metadata(bool full) {
             wuffs_gif__decoder__decode_frame_config(&dec, &fc, &src);
         if (!wuffs_base__status__is_ok(&status)) {
           RETURN_FAIL("decode_frame_config (iccp=%d, xmp=%d): %s", iccp, xmp,
-                      wuffs_base__status__message(&status));
+                      status.repr);
         }
         uint32_t got = wuffs_base__frame_config__width(&fc);
         uint32_t want = 1;
@@ -1504,8 +1493,7 @@ const char* test_wuffs_gif_decode_multiple_loop_counts() {
         break;
       }
       if (!wuffs_base__status__is_ok(&status)) {
-        RETURN_FAIL("decode_frame_config #%" PRIu32 ": got \"%s\"", i,
-                    wuffs_base__status__message(&status));
+        RETURN_FAIL("decode_frame_config #%" PRIu32 ": \"%s\"", i, status.repr);
       }
     }
 
@@ -1756,8 +1744,7 @@ const char* do_test_wuffs_gif_io_position(bool chunked) {
     wuffs_base__status status =
         wuffs_gif__decoder__decode_frame_config(&dec, &fcs[i], &src);
     if (!wuffs_base__status__is_ok(&status)) {
-      RETURN_FAIL("decode_frame_config #%d: \"%s\"", i,
-                  wuffs_base__status__message(&status));
+      RETURN_FAIL("decode_frame_config #%d: \"%s\"", i, status.repr);
     }
 
     uint64_t index_got = wuffs_base__frame_config__index(&fcs[i]);
@@ -1820,8 +1807,7 @@ const char* do_test_wuffs_gif_io_position(bool chunked) {
     status = wuffs_gif__decoder__restart_frame(
         &dec, i, wuffs_base__frame_config__io_position(&fcs[i]));
     if (!wuffs_base__status__is_ok(&status)) {
-      RETURN_FAIL("restart_frame #%d: \"%s\"", i,
-                  wuffs_base__status__message(&status));
+      RETURN_FAIL("restart_frame #%d: \"%s\"", i, status.repr);
     }
 
     int j;
@@ -1829,8 +1815,7 @@ const char* do_test_wuffs_gif_io_position(bool chunked) {
       wuffs_base__frame_config fc = ((wuffs_base__frame_config){});
       status = wuffs_gif__decoder__decode_frame_config(&dec, &fc, &src);
       if (!wuffs_base__status__is_ok(&status)) {
-        RETURN_FAIL("decode_frame_config #%d, #%d: \"%s\"", i, j,
-                    wuffs_base__status__message(&status));
+        RETURN_FAIL("decode_frame_config #%d, #%d: \"%s\"", i, j, status.repr);
       }
 
       uint64_t index_got = wuffs_base__frame_config__index(&fc);

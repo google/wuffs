@@ -181,7 +181,7 @@ const char* wuffs_deflate_decode(wuffs_base__io_buffer* dst,
          (status.repr == wuffs_base__suspension__short_read))) {
       continue;
     }
-    return wuffs_base__status__message(&status);
+    return status.repr;
   }
 }
 
@@ -217,9 +217,7 @@ const char* test_wuffs_deflate_decode_deflate_distance_code_31() {
   const char* got = do_test_io_buffers(wuffs_deflate_decode,
                                        &deflate_deflate_distance_code_31_gt,
                                        UINT64_MAX, UINT64_MAX);
-  // The +1 caters for wuffs_deflate_decode calling
-  // wuffs_base__status__message.
-  if (got != (wuffs_deflate__error__bad_huffman_code + 1)) {
+  if (got != wuffs_deflate__error__bad_huffman_code) {
     RETURN_FAIL("got \"%s\", want \"%s\"", got,
                 wuffs_deflate__error__bad_huffman_code);
   }
@@ -357,13 +355,12 @@ const char* test_wuffs_deflate_decode_split_src() {
         &dec, &got, &src, global_work_slice);
 
     if (z0.repr != wuffs_base__suspension__short_read) {
-      RETURN_FAIL("i=%d: z0: got \"%s\", want \"%s\"", i,
-                  wuffs_base__status__message(&z0),
+      RETURN_FAIL("i=%d: z0: got \"%s\", want \"%s\"", i, z0.repr,
                   wuffs_base__suspension__short_read);
     }
 
     if (z1.repr) {
-      RETURN_FAIL("i=%d: z1: got \"%s\"", i, wuffs_base__status__message(&z1));
+      RETURN_FAIL("i=%d: z1: got \"%s\"", i, z1.repr);
     }
 
     char prefix[64];
