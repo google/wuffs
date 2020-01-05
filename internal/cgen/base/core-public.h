@@ -132,6 +132,11 @@ typedef struct {
   uint8_t private_impl;
 } wuffs_base__utility;
 
+typedef struct {
+  const char* vtable_name;
+  const void* function_pointers;
+} wuffs_base__vtable;
+
 // --------
 
 // See https://github.com/google/wuffs/blob/master/doc/note/statuses.md

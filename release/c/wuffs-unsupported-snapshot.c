@@ -154,6 +154,11 @@ typedef struct {
   uint8_t private_impl;
 } wuffs_base__utility;
 
+typedef struct {
+  const char* vtable_name;
+  const void* function_pointers;
+} wuffs_base__vtable;
+
 // --------
 
 // See https://github.com/google/wuffs/blob/master/doc/note/statuses.md
@@ -2623,6 +2628,7 @@ struct wuffs_adler32__hasher__struct {
   struct {
     uint32_t magic;
     uint32_t active_coroutine;
+    wuffs_base__vtable null_vtable;
 
     uint32_t f_state;
     bool f_started;
@@ -2740,6 +2746,7 @@ struct wuffs_crc32__ieee_hasher__struct {
   struct {
     uint32_t magic;
     uint32_t active_coroutine;
+    wuffs_base__vtable null_vtable;
 
     uint32_t f_state;
 
@@ -2882,6 +2889,7 @@ struct wuffs_deflate__decoder__struct {
   struct {
     uint32_t magic;
     uint32_t active_coroutine;
+    wuffs_base__vtable null_vtable;
 
     uint32_t f_bits;
     uint32_t f_n_bits;
@@ -3077,6 +3085,7 @@ struct wuffs_lzw__decoder__struct {
   struct {
     uint32_t magic;
     uint32_t active_coroutine;
+    wuffs_base__vtable null_vtable;
 
     uint32_t f_set_literal_width_arg;
     uint32_t f_literal_width;
@@ -3309,6 +3318,7 @@ struct wuffs_gif__decoder__struct {
   struct {
     uint32_t magic;
     uint32_t active_coroutine;
+    wuffs_base__vtable null_vtable;
 
     uint32_t f_width;
     uint32_t f_height;
@@ -3623,6 +3633,7 @@ struct wuffs_gzip__decoder__struct {
   struct {
     uint32_t magic;
     uint32_t active_coroutine;
+    wuffs_base__vtable null_vtable;
 
     bool f_ignore_checksum;
 
@@ -3789,6 +3800,7 @@ struct wuffs_zlib__decoder__struct {
   struct {
     uint32_t magic;
     uint32_t active_coroutine;
+    wuffs_base__vtable null_vtable;
 
     bool f_bad_call_sequence;
     bool f_header_complete;

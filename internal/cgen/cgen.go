@@ -762,6 +762,7 @@ func (g *gen) writeStructPrivateImpl(b *buffer, n *a.Struct) error {
 	if n.Classy() {
 		b.writes("uint32_t magic;\n")
 		b.writes("uint32_t active_coroutine;\n")
+		b.writes("wuffs_base__vtable null_vtable;\n")
 		b.writes("\n")
 	}
 
