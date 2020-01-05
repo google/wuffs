@@ -435,15 +435,15 @@ func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 	if g.currFunk.astFunc.Effect().Coroutine() ||
 		(g.currFunk.returnsStatus && (len(g.currFunk.derivedVars) > 0)) {
 
-		isOK := false
+		isComplete := false
 		b.writes("status = ")
 		if retExpr.Operator() == 0 && retExpr.Ident() == t.IDOk {
 			b.writes("wuffs_base__make_status(NULL)")
-			isOK = true
+			isComplete = true
 		} else {
 			if retExpr.Ident().IsStrLiteral(g.tm) {
 				msg, _ := t.Unescape(retExpr.Ident().Str(g.tm))
-				isOK = statusMsgIsWarning(msg)
+				isComplete = statusMsgIsNote(msg)
 			}
 			if err := g.writeExpr(
 				b, retExpr, depth); err != nil {
@@ -458,7 +458,7 @@ func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 
 		if n.RetsError() {
 			b.writes("goto exit;")
-		} else if isOK {
+		} else if isComplete {
 			g.currFunk.hasGotoOK = true
 			b.writes("goto ok;")
 		} else {

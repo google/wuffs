@@ -127,7 +127,7 @@ func Do(args []string) error {
 						if msg == "" {
 							continue
 						}
-						pre := "warning"
+						pre := "note"
 						if msg[0] == '$' {
 							pre = "suspension"
 						} else if msg[0] == '#' {
@@ -195,12 +195,12 @@ func statusMsgIsError(msg string) bool {
 	return (len(msg) != 0) && (msg[0] == '#')
 }
 
-func statusMsgIsSuspension(msg string) bool {
-	return (len(msg) != 0) && (msg[0] == '$')
+func statusMsgIsNote(msg string) bool {
+	return (len(msg) == 0) || (msg[0] != '$' && msg[0] != '#')
 }
 
-func statusMsgIsWarning(msg string) bool {
-	return (len(msg) == 0) || (msg[0] != '$' && msg[0] != '#')
+func statusMsgIsSuspension(msg string) bool {
+	return (len(msg) != 0) && (msg[0] == '$')
 }
 
 type buffer []byte
@@ -284,7 +284,7 @@ func insertBaseAllPublicH(buf *buffer) error {
 				if msg == "" {
 					return fmt.Errorf("bad built-in status %q", z)
 				}
-				pre := "warning"
+				pre := "note"
 				if statusMsgIsError(msg) {
 					pre = "error"
 				} else if statusMsgIsSuspension(msg) {
@@ -688,7 +688,7 @@ func (g *gen) gatherStatuses(b *buffer, n *a.Status) error {
 }
 
 func (g *gen) addStatus(qid t.QID, msg string, public bool) error {
-	category := "warning__"
+	category := "note__"
 	if msg[0] == '$' {
 		category = "suspension__"
 	} else if msg[0] == '#' {

@@ -141,9 +141,9 @@ typedef struct {
 #ifdef __cplusplus
   inline bool is_complete() const;
   inline bool is_error() const;
+  inline bool is_note() const;
   inline bool is_ok() const;
   inline bool is_suspension() const;
-  inline bool is_warning() const;
   inline const char* message() const;
 #endif  // __cplusplus
 
@@ -169,6 +169,11 @@ wuffs_base__status__is_error(const wuffs_base__status* z) {
 }
 
 static inline bool  //
+wuffs_base__status__is_note(const wuffs_base__status* z) {
+  return z->repr && (*z->repr != '$') && (*z->repr != '#');
+}
+
+static inline bool  //
 wuffs_base__status__is_ok(const wuffs_base__status* z) {
   return z->repr == NULL;
 }
@@ -176,11 +181,6 @@ wuffs_base__status__is_ok(const wuffs_base__status* z) {
 static inline bool  //
 wuffs_base__status__is_suspension(const wuffs_base__status* z) {
   return z->repr && (*z->repr == '$');
-}
-
-static inline bool  //
-wuffs_base__status__is_warning(const wuffs_base__status* z) {
-  return z->repr && (*z->repr != '$') && (*z->repr != '#');
 }
 
 // wuffs_base__status__message strips the leading '$', '#' or '@'.
@@ -207,6 +207,11 @@ wuffs_base__status::is_error() const {
 }
 
 inline bool  //
+wuffs_base__status::is_note() const {
+  return wuffs_base__status__is_note(this);
+}
+
+inline bool  //
 wuffs_base__status::is_ok() const {
   return wuffs_base__status__is_ok(this);
 }
@@ -214,11 +219,6 @@ wuffs_base__status::is_ok() const {
 inline bool  //
 wuffs_base__status::is_suspension() const {
   return wuffs_base__status__is_suspension(this);
-}
-
-inline bool  //
-wuffs_base__status::is_warning() const {
-  return wuffs_base__status__is_warning(this);
 }
 
 inline const char*  //

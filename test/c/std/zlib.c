@@ -238,9 +238,9 @@ const char* test_wuffs_zlib_decode_sheep() {
     wuffs_base__status status = wuffs_zlib__decoder__decode_io_writer(
         &dec, &got, &src, global_work_slice);
 
-    if (status.repr != wuffs_zlib__warning__dictionary_required) {
+    if (status.repr != wuffs_zlib__note__dictionary_required) {
       RETURN_FAIL("decode_io_writer (before dict): got \"%s\", want \"%s\"",
-                  status.repr, wuffs_zlib__warning__dictionary_required);
+                  status.repr, wuffs_zlib__note__dictionary_required);
     }
 
     uint32_t dict_id_got = wuffs_zlib__decoder__dictionary_id(&dec);

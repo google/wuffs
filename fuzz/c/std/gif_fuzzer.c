@@ -117,7 +117,7 @@ const char* fuzz(wuffs_base__io_buffer* src, uint32_t hash) {
       wuffs_base__frame_config fc = ((wuffs_base__frame_config){});
       status = wuffs_gif__decoder__decode_frame_config(&dec, &fc, src);
       if (!wuffs_base__status__is_ok(&status)) {
-        if ((status.repr != wuffs_base__warning__end_of_data) || !seen_ok) {
+        if ((status.repr != wuffs_base__note__end_of_data) || !seen_ok) {
           ret = wuffs_base__status__message(&status);
         }
         goto exit;
@@ -135,7 +135,7 @@ const char* fuzz(wuffs_base__io_buffer* src, uint32_t hash) {
       }
 
       if (!wuffs_base__status__is_ok(&status)) {
-        if ((status.repr != wuffs_base__warning__end_of_data) || !seen_ok) {
+        if ((status.repr != wuffs_base__note__end_of_data) || !seen_ok) {
           ret = wuffs_base__status__message(&status);
         }
         goto exit;

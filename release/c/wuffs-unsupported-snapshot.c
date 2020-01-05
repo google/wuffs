@@ -163,16 +163,16 @@ typedef struct {
 #ifdef __cplusplus
   inline bool is_complete() const;
   inline bool is_error() const;
+  inline bool is_note() const;
   inline bool is_ok() const;
   inline bool is_suspension() const;
-  inline bool is_warning() const;
   inline const char* message() const;
 #endif  // __cplusplus
 
 } wuffs_base__status;
 
-extern const char* wuffs_base__warning__end_of_data;
-extern const char* wuffs_base__warning__metadata_reported;
+extern const char* wuffs_base__note__end_of_data;
+extern const char* wuffs_base__note__metadata_reported;
 extern const char* wuffs_base__suspension__short_read;
 extern const char* wuffs_base__suspension__short_write;
 extern const char* wuffs_base__error__bad_i_o_position;
@@ -211,6 +211,11 @@ wuffs_base__status__is_error(const wuffs_base__status* z) {
 }
 
 static inline bool  //
+wuffs_base__status__is_note(const wuffs_base__status* z) {
+  return z->repr && (*z->repr != '$') && (*z->repr != '#');
+}
+
+static inline bool  //
 wuffs_base__status__is_ok(const wuffs_base__status* z) {
   return z->repr == NULL;
 }
@@ -218,11 +223,6 @@ wuffs_base__status__is_ok(const wuffs_base__status* z) {
 static inline bool  //
 wuffs_base__status__is_suspension(const wuffs_base__status* z) {
   return z->repr && (*z->repr == '$');
-}
-
-static inline bool  //
-wuffs_base__status__is_warning(const wuffs_base__status* z) {
-  return z->repr && (*z->repr != '$') && (*z->repr != '#');
 }
 
 // wuffs_base__status__message strips the leading '$', '#' or '@'.
@@ -249,6 +249,11 @@ wuffs_base__status::is_error() const {
 }
 
 inline bool  //
+wuffs_base__status::is_note() const {
+  return wuffs_base__status__is_note(this);
+}
+
+inline bool  //
 wuffs_base__status::is_ok() const {
   return wuffs_base__status__is_ok(this);
 }
@@ -256,11 +261,6 @@ wuffs_base__status::is_ok() const {
 inline bool  //
 wuffs_base__status::is_suspension() const {
   return wuffs_base__status__is_suspension(this);
-}
-
-inline bool  //
-wuffs_base__status::is_warning() const {
-  return wuffs_base__status__is_warning(this);
 }
 
 inline const char*  //
@@ -3637,7 +3637,7 @@ extern "C" {
 
 // ---------------- Status Codes
 
-extern const char* wuffs_zlib__warning__dictionary_required;
+extern const char* wuffs_zlib__note__dictionary_required;
 extern const char* wuffs_zlib__error__bad_checksum;
 extern const char* wuffs_zlib__error__bad_compression_method;
 extern const char* wuffs_zlib__error__bad_compression_window_size;
@@ -4534,8 +4534,8 @@ const uint64_t wuffs_base__low_bits_mask__u64[65] = {
     0x7FFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF,
 };
 
-const char* wuffs_base__warning__end_of_data = "@base: end of data";
-const char* wuffs_base__warning__metadata_reported = "@base: metadata reported";
+const char* wuffs_base__note__end_of_data = "@base: end of data";
+const char* wuffs_base__note__metadata_reported = "@base: metadata reported";
 const char* wuffs_base__suspension__short_read = "$base: short read";
 const char* wuffs_base__suspension__short_write = "$base: short write";
 const char* wuffs_base__error__bad_i_o_position = "#base: bad I/O position";
@@ -8814,8 +8814,7 @@ wuffs_gif__decoder__ack_metadata_chunk(wuffs_gif__decoder* self,
             wuffs_base__u64__sat_add(a_src->meta.pos,
                                      ((uint64_t)(iop_a_src - io0_a_src))),
             self->private_impl.f_metadata_chunk_length_value);
-        status =
-            wuffs_base__make_status(wuffs_base__warning__metadata_reported);
+        status = wuffs_base__make_status(wuffs_base__note__metadata_reported);
         goto ok;
       }
       (iop_a_src += 1, wuffs_base__make_empty_struct());
@@ -9090,7 +9089,7 @@ wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
       }
     }
     if (self->private_impl.f_end_of_data) {
-      status = wuffs_base__make_status(wuffs_base__warning__end_of_data);
+      status = wuffs_base__make_status(wuffs_base__note__end_of_data);
       goto ok;
     }
     v_blend = 0;
@@ -10132,8 +10131,7 @@ wuffs_gif__decoder__decode_ae(wuffs_gif__decoder* self,
                                      ((uint64_t)(iop_a_src - io0_a_src))),
             self->private_impl.f_metadata_chunk_length_value);
         self->private_impl.f_call_sequence = 1;
-        status =
-            wuffs_base__make_status(wuffs_base__warning__metadata_reported);
+        status = wuffs_base__make_status(wuffs_base__note__metadata_reported);
         goto ok;
       } else if (v_is_xmp && self->private_impl.f_report_metadata_xmp) {
         while (((uint64_t)(io2_a_src - iop_a_src)) <= 0) {
@@ -10153,8 +10151,7 @@ wuffs_gif__decoder__decode_ae(wuffs_gif__decoder* self,
                                      ((uint64_t)(iop_a_src - io0_a_src))),
             self->private_impl.f_metadata_chunk_length_value);
         self->private_impl.f_call_sequence = 1;
-        status =
-            wuffs_base__make_status(wuffs_base__warning__metadata_reported);
+        status = wuffs_base__make_status(wuffs_base__note__metadata_reported);
         goto ok;
       }
       goto label_0_break;
@@ -11602,7 +11599,7 @@ exit:
 
 // ---------------- Status Codes Implementations
 
-const char* wuffs_zlib__warning__dictionary_required =
+const char* wuffs_zlib__note__dictionary_required =
     "@zlib: dictionary required";
 const char* wuffs_zlib__error__bad_checksum = "#zlib: bad checksum";
 const char* wuffs_zlib__error__bad_compression_method =
@@ -11914,8 +11911,7 @@ wuffs_zlib__decoder__decode_io_writer(wuffs_zlib__decoder* self,
           }
           self->private_impl.f_dict_id_want = t_1;
         }
-        status =
-            wuffs_base__make_status(wuffs_zlib__warning__dictionary_required);
+        status = wuffs_base__make_status(wuffs_zlib__note__dictionary_required);
         goto ok;
       } else if (self->private_impl.f_got_dictionary) {
         status =
@@ -11929,8 +11925,7 @@ wuffs_zlib__decoder__decode_io_writer(wuffs_zlib__decoder* self,
             wuffs_base__make_status(wuffs_zlib__error__incorrect_dictionary);
         goto exit;
       }
-      status =
-          wuffs_base__make_status(wuffs_zlib__warning__dictionary_required);
+      status = wuffs_base__make_status(wuffs_zlib__note__dictionary_required);
       goto ok;
     }
     self->private_impl.f_header_complete = true;

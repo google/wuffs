@@ -347,7 +347,7 @@ const char* play() {
     wuffs_base__status status =
         wuffs_gif__decoder__decode_frame_config(&dec, &fc, &src);
     if (!wuffs_base__status__is_ok(&status)) {
-      if (status.repr == wuffs_base__warning__end_of_data) {
+      if (status.repr == wuffs_base__note__end_of_data) {
         break;
       }
       return wuffs_base__status__message(&status);
@@ -372,7 +372,7 @@ const char* play() {
 
     wuffs_base__status decode_frame_status =
         wuffs_gif__decoder__decode_frame(&dec, &pb, &src, workbuf, NULL);
-    if (decode_frame_status.repr == wuffs_base__warning__end_of_data) {
+    if (decode_frame_status.repr == wuffs_base__note__end_of_data) {
       break;
     }
 

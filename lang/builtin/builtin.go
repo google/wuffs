@@ -25,7 +25,7 @@ var FourCCs = [...][2]string{
 }
 
 var Statuses = [...]string{
-	// Warnings.
+	// Notes.
 	`"@end of data"`,
 	`"@metadata reported"`,
 
@@ -295,9 +295,9 @@ var Funcs = []string{
 
 	// TODO: should we add is_complete?
 	"status.is_error() bool",
+	"status.is_note() bool",
 	"status.is_ok() bool",
 	"status.is_suspension() bool",
-	"status.is_warning() bool",
 
 	// ---- frame_config
 	// Duration's upper bound is the maximum possible i64 value.
