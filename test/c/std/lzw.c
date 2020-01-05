@@ -82,10 +82,7 @@ const char* do_test_wuffs_lzw_decode(const char* src_filename,
       .data = global_src_slice,
   });
 
-  const char* status_msg = read_file(&src, src_filename);
-  if (status_msg) {
-    return status_msg;
-  }
+  CHECK_STRING(read_file(&src, src_filename));
   if (src.meta.wi != src_size) {
     RETURN_FAIL("src size: got %d, want %d", (int)(src.meta.wi),
                 (int)(src_size));
@@ -98,10 +95,7 @@ const char* do_test_wuffs_lzw_decode(const char* src_filename,
   }
   src.meta.ri++;
 
-  status_msg = read_file(&want, want_filename);
-  if (status_msg) {
-    return status_msg;
-  }
+  CHECK_STRING(read_file(&want, want_filename));
   if (want.meta.wi != want_size) {
     RETURN_FAIL("want size: got %d, want %d", (int)(want.meta.wi),
                 (int)(want_size));
@@ -388,10 +382,7 @@ const char* do_bench_wuffs_lzw_decode(const char* filename,
       .data = global_src_slice,
   });
 
-  const char* status_msg = read_file(&src, filename);
-  if (status_msg) {
-    return status_msg;
-  }
+  CHECK_STRING(read_file(&src, filename));
   if (src.meta.wi <= 0) {
     RETURN_FAIL("src size: got %d, want > 0", (int)(src.meta.wi));
   }

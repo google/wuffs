@@ -232,12 +232,9 @@ const char* test_wuffs_deflate_decode_deflate_huffman_primlen_9() {
   CHECK_FOCUS(__func__);
 
   // First, treat this like any other compare-to-golden test.
-  const char* status_msg = do_test_io_buffers(
-      wuffs_deflate_decode, &deflate_deflate_huffman_primlen_9_gt, UINT64_MAX,
-      UINT64_MAX);
-  if (status_msg) {
-    return status_msg;
-  }
+  CHECK_STRING(do_test_io_buffers(wuffs_deflate_decode,
+                                  &deflate_deflate_huffman_primlen_9_gt,
+                                  UINT64_MAX, UINT64_MAX));
 
   // Second, check that the decoder's huffman table sizes match those predicted
   // by the script/print-deflate-huff-table-size.go program.
@@ -249,10 +246,7 @@ const char* test_wuffs_deflate_decode_deflate_huffman_primlen_9() {
   });
 
   golden_test* gt = &deflate_deflate_huffman_primlen_9_gt;
-  status_msg = read_file(&src, gt->src_filename);
-  if (status_msg) {
-    return status_msg;
-  }
+  CHECK_STRING(read_file(&src, gt->src_filename));
 
   wuffs_deflate__decoder dec;
   wuffs_base__status status = wuffs_deflate__decoder__initialize(
@@ -340,16 +334,9 @@ const char* test_wuffs_deflate_decode_split_src() {
       .data = global_want_slice,
   });
 
-  const char* status_msg;
   golden_test* gt = &deflate_256_bytes_gt;
-  status_msg = read_file(&src, gt->src_filename);
-  if (status_msg) {
-    return status_msg;
-  }
-  status_msg = read_file(&want, gt->want_filename);
-  if (status_msg) {
-    return status_msg;
-  }
+  CHECK_STRING(read_file(&src, gt->src_filename));
+  CHECK_STRING(read_file(&want, gt->want_filename));
 
   int i;
   for (i = 1; i < 32; i++) {
@@ -391,10 +378,7 @@ const char* test_wuffs_deflate_decode_split_src() {
 
     char prefix[64];
     snprintf(prefix, 64, "i=%d: ", i);
-    status_msg = check_io_buffers_equal(prefix, &got, &want);
-    if (status_msg) {
-      return status_msg;
-    }
+    CHECK_STRING(check_io_buffers_equal(prefix, &got, &want));
   }
   return NULL;
 }
@@ -440,16 +424,9 @@ const char* test_wuffs_deflate_history_full() {
       .data = global_want_slice,
   });
 
-  const char* status_msg;
   golden_test* gt = &deflate_pi_gt;
-  status_msg = read_file(&src, gt->src_filename);
-  if (status_msg) {
-    return status_msg;
-  }
-  status_msg = read_file(&want, gt->want_filename);
-  if (status_msg) {
-    return status_msg;
-  }
+  CHECK_STRING(read_file(&src, gt->src_filename));
+  CHECK_STRING(read_file(&want, gt->want_filename));
 
   const int full_history_size = 0x8000;
   int i;
@@ -462,12 +439,9 @@ const char* test_wuffs_deflate_history_full() {
       RETURN_FAIL("initialize: \"%s\"", wuffs_base__status__message(&status));
     }
 
-    status_msg = do_test_wuffs_deflate_history(
+    CHECK_STRING(do_test_wuffs_deflate_history(
         i, gt, &src, &got, &dec, 0, want.meta.wi + i,
-        i >= 0 ? NULL : wuffs_base__suspension__short_write);
-    if (status_msg) {
-      return status_msg;
-    }
+        i >= 0 ? NULL : wuffs_base__suspension__short_write));
 
     uint32_t want_history_index = i >= 0 ? 0 : full_history_size;
     if (dec.private_impl.f_history_index != want_history_index) {
@@ -496,10 +470,7 @@ const char* test_wuffs_deflate_history_full() {
     });
     history_want.meta.wi = full_history_size;
 
-    status_msg = check_io_buffers_equal("", &history_got, &history_want);
-    if (status_msg) {
-      return status_msg;
-    }
+    CHECK_STRING(check_io_buffers_equal("", &history_got, &history_want));
   }
   return NULL;
 }
@@ -515,10 +486,7 @@ const char* test_wuffs_deflate_history_partial() {
   });
 
   golden_test* gt = &deflate_pi_gt;
-  const char* status_msg = read_file(&src, gt->src_filename);
-  if (status_msg) {
-    return status_msg;
-  }
+  CHECK_STRING(read_file(&src, gt->src_filename));
 
   uint32_t starting_history_indexes[] = {
       0x0000, 0x0001, 0x1234, 0x7FFB, 0x7FFC, 0x7FFD, 0x7FFE, 0x7FFF,
@@ -543,12 +511,9 @@ const char* test_wuffs_deflate_history_partial() {
       RETURN_FAIL("initialize: \"%s\"", wuffs_base__status__message(&status));
     }
 
-    status_msg = do_test_wuffs_deflate_history(
+    CHECK_STRING(do_test_wuffs_deflate_history(
         i, gt, &src, &got, &dec, starting_history_index, fragment_length,
-        wuffs_base__suspension__short_write);
-    if (status_msg) {
-      return status_msg;
-    }
+        wuffs_base__suspension__short_write));
 
     bool got_full = dec.private_impl.f_history_index >= 0x8000;
     uint32_t got_history_index = dec.private_impl.f_history_index & 0x7FFF;

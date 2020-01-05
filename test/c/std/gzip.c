@@ -124,10 +124,7 @@ const char* do_test_wuffs_gzip_checksum(bool ignore_checksum,
       .data = global_src_slice,
   });
 
-  const char* status_msg = read_file(&src, gzip_midsummer_gt.src_filename);
-  if (status_msg) {
-    return status_msg;
-  }
+  CHECK_STRING(read_file(&src, gzip_midsummer_gt.src_filename));
 
   // Flip a bit in the gzip checksum, which is in the last 8 bytes of the file.
   if (src.meta.wi < 8) {

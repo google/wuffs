@@ -122,10 +122,7 @@ const char* test_wuffs_crc32_ieee_golden() {
     wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
         .data = global_src_slice,
     });
-    const char* status_msg = read_file(&src, test_cases[i].filename);
-    if (status_msg) {
-      return status_msg;
-    }
+    CHECK_STRING(read_file(&src, test_cases[i].filename));
 
     int j;
     for (j = 0; j < 2; j++) {

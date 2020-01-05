@@ -135,10 +135,7 @@ const char* do_test_wuffs_zlib_checksum(bool ignore_checksum,
       .data = global_src_slice,
   });
 
-  const char* status_msg = read_file(&src, zlib_midsummer_gt.src_filename);
-  if (status_msg) {
-    return status_msg;
-  }
+  CHECK_STRING(read_file(&src, zlib_midsummer_gt.src_filename));
   // Flip a bit in the zlib checksum, which is in the last 4 bytes of the file.
   if (src.meta.wi < 4) {
     RETURN_FAIL("source file was too short");

@@ -64,6 +64,14 @@ char fail_msg[65536] = {0};
 #define INCR_FAIL(msg, ...) \
   msg += snprintf(msg, sizeof(fail_msg) - (msg - fail_msg), ##__VA_ARGS__)
 
+#define CHECK_STRING(string) \
+  {                          \
+    const char* z = string;  \
+    if (z) {                 \
+      return z;              \
+    }                        \
+  }
+
 int tests_run = 0;
 
 uint64_t iterscale = 100;
