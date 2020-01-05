@@ -4,6 +4,7 @@
 ## Work In Progress
 
 - Renamed warnings to notes.
+- Made `wuffs_base__pixel_format` a struct.
 - Made `wuffs_base__status` a struct.
 
 

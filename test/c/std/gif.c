@@ -261,10 +261,10 @@ const char* do_test_wuffs_gif_decode(const char* filename,
     wuffs_base__image_config ic = ((wuffs_base__image_config){});
     CHECK_STATUS("decode_image_config",
                  wuffs_gif__decoder__decode_image_config(&dec, &ic, &src));
-    if (wuffs_base__pixel_config__pixel_format(&ic.pixcfg) !=
+    if (wuffs_base__pixel_config__pixel_format(&ic.pixcfg).repr !=
         WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY) {
       RETURN_FAIL("pixel_format: got 0x%08" PRIX32 ", want 0x%08" PRIX32,
-                  wuffs_base__pixel_config__pixel_format(&ic.pixcfg),
+                  wuffs_base__pixel_config__pixel_format(&ic.pixcfg).repr,
                   WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY);
     }
 
@@ -370,7 +370,7 @@ const char* do_test_wuffs_gif_decode(const char* filename,
       }),
   });
   CHECK_STRING(read_file(&pal_want, palette_filename));
-  if (dst_pixfmt == WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY) {
+  if (dst_pixfmt.repr == WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY) {
     wuffs_base__io_buffer pal_got = ((wuffs_base__io_buffer){
         .data = wuffs_base__pixel_buffer__palette(&pb),
     });
@@ -382,7 +382,7 @@ const char* do_test_wuffs_gif_decode(const char* filename,
       .data = global_want_slice,
   });
   CHECK_STRING(read_file(&ind_want, indexes_filename));
-  if (dst_pixfmt == WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY) {
+  if (dst_pixfmt.repr == WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY) {
     CHECK_STRING(check_io_buffers_equal("indexes ", &got, &ind_want));
   } else {
     wuffs_base__io_buffer expanded_want = ((wuffs_base__io_buffer){
@@ -392,7 +392,7 @@ const char* do_test_wuffs_gif_decode(const char* filename,
       RETURN_FAIL("indexes are too long to expand into the work buffer");
     }
 
-    if (dst_pixfmt == WUFFS_BASE__PIXEL_FORMAT__BGR) {
+    if (dst_pixfmt.repr == WUFFS_BASE__PIXEL_FORMAT__BGR) {
       size_t i;
       for (i = 0; i < ind_want.meta.wi; i++) {
         uint8_t index = ind_want.data.ptr[i];
@@ -401,7 +401,7 @@ const char* do_test_wuffs_gif_decode(const char* filename,
         expanded_want.data.ptr[3 * i + 2] = pal_want_array[4 * index + 2];
       }
       expanded_want.meta.wi = 3 * ind_want.meta.wi;
-    } else if (dst_pixfmt == WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL) {
+    } else if (dst_pixfmt.repr == WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL) {
       size_t i;
       for (i = 0; i < ind_want.meta.wi; i++) {
         uint8_t index = ind_want.data.ptr[i];
@@ -411,7 +411,7 @@ const char* do_test_wuffs_gif_decode(const char* filename,
         expanded_want.data.ptr[4 * i + 3] = pal_want_array[4 * index + 3];
       }
       expanded_want.meta.wi = 4 * ind_want.meta.wi;
-    } else if (dst_pixfmt == WUFFS_BASE__PIXEL_FORMAT__RGB) {
+    } else if (dst_pixfmt.repr == WUFFS_BASE__PIXEL_FORMAT__RGB) {
       size_t i;
       for (i = 0; i < ind_want.meta.wi; i++) {
         uint8_t index = ind_want.data.ptr[i];
@@ -420,7 +420,7 @@ const char* do_test_wuffs_gif_decode(const char* filename,
         expanded_want.data.ptr[3 * i + 2] = pal_want_array[4 * index + 0];
       }
       expanded_want.meta.wi = 3 * ind_want.meta.wi;
-    } else if (dst_pixfmt == WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL) {
+    } else if (dst_pixfmt.repr == WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL) {
       size_t i;
       for (i = 0; i < ind_want.meta.wi; i++) {
         uint8_t index = ind_want.data.ptr[i];
@@ -1093,34 +1093,34 @@ const char* test_wuffs_gif_decode_zero_width_frame() {
 
 const char* test_wuffs_gif_decode_pixfmt_bgr() {
   CHECK_FOCUS(__func__);
-  return do_test_wuffs_gif_decode("test/data/bricks-dither.gif",
-                                  "test/data/bricks-dither.palette",
-                                  "test/data/bricks-dither.indexes", UINT64_MAX,
-                                  WUFFS_BASE__PIXEL_FORMAT__BGR);
+  return do_test_wuffs_gif_decode(
+      "test/data/bricks-dither.gif", "test/data/bricks-dither.palette",
+      "test/data/bricks-dither.indexes", UINT64_MAX,
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGR));
 }
 
 const char* test_wuffs_gif_decode_pixfmt_bgra_nonpremul() {
   CHECK_FOCUS(__func__);
-  return do_test_wuffs_gif_decode("test/data/bricks-dither.gif",
-                                  "test/data/bricks-dither.palette",
-                                  "test/data/bricks-dither.indexes", UINT64_MAX,
-                                  WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL);
+  return do_test_wuffs_gif_decode(
+      "test/data/bricks-dither.gif", "test/data/bricks-dither.palette",
+      "test/data/bricks-dither.indexes", UINT64_MAX,
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL));
 }
 
 const char* test_wuffs_gif_decode_pixfmt_rgb() {
   CHECK_FOCUS(__func__);
-  return do_test_wuffs_gif_decode("test/data/bricks-dither.gif",
-                                  "test/data/bricks-dither.palette",
-                                  "test/data/bricks-dither.indexes", UINT64_MAX,
-                                  WUFFS_BASE__PIXEL_FORMAT__RGB);
+  return do_test_wuffs_gif_decode(
+      "test/data/bricks-dither.gif", "test/data/bricks-dither.palette",
+      "test/data/bricks-dither.indexes", UINT64_MAX,
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__RGB));
 }
 
 const char* test_wuffs_gif_decode_pixfmt_rgba_nonpremul() {
   CHECK_FOCUS(__func__);
-  return do_test_wuffs_gif_decode("test/data/bricks-dither.gif",
-                                  "test/data/bricks-dither.palette",
-                                  "test/data/bricks-dither.indexes", UINT64_MAX,
-                                  WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL);
+  return do_test_wuffs_gif_decode(
+      "test/data/bricks-dither.gif", "test/data/bricks-dither.palette",
+      "test/data/bricks-dither.indexes", UINT64_MAX,
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL));
 }
 
 const char* test_wuffs_gif_decode_input_is_a_gif_just_one_read() {
@@ -1128,7 +1128,8 @@ const char* test_wuffs_gif_decode_input_is_a_gif_just_one_read() {
   return do_test_wuffs_gif_decode(
       "test/data/bricks-dither.gif", "test/data/bricks-dither.palette",
       "test/data/bricks-dither.indexes", UINT64_MAX,
-      WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY);
+      wuffs_base__make_pixel_format(
+          WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY));
 }
 
 const char* test_wuffs_gif_decode_input_is_a_gif_many_big_reads() {
@@ -1136,7 +1137,8 @@ const char* test_wuffs_gif_decode_input_is_a_gif_many_big_reads() {
   return do_test_wuffs_gif_decode(
       "test/data/bricks-dither.gif", "test/data/bricks-dither.palette",
       "test/data/bricks-dither.indexes", 4096,
-      WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY);
+      wuffs_base__make_pixel_format(
+          WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY));
 }
 
 const char* test_wuffs_gif_decode_input_is_a_gif_many_medium_reads() {
@@ -1144,7 +1146,8 @@ const char* test_wuffs_gif_decode_input_is_a_gif_many_medium_reads() {
   return do_test_wuffs_gif_decode(
       "test/data/bricks-dither.gif", "test/data/bricks-dither.palette",
       "test/data/bricks-dither.indexes", 787,
-      WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY);
+      wuffs_base__make_pixel_format(
+          WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY));
   // The magic 787 tickles being in the middle of a decode_extension skip
   // call.
   //
@@ -1156,7 +1159,8 @@ const char* test_wuffs_gif_decode_input_is_a_gif_many_small_reads() {
   return do_test_wuffs_gif_decode(
       "test/data/bricks-dither.gif", "test/data/bricks-dither.palette",
       "test/data/bricks-dither.indexes", 13,
-      WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY);
+      wuffs_base__make_pixel_format(
+          WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY));
 }
 
 const char* test_wuffs_gif_decode_input_is_a_png() {
@@ -1207,10 +1211,10 @@ const char* test_wuffs_gif_decode_interlaced_truncated() {
     RETURN_FAIL("height: got %" PRIu32 ", want 28",
                 wuffs_base__pixel_config__height(&ic.pixcfg));
   }
-  if (wuffs_base__pixel_config__pixel_format(&ic.pixcfg) !=
+  if (wuffs_base__pixel_config__pixel_format(&ic.pixcfg).repr !=
       WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY) {
     RETURN_FAIL("pixel_format: got 0x%08" PRIX32 ", want 0x%08" PRIX32,
-                wuffs_base__pixel_config__pixel_format(&ic.pixcfg),
+                wuffs_base__pixel_config__pixel_format(&ic.pixcfg).repr,
                 WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY);
   }
   const int num_pixel_indexes = 36 * 28 * 1;
@@ -1919,15 +1923,21 @@ const char* do_test_mimic_gif_decode(const char* filename) {
   wuffs_base__io_buffer got = ((wuffs_base__io_buffer){
       .data = global_got_slice,
   });
-  CHECK_STRING(wuffs_gif_decode(
-      &got, 0, WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY, &src));
+  CHECK_STRING(
+      wuffs_gif_decode(&got, 0,
+                       wuffs_base__make_pixel_format(
+                           WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY),
+                       &src));
 
   src.meta.ri = 0;
   wuffs_base__io_buffer want = ((wuffs_base__io_buffer){
       .data = global_want_slice,
   });
-  CHECK_STRING(mimic_gif_decode(
-      &want, 0, WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY, &src));
+  CHECK_STRING(
+      mimic_gif_decode(&want, 0,
+                       wuffs_base__make_pixel_format(
+                           WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY),
+                       &src));
 
   CHECK_STRING(check_io_buffers_equal("", &got, &want));
 
@@ -2042,7 +2052,9 @@ const char* bench_wuffs_gif_decode_1k_bw() {
   return do_bench_gif_decode(
       wuffs_gif_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
       "test/data/pjw-thumbnail.gif",
-      WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY, 2000);
+      wuffs_base__make_pixel_format(
+          WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY),
+      2000);
 }
 
 const char* bench_wuffs_gif_decode_1k_color_full_init() {
@@ -2050,7 +2062,9 @@ const char* bench_wuffs_gif_decode_1k_color_full_init() {
   return do_bench_gif_decode(
       wuffs_gif_decode, WUFFS_INITIALIZE__DEFAULT_OPTIONS,
       "test/data/hippopotamus.regular.gif",
-      WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY, 1000);
+      wuffs_base__make_pixel_format(
+          WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY),
+      1000);
 }
 
 const char* bench_wuffs_gif_decode_1k_color_part_init() {
@@ -2058,21 +2072,28 @@ const char* bench_wuffs_gif_decode_1k_color_part_init() {
   return do_bench_gif_decode(
       wuffs_gif_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
       "test/data/hippopotamus.regular.gif",
-      WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY, 1000);
+      wuffs_base__make_pixel_format(
+          WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY),
+      1000);
 }
 
 const char* bench_wuffs_gif_decode_10k_bgra() {
   CHECK_FOCUS(__func__);
   return do_bench_gif_decode(
       wuffs_gif_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
-      "test/data/hat.gif", WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL, 100);
+      "test/data/hat.gif",
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
+      100);
 }
 
 const char* bench_wuffs_gif_decode_10k_indexed() {
   CHECK_FOCUS(__func__);
   return do_bench_gif_decode(
       wuffs_gif_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
-      "test/data/hat.gif", WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY, 100);
+      "test/data/hat.gif",
+      wuffs_base__make_pixel_format(
+          WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY),
+      100);
 }
 
 const char* bench_wuffs_gif_decode_20k() {
@@ -2080,7 +2101,9 @@ const char* bench_wuffs_gif_decode_20k() {
   return do_bench_gif_decode(
       wuffs_gif_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
       "test/data/bricks-gray.gif",
-      WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY, 50);
+      wuffs_base__make_pixel_format(
+          WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY),
+      50);
 }
 
 const char* bench_wuffs_gif_decode_100k_artificial() {
@@ -2088,7 +2111,9 @@ const char* bench_wuffs_gif_decode_100k_artificial() {
   return do_bench_gif_decode(
       wuffs_gif_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
       "test/data/hibiscus.primitive.gif",
-      WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY, 15);
+      wuffs_base__make_pixel_format(
+          WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY),
+      15);
 }
 
 const char* bench_wuffs_gif_decode_100k_realistic() {
@@ -2096,15 +2121,19 @@ const char* bench_wuffs_gif_decode_100k_realistic() {
   return do_bench_gif_decode(
       wuffs_gif_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
       "test/data/hibiscus.regular.gif",
-      WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY, 10);
+      wuffs_base__make_pixel_format(
+          WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY),
+      10);
 }
 
 const char* bench_wuffs_gif_decode_1000k_full_init() {
   CHECK_FOCUS(__func__);
-  return do_bench_gif_decode(wuffs_gif_decode,
-                             WUFFS_INITIALIZE__DEFAULT_OPTIONS,
-                             "test/data/harvesters.gif",
-                             WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY, 1);
+  return do_bench_gif_decode(
+      wuffs_gif_decode, WUFFS_INITIALIZE__DEFAULT_OPTIONS,
+      "test/data/harvesters.gif",
+      wuffs_base__make_pixel_format(
+          WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY),
+      1);
 }
 
 const char* bench_wuffs_gif_decode_1000k_part_init() {
@@ -2112,7 +2141,9 @@ const char* bench_wuffs_gif_decode_1000k_part_init() {
   return do_bench_gif_decode(
       wuffs_gif_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
       "test/data/harvesters.gif",
-      WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY, 1);
+      wuffs_base__make_pixel_format(
+          WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY),
+      1);
 }
 
 const char* bench_wuffs_gif_decode_anim_screencap() {
@@ -2120,7 +2151,9 @@ const char* bench_wuffs_gif_decode_anim_screencap() {
   return do_bench_gif_decode(
       wuffs_gif_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
       "test/data/gifplayer-muybridge.gif",
-      WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY, 1);
+      wuffs_base__make_pixel_format(
+          WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY),
+      1);
 }
 
   // ---------------- Mimic Benches
@@ -2129,57 +2162,74 @@ const char* bench_wuffs_gif_decode_anim_screencap() {
 
 const char* bench_mimic_gif_decode_1k_bw() {
   CHECK_FOCUS(__func__);
-  return do_bench_gif_decode(mimic_gif_decode, 0, "test/data/pjw-thumbnail.gif",
-                             WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY,
-                             2000);
+  return do_bench_gif_decode(
+      mimic_gif_decode, 0, "test/data/pjw-thumbnail.gif",
+      wuffs_base__make_pixel_format(
+          WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY),
+      2000);
 }
 
 const char* bench_mimic_gif_decode_1k_color() {
   CHECK_FOCUS(__func__);
   return do_bench_gif_decode(
       mimic_gif_decode, 0, "test/data/hippopotamus.regular.gif",
-      WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY, 1000);
+      wuffs_base__make_pixel_format(
+          WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY),
+      1000);
 }
 
 const char* bench_mimic_gif_decode_10k_indexed() {
   CHECK_FOCUS(__func__);
-  return do_bench_gif_decode(mimic_gif_decode, 0, "test/data/hat.gif",
-                             WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY,
-                             100);
+  return do_bench_gif_decode(
+      mimic_gif_decode, 0, "test/data/hat.gif",
+      wuffs_base__make_pixel_format(
+          WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY),
+      100);
 }
 
 const char* bench_mimic_gif_decode_20k() {
   CHECK_FOCUS(__func__);
-  return do_bench_gif_decode(mimic_gif_decode, 0, "test/data/bricks-gray.gif",
-                             WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY,
-                             50);
+  return do_bench_gif_decode(
+      mimic_gif_decode, 0, "test/data/bricks-gray.gif",
+      wuffs_base__make_pixel_format(
+          WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY),
+      50);
 }
 
 const char* bench_mimic_gif_decode_100k_artificial() {
   CHECK_FOCUS(__func__);
   return do_bench_gif_decode(
       mimic_gif_decode, 0, "test/data/hibiscus.primitive.gif",
-      WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY, 15);
+      wuffs_base__make_pixel_format(
+          WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY),
+      15);
 }
 
 const char* bench_mimic_gif_decode_100k_realistic() {
   CHECK_FOCUS(__func__);
   return do_bench_gif_decode(
       mimic_gif_decode, 0, "test/data/hibiscus.regular.gif",
-      WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY, 10);
+      wuffs_base__make_pixel_format(
+          WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY),
+      10);
 }
 
 const char* bench_mimic_gif_decode_1000k() {
   CHECK_FOCUS(__func__);
-  return do_bench_gif_decode(mimic_gif_decode, 0, "test/data/harvesters.gif",
-                             WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY, 1);
+  return do_bench_gif_decode(
+      mimic_gif_decode, 0, "test/data/harvesters.gif",
+      wuffs_base__make_pixel_format(
+          WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY),
+      1);
 }
 
 const char* bench_mimic_gif_decode_anim_screencap() {
   CHECK_FOCUS(__func__);
-  return do_bench_gif_decode(mimic_gif_decode, 0,
-                             "test/data/gifplayer-muybridge.gif",
-                             WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY, 1);
+  return do_bench_gif_decode(
+      mimic_gif_decode, 0, "test/data/gifplayer-muybridge.gif",
+      wuffs_base__make_pixel_format(
+          WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY),
+      1);
 }
 
 #endif  // WUFFS_MIMIC

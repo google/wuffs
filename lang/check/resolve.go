@@ -63,6 +63,7 @@ var (
 	typeExprImageConfig   = a.NewTypeExpr(0, t.IDBase, t.IDImageConfig, nil, nil, nil)
 	typeExprPixelBuffer   = a.NewTypeExpr(0, t.IDBase, t.IDPixelBuffer, nil, nil, nil)
 	typeExprPixelConfig   = a.NewTypeExpr(0, t.IDBase, t.IDPixelConfig, nil, nil, nil)
+	typeExprPixelFormat   = a.NewTypeExpr(0, t.IDBase, t.IDPixelFormat, nil, nil, nil)
 	typeExprPixelSwizzler = a.NewTypeExpr(0, t.IDBase, t.IDPixelSwizzler, nil, nil, nil)
 
 	typeExprDecodeFrameOptions = a.NewTypeExpr(0, t.IDBase, t.IDDecodeFrameOptions, nil, nil, nil)
@@ -104,6 +105,7 @@ var builtInTypeMap = typeMap{
 	t.IDImageConfig:   typeExprImageConfig,
 	t.IDPixelBuffer:   typeExprPixelBuffer,
 	t.IDPixelConfig:   typeExprPixelConfig,
+	t.IDPixelFormat:   typeExprPixelFormat,
 	t.IDPixelSwizzler: typeExprPixelSwizzler,
 
 	t.IDDecodeFrameOptions: typeExprDecodeFrameOptions,

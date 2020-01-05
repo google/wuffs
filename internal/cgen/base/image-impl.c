@@ -169,9 +169,9 @@ wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
   uint64_t (*func)(wuffs_base__slice_u8 dst, wuffs_base__slice_u8 dst_palette,
                    wuffs_base__slice_u8 src) = NULL;
 
-  switch (src_format) {
+  switch (src_format.repr) {
     case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY:
-      switch (dst_format) {
+      switch (dst_format.repr) {
         case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL:
         case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_PREMUL:
         case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY:

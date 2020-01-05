@@ -82,6 +82,7 @@ var Types = []string{
 	"image_config",
 	"pixel_buffer",
 	"pixel_config",
+	"pixel_format",
 	"pixel_swizzler",
 
 	"decode_frame_options",
@@ -113,6 +114,7 @@ var Funcs = []string{
 	"utility.empty_io_reader() io_reader",
 	"utility.empty_io_writer() io_writer",
 	"utility.empty_slice_u8() slice u8",
+	"utility.make_pixel_format(repr: u32) pixel_format",
 	"utility.make_range_ii_u32(min_incl: u32, max_incl: u32) range_ii_u32",
 	"utility.make_range_ie_u32(min_incl: u32, max_excl: u32) range_ie_u32",
 	"utility.make_range_ii_u64(min_incl: u64, max_incl: u64) range_ii_u64",
@@ -319,13 +321,18 @@ var Funcs = []string{
 	// ---- pixel_buffer
 
 	"pixel_buffer.palette() slice u8",
-	"pixel_buffer.pixel_format() u32",
+	"pixel_buffer.pixel_format() pixel_format",
 	"pixel_buffer.plane(p: u32[..= 3]) table u8",
+
+	// ---- pixel_format
+
+	"pixel_format.bits_per_pixel() u32",
 
 	// ---- pixel_swizzler
 
 	"pixel_swizzler.prepare!(" +
-		"dst_pixfmt: u32, dst_palette: slice u8, src_pixfmt: u32, src_palette: slice u8) status",
+		"dst_pixfmt: pixel_format, dst_palette: slice u8, " +
+		"src_pixfmt: pixel_format, src_palette: slice u8) status",
 	"pixel_swizzler.swizzle_interleaved!(" +
 		"dst: slice u8, dst_palette: slice u8, src: slice u8) u64",
 }

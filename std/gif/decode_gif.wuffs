@@ -881,7 +881,7 @@ pri func decoder.decode_id_part1?(dst: ptr base.pixel_buffer, src: base.io_reade
 	status = this.swizzler.prepare!(
 		dst_pixfmt: args.dst.pixel_format(),
 		dst_palette: dst_palette,
-		src_pixfmt: 0x47040008,
+		src_pixfmt: this.util.make_pixel_format(repr: 0x47040008),
 		src_palette: this.palettes[which_palette][..])
 	if not status.is_ok() {
 		return status
@@ -1025,8 +1025,9 @@ pri func decoder.copy_to_image_buffer!(pb: ptr base.pixel_buffer, src: slice bas
 	var width_in_bytes  : base.u64
 	var n               : base.u64
 	var src_ri          : base.u64
+	var pixfmt          : base.pixel_format
 	var bytes_per_pixel : base.u32[..= 64]
-	var pixfmt_channels : base.u32
+	var bits_per_pixel  : base.u32
 	var tab             : table base.u8
 	var i               : base.u64
 	var j               : base.u64
@@ -1037,12 +1038,16 @@ pri func decoder.copy_to_image_buffer!(pb: ptr base.pixel_buffer, src: slice bas
 
 	// TODO: a Wuffs (not just C) name for the WUFFS_BASE__PIXEL_FORMAT__ETC
 	// magic pixfmt constants. Also, support more formats.
-	pixfmt_channels = args.pb.pixel_format() & 0xFFFF
-	if (pixfmt_channels == 0x8888) {
+	//
+	// TODO: the pixfmt variable shouldn't be necessary. We should be able to
+	// chain the two calls: "args.pb.pixel_format().bits_per_pixel()".
+	pixfmt = args.pb.pixel_format()
+	bits_per_pixel = pixfmt.bits_per_pixel()
+	if (bits_per_pixel == 32) {
 		bytes_per_pixel = 4
-	} else if (pixfmt_channels == 0x0888) {
+	} else if (bits_per_pixel == 24) {
 		bytes_per_pixel = 3
-	} else if (pixfmt_channels == 0x0008) {
+	} else if (bits_per_pixel == 8) {
 		bytes_per_pixel = 1
 	} else {
 		return base."#unsupported option"

@@ -15,3 +15,7 @@
 // limitations under the License.
 
 // ---------------- Images
+
+// ---------------- Images (Utility)
+
+#define wuffs_base__utility__make_pixel_format wuffs_base__make_pixel_format

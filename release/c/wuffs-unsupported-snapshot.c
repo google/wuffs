@@ -1472,103 +1472,143 @@ typedef uint32_t wuffs_base__color_u32_argb_premul;
 //
 // Do not manipulate its bits directly; they are private implementation
 // details. Use methods such as wuffs_base__pixel_format__num_planes instead.
-typedef uint32_t wuffs_base__pixel_format;
+typedef struct {
+  uint32_t repr;
 
-// Common 8-bit-depth pixel formats. This list is not exhaustive; not all valid
-// wuffs_base__pixel_format values are present.
+#ifdef __cplusplus
+  inline bool is_valid() const;
+  inline uint32_t bits_per_pixel() const;
+  inline bool is_indexed() const;
+  inline bool is_interleaved() const;
+  inline bool is_planar() const;
+  inline uint32_t num_planes() const;
+#endif  // __cplusplus
 
-#define WUFFS_BASE__PIXEL_FORMAT__INVALID ((wuffs_base__pixel_format)0x00000000)
+} wuffs_base__pixel_format;
 
-#define WUFFS_BASE__PIXEL_FORMAT__A ((wuffs_base__pixel_format)0x02000008)
+static inline wuffs_base__pixel_format  //
+wuffs_base__make_pixel_format(uint32_t repr) {
+  wuffs_base__pixel_format f;
+  f.repr = repr;
+  return f;
+}
 
-#define WUFFS_BASE__PIXEL_FORMAT__Y ((wuffs_base__pixel_format)0x10000008)
-#define WUFFS_BASE__PIXEL_FORMAT__YA_NONPREMUL \
-  ((wuffs_base__pixel_format)0x15000008)
-#define WUFFS_BASE__PIXEL_FORMAT__YA_PREMUL \
-  ((wuffs_base__pixel_format)0x16000008)
+  // Common 8-bit-depth pixel formats. This list is not exhaustive; not all
+  // valid wuffs_base__pixel_format values are present.
 
-#define WUFFS_BASE__PIXEL_FORMAT__YCBCR ((wuffs_base__pixel_format)0x20020888)
-#define WUFFS_BASE__PIXEL_FORMAT__YCBCRK ((wuffs_base__pixel_format)0x21038888)
-#define WUFFS_BASE__PIXEL_FORMAT__YCBCRA_NONPREMUL \
-  ((wuffs_base__pixel_format)0x25038888)
+#define WUFFS_BASE__PIXEL_FORMAT__INVALID 0x00000000
 
-#define WUFFS_BASE__PIXEL_FORMAT__YCOCG ((wuffs_base__pixel_format)0x30020888)
-#define WUFFS_BASE__PIXEL_FORMAT__YCOCGK ((wuffs_base__pixel_format)0x31038888)
-#define WUFFS_BASE__PIXEL_FORMAT__YCOCGA_NONPREMUL \
-  ((wuffs_base__pixel_format)0x35038888)
+#define WUFFS_BASE__PIXEL_FORMAT__A 0x02000008
 
-#define WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL \
-  ((wuffs_base__pixel_format)0x45040008)
-#define WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_PREMUL \
-  ((wuffs_base__pixel_format)0x46040008)
-#define WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY \
-  ((wuffs_base__pixel_format)0x47040008)
+#define WUFFS_BASE__PIXEL_FORMAT__Y 0x10000008
+#define WUFFS_BASE__PIXEL_FORMAT__YA_NONPREMUL 0x15000008
+#define WUFFS_BASE__PIXEL_FORMAT__YA_PREMUL 0x16000008
 
-#define WUFFS_BASE__PIXEL_FORMAT__BGR ((wuffs_base__pixel_format)0x40000888)
-#define WUFFS_BASE__PIXEL_FORMAT__BGRX ((wuffs_base__pixel_format)0x41008888)
-#define WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL \
-  ((wuffs_base__pixel_format)0x45008888)
-#define WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL \
-  ((wuffs_base__pixel_format)0x46008888)
-#define WUFFS_BASE__PIXEL_FORMAT__BGRA_BINARY \
-  ((wuffs_base__pixel_format)0x47008888)
+#define WUFFS_BASE__PIXEL_FORMAT__YCBCR 0x20020888
+#define WUFFS_BASE__PIXEL_FORMAT__YCBCRK 0x21038888
+#define WUFFS_BASE__PIXEL_FORMAT__YCBCRA_NONPREMUL 0x25038888
 
-#define WUFFS_BASE__PIXEL_FORMAT__RGB ((wuffs_base__pixel_format)0x50000888)
-#define WUFFS_BASE__PIXEL_FORMAT__RGBX ((wuffs_base__pixel_format)0x51008888)
-#define WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL \
-  ((wuffs_base__pixel_format)0x55008888)
-#define WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL \
-  ((wuffs_base__pixel_format)0x56008888)
-#define WUFFS_BASE__PIXEL_FORMAT__RGBA_BINARY \
-  ((wuffs_base__pixel_format)0x57008888)
+#define WUFFS_BASE__PIXEL_FORMAT__YCOCG 0x30020888
+#define WUFFS_BASE__PIXEL_FORMAT__YCOCGK 0x31038888
+#define WUFFS_BASE__PIXEL_FORMAT__YCOCGA_NONPREMUL 0x35038888
 
-#define WUFFS_BASE__PIXEL_FORMAT__CMY ((wuffs_base__pixel_format)0x60020888)
-#define WUFFS_BASE__PIXEL_FORMAT__CMYK ((wuffs_base__pixel_format)0x61038888)
+#define WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL 0x45040008
+#define WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_PREMUL 0x46040008
+#define WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY 0x47040008
+
+#define WUFFS_BASE__PIXEL_FORMAT__BGR 0x40000888
+#define WUFFS_BASE__PIXEL_FORMAT__BGRX 0x41008888
+#define WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL 0x45008888
+#define WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL 0x46008888
+#define WUFFS_BASE__PIXEL_FORMAT__BGRA_BINARY 0x47008888
+
+#define WUFFS_BASE__PIXEL_FORMAT__RGB 0x50000888
+#define WUFFS_BASE__PIXEL_FORMAT__RGBX 0x51008888
+#define WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL 0x55008888
+#define WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL 0x56008888
+#define WUFFS_BASE__PIXEL_FORMAT__RGBA_BINARY 0x57008888
+
+#define WUFFS_BASE__PIXEL_FORMAT__CMY 0x60020888
+#define WUFFS_BASE__PIXEL_FORMAT__CMYK 0x61038888
 
 extern const uint32_t wuffs_base__pixel_format__bits_per_channel[16];
 
 static inline bool  //
 wuffs_base__pixel_format__is_valid(const wuffs_base__pixel_format* f) {
-  return *f != 0;
+  return f->repr != 0;
 }
 
 // wuffs_base__pixel_format__bits_per_pixel returns the number of bits per
 // pixel for interleaved pixel formats, and returns 0 for planar pixel formats.
 static inline uint32_t  //
 wuffs_base__pixel_format__bits_per_pixel(const wuffs_base__pixel_format* f) {
-  if (((*f >> 16) & 0x03) != 0) {
+  if (((f->repr >> 16) & 0x03) != 0) {
     return 0;
   }
-  return wuffs_base__pixel_format__bits_per_channel[0x0F & (*f >> 0)] +
-         wuffs_base__pixel_format__bits_per_channel[0x0F & (*f >> 4)] +
-         wuffs_base__pixel_format__bits_per_channel[0x0F & (*f >> 8)] +
-         wuffs_base__pixel_format__bits_per_channel[0x0F & (*f >> 12)];
+  return wuffs_base__pixel_format__bits_per_channel[0x0F & (f->repr >> 0)] +
+         wuffs_base__pixel_format__bits_per_channel[0x0F & (f->repr >> 4)] +
+         wuffs_base__pixel_format__bits_per_channel[0x0F & (f->repr >> 8)] +
+         wuffs_base__pixel_format__bits_per_channel[0x0F & (f->repr >> 12)];
 }
 
 static inline bool  //
 wuffs_base__pixel_format__is_indexed(const wuffs_base__pixel_format* f) {
-  return (*f >> 18) & 0x01;
+  return (f->repr >> 18) & 0x01;
 }
 
 static inline bool  //
 wuffs_base__pixel_format__is_interleaved(const wuffs_base__pixel_format* f) {
-  return ((*f >> 16) & 0x03) == 0;
+  return ((f->repr >> 16) & 0x03) == 0;
 }
 
 static inline bool  //
 wuffs_base__pixel_format__is_planar(const wuffs_base__pixel_format* f) {
-  return ((*f >> 16) & 0x03) != 0;
+  return ((f->repr >> 16) & 0x03) != 0;
 }
 
 static inline uint32_t  //
 wuffs_base__pixel_format__num_planes(const wuffs_base__pixel_format* f) {
-  return ((*f >> 16) & 0x03) + 1;
+  return ((f->repr >> 16) & 0x03) + 1;
 }
 
 #define WUFFS_BASE__PIXEL_FORMAT__NUM_PLANES_MAX 4
 
 #define WUFFS_BASE__PIXEL_FORMAT__INDEXED__INDEX_PLANE 0
 #define WUFFS_BASE__PIXEL_FORMAT__INDEXED__COLOR_PLANE 3
+
+#ifdef __cplusplus
+
+inline bool  //
+wuffs_base__pixel_format::is_valid() const {
+  return wuffs_base__pixel_format__is_valid(this);
+}
+
+inline uint32_t  //
+wuffs_base__pixel_format::bits_per_pixel() const {
+  return wuffs_base__pixel_format__bits_per_pixel(this);
+}
+
+inline bool  //
+wuffs_base__pixel_format::is_indexed() const {
+  return wuffs_base__pixel_format__is_indexed(this);
+}
+
+inline bool  //
+wuffs_base__pixel_format::is_interleaved() const {
+  return wuffs_base__pixel_format__is_interleaved(this);
+}
+
+inline bool  //
+wuffs_base__pixel_format::is_planar() const {
+  return wuffs_base__pixel_format__is_planar(this);
+}
+
+inline uint32_t  //
+wuffs_base__pixel_format::num_planes() const {
+  return wuffs_base__pixel_format__num_planes(this);
+}
+
+#endif  // __cplusplus
 
 // --------
 
@@ -1658,7 +1698,7 @@ typedef struct {
 static inline wuffs_base__pixel_config  //
 wuffs_base__null_pixel_config() {
   wuffs_base__pixel_config ret;
-  ret.private_impl.pixfmt = 0;
+  ret.private_impl.pixfmt.repr = 0;
   ret.private_impl.pixsub = 0;
   ret.private_impl.width = 0;
   ret.private_impl.height = 0;
@@ -1675,7 +1715,7 @@ wuffs_base__pixel_config__set(wuffs_base__pixel_config* c,
   if (!c) {
     return;
   }
-  if (pixfmt) {
+  if (pixfmt.repr) {
     uint64_t wh = ((uint64_t)width) * ((uint64_t)height);
     // TODO: handle things other than 1 byte per pixel.
     if (wh <= ((uint64_t)SIZE_MAX)) {
@@ -1687,7 +1727,7 @@ wuffs_base__pixel_config__set(wuffs_base__pixel_config* c,
     }
   }
 
-  c->private_impl.pixfmt = 0;
+  c->private_impl.pixfmt.repr = 0;
   c->private_impl.pixsub = 0;
   c->private_impl.width = 0;
   c->private_impl.height = 0;
@@ -1696,7 +1736,7 @@ wuffs_base__pixel_config__set(wuffs_base__pixel_config* c,
 static inline void  //
 wuffs_base__pixel_config__invalidate(wuffs_base__pixel_config* c) {
   if (c) {
-    c->private_impl.pixfmt = 0;
+    c->private_impl.pixfmt.repr = 0;
     c->private_impl.pixsub = 0;
     c->private_impl.width = 0;
     c->private_impl.height = 0;
@@ -1705,12 +1745,12 @@ wuffs_base__pixel_config__invalidate(wuffs_base__pixel_config* c) {
 
 static inline bool  //
 wuffs_base__pixel_config__is_valid(const wuffs_base__pixel_config* c) {
-  return c && c->private_impl.pixfmt;
+  return c && c->private_impl.pixfmt.repr;
 }
 
 static inline wuffs_base__pixel_format  //
 wuffs_base__pixel_config__pixel_format(const wuffs_base__pixel_config* c) {
-  return c ? c->private_impl.pixfmt : 0;
+  return c ? c->private_impl.pixfmt : wuffs_base__make_pixel_format(0);
 }
 
 static inline wuffs_base__pixel_subsampling  //
@@ -1849,7 +1889,7 @@ typedef struct {
   } private_impl;
 
 #ifdef __cplusplus
-  inline void set(wuffs_base__pixel_format pixfmt,
+  inline void set(uint32_t pixfmt_repr,
                   wuffs_base__pixel_subsampling pixsub,
                   uint32_t width,
                   uint32_t height,
@@ -1875,7 +1915,7 @@ wuffs_base__null_image_config() {
 // TODO: Should this function return bool? An error type?
 static inline void  //
 wuffs_base__image_config__set(wuffs_base__image_config* c,
-                              wuffs_base__pixel_format pixfmt,
+                              uint32_t pixfmt_repr,
                               wuffs_base__pixel_subsampling pixsub,
                               uint32_t width,
                               uint32_t height,
@@ -1884,8 +1924,8 @@ wuffs_base__image_config__set(wuffs_base__image_config* c,
   if (!c) {
     return;
   }
-  if (wuffs_base__pixel_format__is_valid(&pixfmt)) {
-    c->pixcfg.private_impl.pixfmt = pixfmt;
+  if (pixfmt_repr) {
+    c->pixcfg.private_impl.pixfmt.repr = pixfmt_repr;
     c->pixcfg.private_impl.pixsub = pixsub;
     c->pixcfg.private_impl.width = width;
     c->pixcfg.private_impl.height = height;
@@ -1894,7 +1934,7 @@ wuffs_base__image_config__set(wuffs_base__image_config* c,
     return;
   }
 
-  c->pixcfg.private_impl.pixfmt = 0;
+  c->pixcfg.private_impl.pixfmt.repr = 0;
   c->pixcfg.private_impl.pixsub = 0;
   c->pixcfg.private_impl.width = 0;
   c->pixcfg.private_impl.height = 0;
@@ -1905,7 +1945,7 @@ wuffs_base__image_config__set(wuffs_base__image_config* c,
 static inline void  //
 wuffs_base__image_config__invalidate(wuffs_base__image_config* c) {
   if (c) {
-    c->pixcfg.private_impl.pixfmt = 0;
+    c->pixcfg.private_impl.pixfmt.repr = 0;
     c->pixcfg.private_impl.pixsub = 0;
     c->pixcfg.private_impl.width = 0;
     c->pixcfg.private_impl.height = 0;
@@ -1934,13 +1974,13 @@ wuffs_base__image_config__first_frame_is_opaque(
 #ifdef __cplusplus
 
 inline void  //
-wuffs_base__image_config::set(wuffs_base__pixel_format pixfmt,
+wuffs_base__image_config::set(uint32_t pixfmt_repr,
                               wuffs_base__pixel_subsampling pixsub,
                               uint32_t width,
                               uint32_t height,
                               uint64_t first_frame_io_position,
                               bool first_frame_is_opaque) {
-  wuffs_base__image_config__set(this, pixfmt, pixsub, width, height,
+  wuffs_base__image_config__set(this, pixfmt_repr, pixsub, width, height,
                                 first_frame_io_position, first_frame_is_opaque);
 }
 
@@ -2357,7 +2397,7 @@ wuffs_base__pixel_buffer__pixel_format(const wuffs_base__pixel_buffer* b) {
   if (b) {
     return b->pixcfg.private_impl.pixfmt;
   }
-  return WUFFS_BASE__PIXEL_FORMAT__INVALID;
+  return wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__INVALID);
 }
 
 static inline wuffs_base__table_u8  //
@@ -4491,6 +4531,10 @@ wuffs_base__io_writer__set(wuffs_base__io_buffer* b,
 
   // ---------------- Images
 
+  // ---------------- Images (Utility)
+
+#define wuffs_base__utility__make_pixel_format wuffs_base__make_pixel_format
+
 #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BASE)
 
 const uint8_t wuffs_base__low_bits_mask__u8[9] = {
@@ -4720,9 +4764,9 @@ wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
   uint64_t (*func)(wuffs_base__slice_u8 dst, wuffs_base__slice_u8 dst_palette,
                    wuffs_base__slice_u8 src) = NULL;
 
-  switch (src_format) {
+  switch (src_format.repr) {
     case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY:
-      switch (dst_format) {
+      switch (dst_format.repr) {
         case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL:
         case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_PREMUL:
         case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY:
@@ -10645,7 +10689,7 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
     v_status = wuffs_base__pixel_swizzler__prepare(
         &self->private_impl.f_swizzler,
         wuffs_base__pixel_buffer__pixel_format(a_dst), v_dst_palette,
-        1191444488,
+        wuffs_base__utility__make_pixel_format(1191444488),
         wuffs_base__make_slice_u8(
             self->private_data.f_palettes[v_which_palette], 1024));
     if (!wuffs_base__status__is_ok(&v_status)) {
@@ -10957,8 +11001,9 @@ wuffs_gif__decoder__copy_to_image_buffer(wuffs_gif__decoder* self,
   uint64_t v_width_in_bytes = 0;
   uint64_t v_n = 0;
   uint64_t v_src_ri = 0;
+  wuffs_base__pixel_format v_pixfmt = {0};
   uint32_t v_bytes_per_pixel = 0;
-  uint32_t v_pixfmt_channels = 0;
+  uint32_t v_bits_per_pixel = 0;
   wuffs_base__table_u8 v_tab = {0};
   uint64_t v_i = 0;
   uint64_t v_j = 0;
@@ -10967,12 +11012,13 @@ wuffs_gif__decoder__copy_to_image_buffer(wuffs_gif__decoder* self,
   wuffs_base__slice_u8 v_replicate_dst = {0};
   wuffs_base__slice_u8 v_replicate_src = {0};
 
-  v_pixfmt_channels = (wuffs_base__pixel_buffer__pixel_format(a_pb) & 65535);
-  if (v_pixfmt_channels == 34952) {
+  v_pixfmt = wuffs_base__pixel_buffer__pixel_format(a_pb);
+  v_bits_per_pixel = wuffs_base__pixel_format__bits_per_pixel(&v_pixfmt);
+  if (v_bits_per_pixel == 32) {
     v_bytes_per_pixel = 4;
-  } else if (v_pixfmt_channels == 2184) {
+  } else if (v_bits_per_pixel == 24) {
     v_bytes_per_pixel = 3;
-  } else if (v_pixfmt_channels == 8) {
+  } else if (v_bits_per_pixel == 8) {
     v_bytes_per_pixel = 1;
   } else {
     return wuffs_base__make_status(wuffs_base__error__unsupported_option);

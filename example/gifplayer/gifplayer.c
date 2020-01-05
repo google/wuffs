@@ -328,7 +328,8 @@ const char* play() {
 
     // Override the source's indexed pixel format to be non-indexed.
     wuffs_base__pixel_config__set(
-        &ic.pixcfg, WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL,
+        &ic.pixcfg,
+        wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL),
         WUFFS_BASE__PIXEL_SUBSAMPLING__NONE, width, height);
 
     const char* msg = allocate(&dec, &ic);
