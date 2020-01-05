@@ -177,28 +177,39 @@ wuffs_base__pixel_format::num_planes() const {
 //
 // Do not manipulate its bits directly; they are private implementation
 // details. Use methods such as wuffs_base__pixel_subsampling__bias_x instead.
-typedef uint32_t wuffs_base__pixel_subsampling;
+typedef struct {
+  uint32_t repr;
 
-#define WUFFS_BASE__PIXEL_SUBSAMPLING__NONE ((wuffs_base__pixel_subsampling)0)
+#ifdef __cplusplus
+  inline uint32_t bias_x(uint32_t plane) const;
+  inline uint32_t denominator_x(uint32_t plane) const;
+  inline uint32_t bias_y(uint32_t plane) const;
+  inline uint32_t denominator_y(uint32_t plane) const;
+#endif  // __cplusplus
 
-#define WUFFS_BASE__PIXEL_SUBSAMPLING__444 \
-  ((wuffs_base__pixel_subsampling)0x000000)
-#define WUFFS_BASE__PIXEL_SUBSAMPLING__440 \
-  ((wuffs_base__pixel_subsampling)0x010100)
-#define WUFFS_BASE__PIXEL_SUBSAMPLING__422 \
-  ((wuffs_base__pixel_subsampling)0x101000)
-#define WUFFS_BASE__PIXEL_SUBSAMPLING__420 \
-  ((wuffs_base__pixel_subsampling)0x111100)
-#define WUFFS_BASE__PIXEL_SUBSAMPLING__411 \
-  ((wuffs_base__pixel_subsampling)0x303000)
-#define WUFFS_BASE__PIXEL_SUBSAMPLING__410 \
-  ((wuffs_base__pixel_subsampling)0x313100)
+} wuffs_base__pixel_subsampling;
+
+static inline wuffs_base__pixel_subsampling  //
+wuffs_base__make_pixel_subsampling(uint32_t repr) {
+  wuffs_base__pixel_subsampling s;
+  s.repr = repr;
+  return s;
+}
+
+#define WUFFS_BASE__PIXEL_SUBSAMPLING__NONE 0x00000000
+
+#define WUFFS_BASE__PIXEL_SUBSAMPLING__444 0x000000
+#define WUFFS_BASE__PIXEL_SUBSAMPLING__440 0x010100
+#define WUFFS_BASE__PIXEL_SUBSAMPLING__422 0x101000
+#define WUFFS_BASE__PIXEL_SUBSAMPLING__420 0x111100
+#define WUFFS_BASE__PIXEL_SUBSAMPLING__411 0x303000
+#define WUFFS_BASE__PIXEL_SUBSAMPLING__410 0x313100
 
 static inline uint32_t  //
 wuffs_base__pixel_subsampling__bias_x(const wuffs_base__pixel_subsampling* s,
                                       uint32_t plane) {
   uint32_t shift = ((plane & 0x03) * 8) + 6;
-  return (*s >> shift) & 0x03;
+  return (s->repr >> shift) & 0x03;
 }
 
 static inline uint32_t  //
@@ -206,14 +217,14 @@ wuffs_base__pixel_subsampling__denominator_x(
     const wuffs_base__pixel_subsampling* s,
     uint32_t plane) {
   uint32_t shift = ((plane & 0x03) * 8) + 4;
-  return ((*s >> shift) & 0x03) + 1;
+  return ((s->repr >> shift) & 0x03) + 1;
 }
 
 static inline uint32_t  //
 wuffs_base__pixel_subsampling__bias_y(const wuffs_base__pixel_subsampling* s,
                                       uint32_t plane) {
   uint32_t shift = ((plane & 0x03) * 8) + 2;
-  return (*s >> shift) & 0x03;
+  return (s->repr >> shift) & 0x03;
 }
 
 static inline uint32_t  //
@@ -221,8 +232,32 @@ wuffs_base__pixel_subsampling__denominator_y(
     const wuffs_base__pixel_subsampling* s,
     uint32_t plane) {
   uint32_t shift = ((plane & 0x03) * 8) + 0;
-  return ((*s >> shift) & 0x03) + 1;
+  return ((s->repr >> shift) & 0x03) + 1;
 }
+
+#ifdef __cplusplus
+
+inline uint32_t  //
+wuffs_base__pixel_subsampling::bias_x(uint32_t plane) const {
+  return wuffs_base__pixel_subsampling__bias_x(this, plane);
+}
+
+inline uint32_t  //
+wuffs_base__pixel_subsampling::denominator_x(uint32_t plane) const {
+  return wuffs_base__pixel_subsampling__denominator_x(this, plane);
+}
+
+inline uint32_t  //
+wuffs_base__pixel_subsampling::bias_y(uint32_t plane) const {
+  return wuffs_base__pixel_subsampling__bias_y(this, plane);
+}
+
+inline uint32_t  //
+wuffs_base__pixel_subsampling::denominator_y(uint32_t plane) const {
+  return wuffs_base__pixel_subsampling__denominator_y(this, plane);
+}
+
+#endif  // __cplusplus
 
 // --------
 
@@ -257,7 +292,7 @@ static inline wuffs_base__pixel_config  //
 wuffs_base__null_pixel_config() {
   wuffs_base__pixel_config ret;
   ret.private_impl.pixfmt.repr = 0;
-  ret.private_impl.pixsub = 0;
+  ret.private_impl.pixsub.repr = 0;
   ret.private_impl.width = 0;
   ret.private_impl.height = 0;
   return ret;
@@ -286,7 +321,7 @@ wuffs_base__pixel_config__set(wuffs_base__pixel_config* c,
   }
 
   c->private_impl.pixfmt.repr = 0;
-  c->private_impl.pixsub = 0;
+  c->private_impl.pixsub.repr = 0;
   c->private_impl.width = 0;
   c->private_impl.height = 0;
 }
@@ -295,7 +330,7 @@ static inline void  //
 wuffs_base__pixel_config__invalidate(wuffs_base__pixel_config* c) {
   if (c) {
     c->private_impl.pixfmt.repr = 0;
-    c->private_impl.pixsub = 0;
+    c->private_impl.pixsub.repr = 0;
     c->private_impl.width = 0;
     c->private_impl.height = 0;
   }
@@ -313,7 +348,7 @@ wuffs_base__pixel_config__pixel_format(const wuffs_base__pixel_config* c) {
 
 static inline wuffs_base__pixel_subsampling  //
 wuffs_base__pixel_config__pixel_subsampling(const wuffs_base__pixel_config* c) {
-  return c ? c->private_impl.pixsub : 0;
+  return c ? c->private_impl.pixsub : wuffs_base__make_pixel_subsampling(0);
 }
 
 static inline wuffs_base__rect_ie_u32  //
@@ -448,7 +483,7 @@ typedef struct {
 
 #ifdef __cplusplus
   inline void set(uint32_t pixfmt_repr,
-                  wuffs_base__pixel_subsampling pixsub,
+                  uint32_t pixsub_repr,
                   uint32_t width,
                   uint32_t height,
                   uint64_t first_frame_io_position,
@@ -474,7 +509,7 @@ wuffs_base__null_image_config() {
 static inline void  //
 wuffs_base__image_config__set(wuffs_base__image_config* c,
                               uint32_t pixfmt_repr,
-                              wuffs_base__pixel_subsampling pixsub,
+                              uint32_t pixsub_repr,
                               uint32_t width,
                               uint32_t height,
                               uint64_t first_frame_io_position,
@@ -484,7 +519,7 @@ wuffs_base__image_config__set(wuffs_base__image_config* c,
   }
   if (pixfmt_repr) {
     c->pixcfg.private_impl.pixfmt.repr = pixfmt_repr;
-    c->pixcfg.private_impl.pixsub = pixsub;
+    c->pixcfg.private_impl.pixsub.repr = pixsub_repr;
     c->pixcfg.private_impl.width = width;
     c->pixcfg.private_impl.height = height;
     c->private_impl.first_frame_io_position = first_frame_io_position;
@@ -493,7 +528,7 @@ wuffs_base__image_config__set(wuffs_base__image_config* c,
   }
 
   c->pixcfg.private_impl.pixfmt.repr = 0;
-  c->pixcfg.private_impl.pixsub = 0;
+  c->pixcfg.private_impl.pixsub.repr = 0;
   c->pixcfg.private_impl.width = 0;
   c->pixcfg.private_impl.height = 0;
   c->private_impl.first_frame_io_position = 0;
@@ -504,7 +539,7 @@ static inline void  //
 wuffs_base__image_config__invalidate(wuffs_base__image_config* c) {
   if (c) {
     c->pixcfg.private_impl.pixfmt.repr = 0;
-    c->pixcfg.private_impl.pixsub = 0;
+    c->pixcfg.private_impl.pixsub.repr = 0;
     c->pixcfg.private_impl.width = 0;
     c->pixcfg.private_impl.height = 0;
     c->private_impl.first_frame_io_position = 0;
@@ -533,12 +568,12 @@ wuffs_base__image_config__first_frame_is_opaque(
 
 inline void  //
 wuffs_base__image_config::set(uint32_t pixfmt_repr,
-                              wuffs_base__pixel_subsampling pixsub,
+                              uint32_t pixsub_repr,
                               uint32_t width,
                               uint32_t height,
                               uint64_t first_frame_io_position,
                               bool first_frame_is_opaque) {
-  wuffs_base__image_config__set(this, pixfmt_repr, pixsub, width, height,
+  wuffs_base__image_config__set(this, pixfmt_repr, pixsub_repr, width, height,
                                 first_frame_io_position, first_frame_is_opaque);
 }
 

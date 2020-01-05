@@ -209,10 +209,11 @@ const char* wuffs_gif_decode(wuffs_base__io_buffer* dst,
   CHECK_STATUS("decode_image_config",
                wuffs_gif__decoder__decode_image_config(&dec, &ic, src));
 
-  wuffs_base__pixel_config__set(&ic.pixcfg, pixfmt,
-                                WUFFS_BASE__PIXEL_SUBSAMPLING__NONE,
-                                wuffs_base__pixel_config__width(&ic.pixcfg),
-                                wuffs_base__pixel_config__height(&ic.pixcfg));
+  wuffs_base__pixel_config__set(
+      &ic.pixcfg, pixfmt,
+      wuffs_base__make_pixel_subsampling(WUFFS_BASE__PIXEL_SUBSAMPLING__NONE),
+      wuffs_base__pixel_config__width(&ic.pixcfg),
+      wuffs_base__pixel_config__height(&ic.pixcfg));
 
   wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
   CHECK_STATUS("set_from_slice", wuffs_base__pixel_buffer__set_from_slice(
@@ -282,7 +283,9 @@ const char* do_test_wuffs_gif_decode(const char* filename,
     }
 
     wuffs_base__pixel_config__set(
-        &ic.pixcfg, dst_pixfmt, WUFFS_BASE__PIXEL_SUBSAMPLING__NONE, 160, 120);
+        &ic.pixcfg, dst_pixfmt,
+        wuffs_base__make_pixel_subsampling(WUFFS_BASE__PIXEL_SUBSAMPLING__NONE),
+        160, 120);
 
     CHECK_STATUS("set_from_slice", wuffs_base__pixel_buffer__set_from_slice(
                                        &pb, &ic.pixcfg, global_pixel_slice));
