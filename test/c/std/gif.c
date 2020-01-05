@@ -209,11 +209,10 @@ const char* wuffs_gif_decode(wuffs_base__io_buffer* dst,
   CHECK_STATUS("decode_image_config",
                wuffs_gif__decoder__decode_image_config(&dec, &ic, src));
 
-  wuffs_base__pixel_config__set(
-      &ic.pixcfg, pixfmt,
-      wuffs_base__make_pixel_subsampling(WUFFS_BASE__PIXEL_SUBSAMPLING__NONE),
-      wuffs_base__pixel_config__width(&ic.pixcfg),
-      wuffs_base__pixel_config__height(&ic.pixcfg));
+  wuffs_base__pixel_config__set(&ic.pixcfg, pixfmt.repr,
+                                WUFFS_BASE__PIXEL_SUBSAMPLING__NONE,
+                                wuffs_base__pixel_config__width(&ic.pixcfg),
+                                wuffs_base__pixel_config__height(&ic.pixcfg));
 
   wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
   CHECK_STATUS("set_from_slice", wuffs_base__pixel_buffer__set_from_slice(
@@ -282,10 +281,9 @@ const char* do_test_wuffs_gif_decode(const char* filename,
       RETURN_FAIL("first_frame_is_opaque: got false, want true");
     }
 
-    wuffs_base__pixel_config__set(
-        &ic.pixcfg, dst_pixfmt,
-        wuffs_base__make_pixel_subsampling(WUFFS_BASE__PIXEL_SUBSAMPLING__NONE),
-        160, 120);
+    wuffs_base__pixel_config__set(&ic.pixcfg, dst_pixfmt.repr,
+                                  WUFFS_BASE__PIXEL_SUBSAMPLING__NONE, 160,
+                                  120);
 
     CHECK_STATUS("set_from_slice", wuffs_base__pixel_buffer__set_from_slice(
                                        &pb, &ic.pixcfg, global_pixel_slice));
@@ -913,8 +911,8 @@ const char* test_wuffs_gif_decode_frame_out_of_bounds() {
 
     wuffs_base__pixel_config five_by_five = ((wuffs_base__pixel_config){});
     wuffs_base__pixel_config__set(
-        &five_by_five, wuffs_base__pixel_config__pixel_format(&ic.pixcfg),
-        wuffs_base__pixel_config__pixel_subsampling(&ic.pixcfg), 5, 5);
+        &five_by_five, wuffs_base__pixel_config__pixel_format(&ic.pixcfg).repr,
+        wuffs_base__pixel_config__pixel_subsampling(&ic.pixcfg).repr, 5, 5);
     wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
     status = wuffs_base__pixel_buffer__set_from_slice(&pb, &five_by_five,
                                                       global_pixel_slice);

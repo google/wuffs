@@ -1714,8 +1714,8 @@ typedef struct {
   } private_impl;
 
 #ifdef __cplusplus
-  inline void set(wuffs_base__pixel_format pixfmt,
-                  wuffs_base__pixel_subsampling pixsub,
+  inline void set(uint32_t pixfmt_repr,
+                  uint32_t pixsub_repr,
                   uint32_t width,
                   uint32_t height);
   inline void invalidate();
@@ -1743,19 +1743,19 @@ wuffs_base__null_pixel_config() {
 // TODO: Should this function return bool? An error type?
 static inline void  //
 wuffs_base__pixel_config__set(wuffs_base__pixel_config* c,
-                              wuffs_base__pixel_format pixfmt,
-                              wuffs_base__pixel_subsampling pixsub,
+                              uint32_t pixfmt_repr,
+                              uint32_t pixsub_repr,
                               uint32_t width,
                               uint32_t height) {
   if (!c) {
     return;
   }
-  if (pixfmt.repr) {
+  if (pixfmt_repr) {
     uint64_t wh = ((uint64_t)width) * ((uint64_t)height);
     // TODO: handle things other than 1 byte per pixel.
     if (wh <= ((uint64_t)SIZE_MAX)) {
-      c->private_impl.pixfmt = pixfmt;
-      c->private_impl.pixsub = pixsub;
+      c->private_impl.pixfmt.repr = pixfmt_repr;
+      c->private_impl.pixsub.repr = pixsub_repr;
       c->private_impl.width = width;
       c->private_impl.height = height;
       return;
@@ -1862,11 +1862,11 @@ wuffs_base__pixel_config__pixbuf_len(const wuffs_base__pixel_config* c) {
 #ifdef __cplusplus
 
 inline void  //
-wuffs_base__pixel_config::set(wuffs_base__pixel_format pixfmt,
-                              wuffs_base__pixel_subsampling pixsub,
+wuffs_base__pixel_config::set(uint32_t pixfmt_repr,
+                              uint32_t pixsub_repr,
                               uint32_t width,
                               uint32_t height) {
-  wuffs_base__pixel_config__set(this, pixfmt, pixsub, width, height);
+  wuffs_base__pixel_config__set(this, pixfmt_repr, pixsub_repr, width, height);
 }
 
 inline void  //
