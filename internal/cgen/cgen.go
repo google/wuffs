@@ -344,7 +344,7 @@ func insertInterfaceDeclarations(buf *buffer) error {
 		buf.printf("typedef struct wuffs_base__%s__struct wuffs_base__%s;\n\n", n, n)
 
 		for _, f := range builtInInterfaceMethods[qid] {
-			if err := g.writeFuncSignature(buf, f, cppNone); err != nil {
+			if err := g.writeFuncSignature(buf, f, wfsCDecl); err != nil {
 				return err
 			}
 			buf.writes(";\n\n")
@@ -361,7 +361,7 @@ func insertInterfaceDeclarations(buf *buffer) error {
 
 		buf.writes("\n#ifdef __cplusplus\n\n")
 		for _, f := range builtInInterfaceMethods[qid] {
-			if err := g.writeFuncSignature(buf, f, cppInsideStruct); err != nil {
+			if err := g.writeFuncSignature(buf, f, wfsCppDecl); err != nil {
 				return err
 			}
 			buf.writes("{ return ")
@@ -405,7 +405,7 @@ func insertInterfaceDefinitions(buf *buffer) error {
 			returnsStatus := f.Effect().Coroutine() ||
 				((f.Out() != nil) && f.Out().IsStatus())
 
-			if err := g.writeFuncSignature(buf, f, cppNone); err != nil {
+			if err := g.writeFuncSignature(buf, f, wfsCDecl); err != nil {
 				return err
 			}
 			buf.writes("{\n")
@@ -1045,7 +1045,7 @@ func (g *gen) writeCppMethods(b *buffer, n *a.Struct) error {
 				continue
 			}
 
-			if err := g.writeFuncSignature(b, f, cppInsideStruct); err != nil {
+			if err := g.writeFuncSignature(b, f, wfsCppDecl); err != nil {
 				return err
 			}
 			b.writes("{ return ")

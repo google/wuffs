@@ -72,15 +72,14 @@ func (g *gen) funcCName(n *a.Func) string {
 	return g.pkgPrefix + n.FuncName().Str(g.tm)
 }
 
-// C++ related function signature constants.
+// writeFunctionSignature modes.
 const (
-	cppNone          = 0 // Not C++, just plain C.
-	cppInsideStruct  = 1
-	cppOutsideStruct = 2
+	wfsCDecl   = 0
+	wfsCppDecl = 1
 )
 
-func (g *gen) writeFuncSignature(b *buffer, n *a.Func, cpp uint32) error {
-	if cpp != cppNone {
+func (g *gen) writeFuncSignature(b *buffer, n *a.Func, wfs uint32) error {
+	if wfs != wfsCDecl {
 		b.writes("inline ")
 	} else if n.Public() {
 		b.writes("WUFFS_BASE__MAYBE_STATIC ")
@@ -102,21 +101,16 @@ func (g *gen) writeFuncSignature(b *buffer, n *a.Func, cpp uint32) error {
 	// start of a line.
 	b.writes("//\n")
 
-	switch cpp {
-	case cppNone:
+	switch wfs {
+	case wfsCDecl:
 		b.writes(g.funcCName(n))
-	case cppInsideStruct:
-		b.writes(n.FuncName().Str(g.tm))
-	case cppOutsideStruct:
-		b.writes(g.pkgPrefix)
-		b.writes(n.Receiver().Str(g.tm))
-		b.writes("::")
+	case wfsCppDecl:
 		b.writes(n.FuncName().Str(g.tm))
 	}
 
 	b.writeb('(')
 	comma := false
-	if cpp == cppNone {
+	if wfs == wfsCDecl {
 		if r := n.Receiver(); !r.IsZero() {
 			if n.Effect().Pure() {
 				b.writes("const ")
@@ -138,14 +132,14 @@ func (g *gen) writeFuncSignature(b *buffer, n *a.Func, cpp uint32) error {
 	}
 
 	b.printf(")")
-	if cpp != cppNone && !n.Receiver().IsZero() && n.Effect().Pure() {
+	if wfs != wfsCDecl && !n.Receiver().IsZero() && n.Effect().Pure() {
 		b.writes(" const ")
 	}
 	return nil
 }
 
 func (g *gen) writeFuncPrototype(b *buffer, n *a.Func) error {
-	if err := g.writeFuncSignature(b, n, cppNone); err != nil {
+	if err := g.writeFuncSignature(b, n, wfsCDecl); err != nil {
 		return err
 	}
 	b.writes(";\n\n")
@@ -156,7 +150,7 @@ func (g *gen) writeFuncImpl(b *buffer, n *a.Func) error {
 	k := g.funks[n.QQID()]
 
 	b.printf("// -------- func %s.%s\n\n", g.pkgName, n.QQID().Str(g.tm))
-	if err := g.writeFuncSignature(b, n, cppNone); err != nil {
+	if err := g.writeFuncSignature(b, n, wfsCDecl); err != nil {
 		return err
 	}
 	b.writes("{\n")
