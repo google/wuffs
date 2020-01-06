@@ -336,27 +336,11 @@ func insertInterfaceDeclarations(buf *buffer) error {
 		buf.writes("#if defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)\n\n")
 
 		buf.printf("struct wuffs_base__%s__struct {", n)
-		buf.writes(`
-			#ifdef WUFFS_IMPLEMENTATION
-
-			struct {
-				uint32_t magic;
-				uint32_t active_coroutine;
-				wuffs_base__vtable first_vtable;
-			} private_impl;
-
-			#else  // WUFFS_IMPLEMENTATION
-
-			private:
-			union {
-				uint32_t align_as_per_magic_field;
-				uint8_t placeholder[1073741824];  // 1 GiB.
-			} private_impl WUFFS_BASE__POTENTIALLY_UNUSED_FIELD;
-
-			public:
-
-			#endif  // WUFFS_IMPLEMENTATION
-		`)
+		buf.writes("struct {\n")
+		buf.writes("uint32_t magic;\n")
+		buf.writes("uint32_t active_coroutine;\n")
+		buf.writes("wuffs_base__vtable first_vtable;\n")
+		buf.writes("} private_impl;\n\n")
 
 		buf.writes("\n#ifdef __cplusplus\n\n")
 		// TODO: C++ methods.
@@ -925,29 +909,9 @@ func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
 	fullStructName := g.pkgPrefix + structName + "__struct"
 	b.printf("struct %s {\n", fullStructName)
 
-	b.writex(wiStart)
 	if err := g.writeStructPrivateImpl(b, n); err != nil {
 		return err
 	}
-
-	b.writex(wiElse)
-	b.writes("// When WUFFS_IMPLEMENTATION is not defined, this placeholder private_impl is\n")
-	b.writes("// large enough to discourage trying to allocate one on the stack. The sizeof\n")
-	b.writes("// the real private_impl (and the sizeof the real outermost wuffs_foo__bar\n")
-	b.writes("// struct) is not part of the public, stable, memory-safe API. Call\n")
-	b.writes("// wuffs_foo__bar__baz methods (which all take a \"this\"-like pointer as their\n")
-	b.writes("// first argument) instead of fiddling with bar.private_impl.qux fields.\n")
-	b.writes("//\n")
-	b.writes("// Even when WUFFS_IMPLEMENTATION is not defined, the outermost struct still\n")
-	b.writes("// defines C++ convenience methods. These methods forward on \"this\", so that\n")
-	b.writes("// you can write \"bar->baz(etc)\" instead of \"wuffs_foo__bar__baz(bar, etc)\".\n")
-	b.writes("private:\n")
-	b.writes("union {\n")
-	b.writes("uint32_t align_as_per_magic_field;\n")
-	b.writes("uint8_t placeholder[1073741824];  // 1 GiB.\n")
-	b.writes("} private_impl WUFFS_BASE__POTENTIALLY_UNUSED_FIELD;\n\n")
-	b.writes("public:\n")
-	b.writex(wiEnd)
 
 	if n.AsNode().AsRaw().Flags()&a.FlagsPublic != 0 {
 		if err := g.writeCppMethods(b, n); err != nil {
@@ -962,7 +926,24 @@ func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
 func (g *gen) writeCppMethods(b *buffer, n *a.Struct) error {
 	structName := n.QID().Str(g.tm)
 	fullStructName := g.pkgPrefix + structName + "__struct"
-	b.writes("#ifdef __cplusplus\n\n")
+	b.writes("#ifdef __cplusplus\n")
+
+	b.writes("#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)\n")
+	b.writes("// Disallow constructing or copying an object via standard C++ mechanisms,\n")
+	b.writes("// e.g. the \"new\" operator, as this struct is intentionally opaque. Its total\n")
+	b.writes("// size and field layout is not part of the public, stable, memory-safe API.\n")
+	b.writes("// Use malloc or memcpy and the sizeof__wuffs_foo__bar function instead, and\n")
+	b.writes("// call wuffs_foo__bar__baz methods (which all take a \"this\"-like pointer as\n")
+	b.writes("// their first argument) rather than tweaking bar.private_impl.qux fields.\n")
+	b.writes("//\n")
+	b.writes("// In C, we can just leave wuffs_foo__bar as an incomplete type (unless\n")
+	b.writes("// WUFFS_IMPLEMENTATION is #define'd). In C++, we define a complete type in\n")
+	b.writes("// order to provide convenience methods. These forward on \"this\", so that you\n")
+	b.writes("// can write \"bar->baz(etc)\" instead of \"wuffs_foo__bar__baz(bar, etc)\".\n")
+	b.printf("%s() = delete;\n", fullStructName)
+	b.printf("%s(const %s&) = delete;\n", fullStructName, fullStructName)
+	b.printf("%s& operator=(const %s&) = delete;\n", fullStructName, fullStructName)
+	b.writes("#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)\n\n")
 
 	// The empty // comment makes clang-format place the function name
 	// at the start of a line.
@@ -997,12 +978,6 @@ func (g *gen) writeCppMethods(b *buffer, n *a.Struct) error {
 			b.writes(");}\n\n")
 		}
 	}
-
-	b.writes("#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)\n")
-	b.writes("// Disallow copy and assign.\n")
-	b.printf("%s(const %s&) = delete;\n", fullStructName, fullStructName)
-	b.printf("%s& operator=(const %s&) = delete;\n", fullStructName, fullStructName)
-	b.writes("#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)\n\n")
 
 	b.writes("#endif  // __cplusplus\n\n")
 	return nil
