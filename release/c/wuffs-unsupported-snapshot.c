@@ -187,6 +187,7 @@ extern const char* wuffs_base__error__bad_call_sequence;
 extern const char* wuffs_base__error__bad_receiver;
 extern const char* wuffs_base__error__bad_restart;
 extern const char* wuffs_base__error__bad_sizeof_receiver;
+extern const char* wuffs_base__error__bad_vtable;
 extern const char* wuffs_base__error__bad_workbuf_length;
 extern const char* wuffs_base__error__bad_wuffs_version;
 extern const char* wuffs_base__error__cannot_return_a_suspension;
@@ -2569,6 +2570,10 @@ extern const char* wuffs_base__hasher_u32__vtable_name;
 
 typedef struct wuffs_base__hasher_u32__struct wuffs_base__hasher_u32;
 
+WUFFS_BASE__MAYBE_STATIC uint32_t  //
+wuffs_base__hasher_u32__update_u32(wuffs_base__hasher_u32* self,
+                                   wuffs_base__slice_u8 a_x);
+
 #if defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
 struct wuffs_base__hasher_u32__struct {
@@ -2579,6 +2584,11 @@ struct wuffs_base__hasher_u32__struct {
   } private_impl;
 
 #ifdef __cplusplus
+
+  inline uint32_t  //
+  update_u32(wuffs_base__slice_u8 a_x) {
+    return wuffs_base__hasher_u32__update_u32(this, a_x);
+  }
 
 #endif  // __cplusplus
 
@@ -4565,6 +4575,7 @@ const char* wuffs_base__error__bad_receiver = "#base: bad receiver";
 const char* wuffs_base__error__bad_restart = "#base: bad restart";
 const char* wuffs_base__error__bad_sizeof_receiver =
     "#base: bad sizeof receiver";
+const char* wuffs_base__error__bad_vtable = "#base: bad vtable";
 const char* wuffs_base__error__bad_workbuf_length = "#base: bad workbuf length";
 const char* wuffs_base__error__bad_wuffs_version = "#base: bad wuffs version";
 const char* wuffs_base__error__cannot_return_a_suspension =
@@ -4585,6 +4596,18 @@ const char* wuffs_base__error__too_much_data = "#base: too much data";
 
 const char* wuffs_base__hasher_u32__vtable_name =
     "{vtable}wuffs_base__hasher_u32";
+
+WUFFS_BASE__MAYBE_STATIC uint32_t  //
+wuffs_base__hasher_u32__update_u32(wuffs_base__hasher_u32* self,
+                                   wuffs_base__slice_u8 a_x) {
+  if (!self) {
+    return 0;
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return 0;
+  }
+  return 0;
+}
 
 // ---------------- Images
 

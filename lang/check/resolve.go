@@ -18,7 +18,6 @@ import (
 	"fmt"
 
 	"github.com/google/wuffs/lang/builtin"
-	"github.com/google/wuffs/lang/parse"
 
 	a "github.com/google/wuffs/lang/ast"
 	t "github.com/google/wuffs/lang/token"
@@ -117,48 +116,18 @@ func (c *Checker) parseBuiltInFuncs(ss []string, generic bool) (map[t.QQID]*a.Fu
 		m = map[t.QQID]*a.Func{}
 	}
 
-	buf := []byte(nil)
-	for _, s := range ss {
-		buf = buf[:0]
-		buf = append(buf, "pub func "...)
-		buf = append(buf, s...)
-		buf = append(buf, "{}\n"...)
-
-		const filename = "builtin.wuffs"
-		tokens, _, err := t.Tokenize(c.tm, filename, buf)
-		if err != nil {
-			return nil, fmt.Errorf("check: parsing %q: could not tokenize built-in funcs: %v", s, err)
-		}
-		if generic {
-			for i := range tokens {
-				if tokens[i].ID == builtin.GenericOldName1 {
-					tokens[i].ID = builtin.GenericNewName1
-				} else if tokens[i].ID == builtin.GenericOldName2 {
-					tokens[i].ID = builtin.GenericNewName2
-				}
-			}
-		}
-		file, err := parse.Parse(c.tm, filename, tokens, &parse.Options{
-			AllowBuiltInNames: true,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("check: parsing %q: could not parse built-in funcs: %v", s, err)
-		}
-
-		tlds := file.TopLevelDecls()
-		if len(tlds) != 1 || tlds[0].Kind() != a.KFunc {
-			return nil, fmt.Errorf("check: parsing %q: got %d top level decls, want %d", s, len(tlds), 1)
-		}
-		f := tlds[0].AsFunc()
-		f.AsNode().AsRaw().SetPackage(c.tm, t.IDBase)
+	if err := builtin.ParseFuncs(c.tm, ss, generic, func(f *a.Func) error {
 		if err := c.checkFuncSignature(f.AsNode()); err != nil {
-			return nil, err
+			return err
 		}
-
 		if m != nil {
 			m[f.QQID()] = f
 		}
+		return nil
+	}); err != nil {
+		return nil, err
 	}
+
 	return m, nil
 }
 

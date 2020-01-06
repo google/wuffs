@@ -67,7 +67,7 @@ func (g *gen) funcCName(n *a.Func) string {
 		// TODO: this isn't right if r[0] != 0, i.e. the receiver is from a
 		// used package. There might be similar cases elsewhere in this
 		// package.
-		return g.pkgPrefix + r.Str(g.tm) + "__" + n.FuncName().Str(g.tm)
+		return g.pkgPrefix + r[1].Str(g.tm) + "__" + n.FuncName().Str(g.tm)
 	}
 	return g.pkgPrefix + n.FuncName().Str(g.tm)
 }
@@ -121,7 +121,7 @@ func (g *gen) writeFuncSignature(b *buffer, n *a.Func, cpp uint32) error {
 			if n.Effect().Pure() {
 				b.writes("const ")
 			}
-			b.printf("%s%s *self", g.pkgPrefix, r.Str(g.tm))
+			b.printf("%s%s *self", g.pkgPrefix, r[1].Str(g.tm))
 			comma = true
 		}
 	}
@@ -217,7 +217,7 @@ func (g *gen) gatherFuncImpl(_ *buffer, n *a.Func) error {
 	return nil
 }
 
-func (g *gen) writeOutParamZeroValue(b *buffer, typ *a.TypeExpr) error {
+func writeOutParamZeroValue(b *buffer, tm *t.Map, typ *a.TypeExpr) error {
 	if typ == nil {
 		b.writes("wuffs_base__make_empty_struct()")
 		return nil
@@ -251,39 +251,47 @@ func (g *gen) writeOutParamZeroValue(b *buffer, typ *a.TypeExpr) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("internal error: cannot write the zero value of type %q", typ.Str(g.tm))
+	return fmt.Errorf("internal error: cannot write the zero value of type %q", typ.Str(tm))
+}
+
+func writeFuncImplSelfMagicCheck(b *buffer, tm *t.Map, f *a.Func) error {
+	returnsStatus := f.Effect().Coroutine() ||
+		((f.Out() != nil) && f.Out().IsStatus())
+
+	b.writes("if (!self) { return ")
+	if returnsStatus {
+		b.writes("wuffs_base__make_status(wuffs_base__error__bad_receiver)")
+	} else if err := writeOutParamZeroValue(b, tm, f.Out()); err != nil {
+		return err
+	}
+	b.writes(";}")
+
+	if f.Effect().Pure() {
+		b.writes("if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&")
+		b.writes("    (self->private_impl.magic != WUFFS_BASE__DISABLED)) {")
+	} else {
+		b.writes("if (self->private_impl.magic != WUFFS_BASE__MAGIC) {")
+	}
+	b.writes("return ")
+	if returnsStatus {
+		b.writes("wuffs_base__make_status(" +
+			"(self->private_impl.magic == WUFFS_BASE__DISABLED) " +
+			"? wuffs_base__error__disabled_by_previous_error " +
+			": wuffs_base__error__initialize_not_called)")
+	} else if err := writeOutParamZeroValue(b, tm, f.Out()); err != nil {
+		return err
+	}
+
+	b.writes(";}\n")
+	return nil
 }
 
 func (g *gen) writeFuncImplPrologue(b *buffer) error {
 	// Check the initialized/disabled state and the "self" arg.
 	if g.currFunk.astFunc.Public() && !g.currFunk.astFunc.Receiver().IsZero() {
-		out := g.currFunk.astFunc.Out()
-
-		b.writes("if (!self) { return ")
-		if g.currFunk.returnsStatus {
-			b.writes("wuffs_base__make_status(wuffs_base__error__bad_receiver)")
-		} else if err := g.writeOutParamZeroValue(b, out); err != nil {
+		if err := writeFuncImplSelfMagicCheck(b, g.tm, g.currFunk.astFunc); err != nil {
 			return err
 		}
-		b.writes(";}")
-
-		if g.currFunk.astFunc.Effect().Pure() {
-			b.writes("if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&")
-			b.writes("    (self->private_impl.magic != WUFFS_BASE__DISABLED)) {")
-		} else {
-			b.writes("if (self->private_impl.magic != WUFFS_BASE__MAGIC) {")
-		}
-		b.writes("return ")
-		if g.currFunk.returnsStatus {
-			b.writes("wuffs_base__make_status(" +
-				"(self->private_impl.magic == WUFFS_BASE__DISABLED) " +
-				"? wuffs_base__error__disabled_by_previous_error " +
-				": wuffs_base__error__initialize_not_called)")
-		} else if err := g.writeOutParamZeroValue(b, out); err != nil {
-			return err
-		}
-
-		b.writes(";}\n")
 	}
 
 	// For public functions, check (at runtime) the other args for bounds and

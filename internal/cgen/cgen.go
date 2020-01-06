@@ -325,13 +325,30 @@ func insertBaseImageImplC(buf *buffer) error {
 }
 
 func insertInterfaceDeclarations(buf *buffer) error {
+	if err := parseBuiltInInterfaceMethods(); err != nil {
+		return err
+	}
+
+	g := &gen{
+		pkgPrefix: "wuffs_base__",
+		pkgName:   "base",
+		tm:        &builtInTokenMap,
+	}
+
 	buf.writes("// ---------------- Interface Declarations.\n\n")
 	for _, n := range builtin.Interfaces {
-		buf.printf("extern const char* wuffs_base__%s__vtable_name;\n", n)
-		buf.writeb('\n')
+		qid := t.QID{t.IDBase, builtInTokenMap.ByName(n)}
 
-		buf.printf("typedef struct wuffs_base__%s__struct wuffs_base__%s;\n", n, n)
-		buf.writeb('\n')
+		buf.printf("extern const char* wuffs_base__%s__vtable_name;\n\n", n)
+
+		buf.printf("typedef struct wuffs_base__%s__struct wuffs_base__%s;\n\n", n, n)
+
+		for _, f := range builtInInterfaceMethods[qid] {
+			if err := g.writeFuncSignature(buf, f, cppNone); err != nil {
+				return err
+			}
+			buf.writes(";\n\n")
+		}
 
 		buf.writes("#if defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)\n\n")
 
@@ -343,7 +360,20 @@ func insertInterfaceDeclarations(buf *buffer) error {
 		buf.writes("} private_impl;\n\n")
 
 		buf.writes("\n#ifdef __cplusplus\n\n")
-		// TODO: C++ methods.
+		for _, f := range builtInInterfaceMethods[qid] {
+			if err := g.writeFuncSignature(buf, f, cppInsideStruct); err != nil {
+				return err
+			}
+			buf.writes("{ return ")
+			buf.writes(g.funcCName(f))
+			buf.writes("(this")
+			for _, o := range f.In().Fields() {
+				buf.writeb(',')
+				buf.writes(aPrefix)
+				buf.writes(o.AsField().Name().Str(g.tm))
+			}
+			buf.writes(");}\n\n")
+		}
 		buf.writes("#endif  // __cplusplus\n\n")
 
 		buf.printf("};  // struct wuffs_base__%s__struct\n\n", n)
@@ -354,14 +384,65 @@ func insertInterfaceDeclarations(buf *buffer) error {
 }
 
 func insertInterfaceDefinitions(buf *buffer) error {
+	if err := parseBuiltInInterfaceMethods(); err != nil {
+		return err
+	}
+
+	g := &gen{
+		pkgPrefix: "wuffs_base__",
+		pkgName:   "base",
+		tm:        &builtInTokenMap,
+	}
+
 	buf.writes("// ---------------- Interface Definitions.\n\n")
 	for _, n := range builtin.Interfaces {
+		qid := t.QID{t.IDBase, builtInTokenMap.ByName(n)}
+
 		buf.printf("const char* wuffs_base__%s__vtable_name = "+
-			"\"{vtable}wuffs_base__%s\";\n", n, n)
+			"\"{vtable}wuffs_base__%s\";\n\n", n, n)
+
+		for _, f := range builtInInterfaceMethods[qid] {
+			returnsStatus := f.Effect().Coroutine() ||
+				((f.Out() != nil) && f.Out().IsStatus())
+
+			if err := g.writeFuncSignature(buf, f, cppNone); err != nil {
+				return err
+			}
+			buf.writes("{\n")
+			if err := writeFuncImplSelfMagicCheck(buf, g.tm, f); err != nil {
+				return err
+			}
+
+			// TODO.
+
+			buf.writes("return ")
+			if returnsStatus {
+				buf.writes("wuffs_base__make_status(wuffs_base__error__bad_vtable)")
+			} else if err := writeOutParamZeroValue(buf, g.tm, f.Out()); err != nil {
+				return err
+			}
+			buf.writes(";\n}\n\n")
+		}
 	}
-	buf.writeb('\n')
 
 	return nil
+}
+
+var (
+	builtInTokenMap         = t.Map{}
+	builtInInterfaceMethods = map[t.QID][]*a.Func{}
+)
+
+func parseBuiltInInterfaceMethods() error {
+	if len(builtInInterfaceMethods) != 0 {
+		return nil
+	}
+	return builtin.ParseFuncs(&builtInTokenMap, builtin.InterfaceFuncs, false,
+		func(f *a.Func) error {
+			qid := f.Receiver()
+			builtInInterfaceMethods[qid] = append(builtInInterfaceMethods[qid], f)
+			return nil
+		})
 }
 
 type gen struct {

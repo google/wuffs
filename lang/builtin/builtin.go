@@ -16,6 +16,11 @@
 package builtin
 
 import (
+	"fmt"
+
+	"github.com/google/wuffs/lang/parse"
+
+	a "github.com/google/wuffs/lang/ast"
 	t "github.com/google/wuffs/lang/token"
 )
 
@@ -41,6 +46,7 @@ var Statuses = [...]string{
 	`"#bad receiver"`,
 	`"#bad restart"`,
 	`"#bad sizeof receiver"`,
+	`"#bad vtable"`,
 	`"#bad workbuf length"`,
 	`"#bad wuffs version"`,
 	`"#cannot return a suspension"`,
@@ -341,6 +347,12 @@ var Interfaces = []string{
 	"hasher_u32",
 }
 
+var InterfaceFuncs = []string{
+	// ---- hasher_u32
+
+	"hasher_u32.update_u32!(x: slice u8) u32",
+}
+
 // The "T1" and "T2" types here are placeholders for generic "slice T" or
 // "table T" types. After tokenizing (but before parsing) these XxxFunc strings
 // (e.g. in the lang/check package), replace "T1" and "T2" with "†" or "‡"
@@ -366,4 +378,49 @@ var TableFuncs = []string{
 	"T2.width() u64",
 
 	"T2.row(y: u32) T1",
+}
+
+func ParseFuncs(tm *t.Map, ss []string, generic bool, callback func(*a.Func) error) error {
+	buf := []byte(nil)
+	for _, s := range ss {
+		buf = buf[:0]
+		buf = append(buf, "pub func "...)
+		buf = append(buf, s...)
+		buf = append(buf, "{}\n"...)
+
+		const filename = "builtin.wuffs"
+		tokens, _, err := t.Tokenize(tm, filename, buf)
+		if err != nil {
+			return fmt.Errorf("parsing %q: could not tokenize built-in funcs: %v", s, err)
+		}
+		if generic {
+			for i := range tokens {
+				if tokens[i].ID == GenericOldName1 {
+					tokens[i].ID = GenericNewName1
+				} else if tokens[i].ID == GenericOldName2 {
+					tokens[i].ID = GenericNewName2
+				}
+			}
+		}
+		file, err := parse.Parse(tm, filename, tokens, &parse.Options{
+			AllowBuiltInNames: true,
+		})
+		if err != nil {
+			return fmt.Errorf("parsing %q: could not parse built-in funcs: %v", s, err)
+		}
+
+		tlds := file.TopLevelDecls()
+		if len(tlds) != 1 || tlds[0].Kind() != a.KFunc {
+			return fmt.Errorf("parsing %q: got %d top level decls, want %d", s, len(tlds), 1)
+		}
+		f := tlds[0].AsFunc()
+		f.AsNode().AsRaw().SetPackage(tm, t.IDBase)
+
+		if callback != nil {
+			if err := callback(f); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
