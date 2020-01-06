@@ -887,6 +887,10 @@ func NewConst(flags Flags, filename string, line uint32, name t.ID, xType *TypeE
 	}
 }
 
+// MaxImplements is an advisory limit for the number of interfaces a Struct can
+// implement.
+const MaxImplements = 63
+
 // Struct is "struct ID2(List0)" or "struct ID2?(List0)":
 //  - FlagsPublic      is "pub" vs "pri"
 //  - FlagsClassy      is "ID2" vs "ID2?"

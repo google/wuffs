@@ -4597,6 +4597,10 @@ const char* wuffs_base__error__too_much_data = "#base: too much data";
 const char* wuffs_base__hasher_u32__vtable_name =
     "{vtable}wuffs_base__hasher_u32";
 
+typedef struct {
+  uint32_t (*update_u32)(void* self, wuffs_base__slice_u8 a_x);
+} wuffs_base__hasher_u32__vtable;
+
 WUFFS_BASE__MAYBE_STATIC uint32_t  //
 wuffs_base__hasher_u32__update_u32(wuffs_base__hasher_u32* self,
                                    wuffs_base__slice_u8 a_x) {
@@ -4606,6 +4610,20 @@ wuffs_base__hasher_u32__update_u32(wuffs_base__hasher_u32* self,
   if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
     return 0;
   }
+
+  wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__hasher_u32__vtable_name) {
+      const wuffs_base__hasher_u32__vtable* func_ptrs =
+          (const wuffs_base__hasher_u32__vtable*)(v->function_pointers);
+      return (*func_ptrs->update_u32)(self, a_x);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
   return 0;
 }
 

@@ -74,17 +74,25 @@ func (g *gen) funcCName(n *a.Func) string {
 
 // writeFunctionSignature modes.
 const (
-	wfsCDecl   = 0
-	wfsCppDecl = 1
+	wfsCDecl    = 0
+	wfsCppDecl  = 1
+	wfsCFuncPtr = 2
 )
 
 func (g *gen) writeFuncSignature(b *buffer, n *a.Func, wfs uint32) error {
-	if wfs != wfsCDecl {
+	switch wfs {
+	case wfsCDecl:
+		if n.Public() {
+			b.writes("WUFFS_BASE__MAYBE_STATIC ")
+		} else {
+			b.writes("static ")
+		}
+
+	case wfsCppDecl:
 		b.writes("inline ")
-	} else if n.Public() {
-		b.writes("WUFFS_BASE__MAYBE_STATIC ")
-	} else {
-		b.writes("static ")
+
+	case wfsCFuncPtr:
+		// No-op.
 	}
 
 	// TODO: write n's return values.
@@ -99,18 +107,15 @@ func (g *gen) writeFuncSignature(b *buffer, n *a.Func, wfs uint32) error {
 
 	// The empty // comment makes clang-format place the function name at the
 	// start of a line.
-	b.writes("//\n")
+	if wfs != wfsCFuncPtr {
+		b.writes("//\n")
+	}
 
+	comma := false
 	switch wfs {
 	case wfsCDecl:
 		b.writes(g.funcCName(n))
-	case wfsCppDecl:
-		b.writes(n.FuncName().Str(g.tm))
-	}
-
-	b.writeb('(')
-	comma := false
-	if wfs == wfsCDecl {
+		b.writeb('(')
 		if r := n.Receiver(); !r.IsZero() {
 			if n.Effect().Pure() {
 				b.writes("const ")
@@ -118,6 +123,20 @@ func (g *gen) writeFuncSignature(b *buffer, n *a.Func, wfs uint32) error {
 			b.printf("%s%s *self", g.pkgPrefix, r[1].Str(g.tm))
 			comma = true
 		}
+
+	case wfsCppDecl:
+		b.writes(n.FuncName().Str(g.tm))
+		b.writeb('(')
+
+	case wfsCFuncPtr:
+		b.writes("(*")
+		b.writes(n.FuncName().Str(g.tm))
+		b.writes(")(")
+		if n.Effect().Pure() {
+			b.writes("const ")
+		}
+		b.writes("void* self")
+		comma = true
 	}
 
 	for _, o := range n.In().Fields() {
@@ -132,7 +151,7 @@ func (g *gen) writeFuncSignature(b *buffer, n *a.Func, wfs uint32) error {
 	}
 
 	b.printf(")")
-	if wfs != wfsCDecl && !n.Receiver().IsZero() && n.Effect().Pure() {
+	if (wfs == wfsCppDecl) && !n.Receiver().IsZero() && n.Effect().Pure() {
 		b.writes(" const ")
 	}
 	return nil

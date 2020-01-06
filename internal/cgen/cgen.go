@@ -401,6 +401,15 @@ func insertInterfaceDefinitions(buf *buffer) error {
 		buf.printf("const char* wuffs_base__%s__vtable_name = "+
 			"\"{vtable}wuffs_base__%s\";\n\n", n, n)
 
+		buf.writes("typedef struct {\n\n")
+		for _, f := range builtInInterfaceMethods[qid] {
+			if err := g.writeFuncSignature(buf, f, wfsCFuncPtr); err != nil {
+				return err
+			}
+			buf.writes(";\n")
+		}
+		buf.printf("} wuffs_base__%s__vtable;\n\n", n)
+
 		for _, f := range builtInInterfaceMethods[qid] {
 			returnsStatus := f.Effect().Coroutine() ||
 				((f.Out() != nil) && f.Out().IsStatus())
@@ -413,7 +422,24 @@ func insertInterfaceDefinitions(buf *buffer) error {
 				return err
 			}
 
-			// TODO.
+			buf.writes("\nwuffs_base__vtable* v = &self->private_impl.first_vtable;\n")
+			buf.writes("int i;\n")
+			buf.printf("for (i = 0; i < %d; i++) {\n", a.MaxImplements)
+			buf.printf("if (v->vtable_name == wuffs_base__%s__vtable_name) {\n", n)
+			buf.printf("const wuffs_base__%s__vtable* func_ptrs = "+
+				"(const wuffs_base__%s__vtable*)(v->function_pointers);\n", n, n)
+			buf.printf("return (*func_ptrs->%s)(self", f.FuncName().Str(g.tm))
+			for _, o := range f.In().Fields() {
+				buf.writeb(',')
+				buf.writes(aPrefix)
+				buf.writes(o.AsField().Name().Str(g.tm))
+			}
+			buf.writes(");\n")
+			buf.writes("} else if (v->vtable_name == NULL) {\n")
+			buf.writes("break;\n")
+			buf.writes("}\n")
+			buf.writes("v++;\n")
+			buf.writes("}\n\n")
 
 			buf.writes("return ")
 			if returnsStatus {
