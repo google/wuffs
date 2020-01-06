@@ -2563,6 +2563,43 @@ wuffs_base__pixel_swizzler::swizzle_interleaved(
 
 #endif  // __cplusplus
 
+// ---------------- Interface Declarations.
+
+extern const char* wuffs_base__hasher_u32__vtable_name;
+
+typedef struct wuffs_base__hasher_u32__struct wuffs_base__hasher_u32;
+
+#if defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
+
+struct wuffs_base__hasher_u32__struct {
+#ifdef WUFFS_IMPLEMENTATION
+
+  struct {
+    uint32_t magic;
+    uint32_t active_coroutine;
+    wuffs_base__vtable first_vtable;
+  } private_impl;
+
+#else  // WUFFS_IMPLEMENTATION
+
+ private:
+  union {
+    uint32_t align_as_per_magic_field;
+    uint8_t placeholder[1073741824];  // 1 GiB.
+  } private_impl WUFFS_BASE__POTENTIALLY_UNUSED_FIELD;
+
+ public:
+
+#endif  // WUFFS_IMPLEMENTATION
+
+#ifdef __cplusplus
+
+#endif  // __cplusplus
+
+};  // struct wuffs_base__hasher_u32__struct
+
+#endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif
@@ -4655,6 +4692,11 @@ const char* wuffs_base__error__interleaved_coroutine_calls =
 const char* wuffs_base__error__not_enough_data = "#base: not enough data";
 const char* wuffs_base__error__unsupported_option = "#base: unsupported option";
 const char* wuffs_base__error__too_much_data = "#base: too much data";
+
+// ---------------- Interface Definitions.
+
+const char* wuffs_base__hasher_u32__vtable_name =
+    "{vtable}wuffs_base__hasher_u32";
 
 // ---------------- Images
 

@@ -3,6 +3,7 @@
 
 ## Work In Progress
 
+- Added interfaces.
 - Renamed warnings to notes.
 - Made `wuffs_base__pixel_format` a struct.
 - Made `wuffs_base__pixel_subsampling` a struct.

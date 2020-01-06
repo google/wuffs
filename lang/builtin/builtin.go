@@ -337,6 +337,10 @@ var Funcs = []string{
 		"dst: slice u8, dst_palette: slice u8, src: slice u8) u64",
 }
 
+var Interfaces = []string{
+	"hasher_u32",
+}
+
 // The "T1" and "T2" types here are placeholders for generic "slice T" or
 // "table T" types. After tokenizing (but before parsing) these XxxFunc strings
 // (e.g. in the lang/check package), replace "T1" and "T2" with "†" or "‡"

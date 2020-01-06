@@ -117,10 +117,12 @@ func Do(args []string) error {
 			}
 			buf := make(buffer, 0, 128*1024)
 			if err := expandBangBangInsert(&buf, baseAllImplC, map[string]func(*buffer) error{
-				"// !! INSERT base/all-private.h.\n": insertBaseAllPrivateH,
-				"// !! INSERT base/all-public.h.\n":  insertBaseAllPublicH,
-				"// !! INSERT base/copyright\n":      insertBaseCopyright,
-				"// !! INSERT base/image-impl.c.\n":  insertBaseImageImplC,
+				"// !! INSERT InterfaceDeclarations.\n": insertInterfaceDeclarations,
+				"// !! INSERT InterfaceDefinitions.\n":  insertInterfaceDefinitions,
+				"// !! INSERT base/all-private.h.\n":    insertBaseAllPrivateH,
+				"// !! INSERT base/all-public.h.\n":     insertBaseAllPublicH,
+				"// !! INSERT base/copyright\n":         insertBaseCopyright,
+				"// !! INSERT base/image-impl.c.\n":     insertBaseImageImplC,
 				"// !! INSERT wuffs_base__status strings.\n": func(b *buffer) error {
 					for _, z := range builtin.Statuses {
 						msg, _ := t.Unescape(z)
@@ -319,6 +321,62 @@ func insertBaseCopyright(buf *buffer) error {
 func insertBaseImageImplC(buf *buffer) error {
 	buf.writes(baseImageImplC)
 	buf.writeb('\n')
+	return nil
+}
+
+func insertInterfaceDeclarations(buf *buffer) error {
+	buf.writes("// ---------------- Interface Declarations.\n\n")
+	for _, n := range builtin.Interfaces {
+		buf.printf("extern const char* wuffs_base__%s__vtable_name;\n", n)
+		buf.writeb('\n')
+
+		buf.printf("typedef struct wuffs_base__%s__struct wuffs_base__%s;\n", n, n)
+		buf.writeb('\n')
+
+		buf.writes("#if defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)\n\n")
+
+		buf.printf("struct wuffs_base__%s__struct {", n)
+		buf.writes(`
+			#ifdef WUFFS_IMPLEMENTATION
+
+			struct {
+				uint32_t magic;
+				uint32_t active_coroutine;
+				wuffs_base__vtable first_vtable;
+			} private_impl;
+
+			#else  // WUFFS_IMPLEMENTATION
+
+			private:
+			union {
+				uint32_t align_as_per_magic_field;
+				uint8_t placeholder[1073741824];  // 1 GiB.
+			} private_impl WUFFS_BASE__POTENTIALLY_UNUSED_FIELD;
+
+			public:
+
+			#endif  // WUFFS_IMPLEMENTATION
+		`)
+
+		buf.writes("\n#ifdef __cplusplus\n\n")
+		// TODO: C++ methods.
+		buf.writes("#endif  // __cplusplus\n\n")
+
+		buf.printf("};  // struct wuffs_base__%s__struct\n\n", n)
+
+		buf.writes("#endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)\n\n")
+	}
+	return nil
+}
+
+func insertInterfaceDefinitions(buf *buffer) error {
+	buf.writes("// ---------------- Interface Definitions.\n\n")
+	for _, n := range builtin.Interfaces {
+		buf.printf("const char* wuffs_base__%s__vtable_name = "+
+			"\"{vtable}wuffs_base__%s\";\n", n, n)
+	}
+	buf.writeb('\n')
+
 	return nil
 }
 
