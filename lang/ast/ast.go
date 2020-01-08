@@ -891,12 +891,12 @@ func NewConst(flags Flags, filename string, line uint32, name t.ID, xType *TypeE
 // implement.
 const MaxImplements = 63
 
-// Struct is "struct ID2(List0)" or "struct ID2?(List0)":
+// Struct is "struct ID2?(List1)":
 //  - FlagsPublic      is "pub" vs "pri"
 //  - FlagsClassy      is "ID2" vs "ID2?"
 //  - ID1:   <0|pkg> (set by calling SetPackage)
 //  - ID2:   name
-//  - List0: <Field> fields
+//  - List1: <Field> fields
 //
 // The question mark indicates a classy struct - one that supports methods,
 // especially coroutines.
@@ -908,7 +908,7 @@ func (n *Struct) Public() bool     { return n.flags&FlagsPublic != 0 }
 func (n *Struct) Filename() string { return n.filename }
 func (n *Struct) Line() uint32     { return n.line }
 func (n *Struct) QID() t.QID       { return t.QID{n.id1, n.id2} }
-func (n *Struct) Fields() []*Node  { return n.list0 }
+func (n *Struct) Fields() []*Node  { return n.list1 }
 
 func NewStruct(flags Flags, filename string, line uint32, name t.ID, fields []*Node) *Struct {
 	return &Struct{
@@ -917,7 +917,7 @@ func NewStruct(flags Flags, filename string, line uint32, name t.ID, fields []*N
 		filename: filename,
 		line:     line,
 		id2:      name,
-		list0:    fields,
+		list1:    fields,
 	}
 }
 
