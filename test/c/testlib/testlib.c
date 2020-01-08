@@ -66,20 +66,20 @@ char fail_msg[65536] = {0};
   msg += snprintf(msg, sizeof(fail_msg) - (msg - fail_msg), ##__VA_ARGS__)
 
 #define CHECK_STATUS(prefix, status)             \
-  {                                              \
+  do {                                           \
     wuffs_base__status z = status;               \
     if (z.repr) {                                \
       RETURN_FAIL("%s: \"%s\"", prefix, z.repr); \
     }                                            \
-  }
+  } while (0)
 
 #define CHECK_STRING(string) \
-  {                          \
+  do {                       \
     const char* z = string;  \
     if (z) {                 \
       return z;              \
     }                        \
-  }
+  } while (0)
 
 int tests_run = 0;
 
