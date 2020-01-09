@@ -147,7 +147,7 @@ func Render(w io.Writer, tm *t.Map, src []t.Token, comments []string) (err error
 			if prevID == t.IDEq || (prevID != 0 && !prevIsTightRight && !tok.ID.IsTightLeft()) {
 				// The "(" token's tight-left-ness is context dependent. For
 				// "f(x)", the "(" is tight-left. For "a * (b + c)", it is not.
-				if tok.ID != t.IDOpenParen || !isCloseIdentStrLiteral(tm, prevID) {
+				if tok.ID != t.IDOpenParen || !isCloseIdentStrLiteralQuestion(tm, prevID) {
 					buf = append(buf, ' ')
 				}
 			}
@@ -164,8 +164,6 @@ func Render(w io.Writer, tm *t.Map, src []t.Token, comments []string) (err error
 					return errors.New("render: too many \"}\" tokens")
 				}
 				indent--
-			} else if (tok.ID == t.IDQuestion) && (prevID == t.IDYield) {
-				buf = append(buf, ' ')
 			}
 
 			prevIsTightRight = tok.ID.IsTightRight()
@@ -248,8 +246,8 @@ func isCloseIdentLiteral(tm *t.Map, x t.ID) bool {
 	return x.IsClose() || x.IsIdent(tm) || x.IsLiteral(tm)
 }
 
-func isCloseIdentStrLiteral(tm *t.Map, x t.ID) bool {
-	return x.IsClose() || x.IsIdent(tm) || x.IsStrLiteral(tm)
+func isCloseIdentStrLiteralQuestion(tm *t.Map, x t.ID) bool {
+	return x.IsClose() || x.IsIdent(tm) || x.IsStrLiteral(tm) || (x == t.IDQuestion)
 }
 
 func measureVarNameLength(tm *t.Map, lineTokens []t.Token, remaining []t.Token) uint32 {

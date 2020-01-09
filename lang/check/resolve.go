@@ -110,13 +110,8 @@ var builtInTypeMap = typeMap{
 	t.IDDecodeFrameOptions: typeExprDecodeFrameOptions,
 }
 
-func (c *Checker) parseBuiltInFuncs(ss []string, generic bool) (map[t.QQID]*a.Func, error) {
-	m := map[t.QQID]*a.Func(nil)
-	if generic {
-		m = map[t.QQID]*a.Func{}
-	}
-
-	if err := builtin.ParseFuncs(c.tm, ss, generic, func(f *a.Func) error {
+func (c *Checker) parseBuiltInFuncs(m map[t.QQID]*a.Func, ss []string, generic bool) error {
+	return builtin.ParseFuncs(c.tm, ss, generic, func(f *a.Func) error {
 		if err := c.checkFuncSignature(f.AsNode()); err != nil {
 			return err
 		}
@@ -124,11 +119,7 @@ func (c *Checker) parseBuiltInFuncs(ss []string, generic bool) (map[t.QQID]*a.Fu
 			m[f.QQID()] = f
 		}
 		return nil
-	}); err != nil {
-		return nil, err
-	}
-
-	return m, nil
+	})
 }
 
 func (c *Checker) resolveFunc(typ *a.TypeExpr) (*a.Func, error) {

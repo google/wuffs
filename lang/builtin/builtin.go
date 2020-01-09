@@ -347,6 +347,10 @@ var Interfaces = []string{
 	"hasher_u32",
 }
 
+var InterfacesMap = map[string]bool{
+	"hasher_u32": true,
+}
+
 var InterfaceFuncs = []string{
 	// ---- hasher_u32
 

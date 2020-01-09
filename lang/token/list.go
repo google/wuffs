@@ -149,6 +149,13 @@ type QID [2]ID
 
 func (x QID) IsZero() bool { return x == QID{} }
 
+func (x QID) LessThan(y QID) bool {
+	if x[0] != y[0] {
+		return x[0] < y[0]
+	}
+	return x[1] < y[1]
+}
+
 // Str returns a string form of x.
 func (x QID) Str(m *Map) string {
 	if x[0] != 0 {
@@ -161,6 +168,16 @@ func (x QID) Str(m *Map) string {
 type QQID [3]ID
 
 func (x QQID) IsZero() bool { return x == QQID{} }
+
+func (x QQID) LessThan(y QQID) bool {
+	if x[0] != y[0] {
+		return x[0] < y[0]
+	}
+	if x[1] != y[1] {
+		return x[1] < y[1]
+	}
+	return x[2] < y[2]
+}
 
 // Str returns a string form of x.
 func (x QQID) Str(m *Map) string {
@@ -344,28 +361,29 @@ const (
 	minKeyword = 0xA0
 	maxKeyword = 0xBF
 
-	IDAssert   = ID(0xA0)
-	IDBreak    = ID(0xA1)
-	IDConst    = ID(0xA2)
-	IDContinue = ID(0xA3)
-	IDElse     = ID(0xA4)
-	IDFunc     = ID(0xA5)
-	IDIOBind   = ID(0xA6)
-	IDIOLimit  = ID(0xA7)
-	IDIf       = ID(0xA8)
-	IDInv      = ID(0xA9)
-	IDIterate  = ID(0xAA)
-	IDPost     = ID(0xAB)
-	IDPre      = ID(0xAC)
-	IDPri      = ID(0xAD)
-	IDPub      = ID(0xAE)
-	IDReturn   = ID(0xAF)
-	IDStruct   = ID(0xB0)
-	IDUse      = ID(0xB1)
-	IDVar      = ID(0xB2)
-	IDVia      = ID(0xB3)
-	IDWhile    = ID(0xB4)
-	IDYield    = ID(0xB5)
+	IDAssert     = ID(0xA0)
+	IDBreak      = ID(0xA1)
+	IDConst      = ID(0xA2)
+	IDContinue   = ID(0xA3)
+	IDElse       = ID(0xA4)
+	IDFunc       = ID(0xA5)
+	IDIOBind     = ID(0xA6)
+	IDIOLimit    = ID(0xA7)
+	IDIf         = ID(0xA8)
+	IDImplements = ID(0xA9)
+	IDInv        = ID(0xAA)
+	IDIterate    = ID(0xAB)
+	IDPost       = ID(0xAC)
+	IDPre        = ID(0xAD)
+	IDPri        = ID(0xAE)
+	IDPub        = ID(0xAF)
+	IDReturn     = ID(0xB0)
+	IDStruct     = ID(0xB1)
+	IDUse        = ID(0xB2)
+	IDVar        = ID(0xB3)
+	IDVia        = ID(0xB4)
+	IDWhile      = ID(0xB5)
+	IDYield      = ID(0xB6)
 )
 
 const (
@@ -687,28 +705,29 @@ var builtInsByID = [nBuiltInIDs]string{
 
 	IDNot: "not",
 
-	IDAssert:   "assert",
-	IDBreak:    "break",
-	IDConst:    "const",
-	IDContinue: "continue",
-	IDElse:     "else",
-	IDFunc:     "func",
-	IDIOBind:   "io_bind",
-	IDIOLimit:  "io_limit",
-	IDIf:       "if",
-	IDInv:      "inv",
-	IDIterate:  "iterate",
-	IDPost:     "post",
-	IDPre:      "pre",
-	IDPri:      "pri",
-	IDPub:      "pub",
-	IDReturn:   "return",
-	IDStruct:   "struct",
-	IDUse:      "use",
-	IDVar:      "var",
-	IDVia:      "via",
-	IDWhile:    "while",
-	IDYield:    "yield",
+	IDAssert:     "assert",
+	IDBreak:      "break",
+	IDConst:      "const",
+	IDContinue:   "continue",
+	IDElse:       "else",
+	IDFunc:       "func",
+	IDIOBind:     "io_bind",
+	IDIOLimit:    "io_limit",
+	IDIf:         "if",
+	IDImplements: "implements",
+	IDInv:        "inv",
+	IDIterate:    "iterate",
+	IDPost:       "post",
+	IDPre:        "pre",
+	IDPri:        "pri",
+	IDPub:        "pub",
+	IDReturn:     "return",
+	IDStruct:     "struct",
+	IDUse:        "use",
+	IDVar:        "var",
+	IDVia:        "via",
+	IDWhile:      "while",
+	IDYield:      "yield",
 
 	IDArray: "array",
 	IDNptr:  "nptr",
@@ -1207,7 +1226,6 @@ var isTightRight = [...]bool{
 	IDOpenParen:   true,
 	IDOpenBracket: true,
 
-	IDDot:      true,
-	IDExclam:   true,
-	IDQuestion: true,
+	IDDot:    true,
+	IDExclam: true,
 }

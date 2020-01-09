@@ -217,7 +217,7 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			}
 			p.src = p.src[1:]
 			p.funcEffect = 0
-			in := a.NewStruct(0, p.filename, line, t.IDArgs, argFields)
+			in := a.NewStruct(0, p.filename, line, t.IDArgs, nil, argFields)
 			return a.NewFunc(flags, p.filename, line, id0, id1, in, out, asserts, body).AsNode(), nil
 
 		case t.IDStatus:
@@ -255,6 +255,16 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 				flags |= a.FlagsClassy
 				p.src = p.src[1:]
 			}
+
+			implements := []*a.Node(nil)
+			if p.peek1() == t.IDImplements {
+				p.src = p.src[1:]
+				implements, err = p.parseList(t.IDOpenParen, (*parser).parseQualifiedIdentNode)
+				if err != nil {
+					return nil, err
+				}
+			}
+
 			fields, err := p.parseList(t.IDCloseParen, (*parser).parseFieldNode)
 			if err != nil {
 				return nil, err
@@ -271,10 +281,18 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 				return nil, fmt.Errorf(`parse: expected (implicit) ";", got %q at %s:%d`, got, p.filename, p.line())
 			}
 			p.src = p.src[1:]
-			return a.NewStruct(flags, p.filename, line, name, fields).AsNode(), nil
+			return a.NewStruct(flags, p.filename, line, name, implements, fields).AsNode(), nil
 		}
 	}
 	return nil, fmt.Errorf(`parse: unrecognized top level declaration at %s:%d`, p.filename, line)
+}
+
+func (p *parser) parseQualifiedIdentNode() (*a.Node, error) {
+	pkg, name, err := p.parseQualifiedIdent()
+	if err != nil {
+		return nil, err
+	}
+	return a.NewTypeExpr(0, pkg, name, nil, nil, nil).AsNode(), nil
 }
 
 // parseQualifiedIdent parses "foo.bar" or "bar".

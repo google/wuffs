@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"path"
+	"sort"
 
 	"github.com/google/wuffs/lang/builtin"
 	"github.com/google/wuffs/lang/parse"
@@ -83,28 +84,47 @@ func Check(tm *t.Map, files []*a.File, resolveUse func(usePath string) ([]byte, 
 		}
 	}
 	c := &Checker{
-		tm:           tm,
-		resolveUse:   resolveUse,
-		reasonMap:    rMap,
-		consts:       map[t.QID]*a.Const{},
-		funcs:        map[t.QQID]*a.Func{},
-		localVars:    map[t.QQID]typeMap{},
-		statuses:     map[t.QID]*a.Status{},
-		structs:      map[t.QID]*a.Struct{},
+		tm:         tm,
+		resolveUse: resolveUse,
+		reasonMap:  rMap,
+
+		consts:    map[t.QID]*a.Const{},
+		funcs:     map[t.QQID]*a.Func{},
+		localVars: map[t.QQID]typeMap{},
+		statuses:  map[t.QID]*a.Status{},
+		structs:   map[t.QID]*a.Struct{},
+
 		useBaseNames: map[t.ID]struct{}{},
+
+		builtInSliceFuncs: map[t.QQID]*a.Func{},
+		builtInTableFuncs: map[t.QQID]*a.Func{},
+
+		builtInInterfaces:     map[t.QID][]t.QQID{},
+		builtInInterfaceFuncs: map[t.QQID]*a.Func{},
+		unseenInterfaceImpls:  map[t.QQID]*a.Func{},
 	}
 
-	_, err := c.parseBuiltInFuncs(builtin.Funcs, false)
-	if err != nil {
+	if err := c.parseBuiltInFuncs(nil, builtin.Funcs, false); err != nil {
 		return nil, err
 	}
-	c.builtInSliceFuncs, err = c.parseBuiltInFuncs(builtin.SliceFuncs, true)
-	if err != nil {
+	if err := c.parseBuiltInFuncs(c.builtInSliceFuncs, builtin.SliceFuncs, true); err != nil {
 		return nil, err
 	}
-	c.builtInTableFuncs, err = c.parseBuiltInFuncs(builtin.TableFuncs, true)
-	if err != nil {
+	if err := c.parseBuiltInFuncs(c.builtInTableFuncs, builtin.TableFuncs, true); err != nil {
 		return nil, err
+	}
+	if err := c.parseBuiltInFuncs(c.builtInInterfaceFuncs, builtin.InterfaceFuncs, false); err != nil {
+		return nil, err
+	}
+
+	for qqid := range c.builtInInterfaceFuncs {
+		qid := t.QID{qqid[0], qqid[1]}
+		c.builtInInterfaces[qid] = append(c.builtInInterfaces[qid], qqid)
+	}
+	for _, qqids := range c.builtInInterfaces {
+		sort.Slice(qqids, func(i int, j int) bool {
+			return qqids[i].LessThan(qqids[j])
+		})
 	}
 
 	for _, z := range builtin.Statuses {
@@ -150,7 +170,9 @@ var phases = [...]struct {
 	{a.KStruct, (*Checker).checkStructFields},
 	{a.KFunc, (*Checker).checkFuncSignature},
 	{a.KFunc, (*Checker).checkFuncContract},
+	{a.KFunc, (*Checker).checkFuncImplements},
 	{a.KFunc, (*Checker).checkFuncBody},
+	{a.KInvalid, (*Checker).checkInterfacesSatisfied},
 	{a.KStruct, (*Checker).checkFieldMethodCollisions},
 	{a.KInvalid, (*Checker).checkAllTypeChecked},
 	// TODO: check consts, funcs, structs and uses for name collisions.
@@ -177,7 +199,12 @@ type Checker struct {
 
 	builtInSliceFuncs map[t.QQID]*a.Func
 	builtInTableFuncs map[t.QQID]*a.Func
-	unsortedStructs   []*a.Struct
+
+	builtInInterfaces     map[t.QID][]t.QQID
+	builtInInterfaceFuncs map[t.QQID]*a.Func
+	unseenInterfaceImpls  map[t.QQID]*a.Func
+
+	unsortedStructs []*a.Struct
 }
 
 func (c *Checker) checkUse(node *a.Node) error {
@@ -327,7 +354,7 @@ func (c *Checker) checkConstElement(n *a.Expr, nb bounds, nLists int) error {
 		return nil
 	}
 	if cv := n.ConstValue(); cv == nil || cv.Cmp(nb[0]) < 0 || cv.Cmp(nb[1]) > 0 {
-		return fmt.Errorf("invalid const value %q not within %v", n.Str(c.tm), nb)
+		return fmt.Errorf("check: invalid const value %q not within %v", n.Str(c.tm), nb)
 	}
 	return nil
 }
@@ -348,8 +375,37 @@ func (c *Checker) checkStructDecl(node *a.Node) error {
 	c.unsortedStructs = append(c.unsortedStructs, n)
 	setPlaceholderMBoundsMType(n.AsNode())
 
+	// Add entries to c.unseenInterfaceImpls that later stages remove, checking
+	// that the concrete type (in this package) actually implements the
+	// interfaces that it claims to.
+	for _, o := range n.Implements() {
+		// For example, qid and ifaceType could be "<>.hasher" (i.e. defined in
+		// this package, not the base package) and "base.hasher_u32".
+		//
+		// The "<>" denotes an empty element of a t.QID or t.QQID.
+		o := o.AsTypeExpr()
+		ifaceType := o.QID()
+
+		if (o.Decorator() != 0) || (ifaceType[0] != t.IDBase) ||
+			!builtin.InterfacesMap[ifaceType[1].Str(c.tm)] {
+			return fmt.Errorf("check: invalid interface type %q", o.Str(c.tm))
+		}
+		o.AsNode().SetMBounds(bounds{zero, zero})
+		o.AsNode().SetMType(typeExprTypeExpr)
+
+		if qid[0] != 0 {
+			continue
+		}
+		for _, ifaceFunc := range c.builtInInterfaces[ifaceType] {
+			// Continuing the example, ifaceFunc could be
+			// "base.hasher_u32.update_u32".
+			c.unseenInterfaceImpls[t.QQID{qid[0], qid[1], ifaceFunc[2]}] =
+				c.builtInInterfaceFuncs[ifaceFunc]
+		}
+	}
+
 	// A struct declaration implies a reset method.
-	in := a.NewStruct(0, n.Filename(), n.Line(), t.IDArgs, nil)
+	in := a.NewStruct(0, n.Filename(), n.Line(), t.IDArgs, nil, nil)
 	f := a.NewFunc(a.EffectImpure.AsFlags(), n.Filename(), n.Line(), qid[1], t.IDReset, in, nil, nil, nil)
 	if qid[0] != 0 {
 		f.AsNode().AsRaw().SetPackage(c.tm, qid[0])
@@ -529,6 +585,37 @@ func (c *Checker) checkFuncContract(node *a.Node) error {
 	return nil
 }
 
+func (c *Checker) checkFuncImplements(node *a.Node) error {
+	n := node.AsFunc()
+	o := c.unseenInterfaceImpls[n.QQID()]
+	if o == nil {
+		return nil
+	}
+
+	if (n.Effect() != o.Effect()) || !n.Out().Eq(o.Out()) {
+		return nil
+	}
+
+	// Check that the args (the implicit In types) match.
+	nArgs := n.In().Fields()
+	oArgs := o.In().Fields()
+	if len(nArgs) != len(oArgs) {
+		return nil
+	}
+	for i := range nArgs {
+		na := nArgs[i].AsField()
+		oa := oArgs[i].AsField()
+		if na.Name() != oa.Name() || !na.XType().Eq(oa.XType()) {
+			return nil
+		}
+	}
+
+	// TODO: check that n.Asserts() matches o.Asserts().
+
+	delete(c.unseenInterfaceImpls, n.QQID())
+	return nil
+}
+
 func (c *Checker) checkFuncBody(node *a.Node) error {
 	n := node.AsFunc()
 	if len(n.Body()) == 0 {
@@ -575,6 +662,30 @@ func (c *Checker) checkFuncBody(node *a.Node) error {
 	}
 
 	return nil
+}
+
+func (c *Checker) checkInterfacesSatisfied(node *a.Node) error {
+	if len(c.unseenInterfaceImpls) == 0 {
+		return nil
+	}
+
+	// Pick the largest t.QQID key, despite randomized map iteration order, for
+	// deterministic error messages. The zero-valued t.QQID is LessThan any
+	// non-zero value.
+	method, iface := t.QQID{}, t.QID{}
+	for qqid, f := range c.unseenInterfaceImpls {
+		if method.LessThan(qqid) {
+			fqqid := f.QQID()
+			method, iface = qqid, t.QID{fqqid[0], fqqid[1]}
+		}
+	}
+	// For example, at the end of the loop above, method and iface could be
+	// "<>.hasher.update_u32" and "base.hasher_u32".
+	//
+	// The "<>" denotes an empty element of a t.QID or t.QQID.
+
+	return fmt.Errorf("check: %q does not implement %q: no matching %q method",
+		method[1].Str(c.tm), iface.Str(c.tm), method[2].Str(c.tm))
 }
 
 func (c *Checker) checkFieldMethodCollisions(node *a.Node) error {
