@@ -408,7 +408,7 @@ func insertInterfaceDefinitions(buf *buffer) error {
 			}
 			buf.writes(";\n")
 		}
-		buf.printf("} wuffs_base__%s__vtable;\n\n", n)
+		buf.printf("} wuffs_base__%s__func_ptrs;\n\n", n)
 
 		for _, f := range builtInInterfaceMethods[qid] {
 			returnsStatus := f.Effect().Coroutine() ||
@@ -426,8 +426,8 @@ func insertInterfaceDefinitions(buf *buffer) error {
 			buf.writes("int i;\n")
 			buf.printf("for (i = 0; i < %d; i++) {\n", a.MaxImplements)
 			buf.printf("if (v->vtable_name == wuffs_base__%s__vtable_name) {\n", n)
-			buf.printf("const wuffs_base__%s__vtable* func_ptrs = "+
-				"(const wuffs_base__%s__vtable*)(v->function_pointers);\n", n, n)
+			buf.printf("const wuffs_base__%s__func_ptrs* func_ptrs = "+
+				"(const wuffs_base__%s__func_ptrs*)(v->function_pointers);\n", n, n)
 			buf.printf("return (*func_ptrs->%s)(self", f.FuncName().Str(g.tm))
 			for _, o := range f.In().Fields() {
 				buf.writeb(',')
@@ -713,6 +713,13 @@ func (g *gen) genImpl(b *buffer) error {
 		return err
 	}
 
+	b.writes("// ---------------- VTables\n\n")
+	for _, n := range g.structList {
+		if err := g.writeVTableImpl(b, n); err != nil {
+			return err
+		}
+	}
+
 	b.writes("// ---------------- Initializer Implementations\n\n")
 	for _, n := range g.structList {
 		if err := g.writeInitializerImpl(b, n); err != nil {
@@ -911,6 +918,11 @@ func (g *gen) writeStructPrivateImpl(b *buffer, n *a.Struct) error {
 	if n.Classy() {
 		b.writes("uint32_t magic;\n")
 		b.writes("uint32_t active_coroutine;\n")
+		for _, impl := range n.Implements() {
+			qid := impl.AsTypeExpr().QID()
+			b.printf("wuffs_base__vtable vtable_for__wuffs_%s__%s;\n",
+				qid[0].Str(g.tm), qid[1].Str(g.tm))
+		}
 		b.writes("wuffs_base__vtable null_vtable;\n")
 		b.writes("\n")
 	}
@@ -1097,6 +1109,41 @@ var (
 	wiEnd       = []byte("\n#endif  // WUFFS_IMPLEMENTATION\n\n")
 )
 
+func (g *gen) writeVTableImpl(b *buffer, n *a.Struct) error {
+	impls := n.Implements()
+	if len(impls) == 0 {
+		return nil
+	}
+
+	if err := parseBuiltInInterfaceMethods(); err != nil {
+		return err
+	}
+
+	nQID := n.QID()
+	for _, impl := range impls {
+		iQID := impl.AsTypeExpr().QID()
+		b.printf("const wuffs_%s__%s__func_ptrs %s%s__func_ptrs_for__wuffs_%s__%s = {",
+			iQID[0].Str(g.tm), iQID[1].Str(g.tm),
+			g.pkgPrefix, nQID[1].Str(g.tm),
+			iQID[0].Str(g.tm), iQID[1].Str(g.tm),
+		)
+
+		// Note the two t.Map values: g.tm and builtInTokenMap.
+		altQID := t.QID{
+			builtInTokenMap.ByName(iQID[0].Str(g.tm)),
+			builtInTokenMap.ByName(iQID[1].Str(g.tm)),
+		}
+		for _, f := range builtInInterfaceMethods[altQID] {
+			b.printf("(void*)(&%s%s__%s),\n",
+				g.pkgPrefix, nQID[1].Str(g.tm),
+				f.FuncName().Str(&builtInTokenMap),
+			)
+		}
+		b.writes("};\n\n")
+	}
+	return nil
+}
+
 func (g *gen) writeInitializerSignature(b *buffer, n *a.Struct, public bool) error {
 	structName := n.QID().Str(g.tm)
 	b.printf("wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT //\n"+
@@ -1199,6 +1246,15 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 	}
 
 	b.writes("self->private_impl.magic = WUFFS_BASE__MAGIC;\n")
+	for _, impl := range n.Implements() {
+		qid := impl.AsTypeExpr().QID()
+		iName := fmt.Sprintf("wuffs_%s__%s", qid[0].Str(g.tm), qid[1].Str(g.tm))
+		b.printf("self->private_impl.vtable_for__%s.vtable_name = "+
+			"%s__vtable_name;\n", iName, iName)
+		b.printf("self->private_impl.vtable_for__%s.function_pointers = "+
+			"(const void*)(&%s%s__func_ptrs_for__%s);\n",
+			iName, g.pkgPrefix, n.QID().Str(g.tm), iName)
+	}
 	b.writes("return wuffs_base__make_status(NULL);\n")
 	b.writes("}\n\n")
 

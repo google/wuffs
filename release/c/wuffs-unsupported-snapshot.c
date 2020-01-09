@@ -2659,6 +2659,7 @@ struct wuffs_adler32__hasher__struct {
   struct {
     uint32_t magic;
     uint32_t active_coroutine;
+    wuffs_base__vtable vtable_for__wuffs_base__hasher_u32;
     wuffs_base__vtable null_vtable;
 
     uint32_t f_state;
@@ -2763,6 +2764,7 @@ struct wuffs_crc32__ieee_hasher__struct {
   struct {
     uint32_t magic;
     uint32_t active_coroutine;
+    wuffs_base__vtable vtable_for__wuffs_base__hasher_u32;
     wuffs_base__vtable null_vtable;
 
     uint32_t f_state;
@@ -4599,7 +4601,7 @@ const char* wuffs_base__hasher_u32__vtable_name =
 
 typedef struct {
   uint32_t (*update_u32)(void* self, wuffs_base__slice_u8 a_x);
-} wuffs_base__hasher_u32__vtable;
+} wuffs_base__hasher_u32__func_ptrs;
 
 WUFFS_BASE__MAYBE_STATIC uint32_t  //
 wuffs_base__hasher_u32__update_u32(wuffs_base__hasher_u32* self,
@@ -4615,8 +4617,8 @@ wuffs_base__hasher_u32__update_u32(wuffs_base__hasher_u32* self,
   int i;
   for (i = 0; i < 63; i++) {
     if (v->vtable_name == wuffs_base__hasher_u32__vtable_name) {
-      const wuffs_base__hasher_u32__vtable* func_ptrs =
-          (const wuffs_base__hasher_u32__vtable*)(v->function_pointers);
+      const wuffs_base__hasher_u32__func_ptrs* func_ptrs =
+          (const wuffs_base__hasher_u32__func_ptrs*)(v->function_pointers);
       return (*func_ptrs->update_u32)(self, a_x);
     } else if (v->vtable_name == NULL) {
       break;
@@ -4873,6 +4875,13 @@ wuffs_base__pixel_swizzler__swizzle_interleaved(
 
 // ---------------- Private Function Prototypes
 
+// ---------------- VTables
+
+const wuffs_base__hasher_u32__func_ptrs
+    wuffs_adler32__hasher__func_ptrs_for__wuffs_base__hasher_u32 = {
+        (void*)(&wuffs_adler32__hasher__update_u32),
+};
+
 // ---------------- Initializer Implementations
 
 wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
@@ -4916,6 +4925,10 @@ wuffs_adler32__hasher__initialize(wuffs_adler32__hasher* self,
   }
 
   self->private_impl.magic = WUFFS_BASE__MAGIC;
+  self->private_impl.vtable_for__wuffs_base__hasher_u32.vtable_name =
+      wuffs_base__hasher_u32__vtable_name;
+  self->private_impl.vtable_for__wuffs_base__hasher_u32.function_pointers =
+      (const void*)(&wuffs_adler32__hasher__func_ptrs_for__wuffs_base__hasher_u32);
   return wuffs_base__make_status(NULL);
 }
 
@@ -5884,6 +5897,13 @@ static const uint32_t                 //
 
 // ---------------- Private Function Prototypes
 
+// ---------------- VTables
+
+const wuffs_base__hasher_u32__func_ptrs
+    wuffs_crc32__ieee_hasher__func_ptrs_for__wuffs_base__hasher_u32 = {
+        (void*)(&wuffs_crc32__ieee_hasher__update_u32),
+};
+
 // ---------------- Initializer Implementations
 
 wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
@@ -5927,6 +5947,10 @@ wuffs_crc32__ieee_hasher__initialize(wuffs_crc32__ieee_hasher* self,
   }
 
   self->private_impl.magic = WUFFS_BASE__MAGIC;
+  self->private_impl.vtable_for__wuffs_base__hasher_u32.vtable_name =
+      wuffs_base__hasher_u32__vtable_name;
+  self->private_impl.vtable_for__wuffs_base__hasher_u32.function_pointers =
+      (const void*)(&wuffs_crc32__ieee_hasher__func_ptrs_for__wuffs_base__hasher_u32);
   return wuffs_base__make_status(NULL);
 }
 
@@ -6173,6 +6197,8 @@ static wuffs_base__status  //
 wuffs_deflate__decoder__decode_huffman_slow(wuffs_deflate__decoder* self,
                                             wuffs_base__io_buffer* a_dst,
                                             wuffs_base__io_buffer* a_src);
+
+// ---------------- VTables
 
 // ---------------- Initializer Implementations
 
@@ -7991,6 +8017,8 @@ static wuffs_base__status  //
 wuffs_lzw__decoder__write_to(wuffs_lzw__decoder* self,
                              wuffs_base__io_buffer* a_dst);
 
+// ---------------- VTables
+
 // ---------------- Initializer Implementations
 
 wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
@@ -8590,6 +8618,8 @@ static wuffs_base__status  //
 wuffs_gif__decoder__copy_to_image_buffer(wuffs_gif__decoder* self,
                                          wuffs_base__pixel_buffer* a_pb,
                                          wuffs_base__slice_u8 a_src);
+
+// ---------------- VTables
 
 // ---------------- Initializer Implementations
 
@@ -11192,6 +11222,8 @@ const char* wuffs_gzip__error__bad_header = "#gzip: bad header";
 
 // ---------------- Private Function Prototypes
 
+// ---------------- VTables
+
 // ---------------- Initializer Implementations
 
 wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
@@ -11681,6 +11713,8 @@ const char* wuffs_zlib__error__incorrect_dictionary =
 // ---------------- Private Initializer Prototypes
 
 // ---------------- Private Function Prototypes
+
+// ---------------- VTables
 
 // ---------------- Initializer Implementations
 
