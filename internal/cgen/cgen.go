@@ -403,7 +403,7 @@ func insertInterfaceDefinitions(buf *buffer) error {
 
 		buf.writes("typedef struct {\n\n")
 		for _, f := range builtInInterfaceMethods[qid] {
-			if err := g.writeFuncSignature(buf, f, wfsCFuncPtr); err != nil {
+			if err := g.writeFuncSignature(buf, f, wfsCFuncPtrField); err != nil {
 				return err
 			}
 			buf.writes(";\n")
@@ -1157,7 +1157,11 @@ func (g *gen) writeVTableImpl(b *buffer, n *a.Struct) error {
 			builtInTokenMap.ByName(iQID[1].Str(g.tm)),
 		}
 		for _, f := range builtInInterfaceMethods[altQID] {
-			b.printf("(void*)(&%s%s__%s),\n",
+			b.writeb('(')
+			if err := g.writeFuncSignature(b, f, wfsCFuncPtrType); err != nil {
+				return err
+			}
+			b.printf(")(&%s%s__%s),\n",
 				g.pkgPrefix, nQID[1].Str(g.tm),
 				f.FuncName().Str(&builtInTokenMap),
 			)

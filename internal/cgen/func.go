@@ -74,9 +74,10 @@ func (g *gen) funcCName(n *a.Func) string {
 
 // writeFunctionSignature modes.
 const (
-	wfsCDecl    = 0
-	wfsCppDecl  = 1
-	wfsCFuncPtr = 2
+	wfsCDecl         = 0
+	wfsCppDecl       = 1
+	wfsCFuncPtrField = 2
+	wfsCFuncPtrType  = 3
 )
 
 func (g *gen) writeFuncSignature(b *buffer, n *a.Func, wfs uint32) error {
@@ -91,7 +92,7 @@ func (g *gen) writeFuncSignature(b *buffer, n *a.Func, wfs uint32) error {
 	case wfsCppDecl:
 		b.writes("inline ")
 
-	case wfsCFuncPtr:
+	case wfsCFuncPtrField, wfsCFuncPtrType:
 		// No-op.
 	}
 
@@ -107,7 +108,7 @@ func (g *gen) writeFuncSignature(b *buffer, n *a.Func, wfs uint32) error {
 
 	// The empty // comment makes clang-format place the function name at the
 	// start of a line.
-	if wfs != wfsCFuncPtr {
+	if (wfs != wfsCFuncPtrField) && (wfs != wfsCFuncPtrType) {
 		b.writes("//\n")
 	}
 
@@ -128,14 +129,19 @@ func (g *gen) writeFuncSignature(b *buffer, n *a.Func, wfs uint32) error {
 		b.writes(n.FuncName().Str(g.tm))
 		b.writeb('(')
 
-	case wfsCFuncPtr:
+	case wfsCFuncPtrField, wfsCFuncPtrType:
 		b.writes("(*")
-		b.writes(n.FuncName().Str(g.tm))
+		if wfs == wfsCFuncPtrField {
+			b.writes(n.FuncName().Str(g.tm))
+		}
 		b.writes(")(")
 		if n.Effect().Pure() {
 			b.writes("const ")
 		}
-		b.writes("void* self")
+		b.writes("void*")
+		if wfs == wfsCFuncPtrField {
+			b.writes(" self")
+		}
 		comma = true
 	}
 
@@ -145,7 +151,11 @@ func (g *gen) writeFuncSignature(b *buffer, n *a.Func, wfs uint32) error {
 		}
 		comma = true
 		o := o.AsField()
-		if err := g.writeCTypeName(b, o.XType(), aPrefix, o.Name().Str(g.tm)); err != nil {
+		varNamePrefix, varName := "", ""
+		if wfs != wfsCFuncPtrType {
+			varNamePrefix, varName = aPrefix, o.Name().Str(g.tm)
+		}
+		if err := g.writeCTypeName(b, o.XType(), varNamePrefix, varName); err != nil {
 			return err
 		}
 	}

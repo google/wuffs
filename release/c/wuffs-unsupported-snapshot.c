@@ -4915,7 +4915,8 @@ wuffs_base__pixel_swizzler__swizzle_interleaved(
 
 const wuffs_base__hasher_u32__func_ptrs
     wuffs_adler32__hasher__func_ptrs_for__wuffs_base__hasher_u32 = {
-        (void*)(&wuffs_adler32__hasher__update_u32),
+        (uint32_t(*)(void*, wuffs_base__slice_u8))(
+            &wuffs_adler32__hasher__update_u32),
 };
 
 // ---------------- Initializer Implementations
@@ -5937,7 +5938,8 @@ static const uint32_t                 //
 
 const wuffs_base__hasher_u32__func_ptrs
     wuffs_crc32__ieee_hasher__func_ptrs_for__wuffs_base__hasher_u32 = {
-        (void*)(&wuffs_crc32__ieee_hasher__update_u32),
+        (uint32_t(*)(void*, wuffs_base__slice_u8))(
+            &wuffs_crc32__ieee_hasher__update_u32),
 };
 
 // ---------------- Initializer Implementations

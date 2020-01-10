@@ -363,9 +363,11 @@ func (g *gen) writeCTypeName(b *buffer, n *a.TypeExpr, varNamePrefix string, var
 		o := n.Inner()
 		if o.Decorator() == 0 && o.QID() == (t.QID{t.IDBase, t.IDU8}) && !o.IsRefined() {
 			b.writes("wuffs_base__slice_u8")
-			b.writeb(' ')
-			b.writes(varNamePrefix)
-			b.writes(varName)
+			if varNamePrefix != "" {
+				b.writeb(' ')
+				b.writes(varNamePrefix)
+				b.writes(varName)
+			}
 			return nil
 		}
 		return fmt.Errorf("cannot convert Wuffs type %q to C", n.Str(g.tm))
@@ -374,9 +376,11 @@ func (g *gen) writeCTypeName(b *buffer, n *a.TypeExpr, varNamePrefix string, var
 		o := n.Inner()
 		if o.Decorator() == 0 && o.QID() == (t.QID{t.IDBase, t.IDU8}) && !o.IsRefined() {
 			b.writes("wuffs_base__table_u8")
-			b.writeb(' ')
-			b.writes(varNamePrefix)
-			b.writes(varName)
+			if varNamePrefix != "" {
+				b.writeb(' ')
+				b.writes(varNamePrefix)
+				b.writes(varName)
+			}
 			return nil
 		}
 		return fmt.Errorf("cannot convert Wuffs type %q to C", n.Str(g.tm))
@@ -420,9 +424,11 @@ func (g *gen) writeCTypeName(b *buffer, n *a.TypeExpr, varNamePrefix string, var
 		b.writeb('*')
 	}
 
-	b.writeb(' ')
-	b.writes(varNamePrefix)
-	b.writes(varName)
+	if varNamePrefix != "" {
+		b.writeb(' ')
+		b.writes(varNamePrefix)
+		b.writes(varName)
+	}
 
 	x = n
 	for ; x != nil && x.IsArrayType(); x = x.Inner() {
