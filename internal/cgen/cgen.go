@@ -28,7 +28,6 @@ import (
 	"strings"
 
 	"github.com/google/wuffs/lang/builtin"
-	"github.com/google/wuffs/lang/check"
 	"github.com/google/wuffs/lang/generate"
 
 	cf "github.com/google/wuffs/cmd/commonflags"
@@ -105,7 +104,7 @@ func Do(args []string) error {
 	cformatterFlag := flags.String("cformatter", cf.CformatterDefault, cf.CformatterUsage)
 	genlinenumFlag := flags.Bool("genlinenum", cf.GenlinenumDefault, cf.GenlinenumUsage)
 
-	return generate.Do(&flags, args, func(pkgName string, tm *t.Map, c *check.Checker, files []*a.File) ([]byte, error) {
+	return generate.Do(&flags, args, func(pkgName string, tm *t.Map, files []*a.File) ([]byte, error) {
 		if !cf.IsAlphaNumericIsh(*cformatterFlag) {
 			return nil, fmt.Errorf("bad -cformatter flag value %q", *cformatterFlag)
 		}
@@ -150,7 +149,6 @@ func Do(args []string) error {
 				pkgPrefix:  "wuffs_" + pkgName + "__",
 				pkgName:    pkgName,
 				tm:         tm,
-				checker:    c,
 				files:      files,
 				genlinenum: *genlinenumFlag,
 			}
@@ -475,9 +473,8 @@ type gen struct {
 	pkgPrefix string // e.g. "wuffs_jpeg__"
 	pkgName   string // e.g. "jpeg"
 
-	tm      *t.Map
-	checker *check.Checker
-	files   []*a.File
+	tm    *t.Map
+	files []*a.File
 
 	// genlinenum is whether to print "// foo.wuffs:123" comments in the
 	// generated C code. This can be useful for debugging, although it is not
