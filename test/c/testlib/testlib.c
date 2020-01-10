@@ -30,30 +30,34 @@ uint8_t global_work_array[BUFFER_SIZE];
 uint8_t global_src_array[BUFFER_SIZE];
 uint8_t global_pixel_array[BUFFER_SIZE];
 
-wuffs_base__slice_u8 global_got_slice = ((wuffs_base__slice_u8){
-    .ptr = global_got_array,
-    .len = BUFFER_SIZE,
-});
+wuffs_base__slice_u8 global_got_slice;
+wuffs_base__slice_u8 global_want_slice;
+wuffs_base__slice_u8 global_work_slice;
+wuffs_base__slice_u8 global_src_slice;
+wuffs_base__slice_u8 global_pixel_slice;
 
-wuffs_base__slice_u8 global_want_slice = ((wuffs_base__slice_u8){
-    .ptr = global_want_array,
-    .len = BUFFER_SIZE,
-});
-
-wuffs_base__slice_u8 global_work_slice = ((wuffs_base__slice_u8){
-    .ptr = global_work_array,
-    .len = BUFFER_SIZE,
-});
-
-wuffs_base__slice_u8 global_src_slice = ((wuffs_base__slice_u8){
-    .ptr = global_src_array,
-    .len = BUFFER_SIZE,
-});
-
-wuffs_base__slice_u8 global_pixel_slice = ((wuffs_base__slice_u8){
-    .ptr = global_pixel_array,
-    .len = BUFFER_SIZE,
-});
+void wuffs_testlib__initialize_global_xxx_slices() {
+  global_got_slice = ((wuffs_base__slice_u8){
+      .ptr = global_got_array,
+      .len = BUFFER_SIZE,
+  });
+  global_want_slice = ((wuffs_base__slice_u8){
+      .ptr = global_want_array,
+      .len = BUFFER_SIZE,
+  });
+  global_work_slice = ((wuffs_base__slice_u8){
+      .ptr = global_work_array,
+      .len = BUFFER_SIZE,
+  });
+  global_src_slice = ((wuffs_base__slice_u8){
+      .ptr = global_src_array,
+      .len = BUFFER_SIZE,
+  });
+  global_pixel_slice = ((wuffs_base__slice_u8){
+      .ptr = global_pixel_array,
+      .len = BUFFER_SIZE,
+  });
+}
 
 char fail_msg[65536] = {0};
 
@@ -260,6 +264,7 @@ const char* chdir_to_the_wuffs_root_directory() {
 typedef const char* (*proc)();
 
 int test_main(int argc, char** argv, proc* tests, proc* benches) {
+  wuffs_testlib__initialize_global_xxx_slices();
   const char* status = chdir_to_the_wuffs_root_directory();
   if (status) {
     fprintf(stderr, "%s\n", status);
