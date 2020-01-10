@@ -227,10 +227,10 @@ const char* process_png_chunks(uint8_t* p, size_t n) {
 
 const char* decode_once(bool frag_dst, bool frag_idat) {
   wuffs_zlib__decoder dec;
-  const char* status =
+  wuffs_base__status status =
       wuffs_zlib__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
-  if (status) {
-    return status;
+  if (!wuffs_base__status__is_ok(&status)) {
+    return wuffs_base__status__message(&status);
   }
 
   wuffs_base__io_buffer dst = ((wuffs_base__io_buffer){
@@ -251,8 +251,6 @@ const char* decode_once(bool frag_dst, bool frag_idat) {
           .closed = true,
       }),
   });
-  wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(&dst);
-  wuffs_base__io_reader idat_reader = wuffs_base__io_buffer__reader(&idat);
 
   uint32_t i = 0;  // Number of dst fragments processed, if frag_dst.
   if (frag_dst) {
@@ -266,30 +264,29 @@ const char* decode_once(bool frag_dst, bool frag_idat) {
   }
 
   while (true) {
-    status =
-        wuffs_zlib__decoder__decode_io_writer(&dec, dst_writer, idat_reader,
-                                              ((wuffs_base__slice_u8){
-                                                  .ptr = work_buffer,
-                                                  .len = WORK_BUFFER_SIZE,
-                                              }));
+    status = wuffs_zlib__decoder__transform_io(&dec, &dst, &idat,
+                                               ((wuffs_base__slice_u8){
+                                                   .ptr = work_buffer,
+                                                   .len = WORK_BUFFER_SIZE,
+                                               }));
 
-    if (!status) {
+    if (wuffs_base__status__is_ok(&status)) {
       break;
     }
-    if ((status == wuffs_base__suspension__short_write) && frag_dst &&
+    if ((status.repr == wuffs_base__suspension__short_write) && frag_dst &&
         (i < height - 1)) {
       i++;
       dst.data.len = bytes_per_row * (i + 1);
       continue;
     }
-    if ((status == wuffs_base__suspension__short_read) && frag_idat &&
+    if ((status.repr == wuffs_base__suspension__short_read) && frag_idat &&
         (j < num_idat_chunks - 1)) {
       j++;
       idat.meta.wi = idat_splits[j + 1];
       idat.meta.closed = (num_idat_chunks == j + 1);
       continue;
     }
-    return status;
+    return wuffs_base__status__message(&status);
   }
 
   if (dst.meta.wi != bytes_per_frame) {

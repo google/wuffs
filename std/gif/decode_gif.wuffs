@@ -976,7 +976,7 @@ pri func decoder.decode_id_part2?(dst: ptr base.pixel_buffer, src: base.io_reade
 			}
 			io_bind (io: r, data: this.compressed[this.compressed_ri .. this.compressed_wi]) {
 				mark = r.mark()
-				lzw_status =? this.lzw.decode_io_writer?(
+				lzw_status =? this.lzw.transform_io?(
 					dst: this.util.empty_io_writer(), src: r, workbuf: this.util.empty_slice_u8())
 				this.compressed_ri ~sat+= r.count_since(mark: mark)
 			}

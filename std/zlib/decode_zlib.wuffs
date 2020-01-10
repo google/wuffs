@@ -69,7 +69,7 @@ pub func decoder.workbuf_len() base.range_ii_u64 {
 		max_incl: decoder_workbuf_len_max_incl_worst_case)
 }
 
-pub func decoder.decode_io_writer?(dst: base.io_writer, src: base.io_reader, workbuf: slice base.u8) {
+pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf: slice base.u8) {
 	var x             : base.u16
 	var checksum_got  : base.u32
 	var status        : base.status
@@ -109,7 +109,7 @@ pub func decoder.decode_io_writer?(dst: base.io_writer, src: base.io_reader, wor
 	// Decode and checksum the DEFLATE-encoded payload.
 	while true {
 		mark = args.dst.mark()
-		status =? this.flate.decode_io_writer?(dst: args.dst, src: args.src, workbuf: args.workbuf)
+		status =? this.flate.transform_io?(dst: args.dst, src: args.src, workbuf: args.workbuf)
 		if not this.ignore_checksum {
 			checksum_got = this.checksum.update_u32!(x: args.dst.since(mark: mark))
 		}

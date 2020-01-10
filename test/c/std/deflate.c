@@ -169,7 +169,7 @@ const char* wuffs_deflate_decode(wuffs_base__io_buffer* dst,
     wuffs_base__io_buffer limited_dst = make_limited_writer(*dst, wlimit);
     wuffs_base__io_buffer limited_src = make_limited_reader(*src, rlimit);
 
-    wuffs_base__status status = wuffs_deflate__decoder__decode_io_writer(
+    wuffs_base__status status = wuffs_deflate__decoder__transform_io(
         &dec, &limited_dst, &limited_src, global_work_slice);
 
     dst->meta.wi += limited_dst.meta.wi;
@@ -248,8 +248,8 @@ const char* test_wuffs_deflate_decode_deflate_huffman_primlen_9() {
   CHECK_STATUS("initialize", wuffs_deflate__decoder__initialize(
                                  &dec, sizeof dec, WUFFS_VERSION,
                                  WUFFS_INITIALIZE__DEFAULT_OPTIONS));
-  CHECK_STATUS("decode_io_writer", wuffs_deflate__decoder__decode_io_writer(
-                                       &dec, &got, &src, global_work_slice));
+  CHECK_STATUS("transform_io", wuffs_deflate__decoder__transform_io(
+                                   &dec, &got, &src, global_work_slice));
 
   int i;
   for (i = 0; i < 2; i++) {
@@ -345,13 +345,13 @@ const char* test_wuffs_deflate_decode_split_src() {
     src.meta.closed = false;
     src.meta.ri = gt->src_offset0;
     src.meta.wi = split;
-    wuffs_base__status z0 = wuffs_deflate__decoder__decode_io_writer(
+    wuffs_base__status z0 = wuffs_deflate__decoder__transform_io(
         &dec, &got, &src, global_work_slice);
 
     src.meta.closed = true;
     src.meta.ri = split;
     src.meta.wi = gt->src_offset1;
-    wuffs_base__status z1 = wuffs_deflate__decoder__decode_io_writer(
+    wuffs_base__status z1 = wuffs_deflate__decoder__transform_io(
         &dec, &got, &src, global_work_slice);
 
     if (z0.repr != wuffs_base__suspension__short_read) {
@@ -387,7 +387,7 @@ const char* do_test_wuffs_deflate_history(int i,
 
   dec->private_impl.f_history_index = starting_history_index;
 
-  wuffs_base__status got_z = wuffs_deflate__decoder__decode_io_writer(
+  wuffs_base__status got_z = wuffs_deflate__decoder__transform_io(
       dec, &limited_got, src, global_work_slice);
   got->meta.wi += limited_got.meta.wi;
   if (got_z.repr != want_z) {

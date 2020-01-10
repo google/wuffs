@@ -84,17 +84,16 @@ const char* fuzz(wuffs_base__io_buffer* src, uint32_t hash) {
 
   while (true) {
     dst.meta.wi = 0;
-    status = wuffs_zlib__decoder__decode_io_writer(&dec, &dst, src,
-                                                   ((wuffs_base__slice_u8){
-                                                       .ptr = work_buffer,
-                                                       .len = WORK_BUFFER_SIZE,
-                                                   }));
+    status = wuffs_zlib__decoder__transform_io(&dec, &dst, src,
+                                               ((wuffs_base__slice_u8){
+                                                   .ptr = work_buffer,
+                                                   .len = WORK_BUFFER_SIZE,
+                                               }));
     if (status.repr != wuffs_base__suspension__short_write) {
       break;
     }
     if (dst.meta.wi == 0) {
-      fprintf(stderr,
-              "wuffs_zlib__decoder__decode_io_writer made no progress\n");
+      fprintf(stderr, "wuffs_zlib__decoder__transform_io made no progress\n");
       intentional_segfault();
     }
   }

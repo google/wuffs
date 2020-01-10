@@ -186,7 +186,7 @@ pub func decoder.workbuf_len() base.range_ii_u64 {
 		max_incl: decoder_workbuf_len_max_incl_worst_case)
 }
 
-pub func decoder.decode_io_writer?(dst: base.io_writer, src: base.io_reader, workbuf: slice base.u8) {
+pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf: slice base.u8) {
 	var mark   : base.u64
 	var status : base.status
 

@@ -97,7 +97,7 @@ const char* wuffs_gzip_decode(wuffs_base__io_buffer* dst,
     wuffs_base__io_buffer limited_dst = make_limited_writer(*dst, wlimit);
     wuffs_base__io_buffer limited_src = make_limited_reader(*src, rlimit);
 
-    wuffs_base__status status = wuffs_gzip__decoder__decode_io_writer(
+    wuffs_base__status status = wuffs_gzip__decoder__transform_io(
         &dec, &limited_dst, &limited_src, global_work_slice);
 
     dst->meta.wi += limited_dst.meta.wi;
@@ -165,7 +165,7 @@ const char* do_test_wuffs_gzip_checksum(bool ignore_checksum,
       }
 
       wuffs_base__io_buffer limited_src = make_limited_reader(src, rlimit);
-      wuffs_base__status got_z = wuffs_gzip__decoder__decode_io_writer(
+      wuffs_base__status got_z = wuffs_gzip__decoder__transform_io(
           &dec, &got, &limited_src, global_work_slice);
       src.meta.ri += limited_src.meta.ri;
       if (got_z.repr != want_z) {

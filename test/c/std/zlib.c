@@ -108,7 +108,7 @@ const char* wuffs_zlib_decode(wuffs_base__io_buffer* dst,
     wuffs_base__io_buffer limited_dst = make_limited_writer(*dst, wlimit);
     wuffs_base__io_buffer limited_src = make_limited_reader(*src, rlimit);
 
-    wuffs_base__status status = wuffs_zlib__decoder__decode_io_writer(
+    wuffs_base__status status = wuffs_zlib__decoder__transform_io(
         &dec, &limited_dst, &limited_src, global_work_slice);
 
     dst->meta.wi += limited_dst.meta.wi;
@@ -176,7 +176,7 @@ const char* do_test_wuffs_zlib_checksum(bool ignore_checksum,
 
       wuffs_base__io_buffer limited_src = make_limited_reader(src, rlimit);
 
-      wuffs_base__status got_z = wuffs_zlib__decoder__decode_io_writer(
+      wuffs_base__status got_z = wuffs_zlib__decoder__transform_io(
           &dec, &got, &limited_src, global_work_slice);
       src.meta.ri += limited_src.meta.ri;
       if (got_z.repr != want_z) {
@@ -235,11 +235,11 @@ const char* test_wuffs_zlib_decode_sheep() {
 
   int i;
   for (i = 0; i < 3; i++) {
-    wuffs_base__status status = wuffs_zlib__decoder__decode_io_writer(
-        &dec, &got, &src, global_work_slice);
+    wuffs_base__status status =
+        wuffs_zlib__decoder__transform_io(&dec, &got, &src, global_work_slice);
 
     if (status.repr != wuffs_zlib__note__dictionary_required) {
-      RETURN_FAIL("decode_io_writer (before dict): got \"%s\", want \"%s\"",
+      RETURN_FAIL("transform_io (before dict): got \"%s\", want \"%s\"",
                   status.repr, wuffs_zlib__note__dictionary_required);
     }
 
@@ -257,9 +257,9 @@ const char* test_wuffs_zlib_decode_sheep() {
                 .len = zlib_sheep_dict_len,
             }));
 
-  CHECK_STATUS("decode_io_writer (after dict)",
-               wuffs_zlib__decoder__decode_io_writer(&dec, &got, &src,
-                                                     global_work_slice));
+  CHECK_STATUS(
+      "transform_io (after dict)",
+      wuffs_zlib__decoder__transform_io(&dec, &got, &src, global_work_slice));
 
   wuffs_base__io_buffer want =
       make_io_buffer_from_string(zlib_sheep_want_ptr, zlib_sheep_want_len);

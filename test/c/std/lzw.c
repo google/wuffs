@@ -115,20 +115,19 @@ const char* do_test_wuffs_lzw_decode(const char* src_filename,
     size_t old_wi = got.meta.wi;
     size_t old_ri = src.meta.ri;
 
-    wuffs_base__status status = wuffs_lzw__decoder__decode_io_writer(
+    wuffs_base__status status = wuffs_lzw__decoder__transform_io(
         &dec, &limited_got, &limited_src, global_work_slice);
     got.meta.wi += limited_got.meta.wi;
     src.meta.ri += limited_src.meta.ri;
     if (wuffs_base__status__is_ok(&status)) {
       if (src.meta.ri != src.meta.wi) {
-        RETURN_FAIL(
-            "decode_io_writer returned \"ok\" but src was not exhausted");
+        RETURN_FAIL("transform_io returned \"ok\" but src was not exhausted");
       }
       break;
     }
     if ((status.repr != wuffs_base__suspension__short_read) &&
         (status.repr != wuffs_base__suspension__short_write)) {
-      RETURN_FAIL("decode_io_writer: got \"%s\", want \"%s\" or \"%s\"",
+      RETURN_FAIL("transform_io: got \"%s\", want \"%s\" or \"%s\"",
                   status.repr, wuffs_base__suspension__short_read,
                   wuffs_base__suspension__short_write);
     }
@@ -223,9 +222,9 @@ const char* test_wuffs_lzw_decode_output_bad() {
   wuffs_lzw__decoder__set_literal_width(&dec, 7);
 
   wuffs_base__status status =
-      wuffs_lzw__decoder__decode_io_writer(&dec, &got, &src, global_work_slice);
+      wuffs_lzw__decoder__transform_io(&dec, &got, &src, global_work_slice);
   if (status.repr != wuffs_lzw__error__bad_code) {
-    RETURN_FAIL("decode_io_writer: got \"%s\", want \"%s\"", status.repr,
+    RETURN_FAIL("transform_io: got \"%s\", want \"%s\"", status.repr,
                 wuffs_lzw__error__bad_code);
   }
 
@@ -265,8 +264,8 @@ const char* test_wuffs_lzw_decode_output_empty() {
                    WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
   wuffs_lzw__decoder__set_literal_width(&dec, 8);
 
-  CHECK_STATUS("decode_io_writer", wuffs_lzw__decoder__decode_io_writer(
-                                       &dec, &got, &src, global_work_slice));
+  CHECK_STATUS("transform_io", wuffs_lzw__decoder__transform_io(
+                                   &dec, &got, &src, global_work_slice));
 
   if (got.meta.wi != 0) {
     RETURN_FAIL("got.meta.wi: got %d, want 0", (int)(got.meta.wi));
@@ -290,8 +289,8 @@ const char* do_test_wuffs_lzw_decode_width(uint32_t width,
   wuffs_base__io_buffer got = ((wuffs_base__io_buffer){
       .data = global_got_slice,
   });
-  CHECK_STATUS("decode_io_writer", wuffs_lzw__decoder__decode_io_writer(
-                                       &dec, &got, &src, global_work_slice));
+  CHECK_STATUS("transform_io", wuffs_lzw__decoder__transform_io(
+                                   &dec, &got, &src, global_work_slice));
 
   return check_io_buffers_equal("", &got, &want);
 }
@@ -392,8 +391,8 @@ const char* do_bench_wuffs_lzw_decode(const char* filename,
                  wuffs_lzw__decoder__initialize(
                      &dec, sizeof dec, WUFFS_VERSION,
                      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
-    CHECK_STATUS("decode_io_writer", wuffs_lzw__decoder__decode_io_writer(
-                                         &dec, &got, &src, global_work_slice));
+    CHECK_STATUS("transform_io", wuffs_lzw__decoder__transform_io(
+                                     &dec, &got, &src, global_work_slice));
     n_bytes += got.meta.wi;
   }
   bench_finish(iters, n_bytes);

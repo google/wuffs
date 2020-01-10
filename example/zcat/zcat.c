@@ -123,7 +123,7 @@ static const char* decode() {
     }
 
     while (true) {
-      status = wuffs_gzip__decoder__decode_io_writer(
+      status = wuffs_gzip__decoder__transform_io(
           &dec, &dst, &src,
           wuffs_base__make_slice_u8(work_buffer, WORK_BUFFER_SIZE));
 

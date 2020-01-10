@@ -3,6 +3,7 @@
 
 ## Work In Progress
 
+- Renamed `decode_io_writer?` methods to `transform_io?`.
 - Added interfaces.
 - Renamed warnings to notes.
 - Made `wuffs_base__pixel_format` a struct.
