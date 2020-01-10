@@ -577,6 +577,11 @@ func (g *gen) generate() ([]byte, error) {
 	return *b, nil
 }
 
+var (
+	wiStartImpl = []byte("\n// WUFFS C HEADER ENDS HERE.\n#ifdef WUFFS_IMPLEMENTATION\n\n")
+	wiEnd       = []byte("\n#endif  // WUFFS_IMPLEMENTATION\n\n")
+)
+
 func (g *gen) genIncludes(b *buffer) error {
 	b.writes("#if defined(WUFFS_IMPLEMENTATION) && !defined(WUFFS_CONFIG__MODULES)\n")
 	b.writes("#define WUFFS_CONFIG__MODULES\n")
@@ -1121,13 +1126,6 @@ func (g *gen) writeCppMethods(b *buffer, n *a.Struct) error {
 	b.writes("#endif  // __cplusplus\n\n")
 	return nil
 }
-
-var (
-	wiStartImpl = []byte("\n// WUFFS C HEADER ENDS HERE.\n#ifdef WUFFS_IMPLEMENTATION\n\n")
-	wiStart     = []byte("\n#ifdef WUFFS_IMPLEMENTATION\n\n")
-	wiElse      = []byte("\n#else   // WUFFS_IMPLEMENTATION\n\n")
-	wiEnd       = []byte("\n#endif  // WUFFS_IMPLEMENTATION\n\n")
-)
 
 func (g *gen) writeVTableImpl(b *buffer, n *a.Struct) error {
 	impls := n.Implements()
