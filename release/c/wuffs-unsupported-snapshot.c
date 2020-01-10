@@ -2568,6 +2568,10 @@ wuffs_base__pixel_swizzler::swizzle_interleaved(
 
 extern const char* wuffs_base__hasher_u32__vtable_name;
 
+typedef struct {
+  uint32_t (*update_u32)(void* self, wuffs_base__slice_u8 a_x);
+} wuffs_base__hasher_u32__func_ptrs;
+
 typedef struct wuffs_base__hasher_u32__struct wuffs_base__hasher_u32;
 
 WUFFS_BASE__MAYBE_STATIC uint32_t  //
@@ -4634,10 +4638,6 @@ const char* wuffs_base__error__too_much_data = "#base: too much data";
 
 const char* wuffs_base__hasher_u32__vtable_name =
     "{vtable}wuffs_base__hasher_u32";
-
-typedef struct {
-  uint32_t (*update_u32)(void* self, wuffs_base__slice_u8 a_x);
-} wuffs_base__hasher_u32__func_ptrs;
 
 WUFFS_BASE__MAYBE_STATIC uint32_t  //
 wuffs_base__hasher_u32__update_u32(wuffs_base__hasher_u32* self,

@@ -341,6 +341,15 @@ func insertInterfaceDeclarations(buf *buffer) error {
 
 		buf.printf("extern const char* wuffs_base__%s__vtable_name;\n\n", n)
 
+		buf.writes("typedef struct {\n\n")
+		for _, f := range builtInInterfaceMethods[qid] {
+			if err := g.writeFuncSignature(buf, f, wfsCFuncPtrField); err != nil {
+				return err
+			}
+			buf.writes(";\n")
+		}
+		buf.printf("} wuffs_base__%s__func_ptrs;\n\n", n)
+
 		buf.printf("typedef struct wuffs_base__%s__struct wuffs_base__%s;\n\n", n, n)
 
 		for _, f := range builtInInterfaceMethods[qid] {
@@ -400,15 +409,6 @@ func insertInterfaceDefinitions(buf *buffer) error {
 
 		buf.printf("const char* wuffs_base__%s__vtable_name = "+
 			"\"{vtable}wuffs_base__%s\";\n\n", n, n)
-
-		buf.writes("typedef struct {\n\n")
-		for _, f := range builtInInterfaceMethods[qid] {
-			if err := g.writeFuncSignature(buf, f, wfsCFuncPtrField); err != nil {
-				return err
-			}
-			buf.writes(";\n")
-		}
-		buf.printf("} wuffs_base__%s__func_ptrs;\n\n", n)
 
 		for _, f := range builtInInterfaceMethods[qid] {
 			returnsStatus := f.Effect().Coroutine() ||
