@@ -263,6 +263,9 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 				if err != nil {
 					return nil, err
 				}
+				if len(implements) > a.MaxImplements {
+					return nil, fmt.Errorf(`parse: too many implements listed at %s:%d`, p.filename, p.line())
+				}
 			}
 
 			fields, err := p.parseList(t.IDCloseParen, (*parser).parseFieldNode)
