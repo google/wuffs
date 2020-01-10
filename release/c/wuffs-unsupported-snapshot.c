@@ -2633,6 +2633,14 @@ wuffs_adler32__hasher__initialize(wuffs_adler32__hasher* self,
 size_t  //
 sizeof__wuffs_adler32__hasher();
 
+// ---------------- Upcasts
+
+static inline wuffs_base__hasher_u32*  //
+wuffs_adler32__hasher__upcast_as__wuffs_base__hasher_u32(
+    wuffs_adler32__hasher* p) {
+  return (wuffs_base__hasher_u32*)p;
+}
+
 // ---------------- Public Function Prototypes
 
 WUFFS_BASE__MAYBE_STATIC uint32_t  //
@@ -2694,6 +2702,11 @@ struct wuffs_adler32__hasher__struct {
                                              wuffs_version, initialize_flags);
   }
 
+  inline wuffs_base__hasher_u32*  //
+  upcast_as__wuffs_base__hasher_u32() {
+    return (wuffs_base__hasher_u32*)this;
+  }
+
   inline uint32_t  //
   update_u32(wuffs_base__slice_u8 a_x) {
     return wuffs_adler32__hasher__update_u32(this, a_x);
@@ -2737,6 +2750,14 @@ wuffs_crc32__ieee_hasher__initialize(wuffs_crc32__ieee_hasher* self,
 
 size_t  //
 sizeof__wuffs_crc32__ieee_hasher();
+
+// ---------------- Upcasts
+
+static inline wuffs_base__hasher_u32*  //
+wuffs_crc32__ieee_hasher__upcast_as__wuffs_base__hasher_u32(
+    wuffs_crc32__ieee_hasher* p) {
+  return (wuffs_base__hasher_u32*)p;
+}
 
 // ---------------- Public Function Prototypes
 
@@ -2799,6 +2820,11 @@ struct wuffs_crc32__ieee_hasher__struct {
         this, sizeof_star_self, wuffs_version, initialize_flags);
   }
 
+  inline wuffs_base__hasher_u32*  //
+  upcast_as__wuffs_base__hasher_u32() {
+    return (wuffs_base__hasher_u32*)this;
+  }
+
   inline uint32_t  //
   update_u32(wuffs_base__slice_u8 a_x) {
     return wuffs_crc32__ieee_hasher__update_u32(this, a_x);
@@ -2858,6 +2884,8 @@ wuffs_deflate__decoder__initialize(wuffs_deflate__decoder* self,
 
 size_t  //
 sizeof__wuffs_deflate__decoder();
+
+// ---------------- Upcasts
 
 // ---------------- Public Function Prototypes
 
@@ -3039,6 +3067,8 @@ wuffs_lzw__decoder__initialize(wuffs_lzw__decoder* self,
 size_t  //
 sizeof__wuffs_lzw__decoder();
 
+// ---------------- Upcasts
+
 // ---------------- Public Function Prototypes
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
@@ -3215,6 +3245,8 @@ wuffs_gif__decoder__initialize(wuffs_gif__decoder* self,
 
 size_t  //
 sizeof__wuffs_gif__decoder();
+
+// ---------------- Upcasts
 
 // ---------------- Public Function Prototypes
 
@@ -3562,6 +3594,8 @@ wuffs_gzip__decoder__initialize(wuffs_gzip__decoder* self,
 size_t  //
 sizeof__wuffs_gzip__decoder();
 
+// ---------------- Upcasts
+
 // ---------------- Public Function Prototypes
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
@@ -3707,6 +3741,8 @@ wuffs_zlib__decoder__initialize(wuffs_zlib__decoder* self,
 
 size_t  //
 sizeof__wuffs_zlib__decoder();
+
+// ---------------- Upcasts
 
 // ---------------- Public Function Prototypes
 

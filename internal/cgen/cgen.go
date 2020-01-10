@@ -656,6 +656,20 @@ func (g *gen) genHeader(b *buffer) error {
 		}
 	}
 
+	b.writes("// ---------------- Upcasts\n\n")
+	for _, n := range g.structList {
+		structName := n.QID().Str(g.tm)
+		for _, impl := range n.Implements() {
+			iQID := impl.AsTypeExpr().QID()
+			iName := fmt.Sprintf("wuffs_%s__%s", iQID[0].Str(g.tm), iQID[1].Str(g.tm))
+			b.printf("static inline %s* //\n", iName)
+			b.printf("%s%s__upcast_as__%s(%s%s* p){\n",
+				g.pkgPrefix, structName, iName, g.pkgPrefix, structName)
+			b.printf("return (%s*)p;\n", iName)
+			b.printf("}\n\n")
+		}
+	}
+
 	b.writes("// ---------------- Public Function Prototypes\n\n")
 	if err := g.forEachFunc(b, pubOnly, (*gen).writeFuncPrototype); err != nil {
 		return err
@@ -1070,6 +1084,15 @@ func (g *gen) writeCppMethods(b *buffer, n *a.Struct) error {
 		"initialize(size_t sizeof_star_self, uint64_t wuffs_version, uint32_t initialize_flags) {\n")
 	b.printf("return %s%s__initialize(this, sizeof_star_self, wuffs_version, initialize_flags);\n}\n\n",
 		g.pkgPrefix, structName)
+
+	for _, impl := range n.Implements() {
+		iQID := impl.AsTypeExpr().QID()
+		iName := fmt.Sprintf("wuffs_%s__%s", iQID[0].Str(g.tm), iQID[1].Str(g.tm))
+		b.printf("inline %s* //\n", iName)
+		b.printf("upcast_as__%s(){\n", iName)
+		b.printf("return (%s*)this;\n", iName)
+		b.printf("}\n\n")
+	}
 
 	structID := n.QID()[1]
 	for _, file := range g.files {

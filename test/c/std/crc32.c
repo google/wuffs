@@ -159,6 +159,23 @@ const char* test_wuffs_crc32_ieee_golden() {
   return NULL;
 }
 
+const char* test_wuffs_crc32_ieee_interface() {
+  CHECK_FOCUS(__func__);
+  wuffs_crc32__ieee_hasher h;
+  CHECK_STATUS("initialize",
+               wuffs_crc32__ieee_hasher__initialize(
+                   &h, sizeof h, WUFFS_VERSION,
+                   WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+  const char* digits = "3.14";
+  return do_test__wuffs_base__hasher_u32(
+      wuffs_crc32__ieee_hasher__upcast_as__wuffs_base__hasher_u32(&h),
+      ((wuffs_base__slice_u8){
+          .ptr = (uint8_t*)(digits),
+          .len = (size_t)(strlen(digits)),
+      }),
+      0x16E010BE);
+}
+
 const char* do_test_xxxxx_crc32_ieee_pi(bool mimic) {
   const char* digits =
       "3."
@@ -316,8 +333,9 @@ const char* bench_mimic_crc32_ieee_100k() {
 // The empty comments forces clang-format to place one element per line.
 proc tests[] = {
 
-    test_wuffs_crc32_ieee_golden,  //
-    test_wuffs_crc32_ieee_pi,      //
+    test_wuffs_crc32_ieee_golden,     //
+    test_wuffs_crc32_ieee_interface,  //
+    test_wuffs_crc32_ieee_pi,         //
 
 #ifdef WUFFS_MIMIC
 

@@ -740,4 +740,16 @@ const char* do_test_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
                          tc_neither, gt, wlimit, rlimit, 1, false);
 }
 
+// --------
+
+const char* do_test__wuffs_base__hasher_u32(wuffs_base__hasher_u32* h,
+                                            wuffs_base__slice_u8 data,
+                                            uint32_t want) {
+  uint32_t got = wuffs_base__hasher_u32__update_u32(h, data);
+  if (got != want) {
+    RETURN_FAIL("got 0x%08" PRIX32 ", want 0x%08" PRIX32, got, want);
+  }
+  return NULL;
+}
+
 #endif  // WUFFS_INCLUDE_GUARD
