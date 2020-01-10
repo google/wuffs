@@ -461,12 +461,11 @@ func parseBuiltInInterfaceMethods() error {
 	if len(builtInInterfaceMethods) != 0 {
 		return nil
 	}
-	return builtin.ParseFuncs(&builtInTokenMap, builtin.InterfaceFuncs, false,
-		func(f *a.Func) error {
-			qid := f.Receiver()
-			builtInInterfaceMethods[qid] = append(builtInInterfaceMethods[qid], f)
-			return nil
-		})
+	return builtin.ParseFuncs(&builtInTokenMap, builtin.InterfaceFuncs, func(f *a.Func) error {
+		qid := f.Receiver()
+		builtInInterfaceMethods[qid] = append(builtInInterfaceMethods[qid], f)
+		return nil
+	})
 }
 
 type gen struct {

@@ -17,6 +17,7 @@ package builtin
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/google/wuffs/lang/parse"
 
@@ -370,23 +371,29 @@ const (
 )
 
 var SliceFuncs = []string{
-	"T1.copy_from_slice!(s: T1) u64",
-	"T1.length() u64",
-	"T1.prefix(up_to: u64) T1",
-	"T1.suffix(up_to: u64) T1",
+	"GENERIC T1.copy_from_slice!(s: T1) u64",
+	"GENERIC T1.length() u64",
+	"GENERIC T1.prefix(up_to: u64) T1",
+	"GENERIC T1.suffix(up_to: u64) T1",
 }
 
 var TableFuncs = []string{
-	"T2.height() u64",
-	"T2.stride() u64",
-	"T2.width() u64",
+	"GENERIC T2.height() u64",
+	"GENERIC T2.stride() u64",
+	"GENERIC T2.width() u64",
 
-	"T2.row(y: u32) T1",
+	"GENERIC T2.row(y: u32) T1",
 }
 
-func ParseFuncs(tm *t.Map, ss []string, generic bool, callback func(*a.Func) error) error {
+func ParseFuncs(tm *t.Map, ss []string, callback func(*a.Func) error) error {
+	const GENERIC = "GENERIC "
 	buf := []byte(nil)
 	for _, s := range ss {
+		generic := strings.HasPrefix(s, GENERIC)
+		if generic {
+			s = s[len(GENERIC):]
+		}
+
 		buf = buf[:0]
 		buf = append(buf, "pub func "...)
 		buf = append(buf, s...)

@@ -104,16 +104,16 @@ func Check(tm *t.Map, files []*a.File, resolveUse func(usePath string) ([]byte, 
 		unseenInterfaceImpls:  map[t.QQID]*a.Func{},
 	}
 
-	if err := c.parseBuiltInFuncs(nil, builtin.Funcs, false); err != nil {
+	if err := c.parseBuiltInFuncs(nil, builtin.Funcs); err != nil {
 		return nil, err
 	}
-	if err := c.parseBuiltInFuncs(c.builtInSliceFuncs, builtin.SliceFuncs, true); err != nil {
+	if err := c.parseBuiltInFuncs(c.builtInSliceFuncs, builtin.SliceFuncs); err != nil {
 		return nil, err
 	}
-	if err := c.parseBuiltInFuncs(c.builtInTableFuncs, builtin.TableFuncs, true); err != nil {
+	if err := c.parseBuiltInFuncs(c.builtInTableFuncs, builtin.TableFuncs); err != nil {
 		return nil, err
 	}
-	if err := c.parseBuiltInFuncs(c.builtInInterfaceFuncs, builtin.InterfaceFuncs, false); err != nil {
+	if err := c.parseBuiltInFuncs(c.builtInInterfaceFuncs, builtin.InterfaceFuncs); err != nil {
 		return nil, err
 	}
 
