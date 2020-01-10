@@ -364,10 +364,10 @@ var InterfaceFuncs = []string{
 // daggers, to avoid collision with a user-defined "T1" or "T2" type.
 
 const (
-	GenericOldName1 = t.IDT1
-	GenericOldName2 = t.IDT2
-	GenericNewName1 = t.IDDagger1
-	GenericNewName2 = t.IDDagger2
+	genericOldName1 = t.IDT1
+	genericOldName2 = t.IDT2
+	genericNewName1 = t.IDDagger1
+	genericNewName2 = t.IDDagger2
 )
 
 var SliceFuncs = []string{
@@ -406,10 +406,10 @@ func ParseFuncs(tm *t.Map, ss []string, callback func(*a.Func) error) error {
 		}
 		if generic {
 			for i := range tokens {
-				if tokens[i].ID == GenericOldName1 {
-					tokens[i].ID = GenericNewName1
-				} else if tokens[i].ID == GenericOldName2 {
-					tokens[i].ID = GenericNewName2
+				if id := tokens[i].ID; id == genericOldName1 {
+					tokens[i].ID = genericNewName1
+				} else if id == genericOldName2 {
+					tokens[i].ID = genericNewName2
 				}
 			}
 		}
