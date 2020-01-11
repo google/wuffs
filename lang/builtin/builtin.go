@@ -362,6 +362,7 @@ var InterfaceFuncs = []string{
 	// ---- io_transformer
 
 	"io_transformer.transform_io?(dst: io_writer, src: io_reader, workbuf: slice u8)",
+	"io_transformer.workbuf_len() range_ii_u64",
 }
 
 // The "T1" and "T2" types here are placeholders for generic "slice T" or

@@ -428,7 +428,7 @@ func insertInterfaceDefinitions(buf *buffer) error {
 				return err
 			}
 
-			buf.writes("\nwuffs_base__vtable* v = &self->private_impl.first_vtable;\n")
+			buf.writes("\nconst wuffs_base__vtable* v = &self->private_impl.first_vtable;\n")
 			buf.writes("int i;\n")
 			buf.printf("for (i = 0; i < %d; i++) {\n", a.MaxImplements)
 			buf.printf("if (v->vtable_name == wuffs_base__%s__vtable_name) {\n", n)

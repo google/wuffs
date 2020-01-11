@@ -766,6 +766,15 @@ const char* do_test__wuffs_base__io_transformer(wuffs_base__io_transformer* t,
   if (want_wi > BUFFER_SIZE) {
     return "want_wi is too large";
   }
+  wuffs_base__range_ii_u64 workbuf_len =
+      wuffs_base__io_transformer__workbuf_len(t);
+  if (workbuf_len.min_incl > workbuf_len.max_incl) {
+    return "inconsistent workbuf_len";
+  }
+  if (workbuf_len.max_incl > BUFFER_SIZE) {
+    return "workbuf_len is too large";
+  }
+
   wuffs_base__io_buffer got = ((wuffs_base__io_buffer){
       .data = global_got_slice,
   });

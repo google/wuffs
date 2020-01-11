@@ -2611,6 +2611,7 @@ typedef struct {
                                      wuffs_base__io_buffer* a_dst,
                                      wuffs_base__io_buffer* a_src,
                                      wuffs_base__slice_u8 a_workbuf);
+  wuffs_base__range_ii_u64 (*workbuf_len)(const void* self);
 } wuffs_base__io_transformer__func_ptrs;
 
 typedef struct wuffs_base__io_transformer__struct wuffs_base__io_transformer;
@@ -2620,6 +2621,9 @@ wuffs_base__io_transformer__transform_io(wuffs_base__io_transformer* self,
                                          wuffs_base__io_buffer* a_dst,
                                          wuffs_base__io_buffer* a_src,
                                          wuffs_base__slice_u8 a_workbuf);
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__range_ii_u64  //
+wuffs_base__io_transformer__workbuf_len(const wuffs_base__io_transformer* self);
 
 #if defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
@@ -2638,6 +2642,11 @@ struct wuffs_base__io_transformer__struct {
                wuffs_base__slice_u8 a_workbuf) {
     return wuffs_base__io_transformer__transform_io(this, a_dst, a_src,
                                                     a_workbuf);
+  }
+
+  inline wuffs_base__range_ii_u64  //
+  workbuf_len() const {
+    return wuffs_base__io_transformer__workbuf_len(this);
   }
 
 #endif  // __cplusplus
@@ -4814,7 +4823,7 @@ wuffs_base__hasher_u32__update_u32(wuffs_base__hasher_u32* self,
     return 0;
   }
 
-  wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
   int i;
   for (i = 0; i < 63; i++) {
     if (v->vtable_name == wuffs_base__hasher_u32__vtable_name) {
@@ -4850,7 +4859,7 @@ wuffs_base__io_transformer__transform_io(wuffs_base__io_transformer* self,
             : wuffs_base__error__initialize_not_called);
   }
 
-  wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
   int i;
   for (i = 0; i < 63; i++) {
     if (v->vtable_name == wuffs_base__io_transformer__vtable_name) {
@@ -4864,6 +4873,33 @@ wuffs_base__io_transformer__transform_io(wuffs_base__io_transformer* self,
   }
 
   return wuffs_base__make_status(wuffs_base__error__bad_vtable);
+}
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__range_ii_u64  //
+wuffs_base__io_transformer__workbuf_len(
+    const wuffs_base__io_transformer* self) {
+  if (!self) {
+    return wuffs_base__utility__make_range_ii_u64(0, 0);
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return wuffs_base__utility__make_range_ii_u64(0, 0);
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__io_transformer__vtable_name) {
+      const wuffs_base__io_transformer__func_ptrs* func_ptrs =
+          (const wuffs_base__io_transformer__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->workbuf_len)(self);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return wuffs_base__utility__make_range_ii_u64(0, 0);
 }
 
 // ---------------- Images
@@ -6446,6 +6482,8 @@ const wuffs_base__io_transformer__func_ptrs
                                wuffs_base__io_buffer*,
                                wuffs_base__slice_u8))(
             &wuffs_deflate__decoder__transform_io),
+        (wuffs_base__range_ii_u64(*)(const void*))(
+            &wuffs_deflate__decoder__workbuf_len),
 };
 
 // ---------------- Initializer Implementations
@@ -8278,6 +8316,8 @@ const wuffs_base__io_transformer__func_ptrs
                                wuffs_base__io_buffer*,
                                wuffs_base__slice_u8))(
             &wuffs_lzw__decoder__transform_io),
+        (wuffs_base__range_ii_u64(*)(const void*))(
+            &wuffs_lzw__decoder__workbuf_len),
 };
 
 // ---------------- Initializer Implementations
@@ -11496,6 +11536,8 @@ const wuffs_base__io_transformer__func_ptrs
                                wuffs_base__io_buffer*,
                                wuffs_base__slice_u8))(
             &wuffs_gzip__decoder__transform_io),
+        (wuffs_base__range_ii_u64(*)(const void*))(
+            &wuffs_gzip__decoder__workbuf_len),
 };
 
 // ---------------- Initializer Implementations
@@ -12000,6 +12042,8 @@ const wuffs_base__io_transformer__func_ptrs
                                wuffs_base__io_buffer*,
                                wuffs_base__slice_u8))(
             &wuffs_zlib__decoder__transform_io),
+        (wuffs_base__range_ii_u64(*)(const void*))(
+            &wuffs_zlib__decoder__workbuf_len),
 };
 
 // ---------------- Initializer Implementations
