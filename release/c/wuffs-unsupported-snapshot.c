@@ -2959,6 +2959,12 @@ sizeof__wuffs_deflate__decoder();
 
 // ---------------- Upcasts
 
+static inline wuffs_base__io_transformer*  //
+wuffs_deflate__decoder__upcast_as__wuffs_base__io_transformer(
+    wuffs_deflate__decoder* p) {
+  return (wuffs_base__io_transformer*)p;
+}
+
 // ---------------- Public Function Prototypes
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
@@ -2994,6 +3000,7 @@ struct wuffs_deflate__decoder__struct {
   struct {
     uint32_t magic;
     uint32_t active_coroutine;
+    wuffs_base__vtable vtable_for__wuffs_base__io_transformer;
     wuffs_base__vtable null_vtable;
 
     uint32_t f_bits;
@@ -3088,6 +3095,11 @@ struct wuffs_deflate__decoder__struct {
                                               wuffs_version, initialize_flags);
   }
 
+  inline wuffs_base__io_transformer*  //
+  upcast_as__wuffs_base__io_transformer() {
+    return (wuffs_base__io_transformer*)this;
+  }
+
   inline wuffs_base__empty_struct  //
   add_history(wuffs_base__slice_u8 a_hist) {
     return wuffs_deflate__decoder__add_history(this, a_hist);
@@ -3150,6 +3162,12 @@ sizeof__wuffs_lzw__decoder();
 
 // ---------------- Upcasts
 
+static inline wuffs_base__io_transformer*  //
+wuffs_lzw__decoder__upcast_as__wuffs_base__io_transformer(
+    wuffs_lzw__decoder* p) {
+  return (wuffs_base__io_transformer*)p;
+}
+
 // ---------------- Public Function Prototypes
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
@@ -3187,6 +3205,7 @@ struct wuffs_lzw__decoder__struct {
   struct {
     uint32_t magic;
     uint32_t active_coroutine;
+    wuffs_base__vtable vtable_for__wuffs_base__io_transformer;
     wuffs_base__vtable null_vtable;
 
     uint32_t f_set_literal_width_arg;
@@ -3249,6 +3268,11 @@ struct wuffs_lzw__decoder__struct {
              uint32_t initialize_flags) {
     return wuffs_lzw__decoder__initialize(this, sizeof_star_self, wuffs_version,
                                           initialize_flags);
+  }
+
+  inline wuffs_base__io_transformer*  //
+  upcast_as__wuffs_base__io_transformer() {
+    return (wuffs_base__io_transformer*)this;
   }
 
   inline wuffs_base__empty_struct  //
@@ -3697,6 +3721,12 @@ sizeof__wuffs_gzip__decoder();
 
 // ---------------- Upcasts
 
+static inline wuffs_base__io_transformer*  //
+wuffs_gzip__decoder__upcast_as__wuffs_base__io_transformer(
+    wuffs_gzip__decoder* p) {
+  return (wuffs_base__io_transformer*)p;
+}
+
 // ---------------- Public Function Prototypes
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
@@ -3731,6 +3761,7 @@ struct wuffs_gzip__decoder__struct {
   struct {
     uint32_t magic;
     uint32_t active_coroutine;
+    wuffs_base__vtable vtable_for__wuffs_base__io_transformer;
     wuffs_base__vtable null_vtable;
 
     bool f_ignore_checksum;
@@ -3786,6 +3817,11 @@ struct wuffs_gzip__decoder__struct {
              uint32_t initialize_flags) {
     return wuffs_gzip__decoder__initialize(this, sizeof_star_self,
                                            wuffs_version, initialize_flags);
+  }
+
+  inline wuffs_base__io_transformer*  //
+  upcast_as__wuffs_base__io_transformer() {
+    return (wuffs_base__io_transformer*)this;
   }
 
   inline wuffs_base__empty_struct  //
@@ -3855,6 +3891,12 @@ sizeof__wuffs_zlib__decoder();
 
 // ---------------- Upcasts
 
+static inline wuffs_base__io_transformer*  //
+wuffs_zlib__decoder__upcast_as__wuffs_base__io_transformer(
+    wuffs_zlib__decoder* p) {
+  return (wuffs_base__io_transformer*)p;
+}
+
 // ---------------- Public Function Prototypes
 
 WUFFS_BASE__MAYBE_STATIC uint32_t  //
@@ -3896,6 +3938,7 @@ struct wuffs_zlib__decoder__struct {
   struct {
     uint32_t magic;
     uint32_t active_coroutine;
+    wuffs_base__vtable vtable_for__wuffs_base__io_transformer;
     wuffs_base__vtable null_vtable;
 
     bool f_bad_call_sequence;
@@ -3955,6 +3998,11 @@ struct wuffs_zlib__decoder__struct {
              uint32_t initialize_flags) {
     return wuffs_zlib__decoder__initialize(this, sizeof_star_self,
                                            wuffs_version, initialize_flags);
+  }
+
+  inline wuffs_base__io_transformer*  //
+  upcast_as__wuffs_base__io_transformer() {
+    return (wuffs_base__io_transformer*)this;
   }
 
   inline uint32_t  //
@@ -6391,6 +6439,15 @@ wuffs_deflate__decoder__decode_huffman_slow(wuffs_deflate__decoder* self,
 
 // ---------------- VTables
 
+const wuffs_base__io_transformer__func_ptrs
+    wuffs_deflate__decoder__func_ptrs_for__wuffs_base__io_transformer = {
+        (wuffs_base__status(*)(void*,
+                               wuffs_base__io_buffer*,
+                               wuffs_base__io_buffer*,
+                               wuffs_base__slice_u8))(
+            &wuffs_deflate__decoder__transform_io),
+};
+
 // ---------------- Initializer Implementations
 
 wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
@@ -6434,6 +6491,10 @@ wuffs_deflate__decoder__initialize(wuffs_deflate__decoder* self,
   }
 
   self->private_impl.magic = WUFFS_BASE__MAGIC;
+  self->private_impl.vtable_for__wuffs_base__io_transformer.vtable_name =
+      wuffs_base__io_transformer__vtable_name;
+  self->private_impl.vtable_for__wuffs_base__io_transformer.function_pointers =
+      (const void*)(&wuffs_deflate__decoder__func_ptrs_for__wuffs_base__io_transformer);
   return wuffs_base__make_status(NULL);
 }
 
@@ -8210,6 +8271,15 @@ wuffs_lzw__decoder__write_to(wuffs_lzw__decoder* self,
 
 // ---------------- VTables
 
+const wuffs_base__io_transformer__func_ptrs
+    wuffs_lzw__decoder__func_ptrs_for__wuffs_base__io_transformer = {
+        (wuffs_base__status(*)(void*,
+                               wuffs_base__io_buffer*,
+                               wuffs_base__io_buffer*,
+                               wuffs_base__slice_u8))(
+            &wuffs_lzw__decoder__transform_io),
+};
+
 // ---------------- Initializer Implementations
 
 wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
@@ -8253,6 +8323,10 @@ wuffs_lzw__decoder__initialize(wuffs_lzw__decoder* self,
   }
 
   self->private_impl.magic = WUFFS_BASE__MAGIC;
+  self->private_impl.vtable_for__wuffs_base__io_transformer.vtable_name =
+      wuffs_base__io_transformer__vtable_name;
+  self->private_impl.vtable_for__wuffs_base__io_transformer.function_pointers =
+      (const void*)(&wuffs_lzw__decoder__func_ptrs_for__wuffs_base__io_transformer);
   return wuffs_base__make_status(NULL);
 }
 
@@ -11415,6 +11489,15 @@ const char* wuffs_gzip__error__bad_header = "#gzip: bad header";
 
 // ---------------- VTables
 
+const wuffs_base__io_transformer__func_ptrs
+    wuffs_gzip__decoder__func_ptrs_for__wuffs_base__io_transformer = {
+        (wuffs_base__status(*)(void*,
+                               wuffs_base__io_buffer*,
+                               wuffs_base__io_buffer*,
+                               wuffs_base__slice_u8))(
+            &wuffs_gzip__decoder__transform_io),
+};
+
 // ---------------- Initializer Implementations
 
 wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
@@ -11474,6 +11557,10 @@ wuffs_gzip__decoder__initialize(wuffs_gzip__decoder* self,
     }
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
+  self->private_impl.vtable_for__wuffs_base__io_transformer.vtable_name =
+      wuffs_base__io_transformer__vtable_name;
+  self->private_impl.vtable_for__wuffs_base__io_transformer.function_pointers =
+      (const void*)(&wuffs_gzip__decoder__func_ptrs_for__wuffs_base__io_transformer);
   return wuffs_base__make_status(NULL);
 }
 
@@ -11906,6 +11993,15 @@ const char* wuffs_zlib__error__incorrect_dictionary =
 
 // ---------------- VTables
 
+const wuffs_base__io_transformer__func_ptrs
+    wuffs_zlib__decoder__func_ptrs_for__wuffs_base__io_transformer = {
+        (wuffs_base__status(*)(void*,
+                               wuffs_base__io_buffer*,
+                               wuffs_base__io_buffer*,
+                               wuffs_base__slice_u8))(
+            &wuffs_zlib__decoder__transform_io),
+};
+
 // ---------------- Initializer Implementations
 
 wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
@@ -11974,6 +12070,10 @@ wuffs_zlib__decoder__initialize(wuffs_zlib__decoder* self,
     }
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
+  self->private_impl.vtable_for__wuffs_base__io_transformer.vtable_name =
+      wuffs_base__io_transformer__vtable_name;
+  self->private_impl.vtable_for__wuffs_base__io_transformer.function_pointers =
+      (const void*)(&wuffs_zlib__decoder__func_ptrs_for__wuffs_base__io_transformer);
   return wuffs_base__make_status(NULL);
 }
 

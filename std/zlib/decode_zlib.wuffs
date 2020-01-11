@@ -26,7 +26,7 @@ pub status "#incorrect dictionary"
 // TODO: reference deflate.decoder_workbuf_len_max_incl_worst_case.
 pub const decoder_workbuf_len_max_incl_worst_case base.u64 = 1
 
-pub struct decoder?(
+pub struct decoder? implements base.io_transformer(
 	bad_call_sequence : base.bool,
 	header_complete   : base.bool,
 

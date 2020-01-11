@@ -155,6 +155,18 @@ golden_test deflate_romeo_fixed_gt = {
 
 // ---------------- Deflate Tests
 
+const char* test_wuffs_deflate_decode_interface() {
+  CHECK_FOCUS(__func__);
+  wuffs_deflate__decoder dec;
+  CHECK_STATUS("initialize",
+               wuffs_deflate__decoder__initialize(
+                   &dec, sizeof dec, WUFFS_VERSION,
+                   WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+  return do_test__wuffs_base__io_transformer(
+      wuffs_deflate__decoder__upcast_as__wuffs_base__io_transformer(&dec),
+      "test/data/romeo.txt.deflate", 0, SIZE_MAX, 942, 0x0A);
+}
+
 const char* wuffs_deflate_decode(wuffs_base__io_buffer* dst,
                                  wuffs_base__io_buffer* src,
                                  uint32_t wuffs_initialize_flags,
@@ -825,6 +837,7 @@ proc tests[] = {
     test_wuffs_deflate_decode_deflate_distance_32768,             //
     test_wuffs_deflate_decode_deflate_distance_code_31,           //
     test_wuffs_deflate_decode_deflate_huffman_primlen_9,          //
+    test_wuffs_deflate_decode_interface,                          //
     test_wuffs_deflate_decode_midsummer,                          //
     test_wuffs_deflate_decode_pi_just_one_read,                   //
     test_wuffs_deflate_decode_pi_many_big_reads,                  //

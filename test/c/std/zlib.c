@@ -94,6 +94,18 @@ const size_t zlib_sheep_want_len = 11;
 
 // ---------------- Zlib Tests
 
+const char* test_wuffs_zlib_decode_interface() {
+  CHECK_FOCUS(__func__);
+  wuffs_zlib__decoder dec;
+  CHECK_STATUS("initialize",
+               wuffs_zlib__decoder__initialize(
+                   &dec, sizeof dec, WUFFS_VERSION,
+                   WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+  return do_test__wuffs_base__io_transformer(
+      wuffs_zlib__decoder__upcast_as__wuffs_base__io_transformer(&dec),
+      "test/data/romeo.txt.zlib", 0, SIZE_MAX, 942, 0x0A);
+}
+
 const char* wuffs_zlib_decode(wuffs_base__io_buffer* dst,
                               wuffs_base__io_buffer* src,
                               uint32_t wuffs_initialize_flags,
@@ -347,6 +359,7 @@ proc tests[] = {
     test_wuffs_zlib_checksum_verify_bad0,  //
     test_wuffs_zlib_checksum_verify_bad3,  //
     test_wuffs_zlib_checksum_verify_good,  //
+    test_wuffs_zlib_decode_interface,      //
     test_wuffs_zlib_decode_midsummer,      //
     test_wuffs_zlib_decode_pi,             //
     test_wuffs_zlib_decode_sheep,          //

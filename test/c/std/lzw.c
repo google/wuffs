@@ -66,6 +66,18 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 
 // ---------------- LZW Tests
 
+const char* test_wuffs_lzw_decode_interface() {
+  CHECK_FOCUS(__func__);
+  wuffs_lzw__decoder dec;
+  CHECK_STATUS("initialize",
+               wuffs_lzw__decoder__initialize(
+                   &dec, sizeof dec, WUFFS_VERSION,
+                   WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+  return do_test__wuffs_base__io_transformer(
+      wuffs_lzw__decoder__upcast_as__wuffs_base__io_transformer(&dec),
+      "test/data/bricks-nodither.indexes.giflzw", 1, SIZE_MAX, 19200, 0x4F);
+}
+
 const char* do_test_wuffs_lzw_decode(const char* src_filename,
                                      uint64_t src_size,
                                      const char* want_filename,
@@ -416,6 +428,7 @@ proc tests[] = {
 
     test_wuffs_lzw_decode_bricks_dither,            //
     test_wuffs_lzw_decode_bricks_nodither,          //
+    test_wuffs_lzw_decode_interface,                //
     test_wuffs_lzw_decode_many_big_reads,           //
     test_wuffs_lzw_decode_many_small_writes_reads,  //
     test_wuffs_lzw_decode_output_bad,               //

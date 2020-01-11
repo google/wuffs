@@ -65,7 +65,7 @@ pri const dcode_magic_numbers array[32] base.u32 = [
 pri const huffs_table_size base.u32 = 1024
 pri const huffs_table_mask base.u32 = 1023
 
-pub struct decoder?(
+pub struct decoder? implements base.io_transformer(
 	// These fields yield src's bits in Least Significant Bits order.
 	bits   : base.u32,
 	n_bits : base.u32,

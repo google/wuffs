@@ -83,6 +83,18 @@ golden_test gzip_pi_gt = {
 
 // ---------------- Gzip Tests
 
+const char* test_wuffs_gzip_decode_interface() {
+  CHECK_FOCUS(__func__);
+  wuffs_gzip__decoder dec;
+  CHECK_STATUS("initialize",
+               wuffs_gzip__decoder__initialize(
+                   &dec, sizeof dec, WUFFS_VERSION,
+                   WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+  return do_test__wuffs_base__io_transformer(
+      wuffs_gzip__decoder__upcast_as__wuffs_base__io_transformer(&dec),
+      "test/data/romeo.txt.gz", 0, SIZE_MAX, 942, 0x0A);
+}
+
 const char* wuffs_gzip_decode(wuffs_base__io_buffer* dst,
                               wuffs_base__io_buffer* src,
                               uint32_t wuffs_initialize_flags,
@@ -273,6 +285,7 @@ proc tests[] = {
     test_wuffs_gzip_checksum_verify_bad0,  //
     test_wuffs_gzip_checksum_verify_bad7,  //
     test_wuffs_gzip_checksum_verify_good,  //
+    test_wuffs_gzip_decode_interface,      //
     test_wuffs_gzip_decode_midsummer,      //
     test_wuffs_gzip_decode_pi,             //
 
