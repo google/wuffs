@@ -1077,6 +1077,16 @@ func (g *gen) writeCppMethods(b *buffer, n *a.Struct) error {
 	b.printf("%s() = delete;\n", fullStructName)
 	b.printf("%s(const %s&) = delete;\n", fullStructName, fullStructName)
 	b.printf("%s& operator=(const %s&) = delete;\n", fullStructName, fullStructName)
+	b.writes("\n")
+	b.writes("// As above, the size of the struct is not part of the public API, and unless\n")
+	b.writes("// WUFFS_IMPLEMENTATION is #define'd, this struct type T should be heap\n")
+	b.writes("// allocated, not stack allocated. Its size is not intended to be known at\n")
+	b.writes("// compile time, but it is unfortunately divulged as a side effect of\n")
+	b.writes("// defining C++ convenience methods. Use \"sizeof__T()\", calling the function,\n")
+	b.writes("// instead of \"sizeof T\", invoking the operator. To make the two values\n")
+	b.writes("// different, so that passing the latter will be rejected by the initialize\n")
+	b.writes("// function, we add an arbitrary amount of dead weight.\n")
+	b.writes("uint8_t dead_weight[123000000];  // 123 MB.\n")
 	b.writes("#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)\n\n")
 
 	// The empty // comment makes clang-format place the function name
