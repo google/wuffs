@@ -36,6 +36,8 @@
 extern "C" {
 #endif
 
+// ---------------- Fundamentals
+
 // Wuffs assumes that:
 //  - converting a uint32_t to a size_t will never overflow.
 //  - converting a size_t to a uint64_t will never overflow.
@@ -2600,6 +2602,52 @@ struct wuffs_base__hasher_u32__struct {
 
 #endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
+// --------
+
+extern const char* wuffs_base__io_transformer__vtable_name;
+
+typedef struct {
+  wuffs_base__status (*transform_io)(void* self,
+                                     wuffs_base__io_buffer* a_dst,
+                                     wuffs_base__io_buffer* a_src,
+                                     wuffs_base__slice_u8 a_workbuf);
+} wuffs_base__io_transformer__func_ptrs;
+
+typedef struct wuffs_base__io_transformer__struct wuffs_base__io_transformer;
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
+wuffs_base__io_transformer__transform_io(wuffs_base__io_transformer* self,
+                                         wuffs_base__io_buffer* a_dst,
+                                         wuffs_base__io_buffer* a_src,
+                                         wuffs_base__slice_u8 a_workbuf);
+
+#if defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
+
+struct wuffs_base__io_transformer__struct {
+  struct {
+    uint32_t magic;
+    uint32_t active_coroutine;
+    wuffs_base__vtable first_vtable;
+  } private_impl;
+
+#ifdef __cplusplus
+
+  inline wuffs_base__status  //
+  transform_io(wuffs_base__io_buffer* a_dst,
+               wuffs_base__io_buffer* a_src,
+               wuffs_base__slice_u8 a_workbuf) {
+    return wuffs_base__io_transformer__transform_io(this, a_dst, a_src,
+                                                    a_workbuf);
+  }
+
+#endif  // __cplusplus
+
+};  // struct wuffs_base__io_transformer__struct
+
+#endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
+
+// ----------------
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif
@@ -4732,6 +4780,42 @@ wuffs_base__hasher_u32__update_u32(wuffs_base__hasher_u32* self,
   }
 
   return 0;
+}
+
+// --------
+
+const char* wuffs_base__io_transformer__vtable_name =
+    "{vtable}wuffs_base__io_transformer";
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
+wuffs_base__io_transformer__transform_io(wuffs_base__io_transformer* self,
+                                         wuffs_base__io_buffer* a_dst,
+                                         wuffs_base__io_buffer* a_src,
+                                         wuffs_base__slice_u8 a_workbuf) {
+  if (!self) {
+    return wuffs_base__make_status(wuffs_base__error__bad_receiver);
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_status(
+        (self->private_impl.magic == WUFFS_BASE__DISABLED)
+            ? wuffs_base__error__disabled_by_previous_error
+            : wuffs_base__error__initialize_not_called);
+  }
+
+  wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__io_transformer__vtable_name) {
+      const wuffs_base__io_transformer__func_ptrs* func_ptrs =
+          (const wuffs_base__io_transformer__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->transform_io)(self, a_dst, a_src, a_workbuf);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return wuffs_base__make_status(wuffs_base__error__bad_vtable);
 }
 
 // ---------------- Images

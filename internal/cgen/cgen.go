@@ -334,7 +334,11 @@ func insertInterfaceDeclarations(buf *buffer) error {
 	}
 
 	buf.writes("// ---------------- Interface Declarations.\n\n")
-	for _, n := range builtin.Interfaces {
+	for i, n := range builtin.Interfaces {
+		if i > 0 {
+			buf.writes("// --------\n\n")
+		}
+
 		qid := t.QID{t.IDBase, builtInTokenMap.ByName(n)}
 
 		buf.printf("extern const char* wuffs_base__%s__vtable_name;\n\n", n)
@@ -402,7 +406,11 @@ func insertInterfaceDefinitions(buf *buffer) error {
 	}
 
 	buf.writes("// ---------------- Interface Definitions.\n\n")
-	for _, n := range builtin.Interfaces {
+	for i, n := range builtin.Interfaces {
+		if i > 0 {
+			buf.writes("// --------\n\n")
+		}
+
 		qid := t.QID{t.IDBase, builtInTokenMap.ByName(n)}
 
 		buf.printf("const char* wuffs_base__%s__vtable_name = "+

@@ -346,16 +346,22 @@ var Funcs = []string{
 
 var Interfaces = []string{
 	"hasher_u32",
+	"io_transformer",
 }
 
 var InterfacesMap = map[string]bool{
-	"hasher_u32": true,
+	"hasher_u32":     true,
+	"io_transformer": true,
 }
 
 var InterfaceFuncs = []string{
 	// ---- hasher_u32
 
 	"hasher_u32.update_u32!(x: slice u8) u32",
+
+	// ---- io_transformer
+
+	"io_transformer.transform_io?(dst: io_writer, src: io_reader, workbuf: slice u8)",
 }
 
 // The "T1" and "T2" types here are placeholders for generic "slice T" or

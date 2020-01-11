@@ -44,6 +44,8 @@ extern "C" {
 
 // !! INSERT InterfaceDeclarations.
 
+// ----------------
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif
