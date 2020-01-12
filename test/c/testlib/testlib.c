@@ -784,6 +784,61 @@ const char* do_test__wuffs_base__hasher_u32(wuffs_base__hasher_u32* b,
   return NULL;
 }
 
+const char* do_test__wuffs_base__image_decoder(
+    wuffs_base__image_decoder* b,
+    const char* src_filename,
+    size_t src_ri,
+    size_t src_wi,
+    uint32_t want_width,
+    uint32_t want_height,
+    wuffs_base__color_u32_argb_premul want_final_pixel) {
+  if ((want_width > 16384) || (want_height > 16384) ||
+      ((want_width * want_height * 4) > BUFFER_SIZE)) {
+    return "want dimensions are too large";
+  }
+
+  wuffs_base__image_config ic = ((wuffs_base__image_config){});
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = global_src_slice,
+  });
+  CHECK_STRING(read_file_fragment(&src, src_filename, src_ri, src_wi));
+  CHECK_STATUS("decode_image_config",
+               wuffs_base__image_decoder__decode_image_config(b, &ic, &src));
+
+  uint32_t got_width = wuffs_base__pixel_config__width(&ic.pixcfg);
+  if (got_width != want_width) {
+    RETURN_FAIL("width: got %" PRIu32 ", want %" PRIu32, got_width, want_width);
+  }
+  uint32_t got_height = wuffs_base__pixel_config__height(&ic.pixcfg);
+  if (got_height != want_height) {
+    RETURN_FAIL("height: got %" PRIu32 ", want %" PRIu32, got_height,
+                want_height);
+  }
+  wuffs_base__pixel_config__set(
+      &ic.pixcfg, WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL,
+      WUFFS_BASE__PIXEL_SUBSAMPLING__NONE, want_width, want_height);
+
+  wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
+  CHECK_STATUS("set_from_slice", wuffs_base__pixel_buffer__set_from_slice(
+                                     &pb, &ic.pixcfg, global_pixel_slice));
+  CHECK_STATUS("decode_frame", wuffs_base__image_decoder__decode_frame(
+                                   b, &pb, &src, global_work_slice, NULL));
+
+  uint64_t n = wuffs_base__pixel_config__pixbuf_len(&ic.pixcfg);
+  if (n < 4) {
+    RETURN_FAIL("pixbuf_len too small");
+  } else if (n > BUFFER_SIZE) {
+    RETURN_FAIL("pixbuf_len too large");
+  }
+  wuffs_base__color_u32_argb_premul got_final_pixel =
+      wuffs_base__load_u32le(&global_pixel_array[n - 4]);
+  if (got_final_pixel != want_final_pixel) {
+    RETURN_FAIL("final pixel: got 0x%08" PRIX32 ", want 0x%08" PRIX32,
+                got_final_pixel, want_final_pixel);
+  }
+  return NULL;
+}
+
 const char* do_test__wuffs_base__io_transformer(wuffs_base__io_transformer* b,
                                                 const char* src_filename,
                                                 size_t src_ri,

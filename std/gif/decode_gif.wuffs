@@ -46,7 +46,7 @@ pri const interlace_start array[5] base.u32 = [0xFFFFFFFF, 1, 2, 4, 0]
 pri const interlace_delta array[5] base.u8 = [1, 2, 4, 8, 8]
 pri const interlace_count array[5] base.u8 = [0, 1, 2, 4, 8]
 
-pub struct decoder?(
+pub struct decoder? implements base.image_decoder(
 	width  : base.u32,
 	height : base.u32,
 

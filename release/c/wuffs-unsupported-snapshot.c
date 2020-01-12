@@ -2604,6 +2604,190 @@ struct wuffs_base__hasher_u32__struct {
 
 // --------
 
+extern const char* wuffs_base__image_decoder__vtable_name;
+
+typedef struct {
+  wuffs_base__status (*ack_metadata_chunk)(void* self,
+                                           wuffs_base__io_buffer* a_src);
+  wuffs_base__status (*decode_frame)(void* self,
+                                     wuffs_base__pixel_buffer* a_dst,
+                                     wuffs_base__io_buffer* a_src,
+                                     wuffs_base__slice_u8 a_workbuf,
+                                     wuffs_base__decode_frame_options* a_opts);
+  wuffs_base__status (*decode_frame_config)(void* self,
+                                            wuffs_base__frame_config* a_dst,
+                                            wuffs_base__io_buffer* a_src);
+  wuffs_base__status (*decode_image_config)(void* self,
+                                            wuffs_base__image_config* a_dst,
+                                            wuffs_base__io_buffer* a_src);
+  wuffs_base__rect_ie_u32 (*frame_dirty_rect)(const void* self);
+  uint64_t (*metadata_chunk_length)(const void* self);
+  uint32_t (*metadata_fourcc)(const void* self);
+  uint32_t (*num_animation_loops)(const void* self);
+  uint64_t (*num_decoded_frame_configs)(const void* self);
+  uint64_t (*num_decoded_frames)(const void* self);
+  wuffs_base__status (*restart_frame)(void* self,
+                                      uint64_t a_index,
+                                      uint64_t a_io_position);
+  wuffs_base__empty_struct (*set_report_metadata)(void* self,
+                                                  uint32_t a_fourcc,
+                                                  bool a_report);
+  wuffs_base__range_ii_u64 (*workbuf_len)(const void* self);
+} wuffs_base__image_decoder__func_ptrs;
+
+typedef struct wuffs_base__image_decoder__struct wuffs_base__image_decoder;
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
+wuffs_base__image_decoder__ack_metadata_chunk(wuffs_base__image_decoder* self,
+                                              wuffs_base__io_buffer* a_src);
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
+wuffs_base__image_decoder__decode_frame(
+    wuffs_base__image_decoder* self,
+    wuffs_base__pixel_buffer* a_dst,
+    wuffs_base__io_buffer* a_src,
+    wuffs_base__slice_u8 a_workbuf,
+    wuffs_base__decode_frame_options* a_opts);
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
+wuffs_base__image_decoder__decode_frame_config(wuffs_base__image_decoder* self,
+                                               wuffs_base__frame_config* a_dst,
+                                               wuffs_base__io_buffer* a_src);
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
+wuffs_base__image_decoder__decode_image_config(wuffs_base__image_decoder* self,
+                                               wuffs_base__image_config* a_dst,
+                                               wuffs_base__io_buffer* a_src);
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__rect_ie_u32  //
+wuffs_base__image_decoder__frame_dirty_rect(
+    const wuffs_base__image_decoder* self);
+
+WUFFS_BASE__MAYBE_STATIC uint64_t  //
+wuffs_base__image_decoder__metadata_chunk_length(
+    const wuffs_base__image_decoder* self);
+
+WUFFS_BASE__MAYBE_STATIC uint32_t  //
+wuffs_base__image_decoder__metadata_fourcc(
+    const wuffs_base__image_decoder* self);
+
+WUFFS_BASE__MAYBE_STATIC uint32_t  //
+wuffs_base__image_decoder__num_animation_loops(
+    const wuffs_base__image_decoder* self);
+
+WUFFS_BASE__MAYBE_STATIC uint64_t  //
+wuffs_base__image_decoder__num_decoded_frame_configs(
+    const wuffs_base__image_decoder* self);
+
+WUFFS_BASE__MAYBE_STATIC uint64_t  //
+wuffs_base__image_decoder__num_decoded_frames(
+    const wuffs_base__image_decoder* self);
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
+wuffs_base__image_decoder__restart_frame(wuffs_base__image_decoder* self,
+                                         uint64_t a_index,
+                                         uint64_t a_io_position);
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
+wuffs_base__image_decoder__set_report_metadata(wuffs_base__image_decoder* self,
+                                               uint32_t a_fourcc,
+                                               bool a_report);
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__range_ii_u64  //
+wuffs_base__image_decoder__workbuf_len(const wuffs_base__image_decoder* self);
+
+#if defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
+
+struct wuffs_base__image_decoder__struct {
+  struct {
+    uint32_t magic;
+    uint32_t active_coroutine;
+    wuffs_base__vtable first_vtable;
+  } private_impl;
+
+#ifdef __cplusplus
+
+  inline wuffs_base__status  //
+  ack_metadata_chunk(wuffs_base__io_buffer* a_src) {
+    return wuffs_base__image_decoder__ack_metadata_chunk(this, a_src);
+  }
+
+  inline wuffs_base__status  //
+  decode_frame(wuffs_base__pixel_buffer* a_dst,
+               wuffs_base__io_buffer* a_src,
+               wuffs_base__slice_u8 a_workbuf,
+               wuffs_base__decode_frame_options* a_opts) {
+    return wuffs_base__image_decoder__decode_frame(this, a_dst, a_src,
+                                                   a_workbuf, a_opts);
+  }
+
+  inline wuffs_base__status  //
+  decode_frame_config(wuffs_base__frame_config* a_dst,
+                      wuffs_base__io_buffer* a_src) {
+    return wuffs_base__image_decoder__decode_frame_config(this, a_dst, a_src);
+  }
+
+  inline wuffs_base__status  //
+  decode_image_config(wuffs_base__image_config* a_dst,
+                      wuffs_base__io_buffer* a_src) {
+    return wuffs_base__image_decoder__decode_image_config(this, a_dst, a_src);
+  }
+
+  inline wuffs_base__rect_ie_u32  //
+  frame_dirty_rect() const {
+    return wuffs_base__image_decoder__frame_dirty_rect(this);
+  }
+
+  inline uint64_t  //
+  metadata_chunk_length() const {
+    return wuffs_base__image_decoder__metadata_chunk_length(this);
+  }
+
+  inline uint32_t  //
+  metadata_fourcc() const {
+    return wuffs_base__image_decoder__metadata_fourcc(this);
+  }
+
+  inline uint32_t  //
+  num_animation_loops() const {
+    return wuffs_base__image_decoder__num_animation_loops(this);
+  }
+
+  inline uint64_t  //
+  num_decoded_frame_configs() const {
+    return wuffs_base__image_decoder__num_decoded_frame_configs(this);
+  }
+
+  inline uint64_t  //
+  num_decoded_frames() const {
+    return wuffs_base__image_decoder__num_decoded_frames(this);
+  }
+
+  inline wuffs_base__status  //
+  restart_frame(uint64_t a_index, uint64_t a_io_position) {
+    return wuffs_base__image_decoder__restart_frame(this, a_index,
+                                                    a_io_position);
+  }
+
+  inline wuffs_base__empty_struct  //
+  set_report_metadata(uint32_t a_fourcc, bool a_report) {
+    return wuffs_base__image_decoder__set_report_metadata(this, a_fourcc,
+                                                          a_report);
+  }
+
+  inline wuffs_base__range_ii_u64  //
+  workbuf_len() const {
+    return wuffs_base__image_decoder__workbuf_len(this);
+  }
+
+#endif  // __cplusplus
+
+};  // struct wuffs_base__image_decoder__struct
+
+#endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
+
+// --------
+
 extern const char* wuffs_base__io_transformer__vtable_name;
 
 typedef struct {
@@ -3372,6 +3556,12 @@ sizeof__wuffs_gif__decoder();
 
 // ---------------- Upcasts
 
+static inline wuffs_base__image_decoder*  //
+wuffs_gif__decoder__upcast_as__wuffs_base__image_decoder(
+    wuffs_gif__decoder* p) {
+  return (wuffs_base__image_decoder*)p;
+}
+
 // ---------------- Public Function Prototypes
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
@@ -3451,6 +3641,7 @@ struct wuffs_gif__decoder__struct {
   struct {
     uint32_t magic;
     uint32_t active_coroutine;
+    wuffs_base__vtable vtable_for__wuffs_base__image_decoder;
     wuffs_base__vtable null_vtable;
 
     uint32_t f_width;
@@ -3604,6 +3795,11 @@ struct wuffs_gif__decoder__struct {
              uint32_t initialize_flags) {
     return wuffs_gif__decoder__initialize(this, sizeof_star_self, wuffs_version,
                                           initialize_flags);
+  }
+
+  inline wuffs_base__image_decoder*  //
+  upcast_as__wuffs_base__image_decoder() {
+    return (wuffs_base__image_decoder*)this;
   }
 
   inline wuffs_base__empty_struct  //
@@ -4837,6 +5033,378 @@ wuffs_base__hasher_u32__update_u32(wuffs_base__hasher_u32* self,
   }
 
   return 0;
+}
+
+// --------
+
+const char* wuffs_base__image_decoder__vtable_name =
+    "{vtable}wuffs_base__image_decoder";
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
+wuffs_base__image_decoder__ack_metadata_chunk(wuffs_base__image_decoder* self,
+                                              wuffs_base__io_buffer* a_src) {
+  if (!self) {
+    return wuffs_base__make_status(wuffs_base__error__bad_receiver);
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_status(
+        (self->private_impl.magic == WUFFS_BASE__DISABLED)
+            ? wuffs_base__error__disabled_by_previous_error
+            : wuffs_base__error__initialize_not_called);
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__image_decoder__vtable_name) {
+      const wuffs_base__image_decoder__func_ptrs* func_ptrs =
+          (const wuffs_base__image_decoder__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->ack_metadata_chunk)(self, a_src);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return wuffs_base__make_status(wuffs_base__error__bad_vtable);
+}
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
+wuffs_base__image_decoder__decode_frame(
+    wuffs_base__image_decoder* self,
+    wuffs_base__pixel_buffer* a_dst,
+    wuffs_base__io_buffer* a_src,
+    wuffs_base__slice_u8 a_workbuf,
+    wuffs_base__decode_frame_options* a_opts) {
+  if (!self) {
+    return wuffs_base__make_status(wuffs_base__error__bad_receiver);
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_status(
+        (self->private_impl.magic == WUFFS_BASE__DISABLED)
+            ? wuffs_base__error__disabled_by_previous_error
+            : wuffs_base__error__initialize_not_called);
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__image_decoder__vtable_name) {
+      const wuffs_base__image_decoder__func_ptrs* func_ptrs =
+          (const wuffs_base__image_decoder__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->decode_frame)(self, a_dst, a_src, a_workbuf, a_opts);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return wuffs_base__make_status(wuffs_base__error__bad_vtable);
+}
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
+wuffs_base__image_decoder__decode_frame_config(wuffs_base__image_decoder* self,
+                                               wuffs_base__frame_config* a_dst,
+                                               wuffs_base__io_buffer* a_src) {
+  if (!self) {
+    return wuffs_base__make_status(wuffs_base__error__bad_receiver);
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_status(
+        (self->private_impl.magic == WUFFS_BASE__DISABLED)
+            ? wuffs_base__error__disabled_by_previous_error
+            : wuffs_base__error__initialize_not_called);
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__image_decoder__vtable_name) {
+      const wuffs_base__image_decoder__func_ptrs* func_ptrs =
+          (const wuffs_base__image_decoder__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->decode_frame_config)(self, a_dst, a_src);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return wuffs_base__make_status(wuffs_base__error__bad_vtable);
+}
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
+wuffs_base__image_decoder__decode_image_config(wuffs_base__image_decoder* self,
+                                               wuffs_base__image_config* a_dst,
+                                               wuffs_base__io_buffer* a_src) {
+  if (!self) {
+    return wuffs_base__make_status(wuffs_base__error__bad_receiver);
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_status(
+        (self->private_impl.magic == WUFFS_BASE__DISABLED)
+            ? wuffs_base__error__disabled_by_previous_error
+            : wuffs_base__error__initialize_not_called);
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__image_decoder__vtable_name) {
+      const wuffs_base__image_decoder__func_ptrs* func_ptrs =
+          (const wuffs_base__image_decoder__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->decode_image_config)(self, a_dst, a_src);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return wuffs_base__make_status(wuffs_base__error__bad_vtable);
+}
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__rect_ie_u32  //
+wuffs_base__image_decoder__frame_dirty_rect(
+    const wuffs_base__image_decoder* self) {
+  if (!self) {
+    return wuffs_base__utility__make_rect_ie_u32(0, 0, 0, 0);
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return wuffs_base__utility__make_rect_ie_u32(0, 0, 0, 0);
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__image_decoder__vtable_name) {
+      const wuffs_base__image_decoder__func_ptrs* func_ptrs =
+          (const wuffs_base__image_decoder__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->frame_dirty_rect)(self);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return wuffs_base__utility__make_rect_ie_u32(0, 0, 0, 0);
+}
+
+WUFFS_BASE__MAYBE_STATIC uint64_t  //
+wuffs_base__image_decoder__metadata_chunk_length(
+    const wuffs_base__image_decoder* self) {
+  if (!self) {
+    return 0;
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return 0;
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__image_decoder__vtable_name) {
+      const wuffs_base__image_decoder__func_ptrs* func_ptrs =
+          (const wuffs_base__image_decoder__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->metadata_chunk_length)(self);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return 0;
+}
+
+WUFFS_BASE__MAYBE_STATIC uint32_t  //
+wuffs_base__image_decoder__metadata_fourcc(
+    const wuffs_base__image_decoder* self) {
+  if (!self) {
+    return 0;
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return 0;
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__image_decoder__vtable_name) {
+      const wuffs_base__image_decoder__func_ptrs* func_ptrs =
+          (const wuffs_base__image_decoder__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->metadata_fourcc)(self);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return 0;
+}
+
+WUFFS_BASE__MAYBE_STATIC uint32_t  //
+wuffs_base__image_decoder__num_animation_loops(
+    const wuffs_base__image_decoder* self) {
+  if (!self) {
+    return 0;
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return 0;
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__image_decoder__vtable_name) {
+      const wuffs_base__image_decoder__func_ptrs* func_ptrs =
+          (const wuffs_base__image_decoder__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->num_animation_loops)(self);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return 0;
+}
+
+WUFFS_BASE__MAYBE_STATIC uint64_t  //
+wuffs_base__image_decoder__num_decoded_frame_configs(
+    const wuffs_base__image_decoder* self) {
+  if (!self) {
+    return 0;
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return 0;
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__image_decoder__vtable_name) {
+      const wuffs_base__image_decoder__func_ptrs* func_ptrs =
+          (const wuffs_base__image_decoder__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->num_decoded_frame_configs)(self);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return 0;
+}
+
+WUFFS_BASE__MAYBE_STATIC uint64_t  //
+wuffs_base__image_decoder__num_decoded_frames(
+    const wuffs_base__image_decoder* self) {
+  if (!self) {
+    return 0;
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return 0;
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__image_decoder__vtable_name) {
+      const wuffs_base__image_decoder__func_ptrs* func_ptrs =
+          (const wuffs_base__image_decoder__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->num_decoded_frames)(self);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return 0;
+}
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
+wuffs_base__image_decoder__restart_frame(wuffs_base__image_decoder* self,
+                                         uint64_t a_index,
+                                         uint64_t a_io_position) {
+  if (!self) {
+    return wuffs_base__make_status(wuffs_base__error__bad_receiver);
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_status(
+        (self->private_impl.magic == WUFFS_BASE__DISABLED)
+            ? wuffs_base__error__disabled_by_previous_error
+            : wuffs_base__error__initialize_not_called);
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__image_decoder__vtable_name) {
+      const wuffs_base__image_decoder__func_ptrs* func_ptrs =
+          (const wuffs_base__image_decoder__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->restart_frame)(self, a_index, a_io_position);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return wuffs_base__make_status(wuffs_base__error__bad_vtable);
+}
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
+wuffs_base__image_decoder__set_report_metadata(wuffs_base__image_decoder* self,
+                                               uint32_t a_fourcc,
+                                               bool a_report) {
+  if (!self) {
+    return wuffs_base__make_empty_struct();
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_empty_struct();
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__image_decoder__vtable_name) {
+      const wuffs_base__image_decoder__func_ptrs* func_ptrs =
+          (const wuffs_base__image_decoder__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->set_report_metadata)(self, a_fourcc, a_report);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return wuffs_base__make_empty_struct();
+}
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__range_ii_u64  //
+wuffs_base__image_decoder__workbuf_len(const wuffs_base__image_decoder* self) {
+  if (!self) {
+    return wuffs_base__utility__make_range_ii_u64(0, 0);
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return wuffs_base__utility__make_range_ii_u64(0, 0);
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__image_decoder__vtable_name) {
+      const wuffs_base__image_decoder__func_ptrs* func_ptrs =
+          (const wuffs_base__image_decoder__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->workbuf_len)(self);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return wuffs_base__utility__make_range_ii_u64(0, 0);
 }
 
 // --------
@@ -8926,6 +9494,40 @@ wuffs_gif__decoder__copy_to_image_buffer(wuffs_gif__decoder* self,
 
 // ---------------- VTables
 
+const wuffs_base__image_decoder__func_ptrs
+    wuffs_gif__decoder__func_ptrs_for__wuffs_base__image_decoder = {
+        (wuffs_base__status(*)(void*, wuffs_base__io_buffer*))(
+            &wuffs_gif__decoder__ack_metadata_chunk),
+        (wuffs_base__status(*)(void*,
+                               wuffs_base__pixel_buffer*,
+                               wuffs_base__io_buffer*,
+                               wuffs_base__slice_u8,
+                               wuffs_base__decode_frame_options*))(
+            &wuffs_gif__decoder__decode_frame),
+        (wuffs_base__status(*)(void*,
+                               wuffs_base__frame_config*,
+                               wuffs_base__io_buffer*))(
+            &wuffs_gif__decoder__decode_frame_config),
+        (wuffs_base__status(*)(void*,
+                               wuffs_base__image_config*,
+                               wuffs_base__io_buffer*))(
+            &wuffs_gif__decoder__decode_image_config),
+        (wuffs_base__rect_ie_u32(*)(const void*))(
+            &wuffs_gif__decoder__frame_dirty_rect),
+        (uint64_t(*)(const void*))(&wuffs_gif__decoder__metadata_chunk_length),
+        (uint32_t(*)(const void*))(&wuffs_gif__decoder__metadata_fourcc),
+        (uint32_t(*)(const void*))(&wuffs_gif__decoder__num_animation_loops),
+        (uint64_t(*)(const void*))(
+            &wuffs_gif__decoder__num_decoded_frame_configs),
+        (uint64_t(*)(const void*))(&wuffs_gif__decoder__num_decoded_frames),
+        (wuffs_base__status(*)(void*, uint64_t, uint64_t))(
+            &wuffs_gif__decoder__restart_frame),
+        (wuffs_base__empty_struct(*)(void*, uint32_t, bool))(
+            &wuffs_gif__decoder__set_report_metadata),
+        (wuffs_base__range_ii_u64(*)(const void*))(
+            &wuffs_gif__decoder__workbuf_len),
+};
+
 // ---------------- Initializer Implementations
 
 wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
@@ -8977,6 +9579,10 @@ wuffs_gif__decoder__initialize(wuffs_gif__decoder* self,
     }
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
+  self->private_impl.vtable_for__wuffs_base__image_decoder.vtable_name =
+      wuffs_base__image_decoder__vtable_name;
+  self->private_impl.vtable_for__wuffs_base__image_decoder.function_pointers =
+      (const void*)(&wuffs_gif__decoder__func_ptrs_for__wuffs_base__image_decoder);
   return wuffs_base__make_status(NULL);
 }
 

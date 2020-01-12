@@ -195,6 +195,18 @@ const char* test_basic_sub_struct_initializer() {
 
 // ---------------- GIF Tests
 
+const char* test_wuffs_gif_decode_interface() {
+  CHECK_FOCUS(__func__);
+  wuffs_gif__decoder dec;
+  CHECK_STATUS("initialize",
+               wuffs_gif__decoder__initialize(
+                   &dec, sizeof dec, WUFFS_VERSION,
+                   WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+  return do_test__wuffs_base__image_decoder(
+      wuffs_gif__decoder__upcast_as__wuffs_base__image_decoder(&dec),
+      "test/data/bricks-nodither.gif", 0, SIZE_MAX, 160, 120, 0xFF012463);
+}
+
 const char* wuffs_gif_decode(wuffs_base__io_buffer* dst,
                              uint32_t wuffs_initialize_flags,
                              wuffs_base__pixel_format pixfmt,
@@ -2267,6 +2279,7 @@ proc tests[] = {
     test_wuffs_gif_decode_input_is_a_gif_many_medium_reads,  //
     test_wuffs_gif_decode_input_is_a_gif_many_small_reads,   //
     test_wuffs_gif_decode_input_is_a_png,                    //
+    test_wuffs_gif_decode_interface,                         //
     test_wuffs_gif_decode_interlaced_truncated,              //
     test_wuffs_gif_decode_metadata_empty,                    //
     test_wuffs_gif_decode_metadata_full,                     //

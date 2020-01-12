@@ -346,11 +346,13 @@ var Funcs = []string{
 
 var Interfaces = []string{
 	"hasher_u32",
+	"image_decoder",
 	"io_transformer",
 }
 
 var InterfacesMap = map[string]bool{
 	"hasher_u32":     true,
+	"image_decoder":  true,
 	"io_transformer": true,
 }
 
@@ -358,6 +360,24 @@ var InterfaceFuncs = []string{
 	// ---- hasher_u32
 
 	"hasher_u32.update_u32!(x: slice u8) u32",
+
+	// ---- image_decoder
+
+	"image_decoder.ack_metadata_chunk?(src: io_reader)",
+	"image_decoder.decode_frame?(" +
+		"dst: ptr pixel_buffer, src: io_reader, workbuf: slice u8," +
+		"opts: nptr decode_frame_options)",
+	"image_decoder.decode_frame_config?(dst: nptr frame_config, src: io_reader)",
+	"image_decoder.decode_image_config?(dst: nptr image_config, src: io_reader)",
+	"image_decoder.frame_dirty_rect() rect_ie_u32",
+	"image_decoder.metadata_chunk_length() u64",
+	"image_decoder.metadata_fourcc() u32",
+	"image_decoder.num_animation_loops() u32",
+	"image_decoder.num_decoded_frame_configs() u64",
+	"image_decoder.num_decoded_frames() u64",
+	"image_decoder.restart_frame!(index: u64, io_position: u64) status",
+	"image_decoder.set_report_metadata!(fourcc: u32, report: bool)",
+	"image_decoder.workbuf_len() range_ii_u64",
 
 	// ---- io_transformer
 
