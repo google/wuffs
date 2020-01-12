@@ -540,6 +540,23 @@ const char* read_file(wuffs_base__io_buffer* dst, const char* path) {
   return NULL;
 }
 
+const char* read_file_fragment(wuffs_base__io_buffer* dst,
+                               const char* path,
+                               size_t ri_min,
+                               size_t wi_max) {
+  CHECK_STRING(read_file(dst, path));
+  if (dst->meta.ri < ri_min) {
+    dst->meta.ri = ri_min;
+  }
+  if (dst->meta.wi > wi_max) {
+    dst->meta.wi = wi_max;
+  }
+  if (dst->meta.ri > dst->meta.wi) {
+    RETURN_FAIL("read_file_fragment(\"%s\"): ri > wi", path);
+  }
+  return NULL;
+}
+
 char* hex_dump(char* msg, wuffs_base__io_buffer* buf, size_t i) {
   if (!msg || !buf) {
     RETURN_FAIL("hex_dump: NULL argument");
@@ -747,17 +764,27 @@ const char* do_test_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
 
 // --------
 
-const char* do_test__wuffs_base__hasher_u32(wuffs_base__hasher_u32* h,
-                                            wuffs_base__slice_u8 data,
+const char* do_test__wuffs_base__hasher_u32(wuffs_base__hasher_u32* b,
+                                            const char* src_filename,
+                                            size_t src_ri,
+                                            size_t src_wi,
                                             uint32_t want) {
-  uint32_t got = wuffs_base__hasher_u32__update_u32(h, data);
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = global_src_slice,
+  });
+  CHECK_STRING(read_file_fragment(&src, src_filename, src_ri, src_wi));
+  uint32_t got = wuffs_base__hasher_u32__update_u32(
+      b, ((wuffs_base__slice_u8){
+             .ptr = (uint8_t*)(src.data.ptr + src.meta.ri),
+             .len = (size_t)(src.meta.wi - src.meta.ri),
+         }));
   if (got != want) {
     RETURN_FAIL("got 0x%08" PRIX32 ", want 0x%08" PRIX32, got, want);
   }
   return NULL;
 }
 
-const char* do_test__wuffs_base__io_transformer(wuffs_base__io_transformer* t,
+const char* do_test__wuffs_base__io_transformer(wuffs_base__io_transformer* b,
                                                 const char* src_filename,
                                                 size_t src_ri,
                                                 size_t src_wi,
@@ -767,7 +794,7 @@ const char* do_test__wuffs_base__io_transformer(wuffs_base__io_transformer* t,
     return "want_wi is too large";
   }
   wuffs_base__range_ii_u64 workbuf_len =
-      wuffs_base__io_transformer__workbuf_len(t);
+      wuffs_base__io_transformer__workbuf_len(b);
   if (workbuf_len.min_incl > workbuf_len.max_incl) {
     return "inconsistent workbuf_len";
   }
@@ -781,18 +808,9 @@ const char* do_test__wuffs_base__io_transformer(wuffs_base__io_transformer* t,
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
       .data = global_src_slice,
   });
-  CHECK_STRING(read_file(&src, src_filename));
-  if (src.meta.ri < src_ri) {
-    src.meta.ri = src_ri;
-  }
-  if (src.meta.wi > src_wi) {
-    src.meta.wi = src_wi;
-  }
-  if (src.meta.ri > src.meta.wi) {
-    return "inconsistent src_ri and src_wi";
-  }
+  CHECK_STRING(read_file_fragment(&src, src_filename, src_ri, src_wi));
   CHECK_STATUS("transform_io", wuffs_base__io_transformer__transform_io(
-                                   t, &got, &src, global_work_slice));
+                                   b, &got, &src, global_work_slice));
   if (got.meta.wi != want_wi) {
     RETURN_FAIL("dst wi: got %zu, want %zu", got.meta.wi, want_wi);
   }
