@@ -822,7 +822,8 @@ const char* do_test__wuffs_base__image_decoder(
   CHECK_STATUS("set_from_slice", wuffs_base__pixel_buffer__set_from_slice(
                                      &pb, &ic.pixcfg, global_pixel_slice));
   CHECK_STATUS("decode_frame", wuffs_base__image_decoder__decode_frame(
-                                   b, &pb, &src, global_work_slice, NULL));
+                                   b, &pb, &src, WUFFS_BASE__PIXEL_BLEND__SRC,
+                                   global_work_slice, NULL));
 
   uint64_t n = wuffs_base__pixel_config__pixbuf_len(&ic.pixcfg);
   if (n < 4) {

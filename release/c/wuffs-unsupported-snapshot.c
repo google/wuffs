@@ -1475,6 +1475,17 @@ typedef uint32_t wuffs_base__color_u32_argb_premul;
 
 // --------
 
+typedef uint8_t wuffs_base__pixel_blend;
+
+// wuffs_base__pixel_blend encodes how to blend source and destination pixels,
+// accounting for transparency. It encompasses the Porter-Duff compositing
+// operators as well as the other blending modes defined by PDF.
+//
+// TODO: implement the other modes.
+#define WUFFS_BASE__PIXEL_BLEND__SRC ((wuffs_base__pixel_blend)0)
+
+// --------
+
 // wuffs_base__pixel_format encodes the format of the bytes that constitute an
 // image frame's pixel data.
 //
@@ -2053,6 +2064,8 @@ wuffs_base__image_config::first_frame_is_opaque() const {
 
 // --------
 
+// Deprecated: use wuffs_base__pixel_blend instead.
+//
 // wuffs_base__animation_blend encodes, for an animated image, how to blend the
 // transparent pixels of this frame with the existing canvas. In Porter-Duff
 // compositing operator terminology:
@@ -2524,7 +2537,8 @@ typedef struct {
   inline wuffs_base__status prepare(wuffs_base__pixel_format dst_format,
                                     wuffs_base__slice_u8 dst_palette,
                                     wuffs_base__pixel_format src_format,
-                                    wuffs_base__slice_u8 src_palette);
+                                    wuffs_base__slice_u8 src_palette,
+                                    wuffs_base__pixel_blend blend);
   inline uint64_t swizzle_interleaved(wuffs_base__slice_u8 dst,
                                       wuffs_base__slice_u8 dst_palette,
                                       wuffs_base__slice_u8 src) const;
@@ -2537,7 +2551,8 @@ wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
                                     wuffs_base__pixel_format dst_format,
                                     wuffs_base__slice_u8 dst_palette,
                                     wuffs_base__pixel_format src_format,
-                                    wuffs_base__slice_u8 src_palette);
+                                    wuffs_base__slice_u8 src_palette,
+                                    wuffs_base__pixel_blend blend);
 
 uint64_t  //
 wuffs_base__pixel_swizzler__swizzle_interleaved(
@@ -2552,9 +2567,10 @@ inline wuffs_base__status  //
 wuffs_base__pixel_swizzler::prepare(wuffs_base__pixel_format dst_format,
                                     wuffs_base__slice_u8 dst_palette,
                                     wuffs_base__pixel_format src_format,
-                                    wuffs_base__slice_u8 src_palette) {
+                                    wuffs_base__slice_u8 src_palette,
+                                    wuffs_base__pixel_blend blend) {
   return wuffs_base__pixel_swizzler__prepare(this, dst_format, dst_palette,
-                                             src_format, src_palette);
+                                             src_format, src_palette, blend);
 }
 
 uint64_t  //
@@ -2614,6 +2630,7 @@ typedef struct {
   wuffs_base__status (*decode_frame)(void* self,
                                      wuffs_base__pixel_buffer* a_dst,
                                      wuffs_base__io_buffer* a_src,
+                                     wuffs_base__pixel_blend a_blend,
                                      wuffs_base__slice_u8 a_workbuf,
                                      wuffs_base__decode_frame_options* a_opts);
   wuffs_base__status (*decode_frame_config)(void* self,
@@ -2648,6 +2665,7 @@ wuffs_base__image_decoder__decode_frame(
     wuffs_base__image_decoder* self,
     wuffs_base__pixel_buffer* a_dst,
     wuffs_base__io_buffer* a_src,
+    wuffs_base__pixel_blend a_blend,
     wuffs_base__slice_u8 a_workbuf,
     wuffs_base__decode_frame_options* a_opts);
 
@@ -2717,9 +2735,10 @@ struct wuffs_base__image_decoder__struct {
   inline wuffs_base__status  //
   decode_frame(wuffs_base__pixel_buffer* a_dst,
                wuffs_base__io_buffer* a_src,
+               wuffs_base__pixel_blend a_blend,
                wuffs_base__slice_u8 a_workbuf,
                wuffs_base__decode_frame_options* a_opts) {
-    return wuffs_base__image_decoder__decode_frame(this, a_dst, a_src,
+    return wuffs_base__image_decoder__decode_frame(this, a_dst, a_src, a_blend,
                                                    a_workbuf, a_opts);
   }
 
@@ -3620,6 +3639,7 @@ WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_gif__decoder__decode_frame(wuffs_gif__decoder* self,
                                  wuffs_base__pixel_buffer* a_dst,
                                  wuffs_base__io_buffer* a_src,
+                                 wuffs_base__pixel_blend a_blend,
                                  wuffs_base__slice_u8 a_workbuf,
                                  wuffs_base__decode_frame_options* a_opts);
 
@@ -3874,10 +3894,11 @@ struct wuffs_gif__decoder__struct {
   inline wuffs_base__status  //
   decode_frame(wuffs_base__pixel_buffer* a_dst,
                wuffs_base__io_buffer* a_src,
+               wuffs_base__pixel_blend a_blend,
                wuffs_base__slice_u8 a_workbuf,
                wuffs_base__decode_frame_options* a_opts) {
-    return wuffs_gif__decoder__decode_frame(this, a_dst, a_src, a_workbuf,
-                                            a_opts);
+    return wuffs_gif__decoder__decode_frame(this, a_dst, a_src, a_blend,
+                                            a_workbuf, a_opts);
   }
 
 #endif  // __cplusplus
@@ -5076,6 +5097,7 @@ wuffs_base__image_decoder__decode_frame(
     wuffs_base__image_decoder* self,
     wuffs_base__pixel_buffer* a_dst,
     wuffs_base__io_buffer* a_src,
+    wuffs_base__pixel_blend a_blend,
     wuffs_base__slice_u8 a_workbuf,
     wuffs_base__decode_frame_options* a_opts) {
   if (!self) {
@@ -5094,7 +5116,8 @@ wuffs_base__image_decoder__decode_frame(
     if (v->vtable_name == wuffs_base__image_decoder__vtable_name) {
       const wuffs_base__image_decoder__func_ptrs* func_ptrs =
           (const wuffs_base__image_decoder__func_ptrs*)(v->function_pointers);
-      return (*func_ptrs->decode_frame)(self, a_dst, a_src, a_workbuf, a_opts);
+      return (*func_ptrs->decode_frame)(self, a_dst, a_src, a_blend, a_workbuf,
+                                        a_opts);
     } else if (v->vtable_name == NULL) {
       break;
     }
@@ -5617,7 +5640,8 @@ wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
                                     wuffs_base__pixel_format dst_format,
                                     wuffs_base__slice_u8 dst_palette,
                                     wuffs_base__pixel_format src_format,
-                                    wuffs_base__slice_u8 src_palette) {
+                                    wuffs_base__slice_u8 src_palette,
+                                    wuffs_base__pixel_blend blend) {
   if (!p) {
     return wuffs_base__make_status(wuffs_base__error__bad_receiver);
   }
@@ -9481,7 +9505,8 @@ wuffs_gif__decoder__decode_id_part0(wuffs_gif__decoder* self,
 static wuffs_base__status  //
 wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
                                     wuffs_base__pixel_buffer* a_dst,
-                                    wuffs_base__io_buffer* a_src);
+                                    wuffs_base__io_buffer* a_src,
+                                    wuffs_base__pixel_blend a_blend);
 
 static wuffs_base__status  //
 wuffs_gif__decoder__decode_id_part2(wuffs_gif__decoder* self,
@@ -9503,6 +9528,7 @@ const wuffs_base__image_decoder__func_ptrs
         (wuffs_base__status(*)(void*,
                                wuffs_base__pixel_buffer*,
                                wuffs_base__io_buffer*,
+                               wuffs_base__pixel_blend,
                                wuffs_base__slice_u8,
                                wuffs_base__decode_frame_options*))(
             &wuffs_gif__decoder__decode_frame),
@@ -10275,6 +10301,7 @@ WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_gif__decoder__decode_frame(wuffs_gif__decoder* self,
                                  wuffs_base__pixel_buffer* a_dst,
                                  wuffs_base__io_buffer* a_src,
+                                 wuffs_base__pixel_blend a_blend,
                                  wuffs_base__slice_u8 a_workbuf,
                                  wuffs_base__decode_frame_options* a_opts) {
   if (!self) {
@@ -10322,7 +10349,7 @@ wuffs_gif__decoder__decode_frame(wuffs_gif__decoder* self,
       goto exit;
     }
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
-    status = wuffs_gif__decoder__decode_id_part1(self, a_dst, a_src);
+    status = wuffs_gif__decoder__decode_id_part1(self, a_dst, a_src, a_blend);
     if (status.repr) {
       goto suspend;
     }
@@ -11516,7 +11543,8 @@ exit:
 static wuffs_base__status  //
 wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
                                     wuffs_base__pixel_buffer* a_dst,
-                                    wuffs_base__io_buffer* a_src) {
+                                    wuffs_base__io_buffer* a_src,
+                                    wuffs_base__pixel_blend a_blend) {
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
   uint8_t v_flags = 0;
@@ -11652,7 +11680,8 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
         wuffs_base__pixel_buffer__pixel_format(a_dst), v_dst_palette,
         wuffs_base__utility__make_pixel_format(1191444488),
         wuffs_base__make_slice_u8(
-            self->private_data.f_palettes[v_which_palette], 1024));
+            self->private_data.f_palettes[v_which_palette], 1024),
+        a_blend);
     if (!wuffs_base__status__is_ok(&v_status)) {
       status = v_status;
       if (wuffs_base__status__is_error(&status)) {

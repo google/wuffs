@@ -159,7 +159,8 @@ wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
                                     wuffs_base__pixel_format dst_format,
                                     wuffs_base__slice_u8 dst_palette,
                                     wuffs_base__pixel_format src_format,
-                                    wuffs_base__slice_u8 src_palette) {
+                                    wuffs_base__slice_u8 src_palette,
+                                    wuffs_base__pixel_blend blend) {
   if (!p) {
     return wuffs_base__make_status(wuffs_base__error__bad_receiver);
   }

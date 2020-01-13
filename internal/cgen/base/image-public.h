@@ -23,6 +23,17 @@ typedef uint32_t wuffs_base__color_u32_argb_premul;
 
 // --------
 
+typedef uint8_t wuffs_base__pixel_blend;
+
+// wuffs_base__pixel_blend encodes how to blend source and destination pixels,
+// accounting for transparency. It encompasses the Porter-Duff compositing
+// operators as well as the other blending modes defined by PDF.
+//
+// TODO: implement the other modes.
+#define WUFFS_BASE__PIXEL_BLEND__SRC ((wuffs_base__pixel_blend)0)
+
+// --------
+
 // wuffs_base__pixel_format encodes the format of the bytes that constitute an
 // image frame's pixel data.
 //
@@ -601,6 +612,8 @@ wuffs_base__image_config::first_frame_is_opaque() const {
 
 // --------
 
+// Deprecated: use wuffs_base__pixel_blend instead.
+//
 // wuffs_base__animation_blend encodes, for an animated image, how to blend the
 // transparent pixels of this frame with the existing canvas. In Porter-Duff
 // compositing operator terminology:
@@ -1072,7 +1085,8 @@ typedef struct {
   inline wuffs_base__status prepare(wuffs_base__pixel_format dst_format,
                                     wuffs_base__slice_u8 dst_palette,
                                     wuffs_base__pixel_format src_format,
-                                    wuffs_base__slice_u8 src_palette);
+                                    wuffs_base__slice_u8 src_palette,
+                                    wuffs_base__pixel_blend blend);
   inline uint64_t swizzle_interleaved(wuffs_base__slice_u8 dst,
                                       wuffs_base__slice_u8 dst_palette,
                                       wuffs_base__slice_u8 src) const;
@@ -1085,7 +1099,8 @@ wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
                                     wuffs_base__pixel_format dst_format,
                                     wuffs_base__slice_u8 dst_palette,
                                     wuffs_base__pixel_format src_format,
-                                    wuffs_base__slice_u8 src_palette);
+                                    wuffs_base__slice_u8 src_palette,
+                                    wuffs_base__pixel_blend blend);
 
 uint64_t  //
 wuffs_base__pixel_swizzler__swizzle_interleaved(
@@ -1100,9 +1115,10 @@ inline wuffs_base__status  //
 wuffs_base__pixel_swizzler::prepare(wuffs_base__pixel_format dst_format,
                                     wuffs_base__slice_u8 dst_palette,
                                     wuffs_base__pixel_format src_format,
-                                    wuffs_base__slice_u8 src_palette) {
+                                    wuffs_base__slice_u8 src_palette,
+                                    wuffs_base__pixel_blend blend) {
   return wuffs_base__pixel_swizzler__prepare(this, dst_format, dst_palette,
-                                             src_format, src_palette);
+                                             src_format, src_palette, blend);
 }
 
 uint64_t  //

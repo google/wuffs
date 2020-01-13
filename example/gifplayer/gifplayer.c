@@ -370,8 +370,8 @@ const char* play() {
       }
     }
 
-    wuffs_base__status decode_frame_status =
-        wuffs_gif__decoder__decode_frame(&dec, &pb, &src, workbuf, NULL);
+    wuffs_base__status decode_frame_status = wuffs_gif__decoder__decode_frame(
+        &dec, &pb, &src, WUFFS_BASE__PIXEL_BLEND__SRC, workbuf, NULL);
     if (decode_frame_status.repr == wuffs_base__note__end_of_data) {
       break;
     }

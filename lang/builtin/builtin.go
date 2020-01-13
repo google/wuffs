@@ -87,6 +87,7 @@ var Types = []string{
 
 	"frame_config",
 	"image_config",
+	"pixel_blend",
 	"pixel_buffer",
 	"pixel_config",
 	"pixel_format",
@@ -339,7 +340,7 @@ var Funcs = []string{
 
 	"pixel_swizzler.prepare!(" +
 		"dst_pixfmt: pixel_format, dst_palette: slice u8, " +
-		"src_pixfmt: pixel_format, src_palette: slice u8) status",
+		"src_pixfmt: pixel_format, src_palette: slice u8, blend: pixel_blend) status",
 	"pixel_swizzler.swizzle_interleaved!(" +
 		"dst: slice u8, dst_palette: slice u8, src: slice u8) u64",
 }
@@ -365,8 +366,8 @@ var InterfaceFuncs = []string{
 
 	"image_decoder.ack_metadata_chunk?(src: io_reader)",
 	"image_decoder.decode_frame?(" +
-		"dst: ptr pixel_buffer, src: io_reader, workbuf: slice u8," +
-		"opts: nptr decode_frame_options)",
+		"dst: ptr pixel_buffer, src: io_reader, blend: pixel_blend," +
+		"workbuf: slice u8, opts: nptr decode_frame_options)",
 	"image_decoder.decode_frame_config?(dst: nptr frame_config, src: io_reader)",
 	"image_decoder.decode_image_config?(dst: nptr image_config, src: io_reader)",
 	"image_decoder.frame_dirty_rect() rect_ie_u32",

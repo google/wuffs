@@ -123,7 +123,8 @@ const char* fuzz(wuffs_base__io_buffer* src, uint32_t hash) {
         goto exit;
       }
 
-      status = wuffs_gif__decoder__decode_frame(&dec, &pb, src, workbuf, NULL);
+      status = wuffs_gif__decoder__decode_frame(
+          &dec, &pb, src, WUFFS_BASE__PIXEL_BLEND__SRC, workbuf, NULL);
 
       wuffs_base__rect_ie_u32 frame_rect =
           wuffs_base__frame_config__bounds(&fc);
