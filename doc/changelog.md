@@ -9,6 +9,7 @@
 - Made `wuffs_base__pixel_format` a struct.
 - Made `wuffs_base__pixel_subsampling` a struct.
 - Made `wuffs_base__status` a struct.
+- Removed `wuffs_base__frame_config__blend`.
 
 
 ## 2019-12-19 version 0.2.0

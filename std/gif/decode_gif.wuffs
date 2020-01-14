@@ -324,7 +324,6 @@ pub func decoder.restart_frame!(index: base.u64, io_position: base.u64) base.sta
 }
 
 pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_reader) {
-	var blend            : base.u8
 	var background_color : base.u32
 	var flags            : base.u8
 
@@ -348,10 +347,8 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
 		return base."@end of data"
 	}
 
-	blend = 0
 	background_color = this.black_color_u32_argb_premul
 	if not this.gc_has_transparent_index {
-		blend = 2  // 2 is WUFFS_BASE__ANIMATION_BLEND__OPAQUE.
 		background_color = this.background_color_u32_argb_premul
 
 		// If the quirk is enabled and the first frame has a local color
@@ -385,8 +382,9 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
 			duration: this.gc_duration,
 			index: this.num_decoded_frame_configs_value,
 			io_position: this.frame_config_io_position,
-			blend: blend,
 			disposal: this.gc_disposal,
+			opaque_within_bounds: not this.gc_has_transparent_index,
+			overwrite_instead_of_blend: false,
 			background_color: background_color)
 	}
 

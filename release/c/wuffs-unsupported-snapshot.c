@@ -2112,8 +2112,9 @@ typedef struct {
     wuffs_base__flicks duration;
     uint64_t index;
     uint64_t io_position;
-    wuffs_base__animation_blend blend;
     wuffs_base__animation_disposal disposal;
+    bool opaque_within_bounds;
+    bool overwrite_instead_of_blend;
     wuffs_base__color_u32_argb_premul background_color;
   } private_impl;
 
@@ -2122,8 +2123,9 @@ typedef struct {
                      wuffs_base__flicks duration,
                      uint64_t index,
                      uint64_t io_position,
-                     wuffs_base__animation_blend blend,
                      wuffs_base__animation_disposal disposal,
+                     bool opaque_within_bounds,
+                     bool overwrite_instead_of_blend,
                      wuffs_base__color_u32_argb_premul background_color);
   inline wuffs_base__rect_ie_u32 bounds() const;
   inline uint32_t width() const;
@@ -2131,8 +2133,9 @@ typedef struct {
   inline wuffs_base__flicks duration() const;
   inline uint64_t index() const;
   inline uint64_t io_position() const;
-  inline wuffs_base__animation_blend blend() const;
   inline wuffs_base__animation_disposal disposal() const;
+  inline bool opaque_within_bounds() const;
+  inline bool overwrite_instead_of_blend() const;
   inline wuffs_base__color_u32_argb_premul background_color() const;
 #endif  // __cplusplus
 
@@ -2145,8 +2148,9 @@ wuffs_base__null_frame_config() {
   ret.private_impl.duration = 0;
   ret.private_impl.index = 0;
   ret.private_impl.io_position = 0;
-  ret.private_impl.blend = 0;
   ret.private_impl.disposal = 0;
+  ret.private_impl.opaque_within_bounds = false;
+  ret.private_impl.overwrite_instead_of_blend = false;
   return ret;
 }
 
@@ -2157,8 +2161,9 @@ wuffs_base__frame_config__update(
     wuffs_base__flicks duration,
     uint64_t index,
     uint64_t io_position,
-    wuffs_base__animation_blend blend,
     wuffs_base__animation_disposal disposal,
+    bool opaque_within_bounds,
+    bool overwrite_instead_of_blend,
     wuffs_base__color_u32_argb_premul background_color) {
   if (!c) {
     return;
@@ -2168,8 +2173,9 @@ wuffs_base__frame_config__update(
   c->private_impl.duration = duration;
   c->private_impl.index = index;
   c->private_impl.io_position = io_position;
-  c->private_impl.blend = blend;
   c->private_impl.disposal = disposal;
+  c->private_impl.opaque_within_bounds = opaque_within_bounds;
+  c->private_impl.overwrite_instead_of_blend = overwrite_instead_of_blend;
   c->private_impl.background_color = background_color;
 }
 
@@ -2218,18 +2224,42 @@ wuffs_base__frame_config__io_position(const wuffs_base__frame_config* c) {
   return c ? c->private_impl.io_position : 0;
 }
 
-// wuffs_base__frame_config__blend returns, for an animated image, how to blend
-// the transparent pixels of this frame with the existing canvas.
-static inline wuffs_base__animation_blend  //
-wuffs_base__frame_config__blend(const wuffs_base__frame_config* c) {
-  return c ? c->private_impl.blend : 0;
-}
-
 // wuffs_base__frame_config__disposal returns, for an animated image, how to
 // dispose of this frame after displaying it.
 static inline wuffs_base__animation_disposal  //
 wuffs_base__frame_config__disposal(const wuffs_base__frame_config* c) {
   return c ? c->private_impl.disposal : 0;
+}
+
+// wuffs_base__frame_config__opaque_within_bounds returns whether all pixels
+// within the frame's bounds are fully opaque. It makes no claim about pixels
+// outside the frame bounds but still inside the overall image. The two
+// bounding rectangles can differ for animated images.
+//
+// Its semantics are conservative. It is valid for a fully opaque frame to have
+// this value be false: a false negative.
+//
+// If true, drawing the frame with WUFFS_BASE__PIXEL_BLEND__SRC and
+// WUFFS_BASE__PIXEL_BLEND__SRC_OVER should be equivalent, in terms of
+// resultant pixels, but the former may be faster.
+static inline bool  //
+wuffs_base__frame_config__opaque_within_bounds(
+    const wuffs_base__frame_config* c) {
+  return c && c->private_impl.opaque_within_bounds;
+}
+
+// wuffs_base__frame_config__overwrite_instead_of_blend returns, for an
+// animated image, whether to ignore the previous image state (within the frame
+// bounds) when drawing this incremental frame. Equivalently, whether to use
+// WUFFS_BASE__PIXEL_BLEND__SRC instead of WUFFS_BASE__PIXEL_BLEND__SRC_OVER.
+//
+// The WebP spec (https://developers.google.com/speed/webp/docs/riff_container)
+// calls this the "Blending method" bit. WebP's "Do not blend" corresponds to
+// Wuffs' "overwrite_instead_of_blend".
+static inline bool  //
+wuffs_base__frame_config__overwrite_instead_of_blend(
+    const wuffs_base__frame_config* c) {
+  return c && c->private_impl.overwrite_instead_of_blend;
 }
 
 static inline wuffs_base__color_u32_argb_premul  //
@@ -2245,11 +2275,13 @@ wuffs_base__frame_config::update(
     wuffs_base__flicks duration,
     uint64_t index,
     uint64_t io_position,
-    wuffs_base__animation_blend blend,
     wuffs_base__animation_disposal disposal,
+    bool opaque_within_bounds,
+    bool overwrite_instead_of_blend,
     wuffs_base__color_u32_argb_premul background_color) {
-  wuffs_base__frame_config__update(this, bounds, duration, index, io_position,
-                                   blend, disposal, background_color);
+  wuffs_base__frame_config__update(
+      this, bounds, duration, index, io_position, disposal,
+      opaque_within_bounds, overwrite_instead_of_blend, background_color);
 }
 
 inline wuffs_base__rect_ie_u32  //
@@ -2282,14 +2314,19 @@ wuffs_base__frame_config::io_position() const {
   return wuffs_base__frame_config__io_position(this);
 }
 
-inline wuffs_base__animation_blend  //
-wuffs_base__frame_config::blend() const {
-  return wuffs_base__frame_config__blend(this);
-}
-
 inline wuffs_base__animation_disposal  //
 wuffs_base__frame_config::disposal() const {
   return wuffs_base__frame_config__disposal(this);
+}
+
+inline bool  //
+wuffs_base__frame_config::opaque_within_bounds() const {
+  return wuffs_base__frame_config__opaque_within_bounds(this);
+}
+
+inline bool  //
+wuffs_base__frame_config::overwrite_instead_of_blend() const {
+  return wuffs_base__frame_config__overwrite_instead_of_blend(this);
 }
 
 inline wuffs_base__color_u32_argb_premul  //
@@ -3734,7 +3771,6 @@ struct wuffs_gif__decoder__struct {
     wuffs_lzw__decoder f_lzw;
 
     struct {
-      uint8_t v_blend;
       uint32_t v_background_color;
     } s_decode_frame_config[1];
     struct {
@@ -10055,7 +10091,6 @@ wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
   self->private_impl.active_coroutine = 0;
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
-  uint8_t v_blend = 0;
   uint32_t v_background_color = 0;
   uint8_t v_flags = 0;
 
@@ -10072,7 +10107,6 @@ wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
 
   uint32_t coro_susp_point = self->private_impl.p_decode_frame_config[0];
   if (coro_susp_point) {
-    v_blend = self->private_data.s_decode_frame_config[0].v_blend;
     v_background_color =
         self->private_data.s_decode_frame_config[0].v_background_color;
   }
@@ -10125,10 +10159,8 @@ wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
       status = wuffs_base__make_status(wuffs_base__note__end_of_data);
       goto ok;
     }
-    v_blend = 0;
     v_background_color = self->private_impl.f_black_color_u32_argb_premul;
     if (!self->private_impl.f_gc_has_transparent_index) {
-      v_blend = 2;
       v_background_color =
           self->private_impl.f_background_color_u32_argb_premul;
       if (self->private_impl
@@ -10158,8 +10190,10 @@ wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
                                    self->private_impl.f_height)),
           ((wuffs_base__flicks)(self->private_impl.f_gc_duration)),
           self->private_impl.f_num_decoded_frame_configs_value,
-          self->private_impl.f_frame_config_io_position, v_blend,
-          self->private_impl.f_gc_disposal, v_background_color);
+          self->private_impl.f_frame_config_io_position,
+          self->private_impl.f_gc_disposal,
+          !self->private_impl.f_gc_has_transparent_index, false,
+          v_background_color);
     }
     wuffs_base__u64__sat_add_indirect(
         &self->private_impl.f_num_decoded_frame_configs_value, 1);
@@ -10177,7 +10211,6 @@ suspend:
       wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
   self->private_impl.active_coroutine =
       wuffs_base__status__is_suspension(&status) ? 3 : 0;
-  self->private_data.s_decode_frame_config[0].v_blend = v_blend;
   self->private_data.s_decode_frame_config[0].v_background_color =
       v_background_color;
 

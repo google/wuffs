@@ -318,12 +318,13 @@ var Funcs = []string{
 	"frame_config.index() u64",
 	"frame_config.io_position() u64",
 
-	"frame_config.update!(bounds: rect_ie_u32, duration: u64[..= 0x7FFFFFFFFFFFFFFF], " +
-		"index: u64, io_position: u64, blend: u8, disposal: u8, background_color: u32)",
+	"frame_config.update!(bounds: rect_ie_u32, duration: u64[..= 0x7FFFFFFFFFFFFFFF]," +
+		"index: u64, io_position: u64, disposal: u8, opaque_within_bounds: bool," +
+		"overwrite_instead_of_blend: bool, background_color: u32)",
 
 	// ---- image_config
 
-	"image_config.set!(pixfmt: u32, pixsub: u32, width: u32, height: u32, " +
+	"image_config.set!(pixfmt: u32, pixsub: u32, width: u32, height: u32," +
 		"first_frame_io_position: u64, first_frame_is_opaque: bool)",
 
 	// ---- pixel_buffer
@@ -339,7 +340,7 @@ var Funcs = []string{
 	// ---- pixel_swizzler
 
 	"pixel_swizzler.prepare!(" +
-		"dst_pixfmt: pixel_format, dst_palette: slice u8, " +
+		"dst_pixfmt: pixel_format, dst_palette: slice u8," +
 		"src_pixfmt: pixel_format, src_palette: slice u8, blend: pixel_blend) status",
 	"pixel_swizzler.swizzle_interleaved!(" +
 		"dst: slice u8, dst_palette: slice u8, src: slice u8) u64",
