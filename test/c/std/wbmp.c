@@ -93,17 +93,17 @@ const char* test_wuffs_wbmp_decode_image_config() {
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
       .data = global_src_slice,
   });
-  CHECK_STRING(read_file(&src, "test/data/muybridge-frame-000.wbmp"));
+  CHECK_STRING(read_file(&src, "test/data/bricks-nodither.wbmp"));
   CHECK_STATUS("decode_image_config",
                wuffs_wbmp__decoder__decode_image_config(&dec, &ic, &src));
 
   uint32_t got_width = wuffs_base__pixel_config__width(&ic.pixcfg);
-  uint32_t want_width = 30;
+  uint32_t want_width = 160;
   if (got_width != want_width) {
     RETURN_FAIL("width: got %" PRIu32 ", want %" PRIu32, got_width, want_width);
   }
   uint32_t got_height = wuffs_base__pixel_config__height(&ic.pixcfg);
-  uint32_t want_height = 20;
+  uint32_t want_height = 120;
   if (got_height != want_height) {
     RETURN_FAIL("height: got %" PRIu32 ", want %" PRIu32, got_height,
                 want_height);
