@@ -76,10 +76,10 @@ pri func decoder.decode_huffman_fast!(dst: base.io_writer, src: base.io_reader) 
 		if n_bits < 15 {
 			assert n_bits >= 0  // TODO: this shouldn't be necessary.
 			bits |= args.src.peek_u8_as_u32() << n_bits
-			args.src.skip_fast!(actual: 1, worst_case: 1)
+			args.src.skip32_fast!(actual: 1, worst_case: 1)
 			n_bits += 8
 			bits |= args.src.peek_u8_as_u32() << n_bits
-			args.src.skip_fast!(actual: 1, worst_case: 1)
+			args.src.skip32_fast!(actual: 1, worst_case: 1)
 			n_bits += 8
 			assert n_bits >= 15
 		} else {
@@ -115,10 +115,10 @@ pri func decoder.decode_huffman_fast!(dst: base.io_writer, src: base.io_reader) 
 			if n_bits < 15 {
 				assert n_bits >= 0  // TODO: this shouldn't be necessary.
 				bits |= args.src.peek_u8_as_u32() << n_bits
-				args.src.skip_fast!(actual: 1, worst_case: 1)
+				args.src.skip32_fast!(actual: 1, worst_case: 1)
 				n_bits += 8
 				bits |= args.src.peek_u8_as_u32() << n_bits
-				args.src.skip_fast!(actual: 1, worst_case: 1)
+				args.src.skip32_fast!(actual: 1, worst_case: 1)
 				n_bits += 8
 				assert n_bits >= 15
 			} else {
@@ -173,10 +173,10 @@ pri func decoder.decode_huffman_fast!(dst: base.io_writer, src: base.io_reader) 
 			if n_bits < 15 {
 				assert n_bits >= 0  // TODO: this shouldn't be necessary.
 				bits |= args.src.peek_u8_as_u32() << n_bits
-				args.src.skip_fast!(actual: 1, worst_case: 1)
+				args.src.skip32_fast!(actual: 1, worst_case: 1)
 				n_bits += 8
 				bits |= args.src.peek_u8_as_u32() << n_bits
-				args.src.skip_fast!(actual: 1, worst_case: 1)
+				args.src.skip32_fast!(actual: 1, worst_case: 1)
 				n_bits += 8
 				assert n_bits >= 15
 			} else {
@@ -200,10 +200,10 @@ pri func decoder.decode_huffman_fast!(dst: base.io_writer, src: base.io_reader) 
 		if n_bits < 15 {
 			assert n_bits >= 0  // TODO: this shouldn't be necessary.
 			bits |= args.src.peek_u8_as_u32() << n_bits
-			args.src.skip_fast!(actual: 1, worst_case: 1)
+			args.src.skip32_fast!(actual: 1, worst_case: 1)
 			n_bits += 8
 			bits |= args.src.peek_u8_as_u32() << n_bits
-			args.src.skip_fast!(actual: 1, worst_case: 1)
+			args.src.skip32_fast!(actual: 1, worst_case: 1)
 			n_bits += 8
 			assert n_bits >= 15
 		} else {
@@ -225,10 +225,10 @@ pri func decoder.decode_huffman_fast!(dst: base.io_writer, src: base.io_reader) 
 			if n_bits < 15 {
 				assert n_bits >= 0  // TODO: this shouldn't be necessary.
 				bits |= args.src.peek_u8_as_u32() << n_bits
-				args.src.skip_fast!(actual: 1, worst_case: 1)
+				args.src.skip32_fast!(actual: 1, worst_case: 1)
 				n_bits += 8
 				bits |= args.src.peek_u8_as_u32() << n_bits
-				args.src.skip_fast!(actual: 1, worst_case: 1)
+				args.src.skip32_fast!(actual: 1, worst_case: 1)
 				n_bits += 8
 				assert n_bits >= 15
 			} else {
@@ -269,10 +269,10 @@ pri func decoder.decode_huffman_fast!(dst: base.io_writer, src: base.io_reader) 
 			assert n_bits < 15 via "a < b: a < c; c <= b"(c: table_entry_n_bits)
 			assert n_bits >= 0  // TODO: this shouldn't be necessary.
 			bits |= args.src.peek_u8_as_u32() << n_bits
-			args.src.skip_fast!(actual: 1, worst_case: 1)
+			args.src.skip32_fast!(actual: 1, worst_case: 1)
 			n_bits += 8
 			bits |= args.src.peek_u8_as_u32() << n_bits
-			args.src.skip_fast!(actual: 1, worst_case: 1)
+			args.src.skip32_fast!(actual: 1, worst_case: 1)
 			n_bits += 8
 			assert table_entry_n_bits <= n_bits via "a <= b: a <= c; c <= b"(c: 16)
 			assert n_bits >= table_entry_n_bits via "a >= b: b <= a"()
@@ -330,13 +330,13 @@ pri func decoder.decode_huffman_fast!(dst: base.io_writer, src: base.io_reader) 
 					// TODO: copy_from_slice32 should probably update the
 					// "args.dst.available() >= 258" fact. It should certainly
 					// invalidate any fact that was "<=" instead of ">=".
-					n_copied = args.dst.copy_n_from_slice!(
+					n_copied = args.dst.copy_n32_from_slice!(
 						n: hlen, s: this.history[hdist & 0x7FFF ..])
 					if hlen <= n_copied {
 						break
 					}
 					hlen -= n_copied
-					args.dst.copy_n_from_slice!(n: hlen, s: this.history[..])
+					args.dst.copy_n32_from_slice!(n: hlen, s: this.history[..])
 					break
 				}
 
@@ -359,7 +359,7 @@ pri func decoder.decode_huffman_fast!(dst: base.io_writer, src: base.io_reader) 
 			assert (length as base.u64) <= args.dst.available() via "a <= b: a <= c; c <= b"(c: 258)
 
 			// Copy from args.dst.
-			args.dst.copy_n_from_history_fast!(n: length, distance: (dist_minus_1 + 1))
+			args.dst.copy_n32_from_history_fast!(n: length, distance: (dist_minus_1 + 1))
 			break
 		}
 	}

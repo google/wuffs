@@ -68,12 +68,12 @@ pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf
 	}
 	flags = args.src.read_u8?()
 	// TODO: API for returning the header's MTIME field.
-	args.src.skip?(n: 6)
+	args.src.skip32?(n: 6)
 
 	// Handle FEXTRA.
 	if (flags & 0x04) <> 0 {
 		xlen = args.src.read_u16le?()
-		args.src.skip?(n: xlen as base.u32)
+		args.src.skip32?(n: xlen as base.u32)
 	}
 
 	// Handle FNAME.
@@ -102,7 +102,7 @@ pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf
 
 	// Handle FHCRC.
 	if (flags & 0x02) <> 0 {
-		args.src.skip?(n: 2)
+		args.src.skip32?(n: 2)
 	}
 
 	// Reserved flags bits must be zero.

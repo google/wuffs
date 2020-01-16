@@ -176,7 +176,7 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 			iopPrefix, name, io0Prefix, name, io0Prefix, name)
 		return nil
 
-	case t.IDSkipFast:
+	case t.IDSkip32Fast:
 		// Generate a two part expression using the comma operator: "(pointer
 		// increment, return_empty_struct call)". The final part is a function
 		// call (to a static inline function) instead of a struct literal, to
@@ -218,12 +218,12 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 	}
 
 	switch method {
-	case t.IDCopyNFromHistory, t.IDCopyNFromHistoryFast:
+	case t.IDCopyN32FromHistory, t.IDCopyN32FromHistoryFast:
 		suffix := ""
-		if method == t.IDCopyNFromHistoryFast {
+		if method == t.IDCopyN32FromHistoryFast {
 			suffix = "_fast"
 		}
-		b.printf("wuffs_base__io_writer__copy_n_from_history%s(&%s%s, %s%s, %s%s",
+		b.printf("wuffs_base__io_writer__copy_n32_from_history%s(&%s%s, %s%s, %s%s",
 			suffix, iopPrefix, name, io0Prefix, name, io2Prefix, name)
 		for _, o := range args {
 			b.writeb(',')
@@ -234,13 +234,13 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 		b.writeb(')')
 		return nil
 
-	case t.IDCopyNFromReader:
+	case t.IDCopyN32FromReader:
 		readerName, err := g.ioRecvName(args[1].AsArg().Value())
 		if err != nil {
 			return err
 		}
 
-		b.printf("wuffs_base__io_writer__copy_n_from_reader(&%s%s, %s%s,",
+		b.printf("wuffs_base__io_writer__copy_n32_from_reader(&%s%s, %s%s,",
 			iopPrefix, name, io2Prefix, name)
 		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
 			return err
@@ -253,8 +253,8 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 			iopPrefix, name, io2Prefix, name)
 		return g.writeArgs(b, args, depth)
 
-	case t.IDCopyNFromSlice:
-		b.printf("wuffs_base__io_writer__copy_n_from_slice(&%s%s, %s%s,",
+	case t.IDCopyN32FromSlice:
+		b.printf("wuffs_base__io_writer__copy_n32_from_slice(&%s%s, %s%s,",
 			iopPrefix, name, io2Prefix, name)
 		return g.writeArgs(b, args, depth)
 
@@ -583,7 +583,7 @@ func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error
 			b.printf(" = *iop_a_src++;\n")
 			return nil
 
-		case t.IDSkip:
+		case t.IDSkip32:
 			x := n.Args()[0].AsArg().Value()
 			if cv := x.ConstValue(); cv != nil && cv.Cmp(one) == 0 {
 				if err := g.writeCoroSuspPoint(b, false); err != nil {

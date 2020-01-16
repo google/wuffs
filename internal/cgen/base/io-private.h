@@ -33,11 +33,11 @@ wuffs_base__io__since(uint64_t mark, uint64_t index, uint8_t* ptr) {
 }
 
 static inline uint32_t  //
-wuffs_base__io_writer__copy_n_from_history(uint8_t** ptr_iop_w,
-                                           uint8_t* io1_w,
-                                           uint8_t* io2_w,
-                                           uint32_t length,
-                                           uint32_t distance) {
+wuffs_base__io_writer__copy_n32_from_history(uint8_t** ptr_iop_w,
+                                             uint8_t* io1_w,
+                                             uint8_t* io2_w,
+                                             uint32_t length,
+                                             uint32_t distance) {
   if (!distance) {
     return 0;
   }
@@ -55,12 +55,13 @@ wuffs_base__io_writer__copy_n_from_history(uint8_t** ptr_iop_w,
   // TODO: unrolling by 3 seems best for the std/deflate benchmarks, but that
   // is mostly because 3 is the minimum length for the deflate format. This
   // function implementation shouldn't overfit to that one format. Perhaps the
-  // copy_n_from_history Wuffs method should also take an unroll hint argument,
-  // and the cgen can look if that argument is the constant expression '3'.
+  // copy_n32_from_history Wuffs method should also take an unroll hint
+  // argument, and the cgen can look if that argument is the constant
+  // expression '3'.
   //
-  // See also wuffs_base__io_writer__copy_n_from_history_fast below.
+  // See also wuffs_base__io_writer__copy_n32_from_history_fast below.
   //
-  // Alternatively, or additionally, have a sloppy_copy_n_from_history method
+  // Alternatively, or additionally, have a sloppy_copy_n32_from_history method
   // that copies 8 bytes at a time, possibly writing more than length bytes?
   for (; n >= 3; n -= 3) {
     *p++ = *q++;
@@ -74,18 +75,18 @@ wuffs_base__io_writer__copy_n_from_history(uint8_t** ptr_iop_w,
   return length;
 }
 
-// wuffs_base__io_writer__copy_n_from_history_fast is like the
-// wuffs_base__io_writer__copy_n_from_history function above, but has stronger
-// pre-conditions. The caller needs to prove that:
+// wuffs_base__io_writer__copy_n32_from_history_fast is like the
+// wuffs_base__io_writer__copy_n32_from_history function above, but has
+// stronger pre-conditions. The caller needs to prove that:
 //  - distance >  0
 //  - distance <= (*ptr_iop_w - io1_w)
 //  - length   <= (io2_w      - *ptr_iop_w)
 static inline uint32_t  //
-wuffs_base__io_writer__copy_n_from_history_fast(uint8_t** ptr_iop_w,
-                                                uint8_t* io1_w,
-                                                uint8_t* io2_w,
-                                                uint32_t length,
-                                                uint32_t distance) {
+wuffs_base__io_writer__copy_n32_from_history_fast(uint8_t** ptr_iop_w,
+                                                  uint8_t* io1_w,
+                                                  uint8_t* io2_w,
+                                                  uint32_t length,
+                                                  uint32_t distance) {
   uint8_t* p = *ptr_iop_w;
   uint8_t* q = p - distance;
   uint32_t n = length;
@@ -102,11 +103,11 @@ wuffs_base__io_writer__copy_n_from_history_fast(uint8_t** ptr_iop_w,
 }
 
 static inline uint32_t  //
-wuffs_base__io_writer__copy_n_from_reader(uint8_t** ptr_iop_w,
-                                          uint8_t* io2_w,
-                                          uint32_t length,
-                                          uint8_t** ptr_iop_r,
-                                          uint8_t* io2_r) {
+wuffs_base__io_writer__copy_n32_from_reader(uint8_t** ptr_iop_w,
+                                            uint8_t* io2_w,
+                                            uint32_t length,
+                                            uint8_t** ptr_iop_r,
+                                            uint8_t* io2_r) {
   uint8_t* iop_w = *ptr_iop_w;
   size_t n = length;
   if (n > ((size_t)(io2_w - iop_w))) {
@@ -141,10 +142,10 @@ wuffs_base__io_writer__copy_from_slice(uint8_t** ptr_iop_w,
 }
 
 static inline uint32_t  //
-wuffs_base__io_writer__copy_n_from_slice(uint8_t** ptr_iop_w,
-                                         uint8_t* io2_w,
-                                         uint32_t length,
-                                         wuffs_base__slice_u8 src) {
+wuffs_base__io_writer__copy_n32_from_slice(uint8_t** ptr_iop_w,
+                                           uint8_t* io2_w,
+                                           uint32_t length,
+                                           wuffs_base__slice_u8 src) {
   uint8_t* iop_w = *ptr_iop_w;
   size_t n = src.len;
   if (n > length) {

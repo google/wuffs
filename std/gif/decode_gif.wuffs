@@ -253,7 +253,7 @@ pub func decoder.ack_metadata_chunk?(src: base.io_reader) {
 				// metadata passed to the caller.
 				this.metadata_chunk_length_value += 1
 			} else {
-				args.src.skip_fast!(actual: 1, worst_case: 1)
+				args.src.skip32_fast!(actual: 1, worst_case: 1)
 			}
 			this.metadata_io_position =
 				args.src.position() ~sat+ this.metadata_chunk_length_value
@@ -261,7 +261,7 @@ pub func decoder.ack_metadata_chunk?(src: base.io_reader) {
 		}
 
 		// Consume the '\x00' that means a zero-length block.
-		args.src.skip_fast!(actual: 1, worst_case: 1)
+		args.src.skip32_fast!(actual: 1, worst_case: 1)
 	}
 
 	this.call_sequence = 2
@@ -399,7 +399,7 @@ pri func decoder.skip_frame?(src: base.io_reader) {
 	// Skip the optional Local Color Table, 3 bytes (RGB) per entry.
 	flags = args.src.read_u8?()
 	if (flags & 0x80) <> 0 {
-		args.src.skip?(n: (3 as base.u32) << (1 + (flags & 0x07)))
+		args.src.skip32?(n: (3 as base.u32) << (1 + (flags & 0x07)))
 	}
 
 	// Process the LZW literal width.
@@ -516,7 +516,7 @@ pri func decoder.decode_lsd?(src: base.io_reader) {
 	flags = args.src.read_u8?()
 	background_color_index = args.src.read_u8?()
 	// Ignore the Pixel Aspect Ratio byte.
-	args.src.skip?(n: 1)
+	args.src.skip32?(n: 1)
 
 	// Read the optional Global Color Table.
 	i = 0
@@ -598,7 +598,7 @@ pri func decoder.skip_blocks?(src: base.io_reader) {
 		if block_size == 0 {
 			return ok
 		}
-		args.src.skip?(n: block_size as base.u32)
+		args.src.skip32?(n: block_size as base.u32)
 	}
 }
 
@@ -646,7 +646,7 @@ pri func decoder.decode_ae?(src: base.io_reader) {
 		//
 		// Other extensions include XMP metadata.
 		if block_size <> 11 {
-			args.src.skip?(n: block_size as base.u32)
+			args.src.skip32?(n: block_size as base.u32)
 			break
 		}
 		is_animexts = true
@@ -668,12 +668,12 @@ pri func decoder.decode_ae?(src: base.io_reader) {
 			// count.
 			block_size = args.src.read_u8?()
 			if block_size <> 3 {
-				args.src.skip?(n: block_size as base.u32)
+				args.src.skip32?(n: block_size as base.u32)
 				break
 			}
 			c = args.src.read_u8?()
 			if c <> 0x01 {
-				args.src.skip?(n: 2)
+				args.src.skip32?(n: 2)
 				break
 			}
 			this.num_loops = args.src.read_u16le_as_u32?()
@@ -703,7 +703,7 @@ pri func decoder.decode_ae?(src: base.io_reader) {
 				yield? base."$short read"
 			}
 			this.metadata_chunk_length_value = args.src.peek_u8_as_u64()
-			args.src.skip_fast!(actual: 1, worst_case: 1)
+			args.src.skip32_fast!(actual: 1, worst_case: 1)
 			this.metadata_fourcc_value = 0x49434350  // "ICCP"
 			this.metadata_io_position = args.src.position() ~sat+ this.metadata_chunk_length_value
 			this.call_sequence = 1
@@ -722,7 +722,7 @@ pri func decoder.decode_ae?(src: base.io_reader) {
 				// metadata passed to the caller.
 				this.metadata_chunk_length_value += 1
 			} else {
-				args.src.skip_fast!(actual: 1, worst_case: 1)
+				args.src.skip32_fast!(actual: 1, worst_case: 1)
 			}
 			this.metadata_fourcc_value = 0x584D5020  // "XMP "
 			this.metadata_io_position = args.src.position() ~sat+ this.metadata_chunk_length_value
@@ -962,7 +962,7 @@ pri func decoder.decode_id_part2?(dst: ptr base.pixel_buffer, src: base.io_reade
 				break
 			}
 			block_size = args.src.peek_u8_as_u64()
-			args.src.skip_fast!(actual: 1, worst_case: 1)
+			args.src.skip32_fast!(actual: 1, worst_case: 1)
 		}
 
 		if decoder_workbuf_len_max_incl_worst_case > args.workbuf.length() {
@@ -993,7 +993,7 @@ pri func decoder.decode_id_part2?(dst: ptr base.pixel_buffer, src: base.io_reade
 
 				// Skip any trailing blocks.
 				if need_block_size or (block_size > 0) {
-					args.src.skip?(n: block_size as base.u32)
+					args.src.skip32?(n: block_size as base.u32)
 					this.skip_blocks?(src: args.src)
 				}
 

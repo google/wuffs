@@ -1045,12 +1045,12 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (bounds, e
 				return bounds{}, err
 			}
 
-		} else if method == t.IDCopyNFromHistoryFast {
-			if err := q.canCopyNFromHistoryFast(recv, n.Args()); err != nil {
+		} else if method == t.IDCopyN32FromHistoryFast {
+			if err := q.canCopyN32FromHistoryFast(recv, n.Args()); err != nil {
 				return bounds{}, err
 			}
 
-		} else if method == t.IDSkipFast {
+		} else if method == t.IDSkip32Fast {
 			args := n.Args()
 			if len(args) != 2 {
 				return bounds{}, fmt.Errorf("check: internal error: bad skip_fast arguments")
@@ -1112,7 +1112,7 @@ func (q *checker) canUndoByte(recv *a.Expr) error {
 	return fmt.Errorf("check: could not prove %s.can_undo_byte()", recv.Str(q.tm))
 }
 
-func (q *checker) canCopyNFromHistoryFast(recv *a.Expr, args []*a.Node) error {
+func (q *checker) canCopyN32FromHistoryFast(recv *a.Expr, args []*a.Node) error {
 	// As per cgen's io-private.h, there are three pre-conditions:
 	//  - n <= this.available()
 	//  - distance > 0

@@ -235,13 +235,13 @@ var Funcs = []string{
 	"io_reader.since(mark: u64) slice u8",
 	"io_reader.take!(n: u64) slice u8",
 
-	"io_reader.skip?(n: u32)",
+	"io_reader.skip32?(n: u32)",
 
 	// TODO: this should have explicit pre-conditions "actual <= worst_case"
 	// and "worst_case <= available()". As an implementation restriction, we
 	// also require that worst_case has a constant value. For now, that's all
 	// implicitly checked (i.e. hard coded).
-	"io_reader.skip_fast!(actual: u32, worst_case: u32)",
+	"io_reader.skip32_fast!(actual: u32, worst_case: u32)",
 
 	// ---- io_writer
 
@@ -290,16 +290,16 @@ var Funcs = []string{
 	"io_writer.since(mark: u64) slice u8",
 
 	"io_writer.copy_from_slice!(s: slice u8) u64",
-	"io_writer.copy_n_from_history!(n: u32, distance: u32) u32",
-	"io_writer.copy_n_from_reader!(n: u32, r: io_reader) u32",
-	"io_writer.copy_n_from_slice!(n: u32, s: slice u8) u32",
+	"io_writer.copy_n32_from_history!(n: u32, distance: u32) u32",
+	"io_writer.copy_n32_from_reader!(n: u32, r: io_reader) u32",
+	"io_writer.copy_n32_from_slice!(n: u32, s: slice u8) u32",
 
 	// TODO: this should have explicit pre-conditions:
 	//  - n <= this.available()
 	//  - distance > 0
 	//  - distance <= this.since_mark().length()
 	// For now, that's all implicitly checked (i.e. hard coded).
-	"io_writer.copy_n_from_history_fast!(n: u32, distance: u32) u32",
+	"io_writer.copy_n32_from_history_fast!(n: u32, distance: u32) u32",
 
 	// ---- status
 
