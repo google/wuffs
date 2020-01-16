@@ -4236,11 +4236,14 @@ struct wuffs_wbmp__decoder__struct {
 
     uint32_t f_width;
     uint32_t f_height;
-    uint64_t f_frame_config_io_position;
+    uint8_t f_call_sequence;
     bool f_seen_frame;
     bool f_seen_frame_config;
+    uint64_t f_frame_config_io_position;
 
     uint32_t p_decode_image_config[1];
+    uint32_t p_decode_frame_config[1];
+    uint32_t p_decode_frame[1];
   } private_impl;
 
   struct {
@@ -13099,6 +13102,10 @@ wuffs_wbmp__decoder__decode_image_config(wuffs_wbmp__decoder* self,
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
+    if (self->private_impl.f_call_sequence != 0) {
+      status = wuffs_base__make_status(wuffs_base__error__bad_call_sequence);
+      goto exit;
+    }
     v_i = 0;
     while (v_i < 2) {
       {
@@ -13157,6 +13164,7 @@ wuffs_wbmp__decoder__decode_image_config(wuffs_wbmp__decoder* self,
           self->private_impl.f_height,
           self->private_impl.f_frame_config_io_position, true);
     }
+    self->private_impl.f_call_sequence = 1;
 
     goto ok;
   ok:
@@ -13213,8 +13221,51 @@ wuffs_wbmp__decoder__decode_frame_config(wuffs_wbmp__decoder* self,
   self->private_impl.active_coroutine = 0;
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
-  goto ok;
-ok:
+  uint32_t coro_susp_point = self->private_impl.p_decode_frame_config[0];
+  if (coro_susp_point) {
+  }
+  switch (coro_susp_point) {
+    WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
+
+    if (self->private_impl.f_call_sequence < 1) {
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
+      status = wuffs_wbmp__decoder__decode_image_config(self, NULL, a_src);
+      if (status.repr) {
+        goto suspend;
+      }
+    } else if (self->private_impl.f_call_sequence == 1) {
+    } else if (self->private_impl.f_call_sequence == 2) {
+      status = wuffs_base__make_status(wuffs_base__note__end_of_data);
+      goto ok;
+    } else {
+      status = wuffs_base__make_status(wuffs_base__note__end_of_data);
+      goto ok;
+    }
+    if (a_dst != NULL) {
+      wuffs_base__frame_config__update(
+          a_dst,
+          wuffs_base__utility__make_rect_ie_u32(
+              0, 0, self->private_impl.f_width, self->private_impl.f_height),
+          ((wuffs_base__flicks)(0)), 0,
+          self->private_impl.f_frame_config_io_position, 0, true, false,
+          4278190080);
+    }
+    self->private_impl.f_seen_frame_config = true;
+    self->private_impl.f_call_sequence = 2;
+
+    goto ok;
+  ok:
+    self->private_impl.p_decode_frame_config[0] = 0;
+    goto exit;
+  }
+
+  goto suspend;
+suspend:
+  self->private_impl.p_decode_frame_config[0] =
+      wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
+  self->private_impl.active_coroutine =
+      wuffs_base__status__is_suspension(&status) ? 2 : 0;
+
   goto exit;
 exit:
   if (wuffs_base__status__is_error(&status)) {
@@ -13254,8 +13305,39 @@ wuffs_wbmp__decoder__decode_frame(wuffs_wbmp__decoder* self,
   self->private_impl.active_coroutine = 0;
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
-  goto ok;
-ok:
+  uint32_t coro_susp_point = self->private_impl.p_decode_frame[0];
+  if (coro_susp_point) {
+  }
+  switch (coro_susp_point) {
+    WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
+
+    if (self->private_impl.f_call_sequence < 2) {
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
+      status = wuffs_wbmp__decoder__decode_frame_config(self, NULL, a_src);
+      if (status.repr) {
+        goto suspend;
+      }
+    } else if (self->private_impl.f_call_sequence == 2) {
+    } else {
+      status = wuffs_base__make_status(wuffs_base__note__end_of_data);
+      goto ok;
+    }
+    self->private_impl.f_seen_frame = true;
+    self->private_impl.f_call_sequence = 3;
+
+    goto ok;
+  ok:
+    self->private_impl.p_decode_frame[0] = 0;
+    goto exit;
+  }
+
+  goto suspend;
+suspend:
+  self->private_impl.p_decode_frame[0] =
+      wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
+  self->private_impl.active_coroutine =
+      wuffs_base__status__is_suspension(&status) ? 3 : 0;
+
   goto exit;
 exit:
   if (wuffs_base__status__is_error(&status)) {
@@ -13420,9 +13502,10 @@ wuffs_wbmp__decoder__restart_frame(wuffs_wbmp__decoder* self,
   if (a_index != 0) {
     return wuffs_base__make_status(wuffs_base__error__bad_argument);
   }
-  self->private_impl.f_frame_config_io_position = a_io_position;
+  self->private_impl.f_call_sequence = 1;
   self->private_impl.f_seen_frame = false;
   self->private_impl.f_seen_frame_config = false;
+  self->private_impl.f_frame_config_io_position = a_io_position;
   return wuffs_base__make_status(NULL);
 }
 
