@@ -81,6 +81,35 @@ const char* test_wuffs_wbmp_decode_interface() {
       "test/data/muybridge-frame-000.wbmp", 0, SIZE_MAX, 30, 20, 0xFFFFFFFF);
 }
 
+const char* test_wuffs_wbmp_decode_frame_config() {
+  CHECK_FOCUS(__func__);
+  wuffs_wbmp__decoder dec;
+  CHECK_STATUS("initialize",
+               wuffs_wbmp__decoder__initialize(
+                   &dec, sizeof dec, WUFFS_VERSION,
+                   WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+
+  wuffs_base__frame_config fc = ((wuffs_base__frame_config){});
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = global_src_slice,
+  });
+  CHECK_STRING(read_file(&src, "test/data/hat.wbmp"));
+  CHECK_STATUS("decode_frame_config #0",
+               wuffs_wbmp__decoder__decode_frame_config(&dec, &fc, &src));
+
+  wuffs_base__status status =
+      wuffs_wbmp__decoder__decode_frame_config(&dec, &fc, &src);
+  if (status.repr != wuffs_base__note__end_of_data) {
+    RETURN_FAIL("decode_frame_config #1: got \"%s\", want \"%s\"", status.repr,
+                wuffs_base__note__end_of_data);
+  }
+  if (src.meta.ri != src.meta.wi) {
+    RETURN_FAIL("at end of data: ri (%zu) doesn't equal wi (%zu)", src.meta.ri,
+                src.meta.wi);
+  }
+  return NULL;
+}
+
 const char* test_wuffs_wbmp_decode_image_config() {
   CHECK_FOCUS(__func__);
   wuffs_wbmp__decoder dec;
@@ -136,6 +165,7 @@ const char* test_wuffs_wbmp_decode_image_config() {
 // The empty comments forces clang-format to place one element per line.
 proc tests[] = {
 
+    test_wuffs_wbmp_decode_frame_config,  //
     test_wuffs_wbmp_decode_image_config,  //
     test_wuffs_wbmp_decode_interface,     //
 

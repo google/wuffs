@@ -4245,6 +4245,7 @@ struct wuffs_wbmp__decoder__struct {
     uint32_t p_decode_image_config[1];
     uint32_t p_decode_frame_config[1];
     uint32_t p_decode_frame[1];
+    uint32_t p_skip_frame[1];
   } private_impl;
 
   struct {
@@ -4258,6 +4259,9 @@ struct wuffs_wbmp__decoder__struct {
       uint8_t v_src[1];
       uint8_t v_c;
     } s_decode_frame[1];
+    struct {
+      uint64_t scratch;
+    } s_skip_frame[1];
   } private_data;
 
 #ifdef __cplusplus
@@ -13009,6 +13013,10 @@ const char* wuffs_wbmp__error__bad_header = "#wbmp: bad header";
 
 // ---------------- Private Function Prototypes
 
+static wuffs_base__status  //
+wuffs_wbmp__decoder__skip_frame(wuffs_wbmp__decoder* self,
+                                wuffs_base__io_buffer* a_src);
+
 // ---------------- VTables
 
 const wuffs_base__image_decoder__func_ptrs
@@ -13288,6 +13296,11 @@ wuffs_wbmp__decoder__decode_frame_config(wuffs_wbmp__decoder* self,
       }
     } else if (self->private_impl.f_call_sequence == 1) {
     } else if (self->private_impl.f_call_sequence == 2) {
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
+      status = wuffs_wbmp__decoder__skip_frame(self, a_src);
+      if (status.repr) {
+        goto suspend;
+      }
       status = wuffs_base__make_status(wuffs_base__note__end_of_data);
       goto ok;
     } else {
@@ -13486,6 +13499,71 @@ exit:
   if (wuffs_base__status__is_error(&status)) {
     self->private_impl.magic = WUFFS_BASE__DISABLED;
   }
+  return status;
+}
+
+// -------- func wbmp.decoder.skip_frame
+
+static wuffs_base__status  //
+wuffs_wbmp__decoder__skip_frame(wuffs_wbmp__decoder* self,
+                                wuffs_base__io_buffer* a_src) {
+  wuffs_base__status status = wuffs_base__make_status(NULL);
+
+  uint64_t v_bytes_per_row = 0;
+  uint64_t v_total_bytes = 0;
+
+  uint8_t* iop_a_src = NULL;
+  uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  if (a_src) {
+    io0_a_src = a_src->data.ptr;
+    io1_a_src = io0_a_src + a_src->meta.ri;
+    iop_a_src = io1_a_src;
+    io2_a_src = io0_a_src + a_src->meta.wi;
+  }
+
+  uint32_t coro_susp_point = self->private_impl.p_skip_frame[0];
+  if (coro_susp_point) {
+  }
+  switch (coro_susp_point) {
+    WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
+
+    v_bytes_per_row = ((((uint64_t)(self->private_impl.f_width)) + 7) / 8);
+    v_total_bytes =
+        (v_bytes_per_row * ((uint64_t)(self->private_impl.f_height)));
+    self->private_data.s_skip_frame[0].scratch =
+        ((uint32_t)((v_total_bytes & 4294967295)));
+    WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
+    if (self->private_data.s_skip_frame[0].scratch >
+        ((uint64_t)(io2_a_src - iop_a_src))) {
+      self->private_data.s_skip_frame[0].scratch -=
+          ((uint64_t)(io2_a_src - iop_a_src));
+      iop_a_src = io2_a_src;
+      status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+      goto suspend;
+    }
+    iop_a_src += self->private_data.s_skip_frame[0].scratch;
+    self->private_impl.f_seen_frame = true;
+    self->private_impl.f_call_sequence = 2;
+
+    goto ok;
+  ok:
+    self->private_impl.p_skip_frame[0] = 0;
+    goto exit;
+  }
+
+  goto suspend;
+suspend:
+  self->private_impl.p_skip_frame[0] =
+      wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
+
+  goto exit;
+exit:
+  if (a_src) {
+    a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+  }
+
   return status;
 }
 

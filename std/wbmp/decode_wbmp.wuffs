@@ -101,7 +101,7 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
 	} else if this.call_sequence == 1 {
 		// No-op.
 	} else if this.call_sequence == 2 {
-		// TODO: skip frame.
+		this.skip_frame?(src: args.src)
 		return base."@end of data"
 	} else {
 		return base."@end of data"
@@ -198,6 +198,20 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 
 	this.seen_frame = true
 	this.call_sequence = 3
+}
+
+pri func decoder.skip_frame?(src: base.io_reader) {
+	var bytes_per_row : base.u64[..= 0x20000000]
+	var total_bytes   : base.u64
+
+	bytes_per_row = ((this.width as base.u64) + 7) / 8
+	total_bytes = bytes_per_row * (this.height as base.u64)
+
+	// TODO: total_bytes may be larger than UINT32_MAX.
+	args.src.skip?(n: (total_bytes & 0xFFFFFFFF) as base.u32)
+
+	this.seen_frame = true
+	this.call_sequence = 2
 }
 
 pub func decoder.ack_metadata_chunk?(src: base.io_reader) {
