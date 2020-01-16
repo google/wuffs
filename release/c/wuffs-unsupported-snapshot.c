@@ -13444,7 +13444,7 @@ wuffs_wbmp__decoder__decode_frame(wuffs_wbmp__decoder* self,
           } else {
             v_src[0] = 255;
           }
-          v_c <<= 1;
+          v_c = ((uint8_t)(((((uint32_t)(v_c)) << 1) & 255)));
           wuffs_base__pixel_swizzler__swizzle_interleaved(
               &self->private_impl.f_swizzler, v_dst,
               wuffs_base__utility__empty_slice_u8(),

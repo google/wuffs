@@ -176,7 +176,12 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 				} else {
 					src[0] = 0xFF
 				}
-				c ~mod<<= 1
+				// TODO: this should just be "c ~mod<<= 1", but that generates:
+				//
+				// error: conversion to ‘uint8_t {aka unsigned char}’ from
+				// ‘int’ may alter its value [-Werror=conversion]
+				//     v_c <<= 1;
+				c = (((c as base.u32) << 1) & 0xFF) as base.u8
 
 				this.swizzler.swizzle_interleaved!(
 					dst: dst, dst_palette: this.util.empty_slice_u8(), src: src[..])
