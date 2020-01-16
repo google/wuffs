@@ -143,38 +143,6 @@ const char* test_basic_status_is_error() {
   return NULL;
 }
 
-const char* test_basic_status_strings() {
-  CHECK_FOCUS(__func__);
-  const char* s1 = wuffs_base__error__bad_wuffs_version;
-  const char* t1 = "#base: bad wuffs version";
-  if (strcmp(s1, t1)) {
-    RETURN_FAIL("got \"%s\", want \"%s\"", s1, t1);
-  }
-  const char* s2 = wuffs_base__suspension__short_write;
-  const char* t2 = "$base: short write";
-  if (strcmp(s2, t2)) {
-    RETURN_FAIL("got \"%s\", want \"%s\"", s2, t2);
-  }
-  const char* s3 = wuffs_gif__error__bad_header;
-  const char* t3 = "#gif: bad header";
-  if (strcmp(s3, t3)) {
-    RETURN_FAIL("got \"%s\", want \"%s\"", s3, t3);
-  }
-  return NULL;
-}
-
-const char* test_basic_status_used_package() {
-  CHECK_FOCUS(__func__);
-  // The function call here is from "std/gif" but the argument is from
-  // "std/lzw". The former package depends on the latter.
-  const char* s0 = wuffs_lzw__error__bad_code;
-  const char* t0 = "#lzw: bad code";
-  if (strcmp(s0, t0)) {
-    RETURN_FAIL("got \"%s\", want \"%s\"", s0, t0);
-  }
-  return NULL;
-}
-
 const char* test_basic_sub_struct_initializer() {
   CHECK_FOCUS(__func__);
   wuffs_gif__decoder dec;
@@ -2269,8 +2237,6 @@ proc tests[] = {
     test_basic_bad_wuffs_version,       //
     test_basic_initialize_not_called,   //
     test_basic_status_is_error,         //
-    test_basic_status_strings,          //
-    test_basic_status_used_package,     //
     test_basic_sub_struct_initializer,  //
 
     test_wuffs_gif_call_interleaved,                         //
