@@ -3,6 +3,7 @@
 
 ## Work In Progress
 
+- Added `std/wbmp` package.
 - Renamed `decode_io_writer?` methods to `transform_io?`.
 - Added interfaces.
 - Renamed warnings to notes.

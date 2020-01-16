@@ -4121,6 +4121,134 @@ extern "C" {
 
 // ---------------- Status Codes
 
+extern const char* wuffs_wbmp__error__bad_header;
+
+// ---------------- Public Consts
+
+// ---------------- Struct Declarations
+
+typedef struct wuffs_wbmp__decoder__struct wuffs_wbmp__decoder;
+
+// ---------------- Public Initializer Prototypes
+
+// For any given "wuffs_foo__bar* self", "wuffs_foo__bar__initialize(self,
+// etc)" should be called before any other "wuffs_foo__bar__xxx(self, etc)".
+//
+// Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.
+// Pass 0 (or some combination of WUFFS_INITIALIZE__XXX) for initialize_flags.
+
+wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
+wuffs_wbmp__decoder__initialize(wuffs_wbmp__decoder* self,
+                                size_t sizeof_star_self,
+                                uint64_t wuffs_version,
+                                uint32_t initialize_flags);
+
+size_t  //
+sizeof__wuffs_wbmp__decoder();
+
+// ---------------- Upcasts
+
+// ---------------- Public Function Prototypes
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
+wuffs_wbmp__decoder__decode_image_config(wuffs_wbmp__decoder* self,
+                                         wuffs_base__image_config* a_dst,
+                                         wuffs_base__io_buffer* a_src);
+
+// ---------------- Struct Definitions
+
+// These structs' fields, and the sizeof them, are private implementation
+// details that aren't guaranteed to be stable across Wuffs versions.
+//
+// See https://en.wikipedia.org/wiki/Opaque_pointer#C
+
+#if defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
+
+struct wuffs_wbmp__decoder__struct {
+  // Do not access the private_impl's or private_data's fields directly. There
+  // is no API/ABI compatibility or safety guarantee if you do so. Instead, use
+  // the wuffs_foo__bar__baz functions.
+  //
+  // It is a struct, not a struct*, so that the outermost wuffs_foo__bar struct
+  // can be stack allocated when WUFFS_IMPLEMENTATION is defined.
+
+  struct {
+    uint32_t magic;
+    uint32_t active_coroutine;
+    wuffs_base__vtable null_vtable;
+
+    uint32_t f_width;
+    uint32_t f_height;
+
+    uint32_t p_decode_image_config[1];
+  } private_impl;
+
+  struct {
+    struct {
+      uint32_t v_i;
+      uint32_t v_x32;
+    } s_decode_image_config[1];
+  } private_data;
+
+#ifdef __cplusplus
+#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+  // Disallow constructing or copying an object via standard C++ mechanisms,
+  // e.g. the "new" operator, as this struct is intentionally opaque. Its total
+  // size and field layout is not part of the public, stable, memory-safe API.
+  // Use malloc or memcpy and the sizeof__wuffs_foo__bar function instead, and
+  // call wuffs_foo__bar__baz methods (which all take a "this"-like pointer as
+  // their first argument) rather than tweaking bar.private_impl.qux fields.
+  //
+  // In C, we can just leave wuffs_foo__bar as an incomplete type (unless
+  // WUFFS_IMPLEMENTATION is #define'd). In C++, we define a complete type in
+  // order to provide convenience methods. These forward on "this", so that you
+  // can write "bar->baz(etc)" instead of "wuffs_foo__bar__baz(bar, etc)".
+  wuffs_wbmp__decoder__struct() = delete;
+  wuffs_wbmp__decoder__struct(const wuffs_wbmp__decoder__struct&) = delete;
+  wuffs_wbmp__decoder__struct& operator=(const wuffs_wbmp__decoder__struct&) =
+      delete;
+
+  // As above, the size of the struct is not part of the public API, and unless
+  // WUFFS_IMPLEMENTATION is #define'd, this struct type T should be heap
+  // allocated, not stack allocated. Its size is not intended to be known at
+  // compile time, but it is unfortunately divulged as a side effect of
+  // defining C++ convenience methods. Use "sizeof__T()", calling the function,
+  // instead of "sizeof T", invoking the operator. To make the two values
+  // different, so that passing the latter will be rejected by the initialize
+  // function, we add an arbitrary amount of dead weight.
+  uint8_t dead_weight[123000000];  // 123 MB.
+#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+
+  inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
+  initialize(size_t sizeof_star_self,
+             uint64_t wuffs_version,
+             uint32_t initialize_flags) {
+    return wuffs_wbmp__decoder__initialize(this, sizeof_star_self,
+                                           wuffs_version, initialize_flags);
+  }
+
+  inline wuffs_base__status  //
+  decode_image_config(wuffs_base__image_config* a_dst,
+                      wuffs_base__io_buffer* a_src) {
+    return wuffs_wbmp__decoder__decode_image_config(this, a_dst, a_src);
+  }
+
+#endif  // __cplusplus
+
+};  // struct wuffs_wbmp__decoder__struct
+
+#endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// ---------------- Status Codes
+
 extern const char* wuffs_zlib__note__dictionary_required;
 extern const char* wuffs_zlib__error__bad_checksum;
 extern const char* wuffs_zlib__error__bad_compression_method;
@@ -12681,6 +12809,214 @@ exit:
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) ||
         // defined(WUFFS_CONFIG__MODULE__GZIP)
+
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__WBMP)
+
+// ---------------- Status Codes Implementations
+
+const char* wuffs_wbmp__error__bad_header = "#wbmp: bad header";
+
+// ---------------- Private Consts
+
+// ---------------- Private Initializer Prototypes
+
+// ---------------- Private Function Prototypes
+
+// ---------------- VTables
+
+// ---------------- Initializer Implementations
+
+wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
+wuffs_wbmp__decoder__initialize(wuffs_wbmp__decoder* self,
+                                size_t sizeof_star_self,
+                                uint64_t wuffs_version,
+                                uint32_t initialize_flags) {
+  if (!self) {
+    return wuffs_base__make_status(wuffs_base__error__bad_receiver);
+  }
+  if (sizeof(*self) != sizeof_star_self) {
+    return wuffs_base__make_status(wuffs_base__error__bad_sizeof_receiver);
+  }
+  if (((wuffs_version >> 32) != WUFFS_VERSION_MAJOR) ||
+      (((wuffs_version >> 16) & 0xFFFF) > WUFFS_VERSION_MINOR)) {
+    return wuffs_base__make_status(wuffs_base__error__bad_wuffs_version);
+  }
+
+  if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) != 0) {
+// The whole point of this if-check is to detect an uninitialized *self.
+// We disable the warning on GCC. Clang-5.0 does not have this warning.
+#if !defined(__clang__) && defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
+    if (self->private_impl.magic != 0) {
+      return wuffs_base__make_status(
+          wuffs_base__error__initialize_falsely_claimed_already_zeroed);
+    }
+#if !defined(__clang__) && defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
+  } else {
+    if ((initialize_flags &
+         WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
+      memset(self, 0, sizeof(*self));
+      initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;
+    } else {
+      memset(&(self->private_impl), 0, sizeof(self->private_impl));
+    }
+  }
+
+  self->private_impl.magic = WUFFS_BASE__MAGIC;
+  return wuffs_base__make_status(NULL);
+}
+
+size_t  //
+sizeof__wuffs_wbmp__decoder() {
+  return sizeof(wuffs_wbmp__decoder);
+}
+
+// ---------------- Function Implementations
+
+// -------- func wbmp.decoder.decode_image_config
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
+wuffs_wbmp__decoder__decode_image_config(wuffs_wbmp__decoder* self,
+                                         wuffs_base__image_config* a_dst,
+                                         wuffs_base__io_buffer* a_src) {
+  if (!self) {
+    return wuffs_base__make_status(wuffs_base__error__bad_receiver);
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_status(
+        (self->private_impl.magic == WUFFS_BASE__DISABLED)
+            ? wuffs_base__error__disabled_by_previous_error
+            : wuffs_base__error__initialize_not_called);
+  }
+  if (!a_src) {
+    self->private_impl.magic = WUFFS_BASE__DISABLED;
+    return wuffs_base__make_status(wuffs_base__error__bad_argument);
+  }
+  if ((self->private_impl.active_coroutine != 0) &&
+      (self->private_impl.active_coroutine != 1)) {
+    self->private_impl.magic = WUFFS_BASE__DISABLED;
+    return wuffs_base__make_status(
+        wuffs_base__error__interleaved_coroutine_calls);
+  }
+  self->private_impl.active_coroutine = 0;
+  wuffs_base__status status = wuffs_base__make_status(NULL);
+
+  uint8_t v_c = 0;
+  uint32_t v_i = 0;
+  uint32_t v_x32 = 0;
+  uint64_t v_x64 = 0;
+
+  uint8_t* iop_a_src = NULL;
+  uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  if (a_src) {
+    io0_a_src = a_src->data.ptr;
+    io1_a_src = io0_a_src + a_src->meta.ri;
+    iop_a_src = io1_a_src;
+    io2_a_src = io0_a_src + a_src->meta.wi;
+  }
+
+  uint32_t coro_susp_point = self->private_impl.p_decode_image_config[0];
+  if (coro_susp_point) {
+    v_i = self->private_data.s_decode_image_config[0].v_i;
+    v_x32 = self->private_data.s_decode_image_config[0].v_x32;
+  }
+  switch (coro_susp_point) {
+    WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
+
+    v_i = 0;
+    while (v_i < 2) {
+      {
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
+        if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
+          status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+          goto suspend;
+        }
+        uint8_t t_0 = *iop_a_src++;
+        v_c = t_0;
+      }
+      if (v_c != 0) {
+        status = wuffs_base__make_status(wuffs_wbmp__error__bad_header);
+        goto exit;
+      }
+      v_i += 1;
+    }
+    v_i = 0;
+    while (v_i < 2) {
+      v_x32 = 0;
+      while (true) {
+        {
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
+          if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
+            status =
+                wuffs_base__make_status(wuffs_base__suspension__short_read);
+            goto suspend;
+          }
+          uint8_t t_1 = *iop_a_src++;
+          v_c = t_1;
+        }
+        v_x32 |= ((uint32_t)((v_c & 127)));
+        if ((v_c >> 7) == 0) {
+          goto label_0_break;
+        }
+        v_x64 = (((uint64_t)(v_x32)) << 7);
+        if (v_x64 > 4294967295) {
+          status = wuffs_base__make_status(wuffs_wbmp__error__bad_header);
+          goto exit;
+        }
+        v_x32 = ((uint32_t)(v_x64));
+      }
+    label_0_break:;
+      if (v_i == 0) {
+        self->private_impl.f_width = v_x32;
+      } else {
+        self->private_impl.f_height = v_x32;
+      }
+      v_i += 1;
+    }
+    if (a_dst != NULL) {
+      wuffs_base__image_config__set(
+          a_dst, 1191444488, 0, self->private_impl.f_width,
+          self->private_impl.f_height,
+          wuffs_base__u64__sat_add(a_src->meta.pos,
+                                   ((uint64_t)(iop_a_src - io0_a_src))),
+          true);
+    }
+
+    goto ok;
+  ok:
+    self->private_impl.p_decode_image_config[0] = 0;
+    goto exit;
+  }
+
+  goto suspend;
+suspend:
+  self->private_impl.p_decode_image_config[0] =
+      wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
+  self->private_impl.active_coroutine =
+      wuffs_base__status__is_suspension(&status) ? 1 : 0;
+  self->private_data.s_decode_image_config[0].v_i = v_i;
+  self->private_data.s_decode_image_config[0].v_x32 = v_x32;
+
+  goto exit;
+exit:
+  if (a_src) {
+    a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+  }
+
+  if (wuffs_base__status__is_error(&status)) {
+    self->private_impl.magic = WUFFS_BASE__DISABLED;
+  }
+  return status;
+}
+
+#endif  // !defined(WUFFS_CONFIG__MODULES) ||
+        // defined(WUFFS_CONFIG__MODULE__WBMP)
 
 #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__ZLIB)
 
