@@ -75,3 +75,9 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 			first_frame_is_opaque: true)
 	}
 }
+
+pub func decoder.ack_metadata_chunk?(src: base.io_reader) {
+	// TODO: this final line shouldn't be necessary, here and in some other
+	// std/*/*.wuffs functions.
+	return ok
+}

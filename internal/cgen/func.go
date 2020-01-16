@@ -217,13 +217,14 @@ func (g *gen) gatherFuncImpl(_ *buffer, n *a.Func) error {
 	}
 	g.findDerivedVars()
 
+	if err := g.writeFuncImplBody(&g.currFunk.bBody); err != nil {
+		return err
+	}
+
 	if err := g.writeFuncImplPrologue(&g.currFunk.bPrologue); err != nil {
 		return err
 	}
 	if err := g.writeFuncImplBodyResume(&g.currFunk.bBodyResume); err != nil {
-		return err
-	}
-	if err := g.writeFuncImplBody(&g.currFunk.bBody); err != nil {
 		return err
 	}
 	if err := g.writeFuncImplBodySuspend(&g.currFunk.bBodySuspend); err != nil {
@@ -362,7 +363,7 @@ func (g *gen) writeFuncImplPrologue(b *buffer) error {
 }
 
 func (g *gen) writeFuncImplBodyResume(b *buffer) error {
-	if g.currFunk.astFunc.Effect().Coroutine() {
+	if g.currFunk.coroSuspPoint > 0 {
 		// TODO: don't hard-code [0], and allow recursive coroutines.
 		b.printf("uint32_t coro_susp_point = self->private_impl.%s%s[0];\n",
 			pPrefix, g.currFunk.astFunc.FuncName().Str(g.tm))
@@ -390,7 +391,7 @@ func (g *gen) writeFuncImplBody(b *buffer) error {
 }
 
 func (g *gen) writeFuncImplBodySuspend(b *buffer) error {
-	if g.currFunk.astFunc.Effect().Coroutine() {
+	if g.currFunk.coroSuspPoint > 0 {
 		// We've reached the end of the function body. Reset the coroutine
 		// suspension point so that the next call to this function starts at
 		// the top.
@@ -412,6 +413,9 @@ func (g *gen) writeFuncImplBodySuspend(b *buffer) error {
 			return err
 		}
 		b.writes("\n")
+
+	} else if g.currFunk.astFunc.Effect().Coroutine() {
+		b.writes("\ngoto ok;ok:") // The goto avoids the "unused label" warning.
 	}
 	return nil
 }

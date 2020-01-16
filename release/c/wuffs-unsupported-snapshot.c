@@ -4155,6 +4155,10 @@ wuffs_wbmp__decoder__decode_image_config(wuffs_wbmp__decoder* self,
                                          wuffs_base__image_config* a_dst,
                                          wuffs_base__io_buffer* a_src);
 
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
+wuffs_wbmp__decoder__ack_metadata_chunk(wuffs_wbmp__decoder* self,
+                                        wuffs_base__io_buffer* a_src);
+
 // ---------------- Struct Definitions
 
 // These structs' fields, and the sizeof them, are private implementation
@@ -4231,6 +4235,11 @@ struct wuffs_wbmp__decoder__struct {
   decode_image_config(wuffs_base__image_config* a_dst,
                       wuffs_base__io_buffer* a_src) {
     return wuffs_wbmp__decoder__decode_image_config(this, a_dst, a_src);
+  }
+
+  inline wuffs_base__status  //
+  ack_metadata_chunk(wuffs_base__io_buffer* a_src) {
+    return wuffs_wbmp__decoder__ack_metadata_chunk(this, a_src);
   }
 
 #endif  // __cplusplus
@@ -11907,6 +11916,8 @@ wuffs_gif__decoder__decode_id_part2(wuffs_gif__decoder* self,
                                     wuffs_base__pixel_buffer* a_dst,
                                     wuffs_base__io_buffer* a_src,
                                     wuffs_base__slice_u8 a_workbuf) {
+  wuffs_base__io_buffer empty_io_buffer = wuffs_base__empty_io_buffer();
+
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
   uint64_t v_block_size = 0;
@@ -11934,8 +11945,6 @@ wuffs_gif__decoder__decode_id_part2(wuffs_gif__decoder* self,
     iop_a_src = io1_a_src;
     io2_a_src = io0_a_src + a_src->meta.wi;
   }
-
-  wuffs_base__io_buffer empty_io_buffer = wuffs_base__empty_io_buffer();
 
   uint32_t coro_susp_point = self->private_impl.p_decode_id_part2[0];
   if (coro_susp_point) {
@@ -13009,6 +13018,45 @@ exit:
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
+  if (wuffs_base__status__is_error(&status)) {
+    self->private_impl.magic = WUFFS_BASE__DISABLED;
+  }
+  return status;
+}
+
+// -------- func wbmp.decoder.ack_metadata_chunk
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
+wuffs_wbmp__decoder__ack_metadata_chunk(wuffs_wbmp__decoder* self,
+                                        wuffs_base__io_buffer* a_src) {
+  if (!self) {
+    return wuffs_base__make_status(wuffs_base__error__bad_receiver);
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_status(
+        (self->private_impl.magic == WUFFS_BASE__DISABLED)
+            ? wuffs_base__error__disabled_by_previous_error
+            : wuffs_base__error__initialize_not_called);
+  }
+  if (!a_src) {
+    self->private_impl.magic = WUFFS_BASE__DISABLED;
+    return wuffs_base__make_status(wuffs_base__error__bad_argument);
+  }
+  if ((self->private_impl.active_coroutine != 0) &&
+      (self->private_impl.active_coroutine != 2)) {
+    self->private_impl.magic = WUFFS_BASE__DISABLED;
+    return wuffs_base__make_status(
+        wuffs_base__error__interleaved_coroutine_calls);
+  }
+  self->private_impl.active_coroutine = 0;
+  wuffs_base__status status = wuffs_base__make_status(NULL);
+
+  status = wuffs_base__make_status(NULL);
+  goto ok;
+  goto ok;
+ok:
+  goto exit;
+exit:
   if (wuffs_base__status__is_error(&status)) {
     self->private_impl.magic = WUFFS_BASE__DISABLED;
   }
