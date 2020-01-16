@@ -22,30 +22,6 @@ const uint32_t wuffs_base__pixel_format__bits_per_channel[16] = {
 };
 
 static uint64_t  //
-wuffs_base__pixel_swizzler__xxxx_y(wuffs_base__slice_u8 dst,
-                                   wuffs_base__slice_u8 dst_palette,
-                                   wuffs_base__slice_u8 src) {
-  size_t dst_len4 = dst.len / 4;
-  size_t len = dst_len4 < src.len ? dst_len4 : src.len;
-  uint8_t* d = dst.ptr;
-  uint8_t* s = src.ptr;
-  size_t n = len;
-
-  // TODO: unroll.
-
-  while (n >= 1) {
-    wuffs_base__store_u32le(d + (0 * 4),
-                            0xFF000000 | (0x010101 * (uint32_t)s[0]));
-
-    s += 1 * 1;
-    d += 4 * 1;
-    n -= (size_t)(1 * 1);
-  }
-
-  return len;
-}
-
-static uint64_t  //
 wuffs_base__pixel_swizzler__copy_1_1(wuffs_base__slice_u8 dst,
                                      wuffs_base__slice_u8 dst_palette,
                                      wuffs_base__slice_u8 src) {
@@ -53,9 +29,9 @@ wuffs_base__pixel_swizzler__copy_1_1(wuffs_base__slice_u8 dst,
 }
 
 static uint64_t  //
-wuffs_base__pixel_swizzler__copy_3_1(wuffs_base__slice_u8 dst,
-                                     wuffs_base__slice_u8 dst_palette,
-                                     wuffs_base__slice_u8 src) {
+wuffs_base__pixel_swizzler__xxx_index(wuffs_base__slice_u8 dst,
+                                      wuffs_base__slice_u8 dst_palette,
+                                      wuffs_base__slice_u8 src) {
   if (dst_palette.len != 1024) {
     return 0;
   }
@@ -109,9 +85,9 @@ wuffs_base__pixel_swizzler__copy_3_1(wuffs_base__slice_u8 dst,
 }
 
 static uint64_t  //
-wuffs_base__pixel_swizzler__copy_4_1(wuffs_base__slice_u8 dst,
-                                     wuffs_base__slice_u8 dst_palette,
-                                     wuffs_base__slice_u8 src) {
+wuffs_base__pixel_swizzler__xxxx_index(wuffs_base__slice_u8 dst,
+                                       wuffs_base__slice_u8 dst_palette,
+                                       wuffs_base__slice_u8 src) {
   if (dst_palette.len != 1024) {
     return 0;
   }
@@ -147,6 +123,30 @@ wuffs_base__pixel_swizzler__copy_4_1(wuffs_base__slice_u8 dst,
     wuffs_base__store_u32le(
         d + (0 * 4),
         wuffs_base__load_u32le(dst_palette.ptr + ((uint32_t)(s[0]) * 4)));
+
+    s += 1 * 1;
+    d += 4 * 1;
+    n -= (size_t)(1 * 1);
+  }
+
+  return len;
+}
+
+static uint64_t  //
+wuffs_base__pixel_swizzler__xxxx_y(wuffs_base__slice_u8 dst,
+                                   wuffs_base__slice_u8 dst_palette,
+                                   wuffs_base__slice_u8 src) {
+  size_t dst_len4 = dst.len / 4;
+  size_t len = dst_len4 < src.len ? dst_len4 : src.len;
+  uint8_t* d = dst.ptr;
+  uint8_t* s = src.ptr;
+  size_t n = len;
+
+  // TODO: unroll.
+
+  while (n >= 1) {
+    wuffs_base__store_u32le(d + (0 * 4),
+                            0xFF000000 | (0x010101 * (uint32_t)s[0]));
 
     s += 1 * 1;
     d += 4 * 1;
@@ -233,7 +233,7 @@ wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
               1024) {
             break;
           }
-          func = wuffs_base__pixel_swizzler__copy_3_1;
+          func = wuffs_base__pixel_swizzler__xxx_index;
           break;
         case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
         case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
@@ -242,14 +242,14 @@ wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
               1024) {
             break;
           }
-          func = wuffs_base__pixel_swizzler__copy_4_1;
+          func = wuffs_base__pixel_swizzler__xxxx_index;
           break;
         case WUFFS_BASE__PIXEL_FORMAT__RGB:
           if (wuffs_base__pixel_swizzler__swap_rgbx_bgrx(dst_palette,
                                                          src_palette) != 1024) {
             break;
           }
-          func = wuffs_base__pixel_swizzler__copy_3_1;
+          func = wuffs_base__pixel_swizzler__xxx_index;
           break;
         case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
         case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
@@ -258,7 +258,7 @@ wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
                                                          src_palette) != 1024) {
             break;
           }
-          func = wuffs_base__pixel_swizzler__copy_4_1;
+          func = wuffs_base__pixel_swizzler__xxxx_index;
           break;
         default:
           break;
