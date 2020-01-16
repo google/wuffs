@@ -14,9 +14,17 @@
 
 pub status "#bad header"
 
-pub struct decoder?(
+pub const decoder_workbuf_len_max_incl_worst_case base.u64 = 0
+
+pub struct decoder? implements base.image_decoder(
 	width  : base.u32,
 	height : base.u32,
+
+	frame_config_io_position : base.u64,
+	seen_frame               : base.bool,
+	seen_frame_config        : base.bool,
+
+	util : base.utility,
 )
 
 pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_reader) {
@@ -63,6 +71,8 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 		i += 1
 	}
 
+	this.frame_config_io_position = args.src.position()
+
 	if args.dst <> nullptr {
 		// TODO: a Wuffs (not just C) name for the
 		// WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY magic pixfmt constant.
@@ -71,13 +81,71 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 			pixsub: 0,
 			width: this.width,
 			height: this.height,
-			first_frame_io_position: args.src.position(),
+			first_frame_io_position: this.frame_config_io_position,
 			first_frame_is_opaque: true)
 	}
+}
+
+pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_reader) {
+}
+
+pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, blend: base.pixel_blend, workbuf: slice base.u8, opts: nptr base.decode_frame_options) {
 }
 
 pub func decoder.ack_metadata_chunk?(src: base.io_reader) {
 	// TODO: this final line shouldn't be necessary, here and in some other
 	// std/*/*.wuffs functions.
 	return ok
+}
+
+pub func decoder.frame_dirty_rect() base.rect_ie_u32 {
+	return this.util.make_rect_ie_u32(
+		min_incl_x: 0,
+		min_incl_y: 0,
+		max_excl_x: this.width,
+		max_excl_y: this.height)
+}
+
+pub func decoder.metadata_chunk_length() base.u64 {
+	return 0
+}
+
+pub func decoder.metadata_fourcc() base.u32 {
+	return 0
+}
+
+pub func decoder.num_animation_loops() base.u32 {
+	return 0
+}
+
+pub func decoder.num_decoded_frame_configs() base.u64 {
+	if this.seen_frame_config {
+		return 1
+	}
+	return 0
+}
+
+pub func decoder.num_decoded_frames() base.u64 {
+	if this.seen_frame {
+		return 1
+	}
+	return 0
+}
+
+pub func decoder.restart_frame!(index: base.u64, io_position: base.u64) base.status {
+	if args.index <> 0 {
+		return base."#bad argument"
+	}
+	this.frame_config_io_position = args.io_position
+	this.seen_frame = false
+	this.seen_frame_config = false
+	return ok
+}
+
+pub func decoder.set_report_metadata!(fourcc: base.u32, report: base.bool) {
+	// No-op. WBMP doesn't support metadata.
+}
+
+pub func decoder.workbuf_len() base.range_ii_u64 {
+	return this.util.make_range_ii_u64(min_incl: 0, max_incl: 0)
 }
