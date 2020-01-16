@@ -583,7 +583,7 @@ func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error
 			b.printf(" = *iop_a_src++;\n")
 			return nil
 
-		case t.IDSkip32:
+		case t.IDSkip, t.IDSkip32:
 			x := n.Args()[0].AsArg().Value()
 			if cv := x.ConstValue(); cv != nil && cv.Cmp(one) == 0 {
 				if err := g.writeCoroSuspPoint(b, false); err != nil {

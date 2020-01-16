@@ -492,9 +492,10 @@ const (
 	IDMark             = ID(0x163)
 	IDPosition         = ID(0x164)
 	IDSince            = ID(0x165)
-	IDSkip32           = ID(0x166)
-	IDSkip32Fast       = ID(0x167)
-	IDTake             = ID(0x168)
+	IDSkip             = ID(0x166)
+	IDSkip32           = ID(0x167)
+	IDSkip32Fast       = ID(0x168)
+	IDTake             = ID(0x169)
 
 	IDCopyFromSlice          = ID(0x170)
 	IDCopyN32FromHistory     = ID(0x171)
@@ -834,6 +835,7 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDMark:             "mark",
 	IDPosition:         "position",
 	IDSince:            "since",
+	IDSkip:             "skip",
 	IDSkip32:           "skip32",
 	IDSkip32Fast:       "skip32_fast",
 	IDTake:             "take",

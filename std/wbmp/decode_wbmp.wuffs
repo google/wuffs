@@ -207,8 +207,7 @@ pri func decoder.skip_frame?(src: base.io_reader) {
 	bytes_per_row = ((this.width as base.u64) + 7) / 8
 	total_bytes = bytes_per_row * (this.height as base.u64)
 
-	// TODO: total_bytes may be larger than UINT32_MAX.
-	args.src.skip32?(n: (total_bytes & 0xFFFFFFFF) as base.u32)
+	args.src.skip?(n: total_bytes)
 
 	this.seen_frame = true
 	this.call_sequence = 2

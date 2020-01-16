@@ -13533,8 +13533,7 @@ wuffs_wbmp__decoder__skip_frame(wuffs_wbmp__decoder* self,
     v_bytes_per_row = ((((uint64_t)(self->private_impl.f_width)) + 7) / 8);
     v_total_bytes =
         (v_bytes_per_row * ((uint64_t)(self->private_impl.f_height)));
-    self->private_data.s_skip_frame[0].scratch =
-        ((uint32_t)((v_total_bytes & 4294967295)));
+    self->private_data.s_skip_frame[0].scratch = v_total_bytes;
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
     if (self->private_data.s_skip_frame[0].scratch >
         ((uint64_t)(io2_a_src - iop_a_src))) {

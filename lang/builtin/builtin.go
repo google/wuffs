@@ -235,6 +235,7 @@ var Funcs = []string{
 	"io_reader.since(mark: u64) slice u8",
 	"io_reader.take!(n: u64) slice u8",
 
+	"io_reader.skip?(n: u64)",
 	"io_reader.skip32?(n: u32)",
 
 	// TODO: this should have explicit pre-conditions "actual <= worst_case"
