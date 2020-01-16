@@ -4237,8 +4237,6 @@ struct wuffs_wbmp__decoder__struct {
     uint32_t f_width;
     uint32_t f_height;
     uint8_t f_call_sequence;
-    bool f_seen_frame;
-    bool f_seen_frame_config;
     uint64_t f_frame_config_io_position;
     wuffs_base__pixel_swizzler f_swizzler;
 
@@ -13317,7 +13315,6 @@ wuffs_wbmp__decoder__decode_frame_config(wuffs_wbmp__decoder* self,
           self->private_impl.f_frame_config_io_position, 0, true, false,
           4278190080);
     }
-    self->private_impl.f_seen_frame_config = true;
     self->private_impl.f_call_sequence = 2;
 
     goto ok;
@@ -13471,7 +13468,6 @@ wuffs_wbmp__decoder__decode_frame(wuffs_wbmp__decoder* self,
         v_dst_y += 1;
       }
     }
-    self->private_impl.f_seen_frame = true;
     self->private_impl.f_call_sequence = 3;
 
     goto ok;
@@ -13544,7 +13540,6 @@ wuffs_wbmp__decoder__skip_frame(wuffs_wbmp__decoder* self,
       goto suspend;
     }
     iop_a_src += self->private_data.s_skip_frame[0].scratch;
-    self->private_impl.f_seen_frame = true;
     self->private_impl.f_call_sequence = 3;
 
     goto ok;
@@ -13680,7 +13675,7 @@ wuffs_wbmp__decoder__num_decoded_frame_configs(
     return 0;
   }
 
-  if (self->private_impl.f_seen_frame_config) {
+  if (self->private_impl.f_call_sequence > 1) {
     return 1;
   }
   return 0;
@@ -13698,7 +13693,7 @@ wuffs_wbmp__decoder__num_decoded_frames(const wuffs_wbmp__decoder* self) {
     return 0;
   }
 
-  if (self->private_impl.f_seen_frame) {
+  if (self->private_impl.f_call_sequence > 2) {
     return 1;
   }
   return 0;
@@ -13727,8 +13722,6 @@ wuffs_wbmp__decoder__restart_frame(wuffs_wbmp__decoder* self,
     return wuffs_base__make_status(wuffs_base__error__bad_argument);
   }
   self->private_impl.f_call_sequence = 1;
-  self->private_impl.f_seen_frame = false;
-  self->private_impl.f_seen_frame_config = false;
   self->private_impl.f_frame_config_io_position = a_io_position;
   return wuffs_base__make_status(NULL);
 }
