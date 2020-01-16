@@ -13642,6 +13642,9 @@ wuffs_wbmp__decoder__restart_frame(wuffs_wbmp__decoder* self,
             : wuffs_base__error__initialize_not_called);
   }
 
+  if (self->private_impl.f_call_sequence == 0) {
+    return wuffs_base__make_status(wuffs_base__error__bad_call_sequence);
+  }
   if (a_index != 0) {
     return wuffs_base__make_status(wuffs_base__error__bad_argument);
   }
