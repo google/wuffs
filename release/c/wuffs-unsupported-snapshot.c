@@ -13545,7 +13545,7 @@ wuffs_wbmp__decoder__skip_frame(wuffs_wbmp__decoder* self,
     }
     iop_a_src += self->private_data.s_skip_frame[0].scratch;
     self->private_impl.f_seen_frame = true;
-    self->private_impl.f_call_sequence = 2;
+    self->private_impl.f_call_sequence = 3;
 
     goto ok;
   ok:

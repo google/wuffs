@@ -210,7 +210,7 @@ pri func decoder.skip_frame?(src: base.io_reader) {
 	args.src.skip?(n: total_bytes)
 
 	this.seen_frame = true
-	this.call_sequence = 2
+	this.call_sequence = 3
 }
 
 pub func decoder.ack_metadata_chunk?(src: base.io_reader) {
