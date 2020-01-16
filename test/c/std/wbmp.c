@@ -69,6 +69,18 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 
 // ---------------- WBMP Tests
 
+const char* test_wuffs_wbmp_decode_interface() {
+  CHECK_FOCUS(__func__);
+  wuffs_wbmp__decoder dec;
+  CHECK_STATUS("initialize",
+               wuffs_wbmp__decoder__initialize(
+                   &dec, sizeof dec, WUFFS_VERSION,
+                   WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+  return do_test__wuffs_base__image_decoder(
+      wuffs_wbmp__decoder__upcast_as__wuffs_base__image_decoder(&dec),
+      "test/data/muybridge-frame-000.wbmp", 0, SIZE_MAX, 30, 20, 0xFFFFFFFF);
+}
+
 const char* test_wuffs_wbmp_decode_image_config() {
   CHECK_FOCUS(__func__);
   wuffs_wbmp__decoder dec;
@@ -125,6 +137,7 @@ const char* test_wuffs_wbmp_decode_image_config() {
 proc tests[] = {
 
     test_wuffs_wbmp_decode_image_config,  //
+    test_wuffs_wbmp_decode_interface,     //
 
 #ifdef WUFFS_MIMIC
 

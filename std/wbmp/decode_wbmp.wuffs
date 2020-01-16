@@ -26,7 +26,8 @@ pub struct decoder? implements base.image_decoder(
 	seen_frame_config        : base.bool,
 	frame_config_io_position : base.u64,
 
-	util : base.utility,
+	swizzler : base.pixel_swizzler,
+	util     : base.utility,
 )
 
 pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_reader) {
@@ -126,6 +127,14 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
 }
 
 pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, blend: base.pixel_blend, workbuf: slice base.u8, opts: nptr base.decode_frame_options) {
+	var status : base.status
+	var dst_x  : base.u32
+	var dst_y  : base.u32
+	var tab    : table base.u8
+	var dst    : slice base.u8
+	var src    : array[1] base.u8
+	var c      : base.u8
+
 	if this.call_sequence < 2 {
 		this.decode_frame_config?(dst: nullptr, src: args.src)
 	} else if this.call_sequence == 2 {
@@ -134,7 +143,53 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 		return base."@end of data"
 	}
 
-	// TODO.
+	// TODO: a Wuffs (not just C) name for the
+	// WUFFS_BASE__PIXEL_FORMAT__Y magic pixfmt constant.
+	status = this.swizzler.prepare!(
+		dst_pixfmt: args.dst.pixel_format(),
+		dst_palette: args.dst.palette(),
+		src_pixfmt: this.util.make_pixel_format(repr: 0x10000008),
+		src_palette: this.util.empty_slice_u8(),
+		blend: args.blend)
+	if not status.is_ok() {
+		return status
+	}
+
+	// TODO: be more efficient than reading one byte at a time.
+	if this.width > 0 {
+		tab = args.dst.plane(p: 0)
+		while dst_y < this.height {
+			assert dst_y < 0xFFFFFFFF via "a < b: a < c; c <= b"(c: this.height)
+			dst = tab.row(y: dst_y)
+			dst_x = 0
+
+			while dst_x < this.width,
+				inv dst_y < 0xFFFFFFFF,
+			{
+				assert dst_x < 0xFFFFFFFF via "a < b: a < c; c <= b"(c: this.width)
+
+				if (dst_x & 7) == 0 {
+					c = args.src.read_u8?()
+				}
+				if (c & 0x80) == 0 {
+					src[0] = 0x00
+				} else {
+					src[0] = 0xFF
+				}
+				c ~mod<<= 1
+
+				this.swizzler.swizzle_interleaved!(
+					dst: dst, dst_palette: this.util.empty_slice_u8(), src: src[..])
+
+				if dst.length() >= 4 {
+					dst = dst[4 ..]
+				}
+
+				dst_x += 1
+			}
+			dst_y += 1
+		}
+	}
 
 	this.seen_frame = true
 	this.call_sequence = 3

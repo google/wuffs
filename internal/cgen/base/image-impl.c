@@ -22,6 +22,30 @@ const uint32_t wuffs_base__pixel_format__bits_per_channel[16] = {
 };
 
 static uint64_t  //
+wuffs_base__pixel_swizzler__xxxx_y(wuffs_base__slice_u8 dst,
+                                   wuffs_base__slice_u8 dst_palette,
+                                   wuffs_base__slice_u8 src) {
+  size_t dst_len4 = dst.len / 4;
+  size_t len = dst_len4 < src.len ? dst_len4 : src.len;
+  uint8_t* d = dst.ptr;
+  uint8_t* s = src.ptr;
+  size_t n = len;
+
+  // TODO: unroll.
+
+  while (n >= 1) {
+    wuffs_base__store_u32le(d + (0 * 4),
+                            0xFF000000 | (0x010101 * (uint32_t)s[0]));
+
+    s += 1 * 1;
+    d += 4 * 1;
+    n -= (size_t)(1 * 1);
+  }
+
+  return len;
+}
+
+static uint64_t  //
 wuffs_base__pixel_swizzler__copy_1_1(wuffs_base__slice_u8 dst,
                                      wuffs_base__slice_u8 dst_palette,
                                      wuffs_base__slice_u8 src) {
@@ -83,6 +107,7 @@ wuffs_base__pixel_swizzler__copy_3_1(wuffs_base__slice_u8 dst,
 
   return len;
 }
+
 static uint64_t  //
 wuffs_base__pixel_swizzler__copy_4_1(wuffs_base__slice_u8 dst,
                                      wuffs_base__slice_u8 dst_palette,
@@ -171,6 +196,27 @@ wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
                    wuffs_base__slice_u8 src) = NULL;
 
   switch (src_format.repr) {
+    case WUFFS_BASE__PIXEL_FORMAT__Y:
+      switch (dst_format.repr) {
+        case WUFFS_BASE__PIXEL_FORMAT__BGR:
+        case WUFFS_BASE__PIXEL_FORMAT__RGB:
+          // TODO.
+          break;
+        case WUFFS_BASE__PIXEL_FORMAT__BGRX:
+        case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
+        case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
+        case WUFFS_BASE__PIXEL_FORMAT__BGRA_BINARY:
+        case WUFFS_BASE__PIXEL_FORMAT__RGBX:
+        case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
+        case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
+        case WUFFS_BASE__PIXEL_FORMAT__RGBA_BINARY:
+          func = wuffs_base__pixel_swizzler__xxxx_y;
+          break;
+        default:
+          break;
+      }
+      break;
+
     case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY:
       switch (dst_format.repr) {
         case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL:
