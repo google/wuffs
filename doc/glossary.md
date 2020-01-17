@@ -81,7 +81,7 @@ unambiguous (for the computer), equivalent to exactly one of `(a + b) * c` or,
 more conventionally, `a + (b * c)`. While good for brevity, Wuffs does not have
 operator precedence: the bare `a + b * c` is an invalid Wuffs expression and
 the parentheses must be explicit. The ambiguity (for the human) can be a source
-of bugs in other [security-concious file format
+of bugs in other [security-conscious file format
 parsers](https://github.com/jbangert/nail/issues/7).
 
 Some binary operators (`+`, `*`, `&`, `|`, `^`, `and`, `or`) are also

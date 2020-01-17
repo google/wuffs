@@ -48,11 +48,10 @@ etcetera
 i = i + 1
 ```
 
-fails the compile-time bounds / overflow checker, because the assignment's
-RHS's (Right Hand Side's) range, `[1 ..= 11]`, is not wholly contained by the
-LHS (Left Hand Side) variable's range: `i` has range `[0 ..= 10]`. If `i` had
-an unrefined type, such as `base.u32`, then this is essentially an overflow
-check.
+fails the compile-time bounds/overflow checker, because the assignment's RHS's
+(Right Hand Side's) range, `[1 ..= 11]`, is not wholly contained by the LHS
+(Left Hand Side) variable's range: `i` has range `[0 ..= 10]`. If `i` had an
+unrefined type, such as `base.u32`, then this is essentially an overflow check.
 
 
 ## Masking Array Indexes

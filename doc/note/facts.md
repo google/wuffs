@@ -105,7 +105,7 @@ line of code:
   arms (e.g. those that end with a `break`, `continue` or `return` statement)
   are not considered during reconciliation.
 - The start of a while loop can come from not just its preceding line of code,
-  but also from any explicit `continue`'s inside that loop, and the implicit
+  but also from any explicit `continue`s inside that loop, and the implicit
   `continue` at the closing `}` curly brace.
 - Similarly, the line of code immediately after the entire while loop can come
   from an explicit `break` or if the while condition fails.
@@ -138,9 +138,9 @@ while n_bits < n_extra_bits,
 The `pre`, `post` and `inv` keywords introduce loop pre-conditions,
 post-conditions and invariants (things that are both). The snippet above means
 that the Wuffs compiler has to verify all three conditions at every place this
-loop exits: at the implicit `break` if the `n_Bits < n_extra_bits` evaluates
-false (which in this case trivially proves the third condition), but also at
-every explicit `break` for that loop within its body.
+loop exits: at the implicit `break` if the expression `n_bits < n_extra_bits`
+evaluates to false (which in this case trivially proves the third condition),
+but also at every explicit `break` for that loop within its body.
 
 Similarly, it has to verify only the first two conditions at every place this
 loop repeats (at its initial execution, at every explicit `continue` and at the

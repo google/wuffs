@@ -47,7 +47,7 @@ domain-specific programming language.
 
 Extended Static Checker for Java (ESC/Java) and its successor
 [OpenJML](http://www.openjml.org/), which obviously target the Java programming
-language, similarly has to analyze a language that is more complicated that
+language, similarly has to analyze a language that is more complicated than
 Wuffs. Java is also not commonly used for writing e.g. low level image codecs,
 as the language lacks unsigned integer types, it is garbage collected and
 idiomatic code often allocates.
@@ -211,7 +211,7 @@ limited to that part of a file format that is easily expressible as a formal
 grammar. In particular, it also handles entropy encodings such as LZW (for
 GIF), ZLIB (for PNG) and Huffman (for JPEG, TODO). Wuffs differs from nom
 combined with other Rust code (e.g. a Rust LZW implementation) in that bounds
-and overflow checks not just ubiquitous but also completely eliminated at
+and overflow checks are not just ubiquitous but also completely eliminated at
 compile time.
 
 [Kaitai Struct](http://kaitai.io/) is in a similar space, generating safe

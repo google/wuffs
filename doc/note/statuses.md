@@ -69,7 +69,7 @@ receiver"` is an error and `"$short read"` is a suspension:
 
 In terms of C implementation, a status' `repr` (representation) is just its
 string message: a `const char *`, with `ok` being the null pointer. That C
-string is statically allocated and should never be `free`'d. Status `repr`s can
+string is statically allocated and should never be `free`d. Status `repr`s can
 be compared by the `==` operator and not just by `strcmp`.
 
 The C string's contents has the Wuffs package name inserted by the Wuffs

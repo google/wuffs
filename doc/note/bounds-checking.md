@@ -10,7 +10,7 @@ Similarly, an expression like `x[i]` is invalid unless there is a compile-time
 proof that `i` is in-bounds: that `((0 <= i) and (i < x.length()))`. Proofs can
 involve natural bounds (e.g. if `i` has type `base.u8` then `(0 <= i)` is
 trivially true since a `base.u8` is unsigned),
-[refinements](/doc/glossary.md#refinement-type) (e.g. if `i`has type
+[refinements](/doc/glossary.md#refinement-type) (e.g. if `i` has type
 `base.u32[..= 100]` then 100 is an inclusive upper bound for `i`),
 [facts](/doc/note/facts.md) (e.g. an explicit prior check `if i < x.length()`)
 and [interval arithmetic](/doc/note/interval-arithmetic.md) (e.g. for an

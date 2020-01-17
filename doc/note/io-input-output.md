@@ -8,7 +8,7 @@ prove that you can't misuse a capability, even when given malicious input.
 Instead, the code that calls into Wuffs libraries is responsible for
 interfacing with e.g. the file system or the network system. An `io_buffer` is
 the mechanism for transferring data into and out of Wuffs libraries. For
-example, when decompressing gzip, there are two `io_buffer`'s: the caller fills
+example, when decompressing gzip, there are two `io_buffer`s: the caller fills
 a source buffer with e.g. the compressed file's contents and the callee (the
 Wuffs library) reads compressed bytes from that source buffer and writes
 decompressed bytes to a destination buffer.
@@ -35,19 +35,18 @@ Reading from an `io_buffer`, e.g. copying from a buffer to a file, increments
 An invariant condition is that `((0 <= ri) and (ri <= wi) and (wi <= len))`.
 
 Having separate read and write indexes simplifies connecting a sequence of
-filters or processors with `io_buffer`'s, similar to connecting Unix processes
+filters or processors with `io_buffer`s, similar to connecting Unix processes
 with pipes. Each filter reads from the previous buffer and writes to the next
 buffer. Each buffer is written to by the previous filter and is read from by
 the next filter. There's no need to flip a buffer between reading and writing
-modes. Nonetheless, `io_buffer`'s are generally not thread-safe.
+modes. Nonetheless, `io_buffer`s are generally not thread-safe.
 
-Continuing the "decompressing gzip" example, the application would write to the
-source buffer by copying from e.g. `/dev/stdin`. The Wuffs library would read
+Continuing the "decompressing gzip" example, the application would write to
+the source buffer by copying from e.g. `stdin`. The Wuffs library would read
 from the source buffer and write to the destination buffer. The application
 would read from the destination buffer by copying to e.g. `stdout`. Buffer
 space can be re-used, via compaction (see below), so that neither the source
-(`/dev/stdin`) or destination (`/dev/stdout`) data needs to be entirely in
-memory at any point.
+or destination data needs to be entirely in memory at any point.
 
 For example, an `io_buffer` of length 8 could have 4 bytes available to read
 and 1 byte available to write. If 1 byte was written, there would then be 5
@@ -100,9 +99,9 @@ at the time of the call. When considering a function as a 'black box', the two
 indexes can only travel forward, and it is up to the application code (not
 Wuffs library) code to rewind the indexes (e.g. by compaction).
 
-Even though `ri` can not drop below its initial value, Wuffs code can still
+Even though `ri` cannot drop below its initial value, Wuffs code can still
 read the contents of the slice before `ri` (in sub-slice notation,
-`data[0 .. ri]`) and it should still contain  the `(pos + 0)`th, `(pos + 1)`th,
+`data[0 .. ri]`) and it should still contain the `(pos + 0)`th, `(pos + 1)`th,
 etc. byte of the stream.
 
 The contents of the slice after `wi` (in sub-slice notation, `data[wi .. len]`)
