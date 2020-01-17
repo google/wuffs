@@ -87,8 +87,8 @@ static const char* decode() {
   wuffs_gzip__decoder dec;
   wuffs_base__status status =
       wuffs_gzip__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
-  if (status) {
-    return wuffs_base__status__message(status);
+  if (!wuffs_base__status__is_ok(&status)) {
+    return wuffs_base__status__message(&status);
   }
 
   wuffs_base__io_buffer dst;
@@ -123,7 +123,7 @@ static const char* decode() {
     }
 
     while (true) {
-      status = wuffs_gzip__decoder__decode_io_writer(
+      status = wuffs_gzip__decoder__transform_io(
           &dec, &dst, &src,
           wuffs_base__make_slice_u8(work_buffer, WORK_BUFFER_SIZE));
 
@@ -135,13 +135,13 @@ static const char* decode() {
         wuffs_base__io_buffer__compact(&dst);
       }
 
-      if (status == wuffs_base__suspension__short_read) {
+      if (status.repr == wuffs_base__suspension__short_read) {
         break;
       }
-      if (status == wuffs_base__suspension__short_write) {
+      if (status.repr == wuffs_base__suspension__short_write) {
         continue;
       }
-      return wuffs_base__status__message(status);
+      return wuffs_base__status__message(&status);
     }
 
     wuffs_base__io_buffer__compact(&src);
@@ -163,8 +163,8 @@ int main(int argc, char** argv) {
   prctl(PR_SET_SECCOMP, SECCOMP_MODE_STRICT);
 #endif
 
-  const char* status = decode();
-  int status_code = status ? fail(status) : 0;
+  const char* status_msg = decode();
+  int status_code = status_msg ? fail(status_msg) : 0;
 
 #if defined(WUFFS_EXAMPLE_USE_SECCOMP)
   // Call SYS_exit explicitly instead of SYS_exit_group implicitly.

@@ -115,7 +115,17 @@ extern const char*
 
 #ifdef MAKE_THIS_FILE_COMPILABLE_STANDALONE
 
-typedef const char* wuffs_base__status;
+typedef struct {
+  const char* repr;
+} wuffs_base__status;
+
+static inline wuffs_base__status  //
+wuffs_base__make_status(const char* repr) {
+  wuffs_base__status z;
+  z.repr = repr;
+  return z;
+}
+
 typedef struct {
   uint8_t* ptr;
   size_t len;
@@ -159,7 +169,7 @@ static wuffs_base__status wuffs_deflate__decoder__decode_huffman_fast(
     wuffs_deflate__decoder* self,
     wuffs_base__io_buffer* a_dst,
     wuffs_base__io_buffer* a_src) {
-  return NULL;
+  return wuffs_base__make_status(NULL);
 }
 
 #endif  // MAKE_THIS_FILE_COMPILABLE_STANDALONE
@@ -222,9 +232,9 @@ wuffs_base__status c_wuffs_deflate__decoder__decode_huffman_fast(
   (void)(wuffs_deflate__decoder__decode_huffman_fast);
 
   if (!a_dst || !a_src) {
-    return wuffs_base__error__bad_argument;
+    return wuffs_base__make_status(wuffs_base__error__bad_argument);
   }
-  wuffs_base__status status = NULL;
+  wuffs_base__status status = wuffs_base__make_status(NULL);
 
   // Load contextual state. Prepare to check that pdst and psrc remain within
   // a_dst's and a_src's bounds.
@@ -232,7 +242,7 @@ wuffs_base__status c_wuffs_deflate__decoder__decode_huffman_fast(
   uint8_t* pdst = a_dst->data.ptr + a_dst->meta.wi;
   uint8_t* qdst = a_dst->data.ptr + a_dst->data.len;
   if ((qdst - pdst) < 258) {
-    return NULL;
+    return wuffs_base__make_status(NULL);
   } else {
     qdst -= 258;
   }
@@ -240,7 +250,7 @@ wuffs_base__status c_wuffs_deflate__decoder__decode_huffman_fast(
   uint8_t* psrc = a_src->data.ptr + a_src->meta.ri;
   uint8_t* qsrc = a_src->data.ptr + a_src->meta.wi;
   if ((qsrc - psrc) < 12) {
-    return NULL;
+    return wuffs_base__make_status(NULL);
   } else {
     qsrc -= 12;
   }
@@ -309,8 +319,8 @@ outer_loop:
         goto end;
       }
       if ((table_entry >> 24) != 0x10) {
-        status =
-            wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
+        status = wuffs_base__make_status(
+            wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state);
         goto end;
       }
       uint32_t top = (table_entry >> 8) & 0xFFFF;
@@ -356,8 +366,8 @@ outer_loop:
         break;
       }
       if ((table_entry >> 24) != 0x10) {
-        status =
-            wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
+        status = wuffs_base__make_status(
+            wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state);
         goto end;
       }
       uint32_t top = (table_entry >> 8) & 0xFFFF;
@@ -399,7 +409,7 @@ outer_loop:
         length = 0;
       }
       if (self->private_impl.f_history_index < hdist) {
-        status = wuffs_deflate__error__bad_distance;
+        status = wuffs_base__make_status(wuffs_deflate__error__bad_distance);
         goto end;
       }
 
@@ -423,7 +433,8 @@ outer_loop:
       }
 
       if ((ptrdiff_t)(dist_minus_1 + 1) > (pdst - pdst_mark)) {
-        status = wuffs_deflate__error__internal_error_inconsistent_distance;
+        status = wuffs_base__make_status(
+            wuffs_deflate__error__internal_error_inconsistent_distance);
         goto end;
       }
     }

@@ -162,7 +162,7 @@ func (g *gen) writeStatementAssign0(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr
 		}
 
 		if op != t.IDEqQuestion && rhs.Effect().Coroutine() {
-			b.writes("if (status) { goto suspend; }\n")
+			b.writes("if (status.repr) { goto suspend; }\n")
 		}
 	}
 
@@ -435,15 +435,15 @@ func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 	if g.currFunk.astFunc.Effect().Coroutine() ||
 		(g.currFunk.returnsStatus && (len(g.currFunk.derivedVars) > 0)) {
 
-		isOK := false
+		isComplete := false
 		b.writes("status = ")
 		if retExpr.Operator() == 0 && retExpr.Ident() == t.IDOk {
-			b.writes("NULL")
-			isOK = true
+			b.writes("wuffs_base__make_status(NULL)")
+			isComplete = true
 		} else {
 			if retExpr.Ident().IsStrLiteral(g.tm) {
 				msg, _ := t.Unescape(retExpr.Ident().Str(g.tm))
-				isOK = statusMsgIsWarning(msg)
+				isComplete = statusMsgIsNote(msg)
 			}
 			if err := g.writeExpr(
 				b, retExpr, depth); err != nil {
@@ -458,15 +458,15 @@ func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 
 		if n.RetsError() {
 			b.writes("goto exit;")
-		} else if isOK {
+		} else if isComplete {
 			g.currFunk.hasGotoOK = true
 			b.writes("goto ok;")
 		} else {
 			g.currFunk.hasGotoOK = true
 			// TODO: the "goto exit"s can be "goto ok".
-			b.writes("if (wuffs_base__status__is_error(status)) { goto exit; }" +
-				"else if (wuffs_base__status__is_suspension(status)) { " +
-				"status = wuffs_base__error__cannot_return_a_suspension; goto exit; } goto ok;")
+			b.writes("if (wuffs_base__status__is_error(&status)) { goto exit; }" +
+				"else if (wuffs_base__status__is_suspension(&status)) { " +
+				"status = wuffs_base__make_status(wuffs_base__error__cannot_return_a_suspension); goto exit; } goto ok;")
 		}
 		return nil
 	}

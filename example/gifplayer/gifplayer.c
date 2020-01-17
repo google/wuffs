@@ -273,8 +273,8 @@ const char* try_allocate(wuffs_gif__decoder* dec,
 }
 
 const char* allocate(wuffs_gif__decoder* dec, wuffs_base__image_config* ic) {
-  const char* status = try_allocate(dec, ic);
-  if (status) {
+  const char* status_msg = try_allocate(dec, ic);
+  if (status_msg) {
     free(printbuf.ptr);
     printbuf = wuffs_base__make_slice_u8(NULL, 0);
     free(workbuf.ptr);
@@ -287,15 +287,15 @@ const char* allocate(wuffs_gif__decoder* dec, wuffs_base__image_config* ic) {
     curr_dst_buffer = NULL;
     dst_len = 0;
   }
-  return status;
+  return status_msg;
 }
 
 const char* play() {
   wuffs_gif__decoder dec;
   wuffs_base__status status =
       wuffs_gif__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
-  if (status) {
-    return wuffs_base__status__message(status);
+  if (!wuffs_base__status__is_ok(&status)) {
+    return wuffs_base__status__message(&status);
   }
 
   if (quirk_honor_background_color_flag) {
@@ -314,8 +314,8 @@ const char* play() {
   if (first_play) {
     wuffs_base__image_config ic = {0};
     status = wuffs_gif__decoder__decode_image_config(&dec, &ic, &src);
-    if (status) {
-      return wuffs_base__status__message(status);
+    if (!wuffs_base__status__is_ok(&status)) {
+      return wuffs_base__status__message(&status);
     }
     if (!wuffs_base__image_config__is_valid(&ic)) {
       return "invalid image configuration";
@@ -336,8 +336,8 @@ const char* play() {
       return msg;
     }
     status = wuffs_base__pixel_buffer__set_from_slice(&pb, &ic.pixcfg, pixbuf);
-    if (status) {
-      return wuffs_base__status__message(status);
+    if (!wuffs_base__status__is_ok(&status)) {
+      return wuffs_base__status__message(&status);
     }
     memset(pixbuf.ptr, 0, pixbuf.len);
   }
@@ -346,11 +346,11 @@ const char* play() {
     wuffs_base__frame_config fc = {0};
     wuffs_base__status status =
         wuffs_gif__decoder__decode_frame_config(&dec, &fc, &src);
-    if (status) {
-      if (status == wuffs_base__warning__end_of_data) {
+    if (!wuffs_base__status__is_ok(&status)) {
+      if (status.repr == wuffs_base__note__end_of_data) {
         break;
       }
-      return wuffs_base__status__message(status);
+      return wuffs_base__status__message(&status);
     }
 
     if (wuffs_base__frame_config__index(&fc) == 0) {
@@ -370,9 +370,9 @@ const char* play() {
       }
     }
 
-    wuffs_base__status decode_frame_status =
-        wuffs_gif__decoder__decode_frame(&dec, &pb, &src, workbuf, NULL);
-    if (decode_frame_status == wuffs_base__warning__end_of_data) {
+    wuffs_base__status decode_frame_status = wuffs_gif__decoder__decode_frame(
+        &dec, &pb, &src, WUFFS_BASE__PIXEL_BLEND__SRC, workbuf, NULL);
+    if (decode_frame_status.repr == wuffs_base__note__end_of_data) {
       break;
     }
 
@@ -422,8 +422,8 @@ const char* play() {
 
     // TODO: should a zero duration mean to show this frame forever?
 
-    if (decode_frame_status) {
-      return wuffs_base__status__message(decode_frame_status);
+    if (!wuffs_base__status__is_ok(&decode_frame_status)) {
+      return wuffs_base__status__message(&decode_frame_status);
     }
   }
 
@@ -446,16 +446,16 @@ int main(int argc, char** argv) {
     }
   }
 
-  const char* status = read_stdin();
-  if (status) {
-    fprintf(stderr, "%s\n", status);
+  const char* status_msg = read_stdin();
+  if (status_msg) {
+    fprintf(stderr, "%s\n", status_msg);
     return 1;
   }
 
   while (true) {
-    status = play();
-    if (status) {
-      fprintf(stderr, "%s\n", status);
+    status_msg = play();
+    if (status_msg) {
+      fprintf(stderr, "%s\n", status_msg);
       return 1;
     }
     if (num_loops_remaining == 0) {

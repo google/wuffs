@@ -46,7 +46,7 @@ pri const interlace_start array[5] base.u32 = [0xFFFFFFFF, 1, 2, 4, 0]
 pri const interlace_delta array[5] base.u8 = [1, 2, 4, 8, 8]
 pri const interlace_count array[5] base.u8 = [0, 1, 2, 4, 8]
 
-pub struct decoder?(
+pub struct decoder? implements base.image_decoder(
 	width  : base.u32,
 	height : base.u32,
 
@@ -253,7 +253,7 @@ pub func decoder.ack_metadata_chunk?(src: base.io_reader) {
 				// metadata passed to the caller.
 				this.metadata_chunk_length_value += 1
 			} else {
-				args.src.skip_fast!(actual: 1, worst_case: 1)
+				args.src.skip32_fast!(actual: 1, worst_case: 1)
 			}
 			this.metadata_io_position =
 				args.src.position() ~sat+ this.metadata_chunk_length_value
@@ -261,7 +261,7 @@ pub func decoder.ack_metadata_chunk?(src: base.io_reader) {
 		}
 
 		// Consume the '\x00' that means a zero-length block.
-		args.src.skip_fast!(actual: 1, worst_case: 1)
+		args.src.skip32_fast!(actual: 1, worst_case: 1)
 	}
 
 	this.call_sequence = 2
@@ -324,7 +324,6 @@ pub func decoder.restart_frame!(index: base.u64, io_position: base.u64) base.sta
 }
 
 pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_reader) {
-	var blend            : base.u8
 	var background_color : base.u32
 	var flags            : base.u8
 
@@ -348,10 +347,8 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
 		return base."@end of data"
 	}
 
-	blend = 0
 	background_color = this.black_color_u32_argb_premul
 	if not this.gc_has_transparent_index {
-		blend = 2  // 2 is WUFFS_BASE__ANIMATION_BLEND__OPAQUE.
 		background_color = this.background_color_u32_argb_premul
 
 		// If the quirk is enabled and the first frame has a local color
@@ -385,8 +382,9 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
 			duration: this.gc_duration,
 			index: this.num_decoded_frame_configs_value,
 			io_position: this.frame_config_io_position,
-			blend: blend,
 			disposal: this.gc_disposal,
+			opaque_within_bounds: not this.gc_has_transparent_index,
+			overwrite_instead_of_blend: false,
 			background_color: background_color)
 	}
 
@@ -401,7 +399,7 @@ pri func decoder.skip_frame?(src: base.io_reader) {
 	// Skip the optional Local Color Table, 3 bytes (RGB) per entry.
 	flags = args.src.read_u8?()
 	if (flags & 0x80) <> 0 {
-		args.src.skip?(n: (3 as base.u32) << (1 + (flags & 0x07)))
+		args.src.skip32?(n: (3 as base.u32) << (1 + (flags & 0x07)))
 	}
 
 	// Process the LZW literal width.
@@ -422,7 +420,7 @@ pri func decoder.skip_frame?(src: base.io_reader) {
 }
 
 // TODO: honor args.opts.
-pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, workbuf: slice base.u8, opts: nptr base.decode_frame_options) {
+pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, blend: base.pixel_blend, workbuf: slice base.u8, opts: nptr base.decode_frame_options) {
 	this.ignore_metadata = true
 	if this.call_sequence <> 4 {
 		this.decode_frame_config?(dst: nullptr, src: args.src)
@@ -431,7 +429,7 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 		((this.frame_rect_x0 == this.frame_rect_x1) or (this.frame_rect_y0 == this.frame_rect_y1)) {
 		return "#bad frame size"
 	}
-	this.decode_id_part1?(dst: args.dst, src: args.src)
+	this.decode_id_part1?(dst: args.dst, src: args.src, blend: args.blend)
 	this.decode_id_part2?(dst: args.dst, src: args.src, workbuf: args.workbuf)
 
 	this.num_decoded_frames_value ~sat+= 1
@@ -518,7 +516,7 @@ pri func decoder.decode_lsd?(src: base.io_reader) {
 	flags = args.src.read_u8?()
 	background_color_index = args.src.read_u8?()
 	// Ignore the Pixel Aspect Ratio byte.
-	args.src.skip?(n: 1)
+	args.src.skip32?(n: 1)
 
 	// Read the optional Global Color Table.
 	i = 0
@@ -600,7 +598,7 @@ pri func decoder.skip_blocks?(src: base.io_reader) {
 		if block_size == 0 {
 			return ok
 		}
-		args.src.skip?(n: block_size as base.u32)
+		args.src.skip32?(n: block_size as base.u32)
 	}
 }
 
@@ -648,7 +646,7 @@ pri func decoder.decode_ae?(src: base.io_reader) {
 		//
 		// Other extensions include XMP metadata.
 		if block_size <> 11 {
-			args.src.skip?(n: block_size as base.u32)
+			args.src.skip32?(n: block_size as base.u32)
 			break
 		}
 		is_animexts = true
@@ -670,12 +668,12 @@ pri func decoder.decode_ae?(src: base.io_reader) {
 			// count.
 			block_size = args.src.read_u8?()
 			if block_size <> 3 {
-				args.src.skip?(n: block_size as base.u32)
+				args.src.skip32?(n: block_size as base.u32)
 				break
 			}
 			c = args.src.read_u8?()
 			if c <> 0x01 {
-				args.src.skip?(n: 2)
+				args.src.skip32?(n: 2)
 				break
 			}
 			this.num_loops = args.src.read_u16le_as_u32?()
@@ -705,7 +703,7 @@ pri func decoder.decode_ae?(src: base.io_reader) {
 				yield? base."$short read"
 			}
 			this.metadata_chunk_length_value = args.src.peek_u8_as_u64()
-			args.src.skip_fast!(actual: 1, worst_case: 1)
+			args.src.skip32_fast!(actual: 1, worst_case: 1)
 			this.metadata_fourcc_value = 0x49434350  // "ICCP"
 			this.metadata_io_position = args.src.position() ~sat+ this.metadata_chunk_length_value
 			this.call_sequence = 1
@@ -724,7 +722,7 @@ pri func decoder.decode_ae?(src: base.io_reader) {
 				// metadata passed to the caller.
 				this.metadata_chunk_length_value += 1
 			} else {
-				args.src.skip_fast!(actual: 1, worst_case: 1)
+				args.src.skip32_fast!(actual: 1, worst_case: 1)
 			}
 			this.metadata_fourcc_value = 0x584D5020  // "XMP "
 			this.metadata_io_position = args.src.position() ~sat+ this.metadata_chunk_length_value
@@ -813,7 +811,7 @@ pri func decoder.decode_id_part0?(src: base.io_reader) {
 	}
 }
 
-pri func decoder.decode_id_part1?(dst: ptr base.pixel_buffer, src: base.io_reader) {
+pri func decoder.decode_id_part1?(dst: ptr base.pixel_buffer, src: base.io_reader, blend: base.pixel_blend) {
 	var flags               : base.u8
 	var which_palette       : base.u8[..= 1]
 	var num_palette_entries : base.u32[..= 256]
@@ -881,8 +879,9 @@ pri func decoder.decode_id_part1?(dst: ptr base.pixel_buffer, src: base.io_reade
 	status = this.swizzler.prepare!(
 		dst_pixfmt: args.dst.pixel_format(),
 		dst_palette: dst_palette,
-		src_pixfmt: 0x47040008,
-		src_palette: this.palettes[which_palette][..])
+		src_pixfmt: this.util.make_pixel_format(repr: 0x47040008),
+		src_palette: this.palettes[which_palette][..],
+		blend: args.blend)
 	if not status.is_ok() {
 		return status
 	}
@@ -963,7 +962,7 @@ pri func decoder.decode_id_part2?(dst: ptr base.pixel_buffer, src: base.io_reade
 				break
 			}
 			block_size = args.src.peek_u8_as_u64()
-			args.src.skip_fast!(actual: 1, worst_case: 1)
+			args.src.skip32_fast!(actual: 1, worst_case: 1)
 		}
 
 		if decoder_workbuf_len_max_incl_worst_case > args.workbuf.length() {
@@ -976,7 +975,7 @@ pri func decoder.decode_id_part2?(dst: ptr base.pixel_buffer, src: base.io_reade
 			}
 			io_bind (io: r, data: this.compressed[this.compressed_ri .. this.compressed_wi]) {
 				mark = r.mark()
-				lzw_status =? this.lzw.decode_io_writer?(
+				lzw_status =? this.lzw.transform_io?(
 					dst: this.util.empty_io_writer(), src: r, workbuf: this.util.empty_slice_u8())
 				this.compressed_ri ~sat+= r.count_since(mark: mark)
 			}
@@ -994,7 +993,7 @@ pri func decoder.decode_id_part2?(dst: ptr base.pixel_buffer, src: base.io_reade
 
 				// Skip any trailing blocks.
 				if need_block_size or (block_size > 0) {
-					args.src.skip?(n: block_size as base.u32)
+					args.src.skip32?(n: block_size as base.u32)
 					this.skip_blocks?(src: args.src)
 				}
 
@@ -1025,8 +1024,9 @@ pri func decoder.copy_to_image_buffer!(pb: ptr base.pixel_buffer, src: slice bas
 	var width_in_bytes  : base.u64
 	var n               : base.u64
 	var src_ri          : base.u64
+	var pixfmt          : base.pixel_format
 	var bytes_per_pixel : base.u32[..= 64]
-	var pixfmt_channels : base.u32
+	var bits_per_pixel  : base.u32
 	var tab             : table base.u8
 	var i               : base.u64
 	var j               : base.u64
@@ -1037,12 +1037,16 @@ pri func decoder.copy_to_image_buffer!(pb: ptr base.pixel_buffer, src: slice bas
 
 	// TODO: a Wuffs (not just C) name for the WUFFS_BASE__PIXEL_FORMAT__ETC
 	// magic pixfmt constants. Also, support more formats.
-	pixfmt_channels = args.pb.pixel_format() & 0xFFFF
-	if (pixfmt_channels == 0x8888) {
+	//
+	// TODO: the pixfmt variable shouldn't be necessary. We should be able to
+	// chain the two calls: "args.pb.pixel_format().bits_per_pixel()".
+	pixfmt = args.pb.pixel_format()
+	bits_per_pixel = pixfmt.bits_per_pixel()
+	if (bits_per_pixel == 32) {
 		bytes_per_pixel = 4
-	} else if (pixfmt_channels == 0x0888) {
+	} else if (bits_per_pixel == 24) {
 		bytes_per_pixel = 3
-	} else if (pixfmt_channels == 0x0008) {
+	} else if (bits_per_pixel == 8) {
 		bytes_per_pixel = 1
 	} else {
 		return base."#unsupported option"

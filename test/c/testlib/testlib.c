@@ -30,30 +30,34 @@ uint8_t global_work_array[BUFFER_SIZE];
 uint8_t global_src_array[BUFFER_SIZE];
 uint8_t global_pixel_array[BUFFER_SIZE];
 
-wuffs_base__slice_u8 global_got_slice = ((wuffs_base__slice_u8){
-    .ptr = global_got_array,
-    .len = BUFFER_SIZE,
-});
+wuffs_base__slice_u8 global_got_slice;
+wuffs_base__slice_u8 global_want_slice;
+wuffs_base__slice_u8 global_work_slice;
+wuffs_base__slice_u8 global_src_slice;
+wuffs_base__slice_u8 global_pixel_slice;
 
-wuffs_base__slice_u8 global_want_slice = ((wuffs_base__slice_u8){
-    .ptr = global_want_array,
-    .len = BUFFER_SIZE,
-});
-
-wuffs_base__slice_u8 global_work_slice = ((wuffs_base__slice_u8){
-    .ptr = global_work_array,
-    .len = BUFFER_SIZE,
-});
-
-wuffs_base__slice_u8 global_src_slice = ((wuffs_base__slice_u8){
-    .ptr = global_src_array,
-    .len = BUFFER_SIZE,
-});
-
-wuffs_base__slice_u8 global_pixel_slice = ((wuffs_base__slice_u8){
-    .ptr = global_pixel_array,
-    .len = BUFFER_SIZE,
-});
+void wuffs_testlib__initialize_global_xxx_slices() {
+  global_got_slice = ((wuffs_base__slice_u8){
+      .ptr = global_got_array,
+      .len = BUFFER_SIZE,
+  });
+  global_want_slice = ((wuffs_base__slice_u8){
+      .ptr = global_want_array,
+      .len = BUFFER_SIZE,
+  });
+  global_work_slice = ((wuffs_base__slice_u8){
+      .ptr = global_work_array,
+      .len = BUFFER_SIZE,
+  });
+  global_src_slice = ((wuffs_base__slice_u8){
+      .ptr = global_src_array,
+      .len = BUFFER_SIZE,
+  });
+  global_pixel_slice = ((wuffs_base__slice_u8){
+      .ptr = global_pixel_array,
+      .len = BUFFER_SIZE,
+  });
+}
 
 char fail_msg[65536] = {0};
 
@@ -61,8 +65,25 @@ char fail_msg[65536] = {0};
   return (snprintf(fail_msg, sizeof(fail_msg), ##__VA_ARGS__) >= 0) \
              ? fail_msg                                             \
              : "unknown failure (snprintf-related)"
+
 #define INCR_FAIL(msg, ...) \
   msg += snprintf(msg, sizeof(fail_msg) - (msg - fail_msg), ##__VA_ARGS__)
+
+#define CHECK_STATUS(prefix, status)             \
+  do {                                           \
+    wuffs_base__status z = status;               \
+    if (z.repr) {                                \
+      RETURN_FAIL("%s: \"%s\"", prefix, z.repr); \
+    }                                            \
+  } while (0)
+
+#define CHECK_STRING(string) \
+  do {                       \
+    const char* z = string;  \
+    if (z) {                 \
+      return z;              \
+    }                        \
+  } while (0)
 
 int tests_run = 0;
 
@@ -243,6 +264,7 @@ const char* chdir_to_the_wuffs_root_directory() {
 typedef const char* (*proc)();
 
 int test_main(int argc, char** argv, proc* tests, proc* benches) {
+  wuffs_testlib__initialize_global_xxx_slices();
   const char* status = chdir_to_the_wuffs_root_directory();
   if (status) {
     fprintf(stderr, "%s\n", status);
@@ -426,12 +448,12 @@ const char* copy_to_io_buffer_from_pixel_buffer(wuffs_base__io_buffer* dst,
 
   wuffs_base__pixel_format pixfmt =
       wuffs_base__pixel_config__pixel_format(&src->pixcfg);
-  if (wuffs_base__pixel_format__is_planar(pixfmt)) {
+  if (wuffs_base__pixel_format__is_planar(&pixfmt)) {
     // If we want to support planar pixel buffers, in the future, be concious
     // of pixel subsampling.
     return "copy_to_io_buffer_from_pixel_buffer: cannot copy from planar src";
   }
-  uint32_t bits_per_pixel = wuffs_base__pixel_format__bits_per_pixel(pixfmt);
+  uint32_t bits_per_pixel = wuffs_base__pixel_format__bits_per_pixel(&pixfmt);
   if (bits_per_pixel == 0) {
     return "copy_to_io_buffer_from_pixel_buffer: invalid bits_per_pixel";
   } else if ((bits_per_pixel % 8) != 0) {
@@ -515,6 +537,23 @@ const char* read_file(wuffs_base__io_buffer* dst, const char* path) {
   fclose(f);
   dst->meta.pos = 0;
   dst->meta.closed = true;
+  return NULL;
+}
+
+const char* read_file_fragment(wuffs_base__io_buffer* dst,
+                               const char* path,
+                               size_t ri_min,
+                               size_t wi_max) {
+  CHECK_STRING(read_file(dst, path));
+  if (dst->meta.ri < ri_min) {
+    dst->meta.ri = ri_min;
+  }
+  if (dst->meta.wi > wi_max) {
+    dst->meta.wi = wi_max;
+  }
+  if (dst->meta.ri > dst->meta.wi) {
+    RETURN_FAIL("read_file_fragment(\"%s\"): ri > wi", path);
+  }
   return NULL;
 }
 
@@ -721,6 +760,121 @@ const char* do_test_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
   return proc_io_buffers(codec_func,
                          WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
                          tc_neither, gt, wlimit, rlimit, 1, false);
+}
+
+// --------
+
+const char* do_test__wuffs_base__hasher_u32(wuffs_base__hasher_u32* b,
+                                            const char* src_filename,
+                                            size_t src_ri,
+                                            size_t src_wi,
+                                            uint32_t want) {
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = global_src_slice,
+  });
+  CHECK_STRING(read_file_fragment(&src, src_filename, src_ri, src_wi));
+  uint32_t got = wuffs_base__hasher_u32__update_u32(
+      b, ((wuffs_base__slice_u8){
+             .ptr = (uint8_t*)(src.data.ptr + src.meta.ri),
+             .len = (size_t)(src.meta.wi - src.meta.ri),
+         }));
+  if (got != want) {
+    RETURN_FAIL("got 0x%08" PRIX32 ", want 0x%08" PRIX32, got, want);
+  }
+  return NULL;
+}
+
+const char* do_test__wuffs_base__image_decoder(
+    wuffs_base__image_decoder* b,
+    const char* src_filename,
+    size_t src_ri,
+    size_t src_wi,
+    uint32_t want_width,
+    uint32_t want_height,
+    wuffs_base__color_u32_argb_premul want_final_pixel) {
+  if ((want_width > 16384) || (want_height > 16384) ||
+      ((want_width * want_height * 4) > BUFFER_SIZE)) {
+    return "want dimensions are too large";
+  }
+
+  wuffs_base__image_config ic = ((wuffs_base__image_config){});
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = global_src_slice,
+  });
+  CHECK_STRING(read_file_fragment(&src, src_filename, src_ri, src_wi));
+  CHECK_STATUS("decode_image_config",
+               wuffs_base__image_decoder__decode_image_config(b, &ic, &src));
+
+  uint32_t got_width = wuffs_base__pixel_config__width(&ic.pixcfg);
+  if (got_width != want_width) {
+    RETURN_FAIL("width: got %" PRIu32 ", want %" PRIu32, got_width, want_width);
+  }
+  uint32_t got_height = wuffs_base__pixel_config__height(&ic.pixcfg);
+  if (got_height != want_height) {
+    RETURN_FAIL("height: got %" PRIu32 ", want %" PRIu32, got_height,
+                want_height);
+  }
+  wuffs_base__pixel_config__set(
+      &ic.pixcfg, WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL,
+      WUFFS_BASE__PIXEL_SUBSAMPLING__NONE, want_width, want_height);
+
+  wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
+  CHECK_STATUS("set_from_slice", wuffs_base__pixel_buffer__set_from_slice(
+                                     &pb, &ic.pixcfg, global_pixel_slice));
+  CHECK_STATUS("decode_frame", wuffs_base__image_decoder__decode_frame(
+                                   b, &pb, &src, WUFFS_BASE__PIXEL_BLEND__SRC,
+                                   global_work_slice, NULL));
+
+  uint64_t n = wuffs_base__pixel_config__pixbuf_len(&ic.pixcfg);
+  if (n < 4) {
+    RETURN_FAIL("pixbuf_len too small");
+  } else if (n > BUFFER_SIZE) {
+    RETURN_FAIL("pixbuf_len too large");
+  }
+  wuffs_base__color_u32_argb_premul got_final_pixel =
+      wuffs_base__load_u32le(&global_pixel_array[n - 4]);
+  if (got_final_pixel != want_final_pixel) {
+    RETURN_FAIL("final pixel: got 0x%08" PRIX32 ", want 0x%08" PRIX32,
+                got_final_pixel, want_final_pixel);
+  }
+  return NULL;
+}
+
+const char* do_test__wuffs_base__io_transformer(wuffs_base__io_transformer* b,
+                                                const char* src_filename,
+                                                size_t src_ri,
+                                                size_t src_wi,
+                                                size_t want_wi,
+                                                uint8_t want_final_byte) {
+  if (want_wi > BUFFER_SIZE) {
+    return "want_wi is too large";
+  }
+  wuffs_base__range_ii_u64 workbuf_len =
+      wuffs_base__io_transformer__workbuf_len(b);
+  if (workbuf_len.min_incl > workbuf_len.max_incl) {
+    return "inconsistent workbuf_len";
+  }
+  if (workbuf_len.max_incl > BUFFER_SIZE) {
+    return "workbuf_len is too large";
+  }
+
+  wuffs_base__io_buffer got = ((wuffs_base__io_buffer){
+      .data = global_got_slice,
+  });
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = global_src_slice,
+  });
+  CHECK_STRING(read_file_fragment(&src, src_filename, src_ri, src_wi));
+  CHECK_STATUS("transform_io", wuffs_base__io_transformer__transform_io(
+                                   b, &got, &src, global_work_slice));
+  if (got.meta.wi != want_wi) {
+    RETURN_FAIL("dst wi: got %zu, want %zu", got.meta.wi, want_wi);
+  }
+  if ((want_wi > 0) && (got.data.ptr[want_wi - 1] != want_final_byte)) {
+    RETURN_FAIL("final byte: got 0x%02X, want 0x%02X",
+                got.data.ptr[want_wi - 1], want_final_byte);
+  }
+  return NULL;
 }
 
 #endif  // WUFFS_INCLUDE_GUARD

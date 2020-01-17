@@ -101,16 +101,16 @@ static const char* decode() {
   wuffs_base__status status = wuffs_gzip__decoder__initialize(
       dec, sizeof__wuffs_gzip__decoder(), WUFFS_VERSION,
       WUFFS_INITIALIZE__ALREADY_ZEROED);
-  if (status) {
+  if (!wuffs_base__status__is_ok(&status)) {
     free(dec);
-    return wuffs_base__status__message(status);
+    return wuffs_base__status__message(&status);
   }
-  status = wuffs_gzip__decoder__decode_io_writer(
+  status = wuffs_gzip__decoder__transform_io(
       dec, &dst, &src,
       wuffs_base__make_slice_u8(work_buffer, WORK_BUFFER_SIZE));
-  if (status) {
+  if (!wuffs_base__status__is_ok(&status)) {
     free(dec);
-    return wuffs_base__status__message(status);
+    return wuffs_base__status__message(&status);
   }
   fwrite(dst.data.ptr, sizeof(uint8_t), dst.meta.wi, stdout);
   free(dec);
@@ -118,9 +118,9 @@ static const char* decode() {
 }
 
 int main(int argc, char** argv) {
-  const char* status = decode();
-  if (status) {
-    fprintf(stderr, "%s\n", status);
+  const char* status_msg = decode();
+  if (status_msg) {
+    fprintf(stderr, "%s\n", status_msg);
     return 1;
   }
   return 0;

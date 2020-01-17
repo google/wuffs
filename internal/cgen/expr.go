@@ -30,8 +30,10 @@ func (g *gen) writeExpr(b *buffer, n *a.Expr, depth uint32) error {
 	if cv := n.ConstValue(); cv != nil {
 		if typ := n.MType(); typ.IsNumTypeOrIdeal() {
 			b.writes(cv.String())
-		} else if typ.IsNullptr() || typ.IsStatus() {
+		} else if typ.IsNullptr() {
 			b.writes("NULL")
+		} else if typ.IsStatus() {
+			b.writes("wuffs_base__make_status(NULL)")
 		} else if cv.Cmp(zero) == 0 {
 			b.writes("false")
 		} else if cv.Cmp(one) == 0 {
@@ -70,7 +72,9 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, depth uint32) error {
 
 		} else if ident.IsStrLiteral(g.tm) {
 			if z := g.statusMap[n.StatusQID()]; z.cName != "" {
+				b.writes("wuffs_base__make_status(")
 				b.writes(z.cName)
+				b.writes(")")
 			} else {
 				return fmt.Errorf("unrecognized status %s", n.StatusQID().Str(g.tm))
 			}
@@ -272,12 +276,22 @@ func (g *gen) writeExprBinaryOp(b *buffer, n *a.Expr, depth uint32) error {
 	if err := g.writeExpr(b, n.LHS().AsExpr(), depth); err != nil {
 		return err
 	}
+	if g.hasRepr(n.LHS().AsExpr()) {
+		b.writes(".repr")
+	}
 	b.writes(opName)
 	if err := g.writeExpr(b, n.RHS().AsExpr(), depth); err != nil {
 		return err
 	}
+	if g.hasRepr(n.RHS().AsExpr()) {
+		b.writes(".repr")
+	}
 	b.writeb(')')
 	return nil
+}
+
+func (g *gen) hasRepr(n *a.Expr) bool {
+	return n.MType().IsStatus()
 }
 
 func (g *gen) writeExprAs(b *buffer, lhs *a.Expr, rhs *a.TypeExpr, depth uint32) error {
@@ -321,8 +335,6 @@ func (g *gen) writeExprUserDefinedCall(b *buffer, n *a.Expr, depth uint32) error
 	recvTyp, addr := recv.MType(), "&"
 	if p := recvTyp.Decorator(); p == t.IDNptr || p == t.IDPtr {
 		recvTyp, addr = recvTyp.Inner(), ""
-	} else if recvTyp.IsStatus() {
-		addr = ""
 	}
 	if recvTyp.Decorator() != 0 {
 		return fmt.Errorf("cannot generate user-defined method call %q for receiver type %q",
@@ -351,9 +363,11 @@ func (g *gen) writeCTypeName(b *buffer, n *a.TypeExpr, varNamePrefix string, var
 		o := n.Inner()
 		if o.Decorator() == 0 && o.QID() == (t.QID{t.IDBase, t.IDU8}) && !o.IsRefined() {
 			b.writes("wuffs_base__slice_u8")
-			b.writeb(' ')
-			b.writes(varNamePrefix)
-			b.writes(varName)
+			if varNamePrefix != "" {
+				b.writeb(' ')
+				b.writes(varNamePrefix)
+				b.writes(varName)
+			}
 			return nil
 		}
 		return fmt.Errorf("cannot convert Wuffs type %q to C", n.Str(g.tm))
@@ -362,9 +376,11 @@ func (g *gen) writeCTypeName(b *buffer, n *a.TypeExpr, varNamePrefix string, var
 		o := n.Inner()
 		if o.Decorator() == 0 && o.QID() == (t.QID{t.IDBase, t.IDU8}) && !o.IsRefined() {
 			b.writes("wuffs_base__table_u8")
-			b.writeb(' ')
-			b.writes(varNamePrefix)
-			b.writes(varName)
+			if varNamePrefix != "" {
+				b.writeb(' ')
+				b.writes(varNamePrefix)
+				b.writes(varName)
+			}
 			return nil
 		}
 		return fmt.Errorf("cannot convert Wuffs type %q to C", n.Str(g.tm))
@@ -408,9 +424,11 @@ func (g *gen) writeCTypeName(b *buffer, n *a.TypeExpr, varNamePrefix string, var
 		b.writeb('*')
 	}
 
-	b.writeb(' ')
-	b.writes(varNamePrefix)
-	b.writes(varName)
+	if varNamePrefix != "" {
+		b.writeb(' ')
+		b.writes(varNamePrefix)
+		b.writes(varName)
+	}
 
 	x = n
 	for ; x != nil && x.IsArrayType(); x = x.Inner() {

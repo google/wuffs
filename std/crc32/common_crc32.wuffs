@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // TODO: drop the '?' but still generate wuffs_crc32__ieee_hasher__initialize?
-pub struct ieee_hasher?(
+pub struct ieee_hasher? implements base.hasher_u32(
 	state : base.u32,
 )
 

@@ -62,11 +62,11 @@ uint8_t work_buffer[1];
 
 const char* fuzz(wuffs_base__io_buffer* src, uint32_t hash) {
   wuffs_zlib__decoder dec;
-  const char* status = wuffs_zlib__decoder__initialize(
+  wuffs_base__status status = wuffs_zlib__decoder__initialize(
       &dec, sizeof dec, WUFFS_VERSION,
       (hash & 1) ? WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED : 0);
-  if (status) {
-    return status;
+  if (!wuffs_base__status__is_ok(&status)) {
+    return wuffs_base__status__message(&status);
   }
 
   // Ignore the checksum for 99.99%-ish of all input. When fuzzers generate
@@ -84,19 +84,18 @@ const char* fuzz(wuffs_base__io_buffer* src, uint32_t hash) {
 
   while (true) {
     dst.meta.wi = 0;
-    status = wuffs_zlib__decoder__decode_io_writer(&dec, &dst, src,
-                                                   ((wuffs_base__slice_u8){
-                                                       .ptr = work_buffer,
-                                                       .len = WORK_BUFFER_SIZE,
-                                                   }));
-    if (status != wuffs_base__suspension__short_write) {
+    status = wuffs_zlib__decoder__transform_io(&dec, &dst, src,
+                                               ((wuffs_base__slice_u8){
+                                                   .ptr = work_buffer,
+                                                   .len = WORK_BUFFER_SIZE,
+                                               }));
+    if (status.repr != wuffs_base__suspension__short_write) {
       break;
     }
     if (dst.meta.wi == 0) {
-      fprintf(stderr,
-              "wuffs_zlib__decoder__decode_io_writer made no progress\n");
+      fprintf(stderr, "wuffs_zlib__decoder__transform_io made no progress\n");
       intentional_segfault();
     }
   }
-  return status;
+  return wuffs_base__status__message(&status);
 }

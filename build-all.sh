@@ -70,6 +70,12 @@ wuffs test   -skipgen -mimic
 wuffs bench  -skipgen -mimic -reps=1 -iterscale=1
 
 ./build-example.sh
+LICENSE_CRC32=$(gen/bin/example-crc32 < LICENSE)
+if [ "$LICENSE_CRC32" != "1ea3b7b0" ]; then
+  echo "LICENSE crc32 mismatch"
+  exit 1
+fi
+
 ./build-fuzz.sh
 for f in gen/bin/fuzz-*; do
   echo "Running $f"

@@ -31,7 +31,7 @@ wuffs_base__pixel_buffer pb = etc;
 while (true) {
   wuffs_base__frame_config fc;
   status = wuffs_gif__decoder__decode_frame_config(dec, &fc, &src);
-  if (status == wuffs_base__warning__end_of_data) {
+  if (status == wuffs_base__note__end_of_data) {
     break;
   }
   // Ditto re error checking.

@@ -79,6 +79,18 @@ golden_test crc32_pi_gt = {
 
 // ---------------- CRC32 Tests
 
+const char* test_wuffs_crc32_ieee_interface() {
+  CHECK_FOCUS(__func__);
+  wuffs_crc32__ieee_hasher h;
+  CHECK_STATUS("initialize",
+               wuffs_crc32__ieee_hasher__initialize(
+                   &h, sizeof h, WUFFS_VERSION,
+                   WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+  return do_test__wuffs_base__hasher_u32(
+      wuffs_crc32__ieee_hasher__upcast_as__wuffs_base__hasher_u32(&h),
+      "test/data/hat.lossy.webp", 0, SIZE_MAX, 0x89F53B4E);
+}
+
 const char* test_wuffs_crc32_ieee_golden() {
   CHECK_FOCUS(__func__);
 
@@ -122,20 +134,15 @@ const char* test_wuffs_crc32_ieee_golden() {
     wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
         .data = global_src_slice,
     });
-    const char* status = read_file(&src, test_cases[i].filename);
-    if (status) {
-      return status;
-    }
+    CHECK_STRING(read_file(&src, test_cases[i].filename));
 
     int j;
     for (j = 0; j < 2; j++) {
       wuffs_crc32__ieee_hasher checksum;
-      status = wuffs_crc32__ieee_hasher__initialize(
-          &checksum, sizeof checksum, WUFFS_VERSION,
-          WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
-      if (status) {
-        RETURN_FAIL("initialize: \"%s\"", status);
-      }
+      CHECK_STATUS("initialize",
+                   wuffs_crc32__ieee_hasher__initialize(
+                       &checksum, sizeof checksum, WUFFS_VERSION,
+                       WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
 
       uint32_t got = 0;
       size_t num_fragments = 0;
@@ -222,12 +229,10 @@ const char* do_test_xxxxx_crc32_ieee_pi(bool mimic) {
 
     } else {
       wuffs_crc32__ieee_hasher checksum;
-      const char* status = wuffs_crc32__ieee_hasher__initialize(
-          &checksum, sizeof checksum, WUFFS_VERSION,
-          WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
-      if (status) {
-        RETURN_FAIL("initialize: \"%s\"", status);
-      }
+      CHECK_STATUS("initialize",
+                   wuffs_crc32__ieee_hasher__initialize(
+                       &checksum, sizeof checksum, WUFFS_VERSION,
+                       WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
       got = wuffs_crc32__ieee_hasher__update_u32(&checksum, data);
     }
 
@@ -269,11 +274,9 @@ const char* wuffs_bench_crc32_ieee(wuffs_base__io_buffer* dst,
     len = wuffs_base__u64__min(len, rlimit);
   }
   wuffs_crc32__ieee_hasher checksum;
-  const char* status = wuffs_crc32__ieee_hasher__initialize(
-      &checksum, sizeof checksum, WUFFS_VERSION, wuffs_initialize_flags);
-  if (status) {
-    return status;
-  }
+  CHECK_STATUS("initialize", wuffs_crc32__ieee_hasher__initialize(
+                                 &checksum, sizeof checksum, WUFFS_VERSION,
+                                 wuffs_initialize_flags));
   global_wuffs_crc32_unused_u32 = wuffs_crc32__ieee_hasher__update_u32(
       &checksum, ((wuffs_base__slice_u8){
                      .ptr = src->data.ptr + src->meta.ri,
@@ -325,8 +328,9 @@ const char* bench_mimic_crc32_ieee_100k() {
 // The empty comments forces clang-format to place one element per line.
 proc tests[] = {
 
-    test_wuffs_crc32_ieee_golden,  //
-    test_wuffs_crc32_ieee_pi,      //
+    test_wuffs_crc32_ieee_golden,     //
+    test_wuffs_crc32_ieee_interface,  //
+    test_wuffs_crc32_ieee_pi,         //
 
 #ifdef WUFFS_MIMIC
 

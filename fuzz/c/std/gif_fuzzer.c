@@ -57,19 +57,19 @@ const char* fuzz(wuffs_base__io_buffer* src, uint32_t hash) {
   // variable initialization" warnings.
   {
     wuffs_gif__decoder dec;
-    const char* status = wuffs_gif__decoder__initialize(
+    wuffs_base__status status = wuffs_gif__decoder__initialize(
         &dec, sizeof dec, WUFFS_VERSION,
         (hash & 1) ? WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED
                    : 0);
-    if (status) {
-      ret = status;
+    if (!wuffs_base__status__is_ok(&status)) {
+      ret = wuffs_base__status__message(&status);
       goto exit;
     }
 
     wuffs_base__image_config ic = ((wuffs_base__image_config){});
     status = wuffs_gif__decoder__decode_image_config(&dec, &ic, src);
-    if (status) {
-      ret = status;
+    if (!wuffs_base__status__is_ok(&status)) {
+      ret = wuffs_base__status__message(&status);
       goto exit;
     }
     if (!wuffs_base__image_config__is_valid(&ic)) {
@@ -107,8 +107,8 @@ const char* fuzz(wuffs_base__io_buffer* src, uint32_t hash) {
 
     wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
     status = wuffs_base__pixel_buffer__set_from_slice(&pb, &ic.pixcfg, pixbuf);
-    if (status) {
-      ret = status;
+    if (!wuffs_base__status__is_ok(&status)) {
+      ret = wuffs_base__status__message(&status);
       goto exit;
     }
 
@@ -116,14 +116,15 @@ const char* fuzz(wuffs_base__io_buffer* src, uint32_t hash) {
     while (true) {
       wuffs_base__frame_config fc = ((wuffs_base__frame_config){});
       status = wuffs_gif__decoder__decode_frame_config(&dec, &fc, src);
-      if (status) {
-        if ((status != wuffs_base__warning__end_of_data) || !seen_ok) {
-          ret = status;
+      if (!wuffs_base__status__is_ok(&status)) {
+        if ((status.repr != wuffs_base__note__end_of_data) || !seen_ok) {
+          ret = wuffs_base__status__message(&status);
         }
         goto exit;
       }
 
-      status = wuffs_gif__decoder__decode_frame(&dec, &pb, src, workbuf, NULL);
+      status = wuffs_gif__decoder__decode_frame(
+          &dec, &pb, src, WUFFS_BASE__PIXEL_BLEND__SRC, workbuf, NULL);
 
       wuffs_base__rect_ie_u32 frame_rect =
           wuffs_base__frame_config__bounds(&fc);
@@ -134,9 +135,9 @@ const char* fuzz(wuffs_base__io_buffer* src, uint32_t hash) {
         goto exit;
       }
 
-      if (status) {
-        if ((status != wuffs_base__warning__end_of_data) || !seen_ok) {
-          ret = status;
+      if (!wuffs_base__status__is_ok(&status)) {
+        if ((status.repr != wuffs_base__note__end_of_data) || !seen_ok) {
+          ret = wuffs_base__status__message(&status);
         }
         goto exit;
       }

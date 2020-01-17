@@ -47,8 +47,8 @@ uint32_t parse(char* p, size_t n) {
 
   status = wuffs_demo__parser__initialize(parser, sizeof__wuffs_demo__parser(),
                                           WUFFS_VERSION, 0);
-  if (!wuffs_base__status__is_ok(status)) {
-    printf("initialize: %s\n", wuffs_base__status__message(status));
+  if (!wuffs_base__status__is_ok(&status)) {
+    printf("initialize: %s\n", wuffs_base__status__message(&status));
     free(parser);
     return 0;
   }
@@ -62,8 +62,8 @@ uint32_t parse(char* p, size_t n) {
   iobuf.meta.closed = true;
 
   status = wuffs_demo__parser__parse(parser, &iobuf);
-  if (!wuffs_base__status__is_ok(status)) {
-    printf("parse: %s\n", wuffs_base__status__message(status));
+  if (!wuffs_base__status__is_ok(&status)) {
+    printf("parse: %s\n", wuffs_base__status__message(&status));
     free(parser);
     return 0;
   }

@@ -887,33 +887,40 @@ func NewConst(flags Flags, filename string, line uint32, name t.ID, xType *TypeE
 	}
 }
 
-// Struct is "struct ID2(List0)" or "struct ID2?(List0)":
+// MaxImplements is an advisory limit for the number of interfaces a Struct can
+// implement.
+const MaxImplements = 63
+
+// Struct is "struct ID2? implements List0 (List1)":
 //  - FlagsPublic      is "pub" vs "pri"
 //  - FlagsClassy      is "ID2" vs "ID2?"
 //  - ID1:   <0|pkg> (set by calling SetPackage)
 //  - ID2:   name
-//  - List0: <Field> fields
+//  - List0: <TypeExpr> implements
+//  - List1: <Field> fields
 //
 // The question mark indicates a classy struct - one that supports methods,
 // especially coroutines.
 type Struct Node
 
-func (n *Struct) AsNode() *Node    { return (*Node)(n) }
-func (n *Struct) Classy() bool     { return n.flags&FlagsClassy != 0 }
-func (n *Struct) Public() bool     { return n.flags&FlagsPublic != 0 }
-func (n *Struct) Filename() string { return n.filename }
-func (n *Struct) Line() uint32     { return n.line }
-func (n *Struct) QID() t.QID       { return t.QID{n.id1, n.id2} }
-func (n *Struct) Fields() []*Node  { return n.list0 }
+func (n *Struct) AsNode() *Node       { return (*Node)(n) }
+func (n *Struct) Classy() bool        { return n.flags&FlagsClassy != 0 }
+func (n *Struct) Public() bool        { return n.flags&FlagsPublic != 0 }
+func (n *Struct) Filename() string    { return n.filename }
+func (n *Struct) Line() uint32        { return n.line }
+func (n *Struct) QID() t.QID          { return t.QID{n.id1, n.id2} }
+func (n *Struct) Implements() []*Node { return n.list0 }
+func (n *Struct) Fields() []*Node     { return n.list1 }
 
-func NewStruct(flags Flags, filename string, line uint32, name t.ID, fields []*Node) *Struct {
+func NewStruct(flags Flags, filename string, line uint32, name t.ID, implements []*Node, fields []*Node) *Struct {
 	return &Struct{
 		kind:     KStruct,
 		flags:    flags,
 		filename: filename,
 		line:     line,
 		id2:      name,
-		list0:    fields,
+		list0:    implements,
+		list1:    fields,
 	}
 }
 

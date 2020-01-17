@@ -26,10 +26,10 @@ pri status "#internal error: inconsistent I/O"
 //  - 3056a84 Roll back 3 recent lzw.decoder.suffixes commits
 pub const decoder_workbuf_len_max_incl_worst_case base.u64 = 0
 
-pub struct decoder?(
+pub struct decoder? implements base.io_transformer(
 	// set_literal_width_arg is 1 plus the saved argument passed to
 	// set_literal_width. This is assigned to the literal_width field at the
-	// start of decode_io_writer. During that method, calling set_literal_width
+	// start of transform_io. During that method, calling set_literal_width
 	// will change set_literal_width_arg but not literal_width.
 	set_literal_width_arg : base.u32[..= 9],
 
@@ -77,7 +77,7 @@ pub func decoder.workbuf_len() base.range_ii_u64 {
 	return this.util.make_range_ii_u64(min_incl: 0, max_incl: 0)
 }
 
-pub func decoder.decode_io_writer?(dst: base.io_writer, src: base.io_reader, workbuf: slice base.u8) {
+pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf: slice base.u8) {
 	var i : base.u32[..= 8191]
 
 	// Initialize read_from state.
@@ -159,7 +159,7 @@ pri func decoder.read_from!(src: base.io_reader) {
 				// Read 4 bytes, using the "Variant 4" technique of
 				// https://fgiesen.wordpress.com/2018/02/20/reading-bits-in-far-too-many-ways-part-2/
 				bits |= args.src.peek_u32le() ~mod<< n_bits
-				args.src.skip_fast!(actual: (31 - n_bits) >> 3, worst_case: 3)
+				args.src.skip32_fast!(actual: (31 - n_bits) >> 3, worst_case: 3)
 				n_bits |= 24
 				assert width <= n_bits via "a <= b: a <= c; c <= b"(c: 12)
 				assert n_bits >= width via "a >= b: b <= a"()
@@ -168,7 +168,7 @@ pri func decoder.read_from!(src: base.io_reader) {
 				break
 			} else {
 				bits |= args.src.peek_u8_as_u32() << n_bits
-				args.src.skip_fast!(actual: 1, worst_case: 1)
+				args.src.skip32_fast!(actual: 1, worst_case: 1)
 				n_bits += 8
 				if n_bits >= width {
 					// No-op.
@@ -177,7 +177,7 @@ pri func decoder.read_from!(src: base.io_reader) {
 					break
 				} else {
 					bits |= args.src.peek_u8_as_u32() << n_bits
-					args.src.skip_fast!(actual: 1, worst_case: 1)
+					args.src.skip32_fast!(actual: 1, worst_case: 1)
 					n_bits += 8
 					assert width <= n_bits via "a <= b: a <= c; c <= b"(c: 12)
 					assert n_bits >= width via "a >= b: b <= a"()

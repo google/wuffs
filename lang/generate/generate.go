@@ -30,7 +30,7 @@ import (
 	t "github.com/google/wuffs/lang/token"
 )
 
-type Generator func(packageName string, tm *t.Map, c *check.Checker, files []*a.File) ([]byte, error)
+type Generator func(packageName string, tm *t.Map, files []*a.File) ([]byte, error)
 
 func Do(flags *flag.FlagSet, args []string, g Generator) error {
 	packageName := flags.String("package_name", "", "the package name of the Wuffs input code")
@@ -41,7 +41,7 @@ func Do(flags *flag.FlagSet, args []string, g Generator) error {
 
 	if *packageName == "base" && len(flags.Args()) == 0 {
 		var err error
-		out, err = g("base", nil, nil, nil)
+		out, err = g("base", nil, nil)
 		if err != nil {
 			return err
 		}
@@ -58,12 +58,11 @@ func Do(flags *flag.FlagSet, args []string, g Generator) error {
 			return err
 		}
 
-		c, err := check.Check(tm, files, resolveUse)
-		if err != nil {
+		if _, err := check.Check(tm, files, resolveUse); err != nil {
 			return err
 		}
 
-		out, err = g(pkgName, tm, c, files)
+		out, err = g(pkgName, tm, files)
 		if err != nil {
 			return err
 		}

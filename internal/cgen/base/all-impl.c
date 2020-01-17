@@ -42,6 +42,10 @@ extern "C" {
 
 // !! INSERT base/all-public.h.
 
+// !! INSERT InterfaceDeclarations.
+
+// ----------------
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif
@@ -111,6 +115,8 @@ const uint64_t wuffs_base__low_bits_mask__u64[65] = {
 };
 
 // !! INSERT wuffs_base__status strings.
+
+// !! INSERT InterfaceDefinitions.
 
 // !! INSERT base/image-impl.c.
 

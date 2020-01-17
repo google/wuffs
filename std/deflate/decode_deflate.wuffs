@@ -65,7 +65,7 @@ pri const dcode_magic_numbers array[32] base.u32 = [
 pri const huffs_table_size base.u32 = 1024
 pri const huffs_table_mask base.u32 = 1023
 
-pub struct decoder?(
+pub struct decoder? implements base.io_transformer(
 	// These fields yield src's bits in Least Significant Bits order.
 	bits   : base.u32,
 	n_bits : base.u32,
@@ -186,7 +186,7 @@ pub func decoder.workbuf_len() base.range_ii_u64 {
 		max_incl: decoder_workbuf_len_max_incl_worst_case)
 }
 
-pub func decoder.decode_io_writer?(dst: base.io_writer, src: base.io_reader, workbuf: slice base.u8) {
+pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf: slice base.u8) {
 	var mark   : base.u64
 	var status : base.status
 
@@ -281,7 +281,7 @@ pri func decoder.decode_uncompressed?(dst: base.io_writer, src: base.io_reader) 
 	}
 	length = length.low_bits(n: 16)
 	while true {
-		n_copied = args.dst.copy_n_from_reader!(n: length, r: args.src)
+		n_copied = args.dst.copy_n32_from_reader!(n: length, r: args.src)
 		if length <= n_copied {
 			return ok
 		}

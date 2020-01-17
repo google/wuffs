@@ -2,10 +2,8 @@
 
 Compression decoders read from one input stream (an `io_reader` called `src`)
 and write to an output stream (an `io_writer` called `dst`). Wuffs'
-implementations have one key method: `decode_io_writer`, named after the
-operation (decoding) and the type of the destination (an
-[`io_writer`](/doc/note/io-input-output.md)). It incrementally decompresses the
-source data.
+implementations have one key method: `transform_io`. It incrementally
+decompresses the source data.
 
 This method is a [coroutine](/doc/note/coroutines.md), and does not require
 either all of the input or all of the output to fit in a single contiguous

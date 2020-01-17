@@ -28,7 +28,6 @@ import (
 	"strings"
 
 	"github.com/google/wuffs/lang/builtin"
-	"github.com/google/wuffs/lang/check"
 	"github.com/google/wuffs/lang/generate"
 
 	cf "github.com/google/wuffs/cmd/commonflags"
@@ -105,7 +104,7 @@ func Do(args []string) error {
 	cformatterFlag := flags.String("cformatter", cf.CformatterDefault, cf.CformatterUsage)
 	genlinenumFlag := flags.Bool("genlinenum", cf.GenlinenumDefault, cf.GenlinenumUsage)
 
-	return generate.Do(&flags, args, func(pkgName string, tm *t.Map, c *check.Checker, files []*a.File) ([]byte, error) {
+	return generate.Do(&flags, args, func(pkgName string, tm *t.Map, files []*a.File) ([]byte, error) {
 		if !cf.IsAlphaNumericIsh(*cformatterFlag) {
 			return nil, fmt.Errorf("bad -cformatter flag value %q", *cformatterFlag)
 		}
@@ -117,17 +116,19 @@ func Do(args []string) error {
 			}
 			buf := make(buffer, 0, 128*1024)
 			if err := expandBangBangInsert(&buf, baseAllImplC, map[string]func(*buffer) error{
-				"// !! INSERT base/all-private.h.\n": insertBaseAllPrivateH,
-				"// !! INSERT base/all-public.h.\n":  insertBaseAllPublicH,
-				"// !! INSERT base/copyright\n":      insertBaseCopyright,
-				"// !! INSERT base/image-impl.c.\n":  insertBaseImageImplC,
+				"// !! INSERT InterfaceDeclarations.\n": insertInterfaceDeclarations,
+				"// !! INSERT InterfaceDefinitions.\n":  insertInterfaceDefinitions,
+				"// !! INSERT base/all-private.h.\n":    insertBaseAllPrivateH,
+				"// !! INSERT base/all-public.h.\n":     insertBaseAllPublicH,
+				"// !! INSERT base/copyright\n":         insertBaseCopyright,
+				"// !! INSERT base/image-impl.c.\n":     insertBaseImageImplC,
 				"// !! INSERT wuffs_base__status strings.\n": func(b *buffer) error {
 					for _, z := range builtin.Statuses {
 						msg, _ := t.Unescape(z)
 						if msg == "" {
 							continue
 						}
-						pre := "warning"
+						pre := "note"
 						if msg[0] == '$' {
 							pre = "suspension"
 						} else if msg[0] == '#' {
@@ -148,7 +149,6 @@ func Do(args []string) error {
 				pkgPrefix:  "wuffs_" + pkgName + "__",
 				pkgName:    pkgName,
 				tm:         tm,
-				checker:    c,
 				files:      files,
 				genlinenum: *genlinenumFlag,
 			}
@@ -195,12 +195,12 @@ func statusMsgIsError(msg string) bool {
 	return (len(msg) != 0) && (msg[0] == '#')
 }
 
-func statusMsgIsSuspension(msg string) bool {
-	return (len(msg) != 0) && (msg[0] == '$')
+func statusMsgIsNote(msg string) bool {
+	return (len(msg) == 0) || (msg[0] != '$' && msg[0] != '#')
 }
 
-func statusMsgIsWarning(msg string) bool {
-	return (len(msg) == 0) || (msg[0] != '$' && msg[0] != '#')
+func statusMsgIsSuspension(msg string) bool {
+	return (len(msg) != 0) && (msg[0] == '$')
 }
 
 type buffer []byte
@@ -284,7 +284,7 @@ func insertBaseAllPublicH(buf *buffer) error {
 				if msg == "" {
 					return fmt.Errorf("bad built-in status %q", z)
 				}
-				pre := "warning"
+				pre := "note"
 				if statusMsgIsError(msg) {
 					pre = "error"
 				} else if statusMsgIsSuspension(msg) {
@@ -322,13 +322,166 @@ func insertBaseImageImplC(buf *buffer) error {
 	return nil
 }
 
+func insertInterfaceDeclarations(buf *buffer) error {
+	if err := parseBuiltInInterfaceMethods(); err != nil {
+		return err
+	}
+
+	g := &gen{
+		pkgPrefix: "wuffs_base__",
+		pkgName:   "base",
+		tm:        &builtInTokenMap,
+	}
+
+	buf.writes("// ---------------- Interface Declarations.\n\n")
+	for i, n := range builtin.Interfaces {
+		if i > 0 {
+			buf.writes("// --------\n\n")
+		}
+
+		qid := t.QID{t.IDBase, builtInTokenMap.ByName(n)}
+
+		buf.printf("extern const char* wuffs_base__%s__vtable_name;\n\n", n)
+
+		buf.writes("typedef struct {\n\n")
+		for _, f := range builtInInterfaceMethods[qid] {
+			if err := g.writeFuncSignature(buf, f, wfsCFuncPtrField); err != nil {
+				return err
+			}
+			buf.writes(";\n")
+		}
+		buf.printf("} wuffs_base__%s__func_ptrs;\n\n", n)
+
+		buf.printf("typedef struct wuffs_base__%s__struct wuffs_base__%s;\n\n", n, n)
+
+		for _, f := range builtInInterfaceMethods[qid] {
+			if err := g.writeFuncSignature(buf, f, wfsCDecl); err != nil {
+				return err
+			}
+			buf.writes(";\n\n")
+		}
+
+		buf.writes("#if defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)\n\n")
+
+		buf.printf("struct wuffs_base__%s__struct {", n)
+		buf.writes("struct {\n")
+		buf.writes("uint32_t magic;\n")
+		buf.writes("uint32_t active_coroutine;\n")
+		buf.writes("wuffs_base__vtable first_vtable;\n")
+		buf.writes("} private_impl;\n\n")
+
+		buf.writes("\n#ifdef __cplusplus\n\n")
+		for _, f := range builtInInterfaceMethods[qid] {
+			if err := g.writeFuncSignature(buf, f, wfsCppDecl); err != nil {
+				return err
+			}
+			buf.writes("{ return ")
+			buf.writes(g.funcCName(f))
+			buf.writes("(this")
+			for _, o := range f.In().Fields() {
+				buf.writeb(',')
+				buf.writes(aPrefix)
+				buf.writes(o.AsField().Name().Str(g.tm))
+			}
+			buf.writes(");}\n\n")
+		}
+		buf.writes("#endif  // __cplusplus\n\n")
+
+		buf.printf("};  // struct wuffs_base__%s__struct\n\n", n)
+
+		buf.writes("#endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)\n\n")
+	}
+	return nil
+}
+
+func insertInterfaceDefinitions(buf *buffer) error {
+	if err := parseBuiltInInterfaceMethods(); err != nil {
+		return err
+	}
+
+	g := &gen{
+		pkgPrefix: "wuffs_base__",
+		pkgName:   "base",
+		tm:        &builtInTokenMap,
+	}
+
+	buf.writes("// ---------------- Interface Definitions.\n\n")
+	for i, n := range builtin.Interfaces {
+		if i > 0 {
+			buf.writes("// --------\n\n")
+		}
+
+		qid := t.QID{t.IDBase, builtInTokenMap.ByName(n)}
+
+		buf.printf("const char* wuffs_base__%s__vtable_name = "+
+			"\"{vtable}wuffs_base__%s\";\n\n", n, n)
+
+		for _, f := range builtInInterfaceMethods[qid] {
+			returnsStatus := f.Effect().Coroutine() ||
+				((f.Out() != nil) && f.Out().IsStatus())
+
+			if err := g.writeFuncSignature(buf, f, wfsCDecl); err != nil {
+				return err
+			}
+			buf.writes("{\n")
+			if err := writeFuncImplSelfMagicCheck(buf, g.tm, f); err != nil {
+				return err
+			}
+
+			buf.writes("\nconst wuffs_base__vtable* v = &self->private_impl.first_vtable;\n")
+			buf.writes("int i;\n")
+			buf.printf("for (i = 0; i < %d; i++) {\n", a.MaxImplements)
+			buf.printf("if (v->vtable_name == wuffs_base__%s__vtable_name) {\n", n)
+			buf.printf("const wuffs_base__%s__func_ptrs* func_ptrs = "+
+				"(const wuffs_base__%s__func_ptrs*)(v->function_pointers);\n", n, n)
+			buf.printf("return (*func_ptrs->%s)(self", f.FuncName().Str(g.tm))
+			for _, o := range f.In().Fields() {
+				buf.writeb(',')
+				buf.writes(aPrefix)
+				buf.writes(o.AsField().Name().Str(g.tm))
+			}
+			buf.writes(");\n")
+			buf.writes("} else if (v->vtable_name == NULL) {\n")
+			buf.writes("break;\n")
+			buf.writes("}\n")
+			buf.writes("v++;\n")
+			buf.writes("}\n\n")
+
+			buf.writes("return ")
+			if returnsStatus {
+				buf.writes("wuffs_base__make_status(wuffs_base__error__bad_vtable)")
+			} else if err := writeOutParamZeroValue(buf, g.tm, f.Out()); err != nil {
+				return err
+			}
+			buf.writes(";\n}\n\n")
+		}
+	}
+
+	return nil
+}
+
+var (
+	builtInTokenMap         = t.Map{}
+	builtInInterfaceMethods = map[t.QID][]*a.Func{}
+)
+
+func parseBuiltInInterfaceMethods() error {
+	if len(builtInInterfaceMethods) != 0 {
+		return nil
+	}
+	return builtin.ParseFuncs(&builtInTokenMap, builtin.InterfaceFuncs, func(f *a.Func) error {
+		qid := f.Receiver()
+		builtInInterfaceMethods[qid] = append(builtInInterfaceMethods[qid], f)
+		return nil
+	})
+}
+
 type gen struct {
 	pkgPrefix string // e.g. "wuffs_jpeg__"
 	pkgName   string // e.g. "jpeg"
 
-	tm      *t.Map
-	checker *check.Checker
-	files   []*a.File
+	tm    *t.Map
+	files []*a.File
 
 	// genlinenum is whether to print "// foo.wuffs:123" comments in the
 	// generated C code. This can be useful for debugging, although it is not
@@ -431,6 +584,11 @@ func (g *gen) generate() ([]byte, error) {
 	return *b, nil
 }
 
+var (
+	wiStartImpl = []byte("\n// WUFFS C HEADER ENDS HERE.\n#ifdef WUFFS_IMPLEMENTATION\n\n")
+	wiEnd       = []byte("\n#endif  // WUFFS_IMPLEMENTATION\n\n")
+)
+
 func (g *gen) genIncludes(b *buffer) error {
 	b.writes("#if defined(WUFFS_IMPLEMENTATION) && !defined(WUFFS_CONFIG__MODULES)\n")
 	b.writes("#define WUFFS_CONFIG__MODULES\n")
@@ -507,6 +665,20 @@ func (g *gen) genHeader(b *buffer) error {
 		}
 	}
 
+	b.writes("// ---------------- Upcasts\n\n")
+	for _, n := range g.structList {
+		structName := n.QID().Str(g.tm)
+		for _, impl := range n.Implements() {
+			iQID := impl.AsTypeExpr().QID()
+			iName := fmt.Sprintf("wuffs_%s__%s", iQID[0].Str(g.tm), iQID[1].Str(g.tm))
+			b.printf("static inline %s* //\n", iName)
+			b.printf("%s%s__upcast_as__%s(%s%s* p){\n",
+				g.pkgPrefix, structName, iName, g.pkgPrefix, structName)
+			b.printf("return (%s*)p;\n", iName)
+			b.printf("}\n\n")
+		}
+	}
+
 	b.writes("// ---------------- Public Function Prototypes\n\n")
 	if err := g.forEachFunc(b, pubOnly, (*gen).writeFuncPrototype); err != nil {
 		return err
@@ -562,6 +734,13 @@ func (g *gen) genImpl(b *buffer) error {
 	b.writes("// ---------------- Private Function Prototypes\n\n")
 	if err := g.forEachFunc(b, priOnly, (*gen).writeFuncPrototype); err != nil {
 		return err
+	}
+
+	b.writes("// ---------------- VTables\n\n")
+	for _, n := range g.structList {
+		if err := g.writeVTableImpl(b, n); err != nil {
+			return err
+		}
 	}
 
 	b.writes("// ---------------- Initializer Implementations\n\n")
@@ -688,7 +867,7 @@ func (g *gen) gatherStatuses(b *buffer, n *a.Status) error {
 }
 
 func (g *gen) addStatus(qid t.QID, msg string, public bool) error {
-	category := "warning__"
+	category := "note__"
 	if msg[0] == '$' {
 		category = "suspension__"
 	} else if msg[0] == '#' {
@@ -762,6 +941,12 @@ func (g *gen) writeStructPrivateImpl(b *buffer, n *a.Struct) error {
 	if n.Classy() {
 		b.writes("uint32_t magic;\n")
 		b.writes("uint32_t active_coroutine;\n")
+		for _, impl := range n.Implements() {
+			qid := impl.AsTypeExpr().QID()
+			b.printf("wuffs_base__vtable vtable_for__wuffs_%s__%s;\n",
+				qid[0].Str(g.tm), qid[1].Str(g.tm))
+		}
+		b.writes("wuffs_base__vtable null_vtable;\n")
 		b.writes("\n")
 	}
 
@@ -866,29 +1051,9 @@ func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
 	fullStructName := g.pkgPrefix + structName + "__struct"
 	b.printf("struct %s {\n", fullStructName)
 
-	b.writex(wiStart)
 	if err := g.writeStructPrivateImpl(b, n); err != nil {
 		return err
 	}
-
-	b.writex(wiElse)
-	b.writes("// When WUFFS_IMPLEMENTATION is not defined, this placeholder private_impl is\n")
-	b.writes("// large enough to discourage trying to allocate one on the stack. The sizeof\n")
-	b.writes("// the real private_impl (and the sizeof the real outermost wuffs_foo__bar\n")
-	b.writes("// struct) is not part of the public, stable, memory-safe API. Call\n")
-	b.writes("// wuffs_foo__bar__baz methods (which all take a \"this\"-like pointer as their\n")
-	b.writes("// first argument) instead of fiddling with bar.private_impl.qux fields.\n")
-	b.writes("//\n")
-	b.writes("// Even when WUFFS_IMPLEMENTATION is not defined, the outermost struct still\n")
-	b.writes("// defines C++ convenience methods. These methods forward on \"this\", so that\n")
-	b.writes("// you can write \"bar->baz(etc)\" instead of \"wuffs_foo__bar__baz(bar, etc)\".\n")
-	b.writes("private:\n")
-	b.writes("union {\n")
-	b.writes("uint32_t align_as_per_magic_field;\n")
-	b.writes("uint8_t placeholder[1073741824];  // 1 GiB.\n")
-	b.writes("} private_impl WUFFS_BASE__POTENTIALLY_UNUSED_FIELD;\n\n")
-	b.writes("public:\n")
-	b.writex(wiEnd)
 
 	if n.AsNode().AsRaw().Flags()&a.FlagsPublic != 0 {
 		if err := g.writeCppMethods(b, n); err != nil {
@@ -903,7 +1068,34 @@ func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
 func (g *gen) writeCppMethods(b *buffer, n *a.Struct) error {
 	structName := n.QID().Str(g.tm)
 	fullStructName := g.pkgPrefix + structName + "__struct"
-	b.writes("#ifdef __cplusplus\n\n")
+	b.writes("#ifdef __cplusplus\n")
+
+	b.writes("#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)\n")
+	b.writes("// Disallow constructing or copying an object via standard C++ mechanisms,\n")
+	b.writes("// e.g. the \"new\" operator, as this struct is intentionally opaque. Its total\n")
+	b.writes("// size and field layout is not part of the public, stable, memory-safe API.\n")
+	b.writes("// Use malloc or memcpy and the sizeof__wuffs_foo__bar function instead, and\n")
+	b.writes("// call wuffs_foo__bar__baz methods (which all take a \"this\"-like pointer as\n")
+	b.writes("// their first argument) rather than tweaking bar.private_impl.qux fields.\n")
+	b.writes("//\n")
+	b.writes("// In C, we can just leave wuffs_foo__bar as an incomplete type (unless\n")
+	b.writes("// WUFFS_IMPLEMENTATION is #define'd). In C++, we define a complete type in\n")
+	b.writes("// order to provide convenience methods. These forward on \"this\", so that you\n")
+	b.writes("// can write \"bar->baz(etc)\" instead of \"wuffs_foo__bar__baz(bar, etc)\".\n")
+	b.printf("%s() = delete;\n", fullStructName)
+	b.printf("%s(const %s&) = delete;\n", fullStructName, fullStructName)
+	b.printf("%s& operator=(const %s&) = delete;\n", fullStructName, fullStructName)
+	b.writes("\n")
+	b.writes("// As above, the size of the struct is not part of the public API, and unless\n")
+	b.writes("// WUFFS_IMPLEMENTATION is #define'd, this struct type T should be heap\n")
+	b.writes("// allocated, not stack allocated. Its size is not intended to be known at\n")
+	b.writes("// compile time, but it is unfortunately divulged as a side effect of\n")
+	b.writes("// defining C++ convenience methods. Use \"sizeof__T()\", calling the function,\n")
+	b.writes("// instead of \"sizeof T\", invoking the operator. To make the two values\n")
+	b.writes("// different, so that passing the latter will be rejected by the initialize\n")
+	b.writes("// function, we add an arbitrary amount of dead weight.\n")
+	b.writes("uint8_t dead_weight[123000000];  // 123 MB.\n")
+	b.writes("#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)\n\n")
 
 	// The empty // comment makes clang-format place the function name
 	// at the start of a line.
@@ -911,6 +1103,15 @@ func (g *gen) writeCppMethods(b *buffer, n *a.Struct) error {
 		"initialize(size_t sizeof_star_self, uint64_t wuffs_version, uint32_t initialize_flags) {\n")
 	b.printf("return %s%s__initialize(this, sizeof_star_self, wuffs_version, initialize_flags);\n}\n\n",
 		g.pkgPrefix, structName)
+
+	for _, impl := range n.Implements() {
+		iQID := impl.AsTypeExpr().QID()
+		iName := fmt.Sprintf("wuffs_%s__%s", iQID[0].Str(g.tm), iQID[1].Str(g.tm))
+		b.printf("inline %s* //\n", iName)
+		b.printf("upcast_as__%s(){\n", iName)
+		b.printf("return (%s*)this;\n", iName)
+		b.printf("}\n\n")
+	}
 
 	structID := n.QID()[1]
 	for _, file := range g.files {
@@ -924,7 +1125,7 @@ func (g *gen) writeCppMethods(b *buffer, n *a.Struct) error {
 				continue
 			}
 
-			if err := g.writeFuncSignature(b, f, cppInsideStruct); err != nil {
+			if err := g.writeFuncSignature(b, f, wfsCppDecl); err != nil {
 				return err
 			}
 			b.writes("{ return ")
@@ -939,22 +1140,48 @@ func (g *gen) writeCppMethods(b *buffer, n *a.Struct) error {
 		}
 	}
 
-	b.writes("#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)\n")
-	b.writes("// Disallow copy and assign.\n")
-	b.printf("%s(const %s&) = delete;\n", fullStructName, fullStructName)
-	b.printf("%s& operator=(const %s&) = delete;\n", fullStructName, fullStructName)
-	b.writes("#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)\n\n")
-
 	b.writes("#endif  // __cplusplus\n\n")
 	return nil
 }
 
-var (
-	wiStartImpl = []byte("\n// WUFFS C HEADER ENDS HERE.\n#ifdef WUFFS_IMPLEMENTATION\n\n")
-	wiStart     = []byte("\n#ifdef WUFFS_IMPLEMENTATION\n\n")
-	wiElse      = []byte("\n#else   // WUFFS_IMPLEMENTATION\n\n")
-	wiEnd       = []byte("\n#endif  // WUFFS_IMPLEMENTATION\n\n")
-)
+func (g *gen) writeVTableImpl(b *buffer, n *a.Struct) error {
+	impls := n.Implements()
+	if len(impls) == 0 {
+		return nil
+	}
+
+	if err := parseBuiltInInterfaceMethods(); err != nil {
+		return err
+	}
+
+	nQID := n.QID()
+	for _, impl := range impls {
+		iQID := impl.AsTypeExpr().QID()
+		b.printf("const wuffs_%s__%s__func_ptrs %s%s__func_ptrs_for__wuffs_%s__%s = {",
+			iQID[0].Str(g.tm), iQID[1].Str(g.tm),
+			g.pkgPrefix, nQID[1].Str(g.tm),
+			iQID[0].Str(g.tm), iQID[1].Str(g.tm),
+		)
+
+		// Note the two t.Map values: g.tm and builtInTokenMap.
+		altQID := t.QID{
+			builtInTokenMap.ByName(iQID[0].Str(g.tm)),
+			builtInTokenMap.ByName(iQID[1].Str(g.tm)),
+		}
+		for _, f := range builtInInterfaceMethods[altQID] {
+			b.writeb('(')
+			if err := g.writeFuncSignature(b, f, wfsCFuncPtrType); err != nil {
+				return err
+			}
+			b.printf(")(&%s%s__%s),\n",
+				g.pkgPrefix, nQID[1].Str(g.tm),
+				f.FuncName().Str(&builtInTokenMap),
+			)
+		}
+		b.writes("};\n\n")
+	}
+	return nil
+}
 
 func (g *gen) writeInitializerSignature(b *buffer, n *a.Struct, public bool) error {
 	structName := n.QID().Str(g.tm)
@@ -995,14 +1222,14 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 		return err
 	}
 	b.writes("{\n")
-	b.writes("if (!self) { return wuffs_base__error__bad_receiver; }\n")
+	b.writes("if (!self) { return wuffs_base__make_status(wuffs_base__error__bad_receiver); }\n")
 
 	b.writes("if (sizeof(*self) != sizeof_star_self) {\n")
-	b.writes("  return wuffs_base__error__bad_sizeof_receiver;\n")
+	b.writes("  return wuffs_base__make_status(wuffs_base__error__bad_sizeof_receiver);\n")
 	b.writes("}\n")
 	b.writes("if (((wuffs_version >> 32) != WUFFS_VERSION_MAJOR) || " +
 		"(((wuffs_version >> 16) & 0xFFFF) > WUFFS_VERSION_MINOR)) {\n")
-	b.writes("  return wuffs_base__error__bad_wuffs_version;\n")
+	b.writes("  return wuffs_base__make_status(wuffs_base__error__bad_wuffs_version);\n")
 	b.writes("}\n\n")
 
 	b.writes("if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) != 0) {\n")
@@ -1013,7 +1240,7 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 	b.writes("  #pragma GCC diagnostic ignored \"-Wmaybe-uninitialized\"\n")
 	b.writes("  #endif\n")
 	b.writes("  if (self->private_impl.magic != 0) {\n")
-	b.writes("    return wuffs_base__error__initialize_falsely_claimed_already_zeroed;\n")
+	b.writes("    return wuffs_base__make_status(wuffs_base__error__initialize_falsely_claimed_already_zeroed);\n")
 	b.writes("  }\n")
 	b.writes("  #if !defined(__clang__) && defined(__GNUC__)\n")
 	b.writes("  #pragma GCC diagnostic pop\n")
@@ -1053,12 +1280,21 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 		b.printf("wuffs_base__status z = %s%s__initialize("+
 			"&self->private_data.%s%s, sizeof(self->private_data.%s%s), WUFFS_VERSION, initialize_flags);\n",
 			prefix, qid[1].Str(g.tm), fPrefix, f.Name().Str(g.tm), fPrefix, f.Name().Str(g.tm))
-		b.printf("if (z) { return z; }\n")
+		b.printf("if (z.repr) { return z; }\n")
 		b.printf("}\n")
 	}
 
 	b.writes("self->private_impl.magic = WUFFS_BASE__MAGIC;\n")
-	b.writes("return NULL;\n")
+	for _, impl := range n.Implements() {
+		qid := impl.AsTypeExpr().QID()
+		iName := fmt.Sprintf("wuffs_%s__%s", qid[0].Str(g.tm), qid[1].Str(g.tm))
+		b.printf("self->private_impl.vtable_for__%s.vtable_name = "+
+			"%s__vtable_name;\n", iName, iName)
+		b.printf("self->private_impl.vtable_for__%s.function_pointers = "+
+			"(const void*)(&%s%s__func_ptrs_for__%s);\n",
+			iName, g.pkgPrefix, n.QID().Str(g.tm), iName)
+	}
+	b.writes("return wuffs_base__make_status(NULL);\n")
 	b.writes("}\n\n")
 
 	if n.Public() {

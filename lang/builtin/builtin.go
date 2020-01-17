@@ -16,6 +16,12 @@
 package builtin
 
 import (
+	"fmt"
+	"strings"
+
+	"github.com/google/wuffs/lang/parse"
+
+	a "github.com/google/wuffs/lang/ast"
 	t "github.com/google/wuffs/lang/token"
 )
 
@@ -25,7 +31,7 @@ var FourCCs = [...][2]string{
 }
 
 var Statuses = [...]string{
-	// Warnings.
+	// Notes.
 	`"@end of data"`,
 	`"@metadata reported"`,
 
@@ -41,6 +47,7 @@ var Statuses = [...]string{
 	`"#bad receiver"`,
 	`"#bad restart"`,
 	`"#bad sizeof receiver"`,
+	`"#bad vtable"`,
 	`"#bad workbuf length"`,
 	`"#bad wuffs version"`,
 	`"#cannot return a suspension"`,
@@ -80,8 +87,10 @@ var Types = []string{
 
 	"frame_config",
 	"image_config",
+	"pixel_blend",
 	"pixel_buffer",
 	"pixel_config",
+	"pixel_format",
 	"pixel_swizzler",
 
 	"decode_frame_options",
@@ -113,6 +122,7 @@ var Funcs = []string{
 	"utility.empty_io_reader() io_reader",
 	"utility.empty_io_writer() io_writer",
 	"utility.empty_slice_u8() slice u8",
+	"utility.make_pixel_format(repr: u32) pixel_format",
 	"utility.make_range_ii_u32(min_incl: u32, max_incl: u32) range_ii_u32",
 	"utility.make_range_ie_u32(min_incl: u32, max_excl: u32) range_ie_u32",
 	"utility.make_range_ii_u64(min_incl: u64, max_incl: u64) range_ii_u64",
@@ -225,13 +235,14 @@ var Funcs = []string{
 	"io_reader.since(mark: u64) slice u8",
 	"io_reader.take!(n: u64) slice u8",
 
-	"io_reader.skip?(n: u32)",
+	"io_reader.skip?(n: u64)",
+	"io_reader.skip32?(n: u32)",
 
 	// TODO: this should have explicit pre-conditions "actual <= worst_case"
 	// and "worst_case <= available()". As an implementation restriction, we
 	// also require that worst_case has a constant value. For now, that's all
 	// implicitly checked (i.e. hard coded).
-	"io_reader.skip_fast!(actual: u32, worst_case: u32)",
+	"io_reader.skip32_fast!(actual: u32, worst_case: u32)",
 
 	// ---- io_writer
 
@@ -280,24 +291,24 @@ var Funcs = []string{
 	"io_writer.since(mark: u64) slice u8",
 
 	"io_writer.copy_from_slice!(s: slice u8) u64",
-	"io_writer.copy_n_from_history!(n: u32, distance: u32) u32",
-	"io_writer.copy_n_from_reader!(n: u32, r: io_reader) u32",
-	"io_writer.copy_n_from_slice!(n: u32, s: slice u8) u32",
+	"io_writer.copy_n32_from_history!(n: u32, distance: u32) u32",
+	"io_writer.copy_n32_from_reader!(n: u32, r: io_reader) u32",
+	"io_writer.copy_n32_from_slice!(n: u32, s: slice u8) u32",
 
 	// TODO: this should have explicit pre-conditions:
 	//  - n <= this.available()
 	//  - distance > 0
 	//  - distance <= this.since_mark().length()
 	// For now, that's all implicitly checked (i.e. hard coded).
-	"io_writer.copy_n_from_history_fast!(n: u32, distance: u32) u32",
+	"io_writer.copy_n32_from_history_fast!(n: u32, distance: u32) u32",
 
 	// ---- status
 
 	// TODO: should we add is_complete?
 	"status.is_error() bool",
+	"status.is_note() bool",
 	"status.is_ok() bool",
 	"status.is_suspension() bool",
-	"status.is_warning() bool",
 
 	// ---- frame_config
 	// Duration's upper bound is the maximum possible i64 value.
@@ -308,26 +319,73 @@ var Funcs = []string{
 	"frame_config.index() u64",
 	"frame_config.io_position() u64",
 
-	"frame_config.update!(bounds: rect_ie_u32, duration: u64[..= 0x7FFFFFFFFFFFFFFF], " +
-		"index: u64, io_position: u64, blend: u8, disposal: u8, background_color: u32)",
+	"frame_config.update!(bounds: rect_ie_u32, duration: u64[..= 0x7FFFFFFFFFFFFFFF]," +
+		"index: u64, io_position: u64, disposal: u8, opaque_within_bounds: bool," +
+		"overwrite_instead_of_blend: bool, background_color: u32)",
 
 	// ---- image_config
 
-	"image_config.set!(pixfmt: u32, pixsub: u32, width: u32, height: u32, " +
+	"image_config.set!(pixfmt: u32, pixsub: u32, width: u32, height: u32," +
 		"first_frame_io_position: u64, first_frame_is_opaque: bool)",
 
 	// ---- pixel_buffer
 
 	"pixel_buffer.palette() slice u8",
-	"pixel_buffer.pixel_format() u32",
+	"pixel_buffer.pixel_format() pixel_format",
 	"pixel_buffer.plane(p: u32[..= 3]) table u8",
+
+	// ---- pixel_format
+
+	"pixel_format.bits_per_pixel() u32",
 
 	// ---- pixel_swizzler
 
 	"pixel_swizzler.prepare!(" +
-		"dst_pixfmt: u32, dst_palette: slice u8, src_pixfmt: u32, src_palette: slice u8) status",
+		"dst_pixfmt: pixel_format, dst_palette: slice u8," +
+		"src_pixfmt: pixel_format, src_palette: slice u8, blend: pixel_blend) status",
 	"pixel_swizzler.swizzle_interleaved!(" +
 		"dst: slice u8, dst_palette: slice u8, src: slice u8) u64",
+}
+
+var Interfaces = []string{
+	"hasher_u32",
+	"image_decoder",
+	"io_transformer",
+}
+
+var InterfacesMap = map[string]bool{
+	"hasher_u32":     true,
+	"image_decoder":  true,
+	"io_transformer": true,
+}
+
+var InterfaceFuncs = []string{
+	// ---- hasher_u32
+
+	"hasher_u32.update_u32!(x: slice u8) u32",
+
+	// ---- image_decoder
+
+	"image_decoder.ack_metadata_chunk?(src: io_reader)",
+	"image_decoder.decode_frame?(" +
+		"dst: ptr pixel_buffer, src: io_reader, blend: pixel_blend," +
+		"workbuf: slice u8, opts: nptr decode_frame_options)",
+	"image_decoder.decode_frame_config?(dst: nptr frame_config, src: io_reader)",
+	"image_decoder.decode_image_config?(dst: nptr image_config, src: io_reader)",
+	"image_decoder.frame_dirty_rect() rect_ie_u32",
+	"image_decoder.metadata_chunk_length() u64",
+	"image_decoder.metadata_fourcc() u32",
+	"image_decoder.num_animation_loops() u32",
+	"image_decoder.num_decoded_frame_configs() u64",
+	"image_decoder.num_decoded_frames() u64",
+	"image_decoder.restart_frame!(index: u64, io_position: u64) status",
+	"image_decoder.set_report_metadata!(fourcc: u32, report: bool)",
+	"image_decoder.workbuf_len() range_ii_u64",
+
+	// ---- io_transformer
+
+	"io_transformer.transform_io?(dst: io_writer, src: io_reader, workbuf: slice u8)",
+	"io_transformer.workbuf_len() range_ii_u64",
 }
 
 // The "T1" and "T2" types here are placeholders for generic "slice T" or
@@ -336,23 +394,74 @@ var Funcs = []string{
 // daggers, to avoid collision with a user-defined "T1" or "T2" type.
 
 const (
-	GenericOldName1 = t.IDT1
-	GenericOldName2 = t.IDT2
-	GenericNewName1 = t.IDDagger1
-	GenericNewName2 = t.IDDagger2
+	genericOldName1 = t.IDT1
+	genericOldName2 = t.IDT2
+	genericNewName1 = t.IDDagger1
+	genericNewName2 = t.IDDagger2
 )
 
 var SliceFuncs = []string{
-	"T1.copy_from_slice!(s: T1) u64",
-	"T1.length() u64",
-	"T1.prefix(up_to: u64) T1",
-	"T1.suffix(up_to: u64) T1",
+	"GENERIC T1.copy_from_slice!(s: T1) u64",
+	"GENERIC T1.length() u64",
+	"GENERIC T1.prefix(up_to: u64) T1",
+	"GENERIC T1.suffix(up_to: u64) T1",
 }
 
 var TableFuncs = []string{
-	"T2.height() u64",
-	"T2.stride() u64",
-	"T2.width() u64",
+	"GENERIC T2.height() u64",
+	"GENERIC T2.stride() u64",
+	"GENERIC T2.width() u64",
 
-	"T2.row(y: u32) T1",
+	"GENERIC T2.row(y: u32) T1",
+}
+
+func ParseFuncs(tm *t.Map, ss []string, callback func(*a.Func) error) error {
+	const GENERIC = "GENERIC "
+	buf := []byte(nil)
+	for _, s := range ss {
+		generic := strings.HasPrefix(s, GENERIC)
+		if generic {
+			s = s[len(GENERIC):]
+		}
+
+		buf = buf[:0]
+		buf = append(buf, "pub func "...)
+		buf = append(buf, s...)
+		buf = append(buf, "{}\n"...)
+
+		const filename = "builtin.wuffs"
+		tokens, _, err := t.Tokenize(tm, filename, buf)
+		if err != nil {
+			return fmt.Errorf("parsing %q: could not tokenize built-in funcs: %v", s, err)
+		}
+		if generic {
+			for i := range tokens {
+				if id := tokens[i].ID; id == genericOldName1 {
+					tokens[i].ID = genericNewName1
+				} else if id == genericOldName2 {
+					tokens[i].ID = genericNewName2
+				}
+			}
+		}
+		file, err := parse.Parse(tm, filename, tokens, &parse.Options{
+			AllowBuiltInNames: true,
+		})
+		if err != nil {
+			return fmt.Errorf("parsing %q: could not parse built-in funcs: %v", s, err)
+		}
+
+		tlds := file.TopLevelDecls()
+		if len(tlds) != 1 || tlds[0].Kind() != a.KFunc {
+			return fmt.Errorf("parsing %q: got %d top level decls, want %d", s, len(tlds), 1)
+		}
+		f := tlds[0].AsFunc()
+		f.AsNode().AsRaw().SetPackage(tm, t.IDBase)
+
+		if callback != nil {
+			if err := callback(f); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

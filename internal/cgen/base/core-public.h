@@ -14,14 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Wuffs assumes that:
-//  - converting a uint32_t to a size_t will never overflow.
-//  - converting a size_t to a uint64_t will never overflow.
-#ifdef __WORDSIZE
-#if (__WORDSIZE != 32) && (__WORDSIZE != 64)
-#error "Wuffs requires a word size of either 32 or 64 bits"
-#endif
-#endif
+// ---------------- Fundamentals
 
 // WUFFS_VERSION is the major.minor.patch version, as per https://semver.org/,
 // as a uint64_t. The major number is the high 32 bits. The minor number is the
@@ -55,6 +48,17 @@
 #define WUFFS_BASE__MAYBE_STATIC static
 #else
 #define WUFFS_BASE__MAYBE_STATIC
+#endif
+
+// --------
+
+// Wuffs assumes that:
+//  - converting a uint32_t to a size_t will never overflow.
+//  - converting a size_t to a uint64_t will never overflow.
+#ifdef __WORDSIZE
+#if (__WORDSIZE != 32) && (__WORDSIZE != 64)
+#error "Wuffs requires a word size of either 32 or 64 bits"
+#endif
 #endif
 
 #if defined(__clang__)
@@ -132,48 +136,106 @@ typedef struct {
   uint8_t private_impl;
 } wuffs_base__utility;
 
+typedef struct {
+  const char* vtable_name;
+  const void* function_pointers;
+} wuffs_base__vtable;
+
 // --------
 
 // See https://github.com/google/wuffs/blob/master/doc/note/statuses.md
-typedef const char* wuffs_base__status;
+typedef struct {
+  const char* repr;
+
+#ifdef __cplusplus
+  inline bool is_complete() const;
+  inline bool is_error() const;
+  inline bool is_note() const;
+  inline bool is_ok() const;
+  inline bool is_suspension() const;
+  inline const char* message() const;
+#endif  // __cplusplus
+
+} wuffs_base__status;
 
 // !! INSERT wuffs_base__status names.
 
-static inline bool  //
-wuffs_base__status__is_complete(wuffs_base__status z) {
-  return (z == NULL) || ((*z != '$') && (*z != '#'));
+static inline wuffs_base__status  //
+wuffs_base__make_status(const char* repr) {
+  wuffs_base__status z;
+  z.repr = repr;
+  return z;
 }
 
 static inline bool  //
-wuffs_base__status__is_error(wuffs_base__status z) {
-  return z && (*z == '#');
+wuffs_base__status__is_complete(const wuffs_base__status* z) {
+  return (z->repr == NULL) || ((*z->repr != '$') && (*z->repr != '#'));
 }
 
 static inline bool  //
-wuffs_base__status__is_ok(wuffs_base__status z) {
-  return z == NULL;
+wuffs_base__status__is_error(const wuffs_base__status* z) {
+  return z->repr && (*z->repr == '#');
 }
 
 static inline bool  //
-wuffs_base__status__is_suspension(wuffs_base__status z) {
-  return z && (*z == '$');
+wuffs_base__status__is_note(const wuffs_base__status* z) {
+  return z->repr && (*z->repr != '$') && (*z->repr != '#');
 }
 
 static inline bool  //
-wuffs_base__status__is_warning(wuffs_base__status z) {
-  return z && (*z != '$') && (*z != '#');
+wuffs_base__status__is_ok(const wuffs_base__status* z) {
+  return z->repr == NULL;
+}
+
+static inline bool  //
+wuffs_base__status__is_suspension(const wuffs_base__status* z) {
+  return z->repr && (*z->repr == '$');
 }
 
 // wuffs_base__status__message strips the leading '$', '#' or '@'.
 static inline const char*  //
-wuffs_base__status__message(wuffs_base__status z) {
-  if (z) {
-    if ((*z == '$') || (*z == '#') || (*z == '@')) {
-      return z + 1;
+wuffs_base__status__message(const wuffs_base__status* z) {
+  if (z->repr) {
+    if ((*z->repr == '$') || (*z->repr == '#') || (*z->repr == '@')) {
+      return z->repr + 1;
     }
   }
-  return z;
+  return z->repr;
 }
+
+#ifdef __cplusplus
+
+inline bool  //
+wuffs_base__status::is_complete() const {
+  return wuffs_base__status__is_complete(this);
+}
+
+inline bool  //
+wuffs_base__status::is_error() const {
+  return wuffs_base__status__is_error(this);
+}
+
+inline bool  //
+wuffs_base__status::is_note() const {
+  return wuffs_base__status__is_note(this);
+}
+
+inline bool  //
+wuffs_base__status::is_ok() const {
+  return wuffs_base__status__is_ok(this);
+}
+
+inline bool  //
+wuffs_base__status::is_suspension() const {
+  return wuffs_base__status__is_suspension(this);
+}
+
+inline const char*  //
+wuffs_base__status::message() const {
+  return wuffs_base__status__message(this);
+}
+
+#endif  // __cplusplus
 
 // --------
 

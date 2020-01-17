@@ -55,9 +55,9 @@ wuffs_base__ignore_status(wuffs_base__status z) {
   case n:;
 
 #define WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(n) \
-  if (!status) {                                                \
+  if (!status.repr) {                                           \
     goto ok;                                                    \
-  } else if (*status != '$') {                                  \
+  } else if (*status.repr != '$') {                             \
     goto exit;                                                  \
   }                                                             \
   coro_susp_point = n;                                          \
@@ -417,6 +417,6 @@ wuffs_base__table_u8__row(wuffs_base__table_u8 t, uint32_t y) {
   return wuffs_base__make_slice_u8(NULL, 0);
 }
 
-// ---------------- Slices and Tables (Utility)
+  // ---------------- Slices and Tables (Utility)
 
 #define wuffs_base__utility__empty_slice_u8 wuffs_base__empty_slice_u8

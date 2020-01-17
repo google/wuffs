@@ -5,7 +5,7 @@ involving [I/O](/doc/note/io-input-output.md) - return a status value. There
 are four categories:
 
 - OK:          the request was completed, successfully.
-- Warnings:    the request was completed, unsuccessfully.
+- Notes:       the request was completed, unsuccessfully.
 - Suspensions: the request was not completed, but can be re-tried.
 - Errors:      the request was not completed, permanently.
 
@@ -18,12 +18,12 @@ When a method returns a suspension, the suspended
 again. However, calling any other public coroutine method, while already
 suspended, will lead to an `"#interleaved coroutine calls"` error.
 
-Otherwise, the call was complete. 'Warning' or 'unsuccessful' doesn't
+Otherwise, the call was complete. 'Unsuccessful' (i.e. a note) doesn't
 necessarily mean 'bad' or something to avoid, only that something occurred
 other than the typical outcome. For example, when decoding an animated image,
 without knowing the number of frames beforehand, a call to "decode the next
-frame" could return OK, if there was a next frame, or an `"@end of data"`
-warning, if there wasn't.
+frame" could return OK, if there was a next frame, or an `"@end of data"` note,
+if there wasn't.
 
 
 ## Statuses are Strings
@@ -60,17 +60,17 @@ information such as a source filename.
 The first byte of the string message gives the category. For example, `"#bad
 receiver"` is an error and `"$short read"` is a suspension:
 
-- `'@'` means a warning.
+- `'@'` means a note.
 - `'$'` means a suspension.
 - `'#'` means an error.
 
 
 ## C Implementation
 
-In terms of C implementation, a status value is just its string message: a
-`const char *`, with `ok` being the null pointer. That C string is statically
-allocated and should never be `free`d. Status values can be compared by the
-`==` operator and not just by `strcmp`.
+In terms of C implementation, a status' `repr` (representation) is just its
+string message: a `const char *`, with `ok` being the null pointer. That C
+string is statically allocated and should never be `free`d. Status `repr`s can
+be compared by the `==` operator and not just by `strcmp`.
 
 The C string's contents has the Wuffs package name inserted by the Wuffs
 compiler, just after that first byte. For example, the `std/deflate` package

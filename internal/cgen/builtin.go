@@ -176,7 +176,7 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 			iopPrefix, name, io0Prefix, name, io0Prefix, name)
 		return nil
 
-	case t.IDSkipFast:
+	case t.IDSkip32Fast:
 		// Generate a two part expression using the comma operator: "(pointer
 		// increment, return_empty_struct call)". The final part is a function
 		// call (to a static inline function) instead of a struct literal, to
@@ -218,12 +218,12 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 	}
 
 	switch method {
-	case t.IDCopyNFromHistory, t.IDCopyNFromHistoryFast:
+	case t.IDCopyN32FromHistory, t.IDCopyN32FromHistoryFast:
 		suffix := ""
-		if method == t.IDCopyNFromHistoryFast {
+		if method == t.IDCopyN32FromHistoryFast {
 			suffix = "_fast"
 		}
-		b.printf("wuffs_base__io_writer__copy_n_from_history%s(&%s%s, %s%s, %s%s",
+		b.printf("wuffs_base__io_writer__copy_n32_from_history%s(&%s%s, %s%s, %s%s",
 			suffix, iopPrefix, name, io0Prefix, name, io2Prefix, name)
 		for _, o := range args {
 			b.writeb(',')
@@ -234,13 +234,13 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 		b.writeb(')')
 		return nil
 
-	case t.IDCopyNFromReader:
+	case t.IDCopyN32FromReader:
 		readerName, err := g.ioRecvName(args[1].AsArg().Value())
 		if err != nil {
 			return err
 		}
 
-		b.printf("wuffs_base__io_writer__copy_n_from_reader(&%s%s, %s%s,",
+		b.printf("wuffs_base__io_writer__copy_n32_from_reader(&%s%s, %s%s,",
 			iopPrefix, name, io2Prefix, name)
 		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
 			return err
@@ -253,8 +253,8 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 			iopPrefix, name, io2Prefix, name)
 		return g.writeArgs(b, args, depth)
 
-	case t.IDCopyNFromSlice:
-		b.printf("wuffs_base__io_writer__copy_n_from_slice(&%s%s, %s%s,",
+	case t.IDCopyN32FromSlice:
+		b.printf("wuffs_base__io_writer__copy_n32_from_slice(&%s%s, %s%s,",
 			iopPrefix, name, io2Prefix, name)
 		return g.writeArgs(b, args, depth)
 
@@ -573,7 +573,7 @@ func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error
 			g.currFunk.tempW++
 
 			b.printf("if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {" +
-				"status = wuffs_base__suspension__short_read; goto suspend; }")
+				"status = wuffs_base__make_status(wuffs_base__suspension__short_read); goto suspend; }")
 
 			// TODO: watch for passing an array type to writeCTypeName? In C, an
 			// array type can decay into a pointer.
@@ -583,14 +583,14 @@ func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error
 			b.printf(" = *iop_a_src++;\n")
 			return nil
 
-		case t.IDSkip:
+		case t.IDSkip, t.IDSkip32:
 			x := n.Args()[0].AsArg().Value()
 			if cv := x.ConstValue(); cv != nil && cv.Cmp(one) == 0 {
 				if err := g.writeCoroSuspPoint(b, false); err != nil {
 					return err
 				}
 				b.printf("if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {" +
-					"status = wuffs_base__suspension__short_read; goto suspend; }")
+					"status = wuffs_base__make_status(wuffs_base__suspension__short_read); goto suspend; }")
 				b.printf("iop_a_src++;\n")
 				return nil
 			}
@@ -614,7 +614,7 @@ func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error
 			b.printf("%s -= ((uint64_t)(io2_a_src - iop_a_src));\n", scratchName)
 			b.printf("iop_a_src = io2_a_src;\n")
 
-			b.writes("status = wuffs_base__suspension__short_read; goto suspend; }\n")
+			b.writes("status = wuffs_base__make_status(wuffs_base__suspension__short_read); goto suspend; }\n")
 			b.printf("iop_a_src += %s;\n", scratchName)
 			return nil
 		}
@@ -637,7 +637,7 @@ func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error
 				return err
 			}
 			b.writes("if (iop_a_dst == io2_a_dst) {\n" +
-				"status = wuffs_base__suspension__short_write; goto suspend; }\n" +
+				"status = wuffs_base__make_status(wuffs_base__suspension__short_write); goto suspend; }\n" +
 				"*iop_a_dst++ = ")
 			x := n.Args()[0].AsArg().Value()
 			if err := g.writeExpr(b, x, depth); err != nil {
@@ -693,7 +693,7 @@ func (g *gen) writeReadUxxAsUyy(b *buffer, n *a.Expr, preName string, xx uint8, 
 	b.printf("while (true) {")
 
 	b.printf("if (WUFFS_BASE__UNLIKELY(iop_%s == io2_%s)) {"+
-		"status = wuffs_base__suspension__short_read; goto suspend; }",
+		"status = wuffs_base__make_status(wuffs_base__suspension__short_read); goto suspend; }",
 		preName, preName)
 
 	b.printf("uint64_t *scratch = &%s;", scratchName)

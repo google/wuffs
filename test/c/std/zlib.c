@@ -94,35 +94,45 @@ const size_t zlib_sheep_want_len = 11;
 
 // ---------------- Zlib Tests
 
+const char* test_wuffs_zlib_decode_interface() {
+  CHECK_FOCUS(__func__);
+  wuffs_zlib__decoder dec;
+  CHECK_STATUS("initialize",
+               wuffs_zlib__decoder__initialize(
+                   &dec, sizeof dec, WUFFS_VERSION,
+                   WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+  return do_test__wuffs_base__io_transformer(
+      wuffs_zlib__decoder__upcast_as__wuffs_base__io_transformer(&dec),
+      "test/data/romeo.txt.zlib", 0, SIZE_MAX, 942, 0x0A);
+}
+
 const char* wuffs_zlib_decode(wuffs_base__io_buffer* dst,
                               wuffs_base__io_buffer* src,
                               uint32_t wuffs_initialize_flags,
                               uint64_t wlimit,
                               uint64_t rlimit) {
   wuffs_zlib__decoder dec;
-  const char* status = wuffs_zlib__decoder__initialize(
-      &dec, sizeof dec, WUFFS_VERSION, wuffs_initialize_flags);
-  if (status) {
-    return status;
-  }
+  CHECK_STATUS("initialize",
+               wuffs_zlib__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION,
+                                               wuffs_initialize_flags));
 
   while (true) {
     wuffs_base__io_buffer limited_dst = make_limited_writer(*dst, wlimit);
     wuffs_base__io_buffer limited_src = make_limited_reader(*src, rlimit);
 
-    status = wuffs_zlib__decoder__decode_io_writer(
+    wuffs_base__status status = wuffs_zlib__decoder__transform_io(
         &dec, &limited_dst, &limited_src, global_work_slice);
 
     dst->meta.wi += limited_dst.meta.wi;
     src->meta.ri += limited_src.meta.ri;
 
     if (((wlimit < UINT64_MAX) &&
-         (status == wuffs_base__suspension__short_write)) ||
+         (status.repr == wuffs_base__suspension__short_write)) ||
         ((rlimit < UINT64_MAX) &&
-         (status == wuffs_base__suspension__short_read))) {
+         (status.repr == wuffs_base__suspension__short_read))) {
       continue;
     }
-    return status;
+    return status.repr;
   }
 }
 
@@ -135,10 +145,7 @@ const char* do_test_wuffs_zlib_checksum(bool ignore_checksum,
       .data = global_src_slice,
   });
 
-  const char* status = read_file(&src, zlib_midsummer_gt.src_filename);
-  if (status) {
-    return status;
-  }
+  CHECK_STRING(read_file(&src, zlib_midsummer_gt.src_filename));
   // Flip a bit in the zlib checksum, which is in the last 4 bytes of the file.
   if (src.meta.wi < 4) {
     RETURN_FAIL("source file was too short");
@@ -150,12 +157,10 @@ const char* do_test_wuffs_zlib_checksum(bool ignore_checksum,
   int end_limit;  // The rlimit, relative to the end of the data.
   for (end_limit = 0; end_limit < 10; end_limit++) {
     wuffs_zlib__decoder dec;
-    status = wuffs_zlib__decoder__initialize(
-        &dec, sizeof dec, WUFFS_VERSION,
-        WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
-    if (status) {
-      RETURN_FAIL("initialize: \"%s\"", status);
-    }
+    CHECK_STATUS("initialize",
+                 wuffs_zlib__decoder__initialize(
+                     &dec, sizeof dec, WUFFS_VERSION,
+                     WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
     wuffs_zlib__decoder__set_ignore_checksum(&dec, ignore_checksum);
     got.meta.wi = 0;
     src.meta.ri = 0;
@@ -183,12 +188,12 @@ const char* do_test_wuffs_zlib_checksum(bool ignore_checksum,
 
       wuffs_base__io_buffer limited_src = make_limited_reader(src, rlimit);
 
-      const char* got_z = wuffs_zlib__decoder__decode_io_writer(
+      wuffs_base__status got_z = wuffs_zlib__decoder__transform_io(
           &dec, &got, &limited_src, global_work_slice);
       src.meta.ri += limited_src.meta.ri;
-      if (got_z != want_z) {
-        RETURN_FAIL("end_limit=%d: got \"%s\", want \"%s\"", end_limit, got_z,
-                    want_z);
+      if (got_z.repr != want_z) {
+        RETURN_FAIL("end_limit=%d: got \"%s\", want \"%s\"", end_limit,
+                    got_z.repr, want_z);
       }
     }
   }
@@ -236,20 +241,18 @@ const char* test_wuffs_zlib_decode_sheep() {
       make_io_buffer_from_string(zlib_sheep_src_ptr, zlib_sheep_src_len);
 
   wuffs_zlib__decoder dec;
-  const char* status = wuffs_zlib__decoder__initialize(
-      &dec, sizeof dec, WUFFS_VERSION, WUFFS_INITIALIZE__DEFAULT_OPTIONS);
-  if (status) {
-    RETURN_FAIL("initialize: %s", status);
-  }
+  CHECK_STATUS("initialize", wuffs_zlib__decoder__initialize(
+                                 &dec, sizeof dec, WUFFS_VERSION,
+                                 WUFFS_INITIALIZE__DEFAULT_OPTIONS));
 
   int i;
   for (i = 0; i < 3; i++) {
-    status = wuffs_zlib__decoder__decode_io_writer(&dec, &got, &src,
-                                                   global_work_slice);
+    wuffs_base__status status =
+        wuffs_zlib__decoder__transform_io(&dec, &got, &src, global_work_slice);
 
-    if (status != wuffs_zlib__warning__dictionary_required) {
-      RETURN_FAIL("decode_io_writer (before dict): got \"%s\", want \"%s\"",
-                  status, wuffs_zlib__warning__dictionary_required);
+    if (status.repr != wuffs_zlib__note__dictionary_required) {
+      RETURN_FAIL("transform_io (before dict): got \"%s\", want \"%s\"",
+                  status.repr, wuffs_zlib__note__dictionary_required);
     }
 
     uint32_t dict_id_got = wuffs_zlib__decoder__dictionary_id(&dec);
@@ -266,11 +269,9 @@ const char* test_wuffs_zlib_decode_sheep() {
                 .len = zlib_sheep_dict_len,
             }));
 
-  status = wuffs_zlib__decoder__decode_io_writer(&dec, &got, &src,
-                                                 global_work_slice);
-  if (status) {
-    RETURN_FAIL("decode_io_writer (after dict): %s", status);
-  }
+  CHECK_STATUS(
+      "transform_io (after dict)",
+      wuffs_zlib__decoder__transform_io(&dec, &got, &src, global_work_slice));
 
   wuffs_base__io_buffer want =
       make_io_buffer_from_string(zlib_sheep_want_ptr, zlib_sheep_want_len);
@@ -358,6 +359,7 @@ proc tests[] = {
     test_wuffs_zlib_checksum_verify_bad0,  //
     test_wuffs_zlib_checksum_verify_bad3,  //
     test_wuffs_zlib_checksum_verify_good,  //
+    test_wuffs_zlib_decode_interface,      //
     test_wuffs_zlib_decode_midsummer,      //
     test_wuffs_zlib_decode_pi,             //
     test_wuffs_zlib_decode_sheep,          //
