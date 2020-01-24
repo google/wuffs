@@ -31,6 +31,7 @@ typedef uint8_t wuffs_base__pixel_blend;
 //
 // TODO: implement the other modes.
 #define WUFFS_BASE__PIXEL_BLEND__SRC ((wuffs_base__pixel_blend)0)
+#define WUFFS_BASE__PIXEL_BLEND__SRC_OVER ((wuffs_base__pixel_blend)1)
 
 // --------
 

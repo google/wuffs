@@ -80,11 +80,19 @@ uint8_t g_src_buffer[SRC_BUFFER_SIZE] = {0};
 wuffs_base__io_buffer g_src = {0};
 wuffs_base__image_config g_image_config = {0};
 wuffs_base__image_decoder* g_image_decoder = NULL;
+wuffs_base__color_u32_argb_premul g_background_color = 0xFFA9009A;
 
 union {
   wuffs_gif__decoder gif;
   wuffs_wbmp__decoder wbmp;
 } g_potential_decoders;
+
+static inline void store_u32le(uint8_t* p, uint32_t x) {
+  p[0] = (uint8_t)(x >> 0);
+  p[1] = (uint8_t)(x >> 8);
+  p[2] = (uint8_t)(x >> 16);
+  p[3] = (uint8_t)(x >> 24);
+}
 
 bool read_more_src() {
   if (g_src.meta.closed) {
@@ -191,7 +199,7 @@ bool load_image_config() {
       printf("%s: out of memory\n", g_filename);
       return false;
     }
-    g_workbuf_slice.ptr = p;
+    g_workbuf_slice.ptr = (uint8_t*)p;
     g_workbuf_slice.len = workbuf_len;
   }
 
@@ -202,12 +210,19 @@ bool load_image_config() {
     return false;
   }
   size_t n = num_pixels * sizeof(wuffs_base__color_u32_argb_premul);
-  void* p = calloc(n, 1);
+  void* p = malloc(n);
   if (!p) {
     printf("%s: out of memory\n", g_filename);
     return false;
   }
-  g_pixbuf_slice.ptr = p;
+  {
+    uint8_t* ptr = (uint8_t*)p;
+    for (size_t i = 0; i < num_pixels; i++) {
+      store_u32le(ptr, g_background_color);
+      ptr += 4;
+    }
+  }
+  g_pixbuf_slice.ptr = (uint8_t*)p;
   g_pixbuf_slice.len = n;
 
   // Configure the wuffs_base__pixel_buffer struct.
@@ -226,7 +241,7 @@ bool load_image_config() {
 bool load_image_frame() {
   while (true) {
     wuffs_base__status status = wuffs_base__image_decoder__decode_frame(
-        g_image_decoder, &g_pixbuf, &g_src, WUFFS_BASE__PIXEL_BLEND__SRC,
+        g_image_decoder, &g_pixbuf, &g_src, WUFFS_BASE__PIXEL_BLEND__SRC_OVER,
         g_workbuf_slice, NULL);
 
     if (status.repr == NULL) {
