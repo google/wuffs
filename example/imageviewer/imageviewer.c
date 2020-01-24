@@ -65,9 +65,16 @@ The Escape key quits.
 // X11 limits its image dimensions to uint16_t.
 #define MAX_DIMENSION 65535
 
+#define NUM_BACKGROUND_COLORS 3
 #define SRC_BUFFER_SIZE (64 * 1024)
 
 // Global variable names start with a "g_" prefix.
+
+wuffs_base__color_u32_argb_premul g_background_colors[NUM_BACKGROUND_COLORS] = {
+    0xFF000000,
+    0xFFFFFFFF,
+    0xFFA9009A,
+};
 
 FILE* g_file = NULL;
 const char* g_filename = NULL;
@@ -80,7 +87,7 @@ uint8_t g_src_buffer[SRC_BUFFER_SIZE] = {0};
 wuffs_base__io_buffer g_src = {0};
 wuffs_base__image_config g_image_config = {0};
 wuffs_base__image_decoder* g_image_decoder = NULL;
-wuffs_base__color_u32_argb_premul g_background_color = 0xFFA9009A;
+uint32_t g_background_color_index = 0;
 
 union {
   wuffs_gif__decoder gif;
@@ -217,8 +224,10 @@ bool load_image_config() {
   }
   {
     uint8_t* ptr = (uint8_t*)p;
+    wuffs_base__color_u32_argb_premul color =
+        g_background_colors[g_background_color_index];
     for (size_t i = 0; i < num_pixels; i++) {
-      store_u32le(ptr, g_background_color);
+      store_u32le(ptr, color);
       ptr += 4;
     }
   }
@@ -409,6 +418,7 @@ int main(int argc, char** argv) {
 
   while (true) {
     xcb_generic_event_t* event = xcb_wait_for_event(c);
+    bool reload = false;
 
     switch (event->response_type & 0x7F) {
       case XCB_EXPOSE: {
@@ -429,6 +439,7 @@ int main(int argc, char** argv) {
           switch (i) {
             case XK_Escape:
               return 0;
+
             case ' ':
             case XK_BackSpace:
             case XK_Return:
@@ -441,9 +452,15 @@ int main(int argc, char** argv) {
               } else if (arg == argc) {
                 arg = 1;
               }
-              loaded = load(c, s, w, g, argv[arg]);
-              xcb_clear_area(c, 1, w, 0, 0, 0xFFFF, 0xFFFF);
-              xcb_flush(c);
+              reload = true;
+              break;
+
+            case ',':
+            case '.':
+              g_background_color_index +=
+                  (i == ',') ? (NUM_BACKGROUND_COLORS - 1) : 1;
+              g_background_color_index %= NUM_BACKGROUND_COLORS;
+              reload = true;
               break;
           }
         }
@@ -460,6 +477,12 @@ int main(int argc, char** argv) {
     }
 
     free(event);
+
+    if (reload) {
+      loaded = load(c, s, w, g, argv[arg]);
+      xcb_clear_area(c, 1, w, 0, 0, 0xFFFF, 0xFFFF);
+      xcb_flush(c);
+    }
   }
   return 0;
 }
