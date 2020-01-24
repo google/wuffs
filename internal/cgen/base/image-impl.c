@@ -443,8 +443,8 @@ wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
   }
 
   p->private_impl.func = func;
-  return wuffs_base__make_status(func ? NULL
-                                      : wuffs_base__error__unsupported_option);
+  return wuffs_base__make_status(
+      func ? NULL : wuffs_base__error__unsupported_pixel_swizzler_option);
 }
 
 uint64_t  //

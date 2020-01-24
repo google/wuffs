@@ -201,6 +201,7 @@ extern const char* wuffs_base__error__initialize_not_called;
 extern const char* wuffs_base__error__interleaved_coroutine_calls;
 extern const char* wuffs_base__error__not_enough_data;
 extern const char* wuffs_base__error__unsupported_option;
+extern const char* wuffs_base__error__unsupported_pixel_swizzler_option;
 extern const char* wuffs_base__error__too_much_data;
 
 static inline wuffs_base__status  //
@@ -5334,6 +5335,8 @@ const char* wuffs_base__error__interleaved_coroutine_calls =
     "#base: interleaved coroutine calls";
 const char* wuffs_base__error__not_enough_data = "#base: not enough data";
 const char* wuffs_base__error__unsupported_option = "#base: unsupported option";
+const char* wuffs_base__error__unsupported_pixel_swizzler_option =
+    "#base: unsupported pixel swizzler option";
 const char* wuffs_base__error__too_much_data = "#base: too much data";
 
 // ---------------- Interface Definitions.
@@ -6233,8 +6236,8 @@ wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
   }
 
   p->private_impl.func = func;
-  return wuffs_base__make_status(func ? NULL
-                                      : wuffs_base__error__unsupported_option);
+  return wuffs_base__make_status(
+      func ? NULL : wuffs_base__error__unsupported_pixel_swizzler_option);
 }
 
 uint64_t  //

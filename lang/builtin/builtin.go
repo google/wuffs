@@ -57,6 +57,7 @@ var Statuses = [...]string{
 	`"#interleaved coroutine calls"`,
 	`"#not enough data"`,
 	`"#unsupported option"`,
+	`"#unsupported pixel swizzler option"`,
 	`"#too much data"`,
 }
 
