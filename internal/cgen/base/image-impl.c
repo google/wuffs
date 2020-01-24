@@ -312,8 +312,7 @@ wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
 
   // TODO: support many more formats.
 
-  uint64_t (*func)(wuffs_base__slice_u8 dst, wuffs_base__slice_u8 dst_palette,
-                   wuffs_base__slice_u8 src) = NULL;
+  wuffs_base__pixel_swizzler__func func = NULL;
 
   switch (src_format.repr) {
     case WUFFS_BASE__PIXEL_FORMAT__Y:
@@ -454,7 +453,7 @@ wuffs_base__pixel_swizzler__swizzle_interleaved(
     wuffs_base__slice_u8 dst_palette,
     wuffs_base__slice_u8 src) {
   if (p && p->private_impl.func) {
-    return (*(p->private_impl.func))(dst, dst_palette, src);
+    return (*p->private_impl.func)(dst, dst_palette, src);
   }
   return 0;
 }
