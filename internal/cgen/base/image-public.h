@@ -909,6 +909,10 @@ typedef struct {
   inline wuffs_base__table_u8 plane(uint32_t p);
   inline wuffs_base__color_u32_argb_premul color_u32_at(uint32_t x,
                                                         uint32_t y) const;
+  inline wuffs_base__status set_color_u32_at(
+      uint32_t x,
+      uint32_t y,
+      wuffs_base__color_u32_argb_premul color);
 #endif  // __cplusplus
 
 } wuffs_base__pixel_buffer;
@@ -1065,6 +1069,13 @@ wuffs_base__pixel_buffer__color_u32_at(const wuffs_base__pixel_buffer* b,
                                        uint32_t x,
                                        uint32_t y);
 
+wuffs_base__status  //
+wuffs_base__pixel_buffer__set_color_u32_at(
+    wuffs_base__pixel_buffer* b,
+    uint32_t x,
+    uint32_t y,
+    wuffs_base__color_u32_argb_premul color);
+
 #ifdef __cplusplus
 
 inline wuffs_base__status  //
@@ -1097,6 +1108,14 @@ wuffs_base__pixel_buffer::plane(uint32_t p) {
 inline wuffs_base__color_u32_argb_premul  //
 wuffs_base__pixel_buffer::color_u32_at(uint32_t x, uint32_t y) const {
   return wuffs_base__pixel_buffer__color_u32_at(this, x, y);
+}
+
+inline wuffs_base__status  //
+wuffs_base__pixel_buffer::set_color_u32_at(
+    uint32_t x,
+    uint32_t y,
+    wuffs_base__color_u32_argb_premul color) {
+  return wuffs_base__pixel_buffer__set_color_u32_at(this, x, y, color);
 }
 
 #endif  // __cplusplus

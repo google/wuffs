@@ -30,7 +30,7 @@ wuffs_base__swap_u32_argb_abgr(uint32_t u) {
 }
 
 static inline uint32_t  //
-wuffs_base__premul_u32_axxx(uint32_t u) {
+wuffs_base__premul_u32_axxx(uint32_t nonpremul) {
   // Multiplying by 0x101 (twice, once for alpha and once for color) converts
   // from 8-bit to 16-bit color. Shifting right by 8 undoes that.
   //
@@ -40,14 +40,36 @@ wuffs_base__premul_u32_axxx(uint32_t u) {
   //
   //  - ((0x80   * 0x81  ) / 0xFF  )      = 0x40        = 0x40
   //  - ((0x8080 * 0x8181) / 0xFFFF) >> 8 = 0x4101 >> 8 = 0x41
-  uint32_t a = 0xFF & (u >> 24);
+  uint32_t a = 0xFF & (nonpremul >> 24);
   uint32_t a16 = a * (0x101 * 0x101);
-  uint32_t r = 0xFF & (u >> 16);
+
+  uint32_t r = 0xFF & (nonpremul >> 16);
   r = ((r * a16) / 0xFFFF) >> 8;
-  uint32_t g = 0xFF & (u >> 8);
+  uint32_t g = 0xFF & (nonpremul >> 8);
   g = ((g * a16) / 0xFFFF) >> 8;
-  uint32_t b = 0xFF & (u >> 0);
+  uint32_t b = 0xFF & (nonpremul >> 0);
   b = ((b * a16) / 0xFFFF) >> 8;
+
+  return (a << 24) | (r << 16) | (g << 8) | (b << 0);
+}
+
+static inline uint32_t  //
+wuffs_base__nonpremul_u32_axxx(uint32_t premul) {
+  uint32_t a = 0xFF & (premul >> 24);
+  if (a == 0xFF) {
+    return premul;
+  } else if (a == 0) {
+    return 0;
+  }
+  uint32_t a16 = a * 0x101;
+
+  uint32_t r = 0xFF & (premul >> 16);
+  r = ((r * (0x101 * 0xFFFF)) / a16) >> 8;
+  uint32_t g = 0xFF & (premul >> 8);
+  g = ((g * (0x101 * 0xFFFF)) / a16) >> 8;
+  uint32_t b = 0xFF & (premul >> 0);
+  b = ((b * (0x101 * 0xFFFF)) / a16) >> 8;
+
   return (a << 24) | (r << 16) | (g << 8) | (b << 0);
 }
 
@@ -114,10 +136,76 @@ wuffs_base__pixel_buffer__color_u32_at(const wuffs_base__pixel_buffer* b,
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_BINARY:
       return wuffs_base__swap_u32_argb_abgr(
           wuffs_base__load_u32le(row + (4 * ((size_t)x))));
+
+    default:
+      // TODO: support more formats.
+      break;
   }
 
-  // TODO: support more formats.
   return 0;
+}
+
+wuffs_base__status  //
+wuffs_base__pixel_buffer__set_color_u32_at(
+    wuffs_base__pixel_buffer* b,
+    uint32_t x,
+    uint32_t y,
+    wuffs_base__color_u32_argb_premul color) {
+  if (!b) {
+    return wuffs_base__make_status(wuffs_base__error__bad_receiver);
+  }
+  if ((x >= b->pixcfg.private_impl.width) ||
+      (y >= b->pixcfg.private_impl.height)) {
+    return wuffs_base__make_status(wuffs_base__error__bad_argument);
+  }
+
+  if (wuffs_base__pixel_format__is_planar(&b->pixcfg.private_impl.pixfmt)) {
+    // TODO: support planar formats.
+    return wuffs_base__make_status(wuffs_base__error__unsupported_option);
+  }
+
+  size_t stride = b->private_impl.planes[0].stride;
+  uint8_t* row = b->private_impl.planes[0].ptr + (stride * ((size_t)y));
+
+  switch (b->pixcfg.private_impl.pixfmt.repr) {
+    case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
+      WUFFS_BASE__FALLTHROUGH;
+    case WUFFS_BASE__PIXEL_FORMAT__BGRX:
+      wuffs_base__store_u32le(row + (4 * ((size_t)x)), color);
+      break;
+
+      // Common formats above. Rarer formats below.
+
+    case WUFFS_BASE__PIXEL_FORMAT__BGR:
+      wuffs_base__store_u24le(row + (3 * ((size_t)x)), color);
+      break;
+    case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
+      wuffs_base__store_u32le(row + (4 * ((size_t)x)),
+                              wuffs_base__nonpremul_u32_axxx(color));
+      break;
+
+    case WUFFS_BASE__PIXEL_FORMAT__RGB:
+      wuffs_base__store_u24le(row + (3 * ((size_t)x)),
+                              wuffs_base__swap_u32_argb_abgr(color));
+      break;
+    case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
+      wuffs_base__store_u32le(row + (4 * ((size_t)x)),
+                              wuffs_base__nonpremul_u32_axxx(
+                                  wuffs_base__swap_u32_argb_abgr(color)));
+      break;
+    case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
+      WUFFS_BASE__FALLTHROUGH;
+    case WUFFS_BASE__PIXEL_FORMAT__RGBX:
+      wuffs_base__store_u32le(row + (4 * ((size_t)x)),
+                              wuffs_base__swap_u32_argb_abgr(color));
+      break;
+
+    default:
+      // TODO: support more formats.
+      return wuffs_base__make_status(wuffs_base__error__unsupported_option);
+  }
+
+  return wuffs_base__make_status(NULL);
 }
 
 // --------
