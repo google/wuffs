@@ -412,7 +412,8 @@ int main(int argc, char** argv) {
 
     switch (event->response_type & 0x7F) {
       case XCB_EXPOSE: {
-        if (loaded) {
+        xcb_expose_event_t* e = (xcb_expose_event_t*)event;
+        if (loaded && (e->count == 0)) {
           xcb_copy_area(c, g_pixmap, w, g, 0, 0, 0, 0, g_width, g_height);
           xcb_flush(c);
         }
