@@ -830,12 +830,23 @@ const char* do_test__wuffs_base__image_decoder(
     RETURN_FAIL("pixbuf_len too small");
   } else if (n > BUFFER_SIZE) {
     RETURN_FAIL("pixbuf_len too large");
+  } else {
+    wuffs_base__color_u32_argb_premul got_final_pixel =
+        wuffs_base__load_u32le(&global_pixel_array[n - 4]);
+    if (got_final_pixel != want_final_pixel) {
+      RETURN_FAIL("final pixel: got 0x%08" PRIX32 ", want 0x%08" PRIX32,
+                  got_final_pixel, want_final_pixel);
+    }
   }
-  wuffs_base__color_u32_argb_premul got_final_pixel =
-      wuffs_base__load_u32le(&global_pixel_array[n - 4]);
-  if (got_final_pixel != want_final_pixel) {
-    RETURN_FAIL("final pixel: got 0x%08" PRIX32 ", want 0x%08" PRIX32,
-                got_final_pixel, want_final_pixel);
+
+  if ((want_width > 0) && (want_height > 0)) {
+    wuffs_base__color_u32_argb_premul got_final_pixel =
+        wuffs_base__pixel_buffer__color_u32_at(&pb, want_width - 1,
+                                               want_height - 1);
+    if (got_final_pixel != want_final_pixel) {
+      RETURN_FAIL("final pixel: got 0x%08" PRIX32 ", want 0x%08" PRIX32,
+                  got_final_pixel, want_final_pixel);
+    }
   }
   return NULL;
 }

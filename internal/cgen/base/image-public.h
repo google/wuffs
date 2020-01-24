@@ -907,6 +907,8 @@ typedef struct {
   inline wuffs_base__slice_u8 palette();
   inline wuffs_base__pixel_format pixel_format() const;
   inline wuffs_base__table_u8 plane(uint32_t p);
+  inline wuffs_base__color_u32_argb_premul color_u32_at(uint32_t x,
+                                                        uint32_t y) const;
 #endif  // __cplusplus
 
 } wuffs_base__pixel_buffer;
@@ -1058,6 +1060,11 @@ wuffs_base__pixel_buffer__plane(wuffs_base__pixel_buffer* b, uint32_t p) {
   return ret;
 }
 
+wuffs_base__color_u32_argb_premul  //
+wuffs_base__pixel_buffer__color_u32_at(const wuffs_base__pixel_buffer* b,
+                                       uint32_t x,
+                                       uint32_t y);
+
 #ifdef __cplusplus
 
 inline wuffs_base__status  //
@@ -1085,6 +1092,11 @@ wuffs_base__pixel_buffer::pixel_format() const {
 inline wuffs_base__table_u8  //
 wuffs_base__pixel_buffer::plane(uint32_t p) {
   return wuffs_base__pixel_buffer__plane(this, p);
+}
+
+inline wuffs_base__color_u32_argb_premul  //
+wuffs_base__pixel_buffer::color_u32_at(uint32_t x, uint32_t y) const {
+  return wuffs_base__pixel_buffer__color_u32_at(this, x, y);
 }
 
 #endif  // __cplusplus

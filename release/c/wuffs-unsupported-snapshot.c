@@ -2360,6 +2360,8 @@ typedef struct {
   inline wuffs_base__slice_u8 palette();
   inline wuffs_base__pixel_format pixel_format() const;
   inline wuffs_base__table_u8 plane(uint32_t p);
+  inline wuffs_base__color_u32_argb_premul color_u32_at(uint32_t x,
+                                                        uint32_t y) const;
 #endif  // __cplusplus
 
 } wuffs_base__pixel_buffer;
@@ -2511,6 +2513,11 @@ wuffs_base__pixel_buffer__plane(wuffs_base__pixel_buffer* b, uint32_t p) {
   return ret;
 }
 
+wuffs_base__color_u32_argb_premul  //
+wuffs_base__pixel_buffer__color_u32_at(const wuffs_base__pixel_buffer* b,
+                                       uint32_t x,
+                                       uint32_t y);
+
 #ifdef __cplusplus
 
 inline wuffs_base__status  //
@@ -2538,6 +2545,11 @@ wuffs_base__pixel_buffer::pixel_format() const {
 inline wuffs_base__table_u8  //
 wuffs_base__pixel_buffer::plane(uint32_t p) {
   return wuffs_base__pixel_buffer__plane(this, p);
+}
+
+inline wuffs_base__color_u32_argb_premul  //
+wuffs_base__pixel_buffer::color_u32_at(uint32_t x, uint32_t y) const {
+  return wuffs_base__pixel_buffer__color_u32_at(this, x, y);
 }
 
 #endif  // __cplusplus
@@ -5816,6 +5828,107 @@ const uint32_t wuffs_base__pixel_format__bits_per_channel[16] = {
     0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
     0x08, 0x0A, 0x0C, 0x10, 0x18, 0x20, 0x30, 0x40,
 };
+
+static inline uint32_t  //
+wuffs_base__swap_u32_argb_abgr(uint32_t u) {
+  uint32_t o = u & 0xFF00FF00;
+  uint32_t r = u & 0x00FF0000;
+  uint32_t b = u & 0x000000FF;
+  return o | (r >> 16) | (b << 16);
+}
+
+static inline uint32_t  //
+wuffs_base__premul_u32_axxx(uint32_t u) {
+  // Multiplying by 0x101 (twice, once for alpha and once for color) converts
+  // from 8-bit to 16-bit color. Shifting right by 8 undoes that.
+  //
+  // Working in the higher bit depth can produce slightly different (and
+  // arguably slightly more accurate) results. For example, given 8-bit blue
+  // and alpha of 0x80 and 0x81:
+  //
+  //  - ((0x80   * 0x81  ) / 0xFF  )      = 0x40        = 0x40
+  //  - ((0x8080 * 0x8181) / 0xFFFF) >> 8 = 0x4101 >> 8 = 0x41
+  uint32_t a = 0xFF & (u >> 24);
+  uint32_t a16 = a * (0x101 * 0x101);
+  uint32_t r = 0xFF & (u >> 16);
+  r = ((r * a16) / 0xFFFF) >> 8;
+  uint32_t g = 0xFF & (u >> 8);
+  g = ((g * a16) / 0xFFFF) >> 8;
+  uint32_t b = 0xFF & (u >> 0);
+  b = ((b * a16) / 0xFFFF) >> 8;
+  return (a << 24) | (r << 16) | (g << 8) | (b << 0);
+}
+
+wuffs_base__color_u32_argb_premul  //
+wuffs_base__pixel_buffer__color_u32_at(const wuffs_base__pixel_buffer* b,
+                                       uint32_t x,
+                                       uint32_t y) {
+  if (!b || (x >= b->pixcfg.private_impl.width) ||
+      (y >= b->pixcfg.private_impl.height)) {
+    return 0;
+  }
+
+  if (wuffs_base__pixel_format__is_planar(&b->pixcfg.private_impl.pixfmt)) {
+    // TODO: support planar formats.
+    return 0;
+  }
+
+  size_t stride = b->private_impl.planes[0].stride;
+  uint8_t* row = b->private_impl.planes[0].ptr + (stride * ((size_t)y));
+
+  switch (b->pixcfg.private_impl.pixfmt.repr) {
+    case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
+      WUFFS_BASE__FALLTHROUGH;
+    case WUFFS_BASE__PIXEL_FORMAT__BGRA_BINARY:
+      return wuffs_base__load_u32le(row + (4 * ((size_t)x)));
+
+    case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_PREMUL:
+      WUFFS_BASE__FALLTHROUGH;
+    case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY: {
+      uint8_t* palette = b->private_impl.planes[3].ptr;
+      return wuffs_base__load_u32le(palette + (4 * ((size_t)row[x])));
+    }
+
+      // Common formats above. Rarer formats below.
+
+    case WUFFS_BASE__PIXEL_FORMAT__Y:
+      return 0xFF000000 | (0x00010101 * ((uint32_t)(row[x])));
+
+    case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL: {
+      uint8_t* palette = b->private_impl.planes[3].ptr;
+      return wuffs_base__premul_u32_axxx(
+          wuffs_base__load_u32le(palette + (4 * ((size_t)row[x]))));
+    }
+
+    case WUFFS_BASE__PIXEL_FORMAT__BGR:
+      return 0xFF000000 | wuffs_base__load_u24le(row + (3 * ((size_t)x)));
+    case WUFFS_BASE__PIXEL_FORMAT__BGRX:
+      return 0xFF000000 | wuffs_base__load_u32le(row + (4 * ((size_t)x)));
+    case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
+      return wuffs_base__premul_u32_axxx(
+          wuffs_base__load_u32le(row + (4 * ((size_t)x))));
+
+    case WUFFS_BASE__PIXEL_FORMAT__RGB:
+      return wuffs_base__swap_u32_argb_abgr(
+          0xFF000000 | wuffs_base__load_u24le(row + (3 * ((size_t)x))));
+    case WUFFS_BASE__PIXEL_FORMAT__RGBX:
+      return wuffs_base__swap_u32_argb_abgr(
+          0xFF000000 | wuffs_base__load_u32le(row + (4 * ((size_t)x))));
+    case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
+      return wuffs_base__swap_u32_argb_abgr(wuffs_base__premul_u32_axxx(
+          wuffs_base__load_u32le(row + (4 * ((size_t)x)))));
+    case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
+      WUFFS_BASE__FALLTHROUGH;
+    case WUFFS_BASE__PIXEL_FORMAT__RGBA_BINARY:
+      return wuffs_base__swap_u32_argb_abgr(
+          wuffs_base__load_u32le(row + (4 * ((size_t)x))));
+  }
+
+  // TODO: support more formats.
+  return 0;
+}
+
+// --------
 
 static uint64_t  //
 wuffs_base__pixel_swizzler__copy_1_1(wuffs_base__slice_u8 dst,
