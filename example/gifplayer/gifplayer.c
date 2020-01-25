@@ -91,8 +91,8 @@ int64_t micros_since_start(struct timespec* now) {
 uint8_t src_buffer[SRC_BUFFER_SIZE] = {0};
 size_t src_len = 0;
 
-wuffs_base__color_u32_argb_premul* curr_dst_buffer = NULL;
-wuffs_base__color_u32_argb_premul* prev_dst_buffer = NULL;
+uint8_t* curr_dst_buffer = NULL;
+uint8_t* prev_dst_buffer = NULL;
 size_t dst_len;  // Length in bytes.
 
 wuffs_base__slice_u8 pixbuf = {0};
@@ -138,36 +138,43 @@ static inline uint32_t load_u32le(uint8_t* p) {
          ((uint32_t)(p[2]) << 16) | ((uint32_t)(p[3]) << 24);
 }
 
+static inline void  //
+store_u32le(uint8_t* p, uint32_t x) {
+  p[0] = (uint8_t)(x >> 0);
+  p[1] = (uint8_t)(x >> 8);
+  p[2] = (uint8_t)(x >> 16);
+  p[3] = (uint8_t)(x >> 24);
+}
+
 void restore_background(wuffs_base__pixel_buffer* pb,
                         wuffs_base__rect_ie_u32 bounds,
                         wuffs_base__color_u32_argb_premul background_color) {
-  size_t width = wuffs_base__pixel_config__width(&pb->pixcfg);
+  size_t width4 = (size_t)(wuffs_base__pixel_config__width(&pb->pixcfg)) * 4;
   size_t y;
   for (y = bounds.min_incl_y; y < bounds.max_excl_y; y++) {
     size_t x;
-    wuffs_base__color_u32_argb_premul* d =
-        curr_dst_buffer + (y * width) + bounds.min_incl_x;
+    uint8_t* d = curr_dst_buffer + (y * width4) + (bounds.min_incl_x * 4);
     for (x = bounds.min_incl_x; x < bounds.max_excl_x; x++) {
-      *d++ = background_color;
+      store_u32le(d, background_color);
+      d += sizeof(wuffs_base__color_u32_argb_premul);
     }
   }
 }
 
 void compose(wuffs_base__pixel_buffer* pb, wuffs_base__rect_ie_u32 bounds) {
   wuffs_base__table_u8 tab = wuffs_base__pixel_buffer__plane(pb, 0);
-  size_t width = wuffs_base__pixel_config__width(&pb->pixcfg);
+  size_t width4 = (size_t)(wuffs_base__pixel_config__width(&pb->pixcfg)) * 4;
   size_t y;
   for (y = bounds.min_incl_y; y < bounds.max_excl_y; y++) {
     size_t x;
-    wuffs_base__color_u32_argb_premul* d =
-        curr_dst_buffer + (y * width) + (bounds.min_incl_x * 1);
+    uint8_t* d = curr_dst_buffer + (y * width4) + (bounds.min_incl_x * 4);
     uint8_t* s = tab.ptr + (y * tab.stride) + (bounds.min_incl_x * 4);
     for (x = bounds.min_incl_x; x < bounds.max_excl_x; x++) {
       wuffs_base__color_u32_argb_premul c = load_u32le(s);
       if (c) {
-        *d = c;
+        store_u32le(d, c);
       }
-      d += 1;
+      d += 4;
       s += 4;
     }
   }
@@ -177,14 +184,15 @@ size_t print_ascii_art(wuffs_base__pixel_buffer* pb) {
   uint32_t width = wuffs_base__pixel_config__width(&pb->pixcfg);
   uint32_t height = wuffs_base__pixel_config__height(&pb->pixcfg);
 
-  wuffs_base__color_u32_argb_premul* d = curr_dst_buffer;
+  uint8_t* d = curr_dst_buffer;
   uint8_t* p = printbuf.ptr;
   *p++ = '\n';
   uint32_t y;
   for (y = 0; y < height; y++) {
     uint32_t x;
     for (x = 0; x < width; x++) {
-      wuffs_base__color_u32_argb_premul c = *d++;
+      wuffs_base__color_u32_argb_premul c = load_u32le(d);
+      d += sizeof(wuffs_base__color_u32_argb_premul);
       // Convert to grayscale via the formula
       //  Y = (0.299 * R) + (0.587 * G) + (0.114 * B)
       // translated into fixed point arithmetic.
@@ -203,7 +211,7 @@ size_t print_color_art(wuffs_base__pixel_buffer* pb) {
   uint32_t width = wuffs_base__pixel_config__width(&pb->pixcfg);
   uint32_t height = wuffs_base__pixel_config__height(&pb->pixcfg);
 
-  wuffs_base__color_u32_argb_premul* d = curr_dst_buffer;
+  uint8_t* d = curr_dst_buffer;
   uint8_t* p = printbuf.ptr;
   *p++ = '\n';
   p += sprintf((char*)p, "%s", reset_color);
@@ -211,7 +219,8 @@ size_t print_color_art(wuffs_base__pixel_buffer* pb) {
   for (y = 0; y < height; y++) {
     uint32_t x;
     for (x = 0; x < width; x++) {
-      wuffs_base__color_u32_argb_premul c = *d++;
+      wuffs_base__color_u32_argb_premul c = load_u32le(d);
+      d += sizeof(wuffs_base__color_u32_argb_premul);
       int b = 0xFF & (c >> 0);
       int g = 0xFF & (c >> 8);
       int r = 0xFF & (c >> 16);
@@ -237,12 +246,12 @@ const char* try_allocate(wuffs_gif__decoder* dec,
   }
 
   dst_len = num_pixels * sizeof(wuffs_base__color_u32_argb_premul);
-  curr_dst_buffer = (wuffs_base__color_u32_argb_premul*)malloc(dst_len);
+  curr_dst_buffer = (uint8_t*)malloc(dst_len);
   if (!curr_dst_buffer) {
     return "could not allocate curr-dst buffer";
   }
 
-  prev_dst_buffer = (wuffs_base__color_u32_argb_premul*)malloc(dst_len);
+  prev_dst_buffer = (uint8_t*)malloc(dst_len);
   if (!prev_dst_buffer) {
     return "could not allocate prev-dst buffer";
   }
@@ -358,8 +367,10 @@ const char* play() {
           wuffs_base__frame_config__background_color(&fc);
       size_t i;
       size_t n = dst_len / sizeof(wuffs_base__color_u32_argb_premul);
+      uint8_t* p = curr_dst_buffer;
       for (i = 0; i < n; i++) {
-        curr_dst_buffer[i] = background_color;
+        store_u32le(p, background_color);
+        p += sizeof(wuffs_base__color_u32_argb_premul);
       }
     }
 
@@ -387,7 +398,7 @@ const char* play() {
         break;
       }
       case WUFFS_BASE__ANIMATION_DISPOSAL__RESTORE_PREVIOUS: {
-        wuffs_base__color_u32_argb_premul* swap = curr_dst_buffer;
+        uint8_t* swap = curr_dst_buffer;
         curr_dst_buffer = prev_dst_buffer;
         prev_dst_buffer = swap;
         break;
