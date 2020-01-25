@@ -5,4 +5,16 @@ This directory contains documentation about Wuffs' two aspects:
   language.
 
 "[Getting Started](/doc/getting-started.md)" has some suggestions if you're
-new. The [top level README](/README.md) also has some general remarks.
+new. The [top level README](/README.md) also has some general remarks. Its
+sections include:
+
+- Goals and Non-Goals
+- What Does Wuffs Code Look Like?
+- What Does Compile Time Checking Look Like?
+- Directory Layout
+- Documentation
+- Status
+- Discussion
+- Contributing
+- License
+- Disclaimer
