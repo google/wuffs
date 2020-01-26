@@ -226,7 +226,7 @@ const char* try_allocate(wuffs_gif__decoder* dec) {
   }
 
   dst_len = num_pixels * sizeof(wuffs_base__color_u32_argb_premul);
-  curr_dst_buffer = (uint8_t*)malloc(dst_len);
+  curr_dst_buffer = (uint8_t*)calloc(dst_len, 1);
   if (!curr_dst_buffer) {
     return "could not allocate curr-dst buffer";
   }
@@ -320,7 +320,6 @@ const char* play() {
     if (!wuffs_base__status__is_ok(&status)) {
       return wuffs_base__status__message(&status);
     }
-    memset(curr_dst_buffer, 0, dst_len);
   }
 
   while (1) {
