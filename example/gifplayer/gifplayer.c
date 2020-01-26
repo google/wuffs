@@ -100,6 +100,7 @@ wuffs_base__slice_u8 printbuf = {0};
 
 bool first_play = true;
 uint32_t num_loops_remaining = 0;
+wuffs_base__image_config ic = {0};
 wuffs_base__pixel_buffer pb = {0};
 
 wuffs_base__flicks cumulative_delay_micros = 0;
@@ -216,10 +217,9 @@ size_t print_color_art(wuffs_base__pixel_buffer* pb) {
 
 // ----
 
-const char* try_allocate(wuffs_gif__decoder* dec,
-                         wuffs_base__image_config* ic) {
-  uint32_t width = wuffs_base__pixel_config__width(&ic->pixcfg);
-  uint32_t height = wuffs_base__pixel_config__height(&ic->pixcfg);
+const char* try_allocate(wuffs_gif__decoder* dec) {
+  uint32_t width = wuffs_base__pixel_config__width(&ic.pixcfg);
+  uint32_t height = wuffs_base__pixel_config__height(&ic.pixcfg);
   uint64_t num_pixels = ((uint64_t)width) * ((uint64_t)height);
   if (num_pixels > (SIZE_MAX / sizeof(wuffs_base__color_u32_argb_premul))) {
     return "could not allocate dst buffer";
@@ -255,8 +255,8 @@ const char* try_allocate(wuffs_gif__decoder* dec,
   return NULL;
 }
 
-const char* allocate(wuffs_gif__decoder* dec, wuffs_base__image_config* ic) {
-  const char* status_msg = try_allocate(dec, ic);
+const char* allocate(wuffs_gif__decoder* dec) {
+  const char* status_msg = try_allocate(dec);
   if (status_msg) {
     free(printbuf.ptr);
     printbuf = wuffs_base__make_slice_u8(NULL, 0);
@@ -292,7 +292,6 @@ const char* play() {
   src.meta.pos = 0;
   src.meta.closed = true;
 
-  static wuffs_base__image_config ic = {0};
   if (first_play) {
     status = wuffs_gif__decoder__decode_image_config(&dec, &ic, &src);
     if (!wuffs_base__status__is_ok(&status)) {
@@ -312,7 +311,7 @@ const char* play() {
         &ic.pixcfg, WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL,
         WUFFS_BASE__PIXEL_SUBSAMPLING__NONE, width, height);
 
-    const char* msg = allocate(&dec, &ic);
+    const char* msg = allocate(&dec);
     if (msg) {
       return msg;
     }
