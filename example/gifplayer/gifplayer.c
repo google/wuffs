@@ -95,7 +95,6 @@ uint8_t* curr_dst_buffer = NULL;
 uint8_t* prev_dst_buffer = NULL;
 size_t dst_len;  // Length in bytes.
 
-wuffs_base__slice_u8 pixbuf = {0};
 wuffs_base__slice_u8 workbuf = {0};
 wuffs_base__slice_u8 printbuf = {0};
 
@@ -157,25 +156,6 @@ void restore_background(wuffs_base__pixel_buffer* pb,
     for (x = bounds.min_incl_x; x < bounds.max_excl_x; x++) {
       store_u32le(d, background_color);
       d += sizeof(wuffs_base__color_u32_argb_premul);
-    }
-  }
-}
-
-void compose(wuffs_base__pixel_buffer* pb, wuffs_base__rect_ie_u32 bounds) {
-  wuffs_base__table_u8 tab = wuffs_base__pixel_buffer__plane(pb, 0);
-  size_t width4 = (size_t)(wuffs_base__pixel_config__width(&pb->pixcfg)) * 4;
-  size_t y;
-  for (y = bounds.min_incl_y; y < bounds.max_excl_y; y++) {
-    size_t x;
-    uint8_t* d = curr_dst_buffer + (y * width4) + (bounds.min_incl_x * 4);
-    uint8_t* s = tab.ptr + (y * tab.stride) + (bounds.min_incl_x * 4);
-    for (x = bounds.min_incl_x; x < bounds.max_excl_x; x++) {
-      wuffs_base__color_u32_argb_premul c = load_u32le(s);
-      if (c) {
-        store_u32le(d, c);
-      }
-      d += 4;
-      s += 4;
     }
   }
 }
@@ -256,12 +236,6 @@ const char* try_allocate(wuffs_gif__decoder* dec,
     return "could not allocate prev-dst buffer";
   }
 
-  pixbuf = wuffs_base__malloc_slice_u8(
-      malloc, wuffs_base__pixel_config__pixbuf_len(&ic->pixcfg));
-  if (!pixbuf.ptr) {
-    return "could not allocate pixel buffer";
-  }
-
   workbuf = wuffs_base__malloc_slice_u8(
       malloc, wuffs_gif__decoder__workbuf_len(dec).max_incl);
   if (!workbuf.ptr) {
@@ -288,8 +262,6 @@ const char* allocate(wuffs_gif__decoder* dec, wuffs_base__image_config* ic) {
     printbuf = wuffs_base__make_slice_u8(NULL, 0);
     free(workbuf.ptr);
     workbuf = wuffs_base__make_slice_u8(NULL, 0);
-    free(pixbuf.ptr);
-    pixbuf = wuffs_base__make_slice_u8(NULL, 0);
     free(prev_dst_buffer);
     prev_dst_buffer = NULL;
     free(curr_dst_buffer);
@@ -320,8 +292,8 @@ const char* play() {
   src.meta.pos = 0;
   src.meta.closed = true;
 
+  static wuffs_base__image_config ic = {0};
   if (first_play) {
-    wuffs_base__image_config ic = {0};
     status = wuffs_gif__decoder__decode_image_config(&dec, &ic, &src);
     if (!wuffs_base__status__is_ok(&status)) {
       return wuffs_base__status__message(&status);
@@ -344,11 +316,12 @@ const char* play() {
     if (msg) {
       return msg;
     }
-    status = wuffs_base__pixel_buffer__set_from_slice(&pb, &ic.pixcfg, pixbuf);
+    status = wuffs_base__pixel_buffer__set_from_slice(
+        &pb, &ic.pixcfg, wuffs_base__make_slice_u8(curr_dst_buffer, dst_len));
     if (!wuffs_base__status__is_ok(&status)) {
       return wuffs_base__status__message(&status);
     }
-    memset(pixbuf.ptr, 0, pixbuf.len);
+    memset(curr_dst_buffer, 0, dst_len);
   }
 
   while (1) {
@@ -382,12 +355,10 @@ const char* play() {
     }
 
     wuffs_base__status decode_frame_status = wuffs_gif__decoder__decode_frame(
-        &dec, &pb, &src, WUFFS_BASE__PIXEL_BLEND__SRC, workbuf, NULL);
+        &dec, &pb, &src, WUFFS_BASE__PIXEL_BLEND__SRC_OVER, workbuf, NULL);
     if (decode_frame_status.repr == wuffs_base__note__end_of_data) {
       break;
     }
-
-    compose(&pb, wuffs_base__frame_config__bounds(&fc));
 
     size_t n = color_flag ? print_color_art(&pb) : print_ascii_art(&pb);
 
@@ -401,6 +372,13 @@ const char* play() {
         uint8_t* swap = curr_dst_buffer;
         curr_dst_buffer = prev_dst_buffer;
         prev_dst_buffer = swap;
+
+        wuffs_base__status status = wuffs_base__pixel_buffer__set_from_slice(
+            &pb, &ic.pixcfg,
+            wuffs_base__make_slice_u8(curr_dst_buffer, dst_len));
+        if (!wuffs_base__status__is_ok(&status)) {
+          return wuffs_base__status__message(&status);
+        }
         break;
       }
     }
