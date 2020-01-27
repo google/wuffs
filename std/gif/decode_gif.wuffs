@@ -1035,24 +1035,14 @@ pri func decoder.copy_to_image_buffer!(pb: ptr base.pixel_buffer, src: slice bas
 	var replicate_dst   : slice base.u8
 	var replicate_src   : slice base.u8
 
-	// TODO: a Wuffs (not just C) name for the WUFFS_BASE__PIXEL_FORMAT__ETC
-	// magic pixfmt constants. Also, support more formats.
-	//
 	// TODO: the pixfmt variable shouldn't be necessary. We should be able to
 	// chain the two calls: "args.pb.pixel_format().bits_per_pixel()".
 	pixfmt = args.pb.pixel_format()
 	bits_per_pixel = pixfmt.bits_per_pixel()
-	if (bits_per_pixel == 32) {
-		bytes_per_pixel = 4
-	} else if (bits_per_pixel == 24) {
-		bytes_per_pixel = 3
-	} else if (bits_per_pixel == 16) {
-		bytes_per_pixel = 2
-	} else if (bits_per_pixel == 8) {
-		bytes_per_pixel = 1
-	} else {
+	if (bits_per_pixel > 512) or ((bits_per_pixel & 7) <> 0) {
 		return base."#unsupported option"
 	}
+	bytes_per_pixel = bits_per_pixel >> 3
 
 	width_in_bytes = (this.width as base.u64) * (bytes_per_pixel as base.u64)
 	tab = args.pb.plane(p: 0)

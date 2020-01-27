@@ -12861,17 +12861,10 @@ wuffs_gif__decoder__copy_to_image_buffer(wuffs_gif__decoder* self,
 
   v_pixfmt = wuffs_base__pixel_buffer__pixel_format(a_pb);
   v_bits_per_pixel = wuffs_base__pixel_format__bits_per_pixel(&v_pixfmt);
-  if (v_bits_per_pixel == 32) {
-    v_bytes_per_pixel = 4;
-  } else if (v_bits_per_pixel == 24) {
-    v_bytes_per_pixel = 3;
-  } else if (v_bits_per_pixel == 16) {
-    v_bytes_per_pixel = 2;
-  } else if (v_bits_per_pixel == 8) {
-    v_bytes_per_pixel = 1;
-  } else {
+  if ((v_bits_per_pixel > 512) || ((v_bits_per_pixel & 7) != 0)) {
     return wuffs_base__make_status(wuffs_base__error__unsupported_option);
   }
+  v_bytes_per_pixel = (v_bits_per_pixel >> 3);
   v_width_in_bytes = (((uint64_t)(self->private_impl.f_width)) *
                       ((uint64_t)(v_bytes_per_pixel)));
   v_tab = wuffs_base__pixel_buffer__plane(a_pb, 0);
