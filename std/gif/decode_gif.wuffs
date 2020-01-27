@@ -1046,6 +1046,8 @@ pri func decoder.copy_to_image_buffer!(pb: ptr base.pixel_buffer, src: slice bas
 		bytes_per_pixel = 4
 	} else if (bits_per_pixel == 24) {
 		bytes_per_pixel = 3
+	} else if (bits_per_pixel == 16) {
+		bytes_per_pixel = 2
 	} else if (bits_per_pixel == 8) {
 		bytes_per_pixel = 1
 	} else {

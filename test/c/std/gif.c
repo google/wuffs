@@ -385,6 +385,18 @@ const char* do_test_wuffs_gif_decode(const char* filename,
         expanded_want.data.ptr[3 * i + 2] = pal_want_array[4 * index + 2];
       }
       expanded_want.meta.wi = 3 * ind_want.meta.wi;
+    } else if (dst_pixfmt.repr == WUFFS_BASE__PIXEL_FORMAT__BGR_565) {
+      size_t i;
+      for (i = 0; i < ind_want.meta.wi; i++) {
+        uint8_t index = ind_want.data.ptr[i];
+        uint32_t b5 = pal_want_array[4 * index + 0] >> 3;
+        uint32_t g6 = pal_want_array[4 * index + 1] >> 2;
+        uint32_t r5 = pal_want_array[4 * index + 2] >> 3;
+        uint32_t bgr = (b5 << 0) | (g6 << 5) | (r5 << 11);
+        expanded_want.data.ptr[2 * i + 0] = (uint8_t)(bgr >> 0);
+        expanded_want.data.ptr[2 * i + 1] = (uint8_t)(bgr >> 8);
+      }
+      expanded_want.meta.wi = 2 * ind_want.meta.wi;
     } else if (dst_pixfmt.repr == WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL) {
       size_t i;
       for (i = 0; i < ind_want.meta.wi; i++) {
@@ -1083,6 +1095,14 @@ const char* test_wuffs_gif_decode_pixfmt_bgr() {
       "test/data/bricks-dither.gif", "test/data/bricks-dither.palette",
       "test/data/bricks-dither.indexes", UINT64_MAX,
       wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGR));
+}
+
+const char* test_wuffs_gif_decode_pixfmt_bgr_565() {
+  CHECK_FOCUS(__func__);
+  return do_test_wuffs_gif_decode(
+      "test/data/bricks-dither.gif", "test/data/bricks-dither.palette",
+      "test/data/bricks-dither.indexes", UINT64_MAX,
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGR_565));
 }
 
 const char* test_wuffs_gif_decode_pixfmt_bgra_nonpremul() {
@@ -2266,6 +2286,7 @@ proc tests[] = {
     test_wuffs_gif_decode_pixel_data_too_much_sans_quirk,    //
     test_wuffs_gif_decode_pixel_data_too_much_with_quirk,    //
     test_wuffs_gif_decode_pixfmt_bgr,                        //
+    test_wuffs_gif_decode_pixfmt_bgr_565,                    //
     test_wuffs_gif_decode_pixfmt_bgra_nonpremul,             //
     test_wuffs_gif_decode_pixfmt_rgb,                        //
     test_wuffs_gif_decode_pixfmt_rgba_nonpremul,             //

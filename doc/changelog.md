@@ -4,6 +4,7 @@
 ## Work In Progress
 
 - Added `std/wbmp` package.
+- Added `WUFFS_BASE__PIXEL_FORMAT__BGR_565`.
 - Renamed `decode_io_writer?` methods to `transform_io?`.
 - Added interfaces.
 - Renamed warnings to notes.
