@@ -3,15 +3,17 @@
 
 ## Work In Progress
 
-- Added `std/wbmp` package.
+- Added `example/imageviewer`.
+- Added `std/wbmp`.
+- Added `WUFFS_BASE__PIXEL_BLEND__SRC_OVER`.
 - Added `WUFFS_BASE__PIXEL_FORMAT__BGR_565`.
-- Renamed `decode_io_writer?` methods to `transform_io?`.
 - Added interfaces.
-- Renamed warnings to notes.
 - Made `wuffs_base__pixel_format` a struct.
 - Made `wuffs_base__pixel_subsampling` a struct.
 - Made `wuffs_base__status` a struct.
 - Removed `wuffs_base__frame_config__blend`.
+- Renamed `decode_io_writer?` methods to `transform_io?`.
+- Renamed warnings to notes.
 
 
 ## 2019-12-19 version 0.2.0
