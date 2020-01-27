@@ -190,8 +190,8 @@ wuffs_base__pixel_buffer__set_color_u32_at(
       uint32_t b5 = 0x1F & (color >> (8 - 5));
       uint32_t g6 = 0x3F & (color >> (16 - 6));
       uint32_t r5 = 0x1F & (color >> (24 - 5));
-      wuffs_base__store_u16le(row + (2 * ((size_t)x)),
-                              (b5 << 0) | (g6 << 5) | (r5 << 11));
+      uint32_t bgr565 = (b5 << 0) | (g6 << 5) | (r5 << 11);
+      wuffs_base__store_u16le(row + (2 * ((size_t)x)), (uint16_t)bgr565);
       break;
     }
     case WUFFS_BASE__PIXEL_FORMAT__BGR:
