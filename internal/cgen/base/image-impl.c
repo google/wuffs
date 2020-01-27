@@ -248,36 +248,35 @@ wuffs_base__pixel_swizzler__xx__index__src(wuffs_base__slice_u8 dst,
   uint8_t* s = src.ptr;
   size_t n = len;
 
-  // N is the loop unroll count.
-  const int N = 4;
+  const size_t loop_unroll_count = 4;
 
-  while (n >= N) {
+  while (n >= loop_unroll_count) {
     wuffs_base__store_u16le(
         d + (0 * 2),
-        wuffs_base__load_u16le(dst_palette.ptr + ((uint32_t)(s[0]) * 4)));
+        wuffs_base__load_u16le(dst_palette.ptr + ((size_t)s[0] * 4)));
     wuffs_base__store_u16le(
         d + (1 * 2),
-        wuffs_base__load_u16le(dst_palette.ptr + ((uint32_t)(s[1]) * 4)));
+        wuffs_base__load_u16le(dst_palette.ptr + ((size_t)s[1] * 4)));
     wuffs_base__store_u16le(
         d + (2 * 2),
-        wuffs_base__load_u16le(dst_palette.ptr + ((uint32_t)(s[2]) * 4)));
+        wuffs_base__load_u16le(dst_palette.ptr + ((size_t)s[2] * 4)));
     wuffs_base__store_u16le(
         d + (3 * 2),
-        wuffs_base__load_u16le(dst_palette.ptr + ((uint32_t)(s[3]) * 4)));
+        wuffs_base__load_u16le(dst_palette.ptr + ((size_t)s[3] * 4)));
 
-    s += 1 * N;
-    d += 2 * N;
-    n -= (size_t)(1 * N);
+    s += 1 * loop_unroll_count;
+    d += 2 * loop_unroll_count;
+    n -= loop_unroll_count;
   }
 
   while (n >= 1) {
     wuffs_base__store_u16le(
         d + (0 * 2),
-        wuffs_base__load_u16le(dst_palette.ptr + ((uint32_t)(s[0]) * 4)));
+        wuffs_base__load_u16le(dst_palette.ptr + ((size_t)s[0] * 4)));
 
     s += 1 * 1;
     d += 2 * 1;
-    n -= (size_t)(1 * 1);
+    n -= 1;
   }
 
   return len;
@@ -296,8 +295,7 @@ wuffs_base__pixel_swizzler__xxx__index__src(wuffs_base__slice_u8 dst,
   uint8_t* s = src.ptr;
   size_t n = len;
 
-  // N is the loop unroll count.
-  const int N = 4;
+  const size_t loop_unroll_count = 4;
 
   // The comparison in the while condition is ">", not ">=", because with ">=",
   // the last 4-byte store could write past the end of the dst slice.
@@ -305,35 +303,34 @@ wuffs_base__pixel_swizzler__xxx__index__src(wuffs_base__slice_u8 dst,
   // Each 4-byte store writes one too many bytes, but a subsequent store will
   // overwrite that with the correct byte. There is always another store,
   // whether a 4-byte store in this loop or a 1-byte store in the next loop.
-  while (n > N) {
+  while (n > loop_unroll_count) {
     wuffs_base__store_u32le(
         d + (0 * 3),
-        wuffs_base__load_u32le(dst_palette.ptr + ((uint32_t)(s[0]) * 4)));
+        wuffs_base__load_u32le(dst_palette.ptr + ((size_t)s[0] * 4)));
     wuffs_base__store_u32le(
         d + (1 * 3),
-        wuffs_base__load_u32le(dst_palette.ptr + ((uint32_t)(s[1]) * 4)));
+        wuffs_base__load_u32le(dst_palette.ptr + ((size_t)s[1] * 4)));
     wuffs_base__store_u32le(
         d + (2 * 3),
-        wuffs_base__load_u32le(dst_palette.ptr + ((uint32_t)(s[2]) * 4)));
+        wuffs_base__load_u32le(dst_palette.ptr + ((size_t)s[2] * 4)));
     wuffs_base__store_u32le(
         d + (3 * 3),
-        wuffs_base__load_u32le(dst_palette.ptr + ((uint32_t)(s[3]) * 4)));
+        wuffs_base__load_u32le(dst_palette.ptr + ((size_t)s[3] * 4)));
 
-    s += 1 * N;
-    d += 3 * N;
-    n -= (size_t)(1 * N);
+    s += 1 * loop_unroll_count;
+    d += 3 * loop_unroll_count;
+    n -= loop_unroll_count;
   }
 
   while (n >= 1) {
-    uint32_t s0 =
-        wuffs_base__load_u32le(dst_palette.ptr + ((uint32_t)(s[0]) * 4));
+    uint32_t s0 = wuffs_base__load_u32le(dst_palette.ptr + ((size_t)s[0] * 4));
     d[0] = (uint8_t)(s0 >> 0);
     d[1] = (uint8_t)(s0 >> 8);
     d[2] = (uint8_t)(s0 >> 16);
 
     s += 1 * 1;
     d += 3 * 1;
-    n -= (size_t)(1 * 1);
+    n -= 1;
   }
 
   return len;
@@ -353,46 +350,40 @@ wuffs_base__pixel_swizzler__xxx__index_binary_alpha__src_over(
   uint8_t* s = src.ptr;
   size_t n = len;
 
-  // N is the loop unroll count.
-  const int N = 4;
+  const size_t loop_unroll_count = 4;
 
-  while (n >= N) {
-    uint32_t s0 =
-        wuffs_base__load_u32le(dst_palette.ptr + ((uint32_t)(s[0]) * 4));
+  while (n >= loop_unroll_count) {
+    uint32_t s0 = wuffs_base__load_u32le(dst_palette.ptr + ((size_t)s[0] * 4));
     if (s0) {
       wuffs_base__store_u24le(d + (0 * 4), s0);
     }
-    uint32_t s1 =
-        wuffs_base__load_u32le(dst_palette.ptr + ((uint32_t)(s[1]) * 4));
+    uint32_t s1 = wuffs_base__load_u32le(dst_palette.ptr + ((size_t)s[1] * 4));
     if (s1) {
       wuffs_base__store_u24le(d + (1 * 4), s1);
     }
-    uint32_t s2 =
-        wuffs_base__load_u32le(dst_palette.ptr + ((uint32_t)(s[2]) * 4));
+    uint32_t s2 = wuffs_base__load_u32le(dst_palette.ptr + ((size_t)s[2] * 4));
     if (s2) {
       wuffs_base__store_u24le(d + (2 * 4), s2);
     }
-    uint32_t s3 =
-        wuffs_base__load_u32le(dst_palette.ptr + ((uint32_t)(s[3]) * 4));
+    uint32_t s3 = wuffs_base__load_u32le(dst_palette.ptr + ((size_t)s[3] * 4));
     if (s3) {
       wuffs_base__store_u24le(d + (3 * 4), s3);
     }
 
-    s += 1 * N;
-    d += 3 * N;
-    n -= (size_t)(1 * N);
+    s += 1 * loop_unroll_count;
+    d += 3 * loop_unroll_count;
+    n -= loop_unroll_count;
   }
 
   while (n >= 1) {
-    uint32_t s0 =
-        wuffs_base__load_u32le(dst_palette.ptr + ((uint32_t)(s[0]) * 4));
+    uint32_t s0 = wuffs_base__load_u32le(dst_palette.ptr + ((size_t)s[0] * 4));
     if (s0) {
       wuffs_base__store_u24le(d + (0 * 4), s0);
     }
 
     s += 1 * 1;
     d += 3 * 1;
-    n -= (size_t)(1 * 1);
+    n -= 1;
   }
 
   return len;
@@ -411,36 +402,35 @@ wuffs_base__pixel_swizzler__xxxx__index__src(wuffs_base__slice_u8 dst,
   uint8_t* s = src.ptr;
   size_t n = len;
 
-  // N is the loop unroll count.
-  const int N = 4;
+  const size_t loop_unroll_count = 4;
 
-  while (n >= N) {
+  while (n >= loop_unroll_count) {
     wuffs_base__store_u32le(
         d + (0 * 4),
-        wuffs_base__load_u32le(dst_palette.ptr + ((uint32_t)(s[0]) * 4)));
+        wuffs_base__load_u32le(dst_palette.ptr + ((size_t)s[0] * 4)));
     wuffs_base__store_u32le(
         d + (1 * 4),
-        wuffs_base__load_u32le(dst_palette.ptr + ((uint32_t)(s[1]) * 4)));
+        wuffs_base__load_u32le(dst_palette.ptr + ((size_t)s[1] * 4)));
     wuffs_base__store_u32le(
         d + (2 * 4),
-        wuffs_base__load_u32le(dst_palette.ptr + ((uint32_t)(s[2]) * 4)));
+        wuffs_base__load_u32le(dst_palette.ptr + ((size_t)s[2] * 4)));
     wuffs_base__store_u32le(
         d + (3 * 4),
-        wuffs_base__load_u32le(dst_palette.ptr + ((uint32_t)(s[3]) * 4)));
+        wuffs_base__load_u32le(dst_palette.ptr + ((size_t)s[3] * 4)));
 
-    s += 1 * N;
-    d += 4 * N;
-    n -= (size_t)(1 * N);
+    s += 1 * loop_unroll_count;
+    d += 4 * loop_unroll_count;
+    n -= loop_unroll_count;
   }
 
   while (n >= 1) {
     wuffs_base__store_u32le(
         d + (0 * 4),
-        wuffs_base__load_u32le(dst_palette.ptr + ((uint32_t)(s[0]) * 4)));
+        wuffs_base__load_u32le(dst_palette.ptr + ((size_t)s[0] * 4)));
 
     s += 1 * 1;
     d += 4 * 1;
-    n -= (size_t)(1 * 1);
+    n -= 1;
   }
 
   return len;
@@ -460,46 +450,40 @@ wuffs_base__pixel_swizzler__xxxx__index_binary_alpha__src_over(
   uint8_t* s = src.ptr;
   size_t n = len;
 
-  // N is the loop unroll count.
-  const int N = 4;
+  const size_t loop_unroll_count = 4;
 
-  while (n >= N) {
-    uint32_t s0 =
-        wuffs_base__load_u32le(dst_palette.ptr + ((uint32_t)(s[0]) * 4));
+  while (n >= loop_unroll_count) {
+    uint32_t s0 = wuffs_base__load_u32le(dst_palette.ptr + ((size_t)s[0] * 4));
     if (s0) {
       wuffs_base__store_u32le(d + (0 * 4), s0);
     }
-    uint32_t s1 =
-        wuffs_base__load_u32le(dst_palette.ptr + ((uint32_t)(s[1]) * 4));
+    uint32_t s1 = wuffs_base__load_u32le(dst_palette.ptr + ((size_t)s[1] * 4));
     if (s1) {
       wuffs_base__store_u32le(d + (1 * 4), s1);
     }
-    uint32_t s2 =
-        wuffs_base__load_u32le(dst_palette.ptr + ((uint32_t)(s[2]) * 4));
+    uint32_t s2 = wuffs_base__load_u32le(dst_palette.ptr + ((size_t)s[2] * 4));
     if (s2) {
       wuffs_base__store_u32le(d + (2 * 4), s2);
     }
-    uint32_t s3 =
-        wuffs_base__load_u32le(dst_palette.ptr + ((uint32_t)(s[3]) * 4));
+    uint32_t s3 = wuffs_base__load_u32le(dst_palette.ptr + ((size_t)s[3] * 4));
     if (s3) {
       wuffs_base__store_u32le(d + (3 * 4), s3);
     }
 
-    s += 1 * N;
-    d += 4 * N;
-    n -= (size_t)(1 * N);
+    s += 1 * loop_unroll_count;
+    d += 4 * loop_unroll_count;
+    n -= loop_unroll_count;
   }
 
   while (n >= 1) {
-    uint32_t s0 =
-        wuffs_base__load_u32le(dst_palette.ptr + ((uint32_t)(s[0]) * 4));
+    uint32_t s0 = wuffs_base__load_u32le(dst_palette.ptr + ((size_t)s[0] * 4));
     if (s0) {
       wuffs_base__store_u32le(d + (0 * 4), s0);
     }
 
     s += 1 * 1;
     d += 4 * 1;
-    n -= (size_t)(1 * 1);
+    n -= 1;
   }
 
   return len;
@@ -523,7 +507,7 @@ wuffs_base__pixel_swizzler__xxxx__y(wuffs_base__slice_u8 dst,
 
     s += 1 * 1;
     d += 4 * 1;
-    n -= (size_t)(1 * 1);
+    n -= 1;
   }
 
   return len;
