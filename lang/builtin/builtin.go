@@ -56,6 +56,7 @@ var Statuses = [...]string{
 	`"#initialize not called"`,
 	`"#interleaved coroutine calls"`,
 	`"#not enough data"`,
+	`"#unsupported method"`,
 	`"#unsupported option"`,
 	`"#unsupported pixel swizzler option"`,
 	`"#too much data"`,

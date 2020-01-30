@@ -200,6 +200,7 @@ extern const char* wuffs_base__error__initialize_falsely_claimed_already_zeroed;
 extern const char* wuffs_base__error__initialize_not_called;
 extern const char* wuffs_base__error__interleaved_coroutine_calls;
 extern const char* wuffs_base__error__not_enough_data;
+extern const char* wuffs_base__error__unsupported_method;
 extern const char* wuffs_base__error__unsupported_option;
 extern const char* wuffs_base__error__unsupported_pixel_swizzler_option;
 extern const char* wuffs_base__error__too_much_data;
@@ -5369,6 +5370,7 @@ const char* wuffs_base__error__initialize_not_called =
 const char* wuffs_base__error__interleaved_coroutine_calls =
     "#base: interleaved coroutine calls";
 const char* wuffs_base__error__not_enough_data = "#base: not enough data";
+const char* wuffs_base__error__unsupported_method = "#base: unsupported method";
 const char* wuffs_base__error__unsupported_option = "#base: unsupported option";
 const char* wuffs_base__error__unsupported_pixel_swizzler_option =
     "#base: unsupported pixel swizzler option";
