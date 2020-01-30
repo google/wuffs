@@ -369,11 +369,8 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
 	}
 
 	if args.dst <> nullptr {
-		// The "foo.min(x:this.width_or_height)" calls clip the nominal
-		// frame_rect to the image_rect. The "x" argument name doesn't
-		// necessarily mean "the x direction". It's just that, in Wuffs, every
-		// function call argument needs a name, and for the min function, "x"
-		// is as good a name as any other.
+		// The "foo.min(a:this.width_or_height)" calls clip the nominal
+		// frame_rect to the image_rect.
 		args.dst.update!(bounds: this.util.make_rect_ie_u32(
 			min_incl_x: this.frame_rect_x0.min(a: this.width),
 			min_incl_y: this.frame_rect_y0.min(a: this.height),
