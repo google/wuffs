@@ -1,0 +1,67 @@
+// Copyright 2017 The Wuffs Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+use "std/lzw"
+
+pub status "#bad block"
+pub status "#bad extension label"
+pub status "#bad frame size"
+pub status "#bad graphic control"
+pub status "#bad header"
+pub status "#bad literal width"
+pub status "#bad palette"
+
+pri status "#internal error: inconsistent ri/wi"
+
+// TODO: replace the placeholder 1 value with either 0 or 0xFFFF (plus
+// lzw.decoder_workbuf_len_max_incl_worst_case), depending on whether we'll
+// need a per-pixel-row workbuf.
+pub const decoder_workbuf_len_max_incl_worst_case base.u64 = 1
+
+// See the spec appendix E "Interlaced Images" on page 29. The first element
+// represents either that the frame was non-interlaced, or that all interlace
+// stages are complete. Otherwise, the four interlace stages are elements 4, 3,
+// 2 and 1 in descending order. For example, the start and delta for the first
+// interlace stage is 0 and 8, for the second interlace stage is 4 and 8, etc.
+// For interlaced frames, the decoder.interlace field starts at 4 and is
+// decremented towards 0.
+//
+// interlace_start[0] is a special case. For non-interlaced frames, that
+// element is never accessed. For interlaced frames, that element is only
+// accessed after all interlace stages are complete. Being the maximum base.u32
+// value means that, after all interlace stages are complete, dst_y will be set
+// to that maximum value (and therefore outside the frame rect).
+pri const interlace_start array[5] base.u32 = [0xFFFFFFFF, 1, 2, 4, 0]
+pri const interlace_delta array[5] base.u8 = [1, 2, 4, 8, 8]
+pri const interlace_count array[5] base.u8 = [0, 1, 2, 4, 8]
+
+// animexts1dot0 is "ANIMEXTS1.0" as bytes.
+pri const animexts1dot0 array[11] base.u8 = [
+	0x41, 0x4E, 0x49, 0x4D, 0x45, 0x58, 0x54, 0x53, 0x31, 0x2E, 0x30,
+]
+
+// netscape2dot0 is "NETSCAPE2.0" as bytes.
+pri const netscape2dot0 array[11] base.u8 = [
+	0x4E, 0x45, 0x54, 0x53, 0x43, 0x41, 0x50, 0x45, 0x32, 0x2E, 0x30,
+]
+
+// iccrgbg1012 is "ICCRGBG1012" as bytes.
+pri const iccrgbg1012 array[11] base.u8 = [
+	0x49, 0x43, 0x43, 0x52, 0x47, 0x42, 0x47, 0x31, 0x30, 0x31, 0x32,
+]
+
+// xmpdataxmp is "XMP DataXMP" as bytes.
+pri const xmpdataxmp array[11] base.u8 = [
+	0x58, 0x4D, 0x50, 0x20, 0x44, 0x61, 0x74, 0x61, 0x58, 0x4D, 0x50,
+]
