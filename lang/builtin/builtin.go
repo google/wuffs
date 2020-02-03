@@ -123,6 +123,12 @@ var Funcs = []string{
 
 	"utility.empty_io_reader() io_reader",
 	"utility.empty_io_writer() io_writer",
+	"utility.empty_range_ii_u32() range_ii_u32",
+	"utility.empty_range_ie_u32() range_ie_u32",
+	"utility.empty_range_ii_u64() range_ii_u64",
+	"utility.empty_range_ie_u64() range_ie_u64",
+	"utility.empty_rect_ii_u32() rect_ii_u32",
+	"utility.empty_rect_ie_u32() rect_ie_u32",
 	"utility.empty_slice_u8() slice u8",
 	"utility.make_pixel_format(repr: u32) pixel_format",
 	"utility.make_range_ii_u32(min_incl: u32, max_incl: u32) range_ii_u32",

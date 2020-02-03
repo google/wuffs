@@ -58,10 +58,15 @@ wuffs_base__range_ie_u64__get_max_excl(const wuffs_base__range_ie_u64* r) {
 
 // ---------------- Ranges and Rects (Utility)
 
+#define wuffs_base__utility__empty_range_ii_u32 wuffs_base__empty_range_ii_u32
+#define wuffs_base__utility__empty_range_ie_u32 wuffs_base__empty_range_ie_u32
+#define wuffs_base__utility__empty_range_ii_u64 wuffs_base__empty_range_ii_u64
+#define wuffs_base__utility__empty_range_ie_u64 wuffs_base__empty_range_ie_u64
+#define wuffs_base__utility__empty_rect_ii_u32 wuffs_base__empty_rect_ii_u32
+#define wuffs_base__utility__empty_rect_ie_u32 wuffs_base__empty_rect_ie_u32
 #define wuffs_base__utility__make_range_ii_u32 wuffs_base__make_range_ii_u32
 #define wuffs_base__utility__make_range_ie_u32 wuffs_base__make_range_ie_u32
 #define wuffs_base__utility__make_range_ii_u64 wuffs_base__make_range_ii_u64
 #define wuffs_base__utility__make_range_ie_u64 wuffs_base__make_range_ie_u64
 #define wuffs_base__utility__make_rect_ii_u32 wuffs_base__make_rect_ii_u32
 #define wuffs_base__utility__make_rect_ie_u32 wuffs_base__make_rect_ie_u32
-

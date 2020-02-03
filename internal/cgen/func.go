@@ -256,22 +256,22 @@ func writeOutParamZeroValue(b *buffer, tm *t.Map, typ *a.TypeExpr) error {
 	} else if (typ.Decorator() == 0) && (typ.QID()[0] == t.IDBase) {
 		switch typ.QID()[1] {
 		case t.IDRangeIEU32:
-			b.writes("wuffs_base__utility__make_range_ie_u32(0, 0)")
+			b.writes("wuffs_base__utility__empty_range_ie_u32()")
 			return nil
 		case t.IDRangeIIU32:
-			b.writes("wuffs_base__utility__make_range_ii_u32(0, 0)")
+			b.writes("wuffs_base__utility__empty_range_ii_u32()")
 			return nil
 		case t.IDRangeIEU64:
-			b.writes("wuffs_base__utility__make_range_ie_u64(0, 0)")
+			b.writes("wuffs_base__utility__empty_range_ie_u64()")
 			return nil
 		case t.IDRangeIIU64:
-			b.writes("wuffs_base__utility__make_range_ii_u64(0, 0)")
+			b.writes("wuffs_base__utility__empty_range_ii_u64()")
 			return nil
 		case t.IDRectIEU32:
-			b.writes("wuffs_base__utility__make_rect_ie_u32(0, 0, 0, 0)")
+			b.writes("wuffs_base__utility__empty_rect_ie_u32()")
 			return nil
 		case t.IDRectIIU32:
-			b.writes("wuffs_base__utility__make_rect_ii_u32(0, 0, 0, 0)")
+			b.writes("wuffs_base__utility__empty_rect_ii_u32()")
 			return nil
 		}
 	}

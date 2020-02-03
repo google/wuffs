@@ -36,6 +36,14 @@ typedef struct wuffs_base__range_ii_u32__struct {
 } wuffs_base__range_ii_u32;
 
 static inline wuffs_base__range_ii_u32  //
+wuffs_base__empty_range_ii_u32() {
+  wuffs_base__range_ii_u32 ret;
+  ret.min_incl = 0;
+  ret.max_incl = 0;
+  return ret;
+}
+
+static inline wuffs_base__range_ii_u32  //
 wuffs_base__make_range_ii_u32(uint32_t min_incl, uint32_t max_incl) {
   wuffs_base__range_ii_u32 ret;
   ret.min_incl = min_incl;
@@ -146,6 +154,14 @@ typedef struct wuffs_base__range_ie_u32__struct {
 #endif  // __cplusplus
 
 } wuffs_base__range_ie_u32;
+
+static inline wuffs_base__range_ie_u32  //
+wuffs_base__empty_range_ie_u32() {
+  wuffs_base__range_ie_u32 ret;
+  ret.min_incl = 0;
+  ret.max_excl = 0;
+  return ret;
+}
 
 static inline wuffs_base__range_ie_u32  //
 wuffs_base__make_range_ie_u32(uint32_t min_incl, uint32_t max_excl) {
@@ -269,6 +285,14 @@ typedef struct wuffs_base__range_ii_u64__struct {
 } wuffs_base__range_ii_u64;
 
 static inline wuffs_base__range_ii_u64  //
+wuffs_base__empty_range_ii_u64() {
+  wuffs_base__range_ii_u64 ret;
+  ret.min_incl = 0;
+  ret.max_incl = 0;
+  return ret;
+}
+
+static inline wuffs_base__range_ii_u64  //
 wuffs_base__make_range_ii_u64(uint64_t min_incl, uint64_t max_incl) {
   wuffs_base__range_ii_u64 ret;
   ret.min_incl = min_incl;
@@ -379,6 +403,14 @@ typedef struct wuffs_base__range_ie_u64__struct {
 #endif  // __cplusplus
 
 } wuffs_base__range_ie_u64;
+
+static inline wuffs_base__range_ie_u64  //
+wuffs_base__empty_range_ie_u64() {
+  wuffs_base__range_ie_u64 ret;
+  ret.min_incl = 0;
+  ret.max_excl = 0;
+  return ret;
+}
 
 static inline wuffs_base__range_ie_u64  //
 wuffs_base__make_range_ie_u64(uint64_t min_incl, uint64_t max_excl) {
@@ -502,6 +534,16 @@ typedef struct wuffs_base__rect_ii_u32__struct {
 #endif  // __cplusplus
 
 } wuffs_base__rect_ii_u32;
+
+static inline wuffs_base__rect_ii_u32  //
+wuffs_base__empty_rect_ii_u32() {
+  wuffs_base__rect_ii_u32 ret;
+  ret.min_incl_x = 0;
+  ret.min_incl_y = 0;
+  ret.max_incl_x = 0;
+  ret.max_incl_y = 0;
+  return ret;
+}
 
 static inline wuffs_base__rect_ii_u32  //
 wuffs_base__make_rect_ii_u32(uint32_t min_incl_x,
@@ -629,6 +671,16 @@ typedef struct wuffs_base__rect_ie_u32__struct {
 #endif  // __cplusplus
 
 } wuffs_base__rect_ie_u32;
+
+static inline wuffs_base__rect_ie_u32  //
+wuffs_base__empty_rect_ie_u32() {
+  wuffs_base__rect_ie_u32 ret;
+  ret.min_incl_x = 0;
+  ret.min_incl_y = 0;
+  ret.max_excl_x = 0;
+  ret.max_excl_y = 0;
+  return ret;
+}
 
 static inline wuffs_base__rect_ie_u32  //
 wuffs_base__make_rect_ie_u32(uint32_t min_incl_x,

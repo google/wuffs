@@ -551,6 +551,14 @@ typedef struct wuffs_base__range_ii_u32__struct {
 } wuffs_base__range_ii_u32;
 
 static inline wuffs_base__range_ii_u32  //
+wuffs_base__empty_range_ii_u32() {
+  wuffs_base__range_ii_u32 ret;
+  ret.min_incl = 0;
+  ret.max_incl = 0;
+  return ret;
+}
+
+static inline wuffs_base__range_ii_u32  //
 wuffs_base__make_range_ii_u32(uint32_t min_incl, uint32_t max_incl) {
   wuffs_base__range_ii_u32 ret;
   ret.min_incl = min_incl;
@@ -661,6 +669,14 @@ typedef struct wuffs_base__range_ie_u32__struct {
 #endif  // __cplusplus
 
 } wuffs_base__range_ie_u32;
+
+static inline wuffs_base__range_ie_u32  //
+wuffs_base__empty_range_ie_u32() {
+  wuffs_base__range_ie_u32 ret;
+  ret.min_incl = 0;
+  ret.max_excl = 0;
+  return ret;
+}
 
 static inline wuffs_base__range_ie_u32  //
 wuffs_base__make_range_ie_u32(uint32_t min_incl, uint32_t max_excl) {
@@ -784,6 +800,14 @@ typedef struct wuffs_base__range_ii_u64__struct {
 } wuffs_base__range_ii_u64;
 
 static inline wuffs_base__range_ii_u64  //
+wuffs_base__empty_range_ii_u64() {
+  wuffs_base__range_ii_u64 ret;
+  ret.min_incl = 0;
+  ret.max_incl = 0;
+  return ret;
+}
+
+static inline wuffs_base__range_ii_u64  //
 wuffs_base__make_range_ii_u64(uint64_t min_incl, uint64_t max_incl) {
   wuffs_base__range_ii_u64 ret;
   ret.min_incl = min_incl;
@@ -894,6 +918,14 @@ typedef struct wuffs_base__range_ie_u64__struct {
 #endif  // __cplusplus
 
 } wuffs_base__range_ie_u64;
+
+static inline wuffs_base__range_ie_u64  //
+wuffs_base__empty_range_ie_u64() {
+  wuffs_base__range_ie_u64 ret;
+  ret.min_incl = 0;
+  ret.max_excl = 0;
+  return ret;
+}
 
 static inline wuffs_base__range_ie_u64  //
 wuffs_base__make_range_ie_u64(uint64_t min_incl, uint64_t max_excl) {
@@ -1017,6 +1049,16 @@ typedef struct wuffs_base__rect_ii_u32__struct {
 #endif  // __cplusplus
 
 } wuffs_base__rect_ii_u32;
+
+static inline wuffs_base__rect_ii_u32  //
+wuffs_base__empty_rect_ii_u32() {
+  wuffs_base__rect_ii_u32 ret;
+  ret.min_incl_x = 0;
+  ret.min_incl_y = 0;
+  ret.max_incl_x = 0;
+  ret.max_incl_y = 0;
+  return ret;
+}
 
 static inline wuffs_base__rect_ii_u32  //
 wuffs_base__make_rect_ii_u32(uint32_t min_incl_x,
@@ -1144,6 +1186,16 @@ typedef struct wuffs_base__rect_ie_u32__struct {
 #endif  // __cplusplus
 
 } wuffs_base__rect_ie_u32;
+
+static inline wuffs_base__rect_ie_u32  //
+wuffs_base__empty_rect_ie_u32() {
+  wuffs_base__rect_ie_u32 ret;
+  ret.min_incl_x = 0;
+  ret.min_incl_y = 0;
+  ret.max_excl_x = 0;
+  ret.max_excl_y = 0;
+  return ret;
+}
 
 static inline wuffs_base__rect_ie_u32  //
 wuffs_base__make_rect_ie_u32(uint32_t min_incl_x,
@@ -5079,6 +5131,12 @@ wuffs_base__range_ie_u64__get_max_excl(const wuffs_base__range_ie_u64* r) {
 
   // ---------------- Ranges and Rects (Utility)
 
+#define wuffs_base__utility__empty_range_ii_u32 wuffs_base__empty_range_ii_u32
+#define wuffs_base__utility__empty_range_ie_u32 wuffs_base__empty_range_ie_u32
+#define wuffs_base__utility__empty_range_ii_u64 wuffs_base__empty_range_ii_u64
+#define wuffs_base__utility__empty_range_ie_u64 wuffs_base__empty_range_ie_u64
+#define wuffs_base__utility__empty_rect_ii_u32 wuffs_base__empty_rect_ii_u32
+#define wuffs_base__utility__empty_rect_ie_u32 wuffs_base__empty_rect_ie_u32
 #define wuffs_base__utility__make_range_ii_u32 wuffs_base__make_range_ii_u32
 #define wuffs_base__utility__make_range_ie_u32 wuffs_base__make_range_ie_u32
 #define wuffs_base__utility__make_range_ii_u64 wuffs_base__make_range_ii_u64
@@ -5540,11 +5598,11 @@ WUFFS_BASE__MAYBE_STATIC wuffs_base__rect_ie_u32  //
 wuffs_base__image_decoder__frame_dirty_rect(
     const wuffs_base__image_decoder* self) {
   if (!self) {
-    return wuffs_base__utility__make_rect_ie_u32(0, 0, 0, 0);
+    return wuffs_base__utility__empty_rect_ie_u32();
   }
   if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
       (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
-    return wuffs_base__utility__make_rect_ie_u32(0, 0, 0, 0);
+    return wuffs_base__utility__empty_rect_ie_u32();
   }
 
   const wuffs_base__vtable* v = &self->private_impl.first_vtable;
@@ -5560,7 +5618,7 @@ wuffs_base__image_decoder__frame_dirty_rect(
     v++;
   }
 
-  return wuffs_base__utility__make_rect_ie_u32(0, 0, 0, 0);
+  return wuffs_base__utility__empty_rect_ie_u32();
 }
 
 WUFFS_BASE__MAYBE_STATIC uint64_t  //
@@ -5758,11 +5816,11 @@ wuffs_base__image_decoder__set_report_metadata(wuffs_base__image_decoder* self,
 WUFFS_BASE__MAYBE_STATIC wuffs_base__range_ii_u64  //
 wuffs_base__image_decoder__workbuf_len(const wuffs_base__image_decoder* self) {
   if (!self) {
-    return wuffs_base__utility__make_range_ii_u64(0, 0);
+    return wuffs_base__utility__empty_range_ii_u64();
   }
   if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
       (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
-    return wuffs_base__utility__make_range_ii_u64(0, 0);
+    return wuffs_base__utility__empty_range_ii_u64();
   }
 
   const wuffs_base__vtable* v = &self->private_impl.first_vtable;
@@ -5778,7 +5836,7 @@ wuffs_base__image_decoder__workbuf_len(const wuffs_base__image_decoder* self) {
     v++;
   }
 
-  return wuffs_base__utility__make_range_ii_u64(0, 0);
+  return wuffs_base__utility__empty_range_ii_u64();
 }
 
 // --------
@@ -5821,11 +5879,11 @@ WUFFS_BASE__MAYBE_STATIC wuffs_base__range_ii_u64  //
 wuffs_base__io_transformer__workbuf_len(
     const wuffs_base__io_transformer* self) {
   if (!self) {
-    return wuffs_base__utility__make_range_ii_u64(0, 0);
+    return wuffs_base__utility__empty_range_ii_u64();
   }
   if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
       (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
-    return wuffs_base__utility__make_range_ii_u64(0, 0);
+    return wuffs_base__utility__empty_range_ii_u64();
   }
 
   const wuffs_base__vtable* v = &self->private_impl.first_vtable;
@@ -5841,7 +5899,7 @@ wuffs_base__io_transformer__workbuf_len(
     v++;
   }
 
-  return wuffs_base__utility__make_range_ii_u64(0, 0);
+  return wuffs_base__utility__empty_range_ii_u64();
 }
 
 // ---------------- Images
@@ -8022,11 +8080,11 @@ wuffs_deflate__decoder__add_history(wuffs_deflate__decoder* self,
 WUFFS_BASE__MAYBE_STATIC wuffs_base__range_ii_u64  //
 wuffs_deflate__decoder__workbuf_len(const wuffs_deflate__decoder* self) {
   if (!self) {
-    return wuffs_base__utility__make_range_ii_u64(0, 0);
+    return wuffs_base__utility__empty_range_ii_u64();
   }
   if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
       (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
-    return wuffs_base__utility__make_range_ii_u64(0, 0);
+    return wuffs_base__utility__empty_range_ii_u64();
   }
 
   return wuffs_base__utility__make_range_ii_u64(1, 1);
@@ -9828,11 +9886,11 @@ wuffs_lzw__decoder__set_literal_width(wuffs_lzw__decoder* self, uint32_t a_lw) {
 WUFFS_BASE__MAYBE_STATIC wuffs_base__range_ii_u64  //
 wuffs_lzw__decoder__workbuf_len(const wuffs_lzw__decoder* self) {
   if (!self) {
-    return wuffs_base__utility__make_range_ii_u64(0, 0);
+    return wuffs_base__utility__empty_range_ii_u64();
   }
   if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
       (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
-    return wuffs_base__utility__make_range_ii_u64(0, 0);
+    return wuffs_base__utility__empty_range_ii_u64();
   }
 
   return wuffs_base__utility__make_range_ii_u64(0, 0);
@@ -10798,11 +10856,11 @@ wuffs_gif__decoder__num_decoded_frames(const wuffs_gif__decoder* self) {
 WUFFS_BASE__MAYBE_STATIC wuffs_base__rect_ie_u32  //
 wuffs_gif__decoder__frame_dirty_rect(const wuffs_gif__decoder* self) {
   if (!self) {
-    return wuffs_base__utility__make_rect_ie_u32(0, 0, 0, 0);
+    return wuffs_base__utility__empty_rect_ie_u32();
   }
   if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
       (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
-    return wuffs_base__utility__make_rect_ie_u32(0, 0, 0, 0);
+    return wuffs_base__utility__empty_rect_ie_u32();
   }
 
   return wuffs_base__utility__make_rect_ie_u32(
@@ -10821,11 +10879,11 @@ wuffs_gif__decoder__frame_dirty_rect(const wuffs_gif__decoder* self) {
 WUFFS_BASE__MAYBE_STATIC wuffs_base__range_ii_u64  //
 wuffs_gif__decoder__workbuf_len(const wuffs_gif__decoder* self) {
   if (!self) {
-    return wuffs_base__utility__make_range_ii_u64(0, 0);
+    return wuffs_base__utility__empty_range_ii_u64();
   }
   if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
       (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
-    return wuffs_base__utility__make_range_ii_u64(0, 0);
+    return wuffs_base__utility__empty_range_ii_u64();
   }
 
   return wuffs_base__utility__make_range_ii_u64(1, 1);
@@ -13095,11 +13153,11 @@ wuffs_gzip__decoder__set_ignore_checksum(wuffs_gzip__decoder* self, bool a_ic) {
 WUFFS_BASE__MAYBE_STATIC wuffs_base__range_ii_u64  //
 wuffs_gzip__decoder__workbuf_len(const wuffs_gzip__decoder* self) {
   if (!self) {
-    return wuffs_base__utility__make_range_ii_u64(0, 0);
+    return wuffs_base__utility__empty_range_ii_u64();
   }
   if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
       (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
-    return wuffs_base__utility__make_range_ii_u64(0, 0);
+    return wuffs_base__utility__empty_range_ii_u64();
   }
 
   return wuffs_base__utility__make_range_ii_u64(1, 1);
@@ -14080,11 +14138,11 @@ exit:
 WUFFS_BASE__MAYBE_STATIC wuffs_base__rect_ie_u32  //
 wuffs_wbmp__decoder__frame_dirty_rect(const wuffs_wbmp__decoder* self) {
   if (!self) {
-    return wuffs_base__utility__make_rect_ie_u32(0, 0, 0, 0);
+    return wuffs_base__utility__empty_rect_ie_u32();
   }
   if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
       (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
-    return wuffs_base__utility__make_rect_ie_u32(0, 0, 0, 0);
+    return wuffs_base__utility__empty_rect_ie_u32();
   }
 
   return wuffs_base__utility__make_rect_ie_u32(0, 0, self->private_impl.f_width,
@@ -14221,11 +14279,11 @@ wuffs_wbmp__decoder__set_report_metadata(wuffs_wbmp__decoder* self,
 WUFFS_BASE__MAYBE_STATIC wuffs_base__range_ii_u64  //
 wuffs_wbmp__decoder__workbuf_len(const wuffs_wbmp__decoder* self) {
   if (!self) {
-    return wuffs_base__utility__make_range_ii_u64(0, 0);
+    return wuffs_base__utility__empty_range_ii_u64();
   }
   if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
       (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
-    return wuffs_base__utility__make_range_ii_u64(0, 0);
+    return wuffs_base__utility__empty_range_ii_u64();
   }
 
   return wuffs_base__utility__make_range_ii_u64(0, 0);
@@ -14408,11 +14466,11 @@ wuffs_zlib__decoder__set_ignore_checksum(wuffs_zlib__decoder* self, bool a_ic) {
 WUFFS_BASE__MAYBE_STATIC wuffs_base__range_ii_u64  //
 wuffs_zlib__decoder__workbuf_len(const wuffs_zlib__decoder* self) {
   if (!self) {
-    return wuffs_base__utility__make_range_ii_u64(0, 0);
+    return wuffs_base__utility__empty_range_ii_u64();
   }
   if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
       (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
-    return wuffs_base__utility__make_range_ii_u64(0, 0);
+    return wuffs_base__utility__empty_range_ii_u64();
   }
 
   return wuffs_base__utility__make_range_ii_u64(1, 1);
