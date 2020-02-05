@@ -499,7 +499,7 @@ type gen struct {
 	currFunk funk
 	funks    map[t.QQID]funk
 
-	numPublicCoroutines uint32
+	numPublicCoroutines map[t.QID]uint32
 }
 
 func (g *gen) generate() ([]byte, error) {
@@ -544,6 +544,7 @@ func (g *gen) generate() ([]byte, error) {
 	}
 	g.structMap = map[t.QID]*a.Struct{}
 	g.privateDataFields = map[t.QQID]struct{}{}
+	g.numPublicCoroutines = map[t.QID]uint32{}
 	for _, n := range g.structList {
 		qid := n.QID()
 		g.structMap[qid] = n

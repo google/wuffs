@@ -199,14 +199,16 @@ func (g *gen) writeFuncImpl(b *buffer, n *a.Func) error {
 }
 
 func (g *gen) gatherFuncImpl(_ *buffer, n *a.Func) error {
+	coroID := uint32(0)
 	if n.Public() && n.Effect().Coroutine() {
-		g.numPublicCoroutines++
+		g.numPublicCoroutines[n.Receiver()]++
+		coroID = g.numPublicCoroutines[n.Receiver()]
 	}
 
 	g.currFunk = funk{
 		astFunc: n,
 		cName:   g.funcCName(n),
-		coroID:  g.numPublicCoroutines,
+		coroID:  coroID,
 
 		returnsStatus: n.Effect().Coroutine() ||
 			((n.Out() != nil) && n.Out().IsStatus()),
