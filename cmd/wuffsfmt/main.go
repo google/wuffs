@@ -97,12 +97,12 @@ func isWuffsFile(info os.FileInfo) bool {
 }
 
 func walk(filename string, info os.FileInfo, err error) error {
-	if err == nil && isWuffsFile(info) {
+	if (err == nil) && isWuffsFile(info) {
 		err = do(nil, filename)
 	}
 	// Don't complain if a file was deleted in the meantime (i.e. the directory
-	// changed concurrently while running wuffsfmt).
-	if err != nil && !os.IsNotExist(err) {
+	// changed concurrently while running this program).
+	if (err != nil) && !os.IsNotExist(err) {
 		return err
 	}
 	return nil
@@ -158,16 +158,14 @@ func do(r io.Reader, filename string) error {
 const chmodSupported = runtime.GOOS != "windows"
 
 func writeFile(filename string, b []byte) error {
-	info, err := os.Stat(filename)
-	if err != nil {
-		return err
-	}
 	f, err := ioutil.TempFile(filepath.Dir(filename), filepath.Base(filename))
 	if err != nil {
 		return err
 	}
 	if chmodSupported {
-		f.Chmod(info.Mode().Perm())
+		if info, err := os.Stat(filename); err == nil {
+			f.Chmod(info.Mode().Perm())
+		}
 	}
 	_, werr := f.Write(b)
 	cerr := f.Close()
