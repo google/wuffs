@@ -236,10 +236,15 @@ const char* try_allocate(wuffs_gif__decoder* dec) {
     return "could not allocate prev-dst buffer";
   }
 
-  workbuf = wuffs_base__malloc_slice_u8(
-      malloc, wuffs_gif__decoder__workbuf_len(dec).max_incl);
-  if (!workbuf.ptr) {
-    return "could not allocate work buffer";
+  uint64_t workbuf_len_max_incl = wuffs_gif__decoder__workbuf_len(dec).max_incl;
+  if (workbuf_len_max_incl > 0) {
+    workbuf = wuffs_base__malloc_slice_u8(
+        malloc, wuffs_gif__decoder__workbuf_len(dec).max_incl);
+    if (!workbuf.ptr) {
+      return "could not allocate work buffer";
+    }
+  } else {
+    workbuf = wuffs_base__make_slice_u8(NULL, 0);
   }
 
   uint64_t plen = 1 + ((uint64_t)(width) + 1) * (uint64_t)(height);

@@ -957,10 +957,6 @@ pri func decoder.decode_id_part2?(dst: ptr base.pixel_buffer, src: base.io_reade
 			args.src.skip32_fast!(actual: 1, worst_case: 1)
 		}
 
-		if decoder_workbuf_len_max_incl_worst_case > args.workbuf.length() {
-			return base."#bad workbuf length"
-		}
-
 		while.inner true {
 			if (this.compressed_ri > this.compressed_wi) or (this.compressed_wi > 4096) {
 				return "#internal error: inconsistent ri/wi"

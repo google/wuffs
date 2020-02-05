@@ -288,11 +288,6 @@ const char* do_test_wuffs_gif_decode(const char* filename,
     }
   }
 
-  if (wuffs_gif__decoder__workbuf_len(&dec).min_incl != 1) {
-    RETURN_FAIL("workbuf_len: got %" PRIu64 ", want 1",
-                wuffs_gif__decoder__workbuf_len(&dec).min_incl);
-  }
-
   int num_iters = 0;
   while (true) {
     num_iters++;

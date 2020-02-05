@@ -3664,7 +3664,7 @@ extern const char* wuffs_gif__error__bad_palette;
 
 // ---------------- Public Consts
 
-#define WUFFS_GIF__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE 1
+#define WUFFS_GIF__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE 0
 
 #define WUFFS_GIF__QUIRK_DELAY_NUM_DECODED_FRAMES 1041635328
 
@@ -13198,7 +13198,7 @@ wuffs_gif__decoder__workbuf_len(const wuffs_gif__decoder* self) {
     return wuffs_base__utility__empty_range_ii_u64();
   }
 
-  return wuffs_base__utility__make_range_ii_u64(1, 1);
+  return wuffs_base__utility__make_range_ii_u64(0, 0);
 }
 
 // -------- func gif.decoder.restart_frame
@@ -15042,10 +15042,6 @@ wuffs_gif__decoder__decode_id_part2(wuffs_gif__decoder* self,
         (iop_a_src += 1, wuffs_base__make_empty_struct());
       }
     label_1_break:;
-      if (1 > ((uint64_t)(a_workbuf.len))) {
-        status = wuffs_base__make_status(wuffs_base__error__bad_workbuf_length);
-        goto exit;
-      }
     label_2_continue:;
       while (true) {
         if ((self->private_impl.f_compressed_ri >

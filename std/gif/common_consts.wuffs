@@ -24,10 +24,7 @@ pub status "#bad palette"
 
 pri status "#internal error: inconsistent ri/wi"
 
-// TODO: replace the placeholder 1 value with either 0 or 0xFFFF (plus
-// lzw.decoder_workbuf_len_max_incl_worst_case), depending on whether we'll
-// need a per-pixel-row workbuf.
-pub const decoder_workbuf_len_max_incl_worst_case base.u64 = 1
+pub const decoder_workbuf_len_max_incl_worst_case base.u64 = 0
 
 // See the spec appendix E "Interlaced Images" on page 29. The first element
 // represents either that the frame was non-interlaced, or that all interlace
