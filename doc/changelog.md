@@ -4,10 +4,12 @@
 ## Work In Progress
 
 - Added `example/imageviewer`.
+- Added `std/gif.config_decoder`.
 - Added `std/wbmp`.
 - Added `WUFFS_BASE__PIXEL_BLEND__SRC_OVER`.
 - Added `WUFFS_BASE__PIXEL_FORMAT__BGR_565`.
 - Added interfaces.
+- Added preprocessor.
 - Made `wuffs_base__pixel_format` a struct.
 - Made `wuffs_base__pixel_subsampling` a struct.
 - Made `wuffs_base__status` a struct.
