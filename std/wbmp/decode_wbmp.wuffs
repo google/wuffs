@@ -97,7 +97,9 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
 	if this.call_sequence < 1 {
 		this.decode_image_config?(dst: nullptr, src: args.src)
 	} else if this.call_sequence == 1 {
-		// No-op.
+		if this.frame_config_io_position <> args.src.position() {
+			return base."#bad restart"
+		}
 	} else if this.call_sequence == 2 {
 		this.skip_frame?(src: args.src)
 		return base."@end of data"
