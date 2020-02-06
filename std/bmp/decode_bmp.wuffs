@@ -15,6 +15,8 @@
 pub status "#bad header"
 pub status "#unsupported BMP file"
 
+pri status "#internal error: inconsistent bpp"
+
 pub const decoder_workbuf_len_max_incl_worst_case base.u64 = 0
 
 pub struct decoder? implements base.image_decoder(
@@ -174,7 +176,24 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 }
 
 pri func decoder.skip_frame?(src: base.io_reader) {
-	// TODO.
+	var bytes_per_row : base.u64
+	var y             : base.u32
+
+	args.src.skip32?(n: this.padding)
+
+	if this.bits_per_pixel == 24 {
+		// 3 bytes per pixel. We add 3 and shift twice to round up to a
+		// multiple of 4.
+		bytes_per_row = ((((this.width as base.u64) * 3) + 3) >> 2) << 2
+	} else {
+		return "#internal error: inconsistent bpp"
+	}
+
+	y = this.height
+	while y > 0 {
+		y -= 1
+		args.src.skip?(n: bytes_per_row)
+	}
 
 	this.call_sequence = 3
 }

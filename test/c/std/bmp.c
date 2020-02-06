@@ -81,6 +81,35 @@ const char* test_wuffs_bmp_decode_interface() {
       "test/data/hippopotamus.bmp", 0, SIZE_MAX, 36, 28, 0x00000000);
 }
 
+const char* test_wuffs_bmp_decode_frame_config() {
+  CHECK_FOCUS(__func__);
+  wuffs_bmp__decoder dec;
+  CHECK_STATUS("initialize",
+               wuffs_bmp__decoder__initialize(
+                   &dec, sizeof dec, WUFFS_VERSION,
+                   WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+
+  wuffs_base__frame_config fc = ((wuffs_base__frame_config){});
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = global_src_slice,
+  });
+  CHECK_STRING(read_file(&src, "test/data/hat.bmp"));
+  CHECK_STATUS("decode_frame_config #0",
+               wuffs_bmp__decoder__decode_frame_config(&dec, &fc, &src));
+
+  wuffs_base__status status =
+      wuffs_bmp__decoder__decode_frame_config(&dec, &fc, &src);
+  if (status.repr != wuffs_base__note__end_of_data) {
+    RETURN_FAIL("decode_frame_config #1: got \"%s\", want \"%s\"", status.repr,
+                wuffs_base__note__end_of_data);
+  }
+  if (src.meta.ri != src.meta.wi) {
+    RETURN_FAIL("at end of data: ri (%zu) doesn't equal wi (%zu)", src.meta.ri,
+                src.meta.wi);
+  }
+  return NULL;
+}
+
   // ---------------- Mimic Tests
 
 #ifdef WUFFS_MIMIC
@@ -106,7 +135,8 @@ const char* test_wuffs_bmp_decode_interface() {
 // The empty comments forces clang-format to place one element per line.
 proc tests[] = {
 
-    test_wuffs_bmp_decode_interface,  //
+    test_wuffs_bmp_decode_frame_config,  //
+    test_wuffs_bmp_decode_interface,     //
 
 #ifdef WUFFS_MIMIC
 

@@ -3257,6 +3257,7 @@ struct wuffs_bmp__decoder__struct {
     uint32_t p_decode_image_config[1];
     uint32_t p_decode_frame_config[1];
     uint32_t p_decode_frame[1];
+    uint32_t p_skip_frame[1];
   } private_impl;
 
   struct {
@@ -3267,6 +3268,11 @@ struct wuffs_bmp__decoder__struct {
     struct {
       uint64_t scratch;
     } s_decode_frame[1];
+    struct {
+      uint64_t v_bytes_per_row;
+      uint32_t v_y;
+      uint64_t scratch;
+    } s_skip_frame[1];
   } private_data;
 
 #ifdef __cplusplus
@@ -7366,6 +7372,8 @@ wuffs_adler32__hasher__update_u32(wuffs_adler32__hasher* self,
 const char* wuffs_bmp__error__bad_header = "#bmp: bad header";
 const char* wuffs_bmp__error__unsupported_bmp_file =
     "#bmp: unsupported BMP file";
+const char* wuffs_bmp__error__internal_error_inconsistent_bpp =
+    "#bmp: internal error: inconsistent bpp";
 
 // ---------------- Private Consts
 
@@ -8105,12 +8113,83 @@ wuffs_bmp__decoder__skip_frame(wuffs_bmp__decoder* self,
                                wuffs_base__io_buffer* a_src) {
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
-  self->private_impl.f_call_sequence = 3;
+  uint64_t v_bytes_per_row = 0;
+  uint32_t v_y = 0;
 
-  goto ok;
-ok:
+  uint8_t* iop_a_src = NULL;
+  uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  if (a_src) {
+    io0_a_src = a_src->data.ptr;
+    io1_a_src = io0_a_src + a_src->meta.ri;
+    iop_a_src = io1_a_src;
+    io2_a_src = io0_a_src + a_src->meta.wi;
+  }
+
+  uint32_t coro_susp_point = self->private_impl.p_skip_frame[0];
+  if (coro_susp_point) {
+    v_bytes_per_row = self->private_data.s_skip_frame[0].v_bytes_per_row;
+    v_y = self->private_data.s_skip_frame[0].v_y;
+  }
+  switch (coro_susp_point) {
+    WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
+
+    self->private_data.s_skip_frame[0].scratch = self->private_impl.f_padding;
+    WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
+    if (self->private_data.s_skip_frame[0].scratch >
+        ((uint64_t)(io2_a_src - iop_a_src))) {
+      self->private_data.s_skip_frame[0].scratch -=
+          ((uint64_t)(io2_a_src - iop_a_src));
+      iop_a_src = io2_a_src;
+      status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+      goto suspend;
+    }
+    iop_a_src += self->private_data.s_skip_frame[0].scratch;
+    if (self->private_impl.f_bits_per_pixel == 24) {
+      v_bytes_per_row =
+          ((((((uint64_t)(self->private_impl.f_width)) * 3) + 3) >> 2) << 2);
+    } else {
+      status = wuffs_base__make_status(
+          wuffs_bmp__error__internal_error_inconsistent_bpp);
+      goto exit;
+    }
+    v_y = self->private_impl.f_height;
+    while (v_y > 0) {
+      v_y -= 1;
+      self->private_data.s_skip_frame[0].scratch = v_bytes_per_row;
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
+      if (self->private_data.s_skip_frame[0].scratch >
+          ((uint64_t)(io2_a_src - iop_a_src))) {
+        self->private_data.s_skip_frame[0].scratch -=
+            ((uint64_t)(io2_a_src - iop_a_src));
+        iop_a_src = io2_a_src;
+        status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+        goto suspend;
+      }
+      iop_a_src += self->private_data.s_skip_frame[0].scratch;
+    }
+    self->private_impl.f_call_sequence = 3;
+
+    goto ok;
+  ok:
+    self->private_impl.p_skip_frame[0] = 0;
+    goto exit;
+  }
+
+  goto suspend;
+suspend:
+  self->private_impl.p_skip_frame[0] =
+      wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
+  self->private_data.s_skip_frame[0].v_bytes_per_row = v_bytes_per_row;
+  self->private_data.s_skip_frame[0].v_y = v_y;
+
   goto exit;
 exit:
+  if (a_src) {
+    a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+  }
+
   return status;
 }
 
