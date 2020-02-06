@@ -13,6 +13,7 @@
 // limitations under the License.
 
 pub status "#bad header"
+pub status "#unsupported BMP file"
 
 pub const decoder_workbuf_len_max_incl_worst_case base.u64 = 0
 
@@ -22,6 +23,11 @@ pub struct decoder? implements base.image_decoder(
 
 	call_sequence : base.u8,
 
+	bits_per_pixel : base.u8,
+	top_down       : base.bool,
+
+	padding : base.u32,
+
 	frame_config_io_position : base.u64,
 
 	swizzler : base.pixel_swizzler,
@@ -29,13 +35,78 @@ pub struct decoder? implements base.image_decoder(
 )
 
 pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_reader) {
+	var magic          : base.u32
+	var bitmapInfoLen  : base.u32
+	var planes         : base.u32
+	var bits_per_pixel : base.u32
+	var compression    : base.u32
+
 	if this.call_sequence <> 0 {
 		return base."#bad call sequence"
 	}
 
-	// TODO.
-	this.width = 1
-	this.height = 1
+	// Read the BITMAPFILEHEADER (14 bytes).
+
+	magic = args.src.read_u16le_as_u32?()
+	if magic <> 0x4D42 {  // "BM" little-endian.
+		return "#bad header"
+	}
+
+	args.src.skip32?(n: 8)
+
+	this.padding = args.src.read_u32le?()
+	if this.padding < 14 {
+		return "#bad header"
+	}
+	this.padding -= 14
+
+	// Read the BITMAPINFOHEADER (version 5 is 124 bytes).
+	//
+	// TODO: support other versions.
+
+	bitmapInfoLen = args.src.read_u32le?()
+	if bitmapInfoLen <> 124 {
+		return "#unsupported BMP file"
+	}
+	if this.padding < bitmapInfoLen {
+		return "#bad header"
+	}
+	this.padding -= bitmapInfoLen
+
+	this.width = args.src.read_u32le?()
+	if this.width >= 0x80000000 {
+		return "#bad header"
+	}
+
+	this.height = args.src.read_u32le?()
+	if this.height == 0x80000000 {
+		return "#bad header"
+	} else if this.height > 0x80000000 {
+		this.height = 0 ~mod- this.height
+		this.top_down = true
+	}
+
+	planes = args.src.read_u16le_as_u32?()
+	if planes <> 1 {
+		return "#unsupported BMP file"
+	}
+
+	bits_per_pixel = args.src.read_u16le_as_u32?()
+	if bits_per_pixel <> 24 {
+		// TODO: support 8bpp, 32bpp, possibly more.
+		return "#unsupported BMP file"
+	}
+	this.bits_per_pixel = (bits_per_pixel & 0xFF) as base.u8
+
+	compression = args.src.read_u32le?()
+	if compression <> 0 {
+		// TODO: support compression.
+		return "#unsupported BMP file"
+	}
+
+	// We've already read 20 bytes from the BITMAPINFOHEADER: size (4), width
+	// (4), height (4), planes (2), bpp (2), compression (4). Skip the rest.
+	args.src.skip32?(n: bitmapInfoLen - 20)
 
 	this.frame_config_io_position = args.src.position()
 
@@ -94,6 +165,8 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 	} else {
 		return base."@end of data"
 	}
+
+	args.src.skip32?(n: this.padding)
 
 	// TODO.
 
