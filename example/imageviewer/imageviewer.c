@@ -53,6 +53,7 @@ The Escape key quits.
 // code simply isn't compiled.
 #define WUFFS_CONFIG__MODULES
 #define WUFFS_CONFIG__MODULE__BASE
+#define WUFFS_CONFIG__MODULE__BMP
 #define WUFFS_CONFIG__MODULE__GIF
 #define WUFFS_CONFIG__MODULE__LZW
 #define WUFFS_CONFIG__MODULE__WBMP
@@ -90,6 +91,7 @@ wuffs_base__image_decoder* g_image_decoder = NULL;
 uint32_t g_background_color_index = 0;
 
 union {
+  wuffs_bmp__decoder bmp;
   wuffs_gif__decoder gif;
   wuffs_wbmp__decoder wbmp;
 } g_potential_decoders;
@@ -138,6 +140,19 @@ bool load_image_type() {
       g_image_decoder =
           wuffs_wbmp__decoder__upcast_as__wuffs_base__image_decoder(
               &g_potential_decoders.wbmp);
+      break;
+
+    case 'B':
+      status = wuffs_bmp__decoder__initialize(
+          &g_potential_decoders.bmp, sizeof g_potential_decoders.bmp,
+          WUFFS_VERSION, WUFFS_INITIALIZE__DEFAULT_OPTIONS);
+      if (!wuffs_base__status__is_ok(&status)) {
+        printf("%s: %s\n", g_filename, wuffs_base__status__message(&status));
+        return false;
+      }
+      g_image_decoder =
+          wuffs_bmp__decoder__upcast_as__wuffs_base__image_decoder(
+              &g_potential_decoders.bmp);
       break;
 
     case 'G':

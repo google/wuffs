@@ -15,22 +15,35 @@
 pub status "#bad header"
 pub status "#unsupported BMP file"
 
-pri status "#internal error: inconsistent bpp"
+pri status "#internal error: inconsistent swizzle count"
 
 pub const decoder_workbuf_len_max_incl_worst_case base.u64 = 0
 
 pub struct decoder? implements base.image_decoder(
-	width  : base.u32,
-	height : base.u32,
+	width  : base.u32[..= 0x7FFFFFFF],
+	height : base.u32[..= 0x7FFFFFFF],
 
 	call_sequence : base.u8,
 
-	bits_per_pixel : base.u8,
 	top_down       : base.bool,
+	bits_per_pixel : base.u8[..= 32],
+	pad_per_row    : base.u32[..= 3],
+	bytes_per_row  : base.u64[..= 0x00000001FFFFFFFC],  // 4 * 0x7FFFFFFF
+	bytes_total    : base.u64[..= 0xFFFFFFFC00000004],  // 4 * 0x7FFFFFFF * 0x7FFFFFFF
+	pixfmt         : base.pixel_format,
 
 	padding : base.u32,
 
 	frame_config_io_position : base.u64,
+
+	dst_x     : base.u32,
+	dst_y     : base.u32,
+	dst_y_end : base.u32,
+	dst_y_inc : base.u32,
+
+	stash       : array[4] base.u8,
+	num_stashed : base.u8[..= 4],
+	pending_pad : base.u8[..= 3],
 
 	swizzler : base.pixel_swizzler,
 	util     : base.utility,
@@ -39,6 +52,8 @@ pub struct decoder? implements base.image_decoder(
 pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_reader) {
 	var magic          : base.u32
 	var bitmapInfoLen  : base.u32
+	var width          : base.u32
+	var height         : base.u32
 	var planes         : base.u32
 	var bits_per_pixel : base.u32
 	var compression    : base.u32
@@ -75,17 +90,22 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 	}
 	this.padding -= bitmapInfoLen
 
-	this.width = args.src.read_u32le?()
-	if this.width >= 0x80000000 {
+	width = args.src.read_u32le?()
+	if width >= 0x80000000 {
 		return "#bad header"
 	}
+	this.width = width
 
-	this.height = args.src.read_u32le?()
-	if this.height == 0x80000000 {
+	height = args.src.read_u32le?()
+	if height == 0x80000000 {
 		return "#bad header"
-	} else if this.height > 0x80000000 {
-		this.height = 0 ~mod- this.height
+	} else if height >= 0x80000000 {
+		// The &0x7FFFFFFF is redundant, but proves to the compiler that the
+		// result is within this.height's refined bounds.
+		this.height = (0 ~mod- this.height) & 0x7FFFFFFF
 		this.top_down = true
+	} else {
+		this.height = height
 	}
 
 	planes = args.src.read_u16le_as_u32?()
@@ -94,11 +114,20 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 	}
 
 	bits_per_pixel = args.src.read_u16le_as_u32?()
-	if bits_per_pixel <> 24 {
+	if bits_per_pixel == 24 {
+		this.bits_per_pixel = 24
+		// 3 bytes per pixel, but row lengths are rounded up to multiples of 4.
+		// The "((x + 3) >> 2) << 2" dance rounds x up.
+		this.bytes_per_row = ((((this.width as base.u64) * 3) + 3) >> 2) << 2
+		this.pad_per_row = this.width & 3
+		// TODO: a Wuffs (not just C) name for the
+		// WUFFS_BASE__PIXEL_FORMAT__BGR magic pixfmt constant.
+		this.pixfmt = this.util.make_pixel_format(repr: 0x40000888)
+	} else {
 		// TODO: support 8bpp, 32bpp, possibly more.
 		return "#unsupported BMP file"
 	}
-	this.bits_per_pixel = (bits_per_pixel & 0xFF) as base.u8
+	this.bytes_total = this.bytes_per_row * (this.height as base.u64)
 
 	compression = args.src.read_u32le?()
 	if compression <> 0 {
@@ -116,7 +145,7 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 		// TODO: a Wuffs (not just C) name for the
 		// WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL magic pixfmt constant.
 		args.dst.set!(
-			pixfmt: 0x45008888,
+			pixfmt: 0x45008888,  // TODO: this.pixfmt instead?
 			pixsub: 0,
 			width: this.width,
 			height: this.height,
@@ -160,6 +189,11 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
 }
 
 pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, blend: base.pixel_blend, workbuf: slice base.u8, opts: nptr base.decode_frame_options) {
+	var status          : base.status
+	var bytes_remaining : base.u64
+	var n               : base.u64
+	var src             : slice base.u8
+
 	if this.call_sequence < 2 {
 		this.decode_frame_config?(dst: nullptr, src: args.src)
 	} else if this.call_sequence == 2 {
@@ -170,30 +204,173 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 
 	args.src.skip32?(n: this.padding)
 
-	// TODO.
+	if (this.width > 0) and (this.height > 0) {
+		this.dst_x = 0
+		if this.top_down {
+			this.dst_y = 0
+			this.dst_y_end = this.height
+			this.dst_y_inc = 1
+		} else {
+			this.dst_y = this.height ~mod- 1
+			this.dst_y_end = 0xFFFFFFFF  // -1 as a base.u32.
+			this.dst_y_inc = 0xFFFFFFFF  // -1 as a base.u32.
+		}
+
+		status = this.swizzler.prepare!(
+			dst_pixfmt: args.dst.pixel_format(),
+			dst_palette: args.dst.palette(),
+			src_pixfmt: this.pixfmt,
+			src_palette: this.util.empty_slice_u8(),
+			blend: args.blend)
+		if not status.is_ok() {
+			return status
+		}
+
+		bytes_remaining = this.bytes_total
+		while true {
+			n = args.src.available()
+			if bytes_remaining >= n {
+				bytes_remaining -= n
+			} else {
+				n = bytes_remaining
+				bytes_remaining = 0
+			}
+			src = args.src.take!(n: n)
+			status = this.swizzle!(dst: args.dst, src: src)
+			if status.is_ok() {
+				break
+			} else if status.is_suspension() {
+				yield? status
+			} else {
+				return status
+			}
+		}
+	}
 
 	this.call_sequence = 3
 }
 
+pri func decoder.swizzle!(dst: ptr base.pixel_buffer, src: slice base.u8) base.status {
+	var dst_pixfmt          : base.pixel_format
+	var dst_bits_per_pixel  : base.u32
+	var dst_bytes_per_pixel : base.u64[..= 64]
+	var dst_bytes_per_row   : base.u64
+	var src_bytes_per_pixel : base.u8[..= 4]
+	var tab                 : table base.u8
+	var dst                 : slice base.u8
+	var i                   : base.u64
+	var n                   : base.u64
+
+	// TODO: the dst_pixfmt variable shouldn't be necessary. We should be able
+	// to chain the two calls: "args.dst.pixel_format().bits_per_pixel()".
+	dst_pixfmt = args.dst.pixel_format()
+	dst_bits_per_pixel = dst_pixfmt.bits_per_pixel()
+	if (dst_bits_per_pixel > 512) or ((dst_bits_per_pixel & 7) <> 0) {
+		return base."#unsupported option"
+	}
+	dst_bytes_per_pixel = (dst_bits_per_pixel / 8) as base.u64
+	dst_bytes_per_row = (this.width as base.u64) * dst_bytes_per_pixel
+	src_bytes_per_pixel = (this.bits_per_pixel / 8) as base.u8
+	tab = args.dst.plane(p: 0)
+
+	// Handle the case where the I/O suspension occurred in the middle of the
+	// end-of-row padding.
+	while this.pending_pad > 0 {
+		if args.src.length() <= 0 {
+			return base."$short read"
+		}
+		this.pending_pad -= 1
+		args.src = args.src[1 ..]
+	}
+
+	// Handle the case where the I/O suspension occurred in the middle of a
+	// source pixel.
+	if this.num_stashed <> 0 {
+		while this.num_stashed < src_bytes_per_pixel {
+			assert this.num_stashed < 4 via "a < b: a < c; c <= b"(c: src_bytes_per_pixel)
+			if args.src.length() <= 0 {
+				return base."$short read"
+			}
+			this.stash[this.num_stashed] = args.src[0]
+			this.num_stashed += 1
+			args.src = args.src[1 ..]
+		}
+
+		// Write the single pixel.
+		dst = tab.row(y: this.dst_y)
+		if dst_bytes_per_row < dst.length() {
+			dst = dst[.. dst_bytes_per_row]
+		}
+		i = (this.dst_x as base.u64) * dst_bytes_per_pixel
+		if i < dst.length() {
+			this.swizzler.swizzle_interleaved!(
+				dst: dst[i ..],
+				dst_palette: this.util.empty_slice_u8(),
+				src: this.stash[.. this.num_stashed])
+			this.dst_x ~sat+= 1
+		}
+
+		this.num_stashed = 0
+	}
+
+	while true {
+		if this.dst_x == this.width {
+			this.dst_x = 0
+			this.dst_y ~mod+= this.dst_y_inc
+
+			if this.pad_per_row <> 0 {
+				n = this.pad_per_row as base.u64
+				if n <= args.src.length() {
+					args.src = args.src[n ..]
+				} else {
+					this.pending_pad = ((n - args.src.length()) & 3) as base.u8
+					return base."$short read"
+				}
+			}
+		}
+
+		if this.dst_y == this.dst_y_end {
+			break
+		}
+
+		dst = tab.row(y: this.dst_y)
+		if dst_bytes_per_row < dst.length() {
+			dst = dst[.. dst_bytes_per_row]
+		}
+		i = (this.dst_x as base.u64) * dst_bytes_per_pixel
+		if i < dst.length() {
+			n = this.swizzler.swizzle_interleaved!(
+				dst: dst[i ..],
+				dst_palette: this.util.empty_slice_u8(),
+				src: args.src)
+			this.dst_x ~sat+= (n & 0xFFFFFFFF) as base.u32
+			n = (n & 0xFFFFFFFF) * (src_bytes_per_pixel as base.u64)
+			if n <= args.src.length() {
+				args.src = args.src[n ..]
+			} else {
+				return "#internal error: inconsistent swizzle count"
+			}
+		}
+
+		// Suspend if we didn't complete the row, potentially in the middle of
+		// a source pixel.
+		if this.dst_x < this.width {
+			while (this.num_stashed < src_bytes_per_pixel) and (args.src.length() > 0) {
+				assert this.num_stashed < 4 via "a < b: a < c; c <= b"(c: src_bytes_per_pixel)
+				this.stash[this.num_stashed] = args.src[0]
+				this.num_stashed += 1
+				args.src = args.src[1 ..]
+			}
+			return base."$short read"
+		}
+	}
+
+	return ok
+}
+
 pri func decoder.skip_frame?(src: base.io_reader) {
-	var bytes_per_row : base.u64
-	var y             : base.u32
-
 	args.src.skip32?(n: this.padding)
-
-	if this.bits_per_pixel == 24 {
-		// 3 bytes per pixel. We add 3 and shift twice to round up to a
-		// multiple of 4.
-		bytes_per_row = ((((this.width as base.u64) * 3) + 3) >> 2) << 2
-	} else {
-		return "#internal error: inconsistent bpp"
-	}
-
-	y = this.height
-	while y > 0 {
-		y -= 1
-		args.src.skip?(n: bytes_per_row)
-	}
+	args.src.skip?(n: this.bytes_total)
 
 	this.call_sequence = 3
 }
