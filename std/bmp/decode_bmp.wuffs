@@ -1,0 +1,167 @@
+// Copyright 2020 The Wuffs Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+pub status "#bad header"
+
+pub const decoder_workbuf_len_max_incl_worst_case base.u64 = 0
+
+pub struct decoder? implements base.image_decoder(
+	width  : base.u32,
+	height : base.u32,
+
+	call_sequence : base.u8,
+
+	frame_config_io_position : base.u64,
+
+	swizzler : base.pixel_swizzler,
+	util     : base.utility,
+)
+
+pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_reader) {
+	if this.call_sequence <> 0 {
+		return base."#bad call sequence"
+	}
+
+	// TODO.
+	this.width = 1
+	this.height = 1
+
+	this.frame_config_io_position = args.src.position()
+
+	if args.dst <> nullptr {
+		// TODO: a Wuffs (not just C) name for the
+		// WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL magic pixfmt constant.
+		args.dst.set!(
+			pixfmt: 0x45008888,
+			pixsub: 0,
+			width: this.width,
+			height: this.height,
+			first_frame_io_position: this.frame_config_io_position,
+			first_frame_is_opaque: true)
+	}
+
+	this.call_sequence = 1
+}
+
+pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_reader) {
+	if this.call_sequence < 1 {
+		this.decode_image_config?(dst: nullptr, src: args.src)
+	} else if this.call_sequence == 1 {
+		if this.frame_config_io_position <> args.src.position() {
+			return base."#bad restart"
+		}
+	} else if this.call_sequence == 2 {
+		this.skip_frame?(src: args.src)
+		return base."@end of data"
+	} else {
+		return base."@end of data"
+	}
+
+	if args.dst <> nullptr {
+		args.dst.update!(bounds: this.util.make_rect_ie_u32(
+			min_incl_x: 0,
+			min_incl_y: 0,
+			max_excl_x: this.width,
+			max_excl_y: this.height),
+			duration: 0,
+			index: 0,
+			io_position: this.frame_config_io_position,
+			disposal: 0,
+			opaque_within_bounds: true,
+			overwrite_instead_of_blend: false,
+			background_color: 0xFF000000)
+	}
+
+	this.call_sequence = 2
+}
+
+pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, blend: base.pixel_blend, workbuf: slice base.u8, opts: nptr base.decode_frame_options) {
+	if this.call_sequence < 2 {
+		this.decode_frame_config?(dst: nullptr, src: args.src)
+	} else if this.call_sequence == 2 {
+		// No-op.
+	} else {
+		return base."@end of data"
+	}
+
+	// TODO.
+
+	this.call_sequence = 3
+}
+
+pri func decoder.skip_frame?(src: base.io_reader) {
+	// TODO.
+
+	this.call_sequence = 3
+}
+
+pub func decoder.ack_metadata_chunk?(src: base.io_reader) {
+	// TODO: this final line shouldn't be necessary, here and in some other
+	// std/*/*.wuffs functions.
+	return ok
+}
+
+pub func decoder.frame_dirty_rect() base.rect_ie_u32 {
+	return this.util.make_rect_ie_u32(
+		min_incl_x: 0,
+		min_incl_y: 0,
+		max_excl_x: this.width,
+		max_excl_y: this.height)
+}
+
+pub func decoder.metadata_chunk_length() base.u64 {
+	return 0
+}
+
+pub func decoder.metadata_fourcc() base.u32 {
+	return 0
+}
+
+pub func decoder.num_animation_loops() base.u32 {
+	return 0
+}
+
+pub func decoder.num_decoded_frame_configs() base.u64 {
+	if this.call_sequence > 1 {
+		return 1
+	}
+	return 0
+}
+
+pub func decoder.num_decoded_frames() base.u64 {
+	if this.call_sequence > 2 {
+		return 1
+	}
+	return 0
+}
+
+pub func decoder.restart_frame!(index: base.u64, io_position: base.u64) base.status {
+	if this.call_sequence == 0 {
+		return base."#bad call sequence"
+	}
+	if args.index <> 0 {
+		return base."#bad argument"
+	}
+	this.call_sequence = 1
+	this.frame_config_io_position = args.io_position
+	return ok
+}
+
+pub func decoder.set_report_metadata!(fourcc: base.u32, report: base.bool) {
+	// No-op. BMP doesn't support metadata.
+}
+
+pub func decoder.workbuf_len() base.range_ii_u64 {
+	return this.util.make_range_ii_u64(min_incl: 0, max_incl: 0)
+}
