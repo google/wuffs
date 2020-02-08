@@ -495,7 +495,7 @@ func (q *checker) bcheckAssignment(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 
 func (q *checker) bcheckAssignment1(lhs *a.Expr, lTyp *a.TypeExpr, op t.ID, rhs *a.Expr) (bounds, error) {
 	if lhs == nil && op != t.IDEq {
-		return bounds{}, fmt.Errorf("check: internal error: missing LHS for op key 0x%02X", op)
+		return bounds{}, fmt.Errorf("check: internal error: missing LHS for op key 0x%X", op)
 	}
 
 	lb, err := bounds{}, (error)(nil)
@@ -793,6 +793,9 @@ func bcheckExprConstValue(n *a.Expr) bounds {
 		bcheckExprConstValue(o.AsExpr())
 	}
 	if o := n.RHS(); o != nil && n.Operator() != t.IDXBinaryAs {
+		bcheckExprConstValue(o.AsExpr())
+	}
+	for _, o := range n.Args() {
 		bcheckExprConstValue(o.AsExpr())
 	}
 	cv := n.ConstValue()

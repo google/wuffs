@@ -858,7 +858,7 @@ func evalConstValueBinaryOp(tm *t.Map, n *a.Expr, l *big.Int, r *big.Int) (*big.
 
 		return nil, fmt.Errorf("check: cannot apply tilde-operators to ideal numbers")
 	}
-	return nil, fmt.Errorf("check: unrecognized token (0x%02X) for evalConstValueBinaryOp", n.Operator())
+	return nil, fmt.Errorf("check: unrecognized token (0x%X) for evalConstValueBinaryOp", n.Operator())
 }
 
 func (q *checker) tcheckExprAssociativeOp(n *a.Expr, depth uint32) error {
@@ -896,7 +896,6 @@ func (q *checker) tcheckExprAssociativeOp(n *a.Expr, depth uint32) error {
 			typ = typeExprIdeal
 		}
 		n.SetMType(typ)
-		return nil
 
 	case t.IDXAssociativeAnd, t.IDXAssociativeOr:
 		for _, o := range n.Args() {
@@ -910,10 +909,79 @@ func (q *checker) tcheckExprAssociativeOp(n *a.Expr, depth uint32) error {
 			}
 		}
 		n.SetMType(typeExprBool)
-		return nil
+
+	default:
+		return fmt.Errorf("check: unrecognized token (0x%X) for tcheckExprAssociativeOp", n.Operator())
 	}
 
-	return fmt.Errorf("check: unrecognized token (0x%X) for tcheckExprAssociativeOp", n.Operator())
+	ncv, err := evalConstValueAssociativeOp(q.tm, n)
+	n.SetConstValue(ncv)
+	return err
+}
+
+func evalConstValueAssociativeOp(tm *t.Map, n *a.Expr) (*big.Int, error) {
+	args := n.Args()
+	if len(args) == 0 {
+		return nil, fmt.Errorf("check: no operands for associative operator")
+	}
+	cv0 := args[0].AsExpr().ConstValue()
+	if cv0 == nil {
+		return nil, nil
+	}
+	args = args[1:]
+	ncv := big.NewInt(0).Set(cv0)
+
+	switch n.Operator() {
+	case t.IDXAssociativePlus:
+		for _, o := range args {
+			if cv := o.AsExpr().ConstValue(); cv == nil {
+				return nil, nil
+			} else {
+				ncv.Add(ncv, cv)
+			}
+		}
+
+	case t.IDXAssociativeStar:
+		for _, o := range args {
+			if cv := o.AsExpr().ConstValue(); cv == nil {
+				return nil, nil
+			} else {
+				ncv.Mul(ncv, cv)
+			}
+		}
+
+	case t.IDXAssociativeAmp, t.IDXAssociativeAnd:
+		for _, o := range args {
+			if cv := o.AsExpr().ConstValue(); cv == nil {
+				return nil, nil
+			} else {
+				ncv.And(ncv, cv)
+			}
+		}
+
+	case t.IDXAssociativePipe, t.IDXAssociativeOr:
+		for _, o := range args {
+			if cv := o.AsExpr().ConstValue(); cv == nil {
+				return nil, nil
+			} else {
+				ncv.Or(ncv, cv)
+			}
+		}
+
+	case t.IDXAssociativeHat:
+		for _, o := range args {
+			if cv := o.AsExpr().ConstValue(); cv == nil {
+				return nil, nil
+			} else {
+				ncv.Xor(ncv, cv)
+			}
+		}
+
+	default:
+		return nil, fmt.Errorf("check: unrecognized token (0x%X) for evalConstValueAssociativeOp", n.Operator())
+	}
+
+	return ncv, nil
 }
 
 func (q *checker) tcheckTypeExpr(typ *a.TypeExpr, depth uint32) error {

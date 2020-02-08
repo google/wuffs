@@ -340,7 +340,7 @@ var errFailed = errors.New("failed")
 func proveReasonRequirement(q *checker, op t.ID, lhs *a.Expr, rhs *a.Expr) error {
 	if !op.IsXBinaryOp() {
 		return fmt.Errorf(
-			"check: internal error: proveReasonRequirement token (0x%02X) is not an XBinaryOp", op)
+			"check: internal error: proveReasonRequirement token (0x%X) is not an XBinaryOp", op)
 	}
 	if err := q.proveBinaryOp(op, lhs, rhs); err != nil {
 		n := a.NewExpr(0, op, 0, 0, lhs.AsNode(), nil, rhs.AsNode(), nil)

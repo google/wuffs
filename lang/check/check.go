@@ -749,10 +749,14 @@ func nodeDebugString(tm *t.Map, n *a.Node) string {
 
 func allTypeChecked(tm *t.Map, n *a.Node) error {
 	return n.Walk(func(o *a.Node) error {
-		b := o.MBounds()
+		if b := o.MBounds(); (b[0] == nil) || (b[1] == nil) {
+			return fmt.Errorf("check: internal error: unchecked %s (missing bounds)",
+				nodeDebugString(tm, o))
+		}
 		typ := o.MType()
-		if b[0] == nil || b[1] == nil || typ == nil {
-			return fmt.Errorf("check: internal error: unchecked %s", nodeDebugString(tm, o))
+		if typ == nil {
+			return fmt.Errorf("check: internal error: unchecked %s (missing type)",
+				nodeDebugString(tm, o))
 		}
 
 		typOK := false
