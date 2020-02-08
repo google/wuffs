@@ -8283,7 +8283,7 @@ wuffs_bmp__decoder__swizzle(wuffs_bmp__decoder* self,
   v_dst_pixfmt = wuffs_base__pixel_buffer__pixel_format(a_dst);
   v_dst_bits_per_pixel =
       wuffs_base__pixel_format__bits_per_pixel(&v_dst_pixfmt);
-  if ((v_dst_bits_per_pixel > 512) || ((v_dst_bits_per_pixel & 7) != 0)) {
+  if ((v_dst_bits_per_pixel & 7) != 0) {
     return wuffs_base__make_status(wuffs_base__error__unsupported_option);
   }
   v_dst_bytes_per_pixel = ((uint64_t)((v_dst_bits_per_pixel / 8)));
@@ -16774,7 +16774,7 @@ wuffs_gif__decoder__copy_to_image_buffer(wuffs_gif__decoder* self,
 
   v_pixfmt = wuffs_base__pixel_buffer__pixel_format(a_pb);
   v_bits_per_pixel = wuffs_base__pixel_format__bits_per_pixel(&v_pixfmt);
-  if ((v_bits_per_pixel > 512) || ((v_bits_per_pixel & 7) != 0)) {
+  if ((v_bits_per_pixel & 7) != 0) {
     return wuffs_base__make_status(wuffs_base__error__unsupported_option);
   }
   v_bytes_per_pixel = (v_bits_per_pixel >> 3);

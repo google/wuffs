@@ -344,7 +344,7 @@ var Funcs = []string{
 
 	// ---- pixel_format
 
-	"pixel_format.bits_per_pixel() u32",
+	"pixel_format.bits_per_pixel() u32[..= 256]",
 
 	// ---- pixel_swizzler
 

@@ -1013,8 +1013,8 @@ pri func decoder.copy_to_image_buffer!(pb: ptr base.pixel_buffer, src: slice bas
 	var n               : base.u64
 	var src_ri          : base.u64
 	var pixfmt          : base.pixel_format
-	var bytes_per_pixel : base.u32[..= 64]
-	var bits_per_pixel  : base.u32
+	var bytes_per_pixel : base.u32[..= 32]
+	var bits_per_pixel  : base.u32[..= 256]
 	var tab             : table base.u8
 	var i               : base.u64
 	var j               : base.u64
@@ -1027,7 +1027,7 @@ pri func decoder.copy_to_image_buffer!(pb: ptr base.pixel_buffer, src: slice bas
 	// chain the two calls: "args.pb.pixel_format().bits_per_pixel()".
 	pixfmt = args.pb.pixel_format()
 	bits_per_pixel = pixfmt.bits_per_pixel()
-	if (bits_per_pixel > 512) or ((bits_per_pixel & 7) <> 0) {
+	if (bits_per_pixel & 7) <> 0 {
 		return base."#unsupported option"
 	}
 	bytes_per_pixel = bits_per_pixel >> 3

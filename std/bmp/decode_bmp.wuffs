@@ -252,8 +252,8 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 
 pri func decoder.swizzle!(dst: ptr base.pixel_buffer, src: slice base.u8) base.status {
 	var dst_pixfmt          : base.pixel_format
-	var dst_bits_per_pixel  : base.u32
-	var dst_bytes_per_pixel : base.u64[..= 64]
+	var dst_bits_per_pixel  : base.u32[..= 256]
+	var dst_bytes_per_pixel : base.u64[..= 32]
 	var dst_bytes_per_row   : base.u64
 	var src_bytes_per_pixel : base.u8[..= 4]
 	var tab                 : table base.u8
@@ -265,7 +265,7 @@ pri func decoder.swizzle!(dst: ptr base.pixel_buffer, src: slice base.u8) base.s
 	// to chain the two calls: "args.dst.pixel_format().bits_per_pixel()".
 	dst_pixfmt = args.dst.pixel_format()
 	dst_bits_per_pixel = dst_pixfmt.bits_per_pixel()
-	if (dst_bits_per_pixel > 512) or ((dst_bits_per_pixel & 7) <> 0) {
+	if (dst_bits_per_pixel & 7) <> 0 {
 		return base."#unsupported option"
 	}
 	dst_bytes_per_pixel = (dst_bits_per_pixel / 8) as base.u64
