@@ -97,8 +97,8 @@ pub struct config_decoder? implements base.image_decoder(
 	gc_has_transparent_index : base.bool,
 	gc_transparent_index     : base.u8,
 	gc_disposal              : base.u8,
-	// There are 7056000 flicks per centisecond.
-	gc_duration : base.u64[..= 0xFFFF * 7056000],
+	// There are 7_056000 flicks per centisecond.
+	gc_duration : base.u64[..= 0xFFFF * 7_056000],
 
 	frame_config_io_position        : base.u64,
 	num_decoded_frame_configs_value : base.u64,
@@ -157,7 +157,7 @@ pub func config_decoder.decode_image_config?(dst: nptr base.image_config, src: b
 			(this.frame_rect_y1 == this.height)
 	} else if ffio {
 		// Use opaque black, not transparent black.
-		this.black_color_u32_argb_premul = 0xFF000000
+		this.black_color_u32_argb_premul = 0xFF00_0000
 	}
 
 	if this.background_color_u32_argb_premul == 77 {
@@ -168,7 +168,7 @@ pub func config_decoder.decode_image_config?(dst: nptr base.image_config, src: b
 		// TODO: a Wuffs (not just C) name for the
 		// WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY magic pixfmt constant.
 		args.dst.set!(
-			pixfmt: 0x47040008,
+			pixfmt: 0x4704_0008,
 			pixsub: 0,
 			width: this.width,
 			height: this.height,
@@ -180,9 +180,9 @@ pub func config_decoder.decode_image_config?(dst: nptr base.image_config, src: b
 }
 
 pub func config_decoder.set_report_metadata!(fourcc: base.u32, report: base.bool) {
-	if args.fourcc == 0x49434350 {  // "ICCP"
+	if args.fourcc == 0x4943_4350 {  // "ICCP"
 		this.report_metadata_iccp = args.report
-	} else if args.fourcc == 0x584D5020 {  // "XMP "
+	} else if args.fourcc == 0x584D_5020 {  // "XMP "
 		this.report_metadata_xmp = args.report
 	}
 }
@@ -204,7 +204,7 @@ pub func config_decoder.ack_metadata_chunk?(src: base.io_reader) {
 
 		this.metadata_chunk_length_value = args.src.peek_u8_as_u64()
 		if this.metadata_chunk_length_value > 0 {
-			if this.metadata_fourcc_value == 0x584D5020 {  // "XMP "
+			if this.metadata_fourcc_value == 0x584D_5020 {  // "XMP "
 				// The +1 is because XMP metadata's encoding includes each
 				// block's leading byte (the block size) as part of the
 				// metadata passed to the caller.
@@ -461,7 +461,7 @@ pri func config_decoder.decode_lsd?(src: base.io_reader) {
 			// Convert from RGB (in memory order) to ARGB (in native u32 order)
 			// to BGRA (in memory order).
 			argb = args.src.read_u24be_as_u32?()
-			argb |= 0xFF000000
+			argb |= 0xFF00_0000
 			this.palettes[0][(4 * i) + 0] = ((argb >> 0) & 0xFF) as base.u8
 			this.palettes[0][(4 * i) + 1] = ((argb >> 8) & 0xFF) as base.u8
 			this.palettes[0][(4 * i) + 2] = ((argb >> 16) & 0xFF) as base.u8
@@ -617,7 +617,7 @@ pri func config_decoder.decode_ae?(src: base.io_reader) {
 			}
 			this.metadata_chunk_length_value = args.src.peek_u8_as_u64()
 			args.src.skip32_fast!(actual: 1, worst_case: 1)
-			this.metadata_fourcc_value = 0x49434350  // "ICCP"
+			this.metadata_fourcc_value = 0x4943_4350  // "ICCP"
 			this.metadata_io_position = args.src.position() ~sat+ this.metadata_chunk_length_value
 			this.call_sequence = 1
 			return base."@metadata reported"
@@ -637,7 +637,7 @@ pri func config_decoder.decode_ae?(src: base.io_reader) {
 			} else {
 				args.src.skip32_fast!(actual: 1, worst_case: 1)
 			}
-			this.metadata_fourcc_value = 0x584D5020  // "XMP "
+			this.metadata_fourcc_value = 0x584D_5020  // "XMP "
 			this.metadata_io_position = args.src.position() ~sat+ this.metadata_chunk_length_value
 			this.call_sequence = 1
 			return base."@metadata reported"
@@ -680,9 +680,9 @@ pri func config_decoder.decode_gc?(src: base.io_reader) {
 		this.gc_disposal = 0
 	}
 
-	// There are 7056000 flicks per centisecond.
+	// There are 7_056000 flicks per centisecond.
 	gc_duration_centiseconds = args.src.read_u16le?()
-	this.gc_duration = (gc_duration_centiseconds as base.u64) * 7056000
+	this.gc_duration = (gc_duration_centiseconds as base.u64) * 7_056000
 	this.gc_transparent_index = args.src.read_u8?()
 
 	c = args.src.read_u8?()

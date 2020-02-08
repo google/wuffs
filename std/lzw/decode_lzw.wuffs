@@ -244,7 +244,7 @@ pri func decoder.read_from!(src: base.io_reader) {
 			// In the special case that code == save_code, the decoded bytes
 			// contain an extra copy (at the end) of the first byte, and will
 			// be written to output[old_wi:new_wi + 1].
-			o = (output_wi + ((this.lm1s[c] as base.u32) & 0xFFFFFFF8)) & 8191
+			o = (output_wi + ((this.lm1s[c] as base.u32) & 0xFFFF_FFF8)) & 8191
 			output_wi = (output_wi + 1 + (this.lm1s[c] as base.u32)) & 8191
 
 			steps = (this.lm1s[c] as base.u32) >> 3
@@ -345,7 +345,7 @@ pri func decoder.write_to?(dst: base.io_writer) {
 			this.output_wi = 0
 			return ok
 		}
-		this.output_ri = (this.output_ri ~mod+ ((n & 0xFFFFFFFF) as base.u32)) & 8191
+		this.output_ri = (this.output_ri ~mod+ ((n & 0xFFFF_FFFF) as base.u32)) & 8191
 		yield? base."$short write"
 	}
 }

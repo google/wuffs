@@ -39,7 +39,7 @@ pub const decoder_workbuf_len_max_incl_worst_case base.u64 = 0
 // accessed after all interlace stages are complete. Being the maximum base.u32
 // value means that, after all interlace stages are complete, dst_y will be set
 // to that maximum value (and therefore outside the frame rect).
-pri const interlace_start array[5] base.u32 = [0xFFFFFFFF, 1, 2, 4, 0]
+pri const interlace_start array[5] base.u32 = [0xFFFF_FFFF, 1, 2, 4, 0]
 pri const interlace_delta array[5] base.u8 = [1, 2, 4, 8, 8]
 pri const interlace_count array[5] base.u8 = [0, 1, 2, 4, 8]
 

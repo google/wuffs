@@ -62,7 +62,7 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 				break
 			}
 			x64 = (x32 as base.u64) << 7
-			if x64 > 0xFFFFFFFF {
+			if x64 > 0xFFFF_FFFF {
 				return "#bad header"
 			}
 			x32 = x64 as base.u32
@@ -82,7 +82,7 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 		// TODO: a Wuffs (not just C) name for the
 		// WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY magic pixfmt constant.
 		args.dst.set!(
-			pixfmt: 0x47040008,
+			pixfmt: 0x4704_0008,
 			pixsub: 0,
 			width: this.width,
 			height: this.height,
@@ -119,7 +119,7 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
 			disposal: 0,
 			opaque_within_bounds: true,
 			overwrite_instead_of_blend: false,
-			background_color: 0xFF000000)
+			background_color: 0xFF00_0000)
 	}
 
 	this.call_sequence = 2
@@ -147,7 +147,7 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 	status = this.swizzler.prepare!(
 		dst_pixfmt: args.dst.pixel_format(),
 		dst_palette: args.dst.palette(),
-		src_pixfmt: this.util.make_pixel_format(repr: 0x10000008),
+		src_pixfmt: this.util.make_pixel_format(repr: 0x1000_0008),
 		src_palette: this.util.empty_slice_u8(),
 		blend: args.blend)
 	if not status.is_ok() {
@@ -158,14 +158,14 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 	if this.width > 0 {
 		tab = args.dst.plane(p: 0)
 		while dst_y < this.height {
-			assert dst_y < 0xFFFFFFFF via "a < b: a < c; c <= b"(c: this.height)
+			assert dst_y < 0xFFFF_FFFF via "a < b: a < c; c <= b"(c: this.height)
 			dst = tab.row(y: dst_y)
 			dst_x = 0
 
 			while dst_x < this.width,
-				inv dst_y < 0xFFFFFFFF,
+				inv dst_y < 0xFFFF_FFFF,
 			{
-				assert dst_x < 0xFFFFFFFF via "a < b: a < c; c <= b"(c: this.width)
+				assert dst_x < 0xFFFF_FFFF via "a < b: a < c; c <= b"(c: this.width)
 
 				if (dst_x & 7) == 0 {
 					c = args.src.read_u8?()
@@ -199,7 +199,7 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 }
 
 pri func decoder.skip_frame?(src: base.io_reader) {
-	var bytes_per_row : base.u64[..= 0x20000000]
+	var bytes_per_row : base.u64[..= 0x2000_0000]
 	var total_bytes   : base.u64
 
 	bytes_per_row = ((this.width as base.u64) + 7) / 8

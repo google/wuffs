@@ -152,7 +152,11 @@ func Render(w io.Writer, tm *t.Map, src []t.Token, comments []string) (err error
 				}
 			}
 
-			buf = append(buf, tm.ByID(tok.ID)...)
+			if s := tm.ByID(tok.ID); (s == "") || (s[0] < '0') || ('9' < s[0]) {
+				buf = append(buf, s...)
+			} else {
+				buf = appendNum(buf, s)
+			}
 
 			if tok.ID == t.IDOpenCurly {
 				if indent == maxIndent {
@@ -227,6 +231,46 @@ func appendComment(buf []byte, comments []string, line uint32, indent int, other
 			}
 			buf = append(buf, com...)
 		}
+	}
+	return buf
+}
+
+func appendNum(buf []byte, s string) []byte {
+	groupLen := uint32(6)
+	if (len(s) >= 2) && (s[0] == '0') && ((s[1] == 'X') || (s[1] == 'x')) {
+		buf = append(buf, "0x"...)
+		s = s[2:]
+		groupLen = 4
+	}
+
+	nonUnderscores := uint32(0)
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if c == '_' {
+			continue
+		}
+		nonUnderscores++
+	}
+	digitsUntilGroup := nonUnderscores % groupLen
+	if digitsUntilGroup == 0 {
+		digitsUntilGroup = groupLen
+	}
+
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if c == '_' {
+			continue
+		} else if 'a' <= c {
+			c -= 'a' - 'A'
+		}
+
+		if digitsUntilGroup > 0 {
+			digitsUntilGroup--
+		} else {
+			digitsUntilGroup = groupLen - 1
+			buf = append(buf, '_')
+		}
+		buf = append(buf, c)
 	}
 	return buf
 }

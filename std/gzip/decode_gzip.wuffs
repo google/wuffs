@@ -116,7 +116,7 @@ pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf
 		status =? this.flate.transform_io?(dst: args.dst, src: args.src, workbuf: args.workbuf)
 		if not this.ignore_checksum {
 			checksum_got = this.checksum.update_u32!(x: args.dst.since(mark: mark))
-			decoded_length_got ~mod+= ((args.dst.count_since(mark: mark) & 0xFFFFFFFF) as base.u32)
+			decoded_length_got ~mod+= (args.dst.count_since(mark: mark) & 0xFFFF_FFFF) as base.u32
 		}
 		if status.is_ok() {
 			break

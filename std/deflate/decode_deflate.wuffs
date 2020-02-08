@@ -44,17 +44,17 @@ pub const decoder_workbuf_len_max_incl_worst_case base.u64 = 1
 // Some trailing elements are 0x08000000. Bit 27 indicates an invalid value.
 
 pri const lcode_magic_numbers array[32] base.u32 = [
-	0x40000000, 0x40000100, 0x40000200, 0x40000300, 0x40000400, 0x40000500, 0x40000600, 0x40000700,
-	0x40000810, 0x40000A10, 0x40000C10, 0x40000E10, 0x40001020, 0x40001420, 0x40001820, 0x40001C20,
-	0x40002030, 0x40002830, 0x40003030, 0x40003830, 0x40004040, 0x40005040, 0x40006040, 0x40007040,
-	0x40008050, 0x4000A050, 0x4000C050, 0x4000E050, 0x4000FF00, 0x08000000, 0x08000000, 0x08000000,
+	0x4000_0000, 0x4000_0100, 0x4000_0200, 0x4000_0300, 0x4000_0400, 0x4000_0500, 0x4000_0600, 0x4000_0700,
+	0x4000_0810, 0x4000_0A10, 0x4000_0C10, 0x4000_0E10, 0x4000_1020, 0x4000_1420, 0x4000_1820, 0x4000_1C20,
+	0x4000_2030, 0x4000_2830, 0x4000_3030, 0x4000_3830, 0x4000_4040, 0x4000_5040, 0x4000_6040, 0x4000_7040,
+	0x4000_8050, 0x4000_A050, 0x4000_C050, 0x4000_E050, 0x4000_FF00, 0x0800_0000, 0x0800_0000, 0x0800_0000,
 ]
 
 pri const dcode_magic_numbers array[32] base.u32 = [
-	0x40000000, 0x40000100, 0x40000200, 0x40000300, 0x40000410, 0x40000610, 0x40000820, 0x40000C20,
-	0x40001030, 0x40001830, 0x40002040, 0x40003040, 0x40004050, 0x40006050, 0x40008060, 0x4000C060,
-	0x40010070, 0x40018070, 0x40020080, 0x40030080, 0x40040090, 0x40060090, 0x400800A0, 0x400C00A0,
-	0x401000B0, 0x401800B0, 0x402000C0, 0x403000C0, 0x404000D0, 0x406000D0, 0x08000000, 0x08000000,
+	0x4000_0000, 0x4000_0100, 0x4000_0200, 0x4000_0300, 0x4000_0410, 0x4000_0610, 0x4000_0820, 0x4000_0C20,
+	0x4000_1030, 0x4000_1830, 0x4000_2040, 0x4000_3040, 0x4000_4050, 0x4000_6050, 0x4000_8060, 0x4000_C060,
+	0x4001_0070, 0x4001_8070, 0x4002_0080, 0x4003_0080, 0x4004_0090, 0x4006_0090, 0x4008_00A0, 0x400C_00A0,
+	0x4010_00B0, 0x4018_00B0, 0x4020_00C0, 0x4030_00C0, 0x4040_00D0, 0x4060_00D0, 0x0800_0000, 0x0800_0000,
 ]
 
 // huffs_table_size is the smallest power of 2 that is greater than or equal to
@@ -741,7 +741,7 @@ pri func decoder.init_huff!(which: base.u32[..= 1], n_codes0: base.u32[..= 288],
 		initial_high_bits = (1 as base.u32) << max_cl
 	}
 	prev_cl = (this.code_lengths[args.n_codes0 + (symbols[0] as base.u32)] & 15) as base.u32
-	prev_redirect_key = 0xFFFFFFFF
+	prev_redirect_key = 0xFFFF_FFFF
 	top = 0
 	next_top = 512
 	code = 0
@@ -811,7 +811,7 @@ pri func decoder.init_huff!(which: base.u32[..= 1], n_codes0: base.u32[..= 288],
 				next_top = top + ((1 as base.u32) << j)
 
 				redirect_key = (reverse8[redirect_key >> 1] as base.u32) | ((redirect_key & 1) << 8)
-				this.huffs[args.which][redirect_key] = 0x10000009 | (top << 8) | (j << 4)
+				this.huffs[args.which][redirect_key] = 0x1000_0009 | (top << 8) | (j << 4)
 			}
 		}
 		if (key >= (1 << 9)) or (counts[prev_cl] <= 0) {
@@ -825,10 +825,10 @@ pri func decoder.init_huff!(which: base.u32[..= 1], n_codes0: base.u32[..= 288],
 		symbol = symbols[i] as base.u32
 		if symbol == 256 {
 			// End-of-block.
-			value = 0x20000000 | cl
+			value = 0x2000_0000 | cl
 		} else if (symbol < 256) and (args.which == 0) {
 			// Literal.
-			value = 0x80000000 | (symbol << 8) | cl
+			value = 0x8000_0000 | (symbol << 8) | cl
 		} else if symbol >= args.base_symbol {
 			// Base number + extra bits.
 			symbol -= args.base_symbol

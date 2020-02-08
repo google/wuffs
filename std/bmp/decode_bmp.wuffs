@@ -20,16 +20,16 @@ pri status "#internal error: inconsistent swizzle count"
 pub const decoder_workbuf_len_max_incl_worst_case base.u64 = 0
 
 pub struct decoder? implements base.image_decoder(
-	width  : base.u32[..= 0x7FFFFFFF],
-	height : base.u32[..= 0x7FFFFFFF],
+	width  : base.u32[..= 0x7FFF_FFFF],
+	height : base.u32[..= 0x7FFF_FFFF],
 
 	call_sequence : base.u8,
 
 	top_down       : base.bool,
 	bits_per_pixel : base.u8[..= 32],
 	pad_per_row    : base.u32[..= 3],
-	bytes_per_row  : base.u64[..= 0x00000001FFFFFFFC],  // 4 * 0x7FFFFFFF
-	bytes_total    : base.u64[..= 0xFFFFFFFC00000004],  // 4 * 0x7FFFFFFF * 0x7FFFFFFF
+	bytes_per_row  : base.u64[..= 0x0000_0001_FFFF_FFFC],  // 4 * 0x7FFF_FFFF
+	bytes_total    : base.u64[..= 0xFFFF_FFFC_0000_0004],  // 4 * 0x7FFF_FFFF * 0x7FFF_FFFF
 	pixfmt         : base.pixel_format,
 
 	padding : base.u32,
@@ -91,18 +91,18 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 	this.padding -= bitmapInfoLen
 
 	width = args.src.read_u32le?()
-	if width >= 0x80000000 {
+	if width >= 0x8000_0000 {
 		return "#bad header"
 	}
 	this.width = width
 
 	height = args.src.read_u32le?()
-	if height == 0x80000000 {
+	if height == 0x8000_0000 {
 		return "#bad header"
-	} else if height >= 0x80000000 {
-		// The &0x7FFFFFFF is redundant, but proves to the compiler that the
+	} else if height >= 0x8000_0000 {
+		// The &0x7FFF_FFFF is redundant, but proves to the compiler that the
 		// result is within this.height's refined bounds.
-		this.height = (0 ~mod- this.height) & 0x7FFFFFFF
+		this.height = (0 ~mod- this.height) & 0x7FFF_FFFF
 		this.top_down = true
 	} else {
 		this.height = height
@@ -122,7 +122,7 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 		this.pad_per_row = this.width & 3
 		// TODO: a Wuffs (not just C) name for the
 		// WUFFS_BASE__PIXEL_FORMAT__BGR magic pixfmt constant.
-		this.pixfmt = this.util.make_pixel_format(repr: 0x40000888)
+		this.pixfmt = this.util.make_pixel_format(repr: 0x4000_0888)
 	} else {
 		// TODO: support 8bpp, 32bpp, possibly more.
 		return "#unsupported BMP file"
@@ -145,7 +145,7 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 		// TODO: a Wuffs (not just C) name for the
 		// WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL magic pixfmt constant.
 		args.dst.set!(
-			pixfmt: 0x45008888,  // TODO: this.pixfmt instead?
+			pixfmt: 0x4500_8888,  // TODO: this.pixfmt instead?
 			pixsub: 0,
 			width: this.width,
 			height: this.height,
@@ -182,7 +182,7 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
 			disposal: 0,
 			opaque_within_bounds: true,
 			overwrite_instead_of_blend: false,
-			background_color: 0xFF000000)
+			background_color: 0xFF00_0000)
 	}
 
 	this.call_sequence = 2
@@ -212,8 +212,8 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 			this.dst_y_inc = 1
 		} else {
 			this.dst_y = this.height ~mod- 1
-			this.dst_y_end = 0xFFFFFFFF  // -1 as a base.u32.
-			this.dst_y_inc = 0xFFFFFFFF  // -1 as a base.u32.
+			this.dst_y_end = 0xFFFF_FFFF  // -1 as a base.u32.
+			this.dst_y_inc = 0xFFFF_FFFF  // -1 as a base.u32.
 		}
 
 		status = this.swizzler.prepare!(
@@ -343,8 +343,8 @@ pri func decoder.swizzle!(dst: ptr base.pixel_buffer, src: slice base.u8) base.s
 				dst: dst[i ..],
 				dst_palette: this.util.empty_slice_u8(),
 				src: args.src)
-			this.dst_x ~sat+= (n & 0xFFFFFFFF) as base.u32
-			n = (n & 0xFFFFFFFF) * (src_bytes_per_pixel as base.u64)
+			this.dst_x ~sat+= (n & 0xFFFF_FFFF) as base.u32
+			n = (n & 0xFFFF_FFFF) * (src_bytes_per_pixel as base.u64)
 			if n <= args.src.length() {
 				args.src = args.src[n ..]
 			} else {
