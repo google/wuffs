@@ -89,12 +89,16 @@ func alphaNumeric(c byte) bool {
 	return ('A' <= c && c <= 'Z') || ('a' <= c && c <= 'z') || (c == '_') || ('0' <= c && c <= '9')
 }
 
-func hexaNumeric(c byte) bool {
-	return ('A' <= c && c <= 'F') || ('a' <= c && c <= 'f') || ('0' <= c && c <= '9')
+func hexaNumericUnderscore(c byte) bool {
+	return ('A' <= c && c <= 'F') || ('a' <= c && c <= 'f') || (c == '_') || ('0' <= c && c <= '9')
 }
 
 func numeric(c byte) bool {
 	return ('0' <= c && c <= '9')
+}
+
+func numericUnderscore(c byte) bool {
+	return (c == '_') || ('0' <= c && c <= '9')
 }
 
 func hasPrefix(a []byte, s string) bool {
@@ -111,6 +115,19 @@ func hasPrefix(a []byte, s string) bool {
 		}
 	}
 	return true
+}
+
+// checkNumericUnderscores rejects consecutive or trailing underscores.
+func checkNumericUnderscores(a []byte) bool {
+	prevUnderscore := false
+	for _, c := range a {
+		currUnderscore := c == '_'
+		if prevUnderscore && currUnderscore {
+			return false
+		}
+		prevUnderscore = currUnderscore
+	}
+	return !prevUnderscore
 }
 
 func Tokenize(m *Map, filename string, src []byte) (tokens []Token, comments []string, retErr error) {
@@ -185,12 +202,10 @@ loop:
 
 		if numeric(c) {
 			// TODO: 0b11 binary numbers.
-			//
-			// TODO: allow underscores like 0b1000_0000_1111?
-			j, isDigit := i+1, numeric
+			j, isDigit := i+1, numericUnderscore
 			if c == '0' && j < len(src) {
 				if next := src[j]; next == 'x' || next == 'X' {
-					j, isDigit = j+1, hexaNumeric
+					j, isDigit = j+1, hexaNumericUnderscore
 				} else if numeric(next) {
 					return nil, nil, fmt.Errorf("token: legacy octal syntax at %s:%d", filename, line)
 				}
@@ -199,6 +214,9 @@ loop:
 				if j-i == maxTokenSize {
 					return nil, nil, fmt.Errorf("token: constant too long at %s:%d", filename, line)
 				}
+			}
+			if !checkNumericUnderscores(src[i:j]) {
+				return nil, nil, fmt.Errorf("token: invalid numeric literal at %s:%d", filename, line)
 			}
 			id, err := m.Insert(string(src[i:j]))
 			if err != nil {
