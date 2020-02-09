@@ -34,6 +34,11 @@ pub struct decoder? implements base.image_decoder(
 
 	padding : base.u32,
 
+	mask_r : base.u32,
+	mask_g : base.u32,
+	mask_b : base.u32,
+	mask_a : base.u32,
+
 	frame_config_io_position : base.u64,
 
 	dst_x     : base.u32,
@@ -50,13 +55,13 @@ pub struct decoder? implements base.image_decoder(
 )
 
 pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_reader) {
-	var magic          : base.u32
-	var bitmapInfoLen  : base.u32
-	var width          : base.u32
-	var height         : base.u32
-	var planes         : base.u32
-	var bits_per_pixel : base.u32
-	var compression    : base.u32
+	var magic           : base.u32
+	var bitmap_info_len : base.u32
+	var width           : base.u32
+	var height          : base.u32
+	var planes          : base.u32
+	var bits_per_pixel  : base.u32
+	var compression     : base.u32
 
 	if this.call_sequence <> 0 {
 		return base."#bad call sequence"
@@ -77,18 +82,16 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 	}
 	this.padding -= 14
 
-	// Read the BITMAPINFOHEADER (version 5 is 124 bytes).
-	//
-	// TODO: support other versions.
+	// Read the BITMAPINFOHEADER (version 3 / 4 / 5 is 40 / 108 / 124 bytes).
 
-	bitmapInfoLen = args.src.read_u32le?()
-	if bitmapInfoLen <> 124 {
+	bitmap_info_len = args.src.read_u32le?()
+	if (bitmap_info_len <> 40) and (bitmap_info_len <> 108) and (bitmap_info_len <> 124) {
 		return "#unsupported BMP file"
 	}
-	if this.padding < bitmapInfoLen {
+	if this.padding < bitmap_info_len {
 		return "#bad header"
 	}
-	this.padding -= bitmapInfoLen
+	this.padding -= bitmap_info_len
 
 	width = args.src.read_u32le?()
 	if width >= 0x8000_0000 {
@@ -102,7 +105,7 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 	} else if height >= 0x8000_0000 {
 		// The &0x7FFF_FFFF is redundant, but proves to the compiler that the
 		// result is within this.height's refined bounds.
-		this.height = (0 ~mod- this.height) & 0x7FFF_FFFF
+		this.height = (0 ~mod- height) & 0x7FFF_FFFF
 		this.top_down = true
 	} else {
 		this.height = height
@@ -123,21 +126,51 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 		// TODO: a Wuffs (not just C) name for the
 		// WUFFS_BASE__PIXEL_FORMAT__BGR magic pixfmt constant.
 		this.pixfmt = this.util.make_pixel_format(repr: 0x4000_0888)
+	} else if bits_per_pixel == 32 {
+		this.bits_per_pixel = 32
+		this.bytes_per_row = (this.width as base.u64) * 4
+		this.pad_per_row = 0
+		// TODO: a Wuffs (not just C) name for the
+		// WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL magic pixfmt constant.
+		this.pixfmt = this.util.make_pixel_format(repr: 0x4500_8888)
 	} else {
-		// TODO: support 8bpp, 32bpp, possibly more.
+		// TODO: support other bits_per_pixel's.
 		return "#unsupported BMP file"
 	}
 	this.bytes_total = this.bytes_per_row * (this.height as base.u64)
 
 	compression = args.src.read_u32le?()
+
+	// We've already read 20 bytes from the BITMAPINFOHEADER: size (4), width
+	// (4), height (4), planes (2), bpp (2), compression (4). Skip the rest of
+	// the version 3 BITMAPINFOHEADER (whose total size is 40).
+	args.src.skip32?(n: 40 - 20)
+
+	if bitmap_info_len >= 108 {
+		this.mask_r = args.src.read_u32le?()
+		this.mask_g = args.src.read_u32le?()
+		this.mask_b = args.src.read_u32le?()
+		this.mask_a = args.src.read_u32le?()
+
+		// If compression is 3 (BITFIELDS) but the explicit masks are what the
+		// implicit masks are for no compression, treat it as no compression.
+		if (compression == 3) and
+			(this.mask_r == 0x00FF_0000) and
+			(this.mask_g == 0x0000_FF00) and
+			(this.mask_b == 0x0000_00FF) and
+			(this.mask_a == 0xFF00_0000) {
+			compression = 0
+		}
+
+		// Skip the rest of the BITMAPINFOHEADER. We've already read (40 + (4 *
+		// 4)) bytes.
+		args.src.skip32?(n: bitmap_info_len - 56)
+	}
+
 	if compression <> 0 {
 		// TODO: support compression.
 		return "#unsupported BMP file"
 	}
-
-	// We've already read 20 bytes from the BITMAPINFOHEADER: size (4), width
-	// (4), height (4), planes (2), bpp (2), compression (4). Skip the rest.
-	args.src.skip32?(n: bitmapInfoLen - 20)
 
 	this.frame_config_io_position = args.src.position()
 
