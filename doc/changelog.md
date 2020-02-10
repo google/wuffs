@@ -6,6 +6,7 @@
 - Added `example/imageviewer`.
 - Added `std/bmp`.
 - Added `std/gif.config_decoder`.
+- Added `std/json`.
 - Added `std/wbmp`.
 - Added `WUFFS_BASE__PIXEL_BLEND__SRC_OVER`.
 - Added `WUFFS_BASE__PIXEL_FORMAT__BGR_565`.
