@@ -266,8 +266,8 @@ func (h *livenessHelper) doAssign(r livenesses, n *a.Assign, depth uint32) error
 func (h *livenessHelper) doExpr(r livenesses, n *a.Expr) error {
 	allToStrong := false
 	if n.Effect().Coroutine() {
-		method := n.LHS().AsExpr().Ident()
-		if (method == t.IDSkip) || (method == t.IDSkip32) {
+		recv := n.LHS().AsExpr().LHS().AsExpr()
+		if recv.MType().IsIOTokenType() {
 			// No-op. These methods already save their args across suspensions.
 		} else {
 			allToStrong = true

@@ -3861,6 +3861,7 @@ struct wuffs_deflate__decoder__struct {
       uint32_t v_dist_minus_1;
       uint32_t v_hlen;
       uint32_t v_hdist;
+      uint64_t scratch;
     } s_decode_huffman_slow[1];
   } private_data;
 
@@ -5050,7 +5051,7 @@ struct wuffs_json__decoder__struct {
 
   struct {
     struct {
-      uint64_t v_length;
+      uint64_t scratch;
     } s_decode_tokens[1];
   } private_data;
 
@@ -11960,12 +11961,15 @@ wuffs_deflate__decoder__decode_huffman_slow(wuffs_deflate__decoder* self,
       }
     label_1_break:;
       if ((v_table_entry >> 31) != 0) {
+        self->private_data.s_decode_huffman_slow[0].scratch =
+            ((uint8_t)(((v_table_entry >> 8) & 255)));
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
         if (iop_a_dst == io2_a_dst) {
           status = wuffs_base__make_status(wuffs_base__suspension__short_write);
           goto suspend;
         }
-        *iop_a_dst++ = ((uint8_t)(((v_table_entry >> 8) & 255)));
+        *iop_a_dst++ =
+            ((uint8_t)(self->private_data.s_decode_huffman_slow[0].scratch));
         goto label_0_continue;
       } else if ((v_table_entry >> 30) != 0) {
       } else if ((v_table_entry >> 29) != 0) {
@@ -11999,13 +12003,16 @@ wuffs_deflate__decoder__decode_huffman_slow(wuffs_deflate__decoder* self,
         }
       label_2_break:;
         if ((v_table_entry >> 31) != 0) {
+          self->private_data.s_decode_huffman_slow[0].scratch =
+              ((uint8_t)(((v_table_entry >> 8) & 255)));
           WUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
           if (iop_a_dst == io2_a_dst) {
             status =
                 wuffs_base__make_status(wuffs_base__suspension__short_write);
             goto suspend;
           }
-          *iop_a_dst++ = ((uint8_t)(((v_table_entry >> 8) & 255)));
+          *iop_a_dst++ =
+              ((uint8_t)(self->private_data.s_decode_huffman_slow[0].scratch));
           goto label_0_continue;
         } else if ((v_table_entry >> 30) != 0) {
         } else if ((v_table_entry >> 29) != 0) {
@@ -18136,20 +18143,21 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
 
   uint32_t coro_susp_point = self->private_impl.p_decode_tokens[0];
   if (coro_susp_point) {
-    v_length = self->private_data.s_decode_tokens[0].v_length;
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
     v_length = 456;
+    self->private_data.s_decode_tokens[0].scratch =
+        ((123) << WUFFS_BASE__TOKEN__VALUE_SHIFT) |
+        ((v_length) << WUFFS_BASE__TOKEN__LENGTH_SHIFT);
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
     if (iop_a_dst == io2_a_dst) {
       status = wuffs_base__make_status(wuffs_base__suspension__short_write);
       goto suspend;
     }
     *iop_a_dst++ =
-        wuffs_base__make_token(((123) << WUFFS_BASE__TOKEN__VALUE_SHIFT) |
-                               ((v_length) << WUFFS_BASE__TOKEN__LENGTH_SHIFT));
+        wuffs_base__make_token(self->private_data.s_decode_tokens[0].scratch);
     status = wuffs_base__make_status(NULL);
     goto ok;
     goto ok;
@@ -18164,7 +18172,6 @@ suspend:
       wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
   self->private_impl.active_coroutine =
       wuffs_base__status__is_suspension(&status) ? 1 : 0;
-  self->private_data.s_decode_tokens[0].v_length = v_length;
 
   goto exit;
 exit:

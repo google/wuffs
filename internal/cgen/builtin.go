@@ -634,29 +634,36 @@ func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error
 	case t.IDIOWriter:
 		switch method.Ident() {
 		case t.IDWriteU8:
-			if err := g.writeCoroSuspPoint(b, false); err != nil {
-				return err
-			}
-			b.writes("if (iop_a_dst == io2_a_dst) {\n" +
-				"status = wuffs_base__make_status(wuffs_base__suspension__short_write); goto suspend; }\n" +
-				"*iop_a_dst++ = ")
+			g.currFunk.usesScratch = true
+			// TODO: don't hard-code [0], and allow recursive coroutines.
+			scratchName := fmt.Sprintf("self->private_data.%s%s[0].scratch",
+				sPrefix, g.currFunk.astFunc.FuncName().Str(g.tm))
+
+			b.printf("%s = ", scratchName)
 			x := n.Args()[0].AsArg().Value()
 			if err := g.writeExpr(b, x, depth); err != nil {
 				return err
 			}
 			b.writes(";\n")
+
+			if err := g.writeCoroSuspPoint(b, false); err != nil {
+				return err
+			}
+			b.printf("if (iop_a_dst == io2_a_dst) {\n"+
+				"status = wuffs_base__make_status(wuffs_base__suspension__short_write); goto suspend; }\n"+
+				"*iop_a_dst++ = ((uint8_t)(%s));\n", scratchName)
 			return nil
 		}
 
 	case t.IDTokenWriter:
 		switch method.Ident() {
 		case t.IDWriteToken:
-			if err := g.writeCoroSuspPoint(b, false); err != nil {
-				return err
-			}
-			b.writes("if (iop_a_dst == io2_a_dst) {\n" +
-				"status = wuffs_base__make_status(wuffs_base__suspension__short_write); goto suspend; }\n" +
-				"*iop_a_dst++ = wuffs_base__make_token(((")
+			g.currFunk.usesScratch = true
+			// TODO: don't hard-code [0], and allow recursive coroutines.
+			scratchName := fmt.Sprintf("self->private_data.%s%s[0].scratch",
+				sPrefix, g.currFunk.astFunc.FuncName().Str(g.tm))
+
+			b.printf("%s = ((", scratchName)
 			if err := g.writeExpr(b, n.Args()[0].AsArg().Value(), depth); err != nil {
 				return err
 			}
@@ -664,7 +671,14 @@ func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error
 			if err := g.writeExpr(b, n.Args()[1].AsArg().Value(), depth); err != nil {
 				return err
 			}
-			b.writes(") << WUFFS_BASE__TOKEN__LENGTH_SHIFT));\n")
+			b.writes(") << WUFFS_BASE__TOKEN__LENGTH_SHIFT);\n")
+
+			if err := g.writeCoroSuspPoint(b, false); err != nil {
+				return err
+			}
+			b.printf("if (iop_a_dst == io2_a_dst) {\n"+
+				"status = wuffs_base__make_status(wuffs_base__suspension__short_write); goto suspend; }\n"+
+				"*iop_a_dst++ = wuffs_base__make_token(%s);\n", scratchName)
 			return nil
 		}
 	}
