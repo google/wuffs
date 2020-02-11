@@ -556,11 +556,12 @@ func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error
 	method := n.LHS().AsExpr()
 	recv := method.LHS().AsExpr()
 	recvTyp := recv.MType()
-	if !recvTyp.IsIOType() {
+	if !recvTyp.IsIOTokenType() {
 		return errNoSuchBuiltin
 	}
 
-	if recvTyp.QID()[1] == t.IDIOReader {
+	switch recvTyp.QID()[1] {
+	case t.IDIOReader:
 		switch method.Ident() {
 		case t.IDReadU8, t.IDReadU8AsU32, t.IDReadU8AsU64:
 			if err := g.writeCoroSuspPoint(b, false); err != nil {
@@ -630,7 +631,7 @@ func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error
 			}
 		}
 
-	} else {
+	case t.IDIOWriter:
 		switch method.Ident() {
 		case t.IDWriteU8:
 			if err := g.writeCoroSuspPoint(b, false); err != nil {
@@ -644,6 +645,26 @@ func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error
 				return err
 			}
 			b.writes(";\n")
+			return nil
+		}
+
+	case t.IDTokenWriter:
+		switch method.Ident() {
+		case t.IDWriteToken:
+			if err := g.writeCoroSuspPoint(b, false); err != nil {
+				return err
+			}
+			b.writes("if (iop_a_dst == io2_a_dst) {\n" +
+				"status = wuffs_base__make_status(wuffs_base__suspension__short_write); goto suspend; }\n" +
+				"*iop_a_dst++ = wuffs_base__make_token(((")
+			if err := g.writeExpr(b, n.Args()[0].AsArg().Value(), depth); err != nil {
+				return err
+			}
+			b.writes(") << WUFFS_BASE__TOKEN__VALUE_SHIFT) | ((")
+			if err := g.writeExpr(b, n.Args()[1].AsArg().Value(), depth); err != nil {
+				return err
+			}
+			b.writes(") << WUFFS_BASE__TOKEN__LENGTH_SHIFT));\n")
 			return nil
 		}
 	}

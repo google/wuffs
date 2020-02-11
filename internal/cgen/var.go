@@ -84,9 +84,15 @@ func (g *gen) writeLoadDerivedVar(b *buffer, hack string, prefix string, name t.
 		return nil
 	}
 
-	if !typ.IsIOTokenType() {
+	elem := ""
+	if typ.IsIOType() {
+		elem = "uint8_t"
+	} else if typ.IsTokenType() {
+		elem = "wuffs_base__token"
+	} else {
 		return nil
 	}
+
 	if g.currFunk.derivedVars == nil {
 		return nil
 	}
@@ -96,15 +102,15 @@ func (g *gen) writeLoadDerivedVar(b *buffer, hack string, prefix string, name t.
 
 	preName := prefix + name.Str(g.tm)
 	i1, i2 := "meta.ri", "meta.wi"
-	if typ.QID()[1] == t.IDIOWriter {
+	if q := typ.QID()[1]; (q == t.IDIOWriter) || (q == t.IDTokenWriter) {
 		i1, i2 = "meta.wi", "data.len"
 	}
 
 	if header {
-		b.printf("uint8_t* %s%s = NULL;", iopPrefix, preName)
-		b.printf("uint8_t* %s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;", io0Prefix, preName)
-		b.printf("uint8_t* %s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;", io1Prefix, preName)
-		b.printf("uint8_t* %s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;", io2Prefix, preName)
+		b.printf("%s* %s%s = NULL;", elem, iopPrefix, preName)
+		b.printf("%s* %s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;", elem, io0Prefix, preName)
+		b.printf("%s* %s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;", elem, io1Prefix, preName)
+		b.printf("%s* %s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;", elem, io2Prefix, preName)
 	}
 
 	b.printf("if (%s) {", preName)
@@ -115,7 +121,7 @@ func (g *gen) writeLoadDerivedVar(b *buffer, hack string, prefix string, name t.
 		b.printf("%s%s = %s%s;", iopPrefix, preName, io1Prefix, preName)
 		b.printf("%s%s = %s%s + %s->%s;", io2Prefix, preName, io0Prefix, preName, preName, i2)
 
-		if typ.QID()[1] == t.IDIOWriter {
+		if q := typ.QID()[1]; (q == t.IDIOWriter) || (q == t.IDTokenWriter) {
 			b.printf("if (%s->meta.closed) {", preName)
 			b.printf("%s%s = %s%s;", io2Prefix, preName, iopPrefix, preName)
 			b.printf("}\n")
@@ -155,7 +161,7 @@ func (g *gen) writeSaveDerivedVar(b *buffer, hack string, prefix string, name t.
 
 	preName := prefix + name.Str(g.tm)
 	index := "ri"
-	if typ.QID()[1] == t.IDIOWriter {
+	if q := typ.QID()[1]; (q == t.IDIOWriter) || (q == t.IDTokenWriter) {
 		index = "wi"
 	}
 

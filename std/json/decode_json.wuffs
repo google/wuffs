@@ -18,5 +18,9 @@ pub struct decoder?(
 )
 
 pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
+	var length : base.u64[..= 0xFFFF]
+
+	length = 456
+	args.dst.write_token?(value: 123, length: length)
 	return ok
 }

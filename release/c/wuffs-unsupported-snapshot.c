@@ -5045,6 +5045,7 @@ struct wuffs_json__decoder__struct {
     uint32_t active_coroutine;
     wuffs_base__vtable null_vtable;
 
+    uint32_t p_decode_tokens[1];
   } private_impl;
 
 #ifdef __cplusplus
@@ -18111,12 +18112,58 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
   self->private_impl.active_coroutine = 0;
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
-  status = wuffs_base__make_status(NULL);
-  goto ok;
-  goto ok;
-ok:
+  uint64_t v_length = 0;
+
+  wuffs_base__token* iop_a_dst = NULL;
+  wuffs_base__token* io0_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  wuffs_base__token* io1_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  wuffs_base__token* io2_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  if (a_dst) {
+    io0_a_dst = a_dst->data.ptr;
+    io1_a_dst = io0_a_dst + a_dst->meta.wi;
+    iop_a_dst = io1_a_dst;
+    io2_a_dst = io0_a_dst + a_dst->data.len;
+    if (a_dst->meta.closed) {
+      io2_a_dst = iop_a_dst;
+    }
+  }
+
+  uint32_t coro_susp_point = self->private_impl.p_decode_tokens[0];
+  if (coro_susp_point) {
+  }
+  switch (coro_susp_point) {
+    WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
+
+    v_length = 456;
+    WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
+    if (iop_a_dst == io2_a_dst) {
+      status = wuffs_base__make_status(wuffs_base__suspension__short_write);
+      goto suspend;
+    }
+    *iop_a_dst++ =
+        wuffs_base__make_token(((123) << WUFFS_BASE__TOKEN__VALUE_SHIFT) |
+                               ((v_length) << WUFFS_BASE__TOKEN__LENGTH_SHIFT));
+    status = wuffs_base__make_status(NULL);
+    goto ok;
+    goto ok;
+  ok:
+    self->private_impl.p_decode_tokens[0] = 0;
+    goto exit;
+  }
+
+  goto suspend;
+suspend:
+  self->private_impl.p_decode_tokens[0] =
+      wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
+  self->private_impl.active_coroutine =
+      wuffs_base__status__is_suspension(&status) ? 1 : 0;
+
   goto exit;
 exit:
+  if (a_dst) {
+    a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
+  }
+
   if (wuffs_base__status__is_error(&status)) {
     self->private_impl.magic = WUFFS_BASE__DISABLED;
   }
