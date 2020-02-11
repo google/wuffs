@@ -54,9 +54,12 @@ var (
 	typeExprRectIEU32  = a.NewTypeExpr(0, t.IDBase, t.IDRectIEU32, nil, nil, nil)
 	typeExprRectIIU32  = a.NewTypeExpr(0, t.IDBase, t.IDRectIIU32, nil, nil, nil)
 
-	typeExprIOReader = a.NewTypeExpr(0, t.IDBase, t.IDIOReader, nil, nil, nil)
-	typeExprIOWriter = a.NewTypeExpr(0, t.IDBase, t.IDIOWriter, nil, nil, nil)
-	typeExprStatus   = a.NewTypeExpr(0, t.IDBase, t.IDStatus, nil, nil, nil)
+	typeExprStatus = a.NewTypeExpr(0, t.IDBase, t.IDStatus, nil, nil, nil)
+
+	typeExprIOReader    = a.NewTypeExpr(0, t.IDBase, t.IDIOReader, nil, nil, nil)
+	typeExprIOWriter    = a.NewTypeExpr(0, t.IDBase, t.IDIOWriter, nil, nil, nil)
+	typeExprTokenReader = a.NewTypeExpr(0, t.IDBase, t.IDTokenReader, nil, nil, nil)
+	typeExprTokenWriter = a.NewTypeExpr(0, t.IDBase, t.IDTokenWriter, nil, nil, nil)
 
 	typeExprFrameConfig   = a.NewTypeExpr(0, t.IDBase, t.IDFrameConfig, nil, nil, nil)
 	typeExprImageConfig   = a.NewTypeExpr(0, t.IDBase, t.IDImageConfig, nil, nil, nil)
@@ -97,9 +100,12 @@ var builtInTypeMap = typeMap{
 	t.IDRectIEU32:  typeExprRectIEU32,
 	t.IDRectIIU32:  typeExprRectIIU32,
 
-	t.IDIOReader: typeExprIOReader,
-	t.IDIOWriter: typeExprIOWriter,
-	t.IDStatus:   typeExprStatus,
+	t.IDStatus: typeExprStatus,
+
+	t.IDIOReader:    typeExprIOReader,
+	t.IDIOWriter:    typeExprIOWriter,
+	t.IDTokenReader: typeExprTokenReader,
+	t.IDTokenWriter: typeExprTokenWriter,
 
 	t.IDFrameConfig:   typeExprFrameConfig,
 	t.IDImageConfig:   typeExprImageConfig,

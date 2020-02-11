@@ -83,9 +83,11 @@ var Types = []string{
 	"rect_ie_u32",
 	"rect_ii_u32",
 
+	"status",
+
 	"io_reader",
 	"io_writer",
-	"status",
+	"token_writer",
 
 	"frame_config",
 	"image_config",
@@ -165,6 +167,14 @@ var Funcs = []string{
 	"range_ii_u64.get_max_incl() u64",
 	"range_ii_u64.intersect(r: range_ii_u64) range_ii_u64",
 	"range_ii_u64.unite(r: range_ii_u64) range_ii_u64",
+
+	// ---- status
+
+	// TODO: should we add is_complete?
+	"status.is_error() bool",
+	"status.is_note() bool",
+	"status.is_ok() bool",
+	"status.is_suspension() bool",
 
 	// ---- io_reader
 
@@ -310,13 +320,9 @@ var Funcs = []string{
 	// For now, that's all implicitly checked (i.e. hard coded).
 	"io_writer.copy_n32_from_history_fast!(n: u32, distance: u32) u32",
 
-	// ---- status
+	// ---- token_writer
 
-	// TODO: should we add is_complete?
-	"status.is_error() bool",
-	"status.is_note() bool",
-	"status.is_ok() bool",
-	"status.is_suspension() bool",
+	"token_writer.write_token?(value: u64[..= 0xFFFFFFFFFFFF], length: u64[..= 0xFFFF])",
 
 	// ---- frame_config
 	// Duration's upper bound is the maximum possible i64 value.

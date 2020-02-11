@@ -700,7 +700,19 @@ func (n *TypeExpr) IsIdeal() bool {
 }
 
 func (n *TypeExpr) IsIOType() bool {
-	return n.id0 == 0 && n.id1 == t.IDBase && (n.id2 == t.IDIOReader || n.id2 == t.IDIOWriter)
+	return n.id0 == 0 && n.id1 == t.IDBase &&
+		(n.id2 == t.IDIOReader || n.id2 == t.IDIOWriter)
+}
+
+func (n *TypeExpr) IsTokenType() bool {
+	return n.id0 == 0 && n.id1 == t.IDBase &&
+		(n.id2 == t.IDTokenReader || n.id2 == t.IDTokenWriter)
+}
+
+func (n *TypeExpr) IsIOTokenType() bool {
+	return n.id0 == 0 && n.id1 == t.IDBase &&
+		(n.id2 == t.IDIOReader || n.id2 == t.IDIOWriter ||
+			n.id2 == t.IDTokenReader || n.id2 == t.IDTokenWriter)
 }
 
 func (n *TypeExpr) IsNullptr() bool {

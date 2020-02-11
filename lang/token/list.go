@@ -467,7 +467,9 @@ const (
 	IDIOReader      = ID(0x125)
 	IDIOWriter      = ID(0x126)
 	IDStatus        = ID(0x127)
-	IDUtility       = ID(0x128)
+	IDTokenReader   = ID(0x128)
+	IDTokenWriter   = ID(0x129)
+	IDUtility       = ID(0x12A)
 
 	IDRangeIEU32 = ID(0x130)
 	IDRangeIIU32 = ID(0x131)
@@ -810,6 +812,8 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDIOReader:      "io_reader",
 	IDIOWriter:      "io_writer",
 	IDStatus:        "status",
+	IDTokenReader:   "token_reader",
+	IDTokenWriter:   "token_writer",
 	IDUtility:       "utility",
 
 	IDRangeIEU32: "range_ie_u32",

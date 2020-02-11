@@ -77,8 +77,8 @@ const char* test_wuffs_json_decode_tokens() {
                    &dec, sizeof dec, WUFFS_VERSION,
                    WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
 
-  wuffs_base__io_buffer got = ((wuffs_base__io_buffer){
-      .data = global_got_slice,
+  wuffs_base__token_buffer got = ((wuffs_base__token_buffer){
+      .data = global_got_token_slice,
   });
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
       .data = global_src_slice,

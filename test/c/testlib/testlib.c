@@ -21,6 +21,7 @@
 #include <unistd.h>
 
 #define BUFFER_SIZE (64 * 1024 * 1024)
+#define TOKEN_BUFFER_SIZE (8 * 1024)
 
 #define WUFFS_TESTLIB_ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 
@@ -30,11 +31,17 @@ uint8_t global_work_array[BUFFER_SIZE];
 uint8_t global_src_array[BUFFER_SIZE];
 uint8_t global_pixel_array[BUFFER_SIZE];
 
+wuffs_base__token global_got_token_array[TOKEN_BUFFER_SIZE];
+wuffs_base__token global_want_token_array[TOKEN_BUFFER_SIZE];
+
 wuffs_base__slice_u8 global_got_slice;
 wuffs_base__slice_u8 global_want_slice;
 wuffs_base__slice_u8 global_work_slice;
 wuffs_base__slice_u8 global_src_slice;
 wuffs_base__slice_u8 global_pixel_slice;
+
+wuffs_base__slice_token global_got_token_slice;
+wuffs_base__slice_token global_want_token_slice;
 
 void wuffs_testlib__initialize_global_xxx_slices() {
   global_got_slice = ((wuffs_base__slice_u8){
@@ -56,6 +63,15 @@ void wuffs_testlib__initialize_global_xxx_slices() {
   global_pixel_slice = ((wuffs_base__slice_u8){
       .ptr = global_pixel_array,
       .len = BUFFER_SIZE,
+  });
+
+  global_got_token_slice = ((wuffs_base__slice_token){
+      .ptr = global_got_token_array,
+      .len = TOKEN_BUFFER_SIZE,
+  });
+  global_want_token_slice = ((wuffs_base__slice_token){
+      .ptr = global_want_token_array,
+      .len = TOKEN_BUFFER_SIZE,
   });
 }
 

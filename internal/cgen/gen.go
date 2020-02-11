@@ -86,6 +86,8 @@ func genBase(out *bytes.Buffer) error {
 		{"base/io-public.h", "baseIOPublicH"},
 		{"base/range-private.h", "baseRangePrivateH"},
 		{"base/range-public.h", "baseRangePublicH"},
+		{"base/token-private.h", "baseTokenPrivateH"},
+		{"base/token-public.h", "baseTokenPublicH"},
 	}
 
 	prefixAfterEditing := []byte("// After editing this file,")

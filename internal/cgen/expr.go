@@ -470,17 +470,20 @@ func isBaseRangeType(qid t.QID) bool {
 }
 
 var cTypeNames = [...]string{
-	t.IDI8:       "int8_t",
-	t.IDI16:      "int16_t",
-	t.IDI32:      "int32_t",
-	t.IDI64:      "int64_t",
-	t.IDU8:       "uint8_t",
-	t.IDU16:      "uint16_t",
-	t.IDU32:      "uint32_t",
-	t.IDU64:      "uint64_t",
-	t.IDBool:     "bool",
-	t.IDIOReader: "wuffs_base__io_buffer*",
-	t.IDIOWriter: "wuffs_base__io_buffer*",
+	t.IDI8:   "int8_t",
+	t.IDI16:  "int16_t",
+	t.IDI32:  "int32_t",
+	t.IDI64:  "int64_t",
+	t.IDU8:   "uint8_t",
+	t.IDU16:  "uint16_t",
+	t.IDU32:  "uint32_t",
+	t.IDU64:  "uint64_t",
+	t.IDBool: "bool",
+
+	t.IDIOReader:    "wuffs_base__io_buffer*",
+	t.IDIOWriter:    "wuffs_base__io_buffer*",
+	t.IDTokenReader: "wuffs_base__token_buffer*",
+	t.IDTokenWriter: "wuffs_base__token_buffer*",
 }
 
 const noSuchCOperator = " no_such_C_operator "

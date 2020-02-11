@@ -1,3 +1,5 @@
+// After editing this file, run "go generate" in the parent directory.
+
 // Copyright 2020 The Wuffs Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,11 +14,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// TODO: "decoder implements base.token_decoder".
+// ---------------- Tokens
 
-pub struct decoder?(
-)
-
-pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
-	return ok
-}
+// ---------------- Tokens (Utility)

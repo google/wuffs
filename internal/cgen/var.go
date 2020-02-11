@@ -59,7 +59,7 @@ func (g *gen) needDerivedVar(name t.ID) bool {
 func (g *gen) findDerivedVars() {
 	for _, o := range g.currFunk.astFunc.In().Fields() {
 		o := o.AsField()
-		if !o.XType().IsIOType() || !g.needDerivedVar(o.Name()) {
+		if !o.XType().IsIOTokenType() || !g.needDerivedVar(o.Name()) {
 			continue
 		}
 		if g.currFunk.derivedVars == nil {
@@ -84,7 +84,7 @@ func (g *gen) writeLoadDerivedVar(b *buffer, hack string, prefix string, name t.
 		return nil
 	}
 
-	if !typ.IsIOType() {
+	if !typ.IsIOTokenType() {
 		return nil
 	}
 	if g.currFunk.derivedVars == nil {
@@ -143,7 +143,7 @@ func (g *gen) writeSaveDerivedVar(b *buffer, hack string, prefix string, name t.
 		return nil
 	}
 
-	if !typ.IsIOType() {
+	if !typ.IsIOTokenType() {
 		return nil
 	}
 	if g.currFunk.derivedVars == nil {
@@ -275,6 +275,8 @@ func (g *gen) writeVars(b *buffer, f *funk, inStructDecl bool) error {
 
 		if typ.IsIOType() {
 			b.printf("wuffs_base__io_buffer %s%s = wuffs_base__empty_io_buffer();\n", uPrefix, name)
+		} else if typ.IsTokenType() {
+			return fmt.Errorf("TODO: support token_{reader,writer} typed variables")
 		}
 
 		if err := g.writeCTypeName(b, typ, vPrefix, name); err != nil {
