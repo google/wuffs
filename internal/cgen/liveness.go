@@ -23,7 +23,7 @@ package cgen
 // For example, in this code:
 //
 //   i = etc
-//   yield foo  // The first CSP.
+//   yield? foo  // The first CSP.
 //   j = 0
 //   while j < i {
 //     a[j] = 42
@@ -52,16 +52,15 @@ package cgen
 // since the last write.
 //
 // Essentially, the state transitions are: strong is sticky, weak to strong
-// happens on a read, weak to none happens on a write, and none to weak happens
-// on a CSP. When reconciling multiple code paths, the strongest wins, where
-// strong > weak and weak > none. Loops are repeated until the reconciliations
-// between the N'th and N+1'th iteration are all no-ops: a steady state has
-// been reached. There can be multiple reconciliations per iteration, due to
-// break and continue statements.
+// happens on a read and weak to none happens on a write. On a CSP, none/weak
+// to strong happens for variables explicitly mentioned in the CSP expression
+// and none to weak happens for other variables.
 //
-// Care is taken with a coroutine call in a statement or expression. Arguments
-// to the coroutine are 'inside' and are before the CSP. The rest of the
-// expression is 'outside' and are after the CSP.
+// When reconciling multiple code paths, the strongest wins, where strong >
+// weak and weak > none. Loops are repeated until the reconciliations between
+// the N'th and N+1'th iteration are all no-ops: a steady state has been
+// reached. There can be multiple reconciliations per iteration, due to break
+// and continue statements.
 
 import (
 	"fmt"
@@ -104,6 +103,10 @@ func (r livenesses) lowerWeakToNone(i int) {
 	if r[i] == livenessWeak {
 		r[i] = livenessNone
 	}
+}
+
+func (r livenesses) raiseToStrong(i int) {
+	r[i] = livenessStrong
 }
 
 func (r livenesses) raiseWeakToStrong(i int) {
@@ -227,7 +230,7 @@ loop:
 
 func (h *livenessHelper) doAssign(r livenesses, n *a.Assign, depth uint32) error {
 	if n.Operator() == t.IDEqQuestion {
-		if err := h.doExpr1(r, n.RHS(), 0); err != nil {
+		if err := h.doExpr1(r, n.RHS(), false, 0); err != nil {
 			return err
 		}
 	} else {
@@ -261,7 +264,17 @@ func (h *livenessHelper) doAssign(r livenesses, n *a.Assign, depth uint32) error
 }
 
 func (h *livenessHelper) doExpr(r livenesses, n *a.Expr) error {
-	if err := h.doExpr1(r, n, 0); err != nil {
+	allToStrong := false
+	if n.Effect().Coroutine() {
+		method := n.LHS().AsExpr().Ident()
+		if (method == t.IDSkip) || (method == t.IDSkip32) {
+			// No-op. These methods already save their args across suspensions.
+		} else {
+			allToStrong = true
+		}
+	}
+
+	if err := h.doExpr1(r, n, allToStrong, 0); err != nil {
 		return err
 	}
 	if n.Effect().Coroutine() {
@@ -270,7 +283,7 @@ func (h *livenessHelper) doExpr(r livenesses, n *a.Expr) error {
 	return nil
 }
 
-func (h *livenessHelper) doExpr1(r livenesses, n *a.Expr, depth uint32) error {
+func (h *livenessHelper) doExpr1(r livenesses, n *a.Expr, allToStrong bool, depth uint32) error {
 	if depth > a.MaxBodyDepth {
 		return fmt.Errorf("body recursion depth too large")
 	}
@@ -278,7 +291,7 @@ func (h *livenessHelper) doExpr1(r livenesses, n *a.Expr, depth uint32) error {
 
 	for _, o := range n.AsNode().AsRaw().SubNodes() {
 		if o != nil && o.Kind() == a.KExpr {
-			if err := h.doExpr1(r, o.AsExpr(), depth); err != nil {
+			if err := h.doExpr1(r, o.AsExpr(), allToStrong, depth); err != nil {
 				return err
 			}
 		}
@@ -293,14 +306,18 @@ func (h *livenessHelper) doExpr1(r livenesses, n *a.Expr, depth uint32) error {
 		default:
 			return fmt.Errorf("unrecognized arg kind")
 		}
-		if err := h.doExpr1(r, e, depth); err != nil {
+		if err := h.doExpr1(r, e, allToStrong, depth); err != nil {
 			return err
 		}
 	}
 
 	if n.Operator() == 0 {
 		if i, ok := h.vars[n.Ident()]; ok {
-			r.raiseWeakToStrong(i)
+			if allToStrong {
+				r.raiseToStrong(i)
+			} else {
+				r.raiseWeakToStrong(i)
+			}
 		}
 	}
 

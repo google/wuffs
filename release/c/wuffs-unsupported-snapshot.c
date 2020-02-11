@@ -5048,6 +5048,12 @@ struct wuffs_json__decoder__struct {
     uint32_t p_decode_tokens[1];
   } private_impl;
 
+  struct {
+    struct {
+      uint64_t v_length;
+    } s_decode_tokens[1];
+  } private_data;
+
 #ifdef __cplusplus
 #if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
@@ -18130,6 +18136,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
 
   uint32_t coro_susp_point = self->private_impl.p_decode_tokens[0];
   if (coro_susp_point) {
+    v_length = self->private_data.s_decode_tokens[0].v_length;
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
@@ -18157,6 +18164,7 @@ suspend:
       wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
   self->private_impl.active_coroutine =
       wuffs_base__status__is_suspension(&status) ? 1 : 0;
+  self->private_data.s_decode_tokens[0].v_length = v_length;
 
   goto exit;
 exit:
