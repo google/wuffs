@@ -5137,12 +5137,6 @@ struct wuffs_json__decoder__struct {
     uint32_t p_decode_tokens[1];
   } private_impl;
 
-  struct {
-    struct {
-      uint64_t scratch;
-    } s_decode_tokens[1];
-  } private_data;
-
 #ifdef __cplusplus
 #if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
@@ -18235,17 +18229,14 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
-    v_length = 456;
-    self->private_data.s_decode_tokens[0].scratch =
-        ((123) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
-        ((v_length) << WUFFS_BASE__TOKEN__LENGTH__SHIFT);
-    WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
-    if (iop_a_dst == io2_a_dst) {
+    while (((uint64_t)(io2_a_dst - iop_a_dst)) <= 0) {
       status = wuffs_base__make_status(wuffs_base__suspension__short_write);
-      goto suspend;
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(1);
     }
-    *iop_a_dst++ =
-        wuffs_base__make_token(self->private_data.s_decode_tokens[0].scratch);
+    v_length = 456;
+    *iop_a_dst++ = wuffs_base__make_token(
+        (((uint64_t)(123)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+        (((uint64_t)(v_length)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
     status = wuffs_base__make_status(NULL);
     goto ok;
     goto ok;

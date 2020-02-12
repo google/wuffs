@@ -94,6 +94,8 @@ func (g *gen) writeBuiltinCall(b *buffer, n *a.Expr, depth uint32) error {
 			return g.writeBuiltinIOReader(b, recv, method.Ident(), n.Args(), depth)
 		case t.IDIOWriter:
 			return g.writeBuiltinIOWriter(b, recv, method.Ident(), n.Args(), depth)
+		case t.IDTokenWriter:
+			return g.writeBuiltinTokenWriter(b, recv, method.Ident(), n.Args(), depth)
 		case t.IDUtility:
 			switch method.Ident() {
 			case t.IDEmptyIOReader, t.IDEmptyIOWriter:
@@ -302,6 +304,23 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 				return nil
 			}
 		}
+	}
+
+	return g.writeBuiltinIO(b, recv, method, args, depth)
+}
+
+func (g *gen) writeBuiltinTokenWriter(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, depth uint32) error {
+	if method == t.IDWriteFastToken {
+		b.printf("*iop_a_dst++ = wuffs_base__make_token((((uint64_t)(")
+		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
+			return err
+		}
+		b.writes(")) << WUFFS_BASE__TOKEN__VALUE__SHIFT) | (((uint64_t)(")
+		if err := g.writeExpr(b, args[1].AsArg().Value(), depth); err != nil {
+			return err
+		}
+		b.writes(")) << WUFFS_BASE__TOKEN__LENGTH__SHIFT))")
+		return nil
 	}
 
 	return g.writeBuiltinIO(b, recv, method, args, depth)
@@ -663,15 +682,15 @@ func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error
 			scratchName := fmt.Sprintf("self->private_data.%s%s[0].scratch",
 				sPrefix, g.currFunk.astFunc.FuncName().Str(g.tm))
 
-			b.printf("%s = ((", scratchName)
+			b.printf("%s = (((uint64_t)(", scratchName)
 			if err := g.writeExpr(b, n.Args()[0].AsArg().Value(), depth); err != nil {
 				return err
 			}
-			b.writes(") << WUFFS_BASE__TOKEN__VALUE__SHIFT) | ((")
+			b.writes(")) << WUFFS_BASE__TOKEN__VALUE__SHIFT) | (((uint64_t)(")
 			if err := g.writeExpr(b, n.Args()[1].AsArg().Value(), depth); err != nil {
 				return err
 			}
-			b.writes(") << WUFFS_BASE__TOKEN__LENGTH__SHIFT);\n")
+			b.writes(")) << WUFFS_BASE__TOKEN__LENGTH__SHIFT);\n")
 
 			if err := g.writeCoroSuspPoint(b, false); err != nil {
 				return err

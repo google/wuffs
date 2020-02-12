@@ -606,6 +606,11 @@ const (
 	IDWriteFastU64BE = ID(0x1EE)
 	IDWriteFastU64LE = ID(0x1EF)
 
+	// --------
+
+	IDWriteToken     = ID(0x1F0)
+	IDWriteFastToken = ID(0x1F1)
+
 	// -------- 0x200 block.
 
 	IDInitialize = ID(0x200)
@@ -625,18 +630,17 @@ const (
 	IDIsOK         = ID(0x231)
 	IDIsSuspension = ID(0x232)
 
-	IDAvailable  = ID(0x240)
-	IDHeight     = ID(0x241)
-	IDLength     = ID(0x242)
-	IDPrefix     = ID(0x243)
-	IDRow        = ID(0x244)
-	IDStride     = ID(0x245)
-	IDSuffix     = ID(0x246)
-	IDWidth      = ID(0x247)
-	IDIO         = ID(0x248)
-	IDLimit      = ID(0x249)
-	IDData       = ID(0x24A)
-	IDWriteToken = ID(0x24B)
+	IDAvailable = ID(0x240)
+	IDHeight    = ID(0x241)
+	IDLength    = ID(0x242)
+	IDPrefix    = ID(0x243)
+	IDRow       = ID(0x244)
+	IDStride    = ID(0x245)
+	IDSuffix    = ID(0x246)
+	IDWidth     = ID(0x247)
+	IDIO        = ID(0x248)
+	IDLimit     = ID(0x249)
+	IDData      = ID(0x24A)
 )
 
 var builtInsByID = [nBuiltInIDs]string{
@@ -950,6 +954,11 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDWriteFastU64BE: "write_fast_u64be",
 	IDWriteFastU64LE: "write_fast_u64le",
 
+	// --------
+
+	IDWriteToken:     "write_token",
+	IDWriteFastToken: "write_fast_token",
+
 	// -------- 0x200 block.
 
 	IDInitialize: "initialize",
@@ -967,18 +976,17 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDIsOK:         "is_ok",
 	IDIsSuspension: "is_suspension",
 
-	IDAvailable:  "available",
-	IDHeight:     "height",
-	IDLength:     "length",
-	IDPrefix:     "prefix",
-	IDRow:        "row",
-	IDStride:     "stride",
-	IDSuffix:     "suffix",
-	IDWidth:      "width",
-	IDIO:         "io",
-	IDLimit:      "limit",
-	IDData:       "data",
-	IDWriteToken: "write_token",
+	IDAvailable: "available",
+	IDHeight:    "height",
+	IDLength:    "length",
+	IDPrefix:    "prefix",
+	IDRow:       "row",
+	IDStride:    "stride",
+	IDSuffix:    "suffix",
+	IDWidth:     "width",
+	IDIO:        "io",
+	IDLimit:     "limit",
+	IDData:      "data",
 }
 
 var builtInsByName = map[string]ID{}

@@ -324,6 +324,10 @@ var Funcs = []string{
 
 	"token_writer.write_token?(value: u64[..= 0xFFFFFFFFFFFF], length: u64[..= 0xFFFF])",
 
+	"token_writer.write_fast_token!(value: u64[..= 0xFFFFFFFFFFFF], length: u64[..= 0xFFFF])",
+
+	"token_writer.available() u64",
+
 	// ---- frame_config
 	// Duration's upper bound is the maximum possible i64 value.
 

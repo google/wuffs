@@ -1040,7 +1040,7 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (bounds, e
 			}
 		}
 
-	} else if recvTyp.IsIOType() {
+	} else if recvTyp.IsIOTokenType() {
 		advance, update := (*big.Int)(nil), false
 
 		if method == t.IDUndoByte {
@@ -1260,6 +1260,8 @@ var ioMethodAdvances = [...]struct {
 	t.IDWriteFastU56LE - t.IDPeekU8: {seven, true},
 	t.IDWriteFastU64BE - t.IDPeekU8: {eight, true},
 	t.IDWriteFastU64LE - t.IDPeekU8: {eight, true},
+
+	t.IDWriteFastToken - t.IDPeekU8: {one, true},
 }
 
 func makeConstValueExpr(tm *t.Map, cv *big.Int) (*a.Expr, error) {
