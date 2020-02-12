@@ -87,6 +87,21 @@ const char* test_wuffs_json_decode_tokens() {
   CHECK_STATUS("decode_tokens",
                wuffs_json__decoder__decode_tokens(&dec, &got, &src));
 
+  if (0) {
+    uint64_t pos = 0;
+    size_t i;
+    for (i = got.meta.ri; i < got.meta.wi; i++) {
+      wuffs_base__token* t = &got.data.ptr[i];
+      uint64_t len = wuffs_base__token__length(t);
+      uint64_t bc = wuffs_base__token__value_base_category(t);
+      uint64_t bd = wuffs_base__token__value_base_detail(t);
+      printf("i=%3zu\tp=%3" PRIu64 "\tl=%3" PRIu64 "\tbc=%3" PRIu64
+             "\tbd=0x%06" PRIX64 "\n",
+             i, pos, len, bc, bd);
+      pos = wuffs_base__u64__sat_add(pos, len);
+    }
+  }
+
   return NULL;
 }
 

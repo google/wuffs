@@ -16,21 +16,35 @@
 
 // ---------------- Tokens
 
-#define WUFFS_BASE__TOKEN__LENGTH_MASK 0xFFFF
-#define WUFFS_BASE__TOKEN__MINOR_VALUE_MASK 0xFFFFFF
-#define WUFFS_BASE__TOKEN__MAJOR_VALUE_MASK 0xFFFFFF
-#define WUFFS_BASE__TOKEN__VALUE_MASK 0xFFFFFFFFFFFF
+#define WUFFS_BASE__TOKEN__VALUE__MASK 0xFFFFFFFFFFFF
+#define WUFFS_BASE__TOKEN__VALUE_MAJOR__MASK 0xFFFFFF
+#define WUFFS_BASE__TOKEN__VALUE_MINOR__MASK 0xFFFFFF
+#define WUFFS_BASE__TOKEN__VALUE_BASE_CATEGORY__MASK 0x7FFFFFF
+#define WUFFS_BASE__TOKEN__VALUE_BASE_DETAIL__MASK 0x1FFFFF
+#define WUFFS_BASE__TOKEN__LENGTH__MASK 0xFFFF
 
-#define WUFFS_BASE__TOKEN__LENGTH_SHIFT 0
-#define WUFFS_BASE__TOKEN__MINOR_VALUE_SHIFT 16
-#define WUFFS_BASE__TOKEN__MAJOR_VALUE_SHIFT 40
-#define WUFFS_BASE__TOKEN__VALUE_SHIFT 16
+#define WUFFS_BASE__TOKEN__VALUE__SHIFT 16
+#define WUFFS_BASE__TOKEN__VALUE_MAJOR__SHIFT 40
+#define WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT 16
+#define WUFFS_BASE__TOKEN__VALUE_BASE_CATEGORY__SHIFT 37
+#define WUFFS_BASE__TOKEN__VALUE_BASE_DETAIL__SHIFT 16
+#define WUFFS_BASE__TOKEN__LENGTH__SHIFT 0
 
 typedef struct {
   // Bits 63 .. 40 (24 bits) is the major value.
   // Bits 39 .. 16 (24 bits) is the minor value.
   // Bits 15 ..  0 (16 bits) is the length.
   uint64_t repr;
+
+#ifdef __cplusplus
+  inline uint64_t value() const;
+  inline uint64_t value_major() const;
+  inline uint64_t value_minor() const;
+  inline uint64_t value_base_category() const;
+  inline uint64_t value_base_detail() const;
+  inline uint64_t length() const;
+#endif  // __cplusplus
+
 } wuffs_base__token;
 
 static inline wuffs_base__token  //
@@ -39,6 +53,78 @@ wuffs_base__make_token(uint64_t repr) {
   ret.repr = repr;
   return ret;
 }
+
+static inline uint64_t  //
+wuffs_base__token__value(const wuffs_base__token* t) {
+  return (t->repr >> WUFFS_BASE__TOKEN__VALUE__SHIFT) &
+         WUFFS_BASE__TOKEN__VALUE__MASK;
+}
+
+static inline uint64_t  //
+wuffs_base__token__value_major(const wuffs_base__token* t) {
+  return (t->repr >> WUFFS_BASE__TOKEN__VALUE_MAJOR__SHIFT) &
+         WUFFS_BASE__TOKEN__VALUE_MAJOR__MASK;
+}
+
+static inline uint64_t  //
+wuffs_base__token__value_minor(const wuffs_base__token* t) {
+  return (t->repr >> WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) &
+         WUFFS_BASE__TOKEN__VALUE_MINOR__MASK;
+}
+
+static inline uint64_t  //
+wuffs_base__token__value_base_category(const wuffs_base__token* t) {
+  return (t->repr >> WUFFS_BASE__TOKEN__VALUE_BASE_CATEGORY__SHIFT) &
+         WUFFS_BASE__TOKEN__VALUE_BASE_CATEGORY__MASK;
+}
+
+static inline uint64_t  //
+wuffs_base__token__value_base_detail(const wuffs_base__token* t) {
+  return (t->repr >> WUFFS_BASE__TOKEN__VALUE_BASE_DETAIL__SHIFT) &
+         WUFFS_BASE__TOKEN__VALUE_BASE_DETAIL__MASK;
+}
+
+static inline uint64_t  //
+wuffs_base__token__length(const wuffs_base__token* t) {
+  return (t->repr >> WUFFS_BASE__TOKEN__LENGTH__SHIFT) &
+         WUFFS_BASE__TOKEN__LENGTH__MASK;
+}
+
+#ifdef __cplusplus
+
+inline uint64_t  //
+wuffs_base__token::value() const {
+  return wuffs_base__token__value(this);
+}
+
+inline uint64_t  //
+wuffs_base__token::value_major() const {
+  return wuffs_base__token__value_major(this);
+}
+
+inline uint64_t  //
+wuffs_base__token::value_minor() const {
+  return wuffs_base__token__value_minor(this);
+}
+
+inline uint64_t  //
+wuffs_base__token::value_base_category() const {
+  return wuffs_base__token__value_base_category(this);
+}
+
+inline uint64_t  //
+wuffs_base__token::value_base_detail() const {
+  return wuffs_base__token__value_base_detail(this);
+}
+
+inline uint64_t  //
+wuffs_base__token::length() const {
+  return wuffs_base__token__length(this);
+}
+
+#endif  // __cplusplus
+
+// --------
 
 typedef WUFFS_BASE__SLICE(wuffs_base__token) wuffs_base__slice_token;
 
@@ -49,6 +135,8 @@ wuffs_base__make_slice_token(wuffs_base__token* ptr, size_t len) {
   ret.len = len;
   return ret;
 }
+
+// --------
 
 // wuffs_base__token_buffer_meta is the metadata for a
 // wuffs_base__token_buffer's data.

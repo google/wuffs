@@ -667,11 +667,11 @@ func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error
 			if err := g.writeExpr(b, n.Args()[0].AsArg().Value(), depth); err != nil {
 				return err
 			}
-			b.writes(") << WUFFS_BASE__TOKEN__VALUE_SHIFT) | ((")
+			b.writes(") << WUFFS_BASE__TOKEN__VALUE__SHIFT) | ((")
 			if err := g.writeExpr(b, n.Args()[1].AsArg().Value(), depth); err != nil {
 				return err
 			}
-			b.writes(") << WUFFS_BASE__TOKEN__LENGTH_SHIFT);\n")
+			b.writes(") << WUFFS_BASE__TOKEN__LENGTH__SHIFT);\n")
 
 			if err := g.writeCoroSuspPoint(b, false); err != nil {
 				return err
