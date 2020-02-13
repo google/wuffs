@@ -14,19 +14,175 @@
 
 // TODO: "decoder implements base.token_decoder".
 
+pub status "#bad input"
+pub status "#unsupported recursion depth"
+
 pub struct decoder?(
+)(
+	// stack is conceptually an array of bits, implemented as an array of u32.
+	// The N'th bit being 0 or 1 means that we're in an array or object, where
+	// N is the recursion depth.
+	//
+	// Parsing JSON involves recursion: containers (arrays and objects) can
+	// hold other containers. As child elements are completed, the parser needs
+	// to remember 1 bit of state per recursion depth: whether the parent
+	// container was an array or an object. When continuing to parse the
+	// parent's elements, `, "key": value` is only valid for objects.
+	//
+	// Note that we explicitly track our own stack and depth. We do not use the
+	// call stack to hold this state and the decoder.decode_tokens function is
+	// not recursive per se.
+	//
+	// Wuffs code does not have the capability to dynamically allocate memory,
+	// so the maximum depth is hard-coded at compile time. In this case, the
+	// maximum is 1024 (stack is 1024 bits or 128 bytes).
+	//
+	// The [JSON spec](https://tools.ietf.org/html/rfc7159) clearly states, "an
+	// implementation may set limits on the maximum depth of nesting".
+	//
+	// In comparison, as of February 2020, the Chromium web browser's JSON
+	// parser's maximum recursion depth is 200:
+	// https://source.chromium.org/chromium/chromium/src/+/3dece34cde622faa0daac07156c25d92c9897d1e:base/json/json_common.h;l=18
+	//
+	// Other languages and libraries' maximum depths (determined empirically)
+	// are listed at https://github.com/lovasoa/bad_json_parsers#results
+	stack : array[1024 / 32] base.u32,
 )
 
 pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
-	var length : base.u64[..= 0xFFFF]
+	var whitespace_length : base.u32[..= 0xFFFE]
+	var depth             : base.u32[..= 1024]
+	var stack_byte        : base.u32[..= (1024 / 32) - 1]
+	var stack_bit         : base.u32[..= 31]
+	var c                 : base.u8
 
-	while args.dst.available() <= 0,
-		post args.dst.available() > 0,
-	{
-		yield? base."$short write"
+	// expect is a bitmask of what the next token can be:
+	//  - 0x01 EXPECT_NON_STRING_VALUE.
+	//  - 0x02 EXPECT_STRING_VALUE.
+	//  - 0x04 EXPECT_COMMA ','.
+	//  - 0x08 EXPECT_COLON ':'.
+	//  - 0x10 EXPECT_CLOSE_BRACKET ']'.
+	//  - 0x20 EXPECT_CLOSE_BRACE '}'.
+	//
+	// EXPECT_VALUE is also defined to be 0x03, equivalent to
+	// (EXPECT_NON_STRING_VALUE | EXPECT_STRING_VALUE).
+	//
+	// "Non-string value" includes numbers, literals (false, true, null),
+	// arrays ("[etc]") and objects ("{etc}").
+	//
+	// "String value" includes "this" and "th\u0061t".
+	var expect : base.u8
+
+	expect = 0x03  // EXPECT_VALUE
+
+	while.outer true {
+		if args.dst.available() <= 0 {
+			yield? base."$short write"
+			continue.outer
+		}
+
+		// Consume whitespace.
+		whitespace_length = 0
+		c = 0
+		while.ws true,
+			inv args.dst.available() > 0,
+			post args.src.available() > 0,
+		{
+			if args.src.available() <= 0 {
+				if whitespace_length > 0 {
+					args.dst.write_fast_token!(value: 0, length: whitespace_length as base.u64)
+					whitespace_length = 0
+				}
+				yield? base."$short read"
+				whitespace_length = 0
+				continue.outer
+			}
+
+			c = args.src.peek_u8()
+			if c > 0x20 {  // 0x20 is ' '.
+				break.ws
+			} else if (c <> 0x20) and (c <> 0x0A) and (c <> 0x09) and (c <> 0x0D) {
+				if whitespace_length > 0 {
+					args.dst.write_fast_token!(value: 0, length: whitespace_length as base.u64)
+				}
+				return "#bad input"
+			}
+			args.src.skip32_fast!(actual: 1, worst_case: 1)
+
+			if whitespace_length >= 0xFFFE {
+				args.dst.write_fast_token!(value: 0, length: 0xFFFF)
+				whitespace_length = 0
+				continue.outer
+			}
+			whitespace_length += 1
+		}
+
+		// Emit whitespace.
+		if whitespace_length > 0 {
+			args.dst.write_fast_token!(value: 0, length: whitespace_length as base.u64)
+			whitespace_length = 0
+			if args.dst.available() <= 0 {
+				continue.outer
+			}
+		}
+
+		// These assertions are redundant (the Wuffs compiler should already
+		// know these facts; deleting these assertions should still compile)
+		// but are listed explicitly to help guard against future edits to the
+		// code above inadvertently invalidating these assertions.
+		assert args.dst.available() > 0
+		assert args.src.available() > 0
+
+		if c <= 0x39 {  // 0x39 is '9'.
+			if c == 0x22 {  // 0x22 is '"'.
+				// TODO: strings.
+
+				return "#bad input"
+
+			} else {
+				// TODO: numbers.
+				return "#bad input"
+			}
+
+		} else if c == 0x5B {  // 0x5B is '['.
+			if 0 == (expect & 0x01) {  // 0x01 is EXPECT_NON_STRING_VALUE.
+				return "#bad input"
+			}
+			if depth >= 1024 {
+				return "#unsupported recursion depth"
+			}
+			stack_byte = depth / 32
+			stack_bit = depth & 31
+			this.stack[stack_byte] &= 0 ^ ((1 as base.u32) << stack_bit)
+			depth += 1
+
+			args.src.skip32_fast!(actual: 1, worst_case: 1)
+			args.dst.write_fast_token!(value: 0x20_0010, length: 1)
+			expect = 0x13  // 0x13 is (EXPECT_CLOSE_BRACKET | EXPECT_VALUE).
+
+		} else if c == 0x7B {  // 0x7B is '{'.
+			if 0 == (expect & 0x01) {  // 0x01 is EXPECT_NON_STRING_VALUE.
+				return "#bad input"
+			}
+			if depth >= 1024 {
+				return "#unsupported recursion depth"
+			}
+			stack_byte = depth / 32
+			stack_bit = depth & 31
+			this.stack[stack_byte] |= (1 as base.u32) << stack_bit
+			depth += 1
+
+			args.src.skip32_fast!(actual: 1, worst_case: 1)
+			args.dst.write_fast_token!(value: 0x20_0020, length: 1)
+			expect = 0x22  // 0x22 is (EXPECT_CLOSE_BRACE | EXPECT_STRING_VALUE).
+
+		} else {
+			// TODO: literals (false, true, null).
+			return "#bad input"
+		}
+
+		if depth == 0 {
+			break.outer
+		}
 	}
-
-	length = 456
-	args.dst.write_fast_token!(value: 123, length: length)
-	return ok
 }

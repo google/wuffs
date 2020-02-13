@@ -84,9 +84,9 @@ const char* test_wuffs_json_decode_tokens() {
       .data = global_src_slice,
   });
   CHECK_STRING(read_file(&src, "test/data/github-tags.json"));
-  CHECK_STATUS("decode_tokens",
-               wuffs_json__decoder__decode_tokens(&dec, &got, &src));
 
+  wuffs_base__status status =
+      wuffs_json__decoder__decode_tokens(&dec, &got, &src);
   if (0) {
     uint64_t pos = 0;
     size_t i;
@@ -95,11 +95,12 @@ const char* test_wuffs_json_decode_tokens() {
       uint64_t len = wuffs_base__token__length(t);
       uint64_t bc = wuffs_base__token__value_base_category(t);
       uint64_t bd = wuffs_base__token__value_base_detail(t);
-      printf("i=%3zu\tp=%3" PRIu64 "\tl=%3" PRIu64 "\tbc=%3" PRIu64
-             "\tbd=0x%06" PRIX64 "\n",
-             i, pos, len, bc, bd);
+      printf("i=%3zu\tp=%4" PRIu64 " (0x%03" PRIX64 ")\tl=%3" PRIu64
+             "\tbc=%3" PRIu64 "\tbd=0x%06" PRIX64 "\n",
+             i, pos, pos, len, bc, bd);
       pos = wuffs_base__u64__sat_add(pos, len);
     }
+    CHECK_STATUS("decode_tokens", status);
   }
 
   return NULL;
