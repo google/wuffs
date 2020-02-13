@@ -255,6 +255,29 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 			expect_after_value = 0x14  // 0x14 is (EXPECT_CLOSE_BRACKET | EXPECT_COMMA).
 			continue.outer
 
+		} else if c == 0x5D {  // 0x5D is ']'.
+			if 0 == (expect & 0x10) {  // 0x10 is EXPECT_CLOSE_BRACKET
+				return "#bad input"
+			}
+			args.src.skip32_fast!(actual: 1, worst_case: 1)
+			args.dst.write_fast_token!(value: 0x20_0050, length: 1)
+			if depth <= 1 {
+				break.outer
+			}
+			depth -= 1
+			stack_byte = (depth - 1) / 32
+			stack_bit = (depth - 1) & 31
+			if 0 == (this.stack[stack_byte] & ((1 as base.u32) << stack_bit)) {
+				// 0x14 is (EXPECT_CLOSE_BRACKET | EXPECT_COMMA).
+				expect = 0x14
+				expect_after_value = 0x14
+			} else {
+				// 0x24 is (EXPECT_CLOSE_BRACE | EXPECT_COMMA).
+				expect = 0x24
+				expect_after_value = 0x24
+			}
+			continue.outer
+
 		} else if c == 0x7B {  // 0x7B is '{'.
 			if 0 == (expect & 0x01) {  // 0x01 is EXPECT_NON_STRING_VALUE.
 				return "#bad input"
@@ -270,7 +293,30 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 			args.src.skip32_fast!(actual: 1, worst_case: 1)
 			args.dst.write_fast_token!(value: 0x20_0020, length: 1)
 			expect = 0x22  // 0x22 is (EXPECT_CLOSE_BRACE | EXPECT_STRING_VALUE).
-			expect_after_value = 0x24  // 0x14 is (EXPECT_CLOSE_BRACE | EXPECT_COMMA).
+			expect_after_value = 0x24  // 0x24 is (EXPECT_CLOSE_BRACE | EXPECT_COMMA).
+			continue.outer
+
+		} else if c == 0x7D {  // 0x7D is '}'.
+			if 0 == (expect & 0x20) {  // 0x20 is EXPECT_CLOSE_BRACE.
+				return "#bad input"
+			}
+			args.src.skip32_fast!(actual: 1, worst_case: 1)
+			args.dst.write_fast_token!(value: 0x20_0060, length: 1)
+			if depth <= 1 {
+				break.outer
+			}
+			depth -= 1
+			stack_byte = (depth - 1) / 32
+			stack_bit = (depth - 1) & 31
+			if 0 == (this.stack[stack_byte] & ((1 as base.u32) << stack_bit)) {
+				// 0x14 is (EXPECT_CLOSE_BRACKET | EXPECT_COMMA).
+				expect = 0x14
+				expect_after_value = 0x14
+			} else {
+				// 0x24 is (EXPECT_CLOSE_BRACE | EXPECT_COMMA).
+				expect = 0x24
+				expect_after_value = 0x24
+			}
 			continue.outer
 
 		} else {

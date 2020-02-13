@@ -18447,6 +18447,30 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
         v_expect = 19;
         v_expect_after_value = 20;
         goto label_0_continue;
+      } else if (v_c == 93) {
+        if (0 == (v_expect & 16)) {
+          status = wuffs_base__make_status(wuffs_json__error__bad_input);
+          goto exit;
+        }
+        (iop_a_src += 1, wuffs_base__make_empty_struct());
+        *iop_a_dst++ = wuffs_base__make_token(
+            (((uint64_t)(2097232)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+            (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+        if (v_depth <= 1) {
+          goto label_0_break;
+        }
+        v_depth -= 1;
+        v_stack_byte = ((v_depth - 1) / 32);
+        v_stack_bit = ((v_depth - 1) & 31);
+        if (0 == (self->private_data.f_stack[v_stack_byte] &
+                  (((uint32_t)(1)) << v_stack_bit))) {
+          v_expect = 20;
+          v_expect_after_value = 20;
+        } else {
+          v_expect = 36;
+          v_expect_after_value = 36;
+        }
+        goto label_0_continue;
       } else if (v_c == 123) {
         if (0 == (v_expect & 1)) {
           status = wuffs_base__make_status(wuffs_json__error__bad_input);
@@ -18468,6 +18492,30 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
             (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
         v_expect = 34;
         v_expect_after_value = 36;
+        goto label_0_continue;
+      } else if (v_c == 125) {
+        if (0 == (v_expect & 32)) {
+          status = wuffs_base__make_status(wuffs_json__error__bad_input);
+          goto exit;
+        }
+        (iop_a_src += 1, wuffs_base__make_empty_struct());
+        *iop_a_dst++ = wuffs_base__make_token(
+            (((uint64_t)(2097248)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+            (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+        if (v_depth <= 1) {
+          goto label_0_break;
+        }
+        v_depth -= 1;
+        v_stack_byte = ((v_depth - 1) / 32);
+        v_stack_bit = ((v_depth - 1) & 31);
+        if (0 == (self->private_data.f_stack[v_stack_byte] &
+                  (((uint32_t)(1)) << v_stack_bit))) {
+          v_expect = 20;
+          v_expect_after_value = 20;
+        } else {
+          v_expect = 36;
+          v_expect_after_value = 36;
+        }
         goto label_0_continue;
       } else {
         status = wuffs_base__make_status(wuffs_json__error__bad_input);
