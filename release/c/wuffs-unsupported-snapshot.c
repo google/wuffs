@@ -5146,6 +5146,7 @@ struct wuffs_json__decoder__struct {
     struct {
       uint32_t v_depth;
       uint8_t v_expect;
+      uint8_t v_expect_after_value;
     } s_decode_tokens[1];
   } private_data;
 
@@ -18230,6 +18231,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
   uint32_t v_stack_bit = 0;
   uint8_t v_c = 0;
   uint8_t v_expect = 0;
+  uint8_t v_expect_after_value = 0;
 
   wuffs_base__token* iop_a_dst = NULL;
   wuffs_base__token* io0_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -18259,6 +18261,8 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
   if (coro_susp_point) {
     v_depth = self->private_data.s_decode_tokens[0].v_depth;
     v_expect = self->private_data.s_decode_tokens[0].v_expect;
+    v_expect_after_value =
+        self->private_data.s_decode_tokens[0].v_expect_after_value;
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
@@ -18391,10 +18395,36 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
             v_expect = 8;
             goto label_0_continue;
           }
+        } else if (v_c == 44) {
+          if (0 == (v_expect & 4)) {
+            status = wuffs_base__make_status(wuffs_json__error__bad_input);
+            goto exit;
+          }
+          (iop_a_src += 1, wuffs_base__make_empty_struct());
+          *iop_a_dst++ = wuffs_base__make_token(
+              (((uint64_t)(0)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+              (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+          if (0 == (v_expect & 16)) {
+            v_expect = 2;
+          } else {
+            v_expect = 3;
+          }
+          goto label_0_continue;
         } else {
           status = wuffs_base__make_status(wuffs_json__error__bad_input);
           goto exit;
         }
+      } else if (v_c == 58) {
+        if (0 == (v_expect & 8)) {
+          status = wuffs_base__make_status(wuffs_json__error__bad_input);
+          goto exit;
+        }
+        (iop_a_src += 1, wuffs_base__make_empty_struct());
+        *iop_a_dst++ = wuffs_base__make_token(
+            (((uint64_t)(0)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+            (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+        v_expect = 3;
+        goto label_0_continue;
       } else if (v_c == 91) {
         if (0 == (v_expect & 1)) {
           status = wuffs_base__make_status(wuffs_json__error__bad_input);
@@ -18415,6 +18445,8 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
             (((uint64_t)(2097168)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
             (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
         v_expect = 19;
+        v_expect_after_value = 20;
+        goto label_0_continue;
       } else if (v_c == 123) {
         if (0 == (v_expect & 1)) {
           status = wuffs_base__make_status(wuffs_json__error__bad_input);
@@ -18435,6 +18467,8 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
             (((uint64_t)(2097184)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
             (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
         v_expect = 34;
+        v_expect_after_value = 36;
+        goto label_0_continue;
       } else {
         status = wuffs_base__make_status(wuffs_json__error__bad_input);
         goto exit;
@@ -18442,6 +18476,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
       if (v_depth == 0) {
         goto label_0_break;
       }
+      v_expect = v_expect_after_value;
     }
   label_0_break:;
 
@@ -18459,6 +18494,8 @@ suspend:
       wuffs_base__status__is_suspension(&status) ? 1 : 0;
   self->private_data.s_decode_tokens[0].v_depth = v_depth;
   self->private_data.s_decode_tokens[0].v_expect = v_expect;
+  self->private_data.s_decode_tokens[0].v_expect_after_value =
+      v_expect_after_value;
 
   goto exit;
 exit:
