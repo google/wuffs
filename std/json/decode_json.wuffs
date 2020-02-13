@@ -50,6 +50,7 @@ pub struct decoder?(
 )
 
 pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
+	var string_length     : base.u32[..= 0xFFFE]
 	var whitespace_length : base.u32[..= 0xFFFE]
 	var depth             : base.u32[..= 1024]
 	var stack_byte        : base.u32[..= (1024 / 32) - 1]
@@ -135,9 +136,72 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 
 		if c <= 0x39 {  // 0x39 is '9'.
 			if c == 0x22 {  // 0x22 is '"'.
-				// TODO: strings.
+				// -------- BEGIN parse strings.
+				if 0 == (expect & 0x02) {  // 0x02 is EXPECT_STRING_VALUE.
+					return "#bad input"
+				}
 
-				return "#bad input"
+				// The leading '"' is filler.
+				args.dst.write_fast_token!(value: 0, length: 1)
+				args.src.skip32_fast!(actual: 1, worst_case: 1)
+
+				while.string_loop true {
+					if args.dst.available() <= 0 {
+						yield? base."$short write"
+						continue.string_loop
+					}
+
+					string_length = 0
+					while true,
+						pre args.dst.available() > 0,
+					{
+						if args.src.available() <= 0 {
+							if string_length > 0 {
+								args.dst.write_fast_token!(value: 0x60_0001, length: string_length as base.u64)
+								string_length = 0
+							}
+							continue.string_loop
+						}
+						c = args.src.peek_u8()
+						args.src.skip32_fast!(actual: 1, worst_case: 1)
+
+						if c == 0x22 {  // 0x22 is '"'.
+							args.dst.write_fast_token!(value: 0x60_0000, length: string_length as base.u64)
+							string_length = 0
+							break.string_loop
+
+						} else if c == 0x5C {  // 0x5C is '\\'.
+							// TODO: escapes.
+							return "#bad input"
+
+						} else if string_length >= 0xFFFE {
+							args.dst.write_fast_token!(value: 0x60_0001, length: 0xFFFF)
+							string_length = 0
+							continue.string_loop
+						}
+
+						string_length += 1
+					}
+				}
+
+				// The trailing '"' is filler.
+				while true {
+					if args.dst.available() > 0 {
+						args.dst.write_fast_token!(value: 0, length: 1)
+						break
+					}
+					yield? base."$short write"
+				}
+
+				// As above, expect must have contained EXPECT_STRING_VALUE. If
+				// it didn't also contain EXPECT_NON_STRING_VALUE then we were
+				// parsing an object key and the next token should be ':'.
+				// Otherwise, fall below to "We've just parsed a value".
+				if 0 == (expect & 0x01) {  // 0x01 is EXPECT_NON_STRING_VALUE.
+					expect = 0x08  // 0x08 is EXPECT_COLON.
+					continue.outer
+				}
+				// -------- END   parse strings.
 
 			} else {
 				// TODO: numbers.
@@ -181,6 +245,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 			return "#bad input"
 		}
 
+		// We've just parsed a value.
 		if depth == 0 {
 			break.outer
 		}
