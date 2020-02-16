@@ -87,6 +87,7 @@ var Types = []string{
 
 	"io_reader",
 	"io_writer",
+	"token_reader",
 	"token_writer",
 
 	"frame_config",
