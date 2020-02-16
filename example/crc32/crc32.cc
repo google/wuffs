@@ -19,7 +19,7 @@ crc32 prints the CRC-32 checksum (using the IEEE polynomial) of stdin. It is
 similar to the standard /usr/bin/crc32 program, except that this example
 program only reads from stdin.
 
-This example program differs from the other example Wuffs programs in that it
+This example program differs from most other example Wuffs programs in that it
 is written in C++, not C.
 
 $CXX crc32.cc && ./a.out < ../../README.md; rm -f a.out

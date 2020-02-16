@@ -39,11 +39,7 @@ for f in $sources; do
     continue
   fi
 
-  if [ $f = crc32 ]; then
-    echo "Building gen/bin/example-$f"
-    # example/crc32 is unusual in that it's C++, not C.
-    $CXX -O3 example/$f/*.cc -o gen/bin/example-$f
-  elif [ $f = imageviewer ]; then
+  if [ $f = imageviewer ]; then
     # example/imageviewer is unusual in that needs additional libraries.
     echo "Building gen/bin/example-$f"
     $CC -O3 example/$f/*.c -lxcb -lxcb-image -o gen/bin/example-$f
@@ -59,6 +55,9 @@ for f in $sources; do
     fi
   elif [ -e example/$f/*.c ]; then
     echo "Building gen/bin/example-$f"
-    $CC -O3 example/$f/*.c -o gen/bin/example-$f
+    $CC  -O3 example/$f/*.c  -o gen/bin/example-$f
+  elif [ -e example/$f/*.cc ]; then
+    echo "Building gen/bin/example-$f"
+    $CXX -O3 example/$f/*.cc -o gen/bin/example-$f
   fi
 done

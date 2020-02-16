@@ -4,6 +4,7 @@
 ## Work In Progress
 
 - Added `example/imageviewer`.
+- Added `example/jsonptr`.
 - Added `std/bmp`.
 - Added `std/gif.config_decoder`.
 - Added `std/json`.
