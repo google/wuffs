@@ -18438,7 +18438,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
         v_stack_byte = (v_depth / 32);
         v_stack_bit = (v_depth & 31);
         self->private_data.f_stack[v_stack_byte] &=
-            (0 ^ (((uint32_t)(1)) << v_stack_bit));
+            (4294967295 ^ (((uint32_t)(1)) << v_stack_bit));
         v_depth += 1;
         (iop_a_src += 1, wuffs_base__make_empty_struct());
         *iop_a_dst++ = wuffs_base__make_token(

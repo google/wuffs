@@ -246,7 +246,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 			}
 			stack_byte = depth / 32
 			stack_bit = depth & 31
-			this.stack[stack_byte] &= 0 ^ ((1 as base.u32) << stack_bit)
+			this.stack[stack_byte] &= 0xFFFF_FFFF ^ ((1 as base.u32) << stack_bit)
 			depth += 1
 
 			args.src.skip32_fast!(actual: 1, worst_case: 1)
