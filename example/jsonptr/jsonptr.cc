@@ -246,8 +246,8 @@ parsed_token parse_next_token() {
 // ----
 
 const char* handle_string(parsed_token pt) {
+  TRY(write_dst("\"", 1));
   while (true) {
-    TRY(write_dst("\"", 1));
     TRY(write_dst(pt.data.ptr, pt.data.len));
     if ((pt.token.value_base_detail() & 1) == 0) {
       break;

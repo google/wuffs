@@ -165,6 +165,8 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 								args.dst.write_fast_token!(value: 0x60_0001, length: string_length as base.u64)
 								string_length = 0
 							}
+							yield? base."$short read"
+							string_length = 0
 							continue.string_loop
 						}
 						c = args.src.peek_u8()

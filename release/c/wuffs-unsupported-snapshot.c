@@ -18354,6 +18354,10 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
                        << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
                   v_string_length = 0;
                 }
+                status =
+                    wuffs_base__make_status(wuffs_base__suspension__short_read);
+                WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(4);
+                v_string_length = 0;
                 goto label_2_continue;
               }
               v_c = wuffs_base__load_u8be(iop_a_src);
@@ -18388,7 +18392,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
             }
             status =
                 wuffs_base__make_status(wuffs_base__suspension__short_write);
-            WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(4);
+            WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(5);
           }
         label_3_break:;
           if (0 == (v_expect & 1)) {
