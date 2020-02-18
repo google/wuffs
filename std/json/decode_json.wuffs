@@ -172,21 +172,31 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 						c = args.src.peek_u8()
 						args.src.skip32_fast!(actual: 1, worst_case: 1)
 
-						if c == 0x22 {  // 0x22 is '"'.
-							args.dst.write_fast_token!(value: 0x60_0000, length: string_length as base.u64)
-							string_length = 0
-							break.string_loop
+						if c <= 0x22 {  // 0x22 is '"'.
+							if c == 0x22 {  // 0x22 is '"'.
+								args.dst.write_fast_token!(value: 0x60_0000, length: string_length as base.u64)
+								string_length = 0
+								break.string_loop
+
+							} else if c < 0x20 {  // 0x20 is ' '.
+								if string_length > 0 {
+									args.dst.write_fast_token!(value: 0x60_0001, length: string_length as base.u64)
+									string_length = 0
+								}
+								return "#bad input"
+							}
 
 						} else if c == 0x5C {  // 0x5C is '\\'.
 							// TODO: escapes.
 							return "#bad input"
 
-						} else if string_length >= 0xFFFE {
+						}
+
+						if string_length >= 0xFFFE {
 							args.dst.write_fast_token!(value: 0x60_0001, length: 0xFFFF)
 							string_length = 0
 							continue.string_loop
 						}
-
 						string_length += 1
 					}
 				}

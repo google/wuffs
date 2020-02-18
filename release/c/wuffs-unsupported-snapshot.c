@@ -18362,17 +18362,33 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
               }
               v_c = wuffs_base__load_u8be(iop_a_src);
               (iop_a_src += 1, wuffs_base__make_empty_struct());
-              if (v_c == 34) {
-                *iop_a_dst++ = wuffs_base__make_token(
-                    (((uint64_t)(6291456)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
-                    (((uint64_t)(((uint64_t)(v_string_length))))
-                     << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
-                v_string_length = 0;
-                goto label_2_break;
+              if (v_c <= 34) {
+                if (v_c == 34) {
+                  *iop_a_dst++ = wuffs_base__make_token(
+                      (((uint64_t)(6291456))
+                       << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+                      (((uint64_t)(((uint64_t)(v_string_length))))
+                       << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+                  v_string_length = 0;
+                  goto label_2_break;
+                } else if (v_c < 32) {
+                  if (v_string_length > 0) {
+                    *iop_a_dst++ = wuffs_base__make_token(
+                        (((uint64_t)(6291457))
+                         << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+                        (((uint64_t)(((uint64_t)(v_string_length))))
+                         << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+                    v_string_length = 0;
+                  }
+                  status =
+                      wuffs_base__make_status(wuffs_json__error__bad_input);
+                  goto exit;
+                }
               } else if (v_c == 92) {
                 status = wuffs_base__make_status(wuffs_json__error__bad_input);
                 goto exit;
-              } else if (v_string_length >= 65534) {
+              }
+              if (v_string_length >= 65534) {
                 *iop_a_dst++ = wuffs_base__make_token(
                     (((uint64_t)(6291457)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
                     (((uint64_t)(65535)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
