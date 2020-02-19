@@ -423,13 +423,26 @@ func (g *gen) writeFuncImplBodySuspend(b *buffer) error {
 }
 
 func (g *gen) writeFuncImplEpilogue(b *buffer) error {
+	epilogue := ""
 	if g.currFunk.astFunc.Effect().Coroutine() ||
 		(g.currFunk.returnsStatus && (len(g.currFunk.derivedVars) > 0)) {
 
 		b.writes("goto exit;exit:") // The goto avoids the "unused label" warning.
+
+		if g.currFunk.astFunc.Public() {
+			epilogue = "if (wuffs_base__status__is_error(&status)) { " +
+				"self->private_impl.magic = WUFFS_BASE__DISABLED; }\n" +
+				"return status;\n"
+		} else {
+			epilogue = "return status;\n"
+		}
+	} else if g.currFunk.astFunc.Out() == nil {
+		epilogue = "return wuffs_base__make_empty_struct();\n"
 	}
 
-	if g.currFunk.derivedVars != nil {
+	if (epilogue == "") && g.currFunk.astFunc.BodyEndsWithReturn() {
+		// No-op.
+	} else if g.currFunk.derivedVars != nil {
 		for _, o := range g.currFunk.astFunc.In().Fields() {
 			o := o.AsField()
 			if err := g.writeSaveDerivedVar(b, "", aPrefix, o.Name(), o.XType()); err != nil {
@@ -439,17 +452,7 @@ func (g *gen) writeFuncImplEpilogue(b *buffer) error {
 		b.writes("\n")
 	}
 
-	if g.currFunk.astFunc.Effect().Coroutine() ||
-		(g.currFunk.returnsStatus && (len(g.currFunk.derivedVars) > 0)) {
-
-		if g.currFunk.astFunc.Public() {
-			b.writes("if (wuffs_base__status__is_error(&status)) { " +
-				"self->private_impl.magic = WUFFS_BASE__DISABLED; }\n")
-		}
-		b.writes("return status;\n")
-	} else if g.currFunk.astFunc.Out() == nil {
-		b.writes("return wuffs_base__make_empty_struct();\n")
-	}
+	b.writes(epilogue)
 	return nil
 }
 

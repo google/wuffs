@@ -18699,9 +18699,6 @@ label_0_break:;
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
   return 1;
-  if (a_src) {
-    a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
-  }
 }
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) ||

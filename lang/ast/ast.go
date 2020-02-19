@@ -834,6 +834,14 @@ func (n *Func) Out() *TypeExpr   { return n.rhs.AsTypeExpr() }
 func (n *Func) Asserts() []*Node { return n.list1 }
 func (n *Func) Body() []*Node    { return n.list2 }
 
+func (n *Func) BodyEndsWithReturn() bool {
+	if len(n.list2) == 0 {
+		return false
+	}
+	end := n.list2[len(n.list2)-1]
+	return (end.kind == KRet) && (end.AsRet().Keyword() == t.IDReturn)
+}
+
 func NewFunc(flags Flags, filename string, line uint32, receiverName t.ID, funcName t.ID, in *Struct, out *TypeExpr, asserts []*Node, body []*Node) *Func {
 	return &Func{
 		kind:     KFunc,
