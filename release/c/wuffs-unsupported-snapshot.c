@@ -18296,6 +18296,10 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
                  << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
             v_whitespace_length = 0;
           }
+          if (a_src && a_src->meta.closed) {
+            status = wuffs_base__make_status(wuffs_json__error__bad_input);
+            goto exit;
+          }
           status = wuffs_base__make_status(wuffs_base__suspension__short_read);
           WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(2);
           v_whitespace_length = 0;
@@ -18363,6 +18367,11 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
                       (((uint64_t)(((uint64_t)(v_string_length))))
                        << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
                   v_string_length = 0;
+                }
+                if (a_src && a_src->meta.closed) {
+                  status =
+                      wuffs_base__make_status(wuffs_json__error__bad_input);
+                  goto exit;
                 }
                 status =
                     wuffs_base__make_status(wuffs_base__suspension__short_read);
@@ -18469,6 +18478,10 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
             } else if (v_number_length < 1) {
               status = wuffs_base__make_status(
                   wuffs_json__error__unsupported_number_length);
+              goto exit;
+            }
+            if (a_src && a_src->meta.closed) {
+              status = wuffs_base__make_status(wuffs_json__error__bad_input);
               goto exit;
             }
             status =

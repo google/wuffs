@@ -103,11 +103,8 @@ const char* read_src() {
   size_t n = fread(src.data.ptr + src.meta.wi, sizeof(uint8_t),
                    src.data.len - src.meta.wi, stdin);
   src.meta.wi += n;
-  if (n > 0) {
-    // No-op.
-  } else if (feof(stdin)) {
-    src.meta.closed = true;
-  } else {
+  src.meta.closed = feof(stdin);
+  if ((n == 0) && !src.meta.closed) {
     return "main: read error";
   }
   return nullptr;

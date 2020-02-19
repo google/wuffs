@@ -103,6 +103,9 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 					args.dst.write_fast_token!(value: 0, length: whitespace_length as base.u64)
 					whitespace_length = 0
 				}
+				if args.src.is_closed() {
+					return "#bad input"
+				}
 				yield? base."$short read"
 				whitespace_length = 0
 				continue.outer
@@ -168,6 +171,9 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 							if string_length > 0 {
 								args.dst.write_fast_token!(value: 0x60_0001, length: string_length as base.u64)
 								string_length = 0
+							}
+							if args.src.is_closed() {
+								return "#bad input"
 							}
 							yield? base."$short read"
 							string_length = 0
@@ -259,6 +265,9 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 						break
 					} else if number_length < 1 {
 						return "#unsupported number length"
+					}
+					if args.src.is_closed() {
+						return "#bad input"
 					}
 					yield? base."$short read"
 					while args.dst.available() <= 0,
