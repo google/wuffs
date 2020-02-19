@@ -18137,6 +18137,8 @@ const char* wuffs_json__error__unsupported_number_length =
     "#json: unsupported number length";
 const char* wuffs_json__error__unsupported_recursion_depth =
     "#json: unsupported recursion depth";
+const char* wuffs_json__error__internal_error_inconsistent_i_o =
+    "#json: internal error: inconsistent I/O";
 
 // ---------------- Private Consts
 
@@ -18232,6 +18234,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
   uint32_t v_number_length = 0;
+  uint32_t v_number_status = 0;
   uint32_t v_string_length = 0;
   uint32_t v_whitespace_length = 0;
   uint32_t v_depth = 0;
@@ -18456,29 +18459,41 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
             if (a_src) {
               iop_a_src = a_src->data.ptr + a_src->meta.ri;
             }
-            if (v_number_length > 1) {
-              v_number_length -= 1;
+            v_number_status = (v_number_length >> 8);
+            v_number_length = (v_number_length & 255);
+            if (v_number_status == 0) {
               *iop_a_dst++ = wuffs_base__make_token(
                   (((uint64_t)(4194306)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
                   (((uint64_t)(((uint64_t)(v_number_length))))
                    << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
               goto label_4_break;
-            } else if (v_number_length < 1) {
+            }
+            while (v_number_length > 0) {
+              v_number_length -= 1;
+              if (iop_a_src > io1_a_src) {
+                (iop_a_src--, wuffs_base__make_empty_struct());
+              } else {
+                status = wuffs_base__make_status(
+                    wuffs_json__error__internal_error_inconsistent_i_o);
+                goto exit;
+              }
+            }
+            if (v_number_status == 1) {
+              status = wuffs_base__make_status(wuffs_json__error__bad_input);
+              goto exit;
+            } else if (v_number_status == 2) {
               status = wuffs_base__make_status(
                   wuffs_json__error__unsupported_number_length);
               goto exit;
-            }
-            if (a_src && a_src->meta.closed) {
-              status = wuffs_base__make_status(wuffs_json__error__bad_input);
-              goto exit;
-            }
-            status =
-                wuffs_base__make_status(wuffs_base__suspension__short_read);
-            WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(6);
-            while (((uint64_t)(io2_a_dst - iop_a_dst)) <= 0) {
+            } else {
               status =
-                  wuffs_base__make_status(wuffs_base__suspension__short_write);
-              WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(7);
+                  wuffs_base__make_status(wuffs_base__suspension__short_read);
+              WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(6);
+              while (((uint64_t)(io2_a_dst - iop_a_dst)) <= 0) {
+                status = wuffs_base__make_status(
+                    wuffs_base__suspension__short_write);
+                WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(7);
+              }
             }
           }
         label_4_break:;
@@ -18666,39 +18681,27 @@ wuffs_json__decoder__decode_number(wuffs_json__decoder* self,
   v_n = 0;
   while (true) {
     if (((uint64_t)(io2_a_src - iop_a_src)) <= 0) {
-      if (a_src && a_src->meta.closed) {
-        if (a_src) {
-          a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
-        }
-        return (v_n + 1);
+      if (!(a_src && a_src->meta.closed)) {
+        v_n |= 768;
       }
       goto label_0_break;
     }
     v_c = wuffs_base__load_u8be(iop_a_src);
     if ((v_c < 48) || (57 < v_c)) {
-      if (a_src) {
-        a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
-      }
-      return (v_n + 1);
+      goto label_0_break;
     }
     if (v_n >= 49) {
-      if (a_src) {
-        a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
-      }
-      return 0;
+      v_n |= 512;
+      goto label_0_break;
     }
     v_n += 1;
     (iop_a_src += 1, wuffs_base__make_empty_struct());
   }
 label_0_break:;
-  while ((v_n > 0) && (iop_a_src > io1_a_src)) {
-    v_n -= 1;
-    (iop_a_src--, wuffs_base__make_empty_struct());
-  }
   if (a_src) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
-  return 1;
+  return v_n;
 }
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) ||

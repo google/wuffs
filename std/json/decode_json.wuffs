@@ -18,6 +18,8 @@ pub status "#bad input"
 pub status "#unsupported number length"
 pub status "#unsupported recursion depth"
 
+pri status "#internal error: inconsistent I/O"
+
 pub struct decoder?(
 )(
 	// stack is conceptually an array of bits, implemented as an array of u32.
@@ -51,7 +53,8 @@ pub struct decoder?(
 )
 
 pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
-	var number_length     : base.u32[..= 50]
+	var number_length     : base.u32[..= 0x3FF]
+	var number_status     : base.u32[..= 0x3]
 	var string_length     : base.u32[..= 0xFFFE]
 	var whitespace_length : base.u32[..= 0xFFFE]
 	var depth             : base.u32[..= 1024]
@@ -249,21 +252,33 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 					pre args.dst.available() > 0,
 				{
 					number_length = this.decode_number!(src: args.src)
-					if number_length > 1 {
-						number_length -= 1
+					number_status = number_length >> 8
+					number_length = number_length & 0xFF
+					if number_status == 0 {
 						args.dst.write_fast_token!(value: 0x40_0002, length: number_length as base.u64)
 						break
-					} else if number_length < 1 {
-						return "#unsupported number length"
 					}
-					if args.src.is_closed() {
+
+					while number_length > 0 {
+						number_length -= 1
+						if args.src.can_undo_byte() {
+							args.src.undo_byte!()
+						} else {
+							return "#internal error: inconsistent I/O"
+						}
+					}
+
+					if number_status == 1 {
 						return "#bad input"
-					}
-					yield? base."$short read"
-					while args.dst.available() <= 0,
-						post args.dst.available() > 0,
-					{
-						yield? base."$short write"
+					} else if number_status == 2 {
+						return "#unsupported number length"
+					} else {
+						yield? base."$short read"
+						while args.dst.available() <= 0,
+							post args.dst.available() > 0,
+						{
+							yield? base."$short write"
+						}
 					}
 				}
 				// -------- END   parse numbers.
@@ -380,9 +395,9 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 	}
 }
 
-pri func decoder.decode_number!(src: base.io_reader) base.u32[..= 50] {
+pri func decoder.decode_number!(src: base.io_reader) base.u32[..= 0x3FF] {
 	var c : base.u8
-	var n : base.u32[..= 49]
+	var n : base.u32[..= 0x3FF]
 
 	// TODO: fractions, exponents, leading '-' sign, special casing when the
 	// first digit is '0'.
@@ -390,25 +405,21 @@ pri func decoder.decode_number!(src: base.io_reader) base.u32[..= 50] {
 	n = 0
 	while true {
 		if args.src.available() <= 0 {
-			if args.src.is_closed() {
-				return n + 1
+			if not args.src.is_closed() {
+				n |= 0x300
 			}
 			break
 		}
 		c = args.src.peek_u8()
 		if (c < 0x30) or (0x39 < c) {
-			return n + 1
+			break
 		}
 		if n >= 49 {
-			return 0
+			n |= 0x200
+			break
 		}
 		n += 1
 		args.src.skip32_fast!(actual: 1, worst_case: 1)
 	}
-
-	while (n > 0) and args.src.can_undo_byte() {
-		n -= 1
-		args.src.undo_byte!()
-	}
-	return 1
+	return n
 }
