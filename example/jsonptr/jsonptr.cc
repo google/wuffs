@@ -330,6 +330,10 @@ continue_loop:
                            : context::in_dict_after_brace;
         goto continue_loop;
 
+      case 2:
+        TRY(write_dst(pt.data.ptr, pt.data.len));
+        goto after_value;
+
       case 3:
         TRY(handle_string(pt));
         goto after_value;
