@@ -1060,7 +1060,9 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (bounds, e
 			}
 			actual := args[0].AsArg().Value()
 			worstCase := args[1].AsArg().Value()
-			if err := q.proveBinaryOp(t.IDXBinaryLessEq, actual, worstCase); err == errFailed {
+			if actual.Eq(worstCase) {
+				// No-op. Proving "x <= x" is trivial.
+			} else if err := q.proveBinaryOp(t.IDXBinaryLessEq, actual, worstCase); err == errFailed {
 				return bounds{}, fmt.Errorf("check: could not prove skip_fast pre-condition: %s <= %s",
 					actual.Str(q.tm), worstCase.Str(q.tm))
 			} else if err != nil {
