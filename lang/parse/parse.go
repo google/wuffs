@@ -693,6 +693,10 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 		if err != nil {
 			return nil, err
 		}
+		if value.Effect().Impure() {
+			return nil, fmt.Errorf(`parse: %s an impure expression at %s:%d`,
+				x.Str(p.tm), p.filename, p.line())
+		}
 		return a.NewRet(x, value).AsNode(), nil
 
 	case t.IDWhile:
