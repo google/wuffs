@@ -471,6 +471,15 @@ func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 		return nil
 	}
 
+	if g.currFunk.derivedVars != nil {
+		for _, o := range g.currFunk.astFunc.In().Fields() {
+			o := o.AsField()
+			if err := g.writeSaveDerivedVar(b, "", aPrefix, o.Name(), o.XType()); err != nil {
+				return err
+			}
+		}
+	}
+
 	b.writes("return ")
 	if g.currFunk.astFunc.Out() == nil {
 		b.writes("wuffs_base__make_empty_struct()")

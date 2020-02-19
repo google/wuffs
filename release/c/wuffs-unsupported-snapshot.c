@@ -18137,8 +18137,6 @@ const char* wuffs_json__error__unsupported_number_length =
     "#json: unsupported number length";
 const char* wuffs_json__error__unsupported_recursion_depth =
     "#json: unsupported recursion depth";
-const char* wuffs_json__error__internal_error_inconsistent_i_o =
-    "#json: internal error: inconsistent I/O";
 
 // ---------------- Private Consts
 
@@ -18464,16 +18462,6 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
                   (((uint64_t)(4194306)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
                   (((uint64_t)(((uint64_t)(v_number_length))))
                    << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
-              while (v_number_length > 0) {
-                v_number_length -= 1;
-                if (((uint64_t)(io2_a_src - iop_a_src)) > 0) {
-                  (iop_a_src += 1, wuffs_base__make_empty_struct());
-                } else {
-                  status = wuffs_base__make_status(
-                      wuffs_json__error__internal_error_inconsistent_i_o);
-                  goto exit;
-                }
-              }
               goto label_4_break;
             } else if (v_number_length < 1) {
               status = wuffs_base__make_status(
@@ -18679,21 +18667,37 @@ wuffs_json__decoder__decode_number(wuffs_json__decoder* self,
   while (true) {
     if (((uint64_t)(io2_a_src - iop_a_src)) <= 0) {
       if (a_src && a_src->meta.closed) {
+        if (a_src) {
+          a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+        }
         return (v_n + 1);
       }
       goto label_0_break;
     }
     v_c = wuffs_base__load_u8be(iop_a_src);
     if ((v_c < 48) || (57 < v_c)) {
+      if (a_src) {
+        a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+      }
       return (v_n + 1);
     }
     if (v_n >= 49) {
+      if (a_src) {
+        a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+      }
       return 0;
     }
     v_n += 1;
     (iop_a_src += 1, wuffs_base__make_empty_struct());
   }
 label_0_break:;
+  while ((v_n > 0) && (iop_a_src > io1_a_src)) {
+    v_n -= 1;
+    (iop_a_src--, wuffs_base__make_empty_struct());
+  }
+  if (a_src) {
+    a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+  }
   return 1;
   if (a_src) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));

@@ -18,8 +18,6 @@ pub status "#bad input"
 pub status "#unsupported number length"
 pub status "#unsupported recursion depth"
 
-pri status "#internal error: inconsistent I/O"
-
 pub struct decoder?(
 )(
 	// stack is conceptually an array of bits, implemented as an array of u32.
@@ -254,14 +252,6 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 					if number_length > 1 {
 						number_length -= 1
 						args.dst.write_fast_token!(value: 0x40_0002, length: number_length as base.u64)
-						while number_length > 0 {
-							number_length -= 1
-							if args.src.available() > 0 {
-								args.src.skip32_fast!(actual: 1, worst_case: 1)
-							} else {
-								return "#internal error: inconsistent I/O"
-							}
-						}
 						break
 					} else if number_length < 1 {
 						return "#unsupported number length"
@@ -416,6 +406,9 @@ pri func decoder.decode_number!(src: base.io_reader) base.u32[..= 50] {
 		args.src.skip32_fast!(actual: 1, worst_case: 1)
 	}
 
-	// TODO: explicitly undo arg.src reads.
+	while (n > 0) and args.src.can_undo_byte() {
+		n -= 1
+		args.src.undo_byte!()
+	}
 	return 1
 }
