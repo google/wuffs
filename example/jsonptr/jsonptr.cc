@@ -93,6 +93,9 @@ size_t indent;
 // ----
 
 const char* read_src() {
+  if (src.meta.closed) {
+    return "main: read error: unexpected EOF";
+  }
   src.compact();
   if (src.meta.wi >= src.data.len) {
     return "main: src buffer is full";
@@ -100,12 +103,12 @@ const char* read_src() {
   size_t n = fread(src.data.ptr + src.meta.wi, sizeof(uint8_t),
                    src.data.len - src.meta.wi, stdin);
   src.meta.wi += n;
-  if (n == 0) {
-    if (feof(stdin)) {
-      return "main: read error: unexpected EOF";
-    } else {
-      return "main: read error";
-    }
+  if (n > 0) {
+    // No-op.
+  } else if (feof(stdin)) {
+    src.meta.closed = true;
+  } else {
+    return "main: read error";
   }
   return nullptr;
 }

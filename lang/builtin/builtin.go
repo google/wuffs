@@ -249,6 +249,7 @@ var Funcs = []string{
 
 	"io_reader.available() u64",
 	"io_reader.count_since(mark: u64) u64",
+	"io_reader.is_closed() bool",
 	"io_reader.mark() u64",
 	"io_reader.position() u64",
 	"io_reader.since(mark: u64) slice u8",

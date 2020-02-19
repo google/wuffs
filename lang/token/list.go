@@ -491,13 +491,14 @@ const (
 	IDCanUndoByte      = ID(0x160)
 	IDCountSince       = ID(0x161)
 	IDHistoryAvailable = ID(0x162)
-	IDMark             = ID(0x163)
-	IDPosition         = ID(0x164)
-	IDSince            = ID(0x165)
-	IDSkip             = ID(0x166)
-	IDSkip32           = ID(0x167)
-	IDSkip32Fast       = ID(0x168)
-	IDTake             = ID(0x169)
+	IDIsClosed         = ID(0x163)
+	IDMark             = ID(0x164)
+	IDPosition         = ID(0x165)
+	IDSince            = ID(0x166)
+	IDSkip             = ID(0x167)
+	IDSkip32           = ID(0x168)
+	IDSkip32Fast       = ID(0x169)
+	IDTake             = ID(0x16A)
 
 	IDCopyFromSlice          = ID(0x170)
 	IDCopyN32FromHistory     = ID(0x171)
@@ -841,6 +842,7 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDCanUndoByte:      "can_undo_byte",
 	IDCountSince:       "count_since",
 	IDHistoryAvailable: "history_available",
+	IDIsClosed:         "is_closed",
 	IDMark:             "mark",
 	IDPosition:         "position",
 	IDSince:            "since",

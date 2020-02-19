@@ -160,6 +160,10 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 		b.printf(", ((uint64_t)(%s%s - %s%s)))", iopPrefix, name, io0Prefix, name)
 		return nil
 
+	case t.IDIsClosed:
+		b.printf("(%s && %s->meta.closed)", name, name)
+		return nil
+
 	case t.IDMark:
 		b.printf("((uint64_t)(%s%s - %s%s))", iopPrefix, name, io0Prefix, name)
 		return nil
