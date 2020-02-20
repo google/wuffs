@@ -239,6 +239,20 @@ wuffs_base__status::message() const {
 
 // --------
 
+// WUFFS_BASE__RESULT is a result type: either a status (an error) or a value.
+//
+// A result with all fields NULL or zero is as valid as a zero-valued T.
+#define WUFFS_BASE__RESULT(T)  \
+  struct {                     \
+    wuffs_base__status status; \
+    T value;                   \
+  }
+
+typedef WUFFS_BASE__RESULT(int64_t) wuffs_base__result_i64;
+typedef WUFFS_BASE__RESULT(uint64_t) wuffs_base__result_u64;
+
+// --------
+
 // FourCC constants.
 
 // !! INSERT FourCCs.

@@ -69,6 +69,8 @@ extern "C" {
 
 // !! INSERT base/all-private.h.
 
+// ----------------
+
 #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BASE)
 
 const uint8_t wuffs_base__low_bits_mask__u8[9] = {
@@ -119,6 +121,8 @@ const uint64_t wuffs_base__low_bits_mask__u64[65] = {
 // !! INSERT InterfaceDefinitions.
 
 // !! INSERT base/image-impl.c.
+
+// !! INSERT base/strconv-impl.c.
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) ||
         // defined(WUFFS_CONFIG__MODULE__BASE)
