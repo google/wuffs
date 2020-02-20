@@ -246,7 +246,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 				}
 				continue.outer
 
-			} else if c >= 0x30 {  // 0x30 is '0'.
+			} else if (c >= 0x30) or (c == 0x2D) {  // 0x30 is '0', 0x2D is '-'.
 				// -------- BEGIN parse numbers.
 				while true,
 					pre args.dst.available() > 0,
@@ -399,10 +399,128 @@ pri func decoder.decode_number!(src: base.io_reader) base.u32[..= 0x3FF] {
 	var c : base.u8
 	var n : base.u32[..= 0x3FF]
 
-	// TODO: fractions, exponents, leading '-' sign, special casing when the
-	// first digit is '0'.
+	while.goto_done true {
+		n = 0
 
-	n = 0
+		// Peek.
+		if args.src.available() <= 0 {
+			if not args.src.is_closed() {
+				n |= 0x300
+			}
+			break.goto_done
+		}
+		c = args.src.peek_u8()
+
+		// Scan the optional minus sign.
+		if c <> 0x2D {  // 0x2D is '-'.
+			assert args.src.available() > 0
+			assert n <= 1
+		} else {
+			n += 1
+			args.src.skip32_fast!(actual: 1, worst_case: 1)
+
+			// Peek.
+			if args.src.available() <= 0 {
+				if not args.src.is_closed() {
+					n |= 0x300
+				}
+				n |= 0x100  // A '-' without digits is invalid.
+				break.goto_done
+			}
+			c = args.src.peek_u8()
+
+			assert args.src.available() > 0
+			assert n <= 1
+		}
+
+		// Scan the opening digits.
+		if c == 0x30 {  // 0x30 is '0'.
+			n += 1
+			args.src.skip32_fast!(actual: 1, worst_case: 1)
+			assert n <= 0xFD
+		} else {
+			n = this.decode_digits!(src: args.src, n: n)
+			if n > 0xFD {
+				break.goto_done
+			}
+			assert n <= 0xFD
+		}
+
+		// Peek.
+		if args.src.available() <= 0 {
+			if not args.src.is_closed() {
+				n |= 0x300
+			}
+			break.goto_done
+		}
+		c = args.src.peek_u8()
+
+		// Scan the optional fraction.
+		if c <> 0x2E {  // 0x2E is '.'.
+			assert args.src.available() > 0
+			assert n <= 0xFD
+		} else {
+			n += 1
+			args.src.skip32_fast!(actual: 1, worst_case: 1)
+
+			n = this.decode_digits!(src: args.src, n: n)
+			if n > 0xFD {
+				break.goto_done
+			}
+
+			// Peek.
+			if args.src.available() <= 0 {
+				if not args.src.is_closed() {
+					n |= 0x300
+				}
+				break.goto_done
+			}
+			c = args.src.peek_u8()
+
+			assert args.src.available() > 0
+			assert n <= 0xFD
+		}
+
+		// Scan the optional 'E' or 'e'.
+		if (c <> 0x45) and (c <> 0x65) {  // 0x45 and 0x65 are 'E' and 'e'.
+			break.goto_done
+		}
+		n += 1
+		args.src.skip32_fast!(actual: 1, worst_case: 1)
+		assert n <= 0xFE
+
+		// Peek.
+		if args.src.available() <= 0 {
+			if not args.src.is_closed() {
+				n |= 0x300
+			}
+			n |= 0x100  // An 'E' or 'e' without digits is invalid.
+			break.goto_done
+		}
+		c = args.src.peek_u8()
+
+		// Scan the optional '+' or '-'.
+		if (c <> 0x2B) and (c <> 0x2D) {  // 0x2B and 0x2D are '+' and '-'.
+			assert n <= 255
+		} else {
+			n += 1
+			args.src.skip32_fast!(actual: 1, worst_case: 1)
+			assert n <= 255
+		}
+
+		// Scan the exponent digits.
+		n = this.decode_digits!(src: args.src, n: n)
+
+		break.goto_done
+	}  // while.goto_done
+	return n
+}
+
+pri func decoder.decode_digits!(src: base.io_reader, n: base.u32[..= 0xFF]) base.u32[..= 0x3FF] {
+	var c : base.u8
+	var n : base.u32[..= 0x3FF]
+
+	n = args.n
 	while true {
 		if args.src.available() <= 0 {
 			if not args.src.is_closed() {
@@ -420,6 +538,9 @@ pri func decoder.decode_number!(src: base.io_reader) base.u32[..= 0x3FF] {
 		}
 		n += 1
 		args.src.skip32_fast!(actual: 1, worst_case: 1)
+	}
+	if n == args.n {
+		n |= 0x100
 	}
 	return n
 }
