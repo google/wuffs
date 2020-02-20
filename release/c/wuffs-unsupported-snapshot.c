@@ -18456,6 +18456,10 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
           }
           goto label_0_continue;
         } else if ((v_c >= 48) || (v_c == 45)) {
+          if (0 == (v_expect & 1)) {
+            status = wuffs_base__make_status(wuffs_json__error__bad_input);
+            goto exit;
+          }
           while (true) {
             if (a_src) {
               a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));

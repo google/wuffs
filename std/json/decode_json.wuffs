@@ -248,6 +248,9 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 
 			} else if (c >= 0x30) or (c == 0x2D) {  // 0x30 is '0', 0x2D is '-'.
 				// -------- BEGIN parse numbers.
+				if 0 == (expect & 0x01) {  // 0x02 is EXPECT_NON_STRING_VALUE.
+					return "#bad input"
+				}
 				while true,
 					pre args.dst.available() > 0,
 				{
