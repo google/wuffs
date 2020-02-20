@@ -18500,6 +18500,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
   self->private_impl.active_coroutine = 0;
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
+  uint64_t v_token_value = 0;
   uint32_t v_number_length = 0;
   uint32_t v_number_status = 0;
   uint32_t v_string_length = 0;
@@ -18731,10 +18732,15 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
               iop_a_src = a_src->data.ptr + a_src->meta.ri;
             }
             v_number_status = (v_number_length >> 8);
-            v_number_length = (v_number_length & 255);
+            v_token_value = 4194306;
+            if ((v_number_length & 128) != 0) {
+              v_token_value = 4194308;
+            }
+            v_number_length = (v_number_length & 127);
             if (v_number_status == 0) {
               *iop_a_dst++ = wuffs_base__make_token(
-                  (((uint64_t)(4194306)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+                  (((uint64_t)(v_token_value))
+                   << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
                   (((uint64_t)(((uint64_t)(v_number_length))))
                    << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
               goto label_4_break;
@@ -18937,6 +18943,7 @@ wuffs_json__decoder__decode_number(wuffs_json__decoder* self,
                                    wuffs_base__io_buffer* a_src) {
   uint8_t v_c = 0;
   uint32_t v_n = 0;
+  uint32_t v_floating_point = 0;
 
   uint8_t* iop_a_src = NULL;
   uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -18995,6 +19002,7 @@ wuffs_json__decoder__decode_number(wuffs_json__decoder* self,
     v_c = wuffs_base__load_u8be(iop_a_src);
     if (v_c != 46) {
     } else {
+      v_floating_point = 128;
       v_n += 1;
       (iop_a_src += 1, wuffs_base__make_empty_struct());
       if (a_src) {
@@ -19018,6 +19026,7 @@ wuffs_json__decoder__decode_number(wuffs_json__decoder* self,
     if ((v_c != 69) && (v_c != 101)) {
       goto label_0_break;
     }
+    v_floating_point = 128;
     v_n += 1;
     (iop_a_src += 1, wuffs_base__make_empty_struct());
     if (((uint64_t)(io2_a_src - iop_a_src)) <= 0) {
@@ -19046,7 +19055,7 @@ label_0_break:;
   if (a_src) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
-  return v_n;
+  return (v_n | v_floating_point);
 }
 
 // -------- func json.decoder.decode_digits
