@@ -168,6 +168,14 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 		b.printf("((uint64_t)(%s%s - %s%s))", iopPrefix, name, io0Prefix, name)
 		return nil
 
+	case t.IDMatch7:
+		b.printf("wuffs_base__io_reader__match7(%s%s,  %s%s,", iopPrefix, name, io2Prefix, name)
+		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
+			return err
+		}
+		b.writeb(')')
+		return nil
+
 	case t.IDPosition:
 		b.printf("wuffs_base__u64__sat_add(%s->meta.pos, ((uint64_t)(%s%s - %s%s)))",
 			name, iopPrefix, name, io0Prefix, name)

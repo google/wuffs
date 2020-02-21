@@ -493,12 +493,15 @@ const (
 	IDHistoryAvailable = ID(0x162)
 	IDIsClosed         = ID(0x163)
 	IDMark             = ID(0x164)
-	IDPosition         = ID(0x165)
-	IDSince            = ID(0x166)
-	IDSkip             = ID(0x167)
-	IDSkip32           = ID(0x168)
-	IDSkip32Fast       = ID(0x169)
-	IDTake             = ID(0x16A)
+	IDMatch15          = ID(0x165)
+	IDMatch31          = ID(0x166)
+	IDMatch7           = ID(0x167)
+	IDPosition         = ID(0x168)
+	IDSince            = ID(0x169)
+	IDSkip             = ID(0x16A)
+	IDSkip32           = ID(0x16B)
+	IDSkip32Fast       = ID(0x16C)
+	IDTake             = ID(0x16D)
 
 	IDCopyFromSlice          = ID(0x170)
 	IDCopyN32FromHistory     = ID(0x171)
@@ -844,6 +847,9 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDHistoryAvailable: "history_available",
 	IDIsClosed:         "is_closed",
 	IDMark:             "mark",
+	IDMatch15:          "match15",
+	IDMatch31:          "match31",
+	IDMatch7:           "match7",
 	IDPosition:         "position",
 	IDSince:            "since",
 	IDSkip:             "skip",

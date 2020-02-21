@@ -161,6 +161,41 @@ wuffs_base__io_writer__copy_n32_from_slice(uint8_t** ptr_iop_w,
   return (uint32_t)(n);
 }
 
+// wuffs_base__io_reader__match7 returns whether the io_reader's upcoming bytes
+// start with the given prefix (up to 7 bytes long). It is peek-like, not
+// read-like, in that there are no side-effects.
+//
+// The low 3 bits of a hold the prefix length, n.
+//
+// The high 56 bits of a hold the prefix itself, in little-endian order. The
+// first prefix byte is in bits 8..=15, the second prefix byte is in bits
+// 16..=23, etc. The high (8 * (7 - n)) bits are ignored.
+//
+// There are three possible return values:
+//  - 0 means success.
+//  - 1 means inconclusive, equivalent to "$short read".
+//  - 2 means failure.
+static inline uint32_t  //
+wuffs_base__io_reader__match7(uint8_t* iop_r, uint8_t* io2_r, uint64_t a) {
+  uint32_t n = a & 7;
+  a >>= 8;
+  if ((io2_r - iop_r) >= 8) {
+    uint64_t x = wuffs_base__load_u64le(iop_r);
+    uint32_t shift = 8 * (8 - n);
+    return ((a << shift) == (x << shift)) ? 0 : 2;
+  }
+  for (; n > 0; n--) {
+    if (iop_r >= io2_r) {
+      return 1;
+    } else if (*iop_r != ((uint8_t)(a))) {
+      return 2;
+    }
+    iop_r++;
+    a >>= 8;
+  }
+  return 0;
+}
+
 static inline wuffs_base__io_buffer*  //
 wuffs_base__io_reader__set(wuffs_base__io_buffer* b,
                            uint8_t** ptr_iop_r,

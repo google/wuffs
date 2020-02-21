@@ -252,6 +252,7 @@ var Funcs = []string{
 	"io_reader.count_since(mark: u64) u64",
 	"io_reader.is_closed() bool",
 	"io_reader.mark() u64",
+	"io_reader.match7(a: u64) u32[..= 2]",
 	"io_reader.position() u64",
 	"io_reader.since(mark: u64) slice u8",
 	"io_reader.take!(n: u64) slice u8",
