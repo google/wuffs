@@ -18585,117 +18585,88 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
     v_expect = 3;
   label_0_continue:;
     while (true) {
-      if (((uint64_t)(io2_a_dst - iop_a_dst)) <= 0) {
-        status = wuffs_base__make_status(wuffs_base__suspension__short_write);
-        WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(1);
-        goto label_0_continue;
-      }
-      v_whitespace_length = 0;
-      v_c = 0;
       while (true) {
-        if (((uint64_t)(io2_a_src - iop_a_src)) <= 0) {
-          if (v_whitespace_length > 0) {
-            *iop_a_dst++ = wuffs_base__make_token(
-                (((uint64_t)(0)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
-                (((uint64_t)(((uint64_t)(v_whitespace_length))))
-                 << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
-            v_whitespace_length = 0;
-          }
-          if (a_src && a_src->meta.closed) {
-            status = wuffs_base__make_status(wuffs_json__error__bad_input);
-            goto exit;
-          }
-          status = wuffs_base__make_status(wuffs_base__suspension__short_read);
-          WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(2);
-          v_whitespace_length = 0;
-          goto label_0_continue;
-        }
-        v_c = wuffs_base__load_u8be(iop_a_src);
-        if (v_c > 32) {
-          goto label_1_break;
-        } else if ((v_c != 32) && (v_c != 10) && (v_c != 9) && (v_c != 13)) {
-          if (v_whitespace_length > 0) {
-            *iop_a_dst++ = wuffs_base__make_token(
-                (((uint64_t)(0)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
-                (((uint64_t)(((uint64_t)(v_whitespace_length))))
-                 << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
-          }
-          status = wuffs_base__make_status(wuffs_json__error__bad_input);
-          goto exit;
-        }
-        (iop_a_src += 1, wuffs_base__make_empty_struct());
-        if (v_whitespace_length >= 65534) {
-          *iop_a_dst++ = wuffs_base__make_token(
-              (((uint64_t)(0)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
-              (((uint64_t)(65535)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
-          v_whitespace_length = 0;
-          goto label_0_continue;
-        }
-        v_whitespace_length += 1;
-      }
-    label_1_break:;
-      if (v_whitespace_length > 0) {
-        *iop_a_dst++ = wuffs_base__make_token(
-            (((uint64_t)(0)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
-            (((uint64_t)(((uint64_t)(v_whitespace_length))))
-             << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
-        v_whitespace_length = 0;
         if (((uint64_t)(io2_a_dst - iop_a_dst)) <= 0) {
+          status = wuffs_base__make_status(wuffs_base__suspension__short_write);
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(1);
           goto label_0_continue;
         }
-      }
-      if (v_c <= 57) {
-        if (v_c == 34) {
-          if (0 == (v_expect & 2)) {
+        v_whitespace_length = 0;
+        v_c = 0;
+        while (true) {
+          if (((uint64_t)(io2_a_src - iop_a_src)) <= 0) {
+            if (v_whitespace_length > 0) {
+              *iop_a_dst++ = wuffs_base__make_token(
+                  (((uint64_t)(0)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+                  (((uint64_t)(((uint64_t)(v_whitespace_length))))
+                   << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+              v_whitespace_length = 0;
+            }
+            if (a_src && a_src->meta.closed) {
+              status = wuffs_base__make_status(wuffs_json__error__bad_input);
+              goto exit;
+            }
+            status =
+                wuffs_base__make_status(wuffs_base__suspension__short_read);
+            WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(2);
+            v_whitespace_length = 0;
+            goto label_0_continue;
+          }
+          v_c = wuffs_base__load_u8be(iop_a_src);
+          if (v_c > 32) {
+            goto label_1_break;
+          } else if ((v_c != 32) && (v_c != 10) && (v_c != 9) && (v_c != 13)) {
+            if (v_whitespace_length > 0) {
+              *iop_a_dst++ = wuffs_base__make_token(
+                  (((uint64_t)(0)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+                  (((uint64_t)(((uint64_t)(v_whitespace_length))))
+                   << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+            }
             status = wuffs_base__make_status(wuffs_json__error__bad_input);
             goto exit;
           }
+          (iop_a_src += 1, wuffs_base__make_empty_struct());
+          if (v_whitespace_length >= 65534) {
+            *iop_a_dst++ = wuffs_base__make_token(
+                (((uint64_t)(0)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+                (((uint64_t)(65535)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+            v_whitespace_length = 0;
+            goto label_0_continue;
+          }
+          v_whitespace_length += 1;
+        }
+      label_1_break:;
+        if (v_whitespace_length > 0) {
           *iop_a_dst++ = wuffs_base__make_token(
               (((uint64_t)(0)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
-              (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
-          (iop_a_src += 1, wuffs_base__make_empty_struct());
-        label_2_continue:;
-          while (true) {
-            if (((uint64_t)(io2_a_dst - iop_a_dst)) <= 0) {
-              status =
-                  wuffs_base__make_status(wuffs_base__suspension__short_write);
-              WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(3);
-              goto label_2_continue;
+              (((uint64_t)(((uint64_t)(v_whitespace_length))))
+               << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+          v_whitespace_length = 0;
+          if (((uint64_t)(io2_a_dst - iop_a_dst)) <= 0) {
+            goto label_0_continue;
+          }
+        }
+        if (v_c <= 57) {
+          if (v_c == 34) {
+            if (0 == (v_expect & 2)) {
+              status = wuffs_base__make_status(wuffs_json__error__bad_input);
+              goto exit;
             }
-            v_string_length = 0;
+            *iop_a_dst++ = wuffs_base__make_token(
+                (((uint64_t)(0)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+                (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+            (iop_a_src += 1, wuffs_base__make_empty_struct());
+          label_2_continue:;
             while (true) {
-              if (((uint64_t)(io2_a_src - iop_a_src)) <= 0) {
-                if (v_string_length > 0) {
-                  *iop_a_dst++ = wuffs_base__make_token(
-                      (((uint64_t)(6291457))
-                       << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
-                      (((uint64_t)(((uint64_t)(v_string_length))))
-                       << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
-                  v_string_length = 0;
-                }
-                if (a_src && a_src->meta.closed) {
-                  status =
-                      wuffs_base__make_status(wuffs_json__error__bad_input);
-                  goto exit;
-                }
-                status =
-                    wuffs_base__make_status(wuffs_base__suspension__short_read);
-                WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(4);
-                v_string_length = 0;
+              if (((uint64_t)(io2_a_dst - iop_a_dst)) <= 0) {
+                status = wuffs_base__make_status(
+                    wuffs_base__suspension__short_write);
+                WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(3);
                 goto label_2_continue;
               }
-              v_c = wuffs_base__load_u8be(iop_a_src);
-              (iop_a_src += 1, wuffs_base__make_empty_struct());
-              if (v_c <= 34) {
-                if (v_c == 34) {
-                  *iop_a_dst++ = wuffs_base__make_token(
-                      (((uint64_t)(6291456))
-                       << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
-                      (((uint64_t)(((uint64_t)(v_string_length))))
-                       << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
-                  v_string_length = 0;
-                  goto label_2_break;
-                } else if (v_c < 32) {
+              v_string_length = 0;
+              while (true) {
+                if (((uint64_t)(io2_a_src - iop_a_src)) <= 0) {
                   if (v_string_length > 0) {
                     *iop_a_dst++ = wuffs_base__make_token(
                         (((uint64_t)(6291457))
@@ -18704,43 +18675,151 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
                          << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
                     v_string_length = 0;
                   }
+                  if (a_src && a_src->meta.closed) {
+                    status =
+                        wuffs_base__make_status(wuffs_json__error__bad_input);
+                    goto exit;
+                  }
+                  status = wuffs_base__make_status(
+                      wuffs_base__suspension__short_read);
+                  WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(4);
+                  v_string_length = 0;
+                  goto label_2_continue;
+                }
+                v_c = wuffs_base__load_u8be(iop_a_src);
+                (iop_a_src += 1, wuffs_base__make_empty_struct());
+                if (v_c <= 34) {
+                  if (v_c == 34) {
+                    *iop_a_dst++ = wuffs_base__make_token(
+                        (((uint64_t)(6291456))
+                         << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+                        (((uint64_t)(((uint64_t)(v_string_length))))
+                         << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+                    v_string_length = 0;
+                    goto label_2_break;
+                  } else if (v_c < 32) {
+                    if (v_string_length > 0) {
+                      *iop_a_dst++ = wuffs_base__make_token(
+                          (((uint64_t)(6291457))
+                           << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+                          (((uint64_t)(((uint64_t)(v_string_length))))
+                           << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+                      v_string_length = 0;
+                    }
+                    status =
+                        wuffs_base__make_status(wuffs_json__error__bad_input);
+                    goto exit;
+                  }
+                } else if (v_c == 92) {
                   status =
                       wuffs_base__make_status(wuffs_json__error__bad_input);
                   goto exit;
                 }
-              } else if (v_c == 92) {
+                if (v_string_length >= 65534) {
+                  *iop_a_dst++ = wuffs_base__make_token(
+                      (((uint64_t)(6291457))
+                       << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+                      (((uint64_t)(65535))
+                       << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+                  v_string_length = 0;
+                  goto label_2_continue;
+                }
+                v_string_length += 1;
+              }
+            }
+          label_2_break:;
+            while (true) {
+              if (((uint64_t)(io2_a_dst - iop_a_dst)) > 0) {
+                *iop_a_dst++ = wuffs_base__make_token(
+                    (((uint64_t)(0)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+                    (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+                goto label_3_break;
+              }
+              status =
+                  wuffs_base__make_status(wuffs_base__suspension__short_write);
+              WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(5);
+            }
+          label_3_break:;
+            if (0 == (v_expect & 1)) {
+              v_expect = 8;
+              goto label_0_continue;
+            }
+            goto label_4_break;
+          } else if (v_c == 44) {
+            if (0 == (v_expect & 4)) {
+              status = wuffs_base__make_status(wuffs_json__error__bad_input);
+              goto exit;
+            }
+            (iop_a_src += 1, wuffs_base__make_empty_struct());
+            *iop_a_dst++ = wuffs_base__make_token(
+                (((uint64_t)(0)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+                (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+            if (0 == (v_expect & 16)) {
+              v_expect = 2;
+            } else {
+              v_expect = 3;
+            }
+            goto label_0_continue;
+          } else if ((v_c >= 48) || (v_c == 45)) {
+            if (0 == (v_expect & 1)) {
+              status = wuffs_base__make_status(wuffs_json__error__bad_input);
+              goto exit;
+            }
+            while (true) {
+              if (a_src) {
+                a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+              }
+              v_number_length = wuffs_json__decoder__decode_number(self, a_src);
+              if (a_src) {
+                iop_a_src = a_src->data.ptr + a_src->meta.ri;
+              }
+              v_number_status = (v_number_length >> 8);
+              v_token_value = 4194306;
+              if ((v_number_length & 128) != 0) {
+                v_token_value = 4194308;
+              }
+              v_number_length = (v_number_length & 127);
+              if (v_number_status == 0) {
+                *iop_a_dst++ = wuffs_base__make_token(
+                    (((uint64_t)(v_token_value))
+                     << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+                    (((uint64_t)(((uint64_t)(v_number_length))))
+                     << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+                goto label_5_break;
+              }
+              while (v_number_length > 0) {
+                v_number_length -= 1;
+                if (iop_a_src > io1_a_src) {
+                  (iop_a_src--, wuffs_base__make_empty_struct());
+                } else {
+                  status = wuffs_base__make_status(
+                      wuffs_json__error__internal_error_inconsistent_i_o);
+                  goto exit;
+                }
+              }
+              if (v_number_status == 1) {
                 status = wuffs_base__make_status(wuffs_json__error__bad_input);
                 goto exit;
+              } else if (v_number_status == 2) {
+                status = wuffs_base__make_status(
+                    wuffs_json__error__unsupported_number_length);
+                goto exit;
+              } else {
+                status =
+                    wuffs_base__make_status(wuffs_base__suspension__short_read);
+                WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(6);
+                while (((uint64_t)(io2_a_dst - iop_a_dst)) <= 0) {
+                  status = wuffs_base__make_status(
+                      wuffs_base__suspension__short_write);
+                  WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(7);
+                }
               }
-              if (v_string_length >= 65534) {
-                *iop_a_dst++ = wuffs_base__make_token(
-                    (((uint64_t)(6291457)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
-                    (((uint64_t)(65535)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
-                v_string_length = 0;
-                goto label_2_continue;
-              }
-              v_string_length += 1;
             }
+          label_5_break:;
+            goto label_4_break;
           }
-        label_2_break:;
-          while (true) {
-            if (((uint64_t)(io2_a_dst - iop_a_dst)) > 0) {
-              *iop_a_dst++ = wuffs_base__make_token(
-                  (((uint64_t)(0)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
-                  (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
-              goto label_3_break;
-            }
-            status =
-                wuffs_base__make_status(wuffs_base__suspension__short_write);
-            WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(5);
-          }
-        label_3_break:;
-          if (0 == (v_expect & 1)) {
-            v_expect = 8;
-            goto label_0_continue;
-          }
-        } else if (v_c == 44) {
-          if (0 == (v_expect & 4)) {
+        } else if (v_c == 58) {
+          if (0 == (v_expect & 8)) {
             status = wuffs_base__make_status(wuffs_json__error__bad_input);
             goto exit;
           }
@@ -18748,245 +18827,175 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
           *iop_a_dst++ = wuffs_base__make_token(
               (((uint64_t)(0)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
               (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
-          if (0 == (v_expect & 16)) {
-            v_expect = 2;
-          } else {
-            v_expect = 3;
-          }
+          v_expect = 3;
           goto label_0_continue;
-        } else if ((v_c >= 48) || (v_c == 45)) {
+        } else if (v_c == 91) {
           if (0 == (v_expect & 1)) {
             status = wuffs_base__make_status(wuffs_json__error__bad_input);
             goto exit;
           }
-          while (true) {
-            if (a_src) {
-              a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
-            }
-            v_number_length = wuffs_json__decoder__decode_number(self, a_src);
-            if (a_src) {
-              iop_a_src = a_src->data.ptr + a_src->meta.ri;
-            }
-            v_number_status = (v_number_length >> 8);
-            v_token_value = 4194306;
-            if ((v_number_length & 128) != 0) {
-              v_token_value = 4194308;
-            }
-            v_number_length = (v_number_length & 127);
-            if (v_number_status == 0) {
+          if (v_depth >= 1024) {
+            status = wuffs_base__make_status(
+                wuffs_json__error__unsupported_recursion_depth);
+            goto exit;
+          }
+          v_stack_byte = (v_depth / 32);
+          v_stack_bit = (v_depth & 31);
+          self->private_data.f_stack[v_stack_byte] &=
+              (4294967295 ^ (((uint32_t)(1)) << v_stack_bit));
+          v_depth += 1;
+          (iop_a_src += 1, wuffs_base__make_empty_struct());
+          *iop_a_dst++ = wuffs_base__make_token(
+              (((uint64_t)(2097169)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+              (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+          v_expect = 19;
+          v_expect_after_value = 20;
+          goto label_0_continue;
+        } else if (v_c == 93) {
+          if (0 == (v_expect & 16)) {
+            status = wuffs_base__make_status(wuffs_json__error__bad_input);
+            goto exit;
+          }
+          (iop_a_src += 1, wuffs_base__make_empty_struct());
+          if (v_depth <= 1) {
+            *iop_a_dst++ = wuffs_base__make_token(
+                (((uint64_t)(2097170)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+                (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+            goto label_0_break;
+          }
+          v_depth -= 1;
+          v_stack_byte = ((v_depth - 1) / 32);
+          v_stack_bit = ((v_depth - 1) & 31);
+          if (0 == (self->private_data.f_stack[v_stack_byte] &
+                    (((uint32_t)(1)) << v_stack_bit))) {
+            *iop_a_dst++ = wuffs_base__make_token(
+                (((uint64_t)(2101266)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+                (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+            v_expect = 20;
+            v_expect_after_value = 20;
+          } else {
+            *iop_a_dst++ = wuffs_base__make_token(
+                (((uint64_t)(2105362)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+                (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+            v_expect = 36;
+            v_expect_after_value = 36;
+          }
+          goto label_0_continue;
+        } else if (v_c == 123) {
+          if (0 == (v_expect & 1)) {
+            status = wuffs_base__make_status(wuffs_json__error__bad_input);
+            goto exit;
+          }
+          if (v_depth >= 1024) {
+            status = wuffs_base__make_status(
+                wuffs_json__error__unsupported_recursion_depth);
+            goto exit;
+          }
+          v_stack_byte = (v_depth / 32);
+          v_stack_bit = (v_depth & 31);
+          self->private_data.f_stack[v_stack_byte] |=
+              (((uint32_t)(1)) << v_stack_bit);
+          v_depth += 1;
+          (iop_a_src += 1, wuffs_base__make_empty_struct());
+          *iop_a_dst++ = wuffs_base__make_token(
+              (((uint64_t)(2097185)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+              (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+          v_expect = 34;
+          v_expect_after_value = 36;
+          goto label_0_continue;
+        } else if (v_c == 125) {
+          if (0 == (v_expect & 32)) {
+            status = wuffs_base__make_status(wuffs_json__error__bad_input);
+            goto exit;
+          }
+          (iop_a_src += 1, wuffs_base__make_empty_struct());
+          if (v_depth <= 1) {
+            *iop_a_dst++ = wuffs_base__make_token(
+                (((uint64_t)(2097186)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+                (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+            goto label_0_break;
+          }
+          v_depth -= 1;
+          v_stack_byte = ((v_depth - 1) / 32);
+          v_stack_bit = ((v_depth - 1) & 31);
+          if (0 == (self->private_data.f_stack[v_stack_byte] &
+                    (((uint32_t)(1)) << v_stack_bit))) {
+            *iop_a_dst++ = wuffs_base__make_token(
+                (((uint64_t)(2101282)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+                (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+            v_expect = 20;
+            v_expect_after_value = 20;
+          } else {
+            *iop_a_dst++ = wuffs_base__make_token(
+                (((uint64_t)(2105378)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+                (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+            v_expect = 36;
+            v_expect_after_value = 36;
+          }
+          goto label_0_continue;
+        } else {
+          if (0 == (v_expect & 1)) {
+            status = wuffs_base__make_status(wuffs_json__error__bad_input);
+            goto exit;
+          }
+          v_match = 2;
+          if (v_c == 110) {
+            v_match = wuffs_base__io_reader__match7(iop_a_src, io2_a_src,
+                                                    465676103172);
+            if (v_match == 0) {
               *iop_a_dst++ = wuffs_base__make_token(
-                  (((uint64_t)(v_token_value))
-                   << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
-                  (((uint64_t)(((uint64_t)(v_number_length))))
-                   << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
-              goto label_4_break;
-            }
-            while (v_number_length > 0) {
-              v_number_length -= 1;
-              if (iop_a_src > io1_a_src) {
-                (iop_a_src--, wuffs_base__make_empty_struct());
-              } else {
+                  (((uint64_t)(4194337)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+                  (((uint64_t)(4)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+              if (((uint64_t)(io2_a_src - iop_a_src)) < 4) {
                 status = wuffs_base__make_status(
                     wuffs_json__error__internal_error_inconsistent_i_o);
                 goto exit;
               }
+              (iop_a_src += 4, wuffs_base__make_empty_struct());
+              goto label_4_break;
             }
-            if (v_number_status == 1) {
-              status = wuffs_base__make_status(wuffs_json__error__bad_input);
-              goto exit;
-            } else if (v_number_status == 2) {
-              status = wuffs_base__make_status(
-                  wuffs_json__error__unsupported_number_length);
-              goto exit;
-            } else {
-              status =
-                  wuffs_base__make_status(wuffs_base__suspension__short_read);
-              WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(6);
-              while (((uint64_t)(io2_a_dst - iop_a_dst)) <= 0) {
+          } else if (v_c == 102) {
+            v_match = wuffs_base__io_reader__match7(iop_a_src, io2_a_src,
+                                                    111546413966853);
+            if (v_match == 0) {
+              *iop_a_dst++ = wuffs_base__make_token(
+                  (((uint64_t)(4194369)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+                  (((uint64_t)(5)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+              if (((uint64_t)(io2_a_src - iop_a_src)) < 5) {
                 status = wuffs_base__make_status(
-                    wuffs_base__suspension__short_write);
-                WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(7);
+                    wuffs_json__error__internal_error_inconsistent_i_o);
+                goto exit;
               }
+              (iop_a_src += 5, wuffs_base__make_empty_struct());
+              goto label_4_break;
+            }
+          } else if (v_c == 116) {
+            v_match = wuffs_base__io_reader__match7(iop_a_src, io2_a_src,
+                                                    435762131972);
+            if (v_match == 0) {
+              *iop_a_dst++ = wuffs_base__make_token(
+                  (((uint64_t)(4194433)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+                  (((uint64_t)(4)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+              if (((uint64_t)(io2_a_src - iop_a_src)) < 4) {
+                status = wuffs_base__make_status(
+                    wuffs_json__error__internal_error_inconsistent_i_o);
+                goto exit;
+              }
+              (iop_a_src += 4, wuffs_base__make_empty_struct());
+              goto label_4_break;
             }
           }
-        label_4_break:;
-        } else {
-          status = wuffs_base__make_status(wuffs_json__error__bad_input);
-          goto exit;
-        }
-      } else if (v_c == 58) {
-        if (0 == (v_expect & 8)) {
-          status = wuffs_base__make_status(wuffs_json__error__bad_input);
-          goto exit;
-        }
-        (iop_a_src += 1, wuffs_base__make_empty_struct());
-        *iop_a_dst++ = wuffs_base__make_token(
-            (((uint64_t)(0)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
-            (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
-        v_expect = 3;
-        goto label_0_continue;
-      } else if (v_c == 91) {
-        if (0 == (v_expect & 1)) {
-          status = wuffs_base__make_status(wuffs_json__error__bad_input);
-          goto exit;
-        }
-        if (v_depth >= 1024) {
-          status = wuffs_base__make_status(
-              wuffs_json__error__unsupported_recursion_depth);
-          goto exit;
-        }
-        v_stack_byte = (v_depth / 32);
-        v_stack_bit = (v_depth & 31);
-        self->private_data.f_stack[v_stack_byte] &=
-            (4294967295 ^ (((uint32_t)(1)) << v_stack_bit));
-        v_depth += 1;
-        (iop_a_src += 1, wuffs_base__make_empty_struct());
-        *iop_a_dst++ = wuffs_base__make_token(
-            (((uint64_t)(2097169)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
-            (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
-        v_expect = 19;
-        v_expect_after_value = 20;
-        goto label_0_continue;
-      } else if (v_c == 93) {
-        if (0 == (v_expect & 16)) {
-          status = wuffs_base__make_status(wuffs_json__error__bad_input);
-          goto exit;
-        }
-        (iop_a_src += 1, wuffs_base__make_empty_struct());
-        if (v_depth <= 1) {
-          *iop_a_dst++ = wuffs_base__make_token(
-              (((uint64_t)(2097170)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
-              (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
-          goto label_0_break;
-        }
-        v_depth -= 1;
-        v_stack_byte = ((v_depth - 1) / 32);
-        v_stack_bit = ((v_depth - 1) & 31);
-        if (0 == (self->private_data.f_stack[v_stack_byte] &
-                  (((uint32_t)(1)) << v_stack_bit))) {
-          *iop_a_dst++ = wuffs_base__make_token(
-              (((uint64_t)(2101266)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
-              (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
-          v_expect = 20;
-          v_expect_after_value = 20;
-        } else {
-          *iop_a_dst++ = wuffs_base__make_token(
-              (((uint64_t)(2105362)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
-              (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
-          v_expect = 36;
-          v_expect_after_value = 36;
-        }
-        goto label_0_continue;
-      } else if (v_c == 123) {
-        if (0 == (v_expect & 1)) {
-          status = wuffs_base__make_status(wuffs_json__error__bad_input);
-          goto exit;
-        }
-        if (v_depth >= 1024) {
-          status = wuffs_base__make_status(
-              wuffs_json__error__unsupported_recursion_depth);
-          goto exit;
-        }
-        v_stack_byte = (v_depth / 32);
-        v_stack_bit = (v_depth & 31);
-        self->private_data.f_stack[v_stack_byte] |=
-            (((uint32_t)(1)) << v_stack_bit);
-        v_depth += 1;
-        (iop_a_src += 1, wuffs_base__make_empty_struct());
-        *iop_a_dst++ = wuffs_base__make_token(
-            (((uint64_t)(2097185)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
-            (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
-        v_expect = 34;
-        v_expect_after_value = 36;
-        goto label_0_continue;
-      } else if (v_c == 125) {
-        if (0 == (v_expect & 32)) {
-          status = wuffs_base__make_status(wuffs_json__error__bad_input);
-          goto exit;
-        }
-        (iop_a_src += 1, wuffs_base__make_empty_struct());
-        if (v_depth <= 1) {
-          *iop_a_dst++ = wuffs_base__make_token(
-              (((uint64_t)(2097186)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
-              (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
-          goto label_0_break;
-        }
-        v_depth -= 1;
-        v_stack_byte = ((v_depth - 1) / 32);
-        v_stack_bit = ((v_depth - 1) & 31);
-        if (0 == (self->private_data.f_stack[v_stack_byte] &
-                  (((uint32_t)(1)) << v_stack_bit))) {
-          *iop_a_dst++ = wuffs_base__make_token(
-              (((uint64_t)(2101282)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
-              (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
-          v_expect = 20;
-          v_expect_after_value = 20;
-        } else {
-          *iop_a_dst++ = wuffs_base__make_token(
-              (((uint64_t)(2105378)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
-              (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
-          v_expect = 36;
-          v_expect_after_value = 36;
-        }
-        goto label_0_continue;
-      } else {
-        if (0 == (v_expect & 1)) {
-          status = wuffs_base__make_status(wuffs_json__error__bad_input);
-          goto exit;
-        }
-        v_match = 2;
-        if (v_c == 110) {
-          v_match =
-              wuffs_base__io_reader__match7(iop_a_src, io2_a_src, 465676103172);
-          if (v_match == 0) {
-            *iop_a_dst++ = wuffs_base__make_token(
-                (((uint64_t)(4194337)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
-                (((uint64_t)(4)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
-            if (((uint64_t)(io2_a_src - iop_a_src)) < 4) {
-              status = wuffs_base__make_status(
-                  wuffs_json__error__internal_error_inconsistent_i_o);
-              goto exit;
-            }
-            (iop_a_src += 4, wuffs_base__make_empty_struct());
-          }
-        } else if (v_c == 102) {
-          v_match = wuffs_base__io_reader__match7(iop_a_src, io2_a_src,
-                                                  111546413966853);
-          if (v_match == 0) {
-            *iop_a_dst++ = wuffs_base__make_token(
-                (((uint64_t)(4194369)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
-                (((uint64_t)(5)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
-            if (((uint64_t)(io2_a_src - iop_a_src)) < 5) {
-              status = wuffs_base__make_status(
-                  wuffs_json__error__internal_error_inconsistent_i_o);
-              goto exit;
-            }
-            (iop_a_src += 5, wuffs_base__make_empty_struct());
-          }
-        } else if (v_c == 116) {
-          v_match =
-              wuffs_base__io_reader__match7(iop_a_src, io2_a_src, 435762131972);
-          if (v_match == 0) {
-            *iop_a_dst++ = wuffs_base__make_token(
-                (((uint64_t)(4194433)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
-                (((uint64_t)(4)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
-            if (((uint64_t)(io2_a_src - iop_a_src)) < 4) {
-              status = wuffs_base__make_status(
-                  wuffs_json__error__internal_error_inconsistent_i_o);
-              goto exit;
-            }
-            (iop_a_src += 4, wuffs_base__make_empty_struct());
+          if (v_match == 1) {
+            status =
+                wuffs_base__make_status(wuffs_base__suspension__short_read);
+            WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(8);
+            goto label_0_continue;
           }
         }
-        if (v_match == 1) {
-          status = wuffs_base__make_status(wuffs_base__suspension__short_read);
-          WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(8);
-          goto label_0_continue;
-        } else if (v_match == 2) {
-          status = wuffs_base__make_status(wuffs_json__error__bad_input);
-          goto exit;
-        }
+        status = wuffs_base__make_status(wuffs_json__error__bad_input);
+        goto exit;
       }
+    label_4_break:;
       if (v_depth == 0) {
         goto label_0_break;
       }

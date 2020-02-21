@@ -89,359 +89,414 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 	expect = 0x03  // EXPECT_VALUE
 
 	while.outer true {
-		if args.dst.available() <= 0 {
-			yield? base."$short write"
-			continue.outer
-		}
-
-		// Consume whitespace.
-		whitespace_length = 0
-		c = 0
-		while.ws true,
-			inv args.dst.available() > 0,
-			post args.src.available() > 0,
-		{
-			if args.src.available() <= 0 {
-				if whitespace_length > 0 {
-					args.dst.write_fast_token!(value: 0, length: whitespace_length as base.u64)
-					whitespace_length = 0
-				}
-				if args.src.is_closed() {
-					return "#bad input"
-				}
-				yield? base."$short read"
-				whitespace_length = 0
-				continue.outer
-			}
-
-			c = args.src.peek_u8()
-			if c > 0x20 {  // 0x20 is ' '.
-				break.ws
-			} else if (c <> 0x20) and (c <> 0x0A) and (c <> 0x09) and (c <> 0x0D) {
-				if whitespace_length > 0 {
-					args.dst.write_fast_token!(value: 0, length: whitespace_length as base.u64)
-				}
-				return "#bad input"
-			}
-			args.src.skip32_fast!(actual: 1, worst_case: 1)
-
-			if whitespace_length >= 0xFFFE {
-				args.dst.write_fast_token!(value: 0, length: 0xFFFF)
-				whitespace_length = 0
-				continue.outer
-			}
-			whitespace_length += 1
-		}
-
-		// Emit whitespace.
-		if whitespace_length > 0 {
-			args.dst.write_fast_token!(value: 0, length: whitespace_length as base.u64)
-			whitespace_length = 0
+		while.goto_parsed_a_leaf_value true {
 			if args.dst.available() <= 0 {
+				yield? base."$short write"
 				continue.outer
 			}
-		}
 
-		// These assertions are redundant (the Wuffs compiler should already
-		// know these facts; deleting these assertions should still compile)
-		// but are listed explicitly to help guard against future edits to the
-		// code above inadvertently invalidating these assertions.
-		assert args.dst.available() > 0
-		assert args.src.available() > 0
-
-		if c <= 0x39 {  // 0x39 is '9'.
-			if c == 0x22 {  // 0x22 is '"'.
-				// -------- BEGIN parse strings.
-				if 0 == (expect & 0x02) {  // 0x02 is EXPECT_STRING_VALUE.
-					return "#bad input"
+			// Consume whitespace.
+			whitespace_length = 0
+			c = 0
+			while.ws true,
+				inv args.dst.available() > 0,
+				post args.src.available() > 0,
+			{
+				if args.src.available() <= 0 {
+					if whitespace_length > 0 {
+						args.dst.write_fast_token!(
+							value: 0,
+							length: whitespace_length as base.u64)
+						whitespace_length = 0
+					}
+					if args.src.is_closed() {
+						return "#bad input"
+					}
+					yield? base."$short read"
+					whitespace_length = 0
+					continue.outer
 				}
 
-				// The leading '"' is filler.
-				args.dst.write_fast_token!(value: 0, length: 1)
+				c = args.src.peek_u8()
+				if c > 0x20 {  // 0x20 is ' '.
+					break.ws
+				} else if (c <> 0x20) and (c <> 0x0A) and (c <> 0x09) and (c <> 0x0D) {
+					if whitespace_length > 0 {
+						args.dst.write_fast_token!(
+							value: 0,
+							length: whitespace_length as base.u64)
+					}
+					return "#bad input"
+				}
 				args.src.skip32_fast!(actual: 1, worst_case: 1)
 
-				while.string_loop true {
-					if args.dst.available() <= 0 {
-						yield? base."$short write"
-						continue.string_loop
+				if whitespace_length >= 0xFFFE {
+					args.dst.write_fast_token!(
+						value: 0,
+						length: 0xFFFF)
+					whitespace_length = 0
+					continue.outer
+				}
+				whitespace_length += 1
+			}
+
+			// Emit whitespace.
+			if whitespace_length > 0 {
+				args.dst.write_fast_token!(
+					value: 0,
+					length: whitespace_length as base.u64)
+				whitespace_length = 0
+				if args.dst.available() <= 0 {
+					continue.outer
+				}
+			}
+
+			// These assertions are redundant (the Wuffs compiler should
+			// already know these facts; deleting these assertions should still
+			// compile) but are listed explicitly to guard against future edits
+			// to the code above inadvertently invalidating these assertions.
+			assert args.dst.available() > 0
+			assert args.src.available() > 0
+
+			if c <= 0x39 {  // 0x39 is '9'.
+				if c == 0x22 {  // 0x22 is '"'.
+					// -------- BEGIN parse strings.
+					if 0 == (expect & 0x02) {  // 0x02 is EXPECT_STRING_VALUE.
+						return "#bad input"
 					}
 
-					string_length = 0
+					// The leading '"' is filler.
+					args.dst.write_fast_token!(
+						value: 0,
+						length: 1)
+					args.src.skip32_fast!(actual: 1, worst_case: 1)
+
+					while.string_loop true {
+						if args.dst.available() <= 0 {
+							yield? base."$short write"
+							continue.string_loop
+						}
+
+						string_length = 0
+						while true,
+							pre args.dst.available() > 0,
+						{
+							if args.src.available() <= 0 {
+								if string_length > 0 {
+									args.dst.write_fast_token!(
+										value: 0x60_0001,
+										length: string_length as base.u64)
+									string_length = 0
+								}
+								if args.src.is_closed() {
+									return "#bad input"
+								}
+								yield? base."$short read"
+								string_length = 0
+								continue.string_loop
+							}
+							c = args.src.peek_u8()
+							args.src.skip32_fast!(actual: 1, worst_case: 1)
+
+							if c <= 0x22 {  // 0x22 is '"'.
+								if c == 0x22 {  // 0x22 is '"'.
+									args.dst.write_fast_token!(
+										value: 0x60_0000,
+										length: string_length as base.u64)
+									string_length = 0
+									break.string_loop
+
+								} else if c < 0x20 {  // 0x20 is ' '.
+									if string_length > 0 {
+										args.dst.write_fast_token!(
+											value: 0x60_0001,
+											length: string_length as base.u64)
+										string_length = 0
+									}
+									return "#bad input"
+								}
+
+							} else if c == 0x5C {  // 0x5C is '\\'.
+								// TODO: escapes.
+								return "#bad input"
+
+							}
+
+							if string_length >= 0xFFFE {
+								args.dst.write_fast_token!(
+									value: 0x60_0001,
+									length: 0xFFFF)
+								string_length = 0
+								continue.string_loop
+							}
+							string_length += 1
+						}
+					}
+
+					// The trailing '"' is filler.
+					while true {
+						if args.dst.available() > 0 {
+							args.dst.write_fast_token!(
+								value: 0,
+								length: 1)
+							break
+						}
+						yield? base."$short write"
+					}
+
+					// As above, expect must have contained
+					// EXPECT_STRING_VALUE. If it didn't also contain
+					// EXPECT_NON_STRING_VALUE then we were parsing an object
+					// key and the next token should be ':'.
+					if 0 == (expect & 0x01) {  // 0x01 is EXPECT_NON_STRING_VALUE.
+						expect = 0x08  // 0x08 is EXPECT_COLON.
+						continue.outer
+					}
+					break.goto_parsed_a_leaf_value
+					// -------- END   parse strings.
+
+				} else if c == 0x2C {  // 0x2C is ','.
+					if 0 == (expect & 0x04) {  // 0x01 is EXPECT_COMMA.
+						return "#bad input"
+					}
+					args.src.skip32_fast!(actual: 1, worst_case: 1)
+					// The ',' is filler.
+					args.dst.write_fast_token!(
+						value: 0,
+						length: 1)
+					// What's valid after a comma depends on whether or not
+					// we're in an array or an object.
+					if 0 == (expect & 0x10) {  // 0x10 is EXPECT_CLOSE_BRACKET
+						expect = 0x02  // 0x02 is EXPECT_STRING_VALUE.
+					} else {
+						expect = 0x03  // 0x03 is EXPECT_VALUE.
+					}
+					continue.outer
+
+				} else if (c >= 0x30) or (c == 0x2D) {  // 0x30 is '0', 0x2D is '-'.
+					// -------- BEGIN parse numbers.
+					if 0 == (expect & 0x01) {  // 0x02 is EXPECT_NON_STRING_VALUE.
+						return "#bad input"
+					}
 					while true,
 						pre args.dst.available() > 0,
 					{
-						if args.src.available() <= 0 {
-							if string_length > 0 {
-								args.dst.write_fast_token!(value: 0x60_0001, length: string_length as base.u64)
-								string_length = 0
-							}
-							if args.src.is_closed() {
-								return "#bad input"
-							}
-							yield? base."$short read"
-							string_length = 0
-							continue.string_loop
+						number_length = this.decode_number!(src: args.src)
+						number_status = number_length >> 8
+						token_value = 0x40_0002
+						if (number_length & 0x80) <> 0 {
+							token_value = 0x40_0004
 						}
-						c = args.src.peek_u8()
-						args.src.skip32_fast!(actual: 1, worst_case: 1)
+						number_length = number_length & 0x7F
+						if number_status == 0 {
+							args.dst.write_fast_token!(
+								value: token_value,
+								length: number_length as base.u64)
+							break
+						}
 
-						if c <= 0x22 {  // 0x22 is '"'.
-							if c == 0x22 {  // 0x22 is '"'.
-								args.dst.write_fast_token!(value: 0x60_0000, length: string_length as base.u64)
-								string_length = 0
-								break.string_loop
-
-							} else if c < 0x20 {  // 0x20 is ' '.
-								if string_length > 0 {
-									args.dst.write_fast_token!(value: 0x60_0001, length: string_length as base.u64)
-									string_length = 0
-								}
-								return "#bad input"
+						while number_length > 0 {
+							number_length -= 1
+							if args.src.can_undo_byte() {
+								args.src.undo_byte!()
+							} else {
+								return "#internal error: inconsistent I/O"
 							}
+						}
 
-						} else if c == 0x5C {  // 0x5C is '\\'.
-							// TODO: escapes.
+						if number_status == 1 {
 							return "#bad input"
-
+						} else if number_status == 2 {
+							return "#unsupported number length"
+						} else {
+							yield? base."$short read"
+							while args.dst.available() <= 0,
+								post args.dst.available() > 0,
+							{
+								yield? base."$short write"
+							}
 						}
-
-						if string_length >= 0xFFFE {
-							args.dst.write_fast_token!(value: 0x60_0001, length: 0xFFFF)
-							string_length = 0
-							continue.string_loop
-						}
-						string_length += 1
 					}
+					break.goto_parsed_a_leaf_value
+					// -------- END   parse numbers.
 				}
 
-				// The trailing '"' is filler.
-				while true {
-					if args.dst.available() > 0 {
-						args.dst.write_fast_token!(value: 0, length: 1)
-						break
-					}
-					yield? base."$short write"
-				}
-
-				// As above, expect must have contained EXPECT_STRING_VALUE. If
-				// it didn't also contain EXPECT_NON_STRING_VALUE then we were
-				// parsing an object key and the next token should be ':'.
-				// Otherwise, fall below to "We've just parsed a value".
-				if 0 == (expect & 0x01) {  // 0x01 is EXPECT_NON_STRING_VALUE.
-					expect = 0x08  // 0x08 is EXPECT_COLON.
-					continue.outer
-				}
-				// -------- END   parse strings.
-
-			} else if c == 0x2C {  // 0x2C is ','.
-				if 0 == (expect & 0x04) {  // 0x01 is EXPECT_COMMA.
+			} else if c == 0x3A {  // 0x3A is ':'.
+				if 0 == (expect & 0x08) {  // 0x08 is EXPECT_COLON.
 					return "#bad input"
 				}
 				args.src.skip32_fast!(actual: 1, worst_case: 1)
-				args.dst.write_fast_token!(value: 0, length: 1)  // The ',' is filler.
-				// What's valid after a comma depends on whether or not we're
-				// in an array or an object.
-				if 0 == (expect & 0x10) {  // 0x10 is EXPECT_CLOSE_BRACKET
-					expect = 0x02  // 0x02 is EXPECT_STRING_VALUE.
-				} else {
-					expect = 0x03  // 0x03 is EXPECT_VALUE.
-				}
+				// The ':' is filler.
+				args.dst.write_fast_token!(
+					value: 0,
+					length: 1)
+				expect = 0x03  // 0x03 is EXPECT_VALUE.
 				continue.outer
 
-			} else if (c >= 0x30) or (c == 0x2D) {  // 0x30 is '0', 0x2D is '-'.
-				// -------- BEGIN parse numbers.
-				if 0 == (expect & 0x01) {  // 0x02 is EXPECT_NON_STRING_VALUE.
+			} else if c == 0x5B {  // 0x5B is '['.
+				if 0 == (expect & 0x01) {  // 0x01 is EXPECT_NON_STRING_VALUE.
 					return "#bad input"
 				}
-				while true,
-					pre args.dst.available() > 0,
-				{
-					number_length = this.decode_number!(src: args.src)
-					number_status = number_length >> 8
-					token_value = 0x40_0002
-					if (number_length & 0x80) <> 0 {
-						token_value = 0x40_0004
-					}
-					number_length = number_length & 0x7F
-					if number_status == 0 {
-						args.dst.write_fast_token!(value: token_value, length: number_length as base.u64)
-						break
-					}
+				if depth >= 1024 {
+					return "#unsupported recursion depth"
+				}
+				stack_byte = depth / 32
+				stack_bit = depth & 31
+				this.stack[stack_byte] &= 0xFFFF_FFFF ^ ((1 as base.u32) << stack_bit)
+				depth += 1
 
-					while number_length > 0 {
-						number_length -= 1
-						if args.src.can_undo_byte() {
-							args.src.undo_byte!()
-						} else {
+				args.src.skip32_fast!(actual: 1, worst_case: 1)
+				args.dst.write_fast_token!(
+					value: 0x20_0011,
+					length: 1)
+				expect = 0x13  // 0x13 is (EXPECT_CLOSE_BRACKET | EXPECT_VALUE).
+				expect_after_value = 0x14  // 0x14 is (EXPECT_CLOSE_BRACKET | EXPECT_COMMA).
+				continue.outer
+
+			} else if c == 0x5D {  // 0x5D is ']'.
+				if 0 == (expect & 0x10) {  // 0x10 is EXPECT_CLOSE_BRACKET
+					return "#bad input"
+				}
+				args.src.skip32_fast!(actual: 1, worst_case: 1)
+				if depth <= 1 {
+					args.dst.write_fast_token!(
+						value: 0x20_0012,
+						length: 1)
+					break.outer
+				}
+				depth -= 1
+				stack_byte = (depth - 1) / 32
+				stack_bit = (depth - 1) & 31
+				if 0 == (this.stack[stack_byte] & ((1 as base.u32) << stack_bit)) {
+					args.dst.write_fast_token!(
+						value: 0x20_1012,
+						length: 1)
+					// 0x14 is (EXPECT_CLOSE_BRACKET | EXPECT_COMMA).
+					expect = 0x14
+					expect_after_value = 0x14
+				} else {
+					args.dst.write_fast_token!(
+						value: 0x20_2012,
+						length: 1)
+					// 0x24 is (EXPECT_CLOSE_BRACE | EXPECT_COMMA).
+					expect = 0x24
+					expect_after_value = 0x24
+				}
+				continue.outer
+
+			} else if c == 0x7B {  // 0x7B is '{'.
+				if 0 == (expect & 0x01) {  // 0x01 is EXPECT_NON_STRING_VALUE.
+					return "#bad input"
+				}
+				if depth >= 1024 {
+					return "#unsupported recursion depth"
+				}
+				stack_byte = depth / 32
+				stack_bit = depth & 31
+				this.stack[stack_byte] |= (1 as base.u32) << stack_bit
+				depth += 1
+
+				args.src.skip32_fast!(actual: 1, worst_case: 1)
+				args.dst.write_fast_token!(
+					value: 0x20_0021,
+					length: 1)
+				expect = 0x22  // 0x22 is (EXPECT_CLOSE_BRACE | EXPECT_STRING_VALUE).
+				expect_after_value = 0x24  // 0x24 is (EXPECT_CLOSE_BRACE | EXPECT_COMMA).
+				continue.outer
+
+			} else if c == 0x7D {  // 0x7D is '}'.
+				if 0 == (expect & 0x20) {  // 0x20 is EXPECT_CLOSE_BRACE.
+					return "#bad input"
+				}
+				args.src.skip32_fast!(actual: 1, worst_case: 1)
+				if depth <= 1 {
+					args.dst.write_fast_token!(
+						value: 0x20_0022,
+						length: 1)
+					break.outer
+				}
+				depth -= 1
+				stack_byte = (depth - 1) / 32
+				stack_bit = (depth - 1) & 31
+				if 0 == (this.stack[stack_byte] & ((1 as base.u32) << stack_bit)) {
+					args.dst.write_fast_token!(
+						value: 0x20_1022,
+						length: 1)
+					// 0x14 is (EXPECT_CLOSE_BRACKET | EXPECT_COMMA).
+					expect = 0x14
+					expect_after_value = 0x14
+				} else {
+					args.dst.write_fast_token!(
+						value: 0x20_2022,
+						length: 1)
+					// 0x24 is (EXPECT_CLOSE_BRACE | EXPECT_COMMA).
+					expect = 0x24
+					expect_after_value = 0x24
+				}
+				continue.outer
+
+			} else {
+				if 0 == (expect & 0x01) {  // 0x01 is EXPECT_NON_STRING_VALUE.
+					return "#bad input"
+				}
+				match = 2
+				if c == 0x6E {  // 0x6E is 'n'.
+					match = args.src.match7(a: 0x6C_6C75_6E04)  // 4 bytes "null".
+					if match == 0 {
+						args.dst.write_fast_token!(
+							value: 0x40_0021,
+							length: 4)
+						if args.src.available() < 4 {
 							return "#internal error: inconsistent I/O"
 						}
+						args.src.skip32_fast!(actual: 4, worst_case: 4)
+						break.goto_parsed_a_leaf_value
 					}
 
-					if number_status == 1 {
-						return "#bad input"
-					} else if number_status == 2 {
-						return "#unsupported number length"
-					} else {
-						yield? base."$short read"
-						while args.dst.available() <= 0,
-							post args.dst.available() > 0,
-						{
-							yield? base."$short write"
+				} else if c == 0x66 {  // 0x66 is 'f'.
+					match = args.src.match7(a: 0x6573_6C61_6605)  // 5 bytes "false".
+					if match == 0 {
+						args.dst.write_fast_token!(
+							value: 0x40_0041,
+							length: 5)
+						if args.src.available() < 5 {
+							return "#internal error: inconsistent I/O"
 						}
+						args.src.skip32_fast!(actual: 5, worst_case: 5)
+						break.goto_parsed_a_leaf_value
 					}
-				}
-				// -------- END   parse numbers.
 
-			} else {
-				return "#bad input"
-			}
-
-		} else if c == 0x3A {  // 0x3A is ':'.
-			if 0 == (expect & 0x08) {  // 0x08 is EXPECT_COLON.
-				return "#bad input"
-			}
-			args.src.skip32_fast!(actual: 1, worst_case: 1)
-			args.dst.write_fast_token!(value: 0, length: 1)  // The ':' is filler.
-			expect = 0x03  // 0x03 is EXPECT_VALUE.
-			continue.outer
-
-		} else if c == 0x5B {  // 0x5B is '['.
-			if 0 == (expect & 0x01) {  // 0x01 is EXPECT_NON_STRING_VALUE.
-				return "#bad input"
-			}
-			if depth >= 1024 {
-				return "#unsupported recursion depth"
-			}
-			stack_byte = depth / 32
-			stack_bit = depth & 31
-			this.stack[stack_byte] &= 0xFFFF_FFFF ^ ((1 as base.u32) << stack_bit)
-			depth += 1
-
-			args.src.skip32_fast!(actual: 1, worst_case: 1)
-			args.dst.write_fast_token!(value: 0x20_0011, length: 1)
-			expect = 0x13  // 0x13 is (EXPECT_CLOSE_BRACKET | EXPECT_VALUE).
-			expect_after_value = 0x14  // 0x14 is (EXPECT_CLOSE_BRACKET | EXPECT_COMMA).
-			continue.outer
-
-		} else if c == 0x5D {  // 0x5D is ']'.
-			if 0 == (expect & 0x10) {  // 0x10 is EXPECT_CLOSE_BRACKET
-				return "#bad input"
-			}
-			args.src.skip32_fast!(actual: 1, worst_case: 1)
-			if depth <= 1 {
-				args.dst.write_fast_token!(value: 0x20_0012, length: 1)
-				break.outer
-			}
-			depth -= 1
-			stack_byte = (depth - 1) / 32
-			stack_bit = (depth - 1) & 31
-			if 0 == (this.stack[stack_byte] & ((1 as base.u32) << stack_bit)) {
-				args.dst.write_fast_token!(value: 0x20_1012, length: 1)
-				// 0x14 is (EXPECT_CLOSE_BRACKET | EXPECT_COMMA).
-				expect = 0x14
-				expect_after_value = 0x14
-			} else {
-				args.dst.write_fast_token!(value: 0x20_2012, length: 1)
-				// 0x24 is (EXPECT_CLOSE_BRACE | EXPECT_COMMA).
-				expect = 0x24
-				expect_after_value = 0x24
-			}
-			continue.outer
-
-		} else if c == 0x7B {  // 0x7B is '{'.
-			if 0 == (expect & 0x01) {  // 0x01 is EXPECT_NON_STRING_VALUE.
-				return "#bad input"
-			}
-			if depth >= 1024 {
-				return "#unsupported recursion depth"
-			}
-			stack_byte = depth / 32
-			stack_bit = depth & 31
-			this.stack[stack_byte] |= (1 as base.u32) << stack_bit
-			depth += 1
-
-			args.src.skip32_fast!(actual: 1, worst_case: 1)
-			args.dst.write_fast_token!(value: 0x20_0021, length: 1)
-			expect = 0x22  // 0x22 is (EXPECT_CLOSE_BRACE | EXPECT_STRING_VALUE).
-			expect_after_value = 0x24  // 0x24 is (EXPECT_CLOSE_BRACE | EXPECT_COMMA).
-			continue.outer
-
-		} else if c == 0x7D {  // 0x7D is '}'.
-			if 0 == (expect & 0x20) {  // 0x20 is EXPECT_CLOSE_BRACE.
-				return "#bad input"
-			}
-			args.src.skip32_fast!(actual: 1, worst_case: 1)
-			if depth <= 1 {
-				args.dst.write_fast_token!(value: 0x20_0022, length: 1)
-				break.outer
-			}
-			depth -= 1
-			stack_byte = (depth - 1) / 32
-			stack_bit = (depth - 1) & 31
-			if 0 == (this.stack[stack_byte] & ((1 as base.u32) << stack_bit)) {
-				args.dst.write_fast_token!(value: 0x20_1022, length: 1)
-				// 0x14 is (EXPECT_CLOSE_BRACKET | EXPECT_COMMA).
-				expect = 0x14
-				expect_after_value = 0x14
-			} else {
-				args.dst.write_fast_token!(value: 0x20_2022, length: 1)
-				// 0x24 is (EXPECT_CLOSE_BRACE | EXPECT_COMMA).
-				expect = 0x24
-				expect_after_value = 0x24
-			}
-			continue.outer
-
-		} else {
-			if 0 == (expect & 0x01) {  // 0x01 is EXPECT_NON_STRING_VALUE.
-				return "#bad input"
-			}
-			match = 2
-			if c == 0x6E {  // 0x6E is 'n'.
-				match = args.src.match7(a: 0x6C_6C75_6E04)  // 4 bytes "null".
-				if match == 0 {
-					args.dst.write_fast_token!(value: 0x40_0021, length: 4)
-					if args.src.available() < 4 {
-						return "#internal error: inconsistent I/O"
+				} else if c == 0x74 {  // 0x74 is 't'.
+					match = args.src.match7(a: 0x65_7572_7404)  // 4 bytes "true".
+					if match == 0 {
+						args.dst.write_fast_token!(
+							value: 0x40_0081,
+							length: 4)
+						if args.src.available() < 4 {
+							return "#internal error: inconsistent I/O"
+						}
+						args.src.skip32_fast!(actual: 4, worst_case: 4)
+						break.goto_parsed_a_leaf_value
 					}
-					args.src.skip32_fast!(actual: 4, worst_case: 4)
+
 				}
 
-			} else if c == 0x66 {  // 0x66 is 'f'.
-				match = args.src.match7(a: 0x6573_6C61_6605)  // 5 bytes "false".
-				if match == 0 {
-					args.dst.write_fast_token!(value: 0x40_0041, length: 5)
-					if args.src.available() < 5 {
-						return "#internal error: inconsistent I/O"
-					}
-					args.src.skip32_fast!(actual: 5, worst_case: 5)
+				if match == 1 {
+					yield? base."$short read"
+					continue.outer
 				}
-
-			} else if c == 0x74 {  // 0x74 is 't'.
-				match = args.src.match7(a: 0x65_7572_7404)  // 4 bytes "true".
-				if match == 0 {
-					args.dst.write_fast_token!(value: 0x40_0081, length: 4)
-					if args.src.available() < 4 {
-						return "#internal error: inconsistent I/O"
-					}
-					args.src.skip32_fast!(actual: 4, worst_case: 4)
-				}
-
 			}
 
-			if match == 1 {
-				yield? base."$short read"
-				continue.outer
-			} else if match == 2 {
-				return "#bad input"
-			}
-		}
+			return "#bad input"
+		}  // while.goto_parsed_a_leaf_value
 
-		// We've just parsed a value.
+		// We've just parsed a leaf (non-container) value: literal (null,
+		// false, true), number or string.
 		if depth == 0 {
 			break.outer
 		}
 		expect = expect_after_value
-	}
+	}  // while.outer
 }
 
 pri func decoder.decode_number!(src: base.io_reader) base.u32[..= 0x3FF] {
