@@ -70,14 +70,21 @@ wuffs test   -skipgen -mimic
 wuffs bench  -skipgen -mimic -reps=1 -iterscale=1
 
 ./build-example.sh
-LICENSE_CRC32=$(gen/bin/example-crc32 < LICENSE)
-if [ "$LICENSE_CRC32" != "1ea3b7b0" ]; then
-  echo "LICENSE crc32 mismatch"
+echo "Running  gen/bin/example-crc32"
+JSON_THINGS_CRC32=$(gen/bin/example-crc32 < test/data/json-things.formatted.json)
+if [ "$JSON_THINGS_CRC32" != "cdcc7e35" ]; then
+  echo "example-crc32 failed on json-things data"
+  exit 1
+fi
+echo "Running  gen/bin/example-jsonptr"
+JSON_THINGS_CRC32=$(gen/bin/example-jsonptr < test/data/json-things.unformatted.json | gen/bin/example-crc32)
+if [ "$JSON_THINGS_CRC32" != "cdcc7e35" ]; then
+  echo "example-jsonptr failed on json-things data"
   exit 1
 fi
 
 ./build-fuzz.sh
 for f in gen/bin/fuzz-*; do
-  echo "Running $f"
+  echo "Running  $f"
   $f test/data > /dev/null
 done
