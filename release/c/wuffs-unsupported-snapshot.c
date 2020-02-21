@@ -18458,6 +18458,26 @@ static const uint8_t              //
         0,   0, 0,   0,   0, 0, 0, 0,   0,
 };
 
+static const uint8_t          //
+    wuffs_json__classes[256]  //
+    WUFFS_BASE__POTENTIALLY_UNUSED = {
+        15, 15, 15, 15, 15, 15, 15, 15, 15, 0,  0,  15, 15, 0,  15, 15, 15, 15,
+        15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 0,  15, 1,  15,
+        15, 15, 15, 15, 15, 15, 15, 15, 2,  4,  15, 15, 4,  4,  4,  4,  4,  4,
+        4,  4,  4,  4,  3,  15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+        15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+        15, 7,  15, 8,  15, 15, 15, 15, 15, 15, 15, 15, 9,  15, 15, 15, 15, 15,
+        15, 15, 11, 15, 15, 15, 15, 15, 10, 15, 15, 15, 15, 15, 15, 5,  15, 6,
+        15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+        15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+        15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+        15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+        15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+        15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+        15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+        15, 15, 15, 15,
+};
+
 static const uint8_t                     //
     wuffs_json__hexadecimal_digits[256]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
@@ -18585,6 +18605,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
   uint32_t v_stack_bit = 0;
   uint32_t v_match = 0;
   uint8_t v_c = 0;
+  uint8_t v_class = 0;
   uint8_t v_backslash = 0;
   uint8_t v_uni4_ok = 0;
   uint32_t v_uni4_string = 0;
@@ -18637,6 +18658,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
         }
         v_whitespace_length = 0;
         v_c = 0;
+        v_class = 0;
         while (true) {
           if (((uint64_t)(io2_a_src - iop_a_src)) <= 0) {
             if (v_whitespace_length > 0) {
@@ -18657,17 +18679,9 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
             goto label_0_continue;
           }
           v_c = wuffs_base__load_u8be(iop_a_src);
-          if (v_c > 32) {
+          v_class = wuffs_json__classes[v_c];
+          if (v_class != 0) {
             goto label_1_break;
-          } else if ((v_c != 32) && (v_c != 10) && (v_c != 9) && (v_c != 13)) {
-            if (v_whitespace_length > 0) {
-              *iop_a_dst++ = wuffs_base__make_token(
-                  (((uint64_t)(0)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
-                  (((uint64_t)(((uint64_t)(v_whitespace_length))))
-                   << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
-            }
-            status = wuffs_base__make_status(wuffs_json__error__bad_input);
-            goto exit;
           }
           (iop_a_src += 1, wuffs_base__make_empty_struct());
           if (v_whitespace_length >= 65534) {
@@ -18691,7 +18705,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
           }
         }
         if (v_c <= 57) {
-          if (v_c == 34) {
+          if (v_class == 1) {
             if (0 == (v_expect & 2)) {
               status = wuffs_base__make_status(wuffs_json__error__bad_input);
               goto exit;
@@ -18888,7 +18902,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
               goto label_0_continue;
             }
             goto label_5_break;
-          } else if (v_c == 44) {
+          } else if (v_class == 2) {
             if (0 == (v_expect & 4)) {
               status = wuffs_base__make_status(wuffs_json__error__bad_input);
               goto exit;
@@ -18903,7 +18917,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
               v_expect = 3;
             }
             goto label_0_continue;
-          } else if ((v_c >= 48) || (v_c == 45)) {
+          } else if (v_class == 4) {
             if (0 == (v_expect & 1)) {
               status = wuffs_base__make_status(wuffs_json__error__bad_input);
               goto exit;
@@ -18961,7 +18975,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
           label_6_break:;
             goto label_5_break;
           }
-        } else if (v_c == 58) {
+        } else if (v_class == 3) {
           if (0 == (v_expect & 8)) {
             status = wuffs_base__make_status(wuffs_json__error__bad_input);
             goto exit;
@@ -18972,7 +18986,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
               (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
           v_expect = 3;
           goto label_0_continue;
-        } else if (v_c == 91) {
+        } else if (v_class == 7) {
           if (0 == (v_expect & 1)) {
             status = wuffs_base__make_status(wuffs_json__error__bad_input);
             goto exit;
@@ -18994,7 +19008,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
           v_expect = 19;
           v_expect_after_value = 20;
           goto label_0_continue;
-        } else if (v_c == 93) {
+        } else if (v_class == 8) {
           if (0 == (v_expect & 16)) {
             status = wuffs_base__make_status(wuffs_json__error__bad_input);
             goto exit;
@@ -19024,7 +19038,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
             v_expect_after_value = 36;
           }
           goto label_0_continue;
-        } else if (v_c == 123) {
+        } else if (v_class == 5) {
           if (0 == (v_expect & 1)) {
             status = wuffs_base__make_status(wuffs_json__error__bad_input);
             goto exit;
@@ -19046,7 +19060,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
           v_expect = 34;
           v_expect_after_value = 36;
           goto label_0_continue;
-        } else if (v_c == 125) {
+        } else if (v_class == 6) {
           if (0 == (v_expect & 32)) {
             status = wuffs_base__make_status(wuffs_json__error__bad_input);
             goto exit;
@@ -19082,7 +19096,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
             goto exit;
           }
           v_match = 2;
-          if (v_c == 110) {
+          if (v_class == 11) {
             v_match = wuffs_base__io_reader__match7(iop_a_src, io2_a_src,
                                                     465676103172);
             if (v_match == 0) {
@@ -19097,7 +19111,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
               (iop_a_src += 4, wuffs_base__make_empty_struct());
               goto label_5_break;
             }
-          } else if (v_c == 102) {
+          } else if (v_class == 9) {
             v_match = wuffs_base__io_reader__match7(iop_a_src, io2_a_src,
                                                     111546413966853);
             if (v_match == 0) {
@@ -19112,7 +19126,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
               (iop_a_src += 5, wuffs_base__make_empty_struct());
               goto label_5_break;
             }
-          } else if (v_c == 116) {
+          } else if (v_class == 10) {
             v_match = wuffs_base__io_reader__match7(iop_a_src, io2_a_src,
                                                     435762131972);
             if (v_match == 0) {
