@@ -60,22 +60,46 @@ pri const backslashes array[256] base.u8 = [
 	// 8     9     A     B     C     D     E     F
 ]
 
-//  - 0x00 is CLASS_WHITESPACE.
-//  - 0x01 is CLASS_STRING.
-//  - 0x02 is CLASS_COMMA.
-//  - 0x03 is CLASS_COLON.
-//  - 0x04 is CLASS_NUMBER.
-//  - 0x05 is CLASS_OPEN_CURLY_BRACE.
-//  - 0x06 is CLASS_CLOSE_CURLY_BRACE.
-//  - 0x07 is CLASS_OPEN_SQUARE_BRACKET.
-//  - 0x08 is CLASS_CLOSE_SQUARE_BRACKET.
-//  - 0x09 is CLASS_FALSE.
-//  - 0x0A is CLASS_TRUE.
-//  - 0x0B is CLASS_NULL.
-//  - 0x0C is reserved.
-//  - 0x0D is reserved.
-//  - 0x0E is reserved.
-//  - 0x0F is CLASS_BAD_INPUT.
+//  - 0x00 (bitmask 0x0001) is CLASS_WHITESPACE.
+//  - 0x01 (bitmask 0x0002) is CLASS_STRING.
+//  - 0x02 (bitmask 0x0004) is CLASS_COMMA.
+//  - 0x03 (bitmask 0x0008) is CLASS_COLON.
+//  - 0x04 (bitmask 0x0010) is CLASS_NUMBER.
+//  - 0x05 (bitmask 0x0020) is CLASS_OPEN_CURLY_BRACE.
+//  - 0x06 (bitmask 0x0040) is CLASS_CLOSE_CURLY_BRACE.
+//  - 0x07 (bitmask 0x0080) is CLASS_OPEN_SQUARE_BRACKET.
+//  - 0x08 (bitmask 0x0100) is CLASS_CLOSE_SQUARE_BRACKET.
+//  - 0x09 (bitmask 0x0200) is CLASS_FALSE.
+//  - 0x0A (bitmask 0x0400) is CLASS_TRUE.
+//  - 0x0B (bitmask 0x0800) is CLASS_NULL.
+//  - 0x0C (bitmask 0x1000) is reserved.
+//  - 0x0D (bitmask 0x2000) is reserved.
+//  - 0x0E (bitmask 0x4000) is reserved.
+//  - 0x0F (bitmask 0x8000) is CLASS_BAD_INPUT.
+//
+// The bitmasks are used by the "expect" variable: what the next character
+// class can be.
+//
+//  - 0x0002 is EXPECT_STRING.
+//  - 0x0EB0 is EXPECT_NON_STRING_VALUE.
+//  - 0x0004 is EXPECT_COMMA.
+//  - 0x0008 is EXPECT_COLON.
+//  - 0x0040 is EXPECT_CLOSE_CURLY_BRACE.
+//  - 0x0100 is EXPECT_CLOSE_SQUARE_BRACKET.
+//
+// Bitwise or'ing these together gives 0x0FFE. Whitespace is never expected, as
+// it is handled separately.
+//
+// EXPECT_VALUE is also defined to be 0x0EB2, equivalent to (EXPECT_STRING |
+// EXPECT_NON_STRING_VALUE).
+//
+// EXPECT_NUMBER is also defined to be 0x0010. Testing for EXPECT_NUMBER's
+// presence is equivalent to testing for EXPECT_NON_STRING_VALUE.
+//
+// "Non-string value" includes literals (false, true, null), numbers, arrays
+// and objects.
+//
+// "String value" includes "this" and "th\u0061t".
 pri const classes array[256] base.u8[..= 0x0F] = [
 	// 0     1     2     3     4     5     6     7
 	// 8     9     A     B     C     D     E     F

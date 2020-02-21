@@ -63,29 +63,16 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 	var uni4_string       : base.u32
 	var uni4_value        : base.u32[..= 0xFFFF]
 
-	// expect is a bitmask of what the next token can be:
-	//  - 0x01 EXPECT_NON_STRING_VALUE.
-	//  - 0x02 EXPECT_STRING_VALUE.
-	//  - 0x04 EXPECT_COMMA ','.
-	//  - 0x08 EXPECT_COLON ':'.
-	//  - 0x10 EXPECT_CLOSE_BRACKET ']'.
-	//  - 0x20 EXPECT_CLOSE_BRACE '}'.
+	// expect is a bitmask of what the next character class can be.
 	//
-	// EXPECT_VALUE is also defined to be 0x03, equivalent to
-	// (EXPECT_NON_STRING_VALUE | EXPECT_STRING_VALUE).
-	//
-	// "Non-string value" includes numbers, literals (false, true, null),
-	// arrays ("[etc]") and objects ("{etc}").
-	//
-	// "String value" includes "this" and "th\u0061t".
-	var expect : base.u8
+	// expect_after_value is what to expect after seeing a value (a literal,
+	// number, string, array or object). For depth 0, this is ignored.
+	// Otherwise, it should be (EXPECT_CLOSE_FOO | EXPECT_COMMA), for some
+	// value of FOO.
+	var expect             : base.u32
+	var expect_after_value : base.u32
 
-	// expect_after_value is what to expect after seeing a value. For depth 0,
-	// this is ignored. Otherwise, it should be (EXPECT_CLOSE_FOO |
-	// EXPECT_COMMA), for some value of FOO.
-	var expect_after_value : base.u8
-
-	expect = 0x03  // EXPECT_VALUE
+	expect = 0x0EB2  // EXPECT_VALUE
 
 	while.outer true {
 		while.goto_parsed_a_leaf_value true {
@@ -145,6 +132,11 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 				}
 			}
 
+			// Check expected character classes.
+			if 0 == (expect & ((1 as base.u32) << class)) {
+				return "#bad input"
+			}
+
 			// These assertions are redundant (the Wuffs compiler should
 			// already know these facts; deleting these assertions should still
 			// compile) but are listed explicitly to guard against future edits
@@ -154,10 +146,6 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 
 			if class == 0x01 {  // 0x01 is CLASS_STRING.
 				// -------- BEGIN parse strings.
-				if 0 == (expect & 0x02) {  // 0x02 is EXPECT_STRING_VALUE.
-					return "#bad input"
-				}
-
 				// The leading '"' is filler.
 				args.dst.write_fast_token!(
 					value: 0,
@@ -317,20 +305,17 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 					break
 				}
 
-				// As above, expect must have contained EXPECT_STRING_VALUE. If
-				// it didn't also contain EXPECT_NON_STRING_VALUE then we were
-				// parsing an object key and the next token should be ':'.
-				if 0 == (expect & 0x01) {  // 0x01 is EXPECT_NON_STRING_VALUE.
-					expect = 0x08  // 0x08 is EXPECT_COLON.
+				// As above, expect must have contained EXPECT_STRING. If it
+				// didn't also contain EXPECT_NUMBER then we were parsing an
+				// object key and the next token should be ':'.
+				if 0 == (expect & 0x0010) {  // 0x0010 is EXPECT_NUMBER.
+					expect = 0x0008  // 0x0008 is EXPECT_COLON.
 					continue.outer
 				}
 				break.goto_parsed_a_leaf_value
 				// -------- END   parse strings.
 
 			} else if class == 0x02 {  // 0x02 is CLASS_COMMA.
-				if 0 == (expect & 0x04) {  // 0x01 is EXPECT_COMMA.
-					return "#bad input"
-				}
 				args.src.skip32_fast!(actual: 1, worst_case: 1)
 				// The ',' is filler.
 				args.dst.write_fast_token!(
@@ -338,30 +323,24 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 					length: 1)
 				// What's valid after a comma depends on whether or not we're
 				// in an array or an object.
-				if 0 == (expect & 0x10) {  // 0x10 is EXPECT_CLOSE_BRACKET
-					expect = 0x02  // 0x02 is EXPECT_STRING_VALUE.
+				if 0 == (expect & 0x0100) {  // 0x0100 is EXPECT_CLOSE_SQUARE_BRACKET
+					expect = 0x0002  // 0x0002 is EXPECT_STRING.
 				} else {
-					expect = 0x03  // 0x03 is EXPECT_VALUE.
+					expect = 0x0EB2  // 0x0EB2 is EXPECT_VALUE.
 				}
 				continue.outer
 
 			} else if class == 0x03 {  // 0x03 is CLASS_COLON.
-				if 0 == (expect & 0x08) {  // 0x08 is EXPECT_COLON.
-					return "#bad input"
-				}
 				args.src.skip32_fast!(actual: 1, worst_case: 1)
 				// The ':' is filler.
 				args.dst.write_fast_token!(
 					value: 0,
 					length: 1)
-				expect = 0x03  // 0x03 is EXPECT_VALUE.
+				expect = 0x0EB2  // 0x0EB2 is EXPECT_VALUE.
 				continue.outer
 
 			} else if class == 0x04 {  // 0x04 is CLASS_NUMBER.
 				// -------- BEGIN parse numbers.
-				if 0 == (expect & 0x01) {  // 0x02 is EXPECT_NON_STRING_VALUE.
-					return "#bad input"
-				}
 				while true,
 					pre args.dst.available() > 0,
 				{
@@ -405,9 +384,6 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 				// -------- END   parse numbers.
 
 			} else if class == 0x05 {  // 0x05 is CLASS_OPEN_CURLY_BRACE.
-				if 0 == (expect & 0x01) {  // 0x01 is EXPECT_NON_STRING_VALUE.
-					return "#bad input"
-				}
 				if depth >= 1024 {
 					return "#unsupported recursion depth"
 				}
@@ -420,14 +396,11 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 				args.dst.write_fast_token!(
 					value: 0x20_0021,
 					length: 1)
-				expect = 0x22  // 0x22 is (EXPECT_CLOSE_BRACE | EXPECT_STRING_VALUE).
-				expect_after_value = 0x24  // 0x24 is (EXPECT_CLOSE_BRACE | EXPECT_COMMA).
+				expect = 0x0042  // 0x0042 is (EXPECT_CLOSE_CURLY_BRACE | EXPECT_STRING).
+				expect_after_value = 0x0044  // 0x0044 is (EXPECT_CURLY_CLOSE_BRACE | EXPECT_COMMA).
 				continue.outer
 
 			} else if class == 0x06 {  // 0x06 is CLASS_CLOSE_CURLY_BRACE.
-				if 0 == (expect & 0x20) {  // 0x20 is EXPECT_CLOSE_BRACE.
-					return "#bad input"
-				}
 				args.src.skip32_fast!(actual: 1, worst_case: 1)
 				if depth <= 1 {
 					args.dst.write_fast_token!(
@@ -442,23 +415,20 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 					args.dst.write_fast_token!(
 						value: 0x20_1022,
 						length: 1)
-					// 0x14 is (EXPECT_CLOSE_BRACKET | EXPECT_COMMA).
-					expect = 0x14
-					expect_after_value = 0x14
+					// 0x0104 is (EXPECT_SQUARE_CLOSE_BRACKET | EXPECT_COMMA).
+					expect = 0x0104
+					expect_after_value = 0x0104
 				} else {
 					args.dst.write_fast_token!(
 						value: 0x20_2022,
 						length: 1)
-					// 0x24 is (EXPECT_CLOSE_BRACE | EXPECT_COMMA).
-					expect = 0x24
-					expect_after_value = 0x24
+					// 0x0044 is (EXPECT_CURLY_CLOSE_BRACE | EXPECT_COMMA).
+					expect = 0x0044
+					expect_after_value = 0x0044
 				}
 				continue.outer
 
 			} else if class == 0x07 {  // 0x07 is CLASS_OPEN_SQUARE_BRACKET.
-				if 0 == (expect & 0x01) {  // 0x01 is EXPECT_NON_STRING_VALUE.
-					return "#bad input"
-				}
 				if depth >= 1024 {
 					return "#unsupported recursion depth"
 				}
@@ -471,14 +441,11 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 				args.dst.write_fast_token!(
 					value: 0x20_0011,
 					length: 1)
-				expect = 0x13  // 0x13 is (EXPECT_CLOSE_BRACKET | EXPECT_VALUE).
-				expect_after_value = 0x14  // 0x14 is (EXPECT_CLOSE_BRACKET | EXPECT_COMMA).
+				expect = 0x0FB2  // 0x0FB2 is (EXPECT_CLOSE_SQUARE_BRACKET | EXPECT_VALUE).
+				expect_after_value = 0x0104  // 0x0104 is (EXPECT_CLOSE_SQUARE_BRACKET | EXPECT_COMMA).
 				continue.outer
 
 			} else if class == 0x08 {  // 0x08 is CLASS_CLOSE_SQUARE_BRACKET.
-				if 0 == (expect & 0x10) {  // 0x10 is EXPECT_CLOSE_BRACKET
-					return "#bad input"
-				}
 				args.src.skip32_fast!(actual: 1, worst_case: 1)
 				if depth <= 1 {
 					args.dst.write_fast_token!(
@@ -493,23 +460,20 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 					args.dst.write_fast_token!(
 						value: 0x20_1012,
 						length: 1)
-					// 0x14 is (EXPECT_CLOSE_BRACKET | EXPECT_COMMA).
-					expect = 0x14
-					expect_after_value = 0x14
+					// 0x0104 is (EXPECT_CLOSE_SQUARE_BRACKET | EXPECT_COMMA).
+					expect = 0x0104
+					expect_after_value = 0x0104
 				} else {
 					args.dst.write_fast_token!(
 						value: 0x20_2012,
 						length: 1)
-					// 0x24 is (EXPECT_CLOSE_BRACE | EXPECT_COMMA).
-					expect = 0x24
-					expect_after_value = 0x24
+					// 0x0044 is (EXPECT_CLOSE_CURLY_BRACE | EXPECT_COMMA).
+					expect = 0x0044
+					expect_after_value = 0x0044
 				}
 				continue.outer
 
 			} else if class == 0x09 {  // 0x09 is CLASS_FALSE.
-				if 0 == (expect & 0x01) {  // 0x01 is EXPECT_NON_STRING_VALUE.
-					return "#bad input"
-				}
 				match = args.src.match7(a: 0x6573_6C61_6605)  // 5 bytes "false".
 				if match == 0 {
 					args.dst.write_fast_token!(
@@ -526,9 +490,6 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 				}
 
 			} else if class == 0x0A {  // 0x0A is CLASS_TRUE.
-				if 0 == (expect & 0x01) {  // 0x01 is EXPECT_NON_STRING_VALUE.
-					return "#bad input"
-				}
 				match = args.src.match7(a: 0x65_7572_7404)  // 4 bytes "true".
 				if match == 0 {
 					args.dst.write_fast_token!(
@@ -545,9 +506,6 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 				}
 
 			} else if class == 0x0B {  // 0x0B is CLASS_NULL.
-				if 0 == (expect & 0x01) {  // 0x01 is EXPECT_NON_STRING_VALUE.
-					return "#bad input"
-				}
 				match = args.src.match7(a: 0x6C_6C75_6E04)  // 4 bytes "null".
 				if match == 0 {
 					args.dst.write_fast_token!(
