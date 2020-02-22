@@ -377,8 +377,8 @@ continue_loop:
         }
       }
 
-      TRY(write_dst((vbd & 0x10) ? "]" : "}", 1));
-      ctx = (vbd & 0x1000) ? context::in_list_after_value
+      TRY(write_dst((vbd & 0x20) ? "]" : "}", 1));
+      ctx = (vbd & 0x2000) ? context::in_list_after_value
                            : context::in_dict_after_key;
       goto after_value;
     }
@@ -401,10 +401,10 @@ continue_loop:
     // value (number, string or literal).
     switch (vbc) {
       case 1:
-        TRY(write_dst((vbd & 0x10) ? "[" : "{", 1));
+        TRY(write_dst((vbd & 0x2000) ? "[" : "{", 1));
         depth++;
-        ctx = (vbd & 0x10) ? context::in_list_after_bracket
-                           : context::in_dict_after_brace;
+        ctx = (vbd & 0x2000) ? context::in_list_after_bracket
+                             : context::in_dict_after_brace;
         goto continue_loop;
 
       case 2:

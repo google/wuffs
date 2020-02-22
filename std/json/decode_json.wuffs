@@ -384,6 +384,14 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 				// -------- END   parse numbers.
 
 			} else if class == 0x05 {  // 0x05 is CLASS_OPEN_CURLY_BRACE.
+				token_value = 0x20_4011
+				if depth == 0 {
+					// No-op.
+				} else if 0 <> (expect_after_value & 0x0040) {  // 0x0040 is EXPECT_CLOSE_CURLY_BRACE.
+					token_value = 0x20_4041
+				} else {
+					token_value = 0x20_4021
+				}
 				if depth >= 1024 {
 					return "#unsupported recursion depth"
 				}
@@ -394,7 +402,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 
 				args.src.skip32_fast!(actual: 1, worst_case: 1)
 				args.dst.write_fast_token!(
-					value: 0x20_0021,
+					value: token_value,
 					length: 1)
 				expect = 0x0042  // 0x0042 is (EXPECT_CLOSE_CURLY_BRACE | EXPECT_STRING).
 				expect_after_value = 0x0044  // 0x0044 is (EXPECT_CURLY_CLOSE_BRACE | EXPECT_COMMA).
@@ -404,7 +412,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 				args.src.skip32_fast!(actual: 1, worst_case: 1)
 				if depth <= 1 {
 					args.dst.write_fast_token!(
-						value: 0x20_0022,
+						value: 0x20_1042,
 						length: 1)
 					break.outer
 				}
@@ -413,14 +421,14 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 				stack_bit = (depth - 1) & 31
 				if 0 == (this.stack[stack_byte] & ((1 as base.u32) << stack_bit)) {
 					args.dst.write_fast_token!(
-						value: 0x20_1022,
+						value: 0x20_2042,
 						length: 1)
 					// 0x0104 is (EXPECT_SQUARE_CLOSE_BRACKET | EXPECT_COMMA).
 					expect = 0x0104
 					expect_after_value = 0x0104
 				} else {
 					args.dst.write_fast_token!(
-						value: 0x20_2022,
+						value: 0x20_4042,
 						length: 1)
 					// 0x0044 is (EXPECT_CURLY_CLOSE_BRACE | EXPECT_COMMA).
 					expect = 0x0044
@@ -429,6 +437,14 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 				continue.outer
 
 			} else if class == 0x07 {  // 0x07 is CLASS_OPEN_SQUARE_BRACKET.
+				token_value = 0x20_2011
+				if depth == 0 {
+					// No-op.
+				} else if 0 <> (expect_after_value & 0x0040) {  // 0x0040 is EXPECT_CLOSE_CURLY_BRACE.
+					token_value = 0x20_2041
+				} else {
+					token_value = 0x20_2021
+				}
 				if depth >= 1024 {
 					return "#unsupported recursion depth"
 				}
@@ -439,7 +455,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 
 				args.src.skip32_fast!(actual: 1, worst_case: 1)
 				args.dst.write_fast_token!(
-					value: 0x20_0011,
+					value: token_value,
 					length: 1)
 				expect = 0x0FB2  // 0x0FB2 is (EXPECT_CLOSE_SQUARE_BRACKET | EXPECT_VALUE).
 				expect_after_value = 0x0104  // 0x0104 is (EXPECT_CLOSE_SQUARE_BRACKET | EXPECT_COMMA).
@@ -449,7 +465,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 				args.src.skip32_fast!(actual: 1, worst_case: 1)
 				if depth <= 1 {
 					args.dst.write_fast_token!(
-						value: 0x20_0012,
+						value: 0x20_1022,
 						length: 1)
 					break.outer
 				}
@@ -458,14 +474,14 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 				stack_bit = (depth - 1) & 31
 				if 0 == (this.stack[stack_byte] & ((1 as base.u32) << stack_bit)) {
 					args.dst.write_fast_token!(
-						value: 0x20_1012,
+						value: 0x20_2022,
 						length: 1)
 					// 0x0104 is (EXPECT_CLOSE_SQUARE_BRACKET | EXPECT_COMMA).
 					expect = 0x0104
 					expect_after_value = 0x0104
 				} else {
 					args.dst.write_fast_token!(
-						value: 0x20_2012,
+						value: 0x20_4022,
 						length: 1)
 					// 0x0044 is (EXPECT_CLOSE_CURLY_BRACE | EXPECT_COMMA).
 					expect = 0x0044

@@ -18971,6 +18971,13 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
         label_6_break:;
           goto label_5_break;
         } else if (v_class == 5) {
+          v_token_value = 2113553;
+          if (v_depth == 0) {
+          } else if (0 != (v_expect_after_value & 64)) {
+            v_token_value = 2113601;
+          } else {
+            v_token_value = 2113569;
+          }
           if (v_depth >= 1024) {
             status = wuffs_base__make_status(
                 wuffs_json__error__unsupported_recursion_depth);
@@ -18983,7 +18990,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
           v_depth += 1;
           (iop_a_src += 1, wuffs_base__make_empty_struct());
           *iop_a_dst++ = wuffs_base__make_token(
-              (((uint64_t)(2097185)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+              (((uint64_t)(v_token_value)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
               (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
           v_expect = 66;
           v_expect_after_value = 68;
@@ -18992,7 +18999,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
           (iop_a_src += 1, wuffs_base__make_empty_struct());
           if (v_depth <= 1) {
             *iop_a_dst++ = wuffs_base__make_token(
-                (((uint64_t)(2097186)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+                (((uint64_t)(2101314)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
                 (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
             goto label_0_break;
           }
@@ -19002,19 +19009,26 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
           if (0 == (self->private_data.f_stack[v_stack_byte] &
                     (((uint32_t)(1)) << v_stack_bit))) {
             *iop_a_dst++ = wuffs_base__make_token(
-                (((uint64_t)(2101282)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+                (((uint64_t)(2105410)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
                 (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
             v_expect = 260;
             v_expect_after_value = 260;
           } else {
             *iop_a_dst++ = wuffs_base__make_token(
-                (((uint64_t)(2105378)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+                (((uint64_t)(2113602)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
                 (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
             v_expect = 68;
             v_expect_after_value = 68;
           }
           goto label_0_continue;
         } else if (v_class == 7) {
+          v_token_value = 2105361;
+          if (v_depth == 0) {
+          } else if (0 != (v_expect_after_value & 64)) {
+            v_token_value = 2105409;
+          } else {
+            v_token_value = 2105377;
+          }
           if (v_depth >= 1024) {
             status = wuffs_base__make_status(
                 wuffs_json__error__unsupported_recursion_depth);
@@ -19027,7 +19041,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
           v_depth += 1;
           (iop_a_src += 1, wuffs_base__make_empty_struct());
           *iop_a_dst++ = wuffs_base__make_token(
-              (((uint64_t)(2097169)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+              (((uint64_t)(v_token_value)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
               (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
           v_expect = 4018;
           v_expect_after_value = 260;
@@ -19036,7 +19050,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
           (iop_a_src += 1, wuffs_base__make_empty_struct());
           if (v_depth <= 1) {
             *iop_a_dst++ = wuffs_base__make_token(
-                (((uint64_t)(2097170)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+                (((uint64_t)(2101282)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
                 (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
             goto label_0_break;
           }
@@ -19046,13 +19060,13 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
           if (0 == (self->private_data.f_stack[v_stack_byte] &
                     (((uint32_t)(1)) << v_stack_bit))) {
             *iop_a_dst++ = wuffs_base__make_token(
-                (((uint64_t)(2101266)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+                (((uint64_t)(2105378)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
                 (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
             v_expect = 260;
             v_expect_after_value = 260;
           } else {
             *iop_a_dst++ = wuffs_base__make_token(
-                (((uint64_t)(2105362)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+                (((uint64_t)(2113570)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
                 (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
             v_expect = 68;
             v_expect_after_value = 68;
