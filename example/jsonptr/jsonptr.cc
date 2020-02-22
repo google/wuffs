@@ -259,11 +259,14 @@ const char* handle_string(parsed_token pt) {
     uint64_t vbc = pt.token.value_base_category();
     uint64_t vbd = pt.token.value_base_detail();
 
-    if (vbc == 3) {
+    if (vbc == WUFFS_BASE__TOKEN__VBC__STRING) {
       TRY(write_dst(pt.data.ptr, pt.data.len));
-      if ((vbd & 1) == 0) {
+      if ((vbd & WUFFS_BASE__TOKEN__VBD__STRING__INCOMPLETE) == 0) {
         break;
       }
+
+    } else if (vbc != WUFFS_BASE__TOKEN__VBC__UNICODE_CODE_POINT) {
+      return "main: unexpected token";
 
     } else if (vbd < 0x0020) {
       switch (vbd) {
@@ -362,7 +365,8 @@ continue_loop:
     uint64_t vbd = pt.token.value_base_detail();
 
     // Handle ']' or '}'.
-    if ((vbc == 1) && ((vbd & 0x2) != 0)) {
+    if ((vbc == WUFFS_BASE__TOKEN__VBC__STRUCTURE) &&
+        ((vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__POP) != 0)) {
       if (depth <= 0) {
         return "main: internal error: inconsistent depth";
       }
@@ -377,9 +381,11 @@ continue_loop:
         }
       }
 
-      TRY(write_dst((vbd & 0x20) ? "]" : "}", 1));
-      ctx = (vbd & 0x2000) ? context::in_list_after_value
-                           : context::in_dict_after_key;
+      TRY(write_dst(
+          (vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__FROM_LIST) ? "]" : "}", 1));
+      ctx = (vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__TO_LIST)
+                ? context::in_list_after_value
+                : context::in_dict_after_key;
       goto after_value;
     }
 
@@ -400,18 +406,20 @@ continue_loop:
     // Handle the token itself: either a container ('[' or '{') or a simple
     // value (number, string or literal).
     switch (vbc) {
-      case 1:
-        TRY(write_dst((vbd & 0x2000) ? "[" : "{", 1));
+      case WUFFS_BASE__TOKEN__VBC__STRUCTURE:
+        TRY(write_dst(
+            (vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__TO_LIST) ? "[" : "{", 1));
         depth++;
-        ctx = (vbd & 0x2000) ? context::in_list_after_bracket
-                             : context::in_dict_after_brace;
+        ctx = (vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__TO_LIST)
+                  ? context::in_list_after_bracket
+                  : context::in_dict_after_brace;
         goto continue_loop;
 
-      case 2:
+      case WUFFS_BASE__TOKEN__VBC__NUMBER:
         TRY(write_dst(pt.data.ptr, pt.data.len));
         goto after_value;
 
-      case 3:
+      case WUFFS_BASE__TOKEN__VBC__STRING:
         TRY(handle_string(pt));
         goto after_value;
     }
