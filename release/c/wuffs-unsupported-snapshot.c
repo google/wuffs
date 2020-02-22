@@ -6347,7 +6347,10 @@ wuffs_base__io_writer__copy_n32_from_slice(uint8_t** ptr_iop_w,
 //  - 1 means inconclusive, equivalent to "$short read".
 //  - 2 means failure.
 static inline uint32_t  //
-wuffs_base__io_reader__match7(uint8_t* iop_r, uint8_t* io2_r, uint64_t a) {
+wuffs_base__io_reader__match7(uint8_t* iop_r,
+                              uint8_t* io2_r,
+                              wuffs_base__io_buffer* r,
+                              uint64_t a) {
   uint32_t n = a & 7;
   a >>= 8;
   if ((io2_r - iop_r) >= 8) {
@@ -6357,7 +6360,7 @@ wuffs_base__io_reader__match7(uint8_t* iop_r, uint8_t* io2_r, uint64_t a) {
   }
   for (; n > 0; n--) {
     if (iop_r >= io2_r) {
-      return 1;
+      return (r && r->meta.closed) ? 2 : 1;
     } else if (*iop_r != ((uint8_t)(a))) {
       return 2;
     }
@@ -19056,7 +19059,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
           }
           goto label_0_continue;
         } else if (v_class == 9) {
-          v_match = wuffs_base__io_reader__match7(iop_a_src, io2_a_src,
+          v_match = wuffs_base__io_reader__match7(iop_a_src, io2_a_src, a_src,
                                                   111546413966853);
           if (v_match == 0) {
             *iop_a_dst++ = wuffs_base__make_token(
@@ -19076,8 +19079,8 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
             goto label_0_continue;
           }
         } else if (v_class == 10) {
-          v_match =
-              wuffs_base__io_reader__match7(iop_a_src, io2_a_src, 435762131972);
+          v_match = wuffs_base__io_reader__match7(iop_a_src, io2_a_src, a_src,
+                                                  435762131972);
           if (v_match == 0) {
             *iop_a_dst++ = wuffs_base__make_token(
                 (((uint64_t)(4194433)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
@@ -19096,8 +19099,8 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
             goto label_0_continue;
           }
         } else if (v_class == 11) {
-          v_match =
-              wuffs_base__io_reader__match7(iop_a_src, io2_a_src, 465676103172);
+          v_match = wuffs_base__io_reader__match7(iop_a_src, io2_a_src, a_src,
+                                                  465676103172);
           if (v_match == 0) {
             *iop_a_dst++ = wuffs_base__make_token(
                 (((uint64_t)(4194337)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |

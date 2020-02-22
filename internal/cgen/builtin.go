@@ -169,7 +169,8 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 		return nil
 
 	case t.IDMatch7:
-		b.printf("wuffs_base__io_reader__match7(%s%s,  %s%s,", iopPrefix, name, io2Prefix, name)
+		b.printf("wuffs_base__io_reader__match7(%s%s, %s%s, %s,",
+			iopPrefix, name, io2Prefix, name, name)
 		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
 			return err
 		}

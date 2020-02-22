@@ -176,7 +176,10 @@ wuffs_base__io_writer__copy_n32_from_slice(uint8_t** ptr_iop_w,
 //  - 1 means inconclusive, equivalent to "$short read".
 //  - 2 means failure.
 static inline uint32_t  //
-wuffs_base__io_reader__match7(uint8_t* iop_r, uint8_t* io2_r, uint64_t a) {
+wuffs_base__io_reader__match7(uint8_t* iop_r,
+                              uint8_t* io2_r,
+                              wuffs_base__io_buffer* r,
+                              uint64_t a) {
   uint32_t n = a & 7;
   a >>= 8;
   if ((io2_r - iop_r) >= 8) {
@@ -186,7 +189,7 @@ wuffs_base__io_reader__match7(uint8_t* iop_r, uint8_t* io2_r, uint64_t a) {
   }
   for (; n > 0; n--) {
     if (iop_r >= io2_r) {
-      return 1;
+      return (r && r->meta.closed) ? 2 : 1;
     } else if (*iop_r != ((uint8_t)(a))) {
       return 2;
     }
