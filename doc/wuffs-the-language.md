@@ -31,7 +31,8 @@ Minor features or restrictions include:
   an `if` or `while` condition are optional, but the `{}` curly braces are
   mandatory. There is no 'dangling else' ambiguity.
 - Labeled jumps look like `break.loopname` and `continue.loopname`, for a
-  matching `while.loopname`.
+  matching `while.loopname`. The `while.loopname`'s closing curly brace must be
+  followed by `endwhile.loopname`.
 
 Wuffs code is formatted by the
 [`wuffsfmt`](https://godoc.org/github.com/google/wuffs/cmd/wuffsfmt) program.

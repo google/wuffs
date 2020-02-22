@@ -257,7 +257,7 @@ pri func decoder.decode_blocks?(dst: base.io_writer, src: base.io_reader) {
 				continue.outer
 			}
 		}
-	}
+	} endwhile.outer
 }
 
 // decode_uncompressed decodes an uncompresed block as per the RFC section

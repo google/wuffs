@@ -366,24 +366,25 @@ const (
 	IDConst      = ID(0xA2)
 	IDContinue   = ID(0xA3)
 	IDElse       = ID(0xA4)
-	IDFunc       = ID(0xA5)
-	IDIOBind     = ID(0xA6)
-	IDIOLimit    = ID(0xA7)
-	IDIf         = ID(0xA8)
-	IDImplements = ID(0xA9)
-	IDInv        = ID(0xAA)
-	IDIterate    = ID(0xAB)
-	IDPost       = ID(0xAC)
-	IDPre        = ID(0xAD)
-	IDPri        = ID(0xAE)
-	IDPub        = ID(0xAF)
-	IDReturn     = ID(0xB0)
-	IDStruct     = ID(0xB1)
-	IDUse        = ID(0xB2)
-	IDVar        = ID(0xB3)
-	IDVia        = ID(0xB4)
-	IDWhile      = ID(0xB5)
-	IDYield      = ID(0xB6)
+	IDEndwhile   = ID(0xA5)
+	IDFunc       = ID(0xA6)
+	IDIOBind     = ID(0xA7)
+	IDIOLimit    = ID(0xA8)
+	IDIf         = ID(0xA9)
+	IDImplements = ID(0xAA)
+	IDInv        = ID(0xAB)
+	IDIterate    = ID(0xAC)
+	IDPost       = ID(0xAD)
+	IDPre        = ID(0xAE)
+	IDPri        = ID(0xAF)
+	IDPub        = ID(0xB0)
+	IDReturn     = ID(0xB1)
+	IDStruct     = ID(0xB2)
+	IDUse        = ID(0xB3)
+	IDVar        = ID(0xB4)
+	IDVia        = ID(0xB5)
+	IDWhile      = ID(0xB6)
+	IDYield      = ID(0xB7)
 )
 
 const (
@@ -723,6 +724,7 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDConst:      "const",
 	IDContinue:   "continue",
 	IDElse:       "else",
+	IDEndwhile:   "endwhile",
 	IDFunc:       "func",
 	IDIOBind:     "io_bind",
 	IDIOLimit:    "io_limit",

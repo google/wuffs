@@ -3,6 +3,7 @@
 
 ## Work In Progress
 
+- Added `endwhile` syntax.
 - Added `example/imageviewer`.
 - Added `example/jsonptr`.
 - Added `std/bmp`.

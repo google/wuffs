@@ -362,7 +362,7 @@ pri func decoder.decode_huffman_fast!(dst: base.io_writer, src: base.io_reader) 
 			args.dst.copy_n32_from_history_fast!(n: length, distance: (dist_minus_1 + 1))
 			break
 		}
-	}
+	} endwhile.loop
 
 	// Ensure n_bits < 8 by rewindng args.src, if we loaded too many of its
 	// bytes into the bits variable.

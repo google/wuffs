@@ -272,7 +272,7 @@ pri func decoder.decode_huffman_slow?(dst: base.io_writer, src: base.io_reader) 
 			length -= n_copied
 			yield? base."$short write"
 		}
-	}
+	} endwhile.loop
 
 	// TODO: "assert n_bits < 8"? What about (bits >> n_bits)?
 

@@ -119,7 +119,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 					continue.outer
 				}
 				whitespace_length += 1
-			}  // while.ws
+			} endwhile.ws
 
 			// Emit whitespace.
 			if whitespace_length > 0 {
@@ -286,7 +286,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 						}
 						string_length += 1
 					}
-				}  // while.string_loop
+				} endwhile.string_loop
 
 				// The trailing '"' is filler.
 				while true {
@@ -523,7 +523,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 			}
 
 			return "#bad input"
-		}  // while.goto_parsed_a_leaf_value
+		} endwhile.goto_parsed_a_leaf_value
 
 		// We've just parsed a leaf (non-container) value: literal (null,
 		// false, true), number or string.
@@ -531,7 +531,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 			break.outer
 		}
 		expect = expect_after_value
-	}  // while.outer
+	} endwhile.outer
 }
 
 pri func decoder.decode_number!(src: base.io_reader) base.u32[..= 0x3FF] {
@@ -654,7 +654,7 @@ pri func decoder.decode_number!(src: base.io_reader) base.u32[..= 0x3FF] {
 		n = this.decode_digits!(src: args.src, n: n)
 
 		break.goto_done
-	}  // while.goto_done
+	} endwhile.goto_done
 	return n | floating_point
 }
 

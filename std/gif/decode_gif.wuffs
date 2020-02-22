@@ -992,8 +992,8 @@ pri func decoder.decode_id_part2?(dst: ptr base.pixel_buffer, src: base.io_reade
 				continue.inner
 			}
 			return lzw_status
-		}
-	}
+		} endwhile.inner
+	} endwhile.outer
 
 	this.compressed_ri = 0
 	this.compressed_wi = 0
