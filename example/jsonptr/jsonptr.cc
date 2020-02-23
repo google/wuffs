@@ -23,6 +23,9 @@ is written in C++, not C.
 $CXX jsonptr.cc && ./a.out < ../../test/data/github-tags.json; rm -f a.out
 
 for a C++ compiler $CXX, such as clang++ or g++.
+
+After modifying this program, run "build-example.sh example/jsonptr/" and then
+"script/run-json-test-suite.sh" to catch correctness regressions.
 */
 
 #include <inttypes.h>
