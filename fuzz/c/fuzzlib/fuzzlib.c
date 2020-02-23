@@ -56,9 +56,14 @@ static const char* llvmFuzzerTestOneInput(const uint8_t* data, size_t size) {
   });
 
   const char* msg = fuzz(&src, hash);
-  if (msg && strstr(msg, "internal error:")) {
-    fprintf(stderr, "internal errors shouldn't occur: \"%s\"\n", msg);
-    intentional_segfault();
+  if (msg) {
+    if (strnlen(msg, 2047) >= 2047) {
+      msg = "fuzzlib: internal error: error message is too long";
+    }
+    if (strstr(msg, "internal error:")) {
+      fprintf(stderr, "internal errors shouldn't occur: \"%s\"\n", msg);
+      intentional_segfault();
+    }
   }
   return msg;
 }

@@ -27,6 +27,7 @@ for a C++ compiler $CXX, such as clang++ or g++.
 
 #include <inttypes.h>
 #include <stdio.h>
+#include <string.h>
 
 // Wuffs ships as a "single file C library" or "header file library" as per
 // https://github.com/nothings/stb/blob/master/docs/stb_howto.txt
@@ -94,7 +95,7 @@ size_t indent;
 
 const char* read_src() {
   if (src.meta.closed) {
-    return "main: read error: unexpected EOF";
+    return "main: internal error: read requested on a closed source";
   }
   src.compact();
   if (src.meta.wi >= src.data.len) {
@@ -471,13 +472,33 @@ const char* main1(int argc, char** argv) {
   return nullptr;
 }
 
+int compute_exit_code(const char* status_msg) {
+  if (!status_msg) {
+    return 0;
+  }
+  size_t n = strnlen(status_msg, 2047);
+  if (n >= 2047) {
+    status_msg = "main: internal error: error message is too long";
+    n = strnlen(status_msg, 2047);
+  }
+  fprintf(stderr, "%s\n", status_msg);
+  // Return an exit code of 1 for regular (forseen) errors, e.g. badly
+  // formatted or unsupported input.
+  //
+  // Return an exit code of 2 for internal (exceptional) errors, e.g. defensive
+  // run-time checks found that an internal invariant did not hold.
+  //
+  // Automated testing, including badly formatted inputs, can therefore
+  // discriminate between expected failure (exit code 1) and unexpected failure
+  // (other non-zero exit codes). Specifically, exit code 2 for internal
+  // invariant violation, exit code 139 (which is 128 + SIGSEGV on x86_64
+  // linux) for a segmentation fault (e.g. null pointer dereference).
+  return strstr(status_msg, "internal error:") ? 2 : 1;
+}
+
 int main(int argc, char** argv) {
   const char* z0 = main1(argc, argv);
   const char* z1 = flush_dst();
-  const char* z = z0 ? z0 : z1;
-  if (z) {
-    fprintf(stderr, "%s\n", z);
-    return 1;
-  }
-  return 0;
+  int exit_code = compute_exit_code(z0 ? z0 : z1);
+  return exit_code;
 }

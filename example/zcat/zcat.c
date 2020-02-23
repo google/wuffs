@@ -151,11 +151,30 @@ static const char* decode() {
   }
 }
 
-int fail(const char* msg) {
+int compute_exit_code(const char* status_msg) {
+  if (!status_msg) {
+    return 0;
+  }
+  size_t n = strnlen(status_msg, 2047);
+  if (n >= 2047) {
+    status_msg = "main: internal error: error message is too long";
+    n = strnlen(status_msg, 2047);
+  }
   const int stderr_fd = 2;
-  ignore_return_value(write(stderr_fd, msg, strnlen(msg, 4095)));
+  ignore_return_value(write(stderr_fd, status_msg, n));
   ignore_return_value(write(stderr_fd, "\n", 1));
-  return 1;
+  // Return an exit code of 1 for regular (forseen) errors, e.g. badly
+  // formatted or unsupported input.
+  //
+  // Return an exit code of 2 for internal (exceptional) errors, e.g. defensive
+  // run-time checks found that an internal invariant did not hold.
+  //
+  // Automated testing, including badly formatted inputs, can therefore
+  // discriminate between expected failure (exit code 1) and unexpected failure
+  // (other non-zero exit codes). Specifically, exit code 2 for internal
+  // invariant violation, exit code 139 (which is 128 + SIGSEGV on x86_64
+  // linux) for a segmentation fault (e.g. null pointer dereference).
+  return strstr(status_msg, "internal error:") ? 2 : 1;
 }
 
 int main(int argc, char** argv) {
@@ -163,13 +182,12 @@ int main(int argc, char** argv) {
   prctl(PR_SET_SECCOMP, SECCOMP_MODE_STRICT);
 #endif
 
-  const char* status_msg = decode();
-  int status_code = status_msg ? fail(status_msg) : 0;
+  int exit_code = compute_exit_code(decode());
 
 #if defined(WUFFS_EXAMPLE_USE_SECCOMP)
   // Call SYS_exit explicitly instead of SYS_exit_group implicitly.
   // SECCOMP_MODE_STRICT allows only the former.
-  syscall(SYS_exit, status_code);
+  syscall(SYS_exit, exit_code);
 #endif
-  return status_code;
+  return exit_code;
 }
