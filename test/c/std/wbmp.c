@@ -100,7 +100,7 @@ const char* test_wuffs_wbmp_decode_frame_config() {
   wuffs_base__status status =
       wuffs_wbmp__decoder__decode_frame_config(&dec, &fc, &src);
   if (status.repr != wuffs_base__note__end_of_data) {
-    RETURN_FAIL("decode_frame_config #1: got \"%s\", want \"%s\"", status.repr,
+    RETURN_FAIL("decode_frame_config #1: have \"%s\", want \"%s\"", status.repr,
                 wuffs_base__note__end_of_data);
   }
   if (src.meta.ri != src.meta.wi) {
@@ -126,15 +126,15 @@ const char* test_wuffs_wbmp_decode_image_config() {
   CHECK_STATUS("decode_image_config",
                wuffs_wbmp__decoder__decode_image_config(&dec, &ic, &src));
 
-  uint32_t got_width = wuffs_base__pixel_config__width(&ic.pixcfg);
+  uint32_t have_width = wuffs_base__pixel_config__width(&ic.pixcfg);
   uint32_t want_width = 160;
-  if (got_width != want_width) {
-    RETURN_FAIL("width: got %" PRIu32 ", want %" PRIu32, got_width, want_width);
+  if (have_width != want_width) {
+    RETURN_FAIL("width: have %" PRIu32 ", want %" PRIu32, have_width, want_width);
   }
-  uint32_t got_height = wuffs_base__pixel_config__height(&ic.pixcfg);
+  uint32_t have_height = wuffs_base__pixel_config__height(&ic.pixcfg);
   uint32_t want_height = 120;
-  if (got_height != want_height) {
-    RETURN_FAIL("height: got %" PRIu32 ", want %" PRIu32, got_height,
+  if (have_height != want_height) {
+    RETURN_FAIL("height: have %" PRIu32 ", want %" PRIu32, have_height,
                 want_height);
   }
   return NULL;

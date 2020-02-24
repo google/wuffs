@@ -100,7 +100,7 @@ const char* test_wuffs_bmp_decode_frame_config() {
   wuffs_base__status status =
       wuffs_bmp__decoder__decode_frame_config(&dec, &fc, &src);
   if (status.repr != wuffs_base__note__end_of_data) {
-    RETURN_FAIL("decode_frame_config #1: got \"%s\", want \"%s\"", status.repr,
+    RETURN_FAIL("decode_frame_config #1: have \"%s\", want \"%s\"", status.repr,
                 wuffs_base__note__end_of_data);
   }
   if (src.meta.ri != src.meta.wi) {

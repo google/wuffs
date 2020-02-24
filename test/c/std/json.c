@@ -138,10 +138,10 @@ const char* test_strconv_parse_number_u64() {
     wuffs_base__result_u64 r =
         wuffs_base__parse_number_u64(wuffs_base__make_slice_u8(
             (void*)test_cases[i].str, strlen(test_cases[i].str)));
-    uint64_t got = (r.status.repr == NULL) ? r.value : fail;
-    if (got != test_cases[i].want) {
-      RETURN_FAIL("\"%s\": got 0x%" PRIX64 ", want 0x%" PRIX64,
-                  test_cases[i].str, got, test_cases[i].want);
+    uint64_t have = (r.status.repr == NULL) ? r.value : fail;
+    if (have != test_cases[i].want) {
+      RETURN_FAIL("\"%s\": have 0x%" PRIX64 ", want 0x%" PRIX64,
+                  test_cases[i].str, have, test_cases[i].want);
     }
   }
 
@@ -158,8 +158,8 @@ const char* test_wuffs_json_decode_tokens() {
                    &dec, sizeof dec, WUFFS_VERSION,
                    WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
 
-  wuffs_base__token_buffer got = ((wuffs_base__token_buffer){
-      .data = global_got_token_slice,
+  wuffs_base__token_buffer have = ((wuffs_base__token_buffer){
+      .data = global_have_token_slice,
   });
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
       .data = global_src_slice,
@@ -167,12 +167,12 @@ const char* test_wuffs_json_decode_tokens() {
   CHECK_STRING(read_file(&src, "test/data/github-tags.json"));
 
   wuffs_base__status status =
-      wuffs_json__decoder__decode_tokens(&dec, &got, &src);
+      wuffs_json__decoder__decode_tokens(&dec, &have, &src);
   if (0) {
     uint64_t pos = 0;
     size_t i;
-    for (i = got.meta.ri; i < got.meta.wi; i++) {
-      wuffs_base__token* t = &got.data.ptr[i];
+    for (i = have.meta.ri; i < have.meta.wi; i++) {
+      wuffs_base__token* t = &have.data.ptr[i];
       uint64_t len = wuffs_base__token__length(t);
       uint64_t bc = wuffs_base__token__value_base_category(t);
       uint64_t bd = wuffs_base__token__value_base_detail(t);

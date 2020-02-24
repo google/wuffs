@@ -144,7 +144,7 @@ const char* test_wuffs_adler32_golden() {
                        &checksum, sizeof checksum, WUFFS_VERSION,
                        WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
 
-      uint32_t got = 0;
+      uint32_t have = 0;
       size_t num_fragments = 0;
       size_t num_bytes = 0;
       do {
@@ -156,15 +156,15 @@ const char* test_wuffs_adler32_golden() {
         if ((j > 0) && (data.len > limit)) {
           data.len = limit;
         }
-        got = wuffs_adler32__hasher__update_u32(&checksum, data);
+        have = wuffs_adler32__hasher__update_u32(&checksum, data);
         num_fragments++;
         num_bytes += data.len;
       } while (num_bytes < src.meta.wi);
 
-      if (got != test_cases[i].want) {
-        RETURN_FAIL("i=%d, j=%d, filename=\"%s\": got 0x%08" PRIX32
+      if (have != test_cases[i].want) {
+        RETURN_FAIL("i=%d, j=%d, filename=\"%s\": have 0x%08" PRIX32
                     ", want 0x%08" PRIX32 "\n",
-                    i, j, test_cases[i].filename, got, test_cases[i].want);
+                    i, j, test_cases[i].filename, have, test_cases[i].want);
       }
     }
   }
@@ -179,7 +179,7 @@ const char* test_wuffs_adler32_pi() {
       "141592653589793238462643383279502884197169399375105820974944592307816406"
       "2862089986280348253421170";
   if (strlen(digits) != 99) {
-    RETURN_FAIL("strlen(digits): got %d, want 99", (int)(strlen(digits)));
+    RETURN_FAIL("strlen(digits): have %d, want 99", (int)(strlen(digits)));
   }
 
   // The want values are determined by script/checksum.go.
@@ -212,13 +212,13 @@ const char* test_wuffs_adler32_pi() {
                  wuffs_adler32__hasher__initialize(
                      &checksum, sizeof checksum, WUFFS_VERSION,
                      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
-    uint32_t got = wuffs_adler32__hasher__update_u32(
+    uint32_t have = wuffs_adler32__hasher__update_u32(
         &checksum, ((wuffs_base__slice_u8){
                        .ptr = (uint8_t*)(digits),
                        .len = i,
                    }));
-    if (got != wants[i]) {
-      RETURN_FAIL("i=%d: got 0x%08" PRIX32 ", want 0x%08" PRIX32, i, got,
+    if (have != wants[i]) {
+      RETURN_FAIL("i=%d: have 0x%08" PRIX32 ", want 0x%08" PRIX32, i, have,
                   wants[i]);
     }
   }

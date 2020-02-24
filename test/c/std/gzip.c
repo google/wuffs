@@ -127,8 +127,8 @@ const char* wuffs_gzip_decode(wuffs_base__io_buffer* dst,
 
 const char* do_test_wuffs_gzip_checksum(bool ignore_checksum,
                                         uint32_t bad_checksum) {
-  wuffs_base__io_buffer got = ((wuffs_base__io_buffer){
-      .data = global_got_slice,
+  wuffs_base__io_buffer have = ((wuffs_base__io_buffer){
+      .data = global_have_slice,
   });
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
       .data = global_src_slice,
@@ -152,7 +152,7 @@ const char* do_test_wuffs_gzip_checksum(bool ignore_checksum,
                      &dec, sizeof dec, WUFFS_VERSION,
                      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
     wuffs_gzip__decoder__set_ignore_checksum(&dec, ignore_checksum);
-    got.meta.wi = 0;
+    have.meta.wi = 0;
     src.meta.ri = 0;
 
     // Decode the src data in 1 or 2 chunks, depending on whether end_limit is
@@ -177,12 +177,12 @@ const char* do_test_wuffs_gzip_checksum(bool ignore_checksum,
       }
 
       wuffs_base__io_buffer limited_src = make_limited_reader(src, rlimit);
-      wuffs_base__status got_z = wuffs_gzip__decoder__transform_io(
-          &dec, &got, &limited_src, global_work_slice);
+      wuffs_base__status have_z = wuffs_gzip__decoder__transform_io(
+          &dec, &have, &limited_src, global_work_slice);
       src.meta.ri += limited_src.meta.ri;
-      if (got_z.repr != want_z) {
-        RETURN_FAIL("end_limit=%d: got \"%s\", want \"%s\"", end_limit,
-                    got_z.repr, want_z);
+      if (have_z.repr != want_z) {
+        RETURN_FAIL("end_limit=%d: have \"%s\", want \"%s\"", end_limit,
+                    have_z.repr, want_z);
       }
     }
   }

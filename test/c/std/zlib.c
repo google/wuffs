@@ -138,8 +138,8 @@ const char* wuffs_zlib_decode(wuffs_base__io_buffer* dst,
 
 const char* do_test_wuffs_zlib_checksum(bool ignore_checksum,
                                         uint32_t bad_checksum) {
-  wuffs_base__io_buffer got = ((wuffs_base__io_buffer){
-      .data = global_got_slice,
+  wuffs_base__io_buffer have = ((wuffs_base__io_buffer){
+      .data = global_have_slice,
   });
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
       .data = global_src_slice,
@@ -162,7 +162,7 @@ const char* do_test_wuffs_zlib_checksum(bool ignore_checksum,
                      &dec, sizeof dec, WUFFS_VERSION,
                      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
     wuffs_zlib__decoder__set_ignore_checksum(&dec, ignore_checksum);
-    got.meta.wi = 0;
+    have.meta.wi = 0;
     src.meta.ri = 0;
 
     // Decode the src data in 1 or 2 chunks, depending on whether end_limit is
@@ -188,12 +188,12 @@ const char* do_test_wuffs_zlib_checksum(bool ignore_checksum,
 
       wuffs_base__io_buffer limited_src = make_limited_reader(src, rlimit);
 
-      wuffs_base__status got_z = wuffs_zlib__decoder__transform_io(
-          &dec, &got, &limited_src, global_work_slice);
+      wuffs_base__status have_z = wuffs_zlib__decoder__transform_io(
+          &dec, &have, &limited_src, global_work_slice);
       src.meta.ri += limited_src.meta.ri;
-      if (got_z.repr != want_z) {
-        RETURN_FAIL("end_limit=%d: got \"%s\", want \"%s\"", end_limit,
-                    got_z.repr, want_z);
+      if (have_z.repr != want_z) {
+        RETURN_FAIL("end_limit=%d: have \"%s\", want \"%s\"", end_limit,
+                    have_z.repr, want_z);
       }
     }
   }
@@ -234,8 +234,8 @@ const char* test_wuffs_zlib_decode_pi() {
 
 const char* test_wuffs_zlib_decode_sheep() {
   CHECK_FOCUS(__func__);
-  wuffs_base__io_buffer got = ((wuffs_base__io_buffer){
-      .data = global_got_slice,
+  wuffs_base__io_buffer have = ((wuffs_base__io_buffer){
+      .data = global_have_slice,
   });
   wuffs_base__io_buffer src =
       make_io_buffer_from_string(zlib_sheep_src_ptr, zlib_sheep_src_len);
@@ -248,18 +248,18 @@ const char* test_wuffs_zlib_decode_sheep() {
   int i;
   for (i = 0; i < 3; i++) {
     wuffs_base__status status =
-        wuffs_zlib__decoder__transform_io(&dec, &got, &src, global_work_slice);
+        wuffs_zlib__decoder__transform_io(&dec, &have, &src, global_work_slice);
 
     if (status.repr != wuffs_zlib__note__dictionary_required) {
-      RETURN_FAIL("transform_io (before dict): got \"%s\", want \"%s\"",
+      RETURN_FAIL("transform_io (before dict): have \"%s\", want \"%s\"",
                   status.repr, wuffs_zlib__note__dictionary_required);
     }
 
-    uint32_t dict_id_got = wuffs_zlib__decoder__dictionary_id(&dec);
+    uint32_t dict_id_have = wuffs_zlib__decoder__dictionary_id(&dec);
     uint32_t dict_id_want = 0x0BE0026E;
-    if (dict_id_got != dict_id_want) {
-      RETURN_FAIL("dictionary_id: got 0x%08" PRIX32 ", want 0x%08x" PRIX32,
-                  dict_id_got, dict_id_want);
+    if (dict_id_have != dict_id_want) {
+      RETURN_FAIL("dictionary_id: have 0x%08" PRIX32 ", want 0x%08x" PRIX32,
+                  dict_id_have, dict_id_want);
     }
   }
 
@@ -271,11 +271,11 @@ const char* test_wuffs_zlib_decode_sheep() {
 
   CHECK_STATUS(
       "transform_io (after dict)",
-      wuffs_zlib__decoder__transform_io(&dec, &got, &src, global_work_slice));
+      wuffs_zlib__decoder__transform_io(&dec, &have, &src, global_work_slice));
 
   wuffs_base__io_buffer want =
       make_io_buffer_from_string(zlib_sheep_want_ptr, zlib_sheep_want_len);
-  return check_io_buffers_equal("", &got, &want);
+  return check_io_buffers_equal("", &have, &want);
 }
 
   // ---------------- Mimic Tests
@@ -296,8 +296,8 @@ const char* test_mimic_zlib_decode_pi() {
 
 const char* test_mimic_zlib_decode_sheep() {
   CHECK_FOCUS(__func__);
-  wuffs_base__io_buffer got = ((wuffs_base__io_buffer){
-      .data = global_got_slice,
+  wuffs_base__io_buffer have = ((wuffs_base__io_buffer){
+      .data = global_have_slice,
   });
   wuffs_base__io_buffer src =
       make_io_buffer_from_string(zlib_sheep_src_ptr, zlib_sheep_src_len);
@@ -305,13 +305,13 @@ const char* test_mimic_zlib_decode_sheep() {
       .ptr = ((uint8_t*)(zlib_sheep_dict_ptr)),
       .len = zlib_sheep_dict_len,
   });
-  const char* status = mimic_zlib_decode_with_dictionary(&got, &src, dict);
+  const char* status = mimic_zlib_decode_with_dictionary(&have, &src, dict);
   if (status) {
     return status;
   }
   wuffs_base__io_buffer want =
       make_io_buffer_from_string(zlib_sheep_want_ptr, zlib_sheep_want_len);
-  return check_io_buffers_equal("", &got, &want);
+  return check_io_buffers_equal("", &have, &want);
 }
 
 #endif  // WUFFS_MIMIC

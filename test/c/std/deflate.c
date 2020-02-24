@@ -226,11 +226,11 @@ const char* test_wuffs_deflate_decode_deflate_distance_32768() {
 
 const char* test_wuffs_deflate_decode_deflate_distance_code_31() {
   CHECK_FOCUS(__func__);
-  const char* got = do_test_io_buffers(wuffs_deflate_decode,
-                                       &deflate_deflate_distance_code_31_gt,
-                                       UINT64_MAX, UINT64_MAX);
-  if (got != wuffs_deflate__error__bad_huffman_code) {
-    RETURN_FAIL("got \"%s\", want \"%s\"", got,
+  const char* have = do_test_io_buffers(wuffs_deflate_decode,
+                                        &deflate_deflate_distance_code_31_gt,
+                                        UINT64_MAX, UINT64_MAX);
+  if (have != wuffs_deflate__error__bad_huffman_code) {
+    RETURN_FAIL("have \"%s\", want \"%s\"", have,
                 wuffs_deflate__error__bad_huffman_code);
   }
   return NULL;
@@ -249,8 +249,8 @@ const char* test_wuffs_deflate_decode_deflate_huffman_primlen_9() {
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
       .data = global_src_slice,
   });
-  wuffs_base__io_buffer got = ((wuffs_base__io_buffer){
-      .data = global_got_slice,
+  wuffs_base__io_buffer have = ((wuffs_base__io_buffer){
+      .data = global_have_slice,
   });
 
   golden_test* gt = &deflate_deflate_huffman_primlen_9_gt;
@@ -261,21 +261,21 @@ const char* test_wuffs_deflate_decode_deflate_huffman_primlen_9() {
                                  &dec, sizeof dec, WUFFS_VERSION,
                                  WUFFS_INITIALIZE__DEFAULT_OPTIONS));
   CHECK_STATUS("transform_io", wuffs_deflate__decoder__transform_io(
-                                   &dec, &got, &src, global_work_slice));
+                                   &dec, &have, &src, global_work_slice));
 
   int i;
   for (i = 0; i < 2; i++) {
     // Find the first unused (i.e. zero) entry in the i'th huffs table.
-    int got = WUFFS_DEFLATE__HUFFS_TABLE_SIZE;
-    while ((got > 0) && (dec.private_data.f_huffs[i][got - 1] == 0)) {
-      got--;
+    int have = WUFFS_DEFLATE__HUFFS_TABLE_SIZE;
+    while ((have > 0) && (dec.private_data.f_huffs[i][have - 1] == 0)) {
+      have--;
     }
 
     // See script/print-deflate-huff-table-size.go with primLen = 9 for how
     // these expected values are derived.
     int want = (i == 0) ? 852 : 592;
-    if (got != want) {
-      RETURN_FAIL("i=%d: got %d, want %d", i, got, want);
+    if (have != want) {
+      RETURN_FAIL("i=%d: have %d, want %d", i, have, want);
     }
   }
 
@@ -329,8 +329,8 @@ const char* test_wuffs_deflate_decode_split_src() {
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
       .data = global_src_slice,
   });
-  wuffs_base__io_buffer got = ((wuffs_base__io_buffer){
-      .data = global_got_slice,
+  wuffs_base__io_buffer have = ((wuffs_base__io_buffer){
+      .data = global_have_slice,
   });
   wuffs_base__io_buffer want = ((wuffs_base__io_buffer){
       .data = global_want_slice,
@@ -346,7 +346,7 @@ const char* test_wuffs_deflate_decode_split_src() {
     if (split >= gt->src_offset1) {
       RETURN_FAIL("i=%d: split was not an interior split", i);
     }
-    got.meta.wi = 0;
+    have.meta.wi = 0;
 
     wuffs_deflate__decoder dec;
     CHECK_STATUS("initialize",
@@ -358,26 +358,26 @@ const char* test_wuffs_deflate_decode_split_src() {
     src.meta.ri = gt->src_offset0;
     src.meta.wi = split;
     wuffs_base__status z0 = wuffs_deflate__decoder__transform_io(
-        &dec, &got, &src, global_work_slice);
+        &dec, &have, &src, global_work_slice);
 
     src.meta.closed = true;
     src.meta.ri = split;
     src.meta.wi = gt->src_offset1;
     wuffs_base__status z1 = wuffs_deflate__decoder__transform_io(
-        &dec, &got, &src, global_work_slice);
+        &dec, &have, &src, global_work_slice);
 
     if (z0.repr != wuffs_base__suspension__short_read) {
-      RETURN_FAIL("i=%d: z0: got \"%s\", want \"%s\"", i, z0.repr,
+      RETURN_FAIL("i=%d: z0: have \"%s\", want \"%s\"", i, z0.repr,
                   wuffs_base__suspension__short_read);
     }
 
     if (z1.repr) {
-      RETURN_FAIL("i=%d: z1: got \"%s\"", i, z1.repr);
+      RETURN_FAIL("i=%d: z1: have \"%s\"", i, z1.repr);
     }
 
     char prefix[64];
     snprintf(prefix, 64, "i=%d: ", i);
-    CHECK_STRING(check_io_buffers_equal(prefix, &got, &want));
+    CHECK_STRING(check_io_buffers_equal(prefix, &have, &want));
   }
   return NULL;
 }
@@ -385,27 +385,27 @@ const char* test_wuffs_deflate_decode_split_src() {
 const char* do_test_wuffs_deflate_history(int i,
                                           golden_test* gt,
                                           wuffs_base__io_buffer* src,
-                                          wuffs_base__io_buffer* got,
+                                          wuffs_base__io_buffer* have,
                                           wuffs_deflate__decoder* dec,
                                           uint32_t starting_history_index,
                                           uint64_t wlimit,
                                           const char* want_z) {
   src->meta.ri = gt->src_offset0;
   src->meta.wi = gt->src_offset1;
-  got->meta.ri = 0;
-  got->meta.wi = 0;
+  have->meta.ri = 0;
+  have->meta.wi = 0;
 
-  wuffs_base__io_buffer limited_got = make_limited_writer(*got, wlimit);
+  wuffs_base__io_buffer limited_have = make_limited_writer(*have, wlimit);
 
   dec->private_impl.f_history_index = starting_history_index;
 
-  wuffs_base__status got_z = wuffs_deflate__decoder__transform_io(
-      dec, &limited_got, src, global_work_slice);
-  got->meta.wi += limited_got.meta.wi;
-  if (got_z.repr != want_z) {
+  wuffs_base__status have_z = wuffs_deflate__decoder__transform_io(
+      dec, &limited_have, src, global_work_slice);
+  have->meta.wi += limited_have.meta.wi;
+  if (have_z.repr != want_z) {
     RETURN_FAIL("i=%d: starting_history_index=0x%04" PRIX32
-                ": decode: got \"%s\", want \"%s\"",
-                i, starting_history_index, got_z.repr, want_z);
+                ": decode: have \"%s\", want \"%s\"",
+                i, starting_history_index, have_z.repr, want_z);
   }
   return NULL;
 }
@@ -416,8 +416,8 @@ const char* test_wuffs_deflate_history_full() {
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
       .data = global_src_slice,
   });
-  wuffs_base__io_buffer got = ((wuffs_base__io_buffer){
-      .data = global_got_slice,
+  wuffs_base__io_buffer have = ((wuffs_base__io_buffer){
+      .data = global_have_slice,
   });
   wuffs_base__io_buffer want = ((wuffs_base__io_buffer){
       .data = global_want_slice,
@@ -437,25 +437,25 @@ const char* test_wuffs_deflate_history_full() {
                      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
 
     CHECK_STRING(do_test_wuffs_deflate_history(
-        i, gt, &src, &got, &dec, 0, want.meta.wi + i,
+        i, gt, &src, &have, &dec, 0, want.meta.wi + i,
         i >= 0 ? NULL : wuffs_base__suspension__short_write));
 
     uint32_t want_history_index = i >= 0 ? 0 : full_history_size;
     if (dec.private_impl.f_history_index != want_history_index) {
-      RETURN_FAIL("i=%d: history_index: got %" PRIu32 ", want %" PRIu32, i,
+      RETURN_FAIL("i=%d: history_index: have %" PRIu32 ", want %" PRIu32, i,
                   dec.private_impl.f_history_index, want_history_index);
     }
     if (i >= 0) {
       continue;
     }
 
-    wuffs_base__io_buffer history_got = ((wuffs_base__io_buffer){
+    wuffs_base__io_buffer history_have = ((wuffs_base__io_buffer){
         .data = ((wuffs_base__slice_u8){
             .ptr = dec.private_data.f_history,
             .len = full_history_size,
         }),
     });
-    history_got.meta.wi = full_history_size;
+    history_have.meta.wi = full_history_size;
     if (want.meta.wi < full_history_size - i) {
       RETURN_FAIL("i=%d: want file is too short", i);
     }
@@ -467,7 +467,7 @@ const char* test_wuffs_deflate_history_full() {
     });
     history_want.meta.wi = full_history_size;
 
-    CHECK_STRING(check_io_buffers_equal("", &history_got, &history_want));
+    CHECK_STRING(check_io_buffers_equal("", &history_have, &history_want));
   }
   return NULL;
 }
@@ -478,8 +478,8 @@ const char* test_wuffs_deflate_history_partial() {
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
       .data = global_src_slice,
   });
-  wuffs_base__io_buffer got = ((wuffs_base__io_buffer){
-      .data = global_got_slice,
+  wuffs_base__io_buffer have = ((wuffs_base__io_buffer){
+      .data = global_have_slice,
   });
 
   golden_test* gt = &deflate_pi_gt;
@@ -507,30 +507,31 @@ const char* test_wuffs_deflate_history_partial() {
                      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
 
     CHECK_STRING(do_test_wuffs_deflate_history(
-        i, gt, &src, &got, &dec, starting_history_index, fragment_length,
+        i, gt, &src, &have, &dec, starting_history_index, fragment_length,
         wuffs_base__suspension__short_write));
 
-    bool got_full = dec.private_impl.f_history_index >= 0x8000;
-    uint32_t got_history_index = dec.private_impl.f_history_index & 0x7FFF;
+    bool have_full = dec.private_impl.f_history_index >= 0x8000;
+    uint32_t have_history_index = dec.private_impl.f_history_index & 0x7FFF;
     bool want_full = (starting_history_index + fragment_length) >= 0x8000;
     uint32_t want_history_index =
         (starting_history_index + fragment_length) & 0x7FFF;
-    if ((got_full != want_full) || (got_history_index != want_history_index)) {
+    if ((have_full != want_full) ||
+        (have_history_index != want_history_index)) {
       RETURN_FAIL("i=%d: starting_history_index=0x%04" PRIX32
-                  ": history_index: got %d;%04" PRIX32 ", want %d;%04" PRIX32,
-                  i, starting_history_index, (int)(got_full), got_history_index,
-                  (int)(want_full), want_history_index);
+                  ": history_index: have %d;%04" PRIX32 ", want %d;%04" PRIX32,
+                  i, starting_history_index, (int)(have_full),
+                  have_history_index, (int)(want_full), want_history_index);
     }
 
     int j;
     for (j = -2; j < (int)(fragment_length) + 2; j++) {
       uint32_t index = (starting_history_index + j) & 0x7FFF;
-      uint8_t got = dec.private_data.f_history[index];
+      uint8_t have = dec.private_data.f_history[index];
       uint8_t want = (0 <= j && j < fragment_length) ? fragment[j] : 0;
-      if (got != want) {
+      if (have != want) {
         RETURN_FAIL("i=%d: starting_history_index=0x%04" PRIX32
-                    ": j=%d: got 0x%02" PRIX8 ", want 0x%02" PRIX8,
-                    i, starting_history_index, j, got, want);
+                    ": j=%d: have 0x%02" PRIX8 ", want 0x%02" PRIX8,
+                    i, starting_history_index, j, have, want);
       }
     }
   }
@@ -616,10 +617,10 @@ const char* test_wuffs_deflate_table_redirect() {
   const int n_f_huffs = sizeof(dec.private_data.f_huffs[0]) /
                         sizeof(dec.private_data.f_huffs[0][0]);
   for (i = 0; i < n_f_huffs; i++) {
-    bool got = dec.private_data.f_huffs[0][i] == 0;
+    bool have = dec.private_data.f_huffs[0][i] == 0;
     bool want = i >= (1 << 9) + (1 << 3) + (1 << 3) + (1 << 4);
-    if (got != want) {
-      RETURN_FAIL("huffs[0][%d] == 0: got %d, want %d", i, got, want);
+    if (have != want) {
+      RETURN_FAIL("huffs[0][%d] == 0: have %d, want %d", i, have, want);
     }
   }
 
@@ -627,25 +628,25 @@ const char* test_wuffs_deflate_table_redirect() {
   //  - 0b101111111 (0x017F) to the table offset 512 (0x0200), a 3-bit table.
   //  - 0b011111111 (0x00FF) to the table offset 520 (0x0208), a 3-bit table.
   //  - 0b111111111 (0x01FF) to the table offset 528 (0x0210), a 4-bit table.
-  uint32_t got;
+  uint32_t have;
   uint32_t want;
-  got = dec.private_data.f_huffs[0][0x017F];
+  have = dec.private_data.f_huffs[0][0x017F];
   want = 0x10020039;
-  if (got != want) {
-    RETURN_FAIL("huffs[0][0x017F]: got 0x%08" PRIX32 ", want 0x%08" PRIX32, got,
-                want);
+  if (have != want) {
+    RETURN_FAIL("huffs[0][0x017F]: have 0x%08" PRIX32 ", want 0x%08" PRIX32,
+                have, want);
   }
-  got = dec.private_data.f_huffs[0][0x00FF];
+  have = dec.private_data.f_huffs[0][0x00FF];
   want = 0x10020839;
-  if (got != want) {
-    RETURN_FAIL("huffs[0][0x00FF]: got 0x%08" PRIX32 ", want 0x%08" PRIX32, got,
-                want);
+  if (have != want) {
+    RETURN_FAIL("huffs[0][0x00FF]: have 0x%08" PRIX32 ", want 0x%08" PRIX32,
+                have, want);
   }
-  got = dec.private_data.f_huffs[0][0x01FF];
+  have = dec.private_data.f_huffs[0][0x01FF];
   want = 0x10021049;
-  if (got != want) {
-    RETURN_FAIL("huffs[0][0x01FF]: got 0x%08" PRIX32 ", want 0x%08" PRIX32, got,
-                want);
+  if (have != want) {
+    RETURN_FAIL("huffs[0][0x01FF]: have 0x%08" PRIX32 ", want 0x%08" PRIX32,
+                have, want);
   }
 
   // The first 2nd-level table should look like wants.
@@ -654,12 +655,12 @@ const char* test_wuffs_deflate_table_redirect() {
       0x80000801, 0x80000A03, 0x80000801, 0x80000C03,
   };
   for (i = 0; i < 8; i++) {
-    got = dec.private_data.f_huffs[0][0x0200 + i];
+    have = dec.private_data.f_huffs[0][0x0200 + i];
     want = wants[i];
-    if (got != want) {
-      RETURN_FAIL("huffs[0][0x%04" PRIX32 "]: got 0x%08" PRIX32
+    if (have != want) {
+      RETURN_FAIL("huffs[0][0x%04" PRIX32 "]: have 0x%08" PRIX32
                   ", want 0x%08" PRIX32,
-                  (uint32_t)(0x0200 + i), got, want);
+                  (uint32_t)(0x0200 + i), have, want);
     }
   }
   return NULL;
@@ -698,12 +699,13 @@ const char* test_mimic_deflate_decode_deflate_distance_32768() {
 
 const char* test_mimic_deflate_decode_deflate_distance_code_31() {
   CHECK_FOCUS(__func__);
-  const char* got = do_test_io_buffers(mimic_deflate_decode,
-                                       &deflate_deflate_distance_code_31_gt,
-                                       UINT64_MAX, UINT64_MAX);
+  const char* have = do_test_io_buffers(mimic_deflate_decode,
+                                        &deflate_deflate_distance_code_31_gt,
+                                        UINT64_MAX, UINT64_MAX);
   const char* want = "inflate failed (data error)";
-  if ((got != want) && ((got == NULL) || (want == NULL) || strcmp(got, want))) {
-    RETURN_FAIL("got \"%s\", want \"%s\"", got, want);
+  if ((have != want) &&
+      ((have == NULL) || (want == NULL) || strcmp(have, want))) {
+    RETURN_FAIL("have \"%s\", want \"%s\"", have, want);
   }
   return NULL;
 }

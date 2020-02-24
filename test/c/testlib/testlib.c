@@ -25,27 +25,27 @@
 
 #define WUFFS_TESTLIB_ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 
-uint8_t global_got_array[BUFFER_SIZE];
+uint8_t global_have_array[BUFFER_SIZE];
 uint8_t global_want_array[BUFFER_SIZE];
 uint8_t global_work_array[BUFFER_SIZE];
 uint8_t global_src_array[BUFFER_SIZE];
 uint8_t global_pixel_array[BUFFER_SIZE];
 
-wuffs_base__token global_got_token_array[TOKEN_BUFFER_SIZE];
+wuffs_base__token global_have_token_array[TOKEN_BUFFER_SIZE];
 wuffs_base__token global_want_token_array[TOKEN_BUFFER_SIZE];
 
-wuffs_base__slice_u8 global_got_slice;
+wuffs_base__slice_u8 global_have_slice;
 wuffs_base__slice_u8 global_want_slice;
 wuffs_base__slice_u8 global_work_slice;
 wuffs_base__slice_u8 global_src_slice;
 wuffs_base__slice_u8 global_pixel_slice;
 
-wuffs_base__slice_token global_got_token_slice;
+wuffs_base__slice_token global_have_token_slice;
 wuffs_base__slice_token global_want_token_slice;
 
 void wuffs_testlib__initialize_global_xxx_slices() {
-  global_got_slice = ((wuffs_base__slice_u8){
-      .ptr = global_got_array,
+  global_have_slice = ((wuffs_base__slice_u8){
+      .ptr = global_have_array,
       .len = BUFFER_SIZE,
   });
   global_want_slice = ((wuffs_base__slice_u8){
@@ -65,8 +65,8 @@ void wuffs_testlib__initialize_global_xxx_slices() {
       .len = BUFFER_SIZE,
   });
 
-  global_got_token_slice = ((wuffs_base__slice_token){
-      .ptr = global_got_token_array,
+  global_have_token_slice = ((wuffs_base__slice_token){
+      .ptr = global_have_token_array,
       .len = TOKEN_BUFFER_SIZE,
   });
   global_want_token_slice = ((wuffs_base__slice_token){
@@ -623,30 +623,30 @@ char* hex_dump(char* msg, wuffs_base__io_buffer* buf, size_t i) {
 }
 
 const char* check_io_buffers_equal(const char* prefix,
-                                   wuffs_base__io_buffer* got,
+                                   wuffs_base__io_buffer* have,
                                    wuffs_base__io_buffer* want) {
-  if (!got || !want) {
+  if (!have || !want) {
     RETURN_FAIL("%sio_buffers_equal: NULL argument", prefix);
   }
   char* msg = fail_msg;
   size_t i;
-  size_t n = got->meta.wi < want->meta.wi ? got->meta.wi : want->meta.wi;
+  size_t n = have->meta.wi < want->meta.wi ? have->meta.wi : want->meta.wi;
   for (i = 0; i < n; i++) {
-    if (got->data.ptr[i] != want->data.ptr[i]) {
+    if (have->data.ptr[i] != want->data.ptr[i]) {
       break;
     }
   }
-  if (got->meta.wi != want->meta.wi) {
-    INCR_FAIL(msg, "%sio_buffers_equal: wi: got %zu, want %zu.\n", prefix,
-              got->meta.wi, want->meta.wi);
-  } else if (i < got->meta.wi) {
+  if (have->meta.wi != want->meta.wi) {
+    INCR_FAIL(msg, "%sio_buffers_equal: wi: have %zu, want %zu.\n", prefix,
+              have->meta.wi, want->meta.wi);
+  } else if (i < have->meta.wi) {
     INCR_FAIL(msg, "%sio_buffers_equal: wi=%zu:\n", prefix, n);
   } else {
     return NULL;
   }
   INCR_FAIL(msg, "contents differ at byte %zu (in hex: 0x%06zx):\n", i, i);
-  msg = hex_dump(msg, got, i);
-  INCR_FAIL(msg, "excerpts of got (above) versus want (below):\n");
+  msg = hex_dump(msg, have, i);
+  INCR_FAIL(msg, "excerpts of have (above) versus want (below):\n");
   msg = hex_dump(msg, want, i);
   return fail_msg;
 }
@@ -683,8 +683,8 @@ const char* proc_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
       .data = global_src_slice,
   });
-  wuffs_base__io_buffer got = ((wuffs_base__io_buffer){
-      .data = global_got_slice,
+  wuffs_base__io_buffer have = ((wuffs_base__io_buffer){
+      .data = global_have_slice,
   });
   wuffs_base__io_buffer want = ((wuffs_base__io_buffer){
       .data = global_want_slice,
@@ -715,10 +715,10 @@ const char* proc_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
   uint64_t n_bytes = 0;
   uint64_t i;
   for (i = 0; i < iters; i++) {
-    got.meta.wi = 0;
+    have.meta.wi = 0;
     src.meta.ri = gt->src_offset0;
     const char* status =
-        codec_func(&got, &src, wuffs_initialize_flags, wlimit, rlimit);
+        codec_func(&have, &src, wuffs_initialize_flags, wlimit, rlimit);
     if (status) {
       return status;
     }
@@ -726,7 +726,7 @@ const char* proc_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
       case tc_neither:
         break;
       case tc_dst:
-        n_bytes += got.meta.wi;
+        n_bytes += have.meta.wi;
         break;
       case tc_src:
         n_bytes += src.meta.ri - gt->src_offset0;
@@ -746,7 +746,7 @@ const char* proc_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
       return status;
     }
   }
-  return check_io_buffers_equal("", &got, &want);
+  return check_io_buffers_equal("", &have, &want);
 }
 
 const char* do_bench_io_buffers(
@@ -789,13 +789,13 @@ const char* do_test__wuffs_base__hasher_u32(wuffs_base__hasher_u32* b,
       .data = global_src_slice,
   });
   CHECK_STRING(read_file_fragment(&src, src_filename, src_ri, src_wi));
-  uint32_t got = wuffs_base__hasher_u32__update_u32(
+  uint32_t have = wuffs_base__hasher_u32__update_u32(
       b, ((wuffs_base__slice_u8){
              .ptr = (uint8_t*)(src.data.ptr + src.meta.ri),
              .len = (size_t)(src.meta.wi - src.meta.ri),
          }));
-  if (got != want) {
-    RETURN_FAIL("got 0x%08" PRIX32 ", want 0x%08" PRIX32, got, want);
+  if (have != want) {
+    RETURN_FAIL("have 0x%08" PRIX32 ", want 0x%08" PRIX32, have, want);
   }
   return NULL;
 }
@@ -811,8 +811,8 @@ const char* do_test__wuffs_base__image_config_decoder(
   });
   CHECK_STRING(read_file_fragment(&src, src_filename, src_ri, src_wi));
 
-  uint64_t got_num_frames;
-  for (got_num_frames = 0;; got_num_frames++) {
+  uint64_t have_num_frames;
+  for (have_num_frames = 0;; have_num_frames++) {
     wuffs_base__status status =
         wuffs_base__image_decoder__decode_frame_config(b, NULL, &src);
     if (status.repr == wuffs_base__note__end_of_data) {
@@ -822,8 +822,8 @@ const char* do_test__wuffs_base__image_config_decoder(
     }
   }
 
-  if (got_num_frames != want_num_frames) {
-    RETURN_FAIL("num_frames: got %" PRIu64 ", want %" PRIu64, got_num_frames,
+  if (have_num_frames != want_num_frames) {
+    RETURN_FAIL("num_frames: have %" PRIu64 ", want %" PRIu64, have_num_frames,
                 want_num_frames);
   }
   return NULL;
@@ -850,13 +850,14 @@ const char* do_test__wuffs_base__image_decoder(
   CHECK_STATUS("decode_image_config",
                wuffs_base__image_decoder__decode_image_config(b, &ic, &src));
 
-  uint32_t got_width = wuffs_base__pixel_config__width(&ic.pixcfg);
-  if (got_width != want_width) {
-    RETURN_FAIL("width: got %" PRIu32 ", want %" PRIu32, got_width, want_width);
+  uint32_t have_width = wuffs_base__pixel_config__width(&ic.pixcfg);
+  if (have_width != want_width) {
+    RETURN_FAIL("width: have %" PRIu32 ", want %" PRIu32, have_width,
+                want_width);
   }
-  uint32_t got_height = wuffs_base__pixel_config__height(&ic.pixcfg);
-  if (got_height != want_height) {
-    RETURN_FAIL("height: got %" PRIu32 ", want %" PRIu32, got_height,
+  uint32_t have_height = wuffs_base__pixel_config__height(&ic.pixcfg);
+  if (have_height != want_height) {
+    RETURN_FAIL("height: have %" PRIu32 ", want %" PRIu32, have_height,
                 want_height);
   }
   wuffs_base__pixel_config__set(
@@ -876,21 +877,21 @@ const char* do_test__wuffs_base__image_decoder(
   } else if (n > BUFFER_SIZE) {
     RETURN_FAIL("pixbuf_len too large");
   } else {
-    wuffs_base__color_u32_argb_premul got_final_pixel =
+    wuffs_base__color_u32_argb_premul have_final_pixel =
         wuffs_base__load_u32le(&global_pixel_array[n - 4]);
-    if (got_final_pixel != want_final_pixel) {
-      RETURN_FAIL("final pixel: got 0x%08" PRIX32 ", want 0x%08" PRIX32,
-                  got_final_pixel, want_final_pixel);
+    if (have_final_pixel != want_final_pixel) {
+      RETURN_FAIL("final pixel: have 0x%08" PRIX32 ", want 0x%08" PRIX32,
+                  have_final_pixel, want_final_pixel);
     }
   }
 
   if ((want_width > 0) && (want_height > 0)) {
-    wuffs_base__color_u32_argb_premul got_final_pixel =
+    wuffs_base__color_u32_argb_premul have_final_pixel =
         wuffs_base__pixel_buffer__color_u32_at(&pb, want_width - 1,
                                                want_height - 1);
-    if (got_final_pixel != want_final_pixel) {
-      RETURN_FAIL("final pixel: got 0x%08" PRIX32 ", want 0x%08" PRIX32,
-                  got_final_pixel, want_final_pixel);
+    if (have_final_pixel != want_final_pixel) {
+      RETURN_FAIL("final pixel: have 0x%08" PRIX32 ", want 0x%08" PRIX32,
+                  have_final_pixel, want_final_pixel);
     }
   }
   return NULL;
@@ -914,21 +915,21 @@ const char* do_test__wuffs_base__io_transformer(wuffs_base__io_transformer* b,
     return "workbuf_len is too large";
   }
 
-  wuffs_base__io_buffer got = ((wuffs_base__io_buffer){
-      .data = global_got_slice,
+  wuffs_base__io_buffer have = ((wuffs_base__io_buffer){
+      .data = global_have_slice,
   });
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
       .data = global_src_slice,
   });
   CHECK_STRING(read_file_fragment(&src, src_filename, src_ri, src_wi));
   CHECK_STATUS("transform_io", wuffs_base__io_transformer__transform_io(
-                                   b, &got, &src, global_work_slice));
-  if (got.meta.wi != want_wi) {
-    RETURN_FAIL("dst wi: got %zu, want %zu", got.meta.wi, want_wi);
+                                   b, &have, &src, global_work_slice));
+  if (have.meta.wi != want_wi) {
+    RETURN_FAIL("dst wi: have %zu, want %zu", have.meta.wi, want_wi);
   }
-  if ((want_wi > 0) && (got.data.ptr[want_wi - 1] != want_final_byte)) {
-    RETURN_FAIL("final byte: got 0x%02X, want 0x%02X",
-                got.data.ptr[want_wi - 1], want_final_byte);
+  if ((want_wi > 0) && (have.data.ptr[want_wi - 1] != want_final_byte)) {
+    RETURN_FAIL("final byte: have 0x%02X, want 0x%02X",
+                have.data.ptr[want_wi - 1], want_final_byte);
   }
   return NULL;
 }

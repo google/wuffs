@@ -88,7 +88,7 @@ const char* mimic_zlib_decode(wuffs_base__io_buffer* dst,
                                    rlimit, false);
 }
 
-const char* mimic_zlib_decode_with_dictionary(wuffs_base__io_buffer* got,
+const char* mimic_zlib_decode_with_dictionary(wuffs_base__io_buffer* dst,
                                               wuffs_base__io_buffer* src,
                                               wuffs_base__slice_u8 dictionary) {
   return "miniz does not implement zlib dictionaries";
