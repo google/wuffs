@@ -225,7 +225,7 @@ pri func decoder.decode_blocks?(dst: base.io_writer, src: base.io_reader) {
 
 		if type == 0 {
 			this.decode_uncompressed?(dst: args.dst, src: args.src)
-			continue
+			continue.outer
 		} else if type == 1 {
 			status = this.init_fixed_huffman!()
 			// TODO: "if status.is_error()" is probably more idiomatic, but for

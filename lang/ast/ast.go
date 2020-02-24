@@ -240,6 +240,7 @@ type Loop interface {
 	AsNode() *Node
 	HasBreak() bool
 	HasContinue() bool
+	Keyword() t.ID
 	Label() t.ID
 	Asserts() []*Node
 	Body() []*Node
@@ -513,6 +514,7 @@ type Iterate Node
 func (n *Iterate) AsNode() *Node         { return (*Node)(n) }
 func (n *Iterate) HasBreak() bool        { return n.flags&FlagsHasBreak != 0 }
 func (n *Iterate) HasContinue() bool     { return n.flags&FlagsHasContinue != 0 }
+func (n *Iterate) Keyword() t.ID         { return t.IDIterate }
 func (n *Iterate) Unroll() t.ID          { return n.id0 }
 func (n *Iterate) Label() t.ID           { return n.id1 }
 func (n *Iterate) Length() t.ID          { return n.id2 }
@@ -551,6 +553,7 @@ type While Node
 func (n *While) AsNode() *Node     { return (*Node)(n) }
 func (n *While) HasBreak() bool    { return n.flags&FlagsHasBreak != 0 }
 func (n *While) HasContinue() bool { return n.flags&FlagsHasContinue != 0 }
+func (n *While) Keyword() t.ID     { return t.IDWhile }
 func (n *While) Label() t.ID       { return n.id1 }
 func (n *While) Condition() *Expr  { return n.mhs.AsExpr() }
 func (n *While) Asserts() []*Node  { return n.list1 }

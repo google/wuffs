@@ -151,13 +151,17 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 			}
 		} else if nj := len(q.jumpTargets); nj > 0 {
 			jumpTarget = q.jumpTargets[nj-1]
+			if jumpTarget.Label() != 0 {
+				return fmt.Errorf("check: unlabeled %s for labeled %s.%s",
+					n.Keyword().Str(q.tm), jumpTarget.Keyword().Str(q.tm), jumpTarget.Label().Str(q.tm))
+			}
 		}
 		if jumpTarget == nil {
 			sepStr, labelStr := "", ""
 			if id := n.Label(); id != 0 {
 				sepStr, labelStr = ":", id.Str(q.tm)
 			}
-			return fmt.Errorf("no matching while/iterate statement for %s%s%s",
+			return fmt.Errorf("check: no matching while/iterate statement for %s%s%s",
 				n.Keyword().Str(q.tm), sepStr, labelStr)
 		}
 		if n.Keyword() == t.IDBreak {
