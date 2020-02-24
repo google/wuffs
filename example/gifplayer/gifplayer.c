@@ -41,6 +41,10 @@ support true color: https://gist.github.com/XVilka/8346728
 #include <unistd.h>
 #define WUFFS_EXAMPLE_USE_TIMERS
 
+#include <emscripten.h>
+
+extern void onframe(uint32_t, uint32_t, uint32_t, uint8_t *);
+
 bool started = false;
 struct timespec start_time = {0};
 
@@ -88,7 +92,8 @@ int64_t micros_since_start(struct timespec* now) {
 #define MAX_DIMENSION (4096)
 #endif
 
-uint8_t src_buffer[SRC_BUFFER_SIZE] = {0};
+// uint8_t src_buffer[SRC_BUFFER_SIZE] = {0};
+uint8_t *src_buffer;
 size_t src_len = 0;
 
 uint8_t* curr_dst_buffer = NULL;
@@ -105,18 +110,24 @@ wuffs_base__pixel_buffer pb = {0};
 
 wuffs_base__flicks cumulative_delay_micros = 0;
 
-const char* read_stdin() {
-  while (src_len < SRC_BUFFER_SIZE) {
-    size_t n = fread(src_buffer + src_len, sizeof(uint8_t),
-                     SRC_BUFFER_SIZE - src_len, stdin);
-    src_len += n;
-    if (feof(stdin)) {
-      return NULL;
-    } else if (ferror(stdin)) {
-      return "read error";
-    }
-  }
-  return "input is too large";
+// const char* read_stdin() {
+//   while (src_len < SRC_BUFFER_SIZE) {
+//     size_t n = fread(src_buffer + src_len, sizeof(uint8_t),
+//                      SRC_BUFFER_SIZE - src_len, stdin);
+//     src_len += n;
+//     if (feof(stdin)) {
+//       return NULL;
+//     } else if (ferror(stdin)) {
+//       return "read error";
+//     }
+//   }
+//   return "input is too large";
+// }
+
+const char *read_buffer(uint8_t *buf, size_t len) {
+  src_buffer = buf;
+  src_len = len;
+  return NULL;
 }
 
 // ----
@@ -338,6 +349,9 @@ const char* play() {
       return wuffs_base__status__message(&status);
     }
 
+    uint32_t width = wuffs_base__pixel_config__width(&pb.pixcfg);
+    uint32_t height = wuffs_base__pixel_config__height(&pb.pixcfg);
+
     if (wuffs_base__frame_config__index(&fc) == 0) {
       wuffs_base__color_u32_argb_premul background_color =
           wuffs_base__frame_config__background_color(&fc);
@@ -386,31 +400,35 @@ const char* play() {
       }
     }
 
-#if defined(WUFFS_EXAMPLE_USE_TIMERS)
-    if (started) {
-      struct timespec now;
-      if (clock_gettime(CLOCK_MONOTONIC, &now)) {
-        return strerror(errno);
-      }
-      int64_t elapsed_micros = micros_since_start(&now);
-      if (cumulative_delay_micros > elapsed_micros) {
-        usleep(cumulative_delay_micros - elapsed_micros);
-      }
+// #if defined(WUFFS_EXAMPLE_USE_TIMERS)
+//     if (started) {
+//       struct timespec now;
+//       if (clock_gettime(CLOCK_MONOTONIC, &now)) {
+//         return strerror(errno);
+//       }
+//       int64_t elapsed_micros = micros_since_start(&now);
+//       if (cumulative_delay_micros > elapsed_micros) {
+//         usleep(cumulative_delay_micros - elapsed_micros);
+//       }
 
-    } else {
-      if (clock_gettime(CLOCK_MONOTONIC, &start_time)) {
-        return strerror(errno);
-      }
-      started = true;
-    }
-#endif
+//     } else {
+//       if (clock_gettime(CLOCK_MONOTONIC, &start_time)) {
+//         return strerror(errno);
+//       }
+//       started = true;
+//     }
+// #endif
 
-    fwrite(printbuf.ptr, sizeof(uint8_t), n, stdout);
-    fflush(stdout);
+    // fwrite(printbuf.ptr, sizeof(uint8_t), n, stdout);
+    // fflush(stdout);
 
     cumulative_delay_micros +=
         (1000 * wuffs_base__frame_config__duration(&fc)) /
         WUFFS_BASE__FLICKS_PER_MILLISECOND;
+
+    EM_ASM_({
+        onframe($0, $1, $2, $3);
+      }, width, height, cumulative_delay_micros, curr_dst_buffer);
 
     // TODO: should a zero duration mean to show this frame forever?
 
@@ -427,36 +445,36 @@ const char* play() {
   return NULL;
 }
 
-int main(int argc, char** argv) {
-  int i;
-  for (i = 1; i < argc; i++) {
-    if (!strcmp(argv[i], "-color")) {
-      color_flag = true;
-    }
-    if (!strcmp(argv[i], "-quirk_honor_background_color")) {
-      quirk_honor_background_color_flag = true;
-    }
-  }
+// int main(int argc, char** argv) {
+//   int i;
+//   for (i = 1; i < argc; i++) {
+//     if (!strcmp(argv[i], "-color")) {
+//       color_flag = true;
+//     }
+//     if (!strcmp(argv[i], "-quirk_honor_background_color")) {
+//       quirk_honor_background_color_flag = true;
+//     }
+//   }
 
-  const char* status_msg = read_stdin();
-  if (status_msg) {
-    fprintf(stderr, "%s\n", status_msg);
-    return 1;
-  }
+//   const char* status_msg = read_stdin();
+//   if (status_msg) {
+//     fprintf(stderr, "%s\n", status_msg);
+//     return 1;
+//   }
 
-  while (true) {
-    status_msg = play();
-    if (status_msg) {
-      fprintf(stderr, "%s\n", status_msg);
-      return 1;
-    }
-    if (num_loops_remaining == 0) {
-      continue;
-    }
-    num_loops_remaining--;
-    if (num_loops_remaining == 0) {
-      break;
-    }
-  }
-  return 0;
-}
+//   while (true) {
+//     status_msg = play();
+//     if (status_msg) {
+//       fprintf(stderr, "%s\n", status_msg);
+//       return 1;
+//     }
+//     if (num_loops_remaining == 0) {
+//       continue;
+//     }
+//     num_loops_remaining--;
+//     if (num_loops_remaining == 0) {
+//       break;
+//     }
+//   }
+//   return 0;
+// }
