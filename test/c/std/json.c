@@ -187,6 +187,115 @@ const char* test_wuffs_json_decode_tokens() {
   return NULL;
 }
 
+const char* test_wuffs_json_decode_unicode4_escapes() {
+  CHECK_FOCUS(__func__);
+
+  const uint32_t fail = 0xDEADBEEF;
+
+  struct {
+    uint32_t want;
+    const char* str;
+  } test_cases[] = {
+      // Simple (non-surrogate) successes.
+      {.want = 0x0000000A, .str = "\"\\u000a\""},
+      {.want = 0x0000005C, .str = "\"\\\\u1234\""},  // U+005C is '\\'.
+      {.want = 0x00001000, .str = "\"\\u10002345\""},
+      {.want = 0x00001000, .str = "\"\\u1000234\""},
+      {.want = 0x00001000, .str = "\"\\u100023\""},
+      {.want = 0x00001000, .str = "\"\\u10002\""},
+      {.want = 0x00001234, .str = "\"\\u1234\""},
+      {.want = 0x0000D7FF, .str = "\"\\ud7ff\""},
+      {.want = 0x0000E000, .str = "\"\\uE000\""},
+      {.want = 0x0000FFFF, .str = "\"\\uFffF\""},
+
+      // Unicode surrogate pair. U+0001F4A9 PILE OF POO is (U+D83D, U+DCA9),
+      // because ((0x03D << 10) | 0x0A9) is 0xF4A9:
+      //  - High surrogates are in the range U+D800 ..= U+DBFF.
+      //  - Low  surrogates are in the range U+DC00 ..= U+DFFF.
+      {.want = 0x0001F4A9, .str = "\"\\uD83D\\udca9\""},
+
+      // More surrogate pairs.
+      {.want = 0x00010000, .str = "\"\\uD800\\uDC00\""},
+      {.want = 0x0010FFFF, .str = "\"\\uDBFF\\uDFFF\""},
+
+      // Simple (non-surrogate) failures.
+      {.want = fail, .str = "\"\\U1234\""},
+      {.want = fail, .str = "\"\\u123"},
+      {.want = fail, .str = "\"\\u123\""},
+      {.want = fail, .str = "\"\\u123x\""},
+      {.want = fail, .str = "\"u1234\""},
+
+      // Invalid surrogate pairs.
+      {.want = fail, .str = "\"\\uD800\""},         // High alone.
+      {.want = fail, .str = "\"\\uD83D?udca9\""},   // High then not "\\u".
+      {.want = fail, .str = "\"\\uD83D\\ud7ff\""},  // High then non-surrogate.
+      {.want = fail, .str = "\"\\uD83D\\udbff\""},  // High then high.
+      {.want = fail, .str = "\"\\uD83D\\ue000\""},  // High then non-surrogate.
+      {.want = fail, .str = "\"\\uDC00\""},         // Low alone.
+      {.want = fail, .str = "\"\\uDC00\\u0000\""},  // Low then non-surrogate.
+      {.want = fail, .str = "\"\\uDC00\\ud800\""},  // Low then high.
+      {.want = fail, .str = "\"\\uDC00\\udfff\""},  // Low then low.
+      {.want = fail, .str = "\"\\uDFFF1234\""},     // Low alone.
+  };
+
+  wuffs_json__decoder dec;
+  int tc;
+  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+    CHECK_STATUS("initialize",
+                 wuffs_json__decoder__initialize(
+                     &dec, sizeof dec, WUFFS_VERSION,
+                     WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+
+    wuffs_base__token_buffer tok = ((wuffs_base__token_buffer){
+        .data = global_have_token_slice,
+    });
+    size_t n = strlen(test_cases[tc].str);
+    wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+        .data = wuffs_base__make_slice_u8((void*)(test_cases[tc].str), n),
+        .meta = wuffs_base__make_io_buffer_meta(n, 0, 0, true),
+    });
+
+    wuffs_json__decoder__decode_tokens(&dec, &tok, &src);
+
+    uint32_t have = fail;
+    uint64_t total_length = 0;
+    size_t i;
+    for (i = tok.meta.ri; i < tok.meta.wi; i++) {
+      wuffs_base__token* t = &tok.data.ptr[i];
+      total_length =
+          wuffs_base__u64__sat_add(total_length, wuffs_base__token__length(t));
+
+      // Set have to the first Unicode code point token.
+      if ((have == fail) && ((wuffs_base__token__value_base_category(t) ==
+                              WUFFS_BASE__TOKEN__VBC__UNICODE_CODE_POINT))) {
+        have = wuffs_base__token__value_base_detail(t);
+        if (have > 0x10FFFF) {  // This also catches "have == fail".
+          RETURN_FAIL("%s: invalid Unicode code point", test_cases[tc].str);
+        }
+
+        uint64_t have_length = wuffs_base__token__length(t);
+        uint64_t want_length = (have == 0x5C) ? 2 : ((have <= 0xFFFF) ? 6 : 12);
+        if (have_length != want_length) {
+          RETURN_FAIL("%s: token length: have %" PRIu64 ", want %" PRIu64,
+                      test_cases[tc].str, have_length, want_length);
+        }
+      }
+    }
+
+    if (have != test_cases[tc].want) {
+      RETURN_FAIL("%s: have 0x%" PRIX32 ", want 0x%" PRIX32, test_cases[tc].str,
+                  have, test_cases[tc].want);
+    }
+
+    if (total_length != src.meta.ri) {
+      RETURN_FAIL("%s: total length: have 0x%" PRIu64 ", want 0x%" PRIu64,
+                  test_cases[tc].str, total_length, src.meta.ri);
+    }
+  }
+
+  return NULL;
+}
+
   // ---------------- Mimic Tests
 
 #ifdef WUFFS_MIMIC
@@ -217,7 +326,8 @@ proc tests[] = {
     // as any other place.
     test_strconv_parse_number_u64,  //
 
-    test_wuffs_json_decode_tokens,  //
+    test_wuffs_json_decode_tokens,            //
+    test_wuffs_json_decode_unicode4_escapes,  //
 
 #ifdef WUFFS_MIMIC
 

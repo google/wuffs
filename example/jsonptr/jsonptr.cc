@@ -327,18 +327,30 @@ const char* handle_string(parsed_token pt) {
 
     } else if (vbd <= 0x07FF) {
       // The UTF-8 encoding takes 2 bytes.
-      uint8_t esc2[6];
+      uint8_t esc2[2];
       esc2[0] = 0xC0 | (uint8_t)((vbd >> 6));
       esc2[1] = 0x80 | (uint8_t)((vbd >> 0) & 0x3F);
       TRY(write_dst(&esc2[0], 2));
 
     } else if (vbd <= 0xFFFF) {
+      if ((0xD800 <= vbd) && (vbd <= 0xDFFF)) {
+        return "main: unexpected Unicode surrogate";
+      }
       // The UTF-8 encoding takes 3 bytes.
-      uint8_t esc3[6];
+      uint8_t esc3[3];
       esc3[0] = 0xE0 | (uint8_t)((vbd >> 12));
       esc3[1] = 0x80 | (uint8_t)((vbd >> 6) & 0x3F);
       esc3[2] = 0x80 | (uint8_t)((vbd >> 0) & 0x3F);
       TRY(write_dst(&esc3[0], 3));
+
+    } else if (vbd <= 0x10FFFF) {
+      // The UTF-8 encoding takes 4 bytes.
+      uint8_t esc4[4];
+      esc4[0] = 0xF0 | (uint8_t)((vbd >> 18));
+      esc4[1] = 0x80 | (uint8_t)((vbd >> 12) & 0x3F);
+      esc4[2] = 0x80 | (uint8_t)((vbd >> 6) & 0x3F);
+      esc4[3] = 0x80 | (uint8_t)((vbd >> 0) & 0x3F);
+      TRY(write_dst(&esc4[0], 4));
 
     } else {
       return "main: unexpected Unicode code point";
