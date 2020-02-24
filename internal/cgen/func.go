@@ -47,7 +47,10 @@ type funk struct {
 	hasGotoOK         bool
 }
 
-func (k *funk) jumpTarget(n a.Loop) (uint32, error) {
+func (k *funk) jumpTarget(tm *t.Map, n a.Loop) (interface{}, error) {
+	if label := n.Label(); label != 0 {
+		return label.Str(tm), nil
+	}
 	if k.jumpTargets == nil {
 		k.jumpTargets = map[a.Loop]uint32{}
 	}

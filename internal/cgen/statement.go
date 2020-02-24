@@ -417,7 +417,7 @@ func (g *gen) writeStatementIterate(b *buffer, n *a.Iterate, depth uint32) error
 }
 
 func (g *gen) writeStatementJump(b *buffer, n *a.Jump, depth uint32) error {
-	jt, err := g.currFunk.jumpTarget(n.JumpTarget())
+	jt, err := g.currFunk.jumpTarget(g.tm, n.JumpTarget())
 	if err != nil {
 		return err
 	}
@@ -425,7 +425,7 @@ func (g *gen) writeStatementJump(b *buffer, n *a.Jump, depth uint32) error {
 	if n.Keyword() == t.IDBreak {
 		keyword = "break"
 	}
-	b.printf("goto label_%d_%s;\n", jt, keyword)
+	b.printf("goto label__%v__%s;\n", jt, keyword)
 	return nil
 }
 
@@ -492,11 +492,11 @@ func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 
 func (g *gen) writeStatementWhile(b *buffer, n *a.While, depth uint32) error {
 	if n.HasContinue() {
-		jt, err := g.currFunk.jumpTarget(n)
+		jt, err := g.currFunk.jumpTarget(g.tm, n)
 		if err != nil {
 			return err
 		}
-		b.printf("label_%d_continue:;\n", jt)
+		b.printf("label__%v__continue:;\n", jt)
 	}
 	condition := buffer(nil)
 	if err := g.writeExpr(&condition, n.Condition(), 0); err != nil {
@@ -511,11 +511,11 @@ func (g *gen) writeStatementWhile(b *buffer, n *a.While, depth uint32) error {
 	}
 	b.writes("}\n")
 	if n.HasBreak() {
-		jt, err := g.currFunk.jumpTarget(n)
+		jt, err := g.currFunk.jumpTarget(g.tm, n)
 		if err != nil {
 			return err
 		}
-		b.printf("label_%d_break:;\n", jt)
+		b.printf("label__%v__break:;\n", jt)
 	}
 	return nil
 }
