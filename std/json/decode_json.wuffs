@@ -690,7 +690,15 @@ pri func decoder.decode_digits!(src: base.io_reader, n: base.u32[..= 0xFF]) base
 		if (c < 0x30) or (0x39 < c) {
 			break
 		}
-		if n >= 49 {
+		// Cap the maximum supported number length at an arbitrary value, 99.
+		// The caller's src.data.len should therefore be at least 100.
+		//
+		// An example of a JSON number that is 81 bytes long is:
+		// https://github.com/nst/JSONTestSuite/blob/master/test_parsing/y_number_double_close_to_zero.json
+		//
+		// Note that 99 (in hex, 0x63) is less than 0x80, so we can use 0x80 as
+		// a flag bit in func decoder.decode_number.
+		if n >= 99 {
 			n |= 0x200
 			break
 		}

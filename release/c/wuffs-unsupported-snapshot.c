@@ -19367,7 +19367,7 @@ wuffs_json__decoder__decode_digits(wuffs_json__decoder* self,
     if ((v_c < 48) || (57 < v_c)) {
       goto label_0_break;
     }
-    if (v_n >= 49) {
+    if (v_n >= 99) {
       v_n |= 512;
       goto label_0_break;
     }
