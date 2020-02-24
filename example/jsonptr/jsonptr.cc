@@ -213,7 +213,7 @@ parsed_token parse_next_token() {
       dec_current_token_end_src_index += n;
 
       // Filter out any filler tokens (e.g. whitespace).
-      if (t.value_base_category() == 0) {
+      if (t.value_base_category() == WUFFS_BASE__TOKEN__VBC__FILLER) {
         continue;
       }
 
@@ -436,7 +436,7 @@ continue_loop:
     // parent container is a "{...}" object, toggle between keys and values.
   after_value:
     if (depth <= 0) {
-      return nullptr;
+      goto break_loop;
     }
     switch (ctx) {
       case context::in_list_after_bracket:
@@ -453,6 +453,49 @@ continue_loop:
         break;
     }
   }
+
+break_loop:
+  // Consume an optional whitespace trailer. This isn't part of the JSON spec,
+  // but it works better with line oriented Unix tools (such as "echo 123 |
+  // jsonptr" where it's "echo", not "echo -n") or hand-edited JSON files which
+  // can accidentally contain trailing whitespace.
+  //
+  // A whitespace trailer is zero or more ' ' and then zero or one '\n'.
+  while (true) {
+    if (src.meta.ri < src.meta.wi) {
+      uint8_t c = src.data.ptr[src.meta.ri];
+      if (c == ' ') {
+        src.meta.ri++;
+        continue;
+      } else if (c == '\n') {
+        src.meta.ri++;
+        break;
+      }
+      // The "exhausted the input" check below will fail.
+      break;
+    } else if (src.meta.closed) {
+      break;
+    }
+    TRY(read_src());
+  }
+
+  // Check that we've exhausted the input.
+  if ((src.meta.ri < src.meta.wi) || !src.meta.closed) {
+    return "main: valid JSON followed by further (unexpected) data";
+  }
+
+  // Check that we've used all of the decoded tokens, other than trailing
+  // filler tokens. For example, a bare `"foo"` string is valid JSON, but even
+  // without a trailing '\n', the Wuffs JSON parser emits a filler token for
+  // the final '\"'.
+  for (; tok.meta.ri < tok.meta.wi; tok.meta.ri++) {
+    if (tok.data.ptr[tok.meta.ri].value_base_category() !=
+        WUFFS_BASE__TOKEN__VBC__FILLER) {
+      return "main: internal error: decoded OK but unprocessed tokens remain";
+    }
+  }
+
+  return nullptr;
 }
 
 const char* main1(int argc, char** argv) {
