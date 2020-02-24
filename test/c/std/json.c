@@ -72,7 +72,7 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 const char* test_strconv_parse_number_u64() {
   CHECK_FOCUS(__func__);
 
-  const uint64_t bad = 0xDEADBEEF;
+  const uint64_t fail = 0xDEADBEEF;
 
   struct {
     uint64_t want;
@@ -102,35 +102,35 @@ const char* test_strconv_parse_number_u64() {
       {.want = 0xFFFFFFFFFFFFFFFF, .str = "0xFFFF_FFFF_FFFF_FFFF"},
       {.want = 0xFFFFFFFFFFFFFFFF, .str = "18446744073709551615"},
 
-      {.want = bad, .str = " "},
-      {.want = bad, .str = " 0"},
-      {.want = bad, .str = " 12 "},
-      {.want = bad, .str = ""},
-      {.want = bad, .str = "+0"},
-      {.want = bad, .str = "+1"},
-      {.want = bad, .str = "-0"},
-      {.want = bad, .str = "-1"},
-      {.want = bad, .str = "0 "},
-      {.want = bad, .str = "0_x1"},
-      {.want = bad, .str = "0d___"},
-      {.want = bad, .str = "0x"},
-      {.want = bad, .str = "0x10000000000000000"},      // 1 << 64.
-      {.want = bad, .str = "0x1_0000_0000_0000_0000"},  // 1 << 64.
-      {.want = bad, .str = "1 23"},
-      {.want = bad, .str = "1,23"},
-      {.want = bad, .str = "1.23"},
-      {.want = bad, .str = "123 "},
-      {.want = bad, .str = "123456789012345678901234"},
-      {.want = bad, .str = "12a3"},
-      {.want = bad, .str = "18446744073709551616"},  // UINT64_MAX.
-      {.want = bad, .str = "18446744073709551617"},
-      {.want = bad, .str = "18446744073709551618"},
-      {.want = bad, .str = "18446744073709551619"},
-      {.want = bad, .str = "18446744073709551620"},
-      {.want = bad, .str = "18446744073709551621"},
-      {.want = bad, .str = "_"},
-      {.want = bad, .str = "d"},
-      {.want = bad, .str = "x"},
+      {.want = fail, .str = " "},
+      {.want = fail, .str = " 0"},
+      {.want = fail, .str = " 12 "},
+      {.want = fail, .str = ""},
+      {.want = fail, .str = "+0"},
+      {.want = fail, .str = "+1"},
+      {.want = fail, .str = "-0"},
+      {.want = fail, .str = "-1"},
+      {.want = fail, .str = "0 "},
+      {.want = fail, .str = "0_x1"},
+      {.want = fail, .str = "0d___"},
+      {.want = fail, .str = "0x"},
+      {.want = fail, .str = "0x10000000000000000"},      // 1 << 64.
+      {.want = fail, .str = "0x1_0000_0000_0000_0000"},  // 1 << 64.
+      {.want = fail, .str = "1 23"},
+      {.want = fail, .str = "1,23"},
+      {.want = fail, .str = "1.23"},
+      {.want = fail, .str = "123 "},
+      {.want = fail, .str = "123456789012345678901234"},
+      {.want = fail, .str = "12a3"},
+      {.want = fail, .str = "18446744073709551616"},  // UINT64_MAX.
+      {.want = fail, .str = "18446744073709551617"},
+      {.want = fail, .str = "18446744073709551618"},
+      {.want = fail, .str = "18446744073709551619"},
+      {.want = fail, .str = "18446744073709551620"},
+      {.want = fail, .str = "18446744073709551621"},
+      {.want = fail, .str = "_"},
+      {.want = fail, .str = "d"},
+      {.want = fail, .str = "x"},
   };
 
   int i;
@@ -138,7 +138,7 @@ const char* test_strconv_parse_number_u64() {
     wuffs_base__result_u64 r =
         wuffs_base__parse_number_u64(wuffs_base__make_slice_u8(
             (void*)test_cases[i].str, strlen(test_cases[i].str)));
-    uint64_t got = (r.status.repr == NULL) ? r.value : bad;
+    uint64_t got = (r.status.repr == NULL) ? r.value : fail;
     if (got != test_cases[i].want) {
       RETURN_FAIL("\"%s\": got 0x%" PRIX64 ", want 0x%" PRIX64,
                   test_cases[i].str, got, test_cases[i].want);
