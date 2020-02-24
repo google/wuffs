@@ -17,6 +17,11 @@
 /*
 jsonptr is a JSON formatter (pretty-printer).
 
+As of 2020-02-24, this program passes all 318 "test_parsing" cases from the
+JSON test suite (https://github.com/nst/JSONTestSuite), an appendix to the
+"Parsing JSON is a Minefield" article (http://seriot.ch/parsing_json.php) that
+was first published on 2016-10-26 and updated on 2018-03-30.
+
 This example program differs from most other example Wuffs programs in that it
 is written in C++, not C.
 

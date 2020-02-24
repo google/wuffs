@@ -18756,6 +18756,10 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
         label_2_continue:;
           while (true) {
             if (((uint64_t)(io2_a_src - iop_a_src)) <= 0) {
+              if (a_src && a_src->meta.closed) {
+                status = wuffs_base__make_status(wuffs_json__error__bad_input);
+                goto exit;
+              }
               status =
                   wuffs_base__make_status(wuffs_base__suspension__short_read);
               WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(3);
@@ -18842,6 +18846,11 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
                   }
                 }
                 if (((uint64_t)(io2_a_src - iop_a_src)) < 2) {
+                  if (a_src && a_src->meta.closed) {
+                    status =
+                        wuffs_base__make_status(wuffs_json__error__bad_input);
+                    goto exit;
+                  }
                   status = wuffs_base__make_status(
                       wuffs_base__suspension__short_read);
                   WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(7);
@@ -18860,6 +18869,11 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
                   goto label_3_continue;
                 } else if (v_backslash == 117) {
                   if (((uint64_t)(io2_a_src - iop_a_src)) < 6) {
+                    if (a_src && a_src->meta.closed) {
+                      status =
+                          wuffs_base__make_status(wuffs_json__error__bad_input);
+                      goto exit;
+                    }
                     status = wuffs_base__make_status(
                         wuffs_base__suspension__short_read);
                     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(8);
@@ -18913,6 +18927,10 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
         label_4_continue:;
           while (true) {
             if (((uint64_t)(io2_a_src - iop_a_src)) <= 0) {
+              if (a_src && a_src->meta.closed) {
+                status = wuffs_base__make_status(wuffs_json__error__bad_input);
+                goto exit;
+              }
               status =
                   wuffs_base__make_status(wuffs_base__suspension__short_read);
               WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(9);

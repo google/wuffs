@@ -157,6 +157,9 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 				// before issuing a token with value_base_category 4.
 				while true {
 					if args.src.available() <= 0 {
+						if args.src.is_closed() {
+							return "#bad input"
+						}
 						yield? base."$short read"
 						continue
 					}
@@ -230,6 +233,9 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 							assert args.dst.available() > 0
 
 							if args.src.available() < 2 {
+								if args.src.is_closed() {
+									return "#bad input"
+								}
 								yield? base."$short read"
 								string_length = 0
 								continue.string_loop
@@ -245,6 +251,9 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 
 							} else if backslash == 0x75 {  // 0x75 is 'u'.
 								if args.src.available() < 6 {
+									if args.src.is_closed() {
+										return "#bad input"
+									}
 									yield? base."$short read"
 									string_length = 0
 									continue.string_loop
@@ -291,6 +300,9 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 				// The trailing '"' is filler.
 				while true {
 					if args.src.available() <= 0 {
+						if args.src.is_closed() {
+							return "#bad input"
+						}
 						yield? base."$short read"
 						continue
 					}
