@@ -66,7 +66,8 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 
 // ---------------- LZW Tests
 
-const char* test_wuffs_lzw_decode_interface() {
+const char*  //
+test_wuffs_lzw_decode_interface() {
   CHECK_FOCUS(__func__);
   wuffs_lzw__decoder dec;
   CHECK_STATUS("initialize",
@@ -78,12 +79,13 @@ const char* test_wuffs_lzw_decode_interface() {
       "test/data/bricks-nodither.indexes.giflzw", 1, SIZE_MAX, 19200, 0x4F);
 }
 
-const char* do_test_wuffs_lzw_decode(const char* src_filename,
-                                     uint64_t src_size,
-                                     const char* want_filename,
-                                     uint64_t want_size,
-                                     uint64_t wlimit,
-                                     uint64_t rlimit) {
+const char*  //
+do_test_wuffs_lzw_decode(const char* src_filename,
+                         uint64_t src_size,
+                         const char* want_filename,
+                         uint64_t want_size,
+                         uint64_t wlimit,
+                         uint64_t rlimit) {
   wuffs_base__io_buffer have = ((wuffs_base__io_buffer){
       .data = global_have_slice,
   });
@@ -168,42 +170,48 @@ const char* do_test_wuffs_lzw_decode(const char* src_filename,
   return check_io_buffers_equal("", &have, &want);
 }
 
-const char* test_wuffs_lzw_decode_bricks_dither() {
+const char*  //
+test_wuffs_lzw_decode_bricks_dither() {
   CHECK_FOCUS(__func__);
   return do_test_wuffs_lzw_decode("test/data/bricks-dither.indexes.giflzw",
                                   14923, "test/data/bricks-dither.indexes",
                                   19200, UINT64_MAX, UINT64_MAX);
 }
 
-const char* test_wuffs_lzw_decode_bricks_nodither() {
+const char*  //
+test_wuffs_lzw_decode_bricks_nodither() {
   CHECK_FOCUS(__func__);
   return do_test_wuffs_lzw_decode("test/data/bricks-nodither.indexes.giflzw",
                                   13382, "test/data/bricks-nodither.indexes",
                                   19200, UINT64_MAX, UINT64_MAX);
 }
 
-const char* test_wuffs_lzw_decode_many_big_reads() {
+const char*  //
+test_wuffs_lzw_decode_many_big_reads() {
   CHECK_FOCUS(__func__);
   return do_test_wuffs_lzw_decode("test/data/bricks-gray.indexes.giflzw", 14731,
                                   "test/data/bricks-gray.indexes", 19200,
                                   UINT64_MAX, 4096);
 }
 
-const char* test_wuffs_lzw_decode_many_small_writes_reads() {
+const char*  //
+test_wuffs_lzw_decode_many_small_writes_reads() {
   CHECK_FOCUS(__func__);
   return do_test_wuffs_lzw_decode("test/data/bricks-gray.indexes.giflzw", 14731,
                                   "test/data/bricks-gray.indexes", 19200, 41,
                                   43);
 }
 
-const char* test_wuffs_lzw_decode_pi() {
+const char*  //
+test_wuffs_lzw_decode_pi() {
   CHECK_FOCUS(__func__);
   return do_test_wuffs_lzw_decode("test/data/pi.txt.giflzw", 50550,
                                   "test/data/pi.txt", 100003, UINT64_MAX,
                                   UINT64_MAX);
 }
 
-const char* test_wuffs_lzw_decode_output_bad() {
+const char*  //
+test_wuffs_lzw_decode_output_bad() {
   CHECK_FOCUS(__func__);
 
   wuffs_base__io_buffer have = ((wuffs_base__io_buffer){
@@ -249,7 +257,8 @@ const char* test_wuffs_lzw_decode_output_bad() {
   return NULL;
 }
 
-const char* test_wuffs_lzw_decode_output_empty() {
+const char*  //
+test_wuffs_lzw_decode_output_empty() {
   CHECK_FOCUS(__func__);
 
   wuffs_base__io_buffer have = ((wuffs_base__io_buffer){
@@ -288,9 +297,10 @@ const char* test_wuffs_lzw_decode_output_empty() {
   return NULL;
 }
 
-const char* do_test_wuffs_lzw_decode_width(uint32_t width,
-                                           wuffs_base__io_buffer src,
-                                           wuffs_base__io_buffer want) {
+const char*  //
+do_test_wuffs_lzw_decode_width(uint32_t width,
+                               wuffs_base__io_buffer src,
+                               wuffs_base__io_buffer want) {
   wuffs_lzw__decoder dec;
   CHECK_STATUS("initialize",
                wuffs_lzw__decoder__initialize(
@@ -312,7 +322,8 @@ const char* do_test_wuffs_lzw_decode_width(uint32_t width,
 // two bits but the first non-Clear code after a Clear code has only one bit,
 // so it must be the literal 0x00. Nonetheless, the giflib C library accepts a
 // zero literal width (it only rejects literal widths above 8), so we do too.
-const char* test_wuffs_lzw_decode_width_0() {
+const char*  //
+test_wuffs_lzw_decode_width_0() {
   CHECK_FOCUS(__func__);
 
   // 0b...._...._...._...1  0x001 Clear code.
@@ -343,7 +354,8 @@ const char* test_wuffs_lzw_decode_width_0() {
   return do_test_wuffs_lzw_decode_width(0, src, want);
 }
 
-const char* test_wuffs_lzw_decode_width_1() {
+const char*  //
+test_wuffs_lzw_decode_width_1() {
   CHECK_FOCUS(__func__);
 
   // 0b...._...._...._..10  0x010 Clear code.
@@ -372,8 +384,8 @@ const char* test_wuffs_lzw_decode_width_1() {
 
 // ---------------- LZW Benches
 
-const char* do_bench_wuffs_lzw_decode(const char* filename,
-                                      uint64_t iters_unscaled) {
+const char*  //
+do_bench_wuffs_lzw_decode(const char* filename, uint64_t iters_unscaled) {
   wuffs_base__io_buffer have = ((wuffs_base__io_buffer){
       .data = global_have_slice,
   });
@@ -411,12 +423,14 @@ const char* do_bench_wuffs_lzw_decode(const char* filename,
   return NULL;
 }
 
-const char* bench_wuffs_lzw_decode_20k() {
+const char*  //
+bench_wuffs_lzw_decode_20k() {
   CHECK_FOCUS(__func__);
   return do_bench_wuffs_lzw_decode("test/data/bricks-gray.indexes.giflzw", 50);
 }
 
-const char* bench_wuffs_lzw_decode_100k() {
+const char*  //
+bench_wuffs_lzw_decode_100k() {
   CHECK_FOCUS(__func__);
   return do_bench_wuffs_lzw_decode("test/data/pi.txt.giflzw", 10);
 }
@@ -449,7 +463,8 @@ proc benches[] = {
     NULL,
 };
 
-int main(int argc, char** argv) {
+int  //
+main(int argc, char** argv) {
   proc_package_name = "std/lzw";
   return test_main(argc, argv, tests, benches);
 }

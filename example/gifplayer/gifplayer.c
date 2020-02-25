@@ -44,7 +44,8 @@ support true color: https://gist.github.com/XVilka/8346728
 bool started = false;
 struct timespec start_time = {0};
 
-int64_t micros_since_start(struct timespec* now) {
+int64_t  //
+micros_since_start(struct timespec* now) {
   if (!started) {
     return 0;
   }
@@ -105,7 +106,8 @@ wuffs_base__pixel_buffer pb = {0};
 
 wuffs_base__flicks cumulative_delay_micros = 0;
 
-const char* read_stdin() {
+const char*  //
+read_stdin() {
   while (src_len < SRC_BUFFER_SIZE) {
     size_t n = fread(src_buffer + src_len, sizeof(uint8_t),
                      SRC_BUFFER_SIZE - src_len, stdin);
@@ -133,7 +135,8 @@ bool color_flag = false;
 bool quirk_honor_background_color_flag = false;
 const int stdout_fd = 1;
 
-static inline uint32_t load_u32le(uint8_t* p) {
+static inline uint32_t  //
+load_u32le(uint8_t* p) {
   return ((uint32_t)(p[0]) << 0) | ((uint32_t)(p[1]) << 8) |
          ((uint32_t)(p[2]) << 16) | ((uint32_t)(p[3]) << 24);
 }
@@ -146,9 +149,10 @@ store_u32le(uint8_t* p, uint32_t x) {
   p[3] = (uint8_t)(x >> 24);
 }
 
-void restore_background(wuffs_base__pixel_buffer* pb,
-                        wuffs_base__rect_ie_u32 bounds,
-                        wuffs_base__color_u32_argb_premul background_color) {
+void  //
+restore_background(wuffs_base__pixel_buffer* pb,
+                   wuffs_base__rect_ie_u32 bounds,
+                   wuffs_base__color_u32_argb_premul background_color) {
   size_t width4 = (size_t)(wuffs_base__pixel_config__width(&pb->pixcfg)) * 4;
   size_t y;
   for (y = bounds.min_incl_y; y < bounds.max_excl_y; y++) {
@@ -161,7 +165,8 @@ void restore_background(wuffs_base__pixel_buffer* pb,
   }
 }
 
-size_t print_ascii_art(wuffs_base__pixel_buffer* pb) {
+size_t  //
+print_ascii_art(wuffs_base__pixel_buffer* pb) {
   uint32_t width = wuffs_base__pixel_config__width(&pb->pixcfg);
   uint32_t height = wuffs_base__pixel_config__height(&pb->pixcfg);
 
@@ -188,7 +193,8 @@ size_t print_ascii_art(wuffs_base__pixel_buffer* pb) {
   return p - printbuf.ptr;
 }
 
-size_t print_color_art(wuffs_base__pixel_buffer* pb) {
+size_t  //
+print_color_art(wuffs_base__pixel_buffer* pb) {
   uint32_t width = wuffs_base__pixel_config__width(&pb->pixcfg);
   uint32_t height = wuffs_base__pixel_config__height(&pb->pixcfg);
 
@@ -217,7 +223,8 @@ size_t print_color_art(wuffs_base__pixel_buffer* pb) {
 
 // ----
 
-const char* try_allocate(wuffs_gif__decoder* dec) {
+const char*  //
+try_allocate(wuffs_gif__decoder* dec) {
   uint32_t width = wuffs_base__pixel_config__width(&ic.pixcfg);
   uint32_t height = wuffs_base__pixel_config__height(&ic.pixcfg);
   uint64_t num_pixels = ((uint64_t)width) * ((uint64_t)height);
@@ -260,7 +267,8 @@ const char* try_allocate(wuffs_gif__decoder* dec) {
   return NULL;
 }
 
-const char* allocate(wuffs_gif__decoder* dec) {
+const char*  //
+allocate(wuffs_gif__decoder* dec) {
   const char* status_msg = try_allocate(dec);
   if (status_msg) {
     free(printbuf.ptr);
@@ -276,7 +284,8 @@ const char* allocate(wuffs_gif__decoder* dec) {
   return status_msg;
 }
 
-const char* play() {
+const char*  //
+play() {
   wuffs_gif__decoder dec;
   wuffs_base__status status =
       wuffs_gif__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
@@ -427,7 +436,8 @@ const char* play() {
   return NULL;
 }
 
-int main(int argc, char** argv) {
+int  //
+main(int argc, char** argv) {
   int i;
   for (i = 1; i < argc; i++) {
     if (!strcmp(argv[i], "-color")) {

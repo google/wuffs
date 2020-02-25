@@ -69,7 +69,8 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 
 // ---------------- String Conversions Tests
 
-const char* test_strconv_parse_number_i64() {
+const char*  //
+test_strconv_parse_number_i64() {
   CHECK_FOCUS(__func__);
 
   const int64_t fail = 0xDEADBEEF;
@@ -117,7 +118,8 @@ const char* test_strconv_parse_number_i64() {
   return NULL;
 }
 
-const char* test_strconv_parse_number_u64() {
+const char*  //
+test_strconv_parse_number_u64() {
   CHECK_FOCUS(__func__);
 
   const uint64_t fail = 0xDEADBEEF;
@@ -216,7 +218,8 @@ golden_test json_nobel_prizes_gt = {
 
 // ---------------- JSON Tests
 
-const char* test_wuffs_json_decode_tokens() {
+const char*  //
+test_wuffs_json_decode_tokens() {
   CHECK_FOCUS(__func__);
   wuffs_json__decoder dec;
   CHECK_STATUS("initialize",
@@ -253,11 +256,12 @@ const char* test_wuffs_json_decode_tokens() {
   return NULL;
 }
 
-const char* wuffs_json_decode(wuffs_base__token_buffer* tok,
-                              wuffs_base__io_buffer* src,
-                              uint32_t wuffs_initialize_flags,
-                              uint64_t wlimit,
-                              uint64_t rlimit) {
+const char*  //
+wuffs_json_decode(wuffs_base__token_buffer* tok,
+                  wuffs_base__io_buffer* src,
+                  uint32_t wuffs_initialize_flags,
+                  uint64_t wlimit,
+                  uint64_t rlimit) {
   wuffs_json__decoder dec;
   CHECK_STATUS("initialize",
                wuffs_json__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION,
@@ -284,7 +288,8 @@ const char* wuffs_json_decode(wuffs_base__token_buffer* tok,
   }
 }
 
-const char* test_wuffs_json_decode_unicode4_escapes() {
+const char*  //
+test_wuffs_json_decode_unicode4_escapes() {
   CHECK_FOCUS(__func__);
 
   const uint32_t fail = 0xDEADBEEF;
@@ -403,28 +408,32 @@ const char* test_wuffs_json_decode_unicode4_escapes() {
 
 // ---------------- JSON Benches
 
-const char* bench_wuffs_json_decode_1k() {
+const char*  //
+bench_wuffs_json_decode_1k() {
   CHECK_FOCUS(__func__);
   return do_bench_token_decoder(
       wuffs_json_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
       tcounter_src, &json_github_tags_gt, UINT64_MAX, UINT64_MAX, 10000);
 }
 
-const char* bench_wuffs_json_decode_21k_formatted() {
+const char*  //
+bench_wuffs_json_decode_21k_formatted() {
   CHECK_FOCUS(__func__);
   return do_bench_token_decoder(
       wuffs_json_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
       tcounter_src, &json_file_sizes_gt, UINT64_MAX, UINT64_MAX, 300);
 }
 
-const char* bench_wuffs_json_decode_26k_compact() {
+const char*  //
+bench_wuffs_json_decode_26k_compact() {
   CHECK_FOCUS(__func__);
   return do_bench_token_decoder(
       wuffs_json_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
       tcounter_src, &json_australian_abc_gt, UINT64_MAX, UINT64_MAX, 250);
 }
 
-const char* bench_wuffs_json_decode_217k_stringy() {
+const char*  //
+bench_wuffs_json_decode_217k_stringy() {
   CHECK_FOCUS(__func__);
   return do_bench_token_decoder(
       wuffs_json_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
@@ -479,7 +488,8 @@ proc benches[] = {
     NULL,
 };
 
-int main(int argc, char** argv) {
+int  //
+main(int argc, char** argv) {
   proc_package_name = "std/json";
   return test_main(argc, argv, tests, benches);
 }

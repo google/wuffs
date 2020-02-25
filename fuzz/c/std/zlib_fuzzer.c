@@ -60,7 +60,8 @@ uint8_t work_buffer[WORK_BUFFER_SIZE];
 uint8_t work_buffer[1];
 #endif
 
-const char* fuzz(wuffs_base__io_buffer* src, uint32_t hash) {
+const char*  //
+fuzz(wuffs_base__io_buffer* src, uint32_t hash) {
   wuffs_zlib__decoder dec;
   wuffs_base__status status = wuffs_zlib__decoder__initialize(
       &dec, sizeof dec, WUFFS_VERSION,

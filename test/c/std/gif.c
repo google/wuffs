@@ -70,7 +70,8 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 
 // ---------------- Basic Tests
 
-const char* test_basic_bad_receiver() {
+const char*  //
+test_basic_bad_receiver() {
   CHECK_FOCUS(__func__);
   wuffs_base__image_config ic = ((wuffs_base__image_config){});
   wuffs_base__status status =
@@ -82,7 +83,8 @@ const char* test_basic_bad_receiver() {
   return NULL;
 }
 
-const char* test_basic_bad_sizeof_receiver() {
+const char*  //
+test_basic_bad_sizeof_receiver() {
   CHECK_FOCUS(__func__);
   wuffs_gif__decoder dec;
   wuffs_base__status status = wuffs_gif__decoder__initialize(
@@ -95,7 +97,8 @@ const char* test_basic_bad_sizeof_receiver() {
   return NULL;
 }
 
-const char* test_basic_bad_wuffs_version() {
+const char*  //
+test_basic_bad_wuffs_version() {
   CHECK_FOCUS(__func__);
   wuffs_gif__decoder dec;
   wuffs_base__status status = wuffs_gif__decoder__initialize(
@@ -108,7 +111,8 @@ const char* test_basic_bad_wuffs_version() {
   return NULL;
 }
 
-const char* test_basic_initialize_not_called() {
+const char*  //
+test_basic_initialize_not_called() {
   CHECK_FOCUS(__func__);
   wuffs_gif__decoder dec = ((wuffs_gif__decoder){});
   wuffs_base__image_config ic = ((wuffs_base__image_config){});
@@ -121,7 +125,8 @@ const char* test_basic_initialize_not_called() {
   return NULL;
 }
 
-const char* test_basic_status_is_error() {
+const char*  //
+test_basic_status_is_error() {
   CHECK_FOCUS(__func__);
   wuffs_base__status status;
   status.repr = NULL;
@@ -143,7 +148,8 @@ const char* test_basic_status_is_error() {
   return NULL;
 }
 
-const char* test_basic_sub_struct_initializer() {
+const char*  //
+test_basic_sub_struct_initializer() {
   CHECK_FOCUS(__func__);
   wuffs_gif__decoder dec;
   CHECK_STATUS("initialize",
@@ -163,7 +169,8 @@ const char* test_basic_sub_struct_initializer() {
 
 // ---------------- GIF Tests
 
-const char* test_wuffs_gif_decode_interface_image_config_decoder() {
+const char*  //
+test_wuffs_gif_decode_interface_image_config_decoder() {
   CHECK_FOCUS(__func__);
   wuffs_gif__config_decoder dec;
   CHECK_STATUS("initialize",
@@ -175,7 +182,8 @@ const char* test_wuffs_gif_decode_interface_image_config_decoder() {
       "test/data/animated-red-blue.gif", 0, SIZE_MAX, 4);
 }
 
-const char* test_wuffs_gif_decode_interface_image_decoder() {
+const char*  //
+test_wuffs_gif_decode_interface_image_decoder() {
   CHECK_FOCUS(__func__);
   wuffs_gif__decoder dec;
   CHECK_STATUS("initialize",
@@ -187,10 +195,11 @@ const char* test_wuffs_gif_decode_interface_image_decoder() {
       "test/data/bricks-nodither.gif", 0, SIZE_MAX, 160, 120, 0xFF012463);
 }
 
-const char* wuffs_gif_decode(wuffs_base__io_buffer* dst,
-                             uint32_t wuffs_initialize_flags,
-                             wuffs_base__pixel_format pixfmt,
-                             wuffs_base__io_buffer* src) {
+const char*  //
+wuffs_gif_decode(wuffs_base__io_buffer* dst,
+                 uint32_t wuffs_initialize_flags,
+                 wuffs_base__pixel_format pixfmt,
+                 wuffs_base__io_buffer* src) {
   wuffs_gif__decoder dec;
   CHECK_STATUS("initialize",
                wuffs_gif__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION,
@@ -229,11 +238,12 @@ const char* wuffs_gif_decode(wuffs_base__io_buffer* dst,
   return NULL;
 }
 
-const char* do_test_wuffs_gif_decode(const char* filename,
-                                     const char* palette_filename,
-                                     const char* indexes_filename,
-                                     uint64_t rlimit,
-                                     wuffs_base__pixel_format dst_pixfmt) {
+const char*  //
+do_test_wuffs_gif_decode(const char* filename,
+                         const char* palette_filename,
+                         const char* indexes_filename,
+                         uint64_t rlimit,
+                         wuffs_base__pixel_format dst_pixfmt) {
   wuffs_base__io_buffer have = ((wuffs_base__io_buffer){
       .data = global_have_slice,
   });
@@ -459,10 +469,11 @@ const char* do_test_wuffs_gif_decode(const char* filename,
   return NULL;
 }
 
-const char* do_test_wuffs_gif_decode_expecting(wuffs_base__io_buffer src,
-                                               uint32_t quirk,
-                                               const char* want_status,
-                                               bool want_dirty_rect_is_empty) {
+const char*  //
+do_test_wuffs_gif_decode_expecting(wuffs_base__io_buffer src,
+                                   uint32_t quirk,
+                                   const char* want_status,
+                                   bool want_dirty_rect_is_empty) {
   wuffs_gif__decoder dec;
   CHECK_STATUS("initialize",
                wuffs_gif__decoder__initialize(
@@ -497,7 +508,8 @@ const char* do_test_wuffs_gif_decode_expecting(wuffs_base__io_buffer src,
   return NULL;
 }
 
-const char* test_wuffs_gif_call_interleaved() {
+const char*  //
+test_wuffs_gif_call_interleaved() {
   CHECK_FOCUS(__func__);
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
       .data = global_src_slice,
@@ -537,7 +549,8 @@ const char* test_wuffs_gif_call_interleaved() {
   return NULL;
 }
 
-const char* test_wuffs_gif_call_sequence() {
+const char*  //
+test_wuffs_gif_call_sequence() {
   CHECK_FOCUS(__func__);
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
       .data = global_src_slice,
@@ -562,7 +575,8 @@ const char* test_wuffs_gif_call_sequence() {
   return NULL;
 }
 
-const char* do_test_wuffs_gif_decode_animated(
+const char*  //
+do_test_wuffs_gif_decode_animated(
     const char* filename,
     uint32_t want_num_loops,
     uint32_t want_num_frames,
@@ -649,19 +663,22 @@ const char* do_test_wuffs_gif_decode_animated(
   return NULL;
 }
 
-const char* test_wuffs_gif_decode_animated_big() {
+const char*  //
+test_wuffs_gif_decode_animated_big() {
   CHECK_FOCUS(__func__);
   return do_test_wuffs_gif_decode_animated("test/data/gifplayer-muybridge.gif",
                                            0, 380, NULL);
 }
 
-const char* test_wuffs_gif_decode_animated_medium() {
+const char*  //
+test_wuffs_gif_decode_animated_medium() {
   CHECK_FOCUS(__func__);
   return do_test_wuffs_gif_decode_animated("test/data/muybridge.gif", 0, 15,
                                            NULL);
 }
 
-const char* test_wuffs_gif_decode_animated_small() {
+const char*  //
+test_wuffs_gif_decode_animated_small() {
   CHECK_FOCUS(__func__);
   // animated-red-blue.gif's num_loops should be 3. The value explicitly in the
   // wire format is 0x0002, but that value means "repeat 2 times after the
@@ -679,7 +696,8 @@ const char* test_wuffs_gif_decode_animated_small() {
       want_frame_config_bounds);
 }
 
-const char* test_wuffs_gif_decode_delay_num_frames_decoded() {
+const char*  //
+test_wuffs_gif_decode_delay_num_frames_decoded() {
   CHECK_FOCUS(__func__);
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
       .data = global_src_slice,
@@ -728,7 +746,8 @@ const char* test_wuffs_gif_decode_delay_num_frames_decoded() {
   return NULL;
 }
 
-const char* test_wuffs_gif_decode_empty_palette() {
+const char*  //
+test_wuffs_gif_decode_empty_palette() {
   CHECK_FOCUS(__func__);
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
       .data = global_src_slice,
@@ -795,7 +814,8 @@ const char* test_wuffs_gif_decode_empty_palette() {
   return NULL;
 }
 
-const char* test_wuffs_gif_decode_background_color() {
+const char*  //
+test_wuffs_gif_decode_background_color() {
   CHECK_FOCUS(__func__);
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
       .data = global_src_slice,
@@ -833,7 +853,8 @@ const char* test_wuffs_gif_decode_background_color() {
   return NULL;
 }
 
-const char* test_wuffs_gif_decode_first_frame_is_opaque() {
+const char*  //
+test_wuffs_gif_decode_first_frame_is_opaque() {
   CHECK_FOCUS(__func__);
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
       .data = global_src_slice,
@@ -870,7 +891,8 @@ const char* test_wuffs_gif_decode_first_frame_is_opaque() {
   return NULL;
 }
 
-const char* test_wuffs_gif_decode_frame_out_of_bounds() {
+const char*  //
+test_wuffs_gif_decode_frame_out_of_bounds() {
   CHECK_FOCUS(__func__);
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
       .data = global_src_slice,
@@ -1039,7 +1061,8 @@ const char* test_wuffs_gif_decode_frame_out_of_bounds() {
   return NULL;
 }
 
-const char* test_wuffs_gif_decode_zero_width_frame() {
+const char*  //
+test_wuffs_gif_decode_zero_width_frame() {
   CHECK_FOCUS(__func__);
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
       .data = global_src_slice,
@@ -1097,7 +1120,8 @@ const char* test_wuffs_gif_decode_zero_width_frame() {
   return NULL;
 }
 
-const char* test_wuffs_gif_decode_pixfmt_bgr() {
+const char*  //
+test_wuffs_gif_decode_pixfmt_bgr() {
   CHECK_FOCUS(__func__);
   return do_test_wuffs_gif_decode(
       "test/data/bricks-dither.gif", "test/data/bricks-dither.palette",
@@ -1105,7 +1129,8 @@ const char* test_wuffs_gif_decode_pixfmt_bgr() {
       wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGR));
 }
 
-const char* test_wuffs_gif_decode_pixfmt_bgr_565() {
+const char*  //
+test_wuffs_gif_decode_pixfmt_bgr_565() {
   CHECK_FOCUS(__func__);
   return do_test_wuffs_gif_decode(
       "test/data/bricks-dither.gif", "test/data/bricks-dither.palette",
@@ -1113,7 +1138,8 @@ const char* test_wuffs_gif_decode_pixfmt_bgr_565() {
       wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGR_565));
 }
 
-const char* test_wuffs_gif_decode_pixfmt_bgra_nonpremul() {
+const char*  //
+test_wuffs_gif_decode_pixfmt_bgra_nonpremul() {
   CHECK_FOCUS(__func__);
   return do_test_wuffs_gif_decode(
       "test/data/bricks-dither.gif", "test/data/bricks-dither.palette",
@@ -1121,7 +1147,8 @@ const char* test_wuffs_gif_decode_pixfmt_bgra_nonpremul() {
       wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL));
 }
 
-const char* test_wuffs_gif_decode_pixfmt_rgb() {
+const char*  //
+test_wuffs_gif_decode_pixfmt_rgb() {
   CHECK_FOCUS(__func__);
   return do_test_wuffs_gif_decode(
       "test/data/bricks-dither.gif", "test/data/bricks-dither.palette",
@@ -1129,7 +1156,8 @@ const char* test_wuffs_gif_decode_pixfmt_rgb() {
       wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__RGB));
 }
 
-const char* test_wuffs_gif_decode_pixfmt_rgba_nonpremul() {
+const char*  //
+test_wuffs_gif_decode_pixfmt_rgba_nonpremul() {
   CHECK_FOCUS(__func__);
   return do_test_wuffs_gif_decode(
       "test/data/bricks-dither.gif", "test/data/bricks-dither.palette",
@@ -1137,7 +1165,8 @@ const char* test_wuffs_gif_decode_pixfmt_rgba_nonpremul() {
       wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL));
 }
 
-const char* test_wuffs_gif_decode_input_is_a_gif_just_one_read() {
+const char*  //
+test_wuffs_gif_decode_input_is_a_gif_just_one_read() {
   CHECK_FOCUS(__func__);
   return do_test_wuffs_gif_decode(
       "test/data/bricks-dither.gif", "test/data/bricks-dither.palette",
@@ -1146,7 +1175,8 @@ const char* test_wuffs_gif_decode_input_is_a_gif_just_one_read() {
           WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY));
 }
 
-const char* test_wuffs_gif_decode_input_is_a_gif_many_big_reads() {
+const char*  //
+test_wuffs_gif_decode_input_is_a_gif_many_big_reads() {
   CHECK_FOCUS(__func__);
   return do_test_wuffs_gif_decode(
       "test/data/bricks-dither.gif", "test/data/bricks-dither.palette",
@@ -1155,7 +1185,8 @@ const char* test_wuffs_gif_decode_input_is_a_gif_many_big_reads() {
           WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY));
 }
 
-const char* test_wuffs_gif_decode_input_is_a_gif_many_medium_reads() {
+const char*  //
+test_wuffs_gif_decode_input_is_a_gif_many_medium_reads() {
   CHECK_FOCUS(__func__);
   return do_test_wuffs_gif_decode(
       "test/data/bricks-dither.gif", "test/data/bricks-dither.palette",
@@ -1168,7 +1199,8 @@ const char* test_wuffs_gif_decode_input_is_a_gif_many_medium_reads() {
   // TODO: has 787 changed since we decode the image_config separately?
 }
 
-const char* test_wuffs_gif_decode_input_is_a_gif_many_small_reads() {
+const char*  //
+test_wuffs_gif_decode_input_is_a_gif_many_small_reads() {
   CHECK_FOCUS(__func__);
   return do_test_wuffs_gif_decode(
       "test/data/bricks-dither.gif", "test/data/bricks-dither.palette",
@@ -1177,7 +1209,8 @@ const char* test_wuffs_gif_decode_input_is_a_gif_many_small_reads() {
           WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY));
 }
 
-const char* test_wuffs_gif_decode_input_is_a_png() {
+const char*  //
+test_wuffs_gif_decode_input_is_a_png() {
   CHECK_FOCUS(__func__);
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
       .data = global_src_slice,
@@ -1200,7 +1233,8 @@ const char* test_wuffs_gif_decode_input_is_a_png() {
   return NULL;
 }
 
-const char* test_wuffs_gif_decode_interlaced_truncated() {
+const char*  //
+test_wuffs_gif_decode_interlaced_truncated() {
   CHECK_FOCUS(__func__);
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
       .data = global_src_slice,
@@ -1422,17 +1456,20 @@ const char* do_test_wuffs_gif_decode_metadata(bool full) {
   return NULL;
 }
 
-const char* test_wuffs_gif_decode_metadata_empty() {
+const char*  //
+test_wuffs_gif_decode_metadata_empty() {
   CHECK_FOCUS(__func__);
   return do_test_wuffs_gif_decode_metadata(false);
 }
 
-const char* test_wuffs_gif_decode_metadata_full() {
+const char*  //
+test_wuffs_gif_decode_metadata_full() {
   CHECK_FOCUS(__func__);
   return do_test_wuffs_gif_decode_metadata(true);
 }
 
-const char* test_wuffs_gif_decode_missing_two_src_bytes() {
+const char*  //
+test_wuffs_gif_decode_missing_two_src_bytes() {
   CHECK_FOCUS(__func__);
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
       .data = global_src_slice,
@@ -1449,7 +1486,8 @@ const char* test_wuffs_gif_decode_missing_two_src_bytes() {
       src, 0, wuffs_base__suspension__short_read, false);
 }
 
-const char* test_wuffs_gif_decode_multiple_graphic_controls() {
+const char*  //
+test_wuffs_gif_decode_multiple_graphic_controls() {
   CHECK_FOCUS(__func__);
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
       .data = global_src_slice,
@@ -1475,7 +1513,8 @@ const char* test_wuffs_gif_decode_multiple_graphic_controls() {
   return NULL;
 }
 
-const char* test_wuffs_gif_decode_multiple_loop_counts() {
+const char*  //
+test_wuffs_gif_decode_multiple_loop_counts() {
   CHECK_FOCUS(__func__);
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
       .data = global_src_slice,
@@ -1536,7 +1575,8 @@ const char* test_wuffs_gif_decode_multiple_loop_counts() {
   return NULL;
 }
 
-const char* test_wuffs_gif_decode_pixel_data_none() {
+const char*  //
+test_wuffs_gif_decode_pixel_data_none() {
   CHECK_FOCUS(__func__);
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
       .data = global_src_slice,
@@ -1547,7 +1587,8 @@ const char* test_wuffs_gif_decode_pixel_data_none() {
       src, 0, wuffs_base__error__not_enough_data, true);
 }
 
-const char* test_wuffs_gif_decode_pixel_data_not_enough() {
+const char*  //
+test_wuffs_gif_decode_pixel_data_not_enough() {
   CHECK_FOCUS(__func__);
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
       .data = global_src_slice,
@@ -1559,7 +1600,8 @@ const char* test_wuffs_gif_decode_pixel_data_not_enough() {
       src, 0, wuffs_base__error__not_enough_data, false);
 }
 
-const char* test_wuffs_gif_decode_pixel_data_too_much_sans_quirk() {
+const char*  //
+test_wuffs_gif_decode_pixel_data_too_much_sans_quirk() {
   CHECK_FOCUS(__func__);
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
       .data = global_src_slice,
@@ -1571,7 +1613,8 @@ const char* test_wuffs_gif_decode_pixel_data_too_much_sans_quirk() {
       src, 0, wuffs_base__error__too_much_data, false);
 }
 
-const char* test_wuffs_gif_decode_pixel_data_too_much_with_quirk() {
+const char*  //
+test_wuffs_gif_decode_pixel_data_too_much_with_quirk() {
   CHECK_FOCUS(__func__);
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
       .data = global_src_slice,
@@ -1583,7 +1626,8 @@ const char* test_wuffs_gif_decode_pixel_data_too_much_with_quirk() {
       src, WUFFS_GIF__QUIRK_IGNORE_TOO_MUCH_PIXEL_DATA, NULL, false);
 }
 
-const char* test_wuffs_gif_frame_dirty_rect() {
+const char*  //
+test_wuffs_gif_frame_dirty_rect() {
   CHECK_FOCUS(__func__);
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
       .data = global_src_slice,
@@ -1705,12 +1749,14 @@ const char* do_test_wuffs_gif_num_decoded(bool frame_config) {
   return NULL;
 }
 
-const char* test_wuffs_gif_num_decoded_frame_configs() {
+const char*  //
+test_wuffs_gif_num_decoded_frame_configs() {
   CHECK_FOCUS(__func__);
   return do_test_wuffs_gif_num_decoded(true);
 }
 
-const char* test_wuffs_gif_num_decoded_frames() {
+const char*  //
+test_wuffs_gif_num_decoded_frames() {
   CHECK_FOCUS(__func__);
   return do_test_wuffs_gif_num_decoded(false);
 }
@@ -1867,17 +1913,20 @@ const char* do_test_wuffs_gif_io_position(bool chunked) {
   return NULL;
 }
 
-const char* test_wuffs_gif_io_position_one_chunk() {
+const char*  //
+test_wuffs_gif_io_position_one_chunk() {
   CHECK_FOCUS(__func__);
   return do_test_wuffs_gif_io_position(false);
 }
 
-const char* test_wuffs_gif_io_position_two_chunks() {
+const char*  //
+test_wuffs_gif_io_position_two_chunks() {
   CHECK_FOCUS(__func__);
   return do_test_wuffs_gif_io_position(true);
 }
 
-const char* test_wuffs_gif_small_frame_interlaced() {
+const char*  //
+test_wuffs_gif_small_frame_interlaced() {
   CHECK_FOCUS(__func__);
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
       .data = global_src_slice,
@@ -1931,7 +1980,8 @@ const char* test_wuffs_gif_small_frame_interlaced() {
   return NULL;
 }
 
-const char* test_wuffs_gif_sizeof() {
+const char*  //
+test_wuffs_gif_sizeof() {
   CHECK_FOCUS(__func__);
   size_t n0 = sizeof(wuffs_gif__config_decoder);
   size_t n1 = sizeof(wuffs_gif__decoder);
@@ -1983,67 +2033,80 @@ const char* do_test_mimic_gif_decode(const char* filename) {
   return NULL;
 }
 
-const char* test_mimic_gif_decode_animated_small() {
+const char*  //
+test_mimic_gif_decode_animated_small() {
   CHECK_FOCUS(__func__);
   return do_test_mimic_gif_decode("test/data/animated-red-blue.gif");
 }
 
-const char* test_mimic_gif_decode_bricks_dither() {
+const char*  //
+test_mimic_gif_decode_bricks_dither() {
   CHECK_FOCUS(__func__);
   return do_test_mimic_gif_decode("test/data/bricks-dither.gif");
 }
 
-const char* test_mimic_gif_decode_bricks_gray() {
+const char*  //
+test_mimic_gif_decode_bricks_gray() {
   CHECK_FOCUS(__func__);
   return do_test_mimic_gif_decode("test/data/bricks-gray.gif");
 }
 
-const char* test_mimic_gif_decode_bricks_nodither() {
+const char*  //
+test_mimic_gif_decode_bricks_nodither() {
   CHECK_FOCUS(__func__);
   return do_test_mimic_gif_decode("test/data/bricks-nodither.gif");
 }
 
-const char* test_mimic_gif_decode_gifplayer_muybridge() {
+const char*  //
+test_mimic_gif_decode_gifplayer_muybridge() {
   CHECK_FOCUS(__func__);
   return do_test_mimic_gif_decode("test/data/gifplayer-muybridge.gif");
 }
 
-const char* test_mimic_gif_decode_harvesters() {
+const char*  //
+test_mimic_gif_decode_harvesters() {
   CHECK_FOCUS(__func__);
   return do_test_mimic_gif_decode("test/data/harvesters.gif");
 }
 
-const char* test_mimic_gif_decode_hat() {
+const char*  //
+test_mimic_gif_decode_hat() {
   CHECK_FOCUS(__func__);
   return do_test_mimic_gif_decode("test/data/hat.gif");
 }
 
-const char* test_mimic_gif_decode_hibiscus_primitive() {
+const char*  //
+test_mimic_gif_decode_hibiscus_primitive() {
   CHECK_FOCUS(__func__);
   return do_test_mimic_gif_decode("test/data/hibiscus.primitive.gif");
 }
 
-const char* test_mimic_gif_decode_hibiscus_regular() {
+const char*  //
+test_mimic_gif_decode_hibiscus_regular() {
   CHECK_FOCUS(__func__);
   return do_test_mimic_gif_decode("test/data/hibiscus.regular.gif");
 }
 
-const char* test_mimic_gif_decode_hippopotamus_interlaced() {
+const char*  //
+test_mimic_gif_decode_hippopotamus_interlaced() {
   CHECK_FOCUS(__func__);
   return do_test_mimic_gif_decode("test/data/hippopotamus.interlaced.gif");
 }
 
-const char* test_mimic_gif_decode_hippopotamus_regular() {
+const char*  //
+test_mimic_gif_decode_hippopotamus_regular() {
   CHECK_FOCUS(__func__);
   return do_test_mimic_gif_decode("test/data/hippopotamus.regular.gif");
 }
 
-const char* test_mimic_gif_decode_muybridge() {
+const char*  //
+test_mimic_gif_decode_muybridge() {
   CHECK_FOCUS(__func__);
   return do_test_mimic_gif_decode("test/data/muybridge.gif");
 }
 
-const char* test_mimic_gif_decode_pjw_thumbnail() {
+const char*  //
+test_mimic_gif_decode_pjw_thumbnail() {
   CHECK_FOCUS(__func__);
   return do_test_mimic_gif_decode("test/data/pjw-thumbnail.gif");
 }
@@ -2052,15 +2115,15 @@ const char* test_mimic_gif_decode_pjw_thumbnail() {
 
 // ---------------- GIF Benches
 
-const char* do_bench_gif_decode(
-    const char* (*decode_func)(wuffs_base__io_buffer*,
-                               uint32_t wuffs_initialize_flags,
-                               wuffs_base__pixel_format,
-                               wuffs_base__io_buffer*),
-    uint32_t wuffs_initialize_flags,
-    const char* filename,
-    wuffs_base__pixel_format pixfmt,
-    uint64_t iters_unscaled) {
+const char*  //
+do_bench_gif_decode(const char* (*decode_func)(wuffs_base__io_buffer*,
+                                               uint32_t wuffs_initialize_flags,
+                                               wuffs_base__pixel_format,
+                                               wuffs_base__io_buffer*),
+                    uint32_t wuffs_initialize_flags,
+                    const char* filename,
+                    wuffs_base__pixel_format pixfmt,
+                    uint64_t iters_unscaled) {
   wuffs_base__io_buffer have = ((wuffs_base__io_buffer){
       .data = global_have_slice,
   });
@@ -2083,7 +2146,8 @@ const char* do_bench_gif_decode(
   return NULL;
 }
 
-const char* bench_wuffs_gif_decode_1k_bw() {
+const char*  //
+bench_wuffs_gif_decode_1k_bw() {
   CHECK_FOCUS(__func__);
   return do_bench_gif_decode(
       wuffs_gif_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
@@ -2093,7 +2157,8 @@ const char* bench_wuffs_gif_decode_1k_bw() {
       2000);
 }
 
-const char* bench_wuffs_gif_decode_1k_color_full_init() {
+const char*  //
+bench_wuffs_gif_decode_1k_color_full_init() {
   CHECK_FOCUS(__func__);
   return do_bench_gif_decode(
       wuffs_gif_decode, WUFFS_INITIALIZE__DEFAULT_OPTIONS,
@@ -2103,7 +2168,8 @@ const char* bench_wuffs_gif_decode_1k_color_full_init() {
       1000);
 }
 
-const char* bench_wuffs_gif_decode_1k_color_part_init() {
+const char*  //
+bench_wuffs_gif_decode_1k_color_part_init() {
   CHECK_FOCUS(__func__);
   return do_bench_gif_decode(
       wuffs_gif_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
@@ -2113,7 +2179,8 @@ const char* bench_wuffs_gif_decode_1k_color_part_init() {
       1000);
 }
 
-const char* bench_wuffs_gif_decode_10k_bgra() {
+const char*  //
+bench_wuffs_gif_decode_10k_bgra() {
   CHECK_FOCUS(__func__);
   return do_bench_gif_decode(
       wuffs_gif_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
@@ -2122,7 +2189,8 @@ const char* bench_wuffs_gif_decode_10k_bgra() {
       100);
 }
 
-const char* bench_wuffs_gif_decode_10k_indexed() {
+const char*  //
+bench_wuffs_gif_decode_10k_indexed() {
   CHECK_FOCUS(__func__);
   return do_bench_gif_decode(
       wuffs_gif_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
@@ -2132,7 +2200,8 @@ const char* bench_wuffs_gif_decode_10k_indexed() {
       100);
 }
 
-const char* bench_wuffs_gif_decode_20k() {
+const char*  //
+bench_wuffs_gif_decode_20k() {
   CHECK_FOCUS(__func__);
   return do_bench_gif_decode(
       wuffs_gif_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
@@ -2142,7 +2211,8 @@ const char* bench_wuffs_gif_decode_20k() {
       50);
 }
 
-const char* bench_wuffs_gif_decode_100k_artificial() {
+const char*  //
+bench_wuffs_gif_decode_100k_artificial() {
   CHECK_FOCUS(__func__);
   return do_bench_gif_decode(
       wuffs_gif_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
@@ -2152,7 +2222,8 @@ const char* bench_wuffs_gif_decode_100k_artificial() {
       15);
 }
 
-const char* bench_wuffs_gif_decode_100k_realistic() {
+const char*  //
+bench_wuffs_gif_decode_100k_realistic() {
   CHECK_FOCUS(__func__);
   return do_bench_gif_decode(
       wuffs_gif_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
@@ -2162,7 +2233,8 @@ const char* bench_wuffs_gif_decode_100k_realistic() {
       10);
 }
 
-const char* bench_wuffs_gif_decode_1000k_full_init() {
+const char*  //
+bench_wuffs_gif_decode_1000k_full_init() {
   CHECK_FOCUS(__func__);
   return do_bench_gif_decode(
       wuffs_gif_decode, WUFFS_INITIALIZE__DEFAULT_OPTIONS,
@@ -2172,7 +2244,8 @@ const char* bench_wuffs_gif_decode_1000k_full_init() {
       1);
 }
 
-const char* bench_wuffs_gif_decode_1000k_part_init() {
+const char*  //
+bench_wuffs_gif_decode_1000k_part_init() {
   CHECK_FOCUS(__func__);
   return do_bench_gif_decode(
       wuffs_gif_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
@@ -2182,7 +2255,8 @@ const char* bench_wuffs_gif_decode_1000k_part_init() {
       1);
 }
 
-const char* bench_wuffs_gif_decode_anim_screencap() {
+const char*  //
+bench_wuffs_gif_decode_anim_screencap() {
   CHECK_FOCUS(__func__);
   return do_bench_gif_decode(
       wuffs_gif_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
@@ -2196,7 +2270,8 @@ const char* bench_wuffs_gif_decode_anim_screencap() {
 
 #ifdef WUFFS_MIMIC
 
-const char* bench_mimic_gif_decode_1k_bw() {
+const char*  //
+bench_mimic_gif_decode_1k_bw() {
   CHECK_FOCUS(__func__);
   return do_bench_gif_decode(
       mimic_gif_decode, 0, "test/data/pjw-thumbnail.gif",
@@ -2205,7 +2280,8 @@ const char* bench_mimic_gif_decode_1k_bw() {
       2000);
 }
 
-const char* bench_mimic_gif_decode_1k_color() {
+const char*  //
+bench_mimic_gif_decode_1k_color() {
   CHECK_FOCUS(__func__);
   return do_bench_gif_decode(
       mimic_gif_decode, 0, "test/data/hippopotamus.regular.gif",
@@ -2214,7 +2290,8 @@ const char* bench_mimic_gif_decode_1k_color() {
       1000);
 }
 
-const char* bench_mimic_gif_decode_10k_indexed() {
+const char*  //
+bench_mimic_gif_decode_10k_indexed() {
   CHECK_FOCUS(__func__);
   return do_bench_gif_decode(
       mimic_gif_decode, 0, "test/data/hat.gif",
@@ -2223,7 +2300,8 @@ const char* bench_mimic_gif_decode_10k_indexed() {
       100);
 }
 
-const char* bench_mimic_gif_decode_20k() {
+const char*  //
+bench_mimic_gif_decode_20k() {
   CHECK_FOCUS(__func__);
   return do_bench_gif_decode(
       mimic_gif_decode, 0, "test/data/bricks-gray.gif",
@@ -2232,7 +2310,8 @@ const char* bench_mimic_gif_decode_20k() {
       50);
 }
 
-const char* bench_mimic_gif_decode_100k_artificial() {
+const char*  //
+bench_mimic_gif_decode_100k_artificial() {
   CHECK_FOCUS(__func__);
   return do_bench_gif_decode(
       mimic_gif_decode, 0, "test/data/hibiscus.primitive.gif",
@@ -2241,7 +2320,8 @@ const char* bench_mimic_gif_decode_100k_artificial() {
       15);
 }
 
-const char* bench_mimic_gif_decode_100k_realistic() {
+const char*  //
+bench_mimic_gif_decode_100k_realistic() {
   CHECK_FOCUS(__func__);
   return do_bench_gif_decode(
       mimic_gif_decode, 0, "test/data/hibiscus.regular.gif",
@@ -2250,7 +2330,8 @@ const char* bench_mimic_gif_decode_100k_realistic() {
       10);
 }
 
-const char* bench_mimic_gif_decode_1000k() {
+const char*  //
+bench_mimic_gif_decode_1000k() {
   CHECK_FOCUS(__func__);
   return do_bench_gif_decode(
       mimic_gif_decode, 0, "test/data/harvesters.gif",
@@ -2259,7 +2340,8 @@ const char* bench_mimic_gif_decode_1000k() {
       1);
 }
 
-const char* bench_mimic_gif_decode_anim_screencap() {
+const char*  //
+bench_mimic_gif_decode_anim_screencap() {
   CHECK_FOCUS(__func__);
   return do_bench_gif_decode(
       mimic_gif_decode, 0, "test/data/gifplayer-muybridge.gif",
@@ -2378,7 +2460,8 @@ proc benches[] = {
     NULL,
 };
 
-int main(int argc, char** argv) {
+int  //
+main(int argc, char** argv) {
   proc_package_name = "std/gif";
   return test_main(argc, argv, tests, benches);
 }

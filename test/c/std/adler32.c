@@ -79,7 +79,8 @@ golden_test adler32_pi_gt = {
 
 // ---------------- Adler32 Tests
 
-const char* test_wuffs_adler32_interface() {
+const char*  //
+test_wuffs_adler32_interface() {
   CHECK_FOCUS(__func__);
   wuffs_adler32__hasher h;
   CHECK_STATUS("initialize",
@@ -91,7 +92,8 @@ const char* test_wuffs_adler32_interface() {
       "test/data/hat.lossy.webp", 0, SIZE_MAX, 0xF1BB258D);
 }
 
-const char* test_wuffs_adler32_golden() {
+const char*  //
+test_wuffs_adler32_golden() {
   CHECK_FOCUS(__func__);
 
   struct {
@@ -171,7 +173,8 @@ const char* test_wuffs_adler32_golden() {
   return NULL;
 }
 
-const char* test_wuffs_adler32_pi() {
+const char*  //
+test_wuffs_adler32_pi() {
   CHECK_FOCUS(__func__);
 
   const char* digits =
@@ -229,11 +232,12 @@ const char* test_wuffs_adler32_pi() {
 
 uint32_t global_wuffs_adler32_unused_u32;
 
-const char* wuffs_bench_adler32(wuffs_base__io_buffer* dst,
-                                wuffs_base__io_buffer* src,
-                                uint32_t wuffs_initialize_flags,
-                                uint64_t wlimit,
-                                uint64_t rlimit) {
+const char*  //
+wuffs_bench_adler32(wuffs_base__io_buffer* dst,
+                    wuffs_base__io_buffer* src,
+                    uint32_t wuffs_initialize_flags,
+                    uint64_t wlimit,
+                    uint64_t rlimit) {
   uint64_t len = src->meta.wi - src->meta.ri;
   if (rlimit) {
     len = wuffs_base__u64__min(len, rlimit);
@@ -251,7 +255,8 @@ const char* wuffs_bench_adler32(wuffs_base__io_buffer* dst,
   return NULL;
 }
 
-const char* bench_wuffs_adler32_10k() {
+const char*  //
+bench_wuffs_adler32_10k() {
   CHECK_FOCUS(__func__);
   return do_bench_io_buffers(
       wuffs_bench_adler32,
@@ -259,7 +264,8 @@ const char* bench_wuffs_adler32_10k() {
       &adler32_midsummer_gt, UINT64_MAX, UINT64_MAX, 1500);
 }
 
-const char* bench_wuffs_adler32_100k() {
+const char*  //
+bench_wuffs_adler32_100k() {
   CHECK_FOCUS(__func__);
   return do_bench_io_buffers(
       wuffs_bench_adler32,
@@ -271,14 +277,16 @@ const char* bench_wuffs_adler32_100k() {
 
 #ifdef WUFFS_MIMIC
 
-const char* bench_mimic_adler32_10k() {
+const char*  //
+bench_mimic_adler32_10k() {
   CHECK_FOCUS(__func__);
   return do_bench_io_buffers(mimic_bench_adler32, 0, tcounter_src,
                              &adler32_midsummer_gt, UINT64_MAX, UINT64_MAX,
                              1500);
 }
 
-const char* bench_mimic_adler32_100k() {
+const char*  //
+bench_mimic_adler32_100k() {
   CHECK_FOCUS(__func__);
   return do_bench_io_buffers(mimic_bench_adler32, 0, tcounter_src,
                              &adler32_pi_gt, UINT64_MAX, UINT64_MAX, 150);
@@ -317,7 +325,8 @@ proc benches[] = {
     NULL,
 };
 
-int main(int argc, char** argv) {
+int  //
+main(int argc, char** argv) {
   proc_package_name = "std/adler32";
   return test_main(argc, argv, tests, benches);
 }

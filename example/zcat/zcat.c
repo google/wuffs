@@ -81,9 +81,11 @@ uint8_t work_buffer[1];
 #endif
 
 // ignore_return_value suppresses errors from -Wall -Werror.
-static void ignore_return_value(int ignored) {}
+static void  //
+ignore_return_value(int ignored) {}
 
-static const char* decode() {
+static const char*  //
+decode() {
   wuffs_gzip__decoder dec;
   wuffs_base__status status =
       wuffs_gzip__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
@@ -151,7 +153,8 @@ static const char* decode() {
   }
 }
 
-int compute_exit_code(const char* status_msg) {
+int  //
+compute_exit_code(const char* status_msg) {
   if (!status_msg) {
     return 0;
   }
@@ -177,7 +180,8 @@ int compute_exit_code(const char* status_msg) {
   return strstr(status_msg, "internal error:") ? 2 : 1;
 }
 
-int main(int argc, char** argv) {
+int  //
+main(int argc, char** argv) {
 #if defined(WUFFS_EXAMPLE_USE_SECCOMP)
   prctl(PR_SET_SECCOMP, SECCOMP_MODE_STRICT);
 #endif

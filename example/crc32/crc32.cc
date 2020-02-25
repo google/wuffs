@@ -56,7 +56,8 @@ for a C++ compiler $CXX, such as clang++ or g++.
 
 uint8_t src_buffer[SRC_BUFFER_SIZE];
 
-int main(int argc, char** argv) {
+int  //
+main(int argc, char** argv) {
   wuffs_crc32__ieee_hasher h;
   wuffs_base__status status = h.initialize(sizeof h, WUFFS_VERSION, 0);
   if (!status.is_ok()) {

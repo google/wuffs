@@ -23,13 +23,16 @@
 
 volatile int* intentional_segfault_ptr = NULL;
 
-void intentional_segfault() {
+void  //
+intentional_segfault() {
   *intentional_segfault_ptr = 0;
 }
 
-const char* fuzz(wuffs_base__io_buffer* src, uint32_t hash);
+const char*  //
+fuzz(wuffs_base__io_buffer* src, uint32_t hash);
 
-static const char* llvmFuzzerTestOneInput(const uint8_t* data, size_t size) {
+static const char*  //
+llvmFuzzerTestOneInput(const uint8_t* data, size_t size) {
   // Hash input as per https://en.wikipedia.org/wiki/Jenkins_hash_function
   size_t i = 0;
   uint32_t hash = 0;
@@ -72,7 +75,8 @@ static const char* llvmFuzzerTestOneInput(const uint8_t* data, size_t size) {
 extern "C" {
 #endif
 
-int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
+int  //
+LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   llvmFuzzerTestOneInput(data, size);
   return 0;
 }
@@ -98,9 +102,11 @@ static struct {
   size_t len;
 } relative_cwd;
 
-static int visit(char* filename);
+static int  //
+visit(char* filename);
 
-static int visit_dir(int fd) {
+static int  //
+visit_dir(int fd) {
   int cwd_fd = open(".", O_RDONLY, 0);
   if (fchdir(fd)) {
     printf("failed\n");
@@ -145,7 +151,8 @@ static int visit_dir(int fd) {
   return 0;
 }
 
-static int visit_reg(int fd, off_t size) {
+static int  //
+visit_reg(int fd, off_t size) {
   if ((size < 0) || (0x7FFFFFFF < size)) {
     printf("failed\n");
     fprintf(stderr, "FAIL: file size out of bounds");
@@ -179,7 +186,8 @@ static int visit_reg(int fd, off_t size) {
   return 0;
 }
 
-static int visit(char* filename) {
+static int  //
+visit(char* filename) {
   num_files_processed++;
   if (!filename || (filename[0] == '\x00')) {
     fprintf(stderr, "FAIL: invalid filename\n");
@@ -235,7 +243,8 @@ static int visit(char* filename) {
   return v;
 }
 
-int main(int argc, char** argv) {
+int  //
+main(int argc, char** argv) {
   num_files_processed = 0;
   relative_cwd.len = 0;
 

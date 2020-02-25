@@ -94,7 +94,8 @@ const size_t zlib_sheep_want_len = 11;
 
 // ---------------- Zlib Tests
 
-const char* test_wuffs_zlib_decode_interface() {
+const char*  //
+test_wuffs_zlib_decode_interface() {
   CHECK_FOCUS(__func__);
   wuffs_zlib__decoder dec;
   CHECK_STATUS("initialize",
@@ -106,11 +107,12 @@ const char* test_wuffs_zlib_decode_interface() {
       "test/data/romeo.txt.zlib", 0, SIZE_MAX, 942, 0x0A);
 }
 
-const char* wuffs_zlib_decode(wuffs_base__io_buffer* dst,
-                              wuffs_base__io_buffer* src,
-                              uint32_t wuffs_initialize_flags,
-                              uint64_t wlimit,
-                              uint64_t rlimit) {
+const char*  //
+wuffs_zlib_decode(wuffs_base__io_buffer* dst,
+                  wuffs_base__io_buffer* src,
+                  uint32_t wuffs_initialize_flags,
+                  uint64_t wlimit,
+                  uint64_t rlimit) {
   wuffs_zlib__decoder dec;
   CHECK_STATUS("initialize",
                wuffs_zlib__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION,
@@ -136,8 +138,8 @@ const char* wuffs_zlib_decode(wuffs_base__io_buffer* dst,
   }
 }
 
-const char* do_test_wuffs_zlib_checksum(bool ignore_checksum,
-                                        uint32_t bad_checksum) {
+const char*  //
+do_test_wuffs_zlib_checksum(bool ignore_checksum, uint32_t bad_checksum) {
   wuffs_base__io_buffer have = ((wuffs_base__io_buffer){
       .data = global_have_slice,
   });
@@ -200,39 +202,46 @@ const char* do_test_wuffs_zlib_checksum(bool ignore_checksum,
   return NULL;
 }
 
-const char* test_wuffs_zlib_checksum_ignore() {
+const char*  //
+test_wuffs_zlib_checksum_ignore() {
   CHECK_FOCUS(__func__);
   return do_test_wuffs_zlib_checksum(true, 4 | 0);
 }
 
-const char* test_wuffs_zlib_checksum_verify_bad0() {
+const char*  //
+test_wuffs_zlib_checksum_verify_bad0() {
   CHECK_FOCUS(__func__);
   return do_test_wuffs_zlib_checksum(false, 4 | 0);
 }
 
-const char* test_wuffs_zlib_checksum_verify_bad3() {
+const char*  //
+test_wuffs_zlib_checksum_verify_bad3() {
   CHECK_FOCUS(__func__);
   return do_test_wuffs_zlib_checksum(false, 4 | 3);
 }
 
-const char* test_wuffs_zlib_checksum_verify_good() {
+const char*  //
+test_wuffs_zlib_checksum_verify_good() {
   CHECK_FOCUS(__func__);
   return do_test_wuffs_zlib_checksum(false, 0);
 }
 
-const char* test_wuffs_zlib_decode_midsummer() {
+const char*  //
+test_wuffs_zlib_decode_midsummer() {
   CHECK_FOCUS(__func__);
   return do_test_io_buffers(wuffs_zlib_decode, &zlib_midsummer_gt, UINT64_MAX,
                             UINT64_MAX);
 }
 
-const char* test_wuffs_zlib_decode_pi() {
+const char*  //
+test_wuffs_zlib_decode_pi() {
   CHECK_FOCUS(__func__);
   return do_test_io_buffers(wuffs_zlib_decode, &zlib_pi_gt, UINT64_MAX,
                             UINT64_MAX);
 }
 
-const char* test_wuffs_zlib_decode_sheep() {
+const char*  //
+test_wuffs_zlib_decode_sheep() {
   CHECK_FOCUS(__func__);
   wuffs_base__io_buffer have = ((wuffs_base__io_buffer){
       .data = global_have_slice,
@@ -282,19 +291,22 @@ const char* test_wuffs_zlib_decode_sheep() {
 
 #ifdef WUFFS_MIMIC
 
-const char* test_mimic_zlib_decode_midsummer() {
+const char*  //
+test_mimic_zlib_decode_midsummer() {
   CHECK_FOCUS(__func__);
   return do_test_io_buffers(mimic_zlib_decode, &zlib_midsummer_gt, UINT64_MAX,
                             UINT64_MAX);
 }
 
-const char* test_mimic_zlib_decode_pi() {
+const char*  //
+test_mimic_zlib_decode_pi() {
   CHECK_FOCUS(__func__);
   return do_test_io_buffers(mimic_zlib_decode, &zlib_pi_gt, UINT64_MAX,
                             UINT64_MAX);
 }
 
-const char* test_mimic_zlib_decode_sheep() {
+const char*  //
+test_mimic_zlib_decode_sheep() {
   CHECK_FOCUS(__func__);
   wuffs_base__io_buffer have = ((wuffs_base__io_buffer){
       .data = global_have_slice,
@@ -318,14 +330,16 @@ const char* test_mimic_zlib_decode_sheep() {
 
 // ---------------- Zlib Benches
 
-const char* bench_wuffs_zlib_decode_10k() {
+const char*  //
+bench_wuffs_zlib_decode_10k() {
   CHECK_FOCUS(__func__);
   return do_bench_io_buffers(
       wuffs_zlib_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
       tcounter_dst, &zlib_midsummer_gt, UINT64_MAX, UINT64_MAX, 300);
 }
 
-const char* bench_wuffs_zlib_decode_100k() {
+const char*  //
+bench_wuffs_zlib_decode_100k() {
   CHECK_FOCUS(__func__);
   return do_bench_io_buffers(
       wuffs_zlib_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
@@ -336,13 +350,15 @@ const char* bench_wuffs_zlib_decode_100k() {
 
 #ifdef WUFFS_MIMIC
 
-const char* bench_mimic_zlib_decode_10k() {
+const char*  //
+bench_mimic_zlib_decode_10k() {
   CHECK_FOCUS(__func__);
   return do_bench_io_buffers(mimic_zlib_decode, 0, tcounter_dst,
                              &zlib_midsummer_gt, UINT64_MAX, UINT64_MAX, 300);
 }
 
-const char* bench_mimic_zlib_decode_100k() {
+const char*  //
+bench_mimic_zlib_decode_100k() {
   CHECK_FOCUS(__func__);
   return do_bench_io_buffers(mimic_zlib_decode, 0, tcounter_dst, &zlib_pi_gt,
                              UINT64_MAX, UINT64_MAX, 30);
@@ -391,7 +407,8 @@ proc benches[] = {
     NULL,
 };
 
-int main(int argc, char** argv) {
+int  //
+main(int argc, char** argv) {
   proc_package_name = "std/zlib";
   return test_main(argc, argv, tests, benches);
 }

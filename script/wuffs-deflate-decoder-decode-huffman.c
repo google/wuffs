@@ -165,10 +165,10 @@ const char*
     wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state =
         "?deflate: internal error: inconsistent Huffman decoder state";
 
-static wuffs_base__status wuffs_deflate__decoder__decode_huffman_fast(
-    wuffs_deflate__decoder* self,
-    wuffs_base__io_buffer* a_dst,
-    wuffs_base__io_buffer* a_src) {
+static wuffs_base__status  //
+wuffs_deflate__decoder__decode_huffman_fast(wuffs_deflate__decoder* self,
+                                            wuffs_base__io_buffer* a_dst,
+                                            wuffs_base__io_buffer* a_src) {
   return wuffs_base__make_status(NULL);
 }
 
@@ -217,16 +217,16 @@ static const uint32_t wuffs_base__width_to_mask_table[33] = {
 
 // This is the generated function that we are explicitly overriding. Note that
 // the function name is "wuffs_etc", not "c_wuffs_etc".
-static wuffs_base__status wuffs_deflate__decoder__decode_huffman_fast(
-    wuffs_deflate__decoder* self,
-    wuffs_base__io_buffer* a_dst,
-    wuffs_base__io_buffer* a_src);
+static wuffs_base__status  //
+wuffs_deflate__decoder__decode_huffman_fast(wuffs_deflate__decoder* self,
+                                            wuffs_base__io_buffer* a_dst,
+                                            wuffs_base__io_buffer* a_src);
 
 // This is the overriding implementation.
-wuffs_base__status c_wuffs_deflate__decoder__decode_huffman_fast(
-    wuffs_deflate__decoder* self,
-    wuffs_base__io_buffer* a_dst,
-    wuffs_base__io_buffer* a_src) {
+wuffs_base__status  //
+c_wuffs_deflate__decoder__decode_huffman_fast(wuffs_deflate__decoder* self,
+                                              wuffs_base__io_buffer* a_dst,
+                                              wuffs_base__io_buffer* a_src) {
   // Avoid the -Werror=unused-function warning for the now-unused
   // overridden wuffs_deflate__decoder__decode_huffman_fast.
   (void)(wuffs_deflate__decoder__decode_huffman_fast);

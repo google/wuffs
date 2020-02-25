@@ -14,7 +14,8 @@
 
 #include "gif_lib.h"
 
-int mimic_gif_read_func(GifFileType* f, GifByteType* ptr, int len) {
+int  //
+mimic_gif_read_func(GifFileType* f, GifByteType* ptr, int len) {
   wuffs_base__io_buffer* src = (wuffs_base__io_buffer*)(f->UserData);
   if (len < 0) {
     return 0;
@@ -29,10 +30,11 @@ int mimic_gif_read_func(GifFileType* f, GifByteType* ptr, int len) {
   return n;
 }
 
-const char* mimic_gif_decode(wuffs_base__io_buffer* dst,
-                             uint32_t wuffs_initialize_flags,
-                             wuffs_base__pixel_format pixfmt,
-                             wuffs_base__io_buffer* src) {
+const char*  //
+mimic_gif_decode(wuffs_base__io_buffer* dst,
+                 uint32_t wuffs_initialize_flags,
+                 wuffs_base__pixel_format pixfmt,
+                 wuffs_base__io_buffer* src) {
   const char* ret = NULL;
 
   // http://giflib.sourceforge.net/gif_lib.html#compatibility says that "A few

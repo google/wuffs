@@ -66,13 +66,15 @@
 // recent. For some reason, this #include hits "No such file or directory" on
 // Ubuntu 18.04 (linux 4.15, glibc 2.27), and there's also been problems on
 // Debian systems. Instead, we explicitly define our own memfd_create.
-static int my_memfd_create(const char* name, unsigned int flags) {
+static int  //
+my_memfd_create(const char* name, unsigned int flags) {
   return syscall(__NR_memfd_create, name, flags);
 }
 
 #define N (128 * 1024)
 
-void* make_ring_buffer() {
+void*  //
+make_ring_buffer() {
   int page_size = getpagesize();
   if ((N < page_size) || (page_size <= 0) || ((N % page_size) != 0)) {
     return NULL;
@@ -105,7 +107,8 @@ void* make_ring_buffer() {
   return base;
 }
 
-int main(int argc, char** argv) {
+int  //
+main(int argc, char** argv) {
   uint8_t* base = make_ring_buffer();
   if (!base) {
     fprintf(stderr, "could not make ring buffer\n");

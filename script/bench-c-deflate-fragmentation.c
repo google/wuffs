@@ -88,7 +88,8 @@ const char* cc = "cc";
 const char* cc_version = "???";
 #endif
 
-static inline uint32_t load_u32be(uint8_t* p) {
+static inline uint32_t  //
+load_u32be(uint8_t* p) {
   return ((uint32_t)(p[0]) << 24) | ((uint32_t)(p[1]) << 16) |
          ((uint32_t)(p[2]) << 8) | ((uint32_t)(p[3]) << 0);
 }
@@ -126,7 +127,8 @@ uint64_t bytes_per_pixel = 0;
 uint64_t bytes_per_row = 0;
 uint64_t bytes_per_frame = 0;
 
-const char* read_stdin() {
+const char*  //
+read_stdin() {
   while (src_len < SRC_BUFFER_SIZE) {
     const int stdin_fd = 0;
     ssize_t n = read(stdin_fd, src_buffer + src_len, SRC_BUFFER_SIZE - src_len);
@@ -143,7 +145,8 @@ const char* read_stdin() {
   return "input is too large";
 }
 
-const char* process_png_chunks(uint8_t* p, size_t n) {
+const char*  //
+process_png_chunks(uint8_t* p, size_t n) {
   while (n > 0) {
     // Process the 8 byte chunk header.
     if (n < 8) {
@@ -225,7 +228,8 @@ const char* process_png_chunks(uint8_t* p, size_t n) {
   return NULL;
 }
 
-const char* decode_once(bool frag_dst, bool frag_idat) {
+const char*  //
+decode_once(bool frag_dst, bool frag_idat) {
   wuffs_zlib__decoder dec;
   wuffs_base__status status =
       wuffs_zlib__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
@@ -295,7 +299,8 @@ const char* decode_once(bool frag_dst, bool frag_idat) {
   return NULL;
 }
 
-const char* decode(bool frag_dst, bool frag_idat) {
+const char*  //
+decode(bool frag_dst, bool frag_idat) {
   int reps;
   if (bytes_per_frame < 100000) {
     reps = 1000;
@@ -336,14 +341,16 @@ const char* decode(bool frag_dst, bool frag_idat) {
   return NULL;
 }
 
-int fail(const char* msg) {
+int  //
+fail(const char* msg) {
   const int stderr_fd = 2;
   write(stderr_fd, msg, strnlen(msg, 4095));
   write(stderr_fd, "\n", 1);
   return 1;
 }
 
-int main(int argc, char** argv) {
+int  //
+main(int argc, char** argv) {
   const char* msg = read_stdin();
   if (msg) {
     return fail(msg);

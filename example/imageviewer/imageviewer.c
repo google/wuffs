@@ -96,14 +96,16 @@ union {
   wuffs_wbmp__decoder wbmp;
 } g_potential_decoders;
 
-static inline void store_u32le(uint8_t* p, uint32_t x) {
+static inline void  //
+store_u32le(uint8_t* p, uint32_t x) {
   p[0] = (uint8_t)(x >> 0);
   p[1] = (uint8_t)(x >> 8);
   p[2] = (uint8_t)(x >> 16);
   p[3] = (uint8_t)(x >> 24);
 }
 
-bool read_more_src() {
+bool  //
+read_more_src() {
   if (g_src.meta.closed) {
     printf("%s: unexpected end of file\n", g_filename);
     return false;
@@ -120,7 +122,8 @@ bool read_more_src() {
   return true;
 }
 
-bool load_image_type() {
+bool  //
+load_image_type() {
   while (g_src.meta.wi == 0) {
     if (!read_more_src()) {
       return false;
@@ -175,7 +178,8 @@ bool load_image_type() {
   return true;
 }
 
-bool load_image_config() {
+bool  //
+load_image_config() {
   // Decode the wuffs_base__image_config.
   while (true) {
     wuffs_base__status status = wuffs_base__image_decoder__decode_image_config(
@@ -262,7 +266,8 @@ bool load_image_config() {
 
 // This function always returns true. If we get this far, we still display a
 // partial image, even if we encounter an error.
-bool load_image_frame() {
+bool  //
+load_image_frame() {
   while (true) {
     wuffs_base__status status = wuffs_base__image_decoder__decode_frame(
         g_image_decoder, &g_pixbuf, &g_src, WUFFS_BASE__PIXEL_BLEND__SRC_OVER,
@@ -286,7 +291,8 @@ bool load_image_frame() {
   return true;
 }
 
-bool load_image(const char* filename) {
+bool  //
+load_image(const char* filename) {
   if (g_workbuf_slice.ptr != NULL) {
     free(g_workbuf_slice.ptr);
     g_workbuf_slice.ptr = NULL;
@@ -348,14 +354,16 @@ xcb_pixmap_t g_pixmap = XCB_NONE;
 xcb_keysym_t* g_keysyms = NULL;
 xcb_get_keyboard_mapping_reply_t* g_keyboard_mapping = NULL;
 
-void init_keymap(xcb_connection_t* c, const xcb_setup_t* z) {
+void  //
+init_keymap(xcb_connection_t* c, const xcb_setup_t* z) {
   xcb_get_keyboard_mapping_cookie_t cookie = xcb_get_keyboard_mapping(
       c, z->min_keycode, z->max_keycode - z->min_keycode + 1);
   g_keyboard_mapping = xcb_get_keyboard_mapping_reply(c, cookie, NULL);
   g_keysyms = (xcb_keysym_t*)(g_keyboard_mapping + 1);
 }
 
-xcb_window_t make_window(xcb_connection_t* c, xcb_screen_t* s) {
+xcb_window_t  //
+make_window(xcb_connection_t* c, xcb_screen_t* s) {
   xcb_window_t w = xcb_generate_id(c);
   uint32_t value_mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
   uint32_t value_list[2];
@@ -372,11 +380,12 @@ xcb_window_t make_window(xcb_connection_t* c, xcb_screen_t* s) {
   return w;
 }
 
-bool load(xcb_connection_t* c,
-          xcb_screen_t* s,
-          xcb_window_t w,
-          xcb_gcontext_t g,
-          const char* filename) {
+bool  //
+load(xcb_connection_t* c,
+     xcb_screen_t* s,
+     xcb_window_t w,
+     xcb_gcontext_t g,
+     const char* filename) {
   if (g_pixmap != XCB_NONE) {
     xcb_free_pixmap(c, g_pixmap);
   }
@@ -394,7 +403,8 @@ bool load(xcb_connection_t* c,
   return true;
 }
 
-int main(int argc, char** argv) {
+int  //
+main(int argc, char** argv) {
   xcb_connection_t* c = xcb_connect(NULL, NULL);
   const xcb_setup_t* z = xcb_get_setup(c);
   xcb_screen_t* s = xcb_setup_roots_iterator(z).data;
@@ -508,7 +518,8 @@ int main(int argc, char** argv) {
 
 #if !defined(SUPPORTED_OPERATING_SYSTEM)
 
-int main(int argc, char** argv) {
+int  //
+main(int argc, char** argv) {
   printf("unsupported operating system\n");
   return 1;
 }

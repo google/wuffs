@@ -69,7 +69,8 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 
 // ---------------- BMP Tests
 
-const char* test_wuffs_bmp_decode_interface() {
+const char* //
+test_wuffs_bmp_decode_interface() {
   CHECK_FOCUS(__func__);
   wuffs_bmp__decoder dec;
   CHECK_STATUS("initialize",
@@ -81,7 +82,8 @@ const char* test_wuffs_bmp_decode_interface() {
       "test/data/hippopotamus.bmp", 0, SIZE_MAX, 36, 28, 0xFFF5F5F5);
 }
 
-const char* test_wuffs_bmp_decode_frame_config() {
+const char* //
+test_wuffs_bmp_decode_frame_config() {
   CHECK_FOCUS(__func__);
   wuffs_bmp__decoder dec;
   CHECK_STATUS("initialize",
@@ -161,7 +163,8 @@ proc benches[] = {
     NULL,
 };
 
-int main(int argc, char** argv) {
+int //
+main(int argc, char** argv) {
   proc_package_name = "std/bmp";
   return test_main(argc, argv, tests, benches);
 }

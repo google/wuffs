@@ -101,7 +101,8 @@ size_t indent;
 
 // ----
 
-const char* read_src() {
+const char*  //
+read_src() {
   if (src.meta.closed) {
     return "main: internal error: read requested on a closed source";
   }
@@ -119,7 +120,8 @@ const char* read_src() {
   return nullptr;
 }
 
-const char* flush_dst() {
+const char*  //
+flush_dst() {
   size_t n = dst.meta.wi - dst.meta.ri;
   if (n > 0) {
     size_t i = fwrite(dst.data.ptr + dst.meta.ri, sizeof(uint8_t), n, stdout);
@@ -132,7 +134,8 @@ const char* flush_dst() {
   return nullptr;
 }
 
-const char* write_dst(const void* s, size_t n) {
+const char*  //
+write_dst(const void* s, size_t n) {
   const uint8_t* p = static_cast<const uint8_t*>(s);
   while (n > 0) {
     size_t i = dst.writer_available();
@@ -181,7 +184,8 @@ typedef struct {
   wuffs_base__slice_u8 data;
 } parsed_token;
 
-parsed_token make_pt_error(const char* error_msg) {
+parsed_token  //
+make_pt_error(const char* error_msg) {
   parsed_token p;
   p.error_msg = error_msg;
   p.token = wuffs_base__make_token(0);
@@ -189,9 +193,8 @@ parsed_token make_pt_error(const char* error_msg) {
   return p;
 }
 
-parsed_token make_pt_token(uint64_t token_repr,
-                           uint8_t* data_ptr,
-                           size_t data_len) {
+parsed_token  //
+make_pt_token(uint64_t token_repr, uint8_t* data_ptr, size_t data_len) {
   parsed_token p;
   p.error_msg = nullptr;
   p.token = wuffs_base__make_token(token_repr);
@@ -199,7 +202,8 @@ parsed_token make_pt_token(uint64_t token_repr,
   return p;
 }
 
-parsed_token parse_next_token() {
+parsed_token  //
+parse_next_token() {
   while (true) {
     // Return a previously produced token, if one exists.
     //
@@ -254,7 +258,8 @@ parsed_token parse_next_token() {
 
 // ----
 
-uint8_t hex_digit(uint8_t nibble) {
+uint8_t  //
+hex_digit(uint8_t nibble) {
   nibble &= 0x0F;
   if (nibble <= 9) {
     return '0' + nibble;
@@ -262,7 +267,8 @@ uint8_t hex_digit(uint8_t nibble) {
   return ('A' - 10) + nibble;
 }
 
-const char* handle_string(parsed_token pt) {
+const char*  //
+handle_string(parsed_token pt) {
   TRY(write_dst("\"", 1));
   while (true) {
     uint64_t vbc = pt.token.value_base_category();
@@ -365,7 +371,8 @@ const char* handle_string(parsed_token pt) {
   return nullptr;
 }
 
-const char* main2() {
+const char*  //
+main2() {
   dec_status = dec.initialize(sizeof__wuffs_json__decoder(), WUFFS_VERSION, 0);
   if (!dec_status.is_ok()) {
     return dec_status.message();
@@ -515,7 +522,8 @@ break_loop:
   return nullptr;
 }
 
-const char* main1(int argc, char** argv) {
+const char*  //
+main1(int argc, char** argv) {
   dst = wuffs_base__make_io_buffer(
       wuffs_base__make_slice_u8(dst_buffer, DST_BUFFER_SIZE),
       wuffs_base__empty_io_buffer_meta());
@@ -535,7 +543,8 @@ const char* main1(int argc, char** argv) {
   return nullptr;
 }
 
-int compute_exit_code(const char* status_msg) {
+int  //
+compute_exit_code(const char* status_msg) {
   if (!status_msg) {
     return 0;
   }
@@ -559,7 +568,8 @@ int compute_exit_code(const char* status_msg) {
   return strstr(status_msg, "internal error:") ? 2 : 1;
 }
 
-int main(int argc, char** argv) {
+int  //
+main(int argc, char** argv) {
   const char* z0 = main1(argc, argv);
   const char* z1 = flush_dst();
   int exit_code = compute_exit_code(z0 ? z0 : z1);

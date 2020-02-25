@@ -53,7 +53,8 @@ const char* cc = "cc";
 const char* cc_version = "???";
 #endif
 
-static uint32_t calculate_hash(uint8_t* x_ptr, size_t x_len) {
+static uint32_t  //
+calculate_hash(uint8_t* x_ptr, size_t x_len) {
   uint32_t s1 = 1;
   uint32_t s2 = 0;
 
@@ -115,7 +116,8 @@ static uint32_t calculate_hash(uint8_t* x_ptr, size_t x_len) {
 
 uint8_t buffer[BUFFER_SIZE] = {0};
 
-int main(int argc, char** argv) {
+int  //
+main(int argc, char** argv) {
   bool nocheck = false;
   int i;
   for (i = 0; i < argc; i++) {

@@ -76,7 +76,8 @@ uint8_t work_buffer[WORK_BUFFER_SIZE];
 uint8_t work_buffer[1];
 #endif
 
-static const char* decode() {
+static const char*  //
+decode() {
   wuffs_base__io_buffer dst;
   dst.data.ptr = dst_buffer;
   dst.data.len = DST_BUFFER_SIZE;
@@ -117,7 +118,8 @@ static const char* decode() {
   return NULL;
 }
 
-int main(int argc, char** argv) {
+int  //
+main(int argc, char** argv) {
   const char* status_msg = decode();
   if (status_msg) {
     fprintf(stderr, "%s\n", status_msg);

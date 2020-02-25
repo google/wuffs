@@ -69,7 +69,8 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 
 // ---------------- WBMP Tests
 
-const char* test_wuffs_wbmp_decode_interface() {
+const char*  //
+test_wuffs_wbmp_decode_interface() {
   CHECK_FOCUS(__func__);
   wuffs_wbmp__decoder dec;
   CHECK_STATUS("initialize",
@@ -81,7 +82,8 @@ const char* test_wuffs_wbmp_decode_interface() {
       "test/data/muybridge-frame-000.wbmp", 0, SIZE_MAX, 30, 20, 0xFFFFFFFF);
 }
 
-const char* test_wuffs_wbmp_decode_frame_config() {
+const char*  //
+test_wuffs_wbmp_decode_frame_config() {
   CHECK_FOCUS(__func__);
   wuffs_wbmp__decoder dec;
   CHECK_STATUS("initialize",
@@ -110,7 +112,8 @@ const char* test_wuffs_wbmp_decode_frame_config() {
   return NULL;
 }
 
-const char* test_wuffs_wbmp_decode_image_config() {
+const char*  //
+test_wuffs_wbmp_decode_image_config() {
   CHECK_FOCUS(__func__);
   wuffs_wbmp__decoder dec;
   CHECK_STATUS("initialize",
@@ -129,7 +132,8 @@ const char* test_wuffs_wbmp_decode_image_config() {
   uint32_t have_width = wuffs_base__pixel_config__width(&ic.pixcfg);
   uint32_t want_width = 160;
   if (have_width != want_width) {
-    RETURN_FAIL("width: have %" PRIu32 ", want %" PRIu32, have_width, want_width);
+    RETURN_FAIL("width: have %" PRIu32 ", want %" PRIu32, have_width,
+                want_width);
   }
   uint32_t have_height = wuffs_base__pixel_config__height(&ic.pixcfg);
   uint32_t want_height = 120;
@@ -192,7 +196,8 @@ proc benches[] = {
     NULL,
 };
 
-int main(int argc, char** argv) {
+int  //
+main(int argc, char** argv) {
   proc_package_name = "std/wbmp";
   return test_main(argc, argv, tests, benches);
 }
