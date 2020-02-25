@@ -398,9 +398,6 @@ test_main(int argc, char** argv, proc* tests, proc* benches) {
   return 0;
 }
 
-// WUFFS_INCLUDE_GUARD is where wuffs_base__foo_bar are defined.
-#ifdef WUFFS_INCLUDE_GUARD
-
 wuffs_base__io_buffer  //
 make_io_buffer_from_string(const char* ptr, size_t len) {
   return ((wuffs_base__io_buffer){
@@ -1084,5 +1081,3 @@ do_test__wuffs_base__token_decoder(wuffs_base__token_decoder* b,
   }
   return NULL;
 }
-
-#endif  // WUFFS_INCLUDE_GUARD
