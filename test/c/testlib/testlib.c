@@ -21,7 +21,7 @@
 #include <unistd.h>
 
 #define BUFFER_SIZE (64 * 1024 * 1024)
-#define TOKEN_BUFFER_SIZE (8 * 1024)
+#define TOKEN_BUFFER_SIZE (128 * 1024)
 
 #define WUFFS_TESTLIB_ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 
@@ -454,6 +454,23 @@ wuffs_base__io_buffer make_limited_writer(wuffs_base__io_buffer b,
   return ret;
 }
 
+wuffs_base__token_buffer make_limited_token_writer(wuffs_base__token_buffer b,
+                                                   uint64_t limit) {
+  uint64_t n = b.data.len - b.meta.wi;
+  if (n > limit) {
+    n = limit;
+  }
+
+  wuffs_base__token_buffer ret;
+  ret.data.ptr = b.data.ptr + b.meta.wi;
+  ret.data.len = n;
+  ret.meta.wi = 0;
+  ret.meta.ri = 0;
+  ret.meta.pos = wuffs_base__u64__sat_add(b.meta.pos, b.meta.wi);
+  ret.meta.closed = b.meta.closed;
+  return ret;
+}
+
 // TODO: we shouldn't need to pass the rect. Instead, pass a subset pixbuf.
 const char* copy_to_io_buffer_from_pixel_buffer(wuffs_base__io_buffer* dst,
                                                 wuffs_base__pixel_buffer* src,
@@ -749,6 +766,82 @@ const char* proc_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
   return check_io_buffers_equal("", &have, &want);
 }
 
+const char* proc_token_decoder(
+    const char* (*codec_func)(wuffs_base__token_buffer*,
+                              wuffs_base__io_buffer*,
+                              uint32_t,
+                              uint64_t,
+                              uint64_t),
+    uint32_t wuffs_initialize_flags,
+    throughput_counter tc,
+    golden_test* gt,
+    uint64_t wlimit,
+    uint64_t rlimit,
+    uint64_t iters,
+    bool bench) {
+  if (!codec_func) {
+    RETURN_FAIL("NULL codec_func");
+  }
+  if (!gt) {
+    RETURN_FAIL("NULL golden_test");
+  }
+
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = global_src_slice,
+  });
+  wuffs_base__token_buffer have = ((wuffs_base__token_buffer){
+      .data = global_have_token_slice,
+  });
+
+  if (!gt->src_filename) {
+    src.meta.closed = true;
+  } else {
+    const char* status = read_file(&src, gt->src_filename);
+    if (status) {
+      return status;
+    }
+  }
+  if (gt->src_offset0 || gt->src_offset1) {
+    if (gt->src_offset0 > gt->src_offset1) {
+      RETURN_FAIL("inconsistent src_offsets");
+    }
+    if (gt->src_offset1 > src.meta.wi) {
+      RETURN_FAIL("src_offset1 too large");
+    }
+    src.meta.ri = gt->src_offset0;
+    src.meta.wi = gt->src_offset1;
+  }
+
+  if (bench) {
+    bench_start();
+  }
+  uint64_t n_bytes = 0;
+  uint64_t i;
+  for (i = 0; i < iters; i++) {
+    have.meta.wi = 0;
+    src.meta.ri = gt->src_offset0;
+    const char* status =
+        codec_func(&have, &src, wuffs_initialize_flags, wlimit, rlimit);
+    if (status) {
+      return status;
+    }
+    switch (tc) {
+      case tc_neither:
+        break;
+      case tc_dst:
+        RETURN_FAIL("cannot use tc_dst for token decoders");
+        break;
+      case tc_src:
+        n_bytes += src.meta.ri - gt->src_offset0;
+        break;
+    }
+  }
+  if (bench) {
+    bench_finish(iters, n_bytes);
+  }
+  return NULL;
+}
+
 const char* do_bench_io_buffers(
     const char* (*codec_func)(wuffs_base__io_buffer*,
                               wuffs_base__io_buffer*,
@@ -763,6 +856,22 @@ const char* do_bench_io_buffers(
     uint64_t iters_unscaled) {
   return proc_io_buffers(codec_func, wuffs_initialize_flags, tc, gt, wlimit,
                          rlimit, iters_unscaled * iterscale, true);
+}
+
+const char* do_bench_token_decoder(
+    const char* (*codec_func)(wuffs_base__token_buffer*,
+                              wuffs_base__io_buffer*,
+                              uint32_t,
+                              uint64_t,
+                              uint64_t),
+    uint32_t wuffs_initialize_flags,
+    throughput_counter tc,
+    golden_test* gt,
+    uint64_t wlimit,
+    uint64_t rlimit,
+    uint64_t iters_unscaled) {
+  return proc_token_decoder(codec_func, wuffs_initialize_flags, tc, gt, wlimit,
+                            rlimit, iters_unscaled * iterscale, true);
 }
 
 const char* do_test_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,

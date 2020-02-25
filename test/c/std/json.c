@@ -196,6 +196,24 @@ const char* test_strconv_parse_number_u64() {
   return NULL;
 }
 
+// ---------------- Golden Tests
+
+golden_test json_australian_abc_gt = {
+    .src_filename = "test/data/australian-abc-local-stations.json",  //
+};
+
+golden_test json_file_sizes_gt = {
+    .src_filename = "test/data/file-sizes.json",  //
+};
+
+golden_test json_github_tags_gt = {
+    .src_filename = "test/data/github-tags.json",  //
+};
+
+golden_test json_nobel_prizes_gt = {
+    .src_filename = "test/data/nobel-prizes.json",  //
+};
+
 // ---------------- JSON Tests
 
 const char* test_wuffs_json_decode_tokens() {
@@ -233,6 +251,37 @@ const char* test_wuffs_json_decode_tokens() {
   }
 
   return NULL;
+}
+
+const char* wuffs_json_decode(wuffs_base__token_buffer* tok,
+                              wuffs_base__io_buffer* src,
+                              uint32_t wuffs_initialize_flags,
+                              uint64_t wlimit,
+                              uint64_t rlimit) {
+  wuffs_json__decoder dec;
+  CHECK_STATUS("initialize",
+               wuffs_json__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION,
+                                               wuffs_initialize_flags));
+
+  while (true) {
+    wuffs_base__token_buffer limited_tok =
+        make_limited_token_writer(*tok, wlimit);
+    wuffs_base__io_buffer limited_src = make_limited_reader(*src, rlimit);
+
+    wuffs_base__status status =
+        wuffs_json__decoder__decode_tokens(&dec, &limited_tok, &limited_src);
+
+    tok->meta.wi += limited_tok.meta.wi;
+    src->meta.ri += limited_src.meta.ri;
+
+    if (((wlimit < UINT64_MAX) &&
+         (status.repr == wuffs_base__suspension__short_write)) ||
+        ((rlimit < UINT64_MAX) &&
+         (status.repr == wuffs_base__suspension__short_read))) {
+      continue;
+    }
+    return status.repr;
+  }
 }
 
 const char* test_wuffs_json_decode_unicode4_escapes() {
@@ -352,9 +401,35 @@ const char* test_wuffs_json_decode_unicode4_escapes() {
 
 #endif  // WUFFS_MIMIC
 
-  // ---------------- JSON Benches
+// ---------------- JSON Benches
 
-  // No JSON benches.
+const char* bench_wuffs_json_decode_1k() {
+  CHECK_FOCUS(__func__);
+  return do_bench_token_decoder(
+      wuffs_json_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      tc_src, &json_github_tags_gt, UINT64_MAX, UINT64_MAX, 10000);
+}
+
+const char* bench_wuffs_json_decode_21k_formatted() {
+  CHECK_FOCUS(__func__);
+  return do_bench_token_decoder(
+      wuffs_json_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      tc_src, &json_file_sizes_gt, UINT64_MAX, UINT64_MAX, 300);
+}
+
+const char* bench_wuffs_json_decode_26k_compact() {
+  CHECK_FOCUS(__func__);
+  return do_bench_token_decoder(
+      wuffs_json_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      tc_src, &json_australian_abc_gt, UINT64_MAX, UINT64_MAX, 250);
+}
+
+const char* bench_wuffs_json_decode_217k_stringy() {
+  CHECK_FOCUS(__func__);
+  return do_bench_token_decoder(
+      wuffs_json_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      tc_src, &json_nobel_prizes_gt, UINT64_MAX, UINT64_MAX, 20);
+}
 
   // ---------------- Mimic Benches
 
@@ -390,7 +465,10 @@ proc tests[] = {
 // The empty comments forces clang-format to place one element per line.
 proc benches[] = {
 
-// No JSON benches.
+    bench_wuffs_json_decode_1k,             //
+    bench_wuffs_json_decode_21k_formatted,  //
+    bench_wuffs_json_decode_26k_compact,    //
+    bench_wuffs_json_decode_217k_stringy,   //
 
 #ifdef WUFFS_MIMIC
 
