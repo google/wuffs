@@ -131,12 +131,12 @@ test_wuffs_crc32_ieee_golden() {
       },
   };
 
-  int i;
-  for (i = 0; i < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); i++) {
+  int tc;
+  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
     wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
         .data = global_src_slice,
     });
-    CHECK_STRING(read_file(&src, test_cases[i].filename));
+    CHECK_STRING(read_file(&src, test_cases[tc].filename));
 
     int j;
     for (j = 0; j < 2; j++) {
@@ -163,10 +163,10 @@ test_wuffs_crc32_ieee_golden() {
         num_bytes += data.len;
       } while (num_bytes < src.meta.wi);
 
-      if (have != test_cases[i].want) {
-        RETURN_FAIL("i=%d, j=%d, filename=\"%s\": have 0x%08" PRIX32
+      if (have != test_cases[tc].want) {
+        RETURN_FAIL("tc=%d, j=%d, filename=\"%s\": have 0x%08" PRIX32
                     ", want 0x%08" PRIX32,
-                    i, j, test_cases[i].filename, have, test_cases[i].want);
+                    tc, j, test_cases[tc].filename, have, test_cases[tc].want);
       }
     }
   }

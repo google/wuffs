@@ -103,15 +103,15 @@ test_strconv_parse_number_i64() {
       {.want = fail, .str = "9223372036854775808"},  // 1 << 63.
   };
 
-  int i;
-  for (i = 0; i < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); i++) {
+  int tc;
+  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
     wuffs_base__result_i64 r =
         wuffs_base__parse_number_i64(wuffs_base__make_slice_u8(
-            (void*)test_cases[i].str, strlen(test_cases[i].str)));
+            (void*)test_cases[tc].str, strlen(test_cases[tc].str)));
     int64_t have = (r.status.repr == NULL) ? r.value : fail;
-    if (have != test_cases[i].want) {
+    if (have != test_cases[tc].want) {
       RETURN_FAIL("\"%s\": have 0x%" PRIX64 ", want 0x%" PRIX64,
-                  test_cases[i].str, have, test_cases[i].want);
+                  test_cases[tc].str, have, test_cases[tc].want);
     }
   }
 
@@ -183,15 +183,15 @@ test_strconv_parse_number_u64() {
       {.want = fail, .str = "x"},
   };
 
-  int i;
-  for (i = 0; i < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); i++) {
+  int tc;
+  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
     wuffs_base__result_u64 r =
         wuffs_base__parse_number_u64(wuffs_base__make_slice_u8(
-            (void*)test_cases[i].str, strlen(test_cases[i].str)));
+            (void*)test_cases[tc].str, strlen(test_cases[tc].str)));
     uint64_t have = (r.status.repr == NULL) ? r.value : fail;
-    if (have != test_cases[i].want) {
+    if (have != test_cases[tc].want) {
       RETURN_FAIL("\"%s\": have 0x%" PRIX64 ", want 0x%" PRIX64,
-                  test_cases[i].str, have, test_cases[i].want);
+                  test_cases[tc].str, have, test_cases[tc].want);
     }
   }
 
