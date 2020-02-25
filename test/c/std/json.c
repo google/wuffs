@@ -407,28 +407,28 @@ const char* bench_wuffs_json_decode_1k() {
   CHECK_FOCUS(__func__);
   return do_bench_token_decoder(
       wuffs_json_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
-      tc_src, &json_github_tags_gt, UINT64_MAX, UINT64_MAX, 10000);
+      tcounter_src, &json_github_tags_gt, UINT64_MAX, UINT64_MAX, 10000);
 }
 
 const char* bench_wuffs_json_decode_21k_formatted() {
   CHECK_FOCUS(__func__);
   return do_bench_token_decoder(
       wuffs_json_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
-      tc_src, &json_file_sizes_gt, UINT64_MAX, UINT64_MAX, 300);
+      tcounter_src, &json_file_sizes_gt, UINT64_MAX, UINT64_MAX, 300);
 }
 
 const char* bench_wuffs_json_decode_26k_compact() {
   CHECK_FOCUS(__func__);
   return do_bench_token_decoder(
       wuffs_json_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
-      tc_src, &json_australian_abc_gt, UINT64_MAX, UINT64_MAX, 250);
+      tcounter_src, &json_australian_abc_gt, UINT64_MAX, UINT64_MAX, 250);
 }
 
 const char* bench_wuffs_json_decode_217k_stringy() {
   CHECK_FOCUS(__func__);
   return do_bench_token_decoder(
       wuffs_json_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
-      tc_src, &json_nobel_prizes_gt, UINT64_MAX, UINT64_MAX, 20);
+      tcounter_src, &json_nobel_prizes_gt, UINT64_MAX, UINT64_MAX, 20);
 }
 
   // ---------------- Mimic Benches

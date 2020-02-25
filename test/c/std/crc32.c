@@ -290,7 +290,7 @@ const char* bench_wuffs_crc32_ieee_10k() {
   CHECK_FOCUS(__func__);
   return do_bench_io_buffers(
       wuffs_bench_crc32_ieee,
-      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED, tc_src,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED, tcounter_src,
       &crc32_midsummer_gt, UINT64_MAX, UINT64_MAX, 1500);
 }
 
@@ -298,7 +298,7 @@ const char* bench_wuffs_crc32_ieee_100k() {
   CHECK_FOCUS(__func__);
   return do_bench_io_buffers(
       wuffs_bench_crc32_ieee,
-      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED, tc_src,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED, tcounter_src,
       &crc32_pi_gt, UINT64_MAX, UINT64_MAX, 150);
 }
 
@@ -308,14 +308,14 @@ const char* bench_wuffs_crc32_ieee_100k() {
 
 const char* bench_mimic_crc32_ieee_10k() {
   CHECK_FOCUS(__func__);
-  return do_bench_io_buffers(mimic_bench_crc32_ieee, 0, tc_src,
+  return do_bench_io_buffers(mimic_bench_crc32_ieee, 0, tcounter_src,
                              &crc32_midsummer_gt, UINT64_MAX, UINT64_MAX, 1500);
 }
 
 const char* bench_mimic_crc32_ieee_100k() {
   CHECK_FOCUS(__func__);
-  return do_bench_io_buffers(mimic_bench_crc32_ieee, 0, tc_src, &crc32_pi_gt,
-                             UINT64_MAX, UINT64_MAX, 150);
+  return do_bench_io_buffers(mimic_bench_crc32_ieee, 0, tcounter_src,
+                             &crc32_pi_gt, UINT64_MAX, UINT64_MAX, 150);
 }
 
 #endif  // WUFFS_MIMIC

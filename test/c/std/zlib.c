@@ -322,14 +322,14 @@ const char* bench_wuffs_zlib_decode_10k() {
   CHECK_FOCUS(__func__);
   return do_bench_io_buffers(
       wuffs_zlib_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
-      tc_dst, &zlib_midsummer_gt, UINT64_MAX, UINT64_MAX, 300);
+      tcounter_dst, &zlib_midsummer_gt, UINT64_MAX, UINT64_MAX, 300);
 }
 
 const char* bench_wuffs_zlib_decode_100k() {
   CHECK_FOCUS(__func__);
   return do_bench_io_buffers(
       wuffs_zlib_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
-      tc_dst, &zlib_pi_gt, UINT64_MAX, UINT64_MAX, 30);
+      tcounter_dst, &zlib_pi_gt, UINT64_MAX, UINT64_MAX, 30);
 }
 
   // ---------------- Mimic Benches
@@ -338,13 +338,13 @@ const char* bench_wuffs_zlib_decode_100k() {
 
 const char* bench_mimic_zlib_decode_10k() {
   CHECK_FOCUS(__func__);
-  return do_bench_io_buffers(mimic_zlib_decode, 0, tc_dst, &zlib_midsummer_gt,
-                             UINT64_MAX, UINT64_MAX, 300);
+  return do_bench_io_buffers(mimic_zlib_decode, 0, tcounter_dst,
+                             &zlib_midsummer_gt, UINT64_MAX, UINT64_MAX, 300);
 }
 
 const char* bench_mimic_zlib_decode_100k() {
   CHECK_FOCUS(__func__);
-  return do_bench_io_buffers(mimic_zlib_decode, 0, tc_dst, &zlib_pi_gt,
+  return do_bench_io_buffers(mimic_zlib_decode, 0, tcounter_dst, &zlib_pi_gt,
                              UINT64_MAX, UINT64_MAX, 30);
 }
 

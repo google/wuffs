@@ -671,11 +671,12 @@ const char* check_io_buffers_equal(const char* prefix,
 // throughput_counter is whether to count dst or src bytes, or neither, when
 // calculating a benchmark's MB/s throughput number.
 //
-// Decoders typically use tc_dst. Encoders and hashes typically use tc_src.
+// Decoders typically use tcounter_dst. Encoders and hashes typically use
+// tcounter_src.
 typedef enum {
-  tc_neither = 0,
-  tc_dst = 1,
-  tc_src = 2,
+  tcounter_neither = 0,
+  tcounter_dst = 1,
+  tcounter_src = 2,
 } throughput_counter;
 
 const char* proc_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
@@ -684,7 +685,7 @@ const char* proc_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
                                                       uint64_t,
                                                       uint64_t),
                             uint32_t wuffs_initialize_flags,
-                            throughput_counter tc,
+                            throughput_counter tcounter,
                             golden_test* gt,
                             uint64_t wlimit,
                             uint64_t rlimit,
@@ -739,13 +740,13 @@ const char* proc_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
     if (status) {
       return status;
     }
-    switch (tc) {
-      case tc_neither:
+    switch (tcounter) {
+      case tcounter_neither:
         break;
-      case tc_dst:
+      case tcounter_dst:
         n_bytes += have.meta.wi;
         break;
-      case tc_src:
+      case tcounter_src:
         n_bytes += src.meta.ri - gt->src_offset0;
         break;
     }
@@ -773,7 +774,7 @@ const char* proc_token_decoder(
                               uint64_t,
                               uint64_t),
     uint32_t wuffs_initialize_flags,
-    throughput_counter tc,
+    throughput_counter tcounter,
     golden_test* gt,
     uint64_t wlimit,
     uint64_t rlimit,
@@ -825,13 +826,13 @@ const char* proc_token_decoder(
     if (status) {
       return status;
     }
-    switch (tc) {
-      case tc_neither:
+    switch (tcounter) {
+      case tcounter_neither:
         break;
-      case tc_dst:
-        RETURN_FAIL("cannot use tc_dst for token decoders");
+      case tcounter_dst:
+        RETURN_FAIL("cannot use tcounter_dst for token decoders");
         break;
-      case tc_src:
+      case tcounter_src:
         n_bytes += src.meta.ri - gt->src_offset0;
         break;
     }
@@ -849,13 +850,13 @@ const char* do_bench_io_buffers(
                               uint64_t,
                               uint64_t),
     uint32_t wuffs_initialize_flags,
-    throughput_counter tc,
+    throughput_counter tcounter,
     golden_test* gt,
     uint64_t wlimit,
     uint64_t rlimit,
     uint64_t iters_unscaled) {
-  return proc_io_buffers(codec_func, wuffs_initialize_flags, tc, gt, wlimit,
-                         rlimit, iters_unscaled * iterscale, true);
+  return proc_io_buffers(codec_func, wuffs_initialize_flags, tcounter, gt,
+                         wlimit, rlimit, iters_unscaled * iterscale, true);
 }
 
 const char* do_bench_token_decoder(
@@ -865,13 +866,13 @@ const char* do_bench_token_decoder(
                               uint64_t,
                               uint64_t),
     uint32_t wuffs_initialize_flags,
-    throughput_counter tc,
+    throughput_counter tcounter,
     golden_test* gt,
     uint64_t wlimit,
     uint64_t rlimit,
     uint64_t iters_unscaled) {
-  return proc_token_decoder(codec_func, wuffs_initialize_flags, tc, gt, wlimit,
-                            rlimit, iters_unscaled * iterscale, true);
+  return proc_token_decoder(codec_func, wuffs_initialize_flags, tcounter, gt,
+                            wlimit, rlimit, iters_unscaled * iterscale, true);
 }
 
 const char* do_test_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
@@ -884,7 +885,7 @@ const char* do_test_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
                                uint64_t rlimit) {
   return proc_io_buffers(codec_func,
                          WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
-                         tc_neither, gt, wlimit, rlimit, 1, false);
+                         tcounter_neither, gt, wlimit, rlimit, 1, false);
 }
 
 // --------
