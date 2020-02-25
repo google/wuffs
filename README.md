@@ -207,6 +207,8 @@ file the Contributor License Agreement before sending any pull requests (PRs).
 Of course, if you're new to the project, it's usually best to discuss any
 proposals and reach consensus before sending your first PR.
 
+Source code is [auto-formatted](/doc/note/auto-formatting.md).
+
 
 # License
 
