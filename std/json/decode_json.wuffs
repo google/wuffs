@@ -174,7 +174,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 						continue
 					}
 					args.dst.write_fast_token!(
-						value: 0x60_0001,
+						value: 0x20_0001,
 						length: 0)
 					break
 				}
@@ -192,7 +192,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 						if args.src.available() <= 0 {
 							if string_length > 0 {
 								args.dst.write_fast_token!(
-									value: 0x60_0001,
+									value: 0x20_0001,
 									length: string_length as base.u64)
 								string_length = 0
 							}
@@ -208,7 +208,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 						if c <= 0x22 {  // 0x22 is '"'.
 							if c == 0x22 {  // 0x22 is '"'.
 								args.dst.write_fast_token!(
-									value: 0x60_0000,
+									value: 0x20_0000,
 									length: string_length as base.u64)
 								string_length = 0
 								break.string_loop
@@ -216,7 +216,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 							} else if c < 0x20 {  // 0x20 is ' '.
 								if string_length > 0 {
 									args.dst.write_fast_token!(
-										value: 0x60_0001,
+										value: 0x20_0001,
 										length: string_length as base.u64)
 									string_length = 0
 								}
@@ -226,7 +226,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 						} else if c == 0x5C {  // 0x5C is '\\'.
 							if string_length > 0 {
 								args.dst.write_fast_token!(
-									value: 0x60_0001,
+									value: 0x20_0001,
 									length: string_length as base.u64)
 								string_length = 0
 								if args.dst.available() <= 0 {
@@ -248,7 +248,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 							if c > 0 {
 								args.src.skip32_fast!(actual: 2, worst_case: 2)
 								args.dst.write_fast_token!(
-									value: 0x80_0000 | ((c & 0x7F) as base.u64),
+									value: 0xA0_0000 | ((c & 0x7F) as base.u64),
 									length: 2)
 								continue.string_loop
 
@@ -288,7 +288,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 									// Not a Unicode surrogate. We're good.
 									args.src.skip32_fast!(actual: 6, worst_case: 6)
 									args.dst.write_fast_token!(
-										value: 0x80_0000 | (uni4_value as base.u64),
+										value: 0xA0_0000 | (uni4_value as base.u64),
 										length: 6)
 									continue.string_loop
 
@@ -351,7 +351,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 										uni4_value -= 0xDC00
 										args.src.skip32_fast!(actual: 8, worst_case: 8)
 										args.dst.write_fast_token!(
-											value: 0x80_0000 | ((uni4_high_surrogate + uni4_value) as base.u64),
+											value: 0xA0_0000 | ((uni4_high_surrogate + uni4_value) as base.u64),
 											length: 12)
 										continue.string_loop
 
@@ -378,7 +378,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 						args.src.skip32_fast!(actual: 1, worst_case: 1)
 						if string_length >= 0xFFFE {
 							args.dst.write_fast_token!(
-								value: 0x60_0001,
+								value: 0x20_0001,
 								length: 0xFFFF)
 							string_length = 0
 							continue.string_loop
@@ -448,9 +448,9 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 				{
 					number_length = this.decode_number!(src: args.src)
 					number_status = number_length >> 8
-					token_value = 0x40_0002
+					token_value = 0x80_0004
 					if (number_length & 0x80) <> 0 {
-						token_value = 0x40_0004
+						token_value = 0x80_0002
 					}
 					number_length = number_length & 0x7F
 					if number_status == 0 {
@@ -486,13 +486,13 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 				// -------- END   parse numbers.
 
 			} else if class == 0x05 {  // 0x05 is CLASS_OPEN_CURLY_BRACE.
-				token_value = 0x20_4011
+				token_value = 0x60_4011
 				if depth == 0 {
 					// No-op.
 				} else if 0 <> (expect_after_value & 0x0040) {  // 0x0040 is EXPECT_CLOSE_CURLY_BRACE.
-					token_value = 0x20_4041
+					token_value = 0x60_4041
 				} else {
-					token_value = 0x20_4021
+					token_value = 0x60_4021
 				}
 				if depth >= 1024 {
 					return "#unsupported recursion depth"
@@ -514,7 +514,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 				args.src.skip32_fast!(actual: 1, worst_case: 1)
 				if depth <= 1 {
 					args.dst.write_fast_token!(
-						value: 0x20_1042,
+						value: 0x60_1042,
 						length: 1)
 					break.outer
 				}
@@ -523,14 +523,14 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 				stack_bit = (depth - 1) & 31
 				if 0 == (this.stack[stack_byte] & ((1 as base.u32) << stack_bit)) {
 					args.dst.write_fast_token!(
-						value: 0x20_2042,
+						value: 0x60_2042,
 						length: 1)
 					// 0x0104 is (EXPECT_SQUARE_CLOSE_BRACKET | EXPECT_COMMA).
 					expect = 0x0104
 					expect_after_value = 0x0104
 				} else {
 					args.dst.write_fast_token!(
-						value: 0x20_4042,
+						value: 0x60_4042,
 						length: 1)
 					// 0x0044 is (EXPECT_CURLY_CLOSE_BRACE | EXPECT_COMMA).
 					expect = 0x0044
@@ -539,13 +539,13 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 				continue.outer
 
 			} else if class == 0x07 {  // 0x07 is CLASS_OPEN_SQUARE_BRACKET.
-				token_value = 0x20_2011
+				token_value = 0x60_2011
 				if depth == 0 {
 					// No-op.
 				} else if 0 <> (expect_after_value & 0x0040) {  // 0x0040 is EXPECT_CLOSE_CURLY_BRACE.
-					token_value = 0x20_2041
+					token_value = 0x60_2041
 				} else {
-					token_value = 0x20_2021
+					token_value = 0x60_2021
 				}
 				if depth >= 1024 {
 					return "#unsupported recursion depth"
@@ -567,7 +567,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 				args.src.skip32_fast!(actual: 1, worst_case: 1)
 				if depth <= 1 {
 					args.dst.write_fast_token!(
-						value: 0x20_1022,
+						value: 0x60_1022,
 						length: 1)
 					break.outer
 				}
@@ -576,14 +576,14 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 				stack_bit = (depth - 1) & 31
 				if 0 == (this.stack[stack_byte] & ((1 as base.u32) << stack_bit)) {
 					args.dst.write_fast_token!(
-						value: 0x20_2022,
+						value: 0x60_2022,
 						length: 1)
 					// 0x0104 is (EXPECT_CLOSE_SQUARE_BRACKET | EXPECT_COMMA).
 					expect = 0x0104
 					expect_after_value = 0x0104
 				} else {
 					args.dst.write_fast_token!(
-						value: 0x20_4022,
+						value: 0x60_4022,
 						length: 1)
 					// 0x0044 is (EXPECT_CLOSE_CURLY_BRACE | EXPECT_COMMA).
 					expect = 0x0044
@@ -595,7 +595,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 				match = args.src.match7(a: 0x6573_6C61_6605)  // 5 bytes "false".
 				if match == 0 {
 					args.dst.write_fast_token!(
-						value: 0x40_0041,
+						value: 0x80_0401,
 						length: 5)
 					if args.src.available() < 5 {
 						return "#internal error: inconsistent I/O"
@@ -611,7 +611,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 				match = args.src.match7(a: 0x65_7572_7404)  // 4 bytes "true".
 				if match == 0 {
 					args.dst.write_fast_token!(
-						value: 0x40_0081,
+						value: 0x80_0801,
 						length: 4)
 					if args.src.available() < 4 {
 						return "#internal error: inconsistent I/O"
@@ -627,7 +627,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 				match = args.src.match7(a: 0x6C_6C75_6E04)  // 4 bytes "null".
 				if match == 0 {
 					args.dst.write_fast_token!(
-						value: 0x40_0021,
+						value: 0x80_0201,
 						length: 4)
 					if args.src.available() < 4 {
 						return "#internal error: inconsistent I/O"
