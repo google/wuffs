@@ -123,29 +123,31 @@ wuffs_base__parse_number_i64(wuffs_base__slice_u8 s) {
     p++;
   }
 
-  wuffs_base__result_u64 r =
-      wuffs_base__parse_number_u64(wuffs_base__make_slice_u8(p, q - p));
-  if (r.status.repr != NULL) {
-    wuffs_base__result_i64 ret;
-    ret.status.repr = r.status.repr;
-    ret.value = 0;
-    return ret;
-  } else if (negative) {
-    if (r.value > 0x8000000000000000) {
+  do {
+    wuffs_base__result_u64 r =
+        wuffs_base__parse_number_u64(wuffs_base__make_slice_u8(p, q - p));
+    if (r.status.repr != NULL) {
+      wuffs_base__result_i64 ret;
+      ret.status.repr = r.status.repr;
+      ret.value = 0;
+      return ret;
+    } else if (negative) {
+      if (r.value > 0x8000000000000000) {
+        goto fail_out_of_bounds;
+      }
+      wuffs_base__result_i64 ret;
+      ret.status.repr = NULL;
+      ret.value = -(int64_t)(r.value);
+      return ret;
+    } else if (r.value > 0x7FFFFFFFFFFFFFFF) {
       goto fail_out_of_bounds;
+    } else {
+      wuffs_base__result_i64 ret;
+      ret.status.repr = NULL;
+      ret.value = +(int64_t)(r.value);
+      return ret;
     }
-    wuffs_base__result_i64 ret;
-    ret.status.repr = NULL;
-    ret.value = -(int64_t)(r.value);
-    return ret;
-  } else if (r.value > 0x7FFFFFFFFFFFFFFF) {
-    goto fail_out_of_bounds;
-  } else {
-    wuffs_base__result_i64 ret;
-    ret.status.repr = NULL;
-    ret.value = +(int64_t)(r.value);
-    return ret;
-  }
+  } while (0);
 
 fail_bad_argument:
   do {
