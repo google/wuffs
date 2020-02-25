@@ -16,6 +16,17 @@
 
 // ---------------- String Conversions
 
+// wuffs_base__parse_number_i64 parses the ASCII integer in s. For example, if
+// s contains the bytes "-123" then it will return the int64_t -123.
+//
+// It returns an error if s does not contain an integer or if the integer
+// within would overflow an int64_t.
+//
+// It is similar to wuffs_base__parse_number_u64 but it returns a signed
+// integer, not an unsigned integer. It also allows a leading '+' or '-'.
+wuffs_base__result_i64  //
+wuffs_base__parse_number_i64(wuffs_base__slice_u8 s);
+
 // wuffs_base__parse_number_u64 parses the ASCII integer in s. For example, if
 // s contains the bytes "123" then it will return the uint64_t 123.
 //

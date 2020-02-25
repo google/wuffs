@@ -69,6 +69,54 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 
 // ---------------- String Conversions Tests
 
+const char* test_strconv_parse_number_i64() {
+  CHECK_FOCUS(__func__);
+
+  const int64_t fail = 0xDEADBEEF;
+
+  struct {
+    int64_t want;
+    const char* str;
+  } test_cases[] = {
+      {.want = +0x0000000000000000, .str = "+0"},
+      {.want = +0x0000000000000000, .str = "-0"},
+      {.want = +0x0000000000000000, .str = "0"},
+      {.want = +0x000000000000012C, .str = "+300"},
+      {.want = +0x7FFFFFFFFFFFFFFF, .str = "+9223372036854775807"},
+      {.want = +0x7FFFFFFFFFFFFFFF, .str = "9223372036854775807"},
+      {.want = -0x0000000000000002, .str = "-2"},
+      {.want = -0x00000000000000AB, .str = "_-_0x_AB"},
+      {.want = -0x7FFFFFFFFFFFFFFF, .str = "-9223372036854775807"},
+      {.want = -0x8000000000000000, .str = "-9223372036854775808"},
+
+      {.want = fail, .str = "+ 1"},
+      {.want = fail, .str = "++1"},
+      {.want = fail, .str = "+-1"},
+      {.want = fail, .str = "+9223372036854775808"},  // 1 << 63.
+      {.want = fail, .str = "-"},
+      {.want = fail, .str = "-+1"},
+      {.want = fail, .str = "-0x8000000000000001"},   // -((1 << 63) + 1).
+      {.want = fail, .str = "-9223372036854775809"},  // -((1 << 63) + 1).
+      {.want = fail, .str = "0x8000000000000000"},    // 1 << 63.
+      {.want = fail, .str = "1-"},
+      {.want = fail, .str = "9223372036854775808"},  // 1 << 63.
+  };
+
+  int i;
+  for (i = 0; i < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); i++) {
+    wuffs_base__result_i64 r =
+        wuffs_base__parse_number_i64(wuffs_base__make_slice_u8(
+            (void*)test_cases[i].str, strlen(test_cases[i].str)));
+    int64_t have = (r.status.repr == NULL) ? r.value : fail;
+    if (have != test_cases[i].want) {
+      RETURN_FAIL("\"%s\": have 0x%" PRIX64 ", want 0x%" PRIX64,
+                  test_cases[i].str, have, test_cases[i].want);
+    }
+  }
+
+  return NULL;
+}
+
 const char* test_strconv_parse_number_u64() {
   CHECK_FOCUS(__func__);
 
@@ -324,6 +372,7 @@ proc tests[] = {
     // These strconv tests are really testing the Wuffs base library. They
     // aren't specific to the std/json code, but putting them here is as good
     // as any other place.
+    test_strconv_parse_number_i64,  //
     test_strconv_parse_number_u64,  //
 
     test_wuffs_json_decode_tokens,            //

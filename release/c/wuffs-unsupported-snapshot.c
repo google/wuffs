@@ -3069,6 +3069,17 @@ wuffs_base__pixel_swizzler::swizzle_interleaved(
 
 // ---------------- String Conversions
 
+// wuffs_base__parse_number_i64 parses the ASCII integer in s. For example, if
+// s contains the bytes "-123" then it will return the int64_t -123.
+//
+// It returns an error if s does not contain an integer or if the integer
+// within would overflow an int64_t.
+//
+// It is similar to wuffs_base__parse_number_u64 but it returns a signed
+// integer, not an unsigned integer. It also allows a leading '+' or '-'.
+wuffs_base__result_i64  //
+wuffs_base__parse_number_i64(wuffs_base__slice_u8 s);
+
 // wuffs_base__parse_number_u64 parses the ASCII integer in s. For example, if
 // s contains the bytes "123" then it will return the uint64_t 123.
 //
@@ -8081,6 +8092,65 @@ static const uint8_t wuffs_base__parse_number__hexadecimal_digits[256] = {
 };
 
 // --------
+
+wuffs_base__result_i64  //
+wuffs_base__parse_number_i64(wuffs_base__slice_u8 s) {
+  uint8_t* p = s.ptr;
+  uint8_t* q = s.ptr + s.len;
+
+  for (; (p < q) && (*p == '_'); p++) {
+  }
+
+  bool negative = false;
+  if (p >= q) {
+    goto fail_bad_argument;
+  } else if (*p == '-') {
+    p++;
+    negative = true;
+  } else if (*p == '+') {
+    p++;
+  }
+
+  wuffs_base__result_u64 r =
+      wuffs_base__parse_number_u64(wuffs_base__make_slice_u8(p, q - p));
+  if (r.status.repr != NULL) {
+    wuffs_base__result_i64 ret;
+    ret.status.repr = r.status.repr;
+    ret.value = 0;
+    return ret;
+  } else if (negative) {
+    if (r.value > 0x8000000000000000) {
+      goto fail_out_of_bounds;
+    }
+    wuffs_base__result_i64 ret;
+    ret.status.repr = NULL;
+    ret.value = -(int64_t)(r.value);
+    return ret;
+  } else if (r.value > 0x7FFFFFFFFFFFFFFF) {
+    goto fail_out_of_bounds;
+  } else {
+    wuffs_base__result_i64 ret;
+    ret.status.repr = NULL;
+    ret.value = +(int64_t)(r.value);
+    return ret;
+  }
+
+fail_bad_argument:
+  do {
+    wuffs_base__result_i64 ret;
+    ret.status.repr = wuffs_base__error__bad_argument;
+    ret.value = 0;
+    return ret;
+  } while (0);
+
+fail_out_of_bounds:
+  do {
+    wuffs_base__result_i64 ret;
+    ret.status.repr = wuffs_base__error__out_of_bounds;
+    ret.value = 0;
+    return ret;
+  } while (0);
+}
 
 wuffs_base__result_u64  //
 wuffs_base__parse_number_u64(wuffs_base__slice_u8 s) {
