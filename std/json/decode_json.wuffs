@@ -12,9 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// TODO: "decoder implements base.token_decoder".
-
-pub struct decoder?(
+pub struct decoder? implements base.token_decoder(
 )(
 	// stack is conceptually an array of bits, implemented as an array of u32.
 	// The N'th bit being 0 or 1 means that we're in an array or object, where

@@ -227,33 +227,18 @@ test_wuffs_json_decode_tokens() {
                    &dec, sizeof dec, WUFFS_VERSION,
                    WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
 
-  wuffs_base__token_buffer have = ((wuffs_base__token_buffer){
-      .data = global_have_token_slice,
-  });
-  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
-  });
-  CHECK_STRING(read_file(&src, "test/data/github-tags.json"));
+  const uint64_t vbc = WUFFS_BASE__TOKEN__VBC__STRUCTURE;
+  const uint64_t vbd = WUFFS_BASE__TOKEN__VBD__STRUCTURE__POP |
+                       WUFFS_BASE__TOKEN__VBD__STRUCTURE__FROM_LIST |
+                       WUFFS_BASE__TOKEN__VBD__STRUCTURE__TO_NONE;
+  const uint64_t len = 1;
 
-  wuffs_base__status status =
-      wuffs_json__decoder__decode_tokens(&dec, &have, &src);
-  if (0) {
-    uint64_t pos = 0;
-    size_t i;
-    for (i = have.meta.ri; i < have.meta.wi; i++) {
-      wuffs_base__token* t = &have.data.ptr[i];
-      uint64_t len = wuffs_base__token__length(t);
-      uint64_t bc = wuffs_base__token__value_base_category(t);
-      uint64_t bd = wuffs_base__token__value_base_detail(t);
-      printf("i=%3zu\tp=%4" PRIu64 " (0x%03" PRIX64 ")\tl=%3" PRIu64
-             "\tbc=%3" PRIu64 "\tbd=0x%06" PRIX64 "\n",
-             i, pos, pos, len, bc, bd);
-      pos = wuffs_base__u64__sat_add(pos, len);
-    }
-    CHECK_STATUS("decode_tokens", status);
-  }
-
-  return NULL;
+  return do_test__wuffs_base__token_decoder(
+      wuffs_json__decoder__upcast_as__wuffs_base__token_decoder(&dec),
+      "test/data/github-tags.json", 0, SIZE_MAX,
+      (vbc << WUFFS_BASE__TOKEN__VALUE_BASE_CATEGORY__SHIFT) |
+          (vbd << WUFFS_BASE__TOKEN__VALUE_BASE_DETAIL__SHIFT) |
+          (len << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
 }
 
 const char*  //

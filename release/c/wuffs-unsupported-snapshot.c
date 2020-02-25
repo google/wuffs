@@ -3382,6 +3382,45 @@ struct wuffs_base__io_transformer__struct {
 
 #endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
+// --------
+
+extern const char* wuffs_base__token_decoder__vtable_name;
+
+typedef struct {
+  wuffs_base__status (*decode_tokens)(void* self,
+                                      wuffs_base__token_buffer* a_dst,
+                                      wuffs_base__io_buffer* a_src);
+} wuffs_base__token_decoder__func_ptrs;
+
+typedef struct wuffs_base__token_decoder__struct wuffs_base__token_decoder;
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
+wuffs_base__token_decoder__decode_tokens(wuffs_base__token_decoder* self,
+                                         wuffs_base__token_buffer* a_dst,
+                                         wuffs_base__io_buffer* a_src);
+
+#if defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
+
+struct wuffs_base__token_decoder__struct {
+  struct {
+    uint32_t magic;
+    uint32_t active_coroutine;
+    wuffs_base__vtable first_vtable;
+  } private_impl;
+
+#ifdef __cplusplus
+
+  inline wuffs_base__status  //
+  decode_tokens(wuffs_base__token_buffer* a_dst, wuffs_base__io_buffer* a_src) {
+    return wuffs_base__token_decoder__decode_tokens(this, a_dst, a_src);
+  }
+
+#endif  // __cplusplus
+
+};  // struct wuffs_base__token_decoder__struct
+
+#endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
+
 // ----------------
 
 #ifdef __cplusplus
@@ -5239,6 +5278,12 @@ sizeof__wuffs_json__decoder();
 
 // ---------------- Upcasts
 
+static inline wuffs_base__token_decoder*  //
+wuffs_json__decoder__upcast_as__wuffs_base__token_decoder(
+    wuffs_json__decoder* p) {
+  return (wuffs_base__token_decoder*)p;
+}
+
 // ---------------- Public Function Prototypes
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
@@ -5266,6 +5311,7 @@ struct wuffs_json__decoder__struct {
   struct {
     uint32_t magic;
     uint32_t active_coroutine;
+    wuffs_base__vtable vtable_for__wuffs_base__token_decoder;
     wuffs_base__vtable null_vtable;
 
     uint32_t p_decode_tokens[1];
@@ -5316,6 +5362,11 @@ struct wuffs_json__decoder__struct {
              uint32_t initialize_flags) {
     return wuffs_json__decoder__initialize(this, sizeof_star_self,
                                            wuffs_version, initialize_flags);
+  }
+
+  inline wuffs_base__token_decoder*  //
+  upcast_as__wuffs_base__token_decoder() {
+    return (wuffs_base__token_decoder*)this;
   }
 
   inline wuffs_base__status  //
@@ -7075,6 +7126,41 @@ wuffs_base__io_transformer__workbuf_len(
   }
 
   return wuffs_base__utility__empty_range_ii_u64();
+}
+
+// --------
+
+const char* wuffs_base__token_decoder__vtable_name =
+    "{vtable}wuffs_base__token_decoder";
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
+wuffs_base__token_decoder__decode_tokens(wuffs_base__token_decoder* self,
+                                         wuffs_base__token_buffer* a_dst,
+                                         wuffs_base__io_buffer* a_src) {
+  if (!self) {
+    return wuffs_base__make_status(wuffs_base__error__bad_receiver);
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_status(
+        (self->private_impl.magic == WUFFS_BASE__DISABLED)
+            ? wuffs_base__error__disabled_by_previous_error
+            : wuffs_base__error__initialize_not_called);
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__token_decoder__vtable_name) {
+      const wuffs_base__token_decoder__func_ptrs* func_ptrs =
+          (const wuffs_base__token_decoder__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->decode_tokens)(self, a_dst, a_src);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return wuffs_base__make_status(wuffs_base__error__bad_vtable);
 }
 
 // ---------------- Images
@@ -18673,6 +18759,14 @@ wuffs_json__decoder__decode_digits(wuffs_json__decoder* self,
 
 // ---------------- VTables
 
+const wuffs_base__token_decoder__func_ptrs
+    wuffs_json__decoder__func_ptrs_for__wuffs_base__token_decoder = {
+        (wuffs_base__status(*)(void*,
+                               wuffs_base__token_buffer*,
+                               wuffs_base__io_buffer*))(
+            &wuffs_json__decoder__decode_tokens),
+};
+
 // ---------------- Initializer Implementations
 
 wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
@@ -18716,6 +18810,10 @@ wuffs_json__decoder__initialize(wuffs_json__decoder* self,
   }
 
   self->private_impl.magic = WUFFS_BASE__MAGIC;
+  self->private_impl.vtable_for__wuffs_base__token_decoder.vtable_name =
+      wuffs_base__token_decoder__vtable_name;
+  self->private_impl.vtable_for__wuffs_base__token_decoder.function_pointers =
+      (const void*)(&wuffs_json__decoder__func_ptrs_for__wuffs_base__token_decoder);
   return wuffs_base__make_status(NULL);
 }
 

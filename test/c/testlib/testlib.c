@@ -1011,10 +1011,10 @@ do_test__wuffs_base__image_decoder(
     }
   }
 
-  if ((want_width > 0) && (want_height > 0)) {
+  if ((have_width > 0) && (have_height > 0)) {
     wuffs_base__color_u32_argb_premul have_final_pixel =
-        wuffs_base__pixel_buffer__color_u32_at(&pb, want_width - 1,
-                                               want_height - 1);
+        wuffs_base__pixel_buffer__color_u32_at(&pb, have_width - 1,
+                                               have_height - 1);
     if (have_final_pixel != want_final_pixel) {
       RETURN_FAIL("final pixel: have 0x%08" PRIX32 ", want 0x%08" PRIX32,
                   have_final_pixel, want_final_pixel);
@@ -1054,9 +1054,33 @@ do_test__wuffs_base__io_transformer(wuffs_base__io_transformer* b,
   if (have.meta.wi != want_wi) {
     RETURN_FAIL("dst wi: have %zu, want %zu", have.meta.wi, want_wi);
   }
-  if ((want_wi > 0) && (have.data.ptr[want_wi - 1] != want_final_byte)) {
+  if ((have.meta.wi > 0) &&
+      (have.data.ptr[have.meta.wi - 1] != want_final_byte)) {
     RETURN_FAIL("final byte: have 0x%02X, want 0x%02X",
-                have.data.ptr[want_wi - 1], want_final_byte);
+                have.data.ptr[have.meta.wi - 1], want_final_byte);
+  }
+  return NULL;
+}
+
+const char*  //
+do_test__wuffs_base__token_decoder(wuffs_base__token_decoder* b,
+                                   const char* src_filename,
+                                   size_t src_ri,
+                                   size_t src_wi,
+                                   uint64_t want_final_token_repr) {
+  wuffs_base__token_buffer have = ((wuffs_base__token_buffer){
+      .data = global_have_token_slice,
+  });
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = global_src_slice,
+  });
+  CHECK_STRING(read_file_fragment(&src, src_filename, src_ri, src_wi));
+  CHECK_STATUS("decode_tokens",
+               wuffs_base__token_decoder__decode_tokens(b, &have, &src));
+  if ((have.meta.wi > 0) &&
+      (have.data.ptr[have.meta.wi - 1].repr != want_final_token_repr)) {
+    RETURN_FAIL("final token: have 0x%" PRIX64 ", want 0x%" PRIX64,
+                have.data.ptr[have.meta.wi - 1].repr, want_final_token_repr);
   }
   return NULL;
 }

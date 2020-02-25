@@ -373,12 +373,14 @@ var Interfaces = []string{
 	"hasher_u32",
 	"image_decoder",
 	"io_transformer",
+	"token_decoder",
 }
 
 var InterfacesMap = map[string]bool{
 	"hasher_u32":     true,
 	"image_decoder":  true,
 	"io_transformer": true,
+	"token_decoder":  true,
 }
 
 var InterfaceFuncs = []string{
@@ -408,6 +410,10 @@ var InterfaceFuncs = []string{
 
 	"io_transformer.transform_io?(dst: io_writer, src: io_reader, workbuf: slice u8)",
 	"io_transformer.workbuf_len() range_ii_u64",
+
+	// ---- token_decoder
+
+	"token_decoder.decode_tokens?(dst: token_writer, src: io_reader)",
 }
 
 // The "T1" and "T2" types here are placeholders for generic "slice T" or
