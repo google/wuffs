@@ -214,7 +214,7 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 				if p.size != p.n {
 					b.printf("((uint%d_t)(", p.size)
 				}
-				b.printf("wuffs_base__load_u%d%ce(%s%s)", p.n, p.endianness, iopPrefix, name)
+				b.printf("wuffs_base__load_u%d%ce__no_bounds_check(%s%s)", p.n, p.endianness, iopPrefix, name)
 				if p.size != p.n {
 					b.writes("))")
 				}
@@ -308,7 +308,7 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 				// final part is a function call (to a static inline function)
 				// instead of a struct literal, to avoid a "expression result
 				// unused" compiler error.
-				b.printf("(wuffs_base__store_u%d%ce(%s%s,", p.n, p.endianness, iopPrefix, name)
+				b.printf("(wuffs_base__store_u%d%ce__no_bounds_check(%s%s,", p.n, p.endianness, iopPrefix, name)
 				if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
 					return err
 				}
@@ -746,7 +746,7 @@ func (g *gen) writeReadUxxAsUyy(b *buffer, n *a.Expr, preName string, xx uint8, 
 	if xx != yy {
 		b.printf("((uint%d_t)(", yy)
 	}
-	b.printf("wuffs_base__load_u%d%ce(iop_a_src)", xx, endianness)
+	b.printf("wuffs_base__load_u%d%ce__no_bounds_check(iop_a_src)", xx, endianness)
 	if xx != yy {
 		b.writes("))")
 	}

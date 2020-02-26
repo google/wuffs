@@ -1001,7 +1001,7 @@ do_test__wuffs_base__image_decoder(
     RETURN_FAIL("pixbuf_len too large");
   } else {
     wuffs_base__color_u32_argb_premul have_final_pixel =
-        wuffs_base__load_u32le(&global_pixel_array[n - 4]);
+        wuffs_base__load_u32le__no_bounds_check(&global_pixel_array[n - 4]);
     if (have_final_pixel != want_final_pixel) {
       RETURN_FAIL("final pixel: have 0x%08" PRIX32 ", want 0x%08" PRIX32,
                   have_final_pixel, want_final_pixel);
@@ -1092,8 +1092,8 @@ do_test__wuffs_base__token_decoder(wuffs_base__token_decoder* b,
     uint64_t len = wuffs_base__token__length(t);
 
     if (wuffs_base__token__value(t) != 0) {
-      uint64_t major = wuffs_base__token__value_major(t);
-      uint64_t minor = wuffs_base__token__value_minor(t);
+      uint64_t maj = wuffs_base__token__value_major(t);
+      uint64_t min = wuffs_base__token__value_minor(t);
 
       if ((have.data.len - have.meta.wi) < 16) {
         return "testlib: output is too long";
@@ -1101,10 +1101,10 @@ do_test__wuffs_base__token_decoder(wuffs_base__token_decoder* b,
       // This 16-bytes-per-token debug format is the same one used by
       // `script/print-json-token-debug-format.c`.
       uint8_t* ptr = have.data.ptr + have.meta.wi;
-      wuffs_base__store_u32be(ptr + (0 * 4), (uint32_t)(pos));
-      wuffs_base__store_u32be(ptr + (1 * 4), (uint32_t)(len));
-      wuffs_base__store_u32be(ptr + (2 * 4), (uint32_t)(major));
-      wuffs_base__store_u32be(ptr + (3 * 4), (uint32_t)(minor));
+      wuffs_base__store_u32be__no_bounds_check(ptr + (0 * 4), (uint32_t)(pos));
+      wuffs_base__store_u32be__no_bounds_check(ptr + (1 * 4), (uint32_t)(len));
+      wuffs_base__store_u32be__no_bounds_check(ptr + (2 * 4), (uint32_t)(maj));
+      wuffs_base__store_u32be__no_bounds_check(ptr + (3 * 4), (uint32_t)(min));
       have.meta.wi += 16;
     }
 

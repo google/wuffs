@@ -135,20 +135,6 @@ bool color_flag = false;
 bool quirk_honor_background_color_flag = false;
 const int stdout_fd = 1;
 
-static inline uint32_t  //
-load_u32le(uint8_t* p) {
-  return ((uint32_t)(p[0]) << 0) | ((uint32_t)(p[1]) << 8) |
-         ((uint32_t)(p[2]) << 16) | ((uint32_t)(p[3]) << 24);
-}
-
-static inline void  //
-store_u32le(uint8_t* p, uint32_t x) {
-  p[0] = (uint8_t)(x >> 0);
-  p[1] = (uint8_t)(x >> 8);
-  p[2] = (uint8_t)(x >> 16);
-  p[3] = (uint8_t)(x >> 24);
-}
-
 void  //
 restore_background(wuffs_base__pixel_buffer* pb,
                    wuffs_base__rect_ie_u32 bounds,
@@ -159,7 +145,7 @@ restore_background(wuffs_base__pixel_buffer* pb,
     size_t x;
     uint8_t* d = curr_dst_buffer + (y * width4) + (bounds.min_incl_x * 4);
     for (x = bounds.min_incl_x; x < bounds.max_excl_x; x++) {
-      store_u32le(d, background_color);
+      wuffs_base__store_u32le__no_bounds_check(d, background_color);
       d += sizeof(wuffs_base__color_u32_argb_premul);
     }
   }
@@ -177,7 +163,8 @@ print_ascii_art(wuffs_base__pixel_buffer* pb) {
   for (y = 0; y < height; y++) {
     uint32_t x;
     for (x = 0; x < width; x++) {
-      wuffs_base__color_u32_argb_premul c = load_u32le(d);
+      wuffs_base__color_u32_argb_premul c =
+          wuffs_base__load_u32le__no_bounds_check(d);
       d += sizeof(wuffs_base__color_u32_argb_premul);
       // Convert to grayscale via the formula
       //  Y = (0.299 * R) + (0.587 * G) + (0.114 * B)
@@ -206,7 +193,8 @@ print_color_art(wuffs_base__pixel_buffer* pb) {
   for (y = 0; y < height; y++) {
     uint32_t x;
     for (x = 0; x < width; x++) {
-      wuffs_base__color_u32_argb_premul c = load_u32le(d);
+      wuffs_base__color_u32_argb_premul c =
+          wuffs_base__load_u32le__no_bounds_check(d);
       d += sizeof(wuffs_base__color_u32_argb_premul);
       int b = 0xFF & (c >> 0);
       int g = 0xFF & (c >> 8);
@@ -354,7 +342,7 @@ play() {
       size_t n = dst_len / sizeof(wuffs_base__color_u32_argb_premul);
       uint8_t* p = curr_dst_buffer;
       for (i = 0; i < n; i++) {
-        store_u32le(p, background_color);
+        wuffs_base__store_u32le__no_bounds_check(p, background_color);
         p += sizeof(wuffs_base__color_u32_argb_premul);
       }
     }

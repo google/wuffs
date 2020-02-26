@@ -268,6 +268,16 @@ typedef int64_t wuffs_base__flicks;
 
 // ---------------- Numeric Types
 
+// The helpers below are functions, instead of macros, because their arguments
+// can be an expression that we shouldn't evaluate more than once.
+//
+// They are static, so that linking multiple wuffs .o files won't complain about
+// duplicate function definitions.
+//
+// They are explicitly marked inline, even if modern compilers don't use the
+// inline attribute to guide optimizations such as inlining, to avoid the
+// -Wunused-function warning, and we like to compile with -Wall -Werror.
+
 static inline uint8_t  //
 wuffs_base__u8__min(uint8_t x, uint8_t y) {
   return x < y ? x : y;
@@ -370,6 +380,250 @@ wuffs_base__u64__sat_sub(uint64_t x, uint64_t y) {
   uint64_t res = (uint64_t)(x - y);
   res &= (uint64_t)(-(res <= x));
   return res;
+}
+
+  // --------
+
+#define wuffs_base__load_u8be__no_bounds_check \
+  wuffs_base__load_u8__no_bounds_check
+#define wuffs_base__load_u8le__no_bounds_check \
+  wuffs_base__load_u8__no_bounds_check
+
+static inline uint8_t  //
+wuffs_base__load_u8__no_bounds_check(uint8_t* p) {
+  return p[0];
+}
+
+static inline uint16_t  //
+wuffs_base__load_u16be__no_bounds_check(uint8_t* p) {
+  return (uint16_t)(((uint16_t)(p[0]) << 8) | ((uint16_t)(p[1]) << 0));
+}
+
+static inline uint16_t  //
+wuffs_base__load_u16le__no_bounds_check(uint8_t* p) {
+  return (uint16_t)(((uint16_t)(p[0]) << 0) | ((uint16_t)(p[1]) << 8));
+}
+
+static inline uint32_t  //
+wuffs_base__load_u24be__no_bounds_check(uint8_t* p) {
+  return ((uint32_t)(p[0]) << 16) | ((uint32_t)(p[1]) << 8) |
+         ((uint32_t)(p[2]) << 0);
+}
+
+static inline uint32_t  //
+wuffs_base__load_u24le__no_bounds_check(uint8_t* p) {
+  return ((uint32_t)(p[0]) << 0) | ((uint32_t)(p[1]) << 8) |
+         ((uint32_t)(p[2]) << 16);
+}
+
+static inline uint32_t  //
+wuffs_base__load_u32be__no_bounds_check(uint8_t* p) {
+  return ((uint32_t)(p[0]) << 24) | ((uint32_t)(p[1]) << 16) |
+         ((uint32_t)(p[2]) << 8) | ((uint32_t)(p[3]) << 0);
+}
+
+static inline uint32_t  //
+wuffs_base__load_u32le__no_bounds_check(uint8_t* p) {
+  return ((uint32_t)(p[0]) << 0) | ((uint32_t)(p[1]) << 8) |
+         ((uint32_t)(p[2]) << 16) | ((uint32_t)(p[3]) << 24);
+}
+
+static inline uint64_t  //
+wuffs_base__load_u40be__no_bounds_check(uint8_t* p) {
+  return ((uint64_t)(p[0]) << 32) | ((uint64_t)(p[1]) << 24) |
+         ((uint64_t)(p[2]) << 16) | ((uint64_t)(p[3]) << 8) |
+         ((uint64_t)(p[4]) << 0);
+}
+
+static inline uint64_t  //
+wuffs_base__load_u40le__no_bounds_check(uint8_t* p) {
+  return ((uint64_t)(p[0]) << 0) | ((uint64_t)(p[1]) << 8) |
+         ((uint64_t)(p[2]) << 16) | ((uint64_t)(p[3]) << 24) |
+         ((uint64_t)(p[4]) << 32);
+}
+
+static inline uint64_t  //
+wuffs_base__load_u48be__no_bounds_check(uint8_t* p) {
+  return ((uint64_t)(p[0]) << 40) | ((uint64_t)(p[1]) << 32) |
+         ((uint64_t)(p[2]) << 24) | ((uint64_t)(p[3]) << 16) |
+         ((uint64_t)(p[4]) << 8) | ((uint64_t)(p[5]) << 0);
+}
+
+static inline uint64_t  //
+wuffs_base__load_u48le__no_bounds_check(uint8_t* p) {
+  return ((uint64_t)(p[0]) << 0) | ((uint64_t)(p[1]) << 8) |
+         ((uint64_t)(p[2]) << 16) | ((uint64_t)(p[3]) << 24) |
+         ((uint64_t)(p[4]) << 32) | ((uint64_t)(p[5]) << 40);
+}
+
+static inline uint64_t  //
+wuffs_base__load_u56be__no_bounds_check(uint8_t* p) {
+  return ((uint64_t)(p[0]) << 48) | ((uint64_t)(p[1]) << 40) |
+         ((uint64_t)(p[2]) << 32) | ((uint64_t)(p[3]) << 24) |
+         ((uint64_t)(p[4]) << 16) | ((uint64_t)(p[5]) << 8) |
+         ((uint64_t)(p[6]) << 0);
+}
+
+static inline uint64_t  //
+wuffs_base__load_u56le__no_bounds_check(uint8_t* p) {
+  return ((uint64_t)(p[0]) << 0) | ((uint64_t)(p[1]) << 8) |
+         ((uint64_t)(p[2]) << 16) | ((uint64_t)(p[3]) << 24) |
+         ((uint64_t)(p[4]) << 32) | ((uint64_t)(p[5]) << 40) |
+         ((uint64_t)(p[6]) << 48);
+}
+
+static inline uint64_t  //
+wuffs_base__load_u64be__no_bounds_check(uint8_t* p) {
+  return ((uint64_t)(p[0]) << 56) | ((uint64_t)(p[1]) << 48) |
+         ((uint64_t)(p[2]) << 40) | ((uint64_t)(p[3]) << 32) |
+         ((uint64_t)(p[4]) << 24) | ((uint64_t)(p[5]) << 16) |
+         ((uint64_t)(p[6]) << 8) | ((uint64_t)(p[7]) << 0);
+}
+
+static inline uint64_t  //
+wuffs_base__load_u64le__no_bounds_check(uint8_t* p) {
+  return ((uint64_t)(p[0]) << 0) | ((uint64_t)(p[1]) << 8) |
+         ((uint64_t)(p[2]) << 16) | ((uint64_t)(p[3]) << 24) |
+         ((uint64_t)(p[4]) << 32) | ((uint64_t)(p[5]) << 40) |
+         ((uint64_t)(p[6]) << 48) | ((uint64_t)(p[7]) << 56);
+}
+
+  // --------
+
+#define wuffs_base__store_u8be__no_bounds_check \
+  wuffs_base__store_u8__no_bounds_check
+#define wuffs_base__store_u8le__no_bounds_check \
+  wuffs_base__store_u8__no_bounds_check
+
+static inline void  //
+wuffs_base__store_u8__no_bounds_check(uint8_t* p, uint8_t x) {
+  p[0] = x;
+}
+
+static inline void  //
+wuffs_base__store_u16be__no_bounds_check(uint8_t* p, uint16_t x) {
+  p[0] = (uint8_t)(x >> 8);
+  p[1] = (uint8_t)(x >> 0);
+}
+
+static inline void  //
+wuffs_base__store_u16le__no_bounds_check(uint8_t* p, uint16_t x) {
+  p[0] = (uint8_t)(x >> 0);
+  p[1] = (uint8_t)(x >> 8);
+}
+
+static inline void  //
+wuffs_base__store_u24be__no_bounds_check(uint8_t* p, uint32_t x) {
+  p[0] = (uint8_t)(x >> 16);
+  p[1] = (uint8_t)(x >> 8);
+  p[2] = (uint8_t)(x >> 0);
+}
+
+static inline void  //
+wuffs_base__store_u24le__no_bounds_check(uint8_t* p, uint32_t x) {
+  p[0] = (uint8_t)(x >> 0);
+  p[1] = (uint8_t)(x >> 8);
+  p[2] = (uint8_t)(x >> 16);
+}
+
+static inline void  //
+wuffs_base__store_u32be__no_bounds_check(uint8_t* p, uint32_t x) {
+  p[0] = (uint8_t)(x >> 24);
+  p[1] = (uint8_t)(x >> 16);
+  p[2] = (uint8_t)(x >> 8);
+  p[3] = (uint8_t)(x >> 0);
+}
+
+static inline void  //
+wuffs_base__store_u32le__no_bounds_check(uint8_t* p, uint32_t x) {
+  p[0] = (uint8_t)(x >> 0);
+  p[1] = (uint8_t)(x >> 8);
+  p[2] = (uint8_t)(x >> 16);
+  p[3] = (uint8_t)(x >> 24);
+}
+
+static inline void  //
+wuffs_base__store_u40be__no_bounds_check(uint8_t* p, uint64_t x) {
+  p[0] = (uint8_t)(x >> 32);
+  p[1] = (uint8_t)(x >> 24);
+  p[2] = (uint8_t)(x >> 16);
+  p[3] = (uint8_t)(x >> 8);
+  p[4] = (uint8_t)(x >> 0);
+}
+
+static inline void  //
+wuffs_base__store_u40le__no_bounds_check(uint8_t* p, uint64_t x) {
+  p[0] = (uint8_t)(x >> 0);
+  p[1] = (uint8_t)(x >> 8);
+  p[2] = (uint8_t)(x >> 16);
+  p[3] = (uint8_t)(x >> 24);
+  p[4] = (uint8_t)(x >> 32);
+}
+
+static inline void  //
+wuffs_base__store_u48be__no_bounds_check(uint8_t* p, uint64_t x) {
+  p[0] = (uint8_t)(x >> 40);
+  p[1] = (uint8_t)(x >> 32);
+  p[2] = (uint8_t)(x >> 24);
+  p[3] = (uint8_t)(x >> 16);
+  p[4] = (uint8_t)(x >> 8);
+  p[5] = (uint8_t)(x >> 0);
+}
+
+static inline void  //
+wuffs_base__store_u48le__no_bounds_check(uint8_t* p, uint64_t x) {
+  p[0] = (uint8_t)(x >> 0);
+  p[1] = (uint8_t)(x >> 8);
+  p[2] = (uint8_t)(x >> 16);
+  p[3] = (uint8_t)(x >> 24);
+  p[4] = (uint8_t)(x >> 32);
+  p[5] = (uint8_t)(x >> 40);
+}
+
+static inline void  //
+wuffs_base__store_u56be__no_bounds_check(uint8_t* p, uint64_t x) {
+  p[0] = (uint8_t)(x >> 48);
+  p[1] = (uint8_t)(x >> 40);
+  p[2] = (uint8_t)(x >> 32);
+  p[3] = (uint8_t)(x >> 24);
+  p[4] = (uint8_t)(x >> 16);
+  p[5] = (uint8_t)(x >> 8);
+  p[6] = (uint8_t)(x >> 0);
+}
+
+static inline void  //
+wuffs_base__store_u56le__no_bounds_check(uint8_t* p, uint64_t x) {
+  p[0] = (uint8_t)(x >> 0);
+  p[1] = (uint8_t)(x >> 8);
+  p[2] = (uint8_t)(x >> 16);
+  p[3] = (uint8_t)(x >> 24);
+  p[4] = (uint8_t)(x >> 32);
+  p[5] = (uint8_t)(x >> 40);
+  p[6] = (uint8_t)(x >> 48);
+}
+
+static inline void  //
+wuffs_base__store_u64be__no_bounds_check(uint8_t* p, uint64_t x) {
+  p[0] = (uint8_t)(x >> 56);
+  p[1] = (uint8_t)(x >> 48);
+  p[2] = (uint8_t)(x >> 40);
+  p[3] = (uint8_t)(x >> 32);
+  p[4] = (uint8_t)(x >> 24);
+  p[5] = (uint8_t)(x >> 16);
+  p[6] = (uint8_t)(x >> 8);
+  p[7] = (uint8_t)(x >> 0);
+}
+
+static inline void  //
+wuffs_base__store_u64le__no_bounds_check(uint8_t* p, uint64_t x) {
+  p[0] = (uint8_t)(x >> 0);
+  p[1] = (uint8_t)(x >> 8);
+  p[2] = (uint8_t)(x >> 16);
+  p[3] = (uint8_t)(x >> 24);
+  p[4] = (uint8_t)(x >> 32);
+  p[5] = (uint8_t)(x >> 40);
+  p[6] = (uint8_t)(x >> 48);
+  p[7] = (uint8_t)(x >> 56);
 }
 
 // ---------------- Slices and Tables

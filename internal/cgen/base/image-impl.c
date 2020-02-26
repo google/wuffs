@@ -124,13 +124,14 @@ wuffs_base__pixel_buffer__color_u32_at(const wuffs_base__pixel_buffer* b,
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
       WUFFS_BASE__FALLTHROUGH;
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_BINARY:
-      return wuffs_base__load_u32le(row + (4 * ((size_t)x)));
+      return wuffs_base__load_u32le__no_bounds_check(row + (4 * ((size_t)x)));
 
     case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_PREMUL:
       WUFFS_BASE__FALLTHROUGH;
     case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY: {
       uint8_t* palette = b->private_impl.planes[3].ptr;
-      return wuffs_base__load_u32le(palette + (4 * ((size_t)row[x])));
+      return wuffs_base__load_u32le__no_bounds_check(palette +
+                                                     (4 * ((size_t)row[x])));
     }
 
       // Common formats above. Rarer formats below.
@@ -141,11 +142,13 @@ wuffs_base__pixel_buffer__color_u32_at(const wuffs_base__pixel_buffer* b,
     case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL: {
       uint8_t* palette = b->private_impl.planes[3].ptr;
       return wuffs_base__premul_u32_axxx(
-          wuffs_base__load_u32le(palette + (4 * ((size_t)row[x]))));
+          wuffs_base__load_u32le__no_bounds_check(palette +
+                                                  (4 * ((size_t)row[x]))));
     }
 
     case WUFFS_BASE__PIXEL_FORMAT__BGR_565: {
-      uint16_t bgr = wuffs_base__load_u16le(row + (2 * ((size_t)x)));
+      uint16_t bgr =
+          wuffs_base__load_u16le__no_bounds_check(row + (2 * ((size_t)x)));
       uint32_t b5 = 0x1F & (bgr >> 0);
       uint32_t b = (b5 << 3) | (b5 >> 2);
       uint32_t g6 = 0x3F & (bgr >> 5);
@@ -155,27 +158,31 @@ wuffs_base__pixel_buffer__color_u32_at(const wuffs_base__pixel_buffer* b,
       return 0xFF000000 | (r << 16) | (g << 8) | (b << 0);
     }
     case WUFFS_BASE__PIXEL_FORMAT__BGR:
-      return 0xFF000000 | wuffs_base__load_u24le(row + (3 * ((size_t)x)));
+      return 0xFF000000 |
+             wuffs_base__load_u24le__no_bounds_check(row + (3 * ((size_t)x)));
     case WUFFS_BASE__PIXEL_FORMAT__BGRX:
-      return 0xFF000000 | wuffs_base__load_u32le(row + (4 * ((size_t)x)));
+      return 0xFF000000 |
+             wuffs_base__load_u32le__no_bounds_check(row + (4 * ((size_t)x)));
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
       return wuffs_base__premul_u32_axxx(
-          wuffs_base__load_u32le(row + (4 * ((size_t)x))));
+          wuffs_base__load_u32le__no_bounds_check(row + (4 * ((size_t)x))));
 
     case WUFFS_BASE__PIXEL_FORMAT__RGB:
       return wuffs_base__swap_u32_argb_abgr(
-          0xFF000000 | wuffs_base__load_u24le(row + (3 * ((size_t)x))));
+          0xFF000000 |
+          wuffs_base__load_u24le__no_bounds_check(row + (3 * ((size_t)x))));
     case WUFFS_BASE__PIXEL_FORMAT__RGBX:
       return wuffs_base__swap_u32_argb_abgr(
-          0xFF000000 | wuffs_base__load_u32le(row + (4 * ((size_t)x))));
+          0xFF000000 |
+          wuffs_base__load_u32le__no_bounds_check(row + (4 * ((size_t)x))));
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
       return wuffs_base__swap_u32_argb_abgr(wuffs_base__premul_u32_axxx(
-          wuffs_base__load_u32le(row + (4 * ((size_t)x)))));
+          wuffs_base__load_u32le__no_bounds_check(row + (4 * ((size_t)x)))));
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
       WUFFS_BASE__FALLTHROUGH;
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_BINARY:
       return wuffs_base__swap_u32_argb_abgr(
-          wuffs_base__load_u32le(row + (4 * ((size_t)x))));
+          wuffs_base__load_u32le__no_bounds_check(row + (4 * ((size_t)x))));
 
     default:
       // TODO: support more formats.
@@ -211,7 +218,7 @@ wuffs_base__pixel_buffer__set_color_u32_at(
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
       WUFFS_BASE__FALLTHROUGH;
     case WUFFS_BASE__PIXEL_FORMAT__BGRX:
-      wuffs_base__store_u32le(row + (4 * ((size_t)x)), color);
+      wuffs_base__store_u32le__no_bounds_check(row + (4 * ((size_t)x)), color);
       break;
 
       // Common formats above. Rarer formats below.
@@ -221,31 +228,32 @@ wuffs_base__pixel_buffer__set_color_u32_at(
       uint32_t g6 = 0x3F & (color >> (16 - 6));
       uint32_t r5 = 0x1F & (color >> (24 - 5));
       uint32_t bgr565 = (b5 << 0) | (g6 << 5) | (r5 << 11);
-      wuffs_base__store_u16le(row + (2 * ((size_t)x)), (uint16_t)bgr565);
+      wuffs_base__store_u16le__no_bounds_check(row + (2 * ((size_t)x)),
+                                               (uint16_t)bgr565);
       break;
     }
     case WUFFS_BASE__PIXEL_FORMAT__BGR:
-      wuffs_base__store_u24le(row + (3 * ((size_t)x)), color);
+      wuffs_base__store_u24le__no_bounds_check(row + (3 * ((size_t)x)), color);
       break;
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
-      wuffs_base__store_u32le(row + (4 * ((size_t)x)),
-                              wuffs_base__nonpremul_u32_axxx(color));
+      wuffs_base__store_u32le__no_bounds_check(
+          row + (4 * ((size_t)x)), wuffs_base__nonpremul_u32_axxx(color));
       break;
 
     case WUFFS_BASE__PIXEL_FORMAT__RGB:
-      wuffs_base__store_u24le(row + (3 * ((size_t)x)),
-                              wuffs_base__swap_u32_argb_abgr(color));
+      wuffs_base__store_u24le__no_bounds_check(
+          row + (3 * ((size_t)x)), wuffs_base__swap_u32_argb_abgr(color));
       break;
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
-      wuffs_base__store_u32le(row + (4 * ((size_t)x)),
-                              wuffs_base__nonpremul_u32_axxx(
-                                  wuffs_base__swap_u32_argb_abgr(color)));
+      wuffs_base__store_u32le__no_bounds_check(
+          row + (4 * ((size_t)x)), wuffs_base__nonpremul_u32_axxx(
+                                       wuffs_base__swap_u32_argb_abgr(color)));
       break;
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
       WUFFS_BASE__FALLTHROUGH;
     case WUFFS_BASE__PIXEL_FORMAT__RGBX:
-      wuffs_base__store_u32le(row + (4 * ((size_t)x)),
-                              wuffs_base__swap_u32_argb_abgr(color));
+      wuffs_base__store_u32le__no_bounds_check(
+          row + (4 * ((size_t)x)), wuffs_base__swap_u32_argb_abgr(color));
       break;
 
     default:
@@ -273,9 +281,9 @@ wuffs_base__pixel_swizzler__bgra_premul__bgra_nonpremul__src(
   // TODO: unroll.
 
   while (n >= 1) {
-    uint32_t s0 =
-        wuffs_base__premul_u32_axxx(wuffs_base__load_u32le(s + (0 * 4)));
-    wuffs_base__store_u32le(d + (0 * 4), s0);
+    uint32_t s0 = wuffs_base__premul_u32_axxx(
+        wuffs_base__load_u32le__no_bounds_check(s + (0 * 4)));
+    wuffs_base__store_u32le__no_bounds_check(d + (0 * 4), s0);
 
     s += 1 * 4;
     d += 1 * 4;
@@ -300,9 +308,9 @@ wuffs_base__pixel_swizzler__bgra_premul__bgra_nonpremul__src_over(
   // TODO: unroll.
 
   while (n >= 1) {
-    uint32_t d0 = wuffs_base__load_u32le(d + (0 * 4));
-    uint32_t s0 = wuffs_base__load_u32le(s + (0 * 4));
-    wuffs_base__store_u32le(
+    uint32_t d0 = wuffs_base__load_u32le__no_bounds_check(d + (0 * 4));
+    uint32_t s0 = wuffs_base__load_u32le__no_bounds_check(s + (0 * 4));
+    wuffs_base__store_u32le__no_bounds_check(
         d + (0 * 4), wuffs_base__composite_premul_nonpremul_u32_axxx(d0, s0));
 
     s += 1 * 4;
@@ -349,18 +357,18 @@ wuffs_base__pixel_swizzler__xx__index__src(wuffs_base__slice_u8 dst,
   const size_t loop_unroll_count = 4;
 
   while (n >= loop_unroll_count) {
-    wuffs_base__store_u16le(
-        d + (0 * 2),
-        wuffs_base__load_u16le(dst_palette.ptr + ((size_t)s[0] * 4)));
-    wuffs_base__store_u16le(
-        d + (1 * 2),
-        wuffs_base__load_u16le(dst_palette.ptr + ((size_t)s[1] * 4)));
-    wuffs_base__store_u16le(
-        d + (2 * 2),
-        wuffs_base__load_u16le(dst_palette.ptr + ((size_t)s[2] * 4)));
-    wuffs_base__store_u16le(
-        d + (3 * 2),
-        wuffs_base__load_u16le(dst_palette.ptr + ((size_t)s[3] * 4)));
+    wuffs_base__store_u16le__no_bounds_check(
+        d + (0 * 2), wuffs_base__load_u16le__no_bounds_check(
+                         dst_palette.ptr + ((size_t)s[0] * 4)));
+    wuffs_base__store_u16le__no_bounds_check(
+        d + (1 * 2), wuffs_base__load_u16le__no_bounds_check(
+                         dst_palette.ptr + ((size_t)s[1] * 4)));
+    wuffs_base__store_u16le__no_bounds_check(
+        d + (2 * 2), wuffs_base__load_u16le__no_bounds_check(
+                         dst_palette.ptr + ((size_t)s[2] * 4)));
+    wuffs_base__store_u16le__no_bounds_check(
+        d + (3 * 2), wuffs_base__load_u16le__no_bounds_check(
+                         dst_palette.ptr + ((size_t)s[3] * 4)));
 
     s += loop_unroll_count * 1;
     d += loop_unroll_count * 2;
@@ -368,9 +376,9 @@ wuffs_base__pixel_swizzler__xx__index__src(wuffs_base__slice_u8 dst,
   }
 
   while (n >= 1) {
-    wuffs_base__store_u16le(
-        d + (0 * 2),
-        wuffs_base__load_u16le(dst_palette.ptr + ((size_t)s[0] * 4)));
+    wuffs_base__store_u16le__no_bounds_check(
+        d + (0 * 2), wuffs_base__load_u16le__no_bounds_check(
+                         dst_palette.ptr + ((size_t)s[0] * 4)));
 
     s += 1 * 1;
     d += 1 * 2;
@@ -402,18 +410,18 @@ wuffs_base__pixel_swizzler__xxx__index__src(wuffs_base__slice_u8 dst,
   // overwrite that with the correct byte. There is always another store,
   // whether a 4-byte store in this loop or a 1-byte store in the next loop.
   while (n > loop_unroll_count) {
-    wuffs_base__store_u32le(
-        d + (0 * 3),
-        wuffs_base__load_u32le(dst_palette.ptr + ((size_t)s[0] * 4)));
-    wuffs_base__store_u32le(
-        d + (1 * 3),
-        wuffs_base__load_u32le(dst_palette.ptr + ((size_t)s[1] * 4)));
-    wuffs_base__store_u32le(
-        d + (2 * 3),
-        wuffs_base__load_u32le(dst_palette.ptr + ((size_t)s[2] * 4)));
-    wuffs_base__store_u32le(
-        d + (3 * 3),
-        wuffs_base__load_u32le(dst_palette.ptr + ((size_t)s[3] * 4)));
+    wuffs_base__store_u32le__no_bounds_check(
+        d + (0 * 3), wuffs_base__load_u32le__no_bounds_check(
+                         dst_palette.ptr + ((size_t)s[0] * 4)));
+    wuffs_base__store_u32le__no_bounds_check(
+        d + (1 * 3), wuffs_base__load_u32le__no_bounds_check(
+                         dst_palette.ptr + ((size_t)s[1] * 4)));
+    wuffs_base__store_u32le__no_bounds_check(
+        d + (2 * 3), wuffs_base__load_u32le__no_bounds_check(
+                         dst_palette.ptr + ((size_t)s[2] * 4)));
+    wuffs_base__store_u32le__no_bounds_check(
+        d + (3 * 3), wuffs_base__load_u32le__no_bounds_check(
+                         dst_palette.ptr + ((size_t)s[3] * 4)));
 
     s += loop_unroll_count * 1;
     d += loop_unroll_count * 3;
@@ -421,7 +429,8 @@ wuffs_base__pixel_swizzler__xxx__index__src(wuffs_base__slice_u8 dst,
   }
 
   while (n >= 1) {
-    uint32_t s0 = wuffs_base__load_u32le(dst_palette.ptr + ((size_t)s[0] * 4));
+    uint32_t s0 = wuffs_base__load_u32le__no_bounds_check(dst_palette.ptr +
+                                                          ((size_t)s[0] * 4));
     d[0] = (uint8_t)(s0 >> 0);
     d[1] = (uint8_t)(s0 >> 8);
     d[2] = (uint8_t)(s0 >> 16);
@@ -451,21 +460,25 @@ wuffs_base__pixel_swizzler__xxx__index_binary_alpha__src_over(
   const size_t loop_unroll_count = 4;
 
   while (n >= loop_unroll_count) {
-    uint32_t s0 = wuffs_base__load_u32le(dst_palette.ptr + ((size_t)s[0] * 4));
+    uint32_t s0 = wuffs_base__load_u32le__no_bounds_check(dst_palette.ptr +
+                                                          ((size_t)s[0] * 4));
     if (s0) {
-      wuffs_base__store_u24le(d + (0 * 4), s0);
+      wuffs_base__store_u24le__no_bounds_check(d + (0 * 4), s0);
     }
-    uint32_t s1 = wuffs_base__load_u32le(dst_palette.ptr + ((size_t)s[1] * 4));
+    uint32_t s1 = wuffs_base__load_u32le__no_bounds_check(dst_palette.ptr +
+                                                          ((size_t)s[1] * 4));
     if (s1) {
-      wuffs_base__store_u24le(d + (1 * 4), s1);
+      wuffs_base__store_u24le__no_bounds_check(d + (1 * 4), s1);
     }
-    uint32_t s2 = wuffs_base__load_u32le(dst_palette.ptr + ((size_t)s[2] * 4));
+    uint32_t s2 = wuffs_base__load_u32le__no_bounds_check(dst_palette.ptr +
+                                                          ((size_t)s[2] * 4));
     if (s2) {
-      wuffs_base__store_u24le(d + (2 * 4), s2);
+      wuffs_base__store_u24le__no_bounds_check(d + (2 * 4), s2);
     }
-    uint32_t s3 = wuffs_base__load_u32le(dst_palette.ptr + ((size_t)s[3] * 4));
+    uint32_t s3 = wuffs_base__load_u32le__no_bounds_check(dst_palette.ptr +
+                                                          ((size_t)s[3] * 4));
     if (s3) {
-      wuffs_base__store_u24le(d + (3 * 4), s3);
+      wuffs_base__store_u24le__no_bounds_check(d + (3 * 4), s3);
     }
 
     s += loop_unroll_count * 1;
@@ -474,9 +487,10 @@ wuffs_base__pixel_swizzler__xxx__index_binary_alpha__src_over(
   }
 
   while (n >= 1) {
-    uint32_t s0 = wuffs_base__load_u32le(dst_palette.ptr + ((size_t)s[0] * 4));
+    uint32_t s0 = wuffs_base__load_u32le__no_bounds_check(dst_palette.ptr +
+                                                          ((size_t)s[0] * 4));
     if (s0) {
-      wuffs_base__store_u24le(d + (0 * 4), s0);
+      wuffs_base__store_u24le__no_bounds_check(d + (0 * 4), s0);
     }
 
     s += 1 * 1;
@@ -503,18 +517,18 @@ wuffs_base__pixel_swizzler__xxxx__index__src(wuffs_base__slice_u8 dst,
   const size_t loop_unroll_count = 4;
 
   while (n >= loop_unroll_count) {
-    wuffs_base__store_u32le(
-        d + (0 * 4),
-        wuffs_base__load_u32le(dst_palette.ptr + ((size_t)s[0] * 4)));
-    wuffs_base__store_u32le(
-        d + (1 * 4),
-        wuffs_base__load_u32le(dst_palette.ptr + ((size_t)s[1] * 4)));
-    wuffs_base__store_u32le(
-        d + (2 * 4),
-        wuffs_base__load_u32le(dst_palette.ptr + ((size_t)s[2] * 4)));
-    wuffs_base__store_u32le(
-        d + (3 * 4),
-        wuffs_base__load_u32le(dst_palette.ptr + ((size_t)s[3] * 4)));
+    wuffs_base__store_u32le__no_bounds_check(
+        d + (0 * 4), wuffs_base__load_u32le__no_bounds_check(
+                         dst_palette.ptr + ((size_t)s[0] * 4)));
+    wuffs_base__store_u32le__no_bounds_check(
+        d + (1 * 4), wuffs_base__load_u32le__no_bounds_check(
+                         dst_palette.ptr + ((size_t)s[1] * 4)));
+    wuffs_base__store_u32le__no_bounds_check(
+        d + (2 * 4), wuffs_base__load_u32le__no_bounds_check(
+                         dst_palette.ptr + ((size_t)s[2] * 4)));
+    wuffs_base__store_u32le__no_bounds_check(
+        d + (3 * 4), wuffs_base__load_u32le__no_bounds_check(
+                         dst_palette.ptr + ((size_t)s[3] * 4)));
 
     s += loop_unroll_count * 1;
     d += loop_unroll_count * 4;
@@ -522,9 +536,9 @@ wuffs_base__pixel_swizzler__xxxx__index__src(wuffs_base__slice_u8 dst,
   }
 
   while (n >= 1) {
-    wuffs_base__store_u32le(
-        d + (0 * 4),
-        wuffs_base__load_u32le(dst_palette.ptr + ((size_t)s[0] * 4)));
+    wuffs_base__store_u32le__no_bounds_check(
+        d + (0 * 4), wuffs_base__load_u32le__no_bounds_check(
+                         dst_palette.ptr + ((size_t)s[0] * 4)));
 
     s += 1 * 1;
     d += 1 * 4;
@@ -551,21 +565,25 @@ wuffs_base__pixel_swizzler__xxxx__index_binary_alpha__src_over(
   const size_t loop_unroll_count = 4;
 
   while (n >= loop_unroll_count) {
-    uint32_t s0 = wuffs_base__load_u32le(dst_palette.ptr + ((size_t)s[0] * 4));
+    uint32_t s0 = wuffs_base__load_u32le__no_bounds_check(dst_palette.ptr +
+                                                          ((size_t)s[0] * 4));
     if (s0) {
-      wuffs_base__store_u32le(d + (0 * 4), s0);
+      wuffs_base__store_u32le__no_bounds_check(d + (0 * 4), s0);
     }
-    uint32_t s1 = wuffs_base__load_u32le(dst_palette.ptr + ((size_t)s[1] * 4));
+    uint32_t s1 = wuffs_base__load_u32le__no_bounds_check(dst_palette.ptr +
+                                                          ((size_t)s[1] * 4));
     if (s1) {
-      wuffs_base__store_u32le(d + (1 * 4), s1);
+      wuffs_base__store_u32le__no_bounds_check(d + (1 * 4), s1);
     }
-    uint32_t s2 = wuffs_base__load_u32le(dst_palette.ptr + ((size_t)s[2] * 4));
+    uint32_t s2 = wuffs_base__load_u32le__no_bounds_check(dst_palette.ptr +
+                                                          ((size_t)s[2] * 4));
     if (s2) {
-      wuffs_base__store_u32le(d + (2 * 4), s2);
+      wuffs_base__store_u32le__no_bounds_check(d + (2 * 4), s2);
     }
-    uint32_t s3 = wuffs_base__load_u32le(dst_palette.ptr + ((size_t)s[3] * 4));
+    uint32_t s3 = wuffs_base__load_u32le__no_bounds_check(dst_palette.ptr +
+                                                          ((size_t)s[3] * 4));
     if (s3) {
-      wuffs_base__store_u32le(d + (3 * 4), s3);
+      wuffs_base__store_u32le__no_bounds_check(d + (3 * 4), s3);
     }
 
     s += loop_unroll_count * 1;
@@ -574,9 +592,10 @@ wuffs_base__pixel_swizzler__xxxx__index_binary_alpha__src_over(
   }
 
   while (n >= 1) {
-    uint32_t s0 = wuffs_base__load_u32le(dst_palette.ptr + ((size_t)s[0] * 4));
+    uint32_t s0 = wuffs_base__load_u32le__no_bounds_check(dst_palette.ptr +
+                                                          ((size_t)s[0] * 4));
     if (s0) {
-      wuffs_base__store_u32le(d + (0 * 4), s0);
+      wuffs_base__store_u32le__no_bounds_check(d + (0 * 4), s0);
     }
 
     s += 1 * 1;
@@ -601,8 +620,9 @@ wuffs_base__pixel_swizzler__xxxx__xxx(wuffs_base__slice_u8 dst,
   // TODO: unroll.
 
   while (n >= 1) {
-    wuffs_base__store_u32le(d + (0 * 4),
-                            0xFF000000 | wuffs_base__load_u24le(s + (0 * 3)));
+    wuffs_base__store_u32le__no_bounds_check(
+        d + (0 * 4),
+        0xFF000000 | wuffs_base__load_u24le__no_bounds_check(s + (0 * 3)));
 
     s += 1 * 3;
     d += 1 * 4;
@@ -625,8 +645,8 @@ wuffs_base__pixel_swizzler__xxxx__y(wuffs_base__slice_u8 dst,
   // TODO: unroll.
 
   while (n >= 1) {
-    wuffs_base__store_u32le(d + (0 * 4),
-                            0xFF000000 | (0x010101 * (uint32_t)s[0]));
+    wuffs_base__store_u32le__no_bounds_check(
+        d + (0 * 4), 0xFF000000 | (0x010101 * (uint32_t)s[0]));
 
     s += 1 * 1;
     d += 1 * 4;
@@ -647,11 +667,12 @@ wuffs_base__pixel_swizzler__squash_bgr_565_888(wuffs_base__slice_u8 dst,
 
   size_t n = len4;
   while (n--) {
-    uint32_t argb = wuffs_base__load_u32le(s);
+    uint32_t argb = wuffs_base__load_u32le__no_bounds_check(s);
     uint32_t b5 = 0x1F & (argb >> (8 - 5));
     uint32_t g6 = 0x3F & (argb >> (16 - 6));
     uint32_t r5 = 0x1F & (argb >> (24 - 5));
-    wuffs_base__store_u32le(d, (b5 << 0) | (g6 << 5) | (r5 << 11));
+    wuffs_base__store_u32le__no_bounds_check(
+        d, (b5 << 0) | (g6 << 5) | (r5 << 11));
     s += 4;
     d += 4;
   }

@@ -82,14 +82,6 @@ wuffs_base__token_buffer tok;
 wuffs_json__decoder dec;
 wuffs_base__status dec_status;
 
-static inline void  //
-store_u32be(uint8_t* p, uint32_t x) {
-  p[0] = (uint8_t)(x >> 24);
-  p[1] = (uint8_t)(x >> 16);
-  p[2] = (uint8_t)(x >> 8);
-  p[3] = (uint8_t)(x >> 0);
-}
-
 #define TRY(error_msg)         \
   do {                         \
     const char* z = error_msg; \
@@ -145,14 +137,14 @@ main1(int argc, char** argv) {
       uint64_t len = wuffs_base__token__length(t);
 
       if (wuffs_base__token__value(t) != 0) {
-        uint64_t major = wuffs_base__token__value_major(t);
-        uint64_t minor = wuffs_base__token__value_minor(t);
+        uint64_t maj = wuffs_base__token__value_major(t);
+        uint64_t min = wuffs_base__token__value_minor(t);
 
         uint8_t buf[16];
-        store_u32be(&buf[0 * 4], (uint32_t)(pos));
-        store_u32be(&buf[1 * 4], (uint32_t)(len));
-        store_u32be(&buf[2 * 4], (uint32_t)(major));
-        store_u32be(&buf[3 * 4], (uint32_t)(minor));
+        wuffs_base__store_u32be__no_bounds_check(&buf[0 * 4], (uint32_t)(pos));
+        wuffs_base__store_u32be__no_bounds_check(&buf[1 * 4], (uint32_t)(len));
+        wuffs_base__store_u32be__no_bounds_check(&buf[2 * 4], (uint32_t)(maj));
+        wuffs_base__store_u32be__no_bounds_check(&buf[3 * 4], (uint32_t)(min));
         const int stdout_fd = 1;
         write(stdout_fd, &buf[0], 16);
       }

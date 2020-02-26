@@ -96,14 +96,6 @@ union {
   wuffs_wbmp__decoder wbmp;
 } g_potential_decoders;
 
-static inline void  //
-store_u32le(uint8_t* p, uint32_t x) {
-  p[0] = (uint8_t)(x >> 0);
-  p[1] = (uint8_t)(x >> 8);
-  p[2] = (uint8_t)(x >> 16);
-  p[3] = (uint8_t)(x >> 24);
-}
-
 bool  //
 read_more_src() {
   if (g_src.meta.closed) {
@@ -246,7 +238,7 @@ load_image_config() {
     wuffs_base__color_u32_argb_premul color =
         g_background_colors[g_background_color_index];
     for (size_t i = 0; i < num_pixels; i++) {
-      store_u32le(ptr, color);
+      wuffs_base__store_u32le__no_bounds_check(ptr, color);
       ptr += 4;
     }
   }

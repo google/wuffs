@@ -183,7 +183,7 @@ wuffs_base__io_reader__match7(uint8_t* iop_r,
   uint32_t n = a & 7;
   a >>= 8;
   if ((io2_r - iop_r) >= 8) {
-    uint64_t x = wuffs_base__load_u64le(iop_r);
+    uint64_t x = wuffs_base__load_u64le__no_bounds_check(iop_r);
     uint32_t shift = 8 * (8 - n);
     return ((a << shift) == (x << shift)) ? 0 : 2;
   }
@@ -251,7 +251,7 @@ wuffs_base__io_writer__set(wuffs_base__io_buffer* b,
   return b;
 }
 
-// ---------------- I/O (Utility)
+  // ---------------- I/O (Utility)
 
 #define wuffs_base__utility__empty_io_reader wuffs_base__empty_io_reader
 #define wuffs_base__utility__empty_io_writer wuffs_base__empty_io_writer
