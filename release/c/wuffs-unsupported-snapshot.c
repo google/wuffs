@@ -1515,6 +1515,8 @@ wuffs_base__make_token(uint64_t repr) {
   return ret;
 }
 
+  // --------
+
 #define WUFFS_BASE__TOKEN__VALUE__MASK 0xFFFFFFFFFFFF
 #define WUFFS_BASE__TOKEN__VALUE_MAJOR__MASK 0xFFFFFF
 #define WUFFS_BASE__TOKEN__VALUE_MINOR__MASK 0xFFFFFF
@@ -1529,54 +1531,82 @@ wuffs_base__make_token(uint64_t repr) {
 #define WUFFS_BASE__TOKEN__VALUE_BASE_DETAIL__SHIFT 16
 #define WUFFS_BASE__TOKEN__LENGTH__SHIFT 0
 
+  // --------
+
 #define WUFFS_BASE__TOKEN__VBC__FILLER 0
 #define WUFFS_BASE__TOKEN__VBC__STRING 1
-#define WUFFS_BASE__TOKEN__VBC__BYTES 2
-#define WUFFS_BASE__TOKEN__VBC__STRUCTURE 3
-#define WUFFS_BASE__TOKEN__VBC__NUMBER 4
-#define WUFFS_BASE__TOKEN__VBC__UNICODE_CODE_POINT 5
+#define WUFFS_BASE__TOKEN__VBC__UNICODE_CODE_POINT 2
+#define WUFFS_BASE__TOKEN__VBC__NUMBER 3
+#define WUFFS_BASE__TOKEN__VBC__STRUCTURE 4
 
+// --------
+
+// INCOMPLETE means that this token combines with the following token.
+//
+// For example, tokenizing a comment that is longer than the source buffer can
+// result in multiple VBC__FILLER tokens. All but the last one is INCOMPLETE.
+//
+// By convention, whitespace is not marked incomplete. Two whitespace tokens of
+// length 30 are equivalent to one whitespace token of length 60.
+//
 // Bits 0x2, 0x4 and 0x8 are reserved for flags that are common between
-// VBD_FILLER, VBD_STRING and VBD_BYTES.
+// VBD_FILLER and VBD_STRING.
 #define WUFFS_BASE__TOKEN__VBD__FILLER__INCOMPLETE 0x00001
+
 #define WUFFS_BASE__TOKEN__VBD__FILLER__END_OF_CONSECUTIVE_COMMENTS 0x00010
 #define WUFFS_BASE__TOKEN__VBD__FILLER__COMMENT_LINE 0x00020
 #define WUFFS_BASE__TOKEN__VBD__FILLER__COMMENT_BLOCK 0x00040
 
+// --------
+
+// INCOMPLETE means that this token combines with the following token.
+//
+// For example, tokenizing a string that is longer than the source buffer can
+// result in multiple VBC__STRING tokens. All but the last one is INCOMPLETE.
+//
 // Bits 0x2, 0x4 and 0x8 are reserved for flags that are common between
-// VBD_FILLER, VBD_STRING and VBD_BYTES.
+// VBD_FILLER and VBD_STRING.
 #define WUFFS_BASE__TOKEN__VBD__STRING__INCOMPLETE 0x00001
-#define WUFFS_BASE__TOKEN__VBD__STRING__ALL_ASCII 0x00010
 
-// Bits 0x2, 0x4 and 0x8 are reserved for flags that are common between
-// VBD_FILLER, VBD_STRING and VBD_BYTES.
-#define WUFFS_BASE__TOKEN__VBD__BYTES__INCOMPLETE 0x00001
-// "D_DST_S_SRC" means that it takes S source bytes (possibly padded) to
-// produce D destination bytes. For example,
-// WUFFS_BASE__TOKEN__VBD__BYTES__1_DST_4_SRC_BACKSLASH_X means that the source
-// looks like "\\x23\\x67\\xAB", where 12 src bytes encode 3 dst bytes.
-#define WUFFS_BASE__TOKEN__VBD__BYTES__1_DST_1_SRC_RAW 0x00010
-#define WUFFS_BASE__TOKEN__VBD__BYTES__1_DST_2_SRC_HEX 0x00020
-#define WUFFS_BASE__TOKEN__VBD__BYTES__1_DST_4_SRC_BACKSLASH_X 0x00040
-#define WUFFS_BASE__TOKEN__VBD__BYTES__1_DST_6_SRC_BACKSLASH_U 0x00080
-#define WUFFS_BASE__TOKEN__VBD__BYTES__3_DST_4_SRC_BASE_64_STD 0x00100
-#define WUFFS_BASE__TOKEN__VBD__BYTES__3_DST_4_SRC_BASE_64_URL 0x00200
-#define WUFFS_BASE__TOKEN__VBD__BYTES__4_DST_5_SRC_ASCII_85 0x00400
+// "DEFINITELY_FOO" means that the source bytes (and also the destination
+// bytes, assuming 1_DST_1_SRC_COPY) are in the FOO format. Definitely means
+// that the lack of the bit is conservative: it is valid for all-ASCII strings
+// to have neither DEFINITELY_ASCII or DEFINITELY_UTF_8 bits set.
+#define WUFFS_BASE__TOKEN__VBD__STRING__DEFINITELY_ASCII 0x00010
+#define WUFFS_BASE__TOKEN__VBD__STRING__DEFINITELY_UTF_8 0x00020
 
-#define WUFFS_BASE__TOKEN__VBD__STRUCTURE__PUSH 0x00001
-#define WUFFS_BASE__TOKEN__VBD__STRUCTURE__POP 0x00002
-#define WUFFS_BASE__TOKEN__VBD__STRUCTURE__FROM_NONE 0x00010
-#define WUFFS_BASE__TOKEN__VBD__STRUCTURE__FROM_LIST 0x00020
-#define WUFFS_BASE__TOKEN__VBD__STRUCTURE__FROM_DICT 0x00040
-#define WUFFS_BASE__TOKEN__VBD__STRUCTURE__TO_NONE 0x01000
-#define WUFFS_BASE__TOKEN__VBD__STRUCTURE__TO_LIST 0x02000
-#define WUFFS_BASE__TOKEN__VBD__STRUCTURE__TO_DICT 0x04000
+// "CONVERT_D_DST_S_SRC" means that multiples of S source bytes (possibly
+// padded) produces multiples of D destination bytes. For example,
+// CONVERT_1_DST_4_SRC_BACKSLASH_X means a source like "\\x23\\x67\\xAB", where
+// 12 src bytes encode 3 dst bytes.
+//
+// When src is the empty string, multiple conversion algorithms are applicable
+// (so these bits are not necessarily mutually exclusive), all producing the
+// same empty dst string.
+#define WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_0_DST_1_SRC_DROP 0x00100
+#define WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY 0x00200
+#define WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_1_DST_2_SRC_HEXADECIMAL 0x00400
+#define WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_1_DST_4_SRC_BACKSLASH_X 0x00800
+#define WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_3_DST_4_SRC_BASE_64_STD 0x01000
+#define WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_3_DST_4_SRC_BASE_64_URL 0x02000
+#define WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_4_DST_5_SRC_ASCII_85 0x04000
+
+  // --------
+
+  // UNICODE_CODE_POINT tokens have no room in their VBD for an INCOMPLETE bit.
+  // All 21 bits are used to hold the Unicode code point. Such tokens preserve
+  // the INCOMPLETEness of the previous token (if a FILLER or STRING).
+
+#define WUFFS_BASE__TOKEN__VBD__UNICODE_CODE_POINT__MAX_INCL 0x10FFFF
+
+  // --------
 
 #define WUFFS_BASE__TOKEN__VBD__NUMBER__LITERAL 0x00001
 #define WUFFS_BASE__TOKEN__VBD__NUMBER__LITERAL__UNDEFINED 0x00101
 #define WUFFS_BASE__TOKEN__VBD__NUMBER__LITERAL__NULL 0x00201
 #define WUFFS_BASE__TOKEN__VBD__NUMBER__LITERAL__FALSE 0x00401
 #define WUFFS_BASE__TOKEN__VBD__NUMBER__LITERAL__TRUE 0x00801
+
 // For a source string of "123" or "0x9A", it is valid for a tokenizer to
 // return any one of:
 //  - WUFFS_BASE__TOKEN__VBD__NUMBER__FLOATING_POINT.
@@ -1590,7 +1620,18 @@ wuffs_base__make_token(uint64_t repr) {
 #define WUFFS_BASE__TOKEN__VBD__NUMBER__INTEGER_SIGNED 0x00004
 #define WUFFS_BASE__TOKEN__VBD__NUMBER__INTEGER_UNSIGNED 0x00008
 
-#define WUFFS_BASE__TOKEN__VBD__UNICODE_CODE_POINT__MAX_INCL 0x10FFFF
+  // --------
+
+#define WUFFS_BASE__TOKEN__VBD__STRUCTURE__PUSH 0x00001
+#define WUFFS_BASE__TOKEN__VBD__STRUCTURE__POP 0x00002
+#define WUFFS_BASE__TOKEN__VBD__STRUCTURE__FROM_NONE 0x00010
+#define WUFFS_BASE__TOKEN__VBD__STRUCTURE__FROM_LIST 0x00020
+#define WUFFS_BASE__TOKEN__VBD__STRUCTURE__FROM_DICT 0x00040
+#define WUFFS_BASE__TOKEN__VBD__STRUCTURE__TO_NONE 0x01000
+#define WUFFS_BASE__TOKEN__VBD__STRUCTURE__TO_LIST 0x02000
+#define WUFFS_BASE__TOKEN__VBD__STRUCTURE__TO_DICT 0x04000
+
+// --------
 
 static inline uint64_t  //
 wuffs_base__token__value(const wuffs_base__token* t) {
@@ -18996,7 +19037,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
               goto label__0__continue;
             }
             *iop_a_dst++ = wuffs_base__make_token(
-                (((uint64_t)(2097153)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+                (((uint64_t)(2129713)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
                 (((uint64_t)(0)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
             goto label__0__break;
           }
@@ -19014,7 +19055,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
               if (((uint64_t)(io2_a_src - iop_a_src)) <= 0) {
                 if (v_string_length > 0) {
                   *iop_a_dst++ = wuffs_base__make_token(
-                      (((uint64_t)(2097153))
+                      (((uint64_t)(2097697))
                        << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
                       (((uint64_t)(((uint64_t)(v_string_length))))
                        << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
@@ -19035,7 +19076,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
               if (v_c <= 34) {
                 if (v_c == 34) {
                   *iop_a_dst++ = wuffs_base__make_token(
-                      (((uint64_t)(2097152))
+                      (((uint64_t)(2097696))
                        << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
                       (((uint64_t)(((uint64_t)(v_string_length))))
                        << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
@@ -19044,7 +19085,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
                 } else if (v_c < 32) {
                   if (v_string_length > 0) {
                     *iop_a_dst++ = wuffs_base__make_token(
-                        (((uint64_t)(2097153))
+                        (((uint64_t)(2097697))
                          << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
                         (((uint64_t)(((uint64_t)(v_string_length))))
                          << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
@@ -19057,7 +19098,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
               } else if (v_c == 92) {
                 if (v_string_length > 0) {
                   *iop_a_dst++ = wuffs_base__make_token(
-                      (((uint64_t)(2097153))
+                      (((uint64_t)(2097697))
                        << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
                       (((uint64_t)(((uint64_t)(v_string_length))))
                        << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
@@ -19084,7 +19125,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
                 if (v_c > 0) {
                   (iop_a_src += 2, wuffs_base__make_empty_struct());
                   *iop_a_dst++ = wuffs_base__make_token(
-                      (((uint64_t)((10485760 | ((uint64_t)((v_c & 127))))))
+                      (((uint64_t)((4194304 | ((uint64_t)((v_c & 127))))))
                        << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
                       (((uint64_t)(2)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
                   goto label__string_loop__continue;
@@ -19125,7 +19166,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
                   } else if ((v_uni4_value < 55296) || (57343 < v_uni4_value)) {
                     (iop_a_src += 6, wuffs_base__make_empty_struct());
                     *iop_a_dst++ = wuffs_base__make_token(
-                        (((uint64_t)((10485760 | ((uint64_t)(v_uni4_value)))))
+                        (((uint64_t)((4194304 | ((uint64_t)(v_uni4_value)))))
                          << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
                         (((uint64_t)(6)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
                     goto label__string_loop__continue;
@@ -19180,8 +19221,8 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
                       (iop_a_src += 8, wuffs_base__make_empty_struct());
                       *iop_a_dst++ = wuffs_base__make_token(
                           (((uint64_t)(
-                               (10485760 | ((uint64_t)((v_uni4_high_surrogate +
-                                                        v_uni4_value))))))
+                               (4194304 | ((uint64_t)((v_uni4_high_surrogate +
+                                                       v_uni4_value))))))
                            << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
                           (((uint64_t)(12))
                            << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
@@ -19207,7 +19248,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
               (iop_a_src += 1, wuffs_base__make_empty_struct());
               if (v_string_length >= 65534) {
                 *iop_a_dst++ = wuffs_base__make_token(
-                    (((uint64_t)(2097153)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+                    (((uint64_t)(2097697)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
                     (((uint64_t)(65535)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
                 v_string_length = 0;
                 goto label__string_loop__continue;
@@ -19274,9 +19315,9 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
               iop_a_src = a_src->data.ptr + a_src->meta.ri;
             }
             v_number_status = (v_number_length >> 8);
-            v_token_value = 8388612;
+            v_token_value = 6291460;
             if ((v_number_length & 128) != 0) {
-              v_token_value = 8388610;
+              v_token_value = 6291458;
             }
             v_number_length = (v_number_length & 127);
             if (v_number_status == 0) {
@@ -19318,12 +19359,12 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
         label__2__break:;
           goto label__goto_parsed_a_leaf_value__break;
         } else if (v_class == 5) {
-          v_token_value = 6307857;
+          v_token_value = 8405009;
           if (v_depth == 0) {
           } else if (0 != (v_expect_after_value & 64)) {
-            v_token_value = 6307905;
+            v_token_value = 8405057;
           } else {
-            v_token_value = 6307873;
+            v_token_value = 8405025;
           }
           if (v_depth >= 1024) {
             status = wuffs_base__make_status(
@@ -19346,7 +19387,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
           (iop_a_src += 1, wuffs_base__make_empty_struct());
           if (v_depth <= 1) {
             *iop_a_dst++ = wuffs_base__make_token(
-                (((uint64_t)(6295618)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+                (((uint64_t)(8392770)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
                 (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
             goto label__outer__break;
           }
@@ -19356,25 +19397,25 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
           if (0 == (self->private_data.f_stack[v_stack_byte] &
                     (((uint32_t)(1)) << v_stack_bit))) {
             *iop_a_dst++ = wuffs_base__make_token(
-                (((uint64_t)(6299714)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+                (((uint64_t)(8396866)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
                 (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
             v_expect = 260;
             v_expect_after_value = 260;
           } else {
             *iop_a_dst++ = wuffs_base__make_token(
-                (((uint64_t)(6307906)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+                (((uint64_t)(8405058)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
                 (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
             v_expect = 68;
             v_expect_after_value = 68;
           }
           goto label__outer__continue;
         } else if (v_class == 7) {
-          v_token_value = 6299665;
+          v_token_value = 8396817;
           if (v_depth == 0) {
           } else if (0 != (v_expect_after_value & 64)) {
-            v_token_value = 6299713;
+            v_token_value = 8396865;
           } else {
-            v_token_value = 6299681;
+            v_token_value = 8396833;
           }
           if (v_depth >= 1024) {
             status = wuffs_base__make_status(
@@ -19397,7 +19438,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
           (iop_a_src += 1, wuffs_base__make_empty_struct());
           if (v_depth <= 1) {
             *iop_a_dst++ = wuffs_base__make_token(
-                (((uint64_t)(6295586)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+                (((uint64_t)(8392738)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
                 (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
             goto label__outer__break;
           }
@@ -19407,13 +19448,13 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
           if (0 == (self->private_data.f_stack[v_stack_byte] &
                     (((uint32_t)(1)) << v_stack_bit))) {
             *iop_a_dst++ = wuffs_base__make_token(
-                (((uint64_t)(6299682)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+                (((uint64_t)(8396834)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
                 (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
             v_expect = 260;
             v_expect_after_value = 260;
           } else {
             *iop_a_dst++ = wuffs_base__make_token(
-                (((uint64_t)(6307874)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+                (((uint64_t)(8405026)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
                 (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
             v_expect = 68;
             v_expect_after_value = 68;
@@ -19424,7 +19465,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
                                                   111546413966853);
           if (v_match == 0) {
             *iop_a_dst++ = wuffs_base__make_token(
-                (((uint64_t)(8389633)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+                (((uint64_t)(6292481)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
                 (((uint64_t)(5)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
             if (((uint64_t)(io2_a_src - iop_a_src)) < 5) {
               status = wuffs_base__make_status(
@@ -19444,7 +19485,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
                                                   435762131972);
           if (v_match == 0) {
             *iop_a_dst++ = wuffs_base__make_token(
-                (((uint64_t)(8390657)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+                (((uint64_t)(6293505)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
                 (((uint64_t)(4)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
             if (((uint64_t)(io2_a_src - iop_a_src)) < 4) {
               status = wuffs_base__make_status(
@@ -19464,7 +19505,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
                                                   465676103172);
           if (v_match == 0) {
             *iop_a_dst++ = wuffs_base__make_token(
-                (((uint64_t)(8389121)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
+                (((uint64_t)(6291969)) << WUFFS_BASE__TOKEN__VALUE__SHIFT) |
                 (((uint64_t)(4)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
             if (((uint64_t)(io2_a_src - iop_a_src)) < 4) {
               status = wuffs_base__make_status(
