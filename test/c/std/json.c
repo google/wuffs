@@ -411,13 +411,17 @@ test_wuffs_json_decode_string() {
       {.want_status_repr = NULL, .str = "\"+++\\b+\\f+\\n+\\r+\\t+++\""},
       {.want_status_repr = NULL, .str = "\"\x20\""},              // U+00000020.
       {.want_status_repr = NULL, .str = "\"\xC2\x80\""},          // U+00000080.
+      {.want_status_repr = NULL, .str = "\"\xCE\x94\""},          // U+00000394.
       {.want_status_repr = NULL, .str = "\"\xDF\xBF\""},          // U+000007FF.
       {.want_status_repr = NULL, .str = "\"\xE0\xA0\x80\""},      // U+00000800.
+      {.want_status_repr = NULL, .str = "\"\xE2\x98\x83\""},      // U+00002603.
       {.want_status_repr = NULL, .str = "\"\xED\x80\x80\""},      // U+0000D000.
       {.want_status_repr = NULL, .str = "\"\xED\x9F\xBF\""},      // U+0000D7FF.
       {.want_status_repr = NULL, .str = "\"\xEE\x80\x80\""},      // U+0000E000.
+      {.want_status_repr = NULL, .str = "\"\xEF\xBF\xBD\""},      // U+0000FFFD.
       {.want_status_repr = NULL, .str = "\"\xEF\xBF\xBF\""},      // U+0000FFFF.
       {.want_status_repr = NULL, .str = "\"\xF0\x90\x80\x80\""},  // U+00010000.
+      {.want_status_repr = NULL, .str = "\"\xF0\x9F\x92\xA9\""},  // U+0001F4A9.
       {.want_status_repr = NULL, .str = "\"\xF0\xB0\x80\x81\""},  // U+00030001.
       {.want_status_repr = NULL, .str = "\"\xF1\xB0\x80\x82\""},  // U+00070002.
       {.want_status_repr = NULL, .str = "\"\xF3\xB0\x80\x83\""},  // U+000F0003.
@@ -442,7 +446,9 @@ test_wuffs_json_decode_string() {
       {.want_status_repr = bad_utf, .str = "\"\xDF\xC0\""},
       {.want_status_repr = bad_utf, .str = "\"\xDF\xFF\""},
       {.want_status_repr = bad_utf, .str = "\"\xE0\x9F\xBF\""},
-      {.want_status_repr = bad_utf, .str = "\"\xED\xA0\xB0\""},  // U+0000D800.
+      {.want_status_repr = bad_utf, .str = "\"\xED\xA0\x80\""},  // U+0000D800.
+      {.want_status_repr = bad_utf, .str = "\"\xED\xAF\xBF\""},  // U+0000DBFF.
+      {.want_status_repr = bad_utf, .str = "\"\xED\xB0\x80\""},  // U+0000DC00.
       {.want_status_repr = bad_utf, .str = "\"\xED\xBF\xBF\""},  // U+0000DFFF.
       {.want_status_repr = bad_utf, .str = "\"\xF0\x80\x80\""},
       {.want_status_repr = bad_utf, .str = "\"\xF0\x8F\xBF\xBF\""},
