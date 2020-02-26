@@ -1061,23 +1061,63 @@ do_test__wuffs_base__io_transformer(wuffs_base__io_transformer* b,
 
 const char*  //
 do_test__wuffs_base__token_decoder(wuffs_base__token_decoder* b,
-                                   const char* src_filename,
-                                   size_t src_ri,
-                                   size_t src_wi,
-                                   uint64_t want_final_token_repr) {
-  wuffs_base__token_buffer have = ((wuffs_base__token_buffer){
+                                   golden_test* gt) {
+  wuffs_base__io_buffer have = ((wuffs_base__io_buffer){
+      .data = global_have_slice,
+  });
+  wuffs_base__io_buffer want = ((wuffs_base__io_buffer){
+      .data = global_want_slice,
+  });
+  wuffs_base__token_buffer tok = ((wuffs_base__token_buffer){
       .data = global_have_token_slice,
   });
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
       .data = global_src_slice,
   });
-  CHECK_STRING(read_file_fragment(&src, src_filename, src_ri, src_wi));
-  CHECK_STATUS("decode_tokens",
-               wuffs_base__token_decoder__decode_tokens(b, &have, &src));
-  if ((have.meta.wi > 0) &&
-      (have.data.ptr[have.meta.wi - 1].repr != want_final_token_repr)) {
-    RETURN_FAIL("final token: have 0x%" PRIX64 ", want 0x%" PRIX64,
-                have.data.ptr[have.meta.wi - 1].repr, want_final_token_repr);
+
+  if (gt->src_filename) {
+    CHECK_STRING(
+        read_file_fragment(&src, gt->src_filename, gt->src_offset0,
+                           gt->src_offset1 ? gt->src_offset1 : UINT64_MAX));
+  } else {
+    src.meta.closed = true;
   }
-  return NULL;
+
+  CHECK_STATUS("decode_tokens",
+               wuffs_base__token_decoder__decode_tokens(b, &tok, &src));
+
+  uint64_t pos = 0;
+  while (tok.meta.ri < tok.meta.wi) {
+    wuffs_base__token* t = &tok.data.ptr[tok.meta.ri++];
+    uint64_t len = wuffs_base__token__length(t);
+
+    if (wuffs_base__token__value(t) != 0) {
+      uint64_t major = wuffs_base__token__value_major(t);
+      uint64_t minor = wuffs_base__token__value_minor(t);
+
+      if ((have.data.len - have.meta.wi) < 16) {
+        return "testlib: output is too long";
+      }
+      // This 16-bytes-per-token debug format is the same one used by
+      // `script/print-json-token-debug-format.c`.
+      uint8_t* ptr = have.data.ptr + have.meta.wi;
+      wuffs_base__store_u32be(ptr + (0 * 4), (uint32_t)(pos));
+      wuffs_base__store_u32be(ptr + (1 * 4), (uint32_t)(len));
+      wuffs_base__store_u32be(ptr + (2 * 4), (uint32_t)(major));
+      wuffs_base__store_u32be(ptr + (3 * 4), (uint32_t)(minor));
+      have.meta.wi += 16;
+    }
+
+    pos += len;
+    if (pos > 0xFFFFFFFF) {
+      return "testlib: input is too long";
+    }
+  }
+
+  if (gt->want_filename) {
+    CHECK_STRING(read_file(&want, gt->want_filename));
+  } else {
+    want.meta.closed = true;
+  }
+  return check_io_buffers_equal("", &have, &want);
 }

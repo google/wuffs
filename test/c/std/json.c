@@ -201,7 +201,8 @@ test_strconv_parse_number_u64() {
 // ---------------- Golden Tests
 
 golden_test json_australian_abc_gt = {
-    .src_filename = "test/data/australian-abc-local-stations.json",  //
+    .want_filename = "test/data/australian-abc-local-stations.tokens",  //
+    .src_filename = "test/data/australian-abc-local-stations.json",     //
 };
 
 golden_test json_file_sizes_gt = {
@@ -210,6 +211,11 @@ golden_test json_file_sizes_gt = {
 
 golden_test json_github_tags_gt = {
     .src_filename = "test/data/github-tags.json",  //
+};
+
+golden_test json_json_things_unformatted_gt = {
+    .want_filename = "test/data/json-things.unformatted.tokens",  //
+    .src_filename = "test/data/json-things.unformatted.json",     //
 };
 
 golden_test json_nobel_prizes_gt = {
@@ -221,24 +227,30 @@ golden_test json_nobel_prizes_gt = {
 const char*  //
 test_wuffs_json_decode_interface() {
   CHECK_FOCUS(__func__);
-  wuffs_json__decoder dec;
-  CHECK_STATUS("initialize",
-               wuffs_json__decoder__initialize(
-                   &dec, sizeof dec, WUFFS_VERSION,
-                   WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
 
-  const uint64_t vbc = WUFFS_BASE__TOKEN__VBC__STRUCTURE;
-  const uint64_t vbd = WUFFS_BASE__TOKEN__VBD__STRUCTURE__POP |
-                       WUFFS_BASE__TOKEN__VBD__STRUCTURE__FROM_LIST |
-                       WUFFS_BASE__TOKEN__VBD__STRUCTURE__TO_NONE;
-  const uint64_t len = 1;
+  {
+    wuffs_json__decoder dec;
+    CHECK_STATUS("initialize",
+                 wuffs_json__decoder__initialize(
+                     &dec, sizeof dec, WUFFS_VERSION,
+                     WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+    CHECK_STRING(do_test__wuffs_base__token_decoder(
+        wuffs_json__decoder__upcast_as__wuffs_base__token_decoder(&dec),
+        &json_json_things_unformatted_gt));
+  }
 
-  return do_test__wuffs_base__token_decoder(
-      wuffs_json__decoder__upcast_as__wuffs_base__token_decoder(&dec),
-      "test/data/github-tags.json", 0, SIZE_MAX,
-      (vbc << WUFFS_BASE__TOKEN__VALUE_BASE_CATEGORY__SHIFT) |
-          (vbd << WUFFS_BASE__TOKEN__VALUE_BASE_DETAIL__SHIFT) |
-          (len << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+  {
+    wuffs_json__decoder dec;
+    CHECK_STATUS("initialize",
+                 wuffs_json__decoder__initialize(
+                     &dec, sizeof dec, WUFFS_VERSION,
+                     WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+    CHECK_STRING(do_test__wuffs_base__token_decoder(
+        wuffs_json__decoder__upcast_as__wuffs_base__token_decoder(&dec),
+        &json_australian_abc_gt));
+  }
+
+  return NULL;
 }
 
 const char*  //
