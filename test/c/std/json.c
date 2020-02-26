@@ -219,7 +219,7 @@ golden_test json_nobel_prizes_gt = {
 // ---------------- JSON Tests
 
 const char*  //
-test_wuffs_json_decode_tokens() {
+test_wuffs_json_decode_interface() {
   CHECK_FOCUS(__func__);
   wuffs_json__decoder dec;
   CHECK_STATUS("initialize",
@@ -375,7 +375,88 @@ test_wuffs_json_decode_unicode4_escapes() {
     }
 
     if (total_length != src.meta.ri) {
-      RETURN_FAIL("%s: total length: have 0x%" PRIu64 ", want 0x%" PRIu64,
+      RETURN_FAIL("%s: total length: have %" PRIu64 ", want %" PRIu64,
+                  test_cases[tc].str, total_length, src.meta.ri);
+    }
+  }
+
+  return NULL;
+}
+
+const char*  //
+test_wuffs_json_decode_string() {
+  CHECK_FOCUS(__func__);
+
+  const char* bad_bac = wuffs_json__error__bad_backslash_escape;
+  const char* bad_ccc = wuffs_json__error__bad_c0_control_code;
+  const char* bad_utf = wuffs_json__error__bad_utf_8;
+
+  struct {
+    const char* want_status_repr;
+    const char* str;
+  } test_cases[] = {
+      {.want_status_repr = NULL, .str = "\"+++\\\"+\\/+\\\\+++\""},
+      {.want_status_repr = NULL, .str = "\"+++\\b+\\f+\\n+\\r+\\t+++\""},
+      {.want_status_repr = NULL, .str = "\"\x20\""},              // U+00000020.
+      {.want_status_repr = NULL, .str = "\"\xC2\x80\""},          // U+00000080.
+      {.want_status_repr = NULL, .str = "\"\xDF\xBF\""},          // U+000007FF.
+      {.want_status_repr = NULL, .str = "\"\xE0\xA0\x80\""},      // U+00000800.
+      {.want_status_repr = NULL, .str = "\"\xED\xAF\xBF\""},      // U+0000DBFF.
+      {.want_status_repr = NULL, .str = "\"\xEE\x80\x80\""},      // U+0000E000.
+      {.want_status_repr = NULL, .str = "\"\xEF\xBF\xBF\""},      // U+0000FFFF.
+      {.want_status_repr = NULL, .str = "\"\xF0\x90\x80\x80\""},  // U+00010000.
+      {.want_status_repr = NULL, .str = "\"\xF4\x8F\xBF\xBF\""},  // U+0010FFFF.
+      {.want_status_repr = NULL, .str = "\"abc\""},
+      {.want_status_repr = NULL, .str = "\"i\x6Ak\""},
+      {.want_status_repr = NULL, .str = "\"space+\x20+space\""},
+      {.want_status_repr = NULL, .str = "\"tab+\\t+tab\""},
+      {.want_status_repr = NULL, .str = "\"tab+\\u0009+tab\""},
+
+      {.want_status_repr = bad_bac, .str = "\"\\uIJKL\""},
+      {.want_status_repr = bad_bac, .str = "\"space+\\x20+space\""},
+
+      {.want_status_repr = bad_ccc, .str = "\"\x1F\""},
+      {.want_status_repr = bad_ccc, .str = "\"tab+\t+tab\""},
+
+      {.want_status_repr = bad_utf, .str = "\"\xF5\""},
+      {.want_status_repr = bad_utf, .str = "\"\xFF\xFF\xFF\xFF\""},
+  };
+
+  wuffs_json__decoder dec;
+  int tc;
+  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+    CHECK_STATUS("initialize",
+                 wuffs_json__decoder__initialize(
+                     &dec, sizeof dec, WUFFS_VERSION,
+                     WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+
+    wuffs_base__token_buffer tok = ((wuffs_base__token_buffer){
+        .data = global_have_token_slice,
+    });
+    size_t n = strlen(test_cases[tc].str);
+    wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+        .data = wuffs_base__make_slice_u8((void*)(test_cases[tc].str), n),
+        .meta = wuffs_base__make_io_buffer_meta(n, 0, 0, true),
+    });
+
+    wuffs_base__status have_status =
+        wuffs_json__decoder__decode_tokens(&dec, &tok, &src);
+
+    uint64_t total_length = 0;
+    size_t i;
+    for (i = tok.meta.ri; i < tok.meta.wi; i++) {
+      wuffs_base__token* t = &tok.data.ptr[i];
+      total_length =
+          wuffs_base__u64__sat_add(total_length, wuffs_base__token__length(t));
+    }
+
+    if (have_status.repr != test_cases[tc].want_status_repr) {
+      RETURN_FAIL("%s: have \"%s\", want \"%s\"", test_cases[tc].str,
+                  have_status.repr, test_cases[tc].want_status_repr);
+    }
+
+    if (total_length != src.meta.ri) {
+      RETURN_FAIL("%s: total length: have %" PRIu64 ", want %" PRIu64,
                   test_cases[tc].str, total_length, src.meta.ri);
     }
   }
@@ -444,7 +525,8 @@ proc tests[] = {
     test_strconv_parse_number_i64,  //
     test_strconv_parse_number_u64,  //
 
-    test_wuffs_json_decode_tokens,            //
+    test_wuffs_json_decode_interface,         //
+    test_wuffs_json_decode_string,            //
     test_wuffs_json_decode_unicode4_escapes,  //
 
 #ifdef WUFFS_MIMIC

@@ -55,8 +55,9 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 	var stack_bit         : base.u32[..= 31]
 	var match             : base.u32[..= 2]
 	var c                 : base.u8
-	var class             : base.u8[..= 0x0F]
 	var backslash         : base.u8
+	var char              : base.u8
+	var class             : base.u8[..= 0x0F]
 
 	var uni4_ok             : base.u8
 	var uni4_string         : base.u64
@@ -203,26 +204,28 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 							continue.string_loop
 						}
 						c = args.src.peek_u8()
+						char = lut_chars[c]
 
-						if c <= 0x22 {  // 0x22 is '"'.
-							if c == 0x22 {  // 0x22 is '"'.
+						if char == 0x00 {  // Non-special ASCII.
+							args.src.skip32_fast!(actual: 1, worst_case: 1)
+							if string_length >= 0xFFFE {
 								args.dst.write_fast_token!(
-									value: 0x20_0220,
-									length: string_length as base.u64)
+									value: 0x20_0221,
+									length: 0xFFFF)
 								string_length = 0
-								break.string_loop
-
-							} else if c < 0x20 {  // 0x20 is ' '.
-								if string_length > 0 {
-									args.dst.write_fast_token!(
-										value: 0x20_0221,
-										length: string_length as base.u64)
-									string_length = 0
-								}
-								return "#bad input"
+								continue.string_loop
 							}
+							string_length += 1
+							continue
 
-						} else if c == 0x5C {  // 0x5C is '\\'.
+						} else if char == 0x01 {  // '"'
+							args.dst.write_fast_token!(
+								value: 0x20_0220,
+								length: string_length as base.u64)
+							string_length = 0
+							break.string_loop
+
+						} else if char == 0x02 {  // '\\'.
 							if string_length > 0 {
 								args.dst.write_fast_token!(
 									value: 0x20_0221,
@@ -236,29 +239,31 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 
 							if args.src.available() < 2 {
 								if args.src.is_closed() {
-									return "#bad input"
+									return "#bad backslash-escape"
 								}
 								yield? base."$short read"
 								string_length = 0
+								char = 0
 								continue.string_loop
 							}
-							backslash = (args.src.peek_u16le() >> 8) as base.u8
-							c = lut_backslashes[backslash]
-							if c > 0 {
+							c = (args.src.peek_u16le() >> 8) as base.u8
+							backslash = lut_backslashes[c]
+							if backslash > 0 {
 								args.src.skip32_fast!(actual: 2, worst_case: 2)
 								args.dst.write_fast_token!(
-									value: 0x40_0000 | ((c & 0x7F) as base.u64),
+									value: 0x40_0000 | ((backslash & 0x7F) as base.u64),
 									length: 2)
 								continue.string_loop
 
-							} else if backslash == 0x75 {  // 0x75 is 'u'.
+							} else if c == 0x75 {  // 0x75 is 'u'.
 								// -------- BEGIN backslash-u.
 								if args.src.available() < 6 {
 									if args.src.is_closed() {
-										return "#bad input"
+										return "#bad backslash-escape"
 									}
 									yield? base."$short read"
 									string_length = 0
+									char = 0
 									continue.string_loop
 								}
 
@@ -281,7 +286,8 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 
 								if uni4_ok == 0 {
 									// It wasn't 4 hexadecimal digits. No-op
-									// (and fall through to "#bad input").
+									// (and fall through to "#bad
+									// backslash-escape").
 
 								} else if (uni4_value < 0xD800) or (0xDFFF < uni4_value) {
 									// Not a Unicode surrogate. We're good.
@@ -293,7 +299,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 
 								} else if uni4_value >= 0xDC00 {
 									// Low surrogate. No-op (and fall through
-									// to "#bad input").
+									// to "#bad backslash-escape").
 
 								} else {
 									// High surrogate, which needs to be
@@ -302,11 +308,12 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 									// high surrogate. We need another 6.
 									if args.src.available() < 12 {
 										if args.src.is_closed() {
-											return "#bad input"
+											return "#bad backslash-escape"
 										}
 										yield? base."$short read"
 										string_length = 0
 										uni4_value = 0
+										char = 0
 										continue.string_loop
 									}
 
@@ -356,7 +363,8 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 
 									} else {
 										// Roll back the 4 bytes, then fall
-										// through to "#bad input".
+										// through to "#invalid
+										// backslash-escape".
 										uni4_rollback = 4
 										while uni4_rollback > 0 {
 											uni4_rollback -= 1
@@ -371,18 +379,32 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 								// -------- END   backslash-u.
 							}
 
-							return "#bad input"
+							return "#bad backslash-escape"
+
+						} else if char <= 0x10 {
+							// TODO: reject invalid UTF-8.
+							args.src.skip32_fast!(actual: 1, worst_case: 1)
+							if string_length >= 0xFFFE {
+								args.dst.write_fast_token!(
+									value: 0x20_0221,
+									length: 0xFFFF)
+								string_length = 0
+								continue.string_loop
+							}
+							string_length += 1
+							continue
 						}
 
-						args.src.skip32_fast!(actual: 1, worst_case: 1)
-						if string_length >= 0xFFFE {
+						if string_length > 0 {
 							args.dst.write_fast_token!(
 								value: 0x20_0221,
-								length: 0xFFFF)
+								length: string_length as base.u64)
 							string_length = 0
-							continue.string_loop
 						}
-						string_length += 1
+						if char == 0x80 {
+							return "#bad C0 control code"
+						}
+						return "#bad UTF-8"
 					}
 				} endwhile.string_loop
 
