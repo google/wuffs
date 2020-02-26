@@ -18727,8 +18727,8 @@ const char* wuffs_json__error__internal_error_inconsistent_i_o =
 
 // ---------------- Private Consts
 
-static const uint8_t              //
-    wuffs_json__backslashes[256]  //
+static const uint8_t                  //
+    wuffs_json__lut_backslashes[256]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
         0,   0, 0,   0,   0, 0, 0, 0,   0, 0,   0, 0, 0, 0, 0, 0,   0,   0, 0,
         0,   0, 0,   0,   0, 0, 0, 0,   0, 0,   0, 0, 0, 0, 0, 162, 0,   0, 0,
@@ -18746,8 +18746,8 @@ static const uint8_t              //
         0,   0, 0,   0,   0, 0, 0, 0,   0,
 };
 
-static const uint8_t          //
-    wuffs_json__classes[256]  //
+static const uint8_t              //
+    wuffs_json__lut_classes[256]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
         15, 15, 15, 15, 15, 15, 15, 15, 15, 0,  0,  15, 15, 0,  15, 15, 15, 15,
         15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 0,  15, 1,  15,
@@ -18766,8 +18766,8 @@ static const uint8_t          //
         15, 15, 15, 15,
 };
 
-static const uint8_t                     //
-    wuffs_json__hexadecimal_digits[256]  //
+static const uint8_t                         //
+    wuffs_json__lut_hexadecimal_digits[256]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
         0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 0, 0, 0, 0, 0,
         0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 0, 0, 0, 0, 0,
@@ -18981,7 +18981,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
             goto label__outer__continue;
           }
           v_c = wuffs_base__load_u8be(iop_a_src);
-          v_class = wuffs_json__classes[v_c];
+          v_class = wuffs_json__lut_classes[v_c];
           if (v_class != 0) {
             goto label__ws__break;
           }
@@ -19121,7 +19121,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
                 }
                 v_backslash =
                     ((uint8_t)((wuffs_base__load_u16le(iop_a_src) >> 8)));
-                v_c = wuffs_json__backslashes[v_backslash];
+                v_c = wuffs_json__lut_backslashes[v_backslash];
                 if (v_c > 0) {
                   (iop_a_src += 2, wuffs_base__make_empty_struct());
                   *iop_a_dst++ = wuffs_base__make_token(
@@ -19146,20 +19146,20 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
                       (((uint64_t)(wuffs_base__load_u48le(iop_a_src))) >> 16);
                   v_uni4_value = 0;
                   v_uni4_ok = 128;
-                  v_c = wuffs_json__hexadecimal_digits[(255 &
-                                                        (v_uni4_string >> 0))];
+                  v_c = wuffs_json__lut_hexadecimal_digits[(
+                      255 & (v_uni4_string >> 0))];
                   v_uni4_ok &= v_c;
                   v_uni4_value |= (((uint32_t)((v_c & 15))) << 12);
-                  v_c = wuffs_json__hexadecimal_digits[(255 &
-                                                        (v_uni4_string >> 8))];
+                  v_c = wuffs_json__lut_hexadecimal_digits[(
+                      255 & (v_uni4_string >> 8))];
                   v_uni4_ok &= v_c;
                   v_uni4_value |= (((uint32_t)((v_c & 15))) << 8);
-                  v_c = wuffs_json__hexadecimal_digits[(255 &
-                                                        (v_uni4_string >> 16))];
+                  v_c = wuffs_json__lut_hexadecimal_digits[(
+                      255 & (v_uni4_string >> 16))];
                   v_uni4_ok &= v_c;
                   v_uni4_value |= (((uint32_t)((v_c & 15))) << 4);
-                  v_c = wuffs_json__hexadecimal_digits[(255 &
-                                                        (v_uni4_string >> 24))];
+                  v_c = wuffs_json__lut_hexadecimal_digits[(
+                      255 & (v_uni4_string >> 24))];
                   v_uni4_ok &= v_c;
                   v_uni4_value |= (((uint32_t)((v_c & 15))) << 0);
                   if (v_uni4_ok == 0) {
@@ -19198,19 +19198,19 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
                       v_uni4_value = 0;
                       v_uni4_ok = 128;
                       v_uni4_string >>= 16;
-                      v_c = wuffs_json__hexadecimal_digits[(
+                      v_c = wuffs_json__lut_hexadecimal_digits[(
                           255 & (v_uni4_string >> 0))];
                       v_uni4_ok &= v_c;
                       v_uni4_value |= (((uint32_t)((v_c & 15))) << 12);
-                      v_c = wuffs_json__hexadecimal_digits[(
+                      v_c = wuffs_json__lut_hexadecimal_digits[(
                           255 & (v_uni4_string >> 8))];
                       v_uni4_ok &= v_c;
                       v_uni4_value |= (((uint32_t)((v_c & 15))) << 8);
-                      v_c = wuffs_json__hexadecimal_digits[(
+                      v_c = wuffs_json__lut_hexadecimal_digits[(
                           255 & (v_uni4_string >> 16))];
                       v_uni4_ok &= v_c;
                       v_uni4_value |= (((uint32_t)((v_c & 15))) << 4);
-                      v_c = wuffs_json__hexadecimal_digits[(
+                      v_c = wuffs_json__lut_hexadecimal_digits[(
                           255 & (v_uni4_string >> 24))];
                       v_uni4_ok &= v_c;
                       v_uni4_value |= (((uint32_t)((v_c & 15))) << 0);

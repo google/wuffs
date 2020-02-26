@@ -106,7 +106,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 				}
 
 				c = args.src.peek_u8()
-				class = classes[c]
+				class = lut_classes[c]
 				if class <> 0x00 {  // 0x00 is CLASS_WHITESPACE.
 					break.ws
 				}
@@ -243,7 +243,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 								continue.string_loop
 							}
 							backslash = (args.src.peek_u16le() >> 8) as base.u8
-							c = backslashes[backslash]
+							c = lut_backslashes[backslash]
 							if c > 0 {
 								args.src.skip32_fast!(actual: 2, worst_case: 2)
 								args.dst.write_fast_token!(
@@ -266,16 +266,16 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 								uni4_value = 0
 								uni4_ok = 0x80
 
-								c = hexadecimal_digits[0xFF & (uni4_string >> 0)]
+								c = lut_hexadecimal_digits[0xFF & (uni4_string >> 0)]
 								uni4_ok &= c
 								uni4_value |= ((c & 0x0F) as base.u32) << 12
-								c = hexadecimal_digits[0xFF & (uni4_string >> 8)]
+								c = lut_hexadecimal_digits[0xFF & (uni4_string >> 8)]
 								uni4_ok &= c
 								uni4_value |= ((c & 0x0F) as base.u32) << 8
-								c = hexadecimal_digits[0xFF & (uni4_string >> 16)]
+								c = lut_hexadecimal_digits[0xFF & (uni4_string >> 16)]
 								uni4_ok &= c
 								uni4_value |= ((c & 0x0F) as base.u32) << 4
-								c = hexadecimal_digits[0xFF & (uni4_string >> 24)]
+								c = lut_hexadecimal_digits[0xFF & (uni4_string >> 24)]
 								uni4_ok &= c
 								uni4_value |= ((c & 0x0F) as base.u32) << 0
 
@@ -329,16 +329,16 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 										uni4_ok = 0x80
 										uni4_string >>= 16
 
-										c = hexadecimal_digits[0xFF & (uni4_string >> 0)]
+										c = lut_hexadecimal_digits[0xFF & (uni4_string >> 0)]
 										uni4_ok &= c
 										uni4_value |= ((c & 0x0F) as base.u32) << 12
-										c = hexadecimal_digits[0xFF & (uni4_string >> 8)]
+										c = lut_hexadecimal_digits[0xFF & (uni4_string >> 8)]
 										uni4_ok &= c
 										uni4_value |= ((c & 0x0F) as base.u32) << 8
-										c = hexadecimal_digits[0xFF & (uni4_string >> 16)]
+										c = lut_hexadecimal_digits[0xFF & (uni4_string >> 16)]
 										uni4_ok &= c
 										uni4_value |= ((c & 0x0F) as base.u32) << 4
-										c = hexadecimal_digits[0xFF & (uni4_string >> 24)]
+										c = lut_hexadecimal_digits[0xFF & (uni4_string >> 24)]
 										uni4_ok &= c
 										uni4_value |= ((c & 0x0F) as base.u32) << 0
 									}

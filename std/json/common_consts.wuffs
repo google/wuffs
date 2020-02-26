@@ -18,7 +18,9 @@ pub status "#unsupported recursion depth"
 
 pri status "#internal error: inconsistent I/O"
 
-pri const backslashes array[256] base.u8 = [
+// Look-Up Tables (LUTs).
+
+pri const lut_backslashes array[256] base.u8 = [
 	// 0     1     2     3     4     5     6     7
 	// 8     9     A     B     C     D     E     F
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // 0x00 ..= 0x07.
@@ -100,7 +102,7 @@ pri const backslashes array[256] base.u8 = [
 // and objects.
 //
 // "String value" includes "this" and "th\u0061t".
-pri const classes array[256] base.u8[..= 0x0F] = [
+pri const lut_classes array[256] base.u8[..= 0x0F] = [
 	// 0     1     2     3     4     5     6     7
 	// 8     9     A     B     C     D     E     F
 	0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F,  // 0x00 ..= 0x07.
@@ -142,7 +144,7 @@ pri const classes array[256] base.u8[..= 0x0F] = [
 	// 8     9     A     B     C     D     E     F
 ]
 
-pri const hexadecimal_digits array[256] base.u8 = [
+pri const lut_hexadecimal_digits array[256] base.u8 = [
 	// 0     1     2     3     4     5     6     7
 	// 8     9     A     B     C     D     E     F
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // 0x00 ..= 0x07.
