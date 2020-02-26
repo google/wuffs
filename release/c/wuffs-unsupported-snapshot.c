@@ -8242,8 +8242,8 @@ wuffs_base__parse_number_i64(wuffs_base__slice_u8 s) {
   }
 
   do {
-    wuffs_base__result_u64 r =
-        wuffs_base__parse_number_u64(wuffs_base__make_slice_u8(p, q - p));
+    wuffs_base__result_u64 r = wuffs_base__parse_number_u64(
+        wuffs_base__make_slice_u8(p, (size_t)(q - p)));
     if (r.status.repr != NULL) {
       wuffs_base__result_i64 ret;
       ret.status.repr = r.status.repr;
