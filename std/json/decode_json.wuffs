@@ -48,7 +48,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 	var token_value       : base.u64[..= 0xFF_FFFF]
 	var number_length     : base.u32[..= 0x3FF]
 	var number_status     : base.u32[..= 0x3]
-	var string_length     : base.u32[..= 0xFFFE]
+	var string_length     : base.u32[..= 0xFFFB]
 	var whitespace_length : base.u32[..= 0xFFFE]
 	var depth             : base.u32[..= 1024]
 	var stack_byte        : base.u32[..= (1024 / 32) - 1]
@@ -58,6 +58,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 	var backslash         : base.u8
 	var char              : base.u8
 	var class             : base.u8[..= 0x0F]
+	var multi_byte_utf8   : base.u32
 
 	var uni4_ok             : base.u8
 	var uni4_string         : base.u64
@@ -208,10 +209,10 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 
 						if char == 0x00 {  // Non-special ASCII.
 							args.src.skip32_fast!(actual: 1, worst_case: 1)
-							if string_length >= 0xFFFE {
+							if string_length >= 0xFFFB {
 								args.dst.write_fast_token!(
 									value: 0x20_0221,
-									length: 0xFFFF)
+									length: 0xFFFC)
 								string_length = 0
 								continue.string_loop
 							}
@@ -381,18 +382,92 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 
 							return "#bad backslash-escape"
 
-						} else if char <= 0x10 {
-							// TODO: reject invalid UTF-8.
-							args.src.skip32_fast!(actual: 1, worst_case: 1)
-							if string_length >= 0xFFFE {
-								args.dst.write_fast_token!(
-									value: 0x20_0221,
-									length: 0xFFFF)
+						} else if char == 0x03 {  // 2-byte UTF-8.
+							if args.src.available() < 2 {
+								if args.src.is_closed() {
+									return "#bad UTF-8"
+								}
+								yield? base."$short read"
 								string_length = 0
+								char = 0
 								continue.string_loop
 							}
-							string_length += 1
-							continue
+							multi_byte_utf8 = args.src.peek_u16le_as_u32()
+							if (multi_byte_utf8 & 0xC000) == 0x8000 {
+								multi_byte_utf8 = (0x00_07C0 & (multi_byte_utf8 ~mod<< 6)) |
+									(0x00_003F & (multi_byte_utf8 >> 8))
+								args.src.skip32_fast!(actual: 2, worst_case: 2)
+								if string_length >= 0xFFF8 {
+									args.dst.write_fast_token!(
+										value: 0x20_0221,
+										length: (string_length + 2) as base.u64)
+									string_length = 0
+									continue.string_loop
+								}
+								string_length += 2
+								continue
+							}
+
+						} else if char == 0x04 {  // 3-byte UTF-8.
+							if args.src.available() < 3 {
+								if args.src.is_closed() {
+									return "#bad UTF-8"
+								}
+								yield? base."$short read"
+								string_length = 0
+								char = 0
+								continue.string_loop
+							}
+							multi_byte_utf8 = args.src.peek_u24le_as_u32()
+							if (multi_byte_utf8 & 0xC0_C000) == 0x80_8000 {
+								multi_byte_utf8 = (0x00_F000 & (multi_byte_utf8 ~mod<< 12)) |
+									(0x00_0FC0 & (multi_byte_utf8 >> 2)) |
+									(0x00_003F & (multi_byte_utf8 >> 16))
+								if (0x07FF < multi_byte_utf8) and
+									((multi_byte_utf8 < 0xD800) or (0xDFFF < multi_byte_utf8)) {
+
+									args.src.skip32_fast!(actual: 3, worst_case: 3)
+									if string_length >= 0xFFF8 {
+										args.dst.write_fast_token!(
+											value: 0x20_0221,
+											length: (string_length + 3) as base.u64)
+										string_length = 0
+										continue.string_loop
+									}
+									string_length += 3
+									continue
+								}
+							}
+
+						} else if char == 0x05 {  // 4-byte UTF-8.
+							if args.src.available() < 4 {
+								if args.src.is_closed() {
+									return "#bad UTF-8"
+								}
+								yield? base."$short read"
+								string_length = 0
+								char = 0
+								continue.string_loop
+							}
+							multi_byte_utf8 = args.src.peek_u32le()
+							if (multi_byte_utf8 & 0xC0C0_C000) == 0x8080_8000 {
+								multi_byte_utf8 = (0x1C_0000 & (multi_byte_utf8 ~mod<< 18)) |
+									(0x03_F000 & (multi_byte_utf8 ~mod<< 4)) |
+									(0x00_0FC0 & (multi_byte_utf8 >> 10)) |
+									(0x00_003F & (multi_byte_utf8 >> 24))
+								if (0xFFFF < multi_byte_utf8) and (multi_byte_utf8 <= 0x10_FFFF) {
+									args.src.skip32_fast!(actual: 4, worst_case: 4)
+									if string_length >= 0xFFF8 {
+										args.dst.write_fast_token!(
+											value: 0x20_0221,
+											length: (string_length + 4) as base.u64)
+										string_length = 0
+										continue.string_loop
+									}
+									string_length += 4
+									continue
+								}
+							}
 						}
 
 						if string_length > 0 {

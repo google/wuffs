@@ -401,10 +401,15 @@ test_wuffs_json_decode_string() {
       {.want_status_repr = NULL, .str = "\"\xC2\x80\""},          // U+00000080.
       {.want_status_repr = NULL, .str = "\"\xDF\xBF\""},          // U+000007FF.
       {.want_status_repr = NULL, .str = "\"\xE0\xA0\x80\""},      // U+00000800.
-      {.want_status_repr = NULL, .str = "\"\xED\xAF\xBF\""},      // U+0000DBFF.
+      {.want_status_repr = NULL, .str = "\"\xED\x80\x80\""},      // U+0000D000.
+      {.want_status_repr = NULL, .str = "\"\xED\x9F\xBF\""},      // U+0000D7FF.
       {.want_status_repr = NULL, .str = "\"\xEE\x80\x80\""},      // U+0000E000.
       {.want_status_repr = NULL, .str = "\"\xEF\xBF\xBF\""},      // U+0000FFFF.
       {.want_status_repr = NULL, .str = "\"\xF0\x90\x80\x80\""},  // U+00010000.
+      {.want_status_repr = NULL, .str = "\"\xF0\xB0\x80\x81\""},  // U+00030001.
+      {.want_status_repr = NULL, .str = "\"\xF1\xB0\x80\x82\""},  // U+00070002.
+      {.want_status_repr = NULL, .str = "\"\xF3\xB0\x80\x83\""},  // U+000F0003.
+      {.want_status_repr = NULL, .str = "\"\xF4\x80\x80\x84\""},  // U+00100004.
       {.want_status_repr = NULL, .str = "\"\xF4\x8F\xBF\xBF\""},  // U+0010FFFF.
       {.want_status_repr = NULL, .str = "\"abc\""},
       {.want_status_repr = NULL, .str = "\"i\x6Ak\""},
@@ -418,6 +423,21 @@ test_wuffs_json_decode_string() {
       {.want_status_repr = bad_ccc, .str = "\"\x1F\""},
       {.want_status_repr = bad_ccc, .str = "\"tab+\t+tab\""},
 
+      {.want_status_repr = bad_utf, .str = "\"\x80\""},
+      {.want_status_repr = bad_utf, .str = "\"\xBF\""},
+      {.want_status_repr = bad_utf, .str = "\"\xC1\x80\""},
+      {.want_status_repr = bad_utf, .str = "\"\xC2\x7F\""},
+      {.want_status_repr = bad_utf, .str = "\"\xDF\xC0\""},
+      {.want_status_repr = bad_utf, .str = "\"\xDF\xFF\""},
+      {.want_status_repr = bad_utf, .str = "\"\xE0\x9F\xBF\""},
+      {.want_status_repr = bad_utf, .str = "\"\xED\xA0\xB0\""},  // U+0000D800.
+      {.want_status_repr = bad_utf, .str = "\"\xED\xBF\xBF\""},  // U+0000DFFF.
+      {.want_status_repr = bad_utf, .str = "\"\xF0\x80\x80\""},
+      {.want_status_repr = bad_utf, .str = "\"\xF0\x8F\xBF\xBF\""},
+      {.want_status_repr = bad_utf, .str = "\"\xF2\x7F\x80\x80\""},
+      {.want_status_repr = bad_utf, .str = "\"\xF2\x80\x7F\x80\""},
+      {.want_status_repr = bad_utf, .str = "\"\xF2\x80\x80\x7F\""},
+      {.want_status_repr = bad_utf, .str = "\"\xF4\x90\x80\x80\""},
       {.want_status_repr = bad_utf, .str = "\"\xF5\""},
       {.want_status_repr = bad_utf, .str = "\"\xFF\xFF\xFF\xFF\""},
   };
