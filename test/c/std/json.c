@@ -198,6 +198,115 @@ test_strconv_parse_number_u64() {
   return NULL;
 }
 
+const char*  //
+test_strconv_utf_8_next() {
+  CHECK_FOCUS(__func__);
+
+  // Special case the "\x00" string, which is valid UTF-8 but its strlen is
+  // zero, not one.
+  uint8_t the_nul_byte[0];
+  the_nul_byte[0] = '\x00';
+
+  struct {
+    uint32_t want_cp;
+    uint32_t want_bl;
+    const char* str;
+  } test_cases[] = {
+      {.want_cp = 0x00000000, .want_bl = 0, .str = ""},
+      {.want_cp = 0x00000000, .want_bl = 1, .str = "The <NUL> byte"},
+      {.want_cp = 0x00000009, .want_bl = 1, .str = "\t"},
+      {.want_cp = 0x00000041, .want_bl = 1, .str = "A"},
+      {.want_cp = 0x00000061, .want_bl = 1, .str = "abdefghij"},
+      {.want_cp = 0x0000007F, .want_bl = 1, .str = "\x7F"},
+      {.want_cp = 0x00000080, .want_bl = 2, .str = "\xC2\x80"},
+      {.want_cp = 0x000007FF, .want_bl = 2, .str = "\xDF\xBF"},
+      {.want_cp = 0x00000800, .want_bl = 3, .str = "\xE0\xA0\x80"},
+      {.want_cp = 0x0000FFFD, .want_bl = 3, .str = "\xEF\xBF\xBD"},
+      {.want_cp = 0x0000FFFF, .want_bl = 3, .str = "\xEF\xBF\xBF"},
+      {.want_cp = 0x00010000, .want_bl = 4, .str = "\xF0\x90\x80\x80"},
+      {.want_cp = 0x0010FFFF, .want_bl = 4, .str = "\xF4\x8F\xBF\xBF"},
+
+      // U+00000394 GREEK CAPITAL LETTER DELTA.
+      {.want_cp = 0x00000394, .want_bl = 2, .str = "\xCE\x94"},
+      {.want_cp = 0x00000394, .want_bl = 2, .str = "\xCE\x94+"},
+      {.want_cp = 0x00000394, .want_bl = 2, .str = "\xCE\x94++"},
+      {.want_cp = 0x00000394, .want_bl = 2, .str = "\xCE\x94+++"},
+      {.want_cp = 0x00000394, .want_bl = 2, .str = "\xCE\x94++++"},
+      {.want_cp = 0x00000394, .want_bl = 2, .str = "\xCE\x94\x80"},
+      {.want_cp = 0x00000394, .want_bl = 2, .str = "\xCE\x94\x80\x80"},
+      {.want_cp = 0x00000394, .want_bl = 2, .str = "\xCE\x94\x80\x80\x80"},
+      {.want_cp = 0x00000394, .want_bl = 2, .str = "\xCE\x94\x80\x80\x80\x80"},
+
+      // U+00002603 SNOWMAN.
+      {.want_cp = 0x00002603, .want_bl = 3, .str = "\xE2\x98\x83"},
+      {.want_cp = 0x00002603, .want_bl = 3, .str = "\xE2\x98\x83+"},
+      {.want_cp = 0x00002603, .want_bl = 3, .str = "\xE2\x98\x83++"},
+      {.want_cp = 0x00002603, .want_bl = 3, .str = "\xE2\x98\x83+++"},
+      {.want_cp = 0x00002603, .want_bl = 3, .str = "\xE2\x98\x83++++"},
+      {.want_cp = 0x00002603, .want_bl = 3, .str = "\xE2\x98\x83\xFF"},
+
+      // U+0001F4A9 PILE OF POO.
+      {.want_cp = 0x0001F4A9, .want_bl = 4, .str = "\xF0\x9F\x92\xA9"},
+      {.want_cp = 0x0001F4A9, .want_bl = 4, .str = "\xF0\x9F\x92\xA9+"},
+      {.want_cp = 0x0001F4A9, .want_bl = 4, .str = "\xF0\x9F\x92\xA9++"},
+      {.want_cp = 0x0001F4A9, .want_bl = 4, .str = "\xF0\x9F\x92\xA9+++"},
+      {.want_cp = 0x0001F4A9, .want_bl = 4, .str = "\xF0\x9F\x92\xA9++++"},
+      {.want_cp = 0x0001F4A9, .want_bl = 4, .str = "\xF0\x9F\x92\xA9\xFF"},
+
+      // Invalid.
+      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\x80"},
+      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xBF"},
+      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xC0\x80"},
+      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xC1\xBF"},
+      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xC2"},
+      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xC2\x7F"},
+      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xC2\xC0"},
+      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xC2\xFF"},
+      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xCE"},
+      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xDF\xC0"},
+      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xDF\xFF"},
+      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xE0\x80"},
+      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xE0\x80\x80"},
+      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xE0\x9F\xBF"},
+      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xE2"},
+      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xF0"},
+      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xF0\x80\x80"},
+      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xF0\x80\x80\x80"},
+      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xF0\x8F\xBF\xBF"},
+      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xF4\x90\x80\x80"},
+      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xF5"},
+      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xF6\x80"},
+      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xF7\x80\x80"},
+      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xFF\xFF\xFF\xFF"},
+
+      // Invalid. UTF-8 cannot contain the surrogates U+D800 ..= U+DFFF.
+      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xED\xA0\x80"},
+      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xED\xBF\xBF"},
+  };
+
+  int tc;
+  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+    wuffs_base__slice_u8 s = wuffs_base__make_slice_u8(
+        (void*)test_cases[tc].str, strlen(test_cases[tc].str));
+
+    // Override "The <NUL> byte" with "\x00".
+    if ((test_cases[tc].want_cp == 0) && (test_cases[tc].want_bl == 1)) {
+      s = wuffs_base__make_slice_u8(&the_nul_byte[0], 1);
+    }
+
+    wuffs_base__utf_8__next__output have = wuffs_base__utf_8__next(s);
+    if ((have.code_point != test_cases[tc].want_cp) ||
+        (have.byte_length != test_cases[tc].want_bl)) {
+      RETURN_FAIL("\"%s\": have cp=0x%" PRIX32 " bl=%" PRIu32
+                  ", want cp=0x%" PRIX32 " bl=%" PRIu32,
+                  test_cases[tc].str, have.code_point, have.byte_length,
+                  test_cases[tc].want_cp, test_cases[tc].want_bl);
+    }
+  }
+
+  return NULL;
+}
+
 // ---------------- Golden Tests
 
 golden_test json_australian_abc_gt = {
@@ -562,6 +671,7 @@ proc tests[] = {
     // as any other place.
     test_strconv_parse_number_i64,  //
     test_strconv_parse_number_u64,  //
+    test_strconv_utf_8_next,        //
 
     test_wuffs_json_decode_interface,         //
     test_wuffs_json_decode_string,            //

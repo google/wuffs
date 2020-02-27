@@ -3,6 +3,8 @@
 
 ## Work In Progress
 
+- Added `base` library support for `atoi`-like string conversion.
+- Added `base` library support for UTF-8.
 - Added `endwhile` syntax.
 - Added `example/imageviewer`.
 - Added `example/jsonptr`.
