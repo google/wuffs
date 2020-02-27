@@ -342,7 +342,16 @@ handle_token(wuffs_base__token t) {
         if (!prev_token_incomplete) {
           TRY(write_dst("\"", 1));
         }
-        TRY(write_dst(src.data.ptr + curr_token_end_src_index - len, len));
+
+        if (vbd & WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_0_DST_1_SRC_DROP) {
+          // No-op.
+        } else if (vbd &
+                   WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY) {
+          TRY(write_dst(src.data.ptr + curr_token_end_src_index - len, len));
+        } else {
+          return "main: internal error: unexpected string-token conversion";
+        }
+
         prev_token_incomplete =
             vbd & WUFFS_BASE__TOKEN__VBD__STRING__INCOMPLETE;
         if (prev_token_incomplete) {
