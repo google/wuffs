@@ -61,6 +61,22 @@ After modifying this program, run "build-example.sh example/jsonptr/" and then
 // program to generate a stand-alone C++ file.
 #include "../../release/c/wuffs-unsupported-snapshot.c"
 
+#define TRY(error_msg)         \
+  do {                         \
+    const char* z = error_msg; \
+    if (z) {                   \
+      return z;                \
+    }                          \
+  } while (false)
+
+static const char* eod = "main: end of data";
+
+// ----
+
+#define MAX_INDENT 8
+#define INDENT_STRING "        "
+size_t indent;
+
 #ifndef DST_BUFFER_SIZE
 #define DST_BUFFER_SIZE (32 * 1024)
 #endif
@@ -71,33 +87,60 @@ After modifying this program, run "build-example.sh example/jsonptr/" and then
 #define TOKEN_BUFFER_SIZE (4 * 1024)
 #endif
 
-uint8_t dst_buffer[DST_BUFFER_SIZE];
-uint8_t src_buffer[SRC_BUFFER_SIZE];
-wuffs_base__token tok_buffer[TOKEN_BUFFER_SIZE];
+uint8_t dst_array[DST_BUFFER_SIZE];
+uint8_t src_array[SRC_BUFFER_SIZE];
+wuffs_base__token tok_array[TOKEN_BUFFER_SIZE];
 
 wuffs_base__io_buffer dst;
 wuffs_base__io_buffer src;
 wuffs_base__token_buffer tok;
 
+// curr_token_end_src_index is the src.data.ptr index of the end of the current
+// token. An invariant is that (curr_token_end_src_index <= src.meta.ri).
+size_t curr_token_end_src_index;
+
+bool prev_token_incomplete;
+
+uint64_t depth;
+
+enum class context {
+  none,
+  in_list_after_bracket,
+  in_list_after_value,
+  in_dict_after_brace,
+  in_dict_after_key,
+  in_dict_after_value,
+} ctx;
+
 wuffs_json__decoder dec;
-wuffs_base__status dec_status;
 
-// dec_current_token_end_src_index is the src.data.ptr index of the end of the
-// current token. An invariant is that (dec_current_token_end_src_index <=
-// src.meta.ri).
-size_t dec_current_token_end_src_index;
+const char*  //
+initialize_globals(int argc, char** argv) {
+  indent = 4;
 
-#define MAX_INDENT 8
-#define INDENT_STRING "        "
-size_t indent;
+  dst = wuffs_base__make_io_buffer(
+      wuffs_base__make_slice_u8(dst_array, DST_BUFFER_SIZE),
+      wuffs_base__empty_io_buffer_meta());
 
-#define TRY(error_msg)         \
-  do {                         \
-    const char* z = error_msg; \
-    if (z) {                   \
-      return z;                \
-    }                          \
-  } while (false)
+  src = wuffs_base__make_io_buffer(
+      wuffs_base__make_slice_u8(src_array, SRC_BUFFER_SIZE),
+      wuffs_base__empty_io_buffer_meta());
+
+  tok = wuffs_base__make_token_buffer(
+      wuffs_base__make_slice_token(tok_array, TOKEN_BUFFER_SIZE),
+      wuffs_base__empty_token_buffer_meta());
+
+  curr_token_end_src_index = 0;
+
+  prev_token_incomplete = false;
+
+  depth = 0;
+
+  ctx = context::none;
+
+  return dec.initialize(sizeof__wuffs_json__decoder(), WUFFS_VERSION, 0)
+      .message();
+}
 
 // ----
 
@@ -163,101 +206,6 @@ write_dst(const void* s, size_t n) {
 
 // ----
 
-enum class context {
-  none,
-  in_list_after_bracket,
-  in_list_after_value,
-  in_dict_after_brace,
-  in_dict_after_key,
-  in_dict_after_value,
-};
-
-// parsed_token is a result type, combining a wuffs_base_token and an error.
-// For the parsed_token returned by make_parsed_token, it also contains the src
-// data bytes for the token. This slice is just a view into the src_buffer
-// array, and its contents may change on the next call to parse_next_token.
-//
-// An invariant is that (token.length() == data.len).
-typedef struct {
-  const char* error_msg;
-  wuffs_base__token token;
-  wuffs_base__slice_u8 data;
-} parsed_token;
-
-parsed_token  //
-make_pt_error(const char* error_msg) {
-  parsed_token p;
-  p.error_msg = error_msg;
-  p.token = wuffs_base__make_token(0);
-  p.data = wuffs_base__make_slice_u8(nullptr, 0);
-  return p;
-}
-
-parsed_token  //
-make_pt_token(uint64_t token_repr, uint8_t* data_ptr, size_t data_len) {
-  parsed_token p;
-  p.error_msg = nullptr;
-  p.token = wuffs_base__make_token(token_repr);
-  p.data = wuffs_base__make_slice_u8(data_ptr, data_len);
-  return p;
-}
-
-parsed_token  //
-parse_next_token() {
-  while (true) {
-    // Return a previously produced token, if one exists.
-    //
-    // We do this before checking dec_status. This is analogous to Go's
-    // io.Reader's documented idiom, when processing io.Reader.Read's returned
-    // (n int, err error), to "process the n > 0 bytes returned before
-    // considering the error err. Doing so correctly handles I/O errors that
-    // happen after reading some bytes".
-    if (tok.meta.ri < tok.meta.wi) {
-      wuffs_base__token t = tok.data.ptr[tok.meta.ri++];
-
-      uint64_t n = t.length();
-      if ((src.meta.ri - dec_current_token_end_src_index) < n) {
-        return make_pt_error("main: internal error: inconsistent src indexes");
-      }
-      dec_current_token_end_src_index += n;
-
-      // Filter out any filler tokens (e.g. whitespace).
-      if (t.value_base_category() == WUFFS_BASE__TOKEN__VBC__FILLER) {
-        continue;
-      }
-
-      return make_pt_token(
-          t.repr, src.data.ptr + dec_current_token_end_src_index - n, n);
-    }
-
-    // Now consider dec_status.
-    if (dec_status.repr == nullptr) {
-      return make_pt_error("main: internal error: parser stopped");
-
-    } else if (dec_status.repr == wuffs_base__suspension__short_read) {
-      if (dec_current_token_end_src_index != src.meta.ri) {
-        return make_pt_error("main: internal error: inconsistent src indexes");
-      }
-      const char* z = read_src();
-      if (z) {
-        return make_pt_error(z);
-      }
-      dec_current_token_end_src_index = src.meta.ri;
-
-    } else if (dec_status.repr == wuffs_base__suspension__short_write) {
-      tok.compact();
-
-    } else {
-      return make_pt_error(dec_status.message());
-    }
-
-    // Retry a "short read" or "short write" suspension.
-    dec_status = dec.decode_tokens(&tok, &src);
-  }
-}
-
-// ----
-
 uint8_t  //
 hex_digit(uint8_t nibble) {
   nibble &= 0x0F;
@@ -317,7 +265,7 @@ handle_unicode_code_point(uint32_t ucp) {
 
   } else if (ucp <= 0xFFFF) {
     if ((0xD800 <= ucp) && (ucp <= 0xDFFF)) {
-      return "main: unexpected Unicode surrogate";
+      return "main: internal error: unexpected Unicode surrogate";
     }
     // The UTF-8 encoding takes 3 bytes.
     uint8_t esc3[3];
@@ -336,62 +284,19 @@ handle_unicode_code_point(uint32_t ucp) {
     return write_dst(&esc4[0], 4);
   }
 
-  return "main: unexpected Unicode code point";
+  return "main: internal error: unexpected Unicode code point";
 }
 
 const char*  //
-handle_string(parsed_token pt) {
-  TRY(write_dst("\"", 1));
-  while (true) {
-    uint64_t vbc = pt.token.value_base_category();
-    uint64_t vbd = pt.token.value_base_detail();
-
-    if (vbc == WUFFS_BASE__TOKEN__VBC__STRING) {
-      TRY(write_dst(pt.data.ptr, pt.data.len));
-      if ((vbd & WUFFS_BASE__TOKEN__VBD__STRING__INCOMPLETE) == 0) {
-        break;
-      }
-
-    } else if (vbc == WUFFS_BASE__TOKEN__VBC__UNICODE_CODE_POINT) {
-      TRY(handle_unicode_code_point(vbd));
-
-    } else {
-      return "main: unexpected token";
-    }
-
-    pt = parse_next_token();
-    if (pt.error_msg) {
-      return pt.error_msg;
-    }
-  }
-  TRY(write_dst("\"", 1));
-  return nullptr;
-}
-
-const char*  //
-main2() {
-  dec_status = dec.initialize(sizeof__wuffs_json__decoder(), WUFFS_VERSION, 0);
-  if (!dec_status.is_ok()) {
-    return dec_status.message();
-  }
-  dec_status = dec.decode_tokens(&tok, &src);
-  dec_current_token_end_src_index = 0;
-
-  uint64_t depth = 0;
-  context ctx = context::none;
-
-continue_loop:
-  while (true) {
-    parsed_token pt = parse_next_token();
-    if (pt.error_msg) {
-      return pt.error_msg;
-    }
-    uint64_t vbc = pt.token.value_base_category();
-    uint64_t vbd = pt.token.value_base_detail();
+handle_token(wuffs_base__token t) {
+  do {
+    uint64_t vbc = t.value_base_category();
+    uint64_t vbd = t.value_base_detail();
+    uint64_t len = t.length();
 
     // Handle ']' or '}'.
     if ((vbc == WUFFS_BASE__TOKEN__VBC__STRUCTURE) &&
-        ((vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__POP) != 0)) {
+        (vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__POP)) {
       if (depth <= 0) {
         return "main: internal error: inconsistent depth";
       }
@@ -415,22 +320,44 @@ continue_loop:
     }
 
     // Write preceding whitespace and punctuation, if it wasn't ']' or '}'.
-    if (ctx == context::in_dict_after_key) {
-      TRY(write_dst(": ", 2));
-    } else if (ctx != context::none) {
-      if ((ctx != context::in_list_after_bracket) &&
-          (ctx != context::in_dict_after_brace)) {
-        TRY(write_dst(",", 1));
-      }
-      TRY(write_dst("\n", 1));
-      for (size_t i = 0; i < depth; i++) {
-        TRY(write_dst(INDENT_STRING, indent));
+    if (!prev_token_incomplete) {
+      if (ctx == context::in_dict_after_key) {
+        TRY(write_dst(": ", 2));
+      } else if (ctx != context::none) {
+        if ((ctx != context::in_list_after_bracket) &&
+            (ctx != context::in_dict_after_brace)) {
+          TRY(write_dst(",", 1));
+        }
+        TRY(write_dst("\n", 1));
+        for (size_t i = 0; i < depth; i++) {
+          TRY(write_dst(INDENT_STRING, indent));
+        }
       }
     }
 
     // Handle the token itself: either a container ('[' or '{') or a simple
     // value (number, string or literal).
     switch (vbc) {
+      case WUFFS_BASE__TOKEN__VBC__STRING:
+        if (!prev_token_incomplete) {
+          TRY(write_dst("\"", 1));
+        }
+        TRY(write_dst(src.data.ptr + curr_token_end_src_index - len, len));
+        prev_token_incomplete =
+            vbd & WUFFS_BASE__TOKEN__VBD__STRING__INCOMPLETE;
+        if (prev_token_incomplete) {
+          return nullptr;
+        }
+        TRY(write_dst("\"", 1));
+        goto after_value;
+
+      case WUFFS_BASE__TOKEN__VBC__UNICODE_CODE_POINT:
+        return handle_unicode_code_point(vbd);
+
+      case WUFFS_BASE__TOKEN__VBC__NUMBER:
+        TRY(write_dst(src.data.ptr + curr_token_end_src_index - len, len));
+        goto after_value;
+
       case WUFFS_BASE__TOKEN__VBC__STRUCTURE:
         TRY(write_dst(
             (vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__TO_LIST) ? "[" : "{", 1));
@@ -438,44 +365,80 @@ continue_loop:
         ctx = (vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__TO_LIST)
                   ? context::in_list_after_bracket
                   : context::in_dict_after_brace;
-        goto continue_loop;
-
-      case WUFFS_BASE__TOKEN__VBC__NUMBER:
-        TRY(write_dst(pt.data.ptr, pt.data.len));
-        goto after_value;
-
-      case WUFFS_BASE__TOKEN__VBC__STRING:
-        TRY(handle_string(pt));
-        goto after_value;
+        return nullptr;
     }
 
     // Return an error if we didn't match the (vbc, vbd) pair.
-    return "main: unexpected token";
+    return "main: internal error: unexpected token";
+  } while (0);
 
-    // Book-keeping after completing a value (whether a container value or a
-    // simple value). Empty parent containers are no longer empty. If the
-    // parent container is a "{...}" object, toggle between keys and values.
-  after_value:
-    if (depth <= 0) {
-      goto break_loop;
+  // Book-keeping after completing a value (whether a container value or a
+  // simple value). Empty parent containers are no longer empty. If the parent
+  // container is a "{...}" object, toggle between keys and values.
+after_value:
+  if (depth == 0) {
+    return eod;
+  }
+  switch (ctx) {
+    case context::in_list_after_bracket:
+      ctx = context::in_list_after_value;
+      break;
+    case context::in_dict_after_brace:
+      ctx = context::in_dict_after_key;
+      break;
+    case context::in_dict_after_key:
+      ctx = context::in_dict_after_value;
+      break;
+    case context::in_dict_after_value:
+      ctx = context::in_dict_after_key;
+      break;
+  }
+  return nullptr;
+}
+
+const char*  //
+main1(int argc, char** argv) {
+  TRY(initialize_globals(argc, argv));
+
+  while (true) {
+    wuffs_base__status status = dec.decode_tokens(&tok, &src);
+
+    while (tok.meta.ri < tok.meta.wi) {
+      wuffs_base__token t = tok.data.ptr[tok.meta.ri++];
+      uint64_t n = t.length();
+      if ((src.meta.ri - curr_token_end_src_index) < n) {
+        return "main: internal error: inconsistent src indexes";
+      }
+      curr_token_end_src_index += n;
+
+      if (t.value() == 0) {
+        continue;
+      }
+
+      const char* z = handle_token(t);
+      if (z == nullptr) {
+        continue;
+      } else if (z == eod) {
+        break;
+      }
+      return z;
     }
-    switch (ctx) {
-      case context::in_list_after_bracket:
-        ctx = context::in_list_after_value;
-        break;
-      case context::in_dict_after_brace:
-        ctx = context::in_dict_after_key;
-        break;
-      case context::in_dict_after_key:
-        ctx = context::in_dict_after_value;
-        break;
-      case context::in_dict_after_value:
-        ctx = context::in_dict_after_key;
-        break;
+
+    if (status.repr == nullptr) {
+      break;
+    } else if (status.repr == wuffs_base__suspension__short_read) {
+      if (curr_token_end_src_index != src.meta.ri) {
+        return "main: internal error: inconsistent src indexes";
+      }
+      TRY(read_src());
+      curr_token_end_src_index = src.meta.ri;
+    } else if (status.repr == wuffs_base__suspension__short_write) {
+      tok.compact();
+    } else {
+      return status.message();
     }
   }
 
-break_loop:
   // Consume an optional whitespace trailer. This isn't part of the JSON spec,
   // but it works better with line oriented Unix tools (such as "echo 123 |
   // jsonptr" where it's "echo", not "echo -n") or hand-edited JSON files which
@@ -519,27 +482,6 @@ break_loop:
   return nullptr;
 }
 
-const char*  //
-main1(int argc, char** argv) {
-  dst = wuffs_base__make_io_buffer(
-      wuffs_base__make_slice_u8(dst_buffer, DST_BUFFER_SIZE),
-      wuffs_base__empty_io_buffer_meta());
-
-  src = wuffs_base__make_io_buffer(
-      wuffs_base__make_slice_u8(src_buffer, SRC_BUFFER_SIZE),
-      wuffs_base__empty_io_buffer_meta());
-
-  tok = wuffs_base__make_token_buffer(
-      wuffs_base__make_slice_token(tok_buffer, TOKEN_BUFFER_SIZE),
-      wuffs_base__empty_token_buffer_meta());
-
-  indent = 4;
-
-  TRY(main2());
-  TRY(write_dst("\n", 1));
-  return nullptr;
-}
-
 int  //
 compute_exit_code(const char* status_msg) {
   if (!status_msg) {
@@ -568,7 +510,8 @@ compute_exit_code(const char* status_msg) {
 int  //
 main(int argc, char** argv) {
   const char* z0 = main1(argc, argv);
-  const char* z1 = flush_dst();
-  int exit_code = compute_exit_code(z0 ? z0 : z1);
+  const char* z1 = write_dst("\n", 1);
+  const char* z2 = flush_dst();
+  int exit_code = compute_exit_code(z0 ? z0 : (z1 ? z1 : z2));
   return exit_code;
 }
