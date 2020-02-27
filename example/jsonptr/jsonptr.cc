@@ -268,6 +268,78 @@ hex_digit(uint8_t nibble) {
 }
 
 const char*  //
+handle_unicode_code_point(uint32_t ucp) {
+  if (ucp < 0x0020) {
+    switch (ucp) {
+      case '\b':
+        return write_dst("\\b", 2);
+      case '\f':
+        return write_dst("\\f", 2);
+      case '\n':
+        return write_dst("\\n", 2);
+      case '\r':
+        return write_dst("\\r", 2);
+      case '\t':
+        return write_dst("\\t", 2);
+      default: {
+        // Other bytes less than 0x0020 are valid UTF-8 but not valid in a
+        // JSON string. They need to remain escaped.
+        uint8_t esc6[6];
+        esc6[0] = '\\';
+        esc6[1] = 'u';
+        esc6[2] = '0';
+        esc6[3] = '0';
+        esc6[4] = hex_digit(ucp >> 4);
+        esc6[5] = hex_digit(ucp >> 0);
+        return write_dst(&esc6[0], 6);
+      }
+    }
+
+  } else if (ucp <= 0x007F) {
+    switch (ucp) {
+      case '\"':
+        return write_dst("\\\"", 2);
+      case '\\':
+        return write_dst("\\\\", 2);
+      default: {
+        // The UTF-8 encoding takes 1 byte.
+        uint8_t esc0 = (uint8_t)(ucp);
+        return write_dst(&esc0, 1);
+      }
+    }
+
+  } else if (ucp <= 0x07FF) {
+    // The UTF-8 encoding takes 2 bytes.
+    uint8_t esc2[2];
+    esc2[0] = 0xC0 | (uint8_t)((ucp >> 6));
+    esc2[1] = 0x80 | (uint8_t)((ucp >> 0) & 0x3F);
+    return write_dst(&esc2[0], 2);
+
+  } else if (ucp <= 0xFFFF) {
+    if ((0xD800 <= ucp) && (ucp <= 0xDFFF)) {
+      return "main: unexpected Unicode surrogate";
+    }
+    // The UTF-8 encoding takes 3 bytes.
+    uint8_t esc3[3];
+    esc3[0] = 0xE0 | (uint8_t)((ucp >> 12));
+    esc3[1] = 0x80 | (uint8_t)((ucp >> 6) & 0x3F);
+    esc3[2] = 0x80 | (uint8_t)((ucp >> 0) & 0x3F);
+    return write_dst(&esc3[0], 3);
+
+  } else if (ucp <= 0x10FFFF) {
+    // The UTF-8 encoding takes 4 bytes.
+    uint8_t esc4[4];
+    esc4[0] = 0xF0 | (uint8_t)((ucp >> 18));
+    esc4[1] = 0x80 | (uint8_t)((ucp >> 12) & 0x3F);
+    esc4[2] = 0x80 | (uint8_t)((ucp >> 6) & 0x3F);
+    esc4[3] = 0x80 | (uint8_t)((ucp >> 0) & 0x3F);
+    return write_dst(&esc4[0], 4);
+  }
+
+  return "main: unexpected Unicode code point";
+}
+
+const char*  //
 handle_string(parsed_token pt) {
   TRY(write_dst("\"", 1));
   while (true) {
@@ -280,86 +352,11 @@ handle_string(parsed_token pt) {
         break;
       }
 
-    } else if (vbc != WUFFS_BASE__TOKEN__VBC__UNICODE_CODE_POINT) {
-      return "main: unexpected token";
-
-    } else if (vbd < 0x0020) {
-      switch (vbd) {
-        case '\b':
-          TRY(write_dst("\\b", 2));
-          break;
-        case '\f':
-          TRY(write_dst("\\f", 2));
-          break;
-        case '\n':
-          TRY(write_dst("\\n", 2));
-          break;
-        case '\r':
-          TRY(write_dst("\\r", 2));
-          break;
-        case '\t':
-          TRY(write_dst("\\t", 2));
-          break;
-        default: {
-          // Other bytes less than 0x0020 are valid UTF-8 but not valid in a
-          // JSON string. They need to remain escaped.
-          uint8_t esc6[6];
-          esc6[0] = '\\';
-          esc6[1] = 'u';
-          esc6[2] = '0';
-          esc6[3] = '0';
-          esc6[4] = hex_digit(vbd >> 4);
-          esc6[5] = hex_digit(vbd >> 0);
-          TRY(write_dst(&esc6[0], 6));
-          break;
-        }
-      }
-
-    } else if (vbd <= 0x007F) {
-      switch (vbd) {
-        case '\"':
-          TRY(write_dst("\\\"", 2));
-          break;
-        case '\\':
-          TRY(write_dst("\\\\", 2));
-          break;
-        default: {
-          // The UTF-8 encoding takes 1 byte.
-          uint8_t esc0 = (uint8_t)(vbd);
-          TRY(write_dst(&esc0, 1));
-          break;
-        }
-      }
-
-    } else if (vbd <= 0x07FF) {
-      // The UTF-8 encoding takes 2 bytes.
-      uint8_t esc2[2];
-      esc2[0] = 0xC0 | (uint8_t)((vbd >> 6));
-      esc2[1] = 0x80 | (uint8_t)((vbd >> 0) & 0x3F);
-      TRY(write_dst(&esc2[0], 2));
-
-    } else if (vbd <= 0xFFFF) {
-      if ((0xD800 <= vbd) && (vbd <= 0xDFFF)) {
-        return "main: unexpected Unicode surrogate";
-      }
-      // The UTF-8 encoding takes 3 bytes.
-      uint8_t esc3[3];
-      esc3[0] = 0xE0 | (uint8_t)((vbd >> 12));
-      esc3[1] = 0x80 | (uint8_t)((vbd >> 6) & 0x3F);
-      esc3[2] = 0x80 | (uint8_t)((vbd >> 0) & 0x3F);
-      TRY(write_dst(&esc3[0], 3));
-
-    } else if (vbd <= 0x10FFFF) {
-      // The UTF-8 encoding takes 4 bytes.
-      uint8_t esc4[4];
-      esc4[0] = 0xF0 | (uint8_t)((vbd >> 18));
-      esc4[1] = 0x80 | (uint8_t)((vbd >> 12) & 0x3F);
-      esc4[2] = 0x80 | (uint8_t)((vbd >> 6) & 0x3F);
-      esc4[3] = 0x80 | (uint8_t)((vbd >> 0) & 0x3F);
-      TRY(write_dst(&esc4[0], 4));
+    } else if (vbc == WUFFS_BASE__TOKEN__VBC__UNICODE_CODE_POINT) {
+      TRY(handle_unicode_code_point(vbd));
 
     } else {
-      return "main: unexpected Unicode code point";
+      return "main: unexpected token";
     }
 
     pt = parse_next_token();
