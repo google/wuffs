@@ -99,8 +99,6 @@ wuffs_base__token_buffer tok;
 // token. An invariant is that (curr_token_end_src_index <= src.meta.ri).
 size_t curr_token_end_src_index;
 
-bool prev_token_incomplete;
-
 uint64_t depth;
 
 enum class context {
@@ -131,8 +129,6 @@ initialize_globals(int argc, char** argv) {
       wuffs_base__empty_token_buffer_meta());
 
   curr_token_end_src_index = 0;
-
-  prev_token_incomplete = false;
 
   depth = 0;
 
@@ -319,19 +315,20 @@ handle_token(wuffs_base__token t) {
       goto after_value;
     }
 
-    // Write preceding whitespace and punctuation, if it wasn't ']' or '}'.
-    if (!prev_token_incomplete) {
-      if (ctx == context::in_dict_after_key) {
-        TRY(write_dst(": ", 2));
-      } else if (ctx != context::none) {
-        if ((ctx != context::in_list_after_bracket) &&
-            (ctx != context::in_dict_after_brace)) {
-          TRY(write_dst(",", 1));
-        }
-        TRY(write_dst("\n", 1));
-        for (size_t i = 0; i < depth; i++) {
-          TRY(write_dst(INDENT_STRING, indent));
-        }
+    // Write preceding whitespace and punctuation, if it wasn't ']', '}' or a
+    // continuation of a multi-token chain.
+    if (t.link_prev()) {
+      // No-op.
+    } else if (ctx == context::in_dict_after_key) {
+      TRY(write_dst(": ", 2));
+    } else if (ctx != context::none) {
+      if ((ctx != context::in_list_after_bracket) &&
+          (ctx != context::in_dict_after_brace)) {
+        TRY(write_dst(",", 1));
+      }
+      TRY(write_dst("\n", 1));
+      for (size_t i = 0; i < depth; i++) {
+        TRY(write_dst(INDENT_STRING, indent));
       }
     }
 
@@ -339,7 +336,7 @@ handle_token(wuffs_base__token t) {
     // value (number, string or literal).
     switch (vbc) {
       case WUFFS_BASE__TOKEN__VBC__STRING:
-        if (!prev_token_incomplete) {
+        if (!t.link_prev()) {
           TRY(write_dst("\"", 1));
         }
 
@@ -352,9 +349,7 @@ handle_token(wuffs_base__token t) {
           return "main: internal error: unexpected string-token conversion";
         }
 
-        prev_token_incomplete =
-            vbd & WUFFS_BASE__TOKEN__VBD__STRING__INCOMPLETE;
-        if (prev_token_incomplete) {
+        if (t.link_next()) {
           return nullptr;
         }
         TRY(write_dst("\"", 1));

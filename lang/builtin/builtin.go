@@ -326,9 +326,13 @@ var Funcs = []string{
 
 	// ---- token_writer
 
-	"token_writer.write_token?(value: u64[..= 0xFFFFFFFFFFFF], length: u64[..= 0xFFFF])",
+	"token_writer.write_token?(" +
+		"value_major: u32[..= 0x1F_FFFF], value_minor: u32[..= 0xFF_FFFF]," +
+		"link: u32[..= 0x3], length: u32[..= 0xFFFF])",
 
-	"token_writer.write_fast_token!(value: u64[..= 0xFFFFFFFFFFFF], length: u64[..= 0xFFFF])",
+	"token_writer.write_fast_token!(" +
+		"value_major: u32[..= 0x1F_FFFF], value_minor: u32[..= 0xFF_FFFF]," +
+		"link: u32[..= 0x3], length: u32[..= 0xFFFF])",
 
 	"token_writer.available() u64",
 

@@ -17,22 +17,52 @@
 // ---------------- Tokens
 
 typedef struct {
-  // The repr is divided as:
-  //  - Bits 63 .. 40 (24 bits) is the major value.
-  //  - Bits 39 .. 16 (24 bits) is the minor value.
+  // The repr's 64 bits are divided as:
+  //
+  // +-----+-------------+-------+-------------+-----+-----+-----------+
+  // |  1  |      21     |   3   |      21     |  1  |  1  |     16    |
+  // +-----+-------------+-------+-------------+-----+-----+-----------+
+  // [..................value..................]  LP    LN     length
+  // [..0..|.value_major.|.....value_minor.....]
+  // [..0..|.........VBC.........|.....VBD.....]
+  //
+  // The broad divisions are:
+  //  - Bits 63 .. 18 (46 bits) is the value.
+  //  - Bits 17 .. 16 ( 2 bits) is LP and LN (link_prev and link_next).
   //  - Bits 15 ..  0 (16 bits) is the length.
   //
-  // The major value is a [Base38](doc/note/base38-and-fourcc.md) value. If
-  // zero (special cased for Wuffs' built-in "base" package) then the minor
-  // value is further sub-divided:
-  //  - Bits 39 .. 37 ( 3 bits) is the value_base_category.
-  //  - Bits 36 .. 16 (21 bits) is the value_base_detail.
+  // The value bits can be sub-divided in multiple ways:
+  //  - Bits 63 .. 63 ( 1 bits) is reserved (a zero bit).
+  //  - Bits 62 .. 42 (21 bits) is the value_major.
+  //  - Bits 41 .. 18 (24 bits) is the value_minor.
+  //  - Bits 62 .. 39 (24 bits) is the VBC (value_base_category).
+  //  - Bits 38 .. 18 (21 bits) is the VBD (value_base_detail).
   //
-  // In particular, at 21 bits, the value_base_detail can hold every valid
-  // Unicode code point.
+  // The value_major is a 21-bit [Base38](doc/note/base38-and-fourcc.md) value.
+  // If all of its bits are zero (special cased for Wuffs' built-in "base"
+  // package) then the value_minor is further sub-divided:
+  //  - Bits 41 .. 39 ( 3 bits) is the VBC (value_base_category).
+  //  - Bits 38 .. 18 (21 bits) is the VBD (value_base_detail).
   //
-  // If the major value is non-zero then the minor value has whatever arbitrary
-  // meaning the tokenizer's package assigns to it.
+  // The high 46 bits (bits 63 .. 18) only have VBC and VBD semantics when the
+  // high 22 bits (the value_major) are all zero. An equivalent test is that
+  // the high 25 bits (the notional VBC) has a numerical value less than 8.
+  //
+  // At 21 bits, the VBD can hold every valid Unicode code point.
+  //
+  // If value_major is non-zero then value_minor has whatever arbitrary meaning
+  // the tokenizer's package assigns to it.
+  //
+  // Multiple consecutive tokens can form a larger conceptual unit. For
+  // example, an "abc\tz" string is a single higher level concept but at the
+  // lower level, it could consist of multiple tokens: the quotes '"', the
+  // ASCII texts "abc" and "z" and the backslash-escaped tab '\t'. The LP and
+  // LN (link_prev and link_next) bits denote tokens that are part of a
+  // multi-token chain:
+  //  - LP means that this token is not the first (there is a previous token).
+  //  - LN means that this token is not the last  (there is a next     token).
+  //
+  // In particular, a stand-alone token will have both link bits set to zero.
   uint64_t repr;
 
 #ifdef __cplusplus
@@ -41,6 +71,8 @@ typedef struct {
   inline uint64_t value_minor() const;
   inline uint64_t value_base_category() const;
   inline uint64_t value_base_detail() const;
+  inline bool link_prev() const;
+  inline bool link_next() const;
   inline uint64_t length() const;
 #endif  // __cplusplus
 
@@ -55,19 +87,24 @@ wuffs_base__make_token(uint64_t repr) {
 
   // --------
 
-#define WUFFS_BASE__TOKEN__VALUE__MASK 0xFFFFFFFFFFFF
-#define WUFFS_BASE__TOKEN__VALUE_MAJOR__MASK 0xFFFFFF
+#define WUFFS_BASE__TOKEN__VALUE__MASK 0x3FFFFFFFFFFF
+#define WUFFS_BASE__TOKEN__VALUE_MAJOR__MASK 0x3FFFFF
 #define WUFFS_BASE__TOKEN__VALUE_MINOR__MASK 0xFFFFFF
-#define WUFFS_BASE__TOKEN__VALUE_BASE_CATEGORY__MASK 0x7FFFFFF
+#define WUFFS_BASE__TOKEN__VALUE_BASE_CATEGORY__MASK 0x1FFFFFF
 #define WUFFS_BASE__TOKEN__VALUE_BASE_DETAIL__MASK 0x1FFFFF
+#define WUFFS_BASE__TOKEN__LINK__MASK 0x3
 #define WUFFS_BASE__TOKEN__LENGTH__MASK 0xFFFF
 
-#define WUFFS_BASE__TOKEN__VALUE__SHIFT 16
-#define WUFFS_BASE__TOKEN__VALUE_MAJOR__SHIFT 40
-#define WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT 16
-#define WUFFS_BASE__TOKEN__VALUE_BASE_CATEGORY__SHIFT 37
-#define WUFFS_BASE__TOKEN__VALUE_BASE_DETAIL__SHIFT 16
+#define WUFFS_BASE__TOKEN__VALUE__SHIFT 18
+#define WUFFS_BASE__TOKEN__VALUE_MAJOR__SHIFT 42
+#define WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT 18
+#define WUFFS_BASE__TOKEN__VALUE_BASE_CATEGORY__SHIFT 39
+#define WUFFS_BASE__TOKEN__VALUE_BASE_DETAIL__SHIFT 18
+#define WUFFS_BASE__TOKEN__LINK__SHIFT 16
 #define WUFFS_BASE__TOKEN__LENGTH__SHIFT 0
+
+#define WUFFS_BASE__TOKEN__LINK_PREV 0x20000
+#define WUFFS_BASE__TOKEN__LINK_NEXT 0x10000
 
   // --------
 
@@ -77,41 +114,19 @@ wuffs_base__make_token(uint64_t repr) {
 #define WUFFS_BASE__TOKEN__VBC__NUMBER 3
 #define WUFFS_BASE__TOKEN__VBC__STRUCTURE 4
 
-// --------
+  // --------
 
-// INCOMPLETE means that this token combines with the following token.
-//
-// For example, tokenizing a comment that is longer than the source buffer can
-// result in multiple VBC__FILLER tokens. All but the last one is INCOMPLETE.
-//
-// By convention, whitespace is not marked incomplete. Two whitespace tokens of
-// length 30 are equivalent to one whitespace token of length 60.
-//
-// Bits 0x2, 0x4 and 0x8 are reserved for flags that are common between
-// VBD_FILLER and VBD_STRING.
-#define WUFFS_BASE__TOKEN__VBD__FILLER__INCOMPLETE 0x00001
-
-#define WUFFS_BASE__TOKEN__VBD__FILLER__END_OF_CONSECUTIVE_COMMENTS 0x00010
-#define WUFFS_BASE__TOKEN__VBD__FILLER__COMMENT_LINE 0x00020
-#define WUFFS_BASE__TOKEN__VBD__FILLER__COMMENT_BLOCK 0x00040
+#define WUFFS_BASE__TOKEN__VBD__FILLER__COMMENT_LINE 0x00001
+#define WUFFS_BASE__TOKEN__VBD__FILLER__COMMENT_BLOCK 0x00002
 
 // --------
 
-// INCOMPLETE means that this token combines with the following token.
-//
-// For example, tokenizing a string that is longer than the source buffer can
-// result in multiple VBC__STRING tokens. All but the last one is INCOMPLETE.
-//
-// Bits 0x2, 0x4 and 0x8 are reserved for flags that are common between
-// VBD_FILLER and VBD_STRING.
-#define WUFFS_BASE__TOKEN__VBD__STRING__INCOMPLETE 0x00001
-
-// "DEFINITELY_FOO" means that the source bytes (and also the destination
-// bytes, assuming 1_DST_1_SRC_COPY) are in the FOO format. Definitely means
-// that the lack of the bit is conservative: it is valid for all-ASCII strings
-// to have neither DEFINITELY_ASCII or DEFINITELY_UTF_8 bits set.
-#define WUFFS_BASE__TOKEN__VBD__STRING__DEFINITELY_ASCII 0x00010
-#define WUFFS_BASE__TOKEN__VBD__STRING__DEFINITELY_UTF_8 0x00020
+// "DEFINITELY_FOO" means that the destination bytes (and also the source
+// bytes, for 1_DST_1_SRC_COPY) are in the FOO format. Definitely means that
+// the lack of the bit is conservative: it is valid for all-ASCII strings to
+// have neither DEFINITELY_UTF_8 or DEFINITELY_ASCII bits set.
+#define WUFFS_BASE__TOKEN__VBD__STRING__DEFINITELY_UTF_8 0x00001
+#define WUFFS_BASE__TOKEN__VBD__STRING__DEFINITELY_ASCII 0x00002
 
 // "CONVERT_D_DST_S_SRC" means that multiples of S source bytes (possibly
 // padded) produces multiples of D destination bytes. For example,
@@ -121,21 +136,13 @@ wuffs_base__make_token(uint64_t repr) {
 // When src is the empty string, multiple conversion algorithms are applicable
 // (so these bits are not necessarily mutually exclusive), all producing the
 // same empty dst string.
-#define WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_0_DST_1_SRC_DROP 0x00100
-#define WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY 0x00200
-#define WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_1_DST_2_SRC_HEXADECIMAL 0x00400
-#define WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_1_DST_4_SRC_BACKSLASH_X 0x00800
-#define WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_3_DST_4_SRC_BASE_64_STD 0x01000
-#define WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_3_DST_4_SRC_BASE_64_URL 0x02000
-#define WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_4_DST_5_SRC_ASCII_85 0x04000
-
-  // --------
-
-  // UNICODE_CODE_POINT tokens have no room in their VBD for an INCOMPLETE bit.
-  // All 21 bits are used to hold the Unicode code point. Such tokens preserve
-  // the INCOMPLETEness of the previous token (if a FILLER or STRING).
-
-#define WUFFS_BASE__TOKEN__VBD__UNICODE_CODE_POINT__MAX_INCL 0x10FFFF
+#define WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_0_DST_1_SRC_DROP 0x00010
+#define WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY 0x00020
+#define WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_1_DST_2_SRC_HEXADECIMAL 0x00040
+#define WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_1_DST_4_SRC_BACKSLASH_X 0x00080
+#define WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_3_DST_4_SRC_BASE_64_STD 0x00100
+#define WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_3_DST_4_SRC_BASE_64_URL 0x00200
+#define WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_4_DST_5_SRC_ASCII_85 0x00400
 
   // --------
 
@@ -201,6 +208,16 @@ wuffs_base__token__value_base_detail(const wuffs_base__token* t) {
          WUFFS_BASE__TOKEN__VALUE_BASE_DETAIL__MASK;
 }
 
+static inline bool  //
+wuffs_base__token__link_prev(const wuffs_base__token* t) {
+  return t->repr & WUFFS_BASE__TOKEN__LINK_PREV;
+}
+
+static inline bool  //
+wuffs_base__token__link_next(const wuffs_base__token* t) {
+  return t->repr & WUFFS_BASE__TOKEN__LINK_NEXT;
+}
+
 static inline uint64_t  //
 wuffs_base__token__length(const wuffs_base__token* t) {
   return (t->repr >> WUFFS_BASE__TOKEN__LENGTH__SHIFT) &
@@ -232,6 +249,16 @@ wuffs_base__token::value_base_category() const {
 inline uint64_t  //
 wuffs_base__token::value_base_detail() const {
   return wuffs_base__token__value_base_detail(this);
+}
+
+inline bool  //
+wuffs_base__token::link_prev() const {
+  return wuffs_base__token__link_prev(this);
+}
+
+inline bool  //
+wuffs_base__token::link_next() const {
+  return wuffs_base__token__link_next(this);
 }
 
 inline uint64_t  //

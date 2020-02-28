@@ -1089,11 +1089,12 @@ do_test__wuffs_base__token_decoder(wuffs_base__token_decoder* b,
   uint64_t pos = 0;
   while (tok.meta.ri < tok.meta.wi) {
     wuffs_base__token* t = &tok.data.ptr[tok.meta.ri++];
-    uint64_t len = wuffs_base__token__length(t);
+    uint16_t len = wuffs_base__token__length(t);
 
     if (wuffs_base__token__value(t) != 0) {
-      uint64_t maj = wuffs_base__token__value_major(t);
-      uint64_t min = wuffs_base__token__value_minor(t);
+      uint8_t lp = wuffs_base__token__link_prev(t) ? 1 : 0;
+      uint8_t ln = wuffs_base__token__link_next(t) ? 1 : 0;
+      uint32_t vmajor = wuffs_base__token__value_major(t);
 
       if ((have.data.len - have.meta.wi) < 16) {
         return "testlib: output is too long";
@@ -1101,10 +1102,21 @@ do_test__wuffs_base__token_decoder(wuffs_base__token_decoder* b,
       // This 16-bytes-per-token debug format is the same one used by
       // `script/print-json-token-debug-format.c`.
       uint8_t* ptr = have.data.ptr + have.meta.wi;
-      wuffs_base__store_u32be__no_bounds_check(ptr + (0 * 4), (uint32_t)(pos));
-      wuffs_base__store_u32be__no_bounds_check(ptr + (1 * 4), (uint32_t)(len));
-      wuffs_base__store_u32be__no_bounds_check(ptr + (2 * 4), (uint32_t)(maj));
-      wuffs_base__store_u32be__no_bounds_check(ptr + (3 * 4), (uint32_t)(min));
+
+      wuffs_base__store_u32be__no_bounds_check(ptr + 0x0, (uint32_t)(pos));
+      wuffs_base__store_u16be__no_bounds_check(ptr + 0x4, len);
+      wuffs_base__store_u8__no_bounds_check(ptr + 0x0006, lp);
+      wuffs_base__store_u8__no_bounds_check(ptr + 0x0007, ln);
+      wuffs_base__store_u32be__no_bounds_check(ptr + 0x8, vmajor);
+      if (vmajor) {
+        uint32_t vminor = wuffs_base__token__value_minor(t);
+        wuffs_base__store_u32be__no_bounds_check(ptr + 0xC, vminor);
+      } else {
+        uint8_t vbc = wuffs_base__token__value_base_category(t);
+        uint32_t vbd = wuffs_base__token__value_base_detail(t);
+        wuffs_base__store_u8__no_bounds_check(ptr + 0x000C, vbc);
+        wuffs_base__store_u24be__no_bounds_check(ptr + 0xD, vbd);
+      }
       have.meta.wi += 16;
     }
 

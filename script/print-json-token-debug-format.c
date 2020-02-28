@@ -17,23 +17,38 @@
 // print-json-token-debug-format.c parses JSON from stdin and prints the
 // resulting token stream, eliding any non-essential (e.g. whitespace) tokens.
 //
-// The output format is only for debugging, and certainly not for long term
-// storage. It isn't guaranteed to be stable between versions of this program
-// and of the Wuffs standard library.
+// The output format is only for debugging or regression testing, and certainly
+// not for long term storage. It isn't guaranteed to be stable between versions
+// of this program and of the Wuffs standard library.
 //
-// It prints 16 bytes (4 big-endian uint32's) per token: the token's position
-// (total length of all previous tokens), length, major value and minor value.
+// It prints 16 bytes (128 bits) per token, containing big-endian numbers:
+//
+// +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+// |      POS      |  LEN  | LP| LN|     MAJOR     |     MINOR     |
+// |               |       |   |   |               |VBC|    VBD    |
+// +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+//
+//  - POS   (4 bytes) is the position: the sum of all previous tokens' lengths,
+//                    including elided tokens.
+//  - LEN   (2 bytes) is the length.
+//  - LP    (1 bytes) is the link_prev bit.
+//  - LN    (1 bytes) is the link_next bit
+//  - MAJOR (4 bytes) is the value_major.
+//
+// The final 4 bytes are either value_minor (when the value_major is non-zero)
+// or 1 + 3 bytes for value_base_category and value_base_detail (otherwise).
+//
 // Together with the hexadecimal WUFFS_BASE__TOKEN__ETC constants defined in
 // token-public.h, this format is somewhat human-readable when piped through a
-// hex-dump program (e.g. /usr/bin/hd).
+// hex-dump program (such as /usr/bin/hd), printing one token per line.
 //
 // If the input or output is larger than the program's buffers (64 MiB and
 // 131072 tokens by default), there may be multiple valid tokenizations of any
 // given input. For example, if a source string "abcde" straddles an I/O
-// boundary, it may be tokenized as a 5-length complete string or as a 3-length
-// incomplete string followed by a 2-length complete string.
+// boundary, it may be tokenized as single (no-link) 5-length string or as a
+// 3-length link_next'ed string followed by a 2-length link_prev'ed string.
 //
-// A Wuffs token stream, in general, can support inputs more than (1 << 32)
+// A Wuffs token stream, in general, can support inputs more than 0xFFFF_FFFF
 // bytes long, but this program can not, as it tracks the tokens' cumulative
 // position as a uint32.
 
@@ -134,17 +149,28 @@ main1(int argc, char** argv) {
 
     while (tok.meta.ri < tok.meta.wi) {
       wuffs_base__token* t = &tok.data.ptr[tok.meta.ri++];
-      uint64_t len = wuffs_base__token__length(t);
+      uint16_t len = wuffs_base__token__length(t);
 
       if (wuffs_base__token__value(t) != 0) {
-        uint64_t maj = wuffs_base__token__value_major(t);
-        uint64_t min = wuffs_base__token__value_minor(t);
+        uint8_t lp = wuffs_base__token__link_prev(t) ? 1 : 0;
+        uint8_t ln = wuffs_base__token__link_next(t) ? 1 : 0;
+        uint32_t vmajor = wuffs_base__token__value_major(t);
 
         uint8_t buf[16];
-        wuffs_base__store_u32be__no_bounds_check(&buf[0 * 4], (uint32_t)(pos));
-        wuffs_base__store_u32be__no_bounds_check(&buf[1 * 4], (uint32_t)(len));
-        wuffs_base__store_u32be__no_bounds_check(&buf[2 * 4], (uint32_t)(maj));
-        wuffs_base__store_u32be__no_bounds_check(&buf[3 * 4], (uint32_t)(min));
+        wuffs_base__store_u32be__no_bounds_check(&buf[0x0], (uint32_t)(pos));
+        wuffs_base__store_u16be__no_bounds_check(&buf[0x4], len);
+        wuffs_base__store_u8__no_bounds_check(&buf[0x0006], lp);
+        wuffs_base__store_u8__no_bounds_check(&buf[0x0007], ln);
+        wuffs_base__store_u32be__no_bounds_check(&buf[0x8], vmajor);
+        if (vmajor) {
+          uint32_t vminor = wuffs_base__token__value_minor(t);
+          wuffs_base__store_u32be__no_bounds_check(&buf[0xC], vminor);
+        } else {
+          uint8_t vbc = wuffs_base__token__value_base_category(t);
+          uint32_t vbd = wuffs_base__token__value_base_detail(t);
+          wuffs_base__store_u8__no_bounds_check(&buf[0x000C], vbc);
+          wuffs_base__store_u24be__no_bounds_check(&buf[0xD], vbd);
+        }
         const int stdout_fd = 1;
         write(stdout_fd, &buf[0], 16);
       }
