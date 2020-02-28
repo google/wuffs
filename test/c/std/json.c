@@ -650,7 +650,7 @@ bench_wuffs_json_decode_217k_stringy() {
   CHECK_FOCUS(__func__);
   return do_bench_token_decoder(
       wuffs_json_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
-      tcounter_src, &json_nobel_prizes_gt, UINT64_MAX, UINT64_MAX, 20);
+      tcounter_src, &json_nobel_prizes_gt, UINT64_MAX, UINT64_MAX, 25);
 }
 
   // ---------------- Mimic Benches
