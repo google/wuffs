@@ -128,11 +128,11 @@ read_src() {
 
 const char* vbc_names[8] = {
     "0:Filler..........",  //
-    "1:String..........",  //
-    "2:UnicodeCodePoint",  //
-    "3:Number..........",  //
-    "4:Structure.......",  //
-    "5:Reserved........",  //
+    "1:Structure.......",  //
+    "2:String..........",  //
+    "3:UnicodeCodePoint",  //
+    "4:Literal.........",  //
+    "5:Number..........",  //
     "6:Reserved........",  //
     "7:Reserved........",  //
 };

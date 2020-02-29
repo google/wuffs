@@ -333,8 +333,17 @@ handle_token(wuffs_base__token t) {
     }
 
     // Handle the token itself: either a container ('[' or '{') or a simple
-    // value (number, string or literal).
+    // value: string (a chain of raw or escaped parts), literal or number.
     switch (vbc) {
+      case WUFFS_BASE__TOKEN__VBC__STRUCTURE:
+        TRY(write_dst(
+            (vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__TO_LIST) ? "[" : "{", 1));
+        depth++;
+        ctx = (vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__TO_LIST)
+                  ? context::in_list_after_bracket
+                  : context::in_dict_after_brace;
+        return nullptr;
+
       case WUFFS_BASE__TOKEN__VBC__STRING:
         if (!t.link_prev()) {
           TRY(write_dst("\"", 1));
@@ -358,18 +367,10 @@ handle_token(wuffs_base__token t) {
       case WUFFS_BASE__TOKEN__VBC__UNICODE_CODE_POINT:
         return handle_unicode_code_point(vbd);
 
+      case WUFFS_BASE__TOKEN__VBC__LITERAL:
       case WUFFS_BASE__TOKEN__VBC__NUMBER:
         TRY(write_dst(src.data.ptr + curr_token_end_src_index - len, len));
         goto after_value;
-
-      case WUFFS_BASE__TOKEN__VBC__STRUCTURE:
-        TRY(write_dst(
-            (vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__TO_LIST) ? "[" : "{", 1));
-        depth++;
-        ctx = (vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__TO_LIST)
-                  ? context::in_list_after_bracket
-                  : context::in_dict_after_brace;
-        return nullptr;
     }
 
     // Return an error if we didn't match the (vbc, vbd) pair.
