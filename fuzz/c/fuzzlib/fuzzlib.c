@@ -85,6 +85,25 @@ LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
 }  // extern "C"
 #endif
 
+static wuffs_base__io_buffer  //
+make_limited_reader(wuffs_base__io_buffer b, uint64_t limit) {
+  uint64_t n = b.meta.wi - b.meta.ri;
+  bool closed = b.meta.closed;
+  if (n > limit) {
+    n = limit;
+    closed = false;
+  }
+
+  wuffs_base__io_buffer ret;
+  ret.data.ptr = b.data.ptr + b.meta.ri;
+  ret.data.len = n;
+  ret.meta.wi = n;
+  ret.meta.ri = 0;
+  ret.meta.pos = wuffs_base__u64__sat_add(b.meta.pos, b.meta.ri);
+  ret.meta.closed = closed;
+  return ret;
+}
+
 #ifdef WUFFS_CONFIG__FUZZLIB_MAIN
 
 #include <dirent.h>
@@ -195,6 +214,7 @@ visit(char* filename) {
   }
   int n = printf("- %s%s", relative_cwd.buf, filename);
   printf("%*s", (60 > n) ? (60 - n) : 1, "");
+  fflush(stdout);
 
   struct stat z;
   int fd = open(filename, O_RDONLY, 0);

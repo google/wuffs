@@ -21,6 +21,27 @@ pub status "#unsupported recursion depth"
 
 pri status "#internal error: inconsistent I/O"
 
+// decoder_depth_max_incl is the maximum supported recursion depth: how deeply
+// nested [] arrays and {} objects can be.
+//
+// The JSON spec itself does not define a limit, but allows implementations to
+// set their own limits.
+pub const decoder_depth_max_incl base.u64 = 1024
+
+// decoder_dst_token_buffer_length_min_incl is the minimum length of the dst
+// wuffs_base__token_buffer passed to the decoder.
+pub const decoder_dst_token_buffer_length_min_incl base.u64 = 1
+
+// decoder_src_io_buffer_length_min_incl is the minimum length of the src
+// wuffs_base__io_buffer passed to the decoder.
+//
+// This constrains the src.data.len field and it is the io_buffer capacity (the
+// maximum possible src.meta.ri and src.meta.wi values). It is a property of
+// the backing array's length, not the length of the JSON-formatted input per
+// se. It is perfectly valid to decode "[1,2]" (of length 5) as JSON, as long
+// as that content is placed in an io_buffer whose data.len is at least 100.
+pub const decoder_src_io_buffer_length_min_incl base.u64 = 100
+
 // Look-Up Tables (LUTs).
 
 pri const lut_backslashes array[256] base.u8 = [

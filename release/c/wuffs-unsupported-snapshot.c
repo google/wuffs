@@ -5705,6 +5705,12 @@ extern const char* wuffs_json__error__unsupported_recursion_depth;
 
 // ---------------- Public Consts
 
+#define WUFFS_JSON__DECODER_DEPTH_MAX_INCL 1024
+
+#define WUFFS_JSON__DECODER_DST_TOKEN_BUFFER_LENGTH_MIN_INCL 1
+
+#define WUFFS_JSON__DECODER_SRC_IO_BUFFER_LENGTH_MIN_INCL 100
+
 // ---------------- Struct Declarations
 
 typedef struct wuffs_json__decoder__struct wuffs_json__decoder;
