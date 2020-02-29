@@ -126,8 +126,34 @@ read_src() {
 
 // ----
 
+const char* vbc_names[8] = {
+    "0:Filler..........",  //
+    "1:String..........",  //
+    "2:UnicodeCodePoint",  //
+    "3:Number..........",  //
+    "4:Structure.......",  //
+    "5:Reserved........",  //
+    "6:Reserved........",  //
+    "7:Reserved........",  //
+};
+
+const int base38_decode[38] = {
+    ' ', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '?',       //
+    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',  //
+    'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',  //
+};
+
 const char*  //
 main1(int argc, char** argv) {
+  bool human_readable = false;
+  int i;
+  for (i = 1; i < argc; i++) {
+    if ((strcmp(argv[i], "-h") == 0) ||
+        (strcmp(argv[i], "--human-readable") == 0)) {
+      human_readable = true;
+    }
+  }
+
   src = wuffs_base__make_io_buffer(
       wuffs_base__make_slice_u8(src_buffer, SRC_BUFFER_SIZE),
       wuffs_base__empty_io_buffer_meta());
@@ -155,24 +181,47 @@ main1(int argc, char** argv) {
         uint8_t lp = wuffs_base__token__link_prev(t) ? 1 : 0;
         uint8_t ln = wuffs_base__token__link_next(t) ? 1 : 0;
         uint32_t vmajor = wuffs_base__token__value_major(t);
+        uint32_t vminor = wuffs_base__token__value_minor(t);
+        uint8_t vbc = wuffs_base__token__value_base_category(t);
+        uint32_t vbd = wuffs_base__token__value_base_detail(t);
 
-        uint8_t buf[16];
-        wuffs_base__store_u32be__no_bounds_check(&buf[0x0], (uint32_t)(pos));
-        wuffs_base__store_u16be__no_bounds_check(&buf[0x4], len);
-        wuffs_base__store_u8__no_bounds_check(&buf[0x0006], lp);
-        wuffs_base__store_u8__no_bounds_check(&buf[0x0007], ln);
-        wuffs_base__store_u32be__no_bounds_check(&buf[0x8], vmajor);
-        if (vmajor) {
-          uint32_t vminor = wuffs_base__token__value_minor(t);
-          wuffs_base__store_u32be__no_bounds_check(&buf[0xC], vminor);
+        if (human_readable) {
+          printf("pos=0x%08" PRIX32 "  len=0x%04" PRIX16 "  link=0b%d%d  ",
+                 (uint32_t)(pos), len, (int)(lp), (int)(ln));
+
+          if (vmajor) {
+            uint32_t m = vmajor;
+            uint32_t m0 = m / (38 * 38 * 38);
+            m -= m0 * (38 * 38 * 38);
+            uint32_t m1 = m / (38 * 38);
+            m -= m1 * (38 * 38);
+            uint32_t m2 = m / (38);
+            m -= m2 * (38);
+            uint32_t m3 = m;
+
+            printf("vmajor=0x%06" PRIX32 ":%c%c%c%c  vminor=0x%06" PRIX32 "\n",
+                   vmajor, base38_decode[m0], base38_decode[m1],
+                   base38_decode[m2], base38_decode[m3], vminor);
+          } else {
+            printf("vbc=%s   vbd=0x%06" PRIX32 "\n", vbc_names[vbc & 7], vbd);
+          }
+
         } else {
-          uint8_t vbc = wuffs_base__token__value_base_category(t);
-          uint32_t vbd = wuffs_base__token__value_base_detail(t);
-          wuffs_base__store_u8__no_bounds_check(&buf[0x000C], vbc);
-          wuffs_base__store_u24be__no_bounds_check(&buf[0xD], vbd);
+          uint8_t buf[16];
+          wuffs_base__store_u32be__no_bounds_check(&buf[0x0], (uint32_t)(pos));
+          wuffs_base__store_u16be__no_bounds_check(&buf[0x4], len);
+          wuffs_base__store_u8__no_bounds_check(&buf[0x0006], lp);
+          wuffs_base__store_u8__no_bounds_check(&buf[0x0007], ln);
+          wuffs_base__store_u32be__no_bounds_check(&buf[0x8], vmajor);
+          if (vmajor) {
+            wuffs_base__store_u32be__no_bounds_check(&buf[0xC], vminor);
+          } else {
+            wuffs_base__store_u8__no_bounds_check(&buf[0x000C], vbc);
+            wuffs_base__store_u24be__no_bounds_check(&buf[0xD], vbd);
+          }
+          const int stdout_fd = 1;
+          write(stdout_fd, &buf[0], 16);
         }
-        const int stdout_fd = 1;
-        write(stdout_fd, &buf[0], 16);
       }
 
       pos += len;
