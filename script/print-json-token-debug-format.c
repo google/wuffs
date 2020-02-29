@@ -41,6 +41,9 @@
 // Together with the hexadecimal WUFFS_BASE__TOKEN__ETC constants defined in
 // token-public.h, this format is somewhat human-readable when piped through a
 // hex-dump program (such as /usr/bin/hd), printing one token per line.
+// Alternatively, pass the -h (--human-readable) flag to this program.
+//
+// Pass -a (--all-tokens) to print all tokens, including whitespace.
 //
 // If the input or output is larger than the program's buffers (64 MiB and
 // 131072 tokens by default), there may be multiple valid tokenizations of any
@@ -145,12 +148,19 @@ const int base38_decode[38] = {
 
 const char*  //
 main1(int argc, char** argv) {
+  bool all_tokens = false;
   bool human_readable = false;
   int i;
   for (i = 1; i < argc; i++) {
+    if ((strcmp(argv[i], "-a") == 0) ||
+        (strcmp(argv[i], "--all-tokens") == 0)) {
+      all_tokens = true;
+      continue;
+    }
     if ((strcmp(argv[i], "-h") == 0) ||
         (strcmp(argv[i], "--human-readable") == 0)) {
       human_readable = true;
+      continue;
     }
   }
 
@@ -177,7 +187,7 @@ main1(int argc, char** argv) {
       wuffs_base__token* t = &tok.data.ptr[tok.meta.ri++];
       uint16_t len = wuffs_base__token__length(t);
 
-      if (wuffs_base__token__value(t) != 0) {
+      if (all_tokens || (wuffs_base__token__value(t) != 0)) {
         uint8_t lp = wuffs_base__token__link_prev(t) ? 1 : 0;
         uint8_t ln = wuffs_base__token__link_next(t) ? 1 : 0;
         uint32_t vmajor = wuffs_base__token__value_major(t);
