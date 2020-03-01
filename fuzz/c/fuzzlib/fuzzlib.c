@@ -114,12 +114,23 @@ make_limited_reader(wuffs_base__io_buffer b, uint64_t limit) {
 #include <sys/stat.h>
 #include <unistd.h>
 
+static bool flag_color;
+
 static int num_files_processed;
 
 static struct {
   char buf[PATH_MAX];
   size_t len;
 } relative_cwd;
+
+void  //
+errorf(const char* msg) {
+  if (flag_color) {
+    printf("\e[31m%s\e[0m\n", msg);
+  } else {
+    printf("%s\n", msg);
+  }
+}
 
 static int  //
 visit(char* filename);
@@ -128,14 +139,14 @@ static int  //
 visit_dir(int fd) {
   int cwd_fd = open(".", O_RDONLY, 0);
   if (fchdir(fd)) {
-    printf("failed\n");
+    errorf("failed");
     fprintf(stderr, "FAIL: fchdir: %s\n", strerror(errno));
     return 1;
   }
 
   DIR* d = fdopendir(fd);
   if (!d) {
-    printf("failed\n");
+    errorf("failed");
     fprintf(stderr, "FAIL: fdopendir: %s\n", strerror(errno));
     return 1;
   }
@@ -173,7 +184,7 @@ visit_dir(int fd) {
 static int  //
 visit_reg(int fd, off_t size) {
   if ((size < 0) || (0x7FFFFFFF < size)) {
-    printf("failed\n");
+    errorf("failed");
     fprintf(stderr, "FAIL: file size out of bounds");
     return 1;
   }
@@ -182,17 +193,20 @@ visit_reg(int fd, off_t size) {
   if (size > 0) {
     data = mmap(NULL, size, PROT_READ, MAP_SHARED, fd, 0);
     if (data == MAP_FAILED) {
-      printf("failed\n");
+      errorf("failed");
       fprintf(stderr, "FAIL: mmap: %s\n", strerror(errno));
       return 1;
     }
   }
 
   const char* msg = llvmFuzzerTestOneInput((const uint8_t*)(data), size);
-  if (!msg) {
-    msg = "+ok";
+  if (msg) {
+    errorf(msg);
+  } else if (flag_color) {
+    printf("\e[32mok\e[0m\n");
+  } else {
+    printf("ok\n");
   }
-  printf("%s\n", msg);
 
   if ((size > 0) && munmap(data, size)) {
     fprintf(stderr, "FAIL: mmap: %s\n", strerror(errno));
@@ -219,12 +233,12 @@ visit(char* filename) {
   struct stat z;
   int fd = open(filename, O_RDONLY, 0);
   if (fd == -1) {
-    printf("failed\n");
+    errorf("failed");
     fprintf(stderr, "FAIL: open: %s\n", strerror(errno));
     return 1;
   }
   if (fstat(fd, &z)) {
-    printf("failed\n");
+    errorf("failed");
     fprintf(stderr, "FAIL: fstat: %s\n", strerror(errno));
     return 1;
   }
@@ -244,7 +258,7 @@ visit(char* filename) {
     new_len++;
   }
   if ((filename_len >= PATH_MAX) || (new_len >= PATH_MAX)) {
-    printf("failed\n");
+    errorf("failed");
     fprintf(stderr, "FAIL: path is too long\n");
     return 1;
   }
@@ -265,16 +279,33 @@ visit(char* filename) {
 
 int  //
 main(int argc, char** argv) {
+  flag_color = false;
   num_files_processed = 0;
   relative_cwd.len = 0;
 
   int i;
   for (i = 1; i < argc; i++) {
+    if (argv[i][0] != '-') {
+      continue;
+    }
+    if ((strcmp(argv[i], "-c") == 0) ||  //
+        (strcmp(argv[i], "--color") == 0)) {
+      flag_color = true;
+      continue;
+    }
+    fprintf(stderr, "FAIL: unrecognized flag argument\n");
+    return 1;
+  }
+  for (i = 1; i < argc; i++) {
+    if (argv[i][0] == '-') {
+      continue;
+    }
     int v = visit(argv[i]);
     if (v) {
       return v;
     }
   }
+
   printf("PASS: %d files processed\n", num_files_processed);
   return 0;
 }
