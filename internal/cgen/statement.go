@@ -425,7 +425,7 @@ func (g *gen) writeStatementJump(b *buffer, n *a.Jump, depth uint32) error {
 	if n.Keyword() == t.IDBreak {
 		keyword = "break"
 	}
-	b.printf("goto label__%v__%s;\n", jt, keyword)
+	b.printf("goto label__%s__%s;\n", jt, keyword)
 	return nil
 }
 
@@ -496,7 +496,7 @@ func (g *gen) writeStatementWhile(b *buffer, n *a.While, depth uint32) error {
 		if err != nil {
 			return err
 		}
-		b.printf("label__%v__continue:;\n", jt)
+		b.printf("label__%s__continue:;\n", jt)
 	}
 	condition := buffer(nil)
 	if err := g.writeExpr(&condition, n.Condition(), 0); err != nil {
@@ -515,7 +515,7 @@ func (g *gen) writeStatementWhile(b *buffer, n *a.While, depth uint32) error {
 		if err != nil {
 			return err
 		}
-		b.printf("label__%v__break:;\n", jt)
+		b.printf("label__%s__break:;\n", jt)
 	}
 	return nil
 }

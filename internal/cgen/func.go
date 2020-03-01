@@ -17,6 +17,7 @@ package cgen
 import (
 	"fmt"
 	"math/big"
+	"strconv"
 
 	a "github.com/google/wuffs/lang/ast"
 	t "github.com/google/wuffs/lang/token"
@@ -37,7 +38,7 @@ type funk struct {
 	varList           []*a.Var
 	varResumables     map[t.ID]bool
 	derivedVars       map[t.ID]struct{}
-	jumpTargets       map[a.Loop]uint32
+	jumpTargets       map[a.Loop]string
 	coroSuspPoint     uint32
 	ioBinds           uint32
 	tempW             uint32
@@ -47,20 +48,21 @@ type funk struct {
 	hasGotoOK         bool
 }
 
-func (k *funk) jumpTarget(tm *t.Map, n a.Loop) (interface{}, error) {
+func (k *funk) jumpTarget(tm *t.Map, n a.Loop) (string, error) {
 	if label := n.Label(); label != 0 {
 		return label.Str(tm), nil
 	}
 	if k.jumpTargets == nil {
-		k.jumpTargets = map[a.Loop]uint32{}
+		k.jumpTargets = map[a.Loop]string{}
 	}
 	if jt, ok := k.jumpTargets[n]; ok {
 		return jt, nil
 	}
-	jt := uint32(len(k.jumpTargets))
-	if jt == 1000000 {
-		return 0, fmt.Errorf("too many jump targets")
+	jtInt := len(k.jumpTargets)
+	if jtInt == 1000000 {
+		return "", fmt.Errorf("too many jump targets")
 	}
+	jt := strconv.Itoa(jtInt)
 	k.jumpTargets[n] = jt
 	return jt, nil
 }
