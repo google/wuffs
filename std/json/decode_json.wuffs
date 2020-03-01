@@ -164,10 +164,10 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 					length: 1)
 				args.src.skip32_fast!(actual: 1, worst_case: 1)
 
-				while.string_loop true {
+				while.string_loop_outer true {
 					if args.dst.available() <= 0 {
 						yield? base."$short write"
-						continue.string_loop
+						continue.string_loop_outer
 					}
 
 					string_length = 0
@@ -188,7 +188,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 							}
 							yield? base."$short read"
 							string_length = 0
-							continue.string_loop
+							continue.string_loop_outer
 						}
 						c = args.src.peek_u8()
 						char = lut_chars[c]
@@ -202,7 +202,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 									link: 0x3,
 									length: 0xFFFC)
 								string_length = 0
-								continue.string_loop
+								continue.string_loop_outer
 							}
 							string_length += 1
 							continue.string_loop_inner
@@ -216,7 +216,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 									length: string_length)
 								string_length = 0
 							}
-							break.string_loop
+							break.string_loop_outer
 
 						} else if char == 0x02 {  // '\\'.
 							if string_length > 0 {
@@ -227,7 +227,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 									length: string_length)
 								string_length = 0
 								if args.dst.available() <= 0 {
-									continue.string_loop
+									continue.string_loop_outer
 								}
 							}
 							assert args.dst.available() > 0
@@ -239,7 +239,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 								yield? base."$short read"
 								string_length = 0
 								char = 0
-								continue.string_loop
+								continue.string_loop_outer
 							}
 							c = (args.src.peek_u16le() >> 8) as base.u8
 							backslash = lut_backslashes[c]
@@ -250,7 +250,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 									value_minor: 0x60_0000 | ((backslash & 0x7F) as base.u32),
 									link: 0x3,
 									length: 2)
-								continue.string_loop
+								continue.string_loop_outer
 
 							} else if c == 0x75 {  // 0x75 is 'u'.
 								// -------- BEGIN backslash-u.
@@ -261,7 +261,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 									yield? base."$short read"
 									string_length = 0
 									char = 0
-									continue.string_loop
+									continue.string_loop_outer
 								}
 
 								uni4_string = args.src.peek_u48le_as_u64() >> 16
@@ -294,7 +294,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 										value_minor: 0x60_0000 | uni4_value,
 										link: 0x3,
 										length: 6)
-									continue.string_loop
+									continue.string_loop_outer
 
 								} else if uni4_value >= 0xDC00 {
 									// Low surrogate. No-op (and fall through
@@ -313,7 +313,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 										string_length = 0
 										uni4_value = 0
 										char = 0
-										continue.string_loop
+										continue.string_loop_outer
 									}
 
 									// Roll forward 4 bytes, so that calling
@@ -360,7 +360,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 											value_minor: 0x60_0000 | uni4_high_surrogate | uni4_value,
 											link: 0x3,
 											length: 12)
-										continue.string_loop
+										continue.string_loop_outer
 
 									} else {
 										// Roll back the 4 bytes, then fall
@@ -398,7 +398,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 								yield? base."$short read"
 								string_length = 0
 								char = 0
-								continue.string_loop
+								continue.string_loop_outer
 							}
 							multi_byte_utf8 = args.src.peek_u16le_as_u32()
 							if (multi_byte_utf8 & 0xC000) == 0x8000 {
@@ -412,7 +412,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 										link: 0x3,
 										length: string_length + 2)
 									string_length = 0
-									continue.string_loop
+									continue.string_loop_outer
 								}
 								string_length += 2
 								continue.string_loop_inner
@@ -434,7 +434,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 								yield? base."$short read"
 								string_length = 0
 								char = 0
-								continue.string_loop
+								continue.string_loop_outer
 							}
 							multi_byte_utf8 = args.src.peek_u24le_as_u32()
 							if (multi_byte_utf8 & 0xC0_C000) == 0x80_8000 {
@@ -452,7 +452,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 											link: 0x3,
 											length: string_length + 3)
 										string_length = 0
-										continue.string_loop
+										continue.string_loop_outer
 									}
 									string_length += 3
 									continue.string_loop_inner
@@ -475,7 +475,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 								yield? base."$short read"
 								string_length = 0
 								char = 0
-								continue.string_loop
+								continue.string_loop_outer
 							}
 							multi_byte_utf8 = args.src.peek_u32le()
 							if (multi_byte_utf8 & 0xC0C0_C000) == 0x8080_8000 {
@@ -492,7 +492,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 											link: 0x3,
 											length: string_length + 4)
 										string_length = 0
-										continue.string_loop
+										continue.string_loop_outer
 									}
 									string_length += 4
 									continue.string_loop_inner
@@ -513,7 +513,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 						}
 						return "#bad UTF-8"
 					} endwhile.string_loop_inner
-				} endwhile.string_loop
+				} endwhile.string_loop_outer
 
 				// Emit the trailing '"'.
 				while true {
