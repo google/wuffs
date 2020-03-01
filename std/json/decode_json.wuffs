@@ -171,7 +171,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 					}
 
 					string_length = 0
-					while true,
+					while.string_loop_inner true,
 						pre args.dst.available() > 0,
 					{
 						if args.src.available() <= 0 {
@@ -205,7 +205,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 								continue.string_loop
 							}
 							string_length += 1
-							continue
+							continue.string_loop_inner
 
 						} else if char == 0x01 {  // '"'
 							if string_length <> 0 {
@@ -415,7 +415,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 									continue.string_loop
 								}
 								string_length += 2
-								continue
+								continue.string_loop_inner
 							}
 
 						} else if char == 0x04 {  // 3-byte UTF-8.
@@ -455,7 +455,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 										continue.string_loop
 									}
 									string_length += 3
-									continue
+									continue.string_loop_inner
 								}
 							}
 
@@ -495,7 +495,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 										continue.string_loop
 									}
 									string_length += 4
-									continue
+									continue.string_loop_inner
 								}
 							}
 						}
@@ -512,7 +512,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 							return "#bad C0 control code"
 						}
 						return "#bad UTF-8"
-					}
+					} endwhile.string_loop_inner
 				} endwhile.string_loop
 
 				// Emit the trailing '"'.
