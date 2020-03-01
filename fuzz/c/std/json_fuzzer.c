@@ -202,30 +202,25 @@ fuzz_one_token(wuffs_base__token t,
 }
 
 const char*  //
-fuzz(wuffs_base__io_buffer* full_src, uint32_t hash) {
-  bool leave_internal_buffers_uninitialized = hash & 0x01;
-  hash >>= 1;
-
-  uint64_t tok_limit = hash & 0x0FFF;  // 4095, or ((1 << 12) - 1).
+fuzz_complex(wuffs_base__io_buffer* full_src, uint32_t hash_24_bits) {
+  uint64_t tok_limit = hash_24_bits & 0x0FFF;  // 4095, or ((1 << 12) - 1).
   if (tok_limit < WUFFS_JSON__DECODER_DST_TOKEN_BUFFER_LENGTH_MIN_INCL) {
     tok_limit = WUFFS_JSON__DECODER_DST_TOKEN_BUFFER_LENGTH_MIN_INCL;
   }
-  hash >>= 12;
+  hash_24_bits >>= 12;
 
-  uint64_t src_limit = hash & 0x0FFF;  // 4095, or ((1 << 12) - 1).
+  uint64_t src_limit = hash_24_bits & 0x0FFF;  // 4095, or ((1 << 12) - 1).
   if (src_limit < WUFFS_JSON__DECODER_SRC_IO_BUFFER_LENGTH_MIN_INCL) {
     src_limit = WUFFS_JSON__DECODER_SRC_IO_BUFFER_LENGTH_MIN_INCL;
   }
-  hash >>= 12;
+  hash_24_bits >>= 12;
 
   // ----
 
   wuffs_json__decoder dec;
   wuffs_base__status status = wuffs_json__decoder__initialize(
       &dec, sizeof dec, WUFFS_VERSION,
-      leave_internal_buffers_uninitialized
-          ? WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED
-          : 0);
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
   if (!wuffs_base__status__is_ok(&status)) {
     return wuffs_base__status__message(&status);
   }
@@ -325,4 +320,57 @@ fuzz(wuffs_base__io_buffer* full_src, uint32_t hash) {
     return "fuzz: internal error: decoded OK but final token had link_next";
   }
   return NULL;
+}
+
+const char*  //
+fuzz_simple(wuffs_base__io_buffer* full_src) {
+  wuffs_json__decoder dec;
+  wuffs_base__status status =
+      wuffs_json__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
+  if (!wuffs_base__status__is_ok(&status)) {
+    return wuffs_base__status__message(&status);
+  }
+
+  wuffs_base__token tok_array[TOK_BUFFER_SIZE];
+  wuffs_base__token_buffer tok = ((wuffs_base__token_buffer){
+      .data = ((wuffs_base__slice_token){
+          .ptr = tok_array,
+          .len = TOK_BUFFER_SIZE,
+      }),
+  });
+
+  while (true) {
+    status = wuffs_json__decoder__decode_tokens(&dec, &tok, full_src);
+    if (status.repr == NULL) {
+      break;
+
+    } else if (status.repr == wuffs_base__suspension__short_write) {
+      tok.meta.ri = tok.meta.wi;
+      wuffs_base__token_buffer__compact(&tok);
+      continue;
+    }
+
+    return wuffs_base__status__message(&status);
+  }
+
+  return NULL;
+}
+
+const char*  //
+fuzz(wuffs_base__io_buffer* full_src, uint32_t hash) {
+  // Send 99.6% of inputs to fuzz_complex and the remainder to fuzz_simple. The
+  // 0xA5 constant is arbitrary but non-zero. If the hash function maps the
+  // empty input to 0, this still sends the empty input to fuzz_complex.
+  //
+  // The fuzz_simple implementation shows how easy decoding with Wuffs is when
+  // all you want is to run LLVMFuzzerTestOneInput's built-in (Wuffs API
+  // agnostic) checks (e.g. the ASan address sanitizer) and you don't really
+  // care what the output is, just that it doesn't crash.
+  //
+  // The fuzz_complex implementation adds many more Wuffs API specific checks
+  // (e.g. that the sum of the tokens' lengths do not exceed the input length).
+  if ((hash & 0xFF) != 0xA5) {
+    return fuzz_complex(full_src, hash >> 8);
+  }
+  return fuzz_simple(full_src);
 }
