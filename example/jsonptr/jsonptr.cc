@@ -74,8 +74,12 @@ static const char* eod = "main: end of data";
 // ----
 
 #define MAX_INDENT 8
-#define INDENT_STRING "        "
-size_t indent;
+#define INDENT_SPACES_STRING "        "
+#define INDENT_TABS_STRING "\t\t\t\t\t\t\t\t"
+
+bool flag_compact;
+size_t flag_indent;
+bool flag_tabs;
 
 #ifndef DST_BUFFER_SIZE
 #define DST_BUFFER_SIZE (32 * 1024)
@@ -114,7 +118,9 @@ wuffs_json__decoder dec;
 
 const char*  //
 initialize_globals(int argc, char** argv) {
-  indent = 4;
+  flag_compact = false;
+  flag_indent = 4;
+  flag_tabs = false;
 
   dst = wuffs_base__make_io_buffer(
       wuffs_base__make_slice_u8(dst_array, DST_BUFFER_SIZE),
@@ -133,6 +139,40 @@ initialize_globals(int argc, char** argv) {
   depth = 0;
 
   ctx = context::none;
+
+  int i;
+  for (i = 1; i < argc; i++) {
+    if (argv[i][0] != '-') {
+      return "main: bad argument: use \"jsonptr < foo.json\", not \"jsonptr "
+             "foo.json\"";
+    }
+
+    if ((strcmp(argv[i], "-c") == 0) ||  //
+        (strcmp(argv[i], "--compact") == 0)) {
+      flag_compact = true;
+      continue;
+
+    } else if ((strncmp(argv[i], "-i=", 3) == 0) ||  //
+               (strncmp(argv[i], "--indent=", 9) == 0)) {
+      // Set p to point just after the '='.
+      char* p = argv[i];
+      for (; *p != '='; p++) {
+      }
+      p++;
+
+      if (('0' <= p[0]) && (p[0] <= '8') && (p[1] == '\x00')) {
+        flag_indent = p[0] - '0';
+        continue;
+      }
+
+    } else if ((strcmp(argv[i], "-t") == 0) ||  //
+               (strcmp(argv[i], "--tabs") == 0)) {
+      flag_tabs = true;
+      continue;
+    }
+
+    return "main: bad argument";
+  }
 
   return dec.initialize(sizeof__wuffs_json__decoder(), WUFFS_VERSION, 0)
       .message();
@@ -300,10 +340,11 @@ handle_token(wuffs_base__token t) {
 
       // Write preceding whitespace.
       if ((ctx != context::in_list_after_bracket) &&
-          (ctx != context::in_dict_after_brace)) {
+          (ctx != context::in_dict_after_brace) && !flag_compact) {
         TRY(write_dst("\n", 1));
         for (size_t i = 0; i < depth; i++) {
-          TRY(write_dst(INDENT_STRING, indent));
+          TRY(write_dst(flag_tabs ? INDENT_TABS_STRING : INDENT_SPACES_STRING,
+                        flag_indent));
         }
       }
 
@@ -320,15 +361,18 @@ handle_token(wuffs_base__token t) {
     if (t.link_prev()) {
       // No-op.
     } else if (ctx == context::in_dict_after_key) {
-      TRY(write_dst(": ", 2));
+      TRY(write_dst(": ", flag_compact ? 1 : 2));
     } else if (ctx != context::none) {
       if ((ctx != context::in_list_after_bracket) &&
           (ctx != context::in_dict_after_brace)) {
         TRY(write_dst(",", 1));
       }
-      TRY(write_dst("\n", 1));
-      for (size_t i = 0; i < depth; i++) {
-        TRY(write_dst(INDENT_STRING, indent));
+      if (!flag_compact) {
+        TRY(write_dst("\n", 1));
+        for (size_t i = 0; i < depth; i++) {
+          TRY(write_dst(flag_tabs ? INDENT_TABS_STRING : INDENT_SPACES_STRING,
+                        flag_indent));
+        }
       }
     }
 
