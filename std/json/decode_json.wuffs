@@ -384,6 +384,14 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 
 						} else if char == 0x03 {  // 2-byte UTF-8.
 							if args.src.available() < 2 {
+								if string_length > 0 {
+									args.dst.write_fast_token!(
+										value_major: 0,
+										value_minor: 0x40_0021,
+										link: 0x3,
+										length: string_length)
+									string_length = 0
+								}
 								if args.src.is_closed() {
 									return "#bad UTF-8"
 								}
@@ -412,6 +420,14 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 
 						} else if char == 0x04 {  // 3-byte UTF-8.
 							if args.src.available() < 3 {
+								if string_length > 0 {
+									args.dst.write_fast_token!(
+										value_major: 0,
+										value_minor: 0x40_0021,
+										link: 0x3,
+										length: string_length)
+									string_length = 0
+								}
 								if args.src.is_closed() {
 									return "#bad UTF-8"
 								}
@@ -445,6 +461,14 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 
 						} else if char == 0x05 {  // 4-byte UTF-8.
 							if args.src.available() < 4 {
+								if string_length > 0 {
+									args.dst.write_fast_token!(
+										value_major: 0,
+										value_minor: 0x40_0021,
+										link: 0x3,
+										length: string_length)
+									string_length = 0
+								}
 								if args.src.is_closed() {
 									return "#bad UTF-8"
 								}

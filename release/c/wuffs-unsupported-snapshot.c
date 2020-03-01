@@ -19637,6 +19637,15 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
                 goto exit;
               } else if (v_char == 3) {
                 if (((uint64_t)(io2_a_src - iop_a_src)) < 2) {
+                  if (v_string_length > 0) {
+                    *iop_a_dst++ = wuffs_base__make_token(
+                        (((uint64_t)(4194337))
+                         << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                        (((uint64_t)(3)) << WUFFS_BASE__TOKEN__LINK__SHIFT) |
+                        (((uint64_t)(v_string_length))
+                         << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+                    v_string_length = 0;
+                  }
                   if (a_src && a_src->meta.closed) {
                     status =
                         wuffs_base__make_status(wuffs_json__error__bad_utf_8);
@@ -19670,6 +19679,15 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
                 }
               } else if (v_char == 4) {
                 if (((uint64_t)(io2_a_src - iop_a_src)) < 3) {
+                  if (v_string_length > 0) {
+                    *iop_a_dst++ = wuffs_base__make_token(
+                        (((uint64_t)(4194337))
+                         << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                        (((uint64_t)(3)) << WUFFS_BASE__TOKEN__LINK__SHIFT) |
+                        (((uint64_t)(v_string_length))
+                         << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+                    v_string_length = 0;
+                  }
                   if (a_src && a_src->meta.closed) {
                     status =
                         wuffs_base__make_status(wuffs_json__error__bad_utf_8);
@@ -19708,6 +19726,15 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
                 }
               } else if (v_char == 5) {
                 if (((uint64_t)(io2_a_src - iop_a_src)) < 4) {
+                  if (v_string_length > 0) {
+                    *iop_a_dst++ = wuffs_base__make_token(
+                        (((uint64_t)(4194337))
+                         << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                        (((uint64_t)(3)) << WUFFS_BASE__TOKEN__LINK__SHIFT) |
+                        (((uint64_t)(v_string_length))
+                         << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+                    v_string_length = 0;
+                  }
                   if (a_src && a_src->meta.closed) {
                     status =
                         wuffs_base__make_status(wuffs_json__error__bad_utf_8);
