@@ -97,6 +97,10 @@ which is in the public domain.
 `pjw-thumbnail.*` are various encodings of an image derived from an iconic,
 original photo of Peter J. Weinberger by Rob Pike <r@golang.org>.
 
+`rfc-6901-json-pointer.json` is the example JSON document given in the [RFC
+6901 "JavaScript Object Notation (JSON)
+Pointer"](https://tools.ietf.org/rfc/rfc6901.txt) specification.
+
 `romeo.txt` is an excerpt of Shakespeare's "Romeo and Juliet", copied from
 [shakespeare.mit.edu](http://shakespeare.mit.edu/romeo_juliet/romeo_juliet.2.2.html).
 
