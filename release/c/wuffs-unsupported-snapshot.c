@@ -1803,6 +1803,8 @@ wuffs_base__make_token(uint64_t repr) {
 
   // --------
 
+#define WUFFS_BASE__TOKEN__LENGTH__MAX_INCL 0xFFFF
+
 #define WUFFS_BASE__TOKEN__VALUE__MASK 0x3FFFFFFFFFFF
 #define WUFFS_BASE__TOKEN__VALUE_MAJOR__MASK 0x3FFFFF
 #define WUFFS_BASE__TOKEN__VALUE_MINOR__MASK 0xFFFFFF

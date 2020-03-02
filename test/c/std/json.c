@@ -394,6 +394,157 @@ wuffs_json_decode(wuffs_base__token_buffer* tok,
   }
 }
 
+// test_wuffs_json_decode_prior_valid_utf_8 tests that when encountering
+// invalid or incomplete UTF-8, or a backslash-escape, any prior valid UTF-8 is
+// still output. The decoder batches output so that, ignoring the quotation
+// marks, "abc\xCE\x94efg" can be a single 8-length token instead of multiple
+// (e.g. 3+2+3) tokens. On the other hand, while "abc\xFF" ends with one byte
+// of invalid UTF-8, the 3 good bytes before that should still be output.
+const char*  //
+test_wuffs_json_decode_prior_valid_utf_8() {
+  CHECK_FOCUS(__func__);
+
+  // The test cases contain combinations of valid, partial and invalid UTF-8:
+  //  - "\xCE\x94"         is U+00000394 GREEK CAPITAL LETTER DELTA.
+  //  - "\xE2\x98\x83"     is U+00002603 SNOWMAN.
+  //  - "\xF0\x9F\x92\xA9" is U+0001F4A9 PILE OF POO.
+  //
+  // The code below can also add trailing 's' bytes, which change e.g. the
+  // partial multi-byte UTF-8 "\xE2" to be the invalid UTF-8 "\xE2s".
+  const char* test_cases[] = {
+      "",
+      "\\t",
+      "\\u",
+      "\\u1234",
+      "\x1F",  // Valid UTF-8 but invalid in a JSON string.
+      "\x20",
+      "\xCE",
+      "\xCE\x94",
+      "\xE2",
+      "\xE2\x98",
+      "\xE2\x98\x83",
+      "\xE2\x98\x83\xCE",
+      "\xE2\x98\x83\xCE\x94",
+      "\xF0",
+      "\xF0\x9F",
+      "\xF0\x9F\x92",
+      "\xF0\x9F\x92\xA9",
+      "\xF0\x9F\x92\xA9\xCE",
+      "\xF0\x9F\x92\xA9\xCE\x94",
+  };
+
+  size_t prefixes[] = {
+      0,
+      1,
+      15,
+      WUFFS_BASE__TOKEN__LENGTH__MAX_INCL - 9,
+      WUFFS_BASE__TOKEN__LENGTH__MAX_INCL - 8,
+      WUFFS_BASE__TOKEN__LENGTH__MAX_INCL - 7,
+      WUFFS_BASE__TOKEN__LENGTH__MAX_INCL - 6,
+      WUFFS_BASE__TOKEN__LENGTH__MAX_INCL - 5,
+      WUFFS_BASE__TOKEN__LENGTH__MAX_INCL - 4,
+      WUFFS_BASE__TOKEN__LENGTH__MAX_INCL - 3,
+      WUFFS_BASE__TOKEN__LENGTH__MAX_INCL - 2,
+      WUFFS_BASE__TOKEN__LENGTH__MAX_INCL - 1,
+      WUFFS_BASE__TOKEN__LENGTH__MAX_INCL + 0,
+  };
+
+  size_t suffixes[] = {0, 1, 17};
+
+  wuffs_json__decoder dec;
+
+  int tc;
+  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+    size_t n = strlen(test_cases[tc]);
+    size_t num_preceding = 0;
+    while (num_preceding < n) {
+      wuffs_base__utf_8__next__output x =
+          wuffs_base__utf_8__next(wuffs_base__make_slice_u8(
+              (void*)(test_cases[tc]) + num_preceding, n - num_preceding));
+      if (!wuffs_base__utf_8__next__output__is_valid(&x) ||
+          (x.code_point < 0x20) || (x.code_point == '\\')) {
+        break;
+      }
+      num_preceding += x.byte_length;
+      if (num_preceding > n) {
+        RETURN_FAIL("tc=%d: utf_8__next overflow", tc);
+      }
+    }
+
+    int pre;
+    for (pre = 0; pre < WUFFS_TESTLIB_ARRAY_SIZE(prefixes); pre++) {
+      size_t prefix = prefixes[pre];
+
+      int suf;
+      for (suf = 0; suf < WUFFS_TESTLIB_ARRAY_SIZE(suffixes); suf++) {
+        size_t suffix = suffixes[suf];
+
+        // Set src to "\"ppp...pppMIDDLEsss...sss", with a leading quotation
+        // mark, where prefix and suffix are the number of 'p's and 's's and
+        // test_cases[tc] is the "MIDDLE".
+        wuffs_base__slice_u8 src_data = ((wuffs_base__slice_u8){
+            .ptr = global_src_array,
+            .len = 1 + prefix + n + suffix,
+        });
+        if (src_data.len > IO_BUFFER_SIZE) {
+          RETURN_FAIL("total src length is too long");
+        }
+        src_data.ptr[0] = '\"';
+        memset(&src_data.ptr[1], 'p', prefix);
+        memcpy(&src_data.ptr[1 + prefix], test_cases[tc], n);
+        memset(&src_data.ptr[1 + prefix + n], 's', suffix);
+
+        int closed;
+        for (closed = 0; closed < 2; closed++) {
+          CHECK_STATUS(
+              "initialize",
+              wuffs_json__decoder__initialize(
+                  &dec, sizeof dec, WUFFS_VERSION,
+                  WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+
+          wuffs_base__token_buffer tok = ((wuffs_base__token_buffer){
+              .data = global_have_token_slice,
+          });
+
+          wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+              .data = src_data,
+              .meta = wuffs_base__make_io_buffer_meta(src_data.len, 0, 0,
+                                                      closed != 0),
+          });
+
+          wuffs_json__decoder__decode_tokens(&dec, &tok, &src);
+
+          size_t have = 0;
+          while (tok.meta.ri < tok.meta.wi) {
+            wuffs_base__token* t = &tok.data.ptr[tok.meta.ri++];
+            uint64_t vbc = wuffs_base__token__value_base_category(t);
+            if (vbc == WUFFS_BASE__TOKEN__VBC__UNICODE_CODE_POINT) {
+              break;
+            } else if (vbc == WUFFS_BASE__TOKEN__VBC__STRING) {
+              have += wuffs_base__token__length(t);
+            } else {
+              RETURN_FAIL(
+                  "tc=%d, prefix=%zu, suffix=%zu, closed=%d: unexpected token",
+                  tc, prefix, suffix, closed);
+            }
+          }
+          size_t want = 1 + prefix + num_preceding;  // 1 for the leading '\"'.
+          if (num_preceding == n) {
+            want += suffix;
+          }
+          if (have != want) {
+            RETURN_FAIL(
+                "tc=%d, prefix=%zu, suffix=%zu, closed=%d: have %zu, want %zu",
+                tc, prefix, suffix, closed, have, want);
+          }
+        }
+      }
+    }
+  }
+
+  return NULL;
+}
+
 const char*  //
 test_wuffs_json_decode_unicode4_escapes() {
   CHECK_FOCUS(__func__);
@@ -673,9 +824,10 @@ proc tests[] = {
     test_strconv_parse_number_u64,  //
     test_strconv_utf_8_next,        //
 
-    test_wuffs_json_decode_interface,         //
-    test_wuffs_json_decode_string,            //
-    test_wuffs_json_decode_unicode4_escapes,  //
+    test_wuffs_json_decode_interface,          //
+    test_wuffs_json_decode_prior_valid_utf_8,  //
+    test_wuffs_json_decode_string,             //
+    test_wuffs_json_decode_unicode4_escapes,   //
 
 #ifdef WUFFS_MIMIC
 
