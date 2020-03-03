@@ -304,45 +304,21 @@ handle_unicode_code_point(uint32_t ucp) {
       }
     }
 
-  } else if (ucp <= 0x007F) {
-    switch (ucp) {
-      case '\"':
-        return write_dst("\\\"", 2);
-      case '\\':
-        return write_dst("\\\\", 2);
-      default: {
-        // The UTF-8 encoding takes 1 byte.
-        uint8_t esc0 = (uint8_t)(ucp);
-        return write_dst(&esc0, 1);
-      }
+  } else if (ucp == '\"') {
+    return write_dst("\\\"", 2);
+
+  } else if (ucp == '\\') {
+    return write_dst("\\\\", 2);
+
+  } else {
+    uint8_t u[WUFFS_BASE__UTF_8__BYTE_LENGTH__MAX_INCL];
+    size_t n = wuffs_base__utf_8__encode(
+        wuffs_base__make_slice_u8(&u[0],
+                                  WUFFS_BASE__UTF_8__BYTE_LENGTH__MAX_INCL),
+        ucp);
+    if (n > 0) {
+      return write_dst(&u[0], n);
     }
-
-  } else if (ucp <= 0x07FF) {
-    // The UTF-8 encoding takes 2 bytes.
-    uint8_t esc2[2];
-    esc2[0] = 0xC0 | (uint8_t)((ucp >> 6));
-    esc2[1] = 0x80 | (uint8_t)((ucp >> 0) & 0x3F);
-    return write_dst(&esc2[0], 2);
-
-  } else if (ucp <= 0xFFFF) {
-    if ((0xD800 <= ucp) && (ucp <= 0xDFFF)) {
-      return "main: internal error: unexpected Unicode surrogate";
-    }
-    // The UTF-8 encoding takes 3 bytes.
-    uint8_t esc3[3];
-    esc3[0] = 0xE0 | (uint8_t)((ucp >> 12));
-    esc3[1] = 0x80 | (uint8_t)((ucp >> 6) & 0x3F);
-    esc3[2] = 0x80 | (uint8_t)((ucp >> 0) & 0x3F);
-    return write_dst(&esc3[0], 3);
-
-  } else if (ucp <= 0x10FFFF) {
-    // The UTF-8 encoding takes 4 bytes.
-    uint8_t esc4[4];
-    esc4[0] = 0xF0 | (uint8_t)((ucp >> 18));
-    esc4[1] = 0x80 | (uint8_t)((ucp >> 12) & 0x3F);
-    esc4[2] = 0x80 | (uint8_t)((ucp >> 6) & 0x3F);
-    esc4[3] = 0x80 | (uint8_t)((ucp >> 0) & 0x3F);
-    return write_dst(&esc4[0], 4);
   }
 
   return "main: internal error: unexpected Unicode code point";

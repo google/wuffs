@@ -133,6 +133,15 @@ wuffs_base__utf_8__next__output::is_valid() const {
 
 // --------
 
+// wuffs_base__utf_8__encode writes the UTF-8 encoding of code_point to s and
+// returns the number of bytes written. If code_point is invalid, or if s is
+// shorter than the entire encoding, it returns 0 (and no bytes are written).
+//
+// s will never be too short if its length is at least 4, also known as
+// WUFFS_BASE__UTF_8__BYTE_LENGTH__MAX_INCL.
+size_t //
+wuffs_base__utf_8__encode(wuffs_base__slice_u8 dst, uint32_t code_point);
+
 // wuffs_base__utf_8__next returns the next UTF-8 code point (and that code
 // point's byte length) at the start of s.
 //

@@ -301,6 +301,42 @@ fail_out_of_bounds:
 
 // ---------------- Unicode and UTF-8
 
+size_t  //
+wuffs_base__utf_8__encode(wuffs_base__slice_u8 dst, uint32_t code_point) {
+  if (code_point <= 0x7F) {
+    if (dst.len >= 1) {
+      dst.ptr[0] = (uint8_t)(code_point);
+      return 1;
+    }
+
+  } else if (code_point <= 0x07FF) {
+    if (dst.len >= 2) {
+      dst.ptr[0] = 0xC0 | (uint8_t)((code_point >> 6));
+      dst.ptr[1] = 0x80 | (uint8_t)((code_point >> 0) & 0x3F);
+      return 2;
+    }
+
+  } else if (code_point <= 0xFFFF) {
+    if ((dst.len >= 3) && ((code_point < 0xD800) || (0xDFFF < code_point))) {
+      dst.ptr[0] = 0xE0 | (uint8_t)((code_point >> 12));
+      dst.ptr[1] = 0x80 | (uint8_t)((code_point >> 6) & 0x3F);
+      dst.ptr[2] = 0x80 | (uint8_t)((code_point >> 0) & 0x3F);
+      return 3;
+    }
+
+  } else if (code_point <= 0x10FFFF) {
+    if (dst.len >= 4) {
+      dst.ptr[0] = 0xF0 | (uint8_t)((code_point >> 18));
+      dst.ptr[1] = 0x80 | (uint8_t)((code_point >> 12) & 0x3F);
+      dst.ptr[2] = 0x80 | (uint8_t)((code_point >> 6) & 0x3F);
+      dst.ptr[3] = 0x80 | (uint8_t)((code_point >> 0) & 0x3F);
+      return 4;
+    }
+  }
+
+  return 0;
+}
+
 // wuffs_base__utf_8__byte_length_minus_1 is the byte length (minus 1) of a
 // UTF-8 encoded code point, based on the encoding's initial byte.
 //  - 0x00 is 1-byte UTF-8 (ASCII).
