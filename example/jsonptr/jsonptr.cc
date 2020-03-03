@@ -15,12 +15,42 @@
 // ----------------
 
 /*
-jsonptr is a JSON formatter (pretty-printer).
+jsonptr is a JSON formatter (pretty-printer) that supports the JSON Pointer
+(RFC 6901) query syntax. It reads UTF-8 JSON from stdin and writes
+canonicalized, formatted UTF-8 JSON to stdout.
+
+See the "const char* usage" string below for details.
+
+----
+
+JSON Pointer (and this program's implementation) is one of many JSON query
+languages and JSON tools, such as jq, jql and JMESPath. This one is relatively
+simple and fewer-featured compared to those others.
+
+One benefit of simplicity is that this program's JSON and JSON Pointer
+implementations do not dynamically allocate or free memory (yet it does not
+require that the entire input fits in memory at once). They are therefore
+trivially protected against certain bug classes: memory leaks, double-frees and
+use-after-frees.
+
+The core JSON implementation is also written in the Wuffs programming language
+(and then transpiled to C/C++), which is memory-safe but also guards against
+integer arithmetic overflows.
+
+All together, this program aims to safely handle untrusted JSON files without
+fear of security bugs such as remote code execution.
+
+----
 
 As of 2020-02-24, this program passes all 318 "test_parsing" cases from the
 JSON test suite (https://github.com/nst/JSONTestSuite), an appendix to the
 "Parsing JSON is a Minefield" article (http://seriot.ch/parsing_json.php) that
 was first published on 2016-10-26 and updated on 2018-03-30.
+
+After modifying this program, run "build-example.sh example/jsonptr/" and then
+"script/run-json-test-suite.sh" to catch correctness regressions.
+
+----
 
 This example program differs from most other example Wuffs programs in that it
 is written in C++, not C.
@@ -28,9 +58,6 @@ is written in C++, not C.
 $CXX jsonptr.cc && ./a.out < ../../test/data/github-tags.json; rm -f a.out
 
 for a C++ compiler $CXX, such as clang++ or g++.
-
-After modifying this program, run "build-example.sh example/jsonptr/" and then
-"script/run-json-test-suite.sh" to catch correctness regressions.
 */
 
 #include <inttypes.h>
@@ -71,6 +98,47 @@ After modifying this program, run "build-example.sh example/jsonptr/" and then
 
 static const char* eod = "main: end of data";
 
+static const char* usage =
+    "Usage: jsonptr -flags < input.json\n"
+    "\n"
+    "Note the \"<\". It only reads from stdin, not named files.\n"
+    "\n"
+    "jsonptr is a JSON formatter (pretty-printer) that supports the JSON\n"
+    "Pointer (RFC 6901) query syntax. It reads UTF-8 JSON from stdin and\n"
+    "writes canonicalized, formatted UTF-8 JSON to stdout.\n"
+    "\n"
+    "Canonicalized means that e.g. \"abc\\u000A\\tx\\u0177z\" is re-written\n"
+    "as \"abc\\n\\txŷz\". It does not sort object keys, nor does it reject\n"
+    "duplicate keys.\n"
+    "\n"
+    "Formatted means that arrays' and objects' elements are indented, each\n"
+    "on its own line. Configure this with the -compact, -indent=N (for N\n"
+    "ranging from 0 to 8) and -tabs flags.\n"
+    "\n"
+    "The -query=etc flag gives an optional JSON Pointer query, to print only\n"
+    "a subset of the input. For example, given RFC 6901 section 5's [sample\n"
+    "JSON value](https://tools.ietf.org/rfc/rfc6901.txt), this command:\n"
+    "    jsonptr -query=/foo/1 < rfc-6901-json-pointer.json\n"
+    "will print:\n"
+    "    \"baz\"\n"
+    "\n"
+    "An absent query is equivalent to the empty query, which identifies the\n"
+    "entire input (the root value). The \"/\" query is not equivalent to the\n"
+    "root value. Instead, it identifies the child (the key-value pair) of the\n"
+    "root value whose key is the empty string.\n"
+    "\n"
+    "If the query found a valid JSON value, this program will return a zero\n"
+    "exit code even if the rest of the input isn't valid JSON. If the query\n"
+    "did not find a value, or found an invalid one, this program returns a\n"
+    "non-zero exit code, but may still print partial output to stdout.\n"
+    "\n"
+    "The [JSON specification](https://json.org/) permits implementations that\n"
+    "allow duplicate keys, as this one does. This JSON Pointer implementation\n"
+    "is also greedy, following the first match for each fragment without\n"
+    "back-tracking. For example, the \"/foo/bar\" query will fail if the root\n"
+    "object has multiple \"foo\" children but the first one doesn't have a\n"
+    "\"bar\" child, even if later ones do.";
+
 // ----
 
 #define MAX_INDENT 8
@@ -99,7 +167,7 @@ wuffs_base__token_buffer tok;
 // token. An invariant is that (curr_token_end_src_index <= src.meta.ri).
 size_t curr_token_end_src_index;
 
-uint64_t depth;
+uint32_t depth;
 
 enum class context {
   none,
@@ -110,7 +178,240 @@ enum class context {
   in_dict_after_value,
 } ctx;
 
+bool  //
+in_dict_before_key() {
+  return (ctx == context::in_dict_after_brace) ||
+         (ctx == context::in_dict_after_value);
+}
+
+bool suppress_write_dst;
+bool wrote_to_dst;
+
 wuffs_json__decoder dec;
+
+// ----
+
+// Query is a JSON Pointer query. After initializing with a NUL-terminated C
+// string, its multiple fragments are consumed as the program walks the JSON
+// data from stdin. For example, letting "$" denote a NUL, suppose that we
+// started with a query string of "/apple/banana/12/durian" and are currently
+// trying to match the second fragment, "banana", so that Query::depth is 2:
+//
+// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//  / a p p l e / b a n a n a / 1 2 / d u r i a n $
+// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//                ^           ^
+//                frag_i      frag_k
+//
+// The two pointers frag_i and frag_k are the start (inclusive) and end
+// (exclusive) of the fragment. They satisfy (frag_i <= frag_k) and may be
+// equal if the fragment empty (note that "" is a valid JSON object key).
+//
+// The frag_j pointer moves between these two, or is nullptr. An invariant is
+// that (((frag_i <= frag_j) && (frag_j <= frag_k)) || (frag_j == nullptr)).
+//
+// Wuffs' JSON tokenizer can portray a single JSON string as multiple Wuffs
+// tokens, as backslash-escaped values within that JSON string may each get
+// their own token.
+//
+// At the start of each object key (a JSON string), frag_j is set to frag_i.
+//
+// While frag_j remains non-nullptr, each token's unescaped contents are then
+// compared to that part of the fragment from frag_j to frag_k. If it is a
+// prefix (including the case of an exact match), then frag_j is advanced by
+// the unescaped length. Otherwise, frag_j is set to nullptr.
+//
+// Comparison accounts for JSON Pointer's escaping notation: "~0" and "~1" in
+// the query (not the JSON value) are unescaped to "~" and "/" respectively.
+//
+// The frag_j pointer therefore advances from frag_i to frag_k, or drops out,
+// as we incrementally match the object key with the query fragment. For
+// example, if we have already matched the "ban" of "banana", then we would
+// accept any of an "ana" token, an "a" token or a "\u0061" token, amongst
+// others. They would advance frag_j by 3, 1 or 1 bytes respectively.
+//
+//                      frag_j
+//                      v
+// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//  / a p p l e / b a n a n a / 1 2 / d u r i a n $
+// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//                ^           ^
+//                frag_i      frag_k
+//
+// At the end of each object key (or equivalently, at the start of each object
+// value), if frag_j is non-nullptr and equal to (but not less than) frag_k
+// then we have a fragment match: the query fragment equals the object key. If
+// there is a next fragment (in this example, "12") we move the frag_etc
+// pointers to its start and end and increment Query::depth. Otherwise, we have
+// matched the complete query, and the upcoming JSON value is the result of
+// that query.
+//
+// The discussion above centers on object keys. If the query fragment is
+// numeric then it can also match as an array index: the string fragment "12"
+// will match an array's 13th element (starting counting from zero). See RFC
+// 6901 for its precise definition of an "array index" number.
+//
+// Array index fragment match is represented by the Query::array_index field,
+// whose type (wuffs_base__result_u64) is a result type. An error result means
+// that the fragment is not an array index. A value result holds the number of
+// list elements remaining. When matching a query fragment in an array (instead
+// of in an object), each element ticks this number down towards zero. At zero,
+// the upcoming JSON value is the one that matches the query fragment.
+class Query {
+ private:
+  uint8_t* frag_i;
+  uint8_t* frag_j;
+  uint8_t* frag_k;
+
+  uint32_t depth;
+
+  wuffs_base__result_u64 array_index;
+
+ public:
+  void reset(char* query_c_string) {
+    this->frag_i = (uint8_t*)query_c_string;
+    this->frag_j = (uint8_t*)query_c_string;
+    this->frag_k = (uint8_t*)query_c_string;
+    this->depth = 0;
+    this->array_index.status.repr = "#main: not an array index query fragment";
+    this->array_index.value = 0;
+  }
+
+  void restart_fragment(bool enable) {
+    this->frag_j = enable ? this->frag_i : nullptr;
+  }
+
+  bool is_at(uint32_t depth) { return this->depth == depth; }
+
+  // tick returns whether the fragment is a valid array index whose value is
+  // zero. If valid but non-zero, it decrements it and returns false.
+  bool tick() {
+    if (this->array_index.status.is_ok()) {
+      if (this->array_index.value == 0) {
+        return true;
+      }
+      this->array_index.value--;
+    }
+    return false;
+  }
+
+  // next_fragment moves to the next fragment, returning whether it existed.
+  bool next_fragment() {
+    uint8_t* k = this->frag_k;
+    uint32_t d = this->depth;
+
+    this->reset(nullptr);
+
+    if (!k || (*k != '/')) {
+      return false;
+    }
+    k++;
+
+    bool all_digits = true;
+    uint8_t* i = k;
+    while ((*k != '\x00') && (*k != '/')) {
+      all_digits = all_digits && ('0' <= *k) && (*k <= '9');
+      k++;
+    }
+    this->frag_i = i;
+    this->frag_j = i;
+    this->frag_k = k;
+    this->depth = d + 1;
+    if (all_digits) {
+      // wuffs_base__parse_number_u64 rejects leading zeroes, e.g. "00", "07".
+      this->array_index =
+          wuffs_base__parse_number_u64(wuffs_base__make_slice_u8(i, k - i));
+    }
+    return true;
+  }
+
+  bool matched() { return this->frag_j && (this->frag_j == this->frag_k); }
+
+  void incremental_match_slice(uint8_t* ptr, size_t len) {
+    if (!this->frag_j) {
+      return;
+    }
+    uint8_t* j = this->frag_j;
+    while (true) {
+      if (len == 0) {
+        this->frag_j = j;
+        return;
+      }
+
+      if (*j == '\x00') {
+        break;
+
+      } else if (*j == '~') {
+        j++;
+        if (*j == '0') {
+          if (*ptr != '~') {
+            break;
+          }
+        } else if (*j == '1') {
+          if (*ptr != '/') {
+            break;
+          }
+        } else {
+          break;
+        }
+
+      } else if (*j != *ptr) {
+        break;
+      }
+
+      j++;
+      ptr++;
+      len--;
+    }
+    this->frag_j = nullptr;
+  }
+
+  void incremental_match_code_point(uint32_t code_point) {
+    if (!this->frag_j) {
+      return;
+    }
+    uint8_t u[WUFFS_BASE__UTF_8__BYTE_LENGTH__MAX_INCL];
+    size_t n = wuffs_base__utf_8__encode(
+        wuffs_base__make_slice_u8(&u[0],
+                                  WUFFS_BASE__UTF_8__BYTE_LENGTH__MAX_INCL),
+        code_point);
+    if (n > 0) {
+      this->incremental_match_slice(&u[0], n);
+    }
+  }
+
+  // validate returns whether the (ptr, len) arguments form a valid JSON
+  // Pointer. In particular, it must be valid UTF-8, and either be empty or
+  // start with a '/'. Any '~' within must immediately be followed by either
+  // '0' or '1'.
+  static bool validate(char* query_c_string, size_t length) {
+    if (length <= 0) {
+      return true;
+    }
+    if (query_c_string[0] != '/') {
+      return false;
+    }
+    wuffs_base__slice_u8 s =
+        wuffs_base__make_slice_u8((uint8_t*)query_c_string, length);
+    bool previous_was_tilde = false;
+    while (s.len > 0) {
+      wuffs_base__utf_8__next__output o = wuffs_base__utf_8__next(s);
+      if (!o.is_valid()) {
+        return false;
+      }
+      if (previous_was_tilde && (o.code_point != '0') &&
+          (o.code_point != '1')) {
+        return false;
+      }
+      previous_was_tilde = o.code_point == '~';
+      s.ptr += o.byte_length;
+      s.len -= o.byte_length;
+    }
+    return !previous_was_tilde;
+  }
+} query;
+
+// ----
 
 struct {
   int remaining_argc;
@@ -118,6 +419,7 @@ struct {
 
   bool compact;
   size_t indent;
+  char* query_c_string;
   bool tabs;
 } flags = {0};
 
@@ -157,13 +459,23 @@ parse_flags(int argc, char** argv) {
         explicit_indent = true;
         continue;
       }
+      return usage;
+    }
+    if (!strncmp(arg, "q=", 2) || !strncmp(arg, "query=", 6)) {
+      while (*arg++ != '=') {
+      }
+      if (Query::validate(arg, strlen(arg))) {
+        flags.query_c_string = arg;
+        continue;
+      }
+      return usage;
     }
     if (!strcmp(arg, "t") || !strcmp(arg, "tabs")) {
       flags.tabs = true;
       continue;
     }
 
-    return "main: unrecognized flag argument";
+    return usage;
   }
 
   flags.remaining_argc = argc - c;
@@ -171,7 +483,7 @@ parse_flags(int argc, char** argv) {
   if (!explicit_indent) {
     flags.indent = flags.tabs ? 1 : 4;
   }
-  return NULL;
+  return nullptr;
 }
 
 const char*  //
@@ -196,8 +508,15 @@ initialize_globals(int argc, char** argv) {
 
   TRY(parse_flags(argc, argv));
   if (flags.remaining_argc > 0) {
-    return "main: bad argument: use \"program < input\", not \"program input\"";
+    return usage;
   }
+
+  query.reset(flags.query_c_string);
+
+  // If the query is non-empty, suprress writing to stdout until we've
+  // completed the query.
+  suppress_write_dst = query.next_fragment();
+  wrote_to_dst = false;
 
   return dec.initialize(sizeof__wuffs_json__decoder(), WUFFS_VERSION, 0)
       .message();
@@ -240,6 +559,9 @@ flush_dst() {
 
 const char*  //
 write_dst(const void* s, size_t n) {
+  if (suppress_write_dst) {
+    return nullptr;
+  }
   const uint8_t* p = static_cast<const uint8_t*>(s);
   while (n > 0) {
     size_t i = dst.writer_available();
@@ -261,6 +583,7 @@ write_dst(const void* s, size_t n) {
     dst.meta.wi += i;
     p += i;
     n -= i;
+    wrote_to_dst = true;
   }
   return nullptr;
 }
@@ -334,6 +657,9 @@ handle_token(wuffs_base__token t) {
     // Handle ']' or '}'.
     if ((vbc == WUFFS_BASE__TOKEN__VBC__STRUCTURE) &&
         (vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__POP)) {
+      if (query.is_at(depth)) {
+        return "main: no match for query";
+      }
       if (depth <= 0) {
         return "main: internal error: inconsistent depth";
       }
@@ -343,7 +669,7 @@ handle_token(wuffs_base__token t) {
       if ((ctx != context::in_list_after_bracket) &&
           (ctx != context::in_dict_after_brace) && !flags.compact) {
         TRY(write_dst("\n", 1));
-        for (size_t i = 0; i < depth; i++) {
+        for (uint32_t i = 0; i < depth; i++) {
           TRY(write_dst(flags.tabs ? INDENT_TABS_STRING : INDENT_SPACES_STRING,
                         flags.indent));
         }
@@ -359,21 +685,54 @@ handle_token(wuffs_base__token t) {
 
     // Write preceding whitespace and punctuation, if it wasn't ']', '}' or a
     // continuation of a multi-token chain.
-    if (t.link_prev()) {
-      // No-op.
-    } else if (ctx == context::in_dict_after_key) {
-      TRY(write_dst(": ", flags.compact ? 1 : 2));
-    } else if (ctx != context::none) {
-      if ((ctx != context::in_list_after_bracket) &&
-          (ctx != context::in_dict_after_brace)) {
-        TRY(write_dst(",", 1));
-      }
-      if (!flags.compact) {
-        TRY(write_dst("\n", 1));
-        for (size_t i = 0; i < depth; i++) {
-          TRY(write_dst(flags.tabs ? INDENT_TABS_STRING : INDENT_SPACES_STRING,
-                        flags.indent));
+    if (!t.link_prev()) {
+      if (ctx == context::in_dict_after_key) {
+        TRY(write_dst(": ", flags.compact ? 1 : 2));
+      } else if (ctx != context::none) {
+        if ((ctx != context::in_list_after_bracket) &&
+            (ctx != context::in_dict_after_brace)) {
+          TRY(write_dst(",", 1));
         }
+        if (!flags.compact) {
+          TRY(write_dst("\n", 1));
+          for (size_t i = 0; i < depth; i++) {
+            TRY(write_dst(
+                flags.tabs ? INDENT_TABS_STRING : INDENT_SPACES_STRING,
+                flags.indent));
+          }
+        }
+      }
+
+      bool query_matched = false;
+      if (query.is_at(depth)) {
+        switch (ctx) {
+          case context::in_list_after_bracket:
+          case context::in_list_after_value:
+            query_matched = query.tick();
+            break;
+          case context::in_dict_after_key:
+            query_matched = query.matched();
+            break;
+        }
+      }
+      if (!query_matched) {
+        // No-op.
+      } else if (!query.next_fragment()) {
+        // There is no next fragment. We have matched the complete query, and
+        // the upcoming JSON value is the result of that query.
+        //
+        // Un-suppress writing to stdout and reset the ctx and depth as if we
+        // were about to decode a top-level value. This makes any subsequent
+        // indentation be relative to this point, and we will return eod after
+        // the upcoming JSON value is complete.
+        suppress_write_dst = false;
+        ctx = context::none;
+        depth = 0;
+      } else if ((vbc != WUFFS_BASE__TOKEN__VBC__STRUCTURE) ||
+                 !(vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__PUSH)) {
+        // The query has moved on to the next fragment but the upcoming JSON
+        // value is not a container.
+        return "main: no match for query";
       }
     }
 
@@ -392,13 +751,16 @@ handle_token(wuffs_base__token t) {
       case WUFFS_BASE__TOKEN__VBC__STRING:
         if (!t.link_prev()) {
           TRY(write_dst("\"", 1));
+          query.restart_fragment(in_dict_before_key() && query.is_at(depth));
         }
 
         if (vbd & WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_0_DST_1_SRC_DROP) {
           // No-op.
         } else if (vbd &
                    WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY) {
-          TRY(write_dst(src.data.ptr + curr_token_end_src_index - len, len));
+          uint8_t* ptr = src.data.ptr + curr_token_end_src_index - len;
+          TRY(write_dst(ptr, len));
+          query.incremental_match_slice(ptr, len);
         } else {
           return "main: internal error: unexpected string-token conversion";
         }
@@ -410,7 +772,12 @@ handle_token(wuffs_base__token t) {
         goto after_value;
 
       case WUFFS_BASE__TOKEN__VBC__UNICODE_CODE_POINT:
-        return handle_unicode_code_point(vbd);
+        if (!t.link_prev() || !t.link_next()) {
+          return "main: internal error: unexpected unlinked token";
+        }
+        TRY(handle_unicode_code_point(vbd));
+        query.incremental_match_code_point(vbd);
+        return nullptr;
 
       case WUFFS_BASE__TOKEN__VBC__LITERAL:
       case WUFFS_BASE__TOKEN__VBC__NUMBER:
@@ -469,13 +836,13 @@ main1(int argc, char** argv) {
       if (z == nullptr) {
         continue;
       } else if (z == eod) {
-        break;
+        goto end_of_data;
       }
       return z;
     }
 
     if (status.repr == nullptr) {
-      break;
+      return "main: internal error: unexpected end of token stream";
     } else if (status.repr == wuffs_base__suspension__short_read) {
       if (curr_token_end_src_index != src.meta.ri) {
         return "main: internal error: inconsistent src indexes";
@@ -487,6 +854,13 @@ main1(int argc, char** argv) {
     } else {
       return status.message();
     }
+  }
+end_of_data:
+
+  // With a non-empty query, don't try to consume trailing whitespace or
+  // confirm that we've processed all the tokens.
+  if (flags.query_c_string && *flags.query_c_string) {
+    return nullptr;
   }
 
   // Consume an optional whitespace trailer. This isn't part of the JSON spec,
@@ -559,9 +933,12 @@ compute_exit_code(const char* status_msg) {
 
 int  //
 main(int argc, char** argv) {
-  const char* z0 = main1(argc, argv);
-  const char* z1 = write_dst("\n", 1);
-  const char* z2 = flush_dst();
-  int exit_code = compute_exit_code(z0 ? z0 : (z1 ? z1 : z2));
+  const char* z = main1(argc, argv);
+  if (wrote_to_dst) {
+    const char* z1 = write_dst("\n", 1);
+    const char* z2 = flush_dst();
+    z = z ? z : (z1 ? z1 : z2);
+  }
+  int exit_code = compute_exit_code(z);
   return exit_code;
 }
