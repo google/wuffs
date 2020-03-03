@@ -71,10 +71,30 @@ micros_since_start(struct timespec* now) {
 // compiling it.
 #define WUFFS_IMPLEMENTATION
 
+// Defining the WUFFS_CONFIG__MODULE* macros are optional, but it lets users of
+// release/c/etc.c whitelist which parts of Wuffs to build. That file contains
+// the entire Wuffs standard library, implementing a variety of codecs and file
+// formats. Without this macro definition, an optimizing compiler or linker may
+// very well discard Wuffs code for unused codecs, but listing the Wuffs
+// modules we use makes that process explicit. Preprocessing means that such
+// code simply isn't compiled.
+#define WUFFS_CONFIG__MODULES
+#define WUFFS_CONFIG__MODULE__BASE
+#define WUFFS_CONFIG__MODULE__LZW
+#define WUFFS_CONFIG__MODULE__GIF
+
 // If building this program in an environment that doesn't easily accommodate
 // relative includes, you can use the script/inline-c-relative-includes.go
 // program to generate a stand-alone C file.
 #include "../../release/c/wuffs-unsupported-snapshot.c"
+
+#define TRY(error_msg)         \
+  do {                         \
+    const char* z = error_msg; \
+    if (z) {                   \
+      return z;                \
+    }                          \
+  } while (false)
 
 // Limit the input GIF image to (64 MiB - 1 byte) compressed and 4096 × 4096
 // pixels uncompressed. This is a limitation of this example program (which
@@ -123,6 +143,55 @@ read_stdin() {
 
 // ----
 
+struct {
+  int remaining_argc;
+  char** remaining_argv;
+
+  bool color;
+  bool quirk_honor_background_color;
+} flags = {0};
+
+const char*  //
+parse_flags(int argc, char** argv) {
+  int c = (argc > 0) ? 1 : 0;  // Skip argv[0], the program name.
+  for (; c < argc; c++) {
+    char* arg = argv[c];
+    if (*arg++ != '-') {
+      break;
+    }
+
+    // A double-dash "--foo" is equivalent to a single-dash "-foo". As special
+    // cases, a bare "-" is not a flag (some programs may interpret it as
+    // stdin) and a bare "--" means to stop parsing flags.
+    if (*arg == '\x00') {
+      break;
+    } else if (*arg == '-') {
+      arg++;
+      if (*arg == '\x00') {
+        c++;
+        break;
+      }
+    }
+
+    if (!strcmp(arg, "c") || !strcmp(arg, "color")) {
+      flags.color = true;
+      continue;
+    }
+    if (!strcmp(arg, "quirk_honor_background_color")) {
+      flags.quirk_honor_background_color = true;
+      continue;
+    }
+
+    return "main: unrecognized flag argument";
+  }
+
+  flags.remaining_argc = argc - c;
+  flags.remaining_argv = argv + c;
+  return NULL;
+}
+
+// ----
+
 // BYTES_PER_COLOR_PIXEL is long enough to contain "\x1B[38;2;255;255;255mABC"
 // plus a trailing NUL byte and a few bytes of slack. It starts with a true
 // color terminal escape code. ABC is three bytes for the UTF-8 representation
@@ -130,10 +199,6 @@ read_stdin() {
 #define BYTES_PER_COLOR_PIXEL 32
 
 const char* reset_color = "\x1B[0m";
-
-bool color_flag = false;
-bool quirk_honor_background_color_flag = false;
-const int stdout_fd = 1;
 
 void  //
 restore_background(wuffs_base__pixel_buffer* pb,
@@ -243,7 +308,7 @@ try_allocate(wuffs_gif__decoder* dec) {
   }
 
   uint64_t plen = 1 + ((uint64_t)(width) + 1) * (uint64_t)(height);
-  uint64_t bytes_per_print_pixel = color_flag ? BYTES_PER_COLOR_PIXEL : 1;
+  uint64_t bytes_per_print_pixel = flags.color ? BYTES_PER_COLOR_PIXEL : 1;
   if (plen <= ((uint64_t)SIZE_MAX) / bytes_per_print_pixel) {
     printbuf =
         wuffs_base__malloc_slice_u8(malloc, plen * bytes_per_print_pixel);
@@ -281,7 +346,7 @@ play() {
     return wuffs_base__status__message(&status);
   }
 
-  if (quirk_honor_background_color_flag) {
+  if (flags.quirk_honor_background_color) {
     wuffs_gif__decoder__set_quirk_enabled(
         &dec, WUFFS_GIF__QUIRK_HONOR_BACKGROUND_COLOR, true);
   }
@@ -360,7 +425,7 @@ play() {
       break;
     }
 
-    size_t n = color_flag ? print_color_art(&pb) : print_ascii_art(&pb);
+    size_t n = flags.color ? print_color_art(&pb) : print_ascii_art(&pb);
 
     switch (wuffs_base__frame_config__disposal(&fc)) {
       case WUFFS_BASE__ANIMATION_DISPOSAL__RESTORE_BACKGROUND: {
@@ -424,30 +489,15 @@ play() {
   return NULL;
 }
 
-int  //
-main(int argc, char** argv) {
-  int i;
-  for (i = 1; i < argc; i++) {
-    if (!strcmp(argv[i], "-color")) {
-      color_flag = true;
-    }
-    if (!strcmp(argv[i], "-quirk_honor_background_color")) {
-      quirk_honor_background_color_flag = true;
-    }
+const char*  //
+main1(int argc, char** argv) {
+  TRY(parse_flags(argc, argv));
+  if (flags.remaining_argc > 0) {
+    return "main: bad argument: use \"program < input\", not \"program input\"";
   }
-
-  const char* status_msg = read_stdin();
-  if (status_msg) {
-    fprintf(stderr, "%s\n", status_msg);
-    return 1;
-  }
-
+  TRY(read_stdin());
   while (true) {
-    status_msg = play();
-    if (status_msg) {
-      fprintf(stderr, "%s\n", status_msg);
-      return 1;
-    }
+    TRY(play());
     if (num_loops_remaining == 0) {
       continue;
     }
@@ -455,6 +505,16 @@ main(int argc, char** argv) {
     if (num_loops_remaining == 0) {
       break;
     }
+  }
+  return NULL;
+}
+
+int  //
+main(int argc, char** argv) {
+  const char* z = main1(argc, argv);
+  if (z) {
+    fprintf(stderr, "%s\n", z);
+    return 1;
   }
   return 0;
 }

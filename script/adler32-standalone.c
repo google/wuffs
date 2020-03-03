@@ -53,6 +53,48 @@ const char* cc = "cc";
 const char* cc_version = "???";
 #endif
 
+struct {
+  int remaining_argc;
+  char** remaining_argv;
+
+  bool no_check;
+} flags = {0};
+
+const char*  //
+parse_flags(int argc, char** argv) {
+  int c = (argc > 0) ? 1 : 0;  // Skip argv[0], the program name.
+  for (; c < argc; c++) {
+    char* arg = argv[c];
+    if (*arg++ != '-') {
+      break;
+    }
+
+    // A double-dash "--foo" is equivalent to a single-dash "-foo". As special
+    // cases, a bare "-" is not a flag (some programs may interpret it as
+    // stdin) and a bare "--" means to stop parsing flags.
+    if (*arg == '\x00') {
+      break;
+    } else if (*arg == '-') {
+      arg++;
+      if (*arg == '\x00') {
+        c++;
+        break;
+      }
+    }
+
+    if (!strcmp(arg, "no-check")) {
+      flags.no_check = true;
+      continue;
+    }
+
+    return "main: unrecognized flag argument";
+  }
+
+  flags.remaining_argc = argc - c;
+  flags.remaining_argv = argv + c;
+  return NULL;
+}
+
 static uint32_t  //
 calculate_hash(uint8_t* x_ptr, size_t x_len) {
   uint32_t s1 = 1;
@@ -118,12 +160,10 @@ uint8_t buffer[BUFFER_SIZE] = {0};
 
 int  //
 main(int argc, char** argv) {
-  bool nocheck = false;
-  int i;
-  for (i = 0; i < argc; i++) {
-    if (!strcmp(argv[i], "-nocheck")) {
-      nocheck = true;
-    }
+  const char* err_msg = parse_flags(argc, argv);
+  if (err_msg) {
+    fprintf(stderr, "%s\n", err_msg);
+    return 1;
   }
 
   struct timeval bench_start_tv;
@@ -135,10 +175,11 @@ main(int argc, char** argv) {
   // https://play.golang.org/p/IU2T58P00C
   const uint32_t expected_hash_of_1mib_of_zeroes = 0x00f00001UL;
 
+  int i;
   int num_bad = 0;
   for (i = 0; i < num_reps; i++) {
     uint32_t actual_hash = calculate_hash(buffer, BUFFER_SIZE);
-    if (!nocheck && (actual_hash != expected_hash_of_1mib_of_zeroes)) {
+    if (!flags.no_check && (actual_hash != expected_hash_of_1mib_of_zeroes)) {
       num_bad++;
     }
   }

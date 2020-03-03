@@ -114,7 +114,47 @@ make_limited_reader(wuffs_base__io_buffer b, uint64_t limit) {
 #include <sys/stat.h>
 #include <unistd.h>
 
-static bool flag_color;
+struct {
+  int remaining_argc;
+  char** remaining_argv;
+
+  bool color;
+} flags = {0};
+
+const char*  //
+parse_flags(int argc, char** argv) {
+  int c = (argc > 0) ? 1 : 0;  // Skip argv[0], the program name.
+  for (; c < argc; c++) {
+    char* arg = argv[c];
+    if (*arg++ != '-') {
+      break;
+    }
+
+    // A double-dash "--foo" is equivalent to a single-dash "-foo". As special
+    // cases, a bare "-" is not a flag (some programs may interpret it as
+    // stdin) and a bare "--" means to stop parsing flags.
+    if (*arg == '\x00') {
+      break;
+    } else if (*arg == '-') {
+      arg++;
+      if (*arg == '\x00') {
+        c++;
+        break;
+      }
+    }
+
+    if (!strcmp(arg, "c") || !strcmp(arg, "color")) {
+      flags.color = true;
+      continue;
+    }
+
+    return "main: unrecognized flag argument";
+  }
+
+  flags.remaining_argc = argc - c;
+  flags.remaining_argv = argv + c;
+  return NULL;
+}
 
 static int num_files_processed;
 
@@ -125,7 +165,7 @@ static struct {
 
 void  //
 errorf(const char* msg) {
-  if (flag_color) {
+  if (flags.color) {
     printf("\e[31m%s\e[0m\n", msg);
   } else {
     printf("%s\n", msg);
@@ -151,7 +191,7 @@ visit_dir(int fd) {
     return 1;
   }
 
-  printf("+dir\n");
+  printf("dir\n");
   while (true) {
     struct dirent* e = readdir(d);
     if (!e) {
@@ -202,7 +242,7 @@ visit_reg(int fd, off_t size) {
   const char* msg = llvmFuzzerTestOneInput((const uint8_t*)(data), size);
   if (msg) {
     errorf(msg);
-  } else if (flag_color) {
+  } else if (flags.color) {
     printf("\e[32mok\e[0m\n");
   } else {
     printf("ok\n");
@@ -279,28 +319,17 @@ visit(char* filename) {
 
 int  //
 main(int argc, char** argv) {
-  flag_color = false;
   num_files_processed = 0;
   relative_cwd.len = 0;
 
-  int i;
-  for (i = 1; i < argc; i++) {
-    if (argv[i][0] != '-') {
-      continue;
-    }
-    if ((strcmp(argv[i], "-c") == 0) ||  //
-        (strcmp(argv[i], "--color") == 0)) {
-      flag_color = true;
-      continue;
-    }
-    fprintf(stderr, "FAIL: unrecognized flag argument\n");
+  const char* z = parse_flags(argc, argv);
+  if (z) {
+    fprintf(stderr, "FAIL: %s\n", z);
     return 1;
   }
-  for (i = 1; i < argc; i++) {
-    if (argv[i][0] == '-') {
-      continue;
-    }
-    int v = visit(argv[i]);
+  int i;
+  for (i = 0; i < flags.remaining_argc; i++) {
+    int v = visit(flags.remaining_argv[i]);
     if (v) {
       return v;
     }

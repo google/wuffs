@@ -106,11 +106,103 @@ char fail_msg[65536] = {0};
 
 int tests_run = 0;
 
-uint64_t iterscale = 100;
+struct {
+  int remaining_argc;
+  char** remaining_argv;
+
+  bool bench;
+  const char* focus;
+  uint64_t iterscale;
+  int reps;
+} flags = {0};
+
+const char*  //
+parse_flags(int argc, char** argv) {
+  bool explicit_iterscale = false;
+  bool explicit_reps = false;
+
+  int c = (argc > 0) ? 1 : 0;  // Skip argv[0], the program name.
+  for (; c < argc; c++) {
+    char* arg = argv[c];
+    if (*arg++ != '-') {
+      break;
+    }
+
+    // A double-dash "--foo" is equivalent to a single-dash "-foo". As special
+    // cases, a bare "-" is not a flag (some programs may interpret it as
+    // stdin) and a bare "--" means to stop parsing flags.
+    if (*arg == '\x00') {
+      break;
+    } else if (*arg == '-') {
+      arg++;
+      if (*arg == '\x00') {
+        c++;
+        break;
+      }
+    }
+
+    if (!strcmp(arg, "bench")) {
+      flags.bench = true;
+      continue;
+    }
+
+    if (!strncmp(arg, "focus=", 6)) {
+      flags.focus = arg + 6;
+      continue;
+    }
+
+    if (!strncmp(arg, "iterscale=", 10)) {
+      arg += 10;
+      if (!*arg) {
+        return "missing -iterscale=N value";
+      }
+      char* end = NULL;
+      long int n = strtol(arg, &end, 10);
+      if (*end) {
+        return "invalid -iterscale=N value";
+      }
+      if ((n < 0) || (1000000 < n)) {
+        return "out-of-range -iterscale=N value";
+      }
+      flags.iterscale = n;
+      explicit_iterscale = true;
+      continue;
+    }
+
+    if (!strncmp(arg, "reps=", 5)) {
+      arg += 5;
+      if (!*arg) {
+        return "missing -reps=N value";
+      }
+      char* end = NULL;
+      long int n = strtol(arg, &end, 10);
+      if (*end) {
+        return "invalid -reps=N value";
+      }
+      if ((n < 0) || (1000000 < n)) {
+        return "out-of-range -reps=N value";
+      }
+      flags.reps = n;
+      explicit_reps = true;
+      continue;
+    }
+
+    return "unrecognized flag argument";
+  }
+
+  flags.remaining_argc = argc - c;
+  flags.remaining_argv = argv + c;
+  if (!explicit_iterscale) {
+    flags.iterscale = 100;
+  }
+  if (!explicit_reps) {
+    flags.reps = 5;
+  }
+  return NULL;
+}
 
 const char* proc_package_name = "unknown_package_name";
 const char* proc_func_name = "unknown_func_name";
-const char* focus = "";
 bool in_focus = false;
 
 #define CHECK_FOCUS(func_name) \
@@ -122,8 +214,8 @@ bool in_focus = false;
 
 bool  //
 check_focus() {
-  const char* p = focus;
-  if (!*p) {
+  const char* p = flags.focus;
+  if (!p || !*p) {
     return true;
   }
   size_t n = strlen(proc_func_name);
@@ -295,66 +387,20 @@ test_main(int argc, char** argv, proc* tests, proc* benches) {
     return 1;
   }
 
-  bool bench = false;
-  int reps = 5;
-
-  int i;
-  for (i = 1; i < argc; i++) {
-    const char* arg = argv[i];
-    size_t arg_len = strlen(arg);
-    if (!strcmp(arg, "-bench")) {
-      bench = true;
-
-    } else if ((arg_len >= 7) && !strncmp(arg, "-focus=", 7)) {
-      focus = arg + 7;
-
-    } else if ((arg_len >= 11) && !strncmp(arg, "-iterscale=", 11)) {
-      arg += 11;
-      if (!*arg) {
-        fprintf(stderr, "missing -iterscale=N value\n");
-        return 1;
-      }
-      char* end = NULL;
-      long int n = strtol(arg, &end, 10);
-      if (*end) {
-        fprintf(stderr, "invalid -iterscale=N value\n");
-        return 1;
-      }
-      if ((n < 0) || (1000000 < n)) {
-        fprintf(stderr, "out-of-range -iterscale=N value\n");
-        return 1;
-      }
-      iterscale = n;
-
-    } else if ((arg_len >= 6) && !strncmp(arg, "-reps=", 6)) {
-      arg += 6;
-      if (!*arg) {
-        fprintf(stderr, "missing -reps=N value\n");
-        return 1;
-      }
-      char* end = NULL;
-      long int n = strtol(arg, &end, 10);
-      if (*end) {
-        fprintf(stderr, "invalid -reps=N value\n");
-        return 1;
-      }
-      if ((n < 0) || (1000000 < n)) {
-        fprintf(stderr, "out-of-range -reps=N value\n");
-        return 1;
-      }
-      reps = n;
-
-    } else {
-      fprintf(stderr, "unknown flag \"%s\"\n", arg);
-      return 1;
-    }
+  status = parse_flags(argc, argv);
+  if (status) {
+    fprintf(stderr, "%s\n", status);
+    return 1;
+  }
+  if (flags.remaining_argc > 0) {
+    fprintf(stderr, "unexpected (non-flag) argument\n");
+    return 1;
   }
 
+  int reps = 1;
   proc* procs = tests;
-  if (!bench) {
-    reps = 1;
-  } else {
-    reps++;  // +1 for the warm up run.
+  if (flags.bench) {
+    reps = flags.reps + 1;  // +1 for the warm up run.
     procs = benches;
     printf("# %s\n# %s version %s\n#\n", proc_package_name, cc, cc_version);
     printf(
@@ -365,6 +411,7 @@ test_main(int argc, char** argv, proc* tests, proc* benches) {
         "# install Go, then run \"go get golang.org/x/perf/cmd/benchstat\".\n");
   }
 
+  int i;
   for (i = 0; i < reps; i++) {
     bench_warm_up = i == 0;
     proc* p;
@@ -388,9 +435,9 @@ test_main(int argc, char** argv, proc* tests, proc* benches) {
     if (i != 0) {
       continue;
     }
-    if (bench) {
+    if (flags.bench) {
       printf("# %d benchmarks, 1+%d reps per benchmark, iterscale=%d\n",
-             tests_run, reps - 1, (int)(iterscale));
+             tests_run, flags.reps, (int)(flags.iterscale));
     } else {
       printf("%-16s%-8sPASS (%d tests)\n", proc_package_name, cc, tests_run);
     }
@@ -866,7 +913,8 @@ do_bench_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
                     uint64_t rlimit,
                     uint64_t iters_unscaled) {
   return proc_io_buffers(codec_func, wuffs_initialize_flags, tcounter, gt,
-                         wlimit, rlimit, iters_unscaled * iterscale, true);
+                         wlimit, rlimit, iters_unscaled * flags.iterscale,
+                         true);
 }
 
 const char*  //
@@ -882,7 +930,8 @@ do_bench_token_decoder(const char* (*codec_func)(wuffs_base__token_buffer*,
                        uint64_t rlimit,
                        uint64_t iters_unscaled) {
   return proc_token_decoder(codec_func, wuffs_initialize_flags, tcounter, gt,
-                            wlimit, rlimit, iters_unscaled * iterscale, true);
+                            wlimit, rlimit, iters_unscaled * flags.iterscale,
+                            true);
 }
 
 const char*  //

@@ -406,7 +406,7 @@ do_bench_wuffs_lzw_decode(const char* filename, uint64_t iters_unscaled) {
   bench_start();
   uint64_t n_bytes = 0;
   uint64_t i;
-  uint64_t iters = iters_unscaled * iterscale;
+  uint64_t iters = iters_unscaled * flags.iterscale;
   for (i = 0; i < iters; i++) {
     have.meta.wi = 0;
     src.meta.ri = 1;  // Skip the literal width.

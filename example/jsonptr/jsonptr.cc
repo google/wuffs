@@ -77,10 +77,6 @@ static const char* eod = "main: end of data";
 #define INDENT_SPACES_STRING "        "
 #define INDENT_TABS_STRING "\t\t\t\t\t\t\t\t"
 
-bool flag_compact;
-size_t flag_indent;
-bool flag_tabs;
-
 #ifndef DST_BUFFER_SIZE
 #define DST_BUFFER_SIZE (32 * 1024)
 #endif
@@ -116,12 +112,70 @@ enum class context {
 
 wuffs_json__decoder dec;
 
+struct {
+  int remaining_argc;
+  char** remaining_argv;
+
+  bool compact;
+  size_t indent;
+  bool tabs;
+} flags = {0};
+
+const char*  //
+parse_flags(int argc, char** argv) {
+  bool explicit_indent = false;
+
+  int c = (argc > 0) ? 1 : 0;  // Skip argv[0], the program name.
+  for (; c < argc; c++) {
+    char* arg = argv[c];
+    if (*arg++ != '-') {
+      break;
+    }
+
+    // A double-dash "--foo" is equivalent to a single-dash "-foo". As special
+    // cases, a bare "-" is not a flag (some programs may interpret it as
+    // stdin) and a bare "--" means to stop parsing flags.
+    if (*arg == '\x00') {
+      break;
+    } else if (*arg == '-') {
+      arg++;
+      if (*arg == '\x00') {
+        c++;
+        break;
+      }
+    }
+
+    if (!strcmp(arg, "c") || !strcmp(arg, "compact")) {
+      flags.compact = true;
+      continue;
+    }
+    if (!strncmp(arg, "i=", 2) || !strncmp(arg, "indent=", 7)) {
+      while (*arg++ != '=') {
+      }
+      if (('0' <= arg[0]) && (arg[0] <= '8') && (arg[1] == '\x00')) {
+        flags.indent = arg[0] - '0';
+        explicit_indent = true;
+        continue;
+      }
+    }
+    if (!strcmp(arg, "t") || !strcmp(arg, "tabs")) {
+      flags.tabs = true;
+      continue;
+    }
+
+    return "main: unrecognized flag argument";
+  }
+
+  flags.remaining_argc = argc - c;
+  flags.remaining_argv = argv + c;
+  if (!explicit_indent) {
+    flags.indent = flags.tabs ? 1 : 4;
+  }
+  return NULL;
+}
+
 const char*  //
 initialize_globals(int argc, char** argv) {
-  flag_compact = false;
-  flag_indent = 4;
-  flag_tabs = false;
-
   dst = wuffs_base__make_io_buffer(
       wuffs_base__make_slice_u8(dst_array, DST_BUFFER_SIZE),
       wuffs_base__empty_io_buffer_meta());
@@ -140,38 +194,9 @@ initialize_globals(int argc, char** argv) {
 
   ctx = context::none;
 
-  int i;
-  for (i = 1; i < argc; i++) {
-    if (argv[i][0] != '-') {
-      return "main: bad argument: use \"jsonptr < foo.json\", not \"jsonptr "
-             "foo.json\"";
-    }
-
-    if ((strcmp(argv[i], "-c") == 0) ||  //
-        (strcmp(argv[i], "--compact") == 0)) {
-      flag_compact = true;
-      continue;
-
-    } else if ((strncmp(argv[i], "-i=", 3) == 0) ||  //
-               (strncmp(argv[i], "--indent=", 9) == 0)) {
-      // Set p to point just after the '='.
-      char* p = argv[i];
-      for (; *p != '='; p++) {
-      }
-      p++;
-
-      if (('0' <= p[0]) && (p[0] <= '8') && (p[1] == '\x00')) {
-        flag_indent = p[0] - '0';
-        continue;
-      }
-
-    } else if ((strcmp(argv[i], "-t") == 0) ||  //
-               (strcmp(argv[i], "--tabs") == 0)) {
-      flag_tabs = true;
-      continue;
-    }
-
-    return "main: bad argument";
+  TRY(parse_flags(argc, argv));
+  if (flags.remaining_argc > 0) {
+    return "main: bad argument: use \"program < input\", not \"program input\"";
   }
 
   return dec.initialize(sizeof__wuffs_json__decoder(), WUFFS_VERSION, 0)
@@ -340,11 +365,11 @@ handle_token(wuffs_base__token t) {
 
       // Write preceding whitespace.
       if ((ctx != context::in_list_after_bracket) &&
-          (ctx != context::in_dict_after_brace) && !flag_compact) {
+          (ctx != context::in_dict_after_brace) && !flags.compact) {
         TRY(write_dst("\n", 1));
         for (size_t i = 0; i < depth; i++) {
-          TRY(write_dst(flag_tabs ? INDENT_TABS_STRING : INDENT_SPACES_STRING,
-                        flag_indent));
+          TRY(write_dst(flags.tabs ? INDENT_TABS_STRING : INDENT_SPACES_STRING,
+                        flags.indent));
         }
       }
 
@@ -361,17 +386,17 @@ handle_token(wuffs_base__token t) {
     if (t.link_prev()) {
       // No-op.
     } else if (ctx == context::in_dict_after_key) {
-      TRY(write_dst(": ", flag_compact ? 1 : 2));
+      TRY(write_dst(": ", flags.compact ? 1 : 2));
     } else if (ctx != context::none) {
       if ((ctx != context::in_list_after_bracket) &&
           (ctx != context::in_dict_after_brace)) {
         TRY(write_dst(",", 1));
       }
-      if (!flag_compact) {
+      if (!flags.compact) {
         TRY(write_dst("\n", 1));
         for (size_t i = 0; i < depth; i++) {
-          TRY(write_dst(flag_tabs ? INDENT_TABS_STRING : INDENT_SPACES_STRING,
-                        flag_indent));
+          TRY(write_dst(flags.tabs ? INDENT_TABS_STRING : INDENT_SPACES_STRING,
+                        flags.indent));
         }
       }
     }

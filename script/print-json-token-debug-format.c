@@ -108,6 +108,10 @@ wuffs_base__status dec_status;
     }                          \
   } while (false)
 
+// ignore_return_value suppresses errors from -Wall -Werror.
+static void  //
+ignore_return_value(int ignored) {}
+
 const char*  //
 read_src() {
   if (src.meta.closed) {
@@ -129,6 +133,53 @@ read_src() {
 
 // ----
 
+struct {
+  int remaining_argc;
+  char** remaining_argv;
+
+  bool all_tokens;
+  bool human_readable;
+} flags = {0};
+
+const char*  //
+parse_flags(int argc, char** argv) {
+  int c = (argc > 0) ? 1 : 0;  // Skip argv[0], the program name.
+  for (; c < argc; c++) {
+    char* arg = argv[c];
+    if (*arg++ != '-') {
+      break;
+    }
+
+    // A double-dash "--foo" is equivalent to a single-dash "-foo". As special
+    // cases, a bare "-" is not a flag (some programs may interpret it as
+    // stdin) and a bare "--" means to stop parsing flags.
+    if (*arg == '\x00') {
+      break;
+    } else if (*arg == '-') {
+      arg++;
+      if (*arg == '\x00') {
+        c++;
+        break;
+      }
+    }
+
+    if (!strcmp(arg, "a") || !strcmp(arg, "all-tokens")) {
+      flags.all_tokens = true;
+      continue;
+    }
+    if (!strcmp(arg, "h") || !strcmp(arg, "human-readable")) {
+      flags.human_readable = true;
+      continue;
+    }
+
+    return "main: unrecognized flag argument";
+  }
+
+  flags.remaining_argc = argc - c;
+  flags.remaining_argv = argv + c;
+  return NULL;
+}
+
 const char* vbc_names[8] = {
     "0:Filler..........",  //
     "1:Structure.......",  //
@@ -148,20 +199,9 @@ const int base38_decode[38] = {
 
 const char*  //
 main1(int argc, char** argv) {
-  bool all_tokens = false;
-  bool human_readable = false;
-  int i;
-  for (i = 1; i < argc; i++) {
-    if ((strcmp(argv[i], "-a") == 0) ||
-        (strcmp(argv[i], "--all-tokens") == 0)) {
-      all_tokens = true;
-      continue;
-    }
-    if ((strcmp(argv[i], "-h") == 0) ||
-        (strcmp(argv[i], "--human-readable") == 0)) {
-      human_readable = true;
-      continue;
-    }
+  TRY(parse_flags(argc, argv));
+  if (flags.remaining_argc > 0) {
+    return "main: bad argument: use \"program < input\", not \"program input\"";
   }
 
   src = wuffs_base__make_io_buffer(
@@ -187,7 +227,7 @@ main1(int argc, char** argv) {
       wuffs_base__token* t = &tok.data.ptr[tok.meta.ri++];
       uint16_t len = wuffs_base__token__length(t);
 
-      if (all_tokens || (wuffs_base__token__value(t) != 0)) {
+      if (flags.all_tokens || (wuffs_base__token__value(t) != 0)) {
         uint8_t lp = wuffs_base__token__link_prev(t) ? 1 : 0;
         uint8_t ln = wuffs_base__token__link_next(t) ? 1 : 0;
         uint32_t vmajor = wuffs_base__token__value_major(t);
@@ -195,7 +235,7 @@ main1(int argc, char** argv) {
         uint8_t vbc = wuffs_base__token__value_base_category(t);
         uint32_t vbd = wuffs_base__token__value_base_detail(t);
 
-        if (human_readable) {
+        if (flags.human_readable) {
           printf("pos=0x%08" PRIX32 "  len=0x%04" PRIX16 "  link=0b%d%d  ",
                  (uint32_t)(pos), len, (int)(lp), (int)(ln));
 
@@ -213,7 +253,7 @@ main1(int argc, char** argv) {
                    vmajor, base38_decode[m0], base38_decode[m1],
                    base38_decode[m2], base38_decode[m3], vminor);
           } else {
-            printf("vbc=%s   vbd=0x%06" PRIX32 "\n", vbc_names[vbc & 7], vbd);
+            printf("vbc=%s.  vbd=0x%06" PRIX32 "\n", vbc_names[vbc & 7], vbd);
           }
 
         } else {
@@ -230,7 +270,7 @@ main1(int argc, char** argv) {
             wuffs_base__store_u24be__no_bounds_check(&buf[0xD], vbd);
           }
           const int stdout_fd = 1;
-          write(stdout_fd, &buf[0], 16);
+          ignore_return_value(write(stdout_fd, &buf[0], 16));
         }
       }
 

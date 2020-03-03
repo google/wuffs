@@ -2135,7 +2135,7 @@ do_bench_gif_decode(const char* (*decode_func)(wuffs_base__io_buffer*,
   bench_start();
   uint64_t n_bytes = 0;
   uint64_t i;
-  uint64_t iters = iters_unscaled * iterscale;
+  uint64_t iters = iters_unscaled * flags.iterscale;
   for (i = 0; i < iters; i++) {
     have.meta.wi = 0;
     src.meta.ri = 0;
