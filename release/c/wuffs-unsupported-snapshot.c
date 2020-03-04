@@ -3419,13 +3419,14 @@ wuffs_base__parse_number_i64(wuffs_base__slice_u8 s);
 //    parse: it returns an error unless all of s is consumed.
 //  - It does not allow whitespace, leading or otherwise.
 //  - It does not allow a leading '+' or '-'.
-//  - It does not allow multiple leading zeroes: "0" is valid but "00" is not.
+//  - It does not allow unnecessary leading zeroes ("0" is valid and its sole
+//    zero is necessary). All of "00", "0644" and "007" are invalid.
 //  - It does not take a base argument (e.g. base 10 vs base 16). Instead, it
 //    always accepts both decimal (e.g "1234", "0d5678") and hexadecimal (e.g.
 //    "0x9aBC"). The caller is responsible for prior filtering of e.g. hex
 //    numbers if they are unwanted. For example, Wuffs' JSON decoder will only
 //    produce a wuffs_base__token for decimal numbers, not hexadecimal.
-//  - It is not affected by i18n / l10n settings.
+//  - It is not affected by i18n / l10n settings such as environment variables.
 //  - It does allow arbitrary underscores, except inside the optional 2-byte
 //    opening "0d" or "0X" that denotes base-10 or base-16. For example,
 //    "__0D_1_002" would successfully parse as "one thousand and two".
