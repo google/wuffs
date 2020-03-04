@@ -210,7 +210,7 @@ test_strconv_utf_8_next() {
 
   // Special case the "\x00" string, which is valid UTF-8 but its strlen is
   // zero, not one.
-  uint8_t the_nul_byte[0];
+  uint8_t the_nul_byte[1];
   the_nul_byte[0] = '\x00';
 
   struct {
