@@ -80,12 +80,70 @@ uint8_t work_buffer[WORK_BUFFER_SIZE];
 uint8_t work_buffer[1];
 #endif
 
+// ----
+
+static bool sandboxed = false;
+
+struct {
+  int remaining_argc;
+  char** remaining_argv;
+
+  bool fail_if_unsandboxed;
+} flags = {0};
+
+const char*  //
+parse_flags(int argc, char** argv) {
+  int c = (argc > 0) ? 1 : 0;  // Skip argv[0], the program name.
+  for (; c < argc; c++) {
+    char* arg = argv[c];
+    if (*arg++ != '-') {
+      break;
+    }
+
+    // A double-dash "--foo" is equivalent to a single-dash "-foo". As special
+    // cases, a bare "-" is not a flag (some programs may interpret it as
+    // stdin) and a bare "--" means to stop parsing flags.
+    if (*arg == '\x00') {
+      break;
+    } else if (*arg == '-') {
+      arg++;
+      if (*arg == '\x00') {
+        c++;
+        break;
+      }
+    }
+
+    if (!strcmp(arg, "fail-if-unsandboxed")) {
+      flags.fail_if_unsandboxed = true;
+      continue;
+    }
+
+    return "main: unrecognized flag argument";
+  }
+
+  flags.remaining_argc = argc - c;
+  flags.remaining_argv = argv + c;
+  return NULL;
+}
+
+// ----
+
 // ignore_return_value suppresses errors from -Wall -Werror.
 static void  //
 ignore_return_value(int ignored) {}
 
-static const char*  //
-decode() {
+#include <stdio.h>
+
+const char*  //
+main1(int argc, char** argv) {
+  const char* z = parse_flags(argc, argv);
+  if (z) {
+    return z;
+  }
+  if (flags.fail_if_unsandboxed && !sandboxed) {
+    return "main: unsandboxed";
+  }
+
   wuffs_gzip__decoder dec;
   wuffs_base__status status =
       wuffs_gzip__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
@@ -148,7 +206,7 @@ decode() {
 
     wuffs_base__io_buffer__compact(&src);
     if (src.meta.wi == src.data.len) {
-      return "internal error: no I/O progress possible";
+      return "main: internal error: no I/O progress possible";
     }
   }
 }
@@ -184,9 +242,10 @@ int  //
 main(int argc, char** argv) {
 #if defined(WUFFS_EXAMPLE_USE_SECCOMP)
   prctl(PR_SET_SECCOMP, SECCOMP_MODE_STRICT);
+  sandboxed = true;
 #endif
 
-  int exit_code = compute_exit_code(decode());
+  int exit_code = compute_exit_code(main1(argc, argv));
 
 #if defined(WUFFS_EXAMPLE_USE_SECCOMP)
   // Call SYS_exit explicitly instead of SYS_exit_group implicitly.
