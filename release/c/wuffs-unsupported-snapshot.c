@@ -8632,25 +8632,25 @@ wuffs_base__utf_8__encode(wuffs_base__slice_u8 dst, uint32_t code_point) {
 
   } else if (code_point <= 0x07FF) {
     if (dst.len >= 2) {
-      dst.ptr[0] = 0xC0 | (uint8_t)((code_point >> 6));
-      dst.ptr[1] = 0x80 | (uint8_t)((code_point >> 0) & 0x3F);
+      dst.ptr[0] = (uint8_t)(0xC0 | ((code_point >> 6)));
+      dst.ptr[1] = (uint8_t)(0x80 | ((code_point >> 0) & 0x3F));
       return 2;
     }
 
   } else if (code_point <= 0xFFFF) {
     if ((dst.len >= 3) && ((code_point < 0xD800) || (0xDFFF < code_point))) {
-      dst.ptr[0] = 0xE0 | (uint8_t)((code_point >> 12));
-      dst.ptr[1] = 0x80 | (uint8_t)((code_point >> 6) & 0x3F);
-      dst.ptr[2] = 0x80 | (uint8_t)((code_point >> 0) & 0x3F);
+      dst.ptr[0] = (uint8_t)(0xE0 | ((code_point >> 12)));
+      dst.ptr[1] = (uint8_t)(0x80 | ((code_point >> 6) & 0x3F));
+      dst.ptr[2] = (uint8_t)(0x80 | ((code_point >> 0) & 0x3F));
       return 3;
     }
 
   } else if (code_point <= 0x10FFFF) {
     if (dst.len >= 4) {
-      dst.ptr[0] = 0xF0 | (uint8_t)((code_point >> 18));
-      dst.ptr[1] = 0x80 | (uint8_t)((code_point >> 12) & 0x3F);
-      dst.ptr[2] = 0x80 | (uint8_t)((code_point >> 6) & 0x3F);
-      dst.ptr[3] = 0x80 | (uint8_t)((code_point >> 0) & 0x3F);
+      dst.ptr[0] = (uint8_t)(0xF0 | ((code_point >> 18)));
+      dst.ptr[1] = (uint8_t)(0x80 | ((code_point >> 12) & 0x3F));
+      dst.ptr[2] = (uint8_t)(0x80 | ((code_point >> 6) & 0x3F));
+      dst.ptr[3] = (uint8_t)(0x80 | ((code_point >> 0) & 0x3F));
       return 4;
     }
   }
