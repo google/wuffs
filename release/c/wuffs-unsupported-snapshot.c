@@ -19349,6 +19349,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
   uint32_t v_stack_byte = 0;
   uint32_t v_stack_bit = 0;
   uint32_t v_match = 0;
+  uint32_t v_c_by_4 = 0;
   uint8_t v_c = 0;
   uint8_t v_backslash = 0;
   uint8_t v_char = 0;
@@ -19495,6 +19496,28 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
                 v_string_length = 0;
                 goto label__string_loop_outer__continue;
               }
+              while (((uint64_t)(io2_a_src - iop_a_src)) > 4) {
+                v_c_by_4 = wuffs_base__load_u32le__no_bounds_check(iop_a_src);
+                if (0 != (wuffs_json__lut_chars[(255 & (v_c_by_4 >> 0))] |
+                          wuffs_json__lut_chars[(255 & (v_c_by_4 >> 8))] |
+                          wuffs_json__lut_chars[(255 & (v_c_by_4 >> 16))] |
+                          wuffs_json__lut_chars[(255 & (v_c_by_4 >> 24))])) {
+                  goto label__0__break;
+                }
+                (iop_a_src += 4, wuffs_base__make_empty_struct());
+                if (v_string_length > 65527) {
+                  *iop_a_dst++ = wuffs_base__make_token(
+                      (((uint64_t)(4194337))
+                       << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                      (((uint64_t)(3)) << WUFFS_BASE__TOKEN__LINK__SHIFT) |
+                      (((uint64_t)((v_string_length + 4)))
+                       << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+                  v_string_length = 0;
+                  goto label__string_loop_outer__continue;
+                }
+                v_string_length += 4;
+              }
+            label__0__break:;
               v_c = wuffs_base__load_u8be__no_bounds_check(iop_a_src);
               v_char = wuffs_json__lut_chars[v_c];
               if (v_char == 0) {
@@ -19839,7 +19862,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
             }
           }
         label__string_loop_outer__break:;
-        label__0__continue:;
+        label__1__continue:;
           while (true) {
             if (((uint64_t)(io2_a_src - iop_a_src)) <= 0) {
               if (a_src && a_src->meta.closed) {
@@ -19849,13 +19872,13 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
               status =
                   wuffs_base__make_status(wuffs_base__suspension__short_read);
               WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(11);
-              goto label__0__continue;
+              goto label__1__continue;
             }
             if (((uint64_t)(io2_a_dst - iop_a_dst)) <= 0) {
               status =
                   wuffs_base__make_status(wuffs_base__suspension__short_write);
               WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(12);
-              goto label__0__continue;
+              goto label__1__continue;
             }
             (iop_a_src += 1, wuffs_base__make_empty_struct());
             *iop_a_dst++ = wuffs_base__make_token(
@@ -19863,9 +19886,9 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
                  << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                 (((uint64_t)(2)) << WUFFS_BASE__TOKEN__LINK__SHIFT) |
                 (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
-            goto label__0__break;
+            goto label__1__break;
           }
-        label__0__break:;
+        label__1__break:;
           if (0 == (v_expect & 16)) {
             v_expect = 8;
             goto label__outer__continue;
@@ -19910,7 +19933,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
                    << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                   (((uint64_t)(v_number_length))
                    << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
-              goto label__1__break;
+              goto label__2__break;
             }
             while (v_number_length > 0) {
               v_number_length -= 1;
@@ -19940,7 +19963,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
               }
             }
           }
-        label__1__break:;
+        label__2__break:;
           goto label__goto_parsed_a_leaf_value__break;
         } else if (v_class == 5) {
           v_vminor = 2113553;

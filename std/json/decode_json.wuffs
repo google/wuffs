@@ -55,6 +55,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 	var stack_byte        : base.u32[..= (1024 / 32) - 1]
 	var stack_bit         : base.u32[..= 31]
 	var match             : base.u32[..= 2]
+	var c_by_4            : base.u32
 	var c                 : base.u8
 	var backslash         : base.u8
 	var char              : base.u8
@@ -190,6 +191,32 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 							string_length = 0
 							continue.string_loop_outer
 						}
+
+						// As an optimization, consume non-special ASCII 4 bytes at a time.
+						while args.src.available() > 4,
+							inv args.dst.available() > 0,
+							inv args.src.available() > 0,
+						{
+							c_by_4 = args.src.peek_u32le()
+							if 0x00 <> (lut_chars[0xFF & (c_by_4 >> 0)] |
+								lut_chars[0xFF & (c_by_4 >> 8)] |
+								lut_chars[0xFF & (c_by_4 >> 16)] |
+								lut_chars[0xFF & (c_by_4 >> 24)]) {
+								break
+							}
+							args.src.skip32_fast!(actual: 4, worst_case: 4)
+							if string_length > (0xFFFB - 4) {
+								args.dst.write_fast_token!(
+									value_major: 0,
+									value_minor: 0x40_0021,
+									link: 0x3,
+									length: string_length + 4)
+								string_length = 0
+								continue.string_loop_outer
+							}
+							string_length += 4
+						}
+
 						c = args.src.peek_u8()
 						char = lut_chars[c]
 
