@@ -227,7 +227,7 @@ pri func decoder.decode_huffman_slow?(dst: base.io_writer, src: base.io_reader) 
 				// Copy from hdist to the end of this.history.
 				while true {
 					n_copied = args.dst.copy_n32_from_slice!(
-						n: hlen, s: this.history[hdist & 0x7FFF ..])
+						n: hlen, s: this.history[hdist & 0x7FFF .. 0x8000])
 					if hlen <= n_copied {
 						hlen = 0
 						break
@@ -246,7 +246,7 @@ pri func decoder.decode_huffman_slow?(dst: base.io_writer, src: base.io_reader) 
 				if hlen > 0 {
 					while true {
 						n_copied = args.dst.copy_n32_from_slice!(
-							n: hlen, s: this.history[hdist & 0x7FFF ..])
+							n: hlen, s: this.history[hdist & 0x7FFF .. 0x8000])
 						if hlen <= n_copied {
 							hlen = 0
 							break

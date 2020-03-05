@@ -30,7 +30,6 @@ pri func decoder.decode_huffman_fast!(dst: base.io_writer, src: base.io_reader) 
 	var redir_mask         : base.u32[..= 0x7FFF]
 	var length             : base.u32[..= 258]
 	var dist_minus_1       : base.u32[..= 0x7FFF]
-	var n_copied           : base.u32
 	var hlen               : base.u32[..= 0x7FFF]
 	var hdist              : base.u32
 
@@ -284,7 +283,6 @@ pri func decoder.decode_huffman_fast!(dst: base.io_writer, src: base.io_reader) 
 		bits >>= table_entry_n_bits
 		n_bits -= table_entry_n_bits
 
-		n_copied = 0
 		// The "while true { etc; break }" is a redundant version of "etc", but
 		// its presence minimizes the diff between decode_huffman_fast and
 		// decode_huffman_slow.
@@ -314,31 +312,13 @@ pri func decoder.decode_huffman_fast!(dst: base.io_writer, src: base.io_reader) 
 				// start copying from.
 				hdist = this.history_index - hdist
 
-				// Copy from hdist to the end of this.history, and then
-				// possibly wrap around the this.history ringbuffer.
+				// Copy from hdist to the end of this.history.
 				//
 				// This copying is simpler than the decode_huffman_slow version
 				// because it cannot yield. We have already checked that
 				// args.dst.available() is large enough.
-				//
-				// The "while true { etc; break }" is a redundant version of
-				// "etc", but its presence minimizes the diff between
-				// decode_huffman_fast and decode_huffman_slow.
-				while true,
-					inv args.dst.available() >= 258,
-				{
-					// TODO: copy_from_slice32 should probably update the
-					// "args.dst.available() >= 258" fact. It should certainly
-					// invalidate any fact that was "<=" instead of ">=".
-					n_copied = args.dst.copy_n32_from_slice!(
-						n: hlen, s: this.history[hdist & 0x7FFF ..])
-					if hlen <= n_copied {
-						break
-					}
-					hlen -= n_copied
-					args.dst.copy_n32_from_slice!(n: hlen, s: this.history[..])
-					break
-				}
+				args.dst.copy_n32_from_slice!(
+					n: hlen, s: this.history[hdist & 0x7FFF ..])
 
 				if length == 0 {
 					// No need to copy from args.dst.

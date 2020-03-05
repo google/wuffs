@@ -117,18 +117,24 @@ pub struct decoder? implements base.io_transformer(
 	// Exactly one of the eight bits [24 ..= 31] should be set.
 	huffs : array[2] array[huffs_table_size] base.u32,
 
-	// history holds up to the last 32KiB of decoded output, if the decoding
-	// was incomplete (e.g. due to a short read or write). RFC 1951 (DEFLATE)
-	// gives the maximum distance in a length-distance back-reference as 32768,
-	// or 0x8000.
+	// history[.. 0x8000] holds up to the last 32KiB of decoded output, if the
+	// decoding was incomplete (e.g. due to a short read or write). RFC 1951
+	// (DEFLATE) gives the maximum distance in a length-distance back-reference
+	// as 32768, or 0x8000. Similarly, the RFC gives the maximum length as 258.
 	//
-	// It is a ringbuffer, so that the most distant byte in the decoding isn't
-	// necessarily history[0]. The ringbuffer is full (i.e. it holds 32KiB of
-	// history) if and only if history_index >= 0x8000.
+	// history[.. 0x8000]  is a ringbuffer, so that the most distant byte in
+	// the decoding isn't necessarily history[0]. The ringbuffer is full (i.e.
+	// it holds 32KiB of history) if and only if history_index >= 0x8000.
 	//
 	// history[history_index & 0x7FFF] is where the next byte of decoded output
 	// will be written.
-	history : array[0x8000] base.u8,  // 32 KiB.
+	//
+	// When suspended in decoder.transform_io, or after an add_history call,
+	// history[0x8000 .. 0x8000 + (ML - 1)] duplicates history[.. (ML - 1)],
+	// where ML is the maximum length (258 as stated above). This simplifies
+	// copying up to ML bytes from the ringbuffer, as there is no need to split
+	// the copy around the 0x8000 index.
+	history : array[0x8000 + (258 - 1)] base.u8,  // 32 KiB + (ML - 1) bytes.
 
 	// code_lengths is used to pass out-of-band data to init_huff.
 	//
@@ -147,12 +153,12 @@ pub func decoder.add_history!(hist: slice base.u8) {
 		// If s is longer than the ringbuffer, we can ignore the previous value
 		// of history_index, as we will overwrite the whole ringbuffer.
 		s = s.suffix(up_to: 0x8000)
-		this.history[..].copy_from_slice!(s: s)
+		this.history[.. 0x8000].copy_from_slice!(s: s)
 		this.history_index = 0x8000
 	} else {
 		// Otherwise, append s to the history ringbuffer starting at the
 		// previous history_index (modulo 0x8000).
-		n_copied = this.history[this.history_index & 0x7FFF ..].copy_from_slice!(s: s)
+		n_copied = this.history[this.history_index & 0x7FFF .. 0x8000].copy_from_slice!(s: s)
 		if n_copied < s.length() {
 			// a_slice.copy_from(s:b_slice) returns the minimum of the two
 			// slice lengths. If that value is less than b_slice.length(), then
@@ -162,7 +168,7 @@ pub func decoder.add_history!(hist: slice base.u8) {
 			// wrap around and copy the remainder of s over the start of the
 			// history ringbuffer.
 			s = s[n_copied ..]
-			n_copied = this.history[..].copy_from_slice!(s: s)
+			n_copied = this.history[.. 0x8000].copy_from_slice!(s: s)
 			// Set history_index (modulo 0x8000) to the length of this
 			// remainder. The &0x7FFF is redundant, but proves to the compiler
 			// that the conversion to u32 will not overflow. The +0x8000 is to
@@ -178,6 +184,10 @@ pub func decoder.add_history!(hist: slice base.u8) {
 			this.history_index = (this.history_index & 0x7FFF) + ((n_copied & 0x7FFF) as base.u32) + already_full
 		}
 	}
+
+	// Have the tail of this.history duplicate the head. Look for "ML" in the
+	// comments for the history field for more discussion.
+	this.history[0x8000 ..].copy_from_slice!(s: this.history[..])
 }
 
 pub func decoder.workbuf_len() base.range_ii_u64 {

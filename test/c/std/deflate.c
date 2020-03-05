@@ -424,6 +424,30 @@ do_test_wuffs_deflate_history(int i,
                 ": decode: have \"%s\", want \"%s\"",
                 i, starting_history_index, have_z.repr, want_z);
   }
+
+  // Check that head and the tail of the ringbuffer match.
+  if (wuffs_base__status__is_suspension(&have_z)) {
+    const size_t max_length_minus_1 = 257;
+
+    wuffs_base__io_buffer head = ((wuffs_base__io_buffer){
+        .data = ((wuffs_base__slice_u8){
+            .ptr = dec->private_data.f_history + 0,
+            .len = max_length_minus_1,
+        }),
+    });
+    head.meta.wi = max_length_minus_1;
+
+    wuffs_base__io_buffer tail = ((wuffs_base__io_buffer){
+        .data = ((wuffs_base__slice_u8){
+            .ptr = dec->private_data.f_history + 0x8000,
+            .len = max_length_minus_1,
+        }),
+    });
+    tail.meta.wi = max_length_minus_1;
+
+    CHECK_STRING(check_io_buffers_equal("head vs tail ", &head, &tail));
+  }
+
   return NULL;
 }
 
