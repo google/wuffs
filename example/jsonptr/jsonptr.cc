@@ -37,6 +37,11 @@ The core JSON implementation is also written in the Wuffs programming language
 (and then transpiled to C/C++), which is memory-safe but also guards against
 integer arithmetic overflows.
 
+For defense in depth, on Linux, this program also self-imposes a
+SECCOMP_MODE_STRICT sandbox before reading (or otherwise processing) its input
+or writing its output. Under this sandbox, the only permitted system calls are
+read, write, exit and sigreturn.
+
 All together, this program aims to safely handle untrusted JSON files without
 fear of security bugs such as remote code execution.
 
@@ -60,9 +65,9 @@ $CXX jsonptr.cc && ./a.out < ../../test/data/github-tags.json; rm -f a.out
 for a C++ compiler $CXX, such as clang++ or g++.
 */
 
-#include <inttypes.h>
-#include <stdio.h>
+#include <errno.h>
 #include <string.h>
+#include <unistd.h>
 
 // Wuffs ships as a "single file C library" or "header file library" as per
 // https://github.com/nothings/stb/blob/master/docs/stb_howto.txt
@@ -88,6 +93,14 @@ for a C++ compiler $CXX, such as clang++ or g++.
 // program to generate a stand-alone C++ file.
 #include "../../release/c/wuffs-unsupported-snapshot.c"
 
+#if defined(__linux__)
+#include <linux/prctl.h>
+#include <linux/seccomp.h>
+#include <sys/prctl.h>
+#include <sys/syscall.h>
+#define WUFFS_EXAMPLE_USE_SECCOMP
+#endif
+
 #define TRY(error_msg)         \
   do {                         \
     const char* z = error_msg; \
@@ -112,12 +125,12 @@ static const char* usage =
     "duplicate keys.\n"
     "\n"
     "Formatted means that arrays' and objects' elements are indented, each\n"
-    "on its own line. Configure this with the -compact, -indent=N (for N\n"
-    "ranging from 0 to 8) and -tabs flags.\n"
+    "on its own line. Configure this with the -c / -compact, -i=N / -indent=N\n"
+    "(for N ranging from 0 to 8) and -t / -tabs flags.\n"
     "\n"
-    "The -query=etc flag gives an optional JSON Pointer query, to print only\n"
-    "a subset of the input. For example, given RFC 6901 section 5's [sample\n"
-    "JSON value](https://tools.ietf.org/rfc/rfc6901.txt), this command:\n"
+    "The -q=etc or -query=etc flag gives an optional JSON Pointer query, to\n"
+    "print a subset of the input. For example, given RFC 6901 section 5's\n"
+    "[sample input](https://tools.ietf.org/rfc/rfc6901.txt), this command:\n"
     "    jsonptr -query=/foo/1 < rfc-6901-json-pointer.json\n"
     "will print:\n"
     "    \"baz\"\n"
@@ -137,9 +150,15 @@ static const char* usage =
     "is also greedy, following the first match for each fragment without\n"
     "back-tracking. For example, the \"/foo/bar\" query will fail if the root\n"
     "object has multiple \"foo\" children but the first one doesn't have a\n"
-    "\"bar\" child, even if later ones do.";
+    "\"bar\" child, even if later ones do.\n"
+    "\n"
+    "The -fail-if-unsandboxed flag causes the program to exit if it does not\n"
+    "self-impose a sandbox. On Linux, it self-imposes a SECCOMP_MODE_STRICT\n"
+    "sandbox, regardless of this flag.";
 
 // ----
+
+bool sandboxed = false;
 
 #define MAX_INDENT 8
 #define INDENT_SPACES_STRING "        "
@@ -418,6 +437,7 @@ struct {
   char** remaining_argv;
 
   bool compact;
+  bool fail_if_unsandboxed;
   size_t indent;
   char* query_c_string;
   bool tabs;
@@ -449,6 +469,10 @@ parse_flags(int argc, char** argv) {
 
     if (!strcmp(arg, "c") || !strcmp(arg, "compact")) {
       flags.compact = true;
+      continue;
+    }
+    if (!strcmp(arg, "fail-if-unsandboxed")) {
+      flags.fail_if_unsandboxed = true;
       continue;
     }
     if (!strncmp(arg, "i=", 2) || !strncmp(arg, "indent=", 7)) {
@@ -507,6 +531,9 @@ initialize_globals(int argc, char** argv) {
   ctx = context::none;
 
   TRY(parse_flags(argc, argv));
+  if (flags.fail_if_unsandboxed && !sandboxed) {
+    return "main: unsandboxed";
+  }
   if (flags.remaining_argc > 0) {
     return usage;
   }
@@ -524,6 +551,10 @@ initialize_globals(int argc, char** argv) {
 
 // ----
 
+// ignore_return_value suppresses errors from -Wall -Werror.
+static void  //
+ignore_return_value(int ignored) {}
+
 const char*  //
 read_src() {
   if (src.meta.closed) {
@@ -533,27 +564,37 @@ read_src() {
   if (src.meta.wi >= src.data.len) {
     return "main: src buffer is full";
   }
-  size_t n = fread(src.data.ptr + src.meta.wi, sizeof(uint8_t),
-                   src.data.len - src.meta.wi, stdin);
-  src.meta.wi += n;
-  src.meta.closed = feof(stdin);
-  if ((n == 0) && !src.meta.closed) {
-    return "main: read error";
+  while (true) {
+    const int stdin_fd = 0;
+    ssize_t n =
+        read(stdin_fd, src.data.ptr + src.meta.wi, src.data.len - src.meta.wi);
+    if (n >= 0) {
+      src.meta.wi += n;
+      src.meta.closed = n == 0;
+      break;
+    } else if (errno != EINTR) {
+      return strerror(errno);
+    }
   }
   return nullptr;
 }
 
 const char*  //
 flush_dst() {
-  size_t n = dst.meta.wi - dst.meta.ri;
-  if (n > 0) {
-    size_t i = fwrite(dst.data.ptr + dst.meta.ri, sizeof(uint8_t), n, stdout);
-    dst.meta.ri += i;
-    if (i != n) {
-      return "main: write error";
+  while (true) {
+    size_t n = dst.meta.wi - dst.meta.ri;
+    if (n == 0) {
+      break;
     }
-    dst.compact();
+    const int stdout_fd = 1;
+    ssize_t i = write(stdout_fd, dst.data.ptr + dst.meta.ri, n);
+    if (i >= 0) {
+      dst.meta.ri += i;
+    } else if (errno != EINTR) {
+      return strerror(errno);
+    }
   }
+  dst.compact();
   return nullptr;
 }
 
@@ -888,6 +929,9 @@ end_of_data:
   }
 
   // Check that we've exhausted the input.
+  if ((src.meta.ri == src.meta.wi) && !src.meta.closed) {
+    TRY(read_src());
+  }
   if ((src.meta.ri < src.meta.wi) || !src.meta.closed) {
     return "main: valid JSON followed by further (unexpected) data";
   }
@@ -916,7 +960,9 @@ compute_exit_code(const char* status_msg) {
     status_msg = "main: internal error: error message is too long";
     n = strnlen(status_msg, 2047);
   }
-  fprintf(stderr, "%s\n", status_msg);
+  const int stderr_fd = 2;
+  ignore_return_value(write(stderr_fd, status_msg, n));
+  ignore_return_value(write(stderr_fd, "\n", 1));
   // Return an exit code of 1 for regular (forseen) errors, e.g. badly
   // formatted or unsupported input.
   //
@@ -933,6 +979,11 @@ compute_exit_code(const char* status_msg) {
 
 int  //
 main(int argc, char** argv) {
+#if defined(WUFFS_EXAMPLE_USE_SECCOMP)
+  prctl(PR_SET_SECCOMP, SECCOMP_MODE_STRICT);
+  sandboxed = true;
+#endif
+
   const char* z = main1(argc, argv);
   if (wrote_to_dst) {
     const char* z1 = write_dst("\n", 1);
@@ -940,5 +991,12 @@ main(int argc, char** argv) {
     z = z ? z : (z1 ? z1 : z2);
   }
   int exit_code = compute_exit_code(z);
+
+#if defined(WUFFS_EXAMPLE_USE_SECCOMP)
+  // Call SYS_exit explicitly, instead of calling SYS_exit_group implicitly by
+  // either calling _exit or returning from main. SECCOMP_MODE_STRICT allows
+  // only SYS_exit.
+  syscall(SYS_exit, exit_code);
+#endif
   return exit_code;
 }

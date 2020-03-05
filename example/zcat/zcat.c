@@ -248,8 +248,9 @@ main(int argc, char** argv) {
   int exit_code = compute_exit_code(main1(argc, argv));
 
 #if defined(WUFFS_EXAMPLE_USE_SECCOMP)
-  // Call SYS_exit explicitly instead of SYS_exit_group implicitly.
-  // SECCOMP_MODE_STRICT allows only the former.
+  // Call SYS_exit explicitly, instead of calling SYS_exit_group implicitly by
+  // either calling _exit or returning from main. SECCOMP_MODE_STRICT allows
+  // only SYS_exit.
   syscall(SYS_exit, exit_code);
 #endif
   return exit_code;
