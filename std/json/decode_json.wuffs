@@ -974,7 +974,7 @@ pri func decoder.decode_digits!(src: base.io_reader, n: base.u32[..= 0xFF]) base
 			break
 		}
 		c = args.src.peek_u8()
-		if (c < 0x30) or (0x39 < c) {
+		if 0x00 == lut_decimal_digits[c] {
 			break
 		}
 		// Cap the maximum supported number length at an arbitrary value, 99.
