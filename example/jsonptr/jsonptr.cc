@@ -162,7 +162,7 @@ bool sandboxed = false;
 
 #define MAX_INDENT 8
 #define INDENT_SPACES_STRING "        "
-#define INDENT_TABS_STRING "\t\t\t\t\t\t\t\t"
+#define INDENT_TAB_STRING "\t"
 
 #ifndef DST_BUFFER_SIZE
 #define DST_BUFFER_SIZE (32 * 1024)
@@ -445,7 +445,7 @@ struct {
 
 const char*  //
 parse_flags(int argc, char** argv) {
-  bool explicit_indent = false;
+  flags.indent = 4;
 
   int c = (argc > 0) ? 1 : 0;  // Skip argv[0], the program name.
   for (; c < argc; c++) {
@@ -480,7 +480,6 @@ parse_flags(int argc, char** argv) {
       }
       if (('0' <= arg[0]) && (arg[0] <= '8') && (arg[1] == '\x00')) {
         flags.indent = arg[0] - '0';
-        explicit_indent = true;
         continue;
       }
       return usage;
@@ -504,9 +503,6 @@ parse_flags(int argc, char** argv) {
 
   flags.remaining_argc = argc - c;
   flags.remaining_argv = argv + c;
-  if (!explicit_indent) {
-    flags.indent = flags.tabs ? 1 : 4;
-  }
   return nullptr;
 }
 
@@ -711,8 +707,8 @@ handle_token(wuffs_base__token t) {
           (ctx != context::in_dict_after_brace) && !flags.compact) {
         TRY(write_dst("\n", 1));
         for (uint32_t i = 0; i < depth; i++) {
-          TRY(write_dst(flags.tabs ? INDENT_TABS_STRING : INDENT_SPACES_STRING,
-                        flags.indent));
+          TRY(write_dst(flags.tabs ? INDENT_TAB_STRING : INDENT_SPACES_STRING,
+                        flags.tabs ? 1 : flags.indent));
         }
       }
 
@@ -737,9 +733,8 @@ handle_token(wuffs_base__token t) {
         if (!flags.compact) {
           TRY(write_dst("\n", 1));
           for (size_t i = 0; i < depth; i++) {
-            TRY(write_dst(
-                flags.tabs ? INDENT_TABS_STRING : INDENT_SPACES_STRING,
-                flags.indent));
+            TRY(write_dst(flags.tabs ? INDENT_TAB_STRING : INDENT_SPACES_STRING,
+                          flags.tabs ? 1 : flags.indent));
           }
         }
       }

@@ -118,8 +118,8 @@ struct {
 
 const char*  //
 parse_flags(int argc, char** argv) {
-  bool explicit_iterscale = false;
-  bool explicit_reps = false;
+  flags.iterscale = 100;
+  flags.reps = 5;
 
   int c = (argc > 0) ? 1 : 0;  // Skip argv[0], the program name.
   for (; c < argc; c++) {
@@ -165,7 +165,6 @@ parse_flags(int argc, char** argv) {
         return "out-of-range -iterscale=N value";
       }
       flags.iterscale = n;
-      explicit_iterscale = true;
       continue;
     }
 
@@ -183,7 +182,6 @@ parse_flags(int argc, char** argv) {
         return "out-of-range -reps=N value";
       }
       flags.reps = n;
-      explicit_reps = true;
       continue;
     }
 
@@ -192,12 +190,6 @@ parse_flags(int argc, char** argv) {
 
   flags.remaining_argc = argc - c;
   flags.remaining_argv = argv + c;
-  if (!explicit_iterscale) {
-    flags.iterscale = 100;
-  }
-  if (!explicit_reps) {
-    flags.reps = 5;
-  }
   return NULL;
 }
 
