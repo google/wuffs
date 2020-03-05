@@ -132,8 +132,6 @@ parse_flags(int argc, char** argv) {
 static void  //
 ignore_return_value(int ignored) {}
 
-#include <stdio.h>
-
 const char*  //
 main1(int argc, char** argv) {
   const char* z = parse_flags(argc, argv);
