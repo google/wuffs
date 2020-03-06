@@ -626,7 +626,7 @@ test_wuffs_json_decode_prior_valid_utf_8() {
             .ptr = global_src_array,
             .len = 1 + prefix + n + suffix,
         });
-        if (src_data.len > IO_BUFFER_SIZE) {
+        if (src_data.len > IO_BUFFER_ARRAY_SIZE) {
           RETURN_FAIL("total src length is too long");
         }
         src_data.ptr[0] = '\"';

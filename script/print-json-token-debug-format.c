@@ -84,15 +84,15 @@
 // program to generate a stand-alone C++ file.
 #include "../release/c/wuffs-unsupported-snapshot.c"
 
-#ifndef SRC_BUFFER_SIZE
-#define SRC_BUFFER_SIZE (64 * 1024 * 1024)
+#ifndef SRC_BUFFER_ARRAY_SIZE
+#define SRC_BUFFER_ARRAY_SIZE (64 * 1024 * 1024)
 #endif
-#ifndef TOKEN_BUFFER_SIZE
-#define TOKEN_BUFFER_SIZE (128 * 1024)
+#ifndef TOKEN_BUFFER_ARRAY_SIZE
+#define TOKEN_BUFFER_ARRAY_SIZE (128 * 1024)
 #endif
 
-uint8_t src_buffer[SRC_BUFFER_SIZE];
-wuffs_base__token tok_buffer[TOKEN_BUFFER_SIZE];
+uint8_t src_buffer_array[SRC_BUFFER_ARRAY_SIZE];
+wuffs_base__token tok_buffer_array[TOKEN_BUFFER_ARRAY_SIZE];
 
 wuffs_base__io_buffer src;
 wuffs_base__token_buffer tok;
@@ -205,11 +205,11 @@ main1(int argc, char** argv) {
   }
 
   src = wuffs_base__make_io_buffer(
-      wuffs_base__make_slice_u8(src_buffer, SRC_BUFFER_SIZE),
+      wuffs_base__make_slice_u8(src_buffer_array, SRC_BUFFER_ARRAY_SIZE),
       wuffs_base__empty_io_buffer_meta());
 
   tok = wuffs_base__make_token_buffer(
-      wuffs_base__make_slice_token(tok_buffer, TOKEN_BUFFER_SIZE),
+      wuffs_base__make_slice_token(tok_buffer_array, TOKEN_BUFFER_ARRAY_SIZE),
       wuffs_base__empty_token_buffer_meta());
 
   wuffs_base__status init_status = wuffs_json__decoder__initialize(

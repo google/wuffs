@@ -61,23 +61,24 @@ for a C compiler $CC, such as clang or gcc.
 #define WUFFS_EXAMPLE_USE_SECCOMP
 #endif
 
-#ifndef DST_BUFFER_SIZE
-#define DST_BUFFER_SIZE (128 * 1024)
+#ifndef DST_BUFFER_ARRAY_SIZE
+#define DST_BUFFER_ARRAY_SIZE (128 * 1024)
 #endif
 
-#ifndef SRC_BUFFER_SIZE
-#define SRC_BUFFER_SIZE (128 * 1024)
+#ifndef SRC_BUFFER_ARRAY_SIZE
+#define SRC_BUFFER_ARRAY_SIZE (128 * 1024)
 #endif
 
-#define WORK_BUFFER_SIZE WUFFS_GZIP__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE
+#define WORK_BUFFER_ARRAY_SIZE \
+  WUFFS_GZIP__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE
 
-uint8_t dst_buffer[DST_BUFFER_SIZE];
-uint8_t src_buffer[SRC_BUFFER_SIZE];
-#if WORK_BUFFER_SIZE > 0
-uint8_t work_buffer[WORK_BUFFER_SIZE];
+uint8_t dst_buffer_array[DST_BUFFER_ARRAY_SIZE];
+uint8_t src_buffer_array[SRC_BUFFER_ARRAY_SIZE];
+#if WORK_BUFFER_ARRAY_SIZE > 0
+uint8_t work_buffer_array[WORK_BUFFER_ARRAY_SIZE];
 #else
 // Not all C/C++ compilers support 0-length arrays.
-uint8_t work_buffer[1];
+uint8_t work_buffer_array[1];
 #endif
 
 // ----
@@ -150,16 +151,16 @@ main1(int argc, char** argv) {
   }
 
   wuffs_base__io_buffer dst;
-  dst.data.ptr = dst_buffer;
-  dst.data.len = DST_BUFFER_SIZE;
+  dst.data.ptr = dst_buffer_array;
+  dst.data.len = DST_BUFFER_ARRAY_SIZE;
   dst.meta.wi = 0;
   dst.meta.ri = 0;
   dst.meta.pos = 0;
   dst.meta.closed = false;
 
   wuffs_base__io_buffer src;
-  src.data.ptr = src_buffer;
-  src.data.len = SRC_BUFFER_SIZE;
+  src.data.ptr = src_buffer_array;
+  src.data.len = SRC_BUFFER_ARRAY_SIZE;
   src.meta.wi = 0;
   src.meta.ri = 0;
   src.meta.pos = 0;
@@ -183,12 +184,12 @@ main1(int argc, char** argv) {
     while (true) {
       status = wuffs_gzip__decoder__transform_io(
           &dec, &dst, &src,
-          wuffs_base__make_slice_u8(work_buffer, WORK_BUFFER_SIZE));
+          wuffs_base__make_slice_u8(work_buffer_array, WORK_BUFFER_ARRAY_SIZE));
 
       if (dst.meta.wi) {
         // TODO: handle EINTR and other write errors; see "man 2 write".
         const int stdout_fd = 1;
-        ignore_return_value(write(stdout_fd, dst_buffer, dst.meta.wi));
+        ignore_return_value(write(stdout_fd, dst_buffer_array, dst.meta.wi));
         dst.meta.ri = dst.meta.wi;
         wuffs_base__io_buffer__compact(&dst);
       }

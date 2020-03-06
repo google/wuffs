@@ -20,21 +20,21 @@
 #include <sys/time.h>
 #include <unistd.h>
 
-#define IO_BUFFER_SIZE (64 * 1024 * 1024)
-#define PIXEL_BUFFER_SIZE (64 * 1024 * 1024)
-#define TOKEN_BUFFER_SIZE (128 * 1024)
+#define IO_BUFFER_ARRAY_SIZE (64 * 1024 * 1024)
+#define PIXEL_BUFFER_ARRAY_SIZE (64 * 1024 * 1024)
+#define TOKEN_BUFFER_ARRAY_SIZE (128 * 1024)
 
 #define WUFFS_TESTLIB_ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 
-uint8_t global_have_array[IO_BUFFER_SIZE];
-uint8_t global_want_array[IO_BUFFER_SIZE];
-uint8_t global_work_array[IO_BUFFER_SIZE];
-uint8_t global_src_array[IO_BUFFER_SIZE];
+uint8_t global_have_array[IO_BUFFER_ARRAY_SIZE];
+uint8_t global_want_array[IO_BUFFER_ARRAY_SIZE];
+uint8_t global_work_array[IO_BUFFER_ARRAY_SIZE];
+uint8_t global_src_array[IO_BUFFER_ARRAY_SIZE];
 
-uint8_t global_pixel_array[PIXEL_BUFFER_SIZE];
+uint8_t global_pixel_array[PIXEL_BUFFER_ARRAY_SIZE];
 
-wuffs_base__token global_have_token_array[TOKEN_BUFFER_SIZE];
-wuffs_base__token global_want_token_array[TOKEN_BUFFER_SIZE];
+wuffs_base__token global_have_token_array[TOKEN_BUFFER_ARRAY_SIZE];
+wuffs_base__token global_want_token_array[TOKEN_BUFFER_ARRAY_SIZE];
 
 wuffs_base__slice_u8 global_have_slice;
 wuffs_base__slice_u8 global_want_slice;
@@ -49,32 +49,32 @@ wuffs_base__slice_token global_want_token_slice;
 void wuffs_testlib__initialize_global_xxx_slices() {
   global_have_slice = ((wuffs_base__slice_u8){
       .ptr = global_have_array,
-      .len = IO_BUFFER_SIZE,
+      .len = IO_BUFFER_ARRAY_SIZE,
   });
   global_want_slice = ((wuffs_base__slice_u8){
       .ptr = global_want_array,
-      .len = IO_BUFFER_SIZE,
+      .len = IO_BUFFER_ARRAY_SIZE,
   });
   global_work_slice = ((wuffs_base__slice_u8){
       .ptr = global_work_array,
-      .len = IO_BUFFER_SIZE,
+      .len = IO_BUFFER_ARRAY_SIZE,
   });
   global_src_slice = ((wuffs_base__slice_u8){
       .ptr = global_src_array,
-      .len = IO_BUFFER_SIZE,
+      .len = IO_BUFFER_ARRAY_SIZE,
   });
   global_pixel_slice = ((wuffs_base__slice_u8){
       .ptr = global_pixel_array,
-      .len = PIXEL_BUFFER_SIZE,
+      .len = PIXEL_BUFFER_ARRAY_SIZE,
   });
 
   global_have_token_slice = ((wuffs_base__slice_token){
       .ptr = global_have_token_array,
-      .len = TOKEN_BUFFER_SIZE,
+      .len = TOKEN_BUFFER_ARRAY_SIZE,
   });
   global_want_token_slice = ((wuffs_base__slice_token){
       .ptr = global_want_token_array,
-      .len = TOKEN_BUFFER_SIZE,
+      .len = TOKEN_BUFFER_ARRAY_SIZE,
   });
 }
 
@@ -1002,7 +1002,7 @@ do_test__wuffs_base__image_decoder(
     uint32_t want_height,
     wuffs_base__color_u32_argb_premul want_final_pixel) {
   if ((want_width > 16384) || (want_height > 16384) ||
-      ((want_width * want_height * 4) > PIXEL_BUFFER_SIZE)) {
+      ((want_width * want_height * 4) > PIXEL_BUFFER_ARRAY_SIZE)) {
     return "want dimensions are too large";
   }
 
@@ -1038,7 +1038,7 @@ do_test__wuffs_base__image_decoder(
   uint64_t n = wuffs_base__pixel_config__pixbuf_len(&ic.pixcfg);
   if (n < 4) {
     RETURN_FAIL("pixbuf_len too small");
-  } else if (n > PIXEL_BUFFER_SIZE) {
+  } else if (n > PIXEL_BUFFER_ARRAY_SIZE) {
     RETURN_FAIL("pixbuf_len too large");
   } else {
     wuffs_base__color_u32_argb_premul have_final_pixel =
@@ -1068,7 +1068,7 @@ do_test__wuffs_base__io_transformer(wuffs_base__io_transformer* b,
                                     size_t src_wi,
                                     size_t want_wi,
                                     uint8_t want_final_byte) {
-  if (want_wi > IO_BUFFER_SIZE) {
+  if (want_wi > IO_BUFFER_ARRAY_SIZE) {
     return "want_wi is too large";
   }
   wuffs_base__range_ii_u64 workbuf_len =
@@ -1076,7 +1076,7 @@ do_test__wuffs_base__io_transformer(wuffs_base__io_transformer* b,
   if (workbuf_len.min_incl > workbuf_len.max_incl) {
     return "inconsistent workbuf_len";
   }
-  if (workbuf_len.max_incl > IO_BUFFER_SIZE) {
+  if (workbuf_len.max_incl > IO_BUFFER_ARRAY_SIZE) {
     return "workbuf_len is too large";
   }
 

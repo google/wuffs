@@ -67,7 +67,7 @@ The Escape key quits.
 #define MAX_DIMENSION 65535
 
 #define NUM_BACKGROUND_COLORS 3
-#define SRC_BUFFER_SIZE (64 * 1024)
+#define SRC_BUFFER_ARRAY_SIZE (64 * 1024)
 
 // Global variable names start with a "g_" prefix.
 
@@ -84,7 +84,7 @@ uint32_t g_height = 0;
 wuffs_base__slice_u8 g_workbuf_slice = {0};
 wuffs_base__slice_u8 g_pixbuf_slice = {0};
 wuffs_base__pixel_buffer g_pixbuf = {0};
-uint8_t g_src_buffer[SRC_BUFFER_SIZE] = {0};
+uint8_t g_src_buffer_array[SRC_BUFFER_ARRAY_SIZE] = {0};
 wuffs_base__io_buffer g_src = {0};
 wuffs_base__image_config g_image_config = {0};
 wuffs_base__image_decoder* g_image_decoder = NULL;
@@ -123,7 +123,7 @@ load_image_type() {
   }
 
   wuffs_base__status status;
-  switch (g_src_buffer[0]) {
+  switch (g_src_buffer_array[0]) {
     case '\x00':
       status = wuffs_wbmp__decoder__initialize(
           &g_potential_decoders.wbmp, sizeof g_potential_decoders.wbmp,
@@ -297,8 +297,8 @@ load_image(const char* filename) {
   }
   g_width = 0;
   g_height = 0;
-  g_src.data.ptr = g_src_buffer;
-  g_src.data.len = SRC_BUFFER_SIZE;
+  g_src.data.ptr = g_src_buffer_array;
+  g_src.data.len = SRC_BUFFER_ARRAY_SIZE;
   g_src.meta.wi = 0;
   g_src.meta.ri = 0;
   g_src.meta.pos = 0;

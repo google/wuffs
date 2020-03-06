@@ -98,27 +98,28 @@ load_u32be(uint8_t* p) {
 // compressed, in up to 1024 IDAT chunks, and 256 MiB and 16384 × 16384 pixels
 // uncompressed. This is a limitation of this program (which uses the Wuffs
 // standard library), not a limitation of Wuffs per se.
-#define DST_BUFFER_SIZE (256 * 1024 * 1024)
-#define SRC_BUFFER_SIZE (64 * 1024 * 1024)
+#define DST_BUFFER_ARRAY_SIZE (256 * 1024 * 1024)
+#define SRC_BUFFER_ARRAY_SIZE (64 * 1024 * 1024)
 #define MAX_DIMENSION (16384)
 #define MAX_IDAT_CHUNKS (1024)
 
-uint8_t dst_buffer[DST_BUFFER_SIZE] = {0};
+uint8_t dst_buffer_array[DST_BUFFER_ARRAY_SIZE] = {0};
 size_t dst_len = 0;
-uint8_t src_buffer[SRC_BUFFER_SIZE] = {0};
+uint8_t src_buffer_array[SRC_BUFFER_ARRAY_SIZE] = {0};
 size_t src_len = 0;
-uint8_t idat_buffer[SRC_BUFFER_SIZE] = {0};
+uint8_t idat_buffer_array[SRC_BUFFER_ARRAY_SIZE] = {0};
 // The n'th IDAT chunk data (where n is a zero-based count) is in
-// idat_buffer[i:j], where i = idat_splits[n+0] and j = idat_splits[n+1].
+// idat_buffer_array[i:j], where i = idat_splits[n+0] and j = idat_splits[n+1].
 size_t idat_splits[MAX_IDAT_CHUNKS + 1] = {0};
 uint32_t num_idat_chunks = 0;
 
-#define WORK_BUFFER_SIZE WUFFS_ZLIB__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE
-#if WORK_BUFFER_SIZE > 0
-uint8_t work_buffer[WORK_BUFFER_SIZE];
+#define WORK_BUFFER_ARRAY_SIZE \
+  WUFFS_ZLIB__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE
+#if WORK_BUFFER_ARRAY_SIZE > 0
+uint8_t work_buffer_array[WORK_BUFFER_ARRAY_SIZE];
 #else
 // Not all C/C++ compilers support 0-length arrays.
-uint8_t work_buffer[1];
+uint8_t work_buffer_array[1];
 #endif
 
 uint32_t width = 0;
@@ -129,9 +130,10 @@ uint64_t bytes_per_frame = 0;
 
 const char*  //
 read_stdin() {
-  while (src_len < SRC_BUFFER_SIZE) {
+  while (src_len < SRC_BUFFER_ARRAY_SIZE) {
     const int stdin_fd = 0;
-    ssize_t n = read(stdin_fd, src_buffer + src_len, SRC_BUFFER_SIZE - src_len);
+    ssize_t n = read(stdin_fd, src_buffer_array + src_len,
+                     SRC_BUFFER_ARRAY_SIZE - src_len);
     if (n > 0) {
       src_len += n;
     } else if (n == 0) {
@@ -209,7 +211,7 @@ process_png_chunks(uint8_t* p, size_t n) {
         if (num_idat_chunks == MAX_IDAT_CHUNKS - 1) {
           return "too many IDAT chunks";
         }
-        memcpy(idat_buffer + idat_splits[num_idat_chunks], p, chunk_len);
+        memcpy(idat_buffer_array + idat_splits[num_idat_chunks], p, chunk_len);
         idat_splits[num_idat_chunks + 1] =
             idat_splits[num_idat_chunks] + chunk_len;
         num_idat_chunks++;
@@ -239,14 +241,14 @@ decode_once(bool frag_dst, bool frag_idat) {
 
   wuffs_base__io_buffer dst = ((wuffs_base__io_buffer){
       .data = ((wuffs_base__slice_u8){
-          .ptr = dst_buffer,
+          .ptr = dst_buffer_array,
           .len = bytes_per_frame,
       }),
   });
   wuffs_base__io_buffer idat = ((wuffs_base__io_buffer){
       .data = ((wuffs_base__slice_u8){
-          .ptr = idat_buffer,
-          .len = SRC_BUFFER_SIZE,
+          .ptr = idat_buffer_array,
+          .len = SRC_BUFFER_ARRAY_SIZE,
       }),
       .meta = ((wuffs_base__io_buffer_meta){
           .wi = idat_splits[num_idat_chunks],
@@ -268,11 +270,12 @@ decode_once(bool frag_dst, bool frag_idat) {
   }
 
   while (true) {
-    status = wuffs_zlib__decoder__transform_io(&dec, &dst, &idat,
-                                               ((wuffs_base__slice_u8){
-                                                   .ptr = work_buffer,
-                                                   .len = WORK_BUFFER_SIZE,
-                                               }));
+    status =
+        wuffs_zlib__decoder__transform_io(&dec, &dst, &idat,
+                                          ((wuffs_base__slice_u8){
+                                              .ptr = work_buffer_array,
+                                              .len = WORK_BUFFER_ARRAY_SIZE,
+                                          }));
 
     if (wuffs_base__status__is_ok(&status)) {
       break;
@@ -356,10 +359,10 @@ main(int argc, char** argv) {
     return fail(msg);
   }
   if ((src_len < 8) ||
-      strncmp((const char*)(src_buffer), "\x89PNG\x0D\x0A\x1A\x0A", 8)) {
+      strncmp((const char*)(src_buffer_array), "\x89PNG\x0D\x0A\x1A\x0A", 8)) {
     return fail("invalid PNG");
   }
-  msg = process_png_chunks(src_buffer + 8, src_len - 8);
+  msg = process_png_chunks(src_buffer_array + 8, src_len - 8);
   if (msg) {
     return fail(msg);
   }
@@ -372,7 +375,7 @@ main(int argc, char** argv) {
   // The +1 here is for the per-row filter byte.
   bytes_per_row = (uint64_t)width * bytes_per_pixel + 1;
   bytes_per_frame = (uint64_t)height * bytes_per_row;
-  if (bytes_per_frame > DST_BUFFER_SIZE) {
+  if (bytes_per_frame > DST_BUFFER_ARRAY_SIZE) {
     return fail("decompressed data is too large");
   }
 

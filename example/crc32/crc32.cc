@@ -50,11 +50,11 @@ for a C++ compiler $CXX, such as clang++ or g++.
 // program to generate a stand-alone C++ file.
 #include "../../release/c/wuffs-unsupported-snapshot.c"
 
-#ifndef SRC_BUFFER_SIZE
-#define SRC_BUFFER_SIZE (32 * 1024)
+#ifndef SRC_BUFFER_ARRAY_SIZE
+#define SRC_BUFFER_ARRAY_SIZE (32 * 1024)
 #endif
 
-uint8_t src_buffer[SRC_BUFFER_SIZE];
+uint8_t src_buffer_array[SRC_BUFFER_ARRAY_SIZE];
 
 int  //
 main(int argc, char** argv) {
@@ -66,8 +66,10 @@ main(int argc, char** argv) {
   }
 
   while (true) {
-    size_t n = fread(src_buffer, sizeof(uint8_t), SRC_BUFFER_SIZE, stdin);
-    uint32_t checksum = h.update_u32(wuffs_base__make_slice_u8(src_buffer, n));
+    size_t n =
+        fread(src_buffer_array, sizeof(uint8_t), SRC_BUFFER_ARRAY_SIZE, stdin);
+    uint32_t checksum =
+        h.update_u32(wuffs_base__make_slice_u8(src_buffer_array, n));
     if (feof(stdin)) {
       printf("%08" PRIx32 "\n", checksum);
       return 0;

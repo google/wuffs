@@ -168,19 +168,19 @@ int input_file_descriptor = 0;  // A 0 default means stdin.
 #define INDENT_SPACES_STRING "        "
 #define INDENT_TAB_STRING "\t"
 
-#ifndef DST_BUFFER_SIZE
-#define DST_BUFFER_SIZE (32 * 1024)
+#ifndef DST_BUFFER_ARRAY_SIZE
+#define DST_BUFFER_ARRAY_SIZE (32 * 1024)
 #endif
-#ifndef SRC_BUFFER_SIZE
-#define SRC_BUFFER_SIZE (32 * 1024)
+#ifndef SRC_BUFFER_ARRAY_SIZE
+#define SRC_BUFFER_ARRAY_SIZE (32 * 1024)
 #endif
-#ifndef TOKEN_BUFFER_SIZE
-#define TOKEN_BUFFER_SIZE (4 * 1024)
+#ifndef TOKEN_BUFFER_ARRAY_SIZE
+#define TOKEN_BUFFER_ARRAY_SIZE (4 * 1024)
 #endif
 
-uint8_t dst_array[DST_BUFFER_SIZE];
-uint8_t src_array[SRC_BUFFER_SIZE];
-wuffs_base__token tok_array[TOKEN_BUFFER_SIZE];
+uint8_t dst_array[DST_BUFFER_ARRAY_SIZE];
+uint8_t src_array[SRC_BUFFER_ARRAY_SIZE];
+wuffs_base__token tok_array[TOKEN_BUFFER_ARRAY_SIZE];
 
 wuffs_base__io_buffer dst;
 wuffs_base__io_buffer src;
@@ -513,15 +513,15 @@ parse_flags(int argc, char** argv) {
 const char*  //
 initialize_globals(int argc, char** argv) {
   dst = wuffs_base__make_io_buffer(
-      wuffs_base__make_slice_u8(dst_array, DST_BUFFER_SIZE),
+      wuffs_base__make_slice_u8(dst_array, DST_BUFFER_ARRAY_SIZE),
       wuffs_base__empty_io_buffer_meta());
 
   src = wuffs_base__make_io_buffer(
-      wuffs_base__make_slice_u8(src_array, SRC_BUFFER_SIZE),
+      wuffs_base__make_slice_u8(src_array, SRC_BUFFER_ARRAY_SIZE),
       wuffs_base__empty_io_buffer_meta());
 
   tok = wuffs_base__make_token_buffer(
-      wuffs_base__make_slice_token(tok_array, TOKEN_BUFFER_SIZE),
+      wuffs_base__make_slice_token(tok_array, TOKEN_BUFFER_ARRAY_SIZE),
       wuffs_base__empty_token_buffer_meta());
 
   curr_token_end_src_index = 0;

@@ -102,14 +102,14 @@ micros_since_start(struct timespec* now) {
 //
 // We keep the whole input in memory, instead of one-pass stream processing,
 // because playing a looping animation requires re-winding the input.
-#ifndef SRC_BUFFER_SIZE
-#define SRC_BUFFER_SIZE (64 * 1024 * 1024)
+#ifndef SRC_BUFFER_ARRAY_SIZE
+#define SRC_BUFFER_ARRAY_SIZE (64 * 1024 * 1024)
 #endif
 #ifndef MAX_DIMENSION
 #define MAX_DIMENSION (4096)
 #endif
 
-uint8_t src_buffer[SRC_BUFFER_SIZE] = {0};
+uint8_t src_buffer_array[SRC_BUFFER_ARRAY_SIZE] = {0};
 size_t src_len = 0;
 
 uint8_t* curr_dst_buffer = NULL;
@@ -128,9 +128,9 @@ wuffs_base__flicks cumulative_delay_micros = 0;
 
 const char*  //
 read_stdin() {
-  while (src_len < SRC_BUFFER_SIZE) {
-    size_t n = fread(src_buffer + src_len, sizeof(uint8_t),
-                     SRC_BUFFER_SIZE - src_len, stdin);
+  while (src_len < SRC_BUFFER_ARRAY_SIZE) {
+    size_t n = fread(src_buffer_array + src_len, sizeof(uint8_t),
+                     SRC_BUFFER_ARRAY_SIZE - src_len, stdin);
     src_len += n;
     if (feof(stdin)) {
       return NULL;
@@ -352,7 +352,7 @@ play() {
   }
 
   wuffs_base__io_buffer src;
-  src.data.ptr = src_buffer;
+  src.data.ptr = src_buffer_array;
   src.data.len = src_len;
   src.meta.wi = src_len;
   src.meta.ri = 0;

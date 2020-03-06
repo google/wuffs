@@ -45,10 +45,10 @@ for a C compiler $CC, such as clang or gcc.
 #endif
 #include "wuffs/release/c/wuffs-unsupported-snapshot.c"
 
-#ifndef DST_BUFFER_SIZE
-#define DST_BUFFER_SIZE 1024
+#ifndef DST_BUFFER_ARRAY_SIZE
+#define DST_BUFFER_ARRAY_SIZE 1024
 #endif
-uint8_t dst_buffer[DST_BUFFER_SIZE];
+uint8_t dst_buffer_array[DST_BUFFER_ARRAY_SIZE];
 
 // src_ptr and src_len hold a gzip-encoded "Hello Wuffs."
 //
@@ -68,19 +68,20 @@ uint8_t src_ptr[] = {
 };
 size_t src_len = 0x21;
 
-#define WORK_BUFFER_SIZE WUFFS_GZIP__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE
-#if WORK_BUFFER_SIZE > 0
-uint8_t work_buffer[WORK_BUFFER_SIZE];
+#define WORK_BUFFER_ARRAY_SIZE \
+  WUFFS_GZIP__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE
+#if WORK_BUFFER_ARRAY_SIZE > 0
+uint8_t work_buffer_array[WORK_BUFFER_ARRAY_SIZE];
 #else
 // Not all C/C++ compilers support 0-length arrays.
-uint8_t work_buffer[1];
+uint8_t work_buffer_array[1];
 #endif
 
 static const char*  //
 decode() {
   wuffs_base__io_buffer dst;
-  dst.data.ptr = dst_buffer;
-  dst.data.len = DST_BUFFER_SIZE;
+  dst.data.ptr = dst_buffer_array;
+  dst.data.len = DST_BUFFER_ARRAY_SIZE;
   dst.meta.wi = 0;
   dst.meta.ri = 0;
   dst.meta.pos = 0;
@@ -108,7 +109,7 @@ decode() {
   }
   status = wuffs_gzip__decoder__transform_io(
       dec, &dst, &src,
-      wuffs_base__make_slice_u8(work_buffer, WORK_BUFFER_SIZE));
+      wuffs_base__make_slice_u8(work_buffer_array, WORK_BUFFER_ARRAY_SIZE));
   if (!wuffs_base__status__is_ok(&status)) {
     free(dec);
     return wuffs_base__status__message(&status);

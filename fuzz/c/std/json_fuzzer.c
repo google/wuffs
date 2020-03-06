@@ -59,7 +59,7 @@ It should print "PASS", amongst other information, and exit(0).
 #include "../../../release/c/wuffs-unsupported-snapshot.c"
 #include "../fuzzlib/fuzzlib.c"
 
-#define TOK_BUFFER_SIZE 4096
+#define TOK_BUFFER_ARRAY_SIZE 4096
 #define STACK_SIZE (WUFFS_JSON__DECODER_DEPTH_MAX_INCL + 1)
 
 // Each stack element is 1 byte. The low 7 bits denote the container:
@@ -225,11 +225,12 @@ fuzz_complex(wuffs_base__io_buffer* full_src, uint32_t hash_24_bits) {
     return wuffs_base__status__message(&status);
   }
 
-  wuffs_base__token tok_array[TOK_BUFFER_SIZE];
+  wuffs_base__token tok_array[TOK_BUFFER_ARRAY_SIZE];
   wuffs_base__token_buffer tok = ((wuffs_base__token_buffer){
       .data = ((wuffs_base__slice_token){
           .ptr = tok_array,
-          .len = (tok_limit < TOK_BUFFER_SIZE) ? tok_limit : TOK_BUFFER_SIZE,
+          .len = (tok_limit < TOK_BUFFER_ARRAY_SIZE) ? tok_limit
+                                                     : TOK_BUFFER_ARRAY_SIZE,
       }),
   });
 
@@ -331,11 +332,11 @@ fuzz_simple(wuffs_base__io_buffer* full_src) {
     return wuffs_base__status__message(&status);
   }
 
-  wuffs_base__token tok_array[TOK_BUFFER_SIZE];
+  wuffs_base__token tok_array[TOK_BUFFER_ARRAY_SIZE];
   wuffs_base__token_buffer tok = ((wuffs_base__token_buffer){
       .data = ((wuffs_base__slice_token){
           .ptr = tok_array,
-          .len = TOK_BUFFER_SIZE,
+          .len = TOK_BUFFER_ARRAY_SIZE,
       }),
   });
 

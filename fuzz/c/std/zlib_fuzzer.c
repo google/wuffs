@@ -61,16 +61,17 @@ It should print "PASS", amongst other information, and exit(0).
 #include "../../../release/c/wuffs-unsupported-snapshot.c"
 #include "../fuzzlib/fuzzlib.c"
 
-#define DST_BUFFER_SIZE 65536
+#define DST_BUFFER_ARRAY_SIZE 65536
 
 // Wuffs allows either statically or dynamically allocated work buffers. This
 // program exercises static allocation.
-#define WORK_BUFFER_SIZE WUFFS_ZLIB__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE
-#if WORK_BUFFER_SIZE > 0
-uint8_t work_buffer[WORK_BUFFER_SIZE];
+#define WORK_BUFFER_ARRAY_SIZE \
+  WUFFS_ZLIB__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE
+#if WORK_BUFFER_ARRAY_SIZE > 0
+uint8_t work_buffer_array[WORK_BUFFER_ARRAY_SIZE];
 #else
 // Not all C/C++ compilers support 0-length arrays.
-uint8_t work_buffer[1];
+uint8_t work_buffer_array[1];
 #endif
 
 const char*  //
@@ -88,21 +89,22 @@ fuzz(wuffs_base__io_buffer* src, uint32_t hash) {
   // verify that checksumming does not lead to e.g. buffer overflows.
   wuffs_zlib__decoder__set_ignore_checksum(&dec, hash & 0xFFFE);
 
-  uint8_t dst_buffer[DST_BUFFER_SIZE];
+  uint8_t dst_buffer[DST_BUFFER_ARRAY_SIZE];
   wuffs_base__io_buffer dst = ((wuffs_base__io_buffer){
       .data = ((wuffs_base__slice_u8){
           .ptr = dst_buffer,
-          .len = DST_BUFFER_SIZE,
+          .len = DST_BUFFER_ARRAY_SIZE,
       }),
   });
 
   while (true) {
     dst.meta.wi = 0;
-    status = wuffs_zlib__decoder__transform_io(&dec, &dst, src,
-                                               ((wuffs_base__slice_u8){
-                                                   .ptr = work_buffer,
-                                                   .len = WORK_BUFFER_SIZE,
-                                               }));
+    status =
+        wuffs_zlib__decoder__transform_io(&dec, &dst, src,
+                                          ((wuffs_base__slice_u8){
+                                              .ptr = work_buffer_array,
+                                              .len = WORK_BUFFER_ARRAY_SIZE,
+                                          }));
     if (status.repr != wuffs_base__suspension__short_write) {
       break;
     }
