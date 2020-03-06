@@ -19145,6 +19145,8 @@ const char* wuffs_json__error__internal_error_inconsistent_i_o =
 
 // ---------------- Private Consts
 
+#define WUFFS_JSON__DECODER_NUMBER_LENGTH_MAX_INCL 99
+
 static const uint8_t                  //
     wuffs_json__lut_backslashes[256]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
@@ -20253,7 +20255,7 @@ wuffs_json__decoder__decode_number(wuffs_json__decoder* self,
       if (a_src) {
         iop_a_src = a_src->data.ptr + a_src->meta.ri;
       }
-      if (v_n > 253) {
+      if (v_n > 99) {
         goto label__goto_done__break;
       }
     }
@@ -20266,9 +20268,13 @@ wuffs_json__decoder__decode_number(wuffs_json__decoder* self,
     v_c = wuffs_base__load_u8be__no_bounds_check(iop_a_src);
     if (v_c != 46) {
     } else {
-      v_floating_point = 128;
+      if (v_n >= 99) {
+        v_n |= 512;
+        goto label__goto_done__break;
+      }
       v_n += 1;
       (iop_a_src += 1, wuffs_base__make_empty_struct());
+      v_floating_point = 128;
       if (a_src) {
         a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
       }
@@ -20276,7 +20282,7 @@ wuffs_json__decoder__decode_number(wuffs_json__decoder* self,
       if (a_src) {
         iop_a_src = a_src->data.ptr + a_src->meta.ri;
       }
-      if (v_n > 253) {
+      if (v_n > 99) {
         goto label__goto_done__break;
       }
       if (((uint64_t)(io2_a_src - iop_a_src)) <= 0) {
@@ -20290,9 +20296,13 @@ wuffs_json__decoder__decode_number(wuffs_json__decoder* self,
     if ((v_c != 69) && (v_c != 101)) {
       goto label__goto_done__break;
     }
-    v_floating_point = 128;
+    if (v_n >= 99) {
+      v_n |= 512;
+      goto label__goto_done__break;
+    }
     v_n += 1;
     (iop_a_src += 1, wuffs_base__make_empty_struct());
+    v_floating_point = 128;
     if (((uint64_t)(io2_a_src - iop_a_src)) <= 0) {
       if (!(a_src && a_src->meta.closed)) {
         v_n |= 768;
@@ -20303,6 +20313,10 @@ wuffs_json__decoder__decode_number(wuffs_json__decoder* self,
     v_c = wuffs_base__load_u8be__no_bounds_check(iop_a_src);
     if ((v_c != 43) && (v_c != 45)) {
     } else {
+      if (v_n >= 99) {
+        v_n |= 512;
+        goto label__goto_done__break;
+      }
       v_n += 1;
       (iop_a_src += 1, wuffs_base__make_empty_struct());
     }

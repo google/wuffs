@@ -880,13 +880,13 @@ pri func decoder.decode_number!(src: base.io_reader) base.u32[..= 0x3FF] {
 		if c == 0x30 {  // 0x30 is '0'.
 			n += 1
 			args.src.skip32_fast!(actual: 1, worst_case: 1)
-			assert n <= 0xFD
+			assert n <= 99
 		} else {
 			n = this.decode_digits!(src: args.src, n: n)
-			if n > 0xFD {
+			if n > 99 {
 				break.goto_done
 			}
-			assert n <= 0xFD
+			assert n <= 99
 		}
 
 		// Peek.
@@ -901,14 +901,18 @@ pri func decoder.decode_number!(src: base.io_reader) base.u32[..= 0x3FF] {
 		// Scan the optional fraction.
 		if c <> 0x2E {  // 0x2E is '.'.
 			assert args.src.available() > 0
-			assert n <= 0xFD
+			assert n <= 99
 		} else {
-			floating_point = 0x80
+			if n >= 99 {
+				n |= 0x200
+				break.goto_done
+			}
 			n += 1
 			args.src.skip32_fast!(actual: 1, worst_case: 1)
+			floating_point = 0x80
 
 			n = this.decode_digits!(src: args.src, n: n)
-			if n > 0xFD {
+			if n > 99 {
 				break.goto_done
 			}
 
@@ -922,17 +926,21 @@ pri func decoder.decode_number!(src: base.io_reader) base.u32[..= 0x3FF] {
 			c = args.src.peek_u8()
 
 			assert args.src.available() > 0
-			assert n <= 0xFD
+			assert n <= 99
 		}
 
 		// Scan the optional 'E' or 'e'.
 		if (c <> 0x45) and (c <> 0x65) {  // 0x45 and 0x65 are 'E' and 'e'.
 			break.goto_done
 		}
-		floating_point = 0x80
+		if n >= 99 {
+			n |= 0x200
+			break.goto_done
+		}
 		n += 1
 		args.src.skip32_fast!(actual: 1, worst_case: 1)
-		assert n <= 0xFE
+		floating_point = 0x80
+		assert n <= 99
 
 		// Peek.
 		if args.src.available() <= 0 {
@@ -946,11 +954,15 @@ pri func decoder.decode_number!(src: base.io_reader) base.u32[..= 0x3FF] {
 
 		// Scan the optional '+' or '-'.
 		if (c <> 0x2B) and (c <> 0x2D) {  // 0x2B and 0x2D are '+' and '-'.
-			assert n <= 255
+			assert n <= 99
 		} else {
+			if n >= 99 {
+				n |= 0x200
+				break.goto_done
+			}
 			n += 1
 			args.src.skip32_fast!(actual: 1, worst_case: 1)
-			assert n <= 255
+			assert n <= 99
 		}
 
 		// Scan the exponent digits.
@@ -961,7 +973,7 @@ pri func decoder.decode_number!(src: base.io_reader) base.u32[..= 0x3FF] {
 	return n | floating_point
 }
 
-pri func decoder.decode_digits!(src: base.io_reader, n: base.u32[..= 0xFF]) base.u32[..= 0x3FF] {
+pri func decoder.decode_digits!(src: base.io_reader, n: base.u32[..= 99]) base.u32[..= 0x3FF] {
 	var c : base.u8
 	var n : base.u32[..= 0x3FF]
 
@@ -977,9 +989,9 @@ pri func decoder.decode_digits!(src: base.io_reader, n: base.u32[..= 0xFF]) base
 		if 0x00 == lut_decimal_digits[c] {
 			break
 		}
-		// Cap the maximum supported number length at an arbitrary value, 99.
-		// The caller's src.data.len should therefore be at least 100, also
-		// known as decoder_src_io_buffer_length_min_incl.
+		// Cap decoder_number_length_max_incl at an arbitrary value, 99. The
+		// caller's src.data.len should therefore be at least 100, also known
+		// as decoder_src_io_buffer_length_min_incl.
 		//
 		// An example of a JSON number that is 81 bytes long is:
 		// https://github.com/nst/JSONTestSuite/blob/master/test_parsing/y_number_double_close_to_zero.json

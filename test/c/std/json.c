@@ -400,6 +400,140 @@ wuffs_json_decode(wuffs_base__token_buffer* tok,
   }
 }
 
+const char*  //
+test_wuffs_json_decode_long_numbers() {
+  CHECK_FOCUS(__func__);
+
+  // Spelling "false" with four letters helps clang-format align the test
+  // cases, when viewed in a fixed width font.
+  const bool fals = false;
+
+  // Each test case produces multiple test strings: the test_cases[tc].suffix
+  // field is prefixed with N '9's, for multiple values of N, so that the test
+  // string's total length is near WUFFS_JSON__DECODER_NUMBER_LENGTH_MAX_INCL.
+  // For example, a ".2e4" suffix means an overall string of "999etc999.2e4".
+  //
+  // The test_cases[tc].valid field holds the whether overall string is a valid
+  // JSON number.
+  struct {
+    bool valid;
+    const char* suffix;
+  } test_cases[] = {
+      {.valid = true, .suffix = ""},           //
+      {.valid = true, .suffix = " "},          //
+      {.valid = fals, .suffix = "."},          //
+      {.valid = fals, .suffix = ". "},         //
+      {.valid = fals, .suffix = "E"},          //
+      {.valid = fals, .suffix = "E "},         //
+      {.valid = fals, .suffix = "E-"},         //
+      {.valid = fals, .suffix = "E- "},        //
+      {.valid = true, .suffix = "e2"},         //
+      {.valid = true, .suffix = "e2 "},        //
+      {.valid = true, .suffix = "e+34"},       //
+      {.valid = true, .suffix = "e+34 "},      //
+      {.valid = true, .suffix = ".2"},         //
+      {.valid = true, .suffix = ".2 "},        //
+      {.valid = fals, .suffix = ".2e"},        //
+      {.valid = fals, .suffix = ".2e "},       //
+      {.valid = fals, .suffix = ".2e+"},       //
+      {.valid = fals, .suffix = ".2e+ "},      //
+      {.valid = true, .suffix = ".2e4"},       //
+      {.valid = true, .suffix = ".2e4 "},      //
+      {.valid = true, .suffix = ".2E+5"},      //
+      {.valid = true, .suffix = ".2E+5 "},     //
+      {.valid = true, .suffix = ".2e-5678"},   //
+      {.valid = true, .suffix = ".2e-5678 "},  //
+  };
+
+  // src_array holds the overall test string. 119 is arbitrary but long enough.
+  // See the "if (suffix_length > etc)" check below. 102 is also arbitrary but
+  // larger than WUFFS_JSON__DECODER_NUMBER_LENGTH_MAX_INCL.
+  //
+  // See also test_wuffs_json_decode_src_io_buffer_length.
+  uint8_t src_array[119];
+  memset(&src_array[0], '9', 102);
+  if (102 <= WUFFS_JSON__DECODER_NUMBER_LENGTH_MAX_INCL) {
+    RETURN_FAIL("insufficient number_length test case coverage");
+  }
+
+  wuffs_json__decoder dec;
+
+  int tc;
+  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+    size_t suffix_length = strlen(test_cases[tc].suffix);
+    if ((suffix_length + 1) > (119 - 102)) {  // +1 for the terminal NUL.
+      RETURN_FAIL("tc=%d: src_array is too short", tc);
+    }
+    bool ends_with_space = (suffix_length > 0) &&
+                           (test_cases[tc].suffix[suffix_length - 1] == ' ');
+
+    // Copying the terminal NUL isn't necessary for Wuffs' slices (which are a
+    // pointer-length pair), but this backstop can help debugging with printf
+    // where "%s" takes a C string (a bare pointer).
+    memcpy(&src_array[102], test_cases[tc].suffix, suffix_length + 1);
+
+    size_t nines_length;
+    for (nines_length = 90; nines_length < 102; nines_length++) {
+      wuffs_base__slice_u8 src_data = ((wuffs_base__slice_u8){
+          .ptr = &src_array[102 - nines_length],
+          .len = nines_length + suffix_length,
+      });
+      size_t number_length = src_data.len - (ends_with_space ? 1 : 0);
+
+      int closed;
+      for (closed = 0; closed < 2; closed++) {
+        CHECK_STATUS(
+            "initialize",
+            wuffs_json__decoder__initialize(
+                &dec, sizeof dec, WUFFS_VERSION,
+                WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+
+        wuffs_base__token_buffer tok = ((wuffs_base__token_buffer){
+            .data = global_have_token_slice,
+        });
+
+        wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+            .data = src_data,
+            .meta = wuffs_base__make_io_buffer_meta(src_data.len, 0, 0,
+                                                    closed != 0),
+        });
+
+        const char* have =
+            wuffs_json__decoder__decode_tokens(&dec, &tok, &src).repr;
+
+        size_t total_length = 0;
+        while (tok.meta.ri < tok.meta.wi) {
+          wuffs_base__token* t = &tok.data.ptr[tok.meta.ri++];
+          total_length += wuffs_base__token__length(t);
+        }
+        if (total_length != src.meta.ri) {
+          RETURN_FAIL(
+              "tc=%d, nines_length=%zu, closed=%d: total_length: have %zu, "
+              "want %zu",
+              tc, nines_length, closed, total_length, src.meta.ri);
+        }
+
+        const char* want;
+        if (number_length > WUFFS_JSON__DECODER_NUMBER_LENGTH_MAX_INCL) {
+          want = wuffs_json__error__unsupported_number_length;
+        } else if (closed || ends_with_space) {
+          want = test_cases[tc].valid ? NULL : wuffs_json__error__bad_input;
+        } else {
+          want = wuffs_base__suspension__short_read;
+        }
+
+        if (have != want) {
+          RETURN_FAIL(
+              "tc=%d, nines_length=%zu, closed=%d: have \"%s\", want \"%s\"",
+              tc, nines_length, closed, have, want);
+        }
+      }
+    }
+  }
+
+  return NULL;
+}
+
 // test_wuffs_json_decode_prior_valid_utf_8 tests that when encountering
 // invalid or incomplete UTF-8, or a backslash-escape, any prior valid UTF-8 is
 // still output. The decoder batches output so that, ignoring the quotation
@@ -502,11 +636,8 @@ test_wuffs_json_decode_prior_valid_utf_8() {
 
         int closed;
         for (closed = 0; closed < 2; closed++) {
-          CHECK_STATUS(
-              "initialize",
-              wuffs_json__decoder__initialize(
-                  &dec, sizeof dec, WUFFS_VERSION,
-                  WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+          CHECK_STATUS("initialize", wuffs_json__decoder__initialize(
+                                         &dec, sizeof dec, WUFFS_VERSION, 0));
 
           wuffs_base__token_buffer tok = ((wuffs_base__token_buffer){
               .data = global_have_token_slice,
@@ -655,6 +786,82 @@ test_wuffs_json_decode_unicode4_escapes() {
     if (total_length != src.meta.ri) {
       RETURN_FAIL("%s: total length: have %" PRIu64 ", want %" PRIu64,
                   test_cases[tc].str, total_length, src.meta.ri);
+    }
+  }
+
+  return NULL;
+}
+
+// test_wuffs_json_decode_src_io_buffer_length tests that given a sufficient
+// amount of source data (WUFFS_JSON__DECODER_SRC_IO_BUFFER_LENGTH_MIN_INCL or
+// more), decoding will always return a conclusive result, not a suspension
+// such as "$short read".
+//
+// The JSON specification doesn't give a maximum byte length for a number, but
+// implementations are permitted to impose one. Wuffs' implementation imposes
+// WUFFS_JSON__DECODER_NUMBER_LENGTH_MAX_INCL.
+const char*  //
+test_wuffs_json_decode_src_io_buffer_length() {
+  CHECK_FOCUS(__func__);
+
+  if (WUFFS_JSON__DECODER_NUMBER_LENGTH_MAX_INCL >=
+      WUFFS_JSON__DECODER_SRC_IO_BUFFER_LENGTH_MIN_INCL) {
+    RETURN_FAIL(
+        "inconsistent WUFFS_JSON__DECODER_NUMBER_LENGTH_MAX_INCL vs "
+        "WUFFS_JSON__DECODER_SRC_IO_BUFFER_LENGTH_MIN_INCL");
+  }
+
+  // src_array holds the test string of repeated '7's. 107 is arbitrary but
+  // long enough for the loop below.
+  uint8_t src_array[107];
+  memset(&src_array[0], '7', 107);
+
+  wuffs_json__decoder dec;
+
+  int i;
+  for (i = WUFFS_JSON__DECODER_NUMBER_LENGTH_MAX_INCL - 2;
+       i <= WUFFS_JSON__DECODER_NUMBER_LENGTH_MAX_INCL + 2; i++) {
+    if (i < 0) {
+      RETURN_FAIL("invalid test case: i=%d", i);
+    } else if (i > 107) {
+      RETURN_FAIL("invalid test case: i=%d", i);
+    }
+
+    wuffs_base__slice_u8 src_data = ((wuffs_base__slice_u8){
+        .ptr = &src_array[0],
+        .len = i,
+    });
+
+    int closed;
+    for (closed = 0; closed < 2; closed++) {
+      wuffs_base__token_buffer tok = ((wuffs_base__token_buffer){
+          .data = global_have_token_slice,
+      });
+      wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+          .data = src_data,
+          .meta =
+              wuffs_base__make_io_buffer_meta(src_data.len, 0, 0, closed != 0),
+      });
+      CHECK_STATUS("initialize",
+                   wuffs_json__decoder__initialize(
+                       &dec, sizeof dec, WUFFS_VERSION,
+                       WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+
+      wuffs_base__status have =
+          wuffs_json__decoder__decode_tokens(&dec, &tok, &src);
+      const char* want =
+          (i > WUFFS_JSON__DECODER_NUMBER_LENGTH_MAX_INCL)
+              ? wuffs_json__error__unsupported_number_length
+              : (closed ? NULL : wuffs_base__suspension__short_read);
+      if (have.repr != want) {
+        RETURN_FAIL("i=%d, closed=%d: have \"%s\", want \"%s\"", i, closed,
+                    have.repr, want);
+      }
+
+      if ((i >= WUFFS_JSON__DECODER_SRC_IO_BUFFER_LENGTH_MIN_INCL) &&
+          wuffs_base__status__is_suspension(&have)) {
+        RETURN_FAIL("i=%d, closed=%d: have a suspension", i, closed);
+      }
     }
   }
 
@@ -830,10 +1037,12 @@ proc tests[] = {
     test_strconv_parse_number_u64,  //
     test_strconv_utf_8_next,        //
 
-    test_wuffs_json_decode_interface,          //
-    test_wuffs_json_decode_prior_valid_utf_8,  //
-    test_wuffs_json_decode_string,             //
-    test_wuffs_json_decode_unicode4_escapes,   //
+    test_wuffs_json_decode_interface,             //
+    test_wuffs_json_decode_long_numbers,          //
+    test_wuffs_json_decode_prior_valid_utf_8,     //
+    test_wuffs_json_decode_src_io_buffer_length,  //
+    test_wuffs_json_decode_string,                //
+    test_wuffs_json_decode_unicode4_escapes,      //
 
 #ifdef WUFFS_MIMIC
 

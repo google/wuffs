@@ -42,6 +42,18 @@ pub const decoder_dst_token_buffer_length_min_incl base.u64 = 1
 // as that content is placed in an io_buffer whose data.len is at least 100.
 pub const decoder_src_io_buffer_length_min_incl base.u64 = 100
 
+// decoder_number_length_max_incl is the longest supported byte length for a
+// JSON number. Unlike JSON strings, this package's tokenizer never splits a
+// single JSON number into multiple tokens, as this simplifies the callers.
+// They can then call e.g. wuffs_base__parse_number_i64 without having to
+// reconstitute a contiguous string representation.
+//
+// The JSON spec itself does not define a limit, but allows implementations to
+// set their own limits.
+pri const decoder_number_length_max_incl base.u64 = 99
+
+// --------
+
 // Look-Up Tables (LUTs).
 
 pri const lut_backslashes array[256] base.u8 = [
