@@ -66,6 +66,8 @@ for a C++ compiler $CXX, such as clang++ or g++.
 */
 
 #include <errno.h>
+#include <fcntl.h>
+#include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -112,9 +114,9 @@ for a C++ compiler $CXX, such as clang++ or g++.
 static const char* eod = "main: end of data";
 
 static const char* usage =
-    "Usage: jsonptr -flags < input.json\n"
+    "Usage: jsonptr -flags input.json\n"
     "\n"
-    "Note the \"<\". It only reads from stdin, not named files.\n"
+    "The input.json filename is optional. If absent, it reads from stdin.\n"
     "\n"
     "jsonptr is a JSON formatter (pretty-printer) that supports the JSON\n"
     "Pointer (RFC 6901) query syntax. It reads UTF-8 JSON from stdin and\n"
@@ -122,7 +124,7 @@ static const char* usage =
     "\n"
     "Canonicalized means that e.g. \"abc\\u000A\\tx\\u0177z\" is re-written\n"
     "as \"abc\\n\\txŷz\". It does not sort object keys, nor does it reject\n"
-    "duplicate keys.\n"
+    "duplicate keys. Canonicalization does not imply Unicode normalization.\n"
     "\n"
     "Formatted means that arrays' and objects' elements are indented, each\n"
     "on its own line. Configure this with the -c / -compact, -i=N / -indent=N\n"
@@ -130,8 +132,8 @@ static const char* usage =
     "\n"
     "The -q=etc or -query=etc flag gives an optional JSON Pointer query, to\n"
     "print a subset of the input. For example, given RFC 6901 section 5's\n"
-    "[sample input](https://tools.ietf.org/rfc/rfc6901.txt), this command:\n"
-    "    jsonptr -query=/foo/1 < rfc-6901-json-pointer.json\n"
+    "sample input (https://tools.ietf.org/rfc/rfc6901.txt), this command:\n"
+    "    jsonptr -query=/foo/1 rfc-6901-json-pointer.json\n"
     "will print:\n"
     "    \"baz\"\n"
     "\n"
@@ -145,7 +147,7 @@ static const char* usage =
     "did not find a value, or found an invalid one, this program returns a\n"
     "non-zero exit code, but may still print partial output to stdout.\n"
     "\n"
-    "The [JSON specification](https://json.org/) permits implementations that\n"
+    "The JSON specification (https://json.org/) permits implementations that\n"
     "allow duplicate keys, as this one does. This JSON Pointer implementation\n"
     "is also greedy, following the first match for each fragment without\n"
     "back-tracking. For example, the \"/foo/bar\" query will fail if the root\n"
@@ -159,6 +161,8 @@ static const char* usage =
 // ----
 
 bool sandboxed = false;
+
+int input_file_descriptor = 0;  // A 0 default means stdin.
 
 #define MAX_INDENT 8
 #define INDENT_SPACES_STRING "        "
@@ -530,7 +534,8 @@ initialize_globals(int argc, char** argv) {
   if (flags.fail_if_unsandboxed && !sandboxed) {
     return "main: unsandboxed";
   }
-  if (flags.remaining_argc > 0) {
+  const int stdin_fd = 0;
+  if (flags.remaining_argc > ((input_file_descriptor != stdin_fd) ? 1 : 0)) {
     return usage;
   }
 
@@ -561,9 +566,8 @@ read_src() {
     return "main: src buffer is full";
   }
   while (true) {
-    const int stdin_fd = 0;
-    ssize_t n =
-        read(stdin_fd, src.data.ptr + src.meta.wi, src.data.len - src.meta.wi);
+    ssize_t n = read(input_file_descriptor, src.data.ptr + src.meta.wi,
+                     src.data.len - src.meta.wi);
     if (n >= 0) {
       src.meta.wi += n;
       src.meta.closed = n == 0;
@@ -950,10 +954,15 @@ compute_exit_code(const char* status_msg) {
   if (!status_msg) {
     return 0;
   }
-  size_t n = strnlen(status_msg, 2047);
-  if (n >= 2047) {
-    status_msg = "main: internal error: error message is too long";
+  size_t n;
+  if (status_msg == usage) {
+    n = strlen(status_msg);
+  } else {
     n = strnlen(status_msg, 2047);
+    if (n >= 2047) {
+      status_msg = "main: internal error: error message is too long";
+      n = strnlen(status_msg, 2047);
+    }
   }
   const int stderr_fd = 2;
   ignore_return_value(write(stderr_fd, status_msg, n));
@@ -974,6 +983,28 @@ compute_exit_code(const char* status_msg) {
 
 int  //
 main(int argc, char** argv) {
+  // Look for an input filename (the first non-flag argument) in argv. If there
+  // is one, open it (but do not read from it) before we self-impose a sandbox.
+  //
+  // Flags start with "-", unless it comes after a bare "--" arg.
+  {
+    bool dash_dash = false;
+    int a;
+    for (a = 1; a < argc; a++) {
+      char* arg = argv[a];
+      if ((arg[0] == '-') && !dash_dash) {
+        dash_dash = (arg[1] == '-') && (arg[2] == '\x00');
+        continue;
+      }
+      input_file_descriptor = open(arg, O_RDONLY);
+      if (input_file_descriptor < 0) {
+        fprintf(stderr, "%s: %s\n", arg, strerror(errno));
+        return 1;
+      }
+      break;
+    }
+  }
+
 #if defined(WUFFS_EXAMPLE_USE_SECCOMP)
   prctl(PR_SET_SECCOMP, SECCOMP_MODE_STRICT);
   sandboxed = true;
