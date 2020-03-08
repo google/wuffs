@@ -116,7 +116,17 @@ static const char* eod = "main: end of data";
 static const char* usage =
     "Usage: jsonptr -flags input.json\n"
     "\n"
+    "Flags:\n"
+    "    -c      -compact\n"
+    "    -i=NUM  -indent=NUM\n"
+    "    -o=NUM  -max-output-depth=NUM\n"
+    "    -q=STR  -query=STR\n"
+    "    -t      -tabs\n"
+    "            -fail-if-unsandboxed\n"
+    "\n"
     "The input.json filename is optional. If absent, it reads from stdin.\n"
+    "\n"
+    "----\n"
     "\n"
     "jsonptr is a JSON formatter (pretty-printer) that supports the JSON\n"
     "Pointer (RFC 6901) query syntax. It reads UTF-8 JSON from stdin and\n"
@@ -127,10 +137,12 @@ static const char* usage =
     "duplicate keys. Canonicalization does not imply Unicode normalization.\n"
     "\n"
     "Formatted means that arrays' and objects' elements are indented, each\n"
-    "on its own line. Configure this with the -c / -compact, -i=N / -indent=N\n"
-    "(for N ranging from 0 to 8) and -t / -tabs flags.\n"
+    "on its own line. Configure this with the -c / -compact, -i=NUM /\n"
+    "-indent=NUM (for NUM ranging from 0 to 8) and -t / -tabs flags.\n"
     "\n"
-    "The -q=etc or -query=etc flag gives an optional JSON Pointer query, to\n"
+    "----\n"
+    "\n"
+    "The -q=STR or -query=STR flag gives an optional JSON Pointer query, to\n"
     "print a subset of the input. For example, given RFC 6901 section 5's\n"
     "sample input (https://tools.ietf.org/rfc/rfc6901.txt), this command:\n"
     "    jsonptr -query=/foo/1 rfc-6901-json-pointer.json\n"
@@ -138,9 +150,10 @@ static const char* usage =
     "    \"baz\"\n"
     "\n"
     "An absent query is equivalent to the empty query, which identifies the\n"
-    "entire input (the root value). The \"/\" query is not equivalent to the\n"
-    "root value. Instead, it identifies the child (the key-value pair) of the\n"
-    "root value whose key is the empty string.\n"
+    "entire input (the root value). Unlike a file system, the \"/\" query\n"
+    "does not identify the root. Instead, it identifies the child (the value\n"
+    "in a key-value pair) of the root whose key is the empty string.\n"
+    "Similarly, \"/foo\" and \"/foo/\" identify two different nodes.\n"
     "\n"
     "If the query found a valid JSON value, this program will return a zero\n"
     "exit code even if the rest of the input isn't valid JSON. If the query\n"
@@ -154,9 +167,31 @@ static const char* usage =
     "object has multiple \"foo\" children but the first one doesn't have a\n"
     "\"bar\" child, even if later ones do.\n"
     "\n"
+    "----\n"
+    "\n"
+    "The -o=NUM or -max-output-depth=NUM flag gives the maximum (inclusive)\n"
+    "output depth. JSON containers ([] arrays and {} objects) can hold other\n"
+    "containers. When this flag is set, containers at depth NUM are replaced\n"
+    "with \"[…]\" or \"{…}\". A bare -o or -max-output-depth is equivalent to\n"
+    "NUM=1. The flag's absence is equivalent to an unlimited output depth.\n"
+    "\n"
+    "The -max-output-depth flag only affects the program's output. It doesn't\n"
+    "affect whether or not the input is considered valid JSON. The JSON\n"
+    "specification permits implementations to set their own maximum input\n"
+    "depth. This JSON implementation sets it to 1024.\n"
+    "\n"
+    "Depth is measured in terms of nested containers. It is unaffected by the\n"
+    "number of spaces or tabs used to indent.\n"
+    "\n"
+    "When both -max-output-depth and -query are set, the output depth is\n"
+    "measured from when the query resolves, not from the input root. The\n"
+    "input depth (measured from the root) is still limited to 1024.\n"
+    "\n"
+    "----\n"
+    "\n"
     "The -fail-if-unsandboxed flag causes the program to exit if it does not\n"
     "self-impose a sandbox. On Linux, it self-imposes a SECCOMP_MODE_STRICT\n"
-    "sandbox, regardless of this flag.";
+    "sandbox, regardless of whether this flag was set.";
 
 // ----
 
@@ -207,7 +242,7 @@ in_dict_before_key() {
          (ctx == context::in_dict_after_value);
 }
 
-bool suppress_write_dst;
+uint32_t suppress_write_dst;
 bool wrote_to_dst;
 
 wuffs_json__decoder dec;
@@ -348,7 +383,11 @@ class Query {
     return true;
   }
 
-  bool matched() { return this->frag_j && (this->frag_j == this->frag_k); }
+  bool matched_all() { return this->frag_k == nullptr; }
+
+  bool matched_fragment() {
+    return this->frag_j && (this->frag_j == this->frag_k);
+  }
 
   void incremental_match_slice(uint8_t* ptr, size_t len) {
     if (!this->frag_j) {
@@ -443,6 +482,7 @@ struct {
   bool compact;
   bool fail_if_unsandboxed;
   size_t indent;
+  uint32_t max_output_depth;
   char* query_c_string;
   bool tabs;
 } flags = {0};
@@ -450,6 +490,7 @@ struct {
 const char*  //
 parse_flags(int argc, char** argv) {
   flags.indent = 4;
+  flags.max_output_depth = 0xFFFFFFFF;
 
   int c = (argc > 0) ? 1 : 0;  // Skip argv[0], the program name.
   for (; c < argc; c++) {
@@ -484,6 +525,21 @@ parse_flags(int argc, char** argv) {
       }
       if (('0' <= arg[0]) && (arg[0] <= '8') && (arg[1] == '\x00')) {
         flags.indent = arg[0] - '0';
+        continue;
+      }
+      return usage;
+    }
+    if (!strcmp(arg, "o") || !strcmp(arg, "max-output-depth")) {
+      flags.max_output_depth = 1;
+      continue;
+    } else if (!strncmp(arg, "o=", 2) ||
+               !strncmp(arg, "max-output-depth=", 16)) {
+      while (*arg++ != '=') {
+      }
+      wuffs_base__result_u64 u = wuffs_base__parse_number_u64(
+          wuffs_base__make_slice_u8((uint8_t*)arg, strlen(arg)));
+      if (wuffs_base__status__is_ok(&u.status) && (u.value <= 0xFFFFFFFF)) {
+        flags.max_output_depth = (uint32_t)(u.value);
         continue;
       }
       return usage;
@@ -543,7 +599,7 @@ initialize_globals(int argc, char** argv) {
 
   // If the query is non-empty, suprress writing to stdout until we've
   // completed the query.
-  suppress_write_dst = query.next_fragment();
+  suppress_write_dst = query.next_fragment() ? 1 : 0;
   wrote_to_dst = false;
 
   return dec.initialize(sizeof__wuffs_json__decoder(), WUFFS_VERSION, 0)
@@ -600,7 +656,7 @@ flush_dst() {
 
 const char*  //
 write_dst(const void* s, size_t n) {
-  if (suppress_write_dst) {
+  if (suppress_write_dst > 0) {
     return nullptr;
   }
   const uint8_t* p = static_cast<const uint8_t*>(s);
@@ -706,18 +762,29 @@ handle_token(wuffs_base__token t) {
       }
       depth--;
 
-      // Write preceding whitespace.
-      if ((ctx != context::in_list_after_bracket) &&
-          (ctx != context::in_dict_after_brace) && !flags.compact) {
-        TRY(write_dst("\n", 1));
-        for (uint32_t i = 0; i < depth; i++) {
-          TRY(write_dst(flags.tabs ? INDENT_TAB_STRING : INDENT_SPACES_STRING,
-                        flags.tabs ? 1 : flags.indent));
+      if (query.matched_all() && (depth >= flags.max_output_depth)) {
+        suppress_write_dst--;
+        // '…' is U+2026 HORIZONTAL ELLIPSIS, which is 3 UTF-8 bytes.
+        TRY(write_dst((vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__FROM_LIST)
+                          ? "\"[…]\""
+                          : "\"{…}\"",
+                      7));
+      } else {
+        // Write preceding whitespace.
+        if ((ctx != context::in_list_after_bracket) &&
+            (ctx != context::in_dict_after_brace) && !flags.compact) {
+          TRY(write_dst("\n", 1));
+          for (uint32_t i = 0; i < depth; i++) {
+            TRY(write_dst(flags.tabs ? INDENT_TAB_STRING : INDENT_SPACES_STRING,
+                          flags.tabs ? 1 : flags.indent));
+          }
         }
+
+        TRY(write_dst(
+            (vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__FROM_LIST) ? "]" : "}",
+            1));
       }
 
-      TRY(write_dst(
-          (vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__FROM_LIST) ? "]" : "}", 1));
       ctx = (vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__TO_LIST)
                 ? context::in_list_after_value
                 : context::in_dict_after_key;
@@ -743,19 +810,19 @@ handle_token(wuffs_base__token t) {
         }
       }
 
-      bool query_matched = false;
+      bool query_matched_fragment = false;
       if (query.is_at(depth)) {
         switch (ctx) {
           case context::in_list_after_bracket:
           case context::in_list_after_value:
-            query_matched = query.tick();
+            query_matched_fragment = query.tick();
             break;
           case context::in_dict_after_key:
-            query_matched = query.matched();
+            query_matched_fragment = query.matched_fragment();
             break;
         }
       }
-      if (!query_matched) {
+      if (!query_matched_fragment) {
         // No-op.
       } else if (!query.next_fragment()) {
         // There is no next fragment. We have matched the complete query, and
@@ -765,7 +832,10 @@ handle_token(wuffs_base__token t) {
         // were about to decode a top-level value. This makes any subsequent
         // indentation be relative to this point, and we will return eod after
         // the upcoming JSON value is complete.
-        suppress_write_dst = false;
+        if (suppress_write_dst != 1) {
+          return "main: internal error: inconsistent suppress_write_dst";
+        }
+        suppress_write_dst = 0;
         ctx = context::none;
         depth = 0;
       } else if ((vbc != WUFFS_BASE__TOKEN__VBC__STRUCTURE) ||
@@ -780,8 +850,13 @@ handle_token(wuffs_base__token t) {
     // value: string (a chain of raw or escaped parts), literal or number.
     switch (vbc) {
       case WUFFS_BASE__TOKEN__VBC__STRUCTURE:
-        TRY(write_dst(
-            (vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__TO_LIST) ? "[" : "{", 1));
+        if (query.matched_all() && (depth >= flags.max_output_depth)) {
+          suppress_write_dst++;
+        } else {
+          TRY(write_dst(
+              (vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__TO_LIST) ? "[" : "{",
+              1));
+        }
         depth++;
         ctx = (vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__TO_LIST)
                   ? context::in_list_after_bracket
