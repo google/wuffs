@@ -54,7 +54,73 @@ wuffs_base__parse_number_i64(wuffs_base__slice_u8 s);
 wuffs_base__result_u64  //
 wuffs_base__parse_number_u64(wuffs_base__slice_u8 s);
 
-// ---------------- Unicode and UTF-8
+// ---------------- IEEE 754 Floating Point
+
+// wuffs_base__parse_number_f64 parses the floating point number in s. For
+// example, if s contains the bytes "1.5" then it will return the double 1.5.
+//
+// It returns an error if s does not contain a floating point number.
+//
+// It does not necessarily return an error if the conversion is lossy, e.g. if
+// s is "0.3", which double-precision floating point cannot represent exactly.
+//
+// Similarly, the returned value may be infinite (and no error returned) even
+// if s was not "inf", when the input is nominally finite but sufficiently
+// larger than DBL_MAX, about 1.8e+308.
+//
+// It is similar to the C standard library's strtod function, but:
+//  - Errors are returned in-band (in a result type), not out-of-band (errno).
+//  - It takes a slice (a pointer and length), not a NUL-terminated C string.
+//  - It does not take an optional endptr argument. It does not allow a partial
+//    parse: it returns an error unless all of s is consumed.
+//  - It does not allow whitespace, leading or otherwise.
+//  - It does not allow unnecessary leading zeroes ("0" is valid and its sole
+//    zero is necessary). All of "00", "0644" and "00.7" are invalid.
+//  - It is not affected by i18n / l10n settings such as environment variables.
+//  - Conversely, it always accepts either ',' or '.' as a decimal separator.
+//    In particular, "3,141,592" is always invalid but "3,141" is always valid
+//    (and approximately π). The caller is responsible for e.g. previously
+//    rejecting or filtering s if it contains a comma, if that is unacceptable
+//    to the caller. For example, JSON numbers always use a dot '.' and never a
+//    comma ',', regardless of the LOCALE environment variable.
+//  - It does allow arbitrary underscores. For example, "_3.141_592" would
+//    successfully parse, again approximately π.
+//  - It does allow "inf", "+Infinity" and "-NAN", case insensitive, but it
+//    does not permit "nan" to be followed by an integer mantissa.
+//  - It does not allow hexadecimal floating point numbers.
+wuffs_base__result_f64  //
+wuffs_base__parse_number_f64(wuffs_base__slice_u8 s);
+
+// wuffs_base__ieee_754_bit_representation__etc converts between a double
+// precision numerical value and its IEEE 754 64-bit representation (1 sign
+// bit, 11 exponent bits, 52 explicit significand bits).
+//
+// For example, it converts between:
+//  - +1.0 and 0x3FF0_0000_0000_0000.
+//  - +5.5 and 0x4016_0000_0000_0000.
+//  - -inf and 0xFFF0_0000_0000_0000.
+//
+// See https://en.wikipedia.org/wiki/Double-precision_floating-point_format
+
+static inline uint64_t  //
+wuffs_base__ieee_754_bit_representation__from_f64(double f) {
+  uint64_t u = 0;
+  if (sizeof(uint64_t) == sizeof(double)) {
+    memcpy(&u, &f, sizeof(uint64_t));
+  }
+  return u;
+}
+
+static inline double  //
+wuffs_base__ieee_754_bit_representation__to_f64(uint64_t u) {
+  double f = 0;
+  if (sizeof(uint64_t) == sizeof(double)) {
+    memcpy(&f, &u, sizeof(uint64_t));
+  }
+  return f;
+}
+
+  // ---------------- Unicode and UTF-8
 
 #define WUFFS_BASE__UNICODE_CODE_POINT__MIN_INCL 0x00000000
 #define WUFFS_BASE__UNICODE_CODE_POINT__MAX_INCL 0x0010FFFF
@@ -140,7 +206,7 @@ wuffs_base__utf_8__next__output::is_valid() const {
 //
 // s will never be too short if its length is at least 4, also known as
 // WUFFS_BASE__UTF_8__BYTE_LENGTH__MAX_INCL.
-size_t //
+size_t  //
 wuffs_base__utf_8__encode(wuffs_base__slice_u8 dst, uint32_t code_point);
 
 // wuffs_base__utf_8__next returns the next UTF-8 code point (and that code

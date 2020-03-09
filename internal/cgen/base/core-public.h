@@ -248,6 +248,7 @@ wuffs_base__status::message() const {
     T value;                   \
   }
 
+typedef WUFFS_BASE__RESULT(double) wuffs_base__result_f64;
 typedef WUFFS_BASE__RESULT(int64_t) wuffs_base__result_i64;
 typedef WUFFS_BASE__RESULT(uint64_t) wuffs_base__result_u64;
 

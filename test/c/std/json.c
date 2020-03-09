@@ -69,6 +69,401 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 
 // ---------------- String Conversions Tests
 
+// wuffs_base__private_implementation__high_prec_dec__to_debug_string converts
+// hpd into a human-readable NUL-terminated C string.
+const char*  //
+wuffs_base__private_implementation__high_prec_dec__to_debug_string(
+    wuffs_base__private_implementation__high_prec_dec* hpd,
+    wuffs_base__slice_u8 dst) {
+  if (!hpd) {
+    return "high_prec_dec__to_debug_string: invalid hpd";
+  }
+  uint8_t* p = dst.ptr;
+  uint8_t* q = dst.ptr + dst.len;
+
+  // Sign bit.
+  if ((q - p) < 1) {
+    goto too_short;
+  }
+  *p++ = hpd->negative ? '-' : '+';
+
+  // Digits and decimal point.
+  if (hpd->decimal_point >
+      +WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__DECIMAL_POINT__RANGE) {
+    // We have "infinity".
+    if ((q - p) < 3) {
+      goto too_short;
+    }
+    *p++ = 'i';
+    *p++ = 'n';
+    *p++ = 'f';
+    goto nul_terminator;
+
+  } else if (hpd->decimal_point <
+             -WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__DECIMAL_POINT__RANGE) {
+    // We have "epsilon": a very small number, equivalent to zero.
+    if ((q - p) < 3) {
+      goto too_short;
+    }
+    *p++ = 'e';
+    *p++ = 'p';
+    *p++ = 's';
+    goto nul_terminator;
+
+  } else if (hpd->num_digits == 0) {
+    // We have "0".
+    if ((q - p) < 1) {
+      goto too_short;
+    }
+    *p++ = '0';
+    goto nul_terminator;
+
+  } else if (hpd->decimal_point < 0) {
+    // Referring to the wuffs_base__private_implementation__high_prec_dec
+    // typedef's comment, we have something like ".00789".
+    if ((q - p) < (hpd->num_digits + ((uint32_t)(-hpd->decimal_point)) + 1)) {
+      goto too_short;
+    }
+    uint8_t* src = &hpd->digits[0];
+
+    // Step A.1: write the ".".
+    *p++ = '.';
+
+    // Step A.2: write the "00".
+    uint32_t n = ((uint32_t)(-hpd->decimal_point));
+    if (n > 0) {
+      memset(p, '0', n);
+      p += n;
+    }
+
+    // Step A.3: write the "789".
+    n = hpd->num_digits;
+    while (n--) {
+      *p++ = '0' | *src++;
+    }
+
+  } else if (((uint32_t)(hpd->decimal_point)) <= hpd->num_digits) {
+    // Referring to the wuffs_base__private_implementation__high_prec_dec
+    // typedef's comment, we have something like "78.9".
+    if ((q - p) < (hpd->num_digits + 1)) {
+      goto too_short;
+    }
+    uint8_t* src = &hpd->digits[0];
+
+    // Step B.1: write the "78".
+    uint32_t n = ((uint32_t)(hpd->decimal_point));
+    while (n--) {
+      *p++ = '0' | *src++;
+    }
+
+    // Step B.2: write the ".".
+    *p++ = '.';
+
+    // Step B.3: write the "9".
+    n = hpd->num_digits - ((uint32_t)(hpd->decimal_point));
+    while (n--) {
+      *p++ = '0' | *src++;
+    }
+
+  } else {
+    // Referring to the wuffs_base__private_implementation__high_prec_dec
+    // typedef's comment, we have something like "78900.".
+    if ((q - p) < (((uint32_t)(hpd->decimal_point)) + 1)) {
+      goto too_short;
+    }
+    uint8_t* src = &hpd->digits[0];
+
+    // Step C.1: write the "789".
+    uint32_t n = hpd->num_digits;
+    while (n--) {
+      *p++ = '0' | *src++;
+    }
+
+    // Step C.2: write the "00".
+    n = ((uint32_t)(hpd->decimal_point)) - hpd->num_digits;
+    if (n > 0) {
+      memset(p, '0', n);
+      p += n;
+    }
+
+    // Step C.3: write the ".".
+    *p++ = '.';
+  }
+
+  // Truncated bit.
+  if (hpd->truncated) {
+    if ((q - p) < 1) {
+      goto too_short;
+    }
+    *p++ = '$';
+  }
+
+nul_terminator:
+  if ((q - p) < 1) {
+    goto too_short;
+  }
+  *p++ = '\x00';
+  return NULL;
+
+too_short:
+  return "high_prec_dec__to_debug_string: dst buffer is too short";
+}
+
+const char*  //
+test_strconv_hpd_rounded_integer() {
+  CHECK_FOCUS(__func__);
+
+  struct {
+    uint64_t want;
+    const char* str;
+  } test_cases[] = {
+      {.want = 4, .str = "-3.9"},          //
+      {.want = 3, .str = "-3.14159"},      //
+      {.want = 0, .str = "+0"},            //
+      {.want = 0, .str = "0.0000000009"},  //
+      {.want = 0, .str = "0.1"},           //
+      {.want = 1, .str = "0.9"},           //
+      {.want = 12, .str = "1234e-2"},      //
+      {.want = 57, .str = "5678e-2"},      //
+      {.want = 60, .str = "60.0"},         //
+      {.want = 60, .str = "60.4999"},      //
+      {.want = 60, .str = "60.5"},         //
+      {.want = 60, .str = "60.5000"},      //
+      {.want = 61, .str = "60.5001"},      //
+      {.want = 61, .str = "60.6"},         //
+      {.want = 61, .str = "61.0"},         //
+      {.want = 61, .str = "61.4999"},      //
+      {.want = 62, .str = "61.5"},         //
+      {.want = 62, .str = "61.5000"},      //
+      {.want = 62, .str = "61.5001"},      //
+      {.want = 62, .str = "61.6"},         //
+      {.want = 62, .str = "62.0"},         //
+      {.want = 62, .str = "62.4999"},      //
+      {.want = 62, .str = "62.5"},         //
+      {.want = 62, .str = "62.5000"},      //
+      {.want = 63, .str = "62.5001"},      //
+      {.want = 63, .str = "62.6"},         //
+      {.want = 1000, .str = "999.999"},    //
+      {.want = 4560000, .str = "456e+4"},  //
+
+      // With round-to-even, ½ rounds to 0 but "a tiny bit more than ½" rounds
+      // to 1, even if the HPD struct truncates that "1" digit.
+      {.want = 0, .str = "0.5"},  //
+      {.want = 1,                 // 50 '0's per row.
+       .str = "0.500000000000000000000000000000000000000000000000"
+              "00000000000000000000000000000000000000000000000000"
+              "00000000000000000000000000000000000000000000000000"
+              "00000000000000000000000000000000000000000000000000"
+              "00000000000000000000000000000000000000000000000000"
+              "00000000000000000000000000000000000000000000000000"
+              "00000000000000000000000000000000000000000000000000"
+              "00000000000000000000000000000000000000000000000000"
+              "00000000000000000000000000000000000000000000000000"
+              "00000000000000000000000000000000000000000000000000"
+              "00000000000000000000000000000000000000000000000000"
+              "00000000000000000000000000000000000000000000000000"
+              "00000000000000000000000000000000000000000000000001"},  //
+
+      // Inputs with exactly 18 decimal digits before the decimal point.
+      {.want = 123456789012345679, .str = "123456789012345678.9"},   //
+      {.want = 1000000000000000000, .str = "999999999999999999.9"},  //
+
+      // Inputs with exactly 19 decimal digits before the decimal point.
+      {.want = UINT64_MAX, .str = "1234567890123456789"},  //
+  };
+
+  int tc;
+  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+    wuffs_base__private_implementation__high_prec_dec hpd;
+    CHECK_STATUS(
+        "hpd__parse",
+        wuffs_base__private_implementation__high_prec_dec__parse(
+            &hpd, wuffs_base__make_slice_u8((void*)test_cases[tc].str,
+                                            strlen(test_cases[tc].str))));
+    uint64_t have =
+        wuffs_base__private_implementation__high_prec_dec__rounded_integer(
+            &hpd);
+    if (have != test_cases[tc].want) {
+      RETURN_FAIL("\"%s\": have %" PRIu64 ", want %" PRIu64, test_cases[tc].str,
+                  have, test_cases[tc].want);
+    }
+  }
+  return NULL;
+}
+
+const char*  //
+test_strconv_hpd_shift() {
+  CHECK_FOCUS(__func__);
+
+  struct {
+    const char* str;
+    int32_t shift;  // -ve means left shift, +ve means right shift.
+    const char* want;
+  } test_cases[] = {
+      {.str = "0", .shift = +2, .want = "+0"},                  //
+      {.str = "1", .shift = +3, .want = "+.125"},               //
+      {.str = "12e3", .shift = +5, .want = "+375."},            //
+      {.str = "-0.007", .shift = +8, .want = "-.00002734375"},  //
+      {.str = "3.14159E+26",
+       .shift = +60,
+       .want = "+272489496.244698869986677891574800014495849609375"},  //
+
+      {.str = "0", .shift = -2, .want = "+0"},                //
+      {.str = ".125", .shift = -3, .want = "+1."},            //
+      {.str = "3750e-1", .shift = -5, .want = "+12000."},     //
+      {.str = "-2.734375e-5", .shift = -8, .want = "-.007"},  //
+      {.str = "+272489496.244698869986677891574800014495849609375",
+       .shift = -60,
+       .want = "+314159000000000000000000000."},  //
+  };
+
+  int tc;
+  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+    wuffs_base__private_implementation__high_prec_dec hpd;
+    CHECK_STATUS(
+        "hpd__parse",
+        wuffs_base__private_implementation__high_prec_dec__parse(
+            &hpd, wuffs_base__make_slice_u8((void*)test_cases[tc].str,
+                                            strlen(test_cases[tc].str))));
+    int32_t shift = test_cases[tc].shift;
+    if (shift > 0) {
+      wuffs_base__private_implementation__high_prec_dec__small_rshift(
+          &hpd, (uint32_t)(+shift));
+    } else if (shift < 0) {
+      wuffs_base__private_implementation__high_prec_dec__small_lshift(
+          &hpd, (uint32_t)(-shift));
+    }
+
+    uint8_t have[1024];
+    CHECK_STRING(
+        wuffs_base__private_implementation__high_prec_dec__to_debug_string(
+            &hpd,
+            wuffs_base__make_slice_u8(have, WUFFS_TESTLIB_ARRAY_SIZE(have))));
+    if (strcmp(((void*)(have)), test_cases[tc].want)) {
+      RETURN_FAIL("\"%s\" %s %" PRId32 ":\n    have: \"%s\"\n    want: \"%s\"",
+                  test_cases[tc].str, ((shift > 0) ? ">>" : "<<"),
+                  ((shift > 0) ? +shift : -shift), have, test_cases[tc].want);
+    }
+  }
+  return NULL;
+}
+
+const char*  //
+test_strconv_parse_number_f64() {
+  CHECK_FOCUS(__func__);
+
+  const uint64_t fail = 0xDEADBEEF;
+
+  struct {
+    uint64_t want;
+    const char* str;
+  } test_cases[] = {
+      {.want = 0x0000000000000000, .str = "+0.0"},
+      {.want = 0x0000000000000000, .str = "0"},
+      {.want = 0x0000000000000000, .str = "0e0"},
+      {.want = 0x0000000000000001, .str = "4.9406564584124654e-324"},
+      {.want = 0x000FFFFFFFFFFFFF, .str = "2.2250738585072009E-308"},
+      {.want = 0x0010000000000000, .str = "2.2250738585072014E-308"},
+      {.want = 0x3F88000000000000, .str = "0.01171875"},
+      {.want = 0x3FD0000000000000, .str = ".25"},
+      {.want = 0x3FD3333333333333,
+       .str = "0.2999999999999999888977697537484345957636833190917968750000"},
+      {.want = 0x3FD3333333333333, .str = "0.3"},
+      {.want = 0x3FD3333333333334, .str = "0.30000000000000004"},
+      {.want = 0x3FD3333333333334,
+       .str = "0.3000000000000000444089209850062616169452667236328125000000"},
+      {.want = 0x3FD5555555555555, .str = "0.333333333333333333333333333333"},
+      {.want = 0x3FEFFFFFFFFFFFFF, .str = "0.99999999999999988898"},
+      {.want = 0x3FF0000000000000, .str = "0.999999999999999999999999999999"},
+      {.want = 0x3FF0000000000000, .str = "1"},
+      {.want = 0x3FF0000000000001, .str = "1.0000000000000002"},
+      {.want = 0x3FF0000000000002, .str = "1.0000000000000004"},
+      {.want = 0x3FF4000000000000, .str = "1.25"},
+      {.want = 0x3FF8000000000000, .str = "+1.5"},
+      {.want = 0x4000000000000000, .str = "2"},
+      {.want = 0x400921FB54442D18, .str = "3.141592653589793238462643383279"},
+      {.want = 0x400C000000000000, .str = "3.5"},
+      {.want = 0x4014000000000000, .str = "5"},
+      {.want = 0x4036000000000000, .str = "22"},
+      {.want = 0x4036000000000000, .str = "_+__2_2__."},
+      {.want = 0x4037000000000000, .str = "23"},
+      {.want = 0x4038000000000000, .str = "2.4E+00000000001"},
+      {.want = 0x4038000000000000, .str = "2.4E001"},
+      {.want = 0x4038000000000000, .str = "2.4E1"},
+      {.want = 0x4038000000000000, .str = "24"},
+      {.want = 0x4038000000000000, .str = "2400_00000_00000.00000_e-_1_2"},
+      {.want = 0x40FE240C9FCB0C02, .str = "123456.789012"},
+      {.want = 0x4330000000000000, .str = "4503599627370496"},  // 1 << 52.
+      {.want = 0x4330000000000000, .str = "4503599627370496.5"},
+      {.want = 0x4330000000000001, .str = "4503599627370497"},
+      {.want = 0x4330000000000002, .str = "4503599627370497.5"},
+      {.want = 0x4330000000000002, .str = "4503599627370498"},
+      {.want = 0x4340000000000000, .str = "9007199254740992"},  // 1 << 53.
+      {.want = 0x4340000000000000, .str = "9007199254740993"},
+      {.want = 0x4340000000000001, .str = "9007199254740994"},
+      {.want = 0x4340000000000002, .str = "9007199254740995"},
+      {.want = 0x4340000000000002, .str = "9007199254740996"},
+      {.want = 0x4340000000000002, .str = "9_007__199_254__740_996"},
+      {.want = 0x54B249AD2594C37D, .str = "+1E+100"},
+      {.want = 0x54B249AD2594C37D, .str = "+_1_E_+_1_0_0_"},
+      {.want = 0x7FEFFFFFFFFFFFFF, .str = "1.7976931348623157e308"},
+      {.want = 0x7FF0000000000000, .str = "1.8e308"},
+      {.want = 0x7FF0000000000000, .str = "1e999"},
+      {.want = 0x7FF0000000000000, .str = "__InFinity__"},
+      {.want = 0x7FF0000000000000, .str = "inf"},
+      {.want = 0x7FFFFFFFFFFFFFFF, .str = "+nan"},
+      {.want = 0x7FFFFFFFFFFFFFFF, .str = "_+_NaN_"},
+      {.want = 0x7FFFFFFFFFFFFFFF, .str = "nan"},
+      {.want = 0x8000000000000000, .str = "-0.000e0"},
+      {.want = 0xC008000000000000, .str = "-3"},
+      {.want = 0xFFF0000000000000, .str = "-2e308"},
+      {.want = 0xFFF0000000000000, .str = "-inf"},
+      {.want = 0xFFFFFFFFFFFFFFFF, .str = "-NAN"},
+
+      // We accept either ',' or '.'.
+      {.want = 0x3FFC000000000000, .str = "1,75"},
+      {.want = 0x3FFC000000000000, .str = "1.75"},
+
+      {.want = fail, .str = " 0"},
+      {.want = fail, .str = ""},
+      {.want = fail, .str = "."},
+      {.want = fail, .str = "00"},
+      {.want = fail, .str = "001.2"},
+      {.want = fail, .str = "06.44"},
+      {.want = fail, .str = "0644"},
+      {.want = fail, .str = "1234 67.8e9"},
+      {.want = fail, .str = "2,345,678"},  // Two ','s.
+      {.want = fail, .str = "2.345,678"},  // One '.' and one ','.
+      {.want = fail, .str = "7 "},
+      {.want = fail, .str = "7 .9"},
+      {.want = fail, .str = "7e"},
+      {.want = fail, .str = "7e-"},
+      {.want = fail, .str = "7e-+1"},
+      {.want = fail, .str = "7e++1"},
+      {.want = fail, .str = "NAN "},
+      {.want = fail, .str = "NANA"},
+      {.want = fail, .str = "inf_inity"},
+      {.want = fail, .str = "nun"},
+  };
+
+  int tc;
+  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+    wuffs_base__result_f64 r =
+        wuffs_base__parse_number_f64(wuffs_base__make_slice_u8(
+            (void*)test_cases[tc].str, strlen(test_cases[tc].str)));
+    uint64_t have =
+        (r.status.repr == NULL)
+            ? wuffs_base__ieee_754_bit_representation__from_f64(r.value)
+            : fail;
+    if (have != test_cases[tc].want) {
+      RETURN_FAIL("\"%s\": have 0x%" PRIX64 ", want 0x%" PRIX64,
+                  test_cases[tc].str, have, test_cases[tc].want);
+    }
+  }
+
+  return NULL;
+}
+
 const char*  //
 test_strconv_parse_number_i64() {
   CHECK_FOCUS(__func__);
@@ -1033,9 +1428,12 @@ proc tests[] = {
     // These strconv tests are really testing the Wuffs base library. They
     // aren't specific to the std/json code, but putting them here is as good
     // as any other place.
-    test_strconv_parse_number_i64,  //
-    test_strconv_parse_number_u64,  //
-    test_strconv_utf_8_next,        //
+    test_strconv_hpd_rounded_integer,  //
+    test_strconv_hpd_shift,            //
+    test_strconv_parse_number_f64,     //
+    test_strconv_parse_number_i64,     //
+    test_strconv_parse_number_u64,     //
+    test_strconv_utf_8_next,           //
 
     test_wuffs_json_decode_interface,             //
     test_wuffs_json_decode_long_numbers,          //
