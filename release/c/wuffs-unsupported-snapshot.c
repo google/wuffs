@@ -1886,16 +1886,23 @@ wuffs_base__make_token(uint64_t repr) {
 
 // For a source string of "123" or "0x9A", it is valid for a tokenizer to
 // return any one of:
-//  - WUFFS_BASE__TOKEN__VBD__NUMBER__FLOATING_POINT.
-//  - WUFFS_BASE__TOKEN__VBD__NUMBER__INTEGER_SIGNED.
-//  - WUFFS_BASE__TOKEN__VBD__NUMBER__INTEGER_UNSIGNED.
+//  - WUFFS_BASE__TOKEN__VBD__NUMBER__CONTENT_FLOATING_POINT.
+//  - WUFFS_BASE__TOKEN__VBD__NUMBER__CONTENT_INTEGER_SIGNED.
+//  - WUFFS_BASE__TOKEN__VBD__NUMBER__CONTENT_INTEGER_UNSIGNED.
 //
 // For a source string of "+123" or "-0x9A", only the first two are valid.
 //
 // For a source string of "123.", only the first one is valid.
-#define WUFFS_BASE__TOKEN__VBD__NUMBER__FLOATING_POINT 0x00001
-#define WUFFS_BASE__TOKEN__VBD__NUMBER__INTEGER_SIGNED 0x00002
-#define WUFFS_BASE__TOKEN__VBD__NUMBER__INTEGER_UNSIGNED 0x00004
+#define WUFFS_BASE__TOKEN__VBD__NUMBER__CONTENT_FLOATING_POINT 0x00001
+#define WUFFS_BASE__TOKEN__VBD__NUMBER__CONTENT_INTEGER_SIGNED 0x00002
+#define WUFFS_BASE__TOKEN__VBD__NUMBER__CONTENT_INTEGER_UNSIGNED 0x00004
+
+// The number 300 might be represented as "\x01\x2C", "\x2C\x01\x00\x00" or
+// "300", which are big-endian, little-endian or text. For binary formats, the
+// token length discriminates e.g. u16 little-endian vs u32 little-endian.
+#define WUFFS_BASE__TOKEN__VBD__NUMBER__FORMAT_BINARY_BIG_ENDIAN 0x00100
+#define WUFFS_BASE__TOKEN__VBD__NUMBER__FORMAT_BINARY_LITTLE_ENDIAN 0x00200
+#define WUFFS_BASE__TOKEN__VBD__NUMBER__FORMAT_TEXT 0x00400
 
 // --------
 
@@ -20814,9 +20821,9 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
               iop_a_src = a_src->data.ptr + a_src->meta.ri;
             }
             v_number_status = (v_number_length >> 8);
-            v_vminor = 10485763;
+            v_vminor = 10486787;
             if ((v_number_length & 128) != 0) {
-              v_vminor = 10485761;
+              v_vminor = 10486785;
             }
             v_number_length = (v_number_length & 127);
             if (v_number_status == 0) {

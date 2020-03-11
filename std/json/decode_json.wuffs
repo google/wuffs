@@ -609,9 +609,9 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 				{
 					number_length = this.decode_number!(src: args.src)
 					number_status = number_length >> 8
-					vminor = 0xA0_0003
+					vminor = 0xA0_0403
 					if (number_length & 0x80) <> 0 {
-						vminor = 0xA0_0001
+						vminor = 0xA0_0401
 					}
 					number_length = number_length & 0x7F
 					if number_status == 0 {
