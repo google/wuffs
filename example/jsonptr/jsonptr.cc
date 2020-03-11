@@ -121,6 +121,7 @@ static const char* usage =
     "    -i=NUM  -indent=NUM\n"
     "    -o=NUM  -max-output-depth=NUM\n"
     "    -q=STR  -query=STR\n"
+    "    -s      -strict-json-pointer-syntax\n"
     "    -t      -tabs\n"
     "            -fail-if-unsandboxed\n"
     "\n"
@@ -167,13 +168,20 @@ static const char* usage =
     "object has multiple \"foo\" children but the first one doesn't have a\n"
     "\"bar\" child, even if later ones do.\n"
     "\n"
+    "The -s or -strict-json-pointer-syntax flag restricts the -query=STR\n"
+    "string to exactly RFC 6901, with only two escape sequences: \"~0\" and\n"
+    "\"~1\" for \"~\" and \"/\". Without this flag, this program also lets\n"
+    "\"~n\" and \"~r\" escape the New Line and Carriage Return ASCII control\n"
+    "characters, which can work better with line oriented Unix tools that\n"
+    "assume exactly one value (i.e. one JSON Pointer string) per line.\n"
+    "\n"
     "----\n"
     "\n"
     "The -o=NUM or -max-output-depth=NUM flag gives the maximum (inclusive)\n"
     "output depth. JSON containers ([] arrays and {} objects) can hold other\n"
     "containers. When this flag is set, containers at depth NUM are replaced\n"
     "with \"[…]\" or \"{…}\". A bare -o or -max-output-depth is equivalent to\n"
-    "NUM=1. The flag's absence is equivalent to an unlimited output depth.\n"
+    "-o=1. The flag's absence is equivalent to an unlimited output depth.\n"
     "\n"
     "The -max-output-depth flag only affects the program's output. It doesn't\n"
     "affect whether or not the input is considered valid JSON. The JSON\n"
@@ -413,6 +421,14 @@ class Query {
           if (*ptr != '/') {
             break;
           }
+        } else if (*j == 'n') {
+          if (*ptr != '\n') {
+            break;
+          }
+        } else if (*j == 'r') {
+          if (*ptr != '\r') {
+            break;
+          }
         } else {
           break;
         }
@@ -445,8 +461,11 @@ class Query {
   // validate returns whether the (ptr, len) arguments form a valid JSON
   // Pointer. In particular, it must be valid UTF-8, and either be empty or
   // start with a '/'. Any '~' within must immediately be followed by either
-  // '0' or '1'.
-  static bool validate(char* query_c_string, size_t length) {
+  // '0' or '1'. If strict_json_pointer_syntax is false, a '~' may also be
+  // followed by either 'n' or 'r'.
+  static bool validate(char* query_c_string,
+                       size_t length,
+                       bool strict_json_pointer_syntax) {
     if (length <= 0) {
       return true;
     }
@@ -461,11 +480,24 @@ class Query {
       if (!o.is_valid()) {
         return false;
       }
-      if (previous_was_tilde && (o.code_point != '0') &&
-          (o.code_point != '1')) {
-        return false;
+
+      if (previous_was_tilde) {
+        switch (o.code_point) {
+          case '0':
+          case '1':
+            break;
+          case 'n':
+          case 'r':
+            if (strict_json_pointer_syntax) {
+              return false;
+            }
+            break;
+          default:
+            return false;
+        }
       }
       previous_was_tilde = o.code_point == '~';
+
       s.ptr += o.byte_length;
       s.len -= o.byte_length;
     }
@@ -484,6 +516,7 @@ struct {
   size_t indent;
   uint32_t max_output_depth;
   char* query_c_string;
+  bool strict_json_pointer_syntax;
   bool tabs;
 } flags = {0};
 
@@ -547,11 +580,12 @@ parse_flags(int argc, char** argv) {
     if (!strncmp(arg, "q=", 2) || !strncmp(arg, "query=", 6)) {
       while (*arg++ != '=') {
       }
-      if (Query::validate(arg, strlen(arg))) {
-        flags.query_c_string = arg;
-        continue;
-      }
-      return usage;
+      flags.query_c_string = arg;
+      continue;
+    }
+    if (!strcmp(arg, "s") || !strcmp(arg, "strict-json-pointer-syntax")) {
+      flags.strict_json_pointer_syntax = true;
+      continue;
     }
     if (!strcmp(arg, "t") || !strcmp(arg, "tabs")) {
       flags.tabs = true;
@@ -559,6 +593,12 @@ parse_flags(int argc, char** argv) {
     }
 
     return usage;
+  }
+
+  if (flags.query_c_string &&
+      !Query::validate(flags.query_c_string, strlen(flags.query_c_string),
+                       flags.strict_json_pointer_syntax)) {
+    return "main: bad JSON Pointer (RFC 6901) syntax for the -query=STR flag";
   }
 
   flags.remaining_argc = argc - c;
