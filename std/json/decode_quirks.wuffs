@@ -1,0 +1,158 @@
+// Copyright 2020 The Wuffs Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// --------
+
+// Quirks are discussed in (/doc/note/quirks.md).
+//
+// The base38 encoding of "json" is 0x12_4265. Left shifting by 10 gives
+// 0x4909_9400.
+
+// --------
+
+// When this quirk is enabled, e.g. "abc\az" is accepted as a JSON string,
+// equivalent to "abc\u0007z", containing an ASCII Bell control character.
+pub const quirk_allow_backslash_a base.u32 = 0x4909_9400 | 0x00
+
+// When this quirk is enabled, e.g. "abc\U0001F4A9z" is accepted as a JSON
+// string, equivalent to "abc\uD83D\uDCA9z", containing the U+0001F4A9 PILE OF
+// POO Unicode code point. There are exactly 8 encoded bytes after each "\U".
+pub const quirk_allow_backslash_capital_u base.u32 = 0x4909_9400 | 0x01
+
+// When this quirk is enabled, e.g. "abc\ez" is accepted as a JSON string,
+// equivalent to "abc\u001Bz", containing an ASCII Escape control character.
+pub const quirk_allow_backslash_e base.u32 = 0x4909_9400 | 0x02
+
+// When this quirk is enabled, e.g. "abc\?z" is accepted as a JSON string,
+// equivalent to "abc?z".
+pub const quirk_allow_backslash_question_mark base.u32 = 0x4909_9400 | 0x03
+
+// When this quirk is enabled, e.g. "abc\'z" is accepted as a JSON string,
+// equivalent to "abc'z".
+pub const quirk_allow_backslash_single_quote base.u32 = 0x4909_9400 | 0x04
+
+// When this quirk is enabled, e.g. "abc\vz" is accepted as a JSON string,
+// equivalent to "abc\u000Bz", containing an ASCII Vertical Tab control
+// character.
+pub const quirk_allow_backslash_v base.u32 = 0x4909_9400 | 0x05
+
+// When this quirk is enabled, e.g. "abc\xeFz" is accepted as a JSON string,
+// decoding to 5 bytes: 0x61, 0x62, 0x63, 0xEF and 0x7A. There are exactly 2
+// encoded bytes after each "\x".
+//
+// Decoded strings are byte strings, no longer guaranteed to be valid UTF-8.
+//
+// "\x", "\x9", "\x9$" and "\X99" are all still rejected.
+pub const quirk_allow_backslash_x base.u32 = 0x4909_9400 | 0x06
+
+// When this quirk is enabled, e.g. "abc\0z" is accepted as a JSON string,
+// equivalent to "abc\u0000z", containing an ASCII NUL control character.
+pub const quirk_allow_backslash_zero base.u32 = 0x4909_9400 | 0x07
+
+// When this quirk is enabled, "/* C/C++ style block comments */" are accepted
+// anywhere whitespace would be, although see the quirk_allow_trailing_new_line
+// comment for additional interaction when combining multiple quirks.
+//
+// They produce WUFFS_BASE__TOKEN__VBD__FILLER__COMMENT_BLOCK tokens.
+pub const quirk_allow_comment_block base.u32 = 0x4909_9400 | 0x08
+
+// When this quirk is enabled, "// C/C++ style line comments\n" are accepted
+// anywhere whitespace would be, although see the quirk_allow_trailing_new_line
+// comment for additional interaction when combining multiple quirks.
+//
+// A line comment may omit the trailing '\n' if there is no input afterwards
+// (i.e. the line comment ends with the end-of-file), but note the
+// quirk_allow_trailing_new_line interaction already mentioned.
+//
+// They produce WUFFS_BASE__TOKEN__VBD__FILLER__COMMENT_LINE tokens.
+pub const quirk_allow_comment_line base.u32 = 0x4909_9400 | 0x09
+
+// When this quirk is enabled, there may be a comma after the final array
+// element or object key-value pair and before the closing "]" or "}". A comma
+// can therefore be a terminator (not just a separator) for elements / pairs,
+// which can simplify incremental edits and line oriented diffs.
+//
+// For example, `[1,]`, `[1,2,3,]` and `{"k":"v",}` all become acceptable, but
+// `[,]`, `{,}` and `{"k",:"v"}` are still rejected.
+pub const quirk_allow_final_comma base.u32 = 0x4909_9400 | 0x0A
+
+// When this quirk is enabled, "inf", "Infinity", "NAN" and their
+// case-insensitive variants, optionally preceded immediately by "-" or "+",
+// are accepted anywhere a JSON number would be.
+pub const quirk_allow_inf_nan_numbers base.u32 = 0x4909_9400 | 0x0B
+
+// When this quirk is enabled, the input byte stream may optionally start with
+// "\x1E" (the ASCII Record Separator control character). That byte is skipped
+// and decoding proceeds normally.
+//
+// When combined with quirk_allow_leading_unicode_byte_order_mark, either mark
+// may come first in the byte stream.
+//
+// When combined with quirk_allow_trailing_new_line, this format is also known
+// as RFC 7464, Json Text Sequences and MIME type "application/json-seq".
+pub const quirk_allow_leading_ascii_record_separator base.u32 = 0x4909_9400 | 0x0C
+
+// When this quirk is enabled, the input byte stream may optionally start with
+// "\xEF\xBB\xBF", the UTF-8 encoding of the Unicode BOM (Byte Order Mark).
+// Those 3 bytes are skipped and decoding proceeds normally.
+//
+// When combined with quirk_allow_leading_ascii_record_separator, either mark
+// may come first in the byte stream.
+pub const quirk_allow_leading_unicode_byte_order_mark base.u32 = 0x4909_9400 | 0x0D
+
+// When this quirk is enabled, following a successful decoding of a top-level
+// JSON value, any trailing whitespace (ASCII characters 0x09, 0x0A, 0x0D or
+// 0x20) is also consumed (and WUFFS_BASE__TOKEN__VBC__FILLER tokens emitted)
+// up to the end-of-file or up to and including a single new line (ASCII 0x0A,
+// also known as '\n'), whichever comes first. This trailing whitespace is not
+// mandatory, but it is consumed if present.
+//
+// When enabled, trailing non-whitespace (before a '\n') is an error. For
+// example, with "007" input, decoding with this quirk disabled (the default
+// case) will consume just 1 byte ("0") and leave the rest ("07") unread
+// without error, as "0" is a perfectly valid JSON value (but "00" is not).
+// Decoding "007" (or "007\n") with this quirk enabled will return an error.
+//
+// When enabled, the decoder will not consume more than one trailing '\n', nor
+// will it consume any other whitespace immediately after a trailing '\n'.
+//
+// If a JSON encoder avoids emitting (optional) '\n' bytes, other than a single
+// '\n' after each top-level value in a multi-JSON-value stream, this format is
+// also known as Line-delimited JSON (LDJSON), newline-delimited JSON (NDJSON)
+// and JSON lines (JSONL, http://jsonlines.org/). With or without this quirk
+// enabled, this decoder always accepts '\n' bytes before the end of a
+// top-level JSON value, anywhere whitespace is valid per the JSON spec, but
+// such bytes may confuse other line oriented Unix tools that assume exactly
+// one JSON value per line.
+//
+// When combined with quirk_allow_leading_ascii_record_separator, this format
+// is also known as RFC 7464, Json Text Sequences and MIME type
+// "application/json-seq".
+//
+// When combined with quirk_allow_comment_block or quirk_allow_comment_line, it
+// is an error for a comment to occur in this trailing whitespace, before an
+// end-of-file or '\n' is encountered. Treating this as an error avoids any
+// ambiguity in accounting for new lines within a block comment or ending a
+// line comment.
+pub const quirk_allow_trailing_new_line base.u32 = 0x4909_9400 | 0x0E
+
+// When this quirk is enabled, invalid UTF-8 inside a JSON string is accepted.
+// Each byte of invalid UTF-8 is equivalent to "\uFFFD", the Unicode
+// Replacement Character. Invalid UTF-8 outside a JSON string remains an error.
+//
+// Similarly, for backslash-u escapes featuring incorrectly paired Unicode
+// surrogates, each backslash-u 6-byte unit is replaced. For example,
+// "abc\uDC00z" and "ijk\uD800\uDBFFz" are equivalent to "abc\uFFFDz" and
+// "ijk\uFFFD\uFFFDz".
+pub const quirk_replace_invalid_utf_8 base.u32 = 0x4909_9400 | 0x0F

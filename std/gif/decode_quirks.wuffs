@@ -16,7 +16,10 @@
 
 // Quirks are discussed in (/doc/note/quirks.md).
 //
-// The base38 encoding of "gif " is 0xF_8586.
+// The base38 encoding of "gif " is 0x0F_8586. Left shifting by 10 gives
+// 0x3E16_1800.
+
+// --------
 
 // When this quirk is enabled, when skipping over frames, the number of frames
 // visited isn't incremented when the last byte of the N'th frame is seen.
@@ -32,7 +35,7 @@
 // see the N+1'th frame's header (or the end-of-animation terminator), so that
 // e.g. the API for visiting the N'th frame can also return whether it's the
 // final frame. Enabling this quirk allows for matching that behavior.
-pub const quirk_delay_num_decoded_frames base.u32 = (0xF_8586 << 10) | 0
+pub const quirk_delay_num_decoded_frames base.u32 = 0x3E16_1800 | 0x00
 
 // When this quirk is enabled, the background color of the first frame is set
 // to black whenever that first frame has a local (frame-specific) palette.
@@ -44,7 +47,7 @@ pub const quirk_delay_num_decoded_frames base.u32 = (0xF_8586 << 10) | 0
 //
 // There isn't really much of a rationale for this, other than it matches the
 // behavior of another GIF implementation.
-pub const quirk_first_frame_local_palette_means_black_background base.u32 = (0xF_8586 << 10) | 1
+pub const quirk_first_frame_local_palette_means_black_background base.u32 = 0x3E16_1800 | 0x01
 
 // When this quirk is enabled, the background color is taken from the GIF
 // instead of always being transparent black. If the background color index in
@@ -60,12 +63,12 @@ pub const quirk_first_frame_local_palette_means_black_background base.u32 = (0xF
 // processing WUFFS_BASE__ANIMATION_DISPOSAL__RESTORE_BACKGROUND. In both
 // cases, the caller of Wuffs, not Wuffs itself, is responsible for filling the
 // pixel buffer with that color.
-pub const quirk_honor_background_color base.u32 = (0xF_8586 << 10) | 2
+pub const quirk_honor_background_color base.u32 = 0x3E16_1800 | 0x02
 
 // When this quirk is enabled, silently ignore e.g. a frame that reports a
 // width and height of 6 pixels each, followed by 50 pixel values. In that
 // case, we process the first 36 pixel values and discard the excess 14.
-pub const quirk_ignore_too_much_pixel_data base.u32 = (0xF_8586 << 10) | 3
+pub const quirk_ignore_too_much_pixel_data base.u32 = 0x3E16_1800 | 0x03
 
 // When this quirk is enabled, if the initial frame bounds extends beyond the
 // image bounds, then the image bounds stay unchanged. By default (with this
@@ -74,12 +77,12 @@ pub const quirk_ignore_too_much_pixel_data base.u32 = (0xF_8586 << 10) | 3
 //
 // For more discussion, see
 // https://github.com/google/wuffs/blob/master/test/data/artificial/gif-frame-out-of-bounds.gif.make-artificial.txt
-pub const quirk_image_bounds_are_strict base.u32 = (0xF_8586 << 10) | 4
+pub const quirk_image_bounds_are_strict base.u32 = 0x3E16_1800 | 0x04
 
 // When this quirk is enabled, a frame with zero width or height is rejected
 // during decode_frame (but accepted during decode_frame_config).
-pub const quirk_reject_empty_frame base.u32 = (0xF_8586 << 10) | 5
+pub const quirk_reject_empty_frame base.u32 = 0x3E16_1800 | 0x05
 
 // When this quirk is enabled, a frame with no explicit palette is rejected,
 // instead of implicitly having a palette with every entry being opaque black.
-pub const quirk_reject_empty_palette base.u32 = (0xF_8586 << 10) | 6
+pub const quirk_reject_empty_palette base.u32 = 0x3E16_1800 | 0x06
