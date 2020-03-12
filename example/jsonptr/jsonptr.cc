@@ -117,7 +117,7 @@ static const char* usage =
     "Usage: jsonptr -flags input.json\n"
     "\n"
     "Flags:\n"
-    "    -c      -compact\n"
+    "    -c      -compact-output\n"
     "    -i=NUM  -indent=NUM\n"
     "    -o=NUM  -max-output-depth=NUM\n"
     "    -q=STR  -query=STR\n"
@@ -138,7 +138,7 @@ static const char* usage =
     "duplicate keys. Canonicalization does not imply Unicode normalization.\n"
     "\n"
     "Formatted means that arrays' and objects' elements are indented, each\n"
-    "on its own line. Configure this with the -c / -compact, -i=NUM /\n"
+    "on its own line. Configure this with the -c / -compact-output, -i=NUM /\n"
     "-indent=NUM (for NUM ranging from 0 to 8) and -t / -tabs flags.\n"
     "\n"
     "----\n"
@@ -511,7 +511,7 @@ struct {
   int remaining_argc;
   char** remaining_argv;
 
-  bool compact;
+  bool compact_output;
   bool fail_if_unsandboxed;
   size_t indent;
   uint32_t max_output_depth;
@@ -545,8 +545,8 @@ parse_flags(int argc, char** argv) {
       }
     }
 
-    if (!strcmp(arg, "c") || !strcmp(arg, "compact")) {
-      flags.compact = true;
+    if (!strcmp(arg, "c") || !strcmp(arg, "compact-output")) {
+      flags.compact_output = true;
       continue;
     }
     if (!strcmp(arg, "fail-if-unsandboxed")) {
@@ -812,7 +812,7 @@ handle_token(wuffs_base__token t) {
       } else {
         // Write preceding whitespace.
         if ((ctx != context::in_list_after_bracket) &&
-            (ctx != context::in_dict_after_brace) && !flags.compact) {
+            (ctx != context::in_dict_after_brace) && !flags.compact_output) {
           TRY(write_dst("\n", 1));
           for (uint32_t i = 0; i < depth; i++) {
             TRY(write_dst(flags.tabs ? INDENT_TAB_STRING : INDENT_SPACES_STRING,
@@ -835,13 +835,13 @@ handle_token(wuffs_base__token t) {
     // continuation of a multi-token chain.
     if (!t.link_prev()) {
       if (ctx == context::in_dict_after_key) {
-        TRY(write_dst(": ", flags.compact ? 1 : 2));
+        TRY(write_dst(": ", flags.compact_output ? 1 : 2));
       } else if (ctx != context::none) {
         if ((ctx != context::in_list_after_bracket) &&
             (ctx != context::in_dict_after_brace)) {
           TRY(write_dst(",", 1));
         }
-        if (!flags.compact) {
+        if (!flags.compact_output) {
           TRY(write_dst("\n", 1));
           for (size_t i = 0; i < depth; i++) {
             TRY(write_dst(flags.tabs ? INDENT_TAB_STRING : INDENT_SPACES_STRING,
