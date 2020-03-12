@@ -33,8 +33,8 @@ pub struct decoder? implements base.token_decoder(
 	// maximum is 1024 (stack is 1024 bits or 128 bytes), also known as
 	// decoder_depth_max_incl.
 	//
-	// The [JSON spec](https://tools.ietf.org/html/rfc7159) clearly states, "an
-	// implementation may set limits on the maximum depth of nesting".
+	// The [JSON spec](https://www.ietf.org/rfc/rfc8259.txt) clearly states,
+	// "an implementation may set limits on the maximum depth of nesting".
 	//
 	// In comparison, as of February 2020, the Chromium web browser's JSON
 	// parser's maximum recursion depth is 200:

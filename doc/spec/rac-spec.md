@@ -8,10 +8,10 @@ Status: Draft (as of September 2019). There is no compatibility guarantee yet.
 RAC is a *compressed* file format that allows *random access* (not just
 sequential access) to the decompressed contents. In comparison to some other
 popular compression formats, all four of the
-[Zlib](https://tools.ietf.org/html/rfc1950),
-[Brotli](https://tools.ietf.org/html/rfc7932),
+[Zlib](https://www.ietf.org/rfc/rfc1950.txt),
+[Brotli](https://www.ietf.org/rfc/rfc7932.txt),
 [LZ4](https://github.com/lz4/lz4/blob/master/doc/lz4_Frame_format.md) and
-[Zstandard](https://tools.ietf.org/html/rfc8478) specifications explicitly
+[Zstandard](https://www.ietf.org/rfc/rfc8478.txt) specifications explicitly
 contain the identical phrase: "the data format defined by this specification
 does not attempt to allow random access to compressed data".
 
