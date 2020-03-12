@@ -261,63 +261,66 @@ wuffs_json__decoder dec;
 // string, its multiple fragments are consumed as the program walks the JSON
 // data from stdin. For example, letting "$" denote a NUL, suppose that we
 // started with a query string of "/apple/banana/12/durian" and are currently
-// trying to match the second fragment, "banana", so that Query::depth is 2:
+// trying to match the second fragment, "banana", so that Query::m_depth is 2:
 //
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //  / a p p l e / b a n a n a / 1 2 / d u r i a n $
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //                ^           ^
-//                frag_i      frag_k
+//                m_frag_i    m_frag_k
 //
-// The two pointers frag_i and frag_k are the start (inclusive) and end
-// (exclusive) of the fragment. They satisfy (frag_i <= frag_k) and may be
-// equal if the fragment empty (note that "" is a valid JSON object key).
+// The two pointers m_frag_i and m_frag_k (abbreviated as mfi and mfk) are the
+// start (inclusive) and end (exclusive) of the query fragment. They satisfy
+// (mfi <= mfk) and may be equal if the fragment empty (note that "" is a valid
+// JSON object key).
 //
-// The frag_j pointer moves between these two, or is nullptr. An invariant is
-// that (((frag_i <= frag_j) && (frag_j <= frag_k)) || (frag_j == nullptr)).
+// The m_frag_j (mfj) pointer moves between these two, or is nullptr. An
+// invariant is that (((mfi <= mfj) && (mfj <= mfk)) || (mfj == nullptr)).
 //
 // Wuffs' JSON tokenizer can portray a single JSON string as multiple Wuffs
 // tokens, as backslash-escaped values within that JSON string may each get
 // their own token.
 //
-// At the start of each object key (a JSON string), frag_j is set to frag_i.
+// At the start of each object key (a JSON string), mfj is set to mfi.
 //
-// While frag_j remains non-nullptr, each token's unescaped contents are then
-// compared to that part of the fragment from frag_j to frag_k. If it is a
-// prefix (including the case of an exact match), then frag_j is advanced by
-// the unescaped length. Otherwise, frag_j is set to nullptr.
+// While mfj remains non-nullptr, each token's unescaped contents are then
+// compared to that part of the fragment from mfj to mfk. If it is a prefix
+// (including the case of an exact match), then mfj is advanced by the
+// unescaped length. Otherwise, mfj is set to nullptr.
 //
 // Comparison accounts for JSON Pointer's escaping notation: "~0" and "~1" in
 // the query (not the JSON value) are unescaped to "~" and "/" respectively.
+// "~n" and "~r" are also unescaped to "\n" and "\r". The program is
+// responsible for calling Query::validate (with a strict_json_pointer_syntax
+// argument) before otherwise using this class.
 //
-// The frag_j pointer therefore advances from frag_i to frag_k, or drops out,
-// as we incrementally match the object key with the query fragment. For
-// example, if we have already matched the "ban" of "banana", then we would
-// accept any of an "ana" token, an "a" token or a "\u0061" token, amongst
-// others. They would advance frag_j by 3, 1 or 1 bytes respectively.
+// The mfj pointer therefore advances from mfi to mfk, or drops out, as we
+// incrementally match the object key with the query fragment. For example, if
+// we have already matched the "ban" of "banana", then we would accept any of
+// an "ana" token, an "a" token or a "\u0061" token, amongst others. They would
+// advance mfj by 3, 1 or 1 bytes respectively.
 //
-//                      frag_j
+//                      mfj
 //                      v
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //  / a p p l e / b a n a n a / 1 2 / d u r i a n $
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //                ^           ^
-//                frag_i      frag_k
+//                mfi         mfk
 //
 // At the end of each object key (or equivalently, at the start of each object
-// value), if frag_j is non-nullptr and equal to (but not less than) frag_k
-// then we have a fragment match: the query fragment equals the object key. If
-// there is a next fragment (in this example, "12") we move the frag_etc
-// pointers to its start and end and increment Query::depth. Otherwise, we have
-// matched the complete query, and the upcoming JSON value is the result of
-// that query.
+// value), if mfj is non-nullptr and equal to (but not less than) mfk then we
+// have a fragment match: the query fragment equals the object key. If there is
+// a next fragment (in this example, "12") we move the frag_etc pointers to its
+// start and end and increment Query::m_depth. Otherwise, we have matched the
+// complete query, and the upcoming JSON value is the result of that query.
 //
 // The discussion above centers on object keys. If the query fragment is
 // numeric then it can also match as an array index: the string fragment "12"
 // will match an array's 13th element (starting counting from zero). See RFC
 // 6901 for its precise definition of an "array index" number.
 //
-// Array index fragment match is represented by the Query::array_index field,
+// Array index fragment match is represented by the Query::m_array_index field,
 // whose type (wuffs_base__result_u64) is a result type. An error result means
 // that the fragment is not an array index. A value result holds the number of
 // list elements remaining. When matching a query fragment in an array (instead
@@ -325,46 +328,44 @@ wuffs_json__decoder dec;
 // the upcoming JSON value is the one that matches the query fragment.
 class Query {
  private:
-  uint8_t* frag_i;
-  uint8_t* frag_j;
-  uint8_t* frag_k;
+  uint8_t* m_frag_i;
+  uint8_t* m_frag_j;
+  uint8_t* m_frag_k;
 
-  uint32_t depth;
+  uint32_t m_depth;
 
-  wuffs_base__result_u64 array_index;
+  wuffs_base__result_u64 m_array_index;
 
  public:
   void reset(char* query_c_string) {
-    this->frag_i = (uint8_t*)query_c_string;
-    this->frag_j = (uint8_t*)query_c_string;
-    this->frag_k = (uint8_t*)query_c_string;
-    this->depth = 0;
-    this->array_index.status.repr = "#main: not an array index query fragment";
-    this->array_index.value = 0;
+    m_frag_i = (uint8_t*)query_c_string;
+    m_frag_j = (uint8_t*)query_c_string;
+    m_frag_k = (uint8_t*)query_c_string;
+    m_depth = 0;
+    m_array_index.status.repr = "#main: not an array index query fragment";
+    m_array_index.value = 0;
   }
 
-  void restart_fragment(bool enable) {
-    this->frag_j = enable ? this->frag_i : nullptr;
-  }
+  void restart_fragment(bool enable) { m_frag_j = enable ? m_frag_i : nullptr; }
 
-  bool is_at(uint32_t depth) { return this->depth == depth; }
+  bool is_at(uint32_t depth) { return m_depth == depth; }
 
   // tick returns whether the fragment is a valid array index whose value is
   // zero. If valid but non-zero, it decrements it and returns false.
   bool tick() {
-    if (this->array_index.status.is_ok()) {
-      if (this->array_index.value == 0) {
+    if (m_array_index.status.is_ok()) {
+      if (m_array_index.value == 0) {
         return true;
       }
-      this->array_index.value--;
+      m_array_index.value--;
     }
     return false;
   }
 
   // next_fragment moves to the next fragment, returning whether it existed.
   bool next_fragment() {
-    uint8_t* k = this->frag_k;
-    uint32_t d = this->depth;
+    uint8_t* k = m_frag_k;
+    uint32_t d = m_depth;
 
     this->reset(nullptr);
 
@@ -379,32 +380,30 @@ class Query {
       all_digits = all_digits && ('0' <= *k) && (*k <= '9');
       k++;
     }
-    this->frag_i = i;
-    this->frag_j = i;
-    this->frag_k = k;
-    this->depth = d + 1;
+    m_frag_i = i;
+    m_frag_j = i;
+    m_frag_k = k;
+    m_depth = d + 1;
     if (all_digits) {
       // wuffs_base__parse_number_u64 rejects leading zeroes, e.g. "00", "07".
-      this->array_index =
+      m_array_index =
           wuffs_base__parse_number_u64(wuffs_base__make_slice_u8(i, k - i));
     }
     return true;
   }
 
-  bool matched_all() { return this->frag_k == nullptr; }
+  bool matched_all() { return m_frag_k == nullptr; }
 
-  bool matched_fragment() {
-    return this->frag_j && (this->frag_j == this->frag_k);
-  }
+  bool matched_fragment() { return m_frag_j && (m_frag_j == m_frag_k); }
 
   void incremental_match_slice(uint8_t* ptr, size_t len) {
-    if (!this->frag_j) {
+    if (!m_frag_j) {
       return;
     }
-    uint8_t* j = this->frag_j;
+    uint8_t* j = m_frag_j;
     while (true) {
       if (len == 0) {
-        this->frag_j = j;
+        m_frag_j = j;
         return;
       }
 
@@ -441,11 +440,11 @@ class Query {
       ptr++;
       len--;
     }
-    this->frag_j = nullptr;
+    m_frag_j = nullptr;
   }
 
   void incremental_match_code_point(uint32_t code_point) {
-    if (!this->frag_j) {
+    if (!m_frag_j) {
       return;
     }
     uint8_t u[WUFFS_BASE__UTF_8__BYTE_LENGTH__MAX_INCL];
