@@ -57,6 +57,35 @@ After modifying this program, run "build-example.sh example/jsonptr/" and then
 
 ----
 
+This program uses Wuffs' JSON decoder at a relatively low level, processing the
+decoder's token-stream output individually. The core loop, in pseudo-code, is
+"for_each_token { handle_token(etc); }", where the handle_token function
+changes global state (e.g. the `depth` and `context` variables) and prints
+output text based on that state and the token's source text. Notably,
+handle_token is not recursive, even though JSON values can nest.
+
+This approach is centered around JSON tokens. Each JSON 'thing' (e.g. number,
+string, object) comprises one or more JSON tokens.
+
+An alternative, higher-level approach is in the sibling example/jsonfindptrs
+program. Neither approach is better or worse per se, but when studying this
+program, be aware that there are multiple ways to use Wuffs' JSON decoder.
+
+The two programs, jsonfindptrs and jsonptr, also demonstrate different
+trade-offs with regard to JSON object duplicate keys. The JSON spec permits
+different implementations to allow or reject duplicate keys. It is not always
+clear which approach is safer. Rejecting them is certainly unambiguous, and
+security bugs can lurk in ambiguous corners of a file format, if two different
+implementations both silently accept a file but differ on how to interpret it.
+On the other hand, in the worst case, detecting duplicate keys requires O(N)
+memory, where N is the size of the (potentially untrusted) input.
+
+This program (jsonptr) allows duplicate keys and requires only O(1) memory. As
+mentioned above, it doesn't dynamically allocate memory at all, and on Linux,
+it runs in a SECCOMP_MODE_STRICT sandbox.
+
+----
+
 This example program differs from most other example Wuffs programs in that it
 is written in C++, not C.
 
@@ -152,9 +181,9 @@ static const char* usage =
     "\n"
     "An absent query is equivalent to the empty query, which identifies the\n"
     "entire input (the root value). Unlike a file system, the \"/\" query\n"
-    "does not identify the root. Instead, it identifies the child (the value\n"
-    "in a key-value pair) of the root whose key is the empty string.\n"
-    "Similarly, \"/foo\" and \"/foo/\" identify two different nodes.\n"
+    "does not identify the root. Instead, \"\" is the root and \"/\" is the\n"
+    "child (the value in a key-value pair) of the root whose key is the empty\n"
+    "string. Similarly, \"/xyz\" and \"/xyz/\" are two different nodes.\n"
     "\n"
     "If the query found a valid JSON value, this program will return a zero\n"
     "exit code even if the rest of the input isn't valid JSON. If the query\n"
@@ -982,6 +1011,7 @@ main1(int argc, char** argv) {
       }
       curr_token_end_src_index += n;
 
+      // Skip filler tokens (e.g. whitespace).
       if (t.value() == 0) {
         continue;
       }
