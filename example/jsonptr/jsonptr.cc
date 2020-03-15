@@ -888,6 +888,8 @@ handle_token(wuffs_base__token t) {
           case context::in_dict_after_key:
             query_matched_fragment = query.matched_fragment();
             break;
+          default:
+            break;
         }
       }
       if (!query_matched_fragment) {
@@ -991,6 +993,8 @@ after_value:
       break;
     case context::in_dict_after_value:
       ctx = context::in_dict_after_key;
+      break;
+    default:
       break;
   }
   return nullptr;

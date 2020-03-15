@@ -690,6 +690,8 @@ print_json_pointers(JsonThing& jt, std::string s, uint32_t depth) {
         TRY(print_json_pointers(kv.second, s + e, depth));
       }
       break;
+    default:
+      break;
   }
   return "";
 }
