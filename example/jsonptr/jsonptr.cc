@@ -34,8 +34,8 @@ trivially protected against certain bug classes: memory leaks, double-frees and
 use-after-frees.
 
 The core JSON implementation is also written in the Wuffs programming language
-(and then transpiled to C/C++), which is memory-safe but also guards against
-integer arithmetic overflows.
+(and then transpiled to C/C++), which is memory-safe (e.g. array indexing is
+bounds-checked) but also guards against integer arithmetic overflows.
 
 For defense in depth, on Linux, this program also self-imposes a
 SECCOMP_MODE_STRICT sandbox before reading (or otherwise processing) its input
