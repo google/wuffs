@@ -885,16 +885,10 @@ test_wuffs_json_decode_long_numbers() {
                 &dec, sizeof dec, WUFFS_VERSION,
                 WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
 
-        wuffs_base__token_buffer tok = ((wuffs_base__token_buffer){
-            .data = global_have_token_slice,
-        });
-
-        wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-            .data = src_data,
-            .meta = wuffs_base__make_io_buffer_meta(src_data.len, 0, 0,
-                                                    closed != 0),
-        });
-
+        wuffs_base__token_buffer tok =
+            wuffs_base__make_token_buffer_writer(global_have_token_slice);
+        wuffs_base__io_buffer src =
+            wuffs_base__make_io_buffer_reader(src_data, closed != 0);
         const char* have =
             wuffs_json__decoder__decode_tokens(&dec, &tok, &src).repr;
 
@@ -1036,16 +1030,10 @@ test_wuffs_json_decode_prior_valid_utf_8() {
           CHECK_STATUS("initialize", wuffs_json__decoder__initialize(
                                          &dec, sizeof dec, WUFFS_VERSION, 0));
 
-          wuffs_base__token_buffer tok = ((wuffs_base__token_buffer){
-              .data = global_have_token_slice,
-          });
-
-          wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-              .data = src_data,
-              .meta = wuffs_base__make_io_buffer_meta(src_data.len, 0, 0,
-                                                      closed != 0),
-          });
-
+          wuffs_base__token_buffer tok =
+              wuffs_base__make_token_buffer_writer(global_have_token_slice);
+          wuffs_base__io_buffer src =
+              wuffs_base__make_io_buffer_reader(src_data, closed != 0);
           wuffs_json__decoder__decode_tokens(&dec, &tok, &src);
 
           size_t have = 0;
@@ -1139,15 +1127,12 @@ test_wuffs_json_decode_unicode4_escapes() {
                      &dec, sizeof dec, WUFFS_VERSION,
                      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
 
-    wuffs_base__token_buffer tok = ((wuffs_base__token_buffer){
-        .data = global_have_token_slice,
-    });
-    size_t n = strlen(test_cases[tc].str);
-    wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-        .data = wuffs_base__make_slice_u8((void*)(test_cases[tc].str), n),
-        .meta = wuffs_base__make_io_buffer_meta(n, 0, 0, true),
-    });
-
+    wuffs_base__token_buffer tok =
+        wuffs_base__make_token_buffer_writer(global_have_token_slice);
+    wuffs_base__io_buffer src = wuffs_base__make_io_buffer_reader(
+        wuffs_base__make_slice_u8((void*)(test_cases[tc].str),
+                                  strlen(test_cases[tc].str)),
+        true);
     wuffs_json__decoder__decode_tokens(&dec, &tok, &src);
 
     uint32_t have = fail;
@@ -1231,14 +1216,10 @@ test_wuffs_json_decode_src_io_buffer_length() {
 
     int closed;
     for (closed = 0; closed < 2; closed++) {
-      wuffs_base__token_buffer tok = ((wuffs_base__token_buffer){
-          .data = global_have_token_slice,
-      });
-      wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-          .data = src_data,
-          .meta =
-              wuffs_base__make_io_buffer_meta(src_data.len, 0, 0, closed != 0),
-      });
+      wuffs_base__token_buffer tok =
+          wuffs_base__make_token_buffer_writer(global_have_token_slice);
+      wuffs_base__io_buffer src =
+          wuffs_base__make_io_buffer_reader(src_data, closed != 0);
       CHECK_STATUS("initialize",
                    wuffs_json__decoder__initialize(
                        &dec, sizeof dec, WUFFS_VERSION,
@@ -1338,15 +1319,12 @@ test_wuffs_json_decode_string() {
                      &dec, sizeof dec, WUFFS_VERSION,
                      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
 
-    wuffs_base__token_buffer tok = ((wuffs_base__token_buffer){
-        .data = global_have_token_slice,
-    });
-    size_t n = strlen(test_cases[tc].str);
-    wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-        .data = wuffs_base__make_slice_u8((void*)(test_cases[tc].str), n),
-        .meta = wuffs_base__make_io_buffer_meta(n, 0, 0, true),
-    });
-
+    wuffs_base__token_buffer tok =
+        wuffs_base__make_token_buffer_writer(global_have_token_slice);
+    wuffs_base__io_buffer src = wuffs_base__make_io_buffer_reader(
+        wuffs_base__make_slice_u8((void*)(test_cases[tc].str),
+                                  strlen(test_cases[tc].str)),
+        true);
     wuffs_base__status have_status =
         wuffs_json__decoder__decode_tokens(&dec, &tok, &src);
 

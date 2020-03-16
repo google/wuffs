@@ -311,6 +311,7 @@ typedef struct {
   wuffs_base__token_buffer_meta meta;
 
 #ifdef __cplusplus
+  inline bool is_valid() const;
   inline void compact();
   inline uint64_t reader_available() const;
   inline uint64_t reader_token_position() const;
@@ -343,6 +344,30 @@ wuffs_base__make_token_buffer_meta(size_t wi,
 }
 
 static inline wuffs_base__token_buffer  //
+wuffs_base__make_token_buffer_reader(wuffs_base__slice_token s, bool closed) {
+  wuffs_base__token_buffer ret;
+  ret.data.ptr = s.ptr;
+  ret.data.len = s.len;
+  ret.meta.wi = s.len;
+  ret.meta.ri = 0;
+  ret.meta.pos = 0;
+  ret.meta.closed = closed;
+  return ret;
+}
+
+static inline wuffs_base__token_buffer  //
+wuffs_base__make_token_buffer_writer(wuffs_base__slice_token s) {
+  wuffs_base__token_buffer ret;
+  ret.data.ptr = s.ptr;
+  ret.data.len = s.len;
+  ret.meta.wi = 0;
+  ret.meta.ri = 0;
+  ret.meta.pos = 0;
+  ret.meta.closed = false;
+  return ret;
+}
+
+static inline wuffs_base__token_buffer  //
 wuffs_base__empty_token_buffer() {
   wuffs_base__token_buffer ret;
   ret.data.ptr = NULL;
@@ -362,6 +387,18 @@ wuffs_base__empty_token_buffer_meta() {
   ret.pos = 0;
   ret.closed = false;
   return ret;
+}
+
+static inline bool  //
+wuffs_base__token_buffer__is_valid(const wuffs_base__token_buffer* buf) {
+  if (buf) {
+    if (buf->data.ptr) {
+      return (buf->meta.ri <= buf->meta.wi) && (buf->meta.wi <= buf->data.len);
+    } else {
+      return (buf->meta.ri == 0) && (buf->meta.wi == 0) && (buf->data.len == 0);
+    }
+  }
+  return false;
 }
 
 // wuffs_base__token_buffer__compact moves any written but unread tokens to the
@@ -406,6 +443,11 @@ wuffs_base__token_buffer__writer_token_position(
 }
 
 #ifdef __cplusplus
+
+inline bool  //
+wuffs_base__token_buffer::is_valid() const {
+  return wuffs_base__token_buffer__is_valid(this);
+}
 
 inline void  //
 wuffs_base__token_buffer::compact() {
