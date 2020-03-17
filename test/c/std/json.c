@@ -1106,6 +1106,72 @@ test_wuffs_json_decode_prior_valid_utf_8() {
 }
 
 const char*  //
+test_wuffs_json_decode_quirk_allow_leading_etc() {
+  CHECK_FOCUS(__func__);
+
+  struct {
+    // want has 4 bytes, one for each possible q:
+    //  - q&1 sets WUFFS_JSON__QUIRK_ALLOW_LEADING_ASCII_RECORD_SEPARATOR.
+    //  - q&2 sets WUFFS_JSON__QUIRK_ALLOW_LEADING_UNICODE_BYTE_ORDER_MARK.
+    // A '+' or '-' means that decoding should succeed or fail.
+    const char* want;
+    const char* str;
+  } test_cases[] = {
+      {.want = "-+-+", .str = "\x1Etrue"},
+      {.want = "--++", .str = "\xEF\xBB\xBFtrue"},
+      {.want = "---+", .str = "\x1E\xEF\xBB\xBFtrue"},
+      {.want = "---+", .str = "\xEF\xBB\xBF\x1Etrue"},
+      {.want = "----", .str = " \x1Etrue"},
+      {.want = "----", .str = "\x1E \xEF\xBB\xBFtrue"},
+      {.want = "----", .str = "\x1E\x1Etrue"},
+      {.want = "----", .str = "\xEF\xBB"},
+      {.want = "----", .str = "\xEF\xBB\xBF"},
+      {.want = "----", .str = "\xEF\xBB\xBF$"},
+      {.want = "----", .str = "\xEFtrue"},
+  };
+
+  int tc;
+  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+    int q;
+    for (q = 0; q < 4; q++) {
+      wuffs_json__decoder dec;
+      CHECK_STATUS("initialize", wuffs_json__decoder__initialize(
+                                     &dec, sizeof dec, WUFFS_VERSION,
+                                     WUFFS_INITIALIZE__DEFAULT_OPTIONS));
+      wuffs_json__decoder__set_quirk_enabled(
+          &dec, WUFFS_JSON__QUIRK_ALLOW_LEADING_ASCII_RECORD_SEPARATOR, q & 1);
+      wuffs_json__decoder__set_quirk_enabled(
+          &dec, WUFFS_JSON__QUIRK_ALLOW_LEADING_UNICODE_BYTE_ORDER_MARK, q & 2);
+
+      wuffs_base__token_buffer tok =
+          wuffs_base__make_token_buffer_writer(global_have_token_slice);
+      wuffs_base__io_buffer src = wuffs_base__make_io_buffer_reader(
+          wuffs_base__make_slice_u8((void*)(test_cases[tc].str),
+                                    strlen(test_cases[tc].str)),
+          true);
+      const char* have =
+          wuffs_json__decoder__decode_tokens(&dec, &tok, &src).repr;
+      const char* want =
+          (test_cases[tc].want[q] == '+') ? NULL : wuffs_json__error__bad_input;
+      if (have != want) {
+        RETURN_FAIL("tc=%d, q=%d: decode_tokens: have \"%s\", want \"%s\"", tc,
+                    q, have, want);
+      }
+
+      size_t total_length = 0;
+      while (tok.meta.ri < tok.meta.wi) {
+        total_length += wuffs_base__token__length(&tok.data.ptr[tok.meta.ri++]);
+      }
+      if (total_length != src.meta.ri) {
+        RETURN_FAIL("tc=%d, q=%d: total_length: have %zu, want %zu", tc, q,
+                    total_length, src.meta.ri);
+      }
+    }
+  }
+  return NULL;
+}
+
+const char*  //
 test_wuffs_json_decode_unicode4_escapes() {
   CHECK_FOCUS(__func__);
 
@@ -1453,13 +1519,14 @@ proc tests[] = {
     test_strconv_parse_number_u64,     //
     test_strconv_utf_8_next,           //
 
-    test_wuffs_json_decode_end_of_data,           //
-    test_wuffs_json_decode_interface,             //
-    test_wuffs_json_decode_long_numbers,          //
-    test_wuffs_json_decode_prior_valid_utf_8,     //
-    test_wuffs_json_decode_src_io_buffer_length,  //
-    test_wuffs_json_decode_string,                //
-    test_wuffs_json_decode_unicode4_escapes,      //
+    test_wuffs_json_decode_end_of_data,              //
+    test_wuffs_json_decode_interface,                //
+    test_wuffs_json_decode_long_numbers,             //
+    test_wuffs_json_decode_prior_valid_utf_8,        //
+    test_wuffs_json_decode_quirk_allow_leading_etc,  //
+    test_wuffs_json_decode_src_io_buffer_length,     //
+    test_wuffs_json_decode_string,                   //
+    test_wuffs_json_decode_unicode4_escapes,         //
 
 #ifdef WUFFS_MIMIC
 

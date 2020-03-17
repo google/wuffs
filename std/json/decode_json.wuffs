@@ -13,6 +13,26 @@
 // limitations under the License.
 
 pub struct decoder? implements base.token_decoder(
+	quirk_enabled_allow_backslash_a                     : base.bool,
+	quirk_enabled_allow_backslash_capital_u             : base.bool,
+	quirk_enabled_allow_backslash_e                     : base.bool,
+	quirk_enabled_allow_backslash_question_mark         : base.bool,
+	quirk_enabled_allow_backslash_single_quote          : base.bool,
+	quirk_enabled_allow_backslash_v                     : base.bool,
+	quirk_enabled_allow_backslash_x                     : base.bool,
+	quirk_enabled_allow_backslash_zero                  : base.bool,
+	quirk_enabled_allow_comment_block                   : base.bool,
+	quirk_enabled_allow_comment_line                    : base.bool,
+	quirk_enabled_allow_final_comma                     : base.bool,
+	quirk_enabled_allow_inf_nan_numbers                 : base.bool,
+	quirk_enabled_allow_leading_ascii_record_separator  : base.bool,
+	quirk_enabled_allow_leading_unicode_byte_order_mark : base.bool,
+	quirk_enabled_allow_trailing_new_line               : base.bool,
+	quirk_enabled_replace_invalid_utf_8                 : base.bool,
+
+	allow_leading_ars  : base.bool,
+	allow_leading_ubom : base.bool,
+
 	end_of_data : base.bool,
 )(
 	// stack is conceptually an array of bits, implemented as an array of u32.
@@ -45,6 +65,42 @@ pub struct decoder? implements base.token_decoder(
 	// are listed at https://github.com/lovasoa/bad_json_parsers#results
 	stack : array[1024 / 32] base.u32,
 )
+
+pub func decoder.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
+	if args.quirk == quirk_allow_backslash_a {
+		this.quirk_enabled_allow_backslash_a = args.enabled
+	} else if args.quirk == quirk_allow_backslash_capital_u {
+		this.quirk_enabled_allow_backslash_capital_u = args.enabled
+	} else if args.quirk == quirk_allow_backslash_e {
+		this.quirk_enabled_allow_backslash_e = args.enabled
+	} else if args.quirk == quirk_allow_backslash_question_mark {
+		this.quirk_enabled_allow_backslash_question_mark = args.enabled
+	} else if args.quirk == quirk_allow_backslash_single_quote {
+		this.quirk_enabled_allow_backslash_single_quote = args.enabled
+	} else if args.quirk == quirk_allow_backslash_v {
+		this.quirk_enabled_allow_backslash_v = args.enabled
+	} else if args.quirk == quirk_allow_backslash_x {
+		this.quirk_enabled_allow_backslash_x = args.enabled
+	} else if args.quirk == quirk_allow_backslash_zero {
+		this.quirk_enabled_allow_backslash_zero = args.enabled
+	} else if args.quirk == quirk_allow_comment_block {
+		this.quirk_enabled_allow_comment_block = args.enabled
+	} else if args.quirk == quirk_allow_comment_line {
+		this.quirk_enabled_allow_comment_line = args.enabled
+	} else if args.quirk == quirk_allow_final_comma {
+		this.quirk_enabled_allow_final_comma = args.enabled
+	} else if args.quirk == quirk_allow_inf_nan_numbers {
+		this.quirk_enabled_allow_inf_nan_numbers = args.enabled
+	} else if args.quirk == quirk_allow_leading_ascii_record_separator {
+		this.quirk_enabled_allow_leading_ascii_record_separator = args.enabled
+	} else if args.quirk == quirk_allow_leading_unicode_byte_order_mark {
+		this.quirk_enabled_allow_leading_unicode_byte_order_mark = args.enabled
+	} else if args.quirk == quirk_allow_trailing_new_line {
+		this.quirk_enabled_allow_trailing_new_line = args.enabled
+	} else if args.quirk == quirk_replace_invalid_utf_8 {
+		this.quirk_enabled_replace_invalid_utf_8 = args.enabled
+	}
+}
 
 pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 	var vminor            : base.u32[..= 0xFF_FFFF]
@@ -80,6 +136,11 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 
 	while this.end_of_data {
 		return base."@end of data"
+	}
+
+	if this.quirk_enabled_allow_leading_ascii_record_separator or
+		this.quirk_enabled_allow_leading_unicode_byte_order_mark {
+		this.decode_leading?(dst: args.dst, src: args.src)
 	}
 
 	expect = 0x0EB2  // EXPECT_VALUE
@@ -1016,4 +1077,50 @@ pri func decoder.decode_digits!(src: base.io_reader, n: base.u32[..= 99]) base.u
 		n |= 0x100
 	}
 	return n
+}
+
+pri func decoder.decode_leading?(dst: base.token_writer, src: base.io_reader) {
+	var c : base.u8
+	var u : base.u32
+
+	this.allow_leading_ars = this.quirk_enabled_allow_leading_ascii_record_separator
+	this.allow_leading_ubom = this.quirk_enabled_allow_leading_unicode_byte_order_mark
+	while this.allow_leading_ars or this.allow_leading_ubom {
+		if args.dst.available() <= 0 {
+			yield? base."$short write"
+			continue
+		}
+		if args.src.available() <= 0 {
+			if args.src.is_closed() {
+				break
+			}
+			yield? base."$short read"
+			continue
+		}
+		c = args.src.peek_u8()
+		if (c == 0x1E) and this.allow_leading_ars {
+			this.allow_leading_ars = false
+			args.src.skip32_fast!(actual: 1, worst_case: 1)
+			args.dst.write_fast_token!(
+				value_major: 0, value_minor: 0, link: 0x0, length: 1)
+			continue
+		} else if (c == 0xEF) and this.allow_leading_ubom {
+			if args.src.available() < 3 {
+				if args.src.is_closed() {
+					break
+				}
+				yield? base."$short read"
+				continue
+			}
+			u = args.src.peek_u24le_as_u32()
+			if u == 0xBF_BBEF {
+				this.allow_leading_ubom = false
+				args.src.skip32_fast!(actual: 3, worst_case: 3)
+				args.dst.write_fast_token!(
+					value_major: 0, value_minor: 0, link: 0x0, length: 3)
+				continue
+			}
+		}
+		break
+	}
 }
