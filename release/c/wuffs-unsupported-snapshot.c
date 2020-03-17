@@ -5972,6 +5972,8 @@ struct wuffs_json__decoder__struct {
     wuffs_base__vtable vtable_for__wuffs_base__token_decoder;
     wuffs_base__vtable null_vtable;
 
+    bool f_end_of_data;
+
     uint32_t p_decode_tokens[1];
   } private_impl;
 
@@ -20412,6 +20414,10 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
+    while (self->private_impl.f_end_of_data) {
+      status = wuffs_base__make_status(wuffs_base__note__end_of_data);
+      goto ok;
+    }
     v_expect = 3762;
   label__outer__continue:;
     while (true) {
@@ -21164,6 +21170,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
       v_expect = v_expect_after_value;
     }
   label__outer__break:;
+    self->private_impl.f_end_of_data = true;
 
     goto ok;
   ok:

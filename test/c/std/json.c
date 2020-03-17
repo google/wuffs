@@ -798,6 +798,44 @@ wuffs_json_decode(wuffs_base__token_buffer* tok,
 }
 
 const char*  //
+test_wuffs_json_decode_end_of_data() {
+  CHECK_FOCUS(__func__);
+
+  int i;
+  for (i = 0; i < 2; i++) {
+    uint8_t* src_ptr = (uint8_t*)("123null89");
+    size_t src_len = i ? 3 : 9;
+
+    wuffs_json__decoder dec;
+    CHECK_STATUS("initialize",
+                 wuffs_json__decoder__initialize(
+                     &dec, sizeof dec, WUFFS_VERSION,
+                     WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+
+    wuffs_base__token_buffer tok =
+        wuffs_base__make_token_buffer_writer(global_have_token_slice);
+    wuffs_base__io_buffer src = wuffs_base__make_io_buffer_reader(
+        wuffs_base__make_slice_u8(src_ptr, src_len), true);
+    CHECK_STATUS("decode_tokens",
+                 wuffs_json__decoder__decode_tokens(&dec, &tok, &src));
+    if (src.meta.ri != 3) {
+      RETURN_FAIL("src.meta.ri: have %zu, want 3", src.meta.ri);
+    }
+
+    const char* have =
+        wuffs_json__decoder__decode_tokens(&dec, &tok, &src).repr;
+    if (have != wuffs_base__note__end_of_data) {
+      RETURN_FAIL("decode_tokens: have \"%s\", want \"%s\"", have,
+                  wuffs_base__note__end_of_data);
+    }
+    if (src.meta.ri != 3) {
+      RETURN_FAIL("src.meta.ri: have %zu, want 3", src.meta.ri);
+    }
+  }
+  return NULL;
+}
+
+const char*  //
 test_wuffs_json_decode_long_numbers() {
   CHECK_FOCUS(__func__);
 
@@ -1415,6 +1453,7 @@ proc tests[] = {
     test_strconv_parse_number_u64,     //
     test_strconv_utf_8_next,           //
 
+    test_wuffs_json_decode_end_of_data,           //
     test_wuffs_json_decode_interface,             //
     test_wuffs_json_decode_long_numbers,          //
     test_wuffs_json_decode_prior_valid_utf_8,     //

@@ -13,6 +13,7 @@
 // limitations under the License.
 
 pub struct decoder? implements base.token_decoder(
+	end_of_data : base.bool,
 )(
 	// stack is conceptually an array of bits, implemented as an array of u32.
 	// The N'th bit being 0 or 1 means that we're in an array or object, where
@@ -76,6 +77,10 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 	// value of FOO.
 	var expect             : base.u32
 	var expect_after_value : base.u32
+
+	while this.end_of_data {
+		return base."@end of data"
+	}
 
 	expect = 0x0EB2  // EXPECT_VALUE
 
@@ -835,6 +840,8 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 		}
 		expect = expect_after_value
 	} endwhile.outer
+
+	this.end_of_data = true
 }
 
 pri func decoder.decode_number!(src: base.io_reader) base.u32[..= 0x3FF] {
