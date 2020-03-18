@@ -2354,106 +2354,104 @@ bench_mimic_gif_decode_anim_screencap() {
 
 // ---------------- Manifest
 
-// The empty comments forces clang-format to place one element per line.
 proc tests[] = {
 
     // These basic tests are really testing the Wuffs compiler. They aren't
     // specific to the std/gif code, but putting them here is as good as any
     // other place.
-    test_basic_bad_receiver,            //
-    test_basic_bad_sizeof_receiver,     //
-    test_basic_bad_wuffs_version,       //
-    test_basic_initialize_not_called,   //
-    test_basic_status_is_error,         //
-    test_basic_sub_struct_initializer,  //
+    test_basic_bad_receiver,
+    test_basic_bad_sizeof_receiver,
+    test_basic_bad_wuffs_version,
+    test_basic_initialize_not_called,
+    test_basic_status_is_error,
+    test_basic_sub_struct_initializer,
 
-    test_wuffs_gif_call_interleaved,                         //
-    test_wuffs_gif_call_sequence,                            //
-    test_wuffs_gif_decode_animated_big,                      //
-    test_wuffs_gif_decode_animated_medium,                   //
-    test_wuffs_gif_decode_animated_small,                    //
-    test_wuffs_gif_decode_background_color,                  //
-    test_wuffs_gif_decode_delay_num_frames_decoded,          //
-    test_wuffs_gif_decode_empty_palette,                     //
-    test_wuffs_gif_decode_first_frame_is_opaque,             //
-    test_wuffs_gif_decode_frame_out_of_bounds,               //
-    test_wuffs_gif_decode_input_is_a_gif_just_one_read,      //
-    test_wuffs_gif_decode_input_is_a_gif_many_big_reads,     //
-    test_wuffs_gif_decode_input_is_a_gif_many_medium_reads,  //
-    test_wuffs_gif_decode_input_is_a_gif_many_small_reads,   //
-    test_wuffs_gif_decode_input_is_a_png,                    //
-    test_wuffs_gif_decode_interface_image_config_decoder,    //
-    test_wuffs_gif_decode_interface_image_decoder,           //
-    test_wuffs_gif_decode_interlaced_truncated,              //
-    test_wuffs_gif_decode_metadata_empty,                    //
-    test_wuffs_gif_decode_metadata_full,                     //
-    test_wuffs_gif_decode_missing_two_src_bytes,             //
-    test_wuffs_gif_decode_multiple_graphic_controls,         //
-    test_wuffs_gif_decode_multiple_loop_counts,              //
-    test_wuffs_gif_decode_pixel_data_none,                   //
-    test_wuffs_gif_decode_pixel_data_not_enough,             //
-    test_wuffs_gif_decode_pixel_data_too_much_sans_quirk,    //
-    test_wuffs_gif_decode_pixel_data_too_much_with_quirk,    //
-    test_wuffs_gif_decode_pixfmt_bgr,                        //
-    test_wuffs_gif_decode_pixfmt_bgr_565,                    //
-    test_wuffs_gif_decode_pixfmt_bgra_nonpremul,             //
-    test_wuffs_gif_decode_pixfmt_rgb,                        //
-    test_wuffs_gif_decode_pixfmt_rgba_nonpremul,             //
-    test_wuffs_gif_decode_zero_width_frame,                  //
-    test_wuffs_gif_frame_dirty_rect,                         //
-    test_wuffs_gif_num_decoded_frame_configs,                //
-    test_wuffs_gif_num_decoded_frames,                       //
-    test_wuffs_gif_io_position_one_chunk,                    //
-    test_wuffs_gif_io_position_two_chunks,                   //
-    test_wuffs_gif_small_frame_interlaced,                   //
-    test_wuffs_gif_sizeof,                                   //
+    test_wuffs_gif_call_interleaved,
+    test_wuffs_gif_call_sequence,
+    test_wuffs_gif_decode_animated_big,
+    test_wuffs_gif_decode_animated_medium,
+    test_wuffs_gif_decode_animated_small,
+    test_wuffs_gif_decode_background_color,
+    test_wuffs_gif_decode_delay_num_frames_decoded,
+    test_wuffs_gif_decode_empty_palette,
+    test_wuffs_gif_decode_first_frame_is_opaque,
+    test_wuffs_gif_decode_frame_out_of_bounds,
+    test_wuffs_gif_decode_input_is_a_gif_just_one_read,
+    test_wuffs_gif_decode_input_is_a_gif_many_big_reads,
+    test_wuffs_gif_decode_input_is_a_gif_many_medium_reads,
+    test_wuffs_gif_decode_input_is_a_gif_many_small_reads,
+    test_wuffs_gif_decode_input_is_a_png,
+    test_wuffs_gif_decode_interface_image_config_decoder,
+    test_wuffs_gif_decode_interface_image_decoder,
+    test_wuffs_gif_decode_interlaced_truncated,
+    test_wuffs_gif_decode_metadata_empty,
+    test_wuffs_gif_decode_metadata_full,
+    test_wuffs_gif_decode_missing_two_src_bytes,
+    test_wuffs_gif_decode_multiple_graphic_controls,
+    test_wuffs_gif_decode_multiple_loop_counts,
+    test_wuffs_gif_decode_pixel_data_none,
+    test_wuffs_gif_decode_pixel_data_not_enough,
+    test_wuffs_gif_decode_pixel_data_too_much_sans_quirk,
+    test_wuffs_gif_decode_pixel_data_too_much_with_quirk,
+    test_wuffs_gif_decode_pixfmt_bgr,
+    test_wuffs_gif_decode_pixfmt_bgr_565,
+    test_wuffs_gif_decode_pixfmt_bgra_nonpremul,
+    test_wuffs_gif_decode_pixfmt_rgb,
+    test_wuffs_gif_decode_pixfmt_rgba_nonpremul,
+    test_wuffs_gif_decode_zero_width_frame,
+    test_wuffs_gif_frame_dirty_rect,
+    test_wuffs_gif_num_decoded_frame_configs,
+    test_wuffs_gif_num_decoded_frames,
+    test_wuffs_gif_io_position_one_chunk,
+    test_wuffs_gif_io_position_two_chunks,
+    test_wuffs_gif_small_frame_interlaced,
+    test_wuffs_gif_sizeof,
 
 #ifdef WUFFS_MIMIC
 
-    test_mimic_gif_decode_animated_small,           //
-    test_mimic_gif_decode_bricks_dither,            //
-    test_mimic_gif_decode_bricks_gray,              //
-    test_mimic_gif_decode_bricks_nodither,          //
-    test_mimic_gif_decode_gifplayer_muybridge,      //
-    test_mimic_gif_decode_harvesters,               //
-    test_mimic_gif_decode_hat,                      //
-    test_mimic_gif_decode_hibiscus_primitive,       //
-    test_mimic_gif_decode_hibiscus_regular,         //
-    test_mimic_gif_decode_hippopotamus_interlaced,  //
-    test_mimic_gif_decode_hippopotamus_regular,     //
-    test_mimic_gif_decode_muybridge,                //
-    test_mimic_gif_decode_pjw_thumbnail,            //
+    test_mimic_gif_decode_animated_small,
+    test_mimic_gif_decode_bricks_dither,
+    test_mimic_gif_decode_bricks_gray,
+    test_mimic_gif_decode_bricks_nodither,
+    test_mimic_gif_decode_gifplayer_muybridge,
+    test_mimic_gif_decode_harvesters,
+    test_mimic_gif_decode_hat,
+    test_mimic_gif_decode_hibiscus_primitive,
+    test_mimic_gif_decode_hibiscus_regular,
+    test_mimic_gif_decode_hippopotamus_interlaced,
+    test_mimic_gif_decode_hippopotamus_regular,
+    test_mimic_gif_decode_muybridge,
+    test_mimic_gif_decode_pjw_thumbnail,
 
 #endif  // WUFFS_MIMIC
 
     NULL,
 };
 
-// The empty comments forces clang-format to place one element per line.
 proc benches[] = {
 
-    bench_wuffs_gif_decode_1k_bw,               //
-    bench_wuffs_gif_decode_1k_color_full_init,  //
-    bench_wuffs_gif_decode_1k_color_part_init,  //
-    bench_wuffs_gif_decode_10k_bgra,            //
-    bench_wuffs_gif_decode_10k_indexed,         //
-    bench_wuffs_gif_decode_20k,                 //
-    bench_wuffs_gif_decode_100k_artificial,     //
-    bench_wuffs_gif_decode_100k_realistic,      //
-    bench_wuffs_gif_decode_1000k_full_init,     //
-    bench_wuffs_gif_decode_1000k_part_init,     //
-    bench_wuffs_gif_decode_anim_screencap,      //
+    bench_wuffs_gif_decode_1k_bw,
+    bench_wuffs_gif_decode_1k_color_full_init,
+    bench_wuffs_gif_decode_1k_color_part_init,
+    bench_wuffs_gif_decode_10k_bgra,
+    bench_wuffs_gif_decode_10k_indexed,
+    bench_wuffs_gif_decode_20k,
+    bench_wuffs_gif_decode_100k_artificial,
+    bench_wuffs_gif_decode_100k_realistic,
+    bench_wuffs_gif_decode_1000k_full_init,
+    bench_wuffs_gif_decode_1000k_part_init,
+    bench_wuffs_gif_decode_anim_screencap,
 
 #ifdef WUFFS_MIMIC
 
-    bench_mimic_gif_decode_1k_bw,            //
-    bench_mimic_gif_decode_1k_color,         //
-    bench_mimic_gif_decode_10k_indexed,      //
-    bench_mimic_gif_decode_20k,              //
-    bench_mimic_gif_decode_100k_artificial,  //
-    bench_mimic_gif_decode_100k_realistic,   //
-    bench_mimic_gif_decode_1000k,            //
-    bench_mimic_gif_decode_anim_screencap,   //
+    bench_mimic_gif_decode_1k_bw,
+    bench_mimic_gif_decode_1k_color,
+    bench_mimic_gif_decode_10k_indexed,
+    bench_mimic_gif_decode_20k,
+    bench_mimic_gif_decode_100k_artificial,
+    bench_mimic_gif_decode_100k_realistic,
+    bench_mimic_gif_decode_1000k,
+    bench_mimic_gif_decode_anim_screencap,
 
 #endif  // WUFFS_MIMIC
 

@@ -217,39 +217,39 @@ test_strconv_hpd_rounded_integer() {
     uint64_t want;
     const char* str;
   } test_cases[] = {
-      {.want = 4, .str = "-3.9"},          //
-      {.want = 3, .str = "-3.14159"},      //
-      {.want = 0, .str = "+0"},            //
-      {.want = 0, .str = "0.0000000009"},  //
-      {.want = 0, .str = "0.1"},           //
-      {.want = 1, .str = "0.9"},           //
-      {.want = 12, .str = "1234e-2"},      //
-      {.want = 57, .str = "5678e-2"},      //
-      {.want = 60, .str = "60.0"},         //
-      {.want = 60, .str = "60.4999"},      //
-      {.want = 60, .str = "60.5"},         //
-      {.want = 60, .str = "60.5000"},      //
-      {.want = 61, .str = "60.5001"},      //
-      {.want = 61, .str = "60.6"},         //
-      {.want = 61, .str = "61.0"},         //
-      {.want = 61, .str = "61.4999"},      //
-      {.want = 62, .str = "61.5"},         //
-      {.want = 62, .str = "61.5000"},      //
-      {.want = 62, .str = "61.5001"},      //
-      {.want = 62, .str = "61.6"},         //
-      {.want = 62, .str = "62.0"},         //
-      {.want = 62, .str = "62.4999"},      //
-      {.want = 62, .str = "62.5"},         //
-      {.want = 62, .str = "62.5000"},      //
-      {.want = 63, .str = "62.5001"},      //
-      {.want = 63, .str = "62.6"},         //
-      {.want = 1000, .str = "999.999"},    //
-      {.want = 4560000, .str = "456e+4"},  //
+      {.want = 4, .str = "-3.9"},
+      {.want = 3, .str = "-3.14159"},
+      {.want = 0, .str = "+0"},
+      {.want = 0, .str = "0.0000000009"},
+      {.want = 0, .str = "0.1"},
+      {.want = 1, .str = "0.9"},
+      {.want = 12, .str = "1234e-2"},
+      {.want = 57, .str = "5678e-2"},
+      {.want = 60, .str = "60.0"},
+      {.want = 60, .str = "60.4999"},
+      {.want = 60, .str = "60.5"},
+      {.want = 60, .str = "60.5000"},
+      {.want = 61, .str = "60.5001"},
+      {.want = 61, .str = "60.6"},
+      {.want = 61, .str = "61.0"},
+      {.want = 61, .str = "61.4999"},
+      {.want = 62, .str = "61.5"},
+      {.want = 62, .str = "61.5000"},
+      {.want = 62, .str = "61.5001"},
+      {.want = 62, .str = "61.6"},
+      {.want = 62, .str = "62.0"},
+      {.want = 62, .str = "62.4999"},
+      {.want = 62, .str = "62.5"},
+      {.want = 62, .str = "62.5000"},
+      {.want = 63, .str = "62.5001"},
+      {.want = 63, .str = "62.6"},
+      {.want = 1000, .str = "999.999"},
+      {.want = 4560000, .str = "456e+4"},
 
       // With round-to-even, ½ rounds to 0 but "a tiny bit more than ½" rounds
       // to 1, even if the HPD struct truncates that "1" digit.
-      {.want = 0, .str = "0.5"},  //
-      {.want = 1,                 // 50 '0's per row.
+      {.want = 0, .str = "0.5"},
+      {.want = 1,  // 50 '0's per row.
        .str = "0.500000000000000000000000000000000000000000000000"
               "00000000000000000000000000000000000000000000000000"
               "00000000000000000000000000000000000000000000000000"
@@ -262,14 +262,14 @@ test_strconv_hpd_rounded_integer() {
               "00000000000000000000000000000000000000000000000000"
               "00000000000000000000000000000000000000000000000000"
               "00000000000000000000000000000000000000000000000000"
-              "00000000000000000000000000000000000000000000000001"},  //
+              "00000000000000000000000000000000000000000000000001"},
 
       // Inputs with exactly 18 decimal digits before the decimal point.
-      {.want = 123456789012345679, .str = "123456789012345678.9"},   //
-      {.want = 1000000000000000000, .str = "999999999999999999.9"},  //
+      {.want = 123456789012345679, .str = "123456789012345678.9"},
+      {.want = 1000000000000000000, .str = "999999999999999999.9"},
 
       // Inputs with exactly 19 decimal digits before the decimal point.
-      {.want = UINT64_MAX, .str = "1234567890123456789"},  //
+      {.want = UINT64_MAX, .str = "1234567890123456789"},
   };
 
   int tc;
@@ -300,21 +300,21 @@ test_strconv_hpd_shift() {
     int32_t shift;  // -ve means left shift, +ve means right shift.
     const char* want;
   } test_cases[] = {
-      {.str = "0", .shift = +2, .want = "+0"},                  //
-      {.str = "1", .shift = +3, .want = "+.125"},               //
-      {.str = "12e3", .shift = +5, .want = "+375."},            //
-      {.str = "-0.007", .shift = +8, .want = "-.00002734375"},  //
+      {.str = "0", .shift = +2, .want = "+0"},
+      {.str = "1", .shift = +3, .want = "+.125"},
+      {.str = "12e3", .shift = +5, .want = "+375."},
+      {.str = "-0.007", .shift = +8, .want = "-.00002734375"},
       {.str = "3.14159E+26",
        .shift = +60,
-       .want = "+272489496.244698869986677891574800014495849609375"},  //
+       .want = "+272489496.244698869986677891574800014495849609375"},
 
-      {.str = "0", .shift = -2, .want = "+0"},                //
-      {.str = ".125", .shift = -3, .want = "+1."},            //
-      {.str = "3750e-1", .shift = -5, .want = "+12000."},     //
-      {.str = "-2.734375e-5", .shift = -8, .want = "-.007"},  //
+      {.str = "0", .shift = -2, .want = "+0"},
+      {.str = ".125", .shift = -3, .want = "+1."},
+      {.str = "3750e-1", .shift = -5, .want = "+12000."},
+      {.str = "-2.734375e-5", .shift = -8, .want = "-.007"},
       {.str = "+272489496.244698869986677891574800014495849609375",
        .shift = -60,
-       .want = "+314159000000000000000000000."},  //
+       .want = "+314159000000000000000000000."},
   };
 
   int tc;
@@ -713,25 +713,25 @@ test_strconv_utf_8_next() {
 // ---------------- Golden Tests
 
 golden_test json_australian_abc_gt = {
-    .want_filename = "test/data/australian-abc-local-stations.tokens",  //
-    .src_filename = "test/data/australian-abc-local-stations.json",     //
+    .want_filename = "test/data/australian-abc-local-stations.tokens",
+    .src_filename = "test/data/australian-abc-local-stations.json",
 };
 
 golden_test json_file_sizes_gt = {
-    .src_filename = "test/data/file-sizes.json",  //
+    .src_filename = "test/data/file-sizes.json",
 };
 
 golden_test json_github_tags_gt = {
-    .src_filename = "test/data/github-tags.json",  //
+    .src_filename = "test/data/github-tags.json",
 };
 
 golden_test json_json_things_unformatted_gt = {
-    .want_filename = "test/data/json-things.unformatted.tokens",  //
-    .src_filename = "test/data/json-things.unformatted.json",     //
+    .want_filename = "test/data/json-things.unformatted.tokens",
+    .src_filename = "test/data/json-things.unformatted.json",
 };
 
 golden_test json_nobel_prizes_gt = {
-    .src_filename = "test/data/nobel-prizes.json",  //
+    .src_filename = "test/data/nobel-prizes.json",
 };
 
 // ---------------- JSON Tests
@@ -854,30 +854,30 @@ test_wuffs_json_decode_long_numbers() {
     bool valid;
     const char* suffix;
   } test_cases[] = {
-      {.valid = true, .suffix = ""},           //
-      {.valid = true, .suffix = " "},          //
-      {.valid = fals, .suffix = "."},          //
-      {.valid = fals, .suffix = ". "},         //
-      {.valid = fals, .suffix = "E"},          //
-      {.valid = fals, .suffix = "E "},         //
-      {.valid = fals, .suffix = "E-"},         //
-      {.valid = fals, .suffix = "E- "},        //
-      {.valid = true, .suffix = "e2"},         //
-      {.valid = true, .suffix = "e2 "},        //
-      {.valid = true, .suffix = "e+34"},       //
-      {.valid = true, .suffix = "e+34 "},      //
-      {.valid = true, .suffix = ".2"},         //
-      {.valid = true, .suffix = ".2 "},        //
-      {.valid = fals, .suffix = ".2e"},        //
-      {.valid = fals, .suffix = ".2e "},       //
-      {.valid = fals, .suffix = ".2e+"},       //
-      {.valid = fals, .suffix = ".2e+ "},      //
-      {.valid = true, .suffix = ".2e4"},       //
-      {.valid = true, .suffix = ".2e4 "},      //
-      {.valid = true, .suffix = ".2E+5"},      //
-      {.valid = true, .suffix = ".2E+5 "},     //
-      {.valid = true, .suffix = ".2e-5678"},   //
-      {.valid = true, .suffix = ".2e-5678 "},  //
+      {.valid = true, .suffix = ""},
+      {.valid = true, .suffix = " "},
+      {.valid = fals, .suffix = "."},
+      {.valid = fals, .suffix = ". "},
+      {.valid = fals, .suffix = "E"},
+      {.valid = fals, .suffix = "E "},
+      {.valid = fals, .suffix = "E-"},
+      {.valid = fals, .suffix = "E- "},
+      {.valid = true, .suffix = "e2"},
+      {.valid = true, .suffix = "e2 "},
+      {.valid = true, .suffix = "e+34"},
+      {.valid = true, .suffix = "e+34 "},
+      {.valid = true, .suffix = ".2"},
+      {.valid = true, .suffix = ".2 "},
+      {.valid = fals, .suffix = ".2e"},
+      {.valid = fals, .suffix = ".2e "},
+      {.valid = fals, .suffix = ".2e+"},
+      {.valid = fals, .suffix = ".2e+ "},
+      {.valid = true, .suffix = ".2e4"},
+      {.valid = true, .suffix = ".2e4 "},
+      {.valid = true, .suffix = ".2E+5"},
+      {.valid = true, .suffix = ".2E+5 "},
+      {.valid = true, .suffix = ".2e-5678"},
+      {.valid = true, .suffix = ".2e-5678 "},
   };
 
   // src_array holds the overall test string. 119 is arbitrary but long enough.
@@ -1118,17 +1118,17 @@ test_wuffs_json_decode_quirk_allow_leading_etc() {
     const char* want;
     const char* str;
   } test_cases[] = {
-      {.want = "-X-X", .str = "\x1Etrue"},               //
-      {.want = "--XX", .str = "\xEF\xBB\xBFtrue"},       //
-      {.want = "---X", .str = "\x1E\xEF\xBB\xBFtrue"},   //
-      {.want = "---X", .str = "\xEF\xBB\xBF\x1Etrue"},   //
-      {.want = "----", .str = " \x1Etrue"},              //
-      {.want = "----", .str = "\x1E \xEF\xBB\xBFtrue"},  //
-      {.want = "----", .str = "\x1E\x1Etrue"},           //
-      {.want = "----", .str = "\xEF\xBB"},               //
-      {.want = "----", .str = "\xEF\xBB\xBF"},           //
-      {.want = "----", .str = "\xEF\xBB\xBF$"},          //
-      {.want = "----", .str = "\xEFtrue"},               //
+      {.want = "-X-X", .str = "\x1Etrue"},
+      {.want = "--XX", .str = "\xEF\xBB\xBFtrue"},
+      {.want = "---X", .str = "\x1E\xEF\xBB\xBFtrue"},
+      {.want = "---X", .str = "\xEF\xBB\xBF\x1Etrue"},
+      {.want = "----", .str = " \x1Etrue"},
+      {.want = "----", .str = "\x1E \xEF\xBB\xBFtrue"},
+      {.want = "----", .str = "\x1E\x1Etrue"},
+      {.want = "----", .str = "\xEF\xBB"},
+      {.want = "----", .str = "\xEF\xBB\xBF"},
+      {.want = "----", .str = "\xEF\xBB\xBF$"},
+      {.want = "----", .str = "\xEFtrue"},
   };
 
   int tc;
@@ -1596,28 +1596,27 @@ bench_wuffs_json_decode_217k_stringy() {
 
 // ---------------- Manifest
 
-// The empty comments forces clang-format to place one element per line.
 proc tests[] = {
 
     // These strconv tests are really testing the Wuffs base library. They
     // aren't specific to the std/json code, but putting them here is as good
     // as any other place.
-    test_strconv_hpd_rounded_integer,  //
-    test_strconv_hpd_shift,            //
-    test_strconv_parse_number_f64,     //
-    test_strconv_parse_number_i64,     //
-    test_strconv_parse_number_u64,     //
-    test_strconv_utf_8_next,           //
+    test_strconv_hpd_rounded_integer,
+    test_strconv_hpd_shift,
+    test_strconv_parse_number_f64,
+    test_strconv_parse_number_i64,
+    test_strconv_parse_number_u64,
+    test_strconv_utf_8_next,
 
-    test_wuffs_json_decode_end_of_data,               //
-    test_wuffs_json_decode_interface,                 //
-    test_wuffs_json_decode_long_numbers,              //
-    test_wuffs_json_decode_prior_valid_utf_8,         //
-    test_wuffs_json_decode_quirk_allow_leading_etc,   //
-    test_wuffs_json_decode_quirk_allow_trailing_etc,  //
-    test_wuffs_json_decode_src_io_buffer_length,      //
-    test_wuffs_json_decode_string,                    //
-    test_wuffs_json_decode_unicode4_escapes,          //
+    test_wuffs_json_decode_end_of_data,
+    test_wuffs_json_decode_interface,
+    test_wuffs_json_decode_long_numbers,
+    test_wuffs_json_decode_prior_valid_utf_8,
+    test_wuffs_json_decode_quirk_allow_leading_etc,
+    test_wuffs_json_decode_quirk_allow_trailing_etc,
+    test_wuffs_json_decode_src_io_buffer_length,
+    test_wuffs_json_decode_string,
+    test_wuffs_json_decode_unicode4_escapes,
 
 #ifdef WUFFS_MIMIC
 
@@ -1628,13 +1627,12 @@ proc tests[] = {
     NULL,
 };
 
-// The empty comments forces clang-format to place one element per line.
 proc benches[] = {
 
-    bench_wuffs_json_decode_1k,             //
-    bench_wuffs_json_decode_21k_formatted,  //
-    bench_wuffs_json_decode_26k_compact,    //
-    bench_wuffs_json_decode_217k_stringy,   //
+    bench_wuffs_json_decode_1k,
+    bench_wuffs_json_decode_21k_formatted,
+    bench_wuffs_json_decode_26k_compact,
+    bench_wuffs_json_decode_217k_stringy,
 
 #ifdef WUFFS_MIMIC
 

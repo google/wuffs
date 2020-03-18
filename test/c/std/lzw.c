@@ -437,28 +437,26 @@ bench_wuffs_lzw_decode_100k() {
 
 // ---------------- Manifest
 
-// The empty comments forces clang-format to place one element per line.
 proc tests[] = {
 
-    test_wuffs_lzw_decode_bricks_dither,            //
-    test_wuffs_lzw_decode_bricks_nodither,          //
-    test_wuffs_lzw_decode_interface,                //
-    test_wuffs_lzw_decode_many_big_reads,           //
-    test_wuffs_lzw_decode_many_small_writes_reads,  //
-    test_wuffs_lzw_decode_output_bad,               //
-    test_wuffs_lzw_decode_output_empty,             //
-    test_wuffs_lzw_decode_pi,                       //
-    test_wuffs_lzw_decode_width_0,                  //
-    test_wuffs_lzw_decode_width_1,                  //
+    test_wuffs_lzw_decode_bricks_dither,
+    test_wuffs_lzw_decode_bricks_nodither,
+    test_wuffs_lzw_decode_interface,
+    test_wuffs_lzw_decode_many_big_reads,
+    test_wuffs_lzw_decode_many_small_writes_reads,
+    test_wuffs_lzw_decode_output_bad,
+    test_wuffs_lzw_decode_output_empty,
+    test_wuffs_lzw_decode_pi,
+    test_wuffs_lzw_decode_width_0,
+    test_wuffs_lzw_decode_width_1,
 
     NULL,
 };
 
-// The empty comments forces clang-format to place one element per line.
 proc benches[] = {
 
-    bench_wuffs_lzw_decode_20k,   //
-    bench_wuffs_lzw_decode_100k,  //
+    bench_wuffs_lzw_decode_20k,
+    bench_wuffs_lzw_decode_100k,
 
     NULL,
 };

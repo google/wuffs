@@ -72,13 +72,13 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 // ---------------- Golden Tests
 
 golden_test zlib_midsummer_gt = {
-    .want_filename = "test/data/midsummer.txt",      //
-    .src_filename = "test/data/midsummer.txt.zlib",  //
+    .want_filename = "test/data/midsummer.txt",
+    .src_filename = "test/data/midsummer.txt.zlib",
 };
 
 golden_test zlib_pi_gt = {
-    .want_filename = "test/data/pi.txt",      //
-    .src_filename = "test/data/pi.txt.zlib",  //
+    .want_filename = "test/data/pi.txt",
+    .src_filename = "test/data/pi.txt.zlib",
 };
 
 // This dictionary-using zlib-encoded data comes from
@@ -368,39 +368,37 @@ bench_mimic_zlib_decode_100k() {
 
 // ---------------- Manifest
 
-// The empty comments forces clang-format to place one element per line.
 proc tests[] = {
 
-    test_wuffs_zlib_checksum_ignore,       //
-    test_wuffs_zlib_checksum_verify_bad0,  //
-    test_wuffs_zlib_checksum_verify_bad3,  //
-    test_wuffs_zlib_checksum_verify_good,  //
-    test_wuffs_zlib_decode_interface,      //
-    test_wuffs_zlib_decode_midsummer,      //
-    test_wuffs_zlib_decode_pi,             //
-    test_wuffs_zlib_decode_sheep,          //
+    test_wuffs_zlib_checksum_ignore,
+    test_wuffs_zlib_checksum_verify_bad0,
+    test_wuffs_zlib_checksum_verify_bad3,
+    test_wuffs_zlib_checksum_verify_good,
+    test_wuffs_zlib_decode_interface,
+    test_wuffs_zlib_decode_midsummer,
+    test_wuffs_zlib_decode_pi,
+    test_wuffs_zlib_decode_sheep,
 
 #ifdef WUFFS_MIMIC
 
-    test_mimic_zlib_decode_midsummer,  //
-    test_mimic_zlib_decode_pi,         //
-    test_mimic_zlib_decode_sheep,      //
+    test_mimic_zlib_decode_midsummer,
+    test_mimic_zlib_decode_pi,
+    test_mimic_zlib_decode_sheep,
 
 #endif  // WUFFS_MIMIC
 
     NULL,
 };
 
-// The empty comments forces clang-format to place one element per line.
 proc benches[] = {
 
-    bench_wuffs_zlib_decode_10k,   //
-    bench_wuffs_zlib_decode_100k,  //
+    bench_wuffs_zlib_decode_10k,
+    bench_wuffs_zlib_decode_100k,
 
 #ifdef WUFFS_MIMIC
 
-    bench_mimic_zlib_decode_10k,   //
-    bench_mimic_zlib_decode_100k,  //
+    bench_mimic_zlib_decode_10k,
+    bench_mimic_zlib_decode_100k,
 
 #endif  // WUFFS_MIMIC
 

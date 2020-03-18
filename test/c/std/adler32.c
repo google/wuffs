@@ -70,11 +70,11 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 // ---------------- Golden Tests
 
 golden_test adler32_midsummer_gt = {
-    .src_filename = "test/data/midsummer.txt",  //
+    .src_filename = "test/data/midsummer.txt",
 };
 
 golden_test adler32_pi_gt = {
-    .src_filename = "test/data/pi.txt",  //
+    .src_filename = "test/data/pi.txt",
 };
 
 // ---------------- Adler32 Tests
@@ -299,26 +299,24 @@ bench_mimic_adler32_100k() {
 // Note that the adler32 mimic tests and benches don't work with
 // WUFFS_MIMICLIB_USE_MINIZ_INSTEAD_OF_ZLIB.
 
-// The empty comments forces clang-format to place one element per line.
 proc tests[] = {
 
-    test_wuffs_adler32_golden,     //
-    test_wuffs_adler32_interface,  //
-    test_wuffs_adler32_pi,         //
+    test_wuffs_adler32_golden,
+    test_wuffs_adler32_interface,
+    test_wuffs_adler32_pi,
 
     NULL,
 };
 
-// The empty comments forces clang-format to place one element per line.
 proc benches[] = {
 
-    bench_wuffs_adler32_10k,   //
-    bench_wuffs_adler32_100k,  //
+    bench_wuffs_adler32_10k,
+    bench_wuffs_adler32_100k,
 
 #ifdef WUFFS_MIMIC
 
-    bench_mimic_adler32_10k,   //
-    bench_mimic_adler32_100k,  //
+    bench_mimic_adler32_10k,
+    bench_mimic_adler32_100k,
 
 #endif  // WUFFS_MIMIC
 

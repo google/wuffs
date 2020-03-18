@@ -166,12 +166,11 @@ test_wuffs_wbmp_decode_image_config() {
 
 // ---------------- Manifest
 
-// The empty comments forces clang-format to place one element per line.
 proc tests[] = {
 
-    test_wuffs_wbmp_decode_frame_config,  //
-    test_wuffs_wbmp_decode_image_config,  //
-    test_wuffs_wbmp_decode_interface,     //
+    test_wuffs_wbmp_decode_frame_config,
+    test_wuffs_wbmp_decode_image_config,
+    test_wuffs_wbmp_decode_interface,
 
 #ifdef WUFFS_MIMIC
 
@@ -182,7 +181,6 @@ proc tests[] = {
     NULL,
 };
 
-// The empty comments forces clang-format to place one element per line.
 proc benches[] = {
 
 // No WBMP benches.

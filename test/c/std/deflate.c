@@ -72,14 +72,12 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 // The src_offset0 and src_offset1 magic numbers come from:
 //
 // go run script/extract-flate-offsets.go test/data/*.gz
-//
-// The empty comments forces clang-format to place one element per line.
 
 golden_test deflate_256_bytes_gt = {
-    .want_filename = "test/data/artificial/256.bytes",    //
-    .src_filename = "test/data/artificial/256.bytes.gz",  //
-    .src_offset0 = 20,                                    //
-    .src_offset1 = 281,                                   //
+    .want_filename = "test/data/artificial/256.bytes",
+    .src_filename = "test/data/artificial/256.bytes.gz",
+    .src_offset0 = 20,
+    .src_offset1 = 281,
 };
 
 golden_test deflate_deflate_backref_crosses_blocks_gt = {
@@ -128,29 +126,29 @@ golden_test deflate_deflate_huffman_primlen_9_gt = {
 };
 
 golden_test deflate_midsummer_gt = {
-    .want_filename = "test/data/midsummer.txt",    //
-    .src_filename = "test/data/midsummer.txt.gz",  //
-    .src_offset0 = 24,                             //
-    .src_offset1 = 5166,                           //
+    .want_filename = "test/data/midsummer.txt",
+    .src_filename = "test/data/midsummer.txt.gz",
+    .src_offset0 = 24,
+    .src_offset1 = 5166,
 };
 
 golden_test deflate_pi_gt = {
-    .want_filename = "test/data/pi.txt",    //
-    .src_filename = "test/data/pi.txt.gz",  //
-    .src_offset0 = 17,                      //
-    .src_offset1 = 48335,                   //
+    .want_filename = "test/data/pi.txt",
+    .src_filename = "test/data/pi.txt.gz",
+    .src_offset0 = 17,
+    .src_offset1 = 48335,
 };
 
 golden_test deflate_romeo_gt = {
-    .want_filename = "test/data/romeo.txt",    //
-    .src_filename = "test/data/romeo.txt.gz",  //
-    .src_offset0 = 20,                         //
-    .src_offset1 = 550,                        //
+    .want_filename = "test/data/romeo.txt",
+    .src_filename = "test/data/romeo.txt.gz",
+    .src_offset0 = 20,
+    .src_offset1 = 550,
 };
 
 golden_test deflate_romeo_fixed_gt = {
-    .want_filename = "test/data/romeo.txt",                    //
-    .src_filename = "test/data/romeo.txt.fixed-huff.deflate",  //
+    .want_filename = "test/data/romeo.txt",
+    .src_filename = "test/data/romeo.txt.fixed-huff.deflate",
 };
 
 // ---------------- Deflate Tests
@@ -895,63 +893,61 @@ bench_mimic_deflate_decode_100k_many_big_reads() {
 
 // ---------------- Manifest
 
-// The empty comments forces clang-format to place one element per line.
 proc tests[] = {
 
-    test_wuffs_deflate_decode_256_bytes,                          //
-    test_wuffs_deflate_decode_deflate_backref_crosses_blocks,     //
-    test_wuffs_deflate_decode_deflate_degenerate_huffman_unused,  //
-    test_wuffs_deflate_decode_deflate_distance_32768,             //
-    test_wuffs_deflate_decode_deflate_distance_code_31,           //
-    test_wuffs_deflate_decode_deflate_huffman_primlen_9,          //
-    test_wuffs_deflate_decode_interface,                          //
-    test_wuffs_deflate_decode_midsummer,                          //
-    test_wuffs_deflate_decode_pi_just_one_read,                   //
-    test_wuffs_deflate_decode_pi_many_big_reads,                  //
-    test_wuffs_deflate_decode_pi_many_medium_reads,               //
-    test_wuffs_deflate_decode_pi_many_small_writes_reads,         //
-    test_wuffs_deflate_decode_romeo,                              //
-    test_wuffs_deflate_decode_romeo_fixed,                        //
-    test_wuffs_deflate_decode_split_src,                          //
-    test_wuffs_deflate_history_full,                              //
-    test_wuffs_deflate_history_partial,                           //
-    test_wuffs_deflate_table_redirect,                            //
+    test_wuffs_deflate_decode_256_bytes,
+    test_wuffs_deflate_decode_deflate_backref_crosses_blocks,
+    test_wuffs_deflate_decode_deflate_degenerate_huffman_unused,
+    test_wuffs_deflate_decode_deflate_distance_32768,
+    test_wuffs_deflate_decode_deflate_distance_code_31,
+    test_wuffs_deflate_decode_deflate_huffman_primlen_9,
+    test_wuffs_deflate_decode_interface,
+    test_wuffs_deflate_decode_midsummer,
+    test_wuffs_deflate_decode_pi_just_one_read,
+    test_wuffs_deflate_decode_pi_many_big_reads,
+    test_wuffs_deflate_decode_pi_many_medium_reads,
+    test_wuffs_deflate_decode_pi_many_small_writes_reads,
+    test_wuffs_deflate_decode_romeo,
+    test_wuffs_deflate_decode_romeo_fixed,
+    test_wuffs_deflate_decode_split_src,
+    test_wuffs_deflate_history_full,
+    test_wuffs_deflate_history_partial,
+    test_wuffs_deflate_table_redirect,
 
 #ifdef WUFFS_MIMIC
 
-    test_mimic_deflate_decode_256_bytes,                          //
-    test_mimic_deflate_decode_deflate_backref_crosses_blocks,     //
-    test_mimic_deflate_decode_deflate_degenerate_huffman_unused,  //
-    test_mimic_deflate_decode_deflate_distance_32768,             //
-    test_mimic_deflate_decode_deflate_distance_code_31,           //
-    test_mimic_deflate_decode_deflate_huffman_primlen_9,          //
-    test_mimic_deflate_decode_midsummer,                          //
-    test_mimic_deflate_decode_pi_just_one_read,                   //
-    test_mimic_deflate_decode_pi_many_big_reads,                  //
-    test_mimic_deflate_decode_romeo,                              //
-    test_mimic_deflate_decode_romeo_fixed,                        //
+    test_mimic_deflate_decode_256_bytes,
+    test_mimic_deflate_decode_deflate_backref_crosses_blocks,
+    test_mimic_deflate_decode_deflate_degenerate_huffman_unused,
+    test_mimic_deflate_decode_deflate_distance_32768,
+    test_mimic_deflate_decode_deflate_distance_code_31,
+    test_mimic_deflate_decode_deflate_huffman_primlen_9,
+    test_mimic_deflate_decode_midsummer,
+    test_mimic_deflate_decode_pi_just_one_read,
+    test_mimic_deflate_decode_pi_many_big_reads,
+    test_mimic_deflate_decode_romeo,
+    test_mimic_deflate_decode_romeo_fixed,
 
 #endif  // WUFFS_MIMIC
 
     NULL,
 };
 
-// The empty comments forces clang-format to place one element per line.
 proc benches[] = {
 
-    bench_wuffs_deflate_decode_1k_full_init,         //
-    bench_wuffs_deflate_decode_1k_part_init,         //
-    bench_wuffs_deflate_decode_10k_full_init,        //
-    bench_wuffs_deflate_decode_10k_part_init,        //
-    bench_wuffs_deflate_decode_100k_just_one_read,   //
-    bench_wuffs_deflate_decode_100k_many_big_reads,  //
+    bench_wuffs_deflate_decode_1k_full_init,
+    bench_wuffs_deflate_decode_1k_part_init,
+    bench_wuffs_deflate_decode_10k_full_init,
+    bench_wuffs_deflate_decode_10k_part_init,
+    bench_wuffs_deflate_decode_100k_just_one_read,
+    bench_wuffs_deflate_decode_100k_many_big_reads,
 
 #ifdef WUFFS_MIMIC
 
-    bench_mimic_deflate_decode_1k,                   //
-    bench_mimic_deflate_decode_10k,                  //
-    bench_mimic_deflate_decode_100k_just_one_read,   //
-    bench_mimic_deflate_decode_100k_many_big_reads,  //
+    bench_mimic_deflate_decode_1k,
+    bench_mimic_deflate_decode_10k,
+    bench_mimic_deflate_decode_100k_just_one_read,
+    bench_mimic_deflate_decode_100k_many_big_reads,
 
 #endif  // WUFFS_MIMIC
 

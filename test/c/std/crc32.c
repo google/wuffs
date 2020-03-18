@@ -70,11 +70,11 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 // ---------------- Golden Tests
 
 golden_test crc32_midsummer_gt = {
-    .src_filename = "test/data/midsummer.txt",  //
+    .src_filename = "test/data/midsummer.txt",
 };
 
 golden_test crc32_pi_gt = {
-    .src_filename = "test/data/pi.txt",  //
+    .src_filename = "test/data/pi.txt",
 };
 
 // ---------------- CRC32 Tests
@@ -335,32 +335,30 @@ bench_mimic_crc32_ieee_100k() {
 // Note that the crc32 mimic tests and benches don't work with
 // WUFFS_MIMICLIB_USE_MINIZ_INSTEAD_OF_ZLIB.
 
-// The empty comments forces clang-format to place one element per line.
 proc tests[] = {
 
-    test_wuffs_crc32_ieee_golden,     //
-    test_wuffs_crc32_ieee_interface,  //
-    test_wuffs_crc32_ieee_pi,         //
+    test_wuffs_crc32_ieee_golden,
+    test_wuffs_crc32_ieee_interface,
+    test_wuffs_crc32_ieee_pi,
 
 #ifdef WUFFS_MIMIC
 
-    test_mimic_crc32_ieee_pi,  //
+    test_mimic_crc32_ieee_pi,
 
 #endif  // WUFFS_MIMIC
 
     NULL,
 };
 
-// The empty comments forces clang-format to place one element per line.
 proc benches[] = {
 
-    bench_wuffs_crc32_ieee_10k,   //
-    bench_wuffs_crc32_ieee_100k,  //
+    bench_wuffs_crc32_ieee_10k,
+    bench_wuffs_crc32_ieee_100k,
 
 #ifdef WUFFS_MIMIC
 
-    bench_mimic_crc32_ieee_10k,   //
-    bench_mimic_crc32_ieee_100k,  //
+    bench_mimic_crc32_ieee_10k,
+    bench_mimic_crc32_ieee_100k,
 
 #endif  // WUFFS_MIMIC
 

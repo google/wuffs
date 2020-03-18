@@ -72,13 +72,13 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 // ---------------- Golden Tests
 
 golden_test gzip_midsummer_gt = {
-    .want_filename = "test/data/midsummer.txt",    //
-    .src_filename = "test/data/midsummer.txt.gz",  //
+    .want_filename = "test/data/midsummer.txt",
+    .src_filename = "test/data/midsummer.txt.gz",
 };
 
 golden_test gzip_pi_gt = {
-    .want_filename = "test/data/pi.txt",    //
-    .src_filename = "test/data/pi.txt.gz",  //
+    .want_filename = "test/data/pi.txt",
+    .src_filename = "test/data/pi.txt.gz",
 };
 
 // ---------------- Gzip Tests
@@ -292,37 +292,35 @@ bench_mimic_gzip_decode_100k() {
 // Note that the gzip mimic tests and benches don't work with
 // WUFFS_MIMICLIB_USE_MINIZ_INSTEAD_OF_ZLIB.
 
-// The empty comments forces clang-format to place one element per line.
 proc tests[] = {
 
-    test_wuffs_gzip_checksum_ignore,       //
-    test_wuffs_gzip_checksum_verify_bad0,  //
-    test_wuffs_gzip_checksum_verify_bad7,  //
-    test_wuffs_gzip_checksum_verify_good,  //
-    test_wuffs_gzip_decode_interface,      //
-    test_wuffs_gzip_decode_midsummer,      //
-    test_wuffs_gzip_decode_pi,             //
+    test_wuffs_gzip_checksum_ignore,
+    test_wuffs_gzip_checksum_verify_bad0,
+    test_wuffs_gzip_checksum_verify_bad7,
+    test_wuffs_gzip_checksum_verify_good,
+    test_wuffs_gzip_decode_interface,
+    test_wuffs_gzip_decode_midsummer,
+    test_wuffs_gzip_decode_pi,
 
 #ifdef WUFFS_MIMIC
 
-    test_mimic_gzip_decode_midsummer,  //
-    test_mimic_gzip_decode_pi,         //
+    test_mimic_gzip_decode_midsummer,
+    test_mimic_gzip_decode_pi,
 
 #endif  // WUFFS_MIMIC
 
     NULL,
 };
 
-// The empty comments forces clang-format to place one element per line.
 proc benches[] = {
 
-    bench_wuffs_gzip_decode_10k,   //
-    bench_wuffs_gzip_decode_100k,  //
+    bench_wuffs_gzip_decode_10k,
+    bench_wuffs_gzip_decode_100k,
 
 #ifdef WUFFS_MIMIC
 
-    bench_mimic_gzip_decode_10k,   //
-    bench_mimic_gzip_decode_100k,  //
+    bench_mimic_gzip_decode_10k,
+    bench_mimic_gzip_decode_100k,
 
 #endif  // WUFFS_MIMIC
 
