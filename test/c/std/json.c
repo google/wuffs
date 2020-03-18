@@ -1262,6 +1262,140 @@ test_wuffs_json_decode_quirk_allow_trailing_etc() {
 }
 
 const char*  //
+test_wuffs_json_decode_quirk_replace_invalid_utf_8() {
+  CHECK_FOCUS(__func__);
+
+  // Decoding str should produce want, with invalid UTF-8 replaced by "?". A
+  // proper JSON decoder (with the quirk enabled) would replace with
+  // "\xEF\xBF\xBD", the UTF-8 encoding of U+FFFD, but using "?" leads to
+  // clearer, shorter test cases.
+  struct {
+    const char* want;
+    const char* str;
+  } test_cases[] = {
+      // Valid UTF-8.
+      {.want = "abc", .str = "\"abc\""},
+      {.want = "del\xCE\x94ta", .str = "\"del\\u0394ta\""},
+      {.want = "del\xCE\x94ta", .str = "\"del\xCE\x94ta\""},
+
+      // Invalid UTF-8: right byte lengths, wrong bytes.
+      {.want = "1byte?yz", .str = "\"1byte\xFFyz\""},
+      {.want = "2byte??yz", .str = "\"2byte\xCE\xFFyz\""},
+      {.want = "3byte???yz", .str = "\"3byte\xE2\x98\xFFyz\""},
+      {.want = "4byte????yz", .str = "\"4byte\xF0\x9F\x92\xFFyz\""},
+
+      // Invalid UTF-8: wrong byte lengths.
+      {.want = "?", .str = "\"\xCE\""},
+      {.want = "?g", .str = "\"\xCEg\""},
+      {.want = "?gh", .str = "\"\xCEgh\""},
+      {.want = "j?", .str = "\"j\xE2\""},
+      {.want = "j?l", .str = "\"j\xE2l\""},
+      {.want = "j?lm", .str = "\"j\xE2lm\""},
+      {.want = "?", .str = "\"\xF0\""},
+      {.want = "?r", .str = "\"\xF0r\""},
+      {.want = "?rs", .str = "\"\xF0rs\""},
+
+      // U+DC00 (as an unpaired surrogate) is either 1 or 3 '?'s depending on
+      // whether it's backslash-u or backslash-x.
+      {.want = "a?z", .str = "\"a\\uDC00z\""},
+      {.want = "a?zzzzzz", .str = "\"a\\uDC00zzzzzz\""},
+      {.want = "a???z", .str = "\"a\xED\xB0\x80z\""},
+      {.want = "a???zzzzzz", .str = "\"a\xED\xB0\x80zzzzzz\""},
+
+      // 1 or 2 unpaired surrogates each become '?'s, but for 3 surrogates
+      // where consecutive surrogates make a valid pair, there's only 1 '?'.
+      {.want = "a?z", .str = "\"a\\uD800z\""},
+      {.want = "a??z", .str = "\"a\\uD800\\uDBFFz\""},
+      {.want = "a?\xF4\x8F\xBF\xBFz", .str = "\"a\\uD800\\uDBFF\\uDFFFz\""},
+      {.want = "a\xF0\x90\x80\x80?z", .str = "\"a\\uD800\\uDC00\\uDFFFz\""},
+  };
+
+  int tc;
+  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+    wuffs_json__decoder dec;
+    CHECK_STATUS("initialize", wuffs_json__decoder__initialize(
+                                   &dec, sizeof dec, WUFFS_VERSION,
+                                   WUFFS_INITIALIZE__DEFAULT_OPTIONS));
+    wuffs_json__decoder__set_quirk_enabled(
+        &dec, WUFFS_JSON__QUIRK_REPLACE_INVALID_UTF_8, true);
+
+    wuffs_base__io_buffer have =
+        wuffs_base__make_io_buffer_writer(global_have_slice);
+    wuffs_base__token_buffer tok =
+        wuffs_base__make_token_buffer_writer(global_have_token_slice);
+    wuffs_base__io_buffer src = wuffs_base__make_io_buffer_reader(
+        wuffs_base__make_slice_u8((void*)(test_cases[tc].str),
+                                  strlen(test_cases[tc].str)),
+        true);
+    CHECK_STATUS("decode_tokens",
+                 wuffs_json__decoder__decode_tokens(&dec, &tok, &src));
+
+    uint64_t src_index = 0;
+    while (tok.meta.ri < tok.meta.wi) {
+      wuffs_base__token* t = &tok.data.ptr[tok.meta.ri++];
+      uint64_t vbc = wuffs_base__token__value_base_category(t);
+      uint64_t vbd = wuffs_base__token__value_base_detail(t);
+      uint64_t token_length = wuffs_base__token__length(t);
+
+      if (vbc == WUFFS_BASE__TOKEN__VBC__UNICODE_CODE_POINT) {
+        uint8_t u[WUFFS_BASE__UTF_8__BYTE_LENGTH__MAX_INCL];
+        size_t n = wuffs_base__utf_8__encode(
+            wuffs_base__make_slice_u8(&u[0],
+                                      WUFFS_BASE__UTF_8__BYTE_LENGTH__MAX_INCL),
+            vbd);
+        if (vbd == 0xFFFD) {
+          u[0] = '?';
+          n = 1;
+        }
+        if ((have.data.len - have.meta.wi) < n) {
+          RETURN_FAIL("tc=%d: token too long", tc);
+        }
+        memcpy(&have.data.ptr[have.meta.wi], &u[0], n);
+        have.meta.wi += n;
+
+      } else if (vbc == WUFFS_BASE__TOKEN__VBC__STRING) {
+        if (vbd & WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_0_DST_1_SRC_DROP) {
+          // No-op.
+        } else if (vbd &
+                   WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY) {
+          if ((have.data.len - have.meta.wi) < token_length) {
+            RETURN_FAIL("tc=%d: token too long", tc);
+          }
+          memcpy(&have.data.ptr[have.meta.wi], &test_cases[tc].str[src_index],
+                 token_length);
+          have.meta.wi += token_length;
+        } else {
+          RETURN_FAIL("tc=%d: unexpected string-token conversion", tc);
+        }
+
+      } else {
+        RETURN_FAIL("tc=%d: unexpected token", tc);
+      }
+
+      src_index += token_length;
+    }
+
+    if (src_index != src.meta.ri) {
+      RETURN_FAIL("tc=%d: src_index: have %zu, want %zu", tc, src_index,
+                  src.meta.ri);
+    }
+
+    if (have.meta.wi >= have.data.len) {
+      RETURN_FAIL("tc=%d: too many have bytes", tc);
+    }
+    have.data.ptr[have.meta.wi] = '\x00';
+    size_t len = strlen(test_cases[tc].want);
+    if ((len != have.meta.wi) ||
+        (memcmp(have.data.ptr, test_cases[tc].want, len) != 0)) {
+      RETURN_FAIL("tc=%d: have \"%s\", want \"%s\"", tc, have.data.ptr,
+                  test_cases[tc].want);
+    }
+  }
+
+  return NULL;
+}
+
+const char*  //
 test_wuffs_json_decode_unicode4_escapes() {
   CHECK_FOCUS(__func__);
 
@@ -1614,6 +1748,7 @@ proc tests[] = {
     test_wuffs_json_decode_prior_valid_utf_8,
     test_wuffs_json_decode_quirk_allow_leading_etc,
     test_wuffs_json_decode_quirk_allow_trailing_etc,
+    test_wuffs_json_decode_quirk_replace_invalid_utf_8,
     test_wuffs_json_decode_src_io_buffer_length,
     test_wuffs_json_decode_string,
     test_wuffs_json_decode_unicode4_escapes,

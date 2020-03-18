@@ -400,6 +400,15 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 									// high surrogate. We need another 6.
 									if args.src.available() < 12 {
 										if args.src.is_closed() {
+											if this.quirk_enabled_replace_invalid_utf_8 {
+												args.src.skip32_fast!(actual: 6, worst_case: 6)
+												args.dst.write_fast_token!(
+													value_major: 0,
+													value_minor: 0x60_FFFD,
+													link: 0x3,
+													length: 6)
+												continue.string_loop_outer
+											}
 											return "#bad backslash-escape"
 										}
 										yield? base."$short read"
@@ -460,7 +469,9 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 										// through to "#invalid
 										// backslash-escape".
 										uni4_rollback = 4
-										while uni4_rollback > 0 {
+										while uni4_rollback > 0,
+											inv args.dst.available() > 0,
+										{
 											uni4_rollback -= 1
 											if args.src.can_undo_byte() {
 												args.src.undo_byte!()
@@ -469,6 +480,19 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 											}
 										}
 									}
+								}
+
+								if this.quirk_enabled_replace_invalid_utf_8 {
+									if args.src.available() < 6 {
+										return "#internal error: inconsistent I/O"
+									}
+									args.src.skip32_fast!(actual: 6, worst_case: 6)
+									args.dst.write_fast_token!(
+										value_major: 0,
+										value_minor: 0x60_FFFD,
+										link: 0x3,
+										length: 6)
+									continue.string_loop_outer
 								}
 								// -------- END   backslash-u.
 							}
@@ -484,8 +508,20 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 										link: 0x3,
 										length: string_length)
 									string_length = 0
+									if args.dst.available() <= 0 {
+										continue.string_loop_outer
+									}
 								}
 								if args.src.is_closed() {
+									if this.quirk_enabled_replace_invalid_utf_8 {
+										args.dst.write_fast_token!(
+											value_major: 0,
+											value_minor: 0x60_FFFD,
+											link: 0x3,
+											length: 1)
+										args.src.skip32_fast!(actual: 1, worst_case: 1)
+										continue.string_loop_inner
+									}
 									return "#bad UTF-8"
 								}
 								yield? base."$short read"
@@ -520,8 +556,20 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 										link: 0x3,
 										length: string_length)
 									string_length = 0
+									if args.dst.available() <= 0 {
+										continue.string_loop_outer
+									}
 								}
 								if args.src.is_closed() {
+									if this.quirk_enabled_replace_invalid_utf_8 {
+										args.dst.write_fast_token!(
+											value_major: 0,
+											value_minor: 0x60_FFFD,
+											link: 0x3,
+											length: 1)
+										args.src.skip32_fast!(actual: 1, worst_case: 1)
+										continue.string_loop_inner
+									}
 									return "#bad UTF-8"
 								}
 								yield? base."$short read"
@@ -561,8 +609,20 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 										link: 0x3,
 										length: string_length)
 									string_length = 0
+									if args.dst.available() <= 0 {
+										continue.string_loop_outer
+									}
 								}
 								if args.src.is_closed() {
+									if this.quirk_enabled_replace_invalid_utf_8 {
+										args.dst.write_fast_token!(
+											value_major: 0,
+											value_minor: 0x60_FFFD,
+											link: 0x3,
+											length: 1)
+										args.src.skip32_fast!(actual: 1, worst_case: 1)
+										continue.string_loop_inner
+									}
 									return "#bad UTF-8"
 								}
 								yield? base."$short read"
@@ -600,9 +660,21 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 								link: 0x3,
 								length: string_length)
 							string_length = 0
+							if args.dst.available() <= 0 {
+								continue.string_loop_outer
+							}
 						}
 						if char == 0x80 {
 							return "#bad C0 control code"
+						}
+						if this.quirk_enabled_replace_invalid_utf_8 {
+							args.dst.write_fast_token!(
+								value_major: 0,
+								value_minor: 0x60_FFFD,
+								link: 0x3,
+								length: 1)
+							args.src.skip32_fast!(actual: 1, worst_case: 1)
+							continue.string_loop_inner
 						}
 						return "#bad UTF-8"
 					} endwhile.string_loop_inner
