@@ -670,8 +670,16 @@ initialize_globals(int argc, char** argv) {
   suppress_write_dst = query.next_fragment() ? 1 : 0;
   wrote_to_dst = false;
 
-  return dec.initialize(sizeof__wuffs_json__decoder(), WUFFS_VERSION, 0)
-      .message();
+  TRY(dec.initialize(sizeof__wuffs_json__decoder(), WUFFS_VERSION, 0)
+          .message());
+
+  // Consume an optional whitespace trailer. This isn't part of the JSON spec,
+  // but it works better with line oriented Unix tools (such as "echo 123 |
+  // jsonptr" where it's "echo", not "echo -n") or hand-edited JSON files which
+  // can accidentally contain trailing whitespace.
+  dec.set_quirk_enabled(WUFFS_JSON__QUIRK_ALLOW_TRAILING_NEW_LINE, true);
+
+  return nullptr;
 }
 
 // ----
@@ -1051,30 +1059,6 @@ end_of_data:
     return nullptr;
   }
 
-  // Consume an optional whitespace trailer. This isn't part of the JSON spec,
-  // but it works better with line oriented Unix tools (such as "echo 123 |
-  // jsonptr" where it's "echo", not "echo -n") or hand-edited JSON files which
-  // can accidentally contain trailing whitespace.
-  //
-  // A whitespace trailer is zero or more ' ' and then zero or one '\n'.
-  while (true) {
-    if (src.meta.ri < src.meta.wi) {
-      uint8_t c = src.data.ptr[src.meta.ri];
-      if (c == ' ') {
-        src.meta.ri++;
-        continue;
-      } else if (c == '\n') {
-        src.meta.ri++;
-        break;
-      }
-      // The "exhausted the input" check below will fail.
-      break;
-    } else if (src.meta.closed) {
-      break;
-    }
-    TRY(read_src());
-  }
-
   // Check that we've exhausted the input.
   if ((src.meta.ri == src.meta.wi) && !src.meta.closed) {
     TRY(read_src());
@@ -1084,9 +1068,9 @@ end_of_data:
   }
 
   // Check that we've used all of the decoded tokens, other than trailing
-  // filler tokens. For example, a bare `"foo"` string is valid JSON, but even
-  // without a trailing '\n', the Wuffs JSON parser emits a filler token for
-  // the final '\"'.
+  // filler tokens. For example, "true\n" is valid JSON (and fully consumed
+  // with WUFFS_JSON__QUIRK_ALLOW_TRAILING_NEW_LINE enabled) with a trailing
+  // filler token for the "\n".
   for (; tok.meta.ri < tok.meta.wi; tok.meta.ri++) {
     if (tok.data.ptr[tok.meta.ri].value_base_category() !=
         WUFFS_BASE__TOKEN__VBC__FILLER) {

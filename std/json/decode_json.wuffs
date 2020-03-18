@@ -902,6 +902,10 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 		expect = expect_after_value
 	} endwhile.outer
 
+	if this.quirk_enabled_allow_trailing_new_line {
+		this.decode_trailing_new_line?(dst: args.dst, src: args.src)
+	}
+
 	this.end_of_data = true
 }
 
@@ -1123,4 +1127,58 @@ pri func decoder.decode_leading?(dst: base.token_writer, src: base.io_reader) {
 		}
 		break
 	}
+}
+
+pri func decoder.decode_trailing_new_line?(dst: base.token_writer, src: base.io_reader) {
+	var c                 : base.u8
+	var whitespace_length : base.u32[..= 0xFFFE]
+
+	while.outer true {
+		if args.dst.available() <= 0 {
+			yield? base."$short write"
+			whitespace_length = 0
+			continue.outer
+		}
+
+		while.inner true,
+			pre args.dst.available() > 0,
+		{
+			if args.src.available() <= 0 {
+				if whitespace_length > 0 {
+					args.dst.write_fast_token!(
+						value_major: 0, value_minor: 0, link: 0x0, length: whitespace_length)
+					whitespace_length = 0
+				}
+				if args.src.is_closed() {
+					break.outer
+				}
+				yield? base."$short read"
+				whitespace_length = 0
+				continue.outer
+			}
+
+			c = args.src.peek_u8()
+			if lut_classes[c] <> 0x00 {  // 0x00 is CLASS_WHITESPACE.
+				if whitespace_length > 0 {
+					args.dst.write_fast_token!(
+						value_major: 0, value_minor: 0, link: 0x0, length: whitespace_length)
+					whitespace_length = 0
+				}
+				return "#bad input"
+			}
+
+			args.src.skip32_fast!(actual: 1, worst_case: 1)
+			if (whitespace_length >= 0xFFFE) or (c == 0x0A) {
+				args.dst.write_fast_token!(
+					value_major: 0, value_minor: 0, link: 0x0, length: whitespace_length + 1)
+				whitespace_length = 0
+				if c == 0x0A {
+					break.outer
+				}
+				continue.outer
+			}
+			whitespace_length += 1
+		} endwhile.inner
+	} endwhile.outer
+
 }
