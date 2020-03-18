@@ -711,12 +711,28 @@ func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error
 			scratchName := fmt.Sprintf("self->private_data.%s%s[0].scratch",
 				sPrefix, g.currFunk.astFunc.FuncName().Str(g.tm))
 
+			args := n.Args()
 			b.printf("%s = (((uint64_t)(", scratchName)
-			if err := g.writeExpr(b, n.Args()[0].AsArg().Value(), depth); err != nil {
+			if cv := args[0].AsArg().Value().ConstValue(); (cv == nil) || (cv.Sign() != 0) {
+				if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
+					return err
+				}
+				b.writes(")) << WUFFS_BASE__TOKEN__VALUE_MAJOR__SHIFT) | (((uint64_t)(")
+			}
+
+			if err := g.writeExpr(b, args[1].AsArg().Value(), depth); err != nil {
 				return err
 			}
-			b.writes(")) << WUFFS_BASE__TOKEN__VLL__SHIFT) | (((uint64_t)(")
-			if err := g.writeExpr(b, n.Args()[1].AsArg().Value(), depth); err != nil {
+			b.writes(")) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) | (((uint64_t)(")
+
+			if cv := args[2].AsArg().Value().ConstValue(); (cv == nil) || (cv.Sign() != 0) {
+				if err := g.writeExpr(b, args[2].AsArg().Value(), depth); err != nil {
+					return err
+				}
+				b.writes(")) << WUFFS_BASE__TOKEN__LINK__SHIFT) | (((uint64_t)(")
+			}
+
+			if err := g.writeExpr(b, args[3].AsArg().Value(), depth); err != nil {
 				return err
 			}
 			b.writes(")) << WUFFS_BASE__TOKEN__LENGTH__SHIFT);\n")
