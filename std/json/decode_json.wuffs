@@ -13,14 +13,12 @@
 // limitations under the License.
 
 pub struct decoder? implements base.token_decoder(
-	quirk_enabled_allow_backslash_a                     : base.bool,
+	// quirk_enabled_allow_backslash_etc, an 8-element array, is indexed by the
+	// same enum as lut_quirky_backslashes.
+	quirk_enabled_allow_backslash_etc : array[8] base.bool,
+
 	quirk_enabled_allow_backslash_capital_u             : base.bool,
-	quirk_enabled_allow_backslash_e                     : base.bool,
-	quirk_enabled_allow_backslash_question_mark         : base.bool,
-	quirk_enabled_allow_backslash_single_quote          : base.bool,
-	quirk_enabled_allow_backslash_v                     : base.bool,
 	quirk_enabled_allow_backslash_x                     : base.bool,
-	quirk_enabled_allow_backslash_zero                  : base.bool,
 	quirk_enabled_allow_comment_block                   : base.bool,
 	quirk_enabled_allow_comment_line                    : base.bool,
 	quirk_enabled_allow_final_comma                     : base.bool,
@@ -68,21 +66,21 @@ pub struct decoder? implements base.token_decoder(
 
 pub func decoder.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
 	if args.quirk == quirk_allow_backslash_a {
-		this.quirk_enabled_allow_backslash_a = args.enabled
+		this.quirk_enabled_allow_backslash_etc[1] = args.enabled
 	} else if args.quirk == quirk_allow_backslash_capital_u {
 		this.quirk_enabled_allow_backslash_capital_u = args.enabled
 	} else if args.quirk == quirk_allow_backslash_e {
-		this.quirk_enabled_allow_backslash_e = args.enabled
+		this.quirk_enabled_allow_backslash_etc[2] = args.enabled
 	} else if args.quirk == quirk_allow_backslash_question_mark {
-		this.quirk_enabled_allow_backslash_question_mark = args.enabled
+		this.quirk_enabled_allow_backslash_etc[3] = args.enabled
 	} else if args.quirk == quirk_allow_backslash_single_quote {
-		this.quirk_enabled_allow_backslash_single_quote = args.enabled
+		this.quirk_enabled_allow_backslash_etc[4] = args.enabled
 	} else if args.quirk == quirk_allow_backslash_v {
-		this.quirk_enabled_allow_backslash_v = args.enabled
+		this.quirk_enabled_allow_backslash_etc[5] = args.enabled
 	} else if args.quirk == quirk_allow_backslash_x {
 		this.quirk_enabled_allow_backslash_x = args.enabled
 	} else if args.quirk == quirk_allow_backslash_zero {
-		this.quirk_enabled_allow_backslash_zero = args.enabled
+		this.quirk_enabled_allow_backslash_etc[6] = args.enabled
 	} else if args.quirk == quirk_allow_comment_block {
 		this.quirk_enabled_allow_comment_block = args.enabled
 	} else if args.quirk == quirk_allow_comment_line {
@@ -335,7 +333,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 							}
 							c = (args.src.peek_u16le() >> 8) as base.u8
 							backslash = lut_backslashes[c]
-							if backslash > 0 {
+							if (backslash & 0x80) <> 0 {
 								args.src.skip32_fast!(actual: 2, worst_case: 2)
 								args.dst.write_fast_token!(
 									value_major: 0,
@@ -343,6 +341,17 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 									link: 0x3,
 									length: 2)
 								continue.string_loop_outer
+
+							} else if backslash <> 0 {
+								if this.quirk_enabled_allow_backslash_etc[backslash & 7] {
+									args.src.skip32_fast!(actual: 2, worst_case: 2)
+									args.dst.write_fast_token!(
+										value_major: 0,
+										value_minor: 0x60_0000 | (lut_quirky_backslashes[backslash & 7] as base.u32),
+										link: 0x3,
+										length: 2)
+									continue.string_loop_outer
+								}
 
 							} else if c == 0x75 {  // 0x75 is 'u'.
 								// -------- BEGIN backslash-u.
