@@ -1120,6 +1120,11 @@ test_wuffs_json_decode_quirk_allow_backslash_etc() {
           .quirk = WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_A,
       },
       {
+          .want = 0x0001F4A9,
+          .str = "\"\\U0001F4A9\"",
+          .quirk = WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_CAPITAL_U,
+      },
+      {
           .want = 0x1B,
           .str = "\"\\e\"",
           .quirk = WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_E,

@@ -122,6 +122,10 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 	var uni4_value          : base.u32[..= 0xFFFF]
 	var uni4_high_surrogate : base.u32[..= 0x10_FC00]
 
+	var uni8_ok     : base.u8
+	var uni8_string : base.u64
+	var uni8_value  : base.u32[..= 0xFFFF_FFFF]
+
 	// expect is a bitmask of what the next character class can be.
 	//
 	// expect_after_value is what to expect after seeing a value (a literal,
@@ -483,6 +487,73 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 									continue.string_loop_outer
 								}
 								// -------- END   backslash-u.
+
+							} else if (c == 0x55) and
+								this.quirk_enabled_allow_backslash_capital_u {  // 0x55 is 'U'.
+								// -------- BEGIN backslash-capital-u.
+								if args.src.available() < 10 {
+									if args.src.is_closed() {
+										return "#bad backslash-escape"
+									}
+									yield? base."$short read"
+									string_length = 0
+									char = 0
+									continue.string_loop_outer
+								}
+								uni8_string = args.src.peek_u64le_at(offset: 2)
+								uni8_value = 0
+								uni8_ok = 0x80
+
+								c = lut_hexadecimal_digits[0xFF & (uni8_string >> 0)]
+								uni8_ok &= c
+								uni8_value |= ((c & 0x0F) as base.u32) << 28
+								c = lut_hexadecimal_digits[0xFF & (uni8_string >> 8)]
+								uni8_ok &= c
+								uni8_value |= ((c & 0x0F) as base.u32) << 24
+								c = lut_hexadecimal_digits[0xFF & (uni8_string >> 16)]
+								uni8_ok &= c
+								uni8_value |= ((c & 0x0F) as base.u32) << 20
+								c = lut_hexadecimal_digits[0xFF & (uni8_string >> 24)]
+								uni8_ok &= c
+								uni8_value |= ((c & 0x0F) as base.u32) << 16
+								c = lut_hexadecimal_digits[0xFF & (uni8_string >> 32)]
+								uni8_ok &= c
+								uni8_value |= ((c & 0x0F) as base.u32) << 12
+								c = lut_hexadecimal_digits[0xFF & (uni8_string >> 40)]
+								uni8_ok &= c
+								uni8_value |= ((c & 0x0F) as base.u32) << 8
+								c = lut_hexadecimal_digits[0xFF & (uni8_string >> 48)]
+								uni8_ok &= c
+								uni8_value |= ((c & 0x0F) as base.u32) << 4
+								c = lut_hexadecimal_digits[0xFF & (uni8_string >> 56)]
+								uni8_ok &= c
+								uni8_value |= ((c & 0x0F) as base.u32) << 0
+
+								if uni8_ok == 0 {
+									// It wasn't 8 hexadecimal digits. No-op
+									// (and fall through to "#bad
+									// backslash-escape").
+
+								} else if (uni8_value < 0xD800) or (
+									(0xDFFF < uni8_value) and (uni8_value <= 0x10_FFFF)) {
+									// Not a Unicode surrogate. We're good.
+									args.src.skip32_fast!(actual: 10, worst_case: 10)
+									args.dst.write_fast_token!(
+										value_major: 0,
+										value_minor: 0x60_0000 | (uni8_value & 0x1F_FFFF),
+										link: 0x3,
+										length: 10)
+									continue.string_loop_outer
+								} else if this.quirk_enabled_replace_invalid_utf_8 {
+									args.src.skip32_fast!(actual: 10, worst_case: 10)
+									args.dst.write_fast_token!(
+										value_major: 0,
+										value_minor: 0x60_FFFD,
+										link: 0x3,
+										length: 6)
+									continue.string_loop_outer
+								}
+								// -------- END   backslash-capital-u.
 							}
 
 							return "#bad backslash-escape"

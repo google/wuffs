@@ -28,6 +28,8 @@ pub const quirk_allow_backslash_a base.u32 = 0x4909_9400 | 0x00
 // When this quirk is enabled, e.g. "abc\U0001F4A9z" is accepted as a JSON
 // string, equivalent to "abc\uD83D\uDCA9z", containing the U+0001F4A9 PILE OF
 // POO Unicode code point. There are exactly 8 encoded bytes after each "\U".
+//
+// This quirk can combine with quirk_replace_invalid_utf_8.
 pub const quirk_allow_backslash_capital_u base.u32 = 0x4909_9400 | 0x01
 
 // When this quirk is enabled, e.g. "abc\ez" is accepted as a JSON string,
@@ -51,7 +53,9 @@ pub const quirk_allow_backslash_v base.u32 = 0x4909_9400 | 0x05
 // decoding to 5 bytes: 0x61, 0x62, 0x63, 0xEF and 0x7A. There are exactly 2
 // encoded bytes after each "\x".
 //
-// Decoded strings are byte strings, no longer guaranteed to be valid UTF-8.
+// Decoded strings are byte strings, no longer guaranteed to be valid UTF-8 and
+// even if the overall byte string is valid UTF-8, tokens are also no longer
+// guaranteed to split on UTF-8 boundaries.
 //
 // "\x", "\x9", "\x9$" and "\X99" are all still rejected.
 pub const quirk_allow_backslash_x base.u32 = 0x4909_9400 | 0x06
@@ -149,10 +153,16 @@ pub const quirk_allow_trailing_new_line base.u32 = 0x4909_9400 | 0x0E
 
 // When this quirk is enabled, invalid UTF-8 inside a JSON string is accepted.
 // Each byte of invalid UTF-8 is equivalent to "\uFFFD", the Unicode
-// Replacement Character. Invalid UTF-8 outside a JSON string remains an error.
+// Replacement Character. The UTF-8 encoding of U+FFFD is "\xEF\xBF\xBD".
+//
+// Invalid UTF-8 outside a JSON string remains an error.
 //
 // Similarly, for backslash-u escapes featuring incorrectly paired Unicode
 // surrogates, each backslash-u 6-byte unit is replaced. For example,
 // "abc\uDC00z" and "ijk\uD800\uDBFFz" are equivalent to "abc\uFFFDz" and
 // "ijk\uFFFD\uFFFDz".
+//
+// When combined with quirk_allow_backslash_capital_u, a "\U12345678" 10-byte
+// unit that is an invalid Unicode code point (i.e. in the range U+D800 ..=
+// U+DFFF or above U+10FFFF) is similarly replaced with U+FFFD.
 pub const quirk_replace_invalid_utf_8 base.u32 = 0x4909_9400 | 0x0F
