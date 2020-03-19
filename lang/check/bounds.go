@@ -1068,10 +1068,22 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (bounds, e
 			} else if err != nil {
 				return bounds{}, err
 			}
-			advance, update = worstCase.ConstValue(), true
-			if advance == nil {
+			if worstCase.ConstValue() == nil {
 				return bounds{}, fmt.Errorf("check: skip_fast worst_case is not a constant value")
 			}
+			advance, update = worstCase.ConstValue(), true
+
+		} else if method == t.IDPeekU64LEAt {
+			args := n.Args()
+			if len(args) != 1 {
+				return bounds{}, fmt.Errorf("check: internal error: bad peek_u64le_at arguments")
+			}
+			offset := args[0].AsArg().Value()
+			if offset.ConstValue() == nil {
+				return bounds{}, fmt.Errorf("check: peek_u64le_at offset is not a constant value")
+			}
+			advance, update = big.NewInt(8), false
+			advance.Add(advance, offset.ConstValue())
 
 		} else if method >= t.IDPeekU8 {
 			if m := method - t.IDPeekU8; m < t.ID(len(ioMethodAdvances)) {

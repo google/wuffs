@@ -544,6 +544,8 @@ const (
 
 	// --------
 
+	IDPeekU64LEAt = ID(0x1A0)
+
 	IDPeekU8 = ID(0x1A1)
 
 	IDPeekU16BE = ID(0x1A2)
@@ -898,6 +900,8 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDReadU64LE:      "read_u64le",
 
 	// --------
+
+	IDPeekU64LEAt: "peek_u64le_at",
 
 	IDPeekU8: "peek_u8",
 

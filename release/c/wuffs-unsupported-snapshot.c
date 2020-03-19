@@ -20468,7 +20468,6 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
   uint64_t v_uni4_string = 0;
   uint32_t v_uni4_value = 0;
   uint32_t v_uni4_high_surrogate = 0;
-  uint32_t v_uni4_rollback = 0;
   uint32_t v_expect = 0;
   uint32_t v_expect_after_value = 0;
 
@@ -20791,10 +20790,9 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
                       v_char = 0;
                       goto label__string_loop_outer__continue;
                     }
-                    (iop_a_src += 4, wuffs_base__make_empty_struct());
-                    v_uni4_string =
-                        (wuffs_base__load_u64le__no_bounds_check(iop_a_src) >>
-                         16);
+                    v_uni4_string = (wuffs_base__load_u64le__no_bounds_check(
+                                         iop_a_src + 4) >>
+                                     16);
                     if (((255 & (v_uni4_string >> 0)) != 92) ||
                         ((255 & (v_uni4_string >> 8)) != 117)) {
                       v_uni4_high_surrogate = 0;
@@ -20826,7 +20824,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
                     if ((v_uni4_ok != 0) && (56320 <= v_uni4_value) &&
                         (v_uni4_value <= 57343)) {
                       v_uni4_value -= 56320;
-                      (iop_a_src += 8, wuffs_base__make_empty_struct());
+                      (iop_a_src += 12, wuffs_base__make_empty_struct());
                       *iop_a_dst++ = wuffs_base__make_token(
                           (((uint64_t)((6291456 | v_uni4_high_surrogate |
                                         v_uni4_value)))
@@ -20835,18 +20833,6 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
                           (((uint64_t)(12))
                            << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
                       goto label__string_loop_outer__continue;
-                    } else {
-                      v_uni4_rollback = 4;
-                      while (v_uni4_rollback > 0) {
-                        v_uni4_rollback -= 1;
-                        if (iop_a_src > io1_a_src) {
-                          (iop_a_src--, wuffs_base__make_empty_struct());
-                        } else {
-                          status = wuffs_base__make_status(
-                              wuffs_json__error__internal_error_inconsistent_i_o);
-                          goto exit;
-                        }
-                      }
                     }
                   }
                   if (self->private_impl

@@ -123,7 +123,6 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 	var uni4_string         : base.u64
 	var uni4_value          : base.u32[..= 0xFFFF]
 	var uni4_high_surrogate : base.u32[..= 0x10_FC00]
-	var uni4_rollback       : base.u32
 
 	// expect is a bitmask of what the next character class can be.
 	//
@@ -397,7 +396,8 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 									// High surrogate, which needs to be
 									// followed by a "\\u1234" low surrogate.
 									// We've already peeked 6 bytes for the
-									// high surrogate. We need another 6.
+									// high surrogate. We need 12 in total:
+									// another 8 bytes at an offset of 4.
 									if args.src.available() < 12 {
 										if args.src.is_closed() {
 											if this.quirk_enabled_replace_invalid_utf_8 {
@@ -417,12 +417,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 										char = 0
 										continue.string_loop_outer
 									}
-
-									// Roll forward 4 bytes, so that calling
-									// peek_u64le will pick up the last 8.
-									args.src.skip32_fast!(actual: 4, worst_case: 4)
-
-									uni4_string = args.src.peek_u64le() >> 16
+									uni4_string = args.src.peek_u64le_at(offset: 4) >> 16
 
 									// Look for the low surrogate's "\\u".
 									if ((0xFF & (uni4_string >> 0)) <> 0x5C) or
@@ -456,29 +451,13 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 
 										// Emit a single token for the surrogate pair.
 										uni4_value -= 0xDC00
-										args.src.skip32_fast!(actual: 8, worst_case: 8)
+										args.src.skip32_fast!(actual: 12, worst_case: 12)
 										args.dst.write_fast_token!(
 											value_major: 0,
 											value_minor: 0x60_0000 | uni4_high_surrogate | uni4_value,
 											link: 0x3,
 											length: 12)
 										continue.string_loop_outer
-
-									} else {
-										// Roll back the 4 bytes, then fall
-										// through to "#invalid
-										// backslash-escape".
-										uni4_rollback = 4
-										while uni4_rollback > 0,
-											inv args.dst.available() > 0,
-										{
-											uni4_rollback -= 1
-											if args.src.can_undo_byte() {
-												args.src.undo_byte!()
-											} else {
-												return "#internal error: inconsistent I/O"
-											}
-										}
 									}
 								}
 

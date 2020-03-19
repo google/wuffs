@@ -177,6 +177,14 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 		b.writeb(')')
 		return nil
 
+	case t.IDPeekU64LEAt:
+		b.printf("wuffs_base__load_u64le__no_bounds_check(%s%s + ", iopPrefix, name)
+		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
+			return err
+		}
+		b.writeb(')')
+		return nil
+
 	case t.IDPosition:
 		b.printf("wuffs_base__u64__sat_add(%s->meta.pos, ((uint64_t)(%s%s - %s%s)))",
 			name, iopPrefix, name, io0Prefix, name)
