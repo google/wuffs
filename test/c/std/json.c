@@ -349,6 +349,55 @@ test_strconv_hpd_shift() {
 }
 
 const char*  //
+test_strconv_hexadecimal() {
+  CHECK_FOCUS(__func__);
+
+  {
+    const char* str = "6A6b7";  // The "7" should be ignored.
+    wuffs_base__slice_u8 dst = global_have_slice;
+    wuffs_base__slice_u8 src =
+        wuffs_base__make_slice_u8((void*)str, strlen(str));
+    size_t have = wuffs_base__hexadecimal__decode2(dst, src);
+    if (have != 2) {
+      RETURN_FAIL("decode2: have %zu, want 2", have);
+    }
+    if (global_have_array[0] != 0x6A) {
+      RETURN_FAIL("decode2: dst[0]: have 0x%02X, want 0x6A",
+                  (int)(global_have_array[0]));
+    }
+    if (global_have_array[1] != 0x6B) {
+      RETURN_FAIL("decode2: dst[1]: have 0x%02X, want 0x6B",
+                  (int)(global_have_array[1]));
+    }
+  }
+
+  {
+    const char* str = "\\xa9\\x00\\xFe";
+    wuffs_base__slice_u8 dst = global_have_slice;
+    wuffs_base__slice_u8 src =
+        wuffs_base__make_slice_u8((void*)str, strlen(str));
+    size_t have = wuffs_base__hexadecimal__decode4(dst, src);
+    if (have != 3) {
+      RETURN_FAIL("decode4: have %zu, want 3", have);
+    }
+    if (global_have_array[0] != 0xA9) {
+      RETURN_FAIL("decode4: dst[0]: have 0x%02X, want 0xA9",
+                  (int)(global_have_array[0]));
+    }
+    if (global_have_array[1] != 0x00) {
+      RETURN_FAIL("decode4: dst[1]: have 0x%02X, want 0x00",
+                  (int)(global_have_array[1]));
+    }
+    if (global_have_array[2] != 0xFE) {
+      RETURN_FAIL("decode4: dst[2]: have 0x%02X, want 0xFE",
+                  (int)(global_have_array[2]));
+    }
+  }
+
+  return NULL;
+}
+
+const char*  //
 test_strconv_parse_number_f64() {
   CHECK_FOCUS(__func__);
 
@@ -1830,6 +1879,7 @@ proc tests[] = {
     // These strconv tests are really testing the Wuffs base library. They
     // aren't specific to the std/json code, but putting them here is as good
     // as any other place.
+    test_strconv_hexadecimal,
     test_strconv_hpd_rounded_integer,
     test_strconv_hpd_shift,
     test_strconv_parse_number_f64,

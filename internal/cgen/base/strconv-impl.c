@@ -1104,6 +1104,46 @@ infinity:
   } while (0);
 }
 
+// ---------------- Hexadecimal
+
+size_t  //
+wuffs_base__hexadecimal__decode2(wuffs_base__slice_u8 dst,
+                                 wuffs_base__slice_u8 src) {
+  size_t src_len2 = src.len / 2;
+  size_t len = dst.len < src_len2 ? dst.len : src_len2;
+  uint8_t* d = dst.ptr;
+  uint8_t* s = src.ptr;
+  size_t n = len;
+
+  while (n--) {
+    *d = (wuffs_base__parse_number__hexadecimal_digits[s[0]] << 4) |
+         (wuffs_base__parse_number__hexadecimal_digits[s[1]] & 0x0F);
+    d += 1;
+    s += 2;
+  }
+
+  return len;
+}
+
+size_t  //
+wuffs_base__hexadecimal__decode4(wuffs_base__slice_u8 dst,
+                                 wuffs_base__slice_u8 src) {
+  size_t src_len4 = src.len / 4;
+  size_t len = dst.len < src_len4 ? dst.len : src_len4;
+  uint8_t* d = dst.ptr;
+  uint8_t* s = src.ptr;
+  size_t n = len;
+
+  while (n--) {
+    *d = (wuffs_base__parse_number__hexadecimal_digits[s[2]] << 4) |
+         (wuffs_base__parse_number__hexadecimal_digits[s[3]] & 0x0F);
+    d += 1;
+    s += 4;
+  }
+
+  return len;
+}
+
 // ---------------- Unicode and UTF-8
 
 size_t  //

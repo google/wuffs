@@ -120,7 +120,35 @@ wuffs_base__ieee_754_bit_representation__to_f64(uint64_t u) {
   return f;
 }
 
-  // ---------------- Unicode and UTF-8
+// ---------------- Hexadecimal
+
+// wuffs_base__hexadecimal__decode2 converts "6A6b" to "jk", where e.g. 'j' is
+// U+006A. There are 2 source bytes for every destination byte.
+//
+// It returns the number of dst bytes written: the minimum of dst.len and
+// (src.len / 2). Excess source bytes are ignored.
+//
+// It assumes that the src bytes are two hexadecimal digits (0-9, A-F, a-f),
+// repeated. It may write nonsense bytes if not, although it will not read or
+// write out of bounds.
+size_t  //
+wuffs_base__hexadecimal__decode2(wuffs_base__slice_u8 dst,
+                                 wuffs_base__slice_u8 src);
+
+// wuffs_base__hexadecimal__decode4 converts "\\x6A\\x6b" to "jk", where e.g.
+// 'j' is U+006A. There are 4 source bytes for every destination byte.
+//
+// It returns the number of dst bytes written: the minimum of dst.len and
+// (src.len / 4). Excess source bytes are ignored.
+//
+// It assumes that the src bytes are two ignored bytes and then two hexadecimal
+// digits (0-9, A-F, a-f), repeated. It may write nonsense bytes if not,
+// although it will not read or write out of bounds.
+size_t  //
+wuffs_base__hexadecimal__decode4(wuffs_base__slice_u8 dst,
+                                 wuffs_base__slice_u8 src);
+
+// ---------------- Unicode and UTF-8
 
 #define WUFFS_BASE__UNICODE_CODE_POINT__MIN_INCL 0x00000000
 #define WUFFS_BASE__UNICODE_CODE_POINT__MAX_INCL 0x0010FFFF

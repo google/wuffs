@@ -3591,7 +3591,35 @@ wuffs_base__ieee_754_bit_representation__to_f64(uint64_t u) {
   return f;
 }
 
-  // ---------------- Unicode and UTF-8
+// ---------------- Hexadecimal
+
+// wuffs_base__hexadecimal__decode2 converts "6A6b" to "jk", where e.g. 'j' is
+// U+006A. There are 2 source bytes for every destination byte.
+//
+// It returns the number of dst bytes written: the minimum of dst.len and
+// (src.len / 2). Excess source bytes are ignored.
+//
+// It assumes that the src bytes are two hexadecimal digits (0-9, A-F, a-f),
+// repeated. It may write nonsense bytes if not, although it will not read or
+// write out of bounds.
+size_t  //
+wuffs_base__hexadecimal__decode2(wuffs_base__slice_u8 dst,
+                                 wuffs_base__slice_u8 src);
+
+// wuffs_base__hexadecimal__decode4 converts "\\x6A\\x6b" to "jk", where e.g.
+// 'j' is U+006A. There are 4 source bytes for every destination byte.
+//
+// It returns the number of dst bytes written: the minimum of dst.len and
+// (src.len / 4). Excess source bytes are ignored.
+//
+// It assumes that the src bytes are two ignored bytes and then two hexadecimal
+// digits (0-9, A-F, a-f), repeated. It may write nonsense bytes if not,
+// although it will not read or write out of bounds.
+size_t  //
+wuffs_base__hexadecimal__decode4(wuffs_base__slice_u8 dst,
+                                 wuffs_base__slice_u8 src);
+
+// ---------------- Unicode and UTF-8
 
 #define WUFFS_BASE__UNICODE_CODE_POINT__MIN_INCL 0x00000000
 #define WUFFS_BASE__UNICODE_CODE_POINT__MAX_INCL 0x0010FFFF
@@ -9640,6 +9668,46 @@ infinity:
     ret.value = wuffs_base__ieee_754_bit_representation__to_f64(bits);
     return ret;
   } while (0);
+}
+
+// ---------------- Hexadecimal
+
+size_t  //
+wuffs_base__hexadecimal__decode2(wuffs_base__slice_u8 dst,
+                                 wuffs_base__slice_u8 src) {
+  size_t src_len2 = src.len / 2;
+  size_t len = dst.len < src_len2 ? dst.len : src_len2;
+  uint8_t* d = dst.ptr;
+  uint8_t* s = src.ptr;
+  size_t n = len;
+
+  while (n--) {
+    *d = (wuffs_base__parse_number__hexadecimal_digits[s[0]] << 4) |
+         (wuffs_base__parse_number__hexadecimal_digits[s[1]] & 0x0F);
+    d += 1;
+    s += 2;
+  }
+
+  return len;
+}
+
+size_t  //
+wuffs_base__hexadecimal__decode4(wuffs_base__slice_u8 dst,
+                                 wuffs_base__slice_u8 src) {
+  size_t src_len4 = src.len / 4;
+  size_t len = dst.len < src_len4 ? dst.len : src_len4;
+  uint8_t* d = dst.ptr;
+  uint8_t* s = src.ptr;
+  size_t n = len;
+
+  while (n--) {
+    *d = (wuffs_base__parse_number__hexadecimal_digits[s[2]] << 4) |
+         (wuffs_base__parse_number__hexadecimal_digits[s[3]] & 0x0F);
+    d += 1;
+    s += 4;
+  }
+
+  return len;
 }
 
 // ---------------- Unicode and UTF-8
