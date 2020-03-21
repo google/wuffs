@@ -117,6 +117,10 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 	var class             : base.u8[..= 0x0F]
 	var multi_byte_utf8   : base.u32
 
+	var backslash_x_length : base.u32[..= 0xFFFF]
+	var backslash_x_ok     : base.u8
+	var backslash_x_string : base.u32
+
 	var uni4_ok             : base.u8
 	var uni4_string         : base.u64
 	var uni4_value          : base.u32[..= 0xFFFF]
@@ -554,6 +558,52 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 									continue.string_loop_outer
 								}
 								// -------- END   backslash-capital-u.
+
+							} else if (c == 0x78) and
+								this.quirk_enabled_allow_backslash_x {  // 0x78 is 'x'.
+								// -------- BEGIN backslash-x
+								if args.src.available() < 4 {
+									if args.src.is_closed() {
+										return "#bad backslash-escape"
+									}
+									yield? base."$short read"
+									string_length = 0
+									char = 0
+									continue.string_loop_outer
+								}
+
+								backslash_x_length = 0
+								while (backslash_x_length <= 0xFFFB) and (args.src.available() >= 4),
+									inv args.dst.available() > 0,
+								{
+									backslash_x_string = args.src.peek_u32le()
+									backslash_x_ok = 0x80
+
+									c = lut_hexadecimal_digits[0xFF & (backslash_x_string >> 16)]
+									backslash_x_ok &= c
+									c = lut_hexadecimal_digits[0xFF & (backslash_x_string >> 24)]
+									backslash_x_ok &= c
+
+									if (backslash_x_ok == 0) or
+										((backslash_x_string & 0xFFFF) <> 0x785C) {
+										// It wasn't "\\x34", for some
+										// hexadecimal digits "34".
+										break
+									}
+									args.src.skip32_fast!(actual: 4, worst_case: 4)
+									backslash_x_length += 4
+								}
+
+								if backslash_x_length == 0 {
+									return "#bad backslash-escape"
+								}
+								args.dst.write_fast_token!(
+									value_major: 0,
+									value_minor: 0x40_0080,
+									link: 0x3,
+									length: backslash_x_length)
+								continue.string_loop_outer
+								// -------- END   backslash-x
 							}
 
 							return "#bad backslash-escape"

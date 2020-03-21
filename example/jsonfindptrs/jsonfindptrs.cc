@@ -272,6 +272,13 @@ class TokenStream {
         m_curr_token_end_src_index(0) {
     m_status =
         m_dec.initialize(sizeof__wuffs_json__decoder(), WUFFS_VERSION, 0);
+
+    // Uncomment these lines to enable the WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_X
+    // option, discussed in a separate comment.
+    //
+    // if (m_status.is_ok()) {
+    //   m_dec.set_quirk_enabled(WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_X, true);
+    // }
   }
 
   Result peek() { return peek_or_next(false); }
@@ -584,11 +591,43 @@ JsonThing::parse_string(TokenStream& ts, TokenStream::Result tsr) {
       case WUFFS_BASE__TOKEN__VBC__STRING: {
         if (vbd & WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_0_DST_1_SRC_DROP) {
           // No-op.
+
         } else if (vbd &
                    WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY) {
           const char* ptr =  // Convert from (uint8_t*).
               static_cast<const char*>(static_cast<void*>(tsr.src_data.ptr));
           jt.value.s.append(ptr, tsr.src_data.len);
+
+        } else if (
+            vbd &
+            WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_1_DST_4_SRC_BACKSLASH_X) {
+          // We shouldn't get here unless we enable the
+          // WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_X option. The jsonfindptrs
+          // program doesn't enable that by default, but if you're copy/pasting
+          // this JsonThing code and your program does enable that option,
+          // here's how to handle it.
+          wuffs_base__slice_u8 encoded = tsr.src_data;
+          if (encoded.len & 3) {
+            return Result(
+                "main: internal error: \\x token length not a multiple of 4",
+                JsonThing());
+          }
+          while (encoded.len) {
+            uint8_t decoded[64];
+            size_t len = wuffs_base__hexadecimal__decode4(
+                wuffs_base__make_slice_u8(&decoded[0], 64), encoded);
+            if ((len > 64) || ((len * 4) > encoded.len)) {
+              return Result(
+                  "main: internal error: inconsistent hexadecimal decoding",
+                  JsonThing());
+            }
+            const char* ptr =  // Convert from (uint8_t*).
+                static_cast<const char*>(static_cast<void*>(&decoded[0]));
+            jt.value.s.append(ptr, len);
+            encoded.ptr += len * 4;
+            encoded.len -= len * 4;
+          }
+
         } else {
           return Result(
               "main: internal error: unexpected string-token conversion",

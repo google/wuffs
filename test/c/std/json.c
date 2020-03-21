@@ -1250,6 +1250,86 @@ test_wuffs_json_decode_quirk_allow_backslash_etc() {
 }
 
 const char*  //
+test_wuffs_json_decode_quirk_allow_backslash_x() {
+  CHECK_FOCUS(__func__);
+
+  struct {
+    uint64_t want_bytes;
+    const char* want_status_repr;
+    const char* str;
+  } test_cases[] = {
+      {.want_bytes = 0x12789A,
+       .want_status_repr = NULL,
+       .str = "\"\\x12\\u3456\\x78\\x9A\""},
+      {.want_bytes = 0x00,
+       .want_status_repr = wuffs_json__error__bad_backslash_escape,
+       .str = "\"a\\X6A\""},
+      {.want_bytes = 0x6A6B,
+       .want_status_repr = NULL,
+       .str = "\"a\\x6A\\x6bz\""},
+      {.want_bytes = 0x6A,
+       .want_status_repr = wuffs_json__error__bad_backslash_escape,
+       .str = "\"a\\x6A\\x6yz\""},
+      {.want_bytes = 0x00,
+       .want_status_repr = wuffs_json__error__bad_backslash_escape,
+       .str = "\"a\\x\""},
+  };
+
+  int tc;
+  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+    wuffs_json__decoder dec;
+    CHECK_STATUS("initialize", wuffs_json__decoder__initialize(
+                                   &dec, sizeof dec, WUFFS_VERSION,
+                                   WUFFS_INITIALIZE__DEFAULT_OPTIONS));
+    wuffs_json__decoder__set_quirk_enabled(
+        &dec, WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_X, true);
+
+    wuffs_base__token_buffer tok =
+        wuffs_base__make_token_buffer_writer(global_have_token_slice);
+    wuffs_base__slice_u8 src_slice = wuffs_base__make_slice_u8(
+        (void*)(test_cases[tc].str), strlen(test_cases[tc].str));
+    wuffs_base__io_buffer src =
+        wuffs_base__make_io_buffer_reader(src_slice, true);
+    const char* have_status_repr =
+        wuffs_json__decoder__decode_tokens(&dec, &tok, &src).repr;
+    if (have_status_repr != test_cases[tc].want_status_repr) {
+      RETURN_FAIL("tc=%d: decode_tokens: have \"%s\", want \"%s\"", tc,
+                  have_status_repr, test_cases[tc].want_status_repr);
+    }
+
+    uint64_t src_index = 0;
+    uint64_t have_bytes = 0;
+    while (tok.meta.ri < tok.meta.wi) {
+      wuffs_base__token* t = &tok.data.ptr[tok.meta.ri++];
+      uint64_t vbc = wuffs_base__token__value_base_category(t);
+      uint64_t vbd = wuffs_base__token__value_base_detail(t);
+      uint64_t token_length = wuffs_base__token__length(t);
+      if ((vbc == WUFFS_BASE__TOKEN__VBC__STRING) &&
+          (vbd ==
+           WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_1_DST_4_SRC_BACKSLASH_X)) {
+        uint8_t b[8];
+        size_t n = wuffs_base__hexadecimal__decode4(
+            wuffs_base__make_slice_u8(&b[0], 8),
+            wuffs_base__make_slice_u8(src_slice.ptr + src_index, token_length));
+        size_t i = 0;
+        for (; i < n; i++) {
+          have_bytes <<= 8;
+          have_bytes |= b[i];
+        }
+      }
+
+      src_index += token_length;
+    }
+    if (have_bytes != test_cases[tc].want_bytes) {
+      RETURN_FAIL("tc=%d: have U+%08" PRIX64 ", want U+%08" PRIX64, tc,
+                  have_bytes, test_cases[tc].want_bytes);
+    }
+  }
+
+  return NULL;
+}
+
+const char*  //
 test_wuffs_json_decode_quirk_allow_leading_etc() {
   CHECK_FOCUS(__func__);
 
@@ -1892,6 +1972,7 @@ proc tests[] = {
     test_wuffs_json_decode_long_numbers,
     test_wuffs_json_decode_prior_valid_utf_8,
     test_wuffs_json_decode_quirk_allow_backslash_etc,
+    test_wuffs_json_decode_quirk_allow_backslash_x,
     test_wuffs_json_decode_quirk_allow_leading_etc,
     test_wuffs_json_decode_quirk_allow_trailing_etc,
     test_wuffs_json_decode_quirk_replace_invalid_utf_8,
