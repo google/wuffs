@@ -197,7 +197,7 @@ pri const lut_chars array[256] base.u8 = [
 //  - 0x09 (bitmask 0x0200) is CLASS_FALSE.
 //  - 0x0A (bitmask 0x0400) is CLASS_TRUE.
 //  - 0x0B (bitmask 0x0800) is CLASS_NULL.
-//  - 0x0C (bitmask 0x1000) is reserved.
+//  - 0x0C (bitmask 0x1000) is CLASS_COMMENT.
 //  - 0x0D (bitmask 0x2000) is reserved.
 //  - 0x0E (bitmask 0x4000) is reserved.
 //  - 0x0F (bitmask 0x8000) is CLASS_BAD_INPUT.
@@ -205,26 +205,29 @@ pri const lut_chars array[256] base.u8 = [
 // The bitmasks are used by the "expect" variable: what the next character
 // class can be.
 //
-//  - 0x0002 is EXPECT_STRING.
-//  - 0x0EB0 is EXPECT_NON_STRING_VALUE.
-//  - 0x0004 is EXPECT_COMMA.
-//  - 0x0008 is EXPECT_COLON.
-//  - 0x0040 is EXPECT_CLOSE_CURLY_BRACE.
-//  - 0x0100 is EXPECT_CLOSE_SQUARE_BRACKET.
+//  - 0x1002 is EXPECT_STRING.
+//  - 0x1EB0 is EXPECT_NON_STRING_VALUE.
+//  - 0x1004 is EXPECT_COMMA.
+//  - 0x1008 is EXPECT_COLON.
+//  - 0x1040 is EXPECT_CLOSE_CURLY_BRACE.
+//  - 0x1100 is EXPECT_CLOSE_SQUARE_BRACKET.
 //
 // Bitwise or'ing these together gives 0x0FFE. Whitespace is never expected, as
 // it is handled separately.
 //
-// EXPECT_VALUE is also defined to be 0x0EB2, equivalent to (EXPECT_STRING |
+// EXPECT_VALUE is also defined to be 0x1EB2, equivalent to (EXPECT_STRING |
 // EXPECT_NON_STRING_VALUE).
 //
-// EXPECT_NUMBER is also defined to be 0x0010. Testing for EXPECT_NUMBER's
+// EXPECT_NUMBER is also defined to be 0x1010. Testing for EXPECT_NUMBER's
 // presence is equivalent to testing for EXPECT_NON_STRING_VALUE.
 //
 // "Non-string value" includes literals (false, true, null), numbers, arrays
 // and objects.
 //
 // "String value" includes "this" and "th\u0061t".
+//
+// Comments are always expected. Whether the relevant quirks are enabled are
+// checked elsewhere.
 pri const lut_classes array[256] base.u8[..= 0x0F] = [
 	// 0     1     2     3     4     5     6     7
 	// 8     9     A     B     C     D     E     F
@@ -233,7 +236,7 @@ pri const lut_classes array[256] base.u8[..= 0x0F] = [
 	0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F,  // 0x10 ..= 0x17.
 	0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F,  // 0x18 ..= 0x1F.
 	0x00, 0x0F, 0x01, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F,  // 0x20 ..= 0x27. ' ', '"'.
-	0x0F, 0x0F, 0x0F, 0x0F, 0x02, 0x04, 0x0F, 0x0F,  // 0x28 ..= 0x2F. ',', '-'.
+	0x0F, 0x0F, 0x0F, 0x0F, 0x02, 0x04, 0x0F, 0x0C,  // 0x28 ..= 0x2F. ',', '-', '/'.
 	0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04,  // 0x30 ..= 0x37. '0'-'7'.
 	0x04, 0x04, 0x03, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F,  // 0x38 ..= 0x3F. '8'-'9', ':'.
 

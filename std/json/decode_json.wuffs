@@ -148,7 +148,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 		this.decode_leading?(dst: args.dst, src: args.src)
 	}
 
-	expect = 0x0EB2  // EXPECT_VALUE
+	expect = 0x1EB2  // EXPECT_VALUE
 
 	while.outer true {
 		while.goto_parsed_a_leaf_value true {
@@ -814,8 +814,8 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 				// As above, expect must have contained EXPECT_STRING. If it
 				// didn't also contain EXPECT_NUMBER then we were parsing an
 				// object key and the next token should be ':'.
-				if 0 == (expect & 0x0010) {  // 0x0010 is EXPECT_NUMBER.
-					expect = 0x0008  // 0x0008 is EXPECT_COLON.
+				if 0 == (expect & 0x0010) {  // 0x0010 is (1 << CLASS_NUMBER).
+					expect = 0x1008  // 0x1008 is EXPECT_COLON.
 					continue.outer
 				}
 				break.goto_parsed_a_leaf_value
@@ -831,10 +831,10 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 					length: 1)
 				// What's valid after a comma depends on whether or not we're
 				// in an array or an object.
-				if 0 == (expect & 0x0100) {  // 0x0100 is EXPECT_CLOSE_SQUARE_BRACKET
-					expect = 0x0002  // 0x0002 is EXPECT_STRING.
+				if 0 == (expect & 0x0100) {  // 0x0100 is (1 << CLASS_CLOSE_SQUARE_BRACKET).
+					expect = 0x1002  // 0x1002 is EXPECT_STRING.
 				} else {
-					expect = 0x0EB2  // 0x0EB2 is EXPECT_VALUE.
+					expect = 0x1EB2  // 0x0EB2 is EXPECT_VALUE.
 				}
 				continue.outer
 
@@ -846,7 +846,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 					value_minor: 0,
 					link: 0x0,
 					length: 1)
-				expect = 0x0EB2  // 0x0EB2 is EXPECT_VALUE.
+				expect = 0x1EB2  // 0x1EB2 is EXPECT_VALUE.
 				continue.outer
 
 			} else if class == 0x04 {  // 0x04 is CLASS_NUMBER.
@@ -899,7 +899,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 				vminor = 0x20_4011
 				if depth == 0 {
 					// No-op.
-				} else if 0 <> (expect_after_value & 0x0040) {  // 0x0040 is EXPECT_CLOSE_CURLY_BRACE.
+				} else if 0 <> (expect_after_value & 0x0040) {  // 0x0040 is (1 << CLASS_CLOSE_CURLY_BRACE).
 					vminor = 0x20_4041
 				} else {
 					vminor = 0x20_4021
@@ -918,8 +918,8 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 					value_minor: vminor,
 					link: 0x0,
 					length: 1)
-				expect = 0x0042  // 0x0042 is (EXPECT_CLOSE_CURLY_BRACE | EXPECT_STRING).
-				expect_after_value = 0x0044  // 0x0044 is (EXPECT_CURLY_CLOSE_BRACE | EXPECT_COMMA).
+				expect = 0x1042  // 0x1042 is (EXPECT_CLOSE_CURLY_BRACE | EXPECT_STRING).
+				expect_after_value = 0x1044  // 0x1044 is (EXPECT_CURLY_CLOSE_BRACE | EXPECT_COMMA).
 				continue.outer
 
 			} else if class == 0x06 {  // 0x06 is CLASS_CLOSE_CURLY_BRACE.
@@ -941,18 +941,18 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 						value_minor: 0x20_2042,
 						link: 0x0,
 						length: 1)
-					// 0x0104 is (EXPECT_SQUARE_CLOSE_BRACKET | EXPECT_COMMA).
-					expect = 0x0104
-					expect_after_value = 0x0104
+					// 0x1104 is (EXPECT_SQUARE_CLOSE_BRACKET | EXPECT_COMMA).
+					expect = 0x1104
+					expect_after_value = 0x1104
 				} else {
 					args.dst.write_fast_token!(
 						value_major: 0,
 						value_minor: 0x20_4042,
 						link: 0x0,
 						length: 1)
-					// 0x0044 is (EXPECT_CURLY_CLOSE_BRACE | EXPECT_COMMA).
-					expect = 0x0044
-					expect_after_value = 0x0044
+					// 0x1044 is (EXPECT_CURLY_CLOSE_BRACE | EXPECT_COMMA).
+					expect = 0x1044
+					expect_after_value = 0x1044
 				}
 				continue.outer
 
@@ -960,7 +960,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 				vminor = 0x20_2011
 				if depth == 0 {
 					// No-op.
-				} else if 0 <> (expect_after_value & 0x0040) {  // 0x0040 is EXPECT_CLOSE_CURLY_BRACE.
+				} else if 0 <> (expect_after_value & 0x0040) {  // 0x0040 is (1 << CLASS_CLOSE_CURLY_BRACE).
 					vminor = 0x20_2041
 				} else {
 					vminor = 0x20_2021
@@ -979,8 +979,8 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 					value_minor: vminor,
 					link: 0x0,
 					length: 1)
-				expect = 0x0FB2  // 0x0FB2 is (EXPECT_CLOSE_SQUARE_BRACKET | EXPECT_VALUE).
-				expect_after_value = 0x0104  // 0x0104 is (EXPECT_CLOSE_SQUARE_BRACKET | EXPECT_COMMA).
+				expect = 0x1FB2  // 0x1FB2 is (EXPECT_CLOSE_SQUARE_BRACKET | EXPECT_VALUE).
+				expect_after_value = 0x1104  // 0x1104 is (EXPECT_CLOSE_SQUARE_BRACKET | EXPECT_COMMA).
 				continue.outer
 
 			} else if class == 0x08 {  // 0x08 is CLASS_CLOSE_SQUARE_BRACKET.
@@ -1002,18 +1002,18 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 						value_minor: 0x20_2022,
 						link: 0x0,
 						length: 1)
-					// 0x0104 is (EXPECT_CLOSE_SQUARE_BRACKET | EXPECT_COMMA).
-					expect = 0x0104
-					expect_after_value = 0x0104
+					// 0x1104 is (EXPECT_CLOSE_SQUARE_BRACKET | EXPECT_COMMA).
+					expect = 0x1104
+					expect_after_value = 0x1104
 				} else {
 					args.dst.write_fast_token!(
 						value_major: 0,
 						value_minor: 0x20_4022,
 						link: 0x0,
 						length: 1)
-					// 0x0044 is (EXPECT_CLOSE_CURLY_BRACE | EXPECT_COMMA).
-					expect = 0x0044
-					expect_after_value = 0x0044
+					// 0x1044 is (EXPECT_CLOSE_CURLY_BRACE | EXPECT_COMMA).
+					expect = 0x1044
+					expect_after_value = 0x1044
 				}
 				continue.outer
 
