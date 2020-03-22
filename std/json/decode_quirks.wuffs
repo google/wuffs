@@ -68,18 +68,23 @@ pub const quirk_allow_backslash_zero base.u32 = 0x4909_9400 | 0x07
 // anywhere whitespace would be, although see the quirk_allow_trailing_new_line
 // comment for additional interaction when combining multiple quirks.
 //
-// They produce WUFFS_BASE__TOKEN__VBD__FILLER__COMMENT_BLOCK tokens.
+// They produce WUFFS_BASE__TOKEN__VBD__FILLER__COMMENT_BLOCK tokens. The token
+// chain's source bytes includes the starting "/*" and the ending "*/".
 pub const quirk_allow_comment_block base.u32 = 0x4909_9400 | 0x08
 
 // When this quirk is enabled, "// C/C++ style line comments\n" are accepted
 // anywhere whitespace would be, although see the quirk_allow_trailing_new_line
 // comment for additional interaction when combining multiple quirks.
 //
-// A line comment may omit the trailing '\n' if there is no input afterwards
-// (i.e. the line comment ends with the end-of-file), but note the
-// quirk_allow_trailing_new_line interaction already mentioned.
+// A line comment may not omit the ending "\n", even if there is no input
+// afterwards (i.e. the prospective line comment ends with the end-of-file).
 //
-// They produce WUFFS_BASE__TOKEN__VBD__FILLER__COMMENT_LINE tokens.
+// They produce WUFFS_BASE__TOKEN__VBD__FILLER__COMMENT_LINE tokens. The token
+// chain's source bytes includes the starting "//" and the ending "\n".
+//
+// Even if the line comments are on consecutive lines, each line comment is a
+// separate token chain. There may be whitespace tokens between one line
+// comment's ending "\n" and the next one's starting "//".
 pub const quirk_allow_comment_line base.u32 = 0x4909_9400 | 0x09
 
 // When this quirk is enabled, there may be a comma after the final array

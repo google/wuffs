@@ -1070,6 +1070,12 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 					yield? base."$short read"
 					continue.outer
 				}
+
+			} else if class == 0x0C {  // 0x0C is CLASS_COMMENT.
+				if this.quirk_enabled_allow_comment_block or this.quirk_enabled_allow_comment_line {
+					this.decode_comment?(dst: args.dst, src: args.src)
+					continue.outer
+				}
 			}
 
 			return "#bad input"
@@ -1308,6 +1314,145 @@ pri func decoder.decode_leading?(dst: base.token_writer, src: base.io_reader) {
 		}
 		break
 	}
+}
+
+pri func decoder.decode_comment?(dst: base.token_writer, src: base.io_reader) {
+	var c8        : base.u8
+	var c16       : base.u16
+	var link_prev : base.u32[..= 0x2]
+	var length    : base.u32[..= 0xFFFD]
+
+	while (args.dst.available() <= 0) or (args.src.available() <= 1),
+		post args.dst.available() > 0,
+		post args.src.available() > 1,
+	{
+		if args.dst.available() <= 0 {
+			yield? base."$short write"
+			continue
+		}
+		if args.src.is_closed() {
+			return "#bad input"
+		}
+		yield? base."$short read"
+	}
+	c16 = args.src.peek_u16le()
+
+	if (c16 == 0x2A2F) and this.quirk_enabled_allow_comment_block {
+		args.src.skip32_fast!(actual: 2, worst_case: 2)
+		length = 2
+
+		while.comment_block true {
+			if args.dst.available() <= 0 {
+				yield? base."$short write"
+				length = 0
+				continue.comment_block
+			}
+
+			while true,
+				pre args.dst.available() > 0,
+			{
+				if args.src.available() <= 1 {
+					if length > 0 {
+						args.dst.write_fast_token!(
+							value_major: 0,
+							value_minor: 0x2,
+							link: 0x1 | link_prev,
+							length: length)
+						link_prev = 0x2
+					}
+					if args.src.is_closed() {
+						return "#bad input"
+					}
+					yield? base."$short read"
+					length = 0
+					continue.comment_block
+				}
+
+				c16 = args.src.peek_u16le()
+				if c16 == 0x2F2A {  // 0x2F2A is "*/" little-endian.
+					args.src.skip32_fast!(actual: 2, worst_case: 2)
+					args.dst.write_fast_token!(
+						value_major: 0,
+						value_minor: 0x2,
+						link: link_prev,
+						length: length + 2)
+					return ok
+				}
+
+				args.src.skip32_fast!(actual: 1, worst_case: 1)
+				if length >= 0xFFFD {
+					args.dst.write_fast_token!(
+						value_major: 0,
+						value_minor: 0x2,
+						link: 0x1 | link_prev,
+						length: length + 1)
+					length = 0
+					link_prev = 0x2
+					continue.comment_block
+				}
+				length += 1
+			}
+		} endwhile.comment_block
+
+	} else if (c16 == 0x2F2F) and this.quirk_enabled_allow_comment_line {
+		args.src.skip32_fast!(actual: 2, worst_case: 2)
+		length = 2
+
+		while.comment_line true {
+			if args.dst.available() <= 0 {
+				yield? base."$short write"
+				length = 0
+				continue.comment_line
+			}
+
+			while true,
+				pre args.dst.available() > 0,
+			{
+				if args.src.available() <= 0 {
+					if length > 0 {
+						args.dst.write_fast_token!(
+							value_major: 0,
+							value_minor: 0x1,
+							link: 0x1 | link_prev,
+							length: length)
+						link_prev = 0x2
+					}
+					if args.src.is_closed() {
+						return "#bad input"
+					}
+					yield? base."$short read"
+					length = 0
+					continue.comment_line
+				}
+
+				c8 = args.src.peek_u8()
+				if c8 == 0x0A {  // 0x0A is '\n'.
+					args.src.skip32_fast!(actual: 1, worst_case: 1)
+					args.dst.write_fast_token!(
+						value_major: 0,
+						value_minor: 0x1,
+						link: link_prev,
+						length: length + 1)
+					return ok
+				}
+
+				args.src.skip32_fast!(actual: 1, worst_case: 1)
+				if length >= 0xFFFD {
+					args.dst.write_fast_token!(
+						value_major: 0,
+						value_minor: 0x1,
+						link: 0x1 | link_prev,
+						length: length + 1)
+					length = 0
+					link_prev = 0x2
+					continue.comment_line
+				}
+				length += 1
+			}
+		} endwhile.comment_line
+	}
+
+	return "#bad input"
 }
 
 pri func decoder.decode_trailing_new_line?(dst: base.token_writer, src: base.io_reader) {
