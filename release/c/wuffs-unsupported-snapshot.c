@@ -21320,9 +21320,17 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
               (((uint64_t)(0)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
               (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
           if (0 == (v_expect & 256)) {
-            v_expect = 4098;
+            if (self->private_impl.f_quirk_enabled_allow_final_comma) {
+              v_expect = 4162;
+            } else {
+              v_expect = 4098;
+            }
           } else {
-            v_expect = 7858;
+            if (self->private_impl.f_quirk_enabled_allow_final_comma) {
+              v_expect = 8114;
+            } else {
+              v_expect = 7858;
+            }
           }
           goto label__outer__continue;
         } else if (v_class == 3) {

@@ -832,9 +832,17 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 				// What's valid after a comma depends on whether or not we're
 				// in an array or an object.
 				if 0 == (expect & 0x0100) {  // 0x0100 is (1 << CLASS_CLOSE_SQUARE_BRACKET).
-					expect = 0x1002  // 0x1002 is EXPECT_STRING.
+					if this.quirk_enabled_allow_final_comma {
+						expect = 0x1042  // 0x1042 is EXPECT_STRING | EXPECT_CLOSE_CURLY_BRACE.
+					} else {
+						expect = 0x1002  // 0x1002 is EXPECT_STRING.
+					}
 				} else {
-					expect = 0x1EB2  // 0x0EB2 is EXPECT_VALUE.
+					if this.quirk_enabled_allow_final_comma {
+						expect = 0x1FB2  // 0x0FB2 is EXPECT_VALUE | EXPECT_CLOSE_SQUARE_BRACKET.
+					} else {
+						expect = 0x1EB2  // 0x0EB2 is EXPECT_VALUE.
+					}
 				}
 				continue.outer
 
