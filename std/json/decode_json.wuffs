@@ -110,7 +110,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 	var stack_byte        : base.u32[..= (1024 / 32) - 1]
 	var stack_bit         : base.u32[..= 31]
 	var match             : base.u32[..= 2]
-	var c_by_4            : base.u32
+	var c4                : base.u32
 	var c                 : base.u8
 	var backslash         : base.u8
 	var char              : base.u8
@@ -268,11 +268,11 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 							inv args.dst.available() > 0,
 							inv args.src.available() > 0,
 						{
-							c_by_4 = args.src.peek_u32le()
-							if 0x00 <> (lut_chars[0xFF & (c_by_4 >> 0)] |
-								lut_chars[0xFF & (c_by_4 >> 8)] |
-								lut_chars[0xFF & (c_by_4 >> 16)] |
-								lut_chars[0xFF & (c_by_4 >> 24)]) {
+							c4 = args.src.peek_u32le()
+							if 0x00 <> (lut_chars[0xFF & (c4 >> 0)] |
+								lut_chars[0xFF & (c4 >> 8)] |
+								lut_chars[0xFF & (c4 >> 16)] |
+								lut_chars[0xFF & (c4 >> 24)]) {
 								break
 							}
 							args.src.skip32_fast!(actual: 4, worst_case: 4)
@@ -1334,8 +1334,8 @@ pri func decoder.decode_leading?(dst: base.token_writer, src: base.io_reader) {
 }
 
 pri func decoder.decode_comment?(dst: base.token_writer, src: base.io_reader) {
-	var c8        : base.u8
-	var c16       : base.u16
+	var c         : base.u8
+	var c2        : base.u16
 	var link_prev : base.u32[..= 0x2]
 	var length    : base.u32[..= 0xFFFD]
 
@@ -1352,9 +1352,9 @@ pri func decoder.decode_comment?(dst: base.token_writer, src: base.io_reader) {
 		}
 		yield? base."$short read"
 	}
-	c16 = args.src.peek_u16le()
+	c2 = args.src.peek_u16le()
 
-	if (c16 == 0x2A2F) and this.quirk_enabled_allow_comment_block {
+	if (c2 == 0x2A2F) and this.quirk_enabled_allow_comment_block {
 		args.src.skip32_fast!(actual: 2, worst_case: 2)
 		length = 2
 
@@ -1385,8 +1385,8 @@ pri func decoder.decode_comment?(dst: base.token_writer, src: base.io_reader) {
 					continue.comment_block
 				}
 
-				c16 = args.src.peek_u16le()
-				if c16 == 0x2F2A {  // 0x2F2A is "*/" little-endian.
+				c2 = args.src.peek_u16le()
+				if c2 == 0x2F2A {  // 0x2F2A is "*/" little-endian.
 					args.src.skip32_fast!(actual: 2, worst_case: 2)
 					args.dst.write_fast_token!(
 						value_major: 0,
@@ -1411,7 +1411,7 @@ pri func decoder.decode_comment?(dst: base.token_writer, src: base.io_reader) {
 			}
 		} endwhile.comment_block
 
-	} else if (c16 == 0x2F2F) and this.quirk_enabled_allow_comment_line {
+	} else if (c2 == 0x2F2F) and this.quirk_enabled_allow_comment_line {
 		args.src.skip32_fast!(actual: 2, worst_case: 2)
 		length = 2
 
@@ -1442,8 +1442,8 @@ pri func decoder.decode_comment?(dst: base.token_writer, src: base.io_reader) {
 					continue.comment_line
 				}
 
-				c8 = args.src.peek_u8()
-				if c8 == 0x0A {  // 0x0A is '\n'.
+				c = args.src.peek_u8()
+				if c == 0x0A {  // 0x0A is '\n'.
 					args.src.skip32_fast!(actual: 1, worst_case: 1)
 					args.dst.write_fast_token!(
 						value_major: 0,
