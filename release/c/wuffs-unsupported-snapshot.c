@@ -9695,8 +9695,8 @@ wuffs_base__hexadecimal__decode2(wuffs_base__slice_u8 dst,
   size_t n = len;
 
   while (n--) {
-    *d = (wuffs_base__parse_number__hexadecimal_digits[s[0]] << 4) |
-         (wuffs_base__parse_number__hexadecimal_digits[s[1]] & 0x0F);
+    *d = (uint8_t)((wuffs_base__parse_number__hexadecimal_digits[s[0]] << 4) |
+                   (wuffs_base__parse_number__hexadecimal_digits[s[1]] & 0x0F));
     d += 1;
     s += 2;
   }
@@ -9714,8 +9714,8 @@ wuffs_base__hexadecimal__decode4(wuffs_base__slice_u8 dst,
   size_t n = len;
 
   while (n--) {
-    *d = (wuffs_base__parse_number__hexadecimal_digits[s[2]] << 4) |
-         (wuffs_base__parse_number__hexadecimal_digits[s[3]] & 0x0F);
+    *d = (uint8_t)((wuffs_base__parse_number__hexadecimal_digits[s[2]] << 4) |
+                   (wuffs_base__parse_number__hexadecimal_digits[s[3]] & 0x0F));
     d += 1;
     s += 4;
   }
