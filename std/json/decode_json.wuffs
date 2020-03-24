@@ -21,7 +21,7 @@ pub struct decoder? implements base.token_decoder(
 	quirk_enabled_allow_backslash_x                     : base.bool,
 	quirk_enabled_allow_comment_block                   : base.bool,
 	quirk_enabled_allow_comment_line                    : base.bool,
-	quirk_enabled_allow_final_comma                     : base.bool,
+	quirk_enabled_allow_extra_comma                     : base.bool,
 	quirk_enabled_allow_inf_nan_numbers                 : base.bool,
 	quirk_enabled_allow_leading_ascii_record_separator  : base.bool,
 	quirk_enabled_allow_leading_unicode_byte_order_mark : base.bool,
@@ -85,8 +85,8 @@ pub func decoder.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
 		this.quirk_enabled_allow_comment_block = args.enabled
 	} else if args.quirk == quirk_allow_comment_line {
 		this.quirk_enabled_allow_comment_line = args.enabled
-	} else if args.quirk == quirk_allow_final_comma {
-		this.quirk_enabled_allow_final_comma = args.enabled
+	} else if args.quirk == quirk_allow_extra_comma {
+		this.quirk_enabled_allow_extra_comma = args.enabled
 	} else if args.quirk == quirk_allow_inf_nan_numbers {
 		this.quirk_enabled_allow_inf_nan_numbers = args.enabled
 	} else if args.quirk == quirk_allow_leading_ascii_record_separator {
@@ -832,13 +832,13 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 				// What's valid after a comma depends on whether or not we're
 				// in an array or an object.
 				if 0 == (expect & 0x0100) {  // 0x0100 is (1 << CLASS_CLOSE_SQUARE_BRACKET).
-					if this.quirk_enabled_allow_final_comma {
+					if this.quirk_enabled_allow_extra_comma {
 						expect = 0x1042  // 0x1042 is EXPECT_STRING | EXPECT_CLOSE_CURLY_BRACE.
 					} else {
 						expect = 0x1002  // 0x1002 is EXPECT_STRING.
 					}
 				} else {
-					if this.quirk_enabled_allow_final_comma {
+					if this.quirk_enabled_allow_extra_comma {
 						expect = 0x1FB2  // 0x0FB2 is EXPECT_VALUE | EXPECT_CLOSE_SQUARE_BRACKET.
 					} else {
 						expect = 0x1EB2  // 0x0EB2 is EXPECT_VALUE.

@@ -1330,12 +1330,12 @@ test_wuffs_json_decode_quirk_allow_backslash_x() {
 }
 
 const char*  //
-test_wuffs_json_decode_quirk_allow_final_comma() {
+test_wuffs_json_decode_quirk_allow_extra_comma() {
   CHECK_FOCUS(__func__);
 
   struct {
     // want has 2 bytes, one for each possible q:
-    //  - q&1 sets WUFFS_JSON__QUIRK_ALLOW_FINAL_COMMA.
+    //  - q&1 sets WUFFS_JSON__QUIRK_ALLOW_EXTRA_COMMA.
     // An 'X', '+' or '-' means that decoding should succeed (and consume the
     // entire input), succeed (without consuming the entire input) or fail.
     const char* want;
@@ -1356,7 +1356,7 @@ test_wuffs_json_decode_quirk_allow_final_comma() {
                                      &dec, sizeof dec, WUFFS_VERSION,
                                      WUFFS_INITIALIZE__DEFAULT_OPTIONS));
       wuffs_json__decoder__set_quirk_enabled(
-          &dec, WUFFS_JSON__QUIRK_ALLOW_FINAL_COMMA, q & 1);
+          &dec, WUFFS_JSON__QUIRK_ALLOW_EXTRA_COMMA, q & 1);
 
       wuffs_base__token_buffer tok =
           wuffs_base__make_token_buffer_writer(global_have_token_slice);
@@ -2190,7 +2190,7 @@ proc tests[] = {
     test_wuffs_json_decode_quirk_allow_backslash_etc,
     test_wuffs_json_decode_quirk_allow_backslash_x,
     test_wuffs_json_decode_quirk_allow_comment_etc,
-    test_wuffs_json_decode_quirk_allow_final_comma,
+    test_wuffs_json_decode_quirk_allow_extra_comma,
     test_wuffs_json_decode_quirk_allow_inf_nan_numbers,
     test_wuffs_json_decode_quirk_allow_leading_etc,
     test_wuffs_json_decode_quirk_allow_trailing_etc,

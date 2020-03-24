@@ -5934,7 +5934,7 @@ extern const char* wuffs_json__error__unsupported_recursion_depth;
 
 #define WUFFS_JSON__QUIRK_ALLOW_COMMENT_LINE 1225364489
 
-#define WUFFS_JSON__QUIRK_ALLOW_FINAL_COMMA 1225364490
+#define WUFFS_JSON__QUIRK_ALLOW_EXTRA_COMMA 1225364490
 
 #define WUFFS_JSON__QUIRK_ALLOW_INF_NAN_NUMBERS 1225364491
 
@@ -6015,7 +6015,7 @@ struct wuffs_json__decoder__struct {
     bool f_quirk_enabled_allow_backslash_x;
     bool f_quirk_enabled_allow_comment_block;
     bool f_quirk_enabled_allow_comment_line;
-    bool f_quirk_enabled_allow_final_comma;
+    bool f_quirk_enabled_allow_extra_comma;
     bool f_quirk_enabled_allow_inf_nan_numbers;
     bool f_quirk_enabled_allow_leading_ascii_record_separator;
     bool f_quirk_enabled_allow_leading_unicode_byte_order_mark;
@@ -20495,7 +20495,7 @@ wuffs_json__decoder__set_quirk_enabled(wuffs_json__decoder* self,
   } else if (a_quirk == 1225364489) {
     self->private_impl.f_quirk_enabled_allow_comment_line = a_enabled;
   } else if (a_quirk == 1225364490) {
-    self->private_impl.f_quirk_enabled_allow_final_comma = a_enabled;
+    self->private_impl.f_quirk_enabled_allow_extra_comma = a_enabled;
   } else if (a_quirk == 1225364491) {
     self->private_impl.f_quirk_enabled_allow_inf_nan_numbers = a_enabled;
   } else if (a_quirk == 1225364492) {
@@ -21334,13 +21334,13 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
               (((uint64_t)(0)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
               (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
           if (0 == (v_expect & 256)) {
-            if (self->private_impl.f_quirk_enabled_allow_final_comma) {
+            if (self->private_impl.f_quirk_enabled_allow_extra_comma) {
               v_expect = 4162;
             } else {
               v_expect = 4098;
             }
           } else {
-            if (self->private_impl.f_quirk_enabled_allow_final_comma) {
+            if (self->private_impl.f_quirk_enabled_allow_extra_comma) {
               v_expect = 8114;
             } else {
               v_expect = 7858;

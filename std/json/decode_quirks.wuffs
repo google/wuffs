@@ -94,7 +94,7 @@ pub const quirk_allow_comment_line base.u32 = 0x4909_9400 | 0x09
 //
 // For example, `[1,]`, `[1,2,3,]` and `{"k":"v",}` all become acceptable, but
 // `[,]`, `{,}` and `{"k",:"v"}` are still rejected.
-pub const quirk_allow_final_comma base.u32 = 0x4909_9400 | 0x0A
+pub const quirk_allow_extra_comma base.u32 = 0x4909_9400 | 0x0A
 
 // When this quirk is enabled, "inf", "Infinity", "NAN" and their
 // case-insensitive variants, optionally preceded immediately by "-" or "+",
