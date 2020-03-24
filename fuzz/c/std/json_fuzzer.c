@@ -201,19 +201,63 @@ fuzz_one_token(wuffs_base__token t,
   return NULL;
 }
 
+uint64_t  //
+buffer_limit(uint32_t hash_6_bits, uint64_t min, uint64_t max) {
+  uint64_t n;
+  if (hash_6_bits < 0x20) {
+    n = min + hash_6_bits;
+  } else {
+    n = max - (0x3F - hash_6_bits);
+  }
+  if (n < min) {
+    return min;
+  } else if (n > max) {
+    return max;
+  }
+  return n;
+}
+
+void set_quirks(wuffs_json__decoder* dec, uint32_t hash_12_bits) {
+  uint32_t quirks[] = {
+      WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_A,
+      WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_CAPITAL_U,
+      WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_E,
+      WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_QUESTION_MARK,
+      WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_SINGLE_QUOTE,
+      WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_V,
+      WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_X,
+      WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_ZERO,
+      WUFFS_JSON__QUIRK_ALLOW_COMMENT_BLOCK,
+      WUFFS_JSON__QUIRK_ALLOW_COMMENT_LINE,
+      WUFFS_JSON__QUIRK_ALLOW_EXTRA_COMMA,
+      WUFFS_JSON__QUIRK_ALLOW_INF_NAN_NUMBERS,
+      WUFFS_JSON__QUIRK_ALLOW_LEADING_ASCII_RECORD_SEPARATOR,
+      WUFFS_JSON__QUIRK_ALLOW_LEADING_UNICODE_BYTE_ORDER_MARK,
+      WUFFS_JSON__QUIRK_ALLOW_TRAILING_NEW_LINE,
+      WUFFS_JSON__QUIRK_REPLACE_INVALID_UTF_8,
+      0,
+  };
+
+  uint32_t i;
+  for (i = 0; quirks[i]; i++) {
+    uint32_t bit = 1 << (i % 12);
+    if (hash_12_bits & bit) {
+      wuffs_json__decoder__set_quirk_enabled(dec, quirks[i], true);
+    }
+  }
+}
+
 const char*  //
 fuzz_complex(wuffs_base__io_buffer* full_src, uint32_t hash_24_bits) {
-  uint64_t tok_limit = hash_24_bits & 0x0FFF;  // 4095, or ((1 << 12) - 1).
-  if (tok_limit < WUFFS_JSON__DECODER_DST_TOKEN_BUFFER_LENGTH_MIN_INCL) {
-    tok_limit = WUFFS_JSON__DECODER_DST_TOKEN_BUFFER_LENGTH_MIN_INCL;
-  }
-  hash_24_bits >>= 12;
+  uint64_t tok_limit = buffer_limit(
+      hash_24_bits & 0x3F, WUFFS_JSON__DECODER_DST_TOKEN_BUFFER_LENGTH_MIN_INCL,
+      TOK_BUFFER_ARRAY_SIZE);
+  uint32_t hash_18_bits = hash_24_bits >> 6;
 
-  uint64_t src_limit = hash_24_bits & 0x0FFF;  // 4095, or ((1 << 12) - 1).
-  if (src_limit < WUFFS_JSON__DECODER_SRC_IO_BUFFER_LENGTH_MIN_INCL) {
-    src_limit = WUFFS_JSON__DECODER_SRC_IO_BUFFER_LENGTH_MIN_INCL;
-  }
-  hash_24_bits >>= 12;
+  uint64_t src_limit =
+      buffer_limit(hash_18_bits & 0x3F,
+                   WUFFS_JSON__DECODER_SRC_IO_BUFFER_LENGTH_MIN_INCL, 4096);
+  uint32_t hash_12_bits = hash_18_bits >> 6;
 
   // ----
 
@@ -224,6 +268,7 @@ fuzz_complex(wuffs_base__io_buffer* full_src, uint32_t hash_24_bits) {
   if (!wuffs_base__status__is_ok(&status)) {
     return wuffs_base__status__message(&status);
   }
+  set_quirks(&dec, hash_12_bits);
 
   wuffs_base__token tok_array[TOK_BUFFER_ARRAY_SIZE];
   wuffs_base__token_buffer tok = ((wuffs_base__token_buffer){
