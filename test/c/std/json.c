@@ -833,7 +833,7 @@ test_wuffs_json_decode_interface() {
         WUFFS_JSON__QUIRK_ALLOW_LEADING_ASCII_RECORD_SEPARATOR,
         WUFFS_JSON__QUIRK_ALLOW_LEADING_UNICODE_BYTE_ORDER_MARK,
         WUFFS_JSON__QUIRK_ALLOW_TRAILING_NEW_LINE,
-        WUFFS_JSON__QUIRK_REPLACE_INVALID_UTF_8,
+        WUFFS_JSON__QUIRK_REPLACE_INVALID_UNICODE,
         0,
     };
 
@@ -1742,7 +1742,7 @@ test_wuffs_json_decode_quirk_allow_trailing_etc() {
 }
 
 const char*  //
-test_wuffs_json_decode_quirk_replace_invalid_utf_8() {
+test_wuffs_json_decode_quirk_replace_invalid_unicode() {
   CHECK_FOCUS(__func__);
 
   // Decoding str should produce want, with invalid UTF-8 replaced by "?". A
@@ -1797,7 +1797,7 @@ test_wuffs_json_decode_quirk_replace_invalid_utf_8() {
                                    &dec, sizeof dec, WUFFS_VERSION,
                                    WUFFS_INITIALIZE__DEFAULT_OPTIONS));
     wuffs_json__decoder__set_quirk_enabled(
-        &dec, WUFFS_JSON__QUIRK_REPLACE_INVALID_UTF_8, true);
+        &dec, WUFFS_JSON__QUIRK_REPLACE_INVALID_UNICODE, true);
 
     wuffs_base__io_buffer have =
         wuffs_base__make_io_buffer_writer(global_have_slice);
@@ -2234,7 +2234,7 @@ proc tests[] = {
     test_wuffs_json_decode_quirk_allow_inf_nan_numbers,
     test_wuffs_json_decode_quirk_allow_leading_etc,
     test_wuffs_json_decode_quirk_allow_trailing_etc,
-    test_wuffs_json_decode_quirk_replace_invalid_utf_8,
+    test_wuffs_json_decode_quirk_replace_invalid_unicode,
     test_wuffs_json_decode_src_io_buffer_length,
     test_wuffs_json_decode_string,
     test_wuffs_json_decode_unicode4_escapes,

@@ -29,7 +29,7 @@ pub const quirk_allow_backslash_a base.u32 = 0x4909_9400 | 0x00
 // string, equivalent to "abc\uD83D\uDCA9z", containing the U+0001F4A9 PILE OF
 // POO Unicode code point. There are exactly 8 encoded bytes after each "\U".
 //
-// This quirk can combine with quirk_replace_invalid_utf_8.
+// This quirk can combine with quirk_replace_invalid_unicode.
 pub const quirk_allow_backslash_capital_u base.u32 = 0x4909_9400 | 0x01
 
 // When this quirk is enabled, e.g. "abc\ez" is accepted as a JSON string,
@@ -170,4 +170,4 @@ pub const quirk_allow_trailing_new_line base.u32 = 0x4909_9400 | 0x0E
 // When combined with quirk_allow_backslash_capital_u, a "\U12345678" 10-byte
 // unit that is an invalid Unicode code point (i.e. in the range U+D800 ..=
 // U+DFFF or above U+10FFFF) is similarly replaced with U+FFFD.
-pub const quirk_replace_invalid_utf_8 base.u32 = 0x4909_9400 | 0x0F
+pub const quirk_replace_invalid_unicode base.u32 = 0x4909_9400 | 0x0F

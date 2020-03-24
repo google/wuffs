@@ -26,7 +26,7 @@ pub struct decoder? implements base.token_decoder(
 	quirk_enabled_allow_leading_ascii_record_separator  : base.bool,
 	quirk_enabled_allow_leading_unicode_byte_order_mark : base.bool,
 	quirk_enabled_allow_trailing_new_line               : base.bool,
-	quirk_enabled_replace_invalid_utf_8                 : base.bool,
+	quirk_enabled_replace_invalid_unicode               : base.bool,
 
 	allow_leading_ars  : base.bool,
 	allow_leading_ubom : base.bool,
@@ -95,8 +95,8 @@ pub func decoder.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
 		this.quirk_enabled_allow_leading_unicode_byte_order_mark = args.enabled
 	} else if args.quirk == quirk_allow_trailing_new_line {
 		this.quirk_enabled_allow_trailing_new_line = args.enabled
-	} else if args.quirk == quirk_replace_invalid_utf_8 {
-		this.quirk_enabled_replace_invalid_utf_8 = args.enabled
+	} else if args.quirk == quirk_replace_invalid_unicode {
+		this.quirk_enabled_replace_invalid_unicode = args.enabled
 	}
 }
 
@@ -417,7 +417,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 									// another 8 bytes at an offset of 4.
 									if args.src.available() < 12 {
 										if args.src.is_closed() {
-											if this.quirk_enabled_replace_invalid_utf_8 {
+											if this.quirk_enabled_replace_invalid_unicode {
 												args.src.skip32_fast!(actual: 6, worst_case: 6)
 												args.dst.write_fast_token!(
 													value_major: 0,
@@ -478,7 +478,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 									}
 								}
 
-								if this.quirk_enabled_replace_invalid_utf_8 {
+								if this.quirk_enabled_replace_invalid_unicode {
 									if args.src.available() < 6 {
 										return "#internal error: inconsistent I/O"
 									}
@@ -548,7 +548,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 										link: 0x3,
 										length: 10)
 									continue.string_loop_outer
-								} else if this.quirk_enabled_replace_invalid_utf_8 {
+								} else if this.quirk_enabled_replace_invalid_unicode {
 									args.src.skip32_fast!(actual: 10, worst_case: 10)
 									args.dst.write_fast_token!(
 										value_major: 0,
@@ -622,7 +622,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 									}
 								}
 								if args.src.is_closed() {
-									if this.quirk_enabled_replace_invalid_utf_8 {
+									if this.quirk_enabled_replace_invalid_unicode {
 										args.dst.write_fast_token!(
 											value_major: 0,
 											value_minor: 0x60_FFFD,
@@ -670,7 +670,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 									}
 								}
 								if args.src.is_closed() {
-									if this.quirk_enabled_replace_invalid_utf_8 {
+									if this.quirk_enabled_replace_invalid_unicode {
 										args.dst.write_fast_token!(
 											value_major: 0,
 											value_minor: 0x60_FFFD,
@@ -723,7 +723,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 									}
 								}
 								if args.src.is_closed() {
-									if this.quirk_enabled_replace_invalid_utf_8 {
+									if this.quirk_enabled_replace_invalid_unicode {
 										args.dst.write_fast_token!(
 											value_major: 0,
 											value_minor: 0x60_FFFD,
@@ -776,7 +776,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 						if char == 0x80 {
 							return "#bad C0 control code"
 						}
-						if this.quirk_enabled_replace_invalid_utf_8 {
+						if this.quirk_enabled_replace_invalid_unicode {
 							args.dst.write_fast_token!(
 								value_major: 0,
 								value_minor: 0x60_FFFD,
