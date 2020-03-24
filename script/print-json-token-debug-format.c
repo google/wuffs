@@ -139,6 +139,7 @@ struct {
 
   bool all_tokens;
   bool human_readable;
+  bool quirks;
 } flags = {0};
 
 const char*  //
@@ -169,6 +170,10 @@ parse_flags(int argc, char** argv) {
     }
     if (!strcmp(arg, "h") || !strcmp(arg, "human-readable")) {
       flags.human_readable = true;
+      continue;
+    }
+    if (!strcmp(arg, "q") || !strcmp(arg, "quirks")) {
+      flags.quirks = true;
       continue;
     }
 
@@ -216,6 +221,32 @@ main1(int argc, char** argv) {
       &dec, sizeof__wuffs_json__decoder(), WUFFS_VERSION, 0);
   if (!wuffs_base__status__is_ok(&init_status)) {
     return wuffs_base__status__message(&init_status);
+  }
+
+  if (flags.quirks) {
+    uint32_t quirks[] = {
+        WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_A,
+        WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_CAPITAL_U,
+        WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_E,
+        WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_QUESTION_MARK,
+        WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_SINGLE_QUOTE,
+        WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_V,
+        WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_X,
+        WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_ZERO,
+        WUFFS_JSON__QUIRK_ALLOW_COMMENT_BLOCK,
+        WUFFS_JSON__QUIRK_ALLOW_COMMENT_LINE,
+        WUFFS_JSON__QUIRK_ALLOW_EXTRA_COMMA,
+        WUFFS_JSON__QUIRK_ALLOW_INF_NAN_NUMBERS,
+        WUFFS_JSON__QUIRK_ALLOW_LEADING_ASCII_RECORD_SEPARATOR,
+        WUFFS_JSON__QUIRK_ALLOW_LEADING_UNICODE_BYTE_ORDER_MARK,
+        WUFFS_JSON__QUIRK_ALLOW_TRAILING_NEW_LINE,
+        WUFFS_JSON__QUIRK_REPLACE_INVALID_UTF_8,
+        0,
+    };
+    uint32_t i;
+    for (i = 0; quirks[i]; i++) {
+      wuffs_json__decoder__set_quirk_enabled(&dec, quirks[i], true);
+    }
   }
 
   uint64_t pos = 0;

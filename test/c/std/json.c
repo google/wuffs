@@ -783,6 +783,11 @@ golden_test json_nobel_prizes_gt = {
     .src_filename = "test/data/nobel-prizes.json",
 };
 
+golden_test json_json_quirks_gt = {
+    .want_filename = "test/data/json-quirks.tokens",
+    .src_filename = "test/data/json-quirks.json",
+};
+
 // ---------------- JSON Tests
 
 const char*  //
@@ -809,6 +814,41 @@ test_wuffs_json_decode_interface() {
     CHECK_STRING(do_test__wuffs_base__token_decoder(
         wuffs_json__decoder__upcast_as__wuffs_base__token_decoder(&dec),
         &json_australian_abc_gt));
+  }
+
+  {
+    uint32_t quirks[] = {
+        WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_A,
+        WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_CAPITAL_U,
+        WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_E,
+        WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_QUESTION_MARK,
+        WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_SINGLE_QUOTE,
+        WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_V,
+        WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_X,
+        WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_ZERO,
+        WUFFS_JSON__QUIRK_ALLOW_COMMENT_BLOCK,
+        WUFFS_JSON__QUIRK_ALLOW_COMMENT_LINE,
+        WUFFS_JSON__QUIRK_ALLOW_EXTRA_COMMA,
+        WUFFS_JSON__QUIRK_ALLOW_INF_NAN_NUMBERS,
+        WUFFS_JSON__QUIRK_ALLOW_LEADING_ASCII_RECORD_SEPARATOR,
+        WUFFS_JSON__QUIRK_ALLOW_LEADING_UNICODE_BYTE_ORDER_MARK,
+        WUFFS_JSON__QUIRK_ALLOW_TRAILING_NEW_LINE,
+        WUFFS_JSON__QUIRK_REPLACE_INVALID_UTF_8,
+        0,
+    };
+
+    wuffs_json__decoder dec;
+    CHECK_STATUS("initialize",
+                 wuffs_json__decoder__initialize(
+                     &dec, sizeof dec, WUFFS_VERSION,
+                     WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+    uint32_t i;
+    for (i = 0; quirks[i]; i++) {
+      wuffs_json__decoder__set_quirk_enabled(&dec, quirks[i], true);
+    }
+    CHECK_STRING(do_test__wuffs_base__token_decoder(
+        wuffs_json__decoder__upcast_as__wuffs_base__token_decoder(&dec),
+        &json_json_quirks_gt));
   }
 
   return NULL;
