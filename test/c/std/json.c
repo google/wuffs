@@ -1398,6 +1398,82 @@ test_wuffs_json_decode_quirk_allow_final_comma() {
 }
 
 const char*  //
+test_wuffs_json_decode_quirk_allow_inf_nan_numbers() {
+  CHECK_FOCUS(__func__);
+
+  struct {
+    // want has 2 bytes, one for each possible q:
+    //  - q&1 sets WUFFS_JSON__QUIRK_ALLOW_INF_NAN_NUMBERS.
+    // An 'X', '+' or '-' means that decoding should succeed (and consume the
+    // entire input), succeed (without consuming the entire input) or fail.
+    const char* want;
+    const char* str;
+  } test_cases[] = {
+      {.want = "-X", .str = "InFiniTy"},
+      {.want = "-X", .str = "[+inf, -infinity, +nan,-NaN,NAN]"},
+      {.want = "-X", .str = "inf"},
+      {.want = "-+", .str = "infinit"},
+      {.want = "-+", .str = "infiQity"},
+      {.want = "-+", .str = "nana"},
+      {.want = "--", .str = "+-inf"},
+      {.want = "--", .str = "-+inf"},
+      {.want = "--", .str = "[infinit,"},
+      {.want = "--", .str = "[infiQity,"},
+      {.want = "--", .str = "[nana,"},
+      {.want = "--", .str = "∞"},
+  };
+
+  int tc;
+  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+    int q;
+    for (q = 0; q < 2; q++) {
+      wuffs_json__decoder dec;
+      CHECK_STATUS("initialize", wuffs_json__decoder__initialize(
+                                     &dec, sizeof dec, WUFFS_VERSION,
+                                     WUFFS_INITIALIZE__DEFAULT_OPTIONS));
+      wuffs_json__decoder__set_quirk_enabled(
+          &dec, WUFFS_JSON__QUIRK_ALLOW_INF_NAN_NUMBERS, q & 1);
+
+      wuffs_base__token_buffer tok =
+          wuffs_base__make_token_buffer_writer(global_have_token_slice);
+      wuffs_base__io_buffer src = wuffs_base__make_io_buffer_reader(
+          wuffs_base__make_slice_u8((void*)(test_cases[tc].str),
+                                    strlen(test_cases[tc].str)),
+          true);
+      const char* have =
+          wuffs_json__decoder__decode_tokens(&dec, &tok, &src).repr;
+      const char* want =
+          (test_cases[tc].want[q] != '-') ? NULL : wuffs_json__error__bad_input;
+      if (have != want) {
+        RETURN_FAIL("tc=%d, q=%d: decode_tokens: have \"%s\", want \"%s\"", tc,
+                    q, have, want);
+      }
+
+      size_t total_length = 0;
+      while (tok.meta.ri < tok.meta.wi) {
+        total_length += wuffs_base__token__length(&tok.data.ptr[tok.meta.ri++]);
+      }
+      if (total_length != src.meta.ri) {
+        RETURN_FAIL("tc=%d, q=%d: total_length: have %zu, want %zu", tc, q,
+                    total_length, src.meta.ri);
+      }
+      if (test_cases[tc].want[q] == 'X') {
+        if (total_length != src.data.len) {
+          RETURN_FAIL("tc=%d, q=%d: total_length: have %zu, want %zu", tc, q,
+                      total_length, src.data.len);
+        }
+      } else if (test_cases[tc].want[q] == '+') {
+        if (total_length >= src.data.len) {
+          RETURN_FAIL("tc=%d, q=%d: total_length: have %zu, want < %zu", tc, q,
+                      total_length, src.data.len);
+        }
+      }
+    }
+  }
+  return NULL;
+}
+
+const char*  //
 test_wuffs_json_decode_quirk_allow_comment_etc() {
   CHECK_FOCUS(__func__);
 
@@ -2115,6 +2191,7 @@ proc tests[] = {
     test_wuffs_json_decode_quirk_allow_backslash_x,
     test_wuffs_json_decode_quirk_allow_comment_etc,
     test_wuffs_json_decode_quirk_allow_final_comma,
+    test_wuffs_json_decode_quirk_allow_inf_nan_numbers,
     test_wuffs_json_decode_quirk_allow_leading_etc,
     test_wuffs_json_decode_quirk_allow_trailing_etc,
     test_wuffs_json_decode_quirk_replace_invalid_utf_8,

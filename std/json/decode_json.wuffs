@@ -888,6 +888,10 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 					}
 
 					if number_status == 1 {
+						if this.quirk_enabled_allow_inf_nan_numbers {
+							this.decode_inf_nan?(dst: args.dst, src: args.src)
+							break
+						}
 						return "#bad input"
 					} else if number_status == 2 {
 						return "#unsupported number length"
@@ -1061,7 +1065,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 					continue.outer
 				}
 
-			} else if class == 0x0B {  // 0x0B is CLASS_NULL.
+			} else if class == 0x0B {  // 0x0B is CLASS_NULL_NAN_INF.
 				match = args.src.match7(a: 0x6C_6C75_6E04)  // 4 bytes "null".
 				if match == 0 {
 					args.dst.write_fast_token!(
@@ -1077,6 +1081,11 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 				} else if match == 1 {
 					yield? base."$short read"
 					continue.outer
+				}
+
+				if this.quirk_enabled_allow_inf_nan_numbers {
+					this.decode_inf_nan?(dst: args.dst, src: args.src)
+					break.goto_parsed_a_leaf_value
 				}
 
 			} else if class == 0x0C {  // 0x0C is CLASS_COMMENT.
@@ -1461,6 +1470,111 @@ pri func decoder.decode_comment?(dst: base.token_writer, src: base.io_reader) {
 	}
 
 	return "#bad input"
+}
+
+pri func decoder.decode_inf_nan?(dst: base.token_writer, src: base.io_reader) {
+	var c4  : base.u32
+	var neg : base.u32[..= 1]
+
+	while true {
+		if args.dst.available() <= 0 {
+			yield? base."$short write"
+			continue
+		}
+		if args.src.available() <= 2 {
+			if args.src.is_closed() {
+				return "#bad input"
+			}
+			yield? base."$short read"
+			continue
+		}
+
+		// Bitwise or'ing with 0x20 converts upper case ASCII to lower case.
+
+		c4 = args.src.peek_u24le_as_u32()
+		if (c4 | 0x20_2020) == 0x66_6E69 {
+			if args.src.available() > 7 {
+				if (args.src.peek_u64le() | 0x2020_2020_2020_2020) == 0x7974_696E_6966_6E69 {
+					args.dst.write_fast_token!(
+						value_major: 0,
+						value_minor: 0xA0_0020,
+						link: 0x0,
+						length: 8)
+					args.src.skip32_fast!(actual: 8, worst_case: 8)
+					return ok
+				}
+			} else if not args.src.is_closed() {
+				yield? base."$short read"
+				continue
+			}
+			args.dst.write_fast_token!(
+				value_major: 0,
+				value_minor: 0xA0_0020,
+				link: 0x0,
+				length: 3)
+			args.src.skip32_fast!(actual: 3, worst_case: 3)
+			return ok
+
+		} else if (c4 | 0x20_2020) == 0x6E_616E {
+			args.dst.write_fast_token!(
+				value_major: 0,
+				value_minor: 0xA0_0080,
+				link: 0x0,
+				length: 3)
+			args.src.skip32_fast!(actual: 3, worst_case: 3)
+			return ok
+		} else if (c4 & 0xFF) == 0x2B {  // 0x2B is '+'.
+			neg = 0
+		} else if (c4 & 0xFF) == 0x2D {  // 0x2D is '-'.
+			neg = 1
+		} else {
+			return "#bad input"
+		}
+
+		if args.src.available() <= 3 {
+			if args.src.is_closed() {
+				return "#bad input"
+			}
+			yield? base."$short read"
+			continue
+		}
+
+		c4 = args.src.peek_u32le() >> 8
+		if (c4 | 0x20_2020) == 0x66_6E69 {
+			if args.src.available() > 8 {
+				if (args.src.peek_u64le_at(offset: 1) | 0x2020_2020_2020_2020) == 0x7974_696E_6966_6E69 {
+					args.dst.write_fast_token!(
+						value_major: 0,
+						value_minor: 0xA0_0000 | ((0x20 as base.u32) >> neg),
+						link: 0x0,
+						length: 9)
+					args.src.skip32_fast!(actual: 9, worst_case: 9)
+					return ok
+				}
+			} else if not args.src.is_closed() {
+				yield? base."$short read"
+				continue
+			}
+			args.dst.write_fast_token!(
+				value_major: 0,
+				value_minor: 0xA0_0000 | ((0x20 as base.u32) >> neg),
+				link: 0x0,
+				length: 4)
+			args.src.skip32_fast!(actual: 4, worst_case: 4)
+			return ok
+
+		} else if (c4 | 0x20_2020) == 0x6E_616E {
+			args.dst.write_fast_token!(
+				value_major: 0,
+				value_minor: 0xA0_0000 | ((0x80 as base.u32) >> neg),
+				link: 0x0,
+				length: 4)
+			args.src.skip32_fast!(actual: 4, worst_case: 4)
+			return ok
+		}
+
+		return "#bad input"
+	}
 }
 
 pri func decoder.decode_trailing_new_line?(dst: base.token_writer, src: base.io_reader) {
