@@ -364,7 +364,28 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			n.SetMType(typeExprIdeal)
 			return nil
 
-		} else if id1.IsStrLiteral(q.tm) {
+		} else if id1.IsSQStrLiteral(q.tm) {
+			s := id1.Str(q.tm)
+			unescaped, ok := t.Unescape(id1.Str(q.tm))
+			if !ok {
+				return fmt.Errorf("check: invalid '-string literal %q", s)
+			}
+
+			z := big.NewInt(0)
+			i, iEnd, iDelta := 0, len(unescaped), +1 // Big-endian.
+			if (len(s) > 2) && (s[len(s)-2] == 'l') {
+				i, iEnd, iDelta = len(unescaped)-1, -1, -1 // Little-endian.
+			}
+			for ; i != iEnd; i += iDelta {
+				z.Lsh(z, 8)
+				z.Or(z, big.NewInt(int64(unescaped[i])))
+			}
+
+			n.SetConstValue(z)
+			n.SetMType(typeExprIdeal)
+			return nil
+
+		} else if id1.IsDQStrLiteral(q.tm) {
 			if _, ok := q.c.statuses[n.StatusQID()]; !ok {
 				return fmt.Errorf("check: unrecognized status %s", n.StatusQID().Str(q.tm))
 			}

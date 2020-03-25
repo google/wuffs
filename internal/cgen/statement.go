@@ -441,7 +441,7 @@ func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 			b.writes("wuffs_base__make_status(NULL)")
 			isComplete = true
 		} else {
-			if retExpr.Ident().IsStrLiteral(g.tm) {
+			if retExpr.Ident().IsDQStrLiteral(g.tm) {
 				msg, _ := t.Unescape(retExpr.Ident().Str(g.tm))
 				isComplete = statusMsgIsNote(msg)
 			}

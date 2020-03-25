@@ -70,7 +70,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, depth uint32) error {
 				b.writes("false")
 			}
 
-		} else if ident.IsStrLiteral(g.tm) {
+		} else if ident.IsDQStrLiteral(g.tm) {
 			if z := g.statusMap[n.StatusQID()]; z.cName != "" {
 				b.writes("wuffs_base__make_status(")
 				b.writes(z.cName)

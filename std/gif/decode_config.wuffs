@@ -180,9 +180,9 @@ pub func config_decoder.decode_image_config?(dst: nptr base.image_config, src: b
 }
 
 pub func config_decoder.set_report_metadata!(fourcc: base.u32, report: base.bool) {
-	if args.fourcc == 0x4943_4350 {  // "ICCP"
+	if args.fourcc == 'ICCP'be {
 		this.report_metadata_iccp = args.report
-	} else if args.fourcc == 0x584D_5020 {  // "XMP "
+	} else if args.fourcc == 'XMP 'be {
 		this.report_metadata_xmp = args.report
 	}
 }
@@ -204,7 +204,7 @@ pub func config_decoder.ack_metadata_chunk?(src: base.io_reader) {
 
 		this.metadata_chunk_length_value = args.src.peek_u8_as_u64()
 		if this.metadata_chunk_length_value > 0 {
-			if this.metadata_fourcc_value == 0x584D_5020 {  // "XMP "
+			if this.metadata_fourcc_value == 'XMP 'be {
 				// The +1 is because XMP metadata's encoding includes each
 				// block's leading byte (the block size) as part of the
 				// metadata passed to the caller.
@@ -427,8 +427,8 @@ pri func config_decoder.decode_header?(src: base.io_reader) {
 		c[i] = args.src.read_u8?()
 		i += 1
 	}
-	if (c[0] <> 0x47) or (c[1] <> 0x49) or (c[2] <> 0x46) or (c[3] <> 0x38) or
-		((c[4] <> 0x37) and (c[4] <> 0x39)) or (c[5] <> 0x61) {
+	if (c[0] <> 'G') or (c[1] <> 'I') or (c[2] <> 'F') or (c[3] <> '8') or
+		((c[4] <> '7') and (c[4] <> '9')) or (c[5] <> 'a') {
 		return "#bad header"
 	}
 }
@@ -617,7 +617,7 @@ pri func config_decoder.decode_ae?(src: base.io_reader) {
 			}
 			this.metadata_chunk_length_value = args.src.peek_u8_as_u64()
 			args.src.skip32_fast!(actual: 1, worst_case: 1)
-			this.metadata_fourcc_value = 0x4943_4350  // "ICCP"
+			this.metadata_fourcc_value = 'ICCP'be
 			this.metadata_io_position = args.src.position() ~sat+ this.metadata_chunk_length_value
 			this.call_sequence = 1
 			return base."@metadata reported"
@@ -637,7 +637,7 @@ pri func config_decoder.decode_ae?(src: base.io_reader) {
 			} else {
 				args.src.skip32_fast!(actual: 1, worst_case: 1)
 			}
-			this.metadata_fourcc_value = 0x584D_5020  // "XMP "
+			this.metadata_fourcc_value = 'XMP 'be
 			this.metadata_io_position = args.src.position() ~sat+ this.metadata_chunk_length_value
 			this.call_sequence = 1
 			return base."@metadata reported"

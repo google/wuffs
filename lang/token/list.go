@@ -81,11 +81,22 @@ func (x ID) IsNumLiteral(m *Map) bool {
 	return false
 }
 
-func (x ID) IsStrLiteral(m *Map) bool {
+// IsDQStrLiteral returns whether x is a double-quote string literal.
+func (x ID) IsDQStrLiteral(m *Map) bool {
 	if x < nBuiltInIDs {
 		return false
 	} else if s := m.ByID(x); s != "" {
 		return s[0] == '"'
+	}
+	return false
+}
+
+// IsSQStrLiteral returns whether x is a single-quote string literal.
+func (x ID) IsSQStrLiteral(m *Map) bool {
+	if x < nBuiltInIDs {
+		return false
+	} else if s := m.ByID(x); s != "" {
+		return s[0] == '\''
 	}
 	return false
 }

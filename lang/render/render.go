@@ -291,7 +291,8 @@ func isCloseIdentLiteral(tm *t.Map, x t.ID) bool {
 }
 
 func isCloseIdentStrLiteralQuestion(tm *t.Map, x t.ID) bool {
-	return x.IsClose() || x.IsIdent(tm) || x.IsStrLiteral(tm) || (x == t.IDQuestion)
+	return x.IsClose() || x.IsIdent(tm) || x.IsDQStrLiteral(tm) ||
+		x.IsSQStrLiteral(tm) || (x == t.IDQuestion)
 }
 
 func measureVarNameLength(tm *t.Map, lineTokens []t.Token, remaining []t.Token) uint32 {

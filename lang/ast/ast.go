@@ -379,7 +379,7 @@ func NewExpr(flags Flags, operator t.ID, statusPkg t.ID, ident t.ID, lhs *Node, 
 
 // Assert is "assert RHS via ID2(args)", "pre etc", "inv etc" or "post etc":
 //  - ID0:   <IDAssert|IDPre|IDInv|IDPost>
-//  - ID2:   <string literal> reason
+//  - ID2:   <"-string literal> reason
 //  - RHS:   <Expr>
 //  - List0: <Arg> reason arguments
 type Assert Node
@@ -948,7 +948,7 @@ func NewStruct(flags Flags, filename string, line uint32, name t.ID, implements 
 }
 
 // Use is "use ID2":
-//  - ID2:   <string literal> package path
+//  - ID2:   <"-string literal> package path
 type Use Node
 
 func (n *Use) AsNode() *Node    { return (*Node)(n) }

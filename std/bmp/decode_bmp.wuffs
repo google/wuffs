@@ -70,7 +70,7 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 	// Read the BITMAPFILEHEADER (14 bytes).
 
 	magic = args.src.read_u16le_as_u32?()
-	if magic <> 0x4D42 {  // "BM" little-endian.
+	if magic <> 'BM'le {
 		return "#bad header"
 	}
 

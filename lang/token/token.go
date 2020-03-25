@@ -17,6 +17,7 @@ package token
 import (
 	"errors"
 	"fmt"
+	"unicode/utf8"
 )
 
 const (
@@ -25,11 +26,115 @@ const (
 	maxTokenSize = 1023
 )
 
+var backslashes = [256]byte{
+	'"':  0x22 | 0x80,
+	'\'': 0x27 | 0x80,
+	'/':  0x2F | 0x80,
+	'0':  0x00 | 0x80,
+	'?':  0x3F | 0x80,
+	'\\': 0x5C | 0x80,
+	'a':  0x07 | 0x80,
+	'b':  0x08 | 0x80,
+	'e':  0x1B | 0x80,
+	'f':  0x0C | 0x80,
+	'n':  0x0A | 0x80,
+	'r':  0x0D | 0x80,
+	't':  0x09 | 0x80,
+	'v':  0x0B | 0x80,
+}
+
 func Unescape(s string) (unescaped string, ok bool) {
-	if len(s) < 2 || s[0] != '"' || s[len(s)-1] != '"' {
+	if len(s) < 2 {
 		return "", false
 	}
-	return s[1 : len(s)-1], true
+	switch s[0] {
+	case '"':
+		if s[len(s)-1] == '"' {
+			s = s[1 : len(s)-1]
+		} else {
+			return "", false
+		}
+	case '\'':
+		if s[len(s)-1] == '\'' {
+			s = s[1 : len(s)-1]
+		} else if (len(s) >= 4) && (s[len(s)-3] == '\'') &&
+			((s[len(s)-2] == 'b') || (s[len(s)-2] == 'l')) &&
+			(s[len(s)-1] == 'e') { // "be" or "le" suffix.
+			s = s[1 : len(s)-3]
+		} else {
+			return "", false
+		}
+	default:
+		return "", false
+	}
+
+	for i := 0; ; i++ {
+		if i == len(s) {
+			// There were no backslashes.
+			return s, true
+		}
+		if s[i] == '\\' {
+			break
+		}
+	}
+
+	// There were backslashes.
+	b := make([]byte, 0, len(s))
+	for i := 0; i < len(s); {
+		if s[i] != '\\' {
+			b = append(b, s[i])
+			i += 1
+			continue
+		} else if i >= (len(s) - 1) {
+			// No-op.
+		} else if x := backslashes[s[i+1]]; x != 0 {
+			b = append(b, x&0x7F)
+			i += 2
+			continue
+		} else if (s[i+1] == 'x') && (i < (len(s) - 3)) {
+			u0 := unhex(s[i+2])
+			u1 := unhex(s[i+3])
+			u := (u0 << 4) | u1
+			if 0 <= u {
+				b = append(b, uint8(u))
+				i += 4
+				continue
+			}
+		} else if (s[i+1] == 'u') && (i < (len(s) - 5)) {
+			u0 := unhex(s[i+2])
+			u1 := unhex(s[i+3])
+			u2 := unhex(s[i+4])
+			u3 := unhex(s[i+5])
+			u := (u0 << 12) | (u1 << 8) | (u2 << 4) | u3
+			if (u >= 0) && utf8.ValidRune(u) {
+				e := [utf8.UTFMax]byte{}
+				n := utf8.EncodeRune(e[:], u)
+				b = append(b, e[:n]...)
+				i += 6
+				continue
+			}
+		} else if (s[i+1] == 'U') && (i < (len(s) - 9)) {
+			u0 := unhex(s[i+2])
+			u1 := unhex(s[i+3])
+			u2 := unhex(s[i+4])
+			u3 := unhex(s[i+5])
+			u4 := unhex(s[i+6])
+			u5 := unhex(s[i+7])
+			u6 := unhex(s[i+8])
+			u7 := unhex(s[i+9])
+			u := (u0 << 28) | (u1 << 24) | (u2 << 20) | (u3 << 16) |
+				(u4 << 12) | (u5 << 8) | (u6 << 4) | u7
+			if (u >= 0) && utf8.ValidRune(u) {
+				e := [utf8.UTFMax]byte{}
+				n := utf8.EncodeRune(e[:], u)
+				b = append(b, e[:n]...)
+				i += 10
+				continue
+			}
+		}
+		return "", false
+	}
+	return string(b), true
 }
 
 type Map struct {
@@ -79,6 +184,18 @@ func (m *Map) ByID(x ID) string {
 		return m.byID[x]
 	}
 	return ""
+}
+
+func unhex(c byte) int32 {
+	switch {
+	case 'A' <= c && c <= 'F':
+		return int32(c) - ('A' - 10)
+	case 'a' <= c && c <= 'f':
+		return int32(c) - ('a' - 10)
+	case '0' <= c && c <= '9':
+		return int32(c) - '0'
+	}
+	return -1
 }
 
 func alpha(c byte) bool {
@@ -150,32 +267,45 @@ loop:
 			continue
 		}
 
-		// TODO: recognize escapes such as `\t`, `\"` and `\\`. For now, we
-		// assume that strings don't contain control bytes or backslashes.
-		// Neither should be necessary to parse `use "foo/bar"` lines.
-		if c == '"' {
+		if (c == '"') || (c == '\'') {
+			quote := c
 			j := i + 1
-			for ; j < len(src); j++ {
+			for j < len(src) {
 				c = src[j]
-				if c == '"' {
-					j++
+				j++
+				if c == quote {
 					break
-				}
-				if c == '\\' {
-					return nil, nil, fmt.Errorf("token: backslash in string at %s:%d", filename, line)
-				}
-				if c == '\n' {
-					return nil, nil, fmt.Errorf("token: expected final '\"' in string at %s:%d", filename, line)
-				}
-				if c < ' ' {
+				} else if c == '\\' {
+					if quote == '"' {
+						return nil, nil, fmt.Errorf("token: backslash in \"-string at %s:%d", filename, line)
+					}
+				} else if c == '\n' {
+					return nil, nil, fmt.Errorf("token: expected final %c in string at %s:%d", quote, filename, line)
+				} else if c < ' ' {
 					return nil, nil, fmt.Errorf("token: control character in string at %s:%d", filename, line)
 				}
-				// The -1 is because we still haven't seen the final '"'.
-				if j-i == maxTokenSize-1 {
-					return nil, nil, fmt.Errorf("token: string too long at %s:%d", filename, line)
+			}
+
+			hasEndian := (quote == '\'') && (j < (len(src) - 2)) &&
+				((src[j] == 'b') || (src[j] == 'l')) &&
+				(src[j+1] == 'e')
+			if hasEndian {
+				j += 2
+			}
+
+			if j-i > maxTokenSize {
+				return nil, nil, fmt.Errorf("token: string too long at %s:%d", filename, line)
+			}
+			s := string(src[i:j])
+			if quote == '\'' {
+				if unescaped, ok := Unescape(s); !ok {
+					return nil, nil, fmt.Errorf("token: invalid '-string at %s:%d", filename, line)
+				} else if (len(unescaped) > 1) && !hasEndian {
+					return nil, nil, fmt.Errorf("token: multi-byte '-string needs be or le suffix at %s:%d", filename, line)
 				}
 			}
-			id, err := m.Insert(string(src[i:j]))
+
+			id, err := m.Insert(s)
 			if err != nil {
 				return nil, nil, err
 			}

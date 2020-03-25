@@ -113,9 +113,9 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 	case t.IDUse:
 		p.src = p.src[1:]
 		path := p.peek1()
-		if !path.IsStrLiteral(p.tm) {
+		if !path.IsDQStrLiteral(p.tm) {
 			got := p.tm.ByID(path)
-			return nil, fmt.Errorf(`parse: expected string literal, got %q at %s:%d`, got, p.filename, p.line())
+			return nil, fmt.Errorf(`parse: expected "-string literal, got %q at %s:%d`, got, p.filename, p.line())
 		}
 		p.src = p.src[1:]
 		if x := p.peek1(); x != t.IDSemicolon {
@@ -224,9 +224,9 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			p.src = p.src[1:]
 
 			message := p.peek1()
-			if !message.IsStrLiteral(p.tm) {
+			if !message.IsDQStrLiteral(p.tm) {
 				got := p.tm.ByID(message)
-				return nil, fmt.Errorf(`parse: expected string literal, got %q at %s:%d`, got, p.filename, p.line())
+				return nil, fmt.Errorf(`parse: expected "-string literal, got %q at %s:%d`, got, p.filename, p.line())
 			}
 			if s, _ := t.Unescape(p.tm.ByID(message)); !isStatusMessage(s) {
 				return nil, fmt.Errorf(`parse: status message %q does not start with `+
@@ -604,9 +604,9 @@ func (p *parser) parseAssertNode() (*a.Node, error) {
 		if p.peek1() == t.IDVia {
 			p.src = p.src[1:]
 			reason = p.peek1()
-			if !reason.IsStrLiteral(p.tm) {
+			if !reason.IsDQStrLiteral(p.tm) {
 				got := p.tm.ByID(reason)
-				return nil, fmt.Errorf(`parse: expected string literal, got %q at %s:%d`, got, p.filename, p.line())
+				return nil, fmt.Errorf(`parse: expected "-string literal, got %q at %s:%d`, got, p.filename, p.line())
 			}
 			p.src = p.src[1:]
 			args, err = p.parseList(t.IDCloseParen, (*parser).parseArgNode)
@@ -1254,11 +1254,11 @@ func (p *parser) parseOperand() (*a.Expr, error) {
 			p.src = p.src[1:]
 
 			if x := p.peek1(); x.IsLiteral(p.tm) {
-				if x.IsNumLiteral(p.tm) {
-					return nil, fmt.Errorf(`parse: dot followed by numeric literal at %s:%d`, p.filename, p.line())
+				if !x.IsDQStrLiteral(p.tm) {
+					return nil, fmt.Errorf(`parse: dot followed by non-"-string literal at %s:%d`, p.filename, p.line())
 				}
 				if !first {
-					return nil, fmt.Errorf(`parse: string literal %s has too many package qualifiers at %s:%d`,
+					return nil, fmt.Errorf(`parse: "-string literal %s has too many package qualifiers at %s:%d`,
 						x.Str(p.tm), p.filename, p.line())
 				}
 				p.src = p.src[1:]
