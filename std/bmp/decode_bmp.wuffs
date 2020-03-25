@@ -277,7 +277,7 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 			} else {
 				return status
 			}
-		}
+		} endwhile
 	}
 
 	this.call_sequence = 3
@@ -314,7 +314,7 @@ pri func decoder.swizzle!(dst: ptr base.pixel_buffer, src: slice base.u8) base.s
 		}
 		this.pending_pad -= 1
 		args.src = args.src[1 ..]
-	}
+	} endwhile
 
 	// Handle the case where the I/O suspension occurred in the middle of a
 	// source pixel.
@@ -327,7 +327,7 @@ pri func decoder.swizzle!(dst: ptr base.pixel_buffer, src: slice base.u8) base.s
 			this.stash[this.num_stashed] = args.src[0]
 			this.num_stashed += 1
 			args.src = args.src[1 ..]
-		}
+		} endwhile
 
 		// Write the single pixel.
 		dst = tab.row(y: this.dst_y)
@@ -393,10 +393,10 @@ pri func decoder.swizzle!(dst: ptr base.pixel_buffer, src: slice base.u8) base.s
 				this.stash[this.num_stashed] = args.src[0]
 				this.num_stashed += 1
 				args.src = args.src[1 ..]
-			}
+			} endwhile
 			return base."$short read"
 		}
-	}
+	} endwhile
 
 	return ok
 }

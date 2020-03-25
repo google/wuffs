@@ -87,7 +87,7 @@ pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf
 			if c == 0 {
 				break
 			}
-		}
+		} endwhile
 	}
 
 	// Handle FCOMMENT.
@@ -97,7 +97,7 @@ pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf
 			if c == 0 {
 				break
 			}
-		}
+		} endwhile
 	}
 
 	// Handle FHCRC.
@@ -122,7 +122,7 @@ pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf
 			break
 		}
 		yield? status
-	}
+	} endwhile
 	checksum_want = args.src.read_u32le?()
 	decoded_length_want = args.src.read_u32le?()
 	if (not this.ignore_checksum) and

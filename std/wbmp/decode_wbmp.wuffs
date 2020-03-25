@@ -46,7 +46,7 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 			return "#bad header"
 		}
 		i += 1
-	}
+	} endwhile
 
 	// Width, height.
 	i = 0
@@ -66,7 +66,7 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 				return "#bad header"
 			}
 			x32 = x64 as base.u32
-		}
+		} endwhile
 
 		if i == 0 {
 			this.width = x32
@@ -74,7 +74,7 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 			this.height = x32
 		}
 		i += 1
-	}
+	} endwhile
 
 	this.frame_config_io_position = args.src.position()
 
@@ -190,9 +190,9 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 				}
 
 				dst_x += 1
-			}
+			} endwhile
 			dst_y += 1
-		}
+		} endwhile
 	}
 
 	this.call_sequence = 3

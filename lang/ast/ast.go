@@ -539,7 +539,7 @@ func NewIterate(label t.ID, assigns []*Node, length t.ID, unroll t.ID, asserts [
 	}
 }
 
-// While is "while.ID1 MHS, List1 { List2 }":
+// While is "while.ID1 MHS, List1 { List2 } endwhile.ID1":
 //  - FlagsHasBreak    is the while has an explicit break
 //  - FlagsHasContinue is the while has an explicit continue
 //  - ID1:   <0|label>

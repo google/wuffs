@@ -649,14 +649,16 @@ func (p *parser) parseEndwhile(label t.ID) bool {
 		return false
 	}
 	p.src = p.src[1:]
-	if p.peek1() != t.IDDot {
-		return false
+	if label != 0 {
+		if p.peek1() != t.IDDot {
+			return false
+		}
+		p.src = p.src[1:]
+		if p.peek1() != label {
+			return false
+		}
+		p.src = p.src[1:]
 	}
-	p.src = p.src[1:]
-	if p.peek1() != label {
-		return false
-	}
-	p.src = p.src[1:]
 	return true
 }
 
@@ -737,9 +739,13 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 		if err != nil {
 			return nil, err
 		}
-		if (label != 0) && !p.parseEndwhile(label) {
-			return nil, fmt.Errorf(`parse: expected endwhile.%s at %s:%d`,
-				label.Str(p.tm), p.filename, p.line())
+		if !p.parseEndwhile(label) {
+			dotLabel := ""
+			if label != 0 {
+				dotLabel = "." + label.Str(p.tm)
+			}
+			return nil, fmt.Errorf(`parse: expected endwhile%s at %s:%d`,
+				dotLabel, p.filename, p.line())
 		}
 		return a.NewWhile(label, condition, asserts, body).AsNode(), nil
 	}

@@ -117,7 +117,7 @@ pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf
 			break
 		}
 		yield? status
-	}
+	} endwhile
 	checksum_want = args.src.read_u32be?()
 	if (not this.ignore_checksum) and (checksum_got <> checksum_want) {
 		return "#bad checksum"

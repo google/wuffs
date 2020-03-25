@@ -200,7 +200,7 @@ pub func config_decoder.ack_metadata_chunk?(src: base.io_reader) {
 			post args.src.available() > 0,
 		{
 			yield? base."$short read"
-		}
+		} endwhile
 
 		this.metadata_chunk_length_value = args.src.peek_u8_as_u64()
 		if this.metadata_chunk_length_value > 0 {
@@ -308,7 +308,7 @@ pub func config_decoder.decode_frame_config?(dst: nptr base.frame_config, src: b
 				post args.src.available() > 0,
 			{
 				yield? base."$short read"
-			}
+			} endwhile
 			flags = args.src.peek_u8()
 			if (flags & 0x80) <> 0 {
 				background_color = this.black_color_u32_argb_premul
@@ -413,7 +413,7 @@ pri func config_decoder.decode_up_to_id_part1?(src: base.io_reader) {
 		} else {
 			return "#bad block"
 		}
-	}
+	} endwhile
 }
 
 // decode_header reads either "GIF87a" or "GIF89a".
@@ -426,7 +426,7 @@ pri func config_decoder.decode_header?(src: base.io_reader) {
 	while i < 6 {
 		c[i] = args.src.read_u8?()
 		i += 1
-	}
+	} endwhile
 	if (c[0] <> 'G') or (c[1] <> 'I') or (c[2] <> 'F') or (c[3] <> '8') or
 		((c[4] <> '7') and (c[4] <> '9')) or (c[5] <> 'a') {
 		return "#bad header"
@@ -467,7 +467,7 @@ pri func config_decoder.decode_lsd?(src: base.io_reader) {
 			this.palettes[0][(4 * i) + 2] = ((argb >> 16) & 0xFF) as base.u8
 			this.palettes[0][(4 * i) + 3] = ((argb >> 24) & 0xFF) as base.u8
 			i += 1
-		}
+		} endwhile
 
 		if this.quirk_enabled_honor_background_color {
 			if (background_color_index <> 0) and
@@ -496,7 +496,7 @@ pri func config_decoder.decode_lsd?(src: base.io_reader) {
 		this.palettes[0][(4 * i) + 2] = 0x00
 		this.palettes[0][(4 * i) + 3] = 0xFF
 		i += 1
-	}
+	} endwhile
 }
 
 // decode_extension reads an extension. The Extension Introducer byte has
@@ -532,7 +532,7 @@ pri func config_decoder.skip_blocks?(src: base.io_reader) {
 			return ok
 		}
 		args.src.skip32?(n: block_size as base.u32)
-	}
+	} endwhile
 }
 
 // decode_ae reads an Application Extension.
@@ -544,9 +544,7 @@ pri func config_decoder.decode_ae?(src: base.io_reader) {
 	var is_iccp     : base.bool
 	var is_xmp      : base.bool
 
-	// This "while true" always executes exactly once, as it ends with a
-	// "break", but using "break"s throughout simplifies the control flow.
-	while true {
+	while.goto_done true {
 		block_size = args.src.read_u8?()
 		if block_size == 0 {
 			return ok
@@ -560,7 +558,7 @@ pri func config_decoder.decode_ae?(src: base.io_reader) {
 		// Other extensions include XMP metadata.
 		if block_size <> 11 {
 			args.src.skip32?(n: block_size as base.u32)
-			break
+			break.goto_done
 		}
 		is_animexts = true
 		is_netscape = true
@@ -574,7 +572,7 @@ pri func config_decoder.decode_ae?(src: base.io_reader) {
 			is_iccp = is_iccp and (c == iccrgbg1012[block_size])
 			is_xmp = is_xmp and (c == xmpdataxmp[block_size])
 			block_size += 1
-		}
+		} endwhile
 
 		if is_animexts or is_netscape {
 			// Those 11 bytes should be followed by 0x03, 0x01 and then the loop
@@ -582,12 +580,12 @@ pri func config_decoder.decode_ae?(src: base.io_reader) {
 			block_size = args.src.read_u8?()
 			if block_size <> 3 {
 				args.src.skip32?(n: block_size as base.u32)
-				break
+				break.goto_done
 			}
 			c = args.src.read_u8?()
 			if c <> 0x01 {
 				args.src.skip32?(n: 2)
-				break
+				break.goto_done
 			}
 			this.num_loops = args.src.read_u16le_as_u32?()
 			this.seen_num_loops = true
@@ -614,7 +612,7 @@ pri func config_decoder.decode_ae?(src: base.io_reader) {
 				post args.src.available() > 0,
 			{
 				yield? base."$short read"
-			}
+			} endwhile
 			this.metadata_chunk_length_value = args.src.peek_u8_as_u64()
 			args.src.skip32_fast!(actual: 1, worst_case: 1)
 			this.metadata_fourcc_value = 'ICCP'be
@@ -627,7 +625,7 @@ pri func config_decoder.decode_ae?(src: base.io_reader) {
 				post args.src.available() > 0,
 			{
 				yield? base."$short read"
-			}
+			} endwhile
 			this.metadata_chunk_length_value = args.src.peek_u8_as_u64()
 			if this.metadata_chunk_length_value > 0 {
 				// The +1 is because XMP metadata's encoding includes each
@@ -643,8 +641,8 @@ pri func config_decoder.decode_ae?(src: base.io_reader) {
 			return base."@metadata reported"
 		}
 
-		break
-	}
+		break.goto_done
+	} endwhile.goto_done
 	this.skip_blocks?(src: args.src)
 }
 

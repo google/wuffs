@@ -16679,7 +16679,7 @@ wuffs_gif__config_decoder__decode_ae(wuffs_gif__config_decoder* self,
           goto suspend;
         }
         iop_a_src += self->private_data.s_decode_ae[0].scratch;
-        goto label__0__break;
+        goto label__goto_done__break;
       }
       v_is_animexts = true;
       v_is_netscape = true;
@@ -16738,7 +16738,7 @@ wuffs_gif__config_decoder__decode_ae(wuffs_gif__config_decoder* self,
             goto suspend;
           }
           iop_a_src += self->private_data.s_decode_ae[0].scratch;
-          goto label__0__break;
+          goto label__goto_done__break;
         }
         {
           WUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
@@ -16763,7 +16763,7 @@ wuffs_gif__config_decoder__decode_ae(wuffs_gif__config_decoder* self,
             goto suspend;
           }
           iop_a_src += self->private_data.s_decode_ae[0].scratch;
-          goto label__0__break;
+          goto label__goto_done__break;
         }
         {
           WUFFS_BASE__COROUTINE_SUSPENSION_POINT(8);
@@ -16839,9 +16839,9 @@ wuffs_gif__config_decoder__decode_ae(wuffs_gif__config_decoder* self,
         status = wuffs_base__make_status(wuffs_base__note__metadata_reported);
         goto ok;
       }
-      goto label__0__break;
+      goto label__goto_done__break;
     }
-  label__0__break:;
+  label__goto_done__break:;
     if (a_src) {
       a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
     }
@@ -18575,7 +18575,7 @@ wuffs_gif__decoder__decode_ae(wuffs_gif__decoder* self,
           goto suspend;
         }
         iop_a_src += self->private_data.s_decode_ae[0].scratch;
-        goto label__0__break;
+        goto label__goto_done__break;
       }
       v_is_animexts = true;
       v_is_netscape = true;
@@ -18634,7 +18634,7 @@ wuffs_gif__decoder__decode_ae(wuffs_gif__decoder* self,
             goto suspend;
           }
           iop_a_src += self->private_data.s_decode_ae[0].scratch;
-          goto label__0__break;
+          goto label__goto_done__break;
         }
         {
           WUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
@@ -18659,7 +18659,7 @@ wuffs_gif__decoder__decode_ae(wuffs_gif__decoder* self,
             goto suspend;
           }
           iop_a_src += self->private_data.s_decode_ae[0].scratch;
-          goto label__0__break;
+          goto label__goto_done__break;
         }
         {
           WUFFS_BASE__COROUTINE_SUSPENSION_POINT(8);
@@ -18735,9 +18735,9 @@ wuffs_gif__decoder__decode_ae(wuffs_gif__decoder* self,
         status = wuffs_base__make_status(wuffs_base__note__metadata_reported);
         goto ok;
       }
-      goto label__0__break;
+      goto label__goto_done__break;
     }
-  label__0__break:;
+  label__goto_done__break:;
     if (a_src) {
       a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
     }

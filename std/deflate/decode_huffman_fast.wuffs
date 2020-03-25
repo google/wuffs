@@ -341,7 +341,7 @@ pri func decoder.decode_huffman_fast!(dst: base.io_writer, src: base.io_reader) 
 			// Copy from args.dst.
 			args.dst.copy_n32_from_history_fast!(n: length, distance: (dist_minus_1 + 1))
 			break
-		}
+		} endwhile
 	} endwhile.loop
 
 	// Ensure n_bits < 8 by rewindng args.src, if we loaded too many of its
@@ -363,7 +363,7 @@ pri func decoder.decode_huffman_fast!(dst: base.io_writer, src: base.io_reader) 
 		} else {
 			return "#internal error: inconsistent I/O"
 		}
-	}
+	} endwhile
 
 	this.bits = bits & (((1 as base.u32) << n_bits) - 1)
 	this.n_bits = n_bits

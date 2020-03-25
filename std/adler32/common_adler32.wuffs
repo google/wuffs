@@ -51,7 +51,7 @@ pub func hasher.update_u32!(x: slice base.u8) base.u32 {
 		s2 %= 65521
 
 		args.x = remaining
-	}
+	} endwhile
 
 	this.state = ((s2 & 0xFFFF) << 16) | (s1 & 0xFFFF)
 	return this.state
