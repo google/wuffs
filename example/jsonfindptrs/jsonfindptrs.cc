@@ -233,6 +233,9 @@ parse_flags(int argc, char** argv) {
 
   // ----
 
+#define WORK_BUFFER_ARRAY_SIZE \
+  WUFFS_JSON__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE
+
 #ifndef SRC_BUFFER_ARRAY_SIZE
 #define SRC_BUFFER_ARRAY_SIZE (4 * 1024)
 #endif
@@ -305,7 +308,10 @@ class TokenStream {
         return Result(m_status.message());
       }
 
-      m_status = m_dec.decode_tokens(&m_tok, &m_src);
+      m_status =
+          m_dec.decode_tokens(&m_tok, &m_src,
+                              wuffs_base__make_slice_u8(
+                                  m_work_buffer_array, WORK_BUFFER_ARRAY_SIZE));
     }
 
     wuffs_base__token t = m_tok.data.ptr[m_tok.meta.ri];
@@ -355,6 +361,12 @@ class TokenStream {
 
   wuffs_base__token m_tok_array[TOKEN_BUFFER_ARRAY_SIZE];
   uint8_t m_src_array[SRC_BUFFER_ARRAY_SIZE];
+#if WORK_BUFFER_ARRAY_SIZE > 0
+  uint8_t m_work_buffer_array[WORK_BUFFER_ARRAY_SIZE];
+#else
+  // Not all C/C++ compilers support 0-length arrays.
+  uint8_t m_work_buffer_array[1];
+#endif
   wuffs_json__decoder m_dec;
 };
 

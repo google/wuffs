@@ -84,6 +84,17 @@
 // program to generate a stand-alone C++ file.
 #include "../release/c/wuffs-unsupported-snapshot.c"
 
+// Wuffs allows either statically or dynamically allocated work buffers. This
+// program exercises static allocation.
+#define WORK_BUFFER_ARRAY_SIZE \
+  WUFFS_JSON__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE
+#if WORK_BUFFER_ARRAY_SIZE > 0
+uint8_t work_buffer_array[WORK_BUFFER_ARRAY_SIZE];
+#else
+// Not all C/C++ compilers support 0-length arrays.
+uint8_t work_buffer_array[1];
+#endif
+
 #ifndef SRC_BUFFER_ARRAY_SIZE
 #define SRC_BUFFER_ARRAY_SIZE (64 * 1024 * 1024)
 #endif
@@ -251,8 +262,9 @@ main1(int argc, char** argv) {
 
   uint64_t pos = 0;
   while (true) {
-    wuffs_base__status status =
-        wuffs_json__decoder__decode_tokens(&dec, &tok, &src);
+    wuffs_base__status status = wuffs_json__decoder__decode_tokens(
+        &dec, &tok, &src,
+        wuffs_base__make_slice_u8(work_buffer_array, WORK_BUFFER_ARRAY_SIZE));
 
     while (tok.meta.ri < tok.meta.wi) {
       wuffs_base__token* t = &tok.data.ptr[tok.meta.ri++];

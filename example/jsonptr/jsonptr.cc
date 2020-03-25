@@ -232,6 +232,17 @@ static const char* usage =
 
 // ----
 
+// Wuffs allows either statically or dynamically allocated work buffers. This
+// program exercises static allocation.
+#define WORK_BUFFER_ARRAY_SIZE \
+  WUFFS_JSON__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE
+#if WORK_BUFFER_ARRAY_SIZE > 0
+uint8_t work_buffer_array[WORK_BUFFER_ARRAY_SIZE];
+#else
+// Not all C/C++ compilers support 0-length arrays.
+uint8_t work_buffer_array[1];
+#endif
+
 bool sandboxed = false;
 
 int input_file_descriptor = 0;  // A 0 default means stdin.
@@ -1013,7 +1024,9 @@ main1(int argc, char** argv) {
   TRY(initialize_globals(argc, argv));
 
   while (true) {
-    wuffs_base__status status = dec.decode_tokens(&tok, &src);
+    wuffs_base__status status = dec.decode_tokens(
+        &tok, &src,
+        wuffs_base__make_slice_u8(work_buffer_array, WORK_BUFFER_ARRAY_SIZE));
 
     while (tok.meta.ri < tok.meta.wi) {
       wuffs_base__token t = tok.data.ptr[tok.meta.ri++];

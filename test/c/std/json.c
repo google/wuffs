@@ -870,8 +870,8 @@ wuffs_json_decode(wuffs_base__token_buffer* tok,
         make_limited_token_writer(*tok, wlimit);
     wuffs_base__io_buffer limited_src = make_limited_reader(*src, rlimit);
 
-    wuffs_base__status status =
-        wuffs_json__decoder__decode_tokens(&dec, &limited_tok, &limited_src);
+    wuffs_base__status status = wuffs_json__decoder__decode_tokens(
+        &dec, &limited_tok, &limited_src, global_work_slice);
 
     tok->meta.wi += limited_tok.meta.wi;
     src->meta.ri += limited_src.meta.ri;
@@ -905,14 +905,15 @@ test_wuffs_json_decode_end_of_data() {
         wuffs_base__make_token_buffer_writer(global_have_token_slice);
     wuffs_base__io_buffer src = wuffs_base__make_io_buffer_reader(
         wuffs_base__make_slice_u8(src_ptr, src_len), true);
-    CHECK_STATUS("decode_tokens",
-                 wuffs_json__decoder__decode_tokens(&dec, &tok, &src));
+    CHECK_STATUS("decode_tokens", wuffs_json__decoder__decode_tokens(
+                                      &dec, &tok, &src, global_work_slice));
     if (src.meta.ri != 3) {
       RETURN_FAIL("src.meta.ri: have %zu, want 3", src.meta.ri);
     }
 
     const char* have =
-        wuffs_json__decoder__decode_tokens(&dec, &tok, &src).repr;
+        wuffs_json__decoder__decode_tokens(&dec, &tok, &src, global_work_slice)
+            .repr;
     if (have != wuffs_base__note__end_of_data) {
       RETURN_FAIL("decode_tokens: have \"%s\", want \"%s\"", have,
                   wuffs_base__note__end_of_data);
@@ -1016,8 +1017,9 @@ test_wuffs_json_decode_long_numbers() {
             wuffs_base__make_token_buffer_writer(global_have_token_slice);
         wuffs_base__io_buffer src =
             wuffs_base__make_io_buffer_reader(src_data, closed != 0);
-        const char* have =
-            wuffs_json__decoder__decode_tokens(&dec, &tok, &src).repr;
+        const char* have = wuffs_json__decoder__decode_tokens(&dec, &tok, &src,
+                                                              global_work_slice)
+                               .repr;
 
         size_t total_length = 0;
         while (tok.meta.ri < tok.meta.wi) {
@@ -1161,7 +1163,8 @@ test_wuffs_json_decode_prior_valid_utf_8() {
               wuffs_base__make_token_buffer_writer(global_have_token_slice);
           wuffs_base__io_buffer src =
               wuffs_base__make_io_buffer_reader(src_data, closed != 0);
-          wuffs_json__decoder__decode_tokens(&dec, &tok, &src);
+          wuffs_json__decoder__decode_tokens(&dec, &tok, &src,
+                                             global_work_slice);
 
           size_t have = 0;
           while (tok.meta.ri < tok.meta.wi) {
@@ -1257,8 +1260,9 @@ test_wuffs_json_decode_quirk_allow_backslash_etc() {
                                     strlen(test_cases[tc].str)),
           true);
 
-      const char* have_status_repr =
-          wuffs_json__decoder__decode_tokens(&dec, &tok, &src).repr;
+      const char* have_status_repr = wuffs_json__decoder__decode_tokens(
+                                         &dec, &tok, &src, global_work_slice)
+                                         .repr;
       const char* want_status_repr =
           q ? NULL : wuffs_json__error__bad_backslash_escape;
       if (have_status_repr != want_status_repr) {
@@ -1331,7 +1335,8 @@ test_wuffs_json_decode_quirk_allow_backslash_x() {
     wuffs_base__io_buffer src =
         wuffs_base__make_io_buffer_reader(src_slice, true);
     const char* have_status_repr =
-        wuffs_json__decoder__decode_tokens(&dec, &tok, &src).repr;
+        wuffs_json__decoder__decode_tokens(&dec, &tok, &src, global_work_slice)
+            .repr;
     if (have_status_repr != test_cases[tc].want_status_repr) {
       RETURN_FAIL("tc=%d: decode_tokens: have \"%s\", want \"%s\"", tc,
                   have_status_repr, test_cases[tc].want_status_repr);
@@ -1404,8 +1409,9 @@ test_wuffs_json_decode_quirk_allow_extra_comma() {
           wuffs_base__make_slice_u8((void*)(test_cases[tc].str),
                                     strlen(test_cases[tc].str)),
           true);
-      const char* have =
-          wuffs_json__decoder__decode_tokens(&dec, &tok, &src).repr;
+      const char* have = wuffs_json__decoder__decode_tokens(&dec, &tok, &src,
+                                                            global_work_slice)
+                             .repr;
       const char* want =
           (test_cases[tc].want[q] != '-') ? NULL : wuffs_json__error__bad_input;
       if (have != want) {
@@ -1480,8 +1486,9 @@ test_wuffs_json_decode_quirk_allow_inf_nan_numbers() {
           wuffs_base__make_slice_u8((void*)(test_cases[tc].str),
                                     strlen(test_cases[tc].str)),
           true);
-      const char* have =
-          wuffs_json__decoder__decode_tokens(&dec, &tok, &src).repr;
+      const char* have = wuffs_json__decoder__decode_tokens(&dec, &tok, &src,
+                                                            global_work_slice)
+                             .repr;
       const char* want =
           (test_cases[tc].want[q] != '-') ? NULL : wuffs_json__error__bad_input;
       if (have != want) {
@@ -1552,8 +1559,9 @@ test_wuffs_json_decode_quirk_allow_comment_etc() {
           wuffs_base__make_slice_u8((void*)(test_cases[tc].str),
                                     strlen(test_cases[tc].str)),
           true);
-      const char* have =
-          wuffs_json__decoder__decode_tokens(&dec, &tok, &src).repr;
+      const char* have = wuffs_json__decoder__decode_tokens(&dec, &tok, &src,
+                                                            global_work_slice)
+                             .repr;
       const char* want =
           (test_cases[tc].want[q] != '-') ? NULL : wuffs_json__error__bad_input;
       if (have != want) {
@@ -1630,8 +1638,9 @@ test_wuffs_json_decode_quirk_allow_leading_etc() {
           wuffs_base__make_slice_u8((void*)(test_cases[tc].str),
                                     strlen(test_cases[tc].str)),
           true);
-      const char* have =
-          wuffs_json__decoder__decode_tokens(&dec, &tok, &src).repr;
+      const char* have = wuffs_json__decoder__decode_tokens(&dec, &tok, &src,
+                                                            global_work_slice)
+                             .repr;
       const char* want =
           (test_cases[tc].want[q] != '-') ? NULL : wuffs_json__error__bad_input;
       if (have != want) {
@@ -1708,8 +1717,9 @@ test_wuffs_json_decode_quirk_allow_trailing_etc() {
           wuffs_base__make_slice_u8((void*)(test_cases[tc].str),
                                     strlen(test_cases[tc].str)),
           true);
-      const char* have =
-          wuffs_json__decoder__decode_tokens(&dec, &tok, &src).repr;
+      const char* have = wuffs_json__decoder__decode_tokens(&dec, &tok, &src,
+                                                            global_work_slice)
+                             .repr;
       const char* want =
           (test_cases[tc].want[q] != '-') ? NULL : wuffs_json__error__bad_input;
       if (have != want) {
@@ -1807,8 +1817,8 @@ test_wuffs_json_decode_quirk_replace_invalid_unicode() {
         wuffs_base__make_slice_u8((void*)(test_cases[tc].str),
                                   strlen(test_cases[tc].str)),
         true);
-    CHECK_STATUS("decode_tokens",
-                 wuffs_json__decoder__decode_tokens(&dec, &tok, &src));
+    CHECK_STATUS("decode_tokens", wuffs_json__decoder__decode_tokens(
+                                      &dec, &tok, &src, global_work_slice));
 
     uint64_t src_index = 0;
     while (tok.meta.ri < tok.meta.wi) {
@@ -1941,7 +1951,7 @@ test_wuffs_json_decode_unicode4_escapes() {
         wuffs_base__make_slice_u8((void*)(test_cases[tc].str),
                                   strlen(test_cases[tc].str)),
         true);
-    wuffs_json__decoder__decode_tokens(&dec, &tok, &src);
+    wuffs_json__decoder__decode_tokens(&dec, &tok, &src, global_work_slice);
 
     uint32_t have = fail;
     uint64_t total_length = 0;
@@ -2033,8 +2043,8 @@ test_wuffs_json_decode_src_io_buffer_length() {
                        &dec, sizeof dec, WUFFS_VERSION,
                        WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
 
-      wuffs_base__status have =
-          wuffs_json__decoder__decode_tokens(&dec, &tok, &src);
+      wuffs_base__status have = wuffs_json__decoder__decode_tokens(
+          &dec, &tok, &src, global_work_slice);
       const char* want =
           (i > WUFFS_JSON__DECODER_NUMBER_LENGTH_MAX_INCL)
               ? wuffs_json__error__unsupported_number_length
@@ -2134,7 +2144,7 @@ test_wuffs_json_decode_string() {
                                   strlen(test_cases[tc].str)),
         true);
     wuffs_base__status have_status =
-        wuffs_json__decoder__decode_tokens(&dec, &tok, &src);
+        wuffs_json__decoder__decode_tokens(&dec, &tok, &src, global_work_slice);
 
     uint64_t total_length = 0;
     size_t i;

@@ -101,10 +101,7 @@ fuzz(wuffs_base__io_buffer* src, uint32_t hash) {
     dst.meta.wi = 0;
     status =
         wuffs_zlib__decoder__transform_io(&dec, &dst, src,
-                                          ((wuffs_base__slice_u8){
-                                              .ptr = work_buffer_array,
-                                              .len = WORK_BUFFER_ARRAY_SIZE,
-                                          }));
+            wuffs_base__make_slice_u8(work_buffer_array, WORK_BUFFER_ARRAY_SIZE));
     if (status.repr != wuffs_base__suspension__short_write) {
       break;
     }

@@ -422,7 +422,8 @@ var InterfaceFuncs = []string{
 
 	// ---- token_decoder
 
-	"token_decoder.decode_tokens?(dst: token_writer, src: io_reader)",
+	"token_decoder.decode_tokens?(dst: token_writer, src: io_reader, workbuf: slice u8)",
+	"token_decoder.workbuf_len() range_ii_u64",
 }
 
 // The "T1" and "T2" types here are placeholders for generic "slice T" or

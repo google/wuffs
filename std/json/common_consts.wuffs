@@ -21,6 +21,8 @@ pub status "#unsupported recursion depth"
 
 pri status "#internal error: inconsistent I/O"
 
+pub const decoder_workbuf_len_max_incl_worst_case base.u64 = 0
+
 // decoder_depth_max_incl is the maximum supported recursion depth: how deeply
 // nested [] arrays and {} objects can be.
 //

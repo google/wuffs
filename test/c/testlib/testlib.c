@@ -1124,8 +1124,8 @@ do_test__wuffs_base__token_decoder(wuffs_base__token_decoder* b,
     src.meta.closed = true;
   }
 
-  CHECK_STATUS("decode_tokens",
-               wuffs_base__token_decoder__decode_tokens(b, &tok, &src));
+  CHECK_STATUS("decode_tokens", wuffs_base__token_decoder__decode_tokens(
+                                    b, &tok, &src, global_work_slice));
 
   uint64_t pos = 0;
   while (tok.meta.ri < tok.meta.wi) {

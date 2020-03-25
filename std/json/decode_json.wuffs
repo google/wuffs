@@ -32,6 +32,8 @@ pub struct decoder? implements base.token_decoder(
 	allow_leading_ubom : base.bool,
 
 	end_of_data : base.bool,
+
+	util : base.utility,
 )(
 	// stack is conceptually an array of bits, implemented as an array of u32.
 	// The N'th bit being 0 or 1 means that we're in an array or object, where
@@ -100,7 +102,11 @@ pub func decoder.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
 	}
 }
 
-pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
+pub func decoder.workbuf_len() base.range_ii_u64 {
+	return this.util.empty_range_ii_u64()
+}
+
+pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, workbuf: slice base.u8) {
 	var vminor            : base.u32[..= 0xFF_FFFF]
 	var number_length     : base.u32[..= 0x3FF]
 	var number_status     : base.u32[..= 0x3]
