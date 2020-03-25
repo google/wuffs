@@ -21066,7 +21066,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
                           (((uint64_t)(1))
                            << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
                       (iop_a_src += 1, wuffs_base__make_empty_struct());
-                      goto label__string_loop_inner__continue;
+                      goto label__string_loop_outer__continue;
                     }
                     status =
                         wuffs_base__make_status(wuffs_json__error__bad_utf_8);
@@ -21122,7 +21122,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
                           (((uint64_t)(1))
                            << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
                       (iop_a_src += 1, wuffs_base__make_empty_struct());
-                      goto label__string_loop_inner__continue;
+                      goto label__string_loop_outer__continue;
                     }
                     status =
                         wuffs_base__make_status(wuffs_json__error__bad_utf_8);
@@ -21183,7 +21183,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
                           (((uint64_t)(1))
                            << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
                       (iop_a_src += 1, wuffs_base__make_empty_struct());
-                      goto label__string_loop_inner__continue;
+                      goto label__string_loop_outer__continue;
                     }
                     status =
                         wuffs_base__make_status(wuffs_json__error__bad_utf_8);
@@ -21245,7 +21245,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
                     (((uint64_t)(3)) << WUFFS_BASE__TOKEN__LINK__SHIFT) |
                     (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
                 (iop_a_src += 1, wuffs_base__make_empty_struct());
-                goto label__string_loop_inner__continue;
+                goto label__string_loop_outer__continue;
               }
               status = wuffs_base__make_status(wuffs_json__error__bad_utf_8);
               goto exit;

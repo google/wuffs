@@ -357,6 +357,10 @@ func (q *checker) hasIsErrorFact(id t.ID) bool {
 }
 
 func (q *checker) bcheckAssert(n *a.Assert) error {
+	if err := n.DropExprCachedMBounds(); err != nil {
+		return err
+	}
+
 	condition := n.Condition()
 	if _, err := q.bcheckExpr(condition, 0); err != nil {
 		return err

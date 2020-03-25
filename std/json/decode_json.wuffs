@@ -629,7 +629,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 											link: 0x3,
 											length: 1)
 										args.src.skip32_fast!(actual: 1, worst_case: 1)
-										continue.string_loop_inner
+										continue.string_loop_outer
 									}
 									return "#bad UTF-8"
 								}
@@ -677,7 +677,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 											link: 0x3,
 											length: 1)
 										args.src.skip32_fast!(actual: 1, worst_case: 1)
-										continue.string_loop_inner
+										continue.string_loop_outer
 									}
 									return "#bad UTF-8"
 								}
@@ -730,7 +730,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 											link: 0x3,
 											length: 1)
 										args.src.skip32_fast!(actual: 1, worst_case: 1)
-										continue.string_loop_inner
+										continue.string_loop_outer
 									}
 									return "#bad UTF-8"
 								}
@@ -783,7 +783,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader) {
 								link: 0x3,
 								length: 1)
 							args.src.skip32_fast!(actual: 1, worst_case: 1)
-							continue.string_loop_inner
+							continue.string_loop_outer
 						}
 						return "#bad UTF-8"
 					} endwhile.string_loop_inner

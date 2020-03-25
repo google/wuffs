@@ -236,6 +236,13 @@ func (n *Node) Walk(f func(*Node) error) error {
 	return nil
 }
 
+func dropExprCachedMBounds(n *Node) error {
+	if n.kind == KExpr {
+		n.mBounds = interval.IntRange{nil, nil}
+	}
+	return nil
+}
+
 type Loop interface {
 	AsNode() *Node
 	HasBreak() bool
@@ -389,6 +396,8 @@ func (n *Assert) Keyword() t.ID    { return n.id0 }
 func (n *Assert) Reason() t.ID     { return n.id2 }
 func (n *Assert) Condition() *Expr { return n.rhs.AsExpr() }
 func (n *Assert) Args() []*Node    { return n.list0 }
+
+func (n *Assert) DropExprCachedMBounds() error { return n.AsNode().Walk(dropExprCachedMBounds) }
 
 func NewAssert(keyword t.ID, condition *Expr, reason t.ID, args []*Node) *Assert {
 	return &Assert{
