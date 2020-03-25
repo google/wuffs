@@ -10803,8 +10803,6 @@ wuffs_bmp__decoder__decode_frame_config(wuffs_bmp__decoder* self,
   }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_frame_config[0];
-  if (coro_susp_point) {
-  }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
@@ -11203,8 +11201,6 @@ wuffs_bmp__decoder__skip_frame(wuffs_bmp__decoder* self,
   }
 
   uint32_t coro_susp_point = self->private_impl.p_skip_frame[0];
-  if (coro_susp_point) {
-  }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
@@ -12820,8 +12816,6 @@ wuffs_deflate__decoder__transform_io(wuffs_deflate__decoder* self,
   }
 
   uint32_t coro_susp_point = self->private_impl.p_transform_io[0];
-  if (coro_susp_point) {
-  }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
@@ -14621,8 +14615,6 @@ wuffs_lzw__decoder__transform_io(wuffs_lzw__decoder* self,
   uint32_t v_i = 0;
 
   uint32_t coro_susp_point = self->private_impl.p_transform_io[0];
-  if (coro_susp_point) {
-  }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
@@ -14916,8 +14908,6 @@ wuffs_lzw__decoder__write_to(wuffs_lzw__decoder* self,
   }
 
   uint32_t coro_susp_point = self->private_impl.p_write_to[0];
-  if (coro_susp_point) {
-  }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
@@ -15406,8 +15396,6 @@ wuffs_gif__config_decoder__decode_image_config(wuffs_gif__config_decoder* self,
   bool v_ffio = false;
 
   uint32_t coro_susp_point = self->private_impl.p_decode_image_config[0];
-  if (coro_susp_point) {
-  }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
@@ -15534,8 +15522,6 @@ wuffs_gif__config_decoder__ack_metadata_chunk(wuffs_gif__config_decoder* self,
   }
 
   uint32_t coro_susp_point = self->private_impl.p_ack_metadata_chunk[0];
-  if (coro_susp_point) {
-  }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
@@ -15929,8 +15915,6 @@ wuffs_gif__config_decoder__skip_frame(wuffs_gif__config_decoder* self,
   }
 
   uint32_t coro_susp_point = self->private_impl.p_skip_frame[0];
-  if (coro_susp_point) {
-  }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
@@ -16087,8 +16071,6 @@ wuffs_gif__config_decoder__decode_up_to_id_part1(
   }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_up_to_id_part1[0];
-  if (coro_susp_point) {
-  }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
@@ -16491,8 +16473,6 @@ wuffs_gif__config_decoder__decode_extension(wuffs_gif__config_decoder* self,
   }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_extension[0];
-  if (coro_susp_point) {
-  }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
@@ -16587,8 +16567,6 @@ wuffs_gif__config_decoder__skip_blocks(wuffs_gif__config_decoder* self,
   }
 
   uint32_t coro_susp_point = self->private_impl.p_skip_blocks[0];
-  if (coro_susp_point) {
-  }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
@@ -16924,8 +16902,6 @@ wuffs_gif__config_decoder__decode_gc(wuffs_gif__config_decoder* self,
   }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_gc[0];
-  if (coro_susp_point) {
-  }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
@@ -17054,8 +17030,6 @@ wuffs_gif__config_decoder__decode_id_part0(wuffs_gif__config_decoder* self,
   }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_id_part0[0];
-  if (coro_susp_point) {
-  }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
@@ -17275,8 +17249,6 @@ wuffs_gif__decoder__decode_image_config(wuffs_gif__decoder* self,
   bool v_ffio = false;
 
   uint32_t coro_susp_point = self->private_impl.p_decode_image_config[0];
-  if (coro_susp_point) {
-  }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
@@ -17403,8 +17375,6 @@ wuffs_gif__decoder__ack_metadata_chunk(wuffs_gif__decoder* self,
   }
 
   uint32_t coro_susp_point = self->private_impl.p_ack_metadata_chunk[0];
-  if (coro_susp_point) {
-  }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
@@ -17800,8 +17770,6 @@ wuffs_gif__decoder__skip_frame(wuffs_gif__decoder* self,
   }
 
   uint32_t coro_susp_point = self->private_impl.p_skip_frame[0];
-  if (coro_susp_point) {
-  }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
@@ -17912,8 +17880,6 @@ wuffs_gif__decoder__decode_frame(wuffs_gif__decoder* self,
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
   uint32_t coro_susp_point = self->private_impl.p_decode_frame[0];
-  if (coro_susp_point) {
-  }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
@@ -18001,8 +17967,6 @@ wuffs_gif__decoder__decode_up_to_id_part1(wuffs_gif__decoder* self,
   }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_up_to_id_part1[0];
-  if (coro_susp_point) {
-  }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
@@ -18405,8 +18369,6 @@ wuffs_gif__decoder__decode_extension(wuffs_gif__decoder* self,
   }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_extension[0];
-  if (coro_susp_point) {
-  }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
@@ -18501,8 +18463,6 @@ wuffs_gif__decoder__skip_blocks(wuffs_gif__decoder* self,
   }
 
   uint32_t coro_susp_point = self->private_impl.p_skip_blocks[0];
-  if (coro_susp_point) {
-  }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
@@ -18838,8 +18798,6 @@ wuffs_gif__decoder__decode_gc(wuffs_gif__decoder* self,
   }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_gc[0];
-  if (coro_susp_point) {
-  }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
@@ -18968,8 +18926,6 @@ wuffs_gif__decoder__decode_id_part0(wuffs_gif__decoder* self,
   }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_id_part0[0];
-  if (coro_susp_point) {
-  }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
@@ -21927,8 +21883,6 @@ wuffs_json__decoder__decode_leading(wuffs_json__decoder* self,
   }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_leading[0];
-  if (coro_susp_point) {
-  }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
@@ -22414,8 +22368,6 @@ wuffs_json__decoder__decode_trailing_new_line(wuffs_json__decoder* self,
   }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_trailing_new_line[0];
-  if (coro_susp_point) {
-  }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
@@ -22792,8 +22744,6 @@ wuffs_wbmp__decoder__decode_frame_config(wuffs_wbmp__decoder* self,
   }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_frame_config[0];
-  if (coro_susp_point) {
-  }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
@@ -23053,8 +23003,6 @@ wuffs_wbmp__decoder__skip_frame(wuffs_wbmp__decoder* self,
   }
 
   uint32_t coro_susp_point = self->private_impl.p_skip_frame[0];
-  if (coro_susp_point) {
-  }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 

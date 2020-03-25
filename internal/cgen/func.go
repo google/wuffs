@@ -374,11 +374,17 @@ func (g *gen) writeFuncImplBodyResume(b *buffer) error {
 		// TODO: don't hard-code [0], and allow recursive coroutines.
 		b.printf("uint32_t coro_susp_point = self->private_impl.%s%s[0];\n",
 			pPrefix, g.currFunk.astFunc.FuncName().Str(g.tm))
-		b.printf("if (coro_susp_point) {\n")
-		if err := g.writeResumeSuspend(b, &g.currFunk, false); err != nil {
+
+		resumeBuffer := buffer{}
+		if err := g.writeResumeSuspend(&resumeBuffer, &g.currFunk, false); err != nil {
 			return err
 		}
-		b.writes("}\n")
+		if len(resumeBuffer) > 0 {
+			b.writes("if (coro_susp_point) {\n")
+			b.writex(resumeBuffer)
+			b.writes("}\n")
+		}
+
 		// Generate a coroutine switch similiar to the technique in
 		// https://www.chiark.greenend.org.uk/~sgtatham/coroutines.html
 		//
