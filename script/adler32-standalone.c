@@ -40,17 +40,17 @@
 
 // The order matters here. Clang also defines "__GNUC__".
 #if defined(__clang__)
-const char* cc = "clang";
-const char* cc_version = __clang_version__;
+const char* g_cc = "clang";
+const char* g_cc_version = __clang_version__;
 #elif defined(__GNUC__)
-const char* cc = "gcc";
-const char* cc_version = __VERSION__;
+const char* g_cc = "gcc";
+const char* g_cc_version = __VERSION__;
 #elif defined(_MSC_VER)
-const char* cc = "cl";
-const char* cc_version = "???";
+const char* g_cc = "cl";
+const char* g_cc_version = "???";
 #else
-const char* cc = "cc";
-const char* cc_version = "???";
+const char* g_cc = "cc";
+const char* g_cc_version = "???";
 #endif
 
 struct {
@@ -58,7 +58,7 @@ struct {
   char** remaining_argv;
 
   bool no_check;
-} flags = {0};
+} g_flags = {0};
 
 const char*  //
 parse_flags(int argc, char** argv) {
@@ -83,15 +83,15 @@ parse_flags(int argc, char** argv) {
     }
 
     if (!strcmp(arg, "no-check")) {
-      flags.no_check = true;
+      g_flags.no_check = true;
       continue;
     }
 
     return "main: unrecognized flag argument";
   }
 
-  flags.remaining_argc = argc - c;
-  flags.remaining_argv = argv + c;
+  g_flags.remaining_argc = argc - c;
+  g_flags.remaining_argv = argv + c;
   return NULL;
 }
 
@@ -156,7 +156,7 @@ calculate_hash(uint8_t* x_ptr, size_t x_len) {
   return (s2 << 16) | s1;
 }
 
-uint8_t buffer[BUFFER_SIZE] = {0};
+uint8_t g_buffer[BUFFER_SIZE] = {0};
 
 int  //
 main(int argc, char** argv) {
@@ -178,8 +178,8 @@ main(int argc, char** argv) {
   int i;
   int num_bad = 0;
   for (i = 0; i < num_reps; i++) {
-    uint32_t actual_hash = calculate_hash(buffer, BUFFER_SIZE);
-    if (!flags.no_check && (actual_hash != expected_hash_of_1mib_of_zeroes)) {
+    uint32_t actual_hash = calculate_hash(g_buffer, BUFFER_SIZE);
+    if (!g_flags.no_check && (actual_hash != expected_hash_of_1mib_of_zeroes)) {
       num_bad++;
     }
   }
@@ -198,6 +198,6 @@ main(int argc, char** argv) {
   int64_t denom = micros * ONE_MIBIBYTE;
   int64_t mib_per_s = denom ? numer / denom : 0;
 
-  printf("%8d MiB/s, %s %s\n", (int)mib_per_s, cc, cc_version);
+  printf("%8d MiB/s, %s %s\n", (int)mib_per_s, g_cc, g_cc_version);
   return 0;
 }

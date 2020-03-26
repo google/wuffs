@@ -89,10 +89,10 @@
 #define WORK_BUFFER_ARRAY_SIZE \
   WUFFS_JSON__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE
 #if WORK_BUFFER_ARRAY_SIZE > 0
-uint8_t work_buffer_array[WORK_BUFFER_ARRAY_SIZE];
+uint8_t g_work_buffer_array[WORK_BUFFER_ARRAY_SIZE];
 #else
 // Not all C/C++ compilers support 0-length arrays.
-uint8_t work_buffer_array[1];
+uint8_t g_work_buffer_array[1];
 #endif
 
 #ifndef SRC_BUFFER_ARRAY_SIZE
@@ -102,14 +102,14 @@ uint8_t work_buffer_array[1];
 #define TOKEN_BUFFER_ARRAY_SIZE (128 * 1024)
 #endif
 
-uint8_t src_buffer_array[SRC_BUFFER_ARRAY_SIZE];
-wuffs_base__token tok_buffer_array[TOKEN_BUFFER_ARRAY_SIZE];
+uint8_t g_src_buffer_array[SRC_BUFFER_ARRAY_SIZE];
+wuffs_base__token g_tok_buffer_array[TOKEN_BUFFER_ARRAY_SIZE];
 
-wuffs_base__io_buffer src;
-wuffs_base__token_buffer tok;
+wuffs_base__io_buffer g_src;
+wuffs_base__token_buffer g_tok;
 
-wuffs_json__decoder dec;
-wuffs_base__status dec_status;
+wuffs_json__decoder g_dec;
+wuffs_base__status g_dec_status;
 
 #define TRY(error_msg)         \
   do {                         \
@@ -125,18 +125,18 @@ ignore_return_value(int ignored) {}
 
 const char*  //
 read_src() {
-  if (src.meta.closed) {
+  if (g_src.meta.closed) {
     return "main: internal error: read requested on a closed source";
   }
-  wuffs_base__io_buffer__compact(&src);
-  if (src.meta.wi >= src.data.len) {
-    return "main: src buffer is full";
+  wuffs_base__io_buffer__compact(&g_src);
+  if (g_src.meta.wi >= g_src.data.len) {
+    return "main: g_src buffer is full";
   }
-  size_t n = fread(src.data.ptr + src.meta.wi, sizeof(uint8_t),
-                   src.data.len - src.meta.wi, stdin);
-  src.meta.wi += n;
-  src.meta.closed = feof(stdin);
-  if ((n == 0) && !src.meta.closed) {
+  size_t n = fread(g_src.data.ptr + g_src.meta.wi, sizeof(uint8_t),
+                   g_src.data.len - g_src.meta.wi, stdin);
+  g_src.meta.wi += n;
+  g_src.meta.closed = feof(stdin);
+  if ((n == 0) && !g_src.meta.closed) {
     return "main: read error";
   }
   return NULL;
@@ -151,7 +151,7 @@ struct {
   bool all_tokens;
   bool human_readable;
   bool quirks;
-} flags = {0};
+} g_flags = {0};
 
 const char*  //
 parse_flags(int argc, char** argv) {
@@ -176,27 +176,27 @@ parse_flags(int argc, char** argv) {
     }
 
     if (!strcmp(arg, "a") || !strcmp(arg, "all-tokens")) {
-      flags.all_tokens = true;
+      g_flags.all_tokens = true;
       continue;
     }
     if (!strcmp(arg, "h") || !strcmp(arg, "human-readable")) {
-      flags.human_readable = true;
+      g_flags.human_readable = true;
       continue;
     }
     if (!strcmp(arg, "q") || !strcmp(arg, "quirks")) {
-      flags.quirks = true;
+      g_flags.quirks = true;
       continue;
     }
 
     return "main: unrecognized flag argument";
   }
 
-  flags.remaining_argc = argc - c;
-  flags.remaining_argv = argv + c;
+  g_flags.remaining_argc = argc - c;
+  g_flags.remaining_argv = argv + c;
   return NULL;
 }
 
-const char* vbc_names[8] = {
+const char* g_vbc_names[8] = {
     "0:Filler..........",  //
     "1:Structure.......",  //
     "2:String..........",  //
@@ -207,7 +207,7 @@ const char* vbc_names[8] = {
     "7:Reserved........",  //
 };
 
-const int base38_decode[38] = {
+const int g_base38_decode[38] = {
     ' ', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '?',       //
     'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',  //
     'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',  //
@@ -216,25 +216,25 @@ const int base38_decode[38] = {
 const char*  //
 main1(int argc, char** argv) {
   TRY(parse_flags(argc, argv));
-  if (flags.remaining_argc > 0) {
+  if (g_flags.remaining_argc > 0) {
     return "main: bad argument: use \"program < input\", not \"program input\"";
   }
 
-  src = wuffs_base__make_io_buffer(
-      wuffs_base__make_slice_u8(src_buffer_array, SRC_BUFFER_ARRAY_SIZE),
+  g_src = wuffs_base__make_io_buffer(
+      wuffs_base__make_slice_u8(g_src_buffer_array, SRC_BUFFER_ARRAY_SIZE),
       wuffs_base__empty_io_buffer_meta());
 
-  tok = wuffs_base__make_token_buffer(
-      wuffs_base__make_slice_token(tok_buffer_array, TOKEN_BUFFER_ARRAY_SIZE),
+  g_tok = wuffs_base__make_token_buffer(
+      wuffs_base__make_slice_token(g_tok_buffer_array, TOKEN_BUFFER_ARRAY_SIZE),
       wuffs_base__empty_token_buffer_meta());
 
   wuffs_base__status init_status = wuffs_json__decoder__initialize(
-      &dec, sizeof__wuffs_json__decoder(), WUFFS_VERSION, 0);
+      &g_dec, sizeof__wuffs_json__decoder(), WUFFS_VERSION, 0);
   if (!wuffs_base__status__is_ok(&init_status)) {
     return wuffs_base__status__message(&init_status);
   }
 
-  if (flags.quirks) {
+  if (g_flags.quirks) {
     uint32_t quirks[] = {
         WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_A,
         WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_CAPITAL_U,
@@ -256,21 +256,21 @@ main1(int argc, char** argv) {
     };
     uint32_t i;
     for (i = 0; quirks[i]; i++) {
-      wuffs_json__decoder__set_quirk_enabled(&dec, quirks[i], true);
+      wuffs_json__decoder__set_quirk_enabled(&g_dec, quirks[i], true);
     }
   }
 
   uint64_t pos = 0;
   while (true) {
     wuffs_base__status status = wuffs_json__decoder__decode_tokens(
-        &dec, &tok, &src,
-        wuffs_base__make_slice_u8(work_buffer_array, WORK_BUFFER_ARRAY_SIZE));
+        &g_dec, &g_tok, &g_src,
+        wuffs_base__make_slice_u8(g_work_buffer_array, WORK_BUFFER_ARRAY_SIZE));
 
-    while (tok.meta.ri < tok.meta.wi) {
-      wuffs_base__token* t = &tok.data.ptr[tok.meta.ri++];
+    while (g_tok.meta.ri < g_tok.meta.wi) {
+      wuffs_base__token* t = &g_tok.data.ptr[g_tok.meta.ri++];
       uint16_t len = wuffs_base__token__length(t);
 
-      if (flags.all_tokens || (wuffs_base__token__value(t) != 0)) {
+      if (g_flags.all_tokens || (wuffs_base__token__value(t) != 0)) {
         uint8_t lp = wuffs_base__token__link_prev(t) ? 1 : 0;
         uint8_t ln = wuffs_base__token__link_next(t) ? 1 : 0;
         uint32_t vmajor = wuffs_base__token__value_major(t);
@@ -278,7 +278,7 @@ main1(int argc, char** argv) {
         uint8_t vbc = wuffs_base__token__value_base_category(t);
         uint32_t vbd = wuffs_base__token__value_base_detail(t);
 
-        if (flags.human_readable) {
+        if (g_flags.human_readable) {
           printf("pos=0x%08" PRIX32 "  len=0x%04" PRIX16 "  link=0b%d%d  ",
                  (uint32_t)(pos), len, (int)(lp), (int)(ln));
 
@@ -293,10 +293,10 @@ main1(int argc, char** argv) {
             uint32_t m3 = m;
 
             printf("vmajor=0x%06" PRIX32 ":%c%c%c%c  vminor=0x%06" PRIX32 "\n",
-                   vmajor, base38_decode[m0], base38_decode[m1],
-                   base38_decode[m2], base38_decode[m3], vminor);
+                   vmajor, g_base38_decode[m0], g_base38_decode[m1],
+                   g_base38_decode[m2], g_base38_decode[m3], vminor);
           } else {
-            printf("vbc=%s.  vbd=0x%06" PRIX32 "\n", vbc_names[vbc & 7], vbd);
+            printf("vbc=%s.  vbd=0x%06" PRIX32 "\n", g_vbc_names[vbc & 7], vbd);
           }
 
         } else {
@@ -328,7 +328,7 @@ main1(int argc, char** argv) {
     } else if (status.repr == wuffs_base__suspension__short_read) {
       TRY(read_src());
     } else if (status.repr == wuffs_base__suspension__short_write) {
-      wuffs_base__token_buffer__compact(&tok);
+      wuffs_base__token_buffer__compact(&g_tok);
     } else {
       return wuffs_base__status__message(&status);
     }
