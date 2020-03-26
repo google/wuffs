@@ -69,8 +69,6 @@ The Escape key quits.
 #define NUM_BACKGROUND_COLORS 3
 #define SRC_BUFFER_ARRAY_SIZE (64 * 1024)
 
-// Global variable names start with a "g_" prefix.
-
 wuffs_base__color_u32_argb_premul g_background_colors[NUM_BACKGROUND_COLORS] = {
     0xFF000000,
     0xFFFFFFFF,

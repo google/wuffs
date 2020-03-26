@@ -72,25 +72,25 @@ for a C compiler $CC, such as clang or gcc.
 #define WORK_BUFFER_ARRAY_SIZE \
   WUFFS_GZIP__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE
 
-uint8_t dst_buffer_array[DST_BUFFER_ARRAY_SIZE];
-uint8_t src_buffer_array[SRC_BUFFER_ARRAY_SIZE];
+uint8_t g_dst_buffer_array[DST_BUFFER_ARRAY_SIZE];
+uint8_t g_src_buffer_array[SRC_BUFFER_ARRAY_SIZE];
 #if WORK_BUFFER_ARRAY_SIZE > 0
-uint8_t work_buffer_array[WORK_BUFFER_ARRAY_SIZE];
+uint8_t g_work_buffer_array[WORK_BUFFER_ARRAY_SIZE];
 #else
 // Not all C/C++ compilers support 0-length arrays.
-uint8_t work_buffer_array[1];
+uint8_t g_work_buffer_array[1];
 #endif
 
 // ----
 
-static bool sandboxed = false;
+static bool g_sandboxed = false;
 
 struct {
   int remaining_argc;
   char** remaining_argv;
 
   bool fail_if_unsandboxed;
-} flags = {0};
+} g_flags = {0};
 
 const char*  //
 parse_flags(int argc, char** argv) {
@@ -115,15 +115,15 @@ parse_flags(int argc, char** argv) {
     }
 
     if (!strcmp(arg, "fail-if-unsandboxed")) {
-      flags.fail_if_unsandboxed = true;
+      g_flags.fail_if_unsandboxed = true;
       continue;
     }
 
     return "main: unrecognized flag argument";
   }
 
-  flags.remaining_argc = argc - c;
-  flags.remaining_argv = argv + c;
+  g_flags.remaining_argc = argc - c;
+  g_flags.remaining_argv = argv + c;
   return NULL;
 }
 
@@ -139,7 +139,7 @@ main1(int argc, char** argv) {
   if (z) {
     return z;
   }
-  if (flags.fail_if_unsandboxed && !sandboxed) {
+  if (g_flags.fail_if_unsandboxed && !g_sandboxed) {
     return "main: unsandboxed";
   }
 
@@ -151,7 +151,7 @@ main1(int argc, char** argv) {
   }
 
   wuffs_base__io_buffer dst;
-  dst.data.ptr = dst_buffer_array;
+  dst.data.ptr = g_dst_buffer_array;
   dst.data.len = DST_BUFFER_ARRAY_SIZE;
   dst.meta.wi = 0;
   dst.meta.ri = 0;
@@ -159,7 +159,7 @@ main1(int argc, char** argv) {
   dst.meta.closed = false;
 
   wuffs_base__io_buffer src;
-  src.data.ptr = src_buffer_array;
+  src.data.ptr = g_src_buffer_array;
   src.data.len = SRC_BUFFER_ARRAY_SIZE;
   src.meta.wi = 0;
   src.meta.ri = 0;
@@ -184,12 +184,13 @@ main1(int argc, char** argv) {
     while (true) {
       status = wuffs_gzip__decoder__transform_io(
           &dec, &dst, &src,
-          wuffs_base__make_slice_u8(work_buffer_array, WORK_BUFFER_ARRAY_SIZE));
+          wuffs_base__make_slice_u8(g_work_buffer_array,
+                                    WORK_BUFFER_ARRAY_SIZE));
 
       if (dst.meta.wi) {
         // TODO: handle EINTR and other write errors; see "man 2 write".
         const int stdout_fd = 1;
-        ignore_return_value(write(stdout_fd, dst_buffer_array, dst.meta.wi));
+        ignore_return_value(write(stdout_fd, g_dst_buffer_array, dst.meta.wi));
         dst.meta.ri = dst.meta.wi;
         wuffs_base__io_buffer__compact(&dst);
       }
@@ -241,7 +242,7 @@ int  //
 main(int argc, char** argv) {
 #if defined(WUFFS_EXAMPLE_USE_SECCOMP)
   prctl(PR_SET_SECCOMP, SECCOMP_MODE_STRICT);
-  sandboxed = true;
+  g_sandboxed = true;
 #endif
 
   int exit_code = compute_exit_code(main1(argc, argv));

@@ -54,7 +54,7 @@ for a C++ compiler $CXX, such as clang++ or g++.
 #define SRC_BUFFER_ARRAY_SIZE (32 * 1024)
 #endif
 
-uint8_t src_buffer_array[SRC_BUFFER_ARRAY_SIZE];
+uint8_t g_src_buffer_array[SRC_BUFFER_ARRAY_SIZE];
 
 int  //
 main(int argc, char** argv) {
@@ -66,10 +66,10 @@ main(int argc, char** argv) {
   }
 
   while (true) {
-    size_t n =
-        fread(src_buffer_array, sizeof(uint8_t), SRC_BUFFER_ARRAY_SIZE, stdin);
+    size_t n = fread(g_src_buffer_array, sizeof(uint8_t), SRC_BUFFER_ARRAY_SIZE,
+                     stdin);
     uint32_t checksum =
-        h.update_u32(wuffs_base__make_slice_u8(src_buffer_array, n));
+        h.update_u32(wuffs_base__make_slice_u8(g_src_buffer_array, n));
     if (feof(stdin)) {
       printf("%08" PRIx32 "\n", checksum);
       return 0;

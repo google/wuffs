@@ -18,7 +18,7 @@
 jsonfindptrs reads UTF-8 JSON from stdin and writes every node's JSON Pointer
 (RFC 6901) to stdout.
 
-See the "const char* usage" string below for details.
+See the "const char* g_usage" string below for details.
 
 ----
 
@@ -97,7 +97,7 @@ for a C++ compiler $CXX, such as clang++ or g++.
     }                          \
   } while (false)
 
-static const char* usage =
+static const char* g_usage =
     "Usage: jsonfindptrs -flags input.json\n"
     "\n"
     "Flags:\n"
@@ -177,11 +177,11 @@ struct {
 
   uint32_t max_output_depth;
   bool strict_json_pointer_syntax;
-} flags = {0};
+} g_flags = {0};
 
 std::string  //
 parse_flags(int argc, char** argv) {
-  flags.max_output_depth = 0xFFFFFFFF;
+  g_flags.max_output_depth = 0xFFFFFFFF;
 
   int c = (argc > 0) ? 1 : 0;  // Skip argv[0], the program name.
   for (; c < argc; c++) {
@@ -204,7 +204,7 @@ parse_flags(int argc, char** argv) {
     }
 
     if (!strcmp(arg, "o") || !strcmp(arg, "max-output-depth")) {
-      flags.max_output_depth = 1;
+      g_flags.max_output_depth = 1;
       continue;
     } else if (!strncmp(arg, "o=", 2) ||
                !strncmp(arg, "max-output-depth=", 16)) {
@@ -213,21 +213,21 @@ parse_flags(int argc, char** argv) {
       wuffs_base__result_u64 u = wuffs_base__parse_number_u64(
           wuffs_base__make_slice_u8((uint8_t*)arg, strlen(arg)));
       if (wuffs_base__status__is_ok(&u.status) && (u.value <= 0xFFFFFFFF)) {
-        flags.max_output_depth = (uint32_t)(u.value);
+        g_flags.max_output_depth = (uint32_t)(u.value);
         continue;
       }
-      return usage;
+      return g_usage;
     }
     if (!strcmp(arg, "s") || !strcmp(arg, "strict-json-pointer-syntax")) {
-      flags.strict_json_pointer_syntax = true;
+      g_flags.strict_json_pointer_syntax = true;
       continue;
     }
 
-    return usage;
+    return g_usage;
   }
 
-  flags.remaining_argc = argc - c;
-  flags.remaining_argv = argv + c;
+  g_flags.remaining_argc = argc - c;
+  g_flags.remaining_argv = argv + c;
   return "";
 }
 
@@ -698,13 +698,13 @@ escape_needed:
         e += "~1";
         break;
       case '\n':
-        if (flags.strict_json_pointer_syntax) {
+        if (g_flags.strict_json_pointer_syntax) {
           return "";
         }
         e += "~n";
         break;
       case '\r':
-        if (flags.strict_json_pointer_syntax) {
+        if (g_flags.strict_json_pointer_syntax) {
           return "";
         }
         e += "~r";
@@ -720,7 +720,7 @@ escape_needed:
 std::string  //
 print_json_pointers(JsonThing& jt, std::string s, uint32_t depth) {
   std::cout << s << std::endl;
-  if (depth++ >= flags.max_output_depth) {
+  if (depth++ >= g_flags.max_output_depth) {
     return "";
   }
 
@@ -752,10 +752,10 @@ main1(int argc, char** argv) {
   TRY(parse_flags(argc, argv));
 
   int input_file_descriptor = 0;  // A 0 default means stdin.
-  if (flags.remaining_argc > 1) {
-    return usage;
-  } else if (flags.remaining_argc == 1) {
-    const char* arg = flags.remaining_argv[0];
+  if (g_flags.remaining_argc > 1) {
+    return g_usage;
+  } else if (g_flags.remaining_argc == 1) {
+    const char* arg = g_flags.remaining_argv[0];
     input_file_descriptor = open(arg, O_RDONLY);
     if (input_file_descriptor < 0) {
       return std::string("main: cannot read ") + arg + ": " + strerror(errno);

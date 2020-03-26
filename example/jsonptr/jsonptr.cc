@@ -19,7 +19,7 @@ jsonptr is a JSON formatter (pretty-printer) that supports the JSON Pointer
 (RFC 6901) query syntax. It reads UTF-8 JSON from stdin and writes
 canonicalized, formatted UTF-8 JSON to stdout.
 
-See the "const char* usage" string below for details.
+See the "const char* g_usage" string below for details.
 
 ----
 
@@ -60,7 +60,7 @@ After modifying this program, run "build-example.sh example/jsonptr/" and then
 This program uses Wuffs' JSON decoder at a relatively low level, processing the
 decoder's token-stream output individually. The core loop, in pseudo-code, is
 "for_each_token { handle_token(etc); }", where the handle_token function
-changes global state (e.g. the `depth` and `context` variables) and prints
+changes global state (e.g. the `g_depth` and `g_ctx` variables) and prints
 output text based on that state and the token's source text. Notably,
 handle_token is not recursive, even though JSON values can nest.
 
@@ -140,9 +140,9 @@ for a C++ compiler $CXX, such as clang++ or g++.
     }                          \
   } while (false)
 
-static const char* eod = "main: end of data";
+static const char* g_eod = "main: end of data";
 
-static const char* usage =
+static const char* g_usage =
     "Usage: jsonptr -flags input.json\n"
     "\n"
     "Flags:\n"
@@ -237,15 +237,15 @@ static const char* usage =
 #define WORK_BUFFER_ARRAY_SIZE \
   WUFFS_JSON__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE
 #if WORK_BUFFER_ARRAY_SIZE > 0
-uint8_t work_buffer_array[WORK_BUFFER_ARRAY_SIZE];
+uint8_t g_work_buffer_array[WORK_BUFFER_ARRAY_SIZE];
 #else
 // Not all C/C++ compilers support 0-length arrays.
-uint8_t work_buffer_array[1];
+uint8_t g_work_buffer_array[1];
 #endif
 
-bool sandboxed = false;
+bool g_sandboxed = false;
 
-int input_file_descriptor = 0;  // A 0 default means stdin.
+int g_input_file_descriptor = 0;  // A 0 default means stdin.
 
 #define MAX_INDENT 8
 #define INDENT_SPACES_STRING "        "
@@ -261,19 +261,20 @@ int input_file_descriptor = 0;  // A 0 default means stdin.
 #define TOKEN_BUFFER_ARRAY_SIZE (4 * 1024)
 #endif
 
-uint8_t dst_array[DST_BUFFER_ARRAY_SIZE];
-uint8_t src_array[SRC_BUFFER_ARRAY_SIZE];
-wuffs_base__token tok_array[TOKEN_BUFFER_ARRAY_SIZE];
+uint8_t g_dst_array[DST_BUFFER_ARRAY_SIZE];
+uint8_t g_src_array[SRC_BUFFER_ARRAY_SIZE];
+wuffs_base__token g_tok_array[TOKEN_BUFFER_ARRAY_SIZE];
 
-wuffs_base__io_buffer dst;
-wuffs_base__io_buffer src;
-wuffs_base__token_buffer tok;
+wuffs_base__io_buffer g_dst;
+wuffs_base__io_buffer g_src;
+wuffs_base__token_buffer g_tok;
 
-// curr_token_end_src_index is the src.data.ptr index of the end of the current
-// token. An invariant is that (curr_token_end_src_index <= src.meta.ri).
-size_t curr_token_end_src_index;
+// g_curr_token_end_src_index is the g_src.data.ptr index of the end of the
+// current token. An invariant is that (g_curr_token_end_src_index <=
+// g_src.meta.ri).
+size_t g_curr_token_end_src_index;
 
-uint32_t depth;
+uint32_t g_depth;
 
 enum class context {
   none,
@@ -282,18 +283,18 @@ enum class context {
   in_dict_after_brace,
   in_dict_after_key,
   in_dict_after_value,
-} ctx;
+} g_ctx;
 
 bool  //
 in_dict_before_key() {
-  return (ctx == context::in_dict_after_brace) ||
-         (ctx == context::in_dict_after_value);
+  return (g_ctx == context::in_dict_after_brace) ||
+         (g_ctx == context::in_dict_after_value);
 }
 
-uint32_t suppress_write_dst;
-bool wrote_to_dst;
+uint32_t g_suppress_write_dst;
+bool g_wrote_to_dst;
 
-wuffs_json__decoder dec;
+wuffs_json__decoder g_dec;
 
 // ----
 
@@ -542,7 +543,7 @@ class Query {
     }
     return !previous_was_tilde;
   }
-} query;
+} g_query;
 
 // ----
 
@@ -557,12 +558,12 @@ struct {
   char* query_c_string;
   bool strict_json_pointer_syntax;
   bool tabs;
-} flags = {0};
+} g_flags = {0};
 
 const char*  //
 parse_flags(int argc, char** argv) {
-  flags.indent = 4;
-  flags.max_output_depth = 0xFFFFFFFF;
+  g_flags.indent = 4;
+  g_flags.max_output_depth = 0xFFFFFFFF;
 
   int c = (argc > 0) ? 1 : 0;  // Skip argv[0], the program name.
   for (; c < argc; c++) {
@@ -585,24 +586,24 @@ parse_flags(int argc, char** argv) {
     }
 
     if (!strcmp(arg, "c") || !strcmp(arg, "compact-output")) {
-      flags.compact_output = true;
+      g_flags.compact_output = true;
       continue;
     }
     if (!strcmp(arg, "fail-if-unsandboxed")) {
-      flags.fail_if_unsandboxed = true;
+      g_flags.fail_if_unsandboxed = true;
       continue;
     }
     if (!strncmp(arg, "i=", 2) || !strncmp(arg, "indent=", 7)) {
       while (*arg++ != '=') {
       }
       if (('0' <= arg[0]) && (arg[0] <= '8') && (arg[1] == '\x00')) {
-        flags.indent = arg[0] - '0';
+        g_flags.indent = arg[0] - '0';
         continue;
       }
-      return usage;
+      return g_usage;
     }
     if (!strcmp(arg, "o") || !strcmp(arg, "max-output-depth")) {
-      flags.max_output_depth = 1;
+      g_flags.max_output_depth = 1;
       continue;
     } else if (!strncmp(arg, "o=", 2) ||
                !strncmp(arg, "max-output-depth=", 16)) {
@@ -611,84 +612,85 @@ parse_flags(int argc, char** argv) {
       wuffs_base__result_u64 u = wuffs_base__parse_number_u64(
           wuffs_base__make_slice_u8((uint8_t*)arg, strlen(arg)));
       if (wuffs_base__status__is_ok(&u.status) && (u.value <= 0xFFFFFFFF)) {
-        flags.max_output_depth = (uint32_t)(u.value);
+        g_flags.max_output_depth = (uint32_t)(u.value);
         continue;
       }
-      return usage;
+      return g_usage;
     }
     if (!strncmp(arg, "q=", 2) || !strncmp(arg, "query=", 6)) {
       while (*arg++ != '=') {
       }
-      flags.query_c_string = arg;
+      g_flags.query_c_string = arg;
       continue;
     }
     if (!strcmp(arg, "s") || !strcmp(arg, "strict-json-pointer-syntax")) {
-      flags.strict_json_pointer_syntax = true;
+      g_flags.strict_json_pointer_syntax = true;
       continue;
     }
     if (!strcmp(arg, "t") || !strcmp(arg, "tabs")) {
-      flags.tabs = true;
+      g_flags.tabs = true;
       continue;
     }
 
-    return usage;
+    return g_usage;
   }
 
-  if (flags.query_c_string &&
-      !Query::validate(flags.query_c_string, strlen(flags.query_c_string),
-                       flags.strict_json_pointer_syntax)) {
+  if (g_flags.query_c_string &&
+      !Query::validate(g_flags.query_c_string, strlen(g_flags.query_c_string),
+                       g_flags.strict_json_pointer_syntax)) {
     return "main: bad JSON Pointer (RFC 6901) syntax for the -query=STR flag";
   }
 
-  flags.remaining_argc = argc - c;
-  flags.remaining_argv = argv + c;
+  g_flags.remaining_argc = argc - c;
+  g_flags.remaining_argv = argv + c;
   return nullptr;
 }
 
 const char*  //
 initialize_globals(int argc, char** argv) {
-  dst = wuffs_base__make_io_buffer(
-      wuffs_base__make_slice_u8(dst_array, DST_BUFFER_ARRAY_SIZE),
+  g_dst = wuffs_base__make_io_buffer(
+      wuffs_base__make_slice_u8(g_dst_array, DST_BUFFER_ARRAY_SIZE),
       wuffs_base__empty_io_buffer_meta());
 
-  src = wuffs_base__make_io_buffer(
-      wuffs_base__make_slice_u8(src_array, SRC_BUFFER_ARRAY_SIZE),
+  g_src = wuffs_base__make_io_buffer(
+      wuffs_base__make_slice_u8(g_src_array, SRC_BUFFER_ARRAY_SIZE),
       wuffs_base__empty_io_buffer_meta());
 
-  tok = wuffs_base__make_token_buffer(
-      wuffs_base__make_slice_token(tok_array, TOKEN_BUFFER_ARRAY_SIZE),
+  g_tok = wuffs_base__make_token_buffer(
+      wuffs_base__make_slice_token(g_tok_array, TOKEN_BUFFER_ARRAY_SIZE),
       wuffs_base__empty_token_buffer_meta());
 
-  curr_token_end_src_index = 0;
+  g_curr_token_end_src_index = 0;
 
-  depth = 0;
+  g_depth = 0;
 
-  ctx = context::none;
+  g_ctx = context::none;
 
   TRY(parse_flags(argc, argv));
-  if (flags.fail_if_unsandboxed && !sandboxed) {
+  if (g_flags.fail_if_unsandboxed && !g_sandboxed) {
     return "main: unsandboxed";
   }
   const int stdin_fd = 0;
-  if (flags.remaining_argc > ((input_file_descriptor != stdin_fd) ? 1 : 0)) {
-    return usage;
+  if (g_flags.remaining_argc >
+      ((g_input_file_descriptor != stdin_fd) ? 1 : 0)) {
+    return g_usage;
   }
 
-  query.reset(flags.query_c_string);
+  g_query.reset(g_flags.query_c_string);
 
   // If the query is non-empty, suprress writing to stdout until we've
   // completed the query.
-  suppress_write_dst = query.next_fragment() ? 1 : 0;
-  wrote_to_dst = false;
+  g_suppress_write_dst = g_query.next_fragment() ? 1 : 0;
+  g_wrote_to_dst = false;
 
-  TRY(dec.initialize(sizeof__wuffs_json__decoder(), WUFFS_VERSION, 0)
+  TRY(g_dec.initialize(sizeof__wuffs_json__decoder(), WUFFS_VERSION, 0)
           .message());
 
   // Consume an optional whitespace trailer. This isn't part of the JSON spec,
   // but it works better with line oriented Unix tools (such as "echo 123 |
   // jsonptr" where it's "echo", not "echo -n") or hand-edited JSON files which
   // can accidentally contain trailing whitespace.
-  dec.set_quirk_enabled(WUFFS_JSON__QUIRK_ALLOW_TRAILING_NEW_LINE, true);
+  g_dec.set_quirk_enabled(WUFFS_JSON__QUIRK_ALLOW_TRAILING_NEW_LINE, true);
 
   return nullptr;
 }
@@ -701,19 +703,19 @@ ignore_return_value(int ignored) {}
 
 const char*  //
 read_src() {
-  if (src.meta.closed) {
+  if (g_src.meta.closed) {
     return "main: internal error: read requested on a closed source";
   }
-  src.compact();
-  if (src.meta.wi >= src.data.len) {
-    return "main: src buffer is full";
+  g_src.compact();
+  if (g_src.meta.wi >= g_src.data.len) {
+    return "main: g_src buffer is full";
   }
   while (true) {
-    ssize_t n = read(input_file_descriptor, src.data.ptr + src.meta.wi,
-                     src.data.len - src.meta.wi);
+    ssize_t n = read(g_input_file_descriptor, g_src.data.ptr + g_src.meta.wi,
+                     g_src.data.len - g_src.meta.wi);
     if (n >= 0) {
-      src.meta.wi += n;
-      src.meta.closed = n == 0;
+      g_src.meta.wi += n;
+      g_src.meta.closed = n == 0;
       break;
     } else if (errno != EINTR) {
       return strerror(errno);
@@ -725,49 +727,49 @@ read_src() {
 const char*  //
 flush_dst() {
   while (true) {
-    size_t n = dst.meta.wi - dst.meta.ri;
+    size_t n = g_dst.meta.wi - g_dst.meta.ri;
     if (n == 0) {
       break;
     }
     const int stdout_fd = 1;
-    ssize_t i = write(stdout_fd, dst.data.ptr + dst.meta.ri, n);
+    ssize_t i = write(stdout_fd, g_dst.data.ptr + g_dst.meta.ri, n);
     if (i >= 0) {
-      dst.meta.ri += i;
+      g_dst.meta.ri += i;
     } else if (errno != EINTR) {
       return strerror(errno);
     }
   }
-  dst.compact();
+  g_dst.compact();
   return nullptr;
 }
 
 const char*  //
 write_dst(const void* s, size_t n) {
-  if (suppress_write_dst > 0) {
+  if (g_suppress_write_dst > 0) {
     return nullptr;
   }
   const uint8_t* p = static_cast<const uint8_t*>(s);
   while (n > 0) {
-    size_t i = dst.writer_available();
+    size_t i = g_dst.writer_available();
     if (i == 0) {
       const char* z = flush_dst();
       if (z) {
         return z;
       }
-      i = dst.writer_available();
+      i = g_dst.writer_available();
       if (i == 0) {
-        return "main: dst buffer is full";
+        return "main: g_dst buffer is full";
       }
     }
 
     if (i > n) {
       i = n;
     }
-    memcpy(dst.data.ptr + dst.meta.wi, p, i);
-    dst.meta.wi += i;
+    memcpy(g_dst.data.ptr + g_dst.meta.wi, p, i);
+    g_dst.meta.wi += i;
     p += i;
     n -= i;
-    wrote_to_dst = true;
+    g_wrote_to_dst = true;
   }
   return nullptr;
 }
@@ -841,16 +843,16 @@ handle_token(wuffs_base__token t) {
     // Handle ']' or '}'.
     if ((vbc == WUFFS_BASE__TOKEN__VBC__STRUCTURE) &&
         (vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__POP)) {
-      if (query.is_at(depth)) {
+      if (g_query.is_at(g_depth)) {
         return "main: no match for query";
       }
-      if (depth <= 0) {
-        return "main: internal error: inconsistent depth";
+      if (g_depth <= 0) {
+        return "main: internal error: inconsistent g_depth";
       }
-      depth--;
+      g_depth--;
 
-      if (query.matched_all() && (depth >= flags.max_output_depth)) {
-        suppress_write_dst--;
+      if (g_query.matched_all() && (g_depth >= g_flags.max_output_depth)) {
+        g_suppress_write_dst--;
         // '…' is U+2026 HORIZONTAL ELLIPSIS, which is 3 UTF-8 bytes.
         TRY(write_dst((vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__FROM_LIST)
                           ? "\"[…]\""
@@ -858,12 +860,14 @@ handle_token(wuffs_base__token t) {
                       7));
       } else {
         // Write preceding whitespace.
-        if ((ctx != context::in_list_after_bracket) &&
-            (ctx != context::in_dict_after_brace) && !flags.compact_output) {
+        if ((g_ctx != context::in_list_after_bracket) &&
+            (g_ctx != context::in_dict_after_brace) &&
+            !g_flags.compact_output) {
           TRY(write_dst("\n", 1));
-          for (uint32_t i = 0; i < depth; i++) {
-            TRY(write_dst(flags.tabs ? INDENT_TAB_STRING : INDENT_SPACES_STRING,
-                          flags.tabs ? 1 : flags.indent));
+          for (uint32_t i = 0; i < g_depth; i++) {
+            TRY(write_dst(
+                g_flags.tabs ? INDENT_TAB_STRING : INDENT_SPACES_STRING,
+                g_flags.tabs ? 1 : g_flags.indent));
           }
         }
 
@@ -872,40 +876,41 @@ handle_token(wuffs_base__token t) {
             1));
       }
 
-      ctx = (vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__TO_LIST)
-                ? context::in_list_after_value
-                : context::in_dict_after_key;
+      g_ctx = (vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__TO_LIST)
+                  ? context::in_list_after_value
+                  : context::in_dict_after_key;
       goto after_value;
     }
 
     // Write preceding whitespace and punctuation, if it wasn't ']', '}' or a
     // continuation of a multi-token chain.
     if (!t.link_prev()) {
-      if (ctx == context::in_dict_after_key) {
-        TRY(write_dst(": ", flags.compact_output ? 1 : 2));
-      } else if (ctx != context::none) {
-        if ((ctx != context::in_list_after_bracket) &&
-            (ctx != context::in_dict_after_brace)) {
+      if (g_ctx == context::in_dict_after_key) {
+        TRY(write_dst(": ", g_flags.compact_output ? 1 : 2));
+      } else if (g_ctx != context::none) {
+        if ((g_ctx != context::in_list_after_bracket) &&
+            (g_ctx != context::in_dict_after_brace)) {
           TRY(write_dst(",", 1));
         }
-        if (!flags.compact_output) {
+        if (!g_flags.compact_output) {
           TRY(write_dst("\n", 1));
-          for (size_t i = 0; i < depth; i++) {
-            TRY(write_dst(flags.tabs ? INDENT_TAB_STRING : INDENT_SPACES_STRING,
-                          flags.tabs ? 1 : flags.indent));
+          for (size_t i = 0; i < g_depth; i++) {
+            TRY(write_dst(
+                g_flags.tabs ? INDENT_TAB_STRING : INDENT_SPACES_STRING,
+                g_flags.tabs ? 1 : g_flags.indent));
           }
         }
       }
 
       bool query_matched_fragment = false;
-      if (query.is_at(depth)) {
-        switch (ctx) {
+      if (g_query.is_at(g_depth)) {
+        switch (g_ctx) {
           case context::in_list_after_bracket:
           case context::in_list_after_value:
-            query_matched_fragment = query.tick();
+            query_matched_fragment = g_query.tick();
             break;
           case context::in_dict_after_key:
-            query_matched_fragment = query.matched_fragment();
+            query_matched_fragment = g_query.matched_fragment();
             break;
           default:
             break;
@@ -913,20 +918,20 @@ handle_token(wuffs_base__token t) {
       }
       if (!query_matched_fragment) {
         // No-op.
-      } else if (!query.next_fragment()) {
+      } else if (!g_query.next_fragment()) {
         // There is no next fragment. We have matched the complete query, and
         // the upcoming JSON value is the result of that query.
         //
-        // Un-suppress writing to stdout and reset the ctx and depth as if we
-        // were about to decode a top-level value. This makes any subsequent
-        // indentation be relative to this point, and we will return eod after
-        // the upcoming JSON value is complete.
-        if (suppress_write_dst != 1) {
-          return "main: internal error: inconsistent suppress_write_dst";
+        // Un-suppress writing to stdout and reset the g_ctx and g_depth as if
+        // we were about to decode a top-level value. This makes any subsequent
+        // indentation be relative to this point, and we will return g_eod
+        // after the upcoming JSON value is complete.
+        if (g_suppress_write_dst != 1) {
+          return "main: internal error: inconsistent g_suppress_write_dst";
         }
-        suppress_write_dst = 0;
-        ctx = context::none;
-        depth = 0;
+        g_suppress_write_dst = 0;
+        g_ctx = context::none;
+        g_depth = 0;
       } else if ((vbc != WUFFS_BASE__TOKEN__VBC__STRUCTURE) ||
                  !(vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__PUSH)) {
         // The query has moved on to the next fragment but the upcoming JSON
@@ -939,32 +944,33 @@ handle_token(wuffs_base__token t) {
     // value: string (a chain of raw or escaped parts), literal or number.
     switch (vbc) {
       case WUFFS_BASE__TOKEN__VBC__STRUCTURE:
-        if (query.matched_all() && (depth >= flags.max_output_depth)) {
-          suppress_write_dst++;
+        if (g_query.matched_all() && (g_depth >= g_flags.max_output_depth)) {
+          g_suppress_write_dst++;
         } else {
           TRY(write_dst(
               (vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__TO_LIST) ? "[" : "{",
               1));
         }
-        depth++;
-        ctx = (vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__TO_LIST)
-                  ? context::in_list_after_bracket
-                  : context::in_dict_after_brace;
+        g_depth++;
+        g_ctx = (vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__TO_LIST)
+                    ? context::in_list_after_bracket
+                    : context::in_dict_after_brace;
         return nullptr;
 
       case WUFFS_BASE__TOKEN__VBC__STRING:
         if (!t.link_prev()) {
           TRY(write_dst("\"", 1));
-          query.restart_fragment(in_dict_before_key() && query.is_at(depth));
+          g_query.restart_fragment(in_dict_before_key() &&
+                                   g_query.is_at(g_depth));
         }
 
         if (vbd & WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_0_DST_1_SRC_DROP) {
           // No-op.
         } else if (vbd &
                    WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY) {
-          uint8_t* ptr = src.data.ptr + curr_token_end_src_index - len;
+          uint8_t* ptr = g_src.data.ptr + g_curr_token_end_src_index - len;
           TRY(write_dst(ptr, len));
-          query.incremental_match_slice(ptr, len);
+          g_query.incremental_match_slice(ptr, len);
         } else {
           return "main: internal error: unexpected string-token conversion";
         }
@@ -980,12 +986,12 @@ handle_token(wuffs_base__token t) {
           return "main: internal error: unexpected unlinked token";
         }
         TRY(handle_unicode_code_point(vbd));
-        query.incremental_match_code_point(vbd);
+        g_query.incremental_match_code_point(vbd);
         return nullptr;
 
       case WUFFS_BASE__TOKEN__VBC__LITERAL:
       case WUFFS_BASE__TOKEN__VBC__NUMBER:
-        TRY(write_dst(src.data.ptr + curr_token_end_src_index - len, len));
+        TRY(write_dst(g_src.data.ptr + g_curr_token_end_src_index - len, len));
         goto after_value;
     }
 
@@ -997,21 +1003,21 @@ handle_token(wuffs_base__token t) {
   // simple value). Empty parent containers are no longer empty. If the parent
   // container is a "{...}" object, toggle between keys and values.
 after_value:
-  if (depth == 0) {
-    return eod;
+  if (g_depth == 0) {
+    return g_eod;
   }
-  switch (ctx) {
+  switch (g_ctx) {
     case context::in_list_after_bracket:
-      ctx = context::in_list_after_value;
+      g_ctx = context::in_list_after_value;
       break;
     case context::in_dict_after_brace:
-      ctx = context::in_dict_after_key;
+      g_ctx = context::in_dict_after_key;
       break;
     case context::in_dict_after_key:
-      ctx = context::in_dict_after_value;
+      g_ctx = context::in_dict_after_value;
       break;
     case context::in_dict_after_value:
-      ctx = context::in_dict_after_key;
+      g_ctx = context::in_dict_after_key;
       break;
     default:
       break;
@@ -1024,17 +1030,17 @@ main1(int argc, char** argv) {
   TRY(initialize_globals(argc, argv));
 
   while (true) {
-    wuffs_base__status status = dec.decode_tokens(
-        &tok, &src,
-        wuffs_base__make_slice_u8(work_buffer_array, WORK_BUFFER_ARRAY_SIZE));
+    wuffs_base__status status = g_dec.decode_tokens(
+        &g_tok, &g_src,
+        wuffs_base__make_slice_u8(g_work_buffer_array, WORK_BUFFER_ARRAY_SIZE));
 
-    while (tok.meta.ri < tok.meta.wi) {
-      wuffs_base__token t = tok.data.ptr[tok.meta.ri++];
+    while (g_tok.meta.ri < g_tok.meta.wi) {
+      wuffs_base__token t = g_tok.data.ptr[g_tok.meta.ri++];
       uint64_t n = t.length();
-      if ((src.meta.ri - curr_token_end_src_index) < n) {
-        return "main: internal error: inconsistent src indexes";
+      if ((g_src.meta.ri - g_curr_token_end_src_index) < n) {
+        return "main: internal error: inconsistent g_src indexes";
       }
-      curr_token_end_src_index += n;
+      g_curr_token_end_src_index += n;
 
       // Skip filler tokens (e.g. whitespace).
       if (t.value() == 0) {
@@ -1044,7 +1050,7 @@ main1(int argc, char** argv) {
       const char* z = handle_token(t);
       if (z == nullptr) {
         continue;
-      } else if (z == eod) {
+      } else if (z == g_eod) {
         goto end_of_data;
       }
       return z;
@@ -1053,30 +1059,30 @@ main1(int argc, char** argv) {
     if (status.repr == nullptr) {
       return "main: internal error: unexpected end of token stream";
     } else if (status.repr == wuffs_base__suspension__short_read) {
-      if (curr_token_end_src_index != src.meta.ri) {
-        return "main: internal error: inconsistent src indexes";
+      if (g_curr_token_end_src_index != g_src.meta.ri) {
+        return "main: internal error: inconsistent g_src indexes";
       }
       TRY(read_src());
-      curr_token_end_src_index = src.meta.ri;
+      g_curr_token_end_src_index = g_src.meta.ri;
     } else if (status.repr == wuffs_base__suspension__short_write) {
-      tok.compact();
+      g_tok.compact();
     } else {
       return status.message();
     }
   }
 end_of_data:
 
-  // With a non-empty query, don't try to consume trailing whitespace or
+  // With a non-empty g_query, don't try to consume trailing whitespace or
   // confirm that we've processed all the tokens.
-  if (flags.query_c_string && *flags.query_c_string) {
+  if (g_flags.query_c_string && *g_flags.query_c_string) {
     return nullptr;
   }
 
   // Check that we've exhausted the input.
-  if ((src.meta.ri == src.meta.wi) && !src.meta.closed) {
+  if ((g_src.meta.ri == g_src.meta.wi) && !g_src.meta.closed) {
     TRY(read_src());
   }
-  if ((src.meta.ri < src.meta.wi) || !src.meta.closed) {
+  if ((g_src.meta.ri < g_src.meta.wi) || !g_src.meta.closed) {
     return "main: valid JSON followed by further (unexpected) data";
   }
 
@@ -1084,8 +1090,8 @@ end_of_data:
   // filler tokens. For example, "true\n" is valid JSON (and fully consumed
   // with WUFFS_JSON__QUIRK_ALLOW_TRAILING_NEW_LINE enabled) with a trailing
   // filler token for the "\n".
-  for (; tok.meta.ri < tok.meta.wi; tok.meta.ri++) {
-    if (tok.data.ptr[tok.meta.ri].value_base_category() !=
+  for (; g_tok.meta.ri < g_tok.meta.wi; g_tok.meta.ri++) {
+    if (g_tok.data.ptr[g_tok.meta.ri].value_base_category() !=
         WUFFS_BASE__TOKEN__VBC__FILLER) {
       return "main: internal error: decoded OK but unprocessed tokens remain";
     }
@@ -1100,7 +1106,7 @@ compute_exit_code(const char* status_msg) {
     return 0;
   }
   size_t n;
-  if (status_msg == usage) {
+  if (status_msg == g_usage) {
     n = strlen(status_msg);
   } else {
     n = strnlen(status_msg, 2047);
@@ -1141,8 +1147,8 @@ main(int argc, char** argv) {
         dash_dash = (arg[1] == '-') && (arg[2] == '\x00');
         continue;
       }
-      input_file_descriptor = open(arg, O_RDONLY);
-      if (input_file_descriptor < 0) {
+      g_input_file_descriptor = open(arg, O_RDONLY);
+      if (g_input_file_descriptor < 0) {
         fprintf(stderr, "%s: %s\n", arg, strerror(errno));
         return 1;
       }
@@ -1152,11 +1158,11 @@ main(int argc, char** argv) {
 
 #if defined(WUFFS_EXAMPLE_USE_SECCOMP)
   prctl(PR_SET_SECCOMP, SECCOMP_MODE_STRICT);
-  sandboxed = true;
+  g_sandboxed = true;
 #endif
 
   const char* z = main1(argc, argv);
-  if (wrote_to_dst) {
+  if (g_wrote_to_dst) {
     const char* z1 = write_dst("\n", 1);
     const char* z2 = flush_dst();
     z = z ? z : (z1 ? z1 : z2);
