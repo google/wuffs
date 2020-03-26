@@ -67,10 +67,10 @@ It should print "PASS", amongst other information, and exit(0).
 #define WORK_BUFFER_ARRAY_SIZE \
   WUFFS_JSON__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE
 #if WORK_BUFFER_ARRAY_SIZE > 0
-uint8_t work_buffer_array[WORK_BUFFER_ARRAY_SIZE];
+uint8_t g_work_buffer_array[WORK_BUFFER_ARRAY_SIZE];
 #else
 // Not all C/C++ compilers support 0-length arrays.
-uint8_t work_buffer_array[1];
+uint8_t g_work_buffer_array[1];
 #endif
 
 // Each stack element is 1 byte. The low 7 bits denote the container:
@@ -310,7 +310,7 @@ fuzz_complex(wuffs_base__io_buffer* full_src, uint32_t hash_24_bits) {
 
     status = wuffs_json__decoder__decode_tokens(
         &dec, &tok, &src,
-        wuffs_base__make_slice_u8(work_buffer_array, WORK_BUFFER_ARRAY_SIZE));
+        wuffs_base__make_slice_u8(g_work_buffer_array, WORK_BUFFER_ARRAY_SIZE));
     if ((tok.data.len < tok.meta.wi) ||  //
         (tok.meta.wi < tok.meta.ri) ||   //
         (tok.meta.ri != old_tok_ri)) {
@@ -401,7 +401,7 @@ fuzz_simple(wuffs_base__io_buffer* full_src) {
   while (true) {
     status = wuffs_json__decoder__decode_tokens(
         &dec, &tok, full_src,
-        wuffs_base__make_slice_u8(work_buffer_array, WORK_BUFFER_ARRAY_SIZE));
+        wuffs_base__make_slice_u8(g_work_buffer_array, WORK_BUFFER_ARRAY_SIZE));
     if (status.repr == NULL) {
       break;
 

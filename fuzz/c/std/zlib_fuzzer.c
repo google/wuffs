@@ -68,10 +68,10 @@ It should print "PASS", amongst other information, and exit(0).
 #define WORK_BUFFER_ARRAY_SIZE \
   WUFFS_ZLIB__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE
 #if WORK_BUFFER_ARRAY_SIZE > 0
-uint8_t work_buffer_array[WORK_BUFFER_ARRAY_SIZE];
+uint8_t g_work_buffer_array[WORK_BUFFER_ARRAY_SIZE];
 #else
 // Not all C/C++ compilers support 0-length arrays.
-uint8_t work_buffer_array[1];
+uint8_t g_work_buffer_array[1];
 #endif
 
 const char*  //
@@ -99,9 +99,9 @@ fuzz(wuffs_base__io_buffer* src, uint32_t hash) {
 
   while (true) {
     dst.meta.wi = 0;
-    status =
-        wuffs_zlib__decoder__transform_io(&dec, &dst, src,
-            wuffs_base__make_slice_u8(work_buffer_array, WORK_BUFFER_ARRAY_SIZE));
+    status = wuffs_zlib__decoder__transform_io(
+        &dec, &dst, src,
+        wuffs_base__make_slice_u8(g_work_buffer_array, WORK_BUFFER_ARRAY_SIZE));
     if (status.repr != wuffs_base__suspension__short_write) {
       break;
     }
