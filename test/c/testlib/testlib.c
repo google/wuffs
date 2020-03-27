@@ -26,67 +26,68 @@
 
 #define WUFFS_TESTLIB_ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 
-uint8_t global_have_array[IO_BUFFER_ARRAY_SIZE];
-uint8_t global_want_array[IO_BUFFER_ARRAY_SIZE];
-uint8_t global_work_array[IO_BUFFER_ARRAY_SIZE];
-uint8_t global_src_array[IO_BUFFER_ARRAY_SIZE];
+uint8_t g_have_array_u8[IO_BUFFER_ARRAY_SIZE];
+uint8_t g_want_array_u8[IO_BUFFER_ARRAY_SIZE];
+uint8_t g_work_array_u8[IO_BUFFER_ARRAY_SIZE];
+uint8_t g_src_array_u8[IO_BUFFER_ARRAY_SIZE];
 
-uint8_t global_pixel_array[PIXEL_BUFFER_ARRAY_SIZE];
+uint8_t g_pixel_array_u8[PIXEL_BUFFER_ARRAY_SIZE];
 
-wuffs_base__token global_have_token_array[TOKEN_BUFFER_ARRAY_SIZE];
-wuffs_base__token global_want_token_array[TOKEN_BUFFER_ARRAY_SIZE];
+wuffs_base__token g_have_array_token[TOKEN_BUFFER_ARRAY_SIZE];
+wuffs_base__token g_want_array_token[TOKEN_BUFFER_ARRAY_SIZE];
 
-wuffs_base__slice_u8 global_have_slice;
-wuffs_base__slice_u8 global_want_slice;
-wuffs_base__slice_u8 global_work_slice;
-wuffs_base__slice_u8 global_src_slice;
+wuffs_base__slice_u8 g_have_slice_u8;
+wuffs_base__slice_u8 g_want_slice_u8;
+wuffs_base__slice_u8 g_work_slice_u8;
+wuffs_base__slice_u8 g_src_slice_u8;
 
-wuffs_base__slice_u8 global_pixel_slice;
+wuffs_base__slice_u8 g_pixel_slice_u8;
 
-wuffs_base__slice_token global_have_token_slice;
-wuffs_base__slice_token global_want_token_slice;
+wuffs_base__slice_token g_have_slice_token;
+wuffs_base__slice_token g_want_slice_token;
 
-void wuffs_testlib__initialize_global_xxx_slices() {
-  global_have_slice = ((wuffs_base__slice_u8){
-      .ptr = global_have_array,
+void  //
+wuffs_testlib__initialize_global_xxx_slices() {
+  g_have_slice_u8 = ((wuffs_base__slice_u8){
+      .ptr = g_have_array_u8,
       .len = IO_BUFFER_ARRAY_SIZE,
   });
-  global_want_slice = ((wuffs_base__slice_u8){
-      .ptr = global_want_array,
+  g_want_slice_u8 = ((wuffs_base__slice_u8){
+      .ptr = g_want_array_u8,
       .len = IO_BUFFER_ARRAY_SIZE,
   });
-  global_work_slice = ((wuffs_base__slice_u8){
-      .ptr = global_work_array,
+  g_work_slice_u8 = ((wuffs_base__slice_u8){
+      .ptr = g_work_array_u8,
       .len = IO_BUFFER_ARRAY_SIZE,
   });
-  global_src_slice = ((wuffs_base__slice_u8){
-      .ptr = global_src_array,
+  g_src_slice_u8 = ((wuffs_base__slice_u8){
+      .ptr = g_src_array_u8,
       .len = IO_BUFFER_ARRAY_SIZE,
   });
-  global_pixel_slice = ((wuffs_base__slice_u8){
-      .ptr = global_pixel_array,
+  g_pixel_slice_u8 = ((wuffs_base__slice_u8){
+      .ptr = g_pixel_array_u8,
       .len = PIXEL_BUFFER_ARRAY_SIZE,
   });
 
-  global_have_token_slice = ((wuffs_base__slice_token){
-      .ptr = global_have_token_array,
+  g_have_slice_token = ((wuffs_base__slice_token){
+      .ptr = g_have_array_token,
       .len = TOKEN_BUFFER_ARRAY_SIZE,
   });
-  global_want_token_slice = ((wuffs_base__slice_token){
-      .ptr = global_want_token_array,
+  g_want_slice_token = ((wuffs_base__slice_token){
+      .ptr = g_want_array_token,
       .len = TOKEN_BUFFER_ARRAY_SIZE,
   });
 }
 
-char fail_msg[65536] = {0};
+char g_fail_msg[65536] = {0};
 
-#define RETURN_FAIL(...)                                            \
-  return (snprintf(fail_msg, sizeof(fail_msg), ##__VA_ARGS__) >= 0) \
-             ? fail_msg                                             \
+#define RETURN_FAIL(...)                                                \
+  return (snprintf(g_fail_msg, sizeof(g_fail_msg), ##__VA_ARGS__) >= 0) \
+             ? g_fail_msg                                               \
              : "unknown failure (snprintf-related)"
 
 #define INCR_FAIL(msg, ...) \
-  msg += snprintf(msg, sizeof(fail_msg) - (msg - fail_msg), ##__VA_ARGS__)
+  msg += snprintf(msg, sizeof(g_fail_msg) - (msg - g_fail_msg), ##__VA_ARGS__)
 
 #define CHECK_STATUS(prefix, status)             \
   do {                                           \
@@ -104,7 +105,7 @@ char fail_msg[65536] = {0};
     }                        \
   } while (0)
 
-int tests_run = 0;
+int g_tests_run = 0;
 
 struct {
   int remaining_argc;
@@ -114,12 +115,12 @@ struct {
   const char* focus;
   uint64_t iterscale;
   int reps;
-} flags = {0};
+} g_flags = {0};
 
 const char*  //
 parse_flags(int argc, char** argv) {
-  flags.iterscale = 100;
-  flags.reps = 5;
+  g_flags.iterscale = 100;
+  g_flags.reps = 5;
 
   int c = (argc > 0) ? 1 : 0;  // Skip argv[0], the program name.
   for (; c < argc; c++) {
@@ -142,12 +143,12 @@ parse_flags(int argc, char** argv) {
     }
 
     if (!strcmp(arg, "bench")) {
-      flags.bench = true;
+      g_flags.bench = true;
       continue;
     }
 
     if (!strncmp(arg, "focus=", 6)) {
-      flags.focus = arg + 6;
+      g_flags.focus = arg + 6;
       continue;
     }
 
@@ -164,7 +165,7 @@ parse_flags(int argc, char** argv) {
       if ((n < 0) || (1000000 < n)) {
         return "out-of-range -iterscale=N value";
       }
-      flags.iterscale = n;
+      g_flags.iterscale = n;
       continue;
     }
 
@@ -181,36 +182,36 @@ parse_flags(int argc, char** argv) {
       if ((n < 0) || (1000000 < n)) {
         return "out-of-range -reps=N value";
       }
-      flags.reps = n;
+      g_flags.reps = n;
       continue;
     }
 
     return "unrecognized flag argument";
   }
 
-  flags.remaining_argc = argc - c;
-  flags.remaining_argv = argv + c;
+  g_flags.remaining_argc = argc - c;
+  g_flags.remaining_argv = argv + c;
   return NULL;
 }
 
-const char* proc_package_name = "unknown_package_name";
-const char* proc_func_name = "unknown_func_name";
-bool in_focus = false;
+const char* g_proc_package_name = "unknown_package_name";
+const char* g_proc_func_name = "unknown_func_name";
+bool g_in_focus = false;
 
-#define CHECK_FOCUS(func_name) \
-  proc_func_name = func_name;  \
-  in_focus = check_focus();    \
-  if (!in_focus) {             \
-    return NULL;               \
+#define CHECK_FOCUS(func_name)  \
+  g_proc_func_name = func_name; \
+  g_in_focus = check_focus();   \
+  if (!g_in_focus) {            \
+    return NULL;                \
   }
 
 bool  //
 check_focus() {
-  const char* p = flags.focus;
+  const char* p = g_flags.focus;
   if (!p || !*p) {
     return true;
   }
-  size_t n = strlen(proc_func_name);
+  size_t n = strlen(g_proc_func_name);
 
   // On each iteration of the loop, set p and q so that p (inclusive) and q
   // (exclusive) bracket the interesting fragment of the comma-separated
@@ -246,18 +247,18 @@ check_focus() {
         p += 9;
       }
 
-      // See if proc_func_name (with or without a "test_" or "bench_" prefix)
+      // See if g_proc_func_name (with or without a "test_" or "bench_" prefix)
       // starts with the [p, q) string.
-      if ((n >= q - p) && !strncmp(proc_func_name, p, q - p)) {
+      if ((n >= q - p) && !strncmp(g_proc_func_name, p, q - p)) {
         return true;
       }
       const char* unprefixed_proc_func_name = NULL;
       size_t unprefixed_n = 0;
-      if ((n >= q - p) && !strncmp(proc_func_name, "test_", 5)) {
-        unprefixed_proc_func_name = proc_func_name + 5;
+      if ((n >= q - p) && !strncmp(g_proc_func_name, "test_", 5)) {
+        unprefixed_proc_func_name = g_proc_func_name + 5;
         unprefixed_n = n - 5;
-      } else if ((n >= q - p) && !strncmp(proc_func_name, "bench_", 6)) {
-        unprefixed_proc_func_name = proc_func_name + 6;
+      } else if ((n >= q - p) && !strncmp(g_proc_func_name, "bench_", 6)) {
+        unprefixed_proc_func_name = g_proc_func_name + 6;
         unprefixed_n = n - 6;
       }
       if (unprefixed_proc_func_name && (unprefixed_n >= q - p) &&
@@ -280,17 +281,17 @@ check_focus() {
 
 // The order matters here. Clang also defines "__GNUC__".
 #if defined(__clang__)
-const char* cc = "clang" WUFFS_TESTLIB_QUOTE(__clang_major__);
-const char* cc_version = __clang_version__;
+const char* g_cc = "clang" WUFFS_TESTLIB_QUOTE(__clang_major__);
+const char* g_cc_version = __clang_version__;
 #elif defined(__GNUC__)
-const char* cc = "gcc" WUFFS_TESTLIB_QUOTE(__GNUC__);
-const char* cc_version = __VERSION__;
+const char* g_cc = "gcc" WUFFS_TESTLIB_QUOTE(__GNUC__);
+const char* g_cc_version = __VERSION__;
 #elif defined(_MSC_VER)
-const char* cc = "cl";
-const char* cc_version = "???";
+const char* g_cc = "cl";
+const char* g_cc_version = "???";
 #else
-const char* cc = "cc";
-const char* cc_version = "???";
+const char* g_cc = "cc";
+const char* g_cc_version = "???";
 #endif
 
 typedef struct {
@@ -300,12 +301,12 @@ typedef struct {
   size_t src_offset1;
 } golden_test;
 
-bool bench_warm_up;
-struct timeval bench_start_tv;
+bool g_bench_warm_up;
+struct timeval g_bench_start_tv;
 
 void  //
 bench_start() {
-  gettimeofday(&bench_start_tv, NULL);
+  gettimeofday(&g_bench_start_tv, NULL);
 }
 
 void  //
@@ -313,28 +314,28 @@ bench_finish(uint64_t iters, uint64_t n_bytes) {
   struct timeval bench_finish_tv;
   gettimeofday(&bench_finish_tv, NULL);
   int64_t micros =
-      (int64_t)(bench_finish_tv.tv_sec - bench_start_tv.tv_sec) * 1000000 +
-      (int64_t)(bench_finish_tv.tv_usec - bench_start_tv.tv_usec);
+      (int64_t)(bench_finish_tv.tv_sec - g_bench_start_tv.tv_sec) * 1000000 +
+      (int64_t)(bench_finish_tv.tv_usec - g_bench_start_tv.tv_usec);
   uint64_t nanos = 1;
   if (micros > 0) {
     nanos = (uint64_t)(micros)*1000;
   }
   uint64_t kb_per_s = n_bytes * 1000000 / nanos;
 
-  const char* name = proc_func_name;
+  const char* name = g_proc_func_name;
   if ((strlen(name) >= 6) && !strncmp(name, "bench_", 6)) {
     name += 6;
   }
-  if (bench_warm_up) {
+  if (g_bench_warm_up) {
     printf("# (warm up) %s/%s\t%8" PRIu64 ".%06" PRIu64 " seconds\n",  //
-           name, cc, nanos / 1000000000, (nanos % 1000000000) / 1000);
+           name, g_cc, nanos / 1000000000, (nanos % 1000000000) / 1000);
   } else if (!n_bytes) {
     printf("Benchmark%s/%s\t%8" PRIu64 "\t%8" PRIu64 " ns/op\n",  //
-           name, cc, iters, nanos / iters);
+           name, g_cc, iters, nanos / iters);
   } else {
     printf("Benchmark%s/%s\t%8" PRIu64 "\t%8" PRIu64
-           " ns/op\t%8d.%03d MB/s\n",       //
-           name, cc, iters, nanos / iters,  //
+           " ns/op\t%8d.%03d MB/s\n",         //
+           name, g_cc, iters, nanos / iters,  //
            (int)(kb_per_s / 1000), (int)(kb_per_s % 1000));
   }
   // Flush stdout so that "wuffs bench | tee etc" still prints its numbers as
@@ -384,17 +385,18 @@ test_main(int argc, char** argv, proc* tests, proc* benches) {
     fprintf(stderr, "%s\n", status);
     return 1;
   }
-  if (flags.remaining_argc > 0) {
+  if (g_flags.remaining_argc > 0) {
     fprintf(stderr, "unexpected (non-flag) argument\n");
     return 1;
   }
 
   int reps = 1;
   proc* procs = tests;
-  if (flags.bench) {
-    reps = flags.reps + 1;  // +1 for the warm up run.
+  if (g_flags.bench) {
+    reps = g_flags.reps + 1;  // +1 for the warm up run.
     procs = benches;
-    printf("# %s\n# %s version %s\n#\n", proc_package_name, cc, cc_version);
+    printf("# %s\n# %s version %s\n#\n", g_proc_package_name, g_cc,
+           g_cc_version);
     printf(
         "# The output format, including the \"Benchmark\" prefixes, is "
         "compatible with the\n"
@@ -405,33 +407,34 @@ test_main(int argc, char** argv, proc* tests, proc* benches) {
 
   int i;
   for (i = 0; i < reps; i++) {
-    bench_warm_up = i == 0;
+    g_bench_warm_up = i == 0;
     proc* p;
     for (p = procs; *p; p++) {
-      proc_func_name = "unknown_func_name";
-      fail_msg[0] = 0;
-      in_focus = false;
+      g_proc_func_name = "unknown_func_name";
+      g_fail_msg[0] = 0;
+      g_in_focus = false;
       const char* status = (*p)();
-      if (!in_focus) {
+      if (!g_in_focus) {
         continue;
       }
       if (status) {
-        printf("%-16s%-8sFAIL %s: %s\n", proc_package_name, cc, proc_func_name,
-               status);
+        printf("%-16s%-8sFAIL %s: %s\n", g_proc_package_name, g_cc,
+               g_proc_func_name, status);
         return 1;
       }
       if (i == 0) {
-        tests_run++;
+        g_tests_run++;
       }
     }
     if (i != 0) {
       continue;
     }
-    if (flags.bench) {
+    if (g_flags.bench) {
       printf("# %d benchmarks, 1+%d reps per benchmark, iterscale=%d\n",
-             tests_run, flags.reps, (int)(flags.iterscale));
+             g_tests_run, g_flags.reps, (int)(g_flags.iterscale));
     } else {
-      printf("%-16s%-8sPASS (%d tests)\n", proc_package_name, cc, tests_run);
+      printf("%-16s%-8sPASS (%d tests)\n", g_proc_package_name, g_cc,
+             g_tests_run);
     }
   }
   return 0;
@@ -693,7 +696,7 @@ check_io_buffers_equal(const char* prefix,
   if (!have || !want) {
     RETURN_FAIL("%sio_buffers_equal: NULL argument", prefix);
   }
-  char* msg = fail_msg;
+  char* msg = g_fail_msg;
   size_t i;
   size_t n = have->meta.wi < want->meta.wi ? have->meta.wi : want->meta.wi;
   for (i = 0; i < n; i++) {
@@ -713,7 +716,7 @@ check_io_buffers_equal(const char* prefix,
   msg = hex_dump(msg, have, i);
   INCR_FAIL(msg, "excerpts of have (above) versus want (below):\n");
   msg = hex_dump(msg, want, i);
-  return fail_msg;
+  return g_fail_msg;
 }
 
 // throughput_counter is whether to count dst or src bytes, or neither, when
@@ -748,13 +751,13 @@ proc_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
   }
 
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
+      .data = g_src_slice_u8,
   });
   wuffs_base__io_buffer have = ((wuffs_base__io_buffer){
-      .data = global_have_slice,
+      .data = g_have_slice_u8,
   });
   wuffs_base__io_buffer want = ((wuffs_base__io_buffer){
-      .data = global_want_slice,
+      .data = g_want_slice_u8,
   });
 
   if (!gt->src_filename) {
@@ -837,10 +840,10 @@ proc_token_decoder(const char* (*codec_func)(wuffs_base__token_buffer*,
   }
 
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
+      .data = g_src_slice_u8,
   });
   wuffs_base__token_buffer have = ((wuffs_base__token_buffer){
-      .data = global_have_token_slice,
+      .data = g_have_slice_token,
   });
 
   if (!gt->src_filename) {
@@ -905,7 +908,7 @@ do_bench_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
                     uint64_t rlimit,
                     uint64_t iters_unscaled) {
   return proc_io_buffers(codec_func, wuffs_initialize_flags, tcounter, gt,
-                         wlimit, rlimit, iters_unscaled * flags.iterscale,
+                         wlimit, rlimit, iters_unscaled * g_flags.iterscale,
                          true);
 }
 
@@ -922,7 +925,7 @@ do_bench_token_decoder(const char* (*codec_func)(wuffs_base__token_buffer*,
                        uint64_t rlimit,
                        uint64_t iters_unscaled) {
   return proc_token_decoder(codec_func, wuffs_initialize_flags, tcounter, gt,
-                            wlimit, rlimit, iters_unscaled * flags.iterscale,
+                            wlimit, rlimit, iters_unscaled * g_flags.iterscale,
                             true);
 }
 
@@ -949,7 +952,7 @@ do_test__wuffs_base__hasher_u32(wuffs_base__hasher_u32* b,
                                 size_t src_wi,
                                 uint32_t want) {
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
+      .data = g_src_slice_u8,
   });
   CHECK_STRING(read_file_fragment(&src, src_filename, src_ri, src_wi));
   uint32_t have = wuffs_base__hasher_u32__update_u32(
@@ -970,7 +973,7 @@ do_test__wuffs_base__image_config_decoder(wuffs_base__image_decoder* b,
                                           size_t src_wi,
                                           uint64_t want_num_frames) {
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
+      .data = g_src_slice_u8,
   });
   CHECK_STRING(read_file_fragment(&src, src_filename, src_ri, src_wi));
 
@@ -1008,7 +1011,7 @@ do_test__wuffs_base__image_decoder(
 
   wuffs_base__image_config ic = ((wuffs_base__image_config){});
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
+      .data = g_src_slice_u8,
   });
   CHECK_STRING(read_file_fragment(&src, src_filename, src_ri, src_wi));
   CHECK_STATUS("decode_image_config",
@@ -1030,10 +1033,10 @@ do_test__wuffs_base__image_decoder(
 
   wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
   CHECK_STATUS("set_from_slice", wuffs_base__pixel_buffer__set_from_slice(
-                                     &pb, &ic.pixcfg, global_pixel_slice));
+                                     &pb, &ic.pixcfg, g_pixel_slice_u8));
   CHECK_STATUS("decode_frame", wuffs_base__image_decoder__decode_frame(
                                    b, &pb, &src, WUFFS_BASE__PIXEL_BLEND__SRC,
-                                   global_work_slice, NULL));
+                                   g_work_slice_u8, NULL));
 
   uint64_t n = wuffs_base__pixel_config__pixbuf_len(&ic.pixcfg);
   if (n < 4) {
@@ -1042,7 +1045,7 @@ do_test__wuffs_base__image_decoder(
     RETURN_FAIL("pixbuf_len too large");
   } else {
     wuffs_base__color_u32_argb_premul have_final_pixel =
-        wuffs_base__load_u32le__no_bounds_check(&global_pixel_array[n - 4]);
+        wuffs_base__load_u32le__no_bounds_check(&g_pixel_array_u8[n - 4]);
     if (have_final_pixel != want_final_pixel) {
       RETURN_FAIL("final pixel: have 0x%08" PRIX32 ", want 0x%08" PRIX32,
                   have_final_pixel, want_final_pixel);
@@ -1081,14 +1084,14 @@ do_test__wuffs_base__io_transformer(wuffs_base__io_transformer* b,
   }
 
   wuffs_base__io_buffer have = ((wuffs_base__io_buffer){
-      .data = global_have_slice,
+      .data = g_have_slice_u8,
   });
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
+      .data = g_src_slice_u8,
   });
   CHECK_STRING(read_file_fragment(&src, src_filename, src_ri, src_wi));
   CHECK_STATUS("transform_io", wuffs_base__io_transformer__transform_io(
-                                   b, &have, &src, global_work_slice));
+                                   b, &have, &src, g_work_slice_u8));
   if (have.meta.wi != want_wi) {
     RETURN_FAIL("dst wi: have %zu, want %zu", have.meta.wi, want_wi);
   }
@@ -1104,16 +1107,16 @@ const char*  //
 do_test__wuffs_base__token_decoder(wuffs_base__token_decoder* b,
                                    golden_test* gt) {
   wuffs_base__io_buffer have = ((wuffs_base__io_buffer){
-      .data = global_have_slice,
+      .data = g_have_slice_u8,
   });
   wuffs_base__io_buffer want = ((wuffs_base__io_buffer){
-      .data = global_want_slice,
+      .data = g_want_slice_u8,
   });
   wuffs_base__token_buffer tok = ((wuffs_base__token_buffer){
-      .data = global_have_token_slice,
+      .data = g_have_slice_token,
   });
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
+      .data = g_src_slice_u8,
   });
 
   if (gt->src_filename) {
@@ -1125,7 +1128,7 @@ do_test__wuffs_base__token_decoder(wuffs_base__token_decoder* b,
   }
 
   CHECK_STATUS("decode_tokens", wuffs_base__token_decoder__decode_tokens(
-                                    b, &tok, &src, global_work_slice));
+                                    b, &tok, &src, g_work_slice_u8));
 
   uint64_t pos = 0;
   while (tok.meta.ri < tok.meta.wi) {

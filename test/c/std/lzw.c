@@ -87,13 +87,13 @@ do_test_wuffs_lzw_decode(const char* src_filename,
                          uint64_t wlimit,
                          uint64_t rlimit) {
   wuffs_base__io_buffer have = ((wuffs_base__io_buffer){
-      .data = global_have_slice,
+      .data = g_have_slice_u8,
   });
   wuffs_base__io_buffer want = ((wuffs_base__io_buffer){
-      .data = global_want_slice,
+      .data = g_want_slice_u8,
   });
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
+      .data = g_src_slice_u8,
   });
 
   CHECK_STRING(read_file(&src, src_filename));
@@ -130,7 +130,7 @@ do_test_wuffs_lzw_decode(const char* src_filename,
     size_t old_ri = src.meta.ri;
 
     wuffs_base__status status = wuffs_lzw__decoder__transform_io(
-        &dec, &limited_have, &limited_src, global_work_slice);
+        &dec, &limited_have, &limited_src, g_work_slice_u8);
     have.meta.wi += limited_have.meta.wi;
     src.meta.ri += limited_src.meta.ri;
     if (wuffs_base__status__is_ok(&status)) {
@@ -215,10 +215,10 @@ test_wuffs_lzw_decode_output_bad() {
   CHECK_FOCUS(__func__);
 
   wuffs_base__io_buffer have = ((wuffs_base__io_buffer){
-      .data = global_have_slice,
+      .data = g_have_slice_u8,
   });
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
+      .data = g_src_slice_u8,
   });
 
   // Set up src to be 20 bytes long, starting with three 8-bit literal codes
@@ -242,7 +242,7 @@ test_wuffs_lzw_decode_output_bad() {
   wuffs_lzw__decoder__set_literal_width(&dec, 7);
 
   wuffs_base__status status =
-      wuffs_lzw__decoder__transform_io(&dec, &have, &src, global_work_slice);
+      wuffs_lzw__decoder__transform_io(&dec, &have, &src, g_work_slice_u8);
   if (status.repr != wuffs_lzw__error__bad_code) {
     RETURN_FAIL("transform_io: have \"%s\", want \"%s\"", status.repr,
                 wuffs_lzw__error__bad_code);
@@ -262,10 +262,10 @@ test_wuffs_lzw_decode_output_empty() {
   CHECK_FOCUS(__func__);
 
   wuffs_base__io_buffer have = ((wuffs_base__io_buffer){
-      .data = global_have_slice,
+      .data = g_have_slice_u8,
   });
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
+      .data = g_src_slice_u8,
   });
 
   // Set up src to be 20 bytes long, starting with the 9-bit end code 0x101.
@@ -286,7 +286,7 @@ test_wuffs_lzw_decode_output_empty() {
   wuffs_lzw__decoder__set_literal_width(&dec, 8);
 
   CHECK_STATUS("transform_io", wuffs_lzw__decoder__transform_io(
-                                   &dec, &have, &src, global_work_slice));
+                                   &dec, &have, &src, g_work_slice_u8));
 
   if (have.meta.wi != 0) {
     RETURN_FAIL("have.meta.wi: have %d, want 0", (int)(have.meta.wi));
@@ -309,10 +309,10 @@ do_test_wuffs_lzw_decode_width(uint32_t width,
   wuffs_lzw__decoder__set_literal_width(&dec, width);
 
   wuffs_base__io_buffer have = ((wuffs_base__io_buffer){
-      .data = global_have_slice,
+      .data = g_have_slice_u8,
   });
   CHECK_STATUS("transform_io", wuffs_lzw__decoder__transform_io(
-                                   &dec, &have, &src, global_work_slice));
+                                   &dec, &have, &src, g_work_slice_u8));
 
   return check_io_buffers_equal("", &have, &want);
 }
@@ -333,14 +333,14 @@ test_wuffs_lzw_decode_width_0() {
   // 0b...._..00_0..._....  0x000 Literal "0".
   // 0b...0_10.._...._....  0x010 End code.
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
+      .data = g_src_slice_u8,
   });
   src.meta.wi = 2;
   src.data.ptr[0] = 0x4D;
   src.data.ptr[1] = 0x08;
 
   wuffs_base__io_buffer want = ((wuffs_base__io_buffer){
-      .data = global_want_slice,
+      .data = g_want_slice_u8,
   });
   want.meta.wi = 7;
   want.data.ptr[0] = 0x00;
@@ -364,14 +364,14 @@ test_wuffs_lzw_decode_width_1() {
   // 0b...._..10_0..._....  0x100 Back-ref "01".
   // 0b...0_11.._...._....  0x011 End code.
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
+      .data = g_src_slice_u8,
   });
   src.meta.wi = 2;
   src.data.ptr[0] = 0x12;
   src.data.ptr[1] = 0x0E;
 
   wuffs_base__io_buffer want = ((wuffs_base__io_buffer){
-      .data = global_want_slice,
+      .data = g_want_slice_u8,
   });
   want.meta.wi = 4;
   want.data.ptr[0] = 0x00;
@@ -387,10 +387,10 @@ test_wuffs_lzw_decode_width_1() {
 const char*  //
 do_bench_wuffs_lzw_decode(const char* filename, uint64_t iters_unscaled) {
   wuffs_base__io_buffer have = ((wuffs_base__io_buffer){
-      .data = global_have_slice,
+      .data = g_have_slice_u8,
   });
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
+      .data = g_src_slice_u8,
   });
 
   CHECK_STRING(read_file(&src, filename));
@@ -406,7 +406,7 @@ do_bench_wuffs_lzw_decode(const char* filename, uint64_t iters_unscaled) {
   bench_start();
   uint64_t n_bytes = 0;
   uint64_t i;
-  uint64_t iters = iters_unscaled * flags.iterscale;
+  uint64_t iters = iters_unscaled * g_flags.iterscale;
   for (i = 0; i < iters; i++) {
     have.meta.wi = 0;
     src.meta.ri = 1;  // Skip the literal width.
@@ -416,7 +416,7 @@ do_bench_wuffs_lzw_decode(const char* filename, uint64_t iters_unscaled) {
                      &dec, sizeof dec, WUFFS_VERSION,
                      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
     CHECK_STATUS("transform_io", wuffs_lzw__decoder__transform_io(
-                                     &dec, &have, &src, global_work_slice));
+                                     &dec, &have, &src, g_work_slice_u8));
     n_bytes += have.meta.wi;
   }
   bench_finish(iters, n_bytes);
@@ -437,7 +437,7 @@ bench_wuffs_lzw_decode_100k() {
 
 // ---------------- Manifest
 
-proc tests[] = {
+proc g_tests[] = {
 
     test_wuffs_lzw_decode_bricks_dither,
     test_wuffs_lzw_decode_bricks_nodither,
@@ -453,7 +453,7 @@ proc tests[] = {
     NULL,
 };
 
-proc benches[] = {
+proc g_benches[] = {
 
     bench_wuffs_lzw_decode_20k,
     bench_wuffs_lzw_decode_100k,
@@ -463,6 +463,6 @@ proc benches[] = {
 
 int  //
 main(int argc, char** argv) {
-  proc_package_name = "std/lzw";
-  return test_main(argc, argv, tests, benches);
+  g_proc_package_name = "std/lzw";
+  return test_main(argc, argv, g_tests, g_benches);
 }

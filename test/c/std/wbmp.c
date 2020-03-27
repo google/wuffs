@@ -93,7 +93,7 @@ test_wuffs_wbmp_decode_frame_config() {
 
   wuffs_base__frame_config fc = ((wuffs_base__frame_config){});
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
+      .data = g_src_slice_u8,
   });
   CHECK_STRING(read_file(&src, "test/data/hat.wbmp"));
   CHECK_STATUS("decode_frame_config #0",
@@ -123,7 +123,7 @@ test_wuffs_wbmp_decode_image_config() {
 
   wuffs_base__image_config ic = ((wuffs_base__image_config){});
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
+      .data = g_src_slice_u8,
   });
   CHECK_STRING(read_file(&src, "test/data/bricks-nodither.wbmp"));
   CHECK_STATUS("decode_image_config",
@@ -166,7 +166,7 @@ test_wuffs_wbmp_decode_image_config() {
 
 // ---------------- Manifest
 
-proc tests[] = {
+proc g_tests[] = {
 
     test_wuffs_wbmp_decode_frame_config,
     test_wuffs_wbmp_decode_image_config,
@@ -181,7 +181,7 @@ proc tests[] = {
     NULL,
 };
 
-proc benches[] = {
+proc g_benches[] = {
 
 // No WBMP benches.
 
@@ -196,6 +196,6 @@ proc benches[] = {
 
 int  //
 main(int argc, char** argv) {
-  proc_package_name = "std/wbmp";
-  return test_main(argc, argv, tests, benches);
+  g_proc_package_name = "std/wbmp";
+  return test_main(argc, argv, g_tests, g_benches);
 }

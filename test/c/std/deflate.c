@@ -73,14 +73,14 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 //
 // go run script/extract-flate-offsets.go test/data/*.gz
 
-golden_test deflate_256_bytes_gt = {
+golden_test g_deflate_256_bytes_gt = {
     .want_filename = "test/data/artificial/256.bytes",
     .src_filename = "test/data/artificial/256.bytes.gz",
     .src_offset0 = 20,
     .src_offset1 = 281,
 };
 
-golden_test deflate_deflate_backref_crosses_blocks_gt = {
+golden_test g_deflate_deflate_backref_crosses_blocks_gt = {
     .want_filename =
         "test/data/artificial/"
         "deflate-backref-crosses-blocks.deflate.decompressed",
@@ -89,7 +89,7 @@ golden_test deflate_deflate_backref_crosses_blocks_gt = {
         "deflate-backref-crosses-blocks.deflate",
 };
 
-golden_test deflate_deflate_degenerate_huffman_unused_gt = {
+golden_test g_deflate_deflate_degenerate_huffman_unused_gt = {
     .want_filename =
         "test/data/artificial/"
         "deflate-degenerate-huffman-unused.deflate.decompressed",
@@ -98,7 +98,7 @@ golden_test deflate_deflate_degenerate_huffman_unused_gt = {
         "deflate-degenerate-huffman-unused.deflate",
 };
 
-golden_test deflate_deflate_distance_32768_gt = {
+golden_test g_deflate_deflate_distance_32768_gt = {
     .want_filename =
         "test/data/artificial/"
         "deflate-distance-32768.deflate.decompressed",
@@ -107,7 +107,7 @@ golden_test deflate_deflate_distance_32768_gt = {
         "deflate-distance-32768.deflate",
 };
 
-golden_test deflate_deflate_distance_code_31_gt = {
+golden_test g_deflate_deflate_distance_code_31_gt = {
     .want_filename =
         "test/data/artificial/"
         "qdeflate-distance-code-31.deflate.decompressed",
@@ -116,7 +116,7 @@ golden_test deflate_deflate_distance_code_31_gt = {
         "deflate-distance-code-31.deflate",
 };
 
-golden_test deflate_deflate_huffman_primlen_9_gt = {
+golden_test g_deflate_deflate_huffman_primlen_9_gt = {
     .want_filename =
         "test/data/artificial/"
         "deflate-huffman-primlen-9.deflate.decompressed",
@@ -125,28 +125,28 @@ golden_test deflate_deflate_huffman_primlen_9_gt = {
         "deflate-huffman-primlen-9.deflate",
 };
 
-golden_test deflate_midsummer_gt = {
+golden_test g_deflate_midsummer_gt = {
     .want_filename = "test/data/midsummer.txt",
     .src_filename = "test/data/midsummer.txt.gz",
     .src_offset0 = 24,
     .src_offset1 = 5166,
 };
 
-golden_test deflate_pi_gt = {
+golden_test g_deflate_pi_gt = {
     .want_filename = "test/data/pi.txt",
     .src_filename = "test/data/pi.txt.gz",
     .src_offset0 = 17,
     .src_offset1 = 48335,
 };
 
-golden_test deflate_romeo_gt = {
+golden_test g_deflate_romeo_gt = {
     .want_filename = "test/data/romeo.txt",
     .src_filename = "test/data/romeo.txt.gz",
     .src_offset0 = 20,
     .src_offset1 = 550,
 };
 
-golden_test deflate_romeo_fixed_gt = {
+golden_test g_deflate_romeo_fixed_gt = {
     .want_filename = "test/data/romeo.txt",
     .src_filename = "test/data/romeo.txt.fixed-huff.deflate",
 };
@@ -182,7 +182,7 @@ wuffs_deflate_decode(wuffs_base__io_buffer* dst,
     wuffs_base__io_buffer limited_src = make_limited_reader(*src, rlimit);
 
     wuffs_base__status status = wuffs_deflate__decoder__transform_io(
-        &dec, &limited_dst, &limited_src, global_work_slice);
+        &dec, &limited_dst, &limited_src, g_work_slice_u8);
 
     dst->meta.wi += limited_dst.meta.wi;
     src->meta.ri += limited_src.meta.ri;
@@ -200,7 +200,7 @@ wuffs_deflate_decode(wuffs_base__io_buffer* dst,
 const char*  //
 test_wuffs_deflate_decode_256_bytes() {
   CHECK_FOCUS(__func__);
-  return do_test_io_buffers(wuffs_deflate_decode, &deflate_256_bytes_gt,
+  return do_test_io_buffers(wuffs_deflate_decode, &g_deflate_256_bytes_gt,
                             UINT64_MAX, UINT64_MAX);
 }
 
@@ -208,7 +208,7 @@ const char*  //
 test_wuffs_deflate_decode_deflate_backref_crosses_blocks() {
   CHECK_FOCUS(__func__);
   return do_test_io_buffers(wuffs_deflate_decode,
-                            &deflate_deflate_backref_crosses_blocks_gt,
+                            &g_deflate_deflate_backref_crosses_blocks_gt,
                             UINT64_MAX, UINT64_MAX);
 }
 
@@ -216,7 +216,7 @@ const char*  //
 test_wuffs_deflate_decode_deflate_degenerate_huffman_unused() {
   CHECK_FOCUS(__func__);
   return do_test_io_buffers(wuffs_deflate_decode,
-                            &deflate_deflate_degenerate_huffman_unused_gt,
+                            &g_deflate_deflate_degenerate_huffman_unused_gt,
                             UINT64_MAX, UINT64_MAX);
 }
 
@@ -224,7 +224,7 @@ const char*  //
 test_wuffs_deflate_decode_deflate_distance_32768() {
   CHECK_FOCUS(__func__);
   return do_test_io_buffers(wuffs_deflate_decode,
-                            &deflate_deflate_distance_32768_gt, UINT64_MAX,
+                            &g_deflate_deflate_distance_32768_gt, UINT64_MAX,
                             UINT64_MAX);
 }
 
@@ -232,7 +232,7 @@ const char*  //
 test_wuffs_deflate_decode_deflate_distance_code_31() {
   CHECK_FOCUS(__func__);
   const char* have = do_test_io_buffers(wuffs_deflate_decode,
-                                        &deflate_deflate_distance_code_31_gt,
+                                        &g_deflate_deflate_distance_code_31_gt,
                                         UINT64_MAX, UINT64_MAX);
   if (have != wuffs_deflate__error__bad_huffman_code) {
     RETURN_FAIL("have \"%s\", want \"%s\"", have,
@@ -247,19 +247,19 @@ test_wuffs_deflate_decode_deflate_huffman_primlen_9() {
 
   // First, treat this like any other compare-to-golden test.
   CHECK_STRING(do_test_io_buffers(wuffs_deflate_decode,
-                                  &deflate_deflate_huffman_primlen_9_gt,
+                                  &g_deflate_deflate_huffman_primlen_9_gt,
                                   UINT64_MAX, UINT64_MAX));
 
   // Second, check that the decoder's huffman table sizes match those predicted
   // by the script/print-deflate-huff-table-size.go program.
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
+      .data = g_src_slice_u8,
   });
   wuffs_base__io_buffer have = ((wuffs_base__io_buffer){
-      .data = global_have_slice,
+      .data = g_have_slice_u8,
   });
 
-  golden_test* gt = &deflate_deflate_huffman_primlen_9_gt;
+  golden_test* gt = &g_deflate_deflate_huffman_primlen_9_gt;
   CHECK_STRING(read_file(&src, gt->src_filename));
 
   wuffs_deflate__decoder dec;
@@ -267,7 +267,7 @@ test_wuffs_deflate_decode_deflate_huffman_primlen_9() {
                                  &dec, sizeof dec, WUFFS_VERSION,
                                  WUFFS_INITIALIZE__DEFAULT_OPTIONS));
   CHECK_STATUS("transform_io", wuffs_deflate__decoder__transform_io(
-                                   &dec, &have, &src, global_work_slice));
+                                   &dec, &have, &src, g_work_slice_u8));
 
   int i;
   for (i = 0; i < 2; i++) {
@@ -291,48 +291,48 @@ test_wuffs_deflate_decode_deflate_huffman_primlen_9() {
 const char*  //
 test_wuffs_deflate_decode_midsummer() {
   CHECK_FOCUS(__func__);
-  return do_test_io_buffers(wuffs_deflate_decode, &deflate_midsummer_gt,
+  return do_test_io_buffers(wuffs_deflate_decode, &g_deflate_midsummer_gt,
                             UINT64_MAX, UINT64_MAX);
 }
 
 const char*  //
 test_wuffs_deflate_decode_pi_just_one_read() {
   CHECK_FOCUS(__func__);
-  return do_test_io_buffers(wuffs_deflate_decode, &deflate_pi_gt, UINT64_MAX,
+  return do_test_io_buffers(wuffs_deflate_decode, &g_deflate_pi_gt, UINT64_MAX,
                             UINT64_MAX);
 }
 
 const char*  //
 test_wuffs_deflate_decode_pi_many_big_reads() {
   CHECK_FOCUS(__func__);
-  return do_test_io_buffers(wuffs_deflate_decode, &deflate_pi_gt, UINT64_MAX,
+  return do_test_io_buffers(wuffs_deflate_decode, &g_deflate_pi_gt, UINT64_MAX,
                             4096);
 }
 
 const char*  //
 test_wuffs_deflate_decode_pi_many_medium_reads() {
   CHECK_FOCUS(__func__);
-  return do_test_io_buffers(wuffs_deflate_decode, &deflate_pi_gt, UINT64_MAX,
+  return do_test_io_buffers(wuffs_deflate_decode, &g_deflate_pi_gt, UINT64_MAX,
                             599);
 }
 
 const char*  //
 test_wuffs_deflate_decode_pi_many_small_writes_reads() {
   CHECK_FOCUS(__func__);
-  return do_test_io_buffers(wuffs_deflate_decode, &deflate_pi_gt, 59, 61);
+  return do_test_io_buffers(wuffs_deflate_decode, &g_deflate_pi_gt, 59, 61);
 }
 
 const char*  //
 test_wuffs_deflate_decode_romeo() {
   CHECK_FOCUS(__func__);
-  return do_test_io_buffers(wuffs_deflate_decode, &deflate_romeo_gt, UINT64_MAX,
-                            UINT64_MAX);
+  return do_test_io_buffers(wuffs_deflate_decode, &g_deflate_romeo_gt,
+                            UINT64_MAX, UINT64_MAX);
 }
 
 const char*  //
 test_wuffs_deflate_decode_romeo_fixed() {
   CHECK_FOCUS(__func__);
-  return do_test_io_buffers(wuffs_deflate_decode, &deflate_romeo_fixed_gt,
+  return do_test_io_buffers(wuffs_deflate_decode, &g_deflate_romeo_fixed_gt,
                             UINT64_MAX, UINT64_MAX);
 }
 
@@ -341,16 +341,16 @@ test_wuffs_deflate_decode_split_src() {
   CHECK_FOCUS(__func__);
 
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
+      .data = g_src_slice_u8,
   });
   wuffs_base__io_buffer have = ((wuffs_base__io_buffer){
-      .data = global_have_slice,
+      .data = g_have_slice_u8,
   });
   wuffs_base__io_buffer want = ((wuffs_base__io_buffer){
-      .data = global_want_slice,
+      .data = g_want_slice_u8,
   });
 
-  golden_test* gt = &deflate_256_bytes_gt;
+  golden_test* gt = &g_deflate_256_bytes_gt;
   CHECK_STRING(read_file(&src, gt->src_filename));
   CHECK_STRING(read_file(&want, gt->want_filename));
 
@@ -372,13 +372,13 @@ test_wuffs_deflate_decode_split_src() {
     src.meta.ri = gt->src_offset0;
     src.meta.wi = split;
     wuffs_base__status z0 = wuffs_deflate__decoder__transform_io(
-        &dec, &have, &src, global_work_slice);
+        &dec, &have, &src, g_work_slice_u8);
 
     src.meta.closed = true;
     src.meta.ri = split;
     src.meta.wi = gt->src_offset1;
     wuffs_base__status z1 = wuffs_deflate__decoder__transform_io(
-        &dec, &have, &src, global_work_slice);
+        &dec, &have, &src, g_work_slice_u8);
 
     if (z0.repr != wuffs_base__suspension__short_read) {
       RETURN_FAIL("i=%d: z0: have \"%s\", want \"%s\"", i, z0.repr,
@@ -415,7 +415,7 @@ do_test_wuffs_deflate_history(int i,
   dec->private_impl.f_history_index = starting_history_index;
 
   wuffs_base__status have_z = wuffs_deflate__decoder__transform_io(
-      dec, &limited_have, src, global_work_slice);
+      dec, &limited_have, src, g_work_slice_u8);
   have->meta.wi += limited_have.meta.wi;
   if (have_z.repr != want_z) {
     RETURN_FAIL("i=%d: starting_history_index=0x%04" PRIX32
@@ -454,16 +454,16 @@ test_wuffs_deflate_history_full() {
   CHECK_FOCUS(__func__);
 
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
+      .data = g_src_slice_u8,
   });
   wuffs_base__io_buffer have = ((wuffs_base__io_buffer){
-      .data = global_have_slice,
+      .data = g_have_slice_u8,
   });
   wuffs_base__io_buffer want = ((wuffs_base__io_buffer){
-      .data = global_want_slice,
+      .data = g_want_slice_u8,
   });
 
-  golden_test* gt = &deflate_pi_gt;
+  golden_test* gt = &g_deflate_pi_gt;
   CHECK_STRING(read_file(&src, gt->src_filename));
   CHECK_STRING(read_file(&want, gt->want_filename));
 
@@ -501,7 +501,7 @@ test_wuffs_deflate_history_full() {
     }
     wuffs_base__io_buffer history_want = ((wuffs_base__io_buffer){
         .data = ((wuffs_base__slice_u8){
-            .ptr = global_want_array + want.meta.wi - (full_history_size - i),
+            .ptr = g_want_array_u8 + want.meta.wi - (full_history_size - i),
             .len = full_history_size,
         }),
     });
@@ -517,13 +517,13 @@ test_wuffs_deflate_history_partial() {
   CHECK_FOCUS(__func__);
 
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
+      .data = g_src_slice_u8,
   });
   wuffs_base__io_buffer have = ((wuffs_base__io_buffer){
-      .data = global_have_slice,
+      .data = g_have_slice_u8,
   });
 
-  golden_test* gt = &deflate_pi_gt;
+  golden_test* gt = &g_deflate_pi_gt;
   CHECK_STRING(read_file(&src, gt->src_filename));
 
   uint32_t starting_history_indexes[] = {
@@ -715,7 +715,7 @@ test_wuffs_deflate_table_redirect() {
 const char*  //
 test_mimic_deflate_decode_256_bytes() {
   CHECK_FOCUS(__func__);
-  return do_test_io_buffers(mimic_deflate_decode, &deflate_256_bytes_gt,
+  return do_test_io_buffers(mimic_deflate_decode, &g_deflate_256_bytes_gt,
                             UINT64_MAX, UINT64_MAX);
 }
 
@@ -723,7 +723,7 @@ const char*  //
 test_mimic_deflate_decode_deflate_backref_crosses_blocks() {
   CHECK_FOCUS(__func__);
   return do_test_io_buffers(mimic_deflate_decode,
-                            &deflate_deflate_backref_crosses_blocks_gt,
+                            &g_deflate_deflate_backref_crosses_blocks_gt,
                             UINT64_MAX, UINT64_MAX);
 }
 
@@ -731,7 +731,7 @@ const char*  //
 test_mimic_deflate_decode_deflate_degenerate_huffman_unused() {
   CHECK_FOCUS(__func__);
   return do_test_io_buffers(mimic_deflate_decode,
-                            &deflate_deflate_degenerate_huffman_unused_gt,
+                            &g_deflate_deflate_degenerate_huffman_unused_gt,
                             UINT64_MAX, UINT64_MAX);
 }
 
@@ -739,7 +739,7 @@ const char*  //
 test_mimic_deflate_decode_deflate_distance_32768() {
   CHECK_FOCUS(__func__);
   return do_test_io_buffers(mimic_deflate_decode,
-                            &deflate_deflate_distance_32768_gt, UINT64_MAX,
+                            &g_deflate_deflate_distance_32768_gt, UINT64_MAX,
                             UINT64_MAX);
 }
 
@@ -747,7 +747,7 @@ const char*  //
 test_mimic_deflate_decode_deflate_distance_code_31() {
   CHECK_FOCUS(__func__);
   const char* have = do_test_io_buffers(mimic_deflate_decode,
-                                        &deflate_deflate_distance_code_31_gt,
+                                        &g_deflate_deflate_distance_code_31_gt,
                                         UINT64_MAX, UINT64_MAX);
   const char* want = "inflate failed (data error)";
   if ((have != want) &&
@@ -761,42 +761,42 @@ const char*  //
 test_mimic_deflate_decode_deflate_huffman_primlen_9() {
   CHECK_FOCUS(__func__);
   return do_test_io_buffers(mimic_deflate_decode,
-                            &deflate_deflate_huffman_primlen_9_gt, UINT64_MAX,
+                            &g_deflate_deflate_huffman_primlen_9_gt, UINT64_MAX,
                             UINT64_MAX);
 }
 
 const char*  //
 test_mimic_deflate_decode_midsummer() {
   CHECK_FOCUS(__func__);
-  return do_test_io_buffers(mimic_deflate_decode, &deflate_midsummer_gt,
+  return do_test_io_buffers(mimic_deflate_decode, &g_deflate_midsummer_gt,
                             UINT64_MAX, UINT64_MAX);
 }
 
 const char*  //
 test_mimic_deflate_decode_pi_just_one_read() {
   CHECK_FOCUS(__func__);
-  return do_test_io_buffers(mimic_deflate_decode, &deflate_pi_gt, UINT64_MAX,
+  return do_test_io_buffers(mimic_deflate_decode, &g_deflate_pi_gt, UINT64_MAX,
                             UINT64_MAX);
 }
 
 const char*  //
 test_mimic_deflate_decode_pi_many_big_reads() {
   CHECK_FOCUS(__func__);
-  return do_test_io_buffers(mimic_deflate_decode, &deflate_pi_gt, UINT64_MAX,
+  return do_test_io_buffers(mimic_deflate_decode, &g_deflate_pi_gt, UINT64_MAX,
                             4096);
 }
 
 const char*  //
 test_mimic_deflate_decode_romeo() {
   CHECK_FOCUS(__func__);
-  return do_test_io_buffers(mimic_deflate_decode, &deflate_romeo_gt, UINT64_MAX,
-                            UINT64_MAX);
+  return do_test_io_buffers(mimic_deflate_decode, &g_deflate_romeo_gt,
+                            UINT64_MAX, UINT64_MAX);
 }
 
 const char*  //
 test_mimic_deflate_decode_romeo_fixed() {
   CHECK_FOCUS(__func__);
-  return do_test_io_buffers(mimic_deflate_decode, &deflate_romeo_fixed_gt,
+  return do_test_io_buffers(mimic_deflate_decode, &g_deflate_romeo_fixed_gt,
                             UINT64_MAX, UINT64_MAX);
 }
 
@@ -809,7 +809,7 @@ bench_wuffs_deflate_decode_1k_full_init() {
   CHECK_FOCUS(__func__);
   return do_bench_io_buffers(wuffs_deflate_decode,
                              WUFFS_INITIALIZE__DEFAULT_OPTIONS, tcounter_dst,
-                             &deflate_romeo_gt, UINT64_MAX, UINT64_MAX, 2000);
+                             &g_deflate_romeo_gt, UINT64_MAX, UINT64_MAX, 2000);
 }
 
 const char*  //
@@ -818,7 +818,7 @@ bench_wuffs_deflate_decode_1k_part_init() {
   return do_bench_io_buffers(
       wuffs_deflate_decode,
       WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED, tcounter_dst,
-      &deflate_romeo_gt, UINT64_MAX, UINT64_MAX, 2000);
+      &g_deflate_romeo_gt, UINT64_MAX, UINT64_MAX, 2000);
 }
 
 const char*  //
@@ -826,7 +826,7 @@ bench_wuffs_deflate_decode_10k_full_init() {
   CHECK_FOCUS(__func__);
   return do_bench_io_buffers(
       wuffs_deflate_decode, WUFFS_INITIALIZE__DEFAULT_OPTIONS, tcounter_dst,
-      &deflate_midsummer_gt, UINT64_MAX, UINT64_MAX, 300);
+      &g_deflate_midsummer_gt, UINT64_MAX, UINT64_MAX, 300);
 }
 
 const char*  //
@@ -835,7 +835,7 @@ bench_wuffs_deflate_decode_10k_part_init() {
   return do_bench_io_buffers(
       wuffs_deflate_decode,
       WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED, tcounter_dst,
-      &deflate_midsummer_gt, UINT64_MAX, UINT64_MAX, 300);
+      &g_deflate_midsummer_gt, UINT64_MAX, UINT64_MAX, 300);
 }
 
 const char*  //
@@ -844,7 +844,7 @@ bench_wuffs_deflate_decode_100k_just_one_read() {
   return do_bench_io_buffers(
       wuffs_deflate_decode,
       WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED, tcounter_dst,
-      &deflate_pi_gt, UINT64_MAX, UINT64_MAX, 30);
+      &g_deflate_pi_gt, UINT64_MAX, UINT64_MAX, 30);
 }
 
 const char*  //
@@ -853,7 +853,7 @@ bench_wuffs_deflate_decode_100k_many_big_reads() {
   return do_bench_io_buffers(
       wuffs_deflate_decode,
       WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED, tcounter_dst,
-      &deflate_pi_gt, UINT64_MAX, 4096, 30);
+      &g_deflate_pi_gt, UINT64_MAX, 4096, 30);
 }
 
   // ---------------- Mimic Benches
@@ -864,14 +864,14 @@ const char*  //
 bench_mimic_deflate_decode_1k() {
   CHECK_FOCUS(__func__);
   return do_bench_io_buffers(mimic_deflate_decode, 0, tcounter_dst,
-                             &deflate_romeo_gt, UINT64_MAX, UINT64_MAX, 2000);
+                             &g_deflate_romeo_gt, UINT64_MAX, UINT64_MAX, 2000);
 }
 
 const char*  //
 bench_mimic_deflate_decode_10k() {
   CHECK_FOCUS(__func__);
   return do_bench_io_buffers(mimic_deflate_decode, 0, tcounter_dst,
-                             &deflate_midsummer_gt, UINT64_MAX, UINT64_MAX,
+                             &g_deflate_midsummer_gt, UINT64_MAX, UINT64_MAX,
                              300);
 }
 
@@ -879,21 +879,21 @@ const char*  //
 bench_mimic_deflate_decode_100k_just_one_read() {
   CHECK_FOCUS(__func__);
   return do_bench_io_buffers(mimic_deflate_decode, 0, tcounter_dst,
-                             &deflate_pi_gt, UINT64_MAX, UINT64_MAX, 30);
+                             &g_deflate_pi_gt, UINT64_MAX, UINT64_MAX, 30);
 }
 
 const char*  //
 bench_mimic_deflate_decode_100k_many_big_reads() {
   CHECK_FOCUS(__func__);
   return do_bench_io_buffers(mimic_deflate_decode, 0, tcounter_dst,
-                             &deflate_pi_gt, UINT64_MAX, 4096, 30);
+                             &g_deflate_pi_gt, UINT64_MAX, 4096, 30);
 }
 
 #endif  // WUFFS_MIMIC
 
 // ---------------- Manifest
 
-proc tests[] = {
+proc g_tests[] = {
 
     test_wuffs_deflate_decode_256_bytes,
     test_wuffs_deflate_decode_deflate_backref_crosses_blocks,
@@ -933,7 +933,7 @@ proc tests[] = {
     NULL,
 };
 
-proc benches[] = {
+proc g_benches[] = {
 
     bench_wuffs_deflate_decode_1k_full_init,
     bench_wuffs_deflate_decode_1k_part_init,
@@ -956,6 +956,6 @@ proc benches[] = {
 
 int  //
 main(int argc, char** argv) {
-  proc_package_name = "std/deflate";
-  return test_main(argc, argv, tests, benches);
+  g_proc_package_name = "std/deflate";
+  return test_main(argc, argv, g_tests, g_benches);
 }

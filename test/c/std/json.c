@@ -354,43 +354,43 @@ test_strconv_hexadecimal() {
 
   {
     const char* str = "6A6b7";  // The "7" should be ignored.
-    wuffs_base__slice_u8 dst = global_have_slice;
+    wuffs_base__slice_u8 dst = g_have_slice_u8;
     wuffs_base__slice_u8 src =
         wuffs_base__make_slice_u8((void*)str, strlen(str));
     size_t have = wuffs_base__hexadecimal__decode2(dst, src);
     if (have != 2) {
       RETURN_FAIL("decode2: have %zu, want 2", have);
     }
-    if (global_have_array[0] != 0x6A) {
+    if (g_have_array_u8[0] != 0x6A) {
       RETURN_FAIL("decode2: dst[0]: have 0x%02X, want 0x6A",
-                  (int)(global_have_array[0]));
+                  (int)(g_have_array_u8[0]));
     }
-    if (global_have_array[1] != 0x6B) {
+    if (g_have_array_u8[1] != 0x6B) {
       RETURN_FAIL("decode2: dst[1]: have 0x%02X, want 0x6B",
-                  (int)(global_have_array[1]));
+                  (int)(g_have_array_u8[1]));
     }
   }
 
   {
     const char* str = "\\xa9\\x00\\xFe";
-    wuffs_base__slice_u8 dst = global_have_slice;
+    wuffs_base__slice_u8 dst = g_have_slice_u8;
     wuffs_base__slice_u8 src =
         wuffs_base__make_slice_u8((void*)str, strlen(str));
     size_t have = wuffs_base__hexadecimal__decode4(dst, src);
     if (have != 3) {
       RETURN_FAIL("decode4: have %zu, want 3", have);
     }
-    if (global_have_array[0] != 0xA9) {
+    if (g_have_array_u8[0] != 0xA9) {
       RETURN_FAIL("decode4: dst[0]: have 0x%02X, want 0xA9",
-                  (int)(global_have_array[0]));
+                  (int)(g_have_array_u8[0]));
     }
-    if (global_have_array[1] != 0x00) {
+    if (g_have_array_u8[1] != 0x00) {
       RETURN_FAIL("decode4: dst[1]: have 0x%02X, want 0x00",
-                  (int)(global_have_array[1]));
+                  (int)(g_have_array_u8[1]));
     }
-    if (global_have_array[2] != 0xFE) {
+    if (g_have_array_u8[2] != 0xFE) {
       RETURN_FAIL("decode4: dst[2]: have 0x%02X, want 0xFE",
-                  (int)(global_have_array[2]));
+                  (int)(g_have_array_u8[2]));
     }
   }
 
@@ -761,31 +761,31 @@ test_strconv_utf_8_next() {
 
 // ---------------- Golden Tests
 
-golden_test json_australian_abc_gt = {
+golden_test g_json_australian_abc_gt = {
     .want_filename = "test/data/australian-abc-local-stations.tokens",
     .src_filename = "test/data/australian-abc-local-stations.json",
 };
 
-golden_test json_file_sizes_gt = {
+golden_test g_json_file_sizes_gt = {
     .src_filename = "test/data/file-sizes.json",
 };
 
-golden_test json_github_tags_gt = {
+golden_test g_json_github_tags_gt = {
     .src_filename = "test/data/github-tags.json",
 };
 
-golden_test json_json_things_unformatted_gt = {
+golden_test g_json_json_things_unformatted_gt = {
     .want_filename = "test/data/json-things.unformatted.tokens",
     .src_filename = "test/data/json-things.unformatted.json",
 };
 
-golden_test json_nobel_prizes_gt = {
-    .src_filename = "test/data/nobel-prizes.json",
-};
-
-golden_test json_json_quirks_gt = {
+golden_test g_json_json_quirks_gt = {
     .want_filename = "test/data/json-quirks.tokens",
     .src_filename = "test/data/json-quirks.json",
+};
+
+golden_test g_json_nobel_prizes_gt = {
+    .src_filename = "test/data/nobel-prizes.json",
 };
 
 // ---------------- JSON Tests
@@ -802,7 +802,7 @@ test_wuffs_json_decode_interface() {
                      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
     CHECK_STRING(do_test__wuffs_base__token_decoder(
         wuffs_json__decoder__upcast_as__wuffs_base__token_decoder(&dec),
-        &json_json_things_unformatted_gt));
+        &g_json_json_things_unformatted_gt));
   }
 
   {
@@ -813,7 +813,7 @@ test_wuffs_json_decode_interface() {
                      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
     CHECK_STRING(do_test__wuffs_base__token_decoder(
         wuffs_json__decoder__upcast_as__wuffs_base__token_decoder(&dec),
-        &json_australian_abc_gt));
+        &g_json_australian_abc_gt));
   }
 
   {
@@ -848,7 +848,7 @@ test_wuffs_json_decode_interface() {
     }
     CHECK_STRING(do_test__wuffs_base__token_decoder(
         wuffs_json__decoder__upcast_as__wuffs_base__token_decoder(&dec),
-        &json_json_quirks_gt));
+        &g_json_json_quirks_gt));
   }
 
   return NULL;
@@ -871,7 +871,7 @@ wuffs_json_decode(wuffs_base__token_buffer* tok,
     wuffs_base__io_buffer limited_src = make_limited_reader(*src, rlimit);
 
     wuffs_base__status status = wuffs_json__decoder__decode_tokens(
-        &dec, &limited_tok, &limited_src, global_work_slice);
+        &dec, &limited_tok, &limited_src, g_work_slice_u8);
 
     tok->meta.wi += limited_tok.meta.wi;
     src->meta.ri += limited_src.meta.ri;
@@ -902,17 +902,17 @@ test_wuffs_json_decode_end_of_data() {
                      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
 
     wuffs_base__token_buffer tok =
-        wuffs_base__make_token_buffer_writer(global_have_token_slice);
+        wuffs_base__make_token_buffer_writer(g_have_slice_token);
     wuffs_base__io_buffer src = wuffs_base__make_io_buffer_reader(
         wuffs_base__make_slice_u8(src_ptr, src_len), true);
     CHECK_STATUS("decode_tokens", wuffs_json__decoder__decode_tokens(
-                                      &dec, &tok, &src, global_work_slice));
+                                      &dec, &tok, &src, g_work_slice_u8));
     if (src.meta.ri != 3) {
       RETURN_FAIL("src.meta.ri: have %zu, want 3", src.meta.ri);
     }
 
     const char* have =
-        wuffs_json__decoder__decode_tokens(&dec, &tok, &src, global_work_slice)
+        wuffs_json__decoder__decode_tokens(&dec, &tok, &src, g_work_slice_u8)
             .repr;
     if (have != wuffs_base__note__end_of_data) {
       RETURN_FAIL("decode_tokens: have \"%s\", want \"%s\"", have,
@@ -1014,11 +1014,11 @@ test_wuffs_json_decode_long_numbers() {
                 WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
 
         wuffs_base__token_buffer tok =
-            wuffs_base__make_token_buffer_writer(global_have_token_slice);
+            wuffs_base__make_token_buffer_writer(g_have_slice_token);
         wuffs_base__io_buffer src =
             wuffs_base__make_io_buffer_reader(src_data, closed != 0);
         const char* have = wuffs_json__decoder__decode_tokens(&dec, &tok, &src,
-                                                              global_work_slice)
+                                                              g_work_slice_u8)
                                .repr;
 
         size_t total_length = 0;
@@ -1143,7 +1143,7 @@ test_wuffs_json_decode_prior_valid_utf_8() {
         // mark, where prefix and suffix are the number of 'p's and 's's and
         // test_cases[tc] is the "MIDDLE".
         wuffs_base__slice_u8 src_data = ((wuffs_base__slice_u8){
-            .ptr = global_src_array,
+            .ptr = &g_src_array_u8[0],
             .len = 1 + prefix + n + suffix,
         });
         if (src_data.len > IO_BUFFER_ARRAY_SIZE) {
@@ -1160,11 +1160,10 @@ test_wuffs_json_decode_prior_valid_utf_8() {
                                          &dec, sizeof dec, WUFFS_VERSION, 0));
 
           wuffs_base__token_buffer tok =
-              wuffs_base__make_token_buffer_writer(global_have_token_slice);
+              wuffs_base__make_token_buffer_writer(g_have_slice_token);
           wuffs_base__io_buffer src =
               wuffs_base__make_io_buffer_reader(src_data, closed != 0);
-          wuffs_json__decoder__decode_tokens(&dec, &tok, &src,
-                                             global_work_slice);
+          wuffs_json__decoder__decode_tokens(&dec, &tok, &src, g_work_slice_u8);
 
           size_t have = 0;
           while (tok.meta.ri < tok.meta.wi) {
@@ -1254,15 +1253,15 @@ test_wuffs_json_decode_quirk_allow_backslash_etc() {
       wuffs_json__decoder__set_quirk_enabled(&dec, test_cases[tc].quirk, q);
 
       wuffs_base__token_buffer tok =
-          wuffs_base__make_token_buffer_writer(global_have_token_slice);
+          wuffs_base__make_token_buffer_writer(g_have_slice_token);
       wuffs_base__io_buffer src = wuffs_base__make_io_buffer_reader(
           wuffs_base__make_slice_u8((void*)(test_cases[tc].str),
                                     strlen(test_cases[tc].str)),
           true);
 
-      const char* have_status_repr = wuffs_json__decoder__decode_tokens(
-                                         &dec, &tok, &src, global_work_slice)
-                                         .repr;
+      const char* have_status_repr =
+          wuffs_json__decoder__decode_tokens(&dec, &tok, &src, g_work_slice_u8)
+              .repr;
       const char* want_status_repr =
           q ? NULL : wuffs_json__error__bad_backslash_escape;
       if (have_status_repr != want_status_repr) {
@@ -1329,13 +1328,13 @@ test_wuffs_json_decode_quirk_allow_backslash_x() {
         &dec, WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_X, true);
 
     wuffs_base__token_buffer tok =
-        wuffs_base__make_token_buffer_writer(global_have_token_slice);
+        wuffs_base__make_token_buffer_writer(g_have_slice_token);
     wuffs_base__slice_u8 src_slice = wuffs_base__make_slice_u8(
         (void*)(test_cases[tc].str), strlen(test_cases[tc].str));
     wuffs_base__io_buffer src =
         wuffs_base__make_io_buffer_reader(src_slice, true);
     const char* have_status_repr =
-        wuffs_json__decoder__decode_tokens(&dec, &tok, &src, global_work_slice)
+        wuffs_json__decoder__decode_tokens(&dec, &tok, &src, g_work_slice_u8)
             .repr;
     if (have_status_repr != test_cases[tc].want_status_repr) {
       RETURN_FAIL("tc=%d: decode_tokens: have \"%s\", want \"%s\"", tc,
@@ -1404,14 +1403,14 @@ test_wuffs_json_decode_quirk_allow_extra_comma() {
           &dec, WUFFS_JSON__QUIRK_ALLOW_EXTRA_COMMA, q & 1);
 
       wuffs_base__token_buffer tok =
-          wuffs_base__make_token_buffer_writer(global_have_token_slice);
+          wuffs_base__make_token_buffer_writer(g_have_slice_token);
       wuffs_base__io_buffer src = wuffs_base__make_io_buffer_reader(
           wuffs_base__make_slice_u8((void*)(test_cases[tc].str),
                                     strlen(test_cases[tc].str)),
           true);
-      const char* have = wuffs_json__decoder__decode_tokens(&dec, &tok, &src,
-                                                            global_work_slice)
-                             .repr;
+      const char* have =
+          wuffs_json__decoder__decode_tokens(&dec, &tok, &src, g_work_slice_u8)
+              .repr;
       const char* want =
           (test_cases[tc].want[q] != '-') ? NULL : wuffs_json__error__bad_input;
       if (have != want) {
@@ -1481,14 +1480,14 @@ test_wuffs_json_decode_quirk_allow_inf_nan_numbers() {
           &dec, WUFFS_JSON__QUIRK_ALLOW_INF_NAN_NUMBERS, q & 1);
 
       wuffs_base__token_buffer tok =
-          wuffs_base__make_token_buffer_writer(global_have_token_slice);
+          wuffs_base__make_token_buffer_writer(g_have_slice_token);
       wuffs_base__io_buffer src = wuffs_base__make_io_buffer_reader(
           wuffs_base__make_slice_u8((void*)(test_cases[tc].str),
                                     strlen(test_cases[tc].str)),
           true);
-      const char* have = wuffs_json__decoder__decode_tokens(&dec, &tok, &src,
-                                                            global_work_slice)
-                             .repr;
+      const char* have =
+          wuffs_json__decoder__decode_tokens(&dec, &tok, &src, g_work_slice_u8)
+              .repr;
       const char* want =
           (test_cases[tc].want[q] != '-') ? NULL : wuffs_json__error__bad_input;
       if (have != want) {
@@ -1554,14 +1553,14 @@ test_wuffs_json_decode_quirk_allow_comment_etc() {
           &dec, WUFFS_JSON__QUIRK_ALLOW_COMMENT_LINE, q & 2);
 
       wuffs_base__token_buffer tok =
-          wuffs_base__make_token_buffer_writer(global_have_token_slice);
+          wuffs_base__make_token_buffer_writer(g_have_slice_token);
       wuffs_base__io_buffer src = wuffs_base__make_io_buffer_reader(
           wuffs_base__make_slice_u8((void*)(test_cases[tc].str),
                                     strlen(test_cases[tc].str)),
           true);
-      const char* have = wuffs_json__decoder__decode_tokens(&dec, &tok, &src,
-                                                            global_work_slice)
-                             .repr;
+      const char* have =
+          wuffs_json__decoder__decode_tokens(&dec, &tok, &src, g_work_slice_u8)
+              .repr;
       const char* want =
           (test_cases[tc].want[q] != '-') ? NULL : wuffs_json__error__bad_input;
       if (have != want) {
@@ -1633,14 +1632,14 @@ test_wuffs_json_decode_quirk_allow_leading_etc() {
           &dec, WUFFS_JSON__QUIRK_ALLOW_LEADING_UNICODE_BYTE_ORDER_MARK, q & 2);
 
       wuffs_base__token_buffer tok =
-          wuffs_base__make_token_buffer_writer(global_have_token_slice);
+          wuffs_base__make_token_buffer_writer(g_have_slice_token);
       wuffs_base__io_buffer src = wuffs_base__make_io_buffer_reader(
           wuffs_base__make_slice_u8((void*)(test_cases[tc].str),
                                     strlen(test_cases[tc].str)),
           true);
-      const char* have = wuffs_json__decoder__decode_tokens(&dec, &tok, &src,
-                                                            global_work_slice)
-                             .repr;
+      const char* have =
+          wuffs_json__decoder__decode_tokens(&dec, &tok, &src, g_work_slice_u8)
+              .repr;
       const char* want =
           (test_cases[tc].want[q] != '-') ? NULL : wuffs_json__error__bad_input;
       if (have != want) {
@@ -1712,14 +1711,14 @@ test_wuffs_json_decode_quirk_allow_trailing_etc() {
           &dec, WUFFS_JSON__QUIRK_ALLOW_TRAILING_NEW_LINE, q & 1);
 
       wuffs_base__token_buffer tok =
-          wuffs_base__make_token_buffer_writer(global_have_token_slice);
+          wuffs_base__make_token_buffer_writer(g_have_slice_token);
       wuffs_base__io_buffer src = wuffs_base__make_io_buffer_reader(
           wuffs_base__make_slice_u8((void*)(test_cases[tc].str),
                                     strlen(test_cases[tc].str)),
           true);
-      const char* have = wuffs_json__decoder__decode_tokens(&dec, &tok, &src,
-                                                            global_work_slice)
-                             .repr;
+      const char* have =
+          wuffs_json__decoder__decode_tokens(&dec, &tok, &src, g_work_slice_u8)
+              .repr;
       const char* want =
           (test_cases[tc].want[q] != '-') ? NULL : wuffs_json__error__bad_input;
       if (have != want) {
@@ -1810,15 +1809,15 @@ test_wuffs_json_decode_quirk_replace_invalid_unicode() {
         &dec, WUFFS_JSON__QUIRK_REPLACE_INVALID_UNICODE, true);
 
     wuffs_base__io_buffer have =
-        wuffs_base__make_io_buffer_writer(global_have_slice);
+        wuffs_base__make_io_buffer_writer(g_have_slice_u8);
     wuffs_base__token_buffer tok =
-        wuffs_base__make_token_buffer_writer(global_have_token_slice);
+        wuffs_base__make_token_buffer_writer(g_have_slice_token);
     wuffs_base__io_buffer src = wuffs_base__make_io_buffer_reader(
         wuffs_base__make_slice_u8((void*)(test_cases[tc].str),
                                   strlen(test_cases[tc].str)),
         true);
     CHECK_STATUS("decode_tokens", wuffs_json__decoder__decode_tokens(
-                                      &dec, &tok, &src, global_work_slice));
+                                      &dec, &tok, &src, g_work_slice_u8));
 
     uint64_t src_index = 0;
     while (tok.meta.ri < tok.meta.wi) {
@@ -1946,12 +1945,12 @@ test_wuffs_json_decode_unicode4_escapes() {
                      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
 
     wuffs_base__token_buffer tok =
-        wuffs_base__make_token_buffer_writer(global_have_token_slice);
+        wuffs_base__make_token_buffer_writer(g_have_slice_token);
     wuffs_base__io_buffer src = wuffs_base__make_io_buffer_reader(
         wuffs_base__make_slice_u8((void*)(test_cases[tc].str),
                                   strlen(test_cases[tc].str)),
         true);
-    wuffs_json__decoder__decode_tokens(&dec, &tok, &src, global_work_slice);
+    wuffs_json__decoder__decode_tokens(&dec, &tok, &src, g_work_slice_u8);
 
     uint32_t have = fail;
     uint64_t total_length = 0;
@@ -2035,7 +2034,7 @@ test_wuffs_json_decode_src_io_buffer_length() {
     int closed;
     for (closed = 0; closed < 2; closed++) {
       wuffs_base__token_buffer tok =
-          wuffs_base__make_token_buffer_writer(global_have_token_slice);
+          wuffs_base__make_token_buffer_writer(g_have_slice_token);
       wuffs_base__io_buffer src =
           wuffs_base__make_io_buffer_reader(src_data, closed != 0);
       CHECK_STATUS("initialize",
@@ -2043,8 +2042,8 @@ test_wuffs_json_decode_src_io_buffer_length() {
                        &dec, sizeof dec, WUFFS_VERSION,
                        WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
 
-      wuffs_base__status have = wuffs_json__decoder__decode_tokens(
-          &dec, &tok, &src, global_work_slice);
+      wuffs_base__status have =
+          wuffs_json__decoder__decode_tokens(&dec, &tok, &src, g_work_slice_u8);
       const char* want =
           (i > WUFFS_JSON__DECODER_NUMBER_LENGTH_MAX_INCL)
               ? wuffs_json__error__unsupported_number_length
@@ -2138,13 +2137,13 @@ test_wuffs_json_decode_string() {
                      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
 
     wuffs_base__token_buffer tok =
-        wuffs_base__make_token_buffer_writer(global_have_token_slice);
+        wuffs_base__make_token_buffer_writer(g_have_slice_token);
     wuffs_base__io_buffer src = wuffs_base__make_io_buffer_reader(
         wuffs_base__make_slice_u8((void*)(test_cases[tc].str),
                                   strlen(test_cases[tc].str)),
         true);
     wuffs_base__status have_status =
-        wuffs_json__decoder__decode_tokens(&dec, &tok, &src, global_work_slice);
+        wuffs_json__decoder__decode_tokens(&dec, &tok, &src, g_work_slice_u8);
 
     uint64_t total_length = 0;
     size_t i;
@@ -2183,7 +2182,7 @@ bench_wuffs_json_decode_1k() {
   CHECK_FOCUS(__func__);
   return do_bench_token_decoder(
       wuffs_json_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
-      tcounter_src, &json_github_tags_gt, UINT64_MAX, UINT64_MAX, 10000);
+      tcounter_src, &g_json_github_tags_gt, UINT64_MAX, UINT64_MAX, 10000);
 }
 
 const char*  //
@@ -2191,7 +2190,7 @@ bench_wuffs_json_decode_21k_formatted() {
   CHECK_FOCUS(__func__);
   return do_bench_token_decoder(
       wuffs_json_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
-      tcounter_src, &json_file_sizes_gt, UINT64_MAX, UINT64_MAX, 300);
+      tcounter_src, &g_json_file_sizes_gt, UINT64_MAX, UINT64_MAX, 300);
 }
 
 const char*  //
@@ -2199,7 +2198,7 @@ bench_wuffs_json_decode_26k_compact() {
   CHECK_FOCUS(__func__);
   return do_bench_token_decoder(
       wuffs_json_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
-      tcounter_src, &json_australian_abc_gt, UINT64_MAX, UINT64_MAX, 250);
+      tcounter_src, &g_json_australian_abc_gt, UINT64_MAX, UINT64_MAX, 250);
 }
 
 const char*  //
@@ -2207,7 +2206,7 @@ bench_wuffs_json_decode_217k_stringy() {
   CHECK_FOCUS(__func__);
   return do_bench_token_decoder(
       wuffs_json_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
-      tcounter_src, &json_nobel_prizes_gt, UINT64_MAX, UINT64_MAX, 25);
+      tcounter_src, &g_json_nobel_prizes_gt, UINT64_MAX, UINT64_MAX, 25);
 }
 
   // ---------------- Mimic Benches
@@ -2220,7 +2219,7 @@ bench_wuffs_json_decode_217k_stringy() {
 
 // ---------------- Manifest
 
-proc tests[] = {
+proc g_tests[] = {
 
     // These strconv tests are really testing the Wuffs base library. They
     // aren't specific to the std/json code, but putting them here is as good
@@ -2258,7 +2257,7 @@ proc tests[] = {
     NULL,
 };
 
-proc benches[] = {
+proc g_benches[] = {
 
     bench_wuffs_json_decode_1k,
     bench_wuffs_json_decode_21k_formatted,
@@ -2276,6 +2275,6 @@ proc benches[] = {
 
 int  //
 main(int argc, char** argv) {
-  proc_package_name = "std/json";
-  return test_main(argc, argv, tests, benches);
+  g_proc_package_name = "std/json";
+  return test_main(argc, argv, g_tests, g_benches);
 }

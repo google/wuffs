@@ -69,11 +69,11 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 
 // ---------------- Golden Tests
 
-golden_test adler32_midsummer_gt = {
+golden_test g_adler32_midsummer_gt = {
     .src_filename = "test/data/midsummer.txt",
 };
 
-golden_test adler32_pi_gt = {
+golden_test g_adler32_pi_gt = {
     .src_filename = "test/data/pi.txt",
 };
 
@@ -134,7 +134,7 @@ test_wuffs_adler32_golden() {
   int tc;
   for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
     wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-        .data = global_src_slice,
+        .data = g_src_slice_u8,
     });
     CHECK_STRING(read_file(&src, test_cases[tc].filename));
 
@@ -230,7 +230,7 @@ test_wuffs_adler32_pi() {
 
 // ---------------- Adler32 Benches
 
-uint32_t global_wuffs_adler32_unused_u32;
+uint32_t g_wuffs_adler32_unused_u32;
 
 const char*  //
 wuffs_bench_adler32(wuffs_base__io_buffer* dst,
@@ -246,7 +246,7 @@ wuffs_bench_adler32(wuffs_base__io_buffer* dst,
   CHECK_STATUS("initialize", wuffs_adler32__hasher__initialize(
                                  &checksum, sizeof checksum, WUFFS_VERSION,
                                  wuffs_initialize_flags));
-  global_wuffs_adler32_unused_u32 = wuffs_adler32__hasher__update_u32(
+  g_wuffs_adler32_unused_u32 = wuffs_adler32__hasher__update_u32(
       &checksum, ((wuffs_base__slice_u8){
                      .ptr = src->data.ptr + src->meta.ri,
                      .len = len,
@@ -261,7 +261,7 @@ bench_wuffs_adler32_10k() {
   return do_bench_io_buffers(
       wuffs_bench_adler32,
       WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED, tcounter_src,
-      &adler32_midsummer_gt, UINT64_MAX, UINT64_MAX, 1500);
+      &g_adler32_midsummer_gt, UINT64_MAX, UINT64_MAX, 1500);
 }
 
 const char*  //
@@ -270,7 +270,7 @@ bench_wuffs_adler32_100k() {
   return do_bench_io_buffers(
       wuffs_bench_adler32,
       WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED, tcounter_src,
-      &adler32_pi_gt, UINT64_MAX, UINT64_MAX, 150);
+      &g_adler32_pi_gt, UINT64_MAX, UINT64_MAX, 150);
 }
 
   // ---------------- Mimic Benches
@@ -281,7 +281,7 @@ const char*  //
 bench_mimic_adler32_10k() {
   CHECK_FOCUS(__func__);
   return do_bench_io_buffers(mimic_bench_adler32, 0, tcounter_src,
-                             &adler32_midsummer_gt, UINT64_MAX, UINT64_MAX,
+                             &g_adler32_midsummer_gt, UINT64_MAX, UINT64_MAX,
                              1500);
 }
 
@@ -289,7 +289,7 @@ const char*  //
 bench_mimic_adler32_100k() {
   CHECK_FOCUS(__func__);
   return do_bench_io_buffers(mimic_bench_adler32, 0, tcounter_src,
-                             &adler32_pi_gt, UINT64_MAX, UINT64_MAX, 150);
+                             &g_adler32_pi_gt, UINT64_MAX, UINT64_MAX, 150);
 }
 
 #endif  // WUFFS_MIMIC
@@ -299,7 +299,7 @@ bench_mimic_adler32_100k() {
 // Note that the adler32 mimic tests and benches don't work with
 // WUFFS_MIMICLIB_USE_MINIZ_INSTEAD_OF_ZLIB.
 
-proc tests[] = {
+proc g_tests[] = {
 
     test_wuffs_adler32_golden,
     test_wuffs_adler32_interface,
@@ -308,7 +308,7 @@ proc tests[] = {
     NULL,
 };
 
-proc benches[] = {
+proc g_benches[] = {
 
     bench_wuffs_adler32_10k,
     bench_wuffs_adler32_100k,
@@ -325,6 +325,6 @@ proc benches[] = {
 
 int  //
 main(int argc, char** argv) {
-  proc_package_name = "std/adler32";
-  return test_main(argc, argv, tests, benches);
+  g_proc_package_name = "std/adler32";
+  return test_main(argc, argv, g_tests, g_benches);
 }

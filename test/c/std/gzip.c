@@ -71,12 +71,12 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 
 // ---------------- Golden Tests
 
-golden_test gzip_midsummer_gt = {
+golden_test g_gzip_midsummer_gt = {
     .want_filename = "test/data/midsummer.txt",
     .src_filename = "test/data/midsummer.txt.gz",
 };
 
-golden_test gzip_pi_gt = {
+golden_test g_gzip_pi_gt = {
     .want_filename = "test/data/pi.txt",
     .src_filename = "test/data/pi.txt.gz",
 };
@@ -112,7 +112,7 @@ wuffs_gzip_decode(wuffs_base__io_buffer* dst,
     wuffs_base__io_buffer limited_src = make_limited_reader(*src, rlimit);
 
     wuffs_base__status status = wuffs_gzip__decoder__transform_io(
-        &dec, &limited_dst, &limited_src, global_work_slice);
+        &dec, &limited_dst, &limited_src, g_work_slice_u8);
 
     dst->meta.wi += limited_dst.meta.wi;
     src->meta.ri += limited_src.meta.ri;
@@ -130,13 +130,13 @@ wuffs_gzip_decode(wuffs_base__io_buffer* dst,
 const char*  //
 do_test_wuffs_gzip_checksum(bool ignore_checksum, uint32_t bad_checksum) {
   wuffs_base__io_buffer have = ((wuffs_base__io_buffer){
-      .data = global_have_slice,
+      .data = g_have_slice_u8,
   });
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
+      .data = g_src_slice_u8,
   });
 
-  CHECK_STRING(read_file(&src, gzip_midsummer_gt.src_filename));
+  CHECK_STRING(read_file(&src, g_gzip_midsummer_gt.src_filename));
 
   // Flip a bit in the gzip checksum, which is in the last 8 bytes of the file.
   if (src.meta.wi < 8) {
@@ -180,7 +180,7 @@ do_test_wuffs_gzip_checksum(bool ignore_checksum, uint32_t bad_checksum) {
 
       wuffs_base__io_buffer limited_src = make_limited_reader(src, rlimit);
       wuffs_base__status have_z = wuffs_gzip__decoder__transform_io(
-          &dec, &have, &limited_src, global_work_slice);
+          &dec, &have, &limited_src, g_work_slice_u8);
       src.meta.ri += limited_src.meta.ri;
       if (have_z.repr != want_z) {
         RETURN_FAIL("end_limit=%d: have \"%s\", want \"%s\"", end_limit,
@@ -218,14 +218,14 @@ test_wuffs_gzip_checksum_verify_good() {
 const char*  //
 test_wuffs_gzip_decode_midsummer() {
   CHECK_FOCUS(__func__);
-  return do_test_io_buffers(wuffs_gzip_decode, &gzip_midsummer_gt, UINT64_MAX,
+  return do_test_io_buffers(wuffs_gzip_decode, &g_gzip_midsummer_gt, UINT64_MAX,
                             UINT64_MAX);
 }
 
 const char*  //
 test_wuffs_gzip_decode_pi() {
   CHECK_FOCUS(__func__);
-  return do_test_io_buffers(wuffs_gzip_decode, &gzip_pi_gt, UINT64_MAX,
+  return do_test_io_buffers(wuffs_gzip_decode, &g_gzip_pi_gt, UINT64_MAX,
                             UINT64_MAX);
 }
 
@@ -236,14 +236,14 @@ test_wuffs_gzip_decode_pi() {
 const char*  //
 test_mimic_gzip_decode_midsummer() {
   CHECK_FOCUS(__func__);
-  return do_test_io_buffers(mimic_gzip_decode, &gzip_midsummer_gt, UINT64_MAX,
+  return do_test_io_buffers(mimic_gzip_decode, &g_gzip_midsummer_gt, UINT64_MAX,
                             UINT64_MAX);
 }
 
 const char*  //
 test_mimic_gzip_decode_pi() {
   CHECK_FOCUS(__func__);
-  return do_test_io_buffers(mimic_gzip_decode, &gzip_pi_gt, UINT64_MAX,
+  return do_test_io_buffers(mimic_gzip_decode, &g_gzip_pi_gt, UINT64_MAX,
                             UINT64_MAX);
 }
 
@@ -256,7 +256,7 @@ bench_wuffs_gzip_decode_10k() {
   CHECK_FOCUS(__func__);
   return do_bench_io_buffers(
       wuffs_gzip_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
-      tcounter_dst, &gzip_midsummer_gt, UINT64_MAX, UINT64_MAX, 300);
+      tcounter_dst, &g_gzip_midsummer_gt, UINT64_MAX, UINT64_MAX, 300);
 }
 
 const char*  //
@@ -264,7 +264,7 @@ bench_wuffs_gzip_decode_100k() {
   CHECK_FOCUS(__func__);
   return do_bench_io_buffers(
       wuffs_gzip_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
-      tcounter_dst, &gzip_pi_gt, UINT64_MAX, UINT64_MAX, 30);
+      tcounter_dst, &g_gzip_pi_gt, UINT64_MAX, UINT64_MAX, 30);
 }
 
   // ---------------- Mimic Benches
@@ -275,13 +275,13 @@ const char*  //
 bench_mimic_gzip_decode_10k() {
   CHECK_FOCUS(__func__);
   return do_bench_io_buffers(mimic_gzip_decode, 0, tcounter_dst,
-                             &gzip_midsummer_gt, UINT64_MAX, UINT64_MAX, 300);
+                             &g_gzip_midsummer_gt, UINT64_MAX, UINT64_MAX, 300);
 }
 
 const char*  //
 bench_mimic_gzip_decode_100k() {
   CHECK_FOCUS(__func__);
-  return do_bench_io_buffers(mimic_gzip_decode, 0, tcounter_dst, &gzip_pi_gt,
+  return do_bench_io_buffers(mimic_gzip_decode, 0, tcounter_dst, &g_gzip_pi_gt,
                              UINT64_MAX, UINT64_MAX, 30);
 }
 
@@ -292,7 +292,7 @@ bench_mimic_gzip_decode_100k() {
 // Note that the gzip mimic tests and benches don't work with
 // WUFFS_MIMICLIB_USE_MINIZ_INSTEAD_OF_ZLIB.
 
-proc tests[] = {
+proc g_tests[] = {
 
     test_wuffs_gzip_checksum_ignore,
     test_wuffs_gzip_checksum_verify_bad0,
@@ -312,7 +312,7 @@ proc tests[] = {
     NULL,
 };
 
-proc benches[] = {
+proc g_benches[] = {
 
     bench_wuffs_gzip_decode_10k,
     bench_wuffs_gzip_decode_100k,
@@ -329,6 +329,6 @@ proc benches[] = {
 
 int  //
 main(int argc, char** argv) {
-  proc_package_name = "std/gzip";
-  return test_main(argc, argv, tests, benches);
+  g_proc_package_name = "std/gzip";
+  return test_main(argc, argv, g_tests, g_benches);
 }

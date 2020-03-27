@@ -217,7 +217,7 @@ wuffs_gif_decode(wuffs_base__io_buffer* dst,
 
   wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
   CHECK_STATUS("set_from_slice", wuffs_base__pixel_buffer__set_from_slice(
-                                     &pb, &ic.pixcfg, global_pixel_slice));
+                                     &pb, &ic.pixcfg, g_pixel_slice_u8));
 
   while (true) {
     wuffs_base__status status =
@@ -230,7 +230,7 @@ wuffs_gif_decode(wuffs_base__io_buffer* dst,
     CHECK_STATUS("decode_frame",
                  wuffs_gif__decoder__decode_frame(&dec, &pb, src,
                                                   WUFFS_BASE__PIXEL_BLEND__SRC,
-                                                  global_work_slice, NULL));
+                                                  g_work_slice_u8, NULL));
 
     CHECK_STRING(copy_to_io_buffer_from_pixel_buffer(
         dst, &pb, wuffs_base__frame_config__bounds(&fc)));
@@ -245,10 +245,10 @@ do_test_wuffs_gif_decode(const char* filename,
                          uint64_t rlimit,
                          wuffs_base__pixel_format dst_pixfmt) {
   wuffs_base__io_buffer have = ((wuffs_base__io_buffer){
-      .data = global_have_slice,
+      .data = g_have_slice_u8,
   });
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
+      .data = g_src_slice_u8,
   });
   CHECK_STRING(read_file(&src, filename));
 
@@ -290,7 +290,7 @@ do_test_wuffs_gif_decode(const char* filename,
                                   120);
 
     CHECK_STATUS("set_from_slice", wuffs_base__pixel_buffer__set_from_slice(
-                                       &pb, &ic.pixcfg, global_pixel_slice));
+                                       &pb, &ic.pixcfg, g_pixel_slice_u8));
 
     uint32_t have = wuffs_gif__decoder__num_animation_loops(&dec);
     if (have != 1) {
@@ -330,8 +330,8 @@ do_test_wuffs_gif_decode(const char* filename,
     size_t old_ri = src.meta.ri;
 
     wuffs_base__status status = wuffs_gif__decoder__decode_frame(
-        &dec, &pb, &limited_src, WUFFS_BASE__PIXEL_BLEND__SRC,
-        global_work_slice, NULL);
+        &dec, &pb, &limited_src, WUFFS_BASE__PIXEL_BLEND__SRC, g_work_slice_u8,
+        NULL);
     src.meta.ri += limited_src.meta.ri;
 
     if (wuffs_base__status__is_ok(&status)) {
@@ -380,14 +380,14 @@ do_test_wuffs_gif_decode(const char* filename,
   }
 
   wuffs_base__io_buffer ind_want = ((wuffs_base__io_buffer){
-      .data = global_want_slice,
+      .data = g_want_slice_u8,
   });
   CHECK_STRING(read_file(&ind_want, indexes_filename));
   if (dst_pixfmt.repr == WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY) {
     CHECK_STRING(check_io_buffers_equal("indexes ", &have, &ind_want));
   } else {
     wuffs_base__io_buffer expanded_want = ((wuffs_base__io_buffer){
-        .data = global_work_slice,
+        .data = g_work_slice_u8,
     });
     if (ind_want.meta.wi > (expanded_want.data.len / 4)) {
       RETURN_FAIL("indexes are too long to expand into the work buffer");
@@ -455,7 +455,7 @@ do_test_wuffs_gif_decode(const char* filename,
       RETURN_FAIL("decode_frame returned \"ok\" but src was exhausted");
     }
     wuffs_base__status status = wuffs_gif__decoder__decode_frame(
-        &dec, &pb, &src, WUFFS_BASE__PIXEL_BLEND__SRC, global_work_slice, NULL);
+        &dec, &pb, &src, WUFFS_BASE__PIXEL_BLEND__SRC, g_work_slice_u8, NULL);
     if (status.repr != wuffs_base__note__end_of_data) {
       RETURN_FAIL("decode_frame: have \"%s\", want \"%s\"", status.repr,
                   wuffs_base__note__end_of_data);
@@ -489,10 +489,10 @@ do_test_wuffs_gif_decode_expecting(wuffs_base__io_buffer src,
 
   wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
   CHECK_STATUS("set_from_slice", wuffs_base__pixel_buffer__set_from_slice(
-                                     &pb, &ic.pixcfg, global_pixel_slice));
+                                     &pb, &ic.pixcfg, g_pixel_slice_u8));
 
   wuffs_base__status status = wuffs_gif__decoder__decode_frame(
-      &dec, &pb, &src, WUFFS_BASE__PIXEL_BLEND__SRC, global_work_slice, NULL);
+      &dec, &pb, &src, WUFFS_BASE__PIXEL_BLEND__SRC, g_work_slice_u8, NULL);
   if (status.repr != want_status) {
     RETURN_FAIL("decode_frame: have \"%s\", want \"%s\"", status.repr,
                 want_status);
@@ -512,7 +512,7 @@ const char*  //
 test_wuffs_gif_call_interleaved() {
   CHECK_FOCUS(__func__);
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
+      .data = g_src_slice_u8,
   });
   CHECK_STRING(read_file(&src, "test/data/bricks-dither.gif"));
 
@@ -553,7 +553,7 @@ const char*  //
 test_wuffs_gif_call_sequence() {
   CHECK_FOCUS(__func__);
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
+      .data = g_src_slice_u8,
   });
   CHECK_STRING(read_file(&src, "test/data/bricks-dither.gif"));
 
@@ -582,7 +582,7 @@ do_test_wuffs_gif_decode_animated(
     uint32_t want_num_frames,
     wuffs_base__rect_ie_u32* want_frame_config_bounds) {
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
+      .data = g_src_slice_u8,
   });
   CHECK_STRING(read_file(&src, filename));
 
@@ -605,7 +605,7 @@ do_test_wuffs_gif_decode_animated(
 
   wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
   CHECK_STATUS("set_from_slice", wuffs_base__pixel_buffer__set_from_slice(
-                                     &pb, &ic.pixcfg, global_pixel_slice));
+                                     &pb, &ic.pixcfg, g_pixel_slice_u8));
 
   uint32_t i;
   for (i = 0; i < want_num_frames; i++) {
@@ -630,7 +630,7 @@ do_test_wuffs_gif_decode_animated(
     }
 
     status = wuffs_gif__decoder__decode_frame(
-        &dec, &pb, &src, WUFFS_BASE__PIXEL_BLEND__SRC, global_work_slice, NULL);
+        &dec, &pb, &src, WUFFS_BASE__PIXEL_BLEND__SRC, g_work_slice_u8, NULL);
     if (!wuffs_base__status__is_ok(&status)) {
       RETURN_FAIL("decode_frame #%" PRIu32 ": \"%s\"", i, status.repr);
     }
@@ -647,7 +647,7 @@ do_test_wuffs_gif_decode_animated(
   // decode_frame.
   for (i = 0; i < 3; i++) {
     wuffs_base__status status = wuffs_gif__decoder__decode_frame(
-        &dec, &pb, &src, WUFFS_BASE__PIXEL_BLEND__SRC, global_work_slice, NULL);
+        &dec, &pb, &src, WUFFS_BASE__PIXEL_BLEND__SRC, g_work_slice_u8, NULL);
     if (status.repr != wuffs_base__note__end_of_data) {
       RETURN_FAIL("decode_frame: have \"%s\", want \"%s\"", status.repr,
                   wuffs_base__note__end_of_data);
@@ -700,7 +700,7 @@ const char*  //
 test_wuffs_gif_decode_delay_num_frames_decoded() {
   CHECK_FOCUS(__func__);
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
+      .data = g_src_slice_u8,
   });
   CHECK_STRING(read_file(&src, "test/data/animated-red-blue.gif"));
   if (src.meta.wi < 1) {
@@ -750,7 +750,7 @@ const char*  //
 test_wuffs_gif_decode_empty_palette() {
   CHECK_FOCUS(__func__);
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
+      .data = g_src_slice_u8,
   });
   CHECK_STRING(read_file(&src, "test/data/artificial/gif-empty-palette.gif"));
   int q;
@@ -774,16 +774,15 @@ test_wuffs_gif_decode_empty_palette() {
 
     wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
     status = wuffs_base__pixel_buffer__set_from_slice(&pb, &ic.pixcfg,
-                                                      global_pixel_slice);
+                                                      g_pixel_slice_u8);
     if (!wuffs_base__status__is_ok(&status)) {
       RETURN_FAIL("q=%d: set_from_slice: \"%s\"", q, status.repr);
     }
 
     int i;
     for (i = 0; i < 2; i++) {
-      status = wuffs_gif__decoder__decode_frame(&dec, &pb, &src,
-                                                WUFFS_BASE__PIXEL_BLEND__SRC,
-                                                global_work_slice, NULL);
+      status = wuffs_gif__decoder__decode_frame(
+          &dec, &pb, &src, WUFFS_BASE__PIXEL_BLEND__SRC, g_work_slice_u8, NULL);
       if ((q == 1) && (i == 1)) {
         if (status.repr != wuffs_gif__error__bad_palette) {
           RETURN_FAIL("q=%d: i=%d: decode_frame: have \"%s\", want \"%s\"", q,
@@ -818,7 +817,7 @@ const char*  //
 test_wuffs_gif_decode_background_color() {
   CHECK_FOCUS(__func__);
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
+      .data = g_src_slice_u8,
   });
   CHECK_STRING(
       read_file(&src, "test/data/artificial/gif-background-color.gif"));
@@ -857,7 +856,7 @@ const char*  //
 test_wuffs_gif_decode_first_frame_is_opaque() {
   CHECK_FOCUS(__func__);
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
+      .data = g_src_slice_u8,
   });
   CHECK_STRING(
       read_file(&src, "test/data/artificial/gif-frame-out-of-bounds.gif"));
@@ -895,7 +894,7 @@ const char*  //
 test_wuffs_gif_decode_frame_out_of_bounds() {
   CHECK_FOCUS(__func__);
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
+      .data = g_src_slice_u8,
   });
   CHECK_STRING(
       read_file(&src, "test/data/artificial/gif-frame-out-of-bounds.gif"));
@@ -941,7 +940,7 @@ test_wuffs_gif_decode_frame_out_of_bounds() {
         wuffs_base__pixel_config__pixel_subsampling(&ic.pixcfg).repr, 5, 5);
     wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
     status = wuffs_base__pixel_buffer__set_from_slice(&pb, &five_by_five,
-                                                      global_pixel_slice);
+                                                      g_pixel_slice_u8);
     if (!wuffs_base__status__is_ok(&status)) {
       RETURN_FAIL("q=%d: set_from_slice: \"%s\"", q, status.repr);
     }
@@ -1010,7 +1009,7 @@ test_wuffs_gif_decode_frame_out_of_bounds() {
 
         status = wuffs_gif__decoder__decode_frame(&dec, &pb, &src,
                                                   WUFFS_BASE__PIXEL_BLEND__SRC,
-                                                  global_work_slice, NULL);
+                                                  g_work_slice_u8, NULL);
         if (!wuffs_base__status__is_ok(&status)) {
           RETURN_FAIL("q=%d: decode_frame #%" PRIu32 ": \"%s\"", q, i,
                       status.repr);
@@ -1065,7 +1064,7 @@ const char*  //
 test_wuffs_gif_decode_zero_width_frame() {
   CHECK_FOCUS(__func__);
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
+      .data = g_src_slice_u8,
   });
   CHECK_STRING(
       read_file(&src, "test/data/artificial/gif-zero-width-frame.gif"));
@@ -1105,13 +1104,13 @@ test_wuffs_gif_decode_zero_width_frame() {
 
     wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
     status = wuffs_base__pixel_buffer__set_from_slice(&pb, &ic.pixcfg,
-                                                      global_pixel_slice);
+                                                      g_pixel_slice_u8);
     if (!wuffs_base__status__is_ok(&status)) {
       RETURN_FAIL("q=%d: set_from_slice: \"%s\"", q, status.repr);
     }
 
     wuffs_base__status have = wuffs_gif__decoder__decode_frame(
-        &dec, &pb, &src, WUFFS_BASE__PIXEL_BLEND__SRC, global_work_slice, NULL);
+        &dec, &pb, &src, WUFFS_BASE__PIXEL_BLEND__SRC, g_work_slice_u8, NULL);
     if (have.repr != want) {
       RETURN_FAIL("q=%d: decode_frame: have \"%s\", want \"%s\"", q, have.repr,
                   want);
@@ -1213,7 +1212,7 @@ const char*  //
 test_wuffs_gif_decode_input_is_a_png() {
   CHECK_FOCUS(__func__);
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
+      .data = g_src_slice_u8,
   });
   CHECK_STRING(read_file(&src, "test/data/bricks-dither.png"));
 
@@ -1237,7 +1236,7 @@ const char*  //
 test_wuffs_gif_decode_interlaced_truncated() {
   CHECK_FOCUS(__func__);
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
+      .data = g_src_slice_u8,
   });
   CHECK_STRING(
       read_file(&src, "test/data/hippopotamus.interlaced.truncated.gif"));
@@ -1269,7 +1268,7 @@ test_wuffs_gif_decode_interlaced_truncated() {
 
   wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
   CHECK_STATUS("set_from_slice", wuffs_base__pixel_buffer__set_from_slice(
-                                     &pb, &ic.pixcfg, global_pixel_slice));
+                                     &pb, &ic.pixcfg, g_pixel_slice_u8));
   uint8_t* pixel_ptr = wuffs_base__pixel_buffer__plane(&pb, 0).ptr;
   memset(pixel_ptr, 0xEE, num_pixel_indexes);
 
@@ -1279,7 +1278,7 @@ test_wuffs_gif_decode_interlaced_truncated() {
   }
 
   wuffs_base__status status = wuffs_gif__decoder__decode_frame(
-      &dec, &pb, &src, WUFFS_BASE__PIXEL_BLEND__SRC, global_work_slice, NULL);
+      &dec, &pb, &src, WUFFS_BASE__PIXEL_BLEND__SRC, g_work_slice_u8, NULL);
   if (status.repr != wuffs_base__suspension__short_read) {
     RETURN_FAIL("decode_frame: have \"%s\", want \"%s\"", status.repr,
                 wuffs_base__suspension__short_read);
@@ -1300,9 +1299,10 @@ test_wuffs_gif_decode_interlaced_truncated() {
   return NULL;
 }
 
-const char* do_test_wuffs_gif_decode_metadata(bool full) {
+const char*  //
+do_test_wuffs_gif_decode_metadata(bool full) {
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
+      .data = g_src_slice_u8,
   });
   CHECK_STRING(
       read_file(&src, full ? "test/data/artificial/gif-metadata-full.gif"
@@ -1472,7 +1472,7 @@ const char*  //
 test_wuffs_gif_decode_missing_two_src_bytes() {
   CHECK_FOCUS(__func__);
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
+      .data = g_src_slice_u8,
   });
   CHECK_STRING(read_file(&src, "test/data/pjw-thumbnail.gif"));
 
@@ -1490,7 +1490,7 @@ const char*  //
 test_wuffs_gif_decode_multiple_graphic_controls() {
   CHECK_FOCUS(__func__);
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
+      .data = g_src_slice_u8,
   });
   CHECK_STRING(read_file(
       &src, "test/data/artificial/gif-multiple-graphic-controls.gif"));
@@ -1517,7 +1517,7 @@ const char*  //
 test_wuffs_gif_decode_multiple_loop_counts() {
   CHECK_FOCUS(__func__);
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
+      .data = g_src_slice_u8,
   });
   CHECK_STRING(
       read_file(&src, "test/data/artificial/gif-multiple-loop-counts.gif"));
@@ -1579,7 +1579,7 @@ const char*  //
 test_wuffs_gif_decode_pixel_data_none() {
   CHECK_FOCUS(__func__);
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
+      .data = g_src_slice_u8,
   });
   CHECK_STRING(read_file(&src, "test/data/artificial/gif-pixel-data-none.gif"));
 
@@ -1591,7 +1591,7 @@ const char*  //
 test_wuffs_gif_decode_pixel_data_not_enough() {
   CHECK_FOCUS(__func__);
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
+      .data = g_src_slice_u8,
   });
   CHECK_STRING(
       read_file(&src, "test/data/artificial/gif-pixel-data-not-enough.gif"));
@@ -1604,7 +1604,7 @@ const char*  //
 test_wuffs_gif_decode_pixel_data_too_much_sans_quirk() {
   CHECK_FOCUS(__func__);
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
+      .data = g_src_slice_u8,
   });
   CHECK_STRING(
       read_file(&src, "test/data/artificial/gif-pixel-data-too-much.gif"));
@@ -1617,7 +1617,7 @@ const char*  //
 test_wuffs_gif_decode_pixel_data_too_much_with_quirk() {
   CHECK_FOCUS(__func__);
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
+      .data = g_src_slice_u8,
   });
   CHECK_STRING(
       read_file(&src, "test/data/artificial/gif-pixel-data-too-much.gif"));
@@ -1630,7 +1630,7 @@ const char*  //
 test_wuffs_gif_frame_dirty_rect() {
   CHECK_FOCUS(__func__);
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
+      .data = g_src_slice_u8,
   });
   CHECK_STRING(read_file(&src, "test/data/hippopotamus.interlaced.gif"));
 
@@ -1646,7 +1646,7 @@ test_wuffs_gif_frame_dirty_rect() {
 
   wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
   CHECK_STATUS("set_from_slice", wuffs_base__pixel_buffer__set_from_slice(
-                                     &pb, &ic.pixcfg, global_pixel_slice));
+                                     &pb, &ic.pixcfg, g_pixel_slice_u8));
 
   // The hippopotamus.interlaced.gif image is 28 pixels high. As we decode rows
   // of pixels, interlacing means that we decode rows 0, 8, 16, 24, 4, 12, 20,
@@ -1661,8 +1661,8 @@ test_wuffs_gif_frame_dirty_rect() {
     wuffs_base__io_buffer limited_src = make_limited_reader(src, 1);
 
     wuffs_base__status status = wuffs_gif__decoder__decode_frame(
-        &dec, &pb, &limited_src, WUFFS_BASE__PIXEL_BLEND__SRC,
-        global_work_slice, NULL);
+        &dec, &pb, &limited_src, WUFFS_BASE__PIXEL_BLEND__SRC, g_work_slice_u8,
+        NULL);
     src.meta.ri += limited_src.meta.ri;
 
     wuffs_base__rect_ie_u32 r = wuffs_gif__decoder__frame_dirty_rect(&dec);
@@ -1685,9 +1685,10 @@ test_wuffs_gif_frame_dirty_rect() {
   return NULL;
 }
 
-const char* do_test_wuffs_gif_num_decoded(bool frame_config) {
+const char*  //
+do_test_wuffs_gif_num_decoded(bool frame_config) {
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
+      .data = g_src_slice_u8,
   });
   CHECK_STRING(read_file(&src, "test/data/animated-red-blue.gif"));
 
@@ -1704,7 +1705,7 @@ const char* do_test_wuffs_gif_num_decoded(bool frame_config) {
                  wuffs_gif__decoder__decode_image_config(&dec, &ic, &src));
 
     CHECK_STATUS("set_from_slice", wuffs_base__pixel_buffer__set_from_slice(
-                                       &pb, &ic.pixcfg, global_pixel_slice));
+                                       &pb, &ic.pixcfg, g_pixel_slice_u8));
   }
 
   const char* method = frame_config ? "decode_frame_config" : "decode_frame";
@@ -1728,9 +1729,8 @@ const char* do_test_wuffs_gif_num_decoded(bool frame_config) {
     if (frame_config) {
       status = wuffs_gif__decoder__decode_frame_config(&dec, NULL, &src);
     } else {
-      status = wuffs_gif__decoder__decode_frame(&dec, &pb, &src,
-                                                WUFFS_BASE__PIXEL_BLEND__SRC,
-                                                global_work_slice, NULL);
+      status = wuffs_gif__decoder__decode_frame(
+          &dec, &pb, &src, WUFFS_BASE__PIXEL_BLEND__SRC, g_work_slice_u8, NULL);
     }
 
     if (wuffs_base__status__is_ok(&status)) {
@@ -1761,9 +1761,10 @@ test_wuffs_gif_num_decoded_frames() {
   return do_test_wuffs_gif_num_decoded(false);
 }
 
-const char* do_test_wuffs_gif_io_position(bool chunked) {
+const char*  //
+do_test_wuffs_gif_io_position(bool chunked) {
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
+      .data = g_src_slice_u8,
   });
   CHECK_STRING(read_file(&src, "test/data/animated-red-blue.gif"));
 
@@ -1929,7 +1930,7 @@ const char*  //
 test_wuffs_gif_small_frame_interlaced() {
   CHECK_FOCUS(__func__);
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
+      .data = g_src_slice_u8,
   });
   CHECK_STRING(
       read_file(&src, "test/data/artificial/gif-small-frame-interlaced.gif"));
@@ -1954,7 +1955,7 @@ test_wuffs_gif_small_frame_interlaced() {
 
   wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
   CHECK_STATUS("set_from_slice", wuffs_base__pixel_buffer__set_from_slice(
-                                     &pb, &ic.pixcfg, global_pixel_slice));
+                                     &pb, &ic.pixcfg, g_pixel_slice_u8));
 
   wuffs_base__frame_config fc;
   CHECK_STATUS("decode_frame_config",
@@ -1969,7 +1970,7 @@ test_wuffs_gif_small_frame_interlaced() {
   CHECK_STATUS("decode_frame",
                wuffs_gif__decoder__decode_frame(&dec, &pb, &src,
                                                 WUFFS_BASE__PIXEL_BLEND__SRC,
-                                                global_work_slice, NULL));
+                                                g_work_slice_u8, NULL));
 
   wuffs_base__rect_ie_u32 dr = wuffs_gif__decoder__frame_dirty_rect(&dec);
   if (dr.max_excl_y != 3) {
@@ -1999,15 +2000,16 @@ test_wuffs_gif_sizeof() {
 
 #ifdef WUFFS_MIMIC
 
-const char* do_test_mimic_gif_decode(const char* filename) {
+const char*  //
+do_test_mimic_gif_decode(const char* filename) {
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
+      .data = g_src_slice_u8,
   });
   CHECK_STRING(read_file(&src, filename));
 
   src.meta.ri = 0;
   wuffs_base__io_buffer have = ((wuffs_base__io_buffer){
-      .data = global_have_slice,
+      .data = g_have_slice_u8,
   });
   CHECK_STRING(
       wuffs_gif_decode(&have, 0,
@@ -2017,7 +2019,7 @@ const char* do_test_mimic_gif_decode(const char* filename) {
 
   src.meta.ri = 0;
   wuffs_base__io_buffer want = ((wuffs_base__io_buffer){
-      .data = global_want_slice,
+      .data = g_want_slice_u8,
   });
   CHECK_STRING(
       mimic_gif_decode(&want, 0,
@@ -2125,17 +2127,17 @@ do_bench_gif_decode(const char* (*decode_func)(wuffs_base__io_buffer*,
                     wuffs_base__pixel_format pixfmt,
                     uint64_t iters_unscaled) {
   wuffs_base__io_buffer have = ((wuffs_base__io_buffer){
-      .data = global_have_slice,
+      .data = g_have_slice_u8,
   });
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
+      .data = g_src_slice_u8,
   });
   CHECK_STRING(read_file(&src, filename));
 
   bench_start();
   uint64_t n_bytes = 0;
   uint64_t i;
-  uint64_t iters = iters_unscaled * flags.iterscale;
+  uint64_t iters = iters_unscaled * g_flags.iterscale;
   for (i = 0; i < iters; i++) {
     have.meta.wi = 0;
     src.meta.ri = 0;
@@ -2354,7 +2356,7 @@ bench_mimic_gif_decode_anim_screencap() {
 
 // ---------------- Manifest
 
-proc tests[] = {
+proc g_tests[] = {
 
     // These basic tests are really testing the Wuffs compiler. They aren't
     // specific to the std/gif code, but putting them here is as good as any
@@ -2428,7 +2430,7 @@ proc tests[] = {
     NULL,
 };
 
-proc benches[] = {
+proc g_benches[] = {
 
     bench_wuffs_gif_decode_1k_bw,
     bench_wuffs_gif_decode_1k_color_full_init,
@@ -2460,6 +2462,6 @@ proc benches[] = {
 
 int  //
 main(int argc, char** argv) {
-  proc_package_name = "std/gif";
-  return test_main(argc, argv, tests, benches);
+  g_proc_package_name = "std/gif";
+  return test_main(argc, argv, g_tests, g_benches);
 }
