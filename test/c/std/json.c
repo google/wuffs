@@ -410,6 +410,7 @@ test_strconv_parse_number_f64() {
       {.want = 0x0000000000000000, .str = "+0.0"},
       {.want = 0x0000000000000000, .str = "0"},
       {.want = 0x0000000000000000, .str = "0e0"},
+      {.want = 0x0000000000000000, .str = "1e-332"},
       {.want = 0x0000000000000001, .str = "4.9406564584124654e-324"},
       {.want = 0x000FFFFFFFFFFFFF, .str = "2.2250738585072009E-308"},
       {.want = 0x0010000000000000, .str = "2.2250738585072014E-308"},
@@ -431,7 +432,10 @@ test_strconv_parse_number_f64() {
       {.want = 0x3FF0000000000002, .str = "1.0000000000000004"},
       {.want = 0x3FF4000000000000, .str = "1.25"},
       {.want = 0x3FF8000000000000, .str = "+1.5"},
-      {.want = 0x4000000000000000, .str = "2"},
+      {.want = 0x4008000000000000, .str = "3"},
+      {.want = 0x400921F9F01B866E, .str = "3.14159"},
+      {.want = 0x400921FB54442D11, .str = "3.14159265358979"},
+      {.want = 0x400921FB54442D18, .str = "3.141592653589793"},
       {.want = 0x400921FB54442D18, .str = "3.141592653589793238462643383279"},
       {.want = 0x400C000000000000, .str = "3.5"},
       {.want = 0x4014000000000000, .str = "5"},
@@ -459,6 +463,7 @@ test_strconv_parse_number_f64() {
       {.want = 0x54B249AD2594C37D, .str = "+_1_E_+_1_0_0_"},
       {.want = 0x7FEFFFFFFFFFFFFF, .str = "1.7976931348623157e308"},
       {.want = 0x7FF0000000000000, .str = "1.8e308"},
+      {.want = 0x7FF0000000000000, .str = "1e+316"},
       {.want = 0x7FF0000000000000, .str = "1e999"},
       {.want = 0x7FF0000000000000, .str = "__InFinity__"},
       {.want = 0x7FF0000000000000, .str = "inf"},
@@ -2175,6 +2180,50 @@ test_wuffs_json_decode_string() {
 
 #endif  // WUFFS_MIMIC
 
+// ---------------- String Conversions Benches
+
+const char*  //
+do_bench_strconv_parse_number_f64(const char* str, uint64_t iters_unscaled) {
+  wuffs_base__slice_u8 s = wuffs_base__make_slice_u8((void*)str, strlen(str));
+
+  bench_start();
+  uint64_t i;
+  uint64_t iters = iters_unscaled * g_flags.iterscale;
+  for (i = 0; i < iters; i++) {
+    CHECK_STATUS("", wuffs_base__parse_number_f64(s).status);
+  }
+  bench_finish(iters, 0);
+
+  return NULL;
+}
+
+const char*  //
+bench_strconv_parse_number_f64_1_lsh53_add0() {
+  CHECK_FOCUS(__func__);
+  // 9007_199254_740992 is 0x20_0000_0000_0000, aka ((1<<53) + 0).
+  return do_bench_strconv_parse_number_f64("9007199254740992", 1000);
+}
+
+const char*  //
+bench_strconv_parse_number_f64_1_lsh53_add1() {
+  CHECK_FOCUS(__func__);
+  // 9007_199254_740993 is 0x20_0000_0000_0001, aka ((1<<53) + 1).
+  return do_bench_strconv_parse_number_f64("9007199254740993", 1000);
+}
+
+const char*  //
+bench_strconv_parse_number_f64_pi_long() {
+  CHECK_FOCUS(__func__);
+  return do_bench_strconv_parse_number_f64("3.141592653589793238462643383279",
+                                           1000);
+}
+
+const char*  //
+bench_strconv_parse_number_f64_pi_short() {
+  CHECK_FOCUS(__func__);
+  return do_bench_strconv_parse_number_f64("3.14159", 1000);
+}
+
 // ---------------- JSON Benches
 
 const char*  //
@@ -2258,6 +2307,11 @@ proc g_tests[] = {
 };
 
 proc g_benches[] = {
+
+    bench_strconv_parse_number_f64_1_lsh53_add0,
+    bench_strconv_parse_number_f64_1_lsh53_add1,
+    bench_strconv_parse_number_f64_pi_long,
+    bench_strconv_parse_number_f64_pi_short,
 
     bench_wuffs_json_decode_1k,
     bench_wuffs_json_decode_21k_formatted,
