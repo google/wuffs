@@ -383,6 +383,80 @@ wuffs_base__u64__sat_sub(uint64_t x, uint64_t y) {
   return res;
 }
 
+// --------
+
+typedef struct {
+  uint64_t hi;
+  uint64_t lo;
+} wuffs_base__multiply_u64__output;
+
+// wuffs_base__multiply_u64 returns x*y as a 128-bit value.
+//
+// The maximum inclusive output hi_lo is 0xFFFFFFFFFFFFFFFE_0000000000000001.
+static inline wuffs_base__multiply_u64__output  //
+wuffs_base__multiply_u64(uint64_t x, uint64_t y) {
+  uint64_t x0 = x & 0xFFFFFFFF;
+  uint64_t x1 = x >> 32;
+  uint64_t y0 = y & 0xFFFFFFFF;
+  uint64_t y1 = y >> 32;
+  uint64_t w0 = x0 * y0;
+  uint64_t t = (x1 * y0) + (w0 >> 32);
+  uint64_t w1 = t & 0xFFFFFFFF;
+  uint64_t w2 = t >> 32;
+  w1 += x0 * y1;
+  wuffs_base__multiply_u64__output o;
+  o.hi = (x1 * y1) + w2 + (w1 >> 32);
+  o.lo = x * y;
+  return o;
+}
+
+  // --------
+
+#if defined(__GNUC__) && (__SIZEOF_LONG__ == 8)
+
+static inline uint32_t  //
+wuffs_base__count_leading_zeroes_u64(uint64_t u) {
+  return u ? ((uint32_t)(__builtin_clzl(u))) : 64u;
+}
+
+#else
+
+static inline uint32_t  //
+wuffs_base__count_leading_zeroes_u64(uint64_t u) {
+  if (u == 0) {
+    return 64;
+  }
+
+  uint32_t n = 0;
+  if ((u >> 32) == 0) {
+    n |= 32;
+    u <<= 32;
+  }
+  if ((u >> 48) == 0) {
+    n |= 16;
+    u <<= 16;
+  }
+  if ((u >> 56) == 0) {
+    n |= 8;
+    u <<= 8;
+  }
+  if ((u >> 60) == 0) {
+    n |= 4;
+    u <<= 4;
+  }
+  if ((u >> 62) == 0) {
+    n |= 2;
+    u <<= 2;
+  }
+  if ((u >> 63) == 0) {
+    n |= 1;
+    u <<= 1;
+  }
+  return n;
+}
+
+#endif  // defined(__GNUC__) && (__SIZEOF_LONG__ == 8)
+
   // --------
 
 #define wuffs_base__load_u8be__no_bounds_check \

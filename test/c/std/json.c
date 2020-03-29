@@ -67,6 +67,77 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 // No mimic library.
 #endif
 
+// ---------------- Numeric Types Tests
+
+const char*  //
+test_wuffs_core_count_leading_zeroes_u64() {
+  CHECK_FOCUS(__func__);
+
+  struct {
+    uint64_t num;
+    uint32_t want;
+  } test_cases[] = {
+      {.num = 0x0000000000000000, .want = 64},
+      {.num = 0x0000000000000001, .want = 63},
+      {.num = 0x0000000000008001, .want = 48},
+      {.num = 0x0000000040302010, .want = 33},
+      {.num = 0x0123456789ABCDEF, .want = 7},
+      {.num = 0x8000000000000001, .want = 0},
+      {.num = 0xFFFFFFFFFFFFFFFF, .want = 0},
+  };
+
+  int tc;
+  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+    uint32_t have = wuffs_base__count_leading_zeroes_u64(test_cases[tc].num);
+    if (have != test_cases[tc].want) {
+      RETURN_FAIL("0x%" PRIX64 ": have %" PRIu32 ", want %" PRIu32,
+                  test_cases[tc].num, have, test_cases[tc].want);
+    }
+  }
+
+  return NULL;
+}
+
+const char*  //
+test_wuffs_core_multiply_u64() {
+  CHECK_FOCUS(__func__);
+
+  struct {
+    uint64_t x;
+    uint64_t y;
+    uint64_t want_hi;
+    uint64_t want_lo;
+  } test_cases[] = {
+      {.x = 0x0000000000005678,
+       .y = 0x0000000000001001,
+       .want_hi = 0x0000000000000000,
+       .want_lo = 0x000000000567D678},
+      {.x = 0x00000000DEADBEEF,
+       .y = 0x000000BEEEEEEEEF,
+       .want_hi = 0x00000000000000A6,
+       .want_lo = 0x14C912411FE97321},
+      {.x = 0x0123456789ABCDEF,
+       .y = 0x8080707066554321,
+       .want_hi = 0x009234D666DAD50F,
+       .want_lo = 0x89B3DE09506618CF},
+  };
+
+  int tc;
+  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+    wuffs_base__multiply_u64__output have =
+        wuffs_base__multiply_u64(test_cases[tc].x, test_cases[tc].y);
+    if ((have.hi != test_cases[tc].want_hi) ||
+        (have.lo != test_cases[tc].want_lo)) {
+      RETURN_FAIL("0x%" PRIX64 " * 0x%" PRIX64 ": have (0x%" PRIX64
+                  ", 0x%" PRIX64 "), want (0x%" PRIX64 ", 0x%" PRIX64 ")",
+                  test_cases[tc].x, test_cases[tc].y, have.hi, have.lo,
+                  test_cases[tc].want_hi, test_cases[tc].want_lo);
+    }
+  }
+
+  return NULL;
+}
+
 // ---------------- String Conversions Tests
 
 // wuffs_base__private_implementation__high_prec_dec__to_debug_string converts
@@ -347,6 +418,134 @@ test_strconv_hpd_shift() {
   }
   return NULL;
 }
+
+const char*  //
+test_strconv_mpb_assign_from_hpd() {
+  CHECK_FOCUS(__func__);
+
+  struct {
+    const char* str;
+    int32_t decimal_point;
+    uint64_t want_mantissa;
+    int32_t want_exp2;
+    double want_f64;
+  } test_cases[] = {
+
+      // (0x818995CE7AA0E1B2 * (2 ** -1136)) is roughly 1e-323
+      //
+      // 1e-323 is roughly twice 4.94066e-324, the minimum subnormal positive
+      // double-precision floating point number.
+      {.str = "1",
+       .decimal_point = -322,
+       .want_mantissa = 0x818995CE7AA0E1B2,
+       .want_exp2 = -1136,
+       .want_f64 = 1e-323},
+
+      // (0xD1B71758E219652C * (2 **   -77)) is roughly .0001
+      {.str = "1",
+       .decimal_point = -3,
+       .want_mantissa = 0xD1B71758E219652C,
+       .want_exp2 = -77,
+       .want_f64 = .0001},
+
+      // (0xCCCCCCCCCCCCCCCD * (2 **   -67)) is roughly .1
+      {.str = "1",
+       .decimal_point = +0,
+       .want_mantissa = 0xCCCCCCCCCCCCCCCD,
+       .want_exp2 = -67,
+       .want_f64 = .1},
+
+      // (0x8000000000000000 * (2 **   -63)) is         1.
+      {.str = "1",
+       .decimal_point = +1,
+       .want_mantissa = 0x8000000000000000,
+       .want_exp2 = -63,
+       .want_f64 = 1},
+
+      // (0xA000000000000000 * (2 **   -60)) is         10.
+      {.str = "1",
+       .decimal_point = +2,
+       .want_mantissa = 0xA000000000000000,
+       .want_exp2 = -60,
+       .want_f64 = 10},
+
+      // (0xC9F2C9CD04674EDE * (2 **   +36)) is roughly 1e30.
+      {.str = "1",
+       .decimal_point = +31,
+       .want_mantissa = 0xC9F2C9CD04674EDE,
+       .want_exp2 = +36,
+       .want_f64 = 1e30},
+
+      // (0xDE81E40A034BCF50 * (2 **  +966)) is roughly 1e310.
+      //
+      // 1e310 is almost 50 times larger than DBL_MAX (roughly 1.8e308), so it
+      // should be converted to +infinity.
+      {.str = "1",
+       .decimal_point = +311,
+       .want_mantissa = 0xDE81E40A034BCF50,
+       .want_exp2 = +966,
+       .want_f64 = (1.0 / 0.0)},
+
+      // (0x9A40000000000000 * (2 **   -53)) is         1234.
+      {.str = "1234",
+       .decimal_point = +4,
+       .want_mantissa = 0x9A40000000000000,
+       .want_exp2 = -53,
+       .want_f64 = 1234},
+
+      // (0xC90FCF80DC33721E * (2 **   -62)) is roughly 3.14159
+      {.str = "314159",
+       .decimal_point = +1,
+       .want_mantissa = 0xC90FCF80DC33721E,
+       .want_exp2 = -62,
+       .want_f64 = 3.14159},
+  };
+
+  int tc;
+  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+    wuffs_base__private_implementation__high_prec_dec hpd;
+
+    // Initialize hpd.
+    uint32_t i;
+    for (i = 0; test_cases[tc].str[i]; i++) {
+      hpd.digits[i] = test_cases[tc].str[i] - '0';
+    }
+    hpd.num_digits = i;
+    hpd.decimal_point = test_cases[tc].decimal_point;
+    hpd.negative = false;
+    hpd.truncated = false;
+
+    wuffs_base__private_implementation__medium_prec_bin mpb;
+    wuffs_base__private_implementation__medium_prec_bin__parse_number_f64(&mpb,
+                                                                          &hpd);
+
+    uint64_t have_mantissa = mpb.mantissa;
+    if (have_mantissa != test_cases[tc].want_mantissa) {
+      RETURN_FAIL("%s@%d: mantissa: have 0x%" PRIX64 ", want 0x%" PRIX64,
+                  test_cases[tc].str, test_cases[tc].decimal_point,
+                  have_mantissa, test_cases[tc].want_mantissa);
+    }
+
+    int32_t have_exp2 = mpb.exp2;
+    if (have_exp2 != test_cases[tc].want_exp2) {
+      RETURN_FAIL("%s@%d: exp2: have %" PRId32 ", want %" PRId32,
+                  test_cases[tc].str, test_cases[tc].decimal_point, have_exp2,
+                  test_cases[tc].want_exp2);
+    }
+
+    double have_f64 =
+        wuffs_base__private_implementation__medium_prec_bin__as_f64(&mpb,
+                                                                    false);
+    if (have_f64 != test_cases[tc].want_f64) {
+      RETURN_FAIL("%s@%d: f64: have %g, want %g", test_cases[tc].str,
+                  test_cases[tc].decimal_point, have_f64,
+                  test_cases[tc].want_f64);
+    }
+  }
+  return NULL;
+}
+
+// ----------------
 
 const char*  //
 test_strconv_hexadecimal() {
@@ -2270,12 +2469,15 @@ bench_wuffs_json_decode_217k_stringy() {
 
 proc g_tests[] = {
 
-    // These strconv tests are really testing the Wuffs base library. They
-    // aren't specific to the std/json code, but putting them here is as good
-    // as any other place.
+    // These core and strconv tests are really testing the Wuffs base library.
+    // They aren't specific to the std/json code, but putting them here is as
+    // good as any other place.
+    test_wuffs_core_count_leading_zeroes_u64,
+    test_wuffs_core_multiply_u64,
     test_strconv_hexadecimal,
     test_strconv_hpd_rounded_integer,
     test_strconv_hpd_shift,
+    test_strconv_mpb_assign_from_hpd,
     test_strconv_parse_number_f64,
     test_strconv_parse_number_i64,
     test_strconv_parse_number_u64,

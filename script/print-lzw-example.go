@@ -33,6 +33,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 )
 
 const (
@@ -74,6 +75,13 @@ func codeString(code int) string {
 }
 
 func main() {
+	if err := main1(); err != nil {
+		os.Stderr.WriteString(err.Error() + "\n")
+		os.Exit(1)
+	}
+}
+
+func main1() error {
 	n, s, q := new(naive), new(suf1), new(sufQ)
 	decode(n)
 	decode(s)
@@ -109,6 +117,7 @@ func main() {
 		fmt.Println()
 		key++
 	}
+	return nil
 }
 
 type implementation interface {

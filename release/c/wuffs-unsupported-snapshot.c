@@ -433,6 +433,80 @@ wuffs_base__u64__sat_sub(uint64_t x, uint64_t y) {
   return res;
 }
 
+// --------
+
+typedef struct {
+  uint64_t hi;
+  uint64_t lo;
+} wuffs_base__multiply_u64__output;
+
+// wuffs_base__multiply_u64 returns x*y as a 128-bit value.
+//
+// The maximum inclusive output hi_lo is 0xFFFFFFFFFFFFFFFE_0000000000000001.
+static inline wuffs_base__multiply_u64__output  //
+wuffs_base__multiply_u64(uint64_t x, uint64_t y) {
+  uint64_t x0 = x & 0xFFFFFFFF;
+  uint64_t x1 = x >> 32;
+  uint64_t y0 = y & 0xFFFFFFFF;
+  uint64_t y1 = y >> 32;
+  uint64_t w0 = x0 * y0;
+  uint64_t t = (x1 * y0) + (w0 >> 32);
+  uint64_t w1 = t & 0xFFFFFFFF;
+  uint64_t w2 = t >> 32;
+  w1 += x0 * y1;
+  wuffs_base__multiply_u64__output o;
+  o.hi = (x1 * y1) + w2 + (w1 >> 32);
+  o.lo = x * y;
+  return o;
+}
+
+  // --------
+
+#if defined(__GNUC__) && (__SIZEOF_LONG__ == 8)
+
+static inline uint32_t  //
+wuffs_base__count_leading_zeroes_u64(uint64_t u) {
+  return u ? ((uint32_t)(__builtin_clzl(u))) : 64u;
+}
+
+#else
+
+static inline uint32_t  //
+wuffs_base__count_leading_zeroes_u64(uint64_t u) {
+  if (u == 0) {
+    return 64;
+  }
+
+  uint32_t n = 0;
+  if ((u >> 32) == 0) {
+    n |= 32;
+    u <<= 32;
+  }
+  if ((u >> 48) == 0) {
+    n |= 16;
+    u <<= 16;
+  }
+  if ((u >> 56) == 0) {
+    n |= 8;
+    u <<= 8;
+  }
+  if ((u >> 60) == 0) {
+    n |= 4;
+    u <<= 4;
+  }
+  if ((u >> 62) == 0) {
+    n |= 2;
+    u <<= 2;
+  }
+  if ((u >> 63) == 0) {
+    n |= 1;
+    u <<= 1;
+  }
+  return n;
+}
+
+#endif  // defined(__GNUC__) && (__SIZEOF_LONG__ == 8)
+
   // --------
 
 #define wuffs_base__load_u8be__no_bounds_check \
@@ -8945,6 +9019,9 @@ fail_out_of_bounds:
 // fixed precision floating point decimal number, augmented with ±infinity
 // values, but it cannot represent NaN (Not a Number).
 //
+// "High precision" means that the mantissa holds 500 decimal digits. 500 is
+// WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__DIGITS_PRECISION.
+//
 // An HPD isn't for general purpose arithmetic, only for conversions to and
 // from IEEE 754 double-precision floating point, where the largest and
 // smallest positive, finite values are approximately 1.8e+308 and 4.9e-324.
@@ -8964,7 +9041,7 @@ fail_out_of_bounds:
 // For example, if num_digits is 3 and digits is "\x07\x08\x09":
 //   - A decimal_point of -2 means ".00789"
 //   - A decimal_point of -1 means ".0789"
-//   - A decimal_point of -0 means ".789"
+//   - A decimal_point of +0 means ".789"
 //   - A decimal_point of +1 means "7.89"
 //   - A decimal_point of +2 means "78.9"
 //   - A decimal_point of +3 means "789."
@@ -9494,6 +9571,371 @@ wuffs_base__private_implementation__high_prec_dec__small_rshift(
 
 // --------
 
+// The wuffs_base__private_implementation__etc_powers_of_10 tables were printed
+// by script/print-mpb-powers-of-10.go. That script has an optional -comments
+// flag, whose output is not copied here, which prints further detail.
+//
+// These tables are used in
+// wuffs_base__private_implementation__medium_prec_bin__assign_from_hpd.
+
+// wuffs_base__private_implementation__big_powers_of_10 contains approximations
+// to the powers of 10, ranging from 1e-348 to 1e+340, with the exponent
+// stepping by 8: -348, -340, -332, ..., -12, -4, +4, +12, ..., +340. Each step
+// consists of three uint32_t elements. There are 87 triples, 87 * 3 = 261.
+//
+// For example, the third approximation, for 1e-332, consists of the uint32_t
+// triple (0x3055AC76, 0x8B16FB20, 0xFFFFFB72). The first two of that triple
+// are a little-endian uint64_t value: 0x8B16FB203055AC76. The last one is an
+// int32_t value: -1166. Together, they represent the approximation:
+//   1e-332 ≈ 0x8B16FB203055AC76 * (2 ** -1166)
+// Similarly, the (0x00000000, 0x9C400000, 0xFFFFFFCE) uint32_t triple means:
+//   1e+4   ≈ 0x9C40000000000000 * (2 **   -50)  // This approx'n is exact.
+// Similarly, the (0xD4C4FB27, 0xED63A231, 0x000000A2) uint32_t triple means:
+//   1e+68  ≈ 0xED63A231D4C4FB27 * (2 **   162)
+static const uint32_t
+    wuffs_base__private_implementation__big_powers_of_10[261] = {
+        0x081C0288, 0xFA8FD5A0, 0xFFFFFB3C, 0xA23EBF76, 0xBAAEE17F, 0xFFFFFB57,
+        0x3055AC76, 0x8B16FB20, 0xFFFFFB72, 0x5DCE35EA, 0xCF42894A, 0xFFFFFB8C,
+        0x55653B2D, 0x9A6BB0AA, 0xFFFFFBA7, 0x3D1A45DF, 0xE61ACF03, 0xFFFFFBC1,
+        0xC79AC6CA, 0xAB70FE17, 0xFFFFFBDC, 0xBEBCDC4F, 0xFF77B1FC, 0xFFFFFBF6,
+        0x416BD60C, 0xBE5691EF, 0xFFFFFC11, 0x907FFC3C, 0x8DD01FAD, 0xFFFFFC2C,
+        0x31559A83, 0xD3515C28, 0xFFFFFC46, 0xADA6C9B5, 0x9D71AC8F, 0xFFFFFC61,
+        0x23EE8BCB, 0xEA9C2277, 0xFFFFFC7B, 0x4078536D, 0xAECC4991, 0xFFFFFC96,
+        0x5DB6CE57, 0x823C1279, 0xFFFFFCB1, 0x4DFB5637, 0xC2109436, 0xFFFFFCCB,
+        0x3848984F, 0x9096EA6F, 0xFFFFFCE6, 0x25823AC7, 0xD77485CB, 0xFFFFFD00,
+        0x97BF97F4, 0xA086CFCD, 0xFFFFFD1B, 0x172AACE5, 0xEF340A98, 0xFFFFFD35,
+        0x2A35B28E, 0xB23867FB, 0xFFFFFD50, 0xD2C63F3B, 0x84C8D4DF, 0xFFFFFD6B,
+        0x1AD3CDBA, 0xC5DD4427, 0xFFFFFD85, 0xBB25C996, 0x936B9FCE, 0xFFFFFDA0,
+        0x7D62A584, 0xDBAC6C24, 0xFFFFFDBA, 0x0D5FDAF6, 0xA3AB6658, 0xFFFFFDD5,
+        0xDEC3F126, 0xF3E2F893, 0xFFFFFDEF, 0xAAFF80B8, 0xB5B5ADA8, 0xFFFFFE0A,
+        0x6C7C4A8B, 0x87625F05, 0xFFFFFE25, 0x34C13053, 0xC9BCFF60, 0xFFFFFE3F,
+        0x91BA2655, 0x964E858C, 0xFFFFFE5A, 0x70297EBD, 0xDFF97724, 0xFFFFFE74,
+        0xB8E5B88F, 0xA6DFBD9F, 0xFFFFFE8F, 0x88747D94, 0xF8A95FCF, 0xFFFFFEA9,
+        0x8FA89BCF, 0xB9447093, 0xFFFFFEC4, 0xBF0F156B, 0x8A08F0F8, 0xFFFFFEDF,
+        0x653131B6, 0xCDB02555, 0xFFFFFEF9, 0xD07B7FAC, 0x993FE2C6, 0xFFFFFF14,
+        0x2A2B3B06, 0xE45C10C4, 0xFFFFFF2E, 0x697392D3, 0xAA242499, 0xFFFFFF49,
+        0x8300CA0E, 0xFD87B5F2, 0xFFFFFF63, 0x92111AEB, 0xBCE50864, 0xFFFFFF7E,
+        0x6F5088CC, 0x8CBCCC09, 0xFFFFFF99, 0xE219652C, 0xD1B71758, 0xFFFFFFB3,
+        0x00000000, 0x9C400000, 0xFFFFFFCE, 0x00000000, 0xE8D4A510, 0xFFFFFFE8,
+        0xAC620000, 0xAD78EBC5, 0x00000003, 0xF8940984, 0x813F3978, 0x0000001E,
+        0xC90715B3, 0xC097CE7B, 0x00000038, 0x7BEA5C70, 0x8F7E32CE, 0x00000053,
+        0xABE98068, 0xD5D238A4, 0x0000006D, 0x179A2245, 0x9F4F2726, 0x00000088,
+        0xD4C4FB27, 0xED63A231, 0x000000A2, 0x8CC8ADA8, 0xB0DE6538, 0x000000BD,
+        0x1AAB65DB, 0x83C7088E, 0x000000D8, 0x42711D9A, 0xC45D1DF9, 0x000000F2,
+        0xA61BE758, 0x924D692C, 0x0000010D, 0x1A708DEA, 0xDA01EE64, 0x00000127,
+        0x9AEF774A, 0xA26DA399, 0x00000142, 0xB47D6B85, 0xF209787B, 0x0000015C,
+        0x79DD1877, 0xB454E4A1, 0x00000177, 0x5B9BC5C2, 0x865B8692, 0x00000192,
+        0xC8965D3D, 0xC83553C5, 0x000001AC, 0xFA97A0B3, 0x952AB45C, 0x000001C7,
+        0x99A05FE3, 0xDE469FBD, 0x000001E1, 0xDB398C25, 0xA59BC234, 0x000001FC,
+        0xA3989F5C, 0xF6C69A72, 0x00000216, 0x54E9BECE, 0xB7DCBF53, 0x00000231,
+        0xF22241E2, 0x88FCF317, 0x0000024C, 0xD35C78A5, 0xCC20CE9B, 0x00000266,
+        0x7B2153DF, 0x98165AF3, 0x00000281, 0x971F303A, 0xE2A0B5DC, 0x0000029B,
+        0x5CE3B396, 0xA8D9D153, 0x000002B6, 0xA4A7443C, 0xFB9B7CD9, 0x000002D0,
+        0xA7A44410, 0xBB764C4C, 0x000002EB, 0xB6409C1A, 0x8BAB8EEF, 0x00000306,
+        0xA657842C, 0xD01FEF10, 0x00000320, 0xE9913129, 0x9B10A4E5, 0x0000033B,
+        0xA19C0C9D, 0xE7109BFB, 0x00000355, 0x623BF429, 0xAC2820D9, 0x00000370,
+        0x7AA7CF85, 0x80444B5E, 0x0000038B, 0x03ACDD2D, 0xBF21E440, 0x000003A5,
+        0x5E44FF8F, 0x8E679C2F, 0x000003C0, 0x9C8CB841, 0xD433179D, 0x000003DA,
+        0xB4E31BA9, 0x9E19DB92, 0x000003F5, 0xBADF77D9, 0xEB96BF6E, 0x0000040F,
+        0x9BF0EE6B, 0xAF87023B, 0x0000042A,
+};
+
+// wuffs_base__private_implementation__small_powers_of_10 contains
+// approximations to the powers of 10, ranging from 1e+0 to 1e+7, with the
+// exponent stepping by 1. Each step consists of three uint32_t elements.
+//
+// For example, the third approximation, for 1e+2, consists of the uint32_t
+// triple (0x00000000, 0xC8000000, 0xFFFFFFC7). The first two of that triple
+// are a little-endian uint64_t value: 0xC800000000000000. The last one is an
+// int32_t value: -57. Together, they represent the approximation:
+//   1e+2   ≈ 0xC800000000000000 * (2 **   -57)  // This approx'n is exact.
+// Similarly, the (0x00000000, 0x9C400000, 0xFFFFFFCE) uint32_t triple means:
+//   1e+4   ≈ 0x9C40000000000000 * (2 **   -50)  // This approx'n is exact.
+static const uint32_t
+    wuffs_base__private_implementation__small_powers_of_10[24] = {
+        0x00000000, 0x80000000, 0xFFFFFFC1, 0x00000000, 0xA0000000, 0xFFFFFFC4,
+        0x00000000, 0xC8000000, 0xFFFFFFC7, 0x00000000, 0xFA000000, 0xFFFFFFCA,
+        0x00000000, 0x9C400000, 0xFFFFFFCE, 0x00000000, 0xC3500000, 0xFFFFFFD1,
+        0x00000000, 0xF4240000, 0xFFFFFFD4, 0x00000000, 0x98968000, 0xFFFFFFD8,
+};
+
+// --------
+
+// wuffs_base__private_implementation__medium_prec_bin (abbreviated as MPB) is
+// a fixed precision floating point binary number. Unlike IEEE 754 Floating
+// Point, it cannot represent infinity or NaN (Not a Number).
+//
+// "Medium precision" means that the mantissa holds 64 binary digits, a little
+// more than "double precision", and sizeof(MPB) > sizeof(double). 64 is
+// obviously the number of bits in a uint64_t.
+//
+// An MPB isn't for general purpose arithmetic, only for conversions to and
+// from IEEE 754 double-precision floating point.
+//
+// There is no implicit mantissa bit. The mantissa field is zero if and only if
+// the overall floating point value is ±0. An MPB is normalized if the mantissa
+// is zero or its high bit (the 1<<63 bit) is set.
+//
+// There is no negative bit. An MPB can only represent non-negative numbers.
+//
+// The "all fields are zero" value is valid, and represents the number +0.
+//
+// This is the "Do It Yourself Floating Point" data structure from Loitsch,
+// "Printing Floating-Point Numbers Quickly and Accurately with Integers"
+// (https://www.cs.tufts.edu/~nr/cs257/archive/florian-loitsch/printf.pdf).
+//
+// Florian Loitsch is also the primary contributor to
+// https://github.com/google/double-conversion
+typedef struct {
+  uint64_t mantissa;
+  int32_t exp2;
+} wuffs_base__private_implementation__medium_prec_bin;
+
+static uint32_t  //
+wuffs_base__private_implementation__medium_prec_bin__normalize(
+    wuffs_base__private_implementation__medium_prec_bin* m) {
+  if (m->mantissa == 0) {
+    return 0;
+  }
+  uint32_t shift = wuffs_base__count_leading_zeroes_u64(m->mantissa);
+  m->mantissa <<= shift;
+  m->exp2 -= (int32_t)shift;
+  return shift;
+}
+
+// wuffs_base__private_implementation__medium_prec_bin__mul_pow_10 sets m to be
+// (m * pow), where pow comes from an etc_powers_of_10 triple starting at p.
+//
+// The result is rounded, but not necessarily normalized.
+//
+// Preconditions:
+//  - m is non-NULL.
+//  - m->mantissa is non-zero.
+//  - m->mantissa's high bit is set (i.e. m is normalized).
+//
+// The etc_powers_of_10 triple is already normalized.
+static void  //
+wuffs_base__private_implementation__medium_prec_bin__mul_pow_10(
+    wuffs_base__private_implementation__medium_prec_bin* m,
+    const uint32_t* p) {
+  uint64_t p_mantissa = ((uint64_t)p[0]) | (((uint64_t)p[1]) << 32);
+  int32_t p_exp2 = (int32_t)p[2];
+
+  wuffs_base__multiply_u64__output o =
+      wuffs_base__multiply_u64(m->mantissa, p_mantissa);
+  // Round the mantissa up. It cannot overflow because the maximum possible
+  // value of o.hi is 0xFFFFFFFFFFFFFFFE.
+  m->mantissa = o.hi + (o.lo >> 63);
+  m->exp2 = m->exp2 + p_exp2 + 64;
+}
+
+// wuffs_base__private_implementation__medium_prec_bin__as_f64 converts m to a
+// double (what C calls a double-precision float64).
+//
+// Preconditions:
+//  - m is non-NULL.
+//  - m->mantissa is non-zero.
+//  - m->mantissa's high bit is set (i.e. m is normalized).
+static double  //
+wuffs_base__private_implementation__medium_prec_bin__as_f64(
+    const wuffs_base__private_implementation__medium_prec_bin* m,
+    bool negative) {
+  uint64_t mantissa64 = m->mantissa;
+  // An mpb's mantissa has the implicit (binary) decimal point at the right
+  // hand end of the mantissa's explicit digits. A double-precision's mantissa
+  // has that decimal point near the left hand end. There's also an explicit
+  // versus implicit leading 1 bit (binary digit). Together, the difference in
+  // semantics corresponds to adding 63.
+  int32_t exp2 = m->exp2 + 63;
+
+  // Ensure that exp2 is at least -1022, the minimum double-precision exponent
+  // for normal (as opposed to subnormal) numbers.
+  if (-1022 > exp2) {
+    uint32_t n = (uint32_t)(-1022 - exp2);
+    mantissa64 >>= n;
+    exp2 += (int32_t)n;
+  }
+
+  // Extract the (1 + 52) bits from the 64-bit mantissa64. 52 is the number of
+  // explicit mantissa bits in a double-precision f64.
+  //
+  // Before, we have 64 bits and due to normalization, the high bit 'H' is 1.
+  // 63        55        47       etc     15        7
+  // H210_9876_5432_1098_7654_etc_etc_etc_5432_1098_7654_3210
+  // ++++_++++_++++_++++_++++_etc_etc_etc_++++_+..._...._....  Kept bits.
+  // ...._...._...H_2109_8765_etc_etc_etc_6543_2109_8765_4321  After shifting.
+  // After, we have 53 bits (and bit #52 is this 'H' bit).
+  uint64_t mantissa53 = mantissa64 >> 11;
+
+  // Round up if the old bit #10 (the highest bit dropped by shifting) was set.
+  // We also fix any overflow from rounding up.
+  if (mantissa64 & 1024) {
+    mantissa53++;
+    if ((mantissa53 >> 53) != 0) {
+      mantissa53 >>= 1;
+      exp2++;
+    }
+  }
+
+  // Handle double-precision infinity (a nominal exponent of 1024) and
+  // subnormals (an exponent of -1023 and no implicit mantissa bit, bit #52).
+  if (exp2 >= 1024) {
+    mantissa53 = 0;
+    exp2 = 1024;
+  } else if ((mantissa53 >> 52) == 0) {
+    exp2 = -1023;
+  }
+
+  // Pack the bits and return.
+  const int32_t f64_bias = -1023;
+  uint64_t exp2_bits =
+      (uint64_t)((exp2 - f64_bias) & 0x07FF);           // (1 << 11) - 1.
+  uint64_t bits = (mantissa53 & 0x000FFFFFFFFFFFFF) |   // (1 << 52) - 1.
+                  (exp2_bits << 52) |                   //
+                  (negative ? 0x8000000000000000 : 0);  // (1 << 63).
+  return wuffs_base__ieee_754_bit_representation__to_f64(bits);
+}
+
+// wuffs_base__private_implementation__medium_prec_bin__parse_number_f64
+// converts from an HPD to a double, using an MPB as scratch space. It returns
+// a NULL status.repr if there is no ambiguity in the truncation or rounding to
+// a float64 (an IEEE 754 double-precision floating point value).
+//
+// It may modify m even if it returns a non-NULL status.repr.
+static wuffs_base__result_f64  //
+wuffs_base__private_implementation__medium_prec_bin__parse_number_f64(
+    wuffs_base__private_implementation__medium_prec_bin* m,
+    const wuffs_base__private_implementation__high_prec_dec* h) {
+  // m->mantissa is a uint64_t, which is an integer approximation to a rational
+  // value - h's underlying digits after m's normalization. This error is an
+  // upper bound on the difference between the approximate and actual value.
+  //
+  // The DiyFpStrtod function in https://github.com/google/double-conversion
+  // uses a finer grain (1/8th of the ULP, Unit in the Last Place) when
+  // tracking error. This implementation is coarser (1 ULP) but simpler.
+  //
+  // It is an error in the "numerical approximation" sense, not in the typical
+  // programming sense (as in "bad input" or "a result type").
+  uint64_t error = 0;
+
+  // Convert up to 19 decimal digits (in h->digits) to 64 binary digits (in
+  // m->mantissa): (1e19 < (1<<64)) and ((1<<64) < 1e20). If we have more than
+  // 19 digits, we're truncating (with error).
+  uint32_t i;
+  uint32_t i_end = h->num_digits;
+  if (i_end > 19) {
+    i_end = 19;
+    error = 1;
+  }
+  uint64_t mantissa = 0;
+  for (i = 0; i < i_end; i++) {
+    mantissa = (10 * mantissa) + h->digits[i];
+  }
+  m->mantissa = mantissa;
+  m->exp2 = 0;
+
+  // Check that exp10 lies in the (big_powers_of_10 + small_powers_of_10)
+  // range, -348 ..= +347, stepping big_powers_of_10 by 8 (which is 87 triples)
+  // and small_powers_of_10 by 1 (which is 8 triples).
+  int32_t exp10 = h->decimal_point - ((int32_t)(i_end));
+  if (exp10 < -348) {
+    goto fail;
+  }
+  uint32_t bpo10 = ((uint32_t)(exp10 + 348)) / 8;
+  uint32_t spo10 = ((uint32_t)(exp10 + 348)) % 8;
+  if (bpo10 >= 87) {
+    goto fail;
+  }
+
+  // Normalize (and scale the error).
+  error <<= wuffs_base__private_implementation__medium_prec_bin__normalize(m);
+
+  // Multiplying two MPB values nominally multiplies two mantissas, call them A
+  // and B, which are integer approximations to the precise values (A+a) and
+  // (B+b) for some error terms a and b.
+  //
+  // MPB multiplication calculates (((A+a) * (B+b)) >> 64) to be ((A*B) >> 64).
+  // Shifting (truncating) and rounding introduces further error. The
+  // difference between the calculated result:
+  //  ((A*B                  ) >> 64)
+  // and the true result:
+  //  ((A*B + A*b + a*B + a*b) >> 64)   + rounding_error
+  // is:
+  //  ((      A*b + a*B + a*b) >> 64)   + rounding_error
+  // which can be re-grouped as:
+  //  ((A*b) >> 64) + ((a*(B+b)) >> 64) + rounding_error
+  //
+  // Now, let A and a be "m->mantissa" and "error", and B and b be the
+  // pre-calculated power of 10. A and B are both less than (1 << 64), a is the
+  // "error" local variable and b is less than 1.
+  //
+  // An upper bound (in absolute value) on ((A*b) >> 64) is therefore 1.
+  //
+  // Similarly, an upper bound on ((a*(B+b)) >> 64) is a, also known as error.
+  //
+  // Finally, the rounding_error is at most 1.
+  //
+  // In total, calling mpb__mul_pow_10 will increase the worst-case error by 2.
+  // The subsequent re-normalization can multiply that by a further factor.
+
+  // Multiply by small_powers_of_10[etc].
+  wuffs_base__private_implementation__medium_prec_bin__mul_pow_10(
+      m, &wuffs_base__private_implementation__small_powers_of_10[3 * spo10]);
+  error += 2;
+  error <<= wuffs_base__private_implementation__medium_prec_bin__normalize(m);
+
+  // Multiply by big_powers_of_10[etc].
+  wuffs_base__private_implementation__medium_prec_bin__mul_pow_10(
+      m, &wuffs_base__private_implementation__big_powers_of_10[3 * bpo10]);
+  error += 2;
+  error <<= wuffs_base__private_implementation__medium_prec_bin__normalize(m);
+
+  // We have a good approximation of h, but we still have to check whether the
+  // error is small enough. Equivalently, whether the number of surplus
+  // mantissa bits (the bits dropped when going from m's 64 mantissa bits to
+  // the smaller number of double-precision mantissa bits) would always round
+  // up or down, even when perturbed by ±error. We start at 11 surplus bits (m
+  // has 64, double-precision has 1+52), but it can be higher for subnormals.
+  //
+  // In many cases, the error is small enough and we return true.
+  const int32_t f64_bias = -1023;
+  int32_t subnormal_exp2 = f64_bias - 63;
+  uint32_t surplus_bits = 11;
+  if (subnormal_exp2 >= m->exp2) {
+    surplus_bits += 1 + ((uint32_t)(subnormal_exp2 - m->exp2));
+  }
+
+  uint64_t surplus_mask = (((uint64_t)1) << surplus_bits) - 1;  // e.g. 0x07FF.
+  uint64_t surplus = m->mantissa & surplus_mask;
+  uint64_t halfway = ((uint64_t)1) << (surplus_bits - 1);  // e.g. 0x0400.
+
+  // Do the final calculation in *signed* arithmetic.
+  int64_t i_surplus = (int64_t)surplus;
+  int64_t i_halfway = (int64_t)halfway;
+  int64_t i_error = (int64_t)error;
+
+  if ((i_surplus > (i_halfway - i_error)) &&
+      (i_surplus < (i_halfway + i_error))) {
+    goto fail;
+  }
+
+  wuffs_base__result_f64 ret;
+  ret.status.repr = NULL;
+  ret.value = wuffs_base__private_implementation__medium_prec_bin__as_f64(
+      m, h->negative);
+  return ret;
+
+fail:
+  do {
+    wuffs_base__result_f64 ret;
+    ret.status.repr = "#base: mpb__parse_number_f64 failed";
+    ret.value = 0;
+    return ret;
+  } while (0);
+}
+
+// --------
+
 wuffs_base__result_f64  //
 wuffs_base__parse_number_f64_special(wuffs_base__slice_u8 s,
                                      const char* fallback_status_repr) {
@@ -9597,6 +10039,7 @@ fallback:
 
 wuffs_base__result_f64  //
 wuffs_base__parse_number_f64(wuffs_base__slice_u8 s) {
+  wuffs_base__private_implementation__medium_prec_bin m;
   wuffs_base__private_implementation__high_prec_dec h;
 
   do {
@@ -9623,10 +10066,17 @@ wuffs_base__parse_number_f64(wuffs_base__slice_u8 s) {
       goto infinity;
     }
 
+    wuffs_base__result_f64 mpb_result =
+        wuffs_base__private_implementation__medium_prec_bin__parse_number_f64(
+            &m, &h);
+    if (mpb_result.status.repr == NULL) {
+      return mpb_result;
+    }
+
     // Scale by powers of 2 until we're in the range [½ .. 1], which gives us
     // our exponent (in base-2). First we shift right, possibly a little too
     // far, ending with a value certainly below 1 and possibly below ½...
-    const int32_t bias = -1023;
+    const int32_t f64_bias = -1023;
     int32_t exp2 = 0;
     while (h.decimal_point > 0) {
       uint32_t n = (uint32_t)(+h.decimal_point);
@@ -9670,9 +10120,9 @@ wuffs_base__parse_number_f64(wuffs_base__slice_u8 s) {
     // We're in the range [½ .. 1] but f64 uses [1 .. 2].
     exp2--;
 
-    // The minimum normal exponent is (bias + 1).
-    while ((bias + 1) > exp2) {
-      uint32_t n = (uint32_t)((bias + 1) - exp2);
+    // The minimum normal exponent is (f64_bias + 1).
+    while ((f64_bias + 1) > exp2) {
+      uint32_t n = (uint32_t)((f64_bias + 1) - exp2);
       if (n > WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__SHIFT__MAX_INCL) {
         n = WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__SHIFT__MAX_INCL;
       }
@@ -9681,7 +10131,7 @@ wuffs_base__parse_number_f64(wuffs_base__slice_u8 s) {
     }
 
     // Check for overflow.
-    if ((exp2 - bias) >= 0x07FF) {  // (1 << 11) - 1.
+    if ((exp2 - f64_bias) >= 0x07FF) {  // (1 << 11) - 1.
       goto infinity;
     }
 
@@ -9694,21 +10144,22 @@ wuffs_base__parse_number_f64(wuffs_base__slice_u8 s) {
     if ((man2 >> 53) != 0) {
       man2 >>= 1;
       exp2++;
-      if ((exp2 - bias) >= 0x07FF) {  // (1 << 11) - 1.
+      if ((exp2 - f64_bias) >= 0x07FF) {  // (1 << 11) - 1.
         goto infinity;
       }
     }
 
     // Handle subnormal numbers.
     if ((man2 >> 52) == 0) {
-      exp2 = bias;
+      exp2 = f64_bias;
     }
 
     // Pack the bits and return.
-    uint64_t exp2_bits = (uint64_t)((exp2 - bias) & 0x07FF);  // (1 << 11) - 1.
-    uint64_t bits = (man2 & 0x000FFFFFFFFFFFFF) |             // (1 << 52) - 1.
-                    (exp2_bits << 52) |                       //
-                    (h.negative ? 0x8000000000000000 : 0);    // (1 << 63).
+    uint64_t exp2_bits =
+        (uint64_t)((exp2 - f64_bias) & 0x07FF);             // (1 << 11) - 1.
+    uint64_t bits = (man2 & 0x000FFFFFFFFFFFFF) |           // (1 << 52) - 1.
+                    (exp2_bits << 52) |                     //
+                    (h.negative ? 0x8000000000000000 : 0);  // (1 << 63).
 
     wuffs_base__result_f64 ret;
     ret.status.repr = NULL;

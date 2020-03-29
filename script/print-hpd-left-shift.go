@@ -27,6 +27,7 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"os"
 )
 
 var (
@@ -48,6 +49,13 @@ func ellipsize(s string) string {
 }
 
 func main() {
+	if err := main1(); err != nil {
+		os.Stderr.WriteString(err.Error() + "\n")
+		os.Exit(1)
+	}
+}
+
+func main1() error {
 	flag.Parse()
 
 	const WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__SHIFT__MAX_INCL = 60
@@ -111,4 +119,5 @@ func main() {
 		fmt.Printf("             // offset=0x%04X\n", len(data)&^15)
 	}
 	fmt.Printf("};\n")
+	return nil
 }
