@@ -281,7 +281,7 @@ too_short:
 }
 
 const char*  //
-test_strconv_hpd_rounded_integer() {
+test_wuffs_strconv_hpd_rounded_integer() {
   CHECK_FOCUS(__func__);
 
   struct {
@@ -363,7 +363,7 @@ test_strconv_hpd_rounded_integer() {
 }
 
 const char*  //
-test_strconv_hpd_shift() {
+test_wuffs_strconv_hpd_shift() {
   CHECK_FOCUS(__func__);
 
   struct {
@@ -420,7 +420,7 @@ test_strconv_hpd_shift() {
 }
 
 const char*  //
-test_strconv_mpb_assign_from_hpd() {
+test_wuffs_strconv_mpb_assign_from_hpd() {
   CHECK_FOCUS(__func__);
 
   struct {
@@ -549,7 +549,7 @@ test_strconv_mpb_assign_from_hpd() {
 // ----------------
 
 const char*  //
-test_strconv_hexadecimal() {
+test_wuffs_strconv_hexadecimal() {
   CHECK_FOCUS(__func__);
 
   {
@@ -598,7 +598,7 @@ test_strconv_hexadecimal() {
 }
 
 const char*  //
-test_strconv_parse_number_f64() {
+test_wuffs_strconv_parse_number_f64() {
   CHECK_FOCUS(__func__);
 
   const uint64_t fail = 0xDEADBEEF;
@@ -724,7 +724,7 @@ test_strconv_parse_number_f64() {
 }
 
 const char*  //
-test_strconv_parse_number_i64() {
+test_wuffs_strconv_parse_number_i64() {
   CHECK_FOCUS(__func__);
 
   const int64_t fail = 0xDEADBEEF;
@@ -773,7 +773,7 @@ test_strconv_parse_number_i64() {
 }
 
 const char*  //
-test_strconv_parse_number_u64() {
+test_wuffs_strconv_parse_number_u64() {
   CHECK_FOCUS(__func__);
 
   const uint64_t fail = 0xDEADBEEF;
@@ -859,7 +859,7 @@ test_strconv_parse_number_u64() {
 }
 
 const char*  //
-test_strconv_utf_8_next() {
+test_wuffs_strconv_utf_8_next() {
   CHECK_FOCUS(__func__);
 
   // Special case the "\x00" string, which is valid UTF-8 but its strlen is
@@ -2386,7 +2386,8 @@ test_wuffs_json_decode_string() {
 // ---------------- String Conversions Benches
 
 const char*  //
-do_bench_strconv_parse_number_f64(const char* str, uint64_t iters_unscaled) {
+do_bench_wuffs_strconv_parse_number_f64(const char* str,
+                                        uint64_t iters_unscaled) {
   wuffs_base__slice_u8 s = wuffs_base__make_slice_u8((void*)str, strlen(str));
 
   bench_start();
@@ -2401,30 +2402,30 @@ do_bench_strconv_parse_number_f64(const char* str, uint64_t iters_unscaled) {
 }
 
 const char*  //
-bench_strconv_parse_number_f64_1_lsh53_add0() {
+bench_wuffs_strconv_parse_number_f64_1_lsh53_add0() {
   CHECK_FOCUS(__func__);
   // 9007_199254_740992 is 0x20_0000_0000_0000, aka ((1<<53) + 0).
-  return do_bench_strconv_parse_number_f64("9007199254740992", 1000);
+  return do_bench_wuffs_strconv_parse_number_f64("9007199254740992", 1000);
 }
 
 const char*  //
-bench_strconv_parse_number_f64_1_lsh53_add1() {
+bench_wuffs_strconv_parse_number_f64_1_lsh53_add1() {
   CHECK_FOCUS(__func__);
   // 9007_199254_740993 is 0x20_0000_0000_0001, aka ((1<<53) + 1).
-  return do_bench_strconv_parse_number_f64("9007199254740993", 1000);
+  return do_bench_wuffs_strconv_parse_number_f64("9007199254740993", 1000);
 }
 
 const char*  //
-bench_strconv_parse_number_f64_pi_long() {
+bench_wuffs_strconv_parse_number_f64_pi_long() {
   CHECK_FOCUS(__func__);
-  return do_bench_strconv_parse_number_f64("3.141592653589793238462643383279",
-                                           1000);
+  return do_bench_wuffs_strconv_parse_number_f64(
+      "3.141592653589793238462643383279", 1000);
 }
 
 const char*  //
-bench_strconv_parse_number_f64_pi_short() {
+bench_wuffs_strconv_parse_number_f64_pi_short() {
   CHECK_FOCUS(__func__);
-  return do_bench_strconv_parse_number_f64("3.14159", 1000);
+  return do_bench_wuffs_strconv_parse_number_f64("3.14159", 1000);
 }
 
 // ---------------- JSON Benches
@@ -2478,14 +2479,14 @@ proc g_tests[] = {
     // good as any other place.
     test_wuffs_core_count_leading_zeroes_u64,
     test_wuffs_core_multiply_u64,
-    test_strconv_hexadecimal,
-    test_strconv_hpd_rounded_integer,
-    test_strconv_hpd_shift,
-    test_strconv_mpb_assign_from_hpd,
-    test_strconv_parse_number_f64,
-    test_strconv_parse_number_i64,
-    test_strconv_parse_number_u64,
-    test_strconv_utf_8_next,
+    test_wuffs_strconv_hexadecimal,
+    test_wuffs_strconv_hpd_rounded_integer,
+    test_wuffs_strconv_hpd_shift,
+    test_wuffs_strconv_mpb_assign_from_hpd,
+    test_wuffs_strconv_parse_number_f64,
+    test_wuffs_strconv_parse_number_i64,
+    test_wuffs_strconv_parse_number_u64,
+    test_wuffs_strconv_utf_8_next,
 
     test_wuffs_json_decode_end_of_data,
     test_wuffs_json_decode_interface,
@@ -2514,10 +2515,10 @@ proc g_tests[] = {
 
 proc g_benches[] = {
 
-    bench_strconv_parse_number_f64_1_lsh53_add0,
-    bench_strconv_parse_number_f64_1_lsh53_add1,
-    bench_strconv_parse_number_f64_pi_long,
-    bench_strconv_parse_number_f64_pi_short,
+    bench_wuffs_strconv_parse_number_f64_1_lsh53_add0,
+    bench_wuffs_strconv_parse_number_f64_1_lsh53_add1,
+    bench_wuffs_strconv_parse_number_f64_pi_long,
+    bench_wuffs_strconv_parse_number_f64_pi_short,
 
     bench_wuffs_json_decode_1k,
     bench_wuffs_json_decode_21k_formatted,
