@@ -560,7 +560,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 										value_major: 0,
 										value_minor: 0x60_FFFD,
 										link: 0x3,
-										length: 6)
+										length: 10)
 									continue.string_loop_outer
 								}
 								// -------- END   backslash-capital-u.

@@ -21578,7 +21578,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
                         (((uint64_t)(6356989))
                          << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                         (((uint64_t)(3)) << WUFFS_BASE__TOKEN__LINK__SHIFT) |
-                        (((uint64_t)(6)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+                        (((uint64_t)(10)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
                     goto label__string_loop_outer__continue;
                   }
                 } else if ((v_c == 120) &&
