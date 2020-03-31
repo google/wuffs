@@ -9659,6 +9659,13 @@ static const uint32_t
         0x00000000, 0xF4240000, 0xFFFFFFD4, 0x00000000, 0x98968000, 0xFFFFFFD8,
 };
 
+// wuffs_base__private_implementation__f64_powers_of_10 holds powers of 10 that
+// can be exactly represented by a float64 (what C calls a double).
+static const double wuffs_base__private_implementation__f64_powers_of_10[23] = {
+    1e0,  1e1,  1e2,  1e3,  1e4,  1e5,  1e6,  1e7,  1e8,  1e9,  1e10, 1e11,
+    1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18, 1e19, 1e20, 1e21, 1e22,
+};
+
 // --------
 
 // wuffs_base__private_implementation__medium_prec_bin (abbreviated as MPB) is
@@ -9805,7 +9812,8 @@ wuffs_base__private_implementation__medium_prec_bin__as_f64(
 static wuffs_base__result_f64  //
 wuffs_base__private_implementation__medium_prec_bin__parse_number_f64(
     wuffs_base__private_implementation__medium_prec_bin* m,
-    const wuffs_base__private_implementation__high_prec_dec* h) {
+    const wuffs_base__private_implementation__high_prec_dec* h,
+    bool skip_fast_path_for_tests) {
   // m->mantissa is a uint64_t, which is an integer approximation to a rational
   // value - h's underlying digits after m's normalization. This error is an
   // upper bound on the difference between the approximate and actual value.
@@ -9846,6 +9854,59 @@ wuffs_base__private_implementation__medium_prec_bin__parse_number_f64(
   if (bpo10 >= 87) {
     goto fail;
   }
+
+  // Try a fast path, if float64 math would be exact.
+  //
+  // 15 is such that 1e15 can be losslessly represented in a float64 mantissa:
+  // (1e15 < (1<<53)) and ((1<<53) < 1e16).
+  //
+  // 22 is the maximum valid index for the
+  // wuffs_base__private_implementation__f64_powers_of_10 array.
+  do {
+    if (skip_fast_path_for_tests || ((mantissa >> 52) != 0)) {
+      break;
+    }
+    double d = (double)mantissa;
+
+    if (exp10 == 0) {
+      wuffs_base__result_f64 ret;
+      ret.status.repr = NULL;
+      ret.value = h->negative ? -d : +d;
+      return ret;
+
+    } else if (exp10 > 0) {
+      if (exp10 > 22) {
+        if (exp10 > (15 + 22)) {
+          break;
+        }
+        // If exp10 is in the range 23 ..= 37, try moving a few of the zeroes
+        // from the exponent to the mantissa. If we're still under 1e15, we
+        // haven't truncated any mantissa bits.
+        if (exp10 > 22) {
+          d *= wuffs_base__private_implementation__f64_powers_of_10[exp10 - 22];
+          exp10 = 22;
+          if (d >= 1e15) {
+            break;
+          }
+        }
+      }
+      d *= wuffs_base__private_implementation__f64_powers_of_10[exp10];
+      wuffs_base__result_f64 ret;
+      ret.status.repr = NULL;
+      ret.value = h->negative ? -d : +d;
+      return ret;
+
+    } else {  // "if (exp10 < 0)" is effectively "if (true)" here.
+      if (exp10 < -22) {
+        break;
+      }
+      d /= wuffs_base__private_implementation__f64_powers_of_10[-exp10];
+      wuffs_base__result_f64 ret;
+      ret.status.repr = NULL;
+      ret.value = h->negative ? -d : +d;
+      return ret;
+    }
+  } while (0);
 
   // Normalize (and scale the error).
   error <<= wuffs_base__private_implementation__medium_prec_bin__normalize(m);
@@ -10068,7 +10129,7 @@ wuffs_base__parse_number_f64(wuffs_base__slice_u8 s) {
 
     wuffs_base__result_f64 mpb_result =
         wuffs_base__private_implementation__medium_prec_bin__parse_number_f64(
-            &m, &h);
+            &m, &h, false);
     if (mpb_result.status.repr == NULL) {
       return mpb_result;
     }

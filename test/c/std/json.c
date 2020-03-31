@@ -515,9 +515,10 @@ test_strconv_mpb_assign_from_hpd() {
     hpd.negative = false;
     hpd.truncated = false;
 
+    static const bool skip_fast_path_for_tests = true;
     wuffs_base__private_implementation__medium_prec_bin mpb;
-    wuffs_base__private_implementation__medium_prec_bin__parse_number_f64(&mpb,
-                                                                          &hpd);
+    wuffs_base__private_implementation__medium_prec_bin__parse_number_f64(
+        &mpb, &hpd, skip_fast_path_for_tests);
 
     uint64_t have_mantissa = mpb.mantissa;
     if (have_mantissa != test_cases[tc].want_mantissa) {
@@ -647,6 +648,7 @@ test_strconv_parse_number_f64() {
       {.want = 0x4038000000000000, .str = "24"},
       {.want = 0x4038000000000000, .str = "2400_00000_00000.00000_e-_1_2"},
       {.want = 0x40FE240C9FCB0C02, .str = "123456.789012"},
+      {.want = 0x4202A05F20000000, .str = "1e10"},
       {.want = 0x4330000000000000, .str = "4503599627370496"},  // 1 << 52.
       {.want = 0x4330000000000000, .str = "4503599627370496.5"},
       {.want = 0x4330000000000001, .str = "4503599627370497"},
@@ -658,6 +660,8 @@ test_strconv_parse_number_f64() {
       {.want = 0x4340000000000002, .str = "9007199254740995"},
       {.want = 0x4340000000000002, .str = "9007199254740996"},
       {.want = 0x4340000000000002, .str = "9_007__199_254__740_996"},
+      {.want = 0x4415AF1D78B58C40, .str = "1e20"},
+      {.want = 0x46293E5939A08CEA, .str = "1e30"},
       {.want = 0x54B249AD2594C37D, .str = "+1E+100"},
       {.want = 0x54B249AD2594C37D, .str = "+_1_E_+_1_0_0_"},
       {.want = 0x7FEFFFFFFFFFFFFF, .str = "1.7976931348623157e308"},
