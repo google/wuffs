@@ -9814,177 +9814,183 @@ wuffs_base__private_implementation__medium_prec_bin__parse_number_f64(
     wuffs_base__private_implementation__medium_prec_bin* m,
     const wuffs_base__private_implementation__high_prec_dec* h,
     bool skip_fast_path_for_tests) {
-  // m->mantissa is a uint64_t, which is an integer approximation to a rational
-  // value - h's underlying digits after m's normalization. This error is an
-  // upper bound on the difference between the approximate and actual value.
-  //
-  // The DiyFpStrtod function in https://github.com/google/double-conversion
-  // uses a finer grain (1/8th of the ULP, Unit in the Last Place) when
-  // tracking error. This implementation is coarser (1 ULP) but simpler.
-  //
-  // It is an error in the "numerical approximation" sense, not in the typical
-  // programming sense (as in "bad input" or "a result type").
-  uint64_t error = 0;
-
-  // Convert up to 19 decimal digits (in h->digits) to 64 binary digits (in
-  // m->mantissa): (1e19 < (1<<64)) and ((1<<64) < 1e20). If we have more than
-  // 19 digits, we're truncating (with error).
-  uint32_t i;
-  uint32_t i_end = h->num_digits;
-  if (i_end > 19) {
-    i_end = 19;
-    error = 1;
-  }
-  uint64_t mantissa = 0;
-  for (i = 0; i < i_end; i++) {
-    mantissa = (10 * mantissa) + h->digits[i];
-  }
-  m->mantissa = mantissa;
-  m->exp2 = 0;
-
-  // Check that exp10 lies in the (big_powers_of_10 + small_powers_of_10)
-  // range, -348 ..= +347, stepping big_powers_of_10 by 8 (which is 87 triples)
-  // and small_powers_of_10 by 1 (which is 8 triples).
-  int32_t exp10 = h->decimal_point - ((int32_t)(i_end));
-  if (exp10 < -348) {
-    goto fail;
-  }
-  uint32_t bpo10 = ((uint32_t)(exp10 + 348)) / 8;
-  uint32_t spo10 = ((uint32_t)(exp10 + 348)) % 8;
-  if (bpo10 >= 87) {
-    goto fail;
-  }
-
-  // Try a fast path, if float64 math would be exact.
-  //
-  // 15 is such that 1e15 can be losslessly represented in a float64 mantissa:
-  // (1e15 < (1<<53)) and ((1<<53) < 1e16).
-  //
-  // 22 is the maximum valid index for the
-  // wuffs_base__private_implementation__f64_powers_of_10 array.
   do {
-    if (skip_fast_path_for_tests || ((mantissa >> 52) != 0)) {
-      break;
+    // m->mantissa is a uint64_t, which is an integer approximation to a
+    // rational value - h's underlying digits after m's normalization. This
+    // error is an upper bound on the difference between the approximate and
+    // actual value.
+    //
+    // The DiyFpStrtod function in https://github.com/google/double-conversion
+    // uses a finer grain (1/8th of the ULP, Unit in the Last Place) when
+    // tracking error. This implementation is coarser (1 ULP) but simpler.
+    //
+    // It is an error in the "numerical approximation" sense, not in the
+    // typical programming sense (as in "bad input" or "a result type").
+    uint64_t error = 0;
+
+    // Convert up to 19 decimal digits (in h->digits) to 64 binary digits (in
+    // m->mantissa): (1e19 < (1<<64)) and ((1<<64) < 1e20). If we have more
+    // than 19 digits, we're truncating (with error).
+    uint32_t i;
+    uint32_t i_end = h->num_digits;
+    if (i_end > 19) {
+      i_end = 19;
+      error = 1;
     }
-    double d = (double)mantissa;
+    uint64_t mantissa = 0;
+    for (i = 0; i < i_end; i++) {
+      mantissa = (10 * mantissa) + h->digits[i];
+    }
+    m->mantissa = mantissa;
+    m->exp2 = 0;
 
-    if (exp10 == 0) {
-      wuffs_base__result_f64 ret;
-      ret.status.repr = NULL;
-      ret.value = h->negative ? -d : +d;
-      return ret;
+    // Check that exp10 lies in the (big_powers_of_10 + small_powers_of_10)
+    // range, -348 ..= +347, stepping big_powers_of_10 by 8 (which is 87
+    // triples) and small_powers_of_10 by 1 (which is 8 triples).
+    int32_t exp10 = h->decimal_point - ((int32_t)(i_end));
+    if (exp10 < -348) {
+      goto fail;
+    }
+    uint32_t bpo10 = ((uint32_t)(exp10 + 348)) / 8;
+    uint32_t spo10 = ((uint32_t)(exp10 + 348)) % 8;
+    if (bpo10 >= 87) {
+      goto fail;
+    }
 
-    } else if (exp10 > 0) {
-      if (exp10 > 22) {
-        if (exp10 > (15 + 22)) {
-          break;
-        }
-        // If exp10 is in the range 23 ..= 37, try moving a few of the zeroes
-        // from the exponent to the mantissa. If we're still under 1e15, we
-        // haven't truncated any mantissa bits.
-        if (exp10 > 22) {
-          d *= wuffs_base__private_implementation__f64_powers_of_10[exp10 - 22];
-          exp10 = 22;
-          if (d >= 1e15) {
-            break;
-          }
-        }
-      }
-      d *= wuffs_base__private_implementation__f64_powers_of_10[exp10];
-      wuffs_base__result_f64 ret;
-      ret.status.repr = NULL;
-      ret.value = h->negative ? -d : +d;
-      return ret;
-
-    } else {  // "if (exp10 < 0)" is effectively "if (true)" here.
-      if (exp10 < -22) {
+    // Try a fast path, if float64 math would be exact.
+    //
+    // 15 is such that 1e15 can be losslessly represented in a float64
+    // mantissa: (1e15 < (1<<53)) and ((1<<53) < 1e16).
+    //
+    // 22 is the maximum valid index for the
+    // wuffs_base__private_implementation__f64_powers_of_10 array.
+    do {
+      if (skip_fast_path_for_tests || ((mantissa >> 52) != 0)) {
         break;
       }
-      d /= wuffs_base__private_implementation__f64_powers_of_10[-exp10];
-      wuffs_base__result_f64 ret;
-      ret.status.repr = NULL;
-      ret.value = h->negative ? -d : +d;
-      return ret;
+      double d = (double)mantissa;
+
+      if (exp10 == 0) {
+        wuffs_base__result_f64 ret;
+        ret.status.repr = NULL;
+        ret.value = h->negative ? -d : +d;
+        return ret;
+
+      } else if (exp10 > 0) {
+        if (exp10 > 22) {
+          if (exp10 > (15 + 22)) {
+            break;
+          }
+          // If exp10 is in the range 23 ..= 37, try moving a few of the zeroes
+          // from the exponent to the mantissa. If we're still under 1e15, we
+          // haven't truncated any mantissa bits.
+          if (exp10 > 22) {
+            d *= wuffs_base__private_implementation__f64_powers_of_10[exp10 -
+                                                                      22];
+            exp10 = 22;
+            if (d >= 1e15) {
+              break;
+            }
+          }
+        }
+        d *= wuffs_base__private_implementation__f64_powers_of_10[exp10];
+        wuffs_base__result_f64 ret;
+        ret.status.repr = NULL;
+        ret.value = h->negative ? -d : +d;
+        return ret;
+
+      } else {  // "if (exp10 < 0)" is effectively "if (true)" here.
+        if (exp10 < -22) {
+          break;
+        }
+        d /= wuffs_base__private_implementation__f64_powers_of_10[-exp10];
+        wuffs_base__result_f64 ret;
+        ret.status.repr = NULL;
+        ret.value = h->negative ? -d : +d;
+        return ret;
+      }
+    } while (0);
+
+    // Normalize (and scale the error).
+    error <<= wuffs_base__private_implementation__medium_prec_bin__normalize(m);
+
+    // Multiplying two MPB values nominally multiplies two mantissas, call them
+    // A and B, which are integer approximations to the precise values (A+a)
+    // and (B+b) for some error terms a and b.
+    //
+    // MPB multiplication calculates (((A+a) * (B+b)) >> 64) to be ((A*B) >>
+    // 64). Shifting (truncating) and rounding introduces further error. The
+    // difference between the calculated result:
+    //  ((A*B                  ) >> 64)
+    // and the true result:
+    //  ((A*B + A*b + a*B + a*b) >> 64)   + rounding_error
+    // is:
+    //  ((      A*b + a*B + a*b) >> 64)   + rounding_error
+    // which can be re-grouped as:
+    //  ((A*b) >> 64) + ((a*(B+b)) >> 64) + rounding_error
+    //
+    // Now, let A and a be "m->mantissa" and "error", and B and b be the
+    // pre-calculated power of 10. A and B are both less than (1 << 64), a is
+    // the "error" local variable and b is less than 1.
+    //
+    // An upper bound (in absolute value) on ((A*b) >> 64) is therefore 1.
+    //
+    // An upper bound on ((a*(B+b)) >> 64) is a, also known as error.
+    //
+    // Finally, the rounding_error is at most 1.
+    //
+    // In total, calling mpb__mul_pow_10 will raise the worst-case error by 2.
+    // The subsequent re-normalization can multiply that by a further factor.
+
+    // Multiply by small_powers_of_10[etc].
+    wuffs_base__private_implementation__medium_prec_bin__mul_pow_10(
+        m, &wuffs_base__private_implementation__small_powers_of_10[3 * spo10]);
+    error += 2;
+    error <<= wuffs_base__private_implementation__medium_prec_bin__normalize(m);
+
+    // Multiply by big_powers_of_10[etc].
+    wuffs_base__private_implementation__medium_prec_bin__mul_pow_10(
+        m, &wuffs_base__private_implementation__big_powers_of_10[3 * bpo10]);
+    error += 2;
+    error <<= wuffs_base__private_implementation__medium_prec_bin__normalize(m);
+
+    // We have a good approximation of h, but we still have to check whether
+    // the error is small enough. Equivalently, whether the number of surplus
+    // mantissa bits (the bits dropped when going from m's 64 mantissa bits to
+    // the smaller number of double-precision mantissa bits) would always round
+    // up or down, even when perturbed by ±error. We start at 11 surplus bits
+    // (m has 64, double-precision has 1+52), but it can be higher for
+    // subnormals.
+    //
+    // In many cases, the error is small enough and we return true.
+    const int32_t f64_bias = -1023;
+    int32_t subnormal_exp2 = f64_bias - 63;
+    uint32_t surplus_bits = 11;
+    if (subnormal_exp2 >= m->exp2) {
+      surplus_bits += 1 + ((uint32_t)(subnormal_exp2 - m->exp2));
     }
+
+    uint64_t surplus_mask =
+        (((uint64_t)1) << surplus_bits) - 1;  // e.g. 0x07FF.
+    uint64_t surplus = m->mantissa & surplus_mask;
+    uint64_t halfway = ((uint64_t)1) << (surplus_bits - 1);  // e.g. 0x0400.
+
+    // Do the final calculation in *signed* arithmetic.
+    int64_t i_surplus = (int64_t)surplus;
+    int64_t i_halfway = (int64_t)halfway;
+    int64_t i_error = (int64_t)error;
+
+    if ((i_surplus > (i_halfway - i_error)) &&
+        (i_surplus < (i_halfway + i_error))) {
+      goto fail;
+    }
+
+    wuffs_base__result_f64 ret;
+    ret.status.repr = NULL;
+    ret.value = wuffs_base__private_implementation__medium_prec_bin__as_f64(
+        m, h->negative);
+    return ret;
   } while (0);
-
-  // Normalize (and scale the error).
-  error <<= wuffs_base__private_implementation__medium_prec_bin__normalize(m);
-
-  // Multiplying two MPB values nominally multiplies two mantissas, call them A
-  // and B, which are integer approximations to the precise values (A+a) and
-  // (B+b) for some error terms a and b.
-  //
-  // MPB multiplication calculates (((A+a) * (B+b)) >> 64) to be ((A*B) >> 64).
-  // Shifting (truncating) and rounding introduces further error. The
-  // difference between the calculated result:
-  //  ((A*B                  ) >> 64)
-  // and the true result:
-  //  ((A*B + A*b + a*B + a*b) >> 64)   + rounding_error
-  // is:
-  //  ((      A*b + a*B + a*b) >> 64)   + rounding_error
-  // which can be re-grouped as:
-  //  ((A*b) >> 64) + ((a*(B+b)) >> 64) + rounding_error
-  //
-  // Now, let A and a be "m->mantissa" and "error", and B and b be the
-  // pre-calculated power of 10. A and B are both less than (1 << 64), a is the
-  // "error" local variable and b is less than 1.
-  //
-  // An upper bound (in absolute value) on ((A*b) >> 64) is therefore 1.
-  //
-  // Similarly, an upper bound on ((a*(B+b)) >> 64) is a, also known as error.
-  //
-  // Finally, the rounding_error is at most 1.
-  //
-  // In total, calling mpb__mul_pow_10 will increase the worst-case error by 2.
-  // The subsequent re-normalization can multiply that by a further factor.
-
-  // Multiply by small_powers_of_10[etc].
-  wuffs_base__private_implementation__medium_prec_bin__mul_pow_10(
-      m, &wuffs_base__private_implementation__small_powers_of_10[3 * spo10]);
-  error += 2;
-  error <<= wuffs_base__private_implementation__medium_prec_bin__normalize(m);
-
-  // Multiply by big_powers_of_10[etc].
-  wuffs_base__private_implementation__medium_prec_bin__mul_pow_10(
-      m, &wuffs_base__private_implementation__big_powers_of_10[3 * bpo10]);
-  error += 2;
-  error <<= wuffs_base__private_implementation__medium_prec_bin__normalize(m);
-
-  // We have a good approximation of h, but we still have to check whether the
-  // error is small enough. Equivalently, whether the number of surplus
-  // mantissa bits (the bits dropped when going from m's 64 mantissa bits to
-  // the smaller number of double-precision mantissa bits) would always round
-  // up or down, even when perturbed by ±error. We start at 11 surplus bits (m
-  // has 64, double-precision has 1+52), but it can be higher for subnormals.
-  //
-  // In many cases, the error is small enough and we return true.
-  const int32_t f64_bias = -1023;
-  int32_t subnormal_exp2 = f64_bias - 63;
-  uint32_t surplus_bits = 11;
-  if (subnormal_exp2 >= m->exp2) {
-    surplus_bits += 1 + ((uint32_t)(subnormal_exp2 - m->exp2));
-  }
-
-  uint64_t surplus_mask = (((uint64_t)1) << surplus_bits) - 1;  // e.g. 0x07FF.
-  uint64_t surplus = m->mantissa & surplus_mask;
-  uint64_t halfway = ((uint64_t)1) << (surplus_bits - 1);  // e.g. 0x0400.
-
-  // Do the final calculation in *signed* arithmetic.
-  int64_t i_surplus = (int64_t)surplus;
-  int64_t i_halfway = (int64_t)halfway;
-  int64_t i_error = (int64_t)error;
-
-  if ((i_surplus > (i_halfway - i_error)) &&
-      (i_surplus < (i_halfway + i_error))) {
-    goto fail;
-  }
-
-  wuffs_base__result_f64 ret;
-  ret.status.repr = NULL;
-  ret.value = wuffs_base__private_implementation__medium_prec_bin__as_f64(
-      m, h->negative);
-  return ret;
 
 fail:
   do {
