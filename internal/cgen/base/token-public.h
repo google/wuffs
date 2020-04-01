@@ -23,6 +23,7 @@ typedef struct {
   // |  1  |      21     |   3   |      21     |  1  |  1  |     16    |
   // +-----+-------------+-------+-------------+-----+-----+-----------+
   // [..................value..................]  LP    LN     length
+  // [..1..|..........~value_extension.........]
   // [..0..|.value_major.|.....value_minor.....]
   // [..0..|.........VBC.........|.....VBD.....]
   //
@@ -31,8 +32,15 @@ typedef struct {
   //  - Bits 17 .. 16 ( 2 bits) is LP and LN (link_prev and link_next).
   //  - Bits 15 ..  0 (16 bits) is the length.
   //
-  // The value bits can be sub-divided in multiple ways:
-  //  - Bits 63 .. 63 ( 1 bits) is reserved (a zero bit).
+  // ----
+  //
+  // The value bits can be sub-divided in multiple ways. First, the high bit:
+  //  - Bits 63 .. 63 ( 1 bits) is an extended (1) or simple (0) token.
+  //
+  // For extended tokens:
+  //  - Bits 62 .. 18 (45 bits) is the bitwise-not (~) of the value_extension.
+  //
+  // For simple tokens:
   //  - Bits 62 .. 42 (21 bits) is the value_major.
   //  - Bits 41 .. 18 (24 bits) is the value_minor.
   //  - Bits 62 .. 39 (24 bits) is the VBC (value_base_category).
@@ -46,12 +54,14 @@ typedef struct {
   //
   // The high 46 bits (bits 63 .. 18) only have VBC and VBD semantics when the
   // high 22 bits (the value_major) are all zero. An equivalent test is that
-  // the high 25 bits (the notional VBC) has a numerical value less than 8.
+  // the high 25 bits (the notional VBC) has a value in the range 0 ..= 7.
   //
   // At 21 bits, the VBD can hold every valid Unicode code point.
   //
   // If value_major is non-zero then value_minor has whatever arbitrary meaning
   // the tokenizer's package assigns to it.
+  //
+  // ----
   //
   // Multiple consecutive tokens can form a larger conceptual unit. For
   // example, an "abc\tz" string is a single higher level concept but at the
@@ -66,10 +76,11 @@ typedef struct {
   uint64_t repr;
 
 #ifdef __cplusplus
-  inline uint64_t value() const;
-  inline uint64_t value_major() const;
+  inline int64_t value() const;
+  inline int64_t value_extension() const;
+  inline int64_t value_major() const;
+  inline int64_t value_base_category() const;
   inline uint64_t value_minor() const;
-  inline uint64_t value_base_category() const;
   inline uint64_t value_base_detail() const;
   inline bool link_prev() const;
   inline bool link_next() const;
@@ -89,18 +100,11 @@ wuffs_base__make_token(uint64_t repr) {
 
 #define WUFFS_BASE__TOKEN__LENGTH__MAX_INCL 0xFFFF
 
-#define WUFFS_BASE__TOKEN__VALUE__MASK 0x3FFFFFFFFFFF
-#define WUFFS_BASE__TOKEN__VALUE_MAJOR__MASK 0x3FFFFF
-#define WUFFS_BASE__TOKEN__VALUE_MINOR__MASK 0xFFFFFF
-#define WUFFS_BASE__TOKEN__VALUE_BASE_CATEGORY__MASK 0x1FFFFFF
-#define WUFFS_BASE__TOKEN__VALUE_BASE_DETAIL__MASK 0x1FFFFF
-#define WUFFS_BASE__TOKEN__LINK__MASK 0x3
-#define WUFFS_BASE__TOKEN__LENGTH__MASK 0xFFFF
-
 #define WUFFS_BASE__TOKEN__VALUE__SHIFT 18
+#define WUFFS_BASE__TOKEN__VALUE_EXTENSION__SHIFT 18
 #define WUFFS_BASE__TOKEN__VALUE_MAJOR__SHIFT 42
-#define WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT 18
 #define WUFFS_BASE__TOKEN__VALUE_BASE_CATEGORY__SHIFT 39
+#define WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT 18
 #define WUFFS_BASE__TOKEN__VALUE_BASE_DETAIL__SHIFT 18
 #define WUFFS_BASE__TOKEN__LINK__SHIFT 16
 #define WUFFS_BASE__TOKEN__LENGTH__SHIFT 0
@@ -194,34 +198,42 @@ wuffs_base__make_token(uint64_t repr) {
 
 // --------
 
-static inline uint64_t  //
+// wuffs_base__token__value returns the token's high 46 bits, sign-extended. A
+// negative value means an extended token, non-negative means a simple token.
+static inline int64_t  //
 wuffs_base__token__value(const wuffs_base__token* t) {
-  return (t->repr >> WUFFS_BASE__TOKEN__VALUE__SHIFT) &
-         WUFFS_BASE__TOKEN__VALUE__MASK;
+  return ((int64_t)(t->repr)) >> WUFFS_BASE__TOKEN__VALUE__SHIFT;
 }
 
-static inline uint64_t  //
+// wuffs_base__token__value_extension returns a negative value if the token was
+// not an extended token.
+static inline int64_t  //
+wuffs_base__token__value_extension(const wuffs_base__token* t) {
+  return (~(int64_t)(t->repr)) >> WUFFS_BASE__TOKEN__VALUE_EXTENSION__SHIFT;
+}
+
+// wuffs_base__token__value_major returns a negative value if the token was not
+// a simple token.
+static inline int64_t  //
 wuffs_base__token__value_major(const wuffs_base__token* t) {
-  return (t->repr >> WUFFS_BASE__TOKEN__VALUE_MAJOR__SHIFT) &
-         WUFFS_BASE__TOKEN__VALUE_MAJOR__MASK;
+  return ((int64_t)(t->repr)) >> WUFFS_BASE__TOKEN__VALUE_MAJOR__SHIFT;
+}
+
+// wuffs_base__token__value_base_category returns a negative value if the token
+// was not a simple token.
+static inline int64_t  //
+wuffs_base__token__value_base_category(const wuffs_base__token* t) {
+  return ((int64_t)(t->repr)) >> WUFFS_BASE__TOKEN__VALUE_BASE_CATEGORY__SHIFT;
 }
 
 static inline uint64_t  //
 wuffs_base__token__value_minor(const wuffs_base__token* t) {
-  return (t->repr >> WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) &
-         WUFFS_BASE__TOKEN__VALUE_MINOR__MASK;
-}
-
-static inline uint64_t  //
-wuffs_base__token__value_base_category(const wuffs_base__token* t) {
-  return (t->repr >> WUFFS_BASE__TOKEN__VALUE_BASE_CATEGORY__SHIFT) &
-         WUFFS_BASE__TOKEN__VALUE_BASE_CATEGORY__MASK;
+  return (t->repr >> WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) & 0xFFFFFF;
 }
 
 static inline uint64_t  //
 wuffs_base__token__value_base_detail(const wuffs_base__token* t) {
-  return (t->repr >> WUFFS_BASE__TOKEN__VALUE_BASE_DETAIL__SHIFT) &
-         WUFFS_BASE__TOKEN__VALUE_BASE_DETAIL__MASK;
+  return (t->repr >> WUFFS_BASE__TOKEN__VALUE_BASE_DETAIL__SHIFT) & 0x1FFFFF;
 }
 
 static inline bool  //
@@ -236,30 +248,34 @@ wuffs_base__token__link_next(const wuffs_base__token* t) {
 
 static inline uint64_t  //
 wuffs_base__token__length(const wuffs_base__token* t) {
-  return (t->repr >> WUFFS_BASE__TOKEN__LENGTH__SHIFT) &
-         WUFFS_BASE__TOKEN__LENGTH__MASK;
+  return (t->repr >> WUFFS_BASE__TOKEN__LENGTH__SHIFT) & 0xFFFF;
 }
 
 #ifdef __cplusplus
 
-inline uint64_t  //
+inline int64_t  //
 wuffs_base__token::value() const {
   return wuffs_base__token__value(this);
 }
 
-inline uint64_t  //
+inline int64_t  //
+wuffs_base__token::value_extension() const {
+  return wuffs_base__token__value_extension(this);
+}
+
+inline int64_t  //
 wuffs_base__token::value_major() const {
   return wuffs_base__token__value_major(this);
+}
+
+inline int64_t  //
+wuffs_base__token::value_base_category() const {
+  return wuffs_base__token__value_base_category(this);
 }
 
 inline uint64_t  //
 wuffs_base__token::value_minor() const {
   return wuffs_base__token__value_minor(this);
-}
-
-inline uint64_t  //
-wuffs_base__token::value_base_category() const {
-  return wuffs_base__token__value_base_category(this);
 }
 
 inline uint64_t  //

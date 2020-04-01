@@ -1376,7 +1376,7 @@ test_wuffs_json_decode_prior_valid_utf_8() {
           size_t have = 0;
           while (tok.meta.ri < tok.meta.wi) {
             wuffs_base__token* t = &tok.data.ptr[tok.meta.ri++];
-            uint64_t vbc = wuffs_base__token__value_base_category(t);
+            int64_t vbc = wuffs_base__token__value_base_category(t);
             if (vbc == WUFFS_BASE__TOKEN__VBC__UNICODE_CODE_POINT) {
               break;
             } else if (vbc == WUFFS_BASE__TOKEN__VBC__STRING) {
@@ -1483,7 +1483,7 @@ test_wuffs_json_decode_quirk_allow_backslash_etc() {
       uint32_t have = 0;
       while (tok.meta.ri < tok.meta.wi) {
         wuffs_base__token* t = &tok.data.ptr[tok.meta.ri++];
-        uint64_t vbc = wuffs_base__token__value_base_category(t);
+        int64_t vbc = wuffs_base__token__value_base_category(t);
         uint64_t vbd = wuffs_base__token__value_base_detail(t);
         if (vbc == WUFFS_BASE__TOKEN__VBC__UNICODE_CODE_POINT) {
           have = vbd;
@@ -1553,7 +1553,7 @@ test_wuffs_json_decode_quirk_allow_backslash_x() {
     uint64_t have_bytes = 0;
     while (tok.meta.ri < tok.meta.wi) {
       wuffs_base__token* t = &tok.data.ptr[tok.meta.ri++];
-      uint64_t vbc = wuffs_base__token__value_base_category(t);
+      int64_t vbc = wuffs_base__token__value_base_category(t);
       uint64_t vbd = wuffs_base__token__value_base_detail(t);
       uint64_t token_length = wuffs_base__token__length(t);
       if ((vbc == WUFFS_BASE__TOKEN__VBC__STRING) &&
@@ -2030,7 +2030,7 @@ test_wuffs_json_decode_quirk_replace_invalid_unicode() {
     uint64_t src_index = 0;
     while (tok.meta.ri < tok.meta.wi) {
       wuffs_base__token* t = &tok.data.ptr[tok.meta.ri++];
-      uint64_t vbc = wuffs_base__token__value_base_category(t);
+      int64_t vbc = wuffs_base__token__value_base_category(t);
       uint64_t vbd = wuffs_base__token__value_base_detail(t);
       uint64_t token_length = wuffs_base__token__length(t);
 

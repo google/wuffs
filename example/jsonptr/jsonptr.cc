@@ -836,7 +836,7 @@ handle_unicode_code_point(uint32_t ucp) {
 const char*  //
 handle_token(wuffs_base__token t) {
   do {
-    uint64_t vbc = t.value_base_category();
+    int64_t vbc = t.value_base_category();
     uint64_t vbd = t.value_base_detail();
     uint64_t len = t.length();
 

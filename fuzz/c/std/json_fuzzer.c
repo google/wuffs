@@ -107,7 +107,7 @@ fuzz_one_token(wuffs_base__token t,
     return "fuzz: internal error: inconsistent link bits";
   }
 
-  uint64_t vbc = wuffs_base__token__value_base_category(&t);
+  int64_t vbc = wuffs_base__token__value_base_category(&t);
   uint64_t vbd = wuffs_base__token__value_base_detail(&t);
 
   switch (vbc) {

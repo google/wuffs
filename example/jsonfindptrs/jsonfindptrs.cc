@@ -433,7 +433,7 @@ JsonThing::parse(TokenStream& ts) {
       return Result(std::move(tsr.status_msg));
     }
 
-    uint64_t vbc = tsr.token.value_base_category();
+    int64_t vbc = tsr.token.value_base_category();
     uint64_t vbd = tsr.token.value_base_detail();
     switch (vbc) {
       case WUFFS_BASE__TOKEN__VBC__FILLER:
@@ -469,7 +469,7 @@ JsonThing::parse_array(TokenStream& ts) {
     if (!tsr.status_msg.empty()) {
       return Result(std::move(tsr.status_msg));
     }
-    uint64_t vbc = tsr.token.value_base_category();
+    int64_t vbc = tsr.token.value_base_category();
     uint64_t vbd = tsr.token.value_base_detail();
     if (vbc == WUFFS_BASE__TOKEN__VBC__FILLER) {
       ts.next();
@@ -556,7 +556,7 @@ JsonThing::parse_object(TokenStream& ts) {
     if (!tsr.status_msg.empty()) {
       return Result(std::move(tsr.status_msg));
     }
-    uint64_t vbc = tsr.token.value_base_category();
+    int64_t vbc = tsr.token.value_base_category();
     uint64_t vbd = tsr.token.value_base_detail();
     if (vbc == WUFFS_BASE__TOKEN__VBC__FILLER) {
       ts.next();
@@ -596,7 +596,7 @@ JsonThing::parse_string(TokenStream& ts, TokenStream::Result tsr) {
   JsonThing jt;
   jt.kind = Kind::String;
   while (true) {
-    uint64_t vbc = tsr.token.value_base_category();
+    int64_t vbc = tsr.token.value_base_category();
     uint64_t vbd = tsr.token.value_base_detail();
 
     switch (vbc) {
