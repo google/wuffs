@@ -97,16 +97,16 @@ pub func parser.parse?(src: base.io_reader) {
         // Rebase from ASCII (0x30 ..= 0x39) to the value (0 ..= 9).
         c -= 0x30
 
-        if this.val < 429496729 {
+        if this.val < 429_496729 {
             this.val = (10 * this.val) + (c as base.u32)
             continue
-        } else if (this.val > 429496729) or (c > 5) {
+        } else if (this.val > 429_496729) or (c > 5) {
             return "#too large"
         }
         // Uncomment this assertion to see what facts are known here.
         // assert false
         this.val = (10 * this.val) + (c as base.u32)
-    }
+    } endwhile
 }
 ```
 
@@ -124,11 +124,11 @@ index cb207eec..c38dcf88 100644
 --- a/hello-wuffs-c/parse.wuffs
 +++ b/hello-wuffs-c/parse.wuffs
 @@ -35,7 +35,7 @@ pub func parser.parse?(src: base.io_reader) {
-                if this.val < 429496729 {
+                if this.val < 429_496729 {
                         this.val = (10 * this.val) + (c as base.u32)
                         continue
--               } else if (this.val > 429496729) or (c > 5) {
-+               } else if (this.val > 429496729) {
+-               } else if (this.val > 429_496729) or (c > 5) {
++               } else if (this.val > 429_496729) {
                         return "#too large"
                 }
                 // Uncomment this assertion to see what facts are known here.
