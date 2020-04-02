@@ -196,40 +196,42 @@ func invert(tm *t.Map, n *a.Expr) (*a.Expr, error) {
 }
 
 func (q *checker) bcheckBlock(block []*a.Node) error {
-	// TODO: after a "break loop", do we need to set placeholder MBounds so
-	// that everything (including unreachable code) is bounds checked?
-loop:
+	unreachable := false
 	for _, o := range block {
+		q.errFilename, q.errLine = o.AsRaw().FilenameLine()
+		if unreachable {
+			return fmt.Errorf("check: unreachable code")
+		}
 		if err := q.bcheckStatement(o); err != nil {
 			return err
 		}
+
 		switch o.Kind() {
+		default:
+			continue
 		case a.KJump:
-			break loop
+			// No-op.
 		case a.KRet:
-			if o.AsRet().Keyword() == t.IDReturn {
-				break loop
-			}
-			// o is a yield statement.
-			//
-			// Drop any facts involving args or this.
-			if err := q.facts.update(func(x *a.Expr) (*a.Expr, error) {
-				if x.Mentions(exprArgs) || x.Mentions(exprThis) {
-					return nil, nil
+			if o.AsRet().Keyword() == t.IDYield {
+				// Drop any facts involving args or this.
+				if err := q.facts.update(func(x *a.Expr) (*a.Expr, error) {
+					if x.Mentions(exprArgs) || x.Mentions(exprThis) {
+						return nil, nil
+					}
+					return x, nil
+				}); err != nil {
+					return err
 				}
-				return x, nil
-			}); err != nil {
-				return err
+				// TODO: drop any facts involving ptr-typed local variables?
+				continue
 			}
-			// TODO: drop any facts involving ptr-typed local variables?
 		}
+		unreachable = true
 	}
 	return nil
 }
 
 func (q *checker) bcheckStatement(n *a.Node) error {
-	q.errFilename, q.errLine = n.AsRaw().FilenameLine()
-
 	switch n.Kind() {
 	case a.KAssert:
 		if err := q.bcheckAssert(n.AsAssert()); err != nil {
@@ -386,7 +388,7 @@ func (q *checker) bcheckAssert(n *a.Assert) error {
 		if reasonFunc := q.reasonMap[reasonID]; reasonFunc != nil {
 			err = reasonFunc(q, n)
 		} else {
-			err = fmt.Errorf("no such reason %s", reasonID.Str(q.tm))
+			err = fmt.Errorf("check: no such reason %s", reasonID.Str(q.tm))
 		}
 	} else if condition.Operator().IsBinaryOp() && condition.Operator() != t.IDAs {
 		err = q.proveBinaryOp(condition.Operator(),
@@ -546,7 +548,7 @@ func (q *checker) unify(branches [][]*a.Expr) error {
 		return nil
 	}
 	if len(branches) > 10000 {
-		return fmt.Errorf("too many if-else branches")
+		return fmt.Errorf("check: too many if-else branches")
 	}
 
 	m := map[string]int{}
