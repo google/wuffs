@@ -24,19 +24,25 @@
 // It prints 16 bytes (128 bits) per token, containing big-endian numbers:
 //
 // +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
-// |      POS      |  LEN  | LP| LN|     MAJOR     |     MINOR     |
-// |               |       |   |   |               |VBC|    VBD    |
+// |               |       |   |   |   |      VALUE_EXTENSION      |
+// |      POS      |  LEN  | LP| LN|EXT|VALUE_MAJOR|  VALUE_MINOR  |
+// |               |       |   |   |   |     0     |VBC|    VBD    |
 // +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
 //
-//  - POS   (4 bytes) is the position: the sum of all previous tokens' lengths,
-//                    including elided tokens.
-//  - LEN   (2 bytes) is the length.
-//  - LP    (1 bytes) is the link_prev bit.
-//  - LN    (1 bytes) is the link_next bit
-//  - MAJOR (4 bytes) is the value_major.
+//  - POS (4 bytes) is the position: the sum of all previous tokens' lengths,
+//                  including elided tokens.
+//  - LEN (2 bytes) is the length.
+//  - LP  (1 bytes) is the link_prev bit.
+//  - LN  (1 bytes) is the link_next bit
+//  - EXT (1 bytes) is 1 for extended and 0 for simple tokens.
 //
-// The final 4 bytes are either value_minor (when the value_major is non-zero)
-// or 1 + 3 bytes for value_base_category and value_base_detail (otherwise).
+// Extended tokens have a VALUE_EXTENSION (7 bytes).
+//
+// Simple tokens have a VALUE_MAJOR (3 bytes) and then either 4 bytes
+// VALUE_MINOR (when VALUE_MAJOR is non-zero) or (1 + 3) bytes
+// VALUE_BASE_CATEGORY and VALUE_BASE_DETAIL (when VALUE_MAJOR is zero).
+//
+// ----
 //
 // Together with the hexadecimal WUFFS_BASE__TOKEN__ETC constants defined in
 // token-public.h, this format is somewhat human-readable when piped through a
@@ -273,7 +279,7 @@ main1(int argc, char** argv) {
       if (g_flags.all_tokens || (wuffs_base__token__value(t) != 0)) {
         uint8_t lp = wuffs_base__token__link_prev(t) ? 1 : 0;
         uint8_t ln = wuffs_base__token__link_next(t) ? 1 : 0;
-        uint32_t vmajor = wuffs_base__token__value_major(t);
+        int32_t vmajor = wuffs_base__token__value_major(t);
         uint32_t vminor = wuffs_base__token__value_minor(t);
         uint8_t vbc = wuffs_base__token__value_base_category(t);
         uint32_t vbd = wuffs_base__token__value_base_detail(t);
@@ -282,7 +288,7 @@ main1(int argc, char** argv) {
           printf("pos=0x%08" PRIX32 "  len=0x%04" PRIX16 "  link=0b%d%d  ",
                  (uint32_t)(pos), len, (int)(lp), (int)(ln));
 
-          if (vmajor) {
+          if (vmajor > 0) {
             uint32_t m = vmajor;
             uint32_t m0 = m / (38 * 38 * 38);
             m -= m0 * (38 * 38 * 38);
@@ -295,8 +301,11 @@ main1(int argc, char** argv) {
             printf("vmajor=0x%06" PRIX32 ":%c%c%c%c  vminor=0x%06" PRIX32 "\n",
                    vmajor, g_base38_decode[m0], g_base38_decode[m1],
                    g_base38_decode[m2], g_base38_decode[m3], vminor);
-          } else {
+          } else if (vmajor == 0) {
             printf("vbc=%s.  vbd=0x%06" PRIX32 "\n", g_vbc_names[vbc & 7], vbd);
+          } else {
+            printf("extended... vextension=0x%012" PRIX64 "\n",
+                   wuffs_base__token__value_extension(t));
           }
 
         } else {
@@ -305,12 +314,17 @@ main1(int argc, char** argv) {
           wuffs_base__store_u16be__no_bounds_check(&buf[0x4], len);
           wuffs_base__store_u8__no_bounds_check(&buf[0x0006], lp);
           wuffs_base__store_u8__no_bounds_check(&buf[0x0007], ln);
-          wuffs_base__store_u32be__no_bounds_check(&buf[0x8], vmajor);
-          if (vmajor) {
+          if (vmajor > 0) {
+            wuffs_base__store_u32be__no_bounds_check(&buf[0x8], vmajor);
             wuffs_base__store_u32be__no_bounds_check(&buf[0xC], vminor);
-          } else {
+          } else if (vmajor == 0) {
+            wuffs_base__store_u32be__no_bounds_check(&buf[0x8], 0);
             wuffs_base__store_u8__no_bounds_check(&buf[0x000C], vbc);
             wuffs_base__store_u24be__no_bounds_check(&buf[0xD], vbd);
+          } else {
+            wuffs_base__store_u8__no_bounds_check(&buf[0x0008], 0x01);
+            wuffs_base__store_u56be__no_bounds_check(
+                &buf[0x9], wuffs_base__token__value_extension(t));
           }
           const int stdout_fd = 1;
           ignore_return_value(write(stdout_fd, &buf[0], 16));

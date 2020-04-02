@@ -1138,7 +1138,7 @@ do_test__wuffs_base__token_decoder(wuffs_base__token_decoder* b,
     if (wuffs_base__token__value(t) != 0) {
       uint8_t lp = wuffs_base__token__link_prev(t) ? 1 : 0;
       uint8_t ln = wuffs_base__token__link_next(t) ? 1 : 0;
-      uint32_t vmajor = wuffs_base__token__value_major(t);
+      int32_t vmajor = wuffs_base__token__value_major(t);
 
       if ((have.data.len - have.meta.wi) < 16) {
         return "testlib: output is too long";
@@ -1151,15 +1151,20 @@ do_test__wuffs_base__token_decoder(wuffs_base__token_decoder* b,
       wuffs_base__store_u16be__no_bounds_check(ptr + 0x4, len);
       wuffs_base__store_u8__no_bounds_check(ptr + 0x0006, lp);
       wuffs_base__store_u8__no_bounds_check(ptr + 0x0007, ln);
-      wuffs_base__store_u32be__no_bounds_check(ptr + 0x8, vmajor);
-      if (vmajor) {
+      if (vmajor > 0) {
+        wuffs_base__store_u32be__no_bounds_check(ptr + 0x8, vmajor);
         uint32_t vminor = wuffs_base__token__value_minor(t);
         wuffs_base__store_u32be__no_bounds_check(ptr + 0xC, vminor);
-      } else {
+      } else if (vmajor == 0) {
         uint8_t vbc = wuffs_base__token__value_base_category(t);
         uint32_t vbd = wuffs_base__token__value_base_detail(t);
+        wuffs_base__store_u32be__no_bounds_check(ptr + 0x8, 0);
         wuffs_base__store_u8__no_bounds_check(ptr + 0x000C, vbc);
         wuffs_base__store_u24be__no_bounds_check(ptr + 0xD, vbd);
+      } else {
+        wuffs_base__store_u8__no_bounds_check(ptr + 0x0008, 0x01);
+        wuffs_base__store_u56be__no_bounds_check(
+            ptr + 0x9, wuffs_base__token__value_extension(t));
       }
       have.meta.wi += 16;
     }
