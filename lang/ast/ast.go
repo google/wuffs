@@ -593,6 +593,11 @@ func (n *While) SetBody(body []*Node) { n.list2 = body }
 func (n *While) SetHasBreak()         { n.flags |= FlagsHasBreak }
 func (n *While) SetHasContinue()      { n.flags |= FlagsHasContinue }
 
+func (n *While) IsWhileTrue() bool {
+	condition := n.mhs.AsExpr()
+	return (condition.Operator() == 0) && (condition.Ident() == t.IDTrue)
+}
+
 func NewWhile(label t.ID, condition *Expr, asserts []*Node) *While {
 	return &While{
 		kind:  KWhile,
@@ -1013,10 +1018,9 @@ func NewFile(filename string, topLevelDecls []*Node) *File {
 
 // Terminates returns whether a block of statements terminates. In other words,
 // whether the block is non-empty and its final statement is a "return",
-// "break", "continue" or an "if-else" chain where all branches terminate.
+// "break", "continue", a "while true" that doesn't break or an "if-else" chain
+// where all branches terminate.
 func Terminates(body []*Node) bool {
-	// TODO: strengthen this to include "while" statements? For inspiration,
-	// the Go spec has https://golang.org/ref/spec#Terminating_statements
 	if len(body) == 0 {
 		return false
 	}
@@ -1041,6 +1045,9 @@ func Terminates(body []*Node) bool {
 		return true
 	case KRet:
 		return n.AsRet().Keyword() == t.IDReturn
+	case KWhile:
+		n := n.AsWhile()
+		return n.IsWhileTrue() && !n.HasBreak()
 	}
 	return false
 }

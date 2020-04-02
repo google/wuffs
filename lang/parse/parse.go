@@ -790,16 +790,16 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 		if err != nil {
 			return nil, err
 		}
-		doubleCurly := p.peek1() == t.IDOpenDoubleCurly
-		if doubleCurly && ((condition.Operator() != 0) || (condition.Ident() != t.IDTrue)) {
-			return nil, fmt.Errorf(`parse: double {{ }} while loop condition isn't "true" at %s:%d`,
-				p.filename, p.line())
-		}
 
 		n := a.NewWhile(label, condition, asserts)
 		if !p.loops.Push(n) {
 			return nil, fmt.Errorf(`parse: duplicate loop label %s at %s:%d`,
 				label.Str(p.tm), p.filename, p.line())
+		}
+		doubleCurly := p.peek1() == t.IDOpenDoubleCurly
+		if doubleCurly && !n.IsWhileTrue() {
+			return nil, fmt.Errorf(`parse: double {{ }} while loop condition isn't "true" at %s:%d`,
+				p.filename, p.line())
 		}
 		body, err := p.parseBlock(doubleCurly)
 		if err != nil {
