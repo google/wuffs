@@ -101,7 +101,7 @@ static const char* g_usage =
     "Usage: jsonfindptrs -flags input.json\n"
     "\n"
     "Flags:\n"
-    "    -o=NUM  -max-output-depth=NUM\n"
+    "    -d=NUM  -max-output-depth=NUM\n"
     "    -s      -strict-json-pointer-syntax\n"
     "\n"
     "The input.json filename is optional. If absent, it reads from stdin.\n"
@@ -162,9 +162,9 @@ static const char* g_usage =
     "The JSON specification permits implementations to set their own maximum\n"
     "input depth. This JSON implementation sets it to 1024.\n"
     "\n"
-    "The -o=NUM or -max-output-depth=NUM flag gives the maximum (inclusive)\n"
+    "The -d=NUM or -max-output-depth=NUM flag gives the maximum (inclusive)\n"
     "output depth. JSON containers ([] arrays and {} objects) can hold other\n"
-    "containers. A bare -o or -max-output-depth is equivalent to -o=1,\n"
+    "containers. A bare -d or -max-output-depth is equivalent to -d=1,\n"
     "analogous to the Unix ls command. The flag's absence is equivalent to an\n"
     "unlimited output depth, analogous to the Unix find command (and hence\n"
     "the name of this program: jsonfindptrs).";
@@ -203,10 +203,10 @@ parse_flags(int argc, char** argv) {
       }
     }
 
-    if (!strcmp(arg, "o") || !strcmp(arg, "max-output-depth")) {
+    if (!strcmp(arg, "d") || !strcmp(arg, "max-output-depth")) {
       g_flags.max_output_depth = 1;
       continue;
-    } else if (!strncmp(arg, "o=", 2) ||
+    } else if (!strncmp(arg, "d=", 2) ||
                !strncmp(arg, "max-output-depth=", 16)) {
       while (*arg++ != '=') {
       }

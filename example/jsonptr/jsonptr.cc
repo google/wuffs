@@ -147,8 +147,8 @@ static const char* g_usage =
     "\n"
     "Flags:\n"
     "    -c      -compact-output\n"
+    "    -d=NUM  -max-output-depth=NUM\n"
     "    -i=NUM  -indent=NUM\n"
-    "    -o=NUM  -max-output-depth=NUM\n"
     "    -q=STR  -query=STR\n"
     "    -s      -strict-json-pointer-syntax\n"
     "    -t      -tabs\n"
@@ -206,11 +206,11 @@ static const char* g_usage =
     "\n"
     "----\n"
     "\n"
-    "The -o=NUM or -max-output-depth=NUM flag gives the maximum (inclusive)\n"
+    "The -d=NUM or -max-output-depth=NUM flag gives the maximum (inclusive)\n"
     "output depth. JSON containers ([] arrays and {} objects) can hold other\n"
     "containers. When this flag is set, containers at depth NUM are replaced\n"
-    "with \"[…]\" or \"{…}\". A bare -o or -max-output-depth is equivalent to\n"
-    "-o=1. The flag's absence is equivalent to an unlimited output depth.\n"
+    "with \"[…]\" or \"{…}\". A bare -d or -max-output-depth is equivalent to\n"
+    "-d=1. The flag's absence is equivalent to an unlimited output depth.\n"
     "\n"
     "The -max-output-depth flag only affects the program's output. It doesn't\n"
     "affect whether or not the input is considered valid JSON. The JSON\n"
@@ -589,6 +589,21 @@ parse_flags(int argc, char** argv) {
       g_flags.compact_output = true;
       continue;
     }
+    if (!strcmp(arg, "d") || !strcmp(arg, "max-output-depth")) {
+      g_flags.max_output_depth = 1;
+      continue;
+    } else if (!strncmp(arg, "d=", 2) ||
+               !strncmp(arg, "max-output-depth=", 16)) {
+      while (*arg++ != '=') {
+      }
+      wuffs_base__result_u64 u = wuffs_base__parse_number_u64(
+          wuffs_base__make_slice_u8((uint8_t*)arg, strlen(arg)));
+      if (wuffs_base__status__is_ok(&u.status) && (u.value <= 0xFFFFFFFF)) {
+        g_flags.max_output_depth = (uint32_t)(u.value);
+        continue;
+      }
+      return g_usage;
+    }
     if (!strcmp(arg, "fail-if-unsandboxed")) {
       g_flags.fail_if_unsandboxed = true;
       continue;
@@ -598,21 +613,6 @@ parse_flags(int argc, char** argv) {
       }
       if (('0' <= arg[0]) && (arg[0] <= '8') && (arg[1] == '\x00')) {
         g_flags.indent = arg[0] - '0';
-        continue;
-      }
-      return g_usage;
-    }
-    if (!strcmp(arg, "o") || !strcmp(arg, "max-output-depth")) {
-      g_flags.max_output_depth = 1;
-      continue;
-    } else if (!strncmp(arg, "o=", 2) ||
-               !strncmp(arg, "max-output-depth=", 16)) {
-      while (*arg++ != '=') {
-      }
-      wuffs_base__result_u64 u = wuffs_base__parse_number_u64(
-          wuffs_base__make_slice_u8((uint8_t*)arg, strlen(arg)));
-      if (wuffs_base__status__is_ok(&u.status) && (u.value <= 0xFFFFFFFF)) {
-        g_flags.max_output_depth = (uint32_t)(u.value);
         continue;
       }
       return g_usage;
