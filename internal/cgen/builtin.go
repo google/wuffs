@@ -711,48 +711,6 @@ func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error
 			return nil
 		}
 
-	case t.IDTokenWriter:
-		switch method.Ident() {
-		case t.IDWriteToken:
-			g.currFunk.usesScratch = true
-			// TODO: don't hard-code [0], and allow recursive coroutines.
-			scratchName := fmt.Sprintf("self->private_data.%s%s[0].scratch",
-				sPrefix, g.currFunk.astFunc.FuncName().Str(g.tm))
-
-			args := n.Args()
-			b.printf("%s = (((uint64_t)(", scratchName)
-			if cv := args[0].AsArg().Value().ConstValue(); (cv == nil) || (cv.Sign() != 0) {
-				if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
-					return err
-				}
-				b.writes(")) << WUFFS_BASE__TOKEN__VALUE_MAJOR__SHIFT) | (((uint64_t)(")
-			}
-
-			if err := g.writeExpr(b, args[1].AsArg().Value(), depth); err != nil {
-				return err
-			}
-			b.writes(")) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) | (((uint64_t)(")
-
-			if cv := args[2].AsArg().Value().ConstValue(); (cv == nil) || (cv.Sign() != 0) {
-				if err := g.writeExpr(b, args[2].AsArg().Value(), depth); err != nil {
-					return err
-				}
-				b.writes(")) << WUFFS_BASE__TOKEN__LINK__SHIFT) | (((uint64_t)(")
-			}
-
-			if err := g.writeExpr(b, args[3].AsArg().Value(), depth); err != nil {
-				return err
-			}
-			b.writes(")) << WUFFS_BASE__TOKEN__LENGTH__SHIFT);\n")
-
-			if err := g.writeCoroSuspPoint(b, false); err != nil {
-				return err
-			}
-			b.printf("if (iop_a_dst == io2_a_dst) {\n"+
-				"status = wuffs_base__make_status(wuffs_base__suspension__short_write); goto suspend; }\n"+
-				"*iop_a_dst++ = wuffs_base__make_token(%s);\n", scratchName)
-			return nil
-		}
 	}
 	return errNoSuchBuiltin
 }
