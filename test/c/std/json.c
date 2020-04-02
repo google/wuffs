@@ -1110,9 +1110,9 @@ test_wuffs_json_decode_end_of_data() {
                      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
 
     wuffs_base__token_buffer tok =
-        wuffs_base__make_token_buffer_writer(g_have_slice_token);
-    wuffs_base__io_buffer src = wuffs_base__make_io_buffer_reader(
-        wuffs_base__make_slice_u8(src_ptr, src_len), true);
+        wuffs_base__slice_token__writer(g_have_slice_token);
+    wuffs_base__io_buffer src =
+        wuffs_base__ptr_u8__reader(src_ptr, src_len, true);
     CHECK_STATUS("decode_tokens", wuffs_json__decoder__decode_tokens(
                                       &dec, &tok, &src, g_work_slice_u8));
     if (src.meta.ri != 3) {
@@ -1222,9 +1222,9 @@ test_wuffs_json_decode_long_numbers() {
                 WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
 
         wuffs_base__token_buffer tok =
-            wuffs_base__make_token_buffer_writer(g_have_slice_token);
+            wuffs_base__slice_token__writer(g_have_slice_token);
         wuffs_base__io_buffer src =
-            wuffs_base__make_io_buffer_reader(src_data, closed != 0);
+            wuffs_base__slice_u8__reader(src_data, closed != 0);
         const char* have = wuffs_json__decoder__decode_tokens(&dec, &tok, &src,
                                                               g_work_slice_u8)
                                .repr;
@@ -1368,9 +1368,9 @@ test_wuffs_json_decode_prior_valid_utf_8() {
                                          &dec, sizeof dec, WUFFS_VERSION, 0));
 
           wuffs_base__token_buffer tok =
-              wuffs_base__make_token_buffer_writer(g_have_slice_token);
+              wuffs_base__slice_token__writer(g_have_slice_token);
           wuffs_base__io_buffer src =
-              wuffs_base__make_io_buffer_reader(src_data, closed != 0);
+              wuffs_base__slice_u8__reader(src_data, closed != 0);
           wuffs_json__decoder__decode_tokens(&dec, &tok, &src, g_work_slice_u8);
 
           size_t have = 0;
@@ -1461,11 +1461,9 @@ test_wuffs_json_decode_quirk_allow_backslash_etc() {
       wuffs_json__decoder__set_quirk_enabled(&dec, test_cases[tc].quirk, q);
 
       wuffs_base__token_buffer tok =
-          wuffs_base__make_token_buffer_writer(g_have_slice_token);
-      wuffs_base__io_buffer src = wuffs_base__make_io_buffer_reader(
-          wuffs_base__make_slice_u8((void*)(test_cases[tc].str),
-                                    strlen(test_cases[tc].str)),
-          true);
+          wuffs_base__slice_token__writer(g_have_slice_token);
+      wuffs_base__io_buffer src = wuffs_base__ptr_u8__reader(
+          (void*)test_cases[tc].str, strlen(test_cases[tc].str), true);
 
       const char* have_status_repr =
           wuffs_json__decoder__decode_tokens(&dec, &tok, &src, g_work_slice_u8)
@@ -1536,11 +1534,10 @@ test_wuffs_json_decode_quirk_allow_backslash_x() {
         &dec, WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_X, true);
 
     wuffs_base__token_buffer tok =
-        wuffs_base__make_token_buffer_writer(g_have_slice_token);
+        wuffs_base__slice_token__writer(g_have_slice_token);
     wuffs_base__slice_u8 src_slice = wuffs_base__make_slice_u8(
         (void*)(test_cases[tc].str), strlen(test_cases[tc].str));
-    wuffs_base__io_buffer src =
-        wuffs_base__make_io_buffer_reader(src_slice, true);
+    wuffs_base__io_buffer src = wuffs_base__slice_u8__reader(src_slice, true);
     const char* have_status_repr =
         wuffs_json__decoder__decode_tokens(&dec, &tok, &src, g_work_slice_u8)
             .repr;
@@ -1611,11 +1608,9 @@ test_wuffs_json_decode_quirk_allow_extra_comma() {
           &dec, WUFFS_JSON__QUIRK_ALLOW_EXTRA_COMMA, q & 1);
 
       wuffs_base__token_buffer tok =
-          wuffs_base__make_token_buffer_writer(g_have_slice_token);
-      wuffs_base__io_buffer src = wuffs_base__make_io_buffer_reader(
-          wuffs_base__make_slice_u8((void*)(test_cases[tc].str),
-                                    strlen(test_cases[tc].str)),
-          true);
+          wuffs_base__slice_token__writer(g_have_slice_token);
+      wuffs_base__io_buffer src = wuffs_base__ptr_u8__reader(
+          (void*)test_cases[tc].str, strlen(test_cases[tc].str), true);
       const char* have =
           wuffs_json__decoder__decode_tokens(&dec, &tok, &src, g_work_slice_u8)
               .repr;
@@ -1688,11 +1683,9 @@ test_wuffs_json_decode_quirk_allow_inf_nan_numbers() {
           &dec, WUFFS_JSON__QUIRK_ALLOW_INF_NAN_NUMBERS, q & 1);
 
       wuffs_base__token_buffer tok =
-          wuffs_base__make_token_buffer_writer(g_have_slice_token);
-      wuffs_base__io_buffer src = wuffs_base__make_io_buffer_reader(
-          wuffs_base__make_slice_u8((void*)(test_cases[tc].str),
-                                    strlen(test_cases[tc].str)),
-          true);
+          wuffs_base__slice_token__writer(g_have_slice_token);
+      wuffs_base__io_buffer src = wuffs_base__ptr_u8__reader(
+          (void*)test_cases[tc].str, strlen(test_cases[tc].str), true);
       const char* have =
           wuffs_json__decoder__decode_tokens(&dec, &tok, &src, g_work_slice_u8)
               .repr;
@@ -1761,11 +1754,9 @@ test_wuffs_json_decode_quirk_allow_comment_etc() {
           &dec, WUFFS_JSON__QUIRK_ALLOW_COMMENT_LINE, q & 2);
 
       wuffs_base__token_buffer tok =
-          wuffs_base__make_token_buffer_writer(g_have_slice_token);
-      wuffs_base__io_buffer src = wuffs_base__make_io_buffer_reader(
-          wuffs_base__make_slice_u8((void*)(test_cases[tc].str),
-                                    strlen(test_cases[tc].str)),
-          true);
+          wuffs_base__slice_token__writer(g_have_slice_token);
+      wuffs_base__io_buffer src = wuffs_base__ptr_u8__reader(
+          (void*)test_cases[tc].str, strlen(test_cases[tc].str), true);
       const char* have =
           wuffs_json__decoder__decode_tokens(&dec, &tok, &src, g_work_slice_u8)
               .repr;
@@ -1840,11 +1831,9 @@ test_wuffs_json_decode_quirk_allow_leading_etc() {
           &dec, WUFFS_JSON__QUIRK_ALLOW_LEADING_UNICODE_BYTE_ORDER_MARK, q & 2);
 
       wuffs_base__token_buffer tok =
-          wuffs_base__make_token_buffer_writer(g_have_slice_token);
-      wuffs_base__io_buffer src = wuffs_base__make_io_buffer_reader(
-          wuffs_base__make_slice_u8((void*)(test_cases[tc].str),
-                                    strlen(test_cases[tc].str)),
-          true);
+          wuffs_base__slice_token__writer(g_have_slice_token);
+      wuffs_base__io_buffer src = wuffs_base__ptr_u8__reader(
+          (void*)test_cases[tc].str, strlen(test_cases[tc].str), true);
       const char* have =
           wuffs_json__decoder__decode_tokens(&dec, &tok, &src, g_work_slice_u8)
               .repr;
@@ -1919,11 +1908,9 @@ test_wuffs_json_decode_quirk_allow_trailing_etc() {
           &dec, WUFFS_JSON__QUIRK_ALLOW_TRAILING_NEW_LINE, q & 1);
 
       wuffs_base__token_buffer tok =
-          wuffs_base__make_token_buffer_writer(g_have_slice_token);
-      wuffs_base__io_buffer src = wuffs_base__make_io_buffer_reader(
-          wuffs_base__make_slice_u8((void*)(test_cases[tc].str),
-                                    strlen(test_cases[tc].str)),
-          true);
+          wuffs_base__slice_token__writer(g_have_slice_token);
+      wuffs_base__io_buffer src = wuffs_base__ptr_u8__reader(
+          (void*)test_cases[tc].str, strlen(test_cases[tc].str), true);
       const char* have =
           wuffs_json__decoder__decode_tokens(&dec, &tok, &src, g_work_slice_u8)
               .repr;
@@ -2016,14 +2003,11 @@ test_wuffs_json_decode_quirk_replace_invalid_unicode() {
     wuffs_json__decoder__set_quirk_enabled(
         &dec, WUFFS_JSON__QUIRK_REPLACE_INVALID_UNICODE, true);
 
-    wuffs_base__io_buffer have =
-        wuffs_base__make_io_buffer_writer(g_have_slice_u8);
+    wuffs_base__io_buffer have = wuffs_base__slice_u8__writer(g_have_slice_u8);
     wuffs_base__token_buffer tok =
-        wuffs_base__make_token_buffer_writer(g_have_slice_token);
-    wuffs_base__io_buffer src = wuffs_base__make_io_buffer_reader(
-        wuffs_base__make_slice_u8((void*)(test_cases[tc].str),
-                                  strlen(test_cases[tc].str)),
-        true);
+        wuffs_base__slice_token__writer(g_have_slice_token);
+    wuffs_base__io_buffer src = wuffs_base__ptr_u8__reader(
+        (void*)test_cases[tc].str, strlen(test_cases[tc].str), true);
     CHECK_STATUS("decode_tokens", wuffs_json__decoder__decode_tokens(
                                       &dec, &tok, &src, g_work_slice_u8));
 
@@ -2153,11 +2137,9 @@ test_wuffs_json_decode_unicode4_escapes() {
                      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
 
     wuffs_base__token_buffer tok =
-        wuffs_base__make_token_buffer_writer(g_have_slice_token);
-    wuffs_base__io_buffer src = wuffs_base__make_io_buffer_reader(
-        wuffs_base__make_slice_u8((void*)(test_cases[tc].str),
-                                  strlen(test_cases[tc].str)),
-        true);
+        wuffs_base__slice_token__writer(g_have_slice_token);
+    wuffs_base__io_buffer src = wuffs_base__ptr_u8__reader(
+        (void*)test_cases[tc].str, strlen(test_cases[tc].str), true);
     wuffs_json__decoder__decode_tokens(&dec, &tok, &src, g_work_slice_u8);
 
     uint32_t have = fail;
@@ -2242,9 +2224,9 @@ test_wuffs_json_decode_src_io_buffer_length() {
     int closed;
     for (closed = 0; closed < 2; closed++) {
       wuffs_base__token_buffer tok =
-          wuffs_base__make_token_buffer_writer(g_have_slice_token);
+          wuffs_base__slice_token__writer(g_have_slice_token);
       wuffs_base__io_buffer src =
-          wuffs_base__make_io_buffer_reader(src_data, closed != 0);
+          wuffs_base__slice_u8__reader(src_data, closed != 0);
       CHECK_STATUS("initialize",
                    wuffs_json__decoder__initialize(
                        &dec, sizeof dec, WUFFS_VERSION,
@@ -2345,11 +2327,9 @@ test_wuffs_json_decode_string() {
                      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
 
     wuffs_base__token_buffer tok =
-        wuffs_base__make_token_buffer_writer(g_have_slice_token);
-    wuffs_base__io_buffer src = wuffs_base__make_io_buffer_reader(
-        wuffs_base__make_slice_u8((void*)(test_cases[tc].str),
-                                  strlen(test_cases[tc].str)),
-        true);
+        wuffs_base__slice_token__writer(g_have_slice_token);
+    wuffs_base__io_buffer src = wuffs_base__ptr_u8__reader(
+        (void*)test_cases[tc].str, strlen(test_cases[tc].str), true);
     wuffs_base__status have_status =
         wuffs_json__decoder__decode_tokens(&dec, &tok, &src, g_work_slice_u8);
 

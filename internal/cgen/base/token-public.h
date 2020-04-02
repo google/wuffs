@@ -365,7 +365,7 @@ wuffs_base__make_token_buffer_meta(size_t wi,
 }
 
 static inline wuffs_base__token_buffer  //
-wuffs_base__make_token_buffer_reader(wuffs_base__slice_token s, bool closed) {
+wuffs_base__slice_token__reader(wuffs_base__slice_token s, bool closed) {
   wuffs_base__token_buffer ret;
   ret.data.ptr = s.ptr;
   ret.data.len = s.len;
@@ -377,7 +377,7 @@ wuffs_base__make_token_buffer_reader(wuffs_base__slice_token s, bool closed) {
 }
 
 static inline wuffs_base__token_buffer  //
-wuffs_base__make_token_buffer_writer(wuffs_base__slice_token s) {
+wuffs_base__slice_token__writer(wuffs_base__slice_token s) {
   wuffs_base__token_buffer ret;
   ret.data.ptr = s.ptr;
   ret.data.len = s.len;

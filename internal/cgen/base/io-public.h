@@ -69,7 +69,31 @@ wuffs_base__make_io_buffer_meta(size_t wi,
 }
 
 static inline wuffs_base__io_buffer  //
-wuffs_base__make_io_buffer_reader(wuffs_base__slice_u8 s, bool closed) {
+wuffs_base__ptr_u8__reader(uint8_t* ptr, size_t len, bool closed) {
+  wuffs_base__io_buffer ret;
+  ret.data.ptr = ptr;
+  ret.data.len = len;
+  ret.meta.wi = len;
+  ret.meta.ri = 0;
+  ret.meta.pos = 0;
+  ret.meta.closed = closed;
+  return ret;
+}
+
+static inline wuffs_base__io_buffer  //
+wuffs_base__ptr_u8__writer(uint8_t* ptr, size_t len) {
+  wuffs_base__io_buffer ret;
+  ret.data.ptr = ptr;
+  ret.data.len = len;
+  ret.meta.wi = 0;
+  ret.meta.ri = 0;
+  ret.meta.pos = 0;
+  ret.meta.closed = false;
+  return ret;
+}
+
+static inline wuffs_base__io_buffer  //
+wuffs_base__slice_u8__reader(wuffs_base__slice_u8 s, bool closed) {
   wuffs_base__io_buffer ret;
   ret.data.ptr = s.ptr;
   ret.data.len = s.len;
@@ -81,7 +105,7 @@ wuffs_base__make_io_buffer_reader(wuffs_base__slice_u8 s, bool closed) {
 }
 
 static inline wuffs_base__io_buffer  //
-wuffs_base__make_io_buffer_writer(wuffs_base__slice_u8 s) {
+wuffs_base__slice_u8__writer(wuffs_base__slice_u8 s) {
   wuffs_base__io_buffer ret;
   ret.data.ptr = s.ptr;
   ret.data.len = s.len;
