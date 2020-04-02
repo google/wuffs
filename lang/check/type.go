@@ -140,36 +140,7 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 		return nil
 
 	case a.KJump:
-		n := n.AsJump()
-		jumpTarget := (a.Loop)(nil)
-		if id := n.Label(); id != 0 {
-			for i := len(q.jumpTargets) - 1; i >= 0; i-- {
-				if w := q.jumpTargets[i]; w.Label() == id {
-					jumpTarget = w
-					break
-				}
-			}
-		} else if nj := len(q.jumpTargets); nj > 0 {
-			jumpTarget = q.jumpTargets[nj-1]
-			if jumpTarget.Label() != 0 {
-				return fmt.Errorf("check: unlabeled %s for labeled %s.%s",
-					n.Keyword().Str(q.tm), jumpTarget.Keyword().Str(q.tm), jumpTarget.Label().Str(q.tm))
-			}
-		}
-		if jumpTarget == nil {
-			sepStr, labelStr := "", ""
-			if id := n.Label(); id != 0 {
-				sepStr, labelStr = ":", id.Str(q.tm)
-			}
-			return fmt.Errorf("check: no matching while/iterate statement for %s%s%s",
-				n.Keyword().Str(q.tm), sepStr, labelStr)
-		}
-		if n.Keyword() == t.IDBreak {
-			jumpTarget.SetHasBreak()
-		} else {
-			jumpTarget.SetHasContinue()
-		}
-		n.SetJumpTarget(jumpTarget)
+		// No-op.
 
 	case a.KRet:
 		n := n.AsRet()
@@ -317,10 +288,6 @@ func (q *checker) tcheckLoop(n a.Loop) error {
 		}
 		setPlaceholderMBoundsMType(o)
 	}
-	q.jumpTargets = append(q.jumpTargets, n)
-	defer func() {
-		q.jumpTargets = q.jumpTargets[:len(q.jumpTargets)-1]
-	}()
 	for _, o := range n.Body() {
 		if err := q.tcheckStatement(o); err != nil {
 			return err

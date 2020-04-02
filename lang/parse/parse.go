@@ -77,6 +77,7 @@ type parser struct {
 	opts       Options
 	lastLine   uint32
 	funcEffect a.Effect
+	loops      a.LoopStack
 	allowVar   bool
 }
 
@@ -704,7 +705,41 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 		if err != nil {
 			return nil, err
 		}
-		return a.NewJump(x, label).AsNode(), nil
+
+		loop := a.Loop(nil)
+		if len(p.loops) == 0 {
+			// No-op.
+		} else if label == 0 {
+			loop = p.loops[len(p.loops)-1]
+			if loop.Label() != 0 {
+				return nil, fmt.Errorf(`parse: unlabeled %s for labeled %s.%s at %s:%d`,
+					x.Str(p.tm), loop.Keyword().Str(p.tm), loop.Label().Str(p.tm), p.filename, p.line())
+			}
+		} else {
+			for i := len(p.loops) - 1; i >= 0; i-- {
+				if l := p.loops[i]; label == l.Label() {
+					loop = l
+					break
+				}
+			}
+		}
+		if loop == nil {
+			sepStr, labelStr := "", ""
+			if label != 0 {
+				sepStr, labelStr = ".", label.Str(p.tm)
+			}
+			return nil, fmt.Errorf(`parse: no matching while/iterate statement for %s%s%s at %s:%d`,
+				x.Str(p.tm), sepStr, labelStr, p.filename, p.line())
+		}
+
+		if x == t.IDBreak {
+			loop.SetHasBreak()
+		} else {
+			loop.SetHasContinue()
+		}
+		n := a.NewJump(x, label)
+		n.SetJumpTarget(loop)
+		return n.AsNode(), nil
 
 	case t.IDIOBind, t.IDIOLimit:
 		return p.parseIOBindNode()
@@ -760,10 +795,16 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 			return nil, fmt.Errorf(`parse: double {{ }} while loop condition isn't "true" at %s:%d`,
 				p.filename, p.line())
 		}
+
+		n := a.NewWhile(label, condition, asserts)
+		p.loops.Push(n)
 		body, err := p.parseBlock(doubleCurly)
 		if err != nil {
 			return nil, err
 		}
+		n.SetBody(body)
+		p.loops.Pop()
+
 		if !p.parseEndwhile(label) {
 			dotLabel := ""
 			if label != 0 {
@@ -776,7 +817,7 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 			return nil, fmt.Errorf(`parse: double {{ }} while loop doesn't terminate at %s:%d`,
 				p.filename, p.line())
 		}
-		return a.NewWhile(label, condition, asserts, body).AsNode(), nil
+		return n.AsNode(), nil
 	}
 	return p.parseAssignNode()
 }
@@ -1071,21 +1112,26 @@ func (p *parser) parseIterateBlock(label t.ID, assigns []*a.Node) (*a.Iterate, e
 	if err != nil {
 		return nil, err
 	}
+	n := a.NewIterate(label, assigns, length, unroll, asserts)
+	// TODO: decide how break/continue work with iterate loops.
+	p.loops.Push(n)
 	body, err := p.parseBlock(false)
 	if err != nil {
 		return nil, err
 	}
+	n.SetBody(body)
+	p.loops.Pop()
 
-	elseIterate := (*a.Iterate)(nil)
 	if x := p.peek1(); x == t.IDElse {
 		p.src = p.src[1:]
-		elseIterate, err = p.parseIterateBlock(0, nil)
+		elseIterate, err := p.parseIterateBlock(0, nil)
 		if err != nil {
 			return nil, err
 		}
+		n.SetElseIterate(elseIterate)
 	}
 
-	return a.NewIterate(label, assigns, length, unroll, asserts, body, elseIterate), nil
+	return n, nil
 }
 
 func (p *parser) parseArgNode() (*a.Node, error) {

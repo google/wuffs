@@ -255,6 +255,18 @@ type Loop interface {
 	SetHasContinue()
 }
 
+type LoopStack []Loop
+
+func (s *LoopStack) Push(l Loop) {
+	*s = append(*s, l)
+}
+
+func (s *LoopStack) Pop() Loop {
+	l := (*s)[len(*s)-1]
+	*s = (*s)[:len(*s)-1]
+	return l
+}
+
 type Raw Node
 
 func (n *Raw) AsNode() *Node                  { return (*Node)(n) }
@@ -532,19 +544,19 @@ func (n *Iterate) Assigns() []*Node      { return n.list0 }
 func (n *Iterate) Asserts() []*Node      { return n.list1 }
 func (n *Iterate) Body() []*Node         { return n.list2 }
 
-func (n *Iterate) SetHasBreak()    { n.flags |= FlagsHasBreak }
-func (n *Iterate) SetHasContinue() { n.flags |= FlagsHasContinue }
+func (n *Iterate) SetBody(body []*Node)      { n.list2 = body }
+func (n *Iterate) SetElseIterate(o *Iterate) { n.rhs = o.AsNode() }
+func (n *Iterate) SetHasBreak()              { n.flags |= FlagsHasBreak }
+func (n *Iterate) SetHasContinue()           { n.flags |= FlagsHasContinue }
 
-func NewIterate(label t.ID, assigns []*Node, length t.ID, unroll t.ID, asserts []*Node, body []*Node, elseIterate *Iterate) *Iterate {
+func NewIterate(label t.ID, assigns []*Node, length t.ID, unroll t.ID, asserts []*Node) *Iterate {
 	return &Iterate{
 		kind:  KIterate,
 		id0:   unroll,
 		id1:   label,
 		id2:   length,
-		rhs:   elseIterate.AsNode(),
 		list0: assigns,
 		list1: asserts,
-		list2: body,
 	}
 }
 
@@ -568,16 +580,16 @@ func (n *While) Condition() *Expr  { return n.mhs.AsExpr() }
 func (n *While) Asserts() []*Node  { return n.list1 }
 func (n *While) Body() []*Node     { return n.list2 }
 
-func (n *While) SetHasBreak()    { n.flags |= FlagsHasBreak }
-func (n *While) SetHasContinue() { n.flags |= FlagsHasContinue }
+func (n *While) SetBody(body []*Node) { n.list2 = body }
+func (n *While) SetHasBreak()         { n.flags |= FlagsHasBreak }
+func (n *While) SetHasContinue()      { n.flags |= FlagsHasContinue }
 
-func NewWhile(label t.ID, condition *Expr, asserts []*Node, body []*Node) *While {
+func NewWhile(label t.ID, condition *Expr, asserts []*Node) *While {
 	return &While{
 		kind:  KWhile,
 		id1:   label,
 		mhs:   condition.AsNode(),
 		list1: asserts,
-		list2: body,
 	}
 }
 
