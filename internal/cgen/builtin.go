@@ -870,25 +870,25 @@ var peekMethods = [...]struct {
 	t.IDPeekU64LE - peekMethodsBase:      {64, 64, 'l'},
 }
 
-const writeFastMethodsBase = t.IDWriteFastU8
+const writeFastMethodsBase = t.IDWriteU8Fast
 
 var writeFastMethods = [...]struct {
 	n          uint8
 	endianness uint8
 }{
-	t.IDWriteFastU8 - writeFastMethodsBase:    {8, 'b'},
-	t.IDWriteFastU16BE - writeFastMethodsBase: {16, 'b'},
-	t.IDWriteFastU16LE - writeFastMethodsBase: {16, 'l'},
-	t.IDWriteFastU24BE - writeFastMethodsBase: {24, 'b'},
-	t.IDWriteFastU24LE - writeFastMethodsBase: {24, 'l'},
-	t.IDWriteFastU32BE - writeFastMethodsBase: {32, 'b'},
-	t.IDWriteFastU32LE - writeFastMethodsBase: {32, 'l'},
-	t.IDWriteFastU40BE - writeFastMethodsBase: {40, 'b'},
-	t.IDWriteFastU40LE - writeFastMethodsBase: {40, 'l'},
-	t.IDWriteFastU48BE - writeFastMethodsBase: {48, 'b'},
-	t.IDWriteFastU48LE - writeFastMethodsBase: {48, 'l'},
-	t.IDWriteFastU56BE - writeFastMethodsBase: {56, 'b'},
-	t.IDWriteFastU56LE - writeFastMethodsBase: {56, 'l'},
-	t.IDWriteFastU64BE - writeFastMethodsBase: {64, 'b'},
-	t.IDWriteFastU64LE - writeFastMethodsBase: {64, 'l'},
+	t.IDWriteU8Fast - writeFastMethodsBase:    {8, 'b'},
+	t.IDWriteU16BEFast - writeFastMethodsBase: {16, 'b'},
+	t.IDWriteU16LEFast - writeFastMethodsBase: {16, 'l'},
+	t.IDWriteU24BEFast - writeFastMethodsBase: {24, 'b'},
+	t.IDWriteU24LEFast - writeFastMethodsBase: {24, 'l'},
+	t.IDWriteU32BEFast - writeFastMethodsBase: {32, 'b'},
+	t.IDWriteU32LEFast - writeFastMethodsBase: {32, 'l'},
+	t.IDWriteU40BEFast - writeFastMethodsBase: {40, 'b'},
+	t.IDWriteU40LEFast - writeFastMethodsBase: {40, 'l'},
+	t.IDWriteU48BEFast - writeFastMethodsBase: {48, 'b'},
+	t.IDWriteU48LEFast - writeFastMethodsBase: {48, 'l'},
+	t.IDWriteU56BEFast - writeFastMethodsBase: {56, 'b'},
+	t.IDWriteU56LEFast - writeFastMethodsBase: {56, 'l'},
+	t.IDWriteU64BEFast - writeFastMethodsBase: {64, 'b'},
+	t.IDWriteU64LEFast - writeFastMethodsBase: {64, 'l'},
 }

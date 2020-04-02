@@ -608,21 +608,21 @@ const (
 
 	// --------
 
-	IDWriteFastU8    = ID(0x1E1)
-	IDWriteFastU16BE = ID(0x1E2)
-	IDWriteFastU16LE = ID(0x1E3)
-	IDWriteFastU24BE = ID(0x1E4)
-	IDWriteFastU24LE = ID(0x1E5)
-	IDWriteFastU32BE = ID(0x1E6)
-	IDWriteFastU32LE = ID(0x1E7)
-	IDWriteFastU40BE = ID(0x1E8)
-	IDWriteFastU40LE = ID(0x1E9)
-	IDWriteFastU48BE = ID(0x1EA)
-	IDWriteFastU48LE = ID(0x1EB)
-	IDWriteFastU56BE = ID(0x1EC)
-	IDWriteFastU56LE = ID(0x1ED)
-	IDWriteFastU64BE = ID(0x1EE)
-	IDWriteFastU64LE = ID(0x1EF)
+	IDWriteU8Fast    = ID(0x1E1)
+	IDWriteU16BEFast = ID(0x1E2)
+	IDWriteU16LEFast = ID(0x1E3)
+	IDWriteU24BEFast = ID(0x1E4)
+	IDWriteU24LEFast = ID(0x1E5)
+	IDWriteU32BEFast = ID(0x1E6)
+	IDWriteU32LEFast = ID(0x1E7)
+	IDWriteU40BEFast = ID(0x1E8)
+	IDWriteU40LEFast = ID(0x1E9)
+	IDWriteU48BEFast = ID(0x1EA)
+	IDWriteU48LEFast = ID(0x1EB)
+	IDWriteU56BEFast = ID(0x1EC)
+	IDWriteU56LEFast = ID(0x1ED)
+	IDWriteU64BEFast = ID(0x1EE)
+	IDWriteU64LEFast = ID(0x1EF)
 
 	// --------
 
@@ -963,21 +963,21 @@ var builtInsByID = [nBuiltInIDs]string{
 
 	// --------
 
-	IDWriteFastU8:    "write_fast_u8",
-	IDWriteFastU16BE: "write_fast_u16be",
-	IDWriteFastU16LE: "write_fast_u16le",
-	IDWriteFastU24BE: "write_fast_u24be",
-	IDWriteFastU24LE: "write_fast_u24le",
-	IDWriteFastU32BE: "write_fast_u32be",
-	IDWriteFastU32LE: "write_fast_u32le",
-	IDWriteFastU40BE: "write_fast_u40be",
-	IDWriteFastU40LE: "write_fast_u40le",
-	IDWriteFastU48BE: "write_fast_u48be",
-	IDWriteFastU48LE: "write_fast_u48le",
-	IDWriteFastU56BE: "write_fast_u56be",
-	IDWriteFastU56LE: "write_fast_u56le",
-	IDWriteFastU64BE: "write_fast_u64be",
-	IDWriteFastU64LE: "write_fast_u64le",
+	IDWriteU8Fast:    "write_u8_fast",
+	IDWriteU16BEFast: "write_u16be_fast",
+	IDWriteU16LEFast: "write_u16le_fast",
+	IDWriteU24BEFast: "write_u24be_fast",
+	IDWriteU24LEFast: "write_u24le_fast",
+	IDWriteU32BEFast: "write_u32be_fast",
+	IDWriteU32LEFast: "write_u32le_fast",
+	IDWriteU40BEFast: "write_u40be_fast",
+	IDWriteU40LEFast: "write_u40le_fast",
+	IDWriteU48BEFast: "write_u48be_fast",
+	IDWriteU48LEFast: "write_u48le_fast",
+	IDWriteU56BEFast: "write_u56be_fast",
+	IDWriteU56LEFast: "write_u56le_fast",
+	IDWriteU64BEFast: "write_u64be_fast",
+	IDWriteU64LEFast: "write_u64le_fast",
 
 	// --------
 
