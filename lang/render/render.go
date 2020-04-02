@@ -110,9 +110,11 @@ func Render(w io.Writer, tm *t.Map, src []t.Token, comments []string) (err error
 		// line containing the matching open token.
 		buf = buf[:0]
 		indentAdjustment := 0
-		if lineTokens[0].ID.IsClose() {
+		if id := lineTokens[0].ID; id == t.IDCloseDoubleCurly {
+			// No-op.
+		} else if id.IsClose() {
 			indentAdjustment--
-		} else if hanging && lineTokens[0].ID != t.IDOpenCurly {
+		} else if hanging && ((id != t.IDOpenCurly) && (id != t.IDOpenDoubleCurly)) {
 			indentAdjustment++
 		}
 		buf = appendTabs(buf, indent+indentAdjustment)
@@ -189,7 +191,9 @@ func Render(w io.Writer, tm *t.Map, src []t.Token, comments []string) (err error
 		}
 		commentLine = line + 1
 		prevLine = line
-		prevLineHanging = prevLineHanging && lineTokens[len(lineTokens)-1].ID != t.IDOpenCurly
+		lastID := lineTokens[len(lineTokens)-1].ID
+		prevLineHanging = prevLineHanging &&
+			(lastID != t.IDOpenCurly) && (lastID != t.IDOpenDoubleCurly)
 	}
 
 	// Print any trailing comments.

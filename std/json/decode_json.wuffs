@@ -157,617 +157,173 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 	expect = 0x1EB2  // EXPECT_VALUE
 
 	while.outer true {
-		while.goto_parsed_a_leaf_value true {
-			if args.dst.available() <= 0 {
-				yield? base."$short write"
-				continue.outer
-			}
+		while.goto_parsed_a_leaf_value true {{
+		if args.dst.available() <= 0 {
+			yield? base."$short write"
+			continue.outer
+		}
 
-			// Consume whitespace.
-			whitespace_length = 0
-			c = 0
-			class = 0
-			while.ws true,
-				inv args.dst.available() > 0,
-				post args.src.available() > 0,
-			{
-				if args.src.available() <= 0 {
-					if whitespace_length > 0 {
-						args.dst.write_simple_token_fast!(
-							value_major: 0,
-							value_minor: 0,
-							link: 0x0,
-							length: whitespace_length)
-						whitespace_length = 0
-					}
-					if args.src.is_closed() {
-						return "#bad input"
-					}
-					yield? base."$short read"
-					whitespace_length = 0
-					continue.outer
-				}
-
-				c = args.src.peek_u8()
-				class = lut_classes[c]
-				if class <> 0x00 {  // 0x00 is CLASS_WHITESPACE.
-					break.ws
-				}
-				args.src.skip32_fast!(actual: 1, worst_case: 1)
-
-				if whitespace_length >= 0xFFFE {
+		// Consume whitespace.
+		whitespace_length = 0
+		c = 0
+		class = 0
+		while.ws true,
+			inv args.dst.available() > 0,
+			post args.src.available() > 0,
+		{
+			if args.src.available() <= 0 {
+				if whitespace_length > 0 {
 					args.dst.write_simple_token_fast!(
 						value_major: 0,
 						value_minor: 0,
 						link: 0x0,
-						length: 0xFFFF)
+						length: whitespace_length)
 					whitespace_length = 0
-					continue.outer
 				}
-				whitespace_length += 1
-			} endwhile.ws
+				if args.src.is_closed() {
+					return "#bad input"
+				}
+				yield? base."$short read"
+				whitespace_length = 0
+				continue.outer
+			}
 
-			// Emit whitespace.
-			if whitespace_length > 0 {
+			c = args.src.peek_u8()
+			class = lut_classes[c]
+			if class <> 0x00 {  // 0x00 is CLASS_WHITESPACE.
+				break.ws
+			}
+			args.src.skip32_fast!(actual: 1, worst_case: 1)
+
+			if whitespace_length >= 0xFFFE {
 				args.dst.write_simple_token_fast!(
 					value_major: 0,
 					value_minor: 0,
 					link: 0x0,
-					length: whitespace_length)
+					length: 0xFFFF)
 				whitespace_length = 0
+				continue.outer
+			}
+			whitespace_length += 1
+		} endwhile.ws
+
+		// Emit whitespace.
+		if whitespace_length > 0 {
+			args.dst.write_simple_token_fast!(
+				value_major: 0,
+				value_minor: 0,
+				link: 0x0,
+				length: whitespace_length)
+			whitespace_length = 0
+			if args.dst.available() <= 0 {
+				continue.outer
+			}
+		}
+
+		// Check expected character classes.
+		if 0 == (expect & ((1 as base.u32) << class)) {
+			return "#bad input"
+		}
+
+		// These assertions are redundant (the Wuffs compiler should already
+		// know these facts; deleting these assertions should still compile)
+		// but are listed explicitly to guard against future edits to the code
+		// above inadvertently invalidating these assertions.
+		assert args.dst.available() > 0
+		assert args.src.available() > 0
+
+		if class == 0x01 {  // 0x01 is CLASS_STRING.
+			// -------- BEGIN parse strings.
+			// Emit the leading '"'.
+			args.dst.write_simple_token_fast!(
+				value_major: 0,
+				value_minor: 0x40_0013,
+				link: 0x1,
+				length: 1)
+			args.src.skip32_fast!(actual: 1, worst_case: 1)
+
+			while.string_loop_outer true {
 				if args.dst.available() <= 0 {
-					continue.outer
+					yield? base."$short write"
+					continue.string_loop_outer
 				}
-			}
 
-			// Check expected character classes.
-			if 0 == (expect & ((1 as base.u32) << class)) {
-				return "#bad input"
-			}
-
-			// These assertions are redundant (the Wuffs compiler should
-			// already know these facts; deleting these assertions should still
-			// compile) but are listed explicitly to guard against future edits
-			// to the code above inadvertently invalidating these assertions.
-			assert args.dst.available() > 0
-			assert args.src.available() > 0
-
-			if class == 0x01 {  // 0x01 is CLASS_STRING.
-				// -------- BEGIN parse strings.
-				// Emit the leading '"'.
-				args.dst.write_simple_token_fast!(
-					value_major: 0,
-					value_minor: 0x40_0013,
-					link: 0x1,
-					length: 1)
-				args.src.skip32_fast!(actual: 1, worst_case: 1)
-
-				while.string_loop_outer true {
-					if args.dst.available() <= 0 {
-						yield? base."$short write"
+				string_length = 0
+				while.string_loop_inner true,
+					pre args.dst.available() > 0,
+				{
+					if args.src.available() <= 0 {
+						if string_length > 0 {
+							args.dst.write_simple_token_fast!(
+								value_major: 0,
+								value_minor: 0x40_0021,
+								link: 0x3,
+								length: string_length)
+							string_length = 0
+						}
+						if args.src.is_closed() {
+							return "#bad input"
+						}
+						yield? base."$short read"
+						string_length = 0
 						continue.string_loop_outer
 					}
 
-					string_length = 0
-					while.string_loop_inner true,
-						pre args.dst.available() > 0,
+					// As an optimization, consume non-special ASCII 4 bytes at
+					// a time.
+					while args.src.available() > 4,
+						inv args.dst.available() > 0,
+						inv args.src.available() > 0,
 					{
-						if args.src.available() <= 0 {
-							if string_length > 0 {
-								args.dst.write_simple_token_fast!(
-									value_major: 0,
-									value_minor: 0x40_0021,
-									link: 0x3,
-									length: string_length)
-								string_length = 0
-							}
-							if args.src.is_closed() {
-								return "#bad input"
-							}
-							yield? base."$short read"
+						c4 = args.src.peek_u32le()
+						if 0x00 <> (lut_chars[0xFF & (c4 >> 0)] |
+							lut_chars[0xFF & (c4 >> 8)] |
+							lut_chars[0xFF & (c4 >> 16)] |
+							lut_chars[0xFF & (c4 >> 24)]) {
+							break
+						}
+						args.src.skip32_fast!(actual: 4, worst_case: 4)
+						if string_length > (0xFFFB - 4) {
+							args.dst.write_simple_token_fast!(
+								value_major: 0,
+								value_minor: 0x40_0021,
+								link: 0x3,
+								length: string_length + 4)
 							string_length = 0
 							continue.string_loop_outer
 						}
+						string_length += 4
+					} endwhile
 
-						// As an optimization, consume non-special ASCII 4 bytes at a time.
-						while args.src.available() > 4,
-							inv args.dst.available() > 0,
-							inv args.src.available() > 0,
-						{
-							c4 = args.src.peek_u32le()
-							if 0x00 <> (lut_chars[0xFF & (c4 >> 0)] |
-								lut_chars[0xFF & (c4 >> 8)] |
-								lut_chars[0xFF & (c4 >> 16)] |
-								lut_chars[0xFF & (c4 >> 24)]) {
-								break
-							}
-							args.src.skip32_fast!(actual: 4, worst_case: 4)
-							if string_length > (0xFFFB - 4) {
-								args.dst.write_simple_token_fast!(
-									value_major: 0,
-									value_minor: 0x40_0021,
-									link: 0x3,
-									length: string_length + 4)
-								string_length = 0
-								continue.string_loop_outer
-							}
-							string_length += 4
-						} endwhile
+					c = args.src.peek_u8()
+					char = lut_chars[c]
 
-						c = args.src.peek_u8()
-						char = lut_chars[c]
-
-						if char == 0x00 {  // Non-special ASCII.
-							args.src.skip32_fast!(actual: 1, worst_case: 1)
-							if string_length >= 0xFFFB {
-								args.dst.write_simple_token_fast!(
-									value_major: 0,
-									value_minor: 0x40_0021,
-									link: 0x3,
-									length: 0xFFFC)
-								string_length = 0
-								continue.string_loop_outer
-							}
-							string_length += 1
-							continue.string_loop_inner
-
-						} else if char == 0x01 {  // '"'
-							if string_length <> 0 {
-								args.dst.write_simple_token_fast!(
-									value_major: 0,
-									value_minor: 0x40_0021,
-									link: 0x3,
-									length: string_length)
-								string_length = 0
-							}
-							break.string_loop_outer
-
-						} else if char == 0x02 {  // '\\'.
-							if string_length > 0 {
-								args.dst.write_simple_token_fast!(
-									value_major: 0,
-									value_minor: 0x40_0021,
-									link: 0x3,
-									length: string_length)
-								string_length = 0
-								if args.dst.available() <= 0 {
-									continue.string_loop_outer
-								}
-							}
-							assert args.dst.available() > 0
-
-							if args.src.available() < 2 {
-								if args.src.is_closed() {
-									return "#bad backslash-escape"
-								}
-								yield? base."$short read"
-								string_length = 0
-								char = 0
-								continue.string_loop_outer
-							}
-							c = (args.src.peek_u16le() >> 8) as base.u8
-							backslash = lut_backslashes[c]
-							if (backslash & 0x80) <> 0 {
-								args.src.skip32_fast!(actual: 2, worst_case: 2)
-								args.dst.write_simple_token_fast!(
-									value_major: 0,
-									value_minor: 0x60_0000 | ((backslash & 0x7F) as base.u32),
-									link: 0x3,
-									length: 2)
-								continue.string_loop_outer
-
-							} else if backslash <> 0 {
-								if this.quirk_enabled_allow_backslash_etc[backslash & 7] {
-									args.src.skip32_fast!(actual: 2, worst_case: 2)
-									args.dst.write_simple_token_fast!(
-										value_major: 0,
-										value_minor: 0x60_0000 | (lut_quirky_backslashes[backslash & 7] as base.u32),
-										link: 0x3,
-										length: 2)
-									continue.string_loop_outer
-								}
-
-							} else if c == 'u' {
-								// -------- BEGIN backslash-u.
-								if args.src.available() < 6 {
-									if args.src.is_closed() {
-										return "#bad backslash-escape"
-									}
-									yield? base."$short read"
-									string_length = 0
-									char = 0
-									continue.string_loop_outer
-								}
-
-								uni4_string = args.src.peek_u48le_as_u64() >> 16
-								uni4_value = 0
-								uni4_ok = 0x80
-
-								c = lut_hexadecimal_digits[0xFF & (uni4_string >> 0)]
-								uni4_ok &= c
-								uni4_value |= ((c & 0x0F) as base.u32) << 12
-								c = lut_hexadecimal_digits[0xFF & (uni4_string >> 8)]
-								uni4_ok &= c
-								uni4_value |= ((c & 0x0F) as base.u32) << 8
-								c = lut_hexadecimal_digits[0xFF & (uni4_string >> 16)]
-								uni4_ok &= c
-								uni4_value |= ((c & 0x0F) as base.u32) << 4
-								c = lut_hexadecimal_digits[0xFF & (uni4_string >> 24)]
-								uni4_ok &= c
-								uni4_value |= ((c & 0x0F) as base.u32) << 0
-
-								if uni4_ok == 0 {
-									// It wasn't 4 hexadecimal digits. No-op
-									// (and fall through to "#bad
-									// backslash-escape").
-
-								} else if (uni4_value < 0xD800) or (0xDFFF < uni4_value) {
-									// Not a Unicode surrogate. We're good.
-									args.src.skip32_fast!(actual: 6, worst_case: 6)
-									args.dst.write_simple_token_fast!(
-										value_major: 0,
-										value_minor: 0x60_0000 | uni4_value,
-										link: 0x3,
-										length: 6)
-									continue.string_loop_outer
-
-								} else if uni4_value >= 0xDC00 {
-									// Low surrogate. No-op (and fall through
-									// to "#bad backslash-escape").
-
-								} else {
-									// High surrogate, which needs to be
-									// followed by a "\\u1234" low surrogate.
-									// We've already peeked 6 bytes for the
-									// high surrogate. We need 12 in total:
-									// another 8 bytes at an offset of 4.
-									if args.src.available() < 12 {
-										if args.src.is_closed() {
-											if this.quirk_enabled_replace_invalid_unicode {
-												args.src.skip32_fast!(actual: 6, worst_case: 6)
-												args.dst.write_simple_token_fast!(
-													value_major: 0,
-													value_minor: 0x60_FFFD,
-													link: 0x3,
-													length: 6)
-												continue.string_loop_outer
-											}
-											return "#bad backslash-escape"
-										}
-										yield? base."$short read"
-										string_length = 0
-										uni4_value = 0
-										char = 0
-										continue.string_loop_outer
-									}
-									uni4_string = args.src.peek_u64le_at(offset: 4) >> 16
-
-									// Look for the low surrogate's "\\u".
-									if ((0xFF & (uni4_string >> 0)) <> '\\') or
-										((0xFF & (uni4_string >> 8)) <> 'u') {
-										uni4_high_surrogate = 0
-										uni4_value = 0
-										uni4_ok = 0
-									} else {
-										uni4_high_surrogate =
-											0x1_0000 + ((uni4_value - 0xD800) << 10)
-										uni4_value = 0
-										uni4_ok = 0x80
-										uni4_string >>= 16
-
-										c = lut_hexadecimal_digits[0xFF & (uni4_string >> 0)]
-										uni4_ok &= c
-										uni4_value |= ((c & 0x0F) as base.u32) << 12
-										c = lut_hexadecimal_digits[0xFF & (uni4_string >> 8)]
-										uni4_ok &= c
-										uni4_value |= ((c & 0x0F) as base.u32) << 8
-										c = lut_hexadecimal_digits[0xFF & (uni4_string >> 16)]
-										uni4_ok &= c
-										uni4_value |= ((c & 0x0F) as base.u32) << 4
-										c = lut_hexadecimal_digits[0xFF & (uni4_string >> 24)]
-										uni4_ok &= c
-										uni4_value |= ((c & 0x0F) as base.u32) << 0
-									}
-
-									if (uni4_ok <> 0) and
-										(0xDC00 <= uni4_value) and (uni4_value <= 0xDFFF) {
-
-										// Emit a single token for the surrogate pair.
-										uni4_value -= 0xDC00
-										args.src.skip32_fast!(actual: 12, worst_case: 12)
-										args.dst.write_simple_token_fast!(
-											value_major: 0,
-											value_minor: 0x60_0000 | uni4_high_surrogate | uni4_value,
-											link: 0x3,
-											length: 12)
-										continue.string_loop_outer
-									}
-								}
-
-								if this.quirk_enabled_replace_invalid_unicode {
-									if args.src.available() < 6 {
-										return "#internal error: inconsistent I/O"
-									}
-									args.src.skip32_fast!(actual: 6, worst_case: 6)
-									args.dst.write_simple_token_fast!(
-										value_major: 0,
-										value_minor: 0x60_FFFD,
-										link: 0x3,
-										length: 6)
-									continue.string_loop_outer
-								}
-								// -------- END   backslash-u.
-
-							} else if (c == 'U') and
-								this.quirk_enabled_allow_backslash_capital_u {
-								// -------- BEGIN backslash-capital-u.
-								if args.src.available() < 10 {
-									if args.src.is_closed() {
-										return "#bad backslash-escape"
-									}
-									yield? base."$short read"
-									string_length = 0
-									char = 0
-									continue.string_loop_outer
-								}
-								uni8_string = args.src.peek_u64le_at(offset: 2)
-								uni8_value = 0
-								uni8_ok = 0x80
-
-								c = lut_hexadecimal_digits[0xFF & (uni8_string >> 0)]
-								uni8_ok &= c
-								uni8_value |= ((c & 0x0F) as base.u32) << 28
-								c = lut_hexadecimal_digits[0xFF & (uni8_string >> 8)]
-								uni8_ok &= c
-								uni8_value |= ((c & 0x0F) as base.u32) << 24
-								c = lut_hexadecimal_digits[0xFF & (uni8_string >> 16)]
-								uni8_ok &= c
-								uni8_value |= ((c & 0x0F) as base.u32) << 20
-								c = lut_hexadecimal_digits[0xFF & (uni8_string >> 24)]
-								uni8_ok &= c
-								uni8_value |= ((c & 0x0F) as base.u32) << 16
-								c = lut_hexadecimal_digits[0xFF & (uni8_string >> 32)]
-								uni8_ok &= c
-								uni8_value |= ((c & 0x0F) as base.u32) << 12
-								c = lut_hexadecimal_digits[0xFF & (uni8_string >> 40)]
-								uni8_ok &= c
-								uni8_value |= ((c & 0x0F) as base.u32) << 8
-								c = lut_hexadecimal_digits[0xFF & (uni8_string >> 48)]
-								uni8_ok &= c
-								uni8_value |= ((c & 0x0F) as base.u32) << 4
-								c = lut_hexadecimal_digits[0xFF & (uni8_string >> 56)]
-								uni8_ok &= c
-								uni8_value |= ((c & 0x0F) as base.u32) << 0
-
-								if uni8_ok == 0 {
-									// It wasn't 8 hexadecimal digits. No-op
-									// (and fall through to "#bad
-									// backslash-escape").
-
-								} else if (uni8_value < 0xD800) or (
-									(0xDFFF < uni8_value) and (uni8_value <= 0x10_FFFF)) {
-									// Not a Unicode surrogate. We're good.
-									args.src.skip32_fast!(actual: 10, worst_case: 10)
-									args.dst.write_simple_token_fast!(
-										value_major: 0,
-										value_minor: 0x60_0000 | (uni8_value & 0x1F_FFFF),
-										link: 0x3,
-										length: 10)
-									continue.string_loop_outer
-								} else if this.quirk_enabled_replace_invalid_unicode {
-									args.src.skip32_fast!(actual: 10, worst_case: 10)
-									args.dst.write_simple_token_fast!(
-										value_major: 0,
-										value_minor: 0x60_FFFD,
-										link: 0x3,
-										length: 10)
-									continue.string_loop_outer
-								}
-								// -------- END   backslash-capital-u.
-
-							} else if (c == 'x') and
-								this.quirk_enabled_allow_backslash_x {
-								// -------- BEGIN backslash-x
-								if args.src.available() < 4 {
-									if args.src.is_closed() {
-										return "#bad backslash-escape"
-									}
-									yield? base."$short read"
-									string_length = 0
-									char = 0
-									continue.string_loop_outer
-								}
-
-								backslash_x_length = 0
-								while (backslash_x_length <= 0xFFFB) and (args.src.available() >= 4),
-									inv args.dst.available() > 0,
-								{
-									backslash_x_string = args.src.peek_u32le()
-									backslash_x_ok = 0x80
-
-									c = lut_hexadecimal_digits[0xFF & (backslash_x_string >> 16)]
-									backslash_x_ok &= c
-									c = lut_hexadecimal_digits[0xFF & (backslash_x_string >> 24)]
-									backslash_x_ok &= c
-
-									if (backslash_x_ok == 0) or
-										((backslash_x_string & 0xFFFF) <> 0x785C) {
-										// It wasn't "\\x34", for some
-										// hexadecimal digits "34".
-										break
-									}
-									args.src.skip32_fast!(actual: 4, worst_case: 4)
-									backslash_x_length += 4
-								} endwhile
-
-								if backslash_x_length == 0 {
-									return "#bad backslash-escape"
-								}
-								args.dst.write_simple_token_fast!(
-									value_major: 0,
-									value_minor: 0x40_0080,
-									link: 0x3,
-									length: backslash_x_length)
-								continue.string_loop_outer
-								// -------- END   backslash-x
-							}
-
-							return "#bad backslash-escape"
-
-						} else if char == 0x03 {  // 2-byte UTF-8.
-							if args.src.available() < 2 {
-								if string_length > 0 {
-									args.dst.write_simple_token_fast!(
-										value_major: 0,
-										value_minor: 0x40_0021,
-										link: 0x3,
-										length: string_length)
-									string_length = 0
-									if args.dst.available() <= 0 {
-										continue.string_loop_outer
-									}
-								}
-								if args.src.is_closed() {
-									if this.quirk_enabled_replace_invalid_unicode {
-										args.dst.write_simple_token_fast!(
-											value_major: 0,
-											value_minor: 0x60_FFFD,
-											link: 0x3,
-											length: 1)
-										args.src.skip32_fast!(actual: 1, worst_case: 1)
-										continue.string_loop_outer
-									}
-									return "#bad UTF-8"
-								}
-								yield? base."$short read"
-								string_length = 0
-								char = 0
-								continue.string_loop_outer
-							}
-							multi_byte_utf8 = args.src.peek_u16le_as_u32()
-							if (multi_byte_utf8 & 0xC000) == 0x8000 {
-								multi_byte_utf8 = (0x00_07C0 & (multi_byte_utf8 ~mod<< 6)) |
-									(0x00_003F & (multi_byte_utf8 >> 8))
-								args.src.skip32_fast!(actual: 2, worst_case: 2)
-								if string_length >= 0xFFF8 {
-									args.dst.write_simple_token_fast!(
-										value_major: 0,
-										value_minor: 0x40_0021,
-										link: 0x3,
-										length: string_length + 2)
-									string_length = 0
-									continue.string_loop_outer
-								}
-								string_length += 2
-								continue.string_loop_inner
-							}
-
-						} else if char == 0x04 {  // 3-byte UTF-8.
-							if args.src.available() < 3 {
-								if string_length > 0 {
-									args.dst.write_simple_token_fast!(
-										value_major: 0,
-										value_minor: 0x40_0021,
-										link: 0x3,
-										length: string_length)
-									string_length = 0
-									if args.dst.available() <= 0 {
-										continue.string_loop_outer
-									}
-								}
-								if args.src.is_closed() {
-									if this.quirk_enabled_replace_invalid_unicode {
-										args.dst.write_simple_token_fast!(
-											value_major: 0,
-											value_minor: 0x60_FFFD,
-											link: 0x3,
-											length: 1)
-										args.src.skip32_fast!(actual: 1, worst_case: 1)
-										continue.string_loop_outer
-									}
-									return "#bad UTF-8"
-								}
-								yield? base."$short read"
-								string_length = 0
-								char = 0
-								continue.string_loop_outer
-							}
-							multi_byte_utf8 = args.src.peek_u24le_as_u32()
-							if (multi_byte_utf8 & 0xC0_C000) == 0x80_8000 {
-								multi_byte_utf8 = (0x00_F000 & (multi_byte_utf8 ~mod<< 12)) |
-									(0x00_0FC0 & (multi_byte_utf8 >> 2)) |
-									(0x00_003F & (multi_byte_utf8 >> 16))
-								if (0x07FF < multi_byte_utf8) and
-									((multi_byte_utf8 < 0xD800) or (0xDFFF < multi_byte_utf8)) {
-
-									args.src.skip32_fast!(actual: 3, worst_case: 3)
-									if string_length >= 0xFFF8 {
-										args.dst.write_simple_token_fast!(
-											value_major: 0,
-											value_minor: 0x40_0021,
-											link: 0x3,
-											length: string_length + 3)
-										string_length = 0
-										continue.string_loop_outer
-									}
-									string_length += 3
-									continue.string_loop_inner
-								}
-							}
-
-						} else if char == 0x05 {  // 4-byte UTF-8.
-							if args.src.available() < 4 {
-								if string_length > 0 {
-									args.dst.write_simple_token_fast!(
-										value_major: 0,
-										value_minor: 0x40_0021,
-										link: 0x3,
-										length: string_length)
-									string_length = 0
-									if args.dst.available() <= 0 {
-										continue.string_loop_outer
-									}
-								}
-								if args.src.is_closed() {
-									if this.quirk_enabled_replace_invalid_unicode {
-										args.dst.write_simple_token_fast!(
-											value_major: 0,
-											value_minor: 0x60_FFFD,
-											link: 0x3,
-											length: 1)
-										args.src.skip32_fast!(actual: 1, worst_case: 1)
-										continue.string_loop_outer
-									}
-									return "#bad UTF-8"
-								}
-								yield? base."$short read"
-								string_length = 0
-								char = 0
-								continue.string_loop_outer
-							}
-							multi_byte_utf8 = args.src.peek_u32le()
-							if (multi_byte_utf8 & 0xC0C0_C000) == 0x8080_8000 {
-								multi_byte_utf8 = (0x1C_0000 & (multi_byte_utf8 ~mod<< 18)) |
-									(0x03_F000 & (multi_byte_utf8 ~mod<< 4)) |
-									(0x00_0FC0 & (multi_byte_utf8 >> 10)) |
-									(0x00_003F & (multi_byte_utf8 >> 24))
-								if (0xFFFF < multi_byte_utf8) and (multi_byte_utf8 <= 0x10_FFFF) {
-									args.src.skip32_fast!(actual: 4, worst_case: 4)
-									if string_length >= 0xFFF8 {
-										args.dst.write_simple_token_fast!(
-											value_major: 0,
-											value_minor: 0x40_0021,
-											link: 0x3,
-											length: string_length + 4)
-										string_length = 0
-										continue.string_loop_outer
-									}
-									string_length += 4
-									continue.string_loop_inner
-								}
-							}
+					if char == 0x00 {  // Non-special ASCII.
+						args.src.skip32_fast!(actual: 1, worst_case: 1)
+						if string_length >= 0xFFFB {
+							args.dst.write_simple_token_fast!(
+								value_major: 0,
+								value_minor: 0x40_0021,
+								link: 0x3,
+								length: 0xFFFC)
+							string_length = 0
+							continue.string_loop_outer
 						}
+						string_length += 1
+						continue.string_loop_inner
 
+					} else if char == 0x01 {  // '"'
+						if string_length <> 0 {
+							args.dst.write_simple_token_fast!(
+								value_major: 0,
+								value_minor: 0x40_0021,
+								link: 0x3,
+								length: string_length)
+							string_length = 0
+						}
+						break.string_loop_outer
+
+					} else if char == 0x02 {  // '\\'.
 						if string_length > 0 {
 							args.dst.write_simple_token_fast!(
 								value_major: 0,
@@ -779,330 +335,774 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 								continue.string_loop_outer
 							}
 						}
-						if char == 0x80 {
-							return "#bad C0 control code"
-						}
-						if this.quirk_enabled_replace_invalid_unicode {
-							args.dst.write_simple_token_fast!(
-								value_major: 0,
-								value_minor: 0x60_FFFD,
-								link: 0x3,
-								length: 1)
-							args.src.skip32_fast!(actual: 1, worst_case: 1)
+						assert args.dst.available() > 0
+
+						if args.src.available() < 2 {
+							if args.src.is_closed() {
+								return "#bad backslash-escape"
+							}
+							yield? base."$short read"
+							string_length = 0
+							char = 0
 							continue.string_loop_outer
 						}
-						return "#bad UTF-8"
-					} endwhile.string_loop_inner
-				} endwhile.string_loop_outer
+						c = (args.src.peek_u16le() >> 8) as base.u8
+						backslash = lut_backslashes[c]
+						if (backslash & 0x80) <> 0 {
+							args.src.skip32_fast!(actual: 2, worst_case: 2)
+							args.dst.write_simple_token_fast!(
+								value_major: 0,
+								value_minor: 0x60_0000 | ((backslash & 0x7F) as base.u32),
+								link: 0x3,
+								length: 2)
+							continue.string_loop_outer
 
-				// Emit the trailing '"'.
-				while true {
-					if args.src.available() <= 0 {
-						if args.src.is_closed() {
-							return "#bad input"
+						} else if backslash <> 0 {
+							if this.quirk_enabled_allow_backslash_etc[backslash & 7] {
+								args.src.skip32_fast!(actual: 2, worst_case: 2)
+								args.dst.write_simple_token_fast!(
+									value_major: 0,
+									value_minor: 0x60_0000 | (lut_quirky_backslashes[backslash & 7] as base.u32),
+									link: 0x3,
+									length: 2)
+								continue.string_loop_outer
+							}
+
+						} else if c == 'u' {
+							// -------- BEGIN backslash-u.
+							if args.src.available() < 6 {
+								if args.src.is_closed() {
+									return "#bad backslash-escape"
+								}
+								yield? base."$short read"
+								string_length = 0
+								char = 0
+								continue.string_loop_outer
+							}
+
+							uni4_string = args.src.peek_u48le_as_u64() >> 16
+							uni4_value = 0
+							uni4_ok = 0x80
+
+							c = lut_hexadecimal_digits[0xFF & (uni4_string >> 0)]
+							uni4_ok &= c
+							uni4_value |= ((c & 0x0F) as base.u32) << 12
+							c = lut_hexadecimal_digits[0xFF & (uni4_string >> 8)]
+							uni4_ok &= c
+							uni4_value |= ((c & 0x0F) as base.u32) << 8
+							c = lut_hexadecimal_digits[0xFF & (uni4_string >> 16)]
+							uni4_ok &= c
+							uni4_value |= ((c & 0x0F) as base.u32) << 4
+							c = lut_hexadecimal_digits[0xFF & (uni4_string >> 24)]
+							uni4_ok &= c
+							uni4_value |= ((c & 0x0F) as base.u32) << 0
+
+							if uni4_ok == 0 {
+								// It wasn't 4 hexadecimal digits. No-op (and
+								// fall through to "#bad backslash-escape").
+
+							} else if (uni4_value < 0xD800) or (0xDFFF < uni4_value) {
+								// Not a Unicode surrogate. We're good.
+								args.src.skip32_fast!(actual: 6, worst_case: 6)
+								args.dst.write_simple_token_fast!(
+									value_major: 0,
+									value_minor: 0x60_0000 | uni4_value,
+									link: 0x3,
+									length: 6)
+								continue.string_loop_outer
+
+							} else if uni4_value >= 0xDC00 {
+								// Low surrogate. No-op (and fall through to
+								// "#bad backslash-escape").
+
+							} else {
+								// High surrogate, which needs to be followed
+								// by a "\\u1234" low surrogate. We've already
+								// peeked 6 bytes for the high surrogate. We
+								// need 12 in total: another 8 bytes at an
+								// offset of 4.
+								if args.src.available() < 12 {
+									if args.src.is_closed() {
+										if this.quirk_enabled_replace_invalid_unicode {
+											args.src.skip32_fast!(actual: 6, worst_case: 6)
+											args.dst.write_simple_token_fast!(
+												value_major: 0,
+												value_minor: 0x60_FFFD,
+												link: 0x3,
+												length: 6)
+											continue.string_loop_outer
+										}
+										return "#bad backslash-escape"
+									}
+									yield? base."$short read"
+									string_length = 0
+									uni4_value = 0
+									char = 0
+									continue.string_loop_outer
+								}
+								uni4_string = args.src.peek_u64le_at(offset: 4) >> 16
+
+								// Look for the low surrogate's "\\u".
+								if ((0xFF & (uni4_string >> 0)) <> '\\') or
+									((0xFF & (uni4_string >> 8)) <> 'u') {
+									uni4_high_surrogate = 0
+									uni4_value = 0
+									uni4_ok = 0
+								} else {
+									uni4_high_surrogate =
+										0x1_0000 + ((uni4_value - 0xD800) << 10)
+									uni4_value = 0
+									uni4_ok = 0x80
+									uni4_string >>= 16
+
+									c = lut_hexadecimal_digits[0xFF & (uni4_string >> 0)]
+									uni4_ok &= c
+									uni4_value |= ((c & 0x0F) as base.u32) << 12
+									c = lut_hexadecimal_digits[0xFF & (uni4_string >> 8)]
+									uni4_ok &= c
+									uni4_value |= ((c & 0x0F) as base.u32) << 8
+									c = lut_hexadecimal_digits[0xFF & (uni4_string >> 16)]
+									uni4_ok &= c
+									uni4_value |= ((c & 0x0F) as base.u32) << 4
+									c = lut_hexadecimal_digits[0xFF & (uni4_string >> 24)]
+									uni4_ok &= c
+									uni4_value |= ((c & 0x0F) as base.u32) << 0
+								}
+
+								if (uni4_ok <> 0) and
+									(0xDC00 <= uni4_value) and (uni4_value <= 0xDFFF) {
+
+									// Emit a single token for the surrogate
+									// pair.
+									uni4_value -= 0xDC00
+									args.src.skip32_fast!(actual: 12, worst_case: 12)
+									args.dst.write_simple_token_fast!(
+										value_major: 0,
+										value_minor: 0x60_0000 | uni4_high_surrogate | uni4_value,
+										link: 0x3,
+										length: 12)
+									continue.string_loop_outer
+								}
+							}
+
+							if this.quirk_enabled_replace_invalid_unicode {
+								if args.src.available() < 6 {
+									return "#internal error: inconsistent I/O"
+								}
+								args.src.skip32_fast!(actual: 6, worst_case: 6)
+								args.dst.write_simple_token_fast!(
+									value_major: 0,
+									value_minor: 0x60_FFFD,
+									link: 0x3,
+									length: 6)
+								continue.string_loop_outer
+							}
+							// -------- END   backslash-u.
+
+						} else if (c == 'U') and
+							this.quirk_enabled_allow_backslash_capital_u {
+							// -------- BEGIN backslash-capital-u.
+							if args.src.available() < 10 {
+								if args.src.is_closed() {
+									return "#bad backslash-escape"
+								}
+								yield? base."$short read"
+								string_length = 0
+								char = 0
+								continue.string_loop_outer
+							}
+							uni8_string = args.src.peek_u64le_at(offset: 2)
+							uni8_value = 0
+							uni8_ok = 0x80
+
+							c = lut_hexadecimal_digits[0xFF & (uni8_string >> 0)]
+							uni8_ok &= c
+							uni8_value |= ((c & 0x0F) as base.u32) << 28
+							c = lut_hexadecimal_digits[0xFF & (uni8_string >> 8)]
+							uni8_ok &= c
+							uni8_value |= ((c & 0x0F) as base.u32) << 24
+							c = lut_hexadecimal_digits[0xFF & (uni8_string >> 16)]
+							uni8_ok &= c
+							uni8_value |= ((c & 0x0F) as base.u32) << 20
+							c = lut_hexadecimal_digits[0xFF & (uni8_string >> 24)]
+							uni8_ok &= c
+							uni8_value |= ((c & 0x0F) as base.u32) << 16
+							c = lut_hexadecimal_digits[0xFF & (uni8_string >> 32)]
+							uni8_ok &= c
+							uni8_value |= ((c & 0x0F) as base.u32) << 12
+							c = lut_hexadecimal_digits[0xFF & (uni8_string >> 40)]
+							uni8_ok &= c
+							uni8_value |= ((c & 0x0F) as base.u32) << 8
+							c = lut_hexadecimal_digits[0xFF & (uni8_string >> 48)]
+							uni8_ok &= c
+							uni8_value |= ((c & 0x0F) as base.u32) << 4
+							c = lut_hexadecimal_digits[0xFF & (uni8_string >> 56)]
+							uni8_ok &= c
+							uni8_value |= ((c & 0x0F) as base.u32) << 0
+
+							if uni8_ok == 0 {
+								// It wasn't 8 hexadecimal digits. No-op (and
+								// fall through to "#bad backslash-escape").
+
+							} else if (uni8_value < 0xD800) or (
+								(0xDFFF < uni8_value) and (uni8_value <= 0x10_FFFF)) {
+								// Not a Unicode surrogate. We're good.
+								args.src.skip32_fast!(actual: 10, worst_case: 10)
+								args.dst.write_simple_token_fast!(
+									value_major: 0,
+									value_minor: 0x60_0000 | (uni8_value & 0x1F_FFFF),
+									link: 0x3,
+									length: 10)
+								continue.string_loop_outer
+							} else if this.quirk_enabled_replace_invalid_unicode {
+								args.src.skip32_fast!(actual: 10, worst_case: 10)
+								args.dst.write_simple_token_fast!(
+									value_major: 0,
+									value_minor: 0x60_FFFD,
+									link: 0x3,
+									length: 10)
+								continue.string_loop_outer
+							}
+							// -------- END   backslash-capital-u.
+
+						} else if (c == 'x') and
+							this.quirk_enabled_allow_backslash_x {
+							// -------- BEGIN backslash-x
+							if args.src.available() < 4 {
+								if args.src.is_closed() {
+									return "#bad backslash-escape"
+								}
+								yield? base."$short read"
+								string_length = 0
+								char = 0
+								continue.string_loop_outer
+							}
+
+							backslash_x_length = 0
+							while (backslash_x_length <= 0xFFFB) and (args.src.available() >= 4),
+								inv args.dst.available() > 0,
+							{
+								backslash_x_string = args.src.peek_u32le()
+								backslash_x_ok = 0x80
+
+								c = lut_hexadecimal_digits[0xFF & (backslash_x_string >> 16)]
+								backslash_x_ok &= c
+								c = lut_hexadecimal_digits[0xFF & (backslash_x_string >> 24)]
+								backslash_x_ok &= c
+
+								if (backslash_x_ok == 0) or
+									((backslash_x_string & 0xFFFF) <> 0x785C) {
+									// It wasn't "\\x34", for some hexadecimal
+									// digits "34".
+									break
+								}
+								args.src.skip32_fast!(actual: 4, worst_case: 4)
+								backslash_x_length += 4
+							} endwhile
+
+							if backslash_x_length == 0 {
+								return "#bad backslash-escape"
+							}
+							args.dst.write_simple_token_fast!(
+								value_major: 0,
+								value_minor: 0x40_0080,
+								link: 0x3,
+								length: backslash_x_length)
+							continue.string_loop_outer
+							// -------- END   backslash-x
 						}
-						yield? base."$short read"
-						continue
-					}
-					if args.dst.available() <= 0 {
-						yield? base."$short write"
-						continue
-					}
-					args.src.skip32_fast!(actual: 1, worst_case: 1)
-					args.dst.write_simple_token_fast!(
-						value_major: 0,
-						value_minor: 0x40_0013,
-						link: 0x2,
-						length: 1)
-					break
-				} endwhile
 
-				// As above, expect must have contained EXPECT_STRING. If it
-				// didn't also contain EXPECT_NUMBER then we were parsing an
-				// object key and the next token should be ':'.
-				if 0 == (expect & 0x0010) {  // 0x0010 is (1 << CLASS_NUMBER).
-					expect = 0x1008  // 0x1008 is EXPECT_COLON.
-					continue.outer
-				}
-				break.goto_parsed_a_leaf_value
-				// -------- END   parse strings.
+						return "#bad backslash-escape"
 
-			} else if class == 0x02 {  // 0x02 is CLASS_COMMA.
-				args.src.skip32_fast!(actual: 1, worst_case: 1)
-				// The ',' is filler.
-				args.dst.write_simple_token_fast!(
-					value_major: 0,
-					value_minor: 0,
-					link: 0x0,
-					length: 1)
-				// What's valid after a comma depends on whether or not we're
-				// in an array or an object.
-				if 0 == (expect & 0x0100) {  // 0x0100 is (1 << CLASS_CLOSE_SQUARE_BRACKET).
-					if this.quirk_enabled_allow_extra_comma {
-						expect = 0x1042  // 0x1042 is EXPECT_STRING | EXPECT_CLOSE_CURLY_BRACE.
-					} else {
-						expect = 0x1002  // 0x1002 is EXPECT_STRING.
-					}
-				} else {
-					if this.quirk_enabled_allow_extra_comma {
-						expect = 0x1FB2  // 0x0FB2 is EXPECT_VALUE | EXPECT_CLOSE_SQUARE_BRACKET.
-					} else {
-						expect = 0x1EB2  // 0x0EB2 is EXPECT_VALUE.
-					}
-				}
-				continue.outer
+					} else if char == 0x03 {  // 2-byte UTF-8.
+						if args.src.available() < 2 {
+							if string_length > 0 {
+								args.dst.write_simple_token_fast!(
+									value_major: 0,
+									value_minor: 0x40_0021,
+									link: 0x3,
+									length: string_length)
+								string_length = 0
+								if args.dst.available() <= 0 {
+									continue.string_loop_outer
+								}
+							}
+							if args.src.is_closed() {
+								if this.quirk_enabled_replace_invalid_unicode {
+									args.dst.write_simple_token_fast!(
+										value_major: 0,
+										value_minor: 0x60_FFFD,
+										link: 0x3,
+										length: 1)
+									args.src.skip32_fast!(actual: 1, worst_case: 1)
+									continue.string_loop_outer
+								}
+								return "#bad UTF-8"
+							}
+							yield? base."$short read"
+							string_length = 0
+							char = 0
+							continue.string_loop_outer
+						}
+						multi_byte_utf8 = args.src.peek_u16le_as_u32()
+						if (multi_byte_utf8 & 0xC000) == 0x8000 {
+							multi_byte_utf8 = (0x00_07C0 & (multi_byte_utf8 ~mod<< 6)) |
+								(0x00_003F & (multi_byte_utf8 >> 8))
+							args.src.skip32_fast!(actual: 2, worst_case: 2)
+							if string_length >= 0xFFF8 {
+								args.dst.write_simple_token_fast!(
+									value_major: 0,
+									value_minor: 0x40_0021,
+									link: 0x3,
+									length: string_length + 2)
+								string_length = 0
+								continue.string_loop_outer
+							}
+							string_length += 2
+							continue.string_loop_inner
+						}
 
-			} else if class == 0x03 {  // 0x03 is CLASS_COLON.
-				args.src.skip32_fast!(actual: 1, worst_case: 1)
-				// The ':' is filler.
-				args.dst.write_simple_token_fast!(
-					value_major: 0,
-					value_minor: 0,
-					link: 0x0,
-					length: 1)
-				expect = 0x1EB2  // 0x1EB2 is EXPECT_VALUE.
-				continue.outer
+					} else if char == 0x04 {  // 3-byte UTF-8.
+						if args.src.available() < 3 {
+							if string_length > 0 {
+								args.dst.write_simple_token_fast!(
+									value_major: 0,
+									value_minor: 0x40_0021,
+									link: 0x3,
+									length: string_length)
+								string_length = 0
+								if args.dst.available() <= 0 {
+									continue.string_loop_outer
+								}
+							}
+							if args.src.is_closed() {
+								if this.quirk_enabled_replace_invalid_unicode {
+									args.dst.write_simple_token_fast!(
+										value_major: 0,
+										value_minor: 0x60_FFFD,
+										link: 0x3,
+										length: 1)
+									args.src.skip32_fast!(actual: 1, worst_case: 1)
+									continue.string_loop_outer
+								}
+								return "#bad UTF-8"
+							}
+							yield? base."$short read"
+							string_length = 0
+							char = 0
+							continue.string_loop_outer
+						}
+						multi_byte_utf8 = args.src.peek_u24le_as_u32()
+						if (multi_byte_utf8 & 0xC0_C000) == 0x80_8000 {
+							multi_byte_utf8 = (0x00_F000 & (multi_byte_utf8 ~mod<< 12)) |
+								(0x00_0FC0 & (multi_byte_utf8 >> 2)) |
+								(0x00_003F & (multi_byte_utf8 >> 16))
+							if (0x07FF < multi_byte_utf8) and
+								((multi_byte_utf8 < 0xD800) or (0xDFFF < multi_byte_utf8)) {
 
-			} else if class == 0x04 {  // 0x04 is CLASS_NUMBER.
-				// -------- BEGIN parse numbers.
-				while true,
-					pre args.dst.available() > 0,
-				{
-					number_length = this.decode_number!(src: args.src)
-					number_status = number_length >> 8
-					vminor = 0xA0_0403
-					if (number_length & 0x80) <> 0 {
-						vminor = 0xA0_0401
+								args.src.skip32_fast!(actual: 3, worst_case: 3)
+								if string_length >= 0xFFF8 {
+									args.dst.write_simple_token_fast!(
+										value_major: 0,
+										value_minor: 0x40_0021,
+										link: 0x3,
+										length: string_length + 3)
+									string_length = 0
+									continue.string_loop_outer
+								}
+								string_length += 3
+								continue.string_loop_inner
+							}
+						}
+
+					} else if char == 0x05 {  // 4-byte UTF-8.
+						if args.src.available() < 4 {
+							if string_length > 0 {
+								args.dst.write_simple_token_fast!(
+									value_major: 0,
+									value_minor: 0x40_0021,
+									link: 0x3,
+									length: string_length)
+								string_length = 0
+								if args.dst.available() <= 0 {
+									continue.string_loop_outer
+								}
+							}
+							if args.src.is_closed() {
+								if this.quirk_enabled_replace_invalid_unicode {
+									args.dst.write_simple_token_fast!(
+										value_major: 0,
+										value_minor: 0x60_FFFD,
+										link: 0x3,
+										length: 1)
+									args.src.skip32_fast!(actual: 1, worst_case: 1)
+									continue.string_loop_outer
+								}
+								return "#bad UTF-8"
+							}
+							yield? base."$short read"
+							string_length = 0
+							char = 0
+							continue.string_loop_outer
+						}
+						multi_byte_utf8 = args.src.peek_u32le()
+						if (multi_byte_utf8 & 0xC0C0_C000) == 0x8080_8000 {
+							multi_byte_utf8 = (0x1C_0000 & (multi_byte_utf8 ~mod<< 18)) |
+								(0x03_F000 & (multi_byte_utf8 ~mod<< 4)) |
+								(0x00_0FC0 & (multi_byte_utf8 >> 10)) |
+								(0x00_003F & (multi_byte_utf8 >> 24))
+							if (0xFFFF < multi_byte_utf8) and (multi_byte_utf8 <= 0x10_FFFF) {
+								args.src.skip32_fast!(actual: 4, worst_case: 4)
+								if string_length >= 0xFFF8 {
+									args.dst.write_simple_token_fast!(
+										value_major: 0,
+										value_minor: 0x40_0021,
+										link: 0x3,
+										length: string_length + 4)
+									string_length = 0
+									continue.string_loop_outer
+								}
+								string_length += 4
+								continue.string_loop_inner
+							}
+						}
 					}
-					number_length = number_length & 0x7F
-					if number_status == 0 {
+
+					if string_length > 0 {
 						args.dst.write_simple_token_fast!(
 							value_major: 0,
-							value_minor: vminor,
-							link: 0x0,
-							length: number_length)
-						break
+							value_minor: 0x40_0021,
+							link: 0x3,
+							length: string_length)
+						string_length = 0
+						if args.dst.available() <= 0 {
+							continue.string_loop_outer
+						}
 					}
+					if char == 0x80 {
+						return "#bad C0 control code"
+					}
+					if this.quirk_enabled_replace_invalid_unicode {
+						args.dst.write_simple_token_fast!(
+							value_major: 0,
+							value_minor: 0x60_FFFD,
+							link: 0x3,
+							length: 1)
+						args.src.skip32_fast!(actual: 1, worst_case: 1)
+						continue.string_loop_outer
+					}
+					return "#bad UTF-8"
+				} endwhile.string_loop_inner
+			} endwhile.string_loop_outer
 
-					while number_length > 0 {
-						number_length -= 1
-						if args.src.can_undo_byte() {
-							args.src.undo_byte!()
-						} else {
-							return "#internal error: inconsistent I/O"
-						}
-					} endwhile
-
-					if number_status == 1 {
-						if this.quirk_enabled_allow_inf_nan_numbers {
-							this.decode_inf_nan?(dst: args.dst, src: args.src)
-							break
-						}
+			// Emit the trailing '"'.
+			while true {
+				if args.src.available() <= 0 {
+					if args.src.is_closed() {
 						return "#bad input"
-					} else if number_status == 2 {
-						return "#unsupported number length"
-					} else {
-						yield? base."$short read"
-						while args.dst.available() <= 0,
-							post args.dst.available() > 0,
-						{
-							yield? base."$short write"
-						} endwhile
 					}
-				} endwhile
-				break.goto_parsed_a_leaf_value
-				// -------- END   parse numbers.
-
-			} else if class == 0x05 {  // 0x05 is CLASS_OPEN_CURLY_BRACE.
-				vminor = 0x20_4011
-				if depth == 0 {
-					// No-op.
-				} else if 0 <> (expect_after_value & 0x0040) {  // 0x0040 is (1 << CLASS_CLOSE_CURLY_BRACE).
-					vminor = 0x20_4041
-				} else {
-					vminor = 0x20_4021
+					yield? base."$short read"
+					continue
 				}
-				if depth >= 1024 {
-					return "#unsupported recursion depth"
+				if args.dst.available() <= 0 {
+					yield? base."$short write"
+					continue
 				}
-				stack_byte = depth / 32
-				stack_bit = depth & 31
-				this.stack[stack_byte] |= (1 as base.u32) << stack_bit
-				depth += 1
-
 				args.src.skip32_fast!(actual: 1, worst_case: 1)
 				args.dst.write_simple_token_fast!(
 					value_major: 0,
-					value_minor: vminor,
-					link: 0x0,
+					value_minor: 0x40_0013,
+					link: 0x2,
 					length: 1)
-				expect = 0x1042  // 0x1042 is (EXPECT_CLOSE_CURLY_BRACE | EXPECT_STRING).
-				expect_after_value = 0x1044  // 0x1044 is (EXPECT_CURLY_CLOSE_BRACE | EXPECT_COMMA).
-				continue.outer
+				break
+			} endwhile
 
-			} else if class == 0x06 {  // 0x06 is CLASS_CLOSE_CURLY_BRACE.
-				args.src.skip32_fast!(actual: 1, worst_case: 1)
-				if depth <= 1 {
-					args.dst.write_simple_token_fast!(
-						value_major: 0,
-						value_minor: 0x20_1042,
-						link: 0x0,
-						length: 1)
-					break.outer
-				}
-				depth -= 1
-				stack_byte = (depth - 1) / 32
-				stack_bit = (depth - 1) & 31
-				if 0 == (this.stack[stack_byte] & ((1 as base.u32) << stack_bit)) {
-					args.dst.write_simple_token_fast!(
-						value_major: 0,
-						value_minor: 0x20_2042,
-						link: 0x0,
-						length: 1)
-					// 0x1104 is (EXPECT_SQUARE_CLOSE_BRACKET | EXPECT_COMMA).
-					expect = 0x1104
-					expect_after_value = 0x1104
+			// As above, expect must have contained EXPECT_STRING. If it didn't
+			// also contain EXPECT_NUMBER then we were parsing an object key
+			// and the next token should be ':'.
+			if 0 == (expect & 0x0010) {  // 0x0010 is (1 << CLASS_NUMBER).
+				expect = 0x1008  // 0x1008 is EXPECT_COLON.
+				continue.outer
+			}
+			break.goto_parsed_a_leaf_value
+			// -------- END   parse strings.
+
+		} else if class == 0x02 {  // 0x02 is CLASS_COMMA.
+			args.src.skip32_fast!(actual: 1, worst_case: 1)
+			// The ',' is filler.
+			args.dst.write_simple_token_fast!(
+				value_major: 0,
+				value_minor: 0,
+				link: 0x0,
+				length: 1)
+			// What's valid after a comma depends on whether or not we're in an
+			// array or an object.
+			if 0 == (expect & 0x0100) {  // 0x0100 is (1 << CLASS_CLOSE_SQUARE_BRACKET).
+				if this.quirk_enabled_allow_extra_comma {
+					expect = 0x1042  // 0x1042 is EXPECT_STRING | EXPECT_CLOSE_CURLY_BRACE.
 				} else {
-					args.dst.write_simple_token_fast!(
-						value_major: 0,
-						value_minor: 0x20_4042,
-						link: 0x0,
-						length: 1)
-					// 0x1044 is (EXPECT_CURLY_CLOSE_BRACE | EXPECT_COMMA).
-					expect = 0x1044
-					expect_after_value = 0x1044
+					expect = 0x1002  // 0x1002 is EXPECT_STRING.
 				}
-				continue.outer
-
-			} else if class == 0x07 {  // 0x07 is CLASS_OPEN_SQUARE_BRACKET.
-				vminor = 0x20_2011
-				if depth == 0 {
-					// No-op.
-				} else if 0 <> (expect_after_value & 0x0040) {  // 0x0040 is (1 << CLASS_CLOSE_CURLY_BRACE).
-					vminor = 0x20_2041
+			} else {
+				if this.quirk_enabled_allow_extra_comma {
+					expect = 0x1FB2  // 0x0FB2 is EXPECT_VALUE | EXPECT_CLOSE_SQUARE_BRACKET.
 				} else {
-					vminor = 0x20_2021
-				}
-				if depth >= 1024 {
-					return "#unsupported recursion depth"
-				}
-				stack_byte = depth / 32
-				stack_bit = depth & 31
-				this.stack[stack_byte] &= 0xFFFF_FFFF ^ ((1 as base.u32) << stack_bit)
-				depth += 1
-
-				args.src.skip32_fast!(actual: 1, worst_case: 1)
-				args.dst.write_simple_token_fast!(
-					value_major: 0,
-					value_minor: vminor,
-					link: 0x0,
-					length: 1)
-				expect = 0x1FB2  // 0x1FB2 is (EXPECT_CLOSE_SQUARE_BRACKET | EXPECT_VALUE).
-				expect_after_value = 0x1104  // 0x1104 is (EXPECT_CLOSE_SQUARE_BRACKET | EXPECT_COMMA).
-				continue.outer
-
-			} else if class == 0x08 {  // 0x08 is CLASS_CLOSE_SQUARE_BRACKET.
-				args.src.skip32_fast!(actual: 1, worst_case: 1)
-				if depth <= 1 {
-					args.dst.write_simple_token_fast!(
-						value_major: 0,
-						value_minor: 0x20_1022,
-						link: 0x0,
-						length: 1)
-					break.outer
-				}
-				depth -= 1
-				stack_byte = (depth - 1) / 32
-				stack_bit = (depth - 1) & 31
-				if 0 == (this.stack[stack_byte] & ((1 as base.u32) << stack_bit)) {
-					args.dst.write_simple_token_fast!(
-						value_major: 0,
-						value_minor: 0x20_2022,
-						link: 0x0,
-						length: 1)
-					// 0x1104 is (EXPECT_CLOSE_SQUARE_BRACKET | EXPECT_COMMA).
-					expect = 0x1104
-					expect_after_value = 0x1104
-				} else {
-					args.dst.write_simple_token_fast!(
-						value_major: 0,
-						value_minor: 0x20_4022,
-						link: 0x0,
-						length: 1)
-					// 0x1044 is (EXPECT_CLOSE_CURLY_BRACE | EXPECT_COMMA).
-					expect = 0x1044
-					expect_after_value = 0x1044
-				}
-				continue.outer
-
-			} else if class == 0x09 {  // 0x09 is CLASS_FALSE.
-				match = args.src.match7(a: '\x05false'le)
-				if match == 0 {
-					args.dst.write_simple_token_fast!(
-						value_major: 0,
-						value_minor: 0x80_0004,
-						link: 0x0,
-						length: 5)
-					if args.src.available() < 5 {
-						return "#internal error: inconsistent I/O"
-					}
-					args.src.skip32_fast!(actual: 5, worst_case: 5)
-					break.goto_parsed_a_leaf_value
-				} else if match == 1 {
-					yield? base."$short read"
-					continue.outer
-				}
-
-			} else if class == 0x0A {  // 0x0A is CLASS_TRUE.
-				match = args.src.match7(a: '\x04true'le)
-				if match == 0 {
-					args.dst.write_simple_token_fast!(
-						value_major: 0,
-						value_minor: 0x80_0008,
-						link: 0x0,
-						length: 4)
-					if args.src.available() < 4 {
-						return "#internal error: inconsistent I/O"
-					}
-					args.src.skip32_fast!(actual: 4, worst_case: 4)
-					break.goto_parsed_a_leaf_value
-				} else if match == 1 {
-					yield? base."$short read"
-					continue.outer
-				}
-
-			} else if class == 0x0B {  // 0x0B is CLASS_NULL_NAN_INF.
-				match = args.src.match7(a: '\x04null'le)
-				if match == 0 {
-					args.dst.write_simple_token_fast!(
-						value_major: 0,
-						value_minor: 0x80_0002,
-						link: 0x0,
-						length: 4)
-					if args.src.available() < 4 {
-						return "#internal error: inconsistent I/O"
-					}
-					args.src.skip32_fast!(actual: 4, worst_case: 4)
-					break.goto_parsed_a_leaf_value
-				} else if match == 1 {
-					yield? base."$short read"
-					continue.outer
-				}
-
-				if this.quirk_enabled_allow_inf_nan_numbers {
-					this.decode_inf_nan?(dst: args.dst, src: args.src)
-					break.goto_parsed_a_leaf_value
-				}
-
-			} else if class == 0x0C {  // 0x0C is CLASS_COMMENT.
-				if this.quirk_enabled_allow_comment_block or this.quirk_enabled_allow_comment_line {
-					this.decode_comment?(dst: args.dst, src: args.src)
-					continue.outer
+					expect = 0x1EB2  // 0x0EB2 is EXPECT_VALUE.
 				}
 			}
+			continue.outer
 
-			return "#bad input"
-		} endwhile.goto_parsed_a_leaf_value
+		} else if class == 0x03 {  // 0x03 is CLASS_COLON.
+			args.src.skip32_fast!(actual: 1, worst_case: 1)
+			// The ':' is filler.
+			args.dst.write_simple_token_fast!(
+				value_major: 0,
+				value_minor: 0,
+				link: 0x0,
+				length: 1)
+			expect = 0x1EB2  // 0x1EB2 is EXPECT_VALUE.
+			continue.outer
+
+		} else if class == 0x04 {  // 0x04 is CLASS_NUMBER.
+			// -------- BEGIN parse numbers.
+			while true,
+				pre args.dst.available() > 0,
+			{
+				number_length = this.decode_number!(src: args.src)
+				number_status = number_length >> 8
+				vminor = 0xA0_0403
+				if (number_length & 0x80) <> 0 {
+					vminor = 0xA0_0401
+				}
+				number_length = number_length & 0x7F
+				if number_status == 0 {
+					args.dst.write_simple_token_fast!(
+						value_major: 0,
+						value_minor: vminor,
+						link: 0x0,
+						length: number_length)
+					break
+				}
+
+				while number_length > 0 {
+					number_length -= 1
+					if args.src.can_undo_byte() {
+						args.src.undo_byte!()
+					} else {
+						return "#internal error: inconsistent I/O"
+					}
+				} endwhile
+
+				if number_status == 1 {
+					if this.quirk_enabled_allow_inf_nan_numbers {
+						this.decode_inf_nan?(dst: args.dst, src: args.src)
+						break
+					}
+					return "#bad input"
+				} else if number_status == 2 {
+					return "#unsupported number length"
+				} else {
+					yield? base."$short read"
+					while args.dst.available() <= 0,
+						post args.dst.available() > 0,
+					{
+						yield? base."$short write"
+					} endwhile
+				}
+			} endwhile
+			break.goto_parsed_a_leaf_value
+			// -------- END   parse numbers.
+
+		} else if class == 0x05 {  // 0x05 is CLASS_OPEN_CURLY_BRACE.
+			vminor = 0x20_4011
+			if depth == 0 {
+				// No-op.
+			} else if 0 <> (expect_after_value & 0x0040) {  // 0x0040 is (1 << CLASS_CLOSE_CURLY_BRACE).
+				vminor = 0x20_4041
+			} else {
+				vminor = 0x20_4021
+			}
+			if depth >= 1024 {
+				return "#unsupported recursion depth"
+			}
+			stack_byte = depth / 32
+			stack_bit = depth & 31
+			this.stack[stack_byte] |= (1 as base.u32) << stack_bit
+			depth += 1
+
+			args.src.skip32_fast!(actual: 1, worst_case: 1)
+			args.dst.write_simple_token_fast!(
+				value_major: 0,
+				value_minor: vminor,
+				link: 0x0,
+				length: 1)
+			expect = 0x1042  // 0x1042 is (EXPECT_CLOSE_CURLY_BRACE | EXPECT_STRING).
+			expect_after_value = 0x1044  // 0x1044 is (EXPECT_CURLY_CLOSE_BRACE | EXPECT_COMMA).
+			continue.outer
+
+		} else if class == 0x06 {  // 0x06 is CLASS_CLOSE_CURLY_BRACE.
+			args.src.skip32_fast!(actual: 1, worst_case: 1)
+			if depth <= 1 {
+				args.dst.write_simple_token_fast!(
+					value_major: 0,
+					value_minor: 0x20_1042,
+					link: 0x0,
+					length: 1)
+				break.outer
+			}
+			depth -= 1
+			stack_byte = (depth - 1) / 32
+			stack_bit = (depth - 1) & 31
+			if 0 == (this.stack[stack_byte] & ((1 as base.u32) << stack_bit)) {
+				args.dst.write_simple_token_fast!(
+					value_major: 0,
+					value_minor: 0x20_2042,
+					link: 0x0,
+					length: 1)
+				// 0x1104 is (EXPECT_SQUARE_CLOSE_BRACKET | EXPECT_COMMA).
+				expect = 0x1104
+				expect_after_value = 0x1104
+			} else {
+				args.dst.write_simple_token_fast!(
+					value_major: 0,
+					value_minor: 0x20_4042,
+					link: 0x0,
+					length: 1)
+				// 0x1044 is (EXPECT_CURLY_CLOSE_BRACE | EXPECT_COMMA).
+				expect = 0x1044
+				expect_after_value = 0x1044
+			}
+			continue.outer
+
+		} else if class == 0x07 {  // 0x07 is CLASS_OPEN_SQUARE_BRACKET.
+			vminor = 0x20_2011
+			if depth == 0 {
+				// No-op.
+			} else if 0 <> (expect_after_value & 0x0040) {  // 0x0040 is (1 << CLASS_CLOSE_CURLY_BRACE).
+				vminor = 0x20_2041
+			} else {
+				vminor = 0x20_2021
+			}
+			if depth >= 1024 {
+				return "#unsupported recursion depth"
+			}
+			stack_byte = depth / 32
+			stack_bit = depth & 31
+			this.stack[stack_byte] &= 0xFFFF_FFFF ^ ((1 as base.u32) << stack_bit)
+			depth += 1
+
+			args.src.skip32_fast!(actual: 1, worst_case: 1)
+			args.dst.write_simple_token_fast!(
+				value_major: 0,
+				value_minor: vminor,
+				link: 0x0,
+				length: 1)
+			expect = 0x1FB2  // 0x1FB2 is (EXPECT_CLOSE_SQUARE_BRACKET | EXPECT_VALUE).
+			expect_after_value = 0x1104  // 0x1104 is (EXPECT_CLOSE_SQUARE_BRACKET | EXPECT_COMMA).
+			continue.outer
+
+		} else if class == 0x08 {  // 0x08 is CLASS_CLOSE_SQUARE_BRACKET.
+			args.src.skip32_fast!(actual: 1, worst_case: 1)
+			if depth <= 1 {
+				args.dst.write_simple_token_fast!(
+					value_major: 0,
+					value_minor: 0x20_1022,
+					link: 0x0,
+					length: 1)
+				break.outer
+			}
+			depth -= 1
+			stack_byte = (depth - 1) / 32
+			stack_bit = (depth - 1) & 31
+			if 0 == (this.stack[stack_byte] & ((1 as base.u32) << stack_bit)) {
+				args.dst.write_simple_token_fast!(
+					value_major: 0,
+					value_minor: 0x20_2022,
+					link: 0x0,
+					length: 1)
+				// 0x1104 is (EXPECT_CLOSE_SQUARE_BRACKET | EXPECT_COMMA).
+				expect = 0x1104
+				expect_after_value = 0x1104
+			} else {
+				args.dst.write_simple_token_fast!(
+					value_major: 0,
+					value_minor: 0x20_4022,
+					link: 0x0,
+					length: 1)
+				// 0x1044 is (EXPECT_CLOSE_CURLY_BRACE | EXPECT_COMMA).
+				expect = 0x1044
+				expect_after_value = 0x1044
+			}
+			continue.outer
+
+		} else if class == 0x09 {  // 0x09 is CLASS_FALSE.
+			match = args.src.match7(a: '\x05false'le)
+			if match == 0 {
+				args.dst.write_simple_token_fast!(
+					value_major: 0,
+					value_minor: 0x80_0004,
+					link: 0x0,
+					length: 5)
+				if args.src.available() < 5 {
+					return "#internal error: inconsistent I/O"
+				}
+				args.src.skip32_fast!(actual: 5, worst_case: 5)
+				break.goto_parsed_a_leaf_value
+			} else if match == 1 {
+				yield? base."$short read"
+				continue.outer
+			}
+
+		} else if class == 0x0A {  // 0x0A is CLASS_TRUE.
+			match = args.src.match7(a: '\x04true'le)
+			if match == 0 {
+				args.dst.write_simple_token_fast!(
+					value_major: 0,
+					value_minor: 0x80_0008,
+					link: 0x0,
+					length: 4)
+				if args.src.available() < 4 {
+					return "#internal error: inconsistent I/O"
+				}
+				args.src.skip32_fast!(actual: 4, worst_case: 4)
+				break.goto_parsed_a_leaf_value
+			} else if match == 1 {
+				yield? base."$short read"
+				continue.outer
+			}
+
+		} else if class == 0x0B {  // 0x0B is CLASS_NULL_NAN_INF.
+			match = args.src.match7(a: '\x04null'le)
+			if match == 0 {
+				args.dst.write_simple_token_fast!(
+					value_major: 0,
+					value_minor: 0x80_0002,
+					link: 0x0,
+					length: 4)
+				if args.src.available() < 4 {
+					return "#internal error: inconsistent I/O"
+				}
+				args.src.skip32_fast!(actual: 4, worst_case: 4)
+				break.goto_parsed_a_leaf_value
+			} else if match == 1 {
+				yield? base."$short read"
+				continue.outer
+			}
+
+			if this.quirk_enabled_allow_inf_nan_numbers {
+				this.decode_inf_nan?(dst: args.dst, src: args.src)
+				break.goto_parsed_a_leaf_value
+			}
+
+		} else if class == 0x0C {  // 0x0C is CLASS_COMMENT.
+			if this.quirk_enabled_allow_comment_block or this.quirk_enabled_allow_comment_line {
+				this.decode_comment?(dst: args.dst, src: args.src)
+				continue.outer
+			}
+		}
+
+		return "#bad input"
+		}} endwhile.goto_parsed_a_leaf_value
 
 		// We've just parsed a leaf (non-container) value: literal (null,
 		// false, true), number or string.
@@ -1124,97 +1124,67 @@ pri func decoder.decode_number!(src: base.io_reader) base.u32[..= 0x3FF] {
 	var n              : base.u32[..= 0x3FF]
 	var floating_point : base.u32[..= 0x80]
 
-	while.goto_done true {
-		n = 0
+	while.goto_done true {{
+	n = 0
+
+	// Peek.
+	if args.src.available() <= 0 {
+		if not args.src.is_closed() {
+			n |= 0x300
+		}
+		break.goto_done
+	}
+	c = args.src.peek_u8()
+
+	// Scan the optional minus sign.
+	if c <> '-' {
+		assert args.src.available() > 0
+		assert n <= 1
+	} else {
+		n += 1
+		args.src.skip32_fast!(actual: 1, worst_case: 1)
 
 		// Peek.
 		if args.src.available() <= 0 {
 			if not args.src.is_closed() {
 				n |= 0x300
 			}
+			n |= 0x100  // A '-' without digits is invalid.
 			break.goto_done
 		}
 		c = args.src.peek_u8()
 
-		// Scan the optional minus sign.
-		if c <> '-' {
-			assert args.src.available() > 0
-			assert n <= 1
-		} else {
-			n += 1
-			args.src.skip32_fast!(actual: 1, worst_case: 1)
+		assert args.src.available() > 0
+		assert n <= 1
+	}
 
-			// Peek.
-			if args.src.available() <= 0 {
-				if not args.src.is_closed() {
-					n |= 0x300
-				}
-				n |= 0x100  // A '-' without digits is invalid.
-				break.goto_done
-			}
-			c = args.src.peek_u8()
-
-			assert args.src.available() > 0
-			assert n <= 1
-		}
-
-		// Scan the opening digits.
-		if c == '0' {
-			n += 1
-			args.src.skip32_fast!(actual: 1, worst_case: 1)
-			assert n <= 99
-		} else {
-			n = this.decode_digits!(src: args.src, n: n)
-			if n > 99 {
-				break.goto_done
-			}
-			assert n <= 99
-		}
-
-		// Peek.
-		if args.src.available() <= 0 {
-			if not args.src.is_closed() {
-				n |= 0x300
-			}
+	// Scan the opening digits.
+	if c == '0' {
+		n += 1
+		args.src.skip32_fast!(actual: 1, worst_case: 1)
+		assert n <= 99
+	} else {
+		n = this.decode_digits!(src: args.src, n: n)
+		if n > 99 {
 			break.goto_done
 		}
-		c = args.src.peek_u8()
+		assert n <= 99
+	}
 
-		// Scan the optional fraction.
-		if c <> '.' {
-			assert args.src.available() > 0
-			assert n <= 99
-		} else {
-			if n >= 99 {
-				n |= 0x200
-				break.goto_done
-			}
-			n += 1
-			args.src.skip32_fast!(actual: 1, worst_case: 1)
-			floating_point = 0x80
-
-			n = this.decode_digits!(src: args.src, n: n)
-			if n > 99 {
-				break.goto_done
-			}
-
-			// Peek.
-			if args.src.available() <= 0 {
-				if not args.src.is_closed() {
-					n |= 0x300
-				}
-				break.goto_done
-			}
-			c = args.src.peek_u8()
-
-			assert args.src.available() > 0
-			assert n <= 99
+	// Peek.
+	if args.src.available() <= 0 {
+		if not args.src.is_closed() {
+			n |= 0x300
 		}
+		break.goto_done
+	}
+	c = args.src.peek_u8()
 
-		// Scan the optional 'E' or 'e'.
-		if (c <> 'E') and (c <> 'e') {
-			break.goto_done
-		}
+	// Scan the optional fraction.
+	if c <> '.' {
+		assert args.src.available() > 0
+		assert n <= 99
+	} else {
 		if n >= 99 {
 			n |= 0x200
 			break.goto_done
@@ -1222,36 +1192,67 @@ pri func decoder.decode_number!(src: base.io_reader) base.u32[..= 0x3FF] {
 		n += 1
 		args.src.skip32_fast!(actual: 1, worst_case: 1)
 		floating_point = 0x80
-		assert n <= 99
+
+		n = this.decode_digits!(src: args.src, n: n)
+		if n > 99 {
+			break.goto_done
+		}
 
 		// Peek.
 		if args.src.available() <= 0 {
 			if not args.src.is_closed() {
 				n |= 0x300
 			}
-			n |= 0x100  // An 'E' or 'e' without digits is invalid.
 			break.goto_done
 		}
 		c = args.src.peek_u8()
 
-		// Scan the optional '+' or '-'.
-		if (c <> '+') and (c <> '-') {
-			assert n <= 99
-		} else {
-			if n >= 99 {
-				n |= 0x200
-				break.goto_done
-			}
-			n += 1
-			args.src.skip32_fast!(actual: 1, worst_case: 1)
-			assert n <= 99
-		}
+		assert args.src.available() > 0
+		assert n <= 99
+	}
 
-		// Scan the exponent digits.
-		n = this.decode_digits!(src: args.src, n: n)
-
+	// Scan the optional 'E' or 'e'.
+	if (c <> 'E') and (c <> 'e') {
 		break.goto_done
-	} endwhile.goto_done
+	}
+	if n >= 99 {
+		n |= 0x200
+		break.goto_done
+	}
+	n += 1
+	args.src.skip32_fast!(actual: 1, worst_case: 1)
+	floating_point = 0x80
+	assert n <= 99
+
+	// Peek.
+	if args.src.available() <= 0 {
+		if not args.src.is_closed() {
+			n |= 0x300
+		}
+		n |= 0x100  // An 'E' or 'e' without digits is invalid.
+		break.goto_done
+	}
+	c = args.src.peek_u8()
+
+	// Scan the optional '+' or '-'.
+	if (c <> '+') and (c <> '-') {
+		assert n <= 99
+	} else {
+		if n >= 99 {
+			n |= 0x200
+			break.goto_done
+		}
+		n += 1
+		args.src.skip32_fast!(actual: 1, worst_case: 1)
+		assert n <= 99
+	}
+
+	// Scan the exponent digits.
+	n = this.decode_digits!(src: args.src, n: n)
+
+	break.goto_done
+	}} endwhile.goto_done
+
 	return n | floating_point
 }
 
@@ -1299,6 +1300,7 @@ pri func decoder.decode_leading?(dst: base.token_writer, src: base.io_reader) {
 
 	this.allow_leading_ars = this.quirk_enabled_allow_leading_ascii_record_separator
 	this.allow_leading_ubom = this.quirk_enabled_allow_leading_unicode_byte_order_mark
+
 	while this.allow_leading_ars or this.allow_leading_ubom {
 		if args.dst.available() <= 0 {
 			yield? base."$short write"
@@ -1634,5 +1636,4 @@ pri func decoder.decode_trailing_new_line?(dst: base.token_writer, src: base.io_
 			whitespace_length += 1
 		} endwhile.inner
 	} endwhile.outer
-
 }

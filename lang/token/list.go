@@ -242,16 +242,18 @@ const (
 	minOpen = 0x10
 	maxOpen = 0x17
 
-	IDOpenParen   = ID(0x10)
-	IDOpenBracket = ID(0x11)
-	IDOpenCurly   = ID(0x12)
+	IDOpenParen       = ID(0x10)
+	IDOpenBracket     = ID(0x11)
+	IDOpenCurly       = ID(0x12)
+	IDOpenDoubleCurly = ID(0x13)
 
 	minClose = 0x18
 	maxClose = 0x1F
 
-	IDCloseParen   = ID(0x18)
-	IDCloseBracket = ID(0x19)
-	IDCloseCurly   = ID(0x1A)
+	IDCloseParen       = ID(0x18)
+	IDCloseBracket     = ID(0x19)
+	IDCloseCurly       = ID(0x1A)
+	IDCloseDoubleCurly = ID(0x1B)
 )
 
 const (
@@ -670,13 +672,15 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDQuestion:  "?",
 	IDColon:     ":",
 
-	IDOpenParen:   "(",
-	IDCloseParen:  ")",
-	IDOpenBracket: "[",
+	IDOpenParen:       "(",
+	IDOpenBracket:     "[",
+	IDOpenCurly:       "{",
+	IDOpenDoubleCurly: "{{",
 
-	IDCloseBracket: "]",
-	IDOpenCurly:    "{",
-	IDCloseCurly:   "}",
+	IDCloseParen:       ")",
+	IDCloseBracket:     "]",
+	IDCloseCurly:       "}",
+	IDCloseDoubleCurly: "}}",
 
 	IDPlusEq:    "+=",
 	IDMinusEq:   "-=",
@@ -1029,8 +1033,6 @@ var squiggles = [256]ID{
 	')': IDCloseParen,
 	'[': IDOpenBracket,
 	']': IDCloseBracket,
-	'{': IDOpenCurly,
-	'}': IDCloseCurly,
 
 	',': IDComma,
 	'!': IDExclam,
@@ -1104,6 +1106,14 @@ var lexers = [256][]suffixLexer{
 		{">", IDShiftR},
 		{"=", IDGreaterEq},
 		{"", IDGreaterThan},
+	},
+	'{': {
+		{"{", IDOpenDoubleCurly},
+		{"", IDOpenCurly},
+	},
+	'}': {
+		{"}", IDCloseDoubleCurly},
+		{"", IDCloseCurly},
 	},
 	'~': {
 		{"mod<<=", IDTildeModShiftLEq},

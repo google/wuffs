@@ -30,6 +30,10 @@ Minor features or restrictions include:
 - Labeled jumps look like `break.loopname` and `continue.loopname`, for a
   matching `while.loopname`. The `while.loopname`'s closing curly brace must be
   followed by `endwhile.loopname`.
+- A `while true` loop's block may use double-curly braces: `{{` and `}}`. The
+  formatter will not add an indent to the code inside the block. This is useful
+  when using `while true {{ etc; break; etc; break }}` to simulate what would
+  be a (forwards) `goto` in other languages' straight-line code.
 
 Wuffs code is formatted by the
 [`wuffsfmt`](https://godoc.org/github.com/google/wuffs/cmd/wuffsfmt) program.
