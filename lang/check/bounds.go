@@ -532,41 +532,6 @@ func (q *checker) bcheckAssignment1(lhs *a.Expr, lTyp *a.TypeExpr, op t.ID, rhs 
 	return rb, nil
 }
 
-// terminates returns whether a block of statements terminates. In other words,
-// whether the block is non-empty and its final statement is a "return",
-// "break", "continue" or an "if-else" chain where all branches terminate.
-//
-// TODO: strengthen this to include "while" statements? For inspiration, the Go
-// spec has https://golang.org/ref/spec#Terminating_statements
-func terminates(body []*a.Node) bool {
-	if len(body) > 0 {
-		n := body[len(body)-1]
-		switch n.Kind() {
-		case a.KIf:
-			n := n.AsIf()
-			for {
-				if !terminates(n.BodyIfTrue()) {
-					return false
-				}
-				bif := n.BodyIfFalse()
-				if len(bif) > 0 && !terminates(bif) {
-					return false
-				}
-				n = n.ElseIf()
-				if n == nil {
-					return len(bif) > 0
-				}
-			}
-		case a.KJump:
-			return true
-		case a.KRet:
-			return n.AsRet().Keyword() == t.IDReturn
-		}
-		return false
-	}
-	return false
-}
-
 func snapshot(facts []*a.Expr) []*a.Expr {
 	return append([]*a.Expr(nil), facts...)
 }
@@ -615,7 +580,7 @@ func (q *checker) bcheckIf(n *a.If) error {
 		if err := q.bcheckBlock(n.BodyIfTrue()); err != nil {
 			return err
 		}
-		if !terminates(n.BodyIfTrue()) {
+		if !a.Terminates(n.BodyIfTrue()) {
 			branches = append(branches, snapshot(q.facts))
 		}
 
@@ -632,7 +597,7 @@ func (q *checker) bcheckIf(n *a.If) error {
 			if err := q.bcheckBlock(bif); err != nil {
 				return err
 			}
-			if !terminates(bif) {
+			if !a.Terminates(bif) {
 				branches = append(branches, snapshot(q.facts))
 			}
 			break
@@ -717,7 +682,7 @@ func (q *checker) bcheckWhile(n *a.While) error {
 		}
 		// Check the pre and inv conditions on the implicit continue after the
 		// body.
-		if !terminates(n.Body()) {
+		if !a.Terminates(n.Body()) {
 			for _, o := range n.Asserts() {
 				if o.AsAssert().Keyword() == t.IDPost {
 					continue

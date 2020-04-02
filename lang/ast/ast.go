@@ -820,17 +820,6 @@ const MaxBodyDepth = 255
 //  - RHS:   <Struct> out-parameters
 //  - List1: <Assert> asserts
 //  - List2: <Statement> body
-//
-// Statement means one of:
-//  - Assert
-//  - Assign
-//  - IOBind
-//  - If
-//  - Iterate
-//  - Jump
-//  - Ret
-//  - Var
-//  - While
 type Func Node
 
 func (n *Func) AsNode() *Node    { return (*Node)(n) }
@@ -988,4 +977,49 @@ func NewFile(filename string, topLevelDecls []*Node) *File {
 		filename: filename,
 		list0:    topLevelDecls,
 	}
+}
+
+// Statement means one of:
+//  - Assert
+//  - Assign
+//  - IOBind
+//  - If
+//  - Iterate
+//  - Jump
+//  - Ret
+//  - Var
+//  - While
+
+// Terminates returns whether a block of statements terminates. In other words,
+// whether the block is non-empty and its final statement is a "return",
+// "break", "continue" or an "if-else" chain where all branches terminate.
+func Terminates(body []*Node) bool {
+	// TODO: strengthen this to include "while" statements? For inspiration,
+	// the Go spec has https://golang.org/ref/spec#Terminating_statements
+	if len(body) == 0 {
+		return false
+	}
+	n := body[len(body)-1]
+	switch n.Kind() {
+	case KIf:
+		n := n.AsIf()
+		for {
+			if !Terminates(n.BodyIfTrue()) {
+				return false
+			}
+			bif := n.BodyIfFalse()
+			if len(bif) > 0 && !Terminates(bif) {
+				return false
+			}
+			n = n.ElseIf()
+			if n == nil {
+				return len(bif) > 0
+			}
+		}
+	case KJump:
+		return true
+	case KRet:
+		return n.AsRet().Keyword() == t.IDReturn
+	}
+	return false
 }
