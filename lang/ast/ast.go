@@ -257,8 +257,17 @@ type Loop interface {
 
 type LoopStack []Loop
 
-func (s *LoopStack) Push(l Loop) {
+// Push returns false if an existing Loop has the same non-zero label.
+func (s *LoopStack) Push(l Loop) (ok bool) {
+	if label := l.Label(); label != 0 {
+		for _, o := range *s {
+			if label == o.Label() {
+				return false
+			}
+		}
+	}
 	*s = append(*s, l)
+	return true
 }
 
 func (s *LoopStack) Pop() Loop {

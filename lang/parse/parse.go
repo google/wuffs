@@ -797,7 +797,10 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 		}
 
 		n := a.NewWhile(label, condition, asserts)
-		p.loops.Push(n)
+		if !p.loops.Push(n) {
+			return nil, fmt.Errorf(`parse: duplicate loop label %s at %s:%d`,
+				label.Str(p.tm), p.filename, p.line())
+		}
 		body, err := p.parseBlock(doubleCurly)
 		if err != nil {
 			return nil, err
@@ -1114,7 +1117,10 @@ func (p *parser) parseIterateBlock(label t.ID, assigns []*a.Node) (*a.Iterate, e
 	}
 	n := a.NewIterate(label, assigns, length, unroll, asserts)
 	// TODO: decide how break/continue work with iterate loops.
-	p.loops.Push(n)
+	if !p.loops.Push(n) {
+		return nil, fmt.Errorf(`parse: duplicate loop label %s at %s:%d`,
+			label.Str(p.tm), p.filename, p.line())
+	}
 	body, err := p.parseBlock(false)
 	if err != nil {
 		return nil, err
