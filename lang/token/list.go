@@ -626,7 +626,8 @@ const (
 
 	// --------
 
-	IDWriteFastToken = ID(0x1F1)
+	// TODO: IDWriteExtendedTokenFast
+	IDWriteSimpleTokenFast = ID(0x1F1)
 
 	// -------- 0x200 block.
 
@@ -980,7 +981,7 @@ var builtInsByID = [nBuiltInIDs]string{
 
 	// --------
 
-	IDWriteFastToken: "write_fast_token",
+	IDWriteSimpleTokenFast: "write_simple_token_fast",
 
 	// -------- 0x200 block.
 

@@ -173,7 +173,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 			{
 				if args.src.available() <= 0 {
 					if whitespace_length > 0 {
-						args.dst.write_fast_token!(
+						args.dst.write_simple_token_fast!(
 							value_major: 0,
 							value_minor: 0,
 							link: 0x0,
@@ -196,7 +196,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 				args.src.skip32_fast!(actual: 1, worst_case: 1)
 
 				if whitespace_length >= 0xFFFE {
-					args.dst.write_fast_token!(
+					args.dst.write_simple_token_fast!(
 						value_major: 0,
 						value_minor: 0,
 						link: 0x0,
@@ -209,7 +209,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 
 			// Emit whitespace.
 			if whitespace_length > 0 {
-				args.dst.write_fast_token!(
+				args.dst.write_simple_token_fast!(
 					value_major: 0,
 					value_minor: 0,
 					link: 0x0,
@@ -235,7 +235,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 			if class == 0x01 {  // 0x01 is CLASS_STRING.
 				// -------- BEGIN parse strings.
 				// Emit the leading '"'.
-				args.dst.write_fast_token!(
+				args.dst.write_simple_token_fast!(
 					value_major: 0,
 					value_minor: 0x40_0013,
 					link: 0x1,
@@ -254,7 +254,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 					{
 						if args.src.available() <= 0 {
 							if string_length > 0 {
-								args.dst.write_fast_token!(
+								args.dst.write_simple_token_fast!(
 									value_major: 0,
 									value_minor: 0x40_0021,
 									link: 0x3,
@@ -283,7 +283,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 							}
 							args.src.skip32_fast!(actual: 4, worst_case: 4)
 							if string_length > (0xFFFB - 4) {
-								args.dst.write_fast_token!(
+								args.dst.write_simple_token_fast!(
 									value_major: 0,
 									value_minor: 0x40_0021,
 									link: 0x3,
@@ -300,7 +300,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 						if char == 0x00 {  // Non-special ASCII.
 							args.src.skip32_fast!(actual: 1, worst_case: 1)
 							if string_length >= 0xFFFB {
-								args.dst.write_fast_token!(
+								args.dst.write_simple_token_fast!(
 									value_major: 0,
 									value_minor: 0x40_0021,
 									link: 0x3,
@@ -313,7 +313,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 
 						} else if char == 0x01 {  // '"'
 							if string_length <> 0 {
-								args.dst.write_fast_token!(
+								args.dst.write_simple_token_fast!(
 									value_major: 0,
 									value_minor: 0x40_0021,
 									link: 0x3,
@@ -324,7 +324,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 
 						} else if char == 0x02 {  // '\\'.
 							if string_length > 0 {
-								args.dst.write_fast_token!(
+								args.dst.write_simple_token_fast!(
 									value_major: 0,
 									value_minor: 0x40_0021,
 									link: 0x3,
@@ -349,7 +349,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 							backslash = lut_backslashes[c]
 							if (backslash & 0x80) <> 0 {
 								args.src.skip32_fast!(actual: 2, worst_case: 2)
-								args.dst.write_fast_token!(
+								args.dst.write_simple_token_fast!(
 									value_major: 0,
 									value_minor: 0x60_0000 | ((backslash & 0x7F) as base.u32),
 									link: 0x3,
@@ -359,7 +359,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 							} else if backslash <> 0 {
 								if this.quirk_enabled_allow_backslash_etc[backslash & 7] {
 									args.src.skip32_fast!(actual: 2, worst_case: 2)
-									args.dst.write_fast_token!(
+									args.dst.write_simple_token_fast!(
 										value_major: 0,
 										value_minor: 0x60_0000 | (lut_quirky_backslashes[backslash & 7] as base.u32),
 										link: 0x3,
@@ -404,7 +404,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 								} else if (uni4_value < 0xD800) or (0xDFFF < uni4_value) {
 									// Not a Unicode surrogate. We're good.
 									args.src.skip32_fast!(actual: 6, worst_case: 6)
-									args.dst.write_fast_token!(
+									args.dst.write_simple_token_fast!(
 										value_major: 0,
 										value_minor: 0x60_0000 | uni4_value,
 										link: 0x3,
@@ -425,7 +425,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 										if args.src.is_closed() {
 											if this.quirk_enabled_replace_invalid_unicode {
 												args.src.skip32_fast!(actual: 6, worst_case: 6)
-												args.dst.write_fast_token!(
+												args.dst.write_simple_token_fast!(
 													value_major: 0,
 													value_minor: 0x60_FFFD,
 													link: 0x3,
@@ -475,7 +475,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 										// Emit a single token for the surrogate pair.
 										uni4_value -= 0xDC00
 										args.src.skip32_fast!(actual: 12, worst_case: 12)
-										args.dst.write_fast_token!(
+										args.dst.write_simple_token_fast!(
 											value_major: 0,
 											value_minor: 0x60_0000 | uni4_high_surrogate | uni4_value,
 											link: 0x3,
@@ -489,7 +489,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 										return "#internal error: inconsistent I/O"
 									}
 									args.src.skip32_fast!(actual: 6, worst_case: 6)
-									args.dst.write_fast_token!(
+									args.dst.write_simple_token_fast!(
 										value_major: 0,
 										value_minor: 0x60_FFFD,
 										link: 0x3,
@@ -548,7 +548,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 									(0xDFFF < uni8_value) and (uni8_value <= 0x10_FFFF)) {
 									// Not a Unicode surrogate. We're good.
 									args.src.skip32_fast!(actual: 10, worst_case: 10)
-									args.dst.write_fast_token!(
+									args.dst.write_simple_token_fast!(
 										value_major: 0,
 										value_minor: 0x60_0000 | (uni8_value & 0x1F_FFFF),
 										link: 0x3,
@@ -556,7 +556,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 									continue.string_loop_outer
 								} else if this.quirk_enabled_replace_invalid_unicode {
 									args.src.skip32_fast!(actual: 10, worst_case: 10)
-									args.dst.write_fast_token!(
+									args.dst.write_simple_token_fast!(
 										value_major: 0,
 										value_minor: 0x60_FFFD,
 										link: 0x3,
@@ -603,7 +603,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 								if backslash_x_length == 0 {
 									return "#bad backslash-escape"
 								}
-								args.dst.write_fast_token!(
+								args.dst.write_simple_token_fast!(
 									value_major: 0,
 									value_minor: 0x40_0080,
 									link: 0x3,
@@ -617,7 +617,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 						} else if char == 0x03 {  // 2-byte UTF-8.
 							if args.src.available() < 2 {
 								if string_length > 0 {
-									args.dst.write_fast_token!(
+									args.dst.write_simple_token_fast!(
 										value_major: 0,
 										value_minor: 0x40_0021,
 										link: 0x3,
@@ -629,7 +629,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 								}
 								if args.src.is_closed() {
 									if this.quirk_enabled_replace_invalid_unicode {
-										args.dst.write_fast_token!(
+										args.dst.write_simple_token_fast!(
 											value_major: 0,
 											value_minor: 0x60_FFFD,
 											link: 0x3,
@@ -650,7 +650,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 									(0x00_003F & (multi_byte_utf8 >> 8))
 								args.src.skip32_fast!(actual: 2, worst_case: 2)
 								if string_length >= 0xFFF8 {
-									args.dst.write_fast_token!(
+									args.dst.write_simple_token_fast!(
 										value_major: 0,
 										value_minor: 0x40_0021,
 										link: 0x3,
@@ -665,7 +665,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 						} else if char == 0x04 {  // 3-byte UTF-8.
 							if args.src.available() < 3 {
 								if string_length > 0 {
-									args.dst.write_fast_token!(
+									args.dst.write_simple_token_fast!(
 										value_major: 0,
 										value_minor: 0x40_0021,
 										link: 0x3,
@@ -677,7 +677,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 								}
 								if args.src.is_closed() {
 									if this.quirk_enabled_replace_invalid_unicode {
-										args.dst.write_fast_token!(
+										args.dst.write_simple_token_fast!(
 											value_major: 0,
 											value_minor: 0x60_FFFD,
 											link: 0x3,
@@ -702,7 +702,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 
 									args.src.skip32_fast!(actual: 3, worst_case: 3)
 									if string_length >= 0xFFF8 {
-										args.dst.write_fast_token!(
+										args.dst.write_simple_token_fast!(
 											value_major: 0,
 											value_minor: 0x40_0021,
 											link: 0x3,
@@ -718,7 +718,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 						} else if char == 0x05 {  // 4-byte UTF-8.
 							if args.src.available() < 4 {
 								if string_length > 0 {
-									args.dst.write_fast_token!(
+									args.dst.write_simple_token_fast!(
 										value_major: 0,
 										value_minor: 0x40_0021,
 										link: 0x3,
@@ -730,7 +730,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 								}
 								if args.src.is_closed() {
 									if this.quirk_enabled_replace_invalid_unicode {
-										args.dst.write_fast_token!(
+										args.dst.write_simple_token_fast!(
 											value_major: 0,
 											value_minor: 0x60_FFFD,
 											link: 0x3,
@@ -754,7 +754,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 								if (0xFFFF < multi_byte_utf8) and (multi_byte_utf8 <= 0x10_FFFF) {
 									args.src.skip32_fast!(actual: 4, worst_case: 4)
 									if string_length >= 0xFFF8 {
-										args.dst.write_fast_token!(
+										args.dst.write_simple_token_fast!(
 											value_major: 0,
 											value_minor: 0x40_0021,
 											link: 0x3,
@@ -769,7 +769,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 						}
 
 						if string_length > 0 {
-							args.dst.write_fast_token!(
+							args.dst.write_simple_token_fast!(
 								value_major: 0,
 								value_minor: 0x40_0021,
 								link: 0x3,
@@ -783,7 +783,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 							return "#bad C0 control code"
 						}
 						if this.quirk_enabled_replace_invalid_unicode {
-							args.dst.write_fast_token!(
+							args.dst.write_simple_token_fast!(
 								value_major: 0,
 								value_minor: 0x60_FFFD,
 								link: 0x3,
@@ -809,7 +809,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 						continue
 					}
 					args.src.skip32_fast!(actual: 1, worst_case: 1)
-					args.dst.write_fast_token!(
+					args.dst.write_simple_token_fast!(
 						value_major: 0,
 						value_minor: 0x40_0013,
 						link: 0x2,
@@ -830,7 +830,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 			} else if class == 0x02 {  // 0x02 is CLASS_COMMA.
 				args.src.skip32_fast!(actual: 1, worst_case: 1)
 				// The ',' is filler.
-				args.dst.write_fast_token!(
+				args.dst.write_simple_token_fast!(
 					value_major: 0,
 					value_minor: 0,
 					link: 0x0,
@@ -855,7 +855,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 			} else if class == 0x03 {  // 0x03 is CLASS_COLON.
 				args.src.skip32_fast!(actual: 1, worst_case: 1)
 				// The ':' is filler.
-				args.dst.write_fast_token!(
+				args.dst.write_simple_token_fast!(
 					value_major: 0,
 					value_minor: 0,
 					link: 0x0,
@@ -876,7 +876,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 					}
 					number_length = number_length & 0x7F
 					if number_status == 0 {
-						args.dst.write_fast_token!(
+						args.dst.write_simple_token_fast!(
 							value_major: 0,
 							value_minor: vminor,
 							link: 0x0,
@@ -931,7 +931,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 				depth += 1
 
 				args.src.skip32_fast!(actual: 1, worst_case: 1)
-				args.dst.write_fast_token!(
+				args.dst.write_simple_token_fast!(
 					value_major: 0,
 					value_minor: vminor,
 					link: 0x0,
@@ -943,7 +943,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 			} else if class == 0x06 {  // 0x06 is CLASS_CLOSE_CURLY_BRACE.
 				args.src.skip32_fast!(actual: 1, worst_case: 1)
 				if depth <= 1 {
-					args.dst.write_fast_token!(
+					args.dst.write_simple_token_fast!(
 						value_major: 0,
 						value_minor: 0x20_1042,
 						link: 0x0,
@@ -954,7 +954,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 				stack_byte = (depth - 1) / 32
 				stack_bit = (depth - 1) & 31
 				if 0 == (this.stack[stack_byte] & ((1 as base.u32) << stack_bit)) {
-					args.dst.write_fast_token!(
+					args.dst.write_simple_token_fast!(
 						value_major: 0,
 						value_minor: 0x20_2042,
 						link: 0x0,
@@ -963,7 +963,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 					expect = 0x1104
 					expect_after_value = 0x1104
 				} else {
-					args.dst.write_fast_token!(
+					args.dst.write_simple_token_fast!(
 						value_major: 0,
 						value_minor: 0x20_4042,
 						link: 0x0,
@@ -992,7 +992,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 				depth += 1
 
 				args.src.skip32_fast!(actual: 1, worst_case: 1)
-				args.dst.write_fast_token!(
+				args.dst.write_simple_token_fast!(
 					value_major: 0,
 					value_minor: vminor,
 					link: 0x0,
@@ -1004,7 +1004,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 			} else if class == 0x08 {  // 0x08 is CLASS_CLOSE_SQUARE_BRACKET.
 				args.src.skip32_fast!(actual: 1, worst_case: 1)
 				if depth <= 1 {
-					args.dst.write_fast_token!(
+					args.dst.write_simple_token_fast!(
 						value_major: 0,
 						value_minor: 0x20_1022,
 						link: 0x0,
@@ -1015,7 +1015,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 				stack_byte = (depth - 1) / 32
 				stack_bit = (depth - 1) & 31
 				if 0 == (this.stack[stack_byte] & ((1 as base.u32) << stack_bit)) {
-					args.dst.write_fast_token!(
+					args.dst.write_simple_token_fast!(
 						value_major: 0,
 						value_minor: 0x20_2022,
 						link: 0x0,
@@ -1024,7 +1024,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 					expect = 0x1104
 					expect_after_value = 0x1104
 				} else {
-					args.dst.write_fast_token!(
+					args.dst.write_simple_token_fast!(
 						value_major: 0,
 						value_minor: 0x20_4022,
 						link: 0x0,
@@ -1038,7 +1038,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 			} else if class == 0x09 {  // 0x09 is CLASS_FALSE.
 				match = args.src.match7(a: '\x05false'le)
 				if match == 0 {
-					args.dst.write_fast_token!(
+					args.dst.write_simple_token_fast!(
 						value_major: 0,
 						value_minor: 0x80_0004,
 						link: 0x0,
@@ -1056,7 +1056,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 			} else if class == 0x0A {  // 0x0A is CLASS_TRUE.
 				match = args.src.match7(a: '\x04true'le)
 				if match == 0 {
-					args.dst.write_fast_token!(
+					args.dst.write_simple_token_fast!(
 						value_major: 0,
 						value_minor: 0x80_0008,
 						link: 0x0,
@@ -1074,7 +1074,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 			} else if class == 0x0B {  // 0x0B is CLASS_NULL_NAN_INF.
 				match = args.src.match7(a: '\x04null'le)
 				if match == 0 {
-					args.dst.write_fast_token!(
+					args.dst.write_simple_token_fast!(
 						value_major: 0,
 						value_minor: 0x80_0002,
 						link: 0x0,
@@ -1315,7 +1315,7 @@ pri func decoder.decode_leading?(dst: base.token_writer, src: base.io_reader) {
 		if (c == 0x1E) and this.allow_leading_ars {
 			this.allow_leading_ars = false
 			args.src.skip32_fast!(actual: 1, worst_case: 1)
-			args.dst.write_fast_token!(
+			args.dst.write_simple_token_fast!(
 				value_major: 0, value_minor: 0, link: 0x0, length: 1)
 			continue
 		} else if (c == 0xEF) and this.allow_leading_ubom {
@@ -1330,7 +1330,7 @@ pri func decoder.decode_leading?(dst: base.token_writer, src: base.io_reader) {
 			if u == 0xBF_BBEF {
 				this.allow_leading_ubom = false
 				args.src.skip32_fast!(actual: 3, worst_case: 3)
-				args.dst.write_fast_token!(
+				args.dst.write_simple_token_fast!(
 					value_major: 0, value_minor: 0, link: 0x0, length: 3)
 				continue
 			}
@@ -1376,7 +1376,7 @@ pri func decoder.decode_comment?(dst: base.token_writer, src: base.io_reader) {
 			{
 				if args.src.available() <= 1 {
 					if length > 0 {
-						args.dst.write_fast_token!(
+						args.dst.write_simple_token_fast!(
 							value_major: 0,
 							value_minor: 0x2,
 							link: 0x1 | link_prev,
@@ -1394,7 +1394,7 @@ pri func decoder.decode_comment?(dst: base.token_writer, src: base.io_reader) {
 				c2 = args.src.peek_u16le()
 				if c2 == '*/'le {
 					args.src.skip32_fast!(actual: 2, worst_case: 2)
-					args.dst.write_fast_token!(
+					args.dst.write_simple_token_fast!(
 						value_major: 0,
 						value_minor: 0x2,
 						link: link_prev,
@@ -1404,7 +1404,7 @@ pri func decoder.decode_comment?(dst: base.token_writer, src: base.io_reader) {
 
 				args.src.skip32_fast!(actual: 1, worst_case: 1)
 				if length >= 0xFFFD {
-					args.dst.write_fast_token!(
+					args.dst.write_simple_token_fast!(
 						value_major: 0,
 						value_minor: 0x2,
 						link: 0x1 | link_prev,
@@ -1433,7 +1433,7 @@ pri func decoder.decode_comment?(dst: base.token_writer, src: base.io_reader) {
 			{
 				if args.src.available() <= 0 {
 					if length > 0 {
-						args.dst.write_fast_token!(
+						args.dst.write_simple_token_fast!(
 							value_major: 0,
 							value_minor: 0x1,
 							link: 0x1 | link_prev,
@@ -1451,7 +1451,7 @@ pri func decoder.decode_comment?(dst: base.token_writer, src: base.io_reader) {
 				c = args.src.peek_u8()
 				if c == '\n' {
 					args.src.skip32_fast!(actual: 1, worst_case: 1)
-					args.dst.write_fast_token!(
+					args.dst.write_simple_token_fast!(
 						value_major: 0,
 						value_minor: 0x1,
 						link: link_prev,
@@ -1461,7 +1461,7 @@ pri func decoder.decode_comment?(dst: base.token_writer, src: base.io_reader) {
 
 				args.src.skip32_fast!(actual: 1, worst_case: 1)
 				if length >= 0xFFFD {
-					args.dst.write_fast_token!(
+					args.dst.write_simple_token_fast!(
 						value_major: 0,
 						value_minor: 0x1,
 						link: 0x1 | link_prev,
@@ -1501,7 +1501,7 @@ pri func decoder.decode_inf_nan?(dst: base.token_writer, src: base.io_reader) {
 		if (c4 | 0x20_2020) == 'inf'le {
 			if args.src.available() > 7 {
 				if (args.src.peek_u64le() | 0x2020_2020_2020_2020) == 'infinity'le {
-					args.dst.write_fast_token!(
+					args.dst.write_simple_token_fast!(
 						value_major: 0,
 						value_minor: 0xA0_0020,
 						link: 0x0,
@@ -1513,7 +1513,7 @@ pri func decoder.decode_inf_nan?(dst: base.token_writer, src: base.io_reader) {
 				yield? base."$short read"
 				continue
 			}
-			args.dst.write_fast_token!(
+			args.dst.write_simple_token_fast!(
 				value_major: 0,
 				value_minor: 0xA0_0020,
 				link: 0x0,
@@ -1522,7 +1522,7 @@ pri func decoder.decode_inf_nan?(dst: base.token_writer, src: base.io_reader) {
 			return ok
 
 		} else if (c4 | 0x20_2020) == 'nan'le {
-			args.dst.write_fast_token!(
+			args.dst.write_simple_token_fast!(
 				value_major: 0,
 				value_minor: 0xA0_0080,
 				link: 0x0,
@@ -1549,7 +1549,7 @@ pri func decoder.decode_inf_nan?(dst: base.token_writer, src: base.io_reader) {
 		if (c4 | 0x20_2020) == 'inf'le {
 			if args.src.available() > 8 {
 				if (args.src.peek_u64le_at(offset: 1) | 0x2020_2020_2020_2020) == 'infinity'le {
-					args.dst.write_fast_token!(
+					args.dst.write_simple_token_fast!(
 						value_major: 0,
 						value_minor: 0xA0_0000 | ((0x20 as base.u32) >> neg),
 						link: 0x0,
@@ -1561,7 +1561,7 @@ pri func decoder.decode_inf_nan?(dst: base.token_writer, src: base.io_reader) {
 				yield? base."$short read"
 				continue
 			}
-			args.dst.write_fast_token!(
+			args.dst.write_simple_token_fast!(
 				value_major: 0,
 				value_minor: 0xA0_0000 | ((0x20 as base.u32) >> neg),
 				link: 0x0,
@@ -1570,7 +1570,7 @@ pri func decoder.decode_inf_nan?(dst: base.token_writer, src: base.io_reader) {
 			return ok
 
 		} else if (c4 | 0x20_2020) == 'nan'le {
-			args.dst.write_fast_token!(
+			args.dst.write_simple_token_fast!(
 				value_major: 0,
 				value_minor: 0xA0_0000 | ((0x80 as base.u32) >> neg),
 				link: 0x0,
@@ -1599,7 +1599,7 @@ pri func decoder.decode_trailing_new_line?(dst: base.token_writer, src: base.io_
 		{
 			if args.src.available() <= 0 {
 				if whitespace_length > 0 {
-					args.dst.write_fast_token!(
+					args.dst.write_simple_token_fast!(
 						value_major: 0, value_minor: 0, link: 0x0, length: whitespace_length)
 					whitespace_length = 0
 				}
@@ -1614,7 +1614,7 @@ pri func decoder.decode_trailing_new_line?(dst: base.token_writer, src: base.io_
 			c = args.src.peek_u8()
 			if lut_classes[c] <> 0x00 {  // 0x00 is CLASS_WHITESPACE.
 				if whitespace_length > 0 {
-					args.dst.write_fast_token!(
+					args.dst.write_simple_token_fast!(
 						value_major: 0, value_minor: 0, link: 0x0, length: whitespace_length)
 					whitespace_length = 0
 				}
@@ -1623,7 +1623,7 @@ pri func decoder.decode_trailing_new_line?(dst: base.token_writer, src: base.io_
 
 			args.src.skip32_fast!(actual: 1, worst_case: 1)
 			if (whitespace_length >= 0xFFFE) or (c == '\n') {
-				args.dst.write_fast_token!(
+				args.dst.write_simple_token_fast!(
 					value_major: 0, value_minor: 0, link: 0x0, length: whitespace_length + 1)
 				whitespace_length = 0
 				if c == '\n' {

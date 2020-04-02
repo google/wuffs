@@ -331,7 +331,7 @@ var Funcs = []string{
 
 	// ---- token_writer
 
-	"token_writer.write_fast_token!(" +
+	"token_writer.write_simple_token_fast!(" +
 		"value_major: u32[..= 0x1F_FFFF], value_minor: u32[..= 0xFF_FFFF]," +
 		"link: u32[..= 0x3], length: u32[..= 0xFFFF])",
 

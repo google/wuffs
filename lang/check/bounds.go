@@ -1279,7 +1279,7 @@ var ioMethodAdvances = [...]struct {
 	t.IDWriteFastU64BE - t.IDPeekU8: {eight, true},
 	t.IDWriteFastU64LE - t.IDPeekU8: {eight, true},
 
-	t.IDWriteFastToken - t.IDPeekU8: {one, true},
+	t.IDWriteSimpleTokenFast - t.IDPeekU8: {one, true},
 }
 
 func makeConstValueExpr(tm *t.Map, cv *big.Int) (*a.Expr, error) {
