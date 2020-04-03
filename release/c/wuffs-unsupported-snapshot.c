@@ -8,6 +8,14 @@
 // "foo.h"-like header, #define WUFFS_IMPLEMENTATION before #include'ing or
 // compiling it.
 
+// Wuffs' C code is generated automatically, not hand-written. These warnings'
+// costs outweigh the benefits.
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunreachable-code"
+#pragma clang diagnostic ignored "-Wunused-function"
+#endif
+
 // Copyright 2017 The Wuffs Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,12 +33,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
-
-// GCC does not warn for unused *static inline* functions, but clang does.
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunused-function"
-#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -4205,10 +4207,6 @@ struct wuffs_base__token_decoder__struct {
 }  // extern "C"
 #endif
 
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -6715,12 +6713,6 @@ struct wuffs_zlib__decoder__struct {
 
 // WUFFS C HEADER ENDS HERE.
 #ifdef WUFFS_IMPLEMENTATION
-
-// GCC does not warn for unused *static inline* functions, but clang does.
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunused-function"
-#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -10522,10 +10514,6 @@ wuffs_base__ascii__longest_valid_prefix(wuffs_base__slice_u8 s) {
 
 #ifdef __cplusplus
 }  // extern "C"
-#endif
-
-#ifdef __clang__
-#pragma clang diagnostic pop
 #endif
 
 #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__ADLER32)
@@ -24321,5 +24309,9 @@ exit:
         // defined(WUFFS_CONFIG__MODULE__ZLIB)
 
 #endif  // WUFFS_IMPLEMENTATION
+
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
 
 #endif  // WUFFS_INCLUDE_GUARD

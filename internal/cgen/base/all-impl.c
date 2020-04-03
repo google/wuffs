@@ -30,12 +30,6 @@
 #include <stdint.h>
 #include <string.h>
 
-// GCC does not warn for unused *static inline* functions, but clang does.
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunused-function"
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -50,18 +44,8 @@ extern "C" {
 }  // extern "C"
 #endif
 
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
-
 // WUFFS C HEADER ENDS HERE.
 #ifdef WUFFS_IMPLEMENTATION
-
-// GCC does not warn for unused *static inline* functions, but clang does.
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunused-function"
-#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -129,10 +113,6 @@ const uint64_t wuffs_base__low_bits_mask__u64[65] = {
 
 #ifdef __cplusplus
 }  // extern "C"
-#endif
-
-#ifdef __clang__
-#pragma clang diagnostic pop
 #endif
 
 #endif  // WUFFS_IMPLEMENTATION

@@ -101,6 +101,7 @@ func doGenrelease(args []string) error {
 	unformatted.WriteString("#ifndef WUFFS_INCLUDE_GUARD\n")
 	unformatted.WriteString("#define WUFFS_INCLUDE_GUARD\n\n")
 	unformatted.WriteString(grSingleFileGuidance)
+	unformatted.WriteString(grPragmaPush)
 
 	h.seen = map[string]bool{}
 	for _, f := range h.filesList {
@@ -121,6 +122,7 @@ func doGenrelease(args []string) error {
 
 	unformatted.WriteString("\n")
 	unformatted.Write(grImplEndsHere)
+	unformatted.WriteString(grPragmaPop)
 	unformatted.WriteString("\n\n#endif  // WUFFS_INCLUDE_GUARD\n\n")
 
 	cmd := exec.Command(*cformatterFlag, "-style=Chromium")
@@ -148,6 +150,24 @@ const grSingleFileGuidance = `
 // To use that single file as a "foo.c"-like implementation, instead of a
 // "foo.h"-like header, #define WUFFS_IMPLEMENTATION before #include'ing or
 // compiling it.
+
+`
+
+const grPragmaPush = `
+// Wuffs' C code is generated automatically, not hand-written. These warnings'
+// costs outweigh the benefits.
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunreachable-code"
+#pragma clang diagnostic ignored "-Wunused-function"
+#endif
+
+`
+
+const grPragmaPop = `
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
 
 `
 
