@@ -816,7 +816,12 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 			return nil, fmt.Errorf(`parse: expected endwhile%s at %s:%d`,
 				dotLabel, p.filename, p.line())
 		}
-		if doubleCurly && !a.Terminates(body) {
+		if !doubleCurly {
+			// No-op.
+		} else if n.HasContinue() {
+			return nil, fmt.Errorf(`parse: double {{ }} while loop has explicit continue at %s:%d`,
+				p.filename, p.line())
+		} else if !a.Terminates(body) {
 			return nil, fmt.Errorf(`parse: double {{ }} while loop doesn't terminate at %s:%d`,
 				p.filename, p.line())
 		}
