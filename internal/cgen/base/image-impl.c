@@ -104,23 +104,23 @@ wuffs_base__nonpremul_u32_axxx(uint32_t premul) {
 }
 
 wuffs_base__color_u32_argb_premul  //
-wuffs_base__pixel_buffer__color_u32_at(const wuffs_base__pixel_buffer* b,
+wuffs_base__pixel_buffer__color_u32_at(const wuffs_base__pixel_buffer* pb,
                                        uint32_t x,
                                        uint32_t y) {
-  if (!b || (x >= b->pixcfg.private_impl.width) ||
-      (y >= b->pixcfg.private_impl.height)) {
+  if (!pb || (x >= pb->pixcfg.private_impl.width) ||
+      (y >= pb->pixcfg.private_impl.height)) {
     return 0;
   }
 
-  if (wuffs_base__pixel_format__is_planar(&b->pixcfg.private_impl.pixfmt)) {
+  if (wuffs_base__pixel_format__is_planar(&pb->pixcfg.private_impl.pixfmt)) {
     // TODO: support planar formats.
     return 0;
   }
 
-  size_t stride = b->private_impl.planes[0].stride;
-  uint8_t* row = b->private_impl.planes[0].ptr + (stride * ((size_t)y));
+  size_t stride = pb->private_impl.planes[0].stride;
+  uint8_t* row = pb->private_impl.planes[0].ptr + (stride * ((size_t)y));
 
-  switch (b->pixcfg.private_impl.pixfmt.repr) {
+  switch (pb->pixcfg.private_impl.pixfmt.repr) {
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
       WUFFS_BASE__FALLTHROUGH;
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_BINARY:
@@ -129,7 +129,7 @@ wuffs_base__pixel_buffer__color_u32_at(const wuffs_base__pixel_buffer* b,
     case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_PREMUL:
       WUFFS_BASE__FALLTHROUGH;
     case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY: {
-      uint8_t* palette = b->private_impl.planes[3].ptr;
+      uint8_t* palette = pb->private_impl.planes[3].ptr;
       return wuffs_base__load_u32le__no_bounds_check(palette +
                                                      (4 * ((size_t)row[x])));
     }
@@ -140,7 +140,7 @@ wuffs_base__pixel_buffer__color_u32_at(const wuffs_base__pixel_buffer* b,
       return 0xFF000000 | (0x00010101 * ((uint32_t)(row[x])));
 
     case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL: {
-      uint8_t* palette = b->private_impl.planes[3].ptr;
+      uint8_t* palette = pb->private_impl.planes[3].ptr;
       return wuffs_base__premul_u32_axxx(
           wuffs_base__load_u32le__no_bounds_check(palette +
                                                   (4 * ((size_t)row[x]))));
@@ -194,27 +194,27 @@ wuffs_base__pixel_buffer__color_u32_at(const wuffs_base__pixel_buffer* b,
 
 wuffs_base__status  //
 wuffs_base__pixel_buffer__set_color_u32_at(
-    wuffs_base__pixel_buffer* b,
+    wuffs_base__pixel_buffer* pb,
     uint32_t x,
     uint32_t y,
     wuffs_base__color_u32_argb_premul color) {
-  if (!b) {
+  if (!pb) {
     return wuffs_base__make_status(wuffs_base__error__bad_receiver);
   }
-  if ((x >= b->pixcfg.private_impl.width) ||
-      (y >= b->pixcfg.private_impl.height)) {
+  if ((x >= pb->pixcfg.private_impl.width) ||
+      (y >= pb->pixcfg.private_impl.height)) {
     return wuffs_base__make_status(wuffs_base__error__bad_argument);
   }
 
-  if (wuffs_base__pixel_format__is_planar(&b->pixcfg.private_impl.pixfmt)) {
+  if (wuffs_base__pixel_format__is_planar(&pb->pixcfg.private_impl.pixfmt)) {
     // TODO: support planar formats.
     return wuffs_base__make_status(wuffs_base__error__unsupported_option);
   }
 
-  size_t stride = b->private_impl.planes[0].stride;
-  uint8_t* row = b->private_impl.planes[0].ptr + (stride * ((size_t)y));
+  size_t stride = pb->private_impl.planes[0].stride;
+  uint8_t* row = pb->private_impl.planes[0].ptr + (stride * ((size_t)y));
 
-  switch (b->pixcfg.private_impl.pixfmt.repr) {
+  switch (pb->pixcfg.private_impl.pixfmt.repr) {
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
       WUFFS_BASE__FALLTHROUGH;
     case WUFFS_BASE__PIXEL_FORMAT__BGRX:

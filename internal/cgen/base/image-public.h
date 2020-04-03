@@ -930,13 +930,13 @@ wuffs_base__null_pixel_buffer() {
 }
 
 static inline wuffs_base__status  //
-wuffs_base__pixel_buffer__set_from_slice(wuffs_base__pixel_buffer* b,
+wuffs_base__pixel_buffer__set_from_slice(wuffs_base__pixel_buffer* pb,
                                          const wuffs_base__pixel_config* pixcfg,
                                          wuffs_base__slice_u8 pixbuf_memory) {
-  if (!b) {
+  if (!pb) {
     return wuffs_base__make_status(wuffs_base__error__bad_receiver);
   }
-  memset(b, 0, sizeof(*b));
+  memset(pb, 0, sizeof(*pb));
   if (!pixcfg) {
     return wuffs_base__make_status(wuffs_base__error__bad_argument);
   }
@@ -964,7 +964,8 @@ wuffs_base__pixel_buffer__set_from_slice(wuffs_base__pixel_buffer* b,
           wuffs_base__error__bad_argument_length_too_short);
     }
     wuffs_base__table_u8* tab =
-        &b->private_impl.planes[WUFFS_BASE__PIXEL_FORMAT__INDEXED__COLOR_PLANE];
+        &pb->private_impl
+             .planes[WUFFS_BASE__PIXEL_FORMAT__INDEXED__COLOR_PLANE];
     tab->ptr = ptr;
     tab->width = 1024;
     tab->height = 1;
@@ -987,8 +988,8 @@ wuffs_base__pixel_buffer__set_from_slice(wuffs_base__pixel_buffer* b,
         wuffs_base__error__bad_argument_length_too_short);
   }
 
-  b->pixcfg = *pixcfg;
-  wuffs_base__table_u8* tab = &b->private_impl.planes[0];
+  pb->pixcfg = *pixcfg;
+  wuffs_base__table_u8* tab = &pb->private_impl.planes[0];
   tab->ptr = ptr;
   tab->width = width;
   tab->height = pixcfg->private_impl.height;
@@ -997,13 +998,13 @@ wuffs_base__pixel_buffer__set_from_slice(wuffs_base__pixel_buffer* b,
 }
 
 static inline wuffs_base__status  //
-wuffs_base__pixel_buffer__set_from_table(wuffs_base__pixel_buffer* b,
+wuffs_base__pixel_buffer__set_from_table(wuffs_base__pixel_buffer* pb,
                                          const wuffs_base__pixel_config* pixcfg,
                                          wuffs_base__table_u8 pixbuf_memory) {
-  if (!b) {
+  if (!pb) {
     return wuffs_base__make_status(wuffs_base__error__bad_receiver);
   }
-  memset(b, 0, sizeof(*b));
+  memset(pb, 0, sizeof(*pb));
   if (!pixcfg ||
       wuffs_base__pixel_format__is_planar(&pixcfg->private_impl.pixfmt)) {
     return wuffs_base__make_status(wuffs_base__error__bad_argument);
@@ -1023,19 +1024,20 @@ wuffs_base__pixel_buffer__set_from_table(wuffs_base__pixel_buffer* b,
     return wuffs_base__make_status(wuffs_base__error__bad_argument);
   }
 
-  b->pixcfg = *pixcfg;
-  b->private_impl.planes[0] = pixbuf_memory;
+  pb->pixcfg = *pixcfg;
+  pb->private_impl.planes[0] = pixbuf_memory;
   return wuffs_base__make_status(NULL);
 }
 
 // wuffs_base__pixel_buffer__palette returns the palette color data. If
 // non-empty, it will have length 1024.
 static inline wuffs_base__slice_u8  //
-wuffs_base__pixel_buffer__palette(wuffs_base__pixel_buffer* b) {
-  if (b &&
-      wuffs_base__pixel_format__is_indexed(&b->pixcfg.private_impl.pixfmt)) {
+wuffs_base__pixel_buffer__palette(wuffs_base__pixel_buffer* pb) {
+  if (pb &&
+      wuffs_base__pixel_format__is_indexed(&pb->pixcfg.private_impl.pixfmt)) {
     wuffs_base__table_u8* tab =
-        &b->private_impl.planes[WUFFS_BASE__PIXEL_FORMAT__INDEXED__COLOR_PLANE];
+        &pb->private_impl
+             .planes[WUFFS_BASE__PIXEL_FORMAT__INDEXED__COLOR_PLANE];
     if ((tab->width == 1024) && (tab->height == 1)) {
       return wuffs_base__make_slice_u8(tab->ptr, 1024);
     }
@@ -1044,17 +1046,17 @@ wuffs_base__pixel_buffer__palette(wuffs_base__pixel_buffer* b) {
 }
 
 static inline wuffs_base__pixel_format  //
-wuffs_base__pixel_buffer__pixel_format(const wuffs_base__pixel_buffer* b) {
-  if (b) {
-    return b->pixcfg.private_impl.pixfmt;
+wuffs_base__pixel_buffer__pixel_format(const wuffs_base__pixel_buffer* pb) {
+  if (pb) {
+    return pb->pixcfg.private_impl.pixfmt;
   }
   return wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__INVALID);
 }
 
 static inline wuffs_base__table_u8  //
-wuffs_base__pixel_buffer__plane(wuffs_base__pixel_buffer* b, uint32_t p) {
-  if (b && (p < WUFFS_BASE__PIXEL_FORMAT__NUM_PLANES_MAX)) {
-    return b->private_impl.planes[p];
+wuffs_base__pixel_buffer__plane(wuffs_base__pixel_buffer* pb, uint32_t p) {
+  if (pb && (p < WUFFS_BASE__PIXEL_FORMAT__NUM_PLANES_MAX)) {
+    return pb->private_impl.planes[p];
   }
 
   wuffs_base__table_u8 ret;
@@ -1066,13 +1068,13 @@ wuffs_base__pixel_buffer__plane(wuffs_base__pixel_buffer* b, uint32_t p) {
 }
 
 wuffs_base__color_u32_argb_premul  //
-wuffs_base__pixel_buffer__color_u32_at(const wuffs_base__pixel_buffer* b,
+wuffs_base__pixel_buffer__color_u32_at(const wuffs_base__pixel_buffer* pb,
                                        uint32_t x,
                                        uint32_t y);
 
 wuffs_base__status  //
 wuffs_base__pixel_buffer__set_color_u32_at(
-    wuffs_base__pixel_buffer* b,
+    wuffs_base__pixel_buffer* pb,
     uint32_t x,
     uint32_t y,
     wuffs_base__color_u32_argb_premul color);
@@ -1080,15 +1082,19 @@ wuffs_base__pixel_buffer__set_color_u32_at(
 #ifdef __cplusplus
 
 inline wuffs_base__status  //
-wuffs_base__pixel_buffer::set_from_slice(const wuffs_base__pixel_config* pixcfg,
-                                         wuffs_base__slice_u8 pixbuf_memory) {
-  return wuffs_base__pixel_buffer__set_from_slice(this, pixcfg, pixbuf_memory);
+wuffs_base__pixel_buffer::set_from_slice(
+    const wuffs_base__pixel_config* pixcfg_arg,
+    wuffs_base__slice_u8 pixbuf_memory) {
+  return wuffs_base__pixel_buffer__set_from_slice(this, pixcfg_arg,
+                                                  pixbuf_memory);
 }
 
 inline wuffs_base__status  //
-wuffs_base__pixel_buffer::set_from_table(const wuffs_base__pixel_config* pixcfg,
-                                         wuffs_base__table_u8 pixbuf_memory) {
-  return wuffs_base__pixel_buffer__set_from_table(this, pixcfg, pixbuf_memory);
+wuffs_base__pixel_buffer::set_from_table(
+    const wuffs_base__pixel_config* pixcfg_arg,
+    wuffs_base__table_u8 pixbuf_memory) {
+  return wuffs_base__pixel_buffer__set_from_table(this, pixcfg_arg,
+                                                  pixbuf_memory);
 }
 
 inline wuffs_base__slice_u8  //

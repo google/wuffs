@@ -237,8 +237,9 @@ print_ascii_art(wuffs_base__pixel_buffer* pb) {
       uint32_t b = 0xFF & (c >> 0);
       uint32_t g = 0xFF & (c >> 8);
       uint32_t r = 0xFF & (c >> 16);
-      uint32_t y = ((19595 * r) + (38470 * g) + (7471 * b) + (1 << 15)) >> 16;
-      *p++ = "-:=+IOX@"[(y & 0xFF) >> 5];
+      uint32_t gray =
+          ((19595 * r) + (38470 * g) + (7471 * b) + (1 << 15)) >> 16;
+      *p++ = "-:=+IOX@"[(gray & 0xFF) >> 5];
     }
     *p++ = '\n';
   }
@@ -340,10 +341,10 @@ allocate(wuffs_gif__decoder* dec) {
 const char*  //
 play() {
   wuffs_gif__decoder dec;
-  wuffs_base__status status =
+  wuffs_base__status i_status =
       wuffs_gif__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
-  if (!wuffs_base__status__is_ok(&status)) {
-    return wuffs_base__status__message(&status);
+  if (!wuffs_base__status__is_ok(&i_status)) {
+    return wuffs_base__status__message(&i_status);
   }
 
   if (g_flags.quirk_honor_background_color) {
@@ -360,9 +361,10 @@ play() {
   src.meta.closed = true;
 
   if (g_first_play) {
-    status = wuffs_gif__decoder__decode_image_config(&dec, &g_ic, &src);
-    if (!wuffs_base__status__is_ok(&status)) {
-      return wuffs_base__status__message(&status);
+    wuffs_base__status dic_status =
+        wuffs_gif__decoder__decode_image_config(&dec, &g_ic, &src);
+    if (!wuffs_base__status__is_ok(&dic_status)) {
+      return wuffs_base__status__message(&dic_status);
     }
     if (!wuffs_base__image_config__is_valid(&g_ic)) {
       return "invalid image configuration";
@@ -382,23 +384,23 @@ play() {
     if (msg) {
       return msg;
     }
-    status = wuffs_base__pixel_buffer__set_from_slice(
+    wuffs_base__status sfs0_status = wuffs_base__pixel_buffer__set_from_slice(
         &g_pb, &g_ic.pixcfg,
         wuffs_base__make_slice_u8(g_curr_dst_buffer, g_dst_len));
-    if (!wuffs_base__status__is_ok(&status)) {
-      return wuffs_base__status__message(&status);
+    if (!wuffs_base__status__is_ok(&sfs0_status)) {
+      return wuffs_base__status__message(&sfs0_status);
     }
   }
 
   while (1) {
     wuffs_base__frame_config fc = {0};
-    wuffs_base__status status =
+    wuffs_base__status dfc_status =
         wuffs_gif__decoder__decode_frame_config(&dec, &fc, &src);
-    if (!wuffs_base__status__is_ok(&status)) {
-      if (status.repr == wuffs_base__note__end_of_data) {
+    if (!wuffs_base__status__is_ok(&dfc_status)) {
+      if (dfc_status.repr == wuffs_base__note__end_of_data) {
         break;
       }
-      return wuffs_base__status__message(&status);
+      return wuffs_base__status__message(&dfc_status);
     }
 
     if (wuffs_base__frame_config__index(&fc) == 0) {
@@ -439,11 +441,12 @@ play() {
         g_curr_dst_buffer = g_prev_dst_buffer;
         g_prev_dst_buffer = swap;
 
-        wuffs_base__status status = wuffs_base__pixel_buffer__set_from_slice(
-            &g_pb, &g_ic.pixcfg,
-            wuffs_base__make_slice_u8(g_curr_dst_buffer, g_dst_len));
-        if (!wuffs_base__status__is_ok(&status)) {
-          return wuffs_base__status__message(&status);
+        wuffs_base__status sfs1_status =
+            wuffs_base__pixel_buffer__set_from_slice(
+                &g_pb, &g_ic.pixcfg,
+                wuffs_base__make_slice_u8(g_curr_dst_buffer, g_dst_len));
+        if (!wuffs_base__status__is_ok(&sfs1_status)) {
+          return wuffs_base__status__message(&sfs1_status);
         }
         break;
       }

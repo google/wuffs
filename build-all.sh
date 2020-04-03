@@ -51,7 +51,7 @@ wuffs gen
 
 # Compiler warning flags are discussed at
 # http://fastcompression.blogspot.com/2019/01/compiler-warnings.html
-WARNING_FLAGS="-Wall -Werror -Wpedantic -Wcast-qual -Wcast-align -Wpointer-arith -Wfloat-equal -Wundef -Wvla -Wconversion"
+WARNING_FLAGS="-Wall -Werror -Wpedantic -Wcast-qual -Wcast-align -Wpointer-arith -Wfloat-equal -Wundef -Wvla -Wconversion -Wshadow"
 
 echo "Checking snapshot compiles cleanly (as C)"
 $CC -c $WARNING_FLAGS                        -std=c99 -Wc++-compat \
