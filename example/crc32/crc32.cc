@@ -27,6 +27,10 @@ $CXX crc32.cc && ./a.out < ../../README.md; rm -f a.out
 for a C++ compiler $CXX, such as clang++ or g++.
 */
 
+#if defined(__cplusplus) && (__cplusplus < 201103L)
+#error "This C++ program requires -std=c++11 or later"
+#endif
+
 #include <errno.h>
 #include <inttypes.h>
 #include <stdio.h>

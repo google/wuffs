@@ -94,6 +94,10 @@ $CXX jsonptr.cc && ./a.out < ../../test/data/github-tags.json; rm -f a.out
 for a C++ compiler $CXX, such as clang++ or g++.
 */
 
+#if defined(__cplusplus) && (__cplusplus < 201103L)
+#error "This C++ program requires -std=c++11 or later"
+#endif
+
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
