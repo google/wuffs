@@ -145,9 +145,9 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 	var expect             : base.u32
 	var expect_after_value : base.u32
 
-	while this.end_of_data {
+	if this.end_of_data {
 		return base."@end of data"
-	} endwhile
+	}
 
 	if this.quirk_enabled_allow_leading_ascii_record_separator or
 		this.quirk_enabled_allow_leading_unicode_byte_order_mark {

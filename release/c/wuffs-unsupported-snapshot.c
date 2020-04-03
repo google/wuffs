@@ -21189,7 +21189,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
-    while (self->private_impl.f_end_of_data) {
+    if (self->private_impl.f_end_of_data) {
       status = wuffs_base__make_status(wuffs_base__note__end_of_data);
       goto ok;
     }
