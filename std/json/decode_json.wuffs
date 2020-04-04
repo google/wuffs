@@ -107,6 +107,13 @@ pub func decoder.workbuf_len() base.range_ii_u64 {
 }
 
 pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, workbuf: slice base.u8) {
+	// This is a very, very long function, and it is tempting to refactor it.
+	// Be careful of performance impacts when doing so. For example, commit
+	// 86d3b89f "Factor out json.decoder.decode_string" pulled out a 500 line
+	// decode_string function, which was certainly cleaner structurally, but
+	// also regressed performance by 1.1x to 1.2x. For details, see
+	// https://github.com/google/wuffs/commit/86d3b89f9a6578d964a4b6d71e21dfc9bb702b44
+
 	var vminor            : base.u32[..= 0xFF_FFFF]
 	var number_length     : base.u32[..= 0x3FF]
 	var number_status     : base.u32[..= 0x3]
