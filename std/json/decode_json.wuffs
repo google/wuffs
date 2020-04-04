@@ -110,13 +110,31 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 	var vminor            : base.u32[..= 0xFF_FFFF]
 	var number_length     : base.u32[..= 0x3FF]
 	var number_status     : base.u32[..= 0x3]
+	var string_length     : base.u32[..= 0xFFFB]
 	var whitespace_length : base.u32[..= 0xFFFE]
 	var depth             : base.u32[..= 1024]
 	var stack_byte        : base.u32[..= (1024 / 32) - 1]
 	var stack_bit         : base.u32[..= 31]
 	var match             : base.u32[..= 2]
+	var c4                : base.u32
 	var c                 : base.u8
+	var backslash         : base.u8
+	var char              : base.u8
 	var class             : base.u8[..= 0x0F]
+	var multi_byte_utf8   : base.u32
+
+	var backslash_x_length : base.u32[..= 0xFFFF]
+	var backslash_x_ok     : base.u8
+	var backslash_x_string : base.u32
+
+	var uni4_ok             : base.u8
+	var uni4_string         : base.u64
+	var uni4_value          : base.u32[..= 0xFFFF]
+	var uni4_high_surrogate : base.u32[..= 0x10_FC00]
+
+	var uni8_ok     : base.u8
+	var uni8_string : base.u64
+	var uni8_value  : base.u32[..= 0xFFFF_FFFF]
 
 	// expect is a bitmask of what the next character class can be.
 	//
@@ -224,7 +242,558 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 				length: 1)
 			args.src.skip32_fast!(actual: 1, worst_case: 1)
 
-			this.decode_string?(dst: args.dst, src: args.src)
+			while.string_loop_outer true {
+				if args.dst.available() <= 0 {
+					yield? base."$short write"
+					continue.string_loop_outer
+				}
+
+				string_length = 0
+				while.string_loop_inner true,
+					pre args.dst.available() > 0,
+				{
+					if args.src.available() <= 0 {
+						if string_length > 0 {
+							args.dst.write_simple_token_fast!(
+								value_major: 0,
+								value_minor: 0x40_0021,
+								link: 0x3,
+								length: string_length)
+							string_length = 0
+						}
+						if args.src.is_closed() {
+							return "#bad input"
+						}
+						yield? base."$short read"
+						string_length = 0
+						continue.string_loop_outer
+					}
+
+					// As an optimization, consume non-special ASCII 4 bytes at
+					// a time.
+					while args.src.available() > 4,
+						inv args.dst.available() > 0,
+						inv args.src.available() > 0,
+					{
+						c4 = args.src.peek_u32le()
+						if 0x00 <> (lut_chars[0xFF & (c4 >> 0)] |
+							lut_chars[0xFF & (c4 >> 8)] |
+							lut_chars[0xFF & (c4 >> 16)] |
+							lut_chars[0xFF & (c4 >> 24)]) {
+							break
+						}
+						args.src.skip32_fast!(actual: 4, worst_case: 4)
+						if string_length > (0xFFFB - 4) {
+							args.dst.write_simple_token_fast!(
+								value_major: 0,
+								value_minor: 0x40_0021,
+								link: 0x3,
+								length: string_length + 4)
+							string_length = 0
+							continue.string_loop_outer
+						}
+						string_length += 4
+					} endwhile
+
+					c = args.src.peek_u8()
+					char = lut_chars[c]
+
+					if char == 0x00 {  // Non-special ASCII.
+						args.src.skip32_fast!(actual: 1, worst_case: 1)
+						if string_length >= 0xFFFB {
+							args.dst.write_simple_token_fast!(
+								value_major: 0,
+								value_minor: 0x40_0021,
+								link: 0x3,
+								length: 0xFFFC)
+							string_length = 0
+							continue.string_loop_outer
+						}
+						string_length += 1
+						continue.string_loop_inner
+
+					} else if char == 0x01 {  // '"'
+						if string_length <> 0 {
+							args.dst.write_simple_token_fast!(
+								value_major: 0,
+								value_minor: 0x40_0021,
+								link: 0x3,
+								length: string_length)
+							string_length = 0
+						}
+						break.string_loop_outer
+
+					} else if char == 0x02 {  // '\\'.
+						if string_length > 0 {
+							args.dst.write_simple_token_fast!(
+								value_major: 0,
+								value_minor: 0x40_0021,
+								link: 0x3,
+								length: string_length)
+							string_length = 0
+							if args.dst.available() <= 0 {
+								continue.string_loop_outer
+							}
+						}
+						assert args.dst.available() > 0
+
+						if args.src.available() < 2 {
+							if args.src.is_closed() {
+								return "#bad backslash-escape"
+							}
+							yield? base."$short read"
+							string_length = 0
+							char = 0
+							continue.string_loop_outer
+						}
+						c = (args.src.peek_u16le() >> 8) as base.u8
+						backslash = lut_backslashes[c]
+						if (backslash & 0x80) <> 0 {
+							args.src.skip32_fast!(actual: 2, worst_case: 2)
+							args.dst.write_simple_token_fast!(
+								value_major: 0,
+								value_minor: 0x60_0000 | ((backslash & 0x7F) as base.u32),
+								link: 0x3,
+								length: 2)
+							continue.string_loop_outer
+
+						} else if backslash <> 0 {
+							if this.quirk_enabled_allow_backslash_etc[backslash & 7] {
+								args.src.skip32_fast!(actual: 2, worst_case: 2)
+								args.dst.write_simple_token_fast!(
+									value_major: 0,
+									value_minor: 0x60_0000 | (lut_quirky_backslashes[backslash & 7] as base.u32),
+									link: 0x3,
+									length: 2)
+								continue.string_loop_outer
+							}
+
+						} else if c == 'u' {
+							// -------- BEGIN backslash-u.
+							if args.src.available() < 6 {
+								if args.src.is_closed() {
+									return "#bad backslash-escape"
+								}
+								yield? base."$short read"
+								string_length = 0
+								char = 0
+								continue.string_loop_outer
+							}
+
+							uni4_string = args.src.peek_u48le_as_u64() >> 16
+							uni4_value = 0
+							uni4_ok = 0x80
+
+							c = lut_hexadecimal_digits[0xFF & (uni4_string >> 0)]
+							uni4_ok &= c
+							uni4_value |= ((c & 0x0F) as base.u32) << 12
+							c = lut_hexadecimal_digits[0xFF & (uni4_string >> 8)]
+							uni4_ok &= c
+							uni4_value |= ((c & 0x0F) as base.u32) << 8
+							c = lut_hexadecimal_digits[0xFF & (uni4_string >> 16)]
+							uni4_ok &= c
+							uni4_value |= ((c & 0x0F) as base.u32) << 4
+							c = lut_hexadecimal_digits[0xFF & (uni4_string >> 24)]
+							uni4_ok &= c
+							uni4_value |= ((c & 0x0F) as base.u32) << 0
+
+							if uni4_ok == 0 {
+								// It wasn't 4 hexadecimal digits. No-op (and
+								// fall through to "#bad backslash-escape").
+
+							} else if (uni4_value < 0xD800) or (0xDFFF < uni4_value) {
+								// Not a Unicode surrogate. We're good.
+								args.src.skip32_fast!(actual: 6, worst_case: 6)
+								args.dst.write_simple_token_fast!(
+									value_major: 0,
+									value_minor: 0x60_0000 | uni4_value,
+									link: 0x3,
+									length: 6)
+								continue.string_loop_outer
+
+							} else if uni4_value >= 0xDC00 {
+								// Low surrogate. No-op (and fall through to
+								// "#bad backslash-escape").
+
+							} else {
+								// High surrogate, which needs to be followed
+								// by a "\\u1234" low surrogate. We've already
+								// peeked 6 bytes for the high surrogate. We
+								// need 12 in total: another 8 bytes at an
+								// offset of 4.
+								if args.src.available() < 12 {
+									if args.src.is_closed() {
+										if this.quirk_enabled_replace_invalid_unicode {
+											args.src.skip32_fast!(actual: 6, worst_case: 6)
+											args.dst.write_simple_token_fast!(
+												value_major: 0,
+												value_minor: 0x60_FFFD,
+												link: 0x3,
+												length: 6)
+											continue.string_loop_outer
+										}
+										return "#bad backslash-escape"
+									}
+									yield? base."$short read"
+									string_length = 0
+									uni4_value = 0
+									char = 0
+									continue.string_loop_outer
+								}
+								uni4_string = args.src.peek_u64le_at(offset: 4) >> 16
+
+								// Look for the low surrogate's "\\u".
+								if ((0xFF & (uni4_string >> 0)) <> '\\') or
+									((0xFF & (uni4_string >> 8)) <> 'u') {
+									uni4_high_surrogate = 0
+									uni4_value = 0
+									uni4_ok = 0
+								} else {
+									uni4_high_surrogate =
+										0x1_0000 + ((uni4_value - 0xD800) << 10)
+									uni4_value = 0
+									uni4_ok = 0x80
+									uni4_string >>= 16
+
+									c = lut_hexadecimal_digits[0xFF & (uni4_string >> 0)]
+									uni4_ok &= c
+									uni4_value |= ((c & 0x0F) as base.u32) << 12
+									c = lut_hexadecimal_digits[0xFF & (uni4_string >> 8)]
+									uni4_ok &= c
+									uni4_value |= ((c & 0x0F) as base.u32) << 8
+									c = lut_hexadecimal_digits[0xFF & (uni4_string >> 16)]
+									uni4_ok &= c
+									uni4_value |= ((c & 0x0F) as base.u32) << 4
+									c = lut_hexadecimal_digits[0xFF & (uni4_string >> 24)]
+									uni4_ok &= c
+									uni4_value |= ((c & 0x0F) as base.u32) << 0
+								}
+
+								if (uni4_ok <> 0) and
+									(0xDC00 <= uni4_value) and (uni4_value <= 0xDFFF) {
+
+									// Emit a single token for the surrogate
+									// pair.
+									uni4_value -= 0xDC00
+									args.src.skip32_fast!(actual: 12, worst_case: 12)
+									args.dst.write_simple_token_fast!(
+										value_major: 0,
+										value_minor: 0x60_0000 | uni4_high_surrogate | uni4_value,
+										link: 0x3,
+										length: 12)
+									continue.string_loop_outer
+								}
+							}
+
+							if this.quirk_enabled_replace_invalid_unicode {
+								if args.src.available() < 6 {
+									return "#internal error: inconsistent I/O"
+								}
+								args.src.skip32_fast!(actual: 6, worst_case: 6)
+								args.dst.write_simple_token_fast!(
+									value_major: 0,
+									value_minor: 0x60_FFFD,
+									link: 0x3,
+									length: 6)
+								continue.string_loop_outer
+							}
+							// -------- END   backslash-u.
+
+						} else if (c == 'U') and
+							this.quirk_enabled_allow_backslash_capital_u {
+							// -------- BEGIN backslash-capital-u.
+							if args.src.available() < 10 {
+								if args.src.is_closed() {
+									return "#bad backslash-escape"
+								}
+								yield? base."$short read"
+								string_length = 0
+								char = 0
+								continue.string_loop_outer
+							}
+							uni8_string = args.src.peek_u64le_at(offset: 2)
+							uni8_value = 0
+							uni8_ok = 0x80
+
+							c = lut_hexadecimal_digits[0xFF & (uni8_string >> 0)]
+							uni8_ok &= c
+							uni8_value |= ((c & 0x0F) as base.u32) << 28
+							c = lut_hexadecimal_digits[0xFF & (uni8_string >> 8)]
+							uni8_ok &= c
+							uni8_value |= ((c & 0x0F) as base.u32) << 24
+							c = lut_hexadecimal_digits[0xFF & (uni8_string >> 16)]
+							uni8_ok &= c
+							uni8_value |= ((c & 0x0F) as base.u32) << 20
+							c = lut_hexadecimal_digits[0xFF & (uni8_string >> 24)]
+							uni8_ok &= c
+							uni8_value |= ((c & 0x0F) as base.u32) << 16
+							c = lut_hexadecimal_digits[0xFF & (uni8_string >> 32)]
+							uni8_ok &= c
+							uni8_value |= ((c & 0x0F) as base.u32) << 12
+							c = lut_hexadecimal_digits[0xFF & (uni8_string >> 40)]
+							uni8_ok &= c
+							uni8_value |= ((c & 0x0F) as base.u32) << 8
+							c = lut_hexadecimal_digits[0xFF & (uni8_string >> 48)]
+							uni8_ok &= c
+							uni8_value |= ((c & 0x0F) as base.u32) << 4
+							c = lut_hexadecimal_digits[0xFF & (uni8_string >> 56)]
+							uni8_ok &= c
+							uni8_value |= ((c & 0x0F) as base.u32) << 0
+
+							if uni8_ok == 0 {
+								// It wasn't 8 hexadecimal digits. No-op (and
+								// fall through to "#bad backslash-escape").
+
+							} else if (uni8_value < 0xD800) or (
+								(0xDFFF < uni8_value) and (uni8_value <= 0x10_FFFF)) {
+								// Not a Unicode surrogate. We're good.
+								args.src.skip32_fast!(actual: 10, worst_case: 10)
+								args.dst.write_simple_token_fast!(
+									value_major: 0,
+									value_minor: 0x60_0000 | (uni8_value & 0x1F_FFFF),
+									link: 0x3,
+									length: 10)
+								continue.string_loop_outer
+							} else if this.quirk_enabled_replace_invalid_unicode {
+								args.src.skip32_fast!(actual: 10, worst_case: 10)
+								args.dst.write_simple_token_fast!(
+									value_major: 0,
+									value_minor: 0x60_FFFD,
+									link: 0x3,
+									length: 10)
+								continue.string_loop_outer
+							}
+							// -------- END   backslash-capital-u.
+
+						} else if (c == 'x') and
+							this.quirk_enabled_allow_backslash_x {
+							// -------- BEGIN backslash-x
+							if args.src.available() < 4 {
+								if args.src.is_closed() {
+									return "#bad backslash-escape"
+								}
+								yield? base."$short read"
+								string_length = 0
+								char = 0
+								continue.string_loop_outer
+							}
+
+							backslash_x_length = 0
+							while (backslash_x_length <= 0xFFFB) and (args.src.available() >= 4),
+								inv args.dst.available() > 0,
+							{
+								backslash_x_string = args.src.peek_u32le()
+								backslash_x_ok = 0x80
+
+								c = lut_hexadecimal_digits[0xFF & (backslash_x_string >> 16)]
+								backslash_x_ok &= c
+								c = lut_hexadecimal_digits[0xFF & (backslash_x_string >> 24)]
+								backslash_x_ok &= c
+
+								if (backslash_x_ok == 0) or
+									((backslash_x_string & 0xFFFF) <> 0x785C) {
+									// It wasn't "\\x34", for some hexadecimal
+									// digits "34".
+									break
+								}
+								args.src.skip32_fast!(actual: 4, worst_case: 4)
+								backslash_x_length += 4
+							} endwhile
+
+							if backslash_x_length == 0 {
+								return "#bad backslash-escape"
+							}
+							args.dst.write_simple_token_fast!(
+								value_major: 0,
+								value_minor: 0x40_0080,
+								link: 0x3,
+								length: backslash_x_length)
+							continue.string_loop_outer
+							// -------- END   backslash-x
+						}
+
+						return "#bad backslash-escape"
+
+					} else if char == 0x03 {  // 2-byte UTF-8.
+						if args.src.available() < 2 {
+							if string_length > 0 {
+								args.dst.write_simple_token_fast!(
+									value_major: 0,
+									value_minor: 0x40_0021,
+									link: 0x3,
+									length: string_length)
+								string_length = 0
+								if args.dst.available() <= 0 {
+									continue.string_loop_outer
+								}
+							}
+							if args.src.is_closed() {
+								if this.quirk_enabled_replace_invalid_unicode {
+									args.dst.write_simple_token_fast!(
+										value_major: 0,
+										value_minor: 0x60_FFFD,
+										link: 0x3,
+										length: 1)
+									args.src.skip32_fast!(actual: 1, worst_case: 1)
+									continue.string_loop_outer
+								}
+								return "#bad UTF-8"
+							}
+							yield? base."$short read"
+							string_length = 0
+							char = 0
+							continue.string_loop_outer
+						}
+						multi_byte_utf8 = args.src.peek_u16le_as_u32()
+						if (multi_byte_utf8 & 0xC000) == 0x8000 {
+							multi_byte_utf8 = (0x00_07C0 & (multi_byte_utf8 ~mod<< 6)) |
+								(0x00_003F & (multi_byte_utf8 >> 8))
+							args.src.skip32_fast!(actual: 2, worst_case: 2)
+							if string_length >= 0xFFF8 {
+								args.dst.write_simple_token_fast!(
+									value_major: 0,
+									value_minor: 0x40_0021,
+									link: 0x3,
+									length: string_length + 2)
+								string_length = 0
+								continue.string_loop_outer
+							}
+							string_length += 2
+							continue.string_loop_inner
+						}
+
+					} else if char == 0x04 {  // 3-byte UTF-8.
+						if args.src.available() < 3 {
+							if string_length > 0 {
+								args.dst.write_simple_token_fast!(
+									value_major: 0,
+									value_minor: 0x40_0021,
+									link: 0x3,
+									length: string_length)
+								string_length = 0
+								if args.dst.available() <= 0 {
+									continue.string_loop_outer
+								}
+							}
+							if args.src.is_closed() {
+								if this.quirk_enabled_replace_invalid_unicode {
+									args.dst.write_simple_token_fast!(
+										value_major: 0,
+										value_minor: 0x60_FFFD,
+										link: 0x3,
+										length: 1)
+									args.src.skip32_fast!(actual: 1, worst_case: 1)
+									continue.string_loop_outer
+								}
+								return "#bad UTF-8"
+							}
+							yield? base."$short read"
+							string_length = 0
+							char = 0
+							continue.string_loop_outer
+						}
+						multi_byte_utf8 = args.src.peek_u24le_as_u32()
+						if (multi_byte_utf8 & 0xC0_C000) == 0x80_8000 {
+							multi_byte_utf8 = (0x00_F000 & (multi_byte_utf8 ~mod<< 12)) |
+								(0x00_0FC0 & (multi_byte_utf8 >> 2)) |
+								(0x00_003F & (multi_byte_utf8 >> 16))
+							if (0x07FF < multi_byte_utf8) and
+								((multi_byte_utf8 < 0xD800) or (0xDFFF < multi_byte_utf8)) {
+
+								args.src.skip32_fast!(actual: 3, worst_case: 3)
+								if string_length >= 0xFFF8 {
+									args.dst.write_simple_token_fast!(
+										value_major: 0,
+										value_minor: 0x40_0021,
+										link: 0x3,
+										length: string_length + 3)
+									string_length = 0
+									continue.string_loop_outer
+								}
+								string_length += 3
+								continue.string_loop_inner
+							}
+						}
+
+					} else if char == 0x05 {  // 4-byte UTF-8.
+						if args.src.available() < 4 {
+							if string_length > 0 {
+								args.dst.write_simple_token_fast!(
+									value_major: 0,
+									value_minor: 0x40_0021,
+									link: 0x3,
+									length: string_length)
+								string_length = 0
+								if args.dst.available() <= 0 {
+									continue.string_loop_outer
+								}
+							}
+							if args.src.is_closed() {
+								if this.quirk_enabled_replace_invalid_unicode {
+									args.dst.write_simple_token_fast!(
+										value_major: 0,
+										value_minor: 0x60_FFFD,
+										link: 0x3,
+										length: 1)
+									args.src.skip32_fast!(actual: 1, worst_case: 1)
+									continue.string_loop_outer
+								}
+								return "#bad UTF-8"
+							}
+							yield? base."$short read"
+							string_length = 0
+							char = 0
+							continue.string_loop_outer
+						}
+						multi_byte_utf8 = args.src.peek_u32le()
+						if (multi_byte_utf8 & 0xC0C0_C000) == 0x8080_8000 {
+							multi_byte_utf8 = (0x1C_0000 & (multi_byte_utf8 ~mod<< 18)) |
+								(0x03_F000 & (multi_byte_utf8 ~mod<< 4)) |
+								(0x00_0FC0 & (multi_byte_utf8 >> 10)) |
+								(0x00_003F & (multi_byte_utf8 >> 24))
+							if (0xFFFF < multi_byte_utf8) and (multi_byte_utf8 <= 0x10_FFFF) {
+								args.src.skip32_fast!(actual: 4, worst_case: 4)
+								if string_length >= 0xFFF8 {
+									args.dst.write_simple_token_fast!(
+										value_major: 0,
+										value_minor: 0x40_0021,
+										link: 0x3,
+										length: string_length + 4)
+									string_length = 0
+									continue.string_loop_outer
+								}
+								string_length += 4
+								continue.string_loop_inner
+							}
+						}
+					}
+
+					if string_length > 0 {
+						args.dst.write_simple_token_fast!(
+							value_major: 0,
+							value_minor: 0x40_0021,
+							link: 0x3,
+							length: string_length)
+						string_length = 0
+						if args.dst.available() <= 0 {
+							continue.string_loop_outer
+						}
+					}
+					if char == 0x80 {
+						return "#bad C0 control code"
+					}
+					if this.quirk_enabled_replace_invalid_unicode {
+						args.dst.write_simple_token_fast!(
+							value_major: 0,
+							value_minor: 0x60_FFFD,
+							link: 0x3,
+							length: 1)
+						args.src.skip32_fast!(actual: 1, worst_case: 1)
+						continue.string_loop_outer
+					}
+					return "#bad UTF-8"
+				} endwhile.string_loop_inner
+			} endwhile.string_loop_outer
 
 			// Emit the trailing '"'.
 			while true {
@@ -548,581 +1117,6 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 	}
 
 	this.end_of_data = true
-}
-
-pri func decoder.decode_string?(dst: base.token_writer, src: base.io_reader) {
-	var string_length   : base.u32[..= 0xFFFB]
-	var c4              : base.u32
-	var c               : base.u8
-	var backslash       : base.u8
-	var char            : base.u8
-	var multi_byte_utf8 : base.u32
-
-	var backslash_x_length : base.u32[..= 0xFFFF]
-	var backslash_x_ok     : base.u8
-	var backslash_x_string : base.u32
-
-	var uni4_ok             : base.u8
-	var uni4_string         : base.u64
-	var uni4_value          : base.u32[..= 0xFFFF]
-	var uni4_high_surrogate : base.u32[..= 0x10_FC00]
-
-	var uni8_ok     : base.u8
-	var uni8_string : base.u64
-	var uni8_value  : base.u32[..= 0xFFFF_FFFF]
-
-	while.string_loop_outer true {
-		if args.dst.available() <= 0 {
-			yield? base."$short write"
-			continue.string_loop_outer
-		}
-
-		string_length = 0
-		while.string_loop_inner true,
-			pre args.dst.available() > 0,
-		{
-			if args.src.available() <= 0 {
-				if string_length > 0 {
-					args.dst.write_simple_token_fast!(
-						value_major: 0,
-						value_minor: 0x40_0021,
-						link: 0x3,
-						length: string_length)
-					string_length = 0
-				}
-				if args.src.is_closed() {
-					return "#bad input"
-				}
-				yield? base."$short read"
-				string_length = 0
-				continue.string_loop_outer
-			}
-
-			// As an optimization, consume non-special ASCII 4 bytes at
-			// a time.
-			while args.src.available() > 4,
-				inv args.dst.available() > 0,
-				inv args.src.available() > 0,
-			{
-				c4 = args.src.peek_u32le()
-				if 0x00 <> (lut_chars[0xFF & (c4 >> 0)] |
-					lut_chars[0xFF & (c4 >> 8)] |
-					lut_chars[0xFF & (c4 >> 16)] |
-					lut_chars[0xFF & (c4 >> 24)]) {
-					break
-				}
-				args.src.skip32_fast!(actual: 4, worst_case: 4)
-				if string_length > (0xFFFB - 4) {
-					args.dst.write_simple_token_fast!(
-						value_major: 0,
-						value_minor: 0x40_0021,
-						link: 0x3,
-						length: string_length + 4)
-					string_length = 0
-					continue.string_loop_outer
-				}
-				string_length += 4
-			} endwhile
-
-			c = args.src.peek_u8()
-			char = lut_chars[c]
-
-			if char == 0x00 {  // Non-special ASCII.
-				args.src.skip32_fast!(actual: 1, worst_case: 1)
-				if string_length >= 0xFFFB {
-					args.dst.write_simple_token_fast!(
-						value_major: 0,
-						value_minor: 0x40_0021,
-						link: 0x3,
-						length: 0xFFFC)
-					string_length = 0
-					continue.string_loop_outer
-				}
-				string_length += 1
-				continue.string_loop_inner
-
-			} else if char == 0x01 {  // '"'
-				if string_length <> 0 {
-					args.dst.write_simple_token_fast!(
-						value_major: 0,
-						value_minor: 0x40_0021,
-						link: 0x3,
-						length: string_length)
-					string_length = 0
-				}
-				break.string_loop_outer
-
-			} else if char == 0x02 {  // '\\'.
-				if string_length > 0 {
-					args.dst.write_simple_token_fast!(
-						value_major: 0,
-						value_minor: 0x40_0021,
-						link: 0x3,
-						length: string_length)
-					string_length = 0
-					if args.dst.available() <= 0 {
-						continue.string_loop_outer
-					}
-				}
-				assert args.dst.available() > 0
-
-				if args.src.available() < 2 {
-					if args.src.is_closed() {
-						return "#bad backslash-escape"
-					}
-					yield? base."$short read"
-					string_length = 0
-					char = 0
-					continue.string_loop_outer
-				}
-				c = (args.src.peek_u16le() >> 8) as base.u8
-				backslash = lut_backslashes[c]
-				if (backslash & 0x80) <> 0 {
-					args.src.skip32_fast!(actual: 2, worst_case: 2)
-					args.dst.write_simple_token_fast!(
-						value_major: 0,
-						value_minor: 0x60_0000 | ((backslash & 0x7F) as base.u32),
-						link: 0x3,
-						length: 2)
-					continue.string_loop_outer
-
-				} else if backslash <> 0 {
-					if this.quirk_enabled_allow_backslash_etc[backslash & 7] {
-						args.src.skip32_fast!(actual: 2, worst_case: 2)
-						args.dst.write_simple_token_fast!(
-							value_major: 0,
-							value_minor: 0x60_0000 | (lut_quirky_backslashes[backslash & 7] as base.u32),
-							link: 0x3,
-							length: 2)
-						continue.string_loop_outer
-					}
-
-				} else if c == 'u' {
-					// -------- BEGIN backslash-u.
-					if args.src.available() < 6 {
-						if args.src.is_closed() {
-							return "#bad backslash-escape"
-						}
-						yield? base."$short read"
-						string_length = 0
-						char = 0
-						continue.string_loop_outer
-					}
-
-					uni4_string = args.src.peek_u48le_as_u64() >> 16
-					uni4_value = 0
-					uni4_ok = 0x80
-
-					c = lut_hexadecimal_digits[0xFF & (uni4_string >> 0)]
-					uni4_ok &= c
-					uni4_value |= ((c & 0x0F) as base.u32) << 12
-					c = lut_hexadecimal_digits[0xFF & (uni4_string >> 8)]
-					uni4_ok &= c
-					uni4_value |= ((c & 0x0F) as base.u32) << 8
-					c = lut_hexadecimal_digits[0xFF & (uni4_string >> 16)]
-					uni4_ok &= c
-					uni4_value |= ((c & 0x0F) as base.u32) << 4
-					c = lut_hexadecimal_digits[0xFF & (uni4_string >> 24)]
-					uni4_ok &= c
-					uni4_value |= ((c & 0x0F) as base.u32) << 0
-
-					if uni4_ok == 0 {
-						// It wasn't 4 hexadecimal digits. No-op (and
-						// fall through to "#bad backslash-escape").
-
-					} else if (uni4_value < 0xD800) or (0xDFFF < uni4_value) {
-						// Not a Unicode surrogate. We're good.
-						args.src.skip32_fast!(actual: 6, worst_case: 6)
-						args.dst.write_simple_token_fast!(
-							value_major: 0,
-							value_minor: 0x60_0000 | uni4_value,
-							link: 0x3,
-							length: 6)
-						continue.string_loop_outer
-
-					} else if uni4_value >= 0xDC00 {
-						// Low surrogate. No-op (and fall through to
-						// "#bad backslash-escape").
-
-					} else {
-						// High surrogate, which needs to be followed
-						// by a "\\u1234" low surrogate. We've already
-						// peeked 6 bytes for the high surrogate. We
-						// need 12 in total: another 8 bytes at an
-						// offset of 4.
-						if args.src.available() < 12 {
-							if args.src.is_closed() {
-								if this.quirk_enabled_replace_invalid_unicode {
-									args.src.skip32_fast!(actual: 6, worst_case: 6)
-									args.dst.write_simple_token_fast!(
-										value_major: 0,
-										value_minor: 0x60_FFFD,
-										link: 0x3,
-										length: 6)
-									continue.string_loop_outer
-								}
-								return "#bad backslash-escape"
-							}
-							yield? base."$short read"
-							string_length = 0
-							uni4_value = 0
-							char = 0
-							continue.string_loop_outer
-						}
-						uni4_string = args.src.peek_u64le_at(offset: 4) >> 16
-
-						// Look for the low surrogate's "\\u".
-						if ((0xFF & (uni4_string >> 0)) <> '\\') or
-							((0xFF & (uni4_string >> 8)) <> 'u') {
-							uni4_high_surrogate = 0
-							uni4_value = 0
-							uni4_ok = 0
-						} else {
-							uni4_high_surrogate =
-								0x1_0000 + ((uni4_value - 0xD800) << 10)
-							uni4_value = 0
-							uni4_ok = 0x80
-							uni4_string >>= 16
-
-							c = lut_hexadecimal_digits[0xFF & (uni4_string >> 0)]
-							uni4_ok &= c
-							uni4_value |= ((c & 0x0F) as base.u32) << 12
-							c = lut_hexadecimal_digits[0xFF & (uni4_string >> 8)]
-							uni4_ok &= c
-							uni4_value |= ((c & 0x0F) as base.u32) << 8
-							c = lut_hexadecimal_digits[0xFF & (uni4_string >> 16)]
-							uni4_ok &= c
-							uni4_value |= ((c & 0x0F) as base.u32) << 4
-							c = lut_hexadecimal_digits[0xFF & (uni4_string >> 24)]
-							uni4_ok &= c
-							uni4_value |= ((c & 0x0F) as base.u32) << 0
-						}
-
-						if (uni4_ok <> 0) and
-							(0xDC00 <= uni4_value) and (uni4_value <= 0xDFFF) {
-
-							// Emit a single token for the surrogate
-							// pair.
-							uni4_value -= 0xDC00
-							args.src.skip32_fast!(actual: 12, worst_case: 12)
-							args.dst.write_simple_token_fast!(
-								value_major: 0,
-								value_minor: 0x60_0000 | uni4_high_surrogate | uni4_value,
-								link: 0x3,
-								length: 12)
-							continue.string_loop_outer
-						}
-					}
-
-					if this.quirk_enabled_replace_invalid_unicode {
-						if args.src.available() < 6 {
-							return "#internal error: inconsistent I/O"
-						}
-						args.src.skip32_fast!(actual: 6, worst_case: 6)
-						args.dst.write_simple_token_fast!(
-							value_major: 0,
-							value_minor: 0x60_FFFD,
-							link: 0x3,
-							length: 6)
-						continue.string_loop_outer
-					}
-					// -------- END   backslash-u.
-
-				} else if (c == 'U') and
-					this.quirk_enabled_allow_backslash_capital_u {
-					// -------- BEGIN backslash-capital-u.
-					if args.src.available() < 10 {
-						if args.src.is_closed() {
-							return "#bad backslash-escape"
-						}
-						yield? base."$short read"
-						string_length = 0
-						char = 0
-						continue.string_loop_outer
-					}
-					uni8_string = args.src.peek_u64le_at(offset: 2)
-					uni8_value = 0
-					uni8_ok = 0x80
-
-					c = lut_hexadecimal_digits[0xFF & (uni8_string >> 0)]
-					uni8_ok &= c
-					uni8_value |= ((c & 0x0F) as base.u32) << 28
-					c = lut_hexadecimal_digits[0xFF & (uni8_string >> 8)]
-					uni8_ok &= c
-					uni8_value |= ((c & 0x0F) as base.u32) << 24
-					c = lut_hexadecimal_digits[0xFF & (uni8_string >> 16)]
-					uni8_ok &= c
-					uni8_value |= ((c & 0x0F) as base.u32) << 20
-					c = lut_hexadecimal_digits[0xFF & (uni8_string >> 24)]
-					uni8_ok &= c
-					uni8_value |= ((c & 0x0F) as base.u32) << 16
-					c = lut_hexadecimal_digits[0xFF & (uni8_string >> 32)]
-					uni8_ok &= c
-					uni8_value |= ((c & 0x0F) as base.u32) << 12
-					c = lut_hexadecimal_digits[0xFF & (uni8_string >> 40)]
-					uni8_ok &= c
-					uni8_value |= ((c & 0x0F) as base.u32) << 8
-					c = lut_hexadecimal_digits[0xFF & (uni8_string >> 48)]
-					uni8_ok &= c
-					uni8_value |= ((c & 0x0F) as base.u32) << 4
-					c = lut_hexadecimal_digits[0xFF & (uni8_string >> 56)]
-					uni8_ok &= c
-					uni8_value |= ((c & 0x0F) as base.u32) << 0
-
-					if uni8_ok == 0 {
-						// It wasn't 8 hexadecimal digits. No-op (and
-						// fall through to "#bad backslash-escape").
-
-					} else if (uni8_value < 0xD800) or (
-						(0xDFFF < uni8_value) and (uni8_value <= 0x10_FFFF)) {
-						// Not a Unicode surrogate. We're good.
-						args.src.skip32_fast!(actual: 10, worst_case: 10)
-						args.dst.write_simple_token_fast!(
-							value_major: 0,
-							value_minor: 0x60_0000 | (uni8_value & 0x1F_FFFF),
-							link: 0x3,
-							length: 10)
-						continue.string_loop_outer
-					} else if this.quirk_enabled_replace_invalid_unicode {
-						args.src.skip32_fast!(actual: 10, worst_case: 10)
-						args.dst.write_simple_token_fast!(
-							value_major: 0,
-							value_minor: 0x60_FFFD,
-							link: 0x3,
-							length: 10)
-						continue.string_loop_outer
-					}
-					// -------- END   backslash-capital-u.
-
-				} else if (c == 'x') and
-					this.quirk_enabled_allow_backslash_x {
-					// -------- BEGIN backslash-x
-					if args.src.available() < 4 {
-						if args.src.is_closed() {
-							return "#bad backslash-escape"
-						}
-						yield? base."$short read"
-						string_length = 0
-						char = 0
-						continue.string_loop_outer
-					}
-
-					backslash_x_length = 0
-					while (backslash_x_length <= 0xFFFB) and (args.src.available() >= 4),
-						inv args.dst.available() > 0,
-					{
-						backslash_x_string = args.src.peek_u32le()
-						backslash_x_ok = 0x80
-
-						c = lut_hexadecimal_digits[0xFF & (backslash_x_string >> 16)]
-						backslash_x_ok &= c
-						c = lut_hexadecimal_digits[0xFF & (backslash_x_string >> 24)]
-						backslash_x_ok &= c
-
-						if (backslash_x_ok == 0) or
-							((backslash_x_string & 0xFFFF) <> 0x785C) {
-							// It wasn't "\\x34", for some hexadecimal
-							// digits "34".
-							break
-						}
-						args.src.skip32_fast!(actual: 4, worst_case: 4)
-						backslash_x_length += 4
-					} endwhile
-
-					if backslash_x_length == 0 {
-						return "#bad backslash-escape"
-					}
-					args.dst.write_simple_token_fast!(
-						value_major: 0,
-						value_minor: 0x40_0080,
-						link: 0x3,
-						length: backslash_x_length)
-					continue.string_loop_outer
-					// -------- END   backslash-x
-				}
-
-				return "#bad backslash-escape"
-
-			} else if char == 0x03 {  // 2-byte UTF-8.
-				if args.src.available() < 2 {
-					if string_length > 0 {
-						args.dst.write_simple_token_fast!(
-							value_major: 0,
-							value_minor: 0x40_0021,
-							link: 0x3,
-							length: string_length)
-						string_length = 0
-						if args.dst.available() <= 0 {
-							continue.string_loop_outer
-						}
-					}
-					if args.src.is_closed() {
-						if this.quirk_enabled_replace_invalid_unicode {
-							args.dst.write_simple_token_fast!(
-								value_major: 0,
-								value_minor: 0x60_FFFD,
-								link: 0x3,
-								length: 1)
-							args.src.skip32_fast!(actual: 1, worst_case: 1)
-							continue.string_loop_outer
-						}
-						return "#bad UTF-8"
-					}
-					yield? base."$short read"
-					string_length = 0
-					char = 0
-					continue.string_loop_outer
-				}
-				multi_byte_utf8 = args.src.peek_u16le_as_u32()
-				if (multi_byte_utf8 & 0xC000) == 0x8000 {
-					multi_byte_utf8 = (0x00_07C0 & (multi_byte_utf8 ~mod<< 6)) |
-						(0x00_003F & (multi_byte_utf8 >> 8))
-					args.src.skip32_fast!(actual: 2, worst_case: 2)
-					if string_length >= 0xFFF8 {
-						args.dst.write_simple_token_fast!(
-							value_major: 0,
-							value_minor: 0x40_0021,
-							link: 0x3,
-							length: string_length + 2)
-						string_length = 0
-						continue.string_loop_outer
-					}
-					string_length += 2
-					continue.string_loop_inner
-				}
-
-			} else if char == 0x04 {  // 3-byte UTF-8.
-				if args.src.available() < 3 {
-					if string_length > 0 {
-						args.dst.write_simple_token_fast!(
-							value_major: 0,
-							value_minor: 0x40_0021,
-							link: 0x3,
-							length: string_length)
-						string_length = 0
-						if args.dst.available() <= 0 {
-							continue.string_loop_outer
-						}
-					}
-					if args.src.is_closed() {
-						if this.quirk_enabled_replace_invalid_unicode {
-							args.dst.write_simple_token_fast!(
-								value_major: 0,
-								value_minor: 0x60_FFFD,
-								link: 0x3,
-								length: 1)
-							args.src.skip32_fast!(actual: 1, worst_case: 1)
-							continue.string_loop_outer
-						}
-						return "#bad UTF-8"
-					}
-					yield? base."$short read"
-					string_length = 0
-					char = 0
-					continue.string_loop_outer
-				}
-				multi_byte_utf8 = args.src.peek_u24le_as_u32()
-				if (multi_byte_utf8 & 0xC0_C000) == 0x80_8000 {
-					multi_byte_utf8 = (0x00_F000 & (multi_byte_utf8 ~mod<< 12)) |
-						(0x00_0FC0 & (multi_byte_utf8 >> 2)) |
-						(0x00_003F & (multi_byte_utf8 >> 16))
-					if (0x07FF < multi_byte_utf8) and
-						((multi_byte_utf8 < 0xD800) or (0xDFFF < multi_byte_utf8)) {
-
-						args.src.skip32_fast!(actual: 3, worst_case: 3)
-						if string_length >= 0xFFF8 {
-							args.dst.write_simple_token_fast!(
-								value_major: 0,
-								value_minor: 0x40_0021,
-								link: 0x3,
-								length: string_length + 3)
-							string_length = 0
-							continue.string_loop_outer
-						}
-						string_length += 3
-						continue.string_loop_inner
-					}
-				}
-
-			} else if char == 0x05 {  // 4-byte UTF-8.
-				if args.src.available() < 4 {
-					if string_length > 0 {
-						args.dst.write_simple_token_fast!(
-							value_major: 0,
-							value_minor: 0x40_0021,
-							link: 0x3,
-							length: string_length)
-						string_length = 0
-						if args.dst.available() <= 0 {
-							continue.string_loop_outer
-						}
-					}
-					if args.src.is_closed() {
-						if this.quirk_enabled_replace_invalid_unicode {
-							args.dst.write_simple_token_fast!(
-								value_major: 0,
-								value_minor: 0x60_FFFD,
-								link: 0x3,
-								length: 1)
-							args.src.skip32_fast!(actual: 1, worst_case: 1)
-							continue.string_loop_outer
-						}
-						return "#bad UTF-8"
-					}
-					yield? base."$short read"
-					string_length = 0
-					char = 0
-					continue.string_loop_outer
-				}
-				multi_byte_utf8 = args.src.peek_u32le()
-				if (multi_byte_utf8 & 0xC0C0_C000) == 0x8080_8000 {
-					multi_byte_utf8 = (0x1C_0000 & (multi_byte_utf8 ~mod<< 18)) |
-						(0x03_F000 & (multi_byte_utf8 ~mod<< 4)) |
-						(0x00_0FC0 & (multi_byte_utf8 >> 10)) |
-						(0x00_003F & (multi_byte_utf8 >> 24))
-					if (0xFFFF < multi_byte_utf8) and (multi_byte_utf8 <= 0x10_FFFF) {
-						args.src.skip32_fast!(actual: 4, worst_case: 4)
-						if string_length >= 0xFFF8 {
-							args.dst.write_simple_token_fast!(
-								value_major: 0,
-								value_minor: 0x40_0021,
-								link: 0x3,
-								length: string_length + 4)
-							string_length = 0
-							continue.string_loop_outer
-						}
-						string_length += 4
-						continue.string_loop_inner
-					}
-				}
-			}
-
-			if string_length > 0 {
-				args.dst.write_simple_token_fast!(
-					value_major: 0,
-					value_minor: 0x40_0021,
-					link: 0x3,
-					length: string_length)
-				string_length = 0
-				if args.dst.available() <= 0 {
-					continue.string_loop_outer
-				}
-			}
-			if char == 0x80 {
-				return "#bad C0 control code"
-			}
-			if this.quirk_enabled_replace_invalid_unicode {
-				args.dst.write_simple_token_fast!(
-					value_major: 0,
-					value_minor: 0x60_FFFD,
-					link: 0x3,
-					length: 1)
-				args.src.skip32_fast!(actual: 1, worst_case: 1)
-				continue.string_loop_outer
-			}
-			return "#bad UTF-8"
-		} endwhile.string_loop_inner
-	} endwhile.string_loop_outer
 }
 
 pri func decoder.decode_number!(src: base.io_reader) base.u32[..= 0x3FF] {
