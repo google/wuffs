@@ -455,9 +455,8 @@ JsonThing::parse(TokenStream& ts) {
         return parse_string(ts, tsr);
       case WUFFS_BASE__TOKEN__VBC__LITERAL:
         return parse_literal(tsr);
-      case WUFFS_BASE__TOKEN__VBC__NUMBER: {
+      case WUFFS_BASE__TOKEN__VBC__NUMBER:
         return parse_number(tsr);
-      }
     }
 
     return Result("main: internal error: unexpected token");
