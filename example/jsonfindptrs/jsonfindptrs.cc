@@ -591,6 +591,9 @@ JsonThing::parse_object(TokenStream& ts) {
       return Result("main: internal error: unexpected non-string key");
     }
   }
+  if (have_key) {
+    return Result("main: internal error: unpaired key");
+  }
   return Result("", jt);
 }
 
