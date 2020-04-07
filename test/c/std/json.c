@@ -1429,6 +1429,11 @@ test_wuffs_json_decode_quirk_allow_backslash_etc() {
           .quirk = WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_E,
       },
       {
+          .want = 0x0A,
+          .str = "\"\\\n\"",
+          .quirk = WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_NEW_LINE,
+      },
+      {
           .want = 0x3F,
           .str = "\"\\?\"",
           .quirk = WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_QUESTION_MARK,

@@ -73,6 +73,8 @@ pub func decoder.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
 		this.quirk_enabled_allow_backslash_capital_u = args.enabled
 	} else if args.quirk == quirk_allow_backslash_e {
 		this.quirk_enabled_allow_backslash_etc[2] = args.enabled
+	} else if args.quirk == quirk_allow_backslash_new_line {
+		this.quirk_enabled_allow_backslash_etc[3] = args.enabled
 	} else if args.quirk == quirk_allow_backslash_question_mark {
 		this.quirk_enabled_allow_backslash_etc[4] = args.enabled
 	} else if args.quirk == quirk_allow_backslash_single_quote {

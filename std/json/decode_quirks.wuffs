@@ -36,6 +36,17 @@ pub const quirk_allow_backslash_capital_u base.u32 = 0x4909_9400 | 0x02
 // equivalent to "abc\u001Bz", containing an ASCII Escape control character.
 pub const quirk_allow_backslash_e base.u32 = 0x4909_9400 | 0x03
 
+// When this quirk is enabled, e.g. ("abc\
+// z") is accepted as a JSON string, equivalent to "abc\nz".
+//
+// This allows for multi-line strings, if each new line is preceded by a
+// backslash. This doesn't combine per se with quirk_allow_ascii_control_codes,
+// but they have similar consequences.
+//
+// Any indentation following a new line is not stripped, but remains part of
+// the decoded string.
+pub const quirk_allow_backslash_new_line base.u32 = 0x4909_9400 | 0x04
+
 // When this quirk is enabled, e.g. "abc\?z" is accepted as a JSON string,
 // equivalent to "abc?z".
 pub const quirk_allow_backslash_question_mark base.u32 = 0x4909_9400 | 0x05

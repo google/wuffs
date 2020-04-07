@@ -6054,6 +6054,8 @@ extern const char* wuffs_json__error__unsupported_recursion_depth;
 
 #define WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_E 1225364483
 
+#define WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_NEW_LINE 1225364484
+
 #define WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_QUESTION_MARK 1225364485
 
 #define WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_SINGLE_QUOTE 1225364486
@@ -21045,6 +21047,8 @@ wuffs_json__decoder__set_quirk_enabled(wuffs_json__decoder* self,
     self->private_impl.f_quirk_enabled_allow_backslash_capital_u = a_enabled;
   } else if (a_quirk == 1225364483) {
     self->private_impl.f_quirk_enabled_allow_backslash_etc[2] = a_enabled;
+  } else if (a_quirk == 1225364484) {
+    self->private_impl.f_quirk_enabled_allow_backslash_etc[3] = a_enabled;
   } else if (a_quirk == 1225364485) {
     self->private_impl.f_quirk_enabled_allow_backslash_etc[4] = a_enabled;
   } else if (a_quirk == 1225364486) {
