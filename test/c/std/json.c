@@ -1414,6 +1414,11 @@ test_wuffs_json_decode_quirk_allow_backslash_etc() {
     uint32_t quirk;
   } test_cases[] = {
       {
+          .want = 0x09,
+          .str = "\"\t\"",
+          .quirk = WUFFS_JSON__QUIRK_ALLOW_ASCII_CONTROL_CODES,
+      },
+      {
           .want = 0x07,
           .str = "\"\\a\"",
           .quirk = WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_A,
@@ -1475,6 +1480,11 @@ test_wuffs_json_decode_quirk_allow_backslash_etc() {
               .repr;
       const char* want_status_repr =
           q ? NULL : wuffs_json__error__bad_backslash_escape;
+      if ((test_cases[tc].quirk ==
+           WUFFS_JSON__QUIRK_ALLOW_ASCII_CONTROL_CODES) &&
+          want_status_repr) {
+        want_status_repr = wuffs_json__error__bad_c0_control_code;
+      }
       if (have_status_repr != want_status_repr) {
         RETURN_FAIL("tc=%d, q=%d: decode_tokens: have \"%s\", want \"%s\"", tc,
                     q, have_status_repr, want_status_repr);

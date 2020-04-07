@@ -21,6 +21,20 @@
 
 // --------
 
+// When this quirk is enabled, literal (not escaped) ASCII control codes, such
+// as backspaces, new lines and NUL bytes, are accepted in JSON strings.
+//
+// Regardless of whether this quirk is enabled, escaped ASCII control codes,
+// such as "\b" or "\u0008", are always accepted.
+//
+// This allows for multi-line strings, where a literal new line in the encoding
+// becomes a literal new line in the decoding. A backslash before a new line is
+// still a syntax error, unless combined with quirk_allow_backslash_new_line.
+//
+// Any indentation following a new line is not stripped, but remains part of
+// the decoded string.
+pub const quirk_allow_ascii_control_codes base.u32 = 0x4909_9400 | 0x00
+
 // When this quirk is enabled, e.g. "abc\az" is accepted as a JSON string,
 // equivalent to "abc\u0007z", containing an ASCII Bell control character.
 pub const quirk_allow_backslash_a base.u32 = 0x4909_9400 | 0x01

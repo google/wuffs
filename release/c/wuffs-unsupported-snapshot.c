@@ -6048,6 +6048,8 @@ extern const char* wuffs_json__error__unsupported_recursion_depth;
 
 #define WUFFS_JSON__DECODER_SRC_IO_BUFFER_LENGTH_MIN_INCL 100
 
+#define WUFFS_JSON__QUIRK_ALLOW_ASCII_CONTROL_CODES 1225364480
+
 #define WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_A 1225364481
 
 #define WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_CAPITAL_U 1225364482
@@ -6151,6 +6153,7 @@ struct wuffs_json__decoder__struct {
     wuffs_base__vtable null_vtable;
 
     bool f_quirk_enabled_allow_backslash_etc[8];
+    bool f_quirk_enabled_allow_ascii_control_codes;
     bool f_quirk_enabled_allow_backslash_capital_u;
     bool f_quirk_enabled_allow_backslash_x;
     bool f_quirk_enabled_allow_comment_block;
@@ -20842,9 +20845,9 @@ static const uint8_t                       //
 static const uint8_t            //
     wuffs_json__lut_chars[256]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
-        128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-        128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-        128, 128, 128, 128, 0,   0,   1,   0,   0,   0,   0,   0,   0,   0,
+        128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141,
+        142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155,
+        156, 157, 158, 159, 0,   0,   1,   0,   0,   0,   0,   0,   0,   0,
         0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
         0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
         0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
@@ -20855,12 +20858,12 @@ static const uint8_t            //
         16,  16,  16,  16,  16,  16,  16,  16,  16,  16,  16,  16,  16,  16,
         16,  16,  16,  16,  16,  16,  16,  16,  16,  16,  16,  16,  16,  16,
         16,  16,  16,  16,  16,  16,  16,  16,  16,  16,  16,  16,  16,  16,
-        16,  16,  16,  16,  16,  16,  16,  16,  16,  16,  129, 129, 3,   3,
+        16,  16,  16,  16,  16,  16,  16,  16,  16,  16,  32,  32,  3,   3,
         3,   3,   3,   3,   3,   3,   3,   3,   3,   3,   3,   3,   3,   3,
         3,   3,   3,   3,   3,   3,   3,   3,   3,   3,   3,   3,   3,   3,
         4,   4,   4,   4,   4,   4,   4,   4,   4,   4,   4,   4,   4,   4,
-        4,   4,   5,   5,   5,   5,   5,   129, 129, 129, 129, 129, 129, 129,
-        129, 129, 129, 129,
+        4,   4,   5,   5,   5,   5,   5,   32,  32,  32,  32,  32,  32,  32,
+        32,  32,  32,  32,
 };
 
 static const uint8_t              //
@@ -21041,7 +21044,9 @@ wuffs_json__decoder__set_quirk_enabled(wuffs_json__decoder* self,
     return wuffs_base__make_empty_struct();
   }
 
-  if (a_quirk == 1225364481) {
+  if (a_quirk == 1225364480) {
+    self->private_impl.f_quirk_enabled_allow_ascii_control_codes = a_enabled;
+  } else if (a_quirk == 1225364481) {
     self->private_impl.f_quirk_enabled_allow_backslash_etc[1] = a_enabled;
   } else if (a_quirk == 1225364482) {
     self->private_impl.f_quirk_enabled_allow_backslash_capital_u = a_enabled;
@@ -21862,7 +21867,17 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
                   goto label__string_loop_outer__continue;
                 }
               }
-              if (v_char == 128) {
+              if ((v_char & 128) != 0) {
+                if (self->private_impl
+                        .f_quirk_enabled_allow_ascii_control_codes) {
+                  *iop_a_dst++ = wuffs_base__make_token(
+                      (((uint64_t)((6291456 | ((uint32_t)((v_char & 127))))))
+                       << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                      (((uint64_t)(3)) << WUFFS_BASE__TOKEN__LINK__SHIFT) |
+                      (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+                  (iop_a_src += 1, wuffs_base__make_empty_struct());
+                  goto label__string_loop_outer__continue;
+                }
                 status = wuffs_base__make_status(
                     wuffs_json__error__bad_c0_control_code);
                 goto exit;

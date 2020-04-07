@@ -17,6 +17,7 @@ pub struct decoder? implements base.token_decoder(
 	// same enum as lut_quirky_backslashes.
 	quirk_enabled_allow_backslash_etc : array[8] base.bool,
 
+	quirk_enabled_allow_ascii_control_codes             : base.bool,
 	quirk_enabled_allow_backslash_capital_u             : base.bool,
 	quirk_enabled_allow_backslash_x                     : base.bool,
 	quirk_enabled_allow_comment_block                   : base.bool,
@@ -67,7 +68,9 @@ pub struct decoder? implements base.token_decoder(
 )
 
 pub func decoder.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
-	if args.quirk == quirk_allow_backslash_a {
+	if args.quirk == quirk_allow_ascii_control_codes {
+		this.quirk_enabled_allow_ascii_control_codes = args.enabled
+	} else if args.quirk == quirk_allow_backslash_a {
 		this.quirk_enabled_allow_backslash_etc[1] = args.enabled
 	} else if args.quirk == quirk_allow_backslash_capital_u {
 		this.quirk_enabled_allow_backslash_capital_u = args.enabled
@@ -788,7 +791,16 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 							continue.string_loop_outer
 						}
 					}
-					if char == 0x80 {
+					if (char & 0x80) <> 0 {
+						if this.quirk_enabled_allow_ascii_control_codes {
+							args.dst.write_simple_token_fast!(
+								value_major: 0,
+								value_minor: 0x60_0000 | ((char & 0x7F) as base.u32),
+								link: 0x3,
+								length: 1)
+							args.src.skip32_fast!(actual: 1, worst_case: 1)
+							continue.string_loop_outer
+						}
 						return "#bad C0 control code"
 					}
 					if this.quirk_enabled_replace_invalid_unicode {
