@@ -6048,37 +6048,37 @@ extern const char* wuffs_json__error__unsupported_recursion_depth;
 
 #define WUFFS_JSON__DECODER_SRC_IO_BUFFER_LENGTH_MIN_INCL 100
 
-#define WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_A 1225364480
+#define WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_A 1225364481
 
-#define WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_CAPITAL_U 1225364481
+#define WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_CAPITAL_U 1225364482
 
-#define WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_E 1225364482
+#define WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_E 1225364483
 
-#define WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_QUESTION_MARK 1225364483
+#define WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_QUESTION_MARK 1225364485
 
-#define WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_SINGLE_QUOTE 1225364484
+#define WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_SINGLE_QUOTE 1225364486
 
-#define WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_V 1225364485
+#define WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_V 1225364487
 
-#define WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_X 1225364486
+#define WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_X 1225364488
 
-#define WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_ZERO 1225364487
+#define WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_ZERO 1225364489
 
-#define WUFFS_JSON__QUIRK_ALLOW_COMMENT_BLOCK 1225364488
+#define WUFFS_JSON__QUIRK_ALLOW_COMMENT_BLOCK 1225364490
 
-#define WUFFS_JSON__QUIRK_ALLOW_COMMENT_LINE 1225364489
+#define WUFFS_JSON__QUIRK_ALLOW_COMMENT_LINE 1225364491
 
-#define WUFFS_JSON__QUIRK_ALLOW_EXTRA_COMMA 1225364490
+#define WUFFS_JSON__QUIRK_ALLOW_EXTRA_COMMA 1225364492
 
-#define WUFFS_JSON__QUIRK_ALLOW_INF_NAN_NUMBERS 1225364491
+#define WUFFS_JSON__QUIRK_ALLOW_INF_NAN_NUMBERS 1225364493
 
-#define WUFFS_JSON__QUIRK_ALLOW_LEADING_ASCII_RECORD_SEPARATOR 1225364492
+#define WUFFS_JSON__QUIRK_ALLOW_LEADING_ASCII_RECORD_SEPARATOR 1225364494
 
-#define WUFFS_JSON__QUIRK_ALLOW_LEADING_UNICODE_BYTE_ORDER_MARK 1225364493
+#define WUFFS_JSON__QUIRK_ALLOW_LEADING_UNICODE_BYTE_ORDER_MARK 1225364495
 
-#define WUFFS_JSON__QUIRK_ALLOW_TRAILING_NEW_LINE 1225364494
+#define WUFFS_JSON__QUIRK_ALLOW_TRAILING_NEW_LINE 1225364496
 
-#define WUFFS_JSON__QUIRK_REPLACE_INVALID_UNICODE 1225364495
+#define WUFFS_JSON__QUIRK_REPLACE_INVALID_UNICODE 1225364497
 
 // ---------------- Struct Declarations
 
@@ -20815,13 +20815,13 @@ const char* wuffs_json__error__internal_error_inconsistent_i_o =
 static const uint8_t                  //
     wuffs_json__lut_backslashes[256]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
-        0,   0, 0,   0,   0, 0, 0, 0,   0, 0,   0, 0, 0, 0, 0, 0,   0,   0, 0,
+        0,   0, 0,   0,   0, 0, 0, 0,   0, 0,   3, 0, 0, 0, 0, 0,   0,   0, 0,
         0,   0, 0,   0,   0, 0, 0, 0,   0, 0,   0, 0, 0, 0, 0, 162, 0,   0, 0,
-        0,   4, 0,   0,   0, 0, 0, 0,   0, 175, 6, 0, 0, 0, 0, 0,   0,   0, 0,
-        0,   0, 0,   0,   0, 0, 3, 0,   0, 0,   0, 0, 0, 0, 0, 0,   0,   0, 0,
+        0,   5, 0,   0,   0, 0, 0, 0,   0, 175, 7, 0, 0, 0, 0, 0,   0,   0, 0,
+        0,   0, 0,   0,   0, 0, 4, 0,   0, 0,   0, 0, 0, 0, 0, 0,   0,   0, 0,
         0,   0, 0,   0,   0, 0, 0, 0,   0, 0,   0, 0, 0, 0, 0, 0,   220, 0, 0,
         0,   0, 1,   136, 0, 0, 2, 140, 0, 0,   0, 0, 0, 0, 0, 138, 0,   0, 0,
-        141, 0, 137, 0,   5, 0, 0, 0,   0, 0,   0, 0, 0, 0, 0, 0,   0,   0, 0,
+        141, 0, 137, 0,   6, 0, 0, 0,   0, 0,   0, 0, 0, 0, 0, 0,   0,   0, 0,
         0,   0, 0,   0,   0, 0, 0, 0,   0, 0,   0, 0, 0, 0, 0, 0,   0,   0, 0,
         0,   0, 0,   0,   0, 0, 0, 0,   0, 0,   0, 0, 0, 0, 0, 0,   0,   0, 0,
         0,   0, 0,   0,   0, 0, 0, 0,   0, 0,   0, 0, 0, 0, 0, 0,   0,   0, 0,
@@ -20834,7 +20834,7 @@ static const uint8_t                  //
 static const uint8_t                       //
     wuffs_json__lut_quirky_backslashes[8]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
-        0, 7, 27, 63, 39, 11, 0, 0,
+        0, 7, 27, 10, 63, 39, 11, 0,
 };
 
 static const uint8_t            //
@@ -21039,39 +21039,39 @@ wuffs_json__decoder__set_quirk_enabled(wuffs_json__decoder* self,
     return wuffs_base__make_empty_struct();
   }
 
-  if (a_quirk == 1225364480) {
+  if (a_quirk == 1225364481) {
     self->private_impl.f_quirk_enabled_allow_backslash_etc[1] = a_enabled;
-  } else if (a_quirk == 1225364481) {
-    self->private_impl.f_quirk_enabled_allow_backslash_capital_u = a_enabled;
   } else if (a_quirk == 1225364482) {
-    self->private_impl.f_quirk_enabled_allow_backslash_etc[2] = a_enabled;
+    self->private_impl.f_quirk_enabled_allow_backslash_capital_u = a_enabled;
   } else if (a_quirk == 1225364483) {
-    self->private_impl.f_quirk_enabled_allow_backslash_etc[3] = a_enabled;
-  } else if (a_quirk == 1225364484) {
-    self->private_impl.f_quirk_enabled_allow_backslash_etc[4] = a_enabled;
+    self->private_impl.f_quirk_enabled_allow_backslash_etc[2] = a_enabled;
   } else if (a_quirk == 1225364485) {
-    self->private_impl.f_quirk_enabled_allow_backslash_etc[5] = a_enabled;
+    self->private_impl.f_quirk_enabled_allow_backslash_etc[4] = a_enabled;
   } else if (a_quirk == 1225364486) {
-    self->private_impl.f_quirk_enabled_allow_backslash_x = a_enabled;
+    self->private_impl.f_quirk_enabled_allow_backslash_etc[5] = a_enabled;
   } else if (a_quirk == 1225364487) {
     self->private_impl.f_quirk_enabled_allow_backslash_etc[6] = a_enabled;
   } else if (a_quirk == 1225364488) {
-    self->private_impl.f_quirk_enabled_allow_comment_block = a_enabled;
+    self->private_impl.f_quirk_enabled_allow_backslash_x = a_enabled;
   } else if (a_quirk == 1225364489) {
-    self->private_impl.f_quirk_enabled_allow_comment_line = a_enabled;
+    self->private_impl.f_quirk_enabled_allow_backslash_etc[7] = a_enabled;
   } else if (a_quirk == 1225364490) {
-    self->private_impl.f_quirk_enabled_allow_extra_comma = a_enabled;
+    self->private_impl.f_quirk_enabled_allow_comment_block = a_enabled;
   } else if (a_quirk == 1225364491) {
-    self->private_impl.f_quirk_enabled_allow_inf_nan_numbers = a_enabled;
+    self->private_impl.f_quirk_enabled_allow_comment_line = a_enabled;
   } else if (a_quirk == 1225364492) {
+    self->private_impl.f_quirk_enabled_allow_extra_comma = a_enabled;
+  } else if (a_quirk == 1225364493) {
+    self->private_impl.f_quirk_enabled_allow_inf_nan_numbers = a_enabled;
+  } else if (a_quirk == 1225364494) {
     self->private_impl.f_quirk_enabled_allow_leading_ascii_record_separator =
         a_enabled;
-  } else if (a_quirk == 1225364493) {
+  } else if (a_quirk == 1225364495) {
     self->private_impl.f_quirk_enabled_allow_leading_unicode_byte_order_mark =
         a_enabled;
-  } else if (a_quirk == 1225364494) {
+  } else if (a_quirk == 1225364496) {
     self->private_impl.f_quirk_enabled_allow_trailing_new_line = a_enabled;
-  } else if (a_quirk == 1225364495) {
+  } else if (a_quirk == 1225364497) {
     self->private_impl.f_quirk_enabled_replace_invalid_unicode = a_enabled;
   }
   return wuffs_base__make_empty_struct();

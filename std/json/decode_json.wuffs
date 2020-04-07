@@ -74,15 +74,15 @@ pub func decoder.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
 	} else if args.quirk == quirk_allow_backslash_e {
 		this.quirk_enabled_allow_backslash_etc[2] = args.enabled
 	} else if args.quirk == quirk_allow_backslash_question_mark {
-		this.quirk_enabled_allow_backslash_etc[3] = args.enabled
-	} else if args.quirk == quirk_allow_backslash_single_quote {
 		this.quirk_enabled_allow_backslash_etc[4] = args.enabled
-	} else if args.quirk == quirk_allow_backslash_v {
+	} else if args.quirk == quirk_allow_backslash_single_quote {
 		this.quirk_enabled_allow_backslash_etc[5] = args.enabled
+	} else if args.quirk == quirk_allow_backslash_v {
+		this.quirk_enabled_allow_backslash_etc[6] = args.enabled
 	} else if args.quirk == quirk_allow_backslash_x {
 		this.quirk_enabled_allow_backslash_x = args.enabled
 	} else if args.quirk == quirk_allow_backslash_zero {
-		this.quirk_enabled_allow_backslash_etc[6] = args.enabled
+		this.quirk_enabled_allow_backslash_etc[7] = args.enabled
 	} else if args.quirk == quirk_allow_comment_block {
 		this.quirk_enabled_allow_comment_block = args.enabled
 	} else if args.quirk == quirk_allow_comment_line {
