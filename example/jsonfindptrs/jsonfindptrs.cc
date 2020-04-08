@@ -624,6 +624,10 @@ JsonThing::parse_string(TokenStream& ts, TokenStream::Result tsr) {
           // program doesn't enable that by default, but if you're copy/pasting
           // this JsonThing code and your program does enable that option,
           // here's how to handle it.
+          //
+          // As per the quirk documentation, there are two options for how to
+          // interpret a backslash-x: as a byte or as a Unicode code point.
+          // This implementation chooses as a byte.
           wuffs_base__slice_u8 encoded = tsr.src_data;
           if (encoded.len & 3) {
             return Result(
