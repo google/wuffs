@@ -1875,63 +1875,10 @@ wuffs_base__io_buffer::writer_io_position() const {
 
 // ---------------- Tokens
 
+// wuffs_base__token is an element of a byte stream's tokenization.
+//
+// See https://github.com/google/wuffs/blob/master/doc/note/tokens.md
 typedef struct {
-  // The repr's 64 bits are divided as:
-  //
-  // +-----+-------------+-------+-------------+-----+-----+-----------+
-  // |  1  |      21     |   3   |      21     |  1  |  1  |     16    |
-  // +-----+-------------+-------+-------------+-----+-----+-----------+
-  // [..................value..................]  LP    LN     length
-  // [..1..|..........~value_extension.........]
-  // [..0..|.value_major.|.....value_minor.....]
-  // [..0..|.........VBC.........|.....VBD.....]
-  //
-  // The broad divisions are:
-  //  - Bits 63 .. 18 (46 bits) is the value.
-  //  - Bits 17 .. 16 ( 2 bits) is LP and LN (link_prev and link_next).
-  //  - Bits 15 ..  0 (16 bits) is the length.
-  //
-  // ----
-  //
-  // The value bits can be sub-divided in multiple ways. First, the high bit:
-  //  - Bits 63 .. 63 ( 1 bits) is an extended (1) or simple (0) token.
-  //
-  // For extended tokens:
-  //  - Bits 62 .. 18 (45 bits) is the bitwise-not (~) of the value_extension.
-  //
-  // For simple tokens:
-  //  - Bits 62 .. 42 (21 bits) is the value_major.
-  //  - Bits 41 .. 18 (24 bits) is the value_minor.
-  //  - Bits 62 .. 39 (24 bits) is the VBC (value_base_category).
-  //  - Bits 38 .. 18 (21 bits) is the VBD (value_base_detail).
-  //
-  // The value_major is a 21-bit [Base38](doc/note/base38-and-fourcc.md) value.
-  // If all of its bits are zero (special cased for Wuffs' built-in "base"
-  // package) then the value_minor is further sub-divided:
-  //  - Bits 41 .. 39 ( 3 bits) is the VBC (value_base_category).
-  //  - Bits 38 .. 18 (21 bits) is the VBD (value_base_detail).
-  //
-  // The high 46 bits (bits 63 .. 18) only have VBC and VBD semantics when the
-  // high 22 bits (the value_major) are all zero. An equivalent test is that
-  // the high 25 bits (the notional VBC) has a value in the range 0 ..= 7.
-  //
-  // At 21 bits, the VBD can hold every valid Unicode code point.
-  //
-  // If value_major is non-zero then value_minor has whatever arbitrary meaning
-  // the tokenizer's package assigns to it.
-  //
-  // ----
-  //
-  // Multiple consecutive tokens can form a larger conceptual unit. For
-  // example, an "abc\tz" string is a single higher level concept but at the
-  // lower level, it could consist of multiple tokens: the quotes '"', the
-  // ASCII texts "abc" and "z" and the backslash-escaped tab '\t'. The LP and
-  // LN (link_prev and link_next) bits denote tokens that are part of a
-  // multi-token chain:
-  //  - LP means that this token is not the first (there is a previous token).
-  //  - LN means that this token is not the last  (there is a next     token).
-  //
-  // In particular, a stand-alone token will have both link bits set to zero.
   uint64_t repr;
 
 #ifdef __cplusplus
@@ -2009,6 +1956,10 @@ wuffs_base__make_token(uint64_t repr) {
 // padded) produces multiples of D destination bytes. For example,
 // CONVERT_1_DST_4_SRC_BACKSLASH_X means a source like "\\x23\\x67\\xAB", where
 // 12 src bytes encode 3 dst bytes.
+//
+// Post-processing may further transform those D destination bytes (e.g. treat
+// "\\xFF" as the Unicode code point U+00FF instead of the byte 0xFF), but that
+// is out of scope of this VBD's semantics.
 //
 // When src is the empty string, multiple conversion algorithms are applicable
 // (so these bits are not necessarily mutually exclusive), all producing the
