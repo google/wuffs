@@ -674,7 +674,7 @@ JsonThing::parse_string(TokenStream& ts, TokenStream::Result tsr) {
         return Result("main: internal error: unexpected token");
     }
 
-    if (!tsr.token.link_next()) {
+    if (!tsr.token.continued()) {
       break;
     }
     tsr = ts.next();

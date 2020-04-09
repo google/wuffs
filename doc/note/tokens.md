@@ -36,25 +36,22 @@ string are treated differently when reconstructing the decoded string:
 
 A token is just a `uint64_t`. The broad divisions are:
 
-- Bits 63 .. 18 (46 bits) is the value.
-- Bits 17 .. 16  (2 bits) is `LP` and `LN` (`link_prev` and `link_next`).
+- Bits 63 .. 17 (47 bits) is the value.
+- Bits 16 .. 16  (1 bit)  is the `continued` bit.
 - Bits 15 ..  0 (16 bits) is the length.
 
-The `LP` and `LN` bits denote tokens that are part of a multi-token chain:
-
-- `LP` means that this token is not the first (there is a previous token).
-- `LN` means that this token is not the last  (there is a next     token).
-
-A stand-alone token will have both link bits set to zero.
+The `continued` bit is whether that the token chain for this token also
+contains the next token. The final token in a token chain, including
+stand-alone tokens, will have the `continued` bit set to zero.
 
 ```
-+-----+-------------+-------+-------------+-----+-----+-----------+
-|  1  |      21     |   3   |      21     |  1  |  1  |     16    |
-+-----+-------------+-------+-------------+-----+-----+-----------+
-[..................value..................]  LP    LN     length
-[..1..|..........~value_extension.........]
-[..0..|.value_major.|.....value_minor.....]
-[..0..|......0......|..VBC..|.....VBD.....]
++-----+-------------+-------+---------------+-----+-----------+
+|  1  |      21     |   3   |       22      |  1  |     16    |
++-----+-------------+-------+---------------+-----+-----------+
+[...................value...................] con     length
+[..1..|...........~value_extension..........]
+[..0..|.value_major.|......value_minor......]
+[..0..|......0......|..VBC..|......VBD......]
 ```
 
 The value bits can be sub-divided in multiple ways. First, the high bit:
@@ -64,7 +61,7 @@ The value bits can be sub-divided in multiple ways. First, the high bit:
 
 ### Extended Tokens
 
-- Bits 62 .. 18 (45 bits) is the bitwise-not (~) of the `value_extension`.
+- Bits 62 .. 17 (46 bits) is the bitwise-not (~) of the `value_extension`.
 
 Extended tokens are typically part of a multi-token chain whose first token is
 a simple token that provides the semantics for each `value_extension`.
@@ -73,7 +70,7 @@ a simple token that provides the semantics for each `value_extension`.
 ### Simple Tokens
 
 - Bits 62 .. 42 (21 bits) is the `value_major`.
-- Bits 41 .. 18 (24 bits) is the `value_minor`.
+- Bits 41 .. 17 (25 bits) is the `value_minor`.
 
 The `value_major` is a 21-bit [Base38](doc/note/base38-and-fourcc.md) number.
 For example, an HTML tokenizer might produce a combination of "base" tokens
@@ -90,13 +87,13 @@ tokenizer's package assigns to it.
 A zero `value_major` is reserved for Wuffs' built-in "base" package. The
 `value_minor` is further sub-divided:
 
- - Bits 41 .. 39  (3 bits) is the `VBC` (`value_base_category`).
- - Bits 38 .. 18 (21 bits) is the `VBD` (`value_base_detail`).
+- Bits 41 .. 38  (4 bits) is the `VBC` (`value_base_category`).
+- Bits 37 .. 17 (21 bits) is the `VBD` (`value_base_detail`).
 
-The high 46 bits (bits 63 .. 18) only have `VBC` and `VBD` semantics when the
+The high 47 bits (bits 63 .. 17) only have `VBC` and `VBD` semantics when the
 high 22 bits (the `extended` and `value_major` parts) are all zero. An
-equivalent test is that the high 25 bits (the notional `VBC`), as either an
-unsigned integer or a sign-extended integer, is in the range `0 ..= 7`.
+equivalent test is that the high 26 bits (the notional `VBC`), as either an
+unsigned integer or a sign-extended integer, is in the range `0 ..= 15`.
 
 These `VBC`s organize tokens into broad groups, generally applicable (as
 opposed to being e.g. HTML-specific or JSON-specific). For example, strings and
@@ -142,15 +139,17 @@ entire program (not just the Wuffs library) never calls `malloc`.
 ## Example Token Stream
 
 ```
-$ gcc script/print-json-token-debug-format.c && \
->   ./a.out -all-tokens -human-readable < test/data/json-things.formatted.json
-pos=0x00000000  len=0x0001  link=0b00  vbc=1:Structure........  vbd=0x004011
-pos=0x00000001  len=0x0005  link=0b00  vbc=0:Filler...........  vbd=0x000000
-pos=0x00000006  len=0x0001  link=0b01  vbc=2:String...........  vbd=0x000013
-pos=0x00000007  len=0x0002  link=0b11  vbc=2:String...........  vbd=0x000021
-pos=0x00000009  len=0x0001  link=0b10  vbc=2:String...........  vbd=0x000013
+$ gcc script/print-json-token-debug-format.c -o pjtdf
+$ ./pjtdf -all-tokens -human-readable < test/data/json-things.formatted.json
+pos=0x00000000  len=0x0001  con=0  vbc=1:Structure........  vbd=0x004011
+pos=0x00000001  len=0x0005  con=0  vbc=0:Filler...........  vbd=0x000000
+pos=0x00000006  len=0x0001  con=1  vbc=2:String...........  vbd=0x000013
+pos=0x00000007  len=0x0002  con=1  vbc=2:String...........  vbd=0x000021
+pos=0x00000009  len=0x0001  con=0  vbc=2:String...........  vbd=0x000013
 etc
-pos=0x00000094  len=0x0001  link=0b10  vbc=2:String...........  vbd=0x000013
-pos=0x00000095  len=0x0001  link=0b00  vbc=0:Filler...........  vbd=0x000000
-pos=0x00000096  len=0x0001  link=0b00  vbc=1:Structure........  vbd=0x001042
+pos=0x00000090  len=0x0002  con=1  vbc=3:UnicodeCodePoint.  vbd=0x00000A
+pos=0x00000092  len=0x0002  con=1  vbc=3:UnicodeCodePoint.  vbd=0x00000A
+pos=0x00000094  len=0x0001  con=0  vbc=2:String...........  vbd=0x000013
+pos=0x00000095  len=0x0001  con=0  vbc=0:Filler...........  vbd=0x000000
+pos=0x00000096  len=0x0001  con=0  vbc=1:Structure........  vbd=0x001042
 ```

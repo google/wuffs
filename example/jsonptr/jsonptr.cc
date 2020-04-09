@@ -979,15 +979,15 @@ handle_token(wuffs_base__token t, bool start_of_token_chain) {
           return "main: internal error: unexpected string-token conversion";
         }
 
-        if (t.link_next()) {
+        if (t.continued()) {
           return nullptr;
         }
         TRY(write_dst("\"", 1));
         goto after_value;
 
       case WUFFS_BASE__TOKEN__VBC__UNICODE_CODE_POINT:
-        if (!t.link_next()) {
-          return "main: internal error: unexpected unlinked token";
+        if (!t.continued()) {
+          return "main: internal error: unexpected non-continued UCP token";
         }
         TRY(handle_unicode_code_point(vbd));
         g_query.incremental_match_code_point(vbd);
@@ -1049,12 +1049,12 @@ main1(int argc, char** argv) {
 
       // Skip filler tokens (e.g. whitespace).
       if (t.value() == 0) {
-        start_of_token_chain = !t.link_next();
+        start_of_token_chain = !t.continued();
         continue;
       }
 
       const char* z = handle_token(t, start_of_token_chain);
-      start_of_token_chain = !t.link_next();
+      start_of_token_chain = !t.continued();
       if (z == nullptr) {
         continue;
       } else if (z == g_eod) {

@@ -350,7 +350,7 @@ func (g *gen) writeBuiltinTokenWriter(b *buffer, recv *a.Expr, method t.ID, args
 			if err := g.writeExpr(b, args[2].AsArg().Value(), depth); err != nil {
 				return err
 			}
-			b.writes(")) << WUFFS_BASE__TOKEN__LINK__SHIFT) | (((uint64_t)(")
+			b.writes(")) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) | (((uint64_t)(")
 		}
 
 		if err := g.writeExpr(b, args[3].AsArg().Value(), depth); err != nil {

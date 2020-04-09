@@ -196,7 +196,7 @@ fuzz_one_token(wuffs_base__token t,
 
   // After a complete JSON value, update the parity (even/odd count) of the
   // container.
-  if (!wuffs_base__token__link_next(&t) &&
+  if (!wuffs_base__token__continued(&t) &&
       (vbc != WUFFS_BASE__TOKEN__VBC__FILLER) &&
       ((vbc != WUFFS_BASE__TOKEN__VBC__STRUCTURE) ||
        (vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__POP))) {
@@ -368,8 +368,8 @@ fuzz_complex(wuffs_base__io_buffer* full_src, uint32_t hash_24_bits) {
 
   if (depth != 0) {
     return "fuzz: internal error: decoded OK but final depth was not zero";
-  } else if (wuffs_base__token__link_next(&final_token)) {
-    return "fuzz: internal error: decoded OK but final token had link_next";
+  } else if (wuffs_base__token__continued(&final_token)) {
+    return "fuzz: internal error: decoded OK but final token was continued";
   }
   return NULL;
 }

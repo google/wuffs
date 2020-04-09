@@ -24,16 +24,15 @@
 // It prints 16 bytes (128 bits) per token, containing big-endian numbers:
 //
 // +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
-// |               |       |   |   |   |      VALUE_EXTENSION      |
-// |      POS      |  LEN  | LP| LN|EXT|VALUE_MAJOR|  VALUE_MINOR  |
-// |               |       |   |   |   |     0     |VBC|    VBD    |
+// |               |       |       |   |      VALUE_EXTENSION      |
+// |      POS      |  LEN  |  CON  |EXT|VALUE_MAJOR|  VALUE_MINOR  |
+// |               |       |       |   |     0     |VBC|    VBD    |
 // +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
 //
 //  - POS (4 bytes) is the position: the sum of all previous tokens' lengths,
 //                  including elided tokens.
 //  - LEN (2 bytes) is the length.
-//  - LP  (1 bytes) is the link_prev bit.
-//  - LN  (1 bytes) is the link_next bit
+//  - CON (2 bytes) is the continued bit
 //  - EXT (1 bytes) is 1 for extended and 0 for simple tokens.
 //
 // Extended tokens have a VALUE_EXTENSION (7 bytes).
@@ -54,8 +53,8 @@
 // If the input or output is larger than the program's buffers (64 MiB and
 // 131072 tokens by default), there may be multiple valid tokenizations of any
 // given input. For example, if a source string "abcde" straddles an I/O
-// boundary, it may be tokenized as single (no-link) 5-length string or as a
-// 3-length link_next'ed string followed by a 2-length link_prev'ed string.
+// boundary, it may be tokenized as single (not continued) 5-length string or
+// as a 3-length continued string followed by a 2-length string.
 //
 // A Wuffs token stream, in general, can support inputs more than 0xFFFF_FFFF
 // bytes long, but this program can not, as it tracks the tokens' cumulative
@@ -202,7 +201,7 @@ parse_flags(int argc, char** argv) {
   return NULL;
 }
 
-const char* g_vbc_names[8] = {
+const char* g_vbc_names[16] = {
     "0:Filler..........",  //
     "1:Structure.......",  //
     "2:String..........",  //
@@ -211,6 +210,14 @@ const char* g_vbc_names[8] = {
     "5:Number..........",  //
     "6:Reserved........",  //
     "7:Reserved........",  //
+    "8:Reserved........",  //
+    "9:Reserved........",  //
+    "A:Reserved........",  //
+    "B:Reserved........",  //
+    "C:Reserved........",  //
+    "D:Reserved........",  //
+    "E:Reserved........",  //
+    "F:Reserved........",  //
 };
 
 const int g_base38_decode[38] = {
@@ -277,16 +284,15 @@ main1(int argc, char** argv) {
       uint16_t len = wuffs_base__token__length(t);
 
       if (g_flags.all_tokens || (wuffs_base__token__value(t) != 0)) {
-        uint8_t lp = wuffs_base__token__link_prev(t) ? 1 : 0;
-        uint8_t ln = wuffs_base__token__link_next(t) ? 1 : 0;
+        uint16_t con = wuffs_base__token__continued(t) ? 1 : 0;
         int32_t vmajor = wuffs_base__token__value_major(t);
         uint32_t vminor = wuffs_base__token__value_minor(t);
         uint8_t vbc = wuffs_base__token__value_base_category(t);
         uint32_t vbd = wuffs_base__token__value_base_detail(t);
 
         if (g_flags.human_readable) {
-          printf("pos=0x%08" PRIX32 "  len=0x%04" PRIX16 "  link=0b%d%d  ",
-                 (uint32_t)(pos), len, (int)(lp), (int)(ln));
+          printf("pos=0x%08" PRIX32 "  len=0x%04" PRIX16 "  con=%" PRId16 "  ",
+                 (uint32_t)(pos), len, con);
 
           if (vmajor > 0) {
             uint32_t m = vmajor;
@@ -302,7 +308,8 @@ main1(int argc, char** argv) {
                    vmajor, g_base38_decode[m0], g_base38_decode[m1],
                    g_base38_decode[m2], g_base38_decode[m3], vminor);
           } else if (vmajor == 0) {
-            printf("vbc=%s.  vbd=0x%06" PRIX32 "\n", g_vbc_names[vbc & 7], vbd);
+            printf("vbc=%s.  vbd=0x%06" PRIX32 "\n", g_vbc_names[vbc & 15],
+                   vbd);
           } else {
             printf("extended... vextension=0x%012" PRIX64 "\n",
                    wuffs_base__token__value_extension(t));
@@ -312,8 +319,7 @@ main1(int argc, char** argv) {
           uint8_t buf[16];
           wuffs_base__store_u32be__no_bounds_check(&buf[0x0], (uint32_t)(pos));
           wuffs_base__store_u16be__no_bounds_check(&buf[0x4], len);
-          wuffs_base__store_u8__no_bounds_check(&buf[0x0006], lp);
-          wuffs_base__store_u8__no_bounds_check(&buf[0x0007], ln);
+          wuffs_base__store_u16be__no_bounds_check(&buf[0x6], con);
           if (vmajor > 0) {
             wuffs_base__store_u32be__no_bounds_check(&buf[0x8], vmajor);
             wuffs_base__store_u32be__no_bounds_check(&buf[0xC], vminor);

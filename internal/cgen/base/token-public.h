@@ -29,8 +29,7 @@ typedef struct {
   inline int64_t value_base_category() const;
   inline uint64_t value_minor() const;
   inline uint64_t value_base_detail() const;
-  inline bool link_prev() const;
-  inline bool link_next() const;
+  inline bool continued() const;
   inline uint64_t length() const;
 #endif  // __cplusplus
 
@@ -47,17 +46,14 @@ wuffs_base__make_token(uint64_t repr) {
 
 #define WUFFS_BASE__TOKEN__LENGTH__MAX_INCL 0xFFFF
 
-#define WUFFS_BASE__TOKEN__VALUE__SHIFT 18
-#define WUFFS_BASE__TOKEN__VALUE_EXTENSION__SHIFT 18
+#define WUFFS_BASE__TOKEN__VALUE__SHIFT 17
+#define WUFFS_BASE__TOKEN__VALUE_EXTENSION__SHIFT 17
 #define WUFFS_BASE__TOKEN__VALUE_MAJOR__SHIFT 42
-#define WUFFS_BASE__TOKEN__VALUE_BASE_CATEGORY__SHIFT 39
-#define WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT 18
-#define WUFFS_BASE__TOKEN__VALUE_BASE_DETAIL__SHIFT 18
-#define WUFFS_BASE__TOKEN__LINK__SHIFT 16
+#define WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT 17
+#define WUFFS_BASE__TOKEN__VALUE_BASE_CATEGORY__SHIFT 38
+#define WUFFS_BASE__TOKEN__VALUE_BASE_DETAIL__SHIFT 17
+#define WUFFS_BASE__TOKEN__CONTINUED__SHIFT 16
 #define WUFFS_BASE__TOKEN__LENGTH__SHIFT 0
-
-#define WUFFS_BASE__TOKEN__LINK_PREV 0x20000
-#define WUFFS_BASE__TOKEN__LINK_NEXT 0x10000
 
   // --------
 
@@ -179,7 +175,7 @@ wuffs_base__token__value_base_category(const wuffs_base__token* t) {
 
 static inline uint64_t  //
 wuffs_base__token__value_minor(const wuffs_base__token* t) {
-  return (t->repr >> WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) & 0xFFFFFF;
+  return (t->repr >> WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) & 0x1FFFFFF;
 }
 
 static inline uint64_t  //
@@ -188,13 +184,8 @@ wuffs_base__token__value_base_detail(const wuffs_base__token* t) {
 }
 
 static inline bool  //
-wuffs_base__token__link_prev(const wuffs_base__token* t) {
-  return t->repr & WUFFS_BASE__TOKEN__LINK_PREV;
-}
-
-static inline bool  //
-wuffs_base__token__link_next(const wuffs_base__token* t) {
-  return t->repr & WUFFS_BASE__TOKEN__LINK_NEXT;
+wuffs_base__token__continued(const wuffs_base__token* t) {
+  return t->repr & 0x10000;
 }
 
 static inline uint64_t  //
@@ -235,13 +226,8 @@ wuffs_base__token::value_base_detail() const {
 }
 
 inline bool  //
-wuffs_base__token::link_prev() const {
-  return wuffs_base__token__link_prev(this);
-}
-
-inline bool  //
-wuffs_base__token::link_next() const {
-  return wuffs_base__token__link_next(this);
+wuffs_base__token::continued() const {
+  return wuffs_base__token__continued(this);
 }
 
 inline uint64_t  //
