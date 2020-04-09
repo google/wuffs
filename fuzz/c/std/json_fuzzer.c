@@ -85,7 +85,6 @@ typedef uint8_t stack_element;
 
 const char*  //
 fuzz_one_token(wuffs_base__token t,
-               wuffs_base__token* prev_token,
                wuffs_base__io_buffer* src,
                size_t* ti,
                stack_element* stack,
@@ -100,11 +99,6 @@ fuzz_one_token(wuffs_base__token t,
 
   if ((t.repr >> 63) != 0) {
     return "fuzz: internal error: token high bit was not zero";
-  }
-
-  if (wuffs_base__token__link_next(prev_token) !=
-      (wuffs_base__token__link_prev(&t))) {
-    return "fuzz: internal error: inconsistent link bits";
   }
 
   int64_t vbc = wuffs_base__token__value_base_category(&t);
@@ -290,7 +284,7 @@ fuzz_complex(wuffs_base__io_buffer* full_src, uint32_t hash_24_bits) {
       }),
   });
 
-  wuffs_base__token prev_token = wuffs_base__make_token(0);
+  wuffs_base__token final_token = wuffs_base__make_token(0);
   uint32_t no_progress_count = 0;
 
   stack_element stack[STACK_SIZE];
@@ -335,12 +329,11 @@ fuzz_complex(wuffs_base__io_buffer* full_src, uint32_t hash_24_bits) {
 
     while (tok.meta.ri < tok.meta.wi) {  // Inner loop.
       wuffs_base__token t = tok.data.ptr[tok.meta.ri++];
-      const char* z =
-          fuzz_one_token(t, &prev_token, &src, &ti, &stack[0], &depth);
+      const char* z = fuzz_one_token(t, &src, &ti, &stack[0], &depth);
       if (z != NULL) {
         return z;
       }
-      prev_token = t;
+      final_token = t;
     }  // Inner loop.
 
     // ----
@@ -375,7 +368,7 @@ fuzz_complex(wuffs_base__io_buffer* full_src, uint32_t hash_24_bits) {
 
   if (depth != 0) {
     return "fuzz: internal error: decoded OK but final depth was not zero";
-  } else if (wuffs_base__token__link_next(&prev_token)) {
+  } else if (wuffs_base__token__link_next(&final_token)) {
     return "fuzz: internal error: decoded OK but final token had link_next";
   }
   return NULL;

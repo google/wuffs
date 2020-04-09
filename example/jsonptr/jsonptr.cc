@@ -838,7 +838,7 @@ handle_unicode_code_point(uint32_t ucp) {
 }
 
 const char*  //
-handle_token(wuffs_base__token t) {
+handle_token(wuffs_base__token t, bool start_of_token_chain) {
   do {
     int64_t vbc = t.value_base_category();
     uint64_t vbd = t.value_base_detail();
@@ -888,7 +888,7 @@ handle_token(wuffs_base__token t) {
 
     // Write preceding whitespace and punctuation, if it wasn't ']', '}' or a
     // continuation of a multi-token chain.
-    if (!t.link_prev()) {
+    if (start_of_token_chain) {
       if (g_ctx == context::in_dict_after_key) {
         TRY(write_dst(": ", g_flags.compact_output ? 1 : 2));
       } else if (g_ctx != context::none) {
@@ -962,7 +962,7 @@ handle_token(wuffs_base__token t) {
         return nullptr;
 
       case WUFFS_BASE__TOKEN__VBC__STRING:
-        if (!t.link_prev()) {
+        if (start_of_token_chain) {
           TRY(write_dst("\"", 1));
           g_query.restart_fragment(in_dict_before_key() &&
                                    g_query.is_at(g_depth));
@@ -986,7 +986,7 @@ handle_token(wuffs_base__token t) {
         goto after_value;
 
       case WUFFS_BASE__TOKEN__VBC__UNICODE_CODE_POINT:
-        if (!t.link_prev() || !t.link_next()) {
+        if (!t.link_next()) {
           return "main: internal error: unexpected unlinked token";
         }
         TRY(handle_unicode_code_point(vbd));
@@ -1033,6 +1033,7 @@ const char*  //
 main1(int argc, char** argv) {
   TRY(initialize_globals(argc, argv));
 
+  bool start_of_token_chain = false;
   while (true) {
     wuffs_base__status status = g_dec.decode_tokens(
         &g_tok, &g_src,
@@ -1048,10 +1049,12 @@ main1(int argc, char** argv) {
 
       // Skip filler tokens (e.g. whitespace).
       if (t.value() == 0) {
+        start_of_token_chain = !t.link_next();
         continue;
       }
 
-      const char* z = handle_token(t);
+      const char* z = handle_token(t, start_of_token_chain);
+      start_of_token_chain = !t.link_next();
       if (z == nullptr) {
         continue;
       } else if (z == g_eod) {
