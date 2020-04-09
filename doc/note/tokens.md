@@ -36,9 +36,9 @@ string are treated differently when reconstructing the decoded string:
 
 A token is just a `uint64_t`. The broad divisions are:
 
-- Bits 63 .. 17 (47 bits) is the value.
-- Bits 16 .. 16  (1 bit)  is the `continued` bit.
-- Bits 15 ..  0 (16 bits) is the length.
+- Bits `17 ..= 63` (47 bits) are the value.
+- Bit         `16`  (1 bit)  is the `continued` bit.
+- Bits  `0 ..= 15` (16 bits) are the length.
 
 The `continued` bit is whether that the token chain for this token also
 contains the next token. The final token in a token chain, including
@@ -56,12 +56,12 @@ stand-alone tokens, will have the `continued` bit set to zero.
 
 The value bits can be sub-divided in multiple ways. First, the high bit:
 
-- Bits 63 .. 63  (1 bit)  denote an extended (1) or simple (0) token.
+- Bit         `63`  (1 bit)  denotes an extended (1) or simple (0) token.
 
 
 ### Extended Tokens
 
-- Bits 62 .. 17 (46 bits) is the bitwise-not (~) of the `value_extension`.
+- Bits `17 ..= 62` (46 bits) are the bitwise-not (~) of the `value_extension`.
 
 Extended tokens are typically part of a multi-token chain whose first token is
 a simple token that provides the semantics for each `value_extension`.
@@ -69,8 +69,8 @@ a simple token that provides the semantics for each `value_extension`.
 
 ### Simple Tokens
 
-- Bits 62 .. 42 (21 bits) is the `value_major`.
-- Bits 41 .. 17 (25 bits) is the `value_minor`.
+- Bits `42 ..= 62` (21 bits) are the `value_major`.
+- Bits `17 ..= 41` (25 bits) are the `value_minor`.
 
 The `value_major` is a 21-bit [Base38](doc/note/base38-and-fourcc.md) number.
 For example, an HTML tokenizer might produce a combination of "base" tokens
@@ -87,8 +87,8 @@ tokenizer's package assigns to it.
 A zero `value_major` is reserved for Wuffs' built-in "base" package. The
 `value_minor` is further sub-divided:
 
-- Bits 41 .. 38  (4 bits) is the `VBC` (`value_base_category`).
-- Bits 37 .. 17 (21 bits) is the `VBD` (`value_base_detail`).
+- Bits `38 ..= 41`  (4 bits) are the `VBC` (`value_base_category`).
+- Bits `17 ..= 37` (21 bits) are the `VBD` (`value_base_detail`).
 
 The high 47 bits (bits 63 .. 17) only have `VBC` and `VBD` semantics when the
 high 22 bits (the `extended` and `value_major` parts) are all zero. An
@@ -132,8 +132,8 @@ Wuffs code. Instead, Wuffs just outputs tokens and tokens are just `uint64_t`s.
 The [example/jsonfindptrs](/example/jsonfindptrs/jsonfindptrs.cc) program
 demonstrates creating a traditional DOM-like node tree from a SAX-like token
 stream. The [example/jsonptr](/example/jsonptr/jsonptr.cc) program demonstrates
-a different, lower-level approach that works directly on tokens, where the
-entire program (not just the Wuffs library) never calls `malloc`.
+a lower-level approach that works directly on tokens, where the entire program
+(not just the Wuffs library) never calls `malloc`.
 
 
 ## Example Token Stream

@@ -3,27 +3,27 @@
 `wuffs_base__pixel_format` is a `uint32_t` that encodes the format of the bytes
 that constitute an image frame's pixel data. Its bits:
 
-- bit        31 is reserved.
-- bits 30 .. 28 encodes color (and channel order, in terms of memory).
-- bit        27 is reserved.
-- bits 26 .. 24 encodes transparency.
-- bits 23 .. 21 are reserved.
-- bit        20 indicates big-endian/MSB-first (as opposed to little/LSB).
-- bit        19 indicates floating point (as opposed to integer).
-- bit        18 indicates palette-indexed. The number-of-planes (the next
-                field) will be 0, as the format is considered interleaved,
-                but the 8-bit N-BGRA color data is stored in plane 3.
-- bits 17 .. 16 are the number of planes, minus 1. Zero means interleaved.
-- bits 15 .. 12 encodes the number of bits (depth) in the 3rd channel.
-- bits 11 ..  8 encodes the number of bits (depth) in the 2nd channel.
-- bits  7 ..  4 encodes the number of bits (depth) in the 1st channel.
-- bits  3 ..  0 encodes the number of bits (depth) in the 0th channel.
+- Bit         `31` is reserved.
+- Bits `28 ..= 30` encodes color (and channel order, in terms of memory).
+- Bit         `27` is reserved.
+- Bits `24 ..= 26` encodes transparency.
+- Bits `21 ..= 23` are reserved.
+- Bit         `20` indicates big-endian/MSB-first (instead of little/LSB).
+- Bit         `19` indicates floating point (instead of integer).
+- Bit         `18` indicates palette-indexed. The number-of-planes (the next
+                   field) will be 0, as the format is considered interleaved,
+                   but the 8-bit N-BGRA color data is stored in plane 3.
+- Bits `16 ..= 17` are the number of planes, minus 1. Zero means interleaved.
+- Bits `12 ..= 15` encodes the number of bits (depth) in the 3rd channel.
+- Bits  `8 ..= 11` encodes the number of bits (depth) in the 2nd channel.
+- Bits  `4 ..=  7` encodes the number of bits (depth) in the 1st channel.
+- Bits  `0 ..=  3` encodes the number of bits (depth) in the 0th channel.
 
 The bit fields of a `wuffs_base__pixel_format` are not independent. For
 example, the number of planes should not be greater than the number of
-channels. Similarly, bits 15..4 are unused (and should be zero) if bits 31..24
-(color and transparency) together imply only 1 channel (gray, no alpha) and
-floating point samples should mean a bit depth of 16, 32 or 64.
+channels. Similarly, bits `4 ..= 15` are unused (and should be zero) if bits
+`24 ..= 31` (color and transparency) together imply only 1 channel (gray, no
+alpha) and floating point samples should mean a bit depth of 16, 32 or 64.
 
 Formats hold between 1 and 4 channels. For example: Y (1 channel: gray), YA (2
 channels: gray and alpha), BGR (3 channels: blue, green, red) or CMYK (4
@@ -77,7 +77,7 @@ invalid to combine the zero color (alpha only) with the zero transparency.
 Bit depth is encoded in 4 bits:
 
 -  0 means the channel or index is unused.
--  x means a bit depth of  x, for x in the range 1..8.
+-  x means a bit depth of  x, for x in the range `1 ..= 8`.
 -  9 means a bit depth of 10.
 - 10 means a bit depth of 12.
 - 11 means a bit depth of 16.

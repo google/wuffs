@@ -33,7 +33,7 @@ Base38 is a tighter encoding than FourCC, fitting four characters into 21 bits
 instead of 32 bits. This is achieved by using a smaller alphabet of 38 possible
 values (space, 0-9, ? or a-z), so that it cannot distinguish between e.g. an
 upper case 'X' and a lower case 'x'. There's also the happy coincidence that
-`38 ** 4` is slightly smaller than `2 ** 21`.
+`38 ** 4`, `2085136`, is slightly smaller than `2 ** 21`, `2097152`.
 
 The base38 encoding of `"JPEG"` is `0x122FF6`, which is `1191926`, which is
 `((21 * (38 ** 3)) + (27 * (38 ** 2)) + (16 * (38 ** 1)) + (18 * (38 ** 0)))`.
@@ -45,9 +45,9 @@ different values in their own namespace, without conflicting with other
 packages (assuming that there aren't e.g. two `"JPEG"` Wuffs packages in the
 same library). The conventional `uint32_t` packing is:
 
-- Bit        31 is reserved (zero).
-- Bits 30 .. 10 are the base38 value, shifted by 10.
-- Bits  9 ..  0 are the enumeration value.
+- Bit         `31`  (1 bit)  is reserved (zero).
+- Bits `10 ..= 30` (21 bits) are the base38 value, shifted by 10.
+- Bits  `0 ..=  9` (10 bits) are the enumeration value.
 
 For example, [quirk values](/doc/note/quirks.md) use this `((base38 << 10) |
 enumeration)` scheme.
