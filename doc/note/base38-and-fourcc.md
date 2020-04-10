@@ -49,5 +49,7 @@ same library). The conventional `uint32_t` packing is:
 - Bits `10 ..= 30` (21 bits) are the base38 value, shifted by 10.
 - Bits  `0 ..=  9` (10 bits) are the enumeration value.
 
-For example, [quirk values](/doc/note/quirks.md) use this `((base38 << 10) |
-enumeration)` scheme.
+For example:
+- [Quirk values](/doc/note/quirks.md) use this `((base38 << 10) | enumeration)`
+  scheme.
+- [Tokens](/doc/note/tokens.md) assign 21 out of 64 bits for a Base38 value.
