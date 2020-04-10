@@ -295,18 +295,32 @@ main1(int argc, char** argv) {
                  (uint32_t)(pos), len, con);
 
           if (vmajor > 0) {
+            char vmajor_name[5];
+            vmajor_name[0] = '*';
+            vmajor_name[1] = '*';
+            vmajor_name[2] = '*';
+            vmajor_name[3] = '*';
+            vmajor_name[4] = '\x00';
             uint32_t m = vmajor;
-            uint32_t m0 = m / (38 * 38 * 38);
-            m -= m0 * (38 * 38 * 38);
-            uint32_t m1 = m / (38 * 38);
-            m -= m1 * (38 * 38);
-            uint32_t m2 = m / (38);
-            m -= m2 * (38);
-            uint32_t m3 = m;
+            if (m < 38 * 38 * 38 * 38) {
+              uint32_t m0 = m / (38 * 38 * 38);
+              m -= m0 * (38 * 38 * 38);
+              vmajor_name[0] = g_base38_decode[m0];
 
-            printf("vmajor=0x%06" PRIX32 ":%c%c%c%c  vminor=0x%06" PRIX32 "\n",
-                   vmajor, g_base38_decode[m0], g_base38_decode[m1],
-                   g_base38_decode[m2], g_base38_decode[m3], vminor);
+              uint32_t m1 = m / (38 * 38);
+              m -= m1 * (38 * 38);
+              vmajor_name[1] = g_base38_decode[m1];
+
+              uint32_t m2 = m / (38);
+              m -= m2 * (38);
+              vmajor_name[2] = g_base38_decode[m2];
+
+              uint32_t m3 = m;
+              vmajor_name[3] = g_base38_decode[m3];
+            }
+
+            printf("vmajor=0x%06" PRIX32 ":%s  vminor=0x%06" PRIX32 "\n",
+                   vmajor, vmajor_name, vminor);
           } else if (vmajor == 0) {
             printf("vbc=%s.  vbd=0x%06" PRIX32 "\n", g_vbc_names[vbc & 15],
                    vbd);
