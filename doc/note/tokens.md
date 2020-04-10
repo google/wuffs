@@ -72,7 +72,7 @@ a simple token that provides the semantics for each `value_extension`.
 - Bits `42 ..= 62` (21 bits) are the `value_major`.
 - Bits `17 ..= 41` (25 bits) are the `value_minor`.
 
-The `value_major` is a 21-bit [Base38](doc/note/base38-and-fourcc.md) number.
+The `value_major` is a 21-bit [Base38](/doc/note/base38-and-fourcc.md) number.
 For example, an HTML tokenizer might produce a combination of "base" tokens
 (see below) and tokens whose `value_major` is `0x109B0B`, the Base38 encoding
 of `html`. The `value_major` forms a namespace that distinguishes e.g.
@@ -90,8 +90,8 @@ A zero `value_major` is reserved for Wuffs' built-in "base" package. The
 - Bits `38 ..= 41`  (4 bits) are the `VBC` (`value_base_category`).
 - Bits `17 ..= 37` (21 bits) are the `VBD` (`value_base_detail`).
 
-The high 47 bits (bits 63 .. 17) only have `VBC` and `VBD` semantics when the
-high 22 bits (the `extended` and `value_major` parts) are all zero. An
+The high 47 bits (bits `17 ..= 63`) only have `VBC` and `VBD` semantics when
+the high 22 bits (the `extended` and `value_major` parts) are all zero. An
 equivalent test is that the high 26 bits (the notional `VBC`), as either an
 unsigned integer or a sign-extended integer, is in the range `0 ..= 15`.
 
