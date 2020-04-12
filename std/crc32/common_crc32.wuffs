@@ -17,6 +17,9 @@ pub struct ieee_hasher? implements base.hasher_u32(
 	state : base.u32,
 )
 
+pub func ieee_hasher.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
+}
+
 // TODO: should it be ? instead of ! because it's public, and might need a way
 // to signal "initializer not called"? Should the return type, in the generated
 // C code, be "struct{ uint32_t checksum; wuffs_crc32__status status }"?

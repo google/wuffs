@@ -3827,10 +3827,18 @@ wuffs_base__ascii__longest_valid_prefix(wuffs_base__slice_u8 s);
 extern const char* wuffs_base__hasher_u32__vtable_name;
 
 typedef struct {
+  wuffs_base__empty_struct (*set_quirk_enabled)(void* self,
+                                                uint32_t a_quirk,
+                                                bool a_enabled);
   uint32_t (*update_u32)(void* self, wuffs_base__slice_u8 a_x);
 } wuffs_base__hasher_u32__func_ptrs;
 
 typedef struct wuffs_base__hasher_u32__struct wuffs_base__hasher_u32;
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
+wuffs_base__hasher_u32__set_quirk_enabled(wuffs_base__hasher_u32* self,
+                                          uint32_t a_quirk,
+                                          bool a_enabled);
 
 WUFFS_BASE__MAYBE_STATIC uint32_t  //
 wuffs_base__hasher_u32__update_u32(wuffs_base__hasher_u32* self,
@@ -3849,6 +3857,11 @@ struct wuffs_base__hasher_u32__struct {
 #if __cplusplus >= 201103L
   using unique_ptr = std::unique_ptr<wuffs_base__hasher_u32, decltype(&free)>;
 #endif
+
+  inline wuffs_base__empty_struct  //
+  set_quirk_enabled(uint32_t a_quirk, bool a_enabled) {
+    return wuffs_base__hasher_u32__set_quirk_enabled(this, a_quirk, a_enabled);
+  }
 
   inline uint32_t  //
   update_u32(wuffs_base__slice_u8 a_x) {
@@ -3889,6 +3902,9 @@ typedef struct {
   wuffs_base__status (*restart_frame)(void* self,
                                       uint64_t a_index,
                                       uint64_t a_io_position);
+  wuffs_base__empty_struct (*set_quirk_enabled)(void* self,
+                                                uint32_t a_quirk,
+                                                bool a_enabled);
   wuffs_base__empty_struct (*set_report_metadata)(void* self,
                                                   uint32_t a_fourcc,
                                                   bool a_report);
@@ -3948,6 +3964,11 @@ WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_base__image_decoder__restart_frame(wuffs_base__image_decoder* self,
                                          uint64_t a_index,
                                          uint64_t a_io_position);
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
+wuffs_base__image_decoder__set_quirk_enabled(wuffs_base__image_decoder* self,
+                                             uint32_t a_quirk,
+                                             bool a_enabled);
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
 wuffs_base__image_decoder__set_report_metadata(wuffs_base__image_decoder* self,
@@ -4036,6 +4057,12 @@ struct wuffs_base__image_decoder__struct {
   }
 
   inline wuffs_base__empty_struct  //
+  set_quirk_enabled(uint32_t a_quirk, bool a_enabled) {
+    return wuffs_base__image_decoder__set_quirk_enabled(this, a_quirk,
+                                                        a_enabled);
+  }
+
+  inline wuffs_base__empty_struct  //
   set_report_metadata(uint32_t a_fourcc, bool a_report) {
     return wuffs_base__image_decoder__set_report_metadata(this, a_fourcc,
                                                           a_report);
@@ -4057,6 +4084,9 @@ struct wuffs_base__image_decoder__struct {
 extern const char* wuffs_base__io_transformer__vtable_name;
 
 typedef struct {
+  wuffs_base__empty_struct (*set_quirk_enabled)(void* self,
+                                                uint32_t a_quirk,
+                                                bool a_enabled);
   wuffs_base__status (*transform_io)(void* self,
                                      wuffs_base__io_buffer* a_dst,
                                      wuffs_base__io_buffer* a_src,
@@ -4065,6 +4095,11 @@ typedef struct {
 } wuffs_base__io_transformer__func_ptrs;
 
 typedef struct wuffs_base__io_transformer__struct wuffs_base__io_transformer;
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
+wuffs_base__io_transformer__set_quirk_enabled(wuffs_base__io_transformer* self,
+                                              uint32_t a_quirk,
+                                              bool a_enabled);
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_base__io_transformer__transform_io(wuffs_base__io_transformer* self,
@@ -4089,6 +4124,12 @@ struct wuffs_base__io_transformer__struct {
   using unique_ptr =
       std::unique_ptr<wuffs_base__io_transformer, decltype(&free)>;
 #endif
+
+  inline wuffs_base__empty_struct  //
+  set_quirk_enabled(uint32_t a_quirk, bool a_enabled) {
+    return wuffs_base__io_transformer__set_quirk_enabled(this, a_quirk,
+                                                         a_enabled);
+  }
 
   inline wuffs_base__status  //
   transform_io(wuffs_base__io_buffer* a_dst,
@@ -4118,6 +4159,9 @@ typedef struct {
                                       wuffs_base__token_buffer* a_dst,
                                       wuffs_base__io_buffer* a_src,
                                       wuffs_base__slice_u8 a_workbuf);
+  wuffs_base__empty_struct (*set_quirk_enabled)(void* self,
+                                                uint32_t a_quirk,
+                                                bool a_enabled);
   wuffs_base__range_ii_u64 (*workbuf_len)(const void* self);
 } wuffs_base__token_decoder__func_ptrs;
 
@@ -4128,6 +4172,11 @@ wuffs_base__token_decoder__decode_tokens(wuffs_base__token_decoder* self,
                                          wuffs_base__token_buffer* a_dst,
                                          wuffs_base__io_buffer* a_src,
                                          wuffs_base__slice_u8 a_workbuf);
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
+wuffs_base__token_decoder__set_quirk_enabled(wuffs_base__token_decoder* self,
+                                             uint32_t a_quirk,
+                                             bool a_enabled);
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__range_ii_u64  //
 wuffs_base__token_decoder__workbuf_len(const wuffs_base__token_decoder* self);
@@ -4153,6 +4202,12 @@ struct wuffs_base__token_decoder__struct {
                 wuffs_base__slice_u8 a_workbuf) {
     return wuffs_base__token_decoder__decode_tokens(this, a_dst, a_src,
                                                     a_workbuf);
+  }
+
+  inline wuffs_base__empty_struct  //
+  set_quirk_enabled(uint32_t a_quirk, bool a_enabled) {
+    return wuffs_base__token_decoder__set_quirk_enabled(this, a_quirk,
+                                                        a_enabled);
   }
 
   inline wuffs_base__range_ii_u64  //
@@ -4226,6 +4281,11 @@ wuffs_adler32__hasher__upcast_as__wuffs_base__hasher_u32(
 }
 
 // ---------------- Public Function Prototypes
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
+wuffs_adler32__hasher__set_quirk_enabled(wuffs_adler32__hasher* self,
+                                         uint32_t a_quirk,
+                                         bool a_enabled);
 
 WUFFS_BASE__MAYBE_STATIC uint32_t  //
 wuffs_adler32__hasher__update_u32(wuffs_adler32__hasher* self,
@@ -4318,6 +4378,11 @@ struct wuffs_adler32__hasher__struct {
     return (wuffs_base__hasher_u32*)this;
   }
 
+  inline wuffs_base__empty_struct  //
+  set_quirk_enabled(uint32_t a_quirk, bool a_enabled) {
+    return wuffs_adler32__hasher__set_quirk_enabled(this, a_quirk, a_enabled);
+  }
+
   inline uint32_t  //
   update_u32(wuffs_base__slice_u8 a_x) {
     return wuffs_adler32__hasher__update_u32(this, a_x);
@@ -4392,6 +4457,11 @@ wuffs_bmp__decoder__upcast_as__wuffs_base__image_decoder(
 }
 
 // ---------------- Public Function Prototypes
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
+wuffs_bmp__decoder__set_quirk_enabled(wuffs_bmp__decoder* self,
+                                      uint32_t a_quirk,
+                                      bool a_enabled);
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_bmp__decoder__decode_image_config(wuffs_bmp__decoder* self,
@@ -4573,6 +4643,11 @@ struct wuffs_bmp__decoder__struct {
     return (wuffs_base__image_decoder*)this;
   }
 
+  inline wuffs_base__empty_struct  //
+  set_quirk_enabled(uint32_t a_quirk, bool a_enabled) {
+    return wuffs_bmp__decoder__set_quirk_enabled(this, a_quirk, a_enabled);
+  }
+
   inline wuffs_base__status  //
   decode_image_config(wuffs_base__image_config* a_dst,
                       wuffs_base__io_buffer* a_src) {
@@ -4710,6 +4785,11 @@ wuffs_crc32__ieee_hasher__upcast_as__wuffs_base__hasher_u32(
 
 // ---------------- Public Function Prototypes
 
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
+wuffs_crc32__ieee_hasher__set_quirk_enabled(wuffs_crc32__ieee_hasher* self,
+                                            uint32_t a_quirk,
+                                            bool a_enabled);
+
 WUFFS_BASE__MAYBE_STATIC uint32_t  //
 wuffs_crc32__ieee_hasher__update_u32(wuffs_crc32__ieee_hasher* self,
                                      wuffs_base__slice_u8 a_x);
@@ -4801,6 +4881,12 @@ struct wuffs_crc32__ieee_hasher__struct {
     return (wuffs_base__hasher_u32*)this;
   }
 
+  inline wuffs_base__empty_struct  //
+  set_quirk_enabled(uint32_t a_quirk, bool a_enabled) {
+    return wuffs_crc32__ieee_hasher__set_quirk_enabled(this, a_quirk,
+                                                       a_enabled);
+  }
+
   inline uint32_t  //
   update_u32(wuffs_base__slice_u8 a_x) {
     return wuffs_crc32__ieee_hasher__update_u32(this, a_x);
@@ -4890,6 +4976,11 @@ wuffs_deflate__decoder__upcast_as__wuffs_base__io_transformer(
 WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
 wuffs_deflate__decoder__add_history(wuffs_deflate__decoder* self,
                                     wuffs_base__slice_u8 a_hist);
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
+wuffs_deflate__decoder__set_quirk_enabled(wuffs_deflate__decoder* self,
+                                          uint32_t a_quirk,
+                                          bool a_enabled);
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__range_ii_u64  //
 wuffs_deflate__decoder__workbuf_len(const wuffs_deflate__decoder* self);
@@ -5043,6 +5134,11 @@ struct wuffs_deflate__decoder__struct {
     return wuffs_deflate__decoder__add_history(this, a_hist);
   }
 
+  inline wuffs_base__empty_struct  //
+  set_quirk_enabled(uint32_t a_quirk, bool a_enabled) {
+    return wuffs_deflate__decoder__set_quirk_enabled(this, a_quirk, a_enabled);
+  }
+
   inline wuffs_base__range_ii_u64  //
   workbuf_len() const {
     return wuffs_deflate__decoder__workbuf_len(this);
@@ -5123,6 +5219,11 @@ wuffs_lzw__decoder__upcast_as__wuffs_base__io_transformer(
 }
 
 // ---------------- Public Function Prototypes
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
+wuffs_lzw__decoder__set_quirk_enabled(wuffs_lzw__decoder* self,
+                                      uint32_t a_quirk,
+                                      bool a_enabled);
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
 wuffs_lzw__decoder__set_literal_width(wuffs_lzw__decoder* self, uint32_t a_lw);
@@ -5244,6 +5345,11 @@ struct wuffs_lzw__decoder__struct {
   inline wuffs_base__io_transformer*  //
   upcast_as__wuffs_base__io_transformer() {
     return (wuffs_base__io_transformer*)this;
+  }
+
+  inline wuffs_base__empty_struct  //
+  set_quirk_enabled(uint32_t a_quirk, bool a_enabled) {
+    return wuffs_lzw__decoder__set_quirk_enabled(this, a_quirk, a_enabled);
   }
 
   inline wuffs_base__empty_struct  //
@@ -6106,6 +6212,11 @@ wuffs_gzip__decoder__upcast_as__wuffs_base__io_transformer(
 WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
 wuffs_gzip__decoder__set_ignore_checksum(wuffs_gzip__decoder* self, bool a_ic);
 
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
+wuffs_gzip__decoder__set_quirk_enabled(wuffs_gzip__decoder* self,
+                                       uint32_t a_quirk,
+                                       bool a_enabled);
+
 WUFFS_BASE__MAYBE_STATIC wuffs_base__range_ii_u64  //
 wuffs_gzip__decoder__workbuf_len(const wuffs_gzip__decoder* self);
 
@@ -6218,6 +6329,11 @@ struct wuffs_gzip__decoder__struct {
   inline wuffs_base__empty_struct  //
   set_ignore_checksum(bool a_ic) {
     return wuffs_gzip__decoder__set_ignore_checksum(this, a_ic);
+  }
+
+  inline wuffs_base__empty_struct  //
+  set_quirk_enabled(uint32_t a_quirk, bool a_enabled) {
+    return wuffs_gzip__decoder__set_quirk_enabled(this, a_quirk, a_enabled);
   }
 
   inline wuffs_base__range_ii_u64  //
@@ -6566,6 +6682,11 @@ wuffs_wbmp__decoder__upcast_as__wuffs_base__image_decoder(
 
 // ---------------- Public Function Prototypes
 
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
+wuffs_wbmp__decoder__set_quirk_enabled(wuffs_wbmp__decoder* self,
+                                       uint32_t a_quirk,
+                                       bool a_enabled);
+
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_wbmp__decoder__decode_image_config(wuffs_wbmp__decoder* self,
                                          wuffs_base__image_config* a_dst,
@@ -6729,6 +6850,11 @@ struct wuffs_wbmp__decoder__struct {
     return (wuffs_base__image_decoder*)this;
   }
 
+  inline wuffs_base__empty_struct  //
+  set_quirk_enabled(uint32_t a_quirk, bool a_enabled) {
+    return wuffs_wbmp__decoder__set_quirk_enabled(this, a_quirk, a_enabled);
+  }
+
   inline wuffs_base__status  //
   decode_image_config(wuffs_base__image_config* a_dst,
                       wuffs_base__io_buffer* a_src) {
@@ -6885,6 +7011,11 @@ wuffs_zlib__decoder__add_dictionary(wuffs_zlib__decoder* self,
 WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
 wuffs_zlib__decoder__set_ignore_checksum(wuffs_zlib__decoder* self, bool a_ic);
 
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
+wuffs_zlib__decoder__set_quirk_enabled(wuffs_zlib__decoder* self,
+                                       uint32_t a_quirk,
+                                       bool a_enabled);
+
 WUFFS_BASE__MAYBE_STATIC wuffs_base__range_ii_u64  //
 wuffs_zlib__decoder__workbuf_len(const wuffs_zlib__decoder* self);
 
@@ -7011,6 +7142,11 @@ struct wuffs_zlib__decoder__struct {
   inline wuffs_base__empty_struct  //
   set_ignore_checksum(bool a_ic) {
     return wuffs_zlib__decoder__set_ignore_checksum(this, a_ic);
+  }
+
+  inline wuffs_base__empty_struct  //
+  set_quirk_enabled(uint32_t a_quirk, bool a_enabled) {
+    return wuffs_zlib__decoder__set_quirk_enabled(this, a_quirk, a_enabled);
   }
 
   inline wuffs_base__range_ii_u64  //
@@ -7606,6 +7742,33 @@ const char* wuffs_base__error__too_much_data = "#base: too much data";
 const char* wuffs_base__hasher_u32__vtable_name =
     "{vtable}wuffs_base__hasher_u32";
 
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
+wuffs_base__hasher_u32__set_quirk_enabled(wuffs_base__hasher_u32* self,
+                                          uint32_t a_quirk,
+                                          bool a_enabled) {
+  if (!self) {
+    return wuffs_base__make_empty_struct();
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_empty_struct();
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__hasher_u32__vtable_name) {
+      const wuffs_base__hasher_u32__func_ptrs* func_ptrs =
+          (const wuffs_base__hasher_u32__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->set_quirk_enabled)(self, a_quirk, a_enabled);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return wuffs_base__make_empty_struct();
+}
+
 WUFFS_BASE__MAYBE_STATIC uint32_t  //
 wuffs_base__hasher_u32__update_u32(wuffs_base__hasher_u32* self,
                                    wuffs_base__slice_u8 a_x) {
@@ -7954,6 +8117,33 @@ wuffs_base__image_decoder__restart_frame(wuffs_base__image_decoder* self,
 }
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
+wuffs_base__image_decoder__set_quirk_enabled(wuffs_base__image_decoder* self,
+                                             uint32_t a_quirk,
+                                             bool a_enabled) {
+  if (!self) {
+    return wuffs_base__make_empty_struct();
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_empty_struct();
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__image_decoder__vtable_name) {
+      const wuffs_base__image_decoder__func_ptrs* func_ptrs =
+          (const wuffs_base__image_decoder__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->set_quirk_enabled)(self, a_quirk, a_enabled);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return wuffs_base__make_empty_struct();
+}
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
 wuffs_base__image_decoder__set_report_metadata(wuffs_base__image_decoder* self,
                                                uint32_t a_fourcc,
                                                bool a_report) {
@@ -8010,6 +8200,33 @@ wuffs_base__image_decoder__workbuf_len(const wuffs_base__image_decoder* self) {
 
 const char* wuffs_base__io_transformer__vtable_name =
     "{vtable}wuffs_base__io_transformer";
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
+wuffs_base__io_transformer__set_quirk_enabled(wuffs_base__io_transformer* self,
+                                              uint32_t a_quirk,
+                                              bool a_enabled) {
+  if (!self) {
+    return wuffs_base__make_empty_struct();
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_empty_struct();
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__io_transformer__vtable_name) {
+      const wuffs_base__io_transformer__func_ptrs* func_ptrs =
+          (const wuffs_base__io_transformer__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->set_quirk_enabled)(self, a_quirk, a_enabled);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return wuffs_base__make_empty_struct();
+}
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_base__io_transformer__transform_io(wuffs_base__io_transformer* self,
@@ -8103,6 +8320,33 @@ wuffs_base__token_decoder__decode_tokens(wuffs_base__token_decoder* self,
   }
 
   return wuffs_base__make_status(wuffs_base__error__bad_vtable);
+}
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
+wuffs_base__token_decoder__set_quirk_enabled(wuffs_base__token_decoder* self,
+                                             uint32_t a_quirk,
+                                             bool a_enabled) {
+  if (!self) {
+    return wuffs_base__make_empty_struct();
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_empty_struct();
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__token_decoder__vtable_name) {
+      const wuffs_base__token_decoder__func_ptrs* func_ptrs =
+          (const wuffs_base__token_decoder__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->set_quirk_enabled)(self, a_quirk, a_enabled);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return wuffs_base__make_empty_struct();
 }
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__range_ii_u64  //
@@ -10854,6 +11098,8 @@ wuffs_base__ascii__longest_valid_prefix(wuffs_base__slice_u8 s) {
 
 const wuffs_base__hasher_u32__func_ptrs
     wuffs_adler32__hasher__func_ptrs_for__wuffs_base__hasher_u32 = {
+        (wuffs_base__empty_struct(*)(void*, uint32_t, bool))(
+            &wuffs_adler32__hasher__set_quirk_enabled),
         (uint32_t(*)(void*, wuffs_base__slice_u8))(
             &wuffs_adler32__hasher__update_u32),
 };
@@ -10931,6 +11177,22 @@ sizeof__wuffs_adler32__hasher() {
 }
 
 // ---------------- Function Implementations
+
+// -------- func adler32.hasher.set_quirk_enabled
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
+wuffs_adler32__hasher__set_quirk_enabled(wuffs_adler32__hasher* self,
+                                         uint32_t a_quirk,
+                                         bool a_enabled) {
+  if (!self) {
+    return wuffs_base__make_empty_struct();
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_empty_struct();
+  }
+
+  return wuffs_base__make_empty_struct();
+}
 
 // -------- func adler32.hasher.update_u32
 
@@ -11068,6 +11330,8 @@ const wuffs_base__image_decoder__func_ptrs
         (wuffs_base__status(*)(void*, uint64_t, uint64_t))(
             &wuffs_bmp__decoder__restart_frame),
         (wuffs_base__empty_struct(*)(void*, uint32_t, bool))(
+            &wuffs_bmp__decoder__set_quirk_enabled),
+        (wuffs_base__empty_struct(*)(void*, uint32_t, bool))(
             &wuffs_bmp__decoder__set_report_metadata),
         (wuffs_base__range_ii_u64(*)(const void*))(
             &wuffs_bmp__decoder__workbuf_len),
@@ -11146,6 +11410,22 @@ sizeof__wuffs_bmp__decoder() {
 }
 
 // ---------------- Function Implementations
+
+// -------- func bmp.decoder.set_quirk_enabled
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
+wuffs_bmp__decoder__set_quirk_enabled(wuffs_bmp__decoder* self,
+                                      uint32_t a_quirk,
+                                      bool a_enabled) {
+  if (!self) {
+    return wuffs_base__make_empty_struct();
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_empty_struct();
+  }
+
+  return wuffs_base__make_empty_struct();
+}
 
 // -------- func bmp.decoder.decode_image_config
 
@@ -13286,6 +13566,8 @@ static const uint32_t                 //
 
 const wuffs_base__hasher_u32__func_ptrs
     wuffs_crc32__ieee_hasher__func_ptrs_for__wuffs_base__hasher_u32 = {
+        (wuffs_base__empty_struct(*)(void*, uint32_t, bool))(
+            &wuffs_crc32__ieee_hasher__set_quirk_enabled),
         (uint32_t(*)(void*, wuffs_base__slice_u8))(
             &wuffs_crc32__ieee_hasher__update_u32),
 };
@@ -13363,6 +13645,22 @@ sizeof__wuffs_crc32__ieee_hasher() {
 }
 
 // ---------------- Function Implementations
+
+// -------- func crc32.ieee_hasher.set_quirk_enabled
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
+wuffs_crc32__ieee_hasher__set_quirk_enabled(wuffs_crc32__ieee_hasher* self,
+                                            uint32_t a_quirk,
+                                            bool a_enabled) {
+  if (!self) {
+    return wuffs_base__make_empty_struct();
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_empty_struct();
+  }
+
+  return wuffs_base__make_empty_struct();
+}
 
 // -------- func crc32.ieee_hasher.update_u32
 
@@ -13605,6 +13903,8 @@ wuffs_deflate__decoder__decode_huffman_slow(wuffs_deflate__decoder* self,
 
 const wuffs_base__io_transformer__func_ptrs
     wuffs_deflate__decoder__func_ptrs_for__wuffs_base__io_transformer = {
+        (wuffs_base__empty_struct(*)(void*, uint32_t, bool))(
+            &wuffs_deflate__decoder__set_quirk_enabled),
         (wuffs_base__status(*)(void*,
                                wuffs_base__io_buffer*,
                                wuffs_base__io_buffer*,
@@ -13743,6 +14043,22 @@ wuffs_deflate__decoder__add_history(wuffs_deflate__decoder* self,
           wuffs_base__make_slice_u8(self->private_data.f_history, 33025),
           32768),
       wuffs_base__make_slice_u8(self->private_data.f_history, 33025));
+  return wuffs_base__make_empty_struct();
+}
+
+// -------- func deflate.decoder.set_quirk_enabled
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
+wuffs_deflate__decoder__set_quirk_enabled(wuffs_deflate__decoder* self,
+                                          uint32_t a_quirk,
+                                          bool a_enabled) {
+  if (!self) {
+    return wuffs_base__make_empty_struct();
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_empty_struct();
+  }
+
   return wuffs_base__make_empty_struct();
 }
 
@@ -15475,6 +15791,8 @@ wuffs_lzw__decoder__write_to(wuffs_lzw__decoder* self,
 
 const wuffs_base__io_transformer__func_ptrs
     wuffs_lzw__decoder__func_ptrs_for__wuffs_base__io_transformer = {
+        (wuffs_base__empty_struct(*)(void*, uint32_t, bool))(
+            &wuffs_lzw__decoder__set_quirk_enabled),
         (wuffs_base__status(*)(void*,
                                wuffs_base__io_buffer*,
                                wuffs_base__io_buffer*,
@@ -15557,6 +15875,22 @@ sizeof__wuffs_lzw__decoder() {
 }
 
 // ---------------- Function Implementations
+
+// -------- func lzw.decoder.set_quirk_enabled
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
+wuffs_lzw__decoder__set_quirk_enabled(wuffs_lzw__decoder* self,
+                                      uint32_t a_quirk,
+                                      bool a_enabled) {
+  if (!self) {
+    return wuffs_base__make_empty_struct();
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_empty_struct();
+  }
+
+  return wuffs_base__make_empty_struct();
+}
 
 // -------- func lzw.decoder.set_literal_width
 
@@ -16181,6 +16515,8 @@ const wuffs_base__image_decoder__func_ptrs
         (wuffs_base__status(*)(void*, uint64_t, uint64_t))(
             &wuffs_gif__config_decoder__restart_frame),
         (wuffs_base__empty_struct(*)(void*, uint32_t, bool))(
+            &wuffs_gif__config_decoder__set_quirk_enabled),
+        (wuffs_base__empty_struct(*)(void*, uint32_t, bool))(
             &wuffs_gif__config_decoder__set_report_metadata),
         (wuffs_base__range_ii_u64(*)(const void*))(
             &wuffs_gif__config_decoder__workbuf_len),
@@ -16215,6 +16551,8 @@ const wuffs_base__image_decoder__func_ptrs
         (uint64_t(*)(const void*))(&wuffs_gif__decoder__num_decoded_frames),
         (wuffs_base__status(*)(void*, uint64_t, uint64_t))(
             &wuffs_gif__decoder__restart_frame),
+        (wuffs_base__empty_struct(*)(void*, uint32_t, bool))(
+            &wuffs_gif__decoder__set_quirk_enabled),
         (wuffs_base__empty_struct(*)(void*, uint32_t, bool))(
             &wuffs_gif__decoder__set_report_metadata),
         (wuffs_base__range_ii_u64(*)(const void*))(
@@ -20747,6 +21085,8 @@ const char* wuffs_gzip__error__bad_header = "#gzip: bad header";
 
 const wuffs_base__io_transformer__func_ptrs
     wuffs_gzip__decoder__func_ptrs_for__wuffs_base__io_transformer = {
+        (wuffs_base__empty_struct(*)(void*, uint32_t, bool))(
+            &wuffs_gzip__decoder__set_quirk_enabled),
         (wuffs_base__status(*)(void*,
                                wuffs_base__io_buffer*,
                                wuffs_base__io_buffer*,
@@ -20858,6 +21198,22 @@ wuffs_gzip__decoder__set_ignore_checksum(wuffs_gzip__decoder* self, bool a_ic) {
   }
 
   self->private_impl.f_ignore_checksum = a_ic;
+  return wuffs_base__make_empty_struct();
+}
+
+// -------- func gzip.decoder.set_quirk_enabled
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
+wuffs_gzip__decoder__set_quirk_enabled(wuffs_gzip__decoder* self,
+                                       uint32_t a_quirk,
+                                       bool a_enabled) {
+  if (!self) {
+    return wuffs_base__make_empty_struct();
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_empty_struct();
+  }
+
   return wuffs_base__make_empty_struct();
 }
 
@@ -21419,6 +21775,8 @@ const wuffs_base__token_decoder__func_ptrs
                                wuffs_base__io_buffer*,
                                wuffs_base__slice_u8))(
             &wuffs_json__decoder__decode_tokens),
+        (wuffs_base__empty_struct(*)(void*, uint32_t, bool))(
+            &wuffs_json__decoder__set_quirk_enabled),
         (wuffs_base__range_ii_u64(*)(const void*))(
             &wuffs_json__decoder__workbuf_len),
 };
@@ -23608,6 +23966,8 @@ const wuffs_base__image_decoder__func_ptrs
         (wuffs_base__status(*)(void*, uint64_t, uint64_t))(
             &wuffs_wbmp__decoder__restart_frame),
         (wuffs_base__empty_struct(*)(void*, uint32_t, bool))(
+            &wuffs_wbmp__decoder__set_quirk_enabled),
+        (wuffs_base__empty_struct(*)(void*, uint32_t, bool))(
             &wuffs_wbmp__decoder__set_report_metadata),
         (wuffs_base__range_ii_u64(*)(const void*))(
             &wuffs_wbmp__decoder__workbuf_len),
@@ -23686,6 +24046,22 @@ sizeof__wuffs_wbmp__decoder() {
 }
 
 // ---------------- Function Implementations
+
+// -------- func wbmp.decoder.set_quirk_enabled
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
+wuffs_wbmp__decoder__set_quirk_enabled(wuffs_wbmp__decoder* self,
+                                       uint32_t a_quirk,
+                                       bool a_enabled) {
+  if (!self) {
+    return wuffs_base__make_empty_struct();
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_empty_struct();
+  }
+
+  return wuffs_base__make_empty_struct();
+}
 
 // -------- func wbmp.decoder.decode_image_config
 
@@ -24391,6 +24767,8 @@ const char* wuffs_zlib__error__incorrect_dictionary =
 
 const wuffs_base__io_transformer__func_ptrs
     wuffs_zlib__decoder__func_ptrs_for__wuffs_base__io_transformer = {
+        (wuffs_base__empty_struct(*)(void*, uint32_t, bool))(
+            &wuffs_zlib__decoder__set_quirk_enabled),
         (wuffs_base__status(*)(void*,
                                wuffs_base__io_buffer*,
                                wuffs_base__io_buffer*,
@@ -24549,6 +24927,22 @@ wuffs_zlib__decoder__set_ignore_checksum(wuffs_zlib__decoder* self, bool a_ic) {
   }
 
   self->private_impl.f_ignore_checksum = a_ic;
+  return wuffs_base__make_empty_struct();
+}
+
+// -------- func zlib.decoder.set_quirk_enabled
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
+wuffs_zlib__decoder__set_quirk_enabled(wuffs_zlib__decoder* self,
+                                       uint32_t a_quirk,
+                                       bool a_enabled) {
+  if (!self) {
+    return wuffs_base__make_empty_struct();
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_empty_struct();
+  }
+
   return wuffs_base__make_empty_struct();
 }
 

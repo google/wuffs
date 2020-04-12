@@ -69,6 +69,9 @@ pub struct decoder? implements base.io_transformer(
 	output : array[8192 + 7] base.u8,
 )
 
+pub func decoder.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
+}
+
 pub func decoder.set_literal_width!(lw: base.u32[..= 8]) {
 	this.set_literal_width_arg = args.lw + 1
 }

@@ -190,6 +190,9 @@ pub func decoder.add_history!(hist: slice base.u8) {
 	this.history[0x8000 ..].copy_from_slice!(s: this.history[..])
 }
 
+pub func decoder.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
+}
+
 pub func decoder.workbuf_len() base.range_ii_u64 {
 	return this.util.make_range_ii_u64(
 		min_incl: decoder_workbuf_len_max_incl_worst_case,

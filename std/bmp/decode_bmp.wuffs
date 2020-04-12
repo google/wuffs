@@ -54,6 +54,9 @@ pub struct decoder? implements base.image_decoder(
 	util     : base.utility,
 )
 
+pub func decoder.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
+}
+
 pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_reader) {
 	var magic           : base.u32
 	var bitmap_info_len : base.u32
