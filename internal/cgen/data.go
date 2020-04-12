@@ -17,7 +17,7 @@
 package cgen
 
 const baseAllImplC = "" +
-	"#ifndef WUFFS_INCLUDE_GUARD__BASE\n#define WUFFS_INCLUDE_GUARD__BASE\n\n#if defined(WUFFS_IMPLEMENTATION) && !defined(WUFFS_CONFIG__MODULES)\n#define WUFFS_CONFIG__MODULES\n#define WUFFS_CONFIG__MODULE__BASE\n#endif\n\n// !! WUFFS MONOLITHIC RELEASE DISCARDS EVERYTHING ABOVE.\n\n// !! INSERT base/copyright\n\n#include <stdbool.h>\n#include <stdint.h>\n#include <string.h>\n\n#ifdef __cplusplus\nextern \"C\" {\n#endif\n\n// !! INSERT base/all-public.h.\n\n// !! INSERT InterfaceDeclarations.\n\n" +
+	"#ifndef WUFFS_INCLUDE_GUARD__BASE\n#define WUFFS_INCLUDE_GUARD__BASE\n\n#if defined(WUFFS_IMPLEMENTATION) && !defined(WUFFS_CONFIG__MODULES)\n#define WUFFS_CONFIG__MODULES\n#define WUFFS_CONFIG__MODULE__BASE\n#endif\n\n// !! WUFFS MONOLITHIC RELEASE DISCARDS EVERYTHING ABOVE.\n\n// !! INSERT base/copyright\n\n#include <stdbool.h>\n#include <stdint.h>\n#include <stdlib.h>\n#include <string.h>\n\n#ifdef __cplusplus\n#if __cplusplus >= 201103L\n#include <memory>\n#else\n#warning \"Wuffs' C++ code requires -std=c++11 or later\"\n#endif\n\nextern \"C\" {\n#endif\n\n// !! INSERT base/all-public.h.\n\n// !! INSERT InterfaceDeclarations.\n\n" +
 	"" +
 	"// ----------------\n\n#ifdef __cplusplus\n}  // extern \"C\"\n#endif\n\n// WUFFS C HEADER ENDS HERE.\n#ifdef WUFFS_IMPLEMENTATION\n\n#ifdef __cplusplus\nextern \"C\" {\n#endif\n\n// !! INSERT base/all-private.h.\n\n" +
 	"" +

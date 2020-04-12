@@ -33,7 +33,6 @@ for a C compiler $CC, such as clang or gcc.
 */
 
 #include <stdio.h>
-#include <stdlib.h>
 
 // Wuffs ships as a "single file C library" or "header file library" as per
 // https://github.com/nothings/stb/blob/master/docs/stb_howto.txt
@@ -59,7 +58,7 @@ uint8_t g_dst_buffer_array[DST_BUFFER_ARRAY_SIZE];
 //
 // Passing --no-name to the gzip command line also means to skip the timestamp,
 // which means that its output is deterministic.
-uint8_t g_src_ptr[] = {
+uint8_t g_src_array[] = {
     0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00,  // 00..07
     0x00, 0x03, 0xf3, 0x48, 0xcd, 0xc9, 0xc9, 0x57,  // 08..0F
     0x08, 0x2f, 0x4d, 0x4b, 0x2b, 0xd6, 0xe3, 0x02,  // 10..17
@@ -79,43 +78,28 @@ uint8_t g_work_buffer_array[1];
 
 static const char*  //
 decode() {
-  wuffs_base__io_buffer dst;
-  dst.data.ptr = g_dst_buffer_array;
-  dst.data.len = DST_BUFFER_ARRAY_SIZE;
-  dst.meta.wi = 0;
-  dst.meta.ri = 0;
-  dst.meta.pos = 0;
-  dst.meta.closed = false;
-
-  wuffs_base__io_buffer src;
-  src.data.ptr = g_src_ptr;
-  src.data.len = g_src_len;
-  src.meta.wi = g_src_len;
-  src.meta.ri = 0;
-  src.meta.pos = 0;
-  src.meta.closed = true;
-
-  wuffs_gzip__decoder* dec =
-      (wuffs_gzip__decoder*)(calloc(sizeof__wuffs_gzip__decoder(), 1));
+  wuffs_gzip__decoder* dec = wuffs_gzip__decoder__alloc();
   if (!dec) {
     return "out of memory";
   }
-  wuffs_base__status status = wuffs_gzip__decoder__initialize(
-      dec, sizeof__wuffs_gzip__decoder(), WUFFS_VERSION,
-      WUFFS_INITIALIZE__ALREADY_ZEROED);
-  if (!wuffs_base__status__is_ok(&status)) {
-    free(dec);
-    return wuffs_base__status__message(&status);
-  }
-  status = wuffs_gzip__decoder__transform_io(
+
+  wuffs_base__io_buffer dst =
+      wuffs_base__ptr_u8__writer(&g_dst_buffer_array[0], DST_BUFFER_ARRAY_SIZE);
+
+  static const bool closed = true;
+  wuffs_base__io_buffer src =
+      wuffs_base__ptr_u8__reader(&g_src_array[0], g_src_len, closed);
+
+  wuffs_base__status status = wuffs_gzip__decoder__transform_io(
       dec, &dst, &src,
-      wuffs_base__make_slice_u8(g_work_buffer_array, WORK_BUFFER_ARRAY_SIZE));
+      wuffs_base__make_slice_u8(&g_work_buffer_array[0],
+                                WORK_BUFFER_ARRAY_SIZE));
+  free(dec);
+
   if (!wuffs_base__status__is_ok(&status)) {
-    free(dec);
     return wuffs_base__status__message(&status);
   }
   fwrite(dst.data.ptr, sizeof(uint8_t), dst.meta.wi, stdout);
-  free(dec);
   return NULL;
 }
 

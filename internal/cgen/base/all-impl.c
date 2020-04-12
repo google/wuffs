@@ -28,9 +28,16 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 
 #ifdef __cplusplus
+#if __cplusplus >= 201103L
+#include <memory>
+#else
+#warning "Wuffs' C++ code requires -std=c++11 or later"
+#endif
+
 extern "C" {
 #endif
 

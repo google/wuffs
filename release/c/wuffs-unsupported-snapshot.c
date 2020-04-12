@@ -32,9 +32,16 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 
 #ifdef __cplusplus
+#if __cplusplus >= 201103L
+#include <memory>
+#else
+#warning "Wuffs' C++ code requires -std=c++11 or later"
+#endif
+
 extern "C" {
 #endif
 
@@ -3839,6 +3846,9 @@ struct wuffs_base__hasher_u32__struct {
   } private_impl;
 
 #ifdef __cplusplus
+#if __cplusplus >= 201103L
+  using unique_ptr = std::unique_ptr<wuffs_base__hasher_u32, decltype(&free)>;
+#endif
 
   inline uint32_t  //
   update_u32(wuffs_base__slice_u8 a_x) {
@@ -3957,6 +3967,10 @@ struct wuffs_base__image_decoder__struct {
   } private_impl;
 
 #ifdef __cplusplus
+#if __cplusplus >= 201103L
+  using unique_ptr =
+      std::unique_ptr<wuffs_base__image_decoder, decltype(&free)>;
+#endif
 
   inline wuffs_base__status  //
   ack_metadata_chunk(wuffs_base__io_buffer* a_src) {
@@ -4071,6 +4085,10 @@ struct wuffs_base__io_transformer__struct {
   } private_impl;
 
 #ifdef __cplusplus
+#if __cplusplus >= 201103L
+  using unique_ptr =
+      std::unique_ptr<wuffs_base__io_transformer, decltype(&free)>;
+#endif
 
   inline wuffs_base__status  //
   transform_io(wuffs_base__io_buffer* a_dst,
@@ -4124,6 +4142,10 @@ struct wuffs_base__token_decoder__struct {
   } private_impl;
 
 #ifdef __cplusplus
+#if __cplusplus >= 201103L
+  using unique_ptr =
+      std::unique_ptr<wuffs_base__token_decoder, decltype(&free)>;
+#endif
 
   inline wuffs_base__status  //
   decode_tokens(wuffs_base__token_buffer* a_dst,
@@ -4179,6 +4201,22 @@ wuffs_adler32__hasher__initialize(wuffs_adler32__hasher* self,
 size_t  //
 sizeof__wuffs_adler32__hasher();
 
+// ---------------- Allocs
+
+// These functions allocate and initialize Wuffs structs. They return NULL if
+// memory allocation fails. If they return non-NULL, there is no need to call
+// wuffs_foo__bar__initialize, but the caller is responsible for eventually
+// calling free on the returned pointer. That pointer is effectively a C++
+// std::unique_ptr<T, decltype(&free)>.
+
+wuffs_adler32__hasher*  //
+wuffs_adler32__hasher__alloc();
+
+static inline wuffs_base__hasher_u32*  //
+wuffs_adler32__hasher__alloc_as__wuffs_base__hasher_u32() {
+  return (wuffs_base__hasher_u32*)(wuffs_adler32__hasher__alloc());
+}
+
 // ---------------- Upcasts
 
 static inline wuffs_base__hasher_u32*  //
@@ -4222,6 +4260,23 @@ struct wuffs_adler32__hasher__struct {
   } private_impl;
 
 #ifdef __cplusplus
+#if __cplusplus >= 201103L
+  using unique_ptr = std::unique_ptr<wuffs_adler32__hasher, decltype(&free)>;
+
+  // On failure, the alloc_etc functions return nullptr. They don't throw.
+
+  static inline unique_ptr  //
+  alloc() {
+    return unique_ptr(wuffs_adler32__hasher__alloc(), &free);
+  }
+
+  static inline wuffs_base__hasher_u32::unique_ptr  //
+  alloc_as__wuffs_base__hasher_u32() {
+    return wuffs_base__hasher_u32::unique_ptr(
+        wuffs_adler32__hasher__alloc_as__wuffs_base__hasher_u32(), &free);
+  }
+#endif  // __cplusplus >= 201103L
+
 #if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
   // e.g. the "new" operator, as this struct is intentionally opaque. Its total
@@ -4311,6 +4366,22 @@ wuffs_bmp__decoder__initialize(wuffs_bmp__decoder* self,
 
 size_t  //
 sizeof__wuffs_bmp__decoder();
+
+// ---------------- Allocs
+
+// These functions allocate and initialize Wuffs structs. They return NULL if
+// memory allocation fails. If they return non-NULL, there is no need to call
+// wuffs_foo__bar__initialize, but the caller is responsible for eventually
+// calling free on the returned pointer. That pointer is effectively a C++
+// std::unique_ptr<T, decltype(&free)>.
+
+wuffs_bmp__decoder*  //
+wuffs_bmp__decoder__alloc();
+
+static inline wuffs_base__image_decoder*  //
+wuffs_bmp__decoder__alloc_as__wuffs_base__image_decoder() {
+  return (wuffs_base__image_decoder*)(wuffs_bmp__decoder__alloc());
+}
 
 // ---------------- Upcasts
 
@@ -4444,6 +4515,23 @@ struct wuffs_bmp__decoder__struct {
   } private_data;
 
 #ifdef __cplusplus
+#if __cplusplus >= 201103L
+  using unique_ptr = std::unique_ptr<wuffs_bmp__decoder, decltype(&free)>;
+
+  // On failure, the alloc_etc functions return nullptr. They don't throw.
+
+  static inline unique_ptr  //
+  alloc() {
+    return unique_ptr(wuffs_bmp__decoder__alloc(), &free);
+  }
+
+  static inline wuffs_base__image_decoder::unique_ptr  //
+  alloc_as__wuffs_base__image_decoder() {
+    return wuffs_base__image_decoder::unique_ptr(
+        wuffs_bmp__decoder__alloc_as__wuffs_base__image_decoder(), &free);
+  }
+#endif  // __cplusplus >= 201103L
+
 #if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
   // e.g. the "new" operator, as this struct is intentionally opaque. Its total
@@ -4596,6 +4684,22 @@ wuffs_crc32__ieee_hasher__initialize(wuffs_crc32__ieee_hasher* self,
 size_t  //
 sizeof__wuffs_crc32__ieee_hasher();
 
+// ---------------- Allocs
+
+// These functions allocate and initialize Wuffs structs. They return NULL if
+// memory allocation fails. If they return non-NULL, there is no need to call
+// wuffs_foo__bar__initialize, but the caller is responsible for eventually
+// calling free on the returned pointer. That pointer is effectively a C++
+// std::unique_ptr<T, decltype(&free)>.
+
+wuffs_crc32__ieee_hasher*  //
+wuffs_crc32__ieee_hasher__alloc();
+
+static inline wuffs_base__hasher_u32*  //
+wuffs_crc32__ieee_hasher__alloc_as__wuffs_base__hasher_u32() {
+  return (wuffs_base__hasher_u32*)(wuffs_crc32__ieee_hasher__alloc());
+}
+
 // ---------------- Upcasts
 
 static inline wuffs_base__hasher_u32*  //
@@ -4638,6 +4742,23 @@ struct wuffs_crc32__ieee_hasher__struct {
   } private_impl;
 
 #ifdef __cplusplus
+#if __cplusplus >= 201103L
+  using unique_ptr = std::unique_ptr<wuffs_crc32__ieee_hasher, decltype(&free)>;
+
+  // On failure, the alloc_etc functions return nullptr. They don't throw.
+
+  static inline unique_ptr  //
+  alloc() {
+    return unique_ptr(wuffs_crc32__ieee_hasher__alloc(), &free);
+  }
+
+  static inline wuffs_base__hasher_u32::unique_ptr  //
+  alloc_as__wuffs_base__hasher_u32() {
+    return wuffs_base__hasher_u32::unique_ptr(
+        wuffs_crc32__ieee_hasher__alloc_as__wuffs_base__hasher_u32(), &free);
+  }
+#endif  // __cplusplus >= 201103L
+
 #if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
   // e.g. the "new" operator, as this struct is intentionally opaque. Its total
@@ -4739,6 +4860,22 @@ wuffs_deflate__decoder__initialize(wuffs_deflate__decoder* self,
 
 size_t  //
 sizeof__wuffs_deflate__decoder();
+
+// ---------------- Allocs
+
+// These functions allocate and initialize Wuffs structs. They return NULL if
+// memory allocation fails. If they return non-NULL, there is no need to call
+// wuffs_foo__bar__initialize, but the caller is responsible for eventually
+// calling free on the returned pointer. That pointer is effectively a C++
+// std::unique_ptr<T, decltype(&free)>.
+
+wuffs_deflate__decoder*  //
+wuffs_deflate__decoder__alloc();
+
+static inline wuffs_base__io_transformer*  //
+wuffs_deflate__decoder__alloc_as__wuffs_base__io_transformer() {
+  return (wuffs_base__io_transformer*)(wuffs_deflate__decoder__alloc());
+}
 
 // ---------------- Upcasts
 
@@ -4842,6 +4979,23 @@ struct wuffs_deflate__decoder__struct {
   } private_data;
 
 #ifdef __cplusplus
+#if __cplusplus >= 201103L
+  using unique_ptr = std::unique_ptr<wuffs_deflate__decoder, decltype(&free)>;
+
+  // On failure, the alloc_etc functions return nullptr. They don't throw.
+
+  static inline unique_ptr  //
+  alloc() {
+    return unique_ptr(wuffs_deflate__decoder__alloc(), &free);
+  }
+
+  static inline wuffs_base__io_transformer::unique_ptr  //
+  alloc_as__wuffs_base__io_transformer() {
+    return wuffs_base__io_transformer::unique_ptr(
+        wuffs_deflate__decoder__alloc_as__wuffs_base__io_transformer(), &free);
+  }
+#endif  // __cplusplus >= 201103L
+
 #if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
   // e.g. the "new" operator, as this struct is intentionally opaque. Its total
@@ -4944,6 +5098,22 @@ wuffs_lzw__decoder__initialize(wuffs_lzw__decoder* self,
 size_t  //
 sizeof__wuffs_lzw__decoder();
 
+// ---------------- Allocs
+
+// These functions allocate and initialize Wuffs structs. They return NULL if
+// memory allocation fails. If they return non-NULL, there is no need to call
+// wuffs_foo__bar__initialize, but the caller is responsible for eventually
+// calling free on the returned pointer. That pointer is effectively a C++
+// std::unique_ptr<T, decltype(&free)>.
+
+wuffs_lzw__decoder*  //
+wuffs_lzw__decoder__alloc();
+
+static inline wuffs_base__io_transformer*  //
+wuffs_lzw__decoder__alloc_as__wuffs_base__io_transformer() {
+  return (wuffs_base__io_transformer*)(wuffs_lzw__decoder__alloc());
+}
+
 // ---------------- Upcasts
 
 static inline wuffs_base__io_transformer*  //
@@ -5018,6 +5188,23 @@ struct wuffs_lzw__decoder__struct {
   } private_data;
 
 #ifdef __cplusplus
+#if __cplusplus >= 201103L
+  using unique_ptr = std::unique_ptr<wuffs_lzw__decoder, decltype(&free)>;
+
+  // On failure, the alloc_etc functions return nullptr. They don't throw.
+
+  static inline unique_ptr  //
+  alloc() {
+    return unique_ptr(wuffs_lzw__decoder__alloc(), &free);
+  }
+
+  static inline wuffs_base__io_transformer::unique_ptr  //
+  alloc_as__wuffs_base__io_transformer() {
+    return wuffs_base__io_transformer::unique_ptr(
+        wuffs_lzw__decoder__alloc_as__wuffs_base__io_transformer(), &free);
+  }
+#endif  // __cplusplus >= 201103L
+
 #if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
   // e.g. the "new" operator, as this struct is intentionally opaque. Its total
@@ -5155,6 +5342,30 @@ wuffs_gif__decoder__initialize(wuffs_gif__decoder* self,
 
 size_t  //
 sizeof__wuffs_gif__decoder();
+
+// ---------------- Allocs
+
+// These functions allocate and initialize Wuffs structs. They return NULL if
+// memory allocation fails. If they return non-NULL, there is no need to call
+// wuffs_foo__bar__initialize, but the caller is responsible for eventually
+// calling free on the returned pointer. That pointer is effectively a C++
+// std::unique_ptr<T, decltype(&free)>.
+
+wuffs_gif__config_decoder*  //
+wuffs_gif__config_decoder__alloc();
+
+static inline wuffs_base__image_decoder*  //
+wuffs_gif__config_decoder__alloc_as__wuffs_base__image_decoder() {
+  return (wuffs_base__image_decoder*)(wuffs_gif__config_decoder__alloc());
+}
+
+wuffs_gif__decoder*  //
+wuffs_gif__decoder__alloc();
+
+static inline wuffs_base__image_decoder*  //
+wuffs_gif__decoder__alloc_as__wuffs_base__image_decoder() {
+  return (wuffs_base__image_decoder*)(wuffs_gif__decoder__alloc());
+}
 
 // ---------------- Upcasts
 
@@ -5410,6 +5621,25 @@ struct wuffs_gif__config_decoder__struct {
   } private_data;
 
 #ifdef __cplusplus
+#if __cplusplus >= 201103L
+  using unique_ptr =
+      std::unique_ptr<wuffs_gif__config_decoder, decltype(&free)>;
+
+  // On failure, the alloc_etc functions return nullptr. They don't throw.
+
+  static inline unique_ptr  //
+  alloc() {
+    return unique_ptr(wuffs_gif__config_decoder__alloc(), &free);
+  }
+
+  static inline wuffs_base__image_decoder::unique_ptr  //
+  alloc_as__wuffs_base__image_decoder() {
+    return wuffs_base__image_decoder::unique_ptr(
+        wuffs_gif__config_decoder__alloc_as__wuffs_base__image_decoder(),
+        &free);
+  }
+#endif  // __cplusplus >= 201103L
+
 #if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
   // e.g. the "new" operator, as this struct is intentionally opaque. Its total
@@ -5666,6 +5896,23 @@ struct wuffs_gif__decoder__struct {
   } private_data;
 
 #ifdef __cplusplus
+#if __cplusplus >= 201103L
+  using unique_ptr = std::unique_ptr<wuffs_gif__decoder, decltype(&free)>;
+
+  // On failure, the alloc_etc functions return nullptr. They don't throw.
+
+  static inline unique_ptr  //
+  alloc() {
+    return unique_ptr(wuffs_gif__decoder__alloc(), &free);
+  }
+
+  static inline wuffs_base__image_decoder::unique_ptr  //
+  alloc_as__wuffs_base__image_decoder() {
+    return wuffs_base__image_decoder::unique_ptr(
+        wuffs_gif__decoder__alloc_as__wuffs_base__image_decoder(), &free);
+  }
+#endif  // __cplusplus >= 201103L
+
 #if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
   // e.g. the "new" operator, as this struct is intentionally opaque. Its total
@@ -5830,6 +6077,22 @@ wuffs_gzip__decoder__initialize(wuffs_gzip__decoder* self,
 size_t  //
 sizeof__wuffs_gzip__decoder();
 
+// ---------------- Allocs
+
+// These functions allocate and initialize Wuffs structs. They return NULL if
+// memory allocation fails. If they return non-NULL, there is no need to call
+// wuffs_foo__bar__initialize, but the caller is responsible for eventually
+// calling free on the returned pointer. That pointer is effectively a C++
+// std::unique_ptr<T, decltype(&free)>.
+
+wuffs_gzip__decoder*  //
+wuffs_gzip__decoder__alloc();
+
+static inline wuffs_base__io_transformer*  //
+wuffs_gzip__decoder__alloc_as__wuffs_base__io_transformer() {
+  return (wuffs_base__io_transformer*)(wuffs_gzip__decoder__alloc());
+}
+
 // ---------------- Upcasts
 
 static inline wuffs_base__io_transformer*  //
@@ -5894,6 +6157,23 @@ struct wuffs_gzip__decoder__struct {
   } private_data;
 
 #ifdef __cplusplus
+#if __cplusplus >= 201103L
+  using unique_ptr = std::unique_ptr<wuffs_gzip__decoder, decltype(&free)>;
+
+  // On failure, the alloc_etc functions return nullptr. They don't throw.
+
+  static inline unique_ptr  //
+  alloc() {
+    return unique_ptr(wuffs_gzip__decoder__alloc(), &free);
+  }
+
+  static inline wuffs_base__io_transformer::unique_ptr  //
+  alloc_as__wuffs_base__io_transformer() {
+    return wuffs_base__io_transformer::unique_ptr(
+        wuffs_gzip__decoder__alloc_as__wuffs_base__io_transformer(), &free);
+  }
+#endif  // __cplusplus >= 201103L
+
 #if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
   // e.g. the "new" operator, as this struct is intentionally opaque. Its total
@@ -6042,6 +6322,22 @@ wuffs_json__decoder__initialize(wuffs_json__decoder* self,
 size_t  //
 sizeof__wuffs_json__decoder();
 
+// ---------------- Allocs
+
+// These functions allocate and initialize Wuffs structs. They return NULL if
+// memory allocation fails. If they return non-NULL, there is no need to call
+// wuffs_foo__bar__initialize, but the caller is responsible for eventually
+// calling free on the returned pointer. That pointer is effectively a C++
+// std::unique_ptr<T, decltype(&free)>.
+
+wuffs_json__decoder*  //
+wuffs_json__decoder__alloc();
+
+static inline wuffs_base__token_decoder*  //
+wuffs_json__decoder__alloc_as__wuffs_base__token_decoder() {
+  return (wuffs_base__token_decoder*)(wuffs_json__decoder__alloc());
+}
+
 // ---------------- Upcasts
 
 static inline wuffs_base__token_decoder*  //
@@ -6126,6 +6422,23 @@ struct wuffs_json__decoder__struct {
   } private_data;
 
 #ifdef __cplusplus
+#if __cplusplus >= 201103L
+  using unique_ptr = std::unique_ptr<wuffs_json__decoder, decltype(&free)>;
+
+  // On failure, the alloc_etc functions return nullptr. They don't throw.
+
+  static inline unique_ptr  //
+  alloc() {
+    return unique_ptr(wuffs_json__decoder__alloc(), &free);
+  }
+
+  static inline wuffs_base__token_decoder::unique_ptr  //
+  alloc_as__wuffs_base__token_decoder() {
+    return wuffs_base__token_decoder::unique_ptr(
+        wuffs_json__decoder__alloc_as__wuffs_base__token_decoder(), &free);
+  }
+#endif  // __cplusplus >= 201103L
+
 #if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
   // e.g. the "new" operator, as this struct is intentionally opaque. Its total
@@ -6226,6 +6539,22 @@ wuffs_wbmp__decoder__initialize(wuffs_wbmp__decoder* self,
 
 size_t  //
 sizeof__wuffs_wbmp__decoder();
+
+// ---------------- Allocs
+
+// These functions allocate and initialize Wuffs structs. They return NULL if
+// memory allocation fails. If they return non-NULL, there is no need to call
+// wuffs_foo__bar__initialize, but the caller is responsible for eventually
+// calling free on the returned pointer. That pointer is effectively a C++
+// std::unique_ptr<T, decltype(&free)>.
+
+wuffs_wbmp__decoder*  //
+wuffs_wbmp__decoder__alloc();
+
+static inline wuffs_base__image_decoder*  //
+wuffs_wbmp__decoder__alloc_as__wuffs_base__image_decoder() {
+  return (wuffs_base__image_decoder*)(wuffs_wbmp__decoder__alloc());
+}
 
 // ---------------- Upcasts
 
@@ -6342,6 +6671,23 @@ struct wuffs_wbmp__decoder__struct {
   } private_data;
 
 #ifdef __cplusplus
+#if __cplusplus >= 201103L
+  using unique_ptr = std::unique_ptr<wuffs_wbmp__decoder, decltype(&free)>;
+
+  // On failure, the alloc_etc functions return nullptr. They don't throw.
+
+  static inline unique_ptr  //
+  alloc() {
+    return unique_ptr(wuffs_wbmp__decoder__alloc(), &free);
+  }
+
+  static inline wuffs_base__image_decoder::unique_ptr  //
+  alloc_as__wuffs_base__image_decoder() {
+    return wuffs_base__image_decoder::unique_ptr(
+        wuffs_wbmp__decoder__alloc_as__wuffs_base__image_decoder(), &free);
+  }
+#endif  // __cplusplus >= 201103L
+
 #if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
   // e.g. the "new" operator, as this struct is intentionally opaque. Its total
@@ -6503,6 +6849,22 @@ wuffs_zlib__decoder__initialize(wuffs_zlib__decoder* self,
 size_t  //
 sizeof__wuffs_zlib__decoder();
 
+// ---------------- Allocs
+
+// These functions allocate and initialize Wuffs structs. They return NULL if
+// memory allocation fails. If they return non-NULL, there is no need to call
+// wuffs_foo__bar__initialize, but the caller is responsible for eventually
+// calling free on the returned pointer. That pointer is effectively a C++
+// std::unique_ptr<T, decltype(&free)>.
+
+wuffs_zlib__decoder*  //
+wuffs_zlib__decoder__alloc();
+
+static inline wuffs_base__io_transformer*  //
+wuffs_zlib__decoder__alloc_as__wuffs_base__io_transformer() {
+  return (wuffs_base__io_transformer*)(wuffs_zlib__decoder__alloc());
+}
+
 // ---------------- Upcasts
 
 static inline wuffs_base__io_transformer*  //
@@ -6578,6 +6940,23 @@ struct wuffs_zlib__decoder__struct {
   } private_data;
 
 #ifdef __cplusplus
+#if __cplusplus >= 201103L
+  using unique_ptr = std::unique_ptr<wuffs_zlib__decoder, decltype(&free)>;
+
+  // On failure, the alloc_etc functions return nullptr. They don't throw.
+
+  static inline unique_ptr  //
+  alloc() {
+    return unique_ptr(wuffs_zlib__decoder__alloc(), &free);
+  }
+
+  static inline wuffs_base__io_transformer::unique_ptr  //
+  alloc_as__wuffs_base__io_transformer() {
+    return wuffs_base__io_transformer::unique_ptr(
+        wuffs_zlib__decoder__alloc_as__wuffs_base__io_transformer(), &free);
+  }
+#endif  // __cplusplus >= 201103L
+
 #if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
   // e.g. the "new" operator, as this struct is intentionally opaque. Its total
@@ -10529,6 +10908,23 @@ wuffs_adler32__hasher__initialize(wuffs_adler32__hasher* self,
   return wuffs_base__make_status(NULL);
 }
 
+wuffs_adler32__hasher*  //
+wuffs_adler32__hasher__alloc() {
+  wuffs_adler32__hasher* x =
+      (wuffs_adler32__hasher*)(calloc(sizeof(wuffs_adler32__hasher), 1));
+  if (!x) {
+    return NULL;
+  }
+  if (wuffs_adler32__hasher__initialize(x, sizeof(wuffs_adler32__hasher),
+                                        WUFFS_VERSION,
+                                        WUFFS_INITIALIZE__ALREADY_ZEROED)
+          .repr) {
+    free(x);
+    return NULL;
+  }
+  return x;
+}
+
 size_t  //
 sizeof__wuffs_adler32__hasher() {
   return sizeof(wuffs_adler32__hasher);
@@ -10725,6 +11121,23 @@ wuffs_bmp__decoder__initialize(wuffs_bmp__decoder* self,
   self->private_impl.vtable_for__wuffs_base__image_decoder.function_pointers =
       (const void*)(&wuffs_bmp__decoder__func_ptrs_for__wuffs_base__image_decoder);
   return wuffs_base__make_status(NULL);
+}
+
+wuffs_bmp__decoder*  //
+wuffs_bmp__decoder__alloc() {
+  wuffs_bmp__decoder* x =
+      (wuffs_bmp__decoder*)(calloc(sizeof(wuffs_bmp__decoder), 1));
+  if (!x) {
+    return NULL;
+  }
+  if (wuffs_bmp__decoder__initialize(x, sizeof(wuffs_bmp__decoder),
+                                     WUFFS_VERSION,
+                                     WUFFS_INITIALIZE__ALREADY_ZEROED)
+          .repr) {
+    free(x);
+    return NULL;
+  }
+  return x;
 }
 
 size_t  //
@@ -12927,6 +13340,23 @@ wuffs_crc32__ieee_hasher__initialize(wuffs_crc32__ieee_hasher* self,
   return wuffs_base__make_status(NULL);
 }
 
+wuffs_crc32__ieee_hasher*  //
+wuffs_crc32__ieee_hasher__alloc() {
+  wuffs_crc32__ieee_hasher* x =
+      (wuffs_crc32__ieee_hasher*)(calloc(sizeof(wuffs_crc32__ieee_hasher), 1));
+  if (!x) {
+    return NULL;
+  }
+  if (wuffs_crc32__ieee_hasher__initialize(x, sizeof(wuffs_crc32__ieee_hasher),
+                                           WUFFS_VERSION,
+                                           WUFFS_INITIALIZE__ALREADY_ZEROED)
+          .repr) {
+    free(x);
+    return NULL;
+  }
+  return x;
+}
+
 size_t  //
 sizeof__wuffs_crc32__ieee_hasher() {
   return sizeof(wuffs_crc32__ieee_hasher);
@@ -13232,6 +13662,23 @@ wuffs_deflate__decoder__initialize(wuffs_deflate__decoder* self,
   self->private_impl.vtable_for__wuffs_base__io_transformer.function_pointers =
       (const void*)(&wuffs_deflate__decoder__func_ptrs_for__wuffs_base__io_transformer);
   return wuffs_base__make_status(NULL);
+}
+
+wuffs_deflate__decoder*  //
+wuffs_deflate__decoder__alloc() {
+  wuffs_deflate__decoder* x =
+      (wuffs_deflate__decoder*)(calloc(sizeof(wuffs_deflate__decoder), 1));
+  if (!x) {
+    return NULL;
+  }
+  if (wuffs_deflate__decoder__initialize(x, sizeof(wuffs_deflate__decoder),
+                                         WUFFS_VERSION,
+                                         WUFFS_INITIALIZE__ALREADY_ZEROED)
+          .repr) {
+    free(x);
+    return NULL;
+  }
+  return x;
 }
 
 size_t  //
@@ -15087,6 +15534,23 @@ wuffs_lzw__decoder__initialize(wuffs_lzw__decoder* self,
   return wuffs_base__make_status(NULL);
 }
 
+wuffs_lzw__decoder*  //
+wuffs_lzw__decoder__alloc() {
+  wuffs_lzw__decoder* x =
+      (wuffs_lzw__decoder*)(calloc(sizeof(wuffs_lzw__decoder), 1));
+  if (!x) {
+    return NULL;
+  }
+  if (wuffs_lzw__decoder__initialize(x, sizeof(wuffs_lzw__decoder),
+                                     WUFFS_VERSION,
+                                     WUFFS_INITIALIZE__ALREADY_ZEROED)
+          .repr) {
+    free(x);
+    return NULL;
+  }
+  return x;
+}
+
 size_t  //
 sizeof__wuffs_lzw__decoder() {
   return sizeof(wuffs_lzw__decoder);
@@ -15807,6 +16271,23 @@ wuffs_gif__config_decoder__initialize(wuffs_gif__config_decoder* self,
   return wuffs_base__make_status(NULL);
 }
 
+wuffs_gif__config_decoder*  //
+wuffs_gif__config_decoder__alloc() {
+  wuffs_gif__config_decoder* x = (wuffs_gif__config_decoder*)(calloc(
+      sizeof(wuffs_gif__config_decoder), 1));
+  if (!x) {
+    return NULL;
+  }
+  if (wuffs_gif__config_decoder__initialize(
+          x, sizeof(wuffs_gif__config_decoder), WUFFS_VERSION,
+          WUFFS_INITIALIZE__ALREADY_ZEROED)
+          .repr) {
+    free(x);
+    return NULL;
+  }
+  return x;
+}
+
 size_t  //
 sizeof__wuffs_gif__config_decoder() {
   return sizeof(wuffs_gif__config_decoder);
@@ -15866,6 +16347,23 @@ wuffs_gif__decoder__initialize(wuffs_gif__decoder* self,
   self->private_impl.vtable_for__wuffs_base__image_decoder.function_pointers =
       (const void*)(&wuffs_gif__decoder__func_ptrs_for__wuffs_base__image_decoder);
   return wuffs_base__make_status(NULL);
+}
+
+wuffs_gif__decoder*  //
+wuffs_gif__decoder__alloc() {
+  wuffs_gif__decoder* x =
+      (wuffs_gif__decoder*)(calloc(sizeof(wuffs_gif__decoder), 1));
+  if (!x) {
+    return NULL;
+  }
+  if (wuffs_gif__decoder__initialize(x, sizeof(wuffs_gif__decoder),
+                                     WUFFS_VERSION,
+                                     WUFFS_INITIALIZE__ALREADY_ZEROED)
+          .repr) {
+    free(x);
+    return NULL;
+  }
+  return x;
 }
 
 size_t  //
@@ -20324,6 +20822,23 @@ wuffs_gzip__decoder__initialize(wuffs_gzip__decoder* self,
   return wuffs_base__make_status(NULL);
 }
 
+wuffs_gzip__decoder*  //
+wuffs_gzip__decoder__alloc() {
+  wuffs_gzip__decoder* x =
+      (wuffs_gzip__decoder*)(calloc(sizeof(wuffs_gzip__decoder), 1));
+  if (!x) {
+    return NULL;
+  }
+  if (wuffs_gzip__decoder__initialize(x, sizeof(wuffs_gzip__decoder),
+                                      WUFFS_VERSION,
+                                      WUFFS_INITIALIZE__ALREADY_ZEROED)
+          .repr) {
+    free(x);
+    return NULL;
+  }
+  return x;
+}
+
 size_t  //
 sizeof__wuffs_gzip__decoder() {
   return sizeof(wuffs_gzip__decoder);
@@ -20956,6 +21471,23 @@ wuffs_json__decoder__initialize(wuffs_json__decoder* self,
   self->private_impl.vtable_for__wuffs_base__token_decoder.function_pointers =
       (const void*)(&wuffs_json__decoder__func_ptrs_for__wuffs_base__token_decoder);
   return wuffs_base__make_status(NULL);
+}
+
+wuffs_json__decoder*  //
+wuffs_json__decoder__alloc() {
+  wuffs_json__decoder* x =
+      (wuffs_json__decoder*)(calloc(sizeof(wuffs_json__decoder), 1));
+  if (!x) {
+    return NULL;
+  }
+  if (wuffs_json__decoder__initialize(x, sizeof(wuffs_json__decoder),
+                                      WUFFS_VERSION,
+                                      WUFFS_INITIALIZE__ALREADY_ZEROED)
+          .repr) {
+    free(x);
+    return NULL;
+  }
+  return x;
 }
 
 size_t  //
@@ -23131,6 +23663,23 @@ wuffs_wbmp__decoder__initialize(wuffs_wbmp__decoder* self,
   return wuffs_base__make_status(NULL);
 }
 
+wuffs_wbmp__decoder*  //
+wuffs_wbmp__decoder__alloc() {
+  wuffs_wbmp__decoder* x =
+      (wuffs_wbmp__decoder*)(calloc(sizeof(wuffs_wbmp__decoder), 1));
+  if (!x) {
+    return NULL;
+  }
+  if (wuffs_wbmp__decoder__initialize(x, sizeof(wuffs_wbmp__decoder),
+                                      WUFFS_VERSION,
+                                      WUFFS_INITIALIZE__ALREADY_ZEROED)
+          .repr) {
+    free(x);
+    return NULL;
+  }
+  return x;
+}
+
 size_t  //
 sizeof__wuffs_wbmp__decoder() {
   return sizeof(wuffs_wbmp__decoder);
@@ -23924,6 +24473,23 @@ wuffs_zlib__decoder__initialize(wuffs_zlib__decoder* self,
   self->private_impl.vtable_for__wuffs_base__io_transformer.function_pointers =
       (const void*)(&wuffs_zlib__decoder__func_ptrs_for__wuffs_base__io_transformer);
   return wuffs_base__make_status(NULL);
+}
+
+wuffs_zlib__decoder*  //
+wuffs_zlib__decoder__alloc() {
+  wuffs_zlib__decoder* x =
+      (wuffs_zlib__decoder*)(calloc(sizeof(wuffs_zlib__decoder), 1));
+  if (!x) {
+    return NULL;
+  }
+  if (wuffs_zlib__decoder__initialize(x, sizeof(wuffs_zlib__decoder),
+                                      WUFFS_VERSION,
+                                      WUFFS_INITIALIZE__ALREADY_ZEROED)
+          .repr) {
+    free(x);
+    return NULL;
+  }
+  return x;
 }
 
 size_t  //
