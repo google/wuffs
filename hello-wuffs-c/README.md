@@ -153,7 +153,8 @@ For more realistic problem domains, the output often isn't just a single
 
 That's the end of this "Hello world"-ish introduction. After that, you can read
 more documentation about both [Wuffs the Language](/doc/wuffs-the-language.md)
-and [Wuffs the Library](/doc/wuffs-the-library.md).
+and [Wuffs the Library](/doc/wuffs-the-library.md) (which links to more example
+programs).
 
 Finally, there are admittedly a couple of TODOs in this directory, concerning
 some rough edges in what should be a simple example. Version 0.2 (December
