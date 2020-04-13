@@ -187,6 +187,20 @@ pri const LUT_CHARS array[256] base.u8 = [
 	// 8     9     A     B     C     D     E     F
 ]
 
+pri const CLASS_WHITESPACE base.u8 = 0x00
+pri const CLASS_STRING base.u8 = 0x01
+pri const CLASS_COMMA base.u8 = 0x02
+pri const CLASS_COLON base.u8 = 0x03
+pri const CLASS_NUMBER base.u8 = 0x04
+pri const CLASS_OPEN_CURLY_BRACE base.u8 = 0x05
+pri const CLASS_CLOSE_CURLY_BRACE base.u8 = 0x06
+pri const CLASS_OPEN_SQUARE_BRACKET base.u8 = 0x07
+pri const CLASS_CLOSE_SQUARE_BRACKET base.u8 = 0x08
+pri const CLASS_FALSE base.u8 = 0x09
+pri const CLASS_TRUE base.u8 = 0x0A
+pri const CLASS_NULL_NAN_INF base.u8 = 0x0B
+pri const CLASS_COMMENT base.u8 = 0x0C
+
 // LUT_CLASSES is:
 //  - 0x00 (bitmask 0x0001) is CLASS_WHITESPACE.
 //  - 0x01 (bitmask 0x0002) is CLASS_STRING.

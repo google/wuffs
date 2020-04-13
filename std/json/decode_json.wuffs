@@ -202,7 +202,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 
 			c = args.src.peek_u8()
 			class = LUT_CLASSES[c]
-			if class <> 0x00 {  // 0x00 is CLASS_WHITESPACE.
+			if class <> CLASS_WHITESPACE {
 				break.ws
 			}
 			args.src.skip32_fast!(actual: 1, worst_case: 1)
@@ -244,7 +244,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 		assert args.dst.available() > 0
 		assert args.src.available() > 0
 
-		if class == 0x01 {  // 0x01 is CLASS_STRING.
+		if class == CLASS_STRING {
 			// -------- BEGIN parse strings.
 			// Emit the leading '"'.
 			args.dst.write_simple_token_fast!(
@@ -841,14 +841,14 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 			// As above, expect must have contained EXPECT_STRING. If it didn't
 			// also contain EXPECT_NUMBER then we were parsing an object key
 			// and the next token should be ':'.
-			if 0 == (expect & 0x0010) {  // 0x0010 is (1 << CLASS_NUMBER).
+			if 0 == (expect & ((1 as base.u32) << CLASS_NUMBER)) {
 				expect = 0x1008  // 0x1008 is EXPECT_COLON.
 				continue.outer
 			}
 			break.goto_parsed_a_leaf_value
 			// -------- END   parse strings.
 
-		} else if class == 0x02 {  // 0x02 is CLASS_COMMA.
+		} else if class == CLASS_COMMA {
 			args.src.skip32_fast!(actual: 1, worst_case: 1)
 			// The ',' is filler.
 			args.dst.write_simple_token_fast!(
@@ -858,7 +858,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 				length: 1)
 			// What's valid after a comma depends on whether or not we're in an
 			// array or an object.
-			if 0 == (expect & 0x0100) {  // 0x0100 is (1 << CLASS_CLOSE_SQUARE_BRACKET).
+			if 0 == (expect & ((1 as base.u32) << CLASS_CLOSE_SQUARE_BRACKET)) {
 				if this.quirk_enabled_allow_extra_comma {
 					expect = 0x1042  // 0x1042 is EXPECT_STRING | EXPECT_CLOSE_CURLY_BRACE.
 				} else {
@@ -873,7 +873,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 			}
 			continue.outer
 
-		} else if class == 0x03 {  // 0x03 is CLASS_COLON.
+		} else if class == CLASS_COLON {
 			args.src.skip32_fast!(actual: 1, worst_case: 1)
 			// The ':' is filler.
 			args.dst.write_simple_token_fast!(
@@ -884,7 +884,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 			expect = 0x1EB2  // 0x1EB2 is EXPECT_VALUE.
 			continue.outer
 
-		} else if class == 0x04 {  // 0x04 is CLASS_NUMBER.
+		} else if class == CLASS_NUMBER {
 			// -------- BEGIN parse numbers.
 			while true,
 				pre args.dst.available() > 0,
@@ -934,11 +934,11 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 			break.goto_parsed_a_leaf_value
 			// -------- END   parse numbers.
 
-		} else if class == 0x05 {  // 0x05 is CLASS_OPEN_CURLY_BRACE.
+		} else if class == CLASS_OPEN_CURLY_BRACE {
 			vminor = 0x20_4011
 			if depth == 0 {
 				// No-op.
-			} else if 0 <> (expect_after_value & 0x0040) {  // 0x0040 is (1 << CLASS_CLOSE_CURLY_BRACE).
+			} else if 0 <> (expect_after_value & ((1 as base.u32) << CLASS_CLOSE_CURLY_BRACE)) {
 				vminor = 0x20_4041
 			} else {
 				vminor = 0x20_4021
@@ -961,7 +961,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 			expect_after_value = 0x1044  // 0x1044 is (EXPECT_CURLY_CLOSE_BRACE | EXPECT_COMMA).
 			continue.outer
 
-		} else if class == 0x06 {  // 0x06 is CLASS_CLOSE_CURLY_BRACE.
+		} else if class == CLASS_CLOSE_CURLY_BRACE {
 			args.src.skip32_fast!(actual: 1, worst_case: 1)
 			if depth <= 1 {
 				args.dst.write_simple_token_fast!(
@@ -995,11 +995,11 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 			}
 			continue.outer
 
-		} else if class == 0x07 {  // 0x07 is CLASS_OPEN_SQUARE_BRACKET.
+		} else if class == CLASS_OPEN_SQUARE_BRACKET {
 			vminor = 0x20_2011
 			if depth == 0 {
 				// No-op.
-			} else if 0 <> (expect_after_value & 0x0040) {  // 0x0040 is (1 << CLASS_CLOSE_CURLY_BRACE).
+			} else if 0 <> (expect_after_value & ((1 as base.u32) << CLASS_CLOSE_CURLY_BRACE)) {
 				vminor = 0x20_2041
 			} else {
 				vminor = 0x20_2021
@@ -1022,7 +1022,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 			expect_after_value = 0x1104  // 0x1104 is (EXPECT_CLOSE_SQUARE_BRACKET | EXPECT_COMMA).
 			continue.outer
 
-		} else if class == 0x08 {  // 0x08 is CLASS_CLOSE_SQUARE_BRACKET.
+		} else if class == CLASS_CLOSE_SQUARE_BRACKET {
 			args.src.skip32_fast!(actual: 1, worst_case: 1)
 			if depth <= 1 {
 				args.dst.write_simple_token_fast!(
@@ -1056,7 +1056,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 			}
 			continue.outer
 
-		} else if class == 0x09 {  // 0x09 is CLASS_FALSE.
+		} else if class == CLASS_FALSE {
 			match = args.src.match7(a: '\x05false'le)
 			if match == 0 {
 				args.dst.write_simple_token_fast!(
@@ -1074,7 +1074,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 				continue.outer
 			}
 
-		} else if class == 0x0A {  // 0x0A is CLASS_TRUE.
+		} else if class == CLASS_TRUE {
 			match = args.src.match7(a: '\x04true'le)
 			if match == 0 {
 				args.dst.write_simple_token_fast!(
@@ -1092,7 +1092,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 				continue.outer
 			}
 
-		} else if class == 0x0B {  // 0x0B is CLASS_NULL_NAN_INF.
+		} else if class == CLASS_NULL_NAN_INF {
 			match = args.src.match7(a: '\x04null'le)
 			if match == 0 {
 				args.dst.write_simple_token_fast!(
@@ -1115,7 +1115,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 				break.goto_parsed_a_leaf_value
 			}
 
-		} else if class == 0x0C {  // 0x0C is CLASS_COMMENT.
+		} else if class == CLASS_COMMENT {
 			if this.quirk_enabled_allow_comment_block or this.quirk_enabled_allow_comment_line {
 				this.decode_comment?(dst: args.dst, src: args.src)
 				continue.outer
@@ -1630,7 +1630,7 @@ pri func decoder.decode_trailing_new_line?(dst: base.token_writer, src: base.io_
 			}
 
 			c = args.src.peek_u8()
-			if LUT_CLASSES[c] <> 0x00 {  // 0x00 is CLASS_WHITESPACE.
+			if LUT_CLASSES[c] <> CLASS_WHITESPACE {
 				if whitespace_length > 0 {
 					args.dst.write_simple_token_fast!(
 						value_major: 0, value_minor: 0, continued: 0, length: whitespace_length)

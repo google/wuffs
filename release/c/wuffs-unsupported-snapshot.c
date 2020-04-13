@@ -21671,6 +21671,32 @@ static const uint8_t            //
         32,  32,  32,  32,
 };
 
+#define WUFFS_JSON__CLASS_WHITESPACE 0
+
+#define WUFFS_JSON__CLASS_STRING 1
+
+#define WUFFS_JSON__CLASS_COMMA 2
+
+#define WUFFS_JSON__CLASS_COLON 3
+
+#define WUFFS_JSON__CLASS_NUMBER 4
+
+#define WUFFS_JSON__CLASS_OPEN_CURLY_BRACE 5
+
+#define WUFFS_JSON__CLASS_CLOSE_CURLY_BRACE 6
+
+#define WUFFS_JSON__CLASS_OPEN_SQUARE_BRACKET 7
+
+#define WUFFS_JSON__CLASS_CLOSE_SQUARE_BRACKET 8
+
+#define WUFFS_JSON__CLASS_FALSE 9
+
+#define WUFFS_JSON__CLASS_TRUE 10
+
+#define WUFFS_JSON__CLASS_NULL_NAN_INF 11
+
+#define WUFFS_JSON__CLASS_COMMENT 12
+
 static const uint8_t              //
     WUFFS_JSON__LUT_CLASSES[256]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
@@ -22761,7 +22787,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
             goto label__2__break;
           }
         label__2__break:;
-          if (0 == (v_expect & 16)) {
+          if (0 == (v_expect & (((uint32_t)(1)) << 4))) {
             v_expect = 4104;
             goto label__outer__continue;
           }
@@ -22771,7 +22797,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
           *iop_a_dst++ = wuffs_base__make_token(
               (((uint64_t)(0)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
               (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
-          if (0 == (v_expect & 256)) {
+          if (0 == (v_expect & (((uint32_t)(1)) << 8))) {
             if (self->private_impl.f_quirk_enabled_allow_extra_comma) {
               v_expect = 4162;
             } else {
@@ -22869,7 +22895,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
         } else if (v_class == 5) {
           v_vminor = 2113553;
           if (v_depth == 0) {
-          } else if (0 != (v_expect_after_value & 64)) {
+          } else if (0 != (v_expect_after_value & (((uint32_t)(1)) << 6))) {
             v_vminor = 2113601;
           } else {
             v_vminor = 2113569;
@@ -22924,7 +22950,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
         } else if (v_class == 7) {
           v_vminor = 2105361;
           if (v_depth == 0) {
-          } else if (0 != (v_expect_after_value & 64)) {
+          } else if (0 != (v_expect_after_value & (((uint32_t)(1)) << 6))) {
             v_vminor = 2105409;
           } else {
             v_vminor = 2105377;
