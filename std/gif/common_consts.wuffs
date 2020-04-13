@@ -24,7 +24,7 @@ pub status "#bad palette"
 
 pri status "#internal error: inconsistent ri/wi"
 
-pub const decoder_workbuf_len_max_incl_worst_case base.u64 = 0
+pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE base.u64 = 0
 
 // See the spec appendix E "Interlaced Images" on page 29. The first element
 // represents either that the frame was non-interlaced, or that all interlace
@@ -34,31 +34,31 @@ pub const decoder_workbuf_len_max_incl_worst_case base.u64 = 0
 // For interlaced frames, the decoder.interlace field starts at 4 and is
 // decremented towards 0.
 //
-// interlace_start[0] is a special case. For non-interlaced frames, that
+// INTERLACE_START[0] is a special case. For non-interlaced frames, that
 // element is never accessed. For interlaced frames, that element is only
 // accessed after all interlace stages are complete. Being the maximum base.u32
 // value means that, after all interlace stages are complete, dst_y will be set
 // to that maximum value (and therefore outside the frame rect).
-pri const interlace_start array[5] base.u32 = [0xFFFF_FFFF, 1, 2, 4, 0]
-pri const interlace_delta array[5] base.u8 = [1, 2, 4, 8, 8]
-pri const interlace_count array[5] base.u8 = [0, 1, 2, 4, 8]
+pri const INTERLACE_START array[5] base.u32 = [0xFFFF_FFFF, 1, 2, 4, 0]
+pri const INTERLACE_DELTA array[5] base.u8 = [1, 2, 4, 8, 8]
+pri const INTERLACE_COUNT array[5] base.u8 = [0, 1, 2, 4, 8]
 
-// animexts1dot0 is "ANIMEXTS1.0" as bytes.
-pri const animexts1dot0 array[11] base.u8 = [
+// ANIMEXTS1DOT0 is "ANIMEXTS1.0" as bytes.
+pri const ANIMEXTS1DOT0 array[11] base.u8 = [
 	0x41, 0x4E, 0x49, 0x4D, 0x45, 0x58, 0x54, 0x53, 0x31, 0x2E, 0x30,
 ]
 
-// netscape2dot0 is "NETSCAPE2.0" as bytes.
-pri const netscape2dot0 array[11] base.u8 = [
+// NETSCAPE2DOT0 is "NETSCAPE2.0" as bytes.
+pri const NETSCAPE2DOT0 array[11] base.u8 = [
 	0x4E, 0x45, 0x54, 0x53, 0x43, 0x41, 0x50, 0x45, 0x32, 0x2E, 0x30,
 ]
 
-// iccrgbg1012 is "ICCRGBG1012" as bytes.
-pri const iccrgbg1012 array[11] base.u8 = [
+// ICCRGBG1012 Is "ICCRGBG1012" as bytes.
+pri const ICCRGBG1012 array[11] base.u8 = [
 	0x49, 0x43, 0x43, 0x52, 0x47, 0x42, 0x47, 0x31, 0x30, 0x31, 0x32,
 ]
 
-// xmpdataxmp is "XMP DataXMP" as bytes.
-pri const xmpdataxmp array[11] base.u8 = [
+// XMPDATAXMP IS "XMP DataXMP" as bytes.
+pri const XMPDATAXMP array[11] base.u8 = [
 	0x58, 0x4D, 0x50, 0x20, 0x44, 0x61, 0x74, 0x61, 0x58, 0x4D, 0x50,
 ]

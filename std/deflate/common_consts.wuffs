@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// code_order is defined in the RFC section 3.2.7.
-pri const code_order array[19] base.u8[..= 18] = [
+// CODE_ORDER is defined in the RFC section 3.2.7.
+pri const CODE_ORDER array[19] base.u8[..= 18] = [
 	16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15,
 ]
 
-// reverse8 reverses the bits in a byte.
-pri const reverse8 array[256] base.u8 = [
+// REVERSE8 reverses the bits in a byte.
+pri const REVERSE8 array[256] base.u8 = [
 	0x00, 0x80, 0x40, 0xC0, 0x20, 0xA0, 0x60, 0xE0,  // 0x00 - 0x07
 	0x10, 0x90, 0x50, 0xD0, 0x30, 0xB0, 0x70, 0xF0,  // 0x08 - 0x0F
 	0x08, 0x88, 0x48, 0xC8, 0x28, 0xA8, 0x68, 0xE8,  // 0x10 - 0x17

@@ -84,7 +84,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, depth uint32) error {
 
 		} else {
 			if n.GlobalIdent() {
-				b.writes(g.pkgPrefix)
+				b.writes(g.PKGPREFIX)
 			} else {
 				b.writes(vPrefix)
 			}

@@ -21,20 +21,20 @@ pub status "#unsupported recursion depth"
 
 pri status "#internal error: inconsistent I/O"
 
-pub const decoder_workbuf_len_max_incl_worst_case base.u64 = 0
+pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE base.u64 = 0
 
-// decoder_depth_max_incl is the maximum supported recursion depth: how deeply
+// DECODER_DEPTH_MAX_INCL is the maximum supported recursion depth: how deeply
 // nested [] arrays and {} objects can be.
 //
 // The JSON spec itself does not define a limit, but allows implementations to
 // set their own limits.
-pub const decoder_depth_max_incl base.u64 = 1024
+pub const DECODER_DEPTH_MAX_INCL base.u64 = 1024
 
-// decoder_dst_token_buffer_length_min_incl is the minimum length of the dst
+// DECODER_DST_TOKEN_BUFFER_LENGTH_MIN_INCL is the minimum length of the dst
 // wuffs_base__token_buffer passed to the decoder.
-pub const decoder_dst_token_buffer_length_min_incl base.u64 = 1
+pub const DECODER_DST_TOKEN_BUFFER_LENGTH_MIN_INCL base.u64 = 1
 
-// decoder_src_io_buffer_length_min_incl is the minimum length of the src
+// DECODER_SRC_IO_BUFFER_LENGTH_MIN_INCL is the minimum length of the src
 // wuffs_base__io_buffer passed to the decoder.
 //
 // This constrains the src.data.len field and it is the io_buffer capacity (the
@@ -42,9 +42,9 @@ pub const decoder_dst_token_buffer_length_min_incl base.u64 = 1
 // the backing array's length, not the length of the JSON-formatted input per
 // se. It is perfectly valid to decode "[1,2]" (of length 5) as JSON, as long
 // as that content is placed in an io_buffer whose data.len is at least 100.
-pub const decoder_src_io_buffer_length_min_incl base.u64 = 100
+pub const DECODER_SRC_IO_BUFFER_LENGTH_MIN_INCL base.u64 = 100
 
-// decoder_number_length_max_incl is the longest supported byte length for a
+// DECODER_NUMBER_LENGTH_MAX_INCL is the longest supported byte length for a
 // JSON number. Unlike JSON strings, this package's tokenizer never splits a
 // single JSON number into multiple tokens, as this simplifies the callers.
 // They can then call e.g. wuffs_base__parse_number_i64 without having to
@@ -52,17 +52,17 @@ pub const decoder_src_io_buffer_length_min_incl base.u64 = 100
 //
 // The JSON spec itself does not define a limit, but allows implementations to
 // set their own limits.
-pri const decoder_number_length_max_incl base.u64 = 99
+pri const DECODER_NUMBER_LENGTH_MAX_INCL base.u64 = 99
 
 // --------
 
 // Look-Up Tables (LUTs).
 
-// lut_backslashes[i] helps decode "\i", for various 'i's.
+// LUT_BACKSLASHES[i] helps decode "\i", for various 'i's.
 //
 // If the element's 0x80 bit is set then "\i" is unconditionally a valid
 // single-output-byte backslash-escape. The low 7 bits are the unescaped value.
-// For example, lut_backslashes['n'] is (0x80 | 0x0A), because "\n" is U+000A.
+// For example, LUT_BACKSLASHES['n'] is (0x80 | 0x0A), because "\n" is U+000A.
 //
 // If the element is non-zero (but the 0x80 bit is not set) then "\i"'s
 // validity depends on the relevant quirk. The element's value is an enum:
@@ -73,11 +73,11 @@ pri const decoder_number_length_max_incl base.u64 = 99
 //  - 5: "\'", U+0027, quirk_allow_backslash_single_quote.
 //  - 6: "\v", U+000B, quirk_allow_backslash_v.
 //  - 7: "\0", U+0000, quirk_allow_backslash_zero.
-// The U+1234 values are held in lut_quirky_backslashes, below.
+// The U+1234 values are held in LUT_QUIRKY_BACKSLASHES, below.
 //
 // If the element is zero then "\i" is invalid, or it is a special case, the
 // start of "\x12", "\u1234" or "\U12345678".
-pri const lut_backslashes array[256] base.u8 = [
+pri const LUT_BACKSLASHES array[256] base.u8 = [
 	// 0     1     2     3     4     5     6     7
 	// 8     9     A     B     C     D     E     F
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // 0x00 ..= 0x07.
@@ -119,14 +119,14 @@ pri const lut_backslashes array[256] base.u8 = [
 	// 8     9     A     B     C     D     E     F
 ]
 
-// lut_quirky_backslashes is discussed in the lut_backslashes comment. The
+// LUT_QUIRKY_BACKSLASHES is discussed in the LUT_BACKSLASHES comment. The
 // first element (index 0) is not used, but 8 is a round power of 2, so
 // enforcing index-in-bounds is a simple "&7" operation.
-pri const lut_quirky_backslashes array[8] base.u8 = [
+pri const LUT_QUIRKY_BACKSLASHES array[8] base.u8 = [
 	0x00, 0x07, 0x1B, 0x0A, 0x3F, 0x27, 0x0B, 0x00,
 ]
 
-// lut_chars helps decode bytes within a string:
+// LUT_CHARS helps decode bytes within a string:
 //  - 0x00 is 1-byte UTF-8 (ASCII) but not '"', '\\' or a C0 control code.
 //  - 0x01 is '"'.
 //  - 0x02 is '\\'.
@@ -145,7 +145,7 @@ pri const lut_quirky_backslashes array[8] base.u8 = [
 //    UTF8-4      = %xF0 %x90-BF 2( UTF8-tail ) / %xF1-F3 3( UTF8-tail ) /
 //                  %xF4 %x80-8F 2( UTF8-tail )
 //    UTF8-tail   = %x80-BF
-pri const lut_chars array[256] base.u8 = [
+pri const LUT_CHARS array[256] base.u8 = [
 	// 0     1     2     3     4     5     6     7
 	// 8     9     A     B     C     D     E     F
 	0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87,  // 0x00 ..= 0x07. C0 control codes.
@@ -187,7 +187,7 @@ pri const lut_chars array[256] base.u8 = [
 	// 8     9     A     B     C     D     E     F
 ]
 
-// lut_classes is:
+// LUT_CLASSES is:
 //  - 0x00 (bitmask 0x0001) is CLASS_WHITESPACE.
 //  - 0x01 (bitmask 0x0002) is CLASS_STRING.
 //  - 0x02 (bitmask 0x0004) is CLASS_COMMA.
@@ -231,7 +231,7 @@ pri const lut_chars array[256] base.u8 = [
 //
 // Comments are always expected. Whether the relevant quirks are enabled are
 // checked elsewhere.
-pri const lut_classes array[256] base.u8[..= 0x0F] = [
+pri const LUT_CLASSES array[256] base.u8[..= 0x0F] = [
 	// 0     1     2     3     4     5     6     7
 	// 8     9     A     B     C     D     E     F
 	0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F,  // 0x00 ..= 0x07.
@@ -273,7 +273,7 @@ pri const lut_classes array[256] base.u8[..= 0x0F] = [
 	// 8     9     A     B     C     D     E     F
 ]
 
-pri const lut_decimal_digits array[256] base.u8 = [
+pri const LUT_DECIMAL_DIGITS array[256] base.u8 = [
 	// 0     1     2     3     4     5     6     7
 	// 8     9     A     B     C     D     E     F
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // 0x00 ..= 0x07.
@@ -315,7 +315,7 @@ pri const lut_decimal_digits array[256] base.u8 = [
 	// 8     9     A     B     C     D     E     F
 ]
 
-pri const lut_hexadecimal_digits array[256] base.u8 = [
+pri const LUT_HEXADECIMAL_DIGITS array[256] base.u8 = [
 	// 0     1     2     3     4     5     6     7
 	// 8     9     A     B     C     D     E     F
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // 0x00 ..= 0x07.

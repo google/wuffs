@@ -36,24 +36,24 @@ pub func ieee_hasher.update_u32!(x: slice base.u8) base.u32 {
 			((p[0x01] as base.u32) << 8) |
 			((p[0x02] as base.u32) << 16) |
 			((p[0x03] as base.u32) << 24)
-		s = ieee_table[0x00][p[0x0F]] ^
-			ieee_table[0x01][p[0x0E]] ^
-			ieee_table[0x02][p[0x0D]] ^
-			ieee_table[0x03][p[0x0C]] ^
-			ieee_table[0x04][p[0x0B]] ^
-			ieee_table[0x05][p[0x0A]] ^
-			ieee_table[0x06][p[0x09]] ^
-			ieee_table[0x07][p[0x08]] ^
-			ieee_table[0x08][p[0x07]] ^
-			ieee_table[0x09][p[0x06]] ^
-			ieee_table[0x0A][p[0x05]] ^
-			ieee_table[0x0B][p[0x04]] ^
-			ieee_table[0x0C][0xFF & (s >> 24)] ^
-			ieee_table[0x0D][0xFF & (s >> 16)] ^
-			ieee_table[0x0E][0xFF & (s >> 8)] ^
-			ieee_table[0x0F][0xFF & (s >> 0)]
+		s = IEEE_TABLE[0x00][p[0x0F]] ^
+			IEEE_TABLE[0x01][p[0x0E]] ^
+			IEEE_TABLE[0x02][p[0x0D]] ^
+			IEEE_TABLE[0x03][p[0x0C]] ^
+			IEEE_TABLE[0x04][p[0x0B]] ^
+			IEEE_TABLE[0x05][p[0x0A]] ^
+			IEEE_TABLE[0x06][p[0x09]] ^
+			IEEE_TABLE[0x07][p[0x08]] ^
+			IEEE_TABLE[0x08][p[0x07]] ^
+			IEEE_TABLE[0x09][p[0x06]] ^
+			IEEE_TABLE[0x0A][p[0x05]] ^
+			IEEE_TABLE[0x0B][p[0x04]] ^
+			IEEE_TABLE[0x0C][0xFF & (s >> 24)] ^
+			IEEE_TABLE[0x0D][0xFF & (s >> 16)] ^
+			IEEE_TABLE[0x0E][0xFF & (s >> 8)] ^
+			IEEE_TABLE[0x0F][0xFF & (s >> 0)]
 	} else (length: 1, unroll: 1) {
-		s = ieee_table[0][((s & 0xFF) as base.u8) ^ p[0]] ^ (s >> 8)
+		s = IEEE_TABLE[0][((s & 0xFF) as base.u8) ^ p[0]] ^ (s >> 8)
 	}
 
 	this.state = 0xFFFF_FFFF ^ s
@@ -62,7 +62,7 @@ pub func ieee_hasher.update_u32!(x: slice base.u8) base.u32 {
 
 // The table below was created by script/print-crc32-magic-numbers.go.
 
-pri const ieee_table array[16] array[256] base.u32 = [[
+pri const IEEE_TABLE array[16] array[256] base.u32 = [[
 	0x0000_0000, 0x7707_3096, 0xEE0E_612C, 0x9909_51BA, 0x076D_C419, 0x706A_F48F, 0xE963_A535, 0x9E64_95A3,
 	0x0EDB_8832, 0x79DC_B8A4, 0xE0D5_E91E, 0x97D2_D988, 0x09B6_4C2B, 0x7EB1_7CBD, 0xE7B8_2D07, 0x90BF_1D91,
 	0x1DB7_1064, 0x6AB0_20F2, 0xF3B9_7148, 0x84BE_41DE, 0x1ADA_D47D, 0x6DDD_E4EB, 0xF4D4_B551, 0x83D3_85C7,

@@ -98,7 +98,7 @@ pub struct decoder? implements base.image_decoder(
 
 	has_global_palette : base.bool,
 
-	// interlace indexes the interlace_start and interlace_delta arrays.
+	// interlace indexes the INTERLACE_START and INTERLACE_DELTA arrays.
 	interlace : base.u8[..= 4],
 
 	// Absent an ANIMEXTS1.0 or NETSCAPE2.0 extension, the implicit number of
@@ -155,19 +155,19 @@ pub struct decoder? implements base.image_decoder(
 
 pub func decoder.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
 	if this.call_sequence == 0 {
-		if args.quirk == quirk_delay_num_decoded_frames {
+		if args.quirk == QUIRK_DELAY_NUM_DECODED_FRAMES {
 			this.quirk_enabled_delay_num_decoded_frames = args.enabled
-		} else if args.quirk == quirk_first_frame_local_palette_means_black_background {
+		} else if args.quirk == QUIRK_FIRST_FRAME_LOCAL_PALETTE_MEANS_BLACK_BACKGROUND {
 			this.quirk_enabled_first_frame_local_palette_means_black_background = args.enabled
-		} else if args.quirk == quirk_honor_background_color {
+		} else if args.quirk == QUIRK_HONOR_BACKGROUND_COLOR {
 			this.quirk_enabled_honor_background_color = args.enabled
-		} else if args.quirk == quirk_ignore_too_much_pixel_data {
+		} else if args.quirk == QUIRK_IGNORE_TOO_MUCH_PIXEL_DATA {
 			this.quirk_enabled_ignore_too_much_pixel_data = args.enabled
-		} else if args.quirk == quirk_image_bounds_are_strict {
+		} else if args.quirk == QUIRK_IMAGE_BOUNDS_ARE_STRICT {
 			this.quirk_enabled_image_bounds_are_strict = args.enabled
-		} else if args.quirk == quirk_reject_empty_frame {
+		} else if args.quirk == QUIRK_REJECT_EMPTY_FRAME {
 			this.quirk_enabled_reject_empty_frame = args.enabled
-		} else if args.quirk == quirk_reject_empty_palette {
+		} else if args.quirk == QUIRK_REJECT_EMPTY_PALETTE {
 			this.quirk_enabled_reject_empty_palette = args.enabled
 		}
 	}
@@ -306,8 +306,8 @@ pub func decoder.frame_dirty_rect() base.rect_ie_u32 {
 pub func decoder.workbuf_len() base.range_ii_u64 {
 	//#WHEN PREPROC201
 	return this.util.make_range_ii_u64(
-		min_incl: decoder_workbuf_len_max_incl_worst_case,
-		max_incl: decoder_workbuf_len_max_incl_worst_case)
+		min_incl: DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE,
+		max_incl: DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE)
 	//#WHEN PREPROC201 decode_config.wuffs
 	//## return this.util.empty_range_ii_u64()
 	//#DONE PREPROC201
@@ -642,10 +642,10 @@ pri func decoder.decode_ae?(src: base.io_reader) {
 	block_size = 0  // Re-purpose the block_size variable as a counter.
 	while block_size < 11 {
 		c = args.src.read_u8?()
-		is_animexts = is_animexts and (c == animexts1dot0[block_size])
-		is_netscape = is_netscape and (c == netscape2dot0[block_size])
-		is_iccp = is_iccp and (c == iccrgbg1012[block_size])
-		is_xmp = is_xmp and (c == xmpdataxmp[block_size])
+		is_animexts = is_animexts and (c == ANIMEXTS1DOT0[block_size])
+		is_netscape = is_netscape and (c == NETSCAPE2DOT0[block_size])
+		is_iccp = is_iccp and (c == ICCRGBG1012[block_size])
+		is_xmp = is_xmp and (c == XMPDATAXMP[block_size])
 		block_size += 1
 	} endwhile
 
@@ -1090,7 +1090,7 @@ pri func decoder.copy_to_image_buffer!(pb: ptr base.pixel_buffer, src: slice bas
 
 				replicate_src = tab.row(y: this.dst_y)
 				replicate_y0 = this.dst_y ~sat+ 1
-				replicate_y1 = this.dst_y ~sat+ (interlace_count[this.interlace] as base.u32)
+				replicate_y1 = this.dst_y ~sat+ (INTERLACE_COUNT[this.interlace] as base.u32)
 				replicate_y1 = replicate_y1.min(a: this.frame_rect_y1)
 				while replicate_y0 < replicate_y1 {
 					assert replicate_y0 < 0xFFFF_FFFF via "a < b: a < c; c <= b"(c: replicate_y1)
@@ -1101,10 +1101,10 @@ pri func decoder.copy_to_image_buffer!(pb: ptr base.pixel_buffer, src: slice bas
 				this.dirty_max_excl_y = this.dirty_max_excl_y.max(a: replicate_y1)
 			}
 
-			this.dst_y ~sat+= interlace_delta[this.interlace] as base.u32
+			this.dst_y ~sat+= INTERLACE_DELTA[this.interlace] as base.u32
 			while (this.interlace > 0) and (this.dst_y >= this.frame_rect_y1) {
 				this.interlace -= 1
-				this.dst_y = this.frame_rect_y0 ~sat+ interlace_start[this.interlace]
+				this.dst_y = this.frame_rect_y0 ~sat+ INTERLACE_START[this.interlace]
 			} endwhile
 			continue
 		}
@@ -1127,10 +1127,10 @@ pri func decoder.copy_to_image_buffer!(pb: ptr base.pixel_buffer, src: slice bas
 
 		if this.frame_rect_x1 <= this.dst_x {
 			this.dst_x = this.frame_rect_x0
-			this.dst_y ~sat+= interlace_delta[this.interlace] as base.u32
+			this.dst_y ~sat+= INTERLACE_DELTA[this.interlace] as base.u32
 			while (this.interlace > 0) and (this.dst_y >= this.frame_rect_y1) {
 				this.interlace -= 1
-				this.dst_y = this.frame_rect_y0 ~sat+ interlace_start[this.interlace]
+				this.dst_y = this.frame_rect_y0 ~sat+ INTERLACE_START[this.interlace]
 			} endwhile
 			continue
 		}

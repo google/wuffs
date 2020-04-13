@@ -147,6 +147,8 @@ func Do(args []string) error {
 
 		} else {
 			g := &gen{
+				PKGPREFIX:  "WUFFS_" + strings.ToUpper(pkgName) + "__",
+				PKGNAME:    strings.ToUpper(pkgName),
 				pkgPrefix:  "wuffs_" + pkgName + "__",
 				pkgName:    pkgName,
 				tm:         tm,
@@ -496,6 +498,8 @@ func parseBuiltInInterfaceMethods() error {
 }
 
 type gen struct {
+	PKGPREFIX string // e.g. "WUFFS_JPEG__"
+	PKGNAME   string // e.g. "JPEG"
 	pkgPrefix string // e.g. "wuffs_jpeg__"
 	pkgName   string // e.g. "jpeg"
 
@@ -580,7 +584,7 @@ func (g *gen) generate() ([]byte, error) {
 		return nil, err
 	}
 
-	includeGuard := "WUFFS_INCLUDE_GUARD__" + strings.ToUpper(g.pkgName)
+	includeGuard := "WUFFS_INCLUDE_GUARD__" + g.PKGNAME
 	b.printf("#ifndef %s\n#define %s\n\n", includeGuard, includeGuard)
 
 	if err := g.genIncludes(b); err != nil {
@@ -612,7 +616,7 @@ var (
 func (g *gen) genIncludes(b *buffer) error {
 	b.writes("#if defined(WUFFS_IMPLEMENTATION) && !defined(WUFFS_CONFIG__MODULES)\n")
 	b.writes("#define WUFFS_CONFIG__MODULES\n")
-	b.printf("#define WUFFS_CONFIG__MODULE__%s\n", strings.ToUpper(g.pkgName))
+	b.printf("#define WUFFS_CONFIG__MODULE__%s\n", g.PKGNAME)
 	b.writes("#endif\n\n")
 
 	usesList := []string(nil)
@@ -750,8 +754,7 @@ func (g *gen) genHeader(b *buffer) error {
 }
 
 func (g *gen) genImpl(b *buffer) error {
-	module := "!defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__" +
-		strings.ToUpper(g.pkgName) + ")"
+	module := "!defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__" + g.PKGNAME + ")"
 	b.printf("#if %s\n\n", module)
 
 	b.writes("// ---------------- Status Codes Implementations\n\n")
@@ -940,10 +943,10 @@ func (g *gen) gatherScalarConsts(b *buffer, n *a.Const) error {
 
 func (g *gen) writeConst(b *buffer, n *a.Const) error {
 	if cv := n.Value().ConstValue(); cv != nil {
-		b.printf("#define %s %v\n\n", strings.ToUpper(g.pkgPrefix+n.QID()[1].Str(g.tm)), cv)
+		b.printf("#define %s%s %v\n\n", g.PKGPREFIX, n.QID()[1].Str(g.tm), cv)
 	} else {
 		b.writes("static const ")
-		if err := g.writeCTypeName(b, n.XType(), "//\n"+g.pkgPrefix, n.QID()[1].Str(g.tm)); err != nil {
+		if err := g.writeCTypeName(b, n.XType(), "//\n"+g.PKGPREFIX, n.QID()[1].Str(g.tm)); err != nil {
 			return err
 		}
 		b.writes("//\n WUFFS_BASE__POTENTIALLY_UNUSED = ")

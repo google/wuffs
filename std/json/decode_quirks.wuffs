@@ -29,50 +29,50 @@
 //
 // This allows for multi-line strings, where a literal new line in the encoding
 // becomes a literal new line in the decoding. A backslash before a new line is
-// still a syntax error, unless combined with quirk_allow_backslash_new_line.
+// still a syntax error, unless combined with QUIRK_ALLOW_BACKSLASH_NEW_LINE.
 //
 // Any indentation following a new line is not stripped, but remains part of
 // the decoded string.
-pub const quirk_allow_ascii_control_codes base.u32 = 0x4909_9400 | 0x00
+pub const QUIRK_ALLOW_ASCII_CONTROL_CODES base.u32 = 0x4909_9400 | 0x00
 
 // When this quirk is enabled, e.g. "abc\az" is accepted as a JSON string,
 // equivalent to "abc\u0007z", containing an ASCII Bell control character.
-pub const quirk_allow_backslash_a base.u32 = 0x4909_9400 | 0x01
+pub const QUIRK_ALLOW_BACKSLASH_A base.u32 = 0x4909_9400 | 0x01
 
 // When this quirk is enabled, e.g. "abc\U0001F4A9z" is accepted as a JSON
 // string, equivalent to "abc\uD83D\uDCA9z", containing the U+0001F4A9 PILE OF
 // POO Unicode code point. There are exactly 8 encoded bytes after each "\U".
 //
-// This quirk can combine with quirk_replace_invalid_unicode.
-pub const quirk_allow_backslash_capital_u base.u32 = 0x4909_9400 | 0x02
+// This quirk can combine with QUIRK_REPLACE_INVALID_UNICODE.
+pub const QUIRK_ALLOW_BACKSLASH_CAPITAL_U base.u32 = 0x4909_9400 | 0x02
 
 // When this quirk is enabled, e.g. "abc\ez" is accepted as a JSON string,
 // equivalent to "abc\u001Bz", containing an ASCII Escape control character.
-pub const quirk_allow_backslash_e base.u32 = 0x4909_9400 | 0x03
+pub const QUIRK_ALLOW_BACKSLASH_E base.u32 = 0x4909_9400 | 0x03
 
 // When this quirk is enabled, e.g. ("abc\
 // z") is accepted as a JSON string, equivalent to "abc\nz".
 //
 // This allows for multi-line strings, if each new line is preceded by a
-// backslash. This doesn't combine per se with quirk_allow_ascii_control_codes,
+// backslash. This doesn't combine per se with QUIRK_ALLOW_ASCII_CONTROL_CODES,
 // but they have similar consequences.
 //
 // Any indentation following a new line is not stripped, but remains part of
 // the decoded string.
-pub const quirk_allow_backslash_new_line base.u32 = 0x4909_9400 | 0x04
+pub const QUIRK_ALLOW_BACKSLASH_NEW_LINE base.u32 = 0x4909_9400 | 0x04
 
 // When this quirk is enabled, e.g. "abc\?z" is accepted as a JSON string,
 // equivalent to "abc?z".
-pub const quirk_allow_backslash_question_mark base.u32 = 0x4909_9400 | 0x05
+pub const QUIRK_ALLOW_BACKSLASH_QUESTION_MARK base.u32 = 0x4909_9400 | 0x05
 
 // When this quirk is enabled, e.g. "abc\'z" is accepted as a JSON string,
 // equivalent to "abc'z".
-pub const quirk_allow_backslash_single_quote base.u32 = 0x4909_9400 | 0x06
+pub const QUIRK_ALLOW_BACKSLASH_SINGLE_QUOTE base.u32 = 0x4909_9400 | 0x06
 
 // When this quirk is enabled, e.g. "abc\vz" is accepted as a JSON string,
 // equivalent to "abc\u000Bz", containing an ASCII Vertical Tab control
 // character.
-pub const quirk_allow_backslash_v base.u32 = 0x4909_9400 | 0x07
+pub const QUIRK_ALLOW_BACKSLASH_V base.u32 = 0x4909_9400 | 0x07
 
 // When this quirk is enabled, e.g. "abc\xeFz" is accepted as a JSON string,
 // There are exactly 2 encoded bytes after each "\x".
@@ -91,22 +91,22 @@ pub const quirk_allow_backslash_v base.u32 = 0x4909_9400 | 0x07
 // 0xAF and 0x7A. The UTF-8 encoding of U+00EF LATIN SMALL LETTER I WITH
 // DIAERESIS is the two byte sequence (0xC3, 0xAF). Decoded strings are still
 // valid UTF-8 and tokens still split on UTF-8 boundaries.
-pub const quirk_allow_backslash_x base.u32 = 0x4909_9400 | 0x08
+pub const QUIRK_ALLOW_BACKSLASH_X base.u32 = 0x4909_9400 | 0x08
 
 // When this quirk is enabled, e.g. "abc\0z" is accepted as a JSON string,
 // equivalent to "abc\u0000z", containing an ASCII NUL control character.
-pub const quirk_allow_backslash_zero base.u32 = 0x4909_9400 | 0x09
+pub const QUIRK_ALLOW_BACKSLASH_ZERO base.u32 = 0x4909_9400 | 0x09
 
 // When this quirk is enabled, "/* C/C++ style block comments */" are accepted
-// anywhere whitespace would be, although see the quirk_allow_trailing_new_line
+// anywhere whitespace would be, although see the QUIRK_ALLOW_TRAILING_NEW_LINE
 // comment for additional interaction when combining multiple quirks.
 //
 // They produce WUFFS_BASE__TOKEN__VBD__FILLER__COMMENT_BLOCK tokens. The token
 // chain's source bytes includes the starting "/*" and the ending "*/".
-pub const quirk_allow_comment_block base.u32 = 0x4909_9400 | 0x0A
+pub const QUIRK_ALLOW_COMMENT_BLOCK base.u32 = 0x4909_9400 | 0x0A
 
 // When this quirk is enabled, "// C/C++ style line comments\n" are accepted
-// anywhere whitespace would be, although see the quirk_allow_trailing_new_line
+// anywhere whitespace would be, although see the QUIRK_ALLOW_TRAILING_NEW_LINE
 // comment for additional interaction when combining multiple quirks.
 //
 // A line comment may not omit the ending "\n", even if there is no input
@@ -118,7 +118,7 @@ pub const quirk_allow_comment_block base.u32 = 0x4909_9400 | 0x0A
 // Even if the line comments are on consecutive lines, each line comment is a
 // separate token chain. There may be whitespace tokens between one line
 // comment's ending "\n" and the next one's starting "//".
-pub const quirk_allow_comment_line base.u32 = 0x4909_9400 | 0x0B
+pub const QUIRK_ALLOW_COMMENT_LINE base.u32 = 0x4909_9400 | 0x0B
 
 // When this quirk is enabled, there may be a comma after the final array
 // element or object key-value pair and before the closing "]" or "}". A comma
@@ -127,31 +127,31 @@ pub const quirk_allow_comment_line base.u32 = 0x4909_9400 | 0x0B
 //
 // For example, `[1,]`, `[1,2,3,]` and `{"k":"v",}` all become acceptable, but
 // `[,]`, `{,}` and `{"k",:"v"}` are still rejected.
-pub const quirk_allow_extra_comma base.u32 = 0x4909_9400 | 0x0C
+pub const QUIRK_ALLOW_EXTRA_COMMA base.u32 = 0x4909_9400 | 0x0C
 
 // When this quirk is enabled, "inf", "Infinity", "NAN" and their
 // case-insensitive variants, optionally preceded immediately by "-" or "+",
 // are accepted anywhere a JSON number would be.
-pub const quirk_allow_inf_nan_numbers base.u32 = 0x4909_9400 | 0x0D
+pub const QUIRK_ALLOW_INF_NAN_NUMBERS base.u32 = 0x4909_9400 | 0x0D
 
 // When this quirk is enabled, the input byte stream may optionally start with
 // "\x1E" (the ASCII Record Separator control character). That byte is skipped
 // and decoding proceeds normally.
 //
-// When combined with quirk_allow_leading_unicode_byte_order_mark, either mark
+// When combined with QUIRK_ALLOW_LEADING_UNICODE_BYTE_ORDER_MARK, either mark
 // may come first in the byte stream.
 //
-// When combined with quirk_allow_trailing_new_line, this format is also known
+// When combined with QUIRK_ALLOW_TRAILING_NEW_LINE, this format is also known
 // as RFC 7464, Json Text Sequences and MIME type "application/json-seq".
-pub const quirk_allow_leading_ascii_record_separator base.u32 = 0x4909_9400 | 0x0E
+pub const QUIRK_ALLOW_LEADING_ASCII_RECORD_SEPARATOR base.u32 = 0x4909_9400 | 0x0E
 
 // When this quirk is enabled, the input byte stream may optionally start with
 // "\xEF\xBB\xBF", the UTF-8 encoding of the Unicode BOM (Byte Order Mark).
 // Those 3 bytes are skipped and decoding proceeds normally.
 //
-// When combined with quirk_allow_leading_ascii_record_separator, either mark
+// When combined with QUIRK_ALLOW_LEADING_ASCII_RECORD_SEPARATOR, either mark
 // may come first in the byte stream.
-pub const quirk_allow_leading_unicode_byte_order_mark base.u32 = 0x4909_9400 | 0x0F
+pub const QUIRK_ALLOW_LEADING_UNICODE_BYTE_ORDER_MARK base.u32 = 0x4909_9400 | 0x0F
 
 // When this quirk is enabled, following a successful decoding of a top-level
 // JSON value, any trailing whitespace (ASCII characters 0x09, 0x0A, 0x0D or
@@ -178,16 +178,16 @@ pub const quirk_allow_leading_unicode_byte_order_mark base.u32 = 0x4909_9400 | 0
 // such bytes may confuse other line oriented Unix tools that assume exactly
 // one JSON value per line.
 //
-// When combined with quirk_allow_leading_ascii_record_separator, this format
+// When combined with QUIRK_ALLOW_LEADING_ASCII_RECORD_SEPARATOR, this format
 // is also known as RFC 7464, Json Text Sequences and MIME type
 // "application/json-seq".
 //
-// When combined with quirk_allow_comment_block or quirk_allow_comment_line, it
+// When combined with QUIRK_ALLOW_COMMENT_BLOCK or QUIRK_ALLOW_COMMENT_LINE, it
 // is an error for a comment to occur in this trailing whitespace, before an
 // end-of-file or '\n' is encountered. Treating this as an error avoids any
 // ambiguity in accounting for new lines within a block comment or ending a
 // line comment.
-pub const quirk_allow_trailing_new_line base.u32 = 0x4909_9400 | 0x10
+pub const QUIRK_ALLOW_TRAILING_NEW_LINE base.u32 = 0x4909_9400 | 0x10
 
 // When this quirk is enabled, invalid UTF-8 inside a JSON string is accepted.
 // Each byte of invalid UTF-8 is equivalent to "\uFFFD", the Unicode
@@ -200,7 +200,7 @@ pub const quirk_allow_trailing_new_line base.u32 = 0x4909_9400 | 0x10
 // "abc\uDC00z" and "ijk\uD800\uDBFFz" are equivalent to "abc\uFFFDz" and
 // "ijk\uFFFD\uFFFDz".
 //
-// When combined with quirk_allow_backslash_capital_u, a "\U12345678" 10-byte
+// When combined with QUIRK_ALLOW_BACKSLASH_CAPITAL_U, a "\U12345678" 10-byte
 // unit that is an invalid Unicode code point (i.e. in the range U+D800 ..=
 // U+DFFF or above U+10FFFF) is similarly replaced with U+FFFD.
-pub const quirk_replace_invalid_unicode base.u32 = 0x4909_9400 | 0x11
+pub const QUIRK_REPLACE_INVALID_UNICODE base.u32 = 0x4909_9400 | 0x11

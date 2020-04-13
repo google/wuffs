@@ -83,7 +83,7 @@ pub struct config_decoder? implements base.image_decoder(
 
 	has_global_palette : base.bool,
 
-	// interlace indexes the interlace_start and interlace_delta arrays.
+	// interlace indexes the INTERLACE_START and INTERLACE_DELTA arrays.
 	interlace : base.u8[..= 4],
 
 	// Absent an ANIMEXTS1.0 or NETSCAPE2.0 extension, the implicit number of
@@ -116,19 +116,19 @@ pub struct config_decoder? implements base.image_decoder(
 
 pub func config_decoder.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
 	if this.call_sequence == 0 {
-		if args.quirk == quirk_delay_num_decoded_frames {
+		if args.quirk == QUIRK_DELAY_NUM_DECODED_FRAMES {
 			this.quirk_enabled_delay_num_decoded_frames = args.enabled
-		} else if args.quirk == quirk_first_frame_local_palette_means_black_background {
+		} else if args.quirk == QUIRK_FIRST_FRAME_LOCAL_PALETTE_MEANS_BLACK_BACKGROUND {
 			this.quirk_enabled_first_frame_local_palette_means_black_background = args.enabled
-		} else if args.quirk == quirk_honor_background_color {
+		} else if args.quirk == QUIRK_HONOR_BACKGROUND_COLOR {
 			this.quirk_enabled_honor_background_color = args.enabled
-		} else if args.quirk == quirk_ignore_too_much_pixel_data {
+		} else if args.quirk == QUIRK_IGNORE_TOO_MUCH_PIXEL_DATA {
 			this.quirk_enabled_ignore_too_much_pixel_data = args.enabled
-		} else if args.quirk == quirk_image_bounds_are_strict {
+		} else if args.quirk == QUIRK_IMAGE_BOUNDS_ARE_STRICT {
 			this.quirk_enabled_image_bounds_are_strict = args.enabled
-		} else if args.quirk == quirk_reject_empty_frame {
+		} else if args.quirk == QUIRK_REJECT_EMPTY_FRAME {
 			this.quirk_enabled_reject_empty_frame = args.enabled
-		} else if args.quirk == quirk_reject_empty_palette {
+		} else if args.quirk == QUIRK_REJECT_EMPTY_PALETTE {
 			this.quirk_enabled_reject_empty_palette = args.enabled
 		}
 	}
@@ -567,10 +567,10 @@ pri func config_decoder.decode_ae?(src: base.io_reader) {
 	block_size = 0  // Re-purpose the block_size variable as a counter.
 	while block_size < 11 {
 		c = args.src.read_u8?()
-		is_animexts = is_animexts and (c == animexts1dot0[block_size])
-		is_netscape = is_netscape and (c == netscape2dot0[block_size])
-		is_iccp = is_iccp and (c == iccrgbg1012[block_size])
-		is_xmp = is_xmp and (c == xmpdataxmp[block_size])
+		is_animexts = is_animexts and (c == ANIMEXTS1DOT0[block_size])
+		is_netscape = is_netscape and (c == NETSCAPE2DOT0[block_size])
+		is_iccp = is_iccp and (c == ICCRGBG1012[block_size])
+		is_xmp = is_xmp and (c == XMPDATAXMP[block_size])
 		block_size += 1
 	} endwhile
 

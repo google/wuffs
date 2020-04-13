@@ -14,7 +14,7 @@
 
 pub struct decoder? implements base.token_decoder(
 	// quirk_enabled_allow_backslash_etc, an 8-element array, is indexed by the
-	// same enum as lut_quirky_backslashes.
+	// same enum as LUT_QUIRKY_BACKSLASHES.
 	quirk_enabled_allow_backslash_etc : array[8] base.bool,
 
 	quirk_enabled_allow_ascii_control_codes             : base.bool,
@@ -53,7 +53,7 @@ pub struct decoder? implements base.token_decoder(
 	// Wuffs code does not have the capability to dynamically allocate memory,
 	// so the maximum depth is hard-coded at compile time. In this case, the
 	// maximum is 1024 (stack is 1024 bits or 128 bytes), also known as
-	// decoder_depth_max_incl.
+	// DECODER_DEPTH_MAX_INCL.
 	//
 	// The [JSON spec](https://www.ietf.org/rfc/rfc8259.txt) clearly states,
 	// "an implementation may set limits on the maximum depth of nesting".
@@ -68,41 +68,41 @@ pub struct decoder? implements base.token_decoder(
 )
 
 pub func decoder.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
-	if args.quirk == quirk_allow_ascii_control_codes {
+	if args.quirk == QUIRK_ALLOW_ASCII_CONTROL_CODES {
 		this.quirk_enabled_allow_ascii_control_codes = args.enabled
-	} else if args.quirk == quirk_allow_backslash_a {
+	} else if args.quirk == QUIRK_ALLOW_BACKSLASH_A {
 		this.quirk_enabled_allow_backslash_etc[1] = args.enabled
-	} else if args.quirk == quirk_allow_backslash_capital_u {
+	} else if args.quirk == QUIRK_ALLOW_BACKSLASH_CAPITAL_U {
 		this.quirk_enabled_allow_backslash_capital_u = args.enabled
-	} else if args.quirk == quirk_allow_backslash_e {
+	} else if args.quirk == QUIRK_ALLOW_BACKSLASH_E {
 		this.quirk_enabled_allow_backslash_etc[2] = args.enabled
-	} else if args.quirk == quirk_allow_backslash_new_line {
+	} else if args.quirk == QUIRK_ALLOW_BACKSLASH_NEW_LINE {
 		this.quirk_enabled_allow_backslash_etc[3] = args.enabled
-	} else if args.quirk == quirk_allow_backslash_question_mark {
+	} else if args.quirk == QUIRK_ALLOW_BACKSLASH_QUESTION_MARK {
 		this.quirk_enabled_allow_backslash_etc[4] = args.enabled
-	} else if args.quirk == quirk_allow_backslash_single_quote {
+	} else if args.quirk == QUIRK_ALLOW_BACKSLASH_SINGLE_QUOTE {
 		this.quirk_enabled_allow_backslash_etc[5] = args.enabled
-	} else if args.quirk == quirk_allow_backslash_v {
+	} else if args.quirk == QUIRK_ALLOW_BACKSLASH_V {
 		this.quirk_enabled_allow_backslash_etc[6] = args.enabled
-	} else if args.quirk == quirk_allow_backslash_x {
+	} else if args.quirk == QUIRK_ALLOW_BACKSLASH_X {
 		this.quirk_enabled_allow_backslash_x = args.enabled
-	} else if args.quirk == quirk_allow_backslash_zero {
+	} else if args.quirk == QUIRK_ALLOW_BACKSLASH_ZERO {
 		this.quirk_enabled_allow_backslash_etc[7] = args.enabled
-	} else if args.quirk == quirk_allow_comment_block {
+	} else if args.quirk == QUIRK_ALLOW_COMMENT_BLOCK {
 		this.quirk_enabled_allow_comment_block = args.enabled
-	} else if args.quirk == quirk_allow_comment_line {
+	} else if args.quirk == QUIRK_ALLOW_COMMENT_LINE {
 		this.quirk_enabled_allow_comment_line = args.enabled
-	} else if args.quirk == quirk_allow_extra_comma {
+	} else if args.quirk == QUIRK_ALLOW_EXTRA_COMMA {
 		this.quirk_enabled_allow_extra_comma = args.enabled
-	} else if args.quirk == quirk_allow_inf_nan_numbers {
+	} else if args.quirk == QUIRK_ALLOW_INF_NAN_NUMBERS {
 		this.quirk_enabled_allow_inf_nan_numbers = args.enabled
-	} else if args.quirk == quirk_allow_leading_ascii_record_separator {
+	} else if args.quirk == QUIRK_ALLOW_LEADING_ASCII_RECORD_SEPARATOR {
 		this.quirk_enabled_allow_leading_ascii_record_separator = args.enabled
-	} else if args.quirk == quirk_allow_leading_unicode_byte_order_mark {
+	} else if args.quirk == QUIRK_ALLOW_LEADING_UNICODE_BYTE_ORDER_MARK {
 		this.quirk_enabled_allow_leading_unicode_byte_order_mark = args.enabled
-	} else if args.quirk == quirk_allow_trailing_new_line {
+	} else if args.quirk == QUIRK_ALLOW_TRAILING_NEW_LINE {
 		this.quirk_enabled_allow_trailing_new_line = args.enabled
-	} else if args.quirk == quirk_replace_invalid_unicode {
+	} else if args.quirk == QUIRK_REPLACE_INVALID_UNICODE {
 		this.quirk_enabled_replace_invalid_unicode = args.enabled
 	}
 }
@@ -201,7 +201,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 			}
 
 			c = args.src.peek_u8()
-			class = lut_classes[c]
+			class = LUT_CLASSES[c]
 			if class <> 0x00 {  // 0x00 is CLASS_WHITESPACE.
 				break.ws
 			}
@@ -288,10 +288,10 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 						inv args.src.available() > 0,
 					{
 						c4 = args.src.peek_u32le()
-						if 0x00 <> (lut_chars[0xFF & (c4 >> 0)] |
-							lut_chars[0xFF & (c4 >> 8)] |
-							lut_chars[0xFF & (c4 >> 16)] |
-							lut_chars[0xFF & (c4 >> 24)]) {
+						if 0x00 <> (LUT_CHARS[0xFF & (c4 >> 0)] |
+							LUT_CHARS[0xFF & (c4 >> 8)] |
+							LUT_CHARS[0xFF & (c4 >> 16)] |
+							LUT_CHARS[0xFF & (c4 >> 24)]) {
 							break
 						}
 						args.src.skip32_fast!(actual: 4, worst_case: 4)
@@ -308,7 +308,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 					} endwhile
 
 					c = args.src.peek_u8()
-					char = lut_chars[c]
+					char = LUT_CHARS[c]
 
 					if char == 0x00 {  // Non-special ASCII.
 						args.src.skip32_fast!(actual: 1, worst_case: 1)
@@ -359,7 +359,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 							continue.string_loop_outer
 						}
 						c = (args.src.peek_u16le() >> 8) as base.u8
-						backslash = lut_backslashes[c]
+						backslash = LUT_BACKSLASHES[c]
 						if (backslash & 0x80) <> 0 {
 							args.src.skip32_fast!(actual: 2, worst_case: 2)
 							args.dst.write_simple_token_fast!(
@@ -374,7 +374,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 								args.src.skip32_fast!(actual: 2, worst_case: 2)
 								args.dst.write_simple_token_fast!(
 									value_major: 0,
-									value_minor: 0x60_0000 | (lut_quirky_backslashes[backslash & 7] as base.u32),
+									value_minor: 0x60_0000 | (LUT_QUIRKY_BACKSLASHES[backslash & 7] as base.u32),
 									continued: 1,
 									length: 2)
 								continue.string_loop_outer
@@ -396,16 +396,16 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 							uni4_value = 0
 							uni4_ok = 0x80
 
-							c = lut_hexadecimal_digits[0xFF & (uni4_string >> 0)]
+							c = LUT_HEXADECIMAL_DIGITS[0xFF & (uni4_string >> 0)]
 							uni4_ok &= c
 							uni4_value |= ((c & 0x0F) as base.u32) << 12
-							c = lut_hexadecimal_digits[0xFF & (uni4_string >> 8)]
+							c = LUT_HEXADECIMAL_DIGITS[0xFF & (uni4_string >> 8)]
 							uni4_ok &= c
 							uni4_value |= ((c & 0x0F) as base.u32) << 8
-							c = lut_hexadecimal_digits[0xFF & (uni4_string >> 16)]
+							c = LUT_HEXADECIMAL_DIGITS[0xFF & (uni4_string >> 16)]
 							uni4_ok &= c
 							uni4_value |= ((c & 0x0F) as base.u32) << 4
-							c = lut_hexadecimal_digits[0xFF & (uni4_string >> 24)]
+							c = LUT_HEXADECIMAL_DIGITS[0xFF & (uni4_string >> 24)]
 							uni4_ok &= c
 							uni4_value |= ((c & 0x0F) as base.u32) << 0
 
@@ -467,16 +467,16 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 									uni4_ok = 0x80
 									uni4_string >>= 16
 
-									c = lut_hexadecimal_digits[0xFF & (uni4_string >> 0)]
+									c = LUT_HEXADECIMAL_DIGITS[0xFF & (uni4_string >> 0)]
 									uni4_ok &= c
 									uni4_value |= ((c & 0x0F) as base.u32) << 12
-									c = lut_hexadecimal_digits[0xFF & (uni4_string >> 8)]
+									c = LUT_HEXADECIMAL_DIGITS[0xFF & (uni4_string >> 8)]
 									uni4_ok &= c
 									uni4_value |= ((c & 0x0F) as base.u32) << 8
-									c = lut_hexadecimal_digits[0xFF & (uni4_string >> 16)]
+									c = LUT_HEXADECIMAL_DIGITS[0xFF & (uni4_string >> 16)]
 									uni4_ok &= c
 									uni4_value |= ((c & 0x0F) as base.u32) << 4
-									c = lut_hexadecimal_digits[0xFF & (uni4_string >> 24)]
+									c = LUT_HEXADECIMAL_DIGITS[0xFF & (uni4_string >> 24)]
 									uni4_ok &= c
 									uni4_value |= ((c & 0x0F) as base.u32) << 0
 								}
@@ -527,28 +527,28 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 							uni8_value = 0
 							uni8_ok = 0x80
 
-							c = lut_hexadecimal_digits[0xFF & (uni8_string >> 0)]
+							c = LUT_HEXADECIMAL_DIGITS[0xFF & (uni8_string >> 0)]
 							uni8_ok &= c
 							uni8_value |= ((c & 0x0F) as base.u32) << 28
-							c = lut_hexadecimal_digits[0xFF & (uni8_string >> 8)]
+							c = LUT_HEXADECIMAL_DIGITS[0xFF & (uni8_string >> 8)]
 							uni8_ok &= c
 							uni8_value |= ((c & 0x0F) as base.u32) << 24
-							c = lut_hexadecimal_digits[0xFF & (uni8_string >> 16)]
+							c = LUT_HEXADECIMAL_DIGITS[0xFF & (uni8_string >> 16)]
 							uni8_ok &= c
 							uni8_value |= ((c & 0x0F) as base.u32) << 20
-							c = lut_hexadecimal_digits[0xFF & (uni8_string >> 24)]
+							c = LUT_HEXADECIMAL_DIGITS[0xFF & (uni8_string >> 24)]
 							uni8_ok &= c
 							uni8_value |= ((c & 0x0F) as base.u32) << 16
-							c = lut_hexadecimal_digits[0xFF & (uni8_string >> 32)]
+							c = LUT_HEXADECIMAL_DIGITS[0xFF & (uni8_string >> 32)]
 							uni8_ok &= c
 							uni8_value |= ((c & 0x0F) as base.u32) << 12
-							c = lut_hexadecimal_digits[0xFF & (uni8_string >> 40)]
+							c = LUT_HEXADECIMAL_DIGITS[0xFF & (uni8_string >> 40)]
 							uni8_ok &= c
 							uni8_value |= ((c & 0x0F) as base.u32) << 8
-							c = lut_hexadecimal_digits[0xFF & (uni8_string >> 48)]
+							c = LUT_HEXADECIMAL_DIGITS[0xFF & (uni8_string >> 48)]
 							uni8_ok &= c
 							uni8_value |= ((c & 0x0F) as base.u32) << 4
-							c = lut_hexadecimal_digits[0xFF & (uni8_string >> 56)]
+							c = LUT_HEXADECIMAL_DIGITS[0xFF & (uni8_string >> 56)]
 							uni8_ok &= c
 							uni8_value |= ((c & 0x0F) as base.u32) << 0
 
@@ -597,9 +597,9 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 								backslash_x_string = args.src.peek_u32le()
 								backslash_x_ok = 0x80
 
-								c = lut_hexadecimal_digits[0xFF & (backslash_x_string >> 16)]
+								c = LUT_HEXADECIMAL_DIGITS[0xFF & (backslash_x_string >> 16)]
 								backslash_x_ok &= c
-								c = lut_hexadecimal_digits[0xFF & (backslash_x_string >> 24)]
+								c = LUT_HEXADECIMAL_DIGITS[0xFF & (backslash_x_string >> 24)]
 								backslash_x_ok &= c
 
 								if (backslash_x_ok == 0) or
@@ -1290,12 +1290,12 @@ pri func decoder.decode_digits!(src: base.io_reader, n: base.u32[..= 99]) base.u
 			break
 		}
 		c = args.src.peek_u8()
-		if 0x00 == lut_decimal_digits[c] {
+		if 0x00 == LUT_DECIMAL_DIGITS[c] {
 			break
 		}
-		// Cap decoder_number_length_max_incl at an arbitrary value, 99. The
+		// Cap DECODER_NUMBER_LENGTH_MAX_INCL at an arbitrary value, 99. The
 		// caller's src.data.len should therefore be at least 100, also known
-		// as decoder_src_io_buffer_length_min_incl.
+		// as DECODER_SRC_IO_BUFFER_LENGTH_MIN_INCL.
 		//
 		// An example of a JSON number that is 81 bytes long is:
 		// https://github.com/nst/JSONTestSuite/blob/master/test_parsing/y_number_double_close_to_zero.json
@@ -1630,7 +1630,7 @@ pri func decoder.decode_trailing_new_line?(dst: base.token_writer, src: base.io_
 			}
 
 			c = args.src.peek_u8()
-			if lut_classes[c] <> 0x00 {  // 0x00 is CLASS_WHITESPACE.
+			if LUT_CLASSES[c] <> 0x00 {  // 0x00 is CLASS_WHITESPACE.
 				if whitespace_length > 0 {
 					args.dst.write_simple_token_fast!(
 						value_major: 0, value_minor: 0, continued: 0, length: whitespace_length)
