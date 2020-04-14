@@ -21,18 +21,18 @@ pub status "#unsupported recursion depth"
 
 pri status "#internal error: inconsistent I/O"
 
-pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE base.u64 = 0
+pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0
 
 // DECODER_DEPTH_MAX_INCL is the maximum supported recursion depth: how deeply
 // nested [] arrays and {} objects can be.
 //
 // The JSON spec itself does not define a limit, but allows implementations to
 // set their own limits.
-pub const DECODER_DEPTH_MAX_INCL base.u64 = 1024
+pub const DECODER_DEPTH_MAX_INCL : base.u64 = 1024
 
 // DECODER_DST_TOKEN_BUFFER_LENGTH_MIN_INCL is the minimum length of the dst
 // wuffs_base__token_buffer passed to the decoder.
-pub const DECODER_DST_TOKEN_BUFFER_LENGTH_MIN_INCL base.u64 = 1
+pub const DECODER_DST_TOKEN_BUFFER_LENGTH_MIN_INCL : base.u64 = 1
 
 // DECODER_SRC_IO_BUFFER_LENGTH_MIN_INCL is the minimum length of the src
 // wuffs_base__io_buffer passed to the decoder.
@@ -42,7 +42,7 @@ pub const DECODER_DST_TOKEN_BUFFER_LENGTH_MIN_INCL base.u64 = 1
 // the backing array's length, not the length of the JSON-formatted input per
 // se. It is perfectly valid to decode "[1,2]" (of length 5) as JSON, as long
 // as that content is placed in an io_buffer whose data.len is at least 100.
-pub const DECODER_SRC_IO_BUFFER_LENGTH_MIN_INCL base.u64 = 100
+pub const DECODER_SRC_IO_BUFFER_LENGTH_MIN_INCL : base.u64 = 100
 
 // DECODER_NUMBER_LENGTH_MAX_INCL is the longest supported byte length for a
 // JSON number. Unlike JSON strings, this package's tokenizer never splits a
@@ -52,7 +52,7 @@ pub const DECODER_SRC_IO_BUFFER_LENGTH_MIN_INCL base.u64 = 100
 //
 // The JSON spec itself does not define a limit, but allows implementations to
 // set their own limits.
-pri const DECODER_NUMBER_LENGTH_MAX_INCL base.u64 = 99
+pri const DECODER_NUMBER_LENGTH_MAX_INCL : base.u64 = 99
 
 // --------
 
@@ -77,7 +77,7 @@ pri const DECODER_NUMBER_LENGTH_MAX_INCL base.u64 = 99
 //
 // If the element is zero then "\i" is invalid, or it is a special case, the
 // start of "\x12", "\u1234" or "\U12345678".
-pri const LUT_BACKSLASHES array[256] base.u8 = [
+pri const LUT_BACKSLASHES : array[256] base.u8 = [
 	// 0     1     2     3     4     5     6     7
 	// 8     9     A     B     C     D     E     F
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // 0x00 ..= 0x07.
@@ -122,7 +122,7 @@ pri const LUT_BACKSLASHES array[256] base.u8 = [
 // LUT_QUIRKY_BACKSLASHES is discussed in the LUT_BACKSLASHES comment. The
 // first element (index 0) is not used, but 8 is a round power of 2, so
 // enforcing index-in-bounds is a simple "&7" operation.
-pri const LUT_QUIRKY_BACKSLASHES array[8] base.u8 = [
+pri const LUT_QUIRKY_BACKSLASHES : array[8] base.u8 = [
 	0x00, 0x07, 0x1B, 0x0A, 0x3F, 0x27, 0x0B, 0x00,
 ]
 
@@ -145,7 +145,7 @@ pri const LUT_QUIRKY_BACKSLASHES array[8] base.u8 = [
 //    UTF8-4      = %xF0 %x90-BF 2( UTF8-tail ) / %xF1-F3 3( UTF8-tail ) /
 //                  %xF4 %x80-8F 2( UTF8-tail )
 //    UTF8-tail   = %x80-BF
-pri const LUT_CHARS array[256] base.u8 = [
+pri const LUT_CHARS : array[256] base.u8 = [
 	// 0     1     2     3     4     5     6     7
 	// 8     9     A     B     C     D     E     F
 	0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87,  // 0x00 ..= 0x07. C0 control codes.
@@ -187,19 +187,19 @@ pri const LUT_CHARS array[256] base.u8 = [
 	// 8     9     A     B     C     D     E     F
 ]
 
-pri const CLASS_WHITESPACE base.u8 = 0x00
-pri const CLASS_STRING base.u8 = 0x01
-pri const CLASS_COMMA base.u8 = 0x02
-pri const CLASS_COLON base.u8 = 0x03
-pri const CLASS_NUMBER base.u8 = 0x04
-pri const CLASS_OPEN_CURLY_BRACE base.u8 = 0x05
-pri const CLASS_CLOSE_CURLY_BRACE base.u8 = 0x06
-pri const CLASS_OPEN_SQUARE_BRACKET base.u8 = 0x07
-pri const CLASS_CLOSE_SQUARE_BRACKET base.u8 = 0x08
-pri const CLASS_FALSE base.u8 = 0x09
-pri const CLASS_TRUE base.u8 = 0x0A
-pri const CLASS_NULL_NAN_INF base.u8 = 0x0B
-pri const CLASS_COMMENT base.u8 = 0x0C
+pri const CLASS_WHITESPACE           : base.u8 = 0x00
+pri const CLASS_STRING               : base.u8 = 0x01
+pri const CLASS_COMMA                : base.u8 = 0x02
+pri const CLASS_COLON                : base.u8 = 0x03
+pri const CLASS_NUMBER               : base.u8 = 0x04
+pri const CLASS_OPEN_CURLY_BRACE     : base.u8 = 0x05
+pri const CLASS_CLOSE_CURLY_BRACE    : base.u8 = 0x06
+pri const CLASS_OPEN_SQUARE_BRACKET  : base.u8 = 0x07
+pri const CLASS_CLOSE_SQUARE_BRACKET : base.u8 = 0x08
+pri const CLASS_FALSE                : base.u8 = 0x09
+pri const CLASS_TRUE                 : base.u8 = 0x0A
+pri const CLASS_NULL_NAN_INF         : base.u8 = 0x0B
+pri const CLASS_COMMENT              : base.u8 = 0x0C
 
 // LUT_CLASSES is:
 //  - 0x00 (bitmask 0x0001) is CLASS_WHITESPACE.
@@ -245,7 +245,7 @@ pri const CLASS_COMMENT base.u8 = 0x0C
 //
 // Comments are always expected. Whether the relevant quirks are enabled are
 // checked elsewhere.
-pri const LUT_CLASSES array[256] base.u8[..= 0x0F] = [
+pri const LUT_CLASSES : array[256] base.u8[..= 0x0F] = [
 	// 0     1     2     3     4     5     6     7
 	// 8     9     A     B     C     D     E     F
 	0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F,  // 0x00 ..= 0x07.
@@ -287,7 +287,7 @@ pri const LUT_CLASSES array[256] base.u8[..= 0x0F] = [
 	// 8     9     A     B     C     D     E     F
 ]
 
-pri const LUT_DECIMAL_DIGITS array[256] base.u8 = [
+pri const LUT_DECIMAL_DIGITS : array[256] base.u8 = [
 	// 0     1     2     3     4     5     6     7
 	// 8     9     A     B     C     D     E     F
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // 0x00 ..= 0x07.
@@ -329,7 +329,7 @@ pri const LUT_DECIMAL_DIGITS array[256] base.u8 = [
 	// 8     9     A     B     C     D     E     F
 ]
 
-pri const LUT_HEXADECIMAL_DIGITS array[256] base.u8 = [
+pri const LUT_HEXADECIMAL_DIGITS : array[256] base.u8 = [
 	// 0     1     2     3     4     5     6     7
 	// 8     9     A     B     C     D     E     F
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // 0x00 ..= 0x07.

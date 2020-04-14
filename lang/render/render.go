@@ -122,25 +122,34 @@ func Render(w io.Writer, tm *t.Map, src []t.Token, comments []string) (err error
 		// Apply or update varNameLength.
 		if len(lineTokens) < 3 {
 			varNameLength = 0
-		} else if id := lineTokens[0].ID; id == t.IDPri || id == t.IDPub {
-			inStruct = lineTokens[1].ID == t.IDStruct
-			varNameLength = 0
-		} else if id == t.IDVar || inStruct {
-			if varNameLength == 0 {
-				varNameLength = measureVarNameLength(tm, lineTokens, src)
-			}
-			if id == t.IDVar {
-				buf = append(buf, "var "...)
-				lineTokens = lineTokens[1:]
-			}
-			name := tm.ByID(lineTokens[0].ID)
-			lineTokens = lineTokens[1:]
-			buf = append(buf, name...)
-			for i := uint32(len(name)); i <= varNameLength; i++ {
-				buf = append(buf, ' ')
-			}
 		} else {
-			varNameLength = 0
+			id0 := lineTokens[0].ID
+			id1 := lineTokens[1].ID
+			if (id0 == t.IDPri) || (id0 == t.IDPub) {
+				inStruct = id1 == t.IDStruct
+				if id1 != t.IDConst {
+					varNameLength = 0
+				}
+			}
+			if (id1 == t.IDConst) || (id0 == t.IDVar) || inStruct {
+				if varNameLength == 0 {
+					varNameLength = measureVarNameLength(tm, lineTokens, src)
+				}
+				name := ""
+				if colon := findColon(lineTokens); colon >= 0 {
+					for _, lt := range lineTokens[:colon] {
+						name = tm.ByID(lt.ID)
+						buf = append(buf, name...)
+						buf = append(buf, ' ')
+					}
+					for i := uint32(len(name)); i < varNameLength; i++ {
+						buf = append(buf, ' ')
+					}
+					lineTokens = lineTokens[colon:]
+				}
+			} else {
+				varNameLength = 0
+			}
 		}
 
 		// Render the lineTokens.
@@ -299,26 +308,30 @@ func isCloseIdentStrLiteralQuestion(tm *t.Map, x t.ID) bool {
 		x.IsSQStrLiteral(tm) || (x == t.IDQuestion)
 }
 
+func findColon(lineTokens []t.Token) int {
+	for i, lt := range lineTokens {
+		if lt.ID == t.IDColon {
+			return i
+		}
+	}
+	return -1
+}
+
 func measureVarNameLength(tm *t.Map, lineTokens []t.Token, remaining []t.Token) uint32 {
-	if len(lineTokens) < 2 {
+	x := findColon(lineTokens)
+	if x <= 0 {
 		return 0
 	}
 
-	x := 0 // "x T" struct field.
-	if lineTokens[0].ID == t.IDVar {
-		x = 1 // "var x T" var statement.
-	}
-
 	line := lineTokens[0].Line
-	length := len(tm.ByID(lineTokens[x].ID))
+	length := len(tm.ByID(lineTokens[x-1].ID))
 	for (len(remaining) > x) &&
-		((x == 0) || (remaining[0].ID == t.IDVar)) &&
 		(remaining[0].Line == line+1) &&
 		(remaining[x].Line == line+1) &&
-		(remaining[x].ID.IsIdent(tm)) {
+		(remaining[x].ID == t.IDColon) {
 
 		line = remaining[0].Line
-		length = max(length, len(tm.ByID(remaining[x].ID)))
+		length = max(length, len(tm.ByID(remaining[x-1].ID)))
 
 		remaining = remaining[x+1:]
 		for len(remaining) > 0 && remaining[0].Line == line {

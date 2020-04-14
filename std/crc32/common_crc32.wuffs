@@ -62,7 +62,7 @@ pub func ieee_hasher.update_u32!(x: slice base.u8) base.u32 {
 
 // The table below was created by script/print-crc32-magic-numbers.go.
 
-pri const IEEE_TABLE array[16] array[256] base.u32 = [[
+pri const IEEE_TABLE : array[16] array[256] base.u32 = [[
 	0x0000_0000, 0x7707_3096, 0xEE0E_612C, 0x9909_51BA, 0x076D_C419, 0x706A_F48F, 0xE963_A535, 0x9E64_95A3,
 	0x0EDB_8832, 0x79DC_B8A4, 0xE0D5_E91E, 0x97D2_D988, 0x09B6_4C2B, 0x7EB1_7CBD, 0xE7B8_2D07, 0x90BF_1D91,
 	0x1DB7_1064, 0x6AB0_20F2, 0xF3B9_7148, 0x84BE_41DE, 0x1ADA_D47D, 0x6DDD_E4EB, 0xF4D4_B551, 0x83D3_85C7,

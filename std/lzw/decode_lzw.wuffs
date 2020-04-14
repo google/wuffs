@@ -24,7 +24,7 @@ pri status "#internal error: inconsistent I/O"
 //  - 85be5b9 Delete the obsolete lzw.decoder.suffixes array
 // and the roll back has combined numbers:
 //  - 3056a84 Roll back 3 recent lzw.decoder.suffixes commits
-pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE base.u64 = 0
+pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0
 
 pub struct decoder? implements base.io_transformer(
 	// set_literal_width_arg is 1 plus the saved argument passed to

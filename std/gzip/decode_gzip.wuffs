@@ -21,7 +21,7 @@ pub status "#bad encoding flags"
 pub status "#bad header"
 
 // TODO: reference deflate.DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE.
-pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE base.u64 = 1
+pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 1
 
 pub struct decoder? implements base.io_transformer(
 	ignore_checksum : base.bool,
