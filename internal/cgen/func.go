@@ -188,16 +188,20 @@ func (g *gen) writeFuncImpl(b *buffer, n *a.Func) error {
 		return err
 	}
 	b.writes("{\n")
-	b.writex(k.bPrologue)
-	if k.astFunc.Effect().Coroutine() {
-		b.writex(k.bBodyResume)
+
+	if (len(n.Body()) != 0) || n.Effect().Coroutine() || (n.Out() != nil) {
+		b.writex(k.bPrologue)
+		if n.Effect().Coroutine() {
+			b.writex(k.bBodyResume)
+		}
+		b.writex(k.bBody)
+		if n.Effect().Coroutine() {
+			b.writex(k.bBodySuspend)
+		} else if k.hasGotoOK {
+			b.writes("\ngoto ok;ok:\n") // The goto avoids the "unused label" warning.
+		}
 	}
-	b.writex(k.bBody)
-	if k.astFunc.Effect().Coroutine() {
-		b.writex(k.bBodySuspend)
-	} else if k.hasGotoOK {
-		b.writes("\ngoto ok;ok:\n") // The goto avoids the "unused label" warning.
-	}
+
 	b.writex(k.bEpilogue)
 	b.writes("}\n\n")
 	return nil

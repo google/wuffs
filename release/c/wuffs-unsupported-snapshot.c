@@ -11161,13 +11161,6 @@ WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
 wuffs_adler32__hasher__set_quirk_enabled(wuffs_adler32__hasher* self,
                                          uint32_t a_quirk,
                                          bool a_enabled) {
-  if (!self) {
-    return wuffs_base__make_empty_struct();
-  }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    return wuffs_base__make_empty_struct();
-  }
-
   return wuffs_base__make_empty_struct();
 }
 
@@ -11394,13 +11387,6 @@ WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
 wuffs_bmp__decoder__set_quirk_enabled(wuffs_bmp__decoder* self,
                                       uint32_t a_quirk,
                                       bool a_enabled) {
-  if (!self) {
-    return wuffs_base__make_empty_struct();
-  }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    return wuffs_base__make_empty_struct();
-  }
-
   return wuffs_base__make_empty_struct();
 }
 
@@ -12633,13 +12619,6 @@ WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
 wuffs_bmp__decoder__set_report_metadata(wuffs_bmp__decoder* self,
                                         uint32_t a_fourcc,
                                         bool a_report) {
-  if (!self) {
-    return wuffs_base__make_empty_struct();
-  }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    return wuffs_base__make_empty_struct();
-  }
-
   return wuffs_base__make_empty_struct();
 }
 
@@ -13629,13 +13608,6 @@ WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
 wuffs_crc32__ieee_hasher__set_quirk_enabled(wuffs_crc32__ieee_hasher* self,
                                             uint32_t a_quirk,
                                             bool a_enabled) {
-  if (!self) {
-    return wuffs_base__make_empty_struct();
-  }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    return wuffs_base__make_empty_struct();
-  }
-
   return wuffs_base__make_empty_struct();
 }
 
@@ -14029,13 +14001,6 @@ WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
 wuffs_deflate__decoder__set_quirk_enabled(wuffs_deflate__decoder* self,
                                           uint32_t a_quirk,
                                           bool a_enabled) {
-  if (!self) {
-    return wuffs_base__make_empty_struct();
-  }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    return wuffs_base__make_empty_struct();
-  }
-
   return wuffs_base__make_empty_struct();
 }
 
@@ -15859,13 +15824,6 @@ WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
 wuffs_lzw__decoder__set_quirk_enabled(wuffs_lzw__decoder* self,
                                       uint32_t a_quirk,
                                       bool a_enabled) {
-  if (!self) {
-    return wuffs_base__make_empty_struct();
-  }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    return wuffs_base__make_empty_struct();
-  }
-
   return wuffs_base__make_empty_struct();
 }
 
@@ -21160,13 +21118,6 @@ WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
 wuffs_gzip__decoder__set_quirk_enabled(wuffs_gzip__decoder* self,
                                        uint32_t a_quirk,
                                        bool a_enabled) {
-  if (!self) {
-    return wuffs_base__make_empty_struct();
-  }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    return wuffs_base__make_empty_struct();
-  }
-
   return wuffs_base__make_empty_struct();
 }
 
@@ -24006,13 +23957,6 @@ WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
 wuffs_wbmp__decoder__set_quirk_enabled(wuffs_wbmp__decoder* self,
                                        uint32_t a_quirk,
                                        bool a_enabled) {
-  if (!self) {
-    return wuffs_base__make_empty_struct();
-  }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    return wuffs_base__make_empty_struct();
-  }
-
   return wuffs_base__make_empty_struct();
 }
 
@@ -24667,13 +24611,6 @@ WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
 wuffs_wbmp__decoder__set_report_metadata(wuffs_wbmp__decoder* self,
                                          uint32_t a_fourcc,
                                          bool a_report) {
-  if (!self) {
-    return wuffs_base__make_empty_struct();
-  }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    return wuffs_base__make_empty_struct();
-  }
-
   return wuffs_base__make_empty_struct();
 }
 
@@ -24889,13 +24826,6 @@ WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
 wuffs_zlib__decoder__set_quirk_enabled(wuffs_zlib__decoder* self,
                                        uint32_t a_quirk,
                                        bool a_enabled) {
-  if (!self) {
-    return wuffs_base__make_empty_struct();
-  }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    return wuffs_base__make_empty_struct();
-  }
-
   return wuffs_base__make_empty_struct();
 }
 
