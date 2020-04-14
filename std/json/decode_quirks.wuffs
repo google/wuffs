@@ -18,6 +18,7 @@
 //
 // The base38 encoding of "json" is 0x12_4265. Left shifting by 10 gives
 // 0x4909_9400.
+pri const QUIRKS_BASE : base.u32 = 0x4909_9400
 
 // --------
 
@@ -204,3 +205,5 @@ pub const QUIRK_ALLOW_TRAILING_NEW_LINE : base.u32 = 0x4909_9400 | 0x10
 // unit that is an invalid Unicode code point (i.e. in the range U+D800 ..=
 // U+DFFF or above U+10FFFF) is similarly replaced with U+FFFD.
 pub const QUIRK_REPLACE_INVALID_UNICODE : base.u32 = 0x4909_9400 | 0x11
+
+pri const QUIRKS_COUNT : base.u32 = 0x12

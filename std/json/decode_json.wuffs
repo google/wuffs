@@ -13,21 +13,7 @@
 // limitations under the License.
 
 pub struct decoder? implements base.token_decoder(
-	// quirk_enabled_allow_backslash_etc, an 8-element array, is indexed by the
-	// same enum as LUT_QUIRKY_BACKSLASHES.
-	quirk_enabled_allow_backslash_etc : array[8] base.bool,
-
-	quirk_enabled_allow_ascii_control_codes             : base.bool,
-	quirk_enabled_allow_backslash_capital_u             : base.bool,
-	quirk_enabled_allow_backslash_x                     : base.bool,
-	quirk_enabled_allow_comment_block                   : base.bool,
-	quirk_enabled_allow_comment_line                    : base.bool,
-	quirk_enabled_allow_extra_comma                     : base.bool,
-	quirk_enabled_allow_inf_nan_numbers                 : base.bool,
-	quirk_enabled_allow_leading_ascii_record_separator  : base.bool,
-	quirk_enabled_allow_leading_unicode_byte_order_mark : base.bool,
-	quirk_enabled_allow_trailing_new_line               : base.bool,
-	quirk_enabled_replace_invalid_unicode               : base.bool,
+	quirks : array[QUIRKS_COUNT] base.bool,
 
 	allow_leading_ars  : base.bool,
 	allow_leading_ubom : base.bool,
@@ -68,42 +54,11 @@ pub struct decoder? implements base.token_decoder(
 )
 
 pub func decoder.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
-	if args.quirk == QUIRK_ALLOW_ASCII_CONTROL_CODES {
-		this.quirk_enabled_allow_ascii_control_codes = args.enabled
-	} else if args.quirk == QUIRK_ALLOW_BACKSLASH_A {
-		this.quirk_enabled_allow_backslash_etc[1] = args.enabled
-	} else if args.quirk == QUIRK_ALLOW_BACKSLASH_CAPITAL_U {
-		this.quirk_enabled_allow_backslash_capital_u = args.enabled
-	} else if args.quirk == QUIRK_ALLOW_BACKSLASH_E {
-		this.quirk_enabled_allow_backslash_etc[2] = args.enabled
-	} else if args.quirk == QUIRK_ALLOW_BACKSLASH_NEW_LINE {
-		this.quirk_enabled_allow_backslash_etc[3] = args.enabled
-	} else if args.quirk == QUIRK_ALLOW_BACKSLASH_QUESTION_MARK {
-		this.quirk_enabled_allow_backslash_etc[4] = args.enabled
-	} else if args.quirk == QUIRK_ALLOW_BACKSLASH_SINGLE_QUOTE {
-		this.quirk_enabled_allow_backslash_etc[5] = args.enabled
-	} else if args.quirk == QUIRK_ALLOW_BACKSLASH_V {
-		this.quirk_enabled_allow_backslash_etc[6] = args.enabled
-	} else if args.quirk == QUIRK_ALLOW_BACKSLASH_X {
-		this.quirk_enabled_allow_backslash_x = args.enabled
-	} else if args.quirk == QUIRK_ALLOW_BACKSLASH_ZERO {
-		this.quirk_enabled_allow_backslash_etc[7] = args.enabled
-	} else if args.quirk == QUIRK_ALLOW_COMMENT_BLOCK {
-		this.quirk_enabled_allow_comment_block = args.enabled
-	} else if args.quirk == QUIRK_ALLOW_COMMENT_LINE {
-		this.quirk_enabled_allow_comment_line = args.enabled
-	} else if args.quirk == QUIRK_ALLOW_EXTRA_COMMA {
-		this.quirk_enabled_allow_extra_comma = args.enabled
-	} else if args.quirk == QUIRK_ALLOW_INF_NAN_NUMBERS {
-		this.quirk_enabled_allow_inf_nan_numbers = args.enabled
-	} else if args.quirk == QUIRK_ALLOW_LEADING_ASCII_RECORD_SEPARATOR {
-		this.quirk_enabled_allow_leading_ascii_record_separator = args.enabled
-	} else if args.quirk == QUIRK_ALLOW_LEADING_UNICODE_BYTE_ORDER_MARK {
-		this.quirk_enabled_allow_leading_unicode_byte_order_mark = args.enabled
-	} else if args.quirk == QUIRK_ALLOW_TRAILING_NEW_LINE {
-		this.quirk_enabled_allow_trailing_new_line = args.enabled
-	} else if args.quirk == QUIRK_REPLACE_INVALID_UNICODE {
-		this.quirk_enabled_replace_invalid_unicode = args.enabled
+	if args.quirk >= QUIRKS_BASE {
+		args.quirk -= QUIRKS_BASE
+		if args.quirk < QUIRKS_COUNT {
+			this.quirks[args.quirk] = args.enabled
+		}
 	}
 }
 
@@ -161,8 +116,8 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 		return base."@end of data"
 	}
 
-	if this.quirk_enabled_allow_leading_ascii_record_separator or
-		this.quirk_enabled_allow_leading_unicode_byte_order_mark {
+	if this.quirks[QUIRK_ALLOW_LEADING_ASCII_RECORD_SEPARATOR - QUIRKS_BASE] or
+		this.quirks[QUIRK_ALLOW_LEADING_UNICODE_BYTE_ORDER_MARK - QUIRKS_BASE] {
 		this.decode_leading?(dst: args.dst, src: args.src)
 	}
 
@@ -370,11 +325,11 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 							continue.string_loop_outer
 
 						} else if backslash <> 0 {
-							if this.quirk_enabled_allow_backslash_etc[backslash & 7] {
+							if this.quirks[LUT_QUIRKY_BACKSLASHES_QUIRKS[backslash & 7]] {
 								args.src.skip32_fast!(actual: 2, worst_case: 2)
 								args.dst.write_simple_token_fast!(
 									value_major: 0,
-									value_minor: 0x60_0000 | (LUT_QUIRKY_BACKSLASHES[backslash & 7] as base.u32),
+									value_minor: 0x60_0000 | (LUT_QUIRKY_BACKSLASHES_CHARS[backslash & 7] as base.u32),
 									continued: 1,
 									length: 2)
 								continue.string_loop_outer
@@ -435,7 +390,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 								// offset of 4.
 								if args.src.available() < 12 {
 									if args.src.is_closed() {
-										if this.quirk_enabled_replace_invalid_unicode {
+										if this.quirks[QUIRK_REPLACE_INVALID_UNICODE - QUIRKS_BASE] {
 											args.src.skip32_fast!(actual: 6, worst_case: 6)
 											args.dst.write_simple_token_fast!(
 												value_major: 0,
@@ -497,7 +452,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 								}
 							}
 
-							if this.quirk_enabled_replace_invalid_unicode {
+							if this.quirks[QUIRK_REPLACE_INVALID_UNICODE - QUIRKS_BASE] {
 								if args.src.available() < 6 {
 									return "#internal error: inconsistent I/O"
 								}
@@ -512,7 +467,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 							// -------- END   backslash-u.
 
 						} else if (c == 'U') and
-							this.quirk_enabled_allow_backslash_capital_u {
+							this.quirks[QUIRK_ALLOW_BACKSLASH_CAPITAL_U - QUIRKS_BASE] {
 							// -------- BEGIN backslash-capital-u.
 							if args.src.available() < 10 {
 								if args.src.is_closed() {
@@ -566,7 +521,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 									continued: 1,
 									length: 10)
 								continue.string_loop_outer
-							} else if this.quirk_enabled_replace_invalid_unicode {
+							} else if this.quirks[QUIRK_REPLACE_INVALID_UNICODE - QUIRKS_BASE] {
 								args.src.skip32_fast!(actual: 10, worst_case: 10)
 								args.dst.write_simple_token_fast!(
 									value_major: 0,
@@ -578,7 +533,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 							// -------- END   backslash-capital-u.
 
 						} else if (c == 'x') and
-							this.quirk_enabled_allow_backslash_x {
+							this.quirks[QUIRK_ALLOW_BACKSLASH_X - QUIRKS_BASE] {
 							// -------- BEGIN backslash-x
 							if args.src.available() < 4 {
 								if args.src.is_closed() {
@@ -640,7 +595,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 								}
 							}
 							if args.src.is_closed() {
-								if this.quirk_enabled_replace_invalid_unicode {
+								if this.quirks[QUIRK_REPLACE_INVALID_UNICODE - QUIRKS_BASE] {
 									args.dst.write_simple_token_fast!(
 										value_major: 0,
 										value_minor: 0x60_FFFD,
@@ -688,7 +643,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 								}
 							}
 							if args.src.is_closed() {
-								if this.quirk_enabled_replace_invalid_unicode {
+								if this.quirks[QUIRK_REPLACE_INVALID_UNICODE - QUIRKS_BASE] {
 									args.dst.write_simple_token_fast!(
 										value_major: 0,
 										value_minor: 0x60_FFFD,
@@ -741,7 +696,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 								}
 							}
 							if args.src.is_closed() {
-								if this.quirk_enabled_replace_invalid_unicode {
+								if this.quirks[QUIRK_REPLACE_INVALID_UNICODE - QUIRKS_BASE] {
 									args.dst.write_simple_token_fast!(
 										value_major: 0,
 										value_minor: 0x60_FFFD,
@@ -792,7 +747,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 						}
 					}
 					if (char & 0x80) <> 0 {
-						if this.quirk_enabled_allow_ascii_control_codes {
+						if this.quirks[QUIRK_ALLOW_ASCII_CONTROL_CODES - QUIRKS_BASE] {
 							args.dst.write_simple_token_fast!(
 								value_major: 0,
 								value_minor: 0x60_0000 | ((char & 0x7F) as base.u32),
@@ -803,7 +758,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 						}
 						return "#bad C0 control code"
 					}
-					if this.quirk_enabled_replace_invalid_unicode {
+					if this.quirks[QUIRK_REPLACE_INVALID_UNICODE - QUIRKS_BASE] {
 						args.dst.write_simple_token_fast!(
 							value_major: 0,
 							value_minor: 0x60_FFFD,
@@ -859,13 +814,13 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 			// What's valid after a comma depends on whether or not we're in an
 			// array or an object.
 			if 0 == (expect & ((1 as base.u32) << CLASS_CLOSE_SQUARE_BRACKET)) {
-				if this.quirk_enabled_allow_extra_comma {
+				if this.quirks[QUIRK_ALLOW_EXTRA_COMMA - QUIRKS_BASE] {
 					expect = 0x1042  // 0x1042 is EXPECT_STRING | EXPECT_CLOSE_CURLY_BRACE.
 				} else {
 					expect = 0x1002  // 0x1002 is EXPECT_STRING.
 				}
 			} else {
-				if this.quirk_enabled_allow_extra_comma {
+				if this.quirks[QUIRK_ALLOW_EXTRA_COMMA - QUIRKS_BASE] {
 					expect = 0x1FB2  // 0x0FB2 is EXPECT_VALUE | EXPECT_CLOSE_SQUARE_BRACKET.
 				} else {
 					expect = 0x1EB2  // 0x0EB2 is EXPECT_VALUE.
@@ -915,7 +870,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 				} endwhile
 
 				if number_status == 1 {
-					if this.quirk_enabled_allow_inf_nan_numbers {
+					if this.quirks[QUIRK_ALLOW_INF_NAN_NUMBERS - QUIRKS_BASE] {
 						this.decode_inf_nan?(dst: args.dst, src: args.src)
 						break
 					}
@@ -1110,13 +1065,14 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 				continue.outer
 			}
 
-			if this.quirk_enabled_allow_inf_nan_numbers {
+			if this.quirks[QUIRK_ALLOW_INF_NAN_NUMBERS - QUIRKS_BASE] {
 				this.decode_inf_nan?(dst: args.dst, src: args.src)
 				break.goto_parsed_a_leaf_value
 			}
 
 		} else if class == CLASS_COMMENT {
-			if this.quirk_enabled_allow_comment_block or this.quirk_enabled_allow_comment_line {
+			if this.quirks[QUIRK_ALLOW_COMMENT_BLOCK - QUIRKS_BASE] or
+				this.quirks[QUIRK_ALLOW_COMMENT_LINE - QUIRKS_BASE] {
 				this.decode_comment?(dst: args.dst, src: args.src)
 				continue.outer
 			}
@@ -1133,7 +1089,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 		expect = expect_after_value
 	} endwhile.outer
 
-	if this.quirk_enabled_allow_trailing_new_line {
+	if this.quirks[QUIRK_ALLOW_TRAILING_NEW_LINE - QUIRKS_BASE] {
 		this.decode_trailing_new_line?(dst: args.dst, src: args.src)
 	}
 
@@ -1319,8 +1275,10 @@ pri func decoder.decode_leading?(dst: base.token_writer, src: base.io_reader) {
 	var c : base.u8
 	var u : base.u32
 
-	this.allow_leading_ars = this.quirk_enabled_allow_leading_ascii_record_separator
-	this.allow_leading_ubom = this.quirk_enabled_allow_leading_unicode_byte_order_mark
+	this.allow_leading_ars =
+		this.quirks[QUIRK_ALLOW_LEADING_ASCII_RECORD_SEPARATOR - QUIRKS_BASE]
+	this.allow_leading_ubom =
+		this.quirks[QUIRK_ALLOW_LEADING_UNICODE_BYTE_ORDER_MARK - QUIRKS_BASE]
 
 	while this.allow_leading_ars or this.allow_leading_ubom {
 		if args.dst.available() <= 0 {
@@ -1382,7 +1340,7 @@ pri func decoder.decode_comment?(dst: base.token_writer, src: base.io_reader) {
 	} endwhile
 	c2 = args.src.peek_u16le()
 
-	if (c2 == '/*'le) and this.quirk_enabled_allow_comment_block {
+	if (c2 == '/*'le) and this.quirks[QUIRK_ALLOW_COMMENT_BLOCK - QUIRKS_BASE] {
 		args.src.skip32_fast!(actual: 2, worst_case: 2)
 		length = 2
 
@@ -1437,7 +1395,7 @@ pri func decoder.decode_comment?(dst: base.token_writer, src: base.io_reader) {
 			} endwhile
 		} endwhile.comment_block
 
-	} else if (c2 == '//'le) and this.quirk_enabled_allow_comment_line {
+	} else if (c2 == '//'le) and this.quirks[QUIRK_ALLOW_COMMENT_LINE - QUIRKS_BASE] {
 		args.src.skip32_fast!(actual: 2, worst_case: 2)
 		length = 2
 

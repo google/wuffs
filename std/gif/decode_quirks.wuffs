@@ -18,6 +18,7 @@
 //
 // The base38 encoding of "gif " is 0x0F_8586. Left shifting by 10 gives
 // 0x3E16_1800.
+pri const QUIRKS_BASE : base.u32 = 0x3E16_1800
 
 // --------
 
@@ -86,3 +87,5 @@ pub const QUIRK_REJECT_EMPTY_FRAME : base.u32 = 0x3E16_1800 | 0x05
 // When this quirk is enabled, a frame with no explicit palette is rejected,
 // instead of implicitly having a palette with every entry being opaque black.
 pub const QUIRK_REJECT_EMPTY_PALETTE : base.u32 = 0x3E16_1800 | 0x06
+
+pri const QUIRKS_COUNT : base.u32 = 0x07

@@ -5644,13 +5644,7 @@ struct wuffs_gif__config_decoder__struct {
     uint32_t f_metadata_fourcc_value;
     uint64_t f_metadata_chunk_length_value;
     uint64_t f_metadata_io_position;
-    bool f_quirk_enabled_delay_num_decoded_frames;
-    bool f_quirk_enabled_first_frame_local_palette_means_black_background;
-    bool f_quirk_enabled_honor_background_color;
-    bool f_quirk_enabled_ignore_too_much_pixel_data;
-    bool f_quirk_enabled_image_bounds_are_strict;
-    bool f_quirk_enabled_reject_empty_frame;
-    bool f_quirk_enabled_reject_empty_palette;
+    bool f_quirks[7];
     bool f_delayed_num_decoded_frames;
     bool f_end_of_data;
     bool f_restarted;
@@ -5895,13 +5889,7 @@ struct wuffs_gif__decoder__struct {
     uint32_t f_metadata_fourcc_value;
     uint64_t f_metadata_chunk_length_value;
     uint64_t f_metadata_io_position;
-    bool f_quirk_enabled_delay_num_decoded_frames;
-    bool f_quirk_enabled_first_frame_local_palette_means_black_background;
-    bool f_quirk_enabled_honor_background_color;
-    bool f_quirk_enabled_ignore_too_much_pixel_data;
-    bool f_quirk_enabled_image_bounds_are_strict;
-    bool f_quirk_enabled_reject_empty_frame;
-    bool f_quirk_enabled_reject_empty_palette;
+    bool f_quirks[7];
     bool f_delayed_num_decoded_frames;
     bool f_end_of_data;
     bool f_restarted;
@@ -6501,18 +6489,7 @@ struct wuffs_json__decoder__struct {
     wuffs_base__vtable vtable_for__wuffs_base__token_decoder;
     wuffs_base__vtable null_vtable;
 
-    bool f_quirk_enabled_allow_backslash_etc[8];
-    bool f_quirk_enabled_allow_ascii_control_codes;
-    bool f_quirk_enabled_allow_backslash_capital_u;
-    bool f_quirk_enabled_allow_backslash_x;
-    bool f_quirk_enabled_allow_comment_block;
-    bool f_quirk_enabled_allow_comment_line;
-    bool f_quirk_enabled_allow_extra_comma;
-    bool f_quirk_enabled_allow_inf_nan_numbers;
-    bool f_quirk_enabled_allow_leading_ascii_record_separator;
-    bool f_quirk_enabled_allow_leading_unicode_byte_order_mark;
-    bool f_quirk_enabled_allow_trailing_new_line;
-    bool f_quirk_enabled_replace_invalid_unicode;
+    bool f_quirks[18];
     bool f_allow_leading_ars;
     bool f_allow_leading_ubom;
     bool f_end_of_data;
@@ -16380,6 +16357,10 @@ static const uint8_t           //
         88, 77, 80, 32, 68, 97, 116, 97, 88, 77, 80,
 };
 
+#define WUFFS_GIF__QUIRKS_BASE 1041635328
+
+#define WUFFS_GIF__QUIRKS_COUNT 7
+
 // ---------------- Private Initializer Prototypes
 
 // ---------------- Private Function Prototypes
@@ -16724,23 +16705,10 @@ wuffs_gif__config_decoder__set_quirk_enabled(wuffs_gif__config_decoder* self,
     return wuffs_base__make_empty_struct();
   }
 
-  if (self->private_impl.f_call_sequence == 0) {
-    if (a_quirk == 1041635328) {
-      self->private_impl.f_quirk_enabled_delay_num_decoded_frames = a_enabled;
-    } else if (a_quirk == 1041635329) {
-      self->private_impl
-          .f_quirk_enabled_first_frame_local_palette_means_black_background =
-          a_enabled;
-    } else if (a_quirk == 1041635330) {
-      self->private_impl.f_quirk_enabled_honor_background_color = a_enabled;
-    } else if (a_quirk == 1041635331) {
-      self->private_impl.f_quirk_enabled_ignore_too_much_pixel_data = a_enabled;
-    } else if (a_quirk == 1041635332) {
-      self->private_impl.f_quirk_enabled_image_bounds_are_strict = a_enabled;
-    } else if (a_quirk == 1041635333) {
-      self->private_impl.f_quirk_enabled_reject_empty_frame = a_enabled;
-    } else if (a_quirk == 1041635334) {
-      self->private_impl.f_quirk_enabled_reject_empty_palette = a_enabled;
+  if ((self->private_impl.f_call_sequence == 0) && (a_quirk >= 1041635328)) {
+    a_quirk -= 1041635328;
+    if (a_quirk < 7) {
+      self->private_impl.f_quirks[a_quirk] = a_enabled;
     }
   }
   return wuffs_base__make_empty_struct();
@@ -16801,7 +16769,7 @@ wuffs_gif__config_decoder__decode_image_config(wuffs_gif__config_decoder* self,
       goto suspend;
     }
     v_ffio = !self->private_impl.f_gc_has_transparent_index;
-    if (!self->private_impl.f_quirk_enabled_honor_background_color) {
+    if (!self->private_impl.f_quirks[(1041635330 - 1041635328)]) {
       v_ffio =
           (v_ffio && (self->private_impl.f_frame_rect_x0 == 0) &&
            (self->private_impl.f_frame_rect_y0 == 0) &&
@@ -17211,8 +17179,7 @@ wuffs_gif__config_decoder__decode_frame_config(wuffs_gif__config_decoder* self,
     if (!self->private_impl.f_gc_has_transparent_index) {
       v_background_color =
           self->private_impl.f_background_color_u32_argb_premul;
-      if (self->private_impl
-              .f_quirk_enabled_first_frame_local_palette_means_black_background &&
+      if (self->private_impl.f_quirks[(1041635329 - 1041635328)] &&
           (self->private_impl.f_num_decoded_frame_configs_value == 0)) {
         while (((uint64_t)(io2_a_src - iop_a_src)) <= 0) {
           status = wuffs_base__make_status(wuffs_base__suspension__short_read);
@@ -17346,7 +17313,7 @@ wuffs_gif__config_decoder__skip_frame(wuffs_gif__config_decoder* self,
     if (status.repr) {
       goto suspend;
     }
-    if (self->private_impl.f_quirk_enabled_delay_num_decoded_frames) {
+    if (self->private_impl.f_quirks[(1041635328 - 1041635328)]) {
       self->private_impl.f_delayed_num_decoded_frames = true;
     } else {
       wuffs_base__u64__sat_add_indirect(
@@ -17781,7 +17748,7 @@ wuffs_gif__config_decoder__decode_lsd(wuffs_gif__config_decoder* self,
             ((uint8_t)(((v_argb >> 24) & 255)));
         v_i += 1;
       }
-      if (self->private_impl.f_quirk_enabled_honor_background_color) {
+      if (self->private_impl.f_quirks[(1041635330 - 1041635328)]) {
         if ((v_background_color_index != 0) &&
             (((uint32_t)(v_background_color_index)) < v_num_palette_entries)) {
           v_j = (4 * ((uint32_t)(v_background_color_index)));
@@ -18537,7 +18504,7 @@ wuffs_gif__config_decoder__decode_id_part0(wuffs_gif__config_decoder* self,
     }
     self->private_impl.f_frame_rect_y1 += self->private_impl.f_frame_rect_y0;
     if ((self->private_impl.f_call_sequence == 0) &&
-        !self->private_impl.f_quirk_enabled_image_bounds_are_strict) {
+        !self->private_impl.f_quirks[(1041635332 - 1041635328)]) {
       self->private_impl.f_width = wuffs_base__u32__max(
           self->private_impl.f_width, self->private_impl.f_frame_rect_x1);
       self->private_impl.f_height = wuffs_base__u32__max(
@@ -18577,23 +18544,10 @@ wuffs_gif__decoder__set_quirk_enabled(wuffs_gif__decoder* self,
     return wuffs_base__make_empty_struct();
   }
 
-  if (self->private_impl.f_call_sequence == 0) {
-    if (a_quirk == 1041635328) {
-      self->private_impl.f_quirk_enabled_delay_num_decoded_frames = a_enabled;
-    } else if (a_quirk == 1041635329) {
-      self->private_impl
-          .f_quirk_enabled_first_frame_local_palette_means_black_background =
-          a_enabled;
-    } else if (a_quirk == 1041635330) {
-      self->private_impl.f_quirk_enabled_honor_background_color = a_enabled;
-    } else if (a_quirk == 1041635331) {
-      self->private_impl.f_quirk_enabled_ignore_too_much_pixel_data = a_enabled;
-    } else if (a_quirk == 1041635332) {
-      self->private_impl.f_quirk_enabled_image_bounds_are_strict = a_enabled;
-    } else if (a_quirk == 1041635333) {
-      self->private_impl.f_quirk_enabled_reject_empty_frame = a_enabled;
-    } else if (a_quirk == 1041635334) {
-      self->private_impl.f_quirk_enabled_reject_empty_palette = a_enabled;
+  if ((self->private_impl.f_call_sequence == 0) && (a_quirk >= 1041635328)) {
+    a_quirk -= 1041635328;
+    if (a_quirk < 7) {
+      self->private_impl.f_quirks[a_quirk] = a_enabled;
     }
   }
   return wuffs_base__make_empty_struct();
@@ -18654,7 +18608,7 @@ wuffs_gif__decoder__decode_image_config(wuffs_gif__decoder* self,
       goto suspend;
     }
     v_ffio = !self->private_impl.f_gc_has_transparent_index;
-    if (!self->private_impl.f_quirk_enabled_honor_background_color) {
+    if (!self->private_impl.f_quirks[(1041635330 - 1041635328)]) {
       v_ffio =
           (v_ffio && (self->private_impl.f_frame_rect_x0 == 0) &&
            (self->private_impl.f_frame_rect_y0 == 0) &&
@@ -19066,8 +19020,7 @@ wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
     if (!self->private_impl.f_gc_has_transparent_index) {
       v_background_color =
           self->private_impl.f_background_color_u32_argb_premul;
-      if (self->private_impl
-              .f_quirk_enabled_first_frame_local_palette_means_black_background &&
+      if (self->private_impl.f_quirks[(1041635329 - 1041635328)] &&
           (self->private_impl.f_num_decoded_frame_configs_value == 0)) {
         while (((uint64_t)(io2_a_src - iop_a_src)) <= 0) {
           status = wuffs_base__make_status(wuffs_base__suspension__short_read);
@@ -19201,7 +19154,7 @@ wuffs_gif__decoder__skip_frame(wuffs_gif__decoder* self,
     if (status.repr) {
       goto suspend;
     }
-    if (self->private_impl.f_quirk_enabled_delay_num_decoded_frames) {
+    if (self->private_impl.f_quirks[(1041635328 - 1041635328)]) {
       self->private_impl.f_delayed_num_decoded_frames = true;
     } else {
       wuffs_base__u64__sat_add_indirect(
@@ -19272,7 +19225,7 @@ wuffs_gif__decoder__decode_frame(wuffs_gif__decoder* self,
         goto suspend;
       }
     }
-    if (self->private_impl.f_quirk_enabled_reject_empty_frame &&
+    if (self->private_impl.f_quirks[(1041635333 - 1041635328)] &&
         ((self->private_impl.f_frame_rect_x0 ==
           self->private_impl.f_frame_rect_x1) ||
          (self->private_impl.f_frame_rect_y0 ==
@@ -19677,7 +19630,7 @@ wuffs_gif__decoder__decode_lsd(wuffs_gif__decoder* self,
             ((uint8_t)(((v_argb >> 24) & 255)));
         v_i += 1;
       }
-      if (self->private_impl.f_quirk_enabled_honor_background_color) {
+      if (self->private_impl.f_quirks[(1041635330 - 1041635328)]) {
         if ((v_background_color_index != 0) &&
             (((uint32_t)(v_background_color_index)) < v_num_palette_entries)) {
           v_j = (4 * ((uint32_t)(v_background_color_index)));
@@ -20435,7 +20388,7 @@ wuffs_gif__decoder__decode_id_part0(wuffs_gif__decoder* self,
     self->private_impl.f_dst_x = self->private_impl.f_frame_rect_x0;
     self->private_impl.f_dst_y = self->private_impl.f_frame_rect_y0;
     if ((self->private_impl.f_call_sequence == 0) &&
-        !self->private_impl.f_quirk_enabled_image_bounds_are_strict) {
+        !self->private_impl.f_quirks[(1041635332 - 1041635328)]) {
       self->private_impl.f_width = wuffs_base__u32__max(
           self->private_impl.f_width, self->private_impl.f_frame_rect_x1);
       self->private_impl.f_height = wuffs_base__u32__max(
@@ -20570,7 +20523,7 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
         self->private_data.f_palettes[1][((4 * v_i) + 3)] = 255;
         v_i += 1;
       }
-    } else if (self->private_impl.f_quirk_enabled_reject_empty_palette &&
+    } else if (self->private_impl.f_quirks[(1041635334 - 1041635328)] &&
                !self->private_impl.f_has_global_palette) {
       status = wuffs_base__make_status(wuffs_gif__error__bad_palette);
       goto exit;
@@ -20937,7 +20890,7 @@ label__0__continue:;
   while (v_src_ri < ((uint64_t)(a_src.len))) {
     v_src = wuffs_base__slice_u8__subslice_i(a_src, v_src_ri);
     if (self->private_impl.f_dst_y >= self->private_impl.f_frame_rect_y1) {
-      if (self->private_impl.f_quirk_enabled_ignore_too_much_pixel_data) {
+      if (self->private_impl.f_quirks[(1041635331 - 1041635328)]) {
         return wuffs_base__make_status(NULL);
       }
       return wuffs_base__make_status(wuffs_base__error__too_much_data);
@@ -21641,8 +21594,14 @@ static const uint8_t                  //
         0,   0, 0,   0,   0, 0, 0, 0,   0,
 };
 
-static const uint8_t                       //
-    WUFFS_JSON__LUT_QUIRKY_BACKSLASHES[8]  //
+static const uint8_t                              //
+    WUFFS_JSON__LUT_QUIRKY_BACKSLASHES_QUIRKS[8]  //
+    WUFFS_BASE__POTENTIALLY_UNUSED = {
+        0, 1, 3, 4, 5, 6, 7, 9,
+};
+
+static const uint8_t                             //
+    WUFFS_JSON__LUT_QUIRKY_BACKSLASHES_CHARS[8]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
         0, 7, 27, 10, 63, 39, 11, 0,
 };
@@ -21758,6 +21717,10 @@ static const uint8_t                         //
         0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 0, 0, 0, 0, 0,
         0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 0, 0, 0, 0, 0,
 };
+
+#define WUFFS_JSON__QUIRKS_BASE 1225364480
+
+#define WUFFS_JSON__QUIRKS_COUNT 18
 
 // ---------------- Private Initializer Prototypes
 
@@ -21894,44 +21857,11 @@ wuffs_json__decoder__set_quirk_enabled(wuffs_json__decoder* self,
     return wuffs_base__make_empty_struct();
   }
 
-  if (a_quirk == 1225364480) {
-    self->private_impl.f_quirk_enabled_allow_ascii_control_codes = a_enabled;
-  } else if (a_quirk == 1225364481) {
-    self->private_impl.f_quirk_enabled_allow_backslash_etc[1] = a_enabled;
-  } else if (a_quirk == 1225364482) {
-    self->private_impl.f_quirk_enabled_allow_backslash_capital_u = a_enabled;
-  } else if (a_quirk == 1225364483) {
-    self->private_impl.f_quirk_enabled_allow_backslash_etc[2] = a_enabled;
-  } else if (a_quirk == 1225364484) {
-    self->private_impl.f_quirk_enabled_allow_backslash_etc[3] = a_enabled;
-  } else if (a_quirk == 1225364485) {
-    self->private_impl.f_quirk_enabled_allow_backslash_etc[4] = a_enabled;
-  } else if (a_quirk == 1225364486) {
-    self->private_impl.f_quirk_enabled_allow_backslash_etc[5] = a_enabled;
-  } else if (a_quirk == 1225364487) {
-    self->private_impl.f_quirk_enabled_allow_backslash_etc[6] = a_enabled;
-  } else if (a_quirk == 1225364488) {
-    self->private_impl.f_quirk_enabled_allow_backslash_x = a_enabled;
-  } else if (a_quirk == 1225364489) {
-    self->private_impl.f_quirk_enabled_allow_backslash_etc[7] = a_enabled;
-  } else if (a_quirk == 1225364490) {
-    self->private_impl.f_quirk_enabled_allow_comment_block = a_enabled;
-  } else if (a_quirk == 1225364491) {
-    self->private_impl.f_quirk_enabled_allow_comment_line = a_enabled;
-  } else if (a_quirk == 1225364492) {
-    self->private_impl.f_quirk_enabled_allow_extra_comma = a_enabled;
-  } else if (a_quirk == 1225364493) {
-    self->private_impl.f_quirk_enabled_allow_inf_nan_numbers = a_enabled;
-  } else if (a_quirk == 1225364494) {
-    self->private_impl.f_quirk_enabled_allow_leading_ascii_record_separator =
-        a_enabled;
-  } else if (a_quirk == 1225364495) {
-    self->private_impl.f_quirk_enabled_allow_leading_unicode_byte_order_mark =
-        a_enabled;
-  } else if (a_quirk == 1225364496) {
-    self->private_impl.f_quirk_enabled_allow_trailing_new_line = a_enabled;
-  } else if (a_quirk == 1225364497) {
-    self->private_impl.f_quirk_enabled_replace_invalid_unicode = a_enabled;
+  if (a_quirk >= 1225364480) {
+    a_quirk -= 1225364480;
+    if (a_quirk < 18) {
+      self->private_impl.f_quirks[a_quirk] = a_enabled;
+    }
   }
   return wuffs_base__make_empty_struct();
 }
@@ -22046,10 +21976,8 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
       status = wuffs_base__make_status(wuffs_base__note__end_of_data);
       goto ok;
     }
-    if (self->private_impl
-            .f_quirk_enabled_allow_leading_ascii_record_separator ||
-        self->private_impl
-            .f_quirk_enabled_allow_leading_unicode_byte_order_mark) {
+    if (self->private_impl.f_quirks[(1225364494 - 1225364480)] ||
+        self->private_impl.f_quirks[(1225364495 - 1225364480)]) {
       if (a_dst) {
         a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
       }
@@ -22255,14 +22183,16 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
                       (((uint64_t)(2)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
                   goto label__string_loop_outer__continue;
                 } else if (v_backslash != 0) {
-                  if (self->private_impl.f_quirk_enabled_allow_backslash_etc[(
-                          v_backslash & 7)]) {
+                  if (self->private_impl
+                          .f_quirks[WUFFS_JSON__LUT_QUIRKY_BACKSLASHES_QUIRKS[(
+                              v_backslash & 7)]]) {
                     (iop_a_src += 2, wuffs_base__make_empty_struct());
                     *iop_a_dst++ = wuffs_base__make_token(
                         (((uint64_t)(
                              (6291456 |
-                              ((uint32_t)(WUFFS_JSON__LUT_QUIRKY_BACKSLASHES[(
-                                  v_backslash & 7)])))))
+                              ((uint32_t)(
+                                  WUFFS_JSON__LUT_QUIRKY_BACKSLASHES_CHARS[(
+                                      v_backslash & 7)])))))
                          << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                         (((uint64_t)(1))
                          << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
@@ -22320,7 +22250,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
                     if (((uint64_t)(io2_a_src - iop_a_src)) < 12) {
                       if (a_src && a_src->meta.closed) {
                         if (self->private_impl
-                                .f_quirk_enabled_replace_invalid_unicode) {
+                                .f_quirks[(1225364497 - 1225364480)]) {
                           (iop_a_src += 6, wuffs_base__make_empty_struct());
                           *iop_a_dst++ = wuffs_base__make_token(
                               (((uint64_t)(6356989))
@@ -22389,8 +22319,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
                       goto label__string_loop_outer__continue;
                     }
                   }
-                  if (self->private_impl
-                          .f_quirk_enabled_replace_invalid_unicode) {
+                  if (self->private_impl.f_quirks[(1225364497 - 1225364480)]) {
                     if (((uint64_t)(io2_a_src - iop_a_src)) < 6) {
                       status = wuffs_base__make_status(
                           wuffs_json__error__internal_error_inconsistent_i_o);
@@ -22407,7 +22336,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
                   }
                 } else if ((v_c == 85) &&
                            self->private_impl
-                               .f_quirk_enabled_allow_backslash_capital_u) {
+                               .f_quirks[(1225364482 - 1225364480)]) {
                   if (((uint64_t)(io2_a_src - iop_a_src)) < 10) {
                     if (a_src && a_src->meta.closed) {
                       status = wuffs_base__make_status(
@@ -22470,7 +22399,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
                         (((uint64_t)(10)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
                     goto label__string_loop_outer__continue;
                   } else if (self->private_impl
-                                 .f_quirk_enabled_replace_invalid_unicode) {
+                                 .f_quirks[(1225364497 - 1225364480)]) {
                     (iop_a_src += 10, wuffs_base__make_empty_struct());
                     *iop_a_dst++ = wuffs_base__make_token(
                         (((uint64_t)(6356989))
@@ -22482,7 +22411,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
                   }
                 } else if ((v_c == 120) &&
                            self->private_impl
-                               .f_quirk_enabled_allow_backslash_x) {
+                               .f_quirks[(1225364488 - 1225364480)]) {
                   if (((uint64_t)(io2_a_src - iop_a_src)) < 4) {
                     if (a_src && a_src->meta.closed) {
                       status = wuffs_base__make_status(
@@ -22549,7 +22478,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
                   }
                   if (a_src && a_src->meta.closed) {
                     if (self->private_impl
-                            .f_quirk_enabled_replace_invalid_unicode) {
+                            .f_quirks[(1225364497 - 1225364480)]) {
                       *iop_a_dst++ = wuffs_base__make_token(
                           (((uint64_t)(6356989))
                            << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
@@ -22608,7 +22537,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
                   }
                   if (a_src && a_src->meta.closed) {
                     if (self->private_impl
-                            .f_quirk_enabled_replace_invalid_unicode) {
+                            .f_quirks[(1225364497 - 1225364480)]) {
                       *iop_a_dst++ = wuffs_base__make_token(
                           (((uint64_t)(6356989))
                            << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
@@ -22672,7 +22601,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
                   }
                   if (a_src && a_src->meta.closed) {
                     if (self->private_impl
-                            .f_quirk_enabled_replace_invalid_unicode) {
+                            .f_quirks[(1225364497 - 1225364480)]) {
                       *iop_a_dst++ = wuffs_base__make_token(
                           (((uint64_t)(6356989))
                            << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
@@ -22733,8 +22662,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
                 }
               }
               if ((v_char & 128) != 0) {
-                if (self->private_impl
-                        .f_quirk_enabled_allow_ascii_control_codes) {
+                if (self->private_impl.f_quirks[(1225364480 - 1225364480)]) {
                   *iop_a_dst++ = wuffs_base__make_token(
                       (((uint64_t)((6291456 | ((uint32_t)((v_char & 127))))))
                        << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
@@ -22747,7 +22675,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
                     wuffs_json__error__bad_c0_control_code);
                 goto exit;
               }
-              if (self->private_impl.f_quirk_enabled_replace_invalid_unicode) {
+              if (self->private_impl.f_quirks[(1225364497 - 1225364480)]) {
                 *iop_a_dst++ = wuffs_base__make_token(
                     (((uint64_t)(6356989))
                      << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
@@ -22798,13 +22726,13 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
               (((uint64_t)(0)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
               (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
           if (0 == (v_expect & (((uint32_t)(1)) << 8))) {
-            if (self->private_impl.f_quirk_enabled_allow_extra_comma) {
+            if (self->private_impl.f_quirks[(1225364492 - 1225364480)]) {
               v_expect = 4162;
             } else {
               v_expect = 4098;
             }
           } else {
-            if (self->private_impl.f_quirk_enabled_allow_extra_comma) {
+            if (self->private_impl.f_quirks[(1225364492 - 1225364480)]) {
               v_expect = 8114;
             } else {
               v_expect = 7858;
@@ -22852,7 +22780,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
               }
             }
             if (v_number_status == 1) {
-              if (self->private_impl.f_quirk_enabled_allow_inf_nan_numbers) {
+              if (self->private_impl.f_quirks[(1225364493 - 1225364480)]) {
                 if (a_dst) {
                   a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
                 }
@@ -23065,7 +22993,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
             WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(21);
             goto label__outer__continue;
           }
-          if (self->private_impl.f_quirk_enabled_allow_inf_nan_numbers) {
+          if (self->private_impl.f_quirks[(1225364493 - 1225364480)]) {
             if (a_dst) {
               a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
             }
@@ -23086,8 +23014,8 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
             goto label__goto_parsed_a_leaf_value__break;
           }
         } else if (v_class == 12) {
-          if (self->private_impl.f_quirk_enabled_allow_comment_block ||
-              self->private_impl.f_quirk_enabled_allow_comment_line) {
+          if (self->private_impl.f_quirks[(1225364490 - 1225364480)] ||
+              self->private_impl.f_quirks[(1225364491 - 1225364480)]) {
             if (a_dst) {
               a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
             }
@@ -23118,7 +23046,7 @@ wuffs_json__decoder__decode_tokens(wuffs_json__decoder* self,
       v_expect = v_expect_after_value;
     }
   label__outer__break:;
-    if (self->private_impl.f_quirk_enabled_allow_trailing_new_line) {
+    if (self->private_impl.f_quirks[(1225364496 - 1225364480)]) {
       if (a_dst) {
         a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
       }
@@ -23395,10 +23323,9 @@ wuffs_json__decoder__decode_leading(wuffs_json__decoder* self,
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
     self->private_impl.f_allow_leading_ars =
-        self->private_impl.f_quirk_enabled_allow_leading_ascii_record_separator;
+        self->private_impl.f_quirks[(1225364494 - 1225364480)];
     self->private_impl.f_allow_leading_ubom =
-        self->private_impl
-            .f_quirk_enabled_allow_leading_unicode_byte_order_mark;
+        self->private_impl.f_quirks[(1225364495 - 1225364480)];
   label__0__continue:;
     while (self->private_impl.f_allow_leading_ars ||
            self->private_impl.f_allow_leading_ubom) {
@@ -23526,7 +23453,7 @@ wuffs_json__decoder__decode_comment(wuffs_json__decoder* self,
     }
     v_c2 = wuffs_base__load_u16le__no_bounds_check(iop_a_src);
     if ((v_c2 == 10799) &&
-        self->private_impl.f_quirk_enabled_allow_comment_block) {
+        self->private_impl.f_quirks[(1225364490 - 1225364480)]) {
       (iop_a_src += 2, wuffs_base__make_empty_struct());
       v_length = 2;
     label__comment_block__continue:;
@@ -23579,7 +23506,7 @@ wuffs_json__decoder__decode_comment(wuffs_json__decoder* self,
         }
       }
     } else if ((v_c2 == 12079) &&
-               self->private_impl.f_quirk_enabled_allow_comment_line) {
+               self->private_impl.f_quirks[(1225364491 - 1225364480)]) {
       (iop_a_src += 2, wuffs_base__make_empty_struct());
       v_length = 2;
     label__comment_line__continue:;

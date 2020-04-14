@@ -83,13 +83,7 @@ pub struct decoder? implements base.image_decoder(
 	metadata_chunk_length_value : base.u64,
 	metadata_io_position        : base.u64,
 
-	quirk_enabled_delay_num_decoded_frames                         : base.bool,
-	quirk_enabled_first_frame_local_palette_means_black_background : base.bool,
-	quirk_enabled_honor_background_color                           : base.bool,
-	quirk_enabled_ignore_too_much_pixel_data                       : base.bool,
-	quirk_enabled_image_bounds_are_strict                          : base.bool,
-	quirk_enabled_reject_empty_frame                               : base.bool,
-	quirk_enabled_reject_empty_palette                             : base.bool,
+	quirks : array[QUIRKS_COUNT] base.bool,
 
 	delayed_num_decoded_frames         : base.bool,
 	end_of_data                        : base.bool,
@@ -154,21 +148,10 @@ pub struct decoder? implements base.image_decoder(
 )
 
 pub func decoder.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
-	if this.call_sequence == 0 {
-		if args.quirk == QUIRK_DELAY_NUM_DECODED_FRAMES {
-			this.quirk_enabled_delay_num_decoded_frames = args.enabled
-		} else if args.quirk == QUIRK_FIRST_FRAME_LOCAL_PALETTE_MEANS_BLACK_BACKGROUND {
-			this.quirk_enabled_first_frame_local_palette_means_black_background = args.enabled
-		} else if args.quirk == QUIRK_HONOR_BACKGROUND_COLOR {
-			this.quirk_enabled_honor_background_color = args.enabled
-		} else if args.quirk == QUIRK_IGNORE_TOO_MUCH_PIXEL_DATA {
-			this.quirk_enabled_ignore_too_much_pixel_data = args.enabled
-		} else if args.quirk == QUIRK_IMAGE_BOUNDS_ARE_STRICT {
-			this.quirk_enabled_image_bounds_are_strict = args.enabled
-		} else if args.quirk == QUIRK_REJECT_EMPTY_FRAME {
-			this.quirk_enabled_reject_empty_frame = args.enabled
-		} else if args.quirk == QUIRK_REJECT_EMPTY_PALETTE {
-			this.quirk_enabled_reject_empty_palette = args.enabled
+	if (this.call_sequence == 0) and (args.quirk >= QUIRKS_BASE) {
+		args.quirk -= QUIRKS_BASE
+		if args.quirk < QUIRKS_COUNT {
+			this.quirks[args.quirk] = args.enabled
 		}
 	}
 }
@@ -188,7 +171,7 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 	// TODO: if this.end_of_data, return an error and/or set dst to zero?
 
 	ffio = not this.gc_has_transparent_index
-	if not this.quirk_enabled_honor_background_color {
+	if not this.quirks[QUIRK_HONOR_BACKGROUND_COLOR - QUIRKS_BASE] {
 		ffio = ffio and
 			(this.frame_rect_x0 == 0) and
 			(this.frame_rect_y0 == 0) and
@@ -360,7 +343,7 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
 
 		// If the quirk is enabled and the first frame has a local color
 		// palette, its background color is black.
-		if this.quirk_enabled_first_frame_local_palette_means_black_background and
+		if this.quirks[QUIRK_FIRST_FRAME_LOCAL_PALETTE_MEANS_BLACK_BACKGROUND - QUIRKS_BASE] and
 			(this.num_decoded_frame_configs_value == 0) {
 
 			while args.src.available() <= 0,
@@ -415,7 +398,7 @@ pri func decoder.skip_frame?(src: base.io_reader) {
 	// Skip the blocks of LZW-compressed data.
 	this.skip_blocks?(src: args.src)
 
-	if this.quirk_enabled_delay_num_decoded_frames {
+	if this.quirks[QUIRK_DELAY_NUM_DECODED_FRAMES - QUIRKS_BASE] {
 		this.delayed_num_decoded_frames = true
 	} else {
 		this.num_decoded_frames_value ~sat+= 1
@@ -430,7 +413,7 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 	if this.call_sequence <> 4 {
 		this.decode_frame_config?(dst: nullptr, src: args.src)
 	}
-	if this.quirk_enabled_reject_empty_frame and
+	if this.quirks[QUIRK_REJECT_EMPTY_FRAME - QUIRKS_BASE] and
 		((this.frame_rect_x0 == this.frame_rect_x1) or (this.frame_rect_y0 == this.frame_rect_y1)) {
 		return "#bad frame size"
 	}
@@ -544,7 +527,7 @@ pri func decoder.decode_lsd?(src: base.io_reader) {
 			i += 1
 		} endwhile
 
-		if this.quirk_enabled_honor_background_color {
+		if this.quirks[QUIRK_HONOR_BACKGROUND_COLOR - QUIRKS_BASE] {
 			if (background_color_index <> 0) and
 				((background_color_index as base.u32) < num_palette_entries) {
 
@@ -795,7 +778,7 @@ pri func decoder.decode_id_part0?(src: base.io_reader) {
 	// and the bottom right extent of the first frame. See
 	// test/data/artificial/gif-frame-out-of-bounds.gif.make-artificial.txt for
 	// more discussion.
-	if (this.call_sequence == 0) and (not this.quirk_enabled_image_bounds_are_strict) {
+	if (this.call_sequence == 0) and (not this.quirks[QUIRK_IMAGE_BOUNDS_ARE_STRICT - QUIRKS_BASE]) {
 		this.width = this.width.max(a: this.frame_rect_x1)
 		this.height = this.height.max(a: this.frame_rect_y1)
 	}
@@ -844,7 +827,7 @@ pri func decoder.decode_id_part1?(dst: ptr base.pixel_buffer, src: base.io_reade
 			this.palettes[1][(4 * i) + 3] = 0xFF
 			i += 1
 		} endwhile
-	} else if this.quirk_enabled_reject_empty_palette and (not this.has_global_palette) {
+	} else if this.quirks[QUIRK_REJECT_EMPTY_PALETTE - QUIRKS_BASE] and (not this.has_global_palette) {
 		return "#bad palette"
 	} else if this.gc_has_transparent_index {
 		this.palettes[1][..].copy_from_slice!(s: this.palettes[0][..])
@@ -1037,7 +1020,7 @@ pri func decoder.copy_to_image_buffer!(pb: ptr base.pixel_buffer, src: slice bas
 		src = args.src[src_ri ..]
 
 		if this.dst_y >= this.frame_rect_y1 {
-			if this.quirk_enabled_ignore_too_much_pixel_data {
+			if this.quirks[QUIRK_IGNORE_TOO_MUCH_PIXEL_DATA - QUIRKS_BASE] {
 				return ok
 			}
 			return base."#too much data"
