@@ -125,6 +125,9 @@ pri const LUT_BACKSLASHES : array[256] base.u8 = [
 // enforcing index-in-bounds is a simple "&7" operation.
 pri const LUT_QUIRKY_BACKSLASHES_QUIRKS : array[8] base.u8[..= 0x09] = [
 	0,
+	// Uncommenting the following lines requires being able to define consts in
+	// terms of other consts, which could be non-trivial to specify and
+	// implement (to avoid infinite loops).
 	0x01,  // (QUIRK_ALLOW_BACKSLASH_A - QUIRKS_BASE) as base.u8,
 	0x03,  // (QUIRK_ALLOW_BACKSLASH_E - QUIRKS_BASE) as base.u8,
 	0x04,  // (QUIRK_ALLOW_BACKSLASH_NEW_LINE - QUIRKS_BASE) as base.u8,

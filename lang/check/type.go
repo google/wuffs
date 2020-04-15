@@ -370,6 +370,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 				// TODO: check somewhere that a global ident (i.e. a const) is
 				// not directly in the LHS of an assignment.
 				n.SetGlobalIdent()
+				n.SetConstValue(c.Value().ConstValue())
 				n.SetMType(c.XType())
 				return nil
 			}
