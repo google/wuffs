@@ -1347,35 +1347,54 @@ do_test_wuffs_gif_decode_metadata(bool full) {
         const char* want = "";
         char have_buffer[100];
         int have_length = 0;
-        uint32_t have_fourcc = wuffs_gif__decoder__metadata_fourcc(&dec);
-
-        switch (wuffs_gif__decoder__metadata_fourcc(&dec)) {
-          case WUFFS_BASE__FOURCC__ICCP:
-            want = full ? "\x16\x26\x36\x46\x56\x76\x86\x96" : "";
-            seen_iccp = true;
-            break;
-          case WUFFS_BASE__FOURCC__XMP:
-            want = full ? "\x05\x17\x27\x37\x47\x57\x03\x77\x87\x97" : "";
-            seen_xmp = true;
-            break;
-          default:
-            RETURN_FAIL(
-                "metadata_fourcc (iccp=%d, xmp=%d): unexpected FourCC "
-                "0x%08" PRIX32,
-                iccp, xmp, have_fourcc);
-        }
+        uint32_t have_fourcc = 0;
 
         while (true) {
-          uint64_t n = wuffs_gif__decoder__metadata_chunk_length(&dec);
+          wuffs_base__io_buffer empty = wuffs_base__empty_io_buffer();
+          wuffs_base__more_information minfo =
+              wuffs_base__empty_more_information();
+          wuffs_base__status status =
+              wuffs_gif__decoder__tell_me_more(&dec, &empty, &minfo, &src);
+          if (wuffs_base__status__is_error(&status)) {
+            RETURN_FAIL("tell_me_more (iccp=%d, xmp=%d): \"%s\"", iccp, xmp,
+                        status.repr);
+          } else if (minfo.flavor !=
+                     WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA) {
+            RETURN_FAIL("tell_me_more (iccp=%d, xmp=%d): flavor: have %" PRIu32
+                        ", want %" PRIu32,
+                        iccp, xmp, minfo.flavor,
+                        WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA);
+          }
+
+          have_fourcc = wuffs_base__more_information__metadata__fourcc(&minfo);
+          switch (have_fourcc) {
+            case WUFFS_BASE__FOURCC__ICCP:
+              want = full ? "\x16\x26\x36\x46\x56\x76\x86\x96" : "";
+              seen_iccp = true;
+              break;
+            case WUFFS_BASE__FOURCC__XMP:
+              want = full ? "\x05\x17\x27\x37\x47\x57\x03\x77\x87\x97" : "";
+              seen_xmp = true;
+              break;
+            default:
+              RETURN_FAIL(
+                  "metadata_fourcc (iccp=%d, xmp=%d): unexpected FourCC "
+                  "0x%08" PRIX32,
+                  iccp, xmp, have_fourcc);
+          }
+
+          wuffs_base__range_ie_u64 r =
+              wuffs_base__more_information__metadata__range(&minfo);
+          uint64_t n = wuffs_base__range_ie_u64__length(&r);
           if ((n > 100) || (n + have_length > 100)) {
             RETURN_FAIL(
-                "metadata_chunk_length (iccp=%d, xmp=%d): too much "
+                "metadata chunk length (iccp=%d, xmp=%d): too much "
                 "metadata (vs buffer size)",
                 iccp, xmp);
           }
           if (n > wuffs_base__io_buffer__reader_available(&src)) {
             RETURN_FAIL(
-                "metadata_chunk_length (iccp=%d, xmp=%d): too much "
+                "metadata chunk length (iccp=%d, xmp=%d): too much "
                 "metadata (vs available)",
                 iccp, xmp);
           }
@@ -1383,15 +1402,14 @@ do_test_wuffs_gif_decode_metadata(bool full) {
           have_length += n;
           src.meta.ri += n;
 
-          wuffs_base__status status =
-              wuffs_gif__decoder__ack_metadata_chunk(&dec, &src);
           if (wuffs_base__status__is_ok(&status)) {
             break;
-          } else if (status.repr != wuffs_base__note__metadata_reported) {
+          } else if (status.repr !=
+                     wuffs_base__suspension__even_more_information) {
             RETURN_FAIL(
-                "ack_metadata_chunk (iccp=%d, xmp=%d): have \"%s\", want "
-                "\"%s\"",
-                iccp, xmp, status.repr, wuffs_base__note__metadata_reported);
+                "tell_me_more (iccp=%d, xmp=%d): have \"%s\", want \"%s\"",
+                iccp, xmp, status.repr,
+                wuffs_base__suspension__even_more_information);
           }
         }
 

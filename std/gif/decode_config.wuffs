@@ -61,12 +61,11 @@ pub struct config_decoder? implements base.image_decoder(
 	//  - IC  is decode_image_config, implicit means nullptr args.dst
 	call_sequence : base.u8,
 
-	ignore_metadata             : base.bool,
-	report_metadata_iccp        : base.bool,
-	report_metadata_xmp         : base.bool,
-	metadata_fourcc_value       : base.u32,
-	metadata_chunk_length_value : base.u64,
-	metadata_io_position        : base.u64,
+	ignore_metadata      : base.bool,
+	report_metadata_iccp : base.bool,
+	report_metadata_xmp  : base.bool,
+	metadata_fourcc      : base.u32,
+	metadata_io_position : base.u64,
 
 	quirks : array[QUIRKS_COUNT] base.bool,
 
@@ -170,52 +169,90 @@ pub func config_decoder.set_report_metadata!(fourcc: base.u32, report: base.bool
 	}
 }
 
-pub func config_decoder.ack_metadata_chunk?(src: base.io_reader) {
+pub func config_decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_information, src: base.io_reader) {
+	var chunk_length : base.u64
+
 	if this.call_sequence <> 1 {
 		return base."#bad call sequence"
 	}
-	if args.src.position() <> this.metadata_io_position {
-		return base."#bad I/O position"
+	if this.metadata_fourcc == 0 {
+		return base."#no more information"
 	}
 
-	if this.metadata_chunk_length_value > 0 {
-		while args.src.available() <= 0,
+	while true {
+		while true,
 			post args.src.available() > 0,
 		{
-			yield? base."$short read"
+			if args.src.position() <> this.metadata_io_position {
+				if args.minfo <> nullptr {
+					args.minfo.set!(
+						flavor: 2,  // WUFFS_BASE__MORE_INFORMATION__FLAVOR__IO_SEEK
+						w: 0,
+						x: this.metadata_io_position,
+						y: 0,
+						z: 0)
+				}
+				yield? base."$mispositioned read"
+				continue
+			}
+
+			if args.src.available() <= 0 {
+				if args.minfo <> nullptr {
+					args.minfo.set!(
+						flavor: 0,
+						w: 0,
+						x: 0,
+						y: 0,
+						z: 0)
+				}
+				yield? base."$short read"
+				continue
+			}
+
+			break
 		} endwhile
 
-		this.metadata_chunk_length_value = args.src.peek_u8_as_u64()
-		if this.metadata_chunk_length_value > 0 {
-			if this.metadata_fourcc_value == 'XMP 'be {
-				// The +1 is because XMP metadata's encoding includes each
-				// block's leading byte (the block size) as part of the
-				// metadata passed to the caller.
-				this.metadata_chunk_length_value += 1
-			} else {
-				args.src.skip32_fast!(actual: 1, worst_case: 1)
-			}
-			this.metadata_io_position =
-				args.src.position() ~sat+ this.metadata_chunk_length_value
-			return base."@metadata reported"
+		chunk_length = args.src.peek_u8_as_u64()
+		if chunk_length <= 0 {
+			// Consume the '\x00' that means a zero-length block.
+			args.src.skip32_fast!(actual: 1, worst_case: 1)
+			break
 		}
 
-		// Consume the '\x00' that means a zero-length block.
-		args.src.skip32_fast!(actual: 1, worst_case: 1)
-	}
+		if this.metadata_fourcc == 'XMP 'be {
+			// The +1 is because XMP metadata's encoding includes each
+			// block's leading byte (the block size) as part of the
+			// metadata passed to the caller.
+			chunk_length += 1
+		} else {
+			args.src.skip32_fast!(actual: 1, worst_case: 1)
+		}
+		this.metadata_io_position = args.src.position() ~sat+ chunk_length
 
+		if args.minfo <> nullptr {
+			args.minfo.set!(
+				flavor: 3,  // WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA
+				w: this.metadata_fourcc,
+				x: 0,
+				y: args.src.position(),
+				z: this.metadata_io_position)
+		}
+
+		yield? base."$even more information"
+	} endwhile
+
+	if args.minfo <> nullptr {
+		args.minfo.set!(
+			flavor: 3,  // WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA
+			w: this.metadata_fourcc,
+			x: 0,
+			y: this.metadata_io_position,
+			z: this.metadata_io_position)
+	}
 	this.call_sequence = 2
-	this.metadata_fourcc_value = 0
+	this.metadata_fourcc = 0
 	this.metadata_io_position = 0
 	return ok
-}
-
-pub func config_decoder.metadata_fourcc() base.u32 {
-	return this.metadata_fourcc_value
-}
-
-pub func config_decoder.metadata_chunk_length() base.u64 {
-	return this.metadata_chunk_length_value
 }
 
 pub func config_decoder.num_animation_loops() base.u32 {
@@ -528,6 +565,10 @@ pri func config_decoder.decode_ae?(src: base.io_reader) {
 	var is_xmp      : base.bool
 
 	while.goto_done true {{
+	if this.metadata_fourcc <> 0 {
+		return base."@metadata reported"
+	}
+
 	block_size = args.src.read_u8?()
 	if block_size == 0 {
 		return ok
@@ -591,35 +632,14 @@ pri func config_decoder.decode_ae?(src: base.io_reader) {
 		// No-op.
 
 	} else if is_iccp and this.report_metadata_iccp {
-		while args.src.available() <= 0,
-			post args.src.available() > 0,
-		{
-			yield? base."$short read"
-		} endwhile
-		this.metadata_chunk_length_value = args.src.peek_u8_as_u64()
-		args.src.skip32_fast!(actual: 1, worst_case: 1)
-		this.metadata_fourcc_value = 'ICCP'be
-		this.metadata_io_position = args.src.position() ~sat+ this.metadata_chunk_length_value
+		this.metadata_fourcc = 'ICCP'be
+		this.metadata_io_position = args.src.position()
 		this.call_sequence = 1
 		return base."@metadata reported"
 
 	} else if is_xmp and this.report_metadata_xmp {
-		while args.src.available() <= 0,
-			post args.src.available() > 0,
-		{
-			yield? base."$short read"
-		} endwhile
-		this.metadata_chunk_length_value = args.src.peek_u8_as_u64()
-		if this.metadata_chunk_length_value > 0 {
-			// The +1 is because XMP metadata's encoding includes each
-			// block's leading byte (the block size) as part of the
-			// metadata passed to the caller.
-			this.metadata_chunk_length_value += 1
-		} else {
-			args.src.skip32_fast!(actual: 1, worst_case: 1)
-		}
-		this.metadata_fourcc_value = 'XMP 'be
-		this.metadata_io_position = args.src.position() ~sat+ this.metadata_chunk_length_value
+		this.metadata_fourcc = 'XMP 'be
+		this.metadata_io_position = args.src.position()
 		this.call_sequence = 1
 		return base."@metadata reported"
 	}

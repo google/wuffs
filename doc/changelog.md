@@ -3,8 +3,10 @@
 
 ## Work In Progress
 
-- Added `base` library support for `atoi`-like string conversion.
+- Added `WUFFS_BASE__PIXEL_BLEND__SRC_OVER`.
+- Added `WUFFS_BASE__PIXEL_FORMAT__BGR_565`.
 - Added `base` library support for UTF-8.
+- Added `base` library support for `atoi`-like string conversion.
 - Added `endwhile` syntax.
 - Added `example/imageviewer`.
 - Added `example/jsonptr`.
@@ -12,8 +14,7 @@
 - Added `std/gif.config_decoder`.
 - Added `std/json`.
 - Added `std/wbmp`.
-- Added `WUFFS_BASE__PIXEL_BLEND__SRC_OVER`.
-- Added `WUFFS_BASE__PIXEL_FORMAT__BGR_565`.
+- Added `tell_me_more?` mechanism.
 - Added alloc functions.
 - Added colons to const syntax.
 - Added double-curly blocks.
@@ -25,6 +26,7 @@
 - Made `wuffs_base__pixel_format` a struct.
 - Made `wuffs_base__pixel_subsampling` a struct.
 - Made `wuffs_base__status` a struct.
+- Removed `ack_metadata_chunk?`.
 - Removed `wuffs_base__frame_config__blend`.
 - Renamed `decode_io_writer?` methods to `transform_io?`.
 - Renamed warnings to notes.

@@ -36,6 +36,9 @@ var Statuses = [...]string{
 	`"@metadata reported"`,
 
 	// Suspensions.
+	`"$even more information"`,
+	`"$mispositioned read"`,
+	`"$mispositioned write"`,
 	`"$short read"`,
 	`"$short write"`,
 
@@ -55,6 +58,7 @@ var Statuses = [...]string{
 	`"#initialize falsely claimed already zeroed"`,
 	`"#initialize not called"`,
 	`"#interleaved coroutine calls"`,
+	`"#no more information"`,
 	`"#not enough data"`,
 	`"#out of bounds"`,
 	`"#unsupported method"`,
@@ -83,6 +87,8 @@ var Types = []string{
 	"range_ie_u64",
 	"rect_ie_u32",
 	"rect_ii_u32",
+
+	"more_information",
 
 	"status",
 
@@ -169,6 +175,10 @@ var Funcs = []string{
 	"range_ii_u64.get_max_incl() u64",
 	"range_ii_u64.intersect(r: range_ii_u64) range_ii_u64",
 	"range_ii_u64.unite(r: range_ii_u64) range_ii_u64",
+
+	// ---- more_information
+
+	"more_information.set!(flavor: u32, w: u32, x: u64, y: u64, z: u64)",
 
 	// ---- status
 
@@ -396,21 +406,19 @@ var InterfaceFuncs = []string{
 
 	// ---- image_decoder
 
-	"image_decoder.ack_metadata_chunk?(src: io_reader)",
 	"image_decoder.decode_frame?(" +
 		"dst: ptr pixel_buffer, src: io_reader, blend: pixel_blend," +
 		"workbuf: slice u8, opts: nptr decode_frame_options)",
 	"image_decoder.decode_frame_config?(dst: nptr frame_config, src: io_reader)",
 	"image_decoder.decode_image_config?(dst: nptr image_config, src: io_reader)",
 	"image_decoder.frame_dirty_rect() rect_ie_u32",
-	"image_decoder.metadata_chunk_length() u64",
-	"image_decoder.metadata_fourcc() u32",
 	"image_decoder.num_animation_loops() u32",
 	"image_decoder.num_decoded_frame_configs() u64",
 	"image_decoder.num_decoded_frames() u64",
 	"image_decoder.restart_frame!(index: u64, io_position: u64) status",
 	"image_decoder.set_quirk_enabled!(quirk: u32, enabled: bool)",
 	"image_decoder.set_report_metadata!(fourcc: u32, report: bool)",
+	"image_decoder.tell_me_more?(dst: io_writer, minfo: nptr more_information, src: io_reader)",
 	"image_decoder.workbuf_len() range_ii_u64",
 
 	// ---- io_transformer

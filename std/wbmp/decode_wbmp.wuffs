@@ -213,26 +213,12 @@ pri func decoder.skip_frame?(src: base.io_reader) {
 	this.call_sequence = 3
 }
 
-pub func decoder.ack_metadata_chunk?(src: base.io_reader) {
-	// TODO: this final line shouldn't be necessary, here and in some other
-	// std/*/*.wuffs functions.
-	return ok
-}
-
 pub func decoder.frame_dirty_rect() base.rect_ie_u32 {
 	return this.util.make_rect_ie_u32(
 		min_incl_x: 0,
 		min_incl_y: 0,
 		max_excl_x: this.width,
 		max_excl_y: this.height)
-}
-
-pub func decoder.metadata_chunk_length() base.u64 {
-	return 0
-}
-
-pub func decoder.metadata_fourcc() base.u32 {
-	return 0
 }
 
 pub func decoder.num_animation_loops() base.u32 {
@@ -267,6 +253,10 @@ pub func decoder.restart_frame!(index: base.u64, io_position: base.u64) base.sta
 
 pub func decoder.set_report_metadata!(fourcc: base.u32, report: base.bool) {
 	// No-op. WBMP doesn't support metadata.
+}
+
+pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_information, src: base.io_reader) {
+	return base."#no more information"
 }
 
 pub func decoder.workbuf_len() base.range_ii_u64 {

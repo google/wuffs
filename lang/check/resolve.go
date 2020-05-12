@@ -54,6 +54,8 @@ var (
 	typeExprRectIEU32  = a.NewTypeExpr(0, t.IDBase, t.IDRectIEU32, nil, nil, nil)
 	typeExprRectIIU32  = a.NewTypeExpr(0, t.IDBase, t.IDRectIIU32, nil, nil, nil)
 
+	typeExprMoreInformation = a.NewTypeExpr(0, t.IDBase, t.IDMoreInformation, nil, nil, nil)
+
 	typeExprStatus = a.NewTypeExpr(0, t.IDBase, t.IDStatus, nil, nil, nil)
 
 	typeExprIOReader    = a.NewTypeExpr(0, t.IDBase, t.IDIOReader, nil, nil, nil)
@@ -99,6 +101,8 @@ var builtInTypeMap = typeMap{
 	t.IDRangeIIU64: typeExprRangeIIU64,
 	t.IDRectIEU32:  typeExprRectIEU32,
 	t.IDRectIIU32:  typeExprRectIIU32,
+
+	t.IDMoreInformation: typeExprMoreInformation,
 
 	t.IDStatus: typeExprStatus,
 
