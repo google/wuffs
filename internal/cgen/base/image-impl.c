@@ -59,50 +59,6 @@ wuffs_base__composite_premul_nonpremul_u32_axxx(uint32_t dst_premul,
   return (db << 0) | (dg << 8) | (dr << 16) | (da << 24);
 }
 
-static inline uint32_t  //
-wuffs_base__premul_u32_axxx(uint32_t nonpremul) {
-  // Multiplying by 0x101 (twice, once for alpha and once for color) converts
-  // from 8-bit to 16-bit color. Shifting right by 8 undoes that.
-  //
-  // Working in the higher bit depth can produce slightly different (and
-  // arguably slightly more accurate) results. For example, given 8-bit blue
-  // and alpha of 0x80 and 0x81:
-  //
-  //  - ((0x80   * 0x81  ) / 0xFF  )      = 0x40        = 0x40
-  //  - ((0x8080 * 0x8181) / 0xFFFF) >> 8 = 0x4101 >> 8 = 0x41
-  uint32_t a = 0xFF & (nonpremul >> 24);
-  uint32_t a16 = a * (0x101 * 0x101);
-
-  uint32_t r = 0xFF & (nonpremul >> 16);
-  r = ((r * a16) / 0xFFFF) >> 8;
-  uint32_t g = 0xFF & (nonpremul >> 8);
-  g = ((g * a16) / 0xFFFF) >> 8;
-  uint32_t b = 0xFF & (nonpremul >> 0);
-  b = ((b * a16) / 0xFFFF) >> 8;
-
-  return (a << 24) | (r << 16) | (g << 8) | (b << 0);
-}
-
-static inline uint32_t  //
-wuffs_base__nonpremul_u32_axxx(uint32_t premul) {
-  uint32_t a = 0xFF & (premul >> 24);
-  if (a == 0xFF) {
-    return premul;
-  } else if (a == 0) {
-    return 0;
-  }
-  uint32_t a16 = a * 0x101;
-
-  uint32_t r = 0xFF & (premul >> 16);
-  r = ((r * (0x101 * 0xFFFF)) / a16) >> 8;
-  uint32_t g = 0xFF & (premul >> 8);
-  g = ((g * (0x101 * 0xFFFF)) / a16) >> 8;
-  uint32_t b = 0xFF & (premul >> 0);
-  b = ((b * (0x101 * 0xFFFF)) / a16) >> 8;
-
-  return (a << 24) | (r << 16) | (g << 8) | (b << 0);
-}
-
 wuffs_base__color_u32_argb_premul  //
 wuffs_base__pixel_buffer__color_u32_at(const wuffs_base__pixel_buffer* pb,
                                        uint32_t x,
