@@ -85,6 +85,7 @@ wuffs_base__pixel_buffer g_pixbuf = {0};
 uint8_t g_src_buffer_array[SRC_BUFFER_ARRAY_SIZE] = {0};
 wuffs_base__io_buffer g_src = {0};
 wuffs_base__image_config g_image_config = {0};
+wuffs_base__frame_config g_frame_config = {0};
 wuffs_base__image_decoder* g_image_decoder = NULL;
 uint32_t g_background_color_index = 0;
 
@@ -254,13 +255,35 @@ load_image_config() {
   return true;
 }
 
-// This function always returns true. If we get this far, we still display a
-// partial image, even if we encounter an error.
 bool  //
 load_image_frame() {
+  // Decode the wuffs_base__frame_config.
+  while (true) {
+    wuffs_base__status status = wuffs_base__image_decoder__decode_frame_config(
+        g_image_decoder, &g_frame_config, &g_src);
+
+    if (status.repr == NULL) {
+      break;
+    } else if (status.repr != wuffs_base__suspension__short_read) {
+      printf("%s: %s\n", g_filename, wuffs_base__status__message(&status));
+      return false;
+    }
+
+    if (!read_more_src()) {
+      return false;
+    }
+  }
+
+  // From here on, this function always returns true. If we get this far, we
+  // still display a partial image, even if we encounter an error.
+
+  // Decode the frame (the pixels).
   while (true) {
     wuffs_base__status status = wuffs_base__image_decoder__decode_frame(
-        g_image_decoder, &g_pixbuf, &g_src, WUFFS_BASE__PIXEL_BLEND__SRC_OVER,
+        g_image_decoder, &g_pixbuf, &g_src,
+        wuffs_base__frame_config__overwrite_instead_of_blend(&g_frame_config)
+            ? WUFFS_BASE__PIXEL_BLEND__SRC
+            : WUFFS_BASE__PIXEL_BLEND__SRC_OVER,
         g_workbuf_slice, NULL);
 
     if (status.repr == NULL) {

@@ -423,7 +423,11 @@ play() {
     }
 
     wuffs_base__status decode_frame_status = wuffs_gif__decoder__decode_frame(
-        &dec, &g_pb, &src, WUFFS_BASE__PIXEL_BLEND__SRC_OVER, g_workbuf, NULL);
+        &dec, &g_pb, &src,
+        wuffs_base__frame_config__overwrite_instead_of_blend(&fc)
+            ? WUFFS_BASE__PIXEL_BLEND__SRC
+            : WUFFS_BASE__PIXEL_BLEND__SRC_OVER,
+        g_workbuf, NULL);
     if (decode_frame_status.repr == wuffs_base__note__end_of_data) {
       break;
     }
