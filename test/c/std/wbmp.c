@@ -67,6 +67,174 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 // No mimic library.
 #endif
 
+// ---------------- Pixel Swizzler Tests
+
+void  //
+fill_palette_with_grays(wuffs_base__pixel_buffer* pb) {
+  wuffs_base__slice_u8 palette = wuffs_base__pixel_buffer__palette(pb);
+  if (palette.len != 1024) {
+    return;
+  }
+  int i;
+  for (i = 0; i < 256; i++) {
+    palette.ptr[(4 * i) + 0] = i;
+    palette.ptr[(4 * i) + 1] = i;
+    palette.ptr[(4 * i) + 2] = i;
+    palette.ptr[(4 * i) + 3] = 0xFF;
+  }
+}
+
+void  //
+fill_table(wuffs_base__table_u8 t, uint8_t c) {
+  size_t y;
+  for (y = 0; y < t.height; y++) {
+    memset(t.ptr + (y * t.stride), c, t.width);
+  }
+}
+
+const char*  //
+test_wuffs_pixel_swizzler_swizzle() {
+  CHECK_FOCUS(__func__);
+
+  const uint32_t width = 5;
+  const uint32_t height = 5;
+  uint8_t dummy_palette_array[1024];
+  wuffs_base__pixel_swizzler swizzler;
+
+  const struct {
+    wuffs_base__color_u32_argb_premul pixel;
+    uint32_t pixfmt_repr;
+  } srcs[] = {
+      {
+          .pixel = 0xFF444444,
+          .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__Y,
+      },
+      {
+          .pixel = 0xFF444444,
+          .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY,
+      },
+      {
+          .pixel = 0xFF443300,
+          .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__BGR,
+      },
+      {
+          .pixel = 0x55443300,
+          .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL,
+      },
+  };
+
+  const struct {
+    wuffs_base__color_u32_argb_premul pixel;
+    uint32_t pixfmt_repr;
+  } dsts[] = {
+      {
+          .pixel = 0x80000040,
+          .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL,
+      },
+  };
+
+  const wuffs_base__pixel_blend blends[] = {
+      WUFFS_BASE__PIXEL_BLEND__SRC,
+  };
+
+  int s;
+  for (s = 0; s < WUFFS_TESTLIB_ARRAY_SIZE(srcs); s++) {
+    // Allocate the src_pixbuf.
+    wuffs_base__pixel_config src_pixcfg = ((wuffs_base__pixel_config){});
+    wuffs_base__pixel_config__set(&src_pixcfg, srcs[s].pixfmt_repr,
+                                  WUFFS_BASE__PIXEL_SUBSAMPLING__NONE, width,
+                                  height);
+    wuffs_base__pixel_buffer src_pixbuf = ((wuffs_base__pixel_buffer){});
+    CHECK_STATUS("set_from_slice",
+                 wuffs_base__pixel_buffer__set_from_slice(
+                     &src_pixbuf, &src_pixcfg, g_src_slice_u8));
+    fill_palette_with_grays(&src_pixbuf);
+
+    // Set the middle src pixel.
+    if (srcs[s].pixfmt_repr == WUFFS_BASE__PIXEL_FORMAT__Y) {
+      fill_table(wuffs_base__pixel_buffer__plane(&src_pixbuf, 0), 0x44);
+    } else if (srcs[s].pixfmt_repr ==
+               WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY) {
+      fill_table(wuffs_base__pixel_buffer__plane(&src_pixbuf, 0), 0x44);
+    } else {
+      CHECK_STATUS("set_color_u32_at",
+                   wuffs_base__pixel_buffer__set_color_u32_at(
+                       &src_pixbuf, width / 2, height / 2, srcs[s].pixel));
+    }
+
+    // Check the middle src pixel.
+    wuffs_base__color_u32_argb_premul have_src_pixel =
+        wuffs_base__pixel_buffer__color_u32_at(&src_pixbuf, width / 2,
+                                               height / 2);
+    if (have_src_pixel != srcs[s].pixel) {
+      RETURN_FAIL("s=%d: src_pixel: have 0x%08" PRIX32 ", want 0x%08" PRIX32, s,
+                  have_src_pixel, srcs[s].pixel);
+    }
+
+    int d;
+    for (d = 0; d < WUFFS_TESTLIB_ARRAY_SIZE(dsts); d++) {
+      // Allocate the dst_pixbuf.
+      wuffs_base__pixel_config dst_pixcfg = ((wuffs_base__pixel_config){});
+      wuffs_base__pixel_config__set(&dst_pixcfg, dsts[d].pixfmt_repr,
+                                    WUFFS_BASE__PIXEL_SUBSAMPLING__NONE, width,
+                                    height);
+      wuffs_base__pixel_buffer dst_pixbuf = ((wuffs_base__pixel_buffer){});
+      CHECK_STATUS("set_from_slice",
+                   wuffs_base__pixel_buffer__set_from_slice(
+                       &dst_pixbuf, &dst_pixcfg, g_have_slice_u8));
+      fill_palette_with_grays(&dst_pixbuf);
+
+      wuffs_base__slice_u8 dst_palette =
+          wuffs_base__pixel_buffer__palette(&dst_pixbuf);
+      if (dst_palette.len == 0) {
+        dst_palette = wuffs_base__make_slice_u8(
+            &dummy_palette_array[0],
+            WUFFS_TESTLIB_ARRAY_SIZE(dummy_palette_array));
+      }
+
+      int b;
+      for (b = 0; b < WUFFS_TESTLIB_ARRAY_SIZE(blends); b++) {
+        // Set the middle dst pixel.
+        CHECK_STATUS("set_color_u32_at",
+                     wuffs_base__pixel_buffer__set_color_u32_at(
+                         &dst_pixbuf, width / 2, height / 2, dsts[d].pixel));
+
+        // Swizzle.
+        CHECK_STATUS(
+            "prepare",
+            wuffs_base__pixel_swizzler__prepare(
+                &swizzler, wuffs_base__make_pixel_format(dsts[d].pixfmt_repr),
+                dst_palette, wuffs_base__make_pixel_format(srcs[s].pixfmt_repr),
+                wuffs_base__pixel_buffer__palette(&src_pixbuf), blends[b]));
+        wuffs_base__pixel_swizzler__swizzle_interleaved(
+            &swizzler,
+            wuffs_base__table_u8__row(
+                wuffs_base__pixel_buffer__plane(&dst_pixbuf, 0), height / 2),
+            dst_palette,
+            wuffs_base__table_u8__row(
+                wuffs_base__pixel_buffer__plane(&src_pixbuf, 0), height / 2));
+
+        // Check the middle dst pixel.
+        wuffs_base__color_u32_argb_premul want_dst_pixel = 0;
+        if (blends[b] == WUFFS_BASE__PIXEL_BLEND__SRC) {
+          want_dst_pixel = srcs[s].pixel;
+        } else {
+          return "unsupported blend";
+        }
+        wuffs_base__color_u32_argb_premul have_dst_pixel =
+            wuffs_base__pixel_buffer__color_u32_at(&dst_pixbuf, width / 2,
+                                                   height / 2);
+        if (have_dst_pixel != want_dst_pixel) {
+          RETURN_FAIL("s=%d, d=%d, b=%d: dst_pixel: have 0x%08" PRIX32
+                      ", want 0x%08" PRIX32,
+                      s, d, b, have_dst_pixel, want_dst_pixel);
+        }
+      }
+    }
+  }
+  return NULL;
+}
+
 // ---------------- WBMP Tests
 
 const char*  //
@@ -167,6 +335,11 @@ test_wuffs_wbmp_decode_image_config() {
 // ---------------- Manifest
 
 proc g_tests[] = {
+
+    // These pixel_swizzler tests are really testing the Wuffs base library.
+    // They aren't specific to the std/wbmp code, but putting them here is as
+    // good as any other place.
+    test_wuffs_pixel_swizzler_swizzle,
 
     test_wuffs_wbmp_decode_frame_config,
     test_wuffs_wbmp_decode_image_config,
