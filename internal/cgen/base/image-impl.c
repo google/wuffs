@@ -78,12 +78,10 @@ wuffs_base__pixel_buffer__color_u32_at(const wuffs_base__pixel_buffer* pb,
 
   switch (pb->pixcfg.private_impl.pixfmt.repr) {
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
-      WUFFS_BASE__FALLTHROUGH;
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_BINARY:
       return wuffs_base__load_u32le__no_bounds_check(row + (4 * ((size_t)x)));
 
     case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_PREMUL:
-      WUFFS_BASE__FALLTHROUGH;
     case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY: {
       uint8_t* palette = pb->private_impl.planes[3].ptr;
       return wuffs_base__load_u32le__no_bounds_check(palette +
@@ -116,28 +114,27 @@ wuffs_base__pixel_buffer__color_u32_at(const wuffs_base__pixel_buffer* pb,
     case WUFFS_BASE__PIXEL_FORMAT__BGR:
       return 0xFF000000 |
              wuffs_base__load_u24le__no_bounds_check(row + (3 * ((size_t)x)));
-    case WUFFS_BASE__PIXEL_FORMAT__BGRX:
-      return 0xFF000000 |
-             wuffs_base__load_u32le__no_bounds_check(row + (4 * ((size_t)x)));
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
       return wuffs_base__premul_u32_axxx(
           wuffs_base__load_u32le__no_bounds_check(row + (4 * ((size_t)x))));
+    case WUFFS_BASE__PIXEL_FORMAT__BGRX:
+      return 0xFF000000 |
+             wuffs_base__load_u32le__no_bounds_check(row + (4 * ((size_t)x)));
 
     case WUFFS_BASE__PIXEL_FORMAT__RGB:
       return wuffs_base__swap_u32_argb_abgr(
           0xFF000000 |
           wuffs_base__load_u24le__no_bounds_check(row + (3 * ((size_t)x))));
-    case WUFFS_BASE__PIXEL_FORMAT__RGBX:
-      return wuffs_base__swap_u32_argb_abgr(
-          0xFF000000 |
-          wuffs_base__load_u32le__no_bounds_check(row + (4 * ((size_t)x))));
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
       return wuffs_base__swap_u32_argb_abgr(wuffs_base__premul_u32_axxx(
           wuffs_base__load_u32le__no_bounds_check(row + (4 * ((size_t)x)))));
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
-      WUFFS_BASE__FALLTHROUGH;
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_BINARY:
       return wuffs_base__swap_u32_argb_abgr(
+          wuffs_base__load_u32le__no_bounds_check(row + (4 * ((size_t)x))));
+    case WUFFS_BASE__PIXEL_FORMAT__RGBX:
+      return wuffs_base__swap_u32_argb_abgr(
+          0xFF000000 |
           wuffs_base__load_u32le__no_bounds_check(row + (4 * ((size_t)x))));
 
     default:
@@ -172,7 +169,6 @@ wuffs_base__pixel_buffer__set_color_u32_at(
 
   switch (pb->pixcfg.private_impl.pixfmt.repr) {
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
-      WUFFS_BASE__FALLTHROUGH;
     case WUFFS_BASE__PIXEL_FORMAT__BGRX:
       wuffs_base__store_u32le__no_bounds_check(row + (4 * ((size_t)x)), color);
       break;
@@ -676,14 +672,14 @@ wuffs_base__pixel_swizzler__prepare__y(wuffs_base__pixel_swizzler* p,
       // TODO.
       break;
 
-    case WUFFS_BASE__PIXEL_FORMAT__BGRX:
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_BINARY:
-    case WUFFS_BASE__PIXEL_FORMAT__RGBX:
+    case WUFFS_BASE__PIXEL_FORMAT__BGRX:
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_BINARY:
+    case WUFFS_BASE__PIXEL_FORMAT__RGBX:
       return wuffs_base__pixel_swizzler__xxxx__y;
   }
   return NULL;
@@ -796,16 +792,16 @@ wuffs_base__pixel_swizzler__prepare__bgr(wuffs_base__pixel_swizzler* p,
       // TODO.
       break;
 
-    case WUFFS_BASE__PIXEL_FORMAT__BGRX:
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_BINARY:
+    case WUFFS_BASE__PIXEL_FORMAT__BGRX:
       return wuffs_base__pixel_swizzler__xxxx__xxx;
 
-    case WUFFS_BASE__PIXEL_FORMAT__RGBX:
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_BINARY:
+    case WUFFS_BASE__PIXEL_FORMAT__RGBX:
       // TODO.
       break;
   }
@@ -829,8 +825,8 @@ wuffs_base__pixel_swizzler__prepare__bgra_nonpremul(
       // TODO.
       break;
 
-    case WUFFS_BASE__PIXEL_FORMAT__BGRX:
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
+    case WUFFS_BASE__PIXEL_FORMAT__BGRX:
       switch (blend) {
         case WUFFS_BASE__PIXEL_BLEND__SRC:
           return wuffs_base__pixel_swizzler__copy_4_4;
@@ -850,10 +846,10 @@ wuffs_base__pixel_swizzler__prepare__bgra_nonpremul(
       // TODO.
       break;
 
-    case WUFFS_BASE__PIXEL_FORMAT__RGBX:
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_BINARY:
+    case WUFFS_BASE__PIXEL_FORMAT__RGBX:
       // TODO.
       break;
   }

@@ -2569,6 +2569,23 @@ typedef uint8_t wuffs_base__pixel_blend;
 
 // --------
 
+// wuffs_base__pixel_alpha_transparency is a pixel format's alpha channel
+// model. It is a property of the pixel format in general, not of a specific
+// pixel. An RGBA pixel format (with alpha) can still have fully opaque pixels.
+typedef uint32_t wuffs_base__pixel_alpha_transparency;
+
+#define WUFFS_BASE__PIXEL_ALPHA_TRANSPARENCY__OPAQUE 0
+#define WUFFS_BASE__PIXEL_ALPHA_TRANSPARENCY__NON_PREMULTIPLIED_ALPHA 1
+#define WUFFS_BASE__PIXEL_ALPHA_TRANSPARENCY__PREMULTIPLIED_ALPHA 2
+#define WUFFS_BASE__PIXEL_ALPHA_TRANSPARENCY__BINARY_ALPHA 3
+
+// --------
+
+#define WUFFS_BASE__PIXEL_FORMAT__NUM_PLANES_MAX 4
+
+#define WUFFS_BASE__PIXEL_FORMAT__INDEXED__INDEX_PLANE 0
+#define WUFFS_BASE__PIXEL_FORMAT__INDEXED__COLOR_PLANE 3
+
 // wuffs_base__pixel_format encodes the format of the bytes that constitute an
 // image frame's pixel data.
 //
@@ -2582,10 +2599,12 @@ typedef struct {
 #ifdef __cplusplus
   inline bool is_valid() const;
   inline uint32_t bits_per_pixel() const;
+  inline bool is_direct() const;
   inline bool is_indexed() const;
   inline bool is_interleaved() const;
   inline bool is_planar() const;
   inline uint32_t num_planes() const;
+  inline wuffs_base__pixel_alpha_transparency transparency() const;
 #endif  // __cplusplus
 
 } wuffs_base__pixel_format;
@@ -2604,37 +2623,37 @@ wuffs_base__make_pixel_format(uint32_t repr) {
 
 #define WUFFS_BASE__PIXEL_FORMAT__A 0x02000008
 
-#define WUFFS_BASE__PIXEL_FORMAT__Y 0x10000008
-#define WUFFS_BASE__PIXEL_FORMAT__YA_NONPREMUL 0x15000008
-#define WUFFS_BASE__PIXEL_FORMAT__YA_PREMUL 0x16000008
+#define WUFFS_BASE__PIXEL_FORMAT__Y 0x20000008
+#define WUFFS_BASE__PIXEL_FORMAT__YA_NONPREMUL 0x21000008
+#define WUFFS_BASE__PIXEL_FORMAT__YA_PREMUL 0x22000008
 
-#define WUFFS_BASE__PIXEL_FORMAT__YCBCR 0x20020888
-#define WUFFS_BASE__PIXEL_FORMAT__YCBCRK 0x21038888
-#define WUFFS_BASE__PIXEL_FORMAT__YCBCRA_NONPREMUL 0x25038888
+#define WUFFS_BASE__PIXEL_FORMAT__YCBCR 0x40020888
+#define WUFFS_BASE__PIXEL_FORMAT__YCBCRA_NONPREMUL 0x41038888
+#define WUFFS_BASE__PIXEL_FORMAT__YCBCRK 0x50038888
 
-#define WUFFS_BASE__PIXEL_FORMAT__YCOCG 0x30020888
-#define WUFFS_BASE__PIXEL_FORMAT__YCOCGK 0x31038888
-#define WUFFS_BASE__PIXEL_FORMAT__YCOCGA_NONPREMUL 0x35038888
+#define WUFFS_BASE__PIXEL_FORMAT__YCOCG 0x60020888
+#define WUFFS_BASE__PIXEL_FORMAT__YCOCGA_NONPREMUL 0x61038888
+#define WUFFS_BASE__PIXEL_FORMAT__YCOCGK 0x70038888
 
-#define WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL 0x45040008
-#define WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_PREMUL 0x46040008
-#define WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY 0x47040008
+#define WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL 0x81040008
+#define WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_PREMUL 0x82040008
+#define WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY 0x83040008
 
-#define WUFFS_BASE__PIXEL_FORMAT__BGR_565 0x40000565
-#define WUFFS_BASE__PIXEL_FORMAT__BGR 0x40000888
-#define WUFFS_BASE__PIXEL_FORMAT__BGRX 0x41008888
-#define WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL 0x45008888
-#define WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL 0x46008888
-#define WUFFS_BASE__PIXEL_FORMAT__BGRA_BINARY 0x47008888
+#define WUFFS_BASE__PIXEL_FORMAT__BGR_565 0x80000565
+#define WUFFS_BASE__PIXEL_FORMAT__BGR 0x80000888
+#define WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL 0x81008888
+#define WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL 0x82008888
+#define WUFFS_BASE__PIXEL_FORMAT__BGRA_BINARY 0x83008888
+#define WUFFS_BASE__PIXEL_FORMAT__BGRX 0x90008888
 
-#define WUFFS_BASE__PIXEL_FORMAT__RGB 0x50000888
-#define WUFFS_BASE__PIXEL_FORMAT__RGBX 0x51008888
-#define WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL 0x55008888
-#define WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL 0x56008888
-#define WUFFS_BASE__PIXEL_FORMAT__RGBA_BINARY 0x57008888
+#define WUFFS_BASE__PIXEL_FORMAT__RGB 0xA0000888
+#define WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL 0xA1008888
+#define WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL 0xA2008888
+#define WUFFS_BASE__PIXEL_FORMAT__RGBA_BINARY 0xA3008888
+#define WUFFS_BASE__PIXEL_FORMAT__RGBX 0xB0008888
 
-#define WUFFS_BASE__PIXEL_FORMAT__CMY 0x60020888
-#define WUFFS_BASE__PIXEL_FORMAT__CMYK 0x61038888
+#define WUFFS_BASE__PIXEL_FORMAT__CMY 0xC0020888
+#define WUFFS_BASE__PIXEL_FORMAT__CMYK 0xD0038888
 
 extern const uint32_t wuffs_base__pixel_format__bits_per_channel[16];
 
@@ -2657,8 +2676,13 @@ wuffs_base__pixel_format__bits_per_pixel(const wuffs_base__pixel_format* f) {
 }
 
 static inline bool  //
+wuffs_base__pixel_format__is_direct(const wuffs_base__pixel_format* f) {
+  return ((f->repr >> 18) & 0x01) == 0;
+}
+
+static inline bool  //
 wuffs_base__pixel_format__is_indexed(const wuffs_base__pixel_format* f) {
-  return (f->repr >> 18) & 0x01;
+  return ((f->repr >> 18) & 0x01) != 0;
 }
 
 static inline bool  //
@@ -2676,10 +2700,10 @@ wuffs_base__pixel_format__num_planes(const wuffs_base__pixel_format* f) {
   return ((f->repr >> 16) & 0x03) + 1;
 }
 
-#define WUFFS_BASE__PIXEL_FORMAT__NUM_PLANES_MAX 4
-
-#define WUFFS_BASE__PIXEL_FORMAT__INDEXED__INDEX_PLANE 0
-#define WUFFS_BASE__PIXEL_FORMAT__INDEXED__COLOR_PLANE 3
+static inline wuffs_base__pixel_alpha_transparency  //
+wuffs_base__pixel_format__transparency(const wuffs_base__pixel_format* f) {
+  return (wuffs_base__pixel_alpha_transparency)((f->repr >> 24) & 0x03);
+}
 
 #ifdef __cplusplus
 
@@ -2691,6 +2715,11 @@ wuffs_base__pixel_format::is_valid() const {
 inline uint32_t  //
 wuffs_base__pixel_format::bits_per_pixel() const {
   return wuffs_base__pixel_format__bits_per_pixel(this);
+}
+
+inline bool  //
+wuffs_base__pixel_format::is_direct() const {
+  return wuffs_base__pixel_format__is_direct(this);
 }
 
 inline bool  //
@@ -2711,6 +2740,11 @@ wuffs_base__pixel_format::is_planar() const {
 inline uint32_t  //
 wuffs_base__pixel_format::num_planes() const {
   return wuffs_base__pixel_format__num_planes(this);
+}
+
+inline wuffs_base__pixel_alpha_transparency  //
+wuffs_base__pixel_format::transparency() const {
+  return wuffs_base__pixel_format__transparency(this);
 }
 
 #endif  // __cplusplus
@@ -8495,12 +8529,10 @@ wuffs_base__pixel_buffer__color_u32_at(const wuffs_base__pixel_buffer* pb,
 
   switch (pb->pixcfg.private_impl.pixfmt.repr) {
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
-      WUFFS_BASE__FALLTHROUGH;
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_BINARY:
       return wuffs_base__load_u32le__no_bounds_check(row + (4 * ((size_t)x)));
 
     case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_PREMUL:
-      WUFFS_BASE__FALLTHROUGH;
     case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY: {
       uint8_t* palette = pb->private_impl.planes[3].ptr;
       return wuffs_base__load_u32le__no_bounds_check(palette +
@@ -8533,28 +8565,27 @@ wuffs_base__pixel_buffer__color_u32_at(const wuffs_base__pixel_buffer* pb,
     case WUFFS_BASE__PIXEL_FORMAT__BGR:
       return 0xFF000000 |
              wuffs_base__load_u24le__no_bounds_check(row + (3 * ((size_t)x)));
-    case WUFFS_BASE__PIXEL_FORMAT__BGRX:
-      return 0xFF000000 |
-             wuffs_base__load_u32le__no_bounds_check(row + (4 * ((size_t)x)));
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
       return wuffs_base__premul_u32_axxx(
           wuffs_base__load_u32le__no_bounds_check(row + (4 * ((size_t)x))));
+    case WUFFS_BASE__PIXEL_FORMAT__BGRX:
+      return 0xFF000000 |
+             wuffs_base__load_u32le__no_bounds_check(row + (4 * ((size_t)x)));
 
     case WUFFS_BASE__PIXEL_FORMAT__RGB:
       return wuffs_base__swap_u32_argb_abgr(
           0xFF000000 |
           wuffs_base__load_u24le__no_bounds_check(row + (3 * ((size_t)x))));
-    case WUFFS_BASE__PIXEL_FORMAT__RGBX:
-      return wuffs_base__swap_u32_argb_abgr(
-          0xFF000000 |
-          wuffs_base__load_u32le__no_bounds_check(row + (4 * ((size_t)x))));
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
       return wuffs_base__swap_u32_argb_abgr(wuffs_base__premul_u32_axxx(
           wuffs_base__load_u32le__no_bounds_check(row + (4 * ((size_t)x)))));
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
-      WUFFS_BASE__FALLTHROUGH;
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_BINARY:
       return wuffs_base__swap_u32_argb_abgr(
+          wuffs_base__load_u32le__no_bounds_check(row + (4 * ((size_t)x))));
+    case WUFFS_BASE__PIXEL_FORMAT__RGBX:
+      return wuffs_base__swap_u32_argb_abgr(
+          0xFF000000 |
           wuffs_base__load_u32le__no_bounds_check(row + (4 * ((size_t)x))));
 
     default:
@@ -8589,7 +8620,6 @@ wuffs_base__pixel_buffer__set_color_u32_at(
 
   switch (pb->pixcfg.private_impl.pixfmt.repr) {
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
-      WUFFS_BASE__FALLTHROUGH;
     case WUFFS_BASE__PIXEL_FORMAT__BGRX:
       wuffs_base__store_u32le__no_bounds_check(row + (4 * ((size_t)x)), color);
       break;
@@ -9093,14 +9123,14 @@ wuffs_base__pixel_swizzler__prepare__y(wuffs_base__pixel_swizzler* p,
       // TODO.
       break;
 
-    case WUFFS_BASE__PIXEL_FORMAT__BGRX:
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_BINARY:
-    case WUFFS_BASE__PIXEL_FORMAT__RGBX:
+    case WUFFS_BASE__PIXEL_FORMAT__BGRX:
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_BINARY:
+    case WUFFS_BASE__PIXEL_FORMAT__RGBX:
       return wuffs_base__pixel_swizzler__xxxx__y;
   }
   return NULL;
@@ -9213,16 +9243,16 @@ wuffs_base__pixel_swizzler__prepare__bgr(wuffs_base__pixel_swizzler* p,
       // TODO.
       break;
 
-    case WUFFS_BASE__PIXEL_FORMAT__BGRX:
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_BINARY:
+    case WUFFS_BASE__PIXEL_FORMAT__BGRX:
       return wuffs_base__pixel_swizzler__xxxx__xxx;
 
-    case WUFFS_BASE__PIXEL_FORMAT__RGBX:
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_BINARY:
+    case WUFFS_BASE__PIXEL_FORMAT__RGBX:
       // TODO.
       break;
   }
@@ -9246,8 +9276,8 @@ wuffs_base__pixel_swizzler__prepare__bgra_nonpremul(
       // TODO.
       break;
 
-    case WUFFS_BASE__PIXEL_FORMAT__BGRX:
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
+    case WUFFS_BASE__PIXEL_FORMAT__BGRX:
       switch (blend) {
         case WUFFS_BASE__PIXEL_BLEND__SRC:
           return wuffs_base__pixel_swizzler__copy_4_4;
@@ -9267,10 +9297,10 @@ wuffs_base__pixel_swizzler__prepare__bgra_nonpremul(
       // TODO.
       break;
 
-    case WUFFS_BASE__PIXEL_FORMAT__RGBX:
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_BINARY:
+    case WUFFS_BASE__PIXEL_FORMAT__RGBX:
       // TODO.
       break;
   }
@@ -11757,14 +11787,14 @@ wuffs_bmp__decoder__decode_image_config(wuffs_bmp__decoder* self,
           ((((((uint64_t)(self->private_impl.f_width)) * 3) + 3) >> 2) << 2);
       self->private_impl.f_pad_per_row = (self->private_impl.f_width & 3);
       self->private_impl.f_pixfmt =
-          wuffs_base__utility__make_pixel_format(1073744008);
+          wuffs_base__utility__make_pixel_format(2147485832);
     } else if (v_bits_per_pixel == 32) {
       self->private_impl.f_bits_per_pixel = 32;
       self->private_impl.f_bytes_per_row =
           (((uint64_t)(self->private_impl.f_width)) * 4);
       self->private_impl.f_pad_per_row = 0;
       self->private_impl.f_pixfmt =
-          wuffs_base__utility__make_pixel_format(1157662856);
+          wuffs_base__utility__make_pixel_format(2164295816);
     } else {
       status = wuffs_base__make_status(wuffs_bmp__error__unsupported_bmp_file);
       goto exit;
@@ -11966,7 +11996,7 @@ wuffs_bmp__decoder__decode_image_config(wuffs_bmp__decoder* self,
         a_src->meta.pos, ((uint64_t)(iop_a_src - io0_a_src)));
     if (a_dst != NULL) {
       wuffs_base__image_config__set(
-          a_dst, 1157662856, 0, self->private_impl.f_width,
+          a_dst, 2164295816, 0, self->private_impl.f_width,
           self->private_impl.f_height,
           self->private_impl.f_frame_config_io_position, true);
     }
@@ -16751,7 +16781,7 @@ wuffs_gif__config_decoder__decode_image_config(wuffs_gif__config_decoder* self,
     }
     if (a_dst != NULL) {
       wuffs_base__image_config__set(
-          a_dst, 1191444488, 0, self->private_impl.f_width,
+          a_dst, 2198077448, 0, self->private_impl.f_width,
           self->private_impl.f_height,
           self->private_impl.f_frame_config_io_position, v_ffio);
     }
@@ -18579,7 +18609,7 @@ wuffs_gif__decoder__decode_image_config(wuffs_gif__decoder* self,
     }
     if (a_dst != NULL) {
       wuffs_base__image_config__set(
-          a_dst, 1191444488, 0, self->private_impl.f_width,
+          a_dst, 2198077448, 0, self->private_impl.f_width,
           self->private_impl.f_height,
           self->private_impl.f_frame_config_io_position, v_ffio);
     }
@@ -20503,7 +20533,7 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
     v_status = wuffs_base__pixel_swizzler__prepare(
         &self->private_impl.f_swizzler,
         wuffs_base__pixel_buffer__pixel_format(a_dst), v_dst_palette,
-        wuffs_base__utility__make_pixel_format(1191444488),
+        wuffs_base__utility__make_pixel_format(2198077448),
         wuffs_base__make_slice_u8(
             self->private_data.f_palettes[v_which_palette], 1024),
         a_blend);
@@ -24046,7 +24076,7 @@ wuffs_wbmp__decoder__decode_image_config(wuffs_wbmp__decoder* self,
         a_src->meta.pos, ((uint64_t)(iop_a_src - io0_a_src)));
     if (a_dst != NULL) {
       wuffs_base__image_config__set(
-          a_dst, 1191444488, 0, self->private_impl.f_width,
+          a_dst, 2198077448, 0, self->private_impl.f_width,
           self->private_impl.f_height,
           self->private_impl.f_frame_config_io_position, true);
     }
@@ -24276,7 +24306,7 @@ wuffs_wbmp__decoder__decode_frame(wuffs_wbmp__decoder* self,
         &self->private_impl.f_swizzler,
         wuffs_base__pixel_buffer__pixel_format(a_dst),
         wuffs_base__pixel_buffer__palette(a_dst),
-        wuffs_base__utility__make_pixel_format(268435464),
+        wuffs_base__utility__make_pixel_format(536870920),
         wuffs_base__utility__empty_slice_u8(), a_blend);
     if (!wuffs_base__status__is_ok(&v_status)) {
       status = v_status;

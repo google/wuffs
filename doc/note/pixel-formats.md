@@ -3,10 +3,9 @@
 `wuffs_base__pixel_format` is a `uint32_t` that encodes the format of the bytes
 that constitute an image frame's pixel data. Its bits:
 
-- Bit         `31` is reserved.
-- Bits `28 ..= 30` encodes color (and channel order, in terms of memory).
-- Bit         `27` is reserved.
-- Bits `24 ..= 26` encodes transparency.
+- Bits `28 ..= 31` encodes color (and channel order, in terms of memory).
+- Bits `26 ..= 27` are reserved.
+- Bits `24 ..= 25` encodes transparency.
 - Bits `21 ..= 23` are reserved.
 - Bit         `20` indicates big-endian/MSB-first (instead of little/LSB).
 - Bit         `19` indicates floating point (instead of integer).
@@ -22,8 +21,8 @@ that constitute an image frame's pixel data. Its bits:
 The bit fields of a `wuffs_base__pixel_format` are not independent. For
 example, the number of planes should not be greater than the number of
 channels. Similarly, bits `4 ..= 15` are unused (and should be zero) if bits
-`24 ..= 31` (color and transparency) together imply only 1 channel (gray, no
-alpha) and floating point samples should mean a bit depth of 16, 32 or 64.
+`24 ..= 31` (color and transparency) together imply only 1 channel (e.g. gray,
+no alpha) and floating point samples should mean a bit depth of 16, 32 or 64.
 
 Formats hold between 1 and 4 channels. For example: Y (1 channel: gray), YA (2
 channels: gray and alpha), BGR (3 channels: blue, green, red) or CMYK (4
@@ -39,15 +38,20 @@ channel non-alpha-premultiplied BGRA color data. There is only 1 plane (for the
 index), as the format is considered interleaved. Plane 0 holds the per-pixel
 indices. Plane 3 is re-purposed to hold the per-index colors.
 
-The color field is encoded in 3 bits:
+Color is encoded in 4 bits:
 
-- 0 means                   A (Alpha).
-- 1 means Y         or     YA (Gray, Alpha).
-- 2 means YCbCr     or YCbCrA (Luma, Chroma-blue, Chroma-red, Alpha).
-- 3 means YCoCg     or YCoCgA (Luma, Chroma-orange, Chroma-green, Alpha).
-- 4 means BGR, BGRX or   BGRA (Blue, Green, Red, X-padding or Alpha).
-- 5 means RGB, RGBX or   RGBA (Red, Green, Blue, X-padding or Alpha).
-- 6 means CMY       or   CMYK (Cyan, Magenta, Yellow, Black).
+-  0 means          A      (Alpha).
+-  2 means Y     or YA     (Gray, Alpha).
+-  4 means YCbCr or YCbCrA (Luma, Chroma-blue, Chroma-red, Alpha).
+-  5 means          YCbCrK (Luma, Chroma-blue, Chroma-red, Black).
+-  6 means YCoCg or YCoCgA (Luma, Chroma-orange, Chroma-green, Alpha).
+-  7 means          YCoCgK (Luma, Chroma-orange, Chroma-green, Black).
+-  8 means BGR   or BGRA   (Blue, Green, Red, Alpha).
+-  9 means          BGRX   (Blue, Green, Red, X-padding).
+- 10 means RGB   or RGBA   (Red, Green, Blue, Alpha).
+- 11 means          RGBX   (Red, Green, Blue, X-padding).
+- 12 means CMY   or CMYA   (Cyan, Magenta, Yellow, Alpha).
+- 13 means          CMYK   (Cyan, Magenta, Yellow, Black).
 - all other values are reserved.
 
 In Wuffs, channels are given in memory order (also known as byte order),
@@ -57,15 +61,12 @@ per channel means that the bytes in memory are always Blue, Green, Red then
 Alpha. On big-endian systems, that is the `uint32_t 0xBBGGRRAA`. On
 little-endian, `0xAARRGGBB`.
 
-When the color field (3 bits) encodes multiple options, the transparency field
-(3 bits) distinguishes them:
+Transparency is encoded in 2 bits:
 
-- 0 means fully opaque, no extra channels
-- 1 means fully opaque, one extra channel (X or K, padding or black).
-- 5 means one extra alpha channel, other channels are non-premultiplied.
-- 6 means one extra alpha channel, other channels are     premultiplied.
-- 7 means one extra alpha channel, binary alpha.
-- all other values are reserved.
+- 0 means no alpha channel, fully opaque.
+- 1 means an alpha channel, other channels are non-premultiplied.
+- 2 means an alpha channel, other channels are     premultiplied.
+- 3 means an alpha channel, binary alpha.
 
 Binary alpha means that if a color is not completely opaque, it is completely
 transparent black. As a source pixel format, it can therefore be treated as
@@ -86,7 +87,7 @@ Bit depth is encoded in 4 bits:
 - 14 means a bit depth of 48.
 - 15 means a bit depth of 64.
 
-For example, the value `wuffs_base__pixel_format` `0x40000565` means BGR with
+For example, the value `wuffs_base__pixel_format` `0x80000565` means BGR with
 no alpha or padding, 5/6/5 bits for blue/green/red, interleaved 2 bytes per
 pixel, laid out LSB-first in memory order:
 
