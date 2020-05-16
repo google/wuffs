@@ -175,6 +175,18 @@ wuffs_base__pixel_buffer__set_color_u32_at(
 
       // Common formats above. Rarer formats below.
 
+    case WUFFS_BASE__PIXEL_FORMAT__Y:
+      wuffs_base__store_u8__no_bounds_check(
+          row + ((size_t)x), wuffs_base__color_u32_argb_premul__as_gray(color));
+      break;
+
+    case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY:
+      wuffs_base__store_u8__no_bounds_check(
+          row + ((size_t)x), wuffs_base__pixel_palette__closest_element(
+                                 wuffs_base__pixel_buffer__palette(pb),
+                                 pb->pixcfg.private_impl.pixfmt, color));
+      break;
+
     case WUFFS_BASE__PIXEL_FORMAT__BGR_565: {
       uint32_t b5 = 0x1F & (color >> (8 - 5));
       uint32_t g6 = 0x3F & (color >> (16 - 6));
@@ -214,6 +226,68 @@ wuffs_base__pixel_buffer__set_color_u32_at(
   }
 
   return wuffs_base__make_status(NULL);
+}
+
+// --------
+
+uint8_t  //
+wuffs_base__pixel_palette__closest_element(
+    wuffs_base__slice_u8 palette_slice,
+    wuffs_base__pixel_format palette_format,
+    wuffs_base__color_u32_argb_premul c) {
+  size_t n = palette_slice.len / 4;
+  if (n > 256) {
+    n = 256;
+  }
+  size_t best_index = 0;
+  uint64_t best_score = 0xFFFFFFFFFFFFFFFF;
+
+  // Work in 16-bit color.
+  uint32_t ca = 0x101 * (0xFF & (c >> 24));
+  uint32_t cr = 0x101 * (0xFF & (c >> 16));
+  uint32_t cg = 0x101 * (0xFF & (c >> 8));
+  uint32_t cb = 0x101 * (0xFF & (c >> 0));
+
+  switch (palette_format.repr) {
+    case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL:
+    case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_PREMUL:
+    case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY: {
+      bool nonpremul = palette_format.repr ==
+                       WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL;
+
+      size_t i;
+      for (i = 0; i < n; i++) {
+        // Work in 16-bit color.
+        uint32_t pb = 0x101 * ((uint32_t)(palette_slice.ptr[(4 * i) + 0]));
+        uint32_t pg = 0x101 * ((uint32_t)(palette_slice.ptr[(4 * i) + 1]));
+        uint32_t pr = 0x101 * ((uint32_t)(palette_slice.ptr[(4 * i) + 2]));
+        uint32_t pa = 0x101 * ((uint32_t)(palette_slice.ptr[(4 * i) + 3]));
+
+        // Convert to premultiplied alpha.
+        if (nonpremul && (pa != 0xFFFF)) {
+          pb = (pb * pa) / 0xFFFF;
+          pg = (pg * pa) / 0xFFFF;
+          pr = (pr * pa) / 0xFFFF;
+        }
+
+        // These deltas are conceptually int32_t (signed) but after squaring,
+        // it's equivalent to work in uint32_t (unsigned).
+        pb -= cb;
+        pg -= cg;
+        pr -= cr;
+        pa -= ca;
+        uint64_t score = ((uint64_t)(pb * pb)) + ((uint64_t)(pg * pg)) +
+                         ((uint64_t)(pr * pr)) + ((uint64_t)(pa * pa));
+        if (best_score > score) {
+          best_score = score;
+          best_index = i;
+        }
+      }
+      break;
+    }
+  }
+
+  return best_index;
 }
 
 // --------

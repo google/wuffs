@@ -21,6 +21,23 @@
 // 0xAARRGGBB (Alpha most significant, Blue least), regardless of endianness.
 typedef uint32_t wuffs_base__color_u32_argb_premul;
 
+static inline uint8_t  //
+wuffs_base__color_u32_argb_premul__as_gray(
+    wuffs_base__color_u32_argb_premul c) {
+  // Work in 16-bit color.
+  uint32_t cr = 0x101 * (0xFF & (c >> 16));
+  uint32_t cg = 0x101 * (0xFF & (c >> 8));
+  uint32_t cb = 0x101 * (0xFF & (c >> 0));
+
+  // These coefficients (the fractions 0.299, 0.587 and 0.114) are the same
+  // as those given by the JFIF specification.
+  //
+  // Note that 19595 + 38470 + 7471 equals 65536, also known as (1 << 16). We
+  // shift by 24, not just by 16, because the return value is 8-bit color, not
+  // 16-bit color.
+  return ((19595 * cr) + (38470 * cg) + (7471 * cb) + 32768) >> 24;
+}
+
 // wuffs_base__premul_u32_axxx converts from non-premultiplied alpha to
 // premultiplied alpha. The "axxx" means either "argb" or "abgr".
 static inline uint32_t  //
@@ -1226,6 +1243,23 @@ typedef struct {
 #ifdef __cplusplus
 
 #endif  // __cplusplus
+
+// --------
+
+// wuffs_base__pixel_palette__closest_element returns the index of the palette
+// element that minimizes the sum of squared differences of the four ARGB
+// channels, working in premultiplied alpha. Ties favor the smaller index.
+//
+// The palette_slice.len may equal (N*4), for N less than 256, which means that
+// only the first N palette elements are considered. It returns 0 when N is 0.
+//
+// Applying this function on a per-pixel basis will not produce whole-of-image
+// dithering.
+uint8_t  //
+wuffs_base__pixel_palette__closest_element(
+    wuffs_base__slice_u8 palette_slice,
+    wuffs_base__pixel_format palette_format,
+    wuffs_base__color_u32_argb_premul c);
 
 // --------
 

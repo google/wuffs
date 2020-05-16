@@ -84,14 +84,6 @@ fill_palette_with_grays(wuffs_base__pixel_buffer* pb) {
   }
 }
 
-void  //
-fill_table(wuffs_base__table_u8 t, uint8_t c) {
-  size_t y;
-  for (y = 0; y < t.height; y++) {
-    memset(t.ptr + (y * t.stride), c, t.width);
-  }
-}
-
 const char*  //
 test_wuffs_pixel_swizzler_swizzle() {
   CHECK_FOCUS(__func__);
@@ -150,19 +142,10 @@ test_wuffs_pixel_swizzler_swizzle() {
                      &src_pixbuf, &src_pixcfg, g_src_slice_u8));
     fill_palette_with_grays(&src_pixbuf);
 
-    // Set the middle src pixel.
-    if (srcs[s].pixfmt_repr == WUFFS_BASE__PIXEL_FORMAT__Y) {
-      fill_table(wuffs_base__pixel_buffer__plane(&src_pixbuf, 0), 0x44);
-    } else if (srcs[s].pixfmt_repr ==
-               WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY) {
-      fill_table(wuffs_base__pixel_buffer__plane(&src_pixbuf, 0), 0x44);
-    } else {
-      CHECK_STATUS("set_color_u32_at",
-                   wuffs_base__pixel_buffer__set_color_u32_at(
-                       &src_pixbuf, width / 2, height / 2, srcs[s].pixel));
-    }
-
-    // Check the middle src pixel.
+    // Set and check the middle src pixel.
+    CHECK_STATUS("set_color_u32_at",
+                 wuffs_base__pixel_buffer__set_color_u32_at(
+                     &src_pixbuf, width / 2, height / 2, srcs[s].pixel));
     wuffs_base__color_u32_argb_premul have_src_pixel =
         wuffs_base__pixel_buffer__color_u32_at(&src_pixbuf, width / 2,
                                                height / 2);
