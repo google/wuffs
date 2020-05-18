@@ -84,6 +84,23 @@ fill_palette_with_grays(wuffs_base__pixel_buffer* pb) {
   }
 }
 
+bool  //
+colors_differ(wuffs_base__color_u32_argb_premul color0,
+              wuffs_base__color_u32_argb_premul color1,
+              uint32_t per_channel_tolerance) {
+  uint32_t shift;
+  for (shift = 0; shift < 32; shift += 8) {
+    uint32_t channel0 = 0xFF & (color0 >> shift);
+    uint32_t channel1 = 0xFF & (color1 >> shift);
+    uint32_t delta =
+        (channel0 > channel1) ? (channel0 - channel1) : (channel1 - channel0);
+    if (delta > per_channel_tolerance) {
+      return true;
+    }
+  }
+  return false;
+}
+
 const char*  //
 test_wuffs_pixel_swizzler_swizzle() {
   CHECK_FOCUS(__func__);
@@ -127,6 +144,7 @@ test_wuffs_pixel_swizzler_swizzle() {
 
   const wuffs_base__pixel_blend blends[] = {
       WUFFS_BASE__PIXEL_BLEND__SRC,
+      WUFFS_BASE__PIXEL_BLEND__SRC_OVER,
   };
 
   int s;
@@ -198,19 +216,24 @@ test_wuffs_pixel_swizzler_swizzle() {
                 wuffs_base__pixel_buffer__plane(&src_pixbuf, 0), height / 2));
 
         // Check the middle dst pixel.
+        uint32_t tolerance = 0;
         wuffs_base__color_u32_argb_premul want_dst_pixel = 0;
         if (blends[b] == WUFFS_BASE__PIXEL_BLEND__SRC) {
           want_dst_pixel = srcs[s].pixel;
+        } else if (blends[b] == WUFFS_BASE__PIXEL_BLEND__SRC_OVER) {
+          tolerance = 1;
+          want_dst_pixel = wuffs_base__composite_premul_premul_u32_axxx(
+              dsts[d].pixel, srcs[s].pixel);
         } else {
           return "unsupported blend";
         }
         wuffs_base__color_u32_argb_premul have_dst_pixel =
             wuffs_base__pixel_buffer__color_u32_at(&dst_pixbuf, width / 2,
                                                    height / 2);
-        if (have_dst_pixel != want_dst_pixel) {
+        if (colors_differ(have_dst_pixel, want_dst_pixel, tolerance)) {
           RETURN_FAIL("s=%d, d=%d, b=%d: dst_pixel: have 0x%08" PRIX32
-                      ", want 0x%08" PRIX32,
-                      s, d, b, have_dst_pixel, want_dst_pixel);
+                      ", want 0x%08" PRIX32 ", per-channel tolerance=%" PRId32,
+                      s, d, b, have_dst_pixel, want_dst_pixel, tolerance);
         }
       }
     }
