@@ -137,8 +137,20 @@ test_wuffs_pixel_swizzler_swizzle() {
     uint32_t pixfmt_repr;
   } dsts[] = {
       {
+          .pixel = 0xFF000010,
+          .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__BGR_565,
+      },
+      {
+          .pixel = 0xFF000040,
+          .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__BGR,
+      },
+      {
           .pixel = 0x80000040,
           .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL,
+      },
+      {
+          .pixel = 0x80000040,
+          .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL,
       },
   };
 
@@ -184,6 +196,10 @@ test_wuffs_pixel_swizzler_swizzle() {
                    wuffs_base__pixel_buffer__set_from_slice(
                        &dst_pixbuf, &dst_pixcfg, g_have_slice_u8));
       fill_palette_with_grays(&dst_pixbuf);
+      wuffs_base__pixel_format dst_pixfmt =
+          wuffs_base__make_pixel_format(dsts[d].pixfmt_repr);
+      wuffs_base__pixel_alpha_transparency dst_transparency =
+          wuffs_base__pixel_format__transparency(&dst_pixfmt);
 
       wuffs_base__slice_u8 dst_palette =
           wuffs_base__pixel_buffer__palette(&dst_pixbuf);
@@ -204,8 +220,8 @@ test_wuffs_pixel_swizzler_swizzle() {
         CHECK_STATUS(
             "prepare",
             wuffs_base__pixel_swizzler__prepare(
-                &swizzler, wuffs_base__make_pixel_format(dsts[d].pixfmt_repr),
-                dst_palette, wuffs_base__make_pixel_format(srcs[s].pixfmt_repr),
+                &swizzler, dst_pixfmt, dst_palette,
+                wuffs_base__make_pixel_format(srcs[s].pixfmt_repr),
                 wuffs_base__pixel_buffer__palette(&src_pixbuf), blends[b]));
         wuffs_base__pixel_swizzler__swizzle_interleaved(
             &swizzler,
@@ -216,16 +232,20 @@ test_wuffs_pixel_swizzler_swizzle() {
                 wuffs_base__pixel_buffer__plane(&src_pixbuf, 0), height / 2));
 
         // Check the middle dst pixel.
-        uint32_t tolerance = 0;
+        uint32_t tolerance =
+            (dsts[d].pixfmt_repr == WUFFS_BASE__PIXEL_FORMAT__BGR_565) ? 4 : 0;
         wuffs_base__color_u32_argb_premul want_dst_pixel = 0;
         if (blends[b] == WUFFS_BASE__PIXEL_BLEND__SRC) {
           want_dst_pixel = srcs[s].pixel;
         } else if (blends[b] == WUFFS_BASE__PIXEL_BLEND__SRC_OVER) {
-          tolerance = 1;
+          tolerance += 1;
           want_dst_pixel = wuffs_base__composite_premul_premul_u32_axxx(
               dsts[d].pixel, srcs[s].pixel);
         } else {
           return "unsupported blend";
+        }
+        if (dst_transparency == WUFFS_BASE__PIXEL_ALPHA_TRANSPARENCY__OPAQUE) {
+          want_dst_pixel |= 0xFF000000;
         }
         wuffs_base__color_u32_argb_premul have_dst_pixel =
             wuffs_base__pixel_buffer__color_u32_at(&dst_pixbuf, width / 2,

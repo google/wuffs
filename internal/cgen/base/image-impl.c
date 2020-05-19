@@ -36,8 +36,9 @@ wuffs_base__pixel_swizzler__squash_bgr_565_888(wuffs_base__slice_u8 dst,
     uint32_t b5 = 0x1F & (argb >> (8 - 5));
     uint32_t g6 = 0x3F & (argb >> (16 - 6));
     uint32_t r5 = 0x1F & (argb >> (24 - 5));
+    uint32_t alpha = argb & 0xFF000000;
     wuffs_base__store_u32le__no_bounds_check(
-        d, (r5 << 11) | (g6 << 5) | (b5 << 0));
+        d, alpha | (r5 << 11) | (g6 << 5) | (b5 << 0));
     s += 4;
     d += 4;
   }
@@ -451,6 +452,19 @@ wuffs_base__pixel_swizzler__copy_1_1(wuffs_base__slice_u8 dst,
 }
 
 static uint64_t  //
+wuffs_base__pixel_swizzler__copy_3_3(wuffs_base__slice_u8 dst,
+                                     wuffs_base__slice_u8 dst_palette,
+                                     wuffs_base__slice_u8 src) {
+  size_t dst_len3 = dst.len / 3;
+  size_t src_len3 = src.len / 3;
+  size_t len = dst_len3 < src_len3 ? dst_len3 : src_len3;
+  if (len > 0) {
+    memmove(dst.ptr, src.ptr, len * 3);
+  }
+  return len;
+}
+
+static uint64_t  //
 wuffs_base__pixel_swizzler__copy_4_4(wuffs_base__slice_u8 dst,
                                      wuffs_base__slice_u8 dst_palette,
                                      wuffs_base__slice_u8 src) {
@@ -464,6 +478,143 @@ wuffs_base__pixel_swizzler__copy_4_4(wuffs_base__slice_u8 dst,
 }
 
 // --------
+
+static uint64_t  //
+wuffs_base__pixel_swizzler__bgr_565__bgr(wuffs_base__slice_u8 dst,
+                                         wuffs_base__slice_u8 dst_palette,
+                                         wuffs_base__slice_u8 src) {
+  size_t dst_len2 = dst.len / 2;
+  size_t src_len3 = src.len / 3;
+  size_t len = dst_len2 < src_len3 ? dst_len2 : src_len3;
+  uint8_t* d = dst.ptr;
+  uint8_t* s = src.ptr;
+  size_t n = len;
+
+  // TODO: unroll.
+
+  while (n >= 1) {
+    uint32_t b5 = s[0] >> 3;
+    uint32_t g6 = s[1] >> 2;
+    uint32_t r5 = s[2] >> 3;
+    uint32_t rgb_565 = (r5 << 11) | (g6 << 5) | (b5 << 0);
+    wuffs_base__store_u16le__no_bounds_check(d + (0 * 2), (uint16_t)rgb_565);
+
+    s += 1 * 3;
+    d += 1 * 2;
+    n -= 1;
+  }
+
+  return len;
+}
+
+static uint64_t  //
+wuffs_base__pixel_swizzler__bgr_565__bgra_nonpremul__src(
+    wuffs_base__slice_u8 dst,
+    wuffs_base__slice_u8 dst_palette,
+    wuffs_base__slice_u8 src) {
+  size_t dst_len2 = dst.len / 2;
+  size_t src_len4 = src.len / 4;
+  size_t len = dst_len2 < src_len4 ? dst_len2 : src_len4;
+  uint8_t* d = dst.ptr;
+  uint8_t* s = src.ptr;
+  size_t n = len;
+
+  // TODO: unroll.
+
+  while (n >= 1) {
+    wuffs_base__store_u16le__no_bounds_check(
+        d + (0 * 2),
+        wuffs_base__color_u32_argb_premul__as__color_u16_rgb_565(
+            wuffs_base__premul_u32_axxx(
+                wuffs_base__load_u32le__no_bounds_check(s + (0 * 4)))));
+
+    s += 1 * 4;
+    d += 1 * 2;
+    n -= 1;
+  }
+
+  return len;
+}
+
+static uint64_t  //
+wuffs_base__pixel_swizzler__bgr_565__bgra_nonpremul__src_over(
+    wuffs_base__slice_u8 dst,
+    wuffs_base__slice_u8 dst_palette,
+    wuffs_base__slice_u8 src) {
+  size_t dst_len2 = dst.len / 2;
+  size_t src_len4 = src.len / 4;
+  size_t len = dst_len2 < src_len4 ? dst_len2 : src_len4;
+  uint8_t* d = dst.ptr;
+  uint8_t* s = src.ptr;
+  size_t n = len;
+
+  // TODO: unroll.
+
+  while (n >= 1) {
+    // Convert from 8-bit color to 16-bit color.
+    uint32_t sa = 0x101 * ((uint32_t)s[3]);
+    uint32_t sr = 0x101 * ((uint32_t)s[2]);
+    uint32_t sg = 0x101 * ((uint32_t)s[1]);
+    uint32_t sb = 0x101 * ((uint32_t)s[0]);
+
+    // Convert from 565 color to 16-bit color.
+    uint32_t old_rgb_565 = wuffs_base__load_u16le__no_bounds_check(d + (0 * 2));
+    uint32_t old_r5 = 0x1F & (old_rgb_565 >> 11);
+    uint32_t dr = (0x8421 * old_r5) >> 4;
+    uint32_t old_g6 = 0x3F & (old_rgb_565 >> 5);
+    uint32_t dg = (0x1041 * old_g6) >> 2;
+    uint32_t old_b5 = 0x1F & (old_rgb_565 >> 0);
+    uint32_t db = (0x8421 * old_b5) >> 4;
+
+    // Calculate the inverse of the src-alpha: how much of the dst to keep.
+    uint32_t ia = 0xFFFF - sa;
+
+    // Composite src (nonpremul) over dst (premul).
+    dr = ((sr * sa) + (dr * ia)) / 0xFFFF;
+    dg = ((sg * sa) + (dg * ia)) / 0xFFFF;
+    db = ((sb * sa) + (db * ia)) / 0xFFFF;
+
+    // Convert from 16-bit color to 565 color and combine the components.
+    uint32_t new_r5 = 0x1F & (dr >> 11);
+    uint32_t new_g6 = 0x3F & (dg >> 10);
+    uint32_t new_b5 = 0x1F & (db >> 11);
+    uint32_t new_rgb_565 = (new_r5 << 11) | (new_g6 << 5) | (new_b5 << 0);
+    wuffs_base__store_u16le__no_bounds_check(d + (0 * 2),
+                                             (uint16_t)new_rgb_565);
+
+    s += 1 * 4;
+    d += 1 * 2;
+    n -= 1;
+  }
+
+  return len;
+}
+
+static uint64_t  //
+wuffs_base__pixel_swizzler__bgr_565__y(wuffs_base__slice_u8 dst,
+                                       wuffs_base__slice_u8 dst_palette,
+                                       wuffs_base__slice_u8 src) {
+  size_t dst_len2 = dst.len / 2;
+  size_t len = dst_len2 < src.len ? dst_len2 : src.len;
+  uint8_t* d = dst.ptr;
+  uint8_t* s = src.ptr;
+  size_t n = len;
+
+  // TODO: unroll.
+
+  while (n >= 1) {
+    uint32_t y5 = s[0] >> 3;
+    uint32_t y6 = s[0] >> 2;
+    uint32_t rgb_565 = (y5 << 11) | (y6 << 5) | (y5 << 0);
+    wuffs_base__store_u16le__no_bounds_check(d + (0 * 2), (uint16_t)rgb_565);
+
+    s += 1 * 1;
+    d += 1 * 2;
+    n -= 1;
+  }
+
+  return len;
+}
 
 static uint64_t  //
 wuffs_base__pixel_swizzler__bgr_565__index__src(
@@ -507,6 +658,111 @@ wuffs_base__pixel_swizzler__bgr_565__index__src(
 
     s += 1 * 1;
     d += 1 * 2;
+    n -= 1;
+  }
+
+  return len;
+}
+
+static uint64_t  //
+wuffs_base__pixel_swizzler__bgr_565__index_binary_alpha__src_over(
+    wuffs_base__slice_u8 dst,
+    wuffs_base__slice_u8 dst_palette,
+    wuffs_base__slice_u8 src) {
+  if (dst_palette.len != 1024) {
+    return 0;
+  }
+  size_t dst_len2 = dst.len / 2;
+  size_t len = dst_len2 < src.len ? dst_len2 : src.len;
+  uint8_t* d = dst.ptr;
+  uint8_t* s = src.ptr;
+  size_t n = len;
+
+  // TODO: unroll.
+
+  while (n >= 1) {
+    uint32_t s0 = wuffs_base__load_u32le__no_bounds_check(dst_palette.ptr +
+                                                          ((size_t)s[0] * 4));
+    if (s0) {
+      wuffs_base__store_u16le__no_bounds_check(d + (0 * 2), (uint16_t)s0);
+    }
+
+    s += 1 * 1;
+    d += 1 * 2;
+    n -= 1;
+  }
+
+  return len;
+}
+
+// --------
+
+static uint64_t  //
+wuffs_base__pixel_swizzler__bgr__bgra_nonpremul__src(
+    wuffs_base__slice_u8 dst,
+    wuffs_base__slice_u8 dst_palette,
+    wuffs_base__slice_u8 src) {
+  size_t dst_len3 = dst.len / 3;
+  size_t src_len4 = src.len / 4;
+  size_t len = dst_len3 < src_len4 ? dst_len3 : src_len4;
+  uint8_t* d = dst.ptr;
+  uint8_t* s = src.ptr;
+  size_t n = len;
+
+  // TODO: unroll.
+
+  while (n >= 1) {
+    uint32_t s0 = wuffs_base__premul_u32_axxx(
+        wuffs_base__load_u32le__no_bounds_check(s + (0 * 4)));
+    wuffs_base__store_u24le__no_bounds_check(d + (0 * 3), s0);
+
+    s += 1 * 4;
+    d += 1 * 3;
+    n -= 1;
+  }
+
+  return len;
+}
+
+static uint64_t  //
+wuffs_base__pixel_swizzler__bgr__bgra_nonpremul__src_over(
+    wuffs_base__slice_u8 dst,
+    wuffs_base__slice_u8 dst_palette,
+    wuffs_base__slice_u8 src) {
+  size_t dst_len3 = dst.len / 3;
+  size_t src_len4 = src.len / 4;
+  size_t len = dst_len3 < src_len4 ? dst_len3 : src_len4;
+  uint8_t* d = dst.ptr;
+  uint8_t* s = src.ptr;
+  size_t n = len;
+
+  // TODO: unroll.
+
+  while (n >= 1) {
+    // Convert from 8-bit color to 16-bit color.
+    uint32_t sa = 0x101 * ((uint32_t)s[3]);
+    uint32_t sr = 0x101 * ((uint32_t)s[2]);
+    uint32_t sg = 0x101 * ((uint32_t)s[1]);
+    uint32_t sb = 0x101 * ((uint32_t)s[0]);
+    uint32_t dr = 0x101 * ((uint32_t)d[2]);
+    uint32_t dg = 0x101 * ((uint32_t)d[1]);
+    uint32_t db = 0x101 * ((uint32_t)d[0]);
+
+    // Calculate the inverse of the src-alpha: how much of the dst to keep.
+    uint32_t ia = 0xFFFF - sa;
+
+    // Composite src (nonpremul) over dst (premul).
+    dr = ((sr * sa) + (dr * ia)) / 0xFFFF;
+    dg = ((sg * sa) + (dg * ia)) / 0xFFFF;
+    db = ((sb * sa) + (db * ia)) / 0xFFFF;
+
+    // Convert from 16-bit color to 8-bit color.
+    d[0] = (uint8_t)(db >> 8);
+    d[1] = (uint8_t)(dg >> 8);
+    d[2] = (uint8_t)(dr >> 8);
+
+    s += 1 * 4;
+    d += 1 * 3;
     n -= 1;
   }
 
@@ -715,6 +971,32 @@ wuffs_base__pixel_swizzler__xxx__index_binary_alpha__src_over(
   return len;
 }
 
+static uint64_t  //
+wuffs_base__pixel_swizzler__xxx__y(wuffs_base__slice_u8 dst,
+                                   wuffs_base__slice_u8 dst_palette,
+                                   wuffs_base__slice_u8 src) {
+  size_t dst_len3 = dst.len / 3;
+  size_t len = dst_len3 < src.len ? dst_len3 : src.len;
+  uint8_t* d = dst.ptr;
+  uint8_t* s = src.ptr;
+  size_t n = len;
+
+  // TODO: unroll.
+
+  while (n >= 1) {
+    uint8_t s0 = s[0];
+    d[0] = s0;
+    d[1] = s0;
+    d[2] = s0;
+
+    s += 1 * 1;
+    d += 1 * 3;
+    n -= 1;
+  }
+
+  return len;
+}
+
 // --------
 
 static uint64_t  //
@@ -882,13 +1164,11 @@ wuffs_base__pixel_swizzler__prepare__y(wuffs_base__pixel_swizzler* p,
                                        wuffs_base__pixel_blend blend) {
   switch (dst_format.repr) {
     case WUFFS_BASE__PIXEL_FORMAT__BGR_565:
-      // TODO.
-      break;
+      return wuffs_base__pixel_swizzler__bgr_565__y;
 
     case WUFFS_BASE__PIXEL_FORMAT__BGR:
     case WUFFS_BASE__PIXEL_FORMAT__RGB:
-      // TODO.
-      break;
+      return wuffs_base__pixel_swizzler__xxx__y;
 
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
@@ -932,6 +1212,8 @@ wuffs_base__pixel_swizzler__prepare__indexed__bgra_binary(
       switch (blend) {
         case WUFFS_BASE__PIXEL_BLEND__SRC:
           return wuffs_base__pixel_swizzler__bgr_565__index__src;
+        case WUFFS_BASE__PIXEL_BLEND__SRC_OVER:
+          return wuffs_base__pixel_swizzler__bgr_565__index_binary_alpha__src_over;
       }
       return NULL;
 
@@ -1002,12 +1284,10 @@ wuffs_base__pixel_swizzler__prepare__bgr(wuffs_base__pixel_swizzler* p,
                                          wuffs_base__pixel_blend blend) {
   switch (dst_format.repr) {
     case WUFFS_BASE__PIXEL_FORMAT__BGR_565:
-      // TODO.
-      break;
+      return wuffs_base__pixel_swizzler__bgr_565__bgr;
 
     case WUFFS_BASE__PIXEL_FORMAT__BGR:
-      // TODO.
-      break;
+      return wuffs_base__pixel_swizzler__copy_3_3;
 
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
@@ -1035,12 +1315,22 @@ wuffs_base__pixel_swizzler__prepare__bgra_nonpremul(
     wuffs_base__pixel_blend blend) {
   switch (dst_format.repr) {
     case WUFFS_BASE__PIXEL_FORMAT__BGR_565:
-      // TODO.
-      break;
+      switch (blend) {
+        case WUFFS_BASE__PIXEL_BLEND__SRC:
+          return wuffs_base__pixel_swizzler__bgr_565__bgra_nonpremul__src;
+        case WUFFS_BASE__PIXEL_BLEND__SRC_OVER:
+          return wuffs_base__pixel_swizzler__bgr_565__bgra_nonpremul__src_over;
+      }
+      return NULL;
 
     case WUFFS_BASE__PIXEL_FORMAT__BGR:
-      // TODO.
-      break;
+      switch (blend) {
+        case WUFFS_BASE__PIXEL_BLEND__SRC:
+          return wuffs_base__pixel_swizzler__bgr__bgra_nonpremul__src;
+        case WUFFS_BASE__PIXEL_BLEND__SRC_OVER:
+          return wuffs_base__pixel_swizzler__bgr__bgra_nonpremul__src_over;
+      }
+      return NULL;
 
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
       switch (blend) {
