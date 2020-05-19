@@ -330,7 +330,8 @@ fill_rectangle(wuffs_base__rect_ie_u32 rect,
   if (rect.max_excl_y > g_height) {
     rect.max_excl_y = g_height;
   }
-  uint32_t nonpremul = wuffs_base__nonpremul_u32_axxx(color);
+  uint32_t nonpremul =
+      wuffs_base__color_u32_argb_premul__as__color_u32_argb_nonpremul(color);
   wuffs_base__table_u8 tab = wuffs_base__pixel_buffer__plane(&g_pixbuf, 0);
 
   uint32_t y;

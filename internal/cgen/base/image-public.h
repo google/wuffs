@@ -31,18 +31,18 @@ wuffs_base__color_u32_argb_premul__as__color_u16_rgb_565(
 }
 
 static inline wuffs_base__color_u32_argb_premul  //
-wuffs_base__color_u16_rgb_565__as__color_u32_argb_premul(uint16_t c) {
-  uint32_t b5 = 0x1F & (c >> 0);
+wuffs_base__color_u16_rgb_565__as__color_u32_argb_premul(uint16_t rgb_565) {
+  uint32_t b5 = 0x1F & (rgb_565 >> 0);
   uint32_t b = (b5 << 3) | (b5 >> 2);
-  uint32_t g6 = 0x3F & (c >> 5);
+  uint32_t g6 = 0x3F & (rgb_565 >> 5);
   uint32_t g = (g6 << 2) | (g6 >> 4);
-  uint32_t r5 = 0x1F & (c >> 11);
+  uint32_t r5 = 0x1F & (rgb_565 >> 11);
   uint32_t r = (r5 << 3) | (r5 >> 2);
   return 0xFF000000 | (r << 16) | (g << 8) | (b << 0);
 }
 
 static inline uint8_t  //
-wuffs_base__color_u32_argb_premul__as_gray(
+wuffs_base__color_u32_argb_premul__as__color_u8_gray(
     wuffs_base__color_u32_argb_premul c) {
   // Work in 16-bit color.
   uint32_t cr = 0x101 * (0xFF & (c >> 16));
@@ -59,10 +59,11 @@ wuffs_base__color_u32_argb_premul__as_gray(
   return (uint8_t)(weighted_average >> 24);
 }
 
-// wuffs_base__premul_u32_axxx converts from non-premultiplied alpha to
-// premultiplied alpha. The "axxx" means either "argb" or "abgr".
-static inline uint32_t  //
-wuffs_base__premul_u32_axxx(uint32_t nonpremul) {
+// wuffs_base__color_u32_argb_nonpremul__as__color_u32_argb_premul converts
+// from non-premultiplied alpha to premultiplied alpha.
+static inline wuffs_base__color_u32_argb_premul  //
+wuffs_base__color_u32_argb_nonpremul__as__color_u32_argb_premul(
+    uint32_t argb_nonpremul) {
   // Multiplying by 0x101 (twice, once for alpha and once for color) converts
   // from 8-bit to 16-bit color. Shifting right by 8 undoes that.
   //
@@ -72,36 +73,37 @@ wuffs_base__premul_u32_axxx(uint32_t nonpremul) {
   //
   //  - ((0x80   * 0x81  ) / 0xFF  )      = 0x40        = 0x40
   //  - ((0x8080 * 0x8181) / 0xFFFF) >> 8 = 0x4101 >> 8 = 0x41
-  uint32_t a = 0xFF & (nonpremul >> 24);
+  uint32_t a = 0xFF & (argb_nonpremul >> 24);
   uint32_t a16 = a * (0x101 * 0x101);
 
-  uint32_t r = 0xFF & (nonpremul >> 16);
+  uint32_t r = 0xFF & (argb_nonpremul >> 16);
   r = ((r * a16) / 0xFFFF) >> 8;
-  uint32_t g = 0xFF & (nonpremul >> 8);
+  uint32_t g = 0xFF & (argb_nonpremul >> 8);
   g = ((g * a16) / 0xFFFF) >> 8;
-  uint32_t b = 0xFF & (nonpremul >> 0);
+  uint32_t b = 0xFF & (argb_nonpremul >> 0);
   b = ((b * a16) / 0xFFFF) >> 8;
 
   return (a << 24) | (r << 16) | (g << 8) | (b << 0);
 }
 
-// wuffs_base__nonpremul_u32_axxx converts from premultiplied alpha to
-// non-premultiplied alpha. The "axxx" means either "argb" or "abgr".
+// wuffs_base__color_u32_argb_premul__as__color_u32_argb_nonpremul converts
+// from premultiplied alpha to non-premultiplied alpha.
 static inline uint32_t  //
-wuffs_base__nonpremul_u32_axxx(uint32_t premul) {
-  uint32_t a = 0xFF & (premul >> 24);
+wuffs_base__color_u32_argb_premul__as__color_u32_argb_nonpremul(
+    wuffs_base__color_u32_argb_premul c) {
+  uint32_t a = 0xFF & (c >> 24);
   if (a == 0xFF) {
-    return premul;
+    return c;
   } else if (a == 0) {
     return 0;
   }
   uint32_t a16 = a * 0x101;
 
-  uint32_t r = 0xFF & (premul >> 16);
+  uint32_t r = 0xFF & (c >> 16);
   r = ((r * (0x101 * 0xFFFF)) / a16) >> 8;
-  uint32_t g = 0xFF & (premul >> 8);
+  uint32_t g = 0xFF & (c >> 8);
   g = ((g * (0x101 * 0xFFFF)) / a16) >> 8;
-  uint32_t b = 0xFF & (premul >> 0);
+  uint32_t b = 0xFF & (c >> 0);
   b = ((b * (0x101 * 0xFFFF)) / a16) >> 8;
 
   return (a << 24) | (r << 16) | (g << 8) | (b << 0);
