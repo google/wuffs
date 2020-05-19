@@ -21,6 +21,26 @@
 // 0xAARRGGBB (Alpha most significant, Blue least), regardless of endianness.
 typedef uint32_t wuffs_base__color_u32_argb_premul;
 
+static inline uint16_t  //
+wuffs_base__color_u32_argb_premul__as__color_u16_rgb_565(
+    wuffs_base__color_u32_argb_premul c) {
+  uint32_t r5 = 0xF800 & (c >> 8);
+  uint32_t g6 = 0x07E0 & (c >> 5);
+  uint32_t b5 = 0x001F & (c >> 3);
+  return (uint16_t)(r5 | g6 | b5);
+}
+
+static inline wuffs_base__color_u32_argb_premul  //
+wuffs_base__color_u16_rgb_565__as__color_u32_argb_premul(uint16_t c) {
+  uint32_t b5 = 0x1F & (c >> 0);
+  uint32_t b = (b5 << 3) | (b5 >> 2);
+  uint32_t g6 = 0x3F & (c >> 5);
+  uint32_t g = (g6 << 2) | (g6 >> 4);
+  uint32_t r5 = 0x1F & (c >> 11);
+  uint32_t r = (r5 << 3) | (r5 >> 2);
+  return 0xFF000000 | (r << 16) | (g << 8) | (b << 0);
+}
+
 static inline uint8_t  //
 wuffs_base__color_u32_argb_premul__as_gray(
     wuffs_base__color_u32_argb_premul c) {
@@ -35,7 +55,8 @@ wuffs_base__color_u32_argb_premul__as_gray(
   // Note that 19595 + 38470 + 7471 equals 65536, also known as (1 << 16). We
   // shift by 24, not just by 16, because the return value is 8-bit color, not
   // 16-bit color.
-  return ((19595 * cr) + (38470 * cg) + (7471 * cb) + 32768) >> 24;
+  uint32_t weighted_average = (19595 * cr) + (38470 * cg) + (7471 * cb) + 32768;
+  return (uint8_t)(weighted_average >> 24);
 }
 
 // wuffs_base__premul_u32_axxx converts from non-premultiplied alpha to
