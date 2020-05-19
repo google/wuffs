@@ -9183,22 +9183,22 @@ wuffs_base__pixel_swizzler__xxx__index_binary_alpha__src_over(
     uint32_t s0 = wuffs_base__load_u32le__no_bounds_check(dst_palette.ptr +
                                                           ((size_t)s[0] * 4));
     if (s0) {
-      wuffs_base__store_u24le__no_bounds_check(d + (0 * 4), s0);
+      wuffs_base__store_u24le__no_bounds_check(d + (0 * 3), s0);
     }
     uint32_t s1 = wuffs_base__load_u32le__no_bounds_check(dst_palette.ptr +
                                                           ((size_t)s[1] * 4));
     if (s1) {
-      wuffs_base__store_u24le__no_bounds_check(d + (1 * 4), s1);
+      wuffs_base__store_u24le__no_bounds_check(d + (1 * 3), s1);
     }
     uint32_t s2 = wuffs_base__load_u32le__no_bounds_check(dst_palette.ptr +
                                                           ((size_t)s[2] * 4));
     if (s2) {
-      wuffs_base__store_u24le__no_bounds_check(d + (2 * 4), s2);
+      wuffs_base__store_u24le__no_bounds_check(d + (2 * 3), s2);
     }
     uint32_t s3 = wuffs_base__load_u32le__no_bounds_check(dst_palette.ptr +
                                                           ((size_t)s[3] * 4));
     if (s3) {
-      wuffs_base__store_u24le__no_bounds_check(d + (3 * 4), s3);
+      wuffs_base__store_u24le__no_bounds_check(d + (3 * 3), s3);
     }
 
     s += loop_unroll_count * 1;
@@ -9210,7 +9210,7 @@ wuffs_base__pixel_swizzler__xxx__index_binary_alpha__src_over(
     uint32_t s0 = wuffs_base__load_u32le__no_bounds_check(dst_palette.ptr +
                                                           ((size_t)s[0] * 4));
     if (s0) {
-      wuffs_base__store_u24le__no_bounds_check(d + (0 * 4), s0);
+      wuffs_base__store_u24le__no_bounds_check(d + (0 * 3), s0);
     }
 
     s += 1 * 1;
