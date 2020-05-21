@@ -239,6 +239,15 @@ This is random access by frame index (the "_i_" in "the _i_'th frame"), not by
 time, as different frames can have different display durations.
 
 
+## Degenerate Animations
+
+A still image is, in some sense, an animated image with a single frame, albeit
+without an explicit display duration or looping behavior. Some animated image
+formats also support zero frames, just like the empty string being a valid
+string. For these degenerate (0 or 1 frame) cases, when converting to NII or
+NIA, the convention (but not requirement) is a zero CDD and a zero LoopCount.
+
+
 ## Cumulative Display Duration
 
 Other animation formats, like
