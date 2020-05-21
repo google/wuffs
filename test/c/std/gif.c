@@ -491,11 +491,13 @@ do_test_wuffs_gif_decode_expecting(wuffs_base__io_buffer src,
   CHECK_STATUS("set_from_slice", wuffs_base__pixel_buffer__set_from_slice(
                                      &pb, &ic.pixcfg, g_pixel_slice_u8));
 
-  wuffs_base__status status = wuffs_gif__decoder__decode_frame(
-      &dec, &pb, &src, WUFFS_BASE__PIXEL_BLEND__SRC, g_work_slice_u8, NULL);
-  if (status.repr != want_status) {
-    RETURN_FAIL("decode_frame: have \"%s\", want \"%s\"", status.repr,
-                want_status);
+  {
+    wuffs_base__status status = wuffs_gif__decoder__decode_frame(
+        &dec, &pb, &src, WUFFS_BASE__PIXEL_BLEND__SRC, g_work_slice_u8, NULL);
+    if (status.repr != want_status) {
+      RETURN_FAIL("decode_frame #0: have \"%s\", want \"%s\"", status.repr,
+                  want_status);
+    }
   }
 
   wuffs_base__rect_ie_u32 r = wuffs_gif__decoder__frame_dirty_rect(&dec);
@@ -505,6 +507,16 @@ do_test_wuffs_gif_decode_expecting(wuffs_base__io_buffer src,
                 dirty_rect_is_empty ? "true" : "false",
                 want_dirty_rect_is_empty ? "true" : "false");
   }
+
+  if (want_status == NULL) {
+    wuffs_base__status status = wuffs_gif__decoder__decode_frame(
+        &dec, &pb, &src, WUFFS_BASE__PIXEL_BLEND__SRC, g_work_slice_u8, NULL);
+    if (status.repr != wuffs_base__note__end_of_data) {
+      RETURN_FAIL("decode_frame #1: have \"%s\", want \"%s\"", status.repr,
+                  wuffs_base__note__end_of_data);
+    }
+  }
+
   return NULL;
 }
 
@@ -703,18 +715,14 @@ test_wuffs_gif_decode_delay_num_frames_decoded() {
       .data = g_src_slice_u8,
   });
   CHECK_STRING(read_file(&src, "test/data/animated-red-blue.gif"));
-  if (src.meta.wi < 1) {
-    return "src file is too short";
-  }
 
-  // A GIF image should end with the 0x3B Trailer byte.
-  if (src.data.ptr[src.meta.wi - 1] != 0x3B) {
-    RETURN_FAIL("final byte: have 0x%02X, want 0x%02X",
-                src.data.ptr[src.meta.wi - 1], 0x3B);
+  // Truncate the final 0x3B trailer byte.
+  if (src.meta.wi <= 0) {
+    return "src file is too short";
+  } else if (src.data.ptr[src.meta.wi - 1] != 0x3B) {
+    return "src file does not end with 0x3B";
   }
-  // Replace that final byte with something invalid: neither 0x21 (Extension
-  // Introducer), 0x2C (Image Separator) or 0x3B (Trailer).
-  src.data.ptr[src.meta.wi - 1] = 0x99;
+  src.meta.wi--;
 
   int q;
   for (q = 0; q < 2; q++) {
@@ -1594,6 +1602,25 @@ test_wuffs_gif_decode_multiple_loop_counts() {
 }
 
 const char*  //
+test_wuffs_gif_decode_nul_byte_trailer() {
+  CHECK_FOCUS(__func__);
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = g_src_slice_u8,
+  });
+  CHECK_STRING(read_file(&src, "test/data/pjw-thumbnail.gif"));
+
+  // Change the final 0x3B trailer byte to 0x00.
+  if (src.meta.wi <= 0) {
+    return "src file is too short";
+  } else if (src.data.ptr[src.meta.wi - 1] != 0x3B) {
+    return "src file does not end with 0x3B";
+  }
+  src.data.ptr[src.meta.wi - 1] = 0x00;
+
+  return do_test_wuffs_gif_decode_expecting(src, 0, NULL, false);
+}
+
+const char*  //
 test_wuffs_gif_decode_pixel_data_none() {
   CHECK_FOCUS(__func__);
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
@@ -2409,6 +2436,7 @@ proc g_tests[] = {
     test_wuffs_gif_decode_missing_two_src_bytes,
     test_wuffs_gif_decode_multiple_graphic_controls,
     test_wuffs_gif_decode_multiple_loop_counts,
+    test_wuffs_gif_decode_nul_byte_trailer,
     test_wuffs_gif_decode_pixel_data_none,
     test_wuffs_gif_decode_pixel_data_not_enough,
     test_wuffs_gif_decode_pixel_data_too_much_sans_quirk,

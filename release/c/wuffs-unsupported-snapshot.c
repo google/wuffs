@@ -5644,7 +5644,6 @@ extern "C" {
 
 // ---------------- Status Codes
 
-extern const char* wuffs_gif__error__bad_block;
 extern const char* wuffs_gif__error__bad_extension_label;
 extern const char* wuffs_gif__error__bad_frame_size;
 extern const char* wuffs_gif__error__bad_graphic_control;
@@ -16874,7 +16873,6 @@ wuffs_lzw__decoder__flush(wuffs_lzw__decoder* self) {
 
 // ---------------- Status Codes Implementations
 
-const char* wuffs_gif__error__bad_block = "#gif: bad block";
 const char* wuffs_gif__error__bad_extension_label = "#gif: bad extension label";
 const char* wuffs_gif__error__bad_frame_size = "#gif: bad frame size";
 const char* wuffs_gif__error__bad_graphic_control = "#gif: bad graphic control";
@@ -18055,7 +18053,7 @@ wuffs_gif__config_decoder__decode_up_to_id_part1(
           goto suspend;
         }
         goto label__0__break;
-      } else if (v_block_type == 59) {
+      } else {
         if (self->private_impl.f_delayed_num_decoded_frames) {
           self->private_impl.f_delayed_num_decoded_frames = false;
           wuffs_base__u64__sat_add_indirect(
@@ -18063,9 +18061,6 @@ wuffs_gif__config_decoder__decode_up_to_id_part1(
         }
         self->private_impl.f_end_of_data = true;
         goto label__0__break;
-      } else {
-        status = wuffs_base__make_status(wuffs_gif__error__bad_block);
-        goto exit;
       }
     }
   label__0__break:;
@@ -19928,7 +19923,7 @@ wuffs_gif__decoder__decode_up_to_id_part1(wuffs_gif__decoder* self,
           goto suspend;
         }
         goto label__0__break;
-      } else if (v_block_type == 59) {
+      } else {
         if (self->private_impl.f_delayed_num_decoded_frames) {
           self->private_impl.f_delayed_num_decoded_frames = false;
           wuffs_base__u64__sat_add_indirect(
@@ -19936,9 +19931,6 @@ wuffs_gif__decoder__decode_up_to_id_part1(wuffs_gif__decoder* self,
         }
         self->private_impl.f_end_of_data = true;
         goto label__0__break;
-      } else {
-        status = wuffs_base__make_status(wuffs_gif__error__bad_block);
-        goto exit;
       }
     }
   label__0__break:;

@@ -14,7 +14,6 @@
 
 use "std/lzw"
 
-pub status "#bad block"
 pub status "#bad extension label"
 pub status "#bad frame size"
 pub status "#bad graphic control"

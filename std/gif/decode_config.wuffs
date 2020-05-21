@@ -423,15 +423,25 @@ pri func config_decoder.decode_up_to_id_part1?(src: base.io_reader) {
 			}
 			this.decode_id_part0?(src: args.src)
 			break
-		} else if block_type == 0x3B {  // The spec calls 0x3B the "Trailer".
+		} else {
+			// If we don't have 0x21 or 0x2C then, according to the spec, the
+			// only valid byte is 0x3B, called the "Trailer". In practice, some
+			// other popular decoders allow anything (other than 0x21 or 0x2C)
+			// to be equivalent to 0x3B, which ends the animated GIF image, and
+			// we do likewise here. Some real world GIF files that exhibit this
+			// are at https://github.com/golang/go/issues/38853
+			//
+			// Chromium's decoder
+			// https://skia.googlesource.com/libgifcodec/+/c002ec500aba1e1b0189547629787cb02db78193/SkGifImageReader.cpp#563
+			//
+			// Firefox's decoder
+			// https://dxr.mozilla.org/mozilla-central/rev/93a33cb7f2369ac4f1d1f2ac97ec14ba60e1e7d7/image/decoders/nsGIFDecoder2.cpp#569
 			if this.delayed_num_decoded_frames {
 				this.delayed_num_decoded_frames = false
 				this.num_decoded_frames_value ~sat+= 1
 			}
 			this.end_of_data = true
 			break
-		} else {
-			return "#bad block"
 		}
 	} endwhile
 }
