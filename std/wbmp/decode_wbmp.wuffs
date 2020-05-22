@@ -129,13 +129,17 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
 }
 
 pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, blend: base.pixel_blend, workbuf: slice base.u8, opts: nptr base.decode_frame_options) {
-	var status : base.status
-	var dst_x  : base.u32
-	var dst_y  : base.u32
-	var tab    : table base.u8
-	var dst    : slice base.u8
-	var src    : array[1] base.u8
-	var c      : base.u8
+	var status              : base.status
+	var dst_pixfmt          : base.pixel_format
+	var dst_bits_per_pixel  : base.u32[..= 256]
+	var dst_bytes_per_pixel : base.u64[..= 32]
+	var dst_x_in_bytes      : base.u64
+	var dst_x               : base.u32
+	var dst_y               : base.u32
+	var tab                 : table base.u8
+	var dst                 : slice base.u8
+	var src                 : array[1] base.u8
+	var c                   : base.u8
 
 	if this.call_sequence < 2 {
 		this.decode_frame_config?(dst: nullptr, src: args.src)
@@ -157,6 +161,15 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 		return status
 	}
 
+	// TODO: the dst_pixfmt variable shouldn't be necessary. We should be able
+	// to chain the two calls: "args.dst.pixel_format().bits_per_pixel()".
+	dst_pixfmt = args.dst.pixel_format()
+	dst_bits_per_pixel = dst_pixfmt.bits_per_pixel()
+	if (dst_bits_per_pixel & 7) <> 0 {
+		return base."#unsupported option"
+	}
+	dst_bytes_per_pixel = (dst_bits_per_pixel / 8) as base.u64
+
 	// TODO: be more efficient than reading one byte at a time.
 	if this.width > 0 {
 		tab = args.dst.plane(p: 0)
@@ -171,7 +184,21 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 				assert dst_x < 0xFFFF_FFFF via "a < b: a < c; c <= b"(c: this.width)
 
 				if (dst_x & 7) == 0 {
-					c = args.src.read_u8?()
+					while args.src.available() <= 0,
+						inv dst_x < 0xFFFF_FFFF,
+						inv dst_y < 0xFFFF_FFFF,
+						post args.src.available() > 0,
+					{
+						yield? base."$short read"
+						tab = args.dst.plane(p: 0)
+						dst = tab.row(y: dst_y)
+						dst_x_in_bytes = (dst_x as base.u64) * dst_bytes_per_pixel
+						if dst_x_in_bytes <= dst.length() {
+							dst = dst[dst_x_in_bytes ..]
+						}
+					} endwhile
+					c = args.src.peek_u8()
+					args.src.skip32_fast!(actual: 1, worst_case: 1)
 				}
 				if (c & 0x80) == 0 {
 					src[0] = 0x00
@@ -188,8 +215,8 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 				this.swizzler.swizzle_interleaved!(
 					dst: dst, dst_palette: this.util.empty_slice_u8(), src: src[..])
 
-				if dst.length() >= 4 {
-					dst = dst[4 ..]
+				if dst_bytes_per_pixel <= dst.length() {
+					dst = dst[dst_bytes_per_pixel ..]
 				}
 
 				dst_x += 1

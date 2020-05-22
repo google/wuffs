@@ -6979,6 +6979,7 @@ struct wuffs_wbmp__decoder__struct {
       uint32_t v_x32;
     } s_decode_image_config[1];
     struct {
+      uint64_t v_dst_bytes_per_pixel;
       uint32_t v_dst_x;
       uint32_t v_dst_y;
       uint8_t v_src[1];
@@ -24824,6 +24825,10 @@ wuffs_wbmp__decoder__decode_frame(wuffs_wbmp__decoder* self,
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
   wuffs_base__status v_status = wuffs_base__make_status(NULL);
+  wuffs_base__pixel_format v_dst_pixfmt = {0};
+  uint32_t v_dst_bits_per_pixel = 0;
+  uint64_t v_dst_bytes_per_pixel = 0;
+  uint64_t v_dst_x_in_bytes = 0;
   uint32_t v_dst_x = 0;
   uint32_t v_dst_y = 0;
   wuffs_base__table_u8 v_tab = {0};
@@ -24844,6 +24849,8 @@ wuffs_wbmp__decoder__decode_frame(wuffs_wbmp__decoder* self,
 
   uint32_t coro_susp_point = self->private_impl.p_decode_frame[0];
   if (coro_susp_point) {
+    v_dst_bytes_per_pixel =
+        self->private_data.s_decode_frame[0].v_dst_bytes_per_pixel;
     v_dst_x = self->private_data.s_decode_frame[0].v_dst_x;
     v_dst_y = self->private_data.s_decode_frame[0].v_dst_y;
     memcpy(v_src, self->private_data.s_decode_frame[0].v_src, sizeof(v_src));
@@ -24886,6 +24893,14 @@ wuffs_wbmp__decoder__decode_frame(wuffs_wbmp__decoder* self,
       }
       goto ok;
     }
+    v_dst_pixfmt = wuffs_base__pixel_buffer__pixel_format(a_dst);
+    v_dst_bits_per_pixel =
+        wuffs_base__pixel_format__bits_per_pixel(&v_dst_pixfmt);
+    if ((v_dst_bits_per_pixel & 7) != 0) {
+      status = wuffs_base__make_status(wuffs_base__error__unsupported_option);
+      goto exit;
+    }
+    v_dst_bytes_per_pixel = ((uint64_t)((v_dst_bits_per_pixel / 8)));
     if (self->private_impl.f_width > 0) {
       v_tab = wuffs_base__pixel_buffer__plane(a_dst, 0);
       while (v_dst_y < self->private_impl.f_height) {
@@ -24893,16 +24908,21 @@ wuffs_wbmp__decoder__decode_frame(wuffs_wbmp__decoder* self,
         v_dst_x = 0;
         while (v_dst_x < self->private_impl.f_width) {
           if ((v_dst_x & 7) == 0) {
-            {
-              WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
-              if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
-                status =
-                    wuffs_base__make_status(wuffs_base__suspension__short_read);
-                goto suspend;
+            while (((uint64_t)(io2_a_src - iop_a_src)) <= 0) {
+              status =
+                  wuffs_base__make_status(wuffs_base__suspension__short_read);
+              WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(2);
+              v_tab = wuffs_base__pixel_buffer__plane(a_dst, 0);
+              v_dst = wuffs_base__table_u8__row(v_tab, v_dst_y);
+              v_dst_x_in_bytes =
+                  (((uint64_t)(v_dst_x)) * v_dst_bytes_per_pixel);
+              if (v_dst_x_in_bytes <= ((uint64_t)(v_dst.len))) {
+                v_dst =
+                    wuffs_base__slice_u8__subslice_i(v_dst, v_dst_x_in_bytes);
               }
-              uint8_t t_0 = *iop_a_src++;
-              v_c = t_0;
             }
+            v_c = wuffs_base__load_u8be__no_bounds_check(iop_a_src);
+            (iop_a_src += 1, wuffs_base__make_empty_struct());
           }
           if ((v_c & 128) == 0) {
             v_src[0] = 0;
@@ -24914,8 +24934,9 @@ wuffs_wbmp__decoder__decode_frame(wuffs_wbmp__decoder* self,
               &self->private_impl.f_swizzler, v_dst,
               wuffs_base__utility__empty_slice_u8(),
               wuffs_base__make_slice_u8(v_src, 1));
-          if (((uint64_t)(v_dst.len)) >= 4) {
-            v_dst = wuffs_base__slice_u8__subslice_i(v_dst, 4);
+          if (v_dst_bytes_per_pixel <= ((uint64_t)(v_dst.len))) {
+            v_dst =
+                wuffs_base__slice_u8__subslice_i(v_dst, v_dst_bytes_per_pixel);
           }
           v_dst_x += 1;
         }
@@ -24936,6 +24957,8 @@ suspend:
       wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
   self->private_impl.active_coroutine =
       wuffs_base__status__is_suspension(&status) ? 3 : 0;
+  self->private_data.s_decode_frame[0].v_dst_bytes_per_pixel =
+      v_dst_bytes_per_pixel;
   self->private_data.s_decode_frame[0].v_dst_x = v_dst_x;
   self->private_data.s_decode_frame[0].v_dst_y = v_dst_y;
   memcpy(self->private_data.s_decode_frame[0].v_src, v_src, sizeof(v_src));
