@@ -7849,7 +7849,8 @@ wuffs_base__io_writer__set(wuffs_base__io_buffer* b,
 
   // ----------------
 
-#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BASE)
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BASE) || \
+    defined(WUFFS_CONFIG__MODULE__BASE__CORE)
 
 const uint8_t wuffs_base__low_bits_mask__u8[9] = {
     0x00, 0x01, 0x03, 0x07, 0x0F, 0x1F, 0x3F, 0x7F, 0xFF,
@@ -9273,9 +9274,11 @@ wuffs_base__ascii__longest_valid_prefix(wuffs_base__slice_u8 s) {
 }
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) ||
-        // defined(WUFFS_CONFIG__MODULE__BASE)
+        // defined(WUFFS_CONFIG__MODULE__BASE)  ||
+        // defined(WUFFS_CONFIG__MODULE__BASE__CORE)
 
-#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BASE)
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BASE) || \
+    defined(WUFFS_CONFIG__MODULE__BASE__F64CONV)
 
   // ---------------- IEEE 754 Floating Point
 
@@ -10527,9 +10530,11 @@ infinity:
 }
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) ||
-        // defined(WUFFS_CONFIG__MODULE__BASE)
+        // defined(WUFFS_CONFIG__MODULE__BASE) ||
+        // defined(WUFFS_CONFIG__MODULE__BASE__F64CONV)
 
-#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BASE)
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BASE) || \
+    defined(WUFFS_CONFIG__MODULE__BASE__PIXCONV)
 
 // ---------------- Pixel Swizzler
 
@@ -11707,7 +11712,8 @@ wuffs_base__pixel_swizzler__swizzle_interleaved(
 }
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) ||
-        // defined(WUFFS_CONFIG__MODULE__BASE)
+        // defined(WUFFS_CONFIG__MODULE__BASE) ||
+        // defined(WUFFS_CONFIG__MODULE__BASE__PIXCONV)
 
 #ifdef __cplusplus
 }  // extern "C"

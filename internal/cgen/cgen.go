@@ -93,6 +93,14 @@ const (
 	iopPrefix = "iop_" // Pointer.
 )
 
+// BaseSubModules is the list of lower-cased XXX's in the base module's
+// WUFFS_CONFIG__MODULE__BASE__XXX sub-modules.
+var BaseSubModules = []string{
+	"core",
+	"f64conv",
+	"pixconv",
+}
+
 // Do transpiles a Wuffs program to a C program.
 //
 // The arguments list the source Wuffs files. If no arguments are given, it

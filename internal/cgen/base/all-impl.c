@@ -62,7 +62,8 @@ extern "C" {
 
 // ----------------
 
-#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BASE)
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BASE) || \
+    defined(WUFFS_CONFIG__MODULE__BASE__CORE)
 
 const uint8_t wuffs_base__low_bits_mask__u8[9] = {
     0x00, 0x01, 0x03, 0x07, 0x0F, 0x1F, 0x3F, 0x7F, 0xFF,
@@ -116,21 +117,26 @@ const uint64_t wuffs_base__low_bits_mask__u64[65] = {
 // !! INSERT base/strconv-impl.c.
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) ||
-        // defined(WUFFS_CONFIG__MODULE__BASE)
+        // defined(WUFFS_CONFIG__MODULE__BASE)  ||
+        // defined(WUFFS_CONFIG__MODULE__BASE__CORE)
 
-#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BASE)
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BASE) || \
+    defined(WUFFS_CONFIG__MODULE__BASE__F64CONV)
 
 // !! INSERT base/f64conv-submodule.c.
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) ||
-        // defined(WUFFS_CONFIG__MODULE__BASE)
+        // defined(WUFFS_CONFIG__MODULE__BASE) ||
+        // defined(WUFFS_CONFIG__MODULE__BASE__F64CONV)
 
-#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BASE)
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BASE) || \
+    defined(WUFFS_CONFIG__MODULE__BASE__PIXCONV)
 
 // !! INSERT base/pixconv-submodule.c.
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) ||
-        // defined(WUFFS_CONFIG__MODULE__BASE)
+        // defined(WUFFS_CONFIG__MODULE__BASE) ||
+        // defined(WUFFS_CONFIG__MODULE__BASE__PIXCONV)
 
 #ifdef __cplusplus
 }  // extern "C"

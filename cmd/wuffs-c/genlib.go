@@ -22,6 +22,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/google/wuffs/internal/cgen"
+
 	cf "github.com/google/wuffs/cmd/commonflags"
 )
 
@@ -35,9 +37,15 @@ func doGenlib(args []string) error {
 	}
 	args = flags.Args()
 
-	filenames := make([]string, len(args))
-	for i, arg := range args {
-		filenames[i] = "wuffs-" + strings.Replace(filepath.ToSlash(arg), "/", "-", -1)
+	filenames := []string(nil)
+	for _, arg := range args {
+		if arg != "base" {
+			filenames = append(filenames, "wuffs-"+strings.Replace(filepath.ToSlash(arg), "/", "-", -1))
+		} else {
+			for _, subModule := range cgen.BaseSubModules {
+				filenames = append(filenames, "wuffs-base-"+subModule)
+			}
+		}
 	}
 
 	if *dstdirFlag == "" {
@@ -83,11 +91,24 @@ var (
 
 func genObj(outDir string, inDir string, cc string, dynamism string, filenames []string) error {
 	for _, filename := range filenames {
-		in := filepath.Join(inDir, filename+".c")
+		in := ""
 		out := genlibOutFilename(outDir, dynamism, filename)
 
 		args := []string(nil)
 		args = append(args, "-O3", "-std=c99", "-DWUFFS_IMPLEMENTATION")
+
+		const wuffsBasePrefix = "wuffs-base-"
+		if strings.HasPrefix(filename, wuffsBasePrefix) {
+			in = filepath.Join(inDir, "wuffs-base.c")
+			suffix := filename[len(wuffsBasePrefix):]
+			args = append(args,
+				"-DWUFFS_CONFIG__MODULES",
+				"-DWUFFS_CONFIG__MODULE__BASE__"+strings.ToUpper(suffix),
+			)
+		} else {
+			in = filepath.Join(inDir, filename+".c")
+		}
+
 		if dynamism == "dynamic" {
 			args = append(args, "-fPIC", "-DPIC")
 		}

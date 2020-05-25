@@ -3,6 +3,7 @@
 
 ## Work In Progress
 
+- Added `WUFFS_CONFIG__MODULE__BASE__ETC` sub-modules.
 - Added `WUFFS_BASE__PIXEL_BLEND__SRC_OVER`.
 - Added `WUFFS_BASE__PIXEL_FORMAT__BGR_565`.
 - Added `base` library support for UTF-8.
