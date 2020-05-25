@@ -116,13 +116,15 @@ func Do(args []string) error {
 			}
 			buf := make(buffer, 0, 128*1024)
 			if err := expandBangBangInsert(&buf, baseAllImplC, map[string]func(*buffer) error{
-				"// !! INSERT InterfaceDeclarations.\n": insertInterfaceDeclarations,
-				"// !! INSERT InterfaceDefinitions.\n":  insertInterfaceDefinitions,
-				"// !! INSERT base/all-private.h.\n":    insertBaseAllPrivateH,
-				"// !! INSERT base/all-public.h.\n":     insertBaseAllPublicH,
-				"// !! INSERT base/copyright\n":         insertBaseCopyright,
-				"// !! INSERT base/image-impl.c.\n":     insertBaseImageImplC,
-				"// !! INSERT base/strconv-impl.c.\n":   insertBaseStrConvImplC,
+				"// !! INSERT InterfaceDeclarations.\n":    insertInterfaceDeclarations,
+				"// !! INSERT InterfaceDefinitions.\n":     insertInterfaceDefinitions,
+				"// !! INSERT base/all-private.h.\n":       insertBaseAllPrivateH,
+				"// !! INSERT base/all-public.h.\n":        insertBaseAllPublicH,
+				"// !! INSERT base/copyright\n":            insertBaseCopyright,
+				"// !! INSERT base/f64conv-submodule.c.\n": insertBaseF64ConvSubmoduleC,
+				"// !! INSERT base/image-impl.c.\n":        insertBaseImageImplC,
+				"// !! INSERT base/pixconv-submodule.c.\n": insertBasePixConvSubmoduleC,
+				"// !! INSERT base/strconv-impl.c.\n":      insertBaseStrConvImplC,
 				"// !! INSERT wuffs_base__status strings.\n": func(b *buffer) error {
 					for _, z := range builtin.Statuses {
 						msg, _ := t.Unescape(z)
@@ -327,8 +329,20 @@ func insertBaseCopyright(buf *buffer) error {
 	return nil
 }
 
+func insertBaseF64ConvSubmoduleC(buf *buffer) error {
+	buf.writes(baseF64ConvSubmoduleC)
+	buf.writeb('\n')
+	return nil
+}
+
 func insertBaseImageImplC(buf *buffer) error {
 	buf.writes(baseImageImplC)
+	buf.writeb('\n')
+	return nil
+}
+
+func insertBasePixConvSubmoduleC(buf *buffer) error {
+	buf.writes(basePixConvSubmoduleC)
 	buf.writeb('\n')
 	return nil
 }

@@ -118,6 +118,20 @@ const uint64_t wuffs_base__low_bits_mask__u64[65] = {
 #endif  // !defined(WUFFS_CONFIG__MODULES) ||
         // defined(WUFFS_CONFIG__MODULE__BASE)
 
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BASE)
+
+// !! INSERT base/f64conv-submodule.c.
+
+#endif  // !defined(WUFFS_CONFIG__MODULES) ||
+        // defined(WUFFS_CONFIG__MODULE__BASE)
+
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BASE)
+
+// !! INSERT base/pixconv-submodule.c.
+
+#endif  // !defined(WUFFS_CONFIG__MODULES) ||
+        // defined(WUFFS_CONFIG__MODULE__BASE)
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif
