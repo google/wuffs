@@ -253,7 +253,7 @@ func expandBangBangInsert(b *buffer, s string, m map[string]func(*buffer) error)
 }
 
 func insertBaseAllPrivateH(buf *buffer) error {
-	buf.writes(baseCorePrivateH)
+	buf.writes(baseFundamentalPrivateH)
 	buf.writeb('\n')
 	buf.writes(baseRangePrivateH)
 	buf.writeb('\n')
@@ -271,7 +271,7 @@ func insertBaseAllPrivateH(buf *buffer) error {
 }
 
 func insertBaseAllPublicH(buf *buffer) error {
-	if err := expandBangBangInsert(buf, baseCorePublicH, map[string]func(*buffer) error{
+	if err := expandBangBangInsert(buf, baseFundamentalPublicH, map[string]func(*buffer) error{
 		"// !! INSERT FourCCs.\n": func(b *buffer) error {
 			for _, z := range builtin.FourCCs {
 				b.printf("// %s.\n#define WUFFS_BASE__FOURCC__%s 0x%02X%02X%02X%02X\n\n",

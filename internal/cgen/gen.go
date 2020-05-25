@@ -77,8 +77,8 @@ func genBase(out *bytes.Buffer) error {
 		{"base/image-impl.c", "baseImageImplC"},
 		{"base/strconv-impl.c", "baseStrConvImplC"},
 
-		{"base/core-private.h", "baseCorePrivateH"},
-		{"base/core-public.h", "baseCorePublicH"},
+		{"base/fundamental-private.h", "baseFundamentalPrivateH"},
+		{"base/fundamental-public.h", "baseFundamentalPublicH"},
 		{"base/memory-private.h", "baseMemoryPrivateH"},
 		{"base/memory-public.h", "baseMemoryPublicH"},
 		{"base/image-private.h", "baseImagePrivateH"},
