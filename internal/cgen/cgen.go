@@ -98,6 +98,7 @@ const (
 var BaseSubModules = []string{
 	"core",
 	"f64conv",
+	"interfaces",
 	"pixconv",
 }
 
@@ -133,6 +134,14 @@ func Do(args []string) error {
 				"// !! INSERT base/image-impl.c.\n":        insertBaseImageImplC,
 				"// !! INSERT base/pixconv-submodule.c.\n": insertBasePixConvSubmoduleC,
 				"// !! INSERT base/strconv-impl.c.\n":      insertBaseStrConvImplC,
+				"// !! INSERT vtable names.\n": func(b *buffer) error {
+					for _, n := range builtin.Interfaces {
+						buf.printf("const char* wuffs_base__%s__vtable_name = "+
+							"\"{vtable}wuffs_base__%s\";\n\n", n, n)
+
+					}
+					return nil
+				},
 				"// !! INSERT wuffs_base__status strings.\n": func(b *buffer) error {
 					for _, z := range builtin.Statuses {
 						msg, _ := t.Unescape(z)
@@ -373,10 +382,13 @@ func insertInterfaceDeclarations(buf *buffer) error {
 	}
 
 	buf.writes("// ---------------- Interface Declarations.\n\n")
-	for i, n := range builtin.Interfaces {
-		if i > 0 {
-			buf.writes("// --------\n\n")
-		}
+
+	buf.writes("// For modular builds that divide the base module into sub-modules, using these\n")
+	buf.writes("// functions require the WUFFS_CONFIG__MODULE__BASE__INTERFACES sub-module, not\n")
+	buf.writes("// just WUFFS_CONFIG__MODULE__BASE__CORE.\n\n")
+
+	for _, n := range builtin.Interfaces {
+		buf.writes("// --------\n\n")
 
 		qid := t.QID{t.IDBase, builtInTokenMap.ByName(n)}
 
@@ -455,9 +467,6 @@ func insertInterfaceDefinitions(buf *buffer) error {
 		}
 
 		qid := t.QID{t.IDBase, builtInTokenMap.ByName(n)}
-
-		buf.printf("const char* wuffs_base__%s__vtable_name = "+
-			"\"{vtable}wuffs_base__%s\";\n\n", n, n)
 
 		for _, f := range builtInInterfaceMethods[qid] {
 			returnsStatus := f.Effect().Coroutine() ||

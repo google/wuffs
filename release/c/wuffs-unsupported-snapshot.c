@@ -4120,6 +4120,12 @@ wuffs_base__ascii__longest_valid_prefix(wuffs_base__slice_u8 s);
 
 // ---------------- Interface Declarations.
 
+// For modular builds that divide the base module into sub-modules, using these
+// functions require the WUFFS_CONFIG__MODULE__BASE__INTERFACES sub-module, not
+// just WUFFS_CONFIG__MODULE__BASE__CORE.
+
+// --------
+
 extern const char* wuffs_base__hasher_u32__vtable_name;
 
 typedef struct {
@@ -7953,591 +7959,17 @@ const char* wuffs_base__error__unsupported_pixel_swizzler_option =
     "#base: unsupported pixel swizzler option";
 const char* wuffs_base__error__too_much_data = "#base: too much data";
 
-// ---------------- Interface Definitions.
-
 const char* wuffs_base__hasher_u32__vtable_name =
     "{vtable}wuffs_base__hasher_u32";
-
-WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
-wuffs_base__hasher_u32__set_quirk_enabled(wuffs_base__hasher_u32* self,
-                                          uint32_t a_quirk,
-                                          bool a_enabled) {
-  if (!self) {
-    return wuffs_base__make_empty_struct();
-  }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    return wuffs_base__make_empty_struct();
-  }
-
-  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
-  int i;
-  for (i = 0; i < 63; i++) {
-    if (v->vtable_name == wuffs_base__hasher_u32__vtable_name) {
-      const wuffs_base__hasher_u32__func_ptrs* func_ptrs =
-          (const wuffs_base__hasher_u32__func_ptrs*)(v->function_pointers);
-      return (*func_ptrs->set_quirk_enabled)(self, a_quirk, a_enabled);
-    } else if (v->vtable_name == NULL) {
-      break;
-    }
-    v++;
-  }
-
-  return wuffs_base__make_empty_struct();
-}
-
-WUFFS_BASE__MAYBE_STATIC uint32_t  //
-wuffs_base__hasher_u32__update_u32(wuffs_base__hasher_u32* self,
-                                   wuffs_base__slice_u8 a_x) {
-  if (!self) {
-    return 0;
-  }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    return 0;
-  }
-
-  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
-  int i;
-  for (i = 0; i < 63; i++) {
-    if (v->vtable_name == wuffs_base__hasher_u32__vtable_name) {
-      const wuffs_base__hasher_u32__func_ptrs* func_ptrs =
-          (const wuffs_base__hasher_u32__func_ptrs*)(v->function_pointers);
-      return (*func_ptrs->update_u32)(self, a_x);
-    } else if (v->vtable_name == NULL) {
-      break;
-    }
-    v++;
-  }
-
-  return 0;
-}
-
-// --------
 
 const char* wuffs_base__image_decoder__vtable_name =
     "{vtable}wuffs_base__image_decoder";
 
-WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
-wuffs_base__image_decoder__decode_frame(
-    wuffs_base__image_decoder* self,
-    wuffs_base__pixel_buffer* a_dst,
-    wuffs_base__io_buffer* a_src,
-    wuffs_base__pixel_blend a_blend,
-    wuffs_base__slice_u8 a_workbuf,
-    wuffs_base__decode_frame_options* a_opts) {
-  if (!self) {
-    return wuffs_base__make_status(wuffs_base__error__bad_receiver);
-  }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    return wuffs_base__make_status(
-        (self->private_impl.magic == WUFFS_BASE__DISABLED)
-            ? wuffs_base__error__disabled_by_previous_error
-            : wuffs_base__error__initialize_not_called);
-  }
-
-  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
-  int i;
-  for (i = 0; i < 63; i++) {
-    if (v->vtable_name == wuffs_base__image_decoder__vtable_name) {
-      const wuffs_base__image_decoder__func_ptrs* func_ptrs =
-          (const wuffs_base__image_decoder__func_ptrs*)(v->function_pointers);
-      return (*func_ptrs->decode_frame)(self, a_dst, a_src, a_blend, a_workbuf,
-                                        a_opts);
-    } else if (v->vtable_name == NULL) {
-      break;
-    }
-    v++;
-  }
-
-  return wuffs_base__make_status(wuffs_base__error__bad_vtable);
-}
-
-WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
-wuffs_base__image_decoder__decode_frame_config(wuffs_base__image_decoder* self,
-                                               wuffs_base__frame_config* a_dst,
-                                               wuffs_base__io_buffer* a_src) {
-  if (!self) {
-    return wuffs_base__make_status(wuffs_base__error__bad_receiver);
-  }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    return wuffs_base__make_status(
-        (self->private_impl.magic == WUFFS_BASE__DISABLED)
-            ? wuffs_base__error__disabled_by_previous_error
-            : wuffs_base__error__initialize_not_called);
-  }
-
-  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
-  int i;
-  for (i = 0; i < 63; i++) {
-    if (v->vtable_name == wuffs_base__image_decoder__vtable_name) {
-      const wuffs_base__image_decoder__func_ptrs* func_ptrs =
-          (const wuffs_base__image_decoder__func_ptrs*)(v->function_pointers);
-      return (*func_ptrs->decode_frame_config)(self, a_dst, a_src);
-    } else if (v->vtable_name == NULL) {
-      break;
-    }
-    v++;
-  }
-
-  return wuffs_base__make_status(wuffs_base__error__bad_vtable);
-}
-
-WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
-wuffs_base__image_decoder__decode_image_config(wuffs_base__image_decoder* self,
-                                               wuffs_base__image_config* a_dst,
-                                               wuffs_base__io_buffer* a_src) {
-  if (!self) {
-    return wuffs_base__make_status(wuffs_base__error__bad_receiver);
-  }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    return wuffs_base__make_status(
-        (self->private_impl.magic == WUFFS_BASE__DISABLED)
-            ? wuffs_base__error__disabled_by_previous_error
-            : wuffs_base__error__initialize_not_called);
-  }
-
-  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
-  int i;
-  for (i = 0; i < 63; i++) {
-    if (v->vtable_name == wuffs_base__image_decoder__vtable_name) {
-      const wuffs_base__image_decoder__func_ptrs* func_ptrs =
-          (const wuffs_base__image_decoder__func_ptrs*)(v->function_pointers);
-      return (*func_ptrs->decode_image_config)(self, a_dst, a_src);
-    } else if (v->vtable_name == NULL) {
-      break;
-    }
-    v++;
-  }
-
-  return wuffs_base__make_status(wuffs_base__error__bad_vtable);
-}
-
-WUFFS_BASE__MAYBE_STATIC wuffs_base__rect_ie_u32  //
-wuffs_base__image_decoder__frame_dirty_rect(
-    const wuffs_base__image_decoder* self) {
-  if (!self) {
-    return wuffs_base__utility__empty_rect_ie_u32();
-  }
-  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
-      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
-    return wuffs_base__utility__empty_rect_ie_u32();
-  }
-
-  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
-  int i;
-  for (i = 0; i < 63; i++) {
-    if (v->vtable_name == wuffs_base__image_decoder__vtable_name) {
-      const wuffs_base__image_decoder__func_ptrs* func_ptrs =
-          (const wuffs_base__image_decoder__func_ptrs*)(v->function_pointers);
-      return (*func_ptrs->frame_dirty_rect)(self);
-    } else if (v->vtable_name == NULL) {
-      break;
-    }
-    v++;
-  }
-
-  return wuffs_base__utility__empty_rect_ie_u32();
-}
-
-WUFFS_BASE__MAYBE_STATIC uint32_t  //
-wuffs_base__image_decoder__num_animation_loops(
-    const wuffs_base__image_decoder* self) {
-  if (!self) {
-    return 0;
-  }
-  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
-      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
-    return 0;
-  }
-
-  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
-  int i;
-  for (i = 0; i < 63; i++) {
-    if (v->vtable_name == wuffs_base__image_decoder__vtable_name) {
-      const wuffs_base__image_decoder__func_ptrs* func_ptrs =
-          (const wuffs_base__image_decoder__func_ptrs*)(v->function_pointers);
-      return (*func_ptrs->num_animation_loops)(self);
-    } else if (v->vtable_name == NULL) {
-      break;
-    }
-    v++;
-  }
-
-  return 0;
-}
-
-WUFFS_BASE__MAYBE_STATIC uint64_t  //
-wuffs_base__image_decoder__num_decoded_frame_configs(
-    const wuffs_base__image_decoder* self) {
-  if (!self) {
-    return 0;
-  }
-  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
-      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
-    return 0;
-  }
-
-  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
-  int i;
-  for (i = 0; i < 63; i++) {
-    if (v->vtable_name == wuffs_base__image_decoder__vtable_name) {
-      const wuffs_base__image_decoder__func_ptrs* func_ptrs =
-          (const wuffs_base__image_decoder__func_ptrs*)(v->function_pointers);
-      return (*func_ptrs->num_decoded_frame_configs)(self);
-    } else if (v->vtable_name == NULL) {
-      break;
-    }
-    v++;
-  }
-
-  return 0;
-}
-
-WUFFS_BASE__MAYBE_STATIC uint64_t  //
-wuffs_base__image_decoder__num_decoded_frames(
-    const wuffs_base__image_decoder* self) {
-  if (!self) {
-    return 0;
-  }
-  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
-      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
-    return 0;
-  }
-
-  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
-  int i;
-  for (i = 0; i < 63; i++) {
-    if (v->vtable_name == wuffs_base__image_decoder__vtable_name) {
-      const wuffs_base__image_decoder__func_ptrs* func_ptrs =
-          (const wuffs_base__image_decoder__func_ptrs*)(v->function_pointers);
-      return (*func_ptrs->num_decoded_frames)(self);
-    } else if (v->vtable_name == NULL) {
-      break;
-    }
-    v++;
-  }
-
-  return 0;
-}
-
-WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
-wuffs_base__image_decoder__restart_frame(wuffs_base__image_decoder* self,
-                                         uint64_t a_index,
-                                         uint64_t a_io_position) {
-  if (!self) {
-    return wuffs_base__make_status(wuffs_base__error__bad_receiver);
-  }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    return wuffs_base__make_status(
-        (self->private_impl.magic == WUFFS_BASE__DISABLED)
-            ? wuffs_base__error__disabled_by_previous_error
-            : wuffs_base__error__initialize_not_called);
-  }
-
-  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
-  int i;
-  for (i = 0; i < 63; i++) {
-    if (v->vtable_name == wuffs_base__image_decoder__vtable_name) {
-      const wuffs_base__image_decoder__func_ptrs* func_ptrs =
-          (const wuffs_base__image_decoder__func_ptrs*)(v->function_pointers);
-      return (*func_ptrs->restart_frame)(self, a_index, a_io_position);
-    } else if (v->vtable_name == NULL) {
-      break;
-    }
-    v++;
-  }
-
-  return wuffs_base__make_status(wuffs_base__error__bad_vtable);
-}
-
-WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
-wuffs_base__image_decoder__set_quirk_enabled(wuffs_base__image_decoder* self,
-                                             uint32_t a_quirk,
-                                             bool a_enabled) {
-  if (!self) {
-    return wuffs_base__make_empty_struct();
-  }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    return wuffs_base__make_empty_struct();
-  }
-
-  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
-  int i;
-  for (i = 0; i < 63; i++) {
-    if (v->vtable_name == wuffs_base__image_decoder__vtable_name) {
-      const wuffs_base__image_decoder__func_ptrs* func_ptrs =
-          (const wuffs_base__image_decoder__func_ptrs*)(v->function_pointers);
-      return (*func_ptrs->set_quirk_enabled)(self, a_quirk, a_enabled);
-    } else if (v->vtable_name == NULL) {
-      break;
-    }
-    v++;
-  }
-
-  return wuffs_base__make_empty_struct();
-}
-
-WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
-wuffs_base__image_decoder__set_report_metadata(wuffs_base__image_decoder* self,
-                                               uint32_t a_fourcc,
-                                               bool a_report) {
-  if (!self) {
-    return wuffs_base__make_empty_struct();
-  }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    return wuffs_base__make_empty_struct();
-  }
-
-  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
-  int i;
-  for (i = 0; i < 63; i++) {
-    if (v->vtable_name == wuffs_base__image_decoder__vtable_name) {
-      const wuffs_base__image_decoder__func_ptrs* func_ptrs =
-          (const wuffs_base__image_decoder__func_ptrs*)(v->function_pointers);
-      return (*func_ptrs->set_report_metadata)(self, a_fourcc, a_report);
-    } else if (v->vtable_name == NULL) {
-      break;
-    }
-    v++;
-  }
-
-  return wuffs_base__make_empty_struct();
-}
-
-WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
-wuffs_base__image_decoder__tell_me_more(wuffs_base__image_decoder* self,
-                                        wuffs_base__io_buffer* a_dst,
-                                        wuffs_base__more_information* a_minfo,
-                                        wuffs_base__io_buffer* a_src) {
-  if (!self) {
-    return wuffs_base__make_status(wuffs_base__error__bad_receiver);
-  }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    return wuffs_base__make_status(
-        (self->private_impl.magic == WUFFS_BASE__DISABLED)
-            ? wuffs_base__error__disabled_by_previous_error
-            : wuffs_base__error__initialize_not_called);
-  }
-
-  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
-  int i;
-  for (i = 0; i < 63; i++) {
-    if (v->vtable_name == wuffs_base__image_decoder__vtable_name) {
-      const wuffs_base__image_decoder__func_ptrs* func_ptrs =
-          (const wuffs_base__image_decoder__func_ptrs*)(v->function_pointers);
-      return (*func_ptrs->tell_me_more)(self, a_dst, a_minfo, a_src);
-    } else if (v->vtable_name == NULL) {
-      break;
-    }
-    v++;
-  }
-
-  return wuffs_base__make_status(wuffs_base__error__bad_vtable);
-}
-
-WUFFS_BASE__MAYBE_STATIC wuffs_base__range_ii_u64  //
-wuffs_base__image_decoder__workbuf_len(const wuffs_base__image_decoder* self) {
-  if (!self) {
-    return wuffs_base__utility__empty_range_ii_u64();
-  }
-  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
-      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
-    return wuffs_base__utility__empty_range_ii_u64();
-  }
-
-  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
-  int i;
-  for (i = 0; i < 63; i++) {
-    if (v->vtable_name == wuffs_base__image_decoder__vtable_name) {
-      const wuffs_base__image_decoder__func_ptrs* func_ptrs =
-          (const wuffs_base__image_decoder__func_ptrs*)(v->function_pointers);
-      return (*func_ptrs->workbuf_len)(self);
-    } else if (v->vtable_name == NULL) {
-      break;
-    }
-    v++;
-  }
-
-  return wuffs_base__utility__empty_range_ii_u64();
-}
-
-// --------
-
 const char* wuffs_base__io_transformer__vtable_name =
     "{vtable}wuffs_base__io_transformer";
 
-WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
-wuffs_base__io_transformer__set_quirk_enabled(wuffs_base__io_transformer* self,
-                                              uint32_t a_quirk,
-                                              bool a_enabled) {
-  if (!self) {
-    return wuffs_base__make_empty_struct();
-  }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    return wuffs_base__make_empty_struct();
-  }
-
-  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
-  int i;
-  for (i = 0; i < 63; i++) {
-    if (v->vtable_name == wuffs_base__io_transformer__vtable_name) {
-      const wuffs_base__io_transformer__func_ptrs* func_ptrs =
-          (const wuffs_base__io_transformer__func_ptrs*)(v->function_pointers);
-      return (*func_ptrs->set_quirk_enabled)(self, a_quirk, a_enabled);
-    } else if (v->vtable_name == NULL) {
-      break;
-    }
-    v++;
-  }
-
-  return wuffs_base__make_empty_struct();
-}
-
-WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
-wuffs_base__io_transformer__transform_io(wuffs_base__io_transformer* self,
-                                         wuffs_base__io_buffer* a_dst,
-                                         wuffs_base__io_buffer* a_src,
-                                         wuffs_base__slice_u8 a_workbuf) {
-  if (!self) {
-    return wuffs_base__make_status(wuffs_base__error__bad_receiver);
-  }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    return wuffs_base__make_status(
-        (self->private_impl.magic == WUFFS_BASE__DISABLED)
-            ? wuffs_base__error__disabled_by_previous_error
-            : wuffs_base__error__initialize_not_called);
-  }
-
-  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
-  int i;
-  for (i = 0; i < 63; i++) {
-    if (v->vtable_name == wuffs_base__io_transformer__vtable_name) {
-      const wuffs_base__io_transformer__func_ptrs* func_ptrs =
-          (const wuffs_base__io_transformer__func_ptrs*)(v->function_pointers);
-      return (*func_ptrs->transform_io)(self, a_dst, a_src, a_workbuf);
-    } else if (v->vtable_name == NULL) {
-      break;
-    }
-    v++;
-  }
-
-  return wuffs_base__make_status(wuffs_base__error__bad_vtable);
-}
-
-WUFFS_BASE__MAYBE_STATIC wuffs_base__range_ii_u64  //
-wuffs_base__io_transformer__workbuf_len(
-    const wuffs_base__io_transformer* self) {
-  if (!self) {
-    return wuffs_base__utility__empty_range_ii_u64();
-  }
-  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
-      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
-    return wuffs_base__utility__empty_range_ii_u64();
-  }
-
-  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
-  int i;
-  for (i = 0; i < 63; i++) {
-    if (v->vtable_name == wuffs_base__io_transformer__vtable_name) {
-      const wuffs_base__io_transformer__func_ptrs* func_ptrs =
-          (const wuffs_base__io_transformer__func_ptrs*)(v->function_pointers);
-      return (*func_ptrs->workbuf_len)(self);
-    } else if (v->vtable_name == NULL) {
-      break;
-    }
-    v++;
-  }
-
-  return wuffs_base__utility__empty_range_ii_u64();
-}
-
-// --------
-
 const char* wuffs_base__token_decoder__vtable_name =
     "{vtable}wuffs_base__token_decoder";
-
-WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
-wuffs_base__token_decoder__decode_tokens(wuffs_base__token_decoder* self,
-                                         wuffs_base__token_buffer* a_dst,
-                                         wuffs_base__io_buffer* a_src,
-                                         wuffs_base__slice_u8 a_workbuf) {
-  if (!self) {
-    return wuffs_base__make_status(wuffs_base__error__bad_receiver);
-  }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    return wuffs_base__make_status(
-        (self->private_impl.magic == WUFFS_BASE__DISABLED)
-            ? wuffs_base__error__disabled_by_previous_error
-            : wuffs_base__error__initialize_not_called);
-  }
-
-  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
-  int i;
-  for (i = 0; i < 63; i++) {
-    if (v->vtable_name == wuffs_base__token_decoder__vtable_name) {
-      const wuffs_base__token_decoder__func_ptrs* func_ptrs =
-          (const wuffs_base__token_decoder__func_ptrs*)(v->function_pointers);
-      return (*func_ptrs->decode_tokens)(self, a_dst, a_src, a_workbuf);
-    } else if (v->vtable_name == NULL) {
-      break;
-    }
-    v++;
-  }
-
-  return wuffs_base__make_status(wuffs_base__error__bad_vtable);
-}
-
-WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
-wuffs_base__token_decoder__set_quirk_enabled(wuffs_base__token_decoder* self,
-                                             uint32_t a_quirk,
-                                             bool a_enabled) {
-  if (!self) {
-    return wuffs_base__make_empty_struct();
-  }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    return wuffs_base__make_empty_struct();
-  }
-
-  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
-  int i;
-  for (i = 0; i < 63; i++) {
-    if (v->vtable_name == wuffs_base__token_decoder__vtable_name) {
-      const wuffs_base__token_decoder__func_ptrs* func_ptrs =
-          (const wuffs_base__token_decoder__func_ptrs*)(v->function_pointers);
-      return (*func_ptrs->set_quirk_enabled)(self, a_quirk, a_enabled);
-    } else if (v->vtable_name == NULL) {
-      break;
-    }
-    v++;
-  }
-
-  return wuffs_base__make_empty_struct();
-}
-
-WUFFS_BASE__MAYBE_STATIC wuffs_base__range_ii_u64  //
-wuffs_base__token_decoder__workbuf_len(const wuffs_base__token_decoder* self) {
-  if (!self) {
-    return wuffs_base__utility__empty_range_ii_u64();
-  }
-  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
-      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
-    return wuffs_base__utility__empty_range_ii_u64();
-  }
-
-  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
-  int i;
-  for (i = 0; i < 63; i++) {
-    if (v->vtable_name == wuffs_base__token_decoder__vtable_name) {
-      const wuffs_base__token_decoder__func_ptrs* func_ptrs =
-          (const wuffs_base__token_decoder__func_ptrs*)(v->function_pointers);
-      return (*func_ptrs->workbuf_len)(self);
-    } else if (v->vtable_name == NULL) {
-      break;
-    }
-    v++;
-  }
-
-  return wuffs_base__utility__empty_range_ii_u64();
-}
 
 // ---------------- Images
 
@@ -9292,6 +8724,587 @@ wuffs_base__ascii__longest_valid_prefix(wuffs_base__slice_u8 s) {
 #endif  // !defined(WUFFS_CONFIG__MODULES) ||
         // defined(WUFFS_CONFIG__MODULE__BASE)  ||
         // defined(WUFFS_CONFIG__MODULE__BASE__CORE)
+
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BASE) || \
+    defined(WUFFS_CONFIG__MODULE__BASE__INTERFACES)
+
+// ---------------- Interface Definitions.
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
+wuffs_base__hasher_u32__set_quirk_enabled(wuffs_base__hasher_u32* self,
+                                          uint32_t a_quirk,
+                                          bool a_enabled) {
+  if (!self) {
+    return wuffs_base__make_empty_struct();
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_empty_struct();
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__hasher_u32__vtable_name) {
+      const wuffs_base__hasher_u32__func_ptrs* func_ptrs =
+          (const wuffs_base__hasher_u32__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->set_quirk_enabled)(self, a_quirk, a_enabled);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return wuffs_base__make_empty_struct();
+}
+
+WUFFS_BASE__MAYBE_STATIC uint32_t  //
+wuffs_base__hasher_u32__update_u32(wuffs_base__hasher_u32* self,
+                                   wuffs_base__slice_u8 a_x) {
+  if (!self) {
+    return 0;
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return 0;
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__hasher_u32__vtable_name) {
+      const wuffs_base__hasher_u32__func_ptrs* func_ptrs =
+          (const wuffs_base__hasher_u32__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->update_u32)(self, a_x);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return 0;
+}
+
+// --------
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
+wuffs_base__image_decoder__decode_frame(
+    wuffs_base__image_decoder* self,
+    wuffs_base__pixel_buffer* a_dst,
+    wuffs_base__io_buffer* a_src,
+    wuffs_base__pixel_blend a_blend,
+    wuffs_base__slice_u8 a_workbuf,
+    wuffs_base__decode_frame_options* a_opts) {
+  if (!self) {
+    return wuffs_base__make_status(wuffs_base__error__bad_receiver);
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_status(
+        (self->private_impl.magic == WUFFS_BASE__DISABLED)
+            ? wuffs_base__error__disabled_by_previous_error
+            : wuffs_base__error__initialize_not_called);
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__image_decoder__vtable_name) {
+      const wuffs_base__image_decoder__func_ptrs* func_ptrs =
+          (const wuffs_base__image_decoder__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->decode_frame)(self, a_dst, a_src, a_blend, a_workbuf,
+                                        a_opts);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return wuffs_base__make_status(wuffs_base__error__bad_vtable);
+}
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
+wuffs_base__image_decoder__decode_frame_config(wuffs_base__image_decoder* self,
+                                               wuffs_base__frame_config* a_dst,
+                                               wuffs_base__io_buffer* a_src) {
+  if (!self) {
+    return wuffs_base__make_status(wuffs_base__error__bad_receiver);
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_status(
+        (self->private_impl.magic == WUFFS_BASE__DISABLED)
+            ? wuffs_base__error__disabled_by_previous_error
+            : wuffs_base__error__initialize_not_called);
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__image_decoder__vtable_name) {
+      const wuffs_base__image_decoder__func_ptrs* func_ptrs =
+          (const wuffs_base__image_decoder__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->decode_frame_config)(self, a_dst, a_src);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return wuffs_base__make_status(wuffs_base__error__bad_vtable);
+}
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
+wuffs_base__image_decoder__decode_image_config(wuffs_base__image_decoder* self,
+                                               wuffs_base__image_config* a_dst,
+                                               wuffs_base__io_buffer* a_src) {
+  if (!self) {
+    return wuffs_base__make_status(wuffs_base__error__bad_receiver);
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_status(
+        (self->private_impl.magic == WUFFS_BASE__DISABLED)
+            ? wuffs_base__error__disabled_by_previous_error
+            : wuffs_base__error__initialize_not_called);
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__image_decoder__vtable_name) {
+      const wuffs_base__image_decoder__func_ptrs* func_ptrs =
+          (const wuffs_base__image_decoder__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->decode_image_config)(self, a_dst, a_src);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return wuffs_base__make_status(wuffs_base__error__bad_vtable);
+}
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__rect_ie_u32  //
+wuffs_base__image_decoder__frame_dirty_rect(
+    const wuffs_base__image_decoder* self) {
+  if (!self) {
+    return wuffs_base__utility__empty_rect_ie_u32();
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return wuffs_base__utility__empty_rect_ie_u32();
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__image_decoder__vtable_name) {
+      const wuffs_base__image_decoder__func_ptrs* func_ptrs =
+          (const wuffs_base__image_decoder__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->frame_dirty_rect)(self);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return wuffs_base__utility__empty_rect_ie_u32();
+}
+
+WUFFS_BASE__MAYBE_STATIC uint32_t  //
+wuffs_base__image_decoder__num_animation_loops(
+    const wuffs_base__image_decoder* self) {
+  if (!self) {
+    return 0;
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return 0;
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__image_decoder__vtable_name) {
+      const wuffs_base__image_decoder__func_ptrs* func_ptrs =
+          (const wuffs_base__image_decoder__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->num_animation_loops)(self);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return 0;
+}
+
+WUFFS_BASE__MAYBE_STATIC uint64_t  //
+wuffs_base__image_decoder__num_decoded_frame_configs(
+    const wuffs_base__image_decoder* self) {
+  if (!self) {
+    return 0;
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return 0;
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__image_decoder__vtable_name) {
+      const wuffs_base__image_decoder__func_ptrs* func_ptrs =
+          (const wuffs_base__image_decoder__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->num_decoded_frame_configs)(self);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return 0;
+}
+
+WUFFS_BASE__MAYBE_STATIC uint64_t  //
+wuffs_base__image_decoder__num_decoded_frames(
+    const wuffs_base__image_decoder* self) {
+  if (!self) {
+    return 0;
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return 0;
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__image_decoder__vtable_name) {
+      const wuffs_base__image_decoder__func_ptrs* func_ptrs =
+          (const wuffs_base__image_decoder__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->num_decoded_frames)(self);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return 0;
+}
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
+wuffs_base__image_decoder__restart_frame(wuffs_base__image_decoder* self,
+                                         uint64_t a_index,
+                                         uint64_t a_io_position) {
+  if (!self) {
+    return wuffs_base__make_status(wuffs_base__error__bad_receiver);
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_status(
+        (self->private_impl.magic == WUFFS_BASE__DISABLED)
+            ? wuffs_base__error__disabled_by_previous_error
+            : wuffs_base__error__initialize_not_called);
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__image_decoder__vtable_name) {
+      const wuffs_base__image_decoder__func_ptrs* func_ptrs =
+          (const wuffs_base__image_decoder__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->restart_frame)(self, a_index, a_io_position);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return wuffs_base__make_status(wuffs_base__error__bad_vtable);
+}
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
+wuffs_base__image_decoder__set_quirk_enabled(wuffs_base__image_decoder* self,
+                                             uint32_t a_quirk,
+                                             bool a_enabled) {
+  if (!self) {
+    return wuffs_base__make_empty_struct();
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_empty_struct();
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__image_decoder__vtable_name) {
+      const wuffs_base__image_decoder__func_ptrs* func_ptrs =
+          (const wuffs_base__image_decoder__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->set_quirk_enabled)(self, a_quirk, a_enabled);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return wuffs_base__make_empty_struct();
+}
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
+wuffs_base__image_decoder__set_report_metadata(wuffs_base__image_decoder* self,
+                                               uint32_t a_fourcc,
+                                               bool a_report) {
+  if (!self) {
+    return wuffs_base__make_empty_struct();
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_empty_struct();
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__image_decoder__vtable_name) {
+      const wuffs_base__image_decoder__func_ptrs* func_ptrs =
+          (const wuffs_base__image_decoder__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->set_report_metadata)(self, a_fourcc, a_report);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return wuffs_base__make_empty_struct();
+}
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
+wuffs_base__image_decoder__tell_me_more(wuffs_base__image_decoder* self,
+                                        wuffs_base__io_buffer* a_dst,
+                                        wuffs_base__more_information* a_minfo,
+                                        wuffs_base__io_buffer* a_src) {
+  if (!self) {
+    return wuffs_base__make_status(wuffs_base__error__bad_receiver);
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_status(
+        (self->private_impl.magic == WUFFS_BASE__DISABLED)
+            ? wuffs_base__error__disabled_by_previous_error
+            : wuffs_base__error__initialize_not_called);
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__image_decoder__vtable_name) {
+      const wuffs_base__image_decoder__func_ptrs* func_ptrs =
+          (const wuffs_base__image_decoder__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->tell_me_more)(self, a_dst, a_minfo, a_src);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return wuffs_base__make_status(wuffs_base__error__bad_vtable);
+}
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__range_ii_u64  //
+wuffs_base__image_decoder__workbuf_len(const wuffs_base__image_decoder* self) {
+  if (!self) {
+    return wuffs_base__utility__empty_range_ii_u64();
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return wuffs_base__utility__empty_range_ii_u64();
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__image_decoder__vtable_name) {
+      const wuffs_base__image_decoder__func_ptrs* func_ptrs =
+          (const wuffs_base__image_decoder__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->workbuf_len)(self);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return wuffs_base__utility__empty_range_ii_u64();
+}
+
+// --------
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
+wuffs_base__io_transformer__set_quirk_enabled(wuffs_base__io_transformer* self,
+                                              uint32_t a_quirk,
+                                              bool a_enabled) {
+  if (!self) {
+    return wuffs_base__make_empty_struct();
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_empty_struct();
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__io_transformer__vtable_name) {
+      const wuffs_base__io_transformer__func_ptrs* func_ptrs =
+          (const wuffs_base__io_transformer__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->set_quirk_enabled)(self, a_quirk, a_enabled);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return wuffs_base__make_empty_struct();
+}
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
+wuffs_base__io_transformer__transform_io(wuffs_base__io_transformer* self,
+                                         wuffs_base__io_buffer* a_dst,
+                                         wuffs_base__io_buffer* a_src,
+                                         wuffs_base__slice_u8 a_workbuf) {
+  if (!self) {
+    return wuffs_base__make_status(wuffs_base__error__bad_receiver);
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_status(
+        (self->private_impl.magic == WUFFS_BASE__DISABLED)
+            ? wuffs_base__error__disabled_by_previous_error
+            : wuffs_base__error__initialize_not_called);
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__io_transformer__vtable_name) {
+      const wuffs_base__io_transformer__func_ptrs* func_ptrs =
+          (const wuffs_base__io_transformer__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->transform_io)(self, a_dst, a_src, a_workbuf);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return wuffs_base__make_status(wuffs_base__error__bad_vtable);
+}
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__range_ii_u64  //
+wuffs_base__io_transformer__workbuf_len(
+    const wuffs_base__io_transformer* self) {
+  if (!self) {
+    return wuffs_base__utility__empty_range_ii_u64();
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return wuffs_base__utility__empty_range_ii_u64();
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__io_transformer__vtable_name) {
+      const wuffs_base__io_transformer__func_ptrs* func_ptrs =
+          (const wuffs_base__io_transformer__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->workbuf_len)(self);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return wuffs_base__utility__empty_range_ii_u64();
+}
+
+// --------
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
+wuffs_base__token_decoder__decode_tokens(wuffs_base__token_decoder* self,
+                                         wuffs_base__token_buffer* a_dst,
+                                         wuffs_base__io_buffer* a_src,
+                                         wuffs_base__slice_u8 a_workbuf) {
+  if (!self) {
+    return wuffs_base__make_status(wuffs_base__error__bad_receiver);
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_status(
+        (self->private_impl.magic == WUFFS_BASE__DISABLED)
+            ? wuffs_base__error__disabled_by_previous_error
+            : wuffs_base__error__initialize_not_called);
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__token_decoder__vtable_name) {
+      const wuffs_base__token_decoder__func_ptrs* func_ptrs =
+          (const wuffs_base__token_decoder__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->decode_tokens)(self, a_dst, a_src, a_workbuf);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return wuffs_base__make_status(wuffs_base__error__bad_vtable);
+}
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
+wuffs_base__token_decoder__set_quirk_enabled(wuffs_base__token_decoder* self,
+                                             uint32_t a_quirk,
+                                             bool a_enabled) {
+  if (!self) {
+    return wuffs_base__make_empty_struct();
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_empty_struct();
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__token_decoder__vtable_name) {
+      const wuffs_base__token_decoder__func_ptrs* func_ptrs =
+          (const wuffs_base__token_decoder__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->set_quirk_enabled)(self, a_quirk, a_enabled);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return wuffs_base__make_empty_struct();
+}
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__range_ii_u64  //
+wuffs_base__token_decoder__workbuf_len(const wuffs_base__token_decoder* self) {
+  if (!self) {
+    return wuffs_base__utility__empty_range_ii_u64();
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return wuffs_base__utility__empty_range_ii_u64();
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__token_decoder__vtable_name) {
+      const wuffs_base__token_decoder__func_ptrs* func_ptrs =
+          (const wuffs_base__token_decoder__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->workbuf_len)(self);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return wuffs_base__utility__empty_range_ii_u64();
+}
+
+#endif  // !defined(WUFFS_CONFIG__MODULES) ||
+        // defined(WUFFS_CONFIG__MODULE__BASE) ||
+        // defined(WUFFS_CONFIG__MODULE__BASE__INTERFACES)
 
 #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BASE) || \
     defined(WUFFS_CONFIG__MODULE__BASE__F64CONV)

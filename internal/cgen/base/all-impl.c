@@ -110,7 +110,7 @@ const uint64_t wuffs_base__low_bits_mask__u64[65] = {
 
 // !! INSERT wuffs_base__status strings.
 
-// !! INSERT InterfaceDefinitions.
+// !! INSERT vtable names.
 
 // !! INSERT base/image-impl.c.
 
@@ -119,6 +119,15 @@ const uint64_t wuffs_base__low_bits_mask__u64[65] = {
 #endif  // !defined(WUFFS_CONFIG__MODULES) ||
         // defined(WUFFS_CONFIG__MODULE__BASE)  ||
         // defined(WUFFS_CONFIG__MODULE__BASE__CORE)
+
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BASE) || \
+    defined(WUFFS_CONFIG__MODULE__BASE__INTERFACES)
+
+// !! INSERT InterfaceDefinitions.
+
+#endif  // !defined(WUFFS_CONFIG__MODULES) ||
+        // defined(WUFFS_CONFIG__MODULE__BASE) ||
+        // defined(WUFFS_CONFIG__MODULE__BASE__INTERFACES)
 
 #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BASE) || \
     defined(WUFFS_CONFIG__MODULE__BASE__F64CONV)
