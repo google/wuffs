@@ -381,7 +381,7 @@ var Funcs = []string{
 		"dst_pixfmt: pixel_format, dst_palette: slice u8," +
 		"src_pixfmt: pixel_format, src_palette: slice u8, blend: pixel_blend) status",
 	"pixel_swizzler.swizzle_interleaved!(" +
-		"dst: slice u8, src: slice u8) u64",
+		"dst: slice u8, dst_palette: slice u8, src: slice u8) u64",
 }
 
 var Interfaces = []string{

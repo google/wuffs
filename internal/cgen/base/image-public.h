@@ -1287,16 +1287,16 @@ wuffs_base__pixel_palette__closest_element(
 // --------
 
 // TODO: should the func type take restrict pointers?
-typedef uint64_t (*wuffs_base__pixel_swizzler__func)(const uint8_t* scratch1024,
-                                                     wuffs_base__slice_u8 dst,
-                                                     wuffs_base__slice_u8 src);
+typedef uint64_t (*wuffs_base__pixel_swizzler__func)(
+    wuffs_base__slice_u8 dst,
+    wuffs_base__slice_u8 dst_palette,
+    wuffs_base__slice_u8 src);
 
 typedef struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so.
   struct {
     wuffs_base__pixel_swizzler__func func;
-    uint8_t scratch1024[1024];
   } private_impl;
 
 #ifdef __cplusplus
@@ -1306,6 +1306,7 @@ typedef struct {
                                     wuffs_base__slice_u8 src_palette,
                                     wuffs_base__pixel_blend blend);
   inline uint64_t swizzle_interleaved(wuffs_base__slice_u8 dst,
+                                      wuffs_base__slice_u8 dst_palette,
                                       wuffs_base__slice_u8 src) const;
 #endif  // __cplusplus
 
@@ -1335,6 +1336,7 @@ WUFFS_BASE__MAYBE_STATIC uint64_t  //
 wuffs_base__pixel_swizzler__swizzle_interleaved(
     const wuffs_base__pixel_swizzler* p,
     wuffs_base__slice_u8 dst,
+    wuffs_base__slice_u8 dst_palette,
     wuffs_base__slice_u8 src);
 
 #ifdef __cplusplus
@@ -1352,8 +1354,10 @@ wuffs_base__pixel_swizzler::prepare(wuffs_base__pixel_format dst_format,
 uint64_t  //
 wuffs_base__pixel_swizzler::swizzle_interleaved(
     wuffs_base__slice_u8 dst,
+    wuffs_base__slice_u8 dst_palette,
     wuffs_base__slice_u8 src) const {
-  return wuffs_base__pixel_swizzler__swizzle_interleaved(this, dst, src);
+  return wuffs_base__pixel_swizzler__swizzle_interleaved(this, dst, dst_palette,
+                                                         src);
 }
 
 #endif  // __cplusplus
