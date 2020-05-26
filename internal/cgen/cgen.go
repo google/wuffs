@@ -131,7 +131,6 @@ func Do(args []string) error {
 				"// !! INSERT base/all-public.h.\n":        insertBaseAllPublicH,
 				"// !! INSERT base/copyright\n":            insertBaseCopyright,
 				"// !! INSERT base/f64conv-submodule.c.\n": insertBaseF64ConvSubmoduleC,
-				"// !! INSERT base/image-impl.c.\n":        insertBaseImageImplC,
 				"// !! INSERT base/pixconv-submodule.c.\n": insertBasePixConvSubmoduleC,
 				"// !! INSERT base/strconv-impl.c.\n":      insertBaseStrConvImplC,
 				"// !! INSERT vtable names.\n": func(b *buffer) error {
@@ -348,12 +347,6 @@ func insertBaseCopyright(buf *buffer) error {
 
 func insertBaseF64ConvSubmoduleC(buf *buffer) error {
 	buf.writes(baseF64ConvSubmoduleC)
-	buf.writeb('\n')
-	return nil
-}
-
-func insertBaseImageImplC(buf *buffer) error {
-	buf.writes(baseImageImplC)
 	buf.writeb('\n')
 	return nil
 }

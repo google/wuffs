@@ -74,7 +74,6 @@ func genBase(out *bytes.Buffer) error {
 		filename, varname string
 	}{
 		{"base/all-impl.c", "baseAllImplC"},
-		{"base/image-impl.c", "baseImageImplC"},
 		{"base/strconv-impl.c", "baseStrConvImplC"},
 
 		{"base/f64conv-submodule.c", "baseF64ConvSubmoduleC"},

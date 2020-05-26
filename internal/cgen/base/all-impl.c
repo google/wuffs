@@ -108,11 +108,14 @@ const uint64_t wuffs_base__low_bits_mask__u64[65] = {
     0x7FFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF,
 };
 
+const uint32_t wuffs_base__pixel_format__bits_per_channel[16] = {
+    0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+    0x08, 0x0A, 0x0C, 0x10, 0x18, 0x20, 0x30, 0x40,
+};
+
 // !! INSERT wuffs_base__status strings.
 
 // !! INSERT vtable names.
-
-// !! INSERT base/image-impl.c.
 
 // !! INSERT base/strconv-impl.c.
 
