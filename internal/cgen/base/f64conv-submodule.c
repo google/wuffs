@@ -1011,7 +1011,7 @@ fail:
 
 // --------
 
-wuffs_base__result_f64  //
+static wuffs_base__result_f64  //
 wuffs_base__parse_number_f64_special(wuffs_base__slice_u8 s,
                                      const char* fallback_status_repr) {
   do {
@@ -1112,7 +1112,7 @@ fallback:
   } while (0);
 }
 
-wuffs_base__result_f64  //
+WUFFS_BASE__MAYBE_STATIC wuffs_base__result_f64  //
 wuffs_base__parse_number_f64(wuffs_base__slice_u8 s) {
   wuffs_base__private_implementation__medium_prec_bin m;
   wuffs_base__private_implementation__high_prec_dec h;

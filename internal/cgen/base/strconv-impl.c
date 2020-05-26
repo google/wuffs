@@ -105,7 +105,7 @@ static const uint8_t wuffs_base__parse_number__hexadecimal_digits[256] = {
 
 // --------
 
-wuffs_base__result_i64  //
+WUFFS_BASE__MAYBE_STATIC wuffs_base__result_i64  //
 wuffs_base__parse_number_i64(wuffs_base__slice_u8 s) {
   uint8_t* p = s.ptr;
   uint8_t* q = s.ptr + s.len;
@@ -166,7 +166,7 @@ fail_out_of_bounds:
   } while (0);
 }
 
-wuffs_base__result_u64  //
+WUFFS_BASE__MAYBE_STATIC wuffs_base__result_u64  //
 wuffs_base__parse_number_u64(wuffs_base__slice_u8 s) {
   uint8_t* p = s.ptr;
   uint8_t* q = s.ptr + s.len;
@@ -301,7 +301,7 @@ fail_out_of_bounds:
 
 // ---------------- Hexadecimal
 
-size_t  //
+WUFFS_BASE__MAYBE_STATIC size_t  //
 wuffs_base__hexadecimal__decode2(wuffs_base__slice_u8 dst,
                                  wuffs_base__slice_u8 src) {
   size_t src_len2 = src.len / 2;
@@ -320,7 +320,7 @@ wuffs_base__hexadecimal__decode2(wuffs_base__slice_u8 dst,
   return len;
 }
 
-size_t  //
+WUFFS_BASE__MAYBE_STATIC size_t  //
 wuffs_base__hexadecimal__decode4(wuffs_base__slice_u8 dst,
                                  wuffs_base__slice_u8 src) {
   size_t src_len4 = src.len / 4;
@@ -341,7 +341,7 @@ wuffs_base__hexadecimal__decode4(wuffs_base__slice_u8 dst,
 
 // ---------------- Unicode and UTF-8
 
-size_t  //
+WUFFS_BASE__MAYBE_STATIC size_t  //
 wuffs_base__utf_8__encode(wuffs_base__slice_u8 dst, uint32_t code_point) {
   if (code_point <= 0x7F) {
     if (dst.len >= 1) {
@@ -436,7 +436,7 @@ static const uint8_t wuffs_base__utf_8__byte_length_minus_1[256] = {
     // 8     9     A     B     C     D     E     F
 };
 
-wuffs_base__utf_8__next__output  //
+WUFFS_BASE__MAYBE_STATIC wuffs_base__utf_8__next__output  //
 wuffs_base__utf_8__next(wuffs_base__slice_u8 s) {
   if (s.len == 0) {
     return wuffs_base__make_utf_8__next__output(0, 0);
@@ -492,7 +492,7 @@ wuffs_base__utf_8__next(wuffs_base__slice_u8 s) {
       WUFFS_BASE__UNICODE_REPLACEMENT_CHARACTER, 1);
 }
 
-size_t  //
+WUFFS_BASE__MAYBE_STATIC size_t  //
 wuffs_base__utf_8__longest_valid_prefix(wuffs_base__slice_u8 s) {
   // TODO: possibly optimize the all-ASCII case (4 or 8 bytes at a time).
   //
@@ -510,7 +510,7 @@ wuffs_base__utf_8__longest_valid_prefix(wuffs_base__slice_u8 s) {
   return original_len - s.len;
 }
 
-size_t  //
+WUFFS_BASE__MAYBE_STATIC size_t  //
 wuffs_base__ascii__longest_valid_prefix(wuffs_base__slice_u8 s) {
   // TODO: possibly optimize this by checking 4 or 8 bytes at a time.
   uint8_t* original_ptr = s.ptr;

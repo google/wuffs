@@ -1135,7 +1135,7 @@ wuffs_base__pixel_swizzler__prepare__bgra_nonpremul(
 
 // --------
 
-wuffs_base__status  //
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
                                     wuffs_base__pixel_format dst_format,
                                     wuffs_base__slice_u8 dst_palette,
@@ -1177,7 +1177,7 @@ wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
       func ? NULL : wuffs_base__error__unsupported_pixel_swizzler_option);
 }
 
-uint64_t  //
+WUFFS_BASE__MAYBE_STATIC uint64_t  //
 wuffs_base__pixel_swizzler__swizzle_interleaved(
     const wuffs_base__pixel_swizzler* p,
     wuffs_base__slice_u8 dst,

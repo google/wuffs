@@ -1189,12 +1189,12 @@ wuffs_base__pixel_buffer__plane(wuffs_base__pixel_buffer* pb, uint32_t p) {
   return ret;
 }
 
-wuffs_base__color_u32_argb_premul  //
+WUFFS_BASE__MAYBE_STATIC wuffs_base__color_u32_argb_premul  //
 wuffs_base__pixel_buffer__color_u32_at(const wuffs_base__pixel_buffer* pb,
                                        uint32_t x,
                                        uint32_t y);
 
-wuffs_base__status  //
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_base__pixel_buffer__set_color_u32_at(
     wuffs_base__pixel_buffer* pb,
     uint32_t x,
@@ -1278,7 +1278,7 @@ typedef struct {
 //
 // Applying this function on a per-pixel basis will not produce whole-of-image
 // dithering.
-uint8_t  //
+WUFFS_BASE__MAYBE_STATIC uint8_t  //
 wuffs_base__pixel_palette__closest_element(
     wuffs_base__slice_u8 palette_slice,
     wuffs_base__pixel_format palette_format,
@@ -1312,7 +1312,13 @@ typedef struct {
 
 } wuffs_base__pixel_swizzler;
 
-wuffs_base__status  //
+// wuffs_base__pixel_swizzler__prepare readies the pixel swizzler so that its
+// other methods may be called.
+//
+// For modular builds that divide the base module into sub-modules, using this
+// function requires the WUFFS_CONFIG__MODULE__BASE__PIXCONV sub-module, not
+// just WUFFS_CONFIG__MODULE__BASE__CORE.
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
                                     wuffs_base__pixel_format dst_format,
                                     wuffs_base__slice_u8 dst_palette,
@@ -1320,7 +1326,13 @@ wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
                                     wuffs_base__slice_u8 src_palette,
                                     wuffs_base__pixel_blend blend);
 
-uint64_t  //
+// wuffs_base__pixel_swizzler__swizzle_interleaved converts pixels from a
+// source format to a destination format.
+//
+// For modular builds that divide the base module into sub-modules, using this
+// function requires the WUFFS_CONFIG__MODULE__BASE__PIXCONV sub-module, not
+// just WUFFS_CONFIG__MODULE__BASE__CORE.
+WUFFS_BASE__MAYBE_STATIC uint64_t  //
 wuffs_base__pixel_swizzler__swizzle_interleaved(
     const wuffs_base__pixel_swizzler* p,
     wuffs_base__slice_u8 dst,

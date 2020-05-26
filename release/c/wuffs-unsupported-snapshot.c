@@ -3675,12 +3675,12 @@ wuffs_base__pixel_buffer__plane(wuffs_base__pixel_buffer* pb, uint32_t p) {
   return ret;
 }
 
-wuffs_base__color_u32_argb_premul  //
+WUFFS_BASE__MAYBE_STATIC wuffs_base__color_u32_argb_premul  //
 wuffs_base__pixel_buffer__color_u32_at(const wuffs_base__pixel_buffer* pb,
                                        uint32_t x,
                                        uint32_t y);
 
-wuffs_base__status  //
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_base__pixel_buffer__set_color_u32_at(
     wuffs_base__pixel_buffer* pb,
     uint32_t x,
@@ -3764,7 +3764,7 @@ typedef struct {
 //
 // Applying this function on a per-pixel basis will not produce whole-of-image
 // dithering.
-uint8_t  //
+WUFFS_BASE__MAYBE_STATIC uint8_t  //
 wuffs_base__pixel_palette__closest_element(
     wuffs_base__slice_u8 palette_slice,
     wuffs_base__pixel_format palette_format,
@@ -3798,7 +3798,13 @@ typedef struct {
 
 } wuffs_base__pixel_swizzler;
 
-wuffs_base__status  //
+// wuffs_base__pixel_swizzler__prepare readies the pixel swizzler so that its
+// other methods may be called.
+//
+// For modular builds that divide the base module into sub-modules, using this
+// function requires the WUFFS_CONFIG__MODULE__BASE__PIXCONV sub-module, not
+// just WUFFS_CONFIG__MODULE__BASE__CORE.
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
                                     wuffs_base__pixel_format dst_format,
                                     wuffs_base__slice_u8 dst_palette,
@@ -3806,7 +3812,13 @@ wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
                                     wuffs_base__slice_u8 src_palette,
                                     wuffs_base__pixel_blend blend);
 
-uint64_t  //
+// wuffs_base__pixel_swizzler__swizzle_interleaved converts pixels from a
+// source format to a destination format.
+//
+// For modular builds that divide the base module into sub-modules, using this
+// function requires the WUFFS_CONFIG__MODULE__BASE__PIXCONV sub-module, not
+// just WUFFS_CONFIG__MODULE__BASE__CORE.
+WUFFS_BASE__MAYBE_STATIC uint64_t  //
 wuffs_base__pixel_swizzler__swizzle_interleaved(
     const wuffs_base__pixel_swizzler* p,
     wuffs_base__slice_u8 dst,
@@ -3846,7 +3858,7 @@ wuffs_base__pixel_swizzler::swizzle_interleaved(
 //
 // It is similar to wuffs_base__parse_number_u64 but it returns a signed
 // integer, not an unsigned integer. It also allows a leading '+' or '-'.
-wuffs_base__result_i64  //
+WUFFS_BASE__MAYBE_STATIC wuffs_base__result_i64  //
 wuffs_base__parse_number_i64(wuffs_base__slice_u8 s);
 
 // wuffs_base__parse_number_u64 parses the ASCII integer in s. For example, if
@@ -3873,7 +3885,7 @@ wuffs_base__parse_number_i64(wuffs_base__slice_u8 s);
 //  - It does allow arbitrary underscores, except inside the optional 2-byte
 //    opening "0d" or "0X" that denotes base-10 or base-16. For example,
 //    "__0D_1_002" would successfully parse as "one thousand and two".
-wuffs_base__result_u64  //
+WUFFS_BASE__MAYBE_STATIC wuffs_base__result_u64  //
 wuffs_base__parse_number_u64(wuffs_base__slice_u8 s);
 
 // ---------------- IEEE 754 Floating Point
@@ -3910,7 +3922,11 @@ wuffs_base__parse_number_u64(wuffs_base__slice_u8 s);
 //  - It does allow "inf", "+Infinity" and "-NAN", case insensitive, but it
 //    does not permit "nan" to be followed by an integer mantissa.
 //  - It does not allow hexadecimal floating point numbers.
-wuffs_base__result_f64  //
+//
+// For modular builds that divide the base module into sub-modules, using this
+// function requires the WUFFS_CONFIG__MODULE__BASE__F64CONV sub-module, not
+// just WUFFS_CONFIG__MODULE__BASE__CORE.
+WUFFS_BASE__MAYBE_STATIC wuffs_base__result_f64  //
 wuffs_base__parse_number_f64(wuffs_base__slice_u8 s);
 
 // wuffs_base__ieee_754_bit_representation__etc converts between a double
@@ -3953,7 +3969,7 @@ wuffs_base__ieee_754_bit_representation__to_f64(uint64_t u) {
 // It assumes that the src bytes are two hexadecimal digits (0-9, A-F, a-f),
 // repeated. It may write nonsense bytes if not, although it will not read or
 // write out of bounds.
-size_t  //
+WUFFS_BASE__MAYBE_STATIC size_t  //
 wuffs_base__hexadecimal__decode2(wuffs_base__slice_u8 dst,
                                  wuffs_base__slice_u8 src);
 
@@ -3966,7 +3982,7 @@ wuffs_base__hexadecimal__decode2(wuffs_base__slice_u8 dst,
 // It assumes that the src bytes are two ignored bytes and then two hexadecimal
 // digits (0-9, A-F, a-f), repeated. It may write nonsense bytes if not,
 // although it will not read or write out of bounds.
-size_t  //
+WUFFS_BASE__MAYBE_STATIC size_t  //
 wuffs_base__hexadecimal__decode4(wuffs_base__slice_u8 dst,
                                  wuffs_base__slice_u8 src);
 
@@ -4056,7 +4072,7 @@ wuffs_base__utf_8__next__output::is_valid() const {
 //
 // s will never be too short if its length is at least 4, also known as
 // WUFFS_BASE__UTF_8__BYTE_LENGTH__MAX_INCL.
-size_t  //
+WUFFS_BASE__MAYBE_STATIC size_t  //
 wuffs_base__utf_8__encode(wuffs_base__slice_u8 dst, uint32_t code_point);
 
 // wuffs_base__utf_8__next returns the next UTF-8 code point (and that code
@@ -4079,7 +4095,7 @@ wuffs_base__utf_8__encode(wuffs_base__slice_u8 dst, uint32_t code_point);
 // boundary occurs in the middle of a multi-byte UTF-8 encoding of a single
 // code point, then this function may return something invalid. It is the
 // caller's responsibility to split on or otherwise manage UTF-8 boundaries.
-wuffs_base__utf_8__next__output  //
+WUFFS_BASE__MAYBE_STATIC wuffs_base__utf_8__next__output  //
 wuffs_base__utf_8__next(wuffs_base__slice_u8 s);
 
 // wuffs_base__utf_8__longest_valid_prefix returns the largest n such that the
@@ -4091,7 +4107,7 @@ wuffs_base__utf_8__next(wuffs_base__slice_u8 s);
 // boundary occurs in the middle of a multi-byte UTF-8 encoding of a single
 // code point, then this function will return less than s.len. It is the
 // caller's responsibility to split on or otherwise manage UTF-8 boundaries.
-size_t  //
+WUFFS_BASE__MAYBE_STATIC size_t  //
 wuffs_base__utf_8__longest_valid_prefix(wuffs_base__slice_u8 s);
 
 // wuffs_base__ascii__longest_valid_prefix returns the largest n such that the
@@ -4099,7 +4115,7 @@ wuffs_base__utf_8__longest_valid_prefix(wuffs_base__slice_u8 s);
 //
 // In particular, it returns s.len if and only if all of s is valid ASCII.
 // Equivalently, when none of the bytes in s have the 0x80 high bit set.
-size_t  //
+WUFFS_BASE__MAYBE_STATIC size_t  //
 wuffs_base__ascii__longest_valid_prefix(wuffs_base__slice_u8 s);
 
 // ---------------- Interface Declarations.
@@ -8542,7 +8558,7 @@ wuffs_base__swap_u32_argb_abgr(uint32_t u) {
 
 // --------
 
-wuffs_base__color_u32_argb_premul  //
+WUFFS_BASE__MAYBE_STATIC wuffs_base__color_u32_argb_premul  //
 wuffs_base__pixel_buffer__color_u32_at(const wuffs_base__pixel_buffer* pb,
                                        uint32_t x,
                                        uint32_t y) {
@@ -8622,7 +8638,7 @@ wuffs_base__pixel_buffer__color_u32_at(const wuffs_base__pixel_buffer* pb,
   return 0;
 }
 
-wuffs_base__status  //
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_base__pixel_buffer__set_color_u32_at(
     wuffs_base__pixel_buffer* pb,
     uint32_t x,
@@ -8706,7 +8722,7 @@ wuffs_base__pixel_buffer__set_color_u32_at(
 
 // --------
 
-uint8_t  //
+WUFFS_BASE__MAYBE_STATIC uint8_t  //
 wuffs_base__pixel_palette__closest_element(
     wuffs_base__slice_u8 palette_slice,
     wuffs_base__pixel_format palette_format,
@@ -8857,7 +8873,7 @@ static const uint8_t wuffs_base__parse_number__hexadecimal_digits[256] = {
 
 // --------
 
-wuffs_base__result_i64  //
+WUFFS_BASE__MAYBE_STATIC wuffs_base__result_i64  //
 wuffs_base__parse_number_i64(wuffs_base__slice_u8 s) {
   uint8_t* p = s.ptr;
   uint8_t* q = s.ptr + s.len;
@@ -8918,7 +8934,7 @@ fail_out_of_bounds:
   } while (0);
 }
 
-wuffs_base__result_u64  //
+WUFFS_BASE__MAYBE_STATIC wuffs_base__result_u64  //
 wuffs_base__parse_number_u64(wuffs_base__slice_u8 s) {
   uint8_t* p = s.ptr;
   uint8_t* q = s.ptr + s.len;
@@ -9053,7 +9069,7 @@ fail_out_of_bounds:
 
 // ---------------- Hexadecimal
 
-size_t  //
+WUFFS_BASE__MAYBE_STATIC size_t  //
 wuffs_base__hexadecimal__decode2(wuffs_base__slice_u8 dst,
                                  wuffs_base__slice_u8 src) {
   size_t src_len2 = src.len / 2;
@@ -9072,7 +9088,7 @@ wuffs_base__hexadecimal__decode2(wuffs_base__slice_u8 dst,
   return len;
 }
 
-size_t  //
+WUFFS_BASE__MAYBE_STATIC size_t  //
 wuffs_base__hexadecimal__decode4(wuffs_base__slice_u8 dst,
                                  wuffs_base__slice_u8 src) {
   size_t src_len4 = src.len / 4;
@@ -9093,7 +9109,7 @@ wuffs_base__hexadecimal__decode4(wuffs_base__slice_u8 dst,
 
 // ---------------- Unicode and UTF-8
 
-size_t  //
+WUFFS_BASE__MAYBE_STATIC size_t  //
 wuffs_base__utf_8__encode(wuffs_base__slice_u8 dst, uint32_t code_point) {
   if (code_point <= 0x7F) {
     if (dst.len >= 1) {
@@ -9188,7 +9204,7 @@ static const uint8_t wuffs_base__utf_8__byte_length_minus_1[256] = {
     // 8     9     A     B     C     D     E     F
 };
 
-wuffs_base__utf_8__next__output  //
+WUFFS_BASE__MAYBE_STATIC wuffs_base__utf_8__next__output  //
 wuffs_base__utf_8__next(wuffs_base__slice_u8 s) {
   if (s.len == 0) {
     return wuffs_base__make_utf_8__next__output(0, 0);
@@ -9244,7 +9260,7 @@ wuffs_base__utf_8__next(wuffs_base__slice_u8 s) {
       WUFFS_BASE__UNICODE_REPLACEMENT_CHARACTER, 1);
 }
 
-size_t  //
+WUFFS_BASE__MAYBE_STATIC size_t  //
 wuffs_base__utf_8__longest_valid_prefix(wuffs_base__slice_u8 s) {
   // TODO: possibly optimize the all-ASCII case (4 or 8 bytes at a time).
   //
@@ -9262,7 +9278,7 @@ wuffs_base__utf_8__longest_valid_prefix(wuffs_base__slice_u8 s) {
   return original_len - s.len;
 }
 
-size_t  //
+WUFFS_BASE__MAYBE_STATIC size_t  //
 wuffs_base__ascii__longest_valid_prefix(wuffs_base__slice_u8 s) {
   // TODO: possibly optimize this by checking 4 or 8 bytes at a time.
   uint8_t* original_ptr = s.ptr;
@@ -10277,7 +10293,7 @@ fail:
 
 // --------
 
-wuffs_base__result_f64  //
+static wuffs_base__result_f64  //
 wuffs_base__parse_number_f64_special(wuffs_base__slice_u8 s,
                                      const char* fallback_status_repr) {
   do {
@@ -10378,7 +10394,7 @@ fallback:
   } while (0);
 }
 
-wuffs_base__result_f64  //
+WUFFS_BASE__MAYBE_STATIC wuffs_base__result_f64  //
 wuffs_base__parse_number_f64(wuffs_base__slice_u8 s) {
   wuffs_base__private_implementation__medium_prec_bin m;
   wuffs_base__private_implementation__high_prec_dec h;
@@ -11657,7 +11673,7 @@ wuffs_base__pixel_swizzler__prepare__bgra_nonpremul(
 
 // --------
 
-wuffs_base__status  //
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
                                     wuffs_base__pixel_format dst_format,
                                     wuffs_base__slice_u8 dst_palette,
@@ -11699,7 +11715,7 @@ wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
       func ? NULL : wuffs_base__error__unsupported_pixel_swizzler_option);
 }
 
-uint64_t  //
+WUFFS_BASE__MAYBE_STATIC uint64_t  //
 wuffs_base__pixel_swizzler__swizzle_interleaved(
     const wuffs_base__pixel_swizzler* p,
     wuffs_base__slice_u8 dst,

@@ -33,7 +33,7 @@ wuffs_base__swap_u32_argb_abgr(uint32_t u) {
 
 // --------
 
-wuffs_base__color_u32_argb_premul  //
+WUFFS_BASE__MAYBE_STATIC wuffs_base__color_u32_argb_premul  //
 wuffs_base__pixel_buffer__color_u32_at(const wuffs_base__pixel_buffer* pb,
                                        uint32_t x,
                                        uint32_t y) {
@@ -113,7 +113,7 @@ wuffs_base__pixel_buffer__color_u32_at(const wuffs_base__pixel_buffer* pb,
   return 0;
 }
 
-wuffs_base__status  //
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_base__pixel_buffer__set_color_u32_at(
     wuffs_base__pixel_buffer* pb,
     uint32_t x,
@@ -197,7 +197,7 @@ wuffs_base__pixel_buffer__set_color_u32_at(
 
 // --------
 
-uint8_t  //
+WUFFS_BASE__MAYBE_STATIC uint8_t  //
 wuffs_base__pixel_palette__closest_element(
     wuffs_base__slice_u8 palette_slice,
     wuffs_base__pixel_format palette_format,
