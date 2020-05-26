@@ -341,7 +341,6 @@ pri func decoder.swizzle!(dst: ptr base.pixel_buffer, src: slice base.u8) base.s
 		if i < dst.length() {
 			this.swizzler.swizzle_interleaved!(
 				dst: dst[i ..],
-				dst_palette: this.util.empty_slice_u8(),
 				src: this.stash[.. this.num_stashed])
 			this.dst_x ~sat+= 1
 		}
@@ -377,7 +376,6 @@ pri func decoder.swizzle!(dst: ptr base.pixel_buffer, src: slice base.u8) base.s
 		if i < dst.length() {
 			n = this.swizzler.swizzle_interleaved!(
 				dst: dst[i ..],
-				dst_palette: this.util.empty_slice_u8(),
 				src: args.src)
 			this.dst_x ~sat+= (n & 0xFFFF_FFFF) as base.u32
 			n = (n & 0xFFFF_FFFF) * (src_bytes_per_pixel as base.u64)

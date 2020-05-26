@@ -212,8 +212,7 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 				//     v_c <<= 1;
 				c = (((c as base.u32) << 1) & 0xFF) as base.u8
 
-				this.swizzler.swizzle_interleaved!(
-					dst: dst, dst_palette: this.util.empty_slice_u8(), src: src[..])
+				this.swizzler.swizzle_interleaved!(dst: dst, src: src[..])
 
 				if dst_bytes_per_pixel <= dst.length() {
 					dst = dst[dst_bytes_per_pixel ..]

@@ -107,7 +107,6 @@ test_wuffs_pixel_swizzler_swizzle() {
 
   const uint32_t width = 5;
   const uint32_t height = 5;
-  uint8_t dummy_palette_array[1024];
   wuffs_base__pixel_swizzler swizzler;
 
   const struct {
@@ -201,14 +200,6 @@ test_wuffs_pixel_swizzler_swizzle() {
       wuffs_base__pixel_alpha_transparency dst_transparency =
           wuffs_base__pixel_format__transparency(&dst_pixfmt);
 
-      wuffs_base__slice_u8 dst_palette =
-          wuffs_base__pixel_buffer__palette(&dst_pixbuf);
-      if (dst_palette.len == 0) {
-        dst_palette = wuffs_base__make_slice_u8(
-            &dummy_palette_array[0],
-            WUFFS_TESTLIB_ARRAY_SIZE(dummy_palette_array));
-      }
-
       int b;
       for (b = 0; b < WUFFS_TESTLIB_ARRAY_SIZE(blends); b++) {
         // Set the middle dst pixel.
@@ -220,14 +211,14 @@ test_wuffs_pixel_swizzler_swizzle() {
         CHECK_STATUS(
             "prepare",
             wuffs_base__pixel_swizzler__prepare(
-                &swizzler, dst_pixfmt, dst_palette,
+                &swizzler, dst_pixfmt,
+                wuffs_base__pixel_buffer__palette(&dst_pixbuf),
                 wuffs_base__make_pixel_format(srcs[s].pixfmt_repr),
                 wuffs_base__pixel_buffer__palette(&src_pixbuf), blends[b]));
         wuffs_base__pixel_swizzler__swizzle_interleaved(
             &swizzler,
             wuffs_base__table_u8__row(
                 wuffs_base__pixel_buffer__plane(&dst_pixbuf, 0), height / 2),
-            dst_palette,
             wuffs_base__table_u8__row(
                 wuffs_base__pixel_buffer__plane(&src_pixbuf, 0), height / 2));
 
