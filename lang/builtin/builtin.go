@@ -228,7 +228,7 @@ var Funcs = []string{
 	// TODO: these should have an explicit pre-condition "available() >= N".
 	// For now, that's implicitly checked (i.e. hard coded).
 	//
-	// The io_reader has peek_etc methods and skip_fast, not read_etc_fast,
+	// io_reader has peek_etc methods and skip_u32_fast, not read_etc_fast,
 	// because we sometimes advance the pointer by less than what's read. See
 	// https://fgiesen.wordpress.com/2018/02/20/reading-bits-in-far-too-many-ways-part-2/
 
@@ -276,13 +276,13 @@ var Funcs = []string{
 	"io_reader.take!(n: u64) slice u8",
 
 	"io_reader.skip?(n: u64)",
-	"io_reader.skip32?(n: u32)",
+	"io_reader.skip_u32?(n: u32)",
 
 	// TODO: this should have explicit pre-conditions "actual <= worst_case"
 	// and "worst_case <= available()". As an implementation restriction, we
 	// also require that worst_case has a constant value. For now, that's all
 	// implicitly checked (i.e. hard coded).
-	"io_reader.skip32_fast!(actual: u32, worst_case: u32)",
+	"io_reader.skip_u32_fast!(actual: u32, worst_case: u32)",
 
 	// ---- io_writer
 
@@ -305,8 +305,8 @@ var Funcs = []string{
 	// TODO: these should have an explicit pre-condition "available() >= N".
 	// For now, that's implicitly checked (i.e. hard coded).
 	//
-	// The io_writer has write_etc_fast methods, not poke_etc and skip_fast,
-	// because skip_fast could leave uninitialized bytes in the io_buffer.
+	// io_writer has write_etc_fast methods, not poke_etc and skip_u32_fast,
+	// because skip_u32_fast could leave uninitialized bytes in the io_buffer.
 	"io_writer.write_u8_fast!(a: u8)",
 	"io_writer.write_u16be_fast!(a: u16)",
 	"io_writer.write_u16le_fast!(a: u16)",

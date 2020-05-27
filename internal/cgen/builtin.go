@@ -199,7 +199,7 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 			iopPrefix, name, io0Prefix, name, io0Prefix, name)
 		return nil
 
-	case t.IDSkip32Fast:
+	case t.IDSkipU32Fast:
 		// Generate a two part expression using the comma operator: "(pointer
 		// increment, return_empty_struct call)". The final part is a function
 		// call (to a static inline function) instead of a struct literal, to
@@ -640,7 +640,7 @@ func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error
 			b.printf(" = *iop_a_src++;\n")
 			return nil
 
-		case t.IDSkip, t.IDSkip32:
+		case t.IDSkip, t.IDSkipU32:
 			x := n.Args()[0].AsArg().Value()
 			if cv := x.ConstValue(); cv != nil && cv.Cmp(one) == 0 {
 				if err := g.writeCoroSuspPoint(b, false); err != nil {

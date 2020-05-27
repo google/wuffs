@@ -162,7 +162,7 @@ pri func decoder.read_from!(src: base.io_reader) {
 				// Read 4 bytes, using the "Variant 4" technique of
 				// https://fgiesen.wordpress.com/2018/02/20/reading-bits-in-far-too-many-ways-part-2/
 				bits |= args.src.peek_u32le() ~mod<< n_bits
-				args.src.skip32_fast!(actual: (31 - n_bits) >> 3, worst_case: 3)
+				args.src.skip_u32_fast!(actual: (31 - n_bits) >> 3, worst_case: 3)
 				n_bits |= 24
 				assert width <= n_bits via "a <= b: a <= c; c <= b"(c: 12)
 				assert n_bits >= width via "a >= b: b <= a"()
@@ -171,7 +171,7 @@ pri func decoder.read_from!(src: base.io_reader) {
 				break
 			} else {
 				bits |= args.src.peek_u8_as_u32() << n_bits
-				args.src.skip32_fast!(actual: 1, worst_case: 1)
+				args.src.skip_u32_fast!(actual: 1, worst_case: 1)
 				n_bits += 8
 				if n_bits >= width {
 					// No-op.
@@ -180,7 +180,7 @@ pri func decoder.read_from!(src: base.io_reader) {
 					break
 				} else {
 					bits |= args.src.peek_u8_as_u32() << n_bits
-					args.src.skip32_fast!(actual: 1, worst_case: 1)
+					args.src.skip_u32_fast!(actual: 1, worst_case: 1)
 					n_bits += 8
 					assert width <= n_bits via "a <= b: a <= c; c <= b"(c: 12)
 					assert n_bits >= width via "a >= b: b <= a"()

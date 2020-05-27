@@ -1024,7 +1024,7 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (bounds, e
 				return bounds{}, err
 			}
 
-		} else if method == t.IDSkip32Fast {
+		} else if method == t.IDSkipU32Fast {
 			args := n.Args()
 			if len(args) != 2 {
 				return bounds{}, fmt.Errorf("check: internal error: bad skip_fast arguments")

@@ -198,7 +198,7 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 						}
 					} endwhile
 					c = args.src.peek_u8()
-					args.src.skip32_fast!(actual: 1, worst_case: 1)
+					args.src.skip_u32_fast!(actual: 1, worst_case: 1)
 				}
 				if (c & 0x80) == 0 {
 					src[0] = 0x00

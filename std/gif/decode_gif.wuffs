@@ -254,7 +254,7 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 		chunk_length = args.src.peek_u8_as_u64()
 		if chunk_length <= 0 {
 			// Consume the '\x00' that means a zero-length block.
-			args.src.skip32_fast!(actual: 1, worst_case: 1)
+			args.src.skip_u32_fast!(actual: 1, worst_case: 1)
 			break
 		}
 
@@ -264,7 +264,7 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 			// metadata passed to the caller.
 			chunk_length += 1
 		} else {
-			args.src.skip32_fast!(actual: 1, worst_case: 1)
+			args.src.skip_u32_fast!(actual: 1, worst_case: 1)
 		}
 		this.metadata_io_position = args.src.position() ~sat+ chunk_length
 
@@ -423,7 +423,7 @@ pri func decoder.skip_frame?(src: base.io_reader) {
 	// Skip the optional Local Color Table, 3 bytes (RGB) per entry.
 	flags = args.src.read_u8?()
 	if (flags & 0x80) <> 0 {
-		args.src.skip32?(n: (3 as base.u32) << (1 + (flags & 0x07)))
+		args.src.skip_u32?(n: (3 as base.u32) << (1 + (flags & 0x07)))
 	}
 
 	// Process the LZW literal width.
@@ -554,7 +554,7 @@ pri func decoder.decode_lsd?(src: base.io_reader) {
 	flags = args.src.read_u8?()
 	background_color_index = args.src.read_u8?()
 	// Ignore the Pixel Aspect Ratio byte.
-	args.src.skip32?(n: 1)
+	args.src.skip_u32?(n: 1)
 
 	// Read the optional Global Color Table.
 	i = 0
@@ -636,7 +636,7 @@ pri func decoder.skip_blocks?(src: base.io_reader) {
 		if block_size == 0 {
 			return ok
 		}
-		args.src.skip32?(n: block_size as base.u32)
+		args.src.skip_u32?(n: block_size as base.u32)
 	} endwhile
 }
 
@@ -666,7 +666,7 @@ pri func decoder.decode_ae?(src: base.io_reader) {
 	//
 	// Other extensions include XMP metadata.
 	if block_size <> 11 {
-		args.src.skip32?(n: block_size as base.u32)
+		args.src.skip_u32?(n: block_size as base.u32)
 		break.goto_done
 	}
 	is_animexts = true
@@ -688,12 +688,12 @@ pri func decoder.decode_ae?(src: base.io_reader) {
 		// count.
 		block_size = args.src.read_u8?()
 		if block_size <> 3 {
-			args.src.skip32?(n: block_size as base.u32)
+			args.src.skip_u32?(n: block_size as base.u32)
 			break.goto_done
 		}
 		c = args.src.read_u8?()
 		if c <> 0x01 {
-			args.src.skip32?(n: 2)
+			args.src.skip_u32?(n: 2)
 			break.goto_done
 		}
 		this.num_loops = args.src.read_u16le_as_u32?()
@@ -966,7 +966,7 @@ pri func decoder.decode_id_part2?(dst: ptr base.pixel_buffer, src: base.io_reade
 				break
 			}
 			block_size = args.src.peek_u8_as_u64()
-			args.src.skip32_fast!(actual: 1, worst_case: 1)
+			args.src.skip_u32_fast!(actual: 1, worst_case: 1)
 		} endwhile
 
 		while.inner true {
@@ -993,7 +993,7 @@ pri func decoder.decode_id_part2?(dst: ptr base.pixel_buffer, src: base.io_reade
 
 				// Skip any trailing blocks.
 				if need_block_size or (block_size > 0) {
-					args.src.skip32?(n: block_size as base.u32)
+					args.src.skip_u32?(n: block_size as base.u32)
 					this.skip_blocks?(src: args.src)
 				}
 

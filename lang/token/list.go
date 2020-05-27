@@ -513,8 +513,8 @@ const (
 	IDPosition         = ID(0x168)
 	IDSince            = ID(0x169)
 	IDSkip             = ID(0x16A)
-	IDSkip32           = ID(0x16B)
-	IDSkip32Fast       = ID(0x16C)
+	IDSkipU32          = ID(0x16B)
+	IDSkipU32Fast      = ID(0x16C)
 	IDTake             = ID(0x16D)
 
 	IDCopyFromSlice                 = ID(0x170)
@@ -874,8 +874,8 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDPosition:         "position",
 	IDSince:            "since",
 	IDSkip:             "skip",
-	IDSkip32:           "skip32",
-	IDSkip32Fast:       "skip32_fast",
+	IDSkipU32:          "skip_u32",
+	IDSkipU32Fast:      "skip_u32_fast",
 	IDTake:             "take",
 
 	IDCopyFromSlice:                 "copy_from_slice",

@@ -82,7 +82,7 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 		return "#bad header"
 	}
 
-	args.src.skip32?(n: 8)
+	args.src.skip_u32?(n: 8)
 
 	this.padding = args.src.read_u32le?()
 	if this.padding < 14 {
@@ -161,7 +161,7 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 	// We've already read 20 bytes from the BITMAPINFOHEADER: size (4), width
 	// (4), height (4), planes (2), bpp (2), compression (4). Skip the rest of
 	// the version 3 BITMAPINFOHEADER (whose total size is 40).
-	args.src.skip32?(n: 40 - 20)
+	args.src.skip_u32?(n: 40 - 20)
 
 	if bitmap_info_len >= 108 {
 		this.mask_r = args.src.read_u32le?()
@@ -181,7 +181,7 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 
 		// Skip the rest of the BITMAPINFOHEADER. We've already read (40 + (4 *
 		// 4)) bytes.
-		args.src.skip32?(n: bitmap_info_len - 56)
+		args.src.skip_u32?(n: bitmap_info_len - 56)
 	}
 
 	if compression <> 0 {
@@ -252,7 +252,7 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 		return base."@end of data"
 	}
 
-	args.src.skip32?(n: this.padding)
+	args.src.skip_u32?(n: this.padding)
 
 	if (this.width > 0) and (this.height > 0) {
 		this.dst_x = 0
@@ -419,7 +419,7 @@ pri func decoder.swizzle!(dst: ptr base.pixel_buffer, src: slice base.u8) base.s
 }
 
 pri func decoder.skip_frame?(src: base.io_reader) {
-	args.src.skip32?(n: this.padding)
+	args.src.skip_u32?(n: this.padding)
 	args.src.skip?(n: this.bytes_total)
 
 	this.call_sequence = 3
