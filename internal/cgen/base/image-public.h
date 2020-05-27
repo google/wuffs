@@ -1287,10 +1287,12 @@ wuffs_base__pixel_palette__closest_element(
 // --------
 
 // TODO: should the func type take restrict pointers?
-typedef uint64_t (*wuffs_base__pixel_swizzler__func)(
-    wuffs_base__slice_u8 dst,
-    wuffs_base__slice_u8 dst_palette,
-    wuffs_base__slice_u8 src);
+typedef uint64_t (*wuffs_base__pixel_swizzler__func)(uint8_t* dst_ptr,
+                                                     size_t dst_len,
+                                                     uint8_t* dst_palette_ptr,
+                                                     size_t dst_palette_len,
+                                                     const uint8_t* src_ptr,
+                                                     size_t src_len);
 
 typedef struct {
   // Do not access the private_impl's fields directly. There is no API/ABI

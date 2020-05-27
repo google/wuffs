@@ -41,7 +41,7 @@ wuffs_base__pixel_buffer__color_u32_at(const wuffs_base__pixel_buffer* pb,
   }
 
   size_t stride = pb->private_impl.planes[0].stride;
-  uint8_t* row = pb->private_impl.planes[0].ptr + (stride * ((size_t)y));
+  const uint8_t* row = pb->private_impl.planes[0].ptr + (stride * ((size_t)y));
 
   switch (pb->pixcfg.private_impl.pixfmt.repr) {
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
@@ -403,7 +403,7 @@ wuffs_base__pixel_swizzler__squash_bgr_565_888(wuffs_base__slice_u8 dst,
                                                wuffs_base__slice_u8 src) {
   size_t len4 = (dst.len < src.len ? dst.len : src.len) / 4;
   uint8_t* d = dst.ptr;
-  uint8_t* s = src.ptr;
+  const uint8_t* s = src.ptr;
 
   size_t n = len4;
   while (n--) {
@@ -425,7 +425,7 @@ wuffs_base__pixel_swizzler__swap_rgbx_bgrx(wuffs_base__slice_u8 dst,
                                            wuffs_base__slice_u8 src) {
   size_t len4 = (dst.len < src.len ? dst.len : src.len) / 4;
   uint8_t* d = dst.ptr;
-  uint8_t* s = src.ptr;
+  const uint8_t* s = src.ptr;
 
   size_t n = len4;
   while (n--) {
@@ -446,34 +446,47 @@ wuffs_base__pixel_swizzler__swap_rgbx_bgrx(wuffs_base__slice_u8 dst,
 // --------
 
 static uint64_t  //
-wuffs_base__pixel_swizzler__copy_1_1(wuffs_base__slice_u8 dst,
-                                     wuffs_base__slice_u8 dst_palette,
-                                     wuffs_base__slice_u8 src) {
-  return wuffs_base__slice_u8__copy_from_slice(dst, src);
-}
-
-static uint64_t  //
-wuffs_base__pixel_swizzler__copy_3_3(wuffs_base__slice_u8 dst,
-                                     wuffs_base__slice_u8 dst_palette,
-                                     wuffs_base__slice_u8 src) {
-  size_t dst_len3 = dst.len / 3;
-  size_t src_len3 = src.len / 3;
-  size_t len = dst_len3 < src_len3 ? dst_len3 : src_len3;
+wuffs_base__pixel_swizzler__copy_1_1(uint8_t* dst_ptr,
+                                     size_t dst_len,
+                                     uint8_t* dst_palette_ptr,
+                                     size_t dst_palette_len,
+                                     const uint8_t* src_ptr,
+                                     size_t src_len) {
+  size_t len = (dst_len < src_len) ? dst_len : src_len;
   if (len > 0) {
-    memmove(dst.ptr, src.ptr, len * 3);
+    memmove(dst_ptr, src_ptr, len);
   }
   return len;
 }
 
 static uint64_t  //
-wuffs_base__pixel_swizzler__copy_4_4(wuffs_base__slice_u8 dst,
-                                     wuffs_base__slice_u8 dst_palette,
-                                     wuffs_base__slice_u8 src) {
-  size_t dst_len4 = dst.len / 4;
-  size_t src_len4 = src.len / 4;
-  size_t len = dst_len4 < src_len4 ? dst_len4 : src_len4;
+wuffs_base__pixel_swizzler__copy_3_3(uint8_t* dst_ptr,
+                                     size_t dst_len,
+                                     uint8_t* dst_palette_ptr,
+                                     size_t dst_palette_len,
+                                     const uint8_t* src_ptr,
+                                     size_t src_len) {
+  size_t dst_len3 = dst_len / 3;
+  size_t src_len3 = src_len / 3;
+  size_t len = (dst_len3 < src_len3) ? dst_len3 : src_len3;
   if (len > 0) {
-    memmove(dst.ptr, src.ptr, len * 4);
+    memmove(dst_ptr, src_ptr, len * 3);
+  }
+  return len;
+}
+
+static uint64_t  //
+wuffs_base__pixel_swizzler__copy_4_4(uint8_t* dst_ptr,
+                                     size_t dst_len,
+                                     uint8_t* dst_palette_ptr,
+                                     size_t dst_palette_len,
+                                     const uint8_t* src_ptr,
+                                     size_t src_len) {
+  size_t dst_len4 = dst_len / 4;
+  size_t src_len4 = src_len / 4;
+  size_t len = (dst_len4 < src_len4) ? dst_len4 : src_len4;
+  if (len > 0) {
+    memmove(dst_ptr, src_ptr, len * 4);
   }
   return len;
 }
@@ -481,14 +494,17 @@ wuffs_base__pixel_swizzler__copy_4_4(wuffs_base__slice_u8 dst,
 // --------
 
 static uint64_t  //
-wuffs_base__pixel_swizzler__bgr_565__bgr(wuffs_base__slice_u8 dst,
-                                         wuffs_base__slice_u8 dst_palette,
-                                         wuffs_base__slice_u8 src) {
-  size_t dst_len2 = dst.len / 2;
-  size_t src_len3 = src.len / 3;
-  size_t len = dst_len2 < src_len3 ? dst_len2 : src_len3;
-  uint8_t* d = dst.ptr;
-  uint8_t* s = src.ptr;
+wuffs_base__pixel_swizzler__bgr_565__bgr(uint8_t* dst_ptr,
+                                         size_t dst_len,
+                                         uint8_t* dst_palette_ptr,
+                                         size_t dst_palette_len,
+                                         const uint8_t* src_ptr,
+                                         size_t src_len) {
+  size_t dst_len2 = dst_len / 2;
+  size_t src_len3 = src_len / 3;
+  size_t len = (dst_len2 < src_len3) ? dst_len2 : src_len3;
+  uint8_t* d = dst_ptr;
+  const uint8_t* s = src_ptr;
   size_t n = len;
 
   // TODO: unroll.
@@ -510,14 +526,17 @@ wuffs_base__pixel_swizzler__bgr_565__bgr(wuffs_base__slice_u8 dst,
 
 static uint64_t  //
 wuffs_base__pixel_swizzler__bgr_565__bgra_nonpremul__src(
-    wuffs_base__slice_u8 dst,
-    wuffs_base__slice_u8 dst_palette,
-    wuffs_base__slice_u8 src) {
-  size_t dst_len2 = dst.len / 2;
-  size_t src_len4 = src.len / 4;
-  size_t len = dst_len2 < src_len4 ? dst_len2 : src_len4;
-  uint8_t* d = dst.ptr;
-  uint8_t* s = src.ptr;
+    uint8_t* dst_ptr,
+    size_t dst_len,
+    uint8_t* dst_palette_ptr,
+    size_t dst_palette_len,
+    const uint8_t* src_ptr,
+    size_t src_len) {
+  size_t dst_len2 = dst_len / 2;
+  size_t src_len4 = src_len / 4;
+  size_t len = (dst_len2 < src_len4) ? dst_len2 : src_len4;
+  uint8_t* d = dst_ptr;
+  const uint8_t* s = src_ptr;
   size_t n = len;
 
   // TODO: unroll.
@@ -539,14 +558,17 @@ wuffs_base__pixel_swizzler__bgr_565__bgra_nonpremul__src(
 
 static uint64_t  //
 wuffs_base__pixel_swizzler__bgr_565__bgra_nonpremul__src_over(
-    wuffs_base__slice_u8 dst,
-    wuffs_base__slice_u8 dst_palette,
-    wuffs_base__slice_u8 src) {
-  size_t dst_len2 = dst.len / 2;
-  size_t src_len4 = src.len / 4;
-  size_t len = dst_len2 < src_len4 ? dst_len2 : src_len4;
-  uint8_t* d = dst.ptr;
-  uint8_t* s = src.ptr;
+    uint8_t* dst_ptr,
+    size_t dst_len,
+    uint8_t* dst_palette_ptr,
+    size_t dst_palette_len,
+    const uint8_t* src_ptr,
+    size_t src_len) {
+  size_t dst_len2 = dst_len / 2;
+  size_t src_len4 = src_len / 4;
+  size_t len = (dst_len2 < src_len4) ? dst_len2 : src_len4;
+  uint8_t* d = dst_ptr;
+  const uint8_t* s = src_ptr;
   size_t n = len;
 
   // TODO: unroll.
@@ -592,13 +614,16 @@ wuffs_base__pixel_swizzler__bgr_565__bgra_nonpremul__src_over(
 }
 
 static uint64_t  //
-wuffs_base__pixel_swizzler__bgr_565__y(wuffs_base__slice_u8 dst,
-                                       wuffs_base__slice_u8 dst_palette,
-                                       wuffs_base__slice_u8 src) {
-  size_t dst_len2 = dst.len / 2;
-  size_t len = dst_len2 < src.len ? dst_len2 : src.len;
-  uint8_t* d = dst.ptr;
-  uint8_t* s = src.ptr;
+wuffs_base__pixel_swizzler__bgr_565__y(uint8_t* dst_ptr,
+                                       size_t dst_len,
+                                       uint8_t* dst_palette_ptr,
+                                       size_t dst_palette_len,
+                                       const uint8_t* src_ptr,
+                                       size_t src_len) {
+  size_t dst_len2 = dst_len / 2;
+  size_t len = (dst_len2 < src_len) ? dst_len2 : src_len;
+  uint8_t* d = dst_ptr;
+  const uint8_t* s = src_ptr;
   size_t n = len;
 
   // TODO: unroll.
@@ -618,17 +643,19 @@ wuffs_base__pixel_swizzler__bgr_565__y(wuffs_base__slice_u8 dst,
 }
 
 static uint64_t  //
-wuffs_base__pixel_swizzler__bgr_565__index__src(
-    wuffs_base__slice_u8 dst,
-    wuffs_base__slice_u8 dst_palette,
-    wuffs_base__slice_u8 src) {
-  if (dst_palette.len != 1024) {
+wuffs_base__pixel_swizzler__bgr_565__index__src(uint8_t* dst_ptr,
+                                                size_t dst_len,
+                                                uint8_t* dst_palette_ptr,
+                                                size_t dst_palette_len,
+                                                const uint8_t* src_ptr,
+                                                size_t src_len) {
+  if (dst_palette_len != 1024) {
     return 0;
   }
-  size_t dst_len2 = dst.len / 2;
-  size_t len = dst_len2 < src.len ? dst_len2 : src.len;
-  uint8_t* d = dst.ptr;
-  uint8_t* s = src.ptr;
+  size_t dst_len2 = dst_len / 2;
+  size_t len = (dst_len2 < src_len) ? dst_len2 : src_len;
+  uint8_t* d = dst_ptr;
+  const uint8_t* s = src_ptr;
   size_t n = len;
 
   const size_t loop_unroll_count = 4;
@@ -636,16 +663,16 @@ wuffs_base__pixel_swizzler__bgr_565__index__src(
   while (n >= loop_unroll_count) {
     wuffs_base__store_u16le__no_bounds_check(
         d + (0 * 2), wuffs_base__load_u16le__no_bounds_check(
-                         dst_palette.ptr + ((size_t)s[0] * 4)));
+                         dst_palette_ptr + ((size_t)s[0] * 4)));
     wuffs_base__store_u16le__no_bounds_check(
         d + (1 * 2), wuffs_base__load_u16le__no_bounds_check(
-                         dst_palette.ptr + ((size_t)s[1] * 4)));
+                         dst_palette_ptr + ((size_t)s[1] * 4)));
     wuffs_base__store_u16le__no_bounds_check(
         d + (2 * 2), wuffs_base__load_u16le__no_bounds_check(
-                         dst_palette.ptr + ((size_t)s[2] * 4)));
+                         dst_palette_ptr + ((size_t)s[2] * 4)));
     wuffs_base__store_u16le__no_bounds_check(
         d + (3 * 2), wuffs_base__load_u16le__no_bounds_check(
-                         dst_palette.ptr + ((size_t)s[3] * 4)));
+                         dst_palette_ptr + ((size_t)s[3] * 4)));
 
     s += loop_unroll_count * 1;
     d += loop_unroll_count * 2;
@@ -655,7 +682,7 @@ wuffs_base__pixel_swizzler__bgr_565__index__src(
   while (n >= 1) {
     wuffs_base__store_u16le__no_bounds_check(
         d + (0 * 2), wuffs_base__load_u16le__no_bounds_check(
-                         dst_palette.ptr + ((size_t)s[0] * 4)));
+                         dst_palette_ptr + ((size_t)s[0] * 4)));
 
     s += 1 * 1;
     d += 1 * 2;
@@ -667,22 +694,25 @@ wuffs_base__pixel_swizzler__bgr_565__index__src(
 
 static uint64_t  //
 wuffs_base__pixel_swizzler__bgr_565__index_binary_alpha__src_over(
-    wuffs_base__slice_u8 dst,
-    wuffs_base__slice_u8 dst_palette,
-    wuffs_base__slice_u8 src) {
-  if (dst_palette.len != 1024) {
+    uint8_t* dst_ptr,
+    size_t dst_len,
+    uint8_t* dst_palette_ptr,
+    size_t dst_palette_len,
+    const uint8_t* src_ptr,
+    size_t src_len) {
+  if (dst_palette_len != 1024) {
     return 0;
   }
-  size_t dst_len2 = dst.len / 2;
-  size_t len = dst_len2 < src.len ? dst_len2 : src.len;
-  uint8_t* d = dst.ptr;
-  uint8_t* s = src.ptr;
+  size_t dst_len2 = dst_len / 2;
+  size_t len = (dst_len2 < src_len) ? dst_len2 : src_len;
+  uint8_t* d = dst_ptr;
+  const uint8_t* s = src_ptr;
   size_t n = len;
 
   // TODO: unroll.
 
   while (n >= 1) {
-    uint32_t s0 = wuffs_base__load_u32le__no_bounds_check(dst_palette.ptr +
+    uint32_t s0 = wuffs_base__load_u32le__no_bounds_check(dst_palette_ptr +
                                                           ((size_t)s[0] * 4));
     if (s0) {
       wuffs_base__store_u16le__no_bounds_check(d + (0 * 2), (uint16_t)s0);
@@ -699,15 +729,17 @@ wuffs_base__pixel_swizzler__bgr_565__index_binary_alpha__src_over(
 // --------
 
 static uint64_t  //
-wuffs_base__pixel_swizzler__bgr__bgra_nonpremul__src(
-    wuffs_base__slice_u8 dst,
-    wuffs_base__slice_u8 dst_palette,
-    wuffs_base__slice_u8 src) {
-  size_t dst_len3 = dst.len / 3;
-  size_t src_len4 = src.len / 4;
-  size_t len = dst_len3 < src_len4 ? dst_len3 : src_len4;
-  uint8_t* d = dst.ptr;
-  uint8_t* s = src.ptr;
+wuffs_base__pixel_swizzler__bgr__bgra_nonpremul__src(uint8_t* dst_ptr,
+                                                     size_t dst_len,
+                                                     uint8_t* dst_palette_ptr,
+                                                     size_t dst_palette_len,
+                                                     const uint8_t* src_ptr,
+                                                     size_t src_len) {
+  size_t dst_len3 = dst_len / 3;
+  size_t src_len4 = src_len / 4;
+  size_t len = (dst_len3 < src_len4) ? dst_len3 : src_len4;
+  uint8_t* d = dst_ptr;
+  const uint8_t* s = src_ptr;
   size_t n = len;
 
   // TODO: unroll.
@@ -728,14 +760,17 @@ wuffs_base__pixel_swizzler__bgr__bgra_nonpremul__src(
 
 static uint64_t  //
 wuffs_base__pixel_swizzler__bgr__bgra_nonpremul__src_over(
-    wuffs_base__slice_u8 dst,
-    wuffs_base__slice_u8 dst_palette,
-    wuffs_base__slice_u8 src) {
-  size_t dst_len3 = dst.len / 3;
-  size_t src_len4 = src.len / 4;
-  size_t len = dst_len3 < src_len4 ? dst_len3 : src_len4;
-  uint8_t* d = dst.ptr;
-  uint8_t* s = src.ptr;
+    uint8_t* dst_ptr,
+    size_t dst_len,
+    uint8_t* dst_palette_ptr,
+    size_t dst_palette_len,
+    const uint8_t* src_ptr,
+    size_t src_len) {
+  size_t dst_len3 = dst_len / 3;
+  size_t src_len4 = src_len / 4;
+  size_t len = (dst_len3 < src_len4) ? dst_len3 : src_len4;
+  uint8_t* d = dst_ptr;
+  const uint8_t* s = src_ptr;
   size_t n = len;
 
   // TODO: unroll.
@@ -775,14 +810,17 @@ wuffs_base__pixel_swizzler__bgr__bgra_nonpremul__src_over(
 
 static uint64_t  //
 wuffs_base__pixel_swizzler__bgra_nonpremul__bgra_nonpremul__src_over(
-    wuffs_base__slice_u8 dst,
-    wuffs_base__slice_u8 dst_palette,
-    wuffs_base__slice_u8 src) {
-  size_t dst_len4 = dst.len / 4;
-  size_t src_len4 = src.len / 4;
-  size_t len = dst_len4 < src_len4 ? dst_len4 : src_len4;
-  uint8_t* d = dst.ptr;
-  uint8_t* s = src.ptr;
+    uint8_t* dst_ptr,
+    size_t dst_len,
+    uint8_t* dst_palette_ptr,
+    size_t dst_palette_len,
+    const uint8_t* src_ptr,
+    size_t src_len) {
+  size_t dst_len4 = dst_len / 4;
+  size_t src_len4 = src_len / 4;
+  size_t len = (dst_len4 < src_len4) ? dst_len4 : src_len4;
+  uint8_t* d = dst_ptr;
+  const uint8_t* s = src_ptr;
   size_t n = len;
 
   // TODO: unroll.
@@ -806,14 +844,17 @@ wuffs_base__pixel_swizzler__bgra_nonpremul__bgra_nonpremul__src_over(
 
 static uint64_t  //
 wuffs_base__pixel_swizzler__bgra_premul__bgra_nonpremul__src(
-    wuffs_base__slice_u8 dst,
-    wuffs_base__slice_u8 dst_palette,
-    wuffs_base__slice_u8 src) {
-  size_t dst_len4 = dst.len / 4;
-  size_t src_len4 = src.len / 4;
-  size_t len = dst_len4 < src_len4 ? dst_len4 : src_len4;
-  uint8_t* d = dst.ptr;
-  uint8_t* s = src.ptr;
+    uint8_t* dst_ptr,
+    size_t dst_len,
+    uint8_t* dst_palette_ptr,
+    size_t dst_palette_len,
+    const uint8_t* src_ptr,
+    size_t src_len) {
+  size_t dst_len4 = dst_len / 4;
+  size_t src_len4 = src_len / 4;
+  size_t len = (dst_len4 < src_len4) ? dst_len4 : src_len4;
+  uint8_t* d = dst_ptr;
+  const uint8_t* s = src_ptr;
   size_t n = len;
 
   // TODO: unroll.
@@ -834,14 +875,17 @@ wuffs_base__pixel_swizzler__bgra_premul__bgra_nonpremul__src(
 
 static uint64_t  //
 wuffs_base__pixel_swizzler__bgra_premul__bgra_nonpremul__src_over(
-    wuffs_base__slice_u8 dst,
-    wuffs_base__slice_u8 dst_palette,
-    wuffs_base__slice_u8 src) {
-  size_t dst_len4 = dst.len / 4;
-  size_t src_len4 = src.len / 4;
-  size_t len = dst_len4 < src_len4 ? dst_len4 : src_len4;
-  uint8_t* d = dst.ptr;
-  uint8_t* s = src.ptr;
+    uint8_t* dst_ptr,
+    size_t dst_len,
+    uint8_t* dst_palette_ptr,
+    size_t dst_palette_len,
+    const uint8_t* src_ptr,
+    size_t src_len) {
+  size_t dst_len4 = dst_len / 4;
+  size_t src_len4 = src_len / 4;
+  size_t len = (dst_len4 < src_len4) ? dst_len4 : src_len4;
+  uint8_t* d = dst_ptr;
+  const uint8_t* s = src_ptr;
   size_t n = len;
 
   // TODO: unroll.
@@ -863,16 +907,19 @@ wuffs_base__pixel_swizzler__bgra_premul__bgra_nonpremul__src_over(
 // --------
 
 static uint64_t  //
-wuffs_base__pixel_swizzler__xxx__index__src(wuffs_base__slice_u8 dst,
-                                            wuffs_base__slice_u8 dst_palette,
-                                            wuffs_base__slice_u8 src) {
-  if (dst_palette.len != 1024) {
+wuffs_base__pixel_swizzler__xxx__index__src(uint8_t* dst_ptr,
+                                            size_t dst_len,
+                                            uint8_t* dst_palette_ptr,
+                                            size_t dst_palette_len,
+                                            const uint8_t* src_ptr,
+                                            size_t src_len) {
+  if (dst_palette_len != 1024) {
     return 0;
   }
-  size_t dst_len3 = dst.len / 3;
-  size_t len = dst_len3 < src.len ? dst_len3 : src.len;
-  uint8_t* d = dst.ptr;
-  uint8_t* s = src.ptr;
+  size_t dst_len3 = dst_len / 3;
+  size_t len = (dst_len3 < src_len) ? dst_len3 : src_len;
+  uint8_t* d = dst_ptr;
+  const uint8_t* s = src_ptr;
   size_t n = len;
 
   const size_t loop_unroll_count = 4;
@@ -887,16 +934,16 @@ wuffs_base__pixel_swizzler__xxx__index__src(wuffs_base__slice_u8 dst,
   while (n > loop_unroll_count) {
     wuffs_base__store_u32le__no_bounds_check(
         d + (0 * 3), wuffs_base__load_u32le__no_bounds_check(
-                         dst_palette.ptr + ((size_t)s[0] * 4)));
+                         dst_palette_ptr + ((size_t)s[0] * 4)));
     wuffs_base__store_u32le__no_bounds_check(
         d + (1 * 3), wuffs_base__load_u32le__no_bounds_check(
-                         dst_palette.ptr + ((size_t)s[1] * 4)));
+                         dst_palette_ptr + ((size_t)s[1] * 4)));
     wuffs_base__store_u32le__no_bounds_check(
         d + (2 * 3), wuffs_base__load_u32le__no_bounds_check(
-                         dst_palette.ptr + ((size_t)s[2] * 4)));
+                         dst_palette_ptr + ((size_t)s[2] * 4)));
     wuffs_base__store_u32le__no_bounds_check(
         d + (3 * 3), wuffs_base__load_u32le__no_bounds_check(
-                         dst_palette.ptr + ((size_t)s[3] * 4)));
+                         dst_palette_ptr + ((size_t)s[3] * 4)));
 
     s += loop_unroll_count * 1;
     d += loop_unroll_count * 3;
@@ -904,7 +951,7 @@ wuffs_base__pixel_swizzler__xxx__index__src(wuffs_base__slice_u8 dst,
   }
 
   while (n >= 1) {
-    uint32_t s0 = wuffs_base__load_u32le__no_bounds_check(dst_palette.ptr +
+    uint32_t s0 = wuffs_base__load_u32le__no_bounds_check(dst_palette_ptr +
                                                           ((size_t)s[0] * 4));
     wuffs_base__store_u24le__no_bounds_check(d + (0 * 3), s0);
 
@@ -918,37 +965,40 @@ wuffs_base__pixel_swizzler__xxx__index__src(wuffs_base__slice_u8 dst,
 
 static uint64_t  //
 wuffs_base__pixel_swizzler__xxx__index_binary_alpha__src_over(
-    wuffs_base__slice_u8 dst,
-    wuffs_base__slice_u8 dst_palette,
-    wuffs_base__slice_u8 src) {
-  if (dst_palette.len != 1024) {
+    uint8_t* dst_ptr,
+    size_t dst_len,
+    uint8_t* dst_palette_ptr,
+    size_t dst_palette_len,
+    const uint8_t* src_ptr,
+    size_t src_len) {
+  if (dst_palette_len != 1024) {
     return 0;
   }
-  size_t dst_len3 = dst.len / 3;
-  size_t len = dst_len3 < src.len ? dst_len3 : src.len;
-  uint8_t* d = dst.ptr;
-  uint8_t* s = src.ptr;
+  size_t dst_len3 = dst_len / 3;
+  size_t len = (dst_len3 < src_len) ? dst_len3 : src_len;
+  uint8_t* d = dst_ptr;
+  const uint8_t* s = src_ptr;
   size_t n = len;
 
   const size_t loop_unroll_count = 4;
 
   while (n >= loop_unroll_count) {
-    uint32_t s0 = wuffs_base__load_u32le__no_bounds_check(dst_palette.ptr +
+    uint32_t s0 = wuffs_base__load_u32le__no_bounds_check(dst_palette_ptr +
                                                           ((size_t)s[0] * 4));
     if (s0) {
       wuffs_base__store_u24le__no_bounds_check(d + (0 * 3), s0);
     }
-    uint32_t s1 = wuffs_base__load_u32le__no_bounds_check(dst_palette.ptr +
+    uint32_t s1 = wuffs_base__load_u32le__no_bounds_check(dst_palette_ptr +
                                                           ((size_t)s[1] * 4));
     if (s1) {
       wuffs_base__store_u24le__no_bounds_check(d + (1 * 3), s1);
     }
-    uint32_t s2 = wuffs_base__load_u32le__no_bounds_check(dst_palette.ptr +
+    uint32_t s2 = wuffs_base__load_u32le__no_bounds_check(dst_palette_ptr +
                                                           ((size_t)s[2] * 4));
     if (s2) {
       wuffs_base__store_u24le__no_bounds_check(d + (2 * 3), s2);
     }
-    uint32_t s3 = wuffs_base__load_u32le__no_bounds_check(dst_palette.ptr +
+    uint32_t s3 = wuffs_base__load_u32le__no_bounds_check(dst_palette_ptr +
                                                           ((size_t)s[3] * 4));
     if (s3) {
       wuffs_base__store_u24le__no_bounds_check(d + (3 * 3), s3);
@@ -960,7 +1010,7 @@ wuffs_base__pixel_swizzler__xxx__index_binary_alpha__src_over(
   }
 
   while (n >= 1) {
-    uint32_t s0 = wuffs_base__load_u32le__no_bounds_check(dst_palette.ptr +
+    uint32_t s0 = wuffs_base__load_u32le__no_bounds_check(dst_palette_ptr +
                                                           ((size_t)s[0] * 4));
     if (s0) {
       wuffs_base__store_u24le__no_bounds_check(d + (0 * 3), s0);
@@ -975,13 +1025,16 @@ wuffs_base__pixel_swizzler__xxx__index_binary_alpha__src_over(
 }
 
 static uint64_t  //
-wuffs_base__pixel_swizzler__xxx__y(wuffs_base__slice_u8 dst,
-                                   wuffs_base__slice_u8 dst_palette,
-                                   wuffs_base__slice_u8 src) {
-  size_t dst_len3 = dst.len / 3;
-  size_t len = dst_len3 < src.len ? dst_len3 : src.len;
-  uint8_t* d = dst.ptr;
-  uint8_t* s = src.ptr;
+wuffs_base__pixel_swizzler__xxx__y(uint8_t* dst_ptr,
+                                   size_t dst_len,
+                                   uint8_t* dst_palette_ptr,
+                                   size_t dst_palette_len,
+                                   const uint8_t* src_ptr,
+                                   size_t src_len) {
+  size_t dst_len3 = dst_len / 3;
+  size_t len = (dst_len3 < src_len) ? dst_len3 : src_len;
+  uint8_t* d = dst_ptr;
+  const uint8_t* s = src_ptr;
   size_t n = len;
 
   // TODO: unroll.
@@ -1003,16 +1056,19 @@ wuffs_base__pixel_swizzler__xxx__y(wuffs_base__slice_u8 dst,
 // --------
 
 static uint64_t  //
-wuffs_base__pixel_swizzler__xxxx__index__src(wuffs_base__slice_u8 dst,
-                                             wuffs_base__slice_u8 dst_palette,
-                                             wuffs_base__slice_u8 src) {
-  if (dst_palette.len != 1024) {
+wuffs_base__pixel_swizzler__xxxx__index__src(uint8_t* dst_ptr,
+                                             size_t dst_len,
+                                             uint8_t* dst_palette_ptr,
+                                             size_t dst_palette_len,
+                                             const uint8_t* src_ptr,
+                                             size_t src_len) {
+  if (dst_palette_len != 1024) {
     return 0;
   }
-  size_t dst_len4 = dst.len / 4;
-  size_t len = dst_len4 < src.len ? dst_len4 : src.len;
-  uint8_t* d = dst.ptr;
-  uint8_t* s = src.ptr;
+  size_t dst_len4 = dst_len / 4;
+  size_t len = (dst_len4 < src_len) ? dst_len4 : src_len;
+  uint8_t* d = dst_ptr;
+  const uint8_t* s = src_ptr;
   size_t n = len;
 
   const size_t loop_unroll_count = 4;
@@ -1020,16 +1076,16 @@ wuffs_base__pixel_swizzler__xxxx__index__src(wuffs_base__slice_u8 dst,
   while (n >= loop_unroll_count) {
     wuffs_base__store_u32le__no_bounds_check(
         d + (0 * 4), wuffs_base__load_u32le__no_bounds_check(
-                         dst_palette.ptr + ((size_t)s[0] * 4)));
+                         dst_palette_ptr + ((size_t)s[0] * 4)));
     wuffs_base__store_u32le__no_bounds_check(
         d + (1 * 4), wuffs_base__load_u32le__no_bounds_check(
-                         dst_palette.ptr + ((size_t)s[1] * 4)));
+                         dst_palette_ptr + ((size_t)s[1] * 4)));
     wuffs_base__store_u32le__no_bounds_check(
         d + (2 * 4), wuffs_base__load_u32le__no_bounds_check(
-                         dst_palette.ptr + ((size_t)s[2] * 4)));
+                         dst_palette_ptr + ((size_t)s[2] * 4)));
     wuffs_base__store_u32le__no_bounds_check(
         d + (3 * 4), wuffs_base__load_u32le__no_bounds_check(
-                         dst_palette.ptr + ((size_t)s[3] * 4)));
+                         dst_palette_ptr + ((size_t)s[3] * 4)));
 
     s += loop_unroll_count * 1;
     d += loop_unroll_count * 4;
@@ -1039,7 +1095,7 @@ wuffs_base__pixel_swizzler__xxxx__index__src(wuffs_base__slice_u8 dst,
   while (n >= 1) {
     wuffs_base__store_u32le__no_bounds_check(
         d + (0 * 4), wuffs_base__load_u32le__no_bounds_check(
-                         dst_palette.ptr + ((size_t)s[0] * 4)));
+                         dst_palette_ptr + ((size_t)s[0] * 4)));
 
     s += 1 * 1;
     d += 1 * 4;
@@ -1051,37 +1107,40 @@ wuffs_base__pixel_swizzler__xxxx__index__src(wuffs_base__slice_u8 dst,
 
 static uint64_t  //
 wuffs_base__pixel_swizzler__xxxx__index_binary_alpha__src_over(
-    wuffs_base__slice_u8 dst,
-    wuffs_base__slice_u8 dst_palette,
-    wuffs_base__slice_u8 src) {
-  if (dst_palette.len != 1024) {
+    uint8_t* dst_ptr,
+    size_t dst_len,
+    uint8_t* dst_palette_ptr,
+    size_t dst_palette_len,
+    const uint8_t* src_ptr,
+    size_t src_len) {
+  if (dst_palette_len != 1024) {
     return 0;
   }
-  size_t dst_len4 = dst.len / 4;
-  size_t len = dst_len4 < src.len ? dst_len4 : src.len;
-  uint8_t* d = dst.ptr;
-  uint8_t* s = src.ptr;
+  size_t dst_len4 = dst_len / 4;
+  size_t len = (dst_len4 < src_len) ? dst_len4 : src_len;
+  uint8_t* d = dst_ptr;
+  const uint8_t* s = src_ptr;
   size_t n = len;
 
   const size_t loop_unroll_count = 4;
 
   while (n >= loop_unroll_count) {
-    uint32_t s0 = wuffs_base__load_u32le__no_bounds_check(dst_palette.ptr +
+    uint32_t s0 = wuffs_base__load_u32le__no_bounds_check(dst_palette_ptr +
                                                           ((size_t)s[0] * 4));
     if (s0) {
       wuffs_base__store_u32le__no_bounds_check(d + (0 * 4), s0);
     }
-    uint32_t s1 = wuffs_base__load_u32le__no_bounds_check(dst_palette.ptr +
+    uint32_t s1 = wuffs_base__load_u32le__no_bounds_check(dst_palette_ptr +
                                                           ((size_t)s[1] * 4));
     if (s1) {
       wuffs_base__store_u32le__no_bounds_check(d + (1 * 4), s1);
     }
-    uint32_t s2 = wuffs_base__load_u32le__no_bounds_check(dst_palette.ptr +
+    uint32_t s2 = wuffs_base__load_u32le__no_bounds_check(dst_palette_ptr +
                                                           ((size_t)s[2] * 4));
     if (s2) {
       wuffs_base__store_u32le__no_bounds_check(d + (2 * 4), s2);
     }
-    uint32_t s3 = wuffs_base__load_u32le__no_bounds_check(dst_palette.ptr +
+    uint32_t s3 = wuffs_base__load_u32le__no_bounds_check(dst_palette_ptr +
                                                           ((size_t)s[3] * 4));
     if (s3) {
       wuffs_base__store_u32le__no_bounds_check(d + (3 * 4), s3);
@@ -1093,7 +1152,7 @@ wuffs_base__pixel_swizzler__xxxx__index_binary_alpha__src_over(
   }
 
   while (n >= 1) {
-    uint32_t s0 = wuffs_base__load_u32le__no_bounds_check(dst_palette.ptr +
+    uint32_t s0 = wuffs_base__load_u32le__no_bounds_check(dst_palette_ptr +
                                                           ((size_t)s[0] * 4));
     if (s0) {
       wuffs_base__store_u32le__no_bounds_check(d + (0 * 4), s0);
@@ -1108,14 +1167,17 @@ wuffs_base__pixel_swizzler__xxxx__index_binary_alpha__src_over(
 }
 
 static uint64_t  //
-wuffs_base__pixel_swizzler__xxxx__xxx(wuffs_base__slice_u8 dst,
-                                      wuffs_base__slice_u8 dst_palette,
-                                      wuffs_base__slice_u8 src) {
-  size_t dst_len4 = dst.len / 4;
-  size_t src_len3 = src.len / 3;
-  size_t len = dst_len4 < src_len3 ? dst_len4 : src_len3;
-  uint8_t* d = dst.ptr;
-  uint8_t* s = src.ptr;
+wuffs_base__pixel_swizzler__xxxx__xxx(uint8_t* dst_ptr,
+                                      size_t dst_len,
+                                      uint8_t* dst_palette_ptr,
+                                      size_t dst_palette_len,
+                                      const uint8_t* src_ptr,
+                                      size_t src_len) {
+  size_t dst_len4 = dst_len / 4;
+  size_t src_len3 = src_len / 3;
+  size_t len = (dst_len4 < src_len3) ? dst_len4 : src_len3;
+  uint8_t* d = dst_ptr;
+  const uint8_t* s = src_ptr;
   size_t n = len;
 
   // TODO: unroll.
@@ -1134,13 +1196,16 @@ wuffs_base__pixel_swizzler__xxxx__xxx(wuffs_base__slice_u8 dst,
 }
 
 static uint64_t  //
-wuffs_base__pixel_swizzler__xxxx__y(wuffs_base__slice_u8 dst,
-                                    wuffs_base__slice_u8 dst_palette,
-                                    wuffs_base__slice_u8 src) {
-  size_t dst_len4 = dst.len / 4;
-  size_t len = dst_len4 < src.len ? dst_len4 : src.len;
-  uint8_t* d = dst.ptr;
-  uint8_t* s = src.ptr;
+wuffs_base__pixel_swizzler__xxxx__y(uint8_t* dst_ptr,
+                                    size_t dst_len,
+                                    uint8_t* dst_palette_ptr,
+                                    size_t dst_palette_len,
+                                    const uint8_t* src_ptr,
+                                    size_t src_len) {
+  size_t dst_len4 = dst_len / 4;
+  size_t len = (dst_len4 < src_len) ? dst_len4 : src_len;
+  uint8_t* d = dst_ptr;
+  const uint8_t* s = src_ptr;
   size_t n = len;
 
   // TODO: unroll.
@@ -1420,7 +1485,8 @@ wuffs_base__pixel_swizzler__swizzle_interleaved(
     wuffs_base__slice_u8 dst_palette,
     wuffs_base__slice_u8 src) {
   if (p && p->private_impl.func) {
-    return (*p->private_impl.func)(dst, dst_palette, src);
+    return (*p->private_impl.func)(dst.ptr, dst.len, dst_palette.ptr,
+                                   dst_palette.len, src.ptr, src.len);
   }
   return 0;
 }
