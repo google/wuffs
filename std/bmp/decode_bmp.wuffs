@@ -32,6 +32,9 @@ pub struct decoder? implements base.image_decoder(
 	bytes_total    : base.u64[..= 0xFFFF_FFFC_0000_0004],  // 4 * 0x7FFF_FFFF * 0x7FFF_FFFF
 	pixfmt         : base.pixel_format,
 
+	io_redirect_fourcc : base.u32,
+	io_redirect_pos    : base.u64,
+
 	padding : base.u32,
 
 	mask_r : base.u32,
@@ -66,8 +69,10 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 	var bits_per_pixel  : base.u32
 	var compression     : base.u32
 
-	if this.call_sequence <> 0 {
+	if (this.call_sequence <> 0) or (this.io_redirect_fourcc == 1) {
 		return base."#bad call sequence"
+	} else if this.io_redirect_fourcc <> 0 {
+		return base."@I/O redirect"
 	}
 
 	// Read the BITMAPFILEHEADER (14 bytes).
@@ -84,6 +89,7 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 		return "#bad header"
 	}
 	this.padding -= 14
+	this.io_redirect_pos = (this.padding as base.u64) ~sat+ args.src.position()
 
 	// Read the BITMAPINFOHEADER (version 3 / 4 / 5 is 40 / 108 / 124 bytes).
 
@@ -120,7 +126,17 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 	}
 
 	bits_per_pixel = args.src.read_u16le_as_u32?()
-	if bits_per_pixel == 24 {
+	compression = args.src.read_u32le?()
+	if bits_per_pixel == 0 {
+		if compression == 4 {
+			this.io_redirect_fourcc = 'JPEG'be
+			return base."@I/O redirect"
+		} else if compression == 5 {
+			this.io_redirect_fourcc = 'PNG 'be
+			return base."@I/O redirect"
+		}
+		return "#unsupported BMP file"
+	} else if bits_per_pixel == 24 {
 		this.bits_per_pixel = 24
 		// 3 bytes per pixel, but row lengths are rounded up to multiples of 4.
 		// The "((x + 3) >> 2) << 2" dance rounds x up.
@@ -141,8 +157,6 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 		return "#unsupported BMP file"
 	}
 	this.bytes_total = this.bytes_per_row * (this.height as base.u64)
-
-	compression = args.src.read_u32le?()
 
 	// We've already read 20 bytes from the BITMAPINFOHEADER: size (4), width
 	// (4), height (4), planes (2), bpp (2), compression (4). Skip the rest of
@@ -454,7 +468,20 @@ pub func decoder.set_report_metadata!(fourcc: base.u32, report: base.bool) {
 }
 
 pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_information, src: base.io_reader) {
-	return base."#no more information"
+	if this.io_redirect_fourcc <= 1 {
+		return base."#no more information"
+	}
+	if args.minfo <> nullptr {
+		args.minfo.set!(
+			flavor: 1,  // WUFFS_BASE__MORE_INFORMATION__FLAVOR__IO_REDIRECT
+			w: this.io_redirect_fourcc,
+			x: 0,
+			y: this.io_redirect_pos,
+			z: 0xFFFF_FFFF_FFFF_FFFF)
+	}
+	// Setting io_redirect_fourcc to a dummy value of 1 will cause future calls
+	// to return an error.
+	this.io_redirect_fourcc = 1
 }
 
 pub func decoder.workbuf_len() base.range_ii_u64 {

@@ -30,6 +30,9 @@ func (g *gen) writeExpr(b *buffer, n *a.Expr, depth uint32) error {
 	if cv := n.ConstValue(); cv != nil {
 		if typ := n.MType(); typ.IsNumTypeOrIdeal() {
 			b.writes(cv.String())
+			if cv.Cmp(maxInt64) > 0 {
+				b.writeb('u')
+			}
 		} else if typ.IsNullptr() {
 			b.writes("NULL")
 		} else if typ.IsStatus() {

@@ -179,6 +179,7 @@ load_image_config() {
     if (status.repr == NULL) {
       break;
     } else if (status.repr != wuffs_base__suspension__short_read) {
+      // TODO: handle wuffs_base__note__i_o_redirect.
       printf("%s: %s\n", g_filename, wuffs_base__status__message(&status));
       return false;
     }

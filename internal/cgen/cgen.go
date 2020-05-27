@@ -44,6 +44,8 @@ var (
 
 	mibi = big.NewInt(1 << 20)
 
+	maxInt64 = big.NewInt((1 << 63) - 1)
+
 	typeExprUtility = a.NewTypeExpr(0, t.IDBase, t.IDUtility, nil, nil, nil)
 )
 

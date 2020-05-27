@@ -221,7 +221,7 @@ decimal:
     v &= 0x0F;
 
     // UINT64_MAX is 18446744073709551615, which is ((10 * max10) + max1).
-    const uint64_t max10 = 1844674407370955161;
+    const uint64_t max10 = 1844674407370955161u;
     const uint8_t max1 = 5;
 
     for (; p < q; p++) {

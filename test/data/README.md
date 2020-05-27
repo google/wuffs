@@ -101,6 +101,9 @@ original photo of Peter J. Weinberger by Rob Pike <r@golang.org>.
 6901 "JavaScript Object Notation (JSON)
 Pointer"](https://tools.ietf.org/rfc/rfc6901.txt) specification.
 
+`rgb24png.bmp` comes from [BMP Suite](https://github.com/jsummers/bmpsuite),
+which states that its generated images "are in the public domain".
+
 `romeo.txt` is an excerpt of Shakespeare's "Romeo and Juliet", copied from
 [shakespeare.mit.edu](http://shakespeare.mit.edu/romeo_juliet/romeo_juliet.2.2.html).
 

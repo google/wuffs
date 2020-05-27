@@ -112,6 +112,58 @@ test_wuffs_bmp_decode_frame_config() {
   return NULL;
 }
 
+const char*  //
+test_wuffs_bmp_decode_io_redirect() {
+  CHECK_FOCUS(__func__);
+  wuffs_bmp__decoder dec;
+  CHECK_STATUS("initialize",
+               wuffs_bmp__decoder__initialize(
+                   &dec, sizeof dec, WUFFS_VERSION,
+                   WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = g_src_slice_u8,
+  });
+  CHECK_STRING(read_file(&src, "test/data/rgb24png.bmp"));
+  if (src.meta.wi != 1210) {
+    RETURN_FAIL("file size: have %zu, want 1210", src.meta.wi);
+  }
+
+  wuffs_base__status status =
+      wuffs_bmp__decoder__decode_image_config(&dec, NULL, &src);
+  if (status.repr != wuffs_base__note__i_o_redirect) {
+    RETURN_FAIL("decode_image_config: have \"%s\", want \"%s\"", status.repr,
+                wuffs_base__note__i_o_redirect);
+  }
+
+  wuffs_base__io_buffer empty = wuffs_base__empty_io_buffer();
+  wuffs_base__more_information minfo = wuffs_base__empty_more_information();
+  CHECK_STATUS("tell_me_more",
+               wuffs_bmp__decoder__tell_me_more(&dec, &empty, &minfo, &src));
+  if (minfo.flavor != WUFFS_BASE__MORE_INFORMATION__FLAVOR__IO_REDIRECT) {
+    RETURN_FAIL("flavor: have %" PRIu32 ", want %" PRIu32, minfo.flavor,
+                WUFFS_BASE__MORE_INFORMATION__FLAVOR__IO_REDIRECT);
+  }
+
+  uint32_t have_fourcc =
+      wuffs_base__more_information__io_redirect__fourcc(&minfo);
+  if (have_fourcc != WUFFS_BASE__FOURCC__PNG) {
+    RETURN_FAIL("fourcc: have 0x%08" PRIX32 ", want 0x%08" PRIX32, have_fourcc,
+                WUFFS_BASE__FOURCC__PNG);
+  }
+
+  wuffs_base__range_ie_u64 have_range =
+      wuffs_base__more_information__io_redirect__range(&minfo);
+  if (have_range.min_incl != 138) {
+    RETURN_FAIL("range.min_incl: have %" PRIu64 ", want 138",
+                have_range.min_incl);
+  } else if (have_range.max_excl < 1210) {
+    RETURN_FAIL("range.max_excl: have %" PRIu64 ", want >= 1210",
+                have_range.max_excl);
+  }
+  return NULL;
+}
+
   // ---------------- Mimic Tests
 
 #ifdef WUFFS_MIMIC
@@ -138,6 +190,7 @@ proc g_tests[] = {
 
     test_wuffs_bmp_decode_frame_config,
     test_wuffs_bmp_decode_interface,
+    test_wuffs_bmp_decode_io_redirect,
 
 #ifdef WUFFS_MIMIC
 

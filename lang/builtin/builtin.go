@@ -27,11 +27,14 @@ import (
 
 var FourCCs = [...][2]string{
 	{"ICCP", "International Color Consortium Profile"},
+	{"JPEG", "Joint Photographic Experts Group"},
+	{"PNG ", "Portable Network Graphics"},
 	{"XMP ", "Extensible Metadata Platform"},
 }
 
 var Statuses = [...]string{
 	// Notes.
+	`"@I/O redirect"`,
 	`"@end of data"`,
 	`"@metadata reported"`,
 
