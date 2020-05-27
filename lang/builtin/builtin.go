@@ -275,6 +275,8 @@ var Funcs = []string{
 	"io_reader.since(mark: u64) slice u8",
 	"io_reader.take!(n: u64) slice u8",
 
+	"io_reader.limited_copy_u32_to_slice!(up_to: u32, s: slice u8) u32",
+
 	"io_reader.skip?(n: u64)",
 	"io_reader.skip_u32?(n: u32)",
 

@@ -34,6 +34,26 @@ wuffs_base__io__since(uint64_t mark, uint64_t index, uint8_t* ptr) {
 
 // --------
 
+static inline uint32_t  //
+wuffs_base__io_reader__limited_copy_u32_to_slice(const uint8_t** ptr_iop_r,
+                                                 const uint8_t* io2_r,
+                                                 uint32_t length,
+                                                 wuffs_base__slice_u8 dst) {
+  const uint8_t* iop_r = *ptr_iop_r;
+  size_t n = dst.len;
+  if (n > length) {
+    n = length;
+  }
+  if (n > ((size_t)(io2_r - iop_r))) {
+    n = (size_t)(io2_r - iop_r);
+  }
+  if (n > 0) {
+    memmove(dst.ptr, iop_r, n);
+    *ptr_iop_r += n;
+  }
+  return (uint32_t)(n);
+}
+
 // wuffs_base__io_reader__match7 returns whether the io_reader's upcoming bytes
 // start with the given prefix (up to 7 bytes long). It is peek-like, not
 // read-like, in that there are no side-effects.

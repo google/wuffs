@@ -152,6 +152,11 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 		b.printf("(%s%s > %s%s)", iopPrefix, name, io1Prefix, name)
 		return nil
 
+	case t.IDLimitedCopyU32ToSlice:
+		b.printf("wuffs_base__io_reader__limited_copy_u32_to_slice(&%s%s, %s%s,",
+			iopPrefix, name, io2Prefix, name)
+		return g.writeArgs(b, args, depth)
+
 	case t.IDCountSince:
 		b.printf("wuffs_base__io__count_since(")
 		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {

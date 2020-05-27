@@ -924,8 +924,8 @@ pri func decoder.decode_id_part1?(dst: ptr base.pixel_buffer, src: base.io_reade
 pri func decoder.decode_id_part2?(dst: ptr base.pixel_buffer, src: base.io_reader, workbuf: slice base.u8) {
 	var block_size      : base.u64[..= 255]
 	var need_block_size : base.bool
+	var n_copied        : base.u32
 	var n_compressed    : base.u64
-	var compressed      : slice base.u8
 	var r               : base.io_reader
 	var mark            : base.u64
 	var lzw_status      : base.status
@@ -954,10 +954,11 @@ pri func decoder.decode_id_part2?(dst: ptr base.pixel_buffer, src: base.io_reade
 			if n_compressed <= 0 {
 				break
 			}
-			compressed = args.src.take!(n: n_compressed)
-			this.compressed[this.compressed_wi ..].copy_from_slice!(s: compressed)
-			this.compressed_wi ~sat+= n_compressed
-			block_size ~sat-= n_compressed
+			n_copied = args.src.limited_copy_u32_to_slice!(
+				up_to: (n_compressed & 0xFFFF_FFFF) as base.u32,
+				s: this.compressed[this.compressed_wi ..])
+			this.compressed_wi ~sat+= n_copied as base.u64
+			block_size ~sat-= n_copied as base.u64
 			if block_size > 0 {
 				break
 			}

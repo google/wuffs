@@ -522,6 +522,7 @@ const (
 	IDLimitedCopyU32FromHistoryFast = ID(0x172)
 	IDLimitedCopyU32FromReader      = ID(0x173)
 	IDLimitedCopyU32FromSlice       = ID(0x174)
+	IDLimitedCopyU32ToSlice         = ID(0x175)
 
 	// -------- 0x180 block.
 
@@ -883,6 +884,7 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDLimitedCopyU32FromHistoryFast: "limited_copy_u32_from_history_fast",
 	IDLimitedCopyU32FromReader:      "limited_copy_u32_from_reader",
 	IDLimitedCopyU32FromSlice:       "limited_copy_u32_from_slice",
+	IDLimitedCopyU32ToSlice:         "limited_copy_u32_to_slice",
 
 	// -------- 0x180 block.
 

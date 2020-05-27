@@ -7641,6 +7641,26 @@ wuffs_base__io__since(uint64_t mark, uint64_t index, uint8_t* ptr) {
 
 // --------
 
+static inline uint32_t  //
+wuffs_base__io_reader__limited_copy_u32_to_slice(const uint8_t** ptr_iop_r,
+                                                 const uint8_t* io2_r,
+                                                 uint32_t length,
+                                                 wuffs_base__slice_u8 dst) {
+  const uint8_t* iop_r = *ptr_iop_r;
+  size_t n = dst.len;
+  if (n > length) {
+    n = length;
+  }
+  if (n > ((size_t)(io2_r - iop_r))) {
+    n = (size_t)(io2_r - iop_r);
+  }
+  if (n > 0) {
+    memmove(dst.ptr, iop_r, n);
+    *ptr_iop_r += n;
+  }
+  return (uint32_t)(n);
+}
+
 // wuffs_base__io_reader__match7 returns whether the io_reader's upcoming bytes
 // start with the given prefix (up to 7 bytes long). It is peek-like, not
 // read-like, in that there are no side-effects.
@@ -21277,8 +21297,8 @@ wuffs_gif__decoder__decode_id_part2(wuffs_gif__decoder* self,
 
   uint64_t v_block_size = 0;
   bool v_need_block_size = false;
+  uint32_t v_n_copied = 0;
   uint64_t v_n_compressed = 0;
-  wuffs_base__slice_u8 v_compressed = {0};
   wuffs_base__io_buffer u_r = wuffs_base__empty_io_buffer();
   wuffs_base__io_buffer* v_r = &u_r;
   const uint8_t* iop_v_r WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -21345,17 +21365,16 @@ wuffs_gif__decoder__decode_id_part2(wuffs_gif__decoder* self,
         if (v_n_compressed <= 0) {
           goto label__0__break;
         }
-        v_compressed =
-            wuffs_base__io_reader__take(&iop_a_src, io2_a_src, v_n_compressed);
-        wuffs_base__slice_u8__copy_from_slice(
+        v_n_copied = wuffs_base__io_reader__limited_copy_u32_to_slice(
+            &iop_a_src, io2_a_src, ((uint32_t)((v_n_compressed & 4294967295))),
             wuffs_base__slice_u8__subslice_i(
                 wuffs_base__make_slice_u8(self->private_data.f_compressed,
                                           4096),
-                self->private_impl.f_compressed_wi),
-            v_compressed);
+                self->private_impl.f_compressed_wi));
         wuffs_base__u64__sat_add_indirect(&self->private_impl.f_compressed_wi,
-                                          v_n_compressed);
-        wuffs_base__u64__sat_sub_indirect(&v_block_size, v_n_compressed);
+                                          ((uint64_t)(v_n_copied)));
+        wuffs_base__u64__sat_sub_indirect(&v_block_size,
+                                          ((uint64_t)(v_n_copied)));
         if (v_block_size > 0) {
           goto label__0__break;
         }
