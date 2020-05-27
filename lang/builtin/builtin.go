@@ -331,16 +331,16 @@ var Funcs = []string{
 	"io_writer.since(mark: u64) slice u8",
 
 	"io_writer.copy_from_slice!(s: slice u8) u64",
-	"io_writer.copy_n32_from_history!(n: u32, distance: u32) u32",
-	"io_writer.copy_n32_from_reader!(n: u32, r: io_reader) u32",
-	"io_writer.copy_n32_from_slice!(n: u32, s: slice u8) u32",
+	"io_writer.limited_copy_u32_from_history!(up_to: u32, distance: u32) u32",
+	"io_writer.limited_copy_u32_from_reader!(up_to: u32, r: io_reader) u32",
+	"io_writer.limited_copy_u32_from_slice!(up_to: u32, s: slice u8) u32",
 
 	// TODO: this should have explicit pre-conditions:
-	//  - n <= this.available()
+	//  - up_to <= this.available()
 	//  - distance > 0
 	//  - distance <= this.since_mark().length()
 	// For now, that's all implicitly checked (i.e. hard coded).
-	"io_writer.copy_n32_from_history_fast!(n: u32, distance: u32) u32",
+	"io_writer.limited_copy_u32_from_history_fast!(up_to: u32, distance: u32) u32",
 
 	// ---- token_writer
 

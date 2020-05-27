@@ -517,11 +517,11 @@ const (
 	IDSkip32Fast       = ID(0x16C)
 	IDTake             = ID(0x16D)
 
-	IDCopyFromSlice          = ID(0x170)
-	IDCopyN32FromHistory     = ID(0x171)
-	IDCopyN32FromHistoryFast = ID(0x172)
-	IDCopyN32FromReader      = ID(0x173)
-	IDCopyN32FromSlice       = ID(0x174)
+	IDCopyFromSlice                 = ID(0x170)
+	IDLimitedCopyU32FromHistory     = ID(0x171)
+	IDLimitedCopyU32FromHistoryFast = ID(0x172)
+	IDLimitedCopyU32FromReader      = ID(0x173)
+	IDLimitedCopyU32FromSlice       = ID(0x174)
 
 	// -------- 0x180 block.
 
@@ -878,11 +878,11 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDSkip32Fast:       "skip32_fast",
 	IDTake:             "take",
 
-	IDCopyFromSlice:          "copy_from_slice",
-	IDCopyN32FromHistory:     "copy_n32_from_history",
-	IDCopyN32FromHistoryFast: "copy_n32_from_history_fast",
-	IDCopyN32FromReader:      "copy_n32_from_reader",
-	IDCopyN32FromSlice:       "copy_n32_from_slice",
+	IDCopyFromSlice:                 "copy_from_slice",
+	IDLimitedCopyU32FromHistory:     "limited_copy_u32_from_history",
+	IDLimitedCopyU32FromHistoryFast: "limited_copy_u32_from_history_fast",
+	IDLimitedCopyU32FromReader:      "limited_copy_u32_from_reader",
+	IDLimitedCopyU32FromSlice:       "limited_copy_u32_from_slice",
 
 	// -------- 0x180 block.
 

@@ -1019,8 +1019,8 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (bounds, e
 				return bounds{}, err
 			}
 
-		} else if method == t.IDCopyN32FromHistoryFast {
-			if err := q.canCopyN32FromHistoryFast(recv, n.Args()); err != nil {
+		} else if method == t.IDLimitedCopyU32FromHistoryFast {
+			if err := q.canLimitedCopyU32FromHistoryFast(recv, n.Args()); err != nil {
 				return bounds{}, err
 			}
 
@@ -1100,7 +1100,7 @@ func (q *checker) canUndoByte(recv *a.Expr) error {
 	return fmt.Errorf("check: could not prove %s.can_undo_byte()", recv.Str(q.tm))
 }
 
-func (q *checker) canCopyN32FromHistoryFast(recv *a.Expr, args []*a.Node) error {
+func (q *checker) canLimitedCopyU32FromHistoryFast(recv *a.Expr, args []*a.Node) error {
 	// As per cgen's io-private.h, there are three pre-conditions:
 	//  - n <= this.available()
 	//  - distance > 0

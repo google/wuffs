@@ -294,7 +294,7 @@ pri func decoder.decode_uncompressed?(dst: base.io_writer, src: base.io_reader) 
 	}
 	length = length.low_bits(n: 16)
 	while true {
-		n_copied = args.dst.copy_n32_from_reader!(n: length, r: args.src)
+		n_copied = args.dst.limited_copy_u32_from_reader!(up_to: length, r: args.src)
 		if length <= n_copied {
 			return ok
 		}
