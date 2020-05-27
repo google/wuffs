@@ -351,7 +351,6 @@ var Funcs = []string{
 	"token_writer.available() u64",
 
 	// ---- frame_config
-	// Duration's upper bound is the maximum possible i64 value.
 
 	"frame_config.blend() u8",
 	"frame_config.disposal() u8",
