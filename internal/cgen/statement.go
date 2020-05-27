@@ -262,9 +262,9 @@ func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {
 		if e.Operator() != 0 {
 			prefix = aPrefix
 		}
-		cTyp := "reader"
+		cTyp, qualifier := "reader", "const "
 		if e.MType().QID()[1] == t.IDIOWriter {
-			cTyp = "writer"
+			cTyp, qualifier = "writer", ""
 		}
 		name := e.Ident().Str(g.tm)
 		b.printf("wuffs_base__io_buffer* %s%d_%s%s = %s%s;\n",
@@ -274,14 +274,14 @@ func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {
 		// does this work if the io_bind body advances these pointers, either
 		// directly or by calling other funcs?
 		if e.Operator() == 0 {
-			b.printf("uint8_t *%s%d_%s%s%s = %s%s%s;\n",
-				oPrefix, ioBindNum, iopPrefix, prefix, name, iopPrefix, prefix, name)
-			b.printf("uint8_t *%s%d_%s%s%s = %s%s%s;\n",
-				oPrefix, ioBindNum, io0Prefix, prefix, name, io0Prefix, prefix, name)
-			b.printf("uint8_t *%s%d_%s%s%s = %s%s%s;\n",
-				oPrefix, ioBindNum, io1Prefix, prefix, name, io1Prefix, prefix, name)
-			b.printf("uint8_t *%s%d_%s%s%s = %s%s%s;\n",
-				oPrefix, ioBindNum, io2Prefix, prefix, name, io2Prefix, prefix, name)
+			b.printf("%suint8_t *%s%d_%s%s%s = %s%s%s;\n",
+				qualifier, oPrefix, ioBindNum, iopPrefix, prefix, name, iopPrefix, prefix, name)
+			b.printf("%suint8_t *%s%d_%s%s%s = %s%s%s;\n",
+				qualifier, oPrefix, ioBindNum, io0Prefix, prefix, name, io0Prefix, prefix, name)
+			b.printf("%suint8_t *%s%d_%s%s%s = %s%s%s;\n",
+				qualifier, oPrefix, ioBindNum, io1Prefix, prefix, name, io1Prefix, prefix, name)
+			b.printf("%suint8_t *%s%d_%s%s%s = %s%s%s;\n",
+				qualifier, oPrefix, ioBindNum, io2Prefix, prefix, name, io2Prefix, prefix, name)
 		}
 
 		if n.Keyword() == t.IDIOBind {

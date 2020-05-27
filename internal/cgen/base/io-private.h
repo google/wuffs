@@ -106,14 +106,14 @@ static inline uint32_t  //
 wuffs_base__io_writer__copy_n32_from_reader(uint8_t** ptr_iop_w,
                                             uint8_t* io2_w,
                                             uint32_t length,
-                                            uint8_t** ptr_iop_r,
-                                            uint8_t* io2_r) {
+                                            const uint8_t** ptr_iop_r,
+                                            const uint8_t* io2_r) {
   uint8_t* iop_w = *ptr_iop_w;
   size_t n = length;
   if (n > ((size_t)(io2_w - iop_w))) {
     n = (size_t)(io2_w - iop_w);
   }
-  uint8_t* iop_r = *ptr_iop_r;
+  const uint8_t* iop_r = *ptr_iop_r;
   if (n > ((size_t)(io2_r - iop_r))) {
     n = (size_t)(io2_r - iop_r);
   }
@@ -176,8 +176,8 @@ wuffs_base__io_writer__copy_n32_from_slice(uint8_t** ptr_iop_w,
 //  - 1 means inconclusive, equivalent to "$short read".
 //  - 2 means failure.
 static inline uint32_t  //
-wuffs_base__io_reader__match7(uint8_t* iop_r,
-                              uint8_t* io2_r,
+wuffs_base__io_reader__match7(const uint8_t* iop_r,
+                              const uint8_t* io2_r,
                               wuffs_base__io_buffer* r,
                               uint64_t a) {
   uint32_t n = a & 7;
@@ -201,10 +201,10 @@ wuffs_base__io_reader__match7(uint8_t* iop_r,
 
 static inline wuffs_base__io_buffer*  //
 wuffs_base__io_reader__set(wuffs_base__io_buffer* b,
-                           uint8_t** ptr_iop_r,
-                           uint8_t** ptr_io0_r,
-                           uint8_t** ptr_io1_r,
-                           uint8_t** ptr_io2_r,
+                           const uint8_t** ptr_iop_r,
+                           const uint8_t** ptr_io0_r,
+                           const uint8_t** ptr_io1_r,
+                           const uint8_t** ptr_io2_r,
                            wuffs_base__slice_u8 data) {
   b->data = data;
   b->meta.wi = data.len;
@@ -220,15 +220,24 @@ wuffs_base__io_reader__set(wuffs_base__io_buffer* b,
   return b;
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-qual"
+// TODO: can we avoid the const_cast (by deleting this function)? This might
+// involve converting the call sites to take an io_reader instead of a slice u8
+// (the result of io_reader.take).
 static inline wuffs_base__slice_u8  //
-wuffs_base__io_reader__take(uint8_t** ptr_iop_r, uint8_t* io2_r, uint64_t n) {
+wuffs_base__io_reader__take(const uint8_t** ptr_iop_r,
+                            const uint8_t* io2_r,
+                            uint64_t n) {
   if (n <= ((size_t)(io2_r - *ptr_iop_r))) {
-    uint8_t* p = *ptr_iop_r;
+    const uint8_t* p = *ptr_iop_r;
     *ptr_iop_r += n;
-    return wuffs_base__make_slice_u8(p, n);
+    // The arg is what C calls C++'s "const_cast<uint8_t*>(p)".
+    return wuffs_base__make_slice_u8((uint8_t*)(p), n);
   }
   return wuffs_base__make_slice_u8(NULL, 0);
 }
+#pragma GCC diagnostic pop
 
 static inline wuffs_base__io_buffer*  //
 wuffs_base__io_writer__set(wuffs_base__io_buffer* b,

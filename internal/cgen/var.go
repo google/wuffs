@@ -86,9 +86,17 @@ func (g *gen) writeLoadDerivedVar(b *buffer, hack string, prefix string, name t.
 
 	elem := ""
 	if typ.IsIOType() {
-		elem = "uint8_t"
+		if typ.QID()[1] == t.IDIOReader {
+			elem = "const uint8_t"
+		} else {
+			elem = "uint8_t"
+		}
 	} else if typ.IsTokenType() {
-		elem = "wuffs_base__token"
+		if typ.QID()[1] == t.IDTokenReader {
+			elem = "const wuffs_base__token"
+		} else {
+			elem = "wuffs_base__token"
+		}
 	} else {
 		return nil
 	}
@@ -303,10 +311,18 @@ func (g *gen) writeVars(b *buffer, f *funk, inStructDecl bool) error {
 		}
 
 		if typ.IsIOType() {
-			b.printf("uint8_t* %s%s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;\n", iopPrefix, vPrefix, name)
-			b.printf("uint8_t* %s%s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;\n", io0Prefix, vPrefix, name)
-			b.printf("uint8_t* %s%s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;\n", io1Prefix, vPrefix, name)
-			b.printf("uint8_t* %s%s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;\n", io2Prefix, vPrefix, name)
+			qualifier := ""
+			if typ.QID()[1] == t.IDIOReader {
+				qualifier = "const "
+			}
+			b.printf("%suint8_t* %s%s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;\n",
+				qualifier, iopPrefix, vPrefix, name)
+			b.printf("%suint8_t* %s%s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;\n",
+				qualifier, io0Prefix, vPrefix, name)
+			b.printf("%suint8_t* %s%s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;\n",
+				qualifier, io1Prefix, vPrefix, name)
+			b.printf("%suint8_t* %s%s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;\n",
+				qualifier, io2Prefix, vPrefix, name)
 		}
 	}
 	return nil
