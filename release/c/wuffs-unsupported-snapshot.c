@@ -12251,7 +12251,7 @@ wuffs_bmp__decoder__decode_image_config(wuffs_bmp__decoder* self,
       status = wuffs_base__make_status(wuffs_base__error__bad_call_sequence);
       goto exit;
     } else if (self->private_impl.f_io_redirect_fourcc != 0) {
-      status = wuffs_base__make_status(wuffs_base__note__i_o_redirect);
+      status = wuffs_base__make_status(wuffs_base__note__metadata_reported);
       goto ok;
     }
     {
@@ -12557,11 +12557,11 @@ wuffs_bmp__decoder__decode_image_config(wuffs_bmp__decoder* self,
     if (v_bits_per_pixel == 0) {
       if (v_compression == 4) {
         self->private_impl.f_io_redirect_fourcc = 1246774599;
-        status = wuffs_base__make_status(wuffs_base__note__i_o_redirect);
+        status = wuffs_base__make_status(wuffs_base__note__metadata_reported);
         goto ok;
       } else if (v_compression == 5) {
         self->private_impl.f_io_redirect_fourcc = 1347307296;
-        status = wuffs_base__make_status(wuffs_base__note__i_o_redirect);
+        status = wuffs_base__make_status(wuffs_base__note__metadata_reported);
         goto ok;
       }
       status = wuffs_base__make_status(wuffs_bmp__error__unsupported_bmp_file);

@@ -72,7 +72,7 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 	if (this.call_sequence <> 0) or (this.io_redirect_fourcc == 1) {
 		return base."#bad call sequence"
 	} else if this.io_redirect_fourcc <> 0 {
-		return base."@I/O redirect"
+		return base."@metadata reported"  // XXX
 	}
 
 	// Read the BITMAPFILEHEADER (14 bytes).
@@ -130,10 +130,10 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 	if bits_per_pixel == 0 {
 		if compression == 4 {
 			this.io_redirect_fourcc = 'JPEG'be
-			return base."@I/O redirect"
+			return base."@metadata reported"  // XXX
 		} else if compression == 5 {
 			this.io_redirect_fourcc = 'PNG 'be
-			return base."@I/O redirect"
+			return base."@metadata reported"  // XXX
 		}
 		return "#unsupported BMP file"
 	} else if bits_per_pixel == 24 {

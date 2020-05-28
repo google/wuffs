@@ -131,9 +131,9 @@ test_wuffs_bmp_decode_io_redirect() {
 
   wuffs_base__status status =
       wuffs_bmp__decoder__decode_image_config(&dec, NULL, &src);
-  if (status.repr != wuffs_base__note__i_o_redirect) {
+  if (status.repr != wuffs_base__note__metadata_reported) {  // XXX
     RETURN_FAIL("decode_image_config: have \"%s\", want \"%s\"", status.repr,
-                wuffs_base__note__i_o_redirect);
+                wuffs_base__note__metadata_reported);  // XXX
   }
 
   wuffs_base__io_buffer empty = wuffs_base__empty_io_buffer();
