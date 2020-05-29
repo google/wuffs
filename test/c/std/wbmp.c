@@ -223,7 +223,7 @@ test_wuffs_pixel_swizzler_swizzle() {
                 &swizzler, dst_pixfmt, dst_palette,
                 wuffs_base__make_pixel_format(srcs[s].pixfmt_repr),
                 wuffs_base__pixel_buffer__palette(&src_pixbuf), blends[b]));
-        wuffs_base__pixel_swizzler__swizzle_interleaved(
+        wuffs_base__pixel_swizzler__swizzle_interleaved_from_slice(
             &swizzler,
             wuffs_base__table_u8__row(
                 wuffs_base__pixel_buffer__plane(&dst_pixbuf, 0), height / 2),

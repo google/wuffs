@@ -1479,7 +1479,7 @@ wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
 }
 
 WUFFS_BASE__MAYBE_STATIC uint64_t  //
-wuffs_base__pixel_swizzler__swizzle_interleaved(
+wuffs_base__pixel_swizzler__swizzle_interleaved_from_slice(
     const wuffs_base__pixel_swizzler* p,
     wuffs_base__slice_u8 dst,
     wuffs_base__slice_u8 dst_palette,

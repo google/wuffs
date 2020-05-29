@@ -3800,9 +3800,10 @@ typedef struct {
                                     wuffs_base__pixel_format src_format,
                                     wuffs_base__slice_u8 src_palette,
                                     wuffs_base__pixel_blend blend);
-  inline uint64_t swizzle_interleaved(wuffs_base__slice_u8 dst,
-                                      wuffs_base__slice_u8 dst_palette,
-                                      wuffs_base__slice_u8 src) const;
+  inline uint64_t swizzle_interleaved_from_slice(
+      wuffs_base__slice_u8 dst,
+      wuffs_base__slice_u8 dst_palette,
+      wuffs_base__slice_u8 src) const;
 #endif  // __cplusplus
 
 } wuffs_base__pixel_swizzler;
@@ -3821,14 +3822,14 @@ wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
                                     wuffs_base__slice_u8 src_palette,
                                     wuffs_base__pixel_blend blend);
 
-// wuffs_base__pixel_swizzler__swizzle_interleaved converts pixels from a
-// source format to a destination format.
+// wuffs_base__pixel_swizzler__swizzle_interleaved_from_slice converts pixels
+// from a source format to a destination format.
 //
 // For modular builds that divide the base module into sub-modules, using this
 // function requires the WUFFS_CONFIG__MODULE__BASE__PIXCONV sub-module, not
 // just WUFFS_CONFIG__MODULE__BASE__CORE.
 WUFFS_BASE__MAYBE_STATIC uint64_t  //
-wuffs_base__pixel_swizzler__swizzle_interleaved(
+wuffs_base__pixel_swizzler__swizzle_interleaved_from_slice(
     const wuffs_base__pixel_swizzler* p,
     wuffs_base__slice_u8 dst,
     wuffs_base__slice_u8 dst_palette,
@@ -3847,12 +3848,12 @@ wuffs_base__pixel_swizzler::prepare(wuffs_base__pixel_format dst_format,
 }
 
 uint64_t  //
-wuffs_base__pixel_swizzler::swizzle_interleaved(
+wuffs_base__pixel_swizzler::swizzle_interleaved_from_slice(
     wuffs_base__slice_u8 dst,
     wuffs_base__slice_u8 dst_palette,
     wuffs_base__slice_u8 src) const {
-  return wuffs_base__pixel_swizzler__swizzle_interleaved(this, dst, dst_palette,
-                                                         src);
+  return wuffs_base__pixel_swizzler__swizzle_interleaved_from_slice(
+      this, dst, dst_palette, src);
 }
 
 #endif  // __cplusplus
@@ -11838,7 +11839,7 @@ wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
 }
 
 WUFFS_BASE__MAYBE_STATIC uint64_t  //
-wuffs_base__pixel_swizzler__swizzle_interleaved(
+wuffs_base__pixel_swizzler__swizzle_interleaved_from_slice(
     const wuffs_base__pixel_swizzler* p,
     wuffs_base__slice_u8 dst,
     wuffs_base__slice_u8 dst_palette,
@@ -13134,7 +13135,7 @@ wuffs_bmp__decoder__swizzle(wuffs_bmp__decoder* self,
     }
     v_i = (((uint64_t)(self->private_impl.f_dst_x)) * v_dst_bytes_per_pixel);
     if (v_i < ((uint64_t)(v_dst.len))) {
-      wuffs_base__pixel_swizzler__swizzle_interleaved(
+      wuffs_base__pixel_swizzler__swizzle_interleaved_from_slice(
           &self->private_impl.f_swizzler,
           wuffs_base__slice_u8__subslice_i(v_dst, v_i),
           wuffs_base__utility__empty_slice_u8(),
@@ -13169,7 +13170,7 @@ wuffs_bmp__decoder__swizzle(wuffs_bmp__decoder* self,
     }
     v_i = (((uint64_t)(self->private_impl.f_dst_x)) * v_dst_bytes_per_pixel);
     if (v_i < ((uint64_t)(v_dst.len))) {
-      v_n = wuffs_base__pixel_swizzler__swizzle_interleaved(
+      v_n = wuffs_base__pixel_swizzler__swizzle_interleaved_from_slice(
           &self->private_impl.f_swizzler,
           wuffs_base__slice_u8__subslice_i(v_dst, v_i),
           wuffs_base__utility__empty_slice_u8(), a_src);
@@ -21645,7 +21646,7 @@ label__0__continue:;
       } else {
         v_dst = wuffs_base__slice_u8__subslice_i(v_dst, v_i);
       }
-      v_n = wuffs_base__pixel_swizzler__swizzle_interleaved(
+      v_n = wuffs_base__pixel_swizzler__swizzle_interleaved_from_slice(
           &self->private_impl.f_swizzler, v_dst,
           wuffs_base__make_slice_u8(self->private_data.f_dst_palette, 1024),
           v_src);
@@ -25119,7 +25120,7 @@ wuffs_wbmp__decoder__decode_frame(wuffs_wbmp__decoder* self,
             v_src[0] = 255;
           }
           v_c = ((uint8_t)(((((uint32_t)(v_c)) << 1) & 255)));
-          wuffs_base__pixel_swizzler__swizzle_interleaved(
+          wuffs_base__pixel_swizzler__swizzle_interleaved_from_slice(
               &self->private_impl.f_swizzler, v_dst,
               wuffs_base__utility__empty_slice_u8(),
               wuffs_base__make_slice_u8(v_src, 1));

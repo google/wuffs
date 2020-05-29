@@ -1075,7 +1075,7 @@ pri func decoder.copy_to_image_buffer!(pb: ptr base.pixel_buffer, src: slice bas
 			} else {
 				dst = dst[i ..]
 			}
-			n = this.swizzler.swizzle_interleaved!(
+			n = this.swizzler.swizzle_interleaved_from_slice!(
 				dst: dst, dst_palette: this.dst_palette[..], src: src)
 
 			src_ri ~sat+= n

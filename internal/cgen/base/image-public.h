@@ -1307,9 +1307,10 @@ typedef struct {
                                     wuffs_base__pixel_format src_format,
                                     wuffs_base__slice_u8 src_palette,
                                     wuffs_base__pixel_blend blend);
-  inline uint64_t swizzle_interleaved(wuffs_base__slice_u8 dst,
-                                      wuffs_base__slice_u8 dst_palette,
-                                      wuffs_base__slice_u8 src) const;
+  inline uint64_t swizzle_interleaved_from_slice(
+      wuffs_base__slice_u8 dst,
+      wuffs_base__slice_u8 dst_palette,
+      wuffs_base__slice_u8 src) const;
 #endif  // __cplusplus
 
 } wuffs_base__pixel_swizzler;
@@ -1328,14 +1329,14 @@ wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
                                     wuffs_base__slice_u8 src_palette,
                                     wuffs_base__pixel_blend blend);
 
-// wuffs_base__pixel_swizzler__swizzle_interleaved converts pixels from a
-// source format to a destination format.
+// wuffs_base__pixel_swizzler__swizzle_interleaved_from_slice converts pixels
+// from a source format to a destination format.
 //
 // For modular builds that divide the base module into sub-modules, using this
 // function requires the WUFFS_CONFIG__MODULE__BASE__PIXCONV sub-module, not
 // just WUFFS_CONFIG__MODULE__BASE__CORE.
 WUFFS_BASE__MAYBE_STATIC uint64_t  //
-wuffs_base__pixel_swizzler__swizzle_interleaved(
+wuffs_base__pixel_swizzler__swizzle_interleaved_from_slice(
     const wuffs_base__pixel_swizzler* p,
     wuffs_base__slice_u8 dst,
     wuffs_base__slice_u8 dst_palette,
@@ -1354,12 +1355,12 @@ wuffs_base__pixel_swizzler::prepare(wuffs_base__pixel_format dst_format,
 }
 
 uint64_t  //
-wuffs_base__pixel_swizzler::swizzle_interleaved(
+wuffs_base__pixel_swizzler::swizzle_interleaved_from_slice(
     wuffs_base__slice_u8 dst,
     wuffs_base__slice_u8 dst_palette,
     wuffs_base__slice_u8 src) const {
-  return wuffs_base__pixel_swizzler__swizzle_interleaved(this, dst, dst_palette,
-                                                         src);
+  return wuffs_base__pixel_swizzler__swizzle_interleaved_from_slice(
+      this, dst, dst_palette, src);
 }
 
 #endif  // __cplusplus
