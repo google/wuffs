@@ -34,6 +34,7 @@ var FourCCs = [...][2]string{
 
 var Statuses = [...]string{
 	// Notes.
+	`"@I/O redirect"`,
 	`"@end of data"`,
 	`"@metadata reported"`,
 

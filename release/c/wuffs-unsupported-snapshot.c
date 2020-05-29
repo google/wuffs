@@ -189,6 +189,7 @@ typedef struct {
 
 } wuffs_base__status;
 
+extern const char* wuffs_base__note__i_o_redirect;
 extern const char* wuffs_base__note__end_of_data;
 extern const char* wuffs_base__note__metadata_reported;
 extern const char* wuffs_base__suspension__even_more_information;
@@ -7966,6 +7967,7 @@ const uint32_t wuffs_base__pixel_format__bits_per_channel[16] = {
     0x08, 0x0A, 0x0C, 0x10, 0x18, 0x20, 0x30, 0x40,
 };
 
+const char* wuffs_base__note__i_o_redirect = "@base: I/O redirect";
 const char* wuffs_base__note__end_of_data = "@base: end of data";
 const char* wuffs_base__note__metadata_reported = "@base: metadata reported";
 const char* wuffs_base__suspension__even_more_information =
@@ -12249,7 +12251,7 @@ wuffs_bmp__decoder__decode_image_config(wuffs_bmp__decoder* self,
       status = wuffs_base__make_status(wuffs_base__error__bad_call_sequence);
       goto exit;
     } else if (self->private_impl.f_io_redirect_fourcc != 0) {
-      status = wuffs_base__make_status(wuffs_base__note__metadata_reported);
+      status = wuffs_base__make_status(wuffs_base__note__i_o_redirect);
       goto ok;
     }
     {
@@ -12555,11 +12557,11 @@ wuffs_bmp__decoder__decode_image_config(wuffs_bmp__decoder* self,
     if (v_bits_per_pixel == 0) {
       if (v_compression == 4) {
         self->private_impl.f_io_redirect_fourcc = 1246774599;
-        status = wuffs_base__make_status(wuffs_base__note__metadata_reported);
+        status = wuffs_base__make_status(wuffs_base__note__i_o_redirect);
         goto ok;
       } else if (v_compression == 5) {
         self->private_impl.f_io_redirect_fourcc = 1347307296;
-        status = wuffs_base__make_status(wuffs_base__note__metadata_reported);
+        status = wuffs_base__make_status(wuffs_base__note__i_o_redirect);
         goto ok;
       }
       status = wuffs_base__make_status(wuffs_bmp__error__unsupported_bmp_file);
