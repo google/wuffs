@@ -189,7 +189,6 @@ typedef struct {
 
 } wuffs_base__status;
 
-extern const char* wuffs_base__note__i_o_redirect;
 extern const char* wuffs_base__note__end_of_data;
 extern const char* wuffs_base__note__metadata_reported;
 extern const char* wuffs_base__suspension__even_more_information;
@@ -7967,7 +7966,6 @@ const uint32_t wuffs_base__pixel_format__bits_per_channel[16] = {
     0x08, 0x0A, 0x0C, 0x10, 0x18, 0x20, 0x30, 0x40,
 };
 
-const char* wuffs_base__note__i_o_redirect = "@base: I/O redirect";
 const char* wuffs_base__note__end_of_data = "@base: end of data";
 const char* wuffs_base__note__metadata_reported = "@base: metadata reported";
 const char* wuffs_base__suspension__even_more_information =
