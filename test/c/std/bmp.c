@@ -70,6 +70,23 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 // ---------------- BMP Tests
 
 const char*  //
+wuffs_bmp_decode(uint64_t* n_bytes_out,
+                 wuffs_base__io_buffer* dst,
+                 uint32_t wuffs_initialize_flags,
+                 wuffs_base__pixel_format pixfmt,
+                 wuffs_base__io_buffer* src) {
+  wuffs_bmp__decoder dec;
+  CHECK_STATUS("initialize",
+               wuffs_bmp__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION,
+                                              wuffs_initialize_flags));
+  return do_run__wuffs_base__image_decoder(
+      wuffs_bmp__decoder__upcast_as__wuffs_base__image_decoder(&dec),
+      n_bytes_out, dst, pixfmt, src);
+}
+
+// --------
+
+const char*  //
 test_wuffs_bmp_decode_interface() {
   CHECK_FOCUS(__func__);
   wuffs_bmp__decoder dec;
@@ -172,9 +189,16 @@ test_wuffs_bmp_decode_io_redirect() {
 
 #endif  // WUFFS_MIMIC
 
-  // ---------------- BMP Benches
+// ---------------- BMP Benches
 
-  // No BMP benches.
+const char*  //
+bench_wuffs_bmp_decode_40k() {
+  CHECK_FOCUS(__func__);
+  return do_bench_image_decode(
+      &wuffs_bmp_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
+      "test/data/hat.bmp", 0, SIZE_MAX, 1000);
+}
 
   // ---------------- Mimic Benches
 
@@ -203,7 +227,7 @@ proc g_tests[] = {
 
 proc g_benches[] = {
 
-// No BMP benches.
+    bench_wuffs_bmp_decode_40k,
 
 #ifdef WUFFS_MIMIC
 

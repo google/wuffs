@@ -946,6 +946,98 @@ do_test_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
 // --------
 
 const char*  //
+do_run__wuffs_base__image_decoder(wuffs_base__image_decoder* b,
+                                  uint64_t* n_bytes_out,
+                                  wuffs_base__io_buffer* dst,
+                                  wuffs_base__pixel_format pixfmt,
+                                  wuffs_base__io_buffer* src) {
+  wuffs_base__image_config ic = ((wuffs_base__image_config){});
+  wuffs_base__frame_config fc = ((wuffs_base__frame_config){});
+  wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
+
+  uint32_t bits_per_pixel = wuffs_base__pixel_format__bits_per_pixel(&pixfmt);
+  if (bits_per_pixel == 0) {
+    return "do_run__wuffs_base__image_decoder: invalid bits_per_pixel";
+  } else if ((bits_per_pixel % 8) != 0) {
+    return "do_run__wuffs_base__image_decoder: cannot bench fractional bytes";
+  }
+  uint64_t bytes_per_pixel = bits_per_pixel / 8;
+
+  CHECK_STATUS("decode_image_config",
+               wuffs_base__image_decoder__decode_image_config(b, &ic, src));
+  wuffs_base__pixel_config__set(&ic.pixcfg, pixfmt.repr,
+                                WUFFS_BASE__PIXEL_SUBSAMPLING__NONE,
+                                wuffs_base__pixel_config__width(&ic.pixcfg),
+                                wuffs_base__pixel_config__height(&ic.pixcfg));
+  CHECK_STATUS("set_from_slice", wuffs_base__pixel_buffer__set_from_slice(
+                                     &pb, &ic.pixcfg, g_pixel_slice_u8));
+
+  while (true) {
+    wuffs_base__status status =
+        wuffs_base__image_decoder__decode_frame_config(b, &fc, src);
+    if (status.repr == wuffs_base__note__end_of_data) {
+      break;
+    } else {
+      CHECK_STATUS("decode_frame_config", status);
+    }
+    wuffs_base__pixel_blend blend =
+        ((wuffs_base__frame_config__index(&fc) == 0) ||
+         wuffs_base__frame_config__overwrite_instead_of_blend(&fc) ||
+         wuffs_base__pixel_format__is_indexed(&pixfmt))
+            ? WUFFS_BASE__PIXEL_BLEND__SRC
+            : WUFFS_BASE__PIXEL_BLEND__SRC_OVER;
+
+    CHECK_STATUS("decode_frame",
+                 wuffs_base__image_decoder__decode_frame(
+                     b, &pb, src, blend, g_work_slice_u8, NULL));
+
+    if (n_bytes_out) {
+      uint64_t frame_width = wuffs_base__frame_config__width(&fc);
+      uint64_t frame_height = wuffs_base__frame_config__height(&fc);
+      *n_bytes_out += frame_width * frame_height * bytes_per_pixel;
+    }
+    if (dst) {
+      CHECK_STRING(copy_to_io_buffer_from_pixel_buffer(
+          dst, &pb, wuffs_base__frame_config__bounds(&fc)));
+    }
+  }
+  return NULL;
+}
+
+const char*  //
+do_bench_image_decode(
+    const char* (*decode_func)(uint64_t* n_bytes_out,
+                               wuffs_base__io_buffer* dst,
+                               uint32_t wuffs_initialize_flags,
+                               wuffs_base__pixel_format pixfmt,
+                               wuffs_base__io_buffer* src),
+    uint32_t wuffs_initialize_flags,
+    wuffs_base__pixel_format pixfmt,
+    const char* src_filename,
+    size_t src_ri,
+    size_t src_wi,
+    uint64_t iters_unscaled) {
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = g_src_slice_u8,
+  });
+  CHECK_STRING(read_file_fragment(&src, src_filename, src_ri, src_wi));
+
+  bench_start();
+  uint64_t n_bytes = 0;
+  uint64_t i;
+  uint64_t iters = iters_unscaled * g_flags.iterscale;
+  for (i = 0; i < iters; i++) {
+    src.meta.ri = src_ri;
+    CHECK_STRING(
+        (*decode_func)(&n_bytes, NULL, wuffs_initialize_flags, pixfmt, &src));
+  }
+  bench_finish(iters, n_bytes);
+  return NULL;
+}
+
+// --------
+
+const char*  //
 do_test__wuffs_base__hasher_u32(wuffs_base__hasher_u32* b,
                                 const char* src_filename,
                                 size_t src_ri,
