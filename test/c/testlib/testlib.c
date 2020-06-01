@@ -1017,9 +1017,6 @@ do_bench_image_decode(
     size_t src_ri,
     size_t src_wi,
     uint64_t iters_unscaled) {
-  wuffs_base__io_buffer have = ((wuffs_base__io_buffer){
-      .data = g_have_slice_u8,
-  });
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
       .data = g_src_slice_u8,
   });
@@ -1030,10 +1027,9 @@ do_bench_image_decode(
   uint64_t i;
   uint64_t iters = iters_unscaled * g_flags.iterscale;
   for (i = 0; i < iters; i++) {
-    have.meta.wi = 0;
     src.meta.ri = src_ri;
     CHECK_STRING(
-        (*decode_func)(&n_bytes, &have, wuffs_initialize_flags, pixfmt, &src));
+        (*decode_func)(&n_bytes, NULL, wuffs_initialize_flags, pixfmt, &src));
   }
   bench_finish(iters, n_bytes);
   return NULL;
