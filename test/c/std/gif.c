@@ -2189,27 +2189,8 @@ do_bench_gif_decode(const char* (*decode_func)(uint64_t*,
                     const char* filename,
                     wuffs_base__pixel_format pixfmt,
                     uint64_t iters_unscaled) {
-  wuffs_base__io_buffer have = ((wuffs_base__io_buffer){
-      .data = g_have_slice_u8,
-  });
-  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = g_src_slice_u8,
-  });
-  CHECK_STRING(read_file(&src, filename));
-
-  bench_start();
-  uint64_t n_bytes = 0;
-  uint64_t i;
-  uint64_t iters = iters_unscaled * g_flags.iterscale;
-  for (i = 0; i < iters; i++) {
-    have.meta.wi = 0;
-    src.meta.ri = 0;
-    CHECK_STRING(
-        decode_func(NULL, &have, wuffs_initialize_flags, pixfmt, &src));
-    n_bytes += have.meta.wi;
-  }
-  bench_finish(iters, n_bytes);
-  return NULL;
+  return do_bench_image_decode(decode_func, wuffs_initialize_flags, pixfmt,
+                               filename, 0, SIZE_MAX, iters_unscaled);
 }
 
 const char*  //
