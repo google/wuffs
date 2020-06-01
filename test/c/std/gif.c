@@ -205,54 +205,9 @@ wuffs_gif_decode(uint64_t* n_bytes_out,
   CHECK_STATUS("initialize",
                wuffs_gif__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION,
                                               wuffs_initialize_flags));
-
-  wuffs_base__image_config ic = ((wuffs_base__image_config){});
-  wuffs_base__frame_config fc = ((wuffs_base__frame_config){});
-
-  uint32_t bits_per_pixel = wuffs_base__pixel_format__bits_per_pixel(&pixfmt);
-  if (bits_per_pixel == 0) {
-    return "do_run__wuffs_base__image_decoder: invalid bits_per_pixel";
-  } else if ((bits_per_pixel % 8) != 0) {
-    return "do_run__wuffs_base__image_decoder: cannot bench fractional bytes";
-  }
-  uint64_t bytes_per_pixel = bits_per_pixel / 8;
-
-  CHECK_STATUS("decode_image_config",
-               wuffs_gif__decoder__decode_image_config(&dec, &ic, src));
-
-  wuffs_base__pixel_config__set(&ic.pixcfg, pixfmt.repr,
-                                WUFFS_BASE__PIXEL_SUBSAMPLING__NONE,
-                                wuffs_base__pixel_config__width(&ic.pixcfg),
-                                wuffs_base__pixel_config__height(&ic.pixcfg));
-
-  wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
-  CHECK_STATUS("set_from_slice", wuffs_base__pixel_buffer__set_from_slice(
-                                     &pb, &ic.pixcfg, g_pixel_slice_u8));
-
-  while (true) {
-    wuffs_base__status status =
-        wuffs_gif__decoder__decode_frame_config(&dec, &fc, src);
-    if (status.repr == wuffs_base__note__end_of_data) {
-      break;
-    }
-    CHECK_STATUS("decode_frame_config", status);
-
-    CHECK_STATUS("decode_frame",
-                 wuffs_gif__decoder__decode_frame(&dec, &pb, src,
-                                                  WUFFS_BASE__PIXEL_BLEND__SRC,
-                                                  g_work_slice_u8, NULL));
-
-    if (n_bytes_out) {
-      uint64_t frame_width = wuffs_base__frame_config__width(&fc);
-      uint64_t frame_height = wuffs_base__frame_config__height(&fc);
-      *n_bytes_out += frame_width * frame_height * bytes_per_pixel;
-    }
-    if (dst) {
-      CHECK_STRING(copy_to_io_buffer_from_pixel_buffer(
-          dst, &pb, wuffs_base__frame_config__bounds(&fc)));
-    }
-  }
-  return NULL;
+  return do_run__wuffs_base__image_decoder(
+      wuffs_gif__decoder__upcast_as__wuffs_base__image_decoder(&dec),
+      n_bytes_out, dst, pixfmt, src);
 }
 
 const char*  //
