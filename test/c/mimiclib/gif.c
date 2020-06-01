@@ -31,7 +31,8 @@ mimic_gif_read_func(GifFileType* f, GifByteType* ptr, int len) {
 }
 
 const char*  //
-mimic_gif_decode(wuffs_base__io_buffer* dst,
+mimic_gif_decode(uint64_t* n_bytes_out,
+                 wuffs_base__io_buffer* dst,
                  uint32_t wuffs_initialize_flags,
                  wuffs_base__pixel_format pixfmt,
                  wuffs_base__io_buffer* src) {
@@ -74,13 +75,18 @@ mimic_gif_decode(wuffs_base__io_buffer* dst,
     struct SavedImage* si = &f->SavedImages[i];
     size_t num_src =
         (size_t)(si->ImageDesc.Width) * (size_t)(si->ImageDesc.Height);
-    size_t num_dst = dst->data.len - dst->meta.wi;
-    if (num_dst < num_src) {
-      ret = "GIF image's pixel data won't fit in the dst buffer";
-      goto cleanup1;
+    if (n_bytes_out) {
+      *n_bytes_out += num_src;
     }
-    memmove(dst->data.ptr + dst->meta.wi, si->RasterBits, num_src);
-    dst->meta.wi += num_src;
+    if (dst) {
+      size_t num_dst = dst->data.len - dst->meta.wi;
+      if (num_dst < num_src) {
+        ret = "GIF image's pixel data won't fit in the dst buffer";
+        goto cleanup1;
+      }
+      memmove(dst->data.ptr + dst->meta.wi, si->RasterBits, num_src);
+      dst->meta.wi += num_src;
+    }
   }
 
 cleanup1:;

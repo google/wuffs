@@ -196,7 +196,8 @@ test_wuffs_gif_decode_interface_image_decoder() {
 }
 
 const char*  //
-wuffs_gif_decode(wuffs_base__io_buffer* dst,
+wuffs_gif_decode(uint64_t* n_bytes_out,
+                 wuffs_base__io_buffer* dst,
                  uint32_t wuffs_initialize_flags,
                  wuffs_base__pixel_format pixfmt,
                  wuffs_base__io_buffer* src) {
@@ -207,6 +208,15 @@ wuffs_gif_decode(wuffs_base__io_buffer* dst,
 
   wuffs_base__image_config ic = ((wuffs_base__image_config){});
   wuffs_base__frame_config fc = ((wuffs_base__frame_config){});
+
+  uint32_t bits_per_pixel = wuffs_base__pixel_format__bits_per_pixel(&pixfmt);
+  if (bits_per_pixel == 0) {
+    return "do_run__wuffs_base__image_decoder: invalid bits_per_pixel";
+  } else if ((bits_per_pixel % 8) != 0) {
+    return "do_run__wuffs_base__image_decoder: cannot bench fractional bytes";
+  }
+  uint64_t bytes_per_pixel = bits_per_pixel / 8;
+
   CHECK_STATUS("decode_image_config",
                wuffs_gif__decoder__decode_image_config(&dec, &ic, src));
 
@@ -232,8 +242,15 @@ wuffs_gif_decode(wuffs_base__io_buffer* dst,
                                                   WUFFS_BASE__PIXEL_BLEND__SRC,
                                                   g_work_slice_u8, NULL));
 
-    CHECK_STRING(copy_to_io_buffer_from_pixel_buffer(
-        dst, &pb, wuffs_base__frame_config__bounds(&fc)));
+    if (n_bytes_out) {
+      uint64_t frame_width = wuffs_base__frame_config__width(&fc);
+      uint64_t frame_height = wuffs_base__frame_config__height(&fc);
+      *n_bytes_out += frame_width * frame_height * bytes_per_pixel;
+    }
+    if (dst) {
+      CHECK_STRING(copy_to_io_buffer_from_pixel_buffer(
+          dst, &pb, wuffs_base__frame_config__bounds(&fc)));
+    }
   }
   return NULL;
 }
@@ -2057,7 +2074,7 @@ do_test_mimic_gif_decode(const char* filename) {
       .data = g_have_slice_u8,
   });
   CHECK_STRING(
-      wuffs_gif_decode(&have, 0,
+      wuffs_gif_decode(NULL, &have, WUFFS_INITIALIZE__DEFAULT_OPTIONS,
                        wuffs_base__make_pixel_format(
                            WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY),
                        &src));
@@ -2067,7 +2084,7 @@ do_test_mimic_gif_decode(const char* filename) {
       .data = g_want_slice_u8,
   });
   CHECK_STRING(
-      mimic_gif_decode(&want, 0,
+      mimic_gif_decode(NULL, &want, WUFFS_INITIALIZE__DEFAULT_OPTIONS,
                        wuffs_base__make_pixel_format(
                            WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY),
                        &src));
@@ -2163,7 +2180,8 @@ test_mimic_gif_decode_pjw_thumbnail() {
 // ---------------- GIF Benches
 
 const char*  //
-do_bench_gif_decode(const char* (*decode_func)(wuffs_base__io_buffer*,
+do_bench_gif_decode(const char* (*decode_func)(uint64_t*,
+                                               wuffs_base__io_buffer*,
                                                uint32_t wuffs_initialize_flags,
                                                wuffs_base__pixel_format,
                                                wuffs_base__io_buffer*),
@@ -2186,7 +2204,8 @@ do_bench_gif_decode(const char* (*decode_func)(wuffs_base__io_buffer*,
   for (i = 0; i < iters; i++) {
     have.meta.wi = 0;
     src.meta.ri = 0;
-    CHECK_STRING(decode_func(&have, wuffs_initialize_flags, pixfmt, &src));
+    CHECK_STRING(
+        decode_func(NULL, &have, wuffs_initialize_flags, pixfmt, &src));
     n_bytes += have.meta.wi;
   }
   bench_finish(iters, n_bytes);
