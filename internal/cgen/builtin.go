@@ -94,6 +94,27 @@ func (g *gen) writeBuiltinCall(b *buffer, n *a.Expr, depth uint32) error {
 			return g.writeBuiltinIOReader(b, recv, method.Ident(), n.Args(), depth)
 		case t.IDIOWriter:
 			return g.writeBuiltinIOWriter(b, recv, method.Ident(), n.Args(), depth)
+		case t.IDPixelSwizzler:
+			switch method.Ident() {
+			case t.IDSwizzleInterleavedFromReader:
+				b.writes("wuffs_base__pixel_swizzler__swizzle_interleaved_from_reader(&")
+				if err := g.writeExpr(b, recv, depth); err != nil {
+					return err
+				}
+				args := n.Args()
+				for _, o := range args[:len(args)-1] {
+					b.writeb(',')
+					if err := g.writeExpr(b, o.AsArg().Value(), depth); err != nil {
+						return err
+					}
+				}
+				readerArgName, err := g.ioRecvName(args[len(args)-1].AsArg().Value())
+				if err != nil {
+					return err
+				}
+				b.printf(", &%s%s, %s%s)", iopPrefix, readerArgName, io2Prefix, readerArgName)
+				return nil
+			}
 		case t.IDTokenWriter:
 			return g.writeBuiltinTokenWriter(b, recv, method.Ident(), n.Args(), depth)
 		case t.IDUtility:

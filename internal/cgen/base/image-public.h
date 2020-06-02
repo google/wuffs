@@ -1299,12 +1299,13 @@ typedef struct {
   // compatibility or safety guarantee if you do so.
   struct {
     wuffs_base__pixel_swizzler__func func;
+    uint32_t src_pixfmt_bytes_per_pixel;
   } private_impl;
 
 #ifdef __cplusplus
-  inline wuffs_base__status prepare(wuffs_base__pixel_format dst_format,
+  inline wuffs_base__status prepare(wuffs_base__pixel_format dst_pixfmt,
                                     wuffs_base__slice_u8 dst_palette,
-                                    wuffs_base__pixel_format src_format,
+                                    wuffs_base__pixel_format src_pixfmt,
                                     wuffs_base__slice_u8 src_palette,
                                     wuffs_base__pixel_blend blend);
   inline uint64_t swizzle_interleaved_from_slice(
@@ -1323,9 +1324,9 @@ typedef struct {
 // just WUFFS_CONFIG__MODULE__BASE__CORE.
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
-                                    wuffs_base__pixel_format dst_format,
+                                    wuffs_base__pixel_format dst_pixfmt,
                                     wuffs_base__slice_u8 dst_palette,
-                                    wuffs_base__pixel_format src_format,
+                                    wuffs_base__pixel_format src_pixfmt,
                                     wuffs_base__slice_u8 src_palette,
                                     wuffs_base__pixel_blend blend);
 
@@ -1345,13 +1346,13 @@ wuffs_base__pixel_swizzler__swizzle_interleaved_from_slice(
 #ifdef __cplusplus
 
 inline wuffs_base__status  //
-wuffs_base__pixel_swizzler::prepare(wuffs_base__pixel_format dst_format,
+wuffs_base__pixel_swizzler::prepare(wuffs_base__pixel_format dst_pixfmt,
                                     wuffs_base__slice_u8 dst_palette,
-                                    wuffs_base__pixel_format src_format,
+                                    wuffs_base__pixel_format src_pixfmt,
                                     wuffs_base__slice_u8 src_palette,
                                     wuffs_base__pixel_blend blend) {
-  return wuffs_base__pixel_swizzler__prepare(this, dst_format, dst_palette,
-                                             src_format, src_palette, blend);
+  return wuffs_base__pixel_swizzler__prepare(this, dst_pixfmt, dst_palette,
+                                             src_pixfmt, src_palette, blend);
 }
 
 uint64_t  //

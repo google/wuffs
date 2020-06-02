@@ -662,6 +662,8 @@ const (
 	IDIO        = ID(0x248)
 	IDLimit     = ID(0x249)
 	IDData      = ID(0x24A)
+
+	IDSwizzleInterleavedFromReader = ID(0x280)
 )
 
 var builtInsByID = [nBuiltInIDs]string{
@@ -1019,6 +1021,8 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDIO:        "io",
 	IDLimit:     "limit",
 	IDData:      "data",
+
+	IDSwizzleInterleavedFromReader: "swizzle_interleaved_from_reader",
 }
 
 var builtInsByName = map[string]ID{}

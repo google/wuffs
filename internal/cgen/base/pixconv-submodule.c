@@ -1226,11 +1226,11 @@ wuffs_base__pixel_swizzler__xxxx__y(uint8_t* dst_ptr,
 
 static wuffs_base__pixel_swizzler__func  //
 wuffs_base__pixel_swizzler__prepare__y(wuffs_base__pixel_swizzler* p,
-                                       wuffs_base__pixel_format dst_format,
+                                       wuffs_base__pixel_format dst_pixfmt,
                                        wuffs_base__slice_u8 dst_palette,
                                        wuffs_base__slice_u8 src_palette,
                                        wuffs_base__pixel_blend blend) {
-  switch (dst_format.repr) {
+  switch (dst_pixfmt.repr) {
     case WUFFS_BASE__PIXEL_FORMAT__BGR_565:
       return wuffs_base__pixel_swizzler__bgr_565__y;
 
@@ -1254,11 +1254,11 @@ wuffs_base__pixel_swizzler__prepare__y(wuffs_base__pixel_swizzler* p,
 static wuffs_base__pixel_swizzler__func  //
 wuffs_base__pixel_swizzler__prepare__indexed__bgra_binary(
     wuffs_base__pixel_swizzler* p,
-    wuffs_base__pixel_format dst_format,
+    wuffs_base__pixel_format dst_pixfmt,
     wuffs_base__slice_u8 dst_palette,
     wuffs_base__slice_u8 src_palette,
     wuffs_base__pixel_blend blend) {
-  switch (dst_format.repr) {
+  switch (dst_pixfmt.repr) {
     case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_PREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY:
@@ -1346,11 +1346,11 @@ wuffs_base__pixel_swizzler__prepare__indexed__bgra_binary(
 
 static wuffs_base__pixel_swizzler__func  //
 wuffs_base__pixel_swizzler__prepare__bgr(wuffs_base__pixel_swizzler* p,
-                                         wuffs_base__pixel_format dst_format,
+                                         wuffs_base__pixel_format dst_pixfmt,
                                          wuffs_base__slice_u8 dst_palette,
                                          wuffs_base__slice_u8 src_palette,
                                          wuffs_base__pixel_blend blend) {
-  switch (dst_format.repr) {
+  switch (dst_pixfmt.repr) {
     case WUFFS_BASE__PIXEL_FORMAT__BGR_565:
       return wuffs_base__pixel_swizzler__bgr_565__bgr;
 
@@ -1377,11 +1377,11 @@ wuffs_base__pixel_swizzler__prepare__bgr(wuffs_base__pixel_swizzler* p,
 static wuffs_base__pixel_swizzler__func  //
 wuffs_base__pixel_swizzler__prepare__bgra_nonpremul(
     wuffs_base__pixel_swizzler* p,
-    wuffs_base__pixel_format dst_format,
+    wuffs_base__pixel_format dst_pixfmt,
     wuffs_base__slice_u8 dst_palette,
     wuffs_base__slice_u8 src_palette,
     wuffs_base__pixel_blend blend) {
-  switch (dst_format.repr) {
+  switch (dst_pixfmt.repr) {
     case WUFFS_BASE__PIXEL_FORMAT__BGR_565:
       switch (blend) {
         case WUFFS_BASE__PIXEL_BLEND__SRC:
@@ -1438,44 +1438,71 @@ wuffs_base__pixel_swizzler__prepare__bgra_nonpremul(
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
-                                    wuffs_base__pixel_format dst_format,
+                                    wuffs_base__pixel_format dst_pixfmt,
                                     wuffs_base__slice_u8 dst_palette,
-                                    wuffs_base__pixel_format src_format,
+                                    wuffs_base__pixel_format src_pixfmt,
                                     wuffs_base__slice_u8 src_palette,
                                     wuffs_base__pixel_blend blend) {
   if (!p) {
     return wuffs_base__make_status(wuffs_base__error__bad_receiver);
   }
+  p->private_impl.func = NULL;
+  p->private_impl.src_pixfmt_bytes_per_pixel = 0;
+
+  wuffs_base__pixel_swizzler__func func = NULL;
+  uint32_t src_pixfmt_bits_per_pixel =
+      wuffs_base__pixel_format__bits_per_pixel(&src_pixfmt);
+  if ((src_pixfmt_bits_per_pixel == 0) ||
+      ((src_pixfmt_bits_per_pixel & 7) != 0)) {
+    return wuffs_base__make_status(
+        wuffs_base__error__unsupported_pixel_swizzler_option);
+  }
 
   // TODO: support many more formats.
 
-  wuffs_base__pixel_swizzler__func func = NULL;
-
-  switch (src_format.repr) {
+  switch (src_pixfmt.repr) {
     case WUFFS_BASE__PIXEL_FORMAT__Y:
-      func = wuffs_base__pixel_swizzler__prepare__y(p, dst_format, dst_palette,
+      func = wuffs_base__pixel_swizzler__prepare__y(p, dst_pixfmt, dst_palette,
                                                     src_palette, blend);
       break;
 
     case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY:
       func = wuffs_base__pixel_swizzler__prepare__indexed__bgra_binary(
-          p, dst_format, dst_palette, src_palette, blend);
+          p, dst_pixfmt, dst_palette, src_palette, blend);
       break;
 
     case WUFFS_BASE__PIXEL_FORMAT__BGR:
       func = wuffs_base__pixel_swizzler__prepare__bgr(
-          p, dst_format, dst_palette, src_palette, blend);
+          p, dst_pixfmt, dst_palette, src_palette, blend);
       break;
 
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
       func = wuffs_base__pixel_swizzler__prepare__bgra_nonpremul(
-          p, dst_format, dst_palette, src_palette, blend);
+          p, dst_pixfmt, dst_palette, src_palette, blend);
       break;
   }
 
   p->private_impl.func = func;
+  p->private_impl.src_pixfmt_bytes_per_pixel = src_pixfmt_bits_per_pixel / 8;
   return wuffs_base__make_status(
       func ? NULL : wuffs_base__error__unsupported_pixel_swizzler_option);
+}
+
+WUFFS_BASE__MAYBE_STATIC uint64_t  //
+wuffs_base__pixel_swizzler__swizzle_interleaved_from_reader(
+    const wuffs_base__pixel_swizzler* p,
+    wuffs_base__slice_u8 dst,
+    wuffs_base__slice_u8 dst_palette,
+    const uint8_t** ptr_iop_r,
+    const uint8_t* io2_r) {
+  if (p && p->private_impl.func) {
+    const uint8_t* iop_r = *ptr_iop_r;
+    uint64_t n = (*p->private_impl.func)(dst.ptr, dst.len, dst_palette.ptr,
+                                         dst_palette.len, iop_r, io2_r - iop_r);
+    *ptr_iop_r += n * p->private_impl.src_pixfmt_bytes_per_pixel;
+    return n;
+  }
+  return 0;
 }
 
 WUFFS_BASE__MAYBE_STATIC uint64_t  //

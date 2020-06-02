@@ -15,7 +15,7 @@
 pub status "#bad header"
 pub status "#unsupported BMP file"
 
-pri status "#internal error: inconsistent swizzle count"
+pri status "@internal note: short read"
 
 pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0
 
@@ -25,15 +25,15 @@ pub struct decoder? implements base.image_decoder(
 
 	call_sequence : base.u8,
 
-	top_down       : base.bool,
-	bits_per_pixel : base.u8[..= 32],
-	pad_per_row    : base.u32[..= 3],
-	bytes_per_row  : base.u64[..= 0x0000_0001_FFFF_FFFC],  // 4 * 0x7FFF_FFFF
-	bytes_total    : base.u64[..= 0xFFFF_FFFC_0000_0004],  // 4 * 0x7FFF_FFFF * 0x7FFF_FFFF
-	pixfmt         : base.pixel_format,
+	top_down      : base.bool,
+	pad_per_row   : base.u32[..= 3],
+	bytes_per_row : base.u64[..= 0x0000_0001_FFFF_FFFC],  // 4 * 0x7FFF_FFFF
+	pixfmt        : base.pixel_format,
 
 	io_redirect_fourcc : base.u32,
 	io_redirect_pos    : base.u64,
+
+	frame_config_io_position : base.u64,
 
 	padding : base.u32,
 
@@ -42,16 +42,12 @@ pub struct decoder? implements base.image_decoder(
 	mask_b : base.u32,
 	mask_a : base.u32,
 
-	frame_config_io_position : base.u64,
-
 	dst_x     : base.u32,
 	dst_y     : base.u32,
 	dst_y_end : base.u32,
 	dst_y_inc : base.u32,
 
-	stash       : array[4] base.u8,
-	num_stashed : base.u8[..= 4],
-	pending_pad : base.u8[..= 3],
+	pending_pad : base.u32[..= 3],
 
 	swizzler : base.pixel_swizzler,
 	util     : base.utility,
@@ -137,7 +133,6 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 		}
 		return "#unsupported BMP file"
 	} else if bits_per_pixel == 24 {
-		this.bits_per_pixel = 24
 		// 3 bytes per pixel, but row lengths are rounded up to multiples of 4.
 		// The "((x + 3) >> 2) << 2" dance rounds x up.
 		this.bytes_per_row = ((((this.width as base.u64) * 3) + 3) >> 2) << 2
@@ -146,7 +141,6 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 		// WUFFS_BASE__PIXEL_FORMAT__BGR magic pixfmt constant.
 		this.pixfmt = this.util.make_pixel_format(repr: 0x8000_0888)
 	} else if bits_per_pixel == 32 {
-		this.bits_per_pixel = 32
 		this.bytes_per_row = (this.width as base.u64) * 4
 		this.pad_per_row = 0
 		// TODO: a Wuffs (not just C) name for the
@@ -156,7 +150,6 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 		// TODO: support other bits_per_pixel's.
 		return "#unsupported BMP file"
 	}
-	this.bytes_total = this.bytes_per_row * (this.height as base.u64)
 
 	// We've already read 20 bytes from the BITMAPINFOHEADER: size (4), width
 	// (4), height (4), planes (2), bpp (2), compression (4). Skip the rest of
@@ -239,10 +232,7 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
 }
 
 pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, blend: base.pixel_blend, workbuf: slice base.u8, opts: nptr base.decode_frame_options) {
-	var status          : base.status
-	var bytes_remaining : base.u64
-	var n               : base.u64
-	var src             : slice base.u8
+	var status : base.status
 
 	if this.call_sequence < 2 {
 		this.decode_frame_config?(dst: nullptr, src: args.src)
@@ -276,36 +266,25 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 			return status
 		}
 
-		bytes_remaining = this.bytes_total
 		while true {
-			n = args.src.available()
-			if bytes_remaining >= n {
-				bytes_remaining -= n
-			} else {
-				n = bytes_remaining
-				bytes_remaining = 0
-			}
-			src = args.src.take!(n: n)
-			status = this.swizzle!(dst: args.dst, src: src)
+			status = this.swizzle!(dst: args.dst, src: args.src)
 			if status.is_ok() {
 				break
-			} else if status.is_suspension() {
-				yield? status
-			} else {
+			} else if status <> "@internal note: short read" {
 				return status
 			}
+			yield? base."$short read"
 		} endwhile
 	}
 
 	this.call_sequence = 3
 }
 
-pri func decoder.swizzle!(dst: ptr base.pixel_buffer, src: slice base.u8) base.status {
+pri func decoder.swizzle!(dst: ptr base.pixel_buffer, src: base.io_reader) base.status {
 	var dst_pixfmt          : base.pixel_format
 	var dst_bits_per_pixel  : base.u32[..= 256]
 	var dst_bytes_per_pixel : base.u64[..= 32]
 	var dst_bytes_per_row   : base.u64
-	var src_bytes_per_pixel : base.u8[..= 4]
 	var tab                 : table base.u8
 	var dst                 : slice base.u8
 	var i                   : base.u64
@@ -320,107 +299,56 @@ pri func decoder.swizzle!(dst: ptr base.pixel_buffer, src: slice base.u8) base.s
 	}
 	dst_bytes_per_pixel = (dst_bits_per_pixel / 8) as base.u64
 	dst_bytes_per_row = (this.width as base.u64) * dst_bytes_per_pixel
-	src_bytes_per_pixel = (this.bits_per_pixel / 8) as base.u8
 	tab = args.dst.plane(p: 0)
 
-	// Handle the case where the I/O suspension occurred in the middle of the
-	// end-of-row padding.
-	while this.pending_pad > 0 {
-		if args.src.length() <= 0 {
-			return base."$short read"
-		}
-		this.pending_pad -= 1
-		args.src = args.src[1 ..]
-	} endwhile
-
-	// Handle the case where the I/O suspension occurred in the middle of a
-	// source pixel.
-	if this.num_stashed <> 0 {
-		while this.num_stashed < src_bytes_per_pixel {
-			assert this.num_stashed < 4 via "a < b: a < c; c <= b"(c: src_bytes_per_pixel)
-			if args.src.length() <= 0 {
-				return base."$short read"
+	while.outer true {
+		while this.pending_pad > 0 {
+			if args.src.available() <= 0 {
+				return "@internal note: short read"
 			}
-			this.stash[this.num_stashed] = args.src[0]
-			this.num_stashed += 1
-			args.src = args.src[1 ..]
+			this.pending_pad -= 1
+			args.src.skip_u32_fast!(actual: 1, worst_case: 1)
 		} endwhile
 
-		// Write the single pixel.
-		dst = tab.row(y: this.dst_y)
-		if dst_bytes_per_row < dst.length() {
-			dst = dst[.. dst_bytes_per_row]
-		}
-		i = (this.dst_x as base.u64) * dst_bytes_per_pixel
-		if i < dst.length() {
-			this.swizzler.swizzle_interleaved_from_slice!(
-				dst: dst[i ..],
-				dst_palette: this.util.empty_slice_u8(),
-				src: this.stash[.. this.num_stashed])
-			this.dst_x ~sat+= 1
-		}
-
-		this.num_stashed = 0
-	}
-
-	while true {
-		if this.dst_x == this.width {
-			this.dst_x = 0
-			this.dst_y ~mod+= this.dst_y_inc
-
-			if this.pad_per_row <> 0 {
-				n = this.pad_per_row as base.u64
-				if n <= args.src.length() {
-					args.src = args.src[n ..]
-				} else {
-					this.pending_pad = ((n - args.src.length()) & 3) as base.u8
-					return base."$short read"
+		while.inner true {
+			if this.dst_x == this.width {
+				this.dst_x = 0
+				this.dst_y ~mod+= this.dst_y_inc
+				if this.dst_y == this.dst_y_end {
+					break.outer
+				} else if this.pad_per_row <> 0 {
+					this.pending_pad = this.pad_per_row
+					continue.outer
 				}
 			}
-		}
 
-		if this.dst_y == this.dst_y_end {
-			break
-		}
-
-		dst = tab.row(y: this.dst_y)
-		if dst_bytes_per_row < dst.length() {
-			dst = dst[.. dst_bytes_per_row]
-		}
-		i = (this.dst_x as base.u64) * dst_bytes_per_pixel
-		if i < dst.length() {
-			n = this.swizzler.swizzle_interleaved_from_slice!(
+			dst = tab.row(y: this.dst_y)
+			if dst_bytes_per_row < dst.length() {
+				dst = dst[.. dst_bytes_per_row]
+			}
+			i = (this.dst_x as base.u64) * dst_bytes_per_pixel
+			if i >= dst.length() {
+				// TODO: advance args.src if the dst pixel_buffer bounds is
+				// smaller than this BMP's image bounds?
+				continue.inner
+			}
+			n = this.swizzler.swizzle_interleaved_from_reader!(
 				dst: dst[i ..],
 				dst_palette: this.util.empty_slice_u8(),
 				src: args.src)
-			this.dst_x ~sat+= (n & 0xFFFF_FFFF) as base.u32
-			n = (n & 0xFFFF_FFFF) * (src_bytes_per_pixel as base.u64)
-			if n <= args.src.length() {
-				args.src = args.src[n ..]
-			} else {
-				return "#internal error: inconsistent swizzle count"
+			if n == 0 {
+				return "@internal note: short read"
 			}
-		}
-
-		// Suspend if we didn't complete the row, potentially in the middle of
-		// a source pixel.
-		if this.dst_x < this.width {
-			while (this.num_stashed < src_bytes_per_pixel) and (args.src.length() > 0) {
-				assert this.num_stashed < 4 via "a < b: a < c; c <= b"(c: src_bytes_per_pixel)
-				this.stash[this.num_stashed] = args.src[0]
-				this.num_stashed += 1
-				args.src = args.src[1 ..]
-			} endwhile
-			return base."$short read"
-		}
-	} endwhile
+			this.dst_x ~sat+= (n & 0xFFFF_FFFF) as base.u32
+		} endwhile.inner
+	} endwhile.outer
 
 	return ok
 }
 
 pri func decoder.skip_frame?(src: base.io_reader) {
 	args.src.skip_u32?(n: this.padding)
-	args.src.skip?(n: this.bytes_total)
+	args.src.skip?(n: this.bytes_per_row * (this.height as base.u64))
 
 	this.call_sequence = 3
 }

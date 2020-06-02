@@ -384,6 +384,8 @@ var Funcs = []string{
 	"pixel_swizzler.prepare!(" +
 		"dst_pixfmt: pixel_format, dst_palette: slice u8," +
 		"src_pixfmt: pixel_format, src_palette: slice u8, blend: pixel_blend) status",
+	"pixel_swizzler.swizzle_interleaved_from_reader!(" +
+		"dst: slice u8, dst_palette: slice u8, src: io_reader) u64",
 	"pixel_swizzler.swizzle_interleaved_from_slice!(" +
 		"dst: slice u8, dst_palette: slice u8, src: slice u8) u64",
 }
