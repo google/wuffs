@@ -7719,25 +7719,6 @@ wuffs_base__io_reader__set(wuffs_base__io_buffer* b,
   return b;
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wcast-qual"
-// TODO: can we avoid the const_cast (by deleting this function)? This might
-// involve converting the call sites to take an io_reader instead of a slice u8
-// (the result of io_reader.take).
-static inline wuffs_base__slice_u8  //
-wuffs_base__io_reader__take(const uint8_t** ptr_iop_r,
-                            const uint8_t* io2_r,
-                            uint64_t n) {
-  if (n <= ((size_t)(io2_r - *ptr_iop_r))) {
-    const uint8_t* p = *ptr_iop_r;
-    *ptr_iop_r += n;
-    // The arg is what C calls C++'s "const_cast<uint8_t*>(p)".
-    return wuffs_base__make_slice_u8((uint8_t*)(p), n);
-  }
-  return wuffs_base__make_slice_u8(NULL, 0);
-}
-#pragma GCC diagnostic pop
-
 // --------
 
 static inline uint64_t  //

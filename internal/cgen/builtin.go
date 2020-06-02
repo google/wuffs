@@ -236,10 +236,6 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 		}
 		b.writes(", wuffs_base__make_empty_struct())")
 		return nil
-
-	case t.IDTake:
-		b.printf("wuffs_base__io_reader__take(&%s%s, %s%s,", iopPrefix, name, io2Prefix, name)
-		return g.writeArgs(b, args, depth)
 	}
 
 	if method >= peekMethodsBase {

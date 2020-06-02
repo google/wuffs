@@ -515,7 +515,6 @@ const (
 	IDSkip             = ID(0x16A)
 	IDSkipU32          = ID(0x16B)
 	IDSkipU32Fast      = ID(0x16C)
-	IDTake             = ID(0x16D)
 
 	IDCopyFromSlice                 = ID(0x170)
 	IDLimitedCopyU32FromHistory     = ID(0x171)
@@ -879,7 +878,6 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDSkip:             "skip",
 	IDSkipU32:          "skip_u32",
 	IDSkipU32Fast:      "skip_u32_fast",
-	IDTake:             "take",
 
 	IDCopyFromSlice:                 "copy_from_slice",
 	IDLimitedCopyU32FromHistory:     "limited_copy_u32_from_history",
