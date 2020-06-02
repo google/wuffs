@@ -1498,7 +1498,8 @@ wuffs_base__pixel_swizzler__swizzle_interleaved_from_reader(
   if (p && p->private_impl.func) {
     const uint8_t* iop_r = *ptr_iop_r;
     uint64_t n = (*p->private_impl.func)(dst.ptr, dst.len, dst_palette.ptr,
-                                         dst_palette.len, iop_r, io2_r - iop_r);
+                                         dst_palette.len, iop_r,
+                                         (size_t)(io2_r - iop_r));
     *ptr_iop_r += n * p->private_impl.src_pixfmt_bytes_per_pixel;
     return n;
   }
