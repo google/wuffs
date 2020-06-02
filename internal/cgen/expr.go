@@ -276,25 +276,32 @@ func (g *gen) writeExprBinaryOp(b *buffer, n *a.Expr, depth uint32) error {
 	}
 
 	b.writeb('(')
-	if err := g.writeExpr(b, n.LHS().AsExpr(), depth); err != nil {
+	if err := g.writeExprRepr(b, n.LHS().AsExpr(), depth); err != nil {
 		return err
-	}
-	if g.hasRepr(n.LHS().AsExpr()) {
-		b.writes(".repr")
 	}
 	b.writes(opName)
-	if err := g.writeExpr(b, n.RHS().AsExpr(), depth); err != nil {
+	if err := g.writeExprRepr(b, n.RHS().AsExpr(), depth); err != nil {
 		return err
-	}
-	if g.hasRepr(n.RHS().AsExpr()) {
-		b.writes(".repr")
 	}
 	b.writeb(')')
 	return nil
 }
 
-func (g *gen) hasRepr(n *a.Expr) bool {
-	return n.MType().IsStatus()
+func (g *gen) writeExprRepr(b *buffer, n *a.Expr, depth uint32) error {
+	isStatus := n.MType().IsStatus()
+	if isStatus && (n.Operator() == 0) && n.Ident().IsDQStrLiteral(g.tm) {
+		if z := g.statusMap[n.StatusQID()]; z.cName != "" {
+			b.writes(z.cName)
+			return nil
+		}
+	}
+	if err := g.writeExpr(b, n, depth); err != nil {
+		return err
+	}
+	if isStatus {
+		b.writes(".repr")
+	}
+	return nil
 }
 
 func (g *gen) writeExprAs(b *buffer, lhs *a.Expr, rhs *a.TypeExpr, depth uint32) error {

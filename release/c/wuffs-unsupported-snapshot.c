@@ -13023,10 +13023,7 @@ wuffs_bmp__decoder__decode_frame(wuffs_bmp__decoder* self,
         }
         if (wuffs_base__status__is_ok(&v_status)) {
           goto label__0__break;
-        } else if (v_status.repr !=
-                   wuffs_base__make_status(
-                       wuffs_bmp__note__internal_note_short_read)
-                       .repr) {
+        } else if (v_status.repr != wuffs_bmp__note__internal_note_short_read) {
           status = v_status;
           if (wuffs_base__status__is_error(&status)) {
             goto exit;
@@ -21496,13 +21493,9 @@ wuffs_gif__decoder__decode_id_part2(wuffs_gif__decoder* self,
             }
           }
           goto label__outer__break;
-        } else if (v_lzw_status.repr ==
-                   wuffs_base__make_status(wuffs_base__suspension__short_read)
-                       .repr) {
+        } else if (v_lzw_status.repr == wuffs_base__suspension__short_read) {
           goto label__outer__continue;
-        } else if (v_lzw_status.repr ==
-                   wuffs_base__make_status(wuffs_base__suspension__short_write)
-                       .repr) {
+        } else if (v_lzw_status.repr == wuffs_base__suspension__short_write) {
           goto label__inner__continue;
         }
         status = v_lzw_status;
