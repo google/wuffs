@@ -438,7 +438,7 @@ func insertInterfaceDeclarations(buf *buffer) error {
 
 		buf.writes("\n#ifdef __cplusplus\n")
 		buf.writes("#if __cplusplus >= 201103L\n")
-		buf.printf("using unique_ptr = std::unique_ptr<wuffs_base__%s, decltype(&free)>;", n)
+		buf.printf("using unique_ptr = std::unique_ptr<wuffs_base__%s, decltype(&free)>;\n", n)
 		buf.writes("#endif\n\n")
 
 		for _, f := range builtInInterfaceMethods[qid] {

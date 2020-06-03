@@ -106,8 +106,8 @@ func doGenrelease(args []string) error {
 	unformatted := bytes.NewBuffer(nil)
 	unformatted.WriteString("#ifndef WUFFS_INCLUDE_GUARD\n")
 	unformatted.WriteString("#define WUFFS_INCLUDE_GUARD\n\n")
-	unformatted.WriteString(grSingleFileGuidance)
-	unformatted.WriteString(grPragmaPush)
+	unformatted.WriteString(grSingleFileGuidance[1:]) // [1:] skips the initial '\n'.
+	unformatted.WriteString(grPragmaPush[1:])         // [1:] skips the initial '\n'.
 
 	h.seen = map[string]bool{}
 	for _, f := range h.filesList {
@@ -116,7 +116,7 @@ func doGenrelease(args []string) error {
 		}
 	}
 
-	unformatted.Write(grImplStartsHere)
+	unformatted.Write(grImplStartsHere[1:]) // [1:] skips the initial '\n'.
 	unformatted.WriteString("\n")
 
 	h.seen = map[string]bool{}
@@ -126,10 +126,9 @@ func doGenrelease(args []string) error {
 		}
 	}
 
-	unformatted.WriteString("\n")
 	unformatted.Write(grImplEndsHere)
 	unformatted.WriteString(grPragmaPop)
-	unformatted.WriteString("\n\n#endif  // WUFFS_INCLUDE_GUARD\n\n")
+	unformatted.WriteString("#endif  // WUFFS_INCLUDE_GUARD\n")
 
 	if printTimings {
 		fmt.Fprintf(os.Stderr, "%8d milliseconds collecting the C code\n",
@@ -232,20 +231,20 @@ func (h *genReleaseHelper) parse(relFilename string, s []byte) error {
 	if i := bytes.Index(s, grImplStartsHere); i < 0 {
 		return fmt.Errorf("could not find %q in %s", grImplStartsHere, relFilename)
 	} else {
-		f.fragments[0], s = s[:i], s[i+len(grImplStartsHere):]
+		f.fragments[0], s = bytes.TrimSpace(s[:i]), s[i+len(grImplStartsHere):]
 	}
 
 	if i := bytes.LastIndex(s, grImplEndsHere); i < 0 {
 		return fmt.Errorf("could not find %q in %s", grImplEndsHere, relFilename)
 	} else {
-		f.fragments[1] = s[:i]
+		f.fragments[1] = bytes.TrimSpace(s[:i])
 	}
 
 	if relFilename == "wuffs-base.c" && (h.version != cf.Version{}) {
 		if subs, err := h.substituteWuffsVersion(f.fragments[0]); err != nil {
 			return err
 		} else {
-			f.fragments[0] = subs
+			f.fragments[0] = bytes.TrimSpace(subs)
 		}
 	}
 
@@ -300,6 +299,7 @@ func (h *genReleaseHelper) gen(w *bytes.Buffer, relFilename string, which int, d
 	}
 
 	w.Write(f.fragments[which])
+	w.WriteString("\n\n")
 	h.seen[relFilename] = true
 	return nil
 }
