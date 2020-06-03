@@ -398,7 +398,7 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
 	if args.dst <> nullptr {
 		// The "foo.min(a:this.width_or_height)" calls clip the nominal
 		// frame_rect to the image_rect.
-		args.dst.update!(bounds: this.util.make_rect_ie_u32(
+		args.dst.set!(bounds: this.util.make_rect_ie_u32(
 			min_incl_x: this.frame_rect_x0.min(a: this.width),
 			min_incl_y: this.frame_rect_y0.min(a: this.height),
 			max_excl_x: this.frame_rect_x1.min(a: this.width),

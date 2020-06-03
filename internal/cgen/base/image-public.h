@@ -791,14 +791,14 @@ typedef struct {
   } private_impl;
 
 #ifdef __cplusplus
-  inline void update(wuffs_base__rect_ie_u32 bounds,
-                     wuffs_base__flicks duration,
-                     uint64_t index,
-                     uint64_t io_position,
-                     wuffs_base__animation_disposal disposal,
-                     bool opaque_within_bounds,
-                     bool overwrite_instead_of_blend,
-                     wuffs_base__color_u32_argb_premul background_color);
+  inline void set(wuffs_base__rect_ie_u32 bounds,
+                  wuffs_base__flicks duration,
+                  uint64_t index,
+                  uint64_t io_position,
+                  wuffs_base__animation_disposal disposal,
+                  bool opaque_within_bounds,
+                  bool overwrite_instead_of_blend,
+                  wuffs_base__color_u32_argb_premul background_color);
   inline wuffs_base__rect_ie_u32 bounds() const;
   inline uint32_t width() const;
   inline uint32_t height() const;
@@ -827,7 +827,7 @@ wuffs_base__null_frame_config() {
 }
 
 static inline void  //
-wuffs_base__frame_config__update(
+wuffs_base__frame_config__set(
     wuffs_base__frame_config* c,
     wuffs_base__rect_ie_u32 bounds,
     wuffs_base__flicks duration,
@@ -942,7 +942,7 @@ wuffs_base__frame_config__background_color(const wuffs_base__frame_config* c) {
 #ifdef __cplusplus
 
 inline void  //
-wuffs_base__frame_config::update(
+wuffs_base__frame_config::set(
     wuffs_base__rect_ie_u32 bounds,
     wuffs_base__flicks duration,
     uint64_t index,
@@ -951,9 +951,9 @@ wuffs_base__frame_config::update(
     bool opaque_within_bounds,
     bool overwrite_instead_of_blend,
     wuffs_base__color_u32_argb_premul background_color) {
-  wuffs_base__frame_config__update(
-      this, bounds, duration, index, io_position, disposal,
-      opaque_within_bounds, overwrite_instead_of_blend, background_color);
+  wuffs_base__frame_config__set(this, bounds, duration, index, io_position,
+                                disposal, opaque_within_bounds,
+                                overwrite_instead_of_blend, background_color);
 }
 
 inline wuffs_base__rect_ie_u32  //

@@ -359,7 +359,7 @@ var Funcs = []string{
 	"frame_config.index() u64",
 	"frame_config.io_position() u64",
 
-	"frame_config.update!(bounds: rect_ie_u32, duration: u64[..= 0x7FFF_FFFF_FFFF_FFFF]," +
+	"frame_config.set!(bounds: rect_ie_u32, duration: u64[..= 0x7FFF_FFFF_FFFF_FFFF]," +
 		"index: u64, io_position: u64, disposal: u8, opaque_within_bounds: bool," +
 		"overwrite_instead_of_blend: bool, background_color: u32)",
 

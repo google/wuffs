@@ -45,11 +45,14 @@ func (g *gen) writeBuiltinCall(b *buffer, n *a.Expr, depth uint32) error {
 		u64ToFlicksIndex := -1
 
 		// TODO: don't hard-code these, or a_dst.
-		switch meth := method.Ident(); {
-		case (meth == t.IDSet) && (recvTyp.Inner().QID() == t.QID{t.IDBase, t.IDImageConfig}):
+		if method.Ident() != t.IDSet {
+			return errNoSuchBuiltin
+		}
+		switch recvTyp.Inner().QID() {
+		case t.QID{t.IDBase, t.IDImageConfig}:
 			b.writes("wuffs_base__image_config__set(a_dst")
-		case (meth == t.IDUpdate) && (recvTyp.Inner().QID() == t.QID{t.IDBase, t.IDFrameConfig}):
-			b.writes("wuffs_base__frame_config__update(a_dst")
+		case t.QID{t.IDBase, t.IDFrameConfig}:
+			b.writes("wuffs_base__frame_config__set(a_dst")
 			u64ToFlicksIndex = 1
 		default:
 			return errNoSuchBuiltin
@@ -59,7 +62,7 @@ func (g *gen) writeBuiltinCall(b *buffer, n *a.Expr, depth uint32) error {
 			b.writeb(',')
 			if i == u64ToFlicksIndex {
 				if o.AsArg().Name().Str(g.tm) != "duration" {
-					return errors.New("cgen: internal error: inconsistent frame_config.update argument")
+					return errors.New("cgen: internal error: inconsistent frame_config.set argument")
 				}
 				b.writes("((wuffs_base__flicks)(")
 			}

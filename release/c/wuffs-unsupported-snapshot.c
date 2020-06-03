@@ -3284,14 +3284,14 @@ typedef struct {
   } private_impl;
 
 #ifdef __cplusplus
-  inline void update(wuffs_base__rect_ie_u32 bounds,
-                     wuffs_base__flicks duration,
-                     uint64_t index,
-                     uint64_t io_position,
-                     wuffs_base__animation_disposal disposal,
-                     bool opaque_within_bounds,
-                     bool overwrite_instead_of_blend,
-                     wuffs_base__color_u32_argb_premul background_color);
+  inline void set(wuffs_base__rect_ie_u32 bounds,
+                  wuffs_base__flicks duration,
+                  uint64_t index,
+                  uint64_t io_position,
+                  wuffs_base__animation_disposal disposal,
+                  bool opaque_within_bounds,
+                  bool overwrite_instead_of_blend,
+                  wuffs_base__color_u32_argb_premul background_color);
   inline wuffs_base__rect_ie_u32 bounds() const;
   inline uint32_t width() const;
   inline uint32_t height() const;
@@ -3320,7 +3320,7 @@ wuffs_base__null_frame_config() {
 }
 
 static inline void  //
-wuffs_base__frame_config__update(
+wuffs_base__frame_config__set(
     wuffs_base__frame_config* c,
     wuffs_base__rect_ie_u32 bounds,
     wuffs_base__flicks duration,
@@ -3435,7 +3435,7 @@ wuffs_base__frame_config__background_color(const wuffs_base__frame_config* c) {
 #ifdef __cplusplus
 
 inline void  //
-wuffs_base__frame_config::update(
+wuffs_base__frame_config::set(
     wuffs_base__rect_ie_u32 bounds,
     wuffs_base__flicks duration,
     uint64_t index,
@@ -3444,9 +3444,9 @@ wuffs_base__frame_config::update(
     bool opaque_within_bounds,
     bool overwrite_instead_of_blend,
     wuffs_base__color_u32_argb_premul background_color) {
-  wuffs_base__frame_config__update(
-      this, bounds, duration, index, io_position, disposal,
-      opaque_within_bounds, overwrite_instead_of_blend, background_color);
+  wuffs_base__frame_config__set(this, bounds, duration, index, io_position,
+                                disposal, opaque_within_bounds,
+                                overwrite_instead_of_blend, background_color);
 }
 
 inline wuffs_base__rect_ie_u32  //
@@ -12888,7 +12888,7 @@ wuffs_bmp__decoder__decode_frame_config(wuffs_bmp__decoder* self,
       goto ok;
     }
     if (a_dst != NULL) {
-      wuffs_base__frame_config__update(
+      wuffs_base__frame_config__set(
           a_dst,
           wuffs_base__utility__make_rect_ie_u32(
               0, 0, self->private_impl.f_width, self->private_impl.f_height),
@@ -17932,7 +17932,7 @@ wuffs_gif__config_decoder__decode_frame_config(wuffs_gif__config_decoder* self,
       }
     }
     if (a_dst != NULL) {
-      wuffs_base__frame_config__update(
+      wuffs_base__frame_config__set(
           a_dst,
           wuffs_base__utility__make_rect_ie_u32(
               wuffs_base__u32__min(self->private_impl.f_frame_rect_x0,
@@ -19761,7 +19761,7 @@ wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
       }
     }
     if (a_dst != NULL) {
-      wuffs_base__frame_config__update(
+      wuffs_base__frame_config__set(
           a_dst,
           wuffs_base__utility__make_rect_ie_u32(
               wuffs_base__u32__min(self->private_impl.f_frame_rect_x0,
@@ -24915,7 +24915,7 @@ wuffs_wbmp__decoder__decode_frame_config(wuffs_wbmp__decoder* self,
       goto ok;
     }
     if (a_dst != NULL) {
-      wuffs_base__frame_config__update(
+      wuffs_base__frame_config__set(
           a_dst,
           wuffs_base__utility__make_rect_ie_u32(
               0, 0, self->private_impl.f_width, self->private_impl.f_height),
