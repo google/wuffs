@@ -142,9 +142,12 @@ func Do(args []string) error {
 				"// !! INSERT base/pixconv-submodule.c.\n": insertBasePixConvSubmoduleC,
 				"// !! INSERT base/strconv-impl.c.\n":      insertBaseStrConvImplC,
 				"// !! INSERT vtable names.\n": func(b *buffer) error {
-					for _, n := range builtin.Interfaces {
+					for i, n := range builtin.Interfaces {
+						if i > 0 {
+							buf.writeb('\n')
+						}
 						buf.printf("const char* wuffs_base__%s__vtable_name = "+
-							"\"{vtable}wuffs_base__%s\";\n\n", n, n)
+							"\"{vtable}wuffs_base__%s\";\n", n, n)
 
 					}
 					return nil
@@ -306,15 +309,17 @@ func insertBaseAllPrivateH(buf *buffer) error {
 	buf.writes(baseImagePrivateH)
 	buf.writeb('\n')
 	buf.writes(baseStrConvPrivateH)
-	buf.writeb('\n')
 	return nil
 }
 
 func insertBaseAllPublicH(buf *buffer) error {
 	if err := expandBangBangInsert(buf, baseFundamentalPublicH, map[string]func(*buffer) error{
 		"// !! INSERT FourCCs.\n": func(b *buffer) error {
-			for _, z := range builtin.FourCCs {
-				b.printf("// %s.\n#define WUFFS_BASE__FOURCC__%s 0x%02X%02X%02X%02X\n\n",
+			for i, z := range builtin.FourCCs {
+				if i != 0 {
+					b.writeb('\n')
+				}
+				b.printf("// %s.\n#define WUFFS_BASE__FOURCC__%s 0x%02X%02X%02X%02X\n",
 					z[1],
 					strings.ToUpper(strings.TrimSpace(z[0])),
 					z[0][0],
@@ -357,31 +362,26 @@ func insertBaseAllPublicH(buf *buffer) error {
 	buf.writes(baseImagePublicH)
 	buf.writeb('\n')
 	buf.writes(baseStrConvPublicH)
-	buf.writeb('\n')
 	return nil
 }
 
 func insertBaseCopyright(buf *buffer) error {
 	buf.writes(baseCopyright)
-	buf.writeb('\n')
 	return nil
 }
 
 func insertBaseF64ConvSubmoduleC(buf *buffer) error {
 	buf.writes(baseF64ConvSubmoduleC)
-	buf.writeb('\n')
 	return nil
 }
 
 func insertBasePixConvSubmoduleC(buf *buffer) error {
 	buf.writes(basePixConvSubmoduleC)
-	buf.writeb('\n')
 	return nil
 }
 
 func insertBaseStrConvImplC(buf *buffer) error {
 	buf.writes(baseStrConvImplC)
-	buf.writeb('\n')
 	return nil
 }
 
@@ -400,17 +400,18 @@ func insertInterfaceDeclarations(buf *buffer) error {
 
 	buf.writes("// For modular builds that divide the base module into sub-modules, using these\n")
 	buf.writes("// functions require the WUFFS_CONFIG__MODULE__BASE__INTERFACES sub-module, not\n")
-	buf.writes("// just WUFFS_CONFIG__MODULE__BASE__CORE.\n\n")
+	buf.writes("// just WUFFS_CONFIG__MODULE__BASE__CORE.\n")
 
 	for _, n := range builtin.Interfaces {
-		buf.writes("// --------\n\n")
+		buf.writes("\n// --------\n\n")
 
 		qid := t.QID{t.IDBase, builtInTokenMap.ByName(n)}
 
 		buf.printf("extern const char* wuffs_base__%s__vtable_name;\n\n", n)
 
-		buf.writes("typedef struct {\n\n")
+		buf.writes("typedef struct {\n")
 		for _, f := range builtInInterfaceMethods[qid] {
+			buf.writes("  ")
 			if err := g.writeFuncSignature(buf, f, wfsCFuncPtrField); err != nil {
 				return err
 			}
@@ -429,37 +430,41 @@ func insertInterfaceDeclarations(buf *buffer) error {
 
 		buf.writes("#if defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)\n\n")
 
-		buf.printf("struct wuffs_base__%s__struct {", n)
-		buf.writes("struct {\n")
-		buf.writes("uint32_t magic;\n")
-		buf.writes("uint32_t active_coroutine;\n")
-		buf.writes("wuffs_base__vtable first_vtable;\n")
-		buf.writes("} private_impl;\n\n")
+		buf.printf("struct wuffs_base__%s__struct {\n", n)
+		buf.writes("  struct {\n")
+		buf.writes("    uint32_t magic;\n")
+		buf.writes("    uint32_t active_coroutine;\n")
+		buf.writes("    wuffs_base__vtable first_vtable;\n")
+		buf.writes("  } private_impl;\n\n")
 
-		buf.writes("\n#ifdef __cplusplus\n")
+		buf.writes("#ifdef __cplusplus\n")
 		buf.writes("#if __cplusplus >= 201103L\n")
-		buf.printf("using unique_ptr = std::unique_ptr<wuffs_base__%s, decltype(&free)>;\n", n)
+		buf.printf("  using unique_ptr = std::unique_ptr<wuffs_base__%s, decltype(&free)>;\n", n)
 		buf.writes("#endif\n\n")
 
 		for _, f := range builtInInterfaceMethods[qid] {
 			if err := g.writeFuncSignature(buf, f, wfsCppDecl); err != nil {
 				return err
 			}
-			buf.writes("{ return ")
+			buf.writes(" {\n    return ")
 			buf.writes(g.funcCName(f))
-			buf.writes("(this")
-			for _, o := range f.In().Fields() {
-				buf.writeb(',')
-				buf.writes(aPrefix)
-				buf.writes(o.AsField().Name().Str(g.tm))
+			if len(f.In().Fields()) == 0 {
+				buf.writes("(this")
+			} else {
+				buf.writes("(\n        this")
+				for _, o := range f.In().Fields() {
+					buf.writes(", ")
+					buf.writes(aPrefix)
+					buf.writes(o.AsField().Name().Str(g.tm))
+				}
 			}
-			buf.writes(");}\n\n")
+			buf.writes(");\n  }\n\n")
 		}
 		buf.writes("#endif  // __cplusplus\n\n")
 
 		buf.printf("};  // struct wuffs_base__%s__struct\n\n", n)
 
-		buf.writes("#endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)\n\n")
+		buf.writes("#endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)\n")
 	}
 	return nil
 }
@@ -475,10 +480,10 @@ func insertInterfaceDefinitions(buf *buffer) error {
 		tm:        &builtInTokenMap,
 	}
 
-	buf.writes("// ---------------- Interface Definitions.\n\n")
+	buf.writes("// ---------------- Interface Definitions.\n")
 	for i, n := range builtin.Interfaces {
 		if i > 0 {
-			buf.writes("// --------\n\n")
+			buf.writes("// --------\n")
 		}
 
 		qid := t.QID{t.IDBase, builtInTokenMap.ByName(n)}
@@ -487,40 +492,44 @@ func insertInterfaceDefinitions(buf *buffer) error {
 			returnsStatus := f.Effect().Coroutine() ||
 				((f.Out() != nil) && f.Out().IsStatus())
 
+			buf.writeb('\n')
 			if err := g.writeFuncSignature(buf, f, wfsCDecl); err != nil {
 				return err
 			}
-			buf.writes("{\n")
+			buf.writes(" {\n  ")
 			if err := writeFuncImplSelfMagicCheck(buf, g.tm, f); err != nil {
 				return err
 			}
 
-			buf.writes("\nconst wuffs_base__vtable* v = &self->private_impl.first_vtable;\n")
-			buf.writes("int i;\n")
-			buf.printf("for (i = 0; i < %d; i++) {\n", a.MaxImplements)
-			buf.printf("if (v->vtable_name == wuffs_base__%s__vtable_name) {\n", n)
-			buf.printf("const wuffs_base__%s__func_ptrs* func_ptrs = "+
-				"(const wuffs_base__%s__func_ptrs*)(v->function_pointers);\n", n, n)
-			buf.printf("return (*func_ptrs->%s)(self", f.FuncName().Str(g.tm))
+			buf.writes("\n  const wuffs_base__vtable* v = &self->private_impl.first_vtable;\n")
+			buf.writes("  int i;\n")
+			buf.printf("  for (i = 0; i < %d; i++) {\n", a.MaxImplements)
+			buf.printf("    if (v->vtable_name == wuffs_base__%s__vtable_name) {\n", n)
+			buf.printf("      const wuffs_base__%s__func_ptrs* func_ptrs =\n"+
+				"          (const wuffs_base__%s__func_ptrs*)(v->function_pointers);\n", n, n)
+			buf.printf("      return (*func_ptrs->%s)(self", f.FuncName().Str(g.tm))
 			for _, o := range f.In().Fields() {
-				buf.writeb(',')
+				buf.writes(", ")
 				buf.writes(aPrefix)
 				buf.writes(o.AsField().Name().Str(g.tm))
 			}
 			buf.writes(");\n")
-			buf.writes("} else if (v->vtable_name == NULL) {\n")
-			buf.writes("break;\n")
-			buf.writes("}\n")
-			buf.writes("v++;\n")
-			buf.writes("}\n\n")
+			buf.writes("    } else if (v->vtable_name == NULL) {\n")
+			buf.writes("      break;\n")
+			buf.writes("    }\n")
+			buf.writes("    v++;\n")
+			buf.writes("  }\n\n")
 
-			buf.writes("return ")
+			buf.writes("  return ")
 			if returnsStatus {
 				buf.writes("wuffs_base__make_status(wuffs_base__error__bad_vtable)")
 			} else if err := writeOutParamZeroValue(buf, g.tm, f.Out()); err != nil {
 				return err
 			}
-			buf.writes(";\n}\n\n")
+			buf.writes(";\n}\n")
+		}
+		if (i + 1) < len(builtin.Interfaces) {
+			buf.writeb('\n')
 		}
 	}
 
@@ -1242,7 +1251,7 @@ func (g *gen) writeCppMethods(b *buffer, n *a.Struct) error {
 			if err := g.writeFuncSignature(b, f, wfsCppDecl); err != nil {
 				return err
 			}
-			b.writes("{ return ")
+			b.writes("{\n    return ")
 			b.writes(g.funcCName(f))
 			b.writes("(this")
 			for _, o := range f.In().Fields() {
@@ -1250,7 +1259,7 @@ func (g *gen) writeCppMethods(b *buffer, n *a.Struct) error {
 				b.writes(aPrefix)
 				b.writes(o.AsField().Name().Str(g.tm))
 			}
-			b.writes(");}\n\n")
+			b.writes(");\n  }\n\n")
 		}
 	}
 

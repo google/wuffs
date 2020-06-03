@@ -95,7 +95,7 @@ func (g *gen) writeFuncSignature(b *buffer, n *a.Func, wfs uint32) error {
 		}
 
 	case wfsCppDecl:
-		b.writes("inline ")
+		b.writes("  inline ")
 
 	case wfsCFuncPtrField, wfsCFuncPtrType:
 		// No-op.
@@ -103,9 +103,9 @@ func (g *gen) writeFuncSignature(b *buffer, n *a.Func, wfs uint32) error {
 
 	// TODO: write n's return values.
 	if n.Effect().Coroutine() {
-		b.writes("wuffs_base__status ")
+		b.writes("wuffs_base__status")
 	} else if out := n.Out(); out == nil {
-		b.writes("wuffs_base__empty_struct ")
+		b.writes("wuffs_base__empty_struct")
 		// TODO: does writeCTypeName generate the right C if out is an array?
 	} else if err := g.writeCTypeName(b, out, "", ""); err != nil {
 		return err
@@ -113,8 +113,13 @@ func (g *gen) writeFuncSignature(b *buffer, n *a.Func, wfs uint32) error {
 
 	// The empty // comment makes clang-format place the function name at the
 	// start of a line.
-	if (wfs != wfsCFuncPtrField) && (wfs != wfsCFuncPtrType) {
-		b.writes("//\n")
+	switch wfs {
+	case wfsCDecl:
+		b.writes("  //\n")
+	case wfsCppDecl:
+		b.writes("  //\n  ")
+	case wfsCFuncPtrField:
+		b.writes(" ")
 	}
 
 	comma := false
@@ -123,23 +128,29 @@ func (g *gen) writeFuncSignature(b *buffer, n *a.Func, wfs uint32) error {
 		b.writes(g.funcCName(n))
 		b.writeb('(')
 		if r := n.Receiver(); !r.IsZero() {
+			b.writes("\n    ")
 			if n.Effect().Pure() {
 				b.writes("const ")
 			}
-			b.printf("%s%s *self", g.pkgPrefix, r[1].Str(g.tm))
+			b.printf("%s%s* self", g.pkgPrefix, r[1].Str(g.tm))
 			comma = true
 		}
 
 	case wfsCppDecl:
 		b.writes(n.FuncName().Str(g.tm))
 		b.writeb('(')
+		if len(n.In().Fields()) > 0 {
+			b.writes("\n      ")
+		}
 
 	case wfsCFuncPtrField, wfsCFuncPtrType:
 		b.writes("(*")
 		if wfs == wfsCFuncPtrField {
 			b.writes(n.FuncName().Str(g.tm))
+			b.writes(")(\n    ")
+		} else {
+			b.writes(")(")
 		}
-		b.writes(")(")
 		if n.Effect().Pure() {
 			b.writes("const ")
 		}
@@ -152,7 +163,10 @@ func (g *gen) writeFuncSignature(b *buffer, n *a.Func, wfs uint32) error {
 
 	for _, o := range n.In().Fields() {
 		if comma {
-			b.writeb(',')
+			b.writes(",\n    ")
+			if wfs == wfsCppDecl {
+				b.writes("  ")
+			}
 		}
 		comma = true
 		o := o.AsField()
@@ -167,7 +181,7 @@ func (g *gen) writeFuncSignature(b *buffer, n *a.Func, wfs uint32) error {
 
 	b.printf(")")
 	if (wfs == wfsCppDecl) && !n.Receiver().IsZero() && n.Effect().Pure() {
-		b.writes(" const ")
+		b.writes(" const")
 	}
 	return nil
 }
@@ -293,31 +307,31 @@ func writeFuncImplSelfMagicCheck(b *buffer, tm *t.Map, f *a.Func) error {
 	returnsStatus := f.Effect().Coroutine() ||
 		((f.Out() != nil) && f.Out().IsStatus())
 
-	b.writes("if (!self) { return ")
+	b.writes("if (!self) {\n    return ")
 	if returnsStatus {
 		b.writes("wuffs_base__make_status(wuffs_base__error__bad_receiver)")
 	} else if err := writeOutParamZeroValue(b, tm, f.Out()); err != nil {
 		return err
 	}
-	b.writes(";}")
+	b.writes(";\n  }\n")
 
 	if f.Effect().Pure() {
-		b.writes("if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&")
-		b.writes("    (self->private_impl.magic != WUFFS_BASE__DISABLED)) {")
+		b.writes("  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&\n")
+		b.writes("      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {\n")
 	} else {
-		b.writes("if (self->private_impl.magic != WUFFS_BASE__MAGIC) {")
+		b.writes("  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {\n")
 	}
-	b.writes("return ")
+	b.writes("    return ")
 	if returnsStatus {
-		b.writes("wuffs_base__make_status(" +
-			"(self->private_impl.magic == WUFFS_BASE__DISABLED) " +
-			"? wuffs_base__error__disabled_by_previous_error " +
-			": wuffs_base__error__initialize_not_called)")
+		b.writes("wuffs_base__make_status(\n" +
+			"        (self->private_impl.magic == WUFFS_BASE__DISABLED)\n" +
+			"            ? wuffs_base__error__disabled_by_previous_error\n" +
+			"            : wuffs_base__error__initialize_not_called)")
 	} else if err := writeOutParamZeroValue(b, tm, f.Out()); err != nil {
 		return err
 	}
 
-	b.writes(";}\n")
+	b.writes(";\n  }\n")
 	return nil
 }
 

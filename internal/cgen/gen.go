@@ -117,7 +117,8 @@ func genBase(out *bytes.Buffer) error {
 		}
 		if i := bytes.Index(in, []byte("\n\n")); i >= 0 {
 			if len(copyright) == 0 {
-				copyright = in[:i+2]
+				// Take only one of the two trailing '\n's.
+				copyright = in[:i+1]
 			}
 			in = in[i+2:]
 		}
