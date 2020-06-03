@@ -14,10 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-static inline wuffs_base__empty_struct  //
-wuffs_base__ignore_status(wuffs_base__status z) {
-  return wuffs_base__make_empty_struct();
-}
+// ---------------- Fundamentals
 
 // WUFFS_BASE__MAGIC is a magic number to check that initializers are called.
 // It's not foolproof, given C doesn't automatically zero memory before use,
@@ -72,6 +69,21 @@ wuffs_base__ignore_status(wuffs_base__status z) {
 #define WUFFS_BASE__LIKELY(expr) (expr)
 #define WUFFS_BASE__UNLIKELY(expr) (expr)
 #endif
+
+// --------
+
+static inline wuffs_base__empty_struct  //
+wuffs_base__ignore_status(wuffs_base__status z) {
+  return wuffs_base__make_empty_struct();
+}
+
+static inline wuffs_base__status  //
+wuffs_base__status__ensure_not_a_suspension(wuffs_base__status z) {
+  if (z.repr && (*z.repr == '$')) {
+    z.repr = wuffs_base__error__cannot_return_a_suspension;
+  }
+  return z;
+}
 
 // ---------------- Numeric Types
 

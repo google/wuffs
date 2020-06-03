@@ -776,6 +776,11 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 			return nil, fmt.Errorf(`parse: %s an impure expression at %s:%d`,
 				x.Str(p.tm), p.filename, p.line())
 		}
+		if (x == t.IDReturn) && (value.Operator() == 0) {
+			if s := p.tm.ByID(value.Ident()); (len(s) > 1) && (s[0] == '"') && (s[1] == '$') {
+				return nil, fmt.Errorf(`parse: cannot return a suspension at %s:%d`, p.filename, p.line())
+			}
+		}
 		return a.NewRet(x, value).AsNode(), nil
 
 	case t.IDWhile:

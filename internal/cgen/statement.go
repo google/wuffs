@@ -483,9 +483,30 @@ func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 	b.writes("return ")
 	if g.currFunk.astFunc.Out() == nil {
 		b.writes("wuffs_base__make_empty_struct()")
-	} else if err := g.writeExpr(b, retExpr, depth); err != nil {
-		return err
+	} else {
+		couldBeSuspension := false
+		if retExpr.MType().IsStatus() && !n.RetsError() {
+			couldBeSuspension = true
+			if retExpr.Operator() == 0 {
+				if id := retExpr.Ident(); id == t.IDOk {
+					couldBeSuspension = false
+				} else if s := g.tm.ByID(id); (len(s) > 1) && (s[0] == '"') {
+					couldBeSuspension = s[1] == '$'
+				}
+			}
+		}
+
+		if couldBeSuspension {
+			b.writes("wuffs_base__status__ensure_not_a_suspension(")
+		}
+		if err := g.writeExpr(b, retExpr, depth); err != nil {
+			return err
+		}
+		if couldBeSuspension {
+			b.writeb(')')
+		}
 	}
+
 	b.writeb(';')
 	return nil
 }
