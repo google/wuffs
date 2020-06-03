@@ -137,6 +137,11 @@ func doGenrelease(args []string) error {
 		now = time.Now()
 	}
 
+	if *cformatterFlag == "" {
+		os.Stdout.Write(unformatted.Bytes())
+		return nil
+	}
+
 	cmd := exec.Command(*cformatterFlag, "-style=Chromium")
 	cmd.Stdin = unformatted
 	cmd.Stdout = os.Stdout

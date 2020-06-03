@@ -110,7 +110,7 @@ func doGenGenlib(wuffsRoot string, args []string, genlib bool) error {
 	if genlib {
 		return h.genlibAffected()
 	}
-	return genrelease(wuffsRoot, langs, v)
+	return genrelease(wuffsRoot, langs, v, *cformatterFlag)
 }
 
 type genHelper struct {

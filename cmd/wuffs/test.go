@@ -116,7 +116,7 @@ func doBenchTest(wuffsRoot string, args []string, bench bool) error {
 				return err
 			}
 		}
-		if err := genrelease(wuffsRoot, langs, cf.Version{}); err != nil {
+		if err := genrelease(wuffsRoot, langs, cf.Version{}, *cformatterFlag); err != nil {
 			return err
 		}
 	}

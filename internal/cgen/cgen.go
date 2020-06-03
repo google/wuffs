@@ -194,6 +194,10 @@ func Do(args []string) error {
 			now = time.Now()
 		}
 
+		if *cformatterFlag == "" {
+			return unformatted, nil
+		}
+
 		stdout := &bytes.Buffer{}
 		cmd := exec.Command(*cformatterFlag, "-style=Chromium")
 		cmd.Stdin = bytes.NewReader(unformatted)
