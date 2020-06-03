@@ -26,6 +26,7 @@ import (
 	"os/exec"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/google/wuffs/lang/builtin"
 	"github.com/google/wuffs/lang/generate"
@@ -116,6 +117,11 @@ func Do(args []string) error {
 	genlinenumFlag := flags.Bool("genlinenum", cf.GenlinenumDefault, cf.GenlinenumUsage)
 
 	return generate.Do(&flags, args, func(pkgName string, tm *t.Map, files []*a.File) ([]byte, error) {
+		// printTimings set true will print the time taken for the cformatter
+		// and other work.
+		const printTimings = false
+		now := time.Now()
+
 		if !cf.IsAlphaNumericIsh(*cformatterFlag) {
 			return nil, fmt.Errorf("bad -cformatter flag value %q", *cformatterFlag)
 		}
@@ -182,6 +188,12 @@ func Do(args []string) error {
 			}
 		}
 
+		if printTimings {
+			fmt.Fprintf(os.Stderr, "%8d milliseconds generating the C code\n",
+				time.Since(now).Milliseconds())
+			now = time.Now()
+		}
+
 		stdout := &bytes.Buffer{}
 		cmd := exec.Command(*cformatterFlag, "-style=Chromium")
 		cmd.Stdin = bytes.NewReader(unformatted)
@@ -189,6 +201,10 @@ func Do(args []string) error {
 		cmd.Stderr = os.Stderr
 		if err := cmd.Run(); err != nil {
 			return nil, err
+		}
+		if printTimings {
+			fmt.Fprintf(os.Stderr, "%8d milliseconds formatting the C code via %q\n",
+				time.Since(now).Milliseconds(), *cformatterFlag)
 		}
 		return stdout.Bytes(), nil
 	})

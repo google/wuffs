@@ -24,11 +24,17 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	cf "github.com/google/wuffs/cmd/commonflags"
 )
 
 func doGenrelease(args []string) error {
+	// printTimings set true will print the time taken for the cformatter and
+	// other work.
+	const printTimings = false
+	now := time.Now()
+
 	flags := flag.FlagSet{}
 	cformatterFlag := flags.String("cformatter", cf.CformatterDefault, cf.CformatterUsage)
 	commitDateFlag := flags.String("commitdate", "", "git commit date the release was built from")
@@ -125,11 +131,22 @@ func doGenrelease(args []string) error {
 	unformatted.WriteString(grPragmaPop)
 	unformatted.WriteString("\n\n#endif  // WUFFS_INCLUDE_GUARD\n\n")
 
+	if printTimings {
+		fmt.Fprintf(os.Stderr, "%8d milliseconds collecting the C code\n",
+			time.Since(now).Milliseconds())
+		now = time.Now()
+	}
+
 	cmd := exec.Command(*cformatterFlag, "-style=Chromium")
 	cmd.Stdin = unformatted
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	return cmd.Run()
+	err := cmd.Run()
+	if printTimings {
+		fmt.Fprintf(os.Stderr, "%8d milliseconds formatting the C code via %q\n",
+			time.Since(now).Milliseconds(), *cformatterFlag)
+	}
+	return err
 }
 
 var (
