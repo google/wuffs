@@ -20,23 +20,15 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
-	"time"
 
 	cf "github.com/google/wuffs/cmd/commonflags"
 )
 
 func doGenrelease(args []string) error {
-	// printTimings set true will print the time taken for the cformatter and
-	// other work.
-	const printTimings = false
-	now := time.Now()
-
 	flags := flag.FlagSet{}
-	cformatterFlag := flags.String("cformatter", cf.CformatterDefault, cf.CformatterUsage)
 	commitDateFlag := flags.String("commitdate", "", "git commit date the release was built from")
 	gitRevListCountFlag := flags.Int("gitrevlistcount", 0, `git "rev-list --count" that the release was built from`)
 	revisionFlag := flags.String("revision", "", "git revision the release was built from")
@@ -44,9 +36,6 @@ func doGenrelease(args []string) error {
 
 	if err := flags.Parse(args); err != nil {
 		return err
-	}
-	if !cf.IsAlphaNumericIsh(*cformatterFlag) {
-		return fmt.Errorf("bad -cformatter flag value %q", *cformatterFlag)
 	}
 	if (*gitRevListCountFlag < 0) || (0x7FFFFFFF < *gitRevListCountFlag) {
 		return fmt.Errorf("bad -gitrevlistcount flag value %d", *gitRevListCountFlag)
@@ -103,54 +92,35 @@ func doGenrelease(args []string) error {
 	}
 	sort.Strings(h.filesList)
 
-	unformatted := bytes.NewBuffer(nil)
-	unformatted.WriteString("#ifndef WUFFS_INCLUDE_GUARD\n")
-	unformatted.WriteString("#define WUFFS_INCLUDE_GUARD\n\n")
-	unformatted.WriteString(grSingleFileGuidance[1:]) // [1:] skips the initial '\n'.
-	unformatted.WriteString(grPragmaPush[1:])         // [1:] skips the initial '\n'.
+	out := bytes.NewBuffer(nil)
+	out.WriteString("#ifndef WUFFS_INCLUDE_GUARD\n")
+	out.WriteString("#define WUFFS_INCLUDE_GUARD\n\n")
+	out.WriteString(grSingleFileGuidance[1:]) // [1:] skips the initial '\n'.
+	out.WriteString(grPragmaPush[1:])         // [1:] skips the initial '\n'.
 
 	h.seen = map[string]bool{}
 	for _, f := range h.filesList {
-		if err := h.gen(unformatted, f, 0, 0); err != nil {
+		if err := h.gen(out, f, 0, 0); err != nil {
 			return err
 		}
 	}
 
-	unformatted.Write(grImplStartsHere[1:]) // [1:] skips the initial '\n'.
-	unformatted.WriteString("\n")
+	out.Write(grImplStartsHere[1:]) // [1:] skips the initial '\n'.
+	out.WriteString("\n")
 
 	h.seen = map[string]bool{}
 	for _, f := range h.filesList {
-		if err := h.gen(unformatted, f, 1, 0); err != nil {
+		if err := h.gen(out, f, 1, 0); err != nil {
 			return err
 		}
 	}
 
-	unformatted.Write(grImplEndsHere)
-	unformatted.WriteString(grPragmaPop)
-	unformatted.WriteString("#endif  // WUFFS_INCLUDE_GUARD\n")
+	out.Write(grImplEndsHere)
+	out.WriteString(grPragmaPop)
+	out.WriteString("#endif  // WUFFS_INCLUDE_GUARD\n")
 
-	if printTimings {
-		fmt.Fprintf(os.Stderr, "%8d milliseconds collecting the C code\n",
-			time.Since(now).Milliseconds())
-		now = time.Now()
-	}
-
-	if *cformatterFlag == "" {
-		os.Stdout.Write(unformatted.Bytes())
-		return nil
-	}
-
-	cmd := exec.Command(*cformatterFlag, "-style=Chromium")
-	cmd.Stdin = unformatted
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
-	if printTimings {
-		fmt.Fprintf(os.Stderr, "%8d milliseconds formatting the C code via %q\n",
-			time.Since(now).Milliseconds(), *cformatterFlag)
-	}
-	return err
+	os.Stdout.Write(out.Bytes())
+	return nil
 }
 
 var (

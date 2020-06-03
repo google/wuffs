@@ -24,13 +24,13 @@ import (
 	cf "github.com/google/wuffs/cmd/commonflags"
 )
 
-func genrelease(wuffsRoot string, langs []string, v cf.Version, cformatter string) error {
+func genrelease(wuffsRoot string, langs []string, v cf.Version) error {
 	revision := runGitCommand(wuffsRoot, "rev-parse", "HEAD")
 	commitDate := runGitCommand(wuffsRoot, "show",
 		"--quiet", "--date=format-local:%Y-%m-%d", "--format=%cd")
 	gitRevListCount := runGitCommand(wuffsRoot, "rev-list", "--count", "HEAD")
 	for _, lang := range langs {
-		filename, contents, err := genreleaseLang(wuffsRoot, revision, commitDate, gitRevListCount, v, cformatter, lang)
+		filename, contents, err := genreleaseLang(wuffsRoot, revision, commitDate, gitRevListCount, v, lang)
 		if err != nil {
 			return err
 		}
@@ -41,7 +41,7 @@ func genrelease(wuffsRoot string, langs []string, v cf.Version, cformatter strin
 	return nil
 }
 
-func genreleaseLang(wuffsRoot string, revision string, commitDate, gitRevListCount string, v cf.Version, cformatter string, lang string) (filename string, contents []byte, err error) {
+func genreleaseLang(wuffsRoot string, revision string, commitDate, gitRevListCount string, v cf.Version, lang string) (filename string, contents []byte, err error) {
 	qualFilenames, err := findFiles(filepath.Join(wuffsRoot, "gen", lang), "."+lang)
 	if err != nil {
 		return "", nil, err
@@ -56,9 +56,6 @@ func genreleaseLang(wuffsRoot string, revision string, commitDate, gitRevListCou
 	)
 	if gitRevListCount != "" {
 		args = append(args, "-gitrevlistcount", gitRevListCount)
-	}
-	if lang == "c" {
-		args = append(args, "-cformatter", cformatter)
 	}
 	args = append(args, qualFilenames...)
 	stdout := &bytes.Buffer{}
