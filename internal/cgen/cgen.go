@@ -30,6 +30,7 @@ import (
 
 	"github.com/google/wuffs/lang/builtin"
 	"github.com/google/wuffs/lang/generate"
+	"github.com/google/wuffs/lib/dumbindent"
 
 	cf "github.com/google/wuffs/cmd/commonflags"
 
@@ -200,6 +201,8 @@ func Do(args []string) error {
 		// C code, so further C formatting is unnecessary (and not costless).
 		if (*cformatterFlag == "") || (pkgName == "base") {
 			return unformatted, nil
+		} else if *cformatterFlag == "dumbindent" {
+			return dumbindent.Format(unformatted)
 		}
 
 		stdout := &bytes.Buffer{}
