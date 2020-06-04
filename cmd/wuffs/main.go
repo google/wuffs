@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// ----------------
+
 // wuffs is a tool for managing Wuffs source code.
 package main
 

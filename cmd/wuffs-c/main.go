@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// ----------------
+
 // wuffs-c handles the C language specific parts of the wuffs tool.
 package main
 
