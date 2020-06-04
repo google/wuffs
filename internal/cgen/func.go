@@ -201,7 +201,7 @@ func (g *gen) writeFuncImpl(b *buffer, n *a.Func) error {
 	if err := g.writeFuncSignature(b, n, wfsCDecl); err != nil {
 		return err
 	}
-	b.writes("{\n")
+	b.writes(" {\n")
 
 	if (len(n.Body()) != 0) || n.Effect().Coroutine() || (n.Out() != nil) {
 		b.writex(k.bPrologue)
@@ -212,7 +212,7 @@ func (g *gen) writeFuncImpl(b *buffer, n *a.Func) error {
 		if n.Effect().Coroutine() {
 			b.writex(k.bBodySuspend)
 		} else if k.hasGotoOK {
-			b.writes("\ngoto ok;ok:\n") // The goto avoids the "unused label" warning.
+			b.writes("\ngoto ok;\nok:\n") // The goto avoids the "unused label" warning.
 		}
 	}
 
@@ -307,7 +307,7 @@ func writeFuncImplSelfMagicCheck(b *buffer, tm *t.Map, f *a.Func) error {
 	returnsStatus := f.Effect().Coroutine() ||
 		((f.Out() != nil) && f.Out().IsStatus())
 
-	b.writes("if (!self) {\n    return ")
+	b.writes("  if (!self) {\n    return ")
 	if returnsStatus {
 		b.writes("wuffs_base__make_status(wuffs_base__error__bad_receiver)")
 	} else if err := writeOutParamZeroValue(b, tm, f.Out()); err != nil {
@@ -353,7 +353,7 @@ func (g *gen) writeFuncImplPrologue(b *buffer) error {
 		// For public coroutines, check that we are not suspended in an active
 		// coroutine.
 		if g.currFunk.astFunc.Effect().Coroutine() {
-			b.printf("if ((self->private_impl.active_coroutine != 0) && "+
+			b.printf("if ((self->private_impl.active_coroutine != 0) &&\n"+
 				"(self->private_impl.active_coroutine != %d)) {\n", g.currFunk.coroID)
 			b.writes("self->private_impl.magic = WUFFS_BASE__DISABLED;\n")
 			b.writes("return wuffs_base__make_status(wuffs_base__error__interleaved_coroutine_calls);\n")
@@ -426,12 +426,12 @@ func (g *gen) writeFuncImplBodySuspend(b *buffer) error {
 		// We've reached the end of the function body. Reset the coroutine
 		// suspension point so that the next call to this function starts at
 		// the top.
-		b.writes("\ngoto ok;ok:") // The goto avoids the "unused label" warning.
+		b.writes("\ngoto ok;\nok:\n") // The goto avoids the "unused label" warning.
 		b.printf("self->private_impl.%s%s[0] = 0;\n",
 			pPrefix, g.currFunk.astFunc.FuncName().Str(g.tm))
-		b.writes("goto exit; }\n\n") // Close the coroutine switch.
+		b.writes("goto exit;\n}\n\n") // Close the coroutine switch.
 
-		b.writes("goto suspend;suspend:") // The goto avoids the "unused label" warning.
+		b.writes("goto suspend;\nsuspend:\n") // The goto avoids the "unused label" warning.
 
 		b.printf("self->private_impl.%s%s[0] = "+
 			"wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;\n",
@@ -446,7 +446,7 @@ func (g *gen) writeFuncImplBodySuspend(b *buffer) error {
 		b.writes("\n")
 
 	} else if g.currFunk.astFunc.Effect().Coroutine() {
-		b.writes("\ngoto ok;ok:") // The goto avoids the "unused label" warning.
+		b.writes("\ngoto ok;\nok:\n") // The goto avoids the "unused label" warning.
 	}
 	return nil
 }
@@ -456,11 +456,11 @@ func (g *gen) writeFuncImplEpilogue(b *buffer) error {
 	if g.currFunk.astFunc.Effect().Coroutine() ||
 		(g.currFunk.returnsStatus && (len(g.currFunk.derivedVars) > 0)) {
 
-		b.writes("goto exit;exit:") // The goto avoids the "unused label" warning.
+		b.writes("goto exit;\nexit:\n") // The goto avoids the "unused label" warning.
 
 		if g.currFunk.astFunc.Public() {
-			epilogue = "if (wuffs_base__status__is_error(&status)) { " +
-				"self->private_impl.magic = WUFFS_BASE__DISABLED; }\n" +
+			epilogue = "if (wuffs_base__status__is_error(&status)) {\n" +
+				"self->private_impl.magic = WUFFS_BASE__DISABLED;\n}\n" +
 				"return status;\n"
 		} else {
 			epilogue = "return status;\n"
@@ -540,10 +540,10 @@ func (g *gen) writeFuncImplArgChecks(b *buffer, n *a.Func) error {
 		}
 		b.writes(c)
 	}
-	b.writes(") {")
+	b.writes(") {\n")
 	b.writes("self->private_impl.magic = WUFFS_BASE__DISABLED;\n")
 	if g.currFunk.astFunc.Effect().Coroutine() {
-		b.writes("return wuffs_base__make_status(wuffs_base__error__bad_argument);\n\n")
+		b.writes("return wuffs_base__make_status(wuffs_base__error__bad_argument);\n")
 	} else {
 		// TODO: don't assume that the return type is empty.
 		b.printf("return wuffs_base__make_empty_struct();\n")

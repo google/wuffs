@@ -497,7 +497,7 @@ func insertInterfaceDefinitions(buf *buffer) error {
 			if err := g.writeFuncSignature(buf, f, wfsCDecl); err != nil {
 				return err
 			}
-			buf.writes(" {\n  ")
+			buf.writes(" {\n")
 			if err := writeFuncImplSelfMagicCheck(buf, g.tm, f); err != nil {
 				return err
 			}
@@ -766,7 +766,7 @@ func (g *gen) genHeader(b *buffer) error {
 			iQID := impl.AsTypeExpr().QID()
 			iName := fmt.Sprintf("wuffs_%s__%s", iQID[0].Str(g.tm), iQID[1].Str(g.tm))
 			b.printf("static inline %s*  //\n", iName)
-			b.printf("%s%s__alloc_as__%s(){\n", g.pkgPrefix, structName, iName)
+			b.printf("%s%s__alloc_as__%s() {\n", g.pkgPrefix, structName, iName)
 			b.printf("return (%s*)(%s%s__alloc());\n", iName, g.pkgPrefix, structName)
 			b.printf("}\n\n")
 		}
@@ -779,7 +779,7 @@ func (g *gen) genHeader(b *buffer) error {
 			iQID := impl.AsTypeExpr().QID()
 			iName := fmt.Sprintf("wuffs_%s__%s", iQID[0].Str(g.tm), iQID[1].Str(g.tm))
 			b.printf("static inline %s*  //\n", iName)
-			b.printf("%s%s__upcast_as__%s(%s%s* p){\n",
+			b.printf("%s%s__upcast_as__%s(\n    %s%s* p) {\n",
 				g.pkgPrefix, structName, iName, g.pkgPrefix, structName)
 			b.printf("return (%s*)p;\n", iName)
 			b.printf("}\n\n")
@@ -1017,13 +1017,16 @@ func (g *gen) writeConst(b *buffer, n *a.Const) error {
 func (g *gen) writeConstList(b *buffer, n *a.Expr) error {
 	if n.Operator() == t.IDComma {
 		b.writeb('{')
-		for _, o := range n.Args() {
+		for i, o := range n.Args() {
+			if i&7 == 0 {
+				b.writeb('\n')
+			}
 			if err := g.writeConstList(b, o.AsExpr()); err != nil {
 				return err
 			}
-			b.writeb(',')
+			b.writes(", ")
 		}
-		b.writeb('}')
+		b.writes("\n}")
 	} else if cv := n.ConstValue(); cv != nil {
 		b.writes(cv.String())
 	} else {
@@ -1187,8 +1190,8 @@ func (g *gen) writeCppMethods(b *buffer, n *a.Struct) error {
 		iQID := impl.AsTypeExpr().QID()
 		iName := fmt.Sprintf("wuffs_%s__%s", iQID[0].Str(g.tm), iQID[1].Str(g.tm))
 		b.printf("\nstatic inline %s::unique_ptr  //\n", iName)
-		b.printf("alloc_as__%s(){\n", iName)
-		b.printf("return %s::unique_ptr(%s%s__alloc_as__%s(), &free);\n",
+		b.printf("alloc_as__%s() {\n", iName)
+		b.printf("return %s::unique_ptr(\n%s%s__alloc_as__%s(), &free);\n",
 			iName, g.pkgPrefix, structName, iName)
 		b.printf("}\n")
 	}
@@ -1208,7 +1211,7 @@ func (g *gen) writeCppMethods(b *buffer, n *a.Struct) error {
 	b.writes("// can write \"bar->baz(etc)\" instead of \"wuffs_foo__bar__baz(bar, etc)\".\n")
 	b.printf("%s() = delete;\n", fullStructName)
 	b.printf("%s(const %s&) = delete;\n", fullStructName, fullStructName)
-	b.printf("%s& operator=(const %s&) = delete;\n", fullStructName, fullStructName)
+	b.printf("%s& operator=(\nconst %s&) = delete;\n", fullStructName, fullStructName)
 	b.writes("\n")
 	b.writes("// As above, the size of the struct is not part of the public API, and unless\n")
 	b.writes("// WUFFS_IMPLEMENTATION is #define'd, this struct type T should be heap\n")
@@ -1224,15 +1227,15 @@ func (g *gen) writeCppMethods(b *buffer, n *a.Struct) error {
 	// The empty // comment makes clang-format place the function name
 	// at the start of a line.
 	b.writes("inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //\n" +
-		"initialize(size_t sizeof_star_self, uint64_t wuffs_version, uint32_t initialize_flags) {\n")
-	b.printf("return %s%s__initialize(this, sizeof_star_self, wuffs_version, initialize_flags);\n}\n\n",
+		"initialize(\nsize_t sizeof_star_self,\nuint64_t wuffs_version,\nuint32_t initialize_flags) {\n")
+	b.printf("return %s%s__initialize(\nthis, sizeof_star_self, wuffs_version, initialize_flags);\n}\n\n",
 		g.pkgPrefix, structName)
 
 	for _, impl := range n.Implements() {
 		iQID := impl.AsTypeExpr().QID()
 		iName := fmt.Sprintf("wuffs_%s__%s", iQID[0].Str(g.tm), iQID[1].Str(g.tm))
 		b.printf("inline %s*  //\n", iName)
-		b.printf("upcast_as__%s(){\n", iName)
+		b.printf("upcast_as__%s() {\n", iName)
 		b.printf("return (%s*)this;\n", iName)
 		b.printf("}\n\n")
 	}
@@ -1252,11 +1255,11 @@ func (g *gen) writeCppMethods(b *buffer, n *a.Struct) error {
 			if err := g.writeFuncSignature(b, f, wfsCppDecl); err != nil {
 				return err
 			}
-			b.writes("{\n    return ")
+			b.writes(" {\n    return ")
 			b.writes(g.funcCName(f))
 			b.writes("(this")
 			for _, o := range f.In().Fields() {
-				b.writeb(',')
+				b.writes(", ")
 				b.writes(aPrefix)
 				b.writes(o.AsField().Name().Str(g.tm))
 			}
@@ -1281,7 +1284,7 @@ func (g *gen) writeVTableImpl(b *buffer, n *a.Struct) error {
 	nQID := n.QID()
 	for _, impl := range impls {
 		iQID := impl.AsTypeExpr().QID()
-		b.printf("const wuffs_%s__%s__func_ptrs %s%s__func_ptrs_for__wuffs_%s__%s = {",
+		b.printf("const wuffs_%s__%s__func_ptrs\n%s%s__func_ptrs_for__wuffs_%s__%s = {\n",
 			iQID[0].Str(g.tm), iQID[1].Str(g.tm),
 			g.pkgPrefix, nQID[1].Str(g.tm),
 			iQID[0].Str(g.tm), iQID[1].Str(g.tm),
@@ -1310,7 +1313,11 @@ func (g *gen) writeVTableImpl(b *buffer, n *a.Struct) error {
 func (g *gen) writeInitializerSignature(b *buffer, n *a.Struct, public bool) error {
 	structName := n.QID().Str(g.tm)
 	b.printf("wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //\n"+
-		"%s%s__initialize(%s%s *self, size_t sizeof_star_self, uint64_t wuffs_version, uint32_t initialize_flags)",
+		"%s%s__initialize(\n"+
+		"    %s%s* self,\n"+
+		"    size_t sizeof_star_self,\n"+
+		"    uint64_t wuffs_version,\n"+
+		"    uint32_t initialize_flags)",
 		g.pkgPrefix, structName, g.pkgPrefix, structName)
 	return nil
 }
@@ -1353,12 +1360,14 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 		return err
 	}
 	b.writes("{\n")
-	b.writes("if (!self) { return wuffs_base__make_status(wuffs_base__error__bad_receiver); }\n")
+	b.writes("if (!self) {\n")
+	b.writes("  return wuffs_base__make_status(wuffs_base__error__bad_receiver);\n")
+	b.writes("}\n")
 
 	b.writes("if (sizeof(*self) != sizeof_star_self) {\n")
 	b.writes("  return wuffs_base__make_status(wuffs_base__error__bad_sizeof_receiver);\n")
 	b.writes("}\n")
-	b.writes("if (((wuffs_version >> 32) != WUFFS_VERSION_MAJOR) || " +
+	b.writes("if (((wuffs_version >> 32) != WUFFS_VERSION_MAJOR) ||\n" +
 		"(((wuffs_version >> 16) & 0xFFFF) > WUFFS_VERSION_MINOR)) {\n")
 	b.writes("  return wuffs_base__make_status(wuffs_base__error__bad_wuffs_version);\n")
 	b.writes("}\n\n")
@@ -1419,9 +1428,9 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 	for _, impl := range n.Implements() {
 		qid := impl.AsTypeExpr().QID()
 		iName := fmt.Sprintf("wuffs_%s__%s", qid[0].Str(g.tm), qid[1].Str(g.tm))
-		b.printf("self->private_impl.vtable_for__%s.vtable_name = "+
+		b.printf("self->private_impl.vtable_for__%s.vtable_name =\n"+
 			"%s__vtable_name;\n", iName, iName)
-		b.printf("self->private_impl.vtable_for__%s.function_pointers = "+
+		b.printf("self->private_impl.vtable_for__%s.function_pointers =\n"+
 			"(const void*)(&%s%s__func_ptrs_for__%s);\n",
 			iName, g.pkgPrefix, n.QID().Str(g.tm), iName)
 	}
@@ -1433,21 +1442,21 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 		if err := g.writeAllocSignature(b, n); err != nil {
 			return err
 		}
-		b.writes("{\n")
-		b.printf("%s%s* x = (%s%s*)(calloc(sizeof(%s%s), 1));\n",
+		b.writes(" {\n")
+		b.printf("%s%s* x =\n(%s%s*)(calloc(sizeof(%s%s), 1));\n",
 			g.pkgPrefix, structName, g.pkgPrefix, structName, g.pkgPrefix, structName)
-		b.writes("if (!x) { return NULL; }\n")
-		b.printf("if (%s%s__initialize(x, sizeof(%s%s), "+
+		b.writes("if (!x) {\nreturn NULL;\n}\n")
+		b.printf("if (%s%s__initialize(\nx, sizeof(%s%s), "+
 			"WUFFS_VERSION, WUFFS_INITIALIZE__ALREADY_ZEROED).repr) {\n",
 			g.pkgPrefix, structName, g.pkgPrefix, structName)
-		b.writes("free(x); return NULL; }\n")
+		b.writes("free(x);\nreturn NULL;\n}\n")
 		b.writes("return x;\n")
 		b.writes("}\n\n")
 
 		if err := g.writeSizeofSignature(b, n); err != nil {
 			return err
 		}
-		b.printf("{ return sizeof(%s%s); }\n\n", g.pkgPrefix, structName)
+		b.printf(" {\nreturn sizeof(%s%s);\n}\n\n", g.pkgPrefix, structName)
 	}
 	return nil
 }

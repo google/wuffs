@@ -59,7 +59,7 @@ func (g *gen) writeBuiltinCall(b *buffer, n *a.Expr, depth uint32) error {
 		}
 
 		for i, o := range n.Args() {
-			b.writeb(',')
+			b.writes(", ")
 			if i == u64ToFlicksIndex {
 				if o.AsArg().Name().Str(g.tm) != "duration" {
 					return errors.New("cgen: internal error: inconsistent frame_config.set argument")
@@ -106,7 +106,7 @@ func (g *gen) writeBuiltinCall(b *buffer, n *a.Expr, depth uint32) error {
 				}
 				args := n.Args()
 				for _, o := range args[:len(args)-1] {
-					b.writeb(',')
+					b.writes(", ")
 					if err := g.writeExpr(b, o.AsArg().Value(), depth); err != nil {
 						return err
 					}
@@ -274,7 +274,7 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 		b.printf("wuffs_base__io_writer__limited_copy_u32_from_history%s(&%s%s, %s%s, %s%s",
 			suffix, iopPrefix, name, io0Prefix, name, io2Prefix, name)
 		for _, o := range args {
-			b.writeb(',')
+			b.writes(", ")
 			if err := g.writeExpr(b, o.AsArg().Value(), depth); err != nil {
 				return err
 			}
@@ -490,7 +490,7 @@ func (g *gen) writeBuiltinSlice(b *buffer, recv *a.Expr, method t.ID, args []*a.
 		if err := g.writeExpr(b, recv, depth); err != nil {
 			return err
 		}
-		b.writeb(',')
+		b.writes(", ")
 		return g.writeArgs(b, args, depth)
 
 	case t.IDLength:
@@ -507,7 +507,7 @@ func (g *gen) writeBuiltinSlice(b *buffer, recv *a.Expr, method t.ID, args []*a.
 		if err := g.writeExpr(b, recv, depth); err != nil {
 			return err
 		}
-		b.writeb(',')
+		b.writes(", ")
 		return g.writeArgs(b, args, depth)
 	}
 	return errNoSuchBuiltin
@@ -600,7 +600,7 @@ func (g *gen) writeBuiltinTable(b *buffer, recv *a.Expr, method t.ID, args []*a.
 		if err := g.writeExpr(b, recv, depth); err != nil {
 			return err
 		}
-		b.writeb(',')
+		b.writes(", ")
 		return g.writeArgs(b, args, depth)
 	}
 
@@ -619,7 +619,7 @@ func (g *gen) writeBuiltinTable(b *buffer, recv *a.Expr, method t.ID, args []*a.
 func (g *gen) writeArgs(b *buffer, args []*a.Node, depth uint32) error {
 	for i, o := range args {
 		if i > 0 {
-			b.writeb(',')
+			b.writes(", ")
 		}
 		if err := g.writeExpr(b, o.AsArg().Value(), depth); err != nil {
 			return err
@@ -654,8 +654,8 @@ func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error
 			temp := g.currFunk.tempW
 			g.currFunk.tempW++
 
-			b.printf("if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {" +
-				"status = wuffs_base__make_status(wuffs_base__suspension__short_read); goto suspend; }")
+			b.printf("if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {\n" +
+				"status = wuffs_base__make_status(wuffs_base__suspension__short_read);\ngoto suspend;\n}\n")
 
 			// TODO: watch for passing an array type to writeCTypeName? In C, an
 			// array type can decay into a pointer.
@@ -671,8 +671,8 @@ func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error
 				if err := g.writeCoroSuspPoint(b, false); err != nil {
 					return err
 				}
-				b.printf("if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {" +
-					"status = wuffs_base__make_status(wuffs_base__suspension__short_read); goto suspend; }")
+				b.printf("if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {\n" +
+					"status = wuffs_base__make_status(wuffs_base__suspension__short_read);\ngoto suspend;\n}\n")
 				b.printf("iop_a_src++;\n")
 				return nil
 			}
@@ -696,7 +696,7 @@ func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error
 			b.printf("%s -= ((uint64_t)(io2_a_src - iop_a_src));\n", scratchName)
 			b.printf("iop_a_src = io2_a_src;\n")
 
-			b.writes("status = wuffs_base__make_status(wuffs_base__suspension__short_read); goto suspend; }\n")
+			b.writes("status = wuffs_base__make_status(wuffs_base__suspension__short_read);\ngoto suspend;\n}\n")
 			b.printf("iop_a_src += %s;\n", scratchName)
 			return nil
 		}
@@ -731,7 +731,7 @@ func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error
 				return err
 			}
 			b.printf("if (iop_a_dst == io2_a_dst) {\n"+
-				"status = wuffs_base__make_status(wuffs_base__suspension__short_write); goto suspend; }\n"+
+				"status = wuffs_base__make_status(wuffs_base__suspension__short_write);\ngoto suspend;\n}\n"+
 				"*iop_a_dst++ = ((uint8_t)(%s));\n", scratchName)
 			return nil
 		}
@@ -757,15 +757,15 @@ func (g *gen) writeReadUxxAsUyy(b *buffer, n *a.Expr, preName string, xx uint8, 
 	if err := g.writeCTypeName(b, n.MType(), tPrefix, fmt.Sprint(temp)); err != nil {
 		return err
 	}
-	b.writes(";")
+	b.writes(";\n")
 
 	g.currFunk.usesScratch = true
 	// TODO: don't hard-code [0], and allow recursive coroutines.
 	scratchName := fmt.Sprintf("self->private_data.%s%s[0].scratch",
 		sPrefix, g.currFunk.astFunc.FuncName().Str(g.tm))
 
-	b.printf("if (WUFFS_BASE__LIKELY(io2_a_src - iop_a_src >= %d)) {", xx/8)
-	b.printf("%s%d =", tPrefix, temp)
+	b.printf("if (WUFFS_BASE__LIKELY(io2_a_src - iop_a_src >= %d)) {\n", xx/8)
+	b.printf("%s%d = ", tPrefix, temp)
 	if xx != yy {
 		b.printf("((uint%d_t)(", yy)
 	}
@@ -773,51 +773,51 @@ func (g *gen) writeReadUxxAsUyy(b *buffer, n *a.Expr, preName string, xx uint8, 
 	if xx != yy {
 		b.writes("))")
 	}
-	b.printf("; iop_a_src += %d;\n", xx/8)
-	b.printf("} else {")
+	b.printf(";\niop_a_src += %d;\n", xx/8)
+	b.printf("} else {\n")
 
 	b.printf("%s = 0;\n", scratchName)
 	if err := g.writeCoroSuspPoint(b, false); err != nil {
 		return err
 	}
-	b.printf("while (true) {")
+	b.printf("while (true) {\n")
 
-	b.printf("if (WUFFS_BASE__UNLIKELY(iop_%s == io2_%s)) {"+
-		"status = wuffs_base__make_status(wuffs_base__suspension__short_read); goto suspend; }",
+	b.printf("if (WUFFS_BASE__UNLIKELY(iop_%s == io2_%s)) {\n"+
+		"status = wuffs_base__make_status(wuffs_base__suspension__short_read);\ngoto suspend;\n}\n",
 		preName, preName)
 
-	b.printf("uint64_t *scratch = &%s;", scratchName)
+	b.printf("uint64_t* scratch = &%s;\n", scratchName)
 	b.printf("uint32_t num_bits_%d = ((uint32_t)(*scratch", temp)
 	switch endianness {
 	case 'b':
-		b.writes("& 0xFF)); *scratch >>= 8; *scratch <<= 8;")
-		b.printf("*scratch |= ((uint64_t)(*%s%s++)) << (56 - num_bits_%d);",
+		b.writes(" & 0xFF));\n*scratch >>= 8;\n*scratch <<= 8;\n")
+		b.printf("*scratch |= ((uint64_t)(*%s%s++)) << (56 - num_bits_%d);\n",
 			iopPrefix, preName, temp)
 	case 'l':
-		b.writes(">> 56)); *scratch <<= 8; *scratch >>= 8;")
-		b.printf("*scratch |= ((uint64_t)(*%s%s++)) << num_bits_%d;",
+		b.writes(" >> 56));\n*scratch <<= 8;\n*scratch >>= 8;\n")
+		b.printf("*scratch |= ((uint64_t)(*%s%s++)) << num_bits_%d;\n",
 			iopPrefix, preName, temp)
 	}
 
-	b.printf("if (num_bits_%d == %d) { %s%d = ((uint%d_t)(", temp, xx-8, tPrefix, temp, yy)
+	b.printf("if (num_bits_%d == %d) {\n%s%d = ((uint%d_t)(", temp, xx-8, tPrefix, temp, yy)
 	switch endianness {
 	case 'b':
-		b.printf("*scratch >> %d));", 64-xx)
+		b.printf("*scratch >> %d));\n", 64-xx)
 	case 'l':
-		b.printf("*scratch));")
+		b.printf("*scratch));\n")
 	}
-	b.printf("break;")
-	b.printf("}")
+	b.printf("break;\n")
+	b.printf("}\n")
 
-	b.printf("num_bits_%d += 8;", temp)
+	b.printf("num_bits_%d += 8;\n", temp)
 	switch endianness {
 	case 'b':
-		b.printf("*scratch |= ((uint64_t)(num_bits_%d));", temp)
+		b.printf("*scratch |= ((uint64_t)(num_bits_%d));\n", temp)
 	case 'l':
-		b.printf("*scratch |= ((uint64_t)(num_bits_%d)) << 56;", temp)
+		b.printf("*scratch |= ((uint64_t)(num_bits_%d)) << 56;\n", temp)
 	}
 
-	b.writes("}}\n")
+	b.writes("}\n}\n")
 	return nil
 }
 

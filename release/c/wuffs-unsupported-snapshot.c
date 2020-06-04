@@ -13216,6 +13216,7 @@ label__outer__continue:;
 label__outer__break:;
   status = wuffs_base__make_status(NULL);
   goto ok;
+
   goto ok;
 ok:
   goto exit;
@@ -17734,6 +17735,7 @@ wuffs_gif__config_decoder__tell_me_more(wuffs_gif__config_decoder* self,
     self->private_impl.f_metadata_io_position = 0;
     status = wuffs_base__make_status(NULL);
     goto ok;
+
     goto ok;
   ok:
     self->private_impl.p_tell_me_more[0] = 0;
@@ -18166,6 +18168,7 @@ wuffs_gif__config_decoder__decode_frame(
 
   status = wuffs_base__make_status(wuffs_base__error__unsupported_method);
   goto exit;
+
   goto ok;
 ok:
   goto exit;
@@ -19559,6 +19562,7 @@ wuffs_gif__decoder__tell_me_more(wuffs_gif__decoder* self,
     self->private_impl.f_metadata_io_position = 0;
     status = wuffs_base__make_status(NULL);
     goto ok;
+
     goto ok;
   ok:
     self->private_impl.p_tell_me_more[0] = 0;
@@ -24293,6 +24297,7 @@ wuffs_json__decoder__decode_comment(wuffs_json__decoder* self,
     }
     status = wuffs_base__make_status(wuffs_json__error__bad_input);
     goto exit;
+
     goto ok;
   ok:
     self->private_impl.p_decode_comment[0] = 0;
@@ -25380,6 +25385,7 @@ wuffs_wbmp__decoder__tell_me_more(wuffs_wbmp__decoder* self,
 
   status = wuffs_base__make_status(wuffs_base__error__no_more_information);
   goto exit;
+
   goto ok;
 ok:
   goto exit;

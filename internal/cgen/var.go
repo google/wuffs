@@ -115,27 +115,27 @@ func (g *gen) writeLoadDerivedVar(b *buffer, hack string, prefix string, name t.
 	}
 
 	if header {
-		b.printf("%s* %s%s = NULL;", elem, iopPrefix, preName)
-		b.printf("%s* %s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;", elem, io0Prefix, preName)
-		b.printf("%s* %s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;", elem, io1Prefix, preName)
-		b.printf("%s* %s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;", elem, io2Prefix, preName)
+		b.printf("%s* %s%s = NULL;\n", elem, iopPrefix, preName)
+		b.printf("%s* %s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;\n", elem, io0Prefix, preName)
+		b.printf("%s* %s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;\n", elem, io1Prefix, preName)
+		b.printf("%s* %s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;\n", elem, io2Prefix, preName)
 	}
 
-	b.printf("if (%s) {", preName)
+	b.printf("if (%s) {\n", preName)
 
 	if header {
-		b.printf("%s%s = %s->data.ptr;", io0Prefix, preName, preName)
-		b.printf("%s%s = %s%s + %s->%s;", io1Prefix, preName, io0Prefix, preName, preName, i1)
-		b.printf("%s%s = %s%s;", iopPrefix, preName, io1Prefix, preName)
-		b.printf("%s%s = %s%s + %s->%s;", io2Prefix, preName, io0Prefix, preName, preName, i2)
+		b.printf("%s%s = %s->data.ptr;\n", io0Prefix, preName, preName)
+		b.printf("%s%s = %s%s + %s->%s;\n", io1Prefix, preName, io0Prefix, preName, preName, i1)
+		b.printf("%s%s = %s%s;\n", iopPrefix, preName, io1Prefix, preName)
+		b.printf("%s%s = %s%s + %s->%s;\n", io2Prefix, preName, io0Prefix, preName, preName, i2)
 
 		if q := typ.QID()[1]; (q == t.IDIOWriter) || (q == t.IDTokenWriter) {
-			b.printf("if (%s->meta.closed) {", preName)
-			b.printf("%s%s = %s%s;", io2Prefix, preName, iopPrefix, preName)
+			b.printf("if (%s->meta.closed) {\n", preName)
+			b.printf("%s%s = %s%s;\n", io2Prefix, preName, iopPrefix, preName)
 			b.printf("}\n")
 		}
 	} else {
-		b.printf("%s%s = %s->data.ptr + %s->%s;", iopPrefix, preName, preName, preName, i1)
+		b.printf("%s%s = %s->data.ptr + %s->%s;\n", iopPrefix, preName, preName, preName, i1)
 	}
 
 	b.printf("}\n")
@@ -173,7 +173,7 @@ func (g *gen) writeSaveDerivedVar(b *buffer, hack string, prefix string, name t.
 		index = "wi"
 	}
 
-	b.printf("if (%s) { %s->meta.%s = ((size_t)(%s%s - %s->data.ptr)); }\n",
+	b.printf("if (%s) {\n%s->meta.%s = ((size_t)(%s%s - %s->data.ptr));\n}\n",
 		preName, preName, index, iopPrefix, preName, preName)
 	return nil
 }

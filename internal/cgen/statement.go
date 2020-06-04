@@ -162,7 +162,7 @@ func (g *gen) writeStatementAssign0(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr
 		}
 
 		if op != t.IDEqQuestion && rhs.Effect().Coroutine() {
-			b.writes("if (status.repr) { goto suspend; }\n")
+			b.writes("if (status.repr) {\ngoto suspend;\n}\n")
 		}
 	}
 
@@ -285,7 +285,7 @@ func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {
 		}
 
 		if n.Keyword() == t.IDIOBind {
-			b.printf("%s%s = wuffs_base__io_%s__set(&%s%s, &%s%s%s, &%s%s%s, &%s%s%s, &%s%s%s,",
+			b.printf("%s%s = wuffs_base__io_%s__set(&%s%s, &%s%s%s, &%s%s%s, &%s%s%s, &%s%s%s, ",
 				prefix, name, cTyp, uPrefix, name, iopPrefix, prefix, name,
 				io0Prefix, prefix, name, io1Prefix, prefix, name, io2Prefix, prefix, name)
 			if err := g.writeExpr(b, n.Arg1(), 0); err != nil {
@@ -387,7 +387,7 @@ func (g *gen) writeStatementIterate(b *buffer, n *a.Iterate, depth uint32) error
 	// TODO: don't assume that the slice is a slice of base.u8. In
 	// particular, the code gen can be subtle if the slice element type has
 	// zero size, such as the empty struct.
-	b.printf("wuffs_base__slice_u8 %sslice_%s =", iPrefix, name)
+	b.printf("wuffs_base__slice_u8 %sslice_%s = ", iPrefix, name)
 	if err := g.writeExpr(b, o.RHS(), 0); err != nil {
 		return err
 	}
@@ -450,23 +450,23 @@ func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 				return err
 			}
 		}
-		b.writes(";")
+		b.writes(";\n")
 
 		if n.Keyword() == t.IDYield {
 			return g.writeCoroSuspPoint(b, true)
 		}
 
 		if n.RetsError() {
-			b.writes("goto exit;")
+			b.writes("goto exit;\n")
 		} else if isComplete {
 			g.currFunk.hasGotoOK = true
-			b.writes("goto ok;")
+			b.writes("goto ok;\n")
 		} else {
 			g.currFunk.hasGotoOK = true
 			// TODO: the "goto exit"s can be "goto ok".
-			b.writes("if (wuffs_base__status__is_error(&status)) { goto exit; }" +
-				"else if (wuffs_base__status__is_suspension(&status)) { " +
-				"status = wuffs_base__make_status(wuffs_base__error__cannot_return_a_suspension); goto exit; } goto ok;")
+			b.writes("if (wuffs_base__status__is_error(&status)) {\ngoto exit;\n} " +
+				"else if (wuffs_base__status__is_suspension(&status)) {\n" +
+				"status = wuffs_base__make_status(wuffs_base__error__cannot_return_a_suspension);\ngoto exit;\n}\ngoto ok;\n")
 		}
 		return nil
 	}
@@ -507,7 +507,7 @@ func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 		}
 	}
 
-	b.writeb(';')
+	b.writes(";\n")
 	return nil
 }
 

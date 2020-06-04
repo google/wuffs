@@ -182,13 +182,13 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, depth uint32) error {
 		}
 
 		if mhs != nil {
-			b.writeb(',')
+			b.writes(", ")
 			if err := g.writeExpr(b, mhs, depth); err != nil {
 				return err
 			}
 		}
 		if rhs != nil {
-			b.writeb(',')
+			b.writes(", ")
 			if err := g.writeExpr(b, rhs, depth); err != nil {
 				return err
 			}
@@ -263,7 +263,7 @@ func (g *gen) writeExprBinaryOp(b *buffer, n *a.Expr, depth uint32) error {
 			uOp = "sub"
 		}
 		b.printf("wuffs_base__u%d__sat_%s", uBits, uOp)
-		opName = ","
+		opName = ", "
 
 	case t.IDXBinaryAs:
 		return g.writeExprAs(b, n.LHS().AsExpr(), n.RHS().AsTypeExpr(), depth)
@@ -358,7 +358,7 @@ func (g *gen) writeExprUserDefinedCall(b *buffer, n *a.Expr, depth uint32) error
 			return err
 		}
 		if len(n.Args()) > 0 {
-			b.writeb(',')
+			b.writes(", ")
 		}
 	}
 	return g.writeArgs(b, n.Args(), depth)
