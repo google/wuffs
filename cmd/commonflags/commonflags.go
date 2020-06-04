@@ -28,7 +28,8 @@ const (
 	CcompilersDefault = "clang-5.0,gcc"
 	CcompilersUsage   = `comma-separated list of C compilers`
 
-	CformatterDefault = "clang-format-5.0"
+	// TODO: remove the -cformatter flag entirely.
+	CformatterDefault = "dumbindent"
 	CformatterUsage   = `C formatter`
 
 	FocusDefault = ""

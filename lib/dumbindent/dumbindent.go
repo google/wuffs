@@ -23,6 +23,9 @@
 // indenting nested blocks. The output isn't 'perfect', but it's usually
 // sufficiently readable if the input already has sensible line breaks.
 //
+// See `cmd/dumbindent/main.go` in this repository for an example where
+// `dumbindent` was 70 times faster than `clang-format`.
+//
 // There are no configuration options (e.g. tabs versus spaces).
 //
 // Known bug: it cannot handle /* slash-star comments */ or multi-line strings
