@@ -3,9 +3,9 @@
 
 ## Work In Progress
 
-- Added `WUFFS_CONFIG__MODULE__BASE__ETC` sub-modules.
 - Added `WUFFS_BASE__PIXEL_BLEND__SRC_OVER`.
 - Added `WUFFS_BASE__PIXEL_FORMAT__BGR_565`.
+- Added `WUFFS_CONFIG__MODULE__BASE__ETC` sub-modules.
 - Added `base` library support for UTF-8.
 - Added `base` library support for `atoi`-like string conversion.
 - Added `endwhile` syntax.
@@ -30,6 +30,7 @@
 - Made `wuffs_base__pixel_format` a struct.
 - Made `wuffs_base__pixel_subsampling` a struct.
 - Made `wuffs_base__status` a struct.
+- Removed `-cformatter` flag.
 - Removed `ack_metadata_chunk?`.
 - Removed `wuffs_base__frame_config__blend`.
 - Renamed `decode_io_writer?` methods to `transform_io?`.

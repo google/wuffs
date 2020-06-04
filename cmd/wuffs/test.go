@@ -31,7 +31,6 @@ func doTest(wuffsRoot string, args []string) error  { return doBenchTest(wuffsRo
 func doBenchTest(wuffsRoot string, args []string, bench bool) error {
 	flags := flag.NewFlagSet("test", flag.ExitOnError)
 	ccompilersFlag := flags.String("ccompilers", cf.CcompilersDefault, cf.CcompilersUsage)
-	cformatterFlag := flags.String("cformatter", cf.CformatterDefault, cf.CformatterUsage)
 	focusFlag := flags.String("focus", cf.FocusDefault, cf.FocusUsage)
 	iterscaleFlag := flags.Int("iterscale", cf.IterscaleDefault, cf.IterscaleUsage)
 	langsFlag := flags.String("langs", langsDefault, langsUsage)
@@ -50,9 +49,6 @@ func doBenchTest(wuffsRoot string, args []string, bench bool) error {
 	}
 	if !cf.IsAlphaNumericIsh(*ccompilersFlag) {
 		return fmt.Errorf("bad -ccompilers flag value %q", *ccompilersFlag)
-	}
-	if !cf.IsAlphaNumericIsh(*cformatterFlag) {
-		return fmt.Errorf("bad -cformatter flag value %q", *cformatterFlag)
 	}
 	if !cf.IsAlphaNumericIsh(*focusFlag) {
 		return fmt.Errorf("bad -focus flag value %q", *focusFlag)
@@ -99,7 +95,6 @@ func doBenchTest(wuffsRoot string, args []string, bench bool) error {
 		gh := genHelper{
 			wuffsRoot:   wuffsRoot,
 			langs:       langs,
-			cformatter:  *cformatterFlag,
 			skipgen:     *skipgenFlag,
 			skipgendeps: *skipgendepsFlag,
 		}
