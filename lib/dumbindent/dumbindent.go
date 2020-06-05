@@ -47,8 +47,15 @@ var (
 var (
 	nBraces   int  // The number of unbalanced '{'s.
 	nParens   int  // The number of unbalanced '('s.
-	hangingEq bool // Whether the previous line ends with '='.
+	openBrace bool // Whether the previous line ends with '{'.
+	hanging   bool // Whether the previous line ends with '=' or '\\'.
 )
+
+// hangingBytes is a look-up table for updating the hanging global variable.
+var hangingBytes = [256]bool{
+	'=':  true,
+	'\\': true,
+}
 
 // Format formats the C (or C-like) program in src.
 func Format(src []byte) (dst []byte, retErr error) {
@@ -62,14 +69,19 @@ func Format(src []byte) (dst []byte, retErr error) {
 		line = trimSpace(line)
 
 		// Collapse 2 or more consecutive blank lines into 1. Also strip any
-		// trailing blank lines.
+		// blank lines:
+		//  - immediately after a '{',
+		//  - immediately before a '}',
+		//  - at the end of file.
 		if len(line) == 0 {
 			blankLine = true
 			continue
 		}
 		if blankLine {
 			blankLine = false
-			dst = append(dst, '\n')
+			if !openBrace && (line[0] != '}') {
+				dst = append(dst, '\n')
+			}
 		}
 
 		// Preprocessor lines (#ifdef, #pragma, etc) are never indented.
@@ -78,6 +90,8 @@ func Format(src []byte) (dst []byte, retErr error) {
 			((line[0] == '}') && bytes.HasSuffix(line, externC)) {
 			dst = append(dst, line...)
 			dst = append(dst, '\n')
+			openBrace = false
+			hanging = lastNonWhiteSpace(line) == '\\'
 			continue
 		}
 
@@ -93,7 +107,12 @@ func Format(src []byte) (dst []byte, retErr error) {
 		// dst = append(dst, strconv.Itoa(nBraces)...)
 		// dst = append(dst, ',')
 		// dst = append(dst, strconv.Itoa(nParens)...)
-		// if hangingEq {
+		// if openBrace {
+		//   dst = append(dst, '{')
+		// } else {
+		//   dst = append(dst, ':')
+		// }
+		// if hanging {
 		//   dst = append(dst, '=')
 		// } else {
 		//   dst = append(dst, ':')
@@ -105,7 +124,7 @@ func Format(src []byte) (dst []byte, retErr error) {
 		if nBraces > 0 {
 			indent += 2 * nBraces
 		}
-		if (nParens > 0) || hangingEq {
+		if (nParens > 0) || hanging {
 			indent += 4
 		}
 		if (indent >= 2) && isLabel(line) {
@@ -119,7 +138,6 @@ func Format(src []byte) (dst []byte, retErr error) {
 			dst = append(dst, spaces[:n]...)
 			indent -= n
 		}
-		hangingEq = false
 
 		// Output the line itself.
 		dst = append(dst, line...)
@@ -162,7 +180,8 @@ func Format(src []byte) (dst []byte, retErr error) {
 			}
 			break loop
 		}
-		hangingEq = last == '='
+		openBrace = last == '{'
+		hanging = hangingBytes[last]
 	}
 	return dst, nil
 }

@@ -734,7 +734,7 @@ func (g *gen) genHeader(b *buffer) error {
 		for _, impl := range n.Implements() {
 			iQID := impl.AsTypeExpr().QID()
 			iName := fmt.Sprintf("wuffs_%s__%s", iQID[0].Str(g.tm), iQID[1].Str(g.tm))
-			b.printf("static inline %s*  //\n", iName)
+			b.printf("static inline %s*\n", iName)
 			b.printf("%s%s__alloc_as__%s() {\n", g.pkgPrefix, structName, iName)
 			b.printf("return (%s*)(%s%s__alloc());\n", iName, g.pkgPrefix, structName)
 			b.printf("}\n\n")
@@ -747,7 +747,7 @@ func (g *gen) genHeader(b *buffer) error {
 		for _, impl := range n.Implements() {
 			iQID := impl.AsTypeExpr().QID()
 			iName := fmt.Sprintf("wuffs_%s__%s", iQID[0].Str(g.tm), iQID[1].Str(g.tm))
-			b.printf("static inline %s*  //\n", iName)
+			b.printf("static inline %s*\n", iName)
 			b.printf("%s%s__upcast_as__%s(\n    %s%s* p) {\n",
 				g.pkgPrefix, structName, iName, g.pkgPrefix, structName)
 			b.printf("return (%s*)p;\n", iName)
@@ -971,10 +971,10 @@ func (g *gen) writeConst(b *buffer, n *a.Const) error {
 		b.printf("#define %s%s %v\n\n", g.PKGPREFIX, n.QID()[1].Str(g.tm), cv)
 	} else {
 		b.writes("static const ")
-		if err := g.writeCTypeName(b, n.XType(), "//\n"+g.PKGPREFIX, n.QID()[1].Str(g.tm)); err != nil {
+		if err := g.writeCTypeName(b, n.XType(), "\n"+g.PKGPREFIX, n.QID()[1].Str(g.tm)); err != nil {
 			return err
 		}
-		b.writes("//\n WUFFS_BASE__POTENTIALLY_UNUSED = ")
+		b.writes("WUFFS_BASE__POTENTIALLY_UNUSED = ")
 		if err := g.writeConstList(b, n.Value()); err != nil {
 			return err
 		}
@@ -1151,14 +1151,14 @@ func (g *gen) writeCppMethods(b *buffer, n *a.Struct) error {
 	b.writes("#if __cplusplus >= 201103L\n")
 	b.printf("using unique_ptr = std::unique_ptr<%s%s, decltype(&free)>;\n\n", g.pkgPrefix, structName)
 	b.writes("// On failure, the alloc_etc functions return nullptr. They don't throw.\n\n")
-	b.writes("static inline unique_ptr  //\n")
+	b.writes("static inline unique_ptr\n")
 	b.writes("alloc() {\n")
 	b.printf("return unique_ptr(%s%s__alloc(), &free);\n", g.pkgPrefix, structName)
 	b.writes("}\n")
 	for _, impl := range n.Implements() {
 		iQID := impl.AsTypeExpr().QID()
 		iName := fmt.Sprintf("wuffs_%s__%s", iQID[0].Str(g.tm), iQID[1].Str(g.tm))
-		b.printf("\nstatic inline %s::unique_ptr  //\n", iName)
+		b.printf("\nstatic inline %s::unique_ptr\n", iName)
 		b.printf("alloc_as__%s() {\n", iName)
 		b.printf("return %s::unique_ptr(\n%s%s__alloc_as__%s(), &free);\n",
 			iName, g.pkgPrefix, structName, iName)
@@ -1193,9 +1193,7 @@ func (g *gen) writeCppMethods(b *buffer, n *a.Struct) error {
 	b.writes("uint8_t dead_weight[123000000];  // 123 MB.\n")
 	b.writes("#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)\n\n")
 
-	// The empty // comment makes clang-format place the function name
-	// at the start of a line.
-	b.writes("inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //\n" +
+	b.writes("inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT\n" +
 		"initialize(\nsize_t sizeof_star_self,\nuint64_t wuffs_version,\nuint32_t initialize_flags) {\n")
 	b.printf("return %s%s__initialize(\nthis, sizeof_star_self, wuffs_version, initialize_flags);\n}\n\n",
 		g.pkgPrefix, structName)
@@ -1203,7 +1201,7 @@ func (g *gen) writeCppMethods(b *buffer, n *a.Struct) error {
 	for _, impl := range n.Implements() {
 		iQID := impl.AsTypeExpr().QID()
 		iName := fmt.Sprintf("wuffs_%s__%s", iQID[0].Str(g.tm), iQID[1].Str(g.tm))
-		b.printf("inline %s*  //\n", iName)
+		b.printf("inline %s*\n", iName)
 		b.printf("upcast_as__%s() {\n", iName)
 		b.printf("return (%s*)this;\n", iName)
 		b.printf("}\n\n")
@@ -1281,7 +1279,7 @@ func (g *gen) writeVTableImpl(b *buffer, n *a.Struct) error {
 
 func (g *gen) writeInitializerSignature(b *buffer, n *a.Struct, public bool) error {
 	structName := n.QID().Str(g.tm)
-	b.printf("wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //\n"+
+	b.printf("wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT\n"+
 		"%s%s__initialize(\n"+
 		"    %s%s* self,\n"+
 		"    size_t sizeof_star_self,\n"+
@@ -1293,13 +1291,13 @@ func (g *gen) writeInitializerSignature(b *buffer, n *a.Struct, public bool) err
 
 func (g *gen) writeAllocSignature(b *buffer, n *a.Struct) error {
 	structName := n.QID().Str(g.tm)
-	b.printf("%s%s*  //\n%s%s__alloc()", g.pkgPrefix, structName, g.pkgPrefix, structName)
+	b.printf("%s%s*\n%s%s__alloc()", g.pkgPrefix, structName, g.pkgPrefix, structName)
 	return nil
 }
 
 func (g *gen) writeSizeofSignature(b *buffer, n *a.Struct) error {
 	structName := n.QID().Str(g.tm)
-	b.printf("size_t  //\nsizeof__%s%s()", g.pkgPrefix, structName)
+	b.printf("size_t\nsizeof__%s%s()", g.pkgPrefix, structName)
 	return nil
 }
 

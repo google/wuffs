@@ -50,16 +50,16 @@ func (g *gen) writeBuiltinCall(b *buffer, n *a.Expr, depth uint32) error {
 		}
 		switch recvTyp.Inner().QID() {
 		case t.QID{t.IDBase, t.IDImageConfig}:
-			b.writes("wuffs_base__image_config__set(a_dst")
+			b.writes("wuffs_base__image_config__set(\na_dst")
 		case t.QID{t.IDBase, t.IDFrameConfig}:
-			b.writes("wuffs_base__frame_config__set(a_dst")
+			b.writes("wuffs_base__frame_config__set(\na_dst")
 			u64ToFlicksIndex = 1
 		default:
 			return errNoSuchBuiltin
 		}
 
 		for i, o := range n.Args() {
-			b.writes(", ")
+			b.writes(",\n")
 			if i == u64ToFlicksIndex {
 				if o.AsArg().Name().Str(g.tm) != "duration" {
 					return errors.New("cgen: internal error: inconsistent frame_config.set argument")
@@ -617,9 +617,16 @@ func (g *gen) writeBuiltinTable(b *buffer, recv *a.Expr, method t.ID, args []*a.
 }
 
 func (g *gen) writeArgs(b *buffer, args []*a.Node, depth uint32) error {
+	if len(args) >= 4 {
+		b.writeb('\n')
+	}
 	for i, o := range args {
 		if i > 0 {
-			b.writes(", ")
+			if len(args) >= 4 {
+				b.writes(",\n")
+			} else {
+				b.writes(", ")
+			}
 		}
 		if err := g.writeExpr(b, o.AsArg().Value(), depth); err != nil {
 			return err

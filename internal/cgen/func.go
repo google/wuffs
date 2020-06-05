@@ -111,13 +111,11 @@ func (g *gen) writeFuncSignature(b *buffer, n *a.Func, wfs uint32) error {
 		return err
 	}
 
-	// The empty // comment makes clang-format place the function name at the
-	// start of a line.
 	switch wfs {
 	case wfsCDecl:
-		b.writes("  //\n")
+		b.writes("\n")
 	case wfsCppDecl:
-		b.writes("  //\n  ")
+		b.writes("\n  ")
 	case wfsCFuncPtrField:
 		b.writes(" ")
 	}
