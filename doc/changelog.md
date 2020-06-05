@@ -25,12 +25,11 @@
 - Added single-quoted strings.
 - Added tokens.
 - Changed `gif.decoder_workbuf_len_max_incl_worst_case` from 1 to 0.
-- Changed the default C-formatter.
+- Changed the C formatting style; removed the `-cformatter` flag.
 - Changed what the `std/gif` benchmarks actually measure.
 - Made `wuffs_base__pixel_format` a struct.
 - Made `wuffs_base__pixel_subsampling` a struct.
 - Made `wuffs_base__status` a struct.
-- Removed `-cformatter` flag.
 - Removed `ack_metadata_chunk?`.
 - Removed `wuffs_base__frame_config__blend`.
 - Renamed `decode_io_writer?` methods to `transform_io?`.
