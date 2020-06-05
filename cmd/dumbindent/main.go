@@ -29,15 +29,15 @@
 // indenting nested blocks. The output isn't 'perfect', but it's usually
 // sufficiently readable if the input already has sensible line breaks.
 //
-// An example of "much, much faster", 70 times faster than clang-format:
+// An example of "much, much faster", 80 times faster than clang-format:
 // ----
 // $ wc release/c/wuffs-v0.2.c
 //  11858  35980 431885 release/c/wuffs-v0.2.c
-// $ time clang-format-5.0 < release/c/wuffs-v0.2.c > /dev/null
-// real    0m0.585s
-// user    0m0.525s
-// sys     0m0.041s
-// $ time dumbindent       < release/c/wuffs-v0.2.c > /dev/null
+// $ time clang-format-9 < release/c/wuffs-v0.2.c > /dev/null
+// real    0m0.677s
+// user    0m0.620s
+// sys     0m0.040s
+// $ time dumbindent     < release/c/wuffs-v0.2.c > /dev/null
 // real    0m0.008s
 // user    0m0.005s
 // sys     0m0.005s
