@@ -85,6 +85,10 @@ func Format(src []byte) (dst []byte, retErr error) {
 		}
 
 		// Preprocessor lines (#ifdef, #pragma, etc) are never indented.
+		//
+		// The '{' and '}' for an `extern "C"` are also special cased not to
+		// change indentation inside the block. This assumes that the closing
+		// brace is followed by a `// extern "C"` comment.
 		if (line[0] == '#') ||
 			((line[0] == 'e') && bytes.HasPrefix(line, externC)) ||
 			((line[0] == '}') && bytes.HasSuffix(line, externC)) {
