@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:generate go run gen.go
-
 package cgen
 
 import (
@@ -24,6 +22,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/google/wuffs/internal/cgen/data"
 	"github.com/google/wuffs/lang/builtin"
 	"github.com/google/wuffs/lang/generate"
 	"github.com/google/wuffs/lib/dumbindent"
@@ -119,7 +118,7 @@ func Do(args []string) error {
 				return nil, fmt.Errorf("base package shouldn't have any .wuffs files")
 			}
 			buf := make(buffer, 0, 128*1024)
-			if err := expandBangBangInsert(&buf, baseAllImplC, map[string]func(*buffer) error{
+			if err := expandBangBangInsert(&buf, data.BaseAllImplC, map[string]func(*buffer) error{
 				"// !! INSERT InterfaceDeclarations.\n":    insertInterfaceDeclarations,
 				"// !! INSERT InterfaceDefinitions.\n":     insertInterfaceDefinitions,
 				"// !! INSERT base/all-private.h.\n":       insertBaseAllPrivateH,
@@ -266,24 +265,24 @@ func expandBangBangInsert(b *buffer, s string, m map[string]func(*buffer) error)
 }
 
 func insertBaseAllPrivateH(buf *buffer) error {
-	buf.writes(baseFundamentalPrivateH)
+	buf.writes(data.BaseFundamentalPrivateH)
 	buf.writeb('\n')
-	buf.writes(baseRangePrivateH)
+	buf.writes(data.BaseRangePrivateH)
 	buf.writeb('\n')
-	buf.writes(baseIOPrivateH)
+	buf.writes(data.BaseIOPrivateH)
 	buf.writeb('\n')
-	buf.writes(baseTokenPrivateH)
+	buf.writes(data.BaseTokenPrivateH)
 	buf.writeb('\n')
-	buf.writes(baseMemoryPrivateH)
+	buf.writes(data.BaseMemoryPrivateH)
 	buf.writeb('\n')
-	buf.writes(baseImagePrivateH)
+	buf.writes(data.BaseImagePrivateH)
 	buf.writeb('\n')
-	buf.writes(baseStrConvPrivateH)
+	buf.writes(data.BaseStrConvPrivateH)
 	return nil
 }
 
 func insertBaseAllPublicH(buf *buffer) error {
-	if err := expandBangBangInsert(buf, baseFundamentalPublicH, map[string]func(*buffer) error{
+	if err := expandBangBangInsert(buf, data.BaseFundamentalPublicH, map[string]func(*buffer) error{
 		"// !! INSERT FourCCs.\n": func(b *buffer) error {
 			for i, z := range builtin.FourCCs {
 				if i != 0 {
@@ -321,37 +320,37 @@ func insertBaseAllPublicH(buf *buffer) error {
 	}
 	buf.writeb('\n')
 
-	buf.writes(baseRangePublicH)
+	buf.writes(data.BaseRangePublicH)
 	buf.writeb('\n')
-	buf.writes(baseIOPublicH)
+	buf.writes(data.BaseIOPublicH)
 	buf.writeb('\n')
-	buf.writes(baseTokenPublicH)
+	buf.writes(data.BaseTokenPublicH)
 	buf.writeb('\n')
-	buf.writes(baseMemoryPublicH)
+	buf.writes(data.BaseMemoryPublicH)
 	buf.writeb('\n')
-	buf.writes(baseImagePublicH)
+	buf.writes(data.BaseImagePublicH)
 	buf.writeb('\n')
-	buf.writes(baseStrConvPublicH)
+	buf.writes(data.BaseStrConvPublicH)
 	return nil
 }
 
 func insertBaseCopyright(buf *buffer) error {
-	buf.writes(baseCopyright)
+	buf.writes(data.BaseCopyright)
 	return nil
 }
 
 func insertBaseF64ConvSubmoduleC(buf *buffer) error {
-	buf.writes(baseF64ConvSubmoduleC)
+	buf.writes(data.BaseF64ConvSubmoduleC)
 	return nil
 }
 
 func insertBasePixConvSubmoduleC(buf *buffer) error {
-	buf.writes(basePixConvSubmoduleC)
+	buf.writes(data.BasePixConvSubmoduleC)
 	return nil
 }
 
 func insertBaseStrConvImplC(buf *buffer) error {
-	buf.writes(baseStrConvImplC)
+	buf.writes(data.BaseStrConvImplC)
 	return nil
 }
 

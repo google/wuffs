@@ -16,7 +16,7 @@
 
 package main
 
-// gen.go converts base.* to data.go.
+// gen.go converts "../base/*" to "data.go".
 //
 // Invoke it via "go generate".
 
@@ -55,7 +55,7 @@ func main1() error {
 	out.WriteString("// See the License for the specific language governing permissions and\n")
 	out.WriteString("// limitations under the License.\n")
 	out.WriteString("\n")
-	out.WriteString("package cgen\n")
+	out.WriteString("package data\n")
 	out.WriteString("\n")
 
 	if err := genBase(out); err != nil {
@@ -73,26 +73,26 @@ func genBase(out *bytes.Buffer) error {
 	files := []struct {
 		filename, varname string
 	}{
-		{"base/all-impl.c", "baseAllImplC"},
-		{"base/strconv-impl.c", "baseStrConvImplC"},
+		{"../base/all-impl.c", "BaseAllImplC"},
+		{"../base/strconv-impl.c", "BaseStrConvImplC"},
 
-		{"base/f64conv-submodule.c", "baseF64ConvSubmoduleC"},
-		{"base/pixconv-submodule.c", "basePixConvSubmoduleC"},
+		{"../base/f64conv-submodule.c", "BaseF64ConvSubmoduleC"},
+		{"../base/pixconv-submodule.c", "BasePixConvSubmoduleC"},
 
-		{"base/fundamental-private.h", "baseFundamentalPrivateH"},
-		{"base/fundamental-public.h", "baseFundamentalPublicH"},
-		{"base/memory-private.h", "baseMemoryPrivateH"},
-		{"base/memory-public.h", "baseMemoryPublicH"},
-		{"base/image-private.h", "baseImagePrivateH"},
-		{"base/image-public.h", "baseImagePublicH"},
-		{"base/io-private.h", "baseIOPrivateH"},
-		{"base/io-public.h", "baseIOPublicH"},
-		{"base/range-private.h", "baseRangePrivateH"},
-		{"base/range-public.h", "baseRangePublicH"},
-		{"base/strconv-private.h", "baseStrConvPrivateH"},
-		{"base/strconv-public.h", "baseStrConvPublicH"},
-		{"base/token-private.h", "baseTokenPrivateH"},
-		{"base/token-public.h", "baseTokenPublicH"},
+		{"../base/fundamental-private.h", "BaseFundamentalPrivateH"},
+		{"../base/fundamental-public.h", "BaseFundamentalPublicH"},
+		{"../base/memory-private.h", "BaseMemoryPrivateH"},
+		{"../base/memory-public.h", "BaseMemoryPublicH"},
+		{"../base/image-private.h", "BaseImagePrivateH"},
+		{"../base/image-public.h", "BaseImagePublicH"},
+		{"../base/io-private.h", "BaseIOPrivateH"},
+		{"../base/io-public.h", "BaseIOPublicH"},
+		{"../base/range-private.h", "BaseRangePrivateH"},
+		{"../base/range-public.h", "BaseRangePublicH"},
+		{"../base/strconv-private.h", "BaseStrConvPrivateH"},
+		{"../base/strconv-public.h", "BaseStrConvPublicH"},
+		{"../base/token-private.h", "BaseTokenPrivateH"},
+		{"../base/token-public.h", "BaseTokenPublicH"},
 	}
 
 	prefixAfterEditing := []byte("// After editing this file,")
@@ -128,7 +128,7 @@ func genBase(out *bytes.Buffer) error {
 		out.WriteString("\"\"\n\n")
 	}
 
-	fmt.Fprintf(out, "const baseCopyright = \"\" +\n")
+	fmt.Fprintf(out, "const BaseCopyright = \"\" +\n")
 	writeStringConst(out, copyright)
 	out.WriteString("\"\"\n\n")
 	return nil
