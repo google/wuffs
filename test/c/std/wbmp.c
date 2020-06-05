@@ -338,23 +338,23 @@ test_wuffs_wbmp_decode_image_config() {
   return NULL;
 }
 
-  // ---------------- Mimic Tests
+// ---------------- Mimic Tests
 
 #ifdef WUFFS_MIMIC
 
-  // No mimic tests.
+// No mimic tests.
 
 #endif  // WUFFS_MIMIC
 
-  // ---------------- WBMP Benches
+// ---------------- WBMP Benches
 
-  // No WBMP benches.
+// No WBMP benches.
 
-  // ---------------- Mimic Benches
+// ---------------- Mimic Benches
 
 #ifdef WUFFS_MIMIC
 
-  // No mimic benches.
+// No mimic benches.
 
 #endif  // WUFFS_MIMIC
 

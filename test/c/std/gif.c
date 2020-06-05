@@ -2013,7 +2013,7 @@ test_wuffs_gif_sizeof() {
   return NULL;
 }
 
-  // ---------------- Mimic Tests
+// ---------------- Mimic Tests
 
 #ifdef WUFFS_MIMIC
 
@@ -2243,7 +2243,7 @@ bench_wuffs_gif_decode_anim_screencap() {
       "test/data/gifplayer-muybridge.gif", 0, SIZE_MAX, 1);
 }
 
-  // ---------------- Mimic Benches
+// ---------------- Mimic Benches
 
 #ifdef WUFFS_MIMIC
 

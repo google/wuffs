@@ -185,6 +185,6 @@ wuffs_base__table_u8__row(wuffs_base__table_u8 t, uint32_t y) {
   return wuffs_base__make_slice_u8(NULL, 0);
 }
 
-  // ---------------- Slices and Tables (Utility)
+// ---------------- Slices and Tables (Utility)
 
 #define wuffs_base__utility__empty_slice_u8 wuffs_base__empty_slice_u8

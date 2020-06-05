@@ -2370,11 +2370,11 @@ test_wuffs_json_decode_string() {
   return NULL;
 }
 
-  // ---------------- Mimic Tests
+// ---------------- Mimic Tests
 
 #ifdef WUFFS_MIMIC
 
-  // No mimic tests.
+// No mimic tests.
 
 #endif  // WUFFS_MIMIC
 
@@ -2457,11 +2457,11 @@ bench_wuffs_json_decode_217k_stringy() {
       tcounter_src, &g_json_nobel_prizes_gt, UINT64_MAX, UINT64_MAX, 25);
 }
 
-  // ---------------- Mimic Benches
+// ---------------- Mimic Benches
 
 #ifdef WUFFS_MIMIC
 
-  // No mimic benches.
+// No mimic benches.
 
 #endif  // WUFFS_MIMIC
 

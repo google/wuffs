@@ -253,7 +253,7 @@ test_wuffs_crc32_ieee_pi() {
   return do_test_xxxxx_crc32_ieee_pi(false);
 }
 
-  // ---------------- Mimic Tests
+// ---------------- Mimic Tests
 
 #ifdef WUFFS_MIMIC
 
@@ -310,7 +310,7 @@ bench_wuffs_crc32_ieee_100k() {
       &g_crc32_pi_gt, UINT64_MAX, UINT64_MAX, 150);
 }
 
-  // ---------------- Mimic Benches
+// ---------------- Mimic Benches
 
 #ifdef WUFFS_MIMIC
 

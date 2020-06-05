@@ -181,11 +181,11 @@ test_wuffs_bmp_decode_io_redirect() {
   return NULL;
 }
 
-  // ---------------- Mimic Tests
+// ---------------- Mimic Tests
 
 #ifdef WUFFS_MIMIC
 
-  // No mimic tests.
+// No mimic tests.
 
 #endif  // WUFFS_MIMIC
 
@@ -200,11 +200,11 @@ bench_wuffs_bmp_decode_40k() {
       "test/data/hat.bmp", 0, SIZE_MAX, 1000);
 }
 
-  // ---------------- Mimic Benches
+// ---------------- Mimic Benches
 
 #ifdef WUFFS_MIMIC
 
-  // No mimic benches.
+// No mimic benches.
 
 #endif  // WUFFS_MIMIC
 

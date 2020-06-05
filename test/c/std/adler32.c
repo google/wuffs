@@ -273,7 +273,7 @@ bench_wuffs_adler32_100k() {
       &g_adler32_pi_gt, UINT64_MAX, UINT64_MAX, 150);
 }
 
-  // ---------------- Mimic Benches
+// ---------------- Mimic Benches
 
 #ifdef WUFFS_MIMIC
 

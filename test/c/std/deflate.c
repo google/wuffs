@@ -708,7 +708,7 @@ test_wuffs_deflate_table_redirect() {
   return NULL;
 }
 
-  // ---------------- Mimic Tests
+// ---------------- Mimic Tests
 
 #ifdef WUFFS_MIMIC
 
@@ -856,7 +856,7 @@ bench_wuffs_deflate_decode_100k_many_big_reads() {
       &g_deflate_pi_gt, UINT64_MAX, 4096, 30);
 }
 
-  // ---------------- Mimic Benches
+// ---------------- Mimic Benches
 
 #ifdef WUFFS_MIMIC
 

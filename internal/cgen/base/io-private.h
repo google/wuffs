@@ -265,7 +265,7 @@ wuffs_base__io_writer__set(wuffs_base__io_buffer* b,
   return b;
 }
 
-  // ---------------- I/O (Utility)
+// ---------------- I/O (Utility)
 
 #define wuffs_base__utility__empty_io_reader wuffs_base__empty_io_reader
 #define wuffs_base__utility__empty_io_writer wuffs_base__empty_io_writer

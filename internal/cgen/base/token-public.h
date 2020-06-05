@@ -42,7 +42,7 @@ wuffs_base__make_token(uint64_t repr) {
   return ret;
 }
 
-  // --------
+// --------
 
 #define WUFFS_BASE__TOKEN__LENGTH__MAX_INCL 0xFFFF
 
@@ -55,7 +55,7 @@ wuffs_base__make_token(uint64_t repr) {
 #define WUFFS_BASE__TOKEN__CONTINUED__SHIFT 16
 #define WUFFS_BASE__TOKEN__LENGTH__SHIFT 0
 
-  // --------
+// --------
 
 #define WUFFS_BASE__TOKEN__VBC__FILLER 0
 #define WUFFS_BASE__TOKEN__VBC__STRUCTURE 1
@@ -64,12 +64,12 @@ wuffs_base__make_token(uint64_t repr) {
 #define WUFFS_BASE__TOKEN__VBC__LITERAL 4
 #define WUFFS_BASE__TOKEN__VBC__NUMBER 5
 
-  // --------
+// --------
 
 #define WUFFS_BASE__TOKEN__VBD__FILLER__COMMENT_LINE 0x00001
 #define WUFFS_BASE__TOKEN__VBD__FILLER__COMMENT_BLOCK 0x00002
 
-  // --------
+// --------
 
 #define WUFFS_BASE__TOKEN__VBD__STRUCTURE__PUSH 0x00001
 #define WUFFS_BASE__TOKEN__VBD__STRUCTURE__POP 0x00002
@@ -109,14 +109,14 @@ wuffs_base__make_token(uint64_t repr) {
 #define WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_3_DST_4_SRC_BASE_64_URL 0x00200
 #define WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_4_DST_5_SRC_ASCII_85 0x00400
 
-  // --------
+// --------
 
 #define WUFFS_BASE__TOKEN__VBD__LITERAL__UNDEFINED 0x00001
 #define WUFFS_BASE__TOKEN__VBD__LITERAL__NULL 0x00002
 #define WUFFS_BASE__TOKEN__VBD__LITERAL__FALSE 0x00004
 #define WUFFS_BASE__TOKEN__VBD__LITERAL__TRUE 0x00008
 
-  // --------
+// --------
 
 // For a source string of "123" or "0x9A", it is valid for a tokenizer to
 // return any one of:

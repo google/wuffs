@@ -170,8 +170,8 @@ wuffs_base__make_pixel_format(uint32_t repr) {
   return f;
 }
 
-  // Common 8-bit-depth pixel formats. This list is not exhaustive; not all
-  // valid wuffs_base__pixel_format values are present.
+// Common 8-bit-depth pixel formats. This list is not exhaustive; not all valid
+// wuffs_base__pixel_format values are present.
 
 #define WUFFS_BASE__PIXEL_FORMAT__INVALID 0x00000000
 

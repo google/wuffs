@@ -1,7 +1,7 @@
 # Auto-Formatting
 
 Within this repository:
-- Hand-written `C` code is formatted by `clang-format-5.0 -style=Chromium`.
+- Hand-written `C` code is formatted by `clang-format-9 -style=Chromium`.
 - Auto-generated `C` code is formatted by [`dumbindent`](/cmd/dumbindent),
   which isn't as 'pretty' in some sense, but is [substantially
   faster](https://github.com/google/wuffs/blob/a0f7059eeb022c4dec70ffae4041bcc54f666c0d/cmd/dumbindent/main.go#L32-L44),

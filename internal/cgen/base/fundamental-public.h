@@ -410,7 +410,7 @@ wuffs_base__multiply_u64(uint64_t x, uint64_t y) {
   return o;
 }
 
-  // --------
+// --------
 
 #if defined(__GNUC__) && (__SIZEOF_LONG__ == 8)
 
@@ -457,7 +457,7 @@ wuffs_base__count_leading_zeroes_u64(uint64_t u) {
 
 #endif  // defined(__GNUC__) && (__SIZEOF_LONG__ == 8)
 
-  // --------
+// --------
 
 #define wuffs_base__load_u8be__no_bounds_check \
   wuffs_base__load_u8__no_bounds_check
@@ -563,7 +563,7 @@ wuffs_base__load_u64le__no_bounds_check(const uint8_t* p) {
          ((uint64_t)(p[6]) << 48) | ((uint64_t)(p[7]) << 56);
 }
 
-  // --------
+// --------
 
 #define wuffs_base__store_u8be__no_bounds_check \
   wuffs_base__store_u8__no_bounds_check

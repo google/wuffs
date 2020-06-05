@@ -229,7 +229,7 @@ test_wuffs_gzip_decode_pi() {
                             UINT64_MAX);
 }
 
-  // ---------------- Mimic Tests
+// ---------------- Mimic Tests
 
 #ifdef WUFFS_MIMIC
 
@@ -267,7 +267,7 @@ bench_wuffs_gzip_decode_100k() {
       tcounter_dst, &g_gzip_pi_gt, UINT64_MAX, UINT64_MAX, 30);
 }
 
-  // ---------------- Mimic Benches
+// ---------------- Mimic Benches
 
 #ifdef WUFFS_MIMIC
 

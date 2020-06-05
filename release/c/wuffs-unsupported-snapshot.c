@@ -480,7 +480,7 @@ wuffs_base__multiply_u64(uint64_t x, uint64_t y) {
   return o;
 }
 
-  // --------
+// --------
 
 #if defined(__GNUC__) && (__SIZEOF_LONG__ == 8)
 
@@ -527,7 +527,7 @@ wuffs_base__count_leading_zeroes_u64(uint64_t u) {
 
 #endif  // defined(__GNUC__) && (__SIZEOF_LONG__ == 8)
 
-  // --------
+// --------
 
 #define wuffs_base__load_u8be__no_bounds_check \
   wuffs_base__load_u8__no_bounds_check
@@ -633,7 +633,7 @@ wuffs_base__load_u64le__no_bounds_check(const uint8_t* p) {
          ((uint64_t)(p[6]) << 48) | ((uint64_t)(p[7]) << 56);
 }
 
-  // --------
+// --------
 
 #define wuffs_base__store_u8be__no_bounds_check \
   wuffs_base__store_u8__no_bounds_check
@@ -2056,7 +2056,7 @@ wuffs_base__make_token(uint64_t repr) {
   return ret;
 }
 
-  // --------
+// --------
 
 #define WUFFS_BASE__TOKEN__LENGTH__MAX_INCL 0xFFFF
 
@@ -2069,7 +2069,7 @@ wuffs_base__make_token(uint64_t repr) {
 #define WUFFS_BASE__TOKEN__CONTINUED__SHIFT 16
 #define WUFFS_BASE__TOKEN__LENGTH__SHIFT 0
 
-  // --------
+// --------
 
 #define WUFFS_BASE__TOKEN__VBC__FILLER 0
 #define WUFFS_BASE__TOKEN__VBC__STRUCTURE 1
@@ -2078,12 +2078,12 @@ wuffs_base__make_token(uint64_t repr) {
 #define WUFFS_BASE__TOKEN__VBC__LITERAL 4
 #define WUFFS_BASE__TOKEN__VBC__NUMBER 5
 
-  // --------
+// --------
 
 #define WUFFS_BASE__TOKEN__VBD__FILLER__COMMENT_LINE 0x00001
 #define WUFFS_BASE__TOKEN__VBD__FILLER__COMMENT_BLOCK 0x00002
 
-  // --------
+// --------
 
 #define WUFFS_BASE__TOKEN__VBD__STRUCTURE__PUSH 0x00001
 #define WUFFS_BASE__TOKEN__VBD__STRUCTURE__POP 0x00002
@@ -2123,14 +2123,14 @@ wuffs_base__make_token(uint64_t repr) {
 #define WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_3_DST_4_SRC_BASE_64_URL 0x00200
 #define WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_4_DST_5_SRC_ASCII_85 0x00400
 
-  // --------
+// --------
 
 #define WUFFS_BASE__TOKEN__VBD__LITERAL__UNDEFINED 0x00001
 #define WUFFS_BASE__TOKEN__VBD__LITERAL__NULL 0x00002
 #define WUFFS_BASE__TOKEN__VBD__LITERAL__FALSE 0x00004
 #define WUFFS_BASE__TOKEN__VBD__LITERAL__TRUE 0x00008
 
-  // --------
+// --------
 
 // For a source string of "123" or "0x9A", it is valid for a tokenizer to
 // return any one of:
@@ -2663,8 +2663,8 @@ wuffs_base__make_pixel_format(uint32_t repr) {
   return f;
 }
 
-  // Common 8-bit-depth pixel formats. This list is not exhaustive; not all
-  // valid wuffs_base__pixel_format values are present.
+// Common 8-bit-depth pixel formats. This list is not exhaustive; not all valid
+// wuffs_base__pixel_format values are present.
 
 #define WUFFS_BASE__PIXEL_FORMAT__INVALID 0x00000000
 
@@ -7760,7 +7760,7 @@ wuffs_base__table_u8__row(wuffs_base__table_u8 t, uint32_t y) {
   return wuffs_base__make_slice_u8(NULL, 0);
 }
 
-  // ---------------- Slices and Tables (Utility)
+// ---------------- Slices and Tables (Utility)
 
 #define wuffs_base__utility__empty_slice_u8 wuffs_base__empty_slice_u8
 
@@ -8072,7 +8072,7 @@ wuffs_base__io_writer__set(wuffs_base__io_buffer* b,
   return b;
 }
 
-  // ---------------- I/O (Utility)
+// ---------------- I/O (Utility)
 
 #define wuffs_base__utility__empty_io_reader wuffs_base__empty_io_reader
 #define wuffs_base__utility__empty_io_writer wuffs_base__empty_io_writer
