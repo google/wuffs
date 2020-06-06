@@ -112,23 +112,6 @@ func FormatBytes(dst []byte, src []byte) []byte {
 		}
 		nBraces -= closeBraces
 
-		// When debugging, uncomment these (and import "strconv") to prefix
-		// every non-blank line with the state.
-		//
-		// dst = append(dst, strconv.Itoa(nBraces)...)
-		// dst = append(dst, ',')
-		// dst = append(dst, strconv.Itoa(nParens)...)
-		// if openBrace {
-		//   dst = append(dst, '{')
-		// } else {
-		//   dst = append(dst, ':')
-		// }
-		// if hanging {
-		//   dst = append(dst, '=')
-		// } else {
-		//   dst = append(dst, ':')
-		// }
-
 		// Output a certain number of spaces to rougly approximate the
 		// "clang-format -style=Chromium" indentation style.
 		indent := 0
