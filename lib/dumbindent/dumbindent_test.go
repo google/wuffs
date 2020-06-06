@@ -23,6 +23,10 @@ func TestFormatBytes(tt *testing.T) {
 		src  string
 		want string
 	}{{
+		// Leading and trailing space.
+		src:  "\t\tx y  \n",
+		want: "x y\n",
+	}, {
 		// Braces.
 		src:  "foo{\nbar\n    }\nbaz\n",
 		want: "foo{\n  bar\n}\nbaz\n",
@@ -51,15 +55,21 @@ func TestFormatBytes(tt *testing.T) {
 		src:  "a = \"{\"\nb = {\nc = 0\n",
 		want: "a = \"{\"\nb = {\n  c = 0\n",
 	}, {
+		// Back-tick string.
+		src:  "a['key'] = `{\n\n\nX` ; \nb = {\nc = 0\n",
+		want: "a['key'] = `{\n\n\nX` ;\nb = {\n  c = 0\n",
+	}, {
+		// Slash-star comment.
+		src:  "   a['key'] = /*{\n\n\nX*/ ; \nb = {\nc = 0\n",
+		want: "a['key'] = /*{\n\n\nX*/ ;\nb = {\n  c = 0\n",
+	}, {
 		// Label.
 		src:  "if (b) {\nlabel:\nswitch (i) {\ncase 0:\nj = k\nbreak;\n}\n}\n",
 		want: "if (b) {\nlabel:\n  switch (i) {\n    case 0:\n    j = k\n    break;\n  }\n}\n",
 	}}
 
 	for i, tc := range testCases {
-		if g, err := FormatBytes(nil, []byte(tc.src)); err != nil {
-			tt.Fatalf("i=%d, src=%q: %v", i, tc.src, err)
-		} else if got := string(g); got != tc.want {
+		if got := string(FormatBytes(nil, []byte(tc.src))); got != tc.want {
 			tt.Fatalf("i=%d, src=%q:\ngot  %q\nwant %q", i, tc.src, got, tc.want)
 		}
 	}

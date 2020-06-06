@@ -27,20 +27,18 @@
 // `dumbindent` was 80 times faster than `clang-format`.
 //
 // There are no configuration options (e.g. tabs versus spaces).
-//
-// Known bug: it cannot handle /* slash-star comments */ or multi-line strings
-// yet. This is tracked at https://github.com/google/wuffs/issues/31
 package dumbindent
 
 import (
 	"bytes"
-	"errors"
 )
 
 // 'Constants', but their type is []byte, not string.
 var (
-	externC = []byte("extern \"C\"")
-	spaces  = []byte("                                ")
+	backTick  = []byte("`")
+	externC   = []byte("extern \"C\"")
+	spaces    = []byte("                                ")
+	starSlash = []byte("*/")
 )
 
 // hangingBytes is a look-up table for updating the hanging variable.
@@ -55,9 +53,9 @@ var hangingBytes = [256]bool{
 // It is valid to pass a dst slice (such as nil) whose spare capacity (not
 // including its existing elements) is too short to hold the formatted program.
 // In this case, a new slice will be allocated and returned.
-func FormatBytes(dst []byte, src []byte) ([]byte, error) {
+func FormatBytes(dst []byte, src []byte) []byte {
 	if len(src) == 0 {
-		return dst, nil
+		return dst
 	} else if len(dst) == 0 {
 		dst = make([]byte, 0, len(src)+(len(src)/2))
 	}
@@ -69,11 +67,12 @@ func FormatBytes(dst []byte, src []byte) ([]byte, error) {
 	blankLine := false // Whether the previous line was blank.
 
 	for line, remaining := src, []byte(nil); len(src) > 0; src = remaining {
+		src = trimLeadingWhiteSpace(src)
 		line, remaining = src, nil
 		if i := bytes.IndexByte(line, '\n'); i >= 0 {
 			line, remaining = line[:i], line[i+1:]
 		}
-		line = trimSpace(line)
+		lineLength := len(line)
 
 		// Collapse 2 or more consecutive blank lines into 1. Also strip any
 		// blank lines:
@@ -99,6 +98,7 @@ func FormatBytes(dst []byte, src []byte) ([]byte, error) {
 		if (line[0] == '#') ||
 			((line[0] == 'e') && bytes.HasPrefix(line, externC)) ||
 			((line[0] == '}') && bytes.HasSuffix(line, externC)) {
+			line = trimTrailingWhiteSpace(line)
 			dst = append(dst, line...)
 			dst = append(dst, '\n')
 			openBrace = false
@@ -150,16 +150,16 @@ func FormatBytes(dst []byte, src []byte) ([]byte, error) {
 			indent -= n
 		}
 
-		// Output the line itself.
-		dst = append(dst, line...)
-		dst = append(dst, "\n"...)
+		// Output the leading '}'s.
+		dst = append(dst, line[:closeBraces]...)
+		line = line[closeBraces:]
 
 		// Adjust the state according to the braces and parentheses within the
 		// line (except for those in comments and strings).
 		last := lastNonWhiteSpace(line)
 	loop:
-		for s := line[closeBraces:]; ; {
-			for i, c := range s {
+		for {
+			for i, c := range line {
 				switch c {
 				case '{':
 					nBraces++
@@ -169,23 +169,39 @@ func FormatBytes(dst []byte, src []byte) ([]byte, error) {
 					nParens++
 				case ')':
 					nParens--
+
 				case '/':
-					if (i + 1) >= len(s) {
+					if (i + 1) >= len(line) {
 						break
 					}
-					if s[i+1] == '/' {
+					if line[i+1] == '/' {
 						// A slash-slash comment. Skip the rest of the line.
-						last = lastNonWhiteSpace(s[:i])
+						last = lastNonWhiteSpace(line[:i])
 						break loop
-					} else if s[i+1] == '*' {
-						return nil, errors.New("dumbindent: TODO: support slash-star comments")
+					} else if line[i+1] == '*' {
+						// A slash-star comment.
+						dst = append(dst, line[:i+2]...)
+						restOfLine := line[i+2:]
+						restOfSrc := src[lineLength-len(restOfLine):]
+						dst, line, remaining = handleRaw(dst, restOfSrc, starSlash)
+						last = lastNonWhiteSpace(line)
+						continue loop
 					}
+
 				case '"', '\'':
-					if suffix, err := skipString(s[i+1:], c); err != nil {
-						return nil, err
-					} else {
-						s = suffix
-					}
+					// A cooked string, whose contents are backslash-escaped.
+					suffix := skipCooked(line[i+1:], c)
+					dst = append(dst, line[:len(line)-len(suffix)]...)
+					line = suffix
+					continue loop
+
+				case '`':
+					// A raw string.
+					dst = append(dst, line[:i+1]...)
+					restOfLine := line[i+1:]
+					restOfSrc := src[lineLength-len(restOfLine):]
+					dst, line, remaining = handleRaw(dst, restOfSrc, backTick)
+					last = lastNonWhiteSpace(line)
 					continue loop
 				}
 			}
@@ -193,15 +209,25 @@ func FormatBytes(dst []byte, src []byte) ([]byte, error) {
 		}
 		openBrace = last == '{'
 		hanging = hangingBytes[last]
+
+		// Output the line (minus any trailing space).
+		line = trimTrailingWhiteSpace(line)
+		dst = append(dst, line...)
+		dst = append(dst, "\n"...)
 	}
-	return dst, nil
+	return dst
 }
 
-// trimSpace converts "\t  foo bar " to "foo bar".
-func trimSpace(s []byte) []byte {
+// trimLeadingWhiteSpace converts "\t  foo bar " to "foo bar ".
+func trimLeadingWhiteSpace(s []byte) []byte {
 	for (len(s) > 0) && ((s[0] == ' ') || (s[0] == '\t')) {
 		s = s[1:]
 	}
+	return s
+}
+
+// trimTrailingWhiteSpace converts "\t  foo bar " to "\t  foo bar".
+func trimTrailingWhiteSpace(s []byte) []byte {
 	for (len(s) > 0) && ((s[len(s)-1] == ' ') || (s[len(s)-1] == '\t')) {
 		s = s[:len(s)-1]
 	}
@@ -241,11 +267,11 @@ func lastNonWhiteSpace(s []byte) byte {
 	return 0
 }
 
-// skipString converts `ijk \" lmn" pqr` to ` pqr`.
-func skipString(s []byte, quote byte) (suffix []byte, retErr error) {
+// skipCooked converts `ijk \" lmn" pqr` to ` pqr`.
+func skipCooked(s []byte, quote byte) (suffix []byte) {
 	for i := 0; i < len(s); {
 		if x := s[i]; x == quote {
-			return s[i+1:], nil
+			return s[i+1:]
 		} else if x != '\\' {
 			i += 1
 		} else if (i + 1) < len(s) {
@@ -254,5 +280,22 @@ func skipString(s []byte, quote byte) (suffix []byte, retErr error) {
 			break
 		}
 	}
-	return nil, errors.New("dumbindent: TODO: support multi-line strings")
+	return nil
+}
+
+// handleRaw copies a raw string from restOfSrc to dst, re-calculating the
+// (line, remaining) pair afterwards.
+func handleRaw(dst []byte, restOfSrc []byte, endQuote []byte) (retDst []byte, line []byte, remaining []byte) {
+	end := bytes.Index(restOfSrc, endQuote)
+	if end < 0 {
+		end = len(restOfSrc)
+	} else {
+		end += len(endQuote)
+	}
+	dst = append(dst, restOfSrc[:end]...)
+	line, remaining = restOfSrc[end:], nil
+	if i := bytes.IndexByte(line, '\n'); i >= 0 {
+		line, remaining = line[:i], line[i+1:]
+	}
+	return dst, line, remaining
 }

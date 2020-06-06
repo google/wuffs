@@ -182,7 +182,7 @@ func Do(args []string) error {
 			return unformatted, nil
 		}
 
-		return dumbindent.FormatBytes(nil, unformatted)
+		return dumbindent.FormatBytes(nil, unformatted), nil
 	})
 }
 

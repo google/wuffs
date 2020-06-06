@@ -44,9 +44,6 @@
 // ----
 //
 // There are no configuration options (e.g. tabs versus spaces).
-//
-// Known bug: it cannot handle /* slash-star comments */ or multi-line strings
-// yet. This is tracked at https://github.com/google/wuffs/issues/31
 package main
 
 import (
@@ -145,10 +142,7 @@ func do(r io.Reader, filename string) error {
 		return err
 	}
 
-	dst, err := dumbindent.FormatBytes(nil, src)
-	if err != nil {
-		return err
-	}
+	dst := dumbindent.FormatBytes(nil, src)
 
 	if r != nil {
 		if _, err := os.Stdout.Write(dst); err != nil {
