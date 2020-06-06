@@ -43,24 +43,31 @@ var (
 	spaces  = []byte("                                ")
 )
 
-// Global state.
-var (
-	nBraces   int  // The number of unbalanced '{'s.
-	nParens   int  // The number of unbalanced '('s.
-	openBrace bool // Whether the previous line ends with '{'.
-	hanging   bool // Whether the previous line ends with '=' or '\\'.
-)
-
-// hangingBytes is a look-up table for updating the hanging global variable.
+// hangingBytes is a look-up table for updating the hanging variable.
 var hangingBytes = [256]bool{
 	'=':  true,
 	'\\': true,
 }
 
-// Format formats the C (or C-like) program in src.
-func Format(src []byte) (dst []byte, retErr error) {
-	dst = make([]byte, 0, len(src)+(len(src)/2))
-	blankLine := false
+// FormatBytes formats the C (or C-like) program in src, appending the result
+// to dst, and returns that longer slice.
+//
+// It is valid to pass a dst slice (such as nil) whose spare capacity (not
+// including its existing elements) is too short to hold the formatted program.
+// In this case, a new slice will be allocated and returned.
+func FormatBytes(dst []byte, src []byte) ([]byte, error) {
+	if len(src) == 0 {
+		return dst, nil
+	} else if len(dst) == 0 {
+		dst = make([]byte, 0, len(src)+(len(src)/2))
+	}
+
+	nBraces := 0       // The number of unbalanced '{'s.
+	nParens := 0       // The number of unbalanced '('s.
+	openBrace := false // Whether the previous non-blank line ends with '{'.
+	hanging := false   // Whether the previous non-blank line ends with '=' or '\\'.
+	blankLine := false // Whether the previous line was blank.
+
 	for line, remaining := src, []byte(nil); len(src) > 0; src = remaining {
 		line, remaining = src, nil
 		if i := bytes.IndexByte(line, '\n'); i >= 0 {
@@ -106,7 +113,7 @@ func Format(src []byte) (dst []byte, retErr error) {
 		nBraces -= closeBraces
 
 		// When debugging, uncomment these (and import "strconv") to prefix
-		// every non-blank line with the global state.
+		// every non-blank line with the state.
 		//
 		// dst = append(dst, strconv.Itoa(nBraces)...)
 		// dst = append(dst, ',')
@@ -147,8 +154,8 @@ func Format(src []byte) (dst []byte, retErr error) {
 		dst = append(dst, line...)
 		dst = append(dst, "\n"...)
 
-		// Adjust the global state according to the braces and parentheses
-		// within the line (except for those in comments and strings).
+		// Adjust the state according to the braces and parentheses within the
+		// line (except for those in comments and strings).
 		last := lastNonWhiteSpace(line)
 	loop:
 		for s := line[closeBraces:]; ; {

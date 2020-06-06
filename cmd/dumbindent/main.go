@@ -145,7 +145,7 @@ func do(r io.Reader, filename string) error {
 		return err
 	}
 
-	dst, err := dumbindent.Format(src)
+	dst, err := dumbindent.FormatBytes(nil, src)
 	if err != nil {
 		return err
 	}
