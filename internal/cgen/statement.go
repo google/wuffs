@@ -192,7 +192,7 @@ func (g *gen) writeStatementAssign1(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr
 				uOp = "sub"
 			}
 			b.printf("wuffs_base__u%d__sat_%s_indirect(&", uBits, uOp)
-			opName, closer = ",", ")"
+			opName, closer = ", ", ")"
 
 		case t.IDPlusEq, t.IDMinusEq:
 			if lTyp.IsNumType() {
@@ -285,7 +285,7 @@ func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {
 		}
 
 		if n.Keyword() == t.IDIOBind {
-			b.printf("%s%s = wuffs_base__io_%s__set(&%s%s, &%s%s%s, &%s%s%s, &%s%s%s, &%s%s%s, ",
+			b.printf("%s%s = wuffs_base__io_%s__set(\n&%s%s,\n&%s%s%s,\n&%s%s%s,\n&%s%s%s,\n&%s%s%s,\n",
 				prefix, name, cTyp, uPrefix, name, iopPrefix, prefix, name,
 				io0Prefix, prefix, name, io1Prefix, prefix, name, io2Prefix, prefix, name)
 			if err := g.writeExpr(b, n.Arg1(), 0); err != nil {

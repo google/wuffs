@@ -16,6 +16,7 @@ package cgen
 
 import (
 	"fmt"
+	"strings"
 
 	a "github.com/google/wuffs/lang/ast"
 	t "github.com/google/wuffs/lang/token"
@@ -169,6 +170,12 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, depth uint32) error {
 			b.writes("wuffs_base__slice_u8__subslice_ij(")
 		}
 
+		comma := ", "
+		if (mhs != nil) && (mhs.Operator() != 0) &&
+			(rhs != nil) && (rhs.Operator() != 0) {
+			comma = ",\n"
+		}
+
 		lhsIsArray := lhs.MType().IsArrayType()
 		if lhsIsArray {
 			// TODO: don't assume that the slice is a slice of base.u8.
@@ -178,17 +185,18 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, depth uint32) error {
 			return err
 		}
 		if lhsIsArray {
-			b.printf(", %v)", lhs.MType().ArrayLength().ConstValue())
+			b.writes(comma)
+			b.printf("%v)", lhs.MType().ArrayLength().ConstValue())
 		}
 
 		if mhs != nil {
-			b.writes(", ")
+			b.writes(comma)
 			if err := g.writeExpr(b, mhs, depth); err != nil {
 				return err
 			}
 		}
 		if rhs != nil {
-			b.writes(", ")
+			b.writes(comma)
 			if err := g.writeExpr(b, rhs, depth); err != nil {
 				return err
 			}
@@ -324,6 +332,9 @@ func (g *gen) writeExprAssociativeOp(b *buffer, n *a.Expr, depth uint32) error {
 	opName := cOpName(op)
 	if opName == "" {
 		return fmt.Errorf("unrecognized operator %q", op.AmbiguousForm().Str(g.tm))
+	}
+	if len(n.Args()) > 3 {
+		opName = strings.TrimRight(opName, " ") + "\n"
 	}
 
 	b.writeb('(')

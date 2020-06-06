@@ -100,13 +100,13 @@ func (g *gen) writeBuiltinCall(b *buffer, n *a.Expr, depth uint32) error {
 		case t.IDPixelSwizzler:
 			switch method.Ident() {
 			case t.IDSwizzleInterleavedFromReader:
-				b.writes("wuffs_base__pixel_swizzler__swizzle_interleaved_from_reader(&")
+				b.writes("wuffs_base__pixel_swizzler__swizzle_interleaved_from_reader(\n&")
 				if err := g.writeExpr(b, recv, depth); err != nil {
 					return err
 				}
 				args := n.Args()
 				for _, o := range args[:len(args)-1] {
-					b.writes(", ")
+					b.writes(",\n")
 					if err := g.writeExpr(b, o.AsArg().Value(), depth); err != nil {
 						return err
 					}
@@ -115,7 +115,7 @@ func (g *gen) writeBuiltinCall(b *buffer, n *a.Expr, depth uint32) error {
 				if err != nil {
 					return err
 				}
-				b.printf(", &%s%s, %s%s)", iopPrefix, readerArgName, io2Prefix, readerArgName)
+				b.printf(",\n&%s%s,\n%s%s)", iopPrefix, readerArgName, io2Prefix, readerArgName)
 				return nil
 			}
 		case t.IDTokenWriter:
@@ -177,7 +177,7 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 		return nil
 
 	case t.IDLimitedCopyU32ToSlice:
-		b.printf("wuffs_base__io_reader__limited_copy_u32_to_slice(&%s%s, %s%s,",
+		b.printf("wuffs_base__io_reader__limited_copy_u32_to_slice(\n&%s%s, %s%s,",
 			iopPrefix, name, io2Prefix, name)
 		return g.writeArgs(b, args, depth)
 
@@ -271,7 +271,7 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 		if method == t.IDLimitedCopyU32FromHistoryFast {
 			suffix = "_fast"
 		}
-		b.printf("wuffs_base__io_writer__limited_copy_u32_from_history%s(&%s%s, %s%s, %s%s",
+		b.printf("wuffs_base__io_writer__limited_copy_u32_from_history%s(\n&%s%s, %s%s, %s%s",
 			suffix, iopPrefix, name, io0Prefix, name, io2Prefix, name)
 		for _, o := range args {
 			b.writes(", ")
@@ -288,7 +288,7 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 			return err
 		}
 
-		b.printf("wuffs_base__io_writer__limited_copy_u32_from_reader(&%s%s, %s%s,",
+		b.printf("wuffs_base__io_writer__limited_copy_u32_from_reader(\n&%s%s, %s%s,",
 			iopPrefix, name, io2Prefix, name)
 		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
 			return err
@@ -302,7 +302,7 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 		return g.writeArgs(b, args, depth)
 
 	case t.IDLimitedCopyU32FromSlice:
-		b.printf("wuffs_base__io_writer__limited_copy_u32_from_slice(&%s%s, %s%s,",
+		b.printf("wuffs_base__io_writer__limited_copy_u32_from_slice(\n&%s%s, %s%s,",
 			iopPrefix, name, io2Prefix, name)
 		return g.writeArgs(b, args, depth)
 
@@ -357,25 +357,25 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 
 func (g *gen) writeBuiltinTokenWriter(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, depth uint32) error {
 	if method == t.IDWriteSimpleTokenFast {
-		b.printf("*iop_a_dst++ = wuffs_base__make_token((((uint64_t)(")
+		b.printf("*iop_a_dst++ = wuffs_base__make_token(\n(((uint64_t)(")
 
 		if cv := args[0].AsArg().Value().ConstValue(); (cv == nil) || (cv.Sign() != 0) {
 			if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
 				return err
 			}
-			b.writes(")) << WUFFS_BASE__TOKEN__VALUE_MAJOR__SHIFT) | (((uint64_t)(")
+			b.writes(")) << WUFFS_BASE__TOKEN__VALUE_MAJOR__SHIFT) |\n(((uint64_t)(")
 		}
 
 		if err := g.writeExpr(b, args[1].AsArg().Value(), depth); err != nil {
 			return err
 		}
-		b.writes(")) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) | (((uint64_t)(")
+		b.writes(")) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |\n(((uint64_t)(")
 
 		if cv := args[2].AsArg().Value().ConstValue(); (cv == nil) || (cv.Sign() != 0) {
 			if err := g.writeExpr(b, args[2].AsArg().Value(), depth); err != nil {
 				return err
 			}
-			b.writes(")) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) | (((uint64_t)(")
+			b.writes(")) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |\n(((uint64_t)(")
 		}
 
 		if err := g.writeExpr(b, args[3].AsArg().Value(), depth); err != nil {
@@ -450,7 +450,7 @@ func (g *gen) writeBuiltinNumType(b *buffer, recv *a.Expr, method t.ID, args []*
 		if err := g.writeExpr(b, recv, depth); err != nil {
 			return err
 		}
-		b.writes(",")
+		b.writes(", ")
 		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
 			return err
 		}
@@ -468,7 +468,7 @@ func (g *gen) writeBuiltinNumType(b *buffer, recv *a.Expr, method t.ID, args []*
 		if err := g.writeExpr(b, recv, depth); err != nil {
 			return err
 		}
-		b.writes(",")
+		b.writes(", ")
 		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
 			return err
 		}
@@ -538,7 +538,7 @@ func (g *gen) writeBuiltinSliceCopyFromSlice8(b *buffer, recv *a.Expr, method t.
 			return err
 		}
 	}
-	b.writes("),(")
+	b.writes("), (")
 	if err := g.writeExpr(b, bar, depth); err != nil {
 		return err
 	}
