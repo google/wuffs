@@ -63,9 +63,9 @@ func TestFormatBytes(tt *testing.T) {
 		src:  "   a['key'] = /*{\n\n\nX*/ ; \nb = {\nc = 0\n",
 		want: "a['key'] = /*{\n\n\nX*/ ;\nb = {\n  c = 0\n",
 	}, {
-		// Label.
+		// Nested blocks with label.
 		src:  "if (b) {\nlabel:\nswitch (i) {\ncase 0:\nj = k\nbreak;\n}\n}\n",
-		want: "if (b) {\nlabel:\n  switch (i) {\n    case 0:\n    j = k\n    break;\n  }\n}\n",
+		want: "if (b) {\n  label:\n  switch (i) {\n    case 0:\n    j = k\n    break;\n  }\n}\n",
 	}}
 
 	for i, tc := range testCases {

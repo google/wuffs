@@ -138,9 +138,6 @@ func FormatBytes(dst []byte, src []byte) []byte {
 		if (nParens > 0) || hanging {
 			indent += 4
 		}
-		if (indent >= 2) && isLabel(line) {
-			indent -= 2
-		}
 		for indent > 0 {
 			n := indent
 			if n > len(spaces) {
@@ -232,28 +229,6 @@ func trimTrailingWhiteSpace(s []byte) []byte {
 		s = s[:len(s)-1]
 	}
 	return s
-}
-
-// isLabel returns whether s looks like "foo:" or "bar_baz:;".
-func isLabel(s []byte) bool {
-	for (len(s) > 0) && (s[len(s)-1] == ';') {
-		s = s[:len(s)-1]
-	}
-	if (len(s) < 2) || (s[len(s)-1] != ':') {
-		return false
-	}
-	s = s[:len(s)-1]
-	for _, c := range s {
-		switch {
-		case ('0' <= c) && (c <= '9'):
-		case ('A' <= c) && (c <= 'Z'):
-		case ('a' <= c) && (c <= 'z'):
-		case c == '_':
-		default:
-			return false
-		}
-	}
-	return true
 }
 
 // lastNonWhiteSpace returns the 'z' in "abc xyz  ". It returns '\x00' if s
