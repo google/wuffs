@@ -78,9 +78,18 @@ func TestFormatBytes(tt *testing.T) {
 	}}
 
 	for i, tc := range testCases {
-		if got := string(FormatBytes(nil, []byte(tc.src))); got != tc.want {
+		if got := string(FormatBytes(nil, []byte(tc.src), nil)); got != tc.want {
 			tt.Fatalf("i=%d, src=%q:\ngot  %q\nwant %q", i, tc.src, got, tc.want)
 		}
+	}
+}
+
+func TestTabs(tt *testing.T) {
+	const src = "a {\nb\n}\n"
+	got := string(FormatBytes(nil, []byte(src), &Options{Tabs: true}))
+	want := "a {\n\tb\n}\n"
+	if got != want {
+		tt.Fatalf("\ngot  %q\nwant %q", got, want)
 	}
 }
 
@@ -95,7 +104,7 @@ if (i < j) { foo(); }
 }
 `
 
-	os.Stdout.Write(FormatBytes(nil, []byte(src)))
+	os.Stdout.Write(FormatBytes(nil, []byte(src), nil))
 
 	// Output:
 	// // Blah blah blah.

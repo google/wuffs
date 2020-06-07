@@ -42,8 +42,6 @@
 // user    0m0.005s
 // sys     0m0.005s
 // ----
-//
-// There are no configuration options (e.g. tabs versus spaces).
 package main
 
 import (
@@ -64,6 +62,9 @@ import (
 var (
 	lFlag = flag.Bool("l", false, "list files whose formatting differs from dumbindent's")
 	wFlag = flag.Bool("w", false, "write result to (source) file instead of stdout")
+
+	spacesFlag = flag.Int("spaces", 2, "the number of spaces per indent")
+	tabsFlag   = flag.Bool("tabs", false, "indent with a tab instead of spaces")
 )
 
 func usage() {
@@ -142,7 +143,10 @@ func do(r io.Reader, filename string) error {
 		return err
 	}
 
-	dst := dumbindent.FormatBytes(nil, src)
+	dst := dumbindent.FormatBytes(nil, src, &dumbindent.Options{
+		Spaces: *spacesFlag,
+		Tabs:   *tabsFlag,
+	})
 
 	if r != nil {
 		if _, err := os.Stdout.Write(dst); err != nil {

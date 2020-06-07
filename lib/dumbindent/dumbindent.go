@@ -25,8 +25,6 @@
 //
 // See `cmd/dumbindent/main.go` in this repository for an example where
 // `dumbindent` was 80 times faster than `clang-format`.
-//
-// There are no configuration options (e.g. tabs versus spaces).
 package dumbindent
 
 import (
@@ -37,8 +35,10 @@ import (
 var (
 	backTick  = []byte("`")
 	externC   = []byte("extern \"C\"")
-	spaces    = []byte("                                ")
 	starSlash = []byte("*/")
+
+	spaces = []byte("                                ")
+	tabs   = []byte("\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t")
 )
 
 // hangingBytes is a look-up table for updating the hanging variable.
@@ -47,18 +47,44 @@ var hangingBytes = [256]bool{
 	'\\': true,
 }
 
+// Options are formatting options.
+type Options struct {
+	// Spaces, if positive, is the number of spaces per indentation level. A
+	// non-positive value means to use the default: 2 spaces per indent.
+	//
+	// This field is ignored when Tabs is true.
+	Spaces int
+
+	// Tabs is whether to indent with tabs instead of spaces. If true, it's one
+	// '\t' tab character per indent and the Spaces field is ignored.
+	Tabs bool
+}
+
 // FormatBytes formats the C (or C-like) program in src, appending the result
 // to dst, and returns that longer slice.
 //
 // It is valid to pass a dst slice (such as nil) whose unused capacity
 // (cap(dst) - len(dst)) is too short to hold the formatted program. In this
 // case, a new slice will be allocated and returned.
-func FormatBytes(dst []byte, src []byte) []byte {
+//
+// Passing a nil opts means to use the default options.
+func FormatBytes(dst []byte, src []byte, opts *Options) []byte {
 	src = trimLeadingWhiteSpaceAndNewLines(src)
 	if len(src) == 0 {
 		return dst
 	} else if len(dst) == 0 {
 		dst = make([]byte, 0, len(src)+(len(src)/2))
+	}
+
+	indentBytes := spaces
+	indentCount := 2
+	if opts != nil {
+		if opts.Tabs {
+			indentBytes = tabs
+			indentCount = 1
+		} else if opts.Spaces > 0 {
+			indentCount = opts.Spaces
+		}
 	}
 
 	nBraces := 0       // The number of unbalanced '{'s.
@@ -118,17 +144,17 @@ outer:
 		// "clang-format -style=Chromium" indentation style.
 		indent := 0
 		if nBraces > 0 {
-			indent += 2 * nBraces
+			indent += indentCount * nBraces
 		}
 		if (nParens > 0) || hanging {
-			indent += 4
+			indent += indentCount * 2
 		}
 		for indent > 0 {
 			n := indent
-			if n > len(spaces) {
-				n = len(spaces)
+			if n > len(indentBytes) {
+				n = len(indentBytes)
 			}
-			dst = append(dst, spaces[:n]...)
+			dst = append(dst, indentBytes[:n]...)
 			indent -= n
 		}
 
