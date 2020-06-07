@@ -4,7 +4,7 @@ Within this repository:
 - Hand-written `C` code is formatted by `clang-format-9 -style=Chromium`.
 - Auto-generated `C` code is formatted by [`dumbindent`](/cmd/dumbindent),
   which isn't as 'pretty' in some sense, but is [substantially
-  faster](https://github.com/google/wuffs/blob/dd04d5541744cc73d0852dc9d8ea2fb22c7ae69d/cmd/dumbindent/main.go#L32-L44),
+  faster](https://github.com/google/wuffs/blob/2858c4cfc27a6c083f751db473a4d0d8a7355474/cmd/dumbindent/main.go#L32-L44),
   making the edit-compile-run cycle more productive.
 - `Go` code is formatted by `gofmt`.
 - `Wuffs` code is formatted by [`wuffsfmt`](/cmd/wuffsfmt).
