@@ -18,10 +18,10 @@
 //
 // It is similar in concept to pretty-printers like `indent` or `clang-format`.
 // It is much dumber (it will not add line breaks or otherwise re-flow lines of
-// code, not to fit within an 80 character limit nor for any other reason) but
-// it can therefore be much, much faster at the basic task of automatically
-// indenting nested blocks. The output isn't 'perfect', but it's usually
-// sufficiently readable if the input already has sensible line breaks.
+// code just to fit within an 80 character limit) but it can therefore be much,
+// much faster at the basic task of automatically indenting nested blocks. The
+// output isn't 'perfect', but it's usually sufficiently readable if the input
+// already has sensible line breaks.
 //
 // See `cmd/dumbindent/main.go` in this repository for an example where
 // `dumbindent` was 80 times faster than `clang-format`.
@@ -50,10 +50,11 @@ var hangingBytes = [256]bool{
 // FormatBytes formats the C (or C-like) program in src, appending the result
 // to dst, and returns that longer slice.
 //
-// It is valid to pass a dst slice (such as nil) whose spare capacity (not
-// including its existing elements) is too short to hold the formatted program.
-// In this case, a new slice will be allocated and returned.
+// It is valid to pass a dst slice (such as nil) whose unused capacity
+// (cap(dst) - len(dst)) is too short to hold the formatted program. In this
+// case, a new slice will be allocated and returned.
 func FormatBytes(dst []byte, src []byte) []byte {
+	src = trimLeadingWhiteSpaceAndNewLines(src)
 	if len(src) == 0 {
 		return dst
 	} else if len(dst) == 0 {
@@ -66,6 +67,7 @@ func FormatBytes(dst []byte, src []byte) []byte {
 	hanging := false   // Whether the previous non-blank line ends with '=' or '\\'.
 	blankLine := false // Whether the previous line was blank.
 
+outer:
 	for line, remaining := src, []byte(nil); len(src) > 0; src = remaining {
 		src = trimLeadingWhiteSpace(src)
 		line, remaining = src, nil
@@ -137,18 +139,40 @@ func FormatBytes(dst []byte, src []byte) []byte {
 		// Adjust the state according to the braces and parentheses within the
 		// line (except for those in comments and strings).
 		last := lastNonWhiteSpace(line)
-	loop:
+	inner:
 		for {
 			for i, c := range line {
 				switch c {
 				case '{':
 					nBraces++
+					if l := lastNonWhiteSpace(line[:i]); (l != '=') && (l != ':') {
+						if breakAfterBrace(line[i+1:]) {
+							dst = append(dst, line[:i+1]...)
+							dst = append(dst, '\n')
+							restOfLine := line[i+1:]
+							remaining = src[lineLength-len(restOfLine):]
+							openBrace = true
+							hanging = false
+							continue outer
+						}
+					}
 				case '}':
 					nBraces--
 				case '(':
 					nParens++
 				case ')':
 					nParens--
+
+				case ';':
+					if (nParens == 0) && (breakAfterSemicolon(line[i+1:])) {
+						dst = append(dst, line[:i+1]...)
+						dst = append(dst, '\n')
+						restOfLine := line[i+1:]
+						remaining = src[lineLength-len(restOfLine):]
+						openBrace = false
+						hanging = false
+						continue outer
+					}
 
 				case '/':
 					if (i + 1) >= len(line) {
@@ -157,7 +181,7 @@ func FormatBytes(dst []byte, src []byte) []byte {
 					if line[i+1] == '/' {
 						// A slash-slash comment. Skip the rest of the line.
 						last = lastNonWhiteSpace(line[:i])
-						break loop
+						break inner
 					} else if line[i+1] == '*' {
 						// A slash-star comment.
 						dst = append(dst, line[:i+2]...)
@@ -165,7 +189,7 @@ func FormatBytes(dst []byte, src []byte) []byte {
 						restOfSrc := src[lineLength-len(restOfLine):]
 						dst, line, remaining = handleRaw(dst, restOfSrc, starSlash)
 						last = lastNonWhiteSpace(line)
-						continue loop
+						continue inner
 					}
 
 				case '"', '\'':
@@ -173,7 +197,7 @@ func FormatBytes(dst []byte, src []byte) []byte {
 					suffix := skipCooked(line[i+1:], c)
 					dst = append(dst, line[:len(line)-len(suffix)]...)
 					line = suffix
-					continue loop
+					continue inner
 
 				case '`':
 					// A raw string.
@@ -182,10 +206,10 @@ func FormatBytes(dst []byte, src []byte) []byte {
 					restOfSrc := src[lineLength-len(restOfLine):]
 					dst, line, remaining = handleRaw(dst, restOfSrc, backTick)
 					last = lastNonWhiteSpace(line)
-					continue loop
+					continue inner
 				}
 			}
-			break loop
+			break inner
 		}
 		openBrace = last == '{'
 		hanging = hangingBytes[last]
@@ -198,7 +222,15 @@ func FormatBytes(dst []byte, src []byte) []byte {
 	return dst
 }
 
-// trimLeadingWhiteSpace converts "\t  foo bar " to "foo bar ".
+// trimLeadingWhiteSpaceAndNewLines converts "\t\n  foo bar " to "foo bar ".
+func trimLeadingWhiteSpaceAndNewLines(s []byte) []byte {
+	for (len(s) > 0) && ((s[0] == ' ') || (s[0] == '\t') || (s[0] == '\n')) {
+		s = s[1:]
+	}
+	return s
+}
+
+// trimLeadingWhiteSpace converts "\t\t  foo bar " to "foo bar ".
 func trimLeadingWhiteSpace(s []byte) []byte {
 	for (len(s) > 0) && ((s[0] == ' ') || (s[0] == '\t')) {
 		s = s[1:]
@@ -206,7 +238,7 @@ func trimLeadingWhiteSpace(s []byte) []byte {
 	return s
 }
 
-// trimTrailingWhiteSpace converts "\t  foo bar " to "\t  foo bar".
+// trimTrailingWhiteSpace converts "\t\t  foo bar " to "\t\t  foo bar".
 func trimTrailingWhiteSpace(s []byte) []byte {
 	for (len(s) > 0) && ((s[len(s)-1] == ' ') || (s[len(s)-1] == '\t')) {
 		s = s[:len(s)-1]
@@ -256,4 +288,26 @@ func handleRaw(dst []byte, restOfSrc []byte, endQuote []byte) (retDst []byte, li
 		line, remaining = line[:i], line[i+1:]
 	}
 	return dst, line, remaining
+}
+
+// breakAfterBrace returns whether the first non-space non-tab byte of s (if
+// any) does not look like a comment or another open-brace.
+func breakAfterBrace(s []byte) bool {
+	for _, c := range s {
+		if (c != ' ') && (c != '\t') {
+			return (c != '/') && (c != '{')
+		}
+	}
+	return false
+}
+
+// breakAfterBrace returns whether the first non-space non-tab byte of s (if
+// any) does not look like a comment.
+func breakAfterSemicolon(s []byte) bool {
+	for _, c := range s {
+		if (c != ' ') && (c != '\t') {
+			return c != '/'
+		}
+	}
+	return false
 }

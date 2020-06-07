@@ -24,10 +24,10 @@
 //
 // It is similar in concept to pretty-printers like `indent` or `clang-format`.
 // It is much dumber (it will not add line breaks or otherwise re-flow lines of
-// code, not to fit within an 80 character limit nor for any other reason) but
-// it can therefore be much, much faster at the basic task of automatically
-// indenting nested blocks. The output isn't 'perfect', but it's usually
-// sufficiently readable if the input already has sensible line breaks.
+// code just to fit within an 80 character limit) but it can therefore be much,
+// much faster at the basic task of automatically indenting nested blocks. The
+// output isn't 'perfect', but it's usually sufficiently readable if the input
+// already has sensible line breaks.
 //
 // An example of "much, much faster", 80 times faster than clang-format:
 // ----

@@ -17003,8 +17003,11 @@ wuffs_gif__decoder__initialize(
   }
 
   {
-    wuffs_base__status z = wuffs_lzw__decoder__initialize(&self->private_data.f_lzw, sizeof(self->private_data.f_lzw), WUFFS_VERSION, initialize_flags);
-    if (z.repr) { return z; }
+    wuffs_base__status z = wuffs_lzw__decoder__initialize(
+        &self->private_data.f_lzw, sizeof(self->private_data.f_lzw), WUFFS_VERSION, initialize_flags);
+    if (z.repr) {
+      return z;
+    }
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
   self->private_impl.vtable_for__wuffs_base__image_decoder.vtable_name =
@@ -21193,12 +21196,18 @@ wuffs_gzip__decoder__initialize(
   }
 
   {
-    wuffs_base__status z = wuffs_crc32__ieee_hasher__initialize(&self->private_data.f_checksum, sizeof(self->private_data.f_checksum), WUFFS_VERSION, initialize_flags);
-    if (z.repr) { return z; }
+    wuffs_base__status z = wuffs_crc32__ieee_hasher__initialize(
+        &self->private_data.f_checksum, sizeof(self->private_data.f_checksum), WUFFS_VERSION, initialize_flags);
+    if (z.repr) {
+      return z;
+    }
   }
   {
-    wuffs_base__status z = wuffs_deflate__decoder__initialize(&self->private_data.f_flate, sizeof(self->private_data.f_flate), WUFFS_VERSION, initialize_flags);
-    if (z.repr) { return z; }
+    wuffs_base__status z = wuffs_deflate__decoder__initialize(
+        &self->private_data.f_flate, sizeof(self->private_data.f_flate), WUFFS_VERSION, initialize_flags);
+    if (z.repr) {
+      return z;
+    }
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
   self->private_impl.vtable_for__wuffs_base__io_transformer.vtable_name =
@@ -24667,16 +24676,25 @@ wuffs_zlib__decoder__initialize(
   }
 
   {
-    wuffs_base__status z = wuffs_adler32__hasher__initialize(&self->private_data.f_checksum, sizeof(self->private_data.f_checksum), WUFFS_VERSION, initialize_flags);
-    if (z.repr) { return z; }
+    wuffs_base__status z = wuffs_adler32__hasher__initialize(
+        &self->private_data.f_checksum, sizeof(self->private_data.f_checksum), WUFFS_VERSION, initialize_flags);
+    if (z.repr) {
+      return z;
+    }
   }
   {
-    wuffs_base__status z = wuffs_adler32__hasher__initialize(&self->private_data.f_dict_id_hasher, sizeof(self->private_data.f_dict_id_hasher), WUFFS_VERSION, initialize_flags);
-    if (z.repr) { return z; }
+    wuffs_base__status z = wuffs_adler32__hasher__initialize(
+        &self->private_data.f_dict_id_hasher, sizeof(self->private_data.f_dict_id_hasher), WUFFS_VERSION, initialize_flags);
+    if (z.repr) {
+      return z;
+    }
   }
   {
-    wuffs_base__status z = wuffs_deflate__decoder__initialize(&self->private_data.f_flate, sizeof(self->private_data.f_flate), WUFFS_VERSION, initialize_flags);
-    if (z.repr) { return z; }
+    wuffs_base__status z = wuffs_deflate__decoder__initialize(
+        &self->private_data.f_flate, sizeof(self->private_data.f_flate), WUFFS_VERSION, initialize_flags);
+    if (z.repr) {
+      return z;
+    }
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
   self->private_impl.vtable_for__wuffs_base__io_transformer.vtable_name =

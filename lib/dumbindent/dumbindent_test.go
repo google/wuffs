@@ -15,6 +15,7 @@
 package dumbindent
 
 import (
+	"os"
 	"testing"
 )
 
@@ -66,6 +67,14 @@ func TestFormatBytes(tt *testing.T) {
 		// Nested blocks with label.
 		src:  "if (b) {\nlabel:\nswitch (i) {\ncase 0:\nj = k\nbreak;\n}\n}\n",
 		want: "if (b) {\n  label:\n  switch (i) {\n    case 0:\n    j = k\n    break;\n  }\n}\n",
+	}, {
+		// Inserted line breaks.
+		src:  "if (x) { goto fail; }\n",
+		want: "if (x) {\n  goto fail;\n}\n",
+	}, {
+		// Leading blank lines.
+		src:  "\n\n\n  x = y;",
+		want: "x = y;\n",
 	}}
 
 	for i, tc := range testCases {
@@ -73,4 +82,30 @@ func TestFormatBytes(tt *testing.T) {
 			tt.Fatalf("i=%d, src=%q:\ngot  %q\nwant %q", i, tc.src, got, tc.want)
 		}
 	}
+}
+
+func ExampleFormatBytes() {
+	const src = `
+// Blah blah blah.
+
+
+for (i = 0; i < 3; i++) {
+j = 0; j < 4; j++;
+if (i < j) { foo(); }
+}
+`
+
+	os.Stdout.Write(FormatBytes(nil, []byte(src)))
+
+	// Output:
+	// // Blah blah blah.
+	//
+	// for (i = 0; i < 3; i++) {
+	//   j = 0;
+	//   j < 4;
+	//   j++;
+	//   if (i < j) {
+	//     foo();
+	//   }
+	// }
 }

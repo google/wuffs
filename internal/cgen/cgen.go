@@ -131,7 +131,6 @@ func Do(args []string) error {
 					for _, n := range builtin.Interfaces {
 						buf.printf("const char* wuffs_base__%s__vtable_name = "+
 							"\"{vtable}wuffs_base__%s\";\n", n, n)
-
 					}
 					return nil
 				},
@@ -1383,10 +1382,10 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 		}
 
 		b.printf("{\n")
-		b.printf("wuffs_base__status z = %s%s__initialize("+
+		b.printf("wuffs_base__status z = %s%s__initialize(\n"+
 			"&self->private_data.%s%s, sizeof(self->private_data.%s%s), WUFFS_VERSION, initialize_flags);\n",
 			prefix, qid[1].Str(g.tm), fPrefix, f.Name().Str(g.tm), fPrefix, f.Name().Str(g.tm))
-		b.printf("if (z.repr) { return z; }\n")
+		b.printf("if (z.repr) {\nreturn z;\n}\n")
 		b.printf("}\n")
 	}
 
