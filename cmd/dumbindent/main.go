@@ -17,31 +17,34 @@
 // dumbindent formats C (and C-like) programs.
 //
 // Without explicit paths, it rewrites the standard input to standard output.
-// Otherwise, the -l or -w or both flags must be given. Given a file path, it
-// operates on that file; given a directory path, it operates on all *.{c,h}
-// files in that directory, recursively. File paths starting with a period are
-// ignored.
+// Otherwise, the -l (list files that would change) or -w (write files in
+// place) or both flags must be given. Given a file path, it operates on that
+// file; given a directory path, it operates on all *.{c,h} files in that
+// directory, recursively. File paths starting with a period are ignored.
+//
+// Pass -spaces=N or -tabs to use N spaces or 1 tab per indent level. The
+// default is 2 spaces per indent level.
 //
 // It is similar in concept to pretty-printers like `indent` or `clang-format`.
 // It is much dumber (it will not add line breaks or otherwise re-flow lines of
-// code just to fit within an 80 character limit) but it can therefore be much,
-// much faster at the basic task of automatically indenting nested blocks. The
+// code just to fit within an 80 character limit) but it can therefore be much
+// faster at the basic task of automatically indenting nested blocks. The
 // output isn't 'perfect', but it's usually sufficiently readable if the input
 // already has sensible line breaks.
 //
-// An example of "much, much faster", 80 times faster than clang-format:
-// ----
-// $ wc release/c/wuffs-v0.2.c
-//  11858  35980 431885 release/c/wuffs-v0.2.c
-// $ time clang-format-9 < release/c/wuffs-v0.2.c > /dev/null
-// real    0m0.677s
-// user    0m0.620s
-// sys     0m0.040s
-// $ time dumbindent     < release/c/wuffs-v0.2.c > /dev/null
-// real    0m0.008s
-// user    0m0.005s
-// sys     0m0.005s
-// ----
+// To quantify "much faster", on this one C file, this program was 80 times
+// faster than `clang-format`:
+//
+//     $ wc release/c/wuffs-v0.2.c
+//      11858  35980 431885 release/c/wuffs-v0.2.c
+//     $ time clang-format-9 < release/c/wuffs-v0.2.c > /dev/null
+//     real    0m0.677s
+//     user    0m0.620s
+//     sys     0m0.040s
+//     $ time dumbindent     < release/c/wuffs-v0.2.c > /dev/null
+//     real    0m0.008s
+//     user    0m0.005s
+//     sys     0m0.005s
 package main
 
 import (

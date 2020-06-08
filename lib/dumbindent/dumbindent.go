@@ -18,13 +18,92 @@
 //
 // It is similar in concept to pretty-printers like `indent` or `clang-format`.
 // It is much dumber (it will not add line breaks or otherwise re-flow lines of
-// code just to fit within an 80 character limit) but it can therefore be much,
-// much faster at the basic task of automatically indenting nested blocks. The
+// code just to fit within an 80 character limit) but it can therefore be much
+// faster at the basic task of automatically indenting nested blocks. The
 // output isn't 'perfect', but it's usually sufficiently readable if the input
 // already has sensible line breaks.
 //
-// See `cmd/dumbindent/main.go` in this repository for an example where
-// `dumbindent` was 80 times faster than `clang-format`.
+// To quantify "much faster", on this one C file, `cmd/dumbindent` in this
+// repository was 80 times faster than `clang-format`:
+//
+//     $ wc release/c/wuffs-v0.2.c
+//      11858  35980 431885 release/c/wuffs-v0.2.c
+//     $ time clang-format-9 < release/c/wuffs-v0.2.c > /dev/null
+//     real    0m0.677s
+//     user    0m0.620s
+//     sys     0m0.040s
+//     $ time dumbindent     < release/c/wuffs-v0.2.c > /dev/null
+//     real    0m0.008s
+//     user    0m0.005s
+//     sys     0m0.005s
+//
+// Apart from some rare and largely uninteresting exceptions, the dumbindent
+// algorithm only considers:
+//
+//   ∙ '{' and '}' curly braces,
+//   ∙ '(' and ')' round parentheses,
+//   ∙ ';' semi-colons (if they're not within parentheses),
+//   ∙ strings, comments and preprocessor directives,
+//   ∙ '\n' line breaks, and
+//   ∙ ' ' spaces and '\t' tabs adjacent to any of the above.
+//
+// Everything else is an opaque byte. Consider this input:
+//
+//     for (i = 0; i < 3; i++) {
+//     j = 0; j++;  // Semi-colons not within parentheses.
+//     if (i < j) { foo(); }
+//     u = (v +
+//     w);
+//     }
+//
+// From the algorithm's point of view, this input is equivalent to:
+//
+//     ... (.................) {
+//     .....; ...;  //....................................
+//     .. (.....) { ...(); }
+//     ... (...
+//     .);
+//     }
+//
+// The formatted output (using the default of 2 spaces per indent level) is:
+//
+//     ... (.................) {
+//       .....;
+//       ...;  //....................................
+//       .. (.....) {
+//         ...();
+//       }
+//       ... (...
+//           .);
+//     }
+//
+// Line breaks are generally forced after semi-colons (outside of a for loop's
+// triple expressions) and open-braces. Each output line is then indented
+// according to the net number of open braces preceding it, although lines
+// starting with close braces will outdent first, similar to `gofmt` style. A
+// line whose start is inside a so-far-unbalanced open parenthesis, such as the
+// "w);" line above, gets 2 additional indent levels.
+//
+// Dumbindent will remove some superfluous blank lines, but it will not remove
+// line breaks between consecutive non-empty lines, such as between "u = (v +"
+// and "w);" in the example above.
+//
+// Dumbindent does not parse the input as C/C++ source code. In particular, the
+// algorithm has no interest in solving C++'s "most vexing parse" or
+// determining whether "x*y" is a multiplication or a type definition (where
+// "x" is a type and "y" is a pointer-typed variable, such as "int*p"). For a
+// type definition, where other formatting algorithms would re-write around the
+// "*" as either "x* y" or "x *y", dumbindent will not insert spaces.
+//
+// Similarly, dumbindent will not correct this mis-indentation:
+//
+//     if (condition)
+//       goto fail;
+//       goto fail;
+//
+// Instead, when automatically or manually generating the input for dumbindent,
+// it is recommended to always emit curly braces (again, similar to `gofmt`
+// style), even for what would otherwise be 'one-liner' if statements.
 package dumbindent
 
 import (
@@ -67,7 +146,7 @@ type Options struct {
 // (cap(dst) - len(dst)) is too short to hold the formatted program. In this
 // case, a new slice will be allocated and returned.
 //
-// Passing a nil opts means to use the default options.
+// Passing a nil opts is valid and equivalent to passing &Options{}.
 func FormatBytes(dst []byte, src []byte, opts *Options) []byte {
 	src = trimLeadingWhiteSpaceAndNewLines(src)
 	if len(src) == 0 {

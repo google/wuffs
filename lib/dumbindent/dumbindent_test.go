@@ -95,26 +95,24 @@ func TestTabs(tt *testing.T) {
 
 func ExampleFormatBytes() {
 	const src = `
-// Blah blah blah.
-
-
 for (i = 0; i < 3; i++) {
-j = 0; j < 4; j++;
+j = 0; j++;  // Semi-colons not within parentheses.
 if (i < j) { foo(); }
+u = (v +
+w);
 }
 `
 
 	os.Stdout.Write(FormatBytes(nil, []byte(src), nil))
 
 	// Output:
-	// // Blah blah blah.
-	//
 	// for (i = 0; i < 3; i++) {
 	//   j = 0;
-	//   j < 4;
-	//   j++;
+	//   j++;  // Semi-colons not within parentheses.
 	//   if (i < j) {
 	//     foo();
 	//   }
+	//   u = (v +
+	//       w);
 	// }
 }
