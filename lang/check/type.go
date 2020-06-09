@@ -34,6 +34,12 @@ func (q *checker) tcheckVars(block []*a.Node) error {
 		name := o.Name()
 		if _, ok := q.localVars[name]; ok {
 			return fmt.Errorf("check: duplicate var %q", name.Str(q.tm))
+		} else if q.c.topLevelNames[name] != 0 {
+			return &Error{
+				Err:      fmt.Errorf("check: var %q shadows top level name", name.Str(q.tm)),
+				Filename: o.Filename(),
+				Line:     o.Line(),
+			}
 		}
 		if err := q.tcheckTypeExpr(o.XType(), 0); err != nil {
 			return err
@@ -366,7 +372,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 					return nil
 				}
 			}
-			if _, ok := q.c.useBaseNames[id1]; ok {
+			if q.c.topLevelNames[id1] == a.KUse {
 				n.SetConstValue(zero)
 				n.SetMType(typeExprPackage)
 				return nil

@@ -473,6 +473,8 @@ func NewAssign(operator t.ID, lhs *Expr, rhs *Expr) *Assign {
 type Var Node
 
 func (n *Var) AsNode() *Node    { return (*Node)(n) }
+func (n *Var) Filename() string { return n.filename }
+func (n *Var) Line() uint32     { return n.line }
 func (n *Var) Name() t.ID       { return n.id2 }
 func (n *Var) XType() *TypeExpr { return n.lhs.AsTypeExpr() }
 

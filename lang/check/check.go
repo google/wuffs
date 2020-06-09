@@ -88,15 +88,16 @@ func Check(tm *t.Map, files []*a.File, resolveUse func(usePath string) ([]byte, 
 		resolveUse: resolveUse,
 		reasonMap:  rMap,
 
-		consts:    map[t.QID]*a.Const{},
+		topLevelNames: map[t.ID]a.Kind{
+			t.IDBase: a.KUse,
+		},
+
+		consts:   map[t.QID]*a.Const{},
+		statuses: map[t.QID]*a.Status{},
+		structs:  map[t.QID]*a.Struct{},
+
 		funcs:     map[t.QQID]*a.Func{},
 		localVars: map[t.QQID]typeMap{},
-		statuses:  map[t.QID]*a.Status{},
-		structs:   map[t.QID]*a.Struct{},
-
-		useBaseNames: map[t.ID]struct{}{
-			t.IDBase: struct{}{},
-		},
 
 		builtInSliceFuncs: map[t.QQID]*a.Func{},
 		builtInTableFuncs: map[t.QQID]*a.Func{},
@@ -202,7 +203,6 @@ var phases = [...]struct {
 	{a.KInvalid, (*Checker).checkInterfacesSatisfied},
 	{a.KStruct, (*Checker).checkFieldMethodCollisions},
 	{a.KInvalid, (*Checker).checkAllTypeChecked},
-	// TODO: check consts, funcs, structs and uses for name collisions.
 }
 
 type reason func(q *checker, n *a.Assert) error
@@ -214,15 +214,20 @@ type Checker struct {
 	resolveUse func(usePath string) ([]byte, error)
 	reasonMap  reasonMap
 
-	consts    map[t.QID]*a.Const
+	// The topLevelNames map is keyed by the const/status/struct/use
+	// unqualified name (ID, not QID).
+	//
+	// For `use "foo/bar"`, the name is the base name: "bar".
+	topLevelNames map[t.ID]a.Kind
+
+	// These maps are keyed by the const/status/struct name (QID).
+	consts   map[t.QID]*a.Const
+	statuses map[t.QID]*a.Status
+	structs  map[t.QID]*a.Struct
+
+	// These maps are keyed by the func name (QQID).
 	funcs     map[t.QQID]*a.Func
 	localVars map[t.QQID]typeMap
-	statuses  map[t.QID]*a.Status
-	structs   map[t.QID]*a.Struct
-
-	// useBaseNames are the base names of packages referred to by `use
-	// "foo/bar"` lines. The keys are `bar`, not `"foo/bar"`.
-	useBaseNames map[t.ID]struct{}
 
 	builtInSliceFuncs map[t.QQID]*a.Func
 	builtInTableFuncs map[t.QQID]*a.Func
@@ -243,11 +248,14 @@ func (c *Checker) checkUse(node *a.Node) error {
 	baseName, err := c.tm.Insert(path.Base(filename))
 	if err != nil {
 		return fmt.Errorf("check: cannot resolve `use %s`: %v", usePath.Str(c.tm), err)
+	} else if c.topLevelNames[baseName] != 0 {
+		return &Error{
+			Err:      fmt.Errorf("check: duplicate top level name %q", baseName.Str(c.tm)),
+			Filename: node.AsUse().Filename(),
+			Line:     node.AsUse().Line(),
+		}
 	}
 	filename += ".wuffs"
-	if _, ok := c.useBaseNames[baseName]; ok {
-		return fmt.Errorf("check: duplicate `use \"etc\"` base name %q", baseName.Str(c.tm))
-	}
 
 	if c.resolveUse == nil {
 		return fmt.Errorf("check: cannot resolve a use declaration")
@@ -291,7 +299,7 @@ func (c *Checker) checkUse(node *a.Node) error {
 			}
 		}
 	}
-	c.useBaseNames[baseName] = struct{}{}
+	c.topLevelNames[baseName] = a.KUse
 	setPlaceholderMBoundsMType(node)
 	return nil
 }
@@ -307,6 +315,16 @@ func (c *Checker) checkStatus(node *a.Node) error {
 			OtherFilename: other.Filename(),
 			OtherLine:     other.Line(),
 		}
+	}
+	if qid[0] == 0 {
+		if c.topLevelNames[qid[1]] != 0 {
+			return &Error{
+				Err:      fmt.Errorf("check: duplicate top level name %q", qid[1].Str(c.tm)),
+				Filename: n.Filename(),
+				Line:     n.Line(),
+			}
+		}
+		c.topLevelNames[qid[1]] = a.KStatus
 	}
 	c.statuses[qid] = n
 
@@ -325,6 +343,16 @@ func (c *Checker) checkConst(node *a.Node) error {
 			OtherFilename: other.Filename(),
 			OtherLine:     other.Line(),
 		}
+	}
+	if qid[0] == 0 {
+		if c.topLevelNames[qid[1]] != 0 {
+			return &Error{
+				Err:      fmt.Errorf("check: duplicate top level name %q", qid[1].Str(c.tm)),
+				Filename: n.Filename(),
+				Line:     n.Line(),
+			}
+		}
+		c.topLevelNames[qid[1]] = a.KConst
 	}
 	c.consts[qid] = n
 
@@ -397,6 +425,16 @@ func (c *Checker) checkStructDecl(node *a.Node) error {
 			OtherFilename: other.Filename(),
 			OtherLine:     other.Line(),
 		}
+	}
+	if qid[0] == 0 {
+		if c.topLevelNames[qid[1]] != 0 {
+			return &Error{
+				Err:      fmt.Errorf("check: duplicate top level name %q", qid[1].Str(c.tm)),
+				Filename: n.Filename(),
+				Line:     n.Line(),
+			}
+		}
+		c.topLevelNames[qid[1]] = a.KStruct
 	}
 	c.structs[qid] = n
 	c.unsortedStructs = append(c.unsortedStructs, n)
