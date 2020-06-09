@@ -118,7 +118,8 @@ import (
 // 'Constants', but their type is []byte, not string.
 var (
 	backTick  = []byte("`")
-	externC   = []byte("extern \"C\"")
+	externC   = []byte("extern \"C\" {")
+	namespace = []byte("namespace ")
 	starSlash = []byte("*/")
 
 	spaces = []byte("                                ")
@@ -204,12 +205,10 @@ outer:
 
 		// Preprocessor lines (#ifdef, #pragma, etc) are never indented.
 		//
-		// The '{' and '}' for an `extern "C"` are also special cased not to
-		// change indentation inside the block. This assumes that the closing
-		// brace is followed by a `// extern "C"` comment.
+		// Also catch `extern "C" {` and `namespace foo {`.
 		if (line[0] == '#') ||
 			((line[0] == 'e') && bytes.HasPrefix(line, externC)) ||
-			((line[0] == '}') && bytes.HasSuffix(line, externC)) {
+			((line[0] == 'n') && bytes.HasPrefix(line, namespace)) {
 			line = trimTrailingWhiteSpace(line)
 			dst = append(dst, line...)
 			dst = append(dst, '\n')
@@ -223,6 +222,17 @@ outer:
 		for ; (closeBraces < len(line)) && line[closeBraces] == '}'; closeBraces++ {
 		}
 		nBraces -= closeBraces
+
+		// The heuristics aren't perfect, and sometimes do not catch braces or
+		// parentheses in #define macros. They also don't increment nBraces for
+		// `extern "C"` or namespace lines. We work around that here, clamping
+		// to zero.
+		if nBraces < 0 {
+			nBraces = 0
+		}
+		if nParens < 0 {
+			nParens = 0
+		}
 
 		// Output a certain number of spaces to rougly approximate the
 		// "clang-format -style=Chromium" indentation style.

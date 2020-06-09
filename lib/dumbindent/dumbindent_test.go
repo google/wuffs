@@ -75,6 +75,10 @@ func TestFormatBytes(tt *testing.T) {
 		// Leading blank lines.
 		src:  "\n\n\n  x = y;",
 		want: "x = y;\n",
+	}, {
+		// Namespaces.
+		src:  "namespace A {\nint f() {\nreturn 0;\n}\n}\n",
+		want: "namespace A {\nint f() {\n  return 0;\n}\n}\n",
 	}}
 
 	for i, tc := range testCases {
