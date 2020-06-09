@@ -731,7 +731,7 @@ func (q *checker) bcheckExpr(n *a.Expr, depth uint32) (bounds, error) {
 		return b, nil
 	}
 	if n.ConstValue() != nil {
-		return bcheckExprConstValue(n), nil
+		return bcheckExprConstValue(n)
 	}
 
 	nb, err := q.bcheckExpr1(n, depth)
@@ -756,23 +756,34 @@ func (q *checker) bcheckExpr(n *a.Expr, depth uint32) (bounds, error) {
 	return nb, nil
 }
 
-func bcheckExprConstValue(n *a.Expr) bounds {
+func bcheckExprConstValue(n *a.Expr) (bounds, error) {
 	if o := n.LHS(); o != nil {
-		bcheckExprConstValue(o.AsExpr())
+		if _, err := bcheckExprConstValue(o.AsExpr()); err != nil {
+			return bounds{}, err
+		}
 	}
 	if o := n.MHS(); o != nil {
-		bcheckExprConstValue(o.AsExpr())
+		if _, err := bcheckExprConstValue(o.AsExpr()); err != nil {
+			return bounds{}, err
+		}
 	}
 	if o := n.RHS(); o != nil && n.Operator() != t.IDXBinaryAs {
-		bcheckExprConstValue(o.AsExpr())
+		if _, err := bcheckExprConstValue(o.AsExpr()); err != nil {
+			return bounds{}, err
+		}
 	}
 	for _, o := range n.Args() {
-		bcheckExprConstValue(o.AsExpr())
+		if _, err := bcheckExprConstValue(o.AsExpr()); err != nil {
+			return bounds{}, err
+		}
 	}
 	cv := n.ConstValue()
+	if cv == nil {
+		return bounds{}, fmt.Errorf("check: constant expression has nil ConstValue")
+	}
 	b := bounds{cv, cv}
 	n.SetMBounds(b)
-	return b
+	return b, nil
 }
 
 func (q *checker) bcheckExpr1(n *a.Expr, depth uint32) (bounds, error) {

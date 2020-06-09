@@ -186,10 +186,8 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 	}
 
 	if args.dst <> nullptr {
-		// TODO: a Wuffs (not just C) name for the
-		// WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY magic pixfmt constant.
 		args.dst.set!(
-			pixfmt: 0x8304_0008,
+			pixfmt: base.PIXEL_FORMAT__INDEXED__BGRA_BINARY,
 			pixsub: 0,
 			width: this.width,
 			height: this.height,
@@ -878,12 +876,10 @@ pri func decoder.decode_id_part1?(dst: ptr base.pixel_buffer, src: base.io_reade
 		dst_palette = this.dst_palette[..]
 	}
 
-	// TODO: a Wuffs (not just C) name for the
-	// WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY magic pixfmt constant.
 	status = this.swizzler.prepare!(
 		dst_pixfmt: args.dst.pixel_format(),
 		dst_palette: dst_palette,
-		src_pixfmt: this.util.make_pixel_format(repr: 0x8304_0008),
+		src_pixfmt: this.util.make_pixel_format(repr: base.PIXEL_FORMAT__INDEXED__BGRA_BINARY),
 		src_palette: this.palettes[which_palette][..],
 		blend: args.blend)
 	if not status.is_ok() {

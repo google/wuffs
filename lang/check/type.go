@@ -366,17 +366,12 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 					return nil
 				}
 			}
-			if c, ok := q.c.consts[t.QID{0, id1}]; ok {
-				// TODO: check somewhere that a global ident (i.e. a const) is
-				// not directly in the LHS of an assignment.
-				n.SetGlobalIdent()
-				n.SetConstValue(c.Value().ConstValue())
-				n.SetMType(c.XType())
+			if _, ok := q.c.useBaseNames[id1]; ok {
+				n.SetConstValue(zero)
+				n.SetMType(typeExprPackage)
 				return nil
 			}
-			// TODO: look for other (global) names: consts, funcs, statuses,
-			// structs from used packages.
-			return fmt.Errorf("check: unrecognized identifier %q", id1.Str(q.tm))
+			return q.tcheckExprXDotY(n, 0, id1)
 		}
 
 		switch id1 {
@@ -491,6 +486,21 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 		n.Operator(), n.Str(q.tm))
 }
 
+func (q *checker) tcheckExprXDotY(n *a.Expr, x t.ID, y t.ID) error {
+	qid := t.QID{x, y}
+	if c, ok := q.c.consts[qid]; ok {
+		// TODO: check somewhere that a global ident (i.e. a const) is
+		// not directly in the LHS of an assignment.
+		n.SetGlobalIdent()
+		n.SetConstValue(c.Value().ConstValue())
+		n.SetMType(c.XType())
+		return nil
+	}
+	// TODO: look for other (global) names: consts, funcs, statuses,
+	// structs from used packages.
+	return fmt.Errorf("check: unrecognized identifier %q", qid.Str(q.tm))
+}
+
 func (q *checker) tcheckExprCall(n *a.Expr, depth uint32) error {
 	lhs := n.LHS().AsExpr()
 	if err := q.tcheckExpr(lhs, depth); err != nil {
@@ -568,6 +578,9 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 	lhs := n.LHS().AsExpr()
 	if err := q.tcheckExpr(lhs, depth); err != nil {
 		return err
+	}
+	if lhs.MType() == typeExprPackage {
+		return q.tcheckExprXDotY(n, lhs.Ident(), n.Ident())
 	}
 	lTyp := lhs.MType().Pointee()
 	lQID := lTyp.QID()

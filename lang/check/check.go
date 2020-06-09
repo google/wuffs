@@ -94,7 +94,9 @@ func Check(tm *t.Map, files []*a.File, resolveUse func(usePath string) ([]byte, 
 		statuses:  map[t.QID]*a.Status{},
 		structs:   map[t.QID]*a.Struct{},
 
-		useBaseNames: map[t.ID]struct{}{},
+		useBaseNames: map[t.ID]struct{}{
+			t.IDBase: struct{}{},
+		},
 
 		builtInSliceFuncs: map[t.QQID]*a.Func{},
 		builtInTableFuncs: map[t.QQID]*a.Func{},
@@ -125,6 +127,31 @@ func Check(tm *t.Map, files []*a.File, resolveUse func(usePath string) ([]byte, 
 		sort.Slice(qqids, func(i int, j int) bool {
 			return qqids[i].LessThan(qqids[j])
 		})
+	}
+
+	for _, z := range builtin.Consts {
+		name, err := tm.Insert(z.Name)
+		if err != nil {
+			return nil, err
+		}
+		xType := (*a.TypeExpr)(nil)
+		switch z.Type {
+		case t.IDU32:
+			xType = typeExprU32
+		case t.IDU64:
+			xType = typeExprU64
+		default:
+			return nil, fmt.Errorf("check: unsupported built-in const type %q", z.Type.Str(tm))
+		}
+		value, err := tm.Insert(z.Value)
+		if err != nil {
+			return nil, err
+		}
+		cNode := a.NewConst(0, "", 0, name, xType, a.NewExpr(0, 0, 0, value, nil, nil, nil, nil))
+		if err := c.checkConst(cNode.AsNode()); err != nil {
+			return nil, err
+		}
+		c.consts[t.QID{t.IDBase, name}] = cNode
 	}
 
 	for _, z := range builtin.Statuses {

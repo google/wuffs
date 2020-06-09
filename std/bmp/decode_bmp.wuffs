@@ -137,15 +137,11 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 		// The "((x + 3) >> 2) << 2" dance rounds x up.
 		this.bytes_per_row = ((((this.width as base.u64) * 3) + 3) >> 2) << 2
 		this.pad_per_row = this.width & 3
-		// TODO: a Wuffs (not just C) name for the
-		// WUFFS_BASE__PIXEL_FORMAT__BGR magic pixfmt constant.
-		this.pixfmt = this.util.make_pixel_format(repr: 0x8000_0888)
+		this.pixfmt = this.util.make_pixel_format(repr: base.PIXEL_FORMAT__BGR)
 	} else if bits_per_pixel == 32 {
 		this.bytes_per_row = (this.width as base.u64) * 4
 		this.pad_per_row = 0
-		// TODO: a Wuffs (not just C) name for the
-		// WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL magic pixfmt constant.
-		this.pixfmt = this.util.make_pixel_format(repr: 0x8100_8888)
+		this.pixfmt = this.util.make_pixel_format(repr: base.PIXEL_FORMAT__BGRA_NONPREMUL)
 	} else {
 		// TODO: support other bits_per_pixel's.
 		return "#unsupported BMP file"
@@ -185,10 +181,8 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 	this.frame_config_io_position = args.src.position()
 
 	if args.dst <> nullptr {
-		// TODO: a Wuffs (not just C) name for the
-		// WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL magic pixfmt constant.
 		args.dst.set!(
-			pixfmt: 0x8100_8888,  // TODO: this.pixfmt instead?
+			pixfmt: base.PIXEL_FORMAT__BGRA_NONPREMUL,  // TODO: this.pixfmt instead?
 			pixsub: 0,
 			width: this.width,
 			height: this.height,

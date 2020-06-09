@@ -147,10 +147,8 @@ pub func config_decoder.decode_image_config?(dst: nptr base.image_config, src: b
 	}
 
 	if args.dst <> nullptr {
-		// TODO: a Wuffs (not just C) name for the
-		// WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY magic pixfmt constant.
 		args.dst.set!(
-			pixfmt: 0x8304_0008,
+			pixfmt: base.PIXEL_FORMAT__INDEXED__BGRA_BINARY,
 			pixsub: 0,
 			width: this.width,
 			height: this.height,

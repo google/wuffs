@@ -450,12 +450,13 @@ const (
 	IDCoroutineResumed = ID(0x101)
 	IDThis             = ID(0x102)
 
-	IDT1      = ID(0x108)
-	IDT2      = ID(0x109)
-	IDDagger1 = ID(0x10A)
-	IDDagger2 = ID(0x10B)
+	IDT1      = ID(0x104)
+	IDT2      = ID(0x105)
+	IDDagger1 = ID(0x106)
+	IDDagger2 = ID(0x107)
 
-	IDQNullptr     = ID(0x10C)
+	IDQNullptr     = ID(0x10B)
+	IDQPackage     = ID(0x10C)
 	IDQPlaceholder = ID(0x10D)
 	IDQTypeExpr    = ID(0x10E)
 
@@ -808,6 +809,10 @@ var builtInsByID = [nBuiltInIDs]string{
 	// IDQNullptr is used by the type checker to build an artificial MType for
 	// the nullptr literal.
 	IDQNullptr: "«Nullptr»",
+
+	// IDQPackage is used by the type checker to build an artificial MType for
+	// used (imported) packages.
+	IDQPackage: "«Package»",
 
 	// IDQPlaceholder is used by the type checker to build an artificial MType
 	// for AST nodes that aren't expression nodes or type expression nodes,
