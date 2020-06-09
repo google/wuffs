@@ -30,24 +30,16 @@ import (
 )
 
 type Error struct {
-	Err           error
-	Filename      string
-	Line          uint32
-	OtherFilename string
-	OtherLine     uint32
+	Err      error
+	Filename string
+	Line     uint32
 
 	TMap  *t.Map
 	Facts []*a.Expr
 }
 
 func (e *Error) Error() string {
-	s := ""
-	if e.OtherFilename != "" || e.OtherLine != 0 {
-		s = fmt.Sprintf("%s at %s:%d and %s:%d",
-			e.Err, e.Filename, e.Line, e.OtherFilename, e.OtherLine)
-	} else {
-		s = fmt.Sprintf("%s at %s:%d", e.Err, e.Filename, e.Line)
-	}
+	s := fmt.Sprintf("%s at %s:%d", e.Err, e.Filename, e.Line)
 	if e.TMap == nil {
 		return s
 	}
@@ -307,15 +299,6 @@ func (c *Checker) checkUse(node *a.Node) error {
 func (c *Checker) checkStatus(node *a.Node) error {
 	n := node.AsStatus()
 	qid := n.QID()
-	if other, ok := c.statuses[qid]; ok {
-		return &Error{
-			Err:           fmt.Errorf("check: duplicate status %s", qid.Str(c.tm)),
-			Filename:      n.Filename(),
-			Line:          n.Line(),
-			OtherFilename: other.Filename(),
-			OtherLine:     other.Line(),
-		}
-	}
 	if qid[0] == 0 {
 		if c.topLevelNames[qid[1]] != 0 {
 			return &Error{
@@ -325,6 +308,12 @@ func (c *Checker) checkStatus(node *a.Node) error {
 			}
 		}
 		c.topLevelNames[qid[1]] = a.KStatus
+	} else if c.statuses[qid] != nil {
+		return &Error{
+			Err:      fmt.Errorf("check: duplicate top level name %q", qid.Str(c.tm)),
+			Filename: n.Filename(),
+			Line:     n.Line(),
+		}
 	}
 	c.statuses[qid] = n
 
@@ -335,15 +324,6 @@ func (c *Checker) checkStatus(node *a.Node) error {
 func (c *Checker) checkConst(node *a.Node) error {
 	n := node.AsConst()
 	qid := n.QID()
-	if other, ok := c.consts[qid]; ok {
-		return &Error{
-			Err:           fmt.Errorf("check: duplicate const %s", qid.Str(c.tm)),
-			Filename:      n.Filename(),
-			Line:          n.Line(),
-			OtherFilename: other.Filename(),
-			OtherLine:     other.Line(),
-		}
-	}
 	if qid[0] == 0 {
 		if c.topLevelNames[qid[1]] != 0 {
 			return &Error{
@@ -353,6 +333,12 @@ func (c *Checker) checkConst(node *a.Node) error {
 			}
 		}
 		c.topLevelNames[qid[1]] = a.KConst
+	} else if c.consts[qid] != nil {
+		return &Error{
+			Err:      fmt.Errorf("check: duplicate top level %q", qid.Str(c.tm)),
+			Filename: n.Filename(),
+			Line:     n.Line(),
+		}
 	}
 	c.consts[qid] = n
 
@@ -417,15 +403,6 @@ func (c *Checker) checkConstElement(n *a.Expr, nb bounds, nLists int) error {
 func (c *Checker) checkStructDecl(node *a.Node) error {
 	n := node.AsStruct()
 	qid := n.QID()
-	if other, ok := c.structs[qid]; ok {
-		return &Error{
-			Err:           fmt.Errorf("check: duplicate struct %s", qid.Str(c.tm)),
-			Filename:      n.Filename(),
-			Line:          n.Line(),
-			OtherFilename: other.Filename(),
-			OtherLine:     other.Line(),
-		}
-	}
 	if qid[0] == 0 {
 		if c.topLevelNames[qid[1]] != 0 {
 			return &Error{
@@ -435,6 +412,12 @@ func (c *Checker) checkStructDecl(node *a.Node) error {
 			}
 		}
 		c.topLevelNames[qid[1]] = a.KStruct
+	} else if c.structs[qid] != nil {
+		return &Error{
+			Err:      fmt.Errorf("check: duplicate top level name %q", qid.Str(c.tm)),
+			Filename: n.Filename(),
+			Line:     n.Line(),
+		}
 	}
 	c.structs[qid] = n
 	c.unsortedStructs = append(c.unsortedStructs, n)
@@ -583,13 +566,11 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 	// implicit "return out"?
 
 	qqid := n.QQID()
-	if other, ok := c.funcs[qqid]; ok {
+	if c.funcs[qqid] != nil {
 		return &Error{
-			Err:           fmt.Errorf("check: duplicate function %s", qqid.Str(c.tm)),
-			Filename:      n.Filename(),
-			Line:          n.Line(),
-			OtherFilename: other.Filename(),
-			OtherLine:     other.Line(),
+			Err:      fmt.Errorf("check: duplicate top level name %q", qqid.Str(c.tm)),
+			Filename: n.Filename(),
+			Line:     n.Line(),
 		}
 	}
 	c.funcs[qqid] = n
