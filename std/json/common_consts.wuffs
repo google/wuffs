@@ -219,6 +219,30 @@ pri const CLASS_TRUE                 : base.u8 = 0x0A
 pri const CLASS_NULL_NAN_INF         : base.u8 = 0x0B
 pri const CLASS_COMMENT              : base.u8 = 0x0C
 
+// EXPECT_ETC are unions of LUT_CLASSES bitmasks. See LUT_CLASSES below.
+//
+// Bitwise or'ing these together gives 0x1FFE. Whitespace is never expected, as
+// it is handled separately.
+//
+// EXPECT_VALUE is also defined to be 0x1EB2, equivalent to (EXPECT_STRING |
+// EXPECT_NON_STRING_VALUE).
+//
+// "Non-string value" includes literals (false, true, null), numbers, arrays
+// and objects.
+//
+// "String value" includes "this" and "th\u0061t".
+//
+// Comments are always expected. Whether the relevant quirks are enabled are
+// checked elsewhere.
+pri const EXPECT_VALUE                : base.u32 = 0x1EB2
+pri const EXPECT_NON_STRING_VALUE     : base.u32 = 0x1EB0
+pri const EXPECT_STRING               : base.u32 = 0x1002
+pri const EXPECT_COMMA                : base.u32 = 0x1004
+pri const EXPECT_COLON                : base.u32 = 0x1008
+pri const EXPECT_NUMBER               : base.u32 = 0x1010
+pri const EXPECT_CLOSE_CURLY_BRACE    : base.u32 = 0x1040
+pri const EXPECT_CLOSE_SQUARE_BRACKET : base.u32 = 0x1100
+
 // LUT_CLASSES is:
 //  - 0x00 (bitmask 0x0001) is CLASS_WHITESPACE.
 //  - 0x01 (bitmask 0x0002) is CLASS_STRING.
@@ -238,31 +262,7 @@ pri const CLASS_COMMENT              : base.u8 = 0x0C
 //  - 0x0F (bitmask 0x8000) is CLASS_BAD_INPUT.
 //
 // The bitmasks are used by the "expect" variable: what the next character
-// class can be.
-//
-//  - 0x1002 is EXPECT_STRING.
-//  - 0x1EB0 is EXPECT_NON_STRING_VALUE.
-//  - 0x1004 is EXPECT_COMMA.
-//  - 0x1008 is EXPECT_COLON.
-//  - 0x1040 is EXPECT_CLOSE_CURLY_BRACE.
-//  - 0x1100 is EXPECT_CLOSE_SQUARE_BRACKET.
-//
-// Bitwise or'ing these together gives 0x0FFE. Whitespace is never expected, as
-// it is handled separately.
-//
-// EXPECT_VALUE is also defined to be 0x1EB2, equivalent to (EXPECT_STRING |
-// EXPECT_NON_STRING_VALUE).
-//
-// EXPECT_NUMBER is also defined to be 0x1010. Testing for EXPECT_NUMBER's
-// presence is equivalent to testing for EXPECT_NON_STRING_VALUE.
-//
-// "Non-string value" includes literals (false, true, null), numbers, arrays
-// and objects.
-//
-// "String value" includes "this" and "th\u0061t".
-//
-// Comments are always expected. Whether the relevant quirks are enabled are
-// checked elsewhere.
+// class can be. See EXPECT_ETC above.
 pri const LUT_CLASSES : array[256] base.u8[..= 0x0F] = [
 	// 0     1     2     3     4     5     6     7
 	// 8     9     A     B     C     D     E     F
