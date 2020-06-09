@@ -18,24 +18,29 @@
 //
 // It is similar in concept to pretty-printers like `indent` or `clang-format`.
 // It is much dumber (it will not add line breaks or otherwise re-flow lines of
-// code just to fit within an 80 character limit) but it can therefore be much
+// code just to fit within an 80 column limit) but it can therefore be much
 // faster at the basic task of automatically indenting nested blocks. The
 // output isn't 'perfect', but it's usually sufficiently readable if the input
 // already has sensible line breaks.
 //
 // To quantify "much faster", on this one C file, `cmd/dumbindent` in this
-// repository was 80 times faster than `clang-format`:
+// repository was 80 times faster than `clang-format`, even without a column
+// limit:
 //
 //     $ wc release/c/wuffs-v0.2.c
 //      11858  35980 431885 release/c/wuffs-v0.2.c
-//     $ time clang-format-9 < release/c/wuffs-v0.2.c > /dev/null
-//     real    0m0.677s
-//     user    0m0.620s
-//     sys     0m0.040s
-//     $ time dumbindent     < release/c/wuffs-v0.2.c > /dev/null
+//     $ time dumbindent                               < release/c/wuffs-v0.2.c > /dev/null
 //     real    0m0.008s
 //     user    0m0.005s
 //     sys     0m0.005s
+//     $ time clang-format-9                           < release/c/wuffs-v0.2.c > /dev/null
+//     real    0m0.668s
+//     user    0m0.618s
+//     sys     0m0.032s
+//     $ time clang-format-9 -style='{ColumnLimit: 0}' < release/c/wuffs-v0.2.c > /dev/null
+//     real    0m0.641s
+//     user    0m0.585s
+//     sys     0m0.037s
 //
 // Apart from some rare and largely uninteresting exceptions, the dumbindent
 // algorithm only considers:
