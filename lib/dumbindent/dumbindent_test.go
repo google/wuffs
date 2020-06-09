@@ -79,6 +79,14 @@ func TestFormatBytes(tt *testing.T) {
 		// Namespaces.
 		src:  "namespace A {\nint f() {\nreturn 0;\n}\n}\n",
 		want: "namespace A {\nint f() {\n  return 0;\n}\n}\n",
+	}, {
+		// No break between "{" and "//".
+		src:  "if (b) {  // Blah.\nreturn;\n",
+		want: "if (b) {  // Blah.\n  return;\n",
+	}, {
+		// Simple compound literal.
+		src:  "T x = {0};",
+		want: "T x = {0};\n",
 	}}
 
 	for i, tc := range testCases {

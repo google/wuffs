@@ -265,16 +265,14 @@ outer:
 				switch c {
 				case '{':
 					nBraces++
-					if l := lastNonWhiteSpace(line[:i]); (l != '=') && (l != ':') {
-						if breakAfterBrace(line[i+1:]) {
-							dst = append(dst, line[:i+1]...)
-							dst = append(dst, '\n')
-							restOfLine := line[i+1:]
-							remaining = src[lineLength-len(restOfLine):]
-							openBrace = true
-							hanging = false
-							continue outer
-						}
+					if breakAfterBrace(line[i+1:]) {
+						dst = append(dst, line[:i+1]...)
+						dst = append(dst, '\n')
+						restOfLine := line[i+1:]
+						remaining = src[lineLength-len(restOfLine):]
+						openBrace = true
+						hanging = false
+						continue outer
 					}
 				case '}':
 					nBraces--
@@ -410,19 +408,44 @@ func handleRaw(dst []byte, restOfSrc []byte, endQuote []byte) (retDst []byte, li
 	return dst, line, remaining
 }
 
-// breakAfterBrace returns whether the first non-space non-tab byte of s (if
-// any) does not look like a comment or another open-brace.
+// breakAfterBrace returns whether s starts with a slash-slash comment or with
+// the rest of a "0}" or ".a=1, .b=2}" literal, including the matching "}".
+//
+// This implementation isn't perfect, but it's good enough in practice.
 func breakAfterBrace(s []byte) bool {
-	for _, c := range s {
-		if (c != ' ') && (c != '\t') {
-			return (c != '/') && (c != '{')
+	s = trimLeadingWhiteSpace(s)
+	if len(s) == 0 {
+		return false
+	} else if (len(s) > 1) && (s[0] == '/') && (s[1] == '/') {
+		return false
+	}
+
+	n := 1
+	for i, c := range s {
+		switch c {
+		case ';':
+			return true
+		case '{':
+			n++
+		case '}':
+			n--
+			if n == 0 {
+				return false
+			}
+		case '/':
+			if (i + 1) < len(s) {
+				switch s[i+1] {
+				case '/', '*':
+					return true
+				}
+			}
 		}
 	}
-	return false
+	return true
 }
 
-// breakAfterBrace returns whether the first non-space non-tab byte of s (if
-// any) does not look like a comment.
+// breakAfterSemicolon returns whether the first non-space non-tab byte of s
+// (if any) does not look like a comment.
 func breakAfterSemicolon(s []byte) bool {
 	for _, c := range s {
 		if (c != ' ') && (c != '\t') {
