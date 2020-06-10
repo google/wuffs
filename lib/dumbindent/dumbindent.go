@@ -118,7 +118,7 @@ import (
 // 'Constants', but their type is []byte, not string.
 var (
 	backTick  = []byte("`")
-	externC   = []byte("extern \"C\" {")
+	extern    = []byte("extern ")
 	namespace = []byte("namespace ")
 	starSlash = []byte("*/")
 
@@ -177,6 +177,7 @@ func FormatBytes(dst []byte, src []byte, opts *Options) []byte {
 	nBraces := 0     // The number of unbalanced '{'s.
 	nParens := 0     // The number of unbalanced '('s.
 	hanging := false // Whether the previous non-blank line ends with '=' or '\\'.
+	preproc := false // Whether we're in a #preprocessor line.
 
 	for line, remaining := src, []byte(nil); len(src) > 0; src = remaining {
 		src = trimLeadingWhiteSpace(src)
@@ -200,34 +201,38 @@ func FormatBytes(dst []byte, src []byte, opts *Options) []byte {
 			nBlankLines = 0
 		}
 
-		// Preprocessor lines (#ifdef, #pragma, etc) are never indented.
-		//
-		// Also catch `extern "C" {` and `namespace foo {`.
-		if (line[0] == '#') ||
-			((line[0] == 'e') && bytes.HasPrefix(line, externC)) ||
-			((line[0] == 'n') && bytes.HasPrefix(line, namespace)) {
+		// Handle preprocessor lines (#ifdef, #pragma, etc).
+		if preproc || (line[0] == '#') {
+			if preproc {
+				dst = appendRepeatedBytes(dst, indentBytes, indentCount*2)
+			}
 			line = trimTrailingWhiteSpace(line)
 			dst = append(dst, line...)
 			dst = append(dst, '\n')
-			hanging = lastNonWhiteSpace(line) == '\\'
+			hanging = false
+			preproc = lastNonWhiteSpace(line) == '\\'
 			continue
 		}
 
-		// Account for leading '}'s before we print the line's indentation.
 		closeBraces := 0
-		for ; (closeBraces < len(line)) && line[closeBraces] == '}'; closeBraces++ {
-		}
-		nBraces -= closeBraces
 
-		// The heuristics aren't perfect, and sometimes do not catch braces or
-		// parentheses in #define macros. They also don't increment nBraces for
-		// `extern "C"` or namespace lines. We work around that here, clamping
-		// to zero.
-		if nBraces < 0 {
-			nBraces = 0
-		}
-		if nParens < 0 {
-			nParens = 0
+		// Don't indent for `extern "C" {` or `namespace foo {`.
+		if ((line[0] == 'e') && hasPrefixAndBrace(line, extern)) ||
+			((line[0] == 'n') && hasPrefixAndBrace(line, namespace)) {
+			nBraces--
+
+		} else {
+			// Account for leading '}'s before we print the line's indentation.
+			for ; (closeBraces < len(line)) && line[closeBraces] == '}'; closeBraces++ {
+			}
+			nBraces -= closeBraces
+
+			// Because the "{" in "extern .*{" and "namespace .*{" is had no
+			// net effect on nBraces, the matching "}" can cause the nBraces
+			// count to dip below zero. Correct for that here.
+			if nBraces < 0 {
+				nBraces = 0
+			}
 		}
 
 		// Output a certain number of spaces to roughly approximate
@@ -306,6 +311,13 @@ func FormatBytes(dst []byte, src []byte, opts *Options) []byte {
 		dst = append(dst, "\n"...)
 	}
 	return dst
+}
+
+// hasPrefixAndBrace returns whether line starts with prefix and after that
+// contains a '{'.
+func hasPrefixAndBrace(line []byte, prefix []byte) bool {
+	return bytes.HasPrefix(line, prefix) &&
+		bytes.IndexByte(line[len(prefix):], '{') >= 0
 }
 
 // trimLeadingWhiteSpaceAndNewLines converts "\t\n  foo bar " to "foo bar ".
