@@ -17,11 +17,11 @@
 // Package dumbindent formats C (and C-like) programs.
 //
 // It is similar in concept to pretty-printers like `indent` or `clang-format`.
-// It is much dumber (it will not add line breaks or otherwise re-flow lines of
-// code just to fit within an 80 column limit) but it can therefore be much
-// faster at the basic task of automatically indenting nested blocks. The
-// output isn't 'perfect', but it's usually sufficiently readable if the input
-// already has sensible line breaks.
+// It is much dumber (it will not add or remove line breaks or otherwise
+// re-flow lines of code just to fit within an 80 column limit) but it can
+// therefore be much faster at the basic task of automatically indenting nested
+// blocks. The output isn't 'perfect', but it's usually sufficiently readable
+// if the input already has sensible line breaks.
 //
 // To quantify "much faster", on this one C file, `cmd/dumbindent` in this
 // repository was 80 times faster than `clang-format`, even without a column
@@ -47,15 +47,15 @@
 //
 //   ∙ '{' and '}' curly braces,
 //   ∙ '(' and ')' round parentheses,
-//   ∙ ';' semi-colons (if they're not within parentheses),
-//   ∙ strings, comments and preprocessor directives,
-//   ∙ '\n' line breaks, and
-//   ∙ ' ' spaces and '\t' tabs adjacent to any of the above.
+//   ∙ '\n' line breaks,
+//   ∙ ' ' spaces and '\t' tabs that start or end a line, and
+//   ∙ strings, comments and preprocessor directives (in order to ignore any of
+//     the above special characters within them),
 //
 // Everything else is an opaque byte. Consider this input:
 //
 //     for (i = 0; i < 3; i++) {
-//     j = 0; j++;  // Semi-colons not within parentheses.
+//     j = 0;  // Ignore { in a comment.
 //     if (i < j) { foo(); }
 //     u = (v +
 //     w);
@@ -63,42 +63,42 @@
 //
 // From the algorithm's point of view, this input is equivalent to:
 //
-//     ... (.................) {
-//     .....; ...;  //....................................
-//     .. (.....) { ...(); }
-//     ... (...
+//     ....(.................).{
+//     .................................
+//     ...(.....).{....()..}
+//     ....(...
 //     .);
 //     }
 //
 // The formatted output (using the default of 2 spaces per indent level) is:
 //
-//     ... (.................) {
-//       .....;
-//       ...;  //....................................
-//       .. (.....) {
-//         ...();
-//       }
-//       ... (...
+//     ....(.................).{
+//       .................................
+//       ...(.....).{....()..}
+//       ....(...
 //           .);
 //     }
 //
-// Line breaks are generally forced after semi-colons (outside of a for loop's
-// triple expressions) and open-braces. Each output line is then indented
-// according to the net number of open braces preceding it, although lines
-// starting with close braces will outdent first, similar to `gofmt` style. A
-// line whose start is inside a so-far-unbalanced open parenthesis, such as the
-// "w);" line above, gets 2 additional indent levels.
+// Dumbindent adjusts lines horizontally (indenting) but not vertically (it
+// does not break or un-break lines, or collapse consecutive blank lines),
+// although it will remove blank lines at the end of the input. In the example
+// above, it will not remove the "\n" between "u = (v +" and "w);", even though
+// both lines are short.
 //
-// Dumbindent will remove some superfluous blank lines, but it will not remove
-// line breaks between consecutive non-empty lines, such as between "u = (v +"
-// and "w);" in the example above.
+// Each output line is indented according to the net number of open braces
+// preceding it, although lines starting with close braces will outdent first,
+// similar to `gofmt` style. A line which starts ins a so-far-unbalanced open
+// parenthesis, such as the "w);" line above, gets 2 additional indent levels.
 //
-// Dumbindent does not parse the input as C/C++ source code. In particular, the
-// algorithm has no interest in solving C++'s "most vexing parse" or
-// determining whether "x*y" is a multiplication or a type definition (where
-// "x" is a type and "y" is a pointer-typed variable, such as "int*p"). For a
-// type definition, where other formatting algorithms would re-write around the
-// "*" as either "x* y" or "x *y", dumbindent will not insert spaces.
+// Horizontal adjustment only affects a line's leading white space (and will
+// trim trailing white space). It does not affect white space within a line.
+// Dumbindent does not parse the input as C/C++ source code.
+//
+// In particular, the algorithm does not solve C++'s "most vexing parse" or
+// otherwise determine whether "x*y" is a multiplication or a type definition
+// (where y is a pointer-to-x typed variable, such as "int*p"). For a type
+// definition, where other formatting algorithms would re-write around the "*"
+// as either "x* y" or "x *y", dumbindent will not insert spaces.
 //
 // Similarly, dumbindent will not correct this mis-indentation:
 //
@@ -178,7 +178,6 @@ func FormatBytes(dst []byte, src []byte, opts *Options) []byte {
 	nParens := 0     // The number of unbalanced '('s.
 	hanging := false // Whether the previous non-blank line ends with '=' or '\\'.
 
-outer:
 	for line, remaining := src, []byte(nil); len(src) > 0; src = remaining {
 		src = trimLeadingWhiteSpace(src)
 		line, remaining = src, nil
@@ -231,8 +230,8 @@ outer:
 			nParens = 0
 		}
 
-		// Output a certain number of spaces to rougly approximate the
-		// "clang-format -style=Chromium" indentation style.
+		// Output a certain number of spaces to roughly approximate
+		// clang-format's default indentation style.
 		indent := 0
 		if nBraces > 0 {
 			indent += indentCount * nBraces
@@ -249,36 +248,18 @@ outer:
 		// Adjust the state according to the braces and parentheses within the
 		// line (except for those in comments and strings).
 		last := lastNonWhiteSpace(line)
-	inner:
+	loop:
 		for {
 			for i, c := range line {
 				switch c {
 				case '{':
 					nBraces++
-					if breakAfterBrace(line[i+1:]) {
-						dst = append(dst, line[:i+1]...)
-						dst = append(dst, '\n')
-						restOfLine := line[i+1:]
-						remaining = src[lineLength-len(restOfLine):]
-						hanging = false
-						continue outer
-					}
 				case '}':
 					nBraces--
 				case '(':
 					nParens++
 				case ')':
 					nParens--
-
-				case ';':
-					if (nParens == 0) && (breakAfterSemicolon(line[i+1:])) {
-						dst = append(dst, line[:i+1]...)
-						dst = append(dst, '\n')
-						restOfLine := line[i+1:]
-						remaining = src[lineLength-len(restOfLine):]
-						hanging = false
-						continue outer
-					}
 
 				case '/':
 					if (i + 1) >= len(line) {
@@ -287,7 +268,7 @@ outer:
 					if line[i+1] == '/' {
 						// A slash-slash comment. Skip the rest of the line.
 						last = lastNonWhiteSpace(line[:i])
-						break inner
+						break loop
 					} else if line[i+1] == '*' {
 						// A slash-star comment.
 						dst = append(dst, line[:i+2]...)
@@ -295,7 +276,7 @@ outer:
 						restOfSrc := src[lineLength-len(restOfLine):]
 						dst, line, remaining = handleRaw(dst, restOfSrc, starSlash)
 						last = lastNonWhiteSpace(line)
-						continue inner
+						continue loop
 					}
 
 				case '"', '\'':
@@ -303,7 +284,7 @@ outer:
 					suffix := skipCooked(line[i+1:], c)
 					dst = append(dst, line[:len(line)-len(suffix)]...)
 					line = suffix
-					continue inner
+					continue loop
 
 				case '`':
 					// A raw string.
@@ -312,10 +293,10 @@ outer:
 					restOfSrc := src[lineLength-len(restOfLine):]
 					dst, line, remaining = handleRaw(dst, restOfSrc, backTick)
 					last = lastNonWhiteSpace(line)
-					continue inner
+					continue loop
 				}
 			}
-			break inner
+			break loop
 		}
 		hanging = hangingBytes[last]
 
@@ -407,51 +388,4 @@ func handleRaw(dst []byte, restOfSrc []byte, endQuote []byte) (retDst []byte, li
 		line, remaining = line[:i], line[i+1:]
 	}
 	return dst, line, remaining
-}
-
-// breakAfterBrace returns whether s starts with a slash-slash comment or with
-// the rest of a "0}" or ".a=1, .b=2}" literal, including the matching "}".
-//
-// This implementation isn't perfect, but it's good enough in practice.
-func breakAfterBrace(s []byte) bool {
-	s = trimLeadingWhiteSpace(s)
-	if len(s) == 0 {
-		return false
-	} else if (len(s) > 1) && (s[0] == '/') && (s[1] == '/') {
-		return false
-	}
-
-	n := 1
-	for i, c := range s {
-		switch c {
-		case ';':
-			return true
-		case '{':
-			n++
-		case '}':
-			n--
-			if n == 0 {
-				return false
-			}
-		case '/':
-			if (i + 1) < len(s) {
-				switch s[i+1] {
-				case '/', '*':
-					return true
-				}
-			}
-		}
-	}
-	return true
-}
-
-// breakAfterSemicolon returns whether the first non-space non-tab byte of s
-// (if any) does not look like a comment.
-func breakAfterSemicolon(s []byte) bool {
-	for _, c := range s {
-		if (c != ' ') && (c != '\t') {
-			return c != '/'
-		}
-	}
-	return false
 }

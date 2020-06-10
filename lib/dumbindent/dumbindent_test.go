@@ -68,9 +68,9 @@ func TestFormatBytes(tt *testing.T) {
 		src:  "if (b) {\nlabel:\nswitch (i) {\ncase 0:\nj = k\nbreak;\n}\n}\n",
 		want: "if (b) {\n  label:\n  switch (i) {\n    case 0:\n    j = k\n    break;\n  }\n}\n",
 	}, {
-		// Inserted line breaks.
+		// One-liner if statement.
 		src:  "if (x) { goto fail; }\n",
-		want: "if (x) {\n  goto fail;\n}\n",
+		want: "if (x) { goto fail; }\n",
 	}, {
 		// Leading blank lines.
 		src:  "\n\n\n  x = y;",
@@ -108,7 +108,7 @@ func TestTabs(tt *testing.T) {
 func ExampleFormatBytes() {
 	const src = `
 for (i = 0; i < 3; i++) {
-j = 0; j++;  // Semi-colons not within parentheses.
+j = 0;  // Ignore { in a comment.
 if (i < j) { foo(); }
 u = (v +
 w);
@@ -119,11 +119,8 @@ w);
 
 	// Output:
 	// for (i = 0; i < 3; i++) {
-	//   j = 0;
-	//   j++;  // Semi-colons not within parentheses.
-	//   if (i < j) {
-	//     foo();
-	//   }
+	//   j = 0;  // Ignore { in a comment.
+	//   if (i < j) { foo(); }
 	//   u = (v +
 	//       w);
 	// }

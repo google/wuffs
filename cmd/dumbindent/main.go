@@ -26,11 +26,11 @@
 // default is 2 spaces per indent level.
 //
 // It is similar in concept to pretty-printers like `indent` or `clang-format`.
-// It is much dumber (it will not add line breaks or otherwise re-flow lines of
-// code just to fit within an 80 column limit) but it can therefore be much
-// faster at the basic task of automatically indenting nested blocks. The
-// output isn't 'perfect', but it's usually sufficiently readable if the input
-// already has sensible line breaks.
+// It is much dumber (it will not add or remove line breaks or otherwise
+// re-flow lines of code just to fit within an 80 column limit) but it can
+// therefore be much faster at the basic task of automatically indenting nested
+// blocks. The output isn't 'perfect', but it's usually sufficiently readable
+// if the input already has sensible line breaks.
 //
 // To quantify "much faster", on this one C file, this program was 80 times
 // faster than `clang-format`, even without a column limit:
