@@ -46,7 +46,7 @@ func TestFormatBytes(tt *testing.T) {
 	}, {
 		// Consecutive blank lines.
 		src:  "f {\n\n\ng;\n\n\nh;\n\n\n}\n\n",
-		want: "f {\n  g;\n\n\n  h;\n}\n",
+		want: "f {\n\n\n  g;\n\n\n  h;\n\n\n}\n",
 	}, {
 		// Single-quote string.
 		src:  "a = '{'\nb = {\nc = 0\n",

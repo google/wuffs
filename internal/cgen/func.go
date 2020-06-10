@@ -334,6 +334,8 @@ func writeFuncImplSelfMagicCheck(b *buffer, tm *t.Map, f *a.Func) error {
 }
 
 func (g *gen) writeFuncImplPrologue(b *buffer) error {
+	oldLenB := len(*b)
+
 	// Check the initialized/disabled state and the "self" arg.
 	if g.currFunk.astFunc.Public() && !g.currFunk.astFunc.Receiver().IsZero() {
 		if err := writeFuncImplSelfMagicCheck(b, g.tm, g.currFunk.astFunc); err != nil {
@@ -365,10 +367,13 @@ func (g *gen) writeFuncImplPrologue(b *buffer) error {
 		// TODO: rename the "status" variable to "ret"?
 		b.printf("wuffs_base__status status = wuffs_base__make_status(NULL);\n")
 	}
-	b.writes("\n")
+
+	if oldLenB != len(*b) {
+		b.writes("\n")
+	}
 
 	// Generate the local variables.
-	oldLenB := len(*b)
+	oldLenB = len(*b)
 	if err := g.writeVars(b, &g.currFunk, false); err != nil {
 		return err
 	}

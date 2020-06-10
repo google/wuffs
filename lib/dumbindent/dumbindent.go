@@ -173,11 +173,10 @@ func FormatBytes(dst []byte, src []byte, opts *Options) []byte {
 		}
 	}
 
-	nBlankLines := 0   // The number of preceding blank lines.
-	nBraces := 0       // The number of unbalanced '{'s.
-	nParens := 0       // The number of unbalanced '('s.
-	openBrace := false // Whether the previous non-blank line ends with '{'.
-	hanging := false   // Whether the previous non-blank line ends with '=' or '\\'.
+	nBlankLines := 0 // The number of preceding blank lines.
+	nBraces := 0     // The number of unbalanced '{'s.
+	nParens := 0     // The number of unbalanced '('s.
+	hanging := false // Whether the previous non-blank line ends with '=' or '\\'.
 
 outer:
 	for line, remaining := src, []byte(nil); len(src) > 0; src = remaining {
@@ -198,9 +197,7 @@ outer:
 			continue
 		}
 		if nBlankLines > 0 {
-			if !openBrace && (line[0] != '}') {
-				dst = appendRepeatedBytes(dst, newLines, nBlankLines)
-			}
+			dst = appendRepeatedBytes(dst, newLines, nBlankLines)
 			nBlankLines = 0
 		}
 
@@ -213,7 +210,6 @@ outer:
 			line = trimTrailingWhiteSpace(line)
 			dst = append(dst, line...)
 			dst = append(dst, '\n')
-			openBrace = false
 			hanging = lastNonWhiteSpace(line) == '\\'
 			continue
 		}
@@ -264,7 +260,6 @@ outer:
 						dst = append(dst, '\n')
 						restOfLine := line[i+1:]
 						remaining = src[lineLength-len(restOfLine):]
-						openBrace = true
 						hanging = false
 						continue outer
 					}
@@ -281,7 +276,6 @@ outer:
 						dst = append(dst, '\n')
 						restOfLine := line[i+1:]
 						remaining = src[lineLength-len(restOfLine):]
-						openBrace = false
 						hanging = false
 						continue outer
 					}
@@ -323,7 +317,6 @@ outer:
 			}
 			break inner
 		}
-		openBrace = last == '{'
 		hanging = hangingBytes[last]
 
 		// Output the line (minus any trailing space).

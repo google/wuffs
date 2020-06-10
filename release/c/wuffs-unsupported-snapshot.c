@@ -4192,7 +4192,6 @@ struct wuffs_base__hasher_u32__struct {
   }
 
 #endif  // __cplusplus
-
 };  // struct wuffs_base__hasher_u32__struct
 
 #endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
@@ -4414,7 +4413,6 @@ struct wuffs_base__image_decoder__struct {
   }
 
 #endif  // __cplusplus
-
 };  // struct wuffs_base__image_decoder__struct
 
 #endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
@@ -4493,7 +4491,6 @@ struct wuffs_base__io_transformer__struct {
   }
 
 #endif  // __cplusplus
-
 };  // struct wuffs_base__io_transformer__struct
 
 #endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
@@ -4572,7 +4569,6 @@ struct wuffs_base__token_decoder__struct {
   }
 
 #endif  // __cplusplus
-
 };  // struct wuffs_base__token_decoder__struct
 
 #endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)

@@ -428,8 +428,7 @@ func insertInterfaceDeclarations(buf *buffer) error {
 			}
 			buf.writes(");\n  }\n\n")
 		}
-		buf.writes("#endif  // __cplusplus\n\n")
-
+		buf.writes("#endif  // __cplusplus\n")
 		buf.printf("};  // struct wuffs_base__%s__struct\n\n", n)
 
 		buf.writes("#endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)\n")
@@ -1046,7 +1045,7 @@ func (g *gen) writeStructPrivateImpl(b *buffer, n *a.Struct) error {
 	}
 
 	if n.Classy() {
-		b.writeb('\n')
+		needEmptyLine := true
 		for _, file := range g.files {
 			for _, tld := range file.TopLevelDecls() {
 				if tld.Kind() != a.KFunc {
@@ -1061,6 +1060,10 @@ func (g *gen) writeStructPrivateImpl(b *buffer, n *a.Struct) error {
 					continue
 				}
 
+				if needEmptyLine {
+					needEmptyLine = false
+					b.writeb('\n')
+				}
 				b.printf("uint32_t %s%s[%d];\n", pPrefix, o.FuncName().Str(g.tm), maxDepth)
 			}
 		}
@@ -1083,10 +1086,8 @@ func (g *gen) writeStructPrivateImpl(b *buffer, n *a.Struct) error {
 			}
 			b.writes(";\n")
 		}
-		if oldOuterLenB1 != len(*b) {
-			b.writeb('\n')
-		}
 
+		needEmptyLine := oldOuterLenB1 != len(*b)
 		for _, file := range g.files {
 			for _, tld := range file.TopLevelDecls() {
 				if tld.Kind() != a.KFunc {
@@ -1102,6 +1103,11 @@ func (g *gen) writeStructPrivateImpl(b *buffer, n *a.Struct) error {
 				}
 
 				oldInnerLenB0 := len(*b)
+				oldNeedEmptyLine := needEmptyLine
+				if needEmptyLine {
+					needEmptyLine = false
+					b.writeb('\n')
+				}
 				b.writes("struct {\n")
 				oldInnerLenB1 := len(*b)
 				if k.coroSuspPoint != 0 {
@@ -1116,6 +1122,7 @@ func (g *gen) writeStructPrivateImpl(b *buffer, n *a.Struct) error {
 					b.printf("} %s%s[%d];\n", sPrefix, o.FuncName().Str(g.tm), maxDepth)
 				} else {
 					*b = (*b)[:oldInnerLenB0]
+					needEmptyLine = oldNeedEmptyLine
 				}
 			}
 		}
@@ -1240,7 +1247,7 @@ func (g *gen) writeCppMethods(b *buffer, n *a.Struct) error {
 		}
 	}
 
-	b.writes("#endif  // __cplusplus\n\n")
+	b.writes("#endif  // __cplusplus\n")
 	return nil
 }
 
