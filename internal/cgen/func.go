@@ -368,10 +368,13 @@ func (g *gen) writeFuncImplPrologue(b *buffer) error {
 	b.writes("\n")
 
 	// Generate the local variables.
+	oldLenB := len(*b)
 	if err := g.writeVars(b, &g.currFunk, false); err != nil {
 		return err
 	}
-	b.writes("\n")
+	if oldLenB != len(*b) {
+		b.writes("\n")
+	}
 
 	if g.currFunk.derivedVars != nil {
 		for _, o := range g.currFunk.astFunc.In().Fields() {

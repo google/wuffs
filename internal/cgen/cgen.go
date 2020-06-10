@@ -679,13 +679,17 @@ func (g *gen) genHeader(b *buffer) error {
 
 	b.writes("// ---------------- Status Codes\n\n")
 
+	wroteStatus := false
 	for _, z := range g.statusList {
 		if !z.fromThisPkg || !z.public {
 			continue
 		}
 		b.printf("extern const char* %s;\n", z.cName)
+		wroteStatus = true
 	}
-	b.writes("\n")
+	if wroteStatus {
+		b.writes("\n")
+	}
 
 	b.writes("// ---------------- Public Consts\n\n")
 	if err := g.forEachConst(b, pubOnly, (*gen).writeConst); err != nil {
@@ -782,13 +786,17 @@ func (g *gen) genImpl(b *buffer) error {
 
 	b.writes("// ---------------- Status Codes Implementations\n\n")
 
+	wroteStatus := false
 	for _, z := range g.statusList {
 		if !z.fromThisPkg || z.msg == "" {
 			continue
 		}
 		b.printf("const char* %s = \"%s%s: %s\";\n", z.cName, z.msg[:1], g.pkgName, z.msg[1:])
+		wroteStatus = true
 	}
-	b.writes("\n")
+	if wroteStatus {
+		b.writes("\n")
+	}
 
 	b.writes("// ---------------- Private Consts\n\n")
 	if err := g.forEachConst(b, priOnly, (*gen).writeConst); err != nil {

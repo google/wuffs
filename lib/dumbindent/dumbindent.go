@@ -122,8 +122,9 @@ var (
 	namespace = []byte("namespace ")
 	starSlash = []byte("*/")
 
-	spaces = []byte("                                ")
-	tabs   = []byte("\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t")
+	newLines = []byte("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
+	spaces   = []byte("                                ")
+	tabs     = []byte("\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t")
 )
 
 // hangingBytes is a look-up table for updating the hanging variable.
@@ -172,11 +173,11 @@ func FormatBytes(dst []byte, src []byte, opts *Options) []byte {
 		}
 	}
 
+	nBlankLines := 0   // The number of preceding blank lines.
 	nBraces := 0       // The number of unbalanced '{'s.
 	nParens := 0       // The number of unbalanced '('s.
 	openBrace := false // Whether the previous non-blank line ends with '{'.
 	hanging := false   // Whether the previous non-blank line ends with '=' or '\\'.
-	blankLine := false // Whether the previous line was blank.
 
 outer:
 	for line, remaining := src, []byte(nil); len(src) > 0; src = remaining {
@@ -193,14 +194,14 @@ outer:
 		//  - immediately before a '}',
 		//  - at the end of file.
 		if len(line) == 0 {
-			blankLine = true
+			nBlankLines++
 			continue
 		}
-		if blankLine {
-			blankLine = false
+		if nBlankLines > 0 {
 			if !openBrace && (line[0] != '}') {
-				dst = append(dst, '\n')
+				dst = appendRepeatedBytes(dst, newLines, nBlankLines)
 			}
+			nBlankLines = 0
 		}
 
 		// Preprocessor lines (#ifdef, #pragma, etc) are never indented.
@@ -243,14 +244,7 @@ outer:
 		if (nParens > 0) || hanging {
 			indent += indentCount * 2
 		}
-		for indent > 0 {
-			n := indent
-			if n > len(indentBytes) {
-				n = len(indentBytes)
-			}
-			dst = append(dst, indentBytes[:n]...)
-			indent -= n
-		}
+		dst = appendRepeatedBytes(dst, indentBytes, indent)
 
 		// Output the leading '}'s.
 		dst = append(dst, line[:closeBraces]...)
@@ -362,6 +356,20 @@ func trimTrailingWhiteSpace(s []byte) []byte {
 		s = s[:len(s)-1]
 	}
 	return s
+}
+
+// appendRepeatedBytes appends number copies of a byte, assuming that
+// repeatedBytes' elements are all the same byte.
+func appendRepeatedBytes(dst []byte, repeatedBytes []byte, number int) []byte {
+	for number > 0 {
+		n := number
+		if n > len(repeatedBytes) {
+			n = len(repeatedBytes)
+		}
+		dst = append(dst, repeatedBytes[:n]...)
+		number -= n
+	}
+	return dst
 }
 
 // lastNonWhiteSpace returns the 'z' in "abc xyz  ". It returns '\x00' if s

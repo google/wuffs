@@ -44,9 +44,9 @@ func TestFormatBytes(tt *testing.T) {
 		src:  "int x = // comm.\ny;\n",
 		want: "int x = // comm.\n    y;\n",
 	}, {
-		// Most blank lines should be dropped.
+		// Consecutive blank lines.
 		src:  "f {\n\n\ng;\n\n\nh;\n\n\n}\n\n",
-		want: "f {\n  g;\n\n  h;\n}\n",
+		want: "f {\n  g;\n\n\n  h;\n}\n",
 	}, {
 		// Single-quote string.
 		src:  "a = '{'\nb = {\nc = 0\n",
