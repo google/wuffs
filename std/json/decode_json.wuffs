@@ -1621,7 +1621,7 @@ pri func decoder.decode_inf_nan?(dst: base.token_writer, src: base.io_reader) {
 					args.dst.write_simple_token_fast!(
 						value_major: 0,
 						value_minor: (base.TOKEN__VBC__NUMBER << 21) |
-						((base.TOKEN__VBD__NUMBER__CONTENT_POS_INF as base.u32) >> neg),
+						(base.TOKEN__VBD__NUMBER__CONTENT_POS_INF >> neg),
 						continued: 0,
 						length: 9)
 					args.src.skip_u32_fast!(actual: 9, worst_case: 9)
@@ -1634,7 +1634,7 @@ pri func decoder.decode_inf_nan?(dst: base.token_writer, src: base.io_reader) {
 			args.dst.write_simple_token_fast!(
 				value_major: 0,
 				value_minor: (base.TOKEN__VBC__NUMBER << 21) |
-				((base.TOKEN__VBD__NUMBER__CONTENT_POS_INF as base.u32) >> neg),
+				(base.TOKEN__VBD__NUMBER__CONTENT_POS_INF >> neg),
 				continued: 0,
 				length: 4)
 			args.src.skip_u32_fast!(actual: 4, worst_case: 4)
@@ -1644,7 +1644,7 @@ pri func decoder.decode_inf_nan?(dst: base.token_writer, src: base.io_reader) {
 			args.dst.write_simple_token_fast!(
 				value_major: 0,
 				value_minor: (base.TOKEN__VBC__NUMBER << 21) |
-				((base.TOKEN__VBD__NUMBER__CONTENT_POS_NAN as base.u32) >> neg),
+				(base.TOKEN__VBD__NUMBER__CONTENT_POS_NAN >> neg),
 				continued: 0,
 				length: 4)
 			args.src.skip_u32_fast!(actual: 4, worst_case: 4)

@@ -257,7 +257,7 @@ func (g *gen) writeExprUnaryOp(b *buffer, n *a.Expr, depth uint32) error {
 }
 
 func (g *gen) writeExprBinaryOp(b *buffer, n *a.Expr, depth uint32) error {
-	opName := ""
+	opName, lhsCast := "", false
 
 	op := n.Operator()
 	switch op {
@@ -276,6 +276,12 @@ func (g *gen) writeExprBinaryOp(b *buffer, n *a.Expr, depth uint32) error {
 	case t.IDXBinaryAs:
 		return g.writeExprAs(b, n.LHS().AsExpr(), n.RHS().AsTypeExpr(), depth)
 
+	case t.IDXBinaryShiftL, t.IDXBinaryShiftR, t.IDXBinaryTildeModShiftL:
+		if lhs := n.LHS().AsExpr(); lhs.ConstValue() != nil {
+			lhsCast = true
+		}
+		fallthrough
+
 	default:
 		opName = cOpName(op)
 		if opName == "" {
@@ -284,13 +290,27 @@ func (g *gen) writeExprBinaryOp(b *buffer, n *a.Expr, depth uint32) error {
 	}
 
 	b.writeb('(')
+
+	if lhsCast {
+		b.writes("((")
+		if err := g.writeCTypeName(b, n.LHS().AsExpr().MType(), "", ""); err != nil {
+			return err
+		}
+		b.writes(")(")
+	}
 	if err := g.writeExprRepr(b, n.LHS().AsExpr(), depth); err != nil {
 		return err
 	}
+	if lhsCast {
+		b.writes("))")
+	}
+
 	b.writes(opName)
+
 	if err := g.writeExprRepr(b, n.RHS().AsExpr(), depth); err != nil {
 		return err
 	}
+
 	b.writeb(')')
 	return nil
 }
