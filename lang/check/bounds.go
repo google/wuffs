@@ -317,7 +317,7 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 		}
 
 		if lTyp.IsStatus() {
-			if v := n.Value(); v.Operator() == 0 {
+			if v := n.Value(); (v.Operator() == 0) || (v.Operator() == t.IDDot) {
 				if id := v.Ident(); (id != t.IDOk) && (q.hasIsErrorFact(id) || isErrorStatus(id, q.tm)) {
 					n.SetRetsError()
 				}

@@ -487,12 +487,10 @@ func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 		couldBeSuspension := false
 		if retExpr.MType().IsStatus() && !n.RetsError() {
 			couldBeSuspension = true
-			if retExpr.Operator() == 0 {
-				if id := retExpr.Ident(); id == t.IDOk {
-					couldBeSuspension = false
-				} else if s := g.tm.ByID(id); (len(s) > 1) && (s[0] == '"') {
-					couldBeSuspension = s[1] == '$'
-				}
+			if s := g.tm.ByID(retExpr.Ident()); (len(s) > 1) && (s[0] == '"') {
+				couldBeSuspension = s[1] == '$'
+			} else if (retExpr.Operator() == 0) && (retExpr.Ident() == t.IDOk) {
+				couldBeSuspension = false
 			}
 		}
 

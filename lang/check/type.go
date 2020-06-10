@@ -502,9 +502,12 @@ func (q *checker) tcheckExprXDotY(n *a.Expr, x t.ID, y t.ID) error {
 		n.SetMType(c.XType())
 		return nil
 	}
-	// TODO: look for other (global) names: consts, funcs, statuses,
-	// structs from used packages.
-	return fmt.Errorf("check: unrecognized identifier %q", qid.Str(q.tm))
+	if _, ok := q.c.statuses[t.QID{x, y}]; ok {
+		n.SetMType(typeExprStatus)
+		return nil
+	}
+	// TODO: look in q.c.structs.
+	return fmt.Errorf("check: unrecognized name %q", qid.Str(q.tm))
 }
 
 func (q *checker) tcheckExprCall(n *a.Expr, depth uint32) error {

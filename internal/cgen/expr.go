@@ -38,6 +38,8 @@ func (g *gen) writeExpr(b *buffer, n *a.Expr, depth uint32) error {
 			b.writes("NULL")
 		} else if typ.IsStatus() {
 			b.writes("wuffs_base__make_status(NULL)")
+		} else if !typ.IsBool() {
+			return fmt.Errorf("cannot generate C expression for %v constant of type %q", n.Str(g.tm), n.MType().Str(g.tm))
 		} else if cv.Cmp(zero) == 0 {
 			b.writes("false")
 		} else if cv.Cmp(one) == 0 {
@@ -79,9 +81,9 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, depth uint32) error {
 				b.writes("wuffs_base__make_status(")
 				b.writes(z.cName)
 				b.writes(")")
-			} else {
-				return fmt.Errorf("unrecognized status %s", n.StatusQID().Str(g.tm))
+				return nil
 			}
+			return fmt.Errorf("unrecognized status %s", n.StatusQID().Str(g.tm))
 
 		} else if c, ok := g.scalarConstsMap[t.QID{0, n.Ident()}]; ok {
 			b.writes(c.Value().ConstValue().String())
@@ -212,6 +214,14 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, depth uint32) error {
 			b.writes(aPrefix)
 			b.writes(n.Ident().Str(g.tm))
 			return nil
+		} else if (lhs.Operator() == 0) && n.Ident().IsDQStrLiteral(g.tm) {
+			if z := g.statusMap[t.QID{lhs.Ident(), n.Ident()}]; z.cName != "" {
+				b.writes("wuffs_base__make_status(")
+				b.writes(z.cName)
+				b.writes(")")
+				return nil
+			}
+			return fmt.Errorf("unrecognized status %s", n.Str(g.tm))
 		}
 
 		if err := g.writeExpr(b, lhs, depth); err != nil {
@@ -317,10 +327,16 @@ func (g *gen) writeExprBinaryOp(b *buffer, n *a.Expr, depth uint32) error {
 
 func (g *gen) writeExprRepr(b *buffer, n *a.Expr, depth uint32) error {
 	isStatus := n.MType().IsStatus()
-	if isStatus && (n.Operator() == 0) && n.Ident().IsDQStrLiteral(g.tm) {
-		if z := g.statusMap[n.StatusQID()]; z.cName != "" {
-			b.writes(z.cName)
-			return nil
+	if isStatus {
+		if op := n.Operator(); ((op == 0) || (op == t.IDDot)) && n.Ident().IsDQStrLiteral(g.tm) {
+			qid := t.QID{0, n.Ident()}
+			if op == t.IDDot {
+				qid[0] = n.LHS().AsExpr().Ident()
+			}
+			if z := g.statusMap[qid]; z.cName != "" {
+				b.writes(z.cName)
+				return nil
+			}
 		}
 	}
 	if err := g.writeExpr(b, n, depth); err != nil {

@@ -1355,22 +1355,14 @@ func (p *parser) parseOperand() (*a.Expr, error) {
 
 		case t.IDDot:
 			p.src = p.src[1:]
-
-			if x := p.peek1(); x.IsLiteral(p.tm) {
-				if !x.IsDQStrLiteral(p.tm) {
-					return nil, fmt.Errorf(`parse: dot followed by non-"-string literal at %s:%d`, p.filename, p.line())
-				}
-				if !first {
-					return nil, fmt.Errorf(`parse: "-string literal %s has too many package qualifiers at %s:%d`,
-						x.Str(p.tm), p.filename, p.line())
-				}
+			selector := p.peek1()
+			if first && selector.IsDQStrLiteral(p.tm) {
 				p.src = p.src[1:]
-				return a.NewExpr(0, 0, id, x, nil, nil, nil, nil), nil
-			}
-
-			selector, err := p.parseIdent()
-			if err != nil {
-				return nil, err
+			} else {
+				selector, err = p.parseIdent()
+				if err != nil {
+					return nil, err
+				}
 			}
 			lhs = a.NewExpr(0, t.IDDot, 0, selector, lhs.AsNode(), nil, nil, nil)
 		}
