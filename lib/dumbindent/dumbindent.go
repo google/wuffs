@@ -87,7 +87,7 @@
 //
 // Each output line is indented according to the net number of open braces
 // preceding it, although lines starting with close braces will outdent first,
-// similar to `gofmt` style. A line which starts ins a so-far-unbalanced open
+// similar to `gofmt` style. A line which starts in a so-far-unbalanced open
 // parenthesis, such as the "w);" line above, gets 2 additional indent levels.
 //
 // Horizontal adjustment only affects a line's leading white space (and will
