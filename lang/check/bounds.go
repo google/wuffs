@@ -68,7 +68,7 @@ var (
 
 	maxIntBits = big.NewInt(t.MaxIntBits)
 
-	zeroExpr = a.NewExpr(0, 0, 0, t.ID0, nil, nil, nil, nil)
+	zeroExpr = a.NewExpr(0, 0, t.ID0, nil, nil, nil, nil)
 )
 
 func init() {
@@ -190,7 +190,7 @@ func invert(tm *t.Map, n *a.Expr) (*a.Expr, error) {
 	default:
 		op, lhs, rhs = t.IDXUnaryNot, nil, n
 	}
-	o := a.NewExpr(n.AsNode().AsRaw().Flags(), op, 0, 0, lhs.AsNode(), nil, rhs.AsNode(), args)
+	o := a.NewExpr(n.AsNode().AsRaw().Flags(), op, 0, lhs.AsNode(), nil, rhs.AsNode(), args)
 	o.SetMType(n.MType())
 	return o, nil
 }
@@ -457,14 +457,14 @@ func (q *checker) bcheckAssignment(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 			}
 			switch op {
 			case t.IDPlusEq, t.IDMinusEq:
-				oRHS := a.NewExpr(0, op.BinaryForm(), 0, 0, xRHS.AsNode(), nil, rhs.AsNode(), nil)
+				oRHS := a.NewExpr(0, op.BinaryForm(), 0, xRHS.AsNode(), nil, rhs.AsNode(), nil)
 				// TODO: call SetMBounds?
 				oRHS.SetMType(typeExprIdeal)
 				oRHS, err := simplify(q.tm, oRHS)
 				if err != nil {
 					return nil, err
 				}
-				o := a.NewExpr(0, xOp, 0, 0, xLHS.AsNode(), nil, oRHS.AsNode(), nil)
+				o := a.NewExpr(0, xOp, 0, xLHS.AsNode(), nil, oRHS.AsNode(), nil)
 				o.SetMBounds(bounds{zero, one})
 				o.SetMType(typeExprBool)
 				return o, nil
@@ -712,7 +712,7 @@ func (q *checker) bcheckVar(n *a.Var) error {
 		return err
 	}
 
-	lhs := a.NewExpr(0, 0, 0, n.Name(), nil, nil, nil, nil)
+	lhs := a.NewExpr(0, 0, n.Name(), nil, nil, nil, nil)
 	lhs.SetMType(n.XType())
 	// "var x T" has an implicit "= 0".
 	//
@@ -1265,7 +1265,7 @@ func makeConstValueExpr(tm *t.Map, cv *big.Int) (*a.Expr, error) {
 	if err != nil {
 		return nil, err
 	}
-	o := a.NewExpr(0, 0, 0, id, nil, nil, nil, nil)
+	o := a.NewExpr(0, 0, id, nil, nil, nil, nil)
 	o.SetConstValue(cv)
 	o.SetMBounds(bounds{cv, cv})
 	o.SetMType(typeExprIdeal)
@@ -1274,10 +1274,10 @@ func makeConstValueExpr(tm *t.Map, cv *big.Int) (*a.Expr, error) {
 
 // makeSliceLength returns "x.length()".
 func makeSliceLength(slice *a.Expr) *a.Expr {
-	x := a.NewExpr(0, t.IDDot, 0, t.IDLength, slice.AsNode(), nil, nil, nil)
+	x := a.NewExpr(0, t.IDDot, t.IDLength, slice.AsNode(), nil, nil, nil)
 	x.SetMBounds(bounds{one, one})
 	x.SetMType(a.NewTypeExpr(t.IDFunc, 0, t.IDLength, slice.MType().AsNode(), nil, nil))
-	x = a.NewExpr(0, t.IDOpenParen, 0, 0, x.AsNode(), nil, nil, nil)
+	x = a.NewExpr(0, t.IDOpenParen, 0, x.AsNode(), nil, nil, nil)
 	// TODO: call SetMBounds?
 	x.SetMType(typeExprU64)
 	return x
@@ -1287,7 +1287,7 @@ func makeSliceLength(slice *a.Expr) *a.Expr {
 //
 // n must be the t.ID of a small power of 2.
 func makeSliceLengthEqEq(x t.ID, xTyp *a.TypeExpr, n t.ID) *a.Expr {
-	xExpr := a.NewExpr(0, 0, 0, x, nil, nil, nil, nil)
+	xExpr := a.NewExpr(0, 0, x, nil, nil, nil, nil)
 	xExpr.SetMType(xTyp)
 
 	lhs := makeSliceLength(xExpr)
@@ -1298,12 +1298,12 @@ func makeSliceLengthEqEq(x t.ID, xTyp *a.TypeExpr, n t.ID) *a.Expr {
 	}
 	cv := big.NewInt(int64(nValue))
 
-	rhs := a.NewExpr(0, 0, 0, n, nil, nil, nil, nil)
+	rhs := a.NewExpr(0, 0, n, nil, nil, nil, nil)
 	rhs.SetConstValue(cv)
 	rhs.SetMBounds(bounds{cv, cv})
 	rhs.SetMType(typeExprIdeal)
 
-	ret := a.NewExpr(0, t.IDXBinaryEqEq, 0, 0, lhs.AsNode(), nil, rhs.AsNode(), nil)
+	ret := a.NewExpr(0, t.IDXBinaryEqEq, 0, lhs.AsNode(), nil, rhs.AsNode(), nil)
 	ret.SetMBounds(bounds{zero, one})
 	ret.SetMType(typeExprBool)
 	return ret
@@ -1514,7 +1514,7 @@ func (q *checker) bcheckExprAssociativeOp(n *a.Expr, depth uint32) (bounds, erro
 			continue
 		}
 		lhs := a.NewExpr(n.AsNode().AsRaw().Flags(),
-			n.Operator(), 0, n.Ident(), n.LHS(), n.MHS(), n.RHS(), args[:i])
+			n.Operator(), n.Ident(), n.LHS(), n.MHS(), n.RHS(), args[:i])
 		lb, err = q.bcheckExprBinaryOp1(op, lhs, lb, o.AsExpr(), depth)
 		if err != nil {
 			return bounds{}, err

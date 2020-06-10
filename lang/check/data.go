@@ -307,7 +307,7 @@ var reasons = [...]struct {
 		if xc0 == nil {
 			return errFailed
 		}
-		t1 := a.NewExpr(0, t.IDXBinaryPlus, 0, 0, xb0.AsNode(), nil, xc0.AsNode(), nil)
+		t1 := a.NewExpr(0, t.IDXBinaryPlus, 0, xb0.AsNode(), nil, xc0.AsNode(), nil)
 		if err := proveReasonRequirement(q, t.IDXBinaryLessThan, xa, t1); err != nil {
 			return err
 		}
@@ -355,7 +355,7 @@ var reasons = [...]struct {
 			return errFailed
 		}
 		// a <= (c - b)
-		t1 := a.NewExpr(0, t.IDXBinaryMinus, 0, 0, xc.AsNode(), nil, xb.AsNode(), nil)
+		t1 := a.NewExpr(0, t.IDXBinaryMinus, 0, xc.AsNode(), nil, xb.AsNode(), nil)
 		if err := proveReasonRequirement(q, t.IDXBinaryLessEq, xa, t1); err != nil {
 			return err
 		}

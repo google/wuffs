@@ -1228,7 +1228,7 @@ func (p *parser) parsePossibleListExpr() (*a.Expr, error) {
 	if err != nil {
 		return nil, err
 	}
-	return a.NewExpr(0, t.IDComma, 0, 0, nil, nil, nil, args), nil
+	return a.NewExpr(0, t.IDComma, 0, nil, nil, nil, args), nil
 }
 
 func (p *parser) parseExpr() (*a.Expr, error) {
@@ -1270,7 +1270,7 @@ func (p *parser) parseExpr1() (*a.Expr, error) {
 			if op == 0 {
 				return nil, fmt.Errorf(`parse: internal error: no binary form for token 0x%02X`, x)
 			}
-			return a.NewExpr(0, op, 0, 0, lhs.AsNode(), nil, rhs, nil), nil
+			return a.NewExpr(0, op, 0, lhs.AsNode(), nil, rhs, nil), nil
 		}
 
 		args := []*a.Node{lhs.AsNode(), rhs}
@@ -1286,7 +1286,7 @@ func (p *parser) parseExpr1() (*a.Expr, error) {
 		if op == 0 {
 			return nil, fmt.Errorf(`parse: internal error: no associative form for token 0x%02X`, x)
 		}
-		return a.NewExpr(0, op, 0, 0, nil, nil, nil, args), nil
+		return a.NewExpr(0, op, 0, nil, nil, nil, args), nil
 	}
 	return lhs, nil
 }
@@ -1303,11 +1303,11 @@ func (p *parser) parseOperand() (*a.Expr, error) {
 		if op == 0 {
 			return nil, fmt.Errorf(`parse: internal error: no unary form for token 0x%02X`, x)
 		}
-		return a.NewExpr(0, op, 0, 0, nil, nil, rhs.AsNode(), nil), nil
+		return a.NewExpr(0, op, 0, nil, nil, rhs.AsNode(), nil), nil
 
 	case x.IsLiteral(p.tm):
 		p.src = p.src[1:]
-		return a.NewExpr(0, 0, 0, x, nil, nil, nil, nil), nil
+		return a.NewExpr(0, 0, x, nil, nil, nil, nil), nil
 
 	case x == t.IDOpenParen:
 		p.src = p.src[1:]
@@ -1327,7 +1327,7 @@ func (p *parser) parseOperand() (*a.Expr, error) {
 	if err != nil {
 		return nil, err
 	}
-	lhs := a.NewExpr(0, 0, 0, id, nil, nil, nil, nil)
+	lhs := a.NewExpr(0, 0, id, nil, nil, nil, nil)
 
 	for first := true; ; first = false {
 		flags := a.Flags(0)
@@ -1344,14 +1344,14 @@ func (p *parser) parseOperand() (*a.Expr, error) {
 			if err != nil {
 				return nil, err
 			}
-			lhs = a.NewExpr(flags, t.IDOpenParen, 0, 0, lhs.AsNode(), nil, nil, args)
+			lhs = a.NewExpr(flags, t.IDOpenParen, 0, lhs.AsNode(), nil, nil, args)
 
 		case t.IDOpenBracket:
 			id0, mhs, rhs, err := p.parseBracket(t.IDDotDot)
 			if err != nil {
 				return nil, err
 			}
-			lhs = a.NewExpr(0, id0, 0, 0, lhs.AsNode(), mhs.AsNode(), rhs.AsNode(), nil)
+			lhs = a.NewExpr(0, id0, 0, lhs.AsNode(), mhs.AsNode(), rhs.AsNode(), nil)
 
 		case t.IDDot:
 			p.src = p.src[1:]
@@ -1364,7 +1364,7 @@ func (p *parser) parseOperand() (*a.Expr, error) {
 					return nil, err
 				}
 			}
-			lhs = a.NewExpr(0, t.IDDot, 0, selector, lhs.AsNode(), nil, nil, nil)
+			lhs = a.NewExpr(0, t.IDDot, selector, lhs.AsNode(), nil, nil, nil)
 		}
 	}
 }

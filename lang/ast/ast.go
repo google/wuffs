@@ -160,7 +160,7 @@ type Node struct {
 	// Assert        keyword       .             lit(reason)   Assert
 	// Assign        operator      .             .             Assign
 	// Const         .             pkg           name          Const
-	// Expr          operator      pkg           literal/ident Expr
+	// Expr          operator      .             literal/ident Expr
 	// Field         .             .             name          Field
 	// File          .             .             .             File
 	// Func          funcName      receiverPkg   receiverName  Func
@@ -323,7 +323,6 @@ const MaxExprDepth = 255
 
 // Expr is an expression, such as "i", "+j" or "k + l[m(n, o)].p":
 //  - ID0:   <0|operator|IDOpenParen|IDOpenBracket|IDDotDot|IDDot>
-//  - ID1:   <0|pkg> (for statuses)
 //  - ID2:   <0|literal|ident>
 //  - LHS:   <nil|Expr>
 //  - MHS:   <nil|Expr>
@@ -331,8 +330,7 @@ const MaxExprDepth = 255
 //  - List0: <Arg|Expr> function call args, assoc. op args or list members.
 //
 // A zero ID0 means an identifier or literal in ID2, like `foo`, `42` or a
-// status literal like `"#foo"` or `pkg."$bar"`. For status literals, ID1 is
-// the package.
+// status literal like `"#foo"`.
 //
 // For unary operators, ID0 is the operator and RHS is the operand.
 //
@@ -362,7 +360,6 @@ func (n *Expr) ConstValue() *big.Int       { return n.constValue }
 func (n *Expr) MBounds() interval.IntRange { return n.mBounds }
 func (n *Expr) MType() *TypeExpr           { return n.mType }
 func (n *Expr) Operator() t.ID             { return n.id0 }
-func (n *Expr) StatusQID() t.QID           { return t.QID{n.id1, n.id2} }
 func (n *Expr) Ident() t.ID                { return n.id2 }
 func (n *Expr) LHS() *Node                 { return n.lhs }
 func (n *Expr) MHS() *Node                 { return n.mhs }
@@ -374,7 +371,7 @@ func (n *Expr) SetGlobalIdent()                { n.flags |= FlagsGlobalIdent }
 func (n *Expr) SetMBounds(x interval.IntRange) { n.mBounds = x }
 func (n *Expr) SetMType(x *TypeExpr)           { n.mType = x }
 
-func NewExpr(flags Flags, operator t.ID, statusPkg t.ID, ident t.ID, lhs *Node, mhs *Node, rhs *Node, args []*Node) *Expr {
+func NewExpr(flags Flags, operator t.ID, ident t.ID, lhs *Node, mhs *Node, rhs *Node, args []*Node) *Expr {
 	subExprEffect := Flags(0)
 	if lhs != nil {
 		subExprEffect |= lhs.flags & Flags(effectMask)
@@ -396,7 +393,6 @@ func NewExpr(flags Flags, operator t.ID, statusPkg t.ID, ident t.ID, lhs *Node, 
 		kind:  KExpr,
 		flags: flags,
 		id0:   operator,
-		id1:   statusPkg,
 		id2:   ident,
 		lhs:   lhs,
 		mhs:   mhs,

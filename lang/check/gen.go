@@ -230,7 +230,7 @@ func genProveReasonRequirement(n *node, name string) error {
 		fmt.Fprintf(&out, "if err := proveReasonRequirement(q, t.ID%s, %s, %s); err != nil { return err }\n",
 			key, l, r)
 	} else {
-		fmt.Fprintf(&out, "%s := a.NewExpr(0, t.ID%s, 0, 0, %s.AsNode(), nil, %s.AsNode(), nil)\n",
+		fmt.Fprintf(&out, "%s := a.NewExpr(0, t.ID%s, 0, %s.AsNode(), nil, %s.AsNode(), nil)\n",
 			name, key, l, r)
 	}
 	return nil

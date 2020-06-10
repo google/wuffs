@@ -140,7 +140,7 @@ func Check(tm *t.Map, files []*a.File, resolveUse func(usePath string) ([]byte, 
 		if err != nil {
 			return nil, err
 		}
-		cNode := a.NewConst(0, "", 0, name, xType, a.NewExpr(0, 0, 0, value, nil, nil, nil, nil))
+		cNode := a.NewConst(0, "", 0, name, xType, a.NewExpr(0, 0, value, nil, nil, nil, nil))
 		if err := c.checkConst(cNode.AsNode()); err != nil {
 			return nil, err
 		}

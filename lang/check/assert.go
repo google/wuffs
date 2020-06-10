@@ -58,7 +58,7 @@ func otherHandSide(n *a.Expr, thisHS *a.Expr) (op t.ID, thatHS *a.Expr) {
 type facts []*a.Expr
 
 func (z *facts) appendBinaryOpFact(op t.ID, lhs *a.Expr, rhs *a.Expr) {
-	o := a.NewExpr(0, op, 0, 0, lhs.AsNode(), nil, rhs.AsNode(), nil)
+	o := a.NewExpr(0, op, 0, lhs.AsNode(), nil, rhs.AsNode(), nil)
 	o.SetMBounds(bounds{zero, one})
 	o.SetMType(typeExprBool)
 	z.appendFact(o)
@@ -210,7 +210,7 @@ func simplify(tm *t.Map, n *a.Expr) (*a.Expr, error) {
 			return nil, err
 		}
 		if l != lhs || r != rhs {
-			o := a.NewExpr(0, op, 0, 0, l.AsNode(), nil, r.AsNode(), nil)
+			o := a.NewExpr(0, op, 0, l.AsNode(), nil, r.AsNode(), nil)
 			o.SetConstValue(n.ConstValue())
 			o.SetMType(n.MType())
 			return o, nil
@@ -343,7 +343,7 @@ func proveReasonRequirement(q *checker, op t.ID, lhs *a.Expr, rhs *a.Expr) error
 			"check: internal error: proveReasonRequirement token (0x%X) is not an XBinaryOp", op)
 	}
 	if err := q.proveBinaryOp(op, lhs, rhs); err != nil {
-		n := a.NewExpr(0, op, 0, 0, lhs.AsNode(), nil, rhs.AsNode(), nil)
+		n := a.NewExpr(0, op, 0, lhs.AsNode(), nil, rhs.AsNode(), nil)
 		return fmt.Errorf("cannot prove %q: %v", n.Str(q.tm), err)
 	}
 	return nil

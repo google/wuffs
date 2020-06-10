@@ -77,13 +77,13 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, depth uint32) error {
 			}
 
 		} else if ident.IsDQStrLiteral(g.tm) {
-			if z := g.statusMap[n.StatusQID()]; z.cName != "" {
+			if z := g.statusMap[t.QID{0, n.Ident()}]; z.cName != "" {
 				b.writes("wuffs_base__make_status(")
 				b.writes(z.cName)
 				b.writes(")")
 				return nil
 			}
-			return fmt.Errorf("unrecognized status %s", n.StatusQID().Str(g.tm))
+			return fmt.Errorf("unrecognized status %s", n.Str(g.tm))
 
 		} else if c, ok := g.scalarConstsMap[t.QID{0, n.Ident()}]; ok {
 			b.writes(c.Value().ConstValue().String())

@@ -359,8 +359,8 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			return nil
 
 		} else if id1.IsDQStrLiteral(q.tm) {
-			if _, ok := q.c.statuses[n.StatusQID()]; !ok {
-				return fmt.Errorf("check: unrecognized status %s", n.StatusQID().Str(q.tm))
+			if _, ok := q.c.statuses[t.QID{0, n.Ident()}]; !ok {
+				return fmt.Errorf("check: unrecognized status %s", n.Ident().Str(q.tm))
 			}
 			n.SetMType(typeExprStatus)
 			return nil

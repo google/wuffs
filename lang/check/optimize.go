@@ -109,7 +109,7 @@ func (q *checker) optimizeIOMethodAdvance(receiver *a.Expr, advance *big.Int, up
 		}
 
 		return a.NewExpr(x.AsNode().AsRaw().Flags(),
-			t.IDXBinaryGreaterEq, 0, 0, x.LHS(), nil, o.AsNode(), nil), nil
+			t.IDXBinaryGreaterEq, 0, x.LHS(), nil, o.AsNode(), nil), nil
 	})
 	return retOK, retErr
 }
