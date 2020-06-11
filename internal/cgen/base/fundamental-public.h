@@ -31,10 +31,10 @@
 // each major.minor branch, the commit count should increase monotonically.
 //
 // !! Some code generation programs can override WUFFS_VERSION.
-#define WUFFS_VERSION ((uint64_t)0)
-#define WUFFS_VERSION_MAJOR ((uint64_t)0)
-#define WUFFS_VERSION_MINOR ((uint64_t)0)
-#define WUFFS_VERSION_PATCH ((uint64_t)0)
+#define WUFFS_VERSION 0
+#define WUFFS_VERSION_MAJOR 0
+#define WUFFS_VERSION_MINOR 0
+#define WUFFS_VERSION_PATCH 0
 #define WUFFS_VERSION_PRE_RELEASE_LABEL "work.in.progress"
 #define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 0
 #define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 0

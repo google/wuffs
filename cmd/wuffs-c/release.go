@@ -311,16 +311,16 @@ func (h *genReleaseHelper) substituteWuffsVersion(s []byte) ([]byte, error) {
 	}
 
 	fmt.Fprintf(w, `.
-		#define WUFFS_VERSION ((uint64_t)0x%016X)
-		#define WUFFS_VERSION_MAJOR ((uint64_t)0x%08X)
-		#define WUFFS_VERSION_MINOR ((uint64_t)0x%04X)
-		#define WUFFS_VERSION_PATCH ((uint64_t)0x%04X)
-		#define WUFFS_VERSION_PRE_RELEASE_LABEL %q
-		#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT %d
-		#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE %s
-		#define WUFFS_VERSION_STRING %q
+#define WUFFS_VERSION 0x%09X
+#define WUFFS_VERSION_MAJOR %d
+#define WUFFS_VERSION_MINOR %d
+#define WUFFS_VERSION_PATCH %d
+#define WUFFS_VERSION_PRE_RELEASE_LABEL %q
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT %d
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE %s
+#define WUFFS_VERSION_STRING %q
 
-	`, h.version.Uint64(), h.version.Major, h.version.Minor, h.version.Patch,
+`, h.version.Uint64(), h.version.Major, h.version.Minor, h.version.Patch,
 		h.version.Extension, h.gitRevListCount, commitDate,
 		h.version.String()+buildMetadata)
 
