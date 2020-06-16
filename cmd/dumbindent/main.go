@@ -49,6 +49,10 @@
 //     real    0m0.641s
 //     user    0m0.585s
 //     sys     0m0.037s
+//
+// More commentary is at:
+// https://godoc.org/github.com/google/wuffs/lib/dumbindent
+// https://nigeltao.github.io/blog/2020/dumbindent.html
 package main
 
 import (

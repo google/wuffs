@@ -109,6 +109,9 @@
 // Instead, when automatically or manually generating the input for dumbindent,
 // it is recommended to always emit curly braces (again, similar to `gofmt`
 // style), even for what would otherwise be 'one-liner' if statements.
+//
+// More commentary is at:
+// https://nigeltao.github.io/blog/2020/dumbindent.html
 package dumbindent
 
 import (
