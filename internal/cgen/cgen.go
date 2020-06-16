@@ -406,7 +406,7 @@ func insertInterfaceDeclarations(buf *buffer) error {
 		buf.writes("  } private_impl;\n\n")
 
 		buf.writes("#ifdef __cplusplus\n")
-		buf.writes("#if __cplusplus >= 201103L\n")
+		buf.writes("#if defined(WUFFS_HAS_CPP11)\n")
 		buf.printf("  using unique_ptr = std::unique_ptr<wuffs_base__%s, decltype(&free)>;\n", n)
 		buf.writes("#endif\n\n")
 
@@ -1161,7 +1161,7 @@ func (g *gen) writeCppMethods(b *buffer, n *a.Struct) error {
 	fullStructName := g.pkgPrefix + structName + "__struct"
 	b.writes("#ifdef __cplusplus\n")
 
-	b.writes("#if __cplusplus >= 201103L\n")
+	b.writes("#if defined(WUFFS_HAS_CPP11)\n")
 	b.printf("using unique_ptr = std::unique_ptr<%s%s, decltype(&free)>;\n\n", g.pkgPrefix, structName)
 	b.writes("// On failure, the alloc_etc functions return nullptr. They don't throw.\n\n")
 	b.writes("static inline unique_ptr\n")
@@ -1177,9 +1177,9 @@ func (g *gen) writeCppMethods(b *buffer, n *a.Struct) error {
 			iName, g.pkgPrefix, structName, iName)
 		b.printf("}\n")
 	}
-	b.writes("#endif  // __cplusplus >= 201103L\n\n")
+	b.writes("#endif  // defined(WUFFS_HAS_CPP11)\n\n")
 
-	b.writes("#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)\n")
+	b.writes("#if defined(WUFFS_HAS_CPP11) && !defined(WUFFS_IMPLEMENTATION)\n")
 	b.writes("// Disallow constructing or copying an object via standard C++ mechanisms,\n")
 	b.writes("// e.g. the \"new\" operator, as this struct is intentionally opaque. Its total\n")
 	b.writes("// size and field layout is not part of the public, stable, memory-safe API.\n")
@@ -1204,7 +1204,7 @@ func (g *gen) writeCppMethods(b *buffer, n *a.Struct) error {
 	b.writes("// different, so that passing the latter will be rejected by the initialize\n")
 	b.writes("// function, we add an arbitrary amount of dead weight.\n")
 	b.writes("uint8_t dead_weight[123000000];  // 123 MB.\n")
-	b.writes("#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)\n\n")
+	b.writes("#endif  // defined(WUFFS_HAS_CPP11) && !defined(WUFFS_IMPLEMENTATION)\n\n")
 
 	b.writes("inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT\n" +
 		"initialize(\nsize_t sizeof_star_self,\nuint64_t wuffs_version,\nuint32_t initialize_flags) {\n")
