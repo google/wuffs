@@ -96,9 +96,10 @@
 //
 // In particular, the algorithm does not solve C++'s "most vexing parse" or
 // otherwise determine whether "x*y" is a multiplication or a type definition
-// (where y is a pointer-to-x typed variable, such as "int*p"). For a type
-// definition, where other formatting algorithms would re-write around the "*"
-// as either "x* y" or "x *y", dumbindent will not insert spaces.
+// (where y is a pointer-to-x typed variable or function argument, such as
+// "int*p"). For a type definition, where other formatting algorithms would
+// re-write around the "*" as either "x* y" or "x *y", dumbindent will not
+// insert spaces.
 //
 // Similarly, dumbindent will not correct this mis-indentation:
 //
@@ -138,8 +139,8 @@ var hangingBytes = [256]bool{
 
 // Options are formatting options.
 type Options struct {
-	// Spaces, if positive, is the number of spaces per indentation level. A
-	// non-positive value means to use the default: 2 spaces per indent.
+	// Spaces, if positive, is the number of spaces per indent level. A
+	// non-positive value means to use the default: 2 spaces per indent level.
 	//
 	// This field is ignored when Tabs is true.
 	Spaces int
@@ -152,8 +153,8 @@ type Options struct {
 // FormatBytes formats the C (or C-like) program in src, appending the result
 // to dst, and returns that longer slice.
 //
-// It is valid to pass a dst slice (such as nil) whose unused capacity
-// (cap(dst) - len(dst)) is too short to hold the formatted program. In this
+// It is valid to pass a dst slice (such as nil) whose unused capacity,
+// cap(dst) - len(dst), is too short to hold the formatted program. In this
 // case, a new slice will be allocated and returned.
 //
 // Passing a nil opts is valid and equivalent to passing &Options{}.
@@ -190,11 +191,7 @@ func FormatBytes(dst []byte, src []byte, opts *Options) []byte {
 		}
 		lineLength := len(line)
 
-		// Collapse 2 or more consecutive blank lines into 1. Also strip any
-		// blank lines:
-		//  - immediately after a '{',
-		//  - immediately before a '}',
-		//  - at the end of file.
+		// Strip any blank lines at the end of the file.
 		if len(line) == 0 {
 			nBlankLines++
 			continue
@@ -238,8 +235,8 @@ func FormatBytes(dst []byte, src []byte, opts *Options) []byte {
 			}
 		}
 
-		// Output a certain number of spaces to roughly approximate
-		// clang-format's default indentation style.
+		// Output indentation. Dumbindent's default, 2 spaces per indent level,
+		// roughly approximates clang-format's default style.
 		indent := 0
 		if nBraces > 0 {
 			indent += indentCount * nBraces
