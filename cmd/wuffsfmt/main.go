@@ -17,10 +17,10 @@
 // wuffsfmt formats Wuffs programs.
 //
 // Without explicit paths, it rewrites the standard input to standard output.
-// Otherwise, the -l or -w or both flags must be given. Given a file path, it
-// operates on that file; given a directory path, it operates on all *.wuffs
-// files in that directory, recursively. File paths starting with a period are
-// ignored.
+// Otherwise, the -l (list files that would change) or -w (write files in
+// place) or both flags must be given. Given a file path, it operates on that
+// file; given a directory path, it operates on all *.wuffs files in that
+// directory, recursively. File paths starting with a period are ignored.
 package main
 
 import (
