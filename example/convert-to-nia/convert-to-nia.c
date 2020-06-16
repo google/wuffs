@@ -19,6 +19,12 @@ convert-to-nia converts an image from stdin (e.g. in the BMP, GIF, JPEG or PNG
 format) to stdout (in the NIA/NIE format).
 
 See the "const char* g_usage" string below for details.
+
+An equivalent program (using the Chromium image codecs) is at:
+https://chromium-review.googlesource.com/c/chromium/src/+/2210331
+
+An equivalent program (using the Skia image codecs) is at:
+https://skia-review.googlesource.com/c/skia/+/290618
 */
 
 #include <errno.h>
