@@ -32,14 +32,9 @@
 #include <string.h>
 
 #ifdef __cplusplus
-// MSVC before Visual Studio 2017 mis-reported the __cplusplus level:
-// https://devblogs.microsoft.com/cppblog/msvc-now-correctly-reports-__cplusplus/
-// We just assume that ifdef __cplusplus, MSVC implies C++11 or later. Note
-// that MSVC doesn't support "#warning" and Clang also defines __GNUC__.
-#if (__cplusplus >= 201103L) || defined(_MSC_VER)
-#define WUFFS_HAS_CPP11
+#if __cplusplus >= 201103L
 #include <memory>
-#elif defined(__GNUC__)
+#else
 #warning "Wuffs' C++ code requires -std=c++11 or later"
 #endif
 
