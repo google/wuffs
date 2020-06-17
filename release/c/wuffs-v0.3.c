@@ -67,15 +67,15 @@ extern "C" {
 // each major.minor branch, the commit count should increase monotonically.
 //
 // WUFFS_VERSION was overridden by "wuffs gen -version" based on revision
-// cb19841358e481094bcdded6b9cb9eca42e446da committed on 2020-06-16.
+// 196920ee9153c6d69c6bc25192dcc0f06fe99f04 committed on 2020-06-17.
 #define WUFFS_VERSION 0x000030000
 #define WUFFS_VERSION_MAJOR 0
 #define WUFFS_VERSION_MINOR 3
 #define WUFFS_VERSION_PATCH 0
-#define WUFFS_VERSION_PRE_RELEASE_LABEL "alpha.2"
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 2508
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20200616
-#define WUFFS_VERSION_STRING "0.3.0-alpha.2+2508.20200616"
+#define WUFFS_VERSION_PRE_RELEASE_LABEL "alpha.3"
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 2510
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20200617
+#define WUFFS_VERSION_STRING "0.3.0-alpha.3+2510.20200617"
 
 // Define WUFFS_CONFIG__STATIC_FUNCTIONS to make all of Wuffs' functions have
 // static storage. The motivation is discussed in the "ALLOW STATIC
@@ -4687,12 +4687,13 @@ struct wuffs_adler32__hasher__struct {
 
   static inline unique_ptr
   alloc() {
-    return unique_ptr(wuffs_adler32__hasher__alloc(), &free);
+    return std::unique_ptr<wuffs_adler32__hasher, decltype(&free)>(
+        wuffs_adler32__hasher__alloc(), &free);
   }
 
   static inline wuffs_base__hasher_u32::unique_ptr
   alloc_as__wuffs_base__hasher_u32() {
-    return wuffs_base__hasher_u32::unique_ptr(
+    return std::unique_ptr<wuffs_base__hasher_u32, decltype(&free)>(
         wuffs_adler32__hasher__alloc_as__wuffs_base__hasher_u32(), &free);
   }
 #endif  // defined(WUFFS_HAS_CPP11)
@@ -4962,12 +4963,13 @@ struct wuffs_bmp__decoder__struct {
 
   static inline unique_ptr
   alloc() {
-    return unique_ptr(wuffs_bmp__decoder__alloc(), &free);
+    return std::unique_ptr<wuffs_bmp__decoder, decltype(&free)>(
+        wuffs_bmp__decoder__alloc(), &free);
   }
 
   static inline wuffs_base__image_decoder::unique_ptr
   alloc_as__wuffs_base__image_decoder() {
-    return wuffs_base__image_decoder::unique_ptr(
+    return std::unique_ptr<wuffs_base__image_decoder, decltype(&free)>(
         wuffs_bmp__decoder__alloc_as__wuffs_base__image_decoder(), &free);
   }
 #endif  // defined(WUFFS_HAS_CPP11)
@@ -5202,12 +5204,13 @@ struct wuffs_crc32__ieee_hasher__struct {
 
   static inline unique_ptr
   alloc() {
-    return unique_ptr(wuffs_crc32__ieee_hasher__alloc(), &free);
+    return std::unique_ptr<wuffs_crc32__ieee_hasher, decltype(&free)>(
+        wuffs_crc32__ieee_hasher__alloc(), &free);
   }
 
   static inline wuffs_base__hasher_u32::unique_ptr
   alloc_as__wuffs_base__hasher_u32() {
-    return wuffs_base__hasher_u32::unique_ptr(
+    return std::unique_ptr<wuffs_base__hasher_u32, decltype(&free)>(
         wuffs_crc32__ieee_hasher__alloc_as__wuffs_base__hasher_u32(), &free);
   }
 #endif  // defined(WUFFS_HAS_CPP11)
@@ -5456,12 +5459,13 @@ struct wuffs_deflate__decoder__struct {
 
   static inline unique_ptr
   alloc() {
-    return unique_ptr(wuffs_deflate__decoder__alloc(), &free);
+    return std::unique_ptr<wuffs_deflate__decoder, decltype(&free)>(
+        wuffs_deflate__decoder__alloc(), &free);
   }
 
   static inline wuffs_base__io_transformer::unique_ptr
   alloc_as__wuffs_base__io_transformer() {
-    return wuffs_base__io_transformer::unique_ptr(
+    return std::unique_ptr<wuffs_base__io_transformer, decltype(&free)>(
         wuffs_deflate__decoder__alloc_as__wuffs_base__io_transformer(), &free);
   }
 #endif  // defined(WUFFS_HAS_CPP11)
@@ -5684,12 +5688,13 @@ struct wuffs_lzw__decoder__struct {
 
   static inline unique_ptr
   alloc() {
-    return unique_ptr(wuffs_lzw__decoder__alloc(), &free);
+    return std::unique_ptr<wuffs_lzw__decoder, decltype(&free)>(
+        wuffs_lzw__decoder__alloc(), &free);
   }
 
   static inline wuffs_base__io_transformer::unique_ptr
   alloc_as__wuffs_base__io_transformer() {
-    return wuffs_base__io_transformer::unique_ptr(
+    return std::unique_ptr<wuffs_base__io_transformer, decltype(&free)>(
         wuffs_lzw__decoder__alloc_as__wuffs_base__io_transformer(), &free);
   }
 #endif  // defined(WUFFS_HAS_CPP11)
@@ -6128,12 +6133,13 @@ struct wuffs_gif__config_decoder__struct {
 
   static inline unique_ptr
   alloc() {
-    return unique_ptr(wuffs_gif__config_decoder__alloc(), &free);
+    return std::unique_ptr<wuffs_gif__config_decoder, decltype(&free)>(
+        wuffs_gif__config_decoder__alloc(), &free);
   }
 
   static inline wuffs_base__image_decoder::unique_ptr
   alloc_as__wuffs_base__image_decoder() {
-    return wuffs_base__image_decoder::unique_ptr(
+    return std::unique_ptr<wuffs_base__image_decoder, decltype(&free)>(
         wuffs_gif__config_decoder__alloc_as__wuffs_base__image_decoder(), &free);
   }
 #endif  // defined(WUFFS_HAS_CPP11)
@@ -6391,12 +6397,13 @@ struct wuffs_gif__decoder__struct {
 
   static inline unique_ptr
   alloc() {
-    return unique_ptr(wuffs_gif__decoder__alloc(), &free);
+    return std::unique_ptr<wuffs_gif__decoder, decltype(&free)>(
+        wuffs_gif__decoder__alloc(), &free);
   }
 
   static inline wuffs_base__image_decoder::unique_ptr
   alloc_as__wuffs_base__image_decoder() {
-    return wuffs_base__image_decoder::unique_ptr(
+    return std::unique_ptr<wuffs_base__image_decoder, decltype(&free)>(
         wuffs_gif__decoder__alloc_as__wuffs_base__image_decoder(), &free);
   }
 #endif  // defined(WUFFS_HAS_CPP11)
@@ -6664,12 +6671,13 @@ struct wuffs_gzip__decoder__struct {
 
   static inline unique_ptr
   alloc() {
-    return unique_ptr(wuffs_gzip__decoder__alloc(), &free);
+    return std::unique_ptr<wuffs_gzip__decoder, decltype(&free)>(
+        wuffs_gzip__decoder__alloc(), &free);
   }
 
   static inline wuffs_base__io_transformer::unique_ptr
   alloc_as__wuffs_base__io_transformer() {
-    return wuffs_base__io_transformer::unique_ptr(
+    return std::unique_ptr<wuffs_base__io_transformer, decltype(&free)>(
         wuffs_gzip__decoder__alloc_as__wuffs_base__io_transformer(), &free);
   }
 #endif  // defined(WUFFS_HAS_CPP11)
@@ -6931,12 +6939,13 @@ struct wuffs_json__decoder__struct {
 
   static inline unique_ptr
   alloc() {
-    return unique_ptr(wuffs_json__decoder__alloc(), &free);
+    return std::unique_ptr<wuffs_json__decoder, decltype(&free)>(
+        wuffs_json__decoder__alloc(), &free);
   }
 
   static inline wuffs_base__token_decoder::unique_ptr
   alloc_as__wuffs_base__token_decoder() {
-    return wuffs_base__token_decoder::unique_ptr(
+    return std::unique_ptr<wuffs_base__token_decoder, decltype(&free)>(
         wuffs_json__decoder__alloc_as__wuffs_base__token_decoder(), &free);
   }
 #endif  // defined(WUFFS_HAS_CPP11)
@@ -7198,12 +7207,13 @@ struct wuffs_wbmp__decoder__struct {
 
   static inline unique_ptr
   alloc() {
-    return unique_ptr(wuffs_wbmp__decoder__alloc(), &free);
+    return std::unique_ptr<wuffs_wbmp__decoder, decltype(&free)>(
+        wuffs_wbmp__decoder__alloc(), &free);
   }
 
   static inline wuffs_base__image_decoder::unique_ptr
   alloc_as__wuffs_base__image_decoder() {
-    return wuffs_base__image_decoder::unique_ptr(
+    return std::unique_ptr<wuffs_base__image_decoder, decltype(&free)>(
         wuffs_wbmp__decoder__alloc_as__wuffs_base__image_decoder(), &free);
   }
 #endif  // defined(WUFFS_HAS_CPP11)
@@ -7486,12 +7496,13 @@ struct wuffs_zlib__decoder__struct {
 
   static inline unique_ptr
   alloc() {
-    return unique_ptr(wuffs_zlib__decoder__alloc(), &free);
+    return std::unique_ptr<wuffs_zlib__decoder, decltype(&free)>(
+        wuffs_zlib__decoder__alloc(), &free);
   }
 
   static inline wuffs_base__io_transformer::unique_ptr
   alloc_as__wuffs_base__io_transformer() {
-    return wuffs_base__io_transformer::unique_ptr(
+    return std::unique_ptr<wuffs_base__io_transformer, decltype(&free)>(
         wuffs_zlib__decoder__alloc_as__wuffs_base__io_transformer(), &free);
   }
 #endif  // defined(WUFFS_HAS_CPP11)
