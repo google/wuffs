@@ -35,16 +35,14 @@
 #include <stdlib.h>
 #include <string.h>
 
+// Note that Clang also defines __GNUC__.
 #ifdef __cplusplus
-// MSVC before Visual Studio 2017 mis-reported the __cplusplus level:
-// https://devblogs.microsoft.com/cppblog/msvc-now-correctly-reports-__cplusplus/
-// We just assume that ifdef __cplusplus, MSVC implies C++11 or later. Note
-// that MSVC doesn't support "#warning" and Clang also defines __GNUC__.
-#if (__cplusplus >= 201103L) || defined(_MSC_VER)
-#define WUFFS_HAS_CPP11
+#if __cplusplus >= 201103L
 #include <memory>
 #elif defined(__GNUC__)
-#warning "Wuffs' C++ code requires -std=c++11 or later"
+#warning "Wuffs' C++ code expects -std=c++11 or later"
+#elif defined(_MSC_VER)
+#pragma message("Wuffs' C++ code expects C++11 or later")
 #endif
 
 extern "C" {
@@ -67,15 +65,15 @@ extern "C" {
 // each major.minor branch, the commit count should increase monotonically.
 //
 // WUFFS_VERSION was overridden by "wuffs gen -version" based on revision
-// 196920ee9153c6d69c6bc25192dcc0f06fe99f04 committed on 2020-06-17.
+// d377dcaea826f12b47492cced1b75450a440f6c1 committed on 2020-06-17.
 #define WUFFS_VERSION 0x000030000
 #define WUFFS_VERSION_MAJOR 0
 #define WUFFS_VERSION_MINOR 3
 #define WUFFS_VERSION_PATCH 0
-#define WUFFS_VERSION_PRE_RELEASE_LABEL "alpha.3"
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 2510
+#define WUFFS_VERSION_PRE_RELEASE_LABEL "alpha.4"
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 2514
 #define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20200617
-#define WUFFS_VERSION_STRING "0.3.0-alpha.3+2510.20200617"
+#define WUFFS_VERSION_STRING "0.3.0-alpha.4+2514.20200617"
 
 // Define WUFFS_CONFIG__STATIC_FUNCTIONS to make all of Wuffs' functions have
 // static storage. The motivation is discussed in the "ALLOW STATIC
@@ -4178,7 +4176,7 @@ struct wuffs_base__hasher_u32__struct {
   } private_impl;
 
 #ifdef __cplusplus
-#if defined(WUFFS_HAS_CPP11)
+#if (__cplusplus >= 201103L)
   using unique_ptr = std::unique_ptr<wuffs_base__hasher_u32, decltype(&free)>;
 #endif
 
@@ -4329,7 +4327,7 @@ struct wuffs_base__image_decoder__struct {
   } private_impl;
 
 #ifdef __cplusplus
-#if defined(WUFFS_HAS_CPP11)
+#if (__cplusplus >= 201103L)
   using unique_ptr = std::unique_ptr<wuffs_base__image_decoder, decltype(&free)>;
 #endif
 
@@ -4470,7 +4468,7 @@ struct wuffs_base__io_transformer__struct {
   } private_impl;
 
 #ifdef __cplusplus
-#if defined(WUFFS_HAS_CPP11)
+#if (__cplusplus >= 201103L)
   using unique_ptr = std::unique_ptr<wuffs_base__io_transformer, decltype(&free)>;
 #endif
 
@@ -4548,7 +4546,7 @@ struct wuffs_base__token_decoder__struct {
   } private_impl;
 
 #ifdef __cplusplus
-#if defined(WUFFS_HAS_CPP11)
+#if (__cplusplus >= 201103L)
   using unique_ptr = std::unique_ptr<wuffs_base__token_decoder, decltype(&free)>;
 #endif
 
@@ -4680,25 +4678,24 @@ struct wuffs_adler32__hasher__struct {
   } private_impl;
 
 #ifdef __cplusplus
-#if defined(WUFFS_HAS_CPP11)
+#if (__cplusplus >= 201103L)
   using unique_ptr = std::unique_ptr<wuffs_adler32__hasher, decltype(&free)>;
 
   // On failure, the alloc_etc functions return nullptr. They don't throw.
 
   static inline unique_ptr
   alloc() {
-    return std::unique_ptr<wuffs_adler32__hasher, decltype(&free)>(
-        wuffs_adler32__hasher__alloc(), &free);
+    return unique_ptr(wuffs_adler32__hasher__alloc(), &free);
   }
 
   static inline wuffs_base__hasher_u32::unique_ptr
   alloc_as__wuffs_base__hasher_u32() {
-    return std::unique_ptr<wuffs_base__hasher_u32, decltype(&free)>(
+    return wuffs_base__hasher_u32::unique_ptr(
         wuffs_adler32__hasher__alloc_as__wuffs_base__hasher_u32(), &free);
   }
-#endif  // defined(WUFFS_HAS_CPP11)
+#endif  // (__cplusplus >= 201103L)
 
-#if defined(WUFFS_HAS_CPP11) && !defined(WUFFS_IMPLEMENTATION)
+#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
   // e.g. the "new" operator, as this struct is intentionally opaque. Its total
   // size and field layout is not part of the public, stable, memory-safe API.
@@ -4724,7 +4721,7 @@ struct wuffs_adler32__hasher__struct {
   // different, so that passing the latter will be rejected by the initialize
   // function, we add an arbitrary amount of dead weight.
   uint8_t dead_weight[123000000];  // 123 MB.
-#endif  // defined(WUFFS_HAS_CPP11) && !defined(WUFFS_IMPLEMENTATION)
+#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
 
   inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
   initialize(
@@ -4956,25 +4953,24 @@ struct wuffs_bmp__decoder__struct {
   } private_data;
 
 #ifdef __cplusplus
-#if defined(WUFFS_HAS_CPP11)
+#if (__cplusplus >= 201103L)
   using unique_ptr = std::unique_ptr<wuffs_bmp__decoder, decltype(&free)>;
 
   // On failure, the alloc_etc functions return nullptr. They don't throw.
 
   static inline unique_ptr
   alloc() {
-    return std::unique_ptr<wuffs_bmp__decoder, decltype(&free)>(
-        wuffs_bmp__decoder__alloc(), &free);
+    return unique_ptr(wuffs_bmp__decoder__alloc(), &free);
   }
 
   static inline wuffs_base__image_decoder::unique_ptr
   alloc_as__wuffs_base__image_decoder() {
-    return std::unique_ptr<wuffs_base__image_decoder, decltype(&free)>(
+    return wuffs_base__image_decoder::unique_ptr(
         wuffs_bmp__decoder__alloc_as__wuffs_base__image_decoder(), &free);
   }
-#endif  // defined(WUFFS_HAS_CPP11)
+#endif  // (__cplusplus >= 201103L)
 
-#if defined(WUFFS_HAS_CPP11) && !defined(WUFFS_IMPLEMENTATION)
+#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
   // e.g. the "new" operator, as this struct is intentionally opaque. Its total
   // size and field layout is not part of the public, stable, memory-safe API.
@@ -5000,7 +4996,7 @@ struct wuffs_bmp__decoder__struct {
   // different, so that passing the latter will be rejected by the initialize
   // function, we add an arbitrary amount of dead weight.
   uint8_t dead_weight[123000000];  // 123 MB.
-#endif  // defined(WUFFS_HAS_CPP11) && !defined(WUFFS_IMPLEMENTATION)
+#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
 
   inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
   initialize(
@@ -5197,25 +5193,24 @@ struct wuffs_crc32__ieee_hasher__struct {
   } private_impl;
 
 #ifdef __cplusplus
-#if defined(WUFFS_HAS_CPP11)
+#if (__cplusplus >= 201103L)
   using unique_ptr = std::unique_ptr<wuffs_crc32__ieee_hasher, decltype(&free)>;
 
   // On failure, the alloc_etc functions return nullptr. They don't throw.
 
   static inline unique_ptr
   alloc() {
-    return std::unique_ptr<wuffs_crc32__ieee_hasher, decltype(&free)>(
-        wuffs_crc32__ieee_hasher__alloc(), &free);
+    return unique_ptr(wuffs_crc32__ieee_hasher__alloc(), &free);
   }
 
   static inline wuffs_base__hasher_u32::unique_ptr
   alloc_as__wuffs_base__hasher_u32() {
-    return std::unique_ptr<wuffs_base__hasher_u32, decltype(&free)>(
+    return wuffs_base__hasher_u32::unique_ptr(
         wuffs_crc32__ieee_hasher__alloc_as__wuffs_base__hasher_u32(), &free);
   }
-#endif  // defined(WUFFS_HAS_CPP11)
+#endif  // (__cplusplus >= 201103L)
 
-#if defined(WUFFS_HAS_CPP11) && !defined(WUFFS_IMPLEMENTATION)
+#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
   // e.g. the "new" operator, as this struct is intentionally opaque. Its total
   // size and field layout is not part of the public, stable, memory-safe API.
@@ -5241,7 +5236,7 @@ struct wuffs_crc32__ieee_hasher__struct {
   // different, so that passing the latter will be rejected by the initialize
   // function, we add an arbitrary amount of dead weight.
   uint8_t dead_weight[123000000];  // 123 MB.
-#endif  // defined(WUFFS_HAS_CPP11) && !defined(WUFFS_IMPLEMENTATION)
+#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
 
   inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
   initialize(
@@ -5452,25 +5447,24 @@ struct wuffs_deflate__decoder__struct {
   } private_data;
 
 #ifdef __cplusplus
-#if defined(WUFFS_HAS_CPP11)
+#if (__cplusplus >= 201103L)
   using unique_ptr = std::unique_ptr<wuffs_deflate__decoder, decltype(&free)>;
 
   // On failure, the alloc_etc functions return nullptr. They don't throw.
 
   static inline unique_ptr
   alloc() {
-    return std::unique_ptr<wuffs_deflate__decoder, decltype(&free)>(
-        wuffs_deflate__decoder__alloc(), &free);
+    return unique_ptr(wuffs_deflate__decoder__alloc(), &free);
   }
 
   static inline wuffs_base__io_transformer::unique_ptr
   alloc_as__wuffs_base__io_transformer() {
-    return std::unique_ptr<wuffs_base__io_transformer, decltype(&free)>(
+    return wuffs_base__io_transformer::unique_ptr(
         wuffs_deflate__decoder__alloc_as__wuffs_base__io_transformer(), &free);
   }
-#endif  // defined(WUFFS_HAS_CPP11)
+#endif  // (__cplusplus >= 201103L)
 
-#if defined(WUFFS_HAS_CPP11) && !defined(WUFFS_IMPLEMENTATION)
+#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
   // e.g. the "new" operator, as this struct is intentionally opaque. Its total
   // size and field layout is not part of the public, stable, memory-safe API.
@@ -5496,7 +5490,7 @@ struct wuffs_deflate__decoder__struct {
   // different, so that passing the latter will be rejected by the initialize
   // function, we add an arbitrary amount of dead weight.
   uint8_t dead_weight[123000000];  // 123 MB.
-#endif  // defined(WUFFS_HAS_CPP11) && !defined(WUFFS_IMPLEMENTATION)
+#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
 
   inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
   initialize(
@@ -5681,25 +5675,24 @@ struct wuffs_lzw__decoder__struct {
   } private_data;
 
 #ifdef __cplusplus
-#if defined(WUFFS_HAS_CPP11)
+#if (__cplusplus >= 201103L)
   using unique_ptr = std::unique_ptr<wuffs_lzw__decoder, decltype(&free)>;
 
   // On failure, the alloc_etc functions return nullptr. They don't throw.
 
   static inline unique_ptr
   alloc() {
-    return std::unique_ptr<wuffs_lzw__decoder, decltype(&free)>(
-        wuffs_lzw__decoder__alloc(), &free);
+    return unique_ptr(wuffs_lzw__decoder__alloc(), &free);
   }
 
   static inline wuffs_base__io_transformer::unique_ptr
   alloc_as__wuffs_base__io_transformer() {
-    return std::unique_ptr<wuffs_base__io_transformer, decltype(&free)>(
+    return wuffs_base__io_transformer::unique_ptr(
         wuffs_lzw__decoder__alloc_as__wuffs_base__io_transformer(), &free);
   }
-#endif  // defined(WUFFS_HAS_CPP11)
+#endif  // (__cplusplus >= 201103L)
 
-#if defined(WUFFS_HAS_CPP11) && !defined(WUFFS_IMPLEMENTATION)
+#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
   // e.g. the "new" operator, as this struct is intentionally opaque. Its total
   // size and field layout is not part of the public, stable, memory-safe API.
@@ -5725,7 +5718,7 @@ struct wuffs_lzw__decoder__struct {
   // different, so that passing the latter will be rejected by the initialize
   // function, we add an arbitrary amount of dead weight.
   uint8_t dead_weight[123000000];  // 123 MB.
-#endif  // defined(WUFFS_HAS_CPP11) && !defined(WUFFS_IMPLEMENTATION)
+#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
 
   inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
   initialize(
@@ -6126,25 +6119,24 @@ struct wuffs_gif__config_decoder__struct {
   } private_data;
 
 #ifdef __cplusplus
-#if defined(WUFFS_HAS_CPP11)
+#if (__cplusplus >= 201103L)
   using unique_ptr = std::unique_ptr<wuffs_gif__config_decoder, decltype(&free)>;
 
   // On failure, the alloc_etc functions return nullptr. They don't throw.
 
   static inline unique_ptr
   alloc() {
-    return std::unique_ptr<wuffs_gif__config_decoder, decltype(&free)>(
-        wuffs_gif__config_decoder__alloc(), &free);
+    return unique_ptr(wuffs_gif__config_decoder__alloc(), &free);
   }
 
   static inline wuffs_base__image_decoder::unique_ptr
   alloc_as__wuffs_base__image_decoder() {
-    return std::unique_ptr<wuffs_base__image_decoder, decltype(&free)>(
+    return wuffs_base__image_decoder::unique_ptr(
         wuffs_gif__config_decoder__alloc_as__wuffs_base__image_decoder(), &free);
   }
-#endif  // defined(WUFFS_HAS_CPP11)
+#endif  // (__cplusplus >= 201103L)
 
-#if defined(WUFFS_HAS_CPP11) && !defined(WUFFS_IMPLEMENTATION)
+#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
   // e.g. the "new" operator, as this struct is intentionally opaque. Its total
   // size and field layout is not part of the public, stable, memory-safe API.
@@ -6170,7 +6162,7 @@ struct wuffs_gif__config_decoder__struct {
   // different, so that passing the latter will be rejected by the initialize
   // function, we add an arbitrary amount of dead weight.
   uint8_t dead_weight[123000000];  // 123 MB.
-#endif  // defined(WUFFS_HAS_CPP11) && !defined(WUFFS_IMPLEMENTATION)
+#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
 
   inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
   initialize(
@@ -6390,25 +6382,24 @@ struct wuffs_gif__decoder__struct {
   } private_data;
 
 #ifdef __cplusplus
-#if defined(WUFFS_HAS_CPP11)
+#if (__cplusplus >= 201103L)
   using unique_ptr = std::unique_ptr<wuffs_gif__decoder, decltype(&free)>;
 
   // On failure, the alloc_etc functions return nullptr. They don't throw.
 
   static inline unique_ptr
   alloc() {
-    return std::unique_ptr<wuffs_gif__decoder, decltype(&free)>(
-        wuffs_gif__decoder__alloc(), &free);
+    return unique_ptr(wuffs_gif__decoder__alloc(), &free);
   }
 
   static inline wuffs_base__image_decoder::unique_ptr
   alloc_as__wuffs_base__image_decoder() {
-    return std::unique_ptr<wuffs_base__image_decoder, decltype(&free)>(
+    return wuffs_base__image_decoder::unique_ptr(
         wuffs_gif__decoder__alloc_as__wuffs_base__image_decoder(), &free);
   }
-#endif  // defined(WUFFS_HAS_CPP11)
+#endif  // (__cplusplus >= 201103L)
 
-#if defined(WUFFS_HAS_CPP11) && !defined(WUFFS_IMPLEMENTATION)
+#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
   // e.g. the "new" operator, as this struct is intentionally opaque. Its total
   // size and field layout is not part of the public, stable, memory-safe API.
@@ -6434,7 +6425,7 @@ struct wuffs_gif__decoder__struct {
   // different, so that passing the latter will be rejected by the initialize
   // function, we add an arbitrary amount of dead weight.
   uint8_t dead_weight[123000000];  // 123 MB.
-#endif  // defined(WUFFS_HAS_CPP11) && !defined(WUFFS_IMPLEMENTATION)
+#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
 
   inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
   initialize(
@@ -6664,25 +6655,24 @@ struct wuffs_gzip__decoder__struct {
   } private_data;
 
 #ifdef __cplusplus
-#if defined(WUFFS_HAS_CPP11)
+#if (__cplusplus >= 201103L)
   using unique_ptr = std::unique_ptr<wuffs_gzip__decoder, decltype(&free)>;
 
   // On failure, the alloc_etc functions return nullptr. They don't throw.
 
   static inline unique_ptr
   alloc() {
-    return std::unique_ptr<wuffs_gzip__decoder, decltype(&free)>(
-        wuffs_gzip__decoder__alloc(), &free);
+    return unique_ptr(wuffs_gzip__decoder__alloc(), &free);
   }
 
   static inline wuffs_base__io_transformer::unique_ptr
   alloc_as__wuffs_base__io_transformer() {
-    return std::unique_ptr<wuffs_base__io_transformer, decltype(&free)>(
+    return wuffs_base__io_transformer::unique_ptr(
         wuffs_gzip__decoder__alloc_as__wuffs_base__io_transformer(), &free);
   }
-#endif  // defined(WUFFS_HAS_CPP11)
+#endif  // (__cplusplus >= 201103L)
 
-#if defined(WUFFS_HAS_CPP11) && !defined(WUFFS_IMPLEMENTATION)
+#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
   // e.g. the "new" operator, as this struct is intentionally opaque. Its total
   // size and field layout is not part of the public, stable, memory-safe API.
@@ -6708,7 +6698,7 @@ struct wuffs_gzip__decoder__struct {
   // different, so that passing the latter will be rejected by the initialize
   // function, we add an arbitrary amount of dead weight.
   uint8_t dead_weight[123000000];  // 123 MB.
-#endif  // defined(WUFFS_HAS_CPP11) && !defined(WUFFS_IMPLEMENTATION)
+#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
 
   inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
   initialize(
@@ -6932,25 +6922,24 @@ struct wuffs_json__decoder__struct {
   } private_data;
 
 #ifdef __cplusplus
-#if defined(WUFFS_HAS_CPP11)
+#if (__cplusplus >= 201103L)
   using unique_ptr = std::unique_ptr<wuffs_json__decoder, decltype(&free)>;
 
   // On failure, the alloc_etc functions return nullptr. They don't throw.
 
   static inline unique_ptr
   alloc() {
-    return std::unique_ptr<wuffs_json__decoder, decltype(&free)>(
-        wuffs_json__decoder__alloc(), &free);
+    return unique_ptr(wuffs_json__decoder__alloc(), &free);
   }
 
   static inline wuffs_base__token_decoder::unique_ptr
   alloc_as__wuffs_base__token_decoder() {
-    return std::unique_ptr<wuffs_base__token_decoder, decltype(&free)>(
+    return wuffs_base__token_decoder::unique_ptr(
         wuffs_json__decoder__alloc_as__wuffs_base__token_decoder(), &free);
   }
-#endif  // defined(WUFFS_HAS_CPP11)
+#endif  // (__cplusplus >= 201103L)
 
-#if defined(WUFFS_HAS_CPP11) && !defined(WUFFS_IMPLEMENTATION)
+#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
   // e.g. the "new" operator, as this struct is intentionally opaque. Its total
   // size and field layout is not part of the public, stable, memory-safe API.
@@ -6976,7 +6965,7 @@ struct wuffs_json__decoder__struct {
   // different, so that passing the latter will be rejected by the initialize
   // function, we add an arbitrary amount of dead weight.
   uint8_t dead_weight[123000000];  // 123 MB.
-#endif  // defined(WUFFS_HAS_CPP11) && !defined(WUFFS_IMPLEMENTATION)
+#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
 
   inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
   initialize(
@@ -7200,25 +7189,24 @@ struct wuffs_wbmp__decoder__struct {
   } private_data;
 
 #ifdef __cplusplus
-#if defined(WUFFS_HAS_CPP11)
+#if (__cplusplus >= 201103L)
   using unique_ptr = std::unique_ptr<wuffs_wbmp__decoder, decltype(&free)>;
 
   // On failure, the alloc_etc functions return nullptr. They don't throw.
 
   static inline unique_ptr
   alloc() {
-    return std::unique_ptr<wuffs_wbmp__decoder, decltype(&free)>(
-        wuffs_wbmp__decoder__alloc(), &free);
+    return unique_ptr(wuffs_wbmp__decoder__alloc(), &free);
   }
 
   static inline wuffs_base__image_decoder::unique_ptr
   alloc_as__wuffs_base__image_decoder() {
-    return std::unique_ptr<wuffs_base__image_decoder, decltype(&free)>(
+    return wuffs_base__image_decoder::unique_ptr(
         wuffs_wbmp__decoder__alloc_as__wuffs_base__image_decoder(), &free);
   }
-#endif  // defined(WUFFS_HAS_CPP11)
+#endif  // (__cplusplus >= 201103L)
 
-#if defined(WUFFS_HAS_CPP11) && !defined(WUFFS_IMPLEMENTATION)
+#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
   // e.g. the "new" operator, as this struct is intentionally opaque. Its total
   // size and field layout is not part of the public, stable, memory-safe API.
@@ -7244,7 +7232,7 @@ struct wuffs_wbmp__decoder__struct {
   // different, so that passing the latter will be rejected by the initialize
   // function, we add an arbitrary amount of dead weight.
   uint8_t dead_weight[123000000];  // 123 MB.
-#endif  // defined(WUFFS_HAS_CPP11) && !defined(WUFFS_IMPLEMENTATION)
+#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
 
   inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
   initialize(
@@ -7489,25 +7477,24 @@ struct wuffs_zlib__decoder__struct {
   } private_data;
 
 #ifdef __cplusplus
-#if defined(WUFFS_HAS_CPP11)
+#if (__cplusplus >= 201103L)
   using unique_ptr = std::unique_ptr<wuffs_zlib__decoder, decltype(&free)>;
 
   // On failure, the alloc_etc functions return nullptr. They don't throw.
 
   static inline unique_ptr
   alloc() {
-    return std::unique_ptr<wuffs_zlib__decoder, decltype(&free)>(
-        wuffs_zlib__decoder__alloc(), &free);
+    return unique_ptr(wuffs_zlib__decoder__alloc(), &free);
   }
 
   static inline wuffs_base__io_transformer::unique_ptr
   alloc_as__wuffs_base__io_transformer() {
-    return std::unique_ptr<wuffs_base__io_transformer, decltype(&free)>(
+    return wuffs_base__io_transformer::unique_ptr(
         wuffs_zlib__decoder__alloc_as__wuffs_base__io_transformer(), &free);
   }
-#endif  // defined(WUFFS_HAS_CPP11)
+#endif  // (__cplusplus >= 201103L)
 
-#if defined(WUFFS_HAS_CPP11) && !defined(WUFFS_IMPLEMENTATION)
+#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
   // e.g. the "new" operator, as this struct is intentionally opaque. Its total
   // size and field layout is not part of the public, stable, memory-safe API.
@@ -7533,7 +7520,7 @@ struct wuffs_zlib__decoder__struct {
   // different, so that passing the latter will be rejected by the initialize
   // function, we add an arbitrary amount of dead weight.
   uint8_t dead_weight[123000000];  // 123 MB.
-#endif  // defined(WUFFS_HAS_CPP11) && !defined(WUFFS_IMPLEMENTATION)
+#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
 
   inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
   initialize(
