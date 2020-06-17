@@ -1166,14 +1166,15 @@ func (g *gen) writeCppMethods(b *buffer, n *a.Struct) error {
 	b.writes("// On failure, the alloc_etc functions return nullptr. They don't throw.\n\n")
 	b.writes("static inline unique_ptr\n")
 	b.writes("alloc() {\n")
-	b.printf("return unique_ptr(%s%s__alloc(), &free);\n", g.pkgPrefix, structName)
+	b.printf("return std::unique_ptr<%s%s, decltype(&free)>(\n%s%s__alloc(), &free);\n",
+		g.pkgPrefix, structName, g.pkgPrefix, structName)
 	b.writes("}\n")
 	for _, impl := range n.Implements() {
 		iQID := impl.AsTypeExpr().QID()
 		iName := fmt.Sprintf("wuffs_%s__%s", iQID[0].Str(g.tm), iQID[1].Str(g.tm))
 		b.printf("\nstatic inline %s::unique_ptr\n", iName)
 		b.printf("alloc_as__%s() {\n", iName)
-		b.printf("return %s::unique_ptr(\n%s%s__alloc_as__%s(), &free);\n",
+		b.printf("return std::unique_ptr<%s, decltype(&free)>(\n%s%s__alloc_as__%s(), &free);\n",
 			iName, g.pkgPrefix, structName, iName)
 		b.printf("}\n")
 	}
