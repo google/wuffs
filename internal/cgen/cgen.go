@@ -97,6 +97,7 @@ const (
 var BaseSubModules = []string{
 	"core",
 	"f64conv",
+	"i64conv",
 	"interfaces",
 	"pixconv",
 }
@@ -125,6 +126,7 @@ func Do(args []string) error {
 				"// !! INSERT base/all-public.h.\n":        insertBaseAllPublicH,
 				"// !! INSERT base/copyright\n":            insertBaseCopyright,
 				"// !! INSERT base/f64conv-submodule.c.\n": insertBaseF64ConvSubmoduleC,
+				"// !! INSERT base/i64conv-submodule.c.\n": insertBaseI64ConvSubmoduleC,
 				"// !! INSERT base/pixconv-submodule.c.\n": insertBasePixConvSubmoduleC,
 				"// !! INSERT base/strconv-impl.c.\n":      insertBaseStrConvImplC,
 				"// !! INSERT vtable names.\n": func(b *buffer) error {
@@ -340,6 +342,11 @@ func insertBaseCopyright(buf *buffer) error {
 
 func insertBaseF64ConvSubmoduleC(buf *buffer) error {
 	buf.writes(data.BaseF64ConvSubmoduleC)
+	return nil
+}
+
+func insertBaseI64ConvSubmoduleC(buf *buffer) error {
+	buf.writes(data.BaseI64ConvSubmoduleC)
 	return nil
 }
 

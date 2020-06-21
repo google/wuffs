@@ -77,6 +77,7 @@ func genBase(out *bytes.Buffer) error {
 		{"../base/strconv-impl.c", "BaseStrConvImplC"},
 
 		{"../base/f64conv-submodule.c", "BaseF64ConvSubmoduleC"},
+		{"../base/i64conv-submodule.c", "BaseI64ConvSubmoduleC"},
 		{"../base/pixconv-submodule.c", "BasePixConvSubmoduleC"},
 
 		{"../base/fundamental-private.h", "BaseFundamentalPrivateH"},

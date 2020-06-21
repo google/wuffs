@@ -16,43 +16,20 @@
 
 // ---------------- String Conversions
 
-// wuffs_base__parse_number_i64 parses the ASCII integer in s. For example, if
-// s contains the bytes "-123" then it will return the int64_t -123.
-//
-// It returns an error if s does not contain an integer or if the integer
-// within would overflow an int64_t.
-//
-// It is similar to wuffs_base__parse_number_u64 but it returns a signed
-// integer, not an unsigned integer. It also allows a leading '+' or '-'.
-WUFFS_BASE__MAYBE_STATIC wuffs_base__result_i64  //
-wuffs_base__parse_number_i64(wuffs_base__slice_u8 s);
+// Options (bitwise or'ed together) for wuffs_base__render_number_etc
+// functions.
 
-// wuffs_base__parse_number_u64 parses the ASCII integer in s. For example, if
-// s contains the bytes "123" then it will return the uint64_t 123.
-//
-// It returns an error if s does not contain an integer or if the integer
-// within would overflow a uint64_t.
-//
-// It is similar to the C standard library's strtoull function, but:
-//  - Errors are returned in-band (in a result type), not out-of-band (errno).
-//  - It takes a slice (a pointer and length), not a NUL-terminated C string.
-//  - It does not take an optional endptr argument. It does not allow a partial
-//    parse: it returns an error unless all of s is consumed.
-//  - It does not allow whitespace, leading or otherwise.
-//  - It does not allow a leading '+' or '-'.
-//  - It does not allow unnecessary leading zeroes ("0" is valid and its sole
-//    zero is necessary). All of "00", "0644" and "007" are invalid.
-//  - It does not take a base argument (e.g. base 10 vs base 16). Instead, it
-//    always accepts both decimal (e.g "1234", "0d5678") and hexadecimal (e.g.
-//    "0x9aBC"). The caller is responsible for prior filtering of e.g. hex
-//    numbers if they are unwanted. For example, Wuffs' JSON decoder will only
-//    produce a wuffs_base__token for decimal numbers, not hexadecimal.
-//  - It is not affected by i18n / l10n settings such as environment variables.
-//  - It does allow arbitrary underscores, except inside the optional 2-byte
-//    opening "0d" or "0X" that denotes base-10 or base-16. For example,
-//    "__0D_1_002" would successfully parse as "one thousand and two".
-WUFFS_BASE__MAYBE_STATIC wuffs_base__result_u64  //
-wuffs_base__parse_number_u64(wuffs_base__slice_u8 s);
+#define WUFFS_BASE__RENDER_NUMBER__DEFAULT_OPTIONS ((uint32_t)0x00000000)
+
+// WUFFS_BASE__RENDER_NUMBER__ALIGN_RIGHT means to render to the right side
+// (higher indexes) of the destination slice, leaving any untouched bytes on
+// the left side (lower indexes). The default is vice versa: rendering on the
+// left with slack on the right.
+#define WUFFS_BASE__RENDER_NUMBER__ALIGN_RIGHT ((uint32_t)0x00000001)
+
+// WUFFS_BASE__RENDER_NUMBER__LEADING_PLUS_SIGN means to render the unnecessary
+// leading "+" for non-negative numbers: "+0" and "+123", not "0" and "123".
+#define WUFFS_BASE__RENDER_NUMBER__LEADING_PLUS_SIGN ((uint32_t)0x00000002)
 
 // ---------------- IEEE 754 Floating Point
 
@@ -97,50 +74,6 @@ wuffs_base__parse_number_f64(wuffs_base__slice_u8 s);
 
 // --------
 
-// Options (bitwise or'ed together) for wuffs_base__render_number_etc
-// functions.
-
-#define WUFFS_BASE__RENDER_NUMBER__DEFAULT_OPTIONS ((uint32_t)0x00000000)
-
-// WUFFS_BASE__RENDER_NUMBER__ALIGN_RIGHT means to render to the right side
-// (higher indexes) of the destination slice, leaving any untouched bytes on
-// the left side (lower indexes). The default is vice versa: rendering on the
-// left with slack on the right.
-#define WUFFS_BASE__RENDER_NUMBER__ALIGN_RIGHT ((uint32_t)0x00000001)
-
-// WUFFS_BASE__RENDER_NUMBER__LEADING_PLUS_SIGN means to render the unnecessary
-// leading "+" for non-negative numbers: "+0" and "+123", not "0" and "123".
-#define WUFFS_BASE__RENDER_NUMBER__LEADING_PLUS_SIGN ((uint32_t)0x00000002)
-
-// --------
-
-#define WUFFS_BASE__I64__BYTE_LENGTH__MAX_INCL 20
-#define WUFFS_BASE__U64__BYTE_LENGTH__MAX_INCL 21
-
-// wuffs_base__render_number_i64 writes the decimal encoding of x to dst and
-// returns the number of bytes written. If dst is shorter than the entire
-// encoding, it returns 0 (and no bytes are written).
-//
-// dst will never be too short if its length is at least 20, also known as
-// WUFFS_BASE__I64__BYTE_LENGTH__MAX_INCL.
-WUFFS_BASE__MAYBE_STATIC size_t  //
-wuffs_base__render_number_i64(wuffs_base__slice_u8 dst,
-                              int64_t x,
-                              uint32_t options);
-
-// wuffs_base__render_number_u64 writes the decimal encoding of x to dst and
-// returns the number of bytes written. If dst is shorter than the entire
-// encoding, it returns 0 (and no bytes are written).
-//
-// dst will never be too short if its length is at least 21, also known as
-// WUFFS_BASE__U64__BYTE_LENGTH__MAX_INCL.
-WUFFS_BASE__MAYBE_STATIC size_t  //
-wuffs_base__render_number_u64(wuffs_base__slice_u8 dst,
-                              uint64_t x,
-                              uint32_t options);
-
-// --------
-
 // wuffs_base__ieee_754_bit_representation__etc converts between a double
 // precision numerical value and its IEEE 754 64-bit representation (1 sign
 // bit, 11 exponent bits, 52 explicit significand bits).
@@ -169,6 +102,73 @@ wuffs_base__ieee_754_bit_representation__to_f64(uint64_t u) {
   }
   return f;
 }
+
+// ---------------- Integer
+
+// wuffs_base__parse_number_i64 parses the ASCII integer in s. For example, if
+// s contains the bytes "-123" then it will return the int64_t -123.
+//
+// It returns an error if s does not contain an integer or if the integer
+// within would overflow an int64_t.
+//
+// It is similar to wuffs_base__parse_number_u64 but it returns a signed
+// integer, not an unsigned integer. It also allows a leading '+' or '-'.
+WUFFS_BASE__MAYBE_STATIC wuffs_base__result_i64  //
+wuffs_base__parse_number_i64(wuffs_base__slice_u8 s);
+
+// wuffs_base__parse_number_u64 parses the ASCII integer in s. For example, if
+// s contains the bytes "123" then it will return the uint64_t 123.
+//
+// It returns an error if s does not contain an integer or if the integer
+// within would overflow a uint64_t.
+//
+// It is similar to the C standard library's strtoull function, but:
+//  - Errors are returned in-band (in a result type), not out-of-band (errno).
+//  - It takes a slice (a pointer and length), not a NUL-terminated C string.
+//  - It does not take an optional endptr argument. It does not allow a partial
+//    parse: it returns an error unless all of s is consumed.
+//  - It does not allow whitespace, leading or otherwise.
+//  - It does not allow a leading '+' or '-'.
+//  - It does not allow unnecessary leading zeroes ("0" is valid and its sole
+//    zero is necessary). All of "00", "0644" and "007" are invalid.
+//  - It does not take a base argument (e.g. base 10 vs base 16). Instead, it
+//    always accepts both decimal (e.g "1234", "0d5678") and hexadecimal (e.g.
+//    "0x9aBC"). The caller is responsible for prior filtering of e.g. hex
+//    numbers if they are unwanted. For example, Wuffs' JSON decoder will only
+//    produce a wuffs_base__token for decimal numbers, not hexadecimal.
+//  - It is not affected by i18n / l10n settings such as environment variables.
+//  - It does allow arbitrary underscores, except inside the optional 2-byte
+//    opening "0d" or "0X" that denotes base-10 or base-16. For example,
+//    "__0D_1_002" would successfully parse as "one thousand and two".
+WUFFS_BASE__MAYBE_STATIC wuffs_base__result_u64  //
+wuffs_base__parse_number_u64(wuffs_base__slice_u8 s);
+
+// --------
+
+#define WUFFS_BASE__I64__BYTE_LENGTH__MAX_INCL 20
+#define WUFFS_BASE__U64__BYTE_LENGTH__MAX_INCL 21
+
+// wuffs_base__render_number_i64 writes the decimal encoding of x to dst and
+// returns the number of bytes written. If dst is shorter than the entire
+// encoding, it returns 0 (and no bytes are written).
+//
+// dst will never be too short if its length is at least 20, also known as
+// WUFFS_BASE__I64__BYTE_LENGTH__MAX_INCL.
+WUFFS_BASE__MAYBE_STATIC size_t  //
+wuffs_base__render_number_i64(wuffs_base__slice_u8 dst,
+                              int64_t x,
+                              uint32_t options);
+
+// wuffs_base__render_number_u64 writes the decimal encoding of x to dst and
+// returns the number of bytes written. If dst is shorter than the entire
+// encoding, it returns 0 (and no bytes are written).
+//
+// dst will never be too short if its length is at least 21, also known as
+// WUFFS_BASE__U64__BYTE_LENGTH__MAX_INCL.
+WUFFS_BASE__MAYBE_STATIC size_t  //
+wuffs_base__render_number_u64(wuffs_base__slice_u8 dst,
+                              uint64_t x,
+                              uint32_t options);
 
 // ---------------- Hexadecimal
 
