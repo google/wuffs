@@ -110,7 +110,9 @@ extern "C" {
 #define WUFFS_BASE__WARN_UNUSED_RESULT
 #endif
 
-// Flags for wuffs_foo__bar__initialize functions.
+// --------
+
+// Options (bitwise or'ed together) for wuffs_foo__bar__initialize functions.
 
 #define WUFFS_INITIALIZE__DEFAULT_OPTIONS ((uint32_t)0x00000000)
 
@@ -4646,14 +4648,14 @@ typedef struct wuffs_adler32__hasher__struct wuffs_adler32__hasher;
 // etc)" should be called before any other "wuffs_foo__bar__xxx(self, etc)".
 //
 // Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.
-// Pass 0 (or some combination of WUFFS_INITIALIZE__XXX) for initialize_flags.
+// Pass 0 (or some combination of WUFFS_INITIALIZE__XXX) for options.
 
 wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
 wuffs_adler32__hasher__initialize(
     wuffs_adler32__hasher* self,
     size_t sizeof_star_self,
     uint64_t wuffs_version,
-    uint32_t initialize_flags);
+    uint32_t options);
 
 size_t
 sizeof__wuffs_adler32__hasher();
@@ -4772,9 +4774,9 @@ struct wuffs_adler32__hasher__struct {
   initialize(
       size_t sizeof_star_self,
       uint64_t wuffs_version,
-      uint32_t initialize_flags) {
+      uint32_t options) {
     return wuffs_adler32__hasher__initialize(
-        this, sizeof_star_self, wuffs_version, initialize_flags);
+        this, sizeof_star_self, wuffs_version, options);
   }
 
   inline wuffs_base__hasher_u32*
@@ -4827,14 +4829,14 @@ typedef struct wuffs_bmp__decoder__struct wuffs_bmp__decoder;
 // etc)" should be called before any other "wuffs_foo__bar__xxx(self, etc)".
 //
 // Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.
-// Pass 0 (or some combination of WUFFS_INITIALIZE__XXX) for initialize_flags.
+// Pass 0 (or some combination of WUFFS_INITIALIZE__XXX) for options.
 
 wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
 wuffs_bmp__decoder__initialize(
     wuffs_bmp__decoder* self,
     size_t sizeof_star_self,
     uint64_t wuffs_version,
-    uint32_t initialize_flags);
+    uint32_t options);
 
 size_t
 sizeof__wuffs_bmp__decoder();
@@ -5047,9 +5049,9 @@ struct wuffs_bmp__decoder__struct {
   initialize(
       size_t sizeof_star_self,
       uint64_t wuffs_version,
-      uint32_t initialize_flags) {
+      uint32_t options) {
     return wuffs_bmp__decoder__initialize(
-        this, sizeof_star_self, wuffs_version, initialize_flags);
+        this, sizeof_star_self, wuffs_version, options);
   }
 
   inline wuffs_base__image_decoder*
@@ -5162,14 +5164,14 @@ typedef struct wuffs_crc32__ieee_hasher__struct wuffs_crc32__ieee_hasher;
 // etc)" should be called before any other "wuffs_foo__bar__xxx(self, etc)".
 //
 // Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.
-// Pass 0 (or some combination of WUFFS_INITIALIZE__XXX) for initialize_flags.
+// Pass 0 (or some combination of WUFFS_INITIALIZE__XXX) for options.
 
 wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
 wuffs_crc32__ieee_hasher__initialize(
     wuffs_crc32__ieee_hasher* self,
     size_t sizeof_star_self,
     uint64_t wuffs_version,
-    uint32_t initialize_flags);
+    uint32_t options);
 
 size_t
 sizeof__wuffs_crc32__ieee_hasher();
@@ -5287,9 +5289,9 @@ struct wuffs_crc32__ieee_hasher__struct {
   initialize(
       size_t sizeof_star_self,
       uint64_t wuffs_version,
-      uint32_t initialize_flags) {
+      uint32_t options) {
     return wuffs_crc32__ieee_hasher__initialize(
-        this, sizeof_star_self, wuffs_version, initialize_flags);
+        this, sizeof_star_self, wuffs_version, options);
   }
 
   inline wuffs_base__hasher_u32*
@@ -5353,14 +5355,14 @@ typedef struct wuffs_deflate__decoder__struct wuffs_deflate__decoder;
 // etc)" should be called before any other "wuffs_foo__bar__xxx(self, etc)".
 //
 // Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.
-// Pass 0 (or some combination of WUFFS_INITIALIZE__XXX) for initialize_flags.
+// Pass 0 (or some combination of WUFFS_INITIALIZE__XXX) for options.
 
 wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
 wuffs_deflate__decoder__initialize(
     wuffs_deflate__decoder* self,
     size_t sizeof_star_self,
     uint64_t wuffs_version,
-    uint32_t initialize_flags);
+    uint32_t options);
 
 size_t
 sizeof__wuffs_deflate__decoder();
@@ -5541,9 +5543,9 @@ struct wuffs_deflate__decoder__struct {
   initialize(
       size_t sizeof_star_self,
       uint64_t wuffs_version,
-      uint32_t initialize_flags) {
+      uint32_t options) {
     return wuffs_deflate__decoder__initialize(
-        this, sizeof_star_self, wuffs_version, initialize_flags);
+        this, sizeof_star_self, wuffs_version, options);
   }
 
   inline wuffs_base__io_transformer*
@@ -5608,14 +5610,14 @@ typedef struct wuffs_lzw__decoder__struct wuffs_lzw__decoder;
 // etc)" should be called before any other "wuffs_foo__bar__xxx(self, etc)".
 //
 // Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.
-// Pass 0 (or some combination of WUFFS_INITIALIZE__XXX) for initialize_flags.
+// Pass 0 (or some combination of WUFFS_INITIALIZE__XXX) for options.
 
 wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
 wuffs_lzw__decoder__initialize(
     wuffs_lzw__decoder* self,
     size_t sizeof_star_self,
     uint64_t wuffs_version,
-    uint32_t initialize_flags);
+    uint32_t options);
 
 size_t
 sizeof__wuffs_lzw__decoder();
@@ -5769,9 +5771,9 @@ struct wuffs_lzw__decoder__struct {
   initialize(
       size_t sizeof_star_self,
       uint64_t wuffs_version,
-      uint32_t initialize_flags) {
+      uint32_t options) {
     return wuffs_lzw__decoder__initialize(
-        this, sizeof_star_self, wuffs_version, initialize_flags);
+        this, sizeof_star_self, wuffs_version, options);
   }
 
   inline wuffs_base__io_transformer*
@@ -5862,14 +5864,14 @@ typedef struct wuffs_gif__decoder__struct wuffs_gif__decoder;
 // etc)" should be called before any other "wuffs_foo__bar__xxx(self, etc)".
 //
 // Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.
-// Pass 0 (or some combination of WUFFS_INITIALIZE__XXX) for initialize_flags.
+// Pass 0 (or some combination of WUFFS_INITIALIZE__XXX) for options.
 
 wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
 wuffs_gif__config_decoder__initialize(
     wuffs_gif__config_decoder* self,
     size_t sizeof_star_self,
     uint64_t wuffs_version,
-    uint32_t initialize_flags);
+    uint32_t options);
 
 size_t
 sizeof__wuffs_gif__config_decoder();
@@ -5879,7 +5881,7 @@ wuffs_gif__decoder__initialize(
     wuffs_gif__decoder* self,
     size_t sizeof_star_self,
     uint64_t wuffs_version,
-    uint32_t initialize_flags);
+    uint32_t options);
 
 size_t
 sizeof__wuffs_gif__decoder();
@@ -6213,9 +6215,9 @@ struct wuffs_gif__config_decoder__struct {
   initialize(
       size_t sizeof_star_self,
       uint64_t wuffs_version,
-      uint32_t initialize_flags) {
+      uint32_t options) {
     return wuffs_gif__config_decoder__initialize(
-        this, sizeof_star_self, wuffs_version, initialize_flags);
+        this, sizeof_star_self, wuffs_version, options);
   }
 
   inline wuffs_base__image_decoder*
@@ -6476,9 +6478,9 @@ struct wuffs_gif__decoder__struct {
   initialize(
       size_t sizeof_star_self,
       uint64_t wuffs_version,
-      uint32_t initialize_flags) {
+      uint32_t options) {
     return wuffs_gif__decoder__initialize(
-        this, sizeof_star_self, wuffs_version, initialize_flags);
+        this, sizeof_star_self, wuffs_version, options);
   }
 
   inline wuffs_base__image_decoder*
@@ -6598,14 +6600,14 @@ typedef struct wuffs_gzip__decoder__struct wuffs_gzip__decoder;
 // etc)" should be called before any other "wuffs_foo__bar__xxx(self, etc)".
 //
 // Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.
-// Pass 0 (or some combination of WUFFS_INITIALIZE__XXX) for initialize_flags.
+// Pass 0 (or some combination of WUFFS_INITIALIZE__XXX) for options.
 
 wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
 wuffs_gzip__decoder__initialize(
     wuffs_gzip__decoder* self,
     size_t sizeof_star_self,
     uint64_t wuffs_version,
-    uint32_t initialize_flags);
+    uint32_t options);
 
 size_t
 sizeof__wuffs_gzip__decoder();
@@ -6749,9 +6751,9 @@ struct wuffs_gzip__decoder__struct {
   initialize(
       size_t sizeof_star_self,
       uint64_t wuffs_version,
-      uint32_t initialize_flags) {
+      uint32_t options) {
     return wuffs_gzip__decoder__initialize(
-        this, sizeof_star_self, wuffs_version, initialize_flags);
+        this, sizeof_star_self, wuffs_version, options);
   }
 
   inline wuffs_base__io_transformer*
@@ -6863,14 +6865,14 @@ typedef struct wuffs_json__decoder__struct wuffs_json__decoder;
 // etc)" should be called before any other "wuffs_foo__bar__xxx(self, etc)".
 //
 // Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.
-// Pass 0 (or some combination of WUFFS_INITIALIZE__XXX) for initialize_flags.
+// Pass 0 (or some combination of WUFFS_INITIALIZE__XXX) for options.
 
 wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
 wuffs_json__decoder__initialize(
     wuffs_json__decoder* self,
     size_t sizeof_star_self,
     uint64_t wuffs_version,
-    uint32_t initialize_flags);
+    uint32_t options);
 
 size_t
 sizeof__wuffs_json__decoder();
@@ -7016,9 +7018,9 @@ struct wuffs_json__decoder__struct {
   initialize(
       size_t sizeof_star_self,
       uint64_t wuffs_version,
-      uint32_t initialize_flags) {
+      uint32_t options) {
     return wuffs_json__decoder__initialize(
-        this, sizeof_star_self, wuffs_version, initialize_flags);
+        this, sizeof_star_self, wuffs_version, options);
   }
 
   inline wuffs_base__token_decoder*
@@ -7077,14 +7079,14 @@ typedef struct wuffs_wbmp__decoder__struct wuffs_wbmp__decoder;
 // etc)" should be called before any other "wuffs_foo__bar__xxx(self, etc)".
 //
 // Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.
-// Pass 0 (or some combination of WUFFS_INITIALIZE__XXX) for initialize_flags.
+// Pass 0 (or some combination of WUFFS_INITIALIZE__XXX) for options.
 
 wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
 wuffs_wbmp__decoder__initialize(
     wuffs_wbmp__decoder* self,
     size_t sizeof_star_self,
     uint64_t wuffs_version,
-    uint32_t initialize_flags);
+    uint32_t options);
 
 size_t
 sizeof__wuffs_wbmp__decoder();
@@ -7283,9 +7285,9 @@ struct wuffs_wbmp__decoder__struct {
   initialize(
       size_t sizeof_star_self,
       uint64_t wuffs_version,
-      uint32_t initialize_flags) {
+      uint32_t options) {
     return wuffs_wbmp__decoder__initialize(
-        this, sizeof_star_self, wuffs_version, initialize_flags);
+        this, sizeof_star_self, wuffs_version, options);
   }
 
   inline wuffs_base__image_decoder*
@@ -7407,14 +7409,14 @@ typedef struct wuffs_zlib__decoder__struct wuffs_zlib__decoder;
 // etc)" should be called before any other "wuffs_foo__bar__xxx(self, etc)".
 //
 // Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.
-// Pass 0 (or some combination of WUFFS_INITIALIZE__XXX) for initialize_flags.
+// Pass 0 (or some combination of WUFFS_INITIALIZE__XXX) for options.
 
 wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
 wuffs_zlib__decoder__initialize(
     wuffs_zlib__decoder* self,
     size_t sizeof_star_self,
     uint64_t wuffs_version,
-    uint32_t initialize_flags);
+    uint32_t options);
 
 size_t
 sizeof__wuffs_zlib__decoder();
@@ -7571,9 +7573,9 @@ struct wuffs_zlib__decoder__struct {
   initialize(
       size_t sizeof_star_self,
       uint64_t wuffs_version,
-      uint32_t initialize_flags) {
+      uint32_t options) {
     return wuffs_zlib__decoder__initialize(
-        this, sizeof_star_self, wuffs_version, initialize_flags);
+        this, sizeof_star_self, wuffs_version, options);
   }
 
   inline wuffs_base__io_transformer*
@@ -12237,7 +12239,7 @@ wuffs_adler32__hasher__initialize(
     wuffs_adler32__hasher* self,
     size_t sizeof_star_self,
     uint64_t wuffs_version,
-    uint32_t initialize_flags){
+    uint32_t options){
   if (!self) {
     return wuffs_base__make_status(wuffs_base__error__bad_receiver);
   }
@@ -12249,7 +12251,7 @@ wuffs_adler32__hasher__initialize(
     return wuffs_base__make_status(wuffs_base__error__bad_wuffs_version);
   }
 
-  if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) != 0) {
+  if ((options & WUFFS_INITIALIZE__ALREADY_ZEROED) != 0) {
     // The whole point of this if-check is to detect an uninitialized *self.
     // We disable the warning on GCC. Clang-5.0 does not have this warning.
 #if !defined(__clang__) && defined(__GNUC__)
@@ -12263,9 +12265,9 @@ wuffs_adler32__hasher__initialize(
 #pragma GCC diagnostic pop
 #endif
   } else {
-    if ((initialize_flags & WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
+    if ((options & WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
       memset(self, 0, sizeof(*self));
-      initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;
+      options |= WUFFS_INITIALIZE__ALREADY_ZEROED;
     } else {
       memset(&(self->private_impl), 0, sizeof(self->private_impl));
     }
@@ -12458,7 +12460,7 @@ wuffs_bmp__decoder__initialize(
     wuffs_bmp__decoder* self,
     size_t sizeof_star_self,
     uint64_t wuffs_version,
-    uint32_t initialize_flags){
+    uint32_t options){
   if (!self) {
     return wuffs_base__make_status(wuffs_base__error__bad_receiver);
   }
@@ -12470,7 +12472,7 @@ wuffs_bmp__decoder__initialize(
     return wuffs_base__make_status(wuffs_base__error__bad_wuffs_version);
   }
 
-  if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) != 0) {
+  if ((options & WUFFS_INITIALIZE__ALREADY_ZEROED) != 0) {
     // The whole point of this if-check is to detect an uninitialized *self.
     // We disable the warning on GCC. Clang-5.0 does not have this warning.
 #if !defined(__clang__) && defined(__GNUC__)
@@ -12484,9 +12486,9 @@ wuffs_bmp__decoder__initialize(
 #pragma GCC diagnostic pop
 #endif
   } else {
-    if ((initialize_flags & WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
+    if ((options & WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
       memset(self, 0, sizeof(*self));
-      initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;
+      options |= WUFFS_INITIALIZE__ALREADY_ZEROED;
     } else {
       memset(&(self->private_impl), 0, sizeof(self->private_impl));
     }
@@ -14256,7 +14258,7 @@ wuffs_crc32__ieee_hasher__initialize(
     wuffs_crc32__ieee_hasher* self,
     size_t sizeof_star_self,
     uint64_t wuffs_version,
-    uint32_t initialize_flags){
+    uint32_t options){
   if (!self) {
     return wuffs_base__make_status(wuffs_base__error__bad_receiver);
   }
@@ -14268,7 +14270,7 @@ wuffs_crc32__ieee_hasher__initialize(
     return wuffs_base__make_status(wuffs_base__error__bad_wuffs_version);
   }
 
-  if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) != 0) {
+  if ((options & WUFFS_INITIALIZE__ALREADY_ZEROED) != 0) {
     // The whole point of this if-check is to detect an uninitialized *self.
     // We disable the warning on GCC. Clang-5.0 does not have this warning.
 #if !defined(__clang__) && defined(__GNUC__)
@@ -14282,9 +14284,9 @@ wuffs_crc32__ieee_hasher__initialize(
 #pragma GCC diagnostic pop
 #endif
   } else {
-    if ((initialize_flags & WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
+    if ((options & WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
       memset(self, 0, sizeof(*self));
-      initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;
+      options |= WUFFS_INITIALIZE__ALREADY_ZEROED;
     } else {
       memset(&(self->private_impl), 0, sizeof(self->private_impl));
     }
@@ -14587,7 +14589,7 @@ wuffs_deflate__decoder__initialize(
     wuffs_deflate__decoder* self,
     size_t sizeof_star_self,
     uint64_t wuffs_version,
-    uint32_t initialize_flags){
+    uint32_t options){
   if (!self) {
     return wuffs_base__make_status(wuffs_base__error__bad_receiver);
   }
@@ -14599,7 +14601,7 @@ wuffs_deflate__decoder__initialize(
     return wuffs_base__make_status(wuffs_base__error__bad_wuffs_version);
   }
 
-  if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) != 0) {
+  if ((options & WUFFS_INITIALIZE__ALREADY_ZEROED) != 0) {
     // The whole point of this if-check is to detect an uninitialized *self.
     // We disable the warning on GCC. Clang-5.0 does not have this warning.
 #if !defined(__clang__) && defined(__GNUC__)
@@ -14613,9 +14615,9 @@ wuffs_deflate__decoder__initialize(
 #pragma GCC diagnostic pop
 #endif
   } else {
-    if ((initialize_flags & WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
+    if ((options & WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
       memset(self, 0, sizeof(*self));
-      initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;
+      options |= WUFFS_INITIALIZE__ALREADY_ZEROED;
     } else {
       memset(&(self->private_impl), 0, sizeof(self->private_impl));
     }
@@ -16305,7 +16307,7 @@ wuffs_lzw__decoder__initialize(
     wuffs_lzw__decoder* self,
     size_t sizeof_star_self,
     uint64_t wuffs_version,
-    uint32_t initialize_flags){
+    uint32_t options){
   if (!self) {
     return wuffs_base__make_status(wuffs_base__error__bad_receiver);
   }
@@ -16317,7 +16319,7 @@ wuffs_lzw__decoder__initialize(
     return wuffs_base__make_status(wuffs_base__error__bad_wuffs_version);
   }
 
-  if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) != 0) {
+  if ((options & WUFFS_INITIALIZE__ALREADY_ZEROED) != 0) {
     // The whole point of this if-check is to detect an uninitialized *self.
     // We disable the warning on GCC. Clang-5.0 does not have this warning.
 #if !defined(__clang__) && defined(__GNUC__)
@@ -16331,9 +16333,9 @@ wuffs_lzw__decoder__initialize(
 #pragma GCC diagnostic pop
 #endif
   } else {
-    if ((initialize_flags & WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
+    if ((options & WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
       memset(self, 0, sizeof(*self));
-      initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;
+      options |= WUFFS_INITIALIZE__ALREADY_ZEROED;
     } else {
       memset(&(self->private_impl), 0, sizeof(self->private_impl));
     }
@@ -17043,7 +17045,7 @@ wuffs_gif__config_decoder__initialize(
     wuffs_gif__config_decoder* self,
     size_t sizeof_star_self,
     uint64_t wuffs_version,
-    uint32_t initialize_flags){
+    uint32_t options){
   if (!self) {
     return wuffs_base__make_status(wuffs_base__error__bad_receiver);
   }
@@ -17055,7 +17057,7 @@ wuffs_gif__config_decoder__initialize(
     return wuffs_base__make_status(wuffs_base__error__bad_wuffs_version);
   }
 
-  if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) != 0) {
+  if ((options & WUFFS_INITIALIZE__ALREADY_ZEROED) != 0) {
     // The whole point of this if-check is to detect an uninitialized *self.
     // We disable the warning on GCC. Clang-5.0 does not have this warning.
 #if !defined(__clang__) && defined(__GNUC__)
@@ -17069,9 +17071,9 @@ wuffs_gif__config_decoder__initialize(
 #pragma GCC diagnostic pop
 #endif
   } else {
-    if ((initialize_flags & WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
+    if ((options & WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
       memset(self, 0, sizeof(*self));
-      initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;
+      options |= WUFFS_INITIALIZE__ALREADY_ZEROED;
     } else {
       memset(&(self->private_impl), 0, sizeof(self->private_impl));
     }
@@ -17110,7 +17112,7 @@ wuffs_gif__decoder__initialize(
     wuffs_gif__decoder* self,
     size_t sizeof_star_self,
     uint64_t wuffs_version,
-    uint32_t initialize_flags){
+    uint32_t options){
   if (!self) {
     return wuffs_base__make_status(wuffs_base__error__bad_receiver);
   }
@@ -17122,7 +17124,7 @@ wuffs_gif__decoder__initialize(
     return wuffs_base__make_status(wuffs_base__error__bad_wuffs_version);
   }
 
-  if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) != 0) {
+  if ((options & WUFFS_INITIALIZE__ALREADY_ZEROED) != 0) {
     // The whole point of this if-check is to detect an uninitialized *self.
     // We disable the warning on GCC. Clang-5.0 does not have this warning.
 #if !defined(__clang__) && defined(__GNUC__)
@@ -17136,9 +17138,9 @@ wuffs_gif__decoder__initialize(
 #pragma GCC diagnostic pop
 #endif
   } else {
-    if ((initialize_flags & WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
+    if ((options & WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
       memset(self, 0, sizeof(*self));
-      initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;
+      options |= WUFFS_INITIALIZE__ALREADY_ZEROED;
     } else {
       memset(&(self->private_impl), 0, sizeof(self->private_impl));
     }
@@ -17146,7 +17148,7 @@ wuffs_gif__decoder__initialize(
 
   {
     wuffs_base__status z = wuffs_lzw__decoder__initialize(
-        &self->private_data.f_lzw, sizeof(self->private_data.f_lzw), WUFFS_VERSION, initialize_flags);
+        &self->private_data.f_lzw, sizeof(self->private_data.f_lzw), WUFFS_VERSION, options);
     if (z.repr) {
       return z;
     }
@@ -21303,7 +21305,7 @@ wuffs_gzip__decoder__initialize(
     wuffs_gzip__decoder* self,
     size_t sizeof_star_self,
     uint64_t wuffs_version,
-    uint32_t initialize_flags){
+    uint32_t options){
   if (!self) {
     return wuffs_base__make_status(wuffs_base__error__bad_receiver);
   }
@@ -21315,7 +21317,7 @@ wuffs_gzip__decoder__initialize(
     return wuffs_base__make_status(wuffs_base__error__bad_wuffs_version);
   }
 
-  if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) != 0) {
+  if ((options & WUFFS_INITIALIZE__ALREADY_ZEROED) != 0) {
     // The whole point of this if-check is to detect an uninitialized *self.
     // We disable the warning on GCC. Clang-5.0 does not have this warning.
 #if !defined(__clang__) && defined(__GNUC__)
@@ -21329,9 +21331,9 @@ wuffs_gzip__decoder__initialize(
 #pragma GCC diagnostic pop
 #endif
   } else {
-    if ((initialize_flags & WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
+    if ((options & WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
       memset(self, 0, sizeof(*self));
-      initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;
+      options |= WUFFS_INITIALIZE__ALREADY_ZEROED;
     } else {
       memset(&(self->private_impl), 0, sizeof(self->private_impl));
     }
@@ -21339,14 +21341,14 @@ wuffs_gzip__decoder__initialize(
 
   {
     wuffs_base__status z = wuffs_crc32__ieee_hasher__initialize(
-        &self->private_data.f_checksum, sizeof(self->private_data.f_checksum), WUFFS_VERSION, initialize_flags);
+        &self->private_data.f_checksum, sizeof(self->private_data.f_checksum), WUFFS_VERSION, options);
     if (z.repr) {
       return z;
     }
   }
   {
     wuffs_base__status z = wuffs_deflate__decoder__initialize(
-        &self->private_data.f_flate, sizeof(self->private_data.f_flate), WUFFS_VERSION, initialize_flags);
+        &self->private_data.f_flate, sizeof(self->private_data.f_flate), WUFFS_VERSION, options);
     if (z.repr) {
       return z;
     }
@@ -22079,7 +22081,7 @@ wuffs_json__decoder__initialize(
     wuffs_json__decoder* self,
     size_t sizeof_star_self,
     uint64_t wuffs_version,
-    uint32_t initialize_flags){
+    uint32_t options){
   if (!self) {
     return wuffs_base__make_status(wuffs_base__error__bad_receiver);
   }
@@ -22091,7 +22093,7 @@ wuffs_json__decoder__initialize(
     return wuffs_base__make_status(wuffs_base__error__bad_wuffs_version);
   }
 
-  if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) != 0) {
+  if ((options & WUFFS_INITIALIZE__ALREADY_ZEROED) != 0) {
     // The whole point of this if-check is to detect an uninitialized *self.
     // We disable the warning on GCC. Clang-5.0 does not have this warning.
 #if !defined(__clang__) && defined(__GNUC__)
@@ -22105,9 +22107,9 @@ wuffs_json__decoder__initialize(
 #pragma GCC diagnostic pop
 #endif
   } else {
-    if ((initialize_flags & WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
+    if ((options & WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
       memset(self, 0, sizeof(*self));
-      initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;
+      options |= WUFFS_INITIALIZE__ALREADY_ZEROED;
     } else {
       memset(&(self->private_impl), 0, sizeof(self->private_impl));
     }
@@ -24025,7 +24027,7 @@ wuffs_wbmp__decoder__initialize(
     wuffs_wbmp__decoder* self,
     size_t sizeof_star_self,
     uint64_t wuffs_version,
-    uint32_t initialize_flags){
+    uint32_t options){
   if (!self) {
     return wuffs_base__make_status(wuffs_base__error__bad_receiver);
   }
@@ -24037,7 +24039,7 @@ wuffs_wbmp__decoder__initialize(
     return wuffs_base__make_status(wuffs_base__error__bad_wuffs_version);
   }
 
-  if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) != 0) {
+  if ((options & WUFFS_INITIALIZE__ALREADY_ZEROED) != 0) {
     // The whole point of this if-check is to detect an uninitialized *self.
     // We disable the warning on GCC. Clang-5.0 does not have this warning.
 #if !defined(__clang__) && defined(__GNUC__)
@@ -24051,9 +24053,9 @@ wuffs_wbmp__decoder__initialize(
 #pragma GCC diagnostic pop
 #endif
   } else {
-    if ((initialize_flags & WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
+    if ((options & WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
       memset(self, 0, sizeof(*self));
-      initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;
+      options |= WUFFS_INITIALIZE__ALREADY_ZEROED;
     } else {
       memset(&(self->private_impl), 0, sizeof(self->private_impl));
     }
@@ -24799,7 +24801,7 @@ wuffs_zlib__decoder__initialize(
     wuffs_zlib__decoder* self,
     size_t sizeof_star_self,
     uint64_t wuffs_version,
-    uint32_t initialize_flags){
+    uint32_t options){
   if (!self) {
     return wuffs_base__make_status(wuffs_base__error__bad_receiver);
   }
@@ -24811,7 +24813,7 @@ wuffs_zlib__decoder__initialize(
     return wuffs_base__make_status(wuffs_base__error__bad_wuffs_version);
   }
 
-  if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) != 0) {
+  if ((options & WUFFS_INITIALIZE__ALREADY_ZEROED) != 0) {
     // The whole point of this if-check is to detect an uninitialized *self.
     // We disable the warning on GCC. Clang-5.0 does not have this warning.
 #if !defined(__clang__) && defined(__GNUC__)
@@ -24825,9 +24827,9 @@ wuffs_zlib__decoder__initialize(
 #pragma GCC diagnostic pop
 #endif
   } else {
-    if ((initialize_flags & WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
+    if ((options & WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
       memset(self, 0, sizeof(*self));
-      initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;
+      options |= WUFFS_INITIALIZE__ALREADY_ZEROED;
     } else {
       memset(&(self->private_impl), 0, sizeof(self->private_impl));
     }
@@ -24835,21 +24837,21 @@ wuffs_zlib__decoder__initialize(
 
   {
     wuffs_base__status z = wuffs_adler32__hasher__initialize(
-        &self->private_data.f_checksum, sizeof(self->private_data.f_checksum), WUFFS_VERSION, initialize_flags);
+        &self->private_data.f_checksum, sizeof(self->private_data.f_checksum), WUFFS_VERSION, options);
     if (z.repr) {
       return z;
     }
   }
   {
     wuffs_base__status z = wuffs_adler32__hasher__initialize(
-        &self->private_data.f_dict_id_hasher, sizeof(self->private_data.f_dict_id_hasher), WUFFS_VERSION, initialize_flags);
+        &self->private_data.f_dict_id_hasher, sizeof(self->private_data.f_dict_id_hasher), WUFFS_VERSION, options);
     if (z.repr) {
       return z;
     }
   }
   {
     wuffs_base__status z = wuffs_deflate__decoder__initialize(
-        &self->private_data.f_flate, sizeof(self->private_data.f_flate), WUFFS_VERSION, initialize_flags);
+        &self->private_data.f_flate, sizeof(self->private_data.f_flate), WUFFS_VERSION, options);
     if (z.repr) {
       return z;
     }

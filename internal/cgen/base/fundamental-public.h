@@ -76,7 +76,9 @@
 #define WUFFS_BASE__WARN_UNUSED_RESULT
 #endif
 
-// Flags for wuffs_foo__bar__initialize functions.
+// --------
+
+// Options (bitwise or'ed together) for wuffs_foo__bar__initialize functions.
 
 #define WUFFS_INITIALIZE__DEFAULT_OPTIONS ((uint32_t)0x00000000)
 

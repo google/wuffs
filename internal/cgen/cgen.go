@@ -706,7 +706,7 @@ func (g *gen) genHeader(b *buffer) error {
 	b.writes("// etc)\" should be called before any other \"wuffs_foo__bar__xxx(self, etc)\".\n")
 	b.writes("//\n")
 	b.writes("// Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.\n")
-	b.writes("// Pass 0 (or some combination of WUFFS_INITIALIZE__XXX) for initialize_flags.\n\n")
+	b.writes("// Pass 0 (or some combination of WUFFS_INITIALIZE__XXX) for options.\n\n")
 	for _, n := range g.structList {
 		if n.Public() {
 			if err := g.writeInitializerPrototype(b, n); err != nil {
@@ -1207,8 +1207,8 @@ func (g *gen) writeCppMethods(b *buffer, n *a.Struct) error {
 	b.writes("#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)\n\n")
 
 	b.writes("inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT\n" +
-		"initialize(\nsize_t sizeof_star_self,\nuint64_t wuffs_version,\nuint32_t initialize_flags) {\n")
-	b.printf("return %s%s__initialize(\nthis, sizeof_star_self, wuffs_version, initialize_flags);\n}\n\n",
+		"initialize(\nsize_t sizeof_star_self,\nuint64_t wuffs_version,\nuint32_t options) {\n")
+	b.printf("return %s%s__initialize(\nthis, sizeof_star_self, wuffs_version, options);\n}\n\n",
 		g.pkgPrefix, structName)
 
 	for _, impl := range n.Implements() {
@@ -1297,7 +1297,7 @@ func (g *gen) writeInitializerSignature(b *buffer, n *a.Struct, public bool) err
 		"    %s%s* self,\n"+
 		"    size_t sizeof_star_self,\n"+
 		"    uint64_t wuffs_version,\n"+
-		"    uint32_t initialize_flags)",
+		"    uint32_t options)",
 		g.pkgPrefix, structName, g.pkgPrefix, structName)
 	return nil
 }
@@ -1352,7 +1352,7 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 	b.writes("  return wuffs_base__make_status(wuffs_base__error__bad_wuffs_version);\n")
 	b.writes("}\n\n")
 
-	b.writes("if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) != 0) {\n")
+	b.writes("if ((options & WUFFS_INITIALIZE__ALREADY_ZEROED) != 0) {\n")
 	b.writes("  // The whole point of this if-check is to detect an uninitialized *self.\n")
 	b.writes("  // We disable the warning on GCC. Clang-5.0 does not have this warning.\n")
 	b.writes("  #if !defined(__clang__) && defined(__GNUC__)\n")
@@ -1366,9 +1366,9 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 	b.writes("  #pragma GCC diagnostic pop\n")
 	b.writes("  #endif\n")
 	b.writes("} else {\n")
-	b.writes("  if ((initialize_flags & WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {\n")
+	b.writes("  if ((options & WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {\n")
 	b.writes("    memset(self, 0, sizeof(*self));\n")
-	b.writes("    initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;\n")
+	b.writes("    options |= WUFFS_INITIALIZE__ALREADY_ZEROED;\n")
 	b.writes("  } else {\n")
 	b.writes("    memset(&(self->private_impl), 0, sizeof(self->private_impl));\n")
 	b.writes("  }\n")
@@ -1398,7 +1398,7 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 
 		b.printf("{\n")
 		b.printf("wuffs_base__status z = %s%s__initialize(\n"+
-			"&self->private_data.%s%s, sizeof(self->private_data.%s%s), WUFFS_VERSION, initialize_flags);\n",
+			"&self->private_data.%s%s, sizeof(self->private_data.%s%s), WUFFS_VERSION, options);\n",
 			prefix, qid[1].Str(g.tm), fPrefix, f.Name().Str(g.tm), fPrefix, f.Name().Str(g.tm))
 		b.printf("if (z.repr) {\nreturn z;\n}\n")
 		b.printf("}\n")
