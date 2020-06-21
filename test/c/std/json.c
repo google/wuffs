@@ -859,6 +859,159 @@ test_wuffs_strconv_parse_number_u64() {
 }
 
 const char*  //
+test_wuffs_strconv_render_number_i64() {
+  CHECK_FOCUS(__func__);
+
+  struct {
+    int64_t x;
+    const char* want;
+  } test_cases[] = {
+      {.x = +0x0000000000000000l, .want = "0"},
+      {.x = +0x0000000000000009l, .want = "9"},
+      {.x = +0x000000000000000Al, .want = "10"},
+      {.x = +0x000000000000004Al, .want = "74"},
+      {.x = +0x0000000000000063l, .want = "99"},
+      {.x = +0x0000000000000064l, .want = "100"},
+      {.x = +0x000000000000007Cl, .want = "124"},
+      {.x = +0x00000000000001F4l, .want = "500"},
+      {.x = +0x000000000000036Cl, .want = "876"},
+      {.x = +0x000000000000036Fl, .want = "879"},
+      {.x = +0x0000000000000929l, .want = "2345"},
+      {.x = +0x0000000000010932l, .want = "67890"},
+      {.x = +0x00000000FFFFFFFFl, .want = "4294967295"},
+      {.x = +0x0000000100000000l, .want = "4294967296"},
+      {.x = +0x0123456789ABCDEFl, .want = "81985529216486895"},
+      {.x = +0x7FFFFFFFFFFFFFFFl, .want = "9223372036854775807"},
+
+      {.x = -0x0000000000000009l, .want = "-9"},
+      {.x = -0x000000000000000Al, .want = "-10"},
+      {.x = -0x000000000000004Al, .want = "-74"},
+      {.x = -0x0000000000000063l, .want = "-99"},
+      {.x = -0x0000000000000064l, .want = "-100"},
+      {.x = -0x000000000000007Cl, .want = "-124"},
+      {.x = -0x00000000000001F4l, .want = "-500"},
+      {.x = -0x000000000000036Cl, .want = "-876"},
+      {.x = -0x000000000000036Fl, .want = "-879"},
+      {.x = -0x0000000000000929l, .want = "-2345"},
+      {.x = -0x0000000000010932l, .want = "-67890"},
+      {.x = -0x00000000FFFFFFFFl, .want = "-4294967295"},
+      {.x = -0x0000000100000000l, .want = "-4294967296"},
+      {.x = -0x0123456789ABCDEFl, .want = "-81985529216486895"},
+      {.x = -0x7FFFFFFFFFFFFFFFl, .want = "-9223372036854775807"},
+      {.x = -0x8000000000000000l, .want = "-9223372036854775808"},
+  };
+
+  if (g_have_slice_u8.len < WUFFS_BASE__I64__BYTE_LENGTH__MAX_INCL) {
+    return "g_have_slice_u8.len is too short";
+  }
+
+  int tc;
+  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+    size_t n = wuffs_base__render_number_i64(
+        g_have_slice_u8, test_cases[tc].x,
+        WUFFS_BASE__RENDER_NUMBER__DEFAULT_OPTIONS);
+    if (n == 0) {
+      RETURN_FAIL("%" PRId64 ": could not render", test_cases[tc].x);
+    } else if (n >= g_have_slice_u8.len) {
+      RETURN_FAIL("%" PRId64 ": n is too large", test_cases[tc].x);
+    }
+    g_have_slice_u8.ptr[n] = 0x00;
+    if (strcmp((const char*)(g_have_slice_u8.ptr), test_cases[tc].want) != 0) {
+      RETURN_FAIL("%" PRId64 ": have \"%s\", want \"%s\"", test_cases[tc].x,
+                  g_have_slice_u8.ptr, test_cases[tc].want);
+    }
+  }
+
+  return NULL;
+}
+
+const char*  //
+test_wuffs_strconv_render_number_u64() {
+  CHECK_FOCUS(__func__);
+
+  struct {
+    uint64_t x;
+    const char* want;
+  } test_cases[] = {
+      {.x = 0x0000000000000000l, .want = "0"},
+      {.x = 0x0000000000000009l, .want = "9"},
+      {.x = 0x000000000000000Al, .want = "10"},
+      {.x = 0x000000000000004Al, .want = "74"},
+      {.x = 0x0000000000000063l, .want = "99"},
+      {.x = 0x0000000000000064l, .want = "100"},
+      {.x = 0x000000000000007Cl, .want = "124"},
+      {.x = 0x00000000000001F4l, .want = "500"},
+      {.x = 0x000000000000036Cl, .want = "876"},
+      {.x = 0x000000000000036Fl, .want = "879"},
+      {.x = 0x0000000000000929l, .want = "2345"},
+      {.x = 0x0000000000010932l, .want = "67890"},
+      {.x = 0x00000000FFFFFFFFl, .want = "4294967295"},
+      {.x = 0x0000000100000000l, .want = "4294967296"},
+      {.x = 0x0123456789ABCDEFl, .want = "81985529216486895"},
+      {.x = 0x7FFFFFFFFFFFFFFFl, .want = "9223372036854775807"},
+      {.x = 0x8000000000000000l, .want = "9223372036854775808"},
+      {.x = 0xFFFFFFFFFFFFFFF9l, .want = "18446744073709551609"},
+      {.x = 0xFFFFFFFFFFFFFFFAl, .want = "18446744073709551610"},
+      {.x = 0xFFFFFFFFFFFFFFFEl, .want = "18446744073709551614"},
+      {.x = 0xFFFFFFFFFFFFFFFFl, .want = "18446744073709551615"},
+  };
+
+  if (g_have_slice_u8.len < WUFFS_BASE__U64__BYTE_LENGTH__MAX_INCL) {
+    return "g_have_slice_u8.len is too short";
+  }
+
+  int tc;
+  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+    size_t n = wuffs_base__render_number_u64(
+        g_have_slice_u8, test_cases[tc].x,
+        WUFFS_BASE__RENDER_NUMBER__DEFAULT_OPTIONS);
+    if (n == 0) {
+      RETURN_FAIL("%" PRIu64 ": could not render", test_cases[tc].x);
+    } else if (n >= g_have_slice_u8.len) {
+      RETURN_FAIL("%" PRIu64 ": n is too large", test_cases[tc].x);
+    }
+    g_have_slice_u8.ptr[n] = 0x00;
+    if (strcmp((const char*)(g_have_slice_u8.ptr), test_cases[tc].want) != 0) {
+      RETURN_FAIL("%" PRIu64 ": have \"%s\", want \"%s\"", test_cases[tc].x,
+                  g_have_slice_u8.ptr, test_cases[tc].want);
+    }
+  }
+
+  // Test dst slice is too short.
+  {
+    uint8_t dst[5];
+    size_t n = wuffs_base__render_number_u64(
+        wuffs_base__make_slice_u8(&dst[0], sizeof(dst)), 123456,
+        WUFFS_BASE__RENDER_NUMBER__DEFAULT_OPTIONS);
+    if (n != 0) {
+      RETURN_FAIL("dst too short: have %zu, want 0", n);
+    }
+  }
+
+  // Test options.
+  {
+    uint8_t dst[8];
+    memcpy(&dst[0], "ABCDEFG\x00", 8);
+    size_t n = wuffs_base__render_number_u64(
+        wuffs_base__make_slice_u8(&dst[0], sizeof(dst) - 1), 1234,
+        WUFFS_BASE__RENDER_NUMBER__ALIGN_RIGHT |
+            WUFFS_BASE__RENDER_NUMBER__LEADING_PLUS_SIGN);
+    if (n != 5) {
+      RETURN_FAIL("ALIGN_RIGHT | LEADING_PLUS_SIGN: have %zu, want 5", n);
+    }
+    uint64_t have = wuffs_base__load_u64be__no_bounds_check(&dst[0]);
+    uint64_t want = 0x41422B3132333400;  // "AB+1234\x00".
+    if (have != want) {
+      RETURN_FAIL("ALIGN_RIGHT | LEADING_PLUS_SIGN: have 0x%" PRIX64
+                  ", want 0x%" PRIX64,
+                  have, want);
+    }
+  }
+
+  return NULL;
+}
+
+const char*  //
 test_wuffs_strconv_utf_8_next() {
   CHECK_FOCUS(__func__);
 
@@ -2481,6 +2634,8 @@ proc g_tests[] = {
     test_wuffs_strconv_parse_number_f64,
     test_wuffs_strconv_parse_number_i64,
     test_wuffs_strconv_parse_number_u64,
+    test_wuffs_strconv_render_number_i64,
+    test_wuffs_strconv_render_number_u64,
     test_wuffs_strconv_utf_8_next,
 
     test_wuffs_json_decode_end_of_data,

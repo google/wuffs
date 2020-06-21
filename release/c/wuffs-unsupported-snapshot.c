@@ -3943,6 +3943,52 @@ wuffs_base__parse_number_u64(wuffs_base__slice_u8 s);
 WUFFS_BASE__MAYBE_STATIC wuffs_base__result_f64  //
 wuffs_base__parse_number_f64(wuffs_base__slice_u8 s);
 
+// --------
+
+// Options (bitwise or'ed together) for wuffs_base__render_number_etc
+// functions.
+
+#define WUFFS_BASE__RENDER_NUMBER__DEFAULT_OPTIONS ((uint32_t)0x00000000)
+
+// WUFFS_BASE__RENDER_NUMBER__ALIGN_RIGHT means to render to the right side
+// (higher indexes) of the destination slice, leaving any untouched bytes on
+// the left side (lower indexes). The default is vice versa: rendering on the
+// left with slack on the right.
+#define WUFFS_BASE__RENDER_NUMBER__ALIGN_RIGHT ((uint32_t)0x00000001)
+
+// WUFFS_BASE__RENDER_NUMBER__LEADING_PLUS_SIGN means to render the unnecessary
+// leading "+" for non-negative numbers: "+0" and "+123", not "0" and "123".
+#define WUFFS_BASE__RENDER_NUMBER__LEADING_PLUS_SIGN ((uint32_t)0x00000002)
+
+// --------
+
+#define WUFFS_BASE__I64__BYTE_LENGTH__MAX_INCL 20
+#define WUFFS_BASE__U64__BYTE_LENGTH__MAX_INCL 21
+
+// wuffs_base__render_number_i64 writes the decimal encoding of x to dst and
+// returns the number of bytes written. If dst is shorter than the entire
+// encoding, it returns 0 (and no bytes are written).
+//
+// dst will never be too short if its length is at least 20, also known as
+// WUFFS_BASE__I64__BYTE_LENGTH__MAX_INCL.
+WUFFS_BASE__MAYBE_STATIC size_t  //
+wuffs_base__render_number_i64(wuffs_base__slice_u8 dst,
+                              int64_t x,
+                              uint32_t options);
+
+// wuffs_base__render_number_u64 writes the decimal encoding of x to dst and
+// returns the number of bytes written. If dst is shorter than the entire
+// encoding, it returns 0 (and no bytes are written).
+//
+// dst will never be too short if its length is at least 21, also known as
+// WUFFS_BASE__U64__BYTE_LENGTH__MAX_INCL.
+WUFFS_BASE__MAYBE_STATIC size_t  //
+wuffs_base__render_number_u64(wuffs_base__slice_u8 dst,
+                              uint64_t x,
+                              uint32_t options);
+
+// --------
+
 // wuffs_base__ieee_754_bit_representation__etc converts between a double
 // precision numerical value and its IEEE 754 64-bit representation (1 sign
 // bit, 11 exponent bits, 52 explicit significand bits).
@@ -8472,6 +8518,103 @@ fail_out_of_bounds:
     ret.value = 0;
     return ret;
   } while (0);
+}
+
+// --------
+
+// wuffs_base__render_number__first_hundred contains the decimal encodings of
+// the first one hundred numbers [0 ..= 99].
+static const uint8_t wuffs_base__render_number__first_hundred[200] = {
+    '0', '0', '0', '1', '0', '2', '0', '3', '0', '4',  //
+    '0', '5', '0', '6', '0', '7', '0', '8', '0', '9',  //
+    '1', '0', '1', '1', '1', '2', '1', '3', '1', '4',  //
+    '1', '5', '1', '6', '1', '7', '1', '8', '1', '9',  //
+    '2', '0', '2', '1', '2', '2', '2', '3', '2', '4',  //
+    '2', '5', '2', '6', '2', '7', '2', '8', '2', '9',  //
+    '3', '0', '3', '1', '3', '2', '3', '3', '3', '4',  //
+    '3', '5', '3', '6', '3', '7', '3', '8', '3', '9',  //
+    '4', '0', '4', '1', '4', '2', '4', '3', '4', '4',  //
+    '4', '5', '4', '6', '4', '7', '4', '8', '4', '9',  //
+    '5', '0', '5', '1', '5', '2', '5', '3', '5', '4',  //
+    '5', '5', '5', '6', '5', '7', '5', '8', '5', '9',  //
+    '6', '0', '6', '1', '6', '2', '6', '3', '6', '4',  //
+    '6', '5', '6', '6', '6', '7', '6', '8', '6', '9',  //
+    '7', '0', '7', '1', '7', '2', '7', '3', '7', '4',  //
+    '7', '5', '7', '6', '7', '7', '7', '8', '7', '9',  //
+    '8', '0', '8', '1', '8', '2', '8', '3', '8', '4',  //
+    '8', '5', '8', '6', '8', '7', '8', '8', '8', '9',  //
+    '9', '0', '9', '1', '9', '2', '9', '3', '9', '4',  //
+    '9', '5', '9', '6', '9', '7', '9', '8', '9', '9',  //
+};
+
+static size_t  //
+wuffs_base__private_implementation__render_number_u64(wuffs_base__slice_u8 dst,
+                                                      uint64_t x,
+                                                      uint32_t options,
+                                                      bool neg) {
+  uint8_t buf[WUFFS_BASE__U64__BYTE_LENGTH__MAX_INCL];
+  uint8_t* ptr = &buf[0] + sizeof(buf);
+
+  while (x >= 100) {
+    size_t index = (x % 100) * 2;
+    x /= 100;
+    uint8_t s0 = wuffs_base__render_number__first_hundred[index + 0];
+    uint8_t s1 = wuffs_base__render_number__first_hundred[index + 1];
+    ptr -= 2;
+    ptr[0] = s0;
+    ptr[1] = s1;
+  }
+
+  if (x < 10) {
+    ptr -= 1;
+    ptr[0] = '0' + x;
+  } else {
+    size_t index = x * 2;
+    uint8_t s0 = wuffs_base__render_number__first_hundred[index + 0];
+    uint8_t s1 = wuffs_base__render_number__first_hundred[index + 1];
+    ptr -= 2;
+    ptr[0] = s0;
+    ptr[1] = s1;
+  }
+
+  if (neg) {
+    ptr -= 1;
+    ptr[0] = '-';
+  } else if (options & WUFFS_BASE__RENDER_NUMBER__LEADING_PLUS_SIGN) {
+    ptr -= 1;
+    ptr[0] = '+';
+  }
+
+  size_t n = sizeof(buf) - (ptr - &buf[0]);
+  if (n > dst.len) {
+    return 0;
+  }
+  memcpy(dst.ptr + ((options & WUFFS_BASE__RENDER_NUMBER__ALIGN_RIGHT)
+                        ? (dst.len - n)
+                        : 0),
+         ptr, n);
+  return n;
+}
+
+WUFFS_BASE__MAYBE_STATIC size_t  //
+wuffs_base__render_number_i64(wuffs_base__slice_u8 dst,
+                              int64_t x,
+                              uint32_t options) {
+  uint64_t u = x;
+  bool neg = x < 0;
+  if (neg) {
+    u = 1 + ~u;
+  }
+  return wuffs_base__private_implementation__render_number_u64(dst, u, options,
+                                                               neg);
+}
+
+WUFFS_BASE__MAYBE_STATIC size_t  //
+wuffs_base__render_number_u64(wuffs_base__slice_u8 dst,
+                              uint64_t x,
+                              uint32_t options) {
+  return wuffs_base__private_implementation__render_number_u64(dst, x, options,
+                                                               false);
 }
 
 // ---------------- Hexadecimal

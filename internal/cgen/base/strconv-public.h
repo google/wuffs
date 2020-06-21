@@ -95,6 +95,52 @@ wuffs_base__parse_number_u64(wuffs_base__slice_u8 s);
 WUFFS_BASE__MAYBE_STATIC wuffs_base__result_f64  //
 wuffs_base__parse_number_f64(wuffs_base__slice_u8 s);
 
+// --------
+
+// Options (bitwise or'ed together) for wuffs_base__render_number_etc
+// functions.
+
+#define WUFFS_BASE__RENDER_NUMBER__DEFAULT_OPTIONS ((uint32_t)0x00000000)
+
+// WUFFS_BASE__RENDER_NUMBER__ALIGN_RIGHT means to render to the right side
+// (higher indexes) of the destination slice, leaving any untouched bytes on
+// the left side (lower indexes). The default is vice versa: rendering on the
+// left with slack on the right.
+#define WUFFS_BASE__RENDER_NUMBER__ALIGN_RIGHT ((uint32_t)0x00000001)
+
+// WUFFS_BASE__RENDER_NUMBER__LEADING_PLUS_SIGN means to render the unnecessary
+// leading "+" for non-negative numbers: "+0" and "+123", not "0" and "123".
+#define WUFFS_BASE__RENDER_NUMBER__LEADING_PLUS_SIGN ((uint32_t)0x00000002)
+
+// --------
+
+#define WUFFS_BASE__I64__BYTE_LENGTH__MAX_INCL 20
+#define WUFFS_BASE__U64__BYTE_LENGTH__MAX_INCL 21
+
+// wuffs_base__render_number_i64 writes the decimal encoding of x to dst and
+// returns the number of bytes written. If dst is shorter than the entire
+// encoding, it returns 0 (and no bytes are written).
+//
+// dst will never be too short if its length is at least 20, also known as
+// WUFFS_BASE__I64__BYTE_LENGTH__MAX_INCL.
+WUFFS_BASE__MAYBE_STATIC size_t  //
+wuffs_base__render_number_i64(wuffs_base__slice_u8 dst,
+                              int64_t x,
+                              uint32_t options);
+
+// wuffs_base__render_number_u64 writes the decimal encoding of x to dst and
+// returns the number of bytes written. If dst is shorter than the entire
+// encoding, it returns 0 (and no bytes are written).
+//
+// dst will never be too short if its length is at least 21, also known as
+// WUFFS_BASE__U64__BYTE_LENGTH__MAX_INCL.
+WUFFS_BASE__MAYBE_STATIC size_t  //
+wuffs_base__render_number_u64(wuffs_base__slice_u8 dst,
+                              uint64_t x,
+                              uint32_t options);
+
+// --------
+
 // wuffs_base__ieee_754_bit_representation__etc converts between a double
 // precision numerical value and its IEEE 754 64-bit representation (1 sign
 // bit, 11 exponent bits, 52 explicit significand bits).
