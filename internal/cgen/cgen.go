@@ -100,6 +100,7 @@ var BaseSubModules = []string{
 	"i64conv",
 	"interfaces",
 	"pixconv",
+	"utf8",
 }
 
 // Do transpiles a Wuffs program to a C program.
@@ -128,7 +129,7 @@ func Do(args []string) error {
 				"// !! INSERT base/f64conv-submodule.c.\n": insertBaseF64ConvSubmoduleC,
 				"// !! INSERT base/i64conv-submodule.c.\n": insertBaseI64ConvSubmoduleC,
 				"// !! INSERT base/pixconv-submodule.c.\n": insertBasePixConvSubmoduleC,
-				"// !! INSERT base/strconv-impl.c.\n":      insertBaseStrConvImplC,
+				"// !! INSERT base/utf8-submodule.c.\n":    insertBaseUTF8SubmoduleC,
 				"// !! INSERT vtable names.\n": func(b *buffer) error {
 					for _, n := range builtin.Interfaces {
 						buf.printf("const char* wuffs_base__%s__vtable_name = "+
@@ -355,8 +356,8 @@ func insertBasePixConvSubmoduleC(buf *buffer) error {
 	return nil
 }
 
-func insertBaseStrConvImplC(buf *buffer) error {
-	buf.writes(data.BaseStrConvImplC)
+func insertBaseUTF8SubmoduleC(buf *buffer) error {
+	buf.writes(data.BaseUTF8SubmoduleC)
 	return nil
 }
 

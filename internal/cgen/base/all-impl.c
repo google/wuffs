@@ -120,8 +120,6 @@ const uint32_t wuffs_base__pixel_format__bits_per_channel[16] = {
 
 // !! INSERT vtable names.
 
-// !! INSERT base/strconv-impl.c.
-
 #endif  // !defined(WUFFS_CONFIG__MODULES) ||
         // defined(WUFFS_CONFIG__MODULE__BASE)  ||
         // defined(WUFFS_CONFIG__MODULE__BASE__CORE)
@@ -161,6 +159,15 @@ const uint32_t wuffs_base__pixel_format__bits_per_channel[16] = {
 #endif  // !defined(WUFFS_CONFIG__MODULES) ||
         // defined(WUFFS_CONFIG__MODULE__BASE) ||
         // defined(WUFFS_CONFIG__MODULE__BASE__PIXCONV)
+
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BASE) || \
+    defined(WUFFS_CONFIG__MODULE__BASE__UTF8)
+
+// !! INSERT base/utf8-submodule.c.
+
+#endif  // !defined(WUFFS_CONFIG__MODULES) ||
+        // defined(WUFFS_CONFIG__MODULE__BASE) ||
+        // defined(WUFFS_CONFIG__MODULE__BASE__UTF8)
 
 #ifdef __cplusplus
 }  // extern "C"

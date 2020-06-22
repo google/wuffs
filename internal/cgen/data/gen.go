@@ -74,11 +74,11 @@ func genBase(out *bytes.Buffer) error {
 		filename, varname string
 	}{
 		{"../base/all-impl.c", "BaseAllImplC"},
-		{"../base/strconv-impl.c", "BaseStrConvImplC"},
 
 		{"../base/f64conv-submodule.c", "BaseF64ConvSubmoduleC"},
 		{"../base/i64conv-submodule.c", "BaseI64ConvSubmoduleC"},
 		{"../base/pixconv-submodule.c", "BasePixConvSubmoduleC"},
+		{"../base/utf8-submodule.c", "BaseUTF8SubmoduleC"},
 
 		{"../base/fundamental-private.h", "BaseFundamentalPrivateH"},
 		{"../base/fundamental-public.h", "BaseFundamentalPublicH"},
