@@ -132,7 +132,7 @@ func Do(args []string) error {
 				"// !! INSERT base/utf8-submodule.c.\n":    insertBaseUTF8SubmoduleC,
 				"// !! INSERT vtable names.\n": func(b *buffer) error {
 					for _, n := range builtin.Interfaces {
-						buf.printf("const char* wuffs_base__%s__vtable_name = "+
+						buf.printf("const char* const wuffs_base__%s__vtable_name = "+
 							"\"{vtable}wuffs_base__%s\";\n", n, n)
 					}
 					return nil
@@ -149,7 +149,7 @@ func Do(args []string) error {
 						} else if msg[0] == '#' {
 							pre = "error"
 						}
-						b.printf("const char* wuffs_base__%s__%s = \"%sbase: %s\";\n",
+						b.printf("const char* const wuffs_base__%s__%s = \"%sbase: %s\";\n",
 							pre, cName(msg, ""), msg[:1], msg[1:])
 					}
 					return nil
@@ -313,7 +313,7 @@ func insertBaseAllPublicH(buf *buffer) error {
 				} else if statusMsgIsSuspension(msg) {
 					pre = "suspension"
 				}
-				b.printf("extern const char* wuffs_base__%s__%s;\n", pre, cName(msg, ""))
+				b.printf("extern const char* const wuffs_base__%s__%s;\n", pre, cName(msg, ""))
 			}
 			return nil
 		},
@@ -383,7 +383,7 @@ func insertInterfaceDeclarations(buf *buffer) error {
 
 		qid := t.QID{t.IDBase, builtInTokenMap.ByName(n)}
 
-		buf.printf("extern const char* wuffs_base__%s__vtable_name;\n\n", n)
+		buf.printf("extern const char* const wuffs_base__%s__vtable_name;\n\n", n)
 
 		buf.writes("typedef struct {\n")
 		for _, f := range builtInInterfaceMethods[qid] {
@@ -691,7 +691,7 @@ func (g *gen) genHeader(b *buffer) error {
 		if !z.fromThisPkg || !z.public {
 			continue
 		}
-		b.printf("extern const char* %s;\n", z.cName)
+		b.printf("extern const char* const %s;\n", z.cName)
 		wroteStatus = true
 	}
 	if wroteStatus {
@@ -798,7 +798,7 @@ func (g *gen) genImpl(b *buffer) error {
 		if !z.fromThisPkg || z.msg == "" {
 			continue
 		}
-		b.printf("const char* %s = \"%s%s: %s\";\n", z.cName, z.msg[:1], g.pkgName, z.msg[1:])
+		b.printf("const char* const %s = \"%s%s: %s\";\n", z.cName, z.msg[:1], g.pkgName, z.msg[1:])
 		wroteStatus = true
 	}
 	if wroteStatus {
