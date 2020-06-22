@@ -10426,7 +10426,7 @@ wuffs_base__private_implementation__render_number_u64(wuffs_base__slice_u8 dst,
 
   if (x < 10) {
     ptr -= 1;
-    ptr[0] = '0' + x;
+    ptr[0] = (uint8_t)('0' + x);
   } else {
     size_t index = x * 2;
     uint8_t s0 = wuffs_base__render_number__first_hundred[index + 0];
@@ -10444,7 +10444,7 @@ wuffs_base__private_implementation__render_number_u64(wuffs_base__slice_u8 dst,
     ptr[0] = '+';
   }
 
-  size_t n = sizeof(buf) - (ptr - &buf[0]);
+  size_t n = sizeof(buf) - ((size_t)(ptr - &buf[0]));
   if (n > dst.len) {
     return 0;
   }
@@ -10459,7 +10459,7 @@ WUFFS_BASE__MAYBE_STATIC size_t  //
 wuffs_base__render_number_i64(wuffs_base__slice_u8 dst,
                               int64_t x,
                               uint32_t options) {
-  uint64_t u = x;
+  uint64_t u = (uint64_t)x;
   bool neg = x < 0;
   if (neg) {
     u = 1 + ~u;
