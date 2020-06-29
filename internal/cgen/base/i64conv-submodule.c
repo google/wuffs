@@ -359,7 +359,7 @@ wuffs_base__private_implementation__render_number_u64(wuffs_base__slice_u8 dst,
   if (neg) {
     ptr -= 1;
     ptr[0] = '-';
-  } else if (options & WUFFS_BASE__RENDER_NUMBER__LEADING_PLUS_SIGN) {
+  } else if (options & WUFFS_BASE__RENDER_NUMBER_XXX__LEADING_PLUS_SIGN) {
     ptr -= 1;
     ptr[0] = '+';
   }
@@ -368,7 +368,7 @@ wuffs_base__private_implementation__render_number_u64(wuffs_base__slice_u8 dst,
   if (n > dst.len) {
     return 0;
   }
-  memcpy(dst.ptr + ((options & WUFFS_BASE__RENDER_NUMBER__ALIGN_RIGHT)
+  memcpy(dst.ptr + ((options & WUFFS_BASE__RENDER_NUMBER_XXX__ALIGN_RIGHT)
                         ? (dst.len - n)
                         : 0),
          ptr, n);

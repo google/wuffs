@@ -16,20 +16,49 @@
 
 // ---------------- String Conversions
 
-// Options (bitwise or'ed together) for wuffs_base__render_number_etc
-// functions.
+// Options (bitwise or'ed together) for wuffs_base__render_number_xxx
+// functions. The XXX options apply to both integer and floating point. The FXX
+// options apply only to floating point.
 
-#define WUFFS_BASE__RENDER_NUMBER__DEFAULT_OPTIONS ((uint32_t)0x00000000)
+#define WUFFS_BASE__RENDER_NUMBER_XXX__DEFAULT_OPTIONS ((uint32_t)0x00000000)
 
-// WUFFS_BASE__RENDER_NUMBER__ALIGN_RIGHT means to render to the right side
+// WUFFS_BASE__RENDER_NUMBER_XXX__ALIGN_RIGHT means to render to the right side
 // (higher indexes) of the destination slice, leaving any untouched bytes on
 // the left side (lower indexes). The default is vice versa: rendering on the
 // left with slack on the right.
-#define WUFFS_BASE__RENDER_NUMBER__ALIGN_RIGHT ((uint32_t)0x00000001)
+#define WUFFS_BASE__RENDER_NUMBER_XXX__ALIGN_RIGHT ((uint32_t)0x00000001)
 
-// WUFFS_BASE__RENDER_NUMBER__LEADING_PLUS_SIGN means to render the unnecessary
-// leading "+" for non-negative numbers: "+0" and "+123", not "0" and "123".
-#define WUFFS_BASE__RENDER_NUMBER__LEADING_PLUS_SIGN ((uint32_t)0x00000002)
+// WUFFS_BASE__RENDER_NUMBER_XXX__LEADING_PLUS_SIGN means to render the leading
+// "+" for non-negative numbers: "+0" and "+12.3" instead of "0" and "12.3".
+#define WUFFS_BASE__RENDER_NUMBER_XXX__LEADING_PLUS_SIGN ((uint32_t)0x00000002)
+
+// WUFFS_BASE__RENDER_NUMBER_FXX__DECIMAL_SEPARATOR_IS_A_COMMA means to render
+// one-and-a-half as "1,5" instead of "1.5".
+#define WUFFS_BASE__RENDER_NUMBER_FXX__DECIMAL_SEPARATOR_IS_A_COMMA \
+  ((uint32_t)0x00000100)
+
+// WUFFS_BASE__RENDER_NUMBER_FXX__EXPONENT_ETC means whether to never
+// (EXPONENT_ABSENT, equivalent to printf's "%f") or to always
+// (EXPONENT_PRESENT, equivalent to printf's "%e") render a floating point
+// number as "1.23e+05" instead of "123000".
+//
+// Having both bits set is the same has having neither bit set, where the
+// notation used depends on whether the exponent is sufficiently large: "0.5"
+// is preferred over "5e-01" but "5e-09" is preferred over "0.000000005".
+#define WUFFS_BASE__RENDER_NUMBER_FXX__EXPONENT_ABSENT ((uint32_t)0x00000200)
+#define WUFFS_BASE__RENDER_NUMBER_FXX__EXPONENT_PRESENT ((uint32_t)0x00000400)
+
+// WUFFS_BASE__RENDER_NUMBER_FXX__JUST_ENOUGH_PRECISION means to render the
+// smallest number of digits so that parsing the resultant string will recover
+// the same double-precision floating point number.
+//
+// For example, double-precision cannot distinguish between 0.3 and
+// 0.299999999999999988897769753748434595763683319091796875, so when this bit
+// is set, rendering the latter will produce "0.3" but rendering
+// 0.3000000000000000444089209850062616169452667236328125 will produce
+// "0.30000000000000004".
+#define WUFFS_BASE__RENDER_NUMBER_FXX__JUST_ENOUGH_PRECISION \
+  ((uint32_t)0x00000800)
 
 // ---------------- IEEE 754 Floating Point
 
@@ -147,6 +176,38 @@ wuffs_base__parse_number_u64(wuffs_base__slice_u8 s);
 
 #define WUFFS_BASE__I64__BYTE_LENGTH__MAX_INCL 20
 #define WUFFS_BASE__U64__BYTE_LENGTH__MAX_INCL 21
+
+// wuffs_base__render_number_f64 writes the decimal encoding of x to dst and
+// returns the number of bytes written. If dst is shorter than the entire
+// encoding, it returns 0 (and no bytes are written).
+//
+// For those familiar with C's printf or Go's fmt.Printf functions:
+//  - "%e" means the WUFFS_BASE__RENDER_NUMBER_FXX__EXPONENT_PRESENT option.
+//  - "%f" means the WUFFS_BASE__RENDER_NUMBER_FXX__EXPONENT_ABSENT  option.
+//  - "%g" means neither or both bits are set.
+//
+// The precision argument controls the number of digits rendered, excluding the
+// exponent (the "e+05" in "1.23e+05"):
+//  - for "%e" and "%f" it is the number of digits after the decimal separator,
+//  - for "%g" it is the number of significant digits (and trailing zeroes are
+//    removed).
+//
+// A precision of 6 gives similar output to printf's defaults.
+//
+// A precision greater than 4095 is equivalent to 4095.
+//
+// The precision argument is ignored when the
+// WUFFS_BASE__RENDER_NUMBER_FXX__JUST_ENOUGH_PRECISION option is set. This is
+// similar to Go's strconv.FormatFloat with a negative (i.e. non-sensical)
+// precision, but there is no corresponding feature in C's printf.
+//
+// Extreme values of x will be rendered as "NaN", "Inf" (or "+Inf" if the
+// WUFFS_BASE__RENDER_NUMBER_XXX__LEADING_PLUS_SIGN option is set) or "-Inf".
+WUFFS_BASE__MAYBE_STATIC size_t  //
+wuffs_base__render_number_f64(wuffs_base__slice_u8 dst,
+                              double x,
+                              uint32_t precision,
+                              uint32_t options);
 
 // wuffs_base__render_number_i64 writes the decimal encoding of x to dst and
 // returns the number of bytes written. If dst is shorter than the entire

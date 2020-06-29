@@ -281,6 +281,46 @@ typedef int64_t wuffs_base__flicks;
 // inline attribute to guide optimizations such as inlining, to avoid the
 // -Wunused-function warning, and we like to compile with -Wall -Werror.
 
+static inline int8_t  //
+wuffs_base__i8__min(int8_t x, int8_t y) {
+  return x < y ? x : y;
+}
+
+static inline int8_t  //
+wuffs_base__i8__max(int8_t x, int8_t y) {
+  return x > y ? x : y;
+}
+
+static inline int16_t  //
+wuffs_base__i16__min(int16_t x, int16_t y) {
+  return x < y ? x : y;
+}
+
+static inline int16_t  //
+wuffs_base__i16__max(int16_t x, int16_t y) {
+  return x > y ? x : y;
+}
+
+static inline int32_t  //
+wuffs_base__i32__min(int32_t x, int32_t y) {
+  return x < y ? x : y;
+}
+
+static inline int32_t  //
+wuffs_base__i32__max(int32_t x, int32_t y) {
+  return x > y ? x : y;
+}
+
+static inline int64_t  //
+wuffs_base__i64__min(int64_t x, int64_t y) {
+  return x < y ? x : y;
+}
+
+static inline int64_t  //
+wuffs_base__i64__max(int64_t x, int64_t y) {
+  return x > y ? x : y;
+}
+
 static inline uint8_t  //
 wuffs_base__u8__min(uint8_t x, uint8_t y) {
   return x < y ? x : y;
