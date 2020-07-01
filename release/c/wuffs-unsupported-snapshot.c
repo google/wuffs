@@ -194,36 +194,36 @@ typedef struct {
 
 } wuffs_base__status;
 
-extern const char* const wuffs_base__note__i_o_redirect;
-extern const char* const wuffs_base__note__end_of_data;
-extern const char* const wuffs_base__note__metadata_reported;
-extern const char* const wuffs_base__suspension__even_more_information;
-extern const char* const wuffs_base__suspension__mispositioned_read;
-extern const char* const wuffs_base__suspension__mispositioned_write;
-extern const char* const wuffs_base__suspension__short_read;
-extern const char* const wuffs_base__suspension__short_write;
-extern const char* const wuffs_base__error__bad_i_o_position;
-extern const char* const wuffs_base__error__bad_argument_length_too_short;
-extern const char* const wuffs_base__error__bad_argument;
-extern const char* const wuffs_base__error__bad_call_sequence;
-extern const char* const wuffs_base__error__bad_receiver;
-extern const char* const wuffs_base__error__bad_restart;
-extern const char* const wuffs_base__error__bad_sizeof_receiver;
-extern const char* const wuffs_base__error__bad_vtable;
-extern const char* const wuffs_base__error__bad_workbuf_length;
-extern const char* const wuffs_base__error__bad_wuffs_version;
-extern const char* const wuffs_base__error__cannot_return_a_suspension;
-extern const char* const wuffs_base__error__disabled_by_previous_error;
-extern const char* const wuffs_base__error__initialize_falsely_claimed_already_zeroed;
-extern const char* const wuffs_base__error__initialize_not_called;
-extern const char* const wuffs_base__error__interleaved_coroutine_calls;
-extern const char* const wuffs_base__error__no_more_information;
-extern const char* const wuffs_base__error__not_enough_data;
-extern const char* const wuffs_base__error__out_of_bounds;
-extern const char* const wuffs_base__error__unsupported_method;
-extern const char* const wuffs_base__error__unsupported_option;
-extern const char* const wuffs_base__error__unsupported_pixel_swizzler_option;
-extern const char* const wuffs_base__error__too_much_data;
+extern const char wuffs_base__note__i_o_redirect[];
+extern const char wuffs_base__note__end_of_data[];
+extern const char wuffs_base__note__metadata_reported[];
+extern const char wuffs_base__suspension__even_more_information[];
+extern const char wuffs_base__suspension__mispositioned_read[];
+extern const char wuffs_base__suspension__mispositioned_write[];
+extern const char wuffs_base__suspension__short_read[];
+extern const char wuffs_base__suspension__short_write[];
+extern const char wuffs_base__error__bad_i_o_position[];
+extern const char wuffs_base__error__bad_argument_length_too_short[];
+extern const char wuffs_base__error__bad_argument[];
+extern const char wuffs_base__error__bad_call_sequence[];
+extern const char wuffs_base__error__bad_receiver[];
+extern const char wuffs_base__error__bad_restart[];
+extern const char wuffs_base__error__bad_sizeof_receiver[];
+extern const char wuffs_base__error__bad_vtable[];
+extern const char wuffs_base__error__bad_workbuf_length[];
+extern const char wuffs_base__error__bad_wuffs_version[];
+extern const char wuffs_base__error__cannot_return_a_suspension[];
+extern const char wuffs_base__error__disabled_by_previous_error[];
+extern const char wuffs_base__error__initialize_falsely_claimed_already_zeroed[];
+extern const char wuffs_base__error__initialize_not_called[];
+extern const char wuffs_base__error__interleaved_coroutine_calls[];
+extern const char wuffs_base__error__no_more_information[];
+extern const char wuffs_base__error__not_enough_data[];
+extern const char wuffs_base__error__out_of_bounds[];
+extern const char wuffs_base__error__unsupported_method[];
+extern const char wuffs_base__error__unsupported_option[];
+extern const char wuffs_base__error__unsupported_pixel_swizzler_option[];
+extern const char wuffs_base__error__too_much_data[];
 
 static inline wuffs_base__status  //
 wuffs_base__make_status(const char* repr) {
@@ -4289,7 +4289,7 @@ wuffs_base__ascii__longest_valid_prefix(wuffs_base__slice_u8 s);
 
 // --------
 
-extern const char* const wuffs_base__hasher_u32__vtable_name;
+extern const char wuffs_base__hasher_u32__vtable_name[];
 
 typedef struct {
   wuffs_base__empty_struct (*set_quirk_enabled)(
@@ -4350,7 +4350,7 @@ struct wuffs_base__hasher_u32__struct {
 
 // --------
 
-extern const char* const wuffs_base__image_decoder__vtable_name;
+extern const char wuffs_base__image_decoder__vtable_name[];
 
 typedef struct {
   wuffs_base__status (*decode_frame)(
@@ -4571,7 +4571,7 @@ struct wuffs_base__image_decoder__struct {
 
 // --------
 
-extern const char* const wuffs_base__io_transformer__vtable_name;
+extern const char wuffs_base__io_transformer__vtable_name[];
 
 typedef struct {
   wuffs_base__empty_struct (*set_quirk_enabled)(
@@ -4649,7 +4649,7 @@ struct wuffs_base__io_transformer__struct {
 
 // --------
 
-extern const char* const wuffs_base__token_decoder__vtable_name;
+extern const char wuffs_base__token_decoder__vtable_name[];
 
 typedef struct {
   wuffs_base__status (*decode_tokens)(
@@ -4913,8 +4913,8 @@ extern "C" {
 
 // ---------------- Status Codes
 
-extern const char* const wuffs_bmp__error__bad_header;
-extern const char* const wuffs_bmp__error__unsupported_bmp_file;
+extern const char wuffs_bmp__error__bad_header[];
+extern const char wuffs_bmp__error__unsupported_bmp_file[];
 
 // ---------------- Public Consts
 
@@ -5428,19 +5428,19 @@ extern "C" {
 
 // ---------------- Status Codes
 
-extern const char* const wuffs_deflate__error__bad_huffman_code_over_subscribed;
-extern const char* const wuffs_deflate__error__bad_huffman_code_under_subscribed;
-extern const char* const wuffs_deflate__error__bad_huffman_code_length_count;
-extern const char* const wuffs_deflate__error__bad_huffman_code_length_repetition;
-extern const char* const wuffs_deflate__error__bad_huffman_code;
-extern const char* const wuffs_deflate__error__bad_huffman_minimum_code_length;
-extern const char* const wuffs_deflate__error__bad_block;
-extern const char* const wuffs_deflate__error__bad_distance;
-extern const char* const wuffs_deflate__error__bad_distance_code_count;
-extern const char* const wuffs_deflate__error__bad_literal_length_code_count;
-extern const char* const wuffs_deflate__error__inconsistent_stored_block_length;
-extern const char* const wuffs_deflate__error__missing_end_of_block_code;
-extern const char* const wuffs_deflate__error__no_huffman_codes;
+extern const char wuffs_deflate__error__bad_huffman_code_over_subscribed[];
+extern const char wuffs_deflate__error__bad_huffman_code_under_subscribed[];
+extern const char wuffs_deflate__error__bad_huffman_code_length_count[];
+extern const char wuffs_deflate__error__bad_huffman_code_length_repetition[];
+extern const char wuffs_deflate__error__bad_huffman_code[];
+extern const char wuffs_deflate__error__bad_huffman_minimum_code_length[];
+extern const char wuffs_deflate__error__bad_block[];
+extern const char wuffs_deflate__error__bad_distance[];
+extern const char wuffs_deflate__error__bad_distance_code_count[];
+extern const char wuffs_deflate__error__bad_literal_length_code_count[];
+extern const char wuffs_deflate__error__inconsistent_stored_block_length[];
+extern const char wuffs_deflate__error__missing_end_of_block_code[];
+extern const char wuffs_deflate__error__no_huffman_codes[];
 
 // ---------------- Public Consts
 
@@ -5695,7 +5695,7 @@ extern "C" {
 
 // ---------------- Status Codes
 
-extern const char* const wuffs_lzw__error__bad_code;
+extern const char wuffs_lzw__error__bad_code[];
 
 // ---------------- Public Consts
 
@@ -5928,12 +5928,12 @@ extern "C" {
 
 // ---------------- Status Codes
 
-extern const char* const wuffs_gif__error__bad_extension_label;
-extern const char* const wuffs_gif__error__bad_frame_size;
-extern const char* const wuffs_gif__error__bad_graphic_control;
-extern const char* const wuffs_gif__error__bad_header;
-extern const char* const wuffs_gif__error__bad_literal_width;
-extern const char* const wuffs_gif__error__bad_palette;
+extern const char wuffs_gif__error__bad_extension_label[];
+extern const char wuffs_gif__error__bad_frame_size[];
+extern const char wuffs_gif__error__bad_graphic_control[];
+extern const char wuffs_gif__error__bad_header[];
+extern const char wuffs_gif__error__bad_literal_width[];
+extern const char wuffs_gif__error__bad_palette[];
 
 // ---------------- Public Consts
 
@@ -6682,10 +6682,10 @@ extern "C" {
 
 // ---------------- Status Codes
 
-extern const char* const wuffs_gzip__error__bad_checksum;
-extern const char* const wuffs_gzip__error__bad_compression_method;
-extern const char* const wuffs_gzip__error__bad_encoding_flags;
-extern const char* const wuffs_gzip__error__bad_header;
+extern const char wuffs_gzip__error__bad_checksum[];
+extern const char wuffs_gzip__error__bad_compression_method[];
+extern const char wuffs_gzip__error__bad_encoding_flags[];
+extern const char wuffs_gzip__error__bad_header[];
 
 // ---------------- Public Consts
 
@@ -6903,12 +6903,12 @@ extern "C" {
 
 // ---------------- Status Codes
 
-extern const char* const wuffs_json__error__bad_c0_control_code;
-extern const char* const wuffs_json__error__bad_utf_8;
-extern const char* const wuffs_json__error__bad_backslash_escape;
-extern const char* const wuffs_json__error__bad_input;
-extern const char* const wuffs_json__error__unsupported_number_length;
-extern const char* const wuffs_json__error__unsupported_recursion_depth;
+extern const char wuffs_json__error__bad_c0_control_code[];
+extern const char wuffs_json__error__bad_utf_8[];
+extern const char wuffs_json__error__bad_backslash_escape[];
+extern const char wuffs_json__error__bad_input[];
+extern const char wuffs_json__error__unsupported_number_length[];
+extern const char wuffs_json__error__unsupported_recursion_depth[];
 
 // ---------------- Public Consts
 
@@ -7164,7 +7164,7 @@ extern "C" {
 
 // ---------------- Status Codes
 
-extern const char* const wuffs_wbmp__error__bad_header;
+extern const char wuffs_wbmp__error__bad_header[];
 
 // ---------------- Public Consts
 
@@ -7489,12 +7489,12 @@ extern "C" {
 
 // ---------------- Status Codes
 
-extern const char* const wuffs_zlib__note__dictionary_required;
-extern const char* const wuffs_zlib__error__bad_checksum;
-extern const char* const wuffs_zlib__error__bad_compression_method;
-extern const char* const wuffs_zlib__error__bad_compression_window_size;
-extern const char* const wuffs_zlib__error__bad_parity_check;
-extern const char* const wuffs_zlib__error__incorrect_dictionary;
+extern const char wuffs_zlib__note__dictionary_required[];
+extern const char wuffs_zlib__error__bad_checksum[];
+extern const char wuffs_zlib__error__bad_compression_method[];
+extern const char wuffs_zlib__error__bad_compression_window_size[];
+extern const char wuffs_zlib__error__bad_parity_check[];
+extern const char wuffs_zlib__error__incorrect_dictionary[];
 
 // ---------------- Public Consts
 
@@ -8302,41 +8302,41 @@ const uint32_t wuffs_base__pixel_format__bits_per_channel[16] = {
     0x08, 0x0A, 0x0C, 0x10, 0x18, 0x20, 0x30, 0x40,
 };
 
-const char* const wuffs_base__note__i_o_redirect = "@base: I/O redirect";
-const char* const wuffs_base__note__end_of_data = "@base: end of data";
-const char* const wuffs_base__note__metadata_reported = "@base: metadata reported";
-const char* const wuffs_base__suspension__even_more_information = "$base: even more information";
-const char* const wuffs_base__suspension__mispositioned_read = "$base: mispositioned read";
-const char* const wuffs_base__suspension__mispositioned_write = "$base: mispositioned write";
-const char* const wuffs_base__suspension__short_read = "$base: short read";
-const char* const wuffs_base__suspension__short_write = "$base: short write";
-const char* const wuffs_base__error__bad_i_o_position = "#base: bad I/O position";
-const char* const wuffs_base__error__bad_argument_length_too_short = "#base: bad argument (length too short)";
-const char* const wuffs_base__error__bad_argument = "#base: bad argument";
-const char* const wuffs_base__error__bad_call_sequence = "#base: bad call sequence";
-const char* const wuffs_base__error__bad_receiver = "#base: bad receiver";
-const char* const wuffs_base__error__bad_restart = "#base: bad restart";
-const char* const wuffs_base__error__bad_sizeof_receiver = "#base: bad sizeof receiver";
-const char* const wuffs_base__error__bad_vtable = "#base: bad vtable";
-const char* const wuffs_base__error__bad_workbuf_length = "#base: bad workbuf length";
-const char* const wuffs_base__error__bad_wuffs_version = "#base: bad wuffs version";
-const char* const wuffs_base__error__cannot_return_a_suspension = "#base: cannot return a suspension";
-const char* const wuffs_base__error__disabled_by_previous_error = "#base: disabled by previous error";
-const char* const wuffs_base__error__initialize_falsely_claimed_already_zeroed = "#base: initialize falsely claimed already zeroed";
-const char* const wuffs_base__error__initialize_not_called = "#base: initialize not called";
-const char* const wuffs_base__error__interleaved_coroutine_calls = "#base: interleaved coroutine calls";
-const char* const wuffs_base__error__no_more_information = "#base: no more information";
-const char* const wuffs_base__error__not_enough_data = "#base: not enough data";
-const char* const wuffs_base__error__out_of_bounds = "#base: out of bounds";
-const char* const wuffs_base__error__unsupported_method = "#base: unsupported method";
-const char* const wuffs_base__error__unsupported_option = "#base: unsupported option";
-const char* const wuffs_base__error__unsupported_pixel_swizzler_option = "#base: unsupported pixel swizzler option";
-const char* const wuffs_base__error__too_much_data = "#base: too much data";
+const char wuffs_base__note__i_o_redirect[] = "@base: I/O redirect";
+const char wuffs_base__note__end_of_data[] = "@base: end of data";
+const char wuffs_base__note__metadata_reported[] = "@base: metadata reported";
+const char wuffs_base__suspension__even_more_information[] = "$base: even more information";
+const char wuffs_base__suspension__mispositioned_read[] = "$base: mispositioned read";
+const char wuffs_base__suspension__mispositioned_write[] = "$base: mispositioned write";
+const char wuffs_base__suspension__short_read[] = "$base: short read";
+const char wuffs_base__suspension__short_write[] = "$base: short write";
+const char wuffs_base__error__bad_i_o_position[] = "#base: bad I/O position";
+const char wuffs_base__error__bad_argument_length_too_short[] = "#base: bad argument (length too short)";
+const char wuffs_base__error__bad_argument[] = "#base: bad argument";
+const char wuffs_base__error__bad_call_sequence[] = "#base: bad call sequence";
+const char wuffs_base__error__bad_receiver[] = "#base: bad receiver";
+const char wuffs_base__error__bad_restart[] = "#base: bad restart";
+const char wuffs_base__error__bad_sizeof_receiver[] = "#base: bad sizeof receiver";
+const char wuffs_base__error__bad_vtable[] = "#base: bad vtable";
+const char wuffs_base__error__bad_workbuf_length[] = "#base: bad workbuf length";
+const char wuffs_base__error__bad_wuffs_version[] = "#base: bad wuffs version";
+const char wuffs_base__error__cannot_return_a_suspension[] = "#base: cannot return a suspension";
+const char wuffs_base__error__disabled_by_previous_error[] = "#base: disabled by previous error";
+const char wuffs_base__error__initialize_falsely_claimed_already_zeroed[] = "#base: initialize falsely claimed already zeroed";
+const char wuffs_base__error__initialize_not_called[] = "#base: initialize not called";
+const char wuffs_base__error__interleaved_coroutine_calls[] = "#base: interleaved coroutine calls";
+const char wuffs_base__error__no_more_information[] = "#base: no more information";
+const char wuffs_base__error__not_enough_data[] = "#base: not enough data";
+const char wuffs_base__error__out_of_bounds[] = "#base: out of bounds";
+const char wuffs_base__error__unsupported_method[] = "#base: unsupported method";
+const char wuffs_base__error__unsupported_option[] = "#base: unsupported option";
+const char wuffs_base__error__unsupported_pixel_swizzler_option[] = "#base: unsupported pixel swizzler option";
+const char wuffs_base__error__too_much_data[] = "#base: too much data";
 
-const char* const wuffs_base__hasher_u32__vtable_name = "{vtable}wuffs_base__hasher_u32";
-const char* const wuffs_base__image_decoder__vtable_name = "{vtable}wuffs_base__image_decoder";
-const char* const wuffs_base__io_transformer__vtable_name = "{vtable}wuffs_base__io_transformer";
-const char* const wuffs_base__token_decoder__vtable_name = "{vtable}wuffs_base__token_decoder";
+const char wuffs_base__hasher_u32__vtable_name[] = "{vtable}wuffs_base__hasher_u32";
+const char wuffs_base__image_decoder__vtable_name[] = "{vtable}wuffs_base__image_decoder";
+const char wuffs_base__io_transformer__vtable_name[] = "{vtable}wuffs_base__io_transformer";
+const char wuffs_base__token_decoder__vtable_name[] = "{vtable}wuffs_base__token_decoder";
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) ||
         // defined(WUFFS_CONFIG__MODULE__BASE)  ||
@@ -13103,9 +13103,9 @@ wuffs_adler32__hasher__update_u32(
 
 // ---------------- Status Codes Implementations
 
-const char* const wuffs_bmp__error__bad_header = "#bmp: bad header";
-const char* const wuffs_bmp__error__unsupported_bmp_file = "#bmp: unsupported BMP file";
-const char* const wuffs_bmp__note__internal_note_short_read = "@bmp: internal note: short read";
+const char wuffs_bmp__error__bad_header[] = "#bmp: bad header";
+const char wuffs_bmp__error__unsupported_bmp_file[] = "#bmp: unsupported BMP file";
+const char wuffs_bmp__note__internal_note_short_read[] = "@bmp: internal note: short read";
 
 // ---------------- Private Consts
 
@@ -15147,23 +15147,23 @@ wuffs_crc32__ieee_hasher__update_u32(
 
 // ---------------- Status Codes Implementations
 
-const char* const wuffs_deflate__error__bad_huffman_code_over_subscribed = "#deflate: bad Huffman code (over-subscribed)";
-const char* const wuffs_deflate__error__bad_huffman_code_under_subscribed = "#deflate: bad Huffman code (under-subscribed)";
-const char* const wuffs_deflate__error__bad_huffman_code_length_count = "#deflate: bad Huffman code length count";
-const char* const wuffs_deflate__error__bad_huffman_code_length_repetition = "#deflate: bad Huffman code length repetition";
-const char* const wuffs_deflate__error__bad_huffman_code = "#deflate: bad Huffman code";
-const char* const wuffs_deflate__error__bad_huffman_minimum_code_length = "#deflate: bad Huffman minimum code length";
-const char* const wuffs_deflate__error__bad_block = "#deflate: bad block";
-const char* const wuffs_deflate__error__bad_distance = "#deflate: bad distance";
-const char* const wuffs_deflate__error__bad_distance_code_count = "#deflate: bad distance code count";
-const char* const wuffs_deflate__error__bad_literal_length_code_count = "#deflate: bad literal/length code count";
-const char* const wuffs_deflate__error__inconsistent_stored_block_length = "#deflate: inconsistent stored block length";
-const char* const wuffs_deflate__error__missing_end_of_block_code = "#deflate: missing end-of-block code";
-const char* const wuffs_deflate__error__no_huffman_codes = "#deflate: no Huffman codes";
-const char* const wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state = "#deflate: internal error: inconsistent Huffman decoder state";
-const char* const wuffs_deflate__error__internal_error_inconsistent_i_o = "#deflate: internal error: inconsistent I/O";
-const char* const wuffs_deflate__error__internal_error_inconsistent_distance = "#deflate: internal error: inconsistent distance";
-const char* const wuffs_deflate__error__internal_error_inconsistent_n_bits = "#deflate: internal error: inconsistent n_bits";
+const char wuffs_deflate__error__bad_huffman_code_over_subscribed[] = "#deflate: bad Huffman code (over-subscribed)";
+const char wuffs_deflate__error__bad_huffman_code_under_subscribed[] = "#deflate: bad Huffman code (under-subscribed)";
+const char wuffs_deflate__error__bad_huffman_code_length_count[] = "#deflate: bad Huffman code length count";
+const char wuffs_deflate__error__bad_huffman_code_length_repetition[] = "#deflate: bad Huffman code length repetition";
+const char wuffs_deflate__error__bad_huffman_code[] = "#deflate: bad Huffman code";
+const char wuffs_deflate__error__bad_huffman_minimum_code_length[] = "#deflate: bad Huffman minimum code length";
+const char wuffs_deflate__error__bad_block[] = "#deflate: bad block";
+const char wuffs_deflate__error__bad_distance[] = "#deflate: bad distance";
+const char wuffs_deflate__error__bad_distance_code_count[] = "#deflate: bad distance code count";
+const char wuffs_deflate__error__bad_literal_length_code_count[] = "#deflate: bad literal/length code count";
+const char wuffs_deflate__error__inconsistent_stored_block_length[] = "#deflate: inconsistent stored block length";
+const char wuffs_deflate__error__missing_end_of_block_code[] = "#deflate: missing end-of-block code";
+const char wuffs_deflate__error__no_huffman_codes[] = "#deflate: no Huffman codes";
+const char wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state[] = "#deflate: internal error: inconsistent Huffman decoder state";
+const char wuffs_deflate__error__internal_error_inconsistent_i_o[] = "#deflate: internal error: inconsistent I/O";
+const char wuffs_deflate__error__internal_error_inconsistent_distance[] = "#deflate: internal error: inconsistent distance";
+const char wuffs_deflate__error__internal_error_inconsistent_n_bits[] = "#deflate: internal error: inconsistent n_bits";
 
 // ---------------- Private Consts
 
@@ -16974,8 +16974,8 @@ wuffs_deflate__decoder__decode_huffman_slow(
 
 // ---------------- Status Codes Implementations
 
-const char* const wuffs_lzw__error__bad_code = "#lzw: bad code";
-const char* const wuffs_lzw__error__internal_error_inconsistent_i_o = "#lzw: internal error: inconsistent I/O";
+const char wuffs_lzw__error__bad_code[] = "#lzw: bad code";
+const char wuffs_lzw__error__internal_error_inconsistent_i_o[] = "#lzw: internal error: inconsistent I/O";
 
 // ---------------- Private Consts
 
@@ -17500,13 +17500,13 @@ wuffs_lzw__decoder__flush(
 
 // ---------------- Status Codes Implementations
 
-const char* const wuffs_gif__error__bad_extension_label = "#gif: bad extension label";
-const char* const wuffs_gif__error__bad_frame_size = "#gif: bad frame size";
-const char* const wuffs_gif__error__bad_graphic_control = "#gif: bad graphic control";
-const char* const wuffs_gif__error__bad_header = "#gif: bad header";
-const char* const wuffs_gif__error__bad_literal_width = "#gif: bad literal width";
-const char* const wuffs_gif__error__bad_palette = "#gif: bad palette";
-const char* const wuffs_gif__error__internal_error_inconsistent_ri_wi = "#gif: internal error: inconsistent ri/wi";
+const char wuffs_gif__error__bad_extension_label[] = "#gif: bad extension label";
+const char wuffs_gif__error__bad_frame_size[] = "#gif: bad frame size";
+const char wuffs_gif__error__bad_graphic_control[] = "#gif: bad graphic control";
+const char wuffs_gif__error__bad_header[] = "#gif: bad header";
+const char wuffs_gif__error__bad_literal_width[] = "#gif: bad literal width";
+const char wuffs_gif__error__bad_palette[] = "#gif: bad palette";
+const char wuffs_gif__error__internal_error_inconsistent_ri_wi[] = "#gif: internal error: inconsistent ri/wi";
 
 // ---------------- Private Consts
 
@@ -21980,10 +21980,10 @@ wuffs_gif__decoder__copy_to_image_buffer(
 
 // ---------------- Status Codes Implementations
 
-const char* const wuffs_gzip__error__bad_checksum = "#gzip: bad checksum";
-const char* const wuffs_gzip__error__bad_compression_method = "#gzip: bad compression method";
-const char* const wuffs_gzip__error__bad_encoding_flags = "#gzip: bad encoding flags";
-const char* const wuffs_gzip__error__bad_header = "#gzip: bad header";
+const char wuffs_gzip__error__bad_checksum[] = "#gzip: bad checksum";
+const char wuffs_gzip__error__bad_compression_method[] = "#gzip: bad compression method";
+const char wuffs_gzip__error__bad_encoding_flags[] = "#gzip: bad encoding flags";
+const char wuffs_gzip__error__bad_header[] = "#gzip: bad header";
 
 // ---------------- Private Consts
 
@@ -22480,13 +22480,13 @@ wuffs_gzip__decoder__transform_io(
 
 // ---------------- Status Codes Implementations
 
-const char* const wuffs_json__error__bad_c0_control_code = "#json: bad C0 control code";
-const char* const wuffs_json__error__bad_utf_8 = "#json: bad UTF-8";
-const char* const wuffs_json__error__bad_backslash_escape = "#json: bad backslash-escape";
-const char* const wuffs_json__error__bad_input = "#json: bad input";
-const char* const wuffs_json__error__unsupported_number_length = "#json: unsupported number length";
-const char* const wuffs_json__error__unsupported_recursion_depth = "#json: unsupported recursion depth";
-const char* const wuffs_json__error__internal_error_inconsistent_i_o = "#json: internal error: inconsistent I/O";
+const char wuffs_json__error__bad_c0_control_code[] = "#json: bad C0 control code";
+const char wuffs_json__error__bad_utf_8[] = "#json: bad UTF-8";
+const char wuffs_json__error__bad_backslash_escape[] = "#json: bad backslash-escape";
+const char wuffs_json__error__bad_input[] = "#json: bad input";
+const char wuffs_json__error__unsupported_number_length[] = "#json: unsupported number length";
+const char wuffs_json__error__unsupported_recursion_depth[] = "#json: unsupported recursion depth";
+const char wuffs_json__error__internal_error_inconsistent_i_o[] = "#json: internal error: inconsistent I/O";
 
 // ---------------- Private Consts
 
@@ -24678,7 +24678,7 @@ wuffs_json__decoder__decode_trailing_new_line(
 
 // ---------------- Status Codes Implementations
 
-const char* const wuffs_wbmp__error__bad_header = "#wbmp: bad header";
+const char wuffs_wbmp__error__bad_header[] = "#wbmp: bad header";
 
 // ---------------- Private Consts
 
@@ -25474,12 +25474,12 @@ wuffs_wbmp__decoder__workbuf_len(
 
 // ---------------- Status Codes Implementations
 
-const char* const wuffs_zlib__note__dictionary_required = "@zlib: dictionary required";
-const char* const wuffs_zlib__error__bad_checksum = "#zlib: bad checksum";
-const char* const wuffs_zlib__error__bad_compression_method = "#zlib: bad compression method";
-const char* const wuffs_zlib__error__bad_compression_window_size = "#zlib: bad compression window size";
-const char* const wuffs_zlib__error__bad_parity_check = "#zlib: bad parity check";
-const char* const wuffs_zlib__error__incorrect_dictionary = "#zlib: incorrect dictionary";
+const char wuffs_zlib__note__dictionary_required[] = "@zlib: dictionary required";
+const char wuffs_zlib__error__bad_checksum[] = "#zlib: bad checksum";
+const char wuffs_zlib__error__bad_compression_method[] = "#zlib: bad compression method";
+const char wuffs_zlib__error__bad_compression_window_size[] = "#zlib: bad compression window size";
+const char wuffs_zlib__error__bad_parity_check[] = "#zlib: bad parity check";
+const char wuffs_zlib__error__incorrect_dictionary[] = "#zlib: incorrect dictionary";
 
 // ---------------- Private Consts
 
