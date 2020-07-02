@@ -167,6 +167,39 @@ wuffs_base__utf_8__next(wuffs_base__slice_u8 s) {
       WUFFS_BASE__UNICODE_REPLACEMENT_CHARACTER, 1);
 }
 
+WUFFS_BASE__MAYBE_STATIC wuffs_base__utf_8__next__output  //
+wuffs_base__utf_8__next_from_end(wuffs_base__slice_u8 s) {
+  if (s.len == 0) {
+    return wuffs_base__make_utf_8__next__output(0, 0);
+  }
+  uint8_t* ptr = &s.ptr[s.len - 1];
+  if (*ptr < 0x80) {
+    return wuffs_base__make_utf_8__next__output(*ptr, 1);
+
+  } else if (*ptr < 0xC0) {
+    uint8_t* too_far = &s.ptr[(s.len > 4) ? (s.len - 4) : 0];
+    uint32_t n = 1;
+    while (ptr != too_far) {
+      ptr--;
+      n++;
+      if (*ptr < 0x80) {
+        break;
+      } else if (*ptr < 0xC0) {
+        continue;
+      }
+      wuffs_base__utf_8__next__output o =
+          wuffs_base__utf_8__next(wuffs_base__make_slice_u8(ptr, n));
+      if (o.byte_length != n) {
+        break;
+      }
+      return o;
+    }
+  }
+
+  return wuffs_base__make_utf_8__next__output(
+      WUFFS_BASE__UNICODE_REPLACEMENT_CHARACTER, 1);
+}
+
 WUFFS_BASE__MAYBE_STATIC size_t  //
 wuffs_base__utf_8__longest_valid_prefix(wuffs_base__slice_u8 s) {
   // TODO: possibly optimize the all-ASCII case (4 or 8 bytes at a time).

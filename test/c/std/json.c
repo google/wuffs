@@ -1725,99 +1725,125 @@ test_wuffs_strconv_utf_8_next() {
   the_nul_byte[0] = '\x00';
 
   struct {
-    uint32_t want_cp;
-    uint32_t want_bl;
+    // The uint32_t want is packed as:
+    //  - the high 8 bits are the byte length.
+    //  - the low 24 bits are the code point.
+    uint32_t want0;  // For wuffs_base__utf_8__next.
+    uint32_t want1;  // For wuffs_base__utf_8__next_from_end.
     const char* str;
   } test_cases[] = {
-      {.want_cp = 0x00000000, .want_bl = 0, .str = ""},
-      {.want_cp = 0x00000000, .want_bl = 1, .str = "The <NUL> byte"},
-      {.want_cp = 0x00000009, .want_bl = 1, .str = "\t"},
-      {.want_cp = 0x00000041, .want_bl = 1, .str = "A"},
-      {.want_cp = 0x00000061, .want_bl = 1, .str = "abdefghij"},
-      {.want_cp = 0x0000007F, .want_bl = 1, .str = "\x7F"},
-      {.want_cp = 0x00000080, .want_bl = 2, .str = "\xC2\x80"},
-      {.want_cp = 0x000007FF, .want_bl = 2, .str = "\xDF\xBF"},
-      {.want_cp = 0x00000800, .want_bl = 3, .str = "\xE0\xA0\x80"},
-      {.want_cp = 0x0000FFFD, .want_bl = 3, .str = "\xEF\xBF\xBD"},
-      {.want_cp = 0x0000FFFF, .want_bl = 3, .str = "\xEF\xBF\xBF"},
-      {.want_cp = 0x00010000, .want_bl = 4, .str = "\xF0\x90\x80\x80"},
-      {.want_cp = 0x0010FFFF, .want_bl = 4, .str = "\xF4\x8F\xBF\xBF"},
+      {.want0 = 0x00000000, .want1 = 0x00000000, .str = ""},
+      {.want0 = 0x01000000, .want1 = 0x01000000, .str = "The <NUL> byte"},
+      {.want0 = 0x01000009, .want1 = 0x01000009, .str = "\t"},
+      {.want0 = 0x01000041, .want1 = 0x01000041, .str = "A"},
+      {.want0 = 0x01000061, .want1 = 0x0100006A, .str = "abdefghij"},
+      {.want0 = 0x0100007F, .want1 = 0x0100007F, .str = "\x7F"},
+      {.want0 = 0x02000080, .want1 = 0x02000080, .str = "\xC2\x80"},
+      {.want0 = 0x020007FF, .want1 = 0x020007FF, .str = "\xDF\xBF"},
+      {.want0 = 0x03000800, .want1 = 0x03000800, .str = "\xE0\xA0\x80"},
+      {.want0 = 0x0300FFFD, .want1 = 0x0300FFFD, .str = "\xEF\xBF\xBD"},
+      {.want0 = 0x0300FFFF, .want1 = 0x0300FFFF, .str = "\xEF\xBF\xBF"},
+      {.want0 = 0x04010000, .want1 = 0x04010000, .str = "\xF0\x90\x80\x80"},
+      {.want0 = 0x0410FFFF, .want1 = 0x0410FFFF, .str = "\xF4\x8F\xBF\xBF"},
 
       // U+00000394 GREEK CAPITAL LETTER DELTA.
-      {.want_cp = 0x00000394, .want_bl = 2, .str = "\xCE\x94"},
-      {.want_cp = 0x00000394, .want_bl = 2, .str = "\xCE\x94+"},
-      {.want_cp = 0x00000394, .want_bl = 2, .str = "\xCE\x94++"},
-      {.want_cp = 0x00000394, .want_bl = 2, .str = "\xCE\x94+++"},
-      {.want_cp = 0x00000394, .want_bl = 2, .str = "\xCE\x94++++"},
-      {.want_cp = 0x00000394, .want_bl = 2, .str = "\xCE\x94\x80"},
-      {.want_cp = 0x00000394, .want_bl = 2, .str = "\xCE\x94\x80\x80"},
-      {.want_cp = 0x00000394, .want_bl = 2, .str = "\xCE\x94\x80\x80\x80"},
-      {.want_cp = 0x00000394, .want_bl = 2, .str = "\xCE\x94\x80\x80\x80\x80"},
+      {.want0 = 0x02000394, .want1 = 0x02000394, .str = "\xCE\x94"},
+      {.want0 = 0x02000394, .want1 = 0x01000070, .str = "\xCE\x94p"},
+      {.want0 = 0x02000394, .want1 = 0x01000071, .str = "\xCE\x94pq"},
+      {.want0 = 0x02000394, .want1 = 0x01000072, .str = "\xCE\x94pqr"},
+      {.want0 = 0x02000394, .want1 = 0x01000073, .str = "\xCE\x94pqrs"},
+      {.want0 = 0x02000394, .want1 = 0x0100FFFD, .str = "\xCE\x94\x80"},
+      {.want0 = 0x02000394, .want1 = 0x0100FFFD, .str = "\xCE\x94\x80\x81"},
+      {.want0 = 0x02000394, .want1 = 0x0100FFFD, .str = "\xCE\x94\x80\x81\x82"},
+      {.want0 = 0x02000394,
+       .want1 = 0x0100FFFD,
+       .str = "\xCE\x94\x80\x81\x82\x83"},
+      {.want0 = 0x01000070, .want1 = 0x02000394, .str = "p\xCE\x94"},
 
       // U+00002603 SNOWMAN.
-      {.want_cp = 0x00002603, .want_bl = 3, .str = "\xE2\x98\x83"},
-      {.want_cp = 0x00002603, .want_bl = 3, .str = "\xE2\x98\x83+"},
-      {.want_cp = 0x00002603, .want_bl = 3, .str = "\xE2\x98\x83++"},
-      {.want_cp = 0x00002603, .want_bl = 3, .str = "\xE2\x98\x83+++"},
-      {.want_cp = 0x00002603, .want_bl = 3, .str = "\xE2\x98\x83++++"},
-      {.want_cp = 0x00002603, .want_bl = 3, .str = "\xE2\x98\x83\xFF"},
+      {.want0 = 0x03002603, .want1 = 0x03002603, .str = "\xE2\x98\x83"},
+      {.want0 = 0x03002603, .want1 = 0x01000070, .str = "\xE2\x98\x83p"},
+      {.want0 = 0x03002603, .want1 = 0x01000071, .str = "\xE2\x98\x83pq"},
+      {.want0 = 0x03002603, .want1 = 0x01000072, .str = "\xE2\x98\x83pqr"},
+      {.want0 = 0x03002603, .want1 = 0x01000073, .str = "\xE2\x98\x83pqrs"},
+      {.want0 = 0x03002603, .want1 = 0x0100FFFD, .str = "\xE2\x98\x83\xFF"},
+      {.want0 = 0x01000070, .want1 = 0x03002603, .str = "p\xE2\x98\x83"},
 
       // U+0001F4A9 PILE OF POO.
-      {.want_cp = 0x0001F4A9, .want_bl = 4, .str = "\xF0\x9F\x92\xA9"},
-      {.want_cp = 0x0001F4A9, .want_bl = 4, .str = "\xF0\x9F\x92\xA9+"},
-      {.want_cp = 0x0001F4A9, .want_bl = 4, .str = "\xF0\x9F\x92\xA9++"},
-      {.want_cp = 0x0001F4A9, .want_bl = 4, .str = "\xF0\x9F\x92\xA9+++"},
-      {.want_cp = 0x0001F4A9, .want_bl = 4, .str = "\xF0\x9F\x92\xA9++++"},
-      {.want_cp = 0x0001F4A9, .want_bl = 4, .str = "\xF0\x9F\x92\xA9\xFF"},
+      {.want0 = 0x0401F4A9, .want1 = 0x0401F4A9, .str = "\xF0\x9F\x92\xA9"},
+      {.want0 = 0x0401F4A9, .want1 = 0x01000070, .str = "\xF0\x9F\x92\xA9p"},
+      {.want0 = 0x0401F4A9, .want1 = 0x01000071, .str = "\xF0\x9F\x92\xA9pq"},
+      {.want0 = 0x0401F4A9, .want1 = 0x01000072, .str = "\xF0\x9F\x92\xA9pqr"},
+      {.want0 = 0x0401F4A9, .want1 = 0x01000073, .str = "\xF0\x9F\x92\xA9pqrs"},
+      {.want0 = 0x0401F4A9, .want1 = 0x0100FFFD, .str = "\xF0\x9F\x92\xA9\xFF"},
+      {.want0 = 0x01000070, .want1 = 0x0401F4A9, .str = "p\xF0\x9F\x92\xA9"},
 
       // Invalid.
-      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\x80"},
-      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xBF"},
-      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xC0\x80"},
-      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xC1\xBF"},
-      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xC2"},
-      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xC2\x7F"},
-      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xC2\xC0"},
-      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xC2\xFF"},
-      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xCE"},
-      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xDF\xC0"},
-      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xDF\xFF"},
-      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xE0\x80"},
-      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xE0\x80\x80"},
-      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xE0\x9F\xBF"},
-      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xE2"},
-      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xF0"},
-      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xF0\x80\x80"},
-      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xF0\x80\x80\x80"},
-      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xF0\x8F\xBF\xBF"},
-      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xF4\x90\x80\x80"},
-      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xF5"},
-      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xF6\x80"},
-      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xF7\x80\x80"},
-      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xFF\xFF\xFF\xFF"},
+      {.want0 = 0x0100FFFD, .want1 = 0x0100FFFD, .str = "\x80"},
+      {.want0 = 0x0100FFFD, .want1 = 0x0100FFFD, .str = "\xBF"},
+      {.want0 = 0x0100FFFD, .want1 = 0x0100FFFD, .str = "\xC0\x80"},
+      {.want0 = 0x0100FFFD, .want1 = 0x0100FFFD, .str = "\xC1\xBF"},
+      {.want0 = 0x0100FFFD, .want1 = 0x0100FFFD, .str = "\xC2"},
+      {.want0 = 0x0100FFFD, .want1 = 0x0100007F, .str = "\xC2\x7F"},
+      {.want0 = 0x0100FFFD, .want1 = 0x0100FFFD, .str = "\xC2\xC0"},
+      {.want0 = 0x0100FFFD, .want1 = 0x0100FFFD, .str = "\xC2\xFF"},
+      {.want0 = 0x0100FFFD, .want1 = 0x0100FFFD, .str = "\xCE"},
+      {.want0 = 0x0100FFFD, .want1 = 0x0100FFFD, .str = "\xDF\xC0"},
+      {.want0 = 0x0100FFFD, .want1 = 0x0100FFFD, .str = "\xDF\xFF"},
+      {.want0 = 0x0100FFFD, .want1 = 0x0100FFFD, .str = "\xE0\x80"},
+      {.want0 = 0x0100FFFD, .want1 = 0x0100FFFD, .str = "\xE0\x80\x81"},
+      {.want0 = 0x0100FFFD, .want1 = 0x0100FFFD, .str = "\xE0\x9F\xBF"},
+      {.want0 = 0x0100FFFD, .want1 = 0x0100FFFD, .str = "\xE2"},
+      {.want0 = 0x0100FFFD, .want1 = 0x0100FFFD, .str = "\xF0"},
+      {.want0 = 0x0100FFFD, .want1 = 0x0100FFFD, .str = "\xF0\x80\x81"},
+      {.want0 = 0x0100FFFD, .want1 = 0x0100FFFD, .str = "\xF0\x80\x81\x82"},
+      {.want0 = 0x0100FFFD, .want1 = 0x0100FFFD, .str = "\xF0\x8F\xBF\xBF"},
+      {.want0 = 0x0100FFFD, .want1 = 0x0100FFFD, .str = "\xF4\x90\x81\x82"},
+      {.want0 = 0x0100FFFD, .want1 = 0x0100FFFD, .str = "\xF5"},
+      {.want0 = 0x0100FFFD, .want1 = 0x0100FFFD, .str = "\xF6\x80"},
+      {.want0 = 0x0100FFFD, .want1 = 0x0100FFFD, .str = "\xF7\x80\x81"},
+      {.want0 = 0x0100FFFD, .want1 = 0x0100FFFD, .str = "\xF8\x90\x91\x92\x93"},
+      {.want0 = 0x0100FFFD, .want1 = 0x0100FFFD, .str = "\xFF\xFF\xFF\xFF"},
 
       // Invalid. UTF-8 cannot contain the surrogates U+D800 ..= U+DFFF.
-      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xED\xA0\x80"},
-      {.want_cp = 0x0000FFFD, .want_bl = 1, .str = "\xED\xBF\xBF"},
+      {.want0 = 0x0100FFFD, .want1 = 0x0100FFFD, .str = "\xED\xA0\x80"},
+      {.want0 = 0x0100FFFD, .want1 = 0x0100FFFD, .str = "\xED\xBF\xBF"},
   };
 
   int tc;
   for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
     wuffs_base__slice_u8 s = wuffs_base__make_slice_u8(
         (void*)test_cases[tc].str, strlen(test_cases[tc].str));
-
     // Override "The <NUL> byte" with "\x00".
-    if ((test_cases[tc].want_cp == 0) && (test_cases[tc].want_bl == 1)) {
+    if (test_cases[tc].want0 == 0x01000000) {
       s = wuffs_base__make_slice_u8(&the_nul_byte[0], 1);
     }
 
-    wuffs_base__utf_8__next__output have = wuffs_base__utf_8__next(s);
-    if ((have.code_point != test_cases[tc].want_cp) ||
-        (have.byte_length != test_cases[tc].want_bl)) {
-      RETURN_FAIL("\"%s\": have cp=0x%" PRIX32 " bl=%" PRIu32
-                  ", want cp=0x%" PRIX32 " bl=%" PRIu32,
-                  test_cases[tc].str, have.code_point, have.byte_length,
-                  test_cases[tc].want_cp, test_cases[tc].want_bl);
+    // Test wuffs_base__utf_8__next.
+    {
+      uint32_t want_bl = test_cases[tc].want0 >> 24;
+      uint32_t want_cp = test_cases[tc].want0 & 0xFFFFFF;
+      wuffs_base__utf_8__next__output have = wuffs_base__utf_8__next(s);
+      if ((have.code_point != want_cp) || (have.byte_length != want_bl)) {
+        RETURN_FAIL("next(\"%s\"): have cp=0x%" PRIX32 " bl=%" PRIu32
+                    ", want cp=0x%" PRIX32 " bl=%" PRIu32,
+                    test_cases[tc].str, have.code_point, have.byte_length,
+                    want_cp, want_bl);
+      }
+    }
+
+    // Test wuffs_base__utf_8__next_from_end.
+    {
+      uint32_t want_bl = test_cases[tc].want1 >> 24;
+      uint32_t want_cp = test_cases[tc].want1 & 0xFFFFFF;
+      wuffs_base__utf_8__next__output have =
+          wuffs_base__utf_8__next_from_end(s);
+      if ((have.code_point != want_cp) || (have.byte_length != want_bl)) {
+        RETURN_FAIL("next_from_end(\"%s\"): have cp=0x%" PRIX32 " bl=%" PRIu32
+                    ", want cp=0x%" PRIX32 " bl=%" PRIu32,
+                    test_cases[tc].str, have.code_point, have.byte_length,
+                    want_cp, want_bl);
+      }
     }
   }
 

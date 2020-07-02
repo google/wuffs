@@ -4261,6 +4261,11 @@ wuffs_base__utf_8__encode(wuffs_base__slice_u8 dst, uint32_t code_point);
 WUFFS_BASE__MAYBE_STATIC wuffs_base__utf_8__next__output  //
 wuffs_base__utf_8__next(wuffs_base__slice_u8 s);
 
+// wuffs_base__utf_8__next_from_end is like wuffs_base__utf_8__next except that
+// it looks at the end of s instead of the start.
+WUFFS_BASE__MAYBE_STATIC wuffs_base__utf_8__next__output  //
+wuffs_base__utf_8__next_from_end(wuffs_base__slice_u8 s);
+
 // wuffs_base__utf_8__longest_valid_prefix returns the largest n such that the
 // sub-slice s[..n] is valid UTF-8.
 //
@@ -12875,6 +12880,39 @@ wuffs_base__utf_8__next(wuffs_base__slice_u8 s) {
         break;
       }
       return wuffs_base__make_utf_8__next__output(c, 4);
+  }
+
+  return wuffs_base__make_utf_8__next__output(
+      WUFFS_BASE__UNICODE_REPLACEMENT_CHARACTER, 1);
+}
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__utf_8__next__output  //
+wuffs_base__utf_8__next_from_end(wuffs_base__slice_u8 s) {
+  if (s.len == 0) {
+    return wuffs_base__make_utf_8__next__output(0, 0);
+  }
+  uint8_t* ptr = &s.ptr[s.len - 1];
+  if (*ptr < 0x80) {
+    return wuffs_base__make_utf_8__next__output(*ptr, 1);
+
+  } else if (*ptr < 0xC0) {
+    uint8_t* too_far = &s.ptr[(s.len > 4) ? (s.len - 4) : 0];
+    uint32_t n = 1;
+    while (ptr != too_far) {
+      ptr--;
+      n++;
+      if (*ptr < 0x80) {
+        break;
+      } else if (*ptr < 0xC0) {
+        continue;
+      }
+      wuffs_base__utf_8__next__output o =
+          wuffs_base__utf_8__next(wuffs_base__make_slice_u8(ptr, n));
+      if (o.byte_length != n) {
+        break;
+      }
+      return o;
+    }
   }
 
   return wuffs_base__make_utf_8__next__output(

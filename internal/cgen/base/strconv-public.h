@@ -371,6 +371,11 @@ wuffs_base__utf_8__encode(wuffs_base__slice_u8 dst, uint32_t code_point);
 WUFFS_BASE__MAYBE_STATIC wuffs_base__utf_8__next__output  //
 wuffs_base__utf_8__next(wuffs_base__slice_u8 s);
 
+// wuffs_base__utf_8__next_from_end is like wuffs_base__utf_8__next except that
+// it looks at the end of s instead of the start.
+WUFFS_BASE__MAYBE_STATIC wuffs_base__utf_8__next__output  //
+wuffs_base__utf_8__next_from_end(wuffs_base__slice_u8 s);
+
 // wuffs_base__utf_8__longest_valid_prefix returns the largest n such that the
 // sub-slice s[..n] is valid UTF-8.
 //
