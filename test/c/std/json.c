@@ -3306,6 +3306,71 @@ bench_wuffs_strconv_parse_number_f64_pi_short() {
   return do_bench_wuffs_strconv_parse_number_f64("3.14159", 1000);
 }
 
+const char*  //
+do_bench_wuffs_strconv_render_number_f64(wuffs_base__slice_u64 test_cases,
+                                         uint64_t iters_unscaled) {
+  bench_start();
+  uint64_t i;
+  uint64_t iters = iters_unscaled * g_flags.iterscale;
+  for (i = 0; i < iters; i++) {
+    size_t tc;
+    for (tc = 0; tc < test_cases.len; tc++) {
+      size_t n = wuffs_base__render_number_f64(
+          g_have_slice_u8,
+          wuffs_base__ieee_754_bit_representation__to_f64(test_cases.ptr[tc]),
+          0, WUFFS_BASE__RENDER_NUMBER_FXX__JUST_ENOUGH_PRECISION);
+      if (n == 0) {
+        RETURN_FAIL("0x%016" PRIX64 ": failed", test_cases.ptr[tc]);
+      }
+    }
+  }
+  bench_finish(iters, 0);
+
+  return NULL;
+}
+
+const char*  //
+bench_wuffs_strconv_render_number_f64_just_enough_fractions() {
+  CHECK_FOCUS(__func__);
+  uint64_t test_cases[] = {
+      0x400B000000000000,  // 3.375
+      0x40753C74538EF34D,  // 339.7784
+      0xCFA681AD0223D5B2,  // -5.09e+75
+      0xAC5B4988314D17B8,  // -5.11e-95
+      0x455987BF7CB8EC68,  // 1.2345678912345679e+26
+      0xBFF8000000000000,  // -1.5
+      0x405EDD2F1A9FBE77,  // 123.456
+      0x502552E0653BDA6F,  // 1.23456e+78
+      0x2FC24C42A75EFC06,  // 1.23456e-78
+      0x00047A3A3EF0896C,  // 6.226662346353213e-309
+  };
+  return do_bench_wuffs_strconv_render_number_f64(
+      wuffs_base__make_slice_u64(&test_cases[0],
+                                 WUFFS_TESTLIB_ARRAY_SIZE(test_cases)),
+      200);
+}
+
+const char*  //
+bench_wuffs_strconv_render_number_f64_just_enough_small_integers() {
+  CHECK_FOCUS(__func__);
+  uint64_t test_cases[] = {
+      0x4008000000000000,  // 3
+      0x402C000000000000,  // 14
+      0x4063E00000000000,  // 159
+      0x40A4BA0000000000,  // 2653
+      0x40ECCC6000000000,  // 58979
+      0x4113C41800000000,  // 323846
+      0x41442ADB80000000,  // 2643383
+      0x417AA7CD00000000,  // 27950288
+      0x41B9045F4B000000,  // 419716939
+      0x4201766618E00000,  // 9375105820
+  };
+  return do_bench_wuffs_strconv_render_number_f64(
+      wuffs_base__make_slice_u64(&test_cases[0],
+                                 WUFFS_TESTLIB_ARRAY_SIZE(test_cases)),
+      2000);
+}
+
 // ---------------- JSON Benches
 
 const char*  //
@@ -3400,6 +3465,8 @@ proc g_benches[] = {
     bench_wuffs_strconv_parse_number_f64_1_lsh53_add1,
     bench_wuffs_strconv_parse_number_f64_pi_long,
     bench_wuffs_strconv_parse_number_f64_pi_short,
+    bench_wuffs_strconv_render_number_f64_just_enough_fractions,
+    bench_wuffs_strconv_render_number_f64_just_enough_small_integers,
 
     bench_wuffs_json_decode_1k,
     bench_wuffs_json_decode_21k_formatted,
