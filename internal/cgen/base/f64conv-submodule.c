@@ -727,8 +727,9 @@ wuffs_base__private_implementation__high_prec_dec__round_just_enough(
   // Let f be the floating point number represented by exp2 and mantissa (and
   // also the number in h): the number (mantissa * (2 ** (exp2 - 52))).
   //
-  // If f is zero, we can return early.
-  if (mantissa == 0) {
+  // If f is zero or a small integer, we can return early.
+  if ((mantissa == 0) ||
+      ((exp2 < 53) && (h->decimal_point >= ((int32_t)(h->num_digits))))) {
     return;
   }
 
