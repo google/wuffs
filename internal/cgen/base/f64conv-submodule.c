@@ -1188,13 +1188,10 @@ wuffs_base__private_implementation__medium_prec_bin__parse_number_f64(
           // If exp10 is in the range 23 ..= 37, try moving a few of the zeroes
           // from the exponent to the mantissa. If we're still under 1e15, we
           // haven't truncated any mantissa bits.
-          if (exp10 > 22) {
-            d *= wuffs_base__private_implementation__f64_powers_of_10[exp10 -
-                                                                      22];
-            exp10 = 22;
-            if (d >= 1e15) {
-              break;
-            }
+          d *= wuffs_base__private_implementation__f64_powers_of_10[exp10 - 22];
+          exp10 = 22;
+          if (d >= 1e15) {
+            break;
           }
         }
         d *= wuffs_base__private_implementation__f64_powers_of_10[exp10];
