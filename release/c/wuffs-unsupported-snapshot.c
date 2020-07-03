@@ -2141,15 +2141,31 @@ wuffs_base__make_token(uint64_t repr) {
 
 // --------
 
-// "DEFINITELY_FOO" means that the destination bytes (and also the source
-// bytes, for 1_DST_1_SRC_COPY) are in the FOO format. Definitely means that
-// the lack of the bit is conservative: it is valid for all-ASCII strings to
-// have neither DEFINITELY_UTF_8 or DEFINITELY_ASCII bits set.
+// DEFINITELY_FOO means that the destination bytes (and also the source bytes,
+// for 1_DST_1_SRC_COPY) are in the FOO format. Definitely means that the lack
+// of the bit means "maybe FOO". It does not necessarily mean "not FOO".
+//
+// CHAIN_ETC means that decoding the entire token chain forms a UTF-8 or ASCII
+// string, not just this current token. CHAIN_ETC_UTF_8 therefore distinguishes
+// Unicode (UTF-8) strings from byte strings. MUST means that the the token
+// producer (e.g. parser) must verify this. SHOULD means that the token
+// consumer (e.g. renderer) should verify this.
+//
+// When a CHAIN_ETC_UTF_8 bit is set, the parser must ensure that non-ASCII
+// code points (with multi-byte UTF-8 encodings) do not straddle token
+// boundaries. Checking UTF-8 validity can inspect each token separately.
+//
+// The lack of any particular bit is conservative: it is valid for all-ASCII
+// strings, in a single- or multi-token chain, to have none of these bits set.
 #define WUFFS_BASE__TOKEN__VBD__STRING__DEFINITELY_UTF_8 0x00001
-#define WUFFS_BASE__TOKEN__VBD__STRING__DEFINITELY_ASCII 0x00002
+#define WUFFS_BASE__TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8 0x00002
+#define WUFFS_BASE__TOKEN__VBD__STRING__CHAIN_SHOULD_BE_UTF_8 0x00004
+#define WUFFS_BASE__TOKEN__VBD__STRING__DEFINITELY_ASCII 0x00010
+#define WUFFS_BASE__TOKEN__VBD__STRING__CHAIN_MUST_BE_ASCII 0x00020
+#define WUFFS_BASE__TOKEN__VBD__STRING__CHAIN_SHOULD_BE_ASCII 0x00040
 
-// "CONVERT_D_DST_S_SRC" means that multiples of S source bytes (possibly
-// padded) produces multiples of D destination bytes. For example,
+// CONVERT_D_DST_S_SRC means that multiples of S source bytes (possibly padded)
+// produces multiples of D destination bytes. For example,
 // CONVERT_1_DST_4_SRC_BACKSLASH_X means a source like "\\x23\\x67\\xAB", where
 // 12 src bytes encode 3 dst bytes.
 //
@@ -2160,13 +2176,13 @@ wuffs_base__make_token(uint64_t repr) {
 // When src is the empty string, multiple conversion algorithms are applicable
 // (so these bits are not necessarily mutually exclusive), all producing the
 // same empty dst string.
-#define WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_0_DST_1_SRC_DROP 0x00010
-#define WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY 0x00020
-#define WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_1_DST_2_SRC_HEXADECIMAL 0x00040
-#define WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_1_DST_4_SRC_BACKSLASH_X 0x00080
-#define WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_3_DST_4_SRC_BASE_64_STD 0x00100
-#define WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_3_DST_4_SRC_BASE_64_URL 0x00200
-#define WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_4_DST_5_SRC_ASCII_85 0x00400
+#define WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_0_DST_1_SRC_DROP 0x00100
+#define WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY 0x00200
+#define WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_1_DST_2_SRC_HEXADECIMAL 0x00400
+#define WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_1_DST_4_SRC_BACKSLASH_X 0x00800
+#define WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_3_DST_4_SRC_BASE_64_STD 0x01000
+#define WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_3_DST_4_SRC_BASE_64_URL 0x02000
+#define WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_4_DST_5_SRC_ASCII_85 0x04000
 
 // --------
 
@@ -23102,7 +23118,7 @@ wuffs_json__decoder__decode_tokens(
         }
         if (v_class == 1) {
           *iop_a_dst++ = wuffs_base__make_token(
-              (((uint64_t)(4194323)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+              (((uint64_t)(4194579)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
               (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
               (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
           (iop_a_src += 1, wuffs_base__make_empty_struct());
@@ -23119,7 +23135,7 @@ wuffs_json__decoder__decode_tokens(
               if (((uint64_t)(io2_a_src - iop_a_src)) <= 0) {
                 if (v_string_length > 0) {
                   *iop_a_dst++ = wuffs_base__make_token(
-                      (((uint64_t)(4194337)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                      (((uint64_t)(4194819)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                       (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
                       (((uint64_t)(v_string_length)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
                   v_string_length = 0;
@@ -23144,7 +23160,7 @@ wuffs_json__decoder__decode_tokens(
                 (iop_a_src += 4, wuffs_base__make_empty_struct());
                 if (v_string_length > 65527) {
                   *iop_a_dst++ = wuffs_base__make_token(
-                      (((uint64_t)(4194337)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                      (((uint64_t)(4194819)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                       (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
                       (((uint64_t)((v_string_length + 4))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
                   v_string_length = 0;
@@ -23159,7 +23175,7 @@ wuffs_json__decoder__decode_tokens(
                 (iop_a_src += 1, wuffs_base__make_empty_struct());
                 if (v_string_length >= 65531) {
                   *iop_a_dst++ = wuffs_base__make_token(
-                      (((uint64_t)(4194337)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                      (((uint64_t)(4194819)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                       (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
                       (((uint64_t)(65532)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
                   v_string_length = 0;
@@ -23170,7 +23186,7 @@ wuffs_json__decoder__decode_tokens(
               } else if (v_char == 1) {
                 if (v_string_length != 0) {
                   *iop_a_dst++ = wuffs_base__make_token(
-                      (((uint64_t)(4194337)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                      (((uint64_t)(4194819)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                       (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
                       (((uint64_t)(v_string_length)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
                   v_string_length = 0;
@@ -23179,7 +23195,7 @@ wuffs_json__decoder__decode_tokens(
               } else if (v_char == 2) {
                 if (v_string_length > 0) {
                   *iop_a_dst++ = wuffs_base__make_token(
-                      (((uint64_t)(4194337)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                      (((uint64_t)(4194819)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                       (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
                       (((uint64_t)(v_string_length)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
                   v_string_length = 0;
@@ -23405,7 +23421,7 @@ wuffs_json__decoder__decode_tokens(
                     goto exit;
                   }
                   *iop_a_dst++ = wuffs_base__make_token(
-                      (((uint64_t)(4194432)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                      (((uint64_t)(4196355)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                       (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
                       (((uint64_t)(v_backslash_x_length)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
                   goto label__string_loop_outer__continue;
@@ -23416,7 +23432,7 @@ wuffs_json__decoder__decode_tokens(
                 if (((uint64_t)(io2_a_src - iop_a_src)) < 2) {
                   if (v_string_length > 0) {
                     *iop_a_dst++ = wuffs_base__make_token(
-                        (((uint64_t)(4194337)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                        (((uint64_t)(4194819)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                         (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
                         (((uint64_t)(v_string_length)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
                     v_string_length = 0;
@@ -23448,7 +23464,7 @@ wuffs_json__decoder__decode_tokens(
                   (iop_a_src += 2, wuffs_base__make_empty_struct());
                   if (v_string_length >= 65528) {
                     *iop_a_dst++ = wuffs_base__make_token(
-                        (((uint64_t)(4194337)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                        (((uint64_t)(4194819)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                         (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
                         (((uint64_t)((v_string_length + 2))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
                     v_string_length = 0;
@@ -23461,7 +23477,7 @@ wuffs_json__decoder__decode_tokens(
                 if (((uint64_t)(io2_a_src - iop_a_src)) < 3) {
                   if (v_string_length > 0) {
                     *iop_a_dst++ = wuffs_base__make_token(
-                        (((uint64_t)(4194337)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                        (((uint64_t)(4194819)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                         (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
                         (((uint64_t)(v_string_length)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
                     v_string_length = 0;
@@ -23494,7 +23510,7 @@ wuffs_json__decoder__decode_tokens(
                     (iop_a_src += 3, wuffs_base__make_empty_struct());
                     if (v_string_length >= 65528) {
                       *iop_a_dst++ = wuffs_base__make_token(
-                          (((uint64_t)(4194337)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                          (((uint64_t)(4194819)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                           (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
                           (((uint64_t)((v_string_length + 3))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
                       v_string_length = 0;
@@ -23508,7 +23524,7 @@ wuffs_json__decoder__decode_tokens(
                 if (((uint64_t)(io2_a_src - iop_a_src)) < 4) {
                   if (v_string_length > 0) {
                     *iop_a_dst++ = wuffs_base__make_token(
-                        (((uint64_t)(4194337)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                        (((uint64_t)(4194819)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                         (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
                         (((uint64_t)(v_string_length)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
                     v_string_length = 0;
@@ -23544,7 +23560,7 @@ wuffs_json__decoder__decode_tokens(
                     (iop_a_src += 4, wuffs_base__make_empty_struct());
                     if (v_string_length >= 65528) {
                       *iop_a_dst++ = wuffs_base__make_token(
-                          (((uint64_t)(4194337)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                          (((uint64_t)(4194819)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                           (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
                           (((uint64_t)((v_string_length + 4))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
                       v_string_length = 0;
@@ -23557,7 +23573,7 @@ wuffs_json__decoder__decode_tokens(
               }
               if (v_string_length > 0) {
                 *iop_a_dst++ = wuffs_base__make_token(
-                    (((uint64_t)(4194337)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                    (((uint64_t)(4194819)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                     (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
                     (((uint64_t)(v_string_length)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
                 v_string_length = 0;
@@ -23608,7 +23624,7 @@ wuffs_json__decoder__decode_tokens(
             }
             (iop_a_src += 1, wuffs_base__make_empty_struct());
             *iop_a_dst++ = wuffs_base__make_token(
-                (((uint64_t)(4194323)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                (((uint64_t)(4194579)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                 (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
             goto label__2__break;
           }

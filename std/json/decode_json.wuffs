@@ -206,6 +206,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 				value_major: 0,
 				value_minor: (base.TOKEN__VBC__STRING << 21) |
 				base.TOKEN__VBD__STRING__DEFINITELY_UTF_8 |
+				base.TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8 |
 				base.TOKEN__VBD__STRING__DEFINITELY_ASCII |
 				base.TOKEN__VBD__STRING__CONVERT_0_DST_1_SRC_DROP,
 				continued: 1,
@@ -228,6 +229,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 								value_major: 0,
 								value_minor: (base.TOKEN__VBC__STRING << 21) |
 								base.TOKEN__VBD__STRING__DEFINITELY_UTF_8 |
+								base.TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8 |
 								base.TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY,
 								continued: 1,
 								length: string_length)
@@ -260,6 +262,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 								value_major: 0,
 								value_minor: (base.TOKEN__VBC__STRING << 21) |
 								base.TOKEN__VBD__STRING__DEFINITELY_UTF_8 |
+								base.TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8 |
 								base.TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY,
 								continued: 1,
 								length: string_length + 4)
@@ -279,6 +282,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 								value_major: 0,
 								value_minor: (base.TOKEN__VBC__STRING << 21) |
 								base.TOKEN__VBD__STRING__DEFINITELY_UTF_8 |
+								base.TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8 |
 								base.TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY,
 								continued: 1,
 								length: 0xFFFC)
@@ -294,6 +298,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 								value_major: 0,
 								value_minor: (base.TOKEN__VBC__STRING << 21) |
 								base.TOKEN__VBD__STRING__DEFINITELY_UTF_8 |
+								base.TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8 |
 								base.TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY,
 								continued: 1,
 								length: string_length)
@@ -307,6 +312,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 								value_major: 0,
 								value_minor: (base.TOKEN__VBC__STRING << 21) |
 								base.TOKEN__VBD__STRING__DEFINITELY_UTF_8 |
+								base.TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8 |
 								base.TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY,
 								continued: 1,
 								length: string_length)
@@ -594,6 +600,8 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 							args.dst.write_simple_token_fast!(
 								value_major: 0,
 								value_minor: (base.TOKEN__VBC__STRING << 21) |
+								base.TOKEN__VBD__STRING__DEFINITELY_UTF_8 |
+								base.TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8 |
 								base.TOKEN__VBD__STRING__CONVERT_1_DST_4_SRC_BACKSLASH_X,
 								continued: 1,
 								length: backslash_x_length)
@@ -610,6 +618,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 									value_major: 0,
 									value_minor: (base.TOKEN__VBC__STRING << 21) |
 									base.TOKEN__VBD__STRING__DEFINITELY_UTF_8 |
+									base.TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8 |
 									base.TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY,
 									continued: 1,
 									length: string_length)
@@ -646,6 +655,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 									value_major: 0,
 									value_minor: (base.TOKEN__VBC__STRING << 21) |
 									base.TOKEN__VBD__STRING__DEFINITELY_UTF_8 |
+									base.TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8 |
 									base.TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY,
 									continued: 1,
 									length: string_length + 2)
@@ -663,6 +673,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 									value_major: 0,
 									value_minor: (base.TOKEN__VBC__STRING << 21) |
 									base.TOKEN__VBD__STRING__DEFINITELY_UTF_8 |
+									base.TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8 |
 									base.TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY,
 									continued: 1,
 									length: string_length)
@@ -703,6 +714,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 										value_major: 0,
 										value_minor: (base.TOKEN__VBC__STRING << 21) |
 										base.TOKEN__VBD__STRING__DEFINITELY_UTF_8 |
+										base.TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8 |
 										base.TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY,
 										continued: 1,
 										length: string_length + 3)
@@ -721,6 +733,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 									value_major: 0,
 									value_minor: (base.TOKEN__VBC__STRING << 21) |
 									base.TOKEN__VBD__STRING__DEFINITELY_UTF_8 |
+									base.TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8 |
 									base.TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY,
 									continued: 1,
 									length: string_length)
@@ -760,6 +773,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 										value_major: 0,
 										value_minor: (base.TOKEN__VBC__STRING << 21) |
 										base.TOKEN__VBD__STRING__DEFINITELY_UTF_8 |
+										base.TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8 |
 										base.TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY,
 										continued: 1,
 										length: string_length + 4)
@@ -777,6 +791,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 							value_major: 0,
 							value_minor: (base.TOKEN__VBC__STRING << 21) |
 							base.TOKEN__VBD__STRING__DEFINITELY_UTF_8 |
+							base.TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8 |
 							base.TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY,
 							continued: 1,
 							length: string_length)
@@ -830,6 +845,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 					value_major: 0,
 					value_minor: (base.TOKEN__VBC__STRING << 21) |
 					base.TOKEN__VBD__STRING__DEFINITELY_UTF_8 |
+					base.TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8 |
 					base.TOKEN__VBD__STRING__DEFINITELY_ASCII |
 					base.TOKEN__VBD__STRING__CONVERT_0_DST_1_SRC_DROP,
 					continued: 0,

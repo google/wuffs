@@ -2452,7 +2452,7 @@ test_wuffs_json_decode_quirk_allow_backslash_x() {
       uint64_t vbd = wuffs_base__token__value_base_detail(t);
       uint64_t token_length = wuffs_base__token__length(t);
       if ((vbc == WUFFS_BASE__TOKEN__VBC__STRING) &&
-          (vbd ==
+          (vbd &
            WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_1_DST_4_SRC_BACKSLASH_X)) {
         uint8_t b[8] = {0};
         size_t n = wuffs_base__hexadecimal__decode4(
