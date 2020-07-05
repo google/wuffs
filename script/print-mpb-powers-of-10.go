@@ -16,10 +16,10 @@
 
 package main
 
-// print-mpb-powers-of-10.go prints the
-// wuffs_base__private_implementation__medium_prec_bin__powers_of_10 tables.
+// print-mpb-powers-of-10.go prints the medium-precision (64 bit mantissa)
+// binary (base 2) wuffs_base__private_implementation__powers_of_10 tables.
 //
-// Usage: go run print-mpb-powers-of-10.go -comments
+// Usage: go run print-mpb-powers-of-10.go -detail
 
 import (
 	"flag"
@@ -29,7 +29,7 @@ import (
 )
 
 var (
-	comments = flag.Bool("comments", false, "whether to print comments")
+	detail = flag.Bool("detail", false, "whether to print detailed comments")
 )
 
 func main() {
@@ -42,24 +42,15 @@ func main() {
 func main1() error {
 	flag.Parse()
 
-	const bigCount = 1 + ((+340 - -348) / 8)
+	const count = 1 + ((+310 - -326) / 1)
 	fmt.Printf("static const uint32_t "+
-		"wuffs_base__private_implementation__big_powers_of_10[%d] = {\n", 3*bigCount)
-	for e := -348; e <= +340; e += 8 {
+		"wuffs_base__private_implementation__powers_of_10[%d] = {\n", 3*count)
+	for e := -326; e <= +310; e++ {
 		if err := do(e); err != nil {
 			return err
 		}
 	}
 	fmt.Printf("};\n\n")
-
-	fmt.Printf("static const uint32_t " +
-		"wuffs_base__private_implementation__small_powers_of_10[24] = {\n")
-	for e := 0; e <= 7; e += 1 {
-		if err := do(e); err != nil {
-			return err
-		}
-	}
-	fmt.Printf("};\n")
 
 	return nil
 }
@@ -70,7 +61,7 @@ var (
 	two64 = big.NewInt(0).Lsh(one, 64)
 )
 
-// N is large enough so that (1<<N) is bigger than 1e348.
+// N is large enough so that (1<<N) is bigger than 1e310.
 const N = 2048
 
 func do(e int) error {
@@ -98,9 +89,10 @@ func do(e int) error {
 		return fmt.Errorf("invalid hexadecimal representation %q", hex)
 	}
 
-	fmt.Printf("    0x%s, 0x%s, 0x%08X,", hex[8:], hex[:8], uint32(n))
-	if *comments {
-		fmt.Printf("  // 1e%-04d ≈ (0x%s ", e, hex)
+	fmt.Printf("    0x%s, 0x%s, 0x%08X,  // 1e%-04d",
+		hex[8:], hex[:8], uint32(n), e)
+	if *detail {
+		fmt.Printf("≈ (0x%s ", e, hex)
 		if n >= 0 {
 			fmt.Printf("<< %4d)", +n)
 		} else {
