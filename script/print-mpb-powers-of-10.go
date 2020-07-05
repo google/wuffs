@@ -16,7 +16,7 @@
 
 package main
 
-// print-mpb-powers-of-10.go prints the medium-precision (64 bit mantissa)
+// print-mpb-powers-of-10.go prints the medium-precision (128 bit mantissa)
 // binary (base 2) wuffs_base__private_implementation__powers_of_10 tables.
 //
 // Usage: go run print-mpb-powers-of-10.go -detail
@@ -42,9 +42,9 @@ func main() {
 func main1() error {
 	flag.Parse()
 
-	const count = 1 + ((+310 - -326) / 1)
+	const count = 1 + (+310 - -326)
 	fmt.Printf("static const uint32_t "+
-		"wuffs_base__private_implementation__powers_of_10[%d] = {\n", 3*count)
+		"wuffs_base__private_implementation__powers_of_10[%d] = {\n", 5*count)
 	for e := -326; e <= +310; e++ {
 		if err := do(e); err != nil {
 			return err
@@ -56,13 +56,17 @@ func main1() error {
 }
 
 var (
-	one   = big.NewInt(1)
-	ten   = big.NewInt(10)
-	two64 = big.NewInt(0).Lsh(one, 64)
+	one    = big.NewInt(1)
+	ten    = big.NewInt(10)
+	two128 = big.NewInt(0).Lsh(one, 128)
 )
 
-// N is large enough so that (1<<N) is bigger than 1e310.
+// N is large enough so that (1<<N) is easily bigger than 1e310.
 const N = 2048
+
+// 1214 is 1023 + 191. 1023 is the bias for IEEE 754 double-precision floating
+// point. 191 is ((3 * 64) - 1) and we work with multiples-of-64-bit mantissas.
+const bias = 1214
 
 func do(e int) error {
 	z := big.NewInt(0).Lsh(one, N)
@@ -74,23 +78,18 @@ func do(e int) error {
 		z.Div(z, exp)
 	}
 
-	roundUp := false
 	n := int32(-N)
-	for z.Cmp(two64) >= 0 {
-		roundUp = z.Bit(0) > 0
+	for z.Cmp(two128) >= 0 {
 		z.Rsh(z, 1)
 		n++
 	}
-	if roundUp {
-		z.Add(z, one)
-	}
 	hex := fmt.Sprintf("%X", z)
-	if len(hex) != 16 {
+	if len(hex) != 32 {
 		return fmt.Errorf("invalid hexadecimal representation %q", hex)
 	}
 
-	fmt.Printf("    0x%s, 0x%s, 0x%08X,  // 1e%-04d",
-		hex[8:], hex[:8], uint32(n), e)
+	fmt.Printf("    0x%s, 0x%s, 0x%s, 0x%s, 0x%04X,  // 1e%-04d",
+		hex[24:], hex[16:24], hex[8:16], hex[:8], uint32(n)+bias, e)
 	if *detail {
 		fmt.Printf("≈ (0x%s ", e, hex)
 		if n >= 0 {

@@ -451,7 +451,7 @@ test_wuffs_strconv_mpb_assign_from_hpd() {
       // (0xCCCCCCCCCCCCCCCE * (2 **   -67)) is roughly .1
       {.str = "1",
        .decimal_point = +0,
-       .want_mantissa = 0xCCCCCCCCCCCCCCCE,
+       .want_mantissa = 0xCCCCCCCCCCCCCCCC,
        .want_exp2 = -67,
        .want_f64 = .1},
 
@@ -472,7 +472,7 @@ test_wuffs_strconv_mpb_assign_from_hpd() {
       // (0xC9F2C9CD04674EDE * (2 **   +36)) is roughly 1e30.
       {.str = "1",
        .decimal_point = +31,
-       .want_mantissa = 0xC9F2C9CD04674EE0,
+       .want_mantissa = 0xC9F2C9CD04674EDE,
        .want_exp2 = +36,
        .want_f64 = 1e30},
 
