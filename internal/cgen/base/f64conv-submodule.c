@@ -923,6 +923,11 @@ wuffs_base__private_implementation__high_prec_dec__round_just_enough(
 // as 637 uint32_t quintuples (128-bit mantissa, 32-bit base-2 exponent biased
 // by 0x04BE (which is 1214)). The array size is 637 * 5 = 3185.
 //
+// The 1214 bias in this look-up table equals 1023 + 191. 1023 is the bias for
+// IEEE 754 double-precision floating point. 191 is ((3 * 64) - 1) and
+// wuffs_base__private_implementation__parse_number_f64_eisel works with
+// multiples-of-64-bit mantissas.
+//
 // For example, the third approximation, for 1e-324, consists of the uint32_t
 // quintuple (0x828675B9, 0x52064CAC, 0x5DCE35EA, 0xCF42894A, 0x000A). The
 // first four form a little-endian uint128_t value. The last one is an int32_t
@@ -1585,6 +1590,142 @@ static const double wuffs_base__private_implementation__f64_powers_of_10[23] = {
 
 // --------
 
+// wuffs_base__private_implementation__parse_number_f64_eisel produces the IEEE
+// 754 double-precision value for an exact mantissa and base-10 exponent.
+//
+// On success, it returns a non-negative int64_t such that the low 63 bits hold
+// the 11-bit exponent and 52-bit mantissa.
+//
+// On failure, it returns a negative value.
+//
+// The algorithm is based on an original idea by Michael Eisel. See
+// https://lemire.me/blog/2020/03/10/fast-float-parsing-in-practice/
+//
+// Preconditions:
+//  - man is non-zero.
+//  - exp10 is in the range -326 ..= 310, the same range of the
+//    wuffs_base__private_implementation__powers_of_10 array.
+static int64_t  //
+wuffs_base__private_implementation__parse_number_f64_eisel(uint64_t man,
+                                                           int32_t exp10) {
+  // Look up the (possibly truncated) base-2 representation of (10 ** exp10).
+  // The look-up table was constructed so that it is already normalized: the
+  // table entry's mantissa's MSB (most significant bit) is on.
+  const uint32_t* po10 =
+      &wuffs_base__private_implementation__powers_of_10[5 * (exp10 + 326)];
+
+  // Normalize the man argument. The (man != 0) precondition means that a
+  // non-zero bit exists.
+  uint32_t clz = wuffs_base__count_leading_zeroes_u64(man);
+  man <<= clz;
+
+  // Calculate the return value's base-2 exponent. We might tweak it by ±1
+  // later, but its initial value comes from the look-up table and clz.
+  uint64_t ret_exp2 = ((uint64_t)po10[4]) - ((uint64_t)clz);
+
+  // Multiply the two mantissas. Normalization means that both mantissas are at
+  // least (1<<63), so the 128-bit product must be at least (1<<126). The high
+  // 64 bits of the product, x.hi, must therefore be at least (1<<62).
+  //
+  // As a consequence, x.hi has either 0 or 1 leading zeroes. Shifting x.hi
+  // right by either 9 or 10 bits (depending on x.hi's MSB) will therefore
+  // leave the top 10 MSBs (bits 54 ..= 63) off and the 11th MSB (bit 53) on.
+  wuffs_base__multiply_u64__output x = wuffs_base__multiply_u64(
+      man, ((uint64_t)po10[2]) | (((uint64_t)po10[3]) << 32));
+
+  // Before we shift right by at least 9 bits, recall that the look-up table
+  // entry was possibly truncated. We have so far only calculated a lower bound
+  // for the product (man * e), where e is (10 ** exp10). The upper bound would
+  // add a further (man * 1) to the 128-bit product, which overflows the lower
+  // 64-bit limb if ((x.lo + man) < man).
+  //
+  // If overflow occurs, that adds 1 to x.hi. Since we're about to shift right
+  // by at least 9 bits, that carried 1 can be ignored unless the higher 64-bit
+  // limb's low 9 bits are all on.
+  if (((x.hi & 0x1FF) == 0x1FF) && ((x.lo + man) < man)) {
+    // Refine our calculation of (man * e). Before, our approximation of e used
+    // a "low resolution" 64-bit mantissa. Now use a "high resolution" 128-bit
+    // mantissa. We've already calculated x = (man * bits_0_to_63_incl_of_e).
+    // Now calculate y = (man * bits_64_to_127_incl_of_e).
+    wuffs_base__multiply_u64__output y = wuffs_base__multiply_u64(
+        man, ((uint64_t)po10[0]) | (((uint64_t)po10[1]) << 32));
+
+    // Merge the 128-bit x and 128-bit y, which overlap by 64 bits, to
+    // calculate the 192-bit product of the 64-bit man by the 128-bit e.
+    // As we exit this if-block, we only care about the high 128 bits
+    // (merged_hi and merged_lo) of that 192-bit product.
+    uint64_t merged_hi = x.hi;
+    uint64_t merged_lo = x.lo + y.hi;
+    if (merged_lo < x.lo) {
+      merged_hi++;  // Carry the overflow bit.
+    }
+
+    // The "high resolution" approximation of e is still a lower bound. Once
+    // again, see if the upper bound is large enough to produce a different
+    // result. This time, if it does, give up instead of reaching for an even
+    // more precise approximation to e.
+    //
+    // This three-part check is similar to the two-part check that guarded the
+    // if block that we're now in, but it has an extra term for the middle 64
+    // bits (checking that adding 1 to merged_lo would overflow).
+    if (((merged_hi & 0x1FF) == 0x1FF) && ((merged_lo + 1) == 0) &&
+        (y.lo + man < man)) {
+      return -1;
+    }
+
+    // Replace the 128-bit x with merged.
+    x.hi = merged_hi;
+    x.lo = merged_lo;
+  }
+
+  // As mentioned above, shifting x.hi right by either 9 or 10 bits will leave
+  // the top 10 MSBs (bits 54 ..= 63) off and the 11th MSB (bit 53) on. If the
+  // MSB (before shifting) was on, adjust ret_exp2 for the larger shift.
+  //
+  // Having bit 53 on (and higher bits off) means that ret_mantissa is a 54-bit
+  // number.
+  uint64_t msb = x.hi >> 63;
+  uint64_t ret_mantissa = x.hi >> (msb + 9);
+  ret_exp2 -= 1 ^ msb;
+
+  // IEEE 754 rounds to-nearest with ties rounded to-even. Rounding to-even can
+  // be tricky. If we're half-way between two exactly representable numbers
+  // (x's low 73 bits are zero and the next 2 bits that matter are "01"), give
+  // up instead of trying to pick the winner.
+  //
+  // Technically, we could tighten the condition by changing "73" to "73 or 74,
+  // depending on msb", but a flat "73" is simpler.
+  if ((x.lo == 0) && ((x.hi & 0x1FF) == 0) && ((ret_mantissa & 3) == 1)) {
+    return -1;
+  }
+
+  // If we're not halfway then it's rounding to-nearest. Starting with a 54-bit
+  // number, carry the lowest bit (bit 0) up if it's on. Regardless of whether
+  // it was on or off, shifting right by one then produces a 53-bit number. If
+  // carrying up overflowed, shift again.
+  ret_mantissa += ret_mantissa & 1;
+  ret_mantissa >>= 1;
+  if ((ret_mantissa >> 53) > 0) {
+    ret_mantissa >>= 1;
+    ret_exp2++;
+  }
+
+  // Starting with a 53-bit number, IEEE 754 double-precision normal numbers
+  // have an implicit mantissa bit. Mask that away and keep the low 52 bits.
+  ret_mantissa &= 0x000FFFFFFFFFFFFF;
+
+  // IEEE 754 double-precision floating point has 11 exponent bits. All off (0)
+  // means subnormal numbers. All on (2047) means infinity or NaN.
+  if ((ret_exp2 <= 0) || (2047 <= ret_exp2)) {
+    return -1;
+  }
+
+  // Pack the bits and return.
+  return ((int64_t)(ret_mantissa | (ret_exp2 << 52)));
+}
+
+// --------
+
 // wuffs_base__private_implementation__medium_prec_bin (abbreviated as MPB) is
 // a fixed precision floating point binary number. Unlike IEEE 754 Floating
 // Point, it cannot represent infinity or NaN (Not a Number).
@@ -2148,15 +2289,229 @@ infinity:
   } while (0);
 }
 
+static inline bool  //
+wuffs_base__private_implementation__is_decimal_digit(uint8_t c) {
+  return ('0' <= c) && (c <= '9');
+}
+
 WUFFS_BASE__MAYBE_STATIC wuffs_base__result_f64  //
 wuffs_base__parse_number_f64(wuffs_base__slice_u8 s) {
-  wuffs_base__private_implementation__high_prec_dec h;
-  wuffs_base__status status =
-      wuffs_base__private_implementation__high_prec_dec__parse(&h, s);
-  if (status.repr) {
-    return wuffs_base__parse_number_f64_special(s, status.repr);
-  }
-  return wuffs_base__private_implementation__parse_number_f64__fallback(&h);
+  // In practice, almost all "dd.ddddE±xxx" numbers can be represented
+  // losslessly by a uint64_t mantissa "dddddd" and an int32_t base-10
+  // exponent, adjusting "xxx" for the position (if present) of the decimal
+  // separator '.' or ','.
+  //
+  // This (u64 man, i32 exp10) data structure is superficially similar to the
+  // "Do It Yourself Floating Point" type from Loitsch (†), but the exponent
+  // here is base-10, not base-2.
+  //
+  // If s's number fits in a (man, exp10), parse that pair with the Eisel
+  // algorithm. If not, or if Eisel fails, parsing s with the fallback
+  // algorithm is slower but comprehensive.
+  //
+  // † "Printing Floating-Point Numbers Quickly and Accurately with Integers"
+  // (https://www.cs.tufts.edu/~nr/cs257/archive/florian-loitsch/printf.pdf).
+  // Florian Loitsch is also the primary contributor to
+  // https://github.com/google/double-conversion
+  do {
+    // Calculating that (man, exp10) pair needs to stay within s's bounds.
+    // Provided that s isn't extremely long, work on a NUL-terminated copy of
+    // s's contents. The NUL byte isn't a valid part of "±dd.ddddE±xxx".
+    //
+    // As the pointer p walks the contents, it's faster to repeatedly check "is
+    // *p a valid digit" than "is p within bounds and *p a valid digit".
+    if (s.len >= 256) {
+      goto fallback;
+    }
+    uint8_t z[256];
+    memcpy(&z[0], s.ptr, s.len);
+    z[s.len] = 0;
+    const uint8_t* p = &z[0];
+
+    // Look for a leading minus sign. Technically, we could also look for an
+    // optional plus sign, but the "script/process-json-numbers.c with -p"
+    // benchmark is noticably slower if we do. It's optional and, in practice,
+    // usually absent. Let the fallback catch it.
+    bool negative = (*p == '-');
+    if (negative) {
+      p++;
+    }
+
+    // After walking "dd.dddd", comparing p later with p now will produce the
+    // number of "d"s and "."s.
+    const uint8_t* const start_of_digits_ptr = p;
+
+    // Walk the "d"s before a '.', 'E', NUL byte, etc. If it starts with '0',
+    // it must be a single '0'. If it starts with a non-zero decimal digit, it
+    // can be a sequence of decimal digits.
+    //
+    // Update the man variable during the walk. It's OK if man overflows now.
+    // We'll detect that later.
+    uint64_t man;
+    if (*p == '0') {
+      man = 0;
+      p++;
+      if (wuffs_base__private_implementation__is_decimal_digit(*p)) {
+        goto fallback;
+      }
+    } else if (wuffs_base__private_implementation__is_decimal_digit(*p)) {
+      man = ((uint8_t)(*p - '0'));
+      p++;
+      for (; wuffs_base__private_implementation__is_decimal_digit(*p); p++) {
+        man = (10 * man) + ((uint8_t)(*p - '0'));
+      }
+    } else {
+      goto fallback;
+    }
+
+    // Walk the "d"s after the optional decimal separator ('.' or ','),
+    // updating the man and exp10 variables.
+    int32_t exp10 = 0;
+    if ((*p == '.') || (*p == ',')) {
+      p++;
+      const uint8_t* first_after_separator_ptr = p;
+      if (!wuffs_base__private_implementation__is_decimal_digit(*p)) {
+        goto fallback;
+      }
+      man = (10 * man) + ((uint8_t)(*p - '0'));
+      p++;
+      for (; wuffs_base__private_implementation__is_decimal_digit(*p); p++) {
+        man = (10 * man) + ((uint8_t)(*p - '0'));
+      }
+      exp10 = ((int32_t)(first_after_separator_ptr - p));
+    }
+
+    // Count the number of digits:
+    //  - for an input of "314159",  digit_count is 6.
+    //  - for an input of "3.14159", digit_count is 7.
+    //
+    // This is off-by-one if there is a decimal separator. That's OK for now.
+    // We'll correct for that later. The "script/process-json-numbers.c with
+    // -p" benchmark is noticably slower if we try to correct for that now.
+    uint32_t digit_count = (uint32_t)(p - start_of_digits_ptr);
+
+    // Update exp10 for the optional exponent, starting with 'E' or 'e'.
+    if ((*p | 0x20) == 'e') {
+      p++;
+      int32_t exp_sign = +1;
+      if (*p == '-') {
+        p++;
+        exp_sign = -1;
+      } else if (*p == '+') {
+        p++;
+      }
+      if (!wuffs_base__private_implementation__is_decimal_digit(*p)) {
+        goto fallback;
+      }
+      int32_t exp_num = ((uint8_t)(*p - '0'));
+      p++;
+      // The rest of the exp_num walking has a peculiar control flow but, once
+      // again, the "script/process-json-numbers.c with -p" benchmark is
+      // sensitive to alternative formulations.
+      if (wuffs_base__private_implementation__is_decimal_digit(*p)) {
+        exp_num = (10 * exp_num) + ((uint8_t)(*p - '0'));
+        p++;
+      }
+      if (wuffs_base__private_implementation__is_decimal_digit(*p)) {
+        exp_num = (10 * exp_num) + ((uint8_t)(*p - '0'));
+        p++;
+      }
+      while (wuffs_base__private_implementation__is_decimal_digit(*p)) {
+        if (exp_num > 0x1000000) {
+          goto fallback;
+        }
+        exp_num = (10 * exp_num) + ((uint8_t)(*p - '0'));
+        p++;
+      }
+      exp10 += exp_sign * exp_num;
+    }
+
+    // The Wuffs API is that the original slice has no trailing data. It also
+    // allows underscores, which we don't catch here but the fallback should.
+    if (p != &z[s.len]) {
+      goto fallback;
+    }
+
+    // Check that the uint64_t typed man variable has not overflowed, based on
+    // digit_count.
+    //
+    // For reference:
+    //   - (1 << 63) is  9223372036854775808, which has 19 decimal digits.
+    //   - (1 << 64) is 18446744073709551616, which has 20 decimal digits.
+    //   - 19 nines,  9999999999999999999, is  0x8AC7230489E7FFFF, which has 64
+    //     bits and 16 hexadecimal digits.
+    //   - 20 nines, 99999999999999999999, is 0x56BC75E2D630FFFFF, which has 67
+    //     bits and 17 hexadecimal digits.
+    if (digit_count > 19) {
+      // Even if we have more than 19 pseudo-digits, it's not yet definitely an
+      // overflow. Recall that digit_count might be off-by-one (too large) if
+      // there's a decimal separator. It will also over-report the number of
+      // meaningful digits if the input looks something like "0.000dddExxx".
+      //
+      // We adjust by the number of leading '0's and '.'s and re-compare to 19.
+      // Once again, technically, we could skip ','s too, but that perturbs the
+      // "script/process-json-numbers.c with -p" benchmark.
+      const uint8_t* q = start_of_digits_ptr;
+      for (; (*q == '0') || (*q == '.'); q++) {
+      }
+      digit_count -= (uint32_t)(q - start_of_digits_ptr);
+      if (digit_count > 19) {
+        goto fallback;
+      }
+    }
+
+    // The wuffs_base__private_implementation__parse_number_f64_eisel
+    // preconditions include that exp10 is in the range -326 ..= 310.
+    if ((exp10 < -326) || (310 < exp10)) {
+      goto fallback;
+    }
+
+    // If man and exp10 are small enough, all three of (man), (10 ** exp10) and
+    // (man ** (10 ** exp10)) are exactly representable by a double. We don't
+    // need to run the Eisel algorithm.
+    if ((-22 <= exp10) && (exp10 <= 22) && ((man >> 53) == 0)) {
+      double d = (double)man;
+      if (exp10 >= 0) {
+        d *= wuffs_base__private_implementation__f64_powers_of_10[+exp10];
+      } else {
+        d /= wuffs_base__private_implementation__f64_powers_of_10[-exp10];
+      }
+      wuffs_base__result_f64 ret;
+      ret.status.repr = NULL;
+      ret.value = negative ? -d : +d;
+      return ret;
+    }
+
+    // The wuffs_base__private_implementation__parse_number_f64_eisel
+    // preconditions include that man is non-zero. Parsing "0" should be caught
+    // by the "If man and exp10 are small enough" above, but "0e99" might not.
+    if (man == 0) {
+      goto fallback;
+    }
+
+    // Our man and exp10 are in range. Run the Eisel algorithm.
+    int64_t r =
+        wuffs_base__private_implementation__parse_number_f64_eisel(man, exp10);
+    if (r < 0) {
+      goto fallback;
+    }
+    wuffs_base__result_f64 ret;
+    ret.status.repr = NULL;
+    ret.value = wuffs_base__ieee_754_bit_representation__to_f64(
+        ((uint64_t)r) | (((uint64_t)negative) << 63));
+    return ret;
+  } while (0);
+
+fallback:
+  do {
+    wuffs_base__private_implementation__high_prec_dec h;
+    wuffs_base__status status =
+        wuffs_base__private_implementation__high_prec_dec__parse(&h, s);
+    if (status.repr) {
+      return wuffs_base__parse_number_f64_special(s, status.repr);
+    }
+    return wuffs_base__private_implementation__parse_number_f64__fallback(&h);
+  } while (0);
 }
 
 // --------
