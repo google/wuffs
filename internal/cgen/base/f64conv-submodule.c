@@ -2007,10 +2007,8 @@ fallback:
 }
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__result_f64  //
-wuffs_base__parse_number_f64(wuffs_base__slice_u8 s) {
-  wuffs_base__private_implementation__medium_prec_bin m;
-  wuffs_base__private_implementation__high_prec_dec h;
-
+wuffs_base__private_implementation__parse_number_f64__fallback(
+    wuffs_base__private_implementation__high_prec_dec* h) {
   do {
     // powers converts decimal powers of 10 to binary powers of 2. For example,
     // (10000 >> 13) is 1. It stops before the elements exceed 60, also known
@@ -2021,23 +2019,18 @@ wuffs_base__parse_number_f64(wuffs_base__slice_u8 s) {
         33, 36, 39, 43, 46, 49, 53, 56, 59,      //
     };
 
-    wuffs_base__status status =
-        wuffs_base__private_implementation__high_prec_dec__parse(&h, s);
-    if (status.repr) {
-      return wuffs_base__parse_number_f64_special(s, status.repr);
-    }
-
     // Handle zero and obvious extremes. The largest and smallest positive
     // finite f64 values are approximately 1.8e+308 and 4.9e-324.
-    if ((h.num_digits == 0) || (h.decimal_point < -326)) {
+    if ((h->num_digits == 0) || (h->decimal_point < -326)) {
       goto zero;
-    } else if (h.decimal_point > 310) {
+    } else if (h->decimal_point > 310) {
       goto infinity;
     }
 
+    wuffs_base__private_implementation__medium_prec_bin m;
     wuffs_base__result_f64 mpb_result =
         wuffs_base__private_implementation__medium_prec_bin__parse_number_f64(
-            &m, &h, false);
+            &m, h, false);
     if (mpb_result.status.repr == NULL) {
       return mpb_result;
     }
@@ -2047,39 +2040,37 @@ wuffs_base__parse_number_f64(wuffs_base__slice_u8 s) {
     // far, ending with a value certainly below 1 and possibly below ½...
     const int32_t f64_bias = -1023;
     int32_t exp2 = 0;
-    while (h.decimal_point > 0) {
-      uint32_t n = (uint32_t)(+h.decimal_point);
+    while (h->decimal_point > 0) {
+      uint32_t n = (uint32_t)(+h->decimal_point);
       uint32_t shift =
           (n < num_powers)
               ? powers[n]
               : WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__SHIFT__MAX_INCL;
 
-      wuffs_base__private_implementation__high_prec_dec__small_rshift(&h,
-                                                                      shift);
-      if (h.decimal_point <
+      wuffs_base__private_implementation__high_prec_dec__small_rshift(h, shift);
+      if (h->decimal_point <
           -WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__DECIMAL_POINT__RANGE) {
         goto zero;
       }
       exp2 += (int32_t)shift;
     }
     // ...then we shift left, putting us in [½ .. 1].
-    while (h.decimal_point <= 0) {
+    while (h->decimal_point <= 0) {
       uint32_t shift;
-      if (h.decimal_point == 0) {
-        if (h.digits[0] >= 5) {
+      if (h->decimal_point == 0) {
+        if (h->digits[0] >= 5) {
           break;
         }
-        shift = (h.digits[0] <= 2) ? 2 : 1;
+        shift = (h->digits[0] <= 2) ? 2 : 1;
       } else {
-        uint32_t n = (uint32_t)(-h.decimal_point);
+        uint32_t n = (uint32_t)(-h->decimal_point);
         shift = (n < num_powers)
                     ? powers[n]
                     : WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__SHIFT__MAX_INCL;
       }
 
-      wuffs_base__private_implementation__high_prec_dec__small_lshift(&h,
-                                                                      shift);
-      if (h.decimal_point >
+      wuffs_base__private_implementation__high_prec_dec__small_lshift(h, shift);
+      if (h->decimal_point >
           +WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__DECIMAL_POINT__RANGE) {
         goto infinity;
       }
@@ -2095,7 +2086,7 @@ wuffs_base__parse_number_f64(wuffs_base__slice_u8 s) {
       if (n > WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__SHIFT__MAX_INCL) {
         n = WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__SHIFT__MAX_INCL;
       }
-      wuffs_base__private_implementation__high_prec_dec__small_rshift(&h, n);
+      wuffs_base__private_implementation__high_prec_dec__small_rshift(h, n);
       exp2 += (int32_t)n;
     }
 
@@ -2105,9 +2096,9 @@ wuffs_base__parse_number_f64(wuffs_base__slice_u8 s) {
     }
 
     // Extract 53 bits for the mantissa (in base-2).
-    wuffs_base__private_implementation__high_prec_dec__small_lshift(&h, 53);
+    wuffs_base__private_implementation__high_prec_dec__small_lshift(h, 53);
     uint64_t man2 =
-        wuffs_base__private_implementation__high_prec_dec__rounded_integer(&h);
+        wuffs_base__private_implementation__high_prec_dec__rounded_integer(h);
 
     // Rounding might have added one bit. If so, shift and re-check overflow.
     if ((man2 >> 53) != 0) {
@@ -2125,10 +2116,10 @@ wuffs_base__parse_number_f64(wuffs_base__slice_u8 s) {
 
     // Pack the bits and return.
     uint64_t exp2_bits =
-        (uint64_t)((exp2 - f64_bias) & 0x07FF);             // (1 << 11) - 1.
-    uint64_t bits = (man2 & 0x000FFFFFFFFFFFFF) |           // (1 << 52) - 1.
-                    (exp2_bits << 52) |                     //
-                    (h.negative ? 0x8000000000000000 : 0);  // (1 << 63).
+        (uint64_t)((exp2 - f64_bias) & 0x07FF);              // (1 << 11) - 1.
+    uint64_t bits = (man2 & 0x000FFFFFFFFFFFFF) |            // (1 << 52) - 1.
+                    (exp2_bits << 52) |                      //
+                    (h->negative ? 0x8000000000000000 : 0);  // (1 << 63).
 
     wuffs_base__result_f64 ret;
     ret.status.repr = NULL;
@@ -2138,7 +2129,7 @@ wuffs_base__parse_number_f64(wuffs_base__slice_u8 s) {
 
 zero:
   do {
-    uint64_t bits = h.negative ? 0x8000000000000000 : 0;
+    uint64_t bits = h->negative ? 0x8000000000000000 : 0;
 
     wuffs_base__result_f64 ret;
     ret.status.repr = NULL;
@@ -2148,13 +2139,24 @@ zero:
 
 infinity:
   do {
-    uint64_t bits = h.negative ? 0xFFF0000000000000 : 0x7FF0000000000000;
+    uint64_t bits = h->negative ? 0xFFF0000000000000 : 0x7FF0000000000000;
 
     wuffs_base__result_f64 ret;
     ret.status.repr = NULL;
     ret.value = wuffs_base__ieee_754_bit_representation__to_f64(bits);
     return ret;
   } while (0);
+}
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__result_f64  //
+wuffs_base__parse_number_f64(wuffs_base__slice_u8 s) {
+  wuffs_base__private_implementation__high_prec_dec h;
+  wuffs_base__status status =
+      wuffs_base__private_implementation__high_prec_dec__parse(&h, s);
+  if (status.repr) {
+    return wuffs_base__parse_number_f64_special(s, status.repr);
+  }
+  return wuffs_base__private_implementation__parse_number_f64__fallback(&h);
 }
 
 // --------
