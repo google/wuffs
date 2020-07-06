@@ -146,10 +146,12 @@ wuffs_base__private_implementation__high_prec_dec__parse(
   uint8_t* p = s.ptr;
   uint8_t* q = s.ptr + s.len;
 
-  for (; (p < q) && (*p == '_'); p++) {
-  }
-  if (p >= q) {
-    return wuffs_base__make_status(wuffs_base__error__bad_argument);
+  for (;; p++) {
+    if (p >= q) {
+      return wuffs_base__make_status(wuffs_base__error__bad_argument);
+    } else if (*p != '_') {
+      break;
+    }
   }
 
   // Parse sign.
@@ -162,78 +164,109 @@ wuffs_base__private_implementation__high_prec_dec__parse(
     } else {
       break;
     }
-    for (; (p < q) && (*p == '_'); p++) {
+    for (;; p++) {
+      if (p >= q) {
+        return wuffs_base__make_status(wuffs_base__error__bad_argument);
+      } else if (*p != '_') {
+        break;
+      }
     }
   } while (0);
 
-  // Parse digits.
+  // Parse digits, up to (and including) a '.', 'E' or 'e'. Examples for each
+  // limb in this if-else chain:
+  //  - "0.789"
+  //  - "1002.789"
+  //  - ".789"
+  //  - Other (invalid input).
   uint32_t nd = 0;
   int32_t dp = 0;
-  bool saw_digits = false;
-  bool saw_non_zero_digits = false;
-  bool saw_dot = false;
-  for (; p < q; p++) {
-    if (*p == '_') {
-      // No-op.
-
-    } else if ((*p == '.') || (*p == ',')) {
-      // As per https://en.wikipedia.org/wiki/Decimal_separator, both '.' or
-      // ',' are commonly used. We just parse either, regardless of LOCALE.
-      if (saw_dot) {
+  bool no_digits_before_separator = false;
+  if ('0' == *p) {
+    p++;
+    for (;; p++) {
+      if (p >= q) {
+        goto after_all;
+      } else if ((*p == '.') || (*p == ',')) {
+        p++;
+        goto after_sep;
+      } else if ((*p == 'E') || (*p == 'e')) {
+        p++;
+        goto after_exp;
+      } else if (*p != '_') {
         return wuffs_base__make_status(wuffs_base__error__bad_argument);
       }
-      saw_dot = true;
-      dp = (int32_t)nd;
+    }
 
+  } else if (('0' < *p) && (*p <= '9')) {
+    h->digits[nd++] = (uint8_t)(*p - '0');
+    dp = (int32_t)nd;
+    p++;
+    for (;; p++) {
+      if (p >= q) {
+        goto after_all;
+      } else if (('0' <= *p) && (*p <= '9')) {
+        if (nd < WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__DIGITS_PRECISION) {
+          h->digits[nd++] = (uint8_t)(*p - '0');
+          dp = (int32_t)nd;
+        } else if ('0' != *p) {
+          // Long-tail non-zeroes set the truncated bit.
+          h->truncated = true;
+        }
+      } else if ((*p == '.') || (*p == ',')) {
+        p++;
+        goto after_sep;
+      } else if ((*p == 'E') || (*p == 'e')) {
+        p++;
+        goto after_exp;
+      } else if (*p != '_') {
+        return wuffs_base__make_status(wuffs_base__error__bad_argument);
+      }
+    }
+
+  } else if ((*p == '.') || (*p == ',')) {
+    p++;
+    no_digits_before_separator = true;
+
+  } else {
+    return wuffs_base__make_status(wuffs_base__error__bad_argument);
+  }
+
+after_sep:
+  for (;; p++) {
+    if (p >= q) {
+      goto after_all;
     } else if ('0' == *p) {
-      if (!saw_dot && !saw_non_zero_digits && saw_digits) {
-        // We don't allow unnecessary leading zeroes: "000123" or "0644".
-        return wuffs_base__make_status(wuffs_base__error__bad_argument);
-      }
-      saw_digits = true;
       if (nd == 0) {
         // Track leading zeroes implicitly.
         dp--;
       } else if (nd <
                  WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__DIGITS_PRECISION) {
-        h->digits[nd++] = 0;
-      } else {
-        // Long-tail zeroes are ignored.
+        h->digits[nd++] = (uint8_t)(*p - '0');
       }
-
     } else if (('0' < *p) && (*p <= '9')) {
-      if (!saw_dot && !saw_non_zero_digits && saw_digits) {
-        // We don't allow unnecessary leading zeroes: "000123" or "0644".
-        return wuffs_base__make_status(wuffs_base__error__bad_argument);
-      }
-      saw_digits = true;
-      saw_non_zero_digits = true;
       if (nd < WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__DIGITS_PRECISION) {
         h->digits[nd++] = (uint8_t)(*p - '0');
       } else {
         // Long-tail non-zeroes set the truncated bit.
         h->truncated = true;
       }
-
-    } else {
-      break;
-    }
-  }
-
-  if (!saw_digits) {
-    return wuffs_base__make_status(wuffs_base__error__bad_argument);
-  }
-  if (!saw_dot) {
-    dp = (int32_t)nd;
-  }
-
-  // Parse exponent.
-  if ((p < q) && ((*p == 'E') || (*p == 'e'))) {
-    p++;
-    for (; (p < q) && (*p == '_'); p++) {
-    }
-    if (p >= q) {
+    } else if ((*p == 'E') || (*p == 'e')) {
+      p++;
+      goto after_exp;
+    } else if (*p != '_') {
       return wuffs_base__make_status(wuffs_base__error__bad_argument);
+    }
+  }
+
+after_exp:
+  do {
+    for (;; p++) {
+      if (p >= q) {
+        return wuffs_base__make_status(wuffs_base__error__bad_argument);
+      } else if (*p != '_') {
+        break;
+      }
     }
 
     int32_t exp_sign = +1;
@@ -265,14 +298,17 @@ wuffs_base__private_implementation__high_prec_dec__parse(
       return wuffs_base__make_status(wuffs_base__error__bad_argument);
     }
     dp += exp_sign * exp;
-  }
+  } while (0);
 
-  // Finish.
+after_all:
   if (p != q) {
     return wuffs_base__make_status(wuffs_base__error__bad_argument);
   }
   h->num_digits = nd;
   if (nd == 0) {
+    if (no_digits_before_separator) {
+      return wuffs_base__make_status(wuffs_base__error__bad_argument);
+    }
     h->decimal_point = 0;
   } else if (dp <
              -WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__DECIMAL_POINT__RANGE) {
