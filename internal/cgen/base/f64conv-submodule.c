@@ -1987,7 +1987,7 @@ wuffs_base__private_implementation__is_decimal_digit(uint8_t c) {
 }
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__result_f64  //
-wuffs_base__parse_number_f64(wuffs_base__slice_u8 s) {
+wuffs_base__parse_number_f64(wuffs_base__slice_u8 s, uint32_t options) {
   // In practice, almost all "dd.ddddE±xxx" numbers can be represented
   // losslessly by a uint64_t mantissa "dddddd" and an int32_t base-10
   // exponent, adjusting "xxx" for the position (if present) of the decimal

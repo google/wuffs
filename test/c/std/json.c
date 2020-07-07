@@ -597,9 +597,10 @@ test_wuffs_strconv_parse_number_f64() {
 
   int tc;
   for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
-    wuffs_base__result_f64 r =
-        wuffs_base__parse_number_f64(wuffs_base__make_slice_u8(
-            (void*)test_cases[tc].str, strlen(test_cases[tc].str)));
+    wuffs_base__result_f64 r = wuffs_base__parse_number_f64(
+        wuffs_base__make_slice_u8((void*)test_cases[tc].str,
+                                  strlen(test_cases[tc].str)),
+        WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS);
     uint64_t have =
         (r.status.repr == NULL)
             ? wuffs_base__ieee_754_bit_representation__from_f64(r.value)
@@ -649,9 +650,10 @@ test_wuffs_strconv_parse_number_i64() {
 
   int tc;
   for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
-    wuffs_base__result_i64 r =
-        wuffs_base__parse_number_i64(wuffs_base__make_slice_u8(
-            (void*)test_cases[tc].str, strlen(test_cases[tc].str)));
+    wuffs_base__result_i64 r = wuffs_base__parse_number_i64(
+        wuffs_base__make_slice_u8((void*)test_cases[tc].str,
+                                  strlen(test_cases[tc].str)),
+        WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS);
     int64_t have = (r.status.repr == NULL) ? r.value : fail;
     if (have != test_cases[tc].want) {
       RETURN_FAIL("\"%s\": have 0x%" PRIX64 ", want 0x%" PRIX64,
@@ -735,9 +737,10 @@ test_wuffs_strconv_parse_number_u64() {
 
   int tc;
   for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
-    wuffs_base__result_u64 r =
-        wuffs_base__parse_number_u64(wuffs_base__make_slice_u8(
-            (void*)test_cases[tc].str, strlen(test_cases[tc].str)));
+    wuffs_base__result_u64 r = wuffs_base__parse_number_u64(
+        wuffs_base__make_slice_u8((void*)test_cases[tc].str,
+                                  strlen(test_cases[tc].str)),
+        WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS);
     uint64_t have = (r.status.repr == NULL) ? r.value : fail;
     if (have != test_cases[tc].want) {
       RETURN_FAIL("\"%s\": have 0x%" PRIX64 ", want 0x%" PRIX64,
@@ -3190,7 +3193,9 @@ do_bench_wuffs_strconv_parse_number_f64(const char* str,
   uint64_t i;
   uint64_t iters = iters_unscaled * g_flags.iterscale;
   for (i = 0; i < iters; i++) {
-    CHECK_STATUS("", wuffs_base__parse_number_f64(s).status);
+    CHECK_STATUS("", wuffs_base__parse_number_f64(
+                         s, WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS)
+                         .status);
   }
   bench_finish(iters, 0);
 

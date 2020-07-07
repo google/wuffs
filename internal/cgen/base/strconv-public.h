@@ -16,6 +16,14 @@
 
 // ---------------- String Conversions
 
+// Options (bitwise or'ed together) for wuffs_base__parse_number_xxx
+// functions. The XXX options apply to both integer and floating point. The FXX
+// options apply only to floating point.
+
+#define WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS ((uint32_t)0x00000000)
+
+// --------
+
 // Options (bitwise or'ed together) for wuffs_base__render_number_xxx
 // functions. The XXX options apply to both integer and floating point. The FXX
 // options apply only to floating point.
@@ -99,7 +107,7 @@
 // function requires the WUFFS_CONFIG__MODULE__BASE__F64CONV sub-module, not
 // just WUFFS_CONFIG__MODULE__BASE__CORE.
 WUFFS_BASE__MAYBE_STATIC wuffs_base__result_f64  //
-wuffs_base__parse_number_f64(wuffs_base__slice_u8 s);
+wuffs_base__parse_number_f64(wuffs_base__slice_u8 s, uint32_t options);
 
 // --------
 
@@ -143,7 +151,7 @@ wuffs_base__ieee_754_bit_representation__to_f64(uint64_t u) {
 // It is similar to wuffs_base__parse_number_u64 but it returns a signed
 // integer, not an unsigned integer. It also allows a leading '+' or '-'.
 WUFFS_BASE__MAYBE_STATIC wuffs_base__result_i64  //
-wuffs_base__parse_number_i64(wuffs_base__slice_u8 s);
+wuffs_base__parse_number_i64(wuffs_base__slice_u8 s, uint32_t options);
 
 // wuffs_base__parse_number_u64 parses the ASCII integer in s. For example, if
 // s contains the bytes "123" then it will return the uint64_t 123.
@@ -170,7 +178,7 @@ wuffs_base__parse_number_i64(wuffs_base__slice_u8 s);
 //    opening "0d" or "0X" that denotes base-10 or base-16. For example,
 //    "__0D_1_002" would successfully parse as "one thousand and two".
 WUFFS_BASE__MAYBE_STATIC wuffs_base__result_u64  //
-wuffs_base__parse_number_u64(wuffs_base__slice_u8 s);
+wuffs_base__parse_number_u64(wuffs_base__slice_u8 s, uint32_t options);
 
 // --------
 

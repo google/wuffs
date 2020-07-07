@@ -431,8 +431,9 @@ class Query {
     m_depth = d + 1;
     if (all_digits) {
       // wuffs_base__parse_number_u64 rejects leading zeroes, e.g. "00", "07".
-      m_array_index =
-          wuffs_base__parse_number_u64(wuffs_base__make_slice_u8(i, k - i));
+      m_array_index = wuffs_base__parse_number_u64(
+          wuffs_base__make_slice_u8(i, k - i),
+          WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS);
     }
     return true;
   }
@@ -601,7 +602,8 @@ parse_flags(int argc, char** argv) {
       while (*arg++ != '=') {
       }
       wuffs_base__result_u64 u = wuffs_base__parse_number_u64(
-          wuffs_base__make_slice_u8((uint8_t*)arg, strlen(arg)));
+          wuffs_base__make_slice_u8((uint8_t*)arg, strlen(arg)),
+          WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS);
       if (wuffs_base__status__is_ok(&u.status) && (u.value <= 0xFFFFFFFF)) {
         g_flags.max_output_depth = (uint32_t)(u.value);
         continue;

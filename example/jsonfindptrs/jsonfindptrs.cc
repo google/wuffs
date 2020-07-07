@@ -64,6 +64,7 @@ for a C++ compiler $CXX, such as clang++ or g++.
 #include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
+
 #include <iostream>
 #include <map>
 #include <string>
@@ -215,7 +216,8 @@ parse_flags(int argc, char** argv) {
       while (*arg++ != '=') {
       }
       wuffs_base__result_u64 u = wuffs_base__parse_number_u64(
-          wuffs_base__make_slice_u8((uint8_t*)arg, strlen(arg)));
+          wuffs_base__make_slice_u8((uint8_t*)arg, strlen(arg)),
+          WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS);
       if (wuffs_base__status__is_ok(&u.status) && (u.value <= 0xFFFFFFFF)) {
         g_flags.max_output_depth = (uint32_t)(u.value);
         continue;
@@ -235,7 +237,7 @@ parse_flags(int argc, char** argv) {
   return "";
 }
 
-  // ----
+// ----
 
 #define WORK_BUFFER_ARRAY_SIZE \
   WUFFS_JSON__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE
@@ -522,7 +524,8 @@ JsonThing::parse_number(TokenStream::Result tsr) {
   if (vbd & WUFFS_BASE__TOKEN__VBD__NUMBER__FORMAT_TEXT) {
     if (vbd & WUFFS_BASE__TOKEN__VBD__NUMBER__CONTENT_INTEGER_SIGNED) {
       static constexpr int64_t m = 0x001FFFFFFFFFFFFF;  // ((1<<53) - 1).
-      wuffs_base__result_i64 r = wuffs_base__parse_number_i64(tsr.src_data);
+      wuffs_base__result_i64 r = wuffs_base__parse_number_i64(
+          tsr.src_data, WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS);
       if (!r.status.is_ok()) {
         return Result(r.status.message());
       } else if ((r.value < -m) || (+m < r.value)) {
@@ -533,7 +536,8 @@ JsonThing::parse_number(TokenStream::Result tsr) {
       jt.value.i = r.value;
       return Result("", jt);
     } else if (vbd & WUFFS_BASE__TOKEN__VBD__NUMBER__CONTENT_FLOATING_POINT) {
-      wuffs_base__result_f64 r = wuffs_base__parse_number_f64(tsr.src_data);
+      wuffs_base__result_f64 r = wuffs_base__parse_number_f64(
+          tsr.src_data, WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS);
       if (!r.status.is_ok()) {
         return Result(r.status.message());
       }

@@ -106,7 +106,7 @@ static const uint8_t wuffs_base__parse_number__hexadecimal_digits[256] = {
 // --------
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__result_i64  //
-wuffs_base__parse_number_i64(wuffs_base__slice_u8 s) {
+wuffs_base__parse_number_i64(wuffs_base__slice_u8 s, uint32_t options) {
   uint8_t* p = s.ptr;
   uint8_t* q = s.ptr + s.len;
 
@@ -125,7 +125,7 @@ wuffs_base__parse_number_i64(wuffs_base__slice_u8 s) {
 
   do {
     wuffs_base__result_u64 r = wuffs_base__parse_number_u64(
-        wuffs_base__make_slice_u8(p, (size_t)(q - p)));
+        wuffs_base__make_slice_u8(p, (size_t)(q - p)), options);
     if (r.status.repr != NULL) {
       wuffs_base__result_i64 ret;
       ret.status.repr = r.status.repr;
@@ -167,7 +167,7 @@ fail_out_of_bounds:
 }
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__result_u64  //
-wuffs_base__parse_number_u64(wuffs_base__slice_u8 s) {
+wuffs_base__parse_number_u64(wuffs_base__slice_u8 s, uint32_t options) {
   uint8_t* p = s.ptr;
   uint8_t* q = s.ptr + s.len;
 

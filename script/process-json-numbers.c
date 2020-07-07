@@ -229,7 +229,8 @@ main1(int argc, char** argv) {
 
         if (g_flags.parse_number_f64) {
           wuffs_base__result_f64 r = wuffs_base__parse_number_f64(
-              wuffs_base__make_slice_u8(&g_src.data.ptr[buf_pos], len));
+              wuffs_base__make_slice_u8(&g_src.data.ptr[buf_pos], len),
+              WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS);
           if (!wuffs_base__status__is_ok(&r.status)) {
             return wuffs_base__status__message(&r.status);
           }
