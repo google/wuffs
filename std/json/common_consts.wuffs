@@ -41,8 +41,8 @@ pub const DECODER_DST_TOKEN_BUFFER_LENGTH_MIN_INCL : base.u64 = 1
 // maximum possible src.meta.ri and src.meta.wi values). It is a property of
 // the backing array's length, not the length of the JSON-formatted input per
 // se. It is perfectly valid to decode "[1,2]" (of length 5) as JSON, as long
-// as that content is placed in an io_buffer whose data.len is at least 100.
-pub const DECODER_SRC_IO_BUFFER_LENGTH_MIN_INCL : base.u64 = 100
+// as that content is placed in an io_buffer whose data.len is at least 2048.
+pub const DECODER_SRC_IO_BUFFER_LENGTH_MIN_INCL : base.u64 = 2048
 
 // DECODER_NUMBER_LENGTH_MAX_INCL is the longest supported byte length for a
 // JSON number. Unlike JSON strings, this package's tokenizer never splits a
@@ -52,7 +52,7 @@ pub const DECODER_SRC_IO_BUFFER_LENGTH_MIN_INCL : base.u64 = 100
 //
 // The JSON spec itself does not define a limit, but allows implementations to
 // set their own limits.
-pri const DECODER_NUMBER_LENGTH_MAX_INCL : base.u64 = 99
+pri const DECODER_NUMBER_LENGTH_MAX_INCL : base.u64 = 2047
 
 // --------
 

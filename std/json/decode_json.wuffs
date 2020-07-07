@@ -75,7 +75,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 	// https://github.com/google/wuffs/commit/86d3b89f9a6578d964a4b6d71e21dfc9bb702b44
 
 	var vminor            : base.u32[..= 0xFF_FFFF]
-	var number_length     : base.u32[..= 0x3FF]
+	var number_length     : base.u32[..= 0x3FFF]
 	var number_status     : base.u32[..= 0x3]
 	var string_length     : base.u32[..= 0xFFFB]
 	var whitespace_length : base.u32[..= 0xFFFE]
@@ -905,17 +905,17 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 				pre args.dst.available() > 0,
 			{
 				number_length = this.decode_number!(src: args.src)
-				number_status = number_length >> 8
+				number_status = number_length >> 12
 				vminor = (base.TOKEN__VBC__NUMBER << 21) |
 					base.TOKEN__VBD__NUMBER__CONTENT_FLOATING_POINT |
 					base.TOKEN__VBD__NUMBER__CONTENT_INTEGER_SIGNED |
 					base.TOKEN__VBD__NUMBER__FORMAT_TEXT
-				if (number_length & 0x80) <> 0 {
+				if (number_length & 0x800) <> 0 {
 					vminor = (base.TOKEN__VBC__NUMBER << 21) |
 						base.TOKEN__VBD__NUMBER__CONTENT_FLOATING_POINT |
 						base.TOKEN__VBD__NUMBER__FORMAT_TEXT
 				}
-				number_length = number_length & 0x7F
+				number_length = number_length & 0x7FF
 				if number_status == 0 {
 					args.dst.write_simple_token_fast!(
 						value_major: 0,
@@ -1196,10 +1196,10 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 	this.end_of_data = true
 }
 
-pri func decoder.decode_number!(src: base.io_reader) base.u32[..= 0x3FF] {
+pri func decoder.decode_number!(src: base.io_reader) base.u32[..= 0x3FFF] {
 	var c              : base.u8
-	var n              : base.u32[..= 0x3FF]
-	var floating_point : base.u32[..= 0x80]
+	var n              : base.u32[..= 0x3FFF]
+	var floating_point : base.u32[..= 0x800]
 
 	while.goto_done true {{
 	n = 0
@@ -1207,7 +1207,7 @@ pri func decoder.decode_number!(src: base.io_reader) base.u32[..= 0x3FF] {
 	// Peek.
 	if args.src.available() <= 0 {
 		if not args.src.is_closed() {
-			n |= 0x300
+			n |= 0x3000
 		}
 		break.goto_done
 	}
@@ -1224,9 +1224,9 @@ pri func decoder.decode_number!(src: base.io_reader) base.u32[..= 0x3FF] {
 		// Peek.
 		if args.src.available() <= 0 {
 			if not args.src.is_closed() {
-				n |= 0x300
+				n |= 0x3000
 			}
-			n |= 0x100  // A '-' without digits is invalid.
+			n |= 0x1000  // A '-' without digits is invalid.
 			break.goto_done
 		}
 		c = args.src.peek_u8()
@@ -1239,19 +1239,19 @@ pri func decoder.decode_number!(src: base.io_reader) base.u32[..= 0x3FF] {
 	if c == '0' {
 		n += 1
 		args.src.skip_u32_fast!(actual: 1, worst_case: 1)
-		assert n <= 99
+		assert n <= 2047
 	} else {
 		n = this.decode_digits!(src: args.src, n: n)
-		if n > 99 {
+		if n > 2047 {
 			break.goto_done
 		}
-		assert n <= 99
+		assert n <= 2047
 	}
 
 	// Peek.
 	if args.src.available() <= 0 {
 		if not args.src.is_closed() {
-			n |= 0x300
+			n |= 0x3000
 		}
 		break.goto_done
 	}
@@ -1260,68 +1260,68 @@ pri func decoder.decode_number!(src: base.io_reader) base.u32[..= 0x3FF] {
 	// Scan the optional fraction.
 	if c <> '.' {
 		assert args.src.available() > 0
-		assert n <= 99
+		assert n <= 2047
 	} else {
-		if n >= 99 {
-			n |= 0x200
+		if n >= 2047 {
+			n |= 0x2000
 			break.goto_done
 		}
 		n += 1
 		args.src.skip_u32_fast!(actual: 1, worst_case: 1)
-		floating_point = 0x80
+		floating_point = 0x800
 
 		n = this.decode_digits!(src: args.src, n: n)
-		if n > 99 {
+		if n > 2047 {
 			break.goto_done
 		}
 
 		// Peek.
 		if args.src.available() <= 0 {
 			if not args.src.is_closed() {
-				n |= 0x300
+				n |= 0x3000
 			}
 			break.goto_done
 		}
 		c = args.src.peek_u8()
 
 		assert args.src.available() > 0
-		assert n <= 99
+		assert n <= 2047
 	}
 
 	// Scan the optional 'E' or 'e'.
 	if (c <> 'E') and (c <> 'e') {
 		break.goto_done
 	}
-	if n >= 99 {
-		n |= 0x200
+	if n >= 2047 {
+		n |= 0x2000
 		break.goto_done
 	}
 	n += 1
 	args.src.skip_u32_fast!(actual: 1, worst_case: 1)
-	floating_point = 0x80
-	assert n <= 99
+	floating_point = 0x800
+	assert n <= 2047
 
 	// Peek.
 	if args.src.available() <= 0 {
 		if not args.src.is_closed() {
-			n |= 0x300
+			n |= 0x3000
 		}
-		n |= 0x100  // An 'E' or 'e' without digits is invalid.
+		n |= 0x1000  // An 'E' or 'e' without digits is invalid.
 		break.goto_done
 	}
 	c = args.src.peek_u8()
 
 	// Scan the optional '+' or '-'.
 	if (c <> '+') and (c <> '-') {
-		assert n <= 99
+		assert n <= 2047
 	} else {
-		if n >= 99 {
-			n |= 0x200
+		if n >= 2047 {
+			n |= 0x2000
 			break.goto_done
 		}
 		n += 1
 		args.src.skip_u32_fast!(actual: 1, worst_case: 1)
-		assert n <= 99
+		assert n <= 2047
 	}
 
 	// Scan the exponent digits.
@@ -1333,15 +1333,15 @@ pri func decoder.decode_number!(src: base.io_reader) base.u32[..= 0x3FF] {
 	return n | floating_point
 }
 
-pri func decoder.decode_digits!(src: base.io_reader, n: base.u32[..= 99]) base.u32[..= 0x3FF] {
+pri func decoder.decode_digits!(src: base.io_reader, n: base.u32[..= 2047]) base.u32[..= 0x3FFF] {
 	var c : base.u8
-	var n : base.u32[..= 0x3FF]
+	var n : base.u32[..= 0x3FFF]
 
 	n = args.n
 	while true {
 		if args.src.available() <= 0 {
 			if not args.src.is_closed() {
-				n |= 0x300
+				n |= 0x3000
 			}
 			break
 		}
@@ -1349,24 +1349,27 @@ pri func decoder.decode_digits!(src: base.io_reader, n: base.u32[..= 99]) base.u
 		if 0x00 == LUT_DECIMAL_DIGITS[c] {
 			break
 		}
-		// Cap DECODER_NUMBER_LENGTH_MAX_INCL at an arbitrary value, 99. The
-		// caller's src.data.len should therefore be at least 100, also known
+		// Cap DECODER_NUMBER_LENGTH_MAX_INCL at an arbitrary value, 2047. The
+		// caller's src.data.len should therefore be at least 2048, also known
 		// as DECODER_SRC_IO_BUFFER_LENGTH_MIN_INCL.
 		//
 		// An example of a JSON number that is 81 bytes long is:
 		// https://github.com/nst/JSONTestSuite/blob/master/test_parsing/y_number_double_close_to_zero.json
 		//
-		// Note that 99 (in hex, 0x63) is less than 0x80, so we can use 0x80 as
-		// a flag bit in func decoder.decode_number.
-		if n >= 99 {
-			n |= 0x200
+		// A exact rendering (in printf's "%f" format) of 5e-324 can run to
+		// almost 1100 bytes.
+		//
+		// Note that 2047 (in hex, 0x7FF) is less than 0x800, so we can use
+		// 0x800 as a flag bit in func decoder.decode_number.
+		if n >= 2047 {
+			n |= 0x2000
 			break
 		}
 		n += 1
 		args.src.skip_u32_fast!(actual: 1, worst_case: 1)
 	} endwhile
 	if n == args.n {
-		n |= 0x100
+		n |= 0x1000
 	}
 	return n
 }

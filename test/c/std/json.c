@@ -1982,14 +1982,14 @@ test_wuffs_json_decode_long_numbers() {
       {.valid = true, .suffix = ".2e-5678 "},
   };
 
-  // src_array holds the overall test string. 119 is arbitrary but long enough.
-  // See the "if (suffix_length > etc)" check below. 102 is also arbitrary but
-  // larger than WUFFS_JSON__DECODER_NUMBER_LENGTH_MAX_INCL.
+  // src_array holds the overall test string. 2090 is arbitrary but long
+  // enough. See the "if (suffix_length > etc)" check below. 2060 is also
+  // arbitrary but larger than WUFFS_JSON__DECODER_NUMBER_LENGTH_MAX_INCL.
   //
   // See also test_wuffs_json_decode_src_io_buffer_length.
-  uint8_t src_array[119];
-  memset(&src_array[0], '9', 102);
-  if (102 <= WUFFS_JSON__DECODER_NUMBER_LENGTH_MAX_INCL) {
+  uint8_t src_array[2090];
+  memset(&src_array[0], '9', 2060);
+  if (2060 <= WUFFS_JSON__DECODER_NUMBER_LENGTH_MAX_INCL) {
     RETURN_FAIL("insufficient number_length test case coverage");
   }
 
@@ -1998,7 +1998,7 @@ test_wuffs_json_decode_long_numbers() {
   int tc;
   for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
     size_t suffix_length = strlen(test_cases[tc].suffix);
-    if ((suffix_length + 1) > (119 - 102)) {  // +1 for the terminal NUL.
+    if ((suffix_length + 1) > (2090 - 2060)) {  // +1 for the terminal NUL.
       RETURN_FAIL("tc=%d: src_array is too short", tc);
     }
     bool ends_with_space = (suffix_length > 0) &&
@@ -2007,12 +2007,12 @@ test_wuffs_json_decode_long_numbers() {
     // Copying the terminal NUL isn't necessary for Wuffs' slices (which are a
     // pointer-length pair), but this backstop can help debugging with printf
     // where "%s" takes a C string (a bare pointer).
-    memcpy(&src_array[102], test_cases[tc].suffix, suffix_length + 1);
+    memcpy(&src_array[2060], test_cases[tc].suffix, suffix_length + 1);
 
     size_t nines_length;
-    for (nines_length = 90; nines_length < 102; nines_length++) {
+    for (nines_length = 2037; nines_length < 2050; nines_length++) {
       wuffs_base__slice_u8 src_data = ((wuffs_base__slice_u8){
-          .ptr = &src_array[102 - nines_length],
+          .ptr = &src_array[2060 - nines_length],
           .len = nines_length + suffix_length,
       });
       size_t number_length = src_data.len - (ends_with_space ? 1 : 0);
@@ -3019,10 +3019,10 @@ test_wuffs_json_decode_src_io_buffer_length() {
         "WUFFS_JSON__DECODER_SRC_IO_BUFFER_LENGTH_MIN_INCL");
   }
 
-  // src_array holds the test string of repeated '7's. 107 is arbitrary but
+  // src_array holds the test string of repeated '7's. 2050 is arbitrary but
   // long enough for the loop below.
-  uint8_t src_array[107];
-  memset(&src_array[0], '7', 107);
+  uint8_t src_array[2050];
+  memset(&src_array[0], '7', 2050);
 
   wuffs_json__decoder dec;
 
@@ -3031,7 +3031,7 @@ test_wuffs_json_decode_src_io_buffer_length() {
        i <= WUFFS_JSON__DECODER_NUMBER_LENGTH_MAX_INCL + 2; i++) {
     if (i < 0) {
       RETURN_FAIL("invalid test case: i=%d", i);
-    } else if (i > 107) {
+    } else if (i > 2050) {
       RETURN_FAIL("invalid test case: i=%d", i);
     }
 
