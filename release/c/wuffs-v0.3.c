@@ -65,15 +65,15 @@ extern "C" {
 // each major.minor branch, the commit count should increase monotonically.
 //
 // WUFFS_VERSION was overridden by "wuffs gen -version" based on revision
-// b9f69264a09f6a1c610f35639eab024a0cbb3df9 committed on 2020-07-07.
+// 84bb3afd8742f9e3b3787dd3965d97f3a0a159c4 committed on 2020-07-07.
 #define WUFFS_VERSION 0x000030000
 #define WUFFS_VERSION_MAJOR 0
 #define WUFFS_VERSION_MINOR 3
 #define WUFFS_VERSION_PATCH 0
-#define WUFFS_VERSION_PRE_RELEASE_LABEL "alpha.6"
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 2541
+#define WUFFS_VERSION_PRE_RELEASE_LABEL "alpha.7"
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 2543
 #define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20200707
-#define WUFFS_VERSION_STRING "0.3.0-alpha.6+2541.20200707"
+#define WUFFS_VERSION_STRING "0.3.0-alpha.7+2543.20200707"
 
 // Define WUFFS_CONFIG__STATIC_FUNCTIONS to make all of Wuffs' functions have
 // static storage. The motivation is discussed in the "ALLOW STATIC
@@ -6996,7 +6996,7 @@ extern const char wuffs_json__error__unsupported_recursion_depth[];
 
 #define WUFFS_JSON__DECODER_DST_TOKEN_BUFFER_LENGTH_MIN_INCL 1
 
-#define WUFFS_JSON__DECODER_SRC_IO_BUFFER_LENGTH_MIN_INCL 2048
+#define WUFFS_JSON__DECODER_SRC_IO_BUFFER_LENGTH_MIN_INCL 100
 
 #define WUFFS_JSON__QUIRK_ALLOW_ASCII_CONTROL_CODES 1225364480
 
@@ -23251,7 +23251,7 @@ const char wuffs_json__error__internal_error_inconsistent_i_o[] = "#json: intern
 
 // ---------------- Private Consts
 
-#define WUFFS_JSON__DECODER_NUMBER_LENGTH_MAX_INCL 2047
+#define WUFFS_JSON__DECODER_NUMBER_LENGTH_MAX_INCL 99
 
 static const uint8_t
 WUFFS_JSON__LUT_BACKSLASHES[256]WUFFS_BASE__POTENTIALLY_UNUSED = {
@@ -24376,12 +24376,12 @@ wuffs_json__decoder__decode_tokens(
             if (a_src) {
               iop_a_src = a_src->data.ptr + a_src->meta.ri;
             }
-            v_number_status = (v_number_length >> 12);
+            v_number_status = (v_number_length >> 8);
             v_vminor = 10486787;
-            if ((v_number_length & 2048) != 0) {
+            if ((v_number_length & 128) != 0) {
               v_vminor = 10486785;
             }
-            v_number_length = (v_number_length & 2047);
+            v_number_length = (v_number_length & 127);
             if (v_number_status == 0) {
               *iop_a_dst++ = wuffs_base__make_token(
                   (((uint64_t)(v_vminor)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
@@ -24708,7 +24708,7 @@ wuffs_json__decoder__decode_number(
     v_n = 0;
     if (((uint64_t)(io2_a_src - iop_a_src)) <= 0) {
       if ( ! (a_src && a_src->meta.closed)) {
-        v_n |= 12288;
+        v_n |= 768;
       }
       goto label__goto_done__break;
     }
@@ -24719,9 +24719,9 @@ wuffs_json__decoder__decode_number(
       (iop_a_src += 1, wuffs_base__make_empty_struct());
       if (((uint64_t)(io2_a_src - iop_a_src)) <= 0) {
         if ( ! (a_src && a_src->meta.closed)) {
-          v_n |= 12288;
+          v_n |= 768;
         }
-        v_n |= 4096;
+        v_n |= 256;
         goto label__goto_done__break;
       }
       v_c = wuffs_base__load_u8be__no_bounds_check(iop_a_src);
@@ -24737,26 +24737,26 @@ wuffs_json__decoder__decode_number(
       if (a_src) {
         iop_a_src = a_src->data.ptr + a_src->meta.ri;
       }
-      if (v_n > 2047) {
+      if (v_n > 99) {
         goto label__goto_done__break;
       }
     }
     if (((uint64_t)(io2_a_src - iop_a_src)) <= 0) {
       if ( ! (a_src && a_src->meta.closed)) {
-        v_n |= 12288;
+        v_n |= 768;
       }
       goto label__goto_done__break;
     }
     v_c = wuffs_base__load_u8be__no_bounds_check(iop_a_src);
     if (v_c != 46) {
     } else {
-      if (v_n >= 2047) {
-        v_n |= 8192;
+      if (v_n >= 99) {
+        v_n |= 512;
         goto label__goto_done__break;
       }
       v_n += 1;
       (iop_a_src += 1, wuffs_base__make_empty_struct());
-      v_floating_point = 2048;
+      v_floating_point = 128;
       if (a_src) {
         a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
       }
@@ -24764,12 +24764,12 @@ wuffs_json__decoder__decode_number(
       if (a_src) {
         iop_a_src = a_src->data.ptr + a_src->meta.ri;
       }
-      if (v_n > 2047) {
+      if (v_n > 99) {
         goto label__goto_done__break;
       }
       if (((uint64_t)(io2_a_src - iop_a_src)) <= 0) {
         if ( ! (a_src && a_src->meta.closed)) {
-          v_n |= 12288;
+          v_n |= 768;
         }
         goto label__goto_done__break;
       }
@@ -24778,25 +24778,25 @@ wuffs_json__decoder__decode_number(
     if ((v_c != 69) && (v_c != 101)) {
       goto label__goto_done__break;
     }
-    if (v_n >= 2047) {
-      v_n |= 8192;
+    if (v_n >= 99) {
+      v_n |= 512;
       goto label__goto_done__break;
     }
     v_n += 1;
     (iop_a_src += 1, wuffs_base__make_empty_struct());
-    v_floating_point = 2048;
+    v_floating_point = 128;
     if (((uint64_t)(io2_a_src - iop_a_src)) <= 0) {
       if ( ! (a_src && a_src->meta.closed)) {
-        v_n |= 12288;
+        v_n |= 768;
       }
-      v_n |= 4096;
+      v_n |= 256;
       goto label__goto_done__break;
     }
     v_c = wuffs_base__load_u8be__no_bounds_check(iop_a_src);
     if ((v_c != 43) && (v_c != 45)) {
     } else {
-      if (v_n >= 2047) {
-        v_n |= 8192;
+      if (v_n >= 99) {
+        v_n |= 512;
         goto label__goto_done__break;
       }
       v_n += 1;
@@ -24843,7 +24843,7 @@ wuffs_json__decoder__decode_digits(
   while (true) {
     if (((uint64_t)(io2_a_src - iop_a_src)) <= 0) {
       if ( ! (a_src && a_src->meta.closed)) {
-        v_n |= 12288;
+        v_n |= 768;
       }
       goto label__0__break;
     }
@@ -24851,8 +24851,8 @@ wuffs_json__decoder__decode_digits(
     if (0 == WUFFS_JSON__LUT_DECIMAL_DIGITS[v_c]) {
       goto label__0__break;
     }
-    if (v_n >= 2047) {
-      v_n |= 8192;
+    if (v_n >= 99) {
+      v_n |= 512;
       goto label__0__break;
     }
     v_n += 1;
@@ -24860,7 +24860,7 @@ wuffs_json__decoder__decode_digits(
   }
   label__0__break:;
   if (v_n == a_n) {
-    v_n |= 4096;
+    v_n |= 256;
   }
   if (a_src) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
