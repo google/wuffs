@@ -342,7 +342,9 @@ func insertBaseCopyright(buf *buffer) error {
 }
 
 func insertBaseF64ConvSubmoduleC(buf *buffer) error {
-	buf.writes(data.BaseF64ConvSubmoduleC)
+	buf.writes(data.BaseF64ConvSubmoduleDataC)
+	buf.writeb('\n')
+	buf.writes(data.BaseF64ConvSubmoduleCodeC)
 	return nil
 }
 
