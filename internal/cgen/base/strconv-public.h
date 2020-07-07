@@ -34,11 +34,11 @@
 // (higher indexes) of the destination slice, leaving any untouched bytes on
 // the left side (lower indexes). The default is vice versa: rendering on the
 // left with slack on the right.
-#define WUFFS_BASE__RENDER_NUMBER_XXX__ALIGN_RIGHT ((uint32_t)0x00000001)
+#define WUFFS_BASE__RENDER_NUMBER_XXX__ALIGN_RIGHT ((uint32_t)0x00000010)
 
 // WUFFS_BASE__RENDER_NUMBER_XXX__LEADING_PLUS_SIGN means to render the leading
 // "+" for non-negative numbers: "+0" and "+12.3" instead of "0" and "12.3".
-#define WUFFS_BASE__RENDER_NUMBER_XXX__LEADING_PLUS_SIGN ((uint32_t)0x00000002)
+#define WUFFS_BASE__RENDER_NUMBER_XXX__LEADING_PLUS_SIGN ((uint32_t)0x00000020)
 
 // WUFFS_BASE__RENDER_NUMBER_FXX__DECIMAL_SEPARATOR_IS_A_COMMA means to render
 // one-and-a-half as "1,5" instead of "1.5".
@@ -150,6 +150,10 @@ wuffs_base__ieee_754_bit_representation__to_f64(uint64_t u) {
 //
 // It is similar to wuffs_base__parse_number_u64 but it returns a signed
 // integer, not an unsigned integer. It also allows a leading '+' or '-'.
+//
+// For modular builds that divide the base module into sub-modules, using this
+// function requires the WUFFS_CONFIG__MODULE__BASE__I64CONV sub-module, not
+// just WUFFS_CONFIG__MODULE__BASE__CORE.
 WUFFS_BASE__MAYBE_STATIC wuffs_base__result_i64  //
 wuffs_base__parse_number_i64(wuffs_base__slice_u8 s, uint32_t options);
 
@@ -177,6 +181,10 @@ wuffs_base__parse_number_i64(wuffs_base__slice_u8 s, uint32_t options);
 //  - It does allow arbitrary underscores, except inside the optional 2-byte
 //    opening "0d" or "0X" that denotes base-10 or base-16. For example,
 //    "__0D_1_002" would successfully parse as "one thousand and two".
+//
+// For modular builds that divide the base module into sub-modules, using this
+// function requires the WUFFS_CONFIG__MODULE__BASE__I64CONV sub-module, not
+// just WUFFS_CONFIG__MODULE__BASE__CORE.
 WUFFS_BASE__MAYBE_STATIC wuffs_base__result_u64  //
 wuffs_base__parse_number_u64(wuffs_base__slice_u8 s, uint32_t options);
 
@@ -211,6 +219,10 @@ wuffs_base__parse_number_u64(wuffs_base__slice_u8 s, uint32_t options);
 //
 // Extreme values of x will be rendered as "NaN", "Inf" (or "+Inf" if the
 // WUFFS_BASE__RENDER_NUMBER_XXX__LEADING_PLUS_SIGN option is set) or "-Inf".
+//
+// For modular builds that divide the base module into sub-modules, using this
+// function requires the WUFFS_CONFIG__MODULE__BASE__F64CONV sub-module, not
+// just WUFFS_CONFIG__MODULE__BASE__CORE.
 WUFFS_BASE__MAYBE_STATIC size_t  //
 wuffs_base__render_number_f64(wuffs_base__slice_u8 dst,
                               double x,
@@ -223,6 +235,10 @@ wuffs_base__render_number_f64(wuffs_base__slice_u8 dst,
 //
 // dst will never be too short if its length is at least 20, also known as
 // WUFFS_BASE__I64__BYTE_LENGTH__MAX_INCL.
+//
+// For modular builds that divide the base module into sub-modules, using this
+// function requires the WUFFS_CONFIG__MODULE__BASE__I64CONV sub-module, not
+// just WUFFS_CONFIG__MODULE__BASE__CORE.
 WUFFS_BASE__MAYBE_STATIC size_t  //
 wuffs_base__render_number_i64(wuffs_base__slice_u8 dst,
                               int64_t x,
@@ -234,6 +250,10 @@ wuffs_base__render_number_i64(wuffs_base__slice_u8 dst,
 //
 // dst will never be too short if its length is at least 21, also known as
 // WUFFS_BASE__U64__BYTE_LENGTH__MAX_INCL.
+//
+// For modular builds that divide the base module into sub-modules, using this
+// function requires the WUFFS_CONFIG__MODULE__BASE__I64CONV sub-module, not
+// just WUFFS_CONFIG__MODULE__BASE__CORE.
 WUFFS_BASE__MAYBE_STATIC size_t  //
 wuffs_base__render_number_u64(wuffs_base__slice_u8 dst,
                               uint64_t x,
@@ -250,6 +270,10 @@ wuffs_base__render_number_u64(wuffs_base__slice_u8 dst,
 // It assumes that the src bytes are two hexadecimal digits (0-9, A-F, a-f),
 // repeated. It may write nonsense bytes if not, although it will not read or
 // write out of bounds.
+//
+// For modular builds that divide the base module into sub-modules, using this
+// function requires the WUFFS_CONFIG__MODULE__BASE__I64CONV sub-module, not
+// just WUFFS_CONFIG__MODULE__BASE__CORE.
 WUFFS_BASE__MAYBE_STATIC size_t  //
 wuffs_base__hexadecimal__decode2(wuffs_base__slice_u8 dst,
                                  wuffs_base__slice_u8 src);
@@ -263,6 +287,10 @@ wuffs_base__hexadecimal__decode2(wuffs_base__slice_u8 dst,
 // It assumes that the src bytes are two ignored bytes and then two hexadecimal
 // digits (0-9, A-F, a-f), repeated. It may write nonsense bytes if not,
 // although it will not read or write out of bounds.
+//
+// For modular builds that divide the base module into sub-modules, using this
+// function requires the WUFFS_CONFIG__MODULE__BASE__I64CONV sub-module, not
+// just WUFFS_CONFIG__MODULE__BASE__CORE.
 WUFFS_BASE__MAYBE_STATIC size_t  //
 wuffs_base__hexadecimal__decode4(wuffs_base__slice_u8 dst,
                                  wuffs_base__slice_u8 src);
@@ -353,6 +381,10 @@ wuffs_base__utf_8__next__output::is_valid() const {
 //
 // s will never be too short if its length is at least 4, also known as
 // WUFFS_BASE__UTF_8__BYTE_LENGTH__MAX_INCL.
+//
+// For modular builds that divide the base module into sub-modules, using this
+// function requires the WUFFS_CONFIG__MODULE__BASE__UTF8 sub-module, not just
+// WUFFS_CONFIG__MODULE__BASE__CORE.
 WUFFS_BASE__MAYBE_STATIC size_t  //
 wuffs_base__utf_8__encode(wuffs_base__slice_u8 dst, uint32_t code_point);
 
@@ -376,11 +408,19 @@ wuffs_base__utf_8__encode(wuffs_base__slice_u8 dst, uint32_t code_point);
 // boundary occurs in the middle of a multi-byte UTF-8 encoding of a single
 // code point, then this function may return something invalid. It is the
 // caller's responsibility to split on or otherwise manage UTF-8 boundaries.
+//
+// For modular builds that divide the base module into sub-modules, using this
+// function requires the WUFFS_CONFIG__MODULE__BASE__UTF8 sub-module, not just
+// WUFFS_CONFIG__MODULE__BASE__CORE.
 WUFFS_BASE__MAYBE_STATIC wuffs_base__utf_8__next__output  //
 wuffs_base__utf_8__next(wuffs_base__slice_u8 s);
 
 // wuffs_base__utf_8__next_from_end is like wuffs_base__utf_8__next except that
 // it looks at the end of s instead of the start.
+//
+// For modular builds that divide the base module into sub-modules, using this
+// function requires the WUFFS_CONFIG__MODULE__BASE__UTF8 sub-module, not just
+// WUFFS_CONFIG__MODULE__BASE__CORE.
 WUFFS_BASE__MAYBE_STATIC wuffs_base__utf_8__next__output  //
 wuffs_base__utf_8__next_from_end(wuffs_base__slice_u8 s);
 
@@ -393,6 +433,10 @@ wuffs_base__utf_8__next_from_end(wuffs_base__slice_u8 s);
 // boundary occurs in the middle of a multi-byte UTF-8 encoding of a single
 // code point, then this function will return less than s.len. It is the
 // caller's responsibility to split on or otherwise manage UTF-8 boundaries.
+//
+// For modular builds that divide the base module into sub-modules, using this
+// function requires the WUFFS_CONFIG__MODULE__BASE__UTF8 sub-module, not just
+// WUFFS_CONFIG__MODULE__BASE__CORE.
 WUFFS_BASE__MAYBE_STATIC size_t  //
 wuffs_base__utf_8__longest_valid_prefix(wuffs_base__slice_u8 s);
 
@@ -401,5 +445,9 @@ wuffs_base__utf_8__longest_valid_prefix(wuffs_base__slice_u8 s);
 //
 // In particular, it returns s.len if and only if all of s is valid ASCII.
 // Equivalently, when none of the bytes in s have the 0x80 high bit set.
+//
+// For modular builds that divide the base module into sub-modules, using this
+// function requires the WUFFS_CONFIG__MODULE__BASE__UTF8 sub-module, not just
+// WUFFS_CONFIG__MODULE__BASE__CORE.
 WUFFS_BASE__MAYBE_STATIC size_t  //
 wuffs_base__ascii__longest_valid_prefix(wuffs_base__slice_u8 s);
