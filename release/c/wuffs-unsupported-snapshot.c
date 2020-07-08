@@ -10590,7 +10590,11 @@ wuffs_base__private_implementation__high_prec_dec__round_just_enough(
 // --------
 
 // wuffs_base__private_implementation__parse_number_f64_eisel produces the IEEE
-// 754 double-precision value for an exact mantissa and base-10 exponent.
+// 754 double-precision value for an exact mantissa and base-10 exponent. For
+// example:
+//  - when parsing "456.789e+02", man is 456789 and exp10 is -1.
+//  - when parsing "-123", man is 123 and exp10 is 0. Processing the leading
+//    minus sign is the responsibility of the caller, not this function.
 //
 // On success, it returns a non-negative int64_t such that the low 63 bits hold
 // the 11-bit exponent and 52-bit mantissa.
