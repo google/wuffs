@@ -157,6 +157,8 @@ static const char* g_usage =
     "    -s      -strict-json-pointer-syntax\n"
     "    -t      -tabs\n"
     "            -fail-if-unsandboxed\n"
+    "            -input-json-extra-comma\n"
+    "            -output-json-extra-comma\n"
     "\n"
     "The input.json filename is optional. If absent, it reads from stdin.\n"
     "\n"
@@ -173,6 +175,14 @@ static const char* g_usage =
     "Formatted means that arrays' and objects' elements are indented, each\n"
     "on its own line. Configure this with the -c / -compact-output, -i=NUM /\n"
     "-indent=NUM (for NUM ranging from 0 to 8) and -t / -tabs flags.\n"
+    "\n"
+    "The -input-json-extra-comma flag allows input like \"[1,2,]\", with a\n"
+    "comma after the final element of a JSON list or dictionary.\n"
+    "\n"
+    "The -output-json-extra-comma flag writes extra commas, regardless of\n"
+    "whether the input had it. Extra commas are non-compliant with the JSON\n"
+    "specification but many parsers accept it and it can produce simpler\n"
+    "line-based diffs. This flag is ignored when -compact-output is set.\n"
     "\n"
     "----\n"
     "\n"
@@ -559,7 +569,9 @@ struct {
   bool compact_output;
   bool fail_if_unsandboxed;
   size_t indent;
+  bool input_json_extra_comma;
   uint32_t max_output_depth;
+  bool output_json_extra_comma;
   char* query_c_string;
   bool strict_json_pointer_syntax;
   bool tabs;
@@ -622,6 +634,14 @@ parse_flags(int argc, char** argv) {
         continue;
       }
       return g_usage;
+    }
+    if (!strcmp(arg, "input-json-extra-comma")) {
+      g_flags.input_json_extra_comma = true;
+      continue;
+    }
+    if (!strcmp(arg, "output-json-extra-comma")) {
+      g_flags.output_json_extra_comma = true;
+      continue;
     }
     if (!strncmp(arg, "q=", 2) || !strncmp(arg, "query=", 6)) {
       while (*arg++ != '=') {
@@ -691,6 +711,10 @@ initialize_globals(int argc, char** argv) {
 
   TRY(g_dec.initialize(sizeof__wuffs_json__decoder(), WUFFS_VERSION, 0)
           .message());
+
+  if (g_flags.input_json_extra_comma) {
+    g_dec.set_quirk_enabled(WUFFS_JSON__QUIRK_ALLOW_EXTRA_COMMA, true);
+  }
 
   // Consume an optional whitespace trailer. This isn't part of the JSON spec,
   // but it works better with line oriented Unix tools (such as "echo 123 |
@@ -869,7 +893,11 @@ handle_token(wuffs_base__token t, bool start_of_token_chain) {
         if ((g_ctx != context::in_list_after_bracket) &&
             (g_ctx != context::in_dict_after_brace) &&
             !g_flags.compact_output) {
-          TRY(write_dst("\n", 1));
+          if (g_flags.output_json_extra_comma) {
+            TRY(write_dst(",\n", 2));
+          } else {
+            TRY(write_dst("\n", 1));
+          }
           for (uint32_t i = 0; i < g_depth; i++) {
             TRY(write_dst(
                 g_flags.tabs ? INDENT_TAB_STRING : INDENT_SPACES_STRING,

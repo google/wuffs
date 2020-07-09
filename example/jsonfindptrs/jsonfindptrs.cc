@@ -108,6 +108,7 @@ static const char* g_usage =
     "Flags:\n"
     "    -d=NUM  -max-output-depth=NUM\n"
     "    -s      -strict-json-pointer-syntax\n"
+    "            -input-json-extra-comma\n"
     "\n"
     "The input.json filename is optional. If absent, it reads from stdin.\n"
     "\n"
@@ -151,6 +152,9 @@ static const char* g_usage =
     "This JSON implementation also rejects integer values outside ±M, where\n"
     "M is ((1<<53)-1), also known as JavaScript's Number.MAX_SAFE_INTEGER.\n"
     "\n"
+    "The -input-json-extra-comma flag allows input like \"[1,2,]\", with a\n"
+    "comma after the final element of a JSON list or dictionary.\n"
+    "\n"
     "----\n"
     "\n"
     "The -s or -strict-json-pointer-syntax flag restricts the output lines\n"
@@ -180,6 +184,7 @@ struct {
   int remaining_argc;
   char** remaining_argv;
 
+  bool input_json_extra_comma;
   uint32_t max_output_depth;
   bool strict_json_pointer_syntax;
 } g_flags = {0};
@@ -223,6 +228,10 @@ parse_flags(int argc, char** argv) {
         continue;
       }
       return g_usage;
+    }
+    if (!strcmp(arg, "input-json-extra-comma")) {
+      g_flags.input_json_extra_comma = true;
+      continue;
     }
     if (!strcmp(arg, "s") || !strcmp(arg, "strict-json-pointer-syntax")) {
       g_flags.strict_json_pointer_syntax = true;
@@ -282,12 +291,15 @@ class TokenStream {
     m_status =
         m_dec.initialize(sizeof__wuffs_json__decoder(), WUFFS_VERSION, 0);
 
-    // Uncomment these lines to enable the WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_X
-    // option, discussed in a separate comment.
-    //
-    // if (m_status.is_ok()) {
-    //   m_dec.set_quirk_enabled(WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_X, true);
-    // }
+    if (m_status.is_ok()) {
+      // Uncomment this line to enable the WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_X
+      // option, discussed in a separate comment.
+      // m_dec.set_quirk_enabled(WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_X, true);
+
+      if (g_flags.input_json_extra_comma) {
+        m_dec.set_quirk_enabled(WUFFS_JSON__QUIRK_ALLOW_EXTRA_COMMA, true);
+      }
+    }
   }
 
   Result peek() { return peek_or_next(false); }
