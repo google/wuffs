@@ -96,8 +96,8 @@ const (
 // WUFFS_CONFIG__MODULE__BASE__XXX sub-modules.
 var BaseSubModules = []string{
 	"core",
-	"f64conv",
-	"i64conv",
+	"floatconv",
+	"intconv",
 	"interfaces",
 	"pixconv",
 	"utf8",
@@ -121,15 +121,15 @@ func Do(args []string) error {
 			}
 			buf := make(buffer, 0, 128*1024)
 			if err := expandBangBangInsert(&buf, data.BaseAllImplC, map[string]func(*buffer) error{
-				"// !! INSERT InterfaceDeclarations.\n":    insertInterfaceDeclarations,
-				"// !! INSERT InterfaceDefinitions.\n":     insertInterfaceDefinitions,
-				"// !! INSERT base/all-private.h.\n":       insertBaseAllPrivateH,
-				"// !! INSERT base/all-public.h.\n":        insertBaseAllPublicH,
-				"// !! INSERT base/copyright\n":            insertBaseCopyright,
-				"// !! INSERT base/f64conv-submodule.c.\n": insertBaseF64ConvSubmoduleC,
-				"// !! INSERT base/i64conv-submodule.c.\n": insertBaseI64ConvSubmoduleC,
-				"// !! INSERT base/pixconv-submodule.c.\n": insertBasePixConvSubmoduleC,
-				"// !! INSERT base/utf8-submodule.c.\n":    insertBaseUTF8SubmoduleC,
+				"// !! INSERT InterfaceDeclarations.\n":      insertInterfaceDeclarations,
+				"// !! INSERT InterfaceDefinitions.\n":       insertInterfaceDefinitions,
+				"// !! INSERT base/all-private.h.\n":         insertBaseAllPrivateH,
+				"// !! INSERT base/all-public.h.\n":          insertBaseAllPublicH,
+				"// !! INSERT base/copyright\n":              insertBaseCopyright,
+				"// !! INSERT base/floatconv-submodule.c.\n": insertBaseFloatConvSubmoduleC,
+				"// !! INSERT base/intconv-submodule.c.\n":   insertBaseIntConvSubmoduleC,
+				"// !! INSERT base/pixconv-submodule.c.\n":   insertBasePixConvSubmoduleC,
+				"// !! INSERT base/utf8-submodule.c.\n":      insertBaseUTF8SubmoduleC,
 				"// !! INSERT vtable names.\n": func(b *buffer) error {
 					for _, n := range builtin.Interfaces {
 						buf.printf("const char wuffs_base__%s__vtable_name[] = "+
@@ -341,15 +341,15 @@ func insertBaseCopyright(buf *buffer) error {
 	return nil
 }
 
-func insertBaseF64ConvSubmoduleC(buf *buffer) error {
-	buf.writes(data.BaseF64ConvSubmoduleDataC)
+func insertBaseFloatConvSubmoduleC(buf *buffer) error {
+	buf.writes(data.BaseFloatConvSubmoduleDataC)
 	buf.writeb('\n')
-	buf.writes(data.BaseF64ConvSubmoduleCodeC)
+	buf.writes(data.BaseFloatConvSubmoduleCodeC)
 	return nil
 }
 
-func insertBaseI64ConvSubmoduleC(buf *buffer) error {
-	buf.writes(data.BaseI64ConvSubmoduleC)
+func insertBaseIntConvSubmoduleC(buf *buffer) error {
+	buf.writes(data.BaseIntConvSubmoduleC)
 	return nil
 }
 

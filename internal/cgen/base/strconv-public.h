@@ -104,7 +104,7 @@
 //  - It does not allow hexadecimal floating point numbers.
 //
 // For modular builds that divide the base module into sub-modules, using this
-// function requires the WUFFS_CONFIG__MODULE__BASE__F64CONV sub-module, not
+// function requires the WUFFS_CONFIG__MODULE__BASE__FLOATCONV sub-module, not
 // just WUFFS_CONFIG__MODULE__BASE__CORE.
 WUFFS_BASE__MAYBE_STATIC wuffs_base__result_f64  //
 wuffs_base__parse_number_f64(wuffs_base__slice_u8 s, uint32_t options);
@@ -152,7 +152,7 @@ wuffs_base__ieee_754_bit_representation__to_f64(uint64_t u) {
 // integer, not an unsigned integer. It also allows a leading '+' or '-'.
 //
 // For modular builds that divide the base module into sub-modules, using this
-// function requires the WUFFS_CONFIG__MODULE__BASE__I64CONV sub-module, not
+// function requires the WUFFS_CONFIG__MODULE__BASE__INTCONV sub-module, not
 // just WUFFS_CONFIG__MODULE__BASE__CORE.
 WUFFS_BASE__MAYBE_STATIC wuffs_base__result_i64  //
 wuffs_base__parse_number_i64(wuffs_base__slice_u8 s, uint32_t options);
@@ -183,7 +183,7 @@ wuffs_base__parse_number_i64(wuffs_base__slice_u8 s, uint32_t options);
 //    "__0D_1_002" would successfully parse as "one thousand and two".
 //
 // For modular builds that divide the base module into sub-modules, using this
-// function requires the WUFFS_CONFIG__MODULE__BASE__I64CONV sub-module, not
+// function requires the WUFFS_CONFIG__MODULE__BASE__INTCONV sub-module, not
 // just WUFFS_CONFIG__MODULE__BASE__CORE.
 WUFFS_BASE__MAYBE_STATIC wuffs_base__result_u64  //
 wuffs_base__parse_number_u64(wuffs_base__slice_u8 s, uint32_t options);
@@ -221,7 +221,7 @@ wuffs_base__parse_number_u64(wuffs_base__slice_u8 s, uint32_t options);
 // WUFFS_BASE__RENDER_NUMBER_XXX__LEADING_PLUS_SIGN option is set) or "-Inf".
 //
 // For modular builds that divide the base module into sub-modules, using this
-// function requires the WUFFS_CONFIG__MODULE__BASE__F64CONV sub-module, not
+// function requires the WUFFS_CONFIG__MODULE__BASE__FLOATCONV sub-module, not
 // just WUFFS_CONFIG__MODULE__BASE__CORE.
 WUFFS_BASE__MAYBE_STATIC size_t  //
 wuffs_base__render_number_f64(wuffs_base__slice_u8 dst,
@@ -237,7 +237,7 @@ wuffs_base__render_number_f64(wuffs_base__slice_u8 dst,
 // WUFFS_BASE__I64__BYTE_LENGTH__MAX_INCL.
 //
 // For modular builds that divide the base module into sub-modules, using this
-// function requires the WUFFS_CONFIG__MODULE__BASE__I64CONV sub-module, not
+// function requires the WUFFS_CONFIG__MODULE__BASE__INTCONV sub-module, not
 // just WUFFS_CONFIG__MODULE__BASE__CORE.
 WUFFS_BASE__MAYBE_STATIC size_t  //
 wuffs_base__render_number_i64(wuffs_base__slice_u8 dst,
@@ -252,7 +252,7 @@ wuffs_base__render_number_i64(wuffs_base__slice_u8 dst,
 // WUFFS_BASE__U64__BYTE_LENGTH__MAX_INCL.
 //
 // For modular builds that divide the base module into sub-modules, using this
-// function requires the WUFFS_CONFIG__MODULE__BASE__I64CONV sub-module, not
+// function requires the WUFFS_CONFIG__MODULE__BASE__INTCONV sub-module, not
 // just WUFFS_CONFIG__MODULE__BASE__CORE.
 WUFFS_BASE__MAYBE_STATIC size_t  //
 wuffs_base__render_number_u64(wuffs_base__slice_u8 dst,
@@ -273,13 +273,13 @@ wuffs_base__render_number_u64(wuffs_base__slice_u8 dst,
 // write out of bounds.
 //
 // For modular builds that divide the base module into sub-modules, using this
-// function requires the WUFFS_CONFIG__MODULE__BASE__I64CONV sub-module, not
+// function requires the WUFFS_CONFIG__MODULE__BASE__INTCONV sub-module, not
 // just WUFFS_CONFIG__MODULE__BASE__CORE.
 WUFFS_BASE__MAYBE_STATIC wuffs_base__transform__output  //
 wuffs_base__base_16__decode2(wuffs_base__slice_u8 dst,
-                                 wuffs_base__slice_u8 src,
-                                 bool src_closed,
-                                 uint32_t options);
+                             wuffs_base__slice_u8 src,
+                             bool src_closed,
+                             uint32_t options);
 
 // wuffs_base__base_16__decode4 converts both "\\x6A\\x6b" and "??6a??6B" to
 // "jk", where e.g. 'j' is U+006A. There are 4 src bytes for every dst byte.
@@ -289,13 +289,13 @@ wuffs_base__base_16__decode2(wuffs_base__slice_u8 dst,
 // although it will not read or write out of bounds.
 //
 // For modular builds that divide the base module into sub-modules, using this
-// function requires the WUFFS_CONFIG__MODULE__BASE__I64CONV sub-module, not
+// function requires the WUFFS_CONFIG__MODULE__BASE__INTCONV sub-module, not
 // just WUFFS_CONFIG__MODULE__BASE__CORE.
 WUFFS_BASE__MAYBE_STATIC wuffs_base__transform__output  //
 wuffs_base__base_16__decode4(wuffs_base__slice_u8 dst,
-                                 wuffs_base__slice_u8 src,
-                                 bool src_closed,
-                                 uint32_t options);
+                             wuffs_base__slice_u8 src,
+                             bool src_closed,
+                             uint32_t options);
 
 // ---------------- Base-64
 
@@ -328,7 +328,7 @@ wuffs_base__base_16__decode4(wuffs_base__slice_u8 dst,
 // out is the responsibility of the caller.
 //
 // For modular builds that divide the base module into sub-modules, using this
-// function requires the WUFFS_CONFIG__MODULE__BASE__I64CONV sub-module, not
+// function requires the WUFFS_CONFIG__MODULE__BASE__INTCONV sub-module, not
 // just WUFFS_CONFIG__MODULE__BASE__CORE.
 WUFFS_BASE__MAYBE_STATIC wuffs_base__transform__output  //
 wuffs_base__base_64__decode(wuffs_base__slice_u8 dst,
@@ -340,7 +340,7 @@ wuffs_base__base_64__decode(wuffs_base__slice_u8 dst,
 // encoded bytes in dst.
 //
 // For modular builds that divide the base module into sub-modules, using this
-// function requires the WUFFS_CONFIG__MODULE__BASE__I64CONV sub-module, not
+// function requires the WUFFS_CONFIG__MODULE__BASE__INTCONV sub-module, not
 // just WUFFS_CONFIG__MODULE__BASE__CORE.
 WUFFS_BASE__MAYBE_STATIC wuffs_base__transform__output  //
 wuffs_base__base_64__encode(wuffs_base__slice_u8 dst,
