@@ -68,6 +68,14 @@
 // program to generate a stand-alone C++ file.
 #include "../release/c/wuffs-unsupported-snapshot.c"
 
+// Uncomment this to use the github.com/lemire/fast_double_parser library. This
+// header-only library is C++, not C.
+// #define USE_FAST_DOUBLE_PARSER
+
+#ifdef USE_FAST_DOUBLE_PARSER
+#include "/the/path/to/fast_double_parser/include/fast_double_parser.h"
+#endif
+
 // Wuffs allows either statically or dynamically allocated work buffers. This
 // program exercises static allocation.
 #define WORK_BUFFER_ARRAY_SIZE \
@@ -228,12 +236,30 @@ main1(int argc, char** argv) {
         }
 
         if (g_flags.parse_number_f64) {
-          wuffs_base__result_f64 r = wuffs_base__parse_number_f64(
+          wuffs_base__result_f64 r;
+
+#ifdef USE_FAST_DOUBLE_PARSER
+          // Wuffs (and its JSON parser) works with slices (pointer-length
+          // pairs) but fast_double_parser works with NUL-terminated strings.
+          char buf[1024];
+          if (len > 1023) {
+            return "main: number-as-string is too long";
+          }
+          memcpy(&buf[0], &g_src.data.ptr[buf_pos], len);
+          buf[len] = 0;
+          if (!fast_double_parser::decimal_separator_dot::parse_number(
+                  &buf[0], &r.value)) {
+            return "main: could not parse number";
+          }
+          r.status = wuffs_base__make_status(NULL);
+#else
+          r = wuffs_base__parse_number_f64(
               wuffs_base__make_slice_u8(&g_src.data.ptr[buf_pos], len),
               WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS);
           if (!wuffs_base__status__is_ok(&r.status)) {
             return wuffs_base__status__message(&r.status);
           }
+#endif
 
           if (g_flags.render_number_f64) {
             uint8_t render_buffer[2048];
