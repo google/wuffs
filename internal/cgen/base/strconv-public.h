@@ -295,6 +295,57 @@ WUFFS_BASE__MAYBE_STATIC size_t  //
 wuffs_base__hexadecimal__decode4(wuffs_base__slice_u8 dst,
                                  wuffs_base__slice_u8 src);
 
+// ---------------- Base-64
+
+// Options (bitwise or'ed together) for wuffs_base__base_64__xxx functions.
+
+#define WUFFS_BASE__BASE_64__DEFAULT_OPTIONS ((uint32_t)0x00000000)
+
+// WUFFS_BASE__BASE_64__DECODE_ALLOW_PADDING means that, when decoding base-64,
+// the input may (but does not need to) be padded with '=' bytes so that the
+// overall encoded length in bytes is a multiple of 4. A successful decoding
+// will return a num_src that includes those padding bytes.
+//
+// Excess padding (e.g. three final '='s) will be rejected as bad data.
+#define WUFFS_BASE__BASE_64__DECODE_ALLOW_PADDING ((uint32_t)0x00000001)
+
+// WUFFS_BASE__BASE_64__ENCODE_EMIT_PADDING means that, when encoding base-64,
+// the output will be padded with '=' bytes so that the overall encoded length
+// in bytes is a multiple of 4.
+#define WUFFS_BASE__BASE_64__ENCODE_EMIT_PADDING ((uint32_t)0x00000002)
+
+// WUFFS_BASE__BASE_64__URL_ALPHABET means that, for base-64, the URL-friendly
+// and file-name-friendly alphabet be used, as per RFC 4648 section 5. When
+// this option bit is off, the standard alphabet from section 4 is used.
+#define WUFFS_BASE__BASE_64__URL_ALPHABET ((uint32_t)0x00000100)
+
+// wuffs_base__base_64__decode transforms base-64 encoded bytes from src to
+// arbitrary bytes in dst.
+//
+// It will not permit line breaks or other whitespace in src. Filtering those
+// out is the responsibility of the caller.
+//
+// For modular builds that divide the base module into sub-modules, using this
+// function requires the WUFFS_CONFIG__MODULE__BASE__I64CONV sub-module, not
+// just WUFFS_CONFIG__MODULE__BASE__CORE.
+WUFFS_BASE__MAYBE_STATIC wuffs_base__transform__output  //
+wuffs_base__base_64__decode(wuffs_base__slice_u8 dst,
+                            wuffs_base__slice_u8 src,
+                            bool src_closed,
+                            uint32_t options);
+
+// wuffs_base__base_64__encode transforms arbitrary bytes from src to base-64
+// encoded bytes in dst.
+//
+// For modular builds that divide the base module into sub-modules, using this
+// function requires the WUFFS_CONFIG__MODULE__BASE__I64CONV sub-module, not
+// just WUFFS_CONFIG__MODULE__BASE__CORE.
+WUFFS_BASE__MAYBE_STATIC wuffs_base__transform__output  //
+wuffs_base__base_64__encode(wuffs_base__slice_u8 dst,
+                            wuffs_base__slice_u8 src,
+                            bool src_closed,
+                            uint32_t options);
+
 // ---------------- Unicode and UTF-8
 
 #define WUFFS_BASE__UNICODE_CODE_POINT__MIN_INCL 0x00000000

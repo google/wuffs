@@ -256,6 +256,16 @@ typedef WUFFS_BASE__RESULT(uint64_t) wuffs_base__result_u64;
 
 // --------
 
+// wuffs_base__transform__output is the result of transforming from a src slice
+// to a dst slice.
+typedef struct {
+  wuffs_base__status status;
+  size_t num_dst;
+  size_t num_src;
+} wuffs_base__transform__output;
+
+// --------
+
 // FourCC constants.
 
 // !! INSERT FourCCs.

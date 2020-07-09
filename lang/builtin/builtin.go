@@ -160,6 +160,7 @@ var Statuses = [...]string{
 	`"#bad argument (length too short)"`,
 	`"#bad argument"`,
 	`"#bad call sequence"`,
+	`"#bad data"`,
 	`"#bad receiver"`,
 	`"#bad restart"`,
 	`"#bad sizeof receiver"`,

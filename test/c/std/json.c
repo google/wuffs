@@ -471,6 +471,94 @@ test_wuffs_strconv_hexadecimal() {
 }
 
 const char*  //
+test_wuffs_strconv_base_64() {
+  CHECK_FOCUS(__func__);
+
+  char* foobar = "foobar";
+  const char* wants[] = {
+      "",          //
+      "Zg==",      //
+      "Zm8=",      //
+      "Zm9v",      //
+      "Zm9vYg==",  //
+      "Zm9vYmE=",  //
+      "Zm9vYmFy",  //
+  };
+
+  size_t tc;
+  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(wants); tc++) {
+    const bool src_closed = true;
+
+    wuffs_base__transform__output e = wuffs_base__base_64__encode(
+        g_have_slice_u8, wuffs_base__make_slice_u8(((uint8_t*)foobar), tc),
+        src_closed, WUFFS_BASE__BASE_64__ENCODE_EMIT_PADDING);
+    if (e.status.repr) {
+      RETURN_FAIL("tc=%zu: encode: \"%s\"", tc, e.status.repr);
+    }
+    if (e.num_src != tc) {
+      RETURN_FAIL("tc=%zu: encode: num_src: have %zu, want %zu", tc, e.num_src,
+                  tc);
+    }
+    if (e.num_dst != (((tc + 2) / 3) * 4)) {
+      RETURN_FAIL("tc=%zu: encode: num_dst: have %zu, want %zu", tc, e.num_dst,
+                  (((tc + 2) / 3) * 4));
+    }
+    if ((e.num_dst + 1) > g_have_slice_u8.len) {
+      RETURN_FAIL("tc=%zu: encode: num_dst is too large", tc);
+    }
+    g_have_slice_u8.ptr[e.num_dst] = '\x00';
+    if (strncmp((const char*)(g_have_slice_u8.ptr), wants[tc], e.num_dst) !=
+        0) {
+      RETURN_FAIL("tc=%zu: encode:\nhave \"%s\"\nwant \"%s\"", tc,
+                  g_have_slice_u8.ptr, wants[tc]);
+    }
+
+    int trim;
+    for (trim = 0; trim < 2; trim++) {
+      size_t n = e.num_dst;
+      if (trim) {
+        while ((n > 0) && (g_have_slice_u8.ptr[n - 1] == '=')) {
+          n--;
+        }
+      }
+
+      wuffs_base__transform__output d = wuffs_base__base_64__decode(
+          g_work_slice_u8, wuffs_base__make_slice_u8(g_have_slice_u8.ptr, n),
+          src_closed, WUFFS_BASE__BASE_64__DECODE_ALLOW_PADDING);
+      if (d.status.repr) {
+        RETURN_FAIL("tc=%zu: trim=%d: decode: \"%s\"", tc, trim, d.status.repr);
+      }
+      if (d.num_src != n) {
+        RETURN_FAIL("tc=%zu: trim=%d: decode: num_src: have %zu, want %zu", tc,
+                    trim, d.num_src, n);
+      }
+      if (d.num_dst != tc) {
+        RETURN_FAIL("tc=%zu: trim=%d: decode: num_dst: have %zu, want %zu", tc,
+                    trim, d.num_dst, tc);
+      }
+      if ((d.num_dst + 1) > g_work_slice_u8.len) {
+        RETURN_FAIL("tc=%zu: trim=%d: decode: num_dst is too large", tc, trim);
+      }
+      g_work_slice_u8.ptr[d.num_dst] = '\x00';
+      if ((tc + 1) > g_want_slice_u8.len) {
+        RETURN_FAIL("tc=%zu: trim=%d: decode: tc is too large", tc, trim);
+      }
+      memcpy(g_want_slice_u8.ptr, foobar, tc);
+      g_want_slice_u8.ptr[tc] = '\x00';
+      if (strcmp(((const char*)(g_work_slice_u8.ptr)),
+                 ((const char*)(g_want_slice_u8.ptr))) != 0) {
+        RETURN_FAIL("tc=%zu: trim=%d: decode:\nhave \"%s\"\nwant \"%s\"", tc,
+                    trim, g_work_slice_u8.ptr, g_want_slice_u8.ptr);
+      }
+    }
+  }
+
+  return NULL;
+}
+
+// ----------------
+
+const char*  //
 test_wuffs_strconv_parse_number_f64() {
   CHECK_FOCUS(__func__);
 
@@ -750,6 +838,8 @@ test_wuffs_strconv_parse_number_u64() {
 
   return NULL;
 }
+
+// ----------------
 
 const char*  //
 test_wuffs_strconv_render_number_f64() {
@@ -1635,6 +1725,8 @@ test_wuffs_strconv_render_number_u64() {
 
   return NULL;
 }
+
+// ----------------
 
 const char*  //
 test_wuffs_strconv_utf_8_next() {
@@ -3346,6 +3438,7 @@ proc g_tests[] = {
     test_wuffs_core_count_leading_zeroes_u64,
     test_wuffs_core_multiply_u64,
     test_wuffs_strconv_hexadecimal,
+    test_wuffs_strconv_base_64,
     test_wuffs_strconv_hpd_rounded_integer,
     test_wuffs_strconv_hpd_shift,
     test_wuffs_strconv_parse_number_f64,
