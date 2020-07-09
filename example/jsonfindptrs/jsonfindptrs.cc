@@ -652,18 +652,22 @@ JsonThing::parse_string(TokenStream& ts, TokenStream::Result tsr) {
           }
           while (encoded.len) {
             uint8_t decoded[64];
-            size_t len = wuffs_base__hexadecimal__decode4(
-                wuffs_base__make_slice_u8(&decoded[0], 64), encoded);
-            if ((len > 64) || ((len * 4) > encoded.len)) {
+            const bool src_closed = true;
+            wuffs_base__transform__output o = wuffs_base__base_16__decode4(
+                wuffs_base__make_slice_u8(&decoded[0], 64), encoded, src_closed,
+                WUFFS_BASE__BASE_16__DEFAULT_OPTIONS);
+            if (o.status.is_error()) {
+              return Result(o.status.message(), JsonThing());
+            } else if ((o.num_dst > 64) || (o.num_src > encoded.len)) {
               return Result(
                   "main: internal error: inconsistent hexadecimal decoding",
                   JsonThing());
             }
             const char* ptr =  // Convert from (uint8_t*).
                 static_cast<const char*>(static_cast<void*>(&decoded[0]));
-            jt.value.s.append(ptr, len);
-            encoded.ptr += len * 4;
-            encoded.len -= len * 4;
+            jt.value.s.append(ptr, o.num_dst);
+            encoded.ptr += o.num_src;
+            encoded.len -= o.num_src;
           }
 
         } else {

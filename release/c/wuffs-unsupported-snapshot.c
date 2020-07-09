@@ -4176,13 +4176,14 @@ wuffs_base__render_number_u64(wuffs_base__slice_u8 dst,
                               uint64_t x,
                               uint32_t options);
 
-// ---------------- Hexadecimal
+// ---------------- Base-16
 
-// wuffs_base__hexadecimal__decode2 converts "6A6b" to "jk", where e.g. 'j' is
-// U+006A. There are 2 source bytes for every destination byte.
-//
-// It returns the number of dst bytes written: the minimum of dst.len and
-// (src.len / 2). Excess source bytes are ignored.
+// Options (bitwise or'ed together) for wuffs_base__base_16__xxx functions.
+
+#define WUFFS_BASE__BASE_16__DEFAULT_OPTIONS ((uint32_t)0x00000000)
+
+// wuffs_base__base_16__decode2 converts "6A6b" to "jk", where e.g. 'j' is
+// U+006A. There are 2 src bytes for every dst byte.
 //
 // It assumes that the src bytes are two hexadecimal digits (0-9, A-F, a-f),
 // repeated. It may write nonsense bytes if not, although it will not read or
@@ -4191,15 +4192,14 @@ wuffs_base__render_number_u64(wuffs_base__slice_u8 dst,
 // For modular builds that divide the base module into sub-modules, using this
 // function requires the WUFFS_CONFIG__MODULE__BASE__I64CONV sub-module, not
 // just WUFFS_CONFIG__MODULE__BASE__CORE.
-WUFFS_BASE__MAYBE_STATIC size_t  //
-wuffs_base__hexadecimal__decode2(wuffs_base__slice_u8 dst,
-                                 wuffs_base__slice_u8 src);
+WUFFS_BASE__MAYBE_STATIC wuffs_base__transform__output  //
+wuffs_base__base_16__decode2(wuffs_base__slice_u8 dst,
+                                 wuffs_base__slice_u8 src,
+                                 bool src_closed,
+                                 uint32_t options);
 
-// wuffs_base__hexadecimal__decode4 converts "\\x6A\\x6b" to "jk", where e.g.
-// 'j' is U+006A. There are 4 source bytes for every destination byte.
-//
-// It returns the number of dst bytes written: the minimum of dst.len and
-// (src.len / 4). Excess source bytes are ignored.
+// wuffs_base__base_16__decode4 converts both "\\x6A\\x6b" and "??6a??6B" to
+// "jk", where e.g. 'j' is U+006A. There are 4 src bytes for every dst byte.
 //
 // It assumes that the src bytes are two ignored bytes and then two hexadecimal
 // digits (0-9, A-F, a-f), repeated. It may write nonsense bytes if not,
@@ -4208,9 +4208,11 @@ wuffs_base__hexadecimal__decode2(wuffs_base__slice_u8 dst,
 // For modular builds that divide the base module into sub-modules, using this
 // function requires the WUFFS_CONFIG__MODULE__BASE__I64CONV sub-module, not
 // just WUFFS_CONFIG__MODULE__BASE__CORE.
-WUFFS_BASE__MAYBE_STATIC size_t  //
-wuffs_base__hexadecimal__decode4(wuffs_base__slice_u8 dst,
-                                 wuffs_base__slice_u8 src);
+WUFFS_BASE__MAYBE_STATIC wuffs_base__transform__output  //
+wuffs_base__base_16__decode4(wuffs_base__slice_u8 dst,
+                                 wuffs_base__slice_u8 src,
+                                 bool src_closed,
+                                 uint32_t options);
 
 // ---------------- Base-64
 
@@ -11963,13 +11965,30 @@ wuffs_base__render_number_u64(wuffs_base__slice_u8 dst,
                                                                false);
 }
 
-// ---------------- Hexadecimal
+// ---------------- Base-16
 
-WUFFS_BASE__MAYBE_STATIC size_t  //
-wuffs_base__hexadecimal__decode2(wuffs_base__slice_u8 dst,
-                                 wuffs_base__slice_u8 src) {
+WUFFS_BASE__MAYBE_STATIC wuffs_base__transform__output  //
+wuffs_base__base_16__decode2(wuffs_base__slice_u8 dst,
+                             wuffs_base__slice_u8 src,
+                             bool src_closed,
+                             uint32_t options) {
+  wuffs_base__transform__output o;
   size_t src_len2 = src.len / 2;
-  size_t len = dst.len < src_len2 ? dst.len : src_len2;
+  size_t len;
+  if (dst.len < src_len2) {
+    len = dst.len;
+    o.status.repr = wuffs_base__suspension__short_write;
+  } else {
+    len = src_len2;
+    if (!src_closed) {
+      o.status.repr = wuffs_base__suspension__short_read;
+    } else if (src.len & 1) {
+      o.status.repr = wuffs_base__error__bad_data;
+    } else {
+      o.status.repr = NULL;
+    }
+  }
+
   uint8_t* d = dst.ptr;
   uint8_t* s = src.ptr;
   size_t n = len;
@@ -11981,14 +12000,33 @@ wuffs_base__hexadecimal__decode2(wuffs_base__slice_u8 dst,
     s += 2;
   }
 
-  return len;
+  o.num_dst = len;
+  o.num_src = len * 2;
+  return o;
 }
 
-WUFFS_BASE__MAYBE_STATIC size_t  //
-wuffs_base__hexadecimal__decode4(wuffs_base__slice_u8 dst,
-                                 wuffs_base__slice_u8 src) {
+WUFFS_BASE__MAYBE_STATIC wuffs_base__transform__output  //
+wuffs_base__base_16__decode4(wuffs_base__slice_u8 dst,
+                             wuffs_base__slice_u8 src,
+                             bool src_closed,
+                             uint32_t options) {
+  wuffs_base__transform__output o;
   size_t src_len4 = src.len / 4;
   size_t len = dst.len < src_len4 ? dst.len : src_len4;
+  if (dst.len < src_len4) {
+    len = dst.len;
+    o.status.repr = wuffs_base__suspension__short_write;
+  } else {
+    len = src_len4;
+    if (!src_closed) {
+      o.status.repr = wuffs_base__suspension__short_read;
+    } else if (src.len & 1) {
+      o.status.repr = wuffs_base__error__bad_data;
+    } else {
+      o.status.repr = NULL;
+    }
+  }
+
   uint8_t* d = dst.ptr;
   uint8_t* s = src.ptr;
   size_t n = len;
@@ -12000,7 +12038,9 @@ wuffs_base__hexadecimal__decode4(wuffs_base__slice_u8 dst,
     s += 4;
   }
 
-  return len;
+  o.num_dst = len;
+  o.num_src = len * 4;
+  return o;
 }
 
 // ---------------- Base-64

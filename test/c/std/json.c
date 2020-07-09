@@ -422,17 +422,26 @@ test_wuffs_strconv_hpd_shift() {
 // ----------------
 
 const char*  //
-test_wuffs_strconv_hexadecimal() {
+test_wuffs_strconv_base_16() {
   CHECK_FOCUS(__func__);
+  const bool src_closed = true;
 
   {
-    const char* str = "6A6b7";  // The "7" should be ignored.
+    const char* str = "6A6b7";  // The "7" should cause "#base: bad data".
     wuffs_base__slice_u8 dst = g_have_slice_u8;
     wuffs_base__slice_u8 src =
         wuffs_base__make_slice_u8((void*)str, strlen(str));
-    size_t have = wuffs_base__hexadecimal__decode2(dst, src);
-    if (have != 2) {
-      RETURN_FAIL("decode2: have %zu, want 2", have);
+    wuffs_base__transform__output have = wuffs_base__base_16__decode2(
+        dst, src, src_closed, WUFFS_BASE__BASE_16__DEFAULT_OPTIONS);
+    if (have.status.repr != wuffs_base__error__bad_data) {
+      RETURN_FAIL("decode2: have \"%s\", want \"%s\"", have.status.repr,
+                  wuffs_base__error__bad_data);
+    }
+    if (have.num_dst != 2) {
+      RETURN_FAIL("decode2: num_dst: have %zu, want 2", have.num_dst);
+    }
+    if (have.num_src != 4) {
+      RETURN_FAIL("decode2: num_src: have %zu, want 3", have.num_src);
     }
     if (g_have_array_u8[0] != 0x6A) {
       RETURN_FAIL("decode2: dst[0]: have 0x%02X, want 0x6A",
@@ -449,9 +458,16 @@ test_wuffs_strconv_hexadecimal() {
     wuffs_base__slice_u8 dst = g_have_slice_u8;
     wuffs_base__slice_u8 src =
         wuffs_base__make_slice_u8((void*)str, strlen(str));
-    size_t have = wuffs_base__hexadecimal__decode4(dst, src);
-    if (have != 3) {
-      RETURN_FAIL("decode4: have %zu, want 3", have);
+    wuffs_base__transform__output have = wuffs_base__base_16__decode4(
+        dst, src, src_closed, WUFFS_BASE__BASE_16__DEFAULT_OPTIONS);
+    if (have.status.repr) {
+      RETURN_FAIL("decode2: %s", have.status.repr);
+    }
+    if (have.num_dst != 3) {
+      RETURN_FAIL("decode4: num_dst: have %zu, want 3", have.num_dst);
+    }
+    if (have.num_src != 12) {
+      RETURN_FAIL("decode4: num_src: have %zu, want 3", have.num_src);
     }
     if (g_have_array_u8[0] != 0xA9) {
       RETURN_FAIL("decode4: dst[0]: have 0x%02X, want 0xA9",
@@ -2468,11 +2484,13 @@ test_wuffs_json_decode_quirk_allow_backslash_x() {
           (vbd &
            WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_1_DST_4_SRC_BACKSLASH_X)) {
         uint8_t b[8] = {0};
-        size_t n = wuffs_base__hexadecimal__decode4(
+        const bool src_closed = true;
+        wuffs_base__transform__output o = wuffs_base__base_16__decode4(
             wuffs_base__make_slice_u8(&b[0], 8),
-            wuffs_base__make_slice_u8(src_slice.ptr + src_index, token_length));
+            wuffs_base__make_slice_u8(src_slice.ptr + src_index, token_length),
+            src_closed, 0);
         size_t i = 0;
-        for (; i < n; i++) {
+        for (; i < o.num_dst; i++) {
           have_bytes <<= 8;
           have_bytes |= b[i];
         }
@@ -3437,7 +3455,7 @@ proc g_tests[] = {
     // good as any other place.
     test_wuffs_core_count_leading_zeroes_u64,
     test_wuffs_core_multiply_u64,
-    test_wuffs_strconv_hexadecimal,
+    test_wuffs_strconv_base_16,
     test_wuffs_strconv_base_64,
     test_wuffs_strconv_hpd_rounded_integer,
     test_wuffs_strconv_hpd_shift,
