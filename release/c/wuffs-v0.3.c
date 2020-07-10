@@ -65,15 +65,15 @@ extern "C" {
 // each major.minor branch, the commit count should increase monotonically.
 //
 // WUFFS_VERSION was overridden by "wuffs gen -version" based on revision
-// 84bb3afd8742f9e3b3787dd3965d97f3a0a159c4 committed on 2020-07-07.
+// f9a90f1c5ef743130b59bc848cc616c076be90bc committed on 2020-07-10.
 #define WUFFS_VERSION 0x000030000
 #define WUFFS_VERSION_MAJOR 0
 #define WUFFS_VERSION_MINOR 3
 #define WUFFS_VERSION_PATCH 0
-#define WUFFS_VERSION_PRE_RELEASE_LABEL "alpha.7"
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 2543
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20200707
-#define WUFFS_VERSION_STRING "0.3.0-alpha.7+2543.20200707"
+#define WUFFS_VERSION_PRE_RELEASE_LABEL "alpha.8"
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 2556
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20200710
+#define WUFFS_VERSION_STRING "0.3.0-alpha.8+2556.20200710"
 
 // Define WUFFS_CONFIG__STATIC_FUNCTIONS to make all of Wuffs' functions have
 // static storage. The motivation is discussed in the "ALLOW STATIC
@@ -207,6 +207,7 @@ extern const char wuffs_base__error__bad_i_o_position[];
 extern const char wuffs_base__error__bad_argument_length_too_short[];
 extern const char wuffs_base__error__bad_argument[];
 extern const char wuffs_base__error__bad_call_sequence[];
+extern const char wuffs_base__error__bad_data[];
 extern const char wuffs_base__error__bad_receiver[];
 extern const char wuffs_base__error__bad_restart[];
 extern const char wuffs_base__error__bad_sizeof_receiver[];
@@ -317,6 +318,16 @@ wuffs_base__status::message() const {
 typedef WUFFS_BASE__RESULT(double) wuffs_base__result_f64;
 typedef WUFFS_BASE__RESULT(int64_t) wuffs_base__result_i64;
 typedef WUFFS_BASE__RESULT(uint64_t) wuffs_base__result_u64;
+
+// --------
+
+// wuffs_base__transform__output is the result of transforming from a src slice
+// to a dst slice.
+typedef struct {
+  wuffs_base__status status;
+  size_t num_dst;
+  size_t num_src;
+} wuffs_base__transform__output;
 
 // --------
 
@@ -2184,6 +2195,8 @@ wuffs_base__make_token(uint64_t repr) {
 #define WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_3_DST_4_SRC_BASE_64_STD 0x01000
 #define WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_3_DST_4_SRC_BASE_64_URL 0x02000
 #define WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_4_DST_5_SRC_ASCII_85 0x04000
+#define WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_5_DST_8_SRC_BASE_32_HEX 0x08000
+#define WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_5_DST_8_SRC_BASE_32_STD 0x10000
 
 // --------
 
@@ -4011,7 +4024,7 @@ wuffs_base__pixel_swizzler::swizzle_interleaved_from_slice(
 //  - It does not allow hexadecimal floating point numbers.
 //
 // For modular builds that divide the base module into sub-modules, using this
-// function requires the WUFFS_CONFIG__MODULE__BASE__F64CONV sub-module, not
+// function requires the WUFFS_CONFIG__MODULE__BASE__FLOATCONV sub-module, not
 // just WUFFS_CONFIG__MODULE__BASE__CORE.
 WUFFS_BASE__MAYBE_STATIC wuffs_base__result_f64  //
 wuffs_base__parse_number_f64(wuffs_base__slice_u8 s, uint32_t options);
@@ -4059,7 +4072,7 @@ wuffs_base__ieee_754_bit_representation__to_f64(uint64_t u) {
 // integer, not an unsigned integer. It also allows a leading '+' or '-'.
 //
 // For modular builds that divide the base module into sub-modules, using this
-// function requires the WUFFS_CONFIG__MODULE__BASE__I64CONV sub-module, not
+// function requires the WUFFS_CONFIG__MODULE__BASE__INTCONV sub-module, not
 // just WUFFS_CONFIG__MODULE__BASE__CORE.
 WUFFS_BASE__MAYBE_STATIC wuffs_base__result_i64  //
 wuffs_base__parse_number_i64(wuffs_base__slice_u8 s, uint32_t options);
@@ -4090,7 +4103,7 @@ wuffs_base__parse_number_i64(wuffs_base__slice_u8 s, uint32_t options);
 //    "__0D_1_002" would successfully parse as "one thousand and two".
 //
 // For modular builds that divide the base module into sub-modules, using this
-// function requires the WUFFS_CONFIG__MODULE__BASE__I64CONV sub-module, not
+// function requires the WUFFS_CONFIG__MODULE__BASE__INTCONV sub-module, not
 // just WUFFS_CONFIG__MODULE__BASE__CORE.
 WUFFS_BASE__MAYBE_STATIC wuffs_base__result_u64  //
 wuffs_base__parse_number_u64(wuffs_base__slice_u8 s, uint32_t options);
@@ -4128,7 +4141,7 @@ wuffs_base__parse_number_u64(wuffs_base__slice_u8 s, uint32_t options);
 // WUFFS_BASE__RENDER_NUMBER_XXX__LEADING_PLUS_SIGN option is set) or "-Inf".
 //
 // For modular builds that divide the base module into sub-modules, using this
-// function requires the WUFFS_CONFIG__MODULE__BASE__F64CONV sub-module, not
+// function requires the WUFFS_CONFIG__MODULE__BASE__FLOATCONV sub-module, not
 // just WUFFS_CONFIG__MODULE__BASE__CORE.
 WUFFS_BASE__MAYBE_STATIC size_t  //
 wuffs_base__render_number_f64(wuffs_base__slice_u8 dst,
@@ -4144,7 +4157,7 @@ wuffs_base__render_number_f64(wuffs_base__slice_u8 dst,
 // WUFFS_BASE__I64__BYTE_LENGTH__MAX_INCL.
 //
 // For modular builds that divide the base module into sub-modules, using this
-// function requires the WUFFS_CONFIG__MODULE__BASE__I64CONV sub-module, not
+// function requires the WUFFS_CONFIG__MODULE__BASE__INTCONV sub-module, not
 // just WUFFS_CONFIG__MODULE__BASE__CORE.
 WUFFS_BASE__MAYBE_STATIC size_t  //
 wuffs_base__render_number_i64(wuffs_base__slice_u8 dst,
@@ -4159,48 +4172,101 @@ wuffs_base__render_number_i64(wuffs_base__slice_u8 dst,
 // WUFFS_BASE__U64__BYTE_LENGTH__MAX_INCL.
 //
 // For modular builds that divide the base module into sub-modules, using this
-// function requires the WUFFS_CONFIG__MODULE__BASE__I64CONV sub-module, not
+// function requires the WUFFS_CONFIG__MODULE__BASE__INTCONV sub-module, not
 // just WUFFS_CONFIG__MODULE__BASE__CORE.
 WUFFS_BASE__MAYBE_STATIC size_t  //
 wuffs_base__render_number_u64(wuffs_base__slice_u8 dst,
                               uint64_t x,
                               uint32_t options);
 
-// ---------------- Hexadecimal
+// ---------------- Base-16
 
-// wuffs_base__hexadecimal__decode2 converts "6A6b" to "jk", where e.g. 'j' is
-// U+006A. There are 2 source bytes for every destination byte.
-//
-// It returns the number of dst bytes written: the minimum of dst.len and
-// (src.len / 2). Excess source bytes are ignored.
+// Options (bitwise or'ed together) for wuffs_base__base_16__xxx functions.
+
+#define WUFFS_BASE__BASE_16__DEFAULT_OPTIONS ((uint32_t)0x00000000)
+
+// wuffs_base__base_16__decode2 converts "6A6b" to "jk", where e.g. 'j' is
+// U+006A. There are 2 src bytes for every dst byte.
 //
 // It assumes that the src bytes are two hexadecimal digits (0-9, A-F, a-f),
 // repeated. It may write nonsense bytes if not, although it will not read or
 // write out of bounds.
 //
 // For modular builds that divide the base module into sub-modules, using this
-// function requires the WUFFS_CONFIG__MODULE__BASE__I64CONV sub-module, not
+// function requires the WUFFS_CONFIG__MODULE__BASE__INTCONV sub-module, not
 // just WUFFS_CONFIG__MODULE__BASE__CORE.
-WUFFS_BASE__MAYBE_STATIC size_t  //
-wuffs_base__hexadecimal__decode2(wuffs_base__slice_u8 dst,
-                                 wuffs_base__slice_u8 src);
+WUFFS_BASE__MAYBE_STATIC wuffs_base__transform__output  //
+wuffs_base__base_16__decode2(wuffs_base__slice_u8 dst,
+                             wuffs_base__slice_u8 src,
+                             bool src_closed,
+                             uint32_t options);
 
-// wuffs_base__hexadecimal__decode4 converts "\\x6A\\x6b" to "jk", where e.g.
-// 'j' is U+006A. There are 4 source bytes for every destination byte.
-//
-// It returns the number of dst bytes written: the minimum of dst.len and
-// (src.len / 4). Excess source bytes are ignored.
+// wuffs_base__base_16__decode4 converts both "\\x6A\\x6b" and "??6a??6B" to
+// "jk", where e.g. 'j' is U+006A. There are 4 src bytes for every dst byte.
 //
 // It assumes that the src bytes are two ignored bytes and then two hexadecimal
 // digits (0-9, A-F, a-f), repeated. It may write nonsense bytes if not,
 // although it will not read or write out of bounds.
 //
 // For modular builds that divide the base module into sub-modules, using this
-// function requires the WUFFS_CONFIG__MODULE__BASE__I64CONV sub-module, not
+// function requires the WUFFS_CONFIG__MODULE__BASE__INTCONV sub-module, not
 // just WUFFS_CONFIG__MODULE__BASE__CORE.
-WUFFS_BASE__MAYBE_STATIC size_t  //
-wuffs_base__hexadecimal__decode4(wuffs_base__slice_u8 dst,
-                                 wuffs_base__slice_u8 src);
+WUFFS_BASE__MAYBE_STATIC wuffs_base__transform__output  //
+wuffs_base__base_16__decode4(wuffs_base__slice_u8 dst,
+                             wuffs_base__slice_u8 src,
+                             bool src_closed,
+                             uint32_t options);
+
+// ---------------- Base-64
+
+// Options (bitwise or'ed together) for wuffs_base__base_64__xxx functions.
+
+#define WUFFS_BASE__BASE_64__DEFAULT_OPTIONS ((uint32_t)0x00000000)
+
+// WUFFS_BASE__BASE_64__DECODE_ALLOW_PADDING means that, when decoding base-64,
+// the input may (but does not need to) be padded with '=' bytes so that the
+// overall encoded length in bytes is a multiple of 4. A successful decoding
+// will return a num_src that includes those padding bytes.
+//
+// Excess padding (e.g. three final '='s) will be rejected as bad data.
+#define WUFFS_BASE__BASE_64__DECODE_ALLOW_PADDING ((uint32_t)0x00000001)
+
+// WUFFS_BASE__BASE_64__ENCODE_EMIT_PADDING means that, when encoding base-64,
+// the output will be padded with '=' bytes so that the overall encoded length
+// in bytes is a multiple of 4.
+#define WUFFS_BASE__BASE_64__ENCODE_EMIT_PADDING ((uint32_t)0x00000002)
+
+// WUFFS_BASE__BASE_64__URL_ALPHABET means that, for base-64, the URL-friendly
+// and file-name-friendly alphabet be used, as per RFC 4648 section 5. When
+// this option bit is off, the standard alphabet from section 4 is used.
+#define WUFFS_BASE__BASE_64__URL_ALPHABET ((uint32_t)0x00000100)
+
+// wuffs_base__base_64__decode transforms base-64 encoded bytes from src to
+// arbitrary bytes in dst.
+//
+// It will not permit line breaks or other whitespace in src. Filtering those
+// out is the responsibility of the caller.
+//
+// For modular builds that divide the base module into sub-modules, using this
+// function requires the WUFFS_CONFIG__MODULE__BASE__INTCONV sub-module, not
+// just WUFFS_CONFIG__MODULE__BASE__CORE.
+WUFFS_BASE__MAYBE_STATIC wuffs_base__transform__output  //
+wuffs_base__base_64__decode(wuffs_base__slice_u8 dst,
+                            wuffs_base__slice_u8 src,
+                            bool src_closed,
+                            uint32_t options);
+
+// wuffs_base__base_64__encode transforms arbitrary bytes from src to base-64
+// encoded bytes in dst.
+//
+// For modular builds that divide the base module into sub-modules, using this
+// function requires the WUFFS_CONFIG__MODULE__BASE__INTCONV sub-module, not
+// just WUFFS_CONFIG__MODULE__BASE__CORE.
+WUFFS_BASE__MAYBE_STATIC wuffs_base__transform__output  //
+wuffs_base__base_64__encode(wuffs_base__slice_u8 dst,
+                            wuffs_base__slice_u8 src,
+                            bool src_closed,
+                            uint32_t options);
 
 // ---------------- Unicode and UTF-8
 
@@ -8392,6 +8458,7 @@ const char wuffs_base__error__bad_i_o_position[] = "#base: bad I/O position";
 const char wuffs_base__error__bad_argument_length_too_short[] = "#base: bad argument (length too short)";
 const char wuffs_base__error__bad_argument[] = "#base: bad argument";
 const char wuffs_base__error__bad_call_sequence[] = "#base: bad call sequence";
+const char wuffs_base__error__bad_data[] = "#base: bad data";
 const char wuffs_base__error__bad_receiver[] = "#base: bad receiver";
 const char wuffs_base__error__bad_restart[] = "#base: bad restart";
 const char wuffs_base__error__bad_sizeof_receiver[] = "#base: bad sizeof receiver";
@@ -9015,7 +9082,7 @@ wuffs_base__token_decoder__workbuf_len(
         // defined(WUFFS_CONFIG__MODULE__BASE__INTERFACES)
 
 #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BASE) || \
-    defined(WUFFS_CONFIG__MODULE__BASE__F64CONV)
+    defined(WUFFS_CONFIG__MODULE__BASE__FLOATCONV)
 
 // ---------------- IEEE 754 Floating Point
 
@@ -10591,7 +10658,11 @@ wuffs_base__private_implementation__high_prec_dec__round_just_enough(
 // --------
 
 // wuffs_base__private_implementation__parse_number_f64_eisel produces the IEEE
-// 754 double-precision value for an exact mantissa and base-10 exponent.
+// 754 double-precision value for an exact mantissa and base-10 exponent. For
+// example:
+//  - when parsing "12345.678e+02", man is 12345678 and exp10 is -1.
+//  - when parsing "-12", man is 12 and exp10 is 0. Processing the leading
+//    minus sign is the responsibility of the caller, not this function.
 //
 // On success, it returns a non-negative int64_t such that the low 63 bits hold
 // the 11-bit exponent and 52-bit mantissa.
@@ -10625,38 +10696,64 @@ wuffs_base__private_implementation__parse_number_f64_eisel(uint64_t man,
 
   // Multiply the two mantissas. Normalization means that both mantissas are at
   // least (1<<63), so the 128-bit product must be at least (1<<126). The high
-  // 64 bits of the product, x.hi, must therefore be at least (1<<62).
+  // 64 bits of the product, x_hi, must therefore be at least (1<<62).
   //
-  // As a consequence, x.hi has either 0 or 1 leading zeroes. Shifting x.hi
-  // right by either 9 or 10 bits (depending on x.hi's MSB) will therefore
+  // As a consequence, x_hi has either 0 or 1 leading zeroes. Shifting x_hi
+  // right by either 9 or 10 bits (depending on x_hi's MSB) will therefore
   // leave the top 10 MSBs (bits 54 ..= 63) off and the 11th MSB (bit 53) on.
+#if defined(__GNUC__)
+  // See commit 18449ad75d582dd015c236abc85a16f333b796f3 "Optimize 128-bit muls
+  // in parse_number_f64_eisel" for benchmark numbers.
+  //
+  // Clang also defines "__GNUC__".
+  __uint128_t x =
+      ((__uint128_t)man) * (((uint64_t)po10[2]) | (((uint64_t)po10[3]) << 32));
+  uint64_t x_hi = ((uint64_t)(x >> 64));
+  uint64_t x_lo = ((uint64_t)(x));
+#else
   wuffs_base__multiply_u64__output x = wuffs_base__multiply_u64(
       man, ((uint64_t)po10[2]) | (((uint64_t)po10[3]) << 32));
+  uint64_t x_hi = x.hi;
+  uint64_t x_lo = x.lo;
+#endif
 
   // Before we shift right by at least 9 bits, recall that the look-up table
   // entry was possibly truncated. We have so far only calculated a lower bound
   // for the product (man * e), where e is (10 ** exp10). The upper bound would
   // add a further (man * 1) to the 128-bit product, which overflows the lower
-  // 64-bit limb if ((x.lo + man) < man).
+  // 64-bit limb if ((x_lo + man) < man).
   //
-  // If overflow occurs, that adds 1 to x.hi. Since we're about to shift right
+  // If overflow occurs, that adds 1 to x_hi. Since we're about to shift right
   // by at least 9 bits, that carried 1 can be ignored unless the higher 64-bit
   // limb's low 9 bits are all on.
-  if (((x.hi & 0x1FF) == 0x1FF) && ((x.lo + man) < man)) {
+  if (((x_hi & 0x1FF) == 0x1FF) && ((x_lo + man) < man)) {
     // Refine our calculation of (man * e). Before, our approximation of e used
     // a "low resolution" 64-bit mantissa. Now use a "high resolution" 128-bit
     // mantissa. We've already calculated x = (man * bits_0_to_63_incl_of_e).
     // Now calculate y = (man * bits_64_to_127_incl_of_e).
+#if defined(__GNUC__)
+    // See commit 18449ad75d582dd015c236abc85a16f333b796f3 "Optimize 128-bit
+    // muls in parse_number_f64_eisel" for benchmark numbers.
+    //
+    // Clang also defines "__GNUC__".
+    __uint128_t y = ((__uint128_t)man) *
+                    (((uint64_t)po10[0]) | (((uint64_t)po10[1]) << 32));
+    uint64_t y_hi = ((uint64_t)(y >> 64));
+    uint64_t y_lo = ((uint64_t)(y));
+#else
     wuffs_base__multiply_u64__output y = wuffs_base__multiply_u64(
         man, ((uint64_t)po10[0]) | (((uint64_t)po10[1]) << 32));
+    uint64_t y_hi = y.hi;
+    uint64_t y_lo = y.lo;
+#endif
 
     // Merge the 128-bit x and 128-bit y, which overlap by 64 bits, to
     // calculate the 192-bit product of the 64-bit man by the 128-bit e.
     // As we exit this if-block, we only care about the high 128 bits
     // (merged_hi and merged_lo) of that 192-bit product.
-    uint64_t merged_hi = x.hi;
-    uint64_t merged_lo = x.lo + y.hi;
-    if (merged_lo < x.lo) {
+    uint64_t merged_hi = x_hi;
+    uint64_t merged_lo = x_lo + y_hi;
+    if (merged_lo < x_lo) {
       merged_hi++;  // Carry the overflow bit.
     }
 
@@ -10669,23 +10766,23 @@ wuffs_base__private_implementation__parse_number_f64_eisel(uint64_t man,
     // if block that we're now in, but it has an extra term for the middle 64
     // bits (checking that adding 1 to merged_lo would overflow).
     if (((merged_hi & 0x1FF) == 0x1FF) && ((merged_lo + 1) == 0) &&
-        (y.lo + man < man)) {
+        (y_lo + man < man)) {
       return -1;
     }
 
     // Replace the 128-bit x with merged.
-    x.hi = merged_hi;
-    x.lo = merged_lo;
+    x_hi = merged_hi;
+    x_lo = merged_lo;
   }
 
-  // As mentioned above, shifting x.hi right by either 9 or 10 bits will leave
+  // As mentioned above, shifting x_hi right by either 9 or 10 bits will leave
   // the top 10 MSBs (bits 54 ..= 63) off and the 11th MSB (bit 53) on. If the
   // MSB (before shifting) was on, adjust ret_exp2 for the larger shift.
   //
   // Having bit 53 on (and higher bits off) means that ret_mantissa is a 54-bit
   // number.
-  uint64_t msb = x.hi >> 63;
-  uint64_t ret_mantissa = x.hi >> (msb + 9);
+  uint64_t msb = x_hi >> 63;
+  uint64_t ret_mantissa = x_hi >> (msb + 9);
   ret_exp2 -= 1 ^ msb;
 
   // IEEE 754 rounds to-nearest with ties rounded to-even. Rounding to-even can
@@ -10695,7 +10792,7 @@ wuffs_base__private_implementation__parse_number_f64_eisel(uint64_t man,
   //
   // Technically, we could tighten the condition by changing "73" to "73 or 74,
   // depending on msb", but a flat "73" is simpler.
-  if ((x.lo == 0) && ((x.hi & 0x1FF) == 0) && ((ret_mantissa & 3) == 1)) {
+  if ((x_lo == 0) && ((x_hi & 0x1FF) == 0) && ((ret_mantissa & 3) == 1)) {
     return -1;
   }
 
@@ -11510,10 +11607,10 @@ wuffs_base__render_number_f64(wuffs_base__slice_u8 dst,
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) ||
         // defined(WUFFS_CONFIG__MODULE__BASE) ||
-        // defined(WUFFS_CONFIG__MODULE__BASE__F64CONV)
+        // defined(WUFFS_CONFIG__MODULE__BASE__FLOATCONV)
 
 #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BASE) || \
-    defined(WUFFS_CONFIG__MODULE__BASE__I64CONV)
+    defined(WUFFS_CONFIG__MODULE__BASE__INTCONV)
 
 // ---------------- Integer
 
@@ -11897,13 +11994,30 @@ wuffs_base__render_number_u64(wuffs_base__slice_u8 dst,
                                                                false);
 }
 
-// ---------------- Hexadecimal
+// ---------------- Base-16
 
-WUFFS_BASE__MAYBE_STATIC size_t  //
-wuffs_base__hexadecimal__decode2(wuffs_base__slice_u8 dst,
-                                 wuffs_base__slice_u8 src) {
+WUFFS_BASE__MAYBE_STATIC wuffs_base__transform__output  //
+wuffs_base__base_16__decode2(wuffs_base__slice_u8 dst,
+                             wuffs_base__slice_u8 src,
+                             bool src_closed,
+                             uint32_t options) {
+  wuffs_base__transform__output o;
   size_t src_len2 = src.len / 2;
-  size_t len = dst.len < src_len2 ? dst.len : src_len2;
+  size_t len;
+  if (dst.len < src_len2) {
+    len = dst.len;
+    o.status.repr = wuffs_base__suspension__short_write;
+  } else {
+    len = src_len2;
+    if (!src_closed) {
+      o.status.repr = wuffs_base__suspension__short_read;
+    } else if (src.len & 1) {
+      o.status.repr = wuffs_base__error__bad_data;
+    } else {
+      o.status.repr = NULL;
+    }
+  }
+
   uint8_t* d = dst.ptr;
   uint8_t* s = src.ptr;
   size_t n = len;
@@ -11915,14 +12029,33 @@ wuffs_base__hexadecimal__decode2(wuffs_base__slice_u8 dst,
     s += 2;
   }
 
-  return len;
+  o.num_dst = len;
+  o.num_src = len * 2;
+  return o;
 }
 
-WUFFS_BASE__MAYBE_STATIC size_t  //
-wuffs_base__hexadecimal__decode4(wuffs_base__slice_u8 dst,
-                                 wuffs_base__slice_u8 src) {
+WUFFS_BASE__MAYBE_STATIC wuffs_base__transform__output  //
+wuffs_base__base_16__decode4(wuffs_base__slice_u8 dst,
+                             wuffs_base__slice_u8 src,
+                             bool src_closed,
+                             uint32_t options) {
+  wuffs_base__transform__output o;
   size_t src_len4 = src.len / 4;
   size_t len = dst.len < src_len4 ? dst.len : src_len4;
+  if (dst.len < src_len4) {
+    len = dst.len;
+    o.status.repr = wuffs_base__suspension__short_write;
+  } else {
+    len = src_len4;
+    if (!src_closed) {
+      o.status.repr = wuffs_base__suspension__short_read;
+    } else if (src.len & 1) {
+      o.status.repr = wuffs_base__error__bad_data;
+    } else {
+      o.status.repr = NULL;
+    }
+  }
+
   uint8_t* d = dst.ptr;
   uint8_t* s = src.ptr;
   size_t n = len;
@@ -11934,12 +12067,333 @@ wuffs_base__hexadecimal__decode4(wuffs_base__slice_u8 dst,
     s += 4;
   }
 
-  return len;
+  o.num_dst = len;
+  o.num_src = len * 4;
+  return o;
+}
+
+// ---------------- Base-64
+
+// The two base-64 alphabets, std and url, differ only in the last two codes.
+//  - std: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+//  - url: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+
+static const uint8_t wuffs_base__base_64__decode_std[256] = {
+    // 0     1     2     3     4     5     6     7
+    // 8     9     A     B     C     D     E     F
+    0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,  // 0x00 ..= 0x07.
+    0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,  // 0x08 ..= 0x0F.
+    0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,  // 0x10 ..= 0x17.
+    0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,  // 0x18 ..= 0x1F.
+    0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,  // 0x20 ..= 0x27.
+    0x80, 0x80, 0x80, 0x3E, 0x80, 0x80, 0x80, 0x3F,  // 0x28 ..= 0x2F.
+    0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3A, 0x3B,  // 0x30 ..= 0x37.
+    0x3C, 0x3D, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,  // 0x38 ..= 0x3F.
+
+    0x80, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06,  // 0x40 ..= 0x47.
+    0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E,  // 0x48 ..= 0x4F.
+    0x0F, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16,  // 0x50 ..= 0x57.
+    0x17, 0x18, 0x19, 0x80, 0x80, 0x80, 0x80, 0x80,  // 0x58 ..= 0x5F.
+    0x80, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x20,  // 0x60 ..= 0x67.
+    0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28,  // 0x68 ..= 0x6F.
+    0x29, 0x2A, 0x2B, 0x2C, 0x2D, 0x2E, 0x2F, 0x30,  // 0x70 ..= 0x77.
+    0x31, 0x32, 0x33, 0x80, 0x80, 0x80, 0x80, 0x80,  // 0x78 ..= 0x7F.
+
+    0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,  // 0x80 ..= 0x87.
+    0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,  // 0x88 ..= 0x8F.
+    0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,  // 0x90 ..= 0x97.
+    0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,  // 0x98 ..= 0x9F.
+    0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,  // 0xA0 ..= 0xA7.
+    0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,  // 0xA8 ..= 0xAF.
+    0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,  // 0xB0 ..= 0xB7.
+    0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,  // 0xB8 ..= 0xBF.
+
+    0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,  // 0xC0 ..= 0xC7.
+    0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,  // 0xC8 ..= 0xCF.
+    0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,  // 0xD0 ..= 0xD7.
+    0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,  // 0xD8 ..= 0xDF.
+    0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,  // 0xE0 ..= 0xE7.
+    0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,  // 0xE8 ..= 0xEF.
+    0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,  // 0xF0 ..= 0xF7.
+    0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,  // 0xF8 ..= 0xFF.
+    // 0     1     2     3     4     5     6     7
+    // 8     9     A     B     C     D     E     F
+};
+
+static const uint8_t wuffs_base__base_64__decode_url[256] = {
+    // 0     1     2     3     4     5     6     7
+    // 8     9     A     B     C     D     E     F
+    0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,  // 0x00 ..= 0x07.
+    0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,  // 0x08 ..= 0x0F.
+    0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,  // 0x10 ..= 0x17.
+    0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,  // 0x18 ..= 0x1F.
+    0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,  // 0x20 ..= 0x27.
+    0x80, 0x80, 0x80, 0x80, 0x80, 0x3E, 0x80, 0x80,  // 0x28 ..= 0x2F.
+    0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3A, 0x3B,  // 0x30 ..= 0x37.
+    0x3C, 0x3D, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,  // 0x38 ..= 0x3F.
+
+    0x80, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06,  // 0x40 ..= 0x47.
+    0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E,  // 0x48 ..= 0x4F.
+    0x0F, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16,  // 0x50 ..= 0x57.
+    0x17, 0x18, 0x19, 0x80, 0x80, 0x80, 0x80, 0x3F,  // 0x58 ..= 0x5F.
+    0x80, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x20,  // 0x60 ..= 0x67.
+    0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28,  // 0x68 ..= 0x6F.
+    0x29, 0x2A, 0x2B, 0x2C, 0x2D, 0x2E, 0x2F, 0x30,  // 0x70 ..= 0x77.
+    0x31, 0x32, 0x33, 0x80, 0x80, 0x80, 0x80, 0x80,  // 0x78 ..= 0x7F.
+
+    0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,  // 0x80 ..= 0x87.
+    0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,  // 0x88 ..= 0x8F.
+    0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,  // 0x90 ..= 0x97.
+    0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,  // 0x98 ..= 0x9F.
+    0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,  // 0xA0 ..= 0xA7.
+    0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,  // 0xA8 ..= 0xAF.
+    0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,  // 0xB0 ..= 0xB7.
+    0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,  // 0xB8 ..= 0xBF.
+
+    0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,  // 0xC0 ..= 0xC7.
+    0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,  // 0xC8 ..= 0xCF.
+    0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,  // 0xD0 ..= 0xD7.
+    0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,  // 0xD8 ..= 0xDF.
+    0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,  // 0xE0 ..= 0xE7.
+    0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,  // 0xE8 ..= 0xEF.
+    0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,  // 0xF0 ..= 0xF7.
+    0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,  // 0xF8 ..= 0xFF.
+    // 0     1     2     3     4     5     6     7
+    // 8     9     A     B     C     D     E     F
+};
+
+static const uint8_t wuffs_base__base_64__encode_std[64] = {
+    // 0     1     2     3     4     5     6     7
+    // 8     9     A     B     C     D     E     F
+    0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48,  // 0x00 ..= 0x07.
+    0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F, 0x50,  // 0x08 ..= 0x0F.
+    0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57, 0x58,  // 0x10 ..= 0x17.
+    0x59, 0x5A, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66,  // 0x18 ..= 0x1F.
+    0x67, 0x68, 0x69, 0x6A, 0x6B, 0x6C, 0x6D, 0x6E,  // 0x20 ..= 0x27.
+    0x6F, 0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76,  // 0x28 ..= 0x2F.
+    0x77, 0x78, 0x79, 0x7A, 0x30, 0x31, 0x32, 0x33,  // 0x30 ..= 0x37.
+    0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x2B, 0x2F,  // 0x38 ..= 0x3F.
+};
+
+static const uint8_t wuffs_base__base_64__encode_url[64] = {
+    // 0     1     2     3     4     5     6     7
+    // 8     9     A     B     C     D     E     F
+    0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48,  // 0x00 ..= 0x07.
+    0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F, 0x50,  // 0x08 ..= 0x0F.
+    0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57, 0x58,  // 0x10 ..= 0x17.
+    0x59, 0x5A, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66,  // 0x18 ..= 0x1F.
+    0x67, 0x68, 0x69, 0x6A, 0x6B, 0x6C, 0x6D, 0x6E,  // 0x20 ..= 0x27.
+    0x6F, 0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76,  // 0x28 ..= 0x2F.
+    0x77, 0x78, 0x79, 0x7A, 0x30, 0x31, 0x32, 0x33,  // 0x30 ..= 0x37.
+    0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x2D, 0x5F,  // 0x38 ..= 0x3F.
+};
+
+// --------
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__transform__output  //
+wuffs_base__base_64__decode(wuffs_base__slice_u8 dst,
+                            wuffs_base__slice_u8 src,
+                            bool src_closed,
+                            uint32_t options) {
+  const uint8_t* alphabet = (options & WUFFS_BASE__BASE_64__URL_ALPHABET)
+                                ? wuffs_base__base_64__decode_url
+                                : wuffs_base__base_64__decode_std;
+  wuffs_base__transform__output o;
+  uint8_t* d_ptr = dst.ptr;
+  size_t d_len = dst.len;
+  const uint8_t* s_ptr = src.ptr;
+  size_t s_len = src.len;
+  bool pad = false;
+
+  while (s_len >= 4) {
+    uint32_t s = wuffs_base__load_u32le__no_bounds_check(s_ptr);
+    uint32_t s0 = alphabet[0xFF & (s >> 0)];
+    uint32_t s1 = alphabet[0xFF & (s >> 8)];
+    uint32_t s2 = alphabet[0xFF & (s >> 16)];
+    uint32_t s3 = alphabet[0xFF & (s >> 24)];
+
+    if (((s0 | s1 | s2 | s3) & 0xC0) != 0) {
+      if (s_len > 4) {
+        o.status.repr = wuffs_base__error__bad_data;
+        goto done;
+      } else if (!src_closed) {
+        o.status.repr = wuffs_base__suspension__short_read;
+        goto done;
+      } else if ((options & WUFFS_BASE__BASE_64__DECODE_ALLOW_PADDING) &&
+                 (s_ptr[3] == '=')) {
+        pad = true;
+        if (s_ptr[2] == '=') {
+          goto src2;
+        }
+        goto src3;
+      }
+      o.status.repr = wuffs_base__error__bad_data;
+      goto done;
+    }
+
+    if (d_len < 3) {
+      o.status.repr = wuffs_base__suspension__short_write;
+      goto done;
+    }
+
+    s_ptr += 4;
+    s_len -= 4;
+    s = (s0 << 18) | (s1 << 12) | (s2 << 6) | (s3 << 0);
+    *d_ptr++ = (uint8_t)(s >> 16);
+    *d_ptr++ = (uint8_t)(s >> 8);
+    *d_ptr++ = (uint8_t)(s >> 0);
+    d_len -= 3;
+  }
+
+  if (!src_closed) {
+    o.status.repr = wuffs_base__suspension__short_read;
+    goto done;
+  }
+
+  if (s_len == 0) {
+    o.status.repr = NULL;
+    goto done;
+  } else if (s_len == 1) {
+    o.status.repr = wuffs_base__error__bad_data;
+    goto done;
+  } else if (s_len == 2) {
+    goto src2;
+  }
+
+src3:
+  do {
+    uint32_t s = wuffs_base__load_u24le__no_bounds_check(s_ptr);
+    uint32_t s0 = alphabet[0xFF & (s >> 0)];
+    uint32_t s1 = alphabet[0xFF & (s >> 8)];
+    uint32_t s2 = alphabet[0xFF & (s >> 16)];
+    if ((s0 & 0xC0) || (s1 & 0xC0) || (s2 & 0xC3)) {
+      o.status.repr = wuffs_base__error__bad_data;
+      goto done;
+    }
+    if (d_len < 2) {
+      o.status.repr = wuffs_base__suspension__short_write;
+      goto done;
+    }
+    s_ptr += pad ? 4 : 3;
+    s = (s0 << 18) | (s1 << 12) | (s2 << 6);
+    *d_ptr++ = (uint8_t)(s >> 16);
+    *d_ptr++ = (uint8_t)(s >> 8);
+    o.status.repr = NULL;
+    goto done;
+  } while (0);
+
+src2:
+  do {
+    uint32_t s = wuffs_base__load_u16le__no_bounds_check(s_ptr);
+    uint32_t s0 = alphabet[0xFF & (s >> 0)];
+    uint32_t s1 = alphabet[0xFF & (s >> 8)];
+    if ((s0 & 0xC0) || (s1 & 0xCF)) {
+      o.status.repr = wuffs_base__error__bad_data;
+      goto done;
+    }
+    if (d_len < 1) {
+      o.status.repr = wuffs_base__suspension__short_write;
+      goto done;
+    }
+    s_ptr += pad ? 4 : 2;
+    s = (s0 << 18) | (s1 << 12);
+    *d_ptr++ = (uint8_t)(s >> 16);
+    o.status.repr = NULL;
+    goto done;
+  } while (0);
+
+done:
+  o.num_dst = (size_t)(d_ptr - dst.ptr);
+  o.num_src = (size_t)(s_ptr - src.ptr);
+  return o;
+}
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__transform__output  //
+wuffs_base__base_64__encode(wuffs_base__slice_u8 dst,
+                            wuffs_base__slice_u8 src,
+                            bool src_closed,
+                            uint32_t options) {
+  const uint8_t* alphabet = (options & WUFFS_BASE__BASE_64__URL_ALPHABET)
+                                ? wuffs_base__base_64__encode_url
+                                : wuffs_base__base_64__encode_std;
+  wuffs_base__transform__output o;
+  uint8_t* d_ptr = dst.ptr;
+  size_t d_len = dst.len;
+  const uint8_t* s_ptr = src.ptr;
+  size_t s_len = src.len;
+
+  do {
+    while (s_len >= 3) {
+      if (d_len < 4) {
+        o.status.repr = wuffs_base__suspension__short_write;
+        goto done;
+      }
+      uint32_t s = wuffs_base__load_u24be__no_bounds_check(s_ptr);
+      s_ptr += 3;
+      s_len -= 3;
+      *d_ptr++ = alphabet[0x3F & (s >> 18)];
+      *d_ptr++ = alphabet[0x3F & (s >> 12)];
+      *d_ptr++ = alphabet[0x3F & (s >> 6)];
+      *d_ptr++ = alphabet[0x3F & (s >> 0)];
+      d_len -= 4;
+    }
+
+    if (!src_closed) {
+      o.status.repr = wuffs_base__suspension__short_read;
+      goto done;
+    }
+
+    if (s_len == 2) {
+      if (d_len <
+          ((options & WUFFS_BASE__BASE_64__ENCODE_EMIT_PADDING) ? 4 : 3)) {
+        o.status.repr = wuffs_base__suspension__short_write;
+        goto done;
+      }
+      uint32_t s = ((uint32_t)(wuffs_base__load_u16be__no_bounds_check(s_ptr)))
+                   << 8;
+      s_ptr += 2;
+      *d_ptr++ = alphabet[0x3F & (s >> 18)];
+      *d_ptr++ = alphabet[0x3F & (s >> 12)];
+      *d_ptr++ = alphabet[0x3F & (s >> 6)];
+      if (options & WUFFS_BASE__BASE_64__ENCODE_EMIT_PADDING) {
+        *d_ptr++ = '=';
+      }
+      o.status.repr = NULL;
+      goto done;
+
+    } else if (s_len == 1) {
+      if (d_len <
+          ((options & WUFFS_BASE__BASE_64__ENCODE_EMIT_PADDING) ? 4 : 2)) {
+        o.status.repr = wuffs_base__suspension__short_write;
+        goto done;
+      }
+      uint32_t s = ((uint32_t)(wuffs_base__load_u8__no_bounds_check(s_ptr)))
+                   << 16;
+      s_ptr += 1;
+      *d_ptr++ = alphabet[0x3F & (s >> 18)];
+      *d_ptr++ = alphabet[0x3F & (s >> 12)];
+      if (options & WUFFS_BASE__BASE_64__ENCODE_EMIT_PADDING) {
+        *d_ptr++ = '=';
+        *d_ptr++ = '=';
+      }
+      o.status.repr = NULL;
+      goto done;
+
+    } else {
+      o.status.repr = NULL;
+      goto done;
+    }
+  } while (0);
+
+done:
+  o.num_dst = (size_t)(d_ptr - dst.ptr);
+  o.num_src = (size_t)(s_ptr - src.ptr);
+  return o;
 }
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) ||
         // defined(WUFFS_CONFIG__MODULE__BASE) ||
-        // defined(WUFFS_CONFIG__MODULE__BASE__I64CONV)
+        // defined(WUFFS_CONFIG__MODULE__BASE__INTCONV)
 
 #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BASE) || \
     defined(WUFFS_CONFIG__MODULE__BASE__PIXCONV)
