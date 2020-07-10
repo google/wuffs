@@ -65,15 +65,15 @@ extern "C" {
 // each major.minor branch, the commit count should increase monotonically.
 //
 // WUFFS_VERSION was overridden by "wuffs gen -version" based on revision
-// f9a90f1c5ef743130b59bc848cc616c076be90bc committed on 2020-07-10.
+// e722bb095c6f1be7d732db6a808b5b41d2dad054 committed on 2020-07-10.
 #define WUFFS_VERSION 0x000030000
 #define WUFFS_VERSION_MAJOR 0
 #define WUFFS_VERSION_MINOR 3
 #define WUFFS_VERSION_PATCH 0
-#define WUFFS_VERSION_PRE_RELEASE_LABEL "alpha.8"
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 2556
+#define WUFFS_VERSION_PRE_RELEASE_LABEL "alpha.9"
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 2558
 #define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20200710
-#define WUFFS_VERSION_STRING "0.3.0-alpha.8+2556.20200710"
+#define WUFFS_VERSION_STRING "0.3.0-alpha.9+2558.20200710"
 
 // Define WUFFS_CONFIG__STATIC_FUNCTIONS to make all of Wuffs' functions have
 // static storage. The motivation is discussed in the "ALLOW STATIC
@@ -10701,11 +10701,9 @@ wuffs_base__private_implementation__parse_number_f64_eisel(uint64_t man,
   // As a consequence, x_hi has either 0 or 1 leading zeroes. Shifting x_hi
   // right by either 9 or 10 bits (depending on x_hi's MSB) will therefore
   // leave the top 10 MSBs (bits 54 ..= 63) off and the 11th MSB (bit 53) on.
-#if defined(__GNUC__)
+#if defined(__SIZEOF_INT128__)
   // See commit 18449ad75d582dd015c236abc85a16f333b796f3 "Optimize 128-bit muls
   // in parse_number_f64_eisel" for benchmark numbers.
-  //
-  // Clang also defines "__GNUC__".
   __uint128_t x =
       ((__uint128_t)man) * (((uint64_t)po10[2]) | (((uint64_t)po10[3]) << 32));
   uint64_t x_hi = ((uint64_t)(x >> 64));
@@ -10731,11 +10729,9 @@ wuffs_base__private_implementation__parse_number_f64_eisel(uint64_t man,
     // a "low resolution" 64-bit mantissa. Now use a "high resolution" 128-bit
     // mantissa. We've already calculated x = (man * bits_0_to_63_incl_of_e).
     // Now calculate y = (man * bits_64_to_127_incl_of_e).
-#if defined(__GNUC__)
+#if defined(__SIZEOF_INT128__)
     // See commit 18449ad75d582dd015c236abc85a16f333b796f3 "Optimize 128-bit
     // muls in parse_number_f64_eisel" for benchmark numbers.
-    //
-    // Clang also defines "__GNUC__".
     __uint128_t y = ((__uint128_t)man) *
                     (((uint64_t)po10[0]) | (((uint64_t)po10[1]) << 32));
     uint64_t y_hi = ((uint64_t)(y >> 64));
