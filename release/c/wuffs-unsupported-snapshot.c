@@ -12302,8 +12302,8 @@ src2:
   } while (0);
 
 done:
-  o.num_dst = d_ptr - dst.ptr;
-  o.num_src = s_ptr - src.ptr;
+  o.num_dst = (size_t)(d_ptr - dst.ptr);
+  o.num_src = (size_t)(s_ptr - src.ptr);
   return o;
 }
 
@@ -12385,8 +12385,8 @@ wuffs_base__base_64__encode(wuffs_base__slice_u8 dst,
   } while (0);
 
 done:
-  o.num_dst = d_ptr - dst.ptr;
-  o.num_src = s_ptr - src.ptr;
+  o.num_dst = (size_t)(d_ptr - dst.ptr);
+  o.num_src = (size_t)(s_ptr - src.ptr);
   return o;
 }
 
