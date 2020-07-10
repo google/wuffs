@@ -845,6 +845,9 @@ wuffs_base__private_implementation__parse_number_f64_eisel(uint64_t man,
   // right by either 9 or 10 bits (depending on x_hi's MSB) will therefore
   // leave the top 10 MSBs (bits 54 ..= 63) off and the 11th MSB (bit 53) on.
 #if defined(__GNUC__)
+  // See commit 18449ad75d582dd015c236abc85a16f333b796f3 "Optimize 128-bit muls
+  // in parse_number_f64_eisel" for benchmark numbers.
+  //
   // Clang also defines "__GNUC__".
   __uint128_t x =
       ((__uint128_t)man) * (((uint64_t)po10[2]) | (((uint64_t)po10[3]) << 32));
@@ -872,6 +875,9 @@ wuffs_base__private_implementation__parse_number_f64_eisel(uint64_t man,
     // mantissa. We've already calculated x = (man * bits_0_to_63_incl_of_e).
     // Now calculate y = (man * bits_64_to_127_incl_of_e).
 #if defined(__GNUC__)
+    // See commit 18449ad75d582dd015c236abc85a16f333b796f3 "Optimize 128-bit
+    // muls in parse_number_f64_eisel" for benchmark numbers.
+    //
     // Clang also defines "__GNUC__".
     __uint128_t y = ((__uint128_t)man) *
                     (((uint64_t)po10[0]) | (((uint64_t)po10[1]) << 32));
