@@ -1,0 +1,133 @@
+// Copyright 2020 The Wuffs Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// +build ignore
+
+package main
+
+// extract-cbor-rfc-7049-examples.go extracts the examples (Appendix A) from
+// RFC 7049 "Concise Binary Object Representation (CBOR)". Each example is
+// written to a separate file under a "cbor-rfc-7049-examples" directory.
+//
+// Usage:
+// go run extract-cbor-rfc-7049-examples.go < rfc7049-errata-corrected.txt
+//
+// The rfc7049-errata-corrected.txt file comes from
+// https://github.com/cbor/spec-with-errata-fixed
+
+import (
+	"bytes"
+	"fmt"
+	"io/ioutil"
+	"os"
+)
+
+func main() {
+	if err := main1(); err != nil {
+		os.Stderr.WriteString(err.Error() + "\n")
+		os.Exit(1)
+	}
+}
+
+func main1() error {
+	src, err := readExampleTable()
+	if err != nil {
+		return err
+	}
+	if err := os.Mkdir("cbor-rfc-7049-examples", 0755); err != nil {
+		return err
+	}
+	for remaining := []byte(nil); len(src) > 0; src = remaining {
+		if i := bytes.IndexByte(src, '\n'); i >= 0 {
+			src, remaining = src[:i], src[i+1:]
+		} else {
+			remaining = nil
+		}
+		src = bytes.TrimSpace(src)
+		if (len(src) == 0) || (src[0] != '|') {
+			continue
+		}
+		if (len(src) != 69) || (src[31] != '|') || (src[68] != '|') {
+			return fmt.Errorf("main: unexpected table row: %q", string(src))
+		}
+		src = bytes.TrimSpace(src[33:68])
+		if len(src) == 0 {
+			if err := emit(); err != nil {
+				return err
+			}
+			continue
+		}
+		if (len(src) > 1) && (src[0] == '0') && (src[1] == 'x') {
+			src = src[2:]
+		}
+		for ; len(src) >= 2; src = src[2:] {
+			contents = append(contents, (unhex(src[0])<<4)|unhex(src[1]))
+		}
+	}
+	return emit()
+}
+
+var (
+	contents   = []byte(nil)
+	fileNumber = 0
+)
+
+func emit() error {
+	if len(contents) == 0 {
+		return nil
+	}
+	filename := fmt.Sprintf("cbor-rfc-7049-examples/%02d.cbor", fileNumber)
+	fileNumber++
+	err := ioutil.WriteFile(filename, contents, 0644)
+	contents = nil
+	return err
+}
+
+func unhex(x uint8) uint8 {
+	if x >= 'a' {
+		return x + 10 - 'a'
+	}
+	return x - '0'
+}
+
+func readExampleTable() ([]byte, error) {
+	appendixA := []byte("Appendix A.  Examples\n\n")
+	ruler := []byte("+------------------------------+------------------------------------+\n")
+
+	src, err := ioutil.ReadAll(os.Stdin)
+	if err != nil {
+		return nil, err
+	}
+	if i := bytes.Index(src, appendixA); i < 0 {
+		return nil, fmt.Errorf("main: couldn't find Appendix A")
+	} else {
+		src = src[i+len(appendixA):]
+	}
+	if i := bytes.Index(src, ruler); i < 0 {
+		return nil, fmt.Errorf("main: couldn't find ---- ruler")
+	} else {
+		src = src[i+len(ruler):]
+	}
+	if i := bytes.Index(src, ruler); i < 0 {
+		return nil, fmt.Errorf("main: couldn't find ---- ruler")
+	} else {
+		src = src[i+len(ruler):]
+	}
+	if i := bytes.Index(src, ruler); i < 0 {
+		return nil, fmt.Errorf("main: couldn't find Appendix B")
+	} else {
+		src = src[:i]
+	}
+	return bytes.TrimSpace(src), nil
+}
