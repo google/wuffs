@@ -10695,38 +10695,42 @@ wuffs_base__private_implementation__parse_number_f64_eisel(uint64_t man,
 
   // Multiply the two mantissas. Normalization means that both mantissas are at
   // least (1<<63), so the 128-bit product must be at least (1<<126). The high
-  // 64 bits of the product, x.hi, must therefore be at least (1<<62).
+  // 64 bits of the product, x_hi, must therefore be at least (1<<62).
   //
-  // As a consequence, x.hi has either 0 or 1 leading zeroes. Shifting x.hi
-  // right by either 9 or 10 bits (depending on x.hi's MSB) will therefore
+  // As a consequence, x_hi has either 0 or 1 leading zeroes. Shifting x_hi
+  // right by either 9 or 10 bits (depending on x_hi's MSB) will therefore
   // leave the top 10 MSBs (bits 54 ..= 63) off and the 11th MSB (bit 53) on.
   wuffs_base__multiply_u64__output x = wuffs_base__multiply_u64(
       man, ((uint64_t)po10[2]) | (((uint64_t)po10[3]) << 32));
+  uint64_t x_hi = x.hi;
+  uint64_t x_lo = x.lo;
 
   // Before we shift right by at least 9 bits, recall that the look-up table
   // entry was possibly truncated. We have so far only calculated a lower bound
   // for the product (man * e), where e is (10 ** exp10). The upper bound would
   // add a further (man * 1) to the 128-bit product, which overflows the lower
-  // 64-bit limb if ((x.lo + man) < man).
+  // 64-bit limb if ((x_lo + man) < man).
   //
-  // If overflow occurs, that adds 1 to x.hi. Since we're about to shift right
+  // If overflow occurs, that adds 1 to x_hi. Since we're about to shift right
   // by at least 9 bits, that carried 1 can be ignored unless the higher 64-bit
   // limb's low 9 bits are all on.
-  if (((x.hi & 0x1FF) == 0x1FF) && ((x.lo + man) < man)) {
+  if (((x_hi & 0x1FF) == 0x1FF) && ((x_lo + man) < man)) {
     // Refine our calculation of (man * e). Before, our approximation of e used
     // a "low resolution" 64-bit mantissa. Now use a "high resolution" 128-bit
     // mantissa. We've already calculated x = (man * bits_0_to_63_incl_of_e).
     // Now calculate y = (man * bits_64_to_127_incl_of_e).
     wuffs_base__multiply_u64__output y = wuffs_base__multiply_u64(
         man, ((uint64_t)po10[0]) | (((uint64_t)po10[1]) << 32));
+    uint64_t y_hi = y.hi;
+    uint64_t y_lo = y.lo;
 
     // Merge the 128-bit x and 128-bit y, which overlap by 64 bits, to
     // calculate the 192-bit product of the 64-bit man by the 128-bit e.
     // As we exit this if-block, we only care about the high 128 bits
     // (merged_hi and merged_lo) of that 192-bit product.
-    uint64_t merged_hi = x.hi;
-    uint64_t merged_lo = x.lo + y.hi;
-    if (merged_lo < x.lo) {
+    uint64_t merged_hi = x_hi;
+    uint64_t merged_lo = x_lo + y_hi;
+    if (merged_lo < x_lo) {
       merged_hi++;  // Carry the overflow bit.
     }
 
@@ -10739,23 +10743,23 @@ wuffs_base__private_implementation__parse_number_f64_eisel(uint64_t man,
     // if block that we're now in, but it has an extra term for the middle 64
     // bits (checking that adding 1 to merged_lo would overflow).
     if (((merged_hi & 0x1FF) == 0x1FF) && ((merged_lo + 1) == 0) &&
-        (y.lo + man < man)) {
+        (y_lo + man < man)) {
       return -1;
     }
 
     // Replace the 128-bit x with merged.
-    x.hi = merged_hi;
-    x.lo = merged_lo;
+    x_hi = merged_hi;
+    x_lo = merged_lo;
   }
 
-  // As mentioned above, shifting x.hi right by either 9 or 10 bits will leave
+  // As mentioned above, shifting x_hi right by either 9 or 10 bits will leave
   // the top 10 MSBs (bits 54 ..= 63) off and the 11th MSB (bit 53) on. If the
   // MSB (before shifting) was on, adjust ret_exp2 for the larger shift.
   //
   // Having bit 53 on (and higher bits off) means that ret_mantissa is a 54-bit
   // number.
-  uint64_t msb = x.hi >> 63;
-  uint64_t ret_mantissa = x.hi >> (msb + 9);
+  uint64_t msb = x_hi >> 63;
+  uint64_t ret_mantissa = x_hi >> (msb + 9);
   ret_exp2 -= 1 ^ msb;
 
   // IEEE 754 rounds to-nearest with ties rounded to-even. Rounding to-even can
@@ -10765,7 +10769,7 @@ wuffs_base__private_implementation__parse_number_f64_eisel(uint64_t man,
   //
   // Technically, we could tighten the condition by changing "73" to "73 or 74,
   // depending on msb", but a flat "73" is simpler.
-  if ((x.lo == 0) && ((x.hi & 0x1FF) == 0) && ((ret_mantissa & 3) == 1)) {
+  if ((x_lo == 0) && ((x_hi & 0x1FF) == 0) && ((ret_mantissa & 3) == 1)) {
     return -1;
   }
 
