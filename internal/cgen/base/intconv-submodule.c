@@ -186,6 +186,10 @@ wuffs_base__parse_number_u64(wuffs_base__slice_u8 s, uint32_t options) {
       p++;
       for (; p < q; p++) {
         if (*p != '_') {
+          if (options &
+              WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_MULTIPLE_LEADING_ZEROES) {
+            goto decimal;
+          }
           goto fail_bad_argument;
         }
       }
@@ -209,6 +213,9 @@ wuffs_base__parse_number_u64(wuffs_base__slice_u8 s, uint32_t options) {
       }
     }
 
+    if (options & WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_MULTIPLE_LEADING_ZEROES) {
+      goto decimal;
+    }
     goto fail_bad_argument;
   }
 

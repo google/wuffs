@@ -183,7 +183,9 @@ wuffs_base__private_implementation__high_prec_dec__parse(
   uint32_t nd = 0;
   int32_t dp = 0;
   bool no_digits_before_separator = false;
-  if ('0' == *p) {
+  if (('0' == *p) &&
+      !(options &
+        WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_MULTIPLE_LEADING_ZEROES)) {
     p++;
     for (;; p++) {
       if (p >= q) {
@@ -203,10 +205,16 @@ wuffs_base__private_implementation__high_prec_dec__parse(
       }
     }
 
-  } else if (('0' < *p) && (*p <= '9')) {
-    h->digits[nd++] = (uint8_t)(*p - '0');
-    dp = (int32_t)nd;
-    p++;
+  } else if (('0' <= *p) && (*p <= '9')) {
+    if (*p == '0') {
+      for (; (p < q) && (*p == '0'); p++) {
+      }
+    } else {
+      h->digits[nd++] = (uint8_t)(*p - '0');
+      dp = (int32_t)nd;
+      p++;
+    }
+
     for (;; p++) {
       if (p >= q) {
         goto after_all;
