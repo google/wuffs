@@ -65,15 +65,15 @@ extern "C" {
 // each major.minor branch, the commit count should increase monotonically.
 //
 // WUFFS_VERSION was overridden by "wuffs gen -version" based on revision
-// e722bb095c6f1be7d732db6a808b5b41d2dad054 committed on 2020-07-10.
+// 0a9075f81c0dfb10e6ad1ea3f797f416aa8ab742 committed on 2020-07-11.
 #define WUFFS_VERSION 0x000030000
 #define WUFFS_VERSION_MAJOR 0
 #define WUFFS_VERSION_MINOR 3
 #define WUFFS_VERSION_PATCH 0
-#define WUFFS_VERSION_PRE_RELEASE_LABEL "alpha.9"
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 2558
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20200710
-#define WUFFS_VERSION_STRING "0.3.0-alpha.9+2558.20200710"
+#define WUFFS_VERSION_PRE_RELEASE_LABEL "alpha.10"
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 2566
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20200711
+#define WUFFS_VERSION_STRING "0.3.0-alpha.10+2566.20200711"
 
 // Define WUFFS_CONFIG__STATIC_FUNCTIONS to make all of Wuffs' functions have
 // static storage. The motivation is discussed in the "ALLOW STATIC
@@ -3942,6 +3942,32 @@ wuffs_base__pixel_swizzler::swizzle_interleaved_from_slice(
 
 #define WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS ((uint32_t)0x00000000)
 
+// WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_MULTIPLE_LEADING_ZEROES means to accept
+// inputs like "00", "0644" and "00.7". By default, they are rejected.
+#define WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_MULTIPLE_LEADING_ZEROES \
+  ((uint32_t)0x00000001)
+
+// WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES means to accept inputs like
+// "1__2" and "_3.141_592". By default, they are rejected.
+#define WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES ((uint32_t)0x00000002)
+
+// WUFFS_BASE__PARSE_NUMBER_FXX__DECIMAL_SEPARATOR_IS_A_COMMA means to accept
+// "1,5" and not "1.5" as one-and-a-half.
+//
+// If the caller wants to accept either, it is responsible for canonicalizing
+// the input before calling wuffs_base__parse_number_fxx. The caller also has
+// more context on e.g. exactly how to treat something like "$1,234".
+#define WUFFS_BASE__PARSE_NUMBER_FXX__DECIMAL_SEPARATOR_IS_A_COMMA \
+  ((uint32_t)0x00000010)
+
+// WUFFS_BASE__PARSE_NUMBER_FXX__REJECT_INF_AND_NAN means to reject inputs that
+// would lead to infinite or Not-a-Number floating point values. By default,
+// they are accepted.
+//
+// This affects the literal "inf" as input, but also affects inputs like
+// "1e999" that would overflow double-precision floating point.
+#define WUFFS_BASE__PARSE_NUMBER_FXX__REJECT_INF_AND_NAN ((uint32_t)0x00000020)
+
 // --------
 
 // Options (bitwise or'ed together) for wuffs_base__render_number_xxx
@@ -3954,16 +3980,16 @@ wuffs_base__pixel_swizzler::swizzle_interleaved_from_slice(
 // (higher indexes) of the destination slice, leaving any untouched bytes on
 // the left side (lower indexes). The default is vice versa: rendering on the
 // left with slack on the right.
-#define WUFFS_BASE__RENDER_NUMBER_XXX__ALIGN_RIGHT ((uint32_t)0x00000010)
+#define WUFFS_BASE__RENDER_NUMBER_XXX__ALIGN_RIGHT ((uint32_t)0x00000100)
 
 // WUFFS_BASE__RENDER_NUMBER_XXX__LEADING_PLUS_SIGN means to render the leading
 // "+" for non-negative numbers: "+0" and "+12.3" instead of "0" and "12.3".
-#define WUFFS_BASE__RENDER_NUMBER_XXX__LEADING_PLUS_SIGN ((uint32_t)0x00000020)
+#define WUFFS_BASE__RENDER_NUMBER_XXX__LEADING_PLUS_SIGN ((uint32_t)0x00000200)
 
 // WUFFS_BASE__RENDER_NUMBER_FXX__DECIMAL_SEPARATOR_IS_A_COMMA means to render
 // one-and-a-half as "1,5" instead of "1.5".
 #define WUFFS_BASE__RENDER_NUMBER_FXX__DECIMAL_SEPARATOR_IS_A_COMMA \
-  ((uint32_t)0x00000100)
+  ((uint32_t)0x00001000)
 
 // WUFFS_BASE__RENDER_NUMBER_FXX__EXPONENT_ETC means whether to never
 // (EXPONENT_ABSENT, equivalent to printf's "%f") or to always
@@ -3973,8 +3999,8 @@ wuffs_base__pixel_swizzler::swizzle_interleaved_from_slice(
 // Having both bits set is the same has having neither bit set, where the
 // notation used depends on whether the exponent is sufficiently large: "0.5"
 // is preferred over "5e-01" but "5e-09" is preferred over "0.000000005".
-#define WUFFS_BASE__RENDER_NUMBER_FXX__EXPONENT_ABSENT ((uint32_t)0x00000200)
-#define WUFFS_BASE__RENDER_NUMBER_FXX__EXPONENT_PRESENT ((uint32_t)0x00000400)
+#define WUFFS_BASE__RENDER_NUMBER_FXX__EXPONENT_ABSENT ((uint32_t)0x00002000)
+#define WUFFS_BASE__RENDER_NUMBER_FXX__EXPONENT_PRESENT ((uint32_t)0x00004000)
 
 // WUFFS_BASE__RENDER_NUMBER_FXX__JUST_ENOUGH_PRECISION means to render the
 // smallest number of digits so that parsing the resultant string will recover
@@ -3986,7 +4012,7 @@ wuffs_base__pixel_swizzler::swizzle_interleaved_from_slice(
 // 0.3000000000000000444089209850062616169452667236328125 will produce
 // "0.30000000000000004".
 #define WUFFS_BASE__RENDER_NUMBER_FXX__JUST_ENOUGH_PRECISION \
-  ((uint32_t)0x00000800)
+  ((uint32_t)0x00008000)
 
 // ---------------- IEEE 754 Floating Point
 
@@ -4008,20 +4034,17 @@ wuffs_base__pixel_swizzler::swizzle_interleaved_from_slice(
 //  - It does not take an optional endptr argument. It does not allow a partial
 //    parse: it returns an error unless all of s is consumed.
 //  - It does not allow whitespace, leading or otherwise.
-//  - It does not allow unnecessary leading zeroes ("0" is valid and its sole
-//    zero is necessary). All of "00", "0644" and "00.7" are invalid.
-//  - It is not affected by i18n / l10n settings such as environment variables.
-//  - Conversely, it always accepts either ',' or '.' as a decimal separator.
-//    In particular, "3,141,592" is always invalid but "3,141" is always valid
-//    (and approximately π). The caller is responsible for e.g. previously
-//    rejecting or filtering s if it contains a comma, if that is unacceptable
-//    to the caller. For example, JSON numbers always use a dot '.' and never a
-//    comma ',', regardless of the LOCALE environment variable.
-//  - It does allow arbitrary underscores. For example, "_3.141_592" would
-//    successfully parse, again approximately π.
-//  - It does allow "inf", "+Infinity" and "-NAN", case insensitive, but it
-//    does not permit "nan" to be followed by an integer mantissa.
 //  - It does not allow hexadecimal floating point numbers.
+//  - It is not affected by i18n / l10n settings such as environment variables.
+//
+// The options argument can change these, but by default, it:
+//  - Allows "inf", "+Infinity" and "-NAN", case insensitive. Similarly,
+//    without an explicit opt-out, it would successfully parse "1e999" as
+//    infinity, even though it overflows double-precision floating point.
+//  - Rejects underscores. With an explicit opt-in, "_3.141_592" would
+//    successfully parse as an approximation to π.
+//  - Rejects unnecessary leading zeroes: "00", "0644" and "00.7".
+//  - Uses a dot '1.5' instead of a comma '1,5' for the decimal separator.
 //
 // For modular builds that divide the base module into sub-modules, using this
 // function requires the WUFFS_CONFIG__MODULE__BASE__FLOATCONV sub-module, not
@@ -4090,17 +4113,19 @@ wuffs_base__parse_number_i64(wuffs_base__slice_u8 s, uint32_t options);
 //    parse: it returns an error unless all of s is consumed.
 //  - It does not allow whitespace, leading or otherwise.
 //  - It does not allow a leading '+' or '-'.
-//  - It does not allow unnecessary leading zeroes ("0" is valid and its sole
-//    zero is necessary). All of "00", "0644" and "007" are invalid.
 //  - It does not take a base argument (e.g. base 10 vs base 16). Instead, it
 //    always accepts both decimal (e.g "1234", "0d5678") and hexadecimal (e.g.
 //    "0x9aBC"). The caller is responsible for prior filtering of e.g. hex
 //    numbers if they are unwanted. For example, Wuffs' JSON decoder will only
 //    produce a wuffs_base__token for decimal numbers, not hexadecimal.
 //  - It is not affected by i18n / l10n settings such as environment variables.
-//  - It does allow arbitrary underscores, except inside the optional 2-byte
-//    opening "0d" or "0X" that denotes base-10 or base-16. For example,
-//    "__0D_1_002" would successfully parse as "one thousand and two".
+//
+// The options argument can change these, but by default, it:
+//  - Rejects underscores. With an explicit opt-in, "__0D_1_002" would
+//    successfully parse as "one thousand and two". Underscores are still
+//    rejected inside the optional 2-byte opening "0d" or "0X" that denotes
+//    base-10 or base-16.
+//  - Rejects unnecessary leading zeroes: "00" and "0644".
 //
 // For modular builds that divide the base module into sub-modules, using this
 // function requires the WUFFS_CONFIG__MODULE__BASE__INTCONV sub-module, not
@@ -9991,7 +10016,8 @@ wuffs_base__private_implementation__high_prec_dec__assign(
 static wuffs_base__status  //
 wuffs_base__private_implementation__high_prec_dec__parse(
     wuffs_base__private_implementation__high_prec_dec* h,
-    wuffs_base__slice_u8 s) {
+    wuffs_base__slice_u8 s,
+    uint32_t options) {
   if (!h) {
     return wuffs_base__make_status(wuffs_base__error__bad_receiver);
   }
@@ -10003,11 +10029,13 @@ wuffs_base__private_implementation__high_prec_dec__parse(
   uint8_t* p = s.ptr;
   uint8_t* q = s.ptr + s.len;
 
-  for (;; p++) {
-    if (p >= q) {
-      return wuffs_base__make_status(wuffs_base__error__bad_argument);
-    } else if (*p != '_') {
-      break;
+  if (options & WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES) {
+    for (;; p++) {
+      if (p >= q) {
+        return wuffs_base__make_status(wuffs_base__error__bad_argument);
+      } else if (*p != '_') {
+        break;
+      }
     }
   }
 
@@ -10021,11 +10049,13 @@ wuffs_base__private_implementation__high_prec_dec__parse(
     } else {
       break;
     }
-    for (;; p++) {
-      if (p >= q) {
-        return wuffs_base__make_status(wuffs_base__error__bad_argument);
-      } else if (*p != '_') {
-        break;
+    if (options & WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES) {
+      for (;; p++) {
+        if (p >= q) {
+          return wuffs_base__make_status(wuffs_base__error__bad_argument);
+        } else if (*p != '_') {
+          break;
+        }
       }
     }
   } while (0);
@@ -10039,26 +10069,39 @@ wuffs_base__private_implementation__high_prec_dec__parse(
   uint32_t nd = 0;
   int32_t dp = 0;
   bool no_digits_before_separator = false;
-  if ('0' == *p) {
+  if (('0' == *p) &&
+      !(options &
+        WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_MULTIPLE_LEADING_ZEROES)) {
     p++;
     for (;; p++) {
       if (p >= q) {
         goto after_all;
-      } else if ((*p == '.') || (*p == ',')) {
+      } else if (*p ==
+                 ((options &
+                   WUFFS_BASE__PARSE_NUMBER_FXX__DECIMAL_SEPARATOR_IS_A_COMMA)
+                      ? ','
+                      : '.')) {
         p++;
         goto after_sep;
       } else if ((*p == 'E') || (*p == 'e')) {
         p++;
         goto after_exp;
-      } else if (*p != '_') {
+      } else if ((*p != '_') ||
+                 !(options & WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES)) {
         return wuffs_base__make_status(wuffs_base__error__bad_argument);
       }
     }
 
-  } else if (('0' < *p) && (*p <= '9')) {
-    h->digits[nd++] = (uint8_t)(*p - '0');
-    dp = (int32_t)nd;
-    p++;
+  } else if (('0' <= *p) && (*p <= '9')) {
+    if (*p == '0') {
+      for (; (p < q) && (*p == '0'); p++) {
+      }
+    } else {
+      h->digits[nd++] = (uint8_t)(*p - '0');
+      dp = (int32_t)nd;
+      p++;
+    }
+
     for (;; p++) {
       if (p >= q) {
         goto after_all;
@@ -10070,18 +10113,26 @@ wuffs_base__private_implementation__high_prec_dec__parse(
           // Long-tail non-zeroes set the truncated bit.
           h->truncated = true;
         }
-      } else if ((*p == '.') || (*p == ',')) {
+      } else if (*p ==
+                 ((options &
+                   WUFFS_BASE__PARSE_NUMBER_FXX__DECIMAL_SEPARATOR_IS_A_COMMA)
+                      ? ','
+                      : '.')) {
         p++;
         goto after_sep;
       } else if ((*p == 'E') || (*p == 'e')) {
         p++;
         goto after_exp;
-      } else if (*p != '_') {
+      } else if ((*p != '_') ||
+                 !(options & WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES)) {
         return wuffs_base__make_status(wuffs_base__error__bad_argument);
       }
     }
 
-  } else if ((*p == '.') || (*p == ',')) {
+  } else if (*p == ((options &
+                     WUFFS_BASE__PARSE_NUMBER_FXX__DECIMAL_SEPARATOR_IS_A_COMMA)
+                        ? ','
+                        : '.')) {
     p++;
     no_digits_before_separator = true;
 
@@ -10111,18 +10162,21 @@ after_sep:
     } else if ((*p == 'E') || (*p == 'e')) {
       p++;
       goto after_exp;
-    } else if (*p != '_') {
+    } else if ((*p != '_') ||
+               !(options & WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES)) {
       return wuffs_base__make_status(wuffs_base__error__bad_argument);
     }
   }
 
 after_exp:
   do {
-    for (;; p++) {
-      if (p >= q) {
-        return wuffs_base__make_status(wuffs_base__error__bad_argument);
-      } else if (*p != '_') {
-        break;
+    if (options & WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES) {
+      for (;; p++) {
+        if (p >= q) {
+          return wuffs_base__make_status(wuffs_base__error__bad_argument);
+        } else if (*p != '_') {
+          break;
+        }
       }
     }
 
@@ -10140,7 +10194,8 @@ after_exp:
         WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__DIGITS_PRECISION;
     bool saw_exp_digits = false;
     for (; p < q; p++) {
-      if (*p == '_') {
+      if ((*p == '_') &&
+          (options & WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES)) {
         // No-op.
       } else if (('0' <= *p) && (*p <= '9')) {
         saw_exp_digits = true;
@@ -10820,16 +10875,21 @@ wuffs_base__private_implementation__parse_number_f64_eisel(uint64_t man,
 // --------
 
 static wuffs_base__result_f64  //
-wuffs_base__parse_number_f64_special(wuffs_base__slice_u8 s,
-                                     const char* fallback_status_repr) {
+wuffs_base__private_implementation__parse_number_f64_special(
+    wuffs_base__slice_u8 s,
+    uint32_t options) {
   do {
+    if (options & WUFFS_BASE__PARSE_NUMBER_FXX__REJECT_INF_AND_NAN) {
+      goto fail;
+    }
+
     uint8_t* p = s.ptr;
     uint8_t* q = s.ptr + s.len;
 
     for (; (p < q) && (*p == '_'); p++) {
     }
     if (p >= q) {
-      goto fallback;
+      goto fail;
     }
 
     // Parse sign.
@@ -10847,7 +10907,7 @@ wuffs_base__parse_number_f64_special(wuffs_base__slice_u8 s,
       }
     } while (0);
     if (p >= q) {
-      goto fallback;
+      goto fail;
     }
 
     bool nan = false;
@@ -10857,7 +10917,7 @@ wuffs_base__parse_number_f64_special(wuffs_base__slice_u8 s,
         if (((q - p) < 3) ||                     //
             ((p[1] != 'N') && (p[1] != 'n')) ||  //
             ((p[2] != 'F') && (p[2] != 'f'))) {
-          goto fallback;
+          goto fail;
         }
         p += 3;
 
@@ -10869,21 +10929,21 @@ wuffs_base__parse_number_f64_special(wuffs_base__slice_u8 s,
                    ((p[2] != 'I') && (p[2] != 'i')) ||  //
                    ((p[3] != 'T') && (p[3] != 't')) ||  //
                    ((p[4] != 'Y') && (p[4] != 'y'))) {
-          goto fallback;
+          goto fail;
         }
         p += 5;
 
         if ((p >= q) || (*p == '_')) {
           break;
         }
-        goto fallback;
+        goto fail;
 
       case 'N':
       case 'n':
         if (((q - p) < 3) ||                     //
             ((p[1] != 'A') && (p[1] != 'a')) ||  //
             ((p[2] != 'N') && (p[2] != 'n'))) {
-          goto fallback;
+          goto fail;
         }
         p += 3;
 
@@ -10891,17 +10951,17 @@ wuffs_base__parse_number_f64_special(wuffs_base__slice_u8 s,
           nan = true;
           break;
         }
-        goto fallback;
+        goto fail;
 
       default:
-        goto fallback;
+        goto fail;
     }
 
     // Finish.
     for (; (p < q) && (*p == '_'); p++) {
     }
     if (p != q) {
-      goto fallback;
+      goto fail;
     }
     wuffs_base__result_f64 ret;
     ret.status.repr = NULL;
@@ -10911,18 +10971,19 @@ wuffs_base__parse_number_f64_special(wuffs_base__slice_u8 s,
     return ret;
   } while (0);
 
-fallback:
+fail:
   do {
     wuffs_base__result_f64 ret;
-    ret.status.repr = fallback_status_repr;
+    ret.status.repr = wuffs_base__error__bad_argument;
     ret.value = 0;
     return ret;
   } while (0);
 }
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__result_f64  //
-wuffs_base__private_implementation__parse_number_f64__fallback(
-    wuffs_base__private_implementation__high_prec_dec* h) {
+wuffs_base__private_implementation__high_prec_dec__to_f64(
+    wuffs_base__private_implementation__high_prec_dec* h,
+    uint32_t options) {
   do {
     // powers converts decimal powers of 10 to binary powers of 2. For example,
     // (10000 >> 13) is 1. It stops before the elements exceed 60, also known
@@ -11070,6 +11131,13 @@ zero:
 
 infinity:
   do {
+    if (options & WUFFS_BASE__PARSE_NUMBER_FXX__REJECT_INF_AND_NAN) {
+      wuffs_base__result_f64 ret;
+      ret.status.repr = wuffs_base__error__bad_argument;
+      ret.value = 0;
+      return ret;
+    }
+
     uint64_t bits = h->negative ? 0xFFF0000000000000 : 0x7FF0000000000000;
 
     wuffs_base__result_f64 ret;
@@ -11157,7 +11225,10 @@ wuffs_base__parse_number_f64(wuffs_base__slice_u8 s, uint32_t options) {
     // Walk the "d"s after the optional decimal separator ('.' or ','),
     // updating the man and exp10 variables.
     int32_t exp10 = 0;
-    if ((*p == '.') || (*p == ',')) {
+    if (*p ==
+        ((options & WUFFS_BASE__PARSE_NUMBER_FXX__DECIMAL_SEPARATOR_IS_A_COMMA)
+             ? ','
+             : '.')) {
       p++;
       const uint8_t* first_after_separator_ptr = p;
       if (!wuffs_base__private_implementation__is_decimal_digit(*p)) {
@@ -11296,11 +11367,14 @@ fallback:
   do {
     wuffs_base__private_implementation__high_prec_dec h;
     wuffs_base__status status =
-        wuffs_base__private_implementation__high_prec_dec__parse(&h, s);
+        wuffs_base__private_implementation__high_prec_dec__parse(&h, s,
+                                                                 options);
     if (status.repr) {
-      return wuffs_base__parse_number_f64_special(s, status.repr);
+      return wuffs_base__private_implementation__parse_number_f64_special(
+          s, options);
     }
-    return wuffs_base__private_implementation__parse_number_f64__fallback(&h);
+    return wuffs_base__private_implementation__high_prec_dec__to_f64(&h,
+                                                                     options);
   } while (0);
 }
 
@@ -11704,7 +11778,9 @@ wuffs_base__parse_number_i64(wuffs_base__slice_u8 s, uint32_t options) {
   uint8_t* p = s.ptr;
   uint8_t* q = s.ptr + s.len;
 
-  for (; (p < q) && (*p == '_'); p++) {
+  if (options & WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES) {
+    for (; (p < q) && (*p == '_'); p++) {
+    }
   }
 
   bool negative = false;
@@ -11765,7 +11841,9 @@ wuffs_base__parse_number_u64(wuffs_base__slice_u8 s, uint32_t options) {
   uint8_t* p = s.ptr;
   uint8_t* q = s.ptr + s.len;
 
-  for (; (p < q) && (*p == '_'); p++) {
+  if (options & WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES) {
+    for (; (p < q) && (*p == '_'); p++) {
+    }
   }
 
   if (p >= q) {
@@ -11776,19 +11854,27 @@ wuffs_base__parse_number_u64(wuffs_base__slice_u8 s, uint32_t options) {
     if (p >= q) {
       goto ok_zero;
     }
-    if (*p == '_') {
-      p++;
-      for (; p < q; p++) {
-        if (*p != '_') {
-          goto fail_bad_argument;
+    if (options & WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES) {
+      if (*p == '_') {
+        p++;
+        for (; p < q; p++) {
+          if (*p != '_') {
+            if (options &
+                WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_MULTIPLE_LEADING_ZEROES) {
+              goto decimal;
+            }
+            goto fail_bad_argument;
+          }
         }
+        goto ok_zero;
       }
-      goto ok_zero;
     }
 
     if ((*p == 'x') || (*p == 'X')) {
       p++;
-      for (; (p < q) && (*p == '_'); p++) {
+      if (options & WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES) {
+        for (; (p < q) && (*p == '_'); p++) {
+        }
       }
       if (p < q) {
         goto hexadecimal;
@@ -11796,13 +11882,18 @@ wuffs_base__parse_number_u64(wuffs_base__slice_u8 s, uint32_t options) {
 
     } else if ((*p == 'd') || (*p == 'D')) {
       p++;
-      for (; (p < q) && (*p == '_'); p++) {
+      if (options & WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES) {
+        for (; (p < q) && (*p == '_'); p++) {
+        }
       }
       if (p < q) {
         goto decimal;
       }
     }
 
+    if (options & WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_MULTIPLE_LEADING_ZEROES) {
+      goto decimal;
+    }
     goto fail_bad_argument;
   }
 
@@ -11819,7 +11910,8 @@ decimal:
     const uint8_t max1 = 5;
 
     for (; p < q; p++) {
-      if (*p == '_') {
+      if ((*p == '_') &&
+          (options & WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES)) {
         continue;
       }
       uint8_t digit = wuffs_base__parse_number__decimal_digits[*p];
@@ -11848,7 +11940,8 @@ hexadecimal:
     v &= 0x0F;
 
     for (; p < q; p++) {
-      if (*p == '_') {
+      if ((*p == '_') &&
+          (options & WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES)) {
         continue;
       }
       uint8_t digit = wuffs_base__parse_number__hexadecimal_digits[*p];
