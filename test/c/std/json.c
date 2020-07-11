@@ -360,31 +360,33 @@ test_wuffs_strconv_hpd_rounded_integer() {
                   have, test_cases[tc].want);
     }
   }
+  return NULL;
+}
+
+const char*  //
+test_wuffs_strconv_parse_number_f64_options() {
+  CHECK_FOCUS(__func__);
 
   // Test WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_MULTIPLE_LEADING_ZEROES.
   {
     int o;
     for (o = 0; o < 2; o++) {
-      wuffs_base__private_implementation__high_prec_dec hpd;
       const char* str = "001.25";
-      wuffs_base__status status =
-          wuffs_base__private_implementation__high_prec_dec__parse(
-              &hpd, wuffs_base__make_slice_u8((void*)str, strlen(str)),
-              (o ? WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_MULTIPLE_LEADING_ZEROES
-                 : WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS));
+      wuffs_base__result_f64 r = wuffs_base__parse_number_f64(
+          wuffs_base__make_slice_u8((void*)str, strlen(str)),
+          (o ? WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_MULTIPLE_LEADING_ZEROES
+             : WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS));
 
       if (o == 0) {
-        if (status.repr != wuffs_base__error__bad_argument) {
+        if (r.status.repr != wuffs_base__error__bad_argument) {
           RETURN_FAIL(
               "ALLOW_MULTIPLE_LEADING_ZEROES off: have \"%s\", want \"%s\"",
-              status.repr, wuffs_base__error__bad_argument);
+              r.status.repr, wuffs_base__error__bad_argument);
         }
         continue;
       }
 
-      CHECK_STATUS("ALLOW_MULTIPLE_LEADING_ZEROES on", status);
-      wuffs_base__result_f64 r =
-          wuffs_base__private_implementation__high_prec_dec__to_f64(&hpd, 0);
+      CHECK_STATUS("ALLOW_MULTIPLE_LEADING_ZEROES on", r.status);
       uint64_t have =
           wuffs_base__ieee_754_bit_representation__from_f64(r.value);
       uint64_t want = 0x3FF4000000000000;
@@ -400,25 +402,21 @@ test_wuffs_strconv_hpd_rounded_integer() {
   {
     int o;
     for (o = 0; o < 2; o++) {
-      wuffs_base__private_implementation__high_prec_dec hpd;
       const char* str = "_1.2__5";
-      wuffs_base__status status =
-          wuffs_base__private_implementation__high_prec_dec__parse(
-              &hpd, wuffs_base__make_slice_u8((void*)str, strlen(str)),
-              (o ? WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES
-                 : WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS));
+      wuffs_base__result_f64 r = wuffs_base__parse_number_f64(
+          wuffs_base__make_slice_u8((void*)str, strlen(str)),
+          (o ? WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES
+             : WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS));
 
       if (o == 0) {
-        if (status.repr != wuffs_base__error__bad_argument) {
+        if (r.status.repr != wuffs_base__error__bad_argument) {
           RETURN_FAIL("ALLOW_UNDERSCORES off: have \"%s\", want \"%s\"",
-                      status.repr, wuffs_base__error__bad_argument);
+                      r.status.repr, wuffs_base__error__bad_argument);
         }
         continue;
       }
 
-      CHECK_STATUS("ALLOW_UNDERSCORES on", status);
-      wuffs_base__result_f64 r =
-          wuffs_base__private_implementation__high_prec_dec__to_f64(&hpd, 0);
+      CHECK_STATUS("ALLOW_UNDERSCORES on", r.status);
       uint64_t have =
           wuffs_base__ieee_754_bit_representation__from_f64(r.value);
       uint64_t want = 0x3FF4000000000000;
@@ -434,26 +432,22 @@ test_wuffs_strconv_hpd_rounded_integer() {
   {
     int o;
     for (o = 0; o < 2; o++) {
-      wuffs_base__private_implementation__high_prec_dec hpd;
       const char* str = "1,75";
-      wuffs_base__status status =
-          wuffs_base__private_implementation__high_prec_dec__parse(
-              &hpd, wuffs_base__make_slice_u8((void*)str, strlen(str)),
-              (o ? WUFFS_BASE__PARSE_NUMBER_FXX__DECIMAL_SEPARATOR_IS_A_COMMA
-                 : WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS));
+      wuffs_base__result_f64 r = wuffs_base__parse_number_f64(
+          wuffs_base__make_slice_u8((void*)str, strlen(str)),
+          (o ? WUFFS_BASE__PARSE_NUMBER_FXX__DECIMAL_SEPARATOR_IS_A_COMMA
+             : WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS));
 
       if (o == 0) {
-        if (status.repr != wuffs_base__error__bad_argument) {
+        if (r.status.repr != wuffs_base__error__bad_argument) {
           RETURN_FAIL(
               "DECIMAL_SEPARATOR_IS_A_COMMA off: have \"%s\", want \"%s\"",
-              status.repr, wuffs_base__error__bad_argument);
+              r.status.repr, wuffs_base__error__bad_argument);
         }
         continue;
       }
 
-      CHECK_STATUS("DECIMAL_SEPARATOR_IS_A_COMMA on", status);
-      wuffs_base__result_f64 r =
-          wuffs_base__private_implementation__high_prec_dec__to_f64(&hpd, 0);
+      CHECK_STATUS("DECIMAL_SEPARATOR_IS_A_COMMA on", r.status);
       uint64_t have =
           wuffs_base__ieee_754_bit_representation__from_f64(r.value);
       uint64_t want = 0x3FFC000000000000;
@@ -465,9 +459,7 @@ test_wuffs_strconv_hpd_rounded_integer() {
     }
   }
 
-  // Test WUFFS_BASE__PARSE_NUMBER_FXX__REJECT_INF_AND_NAN, based on calling
-  // wuffs_base__parse_number_f64. It does not call
-  // wuffs_base__private_implementation__high_prec_dec__parse directly.
+  // Test WUFFS_BASE__PARSE_NUMBER_FXX__REJECT_INF_AND_NAN.
   {
     int o;
     for (o = 0; o < 4; o++) {
@@ -709,7 +701,7 @@ test_wuffs_strconv_base_64() {
 // ----------------
 
 const char*  //
-test_wuffs_strconv_parse_number_f64() {
+test_wuffs_strconv_parse_number_f64_regular() {
   CHECK_FOCUS(__func__);
 
   const uint64_t fail = 0xDEADBEEF;
@@ -3647,7 +3639,8 @@ proc g_tests[] = {
     test_wuffs_strconv_base_64,
     test_wuffs_strconv_hpd_rounded_integer,
     test_wuffs_strconv_hpd_shift,
-    test_wuffs_strconv_parse_number_f64,
+    test_wuffs_strconv_parse_number_f64_options,
+    test_wuffs_strconv_parse_number_f64_regular,
     test_wuffs_strconv_parse_number_i64,
     test_wuffs_strconv_parse_number_u64,
     test_wuffs_strconv_render_number_f64,
