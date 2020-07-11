@@ -396,6 +396,40 @@ test_wuffs_strconv_hpd_rounded_integer() {
     }
   }
 
+  // Test WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES.
+  {
+    int o;
+    for (o = 0; o < 2; o++) {
+      wuffs_base__private_implementation__high_prec_dec hpd;
+      const char* str = "_1.2__5";
+      wuffs_base__status status =
+          wuffs_base__private_implementation__high_prec_dec__parse(
+              &hpd, wuffs_base__make_slice_u8((void*)str, strlen(str)),
+              (o ? WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES
+                 : WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS));
+
+      if (o == 0) {
+        if (status.repr != wuffs_base__error__bad_argument) {
+          RETURN_FAIL("ALLOW_UNDERSCORES off: have \"%s\", want \"%s\"",
+                      status.repr, wuffs_base__error__bad_argument);
+        }
+        continue;
+      }
+
+      CHECK_STATUS("ALLOW_UNDERSCORES on", status);
+      wuffs_base__result_f64 r =
+          wuffs_base__private_implementation__high_prec_dec__to_f64(&hpd, 0);
+      uint64_t have =
+          wuffs_base__ieee_754_bit_representation__from_f64(r.value);
+      uint64_t want = 0x3FF4000000000000;
+      if (have != want) {
+        RETURN_FAIL("ALLOW_UNDERSCORES on: have 0x%016" PRIX64
+                    ", want 0x%016" PRIX64,
+                    have, want);
+      }
+    }
+  }
+
   // Test WUFFS_BASE__PARSE_NUMBER_FXX__DECIMAL_SEPARATOR_IS_A_COMMA.
   {
     int o;
@@ -800,7 +834,7 @@ test_wuffs_strconv_parse_number_f64() {
     wuffs_base__result_f64 r = wuffs_base__parse_number_f64(
         wuffs_base__make_slice_u8((void*)test_cases[tc].str,
                                   strlen(test_cases[tc].str)),
-        WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS);
+        WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES);
     uint64_t have =
         (r.status.repr == NULL)
             ? wuffs_base__ieee_754_bit_representation__from_f64(r.value)
@@ -853,7 +887,7 @@ test_wuffs_strconv_parse_number_i64() {
     wuffs_base__result_i64 r = wuffs_base__parse_number_i64(
         wuffs_base__make_slice_u8((void*)test_cases[tc].str,
                                   strlen(test_cases[tc].str)),
-        WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS);
+        WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES);
     int64_t have = (r.status.repr == NULL) ? r.value : fail;
     if (have != test_cases[tc].want) {
       RETURN_FAIL("\"%s\": have 0x%" PRIX64 ", want 0x%" PRIX64,
@@ -940,7 +974,7 @@ test_wuffs_strconv_parse_number_u64() {
     wuffs_base__result_u64 r = wuffs_base__parse_number_u64(
         wuffs_base__make_slice_u8((void*)test_cases[tc].str,
                                   strlen(test_cases[tc].str)),
-        WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS);
+        WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES);
     uint64_t have = (r.status.repr == NULL) ? r.value : fail;
     if (have != test_cases[tc].want) {
       RETURN_FAIL("\"%s\": have 0x%" PRIX64 ", want 0x%" PRIX64,
@@ -969,6 +1003,35 @@ test_wuffs_strconv_parse_number_u64() {
 
       CHECK_STATUS("ALLOW_MULTIPLE_LEADING_ZEROES on", r.status);
       uint64_t want = 7;
+      if (r.value != want) {
+        RETURN_FAIL("ALLOW_MULTIPLE_LEADING_ZEROES on: have %" PRIu64
+                    ", want %" PRIu64,
+                    r.value, want);
+      }
+    }
+  }
+
+  // Test WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES.
+  {
+    int o;
+    for (o = 0; o < 2; o++) {
+      const char* str = "56_7__8";
+      wuffs_base__result_u64 r = wuffs_base__parse_number_u64(
+          wuffs_base__make_slice_u8((void*)str, strlen(str)),
+          (o ? WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES
+             : WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS));
+
+      if (o == 0) {
+        if (r.status.repr != wuffs_base__error__bad_argument) {
+          RETURN_FAIL(
+              "ALLOW_MULTIPLE_LEADING_ZEROES off: have \"%s\", want \"%s\"",
+              r.status.repr, wuffs_base__error__bad_argument);
+        }
+        continue;
+      }
+
+      CHECK_STATUS("ALLOW_MULTIPLE_LEADING_ZEROES on", r.status);
+      uint64_t want = 5678;
       if (r.value != want) {
         RETURN_FAIL("ALLOW_MULTIPLE_LEADING_ZEROES on: have %" PRIu64
                     ", want %" PRIu64,

@@ -110,7 +110,9 @@ wuffs_base__parse_number_i64(wuffs_base__slice_u8 s, uint32_t options) {
   uint8_t* p = s.ptr;
   uint8_t* q = s.ptr + s.len;
 
-  for (; (p < q) && (*p == '_'); p++) {
+  if (options & WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES) {
+    for (; (p < q) && (*p == '_'); p++) {
+    }
   }
 
   bool negative = false;
@@ -171,7 +173,9 @@ wuffs_base__parse_number_u64(wuffs_base__slice_u8 s, uint32_t options) {
   uint8_t* p = s.ptr;
   uint8_t* q = s.ptr + s.len;
 
-  for (; (p < q) && (*p == '_'); p++) {
+  if (options & WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES) {
+    for (; (p < q) && (*p == '_'); p++) {
+    }
   }
 
   if (p >= q) {
@@ -182,23 +186,27 @@ wuffs_base__parse_number_u64(wuffs_base__slice_u8 s, uint32_t options) {
     if (p >= q) {
       goto ok_zero;
     }
-    if (*p == '_') {
-      p++;
-      for (; p < q; p++) {
-        if (*p != '_') {
-          if (options &
-              WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_MULTIPLE_LEADING_ZEROES) {
-            goto decimal;
+    if (options & WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES) {
+      if (*p == '_') {
+        p++;
+        for (; p < q; p++) {
+          if (*p != '_') {
+            if (options &
+                WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_MULTIPLE_LEADING_ZEROES) {
+              goto decimal;
+            }
+            goto fail_bad_argument;
           }
-          goto fail_bad_argument;
         }
+        goto ok_zero;
       }
-      goto ok_zero;
     }
 
     if ((*p == 'x') || (*p == 'X')) {
       p++;
-      for (; (p < q) && (*p == '_'); p++) {
+      if (options & WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES) {
+        for (; (p < q) && (*p == '_'); p++) {
+        }
       }
       if (p < q) {
         goto hexadecimal;
@@ -206,7 +214,9 @@ wuffs_base__parse_number_u64(wuffs_base__slice_u8 s, uint32_t options) {
 
     } else if ((*p == 'd') || (*p == 'D')) {
       p++;
-      for (; (p < q) && (*p == '_'); p++) {
+      if (options & WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES) {
+        for (; (p < q) && (*p == '_'); p++) {
+        }
       }
       if (p < q) {
         goto decimal;
@@ -232,7 +242,8 @@ decimal:
     const uint8_t max1 = 5;
 
     for (; p < q; p++) {
-      if (*p == '_') {
+      if ((*p == '_') &&
+          (options & WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES)) {
         continue;
       }
       uint8_t digit = wuffs_base__parse_number__decimal_digits[*p];
@@ -261,7 +272,8 @@ hexadecimal:
     v &= 0x0F;
 
     for (; p < q; p++) {
-      if (*p == '_') {
+      if ((*p == '_') &&
+          (options & WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES)) {
         continue;
       }
       uint8_t digit = wuffs_base__parse_number__hexadecimal_digits[*p];

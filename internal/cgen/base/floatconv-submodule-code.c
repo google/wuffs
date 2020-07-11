@@ -147,11 +147,13 @@ wuffs_base__private_implementation__high_prec_dec__parse(
   uint8_t* p = s.ptr;
   uint8_t* q = s.ptr + s.len;
 
-  for (;; p++) {
-    if (p >= q) {
-      return wuffs_base__make_status(wuffs_base__error__bad_argument);
-    } else if (*p != '_') {
-      break;
+  if (options & WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES) {
+    for (;; p++) {
+      if (p >= q) {
+        return wuffs_base__make_status(wuffs_base__error__bad_argument);
+      } else if (*p != '_') {
+        break;
+      }
     }
   }
 
@@ -165,11 +167,13 @@ wuffs_base__private_implementation__high_prec_dec__parse(
     } else {
       break;
     }
-    for (;; p++) {
-      if (p >= q) {
-        return wuffs_base__make_status(wuffs_base__error__bad_argument);
-      } else if (*p != '_') {
-        break;
+    if (options & WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES) {
+      for (;; p++) {
+        if (p >= q) {
+          return wuffs_base__make_status(wuffs_base__error__bad_argument);
+        } else if (*p != '_') {
+          break;
+        }
       }
     }
   } while (0);
@@ -200,7 +204,8 @@ wuffs_base__private_implementation__high_prec_dec__parse(
       } else if ((*p == 'E') || (*p == 'e')) {
         p++;
         goto after_exp;
-      } else if (*p != '_') {
+      } else if ((*p != '_') ||
+                 !(options & WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES)) {
         return wuffs_base__make_status(wuffs_base__error__bad_argument);
       }
     }
@@ -236,7 +241,8 @@ wuffs_base__private_implementation__high_prec_dec__parse(
       } else if ((*p == 'E') || (*p == 'e')) {
         p++;
         goto after_exp;
-      } else if (*p != '_') {
+      } else if ((*p != '_') ||
+                 !(options & WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES)) {
         return wuffs_base__make_status(wuffs_base__error__bad_argument);
       }
     }
@@ -274,18 +280,21 @@ after_sep:
     } else if ((*p == 'E') || (*p == 'e')) {
       p++;
       goto after_exp;
-    } else if (*p != '_') {
+    } else if ((*p != '_') ||
+               !(options & WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES)) {
       return wuffs_base__make_status(wuffs_base__error__bad_argument);
     }
   }
 
 after_exp:
   do {
-    for (;; p++) {
-      if (p >= q) {
-        return wuffs_base__make_status(wuffs_base__error__bad_argument);
-      } else if (*p != '_') {
-        break;
+    if (options & WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES) {
+      for (;; p++) {
+        if (p >= q) {
+          return wuffs_base__make_status(wuffs_base__error__bad_argument);
+        } else if (*p != '_') {
+          break;
+        }
       }
     }
 
@@ -303,7 +312,8 @@ after_exp:
         WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__DIGITS_PRECISION;
     bool saw_exp_digits = false;
     for (; p < q; p++) {
-      if (*p == '_') {
+      if ((*p == '_') &&
+          (options & WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES)) {
         // No-op.
       } else if (('0' <= *p) && (*p <= '9')) {
         saw_exp_digits = true;
