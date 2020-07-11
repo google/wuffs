@@ -32,6 +32,10 @@ func TestFormatBytes(tt *testing.T) {
 		src:  "foo{\nbar\n    }\nbaz\n",
 		want: "foo{\n  bar\n}\nbaz\n",
 	}, {
+		// Braces with initial indent, giving every output line +3 spaces.
+		src:  "   foo{\nbar\n    }\nbaz\n",
+		want: "   foo{\n     bar\n   }\n   baz\n",
+	}, {
 		// Parentheses.
 		src:  "i = (j +\nk)\np = q\n",
 		want: "i = (j +\n    k)\np = q\n",
@@ -61,7 +65,7 @@ func TestFormatBytes(tt *testing.T) {
 		want: "a['key'] = `{\n\n\nX` ;\nb = {\n  c = 0\n",
 	}, {
 		// Slash-star comment.
-		src:  "   a['key'] = /*{\n\n\nX*/ ; \nb = {\nc = 0\n",
+		src:  "\n   a['key'] = /*{\n\n\nX*/ ; \nb = {\nc = 0\n",
 		want: "a['key'] = /*{\n\n\nX*/ ;\nb = {\n  c = 0\n",
 	}, {
 		// Nested blocks with label.

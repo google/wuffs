@@ -159,13 +159,6 @@ type Options struct {
 //
 // Passing a nil opts is valid and equivalent to passing &Options{}.
 func FormatBytes(dst []byte, src []byte, opts *Options) []byte {
-	src = trimLeadingWhiteSpaceAndNewLines(src)
-	if len(src) == 0 {
-		return dst
-	} else if len(dst) == 0 {
-		dst = make([]byte, 0, len(src)+(len(src)/2))
-	}
-
 	indentBytes := spaces
 	indentCount := 2
 	if opts != nil {
@@ -175,6 +168,18 @@ func FormatBytes(dst []byte, src []byte, opts *Options) []byte {
 		} else if opts.Spaces > 0 {
 			indentCount = opts.Spaces
 		}
+	}
+
+	// Count the number of leading spaces (or tabs) on the first line. Every
+	// output line starts with that much indent, before further indentation
+	// from unbalanced braces and parentheses.
+	initialIndent := countInitialOccurrences(src, indentBytes[0])
+
+	src = trimLeadingWhiteSpaceAndNewLines(src)
+	if len(src) == 0 {
+		return dst
+	} else if len(dst) == 0 {
+		dst = make([]byte, 0, len(src)+(len(src)/2))
 	}
 
 	nBlankLines := 0 // The number of preceding blank lines.
@@ -203,10 +208,12 @@ func FormatBytes(dst []byte, src []byte, opts *Options) []byte {
 
 		// Handle preprocessor lines (#ifdef, #pragma, etc).
 		if preproc || (line[0] == '#') {
+			indent := initialIndent
 			if preproc {
-				dst = appendRepeatedBytes(dst, indentBytes, indentCount*2)
+				indent += indentCount * 2
 			}
 			line = trimTrailingWhiteSpace(line)
+			dst = appendRepeatedBytes(dst, indentBytes, indent)
 			dst = append(dst, line...)
 			dst = append(dst, '\n')
 			hanging = false
@@ -237,7 +244,7 @@ func FormatBytes(dst []byte, src []byte, opts *Options) []byte {
 
 		// Output indentation. Dumbindent's default, 2 spaces per indent level,
 		// roughly approximates clang-format's default style.
-		indent := 0
+		indent := initialIndent
 		if nBraces > 0 {
 			indent += indentCount * nBraces
 		}
@@ -356,6 +363,17 @@ func appendRepeatedBytes(dst []byte, repeatedBytes []byte, number int) []byte {
 		number -= n
 	}
 	return dst
+}
+
+// countInitialOccurrences returns the length of the longest prefix of s that
+// consists entirely of x. Passing ("aaabacdaa", 'a') returns 3.
+func countInitialOccurrences(s []byte, x byte) int {
+	for i, c := range s {
+		if c != x {
+			return i
+		}
+	}
+	return len(s)
 }
 
 // lastNonWhiteSpace returns the 'z' in "abc xyz  ". It returns '\x00' if s
