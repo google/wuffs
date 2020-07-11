@@ -346,11 +346,12 @@ test_wuffs_strconv_hpd_rounded_integer() {
   int tc;
   for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
     wuffs_base__private_implementation__high_prec_dec hpd;
-    CHECK_STATUS(
-        "hpd__parse",
-        wuffs_base__private_implementation__high_prec_dec__parse(
-            &hpd, wuffs_base__make_slice_u8((void*)test_cases[tc].str,
-                                            strlen(test_cases[tc].str))));
+    CHECK_STATUS("hpd__parse",
+                 wuffs_base__private_implementation__high_prec_dec__parse(
+                     &hpd,
+                     wuffs_base__make_slice_u8((void*)test_cases[tc].str,
+                                               strlen(test_cases[tc].str)),
+                     WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS));
     uint64_t have =
         wuffs_base__private_implementation__high_prec_dec__rounded_integer(
             &hpd);
@@ -359,6 +360,42 @@ test_wuffs_strconv_hpd_rounded_integer() {
                   have, test_cases[tc].want);
     }
   }
+
+  // Test WUFFS_BASE__PARSE_NUMBER_FXX__DECIMAL_SEPARATOR_IS_A_COMMA.
+  {
+    int o;
+    for (o = 0; o < 2; o++) {
+      wuffs_base__private_implementation__high_prec_dec hpd;
+      const char* str = "1,75";
+      wuffs_base__status status =
+          wuffs_base__private_implementation__high_prec_dec__parse(
+              &hpd, wuffs_base__make_slice_u8((void*)str, strlen(str)),
+              (o ? WUFFS_BASE__PARSE_NUMBER_FXX__DECIMAL_SEPARATOR_IS_A_COMMA
+                 : WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS));
+
+      if (o == 0) {
+        if (status.repr != wuffs_base__error__bad_argument) {
+          RETURN_FAIL(
+              "DECIMAL_SEPARATOR_IS_A_COMMA off: have \"%s\", want \"%s\"",
+              status.repr, wuffs_base__error__bad_argument);
+        }
+        continue;
+      }
+
+      CHECK_STATUS("DECIMAL_SEPARATOR_IS_A_COMMA on", status);
+      wuffs_base__result_f64 r =
+          wuffs_base__private_implementation__high_prec_dec__to_f64(&hpd);
+      uint64_t have =
+          wuffs_base__ieee_754_bit_representation__from_f64(r.value);
+      uint64_t want = 0x3FFC000000000000;
+      if (have != want) {
+        RETURN_FAIL("DECIMAL_SEPARATOR_IS_A_COMMA on: have 0x%016" PRIX64
+                    ", want 0x%016" PRIX64,
+                    have, want);
+      }
+    }
+  }
+
   return NULL;
 }
 
@@ -391,11 +428,12 @@ test_wuffs_strconv_hpd_shift() {
   int tc;
   for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
     wuffs_base__private_implementation__high_prec_dec hpd;
-    CHECK_STATUS(
-        "hpd__parse",
-        wuffs_base__private_implementation__high_prec_dec__parse(
-            &hpd, wuffs_base__make_slice_u8((void*)test_cases[tc].str,
-                                            strlen(test_cases[tc].str))));
+    CHECK_STATUS("hpd__parse",
+                 wuffs_base__private_implementation__high_prec_dec__parse(
+                     &hpd,
+                     wuffs_base__make_slice_u8((void*)test_cases[tc].str,
+                                               strlen(test_cases[tc].str)),
+                     WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS));
     int32_t shift = test_cases[tc].shift;
     if (shift > 0) {
       wuffs_base__private_implementation__high_prec_dec__small_rshift(
@@ -672,10 +710,6 @@ test_wuffs_strconv_parse_number_f64() {
 
       // If adding new cases, consider updating u64TestCases in
       // script/print-render-number-f64-tests.go
-
-      // We accept either ',' or '.'.
-      {.want = 0x3FFC000000000000, .str = "1,75"},
-      {.want = 0x3FFC000000000000, .str = "1.75"},
 
       {.want = fail, .str = " 0"},
       {.want = fail, .str = ""},

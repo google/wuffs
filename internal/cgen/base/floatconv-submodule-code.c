@@ -134,7 +134,8 @@ wuffs_base__private_implementation__high_prec_dec__assign(
 static wuffs_base__status  //
 wuffs_base__private_implementation__high_prec_dec__parse(
     wuffs_base__private_implementation__high_prec_dec* h,
-    wuffs_base__slice_u8 s) {
+    wuffs_base__slice_u8 s,
+    uint32_t options) {
   if (!h) {
     return wuffs_base__make_status(wuffs_base__error__bad_receiver);
   }
@@ -187,7 +188,11 @@ wuffs_base__private_implementation__high_prec_dec__parse(
     for (;; p++) {
       if (p >= q) {
         goto after_all;
-      } else if ((*p == '.') || (*p == ',')) {
+      } else if (*p ==
+                 ((options &
+                   WUFFS_BASE__PARSE_NUMBER_FXX__DECIMAL_SEPARATOR_IS_A_COMMA)
+                      ? ','
+                      : '.')) {
         p++;
         goto after_sep;
       } else if ((*p == 'E') || (*p == 'e')) {
@@ -213,7 +218,11 @@ wuffs_base__private_implementation__high_prec_dec__parse(
           // Long-tail non-zeroes set the truncated bit.
           h->truncated = true;
         }
-      } else if ((*p == '.') || (*p == ',')) {
+      } else if (*p ==
+                 ((options &
+                   WUFFS_BASE__PARSE_NUMBER_FXX__DECIMAL_SEPARATOR_IS_A_COMMA)
+                      ? ','
+                      : '.')) {
         p++;
         goto after_sep;
       } else if ((*p == 'E') || (*p == 'e')) {
@@ -224,7 +233,10 @@ wuffs_base__private_implementation__high_prec_dec__parse(
       }
     }
 
-  } else if ((*p == '.') || (*p == ',')) {
+  } else if (*p == ((options &
+                     WUFFS_BASE__PARSE_NUMBER_FXX__DECIMAL_SEPARATOR_IS_A_COMMA)
+                        ? ','
+                        : '.')) {
     p++;
     no_digits_before_separator = true;
 
@@ -963,8 +975,9 @@ wuffs_base__private_implementation__parse_number_f64_eisel(uint64_t man,
 // --------
 
 static wuffs_base__result_f64  //
-wuffs_base__parse_number_f64_special(wuffs_base__slice_u8 s,
-                                     const char* fallback_status_repr) {
+wuffs_base__private_implementation__parse_number_f64_special(
+    wuffs_base__slice_u8 s,
+    const char* fallback_status_repr) {
   do {
     uint8_t* p = s.ptr;
     uint8_t* q = s.ptr + s.len;
@@ -1064,7 +1077,7 @@ fallback:
 }
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__result_f64  //
-wuffs_base__private_implementation__parse_number_f64__fallback(
+wuffs_base__private_implementation__high_prec_dec__to_f64(
     wuffs_base__private_implementation__high_prec_dec* h) {
   do {
     // powers converts decimal powers of 10 to binary powers of 2. For example,
@@ -1300,7 +1313,10 @@ wuffs_base__parse_number_f64(wuffs_base__slice_u8 s, uint32_t options) {
     // Walk the "d"s after the optional decimal separator ('.' or ','),
     // updating the man and exp10 variables.
     int32_t exp10 = 0;
-    if ((*p == '.') || (*p == ',')) {
+    if (*p ==
+        ((options & WUFFS_BASE__PARSE_NUMBER_FXX__DECIMAL_SEPARATOR_IS_A_COMMA)
+             ? ','
+             : '.')) {
       p++;
       const uint8_t* first_after_separator_ptr = p;
       if (!wuffs_base__private_implementation__is_decimal_digit(*p)) {
@@ -1439,11 +1455,13 @@ fallback:
   do {
     wuffs_base__private_implementation__high_prec_dec h;
     wuffs_base__status status =
-        wuffs_base__private_implementation__high_prec_dec__parse(&h, s);
+        wuffs_base__private_implementation__high_prec_dec__parse(&h, s,
+                                                                 options);
     if (status.repr) {
-      return wuffs_base__parse_number_f64_special(s, status.repr);
+      return wuffs_base__private_implementation__parse_number_f64_special(
+          s, status.repr);
     }
-    return wuffs_base__private_implementation__parse_number_f64__fallback(&h);
+    return wuffs_base__private_implementation__high_prec_dec__to_f64(&h);
   } while (0);
 }
 

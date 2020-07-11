@@ -22,6 +22,32 @@
 
 #define WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS ((uint32_t)0x00000000)
 
+// WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_MULTIPLE_LEADING_ZEROES means to accept
+// inputs like "00", "0644" and "00.7". By default, they are rejected.
+#define WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_MULTIPLE_LEADING_ZEROES \
+  ((uint32_t)0x00000001)
+
+// WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES means to accept inputs like
+// "1__2" and "_3.141_592". By default, they are rejected.
+#define WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES ((uint32_t)0x00000002)
+
+// WUFFS_BASE__PARSE_NUMBER_FXX__DECIMAL_SEPARATOR_IS_A_COMMA means to accept
+// "1,5" and not "1.5" as one-and-a-half.
+//
+// If the caller wants to accept either, it is responsible for canonicalizing
+// the input before calling wuffs_base__parse_number_fxx. The caller also has
+// more context on e.g. exactly how to treat something like "$1,234".
+#define WUFFS_BASE__PARSE_NUMBER_FXX__DECIMAL_SEPARATOR_IS_A_COMMA \
+  ((uint32_t)0x00000010)
+
+// WUFFS_BASE__PARSE_NUMBER_FXX__REJECT_INF_AND_NAN means to reject inputs that
+// would lead to infinite or Not-a-Number floating point values. By default,
+// they are accepted.
+//
+// This affects the literal "inf" as input, but also affects inputs like
+// "1e999" that would overflow double-precision floating point.
+#define WUFFS_BASE__PARSE_NUMBER_FXX__REJECT_INF_AND_NAN ((uint32_t)0x00000020)
+
 // --------
 
 // Options (bitwise or'ed together) for wuffs_base__render_number_xxx
@@ -34,16 +60,16 @@
 // (higher indexes) of the destination slice, leaving any untouched bytes on
 // the left side (lower indexes). The default is vice versa: rendering on the
 // left with slack on the right.
-#define WUFFS_BASE__RENDER_NUMBER_XXX__ALIGN_RIGHT ((uint32_t)0x00000010)
+#define WUFFS_BASE__RENDER_NUMBER_XXX__ALIGN_RIGHT ((uint32_t)0x00000100)
 
 // WUFFS_BASE__RENDER_NUMBER_XXX__LEADING_PLUS_SIGN means to render the leading
 // "+" for non-negative numbers: "+0" and "+12.3" instead of "0" and "12.3".
-#define WUFFS_BASE__RENDER_NUMBER_XXX__LEADING_PLUS_SIGN ((uint32_t)0x00000020)
+#define WUFFS_BASE__RENDER_NUMBER_XXX__LEADING_PLUS_SIGN ((uint32_t)0x00000200)
 
 // WUFFS_BASE__RENDER_NUMBER_FXX__DECIMAL_SEPARATOR_IS_A_COMMA means to render
 // one-and-a-half as "1,5" instead of "1.5".
 #define WUFFS_BASE__RENDER_NUMBER_FXX__DECIMAL_SEPARATOR_IS_A_COMMA \
-  ((uint32_t)0x00000100)
+  ((uint32_t)0x00001000)
 
 // WUFFS_BASE__RENDER_NUMBER_FXX__EXPONENT_ETC means whether to never
 // (EXPONENT_ABSENT, equivalent to printf's "%f") or to always
@@ -53,8 +79,8 @@
 // Having both bits set is the same has having neither bit set, where the
 // notation used depends on whether the exponent is sufficiently large: "0.5"
 // is preferred over "5e-01" but "5e-09" is preferred over "0.000000005".
-#define WUFFS_BASE__RENDER_NUMBER_FXX__EXPONENT_ABSENT ((uint32_t)0x00000200)
-#define WUFFS_BASE__RENDER_NUMBER_FXX__EXPONENT_PRESENT ((uint32_t)0x00000400)
+#define WUFFS_BASE__RENDER_NUMBER_FXX__EXPONENT_ABSENT ((uint32_t)0x00002000)
+#define WUFFS_BASE__RENDER_NUMBER_FXX__EXPONENT_PRESENT ((uint32_t)0x00004000)
 
 // WUFFS_BASE__RENDER_NUMBER_FXX__JUST_ENOUGH_PRECISION means to render the
 // smallest number of digits so that parsing the resultant string will recover
@@ -66,7 +92,7 @@
 // 0.3000000000000000444089209850062616169452667236328125 will produce
 // "0.30000000000000004".
 #define WUFFS_BASE__RENDER_NUMBER_FXX__JUST_ENOUGH_PRECISION \
-  ((uint32_t)0x00000800)
+  ((uint32_t)0x00008000)
 
 // ---------------- IEEE 754 Floating Point
 
@@ -88,20 +114,17 @@
 //  - It does not take an optional endptr argument. It does not allow a partial
 //    parse: it returns an error unless all of s is consumed.
 //  - It does not allow whitespace, leading or otherwise.
-//  - It does not allow unnecessary leading zeroes ("0" is valid and its sole
-//    zero is necessary). All of "00", "0644" and "00.7" are invalid.
-//  - It is not affected by i18n / l10n settings such as environment variables.
-//  - Conversely, it always accepts either ',' or '.' as a decimal separator.
-//    In particular, "3,141,592" is always invalid but "3,141" is always valid
-//    (and approximately π). The caller is responsible for e.g. previously
-//    rejecting or filtering s if it contains a comma, if that is unacceptable
-//    to the caller. For example, JSON numbers always use a dot '.' and never a
-//    comma ',', regardless of the LOCALE environment variable.
-//  - It does allow arbitrary underscores. For example, "_3.141_592" would
-//    successfully parse, again approximately π.
-//  - It does allow "inf", "+Infinity" and "-NAN", case insensitive, but it
-//    does not permit "nan" to be followed by an integer mantissa.
 //  - It does not allow hexadecimal floating point numbers.
+//  - It is not affected by i18n / l10n settings such as environment variables.
+//
+// The options argument can change these, but by default, it:
+//  - Allows "inf", "+Infinity" and "-NAN", case insensitive. Similarly,
+//    without an explicit opt-out, it would successfully parse "1e999" as
+//    infinity, even though it overflows double-precision floating point.
+//  - Rejects underscores. With an explicit opt-in, "_3.141_592" would
+//    successfully parse as an approximation to π.
+//  - Rejects unnecessary leading zeroes: "00", "0644" and "00.7".
+//  - Uses a dot '1.5' instead of a comma '1,5' for the decimal separator.
 //
 // For modular builds that divide the base module into sub-modules, using this
 // function requires the WUFFS_CONFIG__MODULE__BASE__FLOATCONV sub-module, not
@@ -170,17 +193,19 @@ wuffs_base__parse_number_i64(wuffs_base__slice_u8 s, uint32_t options);
 //    parse: it returns an error unless all of s is consumed.
 //  - It does not allow whitespace, leading or otherwise.
 //  - It does not allow a leading '+' or '-'.
-//  - It does not allow unnecessary leading zeroes ("0" is valid and its sole
-//    zero is necessary). All of "00", "0644" and "007" are invalid.
 //  - It does not take a base argument (e.g. base 10 vs base 16). Instead, it
 //    always accepts both decimal (e.g "1234", "0d5678") and hexadecimal (e.g.
 //    "0x9aBC"). The caller is responsible for prior filtering of e.g. hex
 //    numbers if they are unwanted. For example, Wuffs' JSON decoder will only
 //    produce a wuffs_base__token for decimal numbers, not hexadecimal.
 //  - It is not affected by i18n / l10n settings such as environment variables.
-//  - It does allow arbitrary underscores, except inside the optional 2-byte
-//    opening "0d" or "0X" that denotes base-10 or base-16. For example,
-//    "__0D_1_002" would successfully parse as "one thousand and two".
+//
+// The options argument can change these, but by default, it:
+//  - Rejects underscores. With an explicit opt-in, "__0D_1_002" would
+//    successfully parse as "one thousand and two". Underscores are still
+//    rejected inside the optional 2-byte opening "0d" or "0X" that denotes
+//    base-10 or base-16.
+//  - Rejects unnecessary leading zeroes: "00" and "0644".
 //
 // For modular builds that divide the base module into sub-modules, using this
 // function requires the WUFFS_CONFIG__MODULE__BASE__INTCONV sub-module, not
