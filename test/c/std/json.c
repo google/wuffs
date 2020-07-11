@@ -364,130 +364,6 @@ test_wuffs_strconv_hpd_rounded_integer() {
 }
 
 const char*  //
-test_wuffs_strconv_parse_number_f64_options() {
-  CHECK_FOCUS(__func__);
-
-  // Test WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_MULTIPLE_LEADING_ZEROES.
-  {
-    int o;
-    for (o = 0; o < 2; o++) {
-      const char* str = "001.25";
-      wuffs_base__result_f64 r = wuffs_base__parse_number_f64(
-          wuffs_base__make_slice_u8((void*)str, strlen(str)),
-          (o ? WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_MULTIPLE_LEADING_ZEROES
-             : WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS));
-
-      if (o == 0) {
-        if (r.status.repr != wuffs_base__error__bad_argument) {
-          RETURN_FAIL(
-              "ALLOW_MULTIPLE_LEADING_ZEROES off: have \"%s\", want \"%s\"",
-              r.status.repr, wuffs_base__error__bad_argument);
-        }
-        continue;
-      }
-
-      CHECK_STATUS("ALLOW_MULTIPLE_LEADING_ZEROES on", r.status);
-      uint64_t have =
-          wuffs_base__ieee_754_bit_representation__from_f64(r.value);
-      uint64_t want = 0x3FF4000000000000;
-      if (have != want) {
-        RETURN_FAIL("ALLOW_MULTIPLE_LEADING_ZEROES on: have 0x%016" PRIX64
-                    ", want 0x%016" PRIX64,
-                    have, want);
-      }
-    }
-  }
-
-  // Test WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES.
-  {
-    int o;
-    for (o = 0; o < 2; o++) {
-      const char* str = "_1.2__5";
-      wuffs_base__result_f64 r = wuffs_base__parse_number_f64(
-          wuffs_base__make_slice_u8((void*)str, strlen(str)),
-          (o ? WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES
-             : WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS));
-
-      if (o == 0) {
-        if (r.status.repr != wuffs_base__error__bad_argument) {
-          RETURN_FAIL("ALLOW_UNDERSCORES off: have \"%s\", want \"%s\"",
-                      r.status.repr, wuffs_base__error__bad_argument);
-        }
-        continue;
-      }
-
-      CHECK_STATUS("ALLOW_UNDERSCORES on", r.status);
-      uint64_t have =
-          wuffs_base__ieee_754_bit_representation__from_f64(r.value);
-      uint64_t want = 0x3FF4000000000000;
-      if (have != want) {
-        RETURN_FAIL("ALLOW_UNDERSCORES on: have 0x%016" PRIX64
-                    ", want 0x%016" PRIX64,
-                    have, want);
-      }
-    }
-  }
-
-  // Test WUFFS_BASE__PARSE_NUMBER_FXX__DECIMAL_SEPARATOR_IS_A_COMMA.
-  {
-    int o;
-    for (o = 0; o < 2; o++) {
-      const char* str = "1,75";
-      wuffs_base__result_f64 r = wuffs_base__parse_number_f64(
-          wuffs_base__make_slice_u8((void*)str, strlen(str)),
-          (o ? WUFFS_BASE__PARSE_NUMBER_FXX__DECIMAL_SEPARATOR_IS_A_COMMA
-             : WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS));
-
-      if (o == 0) {
-        if (r.status.repr != wuffs_base__error__bad_argument) {
-          RETURN_FAIL(
-              "DECIMAL_SEPARATOR_IS_A_COMMA off: have \"%s\", want \"%s\"",
-              r.status.repr, wuffs_base__error__bad_argument);
-        }
-        continue;
-      }
-
-      CHECK_STATUS("DECIMAL_SEPARATOR_IS_A_COMMA on", r.status);
-      uint64_t have =
-          wuffs_base__ieee_754_bit_representation__from_f64(r.value);
-      uint64_t want = 0x3FFC000000000000;
-      if (have != want) {
-        RETURN_FAIL("DECIMAL_SEPARATOR_IS_A_COMMA on: have 0x%016" PRIX64
-                    ", want 0x%016" PRIX64,
-                    have, want);
-      }
-    }
-  }
-
-  // Test WUFFS_BASE__PARSE_NUMBER_FXX__REJECT_INF_AND_NAN.
-  {
-    int o;
-    for (o = 0; o < 4; o++) {
-      const char* str = (o & 2) ? "1e999" : "nan";
-      wuffs_base__result_f64 r = wuffs_base__parse_number_f64(
-          wuffs_base__make_slice_u8((void*)str, strlen(str)),
-          ((o & 1) ? WUFFS_BASE__PARSE_NUMBER_FXX__REJECT_INF_AND_NAN
-                   : WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS));
-
-      if (o & 1) {
-        if (r.status.repr != wuffs_base__error__bad_argument) {
-          RETURN_FAIL("REJECT_INF_AND_NAN off: have \"%s\", want \"%s\"",
-                      r.status.repr, wuffs_base__error__bad_argument);
-        }
-        continue;
-      }
-
-      if (r.status.repr != NULL) {
-        RETURN_FAIL("REJECT_INF_AND_NAN on: have \"%s\", want NULL",
-                    r.status.repr);
-      }
-    }
-  }
-
-  return NULL;
-}
-
-const char*  //
 test_wuffs_strconv_hpd_shift() {
   CHECK_FOCUS(__func__);
 
@@ -699,6 +575,130 @@ test_wuffs_strconv_base_64() {
 }
 
 // ----------------
+
+const char*  //
+test_wuffs_strconv_parse_number_f64_options() {
+  CHECK_FOCUS(__func__);
+
+  // Test WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_MULTIPLE_LEADING_ZEROES.
+  {
+    int o;
+    for (o = 0; o < 2; o++) {
+      const char* str = "001.25";
+      wuffs_base__result_f64 r = wuffs_base__parse_number_f64(
+          wuffs_base__make_slice_u8((void*)str, strlen(str)),
+          (o ? WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_MULTIPLE_LEADING_ZEROES
+             : WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS));
+
+      if (o == 0) {
+        if (r.status.repr != wuffs_base__error__bad_argument) {
+          RETURN_FAIL(
+              "ALLOW_MULTIPLE_LEADING_ZEROES off: have \"%s\", want \"%s\"",
+              r.status.repr, wuffs_base__error__bad_argument);
+        }
+        continue;
+      }
+
+      CHECK_STATUS("ALLOW_MULTIPLE_LEADING_ZEROES on", r.status);
+      uint64_t have =
+          wuffs_base__ieee_754_bit_representation__from_f64(r.value);
+      uint64_t want = 0x3FF4000000000000;
+      if (have != want) {
+        RETURN_FAIL("ALLOW_MULTIPLE_LEADING_ZEROES on: have 0x%016" PRIX64
+                    ", want 0x%016" PRIX64,
+                    have, want);
+      }
+    }
+  }
+
+  // Test WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES.
+  {
+    int o;
+    for (o = 0; o < 2; o++) {
+      const char* str = "_1.2__5";
+      wuffs_base__result_f64 r = wuffs_base__parse_number_f64(
+          wuffs_base__make_slice_u8((void*)str, strlen(str)),
+          (o ? WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES
+             : WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS));
+
+      if (o == 0) {
+        if (r.status.repr != wuffs_base__error__bad_argument) {
+          RETURN_FAIL("ALLOW_UNDERSCORES off: have \"%s\", want \"%s\"",
+                      r.status.repr, wuffs_base__error__bad_argument);
+        }
+        continue;
+      }
+
+      CHECK_STATUS("ALLOW_UNDERSCORES on", r.status);
+      uint64_t have =
+          wuffs_base__ieee_754_bit_representation__from_f64(r.value);
+      uint64_t want = 0x3FF4000000000000;
+      if (have != want) {
+        RETURN_FAIL("ALLOW_UNDERSCORES on: have 0x%016" PRIX64
+                    ", want 0x%016" PRIX64,
+                    have, want);
+      }
+    }
+  }
+
+  // Test WUFFS_BASE__PARSE_NUMBER_FXX__DECIMAL_SEPARATOR_IS_A_COMMA.
+  {
+    int o;
+    for (o = 0; o < 2; o++) {
+      const char* str = "1,75";
+      wuffs_base__result_f64 r = wuffs_base__parse_number_f64(
+          wuffs_base__make_slice_u8((void*)str, strlen(str)),
+          (o ? WUFFS_BASE__PARSE_NUMBER_FXX__DECIMAL_SEPARATOR_IS_A_COMMA
+             : WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS));
+
+      if (o == 0) {
+        if (r.status.repr != wuffs_base__error__bad_argument) {
+          RETURN_FAIL(
+              "DECIMAL_SEPARATOR_IS_A_COMMA off: have \"%s\", want \"%s\"",
+              r.status.repr, wuffs_base__error__bad_argument);
+        }
+        continue;
+      }
+
+      CHECK_STATUS("DECIMAL_SEPARATOR_IS_A_COMMA on", r.status);
+      uint64_t have =
+          wuffs_base__ieee_754_bit_representation__from_f64(r.value);
+      uint64_t want = 0x3FFC000000000000;
+      if (have != want) {
+        RETURN_FAIL("DECIMAL_SEPARATOR_IS_A_COMMA on: have 0x%016" PRIX64
+                    ", want 0x%016" PRIX64,
+                    have, want);
+      }
+    }
+  }
+
+  // Test WUFFS_BASE__PARSE_NUMBER_FXX__REJECT_INF_AND_NAN.
+  {
+    int o;
+    for (o = 0; o < 4; o++) {
+      const char* str = (o & 2) ? "1e999" : "nan";
+      wuffs_base__result_f64 r = wuffs_base__parse_number_f64(
+          wuffs_base__make_slice_u8((void*)str, strlen(str)),
+          ((o & 1) ? WUFFS_BASE__PARSE_NUMBER_FXX__REJECT_INF_AND_NAN
+                   : WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS));
+
+      if (o & 1) {
+        if (r.status.repr != wuffs_base__error__bad_argument) {
+          RETURN_FAIL("REJECT_INF_AND_NAN off: have \"%s\", want \"%s\"",
+                      r.status.repr, wuffs_base__error__bad_argument);
+        }
+        continue;
+      }
+
+      if (r.status.repr != NULL) {
+        RETURN_FAIL("REJECT_INF_AND_NAN on: have \"%s\", want NULL",
+                    r.status.repr);
+      }
+    }
+  }
+
+  return NULL;
+}
 
 const char*  //
 test_wuffs_strconv_parse_number_f64_regular() {
