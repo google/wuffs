@@ -384,7 +384,7 @@ test_wuffs_strconv_hpd_rounded_integer() {
 
       CHECK_STATUS("DECIMAL_SEPARATOR_IS_A_COMMA on", status);
       wuffs_base__result_f64 r =
-          wuffs_base__private_implementation__high_prec_dec__to_f64(&hpd);
+          wuffs_base__private_implementation__high_prec_dec__to_f64(&hpd, 0);
       uint64_t have =
           wuffs_base__ieee_754_bit_representation__from_f64(r.value);
       uint64_t want = 0x3FFC000000000000;
@@ -392,6 +392,33 @@ test_wuffs_strconv_hpd_rounded_integer() {
         RETURN_FAIL("DECIMAL_SEPARATOR_IS_A_COMMA on: have 0x%016" PRIX64
                     ", want 0x%016" PRIX64,
                     have, want);
+      }
+    }
+  }
+
+  // Test WUFFS_BASE__PARSE_NUMBER_FXX__REJECT_INF_AND_NAN, based on calling
+  // wuffs_base__parse_number_f64. It does not call
+  // wuffs_base__private_implementation__high_prec_dec__parse directly.
+  {
+    int o;
+    for (o = 0; o < 4; o++) {
+      const char* str = (o & 2) ? "1e999" : "nan";
+      wuffs_base__result_f64 r = wuffs_base__parse_number_f64(
+          wuffs_base__make_slice_u8((void*)str, strlen(str)),
+          ((o & 1) ? WUFFS_BASE__PARSE_NUMBER_FXX__REJECT_INF_AND_NAN
+                   : WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS));
+
+      if (o & 1) {
+        if (r.status.repr != wuffs_base__error__bad_argument) {
+          RETURN_FAIL("REJECT_INF_AND_NAN off: have \"%s\", want \"%s\"",
+                      r.status.repr, wuffs_base__error__bad_argument);
+        }
+        continue;
+      }
+
+      if (r.status.repr != NULL) {
+        RETURN_FAIL("REJECT_INF_AND_NAN on: have \"%s\", want NULL",
+                    r.status.repr);
       }
     }
   }

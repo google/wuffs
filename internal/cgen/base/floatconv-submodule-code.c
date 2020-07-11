@@ -977,15 +977,19 @@ wuffs_base__private_implementation__parse_number_f64_eisel(uint64_t man,
 static wuffs_base__result_f64  //
 wuffs_base__private_implementation__parse_number_f64_special(
     wuffs_base__slice_u8 s,
-    const char* fallback_status_repr) {
+    uint32_t options) {
   do {
+    if (options & WUFFS_BASE__PARSE_NUMBER_FXX__REJECT_INF_AND_NAN) {
+      goto fail;
+    }
+
     uint8_t* p = s.ptr;
     uint8_t* q = s.ptr + s.len;
 
     for (; (p < q) && (*p == '_'); p++) {
     }
     if (p >= q) {
-      goto fallback;
+      goto fail;
     }
 
     // Parse sign.
@@ -1003,7 +1007,7 @@ wuffs_base__private_implementation__parse_number_f64_special(
       }
     } while (0);
     if (p >= q) {
-      goto fallback;
+      goto fail;
     }
 
     bool nan = false;
@@ -1013,7 +1017,7 @@ wuffs_base__private_implementation__parse_number_f64_special(
         if (((q - p) < 3) ||                     //
             ((p[1] != 'N') && (p[1] != 'n')) ||  //
             ((p[2] != 'F') && (p[2] != 'f'))) {
-          goto fallback;
+          goto fail;
         }
         p += 3;
 
@@ -1025,21 +1029,21 @@ wuffs_base__private_implementation__parse_number_f64_special(
                    ((p[2] != 'I') && (p[2] != 'i')) ||  //
                    ((p[3] != 'T') && (p[3] != 't')) ||  //
                    ((p[4] != 'Y') && (p[4] != 'y'))) {
-          goto fallback;
+          goto fail;
         }
         p += 5;
 
         if ((p >= q) || (*p == '_')) {
           break;
         }
-        goto fallback;
+        goto fail;
 
       case 'N':
       case 'n':
         if (((q - p) < 3) ||                     //
             ((p[1] != 'A') && (p[1] != 'a')) ||  //
             ((p[2] != 'N') && (p[2] != 'n'))) {
-          goto fallback;
+          goto fail;
         }
         p += 3;
 
@@ -1047,17 +1051,17 @@ wuffs_base__private_implementation__parse_number_f64_special(
           nan = true;
           break;
         }
-        goto fallback;
+        goto fail;
 
       default:
-        goto fallback;
+        goto fail;
     }
 
     // Finish.
     for (; (p < q) && (*p == '_'); p++) {
     }
     if (p != q) {
-      goto fallback;
+      goto fail;
     }
     wuffs_base__result_f64 ret;
     ret.status.repr = NULL;
@@ -1067,10 +1071,10 @@ wuffs_base__private_implementation__parse_number_f64_special(
     return ret;
   } while (0);
 
-fallback:
+fail:
   do {
     wuffs_base__result_f64 ret;
-    ret.status.repr = fallback_status_repr;
+    ret.status.repr = wuffs_base__error__bad_argument;
     ret.value = 0;
     return ret;
   } while (0);
@@ -1078,7 +1082,8 @@ fallback:
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__result_f64  //
 wuffs_base__private_implementation__high_prec_dec__to_f64(
-    wuffs_base__private_implementation__high_prec_dec* h) {
+    wuffs_base__private_implementation__high_prec_dec* h,
+    uint32_t options) {
   do {
     // powers converts decimal powers of 10 to binary powers of 2. For example,
     // (10000 >> 13) is 1. It stops before the elements exceed 60, also known
@@ -1226,6 +1231,13 @@ zero:
 
 infinity:
   do {
+    if (options & WUFFS_BASE__PARSE_NUMBER_FXX__REJECT_INF_AND_NAN) {
+      wuffs_base__result_f64 ret;
+      ret.status.repr = wuffs_base__error__bad_argument;
+      ret.value = 0;
+      return ret;
+    }
+
     uint64_t bits = h->negative ? 0xFFF0000000000000 : 0x7FF0000000000000;
 
     wuffs_base__result_f64 ret;
@@ -1459,9 +1471,10 @@ fallback:
                                                                  options);
     if (status.repr) {
       return wuffs_base__private_implementation__parse_number_f64_special(
-          s, status.repr);
+          s, options);
     }
-    return wuffs_base__private_implementation__high_prec_dec__to_f64(&h);
+    return wuffs_base__private_implementation__high_prec_dec__to_f64(&h,
+                                                                     options);
   } while (0);
 }
 
