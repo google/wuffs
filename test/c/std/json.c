@@ -601,7 +601,7 @@ test_wuffs_strconv_parse_number_f64_options() {
 
       CHECK_STATUS("ALLOW_MULTIPLE_LEADING_ZEROES on", r.status);
       uint64_t have =
-          wuffs_base__ieee_754_bit_representation__from_f64(r.value);
+          wuffs_base__ieee_754_bit_representation__from_f64_to_u64(r.value);
       uint64_t want = 0x3FF4000000000000;
       if (have != want) {
         RETURN_FAIL("ALLOW_MULTIPLE_LEADING_ZEROES on: have 0x%016" PRIX64
@@ -631,7 +631,7 @@ test_wuffs_strconv_parse_number_f64_options() {
 
       CHECK_STATUS("ALLOW_UNDERSCORES on", r.status);
       uint64_t have =
-          wuffs_base__ieee_754_bit_representation__from_f64(r.value);
+          wuffs_base__ieee_754_bit_representation__from_f64_to_u64(r.value);
       uint64_t want = 0x3FF4000000000000;
       if (have != want) {
         RETURN_FAIL("ALLOW_UNDERSCORES on: have 0x%016" PRIX64
@@ -662,7 +662,7 @@ test_wuffs_strconv_parse_number_f64_options() {
 
       CHECK_STATUS("DECIMAL_SEPARATOR_IS_A_COMMA on", r.status);
       uint64_t have =
-          wuffs_base__ieee_754_bit_representation__from_f64(r.value);
+          wuffs_base__ieee_754_bit_representation__from_f64_to_u64(r.value);
       uint64_t want = 0x3FFC000000000000;
       if (have != want) {
         RETURN_FAIL("DECIMAL_SEPARATOR_IS_A_COMMA on: have 0x%016" PRIX64
@@ -829,7 +829,7 @@ test_wuffs_strconv_parse_number_f64_regular() {
         WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES);
     uint64_t have =
         (r.status.repr == NULL)
-            ? wuffs_base__ieee_754_bit_representation__from_f64(r.value)
+            ? wuffs_base__ieee_754_bit_representation__from_f64_to_u64(r.value)
             : fail;
     if (have != test_cases[tc].want) {
       RETURN_FAIL("\"%s\": have 0x%" PRIX64 ", want 0x%" PRIX64,
@@ -1690,8 +1690,8 @@ test_wuffs_strconv_render_number_f64() {
 
   int tc;
   for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
-    double f64 =
-        wuffs_base__ieee_754_bit_representation__to_f64(test_cases[tc].x);
+    double f64 = wuffs_base__ieee_754_bit_representation__from_u64_to_f64(
+        test_cases[tc].x);
     int o;
     for (o = 0; o < 6; o++) {
       uint32_t precision = 0;
@@ -3530,7 +3530,8 @@ do_bench_wuffs_strconv_render_number_f64(wuffs_base__slice_u64 test_cases,
     for (tc = 0; tc < test_cases.len; tc++) {
       size_t n = wuffs_base__render_number_f64(
           g_have_slice_u8,
-          wuffs_base__ieee_754_bit_representation__to_f64(test_cases.ptr[tc]),
+          wuffs_base__ieee_754_bit_representation__from_u64_to_f64(
+              test_cases.ptr[tc]),
           0, WUFFS_BASE__RENDER_NUMBER_FXX__JUST_ENOUGH_PRECISION);
       if (n == 0) {
         RETURN_FAIL("0x%016" PRIX64 ": failed", test_cases.ptr[tc]);

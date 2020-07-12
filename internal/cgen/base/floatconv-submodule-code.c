@@ -1083,7 +1083,7 @@ wuffs_base__private_implementation__parse_number_f64_special(
     }
     wuffs_base__result_f64 ret;
     ret.status.repr = NULL;
-    ret.value = wuffs_base__ieee_754_bit_representation__to_f64(
+    ret.value = wuffs_base__ieee_754_bit_representation__from_u64_to_f64(
         (nan ? 0x7FFFFFFFFFFFFFFF : 0x7FF0000000000000) |
         (negative ? 0x8000000000000000 : 0));
     return ret;
@@ -1138,7 +1138,7 @@ wuffs_base__private_implementation__high_prec_dec__to_f64(
         if (r >= 0) {
           wuffs_base__result_f64 ret;
           ret.status.repr = NULL;
-          ret.value = wuffs_base__ieee_754_bit_representation__to_f64(
+          ret.value = wuffs_base__ieee_754_bit_representation__from_u64_to_f64(
               ((uint64_t)r) | (((uint64_t)(h->negative)) << 63));
           return ret;
         }
@@ -1233,7 +1233,7 @@ wuffs_base__private_implementation__high_prec_dec__to_f64(
 
     wuffs_base__result_f64 ret;
     ret.status.repr = NULL;
-    ret.value = wuffs_base__ieee_754_bit_representation__to_f64(bits);
+    ret.value = wuffs_base__ieee_754_bit_representation__from_u64_to_f64(bits);
     return ret;
   } while (0);
 
@@ -1243,7 +1243,7 @@ zero:
 
     wuffs_base__result_f64 ret;
     ret.status.repr = NULL;
-    ret.value = wuffs_base__ieee_754_bit_representation__to_f64(bits);
+    ret.value = wuffs_base__ieee_754_bit_representation__from_u64_to_f64(bits);
     return ret;
   } while (0);
 
@@ -1260,7 +1260,7 @@ infinity:
 
     wuffs_base__result_f64 ret;
     ret.status.repr = NULL;
-    ret.value = wuffs_base__ieee_754_bit_representation__to_f64(bits);
+    ret.value = wuffs_base__ieee_754_bit_representation__from_u64_to_f64(bits);
     return ret;
   } while (0);
 }
@@ -1476,7 +1476,7 @@ wuffs_base__parse_number_f64(wuffs_base__slice_u8 s, uint32_t options) {
     }
     wuffs_base__result_f64 ret;
     ret.status.repr = NULL;
-    ret.value = wuffs_base__ieee_754_bit_representation__to_f64(
+    ret.value = wuffs_base__ieee_754_bit_representation__from_u64_to_f64(
         ((uint64_t)r) | (((uint64_t)negative) << 63));
     return ret;
   } while (0);
@@ -1692,7 +1692,7 @@ wuffs_base__render_number_f64(wuffs_base__slice_u8 dst,
                               uint32_t options) {
   // Decompose x (64 bits) into negativity (1 bit), base-2 exponent (11 bits
   // with a -1023 bias) and mantissa (52 bits).
-  uint64_t bits = wuffs_base__ieee_754_bit_representation__from_f64(x);
+  uint64_t bits = wuffs_base__ieee_754_bit_representation__from_f64_to_u64(x);
   bool neg = (bits >> 63) != 0;
   int32_t exp2 = ((int32_t)(bits >> 52)) & 0x7FF;
   uint64_t man = bits & 0x000FFFFFFFFFFFFFul;
