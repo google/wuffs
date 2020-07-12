@@ -4015,44 +4015,6 @@ wuffs_base__pixel_swizzler::swizzle_interleaved_from_slice(
 
 // ---------------- IEEE 754 Floating Point
 
-// wuffs_base__parse_number_f64 parses the floating point number in s. For
-// example, if s contains the bytes "1.5" then it will return the double 1.5.
-//
-// It returns an error if s does not contain a floating point number.
-//
-// It does not necessarily return an error if the conversion is lossy, e.g. if
-// s is "0.3", which double-precision floating point cannot represent exactly.
-//
-// Similarly, the returned value may be infinite (and no error returned) even
-// if s was not "inf", when the input is nominally finite but sufficiently
-// larger than DBL_MAX, about 1.8e+308.
-//
-// It is similar to the C standard library's strtod function, but:
-//  - Errors are returned in-band (in a result type), not out-of-band (errno).
-//  - It takes a slice (a pointer and length), not a NUL-terminated C string.
-//  - It does not take an optional endptr argument. It does not allow a partial
-//    parse: it returns an error unless all of s is consumed.
-//  - It does not allow whitespace, leading or otherwise.
-//  - It does not allow hexadecimal floating point numbers.
-//  - It is not affected by i18n / l10n settings such as environment variables.
-//
-// The options argument can change these, but by default, it:
-//  - Allows "inf", "+Infinity" and "-NAN", case insensitive. Similarly,
-//    without an explicit opt-out, it would successfully parse "1e999" as
-//    infinity, even though it overflows double-precision floating point.
-//  - Rejects underscores. With an explicit opt-in, "_3.141_592" would
-//    successfully parse as an approximation to π.
-//  - Rejects unnecessary leading zeroes: "00", "0644" and "00.7".
-//  - Uses a dot '1.5' instead of a comma '1,5' for the decimal separator.
-//
-// For modular builds that divide the base module into sub-modules, using this
-// function requires the WUFFS_CONFIG__MODULE__BASE__FLOATCONV sub-module, not
-// just WUFFS_CONFIG__MODULE__BASE__CORE.
-WUFFS_BASE__MAYBE_STATIC wuffs_base__result_f64  //
-wuffs_base__parse_number_f64(wuffs_base__slice_u8 s, uint32_t options);
-
-// --------
-
 // wuffs_base__ieee_754_bit_representation__etc converts between a double
 // precision numerical value and its IEEE 754 representations:
 //   - 16-bit: 1 sign bit,  5 exponent bits, 10 explicit significand bits.
@@ -4145,7 +4107,43 @@ wuffs_base__ieee_754_bit_representation__from_u64_to_f64(uint64_t u) {
   return f;
 }
 
-// ---------------- Integer
+// ---------------- Parsing and Rendering Numbers
+
+// wuffs_base__parse_number_f64 parses the floating point number in s. For
+// example, if s contains the bytes "1.5" then it will return the double 1.5.
+//
+// It returns an error if s does not contain a floating point number.
+//
+// It does not necessarily return an error if the conversion is lossy, e.g. if
+// s is "0.3", which double-precision floating point cannot represent exactly.
+//
+// Similarly, the returned value may be infinite (and no error returned) even
+// if s was not "inf", when the input is nominally finite but sufficiently
+// larger than DBL_MAX, about 1.8e+308.
+//
+// It is similar to the C standard library's strtod function, but:
+//  - Errors are returned in-band (in a result type), not out-of-band (errno).
+//  - It takes a slice (a pointer and length), not a NUL-terminated C string.
+//  - It does not take an optional endptr argument. It does not allow a partial
+//    parse: it returns an error unless all of s is consumed.
+//  - It does not allow whitespace, leading or otherwise.
+//  - It does not allow hexadecimal floating point numbers.
+//  - It is not affected by i18n / l10n settings such as environment variables.
+//
+// The options argument can change these, but by default, it:
+//  - Allows "inf", "+Infinity" and "-NAN", case insensitive. Similarly,
+//    without an explicit opt-out, it would successfully parse "1e999" as
+//    infinity, even though it overflows double-precision floating point.
+//  - Rejects underscores. With an explicit opt-in, "_3.141_592" would
+//    successfully parse as an approximation to π.
+//  - Rejects unnecessary leading zeroes: "00", "0644" and "00.7".
+//  - Uses a dot '1.5' instead of a comma '1,5' for the decimal separator.
+//
+// For modular builds that divide the base module into sub-modules, using this
+// function requires the WUFFS_CONFIG__MODULE__BASE__FLOATCONV sub-module, not
+// just WUFFS_CONFIG__MODULE__BASE__CORE.
+WUFFS_BASE__MAYBE_STATIC wuffs_base__result_f64  //
+wuffs_base__parse_number_f64(wuffs_base__slice_u8 s, uint32_t options);
 
 // wuffs_base__parse_number_i64 parses the ASCII integer in s. For example, if
 // s contains the bytes "-123" then it will return the int64_t -123.
