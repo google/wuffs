@@ -424,6 +424,210 @@ test_wuffs_strconv_hpd_shift() {
 // ----------------
 
 const char*  //
+test_wuffs_strconv_ieee_754_bit_representation_from_u16() {
+  CHECK_FOCUS(__func__);
+
+  double inf = 1.0 / 0.0;
+  uint64_t nan_u64 = 0x7FFFFFFFFFFFFFFF;
+  double nan =
+      wuffs_base__ieee_754_bit_representation__from_u64_to_f64(nan_u64);
+
+  struct {
+    uint16_t u16_bits;
+    uint64_t want_u64;
+    double want_f64;
+  } test_cases[] = {
+      {
+          .u16_bits = 0x0000,
+          .want_u64 = 0x0000000000000000,
+          .want_f64 = 0.0,
+      },
+      {
+          .u16_bits = 0x0001,
+          .want_u64 = 0x3E70000000000000,
+          .want_f64 = 0.000000059604644775390625,
+      },
+      {
+          .u16_bits = 0x0123,
+          .want_u64 = 0x3EF2300000000000,
+          .want_f64 = 0.000017344951629638671875,
+      },
+      {
+          .u16_bits = 0x03FF,
+          .want_u64 = 0x3F0FF80000000000,
+          .want_f64 = 0.000060975551605224609375,
+      },
+      {
+          .u16_bits = 0x0400,
+          .want_u64 = 0x3F10000000000000,
+          .want_f64 = 0.00006103515625,
+      },
+      {
+          .u16_bits = 0x0401,
+          .want_u64 = 0x3F10040000000000,
+          .want_f64 = 0.000061094760894775390625,
+      },
+      {
+          .u16_bits = 0x3C00,
+          .want_u64 = 0x3FF0000000000000,
+          .want_f64 = 1.0,
+      },
+      {
+          .u16_bits = 0x4580,
+          .want_u64 = 0x4016000000000000,
+          .want_f64 = 5.5,
+      },
+      {
+          .u16_bits = 0x7BFF,
+          .want_u64 = 0x40EFFC0000000000,
+          .want_f64 = 65504.0,
+      },
+      {
+          .u16_bits = 0x7C00,
+          .want_u64 = 0x7FF0000000000000,
+          .want_f64 = inf,
+      },
+      {
+          .u16_bits = 0x7E00,
+          .want_u64 = nan_u64,
+          .want_f64 = nan,
+      },
+      {
+          .u16_bits = 0xFC00,
+          .want_u64 = 0xFFF0000000000000,
+          .want_f64 = -inf,
+      },
+  };
+
+  int tc;
+  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+    double have_f64 = wuffs_base__ieee_754_bit_representation__from_u16_to_f64(
+        test_cases[tc].u16_bits);
+    double want_f64 = test_cases[tc].want_f64;
+    // See if they're equal, considering that NaN != NaN.
+    bool equal = ((have_f64 == want_f64) ||
+                  ((have_f64 != have_f64) && (want_f64 != want_f64)));
+    if (!equal) {
+      RETURN_FAIL("tc=%d: to_f64: have %g, want %g", tc, have_f64, want_f64);
+    }
+
+    uint64_t have_u64 =
+        wuffs_base__ieee_754_bit_representation__from_f64_to_u64(have_f64);
+    uint64_t want_u64 = test_cases[tc].want_u64;
+    // There's more than one representation of NaN.
+    if ((have_u64 != want_u64) && (want_u64 != nan_u64)) {
+      RETURN_FAIL("tc=%d: to_u64: have 0x%016" PRIX64 ", want 0x%016" PRIX64,
+                  tc, have_u64, want_u64);
+    }
+  }
+
+  return NULL;
+}
+
+const char*  //
+test_wuffs_strconv_ieee_754_bit_representation_from_u32() {
+  CHECK_FOCUS(__func__);
+
+  double inf = 1.0 / 0.0;
+  uint64_t nan_u64 = 0x7FFFFFFFFFFFFFFF;
+  double nan =
+      wuffs_base__ieee_754_bit_representation__from_u64_to_f64(nan_u64);
+
+  struct {
+    uint32_t u32_bits;
+    uint64_t want_u64;
+    double want_f64;
+  } test_cases[] = {
+      {
+          .u32_bits = 0x00000000,
+          .want_u64 = 0x0000000000000000,
+          .want_f64 = 0.0,
+      },
+      {
+          .u32_bits = 0x00000001,
+          .want_u64 = 0x36A0000000000000,
+          .want_f64 = 1.4012984643248170709237295832899161312802619418765e-45,
+      },
+      {
+          .u32_bits = 0x00000123,
+          .want_u64 = 0x3722300000000000,
+          .want_f64 = 4.0777785311852176763880530873736559420255622508607e-43,
+      },
+      {
+          .u32_bits = 0x007FFFFF,
+          .want_u64 = 0x380FFFFFC0000000,
+          .want_f64 = 1.1754942106924410754870294448492873488270524287459e-38,
+      },
+      {
+          .u32_bits = 0x00800000,
+          .want_u64 = 0x3810000000000000,
+          .want_f64 = 1.1754943508222875079687365372222456778186655567721e-38,
+      },
+      {
+          .u32_bits = 0x00800001,
+          .want_u64 = 0x3810000020000000,
+          .want_f64 = 1.1754944909521339404504436295952040068102786847983e-38,
+      },
+      {
+          .u32_bits = 0x3F800000,
+          .want_u64 = 0x3FF0000000000000,
+          .want_f64 = 1.0,
+      },
+      {
+          .u32_bits = 0x40B00000,
+          .want_u64 = 0x4016000000000000,
+          .want_f64 = 5.5,
+      },
+      {
+          .u32_bits = 0x7F7FFFFF,
+          .want_u64 = 0x47EFFFFFE0000000,
+          .want_f64 = 3.40282346638528859811704183484516925440e38,
+      },
+      {
+          .u32_bits = 0x7F800000,
+          .want_u64 = 0x7FF0000000000000,
+          .want_f64 = inf,
+      },
+      {
+          .u32_bits = 0x7FC00000,
+          .want_u64 = nan_u64,
+          .want_f64 = nan,
+      },
+      {
+          .u32_bits = 0xFF800000,
+          .want_u64 = 0xFFF0000000000000,
+          .want_f64 = -inf,
+      },
+  };
+
+  int tc;
+  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+    double have_f64 = wuffs_base__ieee_754_bit_representation__from_u32_to_f64(
+        test_cases[tc].u32_bits);
+    double want_f64 = test_cases[tc].want_f64;
+    // See if they're equal, considering that NaN != NaN.
+    bool equal = ((have_f64 == want_f64) ||
+                  ((have_f64 != have_f64) && (want_f64 != want_f64)));
+    if (!equal) {
+      RETURN_FAIL("tc=%d: to_f64: have %g, want %g", tc, have_f64, want_f64);
+    }
+
+    uint64_t have_u64 =
+        wuffs_base__ieee_754_bit_representation__from_f64_to_u64(have_f64);
+    uint64_t want_u64 = test_cases[tc].want_u64;
+    // There's more than one representation of NaN.
+    if ((have_u64 != want_u64) && (want_u64 != nan_u64)) {
+      RETURN_FAIL("tc=%d: to_u64: have 0x%016" PRIX64 ", want 0x%016" PRIX64,
+                  tc, have_u64, want_u64);
+    }
+  }
+
+  return NULL;
+}
+
+// ----------------
+
+const char*  //
 test_wuffs_strconv_base_16() {
   CHECK_FOCUS(__func__);
   const bool src_closed = true;
@@ -3640,6 +3844,8 @@ proc g_tests[] = {
     test_wuffs_strconv_base_64,
     test_wuffs_strconv_hpd_rounded_integer,
     test_wuffs_strconv_hpd_shift,
+    test_wuffs_strconv_ieee_754_bit_representation_from_u16,
+    test_wuffs_strconv_ieee_754_bit_representation_from_u32,
     test_wuffs_strconv_parse_number_f64_options,
     test_wuffs_strconv_parse_number_f64_regular,
     test_wuffs_strconv_parse_number_i64,

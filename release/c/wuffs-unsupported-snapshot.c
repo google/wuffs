@@ -4078,6 +4078,43 @@ wuffs_base__ieee_754_bit_representation__from_f64_to_u64(double f) {
 }
 
 static inline double  //
+wuffs_base__ieee_754_bit_representation__from_u16_to_f64(uint16_t u) {
+  uint64_t v = ((uint64_t)(u & 0x8000)) << 48;
+
+  do {
+    uint64_t exp = (u >> 10) & 0x1F;
+    uint64_t man = u & 0x3FF;
+    if (exp == 0x1F) {  // Infinity or NaN.
+      exp = 2047;
+    } else if (exp != 0) {  // Normal.
+      exp += 1008;          // 1008 = 1023 - 15, the difference in biases.
+    } else if (man != 0) {  // Subnormal but non-zero.
+      uint32_t clz = wuffs_base__count_leading_zeroes_u64(man);
+      exp = 1062 - clz;  // 1062 = 1008 + 64 - 10.
+      man = 0x3FF & (man << (clz - 53));
+    } else {  // Zero.
+      break;
+    }
+    v |= (exp << 52) | (man << 42);
+  } while (0);
+
+  double f = 0;
+  if (sizeof(uint64_t) == sizeof(double)) {
+    memcpy(&f, &v, sizeof(uint64_t));
+  }
+  return f;
+}
+
+static inline double  //
+wuffs_base__ieee_754_bit_representation__from_u32_to_f64(uint32_t u) {
+  float f = 0;
+  if (sizeof(uint32_t) == sizeof(float)) {
+    memcpy(&f, &u, sizeof(uint32_t));
+  }
+  return (double)f;
+}
+
+static inline double  //
 wuffs_base__ieee_754_bit_representation__from_u64_to_f64(uint64_t u) {
   double f = 0;
   if (sizeof(uint64_t) == sizeof(double)) {
