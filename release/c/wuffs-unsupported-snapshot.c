@@ -9970,7 +9970,7 @@ wuffs_base__ieee_754_bit_representation__from_f64_to_u16_truncate(double f) {
   if (sizeof(uint64_t) == sizeof(double)) {
     memcpy(&u, &f, sizeof(uint64_t));
   }
-  uint16_t neg = ((uint16_t)(u >> 63)) << 15;
+  uint16_t neg = ((uint16_t)((u >> 63) << 15));
   u &= 0x7FFFFFFFFFFFFFFF;
   uint64_t exp = u >> 52;
   uint64_t man = u & 0x000FFFFFFFFFFFFF;
@@ -10006,7 +10006,7 @@ wuffs_base__ieee_754_bit_representation__from_f64_to_u16_truncate(double f) {
     // Convert from a 53-bit mantissa (after realizing the implicit bit) to a
     // 10-bit mantissa and then adjust for the exponent.
     man |= 0x0010000000000000;
-    uint32_t shift = 1051 - exp;  // 1051 = 0x3F0 + 53 - 10.
+    uint32_t shift = ((uint32_t)(1051 - exp));  // 1051 = 0x3F0 + 53 - 10.
     uint64_t shifted_man = man >> shift;
     wuffs_base__lossy_value_u16 ret;
     ret.value = neg | ((uint16_t)shifted_man);
@@ -10070,7 +10070,7 @@ wuffs_base__ieee_754_bit_representation__from_f64_to_u32_truncate(double f) {
     // Convert from a 53-bit mantissa (after realizing the implicit bit) to a
     // 23-bit mantissa and then adjust for the exponent.
     man |= 0x0010000000000000;
-    uint32_t shift = 926 - exp;  // 926 = 0x380 + 53 - 23.
+    uint32_t shift = ((uint32_t)(926 - exp));  // 926 = 0x380 + 53 - 23.
     uint64_t shifted_man = man >> shift;
     wuffs_base__lossy_value_u32 ret;
     ret.value = neg | ((uint32_t)shifted_man);
