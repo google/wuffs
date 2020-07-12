@@ -16,6 +16,136 @@
 
 // ---------------- IEEE 754 Floating Point
 
+WUFFS_BASE__MAYBE_STATIC wuffs_base__lossy_value_u16  //
+wuffs_base__ieee_754_bit_representation__from_f64_to_u16(double f) {
+  uint64_t u = 0;
+  if (sizeof(uint64_t) == sizeof(double)) {
+    memcpy(&u, &f, sizeof(uint64_t));
+  }
+  uint16_t neg = ((uint16_t)(u >> 63)) << 15;
+  u &= 0x7FFFFFFFFFFFFFFF;
+  uint64_t exp = u >> 52;
+  uint64_t man = u & 0x000FFFFFFFFFFFFF;
+
+  if (exp == 0x7FF) {
+    if (man == 0) {  // Infinity.
+      wuffs_base__lossy_value_u16 ret;
+      ret.value = neg | 0x7C00;
+      ret.lossy = false;
+      return ret;
+    }
+    // NaN. Shift the 52 mantissa bits to 10 mantissa bits, keeping the most
+    // significant mantissa bit (quiet vs signaling NaNs). Also set the low 9
+    // bits of ret.value so that the 10-bit mantissa is non-zero.
+    wuffs_base__lossy_value_u16 ret;
+    ret.value = neg | 0x7DFF | ((uint16_t)(man >> 42));
+    ret.lossy = false;
+    return ret;
+
+  } else if (exp > 0x40E) {  // Truncate to the largest finite f16.
+    wuffs_base__lossy_value_u16 ret;
+    ret.value = neg | 0x7BFF;
+    ret.lossy = true;
+    return ret;
+
+  } else if (exp <= 0x3E6) {  // Truncate to zero.
+    wuffs_base__lossy_value_u16 ret;
+    ret.value = neg;
+    ret.lossy = (u != 0);
+    return ret;
+
+  } else if (exp <= 0x3F0) {  // Normal f64, subnormal f16.
+    // Convert from a 53-bit mantissa (after realizing the implicit bit) to a
+    // 10-bit mantissa and then adjust for the exponent.
+    man |= 0x0010000000000000;
+    uint32_t shift = 1051 - exp;  // 1051 = 0x3F0 + 53 - 10.
+    uint64_t shifted_man = man >> shift;
+    wuffs_base__lossy_value_u16 ret;
+    ret.value = neg | ((uint16_t)shifted_man);
+    ret.lossy = (shifted_man << shift) != man;
+    return ret;
+  }
+
+  // Normal f64, normal f16.
+
+  // Re-bias from 1023 to 15 and shift above f16's 10 mantissa bits.
+  exp = (exp - 1008) << 10;  // 1008 = 1023 - 15 = 0x3FF - 0xF.
+
+  // Convert from a 52-bit mantissa (excluding the implicit bit) to a 10-bit
+  // mantissa (again excluding the implicit bit). We lose some information if
+  // any of the bottom 42 bits are non-zero.
+  wuffs_base__lossy_value_u16 ret;
+  ret.value = neg | ((uint16_t)exp) | ((uint16_t)(man >> 42));
+  ret.lossy = (man << 22) != 0;
+  return ret;
+}
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__lossy_value_u32  //
+wuffs_base__ieee_754_bit_representation__from_f64_to_u32(double f) {
+  uint64_t u = 0;
+  if (sizeof(uint64_t) == sizeof(double)) {
+    memcpy(&u, &f, sizeof(uint64_t));
+  }
+  uint32_t neg = ((uint32_t)(u >> 63)) << 31;
+  u &= 0x7FFFFFFFFFFFFFFF;
+  uint64_t exp = u >> 52;
+  uint64_t man = u & 0x000FFFFFFFFFFFFF;
+
+  if (exp == 0x7FF) {
+    if (man == 0) {  // Infinity.
+      wuffs_base__lossy_value_u32 ret;
+      ret.value = neg | 0x7F800000;
+      ret.lossy = false;
+      return ret;
+    }
+    // NaN. Shift the 52 mantissa bits to 23 mantissa bits, keeping the most
+    // significant mantissa bit (quiet vs signaling NaNs). Also set the low 22
+    // bits of ret.value so that the 23-bit mantissa is non-zero.
+    wuffs_base__lossy_value_u32 ret;
+    ret.value = neg | 0x7FBFFFFF | ((uint32_t)(man >> 29));
+    ret.lossy = false;
+    return ret;
+
+  } else if (exp > 0x47E) {  // Truncate to the largest finite f32.
+    wuffs_base__lossy_value_u32 ret;
+    ret.value = neg | 0x7F7FFFFF;
+    ret.lossy = true;
+    return ret;
+
+  } else if (exp <= 0x369) {  // Truncate to zero.
+    wuffs_base__lossy_value_u32 ret;
+    ret.value = neg;
+    ret.lossy = (u != 0);
+    return ret;
+
+  } else if (exp <= 0x380) {  // Normal f64, subnormal f32.
+    // Convert from a 53-bit mantissa (after realizing the implicit bit) to a
+    // 23-bit mantissa and then adjust for the exponent.
+    man |= 0x0010000000000000;
+    uint32_t shift = 926 - exp;  // 926 = 0x380 + 53 - 23.
+    uint64_t shifted_man = man >> shift;
+    wuffs_base__lossy_value_u32 ret;
+    ret.value = neg | ((uint32_t)shifted_man);
+    ret.lossy = (shifted_man << shift) != man;
+    return ret;
+  }
+
+  // Normal f64, normal f32.
+
+  // Re-bias from 1023 to 127 and shift above f32's 23 mantissa bits.
+  exp = (exp - 896) << 23;  // 896 = 1023 - 127 = 0x3FF - 0x7F.
+
+  // Convert from a 52-bit mantissa (excluding the implicit bit) to a 23-bit
+  // mantissa (again excluding the implicit bit). We lose some information if
+  // any of the bottom 29 bits are non-zero.
+  wuffs_base__lossy_value_u32 ret;
+  ret.value = neg | ((uint32_t)exp) | ((uint32_t)(man >> 29));
+  ret.lossy = (man << 35) != 0;
+  return ret;
+}
+
+// --------
+
 #define WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__DECIMAL_POINT__RANGE 2047
 #define WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__DIGITS_PRECISION 800
 

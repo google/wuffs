@@ -488,7 +488,7 @@ test_wuffs_strconv_ieee_754_bit_representation_from_u16() {
           .want_f64 = inf,
       },
       {
-          .u16_bits = 0x7E00,
+          .u16_bits = 0x7FFF,
           .want_u64 = nan_u64,
           .want_f64 = nan,
       },
@@ -518,6 +518,27 @@ test_wuffs_strconv_ieee_754_bit_representation_from_u16() {
     if ((have_u64 != want_u64) && (want_u64 != nan_u64)) {
       RETURN_FAIL("tc=%d: to_u64: have 0x%016" PRIX64 ", want 0x%016" PRIX64,
                   tc, have_u64, want_u64);
+    }
+
+    int noise;
+    for (noise = 0; noise < 2; noise++) {
+      if ((noise > 0) && ((want_f64 == inf) || (want_f64 == -inf))) {
+        continue;
+      }
+      wuffs_base__lossy_value_u16 lv =
+          wuffs_base__ieee_754_bit_representation__from_f64_to_u16(
+              wuffs_base__ieee_754_bit_representation__from_u64_to_f64(
+                  want_u64 ^ ((uint64_t)noise)));
+      if (lv.value != test_cases[tc].u16_bits) {
+        RETURN_FAIL("tc=%d: noise=%d: to_u16 value: have 0x%04" PRIX16
+                    ", want 0x%04" PRIX16,
+                    tc, noise, lv.value, test_cases[tc].u16_bits);
+      }
+      int want_lossy = (want_f64 == want_f64) ? noise : 0;
+      if (((int)lv.lossy) != want_lossy) {
+        RETURN_FAIL("tc=%d: noise=%d: to_u16 lossy: have %d, want %d", tc,
+                    noise, ((int)(lv.lossy)), want_lossy);
+      }
     }
   }
 
@@ -589,7 +610,7 @@ test_wuffs_strconv_ieee_754_bit_representation_from_u32() {
           .want_f64 = inf,
       },
       {
-          .u32_bits = 0x7FC00000,
+          .u32_bits = 0x7FFFFFFF,
           .want_u64 = nan_u64,
           .want_f64 = nan,
       },
@@ -619,6 +640,27 @@ test_wuffs_strconv_ieee_754_bit_representation_from_u32() {
     if ((have_u64 != want_u64) && (want_u64 != nan_u64)) {
       RETURN_FAIL("tc=%d: to_u64: have 0x%016" PRIX64 ", want 0x%016" PRIX64,
                   tc, have_u64, want_u64);
+    }
+
+    int noise;
+    for (noise = 0; noise < 2; noise++) {
+      if ((noise > 0) && ((want_f64 == inf) || (want_f64 == -inf))) {
+        continue;
+      }
+      wuffs_base__lossy_value_u32 lv =
+          wuffs_base__ieee_754_bit_representation__from_f64_to_u32(
+              wuffs_base__ieee_754_bit_representation__from_u64_to_f64(
+                  want_u64 ^ ((uint64_t)noise)));
+      if (lv.value != test_cases[tc].u32_bits) {
+        RETURN_FAIL("tc=%d: noise=%d: to_u32 value: have 0x%08" PRIX32
+                    ", want 0x%08" PRIX32,
+                    tc, noise, lv.value, test_cases[tc].u32_bits);
+      }
+      int want_lossy = (want_f64 == want_f64) ? noise : 0;
+      if (((int)lv.lossy) != want_lossy) {
+        RETURN_FAIL("tc=%d: noise=%d: to_u32 lossy: have %d, want %d", tc,
+                    noise, ((int)(lv.lossy)), want_lossy);
+      }
     }
   }
 

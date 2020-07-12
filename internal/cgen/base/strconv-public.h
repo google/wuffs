@@ -145,9 +145,31 @@ wuffs_base__parse_number_f64(wuffs_base__slice_u8 s, uint32_t options);
 //  - +5.5 and 0x4580, 0x40B0_0000 or 0x4016_0000_0000_0000.
 //  - -inf and 0xFC00, 0xFF80_0000 or 0xFFF0_0000_0000_0000.
 //
-// Converting from f64 to shorter formats may be lossy.
+// Converting from f64 to shorter formats (f16 or f32, represented in C as
+// uint16_t and uint32_t) may be lossy. Converting finite numbers truncate,
+// producing equal or smaller (closer-to-zero) finite numbers. Converting
+// infinities or NaNs produces infinities or NaNs and always report no loss,
+// even though there a multiple NaN representations so that round-tripping a
+// f64 NaN may produce a different 64 bits. Nonetheless, a NaN's "quiet vs
+// signaling" bit is preserved.
 //
 // See https://en.wikipedia.org/wiki/Double-precision_floating-point_format
+
+typedef struct {
+  uint16_t value;
+  bool lossy;
+} wuffs_base__lossy_value_u16;
+
+typedef struct {
+  uint32_t value;
+  bool lossy;
+} wuffs_base__lossy_value_u32;
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__lossy_value_u16  //
+wuffs_base__ieee_754_bit_representation__from_f64_to_u16(double f);
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__lossy_value_u32  //
+wuffs_base__ieee_754_bit_representation__from_f64_to_u32(double f);
 
 static inline uint64_t  //
 wuffs_base__ieee_754_bit_representation__from_f64_to_u64(double f) {
