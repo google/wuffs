@@ -17,7 +17,7 @@
 // ---------------- IEEE 754 Floating Point
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__lossy_value_u16  //
-wuffs_base__ieee_754_bit_representation__from_f64_to_u16(double f) {
+wuffs_base__ieee_754_bit_representation__from_f64_to_u16_truncate(double f) {
   uint64_t u = 0;
   if (sizeof(uint64_t) == sizeof(double)) {
     memcpy(&u, &f, sizeof(uint64_t));
@@ -81,7 +81,7 @@ wuffs_base__ieee_754_bit_representation__from_f64_to_u16(double f) {
 }
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__lossy_value_u32  //
-wuffs_base__ieee_754_bit_representation__from_f64_to_u32(double f) {
+wuffs_base__ieee_754_bit_representation__from_f64_to_u32_truncate(double f) {
   uint64_t u = 0;
   if (sizeof(uint64_t) == sizeof(double)) {
     memcpy(&u, &f, sizeof(uint64_t));

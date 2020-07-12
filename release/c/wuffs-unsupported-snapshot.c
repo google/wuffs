@@ -4027,12 +4027,18 @@ wuffs_base__pixel_swizzler::swizzle_interleaved_from_slice(
 //  - -inf and 0xFC00, 0xFF80_0000 or 0xFFF0_0000_0000_0000.
 //
 // Converting from f64 to shorter formats (f16 or f32, represented in C as
-// uint16_t and uint32_t) may be lossy. Converting finite numbers truncate,
-// producing equal or smaller (closer-to-zero) finite numbers. Converting
-// infinities or NaNs produces infinities or NaNs and always report no loss,
-// even though there a multiple NaN representations so that round-tripping a
-// f64 NaN may produce a different 64 bits. Nonetheless, a NaN's "quiet vs
-// signaling" bit is preserved.
+// uint16_t and uint32_t) may be lossy. Such functions have names that look
+// like etc_truncate, as converting finite numbers produce equal or smaller
+// (closer-to-zero) finite numbers. For example, 1048576.0 is a perfectly valid
+// f64 number, but converting it to a f16 (with truncation) produces 65504.0,
+// the largest finite f16 number. Truncating a f64-typed value d to f32 does
+// not always produce the same result as the C-style cast ((float)d), as
+// casting can convert from finite numbers to infinite ones.
+//
+// Converting infinities or NaNs produces infinities or NaNs and always report
+// no loss, even though there a multiple NaN representations so that round-
+// tripping a f64-typed NaN may produce a different 64 bits. Nonetheless, the
+// etc_truncate functions preserve a NaN's "quiet vs signaling" bit.
 //
 // See https://en.wikipedia.org/wiki/Double-precision_floating-point_format
 
@@ -4047,10 +4053,10 @@ typedef struct {
 } wuffs_base__lossy_value_u32;
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__lossy_value_u16  //
-wuffs_base__ieee_754_bit_representation__from_f64_to_u16(double f);
+wuffs_base__ieee_754_bit_representation__from_f64_to_u16_truncate(double f);
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__lossy_value_u32  //
-wuffs_base__ieee_754_bit_representation__from_f64_to_u32(double f);
+wuffs_base__ieee_754_bit_representation__from_f64_to_u32_truncate(double f);
 
 static inline uint64_t  //
 wuffs_base__ieee_754_bit_representation__from_f64_to_u64(double f) {
@@ -9959,7 +9965,7 @@ static const double wuffs_base__private_implementation__f64_powers_of_10[23] = {
 // ---------------- IEEE 754 Floating Point
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__lossy_value_u16  //
-wuffs_base__ieee_754_bit_representation__from_f64_to_u16(double f) {
+wuffs_base__ieee_754_bit_representation__from_f64_to_u16_truncate(double f) {
   uint64_t u = 0;
   if (sizeof(uint64_t) == sizeof(double)) {
     memcpy(&u, &f, sizeof(uint64_t));
@@ -10023,7 +10029,7 @@ wuffs_base__ieee_754_bit_representation__from_f64_to_u16(double f) {
 }
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__lossy_value_u32  //
-wuffs_base__ieee_754_bit_representation__from_f64_to_u32(double f) {
+wuffs_base__ieee_754_bit_representation__from_f64_to_u32_truncate(double f) {
   uint64_t u = 0;
   if (sizeof(uint64_t) == sizeof(double)) {
     memcpy(&u, &f, sizeof(uint64_t));

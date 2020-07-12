@@ -526,7 +526,7 @@ test_wuffs_strconv_ieee_754_bit_representation_from_u16() {
         continue;
       }
       wuffs_base__lossy_value_u16 lv =
-          wuffs_base__ieee_754_bit_representation__from_f64_to_u16(
+          wuffs_base__ieee_754_bit_representation__from_f64_to_u16_truncate(
               wuffs_base__ieee_754_bit_representation__from_u64_to_f64(
                   want_u64 ^ ((uint64_t)noise)));
       if (lv.value != test_cases[tc].u16_bits) {
@@ -648,7 +648,7 @@ test_wuffs_strconv_ieee_754_bit_representation_from_u32() {
         continue;
       }
       wuffs_base__lossy_value_u32 lv =
-          wuffs_base__ieee_754_bit_representation__from_f64_to_u32(
+          wuffs_base__ieee_754_bit_representation__from_f64_to_u32_truncate(
               wuffs_base__ieee_754_bit_representation__from_u64_to_f64(
                   want_u64 ^ ((uint64_t)noise)));
       if (lv.value != test_cases[tc].u32_bits) {
