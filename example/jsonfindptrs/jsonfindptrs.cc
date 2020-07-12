@@ -107,8 +107,8 @@ static const char* g_usage =
     "\n"
     "Flags:\n"
     "    -d=NUM  -max-output-depth=NUM\n"
-    "    -s      -strict-json-pointer-syntax\n"
     "            -input-json-extra-comma\n"
+    "            -strict-json-pointer-syntax\n"
     "\n"
     "The input.json filename is optional. If absent, it reads from stdin.\n"
     "\n"
@@ -157,14 +157,13 @@ static const char* g_usage =
     "\n"
     "----\n"
     "\n"
-    "The -s or -strict-json-pointer-syntax flag restricts the output lines\n"
-    "to exactly RFC 6901, with only two escape sequences: \"~0\" and \"~1\"\n"
-    "for \"~\" and \"/\". Without this flag, this program also lets \"~n\"\n"
-    "and \"~r\" escape the New Line and Carriage Return ASCII control\n"
-    "characters, which can work better with line oriented Unix tools that\n"
-    "assume exactly one value (i.e. one JSON Pointer string) per line. With\n"
-    "this flag, the program will fail if the input JSON's object keys contain\n"
-    "\"\\u000A\" or \"\\u000D\".\n"
+    "The -strict-json-pointer-syntax flag restricts the output lines to\n"
+    "exactly RFC 6901, with only two escape sequences: \"~0\" and \"~1\" for\n"
+    "\"~\" and \"/\". Without this flag, this program also lets \"~n\" and\n"
+    "\"~r\" escape the New Line and Carriage Return ASCII control characters,\n"
+    "which can work better with line oriented Unix tools that assume exactly\n"
+    "one value (i.e. one JSON Pointer string) per line. With this flag, it\n"
+    "fails if the input JSON's keys contain \"\\u000A\" or \"\\u000D\".\n"
     "\n"
     "----\n"
     "\n"
@@ -233,7 +232,7 @@ parse_flags(int argc, char** argv) {
       g_flags.input_json_extra_comma = true;
       continue;
     }
-    if (!strcmp(arg, "s") || !strcmp(arg, "strict-json-pointer-syntax")) {
+    if (!strcmp(arg, "strict-json-pointer-syntax")) {
       g_flags.strict_json_pointer_syntax = true;
       continue;
     }

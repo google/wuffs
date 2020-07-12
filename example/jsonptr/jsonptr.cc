@@ -152,13 +152,13 @@ static const char* g_usage =
     "Flags:\n"
     "    -c      -compact-output\n"
     "    -d=NUM  -max-output-depth=NUM\n"
-    "    -i=NUM  -indent=NUM\n"
     "    -q=STR  -query=STR\n"
-    "    -s      -strict-json-pointer-syntax\n"
+    "    -s=NUM  -spaces=NUM\n"
     "    -t      -tabs\n"
     "            -fail-if-unsandboxed\n"
     "            -input-json-extra-comma\n"
     "            -output-json-extra-comma\n"
+    "            -strict-json-pointer-syntax\n"
     "\n"
     "The input.json filename is optional. If absent, it reads from stdin.\n"
     "\n"
@@ -173,8 +173,8 @@ static const char* g_usage =
     "duplicate keys. Canonicalization does not imply Unicode normalization.\n"
     "\n"
     "Formatted means that arrays' and objects' elements are indented, each\n"
-    "on its own line. Configure this with the -c / -compact-output, -i=NUM /\n"
-    "-indent=NUM (for NUM ranging from 0 to 8) and -t / -tabs flags.\n"
+    "on its own line. Configure this with the -c / -compact-output, -s=NUM /\n"
+    "-spaces=NUM (for NUM ranging from 0 to 8) and -t / -tabs flags.\n"
     "\n"
     "The -input-json-extra-comma flag allows input like \"[1,2,]\", with a\n"
     "comma after the final element of a JSON list or dictionary.\n"
@@ -211,12 +211,12 @@ static const char* g_usage =
     "object has multiple \"foo\" children but the first one doesn't have a\n"
     "\"bar\" child, even if later ones do.\n"
     "\n"
-    "The -s or -strict-json-pointer-syntax flag restricts the -query=STR\n"
-    "string to exactly RFC 6901, with only two escape sequences: \"~0\" and\n"
-    "\"~1\" for \"~\" and \"/\". Without this flag, this program also lets\n"
-    "\"~n\" and \"~r\" escape the New Line and Carriage Return ASCII control\n"
-    "characters, which can work better with line oriented Unix tools that\n"
-    "assume exactly one value (i.e. one JSON Pointer string) per line.\n"
+    "The -strict-json-pointer-syntax flag restricts the -query=STR string to\n"
+    "exactly RFC 6901, with only two escape sequences: \"~0\" and \"~1\" for\n"
+    "\"~\" and \"/\". Without this flag, this program also lets \"~n\" and\n"
+    "\"~r\" escape the New Line and Carriage Return ASCII control characters,\n"
+    "which can work better with line oriented Unix tools that assume exactly\n"
+    "one value (i.e. one JSON Pointer string) per line.\n"
     "\n"
     "----\n"
     "\n"
@@ -568,18 +568,18 @@ struct {
 
   bool compact_output;
   bool fail_if_unsandboxed;
-  size_t indent;
   bool input_json_extra_comma;
   uint32_t max_output_depth;
   bool output_json_extra_comma;
   char* query_c_string;
+  size_t spaces;
   bool strict_json_pointer_syntax;
   bool tabs;
 } g_flags = {0};
 
 const char*  //
 parse_flags(int argc, char** argv) {
-  g_flags.indent = 4;
+  g_flags.spaces = 4;
   g_flags.max_output_depth = 0xFFFFFFFF;
 
   int c = (argc > 0) ? 1 : 0;  // Skip argv[0], the program name.
@@ -626,15 +626,6 @@ parse_flags(int argc, char** argv) {
       g_flags.fail_if_unsandboxed = true;
       continue;
     }
-    if (!strncmp(arg, "i=", 2) || !strncmp(arg, "indent=", 7)) {
-      while (*arg++ != '=') {
-      }
-      if (('0' <= arg[0]) && (arg[0] <= '8') && (arg[1] == '\x00')) {
-        g_flags.indent = arg[0] - '0';
-        continue;
-      }
-      return g_usage;
-    }
     if (!strcmp(arg, "input-json-extra-comma")) {
       g_flags.input_json_extra_comma = true;
       continue;
@@ -649,7 +640,16 @@ parse_flags(int argc, char** argv) {
       g_flags.query_c_string = arg;
       continue;
     }
-    if (!strcmp(arg, "s") || !strcmp(arg, "strict-json-pointer-syntax")) {
+    if (!strncmp(arg, "s=", 2) || !strncmp(arg, "spaces=", 7)) {
+      while (*arg++ != '=') {
+      }
+      if (('0' <= arg[0]) && (arg[0] <= '8') && (arg[1] == '\x00')) {
+        g_flags.spaces = arg[0] - '0';
+        continue;
+      }
+      return g_usage;
+    }
+    if (!strcmp(arg, "strict-json-pointer-syntax")) {
       g_flags.strict_json_pointer_syntax = true;
       continue;
     }
@@ -901,7 +901,7 @@ handle_token(wuffs_base__token t, bool start_of_token_chain) {
           for (uint32_t i = 0; i < g_depth; i++) {
             TRY(write_dst(
                 g_flags.tabs ? INDENT_TAB_STRING : INDENT_SPACES_STRING,
-                g_flags.tabs ? 1 : g_flags.indent));
+                g_flags.tabs ? 1 : g_flags.spaces));
           }
         }
 
@@ -931,7 +931,7 @@ handle_token(wuffs_base__token t, bool start_of_token_chain) {
           for (size_t i = 0; i < g_depth; i++) {
             TRY(write_dst(
                 g_flags.tabs ? INDENT_TAB_STRING : INDENT_SPACES_STRING,
-                g_flags.tabs ? 1 : g_flags.indent));
+                g_flags.tabs ? 1 : g_flags.spaces));
           }
         }
       }
