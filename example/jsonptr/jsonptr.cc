@@ -1063,7 +1063,7 @@ const char*  //
 main1(int argc, char** argv) {
   TRY(initialize_globals(argc, argv));
 
-  bool start_of_token_chain = false;
+  bool start_of_token_chain = true;
   while (true) {
     wuffs_base__status status = g_dec.decode_tokens(
         &g_tok, &g_src,
