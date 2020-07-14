@@ -16,8 +16,8 @@
 
 /*
 jsonptr is a JSON formatter (pretty-printer) that supports the JSON Pointer
-(RFC 6901) query syntax. It reads UTF-8 JSON from stdin and writes
-canonicalized, formatted UTF-8 JSON to stdout.
+(RFC 6901) query syntax. It reads CBOR or UTF-8 JSON from stdin and writes CBOR
+or canonicalized, formatted UTF-8 JSON to stdout.
 
 See the "const char* g_usage" string below for details.
 
@@ -27,23 +27,23 @@ JSON Pointer (and this program's implementation) is one of many JSON query
 languages and JSON tools, such as jq, jql and JMESPath. This one is relatively
 simple and fewer-featured compared to those others.
 
-One benefit of simplicity is that this program's JSON and JSON Pointer
+One benefit of simplicity is that this program's CBOR, JSON and JSON Pointer
 implementations do not dynamically allocate or free memory (yet it does not
 require that the entire input fits in memory at once). They are therefore
 trivially protected against certain bug classes: memory leaks, double-frees and
 use-after-frees.
 
-The core JSON implementation is also written in the Wuffs programming language
-(and then transpiled to C/C++), which is memory-safe (e.g. array indexing is
-bounds-checked) but also guards against integer arithmetic overflows.
+The CBOR and JSON implementations are also written in the Wuffs programming
+language (and then transpiled to C/C++), which is memory-safe (e.g. array
+indexing is bounds-checked) but also prevents integer arithmetic overflows.
 
 For defense in depth, on Linux, this program also self-imposes a
 SECCOMP_MODE_STRICT sandbox before reading (or otherwise processing) its input
 or writing its output. Under this sandbox, the only permitted system calls are
 read, write, exit and sigreturn.
 
-All together, this program aims to safely handle untrusted JSON files without
-fear of security bugs such as remote code execution.
+All together, this program aims to safely handle untrusted CBOR or JSON files
+without fear of security bugs such as remote code execution.
 
 ----
 
@@ -152,6 +152,7 @@ static const char* g_usage =
     "Flags:\n"
     "    -c      -compact-output\n"
     "    -d=NUM  -max-output-depth=NUM\n"
+    "    -o=FMT  -output-format={json,cbor}\n"
     "    -q=STR  -query=STR\n"
     "    -s=NUM  -spaces=NUM\n"
     "    -t      -tabs\n"
@@ -165,8 +166,10 @@ static const char* g_usage =
     "----\n"
     "\n"
     "jsonptr is a JSON formatter (pretty-printer) that supports the JSON\n"
-    "Pointer (RFC 6901) query syntax. It reads UTF-8 JSON from stdin and\n"
-    "writes canonicalized, formatted UTF-8 JSON to stdout.\n"
+    "Pointer (RFC 6901) query syntax. It reads CBOR or UTF-8 JSON from stdin\n"
+    "and writes CBOR or canonicalized, formatted UTF-8 JSON to stdout. The\n"
+    "input and output formats do not have to match, but conversion between\n"
+    "formats may be lossy.\n"
     "\n"
     "Canonicalized means that e.g. \"abc\\u000A\\tx\\u0177z\" is re-written\n"
     "as \"abc\\n\\txŷz\". It does not sort object keys, nor does it reject\n"
@@ -174,7 +177,11 @@ static const char* g_usage =
     "\n"
     "Formatted means that arrays' and objects' elements are indented, each\n"
     "on its own line. Configure this with the -c / -compact-output, -s=NUM /\n"
-    "-spaces=NUM (for NUM ranging from 0 to 8) and -t / -tabs flags.\n"
+    "-spaces=NUM (for NUM ranging from 0 to 8) and -t / -tabs flags. Those\n"
+    "flags only apply to JSON (not CBOR) output.\n"
+    "\n"
+    "The -input-format and -output-format flags select between reading and\n"
+    "writing JSON (the default, a textual format) or CBOR (a binary format).\n"
     "\n"
     "The -input-json-extra-comma flag allows input like \"[1,2,]\", with a\n"
     "comma after the final element of a JSON list or dictionary.\n"
@@ -199,17 +206,18 @@ static const char* g_usage =
     "child (the value in a key-value pair) of the root whose key is the empty\n"
     "string. Similarly, \"/xyz\" and \"/xyz/\" are two different nodes.\n"
     "\n"
-    "If the query found a valid JSON value, this program will return a zero\n"
-    "exit code even if the rest of the input isn't valid JSON. If the query\n"
+    "If the query found a valid JSON|CBOR value, this program will return a\n"
+    "zero exit code even if the rest of the input isn't valid. If the query\n"
     "did not find a value, or found an invalid one, this program returns a\n"
     "non-zero exit code, but may still print partial output to stdout.\n"
     "\n"
-    "The JSON specification (https://json.org/) permits implementations that\n"
-    "allow duplicate keys, as this one does. This JSON Pointer implementation\n"
-    "is also greedy, following the first match for each fragment without\n"
-    "back-tracking. For example, the \"/foo/bar\" query will fail if the root\n"
-    "object has multiple \"foo\" children but the first one doesn't have a\n"
-    "\"bar\" child, even if later ones do.\n"
+    "The JSON and CBOR specifications (https://json.org/ or RFC 8259; RFC\n"
+    "7049) permit implementations to allow duplicate keys, as this one does.\n"
+    "This JSON Pointer implementation is also greedy, following the first\n"
+    "match for each fragment without back-tracking. For example, the\n"
+    "\"/foo/bar\" query will fail if the root object has multiple \"foo\"\n"
+    "children but the first one doesn't have a \"bar\" child, even if later\n"
+    "ones do.\n"
     "\n"
     "The -strict-json-pointer-syntax flag restricts the -query=STR string to\n"
     "exactly RFC 6901, with only two escape sequences: \"~0\" and \"~1\" for\n"
@@ -221,15 +229,15 @@ static const char* g_usage =
     "----\n"
     "\n"
     "The -d=NUM or -max-output-depth=NUM flag gives the maximum (inclusive)\n"
-    "output depth. JSON containers ([] arrays and {} objects) can hold other\n"
-    "containers. When this flag is set, containers at depth NUM are replaced\n"
-    "with \"[…]\" or \"{…}\". A bare -d or -max-output-depth is equivalent to\n"
-    "-d=1. The flag's absence is equivalent to an unlimited output depth.\n"
+    "output depth. JSON|CBOR containers ([] arrays and {} objects) can hold\n"
+    "other containers. When this flag is set, containers at depth NUM are\n"
+    "replaced with \"[…]\" or \"{…}\". A bare -d or -max-output-depth is\n"
+    "equivalent to -d=1. The flag's absence means an unlimited output depth.\n"
     "\n"
     "The -max-output-depth flag only affects the program's output. It doesn't\n"
-    "affect whether or not the input is considered valid JSON. The JSON\n"
-    "specification permits implementations to set their own maximum input\n"
-    "depth. This JSON implementation sets it to 1024.\n"
+    "affect whether or not the input is considered valid JSON|CBOR. The\n"
+    "format specifications permit implementations to set their own maximum\n"
+    "input depth. This JSON|CBOR implementation sets it to 1024.\n"
     "\n"
     "Depth is measured in terms of nested containers. It is unaffected by the\n"
     "number of spaces or tabs used to indent.\n"
@@ -309,6 +317,22 @@ uint32_t g_suppress_write_dst;
 bool g_wrote_to_dst;
 
 wuffs_json__decoder g_dec;
+
+// cbor_output_string_array is a 4 KiB buffer. For -output-format=cbor, strings
+// whose length are 4096 or less are written as a single definite-length
+// string. Longer strings are written as an indefinite-length string containing
+// multiple definite-length chunks, each of length up to 4 KiB. See the CBOR
+// RFC (RFC 7049) section 2.2.2 "Indefinite-Length Byte Strings and Text
+// Strings". The output is determinate even when the input is streamed.
+//
+// If raising CBOR_OUTPUT_STRING_ARRAY_SIZE above 0xFFFF then you will also
+// have to update flush_cbor_output_string.
+#define CBOR_OUTPUT_STRING_ARRAY_SIZE 4096
+uint8_t g_cbor_output_string_array[CBOR_OUTPUT_STRING_ARRAY_SIZE];
+
+uint32_t g_cbor_output_string_length;
+bool g_cbor_output_string_is_multiple_chunks;
+bool g_cbor_output_string_is_utf_8;
 
 // ----
 
@@ -562,6 +586,11 @@ class Query {
 
 // ----
 
+enum class file_format {
+  json,
+  cbor,
+};
+
 struct {
   int remaining_argc;
   char** remaining_argv;
@@ -570,6 +599,7 @@ struct {
   bool fail_if_unsandboxed;
   bool input_json_extra_comma;
   uint32_t max_output_depth;
+  file_format output_format;
   bool output_json_extra_comma;
   char* query_c_string;
   size_t spaces;
@@ -628,6 +658,14 @@ parse_flags(int argc, char** argv) {
     }
     if (!strcmp(arg, "input-json-extra-comma")) {
       g_flags.input_json_extra_comma = true;
+      continue;
+    }
+    if (!strcmp(arg, "o=cbor") || !strcmp(arg, "output-format=cbor")) {
+      g_flags.output_format = file_format::cbor;
+      continue;
+    }
+    if (!strcmp(arg, "o=json") || !strcmp(arg, "output-format=json")) {
+      g_flags.output_format = file_format::json;
       continue;
     }
     if (!strcmp(arg, "output-json-extra-comma")) {
@@ -806,6 +844,140 @@ write_dst(const void* s, size_t n) {
 
 // ----
 
+const char*  //
+write_literal(uint64_t vbd) {
+  const char* ptr = nullptr;
+  size_t len = 0;
+  if (vbd & WUFFS_BASE__TOKEN__VBD__LITERAL__UNDEFINED) {
+    if (g_flags.output_format == file_format::json) {
+      ptr = "null";  // JSON's closest approximation to "undefined".
+      len = 4;
+    } else {
+      ptr = "\xF7";
+      len = 1;
+    }
+  } else if (vbd & WUFFS_BASE__TOKEN__VBD__LITERAL__NULL) {
+    if (g_flags.output_format == file_format::json) {
+      ptr = "null";
+      len = 4;
+    } else {
+      ptr = "\xF6";
+      len = 1;
+    }
+  } else if (vbd & WUFFS_BASE__TOKEN__VBD__LITERAL__FALSE) {
+    if (g_flags.output_format == file_format::json) {
+      ptr = "false";
+      len = 5;
+    } else {
+      ptr = "\xF4";
+      len = 1;
+    }
+  } else if (vbd & WUFFS_BASE__TOKEN__VBD__LITERAL__TRUE) {
+    if (g_flags.output_format == file_format::json) {
+      ptr = "true";
+      len = 4;
+    } else {
+      ptr = "\xF5";
+      len = 1;
+    }
+  } else {
+    return "main: internal error: unexpected write_literal argument";
+  }
+  return write_dst(ptr, len);
+}
+
+// ----
+
+const char*  //
+write_number_cbor_f64(double f) {
+  uint8_t buf[9];
+  wuffs_base__lossy_value_u16 lv16 =
+      wuffs_base__ieee_754_bit_representation__from_f64_to_u16_truncate(f);
+  if (!lv16.lossy) {
+    buf[0] = 0xF9;
+    wuffs_base__store_u16be__no_bounds_check(&buf[1], lv16.value);
+    return write_dst(&buf[0], 3);
+  }
+  wuffs_base__lossy_value_u32 lv32 =
+      wuffs_base__ieee_754_bit_representation__from_f64_to_u32_truncate(f);
+  if (!lv32.lossy) {
+    buf[0] = 0xFA;
+    wuffs_base__store_u32be__no_bounds_check(&buf[1], lv32.value);
+    return write_dst(&buf[0], 5);
+  }
+  buf[0] = 0xFB;
+  wuffs_base__store_u64be__no_bounds_check(
+      &buf[1], wuffs_base__ieee_754_bit_representation__from_f64_to_u64(f));
+  return write_dst(&buf[0], 9);
+}
+
+const char*  //
+write_number_cbor_u64(uint8_t base, uint64_t u) {
+  uint8_t buf[9];
+  if (u < 0x18) {
+    buf[0] = base | ((uint8_t)u);
+    return write_dst(&buf[0], 1);
+  } else if ((u >> 8) == 0) {
+    buf[0] = base | 0x18;
+    buf[1] = ((uint8_t)u);
+    return write_dst(&buf[0], 2);
+  } else if ((u >> 16) == 0) {
+    buf[0] = base | 0x19;
+    wuffs_base__store_u16be__no_bounds_check(&buf[1], ((uint16_t)u));
+    return write_dst(&buf[0], 3);
+  } else if ((u >> 32) == 0) {
+    buf[0] = base | 0x1A;
+    wuffs_base__store_u32be__no_bounds_check(&buf[1], ((uint32_t)u));
+    return write_dst(&buf[0], 5);
+  }
+  buf[0] = base | 0x1B;
+  wuffs_base__store_u64be__no_bounds_check(&buf[1], u);
+  return write_dst(&buf[0], 9);
+}
+
+const char*  //
+write_number(uint64_t vbd, uint8_t* ptr, size_t len) {
+  if (vbd & WUFFS_BASE__TOKEN__VBD__NUMBER__FORMAT_TEXT) {
+    if (g_flags.output_format == file_format::json) {
+      return write_dst(ptr, len);
+    }
+
+    // First try to parse (ptr, len) as an integer. Something like
+    // "1180591620717411303424" is a valid number (in the JSON sense) but will
+    // overflow int64_t or uint64_t, so fall back to parsing it as a float64.
+    if (vbd & WUFFS_BASE__TOKEN__VBD__NUMBER__CONTENT_INTEGER_SIGNED) {
+      if ((len > 0) && (ptr[0] == '-')) {
+        wuffs_base__result_i64 ri = wuffs_base__parse_number_i64(
+            wuffs_base__make_slice_u8(ptr, len),
+            WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS);
+        if (ri.status.is_ok()) {
+          return write_number_cbor_u64(0x20, ~ri.value);
+        }
+      } else {
+        wuffs_base__result_u64 ru = wuffs_base__parse_number_u64(
+            wuffs_base__make_slice_u8(ptr, len),
+            WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS);
+        if (ru.status.is_ok()) {
+          return write_number_cbor_u64(0x00, ru.value);
+        }
+      }
+    }
+
+    if (vbd & WUFFS_BASE__TOKEN__VBD__NUMBER__CONTENT_FLOATING_POINT) {
+      wuffs_base__result_f64 rf = wuffs_base__parse_number_f64(
+          wuffs_base__make_slice_u8(ptr, len),
+          WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS);
+      if (rf.status.is_ok()) {
+        return write_number_cbor_f64(rf.value);
+      }
+    }
+  }
+
+  return "main: internal error: unexpected write_number argument";
+}
+
+// ----
+
 uint8_t  //
 hex_digit(uint8_t nibble) {
   nibble &= 0x0F;
@@ -816,51 +988,181 @@ hex_digit(uint8_t nibble) {
 }
 
 const char*  //
-handle_unicode_code_point(uint32_t ucp) {
-  if (ucp < 0x0020) {
-    switch (ucp) {
-      case '\b':
-        return write_dst("\\b", 2);
-      case '\f':
-        return write_dst("\\f", 2);
-      case '\n':
-        return write_dst("\\n", 2);
-      case '\r':
-        return write_dst("\\r", 2);
-      case '\t':
-        return write_dst("\\t", 2);
-      default: {
-        // Other bytes less than 0x0020 are valid UTF-8 but not valid in a
-        // JSON string. They need to remain escaped.
-        uint8_t esc6[6];
-        esc6[0] = '\\';
-        esc6[1] = 'u';
-        esc6[2] = '0';
-        esc6[3] = '0';
-        esc6[4] = hex_digit(ucp >> 4);
-        esc6[5] = hex_digit(ucp >> 0);
-        return write_dst(&esc6[0], 6);
+flush_cbor_output_string() {
+  uint8_t prefix[3];
+  prefix[0] = g_cbor_output_string_is_utf_8 ? 0x60 : 0x40;
+  if (g_cbor_output_string_length < 0x18) {
+    prefix[0] |= g_cbor_output_string_length;
+    TRY(write_dst(&prefix[0], 1));
+  } else if (g_cbor_output_string_length <= 0xFF) {
+    prefix[0] |= 0x18;
+    prefix[1] = g_cbor_output_string_length;
+    TRY(write_dst(&prefix[0], 2));
+  } else if (g_cbor_output_string_length <= 0xFFFF) {
+    prefix[0] |= 0x19;
+    prefix[1] = g_cbor_output_string_length >> 8;
+    prefix[2] = g_cbor_output_string_length;
+    TRY(write_dst(&prefix[0], 3));
+  } else {
+    return "main: internal error: CBOR string output is too long";
+  }
+
+  size_t n = g_cbor_output_string_length;
+  g_cbor_output_string_length = 0;
+  return write_dst(&g_cbor_output_string_array[0], n);
+}
+
+const char*  //
+write_cbor_output_string(uint8_t* ptr, size_t len, bool finish) {
+  // Check that g_cbor_output_string_array can hold any UTF-8 code point.
+  if (CBOR_OUTPUT_STRING_ARRAY_SIZE < 4) {
+    return "main: internal error: CBOR_OUTPUT_STRING_ARRAY_SIZE is too short";
+  }
+
+  while (len > 0) {
+    size_t available =
+        CBOR_OUTPUT_STRING_ARRAY_SIZE - g_cbor_output_string_length;
+    if (available >= len) {
+      memcpy(&g_cbor_output_string_array[g_cbor_output_string_length], ptr,
+             len);
+      g_cbor_output_string_length += len;
+      ptr += len;
+      len = 0;
+      break;
+
+    } else if (available > 0) {
+      if (!g_cbor_output_string_is_multiple_chunks) {
+        g_cbor_output_string_is_multiple_chunks = true;
+        TRY(write_dst(g_cbor_output_string_is_utf_8 ? "\x7F" : "\x5F", 1));
       }
+
+      if (g_cbor_output_string_is_utf_8) {
+        // Walk the end backwards to a UTF-8 boundary, so that each chunk of
+        // the multi-chunk string is also valid UTF-8.
+        while (available > 0) {
+          wuffs_base__utf_8__next__output o = wuffs_base__utf_8__next_from_end(
+              wuffs_base__make_slice_u8(ptr, available));
+          if ((o.code_point != WUFFS_BASE__UNICODE_REPLACEMENT_CHARACTER) ||
+              (o.byte_length != 1)) {
+            break;
+          }
+          available--;
+        }
+      }
+
+      memcpy(&g_cbor_output_string_array[g_cbor_output_string_length], ptr,
+             available);
+      g_cbor_output_string_length += available;
+      ptr += available;
+      len -= available;
     }
 
-  } else if (ucp == '\"') {
-    return write_dst("\\\"", 2);
+    TRY(flush_cbor_output_string());
+  }
 
-  } else if (ucp == '\\') {
-    return write_dst("\\\\", 2);
+  if (finish) {
+    TRY(flush_cbor_output_string());
+    if (g_cbor_output_string_is_multiple_chunks) {
+      TRY(write_dst("\xFF", 1));
+    }
+  }
+  return nullptr;
+}
 
+const char*  //
+handle_string(uint64_t vbd,
+              uint64_t len,
+              bool start_of_token_chain,
+              bool continued) {
+  if (start_of_token_chain) {
+    if (g_flags.output_format == file_format::json) {
+      TRY(write_dst("\"", 1));
+    } else {
+      g_cbor_output_string_length = 0;
+      g_cbor_output_string_is_multiple_chunks = false;
+      g_cbor_output_string_is_utf_8 =
+          vbd & WUFFS_BASE__TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8;
+    }
+    g_query.restart_fragment(in_dict_before_key() && g_query.is_at(g_depth));
+  }
+
+  if (vbd & WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_0_DST_1_SRC_DROP) {
+    // No-op.
+  } else if (vbd & WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY) {
+    uint8_t* ptr = g_src.data.ptr + g_curr_token_end_src_index - len;
+    if (g_flags.output_format == file_format::json) {
+      // TODO: if the input is CBOR but the output is JSON then we have to
+      // escape '\n', '\"', etc.
+      TRY(write_dst(ptr, len));
+    } else {
+      TRY(write_cbor_output_string(ptr, len, false));
+    }
+    g_query.incremental_match_slice(ptr, len);
   } else {
-    uint8_t u[WUFFS_BASE__UTF_8__BYTE_LENGTH__MAX_INCL];
-    size_t n = wuffs_base__utf_8__encode(
-        wuffs_base__make_slice_u8(&u[0],
-                                  WUFFS_BASE__UTF_8__BYTE_LENGTH__MAX_INCL),
-        ucp);
-    if (n > 0) {
-      return write_dst(&u[0], n);
+    return "main: internal error: unexpected string-token conversion";
+  }
+
+  if (continued) {
+    return nullptr;
+  }
+
+  if (g_flags.output_format == file_format::json) {
+    TRY(write_dst("\"", 1));
+  } else {
+    TRY(write_cbor_output_string(nullptr, 0, true));
+  }
+  return nullptr;
+}
+
+const char*  //
+handle_unicode_code_point(uint32_t ucp) {
+  if (g_flags.output_format == file_format::json) {
+    if (ucp < 0x0020) {
+      switch (ucp) {
+        case '\b':
+          return write_dst("\\b", 2);
+        case '\f':
+          return write_dst("\\f", 2);
+        case '\n':
+          return write_dst("\\n", 2);
+        case '\r':
+          return write_dst("\\r", 2);
+        case '\t':
+          return write_dst("\\t", 2);
+      }
+
+      // Other bytes less than 0x0020 are valid UTF-8 but not valid in a
+      // JSON string. They need to remain escaped.
+      uint8_t esc6[6];
+      esc6[0] = '\\';
+      esc6[1] = 'u';
+      esc6[2] = '0';
+      esc6[3] = '0';
+      esc6[4] = hex_digit(ucp >> 4);
+      esc6[5] = hex_digit(ucp >> 0);
+      return write_dst(&esc6[0], 6);
+
+    } else if (ucp == '\"') {
+      return write_dst("\\\"", 2);
+
+    } else if (ucp == '\\') {
+      return write_dst("\\\\", 2);
     }
   }
 
-  return "main: internal error: unexpected Unicode code point";
+  uint8_t u[WUFFS_BASE__UTF_8__BYTE_LENGTH__MAX_INCL];
+  size_t n = wuffs_base__utf_8__encode(
+      wuffs_base__make_slice_u8(&u[0],
+                                WUFFS_BASE__UTF_8__BYTE_LENGTH__MAX_INCL),
+      ucp);
+  if (n == 0) {
+    return "main: internal error: unexpected Unicode code point";
+  }
+
+  if (g_flags.output_format == file_format::json) {
+    return write_dst(&u[0], n);
+  }
+  return write_cbor_output_string(&u[0], n, false);
 }
 
 const char*  //
@@ -884,11 +1186,18 @@ handle_token(wuffs_base__token t, bool start_of_token_chain) {
       if (g_query.matched_all() && (g_depth >= g_flags.max_output_depth)) {
         g_suppress_write_dst--;
         // '…' is U+2026 HORIZONTAL ELLIPSIS, which is 3 UTF-8 bytes.
-        TRY(write_dst((vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__FROM_LIST)
-                          ? "\"[…]\""
-                          : "\"{…}\"",
-                      7));
-      } else {
+        if (g_flags.output_format == file_format::json) {
+          TRY(write_dst((vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__FROM_LIST)
+                            ? "\"[…]\""
+                            : "\"{…}\"",
+                        7));
+        } else {
+          TRY(write_dst((vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__FROM_LIST)
+                            ? "\x65[…]"
+                            : "\x65{…}",
+                        6));
+        }
+      } else if (g_flags.output_format == file_format::json) {
         // Write preceding whitespace.
         if ((g_ctx != context::in_list_after_bracket) &&
             (g_ctx != context::in_dict_after_brace) &&
@@ -908,6 +1217,8 @@ handle_token(wuffs_base__token t, bool start_of_token_chain) {
         TRY(write_dst(
             (vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__FROM_LIST) ? "]" : "}",
             1));
+      } else {
+        TRY(write_dst("\xFF", 1));
       }
 
       g_ctx = (vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__TO_LIST)
@@ -919,7 +1230,9 @@ handle_token(wuffs_base__token t, bool start_of_token_chain) {
     // Write preceding whitespace and punctuation, if it wasn't ']', '}' or a
     // continuation of a multi-token chain.
     if (start_of_token_chain) {
-      if (g_ctx == context::in_dict_after_key) {
+      if (g_flags.output_format != file_format::json) {
+        // No-op.
+      } else if (g_ctx == context::in_dict_after_key) {
         TRY(write_dst(": ", g_flags.compact_output ? 1 : 2));
       } else if (g_ctx != context::none) {
         if ((g_ctx != context::in_list_after_bracket) &&
@@ -980,10 +1293,15 @@ handle_token(wuffs_base__token t, bool start_of_token_chain) {
       case WUFFS_BASE__TOKEN__VBC__STRUCTURE:
         if (g_query.matched_all() && (g_depth >= g_flags.max_output_depth)) {
           g_suppress_write_dst++;
-        } else {
+        } else if (g_flags.output_format == file_format::json) {
           TRY(write_dst(
               (vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__TO_LIST) ? "[" : "{",
               1));
+        } else {
+          TRY(write_dst((vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__TO_LIST)
+                            ? "\x9F"
+                            : "\xBF",
+                        1));
         }
         g_depth++;
         g_ctx = (vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__TO_LIST)
@@ -992,27 +1310,10 @@ handle_token(wuffs_base__token t, bool start_of_token_chain) {
         return nullptr;
 
       case WUFFS_BASE__TOKEN__VBC__STRING:
-        if (start_of_token_chain) {
-          TRY(write_dst("\"", 1));
-          g_query.restart_fragment(in_dict_before_key() &&
-                                   g_query.is_at(g_depth));
-        }
-
-        if (vbd & WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_0_DST_1_SRC_DROP) {
-          // No-op.
-        } else if (vbd &
-                   WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY) {
-          uint8_t* ptr = g_src.data.ptr + g_curr_token_end_src_index - len;
-          TRY(write_dst(ptr, len));
-          g_query.incremental_match_slice(ptr, len);
-        } else {
-          return "main: internal error: unexpected string-token conversion";
-        }
-
+        TRY(handle_string(vbd, len, start_of_token_chain, t.continued()));
         if (t.continued()) {
           return nullptr;
         }
-        TRY(write_dst("\"", 1));
         goto after_value;
 
       case WUFFS_BASE__TOKEN__VBC__UNICODE_CODE_POINT:
@@ -1024,8 +1325,12 @@ handle_token(wuffs_base__token t, bool start_of_token_chain) {
         return nullptr;
 
       case WUFFS_BASE__TOKEN__VBC__LITERAL:
+        TRY(write_literal(vbd));
+        goto after_value;
+
       case WUFFS_BASE__TOKEN__VBC__NUMBER:
-        TRY(write_dst(g_src.data.ptr + g_curr_token_end_src_index - len, len));
+        TRY(write_number(vbd, g_src.data.ptr + g_curr_token_end_src_index - len,
+                         len));
         goto after_value;
     }
 
@@ -1200,7 +1505,9 @@ main(int argc, char** argv) {
 
   const char* z = main1(argc, argv);
   if (g_wrote_to_dst) {
-    const char* z1 = write_dst("\n", 1);
+    const char* z1 = (g_flags.output_format == file_format::json)
+                         ? write_dst("\n", 1)
+                         : nullptr;
     const char* z2 = flush_dst();
     z = z ? z : (z1 ? z1 : z2);
   }
