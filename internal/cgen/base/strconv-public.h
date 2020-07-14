@@ -389,6 +389,30 @@ wuffs_base__base_16__decode4(wuffs_base__slice_u8 dst,
                              bool src_closed,
                              uint32_t options);
 
+// wuffs_base__base_16__encode2 converts "jk" to "6A6B", where e.g. 'j' is
+// U+006A. There are 2 dst bytes for every src byte.
+//
+// For modular builds that divide the base module into sub-modules, using this
+// function requires the WUFFS_CONFIG__MODULE__BASE__INTCONV sub-module, not
+// just WUFFS_CONFIG__MODULE__BASE__CORE.
+WUFFS_BASE__MAYBE_STATIC wuffs_base__transform__output  //
+wuffs_base__base_16__encode2(wuffs_base__slice_u8 dst,
+                             wuffs_base__slice_u8 src,
+                             bool src_closed,
+                             uint32_t options);
+
+// wuffs_base__base_16__encode4 converts "jk" to "\\x6A\\x6B", where e.g. 'j'
+// is U+006A. There are 4 dst bytes for every src byte.
+//
+// For modular builds that divide the base module into sub-modules, using this
+// function requires the WUFFS_CONFIG__MODULE__BASE__INTCONV sub-module, not
+// just WUFFS_CONFIG__MODULE__BASE__CORE.
+WUFFS_BASE__MAYBE_STATIC wuffs_base__transform__output  //
+wuffs_base__base_16__encode2(wuffs_base__slice_u8 dst,
+                             wuffs_base__slice_u8 src,
+                             bool src_closed,
+                             uint32_t options);
+
 // ---------------- Base-64
 
 // Options (bitwise or'ed together) for wuffs_base__base_64__xxx functions.

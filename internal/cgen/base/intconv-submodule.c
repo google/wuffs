@@ -103,6 +103,11 @@ static const uint8_t wuffs_base__parse_number__hexadecimal_digits[256] = {
     // 8     9     A     B     C     D     E     F
 };
 
+static const uint8_t wuffs_base__private_implementation__encode_base16[16] = {
+    0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37,  // 0x00 ..= 0x07.
+    0x38, 0x39, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46,  // 0x08 ..= 0x0F.
+};
+
 // --------
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__result_i64  //
@@ -490,6 +495,82 @@ wuffs_base__base_16__decode4(wuffs_base__slice_u8 dst,
 
   o.num_dst = len;
   o.num_src = len * 4;
+  return o;
+}
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__transform__output  //
+wuffs_base__base_16__encode2(wuffs_base__slice_u8 dst,
+                             wuffs_base__slice_u8 src,
+                             bool src_closed,
+                             uint32_t options) {
+  wuffs_base__transform__output o;
+  size_t dst_len2 = dst.len / 2;
+  size_t len;
+  if (dst_len2 < src.len) {
+    len = dst_len2;
+    o.status.repr = wuffs_base__suspension__short_write;
+  } else {
+    len = src.len;
+    if (!src_closed) {
+      o.status.repr = wuffs_base__suspension__short_read;
+    } else {
+      o.status.repr = NULL;
+    }
+  }
+
+  uint8_t* d = dst.ptr;
+  uint8_t* s = src.ptr;
+  size_t n = len;
+
+  while (n--) {
+    uint8_t c = *s;
+    d[0] = wuffs_base__private_implementation__encode_base16[c >> 4];
+    d[1] = wuffs_base__private_implementation__encode_base16[c & 0x0F];
+    d += 2;
+    s += 1;
+  }
+
+  o.num_dst = len * 2;
+  o.num_src = len;
+  return o;
+}
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__transform__output  //
+wuffs_base__base_16__encode4(wuffs_base__slice_u8 dst,
+                             wuffs_base__slice_u8 src,
+                             bool src_closed,
+                             uint32_t options) {
+  wuffs_base__transform__output o;
+  size_t dst_len4 = dst.len / 4;
+  size_t len;
+  if (dst_len4 < src.len) {
+    len = dst_len4;
+    o.status.repr = wuffs_base__suspension__short_write;
+  } else {
+    len = src.len;
+    if (!src_closed) {
+      o.status.repr = wuffs_base__suspension__short_read;
+    } else {
+      o.status.repr = NULL;
+    }
+  }
+
+  uint8_t* d = dst.ptr;
+  uint8_t* s = src.ptr;
+  size_t n = len;
+
+  while (n--) {
+    uint8_t c = *s;
+    d[0] = '\\';
+    d[1] = 'x';
+    d[2] = wuffs_base__private_implementation__encode_base16[c >> 4];
+    d[3] = wuffs_base__private_implementation__encode_base16[c & 0x0F];
+    d += 4;
+    s += 1;
+  }
+
+  o.num_dst = len * 4;
+  o.num_src = len;
   return o;
 }
 
