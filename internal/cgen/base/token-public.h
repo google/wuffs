@@ -63,6 +63,7 @@ wuffs_base__make_token(uint64_t repr) {
 #define WUFFS_BASE__TOKEN__VBC__UNICODE_CODE_POINT 3
 #define WUFFS_BASE__TOKEN__VBC__LITERAL 4
 #define WUFFS_BASE__TOKEN__VBC__NUMBER 5
+#define WUFFS_BASE__TOKEN__VBC__INLINE_INTEGER 6
 
 // --------
 
@@ -137,7 +138,7 @@ wuffs_base__make_token(uint64_t repr) {
 // --------
 
 // For a source string of "123" or "0x9A", it is valid for a tokenizer to
-// return any one of:
+// return any combination of:
 //  - WUFFS_BASE__TOKEN__VBD__NUMBER__CONTENT_FLOATING_POINT.
 //  - WUFFS_BASE__TOKEN__VBD__NUMBER__CONTENT_INTEGER_SIGNED.
 //  - WUFFS_BASE__TOKEN__VBD__NUMBER__CONTENT_INTEGER_UNSIGNED.
@@ -156,10 +157,13 @@ wuffs_base__make_token(uint64_t repr) {
 
 // The number 300 might be represented as "\x01\x2C", "\x2C\x01\x00\x00" or
 // "300", which are big-endian, little-endian or text. For binary formats, the
-// token length discriminates e.g. u16 little-endian vs u32 little-endian.
+// token length (after adjusting for FORMAT_IGNORE_ETC) discriminates
+// e.g. u16 little-endian vs u32 little-endian.
 #define WUFFS_BASE__TOKEN__VBD__NUMBER__FORMAT_BINARY_BIG_ENDIAN 0x00100
 #define WUFFS_BASE__TOKEN__VBD__NUMBER__FORMAT_BINARY_LITTLE_ENDIAN 0x00200
 #define WUFFS_BASE__TOKEN__VBD__NUMBER__FORMAT_TEXT 0x00400
+
+#define WUFFS_BASE__TOKEN__VBD__NUMBER__FORMAT_IGNORE_FIRST_BYTE 0x01000
 
 // --------
 

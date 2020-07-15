@@ -82,6 +82,7 @@
 // code simply isn't compiled.
 #define WUFFS_CONFIG__MODULES
 #define WUFFS_CONFIG__MODULE__BASE
+#define WUFFS_CONFIG__MODULE__CBOR
 #define WUFFS_CONFIG__MODULE__JSON
 
 // If building this program in an environment that doesn't easily accommodate
@@ -91,8 +92,14 @@
 
 // Wuffs allows either statically or dynamically allocated work buffers. This
 // program exercises static allocation.
+#if WUFFS_CBOR__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE > \
+    WUFFS_JSON__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE
+#define WORK_BUFFER_ARRAY_SIZE \
+  WUFFS_CBOR__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE
+#else
 #define WORK_BUFFER_ARRAY_SIZE \
   WUFFS_JSON__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE
+#endif
 #if WORK_BUFFER_ARRAY_SIZE > 0
 uint8_t g_work_buffer_array[WORK_BUFFER_ARRAY_SIZE];
 #else
@@ -113,7 +120,9 @@ wuffs_base__token g_tok_buffer_array[TOKEN_BUFFER_ARRAY_SIZE];
 wuffs_base__io_buffer g_src;
 wuffs_base__token_buffer g_tok;
 
-wuffs_json__decoder g_dec;
+wuffs_cbor__decoder g_cbor_decoder;
+wuffs_json__decoder g_json_decoder;
+wuffs_base__token_decoder* g_dec;
 wuffs_base__status g_dec_status;
 
 #define TRY(error_msg)         \
@@ -149,12 +158,18 @@ read_src() {
 
 // ----
 
+typedef enum file_format_enum {
+  FILE_FORMAT_JSON,
+  FILE_FORMAT_CBOR,
+} file_format;
+
 struct {
   int remaining_argc;
   char** remaining_argv;
 
   bool all_tokens;
   bool human_readable;
+  file_format input_format;
   bool quirks;
 } g_flags = {0};
 
@@ -188,6 +203,14 @@ parse_flags(int argc, char** argv) {
       g_flags.human_readable = true;
       continue;
     }
+    if (!strcmp(arg, "i=cbor") || !strcmp(arg, "input-format=cbor")) {
+      g_flags.input_format = FILE_FORMAT_CBOR;
+      continue;
+    }
+    if (!strcmp(arg, "i=json") || !strcmp(arg, "input-format=json")) {
+      g_flags.input_format = FILE_FORMAT_JSON;
+      continue;
+    }
     if (!strcmp(arg, "q") || !strcmp(arg, "quirks")) {
       g_flags.quirks = true;
       continue;
@@ -208,7 +231,7 @@ const char* g_vbc_names[16] = {
     "3:UnicodeCodePoint",  //
     "4:Literal.........",  //
     "5:Number..........",  //
-    "6:Reserved........",  //
+    "6:Inline_Integer..",  //
     "7:Reserved........",  //
     "8:Reserved........",  //
     "9:Reserved........",  //
@@ -241,10 +264,22 @@ main1(int argc, char** argv) {
       wuffs_base__make_slice_token(g_tok_buffer_array, TOKEN_BUFFER_ARRAY_SIZE),
       wuffs_base__empty_token_buffer_meta());
 
-  wuffs_base__status init_status = wuffs_json__decoder__initialize(
-      &g_dec, sizeof__wuffs_json__decoder(), WUFFS_VERSION, 0);
-  if (!wuffs_base__status__is_ok(&init_status)) {
-    return wuffs_base__status__message(&init_status);
+  if (g_flags.input_format == FILE_FORMAT_JSON) {
+    wuffs_base__status init_status = wuffs_json__decoder__initialize(
+        &g_json_decoder, sizeof__wuffs_json__decoder(), WUFFS_VERSION, 0);
+    if (!wuffs_base__status__is_ok(&init_status)) {
+      return wuffs_base__status__message(&init_status);
+    }
+    g_dec = wuffs_json__decoder__upcast_as__wuffs_base__token_decoder(
+        &g_json_decoder);
+  } else {
+    wuffs_base__status init_status = wuffs_cbor__decoder__initialize(
+        &g_cbor_decoder, sizeof__wuffs_cbor__decoder(), WUFFS_VERSION, 0);
+    if (!wuffs_base__status__is_ok(&init_status)) {
+      return wuffs_base__status__message(&init_status);
+    }
+    g_dec = wuffs_cbor__decoder__upcast_as__wuffs_base__token_decoder(
+        &g_cbor_decoder);
   }
 
   if (g_flags.quirks) {
@@ -269,14 +304,14 @@ main1(int argc, char** argv) {
     };
     uint32_t i;
     for (i = 0; quirks[i]; i++) {
-      wuffs_json__decoder__set_quirk_enabled(&g_dec, quirks[i], true);
+      wuffs_base__token_decoder__set_quirk_enabled(g_dec, quirks[i], true);
     }
   }
 
   uint64_t pos = 0;
   while (true) {
-    wuffs_base__status status = wuffs_json__decoder__decode_tokens(
-        &g_dec, &g_tok, &g_src,
+    wuffs_base__status status = wuffs_base__token_decoder__decode_tokens(
+        g_dec, &g_tok, &g_src,
         wuffs_base__make_slice_u8(g_work_buffer_array, WORK_BUFFER_ARRAY_SIZE));
 
     while (g_tok.meta.ri < g_tok.meta.wi) {

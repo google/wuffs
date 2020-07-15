@@ -121,6 +121,7 @@ for a C++ compiler $CXX, such as clang++ or g++.
 // code simply isn't compiled.
 #define WUFFS_CONFIG__MODULES
 #define WUFFS_CONFIG__MODULE__BASE
+#define WUFFS_CONFIG__MODULE__CBOR
 #define WUFFS_CONFIG__MODULE__JSON
 
 // If building this program in an environment that doesn't easily accommodate
@@ -152,6 +153,7 @@ static const char* g_usage =
     "Flags:\n"
     "    -c      -compact-output\n"
     "    -d=NUM  -max-output-depth=NUM\n"
+    "    -i=FMT  -input-format={json,cbor}\n"
     "    -o=FMT  -output-format={json,cbor}\n"
     "    -q=STR  -query=STR\n"
     "    -s=NUM  -spaces=NUM\n"
@@ -316,7 +318,9 @@ in_dict_before_key() {
 uint32_t g_suppress_write_dst;
 bool g_wrote_to_dst;
 
-wuffs_json__decoder g_dec;
+wuffs_cbor__decoder g_cbor_decoder;
+wuffs_json__decoder g_json_decoder;
+wuffs_base__token_decoder* g_dec;
 
 // cbor_output_string_array is a 4 KiB buffer. For -output-format=cbor, strings
 // whose length are 4096 or less are written as a single definite-length
@@ -597,6 +601,7 @@ struct {
 
   bool compact_output;
   bool fail_if_unsandboxed;
+  file_format input_format;
   bool input_json_extra_comma;
   uint32_t max_output_depth;
   file_format output_format;
@@ -654,6 +659,14 @@ parse_flags(int argc, char** argv) {
     }
     if (!strcmp(arg, "fail-if-unsandboxed")) {
       g_flags.fail_if_unsandboxed = true;
+      continue;
+    }
+    if (!strcmp(arg, "i=cbor") || !strcmp(arg, "input-format=cbor")) {
+      g_flags.input_format = file_format::cbor;
+      continue;
+    }
+    if (!strcmp(arg, "i=json") || !strcmp(arg, "input-format=json")) {
+      g_flags.input_format = file_format::json;
       continue;
     }
     if (!strcmp(arg, "input-json-extra-comma")) {
@@ -747,18 +760,27 @@ initialize_globals(int argc, char** argv) {
   g_suppress_write_dst = g_query.next_fragment() ? 1 : 0;
   g_wrote_to_dst = false;
 
-  TRY(g_dec.initialize(sizeof__wuffs_json__decoder(), WUFFS_VERSION, 0)
-          .message());
+  if (g_flags.input_format == file_format::json) {
+    TRY(g_json_decoder
+            .initialize(sizeof__wuffs_json__decoder(), WUFFS_VERSION, 0)
+            .message());
+    g_dec = g_json_decoder.upcast_as__wuffs_base__token_decoder();
+  } else {
+    TRY(g_cbor_decoder
+            .initialize(sizeof__wuffs_cbor__decoder(), WUFFS_VERSION, 0)
+            .message());
+    g_dec = g_cbor_decoder.upcast_as__wuffs_base__token_decoder();
+  }
 
   if (g_flags.input_json_extra_comma) {
-    g_dec.set_quirk_enabled(WUFFS_JSON__QUIRK_ALLOW_EXTRA_COMMA, true);
+    g_dec->set_quirk_enabled(WUFFS_JSON__QUIRK_ALLOW_EXTRA_COMMA, true);
   }
 
   // Consume an optional whitespace trailer. This isn't part of the JSON spec,
   // but it works better with line oriented Unix tools (such as "echo 123 |
   // jsonptr" where it's "echo", not "echo -n") or hand-edited JSON files which
   // can accidentally contain trailing whitespace.
-  g_dec.set_quirk_enabled(WUFFS_JSON__QUIRK_ALLOW_TRAILING_NEW_LINE, true);
+  g_dec->set_quirk_enabled(WUFFS_JSON__QUIRK_ALLOW_TRAILING_NEW_LINE, true);
 
   return nullptr;
 }
@@ -937,11 +959,48 @@ write_number_cbor_u64(uint8_t base, uint64_t u) {
 
 const char*  //
 write_number(uint64_t vbd, uint8_t* ptr, size_t len) {
-  if (vbd & WUFFS_BASE__TOKEN__VBD__NUMBER__FORMAT_TEXT) {
-    if (g_flags.output_format == file_format::json) {
+  if (g_flags.output_format == file_format::json) {
+    if (vbd & WUFFS_BASE__TOKEN__VBD__NUMBER__FORMAT_TEXT) {
       return write_dst(ptr, len);
+    } else if ((vbd &
+                WUFFS_BASE__TOKEN__VBD__NUMBER__CONTENT_INTEGER_UNSIGNED) &&
+               (vbd &
+                WUFFS_BASE__TOKEN__VBD__NUMBER__FORMAT_BINARY_BIG_ENDIAN)) {
+      if (vbd & WUFFS_BASE__TOKEN__VBD__NUMBER__FORMAT_IGNORE_FIRST_BYTE) {
+        if (len == 0) {
+          goto fail;
+        }
+        ptr++;
+        len--;
+      }
+      uint64_t u;
+      switch (len) {
+        case 1:
+          u = wuffs_base__load_u8__no_bounds_check(ptr);
+          break;
+        case 2:
+          u = wuffs_base__load_u16be__no_bounds_check(ptr);
+          break;
+        case 4:
+          u = wuffs_base__load_u32be__no_bounds_check(ptr);
+          break;
+        case 8:
+          u = wuffs_base__load_u64be__no_bounds_check(ptr);
+          break;
+        default:
+          goto fail;
+      }
+      uint8_t buf[WUFFS_BASE__U64__BYTE_LENGTH__MAX_INCL];
+      size_t n = wuffs_base__render_number_u64(
+          wuffs_base__make_slice_u8(&buf[0], sizeof buf), u,
+          WUFFS_BASE__RENDER_NUMBER_XXX__DEFAULT_OPTIONS);
+      return write_dst(&buf[0], n);
     }
 
+    // From here on, (g_flags.output_format == file_format::cbor).
+  } else if (vbd & WUFFS_BASE__TOKEN__VBD__NUMBER__FORMAT_BINARY_BIG_ENDIAN) {
+    return write_dst(ptr, len);
+  } else if (vbd & WUFFS_BASE__TOKEN__VBD__NUMBER__FORMAT_TEXT) {
     // First try to parse (ptr, len) as an integer. Something like
     // "1180591620717411303424" is a valid number (in the JSON sense) but will
     // overflow int64_t or uint64_t, so fall back to parsing it as a float64.
@@ -973,7 +1032,21 @@ write_number(uint64_t vbd, uint8_t* ptr, size_t len) {
     }
   }
 
+fail:
   return "main: internal error: unexpected write_number argument";
+}
+
+const char*  //
+write_inline_integer(uint64_t vbd, uint8_t* ptr, size_t len) {
+  if (g_flags.output_format == file_format::cbor) {
+    return write_dst(ptr, len);
+  }
+
+  uint8_t buf[WUFFS_BASE__I64__BYTE_LENGTH__MAX_INCL];
+  size_t n = wuffs_base__render_number_i64(
+      wuffs_base__make_slice_u8(&buf[0], sizeof buf), (int16_t)vbd,
+      WUFFS_BASE__RENDER_NUMBER_XXX__DEFAULT_OPTIONS);
+  return write_dst(&buf[0], n);
 }
 
 // ----
@@ -1332,6 +1405,11 @@ handle_token(wuffs_base__token t, bool start_of_token_chain) {
         TRY(write_number(vbd, g_src.data.ptr + g_curr_token_end_src_index - len,
                          len));
         goto after_value;
+
+      case WUFFS_BASE__TOKEN__VBC__INLINE_INTEGER:
+        TRY(write_inline_integer(
+            vbd, g_src.data.ptr + g_curr_token_end_src_index - len, len));
+        goto after_value;
     }
 
     // Return an error if we didn't match the (vbc, vbd) pair.
@@ -1370,7 +1448,7 @@ main1(int argc, char** argv) {
 
   bool start_of_token_chain = true;
   while (true) {
-    wuffs_base__status status = g_dec.decode_tokens(
+    wuffs_base__status status = g_dec->decode_tokens(
         &g_tok, &g_src,
         wuffs_base__make_slice_u8(g_work_buffer_array, WORK_BUFFER_ARRAY_SIZE));
 

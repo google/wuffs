@@ -2133,6 +2133,7 @@ wuffs_base__make_token(uint64_t repr) {
 #define WUFFS_BASE__TOKEN__VBC__UNICODE_CODE_POINT 3
 #define WUFFS_BASE__TOKEN__VBC__LITERAL 4
 #define WUFFS_BASE__TOKEN__VBC__NUMBER 5
+#define WUFFS_BASE__TOKEN__VBC__INLINE_INTEGER 6
 
 // --------
 
@@ -2207,7 +2208,7 @@ wuffs_base__make_token(uint64_t repr) {
 // --------
 
 // For a source string of "123" or "0x9A", it is valid for a tokenizer to
-// return any one of:
+// return any combination of:
 //  - WUFFS_BASE__TOKEN__VBD__NUMBER__CONTENT_FLOATING_POINT.
 //  - WUFFS_BASE__TOKEN__VBD__NUMBER__CONTENT_INTEGER_SIGNED.
 //  - WUFFS_BASE__TOKEN__VBD__NUMBER__CONTENT_INTEGER_UNSIGNED.
@@ -2226,10 +2227,13 @@ wuffs_base__make_token(uint64_t repr) {
 
 // The number 300 might be represented as "\x01\x2C", "\x2C\x01\x00\x00" or
 // "300", which are big-endian, little-endian or text. For binary formats, the
-// token length discriminates e.g. u16 little-endian vs u32 little-endian.
+// token length (after adjusting for FORMAT_IGNORE_ETC) discriminates
+// e.g. u16 little-endian vs u32 little-endian.
 #define WUFFS_BASE__TOKEN__VBD__NUMBER__FORMAT_BINARY_BIG_ENDIAN 0x00100
 #define WUFFS_BASE__TOKEN__VBD__NUMBER__FORMAT_BINARY_LITTLE_ENDIAN 0x00200
 #define WUFFS_BASE__TOKEN__VBD__NUMBER__FORMAT_TEXT 0x00400
+
+#define WUFFS_BASE__TOKEN__VBD__NUMBER__FORMAT_IGNORE_FIRST_BYTE 0x01000
 
 // --------
 
@@ -5499,6 +5503,207 @@ struct wuffs_bmp__decoder__struct {
 
 #endif  // __cplusplus
 };  // struct wuffs_bmp__decoder__struct
+
+#endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// ---------------- Status Codes
+
+extern const char wuffs_cbor__error__bad_input[];
+
+// ---------------- Public Consts
+
+// ---------------- Struct Declarations
+
+typedef struct wuffs_cbor__decoder__struct wuffs_cbor__decoder;
+
+// ---------------- Public Initializer Prototypes
+
+// For any given "wuffs_foo__bar* self", "wuffs_foo__bar__initialize(self,
+// etc)" should be called before any other "wuffs_foo__bar__xxx(self, etc)".
+//
+// Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.
+// Pass 0 (or some combination of WUFFS_INITIALIZE__XXX) for options.
+
+wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
+wuffs_cbor__decoder__initialize(
+    wuffs_cbor__decoder* self,
+    size_t sizeof_star_self,
+    uint64_t wuffs_version,
+    uint32_t options);
+
+size_t
+sizeof__wuffs_cbor__decoder();
+
+// ---------------- Allocs
+
+// These functions allocate and initialize Wuffs structs. They return NULL if
+// memory allocation fails. If they return non-NULL, there is no need to call
+// wuffs_foo__bar__initialize, but the caller is responsible for eventually
+// calling free on the returned pointer. That pointer is effectively a C++
+// std::unique_ptr<T, decltype(&free)>.
+
+wuffs_cbor__decoder*
+wuffs_cbor__decoder__alloc();
+
+static inline wuffs_base__token_decoder*
+wuffs_cbor__decoder__alloc_as__wuffs_base__token_decoder() {
+  return (wuffs_base__token_decoder*)(wuffs_cbor__decoder__alloc());
+}
+
+// ---------------- Upcasts
+
+static inline wuffs_base__token_decoder*
+wuffs_cbor__decoder__upcast_as__wuffs_base__token_decoder(
+    wuffs_cbor__decoder* p) {
+  return (wuffs_base__token_decoder*)p;
+}
+
+// ---------------- Public Function Prototypes
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct
+wuffs_cbor__decoder__set_quirk_enabled(
+    wuffs_cbor__decoder* self,
+    uint32_t a_quirk,
+    bool a_enabled);
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__range_ii_u64
+wuffs_cbor__decoder__workbuf_len(
+    const wuffs_cbor__decoder* self);
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status
+wuffs_cbor__decoder__decode_tokens(
+    wuffs_cbor__decoder* self,
+    wuffs_base__token_buffer* a_dst,
+    wuffs_base__io_buffer* a_src,
+    wuffs_base__slice_u8 a_workbuf);
+
+// ---------------- Struct Definitions
+
+// These structs' fields, and the sizeof them, are private implementation
+// details that aren't guaranteed to be stable across Wuffs versions.
+//
+// See https://en.wikipedia.org/wiki/Opaque_pointer#C
+
+#if defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
+
+struct wuffs_cbor__decoder__struct {
+  // Do not access the private_impl's or private_data's fields directly. There
+  // is no API/ABI compatibility or safety guarantee if you do so. Instead, use
+  // the wuffs_foo__bar__baz functions.
+  //
+  // It is a struct, not a struct*, so that the outermost wuffs_foo__bar struct
+  // can be stack allocated when WUFFS_IMPLEMENTATION is defined.
+
+  struct {
+    uint32_t magic;
+    uint32_t active_coroutine;
+    wuffs_base__vtable vtable_for__wuffs_base__token_decoder;
+    wuffs_base__vtable null_vtable;
+
+    bool f_end_of_data;
+
+    uint32_t p_decode_tokens[1];
+  } private_impl;
+
+  struct {
+    struct {
+      uint32_t v_depth;
+      uint32_t v_token_length;
+      uint8_t v_c;
+      uint64_t scratch;
+    } s_decode_tokens[1];
+  } private_data;
+
+#ifdef __cplusplus
+#if (__cplusplus >= 201103L)
+  using unique_ptr = std::unique_ptr<wuffs_cbor__decoder, decltype(&free)>;
+
+  // On failure, the alloc_etc functions return nullptr. They don't throw.
+
+  static inline unique_ptr
+  alloc() {
+    return unique_ptr(wuffs_cbor__decoder__alloc(), &free);
+  }
+
+  static inline wuffs_base__token_decoder::unique_ptr
+  alloc_as__wuffs_base__token_decoder() {
+    return wuffs_base__token_decoder::unique_ptr(
+        wuffs_cbor__decoder__alloc_as__wuffs_base__token_decoder(), &free);
+  }
+#endif  // (__cplusplus >= 201103L)
+
+#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+  // Disallow constructing or copying an object via standard C++ mechanisms,
+  // e.g. the "new" operator, as this struct is intentionally opaque. Its total
+  // size and field layout is not part of the public, stable, memory-safe API.
+  // Use malloc or memcpy and the sizeof__wuffs_foo__bar function instead, and
+  // call wuffs_foo__bar__baz methods (which all take a "this"-like pointer as
+  // their first argument) rather than tweaking bar.private_impl.qux fields.
+  //
+  // In C, we can just leave wuffs_foo__bar as an incomplete type (unless
+  // WUFFS_IMPLEMENTATION is #define'd). In C++, we define a complete type in
+  // order to provide convenience methods. These forward on "this", so that you
+  // can write "bar->baz(etc)" instead of "wuffs_foo__bar__baz(bar, etc)".
+  wuffs_cbor__decoder__struct() = delete;
+  wuffs_cbor__decoder__struct(const wuffs_cbor__decoder__struct&) = delete;
+  wuffs_cbor__decoder__struct& operator=(
+      const wuffs_cbor__decoder__struct&) = delete;
+
+  // As above, the size of the struct is not part of the public API, and unless
+  // WUFFS_IMPLEMENTATION is #define'd, this struct type T should be heap
+  // allocated, not stack allocated. Its size is not intended to be known at
+  // compile time, but it is unfortunately divulged as a side effect of
+  // defining C++ convenience methods. Use "sizeof__T()", calling the function,
+  // instead of "sizeof T", invoking the operator. To make the two values
+  // different, so that passing the latter will be rejected by the initialize
+  // function, we add an arbitrary amount of dead weight.
+  uint8_t dead_weight[123000000];  // 123 MB.
+#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+
+  inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
+  initialize(
+      size_t sizeof_star_self,
+      uint64_t wuffs_version,
+      uint32_t options) {
+    return wuffs_cbor__decoder__initialize(
+        this, sizeof_star_self, wuffs_version, options);
+  }
+
+  inline wuffs_base__token_decoder*
+  upcast_as__wuffs_base__token_decoder() {
+    return (wuffs_base__token_decoder*)this;
+  }
+
+  inline wuffs_base__empty_struct
+  set_quirk_enabled(
+      uint32_t a_quirk,
+      bool a_enabled) {
+    return wuffs_cbor__decoder__set_quirk_enabled(this, a_quirk, a_enabled);
+  }
+
+  inline wuffs_base__range_ii_u64
+  workbuf_len() const {
+    return wuffs_cbor__decoder__workbuf_len(this);
+  }
+
+  inline wuffs_base__status
+  decode_tokens(
+      wuffs_base__token_buffer* a_dst,
+      wuffs_base__io_buffer* a_src,
+      wuffs_base__slice_u8 a_workbuf) {
+    return wuffs_cbor__decoder__decode_tokens(this, a_dst, a_src, a_workbuf);
+  }
+
+#endif  // __cplusplus
+};  // struct wuffs_cbor__decoder__struct
 
 #endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
@@ -16007,6 +16212,302 @@ wuffs_bmp__decoder__workbuf_len(
 }
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BMP)
+
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__CBOR)
+
+// ---------------- Status Codes Implementations
+
+const char wuffs_cbor__error__bad_input[] = "#cbor: bad input";
+const char wuffs_cbor__error__internal_error_inconsistent_i_o[] = "#cbor: internal error: inconsistent I/O";
+
+// ---------------- Private Consts
+
+// ---------------- Private Initializer Prototypes
+
+// ---------------- Private Function Prototypes
+
+// ---------------- VTables
+
+const wuffs_base__token_decoder__func_ptrs
+wuffs_cbor__decoder__func_ptrs_for__wuffs_base__token_decoder = {
+  (wuffs_base__status(*)(void*,
+      wuffs_base__token_buffer*,
+      wuffs_base__io_buffer*,
+      wuffs_base__slice_u8))(&wuffs_cbor__decoder__decode_tokens),
+  (wuffs_base__empty_struct(*)(void*,
+      uint32_t,
+      bool))(&wuffs_cbor__decoder__set_quirk_enabled),
+  (wuffs_base__range_ii_u64(*)(const void*))(&wuffs_cbor__decoder__workbuf_len),
+};
+
+// ---------------- Initializer Implementations
+
+wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
+wuffs_cbor__decoder__initialize(
+    wuffs_cbor__decoder* self,
+    size_t sizeof_star_self,
+    uint64_t wuffs_version,
+    uint32_t options){
+  if (!self) {
+    return wuffs_base__make_status(wuffs_base__error__bad_receiver);
+  }
+  if (sizeof(*self) != sizeof_star_self) {
+    return wuffs_base__make_status(wuffs_base__error__bad_sizeof_receiver);
+  }
+  if (((wuffs_version >> 32) != WUFFS_VERSION_MAJOR) ||
+      (((wuffs_version >> 16) & 0xFFFF) > WUFFS_VERSION_MINOR)) {
+    return wuffs_base__make_status(wuffs_base__error__bad_wuffs_version);
+  }
+
+  if ((options & WUFFS_INITIALIZE__ALREADY_ZEROED) != 0) {
+    // The whole point of this if-check is to detect an uninitialized *self.
+    // We disable the warning on GCC. Clang-5.0 does not have this warning.
+#if !defined(__clang__) && defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
+    if (self->private_impl.magic != 0) {
+      return wuffs_base__make_status(wuffs_base__error__initialize_falsely_claimed_already_zeroed);
+    }
+#if !defined(__clang__) && defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
+  } else {
+    if ((options & WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
+      memset(self, 0, sizeof(*self));
+      options |= WUFFS_INITIALIZE__ALREADY_ZEROED;
+    } else {
+      memset(&(self->private_impl), 0, sizeof(self->private_impl));
+    }
+  }
+
+  self->private_impl.magic = WUFFS_BASE__MAGIC;
+  self->private_impl.vtable_for__wuffs_base__token_decoder.vtable_name =
+      wuffs_base__token_decoder__vtable_name;
+  self->private_impl.vtable_for__wuffs_base__token_decoder.function_pointers =
+      (const void*)(&wuffs_cbor__decoder__func_ptrs_for__wuffs_base__token_decoder);
+  return wuffs_base__make_status(NULL);
+}
+
+wuffs_cbor__decoder*
+wuffs_cbor__decoder__alloc() {
+  wuffs_cbor__decoder* x =
+      (wuffs_cbor__decoder*)(calloc(sizeof(wuffs_cbor__decoder), 1));
+  if (!x) {
+    return NULL;
+  }
+  if (wuffs_cbor__decoder__initialize(
+      x, sizeof(wuffs_cbor__decoder), WUFFS_VERSION, WUFFS_INITIALIZE__ALREADY_ZEROED).repr) {
+    free(x);
+    return NULL;
+  }
+  return x;
+}
+
+size_t
+sizeof__wuffs_cbor__decoder() {
+  return sizeof(wuffs_cbor__decoder);
+}
+
+// ---------------- Function Implementations
+
+// -------- func cbor.decoder.set_quirk_enabled
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct
+wuffs_cbor__decoder__set_quirk_enabled(
+    wuffs_cbor__decoder* self,
+    uint32_t a_quirk,
+    bool a_enabled) {
+  return wuffs_base__make_empty_struct();
+}
+
+// -------- func cbor.decoder.workbuf_len
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__range_ii_u64
+wuffs_cbor__decoder__workbuf_len(
+    const wuffs_cbor__decoder* self) {
+  if (!self) {
+    return wuffs_base__utility__empty_range_ii_u64();
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return wuffs_base__utility__empty_range_ii_u64();
+  }
+
+  return wuffs_base__utility__empty_range_ii_u64();
+}
+
+// -------- func cbor.decoder.decode_tokens
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status
+wuffs_cbor__decoder__decode_tokens(
+    wuffs_cbor__decoder* self,
+    wuffs_base__token_buffer* a_dst,
+    wuffs_base__io_buffer* a_src,
+    wuffs_base__slice_u8 a_workbuf) {
+  if (!self) {
+    return wuffs_base__make_status(wuffs_base__error__bad_receiver);
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_status(
+        (self->private_impl.magic == WUFFS_BASE__DISABLED)
+        ? wuffs_base__error__disabled_by_previous_error
+        : wuffs_base__error__initialize_not_called);
+  }
+  if (!a_dst || !a_src) {
+    self->private_impl.magic = WUFFS_BASE__DISABLED;
+    return wuffs_base__make_status(wuffs_base__error__bad_argument);
+  }
+  if ((self->private_impl.active_coroutine != 0) &&
+      (self->private_impl.active_coroutine != 1)) {
+    self->private_impl.magic = WUFFS_BASE__DISABLED;
+    return wuffs_base__make_status(wuffs_base__error__interleaved_coroutine_calls);
+  }
+  self->private_impl.active_coroutine = 0;
+  wuffs_base__status status = wuffs_base__make_status(NULL);
+
+  uint32_t v_depth = 0;
+  uint32_t v_token_length = 0;
+  uint8_t v_c = 0;
+
+  wuffs_base__token* iop_a_dst = NULL;
+  wuffs_base__token* io0_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  wuffs_base__token* io1_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  wuffs_base__token* io2_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  if (a_dst) {
+    io0_a_dst = a_dst->data.ptr;
+    io1_a_dst = io0_a_dst + a_dst->meta.wi;
+    iop_a_dst = io1_a_dst;
+    io2_a_dst = io0_a_dst + a_dst->data.len;
+    if (a_dst->meta.closed) {
+      io2_a_dst = iop_a_dst;
+    }
+  }
+  const uint8_t* iop_a_src = NULL;
+  const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  if (a_src) {
+    io0_a_src = a_src->data.ptr;
+    io1_a_src = io0_a_src + a_src->meta.ri;
+    iop_a_src = io1_a_src;
+    io2_a_src = io0_a_src + a_src->meta.wi;
+  }
+
+  uint32_t coro_susp_point = self->private_impl.p_decode_tokens[0];
+  if (coro_susp_point) {
+    v_depth = self->private_data.s_decode_tokens[0].v_depth;
+    v_token_length = self->private_data.s_decode_tokens[0].v_token_length;
+    v_c = self->private_data.s_decode_tokens[0].v_c;
+  }
+  switch (coro_susp_point) {
+    WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
+
+    if (self->private_impl.f_end_of_data) {
+      status = wuffs_base__make_status(wuffs_base__note__end_of_data);
+      goto ok;
+    }
+    label__outer__continue:;
+    while (true) {
+      while (true) {
+        if (((uint64_t)(io2_a_dst - iop_a_dst)) <= 0) {
+          status = wuffs_base__make_status(wuffs_base__suspension__short_write);
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(1);
+          goto label__outer__continue;
+        }
+        if (((uint64_t)(io2_a_src - iop_a_src)) <= 0) {
+          if (a_src && a_src->meta.closed) {
+            status = wuffs_base__make_status(wuffs_cbor__error__bad_input);
+            goto exit;
+          }
+          status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(2);
+          goto label__outer__continue;
+        }
+        v_c = wuffs_base__load_u8be__no_bounds_check(iop_a_src);
+        if ((24 <= (v_c & 31)) && ((v_c & 31) <= 27)) {
+          v_token_length = (1 + (((uint32_t)(1)) << (v_c & 3)));
+          if (((uint64_t)(io2_a_src - iop_a_src)) < ((uint64_t)(v_token_length))) {
+            if (a_src && a_src->meta.closed) {
+              status = wuffs_base__make_status(wuffs_cbor__error__bad_input);
+              goto exit;
+            }
+            status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+            WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(3);
+            goto label__outer__continue;
+          }
+          self->private_data.s_decode_tokens[0].scratch = v_token_length;
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
+          if (self->private_data.s_decode_tokens[0].scratch > ((uint64_t)(io2_a_src - iop_a_src))) {
+            self->private_data.s_decode_tokens[0].scratch -= ((uint64_t)(io2_a_src - iop_a_src));
+            iop_a_src = io2_a_src;
+            status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+            goto suspend;
+          }
+          iop_a_src += self->private_data.s_decode_tokens[0].scratch;
+        } else {
+          (iop_a_src += 1, wuffs_base__make_empty_struct());
+        }
+        if (v_c < 32) {
+          v_c &= 31;
+          if (v_c < 24) {
+            *iop_a_dst++ = wuffs_base__make_token(
+                (((uint64_t)((12582912 | ((uint32_t)(v_c))))) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+            goto label__goto_parsed_a_leaf_value__break;
+          } else if (v_c < 28) {
+            *iop_a_dst++ = wuffs_base__make_token(
+                (((uint64_t)(10490116)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                (((uint64_t)((1 + (((uint32_t)(1)) << (v_c - 24))))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+            goto label__goto_parsed_a_leaf_value__break;
+          }
+        }
+        if (iop_a_src > io1_a_src) {
+          (iop_a_src--, wuffs_base__make_empty_struct());
+          status = wuffs_base__make_status(wuffs_cbor__error__bad_input);
+          goto exit;
+        }
+        status = wuffs_base__make_status(wuffs_cbor__error__internal_error_inconsistent_i_o);
+        goto exit;
+      }
+      label__goto_parsed_a_leaf_value__break:;
+      if (v_depth == 0) {
+        goto label__outer__break;
+      }
+    }
+    label__outer__break:;
+    self->private_impl.f_end_of_data = true;
+
+    goto ok;
+    ok:
+    self->private_impl.p_decode_tokens[0] = 0;
+    goto exit;
+  }
+
+  goto suspend;
+  suspend:
+  self->private_impl.p_decode_tokens[0] = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
+  self->private_impl.active_coroutine = wuffs_base__status__is_suspension(&status) ? 1 : 0;
+  self->private_data.s_decode_tokens[0].v_depth = v_depth;
+  self->private_data.s_decode_tokens[0].v_token_length = v_token_length;
+  self->private_data.s_decode_tokens[0].v_c = v_c;
+
+  goto exit;
+  exit:
+  if (a_dst) {
+    a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
+  }
+  if (a_src) {
+    a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+  }
+
+  if (wuffs_base__status__is_error(&status)) {
+    self->private_impl.magic = WUFFS_BASE__DISABLED;
+  }
+  return status;
+}
+
+#endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__CBOR)
 
 #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__CRC32)
 

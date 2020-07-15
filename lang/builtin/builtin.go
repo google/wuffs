@@ -81,6 +81,7 @@ var Consts = [...]struct {
 	{t.IDU32, "3", "TOKEN__VBC__UNICODE_CODE_POINT"},
 	{t.IDU32, "4", "TOKEN__VBC__LITERAL"},
 	{t.IDU32, "5", "TOKEN__VBC__NUMBER"},
+	{t.IDU32, "6", "TOKEN__VBC__INLINE_INTEGER"},
 
 	// ----
 
@@ -138,6 +139,8 @@ var Consts = [...]struct {
 	{t.IDU32, "0x00100", "TOKEN__VBD__NUMBER__FORMAT_BINARY_BIG_ENDIAN"},
 	{t.IDU32, "0x00200", "TOKEN__VBD__NUMBER__FORMAT_BINARY_LITTLE_ENDIAN"},
 	{t.IDU32, "0x00400", "TOKEN__VBD__NUMBER__FORMAT_TEXT"},
+
+	{t.IDU32, "0x01000", "TOKEN__VBD__NUMBER__FORMAT_IGNORE_FIRST_BYTE"},
 
 	// ----
 

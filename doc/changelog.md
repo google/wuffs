@@ -13,6 +13,7 @@
 - Added `example/imageviewer`.
 - Added `example/jsonptr`.
 - Added `std/bmp`.
+- Added `std/cbor`.
 - Added `std/gif.config_decoder`.
 - Added `std/json`.
 - Added `std/wbmp`.
