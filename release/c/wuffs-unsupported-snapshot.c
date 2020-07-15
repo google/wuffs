@@ -5618,7 +5618,6 @@ struct wuffs_cbor__decoder__struct {
       uint32_t v_depth;
       uint32_t v_token_length;
       uint8_t v_c;
-      uint64_t scratch;
     } s_decode_tokens[1];
   } private_data;
 
@@ -16436,15 +16435,7 @@ wuffs_cbor__decoder__decode_tokens(
             WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(3);
             goto label__outer__continue;
           }
-          self->private_data.s_decode_tokens[0].scratch = v_token_length;
-          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
-          if (self->private_data.s_decode_tokens[0].scratch > ((uint64_t)(io2_a_src - iop_a_src))) {
-            self->private_data.s_decode_tokens[0].scratch -= ((uint64_t)(io2_a_src - iop_a_src));
-            iop_a_src = io2_a_src;
-            status = wuffs_base__make_status(wuffs_base__suspension__short_read);
-            goto suspend;
-          }
-          iop_a_src += self->private_data.s_decode_tokens[0].scratch;
+          (iop_a_src += v_token_length, wuffs_base__make_empty_struct());
         } else {
           (iop_a_src += 1, wuffs_base__make_empty_struct());
         }

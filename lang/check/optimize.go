@@ -44,10 +44,14 @@ func splitReceiverMethodArgs(n *a.Expr) (receiver *a.Expr, method t.ID, args []*
 	return n.LHS().AsExpr(), n.Ident(), args
 }
 
-func (q *checker) optimizeIOMethodAdvance(receiver *a.Expr, advance *big.Int, update bool) (retOK bool, retErr error) {
+func (q *checker) optimizeIOMethodAdvance(receiver *a.Expr, advance *big.Int, advanceExpr *a.Expr, update bool) (retOK bool, retErr error) {
 	// TODO: do two passes? The first one to non-destructively check retOK. The
 	// second one to drop facts if indeed retOK? Otherwise, an advance
 	// precondition failure will lose some of the facts in its error message.
+
+	if advanceExpr != nil {
+		return q.optimizeIOMethodAdvanceExpr(receiver, advanceExpr, update)
+	}
 
 	retErr = q.facts.update(func(x *a.Expr) (*a.Expr, error) {
 		// TODO: update (discard?) any facts that merely mention
@@ -98,7 +102,7 @@ func (q *checker) optimizeIOMethodAdvance(receiver *a.Expr, advance *big.Int, up
 
 		if rcv.Cmp(advance) == 0 {
 			// TODO: delete the (adjusted) fact, as newRCV will be zero, and
-			// "foo.advance() >= 0" is redundant.
+			// "foo.available() >= 0" is redundant.
 		}
 
 		// Create a new a.Expr to hold the adjusted RHS constant value, newRCV.
@@ -110,6 +114,48 @@ func (q *checker) optimizeIOMethodAdvance(receiver *a.Expr, advance *big.Int, up
 
 		return a.NewExpr(x.AsNode().AsRaw().Flags(),
 			t.IDXBinaryGreaterEq, 0, x.LHS(), nil, o.AsNode(), nil), nil
+	})
+	return retOK, retErr
+}
+
+func (q *checker) optimizeIOMethodAdvanceExpr(receiver *a.Expr, advanceExpr *a.Expr, update bool) (retOK bool, retErr error) {
+	retErr = q.facts.update(func(x *a.Expr) (*a.Expr, error) {
+		// TODO: update (discard?) any facts that merely mention
+		// receiver.available(), even if they aren't an exact match.
+
+		op := x.Operator()
+		if op != t.IDXBinaryGreaterEq && op != t.IDXBinaryGreaterThan {
+			return x, nil
+		}
+
+		// Check that lhs is "receiver.available()".
+		lhs := x.LHS().AsExpr()
+		if lhs.Operator() != t.IDOpenParen || len(lhs.Args()) != 0 {
+			return x, nil
+		}
+		lhs = lhs.LHS().AsExpr()
+		if lhs.Operator() != t.IDDot || lhs.Ident() != t.IDAvailable {
+			return x, nil
+		}
+		lhs = lhs.LHS().AsExpr()
+		if !lhs.Eq(receiver) {
+			return x, nil
+		}
+
+		// Check that rhs is "advanceExpr as base.u64".
+		rhs := x.RHS().AsExpr()
+		if rhs.Operator() != t.IDXBinaryAs ||
+			!rhs.LHS().AsExpr().Eq(advanceExpr) ||
+			!rhs.RHS().AsTypeExpr().Eq(typeExprU64) {
+			return x, nil
+		}
+
+		retOK = true
+
+		if !update {
+			return x, nil
+		}
+		return nil, nil
 	})
 	return retOK, retErr
 }

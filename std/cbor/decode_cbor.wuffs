@@ -62,7 +62,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 				yield? base."$short read"
 				continue.outer
 			}
-			args.src.skip_u32?(n: token_length)
+			args.src.skip_u32_fast!(actual: token_length, worst_case: token_length)
 		} else {
 			args.src.skip_u32_fast!(actual: 1, worst_case: 1)
 		}

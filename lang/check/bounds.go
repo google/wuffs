@@ -1023,7 +1023,7 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (bounds, e
 		}
 
 	} else if recvTyp.IsIOTokenType() {
-		advance, update := (*big.Int)(nil), false
+		advance, advanceExpr, update := (*big.Int)(nil), (*a.Expr)(nil), false
 
 		if method == t.IDUndoByte {
 			if err := q.canUndoByte(recv); err != nil {
@@ -1050,10 +1050,11 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (bounds, e
 			} else if err != nil {
 				return bounds{}, err
 			}
-			if worstCase.ConstValue() == nil {
-				return bounds{}, fmt.Errorf("check: skip_fast worst_case is not a constant value")
+			if cv := worstCase.ConstValue(); cv != nil {
+				advance, update = cv, true
+			} else {
+				advanceExpr, update = actual, true
 			}
-			advance, update = worstCase.ConstValue(), true
 
 		} else if method == t.IDPeekU64LEAt {
 			args := n.Args()
@@ -1074,12 +1075,18 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (bounds, e
 			}
 		}
 
-		if advance != nil {
-			if ok, err := q.optimizeIOMethodAdvance(recv, advance, update); err != nil {
+		if (advance != nil) || (advanceExpr != nil) {
+			if ok, err := q.optimizeIOMethodAdvance(recv, advance, advanceExpr, update); err != nil {
 				return bounds{}, err
 			} else if !ok {
-				return bounds{}, fmt.Errorf("check: could not prove %s pre-condition: %s.available() >= %v",
-					method.Str(q.tm), recv.Str(q.tm), advance)
+				adv := ""
+				if advance != nil {
+					adv = advance.String()
+				} else {
+					adv = advanceExpr.Str(q.tm)
+				}
+				return bounds{}, fmt.Errorf("check: could not prove %s pre-condition: %s.available() >= %s",
+					method.Str(q.tm), recv.Str(q.tm), adv)
 			}
 			// TODO: drop other recv-related facts?
 		}

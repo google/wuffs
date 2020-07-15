@@ -396,9 +396,8 @@ var Funcs = []string{
 	"io_reader.skip_u32?(n: u32)",
 
 	// TODO: this should have explicit pre-conditions "actual <= worst_case"
-	// and "worst_case <= available()". As an implementation restriction, we
-	// also require that worst_case has a constant value. For now, that's all
-	// implicitly checked (i.e. hard coded).
+	// and "worst_case <= available()". For now, that's all implicitly checked
+	// (i.e. hard coded).
 	"io_reader.skip_u32_fast!(actual: u32, worst_case: u32)",
 
 	// ---- io_writer
