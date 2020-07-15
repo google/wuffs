@@ -55,14 +55,15 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 		c = args.src.peek_u8()
 		if (0x18 <= (c & 0x1F)) and ((c & 0x1F) <= 0x1B) {
 			token_length = 1 + ((1 as base.u32) << (c & 0x03))
-			if args.src.available() < (token_length as base.u64) {
-				if args.src.is_closed() {
-					return "#bad input"
-				}
+			if args.src.available() >= (token_length as base.u64) {
+				args.src.skip_u32_fast!(actual: token_length, worst_case: token_length)
+			} else if args.src.is_closed() {
+				return "#bad input"
+			} else {
 				yield? base."$short read"
+				c = 0
 				continue.outer
 			}
-			args.src.skip_u32_fast!(actual: token_length, worst_case: token_length)
 		} else {
 			args.src.skip_u32_fast!(actual: 1, worst_case: 1)
 		}

@@ -5616,8 +5616,6 @@ struct wuffs_cbor__decoder__struct {
   struct {
     struct {
       uint32_t v_depth;
-      uint32_t v_token_length;
-      uint8_t v_c;
     } s_decode_tokens[1];
   } private_data;
 
@@ -16396,8 +16394,6 @@ wuffs_cbor__decoder__decode_tokens(
   uint32_t coro_susp_point = self->private_impl.p_decode_tokens[0];
   if (coro_susp_point) {
     v_depth = self->private_data.s_decode_tokens[0].v_depth;
-    v_token_length = self->private_data.s_decode_tokens[0].v_token_length;
-    v_c = self->private_data.s_decode_tokens[0].v_c;
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
@@ -16426,16 +16422,17 @@ wuffs_cbor__decoder__decode_tokens(
         v_c = wuffs_base__load_u8be__no_bounds_check(iop_a_src);
         if ((24 <= (v_c & 31)) && ((v_c & 31) <= 27)) {
           v_token_length = (1 + (((uint32_t)(1)) << (v_c & 3)));
-          if (((uint64_t)(io2_a_src - iop_a_src)) < ((uint64_t)(v_token_length))) {
-            if (a_src && a_src->meta.closed) {
-              status = wuffs_base__make_status(wuffs_cbor__error__bad_input);
-              goto exit;
-            }
+          if (((uint64_t)(io2_a_src - iop_a_src)) >= ((uint64_t)(v_token_length))) {
+            (iop_a_src += v_token_length, wuffs_base__make_empty_struct());
+          } else if (a_src && a_src->meta.closed) {
+            status = wuffs_base__make_status(wuffs_cbor__error__bad_input);
+            goto exit;
+          } else {
             status = wuffs_base__make_status(wuffs_base__suspension__short_read);
             WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(3);
+            v_c = 0;
             goto label__outer__continue;
           }
-          (iop_a_src += v_token_length, wuffs_base__make_empty_struct());
         } else {
           (iop_a_src += 1, wuffs_base__make_empty_struct());
         }
@@ -16480,8 +16477,6 @@ wuffs_cbor__decoder__decode_tokens(
   self->private_impl.p_decode_tokens[0] = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
   self->private_impl.active_coroutine = wuffs_base__status__is_suspension(&status) ? 1 : 0;
   self->private_data.s_decode_tokens[0].v_depth = v_depth;
-  self->private_data.s_decode_tokens[0].v_token_length = v_token_length;
-  self->private_data.s_decode_tokens[0].v_c = v_c;
 
   goto exit;
   exit:
