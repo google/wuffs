@@ -4205,7 +4205,12 @@ wuffs_base__parse_number_u64(wuffs_base__slice_u8 s, uint32_t options);
 
 // --------
 
+// WUFFS_BASE__I64__BYTE_LENGTH__MAX_INCL is the string length of
+// "-9223372036854775808" and "+9223372036854775807", INT64_MIN and INT64_MAX.
 #define WUFFS_BASE__I64__BYTE_LENGTH__MAX_INCL 20
+
+// WUFFS_BASE__U64__BYTE_LENGTH__MAX_INCL is the string length of
+// "+18446744073709551615", UINT64_MAX.
 #define WUFFS_BASE__U64__BYTE_LENGTH__MAX_INCL 21
 
 // wuffs_base__render_number_f64 writes the decimal encoding of x to dst and
