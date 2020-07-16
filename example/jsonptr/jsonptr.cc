@@ -911,7 +911,7 @@ write_literal(uint64_t vbd) {
 // ----
 
 const char*  //
-write_number_cbor_f64(double f) {
+write_number_as_cbor_f64(double f) {
   uint8_t buf[9];
   wuffs_base__lossy_value_u16 lv16 =
       wuffs_base__ieee_754_bit_representation__from_f64_to_u16_truncate(f);
@@ -934,7 +934,7 @@ write_number_cbor_f64(double f) {
 }
 
 const char*  //
-write_number_cbor_u64(uint8_t base, uint64_t u) {
+write_number_as_cbor_u64(uint8_t base, uint64_t u) {
   uint8_t buf[9];
   if (u < 0x18) {
     buf[0] = base | ((uint8_t)u);
@@ -958,6 +958,51 @@ write_number_cbor_u64(uint8_t base, uint64_t u) {
 }
 
 const char*  //
+write_cbor_number_as_json(uint8_t* ptr,
+                          size_t len,
+                          bool ignore_first_byte,
+                          bool minus_1_minus_x) {
+  if (ignore_first_byte) {
+    if (len == 0) {
+      return "main: internal error: ignore_first_byte with no bytes";
+    }
+    ptr++;
+    len--;
+  }
+  uint64_t u;
+  switch (len) {
+    case 1:
+      u = wuffs_base__load_u8__no_bounds_check(ptr);
+      break;
+    case 2:
+      u = wuffs_base__load_u16be__no_bounds_check(ptr);
+      break;
+    case 4:
+      u = wuffs_base__load_u32be__no_bounds_check(ptr);
+      break;
+    case 8:
+      u = wuffs_base__load_u64be__no_bounds_check(ptr);
+      break;
+    default:
+      return "main: internal error: unexpected cbor number byte length";
+  }
+  uint8_t buf[1 + WUFFS_BASE__U64__BYTE_LENGTH__MAX_INCL];
+  uint8_t* b = &buf[0];
+  if (minus_1_minus_x) {
+    u++;
+    if (u == 0) {
+      // See the cbor.TOKEN_VALUE_MINOR__MINUS_1_MINUS_X comment re overflow.
+      return write_dst("-18446744073709551616", 21);
+    }
+    *b++ = '-';
+  }
+  size_t n = wuffs_base__render_number_u64(
+      wuffs_base__make_slice_u8(b, WUFFS_BASE__U64__BYTE_LENGTH__MAX_INCL), u,
+      WUFFS_BASE__RENDER_NUMBER_XXX__DEFAULT_OPTIONS);
+  return write_dst(&buf[0], n + (minus_1_minus_x ? 1 : 0));
+}
+
+const char*  //
 write_number(uint64_t vbd, uint8_t* ptr, size_t len) {
   if (g_flags.output_format == file_format::json) {
     if (vbd & WUFFS_BASE__TOKEN__VBD__NUMBER__FORMAT_TEXT) {
@@ -966,35 +1011,10 @@ write_number(uint64_t vbd, uint8_t* ptr, size_t len) {
                 WUFFS_BASE__TOKEN__VBD__NUMBER__CONTENT_INTEGER_UNSIGNED) &&
                (vbd &
                 WUFFS_BASE__TOKEN__VBD__NUMBER__FORMAT_BINARY_BIG_ENDIAN)) {
-      if (vbd & WUFFS_BASE__TOKEN__VBD__NUMBER__FORMAT_IGNORE_FIRST_BYTE) {
-        if (len == 0) {
-          goto fail;
-        }
-        ptr++;
-        len--;
-      }
-      uint64_t u;
-      switch (len) {
-        case 1:
-          u = wuffs_base__load_u8__no_bounds_check(ptr);
-          break;
-        case 2:
-          u = wuffs_base__load_u16be__no_bounds_check(ptr);
-          break;
-        case 4:
-          u = wuffs_base__load_u32be__no_bounds_check(ptr);
-          break;
-        case 8:
-          u = wuffs_base__load_u64be__no_bounds_check(ptr);
-          break;
-        default:
-          goto fail;
-      }
-      uint8_t buf[WUFFS_BASE__U64__BYTE_LENGTH__MAX_INCL];
-      size_t n = wuffs_base__render_number_u64(
-          wuffs_base__make_slice_u8(&buf[0], sizeof buf), u,
-          WUFFS_BASE__RENDER_NUMBER_XXX__DEFAULT_OPTIONS);
-      return write_dst(&buf[0], n);
+      return write_cbor_number_as_json(
+          ptr, len,
+          vbd & WUFFS_BASE__TOKEN__VBD__NUMBER__FORMAT_IGNORE_FIRST_BYTE,
+          false);
     }
 
     // From here on, (g_flags.output_format == file_format::cbor).
@@ -1010,14 +1030,14 @@ write_number(uint64_t vbd, uint8_t* ptr, size_t len) {
             wuffs_base__make_slice_u8(ptr, len),
             WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS);
         if (ri.status.is_ok()) {
-          return write_number_cbor_u64(0x20, ~ri.value);
+          return write_number_as_cbor_u64(0x20, ~ri.value);
         }
       } else {
         wuffs_base__result_u64 ru = wuffs_base__parse_number_u64(
             wuffs_base__make_slice_u8(ptr, len),
             WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS);
         if (ru.status.is_ok()) {
-          return write_number_cbor_u64(0x00, ru.value);
+          return write_number_as_cbor_u64(0x00, ru.value);
         }
       }
     }
@@ -1027,7 +1047,7 @@ write_number(uint64_t vbd, uint8_t* ptr, size_t len) {
           wuffs_base__make_slice_u8(ptr, len),
           WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS);
       if (rf.status.is_ok()) {
-        return write_number_cbor_f64(rf.value);
+        return write_number_as_cbor_f64(rf.value);
       }
     }
   }
@@ -1412,7 +1432,20 @@ handle_token(wuffs_base__token t, bool start_of_token_chain) {
         goto after_value;
     }
 
-    // Return an error if we didn't match the (vbc, vbd) pair.
+    if (t.value_major() == WUFFS_CBOR__TOKEN_VALUE_MAJOR) {
+      uint64_t value_minor = t.value_minor();
+      if (value_minor & WUFFS_CBOR__TOKEN_VALUE_MINOR__TAG) {
+        // TODO: CBOR tags.
+      } else if (value_minor & WUFFS_CBOR__TOKEN_VALUE_MINOR__MINUS_1_MINUS_X) {
+        TRY(write_cbor_number_as_json(
+            g_src.data.ptr + g_curr_token_end_src_index - len, len, true,
+            true));
+        goto after_value;
+      }
+    }
+
+    // Return an error if we didn't match the (value_major, value_minor) or
+    // (vbc, vbd) pair.
     return "main: internal error: unexpected token";
   } while (0);
 

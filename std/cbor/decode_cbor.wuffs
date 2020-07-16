@@ -16,6 +16,22 @@ pub status "#bad input"
 
 pri status "#internal error: inconsistent I/O"
 
+// TOKEN_VALUE_MAJOR is the base-38 encoding of "cbor".
+pub const TOKEN_VALUE_MAJOR : base.u32 = 0x0C_061D
+
+// TOKEN_VALUE_MINOR__TAG means that the remaining 24 bits of the token's
+// value_minor is a CBOR tag. That token may be continued, in which case the
+// following token is an extended token (46 bits) and the overall 64-bit CBOR
+// tag is ((first << 46) | ext).
+pub const TOKEN_VALUE_MINOR__TAG : base.u32 = 0x01
+
+// TOKEN_VALUE_MINOR__MINUS_1_MINUS_X means that the token's final
+// (token.length - 1) bytes (which must be one of 1, 2, 4 or 8 bytes) contains
+// a big-endian unsigned integer x. The token's overall value is the negative
+// number (-1 - x). Note that this value can underflow an int64_t, and its
+// absolute value (+1 + x) can overflow a uint64_t.
+pub const TOKEN_VALUE_MINOR__MINUS_1_MINUS_X : base.u32 = 0x02
+
 pub struct decoder? implements base.token_decoder(
 	end_of_data : base.bool,
 
@@ -68,7 +84,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 			args.src.skip_u32_fast!(actual: 1, worst_case: 1)
 		}
 
-		if c < 0x20 {
+		if c < 0x20 {  // Major type 0: an unsigned integer.
 			c &= 0x1F
 			if c < 0x18 {
 				args.dst.write_simple_token_fast!(
@@ -85,6 +101,25 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 					base.TOKEN__VBD__NUMBER__CONTENT_INTEGER_UNSIGNED |
 					base.TOKEN__VBD__NUMBER__FORMAT_BINARY_BIG_ENDIAN |
 					base.TOKEN__VBD__NUMBER__FORMAT_IGNORE_FIRST_BYTE,
+					continued: 0,
+					length: 1 + ((1 as base.u32) << (c - 0x18)))
+				break.goto_parsed_a_leaf_value
+			}
+
+		} else if c < 0x40 {  // Major type 1: a negative integer.
+			c &= 0x1F
+			if c < 0x18 {
+				args.dst.write_simple_token_fast!(
+					value_major: 0,
+					value_minor: (base.TOKEN__VBC__INLINE_INTEGER << 21) |
+					(0x1F_FFFF - (c as base.u32)),
+					continued: 0,
+					length: 1)
+				break.goto_parsed_a_leaf_value
+			} else if c < 0x1C {
+				args.dst.write_simple_token_fast!(
+					value_major: TOKEN_VALUE_MAJOR,
+					value_minor: TOKEN_VALUE_MINOR__MINUS_1_MINUS_X,
 					continued: 0,
 					length: 1 + ((1 as base.u32) << (c - 0x18)))
 				break.goto_parsed_a_leaf_value

@@ -5520,6 +5520,12 @@ extern const char wuffs_cbor__error__bad_input[];
 
 // ---------------- Public Consts
 
+#define WUFFS_CBOR__TOKEN_VALUE_MAJOR 787997
+
+#define WUFFS_CBOR__TOKEN_VALUE_MINOR__TAG 1
+
+#define WUFFS_CBOR__TOKEN_VALUE_MINOR__MINUS_1_MINUS_X 2
+
 // ---------------- Struct Declarations
 
 typedef struct wuffs_cbor__decoder__struct wuffs_cbor__decoder;
@@ -16446,6 +16452,20 @@ wuffs_cbor__decoder__decode_tokens(
           } else if (v_c < 28) {
             *iop_a_dst++ = wuffs_base__make_token(
                 (((uint64_t)(10490116)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                (((uint64_t)((1 + (((uint32_t)(1)) << (v_c - 24))))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+            goto label__goto_parsed_a_leaf_value__break;
+          }
+        } else if (v_c < 64) {
+          v_c &= 31;
+          if (v_c < 24) {
+            *iop_a_dst++ = wuffs_base__make_token(
+                (((uint64_t)((12582912 | (2097151 - ((uint32_t)(v_c)))))) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+            goto label__goto_parsed_a_leaf_value__break;
+          } else if (v_c < 28) {
+            *iop_a_dst++ = wuffs_base__make_token(
+                (((uint64_t)(787997)) << WUFFS_BASE__TOKEN__VALUE_MAJOR__SHIFT) |
+                (((uint64_t)(2)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                 (((uint64_t)((1 + (((uint32_t)(1)) << (v_c - 24))))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
             goto label__goto_parsed_a_leaf_value__break;
           }
