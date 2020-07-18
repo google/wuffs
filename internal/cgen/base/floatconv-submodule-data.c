@@ -136,7 +136,7 @@ static const uint8_t wuffs_base__private_implementation__powers_of_5[0x051C] = {
 //
 // The 1214 bias in this look-up table equals 1023 + 191. 1023 is the bias for
 // IEEE 754 double-precision floating point. 191 is ((3 * 64) - 1) and
-// wuffs_base__private_implementation__parse_number_f64_eisel works with
+// wuffs_base__private_implementation__parse_number_f64_eisel_lemire works with
 // multiples-of-64-bit mantissas.
 //
 // For example, the third approximation, for 1e-324, consists of the uint32_t

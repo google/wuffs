@@ -960,9 +960,9 @@ wuffs_base__private_implementation__high_prec_dec__round_just_enough(
 
 // --------
 
-// wuffs_base__private_implementation__parse_number_f64_eisel produces the IEEE
-// 754 double-precision value for an exact mantissa and base-10 exponent. For
-// example:
+// wuffs_base__private_implementation__parse_number_f64_eisel_lemire produces
+// the IEEE 754 double-precision value for an exact mantissa and base-10
+// exponent. For example:
 //  - when parsing "12345.678e+02", man is 12345678 and exp10 is -1.
 //  - when parsing "-12", man is 12 and exp10 is 0. Processing the leading
 //    minus sign is the responsibility of the caller, not this function.
@@ -972,7 +972,8 @@ wuffs_base__private_implementation__high_prec_dec__round_just_enough(
 //
 // On failure, it returns a negative value.
 //
-// The algorithm is based on an original idea by Michael Eisel. See
+// The algorithm is based on an original idea by Michael Eisel that was refined
+// by Daniel Lemire. See
 // https://lemire.me/blog/2020/03/10/fast-float-parsing-in-practice/
 //
 // Preconditions:
@@ -980,8 +981,9 @@ wuffs_base__private_implementation__high_prec_dec__round_just_enough(
 //  - exp10 is in the range -326 ..= 310, the same range of the
 //    wuffs_base__private_implementation__powers_of_10 array.
 static int64_t  //
-wuffs_base__private_implementation__parse_number_f64_eisel(uint64_t man,
-                                                           int32_t exp10) {
+wuffs_base__private_implementation__parse_number_f64_eisel_lemire(
+    uint64_t man,
+    int32_t exp10) {
   // Look up the (possibly truncated) base-2 representation of (10 ** exp10).
   // The look-up table was constructed so that it is already normalized: the
   // table entry's mantissa's MSB (most significant bit) is on.
@@ -1250,11 +1252,11 @@ wuffs_base__private_implementation__high_prec_dec__to_f64(
       goto infinity;
     }
 
-    // Try the fast Eisel algorithm again. Calculating the (man, exp10) pair
-    // from the high_prec_dec h is more correct but slower than the approach
-    // taken in wuffs_base__parse_number_f64. The latter is optimized for the
-    // common cases (e.g. assuming no underscores or a leading '+' sign) rather
-    // than the full set of cases allowed by the Wuffs API.
+    // Try the fast Eisel-Lemire algorithm again. Calculating the (man, exp10)
+    // pair from the high_prec_dec h is more correct but slower than the
+    // approach taken in wuffs_base__parse_number_f64. The latter is optimized
+    // for the common cases (e.g. assuming no underscores or a leading '+'
+    // sign) rather than the full set of cases allowed by the Wuffs API.
     if (h->num_digits <= 19) {
       uint64_t man = 0;
       uint32_t i;
@@ -1263,8 +1265,9 @@ wuffs_base__private_implementation__high_prec_dec__to_f64(
       }
       int32_t exp10 = h->decimal_point - ((int32_t)(h->num_digits));
       if ((man != 0) && (-326 <= exp10) && (exp10 <= 310)) {
-        int64_t r = wuffs_base__private_implementation__parse_number_f64_eisel(
-            man, exp10);
+        int64_t r =
+            wuffs_base__private_implementation__parse_number_f64_eisel_lemire(
+                man, exp10);
         if (r >= 0) {
           wuffs_base__result_f64 ret;
           ret.status.repr = NULL;
@@ -1411,9 +1414,9 @@ wuffs_base__parse_number_f64(wuffs_base__slice_u8 s, uint32_t options) {
   // "Do It Yourself Floating Point" type from Loitsch (†), but the exponent
   // here is base-10, not base-2.
   //
-  // If s's number fits in a (man, exp10), parse that pair with the Eisel
-  // algorithm. If not, or if Eisel fails, parsing s with the fallback
-  // algorithm is slower but comprehensive.
+  // If s's number fits in a (man, exp10), parse that pair with the
+  // Eisel-Lemire algorithm. If not, or if Eisel-Lemire fails, parsing s with
+  // the fallback algorithm is slower but comprehensive.
   //
   // † "Printing Floating-Point Numbers Quickly and Accurately with Integers"
   // (https://www.cs.tufts.edu/~nr/cs257/archive/florian-loitsch/printf.pdf).
@@ -1569,7 +1572,7 @@ wuffs_base__parse_number_f64(wuffs_base__slice_u8 s, uint32_t options) {
       }
     }
 
-    // The wuffs_base__private_implementation__parse_number_f64_eisel
+    // The wuffs_base__private_implementation__parse_number_f64_eisel_lemire
     // preconditions include that exp10 is in the range -326 ..= 310.
     if ((exp10 < -326) || (310 < exp10)) {
       goto fallback;
@@ -1577,7 +1580,7 @@ wuffs_base__parse_number_f64(wuffs_base__slice_u8 s, uint32_t options) {
 
     // If man and exp10 are small enough, all three of (man), (10 ** exp10) and
     // (man ** (10 ** exp10)) are exactly representable by a double. We don't
-    // need to run the Eisel algorithm.
+    // need to run the Eisel-Lemire algorithm.
     if ((-22 <= exp10) && (exp10 <= 22) && ((man >> 53) == 0)) {
       double d = (double)man;
       if (exp10 >= 0) {
@@ -1591,16 +1594,17 @@ wuffs_base__parse_number_f64(wuffs_base__slice_u8 s, uint32_t options) {
       return ret;
     }
 
-    // The wuffs_base__private_implementation__parse_number_f64_eisel
+    // The wuffs_base__private_implementation__parse_number_f64_eisel_lemire
     // preconditions include that man is non-zero. Parsing "0" should be caught
     // by the "If man and exp10 are small enough" above, but "0e99" might not.
     if (man == 0) {
       goto fallback;
     }
 
-    // Our man and exp10 are in range. Run the Eisel algorithm.
+    // Our man and exp10 are in range. Run the Eisel-Lemire algorithm.
     int64_t r =
-        wuffs_base__private_implementation__parse_number_f64_eisel(man, exp10);
+        wuffs_base__private_implementation__parse_number_f64_eisel_lemire(
+            man, exp10);
     if (r < 0) {
       goto fallback;
     }
