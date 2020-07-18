@@ -15,6 +15,7 @@
 pub status "#bad input"
 
 pri status "#internal error: inconsistent I/O"
+pri status "#internal error: inconsistent token length"
 
 // TOKEN_VALUE_MAJOR is the base-38 encoding of "cbor".
 pub const TOKEN_VALUE_MAJOR : base.u32 = 0x0C_061D
@@ -47,9 +48,20 @@ pub func decoder.workbuf_len() base.range_ii_u64 {
 }
 
 pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, workbuf: slice base.u8) {
+	var string_length : base.u64
+
+	var n64          : base.u64
 	var depth        : base.u32[..= 1024]
-	var token_length : base.u32[..= 9]
+	var token_length : base.u32[..= 0xFFFF]
+	var value_minor  : base.u32[..= 0x1FF_FFFF]
+	var continued    : base.u32[..= 1]
 	var c            : base.u8
+	var c_major      : base.u8
+	var c_minor      : base.u8
+
+	// indefinite_string_major_type is 2 or 3 when we are in an
+	// indefinite-length byte string or text string. It is 0 otherwise.
+	var indefinite_string_major_type : base.u8[..= 3]
 
 	if this.end_of_data {
 		return base."@end of data"
@@ -57,6 +69,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 
 	while.outer true {
 		while.goto_parsed_a_leaf_value true {{
+		while.goto_fail true {{
 		if args.dst.available() <= 0 {
 			yield? base."$short write"
 			continue.outer
@@ -69,32 +82,90 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 			continue.outer
 		}
 		c = args.src.peek_u8()
-		if (0x18 <= (c & 0x1F)) and ((c & 0x1F) <= 0x1B) {
-			token_length = 1 + ((1 as base.u32) << (c & 0x03))
-			if args.src.available() >= (token_length as base.u64) {
-				args.src.skip_u32_fast!(actual: token_length, worst_case: token_length)
-			} else if args.src.is_closed() {
+
+		if (indefinite_string_major_type <> 0) and (indefinite_string_major_type <> (c >> 5)) {
+			if c <> 0xFF {
 				return "#bad input"
-			} else {
-				yield? base."$short read"
-				c = 0
-				continue.outer
 			}
-		} else {
+			value_minor = (base.TOKEN__VBC__STRING << 21) |
+				base.TOKEN__VBD__STRING__CONVERT_0_DST_1_SRC_DROP
+			if indefinite_string_major_type == 3 {
+				value_minor |= base.TOKEN__VBD__STRING__DEFINITELY_UTF_8 |
+					base.TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8 |
+					base.TOKEN__VBD__STRING__DEFINITELY_ASCII
+			}
+			indefinite_string_major_type = 0
 			args.src.skip_u32_fast!(actual: 1, worst_case: 1)
+			args.dst.write_simple_token_fast!(
+				value_major: 0,
+				value_minor: value_minor,
+				continued: 0,
+				length: 1)
+			break.goto_parsed_a_leaf_value
 		}
 
-		if c < 0x20 {  // Major type 0: an unsigned integer.
-			c &= 0x1F
-			if c < 0x18 {
+		args.src.skip_u32_fast!(actual: 1, worst_case: 1)
+		c_major = c >> 5
+		c_minor = c & 0x1F
+		if c_minor < 0x18 {
+			string_length = c_minor as base.u64
+		} else {
+			while.goto_have_string_length true,
+				inv args.dst.available() > 0,
+			{{
+			if c_minor == 0x18 {
+				if args.src.available() >= 1 {
+					string_length = args.src.peek_u8_as_u64()
+					args.src.skip_u32_fast!(actual: 1, worst_case: 1)
+					break.goto_have_string_length
+				}
+			} else if c_minor == 0x19 {
+				if args.src.available() >= 2 {
+					string_length = args.src.peek_u16be_as_u64()
+					args.src.skip_u32_fast!(actual: 2, worst_case: 2)
+					break.goto_have_string_length
+				}
+			} else if c_minor == 0x1A {
+				if args.src.available() >= 4 {
+					string_length = args.src.peek_u32be_as_u64()
+					args.src.skip_u32_fast!(actual: 4, worst_case: 4)
+					break.goto_have_string_length
+				}
+			} else if c_minor == 0x1B {
+				if args.src.available() >= 8 {
+					string_length = args.src.peek_u64be()
+					args.src.skip_u32_fast!(actual: 8, worst_case: 8)
+					break.goto_have_string_length
+				}
+			} else {
+				string_length = 0
+				break.goto_have_string_length
+			}
+
+			if args.src.can_undo_byte() {
+				args.src.undo_byte!()
+				if args.src.is_closed() {
+					return "#bad input"
+				}
+				yield? base."$short read"
+				c_major = 0
+				c_minor = 0
+				continue.outer
+			}
+			return "#internal error: inconsistent I/O"
+			}} endwhile.goto_have_string_length
+		}
+
+		if c_major == 0 {  // Major type 0: an unsigned integer.
+			if c_minor < 0x18 {
 				args.dst.write_simple_token_fast!(
 					value_major: 0,
 					value_minor: (base.TOKEN__VBC__INLINE_INTEGER << 21) |
-					(c as base.u32),
+					(c_minor as base.u32),
 					continued: 0,
 					length: 1)
 				break.goto_parsed_a_leaf_value
-			} else if c < 0x1C {
+			} else if c_minor < 0x1C {
 				args.dst.write_simple_token_fast!(
 					value_major: 0,
 					value_minor: (base.TOKEN__VBC__NUMBER << 21) |
@@ -102,29 +173,105 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 					base.TOKEN__VBD__NUMBER__FORMAT_BINARY_BIG_ENDIAN |
 					base.TOKEN__VBD__NUMBER__FORMAT_IGNORE_FIRST_BYTE,
 					continued: 0,
-					length: 1 + ((1 as base.u32) << (c - 0x18)))
+					length: 1 + ((1 as base.u32) << (c_minor - 0x18)))
 				break.goto_parsed_a_leaf_value
 			}
 
-		} else if c < 0x40 {  // Major type 1: a negative integer.
-			c &= 0x1F
-			if c < 0x18 {
+		} else if c_major == 1 {  // Major type 1: a negative integer.
+			if c_minor < 0x18 {
 				args.dst.write_simple_token_fast!(
 					value_major: 0,
 					value_minor: (base.TOKEN__VBC__INLINE_INTEGER << 21) |
-					(0x1F_FFFF - (c as base.u32)),
+					(0x1F_FFFF - (c_minor as base.u32)),
 					continued: 0,
 					length: 1)
 				break.goto_parsed_a_leaf_value
-			} else if c < 0x1C {
+			} else if c_minor < 0x1C {
 				args.dst.write_simple_token_fast!(
 					value_major: TOKEN_VALUE_MAJOR,
 					value_minor: TOKEN_VALUE_MINOR__MINUS_1_MINUS_X,
 					continued: 0,
-					length: 1 + ((1 as base.u32) << (c - 0x18)))
+					length: 1 + ((1 as base.u32) << (c_minor - 0x18)))
 				break.goto_parsed_a_leaf_value
 			}
+
+		} else if c_major == 2 {  // Major type 2: a byte string.
+			if c_minor == 0x00 {
+				args.dst.write_simple_token_fast!(
+					value_major: 0,
+					value_minor: (base.TOKEN__VBC__STRING << 21) |
+					base.TOKEN__VBD__STRING__CONVERT_0_DST_1_SRC_DROP,
+					continued: 0,
+					length: 1)
+				break.goto_parsed_a_leaf_value
+			} else if c_minor < 0x18 {
+				args.dst.write_simple_token_fast!(
+					value_major: 0,
+					value_minor: (base.TOKEN__VBC__STRING << 21) |
+					base.TOKEN__VBD__STRING__CONVERT_0_DST_1_SRC_DROP,
+					continued: 1,
+					length: 1)
+			} else if c_minor < 0x1C {
+				args.dst.write_simple_token_fast!(
+					value_major: 0,
+					value_minor: (base.TOKEN__VBC__STRING << 21) |
+					base.TOKEN__VBD__STRING__CONVERT_0_DST_1_SRC_DROP,
+					continued: 1,
+					length: 1 + ((1 as base.u32) << (c_minor & 3)))
+			} else if c_minor == 0x1F {
+				indefinite_string_major_type = 2
+				args.dst.write_simple_token_fast!(
+					value_major: 0,
+					value_minor: (base.TOKEN__VBC__STRING << 21) |
+					base.TOKEN__VBD__STRING__CONVERT_0_DST_1_SRC_DROP,
+					continued: 1,
+					length: 1)
+				continue.outer
+			} else {
+				break.goto_fail
+			}
+
+			while true {
+				if args.dst.available() <= 0 {
+					yield? base."$short write"
+					continue
+				}
+				n64 = string_length.min(a: args.src.available())
+				token_length = (n64 & 0xFFFF) as base.u32
+				if n64 > 0xFFFF {
+					token_length = 0xFFFF
+				} else if token_length <= 0 {
+					if args.src.is_closed() {
+						return "#bad input"
+					}
+					yield? base."$short read"
+					continue
+				}
+				if args.src.available() < (token_length as base.u64) {
+					return "#internal error: inconsistent token length"
+				}
+				string_length ~mod-= token_length as base.u64
+				continued = 0
+				if (string_length > 0) or (indefinite_string_major_type > 0) {
+					continued = 1
+				}
+				args.src.skip_u32_fast!(actual: token_length, worst_case: token_length)
+				args.dst.write_simple_token_fast!(
+					value_major: 0,
+					value_minor: (base.TOKEN__VBC__STRING << 21) |
+					base.TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY,
+					continued: continued,
+					length: token_length)
+				if string_length > 0 {
+					continue
+				} else if indefinite_string_major_type > 0 {
+					continue.outer
+				}
+				break.goto_parsed_a_leaf_value
+			} endwhile
 		}
+		break.goto_fail
+		}} endwhile.goto_fail
 
 		if args.src.can_undo_byte() {
 			args.src.undo_byte!()

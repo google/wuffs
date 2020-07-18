@@ -651,7 +651,7 @@ parse_flags(int argc, char** argv) {
       wuffs_base__result_u64 u = wuffs_base__parse_number_u64(
           wuffs_base__make_slice_u8((uint8_t*)arg, strlen(arg)),
           WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS);
-      if (wuffs_base__status__is_ok(&u.status) && (u.value <= 0xFFFFFFFF)) {
+      if (u.status.is_ok() && (u.value <= 0xFFFFFFFF)) {
         g_flags.max_output_depth = (uint32_t)(u.value);
         continue;
       }
@@ -1184,9 +1184,28 @@ handle_string(uint64_t vbd,
   } else if (vbd & WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY) {
     uint8_t* ptr = g_src.data.ptr + g_curr_token_end_src_index - len;
     if (g_flags.output_format == file_format::json) {
-      // TODO: if the input is CBOR but the output is JSON then we have to
-      // escape '\n', '\"', etc.
-      TRY(write_dst(ptr, len));
+      if (g_flags.input_format == file_format::json) {
+        TRY(write_dst(ptr, len));
+      } else if (vbd & WUFFS_BASE__TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8) {
+        // TODO: escape '\n', '\"', etc.
+        TRY(write_dst(ptr, len));
+      } else {
+        uint8_t as_hex[512];
+        uint8_t* p = ptr;
+        size_t n = len;
+        while (n > 0) {
+          wuffs_base__transform__output o = wuffs_base__base_16__encode2(
+              wuffs_base__make_slice_u8(&as_hex[0], sizeof as_hex),
+              wuffs_base__make_slice_u8(p, n), true,
+              WUFFS_BASE__BASE_16__DEFAULT_OPTIONS);
+          TRY(write_dst(&as_hex[0], o.num_dst));
+          p += o.num_src;
+          n -= o.num_src;
+          if (!o.status.is_ok()) {
+            return o.status.message();
+          }
+        }
+      }
     } else {
       TRY(write_cbor_output_string(ptr, len, false));
     }
