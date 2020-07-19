@@ -161,6 +161,7 @@ static const char* g_usage =
     "            -fail-if-unsandboxed\n"
     "            -input-allow-json-comments\n"
     "            -input-allow-json-extra-comma\n"
+    "            -input-allow-json-inf-nan-numbers\n"
     "            -output-cbor-metadata-as-json-comments\n"
     "            -output-json-extra-comma\n"
     "            -strict-json-pointer-syntax\n"
@@ -192,6 +193,9 @@ static const char* g_usage =
     "\n"
     "The -input-allow-json-extra-comma flag allows input like \"[1,2,]\",\n"
     "with a comma after the final element of a JSON list or dictionary.\n"
+    "\n"
+    "The -input-allow-json-inf-nan-numbers flag allows non-finite floating\n"
+    "point numbers (infinities and not-a-numbers) within JSON input.\n"
     "\n"
     "The -output-cbor-metadata-as-json-comments writes CBOR tags and other\n"
     "metadata as /*comments*/, when -i=json and -o=cbor are also set. Such\n"
@@ -614,6 +618,7 @@ struct {
   file_format input_format;
   bool input_allow_json_comments;
   bool input_allow_json_extra_comma;
+  bool input_allow_json_inf_nan_numbers;
   uint32_t max_output_depth;
   file_format output_format;
   bool output_cbor_metadata_as_json_comments;
@@ -687,6 +692,10 @@ parse_flags(int argc, char** argv) {
     }
     if (!strcmp(arg, "input-allow-json-extra-comma")) {
       g_flags.input_allow_json_extra_comma = true;
+      continue;
+    }
+    if (!strcmp(arg, "input-allow-json-inf-nan-numbers")) {
+      g_flags.input_allow_json_inf_nan_numbers = true;
       continue;
     }
     if (!strcmp(arg, "o=cbor") || !strcmp(arg, "output-format=cbor")) {
@@ -798,6 +807,9 @@ initialize_globals(int argc, char** argv) {
   }
   if (g_flags.input_allow_json_extra_comma) {
     g_dec->set_quirk_enabled(WUFFS_JSON__QUIRK_ALLOW_EXTRA_COMMA, true);
+  }
+  if (g_flags.input_allow_json_inf_nan_numbers) {
+    g_dec->set_quirk_enabled(WUFFS_JSON__QUIRK_ALLOW_INF_NAN_NUMBERS, true);
   }
 
   // Consume an optional whitespace trailer. This isn't part of the JSON spec,
@@ -1035,7 +1047,7 @@ write_cbor_number_as_json(uint8_t* ptr,
 const char*  //
 write_number(uint64_t vbd, uint8_t* ptr, size_t len) {
   if (g_flags.output_format == file_format::json) {
-    if (vbd & WUFFS_BASE__TOKEN__VBD__NUMBER__FORMAT_TEXT) {
+    if (g_flags.input_format == file_format::json) {
       return write_dst(ptr, len);
     } else if ((vbd &
                 WUFFS_BASE__TOKEN__VBD__NUMBER__CONTENT_INTEGER_UNSIGNED) &&
@@ -1080,6 +1092,14 @@ write_number(uint64_t vbd, uint8_t* ptr, size_t len) {
         return write_number_as_cbor_f64(rf.value);
       }
     }
+  } else if (vbd & WUFFS_BASE__TOKEN__VBD__NUMBER__CONTENT_NEG_INF) {
+    return write_dst("\xF9\xFC\x00", 3);
+  } else if (vbd & WUFFS_BASE__TOKEN__VBD__NUMBER__CONTENT_POS_INF) {
+    return write_dst("\xF9\x7C\x00", 3);
+  } else if (vbd & WUFFS_BASE__TOKEN__VBD__NUMBER__CONTENT_NEG_NAN) {
+    return write_dst("\xF9\xFF\xFF", 3);
+  } else if (vbd & WUFFS_BASE__TOKEN__VBD__NUMBER__CONTENT_POS_NAN) {
+    return write_dst("\xF9\x7F\xFF", 3);
   }
 
 fail:
@@ -1612,7 +1632,7 @@ end_of_data:
     TRY(read_src());
   }
   if ((g_src.meta.ri < g_src.meta.wi) || !g_src.meta.closed) {
-    return "main: valid JSON followed by further (unexpected) data";
+    return "main: valid JSON|CBOR followed by further (unexpected) data";
   }
 
   // Check that we've used all of the decoded tokens, other than trailing
