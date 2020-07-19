@@ -159,7 +159,9 @@ static const char* g_usage =
     "    -s=NUM  -spaces=NUM\n"
     "    -t      -tabs\n"
     "            -fail-if-unsandboxed\n"
-    "            -input-json-extra-comma\n"
+    "            -input-allow-json-comments\n"
+    "            -input-allow-json-extra-comma\n"
+    "            -output-cbor-metadata-as-json-comments\n"
     "            -output-json-extra-comma\n"
     "            -strict-json-pointer-syntax\n"
     "\n"
@@ -185,12 +187,20 @@ static const char* g_usage =
     "The -input-format and -output-format flags select between reading and\n"
     "writing JSON (the default, a textual format) or CBOR (a binary format).\n"
     "\n"
-    "The -input-json-extra-comma flag allows input like \"[1,2,]\", with a\n"
-    "comma after the final element of a JSON list or dictionary.\n"
+    "The -input-allow-json-comments flag allows \"/*slash-star*/\" and\n"
+    "\"//slash-slash\" C-style comments within JSON input.\n"
+    "\n"
+    "The -input-allow-json-extra-comma flag allows input like \"[1,2,]\",\n"
+    "with a comma after the final element of a JSON list or dictionary.\n"
+    "\n"
+    "The -output-cbor-metadata-as-json-comments writes CBOR tags and other\n"
+    "metadata as /*comments*/, when -i=json and -o=cbor are also set. Such\n"
+    "comments are non-compliant with the JSON specification but many parsers\n"
+    "accept them.\n"
     "\n"
     "The -output-json-extra-comma flag writes extra commas, regardless of\n"
     "whether the input had it. Extra commas are non-compliant with the JSON\n"
-    "specification but many parsers accept it and it can produce simpler\n"
+    "specification but many parsers accept them and they can produce simpler\n"
     "line-based diffs. This flag is ignored when -compact-output is set.\n"
     "\n"
     "----\n"
@@ -602,9 +612,11 @@ struct {
   bool compact_output;
   bool fail_if_unsandboxed;
   file_format input_format;
-  bool input_json_extra_comma;
+  bool input_allow_json_comments;
+  bool input_allow_json_extra_comma;
   uint32_t max_output_depth;
   file_format output_format;
+  bool output_cbor_metadata_as_json_comments;
   bool output_json_extra_comma;
   char* query_c_string;
   size_t spaces;
@@ -669,8 +681,12 @@ parse_flags(int argc, char** argv) {
       g_flags.input_format = file_format::json;
       continue;
     }
-    if (!strcmp(arg, "input-json-extra-comma")) {
-      g_flags.input_json_extra_comma = true;
+    if (!strcmp(arg, "input-allow-json-comments")) {
+      g_flags.input_allow_json_comments = true;
+      continue;
+    }
+    if (!strcmp(arg, "input-allow-json-extra-comma")) {
+      g_flags.input_allow_json_extra_comma = true;
       continue;
     }
     if (!strcmp(arg, "o=cbor") || !strcmp(arg, "output-format=cbor")) {
@@ -679,6 +695,10 @@ parse_flags(int argc, char** argv) {
     }
     if (!strcmp(arg, "o=json") || !strcmp(arg, "output-format=json")) {
       g_flags.output_format = file_format::json;
+      continue;
+    }
+    if (!strcmp(arg, "output-cbor-metadata-as-json-comments")) {
+      g_flags.output_cbor_metadata_as_json_comments = true;
       continue;
     }
     if (!strcmp(arg, "output-json-extra-comma")) {
@@ -772,7 +792,11 @@ initialize_globals(int argc, char** argv) {
     g_dec = g_cbor_decoder.upcast_as__wuffs_base__token_decoder();
   }
 
-  if (g_flags.input_json_extra_comma) {
+  if (g_flags.input_allow_json_comments) {
+    g_dec->set_quirk_enabled(WUFFS_JSON__QUIRK_ALLOW_COMMENT_BLOCK, true);
+    g_dec->set_quirk_enabled(WUFFS_JSON__QUIRK_ALLOW_COMMENT_LINE, true);
+  }
+  if (g_flags.input_allow_json_extra_comma) {
     g_dec->set_quirk_enabled(WUFFS_JSON__QUIRK_ALLOW_EXTRA_COMMA, true);
   }
 
@@ -872,8 +896,14 @@ write_literal(uint64_t vbd) {
   size_t len = 0;
   if (vbd & WUFFS_BASE__TOKEN__VBD__LITERAL__UNDEFINED) {
     if (g_flags.output_format == file_format::json) {
-      ptr = "null";  // JSON's closest approximation to "undefined".
-      len = 4;
+      // JSON's closest approximation to "undefined" is "null".
+      if (g_flags.output_cbor_metadata_as_json_comments) {
+        ptr = "/*cbor:undefined*/null";
+        len = 22;
+      } else {
+        ptr = "null";
+        len = 4;
+      }
     } else {
       ptr = "\xF7";
       len = 1;
@@ -1169,7 +1199,12 @@ handle_string(uint64_t vbd,
               bool continued) {
   if (start_of_token_chain) {
     if (g_flags.output_format == file_format::json) {
-      TRY(write_dst("\"", 1));
+      if (g_flags.output_cbor_metadata_as_json_comments &&
+          !(vbd & WUFFS_BASE__TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8)) {
+        TRY(write_dst("/*cbor:hex*/\"", 13));
+      } else {
+        TRY(write_dst("\"", 1));
+      }
     } else {
       g_cbor_output_string_length = 0;
       g_cbor_output_string_is_multiple_chunks = false;
@@ -1513,7 +1548,7 @@ main1(int argc, char** argv) {
       g_curr_token_end_src_index += n;
 
       // Skip filler tokens (e.g. whitespace).
-      if (t.value() == 0) {
+      if (t.value_base_category() == WUFFS_BASE__TOKEN__VBC__FILLER) {
         start_of_token_chain = !t.continued();
         continue;
       }
