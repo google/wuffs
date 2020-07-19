@@ -1193,6 +1193,30 @@ write_cbor_output_string(uint8_t* ptr, size_t len, bool finish) {
 }
 
 const char*  //
+handle_unicode_code_point(uint32_t ucp);
+
+const char*  //
+write_json_escaped_string(uint8_t* ptr, size_t len) {
+restart:
+  while (true) {
+    size_t i;
+    for (i = 0; i < len; i++) {
+      uint8_t c = ptr[i];
+      if ((c == '"') || (c == '\\') || (c < 0x20)) {
+        TRY(write_dst(ptr, i));
+        TRY(handle_unicode_code_point(c));
+        ptr += i + 1;
+        len -= i + 1;
+        goto restart;
+      }
+    }
+    TRY(write_dst(ptr, len));
+    break;
+  }
+  return nullptr;
+}
+
+const char*  //
 handle_string(uint64_t vbd,
               uint64_t len,
               bool start_of_token_chain,
@@ -1222,8 +1246,7 @@ handle_string(uint64_t vbd,
       if (g_flags.input_format == file_format::json) {
         TRY(write_dst(ptr, len));
       } else if (vbd & WUFFS_BASE__TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8) {
-        // TODO: escape '\n', '\"', etc.
-        TRY(write_dst(ptr, len));
+        TRY(write_json_escaped_string(ptr, len));
       } else {
         uint8_t as_hex[512];
         uint8_t* p = ptr;
@@ -1311,6 +1334,8 @@ handle_unicode_code_point(uint32_t ucp) {
   }
   return write_cbor_output_string(&u[0], n, false);
 }
+
+// ----
 
 const char*  //
 handle_token(wuffs_base__token t, bool start_of_token_chain) {
