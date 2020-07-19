@@ -1193,7 +1193,55 @@ write_cbor_output_string(uint8_t* ptr, size_t len, bool finish) {
 }
 
 const char*  //
-handle_unicode_code_point(uint32_t ucp);
+handle_unicode_code_point(uint32_t ucp) {
+  if (g_flags.output_format == file_format::json) {
+    if (ucp < 0x0020) {
+      switch (ucp) {
+        case '\b':
+          return write_dst("\\b", 2);
+        case '\f':
+          return write_dst("\\f", 2);
+        case '\n':
+          return write_dst("\\n", 2);
+        case '\r':
+          return write_dst("\\r", 2);
+        case '\t':
+          return write_dst("\\t", 2);
+      }
+
+      // Other bytes less than 0x0020 are valid UTF-8 but not valid in a
+      // JSON string. They need to remain escaped.
+      uint8_t esc6[6];
+      esc6[0] = '\\';
+      esc6[1] = 'u';
+      esc6[2] = '0';
+      esc6[3] = '0';
+      esc6[4] = hex_digit(ucp >> 4);
+      esc6[5] = hex_digit(ucp >> 0);
+      return write_dst(&esc6[0], 6);
+
+    } else if (ucp == '\"') {
+      return write_dst("\\\"", 2);
+
+    } else if (ucp == '\\') {
+      return write_dst("\\\\", 2);
+    }
+  }
+
+  uint8_t u[WUFFS_BASE__UTF_8__BYTE_LENGTH__MAX_INCL];
+  size_t n = wuffs_base__utf_8__encode(
+      wuffs_base__make_slice_u8(&u[0],
+                                WUFFS_BASE__UTF_8__BYTE_LENGTH__MAX_INCL),
+      ucp);
+  if (n == 0) {
+    return "main: internal error: unexpected Unicode code point";
+  }
+
+  if (g_flags.output_format == file_format::json) {
+    return write_dst(&u[0], n);
+  }
+  return write_cbor_output_string(&u[0], n, false);
+}
 
 const char*  //
 write_json_escaped_string(uint8_t* ptr, size_t len) {
@@ -1282,57 +1330,6 @@ handle_string(uint64_t vbd,
     TRY(write_cbor_output_string(nullptr, 0, true));
   }
   return nullptr;
-}
-
-const char*  //
-handle_unicode_code_point(uint32_t ucp) {
-  if (g_flags.output_format == file_format::json) {
-    if (ucp < 0x0020) {
-      switch (ucp) {
-        case '\b':
-          return write_dst("\\b", 2);
-        case '\f':
-          return write_dst("\\f", 2);
-        case '\n':
-          return write_dst("\\n", 2);
-        case '\r':
-          return write_dst("\\r", 2);
-        case '\t':
-          return write_dst("\\t", 2);
-      }
-
-      // Other bytes less than 0x0020 are valid UTF-8 but not valid in a
-      // JSON string. They need to remain escaped.
-      uint8_t esc6[6];
-      esc6[0] = '\\';
-      esc6[1] = 'u';
-      esc6[2] = '0';
-      esc6[3] = '0';
-      esc6[4] = hex_digit(ucp >> 4);
-      esc6[5] = hex_digit(ucp >> 0);
-      return write_dst(&esc6[0], 6);
-
-    } else if (ucp == '\"') {
-      return write_dst("\\\"", 2);
-
-    } else if (ucp == '\\') {
-      return write_dst("\\\\", 2);
-    }
-  }
-
-  uint8_t u[WUFFS_BASE__UTF_8__BYTE_LENGTH__MAX_INCL];
-  size_t n = wuffs_base__utf_8__encode(
-      wuffs_base__make_slice_u8(&u[0],
-                                WUFFS_BASE__UTF_8__BYTE_LENGTH__MAX_INCL),
-      ucp);
-  if (n == 0) {
-    return "main: internal error: unexpected Unicode code point";
-  }
-
-  if (g_flags.output_format == file_format::json) {
-    return write_dst(&u[0], n);
-  }
-  return write_cbor_output_string(&u[0], n, false);
 }
 
 // ----
