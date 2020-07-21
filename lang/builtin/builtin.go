@@ -75,6 +75,10 @@ var Consts = [...]struct {
 
 	// ----
 
+	{t.IDU32, "46", "TOKEN__VALUE_EXTENSION__NUM_BITS"},
+
+	// ----
+
 	{t.IDU32, "0", "TOKEN__VBC__FILLER"},
 	{t.IDU32, "1", "TOKEN__VBC__STRUCTURE"},
 	{t.IDU32, "2", "TOKEN__VBC__STRING"},
@@ -463,6 +467,9 @@ var Funcs = []string{
 
 	"token_writer.write_simple_token_fast!(" +
 		"value_major: u32[..= 0x1F_FFFF], value_minor: u32[..= 0x1FF_FFFF]," +
+		"continued: u32[..= 0x1], length: u32[..= 0xFFFF])",
+	"token_writer.write_extended_token_fast!(" +
+		"value_extension: u64[..= 0x3FFF_FFFF_FFFF]," +
 		"continued: u32[..= 0x1], length: u32[..= 0xFFFF])",
 
 	"token_writer.available() u64",

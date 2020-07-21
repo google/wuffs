@@ -26,12 +26,19 @@ pub const TOKEN_VALUE_MAJOR : base.u32 = 0x0C_061D
 // tag is ((first << 46) | ext).
 pub const TOKEN_VALUE_MINOR__TAG : base.u32 = 0x01
 
-// TOKEN_VALUE_MINOR__MINUS_1_MINUS_X means that the token's final
-// (token.length - 1) bytes (which must be one of 1, 2, 4 or 8 bytes) contains
-// a big-endian unsigned integer x. The token's overall value is the negative
-// number (-1 - x). Note that this value can underflow an int64_t, and its
-// absolute value (+1 + x) can overflow a uint64_t.
+// TOKEN_VALUE_MINOR__MINUS_1_MINUS_X means that the 9-byte length token holds
+// the negative integer (-1 - x), where x is the big-endian unsigned integer in
+// the token's final 8 bytes. The most significant bit of x is guaranteed to be
+// set, so that (-1 - x) will always underflow an int64_t and its absolute
+// value (+1 + x) might also overflow a uint64_t.
 pub const TOKEN_VALUE_MINOR__MINUS_1_MINUS_X : base.u32 = 0x02
+
+pri const TOKEN_LENGTHS : array[32] base.u8[..= 9] = [
+	1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1,
+	2, 3, 5, 9, 1, 1, 1, 1,
+]
 
 pub struct decoder? implements base.token_decoder(
 	end_of_data : base.bool,
@@ -56,8 +63,8 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 	var value_minor  : base.u32[..= 0x1FF_FFFF]
 	var continued    : base.u32[..= 1]
 	var c            : base.u8
-	var c_major      : base.u8
-	var c_minor      : base.u8
+	var c_major      : base.u8[..= 0x07]
+	var c_minor      : base.u8[..= 0x1F]
 
 	// indefinite_string_major_type is 2 or 3 when we are in an
 	// indefinite-length byte string or text string. It is 0 otherwise.
@@ -70,7 +77,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 	while.outer true {
 		while.goto_parsed_a_leaf_value true {{
 		while.goto_fail true {{
-		if args.dst.available() <= 0 {
+		if args.dst.available() <= 1 {
 			yield? base."$short write"
 			continue.outer
 		}
@@ -111,7 +118,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 			string_length = c_minor as base.u64
 		} else {
 			while.goto_have_string_length true,
-				inv args.dst.available() > 0,
+				inv args.dst.available() > 1,
 			{{
 			if c_minor == 0x18 {
 				if args.src.available() >= 1 {
@@ -158,43 +165,58 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 
 		if c_major == 0 {
 			// -------- BEGIN Major type 0: an unsigned integer.
-			if c_minor < 0x18 {
+			if c_minor < 0x1A {
 				args.dst.write_simple_token_fast!(
 					value_major: 0,
 					value_minor: (base.TOKEN__VBC__INLINE_INTEGER_UNSIGNED << 21) |
-					(c_minor as base.u32),
+					((string_length & 0xFFFF) as base.u32),
 					continued: 0,
-					length: 1)
+					length: TOKEN_LENGTHS[c_minor] as base.u32)
 				break.goto_parsed_a_leaf_value
 			} else if c_minor < 0x1C {
 				args.dst.write_simple_token_fast!(
 					value_major: 0,
-					value_minor: (base.TOKEN__VBC__NUMBER << 21) |
-					base.TOKEN__VBD__NUMBER__CONTENT_INTEGER_UNSIGNED |
-					base.TOKEN__VBD__NUMBER__FORMAT_BINARY_BIG_ENDIAN |
-					base.TOKEN__VBD__NUMBER__FORMAT_IGNORE_FIRST_BYTE,
+					value_minor: (base.TOKEN__VBC__INLINE_INTEGER_UNSIGNED << 21) |
+					((string_length >> base.TOKEN__VALUE_EXTENSION__NUM_BITS) as base.u32),
+					continued: 1,
+					length: 0)
+				args.dst.write_extended_token_fast!(
+					value_extension: string_length & 0x3FFF_FFFF_FFFF,
 					continued: 0,
-					length: 1 + ((1 as base.u32) << (c_minor - 0x18)))
+					length: TOKEN_LENGTHS[c_minor] as base.u32)
 				break.goto_parsed_a_leaf_value
 			}
 			// -------- END   Major type 0: an unsigned integer.
 
 		} else if c_major == 1 {
 			// -------- END   Major type 1: a negative integer.
-			if c_minor < 0x18 {
+			if c_minor < 0x1A {
 				args.dst.write_simple_token_fast!(
 					value_major: 0,
 					value_minor: (base.TOKEN__VBC__INLINE_INTEGER_SIGNED << 21) |
-					(0x1F_FFFF - (c_minor as base.u32)),
+					(0x1F_FFFF - ((string_length & 0xFFFF) as base.u32)),
 					continued: 0,
-					length: 1)
+					length: TOKEN_LENGTHS[c_minor] as base.u32)
 				break.goto_parsed_a_leaf_value
 			} else if c_minor < 0x1C {
-				args.dst.write_simple_token_fast!(
-					value_major: TOKEN_VALUE_MAJOR,
-					value_minor: TOKEN_VALUE_MINOR__MINUS_1_MINUS_X,
-					continued: 0,
-					length: 1 + ((1 as base.u32) << (c_minor - 0x18)))
+				if string_length < 0x8000_0000_0000_0000 {
+					args.dst.write_simple_token_fast!(
+						value_major: 0,
+						value_minor: (base.TOKEN__VBC__INLINE_INTEGER_SIGNED << 21) |
+						(0x1F_FFFF - ((string_length >> base.TOKEN__VALUE_EXTENSION__NUM_BITS) as base.u32)),
+						continued: 1,
+						length: 0)
+					args.dst.write_extended_token_fast!(
+						value_extension: (0xFFFF_FFFF_FFFF_FFFF - string_length) & 0x3FFF_FFFF_FFFF,
+						continued: 0,
+						length: TOKEN_LENGTHS[c_minor] as base.u32)
+				} else {
+					args.dst.write_simple_token_fast!(
+						value_major: TOKEN_VALUE_MAJOR,
+						value_minor: TOKEN_VALUE_MINOR__MINUS_1_MINUS_X,
+						continued: 0,
+						length: 9)
+				}
 				break.goto_parsed_a_leaf_value
 			}
 			// -------- END   Major type 1: a negative integer.

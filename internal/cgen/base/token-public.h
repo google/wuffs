@@ -56,6 +56,8 @@ wuffs_base__make_token(uint64_t repr) {
 #define WUFFS_BASE__TOKEN__CONTINUED__SHIFT 16
 #define WUFFS_BASE__TOKEN__LENGTH__SHIFT 0
 
+#define WUFFS_BASE__TOKEN__VALUE_EXTENSION__NUM_BITS 46
+
 // --------
 
 #define WUFFS_BASE__TOKEN__VBC__FILLER 0

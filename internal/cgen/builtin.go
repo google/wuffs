@@ -356,29 +356,39 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 }
 
 func (g *gen) writeBuiltinTokenWriter(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, depth uint32) error {
-	if method == t.IDWriteSimpleTokenFast {
-		b.printf("*iop_a_dst++ = wuffs_base__make_token(\n(((uint64_t)(")
+	switch method {
+	case t.IDWriteSimpleTokenFast, t.IDWriteExtendedTokenFast:
+		b.printf("*iop_a_dst++ = wuffs_base__make_token(\n")
 
-		if cv := args[0].AsArg().Value().ConstValue(); (cv == nil) || (cv.Sign() != 0) {
+		if method == t.IDWriteSimpleTokenFast {
+			b.writes("(((uint64_t)(")
+			if cv := args[0].AsArg().Value().ConstValue(); (cv == nil) || (cv.Sign() != 0) {
+				if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
+					return err
+				}
+				b.writes(")) << WUFFS_BASE__TOKEN__VALUE_MAJOR__SHIFT) |\n(((uint64_t)(")
+			}
+
+			if err := g.writeExpr(b, args[1].AsArg().Value(), depth); err != nil {
+				return err
+			}
+			b.writes(")) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |\n(((uint64_t)(")
+		} else {
+			b.writes("(~")
 			if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
 				return err
 			}
-			b.writes(")) << WUFFS_BASE__TOKEN__VALUE_MAJOR__SHIFT) |\n(((uint64_t)(")
+			b.writes(" << WUFFS_BASE__TOKEN__VALUE_EXTENSION__SHIFT) |\n(((uint64_t)(")
 		}
 
-		if err := g.writeExpr(b, args[1].AsArg().Value(), depth); err != nil {
-			return err
-		}
-		b.writes(")) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |\n(((uint64_t)(")
-
-		if cv := args[2].AsArg().Value().ConstValue(); (cv == nil) || (cv.Sign() != 0) {
-			if err := g.writeExpr(b, args[2].AsArg().Value(), depth); err != nil {
+		if cv := args[len(args)-2].AsArg().Value().ConstValue(); (cv == nil) || (cv.Sign() != 0) {
+			if err := g.writeExpr(b, args[len(args)-2].AsArg().Value(), depth); err != nil {
 				return err
 			}
 			b.writes(")) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |\n(((uint64_t)(")
 		}
 
-		if err := g.writeExpr(b, args[3].AsArg().Value(), depth); err != nil {
+		if err := g.writeExpr(b, args[len(args)-1].AsArg().Value(), depth); err != nil {
 			return err
 		}
 		b.writes(")) << WUFFS_BASE__TOKEN__LENGTH__SHIFT))")

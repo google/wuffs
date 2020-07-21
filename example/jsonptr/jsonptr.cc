@@ -312,6 +312,11 @@ wuffs_base__token_buffer g_tok;
 // g_src.meta.ri).
 size_t g_curr_token_end_src_index;
 
+struct {
+  uint64_t category;
+  uint64_t detail;
+} g_token_extension;
+
 uint32_t g_depth;
 
 enum class context {
@@ -768,6 +773,9 @@ initialize_globals(int argc, char** argv) {
 
   g_curr_token_end_src_index = 0;
 
+  g_token_extension.category = 0;
+  g_token_extension.detail = 0;
+
   g_depth = 0;
 
   g_ctx = context::none;
@@ -1000,48 +1008,22 @@ write_number_as_cbor_u64(uint8_t base, uint64_t u) {
 }
 
 const char*  //
-write_cbor_number_as_json(uint8_t* ptr,
-                          size_t len,
-                          bool ignore_first_byte,
-                          bool minus_1_minus_x) {
-  if (ignore_first_byte) {
-    if (len == 0) {
-      return "main: internal error: ignore_first_byte with no bytes";
-    }
-    ptr++;
-    len--;
+write_cbor_minus_1_minus_x(uint8_t* ptr, size_t len) {
+  if (len != 9) {
+    return "main: internal error: invalid ETC__MINUS_1_MINUS_X token length";
   }
-  uint64_t u;
-  switch (len) {
-    case 1:
-      u = wuffs_base__load_u8__no_bounds_check(ptr);
-      break;
-    case 2:
-      u = wuffs_base__load_u16be__no_bounds_check(ptr);
-      break;
-    case 4:
-      u = wuffs_base__load_u32be__no_bounds_check(ptr);
-      break;
-    case 8:
-      u = wuffs_base__load_u64be__no_bounds_check(ptr);
-      break;
-    default:
-      return "main: internal error: unexpected cbor number byte length";
+  uint64_t u = 1 + wuffs_base__load_u64be__no_bounds_check(ptr + 1);
+  if (u == 0) {
+    // See the cbor.TOKEN_VALUE_MINOR__MINUS_1_MINUS_X comment re overflow.
+    return write_dst("-18446744073709551616", 21);
   }
   uint8_t buf[1 + WUFFS_BASE__U64__BYTE_LENGTH__MAX_INCL];
   uint8_t* b = &buf[0];
-  if (minus_1_minus_x) {
-    u++;
-    if (u == 0) {
-      // See the cbor.TOKEN_VALUE_MINOR__MINUS_1_MINUS_X comment re overflow.
-      return write_dst("-18446744073709551616", 21);
-    }
-    *b++ = '-';
-  }
+  *b++ = '-';
   size_t n = wuffs_base__render_number_u64(
       wuffs_base__make_slice_u8(b, WUFFS_BASE__U64__BYTE_LENGTH__MAX_INCL), u,
       WUFFS_BASE__RENDER_NUMBER_XXX__DEFAULT_OPTIONS);
-  return write_dst(&buf[0], n + (minus_1_minus_x ? 1 : 0));
+  return write_dst(&buf[0], 1 + n);
 }
 
 const char*  //
@@ -1049,19 +1031,9 @@ write_number(uint64_t vbd, uint8_t* ptr, size_t len) {
   if (g_flags.output_format == file_format::json) {
     if (g_flags.input_format == file_format::json) {
       return write_dst(ptr, len);
-    } else if ((vbd &
-                WUFFS_BASE__TOKEN__VBD__NUMBER__CONTENT_INTEGER_UNSIGNED) &&
-               (vbd &
-                WUFFS_BASE__TOKEN__VBD__NUMBER__FORMAT_BINARY_BIG_ENDIAN)) {
-      return write_cbor_number_as_json(
-          ptr, len,
-          vbd & WUFFS_BASE__TOKEN__VBD__NUMBER__FORMAT_IGNORE_FIRST_BYTE,
-          false);
     }
 
     // From here on, (g_flags.output_format == file_format::cbor).
-  } else if (vbd & WUFFS_BASE__TOKEN__VBD__NUMBER__FORMAT_BINARY_BIG_ENDIAN) {
-    return write_dst(ptr, len);
   } else if (vbd & WUFFS_BASE__TOKEN__VBD__NUMBER__FORMAT_TEXT) {
     // First try to parse (ptr, len) as an integer. Something like
     // "1180591620717411303424" is a valid number (in the JSON sense) but will
@@ -1536,10 +1508,34 @@ handle_token(wuffs_base__token t, bool start_of_token_chain) {
         uint64_t x = x_is_signed
                          ? ((uint64_t)(t.value_base_detail__sign_extended()))
                          : vbd;
+        if (t.continued()) {
+          g_token_extension.category = vbc;
+          g_token_extension.detail = x;
+          return nullptr;
+        }
         TRY(write_inline_integer(
             x, x_is_signed, g_src.data.ptr + g_curr_token_end_src_index - len,
             len));
         goto after_value;
+      }
+    }
+
+    int64_t ext = t.value_extension();
+    if (ext >= 0) {
+      switch (g_token_extension.category) {
+        case WUFFS_BASE__TOKEN__VBC__INLINE_INTEGER_SIGNED:
+        case WUFFS_BASE__TOKEN__VBC__INLINE_INTEGER_UNSIGNED:
+          uint64_t x = (g_token_extension.detail
+                        << WUFFS_BASE__TOKEN__VALUE_EXTENSION__NUM_BITS) |
+                       ((uint64_t)ext);
+          TRY(write_inline_integer(
+              x,
+              g_token_extension.category ==
+                  WUFFS_BASE__TOKEN__VBC__INLINE_INTEGER_SIGNED,
+              g_src.data.ptr + g_curr_token_end_src_index - len, len));
+          g_token_extension.category = 0;
+          g_token_extension.detail = 0;
+          goto after_value;
       }
     }
 
@@ -1548,9 +1544,8 @@ handle_token(wuffs_base__token t, bool start_of_token_chain) {
       if (value_minor & WUFFS_CBOR__TOKEN_VALUE_MINOR__TAG) {
         // TODO: CBOR tags.
       } else if (value_minor & WUFFS_CBOR__TOKEN_VALUE_MINOR__MINUS_1_MINUS_X) {
-        TRY(write_cbor_number_as_json(
-            g_src.data.ptr + g_curr_token_end_src_index - len, len, true,
-            true));
+        TRY(write_cbor_minus_1_minus_x(
+            g_src.data.ptr + g_curr_token_end_src_index - len, len));
         goto after_value;
       }
     }
