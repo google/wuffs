@@ -45,13 +45,13 @@ contains the next token. The final token in a token chain, including
 stand-alone tokens, will have the `continued` bit set to zero.
 
 ```
-+-----+-------------+-------+---------------+-----+-----------+
-|  1  |      21     |   3   |       22      |  1  |     16    |
-+-----+-------------+-------+---------------+-----+-----------+
-[...................value...................] con     length
-[..1..|...........~value_extension..........]
-[..0..|.value_major.|......value_minor......]
-[..0..|......0......|..VBC..|......VBD......]
++-----+-------------+-------+-------------+-----+-----------+
+|  1  |      21     |   4   |      21     |  1  |     16    |
++-----+-------------+-------+-------------+-----+-----------+
+[..................value..................] con     length
+[..1..|..........~value_extension.........]
+[..0..|.value_major.|.....value_minor.....]
+[..0..|......0......|..VBC..|.....VBD.....]
 ```
 
 The value bits can be sub-divided in multiple ways. First, the high bit:
@@ -79,7 +79,9 @@ of `html`. The `value_major` forms a namespace that distinguishes e.g.
 HTML-specific tokens from JSON-specific tokens.
 
 If `value_major` is non-zero then `value_minor` has whatever meaning the
-tokenizer's package assigns to it.
+tokenizer's package assigns to it. For example, combining its low 18 bits with
+a follow-up extended token's 46 `value_extension` bits could form a 64-bit
+overall value, whose semnatics depend on the `value_minor`'s high 7 bits.
 
 
 ### VBCs and VBDs
