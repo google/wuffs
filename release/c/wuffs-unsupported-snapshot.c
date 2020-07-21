@@ -5545,9 +5545,11 @@ extern const char wuffs_cbor__error__bad_input[];
 
 #define WUFFS_CBOR__TOKEN_VALUE_MAJOR 787997
 
-#define WUFFS_CBOR__TOKEN_VALUE_MINOR__TAG 1
+#define WUFFS_CBOR__TOKEN_VALUE_MINOR__DETAIL_MASK 262143
 
-#define WUFFS_CBOR__TOKEN_VALUE_MINOR__MINUS_1_MINUS_X 2
+#define WUFFS_CBOR__TOKEN_VALUE_MINOR__TAG 16777216
+
+#define WUFFS_CBOR__TOKEN_VALUE_MINOR__MINUS_1_MINUS_X 8388608
 
 // ---------------- Struct Declarations
 
@@ -16578,7 +16580,7 @@ wuffs_cbor__decoder__decode_tokens(
               } else {
                 *iop_a_dst++ = wuffs_base__make_token(
                     (((uint64_t)(787997)) << WUFFS_BASE__TOKEN__VALUE_MAJOR__SHIFT) |
-                    (((uint64_t)(2)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                    (((uint64_t)(8388608)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                     (((uint64_t)(9)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
               }
               goto label__goto_parsed_a_leaf_value__break;

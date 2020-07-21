@@ -20,18 +20,24 @@ pri status "#internal error: inconsistent token length"
 // TOKEN_VALUE_MAJOR is the base-38 encoding of "cbor".
 pub const TOKEN_VALUE_MAJOR : base.u32 = 0x0C_061D
 
-// TOKEN_VALUE_MINOR__TAG means that the remaining 24 bits of the token's
-// value_minor is a CBOR tag. That token may be continued, in which case the
-// following token is an extended token (46 bits) and the overall 64-bit CBOR
-// tag is ((first << 46) | ext).
-pub const TOKEN_VALUE_MINOR__TAG : base.u32 = 0x01
+// TOKEN_VALUE_MINOR__DETAIL_MASK is a mask for the low 18 bits of a token's
+// value_minor. 18 is 64 - base.TOKEN__VALUE_EXTENSION__NUM_BITS.
+pub const TOKEN_VALUE_MINOR__DETAIL_MASK : base.u64 = 0x003_FFFF
+
+// TOKEN_VALUE_MINOR__TAG means that the low 18 bits of the token's value_minor
+// is a CBOR tag. That token may be continued, in which case the following
+// token is an extended token whose value_extension holds a further
+// base.TOKEN__VALUE_EXTENSION__NUM_BITS bits. The 64-bit CBOR tag is either v
+// or ((v << base.TOKEN__VALUE_EXTENSION__NUM_BITS) | value_extension_1) where
+// v is (value_minor_0 & TOKEN_VALUE_MINOR__DETAIL_MASK).
+pub const TOKEN_VALUE_MINOR__TAG : base.u32 = 0x100_0000
 
 // TOKEN_VALUE_MINOR__MINUS_1_MINUS_X means that the 9-byte length token holds
 // the negative integer (-1 - x), where x is the big-endian unsigned integer in
 // the token's final 8 bytes. The most significant bit of x is guaranteed to be
 // set, so that (-1 - x) will always underflow an int64_t and its absolute
 // value (+1 + x) might also overflow a uint64_t.
-pub const TOKEN_VALUE_MINOR__MINUS_1_MINUS_X : base.u32 = 0x02
+pub const TOKEN_VALUE_MINOR__MINUS_1_MINUS_X : base.u32 = 0x080_0000
 
 pri const TOKEN_LENGTHS : array[32] base.u8[..= 9] = [
 	1, 1, 1, 1, 1, 1, 1, 1,
