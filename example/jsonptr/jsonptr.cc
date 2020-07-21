@@ -1509,6 +1509,9 @@ handle_token(wuffs_base__token t, bool start_of_token_chain) {
                          ? ((uint64_t)(t.value_base_detail__sign_extended()))
                          : vbd;
         if (t.continued()) {
+          if (len != 0) {
+            return "main: internal error: unexpected to-be-extended length";
+          }
           g_token_extension.category = vbc;
           g_token_extension.detail = x;
           return nullptr;
