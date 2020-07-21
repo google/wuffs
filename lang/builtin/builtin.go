@@ -81,7 +81,8 @@ var Consts = [...]struct {
 	{t.IDU32, "3", "TOKEN__VBC__UNICODE_CODE_POINT"},
 	{t.IDU32, "4", "TOKEN__VBC__LITERAL"},
 	{t.IDU32, "5", "TOKEN__VBC__NUMBER"},
-	{t.IDU32, "6", "TOKEN__VBC__INLINE_INTEGER"},
+	{t.IDU32, "6", "TOKEN__VBC__INLINE_INTEGER_SIGNED"},
+	{t.IDU32, "7", "TOKEN__VBC__INLINE_INTEGER_UNSIGNED"},
 
 	// ----
 

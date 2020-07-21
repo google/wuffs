@@ -225,22 +225,22 @@ parse_flags(int argc, char** argv) {
 }
 
 const char* g_vbc_names[16] = {
-    "0:Filler..........",  //
-    "1:Structure.......",  //
-    "2:String..........",  //
-    "3:UnicodeCodePoint",  //
-    "4:Literal.........",  //
-    "5:Number..........",  //
-    "6:Inline_Integer..",  //
-    "7:Reserved........",  //
-    "8:Reserved........",  //
-    "9:Reserved........",  //
-    "A:Reserved........",  //
-    "B:Reserved........",  //
-    "C:Reserved........",  //
-    "D:Reserved........",  //
-    "E:Reserved........",  //
-    "F:Reserved........",  //
+    "0:Filler...........",  //
+    "1:Structure........",  //
+    "2:String...........",  //
+    "3:UnicodeCodePoint.",  //
+    "4:Literal..........",  //
+    "5:Number...........",  //
+    "6:InlineIntSigned..",  //
+    "7:InlineIntUnsigned",  //
+    "8:Reserved.........",  //
+    "9:Reserved.........",  //
+    "A:Reserved.........",  //
+    "B:Reserved.........",  //
+    "C:Reserved.........",  //
+    "D:Reserved.........",  //
+    "E:Reserved.........",  //
+    "F:Reserved.........",  //
 };
 
 const int g_base38_decode[38] = {
@@ -357,8 +357,7 @@ main1(int argc, char** argv) {
             printf("vmajor=0x%06" PRIX32 ":%s  vminor=0x%06" PRIX32 "\n",
                    vmajor, vmajor_name, vminor);
           } else if (vmajor == 0) {
-            printf("vbc=%s.  vbd=0x%06" PRIX32 "\n", g_vbc_names[vbc & 15],
-                   vbd);
+            printf("vbc=%s  vbd=0x%06" PRIX32 "\n", g_vbc_names[vbc & 15], vbd);
           } else {
             printf("extended... vextension=0x%012" PRIX64 "\n",
                    wuffs_base__token__value_extension(t));

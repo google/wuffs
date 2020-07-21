@@ -1107,15 +1107,23 @@ fail:
 }
 
 const char*  //
-write_inline_integer(uint64_t vbd, uint8_t* ptr, size_t len) {
+write_inline_integer(uint64_t x, bool x_is_signed, uint8_t* ptr, size_t len) {
   if (g_flags.output_format == file_format::cbor) {
     return write_dst(ptr, len);
   }
 
-  uint8_t buf[WUFFS_BASE__I64__BYTE_LENGTH__MAX_INCL];
-  size_t n = wuffs_base__render_number_i64(
-      wuffs_base__make_slice_u8(&buf[0], sizeof buf), (int16_t)vbd,
-      WUFFS_BASE__RENDER_NUMBER_XXX__DEFAULT_OPTIONS);
+  // Adding the two ETC__BYTE_LENGTH__ETC constants is overkill, but it's
+  // simpler (for producing a constant-expression array size) than taking the
+  // maximum of the two.
+  uint8_t buf[WUFFS_BASE__I64__BYTE_LENGTH__MAX_INCL +
+              WUFFS_BASE__U64__BYTE_LENGTH__MAX_INCL];
+  wuffs_base__slice_u8 dst = wuffs_base__make_slice_u8(&buf[0], sizeof buf);
+  size_t n =
+      x_is_signed
+          ? wuffs_base__render_number_i64(
+                dst, (int64_t)x, WUFFS_BASE__RENDER_NUMBER_XXX__DEFAULT_OPTIONS)
+          : wuffs_base__render_number_u64(
+                dst, x, WUFFS_BASE__RENDER_NUMBER_XXX__DEFAULT_OPTIONS);
   return write_dst(&buf[0], n);
 }
 
@@ -1522,10 +1530,17 @@ handle_token(wuffs_base__token t, bool start_of_token_chain) {
                          len));
         goto after_value;
 
-      case WUFFS_BASE__TOKEN__VBC__INLINE_INTEGER:
+      case WUFFS_BASE__TOKEN__VBC__INLINE_INTEGER_SIGNED:
+      case WUFFS_BASE__TOKEN__VBC__INLINE_INTEGER_UNSIGNED: {
+        bool x_is_signed = vbc == WUFFS_BASE__TOKEN__VBC__INLINE_INTEGER_SIGNED;
+        uint64_t x = x_is_signed
+                         ? ((uint64_t)(t.value_base_detail__sign_extended()))
+                         : vbd;
         TRY(write_inline_integer(
-            vbd, g_src.data.ptr + g_curr_token_end_src_index - len, len));
+            x, x_is_signed, g_src.data.ptr + g_curr_token_end_src_index - len,
+            len));
         goto after_value;
+      }
     }
 
     if (t.value_major() == WUFFS_CBOR__TOKEN_VALUE_MAJOR) {

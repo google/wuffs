@@ -161,7 +161,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 			if c_minor < 0x18 {
 				args.dst.write_simple_token_fast!(
 					value_major: 0,
-					value_minor: (base.TOKEN__VBC__INLINE_INTEGER << 21) |
+					value_minor: (base.TOKEN__VBC__INLINE_INTEGER_UNSIGNED << 21) |
 					(c_minor as base.u32),
 					continued: 0,
 					length: 1)
@@ -184,7 +184,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 			if c_minor < 0x18 {
 				args.dst.write_simple_token_fast!(
 					value_major: 0,
-					value_minor: (base.TOKEN__VBC__INLINE_INTEGER << 21) |
+					value_minor: (base.TOKEN__VBC__INLINE_INTEGER_SIGNED << 21) |
 					(0x1F_FFFF - (c_minor as base.u32)),
 					continued: 0,
 					length: 1)

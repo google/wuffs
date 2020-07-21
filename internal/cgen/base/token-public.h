@@ -29,6 +29,7 @@ typedef struct {
   inline int64_t value_base_category() const;
   inline uint64_t value_minor() const;
   inline uint64_t value_base_detail() const;
+  inline int64_t value_base_detail__sign_extended() const;
   inline bool continued() const;
   inline uint64_t length() const;
 #endif  // __cplusplus
@@ -63,7 +64,8 @@ wuffs_base__make_token(uint64_t repr) {
 #define WUFFS_BASE__TOKEN__VBC__UNICODE_CODE_POINT 3
 #define WUFFS_BASE__TOKEN__VBC__LITERAL 4
 #define WUFFS_BASE__TOKEN__VBC__NUMBER 5
-#define WUFFS_BASE__TOKEN__VBC__INLINE_INTEGER 6
+#define WUFFS_BASE__TOKEN__VBC__INLINE_INTEGER_SIGNED 6
+#define WUFFS_BASE__TOKEN__VBC__INLINE_INTEGER_UNSIGNED 7
 
 // --------
 
@@ -205,6 +207,15 @@ wuffs_base__token__value_base_detail(const wuffs_base__token* t) {
   return (t->repr >> WUFFS_BASE__TOKEN__VALUE_BASE_DETAIL__SHIFT) & 0x1FFFFF;
 }
 
+static inline int64_t  //
+wuffs_base__token__value_base_detail__sign_extended(
+    const wuffs_base__token* t) {
+  // The VBD is 21 bits in the middle of t->repr. Left shift the high (64 - 21
+  // - ETC__SHIFT) bits off, then right shift (sign-extending) back down.
+  uint64_t u = t->repr << (43 - WUFFS_BASE__TOKEN__VALUE_BASE_DETAIL__SHIFT);
+  return ((int64_t)u) >> 43;
+}
+
 static inline bool  //
 wuffs_base__token__continued(const wuffs_base__token* t) {
   return t->repr & 0x10000;
@@ -245,6 +256,11 @@ wuffs_base__token::value_minor() const {
 inline uint64_t  //
 wuffs_base__token::value_base_detail() const {
   return wuffs_base__token__value_base_detail(this);
+}
+
+inline int64_t  //
+wuffs_base__token::value_base_detail__sign_extended() const {
+  return wuffs_base__token__value_base_detail__sign_extended(this);
 }
 
 inline bool  //
