@@ -16592,16 +16592,11 @@ wuffs_cbor__decoder__decode_tokens(
                   (((uint64_t)(4194560)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                   (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
               goto label__goto_parsed_a_leaf_value__break;
-            } else if (v_c_minor < 24) {
-              *iop_a_dst++ = wuffs_base__make_token(
-                  (((uint64_t)(4194560)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
-                  (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
-                  (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
             } else if (v_c_minor < 28) {
               *iop_a_dst++ = wuffs_base__make_token(
                   (((uint64_t)(4194560)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                   (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
-                  (((uint64_t)((1 + (((uint32_t)(1)) << (v_c_minor & 3))))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+                  (((uint64_t)(((uint32_t)(WUFFS_CBOR__TOKEN_LENGTHS[v_c_minor])))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
             } else if (v_c_minor == 31) {
               v_indefinite_string_major_type = 2;
               *iop_a_dst++ = wuffs_base__make_token(
@@ -16659,16 +16654,11 @@ wuffs_cbor__decoder__decode_tokens(
                   (((uint64_t)(4194579)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                   (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
               goto label__goto_parsed_a_leaf_value__break;
-            } else if (v_c_minor < 24) {
-              *iop_a_dst++ = wuffs_base__make_token(
-                  (((uint64_t)(4194579)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
-                  (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
-                  (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
             } else if (v_c_minor < 28) {
               *iop_a_dst++ = wuffs_base__make_token(
                   (((uint64_t)(4194579)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                   (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
-                  (((uint64_t)((1 + (((uint32_t)(1)) << (v_c_minor & 3))))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+                  (((uint64_t)(((uint32_t)(WUFFS_CBOR__TOKEN_LENGTHS[v_c_minor])))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
             } else if (v_c_minor == 31) {
               v_indefinite_string_major_type = 3;
               *iop_a_dst++ = wuffs_base__make_token(
