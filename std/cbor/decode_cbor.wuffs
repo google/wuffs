@@ -248,6 +248,9 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 					continued: 1,
 					length: TOKEN_LENGTHS[c_minor] as base.u32)
 			} else if c_minor == 0x1F {
+				if indefinite_string_major_type <> 0 {
+					break.goto_fail
+				}
 				indefinite_string_major_type = 2
 				args.dst.write_simple_token_fast!(
 					value_major: 0,
@@ -324,6 +327,9 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 					continued: 1,
 					length: TOKEN_LENGTHS[c_minor] as base.u32)
 			} else if c_minor == 0x1F {
+				if indefinite_string_major_type <> 0 {
+					break.goto_fail
+				}
 				indefinite_string_major_type = 3
 				args.dst.write_simple_token_fast!(
 					value_major: 0,
