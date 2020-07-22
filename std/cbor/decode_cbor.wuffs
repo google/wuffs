@@ -361,14 +361,12 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 					yield? base."$short write"
 					continue
 				}
-				n64 = string_length.min(a: args.src.available())
+				n64 = string_length.min(a: 0xFFFF)
+				n64 = args.src.available_valid_utf_8(up_to: n64)
 				token_length = (n64 & 0xFFFF) as base.u32
-				if n64 > 0xFFFF {
-					token_length = 0xFFFF
-				}
-				// TODO: walk token_length back to a UTF-8 boundary.
 				if token_length <= 0 {
-					if args.src.is_closed() {
+					// The longest UTF-8 code point is 4 bytes.
+					if args.src.is_closed() or (args.src.available() >= 4) {
 						return "#bad input"
 					}
 					yield? base."$short read"

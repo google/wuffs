@@ -388,6 +388,7 @@ var Funcs = []string{
 	"io_reader.peek_u64le_at(offset: u32[..= 0xFFF8]) u64",
 
 	"io_reader.available() u64",
+	"io_reader.available_valid_utf_8(up_to: u64) u64",
 	"io_reader.count_since(mark: u64) u64",
 	"io_reader.is_closed() bool",
 	"io_reader.mark() u64",

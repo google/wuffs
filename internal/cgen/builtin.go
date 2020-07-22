@@ -168,6 +168,20 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 	}
 
 	switch method {
+	case t.IDAvailableValidUTF8:
+		name, err := g.ioRecvName(recv)
+		if err != nil {
+			return err
+		}
+		b.printf("((uint64_t)(wuffs_base__utf_8__longest_valid_prefix(%s%s,\n"+
+			"((size_t)(wuffs_base__u64__min(%s%s - %s%s, ",
+			iopPrefix, name, io2Prefix, name, iopPrefix, name)
+		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
+			return err
+		}
+		b.writes("))))))")
+		return nil
+
 	case t.IDUndoByte:
 		b.printf("(%s%s--, wuffs_base__make_empty_struct())", iopPrefix, name)
 		return nil

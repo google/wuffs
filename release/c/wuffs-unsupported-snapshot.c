@@ -16686,13 +16686,12 @@ wuffs_cbor__decoder__decode_tokens(
                 WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(6);
                 goto label__1__continue;
               }
-              v_n64 = wuffs_base__u64__min(v_string_length, ((uint64_t)(io2_a_src - iop_a_src)));
+              v_n64 = wuffs_base__u64__min(v_string_length, 65535);
+              v_n64 = ((uint64_t)(wuffs_base__utf_8__longest_valid_prefix(iop_a_src,
+                  ((size_t)(wuffs_base__u64__min(io2_a_src - iop_a_src, v_n64))))));
               v_token_length = ((uint32_t)((v_n64 & 65535)));
-              if (v_n64 > 65535) {
-                v_token_length = 65535;
-              }
               if (v_token_length <= 0) {
-                if (a_src && a_src->meta.closed) {
+                if ((a_src && a_src->meta.closed) || (((uint64_t)(io2_a_src - iop_a_src)) >= 4)) {
                   status = wuffs_base__make_status(wuffs_cbor__error__bad_input);
                   goto exit;
                 }
