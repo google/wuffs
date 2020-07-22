@@ -2278,7 +2278,8 @@ test_wuffs_strconv_utf_8_next() {
     {
       uint32_t want_bl = test_cases[tc].want0 >> 24;
       uint32_t want_cp = test_cases[tc].want0 & 0xFFFFFF;
-      wuffs_base__utf_8__next__output have = wuffs_base__utf_8__next(s);
+      wuffs_base__utf_8__next__output have =
+          wuffs_base__utf_8__next(s.ptr, s.len);
       if ((have.code_point != want_cp) || (have.byte_length != want_bl)) {
         RETURN_FAIL("next(\"%s\"): have cp=0x%" PRIX32 " bl=%" PRIu32
                     ", want cp=0x%" PRIX32 " bl=%" PRIu32,
@@ -2292,7 +2293,7 @@ test_wuffs_strconv_utf_8_next() {
       uint32_t want_bl = test_cases[tc].want1 >> 24;
       uint32_t want_cp = test_cases[tc].want1 & 0xFFFFFF;
       wuffs_base__utf_8__next__output have =
-          wuffs_base__utf_8__next_from_end(s);
+          wuffs_base__utf_8__next_from_end(s.ptr, s.len);
       if ((have.code_point != want_cp) || (have.byte_length != want_bl)) {
         RETURN_FAIL("next_from_end(\"%s\"): have cp=0x%" PRIX32 " bl=%" PRIu32
                     ", want cp=0x%" PRIX32 " bl=%" PRIu32,
@@ -2664,9 +2665,8 @@ test_wuffs_json_decode_prior_valid_utf_8() {
     size_t n = strlen(test_cases[tc]);
     size_t num_preceding = 0;
     while (num_preceding < n) {
-      wuffs_base__utf_8__next__output x =
-          wuffs_base__utf_8__next(wuffs_base__make_slice_u8(
-              (void*)(test_cases[tc]) + num_preceding, n - num_preceding));
+      wuffs_base__utf_8__next__output x = wuffs_base__utf_8__next(
+          (void*)(test_cases[tc]) + num_preceding, n - num_preceding);
       if (!wuffs_base__utf_8__next__output__is_valid(&x) ||
           (x.code_point < 0x20) || (x.code_point == '\\')) {
         break;

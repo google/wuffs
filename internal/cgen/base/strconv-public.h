@@ -563,7 +563,7 @@ WUFFS_BASE__MAYBE_STATIC size_t  //
 wuffs_base__utf_8__encode(wuffs_base__slice_u8 dst, uint32_t code_point);
 
 // wuffs_base__utf_8__next returns the next UTF-8 code point (and that code
-// point's byte length) at the start of s.
+// point's byte length) at the start of the read-only slice (s_ptr, s_len).
 //
 // There are exactly two cases in which this function returns something where
 // wuffs_base__utf_8__next__output__is_valid is false:
@@ -576,7 +576,7 @@ wuffs_base__utf_8__encode(wuffs_base__slice_u8 dst, uint32_t code_point);
 //
 // In any case, it always returns an output that satisfies both of:
 //  - (output.code_point  <= WUFFS_BASE__UNICODE_CODE_POINT__MAX_INCL).
-//  - (output.byte_length <= s.len).
+//  - (output.byte_length <= s_len).
 //
 // If s is a sub-slice of a larger slice of valid UTF-8, but that sub-slice
 // boundary occurs in the middle of a multi-byte UTF-8 encoding of a single
@@ -587,41 +587,43 @@ wuffs_base__utf_8__encode(wuffs_base__slice_u8 dst, uint32_t code_point);
 // function requires the WUFFS_CONFIG__MODULE__BASE__UTF8 sub-module, not just
 // WUFFS_CONFIG__MODULE__BASE__CORE.
 WUFFS_BASE__MAYBE_STATIC wuffs_base__utf_8__next__output  //
-wuffs_base__utf_8__next(wuffs_base__slice_u8 s);
+wuffs_base__utf_8__next(const uint8_t* s_ptr, size_t s_len);
 
 // wuffs_base__utf_8__next_from_end is like wuffs_base__utf_8__next except that
-// it looks at the end of s instead of the start.
+// it looks at the end of (s_ptr, s_len) instead of the start.
 //
 // For modular builds that divide the base module into sub-modules, using this
 // function requires the WUFFS_CONFIG__MODULE__BASE__UTF8 sub-module, not just
 // WUFFS_CONFIG__MODULE__BASE__CORE.
 WUFFS_BASE__MAYBE_STATIC wuffs_base__utf_8__next__output  //
-wuffs_base__utf_8__next_from_end(wuffs_base__slice_u8 s);
+wuffs_base__utf_8__next_from_end(const uint8_t* s_ptr, size_t s_len);
 
 // wuffs_base__utf_8__longest_valid_prefix returns the largest n such that the
-// sub-slice s[..n] is valid UTF-8.
+// sub-slice s[..n] is valid UTF-8, where s is the read-only slice (s_ptr,
+// s_len).
 //
-// In particular, it returns s.len if and only if all of s is valid UTF-8.
+// In particular, it returns s_len if and only if all of s is valid UTF-8.
 //
 // If s is a sub-slice of a larger slice of valid UTF-8, but that sub-slice
 // boundary occurs in the middle of a multi-byte UTF-8 encoding of a single
-// code point, then this function will return less than s.len. It is the
+// code point, then this function will return less than s_len. It is the
 // caller's responsibility to split on or otherwise manage UTF-8 boundaries.
 //
 // For modular builds that divide the base module into sub-modules, using this
 // function requires the WUFFS_CONFIG__MODULE__BASE__UTF8 sub-module, not just
 // WUFFS_CONFIG__MODULE__BASE__CORE.
 WUFFS_BASE__MAYBE_STATIC size_t  //
-wuffs_base__utf_8__longest_valid_prefix(wuffs_base__slice_u8 s);
+wuffs_base__utf_8__longest_valid_prefix(const uint8_t* s_ptr, size_t s_len);
 
 // wuffs_base__ascii__longest_valid_prefix returns the largest n such that the
-// sub-slice s[..n] is valid ASCII.
+// sub-slice s[..n] is valid ASCII, where s is the read-only slice (s_ptr,
+// s_len).
 //
-// In particular, it returns s.len if and only if all of s is valid ASCII.
+// In particular, it returns s_len if and only if all of s is valid ASCII.
 // Equivalently, when none of the bytes in s have the 0x80 high bit set.
 //
 // For modular builds that divide the base module into sub-modules, using this
 // function requires the WUFFS_CONFIG__MODULE__BASE__UTF8 sub-module, not just
 // WUFFS_CONFIG__MODULE__BASE__CORE.
 WUFFS_BASE__MAYBE_STATIC size_t  //
-wuffs_base__ascii__longest_valid_prefix(wuffs_base__slice_u8 s);
+wuffs_base__ascii__longest_valid_prefix(const uint8_t* s_ptr, size_t s_len);

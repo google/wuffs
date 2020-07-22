@@ -112,20 +112,20 @@ static const uint8_t wuffs_base__utf_8__byte_length_minus_1[256] = {
 };
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__utf_8__next__output  //
-wuffs_base__utf_8__next(wuffs_base__slice_u8 s) {
-  if (s.len == 0) {
+wuffs_base__utf_8__next(const uint8_t* s_ptr, size_t s_len) {
+  if (s_len == 0) {
     return wuffs_base__make_utf_8__next__output(0, 0);
   }
-  uint32_t c = s.ptr[0];
+  uint32_t c = s_ptr[0];
   switch (wuffs_base__utf_8__byte_length_minus_1[c & 0xFF]) {
     case 0:
       return wuffs_base__make_utf_8__next__output(c, 1);
 
     case 1:
-      if (s.len < 2) {
+      if (s_len < 2) {
         break;
       }
-      c = wuffs_base__load_u16le__no_bounds_check(s.ptr);
+      c = wuffs_base__load_u16le__no_bounds_check(s_ptr);
       if ((c & 0xC000) != 0x8000) {
         break;
       }
@@ -133,10 +133,10 @@ wuffs_base__utf_8__next(wuffs_base__slice_u8 s) {
       return wuffs_base__make_utf_8__next__output(c, 2);
 
     case 2:
-      if (s.len < 3) {
+      if (s_len < 3) {
         break;
       }
-      c = wuffs_base__load_u24le__no_bounds_check(s.ptr);
+      c = wuffs_base__load_u24le__no_bounds_check(s_ptr);
       if ((c & 0xC0C000) != 0x808000) {
         break;
       }
@@ -148,10 +148,10 @@ wuffs_base__utf_8__next(wuffs_base__slice_u8 s) {
       return wuffs_base__make_utf_8__next__output(c, 3);
 
     case 3:
-      if (s.len < 4) {
+      if (s_len < 4) {
         break;
       }
-      c = wuffs_base__load_u32le__no_bounds_check(s.ptr);
+      c = wuffs_base__load_u32le__no_bounds_check(s_ptr);
       if ((c & 0xC0C0C000) != 0x80808000) {
         break;
       }
@@ -168,16 +168,16 @@ wuffs_base__utf_8__next(wuffs_base__slice_u8 s) {
 }
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__utf_8__next__output  //
-wuffs_base__utf_8__next_from_end(wuffs_base__slice_u8 s) {
-  if (s.len == 0) {
+wuffs_base__utf_8__next_from_end(const uint8_t* s_ptr, size_t s_len) {
+  if (s_len == 0) {
     return wuffs_base__make_utf_8__next__output(0, 0);
   }
-  uint8_t* ptr = &s.ptr[s.len - 1];
+  const uint8_t* ptr = &s_ptr[s_len - 1];
   if (*ptr < 0x80) {
     return wuffs_base__make_utf_8__next__output(*ptr, 1);
 
   } else if (*ptr < 0xC0) {
-    uint8_t* too_far = &s.ptr[(s.len > 4) ? (s.len - 4) : 0];
+    const uint8_t* too_far = &s_ptr[(s_len > 4) ? (s_len - 4) : 0];
     uint32_t n = 1;
     while (ptr != too_far) {
       ptr--;
@@ -187,8 +187,7 @@ wuffs_base__utf_8__next_from_end(wuffs_base__slice_u8 s) {
       } else if (*ptr < 0xC0) {
         continue;
       }
-      wuffs_base__utf_8__next__output o =
-          wuffs_base__utf_8__next(wuffs_base__make_slice_u8(ptr, n));
+      wuffs_base__utf_8__next__output o = wuffs_base__utf_8__next(ptr, n);
       if (o.byte_length != n) {
         break;
       }
@@ -201,29 +200,29 @@ wuffs_base__utf_8__next_from_end(wuffs_base__slice_u8 s) {
 }
 
 WUFFS_BASE__MAYBE_STATIC size_t  //
-wuffs_base__utf_8__longest_valid_prefix(wuffs_base__slice_u8 s) {
+wuffs_base__utf_8__longest_valid_prefix(const uint8_t* s_ptr, size_t s_len) {
   // TODO: possibly optimize the all-ASCII case (4 or 8 bytes at a time).
   //
   // TODO: possibly optimize this by manually inlining the
   // wuffs_base__utf_8__next calls.
-  size_t original_len = s.len;
-  while (s.len > 0) {
-    wuffs_base__utf_8__next__output o = wuffs_base__utf_8__next(s);
+  size_t original_len = s_len;
+  while (s_len > 0) {
+    wuffs_base__utf_8__next__output o = wuffs_base__utf_8__next(s_ptr, s_len);
     if ((o.code_point > 0x7F) && (o.byte_length == 1)) {
       break;
     }
-    s.ptr += o.byte_length;
-    s.len -= o.byte_length;
+    s_ptr += o.byte_length;
+    s_len -= o.byte_length;
   }
-  return original_len - s.len;
+  return original_len - s_len;
 }
 
 WUFFS_BASE__MAYBE_STATIC size_t  //
-wuffs_base__ascii__longest_valid_prefix(wuffs_base__slice_u8 s) {
+wuffs_base__ascii__longest_valid_prefix(const uint8_t* s_ptr, size_t s_len) {
   // TODO: possibly optimize this by checking 4 or 8 bytes at a time.
-  uint8_t* original_ptr = s.ptr;
-  uint8_t* p = s.ptr;
-  uint8_t* q = s.ptr + s.len;
+  const uint8_t* original_ptr = s_ptr;
+  const uint8_t* p = s_ptr;
+  const uint8_t* q = s_ptr + s_len;
   for (; (p != q) && ((*p & 0x80) == 0); p++) {
   }
   return (size_t)(p - original_ptr);

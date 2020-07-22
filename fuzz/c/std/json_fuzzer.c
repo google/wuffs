@@ -169,11 +169,11 @@ fuzz_one_token(wuffs_base__token t,
         wuffs_base__slice_u8 s =
             wuffs_base__make_slice_u8(src->data.ptr + *ti - len, len);
         if ((vbd & WUFFS_BASE__TOKEN__VBD__STRING__DEFINITELY_UTF_8) &&
-            (s.len != wuffs_base__utf_8__longest_valid_prefix(s))) {
+            (s.len != wuffs_base__utf_8__longest_valid_prefix(s.ptr, s.len))) {
           return "fuzz: internal error: invalid UTF-8";
         }
         if ((vbd & WUFFS_BASE__TOKEN__VBD__STRING__DEFINITELY_ASCII) &&
-            (s.len != wuffs_base__ascii__longest_valid_prefix(s))) {
+            (s.len != wuffs_base__ascii__longest_valid_prefix(s.ptr, s.len))) {
           return "fuzz: internal error: invalid ASCII";
         }
       }

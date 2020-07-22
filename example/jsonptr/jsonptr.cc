@@ -578,7 +578,7 @@ class Query {
         wuffs_base__make_slice_u8((uint8_t*)query_c_string, length);
     bool previous_was_tilde = false;
     while (s.len > 0) {
-      wuffs_base__utf_8__next__output o = wuffs_base__utf_8__next(s);
+      wuffs_base__utf_8__next__output o = wuffs_base__utf_8__next(s.ptr, s.len);
       if (!o.is_valid()) {
         return false;
       }
@@ -1163,8 +1163,8 @@ write_cbor_output_string(uint8_t* ptr, size_t len, bool finish) {
         // Walk the end backwards to a UTF-8 boundary, so that each chunk of
         // the multi-chunk string is also valid UTF-8.
         while (available > 0) {
-          wuffs_base__utf_8__next__output o = wuffs_base__utf_8__next_from_end(
-              wuffs_base__make_slice_u8(ptr, available));
+          wuffs_base__utf_8__next__output o =
+              wuffs_base__utf_8__next_from_end(ptr, available);
           if ((o.code_point != WUFFS_BASE__UNICODE_REPLACEMENT_CHARACTER) ||
               (o.byte_length != 1)) {
             break;
