@@ -13,6 +13,7 @@
 // limitations under the License.
 
 pub status "#bad input"
+pub status "#unsupported recursion depth"
 
 pri status "#internal error: inconsistent I/O"
 pri status "#internal error: inconsistent token length"
@@ -46,14 +47,32 @@ pri const TOKEN_LENGTHS : array[32] base.u8[..= 9] = [
 	1, 1, 1, 1, 1, 1, 1, 1,
 	1, 1, 1, 1, 1, 1, 1, 1,
 	1, 1, 1, 1, 1, 1, 1, 1,
-	2, 3, 5, 9, 1, 1, 1, 1,
+	2, 3, 5, 9, 0, 0, 0, 1,
 ]
 
 pub struct decoder? implements base.token_decoder(
 	end_of_data : base.bool,
 
+	container_close_token_length : base.u8[..= 1],
+
 	util : base.utility,
 )(
+	// stack is conceptually an array of 2-bit integers, implemented as an
+	// array of u32. The N'th 2-bit pair is whether we're in an array or
+	// object, where N is the recursion depth:
+	//  - 0b00 In an array.
+	//  - 0b01 In an object, expecting a value.
+	//  - 0b10 In an array.
+	//  - 0b11 In an object, expecting a key.
+	//
+	// The maximum recursion depth, 1024, is the same as for std/json.
+	stack : array[1024 / 16] base.u32,
+
+	// container_num_remaining[i] is the number of elements remaining in the
+	// open containers, for i ranging in 0 .. depth. If (i < depth) and
+	// (container_num_remaining[i] == 0) then the i'th open container has
+	// indefinite length.
+	container_num_remaining : array[1024] base.u64,
 )
 
 pub func decoder.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
@@ -68,8 +87,11 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 
 	var n64          : base.u64
 	var depth        : base.u32[..= 1024]
+	var stack_byte   : base.u32[..= (1024 / 16) - 1]
+	var stack_bit    : base.u32[..= 30]
 	var token_length : base.u32[..= 0xFFFF]
-	var value_minor  : base.u32[..= 0x1FF_FFFF]
+	var vminor       : base.u32[..= 0x1FF_FFFF]
+	var vminor_alt   : base.u32[..= 0x1FF_FFFF]
 	var continued    : base.u32[..= 1]
 	var c            : base.u8
 	var c_major      : base.u8[..= 0x07]
@@ -103,10 +125,10 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 			if c <> 0xFF {
 				return "#bad input"
 			}
-			value_minor = (base.TOKEN__VBC__STRING << 21) |
+			vminor = (base.TOKEN__VBC__STRING << 21) |
 				base.TOKEN__VBD__STRING__CONVERT_0_DST_1_SRC_DROP
 			if indefinite_string_major_type == 3 {
-				value_minor |= base.TOKEN__VBD__STRING__DEFINITELY_UTF_8 |
+				vminor |= base.TOKEN__VBD__STRING__DEFINITELY_UTF_8 |
 					base.TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8 |
 					base.TOKEN__VBD__STRING__DEFINITELY_ASCII
 			}
@@ -114,7 +136,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 			args.src.skip_u32_fast!(actual: 1, worst_case: 1)
 			args.dst.write_simple_token_fast!(
 				value_major: 0,
-				value_minor: value_minor,
+				value_minor: vminor,
 				continued: 0,
 				length: 1)
 			break.goto_parsed_a_leaf_value
@@ -387,6 +409,88 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 				break.goto_parsed_a_leaf_value
 			} endwhile
 			// -------- END   Major type 3: a text string.
+
+		} else if c_major == 4 {
+			// -------- BEGIN Major type 4: an array of data items.
+			if TOKEN_LENGTHS[c_minor] == 0 {
+				break.goto_fail
+			} else if depth >= 1024 {
+				return "#unsupported recursion depth"
+			}
+
+			vminor = (base.TOKEN__VBC__STRUCTURE << 21) |
+				base.TOKEN__VBD__STRUCTURE__PUSH |
+				base.TOKEN__VBD__STRUCTURE__FROM_NONE |
+				base.TOKEN__VBD__STRUCTURE__TO_LIST
+			vminor_alt = (base.TOKEN__VBC__STRUCTURE << 21) |
+				base.TOKEN__VBD__STRUCTURE__POP |
+				base.TOKEN__VBD__STRUCTURE__FROM_LIST |
+				base.TOKEN__VBD__STRUCTURE__TO_NONE
+			if depth > 0 {
+				stack_byte = (depth - 1) / 16
+				stack_bit = ((depth - 1) & 15) * 2
+				if 0 == (this.stack[stack_byte] & ((1 as base.u32) << stack_bit)) {
+					vminor = (base.TOKEN__VBC__STRUCTURE << 21) |
+						base.TOKEN__VBD__STRUCTURE__PUSH |
+						base.TOKEN__VBD__STRUCTURE__FROM_LIST |
+						base.TOKEN__VBD__STRUCTURE__TO_LIST
+					vminor_alt = (base.TOKEN__VBC__STRUCTURE << 21) |
+						base.TOKEN__VBD__STRUCTURE__POP |
+						base.TOKEN__VBD__STRUCTURE__FROM_LIST |
+						base.TOKEN__VBD__STRUCTURE__TO_LIST
+				} else {
+					vminor = (base.TOKEN__VBC__STRUCTURE << 21) |
+						base.TOKEN__VBD__STRUCTURE__PUSH |
+						base.TOKEN__VBD__STRUCTURE__FROM_DICT |
+						base.TOKEN__VBD__STRUCTURE__TO_LIST
+					vminor_alt = (base.TOKEN__VBC__STRUCTURE << 21) |
+						base.TOKEN__VBD__STRUCTURE__POP |
+						base.TOKEN__VBD__STRUCTURE__FROM_LIST |
+						base.TOKEN__VBD__STRUCTURE__TO_DICT
+				}
+			}
+			args.dst.write_simple_token_fast!(
+				value_major: 0,
+				value_minor: vminor,
+				continued: 0,
+				length: TOKEN_LENGTHS[c_minor] as base.u32)
+			if c_minor == 0x00 {
+				args.dst.write_simple_token_fast!(
+					value_major: 0,
+					value_minor: vminor_alt,
+					continued: 0,
+					length: 0)
+				break.goto_parsed_a_leaf_value
+			}
+
+			stack_byte = depth / 16
+			stack_bit = (depth & 15) * 2
+			this.stack[stack_byte] &= 0xFFFF_FFFF ^ ((3 as base.u32) << stack_bit)
+			this.container_num_remaining[depth] = string_length
+			depth += 1
+			continue.outer
+			// -------- END   Major type 4: an array of data items.
+
+		} else if c_major == 7 {
+			// -------- BEGIN Major type 7: miscellaneous.
+			if c_minor == 0x1F {
+				// Indefinite-length strings were dealt with separately, above.
+				// Here, we expect to be in an indefinite-length container.
+				if depth <= 0 {
+					break.goto_fail
+				}
+				if this.container_num_remaining[depth - 1] <> 0 {
+					break.goto_fail
+				}
+				// Pretend that the indefinite-length container is effectively
+				// a definite-length container with one element remaining.
+				// Having parsed that final phantom element, we'll process the
+				// explicit CBOR stop code like an implicit end-of-container.
+				this.container_num_remaining[depth - 1] = 1
+				this.container_close_token_length = 1
+				break.goto_parsed_a_leaf_value
+			}
+			// -------- END   Major type 7: miscellaneous.
 		}
 		break.goto_fail
 		}} endwhile.goto_fail
@@ -398,11 +502,60 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 		return "#internal error: inconsistent I/O"
 		}} endwhile.goto_parsed_a_leaf_value
 
-		// We've just parsed a leaf (non-container) value: literal (null,
-		// false, true), number or string.
-		if depth == 0 {
-			break.outer
-		}
+		// We've just parsed a leaf (non-container) value, or the (explicit or
+		// implicit) close of a container (array or object).
+		while depth > 0 {
+			if this.container_num_remaining[depth - 1] <= 0 {
+				// We're in an indefinite-length container.
+				continue.outer
+			}
+			this.container_num_remaining[depth - 1] -= 1
+			if this.container_num_remaining[depth - 1] > 0 {
+				// We're in a definite-length, non-empty container and have not
+				// seen its final value.
+				continue.outer
+			}
+
+			while args.dst.available() <= 0,
+				inv depth > 0,
+				post args.dst.available() > 0,
+			{
+				yield? base."$short write"
+				continue
+			} endwhile
+
+			vminor_alt = (base.TOKEN__VBC__STRUCTURE << 21) | base.TOKEN__VBD__STRUCTURE__POP
+
+			stack_byte = (depth - 1) / 16
+			stack_bit = ((depth - 1) & 15) * 2
+			if 0 == (this.stack[stack_byte] & ((1 as base.u32) << stack_bit)) {
+				vminor_alt |= base.TOKEN__VBD__STRUCTURE__FROM_LIST
+			} else {
+				vminor_alt |= base.TOKEN__VBD__STRUCTURE__FROM_DICT
+			}
+
+			depth -= 1
+			if depth > 0 {
+				stack_byte = (depth - 1) / 16
+				stack_bit = ((depth - 1) & 15) * 2
+				if 0 == (this.stack[stack_byte] & ((1 as base.u32) << stack_bit)) {
+					vminor_alt |= base.TOKEN__VBD__STRUCTURE__TO_LIST
+				} else {
+					vminor_alt |= base.TOKEN__VBD__STRUCTURE__TO_DICT
+				}
+			} else {
+				vminor_alt |= base.TOKEN__VBD__STRUCTURE__TO_NONE
+			}
+			args.dst.write_simple_token_fast!(
+				value_major: 0,
+				value_minor: vminor_alt,
+				continued: 0,
+				length: this.container_close_token_length as base.u32)
+			this.container_close_token_length = 0
+		} endwhile
+
+		// We've parsed the top-level value and we're therefore done overall.
+		break.outer
 	} endwhile.outer
 
 	this.end_of_data = true
