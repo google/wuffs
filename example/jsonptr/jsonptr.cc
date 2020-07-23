@@ -176,9 +176,13 @@ static const char* g_usage =
     "input and output formats do not have to match, but conversion between\n"
     "formats may be lossy.\n"
     "\n"
-    "Canonicalized means that e.g. \"abc\\u000A\\tx\\u0177z\" is re-written\n"
-    "as \"abc\\n\\txŷz\". It does not sort object keys, nor does it reject\n"
+    "Canonicalized JSON means that e.g. \"abc\\u000A\\tx\\u0177z\" is re-\n"
+    "written as \"abc\\n\\txŷz\". It does not sort object keys or reject\n"
     "duplicate keys. Canonicalization does not imply Unicode normalization.\n"
+    "\n"
+    "CBOR output is non-canonical (in the RFC 7049 Section 3.9 sense), as\n"
+    "sorting map keys and measuring indefinite-length containers requires\n"
+    "O(input_length) memory but this program runs in O(1) memory.\n"
     "\n"
     "Formatted means that arrays' and objects' elements are indented, each\n"
     "on its own line. Configure this with the -c / -compact-output, -s=NUM /\n"
@@ -206,6 +210,11 @@ static const char* g_usage =
     "whether the input had it. Extra commas are non-compliant with the JSON\n"
     "specification but many parsers accept them and they can produce simpler\n"
     "line-based diffs. This flag is ignored when -compact-output is set.\n"
+    "\n"
+    "When converting from -i=cbor to -o=json, CBOR permits map keys other\n"
+    "than (untagged) UTF-8 strings but JSON does not. This program rejects\n"
+    "such input, as doing otherwise has complicated interactions with the\n"
+    "-query=STR flag and streaming input.\n"
     "\n"
     "----\n"
     "\n"
@@ -1404,8 +1413,17 @@ handle_token(wuffs_base__token t, bool start_of_token_chain) {
       } else if (g_ctx == context::in_dict_after_key) {
         TRY(write_dst(": ", g_flags.compact_output ? 1 : 2));
       } else if (g_ctx != context::none) {
-        if ((g_ctx != context::in_list_after_bracket) &&
-            (g_ctx != context::in_dict_after_brace)) {
+        if ((g_ctx == context::in_dict_after_brace) ||
+            (g_ctx == context::in_dict_after_value)) {
+          // Reject dict keys that aren't UTF-8 strings, which could otherwise
+          // happen with -i=cbor -o=json.
+          if ((vbc != WUFFS_BASE__TOKEN__VBC__STRING) ||
+              !(vbd & WUFFS_BASE__TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8)) {
+            return "main: cannot convert CBOR non-text-string to JSON map key";
+          }
+        }
+        if ((g_ctx == context::in_list_after_value) ||
+            (g_ctx == context::in_dict_after_value)) {
           TRY(write_dst(",", 1));
         }
         if (!g_flags.compact_output) {

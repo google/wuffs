@@ -53,8 +53,6 @@ pri const TOKEN_LENGTHS : array[32] base.u8[..= 9] = [
 pub struct decoder? implements base.token_decoder(
 	end_of_data : base.bool,
 
-	container_close_token_length : base.u8[..= 1],
-
 	util : base.utility,
 )(
 	// stack is conceptually an array of 2-bit integers, implemented as an
@@ -89,6 +87,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 	var depth        : base.u32[..= 1024]
 	var stack_byte   : base.u32[..= (1024 / 16) - 1]
 	var stack_bit    : base.u32[..= 30]
+	var stack_val    : base.u32[..= 3]
 	var token_length : base.u32[..= 0xFFFF]
 	var vminor       : base.u32[..= 0x1FF_FFFF]
 	var vminor_alt   : base.u32[..= 0x1FF_FFFF]
@@ -471,6 +470,67 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 			continue.outer
 			// -------- END   Major type 4: an array of data items.
 
+		} else if c_major == 5 {
+			// -------- BEGIN Major type 5: a map of pairs of data items.
+			if TOKEN_LENGTHS[c_minor] == 0 {
+				break.goto_fail
+			} else if depth >= 1024 {
+				return "#unsupported recursion depth"
+			}
+
+			vminor = (base.TOKEN__VBC__STRUCTURE << 21) |
+				base.TOKEN__VBD__STRUCTURE__PUSH |
+				base.TOKEN__VBD__STRUCTURE__FROM_NONE |
+				base.TOKEN__VBD__STRUCTURE__TO_DICT
+			vminor_alt = (base.TOKEN__VBC__STRUCTURE << 21) |
+				base.TOKEN__VBD__STRUCTURE__POP |
+				base.TOKEN__VBD__STRUCTURE__FROM_DICT |
+				base.TOKEN__VBD__STRUCTURE__TO_NONE
+			if depth > 0 {
+				stack_byte = (depth - 1) / 16
+				stack_bit = ((depth - 1) & 15) * 2
+				if 0 == (this.stack[stack_byte] & ((1 as base.u32) << stack_bit)) {
+					vminor = (base.TOKEN__VBC__STRUCTURE << 21) |
+						base.TOKEN__VBD__STRUCTURE__PUSH |
+						base.TOKEN__VBD__STRUCTURE__FROM_LIST |
+						base.TOKEN__VBD__STRUCTURE__TO_DICT
+					vminor_alt = (base.TOKEN__VBC__STRUCTURE << 21) |
+						base.TOKEN__VBD__STRUCTURE__POP |
+						base.TOKEN__VBD__STRUCTURE__FROM_DICT |
+						base.TOKEN__VBD__STRUCTURE__TO_LIST
+				} else {
+					vminor = (base.TOKEN__VBC__STRUCTURE << 21) |
+						base.TOKEN__VBD__STRUCTURE__PUSH |
+						base.TOKEN__VBD__STRUCTURE__FROM_DICT |
+						base.TOKEN__VBD__STRUCTURE__TO_DICT
+					vminor_alt = (base.TOKEN__VBC__STRUCTURE << 21) |
+						base.TOKEN__VBD__STRUCTURE__POP |
+						base.TOKEN__VBD__STRUCTURE__FROM_DICT |
+						base.TOKEN__VBD__STRUCTURE__TO_DICT
+				}
+			}
+			args.dst.write_simple_token_fast!(
+				value_major: 0,
+				value_minor: vminor,
+				continued: 0,
+				length: TOKEN_LENGTHS[c_minor] as base.u32)
+			if c_minor == 0x00 {
+				args.dst.write_simple_token_fast!(
+					value_major: 0,
+					value_minor: vminor_alt,
+					continued: 0,
+					length: 0)
+				break.goto_parsed_a_leaf_value
+			}
+
+			stack_byte = depth / 16
+			stack_bit = (depth & 15) * 2
+			this.stack[stack_byte] |= (3 as base.u32) << stack_bit
+			this.container_num_remaining[depth] = string_length
+			depth += 1
+			continue.outer
+			// -------- END   Major type 5: a map of pairs of data items.
+
 		} else if c_major == 7 {
 			// -------- BEGIN Major type 7: miscellaneous.
 			if c_minor == 0x1F {
@@ -479,15 +539,49 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 				if depth <= 0 {
 					break.goto_fail
 				}
-				if this.container_num_remaining[depth - 1] <> 0 {
+				depth -= 1
+				if this.container_num_remaining[depth] <> 0 {
 					break.goto_fail
 				}
-				// Pretend that the indefinite-length container is effectively
-				// a definite-length container with one element remaining.
-				// Having parsed that final phantom element, we'll process the
-				// explicit CBOR stop code like an implicit end-of-container.
-				this.container_num_remaining[depth - 1] = 1
-				this.container_close_token_length = 1
+
+				// Check that, if we're in a map, the map contains an even
+				// number of elements.
+				stack_byte = depth / 16
+				stack_bit = (depth & 15) * 2
+				stack_val = 3 & (this.stack[stack_byte] >> stack_bit)
+				if stack_val == 1 {
+					break.goto_fail
+				}
+
+				// Fill in FROM_ETC.
+				if stack_val <> 3 {
+					vminor_alt = (base.TOKEN__VBC__STRUCTURE << 21) |
+						base.TOKEN__VBD__STRUCTURE__POP |
+						base.TOKEN__VBD__STRUCTURE__FROM_LIST
+				} else {
+					vminor_alt = (base.TOKEN__VBC__STRUCTURE << 21) |
+						base.TOKEN__VBD__STRUCTURE__POP |
+						base.TOKEN__VBD__STRUCTURE__FROM_DICT
+				}
+
+				// Fill in TO_ETC.
+				if depth <= 0 {
+					vminor_alt |= base.TOKEN__VBD__STRUCTURE__TO_NONE
+				} else {
+					stack_byte = (depth - 1) / 16
+					stack_bit = ((depth - 1) & 15) * 2
+					if 0 == (this.stack[stack_byte] & ((1 as base.u32) << stack_bit)) {
+						vminor_alt |= base.TOKEN__VBD__STRUCTURE__TO_LIST
+					} else {
+						vminor_alt |= base.TOKEN__VBD__STRUCTURE__TO_DICT
+					}
+				}
+
+				args.dst.write_simple_token_fast!(
+					value_major: 0,
+					value_minor: vminor_alt,
+					continued: 0,
+					length: 1)
 				break.goto_parsed_a_leaf_value
 			}
 			// -------- END   Major type 7: miscellaneous.
@@ -505,6 +599,16 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 		// We've just parsed a leaf (non-container) value, or the (explicit or
 		// implicit) close of a container (array or object).
 		while depth > 0 {
+			// Toggle the key/value bit for object containers. This bit is
+			// ignored for array containers.
+			stack_byte = (depth - 1) / 16
+			stack_bit = ((depth - 1) & 15) * 2
+			this.stack[stack_byte] ^= (1 as base.u32) << (stack_bit + 1)
+			if 1 == (3 & (this.stack[stack_byte] >> stack_bit)) {
+				// We just parsed the key of a key-value pair.
+				continue.outer
+			}
+
 			if this.container_num_remaining[depth - 1] <= 0 {
 				// We're in an indefinite-length container.
 				continue.outer
@@ -523,19 +627,25 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 				yield? base."$short write"
 				continue
 			} endwhile
+			depth -= 1
 
-			vminor_alt = (base.TOKEN__VBC__STRUCTURE << 21) | base.TOKEN__VBD__STRUCTURE__POP
-
-			stack_byte = (depth - 1) / 16
-			stack_bit = ((depth - 1) & 15) * 2
+			// Fill in FROM_ETC.
+			stack_byte = depth / 16
+			stack_bit = (depth & 15) * 2
 			if 0 == (this.stack[stack_byte] & ((1 as base.u32) << stack_bit)) {
-				vminor_alt |= base.TOKEN__VBD__STRUCTURE__FROM_LIST
+				vminor_alt = (base.TOKEN__VBC__STRUCTURE << 21) |
+					base.TOKEN__VBD__STRUCTURE__POP |
+					base.TOKEN__VBD__STRUCTURE__FROM_LIST
 			} else {
-				vminor_alt |= base.TOKEN__VBD__STRUCTURE__FROM_DICT
+				vminor_alt = (base.TOKEN__VBC__STRUCTURE << 21) |
+					base.TOKEN__VBD__STRUCTURE__POP |
+					base.TOKEN__VBD__STRUCTURE__FROM_DICT
 			}
 
-			depth -= 1
-			if depth > 0 {
+			// Fill in TO_ETC.
+			if depth <= 0 {
+				vminor_alt |= base.TOKEN__VBD__STRUCTURE__TO_NONE
+			} else {
 				stack_byte = (depth - 1) / 16
 				stack_bit = ((depth - 1) & 15) * 2
 				if 0 == (this.stack[stack_byte] & ((1 as base.u32) << stack_bit)) {
@@ -543,15 +653,13 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 				} else {
 					vminor_alt |= base.TOKEN__VBD__STRUCTURE__TO_DICT
 				}
-			} else {
-				vminor_alt |= base.TOKEN__VBD__STRUCTURE__TO_NONE
 			}
+
 			args.dst.write_simple_token_fast!(
 				value_major: 0,
 				value_minor: vminor_alt,
 				continued: 0,
-				length: this.container_close_token_length as base.u32)
-			this.container_close_token_length = 0
+				length: 0)
 		} endwhile
 
 		// We've parsed the top-level value and we're therefore done overall.

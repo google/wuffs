@@ -5643,7 +5643,6 @@ struct wuffs_cbor__decoder__struct {
     wuffs_base__vtable null_vtable;
 
     bool f_end_of_data;
-    uint8_t f_container_close_token_length;
 
     uint32_t p_decode_tokens[1];
   } private_impl;
@@ -16422,6 +16421,7 @@ wuffs_cbor__decoder__decode_tokens(
   uint32_t v_depth = 0;
   uint32_t v_stack_byte = 0;
   uint32_t v_stack_bit = 0;
+  uint32_t v_stack_val = 0;
   uint32_t v_token_length = 0;
   uint32_t v_vminor = 0;
   uint32_t v_vminor_alt = 0;
@@ -16760,16 +16760,75 @@ wuffs_cbor__decoder__decode_tokens(
             self->private_data.f_container_num_remaining[v_depth] = v_string_length;
             v_depth += 1;
             goto label__outer__continue;
+          } else if (v_c_major == 5) {
+            if (WUFFS_CBOR__TOKEN_LENGTHS[v_c_minor] == 0) {
+              goto label__goto_fail__break;
+            } else if (v_depth >= 1024) {
+              status = wuffs_base__make_status(wuffs_cbor__error__unsupported_recursion_depth);
+              goto exit;
+            }
+            v_vminor = 2113553;
+            v_vminor_alt = 2101314;
+            if (v_depth > 0) {
+              v_stack_byte = ((v_depth - 1) / 16);
+              v_stack_bit = (((v_depth - 1) & 15) * 2);
+              if (0 == (self->private_data.f_stack[v_stack_byte] & (((uint32_t)(1)) << v_stack_bit))) {
+                v_vminor = 2113569;
+                v_vminor_alt = 2105410;
+              } else {
+                v_vminor = 2113601;
+                v_vminor_alt = 2113602;
+              }
+            }
+            *iop_a_dst++ = wuffs_base__make_token(
+                (((uint64_t)(v_vminor)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                (((uint64_t)(((uint32_t)(WUFFS_CBOR__TOKEN_LENGTHS[v_c_minor])))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+            if (v_c_minor == 0) {
+              *iop_a_dst++ = wuffs_base__make_token(
+                  (((uint64_t)(v_vminor_alt)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                  (((uint64_t)(0)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+              goto label__goto_parsed_a_leaf_value__break;
+            }
+            v_stack_byte = (v_depth / 16);
+            v_stack_bit = ((v_depth & 15) * 2);
+            self->private_data.f_stack[v_stack_byte] |= (((uint32_t)(3)) << v_stack_bit);
+            self->private_data.f_container_num_remaining[v_depth] = v_string_length;
+            v_depth += 1;
+            goto label__outer__continue;
           } else if (v_c_major == 7) {
             if (v_c_minor == 31) {
               if (v_depth <= 0) {
                 goto label__goto_fail__break;
               }
-              if (self->private_data.f_container_num_remaining[(v_depth - 1)] != 0) {
+              v_depth -= 1;
+              if (self->private_data.f_container_num_remaining[v_depth] != 0) {
                 goto label__goto_fail__break;
               }
-              self->private_data.f_container_num_remaining[(v_depth - 1)] = 1;
-              self->private_impl.f_container_close_token_length = 1;
+              v_stack_byte = (v_depth / 16);
+              v_stack_bit = ((v_depth & 15) * 2);
+              v_stack_val = (3 & (self->private_data.f_stack[v_stack_byte] >> v_stack_bit));
+              if (v_stack_val == 1) {
+                goto label__goto_fail__break;
+              }
+              if (v_stack_val != 3) {
+                v_vminor_alt = 2097186;
+              } else {
+                v_vminor_alt = 2097218;
+              }
+              if (v_depth <= 0) {
+                v_vminor_alt |= 4096;
+              } else {
+                v_stack_byte = ((v_depth - 1) / 16);
+                v_stack_bit = (((v_depth - 1) & 15) * 2);
+                if (0 == (self->private_data.f_stack[v_stack_byte] & (((uint32_t)(1)) << v_stack_bit))) {
+                  v_vminor_alt |= 8192;
+                } else {
+                  v_vminor_alt |= 16384;
+                }
+              }
+              *iop_a_dst++ = wuffs_base__make_token(
+                  (((uint64_t)(v_vminor_alt)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                  (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
               goto label__goto_parsed_a_leaf_value__break;
             }
           }
@@ -16786,6 +16845,12 @@ wuffs_cbor__decoder__decode_tokens(
       }
       label__goto_parsed_a_leaf_value__break:;
       while (v_depth > 0) {
+        v_stack_byte = ((v_depth - 1) / 16);
+        v_stack_bit = (((v_depth - 1) & 15) * 2);
+        self->private_data.f_stack[v_stack_byte] ^= (((uint32_t)(1)) << (v_stack_bit + 1));
+        if (1 == (3 & (self->private_data.f_stack[v_stack_byte] >> v_stack_bit))) {
+          goto label__outer__continue;
+        }
         if (self->private_data.f_container_num_remaining[(v_depth - 1)] <= 0) {
           goto label__outer__continue;
         }
@@ -16799,16 +16864,17 @@ wuffs_cbor__decoder__decode_tokens(
           WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(8);
           goto label__2__continue;
         }
-        v_vminor_alt = 2097154;
-        v_stack_byte = ((v_depth - 1) / 16);
-        v_stack_bit = (((v_depth - 1) & 15) * 2);
-        if (0 == (self->private_data.f_stack[v_stack_byte] & (((uint32_t)(1)) << v_stack_bit))) {
-          v_vminor_alt |= 32;
-        } else {
-          v_vminor_alt |= 64;
-        }
         v_depth -= 1;
-        if (v_depth > 0) {
+        v_stack_byte = (v_depth / 16);
+        v_stack_bit = ((v_depth & 15) * 2);
+        if (0 == (self->private_data.f_stack[v_stack_byte] & (((uint32_t)(1)) << v_stack_bit))) {
+          v_vminor_alt = 2097186;
+        } else {
+          v_vminor_alt = 2097218;
+        }
+        if (v_depth <= 0) {
+          v_vminor_alt |= 4096;
+        } else {
           v_stack_byte = ((v_depth - 1) / 16);
           v_stack_bit = (((v_depth - 1) & 15) * 2);
           if (0 == (self->private_data.f_stack[v_stack_byte] & (((uint32_t)(1)) << v_stack_bit))) {
@@ -16816,13 +16882,10 @@ wuffs_cbor__decoder__decode_tokens(
           } else {
             v_vminor_alt |= 16384;
           }
-        } else {
-          v_vminor_alt |= 4096;
         }
         *iop_a_dst++ = wuffs_base__make_token(
             (((uint64_t)(v_vminor_alt)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
-            (((uint64_t)(((uint32_t)(self->private_impl.f_container_close_token_length)))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
-        self->private_impl.f_container_close_token_length = 0;
+            (((uint64_t)(0)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
       }
       goto label__outer__break;
     }
