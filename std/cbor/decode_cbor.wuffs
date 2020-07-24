@@ -605,6 +605,17 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 					length: 2)
 				break.goto_parsed_a_leaf_value
 
+			} else if c_minor < 0x1C {
+				args.dst.write_simple_token_fast!(
+					value_major: 0,
+					value_minor: (base.TOKEN__VBC__NUMBER << 21) |
+					base.TOKEN__VBD__NUMBER__CONTENT_FLOATING_POINT |
+					base.TOKEN__VBD__NUMBER__FORMAT_BINARY_BIG_ENDIAN |
+					base.TOKEN__VBD__NUMBER__FORMAT_IGNORE_FIRST_BYTE,
+					continued: 0,
+					length: TOKEN_LENGTHS[c_minor] as base.u32)
+				break.goto_parsed_a_leaf_value
+
 			} else if c_minor == 0x1F {
 				// Indefinite-length strings were dealt with separately, above.
 				// Here, we expect to be in an indefinite-length container.

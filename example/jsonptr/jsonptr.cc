@@ -1021,6 +1021,46 @@ write_number_as_cbor_u64(uint8_t base, uint64_t u) {
 }
 
 const char*  //
+write_number_as_json_f64(uint8_t* ptr, size_t len) {
+  double f;
+  switch (len) {
+    case 3:
+      f = wuffs_base__ieee_754_bit_representation__from_u16_to_f64(
+          wuffs_base__load_u16be__no_bounds_check(ptr + 1));
+      break;
+    case 5:
+      f = wuffs_base__ieee_754_bit_representation__from_u32_to_f64(
+          wuffs_base__load_u32be__no_bounds_check(ptr + 1));
+      break;
+    case 9:
+      f = wuffs_base__ieee_754_bit_representation__from_u64_to_f64(
+          wuffs_base__load_u64be__no_bounds_check(ptr + 1));
+      break;
+    default:
+      return "main: internal error: unexpected write_number_as_json_f64 len";
+  }
+  uint8_t buf[512];
+  const uint32_t precision = 0;
+  size_t n = wuffs_base__render_number_f64(
+      wuffs_base__make_slice_u8(&buf[0], sizeof buf), f, precision,
+      WUFFS_BASE__RENDER_NUMBER_FXX__JUST_ENOUGH_PRECISION);
+
+  // JSON numbers don't include Infinities or NaNs. For such numbers, their
+  // IEEE 754 bit representation's 11 exponent bits are all on.
+  uint64_t u = wuffs_base__ieee_754_bit_representation__from_f64_to_u64(f);
+  if (((u >> 52) & 0x7FF) == 0x7FF) {
+    if (g_flags.output_cbor_metadata_as_json_comments) {
+      TRY(write_dst("/*cbor:", 7));
+      TRY(write_dst(&buf[0], n));
+      TRY(write_dst("*/", 2));
+    }
+    return write_dst("null", 4);
+  }
+
+  return write_dst(&buf[0], n);
+}
+
+const char*  //
 write_cbor_minus_1_minus_x(uint8_t* ptr, size_t len) {
   if (g_flags.output_format == file_format::cbor) {
     return write_dst(ptr, len);
@@ -1084,8 +1124,14 @@ write_cbor_tag(uint64_t tag, uint8_t* ptr, size_t len) {
 const char*  //
 write_number(uint64_t vbd, uint8_t* ptr, size_t len) {
   if (g_flags.output_format == file_format::json) {
+    const uint64_t cfp_fbbe_fifb =
+        WUFFS_BASE__TOKEN__VBD__NUMBER__CONTENT_FLOATING_POINT |
+        WUFFS_BASE__TOKEN__VBD__NUMBER__FORMAT_BINARY_BIG_ENDIAN |
+        WUFFS_BASE__TOKEN__VBD__NUMBER__FORMAT_IGNORE_FIRST_BYTE;
     if (g_flags.input_format == file_format::json) {
       return write_dst(ptr, len);
+    } else if ((vbd & cfp_fbbe_fifb) == cfp_fbbe_fifb) {
+      return write_number_as_json_f64(ptr, len);
     }
 
     // From here on, (g_flags.output_format == file_format::cbor).

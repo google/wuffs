@@ -16843,6 +16843,11 @@ wuffs_cbor__decoder__decode_tokens(
                   (((uint64_t)((8388608 | ((uint32_t)((v_string_length & 255)))))) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                   (((uint64_t)(2)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
               goto label__goto_parsed_a_leaf_value__break;
+            } else if (v_c_minor < 28) {
+              *iop_a_dst++ = wuffs_base__make_token(
+                  (((uint64_t)(10490113)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                  (((uint64_t)(((uint32_t)(WUFFS_CBOR__TOKEN_LENGTHS[v_c_minor])))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+              goto label__goto_parsed_a_leaf_value__break;
             } else if (v_c_minor == 31) {
               if (v_depth <= 0) {
                 goto label__goto_fail__break;
