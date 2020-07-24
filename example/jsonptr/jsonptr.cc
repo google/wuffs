@@ -1614,7 +1614,15 @@ handle_token(wuffs_base__token t, bool start_of_token_chain) {
 
     if (t.value_major() == WUFFS_CBOR__TOKEN_VALUE_MAJOR) {
       uint64_t value_minor = t.value_minor();
-      if (value_minor & WUFFS_CBOR__TOKEN_VALUE_MINOR__TAG) {
+      if (value_minor & WUFFS_CBOR__TOKEN_VALUE_MINOR__MINUS_1_MINUS_X) {
+        TRY(write_cbor_minus_1_minus_x(
+            g_src.data.ptr + g_curr_token_end_src_index - len, len));
+        goto after_value;
+      } else if (value_minor & WUFFS_CBOR__TOKEN_VALUE_MINOR__SIMPLE_VALUE) {
+        TRY(write_cbor_simple_value(
+            vbd, g_src.data.ptr + g_curr_token_end_src_index - len, len));
+        goto after_value;
+      } else if (value_minor & WUFFS_CBOR__TOKEN_VALUE_MINOR__TAG) {
         if (t.continued()) {
           if (len != 0) {
             return "main: internal error: unexpected to-be-extended length";
@@ -1625,14 +1633,6 @@ handle_token(wuffs_base__token t, bool start_of_token_chain) {
         }
         return write_cbor_tag(
             vbd, g_src.data.ptr + g_curr_token_end_src_index - len, len);
-      } else if (value_minor & WUFFS_CBOR__TOKEN_VALUE_MINOR__MINUS_1_MINUS_X) {
-        TRY(write_cbor_minus_1_minus_x(
-            g_src.data.ptr + g_curr_token_end_src_index - len, len));
-        goto after_value;
-      } else if (value_minor & WUFFS_CBOR__TOKEN_VALUE_MINOR__SIMPLE_VALUE) {
-        TRY(write_cbor_simple_value(
-            vbd, g_src.data.ptr + g_curr_token_end_src_index - len, len));
-        goto after_value;
       }
     }
 

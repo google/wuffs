@@ -25,6 +25,21 @@ pub const TOKEN_VALUE_MAJOR : base.u32 = 0x0C_061D
 // value_minor. 18 is 64 - base.TOKEN__VALUE_EXTENSION__NUM_BITS.
 pub const TOKEN_VALUE_MINOR__DETAIL_MASK : base.u64 = 0x003_FFFF
 
+// TOKEN_VALUE_MINOR__MINUS_1_MINUS_X means that the 9-byte length token holds
+// the negative integer (-1 - x), where x is the big-endian unsigned integer in
+// the token's final 8 bytes. The most significant bit of x is guaranteed to be
+// set, so that (-1 - x) will always underflow an int64_t and its absolute
+// value (+1 + x) might also overflow a uint64_t.
+pub const TOKEN_VALUE_MINOR__MINUS_1_MINUS_X : base.u32 = 0x100_0000
+
+// TOKEN_VALUE_MINOR__SIMPLE_VALUE means that the low 8 bits (or, equivalently,
+// the low 18 bits) of the token's value_minor is a CBOR simple value either in
+// the range 0 ..= 19 or in the range 24 ..= 255.
+//
+// Simple values in the range 20 ..= 23 (which correspond to: false, true, null
+// and undefined) are represented by WUFFS_BASE__TOKEN__VBC__LITERAL tokens.
+pub const TOKEN_VALUE_MINOR__SIMPLE_VALUE : base.u32 = 0x080_0000
+
 // TOKEN_VALUE_MINOR__TAG means that the low 18 bits of the token's value_minor
 // is a CBOR tag. That token may be continued, in which case the following
 // token is an extended token whose value_extension holds a further
@@ -34,22 +49,7 @@ pub const TOKEN_VALUE_MINOR__DETAIL_MASK : base.u64 = 0x003_FFFF
 //
 // When a token chain contains extended tokens like this, all but the last
 // token has zero length.
-pub const TOKEN_VALUE_MINOR__TAG : base.u32 = 0x100_0000
-
-// TOKEN_VALUE_MINOR__MINUS_1_MINUS_X means that the 9-byte length token holds
-// the negative integer (-1 - x), where x is the big-endian unsigned integer in
-// the token's final 8 bytes. The most significant bit of x is guaranteed to be
-// set, so that (-1 - x) will always underflow an int64_t and its absolute
-// value (+1 + x) might also overflow a uint64_t.
-pub const TOKEN_VALUE_MINOR__MINUS_1_MINUS_X : base.u32 = 0x080_0000
-
-// TOKEN_VALUE_MINOR__SIMPLE_VALUE means that the low 8 bits of the token's
-// value_minor is a CBOR simple value either in the range 0 ..= 19 or in the
-// range 24 ..= 255.
-//
-// Simple values in the range 20 ..= 23 (which correspond to: false, true, null
-// and undefined) are represented by WUFFS_BASE__TOKEN__VBC__LITERAL tokens.
-pub const TOKEN_VALUE_MINOR__SIMPLE_VALUE : base.u32 = 0x040_0000
+pub const TOKEN_VALUE_MINOR__TAG : base.u32 = 0x040_0000
 
 pri const LITERALS : array[4] base.u32[..= 0x1FF_FFFF] = [
 	(base.TOKEN__VBC__LITERAL << 21) | base.TOKEN__VBD__LITERAL__FALSE,
