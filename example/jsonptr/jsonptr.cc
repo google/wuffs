@@ -1044,6 +1044,25 @@ write_cbor_minus_1_minus_x(uint8_t* ptr, size_t len) {
 }
 
 const char*  //
+write_cbor_simple_value(uint64_t tag, uint8_t* ptr, size_t len) {
+  if (g_flags.output_format == file_format::cbor) {
+    return write_dst(ptr, len);
+  }
+
+  if (!g_flags.output_cbor_metadata_as_json_comments) {
+    return nullptr;
+  }
+  uint8_t buf[WUFFS_BASE__U64__BYTE_LENGTH__MAX_INCL];
+  size_t n = wuffs_base__render_number_u64(
+      wuffs_base__make_slice_u8(&buf[0],
+                                WUFFS_BASE__U64__BYTE_LENGTH__MAX_INCL),
+      tag, WUFFS_BASE__RENDER_NUMBER_XXX__DEFAULT_OPTIONS);
+  TRY(write_dst("/*cbor:simple", 13));
+  TRY(write_dst(&buf[0], n));
+  return write_dst("*/null", 6);
+}
+
+const char*  //
 write_cbor_tag(uint64_t tag, uint8_t* ptr, size_t len) {
   if (g_flags.output_format == file_format::cbor) {
     return write_dst(ptr, len);
@@ -1609,6 +1628,10 @@ handle_token(wuffs_base__token t, bool start_of_token_chain) {
       } else if (value_minor & WUFFS_CBOR__TOKEN_VALUE_MINOR__MINUS_1_MINUS_X) {
         TRY(write_cbor_minus_1_minus_x(
             g_src.data.ptr + g_curr_token_end_src_index - len, len));
+        goto after_value;
+      } else if (value_minor & WUFFS_CBOR__TOKEN_VALUE_MINOR__SIMPLE_VALUE) {
+        TRY(write_cbor_simple_value(
+            vbd, g_src.data.ptr + g_curr_token_end_src_index - len, len));
         goto after_value;
       }
     }

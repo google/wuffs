@@ -43,6 +43,21 @@ pub const TOKEN_VALUE_MINOR__TAG : base.u32 = 0x100_0000
 // value (+1 + x) might also overflow a uint64_t.
 pub const TOKEN_VALUE_MINOR__MINUS_1_MINUS_X : base.u32 = 0x080_0000
 
+// TOKEN_VALUE_MINOR__SIMPLE_VALUE means that the low 8 bits of the token's
+// value_minor is a CBOR simple value either in the range 0 ..= 19 or in the
+// range 24 ..= 255.
+//
+// Simple values in the range 20 ..= 23 (which correspond to: false, true, null
+// and undefined) are represented by WUFFS_BASE__TOKEN__VBC__LITERAL tokens.
+pub const TOKEN_VALUE_MINOR__SIMPLE_VALUE : base.u32 = 0x040_0000
+
+pri const LITERALS : array[4] base.u32[..= 0x1FF_FFFF] = [
+	(base.TOKEN__VBC__LITERAL << 21) | base.TOKEN__VBD__LITERAL__FALSE,
+	(base.TOKEN__VBC__LITERAL << 21) | base.TOKEN__VBD__LITERAL__TRUE,
+	(base.TOKEN__VBC__LITERAL << 21) | base.TOKEN__VBD__LITERAL__NULL,
+	(base.TOKEN__VBC__LITERAL << 21) | base.TOKEN__VBD__LITERAL__UNDEFINED,
+]
+
 pri const TOKEN_LENGTHS : array[32] base.u8[..= 9] = [
 	1, 1, 1, 1, 1, 1, 1, 1,
 	1, 1, 1, 1, 1, 1, 1, 1,
@@ -561,7 +576,36 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 
 		} else if c_major == 7 {
 			// -------- BEGIN Major type 7: miscellaneous.
-			if c_minor == 0x1F {
+			if c_minor < 0x14 {
+				args.dst.write_simple_token_fast!(
+					value_major: TOKEN_VALUE_MAJOR,
+					value_minor: TOKEN_VALUE_MINOR__SIMPLE_VALUE |
+					((string_length & 0xFF) as base.u32),
+					continued: 0,
+					length: 1)
+				break.goto_parsed_a_leaf_value
+
+			} else if c_minor < 0x18 {
+				args.dst.write_simple_token_fast!(
+					value_major: 0,
+					value_minor: LITERALS[c_minor & 3],
+					continued: 0,
+					length: 1)
+				break.goto_parsed_a_leaf_value
+
+			} else if c_minor == 0x18 {
+				if string_length < 0x18 {
+					break.goto_fail
+				}
+				args.dst.write_simple_token_fast!(
+					value_major: TOKEN_VALUE_MAJOR,
+					value_minor: TOKEN_VALUE_MINOR__SIMPLE_VALUE |
+					((string_length & 0xFF) as base.u32),
+					continued: 0,
+					length: 2)
+				break.goto_parsed_a_leaf_value
+
+			} else if c_minor == 0x1F {
 				// Indefinite-length strings were dealt with separately, above.
 				// Here, we expect to be in an indefinite-length container.
 				if depth <= 0 {

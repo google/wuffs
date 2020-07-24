@@ -5554,6 +5554,8 @@ extern const char wuffs_cbor__error__unsupported_recursion_depth[];
 
 #define WUFFS_CBOR__TOKEN_VALUE_MINOR__MINUS_1_MINUS_X 8388608
 
+#define WUFFS_CBOR__TOKEN_VALUE_MINOR__SIMPLE_VALUE 4194304
+
 // ---------------- Struct Declarations
 
 typedef struct wuffs_cbor__decoder__struct wuffs_cbor__decoder;
@@ -16264,6 +16266,11 @@ const char wuffs_cbor__error__internal_error_inconsistent_token_length[] = "#cbo
 
 // ---------------- Private Consts
 
+static const uint32_t
+WUFFS_CBOR__LITERALS[4]WUFFS_BASE__POTENTIALLY_UNUSED = {
+  8388612, 8388616, 8388610, 8388609,
+};
+
 static const uint8_t
 WUFFS_CBOR__TOKEN_LENGTHS[32]WUFFS_BASE__POTENTIALLY_UNUSED = {
   1, 1, 1, 1, 1, 1, 1, 1,
@@ -16816,7 +16823,27 @@ wuffs_cbor__decoder__decode_tokens(
             }
             goto label__outer__continue;
           } else if (v_c_major == 7) {
-            if (v_c_minor == 31) {
+            if (v_c_minor < 20) {
+              *iop_a_dst++ = wuffs_base__make_token(
+                  (((uint64_t)(787997)) << WUFFS_BASE__TOKEN__VALUE_MAJOR__SHIFT) |
+                  (((uint64_t)((4194304 | ((uint32_t)((v_string_length & 255)))))) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                  (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+              goto label__goto_parsed_a_leaf_value__break;
+            } else if (v_c_minor < 24) {
+              *iop_a_dst++ = wuffs_base__make_token(
+                  (((uint64_t)(WUFFS_CBOR__LITERALS[(v_c_minor & 3)])) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                  (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+              goto label__goto_parsed_a_leaf_value__break;
+            } else if (v_c_minor == 24) {
+              if (v_string_length < 24) {
+                goto label__goto_fail__break;
+              }
+              *iop_a_dst++ = wuffs_base__make_token(
+                  (((uint64_t)(787997)) << WUFFS_BASE__TOKEN__VALUE_MAJOR__SHIFT) |
+                  (((uint64_t)((4194304 | ((uint32_t)((v_string_length & 255)))))) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                  (((uint64_t)(2)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+              goto label__goto_parsed_a_leaf_value__break;
+            } else if (v_c_minor == 31) {
               if (v_depth <= 0) {
                 goto label__goto_fail__break;
               }
