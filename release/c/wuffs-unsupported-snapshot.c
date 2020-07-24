@@ -16512,7 +16512,7 @@ wuffs_cbor__decoder__decode_tokens(
             goto label__goto_parsed_a_leaf_value__break;
           }
           (iop_a_src += 1, wuffs_base__make_empty_struct());
-          v_c_major = (v_c >> 5);
+          v_c_major = ((uint8_t)((v_c >> 5)));
           v_c_minor = (v_c & 31);
           if (v_c_minor < 24) {
             v_string_length = ((uint64_t)(v_c_minor));

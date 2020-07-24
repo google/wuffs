@@ -157,7 +157,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 		}
 
 		args.src.skip_u32_fast!(actual: 1, worst_case: 1)
-		c_major = c >> 5
+		c_major = (c >> 5) as base.u8
 		c_minor = c & 0x1F
 		if c_minor < 0x18 {
 			string_length = c_minor as base.u64
