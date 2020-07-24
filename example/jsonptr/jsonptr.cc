@@ -321,6 +321,10 @@ wuffs_base__token_buffer g_tok;
 // g_src.meta.ri).
 size_t g_curr_token_end_src_index;
 
+// Valid token's VBCs range in 0 ..= 15. Values over that are for tokens from
+// outside of the base package, such as the CBOR package.
+#define CATEGORY_CBOR_TAG 16
+
 struct {
   uint64_t category;
   uint64_t detail;
@@ -1018,6 +1022,10 @@ write_number_as_cbor_u64(uint8_t base, uint64_t u) {
 
 const char*  //
 write_cbor_minus_1_minus_x(uint8_t* ptr, size_t len) {
+  if (g_flags.output_format == file_format::cbor) {
+    return write_dst(ptr, len);
+  }
+
   if (len != 9) {
     return "main: internal error: invalid ETC__MINUS_1_MINUS_X token length";
   }
@@ -1033,6 +1041,25 @@ write_cbor_minus_1_minus_x(uint8_t* ptr, size_t len) {
       wuffs_base__make_slice_u8(b, WUFFS_BASE__U64__BYTE_LENGTH__MAX_INCL), u,
       WUFFS_BASE__RENDER_NUMBER_XXX__DEFAULT_OPTIONS);
   return write_dst(&buf[0], 1 + n);
+}
+
+const char*  //
+write_cbor_tag(uint64_t tag, uint8_t* ptr, size_t len) {
+  if (g_flags.output_format == file_format::cbor) {
+    return write_dst(ptr, len);
+  }
+
+  if (!g_flags.output_cbor_metadata_as_json_comments) {
+    return nullptr;
+  }
+  uint8_t buf[WUFFS_BASE__U64__BYTE_LENGTH__MAX_INCL];
+  size_t n = wuffs_base__render_number_u64(
+      wuffs_base__make_slice_u8(&buf[0],
+                                WUFFS_BASE__U64__BYTE_LENGTH__MAX_INCL),
+      tag, WUFFS_BASE__RENDER_NUMBER_XXX__DEFAULT_OPTIONS);
+  TRY(write_dst("/*cbor:tag", 10));
+  TRY(write_dst(&buf[0], n));
+  return write_dst("*/", 2);
 }
 
 const char*  //
@@ -1543,12 +1570,12 @@ handle_token(wuffs_base__token t, bool start_of_token_chain) {
 
     int64_t ext = t.value_extension();
     if (ext >= 0) {
+      uint64_t x = (g_token_extension.detail
+                    << WUFFS_BASE__TOKEN__VALUE_EXTENSION__NUM_BITS) |
+                   ((uint64_t)ext);
       switch (g_token_extension.category) {
         case WUFFS_BASE__TOKEN__VBC__INLINE_INTEGER_SIGNED:
         case WUFFS_BASE__TOKEN__VBC__INLINE_INTEGER_UNSIGNED:
-          uint64_t x = (g_token_extension.detail
-                        << WUFFS_BASE__TOKEN__VALUE_EXTENSION__NUM_BITS) |
-                       ((uint64_t)ext);
           TRY(write_inline_integer(
               x,
               g_token_extension.category ==
@@ -1557,13 +1584,28 @@ handle_token(wuffs_base__token t, bool start_of_token_chain) {
           g_token_extension.category = 0;
           g_token_extension.detail = 0;
           goto after_value;
+        case CATEGORY_CBOR_TAG:
+          TRY(write_cbor_tag(
+              x, g_src.data.ptr + g_curr_token_end_src_index - len, len));
+          g_token_extension.category = 0;
+          g_token_extension.detail = 0;
+          return nullptr;
       }
     }
 
     if (t.value_major() == WUFFS_CBOR__TOKEN_VALUE_MAJOR) {
       uint64_t value_minor = t.value_minor();
       if (value_minor & WUFFS_CBOR__TOKEN_VALUE_MINOR__TAG) {
-        // TODO: CBOR tags.
+        if (t.continued()) {
+          if (len != 0) {
+            return "main: internal error: unexpected to-be-extended length";
+          }
+          g_token_extension.category = CATEGORY_CBOR_TAG;
+          g_token_extension.detail = vbd;
+          return nullptr;
+        }
+        return write_cbor_tag(
+            vbd, g_src.data.ptr + g_curr_token_end_src_index - len, len);
       } else if (value_minor & WUFFS_CBOR__TOKEN_VALUE_MINOR__MINUS_1_MINUS_X) {
         TRY(write_cbor_minus_1_minus_x(
             g_src.data.ptr + g_curr_token_end_src_index - len, len));

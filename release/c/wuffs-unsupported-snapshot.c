@@ -16795,6 +16795,26 @@ wuffs_cbor__decoder__decode_tokens(
             self->private_data.f_container_num_remaining[v_depth] = v_string_length;
             v_depth += 1;
             goto label__outer__continue;
+          } else if (v_c_major == 6) {
+            if (v_c_minor >= 28) {
+              goto label__goto_fail__break;
+            }
+            if (v_string_length < 262144) {
+              *iop_a_dst++ = wuffs_base__make_token(
+                  (((uint64_t)(787997)) << WUFFS_BASE__TOKEN__VALUE_MAJOR__SHIFT) |
+                  (((uint64_t)((16777216 | ((uint32_t)(v_string_length))))) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                  (((uint64_t)(((uint32_t)(WUFFS_CBOR__TOKEN_LENGTHS[v_c_minor])))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+            } else {
+              *iop_a_dst++ = wuffs_base__make_token(
+                  (((uint64_t)(787997)) << WUFFS_BASE__TOKEN__VALUE_MAJOR__SHIFT) |
+                  (((uint64_t)((16777216 | ((uint32_t)((v_string_length >> 46)))))) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                  (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
+                  (((uint64_t)(0)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+              *iop_a_dst++ = wuffs_base__make_token(
+                  (~(v_string_length & 70368744177663) << WUFFS_BASE__TOKEN__VALUE_EXTENSION__SHIFT) |
+                  (((uint64_t)(((uint32_t)(WUFFS_CBOR__TOKEN_LENGTHS[v_c_minor])))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+            }
+            goto label__outer__continue;
           } else if (v_c_major == 7) {
             if (v_c_minor == 31) {
               if (v_depth <= 0) {

@@ -354,8 +354,8 @@ main1(int argc, char** argv) {
               vmajor_name[3] = g_base38_decode[m3];
             }
 
-            printf("vmajor=0x%06" PRIX32 ":%s  vminor=0x%06" PRIX32 "\n",
-                   vmajor, vmajor_name, vminor);
+            printf("vmajor=0x%06" PRIX32 ":%s vminor=0x%07" PRIX32 "\n", vmajor,
+                   vmajor_name, vminor);
           } else if (vmajor == 0) {
             printf("vbc=%s  vbd=0x%06" PRIX32 "\n", g_vbc_names[vbc & 15], vbd);
           } else {

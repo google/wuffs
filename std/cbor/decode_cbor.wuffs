@@ -531,6 +531,34 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 			continue.outer
 			// -------- END   Major type 5: a map of pairs of data items.
 
+		} else if c_major == 6 {
+			// -------- BEGIN Major type 6: tags.
+			if c_minor >= 0x1C {
+				break.goto_fail
+			}
+			// Write one token (18 bits) or two tokens (18 + 46 bits).
+			if string_length < 0x4_0000 {
+				args.dst.write_simple_token_fast!(
+					value_major: TOKEN_VALUE_MAJOR,
+					value_minor: TOKEN_VALUE_MINOR__TAG |
+					(string_length as base.u32),
+					continued: 0,
+					length: TOKEN_LENGTHS[c_minor] as base.u32)
+			} else {
+				args.dst.write_simple_token_fast!(
+					value_major: TOKEN_VALUE_MAJOR,
+					value_minor: TOKEN_VALUE_MINOR__TAG |
+					((string_length >> base.TOKEN__VALUE_EXTENSION__NUM_BITS) as base.u32),
+					continued: 1,
+					length: 0)
+				args.dst.write_extended_token_fast!(
+					value_extension: string_length & 0x3FFF_FFFF_FFFF,
+					continued: 0,
+					length: TOKEN_LENGTHS[c_minor] as base.u32)
+			}
+			continue.outer
+			// -------- END   Major type 6: tags.
+
 		} else if c_major == 7 {
 			// -------- BEGIN Major type 7: miscellaneous.
 			if c_minor == 0x1F {
