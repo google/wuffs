@@ -25,6 +25,9 @@ package main
 //
 // The rfc7049-errata-corrected.txt file comes from
 // https://github.com/cbor/spec-with-errata-fixed
+//
+// In hindsight, it would have been easier to start from
+// https://github.com/cbor/test-vectors
 
 import (
 	"bytes"
