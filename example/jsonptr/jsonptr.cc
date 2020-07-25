@@ -164,6 +164,7 @@ static const char* g_usage =
     "            -input-allow-json-inf-nan-numbers\n"
     "            -output-cbor-metadata-as-json-comments\n"
     "            -output-json-extra-comma\n"
+    "            -output-json-inf-nan-numbers\n"
     "            -strict-json-pointer-syntax\n"
     "\n"
     "The input.json filename is optional. If absent, it reads from stdin.\n"
@@ -207,9 +208,14 @@ static const char* g_usage =
     "accept them.\n"
     "\n"
     "The -output-json-extra-comma flag writes extra commas, regardless of\n"
-    "whether the input had it. Extra commas are non-compliant with the JSON\n"
+    "whether the input had it. Such commas are non-compliant with the JSON\n"
     "specification but many parsers accept them and they can produce simpler\n"
     "line-based diffs. This flag is ignored when -compact-output is set.\n"
+    "\n"
+    "The -output-json-inf-nan-numbers flag writes Inf and NaN instead of a\n"
+    "substitute null value, when converting from -i=cbor to -o=json. Such\n"
+    "values are non-compliant with the JSON specification but many parsers\n"
+    "accept them.\n"
     "\n"
     "When converting from -i=cbor to -o=json, CBOR permits map keys other\n"
     "than (untagged) UTF-8 strings but JSON does not. This program rejects\n"
@@ -641,6 +647,7 @@ struct {
   file_format output_format;
   bool output_cbor_metadata_as_json_comments;
   bool output_json_extra_comma;
+  bool output_json_inf_nan_numbers;
   char* query_c_string;
   size_t spaces;
   bool strict_json_pointer_syntax;
@@ -730,6 +737,10 @@ parse_flags(int argc, char** argv) {
     }
     if (!strcmp(arg, "output-json-extra-comma")) {
       g_flags.output_json_extra_comma = true;
+      continue;
+    }
+    if (!strcmp(arg, "output-json-inf-nan-numbers")) {
+      g_flags.output_json_inf_nan_numbers = true;
       continue;
     }
     if (!strncmp(arg, "q=", 2) || !strncmp(arg, "query=", 6)) {
@@ -1045,16 +1056,18 @@ write_number_as_json_f64(uint8_t* ptr, size_t len) {
       wuffs_base__make_slice_u8(&buf[0], sizeof buf), f, precision,
       WUFFS_BASE__RENDER_NUMBER_FXX__JUST_ENOUGH_PRECISION);
 
-  // JSON numbers don't include Infinities or NaNs. For such numbers, their
-  // IEEE 754 bit representation's 11 exponent bits are all on.
-  uint64_t u = wuffs_base__ieee_754_bit_representation__from_f64_to_u64(f);
-  if (((u >> 52) & 0x7FF) == 0x7FF) {
-    if (g_flags.output_cbor_metadata_as_json_comments) {
-      TRY(write_dst("/*cbor:", 7));
-      TRY(write_dst(&buf[0], n));
-      TRY(write_dst("*/", 2));
+  if (!g_flags.output_json_inf_nan_numbers) {
+    // JSON numbers don't include Infinities or NaNs. For such numbers, their
+    // IEEE 754 bit representation's 11 exponent bits are all on.
+    uint64_t u = wuffs_base__ieee_754_bit_representation__from_f64_to_u64(f);
+    if (((u >> 52) & 0x7FF) == 0x7FF) {
+      if (g_flags.output_cbor_metadata_as_json_comments) {
+        TRY(write_dst("/*cbor:", 7));
+        TRY(write_dst(&buf[0], n));
+        TRY(write_dst("*/", 2));
+      }
+      return write_dst("null", 4);
     }
-    return write_dst("null", 4);
   }
 
   return write_dst(&buf[0], n);
