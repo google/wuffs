@@ -360,21 +360,28 @@ wuffs_cbor__decoder g_cbor_decoder;
 wuffs_json__decoder g_json_decoder;
 wuffs_base__token_decoder* g_dec;
 
-// cbor_output_string_array is a 4 KiB buffer. For -output-format=cbor, strings
-// whose length are 4096 or less are written as a single definite-length
-// string. Longer strings are written as an indefinite-length string containing
-// multiple definite-length chunks, each of length up to 4 KiB. See the CBOR
-// RFC (RFC 7049) section 2.2.2 "Indefinite-Length Byte Strings and Text
-// Strings". The output is determinate even when the input is streamed.
+// g_spool_array is a 4 KiB buffer.
 //
-// If raising CBOR_OUTPUT_STRING_ARRAY_SIZE above 0xFFFF then you will also
-// have to update flush_cbor_output_string.
-#define CBOR_OUTPUT_STRING_ARRAY_SIZE 4096
-uint8_t g_cbor_output_string_array[CBOR_OUTPUT_STRING_ARRAY_SIZE];
+// For -o=cbor, strings up to SPOOL_ARRAY_SIZE long are written as a single
+// definite-length string. Longer strings are written as an indefinite-length
+// string containing multiple definite-length chunks, each of length up to
+// SPOOL_ARRAY_SIZE. See RFC 7049 section 2.2.2 "Indefinite-Length Byte Strings
+// and Text Strings". Byte strings and text strings are spooled prior to this
+// chunking, so that the output is determinate even when the input is streamed.
+//
+// For -o=json, CBOR byte strings are spooled prior to base64url encoding,
+// which map multiples of 3 source bytes to 4 destination bytes.
+//
+// If raising SPOOL_ARRAY_SIZE above 0xFFFF then you will also have to update
+// flush_cbor_output_string.
+#define SPOOL_ARRAY_SIZE 4096
+uint8_t g_spool_array[SPOOL_ARRAY_SIZE];
 
 uint32_t g_cbor_output_string_length;
 bool g_cbor_output_string_is_multiple_chunks;
 bool g_cbor_output_string_is_utf_8;
+
+uint32_t g_json_output_byte_string_length;
 
 // ----
 
@@ -1246,22 +1253,20 @@ flush_cbor_output_string() {
 
   size_t n = g_cbor_output_string_length;
   g_cbor_output_string_length = 0;
-  return write_dst(&g_cbor_output_string_array[0], n);
+  return write_dst(&g_spool_array[0], n);
 }
 
 const char*  //
 write_cbor_output_string(uint8_t* ptr, size_t len, bool finish) {
-  // Check that g_cbor_output_string_array can hold any UTF-8 code point.
-  if (CBOR_OUTPUT_STRING_ARRAY_SIZE < 4) {
-    return "main: internal error: CBOR_OUTPUT_STRING_ARRAY_SIZE is too short";
+  // Check that g_spool_array can hold any UTF-8 code point.
+  if (SPOOL_ARRAY_SIZE < 4) {
+    return "main: internal error: SPOOL_ARRAY_SIZE is too short";
   }
 
   while (len > 0) {
-    size_t available =
-        CBOR_OUTPUT_STRING_ARRAY_SIZE - g_cbor_output_string_length;
+    size_t available = SPOOL_ARRAY_SIZE - g_cbor_output_string_length;
     if (available >= len) {
-      memcpy(&g_cbor_output_string_array[g_cbor_output_string_length], ptr,
-             len);
+      memcpy(&g_spool_array[g_cbor_output_string_length], ptr, len);
       g_cbor_output_string_length += len;
       ptr += len;
       len = 0;
@@ -1287,8 +1292,7 @@ write_cbor_output_string(uint8_t* ptr, size_t len, bool finish) {
         }
       }
 
-      memcpy(&g_cbor_output_string_array[g_cbor_output_string_length], ptr,
-             available);
+      memcpy(&g_spool_array[g_cbor_output_string_length], ptr, available);
       g_cbor_output_string_length += available;
       ptr += available;
       len -= available;
@@ -1305,6 +1309,66 @@ write_cbor_output_string(uint8_t* ptr, size_t len, bool finish) {
   }
   return nullptr;
 }
+
+const char*  //
+flush_json_output_byte_string(bool finish) {
+  uint8_t* ptr = &g_spool_array[0];
+  size_t len = g_json_output_byte_string_length;
+  while (len > 0) {
+    wuffs_base__transform__output o = wuffs_base__base_64__encode(
+        wuffs_base__make_slice_u8(g_dst.data.ptr + g_dst.meta.wi,
+                                  g_dst.writer_available()),
+        wuffs_base__make_slice_u8(ptr, len), finish,
+        WUFFS_BASE__BASE_64__URL_ALPHABET);
+    g_dst.meta.wi += o.num_dst;
+    ptr += o.num_src;
+    len -= o.num_src;
+    if (o.status.repr == nullptr) {
+      if (len != 0) {
+        return "main: internal error: inconsistent spool length";
+      }
+      g_json_output_byte_string_length = 0;
+      break;
+    } else if (o.status.repr == wuffs_base__suspension__short_read) {
+      memmove(&g_spool_array[0], ptr, len);
+      g_json_output_byte_string_length = len;
+      break;
+    } else if (o.status.repr != wuffs_base__suspension__short_write) {
+      return o.status.message();
+    }
+    TRY(flush_dst());
+  }
+  return nullptr;
+}
+
+const char*  //
+write_json_output_byte_string(uint8_t* ptr, size_t len, bool finish) {
+  while (len > 0) {
+    size_t available = SPOOL_ARRAY_SIZE - g_json_output_byte_string_length;
+    if (available >= len) {
+      memcpy(&g_spool_array[g_json_output_byte_string_length], ptr, len);
+      g_json_output_byte_string_length += len;
+      ptr += len;
+      len = 0;
+      break;
+
+    } else if (available > 0) {
+      memcpy(&g_spool_array[g_json_output_byte_string_length], ptr, available);
+      g_json_output_byte_string_length += available;
+      ptr += available;
+      len -= available;
+    }
+
+    TRY(flush_json_output_byte_string(false));
+  }
+
+  if (finish) {
+    TRY(flush_json_output_byte_string(true));
+  }
+  return nullptr;
+}
+
+// ----
 
 const char*  //
 handle_unicode_code_point(uint32_t ucp) {
@@ -1358,7 +1422,7 @@ handle_unicode_code_point(uint32_t ucp) {
 }
 
 const char*  //
-write_json_escaped_string(uint8_t* ptr, size_t len) {
+write_json_output_text_string(uint8_t* ptr, size_t len) {
 restart:
   while (true) {
     size_t i;
@@ -1387,7 +1451,8 @@ handle_string(uint64_t vbd,
     if (g_flags.output_format == file_format::json) {
       if (g_flags.output_cbor_metadata_as_json_comments &&
           !(vbd & WUFFS_BASE__TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8)) {
-        TRY(write_dst("/*cbor:hex*/\"", 13));
+        TRY(write_dst("/*cbor:base64url*/\"", 19));
+        g_json_output_byte_string_length = 0;
       } else {
         TRY(write_dst("\"", 1));
       }
@@ -1408,23 +1473,9 @@ handle_string(uint64_t vbd,
       if (g_flags.input_format == file_format::json) {
         TRY(write_dst(ptr, len));
       } else if (vbd & WUFFS_BASE__TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8) {
-        TRY(write_json_escaped_string(ptr, len));
+        TRY(write_json_output_text_string(ptr, len));
       } else {
-        uint8_t as_hex[512];
-        uint8_t* p = ptr;
-        size_t n = len;
-        while (n > 0) {
-          wuffs_base__transform__output o = wuffs_base__base_16__encode2(
-              wuffs_base__make_slice_u8(&as_hex[0], sizeof as_hex),
-              wuffs_base__make_slice_u8(p, n), true,
-              WUFFS_BASE__BASE_16__DEFAULT_OPTIONS);
-          TRY(write_dst(&as_hex[0], o.num_dst));
-          p += o.num_src;
-          n -= o.num_src;
-          if (!o.status.is_ok()) {
-            return o.status.message();
-          }
-        }
+        TRY(write_json_output_byte_string(ptr, len, false));
       }
     } else {
       TRY(write_cbor_output_string(ptr, len, false));
@@ -1439,6 +1490,9 @@ handle_string(uint64_t vbd,
   }
 
   if (g_flags.output_format == file_format::json) {
+    if (!(vbd & WUFFS_BASE__TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8)) {
+      TRY(write_json_output_byte_string(nullptr, 0, true));
+    }
     TRY(write_dst("\"", 1));
   } else {
     TRY(write_cbor_output_string(nullptr, 0, true));
