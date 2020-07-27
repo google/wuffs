@@ -338,6 +338,8 @@ struct {
   uint64_t detail;
 } g_token_extension;
 
+bool g_previous_token_was_cbor_tag;
+
 uint32_t g_depth;
 
 enum class context {
@@ -818,6 +820,8 @@ initialize_globals(int argc, char** argv) {
 
   g_token_extension.category = 0;
   g_token_extension.detail = 0;
+
+  g_previous_token_was_cbor_tag = false;
 
   g_depth = 0;
 
@@ -1593,8 +1597,10 @@ handle_token(wuffs_base__token t, bool start_of_token_chain) {
     }
 
     // Write preceding whitespace and punctuation, if it wasn't ']', '}' or a
-    // continuation of a multi-token chain.
-    if (start_of_token_chain) {
+    // continuation of a multi-token chain or a CBOR tagged data item.
+    if (g_previous_token_was_cbor_tag) {
+      g_previous_token_was_cbor_tag = false;
+    } else if (start_of_token_chain) {
       if (g_flags.output_format != file_format::json) {
         // No-op.
       } else if (g_ctx == context::in_dict_after_key) {
@@ -1747,6 +1753,7 @@ handle_token(wuffs_base__token t, bool start_of_token_chain) {
           g_token_extension.detail = 0;
           goto after_value;
         case CATEGORY_CBOR_TAG:
+          g_previous_token_was_cbor_tag = true;
           TRY(write_cbor_tag(x, tok));
           g_token_extension.category = 0;
           g_token_extension.detail = 0;
@@ -1763,6 +1770,7 @@ handle_token(wuffs_base__token t, bool start_of_token_chain) {
         TRY(write_cbor_simple_value(vbd, tok));
         goto after_value;
       } else if (value_minor & WUFFS_CBOR__TOKEN_VALUE_MINOR__TAG) {
+        g_previous_token_was_cbor_tag = true;
         if (t.continued()) {
           if (tok.len != 0) {
             return "main: internal error: unexpected to-be-extended length";
