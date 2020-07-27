@@ -67,13 +67,27 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 // No mimic library.
 #endif
 
+// ---------------- Golden Tests
+
+golden_test g_cbor_cbor_rfc_7049_examples_gt = {
+    .want_filename = "test/data/cbor-rfc-7049-examples.tokens",
+    .src_filename = "test/data/cbor-rfc-7049-examples.cbor",
+};
+
 // ---------------- CBOR Tests
 
 const char*  //
 test_wuffs_cbor_decode_interface() {
   CHECK_FOCUS(__func__);
 
-  // TODO.
+  wuffs_cbor__decoder dec;
+  CHECK_STATUS("initialize",
+               wuffs_cbor__decoder__initialize(
+                   &dec, sizeof dec, WUFFS_VERSION,
+                   WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+  CHECK_STRING(do_test__wuffs_base__token_decoder(
+      wuffs_cbor__decoder__upcast_as__wuffs_base__token_decoder(&dec),
+      &g_cbor_cbor_rfc_7049_examples_gt));
 
   return NULL;
 }

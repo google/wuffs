@@ -17,8 +17,10 @@
 package main
 
 // extract-cbor-rfc-7049-examples.go extracts the examples (Appendix A) from
-// RFC 7049 "Concise Binary Object Representation (CBOR)". Each example is
-// written to a separate file under a "cbor-rfc-7049-examples" directory.
+// RFC 7049 "Concise Binary Object Representation (CBOR)". If the -concat flag
+// is passed, a single CBOR array containing all of the examples are written to
+// stdout. Otherwise, each example is written to a separate file under a
+// "cbor-rfc-7049-examples" directory.
 //
 // Usage:
 // go run extract-cbor-rfc-7049-examples.go < rfc7049-errata-corrected.txt
@@ -31,10 +33,13 @@ package main
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
 )
+
+var concat = flag.Bool("concat", false, "output one monolithic CBOR file")
 
 func main() {
 	if err := main1(); err != nil {
@@ -48,7 +53,10 @@ func main1() error {
 	if err != nil {
 		return err
 	}
-	if err := os.Mkdir("cbor-rfc-7049-examples", 0755); err != nil {
+	if *concat {
+		// Start of CBOR indefinite-length array.
+		os.Stdout.Write([]byte("\x9F"))
+	} else if err := os.Mkdir("cbor-rfc-7049-examples", 0755); err != nil {
 		return err
 	}
 	for remaining := []byte(nil); len(src) > 0; src = remaining {
@@ -78,7 +86,14 @@ func main1() error {
 			contents = append(contents, (unhex(src[0])<<4)|unhex(src[1]))
 		}
 	}
-	return emit()
+	if err := emit(); err != nil {
+		return err
+	}
+	if *concat {
+		// End of CBOR indefinite-length array.
+		os.Stdout.Write([]byte("\xFF"))
+	}
+	return nil
 }
 
 var (
@@ -88,6 +103,11 @@ var (
 
 func emit() error {
 	if len(contents) == 0 {
+		return nil
+	}
+	if *concat {
+		os.Stdout.Write(contents)
+		contents = nil
 		return nil
 	}
 	filename := fmt.Sprintf("cbor-rfc-7049-examples/%02d.cbor", fileNumber)
