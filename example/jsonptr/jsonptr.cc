@@ -1039,20 +1039,20 @@ write_number_as_cbor_u64(uint8_t base, uint64_t u) {
 }
 
 const char*  //
-write_number_as_json_f64(uint8_t* ptr, size_t len) {
+write_number_as_json_f64(wuffs_base__slice_u8 s) {
   double f;
-  switch (len) {
+  switch (s.len) {
     case 3:
       f = wuffs_base__ieee_754_bit_representation__from_u16_to_f64(
-          wuffs_base__load_u16be__no_bounds_check(ptr + 1));
+          wuffs_base__load_u16be__no_bounds_check(s.ptr + 1));
       break;
     case 5:
       f = wuffs_base__ieee_754_bit_representation__from_u32_to_f64(
-          wuffs_base__load_u32be__no_bounds_check(ptr + 1));
+          wuffs_base__load_u32be__no_bounds_check(s.ptr + 1));
       break;
     case 9:
       f = wuffs_base__ieee_754_bit_representation__from_u64_to_f64(
-          wuffs_base__load_u64be__no_bounds_check(ptr + 1));
+          wuffs_base__load_u64be__no_bounds_check(s.ptr + 1));
       break;
     default:
       return "main: internal error: unexpected write_number_as_json_f64 len";
@@ -1081,15 +1081,15 @@ write_number_as_json_f64(uint8_t* ptr, size_t len) {
 }
 
 const char*  //
-write_cbor_minus_1_minus_x(uint8_t* ptr, size_t len) {
+write_cbor_minus_1_minus_x(wuffs_base__slice_u8 s) {
   if (g_flags.output_format == file_format::cbor) {
-    return write_dst(ptr, len);
+    return write_dst(s.ptr, s.len);
   }
 
-  if (len != 9) {
+  if (s.len != 9) {
     return "main: internal error: invalid ETC__MINUS_1_MINUS_X token length";
   }
-  uint64_t u = 1 + wuffs_base__load_u64be__no_bounds_check(ptr + 1);
+  uint64_t u = 1 + wuffs_base__load_u64be__no_bounds_check(s.ptr + 1);
   if (u == 0) {
     // See the cbor.TOKEN_VALUE_MINOR__MINUS_1_MINUS_X comment re overflow.
     return write_dst("-18446744073709551616", 21);
@@ -1104,9 +1104,9 @@ write_cbor_minus_1_minus_x(uint8_t* ptr, size_t len) {
 }
 
 const char*  //
-write_cbor_simple_value(uint64_t tag, uint8_t* ptr, size_t len) {
+write_cbor_simple_value(uint64_t tag, wuffs_base__slice_u8 s) {
   if (g_flags.output_format == file_format::cbor) {
-    return write_dst(ptr, len);
+    return write_dst(s.ptr, s.len);
   }
 
   if (!g_flags.output_cbor_metadata_as_json_comments) {
@@ -1123,9 +1123,9 @@ write_cbor_simple_value(uint64_t tag, uint8_t* ptr, size_t len) {
 }
 
 const char*  //
-write_cbor_tag(uint64_t tag, uint8_t* ptr, size_t len) {
+write_cbor_tag(uint64_t tag, wuffs_base__slice_u8 s) {
   if (g_flags.output_format == file_format::cbor) {
-    return write_dst(ptr, len);
+    return write_dst(s.ptr, s.len);
   }
 
   if (!g_flags.output_cbor_metadata_as_json_comments) {
@@ -1142,35 +1142,33 @@ write_cbor_tag(uint64_t tag, uint8_t* ptr, size_t len) {
 }
 
 const char*  //
-write_number(uint64_t vbd, uint8_t* ptr, size_t len) {
+write_number(uint64_t vbd, wuffs_base__slice_u8 s) {
   if (g_flags.output_format == file_format::json) {
     const uint64_t cfp_fbbe_fifb =
         WUFFS_BASE__TOKEN__VBD__NUMBER__CONTENT_FLOATING_POINT |
         WUFFS_BASE__TOKEN__VBD__NUMBER__FORMAT_BINARY_BIG_ENDIAN |
         WUFFS_BASE__TOKEN__VBD__NUMBER__FORMAT_IGNORE_FIRST_BYTE;
     if (g_flags.input_format == file_format::json) {
-      return write_dst(ptr, len);
+      return write_dst(s.ptr, s.len);
     } else if ((vbd & cfp_fbbe_fifb) == cfp_fbbe_fifb) {
-      return write_number_as_json_f64(ptr, len);
+      return write_number_as_json_f64(s);
     }
 
     // From here on, (g_flags.output_format == file_format::cbor).
   } else if (vbd & WUFFS_BASE__TOKEN__VBD__NUMBER__FORMAT_TEXT) {
-    // First try to parse (ptr, len) as an integer. Something like
+    // First try to parse s as an integer. Something like
     // "1180591620717411303424" is a valid number (in the JSON sense) but will
     // overflow int64_t or uint64_t, so fall back to parsing it as a float64.
     if (vbd & WUFFS_BASE__TOKEN__VBD__NUMBER__CONTENT_INTEGER_SIGNED) {
-      if ((len > 0) && (ptr[0] == '-')) {
+      if ((s.len > 0) && (s.ptr[0] == '-')) {
         wuffs_base__result_i64 ri = wuffs_base__parse_number_i64(
-            wuffs_base__make_slice_u8(ptr, len),
-            WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS);
+            s, WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS);
         if (ri.status.is_ok()) {
           return write_number_as_cbor_u64(0x20, ~ri.value);
         }
       } else {
         wuffs_base__result_u64 ru = wuffs_base__parse_number_u64(
-            wuffs_base__make_slice_u8(ptr, len),
-            WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS);
+            s, WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS);
         if (ru.status.is_ok()) {
           return write_number_as_cbor_u64(0x00, ru.value);
         }
@@ -1179,8 +1177,7 @@ write_number(uint64_t vbd, uint8_t* ptr, size_t len) {
 
     if (vbd & WUFFS_BASE__TOKEN__VBD__NUMBER__CONTENT_FLOATING_POINT) {
       wuffs_base__result_f64 rf = wuffs_base__parse_number_f64(
-          wuffs_base__make_slice_u8(ptr, len),
-          WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS);
+          s, WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS);
       if (rf.status.is_ok()) {
         return write_number_as_cbor_f64(rf.value);
       }
@@ -1200,9 +1197,9 @@ fail:
 }
 
 const char*  //
-write_inline_integer(uint64_t x, bool x_is_signed, uint8_t* ptr, size_t len) {
+write_inline_integer(uint64_t x, bool x_is_signed, wuffs_base__slice_u8 s) {
   if (g_flags.output_format == file_format::cbor) {
-    return write_dst(ptr, len);
+    return write_dst(s.ptr, s.len);
   }
 
   // Adding the two ETC__BYTE_LENGTH__ETC constants is overkill, but it's
@@ -1257,12 +1254,14 @@ flush_cbor_output_string() {
 }
 
 const char*  //
-write_cbor_output_string(uint8_t* ptr, size_t len, bool finish) {
+write_cbor_output_string(wuffs_base__slice_u8 s, bool finish) {
   // Check that g_spool_array can hold any UTF-8 code point.
   if (SPOOL_ARRAY_SIZE < 4) {
     return "main: internal error: SPOOL_ARRAY_SIZE is too short";
   }
 
+  uint8_t* ptr = s.ptr;
+  size_t len = s.len;
   while (len > 0) {
     size_t available = SPOOL_ARRAY_SIZE - g_cbor_output_string_length;
     if (available >= len) {
@@ -1340,7 +1339,9 @@ flush_json_output_byte_string(bool finish) {
 }
 
 const char*  //
-write_json_output_byte_string(uint8_t* ptr, size_t len, bool finish) {
+write_json_output_byte_string(wuffs_base__slice_u8 s, bool finish) {
+  uint8_t* ptr = s.ptr;
+  size_t len = s.len;
   while (len > 0) {
     size_t available = SPOOL_ARRAY_SIZE - g_json_output_byte_string_length;
     if (available >= len) {
@@ -1416,11 +1417,13 @@ handle_unicode_code_point(uint32_t ucp) {
   if (g_flags.output_format == file_format::json) {
     return write_dst(&u[0], n);
   }
-  return write_cbor_output_string(&u[0], n, false);
+  return write_cbor_output_string(wuffs_base__make_slice_u8(&u[0], n), false);
 }
 
 const char*  //
-write_json_output_text_string(uint8_t* ptr, size_t len) {
+write_json_output_text_string(wuffs_base__slice_u8 s) {
+  uint8_t* ptr = s.ptr;
+  size_t len = s.len;
 restart:
   while (true) {
     size_t i;
@@ -1442,7 +1445,7 @@ restart:
 
 const char*  //
 handle_string(uint64_t vbd,
-              uint64_t len,
+              wuffs_base__slice_u8 s,
               bool start_of_token_chain,
               bool continued) {
   if (start_of_token_chain) {
@@ -1466,19 +1469,18 @@ handle_string(uint64_t vbd,
   if (vbd & WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_0_DST_1_SRC_DROP) {
     // No-op.
   } else if (vbd & WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY) {
-    uint8_t* ptr = g_src.data.ptr + g_curr_token_end_src_index - len;
     if (g_flags.output_format == file_format::json) {
       if (g_flags.input_format == file_format::json) {
-        TRY(write_dst(ptr, len));
+        TRY(write_dst(s.ptr, s.len));
       } else if (vbd & WUFFS_BASE__TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8) {
-        TRY(write_json_output_text_string(ptr, len));
+        TRY(write_json_output_text_string(s));
       } else {
-        TRY(write_json_output_byte_string(ptr, len, false));
+        TRY(write_json_output_byte_string(s, false));
       }
     } else {
-      TRY(write_cbor_output_string(ptr, len, false));
+      TRY(write_cbor_output_string(s, false));
     }
-    g_query.incremental_match_slice(ptr, len);
+    g_query.incremental_match_slice(s.ptr, s.len);
   } else {
     return "main: internal error: unexpected string-token conversion";
   }
@@ -1489,11 +1491,11 @@ handle_string(uint64_t vbd,
 
   if (g_flags.output_format == file_format::json) {
     if (!(vbd & WUFFS_BASE__TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8)) {
-      TRY(write_json_output_byte_string(nullptr, 0, true));
+      TRY(write_json_output_byte_string(wuffs_base__empty_slice_u8(), true));
     }
     TRY(write_dst("\"", 1));
   } else {
-    TRY(write_cbor_output_string(nullptr, 0, true));
+    TRY(write_cbor_output_string(wuffs_base__empty_slice_u8(), true));
   }
   return nullptr;
 }
@@ -1505,7 +1507,10 @@ handle_token(wuffs_base__token t, bool start_of_token_chain) {
   do {
     int64_t vbc = t.value_base_category();
     uint64_t vbd = t.value_base_detail();
-    uint64_t len = t.length();
+    uint64_t token_length = t.length();
+    wuffs_base__slice_u8 tok = wuffs_base__make_slice_u8(
+        g_src.data.ptr + g_curr_token_end_src_index - token_length,
+        token_length);
 
     // Handle ']' or '}'.
     if ((vbc == WUFFS_BASE__TOKEN__VBC__STRUCTURE) &&
@@ -1654,7 +1659,7 @@ handle_token(wuffs_base__token t, bool start_of_token_chain) {
         return nullptr;
 
       case WUFFS_BASE__TOKEN__VBC__STRING:
-        TRY(handle_string(vbd, len, start_of_token_chain, t.continued()));
+        TRY(handle_string(vbd, tok, start_of_token_chain, t.continued()));
         if (t.continued()) {
           return nullptr;
         }
@@ -1673,8 +1678,7 @@ handle_token(wuffs_base__token t, bool start_of_token_chain) {
         goto after_value;
 
       case WUFFS_BASE__TOKEN__VBC__NUMBER:
-        TRY(write_number(vbd, g_src.data.ptr + g_curr_token_end_src_index - len,
-                         len));
+        TRY(write_number(vbd, tok));
         goto after_value;
 
       case WUFFS_BASE__TOKEN__VBC__INLINE_INTEGER_SIGNED:
@@ -1684,16 +1688,14 @@ handle_token(wuffs_base__token t, bool start_of_token_chain) {
                          ? ((uint64_t)(t.value_base_detail__sign_extended()))
                          : vbd;
         if (t.continued()) {
-          if (len != 0) {
+          if (tok.len != 0) {
             return "main: internal error: unexpected to-be-extended length";
           }
           g_token_extension.category = vbc;
           g_token_extension.detail = x;
           return nullptr;
         }
-        TRY(write_inline_integer(
-            x, x_is_signed, g_src.data.ptr + g_curr_token_end_src_index - len,
-            len));
+        TRY(write_inline_integer(x, x_is_signed, tok));
         goto after_value;
       }
     }
@@ -1710,13 +1712,12 @@ handle_token(wuffs_base__token t, bool start_of_token_chain) {
               x,
               g_token_extension.category ==
                   WUFFS_BASE__TOKEN__VBC__INLINE_INTEGER_SIGNED,
-              g_src.data.ptr + g_curr_token_end_src_index - len, len));
+              tok));
           g_token_extension.category = 0;
           g_token_extension.detail = 0;
           goto after_value;
         case CATEGORY_CBOR_TAG:
-          TRY(write_cbor_tag(
-              x, g_src.data.ptr + g_curr_token_end_src_index - len, len));
+          TRY(write_cbor_tag(x, tok));
           g_token_extension.category = 0;
           g_token_extension.detail = 0;
           return nullptr;
@@ -1726,24 +1727,21 @@ handle_token(wuffs_base__token t, bool start_of_token_chain) {
     if (t.value_major() == WUFFS_CBOR__TOKEN_VALUE_MAJOR) {
       uint64_t value_minor = t.value_minor();
       if (value_minor & WUFFS_CBOR__TOKEN_VALUE_MINOR__MINUS_1_MINUS_X) {
-        TRY(write_cbor_minus_1_minus_x(
-            g_src.data.ptr + g_curr_token_end_src_index - len, len));
+        TRY(write_cbor_minus_1_minus_x(tok));
         goto after_value;
       } else if (value_minor & WUFFS_CBOR__TOKEN_VALUE_MINOR__SIMPLE_VALUE) {
-        TRY(write_cbor_simple_value(
-            vbd, g_src.data.ptr + g_curr_token_end_src_index - len, len));
+        TRY(write_cbor_simple_value(vbd, tok));
         goto after_value;
       } else if (value_minor & WUFFS_CBOR__TOKEN_VALUE_MINOR__TAG) {
         if (t.continued()) {
-          if (len != 0) {
+          if (tok.len != 0) {
             return "main: internal error: unexpected to-be-extended length";
           }
           g_token_extension.category = CATEGORY_CBOR_TAG;
           g_token_extension.detail = vbd;
           return nullptr;
         }
-        return write_cbor_tag(
-            vbd, g_src.data.ptr + g_curr_token_end_src_index - len, len);
+        return write_cbor_tag(vbd, tok);
       }
     }
 
