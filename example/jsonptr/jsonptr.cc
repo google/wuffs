@@ -839,7 +839,7 @@ initialize_globals(int argc, char** argv) {
 
   g_query.reset(g_flags.query_c_string);
 
-  // If the query is non-empty, suprress writing to stdout until we've
+  // If the query is non-empty, suppress writing to stdout until we've
   // completed the query.
   g_suppress_write_dst = g_query.next_fragment() ? 1 : 0;
   g_wrote_to_dst = false;
@@ -1369,6 +1369,13 @@ flush_json_output_byte_string(bool finish) {
 
 const char*  //
 write_json_output_byte_string(wuffs_base__slice_u8 s, bool finish) {
+  // This function and flush_json_output_byte_string doesn't call write_dst.
+  // Instead, they call wuffs_base__base_64__encode to write directly to g_dst.
+  // It is therefore responsible for checking g_suppress_write_dst.
+  if (g_suppress_write_dst > 0) {
+    return nullptr;
+  }
+
   uint8_t* ptr = s.ptr;
   size_t len = s.len;
   while (len > 0) {
