@@ -1372,7 +1372,7 @@ do_test_wuffs_gif_decode_metadata(bool full) {
                 "metadata (vs buffer size)",
                 iccp, xmp);
           }
-          if (n > wuffs_base__io_buffer__reader_available(&src)) {
+          if (n > wuffs_base__io_buffer__reader_length(&src)) {
             RETURN_FAIL(
                 "metadata chunk length (iccp=%d, xmp=%d): too much "
                 "metadata (vs available)",

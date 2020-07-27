@@ -354,8 +354,8 @@ class TokenStream {
       return "main: src buffer is full";
     }
     while (true) {
-      ssize_t n = read(m_input_file_descriptor, m_src.data.ptr + m_src.meta.wi,
-                       m_src.data.len - m_src.meta.wi);
+      ssize_t n = read(m_input_file_descriptor, m_src.writer_pointer(),
+                       m_src.writer_length());
       if (n >= 0) {
         m_src.meta.wi += n;
         m_src.meta.closed = n == 0;

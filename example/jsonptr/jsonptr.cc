@@ -876,8 +876,8 @@ read_src() {
     return "main: g_src buffer is full";
   }
   while (true) {
-    ssize_t n = read(g_input_file_descriptor, g_src.data.ptr + g_src.meta.wi,
-                     g_src.data.len - g_src.meta.wi);
+    ssize_t n = read(g_input_file_descriptor, g_src.writer_pointer(),
+                     g_src.writer_length());
     if (n >= 0) {
       g_src.meta.wi += n;
       g_src.meta.closed = n == 0;
@@ -892,12 +892,12 @@ read_src() {
 const char*  //
 flush_dst() {
   while (true) {
-    size_t n = g_dst.meta.wi - g_dst.meta.ri;
+    size_t n = g_dst.reader_length();
     if (n == 0) {
       break;
     }
     const int stdout_fd = 1;
-    ssize_t i = write(stdout_fd, g_dst.data.ptr + g_dst.meta.ri, n);
+    ssize_t i = write(stdout_fd, g_dst.reader_pointer(), n);
     if (i >= 0) {
       g_dst.meta.ri += i;
     } else if (errno != EINTR) {
@@ -915,13 +915,13 @@ write_dst(const void* s, size_t n) {
   }
   const uint8_t* p = static_cast<const uint8_t*>(s);
   while (n > 0) {
-    size_t i = g_dst.writer_available();
+    size_t i = g_dst.writer_length();
     if (i == 0) {
       const char* z = flush_dst();
       if (z) {
         return z;
       }
-      i = g_dst.writer_available();
+      i = g_dst.writer_length();
       if (i == 0) {
         return "main: g_dst buffer is full";
       }
@@ -1316,9 +1316,7 @@ flush_json_output_byte_string(bool finish) {
   size_t len = g_json_output_byte_string_length;
   while (len > 0) {
     wuffs_base__transform__output o = wuffs_base__base_64__encode(
-        wuffs_base__make_slice_u8(g_dst.data.ptr + g_dst.meta.wi,
-                                  g_dst.writer_available()),
-        wuffs_base__make_slice_u8(ptr, len), finish,
+        g_dst.writer_slice(), wuffs_base__make_slice_u8(ptr, len), finish,
         WUFFS_BASE__BASE_64__URL_ALPHABET);
     g_dst.meta.wi += o.num_dst;
     ptr += o.num_src;
