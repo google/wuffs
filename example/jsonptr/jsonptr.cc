@@ -1122,7 +1122,7 @@ write_cbor_simple_value(uint64_t tag, wuffs_base__slice_u8 s) {
   }
 
   if (!g_flags.output_cbor_metadata_as_json_comments) {
-    return nullptr;
+    return write_dst("null", 4);
   }
   uint8_t buf[WUFFS_BASE__U64__BYTE_LENGTH__MAX_INCL];
   size_t n = wuffs_base__render_number_u64(
