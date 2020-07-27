@@ -217,10 +217,12 @@ static const char* g_usage =
     "values are non-compliant with the JSON specification but many parsers\n"
     "accept them.\n"
     "\n"
-    "When converting from -i=cbor to -o=json, CBOR permits map keys other\n"
-    "than (untagged) UTF-8 strings but JSON does not. This program rejects\n"
-    "such input, as doing otherwise has complicated interactions with the\n"
-    "-query=STR flag and streaming input.\n"
+    "CBOR is more permissive about map keys but JSON only allows strings.\n"
+    "When converting from -i=cbor to -o=json, this program rejects keys other\n"
+    "than text strings and non-negative integers (CBOR major types 3 and 0).\n"
+    "Integer keys like 123 quoted to be string keys like \"123\". Being even\n"
+    "more permissive would have complicated interactions with the -query=STR\n"
+    "flag and streaming input, so this program just rejects other keys.\n"
     "\n"
     "----\n"
     "\n"
@@ -463,6 +465,7 @@ class Query {
   uint32_t m_depth;
 
   wuffs_base__result_u64 m_array_index;
+  uint64_t m_array_index_remaining;
 
  public:
   void reset(char* query_c_string) {
@@ -472,6 +475,7 @@ class Query {
     m_depth = 0;
     m_array_index.status.repr = "#main: not an array index query fragment";
     m_array_index.value = 0;
+    m_array_index_remaining = 0;
   }
 
   void restart_fragment(bool enable) { m_frag_j = enable ? m_frag_i : nullptr; }
@@ -482,10 +486,10 @@ class Query {
   // zero. If valid but non-zero, it decrements it and returns false.
   bool tick() {
     if (m_array_index.status.is_ok()) {
-      if (m_array_index.value == 0) {
+      if (m_array_index_remaining == 0) {
         return true;
       }
-      m_array_index.value--;
+      m_array_index_remaining--;
     }
     return false;
   }
@@ -517,6 +521,7 @@ class Query {
       m_array_index = wuffs_base__parse_number_u64(
           wuffs_base__make_slice_u8(i, k - i),
           WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS);
+      m_array_index_remaining = m_array_index.value;
     }
     return true;
   }
@@ -524,6 +529,13 @@ class Query {
   bool matched_all() { return m_frag_k == nullptr; }
 
   bool matched_fragment() { return m_frag_j && (m_frag_j == m_frag_k); }
+
+  void restart_and_match_unsigned_number(bool enable, uint64_t u) {
+    m_frag_j =
+        (enable && (m_array_index.status.is_ok()) && (m_array_index.value == u))
+            ? m_frag_k
+            : nullptr;
+  }
 
   void incremental_match_slice(uint8_t* ptr, size_t len) {
     if (!m_frag_j) {
@@ -1198,8 +1210,16 @@ fail:
 
 const char*  //
 write_inline_integer(uint64_t x, bool x_is_signed, wuffs_base__slice_u8 s) {
+  bool is_key = in_dict_before_key();
+  g_query.restart_and_match_unsigned_number(
+      is_key && g_query.is_at(g_depth) && !x_is_signed, x);
+
   if (g_flags.output_format == file_format::cbor) {
     return write_dst(s.ptr, s.len);
+  }
+
+  if (is_key) {
+    TRY(write_dst("\"", 1));
   }
 
   // Adding the two ETC__BYTE_LENGTH__ETC constants is overkill, but it's
@@ -1214,7 +1234,12 @@ write_inline_integer(uint64_t x, bool x_is_signed, wuffs_base__slice_u8 s) {
                 dst, (int64_t)x, WUFFS_BASE__RENDER_NUMBER_XXX__DEFAULT_OPTIONS)
           : wuffs_base__render_number_u64(
                 dst, x, WUFFS_BASE__RENDER_NUMBER_XXX__DEFAULT_OPTIONS);
-  return write_dst(&buf[0], n);
+  TRY(write_dst(&buf[0], n));
+
+  if (is_key) {
+    TRY(write_dst("\"", 1));
+  }
+  return nullptr;
 }
 
 // ----
@@ -1577,10 +1602,15 @@ handle_token(wuffs_base__token t, bool start_of_token_chain) {
       } else if (g_ctx != context::none) {
         if ((g_ctx == context::in_dict_after_brace) ||
             (g_ctx == context::in_dict_after_value)) {
-          // Reject dict keys that aren't UTF-8 strings, which could otherwise
-          // happen with -i=cbor -o=json.
-          if ((vbc != WUFFS_BASE__TOKEN__VBC__STRING) ||
-              !(vbd & WUFFS_BASE__TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8)) {
+          // Reject dict keys that aren't UTF-8 strings or non-negative
+          // integers, which could otherwise happen with -i=cbor -o=json.
+          if (vbc == WUFFS_BASE__TOKEN__VBC__INLINE_INTEGER_UNSIGNED) {
+            // No-op.
+          } else if ((vbc == WUFFS_BASE__TOKEN__VBC__STRING) &&
+                     (vbd &
+                      WUFFS_BASE__TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8)) {
+            // No-op.
+          } else {
             return "main: cannot convert CBOR non-text-string to JSON map key";
           }
         }
