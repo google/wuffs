@@ -1159,11 +1159,12 @@ write_cbor_tag(uint64_t tag, wuffs_base__slice_u8 s) {
 
 const char*  //
 write_number(uint64_t vbd, wuffs_base__slice_u8 s) {
+  const uint64_t cfp_fbbe_fifb =
+      WUFFS_BASE__TOKEN__VBD__NUMBER__CONTENT_FLOATING_POINT |
+      WUFFS_BASE__TOKEN__VBD__NUMBER__FORMAT_BINARY_BIG_ENDIAN |
+      WUFFS_BASE__TOKEN__VBD__NUMBER__FORMAT_IGNORE_FIRST_BYTE;
+
   if (g_flags.output_format == file_format::json) {
-    const uint64_t cfp_fbbe_fifb =
-        WUFFS_BASE__TOKEN__VBD__NUMBER__CONTENT_FLOATING_POINT |
-        WUFFS_BASE__TOKEN__VBD__NUMBER__FORMAT_BINARY_BIG_ENDIAN |
-        WUFFS_BASE__TOKEN__VBD__NUMBER__FORMAT_IGNORE_FIRST_BYTE;
     if (g_flags.input_format == file_format::json) {
       return write_dst(s.ptr, s.len);
     } else if ((vbd & cfp_fbbe_fifb) == cfp_fbbe_fifb) {
@@ -1206,6 +1207,8 @@ write_number(uint64_t vbd, wuffs_base__slice_u8 s) {
     return write_dst("\xF9\xFF\xFF", 3);
   } else if (vbd & WUFFS_BASE__TOKEN__VBD__NUMBER__CONTENT_POS_NAN) {
     return write_dst("\xF9\x7F\xFF", 3);
+  } else if ((vbd & cfp_fbbe_fifb) == cfp_fbbe_fifb) {
+    return write_dst(s.ptr, s.len);
   }
 
 fail:
