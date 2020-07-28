@@ -75,12 +75,6 @@ func genBase(out *bytes.Buffer) error {
 	}{
 		{"../base/all-impl.c", "BaseAllImplC"},
 
-		{"../base/floatconv-submodule-code.c", "BaseFloatConvSubmoduleCodeC"},
-		{"../base/floatconv-submodule-data.c", "BaseFloatConvSubmoduleDataC"},
-		{"../base/intconv-submodule.c", "BaseIntConvSubmoduleC"},
-		{"../base/pixconv-submodule.c", "BasePixConvSubmoduleC"},
-		{"../base/utf8-submodule.c", "BaseUTF8SubmoduleC"},
-
 		{"../base/fundamental-private.h", "BaseFundamentalPrivateH"},
 		{"../base/fundamental-public.h", "BaseFundamentalPublicH"},
 		{"../base/memory-private.h", "BaseMemoryPrivateH"},
@@ -95,6 +89,12 @@ func genBase(out *bytes.Buffer) error {
 		{"../base/strconv-public.h", "BaseStrConvPublicH"},
 		{"../base/token-private.h", "BaseTokenPrivateH"},
 		{"../base/token-public.h", "BaseTokenPublicH"},
+
+		{"../base/floatconv-submodule-code.c", "BaseFloatConvSubmoduleCodeC"},
+		{"../base/floatconv-submodule-data.c", "BaseFloatConvSubmoduleDataC"},
+		{"../base/intconv-submodule.c", "BaseIntConvSubmoduleC"},
+		{"../base/pixconv-submodule.c", "BasePixConvSubmoduleC"},
+		{"../base/utf8-submodule.c", "BaseUTF8SubmoduleC"},
 	}
 
 	prefixAfterEditing := []byte("// After editing this file,")
