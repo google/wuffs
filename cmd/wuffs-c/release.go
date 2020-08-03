@@ -24,6 +24,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/google/wuffs/internal/cgen/data"
+
 	cf "github.com/google/wuffs/cmd/commonflags"
 )
 
@@ -105,7 +107,16 @@ func doGenrelease(args []string) error {
 		}
 	}
 
-	out.Write(grImplStartsHere[1:]) // [1:] skips the initial '\n'.
+	out.WriteString("#if defined(__cplusplus) && (__cplusplus >= 201103L)\n\n")
+	out.WriteString(data.AuxBaseHh)
+	out.WriteString("\n")
+	for _, f := range data.AuxNonBaseHhFiles {
+		out.WriteString(f)
+		out.WriteString("\n")
+	}
+	out.WriteString("#endif  // defined(__cplusplus) && (__cplusplus >= 201103L)\n")
+
+	out.Write(grImplStartsHere)
 	out.WriteString("\n")
 
 	h.seen = map[string]bool{}
@@ -114,6 +125,15 @@ func doGenrelease(args []string) error {
 			return err
 		}
 	}
+
+	out.WriteString("#if defined(__cplusplus) && (__cplusplus >= 201103L)\n\n")
+	out.WriteString(data.AuxBaseCc)
+	out.WriteString("\n")
+	for _, f := range data.AuxNonBaseCcFiles {
+		out.WriteString(f)
+		out.WriteString("\n")
+	}
+	out.WriteString("#endif  // defined(__cplusplus) && (__cplusplus >= 201103L)\n\n")
 
 	out.Write(grImplEndsHere)
 	out.WriteString(grPragmaPop)

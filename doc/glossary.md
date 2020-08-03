@@ -1,5 +1,10 @@
 # Glossary
 
+#### Auxiliary Code
+
+Additional library code that is not written in the Wuffs programming language.
+See the [auxiliary code](/doc/note/auxiliary-code.md) note for more details.
+
 #### Axiom
 
 A named rule for asserting new facts. See the

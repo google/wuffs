@@ -26,6 +26,7 @@ import (
 	"go/format"
 	"io/ioutil"
 	"os"
+	"strings"
 )
 
 const columns = 1024
@@ -58,7 +59,7 @@ func main1() error {
 	out.WriteString("package data\n")
 	out.WriteString("\n")
 
-	if err := genBase(out); err != nil {
+	if err := genData(out); err != nil {
 		return err
 	}
 
@@ -69,7 +70,7 @@ func main1() error {
 	return ioutil.WriteFile("data.go", formatted, 0644)
 }
 
-func genBase(out *bytes.Buffer) error {
+func genData(out *bytes.Buffer) error {
 	files := []struct {
 		filename, varname string
 	}{
@@ -95,6 +96,11 @@ func genBase(out *bytes.Buffer) error {
 		{"../base/intconv-submodule.c", "BaseIntConvSubmoduleC"},
 		{"../base/pixconv-submodule.c", "BasePixConvSubmoduleC"},
 		{"../base/utf8-submodule.c", "BaseUTF8SubmoduleC"},
+
+		{"../aux/base.cc", "AuxBaseCc"},
+		{"../aux/base.hh", "AuxBaseHh"},
+		{"../aux/json.cc", "AuxJsonCc"},
+		{"../aux/json.hh", "AuxJsonHh"},
 	}
 
 	prefixAfterEditing := []byte("// After editing this file,")
@@ -129,6 +135,26 @@ func genBase(out *bytes.Buffer) error {
 		writeStringConst(out, in)
 		out.WriteString("\"\"\n\n")
 	}
+
+	fmt.Fprintf(out, "var AuxNonBaseCcFiles = []string{\n")
+	for _, f := range files {
+		if strings.HasPrefix(f.varname, "Aux") &&
+			strings.HasSuffix(f.varname, "Cc") &&
+			(f.varname != "AuxBaseCc") {
+			fmt.Fprintf(out, "%s,\n", f.varname)
+		}
+	}
+	fmt.Fprintf(out, "}\n\n")
+
+	fmt.Fprintf(out, "var AuxNonBaseHhFiles = []string{\n")
+	for _, f := range files {
+		if strings.HasPrefix(f.varname, "Aux") &&
+			strings.HasSuffix(f.varname, "Hh") &&
+			(f.varname != "AuxBaseHh") {
+			fmt.Fprintf(out, "%s,\n", f.varname)
+		}
+	}
+	fmt.Fprintf(out, "}\n\n")
 
 	fmt.Fprintf(out, "const BaseCopyright = \"\" +\n")
 	writeStringConst(out, copyright)

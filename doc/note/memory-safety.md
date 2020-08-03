@@ -63,6 +63,11 @@ kernel level. The [example/jsonptr](/example/jsonptr/jsonptr.cc) program, which
 parses and filters [JSON](https://www.json.org/), is another example that does
 useful work within a strict sandbox.
 
+Alternatively, Wuffs-the-library's [auxiliary
+code](/doc/note/auxiliary-code.md), augmenting the Wuffs-the-language code with
+hand-written C++ helpers, provides higher level (allocating) APIs, albeit with
+several trade-offs.
+
 
 ## Thread-Safety
 
