@@ -12,6 +12,8 @@
 - Added `endwhile` syntax.
 - Added `example/convert-to-nia`.
 - Added `example/imageviewer`.
+- Added `example/json-to-cbor`.
+- Added `example/jsonfindptrs`.
 - Added `example/jsonptr`.
 - Added `std/bmp`.
 - Added `std/cbor`.
