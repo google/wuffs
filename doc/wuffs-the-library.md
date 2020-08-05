@@ -27,6 +27,6 @@ file depending on the presence or absence of a `WUFFS_IMPLEMENTATION` macro
 definition.
 
 Most of the example programs treat it as a `.c` file. The
-[`/example/library`](/example/library) program treats it as a `.h` file, and
-requires a separate step (e.g. running `wuffs genlib` beforehand) to build the
-library implementation (e.g. a `libwuffs.a` or `libwuffs.so` file).
+[`/example/toy-genlib`](/example/toy-genlib) program treats it as a `.h` file,
+and requires a separate step (running `wuffs genlib` beforehand) to build the
+library implementation (a `libwuffs.a` or `libwuffs.so` file).

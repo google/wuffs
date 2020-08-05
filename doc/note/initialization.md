@@ -13,8 +13,8 @@ implicit `this` pointer argument):
   `wuffs_foo__bar` is deliberately an incomplete type. Its size is not part of
   the stable ABI. Instead, call the `sizeof__wuffs_foo__bar` *function*, whose
   return value can change across Wuffs versions, even across point releases.
-  For an example, look for `calloc` in the
-  [example/library](/example/library/library.c) program.
+  For an example, look for `sizeof__wuffs_json__decoder` in the
+  [example/jsonptr](/example/jsonptr/jsonptr.cc) program.
 - The Wuffs library version, `WUFFS_VERSION`.
 - Additional flags.
 

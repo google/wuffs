@@ -30,7 +30,7 @@ TODO: standardize the various dictionary APIs, after Wuffs v0.2 is released.
 
 ## Examples
 
-- [example/library](/example/library)
+- [example/toy-genlib](/example/toy-genlib)
 - [example/zcat](/example/zcat)
 
 

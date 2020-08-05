@@ -15,17 +15,17 @@
 // ----------------
 
 /*
-library exercises the software libraries built by `wuffs genlib`.
+toy-genlib exercises the software libraries built by `wuffs genlib`.
 
 To exercise the static library:
 
-$CC -static -I../../.. library.c ../../gen/lib/c/$CC-static/libwuffs.a
+$CC -static -I../../.. toy-genlib.c ../../gen/lib/c/$CC-static/libwuffs.a
 ./a.out
 rm -f a.out
 
 To exercise the dynamic library:
 
-$CC -I../../.. library.c -L../../gen/lib/c/$CC-dynamic -lwuffs
+$CC -I../../.. toy-genlib.c -L../../gen/lib/c/$CC-dynamic -lwuffs
 LD_LIBRARY_PATH=../../gen/lib/c/$CC-dynamic ./a.out
 rm -f a.out
 
@@ -40,7 +40,7 @@ for a C compiler $CC, such as clang or gcc.
 // By #include'ing it "as is" without #define'ing WUFFS_IMPLEMENTATION, we use
 // it as a "foo.h"-like header, instead of a "foo.c"-like implementation.
 #if defined(WUFFS_IMPLEMENTATION)
-#error "example/library should not #define WUFFS_IMPLEMENTATION"
+#error "example/toy-genlib should not #define WUFFS_IMPLEMENTATION"
 #endif
 #include "wuffs/release/c/wuffs-unsupported-snapshot.c"
 
