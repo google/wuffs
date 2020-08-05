@@ -97,10 +97,10 @@ func genData(out *bytes.Buffer) error {
 		{"../base/pixconv-submodule.c", "BasePixConvSubmoduleC"},
 		{"../base/utf8-submodule.c", "BaseUTF8SubmoduleC"},
 
-		{"../aux/base.cc", "AuxBaseCc"},
-		{"../aux/base.hh", "AuxBaseHh"},
-		{"../aux/json.cc", "AuxJsonCc"},
-		{"../aux/json.hh", "AuxJsonHh"},
+		{"../auxiliary/base.cc", "AuxBaseCc"},
+		{"../auxiliary/base.hh", "AuxBaseHh"},
+		{"../auxiliary/json.cc", "AuxJsonCc"},
+		{"../auxiliary/json.hh", "AuxJsonHh"},
 	}
 
 	prefixAfterEditing := []byte("// After editing this file,")
