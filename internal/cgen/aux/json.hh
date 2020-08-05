@@ -16,8 +16,6 @@
 
 // ---------------- Auxiliary - JSON
 
-#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__AUX__JSON)
-
 namespace wuffs_aux {
 
 struct DecodeJsonResult {
@@ -78,6 +76,3 @@ DecodeJsonResult DecodeJson(DecodeJsonCallbacks&& callbacks,
                             wuffs_base__slice_u32 quirks);
 
 }  // namespace wuffs_aux
-
-#endif  // !defined(WUFFS_CONFIG__MODULES) ||
-        // defined(WUFFS_CONFIG__MODULE__AUX__JSON)

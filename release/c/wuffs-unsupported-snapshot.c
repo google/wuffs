@@ -8288,8 +8288,6 @@ struct wuffs_zlib__decoder__struct {
 // Auxiliary code is discussed at
 // https://github.com/google/wuffs/blob/master/doc/note/auxiliary-code.md
 
-#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__AUX__BASE)
-
 #include <stdio.h>
 
 #include <string>
@@ -8353,12 +8351,7 @@ class MemoryInput : public Input {
 
 }  // namespace wuffs_aux
 
-#endif  // !defined(WUFFS_CONFIG__MODULES) ||
-        // defined(WUFFS_CONFIG__MODULE__AUX__BASE)
-
 // ---------------- Auxiliary - JSON
-
-#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__AUX__JSON)
 
 namespace wuffs_aux {
 
@@ -8420,9 +8413,6 @@ DecodeJsonResult DecodeJson(DecodeJsonCallbacks&& callbacks,
                             wuffs_base__slice_u32 quirks);
 
 }  // namespace wuffs_aux
-
-#endif  // !defined(WUFFS_CONFIG__MODULES) ||
-        // defined(WUFFS_CONFIG__MODULE__AUX__JSON)
 
 #endif  // defined(__cplusplus) && (__cplusplus >= 201103L)
 

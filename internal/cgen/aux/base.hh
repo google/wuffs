@@ -19,8 +19,6 @@
 // Auxiliary code is discussed at
 // https://github.com/google/wuffs/blob/master/doc/note/auxiliary-code.md
 
-#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__AUX__BASE)
-
 #include <stdio.h>
 
 #include <string>
@@ -83,6 +81,3 @@ class MemoryInput : public Input {
 }  // namespace sync_io
 
 }  // namespace wuffs_aux
-
-#endif  // !defined(WUFFS_CONFIG__MODULES) ||
-        // defined(WUFFS_CONFIG__MODULE__AUX__BASE)
