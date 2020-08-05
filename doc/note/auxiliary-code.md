@@ -30,8 +30,8 @@ programmer who uses Wuffs-the-library, but there are several trade-offs:
   [example/jsonptr](/example/jsonptr/jsonptr.cc) program, which works with the
   low-level token API, can process arbitrarily long input in `O(1)` memory.
 - The auxiliary code is hand-written C++. It's carefully written and there's
-  [not a lot of it](/internal/cgen/aux), but unlike code written in the Wuffs
-  language, its memory-safety is not enforced by the Wuffs toolchain.
+  [not a lot of it](/internal/cgen/auxiliary), but unlike code written in the
+  Wuffs language, its memory-safety is not enforced by the Wuffs toolchain.
 - For simplicity, it assumes that all I/O can be performed synchronously. This
   is trivially true if the input is already entirely in memory (e.g. as a
   `std::vector` or a `std::string`). However, the auxiliary code should not be

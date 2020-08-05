@@ -14,7 +14,7 @@
 
 //go:generate go run gen.go
 
-// Package data contains the files in the sibling "../base" and "../aux"
+// Package data contains the files in the sibling "../base" and "../auxiliary"
 // directories: the hand-written C and C++ code that is the 'runtime library'
 // for Wuffs-transpiled-to-C. In this Go package, those files' contents are
 // provided as string constants.
