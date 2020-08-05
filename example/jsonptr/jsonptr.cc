@@ -86,8 +86,7 @@ it runs in a SECCOMP_MODE_STRICT sandbox.
 
 ----
 
-This example program differs from most other example Wuffs programs in that it
-is written in C++, not C.
+To run:
 
 $CXX jsonptr.cc && ./a.out < ../../test/data/github-tags.json; rm -f a.out
 
