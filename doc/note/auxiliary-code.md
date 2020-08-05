@@ -12,17 +12,18 @@ Wuffs' C/C++ form (a "single file library") also contains auxiliary C++ code
 decoder that is written in the memory-safe Wuffs language works with low-level
 [tokens](/doc/note/tokens.md). The high-level `wuffs_aux::DecodeJson` auxiliary
 function instead uses e.g. a `std::string` and a `double` for the JSON inputs
-`"foo\tbar"` and `0.3`. This is certainly a more *convenient* API for the
-programmer who uses Wuffs-the-library, but there are several trade-offs:
+`"foo\tbar"` and `0.3`. This API is more *convenient* for the programmer who
+uses Wuffs-the-library, but there are several trade-offs:
 
 - Technically, `0.99999999999999999` and `1.0` are different JSON values, and
   the low-level Wuffs JSON decoder can distinguish them, but the high-level
-  `wuffs_aux` JSON decoder will treat them identically (as a `double`).
+  `wuffs_aux` JSON decoder will treat them identically (as a C++ `double`).
 - The low-level API is more modular and can work with a variety of
-  StringToDouble implementations (which convert the string `0.3` to the number
-  `0.3`). The high-level API always uses Wuffs' own StringToDouble
-  implementation, which makes one particular choice on the [binary size versus
-  runtime performance](https://github.com/google/double-conversion/issues/137)
+  StringToDouble implementations (which converts the string `"0.3"`, unquoted
+  in the JSON input, to the number `0.3`). The high-level API always uses
+  Wuffs' own StringToDouble implementation, which makes one particular choice
+  on the [binary size versus runtime
+  performance](https://github.com/google/double-conversion/issues/137)
   frontier. Other choices are viable too, especially when integrating with an
   existing C/C++ project that already uses another StringToDouble library.
 - In the worst case (when the JSON input is just one giant string), `wuffs_aux`
@@ -34,8 +35,8 @@ programmer who uses Wuffs-the-library, but there are several trade-offs:
   Wuffs language, its memory-safety is not enforced by the Wuffs toolchain.
 - For simplicity, it assumes that all I/O can be performed synchronously. This
   is trivially true if the input is already entirely in memory (e.g. as a
-  `std::vector` or a `std::string`). However, the auxiliary code should not be
-  used on e.g. the GUI main thread if it could wait for network I/O (and make
+  `std::string` or a `std::vector`). However, the auxiliary code should not be
+  used on e.g. the GUI main thread if it could block on network I/O (and make
   the GUI unresponsive). In such cases, use the low-level Wuffs API instead.
 
 Similarly, decoding an image using the written-in-Wuffs low-level API involves
