@@ -2407,6 +2407,14 @@ wuffs_base__make_slice_token(wuffs_base__token* ptr, size_t len) {
   return ret;
 }
 
+static inline wuffs_base__slice_token  //
+wuffs_base__empty_slice_token() {
+  wuffs_base__slice_token ret;
+  ret.ptr = NULL;
+  ret.len = 0;
+  return ret;
+}
+
 // --------
 
 // wuffs_base__token_buffer_meta is the metadata for a
@@ -2430,9 +2438,13 @@ typedef struct {
   inline bool is_valid() const;
   inline void compact();
   inline uint64_t reader_length() const;
+  inline wuffs_base__token* reader_pointer() const;
+  inline wuffs_base__slice_token reader_slice() const;
   inline uint64_t reader_token_position() const;
   inline uint64_t writer_length() const;
   inline uint64_t writer_token_position() const;
+  inline wuffs_base__token* writer_pointer() const;
+  inline wuffs_base__slice_token writer_slice() const;
 #endif  // __cplusplus
 
 } wuffs_base__token_buffer;
@@ -2535,9 +2547,20 @@ wuffs_base__token_buffer__compact(wuffs_base__token_buffer* buf) {
 }
 
 static inline uint64_t  //
-wuffs_base__token_buffer__reader_length(
-    const wuffs_base__token_buffer* buf) {
+wuffs_base__token_buffer__reader_length(const wuffs_base__token_buffer* buf) {
   return buf ? buf->meta.wi - buf->meta.ri : 0;
+}
+
+static inline wuffs_base__token*  //
+wuffs_base__token_buffer__reader_pointer(const wuffs_base__token_buffer* buf) {
+  return buf ? (buf->data.ptr + buf->meta.ri) : NULL;
+}
+
+static inline wuffs_base__slice_token  //
+wuffs_base__token_buffer__reader_slice(const wuffs_base__token_buffer* buf) {
+  return buf ? wuffs_base__make_slice_token(buf->data.ptr + buf->meta.ri,
+                                            buf->meta.wi - buf->meta.ri)
+             : wuffs_base__empty_slice_token();
 }
 
 static inline uint64_t  //
@@ -2547,9 +2570,20 @@ wuffs_base__token_buffer__reader_token_position(
 }
 
 static inline uint64_t  //
-wuffs_base__token_buffer__writer_length(
-    const wuffs_base__token_buffer* buf) {
+wuffs_base__token_buffer__writer_length(const wuffs_base__token_buffer* buf) {
   return buf ? buf->data.len - buf->meta.wi : 0;
+}
+
+static inline wuffs_base__token*  //
+wuffs_base__token_buffer__writer_pointer(const wuffs_base__token_buffer* buf) {
+  return buf ? (buf->data.ptr + buf->meta.wi) : NULL;
+}
+
+static inline wuffs_base__slice_token  //
+wuffs_base__token_buffer__writer_slice(const wuffs_base__token_buffer* buf) {
+  return buf ? wuffs_base__make_slice_token(buf->data.ptr + buf->meta.wi,
+                                            buf->data.len - buf->meta.wi)
+             : wuffs_base__empty_slice_token();
 }
 
 static inline uint64_t  //
@@ -2575,6 +2609,16 @@ wuffs_base__token_buffer::reader_length() const {
   return wuffs_base__token_buffer__reader_length(this);
 }
 
+inline wuffs_base__token*  //
+wuffs_base__token_buffer::reader_pointer() const {
+  return wuffs_base__token_buffer__reader_pointer(this);
+}
+
+inline wuffs_base__slice_token  //
+wuffs_base__token_buffer::reader_slice() const {
+  return wuffs_base__token_buffer__reader_slice(this);
+}
+
 inline uint64_t  //
 wuffs_base__token_buffer::reader_token_position() const {
   return wuffs_base__token_buffer__reader_token_position(this);
@@ -2583,6 +2627,16 @@ wuffs_base__token_buffer::reader_token_position() const {
 inline uint64_t  //
 wuffs_base__token_buffer::writer_length() const {
   return wuffs_base__token_buffer__writer_length(this);
+}
+
+inline wuffs_base__token*  //
+wuffs_base__token_buffer::writer_pointer() const {
+  return wuffs_base__token_buffer__writer_pointer(this);
+}
+
+inline wuffs_base__slice_token  //
+wuffs_base__token_buffer::writer_slice() const {
+  return wuffs_base__token_buffer__writer_slice(this);
 }
 
 inline uint64_t  //
