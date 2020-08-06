@@ -2371,7 +2371,7 @@ test_wuffs_json_decode_interface() {
         WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_QUESTION_MARK,
         WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_SINGLE_QUOTE,
         WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_V,
-        WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_X,
+        WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_X_AS_CODE_POINTS,
         WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_ZERO,
         WUFFS_JSON__QUIRK_ALLOW_COMMENT_BLOCK,
         WUFFS_JSON__QUIRK_ALLOW_COMMENT_LINE,
@@ -2857,76 +2857,109 @@ test_wuffs_json_decode_quirk_allow_backslash_x() {
 
   struct {
     uint64_t want_bytes;
+    uint64_t want_code_points;
     const char* want_status_repr;
     const char* str;
   } test_cases[] = {
-      {.want_bytes = 0x12789A,
+      // U+009A in UTF-8 is C2 9A.
+      // U+00FF in UTF-8 is C3 BF.
+      // U+3456 in UTF-8 is E3 91 96.
+      {.want_bytes = 0x12E39196789A,
+       .want_code_points = 0x12E3919678C29A,
        .want_status_repr = NULL,
        .str = "\"\\x12\\u3456\\x78\\x9A\""},
+      {.want_bytes = 0xFF,
+       .want_code_points = 0xC3BF,
+       .want_status_repr = NULL,
+       .str = "\"\\xFf\""},
       {.want_bytes = 0x00,
+       .want_code_points = 0x00,
        .want_status_repr = wuffs_json__error__bad_backslash_escape,
        .str = "\"a\\X6A\""},
       {.want_bytes = 0x6A6B,
+       .want_code_points = 0x6A6B,
        .want_status_repr = NULL,
        .str = "\"a\\x6A\\x6bz\""},
       {.want_bytes = 0x6A,
+       .want_code_points = 0x6A,
        .want_status_repr = wuffs_json__error__bad_backslash_escape,
        .str = "\"a\\x6A\\x6yz\""},
       {.want_bytes = 0x00,
+       .want_code_points = 0x00,
        .want_status_repr = wuffs_json__error__bad_backslash_escape,
        .str = "\"a\\x\""},
   };
 
   int tc;
   for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
-    wuffs_json__decoder dec;
-    CHECK_STATUS("initialize", wuffs_json__decoder__initialize(
-                                   &dec, sizeof dec, WUFFS_VERSION,
-                                   WUFFS_INITIALIZE__DEFAULT_OPTIONS));
-    wuffs_json__decoder__set_quirk_enabled(
-        &dec, WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_X, true);
+    int q;
+    for (q = 0; q < 2; q++) {
+      wuffs_json__decoder dec;
+      CHECK_STATUS("initialize", wuffs_json__decoder__initialize(
+                                     &dec, sizeof dec, WUFFS_VERSION,
+                                     WUFFS_INITIALIZE__DEFAULT_OPTIONS));
+      wuffs_json__decoder__set_quirk_enabled(
+          &dec,
+          q ? WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_X_AS_CODE_POINTS
+            : WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_X_AS_BYTES,
+          true);
 
-    wuffs_base__token_buffer tok =
-        wuffs_base__slice_token__writer(g_have_slice_token);
-    wuffs_base__slice_u8 src_slice = wuffs_base__make_slice_u8(
-        (void*)(test_cases[tc].str), strlen(test_cases[tc].str));
-    wuffs_base__io_buffer src = wuffs_base__slice_u8__reader(src_slice, true);
-    const char* have_status_repr =
-        wuffs_json__decoder__decode_tokens(&dec, &tok, &src, g_work_slice_u8)
-            .repr;
-    if (have_status_repr != test_cases[tc].want_status_repr) {
-      RETURN_FAIL("tc=%d: decode_tokens: have \"%s\", want \"%s\"", tc,
-                  have_status_repr, test_cases[tc].want_status_repr);
-    }
-
-    uint64_t src_index = 0;
-    uint64_t have_bytes = 0;
-    while (tok.meta.ri < tok.meta.wi) {
-      wuffs_base__token* t = &tok.data.ptr[tok.meta.ri++];
-      int64_t vbc = wuffs_base__token__value_base_category(t);
-      uint64_t vbd = wuffs_base__token__value_base_detail(t);
-      uint64_t token_length = wuffs_base__token__length(t);
-      if ((vbc == WUFFS_BASE__TOKEN__VBC__STRING) &&
-          (vbd &
-           WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_1_DST_4_SRC_BACKSLASH_X)) {
-        uint8_t b[8] = {0};
-        const bool src_closed = true;
-        wuffs_base__transform__output o = wuffs_base__base_16__decode4(
-            wuffs_base__make_slice_u8(&b[0], 8),
-            wuffs_base__make_slice_u8(src_slice.ptr + src_index, token_length),
-            src_closed, 0);
-        size_t i = 0;
-        for (; i < o.num_dst; i++) {
-          have_bytes <<= 8;
-          have_bytes |= b[i];
-        }
+      wuffs_base__token_buffer tok =
+          wuffs_base__slice_token__writer(g_have_slice_token);
+      wuffs_base__slice_u8 src_slice = wuffs_base__make_slice_u8(
+          (void*)(test_cases[tc].str), strlen(test_cases[tc].str));
+      wuffs_base__io_buffer src = wuffs_base__slice_u8__reader(src_slice, true);
+      const char* have_status_repr =
+          wuffs_json__decoder__decode_tokens(&dec, &tok, &src, g_work_slice_u8)
+              .repr;
+      if (have_status_repr != test_cases[tc].want_status_repr) {
+        RETURN_FAIL("tc=%d, q=%d: decode_tokens: have \"%s\", want \"%s\"", tc,
+                    q, have_status_repr, test_cases[tc].want_status_repr);
       }
 
-      src_index += token_length;
-    }
-    if (have_bytes != test_cases[tc].want_bytes) {
-      RETURN_FAIL("tc=%d: have U+%08" PRIX64 ", want U+%08" PRIX64, tc,
-                  have_bytes, test_cases[tc].want_bytes);
+      uint64_t src_index = 0;
+      uint64_t have = 0;
+      while (tok.meta.ri < tok.meta.wi) {
+        wuffs_base__token* t = &tok.data.ptr[tok.meta.ri++];
+        int64_t vbc = wuffs_base__token__value_base_category(t);
+        uint64_t vbd = wuffs_base__token__value_base_detail(t);
+        uint64_t token_length = wuffs_base__token__length(t);
+        if ((vbc == WUFFS_BASE__TOKEN__VBC__STRING) &&
+            (vbd &
+             WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_1_DST_4_SRC_BACKSLASH_X)) {
+          uint8_t b[8] = {0};
+          const bool src_closed = true;
+          wuffs_base__transform__output o = wuffs_base__base_16__decode4(
+              wuffs_base__make_slice_u8(&b[0], 8),
+              wuffs_base__make_slice_u8(src_slice.ptr + src_index,
+                                        token_length),
+              src_closed, 0);
+          size_t i = 0;
+          for (; i < o.num_dst; i++) {
+            have <<= 8;
+            have |= b[i];
+          }
+        } else if (vbc == WUFFS_BASE__TOKEN__VBC__UNICODE_CODE_POINT) {
+          uint8_t b[WUFFS_BASE__UTF_8__BYTE_LENGTH__MAX_INCL];
+          size_t n = wuffs_base__utf_8__encode(
+              wuffs_base__make_slice_u8(
+                  &b[0], WUFFS_BASE__UTF_8__BYTE_LENGTH__MAX_INCL),
+              vbd);
+          size_t i = 0;
+          for (; i < n; i++) {
+            have <<= 8;
+            have |= b[i];
+          }
+        }
+
+        src_index += token_length;
+      }
+      uint64_t want =
+          q ? test_cases[tc].want_code_points : test_cases[tc].want_bytes;
+      if (have != want) {
+        RETURN_FAIL("tc=%d, q=%d: have U+%08" PRIX64 ", want U+%08" PRIX64, tc,
+                    q, have, want);
+      }
     }
   }
 

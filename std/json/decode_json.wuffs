@@ -20,6 +20,8 @@ pub struct decoder? implements base.token_decoder(
 
 	end_of_data : base.bool,
 
+	string_value_minor : base.u32[..= 0x1FF_FFFF],
+
 	util : base.utility,
 )(
 	// stack is conceptually an array of bits, implemented as an array of u32.
@@ -92,6 +94,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 
 	var backslash_x_length : base.u32[..= 0xFFFF]
 	var backslash_x_ok     : base.u8
+	var backslash_x_value  : base.u8
 	var backslash_x_string : base.u32
 
 	var uni4_ok             : base.u8
@@ -119,6 +122,16 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 	if this.quirks[QUIRK_ALLOW_LEADING_ASCII_RECORD_SEPARATOR - QUIRKS_BASE] or
 		this.quirks[QUIRK_ALLOW_LEADING_UNICODE_BYTE_ORDER_MARK - QUIRKS_BASE] {
 		this.decode_leading?(dst: args.dst, src: args.src)
+	}
+
+	if this.quirks[QUIRK_ALLOW_BACKSLASH_X_AS_BYTES - QUIRKS_BASE] {
+		if this.quirks[QUIRK_ALLOW_BACKSLASH_X_AS_CODE_POINTS - QUIRKS_BASE] {
+			return "#bad quirk combination"
+		}
+		this.string_value_minor = (base.TOKEN__VBC__STRING << 21)
+	} else {
+		this.string_value_minor = (base.TOKEN__VBC__STRING << 21) |
+			base.TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8
 	}
 
 	expect = EXPECT_VALUE
@@ -204,9 +217,8 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 			// Emit the leading '"'.
 			args.dst.write_simple_token_fast!(
 				value_major: 0,
-				value_minor: (base.TOKEN__VBC__STRING << 21) |
+				value_minor: this.string_value_minor |
 				base.TOKEN__VBD__STRING__DEFINITELY_UTF_8 |
-				base.TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8 |
 				base.TOKEN__VBD__STRING__DEFINITELY_ASCII |
 				base.TOKEN__VBD__STRING__CONVERT_0_DST_1_SRC_DROP,
 				continued: 1,
@@ -227,9 +239,8 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 						if string_length > 0 {
 							args.dst.write_simple_token_fast!(
 								value_major: 0,
-								value_minor: (base.TOKEN__VBC__STRING << 21) |
+								value_minor: this.string_value_minor |
 								base.TOKEN__VBD__STRING__DEFINITELY_UTF_8 |
-								base.TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8 |
 								base.TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY,
 								continued: 1,
 								length: string_length)
@@ -260,9 +271,8 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 						if string_length > (0xFFFB - 4) {
 							args.dst.write_simple_token_fast!(
 								value_major: 0,
-								value_minor: (base.TOKEN__VBC__STRING << 21) |
+								value_minor: this.string_value_minor |
 								base.TOKEN__VBD__STRING__DEFINITELY_UTF_8 |
-								base.TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8 |
 								base.TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY,
 								continued: 1,
 								length: string_length + 4)
@@ -280,9 +290,8 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 						if string_length >= 0xFFFB {
 							args.dst.write_simple_token_fast!(
 								value_major: 0,
-								value_minor: (base.TOKEN__VBC__STRING << 21) |
+								value_minor: this.string_value_minor |
 								base.TOKEN__VBD__STRING__DEFINITELY_UTF_8 |
-								base.TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8 |
 								base.TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY,
 								continued: 1,
 								length: 0xFFFC)
@@ -296,9 +305,8 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 						if string_length <> 0 {
 							args.dst.write_simple_token_fast!(
 								value_major: 0,
-								value_minor: (base.TOKEN__VBC__STRING << 21) |
+								value_minor: this.string_value_minor |
 								base.TOKEN__VBD__STRING__DEFINITELY_UTF_8 |
-								base.TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8 |
 								base.TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY,
 								continued: 1,
 								length: string_length)
@@ -310,9 +318,8 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 						if string_length > 0 {
 							args.dst.write_simple_token_fast!(
 								value_major: 0,
-								value_minor: (base.TOKEN__VBC__STRING << 21) |
+								value_minor: this.string_value_minor |
 								base.TOKEN__VBD__STRING__DEFINITELY_UTF_8 |
-								base.TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8 |
 								base.TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY,
 								continued: 1,
 								length: string_length)
@@ -559,53 +566,88 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 							}
 							// -------- END   backslash-capital-u.
 
-						} else if (c == 'x') and
-							this.quirks[QUIRK_ALLOW_BACKSLASH_X - QUIRKS_BASE] {
+						} else if (c == 'x') {
 							// -------- BEGIN backslash-x
-							if args.src.available() < 4 {
-								if args.src.is_closed() {
-									return "#bad backslash-escape"
+							if this.quirks[QUIRK_ALLOW_BACKSLASH_X_AS_CODE_POINTS - QUIRKS_BASE] {
+								if args.src.available() < 4 {
+									if args.src.is_closed() {
+										return "#bad backslash-escape"
+									}
+									yield? base."$short read"
+									string_length = 0
+									char = 0
+									continue.string_loop_outer
 								}
-								yield? base."$short read"
-								string_length = 0
-								char = 0
-								continue.string_loop_outer
-							}
 
-							backslash_x_length = 0
-							while (backslash_x_length <= 0xFFFB) and (args.src.available() >= 4),
-								inv args.dst.available() > 0,
-							{
 								backslash_x_string = args.src.peek_u32le()
 								backslash_x_ok = 0x80
 
 								c = LUT_HEXADECIMAL_DIGITS[0xFF & (backslash_x_string >> 16)]
 								backslash_x_ok &= c
+								backslash_x_value = (c & 0x0F) << 4
 								c = LUT_HEXADECIMAL_DIGITS[0xFF & (backslash_x_string >> 24)]
 								backslash_x_ok &= c
+								backslash_x_value |= (c & 0x0F)
 
 								if (backslash_x_ok == 0) or
 									((backslash_x_string & 0xFFFF) <> 0x785C) {
 									// It wasn't "\\x34", for some hexadecimal
 									// digits "34".
-									break
+									return "#bad backslash-escape"
 								}
 								args.src.skip_u32_fast!(actual: 4, worst_case: 4)
-								backslash_x_length += 4
-							} endwhile
+								args.dst.write_simple_token_fast!(
+									value_major: 0,
+									value_minor: (base.TOKEN__VBC__UNICODE_CODE_POINT << 21) |
+									(backslash_x_value as base.u32),
+									continued: 1,
+									length: 4)
+								continue.string_loop_outer
+							} else if this.quirks[QUIRK_ALLOW_BACKSLASH_X_AS_BYTES - QUIRKS_BASE] {
+								if args.src.available() < 4 {
+									if args.src.is_closed() {
+										return "#bad backslash-escape"
+									}
+									yield? base."$short read"
+									string_length = 0
+									char = 0
+									continue.string_loop_outer
+								}
 
-							if backslash_x_length == 0 {
-								return "#bad backslash-escape"
+								backslash_x_length = 0
+								while (backslash_x_length <= 0xFFFB) and (args.src.available() >= 4),
+									inv args.dst.available() > 0,
+								{
+									backslash_x_string = args.src.peek_u32le()
+									backslash_x_ok = 0x80
+
+									c = LUT_HEXADECIMAL_DIGITS[0xFF & (backslash_x_string >> 16)]
+									backslash_x_ok &= c
+									c = LUT_HEXADECIMAL_DIGITS[0xFF & (backslash_x_string >> 24)]
+									backslash_x_ok &= c
+
+									if (backslash_x_ok == 0) or
+										((backslash_x_string & 0xFFFF) <> 0x785C) {
+										// It wasn't "\\x34", for some hexadecimal
+										// digits "34".
+										break
+									}
+									args.src.skip_u32_fast!(actual: 4, worst_case: 4)
+									backslash_x_length += 4
+								} endwhile
+
+								if backslash_x_length == 0 {
+									return "#bad backslash-escape"
+								}
+								args.dst.write_simple_token_fast!(
+									value_major: 0,
+									value_minor: this.string_value_minor |
+									base.TOKEN__VBD__STRING__DEFINITELY_UTF_8 |
+									base.TOKEN__VBD__STRING__CONVERT_1_DST_4_SRC_BACKSLASH_X,
+									continued: 1,
+									length: backslash_x_length)
+								continue.string_loop_outer
 							}
-							args.dst.write_simple_token_fast!(
-								value_major: 0,
-								value_minor: (base.TOKEN__VBC__STRING << 21) |
-								base.TOKEN__VBD__STRING__DEFINITELY_UTF_8 |
-								base.TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8 |
-								base.TOKEN__VBD__STRING__CONVERT_1_DST_4_SRC_BACKSLASH_X,
-								continued: 1,
-								length: backslash_x_length)
-							continue.string_loop_outer
 							// -------- END   backslash-x
 						}
 
@@ -616,9 +658,8 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 							if string_length > 0 {
 								args.dst.write_simple_token_fast!(
 									value_major: 0,
-									value_minor: (base.TOKEN__VBC__STRING << 21) |
+									value_minor: this.string_value_minor |
 									base.TOKEN__VBD__STRING__DEFINITELY_UTF_8 |
-									base.TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8 |
 									base.TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY,
 									continued: 1,
 									length: string_length)
@@ -653,9 +694,8 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 							if string_length >= 0xFFF8 {
 								args.dst.write_simple_token_fast!(
 									value_major: 0,
-									value_minor: (base.TOKEN__VBC__STRING << 21) |
+									value_minor: this.string_value_minor |
 									base.TOKEN__VBD__STRING__DEFINITELY_UTF_8 |
-									base.TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8 |
 									base.TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY,
 									continued: 1,
 									length: string_length + 2)
@@ -671,9 +711,8 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 							if string_length > 0 {
 								args.dst.write_simple_token_fast!(
 									value_major: 0,
-									value_minor: (base.TOKEN__VBC__STRING << 21) |
+									value_minor: this.string_value_minor |
 									base.TOKEN__VBD__STRING__DEFINITELY_UTF_8 |
-									base.TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8 |
 									base.TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY,
 									continued: 1,
 									length: string_length)
@@ -712,9 +751,8 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 								if string_length >= 0xFFF8 {
 									args.dst.write_simple_token_fast!(
 										value_major: 0,
-										value_minor: (base.TOKEN__VBC__STRING << 21) |
+										value_minor: this.string_value_minor |
 										base.TOKEN__VBD__STRING__DEFINITELY_UTF_8 |
-										base.TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8 |
 										base.TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY,
 										continued: 1,
 										length: string_length + 3)
@@ -731,9 +769,8 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 							if string_length > 0 {
 								args.dst.write_simple_token_fast!(
 									value_major: 0,
-									value_minor: (base.TOKEN__VBC__STRING << 21) |
+									value_minor: this.string_value_minor |
 									base.TOKEN__VBD__STRING__DEFINITELY_UTF_8 |
-									base.TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8 |
 									base.TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY,
 									continued: 1,
 									length: string_length)
@@ -771,9 +808,8 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 								if string_length >= 0xFFF8 {
 									args.dst.write_simple_token_fast!(
 										value_major: 0,
-										value_minor: (base.TOKEN__VBC__STRING << 21) |
+										value_minor: this.string_value_minor |
 										base.TOKEN__VBD__STRING__DEFINITELY_UTF_8 |
-										base.TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8 |
 										base.TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY,
 										continued: 1,
 										length: string_length + 4)
@@ -789,9 +825,8 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 					if string_length > 0 {
 						args.dst.write_simple_token_fast!(
 							value_major: 0,
-							value_minor: (base.TOKEN__VBC__STRING << 21) |
+							value_minor: this.string_value_minor |
 							base.TOKEN__VBD__STRING__DEFINITELY_UTF_8 |
-							base.TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8 |
 							base.TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY,
 							continued: 1,
 							length: string_length)
@@ -843,9 +878,8 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 				args.src.skip_u32_fast!(actual: 1, worst_case: 1)
 				args.dst.write_simple_token_fast!(
 					value_major: 0,
-					value_minor: (base.TOKEN__VBC__STRING << 21) |
+					value_minor: this.string_value_minor |
 					base.TOKEN__VBD__STRING__DEFINITELY_UTF_8 |
-					base.TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8 |
 					base.TOKEN__VBD__STRING__DEFINITELY_ASCII |
 					base.TOKEN__VBD__STRING__CONVERT_0_DST_1_SRC_DROP,
 					continued: 0,

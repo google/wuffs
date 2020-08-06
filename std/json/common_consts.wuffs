@@ -16,6 +16,7 @@ pub status "#bad C0 control code"
 pub status "#bad UTF-8"
 pub status "#bad backslash-escape"
 pub status "#bad input"
+pub status "#bad quirk combination"
 pub status "#unsupported number length"
 pub status "#unsupported recursion depth"
 
@@ -123,7 +124,7 @@ pri const LUT_BACKSLASHES : array[256] base.u8 = [
 // LUT_QUIRKY_BACKSLASHES_QUIRKS is discussed in the LUT_BACKSLASHES comment.
 // The first element (index 0) is not used, but 8 is a round power of 2, so
 // enforcing index-in-bounds is a simple "&7" operation.
-pri const LUT_QUIRKY_BACKSLASHES_QUIRKS : array[8] base.u8[..= 0x09] = [
+pri const LUT_QUIRKY_BACKSLASHES_QUIRKS : array[8] base.u8[..= 0x0A] = [
 	0,
 	// Uncommenting the following lines requires being able to define consts in
 	// terms of other consts, which could be non-trivial to specify and
@@ -134,7 +135,7 @@ pri const LUT_QUIRKY_BACKSLASHES_QUIRKS : array[8] base.u8[..= 0x09] = [
 	0x05,  // (QUIRK_ALLOW_BACKSLASH_QUESTION_MARK - QUIRKS_BASE) as base.u8,
 	0x06,  // (QUIRK_ALLOW_BACKSLASH_SINGLE_QUOTE - QUIRKS_BASE) as base.u8,
 	0x07,  // (QUIRK_ALLOW_BACKSLASH_V - QUIRKS_BASE) as base.u8,
-	0x09,  // (QUIRK_ALLOW_BACKSLASH_ZERO - QUIRKS_BASE) as base.u8,
+	0x0A,  // (QUIRK_ALLOW_BACKSLASH_ZERO - QUIRKS_BASE) as base.u8,
 ]
 
 // LUT_QUIRKY_BACKSLASHES_CHARS is discussed in the LUT_BACKSLASHES comment.
