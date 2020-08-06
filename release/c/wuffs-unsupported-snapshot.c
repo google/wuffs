@@ -2429,9 +2429,9 @@ typedef struct {
 #ifdef __cplusplus
   inline bool is_valid() const;
   inline void compact();
-  inline uint64_t reader_available() const;
+  inline uint64_t reader_length() const;
   inline uint64_t reader_token_position() const;
-  inline uint64_t writer_available() const;
+  inline uint64_t writer_length() const;
   inline uint64_t writer_token_position() const;
 #endif  // __cplusplus
 
@@ -2535,7 +2535,7 @@ wuffs_base__token_buffer__compact(wuffs_base__token_buffer* buf) {
 }
 
 static inline uint64_t  //
-wuffs_base__token_buffer__reader_available(
+wuffs_base__token_buffer__reader_length(
     const wuffs_base__token_buffer* buf) {
   return buf ? buf->meta.wi - buf->meta.ri : 0;
 }
@@ -2547,7 +2547,7 @@ wuffs_base__token_buffer__reader_token_position(
 }
 
 static inline uint64_t  //
-wuffs_base__token_buffer__writer_available(
+wuffs_base__token_buffer__writer_length(
     const wuffs_base__token_buffer* buf) {
   return buf ? buf->data.len - buf->meta.wi : 0;
 }
@@ -2571,8 +2571,8 @@ wuffs_base__token_buffer::compact() {
 }
 
 inline uint64_t  //
-wuffs_base__token_buffer::reader_available() const {
-  return wuffs_base__token_buffer__reader_available(this);
+wuffs_base__token_buffer::reader_length() const {
+  return wuffs_base__token_buffer__reader_length(this);
 }
 
 inline uint64_t  //
@@ -2581,8 +2581,8 @@ wuffs_base__token_buffer::reader_token_position() const {
 }
 
 inline uint64_t  //
-wuffs_base__token_buffer::writer_available() const {
-  return wuffs_base__token_buffer__writer_available(this);
+wuffs_base__token_buffer::writer_length() const {
+  return wuffs_base__token_buffer__writer_length(this);
 }
 
 inline uint64_t  //
