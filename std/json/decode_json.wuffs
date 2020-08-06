@@ -584,10 +584,10 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 
 								c = LUT_HEXADECIMAL_DIGITS[0xFF & (backslash_x_string >> 16)]
 								backslash_x_ok &= c
-								backslash_x_value = (c & 0x0F) << 4
+								backslash_x_value = ((c & 0x0F) << 4) as base.u8
 								c = LUT_HEXADECIMAL_DIGITS[0xFF & (backslash_x_string >> 24)]
 								backslash_x_ok &= c
-								backslash_x_value |= (c & 0x0F)
+								backslash_x_value = (backslash_x_value | (c & 0x0F)) as base.u8
 
 								if (backslash_x_ok == 0) or
 									((backslash_x_string & 0xFFFF) <> 0x785C) {

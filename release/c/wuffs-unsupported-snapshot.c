@@ -26180,10 +26180,10 @@ wuffs_json__decoder__decode_tokens(
                     v_backslash_x_ok = 128;
                     v_c = WUFFS_JSON__LUT_HEXADECIMAL_DIGITS[(255 & (v_backslash_x_string >> 16))];
                     v_backslash_x_ok &= v_c;
-                    v_backslash_x_value = ((v_c & 15) << 4);
+                    v_backslash_x_value = ((uint8_t)(((v_c & 15) << 4)));
                     v_c = WUFFS_JSON__LUT_HEXADECIMAL_DIGITS[(255 & (v_backslash_x_string >> 24))];
                     v_backslash_x_ok &= v_c;
-                    v_backslash_x_value |= (v_c & 15);
+                    v_backslash_x_value = ((uint8_t)((v_backslash_x_value | (v_c & 15))));
                     if ((v_backslash_x_ok == 0) || ((v_backslash_x_string & 65535) != 30812)) {
                       status = wuffs_base__make_status(wuffs_json__error__bad_backslash_escape);
                       goto exit;
