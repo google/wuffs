@@ -105,7 +105,12 @@ static const char* g_usage =
     "comma after the final element of a JSON list or dictionary.\n"
     "\n"
     "The -input-allow-inf-nan-numbers flag allows non-finite floating point\n"
-    "numbers (infinities and not-a-numbers) within JSON input.";
+    "numbers (infinities and not-a-numbers) within JSON input.\n"
+    "\n"
+    "----\n"
+    "\n"
+    "The JSON specification permits implementations to set their own maximum\n"
+    "input depth. This JSON implementation sets it to 1024.";
 
 // ----
 

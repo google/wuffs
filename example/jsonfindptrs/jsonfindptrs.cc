@@ -106,7 +106,9 @@ static const char* g_usage =
     "\n"
     "Flags:\n"
     "    -d=NUM  -max-output-depth=NUM\n"
-    "            -input-json-extra-comma\n"
+    "            -input-allow-comments\n"
+    "            -input-allow-extra-comma\n"
+    "            -input-allow-inf-nan-numbers\n"
     "            -strict-json-pointer-syntax\n"
     "\n"
     "The input.json filename is optional. If absent, it reads from stdin.\n"
@@ -151,8 +153,14 @@ static const char* g_usage =
     "This JSON implementation also rejects integer values outside ±M, where\n"
     "M is ((1<<53)-1), also known as JavaScript's Number.MAX_SAFE_INTEGER.\n"
     "\n"
-    "The -input-json-extra-comma flag allows input like \"[1,2,]\", with a\n"
+    "The -input-allow-comments flag allows \"/*slash-star*/\" and\n"
+    "\"//slash-slash\" C-style comments within JSON input.\n"
+    "\n"
+    "The -input-allow-extra-comma flag allows input like \"[1,2,]\", with a\n"
     "comma after the final element of a JSON list or dictionary.\n"
+    "\n"
+    "The -input-allow-inf-nan-numbers flag allows non-finite floating point\n"
+    "numbers (infinities and not-a-numbers) within JSON input.\n"
     "\n"
     "----\n"
     "\n"
@@ -184,7 +192,6 @@ struct {
   int remaining_argc;
   char** remaining_argv;
 
-  bool input_json_extra_comma;
   uint32_t max_output_depth;
   bool strict_json_pointer_syntax;
 } g_flags = {0};
@@ -229,8 +236,17 @@ parse_flags(int argc, char** argv) {
       }
       return g_usage;
     }
-    if (!strcmp(arg, "input-json-extra-comma")) {
+    if (!strcmp(arg, "input-allow-comments")) {
+      g_quirks.push_back(WUFFS_JSON__QUIRK_ALLOW_COMMENT_BLOCK);
+      g_quirks.push_back(WUFFS_JSON__QUIRK_ALLOW_COMMENT_LINE);
+      continue;
+    }
+    if (!strcmp(arg, "input-allow-extra-comma")) {
       g_quirks.push_back(WUFFS_JSON__QUIRK_ALLOW_EXTRA_COMMA);
+      continue;
+    }
+    if (!strcmp(arg, "input-allow-inf-nan-numbers")) {
+      g_quirks.push_back(WUFFS_JSON__QUIRK_ALLOW_INF_NAN_NUMBERS);
       continue;
     }
     if (!strcmp(arg, "strict-json-pointer-syntax")) {
