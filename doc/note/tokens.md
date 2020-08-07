@@ -145,13 +145,13 @@ $ gcc script/print-json-token-debug-format.c -o pjtdf
 $ ./pjtdf -all-tokens -human-readable < test/data/json-things.formatted.json
 pos=0x00000000  len=0x0001  con=0  vbc=1:Structure........  vbd=0x004011
 pos=0x00000001  len=0x0005  con=0  vbc=0:Filler...........  vbd=0x000000
-pos=0x00000006  len=0x0001  con=1  vbc=2:String...........  vbd=0x000013
-pos=0x00000007  len=0x0002  con=1  vbc=2:String...........  vbd=0x000021
-pos=0x00000009  len=0x0001  con=0  vbc=2:String...........  vbd=0x000013
+pos=0x00000006  len=0x0001  con=1  vbc=2:String...........  vbd=0x000113
+pos=0x00000007  len=0x0002  con=1  vbc=2:String...........  vbd=0x000203
+pos=0x00000009  len=0x0001  con=0  vbc=2:String...........  vbd=0x000113
 etc
 pos=0x00000090  len=0x0002  con=1  vbc=3:UnicodeCodePoint.  vbd=0x00000A
 pos=0x00000092  len=0x0002  con=1  vbc=3:UnicodeCodePoint.  vbd=0x00000A
-pos=0x00000094  len=0x0001  con=0  vbc=2:String...........  vbd=0x000013
+pos=0x00000094  len=0x0001  con=0  vbc=2:String...........  vbd=0x000113
 pos=0x00000095  len=0x0001  con=0  vbc=0:Filler...........  vbd=0x000000
 pos=0x00000096  len=0x0001  con=0  vbc=1:Structure........  vbd=0x001042
 ```
