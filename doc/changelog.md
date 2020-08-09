@@ -10,6 +10,7 @@
 - Added `base` library support for UTF-8.
 - Added `base` library support for `atoi`-like string conversion.
 - Added `endwhile` syntax.
+- Added `example/cbor-to-json`.
 - Added `example/convert-to-nia`.
 - Added `example/imageviewer`.
 - Added `example/json-to-cbor`.

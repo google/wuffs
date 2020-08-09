@@ -18,6 +18,8 @@ pub status "#unsupported recursion depth"
 pri status "#internal error: inconsistent I/O"
 pri status "#internal error: inconsistent token length"
 
+pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0
+
 // TOKEN_VALUE_MAJOR is the base-38 encoding of "cbor".
 pub const TOKEN_VALUE_MAJOR : base.u32 = 0x0C_061D
 

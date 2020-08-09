@@ -99,6 +99,8 @@ func genData(out *bytes.Buffer) error {
 
 		{"../auxiliary/base.cc", "AuxBaseCc"},
 		{"../auxiliary/base.hh", "AuxBaseHh"},
+		{"../auxiliary/cbor.cc", "AuxCborCc"},
+		{"../auxiliary/cbor.hh", "AuxCborHh"},
 		{"../auxiliary/json.cc", "AuxJsonCc"},
 		{"../auxiliary/json.hh", "AuxJsonHh"},
 	}
