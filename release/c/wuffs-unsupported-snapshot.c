@@ -8495,9 +8495,9 @@ class DecodeJsonCallbacks {
 
   virtual std::string AppendNull() = 0;
   virtual std::string AppendBool(bool val) = 0;
-  virtual std::string AppendI64(int64_t val) = 0;
   virtual std::string AppendF64(double val) = 0;
-  virtual std::string AppendString(std::string&& val) = 0;
+  virtual std::string AppendI64(int64_t val) = 0;
+  virtual std::string AppendTextString(std::string&& val) = 0;
 
   // Push and Pop are called for container nodes: JSON arrays (lists) and JSON
   // objects (dictionaries).
@@ -8524,7 +8524,7 @@ class DecodeJsonCallbacks {
   // as DecodeJson may then de-allocate the backing array.
   virtual void Done(DecodeJsonResult& result,
                     sync_io::Input& input,
-                    IOBuffer& buffer) = 0;
+                    IOBuffer& buffer);
 };
 
 // DecodeJson calls callbacks based on the JSON-formatted data in input.
@@ -29267,6 +29267,10 @@ DecodeJsonResult::DecodeJsonResult(std::string&& error_message0,
     : error_message(std::move(error_message0)),
       cursor_position(cursor_position0) {}
 
+void DecodeJsonCallbacks::Done(DecodeJsonResult& result,
+                               sync_io::Input& input,
+                               IOBuffer& buffer) {}
+
 DecodeJsonResult  //
 DecodeJson(DecodeJsonCallbacks&& callbacks,
            sync_io::Input&& input,
@@ -29400,7 +29404,7 @@ DecodeJson(DecodeJsonCallbacks&& callbacks,
           if (token.continued()) {
             continue;
           }
-          ret_error_message = callbacks.AppendString(std::move(str));
+          ret_error_message = callbacks.AppendTextString(std::move(str));
           str.clear();
           goto parsed_a_value;
         }
@@ -29470,6 +29474,7 @@ DecodeJson(DecodeJsonCallbacks&& callbacks,
                     0x7FFFFFFFFFFFFFFFul));
             goto parsed_a_value;
           }
+          goto fail;
         }
       }
 

@@ -27,6 +27,10 @@ DecodeJsonResult::DecodeJsonResult(std::string&& error_message0,
     : error_message(std::move(error_message0)),
       cursor_position(cursor_position0) {}
 
+void DecodeJsonCallbacks::Done(DecodeJsonResult& result,
+                               sync_io::Input& input,
+                               IOBuffer& buffer) {}
+
 DecodeJsonResult  //
 DecodeJson(DecodeJsonCallbacks&& callbacks,
            sync_io::Input&& input,
@@ -160,7 +164,7 @@ DecodeJson(DecodeJsonCallbacks&& callbacks,
           if (token.continued()) {
             continue;
           }
-          ret_error_message = callbacks.AppendString(std::move(str));
+          ret_error_message = callbacks.AppendTextString(std::move(str));
           str.clear();
           goto parsed_a_value;
         }
@@ -230,6 +234,7 @@ DecodeJson(DecodeJsonCallbacks&& callbacks,
                     0x7FFFFFFFFFFFFFFFul));
             goto parsed_a_value;
           }
+          goto fail;
         }
       }
 

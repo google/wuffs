@@ -248,11 +248,6 @@ class Callbacks : public wuffs_aux::DecodeJsonCallbacks {
     return write_dst(val ? "\xF5" : "\xF4", 1);
   }
 
-  virtual std::string AppendI64(int64_t val) {
-    return (val >= 0) ? Append(static_cast<uint64_t>(val), 0x00)
-                      : Append(static_cast<uint64_t>(-(val + 1)), 0x20);
-  }
-
   virtual std::string AppendF64(double val) {
     uint8_t c[9];
     wuffs_base__lossy_value_u16 lv16 =
@@ -275,7 +270,12 @@ class Callbacks : public wuffs_aux::DecodeJsonCallbacks {
     return write_dst(&c[0], 9);
   }
 
-  virtual std::string AppendString(std::string&& val) {
+  virtual std::string AppendI64(int64_t val) {
+    return (val >= 0) ? Append(static_cast<uint64_t>(val), 0x00)
+                      : Append(static_cast<uint64_t>(-(val + 1)), 0x20);
+  }
+
+  virtual std::string AppendTextString(std::string&& val) {
     TRY(Append(val.size(), 0x60));
     return write_dst(val.data(), val.size());
   }

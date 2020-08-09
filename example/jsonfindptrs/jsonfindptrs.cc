@@ -441,7 +441,7 @@ class Callbacks : public wuffs_aux::DecodeJsonCallbacks {
     return Append(std::move(jt));
   }
 
-  virtual std::string AppendString(std::string&& val) {
+  virtual std::string AppendTextString(std::string&& val) {
     JsonThing jt;
     jt.kind = JsonThing::Kind::String;
     jt.value.s = std::move(val);
