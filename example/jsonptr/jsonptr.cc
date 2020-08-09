@@ -301,7 +301,8 @@ bool g_sandboxed = false;
 
 int g_input_file_descriptor = 0;  // A 0 default means stdin.
 
-#define MAX_INDENT 8
+// parse_flags enforces that g_flags.spaces <= 8 (the length of
+// INDENT_SPACES_STRING).
 #define INDENT_SPACES_STRING "        "
 #define INDENT_TAB_STRING "\t"
 
