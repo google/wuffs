@@ -92,6 +92,90 @@ test_wuffs_cbor_decode_interface() {
   return NULL;
 }
 
+const char*  //
+test_wuffs_cbor_decode_invalid() {
+  CHECK_FOCUS(__func__);
+
+  // The official suite of CBOR test vectors (collected in this repo as
+  // test/data/cbor-rfc-7049-examples.cbor) contain valid examples.
+  //
+  // This suite contains invalid examples, which should be rejected.
+  char* test_cases[] = {
+      // Truncated (integer; major type 0) value.
+      "\x18",
+      // Map with 1 element (an odd number).
+      "\xA1\x01",
+      // Map with 3 elements (an odd number).
+      "\xBF\x01\x02\x03\xFF",
+      // Unused opcode.
+      "\xFE",
+  };
+
+  int tc;
+  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+    wuffs_base__token tok_array[256];
+    wuffs_base__token_buffer tok_buf =
+        wuffs_base__slice_token__writer(wuffs_base__make_slice_token(
+            &tok_array[0], WUFFS_TESTLIB_ARRAY_SIZE(tok_array)));
+    const bool closed = true;
+    wuffs_base__io_buffer io_buf = wuffs_base__slice_u8__reader(
+        wuffs_base__make_slice_u8((uint8_t*)(test_cases[tc]),
+                                  strlen(test_cases[tc])),
+        closed);
+
+    wuffs_cbor__decoder dec;
+    CHECK_STATUS("initialize",
+                 wuffs_cbor__decoder__initialize(
+                     &dec, sizeof dec, WUFFS_VERSION,
+                     WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+
+    wuffs_base__status status = wuffs_cbor__decoder__decode_tokens(
+        &dec, &tok_buf, &io_buf, g_work_slice_u8);
+    if (!wuffs_base__status__is_error(&status)) {
+      RETURN_FAIL("tc=%d: have \"%s\", want an error", tc, status.repr);
+    }
+  }
+  return NULL;
+}
+
+const char*  //
+test_wuffs_cbor_decode_valid() {
+  CHECK_FOCUS(__func__);
+
+  // This suite contains valid examples, similar to the
+  // test_wuffs_cbor_decode_invalid examples, but they should be accepted.
+  char* test_cases[] = {
+      // Map with 2 elements (an even number).
+      "\xA1\x01\x02",
+  };
+
+  int tc;
+  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+    wuffs_base__token tok_array[256];
+    wuffs_base__token_buffer tok_buf =
+        wuffs_base__slice_token__writer(wuffs_base__make_slice_token(
+            &tok_array[0], WUFFS_TESTLIB_ARRAY_SIZE(tok_array)));
+    const bool closed = true;
+    wuffs_base__io_buffer io_buf = wuffs_base__slice_u8__reader(
+        wuffs_base__make_slice_u8((uint8_t*)(test_cases[tc]),
+                                  strlen(test_cases[tc])),
+        closed);
+
+    wuffs_cbor__decoder dec;
+    CHECK_STATUS("initialize",
+                 wuffs_cbor__decoder__initialize(
+                     &dec, sizeof dec, WUFFS_VERSION,
+                     WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+
+    wuffs_base__status status = wuffs_cbor__decoder__decode_tokens(
+        &dec, &tok_buf, &io_buf, g_work_slice_u8);
+    if (!wuffs_base__status__is_ok(&status)) {
+      RETURN_FAIL("tc=%d: have \"%s\", want no error", tc, status.repr);
+    }
+  }
+  return NULL;
+}
+
 // ---------------- Mimic Tests
 
 #ifdef WUFFS_MIMIC
@@ -117,6 +201,8 @@ test_wuffs_cbor_decode_interface() {
 proc g_tests[] = {
 
     test_wuffs_cbor_decode_interface,
+    test_wuffs_cbor_decode_invalid,
+    test_wuffs_cbor_decode_valid,
 
 #ifdef WUFFS_MIMIC
 
