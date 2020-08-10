@@ -414,41 +414,41 @@ class Callbacks : public wuffs_aux::DecodeJsonCallbacks {
     return "main: internal error: non-container stack entry";
   }
 
-  virtual std::string AppendNull() {
+  std::string AppendNull() override {
     JsonThing jt;
     jt.kind = JsonThing::Kind::Null;
     return Append(std::move(jt));
   }
 
-  virtual std::string AppendBool(bool val) {
+  std::string AppendBool(bool val) override {
     JsonThing jt;
     jt.kind = JsonThing::Kind::Bool;
     jt.value.b = val;
     return Append(std::move(jt));
   }
 
-  virtual std::string AppendI64(int64_t val) {
+  std::string AppendI64(int64_t val) override {
     JsonThing jt;
     jt.kind = JsonThing::Kind::Int64;
     jt.value.i = val;
     return Append(std::move(jt));
   }
 
-  virtual std::string AppendF64(double val) {
+  std::string AppendF64(double val) override {
     JsonThing jt;
     jt.kind = JsonThing::Kind::Float64;
     jt.value.f = val;
     return Append(std::move(jt));
   }
 
-  virtual std::string AppendTextString(std::string&& val) {
+  std::string AppendTextString(std::string&& val) override {
     JsonThing jt;
     jt.kind = JsonThing::Kind::String;
     jt.value.s = std::move(val);
     return Append(std::move(jt));
   }
 
-  virtual std::string Push(uint32_t flags) {
+  std::string Push(uint32_t flags) override {
     if (flags & WUFFS_BASE__TOKEN__VBD__STRUCTURE__TO_LIST) {
       JsonThing jt;
       jt.kind = JsonThing::Kind::Array;
@@ -463,7 +463,7 @@ class Callbacks : public wuffs_aux::DecodeJsonCallbacks {
     return "main: internal error: bad push";
   }
 
-  virtual std::string Pop(uint32_t flags) {
+  std::string Pop(uint32_t flags) override {
     if (m_stack.empty()) {
       return "main: internal error: bad pop";
     }
@@ -472,9 +472,9 @@ class Callbacks : public wuffs_aux::DecodeJsonCallbacks {
     return Append(std::move(jt));
   }
 
-  virtual void Done(wuffs_aux::DecodeJsonResult& result,
-                    wuffs_aux::sync_io::Input& input,
-                    wuffs_aux::IOBuffer& buffer) {
+  void Done(wuffs_aux::DecodeJsonResult& result,
+            wuffs_aux::sync_io::Input& input,
+            wuffs_aux::IOBuffer& buffer) override {
     if (!result.error_message.empty()) {
       return;
     } else if (m_stack.size() != 1) {

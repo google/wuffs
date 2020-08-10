@@ -326,7 +326,7 @@ class Callbacks : public wuffs_aux::DecodeCborCallbacks {
     return "";
   }
 
-  virtual std::string AppendNull() {
+  std::string AppendNull() override {
     TRY(WritePreambleAndUpdateContext());
     if (g_ctx == context::in_dict_after_key) {
       return "main: invalid JSON map key";
@@ -334,7 +334,7 @@ class Callbacks : public wuffs_aux::DecodeCborCallbacks {
     return write_dst("null", 4);
   }
 
-  virtual std::string AppendUndefined() {
+  std::string AppendUndefined() override {
     TRY(WritePreambleAndUpdateContext());
     if (g_ctx == context::in_dict_after_key) {
       return "main: invalid JSON map key";
@@ -346,7 +346,7 @@ class Callbacks : public wuffs_aux::DecodeCborCallbacks {
     return write_dst("null", 4);
   }
 
-  virtual std::string AppendBool(bool val) {
+  std::string AppendBool(bool val) override {
     TRY(WritePreambleAndUpdateContext());
     if (g_ctx == context::in_dict_after_key) {
       return "main: invalid JSON map key";
@@ -357,7 +357,7 @@ class Callbacks : public wuffs_aux::DecodeCborCallbacks {
     return write_dst("false", 5);
   }
 
-  virtual std::string AppendF64(double val) {
+  std::string AppendF64(double val) override {
     TRY(WritePreambleAndUpdateContext());
     if (g_ctx == context::in_dict_after_key) {
       return "main: invalid JSON map key";
@@ -385,7 +385,7 @@ class Callbacks : public wuffs_aux::DecodeCborCallbacks {
     return write_dst(&buf[0], n);
   }
 
-  virtual std::string AppendI64(int64_t val) {
+  std::string AppendI64(int64_t val) override {
     TRY(WritePreambleAndUpdateContext());
     if (g_ctx == context::in_dict_after_key) {
       TRY(write_dst("\"", 1));
@@ -403,7 +403,7 @@ class Callbacks : public wuffs_aux::DecodeCborCallbacks {
     return "";
   }
 
-  virtual std::string AppendU64(uint64_t val) {
+  std::string AppendU64(uint64_t val) override {
     TRY(WritePreambleAndUpdateContext());
     if (g_ctx == context::in_dict_after_key) {
       TRY(write_dst("\"", 1));
@@ -421,7 +421,7 @@ class Callbacks : public wuffs_aux::DecodeCborCallbacks {
     return "";
   }
 
-  virtual std::string AppendByteString(std::string&& val) {
+  std::string AppendByteString(std::string&& val) override {
     TRY(WritePreambleAndUpdateContext());
     if (g_flags.output_cbor_metadata_as_comments) {
       TRY(write_dst("/*cbor:base64url*/\"", 19));
@@ -455,7 +455,7 @@ class Callbacks : public wuffs_aux::DecodeCborCallbacks {
     return write_dst("\"", 1);
   }
 
-  virtual std::string AppendTextString(std::string&& val) {
+  std::string AppendTextString(std::string&& val) override {
     TRY(WritePreambleAndUpdateContext());
     TRY(write_dst("\"", 1));
     const uint8_t* ptr =
@@ -506,7 +506,7 @@ class Callbacks : public wuffs_aux::DecodeCborCallbacks {
     return write_dst(&esc6[0], 6);
   }
 
-  virtual std::string AppendMinus1MinusX(uint64_t val) {
+  std::string AppendMinus1MinusX(uint64_t val) override {
     TRY(WritePreambleAndUpdateContext());
     if (g_ctx == context::in_dict_after_key) {
       TRY(write_dst("\"", 1));
@@ -532,7 +532,7 @@ class Callbacks : public wuffs_aux::DecodeCborCallbacks {
     return "";
   }
 
-  virtual std::string AppendCborSimpleValue(uint8_t val) {
+  std::string AppendCborSimpleValue(uint8_t val) override {
     TRY(WritePreambleAndUpdateContext());
     if (g_ctx == context::in_dict_after_key) {
       return "main: invalid JSON map key";
@@ -551,7 +551,7 @@ class Callbacks : public wuffs_aux::DecodeCborCallbacks {
     return write_dst("*/null", 6);
   }
 
-  virtual std::string AppendCborTag(uint64_t val) {
+  std::string AppendCborTag(uint64_t val) override {
     // No call to WritePreambleAndUpdateContext. A CBOR tag isn't a value. It
     // decorates the upcoming value.
     if (g_flags.output_cbor_metadata_as_comments) {
@@ -560,7 +560,7 @@ class Callbacks : public wuffs_aux::DecodeCborCallbacks {
     return "";
   }
 
-  virtual std::string Push(uint32_t flags) {
+  std::string Push(uint32_t flags) override {
     TRY(WritePreambleAndUpdateContext());
     if (g_ctx == context::in_dict_after_key) {
       return "main: invalid JSON map key";
@@ -574,7 +574,7 @@ class Callbacks : public wuffs_aux::DecodeCborCallbacks {
         (flags & WUFFS_BASE__TOKEN__VBD__STRUCTURE__TO_LIST) ? "[" : "{", 1);
   }
 
-  virtual std::string Pop(uint32_t flags) {
+  std::string Pop(uint32_t flags) override {
     // No call to WritePreambleAndUpdateContext. We write the extra comma,
     // outdent, etc. ourselves.
     g_depth--;

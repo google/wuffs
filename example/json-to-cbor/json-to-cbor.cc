@@ -242,13 +242,13 @@ class Callbacks : public wuffs_aux::DecodeJsonCallbacks {
     return write_dst(&c[0], 9);
   }
 
-  virtual std::string AppendNull() { return write_dst("\xF6", 1); }
+  std::string AppendNull() override { return write_dst("\xF6", 1); }
 
-  virtual std::string AppendBool(bool val) {
+  std::string AppendBool(bool val) override {
     return write_dst(val ? "\xF5" : "\xF4", 1);
   }
 
-  virtual std::string AppendF64(double val) {
+  std::string AppendF64(double val) override {
     uint8_t c[9];
     wuffs_base__lossy_value_u16 lv16 =
         wuffs_base__ieee_754_bit_representation__from_f64_to_u16_truncate(val);
@@ -270,32 +270,28 @@ class Callbacks : public wuffs_aux::DecodeJsonCallbacks {
     return write_dst(&c[0], 9);
   }
 
-  virtual std::string AppendI64(int64_t val) {
+  std::string AppendI64(int64_t val) override {
     return (val >= 0) ? Append(static_cast<uint64_t>(val), 0x00)
                       : Append(static_cast<uint64_t>(-(val + 1)), 0x20);
   }
 
-  virtual std::string AppendByteString(std::string&& val) {
+  std::string AppendByteString(std::string&& val) override {
     TRY(Append(val.size(), 0x40));
     return write_dst(val.data(), val.size());
   }
 
-  virtual std::string AppendTextString(std::string&& val) {
+  std::string AppendTextString(std::string&& val) override {
     TRY(Append(val.size(), 0x60));
     return write_dst(val.data(), val.size());
   }
 
-  virtual std::string Push(uint32_t flags) {
+  std::string Push(uint32_t flags) override {
     return write_dst(
         (flags & WUFFS_BASE__TOKEN__VBD__STRUCTURE__TO_LIST) ? "\x9F" : "\xBF",
         1);
   }
 
-  virtual std::string Pop(uint32_t flags) { return write_dst("\xFF", 1); }
-
-  virtual void Done(wuffs_aux::DecodeJsonResult& result,
-                    wuffs_aux::sync_io::Input& input,
-                    wuffs_aux::IOBuffer& buffer) {}
+  std::string Pop(uint32_t flags) override { return write_dst("\xFF", 1); }
 };
 
 // ----
