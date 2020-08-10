@@ -61,7 +61,7 @@ It should print "PASS", amongst other information, and exit(0).
 #include "../fuzzlib/fuzzlib.c"
 
 const char*  //
-fuzz(wuffs_base__io_buffer* src, uint32_t hash) {
+fuzz(wuffs_base__io_buffer* src, uint64_t hash) {
   const char* ret = NULL;
   wuffs_base__slice_u8 pixbuf = ((wuffs_base__slice_u8){});
   wuffs_base__slice_u8 workbuf = ((wuffs_base__slice_u8){});

@@ -209,7 +209,7 @@ fuzz_one_token(wuffs_base__token t,
 }
 
 uint64_t  //
-buffer_limit(uint32_t hash_6_bits, uint64_t min, uint64_t max) {
+buffer_limit(uint64_t hash_6_bits, uint64_t min, uint64_t max) {
   uint64_t n;
   if (hash_6_bits < 0x20) {
     n = min + hash_6_bits;
@@ -224,7 +224,7 @@ buffer_limit(uint32_t hash_6_bits, uint64_t min, uint64_t max) {
   return n;
 }
 
-void set_quirks(wuffs_json__decoder* dec, uint32_t hash_12_bits) {
+void set_quirks(wuffs_json__decoder* dec, uint64_t hash_44_bits) {
   uint32_t quirks[] = {
       WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_A,
       WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_CAPITAL_U,
@@ -232,8 +232,8 @@ void set_quirks(wuffs_json__decoder* dec, uint32_t hash_12_bits) {
       WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_QUESTION_MARK,
       WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_SINGLE_QUOTE,
       WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_V,
-      WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_X_AS_BYTES,
-      WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_X_AS_CODE_POINTS,
+      (hash_44_bits & 1) ? WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_X_AS_BYTES
+                         : WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_X_AS_CODE_POINTS,
       WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_ZERO,
       WUFFS_JSON__QUIRK_ALLOW_COMMENT_BLOCK,
       WUFFS_JSON__QUIRK_ALLOW_COMMENT_LINE,
@@ -246,26 +246,29 @@ void set_quirks(wuffs_json__decoder* dec, uint32_t hash_12_bits) {
       0,
   };
 
+  // Shift off a bit for the ETC_BACKSLASH_X_ETC choice.
+  uint64_t hash_43_bits = hash_44_bits >> 1;
+
   uint32_t i;
   for (i = 0; quirks[i]; i++) {
-    uint32_t bit = 1 << (i % 12);
-    if (hash_12_bits & bit) {
+    uint64_t bit = 1 << (i % 43);
+    if (hash_43_bits & bit) {
       wuffs_json__decoder__set_quirk_enabled(dec, quirks[i], true);
     }
   }
 }
 
 const char*  //
-fuzz_complex(wuffs_base__io_buffer* full_src, uint32_t hash_24_bits) {
+fuzz_complex(wuffs_base__io_buffer* full_src, uint64_t hash_56_bits) {
   uint64_t tok_limit = buffer_limit(
-      hash_24_bits & 0x3F, WUFFS_JSON__DECODER_DST_TOKEN_BUFFER_LENGTH_MIN_INCL,
+      hash_56_bits & 0x3F, WUFFS_JSON__DECODER_DST_TOKEN_BUFFER_LENGTH_MIN_INCL,
       TOK_BUFFER_ARRAY_SIZE);
-  uint32_t hash_18_bits = hash_24_bits >> 6;
+  uint64_t hash_50_bits = hash_56_bits >> 6;
 
   uint64_t src_limit =
-      buffer_limit(hash_18_bits & 0x3F,
+      buffer_limit(hash_50_bits & 0x3F,
                    WUFFS_JSON__DECODER_SRC_IO_BUFFER_LENGTH_MIN_INCL, 4096);
-  uint32_t hash_12_bits = hash_18_bits >> 6;
+  uint64_t hash_44_bits = hash_50_bits >> 6;
 
   // ----
 
@@ -276,7 +279,7 @@ fuzz_complex(wuffs_base__io_buffer* full_src, uint32_t hash_24_bits) {
   if (!wuffs_base__status__is_ok(&status)) {
     return wuffs_base__status__message(&status);
   }
-  set_quirks(&dec, hash_12_bits);
+  set_quirks(&dec, hash_44_bits);
 
   wuffs_base__token tok_array[TOK_BUFFER_ARRAY_SIZE];
   wuffs_base__token_buffer tok = ((wuffs_base__token_buffer){
@@ -415,7 +418,7 @@ fuzz_simple(wuffs_base__io_buffer* full_src) {
 }
 
 const char*  //
-fuzz(wuffs_base__io_buffer* full_src, uint32_t hash) {
+fuzz(wuffs_base__io_buffer* full_src, uint64_t hash) {
   // Send 99.6% of inputs to fuzz_complex and the remainder to fuzz_simple. The
   // 0xA5 constant is arbitrary but non-zero. If the hash function maps the
   // empty input to 0, this still sends the empty input to fuzz_complex.

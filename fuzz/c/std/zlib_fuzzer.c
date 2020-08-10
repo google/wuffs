@@ -75,7 +75,7 @@ uint8_t g_work_buffer_array[1];
 #endif
 
 const char*  //
-fuzz(wuffs_base__io_buffer* src, uint32_t hash) {
+fuzz(wuffs_base__io_buffer* src, uint64_t hash) {
   wuffs_zlib__decoder dec;
   wuffs_base__status status = wuffs_zlib__decoder__initialize(
       &dec, sizeof dec, WUFFS_VERSION,

@@ -27,14 +27,12 @@ intentional_segfault() {
   *ptr = 0;
 }
 
-const char*  //
-fuzz(wuffs_base__io_buffer* src, uint32_t hash);
-
-static const char*  //
-llvmFuzzerTestOneInput(const uint8_t* data, size_t size) {
-  // Hash input as per https://en.wikipedia.org/wiki/Jenkins_hash_function
-  size_t i = 0;
+// jenkins_hash_u32 implements
+// https://en.wikipedia.org/wiki/Jenkins_hash_function
+static uint32_t  //
+jenkins_hash_u32(const uint8_t* data, size_t size) {
   uint32_t hash = 0;
+  size_t i = 0;
   while (i != size) {
     hash += data[i++];
     hash += hash << 10;
@@ -43,6 +41,19 @@ llvmFuzzerTestOneInput(const uint8_t* data, size_t size) {
   hash += hash << 3;
   hash ^= hash >> 11;
   hash += hash << 15;
+  return hash;
+}
+
+const char*  //
+fuzz(wuffs_base__io_buffer* src, uint64_t hash);
+
+static const char*  //
+llvmFuzzerTestOneInput(const uint8_t* data, size_t size) {
+  // Make a 64-bit hash out of two 32-bit hashes, each on half of the data.
+  size_t s2 = size / 2;
+  uint32_t hash0 = jenkins_hash_u32(data, s2);
+  uint32_t hash1 = jenkins_hash_u32(data + s2, size - s2);
+  uint64_t hash = (((uint64_t)hash0) << 32) | ((uint64_t)hash1);
 
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
       .data = ((wuffs_base__slice_u8){
