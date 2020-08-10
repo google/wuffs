@@ -18,7 +18,28 @@ pub status "#unsupported recursion depth"
 pri status "#internal error: inconsistent I/O"
 pri status "#internal error: inconsistent token length"
 
+// --------
+
+// DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE is the largest workbuf length that a
+// decoder will request.
 pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0
+
+// DECODER_DEPTH_MAX_INCL is the maximum supported recursion depth: how deeply
+// nested [] arrays and {} maps can be.
+//
+// The CBOR spec itself does not define a limit, but allows implementations to
+// set their own limits.
+pub const DECODER_DEPTH_MAX_INCL : base.u64 = 1024
+
+// DECODER_DST_TOKEN_BUFFER_LENGTH_MIN_INCL is the minimum length of the dst
+// wuffs_base__token_buffer passed to the decoder.
+pub const DECODER_DST_TOKEN_BUFFER_LENGTH_MIN_INCL : base.u64 = 2
+
+// DECODER_SRC_IO_BUFFER_LENGTH_MIN_INCL is the minimum length of the src
+// wuffs_base__io_buffer passed to the decoder.
+pub const DECODER_SRC_IO_BUFFER_LENGTH_MIN_INCL : base.u64 = 9
+
+// --------
 
 // TOKEN_VALUE_MAJOR is the base-38 encoding of "cbor".
 pub const TOKEN_VALUE_MAJOR : base.u32 = 0x0C_061D
@@ -52,6 +73,8 @@ pub const TOKEN_VALUE_MINOR__SIMPLE_VALUE : base.u32 = 0x080_0000
 // When a token chain contains extended tokens like this, all but the last
 // token has zero length.
 pub const TOKEN_VALUE_MINOR__TAG : base.u32 = 0x040_0000
+
+// --------
 
 pri const LITERALS : array[4] base.u32[..= 0x1FF_FFFF] = [
 	(base.TOKEN__VBC__LITERAL << 21) | base.TOKEN__VBD__LITERAL__FALSE,

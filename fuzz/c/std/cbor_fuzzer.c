@@ -25,8 +25,8 @@ such as https://github.com/google/oss-fuzz calling LLVMFuzzerTestOneInput.
 When working on the fuzz implementation, or as a sanity check, defining
 WUFFS_CONFIG__FUZZLIB_MAIN will let you manually run fuzz over a set of files:
 
-gcc -DWUFFS_CONFIG__FUZZLIB_MAIN json_fuzzer.c
-./a.out ../../../test/data/*.json
+gcc -DWUFFS_CONFIG__FUZZLIB_MAIN cbor_fuzzer.c
+./a.out ../../../test/data/*.cbor
 rm -f ./a.out
 
 It should print "PASS", amongst other information, and exit(0).
@@ -51,7 +51,7 @@ It should print "PASS", amongst other information, and exit(0).
 // code simply isn't compiled.
 #define WUFFS_CONFIG__MODULES
 #define WUFFS_CONFIG__MODULE__BASE
-#define WUFFS_CONFIG__MODULE__JSON
+#define WUFFS_CONFIG__MODULE__CBOR
 
 // If building this program in an environment that doesn't easily accommodate
 // relative includes, you can use the script/inline-c-relative-includes.go
@@ -60,12 +60,12 @@ It should print "PASS", amongst other information, and exit(0).
 #include "../fuzzlib/fuzzlib.c"
 
 #define TOK_BUFFER_ARRAY_SIZE 4096
-#define STACK_SIZE (WUFFS_JSON__DECODER_DEPTH_MAX_INCL + 1)
+#define STACK_SIZE (WUFFS_CBOR__DECODER_DEPTH_MAX_INCL + 1)
 
 // Wuffs allows either statically or dynamically allocated work buffers. This
 // program exercises static allocation.
 #define WORK_BUFFER_ARRAY_SIZE \
-  WUFFS_JSON__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE
+  WUFFS_CBOR__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE
 #if WORK_BUFFER_ARRAY_SIZE > 0
 uint8_t g_work_buffer_array[WORK_BUFFER_ARRAY_SIZE];
 #else
@@ -82,6 +82,14 @@ uint8_t g_work_buffer_array[1];
 // container. A valid dictionary contains key-value pairs and should therefore
 // contain an even number of elements.
 typedef uint8_t stack_element;
+
+bool  //
+is_cbor_tag(wuffs_base__token t) {
+  return (wuffs_base__token__value_major(&t) ==
+          WUFFS_CBOR__TOKEN_VALUE_MAJOR) &&
+         (wuffs_base__token__value_minor(&t) &
+          WUFFS_CBOR__TOKEN_VALUE_MINOR__TAG);
+}
 
 const char*  //
 fuzz_one_token(wuffs_base__token t,
@@ -196,12 +204,13 @@ fuzz_one_token(wuffs_base__token t,
       break;
   }
 
-  // After a complete JSON value, update the parity (even/odd count) of the
+  // After a complete CBOR value, update the parity (even/odd count) of the
   // container.
   if (!wuffs_base__token__continued(&t) &&
       (vbc != WUFFS_BASE__TOKEN__VBC__FILLER) &&
       ((vbc != WUFFS_BASE__TOKEN__VBC__STRUCTURE) ||
-       (vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__POP))) {
+       (vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__POP)) &&
+      !is_cbor_tag(t)) {
     stack[*depth] ^= 0x80;
   }
 
@@ -224,59 +233,26 @@ buffer_limit(uint32_t hash_6_bits, uint64_t min, uint64_t max) {
   return n;
 }
 
-void set_quirks(wuffs_json__decoder* dec, uint32_t hash_12_bits) {
-  uint32_t quirks[] = {
-      WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_A,
-      WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_CAPITAL_U,
-      WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_E,
-      WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_QUESTION_MARK,
-      WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_SINGLE_QUOTE,
-      WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_V,
-      WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_X_AS_BYTES,
-      WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_X_AS_CODE_POINTS,
-      WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_ZERO,
-      WUFFS_JSON__QUIRK_ALLOW_COMMENT_BLOCK,
-      WUFFS_JSON__QUIRK_ALLOW_COMMENT_LINE,
-      WUFFS_JSON__QUIRK_ALLOW_EXTRA_COMMA,
-      WUFFS_JSON__QUIRK_ALLOW_INF_NAN_NUMBERS,
-      WUFFS_JSON__QUIRK_ALLOW_LEADING_ASCII_RECORD_SEPARATOR,
-      WUFFS_JSON__QUIRK_ALLOW_LEADING_UNICODE_BYTE_ORDER_MARK,
-      WUFFS_JSON__QUIRK_ALLOW_TRAILING_NEW_LINE,
-      WUFFS_JSON__QUIRK_REPLACE_INVALID_UNICODE,
-      0,
-  };
-
-  uint32_t i;
-  for (i = 0; quirks[i]; i++) {
-    uint32_t bit = 1 << (i % 12);
-    if (hash_12_bits & bit) {
-      wuffs_json__decoder__set_quirk_enabled(dec, quirks[i], true);
-    }
-  }
-}
-
 const char*  //
 fuzz_complex(wuffs_base__io_buffer* full_src, uint32_t hash_24_bits) {
   uint64_t tok_limit = buffer_limit(
-      hash_24_bits & 0x3F, WUFFS_JSON__DECODER_DST_TOKEN_BUFFER_LENGTH_MIN_INCL,
+      hash_24_bits & 0x3F, WUFFS_CBOR__DECODER_DST_TOKEN_BUFFER_LENGTH_MIN_INCL,
       TOK_BUFFER_ARRAY_SIZE);
   uint32_t hash_18_bits = hash_24_bits >> 6;
 
   uint64_t src_limit =
       buffer_limit(hash_18_bits & 0x3F,
-                   WUFFS_JSON__DECODER_SRC_IO_BUFFER_LENGTH_MIN_INCL, 4096);
-  uint32_t hash_12_bits = hash_18_bits >> 6;
+                   WUFFS_CBOR__DECODER_SRC_IO_BUFFER_LENGTH_MIN_INCL, 4096);
 
   // ----
 
-  wuffs_json__decoder dec;
-  wuffs_base__status status = wuffs_json__decoder__initialize(
+  wuffs_cbor__decoder dec;
+  wuffs_base__status status = wuffs_cbor__decoder__initialize(
       &dec, sizeof dec, WUFFS_VERSION,
       WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
   if (!wuffs_base__status__is_ok(&status)) {
     return wuffs_base__status__message(&status);
   }
-  set_quirks(&dec, hash_12_bits);
 
   wuffs_base__token tok_array[TOK_BUFFER_ARRAY_SIZE];
   wuffs_base__token_buffer tok = ((wuffs_base__token_buffer){
@@ -305,7 +281,7 @@ fuzz_complex(wuffs_base__io_buffer* full_src, uint32_t hash_24_bits) {
     size_t old_src_ri = src.meta.ri;
     size_t ti = old_src_ri;
 
-    status = wuffs_json__decoder__decode_tokens(
+    status = wuffs_cbor__decoder__decode_tokens(
         &dec, &tok, &src,
         wuffs_base__make_slice_u8(g_work_buffer_array, WORK_BUFFER_ARRAY_SIZE));
     if ((tok.data.len < tok.meta.wi) ||  //
@@ -353,7 +329,7 @@ fuzz_complex(wuffs_base__io_buffer* full_src, uint32_t hash_24_bits) {
 
     } else if (status.repr == wuffs_base__suspension__short_read) {
       // Some Wuffs packages can yield "$short read" for a closed io_reader,
-      // but Wuffs' json package does not.
+      // but Wuffs' cbor package does not.
       if (src.meta.closed) {
         return "fuzz: internal error: short read on a closed io_reader";
       }
@@ -380,9 +356,9 @@ fuzz_complex(wuffs_base__io_buffer* full_src, uint32_t hash_24_bits) {
 
 const char*  //
 fuzz_simple(wuffs_base__io_buffer* full_src) {
-  wuffs_json__decoder dec;
+  wuffs_cbor__decoder dec;
   wuffs_base__status status =
-      wuffs_json__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
+      wuffs_cbor__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
   if (!wuffs_base__status__is_ok(&status)) {
     return wuffs_base__status__message(&status);
   }
@@ -396,7 +372,7 @@ fuzz_simple(wuffs_base__io_buffer* full_src) {
   });
 
   while (true) {
-    status = wuffs_json__decoder__decode_tokens(
+    status = wuffs_cbor__decoder__decode_tokens(
         &dec, &tok, full_src,
         wuffs_base__make_slice_u8(g_work_buffer_array, WORK_BUFFER_ARRAY_SIZE));
     if (status.repr == NULL) {

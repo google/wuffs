@@ -22,6 +22,10 @@ pub status "#unsupported recursion depth"
 
 pri status "#internal error: inconsistent I/O"
 
+// --------
+
+// DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE is the largest workbuf length that a
+// decoder will request.
 pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0
 
 // DECODER_DEPTH_MAX_INCL is the maximum supported recursion depth: how deeply
