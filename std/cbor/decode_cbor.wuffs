@@ -414,7 +414,6 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 					value_minor: (base.TOKEN__VBC__STRING << 21) |
 					base.TOKEN__VBD__STRING__DEFINITELY_UTF_8 |
 					base.TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8 |
-					base.TOKEN__VBD__STRING__DEFINITELY_ASCII |
 					base.TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY,
 					continued: continued,
 					length: token_length)

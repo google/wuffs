@@ -17048,7 +17048,7 @@ wuffs_cbor__decoder__decode_tokens(
               }
               (iop_a_src += v_token_length, wuffs_base__make_empty_struct());
               *iop_a_dst++ = wuffs_base__make_token(
-                  (((uint64_t)(4194835)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                  (((uint64_t)(4194819)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                   (((uint64_t)(v_continued)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
                   (((uint64_t)(v_token_length)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
               if (v_string_length > 0) {
