@@ -27,9 +27,15 @@ DecodeJsonResult::DecodeJsonResult(std::string&& error_message0,
     : error_message(std::move(error_message0)),
       cursor_position(cursor_position0) {}
 
-void DecodeJsonCallbacks::Done(DecodeJsonResult& result,
-                               sync_io::Input& input,
-                               IOBuffer& buffer) {}
+std::string  //
+DecodeJsonCallbacks::AppendByteString(std::string&& val) {
+  return "wuffs_aux::JsonDecoder: unexpected JSON byte string";
+}
+
+void  //
+DecodeJsonCallbacks::Done(DecodeJsonResult& result,
+                          sync_io::Input& input,
+                          IOBuffer& buffer) {}
 
 DecodeJsonResult  //
 DecodeJson(DecodeJsonCallbacks&& callbacks,
@@ -158,13 +164,43 @@ DecodeJson(DecodeJsonCallbacks&& callbacks,
             const char* ptr =  // Convert from (uint8_t*).
                 static_cast<const char*>(static_cast<void*>(token_ptr));
             str.append(ptr, token_len);
+          } else if (
+              vbd &
+              WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_1_DST_4_SRC_BACKSLASH_X) {
+            wuffs_base__slice_u8 encoded =
+                wuffs_base__make_slice_u8(token_ptr, token_len);
+            while (encoded.len > 0) {
+              uint8_t decoded[64];
+              constexpr bool src_closed = true;
+              wuffs_base__transform__output o = wuffs_base__base_16__decode4(
+                  wuffs_base__make_slice_u8(&decoded[0], sizeof decoded),
+                  encoded, src_closed, WUFFS_BASE__BASE_16__DEFAULT_OPTIONS);
+              if (o.status.is_error()) {
+                ret_error_message = o.status.message();
+                goto done;
+              } else if ((o.num_dst > (sizeof decoded)) ||
+                         (o.num_src > encoded.len)) {
+                ret_error_message =
+                    "wuffs_aux::JsonDecoder: internal error: inconsistent "
+                    "base16 decoding";
+                goto done;
+              }
+              str.append(  // Convert from (uint8_t*).
+                  static_cast<const char*>(static_cast<void*>(&decoded[0])),
+                  o.num_dst);
+              encoded.ptr += o.num_src;
+              encoded.len -= o.num_src;
+            }
           } else {
             goto fail;
           }
           if (token.continued()) {
             continue;
           }
-          ret_error_message = callbacks.AppendTextString(std::move(str));
+          ret_error_message =
+              (vbd & WUFFS_BASE__TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8)
+                  ? callbacks.AppendTextString(std::move(str))
+                  : callbacks.AppendByteString(std::move(str));
           str.clear();
           goto parsed_a_value;
         }

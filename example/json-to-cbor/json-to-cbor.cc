@@ -275,6 +275,11 @@ class Callbacks : public wuffs_aux::DecodeJsonCallbacks {
                       : Append(static_cast<uint64_t>(-(val + 1)), 0x20);
   }
 
+  virtual std::string AppendByteString(std::string&& val) {
+    TRY(Append(val.size(), 0x40));
+    return write_dst(val.data(), val.size());
+  }
+
   virtual std::string AppendTextString(std::string&& val) {
     TRY(Append(val.size(), 0x60));
     return write_dst(val.data(), val.size());

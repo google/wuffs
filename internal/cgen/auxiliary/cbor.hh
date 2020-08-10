@@ -62,6 +62,8 @@ class DecodeCborCallbacks {
   //
   // Do not keep a reference to buffer or buffer.data.ptr after Done returns,
   // as DecodeCbor may then de-allocate the backing array.
+  //
+  // The default Done implementation is a no-op.
   virtual void Done(DecodeCborResult& result,
                     sync_io::Input& input,
                     IOBuffer& buffer);
