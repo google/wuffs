@@ -112,6 +112,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 	var c            : base.u8
 	var c_major      : base.u8[..= 0x07]
 	var c_minor      : base.u8[..= 0x1F]
+	var tagged       : base.bool
 
 	// indefinite_string_major_type is 2 or 3 when we are in an
 	// indefinite-length byte string or text string. It is 0 otherwise.
@@ -484,6 +485,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 			this.stack[stack_byte] &= 0xFFFF_FFFF ^ ((3 as base.u32) << stack_bit)
 			this.container_num_remaining[depth] = string_length
 			depth += 1
+			tagged = false
 			continue.outer
 			// -------- END   Major type 4: an array of data items.
 
@@ -545,6 +547,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 			this.stack[stack_byte] |= (3 as base.u32) << stack_bit
 			this.container_num_remaining[depth] = string_length
 			depth += 1
+			tagged = false
 			continue.outer
 			// -------- END   Major type 5: a map of pairs of data items.
 
@@ -573,6 +576,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 					continued: 0,
 					length: TOKEN_LENGTHS[c_minor] as base.u32)
 			}
+			tagged = true
 			continue.outer
 			// -------- END   Major type 6: tags.
 
@@ -621,7 +625,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 			} else if c_minor == 0x1F {
 				// Indefinite-length strings were dealt with separately, above.
 				// Here, we expect to be in an indefinite-length container.
-				if depth <= 0 {
+				if tagged or (depth <= 0) {
 					break.goto_fail
 				}
 				depth -= 1
@@ -683,6 +687,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 
 		// We've just parsed a leaf (non-container) value, or the (explicit or
 		// implicit) close of a container (array or object).
+		tagged = false
 		while depth > 0 {
 			// Toggle the key/value bit for object containers. This bit is
 			// ignored for array containers.

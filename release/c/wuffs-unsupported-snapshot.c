@@ -5761,6 +5761,7 @@ struct wuffs_cbor__decoder__struct {
       uint64_t v_string_length;
       uint32_t v_depth;
       uint32_t v_token_length;
+      bool v_tagged;
       uint8_t v_indefinite_string_major_type;
     } s_decode_tokens[1];
   } private_data;
@@ -16759,6 +16760,7 @@ wuffs_cbor__decoder__decode_tokens(
   uint8_t v_c = 0;
   uint8_t v_c_major = 0;
   uint8_t v_c_minor = 0;
+  bool v_tagged = false;
   uint8_t v_indefinite_string_major_type = 0;
 
   wuffs_base__token* iop_a_dst = NULL;
@@ -16790,6 +16792,7 @@ wuffs_cbor__decoder__decode_tokens(
     v_string_length = self->private_data.s_decode_tokens[0].v_string_length;
     v_depth = self->private_data.s_decode_tokens[0].v_depth;
     v_token_length = self->private_data.s_decode_tokens[0].v_token_length;
+    v_tagged = self->private_data.s_decode_tokens[0].v_tagged;
     v_indefinite_string_major_type = self->private_data.s_decode_tokens[0].v_indefinite_string_major_type;
   }
   switch (coro_susp_point) {
@@ -17089,6 +17092,7 @@ wuffs_cbor__decoder__decode_tokens(
             self->private_data.f_stack[v_stack_byte] &= (4294967295 ^ (((uint32_t)(3)) << v_stack_bit));
             self->private_data.f_container_num_remaining[v_depth] = v_string_length;
             v_depth += 1;
+            v_tagged = false;
             goto label__outer__continue;
           } else if (v_c_major == 5) {
             if (WUFFS_CBOR__TOKEN_LENGTHS[v_c_minor] == 0) {
@@ -17124,6 +17128,7 @@ wuffs_cbor__decoder__decode_tokens(
             self->private_data.f_stack[v_stack_byte] |= (((uint32_t)(3)) << v_stack_bit);
             self->private_data.f_container_num_remaining[v_depth] = v_string_length;
             v_depth += 1;
+            v_tagged = false;
             goto label__outer__continue;
           } else if (v_c_major == 6) {
             if (v_c_minor >= 28) {
@@ -17144,6 +17149,7 @@ wuffs_cbor__decoder__decode_tokens(
                   (~(v_string_length & 70368744177663) << WUFFS_BASE__TOKEN__VALUE_EXTENSION__SHIFT) |
                   (((uint64_t)(((uint32_t)(WUFFS_CBOR__TOKEN_LENGTHS[v_c_minor])))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
             }
+            v_tagged = true;
             goto label__outer__continue;
           } else if (v_c_major == 7) {
             if (v_c_minor < 20) {
@@ -17172,7 +17178,7 @@ wuffs_cbor__decoder__decode_tokens(
                   (((uint64_t)(((uint32_t)(WUFFS_CBOR__TOKEN_LENGTHS[v_c_minor])))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
               goto label__goto_parsed_a_leaf_value__break;
             } else if (v_c_minor == 31) {
-              if (v_depth <= 0) {
+              if (v_tagged || (v_depth <= 0)) {
                 goto label__goto_fail__break;
               }
               v_depth -= 1;
@@ -17219,6 +17225,7 @@ wuffs_cbor__decoder__decode_tokens(
         goto exit;
       }
       label__goto_parsed_a_leaf_value__break:;
+      v_tagged = false;
       while (v_depth > 0) {
         v_stack_byte = ((v_depth - 1) / 16);
         v_stack_bit = (((v_depth - 1) & 15) * 2);
@@ -17280,6 +17287,7 @@ wuffs_cbor__decoder__decode_tokens(
   self->private_data.s_decode_tokens[0].v_string_length = v_string_length;
   self->private_data.s_decode_tokens[0].v_depth = v_depth;
   self->private_data.s_decode_tokens[0].v_token_length = v_token_length;
+  self->private_data.s_decode_tokens[0].v_tagged = v_tagged;
   self->private_data.s_decode_tokens[0].v_indefinite_string_major_type = v_indefinite_string_major_type;
 
   goto exit;

@@ -103,10 +103,16 @@ test_wuffs_cbor_decode_invalid() {
   char* test_cases[] = {
       // Truncated (integer; major type 0) value.
       "\x18",
+      // Tag in array, immediately before an 0xFF stop code. Some discussion is
+      // at https://github.com/cbor/cbor.github.io/issues/65
+      "\x9F\xD0\xFF",
       // Map with 1 element (an odd number).
       "\xA1\x01",
       // Map with 3 elements (an odd number).
       "\xBF\x01\x02\x03\xFF",
+      // Tag in map, immediately before an 0xFF stop code. Some discussion is
+      // at https://github.com/cbor/cbor.github.io/issues/65
+      "\xBF\xD0\xFF",
       // Unused opcode.
       "\xFE",
   };
@@ -147,6 +153,10 @@ test_wuffs_cbor_decode_valid() {
   char* test_cases[] = {
       // Map with 2 elements (an even number).
       "\xA1\x01\x02",
+      // Tag immediately before an empty array.
+      "\xD0\x9F\xFF",
+      // Tag immediately before an empty map.
+      "\xD0\xBF\xFF",
   };
 
   int tc;
