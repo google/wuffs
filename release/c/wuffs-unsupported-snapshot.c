@@ -904,9 +904,63 @@ wuffs_base__empty_slice_u8() {
   return ret;
 }
 
+static inline wuffs_base__slice_u16  //
+wuffs_base__empty_slice_u16() {
+  wuffs_base__slice_u16 ret;
+  ret.ptr = NULL;
+  ret.len = 0;
+  return ret;
+}
+
+static inline wuffs_base__slice_u32  //
+wuffs_base__empty_slice_u32() {
+  wuffs_base__slice_u32 ret;
+  ret.ptr = NULL;
+  ret.len = 0;
+  return ret;
+}
+
+static inline wuffs_base__slice_u64  //
+wuffs_base__empty_slice_u64() {
+  wuffs_base__slice_u64 ret;
+  ret.ptr = NULL;
+  ret.len = 0;
+  return ret;
+}
+
 static inline wuffs_base__table_u8  //
 wuffs_base__empty_table_u8() {
   wuffs_base__table_u8 ret;
+  ret.ptr = NULL;
+  ret.width = 0;
+  ret.height = 0;
+  ret.stride = 0;
+  return ret;
+}
+
+static inline wuffs_base__table_u16  //
+wuffs_base__empty_table_u16() {
+  wuffs_base__table_u16 ret;
+  ret.ptr = NULL;
+  ret.width = 0;
+  ret.height = 0;
+  ret.stride = 0;
+  return ret;
+}
+
+static inline wuffs_base__table_u32  //
+wuffs_base__empty_table_u32() {
+  wuffs_base__table_u32 ret;
+  ret.ptr = NULL;
+  ret.width = 0;
+  ret.height = 0;
+  ret.stride = 0;
+  return ret;
+}
+
+static inline wuffs_base__table_u64  //
+wuffs_base__empty_table_u64() {
+  wuffs_base__table_u64 ret;
   ret.ptr = NULL;
   ret.width = 0;
   ret.height = 0;
@@ -8479,9 +8533,10 @@ class DecodeCborCallbacks {
 // the number of bytes consumed. On failure, error_message is non-empty and
 // cursor_position is the location of the error. That error may be a content
 // error (invalid CBOR) or an input error (e.g. network failure).
-DecodeCborResult DecodeCbor(DecodeCborCallbacks&& callbacks,
-                            sync_io::Input&& input,
-                            wuffs_base__slice_u32 quirks);
+DecodeCborResult DecodeCbor(
+    DecodeCborCallbacks&& callbacks,
+    sync_io::Input&& input,
+    wuffs_base__slice_u32 quirks = wuffs_base__empty_slice_u32());
 
 }  // namespace wuffs_aux
 
@@ -8555,9 +8610,10 @@ class DecodeJsonCallbacks {
 // the number of bytes consumed. On failure, error_message is non-empty and
 // cursor_position is the location of the error. That error may be a content
 // error (invalid JSON) or an input error (e.g. network failure).
-DecodeJsonResult DecodeJson(DecodeJsonCallbacks&& callbacks,
-                            sync_io::Input&& input,
-                            wuffs_base__slice_u32 quirks);
+DecodeJsonResult DecodeJson(
+    DecodeJsonCallbacks&& callbacks,
+    sync_io::Input&& input,
+    wuffs_base__slice_u32 quirks = wuffs_base__empty_slice_u32());
 
 }  // namespace wuffs_aux
 

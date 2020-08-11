@@ -143,8 +143,6 @@ bool g_wrote_to_dst;
 
 std::vector<uint64_t> g_cbor_tags;
 
-std::vector<uint32_t> g_quirks;
-
 struct {
   int remaining_argc;
   char** remaining_argv;
@@ -622,9 +620,7 @@ main1(int argc, char** argv) {
     }
   }
 
-  return wuffs_aux::DecodeCbor(
-             Callbacks(), wuffs_aux::sync_io::FileInput(in),
-             wuffs_base__make_slice_u32(g_quirks.data(), g_quirks.size()))
+  return wuffs_aux::DecodeCbor(Callbacks(), wuffs_aux::sync_io::FileInput(in))
       .error_message;
 }
 

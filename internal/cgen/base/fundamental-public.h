@@ -830,9 +830,63 @@ wuffs_base__empty_slice_u8() {
   return ret;
 }
 
+static inline wuffs_base__slice_u16  //
+wuffs_base__empty_slice_u16() {
+  wuffs_base__slice_u16 ret;
+  ret.ptr = NULL;
+  ret.len = 0;
+  return ret;
+}
+
+static inline wuffs_base__slice_u32  //
+wuffs_base__empty_slice_u32() {
+  wuffs_base__slice_u32 ret;
+  ret.ptr = NULL;
+  ret.len = 0;
+  return ret;
+}
+
+static inline wuffs_base__slice_u64  //
+wuffs_base__empty_slice_u64() {
+  wuffs_base__slice_u64 ret;
+  ret.ptr = NULL;
+  ret.len = 0;
+  return ret;
+}
+
 static inline wuffs_base__table_u8  //
 wuffs_base__empty_table_u8() {
   wuffs_base__table_u8 ret;
+  ret.ptr = NULL;
+  ret.width = 0;
+  ret.height = 0;
+  ret.stride = 0;
+  return ret;
+}
+
+static inline wuffs_base__table_u16  //
+wuffs_base__empty_table_u16() {
+  wuffs_base__table_u16 ret;
+  ret.ptr = NULL;
+  ret.width = 0;
+  ret.height = 0;
+  ret.stride = 0;
+  return ret;
+}
+
+static inline wuffs_base__table_u32  //
+wuffs_base__empty_table_u32() {
+  wuffs_base__table_u32 ret;
+  ret.ptr = NULL;
+  ret.width = 0;
+  ret.height = 0;
+  ret.stride = 0;
+  return ret;
+}
+
+static inline wuffs_base__table_u64  //
+wuffs_base__empty_table_u64() {
+  wuffs_base__table_u64 ret;
   ret.ptr = NULL;
   ret.width = 0;
   ret.height = 0;

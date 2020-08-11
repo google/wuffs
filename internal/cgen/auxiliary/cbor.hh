@@ -75,8 +75,9 @@ class DecodeCborCallbacks {
 // the number of bytes consumed. On failure, error_message is non-empty and
 // cursor_position is the location of the error. That error may be a content
 // error (invalid CBOR) or an input error (e.g. network failure).
-DecodeCborResult DecodeCbor(DecodeCborCallbacks&& callbacks,
-                            sync_io::Input&& input,
-                            wuffs_base__slice_u32 quirks);
+DecodeCborResult DecodeCbor(
+    DecodeCborCallbacks&& callbacks,
+    sync_io::Input&& input,
+    wuffs_base__slice_u32 quirks = wuffs_base__empty_slice_u32());
 
 }  // namespace wuffs_aux
