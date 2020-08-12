@@ -623,6 +623,10 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 
 			} else if c_minor == 0x18 {
 				if string_length < 0x18 {
+					if not args.src.can_undo_byte() {
+						return "#internal error: inconsistent I/O"
+					}
+					args.src.undo_byte!()
 					break.goto_fail
 				}
 				args.dst.write_simple_token_fast!(

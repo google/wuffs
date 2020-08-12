@@ -17239,6 +17239,11 @@ wuffs_cbor__decoder__decode_tokens(
               goto label__goto_parsed_a_leaf_value__break;
             } else if (v_c_minor == 24) {
               if (v_string_length < 24) {
+                if ( ! (iop_a_src > io1_a_src)) {
+                  status = wuffs_base__make_status(wuffs_cbor__error__internal_error_inconsistent_i_o);
+                  goto exit;
+                }
+                (iop_a_src--, wuffs_base__make_empty_struct());
                 goto label__goto_fail__break;
               }
               *iop_a_dst++ = wuffs_base__make_token(
