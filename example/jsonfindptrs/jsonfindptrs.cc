@@ -106,6 +106,7 @@ static const char* g_usage =
     "\n"
     "Flags:\n"
     "    -d=NUM  -max-output-depth=NUM\n"
+    "    -q=STR  -query=STR\n"
     "            -input-allow-comments\n"
     "            -input-allow-extra-comma\n"
     "            -input-allow-inf-nan-numbers\n"
@@ -193,6 +194,7 @@ struct {
   char** remaining_argv;
 
   uint32_t max_output_depth;
+  char* query_c_string;
   bool strict_json_pointer_syntax;
 } g_flags = {0};
 
@@ -247,6 +249,12 @@ parse_flags(int argc, char** argv) {
     }
     if (!strcmp(arg, "input-allow-inf-nan-numbers")) {
       g_quirks.push_back(WUFFS_JSON__QUIRK_ALLOW_INF_NAN_NUMBERS);
+      continue;
+    }
+    if (!strncmp(arg, "q=", 2) || !strncmp(arg, "query=", 6)) {
+      while (*arg++ != '=') {
+      }
+      g_flags.query_c_string = arg;
       continue;
     }
     if (!strcmp(arg, "strict-json-pointer-syntax")) {
@@ -506,7 +514,8 @@ main1(int argc, char** argv) {
 
   return wuffs_aux::DecodeJson(
              Callbacks(), wuffs_aux::sync_io::FileInput(in),
-             wuffs_base__make_slice_u32(g_quirks.data(), g_quirks.size()))
+             wuffs_base__make_slice_u32(g_quirks.data(), g_quirks.size()),
+             (g_flags.query_c_string ? g_flags.query_c_string : ""))
       .error_message;
 }
 

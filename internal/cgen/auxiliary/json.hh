@@ -78,15 +78,27 @@ class DecodeJsonCallbacks {
                     IOBuffer& buffer);
 };
 
+extern const char DecodeJson_BadJsonPointer[];
+extern const char DecodeJson_NoMatch[];
+
 // DecodeJson calls callbacks based on the JSON-formatted data in input.
 //
 // On success, the returned error_message is empty and cursor_position counts
 // the number of bytes consumed. On failure, error_message is non-empty and
 // cursor_position is the location of the error. That error may be a content
 // error (invalid JSON) or an input error (e.g. network failure).
+//
+// json_pointer is a query in the JSON Pointer (RFC 6901) syntax. The callbacks
+// run for the input's sub-node that matches the query. DecodeJson_NoMatch is
+// returned if no matching sub-node was found. The empty query matches the
+// input's root node, consistent with JSON Pointer semantics.
+//
+// The JSON Pointer implementation is greedy: duplicate keys are not rejected
+// but only the first match for each '/'-separated fragment is followed.
 DecodeJsonResult DecodeJson(
     DecodeJsonCallbacks&& callbacks,
     sync_io::Input&& input,
-    wuffs_base__slice_u32 quirks = wuffs_base__empty_slice_u32());
+    wuffs_base__slice_u32 quirks = wuffs_base__empty_slice_u32(),
+    std::string json_pointer = std::string());
 
 }  // namespace wuffs_aux
