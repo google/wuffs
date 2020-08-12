@@ -90,6 +90,7 @@ const char DecodeJson_NoMatch[] = "wuffs_aux::DecodeJson: no match";
     goto done;                                                           \
   }                                                                      \
   uint8_t* token_ptr = io_buf->data.ptr + cursor_index;                  \
+  (void)(token_ptr);                                                     \
   cursor_index += token_len
 
 // --------
