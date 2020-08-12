@@ -29386,6 +29386,8 @@ const char DecodeJson_BadJsonPointer[] =
     "wuffs_aux::DecodeJson: bad JSON Pointer";
 const char DecodeJson_NoMatch[] = "wuffs_aux::DecodeJson: no match";
 
+// --------
+
 #define WUFFS_AUX__DECODE_JSON__GET_THE_NEXT_TOKEN                       \
   while (tok_buf.meta.ri >= tok_buf.meta.wi) {                           \
     if (tok_status.repr == nullptr) {                                    \
@@ -29434,6 +29436,8 @@ const char DecodeJson_NoMatch[] = "wuffs_aux::DecodeJson: no match";
   }                                                                      \
   uint8_t* token_ptr = io_buf->data.ptr + cursor_index;                  \
   cursor_index += token_len
+
+// --------
 
 namespace {
 
@@ -29510,6 +29514,8 @@ DecodeJson_DecodeBackslashX(std::string& str,
   }
   return "";
 }
+
+// --------
 
 std::string  //
 DecodeJson_WalkJsonPointerFragment(wuffs_base__token_buffer& tok_buf,
@@ -29700,6 +29706,8 @@ done:
 }
 
 }  // namespace
+
+// --------
 
 DecodeJsonResult  //
 DecodeJson(DecodeJsonCallbacks&& callbacks,
