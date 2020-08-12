@@ -92,10 +92,15 @@ const char DecodeJson_NoMatch[] = "wuffs_aux::DecodeJson: no match";
 
 namespace {
 
-// DecodeJson_SplitJsonPointer returns ("bar", 8) for ("/foo/bar/baz/qux", 5).
-// It returns a 0 size_t when s has invalid JSON Pointer syntax.
+// DecodeJson_SplitJsonPointer returns ("bar", 8) for ("/foo/bar/b~1z/qux", 5,
+// etc). It returns a 0 size_t when s has invalid JSON Pointer syntax.
+//
+// The string returned is unescaped. If calling it again, this time with i=8,
+// the "b~1z" substring would be returned as "b/z".
 std::pair<std::string, size_t>  //
-DecodeJson_SplitJsonPointer(std::string& s, size_t i) {
+DecodeJson_SplitJsonPointer(std::string& s,
+                            size_t i,
+                            bool allow_tilde_r_tilde_n) {
   std::string fragment;
   while (i < s.size()) {
     char c = s[i];
@@ -119,6 +124,16 @@ DecodeJson_SplitJsonPointer(std::string& s, size_t i) {
       fragment.push_back('/');
       i++;
       continue;
+    } else if (allow_tilde_r_tilde_n) {
+      if (c == 'r') {
+        fragment.push_back('\r');
+        i++;
+        continue;
+      } else if (c == 'n') {
+        fragment.push_back('\n');
+        i++;
+        continue;
+      }
     }
     return std::make_pair(std::string(), 0);
   }
@@ -366,8 +381,13 @@ DecodeJson(DecodeJsonCallbacks&& callbacks,
       ret_error_message = "wuffs_aux::DecodeJson: out of memory";
       goto done;
     }
+    bool allow_tilde_r_tilde_n = false;
     for (size_t i = 0; i < quirks.len; i++) {
       dec->set_quirk_enabled(quirks.ptr[i], true);
+      if (quirks.ptr[i] ==
+          WUFFS_JSON__QUIRK_JSON_POINTER_ALLOW_TILDE_R_TILDE_N) {
+        allow_tilde_r_tilde_n = true;
+      }
     }
 
     // Prepare the wuffs_base__tok_buffer.
@@ -387,8 +407,8 @@ DecodeJson(DecodeJsonCallbacks&& callbacks,
         ret_error_message = DecodeJson_BadJsonPointer;
         goto done;
       }
-      std::pair<std::string, size_t> split =
-          DecodeJson_SplitJsonPointer(json_pointer, i + 1);
+      std::pair<std::string, size_t> split = DecodeJson_SplitJsonPointer(
+          json_pointer, i + 1, allow_tilde_r_tilde_n);
       i = std::move(split.second);
       if (i == 0) {
         ret_error_message = DecodeJson_BadJsonPointer;

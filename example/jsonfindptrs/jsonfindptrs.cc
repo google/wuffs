@@ -501,6 +501,9 @@ class Callbacks : public wuffs_aux::DecodeJsonCallbacks {
 std::string  //
 main1(int argc, char** argv) {
   TRY(parse_flags(argc, argv));
+  if (!g_flags.strict_json_pointer_syntax) {
+    g_quirks.push_back(WUFFS_JSON__QUIRK_JSON_POINTER_ALLOW_TILDE_R_TILDE_N);
+  }
 
   FILE* in = stdin;
   if (g_flags.remaining_argc > 1) {

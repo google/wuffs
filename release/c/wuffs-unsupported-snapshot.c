@@ -7625,7 +7625,9 @@ extern const char wuffs_json__error__unsupported_recursion_depth[];
 
 #define WUFFS_JSON__QUIRK_ALLOW_TRAILING_NEW_LINE 1225364497
 
-#define WUFFS_JSON__QUIRK_REPLACE_INVALID_UNICODE 1225364498
+#define WUFFS_JSON__QUIRK_JSON_POINTER_ALLOW_TILDE_R_TILDE_N 1225364498
+
+#define WUFFS_JSON__QUIRK_REPLACE_INVALID_UNICODE 1225364499
 
 // ---------------- Struct Declarations
 
@@ -7715,7 +7717,7 @@ struct wuffs_json__decoder__struct {
     wuffs_base__vtable vtable_for__wuffs_base__token_decoder;
     wuffs_base__vtable null_vtable;
 
-    bool f_quirks[19];
+    bool f_quirks[20];
     bool f_allow_leading_ars;
     bool f_allow_leading_ubom;
     bool f_end_of_data;
@@ -25710,7 +25712,7 @@ WUFFS_JSON__LUT_HEXADECIMAL_DIGITS[256]WUFFS_BASE__POTENTIALLY_UNUSED = {
 
 #define WUFFS_JSON__QUIRKS_BASE 1225364480
 
-#define WUFFS_JSON__QUIRKS_COUNT 19
+#define WUFFS_JSON__QUIRKS_COUNT 20
 
 // ---------------- Private Initializer Prototypes
 
@@ -25852,7 +25854,7 @@ wuffs_json__decoder__set_quirk_enabled(
 
   if (a_quirk >= 1225364480) {
     a_quirk -= 1225364480;
-    if (a_quirk < 19) {
+    if (a_quirk < 20) {
       self->private_impl.f_quirks[a_quirk] = a_enabled;
     }
   }
@@ -26214,7 +26216,7 @@ wuffs_json__decoder__decode_tokens(
                   } else {
                     if (((uint64_t)(io2_a_src - iop_a_src)) < 12) {
                       if (a_src && a_src->meta.closed) {
-                        if (self->private_impl.f_quirks[18]) {
+                        if (self->private_impl.f_quirks[19]) {
                           (iop_a_src += 6, wuffs_base__make_empty_struct());
                           *iop_a_dst++ = wuffs_base__make_token(
                               (((uint64_t)(6356989)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
@@ -26265,7 +26267,7 @@ wuffs_json__decoder__decode_tokens(
                       goto label__string_loop_outer__continue;
                     }
                   }
-                  if (self->private_impl.f_quirks[18]) {
+                  if (self->private_impl.f_quirks[19]) {
                     if (((uint64_t)(io2_a_src - iop_a_src)) < 6) {
                       status = wuffs_base__make_status(wuffs_json__error__internal_error_inconsistent_i_o);
                       goto exit;
@@ -26324,7 +26326,7 @@ wuffs_json__decoder__decode_tokens(
                         (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
                         (((uint64_t)(10)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
                     goto label__string_loop_outer__continue;
-                  } else if (self->private_impl.f_quirks[18]) {
+                  } else if (self->private_impl.f_quirks[19]) {
                     (iop_a_src += 10, wuffs_base__make_empty_struct());
                     *iop_a_dst++ = wuffs_base__make_token(
                         (((uint64_t)(6356989)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
@@ -26416,7 +26418,7 @@ wuffs_json__decoder__decode_tokens(
                     }
                   }
                   if (a_src && a_src->meta.closed) {
-                    if (self->private_impl.f_quirks[18]) {
+                    if (self->private_impl.f_quirks[19]) {
                       *iop_a_dst++ = wuffs_base__make_token(
                           (((uint64_t)(6356989)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                           (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
@@ -26461,7 +26463,7 @@ wuffs_json__decoder__decode_tokens(
                     }
                   }
                   if (a_src && a_src->meta.closed) {
-                    if (self->private_impl.f_quirks[18]) {
+                    if (self->private_impl.f_quirks[19]) {
                       *iop_a_dst++ = wuffs_base__make_token(
                           (((uint64_t)(6356989)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                           (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
@@ -26508,7 +26510,7 @@ wuffs_json__decoder__decode_tokens(
                     }
                   }
                   if (a_src && a_src->meta.closed) {
-                    if (self->private_impl.f_quirks[18]) {
+                    if (self->private_impl.f_quirks[19]) {
                       *iop_a_dst++ = wuffs_base__make_token(
                           (((uint64_t)(6356989)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                           (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
@@ -26568,7 +26570,7 @@ wuffs_json__decoder__decode_tokens(
                 status = wuffs_base__make_status(wuffs_json__error__bad_c0_control_code);
                 goto exit;
               }
-              if (self->private_impl.f_quirks[18]) {
+              if (self->private_impl.f_quirks[19]) {
                 *iop_a_dst++ = wuffs_base__make_token(
                     (((uint64_t)(6356989)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                     (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
@@ -29435,10 +29437,15 @@ const char DecodeJson_NoMatch[] = "wuffs_aux::DecodeJson: no match";
 
 namespace {
 
-// DecodeJson_SplitJsonPointer returns ("bar", 8) for ("/foo/bar/baz/qux", 5).
-// It returns a 0 size_t when s has invalid JSON Pointer syntax.
+// DecodeJson_SplitJsonPointer returns ("bar", 8) for ("/foo/bar/b~1z/qux", 5,
+// etc). It returns a 0 size_t when s has invalid JSON Pointer syntax.
+//
+// The string returned is unescaped. If calling it again, this time with i=8,
+// the "b~1z" substring would be returned as "b/z".
 std::pair<std::string, size_t>  //
-DecodeJson_SplitJsonPointer(std::string& s, size_t i) {
+DecodeJson_SplitJsonPointer(std::string& s,
+                            size_t i,
+                            bool allow_tilde_r_tilde_n) {
   std::string fragment;
   while (i < s.size()) {
     char c = s[i];
@@ -29462,6 +29469,16 @@ DecodeJson_SplitJsonPointer(std::string& s, size_t i) {
       fragment.push_back('/');
       i++;
       continue;
+    } else if (allow_tilde_r_tilde_n) {
+      if (c == 'r') {
+        fragment.push_back('\r');
+        i++;
+        continue;
+      } else if (c == 'n') {
+        fragment.push_back('\n');
+        i++;
+        continue;
+      }
     }
     return std::make_pair(std::string(), 0);
   }
@@ -29709,8 +29726,13 @@ DecodeJson(DecodeJsonCallbacks&& callbacks,
       ret_error_message = "wuffs_aux::DecodeJson: out of memory";
       goto done;
     }
+    bool allow_tilde_r_tilde_n = false;
     for (size_t i = 0; i < quirks.len; i++) {
       dec->set_quirk_enabled(quirks.ptr[i], true);
+      if (quirks.ptr[i] ==
+          WUFFS_JSON__QUIRK_JSON_POINTER_ALLOW_TILDE_R_TILDE_N) {
+        allow_tilde_r_tilde_n = true;
+      }
     }
 
     // Prepare the wuffs_base__tok_buffer.
@@ -29730,8 +29752,8 @@ DecodeJson(DecodeJsonCallbacks&& callbacks,
         ret_error_message = DecodeJson_BadJsonPointer;
         goto done;
       }
-      std::pair<std::string, size_t> split =
-          DecodeJson_SplitJsonPointer(json_pointer, i + 1);
+      std::pair<std::string, size_t> split = DecodeJson_SplitJsonPointer(
+          json_pointer, i + 1, allow_tilde_r_tilde_n);
       i = std::move(split.second);
       if (i == 0) {
         ret_error_message = DecodeJson_BadJsonPointer;
