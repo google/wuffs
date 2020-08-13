@@ -158,7 +158,7 @@ pri func decoder.read_from!(src: base.io_reader) {
 	while true {
 		if n_bits < width {
 			assert n_bits < 12 via "a < b: a < c; c <= b"(c: width)
-			if args.src.available() >= 4 {
+			if args.src.length() >= 4 {
 				// Read 4 bytes, using the "Variant 4" technique of
 				// https://fgiesen.wordpress.com/2018/02/20/reading-bits-in-far-too-many-ways-part-2/
 				bits |= args.src.peek_u32le() ~mod<< n_bits
@@ -166,7 +166,7 @@ pri func decoder.read_from!(src: base.io_reader) {
 				n_bits |= 24
 				assert width <= n_bits via "a <= b: a <= c; c <= b"(c: 12)
 				assert n_bits >= width via "a >= b: b <= a"()
-			} else if args.src.available() <= 0 {
+			} else if args.src.length() <= 0 {
 				this.read_from_return_value = 2
 				break
 			} else {
@@ -175,7 +175,7 @@ pri func decoder.read_from!(src: base.io_reader) {
 				n_bits += 8
 				if n_bits >= width {
 					// No-op.
-				} else if args.src.available() <= 0 {
+				} else if args.src.length() <= 0 {
 					this.read_from_return_value = 2
 					break
 				} else {

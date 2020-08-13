@@ -57,12 +57,12 @@ pri func decoder.decode_huffman_fast!(dst: base.io_writer, src: base.io_reader) 
 	// available input, because the H-L Literal/Length code is up to 15 bits
 	// plus up to 5 extra bits, the H-D Distance code is up to 15 bits plus up
 	// to 13 extra bits and 15 + 5 + 15 + 13 == 48. However,
-	// args.src.available() assertions are made in terms of bytes, not bits.
+	// args.src.length() assertions are made in terms of bytes, not bits.
 	//
 	// In theory, we could write assertions that mixed bytes and bits, such as:
 	//
-	// assert ((args.src.available() >= 6) and (n_bits >=  5)) or
-	//        ((args.src.available() >= 4) and (n_bits >= 21))
+	// assert ((args.src.length() >= 6) and (n_bits >=  5)) or
+	//        ((args.src.length() >= 4) and (n_bits >= 21))
 	//
 	// but that looks clumsy and makes the proofs more complicated. Instead, we
 	// are conservative and work in terms of bytes only. In bytes, each code
@@ -70,7 +70,7 @@ pri func decoder.decode_huffman_fast!(dst: base.io_writer, src: base.io_reader) 
 	// for each. There are also up to 13 extra bits, or 2 bytes. Thus, each
 	// code requires up to 2 + 2 + 2 == 6 bytes, and there are two codes (one
 	// from H-L and one from H-D). Therefore, we check for at least 12 bytes.
-	while.loop(args.dst.available() >= 258) and (args.src.available() >= 12) {
+	while.loop(args.dst.length() >= 258) and (args.src.length() >= 12) {
 		// Ensure that we have at least 15 bits of input.
 		if n_bits < 15 {
 			assert n_bits >= 0  // TODO: this shouldn't be necessary.
@@ -82,12 +82,12 @@ pri func decoder.decode_huffman_fast!(dst: base.io_writer, src: base.io_reader) 
 			n_bits += 8
 			assert n_bits >= 15
 		} else {
-			assert args.src.available() >= 10
+			assert args.src.length() >= 10
 		}
 		// These assertions are redundant, but are listed explicitly for
 		// clarity. They must hold regardless of which branch was taken for the
 		// if statement above.
-		assert args.src.available() >= 10
+		assert args.src.length() >= 10
 		assert n_bits >= 15
 
 		// Decode an lcode symbol from H-L.
@@ -102,7 +102,7 @@ pri func decoder.decode_huffman_fast!(dst: base.io_writer, src: base.io_reader) 
 			continue.loop
 		} else if (table_entry >> 30) <> 0 {
 			// No-op; code continues past the if-else chain.
-			assert args.src.available() >= 8
+			assert args.src.length() >= 8
 		} else if (table_entry >> 29) <> 0 {
 			// End of block.
 			this.end_of_block = true
@@ -121,10 +121,10 @@ pri func decoder.decode_huffman_fast!(dst: base.io_writer, src: base.io_reader) 
 				n_bits += 8
 				assert n_bits >= 15
 			} else {
-				assert args.src.available() >= 8
+				assert args.src.length() >= 8
 			}
 			// Once again, redundant but explicit assertions.
-			assert args.src.available() >= 8
+			assert args.src.length() >= 8
 			assert n_bits >= 15
 
 			redir_top = (table_entry >> 8) & 0xFFFF
@@ -153,7 +153,7 @@ pri func decoder.decode_huffman_fast!(dst: base.io_writer, src: base.io_reader) 
 			}
 
 			// Once again, redundant but explicit assertions.
-			assert args.src.available() >= 8
+			assert args.src.length() >= 8
 
 		} else if (table_entry >> 27) <> 0 {
 			return "#bad Huffman code"
@@ -179,10 +179,10 @@ pri func decoder.decode_huffman_fast!(dst: base.io_writer, src: base.io_reader) 
 				n_bits += 8
 				assert n_bits >= 15
 			} else {
-				assert args.src.available() >= 6
+				assert args.src.length() >= 6
 			}
 			// Once again, redundant but explicit assertions.
-			assert args.src.available() >= 6
+			assert args.src.length() >= 6
 			assert n_bits >= 15
 
 			// The "+ 253" is the same as "- 3", after the "& 0xFF", but the
@@ -192,7 +192,7 @@ pri func decoder.decode_huffman_fast!(dst: base.io_writer, src: base.io_reader) 
 			n_bits -= table_entry_n_bits
 
 		} else {
-			assert args.src.available() >= 6
+			assert args.src.length() >= 6
 		}
 
 		// Ensure that we have at least 15 bits of input.
@@ -206,10 +206,10 @@ pri func decoder.decode_huffman_fast!(dst: base.io_writer, src: base.io_reader) 
 			n_bits += 8
 			assert n_bits >= 15
 		} else {
-			assert args.src.available() >= 4
+			assert args.src.length() >= 4
 		}
 		// Once again, redundant but explicit assertions.
-		assert args.src.available() >= 4
+		assert args.src.length() >= 4
 		assert n_bits >= 15
 
 		// Decode a dcode symbol from H-D.
@@ -231,10 +231,10 @@ pri func decoder.decode_huffman_fast!(dst: base.io_writer, src: base.io_reader) 
 				n_bits += 8
 				assert n_bits >= 15
 			} else {
-				assert args.src.available() >= 2
+				assert args.src.length() >= 2
 			}
 			// Once again, redundant but explicit assertions.
-			assert args.src.available() >= 2
+			assert args.src.length() >= 2
 			assert n_bits >= 15
 
 			redir_top = (table_entry >> 8) & 0xFFFF
@@ -244,7 +244,7 @@ pri func decoder.decode_huffman_fast!(dst: base.io_writer, src: base.io_reader) 
 			bits >>= table_entry_n_bits
 			n_bits -= table_entry_n_bits
 		} else {
-			assert args.src.available() >= 2
+			assert args.src.length() >= 2
 		}
 
 		// For H-D, all symbols should be base_number + extra_bits.
@@ -287,7 +287,7 @@ pri func decoder.decode_huffman_fast!(dst: base.io_writer, src: base.io_reader) 
 		// its presence minimizes the diff between decode_huffman_fast and
 		// decode_huffman_slow.
 		while true,
-			pre args.dst.available() >= 258,
+			pre args.dst.length() >= 258,
 		{
 			// Copy from this.history.
 			if ((dist_minus_1 + 1) as base.u64) > args.dst.history_available() {
@@ -316,7 +316,7 @@ pri func decoder.decode_huffman_fast!(dst: base.io_writer, src: base.io_reader) 
 				//
 				// This copying is simpler than the decode_huffman_slow version
 				// because it cannot yield. We have already checked that
-				// args.dst.available() is large enough.
+				// args.dst.length() is large enough.
 				args.dst.limited_copy_u32_from_slice!(
 					up_to: hlen, s: this.history[hdist & 0x7FFF ..])
 
@@ -331,12 +331,12 @@ pri func decoder.decode_huffman_fast!(dst: base.io_writer, src: base.io_reader) 
 			}
 			// Once again, redundant but explicit assertions.
 			assert ((dist_minus_1 + 1) as base.u64) <= args.dst.history_available()
-			assert args.dst.available() >= 258
+			assert args.dst.length() >= 258
 
 			// We can therefore prove:
 			assert (dist_minus_1 + 1) > 0
 			assert (length as base.u64) <= 258
-			assert (length as base.u64) <= args.dst.available() via "a <= b: a <= c; c <= b"(c: 258)
+			assert (length as base.u64) <= args.dst.length() via "a <= b: a <= c; c <= b"(c: 258)
 
 			// Copy from args.dst.
 			args.dst.limited_copy_u32_from_history_fast!(

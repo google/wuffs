@@ -299,7 +299,7 @@ pri func decoder.decode_uncompressed?(dst: base.io_writer, src: base.io_reader) 
 			return ok
 		}
 		length -= n_copied
-		if args.dst.available() == 0 {
+		if args.dst.length() == 0 {
 			yield? base."$short write"
 		} else {
 			yield? base."$short read"

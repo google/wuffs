@@ -179,7 +179,7 @@ pub func config_decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more
 
 	while true {
 		while true,
-			post args.src.available() > 0,
+			post args.src.length() > 0,
 		{
 			if args.src.position() <> this.metadata_io_position {
 				if args.minfo <> nullptr {
@@ -194,7 +194,7 @@ pub func config_decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more
 				continue
 			}
 
-			if args.src.available() <= 0 {
+			if args.src.length() <= 0 {
 				if args.minfo <> nullptr {
 					args.minfo.set!(
 						flavor: 0,
@@ -322,8 +322,8 @@ pub func config_decoder.decode_frame_config?(dst: nptr base.frame_config, src: b
 		if this.quirks[QUIRK_FIRST_FRAME_LOCAL_PALETTE_MEANS_BLACK_BACKGROUND - QUIRKS_BASE] and
 			(this.num_decoded_frame_configs_value == 0) {
 
-			while args.src.available() <= 0,
-				post args.src.available() > 0,
+			while args.src.length() <= 0,
+				post args.src.length() > 0,
 			{
 				yield? base."$short read"
 			} endwhile

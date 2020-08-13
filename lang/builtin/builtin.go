@@ -346,8 +346,8 @@ var Funcs = []string{
 	"io_reader.read_u64be?() u64",
 	"io_reader.read_u64le?() u64",
 
-	// TODO: these should have an explicit pre-condition "available() >= N".
-	// For now, that's implicitly checked (i.e. hard coded).
+	// TODO: these should have an explicit pre-condition "length() >= N". For
+	// now, that's implicitly checked (i.e. hard coded).
 	//
 	// io_reader has peek_etc methods and skip_u32_fast, not read_etc_fast,
 	// because we sometimes advance the pointer by less than what's read. See
@@ -387,9 +387,9 @@ var Funcs = []string{
 	// in practice.
 	"io_reader.peek_u64le_at(offset: u32[..= 0xFFF8]) u64",
 
-	"io_reader.available() u64",
 	"io_reader.count_since(mark: u64) u64",
 	"io_reader.is_closed() bool",
+	"io_reader.length() u64",
 	"io_reader.mark() u64",
 	"io_reader.match7(a: u64) u32[..= 2]",
 	"io_reader.position() u64",
@@ -402,7 +402,7 @@ var Funcs = []string{
 	"io_reader.skip_u32?(n: u32)",
 
 	// TODO: this should have explicit pre-conditions "actual <= worst_case"
-	// and "worst_case <= available()". For now, that's all implicitly checked
+	// and "worst_case <= length()". For now, that's all implicitly checked
 	// (i.e. hard coded).
 	"io_reader.skip_u32_fast!(actual: u32, worst_case: u32)",
 
@@ -424,8 +424,8 @@ var Funcs = []string{
 	"io_writer.write_u64be?(a: u64)",
 	"io_writer.write_u64le?(a: u64)",
 
-	// TODO: these should have an explicit pre-condition "available() >= N".
-	// For now, that's implicitly checked (i.e. hard coded).
+	// TODO: these should have an explicit pre-condition "length() >= N". For
+	// now, that's implicitly checked (i.e. hard coded).
 	//
 	// io_writer has write_etc_fast methods, not poke_etc and skip_u32_fast,
 	// because skip_u32_fast could leave uninitialized bytes in the io_buffer.
@@ -445,9 +445,9 @@ var Funcs = []string{
 	"io_writer.write_u64be_fast!(a: u64)",
 	"io_writer.write_u64le_fast!(a: u64)",
 
-	"io_writer.available() u64",
 	"io_writer.count_since(mark: u64) u64",
 	"io_writer.history_available() u64",
+	"io_writer.length() u64",
 	"io_writer.mark() u64",
 	"io_writer.position() u64",
 	"io_writer.since(mark: u64) slice u8",
@@ -458,7 +458,7 @@ var Funcs = []string{
 	"io_writer.limited_copy_u32_from_slice!(up_to: u32, s: slice u8) u32",
 
 	// TODO: this should have explicit pre-conditions:
-	//  - up_to <= this.available()
+	//  - up_to <= this.length()
 	//  - distance > 0
 	//  - distance <= this.since_mark().length()
 	// For now, that's all implicitly checked (i.e. hard coded).
@@ -473,7 +473,7 @@ var Funcs = []string{
 		"value_extension: u64[..= 0x3FFF_FFFF_FFFF]," +
 		"continued: u32[..= 0x1], length: u32[..= 0xFFFF])",
 
-	"token_writer.available() u64",
+	"token_writer.length() u64",
 
 	// ---- frame_config
 

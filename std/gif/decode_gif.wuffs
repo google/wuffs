@@ -218,7 +218,7 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 
 	while true {
 		while true,
-			post args.src.available() > 0,
+			post args.src.length() > 0,
 		{
 			if args.src.position() <> this.metadata_io_position {
 				if args.minfo <> nullptr {
@@ -233,7 +233,7 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 				continue
 			}
 
-			if args.src.available() <= 0 {
+			if args.src.length() <= 0 {
 				if args.minfo <> nullptr {
 					args.minfo.set!(
 						flavor: 0,
@@ -381,8 +381,8 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
 		if this.quirks[QUIRK_FIRST_FRAME_LOCAL_PALETTE_MEANS_BLACK_BACKGROUND - QUIRKS_BASE] and
 			(this.num_decoded_frame_configs_value == 0) {
 
-			while args.src.available() <= 0,
-				post args.src.available() > 0,
+			while args.src.length() <= 0,
+				post args.src.length() > 0,
 			{
 				yield? base."$short read"
 			} endwhile
@@ -937,7 +937,7 @@ pri func decoder.decode_id_part2?(dst: ptr base.pixel_buffer, src: base.io_reade
 		if block_size == 0 {
 			break.outer
 		}
-		while args.src.available() == 0 {
+		while args.src.length() == 0 {
 			yield? base."$short read"
 		} endwhile
 
@@ -946,7 +946,7 @@ pri func decoder.decode_id_part2?(dst: ptr base.pixel_buffer, src: base.io_reade
 			this.compressed_wi = 0
 		}
 		while this.compressed_wi <= (4096 - 255) {
-			n_compressed = block_size.min(a: args.src.available())
+			n_compressed = block_size.min(a: args.src.length())
 			if n_compressed <= 0 {
 				break
 			}
@@ -958,7 +958,7 @@ pri func decoder.decode_id_part2?(dst: ptr base.pixel_buffer, src: base.io_reade
 			if block_size > 0 {
 				break
 			}
-			if args.src.available() <= 0 {
+			if args.src.length() <= 0 {
 				need_block_size = true
 				break
 			}

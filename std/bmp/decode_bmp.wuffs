@@ -297,7 +297,7 @@ pri func decoder.swizzle!(dst: ptr base.pixel_buffer, src: base.io_reader) base.
 
 	while.outer true {
 		while this.pending_pad > 0 {
-			if args.src.available() <= 0 {
+			if args.src.length() <= 0 {
 				return "@internal note: short read"
 			}
 			this.pending_pad -= 1

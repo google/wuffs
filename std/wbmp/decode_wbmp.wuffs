@@ -180,10 +180,10 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 				assert dst_x < 0xFFFF_FFFF via "a < b: a < c; c <= b"(c: this.width)
 
 				if (dst_x & 7) == 0 {
-					while args.src.available() <= 0,
+					while args.src.length() <= 0,
 						inv dst_x < 0xFFFF_FFFF,
 						inv dst_y < 0xFFFF_FFFF,
-						post args.src.available() > 0,
+						post args.src.length() > 0,
 					{
 						yield? base."$short read"
 						tab = args.dst.plane(p: 0)

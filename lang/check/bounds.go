@@ -1085,7 +1085,7 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (bounds, e
 				} else {
 					adv = advanceExpr.Str(q.tm)
 				}
-				return bounds{}, fmt.Errorf("check: could not prove %s pre-condition: %s.available() >= %s",
+				return bounds{}, fmt.Errorf("check: could not prove %s pre-condition: %s.length() >= %s",
 					method.Str(q.tm), recv.Str(q.tm), adv)
 			}
 			// TODO: drop other recv-related facts?
@@ -1120,7 +1120,7 @@ func (q *checker) canUndoByte(recv *a.Expr) error {
 
 func (q *checker) canLimitedCopyU32FromHistoryFast(recv *a.Expr, args []*a.Node) error {
 	// As per cgen's io-private.h, there are three pre-conditions:
-	//  - n <= this.available()
+	//  - n <= this.length()
 	//  - distance > 0
 	//  - distance <= this.history_available()
 
@@ -1130,7 +1130,7 @@ func (q *checker) canLimitedCopyU32FromHistoryFast(recv *a.Expr, args []*a.Node)
 	n := args[0].AsArg().Value()
 	distance := args[1].AsArg().Value()
 
-	// Check "n <= this.available()".
+	// Check "n <= this.length()".
 check0:
 	for {
 		for _, x := range q.facts {
@@ -1148,9 +1148,9 @@ check0:
 				continue
 			}
 
-			// Check that the RHS is "recv.available()".
+			// Check that the RHS is "recv.length()".
 			y, method, yArgs := splitReceiverMethodArgs(x.RHS().AsExpr())
-			if method != t.IDAvailable || len(yArgs) != 0 {
+			if method != t.IDLength || len(yArgs) != 0 {
 				continue
 			}
 			if !y.Eq(recv) {
@@ -1159,7 +1159,7 @@ check0:
 
 			break check0
 		}
-		return fmt.Errorf("check: could not prove n <= %s.available()", recv.Str(q.tm))
+		return fmt.Errorf("check: could not prove n <= %s.length()", recv.Str(q.tm))
 	}
 
 	// Check "distance > 0".

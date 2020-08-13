@@ -651,8 +651,6 @@ const (
 	IDIsOK         = ID(0x231)
 	IDIsSuspension = ID(0x232)
 
-	IDAvailable = ID(0x250)
-
 	IDData            = ID(0x240)
 	IDHeight          = ID(0x241)
 	IDIO              = ID(0x242)
@@ -1015,8 +1013,6 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDIsError:      "is_error",
 	IDIsOK:         "is_ok",
 	IDIsSuspension: "is_suspension",
-
-	IDAvailable: "available",
 
 	IDData:            "data",
 	IDHeight:          "height",

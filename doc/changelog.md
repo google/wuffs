@@ -37,6 +37,7 @@
 - Made `wuffs_base__status` a struct.
 - Removed `ack_metadata_chunk?`.
 - Removed `wuffs_base__frame_config__blend`.
+- Renamed I/O `available` methods to `length`.
 - Renamed `decode_io_writer?` methods to `transform_io?`.
 - Renamed `example/library` to `example/toy-genlib`.
 - Renamed `swizzle_interleaved!` to `swizzle_interleaved_from_slice!`.

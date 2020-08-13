@@ -148,11 +148,11 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 	while.outer true {
 		while.goto_parsed_a_leaf_value true {{
 		while.goto_fail true {{
-		if args.dst.available() <= 1 {
+		if args.dst.length() <= 1 {
 			yield? base."$short write"
 			continue.outer
 		}
-		if args.src.available() <= 0 {
+		if args.src.length() <= 0 {
 			if args.src.is_closed() {
 				return "#bad input"
 			}
@@ -189,28 +189,28 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 			string_length = c_minor as base.u64
 		} else {
 			while.goto_have_string_length true,
-				inv args.dst.available() > 1,
+				inv args.dst.length() > 1,
 			{{
 			if c_minor == 0x18 {
-				if args.src.available() >= 1 {
+				if args.src.length() >= 1 {
 					string_length = args.src.peek_u8_as_u64()
 					args.src.skip_u32_fast!(actual: 1, worst_case: 1)
 					break.goto_have_string_length
 				}
 			} else if c_minor == 0x19 {
-				if args.src.available() >= 2 {
+				if args.src.length() >= 2 {
 					string_length = args.src.peek_u16be_as_u64()
 					args.src.skip_u32_fast!(actual: 2, worst_case: 2)
 					break.goto_have_string_length
 				}
 			} else if c_minor == 0x1A {
-				if args.src.available() >= 4 {
+				if args.src.length() >= 4 {
 					string_length = args.src.peek_u32be_as_u64()
 					args.src.skip_u32_fast!(actual: 4, worst_case: 4)
 					break.goto_have_string_length
 				}
 			} else if c_minor == 0x1B {
-				if args.src.available() >= 8 {
+				if args.src.length() >= 8 {
 					string_length = args.src.peek_u64be()
 					args.src.skip_u32_fast!(actual: 8, worst_case: 8)
 					break.goto_have_string_length
@@ -326,11 +326,11 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 			}
 
 			while true {
-				if args.dst.available() <= 0 {
+				if args.dst.length() <= 0 {
 					yield? base."$short write"
 					continue
 				}
-				n64 = string_length.min(a: args.src.available())
+				n64 = string_length.min(a: args.src.length())
 				token_length = (n64 & 0xFFFF) as base.u32
 				if n64 > 0xFFFF {
 					token_length = 0xFFFF
@@ -341,7 +341,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 					yield? base."$short read"
 					continue
 				}
-				if args.src.available() < (token_length as base.u64) {
+				if args.src.length() < (token_length as base.u64) {
 					return "#internal error: inconsistent token length"
 				}
 				string_length ~mod-= token_length as base.u64
@@ -408,7 +408,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 			}
 
 			while true {
-				if args.dst.available() <= 0 {
+				if args.dst.length() <= 0 {
 					yield? base."$short write"
 					continue
 				}
@@ -417,13 +417,13 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 				token_length = (n64 & 0xFFFF) as base.u32
 				if token_length <= 0 {
 					// The longest UTF-8 code point is 4 bytes.
-					if args.src.is_closed() or (args.src.available() >= 4) {
+					if args.src.is_closed() or (args.src.length() >= 4) {
 						return "#bad input"
 					}
 					yield? base."$short read"
 					continue
 				}
-				if args.src.available() < (token_length as base.u64) {
+				if args.src.length() < (token_length as base.u64) {
 					return "#internal error: inconsistent token length"
 				}
 				string_length ~mod-= token_length as base.u64
@@ -736,9 +736,9 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 				continue.outer
 			}
 
-			while args.dst.available() <= 0,
+			while args.dst.length() <= 0,
 				inv depth > 0,
-				post args.dst.available() > 0,
+				post args.dst.length() > 0,
 			{
 				yield? base."$short write"
 				continue

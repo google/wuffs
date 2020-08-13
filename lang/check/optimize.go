@@ -55,7 +55,7 @@ func (q *checker) optimizeIOMethodAdvance(receiver *a.Expr, advance *big.Int, ad
 
 	retErr = q.facts.update(func(x *a.Expr) (*a.Expr, error) {
 		// TODO: update (discard?) any facts that merely mention
-		// receiver.available(), even if they aren't an exact match.
+		// receiver.length(), even if they aren't an exact match.
 
 		op := x.Operator()
 		if op != t.IDXBinaryGreaterEq && op != t.IDXBinaryGreaterThan {
@@ -67,13 +67,13 @@ func (q *checker) optimizeIOMethodAdvance(receiver *a.Expr, advance *big.Int, ad
 			return x, nil
 		}
 
-		// Check that lhs is "receiver.available()".
+		// Check that lhs is "receiver.length()".
 		lhs := x.LHS().AsExpr()
 		if lhs.Operator() != t.IDOpenParen || len(lhs.Args()) != 0 {
 			return x, nil
 		}
 		lhs = lhs.LHS().AsExpr()
-		if lhs.Operator() != t.IDDot || lhs.Ident() != t.IDAvailable {
+		if lhs.Operator() != t.IDDot || lhs.Ident() != t.IDLength {
 			return x, nil
 		}
 		lhs = lhs.LHS().AsExpr()
@@ -102,7 +102,7 @@ func (q *checker) optimizeIOMethodAdvance(receiver *a.Expr, advance *big.Int, ad
 
 		if rcv.Cmp(advance) == 0 {
 			// TODO: delete the (adjusted) fact, as newRCV will be zero, and
-			// "foo.available() >= 0" is redundant.
+			// "foo.length() >= 0" is redundant.
 		}
 
 		// Create a new a.Expr to hold the adjusted RHS constant value, newRCV.
@@ -121,20 +121,20 @@ func (q *checker) optimizeIOMethodAdvance(receiver *a.Expr, advance *big.Int, ad
 func (q *checker) optimizeIOMethodAdvanceExpr(receiver *a.Expr, advanceExpr *a.Expr, update bool) (retOK bool, retErr error) {
 	retErr = q.facts.update(func(x *a.Expr) (*a.Expr, error) {
 		// TODO: update (discard?) any facts that merely mention
-		// receiver.available(), even if they aren't an exact match.
+		// receiver.length(), even if they aren't an exact match.
 
 		op := x.Operator()
 		if op != t.IDXBinaryGreaterEq && op != t.IDXBinaryGreaterThan {
 			return x, nil
 		}
 
-		// Check that lhs is "receiver.available()".
+		// Check that lhs is "receiver.length()".
 		lhs := x.LHS().AsExpr()
 		if lhs.Operator() != t.IDOpenParen || len(lhs.Args()) != 0 {
 			return x, nil
 		}
 		lhs = lhs.LHS().AsExpr()
-		if lhs.Operator() != t.IDDot || lhs.Ident() != t.IDAvailable {
+		if lhs.Operator() != t.IDDot || lhs.Ident() != t.IDLength {
 			return x, nil
 		}
 		lhs = lhs.LHS().AsExpr()

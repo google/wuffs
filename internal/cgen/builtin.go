@@ -150,7 +150,7 @@ func (g *gen) ioRecvName(recv *a.Expr) (string, error) {
 
 func (g *gen) writeBuiltinIO(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, depth uint32) error {
 	switch method {
-	case t.IDAvailable:
+	case t.IDLength:
 		name, err := g.ioRecvName(recv)
 		if err != nil {
 			return err
