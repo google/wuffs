@@ -1122,7 +1122,7 @@ func (q *checker) canLimitedCopyU32FromHistoryFast(recv *a.Expr, args []*a.Node)
 	// As per cgen's io-private.h, there are three pre-conditions:
 	//  - n <= this.length()
 	//  - distance > 0
-	//  - distance <= this.history_available()
+	//  - distance <= this.history_length()
 
 	if len(args) != 2 {
 		return fmt.Errorf("check: internal error: inconsistent copy_n_from_history_fast arguments")
@@ -1180,7 +1180,7 @@ check1:
 		return fmt.Errorf("check: could not prove distance > 0")
 	}
 
-	// Check "distance <= this.history_available()".
+	// Check "distance <= this.history_length()".
 check2:
 	for {
 		for _, x := range q.facts {
@@ -1198,9 +1198,9 @@ check2:
 				continue
 			}
 
-			// Check that the RHS is "recv.history_available()".
+			// Check that the RHS is "recv.history_length()".
 			y, method, yArgs := splitReceiverMethodArgs(x.RHS().AsExpr())
-			if method != t.IDHistoryAvailable || len(yArgs) != 0 {
+			if method != t.IDHistoryLength || len(yArgs) != 0 {
 				continue
 			}
 			if !y.Eq(recv) {
@@ -1209,7 +1209,7 @@ check2:
 
 			break check2
 		}
-		return fmt.Errorf("check: could not prove distance <= %s.history_available()", recv.Str(q.tm))
+		return fmt.Errorf("check: could not prove distance <= %s.history_length()", recv.Str(q.tm))
 	}
 
 	return nil

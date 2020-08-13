@@ -328,7 +328,7 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 		b.printf(", ((uint64_t)(%s%s - %s%s)))", iopPrefix, name, io0Prefix, name)
 		return nil
 
-	case t.IDHistoryAvailable, t.IDMark:
+	case t.IDHistoryLength, t.IDMark:
 		b.printf("((uint64_t)(%s%s - %s%s))", iopPrefix, name, io0Prefix, name)
 		return nil
 

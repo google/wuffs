@@ -203,11 +203,11 @@ pri func decoder.decode_huffman_slow?(dst: base.io_writer, src: base.io_reader) 
 
 		while true {
 			// Copy from this.history.
-			if ((dist_minus_1 + 1) as base.u64) > args.dst.history_available() {
+			if ((dist_minus_1 + 1) as base.u64) > args.dst.history_length() {
 				// Set (hlen, hdist) to be the length-distance pair to copy
 				// from this.history, and (length, distance) to be the
 				// remaining length-distance pair to copy from args.dst.
-				hdist = (((dist_minus_1 + 1) as base.u64) - args.dst.history_available()) as base.u32
+				hdist = (((dist_minus_1 + 1) as base.u64) - args.dst.history_length()) as base.u32
 				if length > hdist {
 					assert hdist < length via "a < b: b > a"()
 					assert hdist < 0x8000 via "a < b: a < c; c <= b"(c: length)

@@ -503,19 +503,19 @@ const (
 
 	IDDecodeFrameOptions = ID(0x158)
 
-	IDCanUndoByte      = ID(0x160)
-	IDCountSince       = ID(0x161)
-	IDHistoryAvailable = ID(0x162)
-	IDIsClosed         = ID(0x163)
-	IDMark             = ID(0x164)
-	IDMatch15          = ID(0x165)
-	IDMatch31          = ID(0x166)
-	IDMatch7           = ID(0x167)
-	IDPosition         = ID(0x168)
-	IDSince            = ID(0x169)
-	IDSkip             = ID(0x16A)
-	IDSkipU32          = ID(0x16B)
-	IDSkipU32Fast      = ID(0x16C)
+	IDCanUndoByte   = ID(0x160)
+	IDCountSince    = ID(0x161)
+	IDHistoryLength = ID(0x162)
+	IDIsClosed      = ID(0x163)
+	IDMark          = ID(0x164)
+	IDMatch15       = ID(0x165)
+	IDMatch31       = ID(0x166)
+	IDMatch7        = ID(0x167)
+	IDPosition      = ID(0x168)
+	IDSince         = ID(0x169)
+	IDSkip          = ID(0x16A)
+	IDSkipU32       = ID(0x16B)
+	IDSkipU32Fast   = ID(0x16C)
 
 	IDCopyFromSlice                 = ID(0x170)
 	IDLimitedCopyU32FromHistory     = ID(0x171)
@@ -870,19 +870,19 @@ var builtInsByID = [nBuiltInIDs]string{
 
 	IDDecodeFrameOptions: "decode_frame_options",
 
-	IDCanUndoByte:      "can_undo_byte",
-	IDCountSince:       "count_since",
-	IDHistoryAvailable: "history_available",
-	IDIsClosed:         "is_closed",
-	IDMark:             "mark",
-	IDMatch15:          "match15",
-	IDMatch31:          "match31",
-	IDMatch7:           "match7",
-	IDPosition:         "position",
-	IDSince:            "since",
-	IDSkip:             "skip",
-	IDSkipU32:          "skip_u32",
-	IDSkipU32Fast:      "skip_u32_fast",
+	IDCanUndoByte:   "can_undo_byte",
+	IDCountSince:    "count_since",
+	IDHistoryLength: "history_length",
+	IDIsClosed:      "is_closed",
+	IDMark:          "mark",
+	IDMatch15:       "match15",
+	IDMatch31:       "match31",
+	IDMatch7:        "match7",
+	IDPosition:      "position",
+	IDSince:         "since",
+	IDSkip:          "skip",
+	IDSkipU32:       "skip_u32",
+	IDSkipU32Fast:   "skip_u32_fast",
 
 	IDCopyFromSlice:                 "copy_from_slice",
 	IDLimitedCopyU32FromHistory:     "limited_copy_u32_from_history",
