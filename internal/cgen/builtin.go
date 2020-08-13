@@ -168,7 +168,7 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 	}
 
 	switch method {
-	case t.IDAvailableValidUTF8:
+	case t.IDValidUTF8Length:
 		name, err := g.ioRecvName(recv)
 		if err != nil {
 			return err

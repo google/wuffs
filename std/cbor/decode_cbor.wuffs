@@ -413,7 +413,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 					continue
 				}
 				n64 = string_length.min(a: 0xFFFF)
-				n64 = args.src.available_valid_utf_8(up_to: n64)
+				n64 = args.src.valid_utf_8_length(up_to: n64)
 				token_length = (n64 & 0xFFFF) as base.u32
 				if token_length <= 0 {
 					// The longest UTF-8 code point is 4 bytes.
