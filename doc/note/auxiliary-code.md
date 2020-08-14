@@ -1,11 +1,12 @@
 # Auxiliary Code
 
 Wuffs is a [memory-safe](/doc/note/memory-safety.md) programming language,
-achieving that safety in part because Wuffs code doesn't even have the
-*capability* to dynamically allocate and free memory. Wuffs code is also
-transpiled to C (which is very portable and easy to bind to other, higher-level
-languages), but C lacks modern conveniences like a built-in string type that's
-safe and easy to use.
+achieving that safety in part because Wuffs code is
+[hermetic](/doc/note/hermeticity.md) and doesn't even have the *capability* to
+dynamically allocate and free memory. Wuffs code is also transpiled to C (which
+is very portable and easy to bind to other, higher-level languages), but C
+lacks modern conveniences like a built-in string type that's safe and easy to
+use.
 
 Wuffs' C/C++ form (a "single file library") also contains auxiliary C++ code
 (in the `wuffs_aux` namespace) that compensates for that. For example, the JSON
