@@ -84,7 +84,7 @@ uint8_t g_work_buffer_array[1];
 typedef uint8_t stack_element;
 
 bool  //
-is_cbor_tag(wuffs_base__token t) {
+token_is_cbor_tag(wuffs_base__token t) {
   return (wuffs_base__token__value_major(&t) ==
           WUFFS_CBOR__TOKEN_VALUE_MAJOR) &&
          (wuffs_base__token__value_minor(&t) &
@@ -106,9 +106,12 @@ fuzz_one_token(wuffs_base__token t,
   }
   *ti += len;
 
-  if ((wuffs_base__token__value_extension(&t) >= 0) &&
-      !wuffs_base__token__continued(&prev_token)) {
-    return "fuzz: internal error: extended token not after continued token";
+  bool is_cbor_tag = token_is_cbor_tag(t);
+  if (wuffs_base__token__value_extension(&t) >= 0) {
+    if (!wuffs_base__token__continued(&prev_token)) {
+      return "fuzz: internal error: extended token not after continued token";
+    }
+    is_cbor_tag = token_is_cbor_tag(prev_token);
   }
 
   int64_t vbc = wuffs_base__token__value_base_category(&t);
@@ -210,7 +213,7 @@ fuzz_one_token(wuffs_base__token t,
       (vbc != WUFFS_BASE__TOKEN__VBC__FILLER) &&
       ((vbc != WUFFS_BASE__TOKEN__VBC__STRUCTURE) ||
        (vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__POP)) &&
-      !is_cbor_tag(t)) {
+      !is_cbor_tag) {
     stack[*depth] ^= 0x80;
   }
 
