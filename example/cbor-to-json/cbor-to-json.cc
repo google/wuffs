@@ -620,8 +620,9 @@ main1(int argc, char** argv) {
     }
   }
 
-  return wuffs_aux::DecodeCbor(Callbacks(), wuffs_aux::sync_io::FileInput(in))
-      .error_message;
+  Callbacks callbacks;
+  wuffs_aux::sync_io::FileInput input(in);
+  return wuffs_aux::DecodeCbor(callbacks, input).error_message;
 }
 
 // ----

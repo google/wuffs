@@ -8536,8 +8536,8 @@ class DecodeCborCallbacks {
 // cursor_position is the location of the error. That error may be a content
 // error (invalid CBOR) or an input error (e.g. network failure).
 DecodeCborResult DecodeCbor(
-    DecodeCborCallbacks&& callbacks,
-    sync_io::Input&& input,
+    DecodeCborCallbacks& callbacks,
+    sync_io::Input& input,
     wuffs_base__slice_u32 quirks = wuffs_base__empty_slice_u32());
 
 }  // namespace wuffs_aux
@@ -8624,8 +8624,8 @@ extern const char DecodeJson_NoMatch[];
 // The JSON Pointer implementation is greedy: duplicate keys are not rejected
 // but only the first match for each '/'-separated fragment is followed.
 DecodeJsonResult DecodeJson(
-    DecodeJsonCallbacks&& callbacks,
-    sync_io::Input&& input,
+    DecodeJsonCallbacks& callbacks,
+    sync_io::Input& input,
     wuffs_base__slice_u32 quirks = wuffs_base__empty_slice_u32(),
     std::string json_pointer = std::string());
 
@@ -29049,8 +29049,8 @@ DecodeCborCallbacks::Done(DecodeCborResult& result,
                           IOBuffer& buffer) {}
 
 DecodeCborResult  //
-DecodeCbor(DecodeCborCallbacks&& callbacks,
-           sync_io::Input&& input,
+DecodeCbor(DecodeCborCallbacks& callbacks,
+           sync_io::Input& input,
            wuffs_base__slice_u32 quirks) {
   // Prepare the wuffs_base__io_buffer and the resultant error_message.
   wuffs_base__io_buffer* io_buf = input.BringsItsOwnIOBuffer();
@@ -29711,8 +29711,8 @@ done:
 // --------
 
 DecodeJsonResult  //
-DecodeJson(DecodeJsonCallbacks&& callbacks,
-           sync_io::Input&& input,
+DecodeJson(DecodeJsonCallbacks& callbacks,
+           sync_io::Input& input,
            wuffs_base__slice_u32 quirks,
            std::string json_pointer) {
   // Prepare the wuffs_base__io_buffer and the resultant error_message.

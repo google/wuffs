@@ -366,8 +366,8 @@ done:
 // --------
 
 DecodeJsonResult  //
-DecodeJson(DecodeJsonCallbacks&& callbacks,
-           sync_io::Input&& input,
+DecodeJson(DecodeJsonCallbacks& callbacks,
+           sync_io::Input& input,
            wuffs_base__slice_u32 quirks,
            std::string json_pointer) {
   // Prepare the wuffs_base__io_buffer and the resultant error_message.

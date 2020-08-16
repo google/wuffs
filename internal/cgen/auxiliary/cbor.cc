@@ -33,8 +33,8 @@ DecodeCborCallbacks::Done(DecodeCborResult& result,
                           IOBuffer& buffer) {}
 
 DecodeCborResult  //
-DecodeCbor(DecodeCborCallbacks&& callbacks,
-           sync_io::Input&& input,
+DecodeCbor(DecodeCborCallbacks& callbacks,
+           sync_io::Input& input,
            wuffs_base__slice_u32 quirks) {
   // Prepare the wuffs_base__io_buffer and the resultant error_message.
   wuffs_base__io_buffer* io_buf = input.BringsItsOwnIOBuffer();

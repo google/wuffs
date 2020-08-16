@@ -313,8 +313,10 @@ main1(int argc, char** argv) {
     }
   }
 
+  Callbacks callbacks;
+  wuffs_aux::sync_io::FileInput input(in);
   return wuffs_aux::DecodeJson(
-             Callbacks(), wuffs_aux::sync_io::FileInput(in),
+             callbacks, input,
              wuffs_base__make_slice_u32(g_quirks.data(), g_quirks.size()))
       .error_message;
 }
