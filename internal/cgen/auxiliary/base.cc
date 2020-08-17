@@ -53,6 +53,12 @@ FileInput::CopyIn(IOBuffer* dst) {
 
 // --------
 
+MemoryInput::MemoryInput(const char* ptr, size_t len)
+    : m_io(wuffs_base__ptr_u8__reader(
+          static_cast<uint8_t*>(static_cast<void*>(const_cast<char*>(ptr))),
+          len,
+          true)) {}
+
 MemoryInput::MemoryInput(const uint8_t* ptr, size_t len)
     : m_io(wuffs_base__ptr_u8__reader(const_cast<uint8_t*>(ptr), len, true)) {}
 

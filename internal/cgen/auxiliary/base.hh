@@ -63,6 +63,7 @@ class FileInput : public Input {
 // It does not take responsibility for freeing the memory when done.
 class MemoryInput : public Input {
  public:
+  MemoryInput(const char* ptr, size_t len);
   MemoryInput(const uint8_t* ptr, size_t len);
 
   virtual IOBuffer* BringsItsOwnIOBuffer();
