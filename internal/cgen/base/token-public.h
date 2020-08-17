@@ -71,8 +71,9 @@ wuffs_base__make_token(uint64_t repr) {
 
 // --------
 
-#define WUFFS_BASE__TOKEN__VBD__FILLER__COMMENT_LINE 0x00001
+#define WUFFS_BASE__TOKEN__VBD__FILLER__PUNCTUATION 0x00001
 #define WUFFS_BASE__TOKEN__VBD__FILLER__COMMENT_BLOCK 0x00002
+#define WUFFS_BASE__TOKEN__VBD__FILLER__COMMENT_LINE 0x00004
 
 // --------
 

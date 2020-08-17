@@ -90,8 +90,9 @@ var Consts = [...]struct {
 
 	// ----
 
-	{t.IDU32, "0x00001", "TOKEN__VBD__FILLER__COMMENT_LINE"},
+	{t.IDU32, "0x00001", "TOKEN__VBD__FILLER__PUNCTUATION"},
 	{t.IDU32, "0x00002", "TOKEN__VBD__FILLER__COMMENT_BLOCK"},
+	{t.IDU32, "0x00004", "TOKEN__VBD__FILLER__COMMENT_LINE"},
 
 	// ----
 

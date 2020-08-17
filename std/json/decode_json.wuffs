@@ -899,10 +899,11 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 
 		} else if class == CLASS_COMMA {
 			args.src.skip_u32_fast!(actual: 1, worst_case: 1)
-			// The ',' is filler.
+			// The ',' is punctuation (filler).
 			args.dst.write_simple_token_fast!(
 				value_major: 0,
-				value_minor: 0,
+				value_minor: (base.TOKEN__VBC__FILLER << 21) |
+				base.TOKEN__VBD__FILLER__PUNCTUATION,
 				continued: 0,
 				length: 1)
 			// What's valid after a comma depends on whether or not we're in an
@@ -924,10 +925,11 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 
 		} else if class == CLASS_COLON {
 			args.src.skip_u32_fast!(actual: 1, worst_case: 1)
-			// The ':' is filler.
+			// The ':' is punctuation (filler).
 			args.dst.write_simple_token_fast!(
 				value_major: 0,
-				value_minor: 0,
+				value_minor: (base.TOKEN__VBC__FILLER << 21) |
+				base.TOKEN__VBD__FILLER__PUNCTUATION,
 				continued: 0,
 				length: 1)
 			expect = EXPECT_VALUE
