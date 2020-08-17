@@ -65,15 +65,15 @@ extern "C" {
 // each major.minor branch, the commit count should increase monotonically.
 //
 // WUFFS_VERSION was overridden by "wuffs gen -version" based on revision
-// 0a9075f81c0dfb10e6ad1ea3f797f416aa8ab742 committed on 2020-07-11.
+// ca1113620b228a7bc7ca86364d5fdfc848361e95 committed on 2020-08-17.
 #define WUFFS_VERSION 0x000030000
 #define WUFFS_VERSION_MAJOR 0
 #define WUFFS_VERSION_MINOR 3
 #define WUFFS_VERSION_PATCH 0
-#define WUFFS_VERSION_PRE_RELEASE_LABEL "alpha.10"
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 2566
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20200711
-#define WUFFS_VERSION_STRING "0.3.0-alpha.10+2566.20200711"
+#define WUFFS_VERSION_PRE_RELEASE_LABEL "alpha.11"
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 2663
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20200817
+#define WUFFS_VERSION_STRING "0.3.0-alpha.11+2663.20200817"
 
 // Define WUFFS_CONFIG__STATIC_FUNCTIONS to make all of Wuffs' functions have
 // static storage. The motivation is discussed in the "ALLOW STATIC
@@ -905,9 +905,63 @@ wuffs_base__empty_slice_u8() {
   return ret;
 }
 
+static inline wuffs_base__slice_u16  //
+wuffs_base__empty_slice_u16() {
+  wuffs_base__slice_u16 ret;
+  ret.ptr = NULL;
+  ret.len = 0;
+  return ret;
+}
+
+static inline wuffs_base__slice_u32  //
+wuffs_base__empty_slice_u32() {
+  wuffs_base__slice_u32 ret;
+  ret.ptr = NULL;
+  ret.len = 0;
+  return ret;
+}
+
+static inline wuffs_base__slice_u64  //
+wuffs_base__empty_slice_u64() {
+  wuffs_base__slice_u64 ret;
+  ret.ptr = NULL;
+  ret.len = 0;
+  return ret;
+}
+
 static inline wuffs_base__table_u8  //
 wuffs_base__empty_table_u8() {
   wuffs_base__table_u8 ret;
+  ret.ptr = NULL;
+  ret.width = 0;
+  ret.height = 0;
+  ret.stride = 0;
+  return ret;
+}
+
+static inline wuffs_base__table_u16  //
+wuffs_base__empty_table_u16() {
+  wuffs_base__table_u16 ret;
+  ret.ptr = NULL;
+  ret.width = 0;
+  ret.height = 0;
+  ret.stride = 0;
+  return ret;
+}
+
+static inline wuffs_base__table_u32  //
+wuffs_base__empty_table_u32() {
+  wuffs_base__table_u32 ret;
+  ret.ptr = NULL;
+  ret.width = 0;
+  ret.height = 0;
+  ret.stride = 0;
+  return ret;
+}
+
+static inline wuffs_base__table_u64  //
+wuffs_base__empty_table_u64() {
+  wuffs_base__table_u64 ret;
   ret.ptr = NULL;
   ret.width = 0;
   ret.height = 0;
@@ -1903,10 +1957,14 @@ typedef struct {
 #ifdef __cplusplus
   inline bool is_valid() const;
   inline void compact();
-  inline uint64_t reader_available() const;
   inline uint64_t reader_io_position() const;
-  inline uint64_t writer_available() const;
+  inline size_t reader_length() const;
+  inline uint8_t* reader_pointer() const;
+  inline wuffs_base__slice_u8 reader_slice() const;
   inline uint64_t writer_io_position() const;
+  inline size_t writer_length() const;
+  inline uint8_t* writer_pointer() const;
+  inline wuffs_base__slice_u8 writer_slice() const;
 #endif  // __cplusplus
 
 } wuffs_base__io_buffer;
@@ -2032,23 +2090,47 @@ wuffs_base__io_buffer__compact(wuffs_base__io_buffer* buf) {
 }
 
 static inline uint64_t  //
-wuffs_base__io_buffer__reader_available(const wuffs_base__io_buffer* buf) {
-  return buf ? buf->meta.wi - buf->meta.ri : 0;
-}
-
-static inline uint64_t  //
 wuffs_base__io_buffer__reader_io_position(const wuffs_base__io_buffer* buf) {
   return buf ? wuffs_base__u64__sat_add(buf->meta.pos, buf->meta.ri) : 0;
 }
 
-static inline uint64_t  //
-wuffs_base__io_buffer__writer_available(const wuffs_base__io_buffer* buf) {
-  return buf ? buf->data.len - buf->meta.wi : 0;
+static inline size_t  //
+wuffs_base__io_buffer__reader_length(const wuffs_base__io_buffer* buf) {
+  return buf ? buf->meta.wi - buf->meta.ri : 0;
+}
+
+static inline uint8_t*  //
+wuffs_base__io_buffer__reader_pointer(const wuffs_base__io_buffer* buf) {
+  return buf ? (buf->data.ptr + buf->meta.ri) : NULL;
+}
+
+static inline wuffs_base__slice_u8  //
+wuffs_base__io_buffer__reader_slice(const wuffs_base__io_buffer* buf) {
+  return buf ? wuffs_base__make_slice_u8(buf->data.ptr + buf->meta.ri,
+                                         buf->meta.wi - buf->meta.ri)
+             : wuffs_base__empty_slice_u8();
 }
 
 static inline uint64_t  //
 wuffs_base__io_buffer__writer_io_position(const wuffs_base__io_buffer* buf) {
   return buf ? wuffs_base__u64__sat_add(buf->meta.pos, buf->meta.wi) : 0;
+}
+
+static inline size_t  //
+wuffs_base__io_buffer__writer_length(const wuffs_base__io_buffer* buf) {
+  return buf ? buf->data.len - buf->meta.wi : 0;
+}
+
+static inline uint8_t*  //
+wuffs_base__io_buffer__writer_pointer(const wuffs_base__io_buffer* buf) {
+  return buf ? (buf->data.ptr + buf->meta.wi) : NULL;
+}
+
+static inline wuffs_base__slice_u8  //
+wuffs_base__io_buffer__writer_slice(const wuffs_base__io_buffer* buf) {
+  return buf ? wuffs_base__make_slice_u8(buf->data.ptr + buf->meta.wi,
+                                         buf->data.len - buf->meta.wi)
+             : wuffs_base__empty_slice_u8();
 }
 
 #ifdef __cplusplus
@@ -2064,23 +2146,43 @@ wuffs_base__io_buffer::compact() {
 }
 
 inline uint64_t  //
-wuffs_base__io_buffer::reader_available() const {
-  return wuffs_base__io_buffer__reader_available(this);
-}
-
-inline uint64_t  //
 wuffs_base__io_buffer::reader_io_position() const {
   return wuffs_base__io_buffer__reader_io_position(this);
 }
 
-inline uint64_t  //
-wuffs_base__io_buffer::writer_available() const {
-  return wuffs_base__io_buffer__writer_available(this);
+inline size_t  //
+wuffs_base__io_buffer::reader_length() const {
+  return wuffs_base__io_buffer__reader_length(this);
+}
+
+inline uint8_t*  //
+wuffs_base__io_buffer::reader_pointer() const {
+  return wuffs_base__io_buffer__reader_pointer(this);
+}
+
+inline wuffs_base__slice_u8  //
+wuffs_base__io_buffer::reader_slice() const {
+  return wuffs_base__io_buffer__reader_slice(this);
 }
 
 inline uint64_t  //
 wuffs_base__io_buffer::writer_io_position() const {
   return wuffs_base__io_buffer__writer_io_position(this);
+}
+
+inline size_t  //
+wuffs_base__io_buffer::writer_length() const {
+  return wuffs_base__io_buffer__writer_length(this);
+}
+
+inline uint8_t*  //
+wuffs_base__io_buffer::writer_pointer() const {
+  return wuffs_base__io_buffer__writer_pointer(this);
+}
+
+inline wuffs_base__slice_u8  //
+wuffs_base__io_buffer::writer_slice() const {
+  return wuffs_base__io_buffer__writer_slice(this);
 }
 
 #endif  // __cplusplus
@@ -2100,6 +2202,7 @@ typedef struct {
   inline int64_t value_base_category() const;
   inline uint64_t value_minor() const;
   inline uint64_t value_base_detail() const;
+  inline int64_t value_base_detail__sign_extended() const;
   inline bool continued() const;
   inline uint64_t length() const;
 #endif  // __cplusplus
@@ -2126,6 +2229,8 @@ wuffs_base__make_token(uint64_t repr) {
 #define WUFFS_BASE__TOKEN__CONTINUED__SHIFT 16
 #define WUFFS_BASE__TOKEN__LENGTH__SHIFT 0
 
+#define WUFFS_BASE__TOKEN__VALUE_EXTENSION__NUM_BITS 46
+
 // --------
 
 #define WUFFS_BASE__TOKEN__VBC__FILLER 0
@@ -2134,6 +2239,8 @@ wuffs_base__make_token(uint64_t repr) {
 #define WUFFS_BASE__TOKEN__VBC__UNICODE_CODE_POINT 3
 #define WUFFS_BASE__TOKEN__VBC__LITERAL 4
 #define WUFFS_BASE__TOKEN__VBC__NUMBER 5
+#define WUFFS_BASE__TOKEN__VBC__INLINE_INTEGER_SIGNED 6
+#define WUFFS_BASE__TOKEN__VBC__INLINE_INTEGER_UNSIGNED 7
 
 // --------
 
@@ -2208,7 +2315,7 @@ wuffs_base__make_token(uint64_t repr) {
 // --------
 
 // For a source string of "123" or "0x9A", it is valid for a tokenizer to
-// return any one of:
+// return any combination of:
 //  - WUFFS_BASE__TOKEN__VBD__NUMBER__CONTENT_FLOATING_POINT.
 //  - WUFFS_BASE__TOKEN__VBD__NUMBER__CONTENT_INTEGER_SIGNED.
 //  - WUFFS_BASE__TOKEN__VBD__NUMBER__CONTENT_INTEGER_UNSIGNED.
@@ -2227,10 +2334,13 @@ wuffs_base__make_token(uint64_t repr) {
 
 // The number 300 might be represented as "\x01\x2C", "\x2C\x01\x00\x00" or
 // "300", which are big-endian, little-endian or text. For binary formats, the
-// token length discriminates e.g. u16 little-endian vs u32 little-endian.
+// token length (after adjusting for FORMAT_IGNORE_ETC) discriminates
+// e.g. u16 little-endian vs u32 little-endian.
 #define WUFFS_BASE__TOKEN__VBD__NUMBER__FORMAT_BINARY_BIG_ENDIAN 0x00100
 #define WUFFS_BASE__TOKEN__VBD__NUMBER__FORMAT_BINARY_LITTLE_ENDIAN 0x00200
 #define WUFFS_BASE__TOKEN__VBD__NUMBER__FORMAT_TEXT 0x00400
+
+#define WUFFS_BASE__TOKEN__VBD__NUMBER__FORMAT_IGNORE_FIRST_BYTE 0x01000
 
 // --------
 
@@ -2270,6 +2380,15 @@ wuffs_base__token__value_minor(const wuffs_base__token* t) {
 static inline uint64_t  //
 wuffs_base__token__value_base_detail(const wuffs_base__token* t) {
   return (t->repr >> WUFFS_BASE__TOKEN__VALUE_BASE_DETAIL__SHIFT) & 0x1FFFFF;
+}
+
+static inline int64_t  //
+wuffs_base__token__value_base_detail__sign_extended(
+    const wuffs_base__token* t) {
+  // The VBD is 21 bits in the middle of t->repr. Left shift the high (64 - 21
+  // - ETC__SHIFT) bits off, then right shift (sign-extending) back down.
+  uint64_t u = t->repr << (43 - WUFFS_BASE__TOKEN__VALUE_BASE_DETAIL__SHIFT);
+  return ((int64_t)u) >> 43;
 }
 
 static inline bool  //
@@ -2314,6 +2433,11 @@ wuffs_base__token::value_base_detail() const {
   return wuffs_base__token__value_base_detail(this);
 }
 
+inline int64_t  //
+wuffs_base__token::value_base_detail__sign_extended() const {
+  return wuffs_base__token__value_base_detail__sign_extended(this);
+}
+
 inline bool  //
 wuffs_base__token::continued() const {
   return wuffs_base__token__continued(this);
@@ -2335,6 +2459,14 @@ wuffs_base__make_slice_token(wuffs_base__token* ptr, size_t len) {
   wuffs_base__slice_token ret;
   ret.ptr = ptr;
   ret.len = len;
+  return ret;
+}
+
+static inline wuffs_base__slice_token  //
+wuffs_base__empty_slice_token() {
+  wuffs_base__slice_token ret;
+  ret.ptr = NULL;
+  ret.len = 0;
   return ret;
 }
 
@@ -2360,10 +2492,14 @@ typedef struct {
 #ifdef __cplusplus
   inline bool is_valid() const;
   inline void compact();
-  inline uint64_t reader_available() const;
+  inline uint64_t reader_length() const;
+  inline wuffs_base__token* reader_pointer() const;
+  inline wuffs_base__slice_token reader_slice() const;
   inline uint64_t reader_token_position() const;
-  inline uint64_t writer_available() const;
+  inline uint64_t writer_length() const;
   inline uint64_t writer_token_position() const;
+  inline wuffs_base__token* writer_pointer() const;
+  inline wuffs_base__slice_token writer_slice() const;
 #endif  // __cplusplus
 
 } wuffs_base__token_buffer;
@@ -2466,9 +2602,20 @@ wuffs_base__token_buffer__compact(wuffs_base__token_buffer* buf) {
 }
 
 static inline uint64_t  //
-wuffs_base__token_buffer__reader_available(
-    const wuffs_base__token_buffer* buf) {
+wuffs_base__token_buffer__reader_length(const wuffs_base__token_buffer* buf) {
   return buf ? buf->meta.wi - buf->meta.ri : 0;
+}
+
+static inline wuffs_base__token*  //
+wuffs_base__token_buffer__reader_pointer(const wuffs_base__token_buffer* buf) {
+  return buf ? (buf->data.ptr + buf->meta.ri) : NULL;
+}
+
+static inline wuffs_base__slice_token  //
+wuffs_base__token_buffer__reader_slice(const wuffs_base__token_buffer* buf) {
+  return buf ? wuffs_base__make_slice_token(buf->data.ptr + buf->meta.ri,
+                                            buf->meta.wi - buf->meta.ri)
+             : wuffs_base__empty_slice_token();
 }
 
 static inline uint64_t  //
@@ -2478,9 +2625,20 @@ wuffs_base__token_buffer__reader_token_position(
 }
 
 static inline uint64_t  //
-wuffs_base__token_buffer__writer_available(
-    const wuffs_base__token_buffer* buf) {
+wuffs_base__token_buffer__writer_length(const wuffs_base__token_buffer* buf) {
   return buf ? buf->data.len - buf->meta.wi : 0;
+}
+
+static inline wuffs_base__token*  //
+wuffs_base__token_buffer__writer_pointer(const wuffs_base__token_buffer* buf) {
+  return buf ? (buf->data.ptr + buf->meta.wi) : NULL;
+}
+
+static inline wuffs_base__slice_token  //
+wuffs_base__token_buffer__writer_slice(const wuffs_base__token_buffer* buf) {
+  return buf ? wuffs_base__make_slice_token(buf->data.ptr + buf->meta.wi,
+                                            buf->data.len - buf->meta.wi)
+             : wuffs_base__empty_slice_token();
 }
 
 static inline uint64_t  //
@@ -2502,8 +2660,18 @@ wuffs_base__token_buffer::compact() {
 }
 
 inline uint64_t  //
-wuffs_base__token_buffer::reader_available() const {
-  return wuffs_base__token_buffer__reader_available(this);
+wuffs_base__token_buffer::reader_length() const {
+  return wuffs_base__token_buffer__reader_length(this);
+}
+
+inline wuffs_base__token*  //
+wuffs_base__token_buffer::reader_pointer() const {
+  return wuffs_base__token_buffer__reader_pointer(this);
+}
+
+inline wuffs_base__slice_token  //
+wuffs_base__token_buffer::reader_slice() const {
+  return wuffs_base__token_buffer__reader_slice(this);
 }
 
 inline uint64_t  //
@@ -2512,8 +2680,18 @@ wuffs_base__token_buffer::reader_token_position() const {
 }
 
 inline uint64_t  //
-wuffs_base__token_buffer::writer_available() const {
-  return wuffs_base__token_buffer__writer_available(this);
+wuffs_base__token_buffer::writer_length() const {
+  return wuffs_base__token_buffer__writer_length(this);
+}
+
+inline wuffs_base__token*  //
+wuffs_base__token_buffer::writer_pointer() const {
+  return wuffs_base__token_buffer__writer_pointer(this);
+}
+
+inline wuffs_base__slice_token  //
+wuffs_base__token_buffer::writer_slice() const {
+  return wuffs_base__token_buffer__writer_slice(this);
 }
 
 inline uint64_t  //
@@ -4016,6 +4194,106 @@ wuffs_base__pixel_swizzler::swizzle_interleaved_from_slice(
 
 // ---------------- IEEE 754 Floating Point
 
+// wuffs_base__ieee_754_bit_representation__etc converts between a double
+// precision numerical value and its IEEE 754 representations:
+//   - 16-bit: 1 sign bit,  5 exponent bits, 10 explicit significand bits.
+//   - 32-bit: 1 sign bit,  8 exponent bits, 23 explicit significand bits.
+//   - 64-bit: 1 sign bit, 11 exponent bits, 52 explicit significand bits.
+//
+// For example, it converts between:
+//  - +1.0 and 0x3C00, 0x3F80_0000 or 0x3FF0_0000_0000_0000.
+//  - +5.5 and 0x4580, 0x40B0_0000 or 0x4016_0000_0000_0000.
+//  - -inf and 0xFC00, 0xFF80_0000 or 0xFFF0_0000_0000_0000.
+//
+// Converting from f64 to shorter formats (f16 or f32, represented in C as
+// uint16_t and uint32_t) may be lossy. Such functions have names that look
+// like etc_truncate, as converting finite numbers produce equal or smaller
+// (closer-to-zero) finite numbers. For example, 1048576.0 is a perfectly valid
+// f64 number, but converting it to a f16 (with truncation) produces 65504.0,
+// the largest finite f16 number. Truncating a f64-typed value d to f32 does
+// not always produce the same result as the C-style cast ((float)d), as
+// casting can convert from finite numbers to infinite ones.
+//
+// Converting infinities or NaNs produces infinities or NaNs and always report
+// no loss, even though there a multiple NaN representations so that round-
+// tripping a f64-typed NaN may produce a different 64 bits. Nonetheless, the
+// etc_truncate functions preserve a NaN's "quiet vs signaling" bit.
+//
+// See https://en.wikipedia.org/wiki/Double-precision_floating-point_format
+
+typedef struct {
+  uint16_t value;
+  bool lossy;
+} wuffs_base__lossy_value_u16;
+
+typedef struct {
+  uint32_t value;
+  bool lossy;
+} wuffs_base__lossy_value_u32;
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__lossy_value_u16  //
+wuffs_base__ieee_754_bit_representation__from_f64_to_u16_truncate(double f);
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__lossy_value_u32  //
+wuffs_base__ieee_754_bit_representation__from_f64_to_u32_truncate(double f);
+
+static inline uint64_t  //
+wuffs_base__ieee_754_bit_representation__from_f64_to_u64(double f) {
+  uint64_t u = 0;
+  if (sizeof(uint64_t) == sizeof(double)) {
+    memcpy(&u, &f, sizeof(uint64_t));
+  }
+  return u;
+}
+
+static inline double  //
+wuffs_base__ieee_754_bit_representation__from_u16_to_f64(uint16_t u) {
+  uint64_t v = ((uint64_t)(u & 0x8000)) << 48;
+
+  do {
+    uint64_t exp = (u >> 10) & 0x1F;
+    uint64_t man = u & 0x3FF;
+    if (exp == 0x1F) {  // Infinity or NaN.
+      exp = 2047;
+    } else if (exp != 0) {  // Normal.
+      exp += 1008;          // 1008 = 1023 - 15, the difference in biases.
+    } else if (man != 0) {  // Subnormal but non-zero.
+      uint32_t clz = wuffs_base__count_leading_zeroes_u64(man);
+      exp = 1062 - clz;  // 1062 = 1008 + 64 - 10.
+      man = 0x3FF & (man << (clz - 53));
+    } else {  // Zero.
+      break;
+    }
+    v |= (exp << 52) | (man << 42);
+  } while (0);
+
+  double f = 0;
+  if (sizeof(uint64_t) == sizeof(double)) {
+    memcpy(&f, &v, sizeof(uint64_t));
+  }
+  return f;
+}
+
+static inline double  //
+wuffs_base__ieee_754_bit_representation__from_u32_to_f64(uint32_t u) {
+  float f = 0;
+  if (sizeof(uint32_t) == sizeof(float)) {
+    memcpy(&f, &u, sizeof(uint32_t));
+  }
+  return (double)f;
+}
+
+static inline double  //
+wuffs_base__ieee_754_bit_representation__from_u64_to_f64(uint64_t u) {
+  double f = 0;
+  if (sizeof(uint64_t) == sizeof(double)) {
+    memcpy(&f, &u, sizeof(uint64_t));
+  }
+  return f;
+}
+
+// ---------------- Parsing and Rendering Numbers
+
 // wuffs_base__parse_number_f64 parses the floating point number in s. For
 // example, if s contains the bytes "1.5" then it will return the double 1.5.
 //
@@ -4051,39 +4329,6 @@ wuffs_base__pixel_swizzler::swizzle_interleaved_from_slice(
 // just WUFFS_CONFIG__MODULE__BASE__CORE.
 WUFFS_BASE__MAYBE_STATIC wuffs_base__result_f64  //
 wuffs_base__parse_number_f64(wuffs_base__slice_u8 s, uint32_t options);
-
-// --------
-
-// wuffs_base__ieee_754_bit_representation__etc converts between a double
-// precision numerical value and its IEEE 754 64-bit representation (1 sign
-// bit, 11 exponent bits, 52 explicit significand bits).
-//
-// For example, it converts between:
-//  - +1.0 and 0x3FF0_0000_0000_0000.
-//  - +5.5 and 0x4016_0000_0000_0000.
-//  - -inf and 0xFFF0_0000_0000_0000.
-//
-// See https://en.wikipedia.org/wiki/Double-precision_floating-point_format
-
-static inline uint64_t  //
-wuffs_base__ieee_754_bit_representation__from_f64(double f) {
-  uint64_t u = 0;
-  if (sizeof(uint64_t) == sizeof(double)) {
-    memcpy(&u, &f, sizeof(uint64_t));
-  }
-  return u;
-}
-
-static inline double  //
-wuffs_base__ieee_754_bit_representation__to_f64(uint64_t u) {
-  double f = 0;
-  if (sizeof(uint64_t) == sizeof(double)) {
-    memcpy(&f, &u, sizeof(uint64_t));
-  }
-  return f;
-}
-
-// ---------------- Integer
 
 // wuffs_base__parse_number_i64 parses the ASCII integer in s. For example, if
 // s contains the bytes "-123" then it will return the int64_t -123.
@@ -4135,7 +4380,12 @@ wuffs_base__parse_number_u64(wuffs_base__slice_u8 s, uint32_t options);
 
 // --------
 
+// WUFFS_BASE__I64__BYTE_LENGTH__MAX_INCL is the string length of
+// "-9223372036854775808" and "+9223372036854775807", INT64_MIN and INT64_MAX.
 #define WUFFS_BASE__I64__BYTE_LENGTH__MAX_INCL 20
+
+// WUFFS_BASE__U64__BYTE_LENGTH__MAX_INCL is the string length of
+// "+18446744073709551615", UINT64_MAX.
 #define WUFFS_BASE__U64__BYTE_LENGTH__MAX_INCL 21
 
 // wuffs_base__render_number_f64 writes the decimal encoding of x to dst and
@@ -4238,6 +4488,30 @@ wuffs_base__base_16__decode2(wuffs_base__slice_u8 dst,
 // just WUFFS_CONFIG__MODULE__BASE__CORE.
 WUFFS_BASE__MAYBE_STATIC wuffs_base__transform__output  //
 wuffs_base__base_16__decode4(wuffs_base__slice_u8 dst,
+                             wuffs_base__slice_u8 src,
+                             bool src_closed,
+                             uint32_t options);
+
+// wuffs_base__base_16__encode2 converts "jk" to "6A6B", where e.g. 'j' is
+// U+006A. There are 2 dst bytes for every src byte.
+//
+// For modular builds that divide the base module into sub-modules, using this
+// function requires the WUFFS_CONFIG__MODULE__BASE__INTCONV sub-module, not
+// just WUFFS_CONFIG__MODULE__BASE__CORE.
+WUFFS_BASE__MAYBE_STATIC wuffs_base__transform__output  //
+wuffs_base__base_16__encode2(wuffs_base__slice_u8 dst,
+                             wuffs_base__slice_u8 src,
+                             bool src_closed,
+                             uint32_t options);
+
+// wuffs_base__base_16__encode4 converts "jk" to "\\x6A\\x6B", where e.g. 'j'
+// is U+006A. There are 4 dst bytes for every src byte.
+//
+// For modular builds that divide the base module into sub-modules, using this
+// function requires the WUFFS_CONFIG__MODULE__BASE__INTCONV sub-module, not
+// just WUFFS_CONFIG__MODULE__BASE__CORE.
+WUFFS_BASE__MAYBE_STATIC wuffs_base__transform__output  //
+wuffs_base__base_16__encode2(wuffs_base__slice_u8 dst,
                              wuffs_base__slice_u8 src,
                              bool src_closed,
                              uint32_t options);
@@ -4387,7 +4661,7 @@ WUFFS_BASE__MAYBE_STATIC size_t  //
 wuffs_base__utf_8__encode(wuffs_base__slice_u8 dst, uint32_t code_point);
 
 // wuffs_base__utf_8__next returns the next UTF-8 code point (and that code
-// point's byte length) at the start of s.
+// point's byte length) at the start of the read-only slice (s_ptr, s_len).
 //
 // There are exactly two cases in which this function returns something where
 // wuffs_base__utf_8__next__output__is_valid is false:
@@ -4400,7 +4674,7 @@ wuffs_base__utf_8__encode(wuffs_base__slice_u8 dst, uint32_t code_point);
 //
 // In any case, it always returns an output that satisfies both of:
 //  - (output.code_point  <= WUFFS_BASE__UNICODE_CODE_POINT__MAX_INCL).
-//  - (output.byte_length <= s.len).
+//  - (output.byte_length <= s_len).
 //
 // If s is a sub-slice of a larger slice of valid UTF-8, but that sub-slice
 // boundary occurs in the middle of a multi-byte UTF-8 encoding of a single
@@ -4411,44 +4685,46 @@ wuffs_base__utf_8__encode(wuffs_base__slice_u8 dst, uint32_t code_point);
 // function requires the WUFFS_CONFIG__MODULE__BASE__UTF8 sub-module, not just
 // WUFFS_CONFIG__MODULE__BASE__CORE.
 WUFFS_BASE__MAYBE_STATIC wuffs_base__utf_8__next__output  //
-wuffs_base__utf_8__next(wuffs_base__slice_u8 s);
+wuffs_base__utf_8__next(const uint8_t* s_ptr, size_t s_len);
 
 // wuffs_base__utf_8__next_from_end is like wuffs_base__utf_8__next except that
-// it looks at the end of s instead of the start.
+// it looks at the end of (s_ptr, s_len) instead of the start.
 //
 // For modular builds that divide the base module into sub-modules, using this
 // function requires the WUFFS_CONFIG__MODULE__BASE__UTF8 sub-module, not just
 // WUFFS_CONFIG__MODULE__BASE__CORE.
 WUFFS_BASE__MAYBE_STATIC wuffs_base__utf_8__next__output  //
-wuffs_base__utf_8__next_from_end(wuffs_base__slice_u8 s);
+wuffs_base__utf_8__next_from_end(const uint8_t* s_ptr, size_t s_len);
 
 // wuffs_base__utf_8__longest_valid_prefix returns the largest n such that the
-// sub-slice s[..n] is valid UTF-8.
+// sub-slice s[..n] is valid UTF-8, where s is the read-only slice (s_ptr,
+// s_len).
 //
-// In particular, it returns s.len if and only if all of s is valid UTF-8.
+// In particular, it returns s_len if and only if all of s is valid UTF-8.
 //
 // If s is a sub-slice of a larger slice of valid UTF-8, but that sub-slice
 // boundary occurs in the middle of a multi-byte UTF-8 encoding of a single
-// code point, then this function will return less than s.len. It is the
+// code point, then this function will return less than s_len. It is the
 // caller's responsibility to split on or otherwise manage UTF-8 boundaries.
 //
 // For modular builds that divide the base module into sub-modules, using this
 // function requires the WUFFS_CONFIG__MODULE__BASE__UTF8 sub-module, not just
 // WUFFS_CONFIG__MODULE__BASE__CORE.
 WUFFS_BASE__MAYBE_STATIC size_t  //
-wuffs_base__utf_8__longest_valid_prefix(wuffs_base__slice_u8 s);
+wuffs_base__utf_8__longest_valid_prefix(const uint8_t* s_ptr, size_t s_len);
 
 // wuffs_base__ascii__longest_valid_prefix returns the largest n such that the
-// sub-slice s[..n] is valid ASCII.
+// sub-slice s[..n] is valid ASCII, where s is the read-only slice (s_ptr,
+// s_len).
 //
-// In particular, it returns s.len if and only if all of s is valid ASCII.
+// In particular, it returns s_len if and only if all of s is valid ASCII.
 // Equivalently, when none of the bytes in s have the 0x80 high bit set.
 //
 // For modular builds that divide the base module into sub-modules, using this
 // function requires the WUFFS_CONFIG__MODULE__BASE__UTF8 sub-module, not just
 // WUFFS_CONFIG__MODULE__BASE__CORE.
 WUFFS_BASE__MAYBE_STATIC size_t  //
-wuffs_base__ascii__longest_valid_prefix(wuffs_base__slice_u8 s);
+wuffs_base__ascii__longest_valid_prefix(const uint8_t* s_ptr, size_t s_len);
 
 // ---------------- Interface Declarations.
 
@@ -5409,6 +5685,230 @@ struct wuffs_bmp__decoder__struct {
 
 #endif  // __cplusplus
 };  // struct wuffs_bmp__decoder__struct
+
+#endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// ---------------- Status Codes
+
+extern const char wuffs_cbor__error__bad_input[];
+extern const char wuffs_cbor__error__unsupported_recursion_depth[];
+
+// ---------------- Public Consts
+
+#define WUFFS_CBOR__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE 0
+
+#define WUFFS_CBOR__DECODER_DEPTH_MAX_INCL 1024
+
+#define WUFFS_CBOR__DECODER_DST_TOKEN_BUFFER_LENGTH_MIN_INCL 2
+
+#define WUFFS_CBOR__DECODER_SRC_IO_BUFFER_LENGTH_MIN_INCL 9
+
+#define WUFFS_CBOR__TOKEN_VALUE_MAJOR 787997
+
+#define WUFFS_CBOR__TOKEN_VALUE_MINOR__DETAIL_MASK 262143
+
+#define WUFFS_CBOR__TOKEN_VALUE_MINOR__MINUS_1_MINUS_X 16777216
+
+#define WUFFS_CBOR__TOKEN_VALUE_MINOR__SIMPLE_VALUE 8388608
+
+#define WUFFS_CBOR__TOKEN_VALUE_MINOR__TAG 4194304
+
+// ---------------- Struct Declarations
+
+typedef struct wuffs_cbor__decoder__struct wuffs_cbor__decoder;
+
+// ---------------- Public Initializer Prototypes
+
+// For any given "wuffs_foo__bar* self", "wuffs_foo__bar__initialize(self,
+// etc)" should be called before any other "wuffs_foo__bar__xxx(self, etc)".
+//
+// Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.
+// Pass 0 (or some combination of WUFFS_INITIALIZE__XXX) for options.
+
+wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
+wuffs_cbor__decoder__initialize(
+    wuffs_cbor__decoder* self,
+    size_t sizeof_star_self,
+    uint64_t wuffs_version,
+    uint32_t options);
+
+size_t
+sizeof__wuffs_cbor__decoder();
+
+// ---------------- Allocs
+
+// These functions allocate and initialize Wuffs structs. They return NULL if
+// memory allocation fails. If they return non-NULL, there is no need to call
+// wuffs_foo__bar__initialize, but the caller is responsible for eventually
+// calling free on the returned pointer. That pointer is effectively a C++
+// std::unique_ptr<T, decltype(&free)>.
+
+wuffs_cbor__decoder*
+wuffs_cbor__decoder__alloc();
+
+static inline wuffs_base__token_decoder*
+wuffs_cbor__decoder__alloc_as__wuffs_base__token_decoder() {
+  return (wuffs_base__token_decoder*)(wuffs_cbor__decoder__alloc());
+}
+
+// ---------------- Upcasts
+
+static inline wuffs_base__token_decoder*
+wuffs_cbor__decoder__upcast_as__wuffs_base__token_decoder(
+    wuffs_cbor__decoder* p) {
+  return (wuffs_base__token_decoder*)p;
+}
+
+// ---------------- Public Function Prototypes
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct
+wuffs_cbor__decoder__set_quirk_enabled(
+    wuffs_cbor__decoder* self,
+    uint32_t a_quirk,
+    bool a_enabled);
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__range_ii_u64
+wuffs_cbor__decoder__workbuf_len(
+    const wuffs_cbor__decoder* self);
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status
+wuffs_cbor__decoder__decode_tokens(
+    wuffs_cbor__decoder* self,
+    wuffs_base__token_buffer* a_dst,
+    wuffs_base__io_buffer* a_src,
+    wuffs_base__slice_u8 a_workbuf);
+
+// ---------------- Struct Definitions
+
+// These structs' fields, and the sizeof them, are private implementation
+// details that aren't guaranteed to be stable across Wuffs versions.
+//
+// See https://en.wikipedia.org/wiki/Opaque_pointer#C
+
+#if defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
+
+struct wuffs_cbor__decoder__struct {
+  // Do not access the private_impl's or private_data's fields directly. There
+  // is no API/ABI compatibility or safety guarantee if you do so. Instead, use
+  // the wuffs_foo__bar__baz functions.
+  //
+  // It is a struct, not a struct*, so that the outermost wuffs_foo__bar struct
+  // can be stack allocated when WUFFS_IMPLEMENTATION is defined.
+
+  struct {
+    uint32_t magic;
+    uint32_t active_coroutine;
+    wuffs_base__vtable vtable_for__wuffs_base__token_decoder;
+    wuffs_base__vtable null_vtable;
+
+    bool f_end_of_data;
+
+    uint32_t p_decode_tokens[1];
+  } private_impl;
+
+  struct {
+    uint32_t f_stack[64];
+    uint64_t f_container_num_remaining[1024];
+
+    struct {
+      uint64_t v_string_length;
+      uint32_t v_depth;
+      uint32_t v_token_length;
+      bool v_tagged;
+      uint8_t v_indefinite_string_major_type;
+    } s_decode_tokens[1];
+  } private_data;
+
+#ifdef __cplusplus
+#if (__cplusplus >= 201103L)
+  using unique_ptr = std::unique_ptr<wuffs_cbor__decoder, decltype(&free)>;
+
+  // On failure, the alloc_etc functions return nullptr. They don't throw.
+
+  static inline unique_ptr
+  alloc() {
+    return unique_ptr(wuffs_cbor__decoder__alloc(), &free);
+  }
+
+  static inline wuffs_base__token_decoder::unique_ptr
+  alloc_as__wuffs_base__token_decoder() {
+    return wuffs_base__token_decoder::unique_ptr(
+        wuffs_cbor__decoder__alloc_as__wuffs_base__token_decoder(), &free);
+  }
+#endif  // (__cplusplus >= 201103L)
+
+#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+  // Disallow constructing or copying an object via standard C++ mechanisms,
+  // e.g. the "new" operator, as this struct is intentionally opaque. Its total
+  // size and field layout is not part of the public, stable, memory-safe API.
+  // Use malloc or memcpy and the sizeof__wuffs_foo__bar function instead, and
+  // call wuffs_foo__bar__baz methods (which all take a "this"-like pointer as
+  // their first argument) rather than tweaking bar.private_impl.qux fields.
+  //
+  // In C, we can just leave wuffs_foo__bar as an incomplete type (unless
+  // WUFFS_IMPLEMENTATION is #define'd). In C++, we define a complete type in
+  // order to provide convenience methods. These forward on "this", so that you
+  // can write "bar->baz(etc)" instead of "wuffs_foo__bar__baz(bar, etc)".
+  wuffs_cbor__decoder__struct() = delete;
+  wuffs_cbor__decoder__struct(const wuffs_cbor__decoder__struct&) = delete;
+  wuffs_cbor__decoder__struct& operator=(
+      const wuffs_cbor__decoder__struct&) = delete;
+
+  // As above, the size of the struct is not part of the public API, and unless
+  // WUFFS_IMPLEMENTATION is #define'd, this struct type T should be heap
+  // allocated, not stack allocated. Its size is not intended to be known at
+  // compile time, but it is unfortunately divulged as a side effect of
+  // defining C++ convenience methods. Use "sizeof__T()", calling the function,
+  // instead of "sizeof T", invoking the operator. To make the two values
+  // different, so that passing the latter will be rejected by the initialize
+  // function, we add an arbitrary amount of dead weight.
+  uint8_t dead_weight[123000000];  // 123 MB.
+#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+
+  inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
+  initialize(
+      size_t sizeof_star_self,
+      uint64_t wuffs_version,
+      uint32_t options) {
+    return wuffs_cbor__decoder__initialize(
+        this, sizeof_star_self, wuffs_version, options);
+  }
+
+  inline wuffs_base__token_decoder*
+  upcast_as__wuffs_base__token_decoder() {
+    return (wuffs_base__token_decoder*)this;
+  }
+
+  inline wuffs_base__empty_struct
+  set_quirk_enabled(
+      uint32_t a_quirk,
+      bool a_enabled) {
+    return wuffs_cbor__decoder__set_quirk_enabled(this, a_quirk, a_enabled);
+  }
+
+  inline wuffs_base__range_ii_u64
+  workbuf_len() const {
+    return wuffs_cbor__decoder__workbuf_len(this);
+  }
+
+  inline wuffs_base__status
+  decode_tokens(
+      wuffs_base__token_buffer* a_dst,
+      wuffs_base__io_buffer* a_src,
+      wuffs_base__slice_u8 a_workbuf) {
+    return wuffs_cbor__decoder__decode_tokens(this, a_dst, a_src, a_workbuf);
+  }
+
+#endif  // __cplusplus
+};  // struct wuffs_cbor__decoder__struct
 
 #endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
@@ -7076,6 +7576,7 @@ extern const char wuffs_json__error__bad_c0_control_code[];
 extern const char wuffs_json__error__bad_utf_8[];
 extern const char wuffs_json__error__bad_backslash_escape[];
 extern const char wuffs_json__error__bad_input[];
+extern const char wuffs_json__error__bad_quirk_combination[];
 extern const char wuffs_json__error__unsupported_number_length[];
 extern const char wuffs_json__error__unsupported_recursion_depth[];
 
@@ -7105,25 +7606,29 @@ extern const char wuffs_json__error__unsupported_recursion_depth[];
 
 #define WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_V 1225364487
 
-#define WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_X 1225364488
+#define WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_X_AS_BYTES 1225364488
 
-#define WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_ZERO 1225364489
+#define WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_X_AS_CODE_POINTS 1225364489
 
-#define WUFFS_JSON__QUIRK_ALLOW_COMMENT_BLOCK 1225364490
+#define WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_ZERO 1225364490
 
-#define WUFFS_JSON__QUIRK_ALLOW_COMMENT_LINE 1225364491
+#define WUFFS_JSON__QUIRK_ALLOW_COMMENT_BLOCK 1225364491
 
-#define WUFFS_JSON__QUIRK_ALLOW_EXTRA_COMMA 1225364492
+#define WUFFS_JSON__QUIRK_ALLOW_COMMENT_LINE 1225364492
 
-#define WUFFS_JSON__QUIRK_ALLOW_INF_NAN_NUMBERS 1225364493
+#define WUFFS_JSON__QUIRK_ALLOW_EXTRA_COMMA 1225364493
 
-#define WUFFS_JSON__QUIRK_ALLOW_LEADING_ASCII_RECORD_SEPARATOR 1225364494
+#define WUFFS_JSON__QUIRK_ALLOW_INF_NAN_NUMBERS 1225364494
 
-#define WUFFS_JSON__QUIRK_ALLOW_LEADING_UNICODE_BYTE_ORDER_MARK 1225364495
+#define WUFFS_JSON__QUIRK_ALLOW_LEADING_ASCII_RECORD_SEPARATOR 1225364495
 
-#define WUFFS_JSON__QUIRK_ALLOW_TRAILING_NEW_LINE 1225364496
+#define WUFFS_JSON__QUIRK_ALLOW_LEADING_UNICODE_BYTE_ORDER_MARK 1225364496
 
-#define WUFFS_JSON__QUIRK_REPLACE_INVALID_UNICODE 1225364497
+#define WUFFS_JSON__QUIRK_ALLOW_TRAILING_NEW_LINE 1225364497
+
+#define WUFFS_JSON__QUIRK_JSON_POINTER_ALLOW_TILDE_R_TILDE_N 1225364498
+
+#define WUFFS_JSON__QUIRK_REPLACE_INVALID_UNICODE 1225364499
 
 // ---------------- Struct Declarations
 
@@ -7213,10 +7718,11 @@ struct wuffs_json__decoder__struct {
     wuffs_base__vtable vtable_for__wuffs_base__token_decoder;
     wuffs_base__vtable null_vtable;
 
-    bool f_quirks[18];
+    bool f_quirks[20];
     bool f_allow_leading_ars;
     bool f_allow_leading_ubom;
     bool f_end_of_data;
+    uint32_t f_string_value_minor;
 
     uint32_t p_decode_tokens[1];
     uint32_t p_decode_leading[1];
@@ -7898,6 +8404,236 @@ struct wuffs_zlib__decoder__struct {
 #ifdef __cplusplus
 }  // extern "C"
 #endif
+
+#if defined(__cplusplus) && (__cplusplus >= 201103L)
+
+// ---------------- Auxiliary - Base
+
+// Auxiliary code is discussed at
+// https://github.com/google/wuffs/blob/master/doc/note/auxiliary-code.md
+
+#include <stdio.h>
+
+#include <string>
+
+namespace wuffs_aux {
+
+using IOBuffer = wuffs_base__io_buffer;
+
+namespace sync_io {
+
+// --------
+
+class Input {
+ public:
+  virtual IOBuffer* BringsItsOwnIOBuffer();
+  virtual std::string CopyIn(IOBuffer* dst) = 0;
+};
+
+// --------
+
+// FileInput is an Input that reads from a file source.
+//
+// It does not take responsibility for closing the file when done.
+class FileInput : public Input {
+ public:
+  FileInput(FILE* f);
+
+  virtual std::string CopyIn(IOBuffer* dst);
+
+ private:
+  FILE* m_f;
+
+  // Delete the copy and assign constructors.
+  FileInput(const FileInput&) = delete;
+  FileInput& operator=(const FileInput&) = delete;
+};
+
+// --------
+
+// MemoryInput is an Input that reads from an in-memory source.
+//
+// It does not take responsibility for freeing the memory when done.
+class MemoryInput : public Input {
+ public:
+  MemoryInput(const char* ptr, size_t len);
+  MemoryInput(const uint8_t* ptr, size_t len);
+
+  virtual IOBuffer* BringsItsOwnIOBuffer();
+  virtual std::string CopyIn(IOBuffer* dst);
+
+ private:
+  IOBuffer m_io;
+
+  // Delete the copy and assign constructors.
+  MemoryInput(const MemoryInput&) = delete;
+  MemoryInput& operator=(const MemoryInput&) = delete;
+};
+
+// --------
+
+}  // namespace sync_io
+
+}  // namespace wuffs_aux
+
+// ---------------- Auxiliary - CBOR
+
+namespace wuffs_aux {
+
+struct DecodeCborResult {
+  DecodeCborResult(std::string&& error_message0, uint64_t cursor_position0);
+
+  std::string error_message;
+  uint64_t cursor_position;
+};
+
+class DecodeCborCallbacks {
+ public:
+  // AppendXxx are called for leaf nodes: literals, numbers, strings, etc.
+
+  virtual std::string AppendNull() = 0;
+  virtual std::string AppendUndefined() = 0;
+  virtual std::string AppendBool(bool val) = 0;
+  virtual std::string AppendF64(double val) = 0;
+  virtual std::string AppendI64(int64_t val) = 0;
+  virtual std::string AppendU64(uint64_t val) = 0;
+  virtual std::string AppendByteString(std::string&& val) = 0;
+  virtual std::string AppendTextString(std::string&& val) = 0;
+  virtual std::string AppendMinus1MinusX(uint64_t val) = 0;
+  virtual std::string AppendCborSimpleValue(uint8_t val) = 0;
+  virtual std::string AppendCborTag(uint64_t val) = 0;
+
+  // Push and Pop are called for container nodes: CBOR arrays (lists) and CBOR
+  // maps (dictionaries).
+  //
+  // The flags bits combine exactly one of:
+  //  - WUFFS_BASE__TOKEN__VBD__STRUCTURE__FROM_NONE
+  //  - WUFFS_BASE__TOKEN__VBD__STRUCTURE__FROM_LIST
+  //  - WUFFS_BASE__TOKEN__VBD__STRUCTURE__FROM_DICT
+  // and exactly one of:
+  //  - WUFFS_BASE__TOKEN__VBD__STRUCTURE__TO_NONE
+  //  - WUFFS_BASE__TOKEN__VBD__STRUCTURE__TO_LIST
+  //  - WUFFS_BASE__TOKEN__VBD__STRUCTURE__TO_DICT
+
+  virtual std::string Push(uint32_t flags) = 0;
+  virtual std::string Pop(uint32_t flags) = 0;
+
+  // Done is always the last Callback method called by DecodeCbor, whether or
+  // not parsing the input as CBOR encountered an error. Even when successful,
+  // trailing data may remain in input and buffer.
+  //
+  // Do not keep a reference to buffer or buffer.data.ptr after Done returns,
+  // as DecodeCbor may then de-allocate the backing array.
+  //
+  // The default Done implementation is a no-op.
+  virtual void Done(DecodeCborResult& result,
+                    sync_io::Input& input,
+                    IOBuffer& buffer);
+};
+
+// DecodeCbor calls callbacks based on the CBOR-formatted data in input.
+//
+// On success, the returned error_message is empty and cursor_position counts
+// the number of bytes consumed. On failure, error_message is non-empty and
+// cursor_position is the location of the error. That error may be a content
+// error (invalid CBOR) or an input error (e.g. network failure).
+DecodeCborResult DecodeCbor(
+    DecodeCborCallbacks& callbacks,
+    sync_io::Input& input,
+    wuffs_base__slice_u32 quirks = wuffs_base__empty_slice_u32());
+
+}  // namespace wuffs_aux
+
+// ---------------- Auxiliary - JSON
+
+namespace wuffs_aux {
+
+struct DecodeJsonResult {
+  DecodeJsonResult(std::string&& error_message0, uint64_t cursor_position0);
+
+  std::string error_message;
+  uint64_t cursor_position;
+};
+
+class DecodeJsonCallbacks {
+ public:
+  // AppendXxx are called for leaf nodes: literals, numbers and strings. For
+  // strings, the Callbacks implementation is responsible for tracking map keys
+  // versus other values.
+
+  // The JSON file format as specified deals only with (UTF-8) text strings,
+  // but an unofficial extension allows "ijk\x89m" escapes within those
+  // strings. DecodeJsonCallbacks' AppendByteString will not be called unless
+  // WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_X_AS_BYTES is passed to DecodeJson. If
+  // it is passed, AppendTextString will not be called and all byte strings are
+  // potentially invalid UTF-8. It is up to the AppendByteString implementation
+  // whether to test the std::string for UTF-8 validity.
+  //
+  // The default AppendByteString implementation returns an error message.
+
+  virtual std::string AppendNull() = 0;
+  virtual std::string AppendBool(bool val) = 0;
+  virtual std::string AppendF64(double val) = 0;
+  virtual std::string AppendI64(int64_t val) = 0;
+  virtual std::string AppendByteString(std::string&& val);
+  virtual std::string AppendTextString(std::string&& val) = 0;
+
+  // Push and Pop are called for container nodes: JSON arrays (lists) and JSON
+  // objects (dictionaries).
+  //
+  // The flags bits combine exactly one of:
+  //  - WUFFS_BASE__TOKEN__VBD__STRUCTURE__FROM_NONE
+  //  - WUFFS_BASE__TOKEN__VBD__STRUCTURE__FROM_LIST
+  //  - WUFFS_BASE__TOKEN__VBD__STRUCTURE__FROM_DICT
+  // and exactly one of:
+  //  - WUFFS_BASE__TOKEN__VBD__STRUCTURE__TO_NONE
+  //  - WUFFS_BASE__TOKEN__VBD__STRUCTURE__TO_LIST
+  //  - WUFFS_BASE__TOKEN__VBD__STRUCTURE__TO_DICT
+
+  virtual std::string Push(uint32_t flags) = 0;
+  virtual std::string Pop(uint32_t flags) = 0;
+
+  // Done is always the last Callback method called by DecodeJson, whether or
+  // not parsing the input as JSON encountered an error. Even when successful,
+  // trailing data may remain in input and buffer. See "Unintuitive JSON
+  // Parsing" (https://nullprogram.com/blog/2019/12/28/) which discusses JSON
+  // parsing and when it stops.
+  //
+  // Do not keep a reference to buffer or buffer.data.ptr after Done returns,
+  // as DecodeJson may then de-allocate the backing array.
+  //
+  // The default Done implementation is a no-op.
+  virtual void Done(DecodeJsonResult& result,
+                    sync_io::Input& input,
+                    IOBuffer& buffer);
+};
+
+extern const char DecodeJson_BadJsonPointer[];
+extern const char DecodeJson_NoMatch[];
+
+// DecodeJson calls callbacks based on the JSON-formatted data in input.
+//
+// On success, the returned error_message is empty and cursor_position counts
+// the number of bytes consumed. On failure, error_message is non-empty and
+// cursor_position is the location of the error. That error may be a content
+// error (invalid JSON) or an input error (e.g. network failure).
+//
+// json_pointer is a query in the JSON Pointer (RFC 6901) syntax. The callbacks
+// run for the input's sub-node that matches the query. DecodeJson_NoMatch is
+// returned if no matching sub-node was found. The empty query matches the
+// input's root node, consistent with JSON Pointer semantics.
+//
+// The JSON Pointer implementation is greedy: duplicate keys are not rejected
+// but only the first match for each '/'-separated fragment is followed.
+DecodeJsonResult DecodeJson(
+    DecodeJsonCallbacks& callbacks,
+    sync_io::Input& input,
+    wuffs_base__slice_u32 quirks = wuffs_base__empty_slice_u32(),
+    std::string json_pointer = std::string());
+
+}  // namespace wuffs_aux
+
+#endif  // defined(__cplusplus) && (__cplusplus >= 201103L)
 
 // WUFFS C HEADER ENDS HERE.
 #ifdef WUFFS_IMPLEMENTATION
@@ -9231,7 +9967,7 @@ static const uint8_t wuffs_base__private_implementation__powers_of_5[0x051C] = {
 //
 // The 1214 bias in this look-up table equals 1023 + 191. 1023 is the bias for
 // IEEE 754 double-precision floating point. 191 is ((3 * 64) - 1) and
-// wuffs_base__private_implementation__parse_number_f64_eisel works with
+// wuffs_base__private_implementation__parse_number_f64_eisel_lemire works with
 // multiples-of-64-bit mantissas.
 //
 // For example, the third approximation, for 1e-324, consists of the uint32_t
@@ -9897,6 +10633,136 @@ static const double wuffs_base__private_implementation__f64_powers_of_10[23] = {
 };
 
 // ---------------- IEEE 754 Floating Point
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__lossy_value_u16  //
+wuffs_base__ieee_754_bit_representation__from_f64_to_u16_truncate(double f) {
+  uint64_t u = 0;
+  if (sizeof(uint64_t) == sizeof(double)) {
+    memcpy(&u, &f, sizeof(uint64_t));
+  }
+  uint16_t neg = ((uint16_t)((u >> 63) << 15));
+  u &= 0x7FFFFFFFFFFFFFFF;
+  uint64_t exp = u >> 52;
+  uint64_t man = u & 0x000FFFFFFFFFFFFF;
+
+  if (exp == 0x7FF) {
+    if (man == 0) {  // Infinity.
+      wuffs_base__lossy_value_u16 ret;
+      ret.value = neg | 0x7C00;
+      ret.lossy = false;
+      return ret;
+    }
+    // NaN. Shift the 52 mantissa bits to 10 mantissa bits, keeping the most
+    // significant mantissa bit (quiet vs signaling NaNs). Also set the low 9
+    // bits of ret.value so that the 10-bit mantissa is non-zero.
+    wuffs_base__lossy_value_u16 ret;
+    ret.value = neg | 0x7DFF | ((uint16_t)(man >> 42));
+    ret.lossy = false;
+    return ret;
+
+  } else if (exp > 0x40E) {  // Truncate to the largest finite f16.
+    wuffs_base__lossy_value_u16 ret;
+    ret.value = neg | 0x7BFF;
+    ret.lossy = true;
+    return ret;
+
+  } else if (exp <= 0x3E6) {  // Truncate to zero.
+    wuffs_base__lossy_value_u16 ret;
+    ret.value = neg;
+    ret.lossy = (u != 0);
+    return ret;
+
+  } else if (exp <= 0x3F0) {  // Normal f64, subnormal f16.
+    // Convert from a 53-bit mantissa (after realizing the implicit bit) to a
+    // 10-bit mantissa and then adjust for the exponent.
+    man |= 0x0010000000000000;
+    uint32_t shift = ((uint32_t)(1051 - exp));  // 1051 = 0x3F0 + 53 - 10.
+    uint64_t shifted_man = man >> shift;
+    wuffs_base__lossy_value_u16 ret;
+    ret.value = neg | ((uint16_t)shifted_man);
+    ret.lossy = (shifted_man << shift) != man;
+    return ret;
+  }
+
+  // Normal f64, normal f16.
+
+  // Re-bias from 1023 to 15 and shift above f16's 10 mantissa bits.
+  exp = (exp - 1008) << 10;  // 1008 = 1023 - 15 = 0x3FF - 0xF.
+
+  // Convert from a 52-bit mantissa (excluding the implicit bit) to a 10-bit
+  // mantissa (again excluding the implicit bit). We lose some information if
+  // any of the bottom 42 bits are non-zero.
+  wuffs_base__lossy_value_u16 ret;
+  ret.value = neg | ((uint16_t)exp) | ((uint16_t)(man >> 42));
+  ret.lossy = (man << 22) != 0;
+  return ret;
+}
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__lossy_value_u32  //
+wuffs_base__ieee_754_bit_representation__from_f64_to_u32_truncate(double f) {
+  uint64_t u = 0;
+  if (sizeof(uint64_t) == sizeof(double)) {
+    memcpy(&u, &f, sizeof(uint64_t));
+  }
+  uint32_t neg = ((uint32_t)(u >> 63)) << 31;
+  u &= 0x7FFFFFFFFFFFFFFF;
+  uint64_t exp = u >> 52;
+  uint64_t man = u & 0x000FFFFFFFFFFFFF;
+
+  if (exp == 0x7FF) {
+    if (man == 0) {  // Infinity.
+      wuffs_base__lossy_value_u32 ret;
+      ret.value = neg | 0x7F800000;
+      ret.lossy = false;
+      return ret;
+    }
+    // NaN. Shift the 52 mantissa bits to 23 mantissa bits, keeping the most
+    // significant mantissa bit (quiet vs signaling NaNs). Also set the low 22
+    // bits of ret.value so that the 23-bit mantissa is non-zero.
+    wuffs_base__lossy_value_u32 ret;
+    ret.value = neg | 0x7FBFFFFF | ((uint32_t)(man >> 29));
+    ret.lossy = false;
+    return ret;
+
+  } else if (exp > 0x47E) {  // Truncate to the largest finite f32.
+    wuffs_base__lossy_value_u32 ret;
+    ret.value = neg | 0x7F7FFFFF;
+    ret.lossy = true;
+    return ret;
+
+  } else if (exp <= 0x369) {  // Truncate to zero.
+    wuffs_base__lossy_value_u32 ret;
+    ret.value = neg;
+    ret.lossy = (u != 0);
+    return ret;
+
+  } else if (exp <= 0x380) {  // Normal f64, subnormal f32.
+    // Convert from a 53-bit mantissa (after realizing the implicit bit) to a
+    // 23-bit mantissa and then adjust for the exponent.
+    man |= 0x0010000000000000;
+    uint32_t shift = ((uint32_t)(926 - exp));  // 926 = 0x380 + 53 - 23.
+    uint64_t shifted_man = man >> shift;
+    wuffs_base__lossy_value_u32 ret;
+    ret.value = neg | ((uint32_t)shifted_man);
+    ret.lossy = (shifted_man << shift) != man;
+    return ret;
+  }
+
+  // Normal f64, normal f32.
+
+  // Re-bias from 1023 to 127 and shift above f32's 23 mantissa bits.
+  exp = (exp - 896) << 23;  // 896 = 1023 - 127 = 0x3FF - 0x7F.
+
+  // Convert from a 52-bit mantissa (excluding the implicit bit) to a 23-bit
+  // mantissa (again excluding the implicit bit). We lose some information if
+  // any of the bottom 29 bits are non-zero.
+  wuffs_base__lossy_value_u32 ret;
+  ret.value = neg | ((uint32_t)exp) | ((uint32_t)(man >> 29));
+  ret.lossy = (man << 35) != 0;
+  return ret;
+}
+
+// --------
 
 #define WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__DECIMAL_POINT__RANGE 2047
 #define WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__DIGITS_PRECISION 800
@@ -10712,9 +11578,9 @@ wuffs_base__private_implementation__high_prec_dec__round_just_enough(
 
 // --------
 
-// wuffs_base__private_implementation__parse_number_f64_eisel produces the IEEE
-// 754 double-precision value for an exact mantissa and base-10 exponent. For
-// example:
+// wuffs_base__private_implementation__parse_number_f64_eisel_lemire produces
+// the IEEE 754 double-precision value for an exact mantissa and base-10
+// exponent. For example:
 //  - when parsing "12345.678e+02", man is 12345678 and exp10 is -1.
 //  - when parsing "-12", man is 12 and exp10 is 0. Processing the leading
 //    minus sign is the responsibility of the caller, not this function.
@@ -10724,7 +11590,8 @@ wuffs_base__private_implementation__high_prec_dec__round_just_enough(
 //
 // On failure, it returns a negative value.
 //
-// The algorithm is based on an original idea by Michael Eisel. See
+// The algorithm is based on an original idea by Michael Eisel that was refined
+// by Daniel Lemire. See
 // https://lemire.me/blog/2020/03/10/fast-float-parsing-in-practice/
 //
 // Preconditions:
@@ -10732,8 +11599,9 @@ wuffs_base__private_implementation__high_prec_dec__round_just_enough(
 //  - exp10 is in the range -326 ..= 310, the same range of the
 //    wuffs_base__private_implementation__powers_of_10 array.
 static int64_t  //
-wuffs_base__private_implementation__parse_number_f64_eisel(uint64_t man,
-                                                           int32_t exp10) {
+wuffs_base__private_implementation__parse_number_f64_eisel_lemire(
+    uint64_t man,
+    int32_t exp10) {
   // Look up the (possibly truncated) base-2 representation of (10 ** exp10).
   // The look-up table was constructed so that it is already normalized: the
   // table entry's mantissa's MSB (most significant bit) is on.
@@ -10965,7 +11833,7 @@ wuffs_base__private_implementation__parse_number_f64_special(
     }
     wuffs_base__result_f64 ret;
     ret.status.repr = NULL;
-    ret.value = wuffs_base__ieee_754_bit_representation__to_f64(
+    ret.value = wuffs_base__ieee_754_bit_representation__from_u64_to_f64(
         (nan ? 0x7FFFFFFFFFFFFFFF : 0x7FF0000000000000) |
         (negative ? 0x8000000000000000 : 0));
     return ret;
@@ -11002,11 +11870,11 @@ wuffs_base__private_implementation__high_prec_dec__to_f64(
       goto infinity;
     }
 
-    // Try the fast Eisel algorithm again. Calculating the (man, exp10) pair
-    // from the high_prec_dec h is more correct but slower than the approach
-    // taken in wuffs_base__parse_number_f64. The latter is optimized for the
-    // common cases (e.g. assuming no underscores or a leading '+' sign) rather
-    // than the full set of cases allowed by the Wuffs API.
+    // Try the fast Eisel-Lemire algorithm again. Calculating the (man, exp10)
+    // pair from the high_prec_dec h is more correct but slower than the
+    // approach taken in wuffs_base__parse_number_f64. The latter is optimized
+    // for the common cases (e.g. assuming no underscores or a leading '+'
+    // sign) rather than the full set of cases allowed by the Wuffs API.
     if (h->num_digits <= 19) {
       uint64_t man = 0;
       uint32_t i;
@@ -11015,12 +11883,13 @@ wuffs_base__private_implementation__high_prec_dec__to_f64(
       }
       int32_t exp10 = h->decimal_point - ((int32_t)(h->num_digits));
       if ((man != 0) && (-326 <= exp10) && (exp10 <= 310)) {
-        int64_t r = wuffs_base__private_implementation__parse_number_f64_eisel(
-            man, exp10);
+        int64_t r =
+            wuffs_base__private_implementation__parse_number_f64_eisel_lemire(
+                man, exp10);
         if (r >= 0) {
           wuffs_base__result_f64 ret;
           ret.status.repr = NULL;
-          ret.value = wuffs_base__ieee_754_bit_representation__to_f64(
+          ret.value = wuffs_base__ieee_754_bit_representation__from_u64_to_f64(
               ((uint64_t)r) | (((uint64_t)(h->negative)) << 63));
           return ret;
         }
@@ -11115,7 +11984,7 @@ wuffs_base__private_implementation__high_prec_dec__to_f64(
 
     wuffs_base__result_f64 ret;
     ret.status.repr = NULL;
-    ret.value = wuffs_base__ieee_754_bit_representation__to_f64(bits);
+    ret.value = wuffs_base__ieee_754_bit_representation__from_u64_to_f64(bits);
     return ret;
   } while (0);
 
@@ -11125,7 +11994,7 @@ zero:
 
     wuffs_base__result_f64 ret;
     ret.status.repr = NULL;
-    ret.value = wuffs_base__ieee_754_bit_representation__to_f64(bits);
+    ret.value = wuffs_base__ieee_754_bit_representation__from_u64_to_f64(bits);
     return ret;
   } while (0);
 
@@ -11142,7 +12011,7 @@ infinity:
 
     wuffs_base__result_f64 ret;
     ret.status.repr = NULL;
-    ret.value = wuffs_base__ieee_754_bit_representation__to_f64(bits);
+    ret.value = wuffs_base__ieee_754_bit_representation__from_u64_to_f64(bits);
     return ret;
   } while (0);
 }
@@ -11163,9 +12032,9 @@ wuffs_base__parse_number_f64(wuffs_base__slice_u8 s, uint32_t options) {
   // "Do It Yourself Floating Point" type from Loitsch (†), but the exponent
   // here is base-10, not base-2.
   //
-  // If s's number fits in a (man, exp10), parse that pair with the Eisel
-  // algorithm. If not, or if Eisel fails, parsing s with the fallback
-  // algorithm is slower but comprehensive.
+  // If s's number fits in a (man, exp10), parse that pair with the
+  // Eisel-Lemire algorithm. If not, or if Eisel-Lemire fails, parsing s with
+  // the fallback algorithm is slower but comprehensive.
   //
   // † "Printing Floating-Point Numbers Quickly and Accurately with Integers"
   // (https://www.cs.tufts.edu/~nr/cs257/archive/florian-loitsch/printf.pdf).
@@ -11321,7 +12190,7 @@ wuffs_base__parse_number_f64(wuffs_base__slice_u8 s, uint32_t options) {
       }
     }
 
-    // The wuffs_base__private_implementation__parse_number_f64_eisel
+    // The wuffs_base__private_implementation__parse_number_f64_eisel_lemire
     // preconditions include that exp10 is in the range -326 ..= 310.
     if ((exp10 < -326) || (310 < exp10)) {
       goto fallback;
@@ -11329,7 +12198,7 @@ wuffs_base__parse_number_f64(wuffs_base__slice_u8 s, uint32_t options) {
 
     // If man and exp10 are small enough, all three of (man), (10 ** exp10) and
     // (man ** (10 ** exp10)) are exactly representable by a double. We don't
-    // need to run the Eisel algorithm.
+    // need to run the Eisel-Lemire algorithm.
     if ((-22 <= exp10) && (exp10 <= 22) && ((man >> 53) == 0)) {
       double d = (double)man;
       if (exp10 >= 0) {
@@ -11343,22 +12212,23 @@ wuffs_base__parse_number_f64(wuffs_base__slice_u8 s, uint32_t options) {
       return ret;
     }
 
-    // The wuffs_base__private_implementation__parse_number_f64_eisel
+    // The wuffs_base__private_implementation__parse_number_f64_eisel_lemire
     // preconditions include that man is non-zero. Parsing "0" should be caught
     // by the "If man and exp10 are small enough" above, but "0e99" might not.
     if (man == 0) {
       goto fallback;
     }
 
-    // Our man and exp10 are in range. Run the Eisel algorithm.
+    // Our man and exp10 are in range. Run the Eisel-Lemire algorithm.
     int64_t r =
-        wuffs_base__private_implementation__parse_number_f64_eisel(man, exp10);
+        wuffs_base__private_implementation__parse_number_f64_eisel_lemire(
+            man, exp10);
     if (r < 0) {
       goto fallback;
     }
     wuffs_base__result_f64 ret;
     ret.status.repr = NULL;
-    ret.value = wuffs_base__ieee_754_bit_representation__to_f64(
+    ret.value = wuffs_base__ieee_754_bit_representation__from_u64_to_f64(
         ((uint64_t)r) | (((uint64_t)negative) << 63));
     return ret;
   } while (0);
@@ -11574,7 +12444,7 @@ wuffs_base__render_number_f64(wuffs_base__slice_u8 dst,
                               uint32_t options) {
   // Decompose x (64 bits) into negativity (1 bit), base-2 exponent (11 bits
   // with a -1023 bias) and mantissa (52 bits).
-  uint64_t bits = wuffs_base__ieee_754_bit_representation__from_f64(x);
+  uint64_t bits = wuffs_base__ieee_754_bit_representation__from_f64_to_u64(x);
   bool neg = (bits >> 63) != 0;
   int32_t exp2 = ((int32_t)(bits >> 52)) & 0x7FF;
   uint64_t man = bits & 0x000FFFFFFFFFFFFFul;
@@ -11769,6 +12639,11 @@ static const uint8_t wuffs_base__parse_number__hexadecimal_digits[256] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // 0xF8 ..= 0xFF.
     // 0     1     2     3     4     5     6     7
     // 8     9     A     B     C     D     E     F
+};
+
+static const uint8_t wuffs_base__private_implementation__encode_base16[16] = {
+    0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37,  // 0x00 ..= 0x07.
+    0x38, 0x39, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46,  // 0x08 ..= 0x0F.
 };
 
 // --------
@@ -12158,6 +13033,82 @@ wuffs_base__base_16__decode4(wuffs_base__slice_u8 dst,
 
   o.num_dst = len;
   o.num_src = len * 4;
+  return o;
+}
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__transform__output  //
+wuffs_base__base_16__encode2(wuffs_base__slice_u8 dst,
+                             wuffs_base__slice_u8 src,
+                             bool src_closed,
+                             uint32_t options) {
+  wuffs_base__transform__output o;
+  size_t dst_len2 = dst.len / 2;
+  size_t len;
+  if (dst_len2 < src.len) {
+    len = dst_len2;
+    o.status.repr = wuffs_base__suspension__short_write;
+  } else {
+    len = src.len;
+    if (!src_closed) {
+      o.status.repr = wuffs_base__suspension__short_read;
+    } else {
+      o.status.repr = NULL;
+    }
+  }
+
+  uint8_t* d = dst.ptr;
+  uint8_t* s = src.ptr;
+  size_t n = len;
+
+  while (n--) {
+    uint8_t c = *s;
+    d[0] = wuffs_base__private_implementation__encode_base16[c >> 4];
+    d[1] = wuffs_base__private_implementation__encode_base16[c & 0x0F];
+    d += 2;
+    s += 1;
+  }
+
+  o.num_dst = len * 2;
+  o.num_src = len;
+  return o;
+}
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__transform__output  //
+wuffs_base__base_16__encode4(wuffs_base__slice_u8 dst,
+                             wuffs_base__slice_u8 src,
+                             bool src_closed,
+                             uint32_t options) {
+  wuffs_base__transform__output o;
+  size_t dst_len4 = dst.len / 4;
+  size_t len;
+  if (dst_len4 < src.len) {
+    len = dst_len4;
+    o.status.repr = wuffs_base__suspension__short_write;
+  } else {
+    len = src.len;
+    if (!src_closed) {
+      o.status.repr = wuffs_base__suspension__short_read;
+    } else {
+      o.status.repr = NULL;
+    }
+  }
+
+  uint8_t* d = dst.ptr;
+  uint8_t* s = src.ptr;
+  size_t n = len;
+
+  while (n--) {
+    uint8_t c = *s;
+    d[0] = '\\';
+    d[1] = 'x';
+    d[2] = wuffs_base__private_implementation__encode_base16[c >> 4];
+    d[3] = wuffs_base__private_implementation__encode_base16[c & 0x0F];
+    d += 4;
+    s += 1;
+  }
+
+  o.num_dst = len * 4;
+  o.num_src = len;
   return o;
 }
 
@@ -14097,20 +15048,20 @@ static const uint8_t wuffs_base__utf_8__byte_length_minus_1[256] = {
 };
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__utf_8__next__output  //
-wuffs_base__utf_8__next(wuffs_base__slice_u8 s) {
-  if (s.len == 0) {
+wuffs_base__utf_8__next(const uint8_t* s_ptr, size_t s_len) {
+  if (s_len == 0) {
     return wuffs_base__make_utf_8__next__output(0, 0);
   }
-  uint32_t c = s.ptr[0];
+  uint32_t c = s_ptr[0];
   switch (wuffs_base__utf_8__byte_length_minus_1[c & 0xFF]) {
     case 0:
       return wuffs_base__make_utf_8__next__output(c, 1);
 
     case 1:
-      if (s.len < 2) {
+      if (s_len < 2) {
         break;
       }
-      c = wuffs_base__load_u16le__no_bounds_check(s.ptr);
+      c = wuffs_base__load_u16le__no_bounds_check(s_ptr);
       if ((c & 0xC000) != 0x8000) {
         break;
       }
@@ -14118,10 +15069,10 @@ wuffs_base__utf_8__next(wuffs_base__slice_u8 s) {
       return wuffs_base__make_utf_8__next__output(c, 2);
 
     case 2:
-      if (s.len < 3) {
+      if (s_len < 3) {
         break;
       }
-      c = wuffs_base__load_u24le__no_bounds_check(s.ptr);
+      c = wuffs_base__load_u24le__no_bounds_check(s_ptr);
       if ((c & 0xC0C000) != 0x808000) {
         break;
       }
@@ -14133,10 +15084,10 @@ wuffs_base__utf_8__next(wuffs_base__slice_u8 s) {
       return wuffs_base__make_utf_8__next__output(c, 3);
 
     case 3:
-      if (s.len < 4) {
+      if (s_len < 4) {
         break;
       }
-      c = wuffs_base__load_u32le__no_bounds_check(s.ptr);
+      c = wuffs_base__load_u32le__no_bounds_check(s_ptr);
       if ((c & 0xC0C0C000) != 0x80808000) {
         break;
       }
@@ -14153,16 +15104,16 @@ wuffs_base__utf_8__next(wuffs_base__slice_u8 s) {
 }
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__utf_8__next__output  //
-wuffs_base__utf_8__next_from_end(wuffs_base__slice_u8 s) {
-  if (s.len == 0) {
+wuffs_base__utf_8__next_from_end(const uint8_t* s_ptr, size_t s_len) {
+  if (s_len == 0) {
     return wuffs_base__make_utf_8__next__output(0, 0);
   }
-  uint8_t* ptr = &s.ptr[s.len - 1];
+  const uint8_t* ptr = &s_ptr[s_len - 1];
   if (*ptr < 0x80) {
     return wuffs_base__make_utf_8__next__output(*ptr, 1);
 
   } else if (*ptr < 0xC0) {
-    uint8_t* too_far = &s.ptr[(s.len > 4) ? (s.len - 4) : 0];
+    const uint8_t* too_far = &s_ptr[(s_len > 4) ? (s_len - 4) : 0];
     uint32_t n = 1;
     while (ptr != too_far) {
       ptr--;
@@ -14172,8 +15123,7 @@ wuffs_base__utf_8__next_from_end(wuffs_base__slice_u8 s) {
       } else if (*ptr < 0xC0) {
         continue;
       }
-      wuffs_base__utf_8__next__output o =
-          wuffs_base__utf_8__next(wuffs_base__make_slice_u8(ptr, n));
+      wuffs_base__utf_8__next__output o = wuffs_base__utf_8__next(ptr, n);
       if (o.byte_length != n) {
         break;
       }
@@ -14186,29 +15136,29 @@ wuffs_base__utf_8__next_from_end(wuffs_base__slice_u8 s) {
 }
 
 WUFFS_BASE__MAYBE_STATIC size_t  //
-wuffs_base__utf_8__longest_valid_prefix(wuffs_base__slice_u8 s) {
+wuffs_base__utf_8__longest_valid_prefix(const uint8_t* s_ptr, size_t s_len) {
   // TODO: possibly optimize the all-ASCII case (4 or 8 bytes at a time).
   //
   // TODO: possibly optimize this by manually inlining the
   // wuffs_base__utf_8__next calls.
-  size_t original_len = s.len;
-  while (s.len > 0) {
-    wuffs_base__utf_8__next__output o = wuffs_base__utf_8__next(s);
+  size_t original_len = s_len;
+  while (s_len > 0) {
+    wuffs_base__utf_8__next__output o = wuffs_base__utf_8__next(s_ptr, s_len);
     if ((o.code_point > 0x7F) && (o.byte_length == 1)) {
       break;
     }
-    s.ptr += o.byte_length;
-    s.len -= o.byte_length;
+    s_ptr += o.byte_length;
+    s_len -= o.byte_length;
   }
-  return original_len - s.len;
+  return original_len - s_len;
 }
 
 WUFFS_BASE__MAYBE_STATIC size_t  //
-wuffs_base__ascii__longest_valid_prefix(wuffs_base__slice_u8 s) {
+wuffs_base__ascii__longest_valid_prefix(const uint8_t* s_ptr, size_t s_len) {
   // TODO: possibly optimize this by checking 4 or 8 bytes at a time.
-  uint8_t* original_ptr = s.ptr;
-  uint8_t* p = s.ptr;
-  uint8_t* q = s.ptr + s.len;
+  const uint8_t* original_ptr = s_ptr;
+  const uint8_t* p = s_ptr;
+  const uint8_t* q = s_ptr + s_len;
   for (; (p != q) && ((*p & 0x80) == 0); p++) {
   }
   return (size_t)(p - original_ptr);
@@ -15706,6 +16656,739 @@ wuffs_bmp__decoder__workbuf_len(
 }
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BMP)
+
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__CBOR)
+
+// ---------------- Status Codes Implementations
+
+const char wuffs_cbor__error__bad_input[] = "#cbor: bad input";
+const char wuffs_cbor__error__unsupported_recursion_depth[] = "#cbor: unsupported recursion depth";
+const char wuffs_cbor__error__internal_error_inconsistent_i_o[] = "#cbor: internal error: inconsistent I/O";
+const char wuffs_cbor__error__internal_error_inconsistent_token_length[] = "#cbor: internal error: inconsistent token length";
+
+// ---------------- Private Consts
+
+static const uint32_t
+WUFFS_CBOR__LITERALS[4]WUFFS_BASE__POTENTIALLY_UNUSED = {
+  8388612, 8388616, 8388610, 8388609,
+};
+
+static const uint8_t
+WUFFS_CBOR__TOKEN_LENGTHS[32]WUFFS_BASE__POTENTIALLY_UNUSED = {
+  1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1,
+  2, 3, 5, 9, 0, 0, 0, 1,
+};
+
+// ---------------- Private Initializer Prototypes
+
+// ---------------- Private Function Prototypes
+
+// ---------------- VTables
+
+const wuffs_base__token_decoder__func_ptrs
+wuffs_cbor__decoder__func_ptrs_for__wuffs_base__token_decoder = {
+  (wuffs_base__status(*)(void*,
+      wuffs_base__token_buffer*,
+      wuffs_base__io_buffer*,
+      wuffs_base__slice_u8))(&wuffs_cbor__decoder__decode_tokens),
+  (wuffs_base__empty_struct(*)(void*,
+      uint32_t,
+      bool))(&wuffs_cbor__decoder__set_quirk_enabled),
+  (wuffs_base__range_ii_u64(*)(const void*))(&wuffs_cbor__decoder__workbuf_len),
+};
+
+// ---------------- Initializer Implementations
+
+wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
+wuffs_cbor__decoder__initialize(
+    wuffs_cbor__decoder* self,
+    size_t sizeof_star_self,
+    uint64_t wuffs_version,
+    uint32_t options){
+  if (!self) {
+    return wuffs_base__make_status(wuffs_base__error__bad_receiver);
+  }
+  if (sizeof(*self) != sizeof_star_self) {
+    return wuffs_base__make_status(wuffs_base__error__bad_sizeof_receiver);
+  }
+  if (((wuffs_version >> 32) != WUFFS_VERSION_MAJOR) ||
+      (((wuffs_version >> 16) & 0xFFFF) > WUFFS_VERSION_MINOR)) {
+    return wuffs_base__make_status(wuffs_base__error__bad_wuffs_version);
+  }
+
+  if ((options & WUFFS_INITIALIZE__ALREADY_ZEROED) != 0) {
+    // The whole point of this if-check is to detect an uninitialized *self.
+    // We disable the warning on GCC. Clang-5.0 does not have this warning.
+#if !defined(__clang__) && defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
+    if (self->private_impl.magic != 0) {
+      return wuffs_base__make_status(wuffs_base__error__initialize_falsely_claimed_already_zeroed);
+    }
+#if !defined(__clang__) && defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
+  } else {
+    if ((options & WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
+      memset(self, 0, sizeof(*self));
+      options |= WUFFS_INITIALIZE__ALREADY_ZEROED;
+    } else {
+      memset(&(self->private_impl), 0, sizeof(self->private_impl));
+    }
+  }
+
+  self->private_impl.magic = WUFFS_BASE__MAGIC;
+  self->private_impl.vtable_for__wuffs_base__token_decoder.vtable_name =
+      wuffs_base__token_decoder__vtable_name;
+  self->private_impl.vtable_for__wuffs_base__token_decoder.function_pointers =
+      (const void*)(&wuffs_cbor__decoder__func_ptrs_for__wuffs_base__token_decoder);
+  return wuffs_base__make_status(NULL);
+}
+
+wuffs_cbor__decoder*
+wuffs_cbor__decoder__alloc() {
+  wuffs_cbor__decoder* x =
+      (wuffs_cbor__decoder*)(calloc(sizeof(wuffs_cbor__decoder), 1));
+  if (!x) {
+    return NULL;
+  }
+  if (wuffs_cbor__decoder__initialize(
+      x, sizeof(wuffs_cbor__decoder), WUFFS_VERSION, WUFFS_INITIALIZE__ALREADY_ZEROED).repr) {
+    free(x);
+    return NULL;
+  }
+  return x;
+}
+
+size_t
+sizeof__wuffs_cbor__decoder() {
+  return sizeof(wuffs_cbor__decoder);
+}
+
+// ---------------- Function Implementations
+
+// -------- func cbor.decoder.set_quirk_enabled
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct
+wuffs_cbor__decoder__set_quirk_enabled(
+    wuffs_cbor__decoder* self,
+    uint32_t a_quirk,
+    bool a_enabled) {
+  return wuffs_base__make_empty_struct();
+}
+
+// -------- func cbor.decoder.workbuf_len
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__range_ii_u64
+wuffs_cbor__decoder__workbuf_len(
+    const wuffs_cbor__decoder* self) {
+  if (!self) {
+    return wuffs_base__utility__empty_range_ii_u64();
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return wuffs_base__utility__empty_range_ii_u64();
+  }
+
+  return wuffs_base__utility__empty_range_ii_u64();
+}
+
+// -------- func cbor.decoder.decode_tokens
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status
+wuffs_cbor__decoder__decode_tokens(
+    wuffs_cbor__decoder* self,
+    wuffs_base__token_buffer* a_dst,
+    wuffs_base__io_buffer* a_src,
+    wuffs_base__slice_u8 a_workbuf) {
+  if (!self) {
+    return wuffs_base__make_status(wuffs_base__error__bad_receiver);
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_status(
+        (self->private_impl.magic == WUFFS_BASE__DISABLED)
+        ? wuffs_base__error__disabled_by_previous_error
+        : wuffs_base__error__initialize_not_called);
+  }
+  if (!a_dst || !a_src) {
+    self->private_impl.magic = WUFFS_BASE__DISABLED;
+    return wuffs_base__make_status(wuffs_base__error__bad_argument);
+  }
+  if ((self->private_impl.active_coroutine != 0) &&
+      (self->private_impl.active_coroutine != 1)) {
+    self->private_impl.magic = WUFFS_BASE__DISABLED;
+    return wuffs_base__make_status(wuffs_base__error__interleaved_coroutine_calls);
+  }
+  self->private_impl.active_coroutine = 0;
+  wuffs_base__status status = wuffs_base__make_status(NULL);
+
+  uint64_t v_string_length = 0;
+  uint64_t v_n64 = 0;
+  uint32_t v_depth = 0;
+  uint32_t v_stack_byte = 0;
+  uint32_t v_stack_bit = 0;
+  uint32_t v_stack_val = 0;
+  uint32_t v_token_length = 0;
+  uint32_t v_vminor = 0;
+  uint32_t v_vminor_alt = 0;
+  uint32_t v_continued = 0;
+  uint8_t v_c = 0;
+  uint8_t v_c_major = 0;
+  uint8_t v_c_minor = 0;
+  bool v_tagged = false;
+  uint8_t v_indefinite_string_major_type = 0;
+
+  wuffs_base__token* iop_a_dst = NULL;
+  wuffs_base__token* io0_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  wuffs_base__token* io1_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  wuffs_base__token* io2_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  if (a_dst) {
+    io0_a_dst = a_dst->data.ptr;
+    io1_a_dst = io0_a_dst + a_dst->meta.wi;
+    iop_a_dst = io1_a_dst;
+    io2_a_dst = io0_a_dst + a_dst->data.len;
+    if (a_dst->meta.closed) {
+      io2_a_dst = iop_a_dst;
+    }
+  }
+  const uint8_t* iop_a_src = NULL;
+  const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  if (a_src) {
+    io0_a_src = a_src->data.ptr;
+    io1_a_src = io0_a_src + a_src->meta.ri;
+    iop_a_src = io1_a_src;
+    io2_a_src = io0_a_src + a_src->meta.wi;
+  }
+
+  uint32_t coro_susp_point = self->private_impl.p_decode_tokens[0];
+  if (coro_susp_point) {
+    v_string_length = self->private_data.s_decode_tokens[0].v_string_length;
+    v_depth = self->private_data.s_decode_tokens[0].v_depth;
+    v_token_length = self->private_data.s_decode_tokens[0].v_token_length;
+    v_tagged = self->private_data.s_decode_tokens[0].v_tagged;
+    v_indefinite_string_major_type = self->private_data.s_decode_tokens[0].v_indefinite_string_major_type;
+  }
+  switch (coro_susp_point) {
+    WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
+
+    if (self->private_impl.f_end_of_data) {
+      status = wuffs_base__make_status(wuffs_base__note__end_of_data);
+      goto ok;
+    }
+    label__outer__continue:;
+    while (true) {
+      while (true) {
+        while (true) {
+          if (((uint64_t)(io2_a_dst - iop_a_dst)) <= 1) {
+            status = wuffs_base__make_status(wuffs_base__suspension__short_write);
+            WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(1);
+            goto label__outer__continue;
+          }
+          if (((uint64_t)(io2_a_src - iop_a_src)) <= 0) {
+            if (a_src && a_src->meta.closed) {
+              status = wuffs_base__make_status(wuffs_cbor__error__bad_input);
+              goto exit;
+            }
+            status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+            WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(2);
+            goto label__outer__continue;
+          }
+          v_c = wuffs_base__load_u8be__no_bounds_check(iop_a_src);
+          if ((v_indefinite_string_major_type != 0) && (v_indefinite_string_major_type != (v_c >> 5))) {
+            if (v_c != 255) {
+              status = wuffs_base__make_status(wuffs_cbor__error__bad_input);
+              goto exit;
+            }
+            v_vminor = 4194560;
+            if (v_indefinite_string_major_type == 3) {
+              v_vminor |= 19;
+            }
+            v_indefinite_string_major_type = 0;
+            (iop_a_src += 1, wuffs_base__make_empty_struct());
+            *iop_a_dst++ = wuffs_base__make_token(
+                (((uint64_t)(v_vminor)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+            goto label__goto_parsed_a_leaf_value__break;
+          }
+          (iop_a_src += 1, wuffs_base__make_empty_struct());
+          v_c_major = ((uint8_t)((v_c >> 5)));
+          v_c_minor = (v_c & 31);
+          if (v_c_minor < 24) {
+            v_string_length = ((uint64_t)(v_c_minor));
+          } else {
+            while (true) {
+              if (v_c_minor == 24) {
+                if (((uint64_t)(io2_a_src - iop_a_src)) >= 1) {
+                  v_string_length = ((uint64_t)(wuffs_base__load_u8be__no_bounds_check(iop_a_src)));
+                  (iop_a_src += 1, wuffs_base__make_empty_struct());
+                  goto label__goto_have_string_length__break;
+                }
+              } else if (v_c_minor == 25) {
+                if (((uint64_t)(io2_a_src - iop_a_src)) >= 2) {
+                  v_string_length = ((uint64_t)(wuffs_base__load_u16be__no_bounds_check(iop_a_src)));
+                  (iop_a_src += 2, wuffs_base__make_empty_struct());
+                  goto label__goto_have_string_length__break;
+                }
+              } else if (v_c_minor == 26) {
+                if (((uint64_t)(io2_a_src - iop_a_src)) >= 4) {
+                  v_string_length = ((uint64_t)(wuffs_base__load_u32be__no_bounds_check(iop_a_src)));
+                  (iop_a_src += 4, wuffs_base__make_empty_struct());
+                  goto label__goto_have_string_length__break;
+                }
+              } else if (v_c_minor == 27) {
+                if (((uint64_t)(io2_a_src - iop_a_src)) >= 8) {
+                  v_string_length = wuffs_base__load_u64be__no_bounds_check(iop_a_src);
+                  (iop_a_src += 8, wuffs_base__make_empty_struct());
+                  goto label__goto_have_string_length__break;
+                }
+              } else {
+                v_string_length = 0;
+                goto label__goto_have_string_length__break;
+              }
+              if (iop_a_src > io1_a_src) {
+                (iop_a_src--, wuffs_base__make_empty_struct());
+                if (a_src && a_src->meta.closed) {
+                  status = wuffs_base__make_status(wuffs_cbor__error__bad_input);
+                  goto exit;
+                }
+                status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+                WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(3);
+                v_c_major = 0;
+                v_c_minor = 0;
+                goto label__outer__continue;
+              }
+              status = wuffs_base__make_status(wuffs_cbor__error__internal_error_inconsistent_i_o);
+              goto exit;
+            }
+            label__goto_have_string_length__break:;
+          }
+          if (v_c_major == 0) {
+            if (v_c_minor < 26) {
+              *iop_a_dst++ = wuffs_base__make_token(
+                  (((uint64_t)((14680064 | ((uint32_t)((v_string_length & 65535)))))) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                  (((uint64_t)(((uint32_t)(WUFFS_CBOR__TOKEN_LENGTHS[v_c_minor])))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+              goto label__goto_parsed_a_leaf_value__break;
+            } else if (v_c_minor < 28) {
+              *iop_a_dst++ = wuffs_base__make_token(
+                  (((uint64_t)((14680064 | ((uint32_t)((v_string_length >> 46)))))) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                  (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
+                  (((uint64_t)(0)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+              *iop_a_dst++ = wuffs_base__make_token(
+                  (~(v_string_length & 70368744177663) << WUFFS_BASE__TOKEN__VALUE_EXTENSION__SHIFT) |
+                  (((uint64_t)(((uint32_t)(WUFFS_CBOR__TOKEN_LENGTHS[v_c_minor])))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+              goto label__goto_parsed_a_leaf_value__break;
+            }
+          } else if (v_c_major == 1) {
+            if (v_c_minor < 26) {
+              *iop_a_dst++ = wuffs_base__make_token(
+                  (((uint64_t)((12582912 | (2097151 - ((uint32_t)((v_string_length & 65535))))))) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                  (((uint64_t)(((uint32_t)(WUFFS_CBOR__TOKEN_LENGTHS[v_c_minor])))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+              goto label__goto_parsed_a_leaf_value__break;
+            } else if (v_c_minor < 28) {
+              if (v_string_length < 9223372036854775808u) {
+                *iop_a_dst++ = wuffs_base__make_token(
+                    (((uint64_t)((12582912 | (2097151 - ((uint32_t)((v_string_length >> 46))))))) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                    (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
+                    (((uint64_t)(0)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+                *iop_a_dst++ = wuffs_base__make_token(
+                    (~((18446744073709551615u - v_string_length) & 70368744177663) << WUFFS_BASE__TOKEN__VALUE_EXTENSION__SHIFT) |
+                    (((uint64_t)(((uint32_t)(WUFFS_CBOR__TOKEN_LENGTHS[v_c_minor])))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+              } else {
+                *iop_a_dst++ = wuffs_base__make_token(
+                    (((uint64_t)(787997)) << WUFFS_BASE__TOKEN__VALUE_MAJOR__SHIFT) |
+                    (((uint64_t)(16777216)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                    (((uint64_t)(9)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+              }
+              goto label__goto_parsed_a_leaf_value__break;
+            }
+          } else if (v_c_major == 2) {
+            if (v_c_minor == 0) {
+              *iop_a_dst++ = wuffs_base__make_token(
+                  (((uint64_t)(4194560)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                  (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+              goto label__goto_parsed_a_leaf_value__break;
+            } else if (v_c_minor < 28) {
+              *iop_a_dst++ = wuffs_base__make_token(
+                  (((uint64_t)(4194560)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                  (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
+                  (((uint64_t)(((uint32_t)(WUFFS_CBOR__TOKEN_LENGTHS[v_c_minor])))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+            } else if (v_c_minor == 31) {
+              if (v_indefinite_string_major_type != 0) {
+                goto label__goto_fail__break;
+              }
+              v_indefinite_string_major_type = 2;
+              *iop_a_dst++ = wuffs_base__make_token(
+                  (((uint64_t)(4194560)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                  (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
+                  (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+              goto label__outer__continue;
+            } else {
+              goto label__goto_fail__break;
+            }
+            label__0__continue:;
+            while (true) {
+              if (((uint64_t)(io2_a_dst - iop_a_dst)) <= 0) {
+                status = wuffs_base__make_status(wuffs_base__suspension__short_write);
+                WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(4);
+                goto label__0__continue;
+              }
+              v_n64 = wuffs_base__u64__min(v_string_length, ((uint64_t)(io2_a_src - iop_a_src)));
+              v_token_length = ((uint32_t)((v_n64 & 65535)));
+              if (v_n64 > 65535) {
+                v_token_length = 65535;
+              } else if (v_token_length <= 0) {
+                if (a_src && a_src->meta.closed) {
+                  status = wuffs_base__make_status(wuffs_cbor__error__bad_input);
+                  goto exit;
+                }
+                status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+                WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(5);
+                goto label__0__continue;
+              }
+              if (((uint64_t)(io2_a_src - iop_a_src)) < ((uint64_t)(v_token_length))) {
+                status = wuffs_base__make_status(wuffs_cbor__error__internal_error_inconsistent_token_length);
+                goto exit;
+              }
+              v_string_length -= ((uint64_t)(v_token_length));
+              v_continued = 0;
+              if ((v_string_length > 0) || (v_indefinite_string_major_type > 0)) {
+                v_continued = 1;
+              }
+              (iop_a_src += v_token_length, wuffs_base__make_empty_struct());
+              *iop_a_dst++ = wuffs_base__make_token(
+                  (((uint64_t)(4194816)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                  (((uint64_t)(v_continued)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
+                  (((uint64_t)(v_token_length)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+              if (v_string_length > 0) {
+                goto label__0__continue;
+              } else if (v_indefinite_string_major_type > 0) {
+                goto label__outer__continue;
+              }
+              goto label__goto_parsed_a_leaf_value__break;
+            }
+          } else if (v_c_major == 3) {
+            if (v_c_minor == 0) {
+              *iop_a_dst++ = wuffs_base__make_token(
+                  (((uint64_t)(4194579)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                  (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+              goto label__goto_parsed_a_leaf_value__break;
+            } else if (v_c_minor < 28) {
+              *iop_a_dst++ = wuffs_base__make_token(
+                  (((uint64_t)(4194579)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                  (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
+                  (((uint64_t)(((uint32_t)(WUFFS_CBOR__TOKEN_LENGTHS[v_c_minor])))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+            } else if (v_c_minor == 31) {
+              if (v_indefinite_string_major_type != 0) {
+                goto label__goto_fail__break;
+              }
+              v_indefinite_string_major_type = 3;
+              *iop_a_dst++ = wuffs_base__make_token(
+                  (((uint64_t)(4194579)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                  (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
+                  (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+              goto label__outer__continue;
+            } else {
+              goto label__goto_fail__break;
+            }
+            label__1__continue:;
+            while (true) {
+              if (((uint64_t)(io2_a_dst - iop_a_dst)) <= 0) {
+                status = wuffs_base__make_status(wuffs_base__suspension__short_write);
+                WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(6);
+                goto label__1__continue;
+              }
+              v_n64 = wuffs_base__u64__min(v_string_length, 65535);
+              v_n64 = ((uint64_t)(wuffs_base__utf_8__longest_valid_prefix(iop_a_src,
+                  ((size_t)(wuffs_base__u64__min(((uint64_t)(io2_a_src - iop_a_src)), v_n64))))));
+              v_token_length = ((uint32_t)((v_n64 & 65535)));
+              if (v_token_length <= 0) {
+                if ((a_src && a_src->meta.closed) || (((uint64_t)(io2_a_src - iop_a_src)) >= 4)) {
+                  status = wuffs_base__make_status(wuffs_cbor__error__bad_input);
+                  goto exit;
+                }
+                status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+                WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(7);
+                goto label__1__continue;
+              }
+              if (((uint64_t)(io2_a_src - iop_a_src)) < ((uint64_t)(v_token_length))) {
+                status = wuffs_base__make_status(wuffs_cbor__error__internal_error_inconsistent_token_length);
+                goto exit;
+              }
+              v_string_length -= ((uint64_t)(v_token_length));
+              v_continued = 0;
+              if ((v_string_length > 0) || (v_indefinite_string_major_type > 0)) {
+                v_continued = 1;
+              }
+              (iop_a_src += v_token_length, wuffs_base__make_empty_struct());
+              *iop_a_dst++ = wuffs_base__make_token(
+                  (((uint64_t)(4194819)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                  (((uint64_t)(v_continued)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
+                  (((uint64_t)(v_token_length)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+              if (v_string_length > 0) {
+                goto label__1__continue;
+              } else if (v_indefinite_string_major_type > 0) {
+                goto label__outer__continue;
+              }
+              goto label__goto_parsed_a_leaf_value__break;
+            }
+          } else if (v_c_major == 4) {
+            if (WUFFS_CBOR__TOKEN_LENGTHS[v_c_minor] == 0) {
+              goto label__goto_fail__break;
+            } else if (v_depth >= 1024) {
+              status = wuffs_base__make_status(wuffs_cbor__error__unsupported_recursion_depth);
+              goto exit;
+            }
+            v_vminor = 2105361;
+            v_vminor_alt = 2101282;
+            if (v_depth > 0) {
+              v_stack_byte = ((v_depth - 1) / 16);
+              v_stack_bit = (((v_depth - 1) & 15) * 2);
+              if (0 == (self->private_data.f_stack[v_stack_byte] & (((uint32_t)(1)) << v_stack_bit))) {
+                v_vminor = 2105377;
+                v_vminor_alt = 2105378;
+              } else {
+                v_vminor = 2105409;
+                v_vminor_alt = 2113570;
+              }
+            }
+            *iop_a_dst++ = wuffs_base__make_token(
+                (((uint64_t)(v_vminor)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                (((uint64_t)(((uint32_t)(WUFFS_CBOR__TOKEN_LENGTHS[v_c_minor])))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+            if (v_c_minor == 0) {
+              *iop_a_dst++ = wuffs_base__make_token(
+                  (((uint64_t)(v_vminor_alt)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                  (((uint64_t)(0)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+              goto label__goto_parsed_a_leaf_value__break;
+            }
+            v_stack_byte = (v_depth / 16);
+            v_stack_bit = ((v_depth & 15) * 2);
+            self->private_data.f_stack[v_stack_byte] &= (4294967295 ^ (((uint32_t)(3)) << v_stack_bit));
+            self->private_data.f_container_num_remaining[v_depth] = v_string_length;
+            v_depth += 1;
+            v_tagged = false;
+            goto label__outer__continue;
+          } else if (v_c_major == 5) {
+            if (WUFFS_CBOR__TOKEN_LENGTHS[v_c_minor] == 0) {
+              goto label__goto_fail__break;
+            } else if (v_depth >= 1024) {
+              status = wuffs_base__make_status(wuffs_cbor__error__unsupported_recursion_depth);
+              goto exit;
+            }
+            v_vminor = 2113553;
+            v_vminor_alt = 2101314;
+            if (v_depth > 0) {
+              v_stack_byte = ((v_depth - 1) / 16);
+              v_stack_bit = (((v_depth - 1) & 15) * 2);
+              if (0 == (self->private_data.f_stack[v_stack_byte] & (((uint32_t)(1)) << v_stack_bit))) {
+                v_vminor = 2113569;
+                v_vminor_alt = 2105410;
+              } else {
+                v_vminor = 2113601;
+                v_vminor_alt = 2113602;
+              }
+            }
+            *iop_a_dst++ = wuffs_base__make_token(
+                (((uint64_t)(v_vminor)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                (((uint64_t)(((uint32_t)(WUFFS_CBOR__TOKEN_LENGTHS[v_c_minor])))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+            if (v_c_minor == 0) {
+              *iop_a_dst++ = wuffs_base__make_token(
+                  (((uint64_t)(v_vminor_alt)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                  (((uint64_t)(0)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+              goto label__goto_parsed_a_leaf_value__break;
+            }
+            v_stack_byte = (v_depth / 16);
+            v_stack_bit = ((v_depth & 15) * 2);
+            self->private_data.f_stack[v_stack_byte] |= (((uint32_t)(3)) << v_stack_bit);
+            self->private_data.f_container_num_remaining[v_depth] = v_string_length;
+            v_depth += 1;
+            v_tagged = false;
+            goto label__outer__continue;
+          } else if (v_c_major == 6) {
+            if (v_c_minor >= 28) {
+              goto label__goto_fail__break;
+            }
+            if (v_string_length < 262144) {
+              *iop_a_dst++ = wuffs_base__make_token(
+                  (((uint64_t)(787997)) << WUFFS_BASE__TOKEN__VALUE_MAJOR__SHIFT) |
+                  (((uint64_t)((4194304 | ((uint32_t)(v_string_length))))) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                  (((uint64_t)(((uint32_t)(WUFFS_CBOR__TOKEN_LENGTHS[v_c_minor])))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+            } else {
+              *iop_a_dst++ = wuffs_base__make_token(
+                  (((uint64_t)(787997)) << WUFFS_BASE__TOKEN__VALUE_MAJOR__SHIFT) |
+                  (((uint64_t)((4194304 | ((uint32_t)((v_string_length >> 46)))))) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                  (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
+                  (((uint64_t)(0)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+              *iop_a_dst++ = wuffs_base__make_token(
+                  (~(v_string_length & 70368744177663) << WUFFS_BASE__TOKEN__VALUE_EXTENSION__SHIFT) |
+                  (((uint64_t)(((uint32_t)(WUFFS_CBOR__TOKEN_LENGTHS[v_c_minor])))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+            }
+            v_tagged = true;
+            goto label__outer__continue;
+          } else if (v_c_major == 7) {
+            if (v_c_minor < 20) {
+              *iop_a_dst++ = wuffs_base__make_token(
+                  (((uint64_t)(787997)) << WUFFS_BASE__TOKEN__VALUE_MAJOR__SHIFT) |
+                  (((uint64_t)((8388608 | ((uint32_t)((v_string_length & 255)))))) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                  (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+              goto label__goto_parsed_a_leaf_value__break;
+            } else if (v_c_minor < 24) {
+              *iop_a_dst++ = wuffs_base__make_token(
+                  (((uint64_t)(WUFFS_CBOR__LITERALS[(v_c_minor & 3)])) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                  (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+              goto label__goto_parsed_a_leaf_value__break;
+            } else if (v_c_minor == 24) {
+              if (v_string_length < 24) {
+                if ( ! (iop_a_src > io1_a_src)) {
+                  status = wuffs_base__make_status(wuffs_cbor__error__internal_error_inconsistent_i_o);
+                  goto exit;
+                }
+                (iop_a_src--, wuffs_base__make_empty_struct());
+                goto label__goto_fail__break;
+              }
+              *iop_a_dst++ = wuffs_base__make_token(
+                  (((uint64_t)(787997)) << WUFFS_BASE__TOKEN__VALUE_MAJOR__SHIFT) |
+                  (((uint64_t)((8388608 | ((uint32_t)((v_string_length & 255)))))) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                  (((uint64_t)(2)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+              goto label__goto_parsed_a_leaf_value__break;
+            } else if (v_c_minor < 28) {
+              *iop_a_dst++ = wuffs_base__make_token(
+                  (((uint64_t)(10490113)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                  (((uint64_t)(((uint32_t)(WUFFS_CBOR__TOKEN_LENGTHS[v_c_minor])))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+              goto label__goto_parsed_a_leaf_value__break;
+            } else if (v_c_minor == 31) {
+              if (v_tagged || (v_depth <= 0)) {
+                goto label__goto_fail__break;
+              }
+              v_depth -= 1;
+              if (self->private_data.f_container_num_remaining[v_depth] != 0) {
+                goto label__goto_fail__break;
+              }
+              v_stack_byte = (v_depth / 16);
+              v_stack_bit = ((v_depth & 15) * 2);
+              v_stack_val = (3 & (self->private_data.f_stack[v_stack_byte] >> v_stack_bit));
+              if (v_stack_val == 1) {
+                goto label__goto_fail__break;
+              }
+              if (v_stack_val != 3) {
+                v_vminor_alt = 2097186;
+              } else {
+                v_vminor_alt = 2097218;
+              }
+              if (v_depth <= 0) {
+                v_vminor_alt |= 4096;
+              } else {
+                v_stack_byte = ((v_depth - 1) / 16);
+                v_stack_bit = (((v_depth - 1) & 15) * 2);
+                if (0 == (self->private_data.f_stack[v_stack_byte] & (((uint32_t)(1)) << v_stack_bit))) {
+                  v_vminor_alt |= 8192;
+                } else {
+                  v_vminor_alt |= 16384;
+                }
+              }
+              *iop_a_dst++ = wuffs_base__make_token(
+                  (((uint64_t)(v_vminor_alt)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                  (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+              goto label__goto_parsed_a_leaf_value__break;
+            }
+          }
+          goto label__goto_fail__break;
+        }
+        label__goto_fail__break:;
+        if (iop_a_src > io1_a_src) {
+          (iop_a_src--, wuffs_base__make_empty_struct());
+          status = wuffs_base__make_status(wuffs_cbor__error__bad_input);
+          goto exit;
+        }
+        status = wuffs_base__make_status(wuffs_cbor__error__internal_error_inconsistent_i_o);
+        goto exit;
+      }
+      label__goto_parsed_a_leaf_value__break:;
+      v_tagged = false;
+      while (v_depth > 0) {
+        v_stack_byte = ((v_depth - 1) / 16);
+        v_stack_bit = (((v_depth - 1) & 15) * 2);
+        self->private_data.f_stack[v_stack_byte] ^= (((uint32_t)(1)) << (v_stack_bit + 1));
+        if (1 == (3 & (self->private_data.f_stack[v_stack_byte] >> v_stack_bit))) {
+          goto label__outer__continue;
+        }
+        if (self->private_data.f_container_num_remaining[(v_depth - 1)] <= 0) {
+          goto label__outer__continue;
+        }
+        self->private_data.f_container_num_remaining[(v_depth - 1)] -= 1;
+        if (self->private_data.f_container_num_remaining[(v_depth - 1)] > 0) {
+          goto label__outer__continue;
+        }
+        label__2__continue:;
+        while (((uint64_t)(io2_a_dst - iop_a_dst)) <= 0) {
+          status = wuffs_base__make_status(wuffs_base__suspension__short_write);
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(8);
+          goto label__2__continue;
+        }
+        v_depth -= 1;
+        v_stack_byte = (v_depth / 16);
+        v_stack_bit = ((v_depth & 15) * 2);
+        if (0 == (self->private_data.f_stack[v_stack_byte] & (((uint32_t)(1)) << v_stack_bit))) {
+          v_vminor_alt = 2097186;
+        } else {
+          v_vminor_alt = 2097218;
+        }
+        if (v_depth <= 0) {
+          v_vminor_alt |= 4096;
+        } else {
+          v_stack_byte = ((v_depth - 1) / 16);
+          v_stack_bit = (((v_depth - 1) & 15) * 2);
+          if (0 == (self->private_data.f_stack[v_stack_byte] & (((uint32_t)(1)) << v_stack_bit))) {
+            v_vminor_alt |= 8192;
+          } else {
+            v_vminor_alt |= 16384;
+          }
+        }
+        *iop_a_dst++ = wuffs_base__make_token(
+            (((uint64_t)(v_vminor_alt)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+            (((uint64_t)(0)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+      }
+      goto label__outer__break;
+    }
+    label__outer__break:;
+    self->private_impl.f_end_of_data = true;
+
+    goto ok;
+    ok:
+    self->private_impl.p_decode_tokens[0] = 0;
+    goto exit;
+  }
+
+  goto suspend;
+  suspend:
+  self->private_impl.p_decode_tokens[0] = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
+  self->private_impl.active_coroutine = wuffs_base__status__is_suspension(&status) ? 1 : 0;
+  self->private_data.s_decode_tokens[0].v_string_length = v_string_length;
+  self->private_data.s_decode_tokens[0].v_depth = v_depth;
+  self->private_data.s_decode_tokens[0].v_token_length = v_token_length;
+  self->private_data.s_decode_tokens[0].v_tagged = v_tagged;
+  self->private_data.s_decode_tokens[0].v_indefinite_string_major_type = v_indefinite_string_major_type;
+
+  goto exit;
+  exit:
+  if (a_dst) {
+    a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
+  }
+  if (a_src) {
+    a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+  }
+
+  if (wuffs_base__status__is_error(&status)) {
+    self->private_impl.magic = WUFFS_BASE__DISABLED;
+  }
+  return status;
+}
+
+#endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__CBOR)
 
 #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__CRC32)
 
@@ -23788,6 +25471,7 @@ const char wuffs_json__error__bad_c0_control_code[] = "#json: bad C0 control cod
 const char wuffs_json__error__bad_utf_8[] = "#json: bad UTF-8";
 const char wuffs_json__error__bad_backslash_escape[] = "#json: bad backslash-escape";
 const char wuffs_json__error__bad_input[] = "#json: bad input";
+const char wuffs_json__error__bad_quirk_combination[] = "#json: bad quirk combination";
 const char wuffs_json__error__unsupported_number_length[] = "#json: unsupported number length";
 const char wuffs_json__error__unsupported_recursion_depth[] = "#json: unsupported recursion depth";
 const char wuffs_json__error__internal_error_inconsistent_i_o[] = "#json: internal error: inconsistent I/O";
@@ -23834,7 +25518,7 @@ WUFFS_JSON__LUT_BACKSLASHES[256]WUFFS_BASE__POTENTIALLY_UNUSED = {
 
 static const uint8_t
 WUFFS_JSON__LUT_QUIRKY_BACKSLASHES_QUIRKS[8]WUFFS_BASE__POTENTIALLY_UNUSED = {
-  0, 1, 3, 4, 5, 6, 7, 9,
+  0, 1, 3, 4, 5, 6, 7, 10,
 };
 
 static const uint8_t
@@ -24030,7 +25714,7 @@ WUFFS_JSON__LUT_HEXADECIMAL_DIGITS[256]WUFFS_BASE__POTENTIALLY_UNUSED = {
 
 #define WUFFS_JSON__QUIRKS_BASE 1225364480
 
-#define WUFFS_JSON__QUIRKS_COUNT 18
+#define WUFFS_JSON__QUIRKS_COUNT 20
 
 // ---------------- Private Initializer Prototypes
 
@@ -24172,7 +25856,7 @@ wuffs_json__decoder__set_quirk_enabled(
 
   if (a_quirk >= 1225364480) {
     a_quirk -= 1225364480;
-    if (a_quirk < 18) {
+    if (a_quirk < 20) {
       self->private_impl.f_quirks[a_quirk] = a_enabled;
     }
   }
@@ -24241,6 +25925,7 @@ wuffs_json__decoder__decode_tokens(
   uint32_t v_multi_byte_utf8 = 0;
   uint32_t v_backslash_x_length = 0;
   uint8_t v_backslash_x_ok = 0;
+  uint8_t v_backslash_x_value = 0;
   uint32_t v_backslash_x_string = 0;
   uint8_t v_uni4_ok = 0;
   uint64_t v_uni4_string = 0;
@@ -24289,7 +25974,7 @@ wuffs_json__decoder__decode_tokens(
       status = wuffs_base__make_status(wuffs_base__note__end_of_data);
       goto ok;
     }
-    if (self->private_impl.f_quirks[14] || self->private_impl.f_quirks[15]) {
+    if (self->private_impl.f_quirks[15] || self->private_impl.f_quirks[16]) {
       if (a_dst) {
         a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
       }
@@ -24307,6 +25992,15 @@ wuffs_json__decoder__decode_tokens(
       if (status.repr) {
         goto suspend;
       }
+    }
+    if (self->private_impl.f_quirks[8]) {
+      if (self->private_impl.f_quirks[9]) {
+        status = wuffs_base__make_status(wuffs_json__error__bad_quirk_combination);
+        goto exit;
+      }
+      self->private_impl.f_string_value_minor = 4194304;
+    } else {
+      self->private_impl.f_string_value_minor = 4194306;
     }
     v_expect = 7858;
     label__outer__continue:;
@@ -24368,7 +26062,10 @@ wuffs_json__decoder__decode_tokens(
         }
         if (v_class == 1) {
           *iop_a_dst++ = wuffs_base__make_token(
-              (((uint64_t)(4194579)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+              (((uint64_t)((self->private_impl.f_string_value_minor |
+              1 |
+              16 |
+              256))) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
               (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
               (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
           (iop_a_src += 1, wuffs_base__make_empty_struct());
@@ -24385,7 +26082,7 @@ wuffs_json__decoder__decode_tokens(
               if (((uint64_t)(io2_a_src - iop_a_src)) <= 0) {
                 if (v_string_length > 0) {
                   *iop_a_dst++ = wuffs_base__make_token(
-                      (((uint64_t)(4194819)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                      (((uint64_t)((self->private_impl.f_string_value_minor | 1 | 512))) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                       (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
                       (((uint64_t)(v_string_length)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
                   v_string_length = 0;
@@ -24410,7 +26107,7 @@ wuffs_json__decoder__decode_tokens(
                 (iop_a_src += 4, wuffs_base__make_empty_struct());
                 if (v_string_length > 65527) {
                   *iop_a_dst++ = wuffs_base__make_token(
-                      (((uint64_t)(4194819)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                      (((uint64_t)((self->private_impl.f_string_value_minor | 1 | 512))) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                       (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
                       (((uint64_t)((v_string_length + 4))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
                   v_string_length = 0;
@@ -24425,7 +26122,7 @@ wuffs_json__decoder__decode_tokens(
                 (iop_a_src += 1, wuffs_base__make_empty_struct());
                 if (v_string_length >= 65531) {
                   *iop_a_dst++ = wuffs_base__make_token(
-                      (((uint64_t)(4194819)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                      (((uint64_t)((self->private_impl.f_string_value_minor | 1 | 512))) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                       (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
                       (((uint64_t)(65532)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
                   v_string_length = 0;
@@ -24436,7 +26133,7 @@ wuffs_json__decoder__decode_tokens(
               } else if (v_char == 1) {
                 if (v_string_length != 0) {
                   *iop_a_dst++ = wuffs_base__make_token(
-                      (((uint64_t)(4194819)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                      (((uint64_t)((self->private_impl.f_string_value_minor | 1 | 512))) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                       (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
                       (((uint64_t)(v_string_length)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
                   v_string_length = 0;
@@ -24445,7 +26142,7 @@ wuffs_json__decoder__decode_tokens(
               } else if (v_char == 2) {
                 if (v_string_length > 0) {
                   *iop_a_dst++ = wuffs_base__make_token(
-                      (((uint64_t)(4194819)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                      (((uint64_t)((self->private_impl.f_string_value_minor | 1 | 512))) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                       (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
                       (((uint64_t)(v_string_length)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
                   v_string_length = 0;
@@ -24521,7 +26218,7 @@ wuffs_json__decoder__decode_tokens(
                   } else {
                     if (((uint64_t)(io2_a_src - iop_a_src)) < 12) {
                       if (a_src && a_src->meta.closed) {
-                        if (self->private_impl.f_quirks[17]) {
+                        if (self->private_impl.f_quirks[19]) {
                           (iop_a_src += 6, wuffs_base__make_empty_struct());
                           *iop_a_dst++ = wuffs_base__make_token(
                               (((uint64_t)(6356989)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
@@ -24572,7 +26269,7 @@ wuffs_json__decoder__decode_tokens(
                       goto label__string_loop_outer__continue;
                     }
                   }
-                  if (self->private_impl.f_quirks[17]) {
+                  if (self->private_impl.f_quirks[19]) {
                     if (((uint64_t)(io2_a_src - iop_a_src)) < 6) {
                       status = wuffs_base__make_status(wuffs_json__error__internal_error_inconsistent_i_o);
                       goto exit;
@@ -24631,7 +26328,7 @@ wuffs_json__decoder__decode_tokens(
                         (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
                         (((uint64_t)(10)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
                     goto label__string_loop_outer__continue;
-                  } else if (self->private_impl.f_quirks[17]) {
+                  } else if (self->private_impl.f_quirks[19]) {
                     (iop_a_src += 10, wuffs_base__make_empty_struct());
                     *iop_a_dst++ = wuffs_base__make_token(
                         (((uint64_t)(6356989)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
@@ -24639,42 +26336,74 @@ wuffs_json__decoder__decode_tokens(
                         (((uint64_t)(10)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
                     goto label__string_loop_outer__continue;
                   }
-                } else if ((v_c == 120) && self->private_impl.f_quirks[8]) {
-                  if (((uint64_t)(io2_a_src - iop_a_src)) < 4) {
-                    if (a_src && a_src->meta.closed) {
-                      status = wuffs_base__make_status(wuffs_json__error__bad_backslash_escape);
-                      goto exit;
+                } else if (v_c == 120) {
+                  if (self->private_impl.f_quirks[9]) {
+                    if (((uint64_t)(io2_a_src - iop_a_src)) < 4) {
+                      if (a_src && a_src->meta.closed) {
+                        status = wuffs_base__make_status(wuffs_json__error__bad_backslash_escape);
+                        goto exit;
+                      }
+                      status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+                      WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(10);
+                      v_string_length = 0;
+                      v_char = 0;
+                      goto label__string_loop_outer__continue;
                     }
-                    status = wuffs_base__make_status(wuffs_base__suspension__short_read);
-                    WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(10);
-                    v_string_length = 0;
-                    v_char = 0;
-                    goto label__string_loop_outer__continue;
-                  }
-                  v_backslash_x_length = 0;
-                  while ((v_backslash_x_length <= 65531) && (((uint64_t)(io2_a_src - iop_a_src)) >= 4)) {
                     v_backslash_x_string = wuffs_base__load_u32le__no_bounds_check(iop_a_src);
                     v_backslash_x_ok = 128;
                     v_c = WUFFS_JSON__LUT_HEXADECIMAL_DIGITS[(255 & (v_backslash_x_string >> 16))];
                     v_backslash_x_ok &= v_c;
+                    v_backslash_x_value = ((uint8_t)(((v_c & 15) << 4)));
                     v_c = WUFFS_JSON__LUT_HEXADECIMAL_DIGITS[(255 & (v_backslash_x_string >> 24))];
                     v_backslash_x_ok &= v_c;
+                    v_backslash_x_value = ((uint8_t)((v_backslash_x_value | (v_c & 15))));
                     if ((v_backslash_x_ok == 0) || ((v_backslash_x_string & 65535) != 30812)) {
-                      goto label__1__break;
+                      status = wuffs_base__make_status(wuffs_json__error__bad_backslash_escape);
+                      goto exit;
                     }
                     (iop_a_src += 4, wuffs_base__make_empty_struct());
-                    v_backslash_x_length += 4;
+                    *iop_a_dst++ = wuffs_base__make_token(
+                        (((uint64_t)((6291456 | ((uint32_t)(v_backslash_x_value))))) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                        (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
+                        (((uint64_t)(4)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+                    goto label__string_loop_outer__continue;
+                  } else if (self->private_impl.f_quirks[8]) {
+                    if (((uint64_t)(io2_a_src - iop_a_src)) < 4) {
+                      if (a_src && a_src->meta.closed) {
+                        status = wuffs_base__make_status(wuffs_json__error__bad_backslash_escape);
+                        goto exit;
+                      }
+                      status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+                      WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(11);
+                      v_string_length = 0;
+                      v_char = 0;
+                      goto label__string_loop_outer__continue;
+                    }
+                    v_backslash_x_length = 0;
+                    while ((v_backslash_x_length <= 65531) && (((uint64_t)(io2_a_src - iop_a_src)) >= 4)) {
+                      v_backslash_x_string = wuffs_base__load_u32le__no_bounds_check(iop_a_src);
+                      v_backslash_x_ok = 128;
+                      v_c = WUFFS_JSON__LUT_HEXADECIMAL_DIGITS[(255 & (v_backslash_x_string >> 16))];
+                      v_backslash_x_ok &= v_c;
+                      v_c = WUFFS_JSON__LUT_HEXADECIMAL_DIGITS[(255 & (v_backslash_x_string >> 24))];
+                      v_backslash_x_ok &= v_c;
+                      if ((v_backslash_x_ok == 0) || ((v_backslash_x_string & 65535) != 30812)) {
+                        goto label__1__break;
+                      }
+                      (iop_a_src += 4, wuffs_base__make_empty_struct());
+                      v_backslash_x_length += 4;
+                    }
+                    label__1__break:;
+                    if (v_backslash_x_length == 0) {
+                      status = wuffs_base__make_status(wuffs_json__error__bad_backslash_escape);
+                      goto exit;
+                    }
+                    *iop_a_dst++ = wuffs_base__make_token(
+                        (((uint64_t)((self->private_impl.f_string_value_minor | 1 | 2048))) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                        (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
+                        (((uint64_t)(v_backslash_x_length)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+                    goto label__string_loop_outer__continue;
                   }
-                  label__1__break:;
-                  if (v_backslash_x_length == 0) {
-                    status = wuffs_base__make_status(wuffs_json__error__bad_backslash_escape);
-                    goto exit;
-                  }
-                  *iop_a_dst++ = wuffs_base__make_token(
-                      (((uint64_t)(4196355)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
-                      (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
-                      (((uint64_t)(v_backslash_x_length)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
-                  goto label__string_loop_outer__continue;
                 }
                 status = wuffs_base__make_status(wuffs_json__error__bad_backslash_escape);
                 goto exit;
@@ -24682,7 +26411,7 @@ wuffs_json__decoder__decode_tokens(
                 if (((uint64_t)(io2_a_src - iop_a_src)) < 2) {
                   if (v_string_length > 0) {
                     *iop_a_dst++ = wuffs_base__make_token(
-                        (((uint64_t)(4194819)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                        (((uint64_t)((self->private_impl.f_string_value_minor | 1 | 512))) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                         (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
                         (((uint64_t)(v_string_length)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
                     v_string_length = 0;
@@ -24691,52 +26420,7 @@ wuffs_json__decoder__decode_tokens(
                     }
                   }
                   if (a_src && a_src->meta.closed) {
-                    if (self->private_impl.f_quirks[17]) {
-                      *iop_a_dst++ = wuffs_base__make_token(
-                          (((uint64_t)(6356989)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
-                          (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
-                          (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
-                      (iop_a_src += 1, wuffs_base__make_empty_struct());
-                      goto label__string_loop_outer__continue;
-                    }
-                    status = wuffs_base__make_status(wuffs_json__error__bad_utf_8);
-                    goto exit;
-                  }
-                  status = wuffs_base__make_status(wuffs_base__suspension__short_read);
-                  WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(11);
-                  v_string_length = 0;
-                  v_char = 0;
-                  goto label__string_loop_outer__continue;
-                }
-                v_multi_byte_utf8 = ((uint32_t)(wuffs_base__load_u16le__no_bounds_check(iop_a_src)));
-                if ((v_multi_byte_utf8 & 49152) == 32768) {
-                  v_multi_byte_utf8 = ((1984 & (v_multi_byte_utf8 << 6)) | (63 & (v_multi_byte_utf8 >> 8)));
-                  (iop_a_src += 2, wuffs_base__make_empty_struct());
-                  if (v_string_length >= 65528) {
-                    *iop_a_dst++ = wuffs_base__make_token(
-                        (((uint64_t)(4194819)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
-                        (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
-                        (((uint64_t)((v_string_length + 2))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
-                    v_string_length = 0;
-                    goto label__string_loop_outer__continue;
-                  }
-                  v_string_length += 2;
-                  goto label__string_loop_inner__continue;
-                }
-              } else if (v_char == 4) {
-                if (((uint64_t)(io2_a_src - iop_a_src)) < 3) {
-                  if (v_string_length > 0) {
-                    *iop_a_dst++ = wuffs_base__make_token(
-                        (((uint64_t)(4194819)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
-                        (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
-                        (((uint64_t)(v_string_length)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
-                    v_string_length = 0;
-                    if (((uint64_t)(io2_a_dst - iop_a_dst)) <= 0) {
-                      goto label__string_loop_outer__continue;
-                    }
-                  }
-                  if (a_src && a_src->meta.closed) {
-                    if (self->private_impl.f_quirks[17]) {
+                    if (self->private_impl.f_quirks[19]) {
                       *iop_a_dst++ = wuffs_base__make_token(
                           (((uint64_t)(6356989)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                           (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
@@ -24753,28 +26437,26 @@ wuffs_json__decoder__decode_tokens(
                   v_char = 0;
                   goto label__string_loop_outer__continue;
                 }
-                v_multi_byte_utf8 = ((uint32_t)(wuffs_base__load_u24le__no_bounds_check(iop_a_src)));
-                if ((v_multi_byte_utf8 & 12632064) == 8421376) {
-                  v_multi_byte_utf8 = ((61440 & (v_multi_byte_utf8 << 12)) | (4032 & (v_multi_byte_utf8 >> 2)) | (63 & (v_multi_byte_utf8 >> 16)));
-                  if ((2047 < v_multi_byte_utf8) && ((v_multi_byte_utf8 < 55296) || (57343 < v_multi_byte_utf8))) {
-                    (iop_a_src += 3, wuffs_base__make_empty_struct());
-                    if (v_string_length >= 65528) {
-                      *iop_a_dst++ = wuffs_base__make_token(
-                          (((uint64_t)(4194819)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
-                          (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
-                          (((uint64_t)((v_string_length + 3))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
-                      v_string_length = 0;
-                      goto label__string_loop_outer__continue;
-                    }
-                    v_string_length += 3;
-                    goto label__string_loop_inner__continue;
+                v_multi_byte_utf8 = ((uint32_t)(wuffs_base__load_u16le__no_bounds_check(iop_a_src)));
+                if ((v_multi_byte_utf8 & 49152) == 32768) {
+                  v_multi_byte_utf8 = ((1984 & (v_multi_byte_utf8 << 6)) | (63 & (v_multi_byte_utf8 >> 8)));
+                  (iop_a_src += 2, wuffs_base__make_empty_struct());
+                  if (v_string_length >= 65528) {
+                    *iop_a_dst++ = wuffs_base__make_token(
+                        (((uint64_t)((self->private_impl.f_string_value_minor | 1 | 512))) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                        (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
+                        (((uint64_t)((v_string_length + 2))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+                    v_string_length = 0;
+                    goto label__string_loop_outer__continue;
                   }
+                  v_string_length += 2;
+                  goto label__string_loop_inner__continue;
                 }
-              } else if (v_char == 5) {
-                if (((uint64_t)(io2_a_src - iop_a_src)) < 4) {
+              } else if (v_char == 4) {
+                if (((uint64_t)(io2_a_src - iop_a_src)) < 3) {
                   if (v_string_length > 0) {
                     *iop_a_dst++ = wuffs_base__make_token(
-                        (((uint64_t)(4194819)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                        (((uint64_t)((self->private_impl.f_string_value_minor | 1 | 512))) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                         (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
                         (((uint64_t)(v_string_length)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
                     v_string_length = 0;
@@ -24783,7 +26465,7 @@ wuffs_json__decoder__decode_tokens(
                     }
                   }
                   if (a_src && a_src->meta.closed) {
-                    if (self->private_impl.f_quirks[17]) {
+                    if (self->private_impl.f_quirks[19]) {
                       *iop_a_dst++ = wuffs_base__make_token(
                           (((uint64_t)(6356989)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                           (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
@@ -24800,6 +26482,53 @@ wuffs_json__decoder__decode_tokens(
                   v_char = 0;
                   goto label__string_loop_outer__continue;
                 }
+                v_multi_byte_utf8 = ((uint32_t)(wuffs_base__load_u24le__no_bounds_check(iop_a_src)));
+                if ((v_multi_byte_utf8 & 12632064) == 8421376) {
+                  v_multi_byte_utf8 = ((61440 & (v_multi_byte_utf8 << 12)) | (4032 & (v_multi_byte_utf8 >> 2)) | (63 & (v_multi_byte_utf8 >> 16)));
+                  if ((2047 < v_multi_byte_utf8) && ((v_multi_byte_utf8 < 55296) || (57343 < v_multi_byte_utf8))) {
+                    (iop_a_src += 3, wuffs_base__make_empty_struct());
+                    if (v_string_length >= 65528) {
+                      *iop_a_dst++ = wuffs_base__make_token(
+                          (((uint64_t)((self->private_impl.f_string_value_minor | 1 | 512))) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                          (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
+                          (((uint64_t)((v_string_length + 3))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+                      v_string_length = 0;
+                      goto label__string_loop_outer__continue;
+                    }
+                    v_string_length += 3;
+                    goto label__string_loop_inner__continue;
+                  }
+                }
+              } else if (v_char == 5) {
+                if (((uint64_t)(io2_a_src - iop_a_src)) < 4) {
+                  if (v_string_length > 0) {
+                    *iop_a_dst++ = wuffs_base__make_token(
+                        (((uint64_t)((self->private_impl.f_string_value_minor | 1 | 512))) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                        (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
+                        (((uint64_t)(v_string_length)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+                    v_string_length = 0;
+                    if (((uint64_t)(io2_a_dst - iop_a_dst)) <= 0) {
+                      goto label__string_loop_outer__continue;
+                    }
+                  }
+                  if (a_src && a_src->meta.closed) {
+                    if (self->private_impl.f_quirks[19]) {
+                      *iop_a_dst++ = wuffs_base__make_token(
+                          (((uint64_t)(6356989)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                          (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
+                          (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+                      (iop_a_src += 1, wuffs_base__make_empty_struct());
+                      goto label__string_loop_outer__continue;
+                    }
+                    status = wuffs_base__make_status(wuffs_json__error__bad_utf_8);
+                    goto exit;
+                  }
+                  status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+                  WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(14);
+                  v_string_length = 0;
+                  v_char = 0;
+                  goto label__string_loop_outer__continue;
+                }
                 v_multi_byte_utf8 = wuffs_base__load_u32le__no_bounds_check(iop_a_src);
                 if ((v_multi_byte_utf8 & 3233857536) == 2155905024) {
                   v_multi_byte_utf8 = ((1835008 & (v_multi_byte_utf8 << 18)) |
@@ -24810,7 +26539,7 @@ wuffs_json__decoder__decode_tokens(
                     (iop_a_src += 4, wuffs_base__make_empty_struct());
                     if (v_string_length >= 65528) {
                       *iop_a_dst++ = wuffs_base__make_token(
-                          (((uint64_t)(4194819)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                          (((uint64_t)((self->private_impl.f_string_value_minor | 1 | 512))) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                           (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
                           (((uint64_t)((v_string_length + 4))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
                       v_string_length = 0;
@@ -24823,7 +26552,7 @@ wuffs_json__decoder__decode_tokens(
               }
               if (v_string_length > 0) {
                 *iop_a_dst++ = wuffs_base__make_token(
-                    (((uint64_t)(4194819)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                    (((uint64_t)((self->private_impl.f_string_value_minor | 1 | 512))) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                     (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
                     (((uint64_t)(v_string_length)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
                 v_string_length = 0;
@@ -24843,7 +26572,7 @@ wuffs_json__decoder__decode_tokens(
                 status = wuffs_base__make_status(wuffs_json__error__bad_c0_control_code);
                 goto exit;
               }
-              if (self->private_impl.f_quirks[17]) {
+              if (self->private_impl.f_quirks[19]) {
                 *iop_a_dst++ = wuffs_base__make_token(
                     (((uint64_t)(6356989)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                     (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
@@ -24864,17 +26593,20 @@ wuffs_json__decoder__decode_tokens(
                 goto exit;
               }
               status = wuffs_base__make_status(wuffs_base__suspension__short_read);
-              WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(14);
+              WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(15);
               goto label__2__continue;
             }
             if (((uint64_t)(io2_a_dst - iop_a_dst)) <= 0) {
               status = wuffs_base__make_status(wuffs_base__suspension__short_write);
-              WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(15);
+              WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(16);
               goto label__2__continue;
             }
             (iop_a_src += 1, wuffs_base__make_empty_struct());
             *iop_a_dst++ = wuffs_base__make_token(
-                (((uint64_t)(4194579)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                (((uint64_t)((self->private_impl.f_string_value_minor |
+                1 |
+                16 |
+                256))) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                 (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
             goto label__2__break;
           }
@@ -24890,13 +26622,13 @@ wuffs_json__decoder__decode_tokens(
               (((uint64_t)(0)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
               (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
           if (0 == (v_expect & (((uint32_t)(1)) << 8))) {
-            if (self->private_impl.f_quirks[12]) {
+            if (self->private_impl.f_quirks[13]) {
               v_expect = 4162;
             } else {
               v_expect = 4098;
             }
           } else {
-            if (self->private_impl.f_quirks[12]) {
+            if (self->private_impl.f_quirks[13]) {
               v_expect = 8114;
             } else {
               v_expect = 7858;
@@ -24941,14 +26673,14 @@ wuffs_json__decoder__decode_tokens(
               }
             }
             if (v_number_status == 1) {
-              if (self->private_impl.f_quirks[13]) {
+              if (self->private_impl.f_quirks[14]) {
                 if (a_dst) {
                   a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
                 }
                 if (a_src) {
                   a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
                 }
-                WUFFS_BASE__COROUTINE_SUSPENSION_POINT(16);
+                WUFFS_BASE__COROUTINE_SUSPENSION_POINT(17);
                 status = wuffs_json__decoder__decode_inf_nan(self, a_dst, a_src);
                 if (a_dst) {
                   iop_a_dst = a_dst->data.ptr + a_dst->meta.wi;
@@ -24968,10 +26700,10 @@ wuffs_json__decoder__decode_tokens(
               goto exit;
             } else {
               status = wuffs_base__make_status(wuffs_base__suspension__short_read);
-              WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(17);
+              WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(18);
               while (((uint64_t)(io2_a_dst - iop_a_dst)) <= 0) {
                 status = wuffs_base__make_status(wuffs_base__suspension__short_write);
-                WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(18);
+                WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(19);
               }
             }
           }
@@ -25087,7 +26819,7 @@ wuffs_json__decoder__decode_tokens(
             goto label__goto_parsed_a_leaf_value__break;
           } else if (v_match == 1) {
             status = wuffs_base__make_status(wuffs_base__suspension__short_read);
-            WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(19);
+            WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(20);
             goto label__outer__continue;
           }
         } else if (v_class == 10) {
@@ -25104,7 +26836,7 @@ wuffs_json__decoder__decode_tokens(
             goto label__goto_parsed_a_leaf_value__break;
           } else if (v_match == 1) {
             status = wuffs_base__make_status(wuffs_base__suspension__short_read);
-            WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(20);
+            WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(21);
             goto label__outer__continue;
           }
         } else if (v_class == 11) {
@@ -25121,17 +26853,17 @@ wuffs_json__decoder__decode_tokens(
             goto label__goto_parsed_a_leaf_value__break;
           } else if (v_match == 1) {
             status = wuffs_base__make_status(wuffs_base__suspension__short_read);
-            WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(21);
+            WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(22);
             goto label__outer__continue;
           }
-          if (self->private_impl.f_quirks[13]) {
+          if (self->private_impl.f_quirks[14]) {
             if (a_dst) {
               a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
             }
             if (a_src) {
               a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
             }
-            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(22);
+            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(23);
             status = wuffs_json__decoder__decode_inf_nan(self, a_dst, a_src);
             if (a_dst) {
               iop_a_dst = a_dst->data.ptr + a_dst->meta.wi;
@@ -25145,14 +26877,14 @@ wuffs_json__decoder__decode_tokens(
             goto label__goto_parsed_a_leaf_value__break;
           }
         } else if (v_class == 12) {
-          if (self->private_impl.f_quirks[10] || self->private_impl.f_quirks[11]) {
+          if (self->private_impl.f_quirks[11] || self->private_impl.f_quirks[12]) {
             if (a_dst) {
               a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
             }
             if (a_src) {
               a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
             }
-            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(23);
+            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(24);
             status = wuffs_json__decoder__decode_comment(self, a_dst, a_src);
             if (a_dst) {
               iop_a_dst = a_dst->data.ptr + a_dst->meta.wi;
@@ -25176,14 +26908,14 @@ wuffs_json__decoder__decode_tokens(
       v_expect = v_expect_after_value;
     }
     label__outer__break:;
-    if (self->private_impl.f_quirks[16]) {
+    if (self->private_impl.f_quirks[17]) {
       if (a_dst) {
         a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
       }
       if (a_src) {
         a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
       }
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(24);
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(25);
       status = wuffs_json__decoder__decode_trailing_new_line(self, a_dst, a_src);
       if (a_dst) {
         iop_a_dst = a_dst->data.ptr + a_dst->meta.wi;
@@ -25451,8 +27183,8 @@ wuffs_json__decoder__decode_leading(
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
-    self->private_impl.f_allow_leading_ars = self->private_impl.f_quirks[14];
-    self->private_impl.f_allow_leading_ubom = self->private_impl.f_quirks[15];
+    self->private_impl.f_allow_leading_ars = self->private_impl.f_quirks[15];
+    self->private_impl.f_allow_leading_ubom = self->private_impl.f_quirks[16];
     label__0__continue:;
     while (self->private_impl.f_allow_leading_ars || self->private_impl.f_allow_leading_ubom) {
       if (((uint64_t)(io2_a_dst - iop_a_dst)) <= 0) {
@@ -25577,7 +27309,7 @@ wuffs_json__decoder__decode_comment(
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(2);
     }
     v_c2 = wuffs_base__load_u16le__no_bounds_check(iop_a_src);
-    if ((v_c2 == 10799) && self->private_impl.f_quirks[10]) {
+    if ((v_c2 == 10799) && self->private_impl.f_quirks[11]) {
       (iop_a_src += 2, wuffs_base__make_empty_struct());
       v_length = 2;
       label__comment_block__continue:;
@@ -25626,7 +27358,7 @@ wuffs_json__decoder__decode_comment(
           v_length += 1;
         }
       }
-    } else if ((v_c2 == 12079) && self->private_impl.f_quirks[11]) {
+    } else if ((v_c2 == 12079) && self->private_impl.f_quirks[12]) {
       (iop_a_src += 2, wuffs_base__make_empty_struct());
       v_length = 2;
       label__comment_line__continue:;
@@ -27227,6 +28959,984 @@ wuffs_zlib__decoder__transform_io(
 }
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__ZLIB)
+
+#if defined(__cplusplus) && (__cplusplus >= 201103L)
+
+// ---------------- Auxiliary - Base
+
+// Auxiliary code is discussed at
+// https://github.com/google/wuffs/blob/master/doc/note/auxiliary-code.md
+
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__AUX__BASE)
+
+namespace wuffs_aux {
+
+namespace sync_io {
+
+// --------
+
+IOBuffer*  //
+Input::BringsItsOwnIOBuffer() {
+  return nullptr;
+}
+
+// --------
+
+FileInput::FileInput(FILE* f) : m_f(f) {}
+
+std::string  //
+FileInput::CopyIn(IOBuffer* dst) {
+  if (!m_f) {
+    return "wuffs_aux::sync_io::FileInput: nullptr file";
+  } else if (dst && !dst->meta.closed) {
+    size_t n = fread(dst->writer_pointer(), 1, dst->writer_length(), m_f);
+    dst->meta.wi += n;
+    dst->meta.closed = feof(m_f);
+    if (ferror(m_f)) {
+      return "wuffs_aux::sync_io::FileInput: error reading file";
+    }
+  }
+  return "";
+}
+
+// --------
+
+MemoryInput::MemoryInput(const char* ptr, size_t len)
+    : m_io(wuffs_base__ptr_u8__reader(
+          static_cast<uint8_t*>(static_cast<void*>(const_cast<char*>(ptr))),
+          len,
+          true)) {}
+
+MemoryInput::MemoryInput(const uint8_t* ptr, size_t len)
+    : m_io(wuffs_base__ptr_u8__reader(const_cast<uint8_t*>(ptr), len, true)) {}
+
+IOBuffer*  //
+MemoryInput::BringsItsOwnIOBuffer() {
+  return &m_io;
+}
+
+std::string  //
+MemoryInput::CopyIn(IOBuffer* dst) {
+  if (dst && !dst->meta.closed && (dst != &m_io)) {
+    size_t nd = dst->writer_length();
+    size_t ns = m_io.reader_length();
+    size_t n = (nd < ns) ? nd : ns;
+    memcpy(dst->writer_pointer(), m_io.reader_pointer(), n);
+    m_io.meta.ri += n;
+    dst->meta.wi += n;
+    dst->meta.closed = m_io.reader_length() == 0;
+  }
+  return "";
+}
+
+// --------
+
+}  // namespace sync_io
+
+}  // namespace wuffs_aux
+
+#endif  // !defined(WUFFS_CONFIG__MODULES) ||
+        // defined(WUFFS_CONFIG__MODULE__AUX__BASE)
+
+// ---------------- Auxiliary - CBOR
+
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__AUX__CBOR)
+
+#include <utility>
+
+namespace wuffs_aux {
+
+DecodeCborResult::DecodeCborResult(std::string&& error_message0,
+                                   uint64_t cursor_position0)
+    : error_message(std::move(error_message0)),
+      cursor_position(cursor_position0) {}
+
+void  //
+DecodeCborCallbacks::Done(DecodeCborResult& result,
+                          sync_io::Input& input,
+                          IOBuffer& buffer) {}
+
+DecodeCborResult  //
+DecodeCbor(DecodeCborCallbacks& callbacks,
+           sync_io::Input& input,
+           wuffs_base__slice_u32 quirks) {
+  // Prepare the wuffs_base__io_buffer and the resultant error_message.
+  wuffs_base__io_buffer* io_buf = input.BringsItsOwnIOBuffer();
+  wuffs_base__io_buffer fallback_io_buf = wuffs_base__empty_io_buffer();
+  std::unique_ptr<uint8_t[]> fallback_io_array(nullptr);
+  if (!io_buf) {
+    fallback_io_array = std::unique_ptr<uint8_t[]>(new uint8_t[4096]);
+    fallback_io_buf = wuffs_base__ptr_u8__writer(fallback_io_array.get(), 4096);
+    io_buf = &fallback_io_buf;
+  }
+  size_t cursor_index = 0;
+  std::string ret_error_message;
+  std::string io_error_message;
+
+  do {
+    // Prepare the low-level CBOR decoder.
+    wuffs_cbor__decoder::unique_ptr dec = wuffs_cbor__decoder::alloc();
+    if (!dec) {
+      ret_error_message = "wuffs_aux::CborDecoder: out of memory";
+      goto done;
+    }
+    for (size_t i = 0; i < quirks.len; i++) {
+      dec->set_quirk_enabled(quirks.ptr[i], true);
+    }
+
+    // Prepare the wuffs_base__tok_buffer.
+    wuffs_base__token tok_array[256];
+    wuffs_base__token_buffer tok_buf =
+        wuffs_base__slice_token__writer(wuffs_base__make_slice_token(
+            &tok_array[0], (sizeof(tok_array) / sizeof(tok_array[0]))));
+    wuffs_base__status tok_status = wuffs_base__make_status(nullptr);
+
+    // Prepare other state.
+    uint32_t depth = 0;
+    std::string str;
+    int64_t extension_category = 0;
+    uint64_t extension_detail = 0;
+
+    // Valid token's VBCs range in 0 ..= 15. Values over that are for tokens
+    // from outside of the base package, such as the CBOR package.
+    constexpr int64_t EXT_CAT__CBOR_TAG = 16;
+
+    // Loop, doing these two things:
+    //  1. Get the next token.
+    //  2. Process that token.
+    while (true) {
+      // 1. Get the next token.
+
+      while (tok_buf.meta.ri >= tok_buf.meta.wi) {
+        if (tok_status.repr == nullptr) {
+          // No-op.
+        } else if (tok_status.repr == wuffs_base__suspension__short_write) {
+          tok_buf.compact();
+        } else if (tok_status.repr == wuffs_base__suspension__short_read) {
+          // Read from input to io_buf.
+          if (!io_error_message.empty()) {
+            ret_error_message = std::move(io_error_message);
+            goto done;
+          } else if (cursor_index != io_buf->meta.ri) {
+            ret_error_message =
+                "wuffs_aux::CborDecoder: internal error: bad cursor_index";
+            goto done;
+          } else if (io_buf->meta.closed) {
+            ret_error_message =
+                "wuffs_aux::CborDecoder: internal error: io_buf is closed";
+            goto done;
+          }
+          io_buf->compact();
+          if (io_buf->meta.wi >= io_buf->data.len) {
+            ret_error_message =
+                "wuffs_aux::CborDecoder: internal error: io_buf is full";
+            goto done;
+          }
+          cursor_index = io_buf->meta.ri;
+          io_error_message = input.CopyIn(io_buf);
+        } else {
+          ret_error_message = tok_status.message();
+          goto done;
+        }
+
+        if (WUFFS_CBOR__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE != 0) {
+          ret_error_message =
+              "wuffs_aux::CborDecoder: internal error: bad WORKBUF_LEN";
+          goto done;
+        }
+        wuffs_base__slice_u8 work_buf = wuffs_base__empty_slice_u8();
+        tok_status = dec->decode_tokens(&tok_buf, io_buf, work_buf);
+      }
+
+      wuffs_base__token token = tok_buf.data.ptr[tok_buf.meta.ri++];
+      uint64_t token_len = token.length();
+      if ((io_buf->meta.ri < cursor_index) ||
+          ((io_buf->meta.ri - cursor_index) < token_len)) {
+        ret_error_message =
+            "wuffs_aux::CborDecoder: internal error: bad token indexes";
+        goto done;
+      }
+      uint8_t* token_ptr = io_buf->data.ptr + cursor_index;
+      cursor_index += token_len;
+
+      // 2. Process that token.
+
+      uint64_t vbd = token.value_base_detail();
+
+      if (extension_category != 0) {
+        int64_t ext = token.value_extension();
+        if ((ext >= 0) && !token.continued()) {
+          extension_detail = (extension_detail
+                              << WUFFS_BASE__TOKEN__VALUE_EXTENSION__NUM_BITS) |
+                             static_cast<uint64_t>(ext);
+          switch (extension_category) {
+            case WUFFS_BASE__TOKEN__VBC__INLINE_INTEGER_SIGNED:
+              extension_category = 0;
+              ret_error_message =
+                  callbacks.AppendI64(static_cast<int64_t>(extension_detail));
+              goto parsed_a_value;
+            case WUFFS_BASE__TOKEN__VBC__INLINE_INTEGER_UNSIGNED:
+              extension_category = 0;
+              ret_error_message = callbacks.AppendU64(extension_detail);
+              goto parsed_a_value;
+            case EXT_CAT__CBOR_TAG:
+              extension_category = 0;
+              ret_error_message = callbacks.AppendCborTag(extension_detail);
+              if (!ret_error_message.empty()) {
+                goto done;
+              }
+              continue;
+          }
+        }
+        ret_error_message =
+            "wuffs_aux::CborDecoder: internal error: bad extended token";
+        goto done;
+      }
+
+      switch (token.value_base_category()) {
+        case WUFFS_BASE__TOKEN__VBC__FILLER:
+          continue;
+
+        case WUFFS_BASE__TOKEN__VBC__STRUCTURE: {
+          if (vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__PUSH) {
+            ret_error_message = callbacks.Push(static_cast<uint32_t>(vbd));
+            if (!ret_error_message.empty()) {
+              goto done;
+            }
+            depth++;
+            continue;
+          }
+          ret_error_message = callbacks.Pop(static_cast<uint32_t>(vbd));
+          depth--;
+          goto parsed_a_value;
+        }
+
+        case WUFFS_BASE__TOKEN__VBC__STRING: {
+          if (vbd & WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_0_DST_1_SRC_DROP) {
+            // No-op.
+          } else if (vbd &
+                     WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY) {
+            const char* ptr =  // Convert from (uint8_t*).
+                static_cast<const char*>(static_cast<void*>(token_ptr));
+            str.append(ptr, token_len);
+          } else {
+            goto fail;
+          }
+          if (token.continued()) {
+            continue;
+          }
+          ret_error_message =
+              (vbd & WUFFS_BASE__TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8)
+                  ? callbacks.AppendTextString(std::move(str))
+                  : callbacks.AppendByteString(std::move(str));
+          str.clear();
+          goto parsed_a_value;
+        }
+
+        case WUFFS_BASE__TOKEN__VBC__UNICODE_CODE_POINT: {
+          uint8_t u[WUFFS_BASE__UTF_8__BYTE_LENGTH__MAX_INCL];
+          size_t n = wuffs_base__utf_8__encode(
+              wuffs_base__make_slice_u8(
+                  &u[0], WUFFS_BASE__UTF_8__BYTE_LENGTH__MAX_INCL),
+              static_cast<uint32_t>(vbd));
+          const char* ptr =  // Convert from (uint8_t*).
+              static_cast<const char*>(static_cast<void*>(&u[0]));
+          str.append(ptr, n);
+          if (token.continued()) {
+            continue;
+          }
+          goto fail;
+        }
+
+        case WUFFS_BASE__TOKEN__VBC__LITERAL: {
+          if (vbd & WUFFS_BASE__TOKEN__VBD__LITERAL__NULL) {
+            ret_error_message = callbacks.AppendNull();
+          } else if (vbd & WUFFS_BASE__TOKEN__VBD__LITERAL__UNDEFINED) {
+            ret_error_message = callbacks.AppendUndefined();
+          } else {
+            ret_error_message = callbacks.AppendBool(
+                vbd & WUFFS_BASE__TOKEN__VBD__LITERAL__TRUE);
+          }
+          goto parsed_a_value;
+        }
+
+        case WUFFS_BASE__TOKEN__VBC__NUMBER: {
+          const uint64_t cfp_fbbe_fifb =
+              WUFFS_BASE__TOKEN__VBD__NUMBER__CONTENT_FLOATING_POINT |
+              WUFFS_BASE__TOKEN__VBD__NUMBER__FORMAT_BINARY_BIG_ENDIAN |
+              WUFFS_BASE__TOKEN__VBD__NUMBER__FORMAT_IGNORE_FIRST_BYTE;
+          if ((vbd & cfp_fbbe_fifb) == cfp_fbbe_fifb) {
+            double f;
+            switch (token_len) {
+              case 3:
+                f = wuffs_base__ieee_754_bit_representation__from_u16_to_f64(
+                    wuffs_base__load_u16be__no_bounds_check(token_ptr + 1));
+                break;
+              case 5:
+                f = wuffs_base__ieee_754_bit_representation__from_u32_to_f64(
+                    wuffs_base__load_u32be__no_bounds_check(token_ptr + 1));
+                break;
+              case 9:
+                f = wuffs_base__ieee_754_bit_representation__from_u64_to_f64(
+                    wuffs_base__load_u64be__no_bounds_check(token_ptr + 1));
+                break;
+              default:
+                goto fail;
+            }
+            ret_error_message = callbacks.AppendF64(f);
+            goto parsed_a_value;
+          }
+          goto fail;
+        }
+
+        case WUFFS_BASE__TOKEN__VBC__INLINE_INTEGER_SIGNED: {
+          if (token.continued()) {
+            extension_category = WUFFS_BASE__TOKEN__VBC__INLINE_INTEGER_SIGNED;
+            extension_detail =
+                static_cast<uint64_t>(token.value_base_detail__sign_extended());
+            continue;
+          }
+          ret_error_message =
+              callbacks.AppendI64(token.value_base_detail__sign_extended());
+          goto parsed_a_value;
+        }
+
+        case WUFFS_BASE__TOKEN__VBC__INLINE_INTEGER_UNSIGNED: {
+          if (token.continued()) {
+            extension_category =
+                WUFFS_BASE__TOKEN__VBC__INLINE_INTEGER_UNSIGNED;
+            extension_detail = vbd;
+            continue;
+          }
+          ret_error_message = callbacks.AppendU64(vbd);
+          goto parsed_a_value;
+        }
+      }
+
+      if (token.value_major() == WUFFS_CBOR__TOKEN_VALUE_MAJOR) {
+        uint64_t value_minor = token.value_minor();
+        if (value_minor & WUFFS_CBOR__TOKEN_VALUE_MINOR__MINUS_1_MINUS_X) {
+          if (token_len == 9) {
+            ret_error_message = callbacks.AppendMinus1MinusX(
+                wuffs_base__load_u64be__no_bounds_check(token_ptr + 1));
+            goto parsed_a_value;
+          }
+        } else if (value_minor & WUFFS_CBOR__TOKEN_VALUE_MINOR__SIMPLE_VALUE) {
+          ret_error_message =
+              callbacks.AppendCborSimpleValue(static_cast<uint8_t>(
+                  value_minor & WUFFS_CBOR__TOKEN_VALUE_MINOR__DETAIL_MASK));
+          goto parsed_a_value;
+        } else if (value_minor & WUFFS_CBOR__TOKEN_VALUE_MINOR__TAG) {
+          if (token.continued()) {
+            extension_category = EXT_CAT__CBOR_TAG;
+            extension_detail =
+                value_minor & WUFFS_CBOR__TOKEN_VALUE_MINOR__DETAIL_MASK;
+            continue;
+          }
+          ret_error_message = callbacks.AppendCborTag(
+              value_minor & WUFFS_CBOR__TOKEN_VALUE_MINOR__DETAIL_MASK);
+          if (!ret_error_message.empty()) {
+            goto done;
+          }
+          continue;
+        }
+      }
+
+    fail:
+      ret_error_message =
+          "wuffs_aux::CborDecoder: internal error: unexpected token";
+      goto done;
+
+    parsed_a_value:
+      if (!ret_error_message.empty() || (depth == 0)) {
+        goto done;
+      }
+    }
+  } while (false);
+
+done:
+  DecodeCborResult result(
+      std::move(ret_error_message),
+      wuffs_base__u64__sat_add(io_buf->meta.pos, cursor_index));
+  callbacks.Done(result, input, *io_buf);
+  return result;
+}
+
+}  // namespace wuffs_aux
+
+#endif  // !defined(WUFFS_CONFIG__MODULES) ||
+        // defined(WUFFS_CONFIG__MODULE__AUX__CBOR)
+
+// ---------------- Auxiliary - JSON
+
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__AUX__JSON)
+
+#include <utility>
+
+namespace wuffs_aux {
+
+DecodeJsonResult::DecodeJsonResult(std::string&& error_message0,
+                                   uint64_t cursor_position0)
+    : error_message(std::move(error_message0)),
+      cursor_position(cursor_position0) {}
+
+std::string  //
+DecodeJsonCallbacks::AppendByteString(std::string&& val) {
+  return "wuffs_aux::DecodeJson: unexpected JSON byte string";
+}
+
+void  //
+DecodeJsonCallbacks::Done(DecodeJsonResult& result,
+                          sync_io::Input& input,
+                          IOBuffer& buffer) {}
+
+const char DecodeJson_BadJsonPointer[] =
+    "wuffs_aux::DecodeJson: bad JSON Pointer";
+const char DecodeJson_NoMatch[] = "wuffs_aux::DecodeJson: no match";
+
+// --------
+
+#define WUFFS_AUX__DECODE_JSON__GET_THE_NEXT_TOKEN                       \
+  while (tok_buf.meta.ri >= tok_buf.meta.wi) {                           \
+    if (tok_status.repr == nullptr) {                                    \
+    } else if (tok_status.repr == wuffs_base__suspension__short_write) { \
+      tok_buf.compact();                                                 \
+    } else if (tok_status.repr == wuffs_base__suspension__short_read) {  \
+      if (!io_error_message.empty()) {                                   \
+        ret_error_message = std::move(io_error_message);                 \
+        goto done;                                                       \
+      } else if (cursor_index != io_buf->meta.ri) {                      \
+        ret_error_message =                                              \
+            "wuffs_aux::DecodeJson: internal error: bad cursor_index";   \
+        goto done;                                                       \
+      } else if (io_buf->meta.closed) {                                  \
+        ret_error_message =                                              \
+            "wuffs_aux::DecodeJson: internal error: io_buf is closed";   \
+        goto done;                                                       \
+      }                                                                  \
+      io_buf->compact();                                                 \
+      if (io_buf->meta.wi >= io_buf->data.len) {                         \
+        ret_error_message =                                              \
+            "wuffs_aux::DecodeJson: internal error: io_buf is full";     \
+        goto done;                                                       \
+      }                                                                  \
+      cursor_index = io_buf->meta.ri;                                    \
+      io_error_message = input.CopyIn(io_buf);                           \
+    } else {                                                             \
+      ret_error_message = tok_status.message();                          \
+      goto done;                                                         \
+    }                                                                    \
+    if (WUFFS_JSON__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE != 0) {      \
+      ret_error_message =                                                \
+          "wuffs_aux::DecodeJson: internal error: bad WORKBUF_LEN";      \
+      goto done;                                                         \
+    }                                                                    \
+    wuffs_base__slice_u8 work_buf = wuffs_base__empty_slice_u8();        \
+    tok_status = dec->decode_tokens(&tok_buf, io_buf, work_buf);         \
+  }                                                                      \
+  wuffs_base__token token = tok_buf.data.ptr[tok_buf.meta.ri++];         \
+  uint64_t token_len = token.length();                                   \
+  if ((io_buf->meta.ri < cursor_index) ||                                \
+      ((io_buf->meta.ri - cursor_index) < token_len)) {                  \
+    ret_error_message =                                                  \
+        "wuffs_aux::DecodeJson: internal error: bad token indexes";      \
+    goto done;                                                           \
+  }                                                                      \
+  uint8_t* token_ptr = io_buf->data.ptr + cursor_index;                  \
+  (void)(token_ptr);                                                     \
+  cursor_index += token_len
+
+// --------
+
+namespace {
+
+// DecodeJson_SplitJsonPointer returns ("bar", 8) for ("/foo/bar/b~1z/qux", 5,
+// etc). It returns a 0 size_t when s has invalid JSON Pointer syntax.
+//
+// The string returned is unescaped. If calling it again, this time with i=8,
+// the "b~1z" substring would be returned as "b/z".
+std::pair<std::string, size_t>  //
+DecodeJson_SplitJsonPointer(std::string& s,
+                            size_t i,
+                            bool allow_tilde_r_tilde_n) {
+  std::string fragment;
+  while (i < s.size()) {
+    char c = s[i];
+    if (c == '/') {
+      break;
+    } else if (c != '~') {
+      fragment.push_back(c);
+      i++;
+      continue;
+    }
+    i++;
+    if (i >= s.size()) {
+      return std::make_pair(std::string(), 0);
+    }
+    c = s[i];
+    if (c == '0') {
+      fragment.push_back('~');
+      i++;
+      continue;
+    } else if (c == '1') {
+      fragment.push_back('/');
+      i++;
+      continue;
+    } else if (allow_tilde_r_tilde_n) {
+      if (c == 'r') {
+        fragment.push_back('\r');
+        i++;
+        continue;
+      } else if (c == 'n') {
+        fragment.push_back('\n');
+        i++;
+        continue;
+      }
+    }
+    return std::make_pair(std::string(), 0);
+  }
+  return std::make_pair(std::move(fragment), i);
+}
+
+std::string  //
+DecodeJson_DecodeBackslashX(std::string& str,
+                            uint8_t* token_ptr,
+                            size_t token_len) {
+  wuffs_base__slice_u8 encoded =
+      wuffs_base__make_slice_u8(token_ptr, token_len);
+  while (encoded.len > 0) {
+    uint8_t decoded[64];
+    constexpr bool src_closed = true;
+    wuffs_base__transform__output o = wuffs_base__base_16__decode4(
+        wuffs_base__make_slice_u8(&decoded[0], sizeof decoded), encoded,
+        src_closed, WUFFS_BASE__BASE_16__DEFAULT_OPTIONS);
+    if (o.status.is_error()) {
+      return o.status.message();
+    } else if ((o.num_dst > (sizeof decoded)) || (o.num_src > encoded.len)) {
+      return "wuffs_aux::DecodeJson: internal error: inconsistent base16 "
+             "decoding";
+    }
+    str.append(  // Convert from (uint8_t*).
+        static_cast<const char*>(static_cast<void*>(&decoded[0])), o.num_dst);
+    encoded.ptr += o.num_src;
+    encoded.len -= o.num_src;
+  }
+  return "";
+}
+
+// --------
+
+std::string  //
+DecodeJson_WalkJsonPointerFragment(wuffs_base__token_buffer& tok_buf,
+                                   wuffs_base__status& tok_status,
+                                   wuffs_json__decoder::unique_ptr& dec,
+                                   wuffs_base__io_buffer* io_buf,
+                                   std::string& io_error_message,
+                                   size_t& cursor_index,
+                                   sync_io::Input& input,
+                                   std::string& json_pointer_fragment) {
+  std::string ret_error_message;
+  while (true) {
+    WUFFS_AUX__DECODE_JSON__GET_THE_NEXT_TOKEN;
+
+    int64_t vbc = token.value_base_category();
+    uint64_t vbd = token.value_base_detail();
+    if (vbc == WUFFS_BASE__TOKEN__VBC__FILLER) {
+      continue;
+    } else if ((vbc != WUFFS_BASE__TOKEN__VBC__STRUCTURE) ||
+               !(vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__PUSH)) {
+      return DecodeJson_NoMatch;
+    } else if (vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__TO_LIST) {
+      goto do_list;
+    }
+    goto do_dict;
+  }
+
+do_dict:
+  // Alternate between these two things:
+  //  1. Decode the next dict key (a string). If it matches the fragment, we're
+  //    done (success). If we've reached the dict's end (VBD__STRUCTURE__POP)
+  //    so that there was no next dict key, we're done (failure).
+  //  2. Otherwise, skip the next dict value.
+  while (true) {
+    for (std::string str; true;) {
+      WUFFS_AUX__DECODE_JSON__GET_THE_NEXT_TOKEN;
+
+      int64_t vbc = token.value_base_category();
+      uint64_t vbd = token.value_base_detail();
+      switch (vbc) {
+        case WUFFS_BASE__TOKEN__VBC__FILLER:
+          continue;
+
+        case WUFFS_BASE__TOKEN__VBC__STRUCTURE:
+          if (vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__PUSH) {
+            goto fail;
+          }
+          return DecodeJson_NoMatch;
+
+        case WUFFS_BASE__TOKEN__VBC__STRING: {
+          if (vbd & WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_0_DST_1_SRC_DROP) {
+            // No-op.
+          } else if (vbd &
+                     WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY) {
+            const char* ptr =  // Convert from (uint8_t*).
+                static_cast<const char*>(static_cast<void*>(token_ptr));
+            str.append(ptr, token_len);
+          } else if (
+              vbd &
+              WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_1_DST_4_SRC_BACKSLASH_X) {
+            ret_error_message =
+                DecodeJson_DecodeBackslashX(str, token_ptr, token_len);
+            if (!ret_error_message.empty()) {
+              goto done;
+            }
+          } else {
+            goto fail;
+          }
+          break;
+        }
+
+        case WUFFS_BASE__TOKEN__VBC__UNICODE_CODE_POINT: {
+          uint8_t u[WUFFS_BASE__UTF_8__BYTE_LENGTH__MAX_INCL];
+          size_t n = wuffs_base__utf_8__encode(
+              wuffs_base__make_slice_u8(
+                  &u[0], WUFFS_BASE__UTF_8__BYTE_LENGTH__MAX_INCL),
+              static_cast<uint32_t>(vbd));
+          const char* ptr =  // Convert from (uint8_t*).
+              static_cast<const char*>(static_cast<void*>(&u[0]));
+          str.append(ptr, n);
+          break;
+        }
+
+        default:
+          goto fail;
+      }
+
+      if (token.continued()) {
+        continue;
+      }
+      if (str == json_pointer_fragment) {
+        return "";
+      }
+      goto skip_the_next_dict_value;
+    }
+
+  skip_the_next_dict_value:
+    for (uint32_t skip_depth = 0; true;) {
+      WUFFS_AUX__DECODE_JSON__GET_THE_NEXT_TOKEN;
+
+      int64_t vbc = token.value_base_category();
+      uint64_t vbd = token.value_base_detail();
+      if (token.continued() || (vbc == WUFFS_BASE__TOKEN__VBC__FILLER)) {
+        continue;
+      } else if (vbc == WUFFS_BASE__TOKEN__VBC__STRUCTURE) {
+        if (vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__PUSH) {
+          skip_depth++;
+          continue;
+        }
+        skip_depth--;
+      }
+
+      if (skip_depth == 0) {
+        break;
+      }
+    }  // skip_the_next_dict_value
+  }    // do_dict
+
+do_list:
+  do {
+    wuffs_base__result_u64 result_u64 = wuffs_base__parse_number_u64(
+        wuffs_base__make_slice_u8(
+            static_cast<uint8_t*>(static_cast<void*>(
+                const_cast<char*>(json_pointer_fragment.data()))),
+            json_pointer_fragment.size()),
+        WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS);
+    if (!result_u64.status.is_ok()) {
+      return DecodeJson_NoMatch;
+    }
+    uint64_t remaining = result_u64.value;
+    if (remaining == 0) {
+      goto check_that_a_value_follows;
+    }
+    for (uint32_t skip_depth = 0; true;) {
+      WUFFS_AUX__DECODE_JSON__GET_THE_NEXT_TOKEN;
+
+      int64_t vbc = token.value_base_category();
+      uint64_t vbd = token.value_base_detail();
+      if (token.continued() || (vbc == WUFFS_BASE__TOKEN__VBC__FILLER)) {
+        continue;
+      } else if (vbc == WUFFS_BASE__TOKEN__VBC__STRUCTURE) {
+        if (vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__PUSH) {
+          skip_depth++;
+          continue;
+        }
+        if (skip_depth == 0) {
+          return DecodeJson_NoMatch;
+        }
+        skip_depth--;
+      }
+
+      if (skip_depth > 0) {
+        continue;
+      }
+      remaining--;
+      if (remaining == 0) {
+        goto check_that_a_value_follows;
+      }
+    }
+  } while (false);  // do_list
+
+check_that_a_value_follows:
+  while (true) {
+    WUFFS_AUX__DECODE_JSON__GET_THE_NEXT_TOKEN;
+
+    int64_t vbc = token.value_base_category();
+    uint64_t vbd = token.value_base_detail();
+    if (vbc == WUFFS_BASE__TOKEN__VBC__FILLER) {
+      continue;
+    }
+
+    // Undo the last part of WUFFS_AUX__DECODE_JSON__GET_THE_NEXT_TOKEN, so that
+    // we're only peeking at the next token.
+    tok_buf.meta.ri--;
+    cursor_index -= token_len;
+
+    if ((vbc == WUFFS_BASE__TOKEN__VBC__STRUCTURE) &&
+        (vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__POP)) {
+      return DecodeJson_NoMatch;
+    }
+    return "";
+  }  // check_that_a_value_follows
+
+fail:
+  return "wuffs_aux::DecodeJson: internal error: unexpected token";
+done:
+  return ret_error_message;
+}
+
+}  // namespace
+
+// --------
+
+DecodeJsonResult  //
+DecodeJson(DecodeJsonCallbacks& callbacks,
+           sync_io::Input& input,
+           wuffs_base__slice_u32 quirks,
+           std::string json_pointer) {
+  // Prepare the wuffs_base__io_buffer and the resultant error_message.
+  wuffs_base__io_buffer* io_buf = input.BringsItsOwnIOBuffer();
+  wuffs_base__io_buffer fallback_io_buf = wuffs_base__empty_io_buffer();
+  std::unique_ptr<uint8_t[]> fallback_io_array(nullptr);
+  if (!io_buf) {
+    fallback_io_array = std::unique_ptr<uint8_t[]>(new uint8_t[4096]);
+    fallback_io_buf = wuffs_base__ptr_u8__writer(fallback_io_array.get(), 4096);
+    io_buf = &fallback_io_buf;
+  }
+  size_t cursor_index = 0;
+  std::string ret_error_message;
+  std::string io_error_message;
+
+  do {
+    // Prepare the low-level JSON decoder.
+    wuffs_json__decoder::unique_ptr dec = wuffs_json__decoder::alloc();
+    if (!dec) {
+      ret_error_message = "wuffs_aux::DecodeJson: out of memory";
+      goto done;
+    }
+    bool allow_tilde_r_tilde_n = false;
+    for (size_t i = 0; i < quirks.len; i++) {
+      dec->set_quirk_enabled(quirks.ptr[i], true);
+      if (quirks.ptr[i] ==
+          WUFFS_JSON__QUIRK_JSON_POINTER_ALLOW_TILDE_R_TILDE_N) {
+        allow_tilde_r_tilde_n = true;
+      }
+    }
+
+    // Prepare the wuffs_base__tok_buffer.
+    wuffs_base__token tok_array[256];
+    wuffs_base__token_buffer tok_buf =
+        wuffs_base__slice_token__writer(wuffs_base__make_slice_token(
+            &tok_array[0], (sizeof(tok_array) / sizeof(tok_array[0]))));
+    wuffs_base__status tok_status = wuffs_base__make_status(nullptr);
+
+    // Prepare other state.
+    uint32_t depth = 0;
+    std::string str;
+
+    // Walk the (optional) JSON Pointer.
+    for (size_t i = 0; i < json_pointer.size();) {
+      if (json_pointer[i] != '/') {
+        ret_error_message = DecodeJson_BadJsonPointer;
+        goto done;
+      }
+      std::pair<std::string, size_t> split = DecodeJson_SplitJsonPointer(
+          json_pointer, i + 1, allow_tilde_r_tilde_n);
+      i = std::move(split.second);
+      if (i == 0) {
+        ret_error_message = DecodeJson_BadJsonPointer;
+        goto done;
+      }
+      ret_error_message = DecodeJson_WalkJsonPointerFragment(
+          tok_buf, tok_status, dec, io_buf, io_error_message, cursor_index,
+          input, split.first);
+      if (!ret_error_message.empty()) {
+        goto done;
+      }
+    }
+
+    // Loop, doing these two things:
+    //  1. Get the next token.
+    //  2. Process that token.
+    while (true) {
+      WUFFS_AUX__DECODE_JSON__GET_THE_NEXT_TOKEN;
+
+      int64_t vbc = token.value_base_category();
+      uint64_t vbd = token.value_base_detail();
+      switch (vbc) {
+        case WUFFS_BASE__TOKEN__VBC__FILLER:
+          continue;
+
+        case WUFFS_BASE__TOKEN__VBC__STRUCTURE: {
+          if (vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__PUSH) {
+            ret_error_message = callbacks.Push(static_cast<uint32_t>(vbd));
+            if (!ret_error_message.empty()) {
+              goto done;
+            }
+            depth++;
+            continue;
+          }
+          ret_error_message = callbacks.Pop(static_cast<uint32_t>(vbd));
+          depth--;
+          goto parsed_a_value;
+        }
+
+        case WUFFS_BASE__TOKEN__VBC__STRING: {
+          if (vbd & WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_0_DST_1_SRC_DROP) {
+            // No-op.
+          } else if (vbd &
+                     WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY) {
+            const char* ptr =  // Convert from (uint8_t*).
+                static_cast<const char*>(static_cast<void*>(token_ptr));
+            str.append(ptr, token_len);
+          } else if (
+              vbd &
+              WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_1_DST_4_SRC_BACKSLASH_X) {
+            ret_error_message =
+                DecodeJson_DecodeBackslashX(str, token_ptr, token_len);
+            if (!ret_error_message.empty()) {
+              goto done;
+            }
+          } else {
+            goto fail;
+          }
+          if (token.continued()) {
+            continue;
+          }
+          ret_error_message =
+              (vbd & WUFFS_BASE__TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8)
+                  ? callbacks.AppendTextString(std::move(str))
+                  : callbacks.AppendByteString(std::move(str));
+          str.clear();
+          goto parsed_a_value;
+        }
+
+        case WUFFS_BASE__TOKEN__VBC__UNICODE_CODE_POINT: {
+          uint8_t u[WUFFS_BASE__UTF_8__BYTE_LENGTH__MAX_INCL];
+          size_t n = wuffs_base__utf_8__encode(
+              wuffs_base__make_slice_u8(
+                  &u[0], WUFFS_BASE__UTF_8__BYTE_LENGTH__MAX_INCL),
+              static_cast<uint32_t>(vbd));
+          const char* ptr =  // Convert from (uint8_t*).
+              static_cast<const char*>(static_cast<void*>(&u[0]));
+          str.append(ptr, n);
+          if (token.continued()) {
+            continue;
+          }
+          goto fail;
+        }
+
+        case WUFFS_BASE__TOKEN__VBC__LITERAL: {
+          ret_error_message =
+              (vbd & WUFFS_BASE__TOKEN__VBD__LITERAL__NULL)
+                  ? callbacks.AppendNull()
+                  : callbacks.AppendBool(vbd &
+                                         WUFFS_BASE__TOKEN__VBD__LITERAL__TRUE);
+          goto parsed_a_value;
+        }
+
+        case WUFFS_BASE__TOKEN__VBC__NUMBER: {
+          if (vbd & WUFFS_BASE__TOKEN__VBD__NUMBER__FORMAT_TEXT) {
+            if (vbd & WUFFS_BASE__TOKEN__VBD__NUMBER__CONTENT_INTEGER_SIGNED) {
+              wuffs_base__result_i64 r = wuffs_base__parse_number_i64(
+                  wuffs_base__make_slice_u8(token_ptr, token_len),
+                  WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS);
+              if (r.status.is_ok()) {
+                ret_error_message = callbacks.AppendI64(r.value);
+                goto parsed_a_value;
+              }
+            }
+            if (vbd & WUFFS_BASE__TOKEN__VBD__NUMBER__CONTENT_FLOATING_POINT) {
+              wuffs_base__result_f64 r = wuffs_base__parse_number_f64(
+                  wuffs_base__make_slice_u8(token_ptr, token_len),
+                  WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS);
+              if (r.status.is_ok()) {
+                ret_error_message = callbacks.AppendF64(r.value);
+                goto parsed_a_value;
+              }
+            }
+          } else if (vbd & WUFFS_BASE__TOKEN__VBD__NUMBER__CONTENT_NEG_INF) {
+            ret_error_message = callbacks.AppendF64(
+                wuffs_base__ieee_754_bit_representation__from_u64_to_f64(
+                    0xFFF0000000000000ul));
+            goto parsed_a_value;
+          } else if (vbd & WUFFS_BASE__TOKEN__VBD__NUMBER__CONTENT_POS_INF) {
+            ret_error_message = callbacks.AppendF64(
+                wuffs_base__ieee_754_bit_representation__from_u64_to_f64(
+                    0x7FF0000000000000ul));
+            goto parsed_a_value;
+          } else if (vbd & WUFFS_BASE__TOKEN__VBD__NUMBER__CONTENT_NEG_NAN) {
+            ret_error_message = callbacks.AppendF64(
+                wuffs_base__ieee_754_bit_representation__from_u64_to_f64(
+                    0xFFFFFFFFFFFFFFFFul));
+            goto parsed_a_value;
+          } else if (vbd & WUFFS_BASE__TOKEN__VBD__NUMBER__CONTENT_POS_NAN) {
+            ret_error_message = callbacks.AppendF64(
+                wuffs_base__ieee_754_bit_representation__from_u64_to_f64(
+                    0x7FFFFFFFFFFFFFFFul));
+            goto parsed_a_value;
+          }
+          goto fail;
+        }
+      }
+
+    fail:
+      ret_error_message =
+          "wuffs_aux::DecodeJson: internal error: unexpected token";
+      goto done;
+
+    parsed_a_value:
+      if (!ret_error_message.empty() || (depth == 0)) {
+        goto done;
+      }
+    }
+  } while (false);
+
+done:
+  DecodeJsonResult result(
+      std::move(ret_error_message),
+      wuffs_base__u64__sat_add(io_buf->meta.pos, cursor_index));
+  callbacks.Done(result, input, *io_buf);
+  return result;
+}
+
+#undef WUFFS_AUX__DECODE_JSON__GET_THE_NEXT_TOKEN
+
+}  // namespace wuffs_aux
+
+#endif  // !defined(WUFFS_CONFIG__MODULES) ||
+        // defined(WUFFS_CONFIG__MODULE__AUX__JSON)
+
+#endif  // defined(__cplusplus) && (__cplusplus >= 201103L)
 
 #endif  // WUFFS_IMPLEMENTATION
 
