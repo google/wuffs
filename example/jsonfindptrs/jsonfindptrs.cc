@@ -193,9 +193,11 @@ struct {
   int remaining_argc;
   char** remaining_argv;
 
-  uint32_t max_output_depth;
-  char* query_c_string;
   bool strict_json_pointer_syntax;
+
+  uint32_t max_output_depth;
+
+  char* query_c_string;
 } g_flags = {0};
 
 std::string  //

@@ -270,10 +270,22 @@ bool g_sandboxed = false;
 
 int g_input_file_descriptor = 0;  // A 0 default means stdin.
 
-// parse_flags enforces that g_flags.spaces <= 8 (the length of
-// INDENT_SPACES_STRING).
-#define INDENT_SPACES_STRING "        "
-#define INDENT_TAB_STRING "\t"
+#define NEW_LINE_THEN_256_SPACES                                               \
+  "\n                                                                        " \
+  "                                                                          " \
+  "                                                                          " \
+  "                                    "
+#define NEW_LINE_THEN_256_TABS                                                 \
+  "\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t" \
+  "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t" \
+  "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t" \
+  "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t" \
+  "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t" \
+  "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t" \
+  "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t"
+
+const char* g_new_line_then_256_indent_bytes;
+uint32_t g_bytes_per_indent_depth;
 
 #ifndef DST_BUFFER_ARRAY_SIZE
 #define DST_BUFFER_ARRAY_SIZE (32 * 1024)
@@ -581,12 +593,14 @@ struct {
   bool input_allow_comments;
   bool input_allow_extra_comma;
   bool input_allow_inf_nan_numbers;
-  uint32_t max_output_depth;
   bool output_extra_comma;
-  char* query_c_string;
-  size_t spaces;
   bool strict_json_pointer_syntax;
   bool tabs;
+
+  uint32_t max_output_depth;
+  uint32_t spaces;
+
+  char* query_c_string;
 } g_flags = {0};
 
 const char*  //
@@ -721,6 +735,10 @@ initialize_globals(int argc, char** argv) {
       ((g_input_file_descriptor != stdin_fd) ? 1 : 0)) {
     return g_usage;
   }
+
+  g_new_line_then_256_indent_bytes =
+      g_flags.tabs ? NEW_LINE_THEN_256_TABS : NEW_LINE_THEN_256_SPACES;
+  g_bytes_per_indent_depth = g_flags.tabs ? 1 : g_flags.spaces;
 
   g_query.reset(g_flags.query_c_string);
 
@@ -923,14 +941,12 @@ handle_token(wuffs_base__token t, bool start_of_token_chain) {
             (g_ctx != context::in_dict_after_brace) &&
             !g_flags.compact_output) {
           if (g_flags.output_extra_comma) {
-            TRY(write_dst(",\n", 2));
-          } else {
-            TRY(write_dst("\n", 1));
+            TRY(write_dst(",", 1));
           }
-          for (uint32_t i = 0; i < g_depth; i++) {
-            TRY(write_dst(
-                g_flags.tabs ? INDENT_TAB_STRING : INDENT_SPACES_STRING,
-                g_flags.tabs ? 1 : g_flags.spaces));
+          uint32_t indent = g_depth * g_bytes_per_indent_depth;
+          TRY(write_dst(g_new_line_then_256_indent_bytes, 1 + (indent & 0xFF)));
+          for (indent >>= 8; indent > 0; indent--) {
+            TRY(write_dst(g_new_line_then_256_indent_bytes + 1, 0x100));
           }
         }
 
@@ -956,11 +972,10 @@ handle_token(wuffs_base__token t, bool start_of_token_chain) {
           TRY(write_dst(",", 1));
         }
         if (!g_flags.compact_output) {
-          TRY(write_dst("\n", 1));
-          for (size_t i = 0; i < g_depth; i++) {
-            TRY(write_dst(
-                g_flags.tabs ? INDENT_TAB_STRING : INDENT_SPACES_STRING,
-                g_flags.tabs ? 1 : g_flags.spaces));
+          uint32_t indent = g_depth * g_bytes_per_indent_depth;
+          TRY(write_dst(g_new_line_then_256_indent_bytes, 1 + (indent & 0xFF)));
+          for (indent >>= 8; indent > 0; indent--) {
+            TRY(write_dst(g_new_line_then_256_indent_bytes + 1, 0x100));
           }
         }
       }

@@ -120,10 +120,22 @@ static const char* g_usage =
 
 // ----
 
-// parse_flags enforces that g_flags.spaces <= 8 (the length of
-// INDENT_SPACES_STRING).
-#define INDENT_SPACES_STRING "        "
-#define INDENT_TAB_STRING "\t"
+#define NEW_LINE_THEN_256_SPACES                                               \
+  "\n                                                                        " \
+  "                                                                          " \
+  "                                                                          " \
+  "                                    "
+#define NEW_LINE_THEN_256_TABS                                                 \
+  "\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t" \
+  "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t" \
+  "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t" \
+  "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t" \
+  "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t" \
+  "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t" \
+  "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t"
+
+const char* g_new_line_then_256_indent_bytes;
+uint32_t g_bytes_per_indent_depth;
 
 uint8_t g_dst_array[32768];
 wuffs_base__io_buffer g_dst;
@@ -151,8 +163,9 @@ struct {
   bool output_cbor_metadata_as_comments;
   bool output_extra_comma;
   bool output_inf_nan_numbers;
-  size_t spaces;
   bool tabs;
+
+  uint32_t spaces;
 } g_flags = {0};
 
 std::string  //
@@ -274,17 +287,14 @@ class Callbacks : public wuffs_aux::DecodeCborCallbacks {
     do {
       switch (g_ctx) {
         case context::none:
-          // No-op.
-          break;
+          goto skip_indentation;
         case context::in_list_after_bracket:
-          TRY(write_dst("\n", g_flags.compact_output ? 0 : 1));
           g_ctx = context::in_list_after_value;
           break;
         case context::in_list_after_value:
-          TRY(write_dst(",\n", g_flags.compact_output ? 1 : 2));
+          TRY(write_dst(",", 1));
           break;
         case context::in_dict_after_brace:
-          TRY(write_dst("\n", g_flags.compact_output ? 0 : 1));
           g_ctx = context::in_dict_after_key;
           break;
         case context::in_dict_after_key:
@@ -292,15 +302,16 @@ class Callbacks : public wuffs_aux::DecodeCborCallbacks {
           g_ctx = context::in_dict_after_value;
           goto skip_indentation;
         case context::in_dict_after_value:
-          TRY(write_dst(",\n", g_flags.compact_output ? 1 : 2));
+          TRY(write_dst(",", 1));
           g_ctx = context::in_dict_after_key;
           break;
       }
 
       if (!g_flags.compact_output) {
-        for (size_t i = 0; i < g_depth; i++) {
-          TRY(write_dst(g_flags.tabs ? INDENT_TAB_STRING : INDENT_SPACES_STRING,
-                        g_flags.tabs ? 1 : g_flags.spaces));
+        uint32_t indent = g_depth * g_bytes_per_indent_depth;
+        TRY(write_dst(g_new_line_then_256_indent_bytes, 1 + (indent & 0xFF)));
+        for (indent >>= 8; indent > 0; indent--) {
+          TRY(write_dst(g_new_line_then_256_indent_bytes + 1, 0x100));
         }
       }
     } while (false);
@@ -581,13 +592,12 @@ class Callbacks : public wuffs_aux::DecodeCborCallbacks {
     } else if ((g_ctx != context::in_list_after_bracket) &&
                (g_ctx != context::in_dict_after_brace)) {
       if (g_flags.output_extra_comma) {
-        TRY(write_dst(",\n", 2));
-      } else {
-        TRY(write_dst("\n", 1));
+        TRY(write_dst(",", 1));
       }
-      for (size_t i = 0; i < g_depth; i++) {
-        TRY(write_dst(g_flags.tabs ? INDENT_TAB_STRING : INDENT_SPACES_STRING,
-                      g_flags.tabs ? 1 : g_flags.spaces));
+      uint32_t indent = g_depth * g_bytes_per_indent_depth;
+      TRY(write_dst(g_new_line_then_256_indent_bytes, 1 + (indent & 0xFF)));
+      for (indent >>= 8; indent > 0; indent--) {
+        TRY(write_dst(g_new_line_then_256_indent_bytes + 1, 0x100));
       }
     }
     g_ctx = (flags & WUFFS_BASE__TOKEN__VBD__STRUCTURE__TO_LIST)
@@ -609,6 +619,10 @@ main1(int argc, char** argv) {
   g_wrote_to_dst = false;
 
   TRY(parse_flags(argc, argv));
+
+  g_new_line_then_256_indent_bytes =
+      g_flags.tabs ? NEW_LINE_THEN_256_TABS : NEW_LINE_THEN_256_SPACES;
+  g_bytes_per_indent_depth = g_flags.tabs ? 1 : g_flags.spaces;
 
   FILE* in = stdin;
   if (g_flags.remaining_argc > 1) {
