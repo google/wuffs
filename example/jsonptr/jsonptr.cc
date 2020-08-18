@@ -305,10 +305,9 @@ wuffs_base__io_buffer g_dst;
 wuffs_base__io_buffer g_src;
 wuffs_base__token_buffer g_tok;
 
-// g_curr_token_end_src_index is the g_src.data.ptr index of the end of the
-// current token. An invariant is that (g_curr_token_end_src_index <=
-// g_src.meta.ri).
-size_t g_curr_token_end_src_index;
+// g_cursor_index is the g_src.data.ptr index between the previous and current
+// token. An invariant is that (g_cursor_index <= g_src.meta.ri).
+size_t g_cursor_index;
 
 uint32_t g_depth;
 
@@ -720,7 +719,7 @@ initialize_globals(int argc, char** argv) {
       wuffs_base__make_slice_token(g_tok_array, TOKEN_BUFFER_ARRAY_SIZE),
       wuffs_base__empty_token_buffer_meta());
 
-  g_curr_token_end_src_index = 0;
+  g_cursor_index = 0;
 
   g_depth = 0;
 
@@ -913,9 +912,10 @@ handle_token(wuffs_base__token t, bool start_of_token_chain) {
     int64_t vbc = t.value_base_category();
     uint64_t vbd = t.value_base_detail();
     uint64_t token_length = t.length();
+    // The "- token_length" is because we incremented g_cursor_index before
+    // calling handle_token.
     wuffs_base__slice_u8 tok = wuffs_base__make_slice_u8(
-        g_src.data.ptr + g_curr_token_end_src_index - token_length,
-        token_length);
+        g_src.data.ptr + g_cursor_index - token_length, token_length);
 
     // Handle ']' or '}'.
     if ((vbc == WUFFS_BASE__TOKEN__VBC__STRUCTURE) &&
@@ -1114,11 +1114,11 @@ main1(int argc, char** argv) {
 
     while (g_tok.meta.ri < g_tok.meta.wi) {
       wuffs_base__token t = g_tok.data.ptr[g_tok.meta.ri++];
-      uint64_t n = t.length();
-      if ((g_src.meta.ri - g_curr_token_end_src_index) < n) {
+      uint64_t token_length = t.length();
+      if ((g_src.meta.ri - g_cursor_index) < token_length) {
         return "main: internal error: inconsistent g_src indexes";
       }
-      g_curr_token_end_src_index += n;
+      g_cursor_index += token_length;
 
       // Skip filler tokens (e.g. whitespace).
       if (t.value_base_category() == WUFFS_BASE__TOKEN__VBC__FILLER) {
@@ -1139,11 +1139,11 @@ main1(int argc, char** argv) {
     if (status.repr == nullptr) {
       return "main: internal error: unexpected end of token stream";
     } else if (status.repr == wuffs_base__suspension__short_read) {
-      if (g_curr_token_end_src_index != g_src.meta.ri) {
+      if (g_cursor_index != g_src.meta.ri) {
         return "main: internal error: inconsistent g_src indexes";
       }
       TRY(read_src());
-      g_curr_token_end_src_index = g_src.meta.ri;
+      g_cursor_index = g_src.meta.ri;
     } else if (status.repr == wuffs_base__suspension__short_write) {
       g_tok.compact();
     } else {
