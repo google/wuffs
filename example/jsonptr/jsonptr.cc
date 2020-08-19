@@ -818,10 +818,7 @@ flush_dst() {
 }
 
 const char*  //
-write_dst(const void* s, size_t n) {
-  if (g_suppress_write_dst > 0) {
-    return nullptr;
-  }
+write_dst_slow(const void* s, size_t n) {
   const uint8_t* p = static_cast<const uint8_t*>(s);
   while (n > 0) {
     size_t i = g_dst.writer_length();
@@ -846,6 +843,19 @@ write_dst(const void* s, size_t n) {
     g_wrote_to_dst = true;
   }
   return nullptr;
+}
+
+inline const char*  //
+write_dst(const void* s, size_t n) {
+  if (g_suppress_write_dst > 0) {
+    return nullptr;
+  } else if (n <= (DST_BUFFER_ARRAY_SIZE - g_dst.meta.wi)) {
+    memcpy(g_dst.data.ptr + g_dst.meta.wi, s, n);
+    g_dst.meta.wi += n;
+    g_wrote_to_dst = true;
+    return nullptr;
+  }
+  return write_dst_slow(s, n);
 }
 
 // ----
