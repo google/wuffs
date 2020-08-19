@@ -158,6 +158,8 @@ static const char* g_usage =
     "            -input-allow-comments\n"
     "            -input-allow-extra-comma\n"
     "            -input-allow-inf-nan-numbers\n"
+    "            -jwcc\n"
+    "            -output-comments\n"
     "            -output-extra-comma\n"
     "            -strict-json-pointer-syntax\n"
     "\n"
@@ -179,7 +181,7 @@ static const char* g_usage =
     "\n"
     "The -input-allow-comments flag allows \"/*slash-star*/\" and\n"
     "\"//slash-slash\" C-style comments within JSON input. Such comments are\n"
-    "stripped from the output.\n"
+    "stripped from the output unless -output-comments was also set.\n"
     "\n"
     "The -input-allow-extra-comma flag allows input like \"[1,2,]\", with a\n"
     "comma after the final element of a JSON list or dictionary.\n"
@@ -187,11 +189,23 @@ static const char* g_usage =
     "The -input-allow-inf-nan-numbers flag allows non-finite floating point\n"
     "numbers (infinities and not-a-numbers) within JSON input.\n"
     "\n"
+    "The -output-comments flag copies any input comments to the output. It\n"
+    "has no effect unless -input-allow-comments was also set. Comments look\n"
+    "better after commas than before them, but a closing \"]\" or \"}\" can\n"
+    "occur after arbitrarily many comments, so -output-comments also requires\n"
+    "that one or both of -compact-output and -output-extra-comma be set.\n"
+    "\n"
     "The -output-extra-comma flag writes output like \"[1,2,]\", with a comma\n"
     "after the final element of a JSON list or dictionary. Such commas are\n"
     "non-compliant with the JSON specification but many parsers accept them\n"
     "and they can produce simpler line-based diffs. This flag is ignored when\n"
     "-compact-output is set.\n"
+    "\n"
+    "The -jwcc flag (JSON With Commas and Comments) enables all of:\n"
+    "            -input-allow-comments\n"
+    "            -input-allow-extra-comma\n"
+    "            -output-comments\n"
+    "            -output-extra-comma\n"
     "\n"
     "----\n"
     "\n"
@@ -325,6 +339,8 @@ in_dict_before_key() {
   return (g_ctx == context::in_dict_after_brace) ||
          (g_ctx == context::in_dict_after_value);
 }
+
+bool g_is_after_comment;
 
 uint32_t g_suppress_write_dst;
 bool g_wrote_to_dst;
@@ -592,6 +608,7 @@ struct {
   bool input_allow_comments;
   bool input_allow_extra_comma;
   bool input_allow_inf_nan_numbers;
+  bool output_comments;
   bool output_extra_comma;
   bool strict_json_pointer_syntax;
   bool tabs;
@@ -663,6 +680,17 @@ parse_flags(int argc, char** argv) {
       g_flags.input_allow_inf_nan_numbers = true;
       continue;
     }
+    if (!strcmp(arg, "jwcc")) {
+      g_flags.input_allow_comments = true;
+      g_flags.input_allow_extra_comma = true;
+      g_flags.output_comments = true;
+      g_flags.output_extra_comma = true;
+      continue;
+    }
+    if (!strcmp(arg, "output-comments")) {
+      g_flags.output_comments = true;
+      continue;
+    }
     if (!strcmp(arg, "output-extra-comma")) {
       g_flags.output_extra_comma = true;
       continue;
@@ -725,9 +753,16 @@ initialize_globals(int argc, char** argv) {
 
   g_ctx = context::none;
 
+  g_is_after_comment = false;
+
   TRY(parse_flags(argc, argv));
   if (g_flags.fail_if_unsandboxed && !g_sandboxed) {
     return "main: unsandboxed";
+  }
+  if (g_flags.output_comments && !g_flags.compact_output &&
+      !g_flags.output_extra_comma) {
+    return "main: -output-comments requires one or both of -compact-output and "
+           "-output-extra-comma";
   }
   const int stdin_fd = 0;
   if (g_flags.remaining_argc >
@@ -858,6 +893,26 @@ write_dst(const void* s, size_t n) {
   return write_dst_slow(s, n);
 }
 
+#define TRY_INDENT_WITH_LEADING_NEW_LINE                                   \
+  do {                                                                     \
+    uint32_t indent = g_depth * g_bytes_per_indent_depth;                  \
+    TRY(write_dst(g_new_line_then_256_indent_bytes, 1 + (indent & 0xFF))); \
+    for (indent >>= 8; indent > 0; indent--) {                             \
+      TRY(write_dst(g_new_line_then_256_indent_bytes + 1, 0x100));         \
+    }                                                                      \
+  } while (false)
+
+// TRY_INDENT_SANS_LEADING_NEW_LINE is used after comments, which print their
+// own "\n".
+#define TRY_INDENT_SANS_LEADING_NEW_LINE                                   \
+  do {                                                                     \
+    uint32_t indent = g_depth * g_bytes_per_indent_depth;                  \
+    TRY(write_dst(g_new_line_then_256_indent_bytes + 1, (indent & 0xFF))); \
+    for (indent >>= 8; indent > 0; indent--) {                             \
+      TRY(write_dst(g_new_line_then_256_indent_bytes + 1, 0x100));         \
+    }                                                                      \
+  } while (false)
+
 // ----
 
 uint8_t  //
@@ -950,13 +1005,13 @@ handle_token(wuffs_base__token t, bool start_of_token_chain) {
         if ((g_ctx != context::in_list_after_bracket) &&
             (g_ctx != context::in_dict_after_brace) &&
             !g_flags.compact_output) {
-          if (g_flags.output_extra_comma) {
-            TRY(write_dst(",", 1));
-          }
-          uint32_t indent = g_depth * g_bytes_per_indent_depth;
-          TRY(write_dst(g_new_line_then_256_indent_bytes, 1 + (indent & 0xFF)));
-          for (indent >>= 8; indent > 0; indent--) {
-            TRY(write_dst(g_new_line_then_256_indent_bytes + 1, 0x100));
+          if (g_is_after_comment) {
+            TRY_INDENT_SANS_LEADING_NEW_LINE;
+          } else {
+            if (g_flags.output_extra_comma) {
+              TRY(write_dst(",", 1));
+            }
+            TRY_INDENT_WITH_LEADING_NEW_LINE;
           }
         }
 
@@ -974,7 +1029,9 @@ handle_token(wuffs_base__token t, bool start_of_token_chain) {
     // Write preceding whitespace and punctuation, if it wasn't ']', '}' or a
     // continuation of a multi-token chain.
     if (start_of_token_chain) {
-      if (g_ctx == context::in_dict_after_key) {
+      if (g_is_after_comment) {
+        TRY_INDENT_SANS_LEADING_NEW_LINE;
+      } else if (g_ctx == context::in_dict_after_key) {
         TRY(write_dst(": ", g_flags.compact_output ? 1 : 2));
       } else if (g_ctx != context::none) {
         if ((g_ctx != context::in_list_after_bracket) &&
@@ -982,11 +1039,7 @@ handle_token(wuffs_base__token t, bool start_of_token_chain) {
           TRY(write_dst(",", 1));
         }
         if (!g_flags.compact_output) {
-          uint32_t indent = g_depth * g_bytes_per_indent_depth;
-          TRY(write_dst(g_new_line_then_256_indent_bytes, 1 + (indent & 0xFF)));
-          for (indent >>= 8; indent > 0; indent--) {
-            TRY(write_dst(g_new_line_then_256_indent_bytes + 1, 0x100));
-          }
+          TRY_INDENT_WITH_LEADING_NEW_LINE;
         }
       }
 
@@ -1130,13 +1183,47 @@ main1(int argc, char** argv) {
       }
       g_cursor_index += token_length;
 
-      // Skip filler tokens (e.g. whitespace).
+      // Handle filler tokens (e.g. whitespace, punctuation and comments).
+      // These are skipped, unless -output-comments is enabled.
       if (t.value_base_category() == WUFFS_BASE__TOKEN__VBC__FILLER) {
+        if (g_flags.output_comments &&
+            (t.value_base_detail() &
+             WUFFS_BASE__TOKEN__VBD__FILLER__COMMENT_ANY)) {
+          if (g_flags.compact_output) {
+            TRY(write_dst(g_src.data.ptr + g_cursor_index - token_length,
+                          token_length));
+          } else {
+            if (start_of_token_chain) {
+              if (g_is_after_comment) {
+                TRY_INDENT_SANS_LEADING_NEW_LINE;
+              } else if (g_ctx != context::none) {
+                if (g_ctx == context::in_dict_after_key) {
+                  TRY(write_dst(":", 1));
+                } else if ((g_ctx != context::in_list_after_bracket) &&
+                           (g_ctx != context::in_dict_after_brace)) {
+                  TRY(write_dst(",", 1));
+                }
+                if (!g_flags.compact_output) {
+                  TRY_INDENT_WITH_LEADING_NEW_LINE;
+                }
+              }
+            }
+            TRY(write_dst(g_src.data.ptr + g_cursor_index - token_length,
+                          token_length));
+            if (!t.continued() &&
+                (t.value_base_detail() &
+                 WUFFS_BASE__TOKEN__VBD__FILLER__COMMENT_BLOCK)) {
+              TRY(write_dst("\n", 1));
+            }
+            g_is_after_comment = true;
+          }
+        }
         start_of_token_chain = !t.continued();
         continue;
       }
 
       const char* z = handle_token(t, start_of_token_chain);
+      g_is_after_comment = false;
       start_of_token_chain = !t.continued();
       if (z == nullptr) {
         continue;
