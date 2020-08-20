@@ -17010,12 +17010,13 @@ wuffs_cbor__decoder__decode_tokens(
               goto label__goto_parsed_a_leaf_value__break;
             }
           } else if (v_c_major == 2) {
-            if (v_c_minor == 0) {
-              *iop_a_dst++ = wuffs_base__make_token(
-                  (((uint64_t)(4194560)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
-                  (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
-              goto label__goto_parsed_a_leaf_value__break;
-            } else if (v_c_minor < 28) {
+            if (v_c_minor < 28) {
+              if (v_string_length == 0) {
+                *iop_a_dst++ = wuffs_base__make_token(
+                    (((uint64_t)(4194560)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                    (((uint64_t)(((uint32_t)(WUFFS_CBOR__TOKEN_LENGTHS[v_c_minor])))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+                goto label__goto_parsed_a_leaf_value__break;
+              }
               *iop_a_dst++ = wuffs_base__make_token(
                   (((uint64_t)(4194560)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                   (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
@@ -17075,12 +17076,13 @@ wuffs_cbor__decoder__decode_tokens(
               goto label__goto_parsed_a_leaf_value__break;
             }
           } else if (v_c_major == 3) {
-            if (v_c_minor == 0) {
-              *iop_a_dst++ = wuffs_base__make_token(
-                  (((uint64_t)(4194579)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
-                  (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
-              goto label__goto_parsed_a_leaf_value__break;
-            } else if (v_c_minor < 28) {
+            if (v_c_minor < 28) {
+              if (v_string_length == 0) {
+                *iop_a_dst++ = wuffs_base__make_token(
+                    (((uint64_t)(4194579)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                    (((uint64_t)(((uint32_t)(WUFFS_CBOR__TOKEN_LENGTHS[v_c_minor])))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+                goto label__goto_parsed_a_leaf_value__break;
+              }
               *iop_a_dst++ = wuffs_base__make_token(
                   (((uint64_t)(4194579)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                   (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |

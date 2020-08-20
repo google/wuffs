@@ -294,15 +294,16 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 
 		} else if c_major == 2 {
 			// -------- BEGIN Major type 2: a byte string.
-			if c_minor == 0x00 {
-				args.dst.write_simple_token_fast!(
-					value_major: 0,
-					value_minor: (base.TOKEN__VBC__STRING << 21) |
-					base.TOKEN__VBD__STRING__CONVERT_0_DST_1_SRC_DROP,
-					continued: 0,
-					length: 1)
-				break.goto_parsed_a_leaf_value
-			} else if c_minor < 0x1C {
+			if c_minor < 0x1C {
+				if string_length == 0 {
+					args.dst.write_simple_token_fast!(
+						value_major: 0,
+						value_minor: (base.TOKEN__VBC__STRING << 21) |
+						base.TOKEN__VBD__STRING__CONVERT_0_DST_1_SRC_DROP,
+						continued: 0,
+						length: TOKEN_LENGTHS[c_minor] as base.u32)
+					break.goto_parsed_a_leaf_value
+				}
 				args.dst.write_simple_token_fast!(
 					value_major: 0,
 					value_minor: (base.TOKEN__VBC__STRING << 21) |
@@ -367,18 +368,19 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 
 		} else if c_major == 3 {
 			// -------- BEGIN Major type 3: a text string.
-			if c_minor == 0x00 {
-				args.dst.write_simple_token_fast!(
-					value_major: 0,
-					value_minor: (base.TOKEN__VBC__STRING << 21) |
-					base.TOKEN__VBD__STRING__DEFINITELY_UTF_8 |
-					base.TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8 |
-					base.TOKEN__VBD__STRING__DEFINITELY_ASCII |
-					base.TOKEN__VBD__STRING__CONVERT_0_DST_1_SRC_DROP,
-					continued: 0,
-					length: 1)
-				break.goto_parsed_a_leaf_value
-			} else if c_minor < 0x1C {
+			if c_minor < 0x1C {
+				if string_length == 0 {
+					args.dst.write_simple_token_fast!(
+						value_major: 0,
+						value_minor: (base.TOKEN__VBC__STRING << 21) |
+						base.TOKEN__VBD__STRING__DEFINITELY_UTF_8 |
+						base.TOKEN__VBD__STRING__CHAIN_MUST_BE_UTF_8 |
+						base.TOKEN__VBD__STRING__DEFINITELY_ASCII |
+						base.TOKEN__VBD__STRING__CONVERT_0_DST_1_SRC_DROP,
+						continued: 0,
+						length: TOKEN_LENGTHS[c_minor] as base.u32)
+					break.goto_parsed_a_leaf_value
+				}
 				args.dst.write_simple_token_fast!(
 					value_major: 0,
 					value_minor: (base.TOKEN__VBC__STRING << 21) |
