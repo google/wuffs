@@ -971,7 +971,7 @@ handle_unicode_code_point(uint32_t ucp) {
 
 // ----
 
-const char*  //
+inline const char*  //
 handle_token(wuffs_base__token t, bool start_of_token_chain) {
   do {
     int64_t vbc = t.value_base_category();
