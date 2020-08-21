@@ -1199,14 +1199,9 @@ handle_token(wuffs_base__token t, bool start_of_token_chain) {
                                    g_query.is_at(g_depth));
         }
 
-        if (vbd & WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_0_DST_1_SRC_DROP) {
-          // No-op.
-        } else if (vbd &
-                   WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY) {
+        if (vbd & WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY) {
           TRY(write_dst(tok.ptr, tok.len));
           g_query.incremental_match_slice(tok.ptr, tok.len);
-        } else {
-          return "main: internal error: unexpected string-token conversion";
         }
 
         if (t.continued()) {
