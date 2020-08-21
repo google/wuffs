@@ -1222,15 +1222,11 @@ handle_token(wuffs_base__token t, bool start_of_token_chain) {
         TRY(handle_unicode_code_point(vbd));
         g_query.incremental_match_code_point(vbd);
         return nullptr;
-
-      case WUFFS_BASE__TOKEN__VBC__LITERAL:
-      case WUFFS_BASE__TOKEN__VBC__NUMBER:
-        TRY(write_dst(tok.ptr, tok.len));
-        goto after_value;
     }
 
-    // Return an error if we didn't match the (vbc, vbd) pair.
-    return "main: internal error: unexpected token";
+    // We have a literal or a number.
+    TRY(write_dst(tok.ptr, tok.len));
+    goto after_value;
   } while (0);
 
   // Book-keeping after completing a value (whether a container value or a
