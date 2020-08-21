@@ -30,6 +30,7 @@
 - Added single-quoted strings.
 - Added tokens.
 - Changed `gif.decoder_workbuf_len_max_incl_worst_case` from 1 to 0.
+- Changed default C compilers from `clang-5.0,gcc` to `clang-9,gcc`.
 - Changed the C formatting style; removed the `-cformatter` flag.
 - Changed what the `std/gif` benchmarks actually measure.
 - Made `wuffs_base__pixel_format` a struct.
