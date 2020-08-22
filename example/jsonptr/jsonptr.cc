@@ -161,6 +161,7 @@ static const char* g_usage =
     "            -jwcc\n"
     "            -output-comments\n"
     "            -output-extra-comma\n"
+    "            -output-inf-nan-numbers\n"
     "            -strict-json-pointer-syntax\n"
     "\n"
     "The input.json filename is optional. If absent, it reads from stdin.\n"
@@ -187,7 +188,8 @@ static const char* g_usage =
     "comma after the final element of a JSON list or dictionary.\n"
     "\n"
     "The -input-allow-inf-nan-numbers flag allows non-finite floating point\n"
-    "numbers (infinities and not-a-numbers) within JSON input.\n"
+    "numbers (infinities and not-a-numbers) within JSON input. This flag\n"
+    "requires that -output-inf-nan-numbers also be set.\n"
     "\n"
     "The -output-comments flag copies any input comments to the output. It\n"
     "has no effect unless -input-allow-comments was also set. Comments look\n"
@@ -742,6 +744,7 @@ struct {
   bool input_allow_inf_nan_numbers;
   bool output_comments;
   bool output_extra_comma;
+  bool output_inf_nan_numbers;
   bool strict_json_pointer_syntax;
   bool tabs;
 
@@ -827,6 +830,10 @@ parse_flags(int argc, char** argv) {
       g_flags.output_extra_comma = true;
       continue;
     }
+    if (!strcmp(arg, "output-inf-nan-numbers")) {
+      g_flags.output_inf_nan_numbers = true;
+      continue;
+    }
     if (!strncmp(arg, "q=", 2) || !strncmp(arg, "query=", 6)) {
       while (*arg++ != '=') {
       }
@@ -895,6 +902,10 @@ initialize_globals(int argc, char** argv) {
       !g_flags.output_extra_comma) {
     return "main: -output-comments requires one or both of -compact-output and "
            "-output-extra-comma";
+  }
+  if (g_flags.input_allow_inf_nan_numbers && !g_flags.output_inf_nan_numbers) {
+    return "main: -input-allow-inf-nan-numbers requires "
+           "-output-inf-nan-numbers";
   }
   const int stdin_fd = 0;
   if (g_flags.remaining_argc >
