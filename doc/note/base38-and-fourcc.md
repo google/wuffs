@@ -33,7 +33,8 @@ Base38 is a tighter encoding than FourCC, fitting four characters into 21 bits
 instead of 32 bits. This is achieved by using a smaller alphabet of 38 possible
 values (space, 0-9, ? or a-z), so that it cannot distinguish between e.g. an
 upper case 'X' and a lower case 'x'. There's also the happy coincidence that
-`38 ** 4`, `2085136`, is slightly smaller than `2 ** 21`, `2097152`.
+`38 ** 4 = 0x1FD110 = 2085136` is slightly smaller than `2 ** 21 = 0x200000 =
+2097152`.
 
 The base38 encoding of `"JPEG"` is `0x122FF6`, which is `1191926`, which is
 `((21 * (38 ** 3)) + (27 * (38 ** 2)) + (16 * (38 ** 1)) + (18 * (38 ** 0)))`.
