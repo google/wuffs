@@ -456,6 +456,11 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 			if TOKEN_LENGTHS[c_minor] == 0 {
 				break.goto_fail
 			} else if depth >= 1024 {
+				token_length = TOKEN_LENGTHS[c_minor] as base.u32
+				while (token_length > 0) and (args.src.can_undo_byte()) {
+					args.src.undo_byte!()
+					token_length -= 1
+				} endwhile
 				return "#unsupported recursion depth"
 			}
 
@@ -518,6 +523,11 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 			if TOKEN_LENGTHS[c_minor] == 0 {
 				break.goto_fail
 			} else if depth >= 1024 {
+				token_length = TOKEN_LENGTHS[c_minor] as base.u32
+				while (token_length > 0) and (args.src.can_undo_byte()) {
+					args.src.undo_byte!()
+					token_length -= 1
+				} endwhile
 				return "#unsupported recursion depth"
 			}
 

@@ -17145,6 +17145,11 @@ wuffs_cbor__decoder__decode_tokens(
             if (WUFFS_CBOR__TOKEN_LENGTHS[v_c_minor] == 0) {
               goto label__goto_fail__break;
             } else if (v_depth >= 1024) {
+              v_token_length = ((uint32_t)(WUFFS_CBOR__TOKEN_LENGTHS[v_c_minor]));
+              while ((v_token_length > 0) && (iop_a_src > io1_a_src)) {
+                (iop_a_src--, wuffs_base__make_empty_struct());
+                v_token_length -= 1;
+              }
               status = wuffs_base__make_status(wuffs_cbor__error__unsupported_recursion_depth);
               goto exit;
             }
@@ -17181,6 +17186,11 @@ wuffs_cbor__decoder__decode_tokens(
             if (WUFFS_CBOR__TOKEN_LENGTHS[v_c_minor] == 0) {
               goto label__goto_fail__break;
             } else if (v_depth >= 1024) {
+              v_token_length = ((uint32_t)(WUFFS_CBOR__TOKEN_LENGTHS[v_c_minor]));
+              while ((v_token_length > 0) && (iop_a_src > io1_a_src)) {
+                (iop_a_src--, wuffs_base__make_empty_struct());
+                v_token_length -= 1;
+              }
               status = wuffs_base__make_status(wuffs_cbor__error__unsupported_recursion_depth);
               goto exit;
             }
