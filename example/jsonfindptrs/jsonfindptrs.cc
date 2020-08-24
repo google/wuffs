@@ -420,8 +420,9 @@ class Callbacks : public wuffs_aux::DecodeJsonCallbacks {
           return "";
         }
         return "main: internal error: non-string map key";
+      default:
+        return "main: internal error: non-container stack entry";
     }
-    return "main: internal error: non-container stack entry";
   }
 
   std::string AppendNull() override {
