@@ -441,6 +441,7 @@ uint32_t g_bytes_per_indent_depth;
 #ifndef SRC_BUFFER_ARRAY_SIZE
 #define SRC_BUFFER_ARRAY_SIZE (32 * 1024)
 #endif
+// 1 token is 8 bytes. 4Ki tokens is 32KiB.
 #ifndef TOKEN_BUFFER_ARRAY_SIZE
 #define TOKEN_BUFFER_ARRAY_SIZE (4 * 1024)
 #endif

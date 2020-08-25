@@ -60,7 +60,7 @@ DecodeCbor(DecodeCborCallbacks& callbacks,
       dec->set_quirk_enabled(quirks.ptr[i], true);
     }
 
-    // Prepare the wuffs_base__tok_buffer.
+    // Prepare the wuffs_base__tok_buffer. 256 tokens is 2KiB.
     wuffs_base__token tok_array[256];
     wuffs_base__token_buffer tok_buf =
         wuffs_base__slice_token__writer(wuffs_base__make_slice_token(
