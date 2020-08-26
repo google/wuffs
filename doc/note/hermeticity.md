@@ -55,12 +55,18 @@ asynchronous and complex.
 For Wuffs, the compiler enforces [memory-safety](/doc/note/memory-safety.md)
 (at compile time) and communication (a function call) is lightweight,
 synchronous and simple. [Wuffs the Language](/doc/wuffs-the-language.md) is
-deliberately unpowerful: there are no global variables, no `unsafe` keyword, no
-FFI (Foreign Function Interface) or system call facility, no user-supplied
-callbacks, no allocation or de-allocation of memory and no panicking or
-throwing exceptions (including for out-of-memory). Wuffs is designed for
-writing hermetic, secure libraries, not complete programs, and **with less
-power comes easier proof of safety**.
+deliberately unpowerful. There are:
+
+- no global variables,
+- no `unsafe` keyword,
+- no FFI (Foreign Function Interface),
+- no user-supplied callbacks,
+- no system calls,
+- no allocation or de-allocation of memory and
+- no panicking or throwing exceptions (including for out-of-memory).
+
+Wuffs is designed for writing hermetic, secure libraries, not complete
+programs, and **with less power comes easier proof of safety**.
 
 In comparison to compiling C/C++ code with WebAssembly (which can be restricted
 to only compute), both Wuffs and Wasm allow for hermetic libraries within
