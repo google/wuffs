@@ -23,7 +23,7 @@
 typedef struct {
   size_t wi;     // Write index. Invariant: wi <= len.
   size_t ri;     // Read  index. Invariant: ri <= wi.
-  uint64_t pos;  // Position of the buffer start relative to the stream start.
+  uint64_t pos;  // Buffer position (relative to the start of stream).
   bool closed;   // No further writes are expected.
 } wuffs_base__io_buffer_meta;
 
