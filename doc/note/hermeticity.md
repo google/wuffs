@@ -57,7 +57,8 @@ For Wuffs, the compiler enforces [memory-safety](/doc/note/memory-safety.md)
 synchronous and simple. [Wuffs the Language](/doc/wuffs-the-language.md) is
 deliberately unpowerful. There are:
 
-- no global variables,
+- no mutable global variables,
+- no mutable TLS (thread-local storage) variables,
 - no `unsafe` keyword,
 - no FFI (Foreign Function Interface),
 - no user-supplied callbacks,
