@@ -191,6 +191,9 @@ std::vector<uint32_t> g_quirks;
 
 std::string g_dst;
 
+// g_to_string_cache[i] caches the result of std::to_string(i).
+std::vector<std::string> g_to_string_cache;
+
 struct {
   int remaining_argc;
   char** remaining_argv;
@@ -362,7 +365,10 @@ print_json_pointers(JsonThing& jt, uint32_t depth) {
     case JsonThing::Kind::Array:
       g_dst += "/";
       for (size_t i = 0; i < jt.value.a.size(); i++) {
-        g_dst += std::to_string(i);
+        if (i >= g_to_string_cache.size()) {
+          g_to_string_cache.push_back(std::to_string(i));
+        }
+        g_dst += g_to_string_cache[i];
         TRY(print_json_pointers(jt.value.a[i], depth));
         g_dst.resize(n + 1);
       }
