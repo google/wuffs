@@ -189,6 +189,8 @@ static const char* g_usage =
 
 std::vector<uint32_t> g_quirks;
 
+std::string g_dst;
+
 struct {
   int remaining_argc;
   char** remaining_argv;
@@ -349,28 +351,35 @@ escape_needed:
 }
 
 std::string  //
-print_json_pointers(JsonThing& jt, std::string s, uint32_t depth) {
-  std::cout << s << '\n';
+print_json_pointers(JsonThing& jt, uint32_t depth) {
+  std::cout << g_dst << '\n';
   if (depth++ >= g_flags.max_output_depth) {
     return "";
   }
 
+  size_t n = g_dst.size();
   switch (jt.kind) {
     case JsonThing::Kind::Array:
-      s += "/";
+      g_dst += "/";
       for (size_t i = 0; i < jt.value.a.size(); i++) {
-        TRY(print_json_pointers(jt.value.a[i], s + std::to_string(i), depth));
+        g_dst += std::to_string(i);
+        TRY(print_json_pointers(jt.value.a[i], depth));
+        g_dst.resize(n + 1);
       }
+      g_dst.resize(n);
       break;
     case JsonThing::Kind::Object:
-      s += "/";
+      g_dst += "/";
       for (auto& kv : jt.value.o) {
         std::string e = escape(kv.first);
         if (e.empty() && !kv.first.empty()) {
           return "main: unsupported \"\\u000A\" or \"\\u000D\" in object key";
         }
-        TRY(print_json_pointers(kv.second, s + e, depth));
+        g_dst += e;
+        TRY(print_json_pointers(kv.second, depth));
+        g_dst.resize(n + 1);
       }
+      g_dst.resize(n);
       break;
     default:
       break;
@@ -492,7 +501,7 @@ class Callbacks : public wuffs_aux::DecodeJsonCallbacks {
       result.error_message = "main: internal error: bad depth";
       return;
     }
-    result.error_message = print_json_pointers(m_stack.back().thing, "", 0);
+    result.error_message = print_json_pointers(m_stack.back().thing, 0);
   }
 
  private:
