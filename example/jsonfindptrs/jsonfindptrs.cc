@@ -313,19 +313,21 @@ class JsonThing {
 
 // ----
 
-std::string  //
-escape(std::string s) {
-  for (char& c : s) {
+bool  //
+escape_needed(const std::string& s) {
+  for (const char& c : s) {
     if ((c == '~') || (c == '/') || (c == '\n') || (c == '\r')) {
-      goto escape_needed;
+      return true;
     }
   }
-  return s;
+  return false;
+}
 
-escape_needed:
+std::string  //
+escape(const std::string& s) {
   std::string e;
   e.reserve(8 + s.length());
-  for (char& c : s) {
+  for (const char& c : s) {
     switch (c) {
       case '~':
         e += "~0";
@@ -377,11 +379,15 @@ print_json_pointers(JsonThing& jt, uint32_t depth) {
     case JsonThing::Kind::Object:
       g_dst += "/";
       for (auto& kv : jt.value.o) {
-        std::string e = escape(kv.first);
-        if (e.empty() && !kv.first.empty()) {
-          return "main: unsupported \"\\u000A\" or \"\\u000D\" in object key";
+        if (!escape_needed(kv.first)) {
+          g_dst += kv.first;
+        } else {
+          std::string e = escape(kv.first);
+          if (e.empty()) {
+            return "main: unsupported \"\\u000A\" or \"\\u000D\" in object key";
+          }
+          g_dst += e;
         }
-        g_dst += e;
         TRY(print_json_pointers(kv.second, depth));
         g_dst.resize(n + 1);
       }
