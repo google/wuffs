@@ -113,6 +113,7 @@ static const char* g_usage =
     "            -input-allow-comments\n"
     "            -input-allow-extra-comma\n"
     "            -input-allow-inf-nan-numbers\n"
+    "            -only-parse-dont-output\n"
     "            -strict-json-pointer-syntax\n"
     "\n"
     "The input.json filename is optional. If absent, it reads from stdin.\n"
@@ -168,6 +169,11 @@ static const char* g_usage =
     "\n"
     "----\n"
     "\n"
+    "The -only-parse-dont-output flag means to write nothing to stdout. An\n"
+    "error message will still be written to stderr if the input is invalid.\n"
+    "\n"
+    "----\n"
+    "\n"
     "The -strict-json-pointer-syntax flag restricts the output lines to\n"
     "exactly RFC 6901, with only two escape sequences: \"~0\" and \"~1\" for\n"
     "\"~\" and \"/\". Without this flag, this program also lets \"~n\" and\n"
@@ -201,6 +207,7 @@ struct {
   int remaining_argc;
   char** remaining_argv;
 
+  bool only_parse_dont_output;
   bool strict_json_pointer_syntax;
 
   uint32_t max_output_depth;
@@ -265,6 +272,10 @@ parse_flags(int argc, char** argv) {
       while (*arg++ != '=') {
       }
       g_flags.query_c_string = arg;
+      continue;
+    }
+    if (!strcmp(arg, "only-parse-dont-output")) {
+      g_flags.only_parse_dont_output = true;
       continue;
     }
     if (!strcmp(arg, "strict-json-pointer-syntax")) {
@@ -482,8 +493,9 @@ class Callbacks : public wuffs_aux::DecodeJsonCallbacks {
     } else if (m_stack.size() != 1) {
       result.error_message = "main: internal error: bad depth";
       return;
+    } else if (!g_flags.only_parse_dont_output) {
+      result.error_message = print_json_pointers(m_stack.back().jvalue, 0);
     }
-    result.error_message = print_json_pointers(m_stack.back().jvalue, 0);
   }
 
  private:
