@@ -350,7 +350,7 @@ escape_needed:
 
 std::string  //
 print_json_pointers(JsonThing& jt, std::string s, uint32_t depth) {
-  std::cout << s << std::endl;
+  std::cout << s << '\n';
   if (depth++ >= g_flags.max_output_depth) {
     return "";
   }
@@ -534,7 +534,7 @@ compute_exit_code(std::string status_msg) {
   if (status_msg.empty()) {
     return 0;
   }
-  std::cerr << status_msg << std::endl;
+  std::cerr << status_msg << '\n';
   // Return an exit code of 1 for regular (forseen) errors, e.g. badly
   // formatted or unsupported input.
   //
