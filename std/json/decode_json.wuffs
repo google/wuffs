@@ -846,6 +846,9 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 							args.src.skip_u32_fast!(actual: 1, worst_case: 1)
 							continue.string_loop_outer
 						}
+						if char == 0x8A {
+							return "#bad new-line in a string"
+						}
 						return "#bad C0 control code"
 					}
 					if this.quirks[QUIRK_REPLACE_INVALID_UNICODE - QUIRKS_BASE] {

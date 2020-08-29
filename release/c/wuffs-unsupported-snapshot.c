@@ -7606,6 +7606,7 @@ extern const char wuffs_json__error__bad_c0_control_code[];
 extern const char wuffs_json__error__bad_utf_8[];
 extern const char wuffs_json__error__bad_backslash_escape[];
 extern const char wuffs_json__error__bad_input[];
+extern const char wuffs_json__error__bad_new_line_in_a_string[];
 extern const char wuffs_json__error__bad_quirk_combination[];
 extern const char wuffs_json__error__unsupported_number_length[];
 extern const char wuffs_json__error__unsupported_recursion_depth[];
@@ -25513,6 +25514,7 @@ const char wuffs_json__error__bad_c0_control_code[] = "#json: bad C0 control cod
 const char wuffs_json__error__bad_utf_8[] = "#json: bad UTF-8";
 const char wuffs_json__error__bad_backslash_escape[] = "#json: bad backslash-escape";
 const char wuffs_json__error__bad_input[] = "#json: bad input";
+const char wuffs_json__error__bad_new_line_in_a_string[] = "#json: bad new-line in a string";
 const char wuffs_json__error__bad_quirk_combination[] = "#json: bad quirk combination";
 const char wuffs_json__error__unsupported_number_length[] = "#json: unsupported number length";
 const char wuffs_json__error__unsupported_recursion_depth[] = "#json: unsupported recursion depth";
@@ -26610,6 +26612,10 @@ wuffs_json__decoder__decode_tokens(
                       (((uint64_t)(1)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
                   (iop_a_src += 1, wuffs_base__make_empty_struct());
                   goto label__string_loop_outer__continue;
+                }
+                if (v_char == 138) {
+                  status = wuffs_base__make_status(wuffs_json__error__bad_new_line_in_a_string);
+                  goto exit;
                 }
                 status = wuffs_base__make_status(wuffs_json__error__bad_c0_control_code);
                 goto exit;
