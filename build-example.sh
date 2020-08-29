@@ -55,9 +55,11 @@ for f in $sources; do
     fi
   elif [ -e example/$f/*.c ]; then
     echo "Building gen/bin/example-$f"
-    $CC  -O3 example/$f/*.c  -o gen/bin/example-$f
+    $CC  -O3            example/$f/*.c  -o gen/bin/example-$f
+  elif [ $f = "jsonfindptrs" ]; then
+    $CXX -O3 -std=c++17 example/$f/*.cc -o gen/bin/example-$f
   elif [ -e example/$f/*.cc ]; then
     echo "Building gen/bin/example-$f"
-    $CXX -O3 example/$f/*.cc -o gen/bin/example-$f
+    $CXX -O3            example/$f/*.cc -o gen/bin/example-$f
   fi
 done

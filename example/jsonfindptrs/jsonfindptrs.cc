@@ -56,8 +56,8 @@ $CXX jsonfindptrs.cc && ./a.out < ../../test/data/github-tags.json; rm -f a.out
 for a C++ compiler $CXX, such as clang++ or g++.
 */
 
-#if defined(__cplusplus) && (__cplusplus < 201103L)
-#error "This C++ program requires -std=c++11 or later"
+#if defined(__cplusplus) && (__cplusplus < 201703L)
+#error "This C++ program requires -std=c++17 or later"
 #endif
 
 #include <stdio.h>
@@ -66,6 +66,9 @@ for a C++ compiler $CXX, such as clang++ or g++.
 #include <map>
 #include <string>
 #include <vector>
+
+// <variant> requires C++17.
+#include <variant>
 
 // Wuffs ships as a "single file C library" or "header file library" as per
 // https://github.com/nothings/stb/blob/master/docs/stb_howto.txt
@@ -279,36 +282,34 @@ parse_flags(int argc, char** argv) {
 
 // ----
 
-class JsonThing {
- public:
-  using Vector = std::vector<JsonThing>;
+struct JsonValue;
 
-  // We use a std::map in this example program to avoid dependencies outside of
-  // the C++ standard library. If you're copy/pasting this JsonThing code,
-  // consider a more efficient data structure such as an absl::btree_map.
-  //
-  // See CppCon 2014: Chandler Carruth "Efficiency with Algorithms, Performance
-  // with Data Structures" at https://www.youtube.com/watch?v=fHNmRkzxHWs
-  using Map = std::map<std::string, JsonThing>;
+using JsonVector = std::vector<JsonValue>;
 
-  enum class Kind {
-    Null,
-    Bool,
-    Int64,
-    Float64,
-    String,
-    Array,
-    Object,
-  } kind = Kind::Null;
+// We use a std::map in this example program to avoid dependencies outside of
+// the C++ standard library. If you're copy/pasting this JsonValue code,
+// consider a more efficient data structure such as an absl::btree_map.
+//
+// See CppCon 2014: Chandler Carruth "Efficiency with Algorithms, Performance
+// with Data Structures" at https://www.youtube.com/watch?v=fHNmRkzxHWs
+using JsonMap = std::map<std::string, JsonValue>;
 
-  struct Value {
-    bool b = false;
-    int64_t i = 0;
-    double f = 0;
-    std::string s;
-    Vector a;
-    Map o;
-  } value;
+using JsonVariant = std::variant<std::monostate,
+                                 bool,
+                                 int64_t,
+                                 double,
+                                 std::string,
+                                 JsonVector,
+                                 JsonMap>;
+
+struct JsonValue : JsonVariant {
+  JsonValue() : JsonVariant() {}
+  JsonValue(bool x) : JsonVariant(x) {}
+  JsonValue(int64_t x) : JsonVariant(x) {}
+  JsonValue(double x) : JsonVariant(x) {}
+  JsonValue(std::string&& x) : JsonVariant(x) {}
+  JsonValue(JsonVector* ignored) : JsonVariant(JsonVector()) {}
+  JsonValue(JsonMap* ignored) : JsonVariant(JsonMap()) {}
 };
 
 // ----
@@ -356,45 +357,41 @@ escape(const std::string& s) {
 }
 
 std::string  //
-print_json_pointers(JsonThing& jt, uint32_t depth) {
+print_json_pointers(JsonValue& jvalue, uint32_t depth) {
   std::cout << g_dst << '\n';
   if (depth++ >= g_flags.max_output_depth) {
     return "";
   }
 
   size_t n = g_dst.size();
-  switch (jt.kind) {
-    case JsonThing::Kind::Array:
-      g_dst += "/";
-      for (size_t i = 0; i < jt.value.a.size(); i++) {
-        if (i >= g_to_string_cache.size()) {
-          g_to_string_cache.push_back(std::to_string(i));
-        }
-        g_dst += g_to_string_cache[i];
-        TRY(print_json_pointers(jt.value.a[i], depth));
-        g_dst.resize(n + 1);
+  if (std::holds_alternative<JsonVector>(jvalue)) {
+    JsonVector& jvector = std::get<JsonVector>(jvalue);
+    g_dst += "/";
+    for (size_t i = 0; i < jvector.size(); i++) {
+      if (i >= g_to_string_cache.size()) {
+        g_to_string_cache.push_back(std::to_string(i));
       }
-      g_dst.resize(n);
-      break;
-    case JsonThing::Kind::Object:
-      g_dst += "/";
-      for (auto& kv : jt.value.o) {
-        if (!escape_needed(kv.first)) {
-          g_dst += kv.first;
-        } else {
-          std::string e = escape(kv.first);
-          if (e.empty()) {
-            return "main: unsupported \"\\u000A\" or \"\\u000D\" in object key";
-          }
-          g_dst += e;
+      g_dst += g_to_string_cache[i];
+      TRY(print_json_pointers(jvector[i], depth));
+      g_dst.resize(n + 1);
+    }
+    g_dst.resize(n);
+  } else if (std::holds_alternative<JsonMap>(jvalue)) {
+    g_dst += "/";
+    for (auto& kv : std::get<JsonMap>(jvalue)) {
+      if (!escape_needed(kv.first)) {
+        g_dst += kv.first;
+      } else {
+        std::string e = escape(kv.first);
+        if (e.empty()) {
+          return "main: unsupported \"\\u000A\" or \"\\u000D\" in object key";
         }
-        TRY(print_json_pointers(kv.second, depth));
-        g_dst.resize(n + 1);
+        g_dst += e;
       }
-      g_dst.resize(n);
-      break;
-    default:
-      break;
+      TRY(print_json_pointers(kv.second, depth));
+      g_dst.resize(n + 1);
+    }
+    g_dst.resize(n);
   }
   return "";
 }
@@ -404,92 +401,65 @@ print_json_pointers(JsonThing& jt, uint32_t depth) {
 class Callbacks : public wuffs_aux::DecodeJsonCallbacks {
  public:
   struct Entry {
-    Entry(JsonThing&& jt)
-        : thing(std::move(jt)), has_map_key(false), map_key() {}
+    Entry(JsonValue&& jvalue_arg)
+        : jvalue(std::move(jvalue_arg)), has_map_key(false), map_key() {}
 
-    JsonThing thing;
+    JsonValue jvalue;
     bool has_map_key;
     std::string map_key;
   };
 
   Callbacks() = default;
 
-  std::string Append(JsonThing&& jt) {
+  std::string Append(JsonValue&& jvalue) {
     if (m_stack.empty()) {
-      m_stack.push_back(Entry(std::move(jt)));
+      m_stack.push_back(Entry(std::move(jvalue)));
       return "";
     }
     Entry& top = m_stack.back();
-    switch (top.thing.kind) {
-      case JsonThing::Kind::Array:
-        top.thing.value.a.push_back(std::move(jt));
-        return "";
-      case JsonThing::Kind::Object:
-        if (top.has_map_key) {
-          top.has_map_key = false;
-          auto iter = top.thing.value.o.find(top.map_key);
-          if (iter != top.thing.value.o.end()) {
-            return "main: duplicate key: " + top.map_key;
-          }
-          top.thing.value.o.insert(
-              iter, JsonThing::Map::value_type(std::move(top.map_key),
-                                               std::move(jt)));
-          return "";
-        } else if (jt.kind == JsonThing::Kind::String) {
-          top.has_map_key = true;
-          top.map_key = std::move(jt.value.s);
-          return "";
+    if (std::holds_alternative<JsonVector>(top.jvalue)) {
+      std::get<JsonVector>(top.jvalue).push_back(std::move(jvalue));
+      return "";
+    } else if (std::holds_alternative<JsonMap>(top.jvalue)) {
+      JsonMap& jmap = std::get<JsonMap>(top.jvalue);
+      if (top.has_map_key) {
+        top.has_map_key = false;
+        auto iter = jmap.find(top.map_key);
+        if (iter != jmap.end()) {
+          return "main: duplicate key: " + top.map_key;
         }
-        return "main: internal error: non-string map key";
-      default:
-        return "main: internal error: non-container stack entry";
+        jmap.insert(iter, JsonMap::value_type(std::move(top.map_key),
+                                              std::move(jvalue)));
+        return "";
+      } else if (std::holds_alternative<std::string>(jvalue)) {
+        top.has_map_key = true;
+        top.map_key = std::move(std::get<std::string>(jvalue));
+        return "";
+      }
+      return "main: internal error: non-string map key";
+    } else {
+      return "main: internal error: non-container stack entry";
     }
   }
 
-  std::string AppendNull() override {
-    JsonThing jt;
-    jt.kind = JsonThing::Kind::Null;
-    return Append(std::move(jt));
-  }
+  std::string AppendNull() override { return Append(JsonValue()); }
 
-  std::string AppendBool(bool val) override {
-    JsonThing jt;
-    jt.kind = JsonThing::Kind::Bool;
-    jt.value.b = val;
-    return Append(std::move(jt));
-  }
+  std::string AppendBool(bool val) override { return Append(JsonValue(val)); }
 
-  std::string AppendI64(int64_t val) override {
-    JsonThing jt;
-    jt.kind = JsonThing::Kind::Int64;
-    jt.value.i = val;
-    return Append(std::move(jt));
-  }
+  std::string AppendI64(int64_t val) override { return Append(JsonValue(val)); }
 
-  std::string AppendF64(double val) override {
-    JsonThing jt;
-    jt.kind = JsonThing::Kind::Float64;
-    jt.value.f = val;
-    return Append(std::move(jt));
-  }
+  std::string AppendF64(double val) override { return Append(JsonValue(val)); }
 
   std::string AppendTextString(std::string&& val) override {
-    JsonThing jt;
-    jt.kind = JsonThing::Kind::String;
-    jt.value.s = std::move(val);
-    return Append(std::move(jt));
+    return Append(JsonValue(std::move(val)));
   }
 
   std::string Push(uint32_t flags) override {
     if (flags & WUFFS_BASE__TOKEN__VBD__STRUCTURE__TO_LIST) {
-      JsonThing jt;
-      jt.kind = JsonThing::Kind::Array;
-      m_stack.push_back(std::move(jt));
+      m_stack.push_back(JsonValue(static_cast<JsonVector*>(nullptr)));
       return "";
     } else if (flags & WUFFS_BASE__TOKEN__VBD__STRUCTURE__TO_DICT) {
-      JsonThing jt;
-      jt.kind = JsonThing::Kind::Object;
-      m_stack.push_back(std::move(jt));
+      m_stack.push_back(JsonValue(static_cast<JsonMap*>(nullptr)));
       return "";
     }
     return "main: internal error: bad push";
@@ -499,9 +469,9 @@ class Callbacks : public wuffs_aux::DecodeJsonCallbacks {
     if (m_stack.empty()) {
       return "main: internal error: bad pop";
     }
-    JsonThing jt = std::move(m_stack.back().thing);
+    JsonValue jvalue = std::move(m_stack.back().jvalue);
     m_stack.pop_back();
-    return Append(std::move(jt));
+    return Append(std::move(jvalue));
   }
 
   void Done(wuffs_aux::DecodeJsonResult& result,
@@ -513,7 +483,7 @@ class Callbacks : public wuffs_aux::DecodeJsonCallbacks {
       result.error_message = "main: internal error: bad depth";
       return;
     }
-    result.error_message = print_json_pointers(m_stack.back().thing, 0);
+    result.error_message = print_json_pointers(m_stack.back().jvalue, 0);
   }
 
  private:
