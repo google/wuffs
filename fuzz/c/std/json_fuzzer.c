@@ -232,8 +232,7 @@ void set_quirks(wuffs_json__decoder* dec, uint64_t hash_44_bits) {
       WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_QUESTION_MARK,
       WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_SINGLE_QUOTE,
       WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_V,
-      (hash_44_bits & 1) ? WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_X_AS_BYTES
-                         : WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_X_AS_CODE_POINTS,
+      WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_X_AS_CODE_POINTS,
       WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_ZERO,
       WUFFS_JSON__QUIRK_ALLOW_COMMENT_BLOCK,
       WUFFS_JSON__QUIRK_ALLOW_COMMENT_LINE,
@@ -246,13 +245,10 @@ void set_quirks(wuffs_json__decoder* dec, uint64_t hash_44_bits) {
       0,
   };
 
-  // Shift off a bit for the ETC_BACKSLASH_X_ETC choice.
-  uint64_t hash_43_bits = hash_44_bits >> 1;
-
   uint32_t i;
   for (i = 0; quirks[i]; i++) {
-    uint64_t bit = 1 << (i % 43);
-    if (hash_43_bits & bit) {
+    uint64_t bit = 1 << (i % 44);
+    if (hash_44_bits & bit) {
       wuffs_json__decoder__set_quirk_enabled(dec, quirks[i], true);
     }
   }

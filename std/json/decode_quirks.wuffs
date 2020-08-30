@@ -75,19 +75,11 @@ pub const QUIRK_ALLOW_BACKSLASH_SINGLE_QUOTE : base.u32 = 0x4909_9400 | 0x06
 // character.
 pub const QUIRK_ALLOW_BACKSLASH_V : base.u32 = 0x4909_9400 | 0x07
 
-// When this quirk is enabled, e.g. "abc\xeFz" is accepted as a JSON string. It
-// decodes to 5 bytes: 0x61, 0x62, 0x63, 0xEF and 0x7A. Decoded strings are
-// byte strings, no longer guaranteed to be valid UTF-8 and even if the overall
-// byte string is valid UTF-8, tokens are also no longer guaranteed to split on
-// UTF-8 boundaries.
-//
-// It is up to the caller whether and how to run UTF-8 validation.
-//
-// There are exactly 2 encoded bytes after each "\x". "\x", "\x9", "\x9$" and
-// "\X99" are all still rejected.
-//
-// This quirk cannot be combined with QUIRK_ALLOW_BACKSLASH_X_AS_CODE_POINTS.
-pub const QUIRK_ALLOW_BACKSLASH_X_AS_BYTES : base.u32 = 0x4909_9400 | 0x08
+// (0x4909_9400 | 0x08) is reserved for QUIRK_ALLOW_BACKSLASH_X_AS_BYTES. This
+// quirk used to be implemented, but it was removed due to its complexity.
+// Enabling it (as a run-time option) meant that decoded JSON strings are no
+// longer guaranteed to be valid UTF-8. We could re-implement it if there is
+// sufficient demand.
 
 // When this quirk is enabled, e.g. "abc\xeFz" is accepted as a JSON string. It
 // decodes to 6 bytes: 0x61, 0x62, 0x63, 0xC3, 0xAF and 0x7A. The UTF-8
@@ -97,8 +89,6 @@ pub const QUIRK_ALLOW_BACKSLASH_X_AS_BYTES : base.u32 = 0x4909_9400 | 0x08
 //
 // There are exactly 2 encoded bytes after each "\x". "\x", "\x9", "\x9$" and
 // "\X99" are all still rejected.
-//
-// This quirk cannot be combined with QUIRK_ALLOW_BACKSLASH_X_AS_BYTES.
 pub const QUIRK_ALLOW_BACKSLASH_X_AS_CODE_POINTS : base.u32 = 0x4909_9400 | 0x09
 
 // When this quirk is enabled, e.g. "abc\0z" is accepted as a JSON string,

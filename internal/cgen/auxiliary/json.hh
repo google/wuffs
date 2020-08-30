@@ -31,21 +31,10 @@ class DecodeJsonCallbacks {
   // strings, the Callbacks implementation is responsible for tracking map keys
   // versus other values.
 
-  // The JSON file format as specified deals only with (UTF-8) text strings,
-  // but an unofficial extension allows "ijk\x89m" escapes within those
-  // strings. DecodeJsonCallbacks' AppendByteString will not be called unless
-  // WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_X_AS_BYTES is passed to DecodeJson. If
-  // it is passed, AppendTextString will not be called and all byte strings are
-  // potentially invalid UTF-8. It is up to the AppendByteString implementation
-  // whether to test the std::string for UTF-8 validity.
-  //
-  // The default AppendByteString implementation returns an error message.
-
   virtual std::string AppendNull() = 0;
   virtual std::string AppendBool(bool val) = 0;
   virtual std::string AppendF64(double val) = 0;
   virtual std::string AppendI64(int64_t val) = 0;
-  virtual std::string AppendByteString(std::string&& val);
   virtual std::string AppendTextString(std::string&& val) = 0;
 
   // Push and Pop are called for container nodes: JSON arrays (lists) and JSON
