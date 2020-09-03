@@ -22,9 +22,23 @@ import (
 	"sync"
 )
 
+var initialWorkingDirectory = ""
+
+func init() {
+	initialWorkingDirectory, _ = os.Getwd()
+}
+
 var cache struct {
 	mu    sync.Mutex
 	value string
+}
+
+func setValue(value string) (string, error) {
+	cache.mu.Lock()
+	cache.value = value
+	cache.mu.Unlock()
+
+	return value, nil
 }
 
 func Value() (string, error) {
@@ -36,17 +50,23 @@ func Value() (string, error) {
 		return value, nil
 	}
 
-	// TODO: look for a WUFFSROOT environment variable? Also check that
-	// wuffs-root-directory.txt exists?
-	for _, p := range filepath.SplitList(build.Default.GOPATH) {
-		p = filepath.Join(p, "src", "github.com", "google", "wuffs")
-		if o, err := os.Stat(p); err == nil && o.IsDir() {
-			cache.mu.Lock()
-			cache.value = p
-			cache.mu.Unlock()
+	const wrdTxt = "wuffs-root-directory.txt"
 
-			return p, nil
+	// Look for "w-r-d.txt" in the working directory or its ancestors.
+	for p, q := initialWorkingDirectory, ""; p != q; p, q = filepath.Dir(p), p {
+		if _, err := os.Stat(filepath.Join(p, wrdTxt)); err == nil {
+			return setValue(p)
 		}
 	}
+
+	// Look for "github.com/google/wuffs/w-r-d.txt" in the Go source
+	// directories.
+	for _, p := range build.Default.SrcDirs() {
+		p = filepath.Join(p, "github.com", "google", "wuffs")
+		if _, err := os.Stat(filepath.Join(p, wrdTxt)); err == nil {
+			return setValue(p)
+		}
+	}
+
 	return "", errors.New("could not find Wuffs root directory")
 }
