@@ -65,15 +65,15 @@ extern "C" {
 // each major.minor branch, the commit count should increase monotonically.
 //
 // WUFFS_VERSION was overridden by "wuffs gen -version" based on revision
-// a06a89c080e46db183fb65268e5cbef247c2b85a committed on 2020-08-30.
+// 57d47c633ce692dff24a804382935f46f7074ebf committed on 2020-09-08.
 #define WUFFS_VERSION 0x000030000
 #define WUFFS_VERSION_MAJOR 0
 #define WUFFS_VERSION_MINOR 3
 #define WUFFS_VERSION_PATCH 0
-#define WUFFS_VERSION_PRE_RELEASE_LABEL "alpha.12"
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 2695
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20200830
-#define WUFFS_VERSION_STRING "0.3.0-alpha.12+2695.20200830"
+#define WUFFS_VERSION_PRE_RELEASE_LABEL "alpha.13"
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 2702
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20200908
+#define WUFFS_VERSION_STRING "0.3.0-alpha.13+2702.20200908"
 
 // Define WUFFS_CONFIG__STATIC_FUNCTIONS to make all of Wuffs' functions have
 // static storage. The motivation is discussed in the "ALLOW STATIC
@@ -11940,7 +11940,7 @@ wuffs_base__private_implementation__high_prec_dec__to_f64(
         if (h->digits[0] >= 5) {
           break;
         }
-        shift = (h->digits[0] <= 2) ? 2 : 1;
+        shift = (h->digits[0] < 2) ? 2 : 1;
       } else {
         uint32_t n = (uint32_t)(-h->decimal_point);
         shift = (n < num_powers)
