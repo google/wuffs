@@ -1304,7 +1304,7 @@ wuffs_base__private_implementation__high_prec_dec__to_f64(
         if (h->digits[0] >= 5) {
           break;
         }
-        shift = (h->digits[0] <= 2) ? 2 : 1;
+        shift = (h->digits[0] < 2) ? 2 : 1;
       } else {
         uint32_t n = (uint32_t)(-h->decimal_point);
         shift = (n < num_powers)
