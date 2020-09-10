@@ -512,8 +512,8 @@ wuffs_base__u64__sat_sub(uint64_t x, uint64_t y) {
 // --------
 
 typedef struct {
-  uint64_t hi;
   uint64_t lo;
+  uint64_t hi;
 } wuffs_base__multiply_u64__output;
 
 // wuffs_base__multiply_u64 returns x*y as a 128-bit value.
@@ -531,8 +531,8 @@ wuffs_base__multiply_u64(uint64_t x, uint64_t y) {
   uint64_t w2 = t >> 32;
   w1 += x0 * y1;
   wuffs_base__multiply_u64__output o;
-  o.hi = (x1 * y1) + w2 + (w1 >> 32);
   o.lo = x * y;
+  o.hi = (x1 * y1) + w2 + (w1 >> 32);
   return o;
 }
 
