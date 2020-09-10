@@ -14,6 +14,9 @@
 
 // ----------------
 
+// jsonptr is discussed extensively at
+// https://nigeltao.github.io/blog/2020/jsonptr.html
+
 /*
 jsonptr is a JSON formatter (pretty-printer) that supports the JSON Pointer
 (RFC 6901) query syntax. It reads UTF-8 JSON from stdin and writes
