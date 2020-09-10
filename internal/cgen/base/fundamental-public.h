@@ -447,6 +447,13 @@ typedef struct {
 // The maximum inclusive output hi_lo is 0xFFFFFFFFFFFFFFFE_0000000000000001.
 static inline wuffs_base__multiply_u64__output  //
 wuffs_base__multiply_u64(uint64_t x, uint64_t y) {
+#if defined(__SIZEOF_INT128__)
+  __uint128_t z = ((__uint128_t)x) * ((__uint128_t)y);
+  wuffs_base__multiply_u64__output o;
+  o.lo = ((uint64_t)(z));
+  o.hi = ((uint64_t)(z >> 64));
+  return o;
+#else
   uint64_t x0 = x & 0xFFFFFFFF;
   uint64_t x1 = x >> 32;
   uint64_t y0 = y & 0xFFFFFFFF;
@@ -460,6 +467,7 @@ wuffs_base__multiply_u64(uint64_t x, uint64_t y) {
   o.lo = x * y;
   o.hi = (x1 * y1) + w2 + (w1 >> 32);
   return o;
+#endif
 }
 
 // --------
