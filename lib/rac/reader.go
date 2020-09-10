@@ -438,7 +438,7 @@ func (r *Reader) SeekRange(low int64, high int64) error {
 func (r *Reader) seek(offset int64, whence int, limit int64) (int64, error) {
 	if r.concReader.ready() {
 		n, err := r.concReader.seek(offset, whence, limit)
-		r.err = r.err
+		r.err = err
 		return n, err
 	}
 
