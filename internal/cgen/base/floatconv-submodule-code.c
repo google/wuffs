@@ -1578,9 +1578,8 @@ wuffs_base__parse_number_f64(wuffs_base__slice_u8 s, uint32_t options) {
       goto fallback;
     }
 
-    // If man and exp10 are small enough, all three of (man), (10 ** exp10) and
-    // (man ** (10 ** exp10)) are exactly representable by a double. We don't
-    // need to run the Eisel-Lemire algorithm.
+    // If both man and (10 ** exp10) are exactly representable by a double, we
+    // don't need to run the Eisel-Lemire algorithm.
     if ((-22 <= exp10) && (exp10 <= 22) && ((man >> 53) == 0)) {
       double d = (double)man;
       if (exp10 >= 0) {
@@ -1596,7 +1595,7 @@ wuffs_base__parse_number_f64(wuffs_base__slice_u8 s, uint32_t options) {
 
     // The wuffs_base__private_implementation__parse_number_f64_eisel_lemire
     // preconditions include that man is non-zero. Parsing "0" should be caught
-    // by the "If man and exp10 are small enough" above, but "0e99" might not.
+    // by the "If both man and (10 ** exp10)" above, but "0e99" might not.
     if (man == 0) {
       goto fallback;
     }
