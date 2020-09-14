@@ -1006,19 +1006,10 @@ wuffs_base__private_implementation__parse_number_f64_eisel_lemire(
   // As a consequence, x_hi has either 0 or 1 leading zeroes. Shifting x_hi
   // right by either 9 or 10 bits (depending on x_hi's MSB) will therefore
   // leave the top 10 MSBs (bits 54 ..= 63) off and the 11th MSB (bit 53) on.
-#if defined(__SIZEOF_INT128__)
-  // See commit 18449ad75d582dd015c236abc85a16f333b796f3 "Optimize 128-bit muls
-  // in parse_number_f64_eisel" for benchmark numbers.
-  __uint128_t x =
-      ((__uint128_t)man) * (((uint64_t)po10[2]) | (((uint64_t)po10[3]) << 32));
-  uint64_t x_hi = ((uint64_t)(x >> 64));
-  uint64_t x_lo = ((uint64_t)(x));
-#else
   wuffs_base__multiply_u64__output x = wuffs_base__multiply_u64(
       man, ((uint64_t)po10[2]) | (((uint64_t)po10[3]) << 32));
   uint64_t x_hi = x.hi;
   uint64_t x_lo = x.lo;
-#endif
 
   // Before we shift right by at least 9 bits, recall that the look-up table
   // entry was possibly truncated. We have so far only calculated a lower bound
@@ -1034,19 +1025,10 @@ wuffs_base__private_implementation__parse_number_f64_eisel_lemire(
     // a "low resolution" 64-bit mantissa. Now use a "high resolution" 128-bit
     // mantissa. We've already calculated x = (man * bits_0_to_63_incl_of_e).
     // Now calculate y = (man * bits_64_to_127_incl_of_e).
-#if defined(__SIZEOF_INT128__)
-    // See commit 18449ad75d582dd015c236abc85a16f333b796f3 "Optimize 128-bit
-    // muls in parse_number_f64_eisel" for benchmark numbers.
-    __uint128_t y = ((__uint128_t)man) *
-                    (((uint64_t)po10[0]) | (((uint64_t)po10[1]) << 32));
-    uint64_t y_hi = ((uint64_t)(y >> 64));
-    uint64_t y_lo = ((uint64_t)(y));
-#else
     wuffs_base__multiply_u64__output y = wuffs_base__multiply_u64(
         man, ((uint64_t)po10[0]) | (((uint64_t)po10[1]) << 32));
     uint64_t y_hi = y.hi;
     uint64_t y_lo = y.lo;
-#endif
 
     // Merge the 128-bit x and 128-bit y, which overlap by 64 bits, to
     // calculate the 192-bit product of the 64-bit man by the 128-bit e.
