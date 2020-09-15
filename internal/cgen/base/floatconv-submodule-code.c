@@ -978,8 +978,14 @@ wuffs_base__private_implementation__high_prec_dec__round_just_enough(
 //
 // Preconditions:
 //  - man is non-zero.
-//  - exp10 is in the range -326 ..= 310, the same range of the
+//  - exp10 is in the range -307 ..= 288, the same range of the
 //    wuffs_base__private_implementation__powers_of_10 array.
+//
+// The exp10 range (and the fact that man is in the range [1 ..= UINT64_MAX],
+// approximately [1 ..= 1.85e+19]) means that (man * (10 ** exp10)) is in the
+// range [1e-307 ..= 1.85e+307]. This is entirely within the range of normal
+// (neither subnormal nor non-finite) f64 values: DBL_MIN and DBL_MAX are
+// approximately 2.23e–308 and 1.80e+308.
 static int64_t  //
 wuffs_base__private_implementation__parse_number_f64_eisel_lemire(
     uint64_t man,
@@ -1085,6 +1091,11 @@ wuffs_base__private_implementation__parse_number_f64_eisel_lemire(
   // carrying up overflowed, shift again.
   ret_mantissa += ret_mantissa & 1;
   ret_mantissa >>= 1;
+  // This if block is equivalent to (but benchmarks slightly faster than) the
+  // following branchless form:
+  //    uint64_t overflow_adjustment = ret_mantissa >> 53;
+  //    ret_mantissa >>= overflow_adjustment;
+  //    ret_exp2 += overflow_adjustment;
   if ((ret_mantissa >> 53) > 0) {
     ret_mantissa >>= 1;
     ret_exp2++;
@@ -1093,12 +1104,6 @@ wuffs_base__private_implementation__parse_number_f64_eisel_lemire(
   // Starting with a 53-bit number, IEEE 754 double-precision normal numbers
   // have an implicit mantissa bit. Mask that away and keep the low 52 bits.
   ret_mantissa &= 0x000FFFFFFFFFFFFF;
-
-  // IEEE 754 double-precision floating point has 11 exponent bits. All off (0)
-  // means subnormal numbers. All on (2047) means infinity or NaN.
-  if ((ret_exp2 <= 0) || (2047 <= ret_exp2)) {
-    return -1;
-  }
 
   // Pack the bits and return.
   return ((int64_t)(ret_mantissa | (ret_exp2 << 52)));
@@ -1246,7 +1251,7 @@ wuffs_base__private_implementation__high_prec_dec__to_f64(
         man = (10 * man) + h->digits[i];
       }
       int32_t exp10 = h->decimal_point - ((int32_t)(h->num_digits));
-      if ((man != 0) && (-326 <= exp10) && (exp10 <= 310)) {
+      if ((man != 0) && (-307 <= exp10) && (exp10 <= 288)) {
         int64_t r =
             wuffs_base__private_implementation__parse_number_f64_eisel_lemire(
                 man, exp10);
@@ -1555,8 +1560,8 @@ wuffs_base__parse_number_f64(wuffs_base__slice_u8 s, uint32_t options) {
     }
 
     // The wuffs_base__private_implementation__parse_number_f64_eisel_lemire
-    // preconditions include that exp10 is in the range -326 ..= 310.
-    if ((exp10 < -326) || (310 < exp10)) {
+    // preconditions include that exp10 is in the range [-307 ..= 288].
+    if ((exp10 < -307) || (288 < exp10)) {
       goto fallback;
     }
 
