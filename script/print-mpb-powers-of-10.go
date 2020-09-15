@@ -30,11 +30,11 @@ package main
 //
 // With -detail set, its output should include:
 //
-// 0xF7604B57, 0x014BB630, 0xFE98746D, 0x84A57695, 0x0004,
-//    // 1e-326 ≈ (0x84A57695FE98746D014BB630F7604B57 >> 1210)
+// 0x79F8E056, 0xA5D3B6D4, 0x06306BAB, 0x8FD0C162, 0x0043,
+//    // 1e-307 ≈ (0x8FD0C16206306BABA5D3B6D479F8E056 >> 1147)
 //
-// 0x35385E2D, 0x419EA3BD, 0x7E3E9188, 0xA5CED43B, 0x0007,
-//    // 1e-325 ≈ (0xA5CED43B7E3E9188419EA3BD35385E2D >> 1207)
+// 0x9877186C, 0x8F48A489, 0x87BC8696, 0xB3C4F1BA, 0x0046,
+//    // 1e-306 ≈ (0xB3C4F1BA87BC86968F48A4899877186C >> 1144)
 //
 // ...
 //
@@ -55,11 +55,11 @@ package main
 //
 // ...
 //
-// 0x51E513DA, 0x2CD2CC65, 0x35D63F73, 0xB201833B, 0x0841,
-//    // 1e309  ≈ (0xB201833B35D63F732CD2CC6551E513DA <<  899)
+// 0xBFFF5A74, 0x5C68F256, 0x49EE8C70, 0xA81F3014, 0x07F8,
+//    // 1e287  ≈ (0xA81F301449EE8C705C68F256BFFF5A74 <<  826)
 //
-// 0xA65E58D1, 0xF8077F7E, 0x034BCF4F, 0xDE81E40A, 0x0844,
-//    // 1e310  ≈ (0xDE81E40A034BCF4FF8077F7EA65E58D1 <<  902)
+// 0x6FFF3111, 0x73832EEC, 0x5C6A2F8C, 0xD226FC19, 0x07FB,
+//    // 1e288  ≈ (0xD226FC195C6A2F8C73832EEC6FFF3111 <<  829)
 
 import (
 	"flag"
@@ -82,10 +82,10 @@ func main() {
 func main1() error {
 	flag.Parse()
 
-	const count = 1 + (+310 - -326)
+	const count = 1 + (+288 - -307)
 	fmt.Printf("static const uint32_t "+
 		"wuffs_base__private_implementation__powers_of_10[%d] = {\n", 5*count)
-	for e := -326; e <= +310; e++ {
+	for e := -307; e <= +288; e++ {
 		if err := do(e); err != nil {
 			return err
 		}

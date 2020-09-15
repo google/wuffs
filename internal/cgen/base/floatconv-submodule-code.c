@@ -994,7 +994,7 @@ wuffs_base__private_implementation__parse_number_f64_eisel_lemire(
   // The look-up table was constructed so that it is already normalized: the
   // table entry's mantissa's MSB (most significant bit) is on.
   const uint32_t* po10 =
-      &wuffs_base__private_implementation__powers_of_10[5 * (exp10 + 326)];
+      &wuffs_base__private_implementation__powers_of_10[5 * (exp10 + 307)];
 
   // Normalize the man argument. The (man != 0) precondition means that a
   // non-zero bit exists.
