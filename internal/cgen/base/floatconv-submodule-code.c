@@ -978,7 +978,7 @@ wuffs_base__private_implementation__high_prec_dec__round_just_enough(
 //
 // Preconditions:
 //  - man is non-zero.
-//  - exp10 is in the range -307 ..= 288, the same range of the
+//  - exp10 is in the range [-307 ..= 288], the same range of the
 //    wuffs_base__private_implementation__powers_of_10 array.
 //
 // The exp10 range (and the fact that man is in the range [1 ..= UINT64_MAX],

@@ -9987,7 +9987,7 @@ static const uint8_t wuffs_base__private_implementation__powers_of_5[0x051C] = {
 
 // wuffs_base__private_implementation__powers_of_10 contains truncated
 // approximations to the powers of 10, ranging from 1e-307 to 1e+288 inclusive,
-// as 637 uint32_t quintuples (128-bit mantissa, 32-bit base-2 exponent biased
+// as 596 uint32_t quintuples (128-bit mantissa, 32-bit base-2 exponent biased
 // by 0x04BE (which is 1214)). The array size is 596 * 5 = 2980.
 //
 // The 1214 bias in this look-up table equals 1023 + 191. 1023 is the bias for
@@ -11580,7 +11580,7 @@ wuffs_base__private_implementation__high_prec_dec__round_just_enough(
 //
 // Preconditions:
 //  - man is non-zero.
-//  - exp10 is in the range -307 ..= 288, the same range of the
+//  - exp10 is in the range [-307 ..= 288], the same range of the
 //    wuffs_base__private_implementation__powers_of_10 array.
 //
 // The exp10 range (and the fact that man is in the range [1 ..= UINT64_MAX],
