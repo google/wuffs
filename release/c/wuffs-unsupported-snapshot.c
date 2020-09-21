@@ -7661,6 +7661,8 @@ extern const char wuffs_json__error__unsupported_recursion_depth[];
 
 #define WUFFS_JSON__QUIRK_ALLOW_LEADING_UNICODE_BYTE_ORDER_MARK 1225364496
 
+#define WUFFS_JSON__QUIRK_ALLOW_TRAILING_COMMENT 1225364497
+
 #define WUFFS_JSON__QUIRK_ALLOW_TRAILING_NEW_LINE 1225364498
 
 #define WUFFS_JSON__QUIRK_JSON_POINTER_ALLOW_TILDE_R_TILDE_N 1225364499
@@ -7758,7 +7760,9 @@ struct wuffs_json__decoder__struct {
     bool f_quirks[21];
     bool f_allow_leading_ars;
     bool f_allow_leading_ubom;
+    bool f_allow_trailing_comment;
     bool f_end_of_data;
+    uint8_t f_comment_type;
 
     uint32_t p_decode_tokens[1];
     uint32_t p_decode_leading[1];
@@ -27227,6 +27231,7 @@ wuffs_json__decoder__decode_comment(
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
+    self->private_impl.f_comment_type = 0;
     label__0__continue:;
     while ((((uint64_t)(io2_a_dst - iop_a_dst)) <= 0) || (((uint64_t)(io2_a_src - iop_a_src)) <= 1)) {
       if (((uint64_t)(io2_a_dst - iop_a_dst)) <= 0) {
@@ -27276,6 +27281,7 @@ wuffs_json__decoder__decode_comment(
             *iop_a_dst++ = wuffs_base__make_token(
                 (((uint64_t)(2)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                 (((uint64_t)((v_length + 2))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+            self->private_impl.f_comment_type = 1;
             status = wuffs_base__make_status(NULL);
             goto ok;
           }
@@ -27325,6 +27331,7 @@ wuffs_json__decoder__decode_comment(
             *iop_a_dst++ = wuffs_base__make_token(
                 (((uint64_t)(4)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                 (((uint64_t)((v_length + 1))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+            self->private_impl.f_comment_type = 2;
             status = wuffs_base__make_status(NULL);
             goto ok;
           }
@@ -27568,6 +27575,7 @@ wuffs_json__decoder__decode_trailing_new_line(
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
+    self->private_impl.f_allow_trailing_comment = self->private_impl.f_quirks[17];
     label__outer__continue:;
     while (true) {
       if (((uint64_t)(io2_a_dst - iop_a_dst)) <= 0) {
@@ -27599,6 +27607,33 @@ wuffs_json__decoder__decode_trailing_new_line(
                 (((uint64_t)(0)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                 (((uint64_t)(v_whitespace_length)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
             v_whitespace_length = 0;
+          }
+          if (self->private_impl.f_allow_trailing_comment) {
+            if (a_dst) {
+              a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
+            }
+            if (a_src) {
+              a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+            }
+            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
+            status = wuffs_json__decoder__decode_comment(self, a_dst, a_src);
+            if (a_dst) {
+              iop_a_dst = a_dst->data.ptr + a_dst->meta.wi;
+            }
+            if (a_src) {
+              iop_a_src = a_src->data.ptr + a_src->meta.ri;
+            }
+            if (status.repr) {
+              goto suspend;
+            }
+            v_c = 0;
+            v_whitespace_length = 0;
+            if (self->private_impl.f_comment_type == 1) {
+              self->private_impl.f_allow_trailing_comment = false;
+              goto label__outer__continue;
+            } else if (self->private_impl.f_comment_type == 2) {
+              goto label__outer__break;
+            }
           }
           status = wuffs_base__make_status(wuffs_json__error__bad_input);
           goto exit;

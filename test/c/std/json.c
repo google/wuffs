@@ -3386,7 +3386,72 @@ test_wuffs_json_decode_quirk_allow_leading_etc() {
 }
 
 const char*  //
-test_wuffs_json_decode_quirk_allow_trailing_etc() {
+test_wuffs_json_decode_quirk_allow_trailing_comment() {
+  CHECK_FOCUS(__func__);
+
+  // These test cases all end with two '\n' bytes. If the first byte is '8'
+  // then decoding should succeed, and stop between those two '\n' bytes.
+  // Otherwise, decoding should fail.
+  const char* test_cases[] = {
+      "80\n\n",                //
+      "81 \n\n",               //
+      "82 /*foo*/ \n\n",       //
+      "83/*bar\nbaz*/\n\n",    //
+      "84 // qux\n\n",         //
+      "95 /*c0*/ /*c1*/\n\n",  //
+      "96 /*c0*/ // c2 \n\n",  //
+  };
+
+  int tc;
+  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+    wuffs_json__decoder dec;
+    CHECK_STATUS("initialize", wuffs_json__decoder__initialize(
+                                   &dec, sizeof dec, WUFFS_VERSION,
+                                   WUFFS_INITIALIZE__DEFAULT_OPTIONS));
+    wuffs_json__decoder__set_quirk_enabled(
+        &dec, WUFFS_JSON__QUIRK_ALLOW_COMMENT_BLOCK, true);
+    wuffs_json__decoder__set_quirk_enabled(
+        &dec, WUFFS_JSON__QUIRK_ALLOW_COMMENT_LINE, true);
+    wuffs_json__decoder__set_quirk_enabled(
+        &dec, WUFFS_JSON__QUIRK_ALLOW_TRAILING_COMMENT, true);
+    wuffs_json__decoder__set_quirk_enabled(
+        &dec, WUFFS_JSON__QUIRK_ALLOW_TRAILING_NEW_LINE, true);
+
+    void* tc_ptr = (void*)(test_cases[tc]);
+    size_t tc_len = strlen(test_cases[tc]);
+    wuffs_base__token_buffer tok =
+        wuffs_base__slice_token__writer(g_have_slice_token);
+    wuffs_base__io_buffer src =
+        wuffs_base__ptr_u8__reader(tc_ptr, tc_len, true);
+    const char* have =
+        wuffs_json__decoder__decode_tokens(&dec, &tok, &src, g_work_slice_u8)
+            .repr;
+    const char* want =
+        (test_cases[tc][0] == '8') ? NULL : wuffs_json__error__bad_input;
+    if (have != want) {
+      RETURN_FAIL("tc=%d: decode_tokens: have \"%s\", want \"%s\"", tc, have,
+                  want);
+    } else if (have != NULL) {
+      continue;
+    }
+
+    size_t total_length = 0;
+    while (tok.meta.ri < tok.meta.wi) {
+      total_length += wuffs_base__token__length(&tok.data.ptr[tok.meta.ri++]);
+    }
+    if (total_length != src.meta.ri) {
+      RETURN_FAIL("tc=%d: total_length: have %zu, want %zu", tc, total_length,
+                  src.meta.ri);
+    } else if ((total_length + 1) != tc_len) {
+      RETURN_FAIL("tc=%d: total_length+1: have %zu, want %zu", tc,
+                  total_length + 1, tc_len);
+    }
+  }
+  return NULL;
+}
+
+const char*  //
+test_wuffs_json_decode_quirk_allow_trailing_new_line() {
   CHECK_FOCUS(__func__);
 
   struct {
@@ -4069,7 +4134,8 @@ proc g_tests[] = {
     test_wuffs_json_decode_quirk_allow_extra_comma,
     test_wuffs_json_decode_quirk_allow_inf_nan_numbers,
     test_wuffs_json_decode_quirk_allow_leading_etc,
-    test_wuffs_json_decode_quirk_allow_trailing_etc,
+    test_wuffs_json_decode_quirk_allow_trailing_comment,
+    test_wuffs_json_decode_quirk_allow_trailing_new_line,
     test_wuffs_json_decode_quirk_replace_invalid_unicode,
     test_wuffs_json_decode_src_io_buffer_length,
     test_wuffs_json_decode_string,

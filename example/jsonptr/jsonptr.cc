@@ -934,6 +934,7 @@ initialize_globals(int argc, char** argv) {
   if (g_flags.input_allow_comments) {
     g_dec.set_quirk_enabled(WUFFS_JSON__QUIRK_ALLOW_COMMENT_BLOCK, true);
     g_dec.set_quirk_enabled(WUFFS_JSON__QUIRK_ALLOW_COMMENT_LINE, true);
+    g_dec.set_quirk_enabled(WUFFS_JSON__QUIRK_ALLOW_TRAILING_COMMENT, true);
   }
   if (g_flags.input_allow_extra_comma) {
     g_dec.set_quirk_enabled(WUFFS_JSON__QUIRK_ALLOW_EXTRA_COMMA, true);

@@ -15,10 +15,17 @@
 pub struct decoder? implements base.token_decoder(
 	quirks : array[QUIRKS_COUNT] base.bool,
 
-	allow_leading_ars  : base.bool,
-	allow_leading_ubom : base.bool,
+	allow_leading_ars      : base.bool,
+	allow_leading_ubom     : base.bool,
+	allow_trailing_comment : base.bool,
 
 	end_of_data : base.bool,
+
+	// comment_type is set as a side-effect of decode_comment?.
+	//  - 0 means failure.
+	//  - 1 means a block comment.
+	//  - 2 means a line  comment.
+	comment_type : base.u8,
 
 	util : base.utility,
 )(
@@ -1420,6 +1427,8 @@ pri func decoder.decode_comment?(dst: base.token_writer, src: base.io_reader) {
 	var c2     : base.u16
 	var length : base.u32[..= 0xFFFD]
 
+	this.comment_type = 0
+
 	while (args.dst.length() <= 0) or (args.src.length() <= 1),
 		post args.dst.length() > 0,
 		post args.src.length() > 1,
@@ -1475,6 +1484,7 @@ pri func decoder.decode_comment?(dst: base.token_writer, src: base.io_reader) {
 						base.TOKEN__VBD__FILLER__COMMENT_BLOCK,
 						continued: 0,
 						length: length + 2)
+					this.comment_type = 1
 					return ok
 				}
 
@@ -1533,6 +1543,7 @@ pri func decoder.decode_comment?(dst: base.token_writer, src: base.io_reader) {
 						base.TOKEN__VBD__FILLER__COMMENT_LINE,
 						continued: 0,
 						length: length + 1)
+					this.comment_type = 2
 					return ok
 				}
 
@@ -1670,6 +1681,8 @@ pri func decoder.decode_trailing_new_line?(dst: base.token_writer, src: base.io_
 	var c                 : base.u8
 	var whitespace_length : base.u32[..= 0xFFFE]
 
+	this.allow_trailing_comment = this.quirks[QUIRK_ALLOW_TRAILING_COMMENT - QUIRKS_BASE]
+
 	while.outer true {
 		if args.dst.length() <= 0 {
 			yield? base."$short write"
@@ -1700,6 +1713,17 @@ pri func decoder.decode_trailing_new_line?(dst: base.token_writer, src: base.io_
 					args.dst.write_simple_token_fast!(
 						value_major: 0, value_minor: 0, continued: 0, length: whitespace_length)
 					whitespace_length = 0
+				}
+				if this.allow_trailing_comment {
+					this.decode_comment?(dst: args.dst, src: args.src)
+					c = 0
+					whitespace_length = 0
+					if this.comment_type == 1 {  // Block comment.
+						this.allow_trailing_comment = false
+						continue.outer
+					} else if this.comment_type == 2 {  // Line comment.
+						break.outer
+					}
 				}
 				return "#bad input"
 			}
