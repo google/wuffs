@@ -186,14 +186,14 @@ pub const QUIRK_ALLOW_LEADING_UNICODE_BYTE_ORDER_MARK : base.u32 = 0x4909_9400 |
 // end-of-file or '\n' is encountered. Treating this as an error avoids any
 // ambiguity in accounting for new lines within a block comment or ending a
 // line comment.
-pub const QUIRK_ALLOW_TRAILING_NEW_LINE : base.u32 = 0x4909_9400 | 0x11
+pub const QUIRK_ALLOW_TRAILING_NEW_LINE : base.u32 = 0x4909_9400 | 0x12
 
 // When this quirk is enabled, JSON Pointer strings containing "~r" or "~n",
 // which would otherwise be invalid, are unescaped as "\r" or "\n".
 //
 // This quirk isn't used by Wuffs' std/json package per se, but it is used by
 // the wuffs_aux::DecodeJson function.
-pub const QUIRK_JSON_POINTER_ALLOW_TILDE_R_TILDE_N : base.u32 = 0x4909_9400 | 0x12
+pub const QUIRK_JSON_POINTER_ALLOW_TILDE_R_TILDE_N : base.u32 = 0x4909_9400 | 0x13
 
 // When this quirk is enabled, invalid UTF-8 inside a JSON string is accepted.
 // Each byte of invalid UTF-8 is equivalent to "\uFFFD", the Unicode
@@ -209,6 +209,6 @@ pub const QUIRK_JSON_POINTER_ALLOW_TILDE_R_TILDE_N : base.u32 = 0x4909_9400 | 0x
 // When combined with QUIRK_ALLOW_BACKSLASH_CAPITAL_U, a "\U12345678" 10-byte
 // unit that is an invalid Unicode code point (i.e. in the range U+D800 ..=
 // U+DFFF or above U+10FFFF) is similarly replaced with U+FFFD.
-pub const QUIRK_REPLACE_INVALID_UNICODE : base.u32 = 0x4909_9400 | 0x13
+pub const QUIRK_REPLACE_INVALID_UNICODE : base.u32 = 0x4909_9400 | 0x14
 
-pri const QUIRKS_COUNT : base.u32 = 0x14
+pri const QUIRKS_COUNT : base.u32 = 0x15

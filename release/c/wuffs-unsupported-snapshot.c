@@ -7661,11 +7661,11 @@ extern const char wuffs_json__error__unsupported_recursion_depth[];
 
 #define WUFFS_JSON__QUIRK_ALLOW_LEADING_UNICODE_BYTE_ORDER_MARK 1225364496
 
-#define WUFFS_JSON__QUIRK_ALLOW_TRAILING_NEW_LINE 1225364497
+#define WUFFS_JSON__QUIRK_ALLOW_TRAILING_NEW_LINE 1225364498
 
-#define WUFFS_JSON__QUIRK_JSON_POINTER_ALLOW_TILDE_R_TILDE_N 1225364498
+#define WUFFS_JSON__QUIRK_JSON_POINTER_ALLOW_TILDE_R_TILDE_N 1225364499
 
-#define WUFFS_JSON__QUIRK_REPLACE_INVALID_UNICODE 1225364499
+#define WUFFS_JSON__QUIRK_REPLACE_INVALID_UNICODE 1225364500
 
 // ---------------- Struct Declarations
 
@@ -7755,7 +7755,7 @@ struct wuffs_json__decoder__struct {
     wuffs_base__vtable vtable_for__wuffs_base__token_decoder;
     wuffs_base__vtable null_vtable;
 
-    bool f_quirks[20];
+    bool f_quirks[21];
     bool f_allow_leading_ars;
     bool f_allow_leading_ubom;
     bool f_end_of_data;
@@ -25697,7 +25697,7 @@ WUFFS_JSON__LUT_HEXADECIMAL_DIGITS[256]WUFFS_BASE__POTENTIALLY_UNUSED = {
 
 #define WUFFS_JSON__QUIRKS_BASE 1225364480
 
-#define WUFFS_JSON__QUIRKS_COUNT 20
+#define WUFFS_JSON__QUIRKS_COUNT 21
 
 // ---------------- Private Initializer Prototypes
 
@@ -25839,7 +25839,7 @@ wuffs_json__decoder__set_quirk_enabled(
 
   if (a_quirk >= 1225364480) {
     a_quirk -= 1225364480;
-    if (a_quirk < 20) {
+    if (a_quirk < 21) {
       self->private_impl.f_quirks[a_quirk] = a_enabled;
     }
   }
@@ -26188,7 +26188,7 @@ wuffs_json__decoder__decode_tokens(
                   } else {
                     if (((uint64_t)(io2_a_src - iop_a_src)) < 12) {
                       if (a_src && a_src->meta.closed) {
-                        if (self->private_impl.f_quirks[19]) {
+                        if (self->private_impl.f_quirks[20]) {
                           (iop_a_src += 6, wuffs_base__make_empty_struct());
                           *iop_a_dst++ = wuffs_base__make_token(
                               (((uint64_t)(6356989)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
@@ -26239,7 +26239,7 @@ wuffs_json__decoder__decode_tokens(
                       goto label__string_loop_outer__continue;
                     }
                   }
-                  if (self->private_impl.f_quirks[19]) {
+                  if (self->private_impl.f_quirks[20]) {
                     if (((uint64_t)(io2_a_src - iop_a_src)) < 6) {
                       status = wuffs_base__make_status(wuffs_json__error__internal_error_inconsistent_i_o);
                       goto exit;
@@ -26298,7 +26298,7 @@ wuffs_json__decoder__decode_tokens(
                         (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
                         (((uint64_t)(10)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
                     goto label__string_loop_outer__continue;
-                  } else if (self->private_impl.f_quirks[19]) {
+                  } else if (self->private_impl.f_quirks[20]) {
                     (iop_a_src += 10, wuffs_base__make_empty_struct());
                     *iop_a_dst++ = wuffs_base__make_token(
                         (((uint64_t)(6356989)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
@@ -26352,7 +26352,7 @@ wuffs_json__decoder__decode_tokens(
                     }
                   }
                   if (a_src && a_src->meta.closed) {
-                    if (self->private_impl.f_quirks[19]) {
+                    if (self->private_impl.f_quirks[20]) {
                       *iop_a_dst++ = wuffs_base__make_token(
                           (((uint64_t)(6356989)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                           (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
@@ -26397,7 +26397,7 @@ wuffs_json__decoder__decode_tokens(
                     }
                   }
                   if (a_src && a_src->meta.closed) {
-                    if (self->private_impl.f_quirks[19]) {
+                    if (self->private_impl.f_quirks[20]) {
                       *iop_a_dst++ = wuffs_base__make_token(
                           (((uint64_t)(6356989)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                           (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
@@ -26444,7 +26444,7 @@ wuffs_json__decoder__decode_tokens(
                     }
                   }
                   if (a_src && a_src->meta.closed) {
-                    if (self->private_impl.f_quirks[19]) {
+                    if (self->private_impl.f_quirks[20]) {
                       *iop_a_dst++ = wuffs_base__make_token(
                           (((uint64_t)(6356989)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                           (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
@@ -26508,7 +26508,7 @@ wuffs_json__decoder__decode_tokens(
                 status = wuffs_base__make_status(wuffs_json__error__bad_c0_control_code);
                 goto exit;
               }
-              if (self->private_impl.f_quirks[19]) {
+              if (self->private_impl.f_quirks[20]) {
                 *iop_a_dst++ = wuffs_base__make_token(
                     (((uint64_t)(6356989)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                     (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
@@ -26841,7 +26841,7 @@ wuffs_json__decoder__decode_tokens(
       v_expect = v_expect_after_value;
     }
     label__outer__break:;
-    if (self->private_impl.f_quirks[17]) {
+    if (self->private_impl.f_quirks[18]) {
       if (a_dst) {
         a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
       }
