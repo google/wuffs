@@ -65,15 +65,15 @@ extern "C" {
 // each major.minor branch, the commit count should increase monotonically.
 //
 // WUFFS_VERSION was overridden by "wuffs gen -version" based on revision
-// 57d47c633ce692dff24a804382935f46f7074ebf committed on 2020-09-08.
+// fa50f4de67da25a320584164ed12869603898a16 committed on 2020-09-21.
 #define WUFFS_VERSION 0x000030000
 #define WUFFS_VERSION_MAJOR 0
 #define WUFFS_VERSION_MINOR 3
 #define WUFFS_VERSION_PATCH 0
-#define WUFFS_VERSION_PRE_RELEASE_LABEL "alpha.13"
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 2702
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20200908
-#define WUFFS_VERSION_STRING "0.3.0-alpha.13+2702.20200908"
+#define WUFFS_VERSION_PRE_RELEASE_LABEL "alpha.14"
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 2715
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20200921
+#define WUFFS_VERSION_STRING "0.3.0-alpha.14+2715.20200921"
 
 // Define WUFFS_CONFIG__STATIC_FUNCTIONS to make all of Wuffs' functions have
 // static storage. The motivation is discussed in the "ALLOW STATIC
@@ -513,8 +513,8 @@ wuffs_base__u64__sat_sub(uint64_t x, uint64_t y) {
 // --------
 
 typedef struct {
-  uint64_t hi;
   uint64_t lo;
+  uint64_t hi;
 } wuffs_base__multiply_u64__output;
 
 // wuffs_base__multiply_u64 returns x*y as a 128-bit value.
@@ -522,6 +522,13 @@ typedef struct {
 // The maximum inclusive output hi_lo is 0xFFFFFFFFFFFFFFFE_0000000000000001.
 static inline wuffs_base__multiply_u64__output  //
 wuffs_base__multiply_u64(uint64_t x, uint64_t y) {
+#if defined(__SIZEOF_INT128__)
+  __uint128_t z = ((__uint128_t)x) * ((__uint128_t)y);
+  wuffs_base__multiply_u64__output o;
+  o.lo = ((uint64_t)(z));
+  o.hi = ((uint64_t)(z >> 64));
+  return o;
+#else
   uint64_t x0 = x & 0xFFFFFFFF;
   uint64_t x1 = x >> 32;
   uint64_t y0 = y & 0xFFFFFFFF;
@@ -532,9 +539,10 @@ wuffs_base__multiply_u64(uint64_t x, uint64_t y) {
   uint64_t w2 = t >> 32;
   w1 += x0 * y1;
   wuffs_base__multiply_u64__output o;
-  o.hi = (x1 * y1) + w2 + (w1 >> 32);
   o.lo = x * y;
+  o.hi = (x1 * y1) + w2 + (w1 >> 32);
   return o;
+#endif
 }
 
 // --------
@@ -7654,11 +7662,13 @@ extern const char wuffs_json__error__unsupported_recursion_depth[];
 
 #define WUFFS_JSON__QUIRK_ALLOW_LEADING_UNICODE_BYTE_ORDER_MARK 1225364496
 
-#define WUFFS_JSON__QUIRK_ALLOW_TRAILING_NEW_LINE 1225364497
+#define WUFFS_JSON__QUIRK_ALLOW_TRAILING_COMMENT 1225364497
 
-#define WUFFS_JSON__QUIRK_JSON_POINTER_ALLOW_TILDE_R_TILDE_N 1225364498
+#define WUFFS_JSON__QUIRK_ALLOW_TRAILING_NEW_LINE 1225364498
 
-#define WUFFS_JSON__QUIRK_REPLACE_INVALID_UNICODE 1225364499
+#define WUFFS_JSON__QUIRK_JSON_POINTER_ALLOW_TILDE_R_TILDE_N 1225364499
+
+#define WUFFS_JSON__QUIRK_REPLACE_INVALID_UNICODE 1225364500
 
 // ---------------- Struct Declarations
 
@@ -7748,10 +7758,12 @@ struct wuffs_json__decoder__struct {
     wuffs_base__vtable vtable_for__wuffs_base__token_decoder;
     wuffs_base__vtable null_vtable;
 
-    bool f_quirks[20];
+    bool f_quirks[21];
     bool f_allow_leading_ars;
     bool f_allow_leading_ubom;
+    bool f_allow_trailing_comment;
     bool f_end_of_data;
+    uint8_t f_comment_type;
 
     uint32_t p_decode_tokens[1];
     uint32_t p_decode_leading[1];
@@ -9979,20 +9991,20 @@ static const uint8_t wuffs_base__private_implementation__powers_of_5[0x051C] = {
 // --------
 
 // wuffs_base__private_implementation__powers_of_10 contains truncated
-// approximations to the powers of 10, ranging from 1e-326 to 1e+310 inclusive,
-// as 637 uint32_t quintuples (128-bit mantissa, 32-bit base-2 exponent biased
-// by 0x04BE (which is 1214)). The array size is 637 * 5 = 3185.
+// approximations to the powers of 10, ranging from 1e-307 to 1e+288 inclusive,
+// as 596 uint32_t quintuples (128-bit mantissa, 32-bit base-2 exponent biased
+// by 0x04BE (which is 1214)). The array size is 596 * 5 = 2980.
 //
 // The 1214 bias in this look-up table equals 1023 + 191. 1023 is the bias for
 // IEEE 754 double-precision floating point. 191 is ((3 * 64) - 1) and
 // wuffs_base__private_implementation__parse_number_f64_eisel_lemire works with
 // multiples-of-64-bit mantissas.
 //
-// For example, the third approximation, for 1e-324, consists of the uint32_t
-// quintuple (0x828675B9, 0x52064CAC, 0x5DCE35EA, 0xCF42894A, 0x000A). The
+// For example, the third approximation, for 1e-305, consists of the uint32_t
+// quintuple (0xFE94DE87, 0x331ACDAB, 0x29ABA83C, 0xE0B62E29, 0x0049,). The
 // first four form a little-endian uint128_t value. The last one is an int32_t
 // value: -1140. Together, they represent the approximation to 1e-324:
-//   0xCF42894A_5DCE35EA_52064CAC_828675B9 * (2 ** (0x000A - 0x04BE))
+//   0xE0B62E29_29ABA83C_331ACDAB_FE94DE87 * (2 ** (0x0049 - 0x04BE))
 //
 // Similarly, 1e+4 is approximated by the uint64_t quintuple
 // (0x00000000, 0x00000000, 0x00000000, 0x9C400000, 0x044C) which means:
@@ -10003,26 +10015,7 @@ static const uint8_t wuffs_base__private_implementation__powers_of_5[0x051C] = {
 //   0xED63A231_D4C4FB27.4CA7AAA8_63EE4BDD * (2 ** (0x0520 - 0x04BE))
 //
 // This table was generated by by script/print-mpb-powers-of-10.go
-static const uint32_t wuffs_base__private_implementation__powers_of_10[3185] = {
-    0xF7604B57, 0x014BB630, 0xFE98746D, 0x84A57695, 0x0004,  // 1e-326
-    0x35385E2D, 0x419EA3BD, 0x7E3E9188, 0xA5CED43B, 0x0007,  // 1e-325
-    0x828675B9, 0x52064CAC, 0x5DCE35EA, 0xCF42894A, 0x000A,  // 1e-324
-    0xD1940993, 0x7343EFEB, 0x7AA0E1B2, 0x818995CE, 0x000E,  // 1e-323
-    0xC5F90BF8, 0x1014EBE6, 0x19491A1F, 0xA1EBFB42, 0x0011,  // 1e-322
-    0x77774EF6, 0xD41A26E0, 0x9F9B60A6, 0xCA66FA12, 0x0014,  // 1e-321
-    0x955522B4, 0x8920B098, 0x478238D0, 0xFD00B897, 0x0017,  // 1e-320
-    0x5D5535B0, 0x55B46E5F, 0x8CB16382, 0x9E20735E, 0x001B,  // 1e-319
-    0x34AA831D, 0xEB2189F7, 0x2FDDBC62, 0xC5A89036, 0x001E,  // 1e-318
-    0x01D523E4, 0xA5E9EC75, 0xBBD52B7B, 0xF712B443, 0x0021,  // 1e-317
-    0x2125366E, 0x47B233C9, 0x55653B2D, 0x9A6BB0AA, 0x0025,  // 1e-316
-    0x696E840A, 0x999EC0BB, 0xEABE89F8, 0xC1069CD4, 0x0028,  // 1e-315
-    0x43CA250D, 0xC00670EA, 0x256E2C76, 0xF148440A, 0x002B,  // 1e-314
-    0x6A5E5728, 0x38040692, 0x5764DBCA, 0x96CD2A86, 0x002F,  // 1e-313
-    0x04F5ECF2, 0xC6050837, 0xED3E12BC, 0xBC807527, 0x0032,  // 1e-312
-    0xC633682E, 0xF7864A44, 0xE88D976B, 0xEBA09271, 0x0035,  // 1e-311
-    0xFBE0211D, 0x7AB3EE6A, 0x31587EA3, 0x93445B87, 0x0039,  // 1e-310
-    0xBAD82964, 0x5960EA05, 0xFDAE9E4C, 0xB8157268, 0x003C,  // 1e-309
-    0x298E33BD, 0x6FB92487, 0x3D1A45DF, 0xE61ACF03, 0x003F,  // 1e-308
+static const uint32_t wuffs_base__private_implementation__powers_of_10[2980] = {
     0x79F8E056, 0xA5D3B6D4, 0x06306BAB, 0x8FD0C162, 0x0043,  // 1e-307
     0x9877186C, 0x8F48A489, 0x87BC8696, 0xB3C4F1BA, 0x0046,  // 1e-306
     0xFE94DE87, 0x331ACDAB, 0x29ABA83C, 0xE0B62E29, 0x0049,  // 1e-305
@@ -10619,28 +10612,6 @@ static const uint32_t wuffs_base__private_implementation__powers_of_10[3185] = {
     0xCCCC485D, 0x49ED8EAB, 0xD4BED6C0, 0x867F59A9, 0x07F5,  // 1e286
     0xBFFF5A74, 0x5C68F256, 0x49EE8C70, 0xA81F3014, 0x07F8,  // 1e287
     0x6FFF3111, 0x73832EEC, 0x5C6A2F8C, 0xD226FC19, 0x07FB,  // 1e288
-    0xC5FF7EAB, 0xC831FD53, 0xD9C25DB7, 0x83585D8F, 0x07FF,  // 1e289
-    0xB77F5E55, 0xBA3E7CA8, 0xD032F525, 0xA42E74F3, 0x0802,  // 1e290
-    0xE55F35EB, 0x28CE1BD2, 0xC43FB26F, 0xCD3A1230, 0x0805,  // 1e291
-    0xCF5B81B3, 0x7980D163, 0x7AA7CF85, 0x80444B5E, 0x0809,  // 1e292
-    0xC332621F, 0xD7E105BC, 0x1951C366, 0xA0555E36, 0x080C,  // 1e293
-    0xF3FEFAA7, 0x8DD9472B, 0x9FA63440, 0xC86AB5C3, 0x080F,  // 1e294
-    0xF0FEB951, 0xB14F98F6, 0x878FC150, 0xFA856334, 0x0812,  // 1e295
-    0x569F33D3, 0x6ED1BF9A, 0xD4B9D8D2, 0x9C935E00, 0x0816,  // 1e296
-    0xEC4700C8, 0x0A862F80, 0x09E84F07, 0xC3B83581, 0x0819,  // 1e297
-    0x2758C0FA, 0xCD27BB61, 0x4C6262C8, 0xF4A642E1, 0x081C,  // 1e298
-    0xB897789C, 0x8038D51C, 0xCFBD7DBD, 0x98E7E9CC, 0x0820,  // 1e299
-    0xE6BD56C3, 0xE0470A63, 0x03ACDD2C, 0xBF21E440, 0x0823,  // 1e300
-    0xE06CAC74, 0x1858CCFC, 0x04981478, 0xEEEA5D50, 0x0826,  // 1e301
-    0x0C43EBC8, 0x0F37801E, 0x02DF0CCB, 0x95527A52, 0x082A,  // 1e302
-    0x8F54E6BA, 0xD3056025, 0x8396CFFD, 0xBAA718E6, 0x082D,  // 1e303
-    0xF32A2069, 0x47C6B82E, 0x247C83FD, 0xE950DF20, 0x0830,  // 1e304
-    0x57FA5441, 0x4CDC331D, 0x16CDD27E, 0x91D28B74, 0x0834,  // 1e305
-    0xADF8E952, 0xE0133FE4, 0x1C81471D, 0xB6472E51, 0x0837,  // 1e306
-    0xD97723A6, 0x58180FDD, 0x63A198E5, 0xE3D8F9E5, 0x083A,  // 1e307
-    0xA7EA7648, 0x570F09EA, 0x5E44FF8F, 0x8E679C2F, 0x083E,  // 1e308
-    0x51E513DA, 0x2CD2CC65, 0x35D63F73, 0xB201833B, 0x0841,  // 1e309
-    0xA65E58D1, 0xF8077F7E, 0x034BCF4F, 0xDE81E40A, 0x0844,  // 1e310
 };
 
 // wuffs_base__private_implementation__f64_powers_of_10 holds powers of 10 that
@@ -11614,8 +11585,14 @@ wuffs_base__private_implementation__high_prec_dec__round_just_enough(
 //
 // Preconditions:
 //  - man is non-zero.
-//  - exp10 is in the range -326 ..= 310, the same range of the
+//  - exp10 is in the range [-307 ..= 288], the same range of the
 //    wuffs_base__private_implementation__powers_of_10 array.
+//
+// The exp10 range (and the fact that man is in the range [1 ..= UINT64_MAX],
+// approximately [1 ..= 1.85e+19]) means that (man * (10 ** exp10)) is in the
+// range [1e-307 ..= 1.85e+307]. This is entirely within the range of normal
+// (neither subnormal nor non-finite) f64 values: DBL_MIN and DBL_MAX are
+// approximately 2.23e–308 and 1.80e+308.
 static int64_t  //
 wuffs_base__private_implementation__parse_number_f64_eisel_lemire(
     uint64_t man,
@@ -11624,7 +11601,7 @@ wuffs_base__private_implementation__parse_number_f64_eisel_lemire(
   // The look-up table was constructed so that it is already normalized: the
   // table entry's mantissa's MSB (most significant bit) is on.
   const uint32_t* po10 =
-      &wuffs_base__private_implementation__powers_of_10[5 * (exp10 + 326)];
+      &wuffs_base__private_implementation__powers_of_10[5 * (exp10 + 307)];
 
   // Normalize the man argument. The (man != 0) precondition means that a
   // non-zero bit exists.
@@ -11642,19 +11619,10 @@ wuffs_base__private_implementation__parse_number_f64_eisel_lemire(
   // As a consequence, x_hi has either 0 or 1 leading zeroes. Shifting x_hi
   // right by either 9 or 10 bits (depending on x_hi's MSB) will therefore
   // leave the top 10 MSBs (bits 54 ..= 63) off and the 11th MSB (bit 53) on.
-#if defined(__SIZEOF_INT128__)
-  // See commit 18449ad75d582dd015c236abc85a16f333b796f3 "Optimize 128-bit muls
-  // in parse_number_f64_eisel" for benchmark numbers.
-  __uint128_t x =
-      ((__uint128_t)man) * (((uint64_t)po10[2]) | (((uint64_t)po10[3]) << 32));
-  uint64_t x_hi = ((uint64_t)(x >> 64));
-  uint64_t x_lo = ((uint64_t)(x));
-#else
   wuffs_base__multiply_u64__output x = wuffs_base__multiply_u64(
       man, ((uint64_t)po10[2]) | (((uint64_t)po10[3]) << 32));
   uint64_t x_hi = x.hi;
   uint64_t x_lo = x.lo;
-#endif
 
   // Before we shift right by at least 9 bits, recall that the look-up table
   // entry was possibly truncated. We have so far only calculated a lower bound
@@ -11670,19 +11638,10 @@ wuffs_base__private_implementation__parse_number_f64_eisel_lemire(
     // a "low resolution" 64-bit mantissa. Now use a "high resolution" 128-bit
     // mantissa. We've already calculated x = (man * bits_0_to_63_incl_of_e).
     // Now calculate y = (man * bits_64_to_127_incl_of_e).
-#if defined(__SIZEOF_INT128__)
-    // See commit 18449ad75d582dd015c236abc85a16f333b796f3 "Optimize 128-bit
-    // muls in parse_number_f64_eisel" for benchmark numbers.
-    __uint128_t y = ((__uint128_t)man) *
-                    (((uint64_t)po10[0]) | (((uint64_t)po10[1]) << 32));
-    uint64_t y_hi = ((uint64_t)(y >> 64));
-    uint64_t y_lo = ((uint64_t)(y));
-#else
     wuffs_base__multiply_u64__output y = wuffs_base__multiply_u64(
         man, ((uint64_t)po10[0]) | (((uint64_t)po10[1]) << 32));
     uint64_t y_hi = y.hi;
     uint64_t y_lo = y.lo;
-#endif
 
     // Merge the 128-bit x and 128-bit y, which overlap by 64 bits, to
     // calculate the 192-bit product of the 64-bit man by the 128-bit e.
@@ -11739,6 +11698,11 @@ wuffs_base__private_implementation__parse_number_f64_eisel_lemire(
   // carrying up overflowed, shift again.
   ret_mantissa += ret_mantissa & 1;
   ret_mantissa >>= 1;
+  // This if block is equivalent to (but benchmarks slightly faster than) the
+  // following branchless form:
+  //    uint64_t overflow_adjustment = ret_mantissa >> 53;
+  //    ret_mantissa >>= overflow_adjustment;
+  //    ret_exp2 += overflow_adjustment;
   if ((ret_mantissa >> 53) > 0) {
     ret_mantissa >>= 1;
     ret_exp2++;
@@ -11747,12 +11711,6 @@ wuffs_base__private_implementation__parse_number_f64_eisel_lemire(
   // Starting with a 53-bit number, IEEE 754 double-precision normal numbers
   // have an implicit mantissa bit. Mask that away and keep the low 52 bits.
   ret_mantissa &= 0x000FFFFFFFFFFFFF;
-
-  // IEEE 754 double-precision floating point has 11 exponent bits. All off (0)
-  // means subnormal numbers. All on (2047) means infinity or NaN.
-  if ((ret_exp2 <= 0) || (2047 <= ret_exp2)) {
-    return -1;
-  }
 
   // Pack the bits and return.
   return ((int64_t)(ret_mantissa | (ret_exp2 << 52)));
@@ -11900,7 +11858,7 @@ wuffs_base__private_implementation__high_prec_dec__to_f64(
         man = (10 * man) + h->digits[i];
       }
       int32_t exp10 = h->decimal_point - ((int32_t)(h->num_digits));
-      if ((man != 0) && (-326 <= exp10) && (exp10 <= 310)) {
+      if ((man != 0) && (-307 <= exp10) && (exp10 <= 288)) {
         int64_t r =
             wuffs_base__private_implementation__parse_number_f64_eisel_lemire(
                 man, exp10);
@@ -12209,14 +12167,13 @@ wuffs_base__parse_number_f64(wuffs_base__slice_u8 s, uint32_t options) {
     }
 
     // The wuffs_base__private_implementation__parse_number_f64_eisel_lemire
-    // preconditions include that exp10 is in the range -326 ..= 310.
-    if ((exp10 < -326) || (310 < exp10)) {
+    // preconditions include that exp10 is in the range [-307 ..= 288].
+    if ((exp10 < -307) || (288 < exp10)) {
       goto fallback;
     }
 
-    // If man and exp10 are small enough, all three of (man), (10 ** exp10) and
-    // (man ** (10 ** exp10)) are exactly representable by a double. We don't
-    // need to run the Eisel-Lemire algorithm.
+    // If both man and (10 ** exp10) are exactly representable by a double, we
+    // don't need to run the Eisel-Lemire algorithm.
     if ((-22 <= exp10) && (exp10 <= 22) && ((man >> 53) == 0)) {
       double d = (double)man;
       if (exp10 >= 0) {
@@ -12232,7 +12189,7 @@ wuffs_base__parse_number_f64(wuffs_base__slice_u8 s, uint32_t options) {
 
     // The wuffs_base__private_implementation__parse_number_f64_eisel_lemire
     // preconditions include that man is non-zero. Parsing "0" should be caught
-    // by the "If man and exp10 are small enough" above, but "0e99" might not.
+    // by the "If both man and (10 ** exp10)" above, but "0e99" might not.
     if (man == 0) {
       goto fallback;
     }
@@ -25745,7 +25702,7 @@ WUFFS_JSON__LUT_HEXADECIMAL_DIGITS[256]WUFFS_BASE__POTENTIALLY_UNUSED = {
 
 #define WUFFS_JSON__QUIRKS_BASE 1225364480
 
-#define WUFFS_JSON__QUIRKS_COUNT 20
+#define WUFFS_JSON__QUIRKS_COUNT 21
 
 // ---------------- Private Initializer Prototypes
 
@@ -25887,7 +25844,7 @@ wuffs_json__decoder__set_quirk_enabled(
 
   if (a_quirk >= 1225364480) {
     a_quirk -= 1225364480;
-    if (a_quirk < 20) {
+    if (a_quirk < 21) {
       self->private_impl.f_quirks[a_quirk] = a_enabled;
     }
   }
@@ -26236,7 +26193,7 @@ wuffs_json__decoder__decode_tokens(
                   } else {
                     if (((uint64_t)(io2_a_src - iop_a_src)) < 12) {
                       if (a_src && a_src->meta.closed) {
-                        if (self->private_impl.f_quirks[19]) {
+                        if (self->private_impl.f_quirks[20]) {
                           (iop_a_src += 6, wuffs_base__make_empty_struct());
                           *iop_a_dst++ = wuffs_base__make_token(
                               (((uint64_t)(6356989)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
@@ -26287,7 +26244,7 @@ wuffs_json__decoder__decode_tokens(
                       goto label__string_loop_outer__continue;
                     }
                   }
-                  if (self->private_impl.f_quirks[19]) {
+                  if (self->private_impl.f_quirks[20]) {
                     if (((uint64_t)(io2_a_src - iop_a_src)) < 6) {
                       status = wuffs_base__make_status(wuffs_json__error__internal_error_inconsistent_i_o);
                       goto exit;
@@ -26346,7 +26303,7 @@ wuffs_json__decoder__decode_tokens(
                         (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
                         (((uint64_t)(10)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
                     goto label__string_loop_outer__continue;
-                  } else if (self->private_impl.f_quirks[19]) {
+                  } else if (self->private_impl.f_quirks[20]) {
                     (iop_a_src += 10, wuffs_base__make_empty_struct());
                     *iop_a_dst++ = wuffs_base__make_token(
                         (((uint64_t)(6356989)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
@@ -26400,7 +26357,7 @@ wuffs_json__decoder__decode_tokens(
                     }
                   }
                   if (a_src && a_src->meta.closed) {
-                    if (self->private_impl.f_quirks[19]) {
+                    if (self->private_impl.f_quirks[20]) {
                       *iop_a_dst++ = wuffs_base__make_token(
                           (((uint64_t)(6356989)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                           (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
@@ -26445,7 +26402,7 @@ wuffs_json__decoder__decode_tokens(
                     }
                   }
                   if (a_src && a_src->meta.closed) {
-                    if (self->private_impl.f_quirks[19]) {
+                    if (self->private_impl.f_quirks[20]) {
                       *iop_a_dst++ = wuffs_base__make_token(
                           (((uint64_t)(6356989)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                           (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
@@ -26492,7 +26449,7 @@ wuffs_json__decoder__decode_tokens(
                     }
                   }
                   if (a_src && a_src->meta.closed) {
-                    if (self->private_impl.f_quirks[19]) {
+                    if (self->private_impl.f_quirks[20]) {
                       *iop_a_dst++ = wuffs_base__make_token(
                           (((uint64_t)(6356989)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                           (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
@@ -26556,7 +26513,7 @@ wuffs_json__decoder__decode_tokens(
                 status = wuffs_base__make_status(wuffs_json__error__bad_c0_control_code);
                 goto exit;
               }
-              if (self->private_impl.f_quirks[19]) {
+              if (self->private_impl.f_quirks[20]) {
                 *iop_a_dst++ = wuffs_base__make_token(
                     (((uint64_t)(6356989)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                     (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
@@ -26889,7 +26846,7 @@ wuffs_json__decoder__decode_tokens(
       v_expect = v_expect_after_value;
     }
     label__outer__break:;
-    if (self->private_impl.f_quirks[17]) {
+    if (self->private_impl.f_quirks[18]) {
       if (a_dst) {
         a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
       }
@@ -27275,6 +27232,7 @@ wuffs_json__decoder__decode_comment(
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
+    self->private_impl.f_comment_type = 0;
     label__0__continue:;
     while ((((uint64_t)(io2_a_dst - iop_a_dst)) <= 0) || (((uint64_t)(io2_a_src - iop_a_src)) <= 1)) {
       if (((uint64_t)(io2_a_dst - iop_a_dst)) <= 0) {
@@ -27324,6 +27282,7 @@ wuffs_json__decoder__decode_comment(
             *iop_a_dst++ = wuffs_base__make_token(
                 (((uint64_t)(2)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                 (((uint64_t)((v_length + 2))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+            self->private_impl.f_comment_type = 1;
             status = wuffs_base__make_status(NULL);
             goto ok;
           }
@@ -27373,6 +27332,7 @@ wuffs_json__decoder__decode_comment(
             *iop_a_dst++ = wuffs_base__make_token(
                 (((uint64_t)(4)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                 (((uint64_t)((v_length + 1))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+            self->private_impl.f_comment_type = 2;
             status = wuffs_base__make_status(NULL);
             goto ok;
           }
@@ -27616,6 +27576,7 @@ wuffs_json__decoder__decode_trailing_new_line(
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
+    self->private_impl.f_allow_trailing_comment = self->private_impl.f_quirks[17];
     label__outer__continue:;
     while (true) {
       if (((uint64_t)(io2_a_dst - iop_a_dst)) <= 0) {
@@ -27647,6 +27608,33 @@ wuffs_json__decoder__decode_trailing_new_line(
                 (((uint64_t)(0)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                 (((uint64_t)(v_whitespace_length)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
             v_whitespace_length = 0;
+          }
+          if (self->private_impl.f_allow_trailing_comment) {
+            if (a_dst) {
+              a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
+            }
+            if (a_src) {
+              a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+            }
+            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
+            status = wuffs_json__decoder__decode_comment(self, a_dst, a_src);
+            if (a_dst) {
+              iop_a_dst = a_dst->data.ptr + a_dst->meta.wi;
+            }
+            if (a_src) {
+              iop_a_src = a_src->data.ptr + a_src->meta.ri;
+            }
+            if (status.repr) {
+              goto suspend;
+            }
+            v_c = 0;
+            v_whitespace_length = 0;
+            if (self->private_impl.f_comment_type == 1) {
+              self->private_impl.f_allow_trailing_comment = false;
+              goto label__outer__continue;
+            } else if (self->private_impl.f_comment_type == 2) {
+              goto label__outer__break;
+            }
           }
           status = wuffs_base__make_status(wuffs_json__error__bad_input);
           goto exit;
@@ -29050,6 +29038,8 @@ DecodeCbor(DecodeCborCallbacks& callbacks,
     fallback_io_buf = wuffs_base__ptr_u8__writer(fallback_io_array.get(), 4096);
     io_buf = &fallback_io_buf;
   }
+  // cursor_index is discussed at
+  // https://nigeltao.github.io/blog/2020/jsonptr.html#the-cursor-index
   size_t cursor_index = 0;
   std::string ret_error_message;
   std::string io_error_message;
@@ -29674,6 +29664,8 @@ DecodeJson(DecodeJsonCallbacks& callbacks,
     fallback_io_buf = wuffs_base__ptr_u8__writer(fallback_io_array.get(), 4096);
     io_buf = &fallback_io_buf;
   }
+  // cursor_index is discussed at
+  // https://nigeltao.github.io/blog/2020/jsonptr.html#the-cursor-index
   size_t cursor_index = 0;
   std::string ret_error_message;
   std::string io_error_message;
