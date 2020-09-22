@@ -2537,7 +2537,7 @@ test_wuffs_json_decode_interface() {
         WUFFS_JSON__QUIRK_ALLOW_INF_NAN_NUMBERS,
         WUFFS_JSON__QUIRK_ALLOW_LEADING_ASCII_RECORD_SEPARATOR,
         WUFFS_JSON__QUIRK_ALLOW_LEADING_UNICODE_BYTE_ORDER_MARK,
-        WUFFS_JSON__QUIRK_ALLOW_TRAILING_NEW_LINE,
+        WUFFS_JSON__QUIRK_ALLOW_TRAILING_FILLER,
         WUFFS_JSON__QUIRK_REPLACE_INVALID_UNICODE,
         0,
     };
@@ -3386,24 +3386,51 @@ test_wuffs_json_decode_quirk_allow_leading_etc() {
 }
 
 const char*  //
-test_wuffs_json_decode_quirk_allow_trailing_comment() {
+test_wuffs_json_decode_quirk_allow_trailing_comments() {
   CHECK_FOCUS(__func__);
 
-  // These test cases all end with two '\n' bytes. If the first byte is '8'
-  // then decoding should succeed, and stop between those two '\n' bytes.
-  // Otherwise, decoding should fail.
+  // The first byte is a code.
+  //  - '1' means that there is zero or one '\n' bytes
+  //  - '2' means that there are two '\n' bytes but no comments
+  //  - '3' means that there are comments
+  //  - '4' means that there is non-filler after  eof-or-'\n'
+  //  - '5' means that there is non-filler before eof-or-'\n'
+  //
+  // WUFFS_JSON__QUIRK_ALLOW_TRAILING_FILLER (together with
+  // WUFFS_JSON__QUIRK_ALLOW_COMMENT_ETC) should decode the '1's, '2's and '3's
+  // completely and the '4's and '5's up to but excluding the non-filler.
+  //
+  // WUFFS_JSON__QUIRK_EXPECT_TRAILING_NEW_LINE_OR_EOF should decode the '1's
+  // completely and the '2's and '4's just after the first '\n'.
   const char* test_cases[] = {
-      "80\n\n",                //
-      "81 \n\n",               //
-      "82 /*foo*/ \n\n",       //
-      "83/*bar\nbaz*/\n\n",    //
-      "84 // qux\n\n",         //
-      "95 /*c0*/ /*c1*/\n\n",  //
-      "96 /*c0*/ // c2 \n\n",  //
+      "100",                         //
+      "101 \n",                      //
+      "202\n\n",                     //
+      "203 \n\n",                    //
+      "304 /*foo*/",                 //
+      "305 /*foo*/ ",                //
+      "306 /*foo*/ \n",              //
+      "307 /*foo*/ \n\n",            //
+      "308/*bar\nbaz*/\n\n",         //
+      "309 // qux\n\n",              //
+      "310 /*c0*/ /*c1*/\n\n",       //
+      "311 /*c0*/ \n\n // c2 \n\n",  //
+      "412 \n9",                     //
+      "513 9",                       //
   };
 
   int tc;
+
+  // Test ALLOW_ETC.
   for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+    void* tc_ptr = (void*)(test_cases[tc]);
+    size_t tc_len = strlen(test_cases[tc]);
+    char code = test_cases[tc][0];
+
+    wuffs_base__token_buffer tok =
+        wuffs_base__slice_token__writer(g_have_slice_token);
+    wuffs_base__io_buffer src =
+        wuffs_base__ptr_u8__reader(tc_ptr, tc_len, true);
     wuffs_json__decoder dec;
     CHECK_STATUS("initialize", wuffs_json__decoder__initialize(
                                    &dec, sizeof dec, WUFFS_VERSION,
@@ -3413,81 +3440,119 @@ test_wuffs_json_decode_quirk_allow_trailing_comment() {
     wuffs_json__decoder__set_quirk_enabled(
         &dec, WUFFS_JSON__QUIRK_ALLOW_COMMENT_LINE, true);
     wuffs_json__decoder__set_quirk_enabled(
-        &dec, WUFFS_JSON__QUIRK_ALLOW_TRAILING_COMMENT, true);
-    wuffs_json__decoder__set_quirk_enabled(
-        &dec, WUFFS_JSON__QUIRK_ALLOW_TRAILING_NEW_LINE, true);
+        &dec, WUFFS_JSON__QUIRK_ALLOW_TRAILING_FILLER, true);
 
+    const char* have_repr =
+        wuffs_json__decoder__decode_tokens(&dec, &tok, &src, g_work_slice_u8)
+            .repr;
+    if (have_repr != NULL) {
+      RETURN_FAIL("tc=%d, ALLOW_ETC: decode_tokens: have \"%s\", want NULL", tc,
+                  have_repr);
+    }
+
+    size_t have_total_length = 0;
+    while (tok.meta.ri < tok.meta.wi) {
+      have_total_length +=
+          wuffs_base__token__length(&tok.data.ptr[tok.meta.ri++]);
+    }
+    size_t want_total_length = tc_len - ((code >= '4') ? 1 : 0);
+    if (have_total_length != src.meta.ri) {
+      RETURN_FAIL("tc=%d, ALLOW_ETC: total_length: have %zu, want %zu", tc,
+                  have_total_length, src.meta.ri);
+    } else if (have_total_length != want_total_length) {
+      RETURN_FAIL("tc=%d, ALLOW_ETC: total_length: have %zu, want %zu", tc,
+                  have_total_length, want_total_length);
+    }
+  }
+
+  // Test EXPECT_ETC.
+  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
     void* tc_ptr = (void*)(test_cases[tc]);
     size_t tc_len = strlen(test_cases[tc]);
+    char code = test_cases[tc][0];
+
     wuffs_base__token_buffer tok =
         wuffs_base__slice_token__writer(g_have_slice_token);
     wuffs_base__io_buffer src =
         wuffs_base__ptr_u8__reader(tc_ptr, tc_len, true);
-    const char* have =
+    wuffs_json__decoder dec;
+    CHECK_STATUS("initialize", wuffs_json__decoder__initialize(
+                                   &dec, sizeof dec, WUFFS_VERSION,
+                                   WUFFS_INITIALIZE__DEFAULT_OPTIONS));
+    wuffs_json__decoder__set_quirk_enabled(
+        &dec, WUFFS_JSON__QUIRK_EXPECT_TRAILING_NEW_LINE_OR_EOF, true);
+
+    const char* have_repr =
         wuffs_json__decoder__decode_tokens(&dec, &tok, &src, g_work_slice_u8)
             .repr;
-    const char* want =
-        (test_cases[tc][0] == '8') ? NULL : wuffs_json__error__bad_input;
-    if (have != want) {
-      RETURN_FAIL("tc=%d: decode_tokens: have \"%s\", want \"%s\"", tc, have,
-                  want);
-    } else if (have != NULL) {
+    const char* want_repr =
+        ((code == '3') || (code == '5')) ? wuffs_json__error__bad_input : NULL;
+    if (have_repr != want_repr) {
+      RETURN_FAIL("tc=%d, EXPECT_ETC: decode_tokens: have \"%s\", want \"%s\"",
+                  tc, have_repr, want_repr);
+    } else if (have_repr != NULL) {
       continue;
     }
 
-    size_t total_length = 0;
+    size_t have_total_length = 0;
     while (tok.meta.ri < tok.meta.wi) {
-      total_length += wuffs_base__token__length(&tok.data.ptr[tok.meta.ri++]);
+      have_total_length +=
+          wuffs_base__token__length(&tok.data.ptr[tok.meta.ri++]);
     }
-    if (total_length != src.meta.ri) {
-      RETURN_FAIL("tc=%d: total_length: have %zu, want %zu", tc, total_length,
-                  src.meta.ri);
-    } else if ((total_length + 1) != tc_len) {
-      RETURN_FAIL("tc=%d: total_length+1: have %zu, want %zu", tc,
-                  total_length + 1, tc_len);
+    size_t want_total_length = tc_len - ((code == '1') ? 0 : 1);
+    if (have_total_length != src.meta.ri) {
+      RETURN_FAIL("tc=%d, EXPECT_ETC: total_length: have %zu, want %zu", tc,
+                  have_total_length, src.meta.ri);
+    } else if (have_total_length != want_total_length) {
+      RETURN_FAIL("tc=%d, EXPECT_ETC: total_length: have %zu, want %zu", tc,
+                  have_total_length, want_total_length);
     }
   }
+
   return NULL;
 }
 
 const char*  //
-test_wuffs_json_decode_quirk_allow_trailing_new_line() {
+test_wuffs_json_decode_quirk_allow_trailing_filler() {
   CHECK_FOCUS(__func__);
 
   struct {
-    // want has 2 bytes, one for each possible q:
-    //  - q&1 sets WUFFS_JSON__QUIRK_ALLOW_TRAILING_NEW_LINE.
+    // want has 3 bytes, one for each possible q:
+    //  - q&1 sets WUFFS_JSON__QUIRK_ALLOW_TRAILING_FILLER.
+    //  - q&2 sets WUFFS_JSON__QUIRK_EXPECT_TRAILING_NEW_LINE_OR_EOF.
     // An 'X', '+' or '-' means that decoding should succeed (and consume the
     // entire input), succeed (without consuming the entire input) or fail.
     const char* want;
     const char* str;
   } test_cases[] = {
-      {.want = "++", .str = "0 \n "},      //
-      {.want = "++", .str = "0 \n\n"},     //
-      {.want = "++", .str = "0\n\n"},      //
-      {.want = "+-", .str = "0 true \n"},  //
-      {.want = "+-", .str = "007"},        //
-      {.want = "+-", .str = "007\n"},      //
-      {.want = "+-", .str = "0true "},     //
-      {.want = "+-", .str = "0true"},      //
-      {.want = "+X", .str = "0 "},         //
-      {.want = "+X", .str = "0 \n"},       //
-      {.want = "+X", .str = "0\n"},        //
-      {.want = "+X", .str = "0\t\r\n"},    //
-      {.want = "--", .str = "\n"},         //
-      {.want = "XX", .str = "0"},          //
+      {.want = "+X+", .str = "0 \n "},      //
+      {.want = "+X+", .str = "0 \n\n"},     //
+      {.want = "+X+", .str = "0\n\n"},      //
+      {.want = "++-", .str = "0 true \n"},  //
+      {.want = "++-", .str = "007"},        //
+      {.want = "++-", .str = "007\n"},      //
+      {.want = "++-", .str = "0true "},     //
+      {.want = "++-", .str = "0true"},      //
+      {.want = "+XX", .str = "0 "},         //
+      {.want = "+XX", .str = "0 \n"},       //
+      {.want = "+XX", .str = "0\n"},        //
+      {.want = "+XX", .str = "0\t\r\n"},    //
+      {.want = "---", .str = "\n"},         //
+      {.want = "XXX", .str = "0"},          //
   };
 
   int tc;
   for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
     int q;
-    for (q = 0; q < 2; q++) {
+    for (q = 0; q < 3; q++) {
       wuffs_json__decoder dec;
       CHECK_STATUS("initialize", wuffs_json__decoder__initialize(
                                      &dec, sizeof dec, WUFFS_VERSION,
                                      WUFFS_INITIALIZE__DEFAULT_OPTIONS));
       wuffs_json__decoder__set_quirk_enabled(
-          &dec, WUFFS_JSON__QUIRK_ALLOW_TRAILING_NEW_LINE, q & 1);
+          &dec, WUFFS_JSON__QUIRK_ALLOW_TRAILING_FILLER, q & 1);
+      wuffs_json__decoder__set_quirk_enabled(
+          &dec, WUFFS_JSON__QUIRK_EXPECT_TRAILING_NEW_LINE_OR_EOF, q & 2);
 
       wuffs_base__token_buffer tok =
           wuffs_base__slice_token__writer(g_have_slice_token);
@@ -4134,8 +4199,8 @@ proc g_tests[] = {
     test_wuffs_json_decode_quirk_allow_extra_comma,
     test_wuffs_json_decode_quirk_allow_inf_nan_numbers,
     test_wuffs_json_decode_quirk_allow_leading_etc,
-    test_wuffs_json_decode_quirk_allow_trailing_comment,
-    test_wuffs_json_decode_quirk_allow_trailing_new_line,
+    test_wuffs_json_decode_quirk_allow_trailing_comments,
+    test_wuffs_json_decode_quirk_allow_trailing_filler,
     test_wuffs_json_decode_quirk_replace_invalid_unicode,
     test_wuffs_json_decode_src_io_buffer_length,
     test_wuffs_json_decode_string,

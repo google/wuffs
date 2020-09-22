@@ -470,6 +470,7 @@ enum class context {
   in_dict_after_brace,
   in_dict_after_key,
   in_dict_after_value,
+  end_of_data,
 } g_ctx;
 
 bool  //
@@ -934,7 +935,6 @@ initialize_globals(int argc, char** argv) {
   if (g_flags.input_allow_comments) {
     g_dec.set_quirk_enabled(WUFFS_JSON__QUIRK_ALLOW_COMMENT_BLOCK, true);
     g_dec.set_quirk_enabled(WUFFS_JSON__QUIRK_ALLOW_COMMENT_LINE, true);
-    g_dec.set_quirk_enabled(WUFFS_JSON__QUIRK_ALLOW_TRAILING_COMMENT, true);
   }
   if (g_flags.input_allow_extra_comma) {
     g_dec.set_quirk_enabled(WUFFS_JSON__QUIRK_ALLOW_EXTRA_COMMA, true);
@@ -943,11 +943,11 @@ initialize_globals(int argc, char** argv) {
     g_dec.set_quirk_enabled(WUFFS_JSON__QUIRK_ALLOW_INF_NAN_NUMBERS, true);
   }
 
-  // Consume an optional whitespace trailer. This isn't part of the JSON spec,
-  // but it works better with line oriented Unix tools (such as "echo 123 |
-  // jsonptr" where it's "echo", not "echo -n") or hand-edited JSON files which
-  // can accidentally contain trailing whitespace.
-  g_dec.set_quirk_enabled(WUFFS_JSON__QUIRK_ALLOW_TRAILING_NEW_LINE, true);
+  // Consume any optional trailing whitespace and comments. This isn't part of
+  // the JSON spec, but it works better with line oriented Unix tools (such as
+  // "echo 123 | jsonptr" where it's "echo", not "echo -n") or hand-edited JSON
+  // files which can accidentally contain trailing whitespace.
+  g_dec.set_quirk_enabled(WUFFS_JSON__QUIRK_ALLOW_TRAILING_FILLER, true);
 
   return nullptr;
 }
@@ -1301,7 +1301,8 @@ main1(int argc, char** argv) {
                 if (g_ctx == context::in_dict_after_key) {
                   TRY(write_dst(":", 1));
                 } else if ((g_ctx != context::in_list_after_bracket) &&
-                           (g_ctx != context::in_dict_after_brace)) {
+                           (g_ctx != context::in_dict_after_brace) &&
+                           (g_ctx != context::end_of_data)) {
                   TRY(write_dst(",", 1));
                 }
                 if (!g_flags.compact_output) {
@@ -1328,14 +1329,29 @@ main1(int argc, char** argv) {
       start_of_token_chain = !t.continued();
       if (z == nullptr) {
         continue;
-      } else if (z == g_eod) {
-        goto end_of_data;
+      } else if (z != g_eod) {
+        return z;
+      } else if (g_flags.query_c_string && *g_flags.query_c_string) {
+        // With a non-empty g_query, don't try to consume trailing filler or
+        // confirm that we've processed all the tokens.
+        return nullptr;
       }
-      return z;
+      g_ctx = context::end_of_data;
     }
 
     if (status.repr == nullptr) {
-      return "main: internal error: unexpected end of token stream";
+      if (g_ctx != context::end_of_data) {
+        return "main: internal error: unexpected end of token stream";
+      }
+      // Check that we've exhausted the input.
+      if ((g_src.meta.ri == g_src.meta.wi) && !g_src.meta.closed) {
+        TRY(read_src());
+      }
+      if ((g_src.meta.ri < g_src.meta.wi) || !g_src.meta.closed) {
+        return "main: valid JSON followed by further (unexpected) data";
+      }
+      // All done.
+      return nullptr;
     } else if (status.repr == wuffs_base__suspension__short_read) {
       if (g_cursor_index != g_src.meta.ri) {
         return "main: internal error: inconsistent g_src indexes";
@@ -1348,34 +1364,6 @@ main1(int argc, char** argv) {
       return status.message();
     }
   }
-end_of_data:
-
-  // With a non-empty g_query, don't try to consume trailing whitespace or
-  // confirm that we've processed all the tokens.
-  if (g_flags.query_c_string && *g_flags.query_c_string) {
-    return nullptr;
-  }
-
-  // Check that we've exhausted the input.
-  if ((g_src.meta.ri == g_src.meta.wi) && !g_src.meta.closed) {
-    TRY(read_src());
-  }
-  if ((g_src.meta.ri < g_src.meta.wi) || !g_src.meta.closed) {
-    return "main: valid JSON followed by further (unexpected) data";
-  }
-
-  // Check that we've used all of the decoded tokens, other than trailing
-  // filler tokens. For example, "true\n" is valid JSON (and fully consumed
-  // with WUFFS_JSON__QUIRK_ALLOW_TRAILING_NEW_LINE enabled) with a trailing
-  // filler token for the "\n".
-  for (; g_tok.meta.ri < g_tok.meta.wi; g_tok.meta.ri++) {
-    if (g_tok.data.ptr[g_tok.meta.ri].value_base_category() !=
-        WUFFS_BASE__TOKEN__VBC__FILLER) {
-      return "main: internal error: decoded OK but unprocessed tokens remain";
-    }
-  }
-
-  return nullptr;
 }
 
 int  //
@@ -1441,7 +1429,7 @@ main(int argc, char** argv) {
 
   const char* z = main1(argc, argv);
   if (g_wrote_to_dst) {
-    const char* z1 = write_dst("\n", 1);
+    const char* z1 = g_is_after_comment ? nullptr : write_dst("\n", 1);
     const char* z2 = flush_dst();
     z = z ? z : (z1 ? z1 : z2);
   }

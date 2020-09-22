@@ -7661,7 +7661,11 @@ extern const char wuffs_json__error__unsupported_recursion_depth[];
 
 #define WUFFS_JSON__QUIRK_ALLOW_LEADING_UNICODE_BYTE_ORDER_MARK 1225364496
 
+#define WUFFS_JSON__QUIRK_ALLOW_TRAILING_FILLER 1225364497
+
 #define WUFFS_JSON__QUIRK_ALLOW_TRAILING_COMMENT 1225364497
+
+#define WUFFS_JSON__QUIRK_EXPECT_TRAILING_NEW_LINE_OR_EOF 1225364498
 
 #define WUFFS_JSON__QUIRK_ALLOW_TRAILING_NEW_LINE 1225364498
 
@@ -7760,15 +7764,15 @@ struct wuffs_json__decoder__struct {
     bool f_quirks[21];
     bool f_allow_leading_ars;
     bool f_allow_leading_ubom;
-    bool f_allow_trailing_comment;
     bool f_end_of_data;
+    uint8_t f_trailer_stop;
     uint8_t f_comment_type;
 
     uint32_t p_decode_tokens[1];
     uint32_t p_decode_leading[1];
     uint32_t p_decode_comment[1];
     uint32_t p_decode_inf_nan[1];
-    uint32_t p_decode_trailing_new_line[1];
+    uint32_t p_decode_trailer[1];
   } private_impl;
 
   struct {
@@ -25737,7 +25741,7 @@ wuffs_json__decoder__decode_inf_nan(
     wuffs_base__io_buffer* a_src);
 
 static wuffs_base__status
-wuffs_json__decoder__decode_trailing_new_line(
+wuffs_json__decoder__decode_trailer(
     wuffs_json__decoder* self,
     wuffs_base__token_buffer* a_dst,
     wuffs_base__io_buffer* a_src);
@@ -25959,6 +25963,12 @@ wuffs_json__decoder__decode_tokens(
     if (self->private_impl.f_end_of_data) {
       status = wuffs_base__make_status(wuffs_base__note__end_of_data);
       goto ok;
+    }
+    if (self->private_impl.f_quirks[18]) {
+      if (self->private_impl.f_quirks[11] || self->private_impl.f_quirks[12] || self->private_impl.f_quirks[17]) {
+        status = wuffs_base__make_status(wuffs_json__error__bad_quirk_combination);
+        goto exit;
+      }
     }
     if (self->private_impl.f_quirks[15] || self->private_impl.f_quirks[16]) {
       if (a_dst) {
@@ -26832,7 +26842,9 @@ wuffs_json__decoder__decode_tokens(
             if (status.repr) {
               goto suspend;
             }
-            goto label__outer__continue;
+            if (self->private_impl.f_comment_type > 0) {
+              goto label__outer__continue;
+            }
           }
         }
         status = wuffs_base__make_status(wuffs_json__error__bad_input);
@@ -26845,7 +26857,7 @@ wuffs_json__decoder__decode_tokens(
       v_expect = v_expect_after_value;
     }
     label__outer__break:;
-    if (self->private_impl.f_quirks[18]) {
+    if (self->private_impl.f_quirks[17] || self->private_impl.f_quirks[18]) {
       if (a_dst) {
         a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
       }
@@ -26853,7 +26865,7 @@ wuffs_json__decoder__decode_tokens(
         a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
       }
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(24);
-      status = wuffs_json__decoder__decode_trailing_new_line(self, a_dst, a_src);
+      status = wuffs_json__decoder__decode_trailer(self, a_dst, a_src);
       if (a_dst) {
         iop_a_dst = a_dst->data.ptr + a_dst->meta.wi;
       }
@@ -27240,8 +27252,8 @@ wuffs_json__decoder__decode_comment(
         goto label__0__continue;
       }
       if (a_src && a_src->meta.closed) {
-        status = wuffs_base__make_status(wuffs_json__error__bad_input);
-        goto exit;
+        status = wuffs_base__make_status(NULL);
+        goto ok;
       }
       status = wuffs_base__make_status(wuffs_base__suspension__short_read);
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(2);
@@ -27348,8 +27360,6 @@ wuffs_json__decoder__decode_comment(
         }
       }
     }
-    status = wuffs_base__make_status(wuffs_json__error__bad_input);
-    goto exit;
 
     goto ok;
     ok:
@@ -27535,10 +27545,10 @@ wuffs_json__decoder__decode_inf_nan(
   return status;
 }
 
-// -------- func json.decoder.decode_trailing_new_line
+// -------- func json.decoder.decode_trailer
 
 static wuffs_base__status
-wuffs_json__decoder__decode_trailing_new_line(
+wuffs_json__decoder__decode_trailer(
     wuffs_json__decoder* self,
     wuffs_base__token_buffer* a_dst,
     wuffs_base__io_buffer* a_src) {
@@ -27571,11 +27581,15 @@ wuffs_json__decoder__decode_trailing_new_line(
     io2_a_src = io0_a_src + a_src->meta.wi;
   }
 
-  uint32_t coro_susp_point = self->private_impl.p_decode_trailing_new_line[0];
+  uint32_t coro_susp_point = self->private_impl.p_decode_trailer[0];
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
-    self->private_impl.f_allow_trailing_comment = self->private_impl.f_quirks[17];
+    if (self->private_impl.f_quirks[18]) {
+      self->private_impl.f_trailer_stop = 10;
+    } else {
+      self->private_impl.f_trailer_stop = 0;
+    }
     label__outer__continue:;
     while (true) {
       if (((uint64_t)(io2_a_dst - iop_a_dst)) <= 0) {
@@ -27608,44 +27622,44 @@ wuffs_json__decoder__decode_trailing_new_line(
                 (((uint64_t)(v_whitespace_length)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
             v_whitespace_length = 0;
           }
-          if (self->private_impl.f_allow_trailing_comment) {
-            if (a_dst) {
-              a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
-            }
-            if (a_src) {
-              a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
-            }
-            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
-            status = wuffs_json__decoder__decode_comment(self, a_dst, a_src);
-            if (a_dst) {
-              iop_a_dst = a_dst->data.ptr + a_dst->meta.wi;
-            }
-            if (a_src) {
-              iop_a_src = a_src->data.ptr + a_src->meta.ri;
-            }
-            if (status.repr) {
-              goto suspend;
-            }
-            v_c = 0;
-            v_whitespace_length = 0;
-            if (self->private_impl.f_comment_type == 1) {
-              self->private_impl.f_allow_trailing_comment = false;
-              goto label__outer__continue;
-            } else if (self->private_impl.f_comment_type == 2) {
-              goto label__outer__break;
-            }
+          if (self->private_impl.f_trailer_stop > 0) {
+            status = wuffs_base__make_status(wuffs_json__error__bad_input);
+            goto exit;
           }
-          status = wuffs_base__make_status(wuffs_json__error__bad_input);
-          goto exit;
+          if (a_dst) {
+            a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
+          }
+          if (a_src) {
+            a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+          }
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
+          status = wuffs_json__decoder__decode_comment(self, a_dst, a_src);
+          if (a_dst) {
+            iop_a_dst = a_dst->data.ptr + a_dst->meta.wi;
+          }
+          if (a_src) {
+            iop_a_src = a_src->data.ptr + a_src->meta.ri;
+          }
+          if (status.repr) {
+            goto suspend;
+          }
+          v_c = 0;
+          v_whitespace_length = 0;
+          if (self->private_impl.f_comment_type > 0) {
+            goto label__outer__continue;
+          }
+          status = wuffs_base__make_status(NULL);
+          goto ok;
         }
         (iop_a_src += 1, wuffs_base__make_empty_struct());
-        if ((v_whitespace_length >= 65534) || (v_c == 10)) {
+        if ((v_whitespace_length >= 65534) || (v_c == self->private_impl.f_trailer_stop)) {
           *iop_a_dst++ = wuffs_base__make_token(
               (((uint64_t)(0)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
               (((uint64_t)((v_whitespace_length + 1))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
           v_whitespace_length = 0;
-          if (v_c == 10) {
-            goto label__outer__break;
+          if (v_c == self->private_impl.f_trailer_stop) {
+            status = wuffs_base__make_status(NULL);
+            goto ok;
           }
           goto label__outer__continue;
         }
@@ -27656,13 +27670,13 @@ wuffs_json__decoder__decode_trailing_new_line(
 
     goto ok;
     ok:
-    self->private_impl.p_decode_trailing_new_line[0] = 0;
+    self->private_impl.p_decode_trailer[0] = 0;
     goto exit;
   }
 
   goto suspend;
   suspend:
-  self->private_impl.p_decode_trailing_new_line[0] = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
+  self->private_impl.p_decode_trailer[0] = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
 
   goto exit;
   exit:

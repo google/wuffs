@@ -97,16 +97,17 @@ pub const QUIRK_ALLOW_BACKSLASH_X_AS_CODE_POINTS : base.u32 = 0x4909_9400 | 0x09
 pub const QUIRK_ALLOW_BACKSLASH_ZERO : base.u32 = 0x4909_9400 | 0x0A
 
 // When this quirk is enabled, "/* C/C++ style block comments */" are accepted
-// anywhere whitespace would be, although see the QUIRK_ALLOW_TRAILING_COMMENT
-// comment for additional interaction when combining multiple quirks.
+// anywhere whitespace would be. See also QUIRK_ALLOW_TRAILING_FILLER.
 //
 // They produce WUFFS_BASE__TOKEN__VBD__FILLER__COMMENT_BLOCK tokens. The token
 // chain's source bytes includes the starting "/*" and the ending "*/".
+//
+// To avoid ambiguity (as comments can contain new lines), this quirk cannot be
+// combined with QUIRK_EXPECT_TRAILING_NEW_LINE_OR_EOF.
 pub const QUIRK_ALLOW_COMMENT_BLOCK : base.u32 = 0x4909_9400 | 0x0B
 
 // When this quirk is enabled, "// C/C++ style line comments\n" are accepted
-// anywhere whitespace would be, although see the QUIRK_ALLOW_TRAILING_COMMENT
-// comment for additional interaction when combining multiple quirks.
+// anywhere whitespace would be. See also QUIRK_ALLOW_TRAILING_FILLER.
 //
 // A line comment may not omit the ending "\n", even if there is no input
 // afterwards (i.e. the prospective line comment ends with the end-of-file).
@@ -117,6 +118,9 @@ pub const QUIRK_ALLOW_COMMENT_BLOCK : base.u32 = 0x4909_9400 | 0x0B
 // Even if the line comments are on consecutive lines, each line comment is a
 // separate token chain. There may be whitespace tokens between one line
 // comment's ending "\n" and the next one's starting "//".
+//
+// To avoid ambiguity (as comments can contain new lines), this quirk cannot be
+// combined with QUIRK_EXPECT_TRAILING_NEW_LINE_OR_EOF.
 pub const QUIRK_ALLOW_COMMENT_LINE : base.u32 = 0x4909_9400 | 0x0C
 
 // When this quirk is enabled, there may be a comma after the final array
@@ -140,8 +144,9 @@ pub const QUIRK_ALLOW_INF_NAN_NUMBERS : base.u32 = 0x4909_9400 | 0x0E
 // When combined with QUIRK_ALLOW_LEADING_UNICODE_BYTE_ORDER_MARK, either mark
 // may come first in the byte stream.
 //
-// When combined with QUIRK_ALLOW_TRAILING_NEW_LINE, this format is also known
-// as RFC 7464, Json Text Sequences and MIME type "application/json-seq".
+// When combined with QUIRK_EXPECT_TRAILING_NEW_LINE_OR_EOF, this format is
+// also known as RFC 7464, Json Text Sequences and MIME type
+// "application/json-seq".
 pub const QUIRK_ALLOW_LEADING_ASCII_RECORD_SEPARATOR : base.u32 = 0x4909_9400 | 0x0F
 
 // When this quirk is enabled, the input byte stream may optionally start with
@@ -152,40 +157,43 @@ pub const QUIRK_ALLOW_LEADING_ASCII_RECORD_SEPARATOR : base.u32 = 0x4909_9400 | 
 // may come first in the byte stream.
 pub const QUIRK_ALLOW_LEADING_UNICODE_BYTE_ORDER_MARK : base.u32 = 0x4909_9400 | 0x10
 
-// When this quirk is enabled and both:
-//  - QUIRK_ALLOW_TRAILING_NEW_LINE is enabled,
-//  - at least one of QUIRK_ALLOW_COMMENT_ETC is enabled,
-// the trailing whitespace may optionally contain a single comment. As per
-// QUIRK_ALLOW_TRAILING_NEW_LINE, processing will still stop at the first
-// trailing '\n' (outside of a block comment), even if more comments followed.
+// When this quirk is enabled, following a successful decoding of a top-level
+// JSON value, any trailing whitespace (ASCII characters 0x09, 0x0A, 0x0D or
+// 0x20) and/or comments (if QUIRK_ALLOW_COMMENT_ETC is enabled) are also
+// consumed (and WUFFS_BASE__TOKEN__VBC__FILLER tokens emitted) up to but
+// excluding the end-of-file or the next non-filler byte.
 //
-// For a trailing block comment, new lines within the comment are not counted
-// and after the comment concludes, the decoder will continue consuming
-// whitespace up to and including the next '\n' (or end-of-file).
+// Trailing non-filler is not an error. Decoding simply stops before it.
 //
-// For a trailing line comment, the decoder stops immediately after the
-// comment. If not stopped by end-of-file, this stops after the '\n' that
-// concludes (and is part of) the comment. One implication is that if multiple
-// line comments trail a JSON value, only the first one will be processed.
+// To avoid ambiguity, this quirk cannot be combined with
+// QUIRK_EXPECT_TRAILING_NEW_LINE_OR_EOF. Unlike that quirk, enabling this
+// quirk will consume multiple trailing '\n' bytes.
+pub const QUIRK_ALLOW_TRAILING_FILLER : base.u32 = 0x4909_9400 | 0x11
+
+// Deprecated: equivalent to QUIRK_ALLOW_TRAILING_FILLER.
 pub const QUIRK_ALLOW_TRAILING_COMMENT : base.u32 = 0x4909_9400 | 0x11
 
 // When this quirk is enabled, following a successful decoding of a top-level
 // JSON value, any trailing whitespace (ASCII characters 0x09, 0x0A, 0x0D or
 // 0x20) is also consumed (and WUFFS_BASE__TOKEN__VBC__FILLER tokens emitted)
-// up to the end-of-file or up to and including a single new line (ASCII 0x0A,
-// also known as '\n'), whichever comes first. This trailing whitespace is not
-// mandatory, but it is consumed if present.
+// up to but excluding the end-of-file or up to and including a single new line
+// (ASCII 0x0A, also known as '\n'), whichever comes first. A trailing '\n' is
+// not mandatory (if at end-of-file), but it is consumed if present and will
+// stop decoding.
 //
-// When enabled, trailing non-whitespace (before a '\n') is an error (unless it
-// is a comment and QUIRK_ALLOW_TRAILING_COMMENT is enabled; see above). For
-// example, with "007" input, decoding with this quirk disabled (the default
-// case) will consume just 1 byte ("0") and leave the rest ("07") unread
-// without error, as "0" is a perfectly valid JSON value (but "00" is not).
-// Decoding "007" (or "007\n") with this quirk enabled will return an error.
+// Trailing non-whitespace after a trailing '\n' is ignored.
 //
-// When enabled, the decoder will not consume more than one trailing '\n'
-// (outside of a block comment), nor will it consume any other whitespace
-// immediately after a trailing '\n'.
+// Trailing non-whitespace, before EOF or '\n', is an error. For example, with
+// "007" input, decoding with this quirk disabled (the default case) will
+// consume just 1 byte ("0") and leave the rest ("07") unread without error, as
+// "0" is a perfectly valid JSON value (but "00" is not). Decoding "007" (or
+// "007\n") with this quirk enabled will return an error.
+//
+// To avoid ambiguity (as comments can contain new lines), this quirk cannot be
+// combined with any of:
+//  - QUIRK_ALLOW_COMMENT_BLOCK
+//  - QUIRK_ALLOW_COMMENT_LINE
+//  - QUIRK_ALLOW_TRAILING_FILLER
 //
 // If a JSON encoder avoids emitting (optional) '\n' bytes, other than a single
 // '\n' after each top-level value in a multi-JSON-value stream, this format is
@@ -199,13 +207,9 @@ pub const QUIRK_ALLOW_TRAILING_COMMENT : base.u32 = 0x4909_9400 | 0x11
 // When combined with QUIRK_ALLOW_LEADING_ASCII_RECORD_SEPARATOR, this format
 // is also known as RFC 7464, Json Text Sequences and MIME type
 // "application/json-seq".
-//
-// When combined with QUIRK_ALLOW_COMMENT_BLOCK or QUIRK_ALLOW_COMMENT_LINE, it
-// is an error for a comment to occur in this trailing whitespace, unless
-// QUIRK_ALLOW_TRAILING_COMMENT is also enabled. Be aware that block comments
-// can contain multiple new lines, so combining such quirks can break the
-// "exactly one JSON value per line" assumption for newline-delimited but
-// otherwise compact (minified) JSON.
+pub const QUIRK_EXPECT_TRAILING_NEW_LINE_OR_EOF : base.u32 = 0x4909_9400 | 0x12
+
+// Deprecated: equivalent to QUIRK_EXPECT_TRAILING_NEW_LINE_OR_EOF.
 pub const QUIRK_ALLOW_TRAILING_NEW_LINE : base.u32 = 0x4909_9400 | 0x12
 
 // When this quirk is enabled, JSON Pointer strings containing "~r" or "~n",
