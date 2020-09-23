@@ -128,6 +128,14 @@ func do(e int) error {
 		return fmt.Errorf("invalid hexadecimal representation %q", hex)
 	}
 
+	// Confirm that the linear approximation to the biased-value-of-n is
+	// correct for this particular value of e.
+	approxN := uint32(((217706 * e) >> 16) + 1087)
+	biasedN := bias + uint32(n)
+	if approxN != biasedN {
+		return fmt.Errorf("biased-n approximation: have %d, want %d", approxN, biasedN)
+	}
+
 	fmt.Printf("    0x%s, 0x%s, 0x%s, 0x%s, 0x%04X,  // 1e%-04d",
 		hex[24:], hex[16:24], hex[8:16], hex[:8], uint32(n)+bias, e)
 	if *detail {

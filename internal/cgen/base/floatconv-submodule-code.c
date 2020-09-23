@@ -1002,8 +1002,21 @@ wuffs_base__private_implementation__parse_number_f64_eisel_lemire(
   man <<= clz;
 
   // Calculate the return value's base-2 exponent. We might tweak it by ±1
-  // later, but its initial value comes from the look-up table and clz.
-  uint64_t ret_exp2 = ((uint64_t)po10[4]) - ((uint64_t)clz);
+  // later, but its initial value comes from a linear scaling of exp10,
+  // converting from power-of-10 to power-of-2, and adjusting by clz.
+  //
+  // The magic constants are:
+  //  - 1087 = 1023 + 64. The 1023 is the f64 exponent bias. The 64 is because
+  //    the look-up table uses 64-bit mantissas.
+  //  - 217706 is such that the ratio 217706 / 65536 ≈ 3.321930 is close enough
+  //    (over the practical range of exp10) to log(10) / log(2) ≈ 3.321928.
+  //  - 65536 = 1<<16 is arbitrary but a power of 2, so division is a shift.
+  //
+  // Equality of the linearly-scaled value and the actual power-of-2, over the
+  // range of exp10 arguments that this function accepts, is confirmed by
+  // script/print-mpb-powers-of-10.go
+  uint64_t ret_exp2 =
+      ((uint64_t)(((217706 * exp10) >> 16) + 1087)) - ((uint64_t)clz);
 
   // Multiply the two mantissas. Normalization means that both mantissas are at
   // least (1<<63), so the 128-bit product must be at least (1<<126). The high
