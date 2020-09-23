@@ -123,12 +123,12 @@
 //
 // See https://en.wikipedia.org/wiki/Double-precision_floating-point_format
 
-typedef struct {
+typedef struct wuffs_base__lossy_value_u16__struct {
   uint16_t value;
   bool lossy;
 } wuffs_base__lossy_value_u16;
 
-typedef struct {
+typedef struct wuffs_base__lossy_value_u32__struct {
   uint32_t value;
   bool lossy;
 } wuffs_base__lossy_value_u32;
@@ -498,7 +498,7 @@ wuffs_base__base_64__encode(wuffs_base__slice_u8 dst,
 
 // wuffs_base__utf_8__next__output is the type returned by
 // wuffs_base__utf_8__next.
-typedef struct {
+typedef struct wuffs_base__utf_8__next__output__struct {
   uint32_t code_point;
   uint32_t byte_length;
 

@@ -20,7 +20,7 @@
 
 // wuffs_base__io_buffer_meta is the metadata for a wuffs_base__io_buffer's
 // data.
-typedef struct {
+typedef struct wuffs_base__io_buffer_meta__struct {
   size_t wi;     // Write index. Invariant: wi <= len.
   size_t ri;     // Read  index. Invariant: ri <= wi.
   uint64_t pos;  // Buffer position (relative to the start of stream).
@@ -31,7 +31,7 @@ typedef struct {
 // additional metadata.
 //
 // A value with all fields zero is a valid, empty buffer.
-typedef struct {
+typedef struct wuffs_base__io_buffer__struct {
   wuffs_base__slice_u8 data;
   wuffs_base__io_buffer_meta meta;
 

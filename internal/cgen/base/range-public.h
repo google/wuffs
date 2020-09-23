@@ -814,7 +814,7 @@ wuffs_base__rect_ie_u32::height() const {
 // The flavor field follows the base38 namespace
 // convention](/doc/note/base38-and-fourcc.md). The other fields' semantics
 // depends on the flavor.
-typedef struct {
+typedef struct wuffs_base__more_information__struct {
   uint32_t flavor;
   uint32_t w;
   uint64_t x;

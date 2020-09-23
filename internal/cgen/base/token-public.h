@@ -19,7 +19,7 @@
 // wuffs_base__token is an element of a byte stream's tokenization.
 //
 // See https://github.com/google/wuffs/blob/master/doc/note/tokens.md
-typedef struct {
+typedef struct wuffs_base__token__struct {
   uint64_t repr;
 
 #ifdef __cplusplus
@@ -305,7 +305,7 @@ wuffs_base__empty_slice_token() {
 
 // wuffs_base__token_buffer_meta is the metadata for a
 // wuffs_base__token_buffer's data.
-typedef struct {
+typedef struct wuffs_base__token_buffer_meta__struct {
   size_t wi;     // Write index. Invariant: wi <= len.
   size_t ri;     // Read  index. Invariant: ri <= wi.
   uint64_t pos;  // Position of the buffer start relative to the stream start.
@@ -316,7 +316,7 @@ typedef struct {
 // plus additional metadata.
 //
 // A value with all fields zero is a valid, empty buffer.
-typedef struct {
+typedef struct wuffs_base__token_buffer__struct {
   wuffs_base__slice_token data;
   wuffs_base__token_buffer_meta meta;
 

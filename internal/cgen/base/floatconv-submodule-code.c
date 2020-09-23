@@ -197,7 +197,7 @@ wuffs_base__ieee_754_bit_representation__from_f64_to_u32_truncate(double f) {
 // digits can affect rounding.
 //
 // The "all fields are zero" value is valid, and represents the number +0.
-typedef struct {
+typedef struct wuffs_base__private_implementation__high_prec_dec__struct {
   uint32_t num_digits;
   int32_t decimal_point;
   bool negative;

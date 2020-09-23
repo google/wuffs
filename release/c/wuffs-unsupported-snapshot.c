@@ -137,7 +137,7 @@ extern "C" {
 // wuffs_base__empty_struct is used when a Wuffs function returns an empty
 // struct. In C, if a function f returns void, you can't say "x = f()", but in
 // Wuffs, if a function g returns empty, you can say "y = g()".
-typedef struct {
+typedef struct wuffs_base__empty_struct__struct {
   // private_impl is a placeholder field. It isn't explicitly used, except that
   // without it, the sizeof a struct with no fields can differ across C/C++
   // compilers, and it is undefined behavior in C99. For example, gcc says that
@@ -159,7 +159,7 @@ wuffs_base__make_empty_struct() {
 
 // wuffs_base__utility is a placeholder receiver type. It enables what Java
 // calls static methods, as opposed to regular methods.
-typedef struct {
+typedef struct wuffs_base__utility__struct {
   // private_impl is a placeholder field. It isn't explicitly used, except that
   // without it, the sizeof a struct with no fields can differ across C/C++
   // compilers, and it is undefined behavior in C99. For example, gcc says that
@@ -172,7 +172,7 @@ typedef struct {
   uint8_t private_impl;
 } wuffs_base__utility;
 
-typedef struct {
+typedef struct wuffs_base__vtable__struct {
   const char* vtable_name;
   const void* function_pointers;
 } wuffs_base__vtable;
@@ -180,7 +180,7 @@ typedef struct {
 // --------
 
 // See https://github.com/google/wuffs/blob/master/doc/note/statuses.md
-typedef struct {
+typedef struct wuffs_base__status__struct {
   const char* repr;
 
 #ifdef __cplusplus
@@ -322,7 +322,7 @@ typedef WUFFS_BASE__RESULT(uint64_t) wuffs_base__result_u64;
 
 // wuffs_base__transform__output is the result of transforming from a src slice
 // to a dst slice.
-typedef struct {
+typedef struct wuffs_base__transform__output__struct {
   wuffs_base__status status;
   size_t num_dst;
   size_t num_src;
@@ -511,7 +511,7 @@ wuffs_base__u64__sat_sub(uint64_t x, uint64_t y) {
 
 // --------
 
-typedef struct {
+typedef struct wuffs_base__multiply_u64__output__struct {
   uint64_t lo;
   uint64_t hi;
 } wuffs_base__multiply_u64__output;
@@ -1811,7 +1811,7 @@ wuffs_base__rect_ie_u32::height() const {
 // The flavor field follows the base38 namespace
 // convention](/doc/note/base38-and-fourcc.md). The other fields' semantics
 // depends on the flavor.
-typedef struct {
+typedef struct wuffs_base__more_information__struct {
   uint32_t flavor;
   uint32_t w;
   uint64_t x;
@@ -1946,7 +1946,7 @@ wuffs_base__more_information::metadata__range() const {
 
 // wuffs_base__io_buffer_meta is the metadata for a wuffs_base__io_buffer's
 // data.
-typedef struct {
+typedef struct wuffs_base__io_buffer_meta__struct {
   size_t wi;     // Write index. Invariant: wi <= len.
   size_t ri;     // Read  index. Invariant: ri <= wi.
   uint64_t pos;  // Buffer position (relative to the start of stream).
@@ -1957,7 +1957,7 @@ typedef struct {
 // additional metadata.
 //
 // A value with all fields zero is a valid, empty buffer.
-typedef struct {
+typedef struct wuffs_base__io_buffer__struct {
   wuffs_base__slice_u8 data;
   wuffs_base__io_buffer_meta meta;
 
@@ -2226,7 +2226,7 @@ wuffs_base__io_buffer::writer_slice() const {
 // wuffs_base__token is an element of a byte stream's tokenization.
 //
 // See https://github.com/google/wuffs/blob/master/doc/note/tokens.md
-typedef struct {
+typedef struct wuffs_base__token__struct {
   uint64_t repr;
 
 #ifdef __cplusplus
@@ -2512,7 +2512,7 @@ wuffs_base__empty_slice_token() {
 
 // wuffs_base__token_buffer_meta is the metadata for a
 // wuffs_base__token_buffer's data.
-typedef struct {
+typedef struct wuffs_base__token_buffer_meta__struct {
   size_t wi;     // Write index. Invariant: wi <= len.
   size_t ri;     // Read  index. Invariant: ri <= wi.
   uint64_t pos;  // Position of the buffer start relative to the stream start.
@@ -2523,7 +2523,7 @@ typedef struct {
 // plus additional metadata.
 //
 // A value with all fields zero is a valid, empty buffer.
-typedef struct {
+typedef struct wuffs_base__token_buffer__struct {
   wuffs_base__slice_token data;
   wuffs_base__token_buffer_meta meta;
 
@@ -2931,7 +2931,7 @@ typedef uint32_t wuffs_base__pixel_alpha_transparency;
 //
 // Do not manipulate its bits directly; they are private implementation
 // details. Use methods such as wuffs_base__pixel_format__num_planes instead.
-typedef struct {
+typedef struct wuffs_base__pixel_format__struct {
   uint32_t repr;
 
 #ifdef __cplusplus
@@ -3096,7 +3096,7 @@ wuffs_base__pixel_format::transparency() const {
 //
 // Do not manipulate its bits directly; they are private implementation
 // details. Use methods such as wuffs_base__pixel_subsampling__bias_x instead.
-typedef struct {
+typedef struct wuffs_base__pixel_subsampling__struct {
   uint32_t repr;
 
 #ifdef __cplusplus
@@ -3180,7 +3180,7 @@ wuffs_base__pixel_subsampling::denominator_y(uint32_t plane) const {
 
 // --------
 
-typedef struct {
+typedef struct wuffs_base__pixel_config__struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so.
   struct {
@@ -3390,7 +3390,7 @@ wuffs_base__pixel_config::pixbuf_len() const {
 
 // --------
 
-typedef struct {
+typedef struct wuffs_base__image_config__struct {
   wuffs_base__pixel_config pixcfg;
 
   // Do not access the private_impl's fields directly. There is no API/ABI
@@ -3560,7 +3560,7 @@ typedef uint8_t wuffs_base__animation_disposal;
 
 // --------
 
-typedef struct {
+typedef struct wuffs_base__frame_config__struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so.
   struct {
@@ -3794,7 +3794,7 @@ wuffs_base__frame_config::background_color() const {
 
 // --------
 
-typedef struct {
+typedef struct wuffs_base__pixel_buffer__struct {
   wuffs_base__pixel_config pixcfg;
 
   // Do not access the private_impl's fields directly. There is no API/ABI
@@ -4035,7 +4035,7 @@ wuffs_base__pixel_buffer::set_color_u32_at(
 
 // --------
 
-typedef struct {
+typedef struct wuffs_base__decode_frame_options__struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so.
   struct {
@@ -4078,7 +4078,7 @@ typedef uint64_t (*wuffs_base__pixel_swizzler__func)(uint8_t* dst_ptr,
                                                      const uint8_t* src_ptr,
                                                      size_t src_len);
 
-typedef struct {
+typedef struct wuffs_base__pixel_swizzler__struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so.
   struct {
@@ -4259,12 +4259,12 @@ wuffs_base__pixel_swizzler::swizzle_interleaved_from_slice(
 //
 // See https://en.wikipedia.org/wiki/Double-precision_floating-point_format
 
-typedef struct {
+typedef struct wuffs_base__lossy_value_u16__struct {
   uint16_t value;
   bool lossy;
 } wuffs_base__lossy_value_u16;
 
-typedef struct {
+typedef struct wuffs_base__lossy_value_u32__struct {
   uint32_t value;
   bool lossy;
 } wuffs_base__lossy_value_u32;
@@ -4634,7 +4634,7 @@ wuffs_base__base_64__encode(wuffs_base__slice_u8 dst,
 
 // wuffs_base__utf_8__next__output is the type returned by
 // wuffs_base__utf_8__next.
-typedef struct {
+typedef struct wuffs_base__utf_8__next__output__struct {
   uint32_t code_point;
   uint32_t byte_length;
 
@@ -10804,7 +10804,7 @@ wuffs_base__ieee_754_bit_representation__from_f64_to_u32_truncate(double f) {
 // digits can affect rounding.
 //
 // The "all fields are zero" value is valid, and represents the number +0.
-typedef struct {
+typedef struct wuffs_base__private_implementation__high_prec_dec__struct {
   uint32_t num_digits;
   int32_t decimal_point;
   bool negative;

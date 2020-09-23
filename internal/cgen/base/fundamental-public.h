@@ -103,7 +103,7 @@
 // wuffs_base__empty_struct is used when a Wuffs function returns an empty
 // struct. In C, if a function f returns void, you can't say "x = f()", but in
 // Wuffs, if a function g returns empty, you can say "y = g()".
-typedef struct {
+typedef struct wuffs_base__empty_struct__struct {
   // private_impl is a placeholder field. It isn't explicitly used, except that
   // without it, the sizeof a struct with no fields can differ across C/C++
   // compilers, and it is undefined behavior in C99. For example, gcc says that
@@ -125,7 +125,7 @@ wuffs_base__make_empty_struct() {
 
 // wuffs_base__utility is a placeholder receiver type. It enables what Java
 // calls static methods, as opposed to regular methods.
-typedef struct {
+typedef struct wuffs_base__utility__struct {
   // private_impl is a placeholder field. It isn't explicitly used, except that
   // without it, the sizeof a struct with no fields can differ across C/C++
   // compilers, and it is undefined behavior in C99. For example, gcc says that
@@ -138,7 +138,7 @@ typedef struct {
   uint8_t private_impl;
 } wuffs_base__utility;
 
-typedef struct {
+typedef struct wuffs_base__vtable__struct {
   const char* vtable_name;
   const void* function_pointers;
 } wuffs_base__vtable;
@@ -146,7 +146,7 @@ typedef struct {
 // --------
 
 // See https://github.com/google/wuffs/blob/master/doc/note/statuses.md
-typedef struct {
+typedef struct wuffs_base__status__struct {
   const char* repr;
 
 #ifdef __cplusplus
@@ -258,7 +258,7 @@ typedef WUFFS_BASE__RESULT(uint64_t) wuffs_base__result_u64;
 
 // wuffs_base__transform__output is the result of transforming from a src slice
 // to a dst slice.
-typedef struct {
+typedef struct wuffs_base__transform__output__struct {
   wuffs_base__status status;
   size_t num_dst;
   size_t num_src;
@@ -437,7 +437,7 @@ wuffs_base__u64__sat_sub(uint64_t x, uint64_t y) {
 
 // --------
 
-typedef struct {
+typedef struct wuffs_base__multiply_u64__output__struct {
   uint64_t lo;
   uint64_t hi;
 } wuffs_base__multiply_u64__output;

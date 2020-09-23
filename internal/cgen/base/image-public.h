@@ -147,7 +147,7 @@ typedef uint32_t wuffs_base__pixel_alpha_transparency;
 //
 // Do not manipulate its bits directly; they are private implementation
 // details. Use methods such as wuffs_base__pixel_format__num_planes instead.
-typedef struct {
+typedef struct wuffs_base__pixel_format__struct {
   uint32_t repr;
 
 #ifdef __cplusplus
@@ -312,7 +312,7 @@ wuffs_base__pixel_format::transparency() const {
 //
 // Do not manipulate its bits directly; they are private implementation
 // details. Use methods such as wuffs_base__pixel_subsampling__bias_x instead.
-typedef struct {
+typedef struct wuffs_base__pixel_subsampling__struct {
   uint32_t repr;
 
 #ifdef __cplusplus
@@ -396,7 +396,7 @@ wuffs_base__pixel_subsampling::denominator_y(uint32_t plane) const {
 
 // --------
 
-typedef struct {
+typedef struct wuffs_base__pixel_config__struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so.
   struct {
@@ -606,7 +606,7 @@ wuffs_base__pixel_config::pixbuf_len() const {
 
 // --------
 
-typedef struct {
+typedef struct wuffs_base__image_config__struct {
   wuffs_base__pixel_config pixcfg;
 
   // Do not access the private_impl's fields directly. There is no API/ABI
@@ -776,7 +776,7 @@ typedef uint8_t wuffs_base__animation_disposal;
 
 // --------
 
-typedef struct {
+typedef struct wuffs_base__frame_config__struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so.
   struct {
@@ -1010,7 +1010,7 @@ wuffs_base__frame_config::background_color() const {
 
 // --------
 
-typedef struct {
+typedef struct wuffs_base__pixel_buffer__struct {
   wuffs_base__pixel_config pixcfg;
 
   // Do not access the private_impl's fields directly. There is no API/ABI
@@ -1251,7 +1251,7 @@ wuffs_base__pixel_buffer::set_color_u32_at(
 
 // --------
 
-typedef struct {
+typedef struct wuffs_base__decode_frame_options__struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so.
   struct {
@@ -1294,7 +1294,7 @@ typedef uint64_t (*wuffs_base__pixel_swizzler__func)(uint8_t* dst_ptr,
                                                      const uint8_t* src_ptr,
                                                      size_t src_len);
 
-typedef struct {
+typedef struct wuffs_base__pixel_swizzler__struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so.
   struct {
