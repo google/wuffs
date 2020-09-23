@@ -993,8 +993,8 @@ wuffs_base__private_implementation__parse_number_f64_eisel_lemire(
   // Look up the (possibly truncated) base-2 representation of (10 ** exp10).
   // The look-up table was constructed so that it is already normalized: the
   // table entry's mantissa's MSB (most significant bit) is on.
-  const uint32_t* po10 =
-      &wuffs_base__private_implementation__powers_of_10[5 * (exp10 + 307)];
+  const uint64_t* po10 =
+      &wuffs_base__private_implementation__powers_of_10[exp10 + 307][0];
 
   // Normalize the man argument. The (man != 0) precondition means that a
   // non-zero bit exists.
@@ -1025,8 +1025,7 @@ wuffs_base__private_implementation__parse_number_f64_eisel_lemire(
   // As a consequence, x_hi has either 0 or 1 leading zeroes. Shifting x_hi
   // right by either 9 or 10 bits (depending on x_hi's MSB) will therefore
   // leave the top 10 MSBs (bits 54 ..= 63) off and the 11th MSB (bit 53) on.
-  wuffs_base__multiply_u64__output x = wuffs_base__multiply_u64(
-      man, ((uint64_t)po10[2]) | (((uint64_t)po10[3]) << 32));
+  wuffs_base__multiply_u64__output x = wuffs_base__multiply_u64(man, po10[1]);
   uint64_t x_hi = x.hi;
   uint64_t x_lo = x.lo;
 
@@ -1044,8 +1043,7 @@ wuffs_base__private_implementation__parse_number_f64_eisel_lemire(
     // a "low resolution" 64-bit mantissa. Now use a "high resolution" 128-bit
     // mantissa. We've already calculated x = (man * bits_0_to_63_incl_of_e).
     // Now calculate y = (man * bits_64_to_127_incl_of_e).
-    wuffs_base__multiply_u64__output y = wuffs_base__multiply_u64(
-        man, ((uint64_t)po10[0]) | (((uint64_t)po10[1]) << 32));
+    wuffs_base__multiply_u64__output y = wuffs_base__multiply_u64(man, po10[0]);
     uint64_t y_hi = y.hi;
     uint64_t y_lo = y.lo;
 

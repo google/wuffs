@@ -20,45 +20,42 @@ package main
 // binary (base-2) wuffs_base__private_implementation__powers_of_10 tables.
 //
 // When the approximation to (10 ** N) is not exact, the mantissa is truncated,
-// not rounded to nearest. The base-2 exponent is chosen so that the mantissa's
-// most signficant bit (bit 127) is set.
-//
-// The final uint32_t entry in each row-of-5 is biased by 1214, also known as
-// 0x04BE, which simplifies its use in f64conv-submodule.c.
+// not rounded to nearest. The base-2 exponent (an implicit third column) is
+// chosen so that the mantissa's most signficant bit (bit 127) is set.
 //
 // Usage: go run print-mpb-powers-of-10.go -detail
 //
 // With -detail set, its output should include:
 //
-// 0x79F8E056, 0xA5D3B6D4, 0x06306BAB, 0x8FD0C162, 0x0043,
+// {0xA5D3B6D479F8E056, 0x8FD0C16206306BAB},
 //    // 1e-307 ≈ (0x8FD0C16206306BABA5D3B6D479F8E056 >> 1147)
 //
-// 0x9877186C, 0x8F48A489, 0x87BC8696, 0xB3C4F1BA, 0x0046,
+// {0x8F48A4899877186C, 0xB3C4F1BA87BC8696},
 //    // 1e-306 ≈ (0xB3C4F1BA87BC86968F48A4899877186C >> 1144)
 //
 // ...
 //
-// 0x0A3D70A3, 0x3D70A3D7, 0x70A3D70A, 0xA3D70A3D, 0x0438,
+// {0x3D70A3D70A3D70A3, 0xA3D70A3D70A3D70A},
 //    // 1e-2   ≈ (0xA3D70A3D70A3D70A3D70A3D70A3D70A3 >>  134)
 //
-// 0xCCCCCCCC, 0xCCCCCCCC, 0xCCCCCCCC, 0xCCCCCCCC, 0x043B,
+// {0xCCCCCCCCCCCCCCCC, 0xCCCCCCCCCCCCCCCC},
 //    // 1e-1   ≈ (0xCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC >>  131)
 //
-// 0x00000000, 0x00000000, 0x00000000, 0x80000000, 0x043F,
+// {0x0000000000000000, 0x8000000000000000},
 //    // 1e0    ≈ (0x80000000000000000000000000000000 >>  127)
 //
-// 0x00000000, 0x00000000, 0x00000000, 0xA0000000, 0x0442,
+// {0x0000000000000000, 0xA000000000000000},
 //    // 1e1    ≈ (0xA0000000000000000000000000000000 >>  124)
 //
-// 0x00000000, 0x00000000, 0x00000000, 0xC8000000, 0x0445,
+// {0x0000000000000000, 0xC800000000000000},
 //    // 1e2    ≈ (0xC8000000000000000000000000000000 >>  121)
 //
 // ...
 //
-// 0xBFFF5A74, 0x5C68F256, 0x49EE8C70, 0xA81F3014, 0x07F8,
+// {0x5C68F256BFFF5A74, 0xA81F301449EE8C70},
 //    // 1e287  ≈ (0xA81F301449EE8C705C68F256BFFF5A74 <<  826)
 //
-// 0x6FFF3111, 0x73832EEC, 0x5C6A2F8C, 0xD226FC19, 0x07FB,
+// {0x73832EEC6FFF3111, 0xD226FC195C6A2F8C},
 //    // 1e288  ≈ (0xD226FC195C6A2F8C73832EEC6FFF3111 <<  829)
 
 import (
@@ -83,8 +80,8 @@ func main1() error {
 	flag.Parse()
 
 	const count = 1 + (+288 - -307)
-	fmt.Printf("static const uint32_t "+
-		"wuffs_base__private_implementation__powers_of_10[%d] = {\n", 5*count)
+	fmt.Printf("static const uint64_t "+
+		"wuffs_base__private_implementation__powers_of_10[%d][2] = {\n", count)
 	for e := -307; e <= +288; e++ {
 		if err := do(e); err != nil {
 			return err
@@ -136,8 +133,8 @@ func do(e int) error {
 		return fmt.Errorf("biased-n approximation: have %d, want %d", approxN, biasedN)
 	}
 
-	fmt.Printf("    0x%s, 0x%s, 0x%s, 0x%s, 0x%04X,  // 1e%-04d",
-		hex[24:], hex[16:24], hex[8:16], hex[:8], uint32(n)+bias, e)
+	fmt.Printf("    {0x%s, 0x%s},  // 1e%-04d",
+		hex[16:], hex[:16], e)
 	if *detail {
 		fmt.Printf(" ≈ (0x%s ", hex)
 		if n >= 0 {
