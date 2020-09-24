@@ -170,9 +170,6 @@ pub const QUIRK_ALLOW_LEADING_UNICODE_BYTE_ORDER_MARK : base.u32 = 0x4909_9400 |
 // quirk will consume multiple trailing '\n' bytes.
 pub const QUIRK_ALLOW_TRAILING_FILLER : base.u32 = 0x4909_9400 | 0x11
 
-// Deprecated: equivalent to QUIRK_ALLOW_TRAILING_FILLER.
-pub const QUIRK_ALLOW_TRAILING_COMMENT : base.u32 = 0x4909_9400 | 0x11
-
 // When this quirk is enabled, following a successful decoding of a top-level
 // JSON value, any trailing whitespace (ASCII characters 0x09, 0x0A, 0x0D or
 // 0x20) is also consumed (and WUFFS_BASE__TOKEN__VBC__FILLER tokens emitted)
@@ -208,9 +205,6 @@ pub const QUIRK_ALLOW_TRAILING_COMMENT : base.u32 = 0x4909_9400 | 0x11
 // is also known as RFC 7464, Json Text Sequences and MIME type
 // "application/json-seq".
 pub const QUIRK_EXPECT_TRAILING_NEW_LINE_OR_EOF : base.u32 = 0x4909_9400 | 0x12
-
-// Deprecated: equivalent to QUIRK_EXPECT_TRAILING_NEW_LINE_OR_EOF.
-pub const QUIRK_ALLOW_TRAILING_NEW_LINE : base.u32 = 0x4909_9400 | 0x12
 
 // When this quirk is enabled, JSON Pointer strings containing "~r" or "~n",
 // which would otherwise be invalid, are unescaped as "\r" or "\n".
