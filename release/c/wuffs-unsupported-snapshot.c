@@ -4774,7 +4774,7 @@ wuffs_base__ascii__longest_valid_prefix(const uint8_t* s_ptr, size_t s_len);
 
 extern const char wuffs_base__hasher_u32__vtable_name[];
 
-typedef struct {
+typedef struct wuffs_base__hasher_u32__func_ptrs__struct {
   wuffs_base__empty_struct (*set_quirk_enabled)(
     void* self,
     uint32_t a_quirk,
@@ -4835,7 +4835,7 @@ struct wuffs_base__hasher_u32__struct {
 
 extern const char wuffs_base__image_decoder__vtable_name[];
 
-typedef struct {
+typedef struct wuffs_base__image_decoder__func_ptrs__struct {
   wuffs_base__status (*decode_frame)(
     void* self,
     wuffs_base__pixel_buffer* a_dst,
@@ -5056,7 +5056,7 @@ struct wuffs_base__image_decoder__struct {
 
 extern const char wuffs_base__io_transformer__vtable_name[];
 
-typedef struct {
+typedef struct wuffs_base__io_transformer__func_ptrs__struct {
   wuffs_base__empty_struct (*set_quirk_enabled)(
     void* self,
     uint32_t a_quirk,
@@ -5134,7 +5134,7 @@ struct wuffs_base__io_transformer__struct {
 
 extern const char wuffs_base__token_decoder__vtable_name[];
 
-typedef struct {
+typedef struct wuffs_base__token_decoder__func_ptrs__struct {
   wuffs_base__status (*decode_tokens)(
     void* self,
     wuffs_base__token_buffer* a_dst,

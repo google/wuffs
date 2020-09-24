@@ -387,7 +387,7 @@ func insertInterfaceDeclarations(buf *buffer) error {
 
 		buf.printf("extern const char wuffs_base__%s__vtable_name[];\n\n", n)
 
-		buf.writes("typedef struct {\n")
+		buf.printf("typedef struct wuffs_base__%s__func_ptrs__struct {\n", n)
 		for _, f := range builtInInterfaceMethods[qid] {
 			buf.writes("  ")
 			if err := g.writeFuncSignature(buf, f, wfsCFuncPtrField); err != nil {
