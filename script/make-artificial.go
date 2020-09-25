@@ -958,40 +958,51 @@ outer:
 		s := line[len(cmdGC):]
 
 		flags := uint8(0)
-		if i := strings.IndexByte(s, ' '); i < 0 {
-			break
-		} else {
-			switch s[:i] {
-			case "animationDisposalNone":
+		duration := uint32(0)
+		transparentIndex := uint32(0)
+		for s != "" {
+			term := ""
+			if i := strings.IndexByte(s, ' '); i >= 0 {
+				term, s = s[:i], s[i+1:]
+			} else {
+				term, s = s, ""
+			}
+
+			const (
+				ms    = "ms"
+				trans = "transparentIndex="
+			)
+			switch {
+			case term == "animationDisposalNone":
 				flags |= 0x00
-			case "animationDisposalRestoreBackground":
+			case term == "animationDisposalRestoreBackground":
 				flags |= 0x08
-			case "animationDisposalRestorePrevious":
+			case term == "animationDisposalRestorePrevious":
 				flags |= 0x0C
+			case strings.HasPrefix(term, trans):
+				num, remaining, ok := parseNum(term[len(trans):])
+				if !ok || remaining != "" {
+					break outer
+				}
+				flags |= 0x01
+				transparentIndex = num
+			case strings.HasSuffix(term, ms):
+				num, remaining, ok := parseNum(term[:len(term)-len(ms)])
+				if !ok || remaining != "" {
+					break outer
+				}
+				duration = num / 10 // GIF's unit of time is 10ms.
 			default:
 				break outer
 			}
-			s = s[i+1:]
 		}
-
-		if !strings.HasSuffix(s, "ms") {
-			break
-		}
-		s = s[:len(s)-2]
-		duration, s, ok := parseNum(s)
-		if !ok || s != "" {
-			break
-		}
-		duration /= 10 // GIF's unit of time is 10ms.
-
-		transparentIndex := uint8(0)
 
 		out = append(out,
 			0x21, 0xF9, 0x04,
 			flags,
 			uint8(duration>>0),
 			uint8(duration>>8),
-			transparentIndex,
+			uint8(transparentIndex),
 			0x00,
 		)
 		return stateGif, nil
