@@ -959,7 +959,7 @@ outer:
 
 		flags := uint8(0)
 		duration := uint32(0)
-		transparentIndex := uint32(0)
+		transparentIndex := uint8(0)
 		for s != "" {
 			term := ""
 			if i := strings.IndexByte(s, ' '); i >= 0 {
@@ -980,12 +980,12 @@ outer:
 			case term == "animationDisposalRestorePrevious":
 				flags |= 0x0C
 			case strings.HasPrefix(term, trans):
-				num, remaining, ok := parseNum(term[len(trans):])
-				if !ok || remaining != "" {
+				num, err := strconv.ParseUint(term[len(trans):], 0, 8)
+				if err != nil {
 					break outer
 				}
 				flags |= 0x01
-				transparentIndex = num
+				transparentIndex = uint8(num)
 			case strings.HasSuffix(term, ms):
 				num, remaining, ok := parseNum(term[:len(term)-len(ms)])
 				if !ok || remaining != "" {
@@ -1002,7 +1002,7 @@ outer:
 			flags,
 			uint8(duration>>0),
 			uint8(duration>>8),
-			uint8(transparentIndex),
+			transparentIndex,
 			0x00,
 		)
 		return stateGif, nil
