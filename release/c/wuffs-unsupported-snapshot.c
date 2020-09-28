@@ -11641,6 +11641,12 @@ wuffs_base__private_implementation__parse_number_f64_eisel_lemire(
   // If overflow occurs, that adds 1 to x_hi. Since we're about to shift right
   // by at least 9 bits, that carried 1 can be ignored unless the higher 64-bit
   // limb's low 9 bits are all on.
+  //
+  // For example, parsing "9999999999999999999" will take the if-true branch
+  // here, since:
+  //  - x_hi = 0x4563918244F3FFFF
+  //  - x_lo = 0x8000000000000000
+  //  - man  = 0x8AC7230489E7FFFF
   if (((x_hi & 0x1FF) == 0x1FF) && ((x_lo + man) < man)) {
     // Refine our calculation of (man * e). Before, our approximation of e used
     // a "low resolution" 64-bit mantissa. Now use a "high resolution" 128-bit
@@ -11654,6 +11660,13 @@ wuffs_base__private_implementation__parse_number_f64_eisel_lemire(
     // calculate the 192-bit product of the 64-bit man by the 128-bit e.
     // As we exit this if-block, we only care about the high 128 bits
     // (merged_hi and merged_lo) of that 192-bit product.
+    //
+    // For example, parsing "1.234e-45" will take the if-true branch here,
+    // since:
+    //  - x_hi = 0x70B7E3696DB29FFF
+    //  - x_lo = 0xE040000000000000
+    //  - y_hi = 0x33718BBEAB0E0D7A
+    //  - y_lo = 0xA880000000000000
     uint64_t merged_hi = x_hi;
     uint64_t merged_lo = x_lo + y_hi;
     if (merged_lo < x_lo) {
@@ -11668,6 +11681,13 @@ wuffs_base__private_implementation__parse_number_f64_eisel_lemire(
     // This three-part check is similar to the two-part check that guarded the
     // if block that we're now in, but it has an extra term for the middle 64
     // bits (checking that adding 1 to merged_lo would overflow).
+    //
+    // For example, parsing "5.9604644775390625e-8" will take the if-true
+    // branch here, since:
+    //  - merged_hi = 0x7FFFFFFFFFFFFFFF
+    //  - merged_lo = 0xFFFFFFFFFFFFFFFF
+    //  - y_lo      = 0x4DB3FFC120988200
+    //  - man       = 0xD3C21BCECCEDA100
     if (((merged_hi & 0x1FF) == 0x1FF) && ((merged_lo + 1) == 0) &&
         (y_lo + man < man)) {
       return -1;
@@ -11695,6 +11715,10 @@ wuffs_base__private_implementation__parse_number_f64_eisel_lemire(
   //
   // Technically, we could tighten the condition by changing "73" to "73 or 74,
   // depending on msb", but a flat "73" is simpler.
+  //
+  // For example, parsing "1e+23" will take the if-true branch here, since:
+  //  - x_hi          = 0x54B40B1F852BDA00
+  //  - ret_mantissa  = 0x002A5A058FC295ED
   if ((x_lo == 0) && ((x_hi & 0x1FF) == 0) && ((ret_mantissa & 3) == 1)) {
     return -1;
   }
@@ -11710,6 +11734,11 @@ wuffs_base__private_implementation__parse_number_f64_eisel_lemire(
   //    uint64_t overflow_adjustment = ret_mantissa >> 53;
   //    ret_mantissa >>= overflow_adjustment;
   //    ret_exp2 += overflow_adjustment;
+  //
+  // For example, parsing "7.2057594037927933e+16" will take the if-true
+  // branch here, since:
+  //  - x_hi          = 0x7FFFFFFFFFFFFE80
+  //  - ret_mantissa  = 0x0020000000000000
   if ((ret_mantissa >> 53) > 0) {
     ret_mantissa >>= 1;
     ret_exp2++;
