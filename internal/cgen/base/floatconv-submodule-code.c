@@ -975,6 +975,8 @@ wuffs_base__private_implementation__high_prec_dec__round_just_enough(
 // The algorithm is based on an original idea by Michael Eisel that was refined
 // by Daniel Lemire. See
 // https://lemire.me/blog/2020/03/10/fast-float-parsing-in-practice/
+// and
+// https://nigeltao.github.io/blog/2020/eisel-lemire.html
 //
 // Preconditions:
 //  - man is non-zero.
