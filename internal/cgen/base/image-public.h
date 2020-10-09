@@ -736,28 +736,6 @@ wuffs_base__image_config::first_frame_is_opaque() const {
 
 // --------
 
-// Deprecated: use wuffs_base__pixel_blend instead.
-//
-// wuffs_base__animation_blend encodes, for an animated image, how to blend the
-// transparent pixels of this frame with the existing canvas. In Porter-Duff
-// compositing operator terminology:
-//  - 0 means the frame may be transparent, and should be blended "src over
-//    dst", also known as just "over".
-//  - 1 means the frame may be transparent, and should be blended "src".
-//  - 2 means the frame is completely opaque, so that "src over dst" and "src"
-//    are equivalent.
-//
-// These semantics are conservative. It is valid for a completely opaque frame
-// to have a blend value other than 2.
-typedef uint8_t wuffs_base__animation_blend;
-
-#define WUFFS_BASE__ANIMATION_BLEND__SRC_OVER_DST \
-  ((wuffs_base__animation_blend)0)
-#define WUFFS_BASE__ANIMATION_BLEND__SRC ((wuffs_base__animation_blend)1)
-#define WUFFS_BASE__ANIMATION_BLEND__OPAQUE ((wuffs_base__animation_blend)2)
-
-// --------
-
 // wuffs_base__animation_disposal encodes, for an animated image, how to
 // dispose of a frame after displaying it:
 //  - None means to draw the next frame on top of this one.
