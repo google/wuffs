@@ -15,15 +15,15 @@
 // ----------------
 
 // manual-test-parse-number-f64.c tests Wuffs' parse_number_f64 function. The
-// https://github.com/nigeltao/parse-number-f64-test-data repository contains
+// https://github.com/nigeltao/parse-number-fxx-test-data repository contains
 // the data files, containing one test case per line, like:
 //
-// 3FF0000000000000 1
-// 3FF4000000000000 1.25
-// 3FF6666666666666 1.4
-// 405EDD2F1A9FBE77 123.456
-// 4088A80000000000 789
-// 7FF0000000000000 123.456e789
+// 3C00 3F800000 3FF0000000000000 1
+// 3D00 3FA00000 3FF4000000000000 1.25
+// 3D9A 3FB33333 3FF6666666666666 1.4
+// 57B7 42F6E979 405EDD2F1A9FBE77 123.456
+// 622A 44454000 4088A80000000000 789
+// 7C00 7F800000 7FF0000000000000 123.456e789
 
 #include <inttypes.h>
 #include <stdio.h>
@@ -74,7 +74,7 @@ const uint8_t hex[256] = {
     0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // 0x48-0x4F
     0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // 0x50-0x57
     0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // 0x58-0x5F
-    0x0, 0xA, 0xB, 0xC, 0xD, 0xE, 0xF, 0x0,  // 0x60-0x67 A-F
+    0x0, 0xA, 0xB, 0xC, 0xD, 0xE, 0xF, 0x0,  // 0x60-0x67 a-f
     0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // 0x68-0x6F
     0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // 0x70-0x77
     0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // 0x78-0x7F
@@ -146,7 +146,7 @@ fail(const char* impl, const char* z, uint64_t have, uint64_t want) {
 
 bool  //
 process_line(wuffs_base__slice_u8 s) {
-  if (s.len < 18) {
+  if (s.len < 32) {
     fprintf(stderr, "main: short input at %s:%" PRIu64 "\n", g_filename,
             g_line);
     return false;
@@ -155,11 +155,11 @@ process_line(wuffs_base__slice_u8 s) {
     return false;
   }
   uint64_t want = 0;
-  for (int i = 0; i < 16; i++) {
+  for (int i = 14; i < 30; i++) {
     want = (want << 4) | hex[s.ptr[i]];
   }
-  s.ptr += 17;
-  s.len -= 17;
+  s.ptr += 31;
+  s.len -= 31;
 
   // Convert ".123" to "0.123". Not all parsers like a leading dot.
   if (s.ptr[0] == '.') {
