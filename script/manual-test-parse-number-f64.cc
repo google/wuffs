@@ -52,12 +52,19 @@
 // program to generate a stand-alone C++ file.
 #include "../release/c/wuffs-unsupported-snapshot.c"
 
-// Uncomment this to use the github.com/lemire/fast_double_parser library. This
-// header-only library is C++, not C.
+// Uncomment one or all of these to use the
+//  - github.com/lemire/fast_double_parser
+//  - github.com/lemire/fast_float
+// libraries. These header-only libraries are C++, not C.
+//
 // #define USE_LEMIRE_FAST_DOUBLE_PARSER
+// #define USE_LEMIRE_FAST_FLOAT
 
 #ifdef USE_LEMIRE_FAST_DOUBLE_PARSER
 #include "/the/path/to/fast_double_parser/include/fast_double_parser.h"
+#endif
+#ifdef USE_LEMIRE_FAST_FLOAT
+#include "/the/path/to/fast_float/include/fast_float/fast_float.h"
 #endif
 
 const uint8_t hex[256] = {
@@ -140,8 +147,10 @@ fail(const char* impl, const char* z, uint64_t have, uint64_t want) {
   fprintf(stderr, "main: %s mismatch at %s:%" PRIu64 "\n", impl, g_filename,
           g_line);
   fprintf(stderr, "src:  %s\n", z);
-  fprintf(stderr, "have: %016" PRIX64 "\n", have);
-  fprintf(stderr, "want: %016" PRIX64 "\n", want);
+  fprintf(stderr, "have: 0x%016" PRIX64 " %f\n", have,
+          wuffs_base__ieee_754_bit_representation__from_u64_to_f64(have));
+  fprintf(stderr, "want: 0x%016" PRIX64 " %f\n", want,
+          wuffs_base__ieee_754_bit_representation__from_u64_to_f64(want));
 }
 
 bool  //
@@ -193,13 +202,34 @@ process_line(wuffs_base__slice_u8 s) {
     double have_f64;
     if (!fast_double_parser::decimal_separator_dot::parse_number(&z[0],
                                                                  &have_f64)) {
-      fail_parse("lemire", z);
+      fail_parse("lemire/fast_double_parser", &z[0]);
       return false;
     }
     uint64_t have =
         wuffs_base__ieee_754_bit_representation__from_f64_to_u64(have_f64);
     if (have != want) {
-      fail("lemire", &z[0], have, want);
+      fail("lemire/fast_double_parser", &z[0], have, want);
+      return false;
+    }
+  }
+#endif
+
+#ifdef USE_LEMIRE_FAST_FLOAT
+  // Check lemire/fast_float's from_chars.
+  {
+    double have_f64;
+    fast_float::from_chars_result result = fast_float::from_chars(
+        static_cast<char*>(static_cast<void*>(s.ptr)),
+        static_cast<char*>(static_cast<void*>(s.ptr + s.len)), have_f64,
+        fast_float::chars_format::general);
+    if (result.ec != std::errc()) {
+      fail_parse("lemire/fast_float", &z[0]);
+      return false;
+    }
+    uint64_t have =
+        wuffs_base__ieee_754_bit_representation__from_f64_to_u64(have_f64);
+    if (have != want) {
+      fail("lemire/fast_float", &z[0], have, want);
       return false;
     }
   }
@@ -210,7 +240,7 @@ process_line(wuffs_base__slice_u8 s) {
     wuffs_base__result_f64 res = wuffs_base__parse_number_f64(
         s, WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS);
     if (res.status.repr) {
-      fail_parse("wuffs", z);
+      fail_parse("wuffs", &z[0]);
       return false;
     }
     uint64_t have =
