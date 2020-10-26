@@ -1,8 +1,8 @@
-# Wrangling Untrusted File Formats Safely
+![WUFFS Logo](./doc/logo/wuffs-acronym-logo-1536x1024.png)
 
-([Formerly known as
-Puffs](https://groups.google.com/d/topic/puffslang/ZX-ymyf8xh0/discussion):
-Parsing Untrusted File Formats Safely).
+Wuffs (Wrangling Untrusted File Formats Safely) is [formerly known as
+Puffs](https://groups.google.com/d/topic/puffslang/ZX-ymyf8xh0/discussion)
+(Parsing Untrusted File Formats Safely).
 
 Wuffs is a **memory-safe programming language** (and a **standard library**
 written in that language) for wrangling **untrusted file formats** safely.
