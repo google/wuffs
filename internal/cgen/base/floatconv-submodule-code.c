@@ -680,7 +680,6 @@ wuffs_base__private_implementation__high_prec_dec__small_rshift(
     // After the shift, h's number is effectively zero.
     h->num_digits = 0;
     h->decimal_point = 0;
-    h->negative = false;
     h->truncated = false;
     return;
   }
@@ -1307,6 +1306,9 @@ wuffs_base__private_implementation__high_prec_dec__to_f64(
       }
     }
 
+    // When Eisel-Lemire fails, fall back to Simple Decimal Conversion. See
+    // https://nigeltao.github.io/blog/2020/parse-number-f64-simple.html
+    //
     // Scale by powers of 2 until we're in the range [½ .. 1], which gives us
     // our exponent (in base-2). First we shift right, possibly a little too
     // far, ending with a value certainly below 1 and possibly below ½...
