@@ -18535,8 +18535,8 @@ wuffs_deflate__decoder__decode_blocks(
           uint32_t t_0 = *iop_a_src++;
           v_b0 = t_0;
         }
-        self->private_impl.f_bits |= (v_b0 << self->private_impl.f_n_bits);
-        self->private_impl.f_n_bits += 8;
+        self->private_impl.f_bits |= (v_b0 << (self->private_impl.f_n_bits & 3));
+        self->private_impl.f_n_bits = ((self->private_impl.f_n_bits & 3) + 8);
       }
       v_final = (self->private_impl.f_bits & 1);
       v_type = ((self->private_impl.f_bits >> 1) & 3);

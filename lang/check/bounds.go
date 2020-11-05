@@ -195,6 +195,14 @@ func invert(tm *t.Map, n *a.Expr) (*a.Expr, error) {
 	return o, nil
 }
 
+func updateFactsForSuspension(x *a.Expr) (*a.Expr, error) {
+	if x.Mentions(exprArgs) || x.Mentions(exprThis) {
+		return nil, nil
+	}
+	// TODO: drop any facts involving ptr-typed local variables?
+	return x, nil
+}
+
 func (q *checker) bcheckBlock(block []*a.Node) error {
 	unreachable := false
 	for _, o := range block {
@@ -213,16 +221,9 @@ func (q *checker) bcheckBlock(block []*a.Node) error {
 			// No-op.
 		case a.KRet:
 			if o.AsRet().Keyword() == t.IDYield {
-				// Drop any facts involving args or this.
-				if err := q.facts.update(func(x *a.Expr) (*a.Expr, error) {
-					if x.Mentions(exprArgs) || x.Mentions(exprThis) {
-						return nil, nil
-					}
-					return x, nil
-				}); err != nil {
+				if err := q.facts.update(updateFactsForSuspension); err != nil {
 					return err
 				}
-				// TODO: drop any facts involving ptr-typed local variables?
 				continue
 			}
 		}
@@ -421,6 +422,12 @@ func (q *checker) bcheckAssignment(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 	nb, err := q.bcheckAssignment1(lhs, lTyp, op, rhs)
 	if err != nil {
 		return err
+	}
+
+	if rhs.Effect().Coroutine() && (op != t.IDEqQuestion) {
+		if err := q.facts.update(updateFactsForSuspension); err != nil {
+			return err
+		}
 	}
 
 	if lhs == nil {

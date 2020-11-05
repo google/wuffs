@@ -228,8 +228,8 @@ pri func decoder.decode_blocks?(dst: base.io_writer, src: base.io_reader) {
 			post this.n_bits >= 3,
 		{
 			b0 = args.src.read_u8_as_u32?()
-			this.bits |= b0 << this.n_bits
-			this.n_bits += 8
+			this.bits |= b0 << (this.n_bits & 3)
+			this.n_bits = (this.n_bits & 3) + 8
 		} endwhile
 		final = this.bits & 0x01
 		type = (this.bits >> 1) & 0x03
