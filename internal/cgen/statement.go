@@ -146,8 +146,6 @@ func (g *gen) writeStatementAssign0(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr
 				return false, err
 			}
 			b.writes("status = ")
-		} else if rhs.Effect().Coroutine() {
-			b.writes("status = ")
 		}
 
 		if !hack {
