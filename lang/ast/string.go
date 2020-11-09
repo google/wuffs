@@ -21,7 +21,7 @@ import (
 // Str returns a string form of n.
 func (n *Expr) Str(tm *t.Map) string {
 	if n == nil {
-		return ""
+		return "«nilExpr»"
 	}
 	if n.id0 == 0 && n.id1 == 0 {
 		return tm.ByID(n.id2)
@@ -191,7 +191,7 @@ var opStrings = [...]string{
 // Str returns a string form of n.
 func (n *TypeExpr) Str(tm *t.Map) string {
 	if n == nil {
-		return ""
+		return "«nilTypeExpr»"
 	}
 	if n.Decorator() == 0 && n.Min() == nil && n.Max() == nil {
 		return n.QID().Str(tm)
