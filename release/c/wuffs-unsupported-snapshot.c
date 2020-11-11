@@ -18448,10 +18448,10 @@ wuffs_deflate__decoder__transform_io(
           a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
         }
         wuffs_base__status t_0 = wuffs_deflate__decoder__decode_blocks(self, a_dst, a_src);
+        v_status = t_0;
         if (a_dst) {
           iop_a_dst = a_dst->data.ptr + a_dst->meta.wi;
         }
-        v_status = t_0;
       }
       if ( ! wuffs_base__status__is_suspension(&v_status)) {
         status = v_status;
@@ -24726,8 +24726,8 @@ wuffs_gif__decoder__decode_id_part2(
           {
             u_r.meta.ri = ((size_t)(iop_v_r - u_r.data.ptr));
             wuffs_base__status t_1 = wuffs_lzw__decoder__transform_io(&self->private_data.f_lzw, &empty_io_buffer, v_r, wuffs_base__utility__empty_slice_u8());
-            iop_v_r = u_r.data.ptr + u_r.meta.ri;
             v_lzw_status = t_1;
+            iop_v_r = u_r.data.ptr + u_r.meta.ri;
           }
           wuffs_base__u64__sat_add_indirect(&self->private_impl.f_compressed_ri, wuffs_base__io__count_since(v_mark, ((uint64_t)(iop_v_r - io0_v_r))));
           v_r = o_0_v_r;
@@ -25327,13 +25327,13 @@ wuffs_gzip__decoder__transform_io(
           a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
         }
         wuffs_base__status t_7 = wuffs_deflate__decoder__transform_io(&self->private_data.f_flate, a_dst, a_src, a_workbuf);
+        v_status = t_7;
         if (a_dst) {
           iop_a_dst = a_dst->data.ptr + a_dst->meta.wi;
         }
         if (a_src) {
           iop_a_src = a_src->data.ptr + a_src->meta.ri;
         }
-        v_status = t_7;
       }
       if ( ! self->private_impl.f_ignore_checksum) {
         v_checksum_got = wuffs_crc32__ieee_hasher__update_u32(&self->private_data.f_checksum, wuffs_base__io__since(v_mark, ((uint64_t)(iop_a_dst - io0_a_dst)), io0_a_dst));
@@ -28849,13 +28849,13 @@ wuffs_zlib__decoder__transform_io(
           a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
         }
         wuffs_base__status t_2 = wuffs_deflate__decoder__transform_io(&self->private_data.f_flate, a_dst, a_src, a_workbuf);
+        v_status = t_2;
         if (a_dst) {
           iop_a_dst = a_dst->data.ptr + a_dst->meta.wi;
         }
         if (a_src) {
           iop_a_src = a_src->data.ptr + a_src->meta.ri;
         }
-        v_status = t_2;
       }
       if ( ! self->private_impl.f_ignore_checksum) {
         v_checksum_got = wuffs_adler32__hasher__update_u32(&self->private_data.f_checksum, wuffs_base__io__since(v_mark, ((uint64_t)(iop_a_dst - io0_a_dst)), io0_a_dst));

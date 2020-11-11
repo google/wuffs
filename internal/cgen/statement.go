@@ -81,28 +81,49 @@ func (g *gen) writeStatementAssign(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr,
 	}
 	depth++
 
-	hack, err := g.writeStatementAssign0(b, op, lhs, rhs)
-	if err != nil {
-		return err
+	needWriteLoadExprDerivedVars := false
+	if (len(g.currFunk.derivedVars) > 0) &&
+		(rhs.Operator() == t.IDOpenParen) {
+		method := rhs.LHS().AsExpr()
+		recvTyp := method.LHS().MType().Pointee()
+		if (recvTyp.Decorator() == 0) && (recvTyp.QID()[0] != t.IDBase) {
+			n := len(*b)
+			if err := g.writeSaveExprDerivedVars(b, rhs); err != nil {
+				return err
+			}
+			needWriteLoadExprDerivedVars = n != len(*b)
+		}
 	}
+
+	couldSuspend := false
+	if err := g.writeBuiltinQuestionCall(b, rhs, 0); err == nil {
+		// No-op.
+	} else if err != errNoSuchBuiltin {
+		return err
+	} else {
+		if _, err := g.writeStatementAssign0(b, op, lhs, rhs); err != nil {
+			return err
+		}
+		couldSuspend = (op != t.IDEqQuestion) && rhs.Effect().Coroutine()
+	}
+
 	if lhs != nil {
 		if err := g.writeStatementAssign1(b, op, lhs, rhs); err != nil {
 			return err
 		}
 	}
-	if hack {
+	if needWriteLoadExprDerivedVars {
 		if err := g.writeLoadExprDerivedVars(b, rhs); err != nil {
 			return err
 		}
+	}
+	if couldSuspend {
+		b.writes("if (status.repr) {\ngoto suspend;\n}\n")
 	}
 	return nil
 }
 
 func (g *gen) writeStatementAssign0(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr) (bool, error) {
-	if err := g.writeBuiltinQuestionCall(b, rhs, 0); err != errNoSuchBuiltin {
-		return false, err
-	}
-
 	doWork, hack := (lhs == nil) || rhs.Effect().Coroutine(), false
 	if !doWork && (rhs.Operator() == t.IDOpenParen) && (len(g.currFunk.derivedVars) > 0) {
 		// TODO: tighten this heuristic for filtering out all but user-defined
@@ -129,10 +150,6 @@ func (g *gen) writeStatementAssign0(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr
 	}
 
 	if doWork {
-		if err := g.writeSaveExprDerivedVars(b, rhs); err != nil {
-			return false, err
-		}
-
 		if op == t.IDEqQuestion {
 			if g.currFunk.tempW > maxTemp {
 				return false, fmt.Errorf("too many temporary variables required")
@@ -153,14 +170,6 @@ func (g *gen) writeStatementAssign0(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr
 				return false, err
 			}
 			b.writes(";\n")
-
-			if err := g.writeLoadExprDerivedVars(b, rhs); err != nil {
-				return false, err
-			}
-		}
-
-		if op != t.IDEqQuestion && rhs.Effect().Coroutine() {
-			b.writes("if (status.repr) {\ngoto suspend;\n}\n")
 		}
 	}
 
