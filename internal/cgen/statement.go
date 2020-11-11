@@ -101,7 +101,7 @@ func (g *gen) writeStatementAssign(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr,
 	} else if err != errNoSuchBuiltin {
 		return err
 	} else {
-		if _, err := g.writeStatementAssign0(b, op, lhs, rhs); err != nil {
+		if err := g.writeStatementAssign0(b, op, lhs, rhs); err != nil {
 			return err
 		}
 		couldSuspend = (op != t.IDEqQuestion) && rhs.Effect().Coroutine()
@@ -123,36 +123,11 @@ func (g *gen) writeStatementAssign(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr,
 	return nil
 }
 
-func (g *gen) writeStatementAssign0(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr) (bool, error) {
-	doWork, hack := (lhs == nil) || rhs.Effect().Coroutine(), false
-	if !doWork && (rhs.Operator() == t.IDOpenParen) && (len(g.currFunk.derivedVars) > 0) {
-		// TODO: tighten this heuristic for filtering out all but user-defined
-		// method receivers.
-		method := rhs.LHS().AsExpr()
-		if (method == nil) || !method.LHS().MType().IsPointerType() {
-			return false, nil
-		}
-		for _, arg := range rhs.Args() {
-			v := arg.AsArg().Value()
-			// TODO: walk v, not just check it for an exact match for
-			// "args.foo", for some foo in derivedVars?
-			if v.Operator() != t.IDDot {
-				continue
-			}
-			if vLHS := v.LHS().AsExpr(); vLHS.Operator() != 0 || vLHS.Ident() != t.IDArgs {
-				continue
-			}
-			if _, ok := g.currFunk.derivedVars[v.Ident()]; ok {
-				doWork, hack = true, true
-				break
-			}
-		}
-	}
-
-	if doWork {
+func (g *gen) writeStatementAssign0(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr) error {
+	if (lhs == nil) || rhs.Effect().Coroutine() {
 		if op == t.IDEqQuestion {
 			if g.currFunk.tempW > maxTemp {
-				return false, fmt.Errorf("too many temporary variables required")
+				return fmt.Errorf("too many temporary variables required")
 			}
 			temp := g.currFunk.tempW
 			g.currFunk.tempW++
@@ -160,20 +135,18 @@ func (g *gen) writeStatementAssign0(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr
 			b.printf("wuffs_base__status %s%d = ", tPrefix, temp)
 		} else if rhs.Effect().Coroutine() {
 			if err := g.writeCoroSuspPoint(b, false); err != nil {
-				return false, err
+				return err
 			}
 			b.writes("status = ")
 		}
 
-		if !hack {
-			if err := g.writeExpr(b, rhs, 0); err != nil {
-				return false, err
-			}
-			b.writes(";\n")
+		if err := g.writeExpr(b, rhs, 0); err != nil {
+			return err
 		}
+		b.writes(";\n")
 	}
 
-	return hack, nil
+	return nil
 }
 
 func (g *gen) writeStatementAssign1(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr) error {
