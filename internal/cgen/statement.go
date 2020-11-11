@@ -95,22 +95,23 @@ func (g *gen) writeStatementAssign(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr,
 		}
 	}
 
-	couldSuspend := false
-	if err := g.writeBuiltinQuestionCall(b, rhs, 0); err == nil {
-		// No-op.
-	} else if err != errNoSuchBuiltin {
-		return err
-	} else {
-		if err := g.writeStatementAssign0(b, op, lhs, rhs); err != nil {
+	couldSuspend, skipRHS := false, false
+	if rhs.Effect().Coroutine() {
+		if err := g.writeBuiltinQuestionCall(b, rhs, 0); err == nil {
+			skipRHS = true
+		} else if err != errNoSuchBuiltin {
 			return err
+		} else if op != t.IDEqQuestion {
+			if err := g.writeCoroSuspPoint(b, false); err != nil {
+				return err
+			}
+			b.writes("status = ")
+			couldSuspend = true
 		}
-		couldSuspend = (op != t.IDEqQuestion) && rhs.Effect().Coroutine()
 	}
 
-	if lhs != nil {
-		if err := g.writeStatementAssign1(b, op, lhs, rhs); err != nil {
-			return err
-		}
+	if err := g.writeStatementAssign1(b, op, lhs, rhs, skipRHS); err != nil {
+		return err
 	}
 	if needWriteLoadExprDerivedVars {
 		if err := g.writeLoadExprDerivedVars(b, rhs); err != nil {
@@ -123,69 +124,61 @@ func (g *gen) writeStatementAssign(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr,
 	return nil
 }
 
-func (g *gen) writeStatementAssign0(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr) error {
-	if (lhs == nil) || rhs.Effect().Coroutine() {
-		if op == t.IDEqQuestion {
-			if g.currFunk.tempW > maxTemp {
-				return fmt.Errorf("too many temporary variables required")
-			}
-			temp := g.currFunk.tempW
-			g.currFunk.tempW++
+func (g *gen) writeStatementAssign1(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr, skipRHS bool) error {
+	lhsBuf := buffer(nil)
+	opName, closer, disableWconversion := "", "", false
 
-			b.printf("wuffs_base__status %s%d = ", tPrefix, temp)
-		} else if rhs.Effect().Coroutine() {
-			if err := g.writeCoroSuspPoint(b, false); err != nil {
-				return err
-			}
-			b.writes("status = ")
-		}
-
-		if err := g.writeExpr(b, rhs, 0); err != nil {
+	if lhs != nil {
+		if err := g.writeExpr(&lhsBuf, lhs, 0); err != nil {
 			return err
 		}
-		b.writes(";\n")
-	}
 
-	return nil
-}
+		if lTyp := lhs.MType(); lTyp.IsArrayType() {
+			b.writes("memcpy(")
+			opName, closer = ",", fmt.Sprintf(", sizeof(%s))", lhsBuf)
 
-func (g *gen) writeStatementAssign1(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr) error {
-	lhsBuf := buffer(nil)
-	if err := g.writeExpr(&lhsBuf, lhs, 0); err != nil {
-		return err
-	}
-
-	opName, closer, disableWconversion := "", "", false
-	if lTyp := lhs.MType(); lTyp.IsArrayType() {
-		b.writes("memcpy(")
-		opName, closer = ",", fmt.Sprintf(", sizeof(%s))", lhsBuf)
-
-	} else {
-		switch op {
-		case t.IDTildeSatPlusEq, t.IDTildeSatMinusEq:
-			uBits := uintBits(lTyp.QID())
-			if uBits == 0 {
-				return fmt.Errorf("unsupported tilde-operator type %q", lTyp.Str(g.tm))
-			}
-			uOp := "add"
-			if op != t.IDTildeSatPlusEq {
-				uOp = "sub"
-			}
-			b.printf("wuffs_base__u%d__sat_%s_indirect(&", uBits, uOp)
-			opName, closer = ", ", ")"
-
-		case t.IDPlusEq, t.IDMinusEq:
-			if lTyp.IsNumType() {
-				if u := lTyp.QID()[1]; u == t.IDU8 || u == t.IDU16 {
-					disableWconversion = true
+		} else {
+			switch op {
+			case t.IDEqQuestion:
+				opName = cOpName(t.IDEqQuestion)
+				if g.currFunk.tempW > maxTemp {
+					return fmt.Errorf("too many temporary variables required")
 				}
-			}
-			fallthrough
+				temp := g.currFunk.tempW
+				g.currFunk.tempW++
 
-		default:
-			opName = cOpName(op)
-			if opName == "" {
-				return fmt.Errorf("unrecognized operator %q", op.AmbiguousForm().Str(g.tm))
+				b.printf("wuffs_base__status %s%d = ", tPrefix, temp)
+
+				if err := g.writeExpr(b, rhs, 0); err != nil {
+					return err
+				}
+				b.writes(";\n")
+
+			case t.IDTildeSatPlusEq, t.IDTildeSatMinusEq:
+				uBits := uintBits(lTyp.QID())
+				if uBits == 0 {
+					return fmt.Errorf("unsupported tilde-operator type %q", lTyp.Str(g.tm))
+				}
+				uOp := "add"
+				if op != t.IDTildeSatPlusEq {
+					uOp = "sub"
+				}
+				b.printf("wuffs_base__u%d__sat_%s_indirect(&", uBits, uOp)
+				opName, closer = ", ", ")"
+
+			case t.IDPlusEq, t.IDMinusEq:
+				if lTyp.IsNumType() {
+					if u := lTyp.QID()[1]; u == t.IDU8 || u == t.IDU16 {
+						disableWconversion = true
+					}
+				}
+				fallthrough
+
+			default:
+				opName = cOpName(op)
+				if opName == "" {
+					return fmt.Errorf("unrecognized operator %q", op.AmbiguousForm().Str(g.tm))
+				}
 			}
 		}
 	}
@@ -200,19 +193,24 @@ func (g *gen) writeStatementAssign1(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr
 		b.writes("#endif\n")
 	}
 
+	n := len(*b)
 	b.writex(lhsBuf)
 	b.writes(opName)
-	if rhs.Effect().Coroutine() {
+	if g.currFunk.tempR != g.currFunk.tempW {
 		if g.currFunk.tempR != (g.currFunk.tempW - 1) {
 			return fmt.Errorf("internal error: temporary variable count out of sync")
 		}
 		b.printf("%s%d", tPrefix, g.currFunk.tempR)
 		g.currFunk.tempR++
+	} else if skipRHS {
+		// No-op.
 	} else if err := g.writeExpr(b, rhs, 0); err != nil {
 		return err
 	}
 	b.writes(closer)
-	b.writes(";\n")
+	if n != len(*b) {
+		b.writes(";\n")
+	}
 
 	if disableWconversion {
 		b.writes("#if defined(__GNUC__)\n")
