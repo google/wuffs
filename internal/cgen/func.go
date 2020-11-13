@@ -384,8 +384,10 @@ func (g *gen) writeFuncImplPrologue(b *buffer) error {
 	if g.currFunk.derivedVars != nil {
 		for _, o := range g.currFunk.astFunc.In().Fields() {
 			o := o.AsField()
-			if err := g.writeLoadDerivedVar(b, "", aPrefix, o.Name(), o.XType(), true); err != nil {
-				return err
+			if _, ok := g.currFunk.derivedVars[o.Name()]; ok {
+				if err := g.writeInitialLoadDerivedVar(b, o); err != nil {
+					return err
+				}
 			}
 		}
 		b.writes("\n")
@@ -480,8 +482,10 @@ func (g *gen) writeFuncImplEpilogue(b *buffer) error {
 	} else if g.currFunk.derivedVars != nil {
 		for _, o := range g.currFunk.astFunc.In().Fields() {
 			o := o.AsField()
-			if err := g.writeSaveDerivedVar(b, "", aPrefix, o.Name(), o.XType()); err != nil {
-				return err
+			if _, ok := g.currFunk.derivedVars[o.Name()]; ok {
+				if err := g.writeFinalSaveDerivedVar(b, o); err != nil {
+					return err
+				}
 			}
 		}
 		b.writes("\n")
