@@ -241,10 +241,11 @@ static const char* g_usage =
     "\n"
     "The -strict-json-pointer-syntax flag restricts the -query=STR string to\n"
     "exactly RFC 6901, with only two escape sequences: \"~0\" and \"~1\" for\n"
-    "\"~\" and \"/\". Without this flag, this program also lets \"~n\" and\n"
-    "\"~r\" escape the New Line and Carriage Return ASCII control characters,\n"
-    "which can work better with line oriented Unix tools that assume exactly\n"
-    "one value (i.e. one JSON Pointer string) per line.\n"
+    "\"~\" and \"/\". Without this flag, this program also lets \"~n\",\n"
+    "\"~r\" and \"~t\" escape the New Line, Carriage Return and Horizontal\n"
+    "Tab ASCII control characters, which can work better with line oriented\n"
+    "(and tab separated) Unix tools that assume exactly one record (e.g. one\n"
+    "JSON Pointer string) per line.\n"
     "\n"
     "----\n"
     "\n"
@@ -660,6 +661,10 @@ class Query {
           if (*ptr != '\r') {
             break;
           }
+        } else if (*j == 't') {
+          if (*ptr != '\t') {
+            break;
+          }
         } else {
           break;
         }
@@ -693,7 +698,7 @@ class Query {
   // Pointer. In particular, it must be valid UTF-8, and either be empty or
   // start with a '/'. Any '~' within must immediately be followed by either
   // '0' or '1'. If strict_json_pointer_syntax is false, a '~' may also be
-  // followed by either 'n' or 'r'.
+  // followed by either 'n', 'r' or 't'.
   static bool validate(char* query_c_string,
                        size_t length,
                        bool strict_json_pointer_syntax) {
@@ -719,6 +724,7 @@ class Query {
             break;
           case 'n':
           case 'r':
+          case 't':
             if (strict_json_pointer_syntax) {
               return false;
             }

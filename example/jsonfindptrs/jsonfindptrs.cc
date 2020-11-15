@@ -176,11 +176,12 @@ static const char* g_usage =
     "\n"
     "The -strict-json-pointer-syntax flag restricts the output lines to\n"
     "exactly RFC 6901, with only two escape sequences: \"~0\" and \"~1\" for\n"
-    "\"~\" and \"/\". Without this flag, this program also lets \"~n\" and\n"
-    "\"~r\" escape the New Line and Carriage Return ASCII control characters,\n"
-    "which can work better with line oriented Unix tools that assume exactly\n"
-    "one value (i.e. one JSON Pointer string) per line. With this flag, it\n"
-    "fails if the input JSON's keys contain \"\\u000A\" or \"\\u000D\".\n"
+    "\"~\" and \"/\". Without this flag, this program also lets \"~n\",\n"
+    "\"~r\" and \"~t\" escape the New Line, Carriage Return and Horizontal\n"
+    "Tab ASCII control characters, which can work better with line oriented\n"
+    "(and tab separated) Unix tools that assume exactly one record (e.g. one\n"
+    "JSON Pointer string) per line. With this flag, it fails if the input\n"
+    "JSON's keys contain \"\\u0009\", \"\\u000A\" or \"\\u000D\".\n"
     "\n"
     "----\n"
     "\n"
@@ -328,7 +329,7 @@ struct JsonValue : JsonVariant {
 bool  //
 escape_needed(const std::string& s) {
   for (const char& c : s) {
-    if ((c == '~') || (c == '/') || (c == '\n') || (c == '\r')) {
+    if ((c == '~') || (c == '/') || (c == '\n') || (c == '\r') || (c == '\t')) {
       return true;
     }
   }
@@ -358,6 +359,12 @@ escape(const std::string& s) {
           return "";
         }
         e += "~r";
+        break;
+      case '\t':
+        if (g_flags.strict_json_pointer_syntax) {
+          return "";
+        }
+        e += "~t";
         break;
       default:
         e += c;
@@ -395,7 +402,8 @@ print_json_pointers(JsonValue& jvalue, uint32_t depth) {
       } else {
         std::string e = escape(kv.first);
         if (e.empty()) {
-          return "main: unsupported \"\\u000A\" or \"\\u000D\" in object key";
+          return "main: unsupported \"\\u0009\", \"\\u000A\" or \"\\u000D\" in "
+                 "object key";
         }
         g_dst += e;
       }
@@ -508,7 +516,8 @@ std::string  //
 main1(int argc, char** argv) {
   TRY(parse_flags(argc, argv));
   if (!g_flags.strict_json_pointer_syntax) {
-    g_quirks.push_back(WUFFS_JSON__QUIRK_JSON_POINTER_ALLOW_TILDE_R_TILDE_N);
+    g_quirks.push_back(
+        WUFFS_JSON__QUIRK_JSON_POINTER_ALLOW_TILDE_N_TILDE_R_TILDE_T);
   }
 
   FILE* in = stdin;

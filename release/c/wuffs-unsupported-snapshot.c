@@ -7616,7 +7616,7 @@ extern const char wuffs_json__error__unsupported_recursion_depth[];
 
 #define WUFFS_JSON__QUIRK_EXPECT_TRAILING_NEW_LINE_OR_EOF 1225364498
 
-#define WUFFS_JSON__QUIRK_JSON_POINTER_ALLOW_TILDE_R_TILDE_N 1225364499
+#define WUFFS_JSON__QUIRK_JSON_POINTER_ALLOW_TILDE_N_TILDE_R_TILDE_T 1225364499
 
 #define WUFFS_JSON__QUIRK_REPLACE_INVALID_UNICODE 1225364500
 
@@ -29425,7 +29425,7 @@ namespace {
 std::pair<std::string, size_t>  //
 DecodeJson_SplitJsonPointer(std::string& s,
                             size_t i,
-                            bool allow_tilde_r_tilde_n) {
+                            bool allow_tilde_n_tilde_r_tilde_t) {
   std::string fragment;
   while (i < s.size()) {
     char c = s[i];
@@ -29449,13 +29449,17 @@ DecodeJson_SplitJsonPointer(std::string& s,
       fragment.push_back('/');
       i++;
       continue;
-    } else if (allow_tilde_r_tilde_n) {
-      if (c == 'r') {
+    } else if (allow_tilde_n_tilde_r_tilde_t) {
+      if (c == 'n') {
+        fragment.push_back('\n');
+        i++;
+        continue;
+      } else if (c == 'r') {
         fragment.push_back('\r');
         i++;
         continue;
-      } else if (c == 'n') {
-        fragment.push_back('\n');
+      } else if (c == 't') {
+        fragment.push_back('\t');
         i++;
         continue;
       }
@@ -29678,12 +29682,12 @@ DecodeJson(DecodeJsonCallbacks& callbacks,
       ret_error_message = "wuffs_aux::DecodeJson: out of memory";
       goto done;
     }
-    bool allow_tilde_r_tilde_n = false;
+    bool allow_tilde_n_tilde_r_tilde_t = false;
     for (size_t i = 0; i < quirks.len; i++) {
       dec->set_quirk_enabled(quirks.ptr[i], true);
       if (quirks.ptr[i] ==
-          WUFFS_JSON__QUIRK_JSON_POINTER_ALLOW_TILDE_R_TILDE_N) {
-        allow_tilde_r_tilde_n = true;
+          WUFFS_JSON__QUIRK_JSON_POINTER_ALLOW_TILDE_N_TILDE_R_TILDE_T) {
+        allow_tilde_n_tilde_r_tilde_t = true;
       }
     }
 
@@ -29705,7 +29709,7 @@ DecodeJson(DecodeJsonCallbacks& callbacks,
         goto done;
       }
       std::pair<std::string, size_t> split = DecodeJson_SplitJsonPointer(
-          json_pointer, i + 1, allow_tilde_r_tilde_n);
+          json_pointer, i + 1, allow_tilde_n_tilde_r_tilde_t);
       i = std::move(split.second);
       if (i == 0) {
         ret_error_message = DecodeJson_BadJsonPointer;

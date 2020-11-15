@@ -206,12 +206,12 @@ pub const QUIRK_ALLOW_TRAILING_FILLER : base.u32 = 0x4909_9400 | 0x11
 // "application/json-seq".
 pub const QUIRK_EXPECT_TRAILING_NEW_LINE_OR_EOF : base.u32 = 0x4909_9400 | 0x12
 
-// When this quirk is enabled, JSON Pointer strings containing "~r" or "~n",
-// which would otherwise be invalid, are unescaped as "\r" or "\n".
+// When this quirk is enabled, JSON Pointer strings containing "~n", "~r" or
+// "~t", which would otherwise be invalid, are unescaped as "\n", "\r" or "\t".
 //
 // This quirk isn't used by Wuffs' std/json package per se, but it is used by
 // the wuffs_aux::DecodeJson function.
-pub const QUIRK_JSON_POINTER_ALLOW_TILDE_R_TILDE_N : base.u32 = 0x4909_9400 | 0x13
+pub const QUIRK_JSON_POINTER_ALLOW_TILDE_N_TILDE_R_TILDE_T : base.u32 = 0x4909_9400 | 0x13
 
 // When this quirk is enabled, invalid UTF-8 inside a JSON string is accepted.
 // Each byte of invalid UTF-8 is equivalent to "\uFFFD", the Unicode
