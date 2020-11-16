@@ -109,6 +109,68 @@ wuffs_base__color_u32_argb_premul__as__color_u32_argb_nonpremul(
   return (a << 24) | (r << 16) | (g << 8) | (b << 0);
 }
 
+// wuffs_base__color_u64_argb_nonpremul__as__color_u32_argb_premul converts
+// from 4x16LE non-premultiplied alpha to 4x8 premultiplied alpha.
+static inline wuffs_base__color_u32_argb_premul  //
+wuffs_base__color_u64_argb_nonpremul__as__color_u32_argb_premul(
+    uint64_t argb_nonpremul) {
+  uint32_t a16 = 0xFFFF & (argb_nonpremul >> 48);
+
+  uint32_t r16 = 0xFFFF & (argb_nonpremul >> 32);
+  r16 = (r16 * a16) / 0xFFFF;
+  uint32_t g16 = 0xFFFF & (argb_nonpremul >> 16);
+  g16 = (g16 * a16) / 0xFFFF;
+  uint32_t b16 = 0xFFFF & (argb_nonpremul >> 0);
+  b16 = (b16 * a16) / 0xFFFF;
+
+  return ((a16 >> 8) << 24) | ((r16 >> 8) << 16) | ((g16 >> 8) << 8) |
+         ((b16 >> 8) << 0);
+}
+
+// wuffs_base__color_u32_argb_premul__as__color_u64_argb_nonpremul converts
+// from 4x8 premultiplied alpha to 4x16LE non-premultiplied alpha.
+static inline uint64_t  //
+wuffs_base__color_u32_argb_premul__as__color_u64_argb_nonpremul(
+    wuffs_base__color_u32_argb_premul c) {
+  uint32_t a = 0xFF & (c >> 24);
+  if (a == 0xFF) {
+    uint64_t r16 = 0x101 * (0xFF & (c >> 16));
+    uint64_t g16 = 0x101 * (0xFF & (c >> 8));
+    uint64_t b16 = 0x101 * (0xFF & (c >> 0));
+    return 0xFFFF000000000000u | (r16 << 32) | (g16 << 16) | (b16 << 0);
+  } else if (a == 0) {
+    return 0;
+  }
+  uint64_t a16 = a * 0x101;
+
+  uint64_t r = 0xFF & (c >> 16);
+  uint64_t r16 = (r * (0x101 * 0xFFFF)) / a16;
+  uint64_t g = 0xFF & (c >> 8);
+  uint64_t g16 = (g * (0x101 * 0xFFFF)) / a16;
+  uint64_t b = 0xFF & (c >> 0);
+  uint64_t b16 = (b * (0x101 * 0xFFFF)) / a16;
+
+  return (a16 << 48) | (r16 << 32) | (g16 << 16) | (b16 << 0);
+}
+
+static inline uint64_t  //
+wuffs_base__color_u32__as__color_u64(uint32_t c) {
+  uint64_t a16 = 0x101 * (0xFF & (c >> 24));
+  uint64_t r16 = 0x101 * (0xFF & (c >> 16));
+  uint64_t g16 = 0x101 * (0xFF & (c >> 8));
+  uint64_t b16 = 0x101 * (0xFF & (c >> 0));
+  return (a16 << 48) | (r16 << 32) | (g16 << 16) | (b16 << 0);
+}
+
+static inline uint32_t  //
+wuffs_base__color_u64__as__color_u32(uint64_t c) {
+  uint32_t a = ((uint32_t)(0xFF & (c >> 56)));
+  uint32_t r = ((uint32_t)(0xFF & (c >> 40)));
+  uint32_t g = ((uint32_t)(0xFF & (c >> 24)));
+  uint32_t b = ((uint32_t)(0xFF & (c >> 8)));
+  return (a << 24) | (r << 16) | (g << 8) | (b << 0);
+}
+
 // --------
 
 typedef uint8_t wuffs_base__pixel_blend;
@@ -196,13 +258,17 @@ wuffs_base__make_pixel_format(uint32_t repr) {
 #define WUFFS_BASE__PIXEL_FORMAT__BGR_565 0x80000565
 #define WUFFS_BASE__PIXEL_FORMAT__BGR 0x80000888
 #define WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL 0x81008888
+#define WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE 0x8100BBBB
 #define WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL 0x82008888
+#define WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL_4X16LE 0x8200BBBB
 #define WUFFS_BASE__PIXEL_FORMAT__BGRA_BINARY 0x83008888
 #define WUFFS_BASE__PIXEL_FORMAT__BGRX 0x90008888
 
 #define WUFFS_BASE__PIXEL_FORMAT__RGB 0xA0000888
 #define WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL 0xA1008888
+#define WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL_4X16LE 0xA100BBBB
 #define WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL 0xA2008888
+#define WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL_4X16LE 0xA200BBBB
 #define WUFFS_BASE__PIXEL_FORMAT__RGBA_BINARY 0xA3008888
 #define WUFFS_BASE__PIXEL_FORMAT__RGBX 0xB0008888
 
