@@ -134,6 +134,10 @@ test_wuffs_pixel_swizzler_swizzle() {
           .pixel = 0x55443300,
           .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE,
       },
+      {
+          .pixel = 0xFF443300,
+          .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__BGRX,
+      },
   };
 
   const struct {
