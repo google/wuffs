@@ -13996,28 +13996,7 @@ wuffs_base__pixel_swizzler__squash_tight_4x8_4x16le(uint8_t* dst_ptr,
   uint8_t* d = dst_ptr;
   const uint8_t* s = src_ptr;
 
-  const size_t loop_unroll_count = 4;
-
   size_t n = len;
-  while (n >= loop_unroll_count) {
-    wuffs_base__store_u32le__no_bounds_check(
-        d + (0 * 4), wuffs_base__color_u64__as__color_u32(
-                         wuffs_base__load_u64le__no_bounds_check(s + (0 * 8))));
-    wuffs_base__store_u32le__no_bounds_check(
-        d + (1 * 4), wuffs_base__color_u64__as__color_u32(
-                         wuffs_base__load_u64le__no_bounds_check(s + (1 * 8))));
-    wuffs_base__store_u32le__no_bounds_check(
-        d + (2 * 4), wuffs_base__color_u64__as__color_u32(
-                         wuffs_base__load_u64le__no_bounds_check(s + (2 * 8))));
-    wuffs_base__store_u32le__no_bounds_check(
-        d + (3 * 4), wuffs_base__color_u64__as__color_u32(
-                         wuffs_base__load_u64le__no_bounds_check(s + (3 * 8))));
-
-    s += loop_unroll_count * 8;
-    d += loop_unroll_count * 4;
-    n -= loop_unroll_count;
-  }
-
   while (n >= 1) {
     wuffs_base__store_u32le__no_bounds_check(
         d + (0 * 4), wuffs_base__color_u64__as__color_u32(
