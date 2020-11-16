@@ -1,6 +1,6 @@
 # Naïve Image Formats: NIE, NII, NIA
 
-Status: Draft (as of May 2020). There is no compatibility guarantee yet.
+Status: Draft (as of November 2020). There is no compatibility guarantee yet.
 
 A companion document has further discussion of [NIE related
 work](/doc/spec/nie-related-work.md).
@@ -12,14 +12,13 @@ NIE is an easily parsed, uncompressed, lossless format for still (single frame)
 images. The 16 byte header:
 
 - 4 bytes of 'magic': \[0x6E, 0xC3, 0xAF, 0x45\], the UTF-8 encoding of "nïE".
-- 4 bytes of version-and-configuration: \[0xFF, 0x62 or 0x72, 0x6E or 0x70,
-  0x34 or 0x38\].
+- 4 bytes of version-and-configuration: \[0xFF, 0x62, 0x6E or 0x70, 0x34 or
+  0x38\].
   - The first byte denotes the overall NIE/NII/NIA format version. 0xFF (which
     is not valid UTF-8) denotes version 1. There are no other valid versions at
     this time.
-  - The second byte, either an ASCII 'b' or an ASCII 'r', denotes whether the
-    pixel's data is in BGRA or RGBA order (in memory order, independent of CPU
-    endianness).
+  - The second byte must be an ASCII 'b'. This denotes that the payload is in
+    BGRA order (in terms of the wire format, independent of CPU endianness).
   - The third byte, either an ASCII 'n' or an ASCII 'p', denotes whether the
     payload contains non-premultiplied or premultiplied alpha.
   - The fourth byte, either an ASCII '4' or an ASCII '8', denotes whether there
@@ -31,11 +30,10 @@ images. The 16 byte header:
 
 The payload:
 
-- 4 or 8 bytes per pixel. W×H pixels in row-major order. Row-major means that
-  horizontally adjacent pixels are adjacent in memory. Values are
-  little-endian. For example, with BGRA order and 8 bytes per pixel, those
+- 4 or 8 bytes per pixel. W×H pixels in row-major order (horizontally adjacent
+  pixels are adjacent in memory). For example, with 8 bytes per pixel, those
   bytes are \[B₀, B₁, G₀, G₁, R₀, R₁, A₀, A₁\]. The ₀ and ₁ subscripts denote
-  the low and high bytes of the `uint16`.
+  the low and high bytes of each little-endian `uint16`.
 
 That's it.
 
@@ -371,4 +369,4 @@ in a long "E", "I" or "A" sound. It's definitely a hard "N", not a soft one.
 
 ---
 
-Updated on May 2020.
+Updated on November 2020.

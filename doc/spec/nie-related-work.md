@@ -14,12 +14,11 @@ more suitable.
 Amongst uncompressed formats, [Farbfeld](https://tools.suckless.org/farbfeld/)
 is a very similar design. The main difference is that NIE is little-endian (the
 same as the vast majority of CPUs) where Farbfeld is big-endian. NIE/NII/NIA
-also allows animated images, not just still images, and is also configurable
-with respect to BGRA versus RGBA order, non-premultiplied versus premultiplied
-alpha, and 8 versus 16 bit channels. Configurability is admittedly a trade-off:
-one person's configuration parameter is another person's unnecessary bloat.
-We're not saying that Farbfeld is a bad design, just a different design that
-has chosen different trade-offs.
+also allows animated images, not just still images, and is also configurable:
+non-premultiplied versus premultiplied alpha and 8- versus 16-bit channels.
+Configurability is admittedly a trade-off. One person's configuration parameter
+is another person's unnecessary bloat. We're not saying that Farbfeld is a bad
+design, just a different design that has chosen different trade-offs.
 
 [PAM](http://netpbm.sourceforge.net/doc/pam.html) (Portable Arbitrary Map) and
 its related formats (PBM, PGM, PPM) are also very similar. The main difference
