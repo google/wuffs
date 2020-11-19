@@ -5568,10 +5568,7 @@ struct wuffs_bmp__decoder__struct {
     uint64_t f_io_redirect_pos;
     uint64_t f_frame_config_io_position;
     uint32_t f_padding;
-    uint32_t f_mask_r;
-    uint32_t f_mask_g;
-    uint32_t f_mask_b;
-    uint32_t f_mask_a;
+    uint32_t f_channel_masks[4];
     uint32_t f_dst_x;
     uint32_t f_dst_y;
     uint32_t f_dst_y_end;
@@ -16495,7 +16492,7 @@ wuffs_bmp__decoder__decode_image_config(
               *scratch |= ((uint64_t)(num_bits_8)) << 56;
             }
           }
-          self->private_impl.f_mask_r = t_8;
+          self->private_impl.f_channel_masks[2] = t_8;
         }
         {
           WUFFS_BASE__COROUTINE_SUSPENSION_POINT(21);
@@ -16524,7 +16521,7 @@ wuffs_bmp__decoder__decode_image_config(
               *scratch |= ((uint64_t)(num_bits_9)) << 56;
             }
           }
-          self->private_impl.f_mask_g = t_9;
+          self->private_impl.f_channel_masks[1] = t_9;
         }
         {
           WUFFS_BASE__COROUTINE_SUSPENSION_POINT(23);
@@ -16553,7 +16550,7 @@ wuffs_bmp__decoder__decode_image_config(
               *scratch |= ((uint64_t)(num_bits_10)) << 56;
             }
           }
-          self->private_impl.f_mask_b = t_10;
+          self->private_impl.f_channel_masks[0] = t_10;
         }
         if (v_bitmap_info_len >= 56) {
           {
@@ -16583,7 +16580,7 @@ wuffs_bmp__decoder__decode_image_config(
                 *scratch |= ((uint64_t)(num_bits_11)) << 56;
               }
             }
-            self->private_impl.f_mask_a = t_11;
+            self->private_impl.f_channel_masks[3] = t_11;
           }
           self->private_data.s_decode_image_config[0].scratch = (v_bitmap_info_len - 56);
           WUFFS_BASE__COROUTINE_SUSPENSION_POINT(27);
@@ -16595,11 +16592,11 @@ wuffs_bmp__decoder__decode_image_config(
           }
           iop_a_src += self->private_data.s_decode_image_config[0].scratch;
         }
-        if ((self->private_impl.f_mask_r == 16711680) && (self->private_impl.f_mask_g == 65280) && (self->private_impl.f_mask_b == 255)) {
+        if ((self->private_impl.f_channel_masks[0] == 255) && (self->private_impl.f_channel_masks[1] == 65280) && (self->private_impl.f_channel_masks[2] == 16711680)) {
           if (v_bits_per_pixel == 24) {
             v_compression = 0;
           } else if (v_bits_per_pixel == 32) {
-            if ((self->private_impl.f_mask_a == 0) || (self->private_impl.f_mask_a == 4278190080)) {
+            if ((self->private_impl.f_channel_masks[3] == 0) || (self->private_impl.f_channel_masks[3] == 4278190080)) {
               v_compression = 0;
             }
           }
@@ -16626,7 +16623,7 @@ wuffs_bmp__decoder__decode_image_config(
     } else if (v_bits_per_pixel == 32) {
       self->private_impl.f_bytes_per_row = (((uint64_t)(self->private_impl.f_width)) * 4);
       self->private_impl.f_pad_per_row = 0;
-      if (self->private_impl.f_mask_a == 0) {
+      if (self->private_impl.f_channel_masks[3] == 0) {
         self->private_impl.f_pixfmt = wuffs_base__utility__make_pixel_format(2415954056);
       } else {
         self->private_impl.f_pixfmt = wuffs_base__utility__make_pixel_format(2164295816);

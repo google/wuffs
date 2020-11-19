@@ -37,10 +37,9 @@ pub struct decoder? implements base.image_decoder(
 
 	padding : base.u32,
 
-	mask_r : base.u32,
-	mask_g : base.u32,
-	mask_b : base.u32,
-	mask_a : base.u32,
+	// channel_etc's indexes are: B, G, R, A. This is in Wuffs' default order,
+	// which isn't the RGBA order they're listed in the wire format.
+	channel_masks : array[4] base.u32,
 
 	dst_x     : base.u32,
 	dst_y     : base.u32,
@@ -97,7 +96,7 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 
 	if bitmap_info_len == 40 {
 		// It's poorly documented, but some "length 40" data can be silently
-		// augmented with RGB masks (12 bytes) or RGBA masks (16 bytes).
+		// augmented with RGB or RGBA channel_masks (12 or 16 bytes).
 		if this.padding >= 16 {
 			bitmap_info_len = 56
 			this.padding -= 16
@@ -151,26 +150,28 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 	// the version 3 BITMAPINFOHEADER (whose total size is 40).
 	args.src.skip_u32?(n: 40 - 20)
 
-	// Read the masks when compression is 3 (BITFIELDS) or 6 (ALPHABITFIELDS).
+	// Read the channel_masks when compression is 3 (BITFIELDS) or 6
+	// (ALPHABITFIELDS).
 	if (compression == 3) or (compression == 6) {
 		if bitmap_info_len >= 52 {
-			this.mask_r = args.src.read_u32le?()
-			this.mask_g = args.src.read_u32le?()
-			this.mask_b = args.src.read_u32le?()
+			this.channel_masks[2] = args.src.read_u32le?()
+			this.channel_masks[1] = args.src.read_u32le?()
+			this.channel_masks[0] = args.src.read_u32le?()
 			if bitmap_info_len >= 56 {
-				this.mask_a = args.src.read_u32le?()
+				this.channel_masks[3] = args.src.read_u32le?()
 				// Skip the rest of the BITMAPINFOHEADER.
 				args.src.skip_u32?(n: bitmap_info_len - 56)
 			}
-			// If the explicit masks are what the implicit masks would be for
-			// no compression, treat it as no compression.
-			if (this.mask_r == 0x00FF_0000) and
-				(this.mask_g == 0x0000_FF00) and
-				(this.mask_b == 0x0000_00FF) {
+			// If the explicit channel_masks are what the implicit ones would
+			// be for no compression, treat it as no compression.
+			if (this.channel_masks[0] == 0x0000_00FF) and
+				(this.channel_masks[1] == 0x0000_FF00) and
+				(this.channel_masks[2] == 0x00FF_0000) {
 				if bits_per_pixel == 24 {
 					compression = 0
 				} else if bits_per_pixel == 32 {
-					if (this.mask_a == 0) or (this.mask_a == 0xFF00_0000) {
+					if (this.channel_masks[3] == 0) or
+						(this.channel_masks[3] == 0xFF00_0000) {
 						compression = 0
 					}
 				}
@@ -192,7 +193,7 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 	} else if bits_per_pixel == 32 {
 		this.bytes_per_row = (this.width as base.u64) * 4
 		this.pad_per_row = 0
-		if this.mask_a == 0 {
+		if this.channel_masks[3] == 0 {
 			this.pixfmt = this.util.make_pixel_format(repr: base.PIXEL_FORMAT__BGRX)
 		} else {
 			this.pixfmt = this.util.make_pixel_format(repr: base.PIXEL_FORMAT__BGRA_NONPREMUL)
