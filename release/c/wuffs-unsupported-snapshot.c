@@ -2871,13 +2871,13 @@ wuffs_base__color_u32_argb_premul__as__color_u32_argb_nonpremul(
 static inline wuffs_base__color_u32_argb_premul  //
 wuffs_base__color_u64_argb_nonpremul__as__color_u32_argb_premul(
     uint64_t argb_nonpremul) {
-  uint32_t a16 = 0xFFFF & (argb_nonpremul >> 48);
+  uint32_t a16 = ((uint32_t)(0xFFFF & (argb_nonpremul >> 48)));
 
-  uint32_t r16 = 0xFFFF & (argb_nonpremul >> 32);
+  uint32_t r16 = ((uint32_t)(0xFFFF & (argb_nonpremul >> 32)));
   r16 = (r16 * a16) / 0xFFFF;
-  uint32_t g16 = 0xFFFF & (argb_nonpremul >> 16);
+  uint32_t g16 = ((uint32_t)(0xFFFF & (argb_nonpremul >> 16)));
   g16 = (g16 * a16) / 0xFFFF;
-  uint32_t b16 = 0xFFFF & (argb_nonpremul >> 0);
+  uint32_t b16 = ((uint32_t)(0xFFFF & (argb_nonpremul >> 0)));
   b16 = (b16 * a16) / 0xFFFF;
 
   return ((a16 >> 8) << 24) | ((r16 >> 8) << 16) | ((g16 >> 8) << 8) |
