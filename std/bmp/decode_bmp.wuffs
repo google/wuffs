@@ -35,7 +35,8 @@ pub struct decoder? implements base.image_decoder(
 
 	frame_config_io_position : base.u64,
 
-	padding : base.u32,
+	bitmap_info_len : base.u32,
+	padding         : base.u32,
 
 	bits_per_pixel : base.u32,
 	compression    : base.u32,
@@ -56,19 +57,24 @@ pub struct decoder? implements base.image_decoder(
 	swizzler : base.pixel_swizzler,
 	util     : base.utility,
 )(
-	scratch : array[2048] base.u8,  // 2048 = 256 * (8 bytes per BGRA_NONPREMUL_4X16LE).
+	// scratch is one of:
+	//  - 2048 bytes = 256  * (8 bytes per BGRA_NONPREMUL_4X16LE).
+	//  - 1024 bytes = 1024 * (1 byte  per INDEXED__BGRA_BINARY), plus
+	//    1024 bytes = 256  * (4 bytes per dst_palette entry).
+	scratch : array[2048] base.u8,
+
+	src_palette : array[4 * 256] base.u8,
 )
 
 pub func decoder.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
 }
 
 pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_reader) {
-	var magic           : base.u32
-	var bitmap_info_len : base.u32
-	var width           : base.u32
-	var height          : base.u32
-	var planes          : base.u32
-	var dst_pixfmt      : base.u32
+	var magic      : base.u32
+	var width      : base.u32
+	var height     : base.u32
+	var planes     : base.u32
+	var dst_pixfmt : base.u32
 
 	if (this.call_sequence <> 0) or (this.io_redirect_fourcc == 1) {
 		return base."#bad call sequence"
@@ -94,24 +100,26 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 
 	// Read the BITMAPINFOHEADER (version 3 / 4 / 5 is 40 / 108 / 124 bytes).
 
-	bitmap_info_len = args.src.read_u32le?()
-	if this.padding < bitmap_info_len {
+	this.bitmap_info_len = args.src.read_u32le?()
+	if this.padding < this.bitmap_info_len {
 		return "#bad header"
 	}
-	this.padding -= bitmap_info_len
+	this.padding -= this.bitmap_info_len
 
-	if bitmap_info_len == 40 {
-		// It's poorly documented, but some "length 40" data can be silently
-		// augmented with RGB or RGBA channel_masks (12 or 16 bytes).
-		if this.padding >= 16 {
-			bitmap_info_len = 56
-			this.padding -= 16
-		} else if this.padding >= 12 {
-			bitmap_info_len = 52
-			this.padding -= 12
+	if this.bitmap_info_len == 40 {
+		if this.bits_per_pixel >= 16 {
+			// It's poorly documented, but "length 40" data can be silently
+			// augmented with RGB or RGBA channel_masks (12 or 16 bytes).
+			if this.padding >= 16 {
+				this.bitmap_info_len = 56
+				this.padding -= 16
+			} else if this.padding >= 12 {
+				this.bitmap_info_len = 52
+				this.padding -= 12
+			}
 		}
-	} else if (bitmap_info_len <> 52) and (bitmap_info_len <> 56) and
-		(bitmap_info_len <> 108) and (bitmap_info_len <> 124) {
+	} else if (this.bitmap_info_len <> 52) and (this.bitmap_info_len <> 56) and
+		(this.bitmap_info_len <> 108) and (this.bitmap_info_len <> 124) {
 		return "#unsupported BMP file"
 	}
 
@@ -163,14 +171,14 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 
 	// Read the channel_masks when this.compression is 3 (BITFIELDS).
 	if this.compression == 3 {
-		if bitmap_info_len >= 52 {
+		if this.bitmap_info_len >= 52 {
 			this.channel_masks[2] = args.src.read_u32le?()
 			this.channel_masks[1] = args.src.read_u32le?()
 			this.channel_masks[0] = args.src.read_u32le?()
-			if bitmap_info_len >= 56 {
+			if this.bitmap_info_len >= 56 {
 				this.channel_masks[3] = args.src.read_u32le?()
 				// Skip the rest of the BITMAPINFOHEADER.
-				args.src.skip_u32?(n: bitmap_info_len - 56)
+				args.src.skip_u32?(n: this.bitmap_info_len ~mod- 56)
 			}
 			// If the explicit channel_masks are what the implicit ones would
 			// be for no compression, treat it as no compression.
@@ -188,15 +196,21 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 			}
 			this.process_masks?()
 		}
-	} else if bitmap_info_len >= 40 {
+	} else if this.bitmap_info_len >= 40 {
 		// Skip the rest of the BITMAPINFOHEADER.
-		args.src.skip_u32?(n: bitmap_info_len - 40)
+		args.src.skip_u32?(n: this.bitmap_info_len - 40)
+		// The palette follows the BITMAPINFOHEADER.
+		if this.bits_per_pixel < 16 {
+			this.read_palette?(src: args.src)
+		}
 	} else {
 		return "#unsupported BMP file"
 	}
 
 	if this.compression == 0 {  // 0 means no compression.
-		if this.bits_per_pixel == 16 {
+		if this.bits_per_pixel == 8 {
+			this.src_pixfmt = base.PIXEL_FORMAT__INDEXED__BGRA_BINARY
+		} else if this.bits_per_pixel == 16 {
 			// Implement BMP's 16-bit default (BGRX_5551) as BITFIELDS.
 			this.compression = 3
 			this.channel_masks[0] = 0x001F
@@ -229,7 +243,10 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 	}
 
 	// The "((x + 3) >> 2) << 2" dance rounds x up to a multiple of 4.
-	if this.bits_per_pixel == 16 {
+	if this.bits_per_pixel == 8 {
+		this.bytes_per_row = ((((this.width as base.u64) * 1) + 3) >> 2) << 2
+		this.pad_per_row = (4 - (this.width & 3)) & 3
+	} else if this.bits_per_pixel == 16 {
 		this.bytes_per_row = ((((this.width as base.u64) * 2) + 3) >> 2) << 2
 		this.pad_per_row = (this.width & 1) * 2
 	} else if this.bits_per_pixel == 24 {
@@ -296,7 +313,8 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
 }
 
 pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, blend: base.pixel_blend, workbuf: slice base.u8, opts: nptr base.decode_frame_options) {
-	var status : base.status
+	var dst_palette : slice base.u8
+	var status      : base.status
 
 	if this.call_sequence < 2 {
 		this.decode_frame_config?(dst: nullptr, src: args.src)
@@ -320,11 +338,16 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 			this.dst_y_inc = 0xFFFF_FFFF  // -1 as a base.u32.
 		}
 
+		dst_palette = args.dst.palette()
+		if dst_palette.length() == 0 {
+			dst_palette = this.scratch[1024 ..]
+		}
+
 		status = this.swizzler.prepare!(
 			dst_pixfmt: args.dst.pixel_format(),
-			dst_palette: args.dst.palette(),
+			dst_palette: dst_palette,
 			src_pixfmt: this.util.make_pixel_format(repr: this.src_pixfmt),
-			src_palette: this.util.empty_slice_u8(),
+			src_palette: this.src_palette[..],
 			blend: args.blend)
 		if not status.is_ok() {
 			return status
@@ -354,6 +377,7 @@ pri func decoder.swizzle_compress0!(dst: ptr base.pixel_buffer, src: base.io_rea
 	var dst_bits_per_pixel  : base.u32[..= 256]
 	var dst_bytes_per_pixel : base.u64[..= 32]
 	var dst_bytes_per_row   : base.u64
+	var dst_palette         : slice base.u8
 	var tab                 : table base.u8
 	var dst                 : slice base.u8
 	var i                   : base.u64
@@ -368,6 +392,10 @@ pri func decoder.swizzle_compress0!(dst: ptr base.pixel_buffer, src: base.io_rea
 	}
 	dst_bytes_per_pixel = (dst_bits_per_pixel / 8) as base.u64
 	dst_bytes_per_row = (this.width as base.u64) * dst_bytes_per_pixel
+	dst_palette = args.dst.palette()
+	if dst_palette.length() == 0 {
+		dst_palette = this.scratch[1024 ..]
+	}
 	tab = args.dst.plane(p: 0)
 
 	while.outer true {
@@ -403,7 +431,7 @@ pri func decoder.swizzle_compress0!(dst: ptr base.pixel_buffer, src: base.io_rea
 			}
 			n = this.swizzler.swizzle_interleaved_from_reader!(
 				dst: dst[i ..],
-				dst_palette: this.util.empty_slice_u8(),
+				dst_palette: dst_palette,
 				src: args.src)
 			if n == 0 {
 				return "@internal note: short read"
@@ -420,6 +448,7 @@ pri func decoder.swizzle_compress3!(dst: ptr base.pixel_buffer, src: base.io_rea
 	var dst_bits_per_pixel  : base.u32[..= 256]
 	var dst_bytes_per_pixel : base.u64[..= 32]
 	var dst_bytes_per_row   : base.u64
+	var dst_palette         : slice base.u8
 	var tab                 : table base.u8
 	var dst                 : slice base.u8
 	var i                   : base.u64
@@ -443,6 +472,10 @@ pri func decoder.swizzle_compress3!(dst: ptr base.pixel_buffer, src: base.io_rea
 	}
 	dst_bytes_per_pixel = (dst_bits_per_pixel / 8) as base.u64
 	dst_bytes_per_row = (this.width as base.u64) * dst_bytes_per_pixel
+	dst_palette = args.dst.palette()
+	if dst_palette.length() == 0 {
+		dst_palette = this.scratch[1024 ..]
+	}
 	tab = args.dst.plane(p: 0)
 
 	while.outer true {
@@ -529,7 +562,7 @@ pri func decoder.swizzle_compress3!(dst: ptr base.pixel_buffer, src: base.io_rea
 
 			n = this.swizzler.swizzle_interleaved_from_slice!(
 				dst: dst[i ..],
-				dst_palette: this.util.empty_slice_u8(),
+				dst_palette: dst_palette,
 				src: this.scratch[.. 8 * p0])
 			if n == 0 {
 				return "@internal note: short read"
@@ -609,6 +642,43 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 
 pub func decoder.workbuf_len() base.range_ii_u64 {
 	return this.util.make_range_ii_u64(min_incl: 0, max_incl: 0)
+}
+
+pri func decoder.read_palette?(src: base.io_reader) {
+	var i    : base.u32
+	var argb : base.u32
+
+	if this.bitmap_info_len < 40 {
+		while (i < 256) and (this.padding >= 3) {
+			this.padding -= 3
+			argb = args.src.read_u24le_as_u32?()
+			argb |= 0xFF00_0000
+			this.src_palette[(4 * i) + 0] = ((argb >> 0) & 0xFF) as base.u8
+			this.src_palette[(4 * i) + 1] = ((argb >> 8) & 0xFF) as base.u8
+			this.src_palette[(4 * i) + 2] = ((argb >> 16) & 0xFF) as base.u8
+			this.src_palette[(4 * i) + 3] = ((argb >> 24) & 0xFF) as base.u8
+			i += 1
+		} endwhile
+	} else {
+		while (i < 256) and (this.padding >= 4) {
+			this.padding -= 4
+			argb = args.src.read_u32le?()
+			argb |= 0xFF00_0000
+			this.src_palette[(4 * i) + 0] = ((argb >> 0) & 0xFF) as base.u8
+			this.src_palette[(4 * i) + 1] = ((argb >> 8) & 0xFF) as base.u8
+			this.src_palette[(4 * i) + 2] = ((argb >> 16) & 0xFF) as base.u8
+			this.src_palette[(4 * i) + 3] = ((argb >> 24) & 0xFF) as base.u8
+			i += 1
+		} endwhile
+	}
+
+	while i < 256 {
+		this.src_palette[(4 * i) + 0] = 0x00
+		this.src_palette[(4 * i) + 1] = 0x00
+		this.src_palette[(4 * i) + 2] = 0x00
+		this.src_palette[(4 * i) + 3] = 0xFF
+		i += 1
+	} endwhile
 }
 
 pri func decoder.process_masks?() {
