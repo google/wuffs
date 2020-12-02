@@ -501,6 +501,7 @@ var Funcs = []string{
 	// ---- pixel_buffer
 
 	"pixel_buffer.palette() slice u8",
+	"pixel_buffer.palette_or_else(fallback: slice u8) slice u8",
 	"pixel_buffer.pixel_format() pixel_format",
 	"pixel_buffer.plane(p: u32[..= 3]) table u8",
 

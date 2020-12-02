@@ -1072,6 +1072,7 @@ typedef struct wuffs_base__pixel_buffer__struct {
       const wuffs_base__pixel_config* pixcfg,
       wuffs_base__table_u8 pixbuf_memory);
   inline wuffs_base__slice_u8 palette();
+  inline wuffs_base__slice_u8 palette_or_else(wuffs_base__slice_u8 fallback);
   inline wuffs_base__pixel_format pixel_format() const;
   inline wuffs_base__table_u8 plane(uint32_t p);
   inline wuffs_base__color_u32_argb_premul color_u32_at(uint32_t x,
@@ -1211,6 +1212,21 @@ wuffs_base__pixel_buffer__palette(wuffs_base__pixel_buffer* pb) {
   return wuffs_base__make_slice_u8(NULL, 0);
 }
 
+static inline wuffs_base__slice_u8  //
+wuffs_base__pixel_buffer__palette_or_else(wuffs_base__pixel_buffer* pb,
+                                          wuffs_base__slice_u8 fallback) {
+  if (pb &&
+      wuffs_base__pixel_format__is_indexed(&pb->pixcfg.private_impl.pixfmt)) {
+    wuffs_base__table_u8* tab =
+        &pb->private_impl
+             .planes[WUFFS_BASE__PIXEL_FORMAT__INDEXED__COLOR_PLANE];
+    if ((tab->width == 1024) && (tab->height == 1)) {
+      return wuffs_base__make_slice_u8(tab->ptr, 1024);
+    }
+  }
+  return fallback;
+}
+
 static inline wuffs_base__pixel_format  //
 wuffs_base__pixel_buffer__pixel_format(const wuffs_base__pixel_buffer* pb) {
   if (pb) {
@@ -1266,6 +1282,11 @@ wuffs_base__pixel_buffer::set_from_table(
 inline wuffs_base__slice_u8  //
 wuffs_base__pixel_buffer::palette() {
   return wuffs_base__pixel_buffer__palette(this);
+}
+
+inline wuffs_base__slice_u8  //
+wuffs_base__pixel_buffer::palette_or_else(wuffs_base__slice_u8 fallback) {
+  return wuffs_base__pixel_buffer__palette_or_else(this, fallback);
 }
 
 inline wuffs_base__pixel_format  //

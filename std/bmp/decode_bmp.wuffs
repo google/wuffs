@@ -313,8 +313,7 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
 }
 
 pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, blend: base.pixel_blend, workbuf: slice base.u8, opts: nptr base.decode_frame_options) {
-	var dst_palette : slice base.u8
-	var status      : base.status
+	var status : base.status
 
 	if this.call_sequence < 2 {
 		this.decode_frame_config?(dst: nullptr, src: args.src)
@@ -338,14 +337,9 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 			this.dst_y_inc = 0xFFFF_FFFF  // -1 as a base.u32.
 		}
 
-		dst_palette = args.dst.palette()
-		if dst_palette.length() == 0 {
-			dst_palette = this.scratch[1024 ..]
-		}
-
 		status = this.swizzler.prepare!(
 			dst_pixfmt: args.dst.pixel_format(),
-			dst_palette: dst_palette,
+			dst_palette: args.dst.palette_or_else(fallback: this.scratch[1024 ..]),
 			src_pixfmt: this.util.make_pixel_format(repr: this.src_pixfmt),
 			src_palette: this.src_palette[..],
 			blend: args.blend)
@@ -392,10 +386,7 @@ pri func decoder.swizzle_compress0!(dst: ptr base.pixel_buffer, src: base.io_rea
 	}
 	dst_bytes_per_pixel = (dst_bits_per_pixel / 8) as base.u64
 	dst_bytes_per_row = (this.width as base.u64) * dst_bytes_per_pixel
-	dst_palette = args.dst.palette()
-	if dst_palette.length() == 0 {
-		dst_palette = this.scratch[1024 ..]
-	}
+	dst_palette = args.dst.palette_or_else(fallback: this.scratch[1024 ..])
 	tab = args.dst.plane(p: 0)
 
 	while.outer true {
@@ -472,10 +463,7 @@ pri func decoder.swizzle_compress3!(dst: ptr base.pixel_buffer, src: base.io_rea
 	}
 	dst_bytes_per_pixel = (dst_bits_per_pixel / 8) as base.u64
 	dst_bytes_per_row = (this.width as base.u64) * dst_bytes_per_pixel
-	dst_palette = args.dst.palette()
-	if dst_palette.length() == 0 {
-		dst_palette = this.scratch[1024 ..]
-	}
+	dst_palette = args.dst.palette_or_else(fallback: this.scratch[1024 ..])
 	tab = args.dst.plane(p: 0)
 
 	while.outer true {

@@ -819,7 +819,6 @@ pri func decoder.decode_id_part1?(dst: ptr base.pixel_buffer, src: base.io_reade
 	var num_palette_entries : base.u32[..= 256]
 	var i                   : base.u32
 	var argb                : base.u32
-	var dst_palette         : slice base.u8
 	var status              : base.status
 	var lw                  : base.u8
 
@@ -871,14 +870,9 @@ pri func decoder.decode_id_part1?(dst: ptr base.pixel_buffer, src: base.io_reade
 		this.palettes[1][(4 * (this.gc_transparent_index as base.u32)) + 3] = 0x00
 	}
 
-	dst_palette = args.dst.palette()
-	if dst_palette.length() == 0 {
-		dst_palette = this.dst_palette[..]
-	}
-
 	status = this.swizzler.prepare!(
 		dst_pixfmt: args.dst.pixel_format(),
-		dst_palette: dst_palette,
+		dst_palette: args.dst.palette_or_else(fallback: this.dst_palette[..]),
 		src_pixfmt: this.util.make_pixel_format(repr: base.PIXEL_FORMAT__INDEXED__BGRA_BINARY),
 		src_palette: this.palettes[which_palette][..],
 		blend: args.blend)

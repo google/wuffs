@@ -3829,6 +3829,7 @@ typedef struct wuffs_base__pixel_buffer__struct {
       const wuffs_base__pixel_config* pixcfg,
       wuffs_base__table_u8 pixbuf_memory);
   inline wuffs_base__slice_u8 palette();
+  inline wuffs_base__slice_u8 palette_or_else(wuffs_base__slice_u8 fallback);
   inline wuffs_base__pixel_format pixel_format() const;
   inline wuffs_base__table_u8 plane(uint32_t p);
   inline wuffs_base__color_u32_argb_premul color_u32_at(uint32_t x,
@@ -3968,6 +3969,21 @@ wuffs_base__pixel_buffer__palette(wuffs_base__pixel_buffer* pb) {
   return wuffs_base__make_slice_u8(NULL, 0);
 }
 
+static inline wuffs_base__slice_u8  //
+wuffs_base__pixel_buffer__palette_or_else(wuffs_base__pixel_buffer* pb,
+                                          wuffs_base__slice_u8 fallback) {
+  if (pb &&
+      wuffs_base__pixel_format__is_indexed(&pb->pixcfg.private_impl.pixfmt)) {
+    wuffs_base__table_u8* tab =
+        &pb->private_impl
+             .planes[WUFFS_BASE__PIXEL_FORMAT__INDEXED__COLOR_PLANE];
+    if ((tab->width == 1024) && (tab->height == 1)) {
+      return wuffs_base__make_slice_u8(tab->ptr, 1024);
+    }
+  }
+  return fallback;
+}
+
 static inline wuffs_base__pixel_format  //
 wuffs_base__pixel_buffer__pixel_format(const wuffs_base__pixel_buffer* pb) {
   if (pb) {
@@ -4023,6 +4039,11 @@ wuffs_base__pixel_buffer::set_from_table(
 inline wuffs_base__slice_u8  //
 wuffs_base__pixel_buffer::palette() {
   return wuffs_base__pixel_buffer__palette(this);
+}
+
+inline wuffs_base__slice_u8  //
+wuffs_base__pixel_buffer::palette_or_else(wuffs_base__slice_u8 fallback) {
+  return wuffs_base__pixel_buffer__palette_or_else(this, fallback);
 }
 
 inline wuffs_base__pixel_format  //
@@ -16901,7 +16922,6 @@ wuffs_bmp__decoder__decode_frame(
   self->private_impl.active_coroutine = 0;
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
-  wuffs_base__slice_u8 v_dst_palette = {0};
   wuffs_base__status v_status = wuffs_base__make_status(NULL);
 
   const uint8_t* iop_a_src = NULL;
@@ -16956,13 +16976,9 @@ wuffs_bmp__decoder__decode_frame(
         self->private_impl.f_dst_y_end = 4294967295;
         self->private_impl.f_dst_y_inc = 4294967295;
       }
-      v_dst_palette = wuffs_base__pixel_buffer__palette(a_dst);
-      if (((uint64_t)(v_dst_palette.len)) == 0) {
-        v_dst_palette = wuffs_base__slice_u8__subslice_i(wuffs_base__make_slice_u8(self->private_data.f_scratch, 2048), 1024);
-      }
       v_status = wuffs_base__pixel_swizzler__prepare(&self->private_impl.f_swizzler,
           wuffs_base__pixel_buffer__pixel_format(a_dst),
-          v_dst_palette,
+          wuffs_base__pixel_buffer__palette_or_else(a_dst, wuffs_base__slice_u8__subslice_i(wuffs_base__make_slice_u8(self->private_data.f_scratch, 2048), 1024)),
           wuffs_base__utility__make_pixel_format(self->private_impl.f_src_pixfmt),
           wuffs_base__make_slice_u8(self->private_data.f_src_palette, 1024),
           a_blend);
@@ -17074,10 +17090,7 @@ wuffs_bmp__decoder__swizzle_compress0(
   }
   v_dst_bytes_per_pixel = ((uint64_t)((v_dst_bits_per_pixel / 8)));
   v_dst_bytes_per_row = (((uint64_t)(self->private_impl.f_width)) * v_dst_bytes_per_pixel);
-  v_dst_palette = wuffs_base__pixel_buffer__palette(a_dst);
-  if (((uint64_t)(v_dst_palette.len)) == 0) {
-    v_dst_palette = wuffs_base__slice_u8__subslice_i(wuffs_base__make_slice_u8(self->private_data.f_scratch, 2048), 1024);
-  }
+  v_dst_palette = wuffs_base__pixel_buffer__palette_or_else(a_dst, wuffs_base__slice_u8__subslice_i(wuffs_base__make_slice_u8(self->private_data.f_scratch, 2048), 1024));
   v_tab = wuffs_base__pixel_buffer__plane(a_dst, 0);
   label__outer__continue:;
   while (true) {
@@ -17182,10 +17195,7 @@ wuffs_bmp__decoder__swizzle_compress3(
   }
   v_dst_bytes_per_pixel = ((uint64_t)((v_dst_bits_per_pixel / 8)));
   v_dst_bytes_per_row = (((uint64_t)(self->private_impl.f_width)) * v_dst_bytes_per_pixel);
-  v_dst_palette = wuffs_base__pixel_buffer__palette(a_dst);
-  if (((uint64_t)(v_dst_palette.len)) == 0) {
-    v_dst_palette = wuffs_base__slice_u8__subslice_i(wuffs_base__make_slice_u8(self->private_data.f_scratch, 2048), 1024);
-  }
+  v_dst_palette = wuffs_base__pixel_buffer__palette_or_else(a_dst, wuffs_base__slice_u8__subslice_i(wuffs_base__make_slice_u8(self->private_data.f_scratch, 2048), 1024));
   v_tab = wuffs_base__pixel_buffer__plane(a_dst, 0);
   label__outer__continue:;
   while (true) {
@@ -25526,7 +25536,6 @@ wuffs_gif__decoder__decode_id_part1(
   uint32_t v_num_palette_entries = 0;
   uint32_t v_i = 0;
   uint32_t v_argb = 0;
-  wuffs_base__slice_u8 v_dst_palette = {0};
   wuffs_base__status v_status = wuffs_base__make_status(NULL);
   uint8_t v_lw = 0;
 
@@ -25626,13 +25635,9 @@ wuffs_gif__decoder__decode_id_part1(
       self->private_data.f_palettes[1][((4 * ((uint32_t)(self->private_impl.f_gc_transparent_index))) + 2)] = 0;
       self->private_data.f_palettes[1][((4 * ((uint32_t)(self->private_impl.f_gc_transparent_index))) + 3)] = 0;
     }
-    v_dst_palette = wuffs_base__pixel_buffer__palette(a_dst);
-    if (((uint64_t)(v_dst_palette.len)) == 0) {
-      v_dst_palette = wuffs_base__make_slice_u8(self->private_data.f_dst_palette, 1024);
-    }
     v_status = wuffs_base__pixel_swizzler__prepare(&self->private_impl.f_swizzler,
         wuffs_base__pixel_buffer__pixel_format(a_dst),
-        v_dst_palette,
+        wuffs_base__pixel_buffer__palette_or_else(a_dst, wuffs_base__make_slice_u8(self->private_data.f_dst_palette, 1024)),
         wuffs_base__utility__make_pixel_format(2198077448),
         wuffs_base__make_slice_u8(self->private_data.f_palettes[v_which_palette], 1024),
         a_blend);
