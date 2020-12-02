@@ -16,6 +16,7 @@ package cgen
 
 import (
 	"fmt"
+	"math/big"
 	"strings"
 
 	a "github.com/google/wuffs/lang/ast"
@@ -163,6 +164,21 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, depth uint32) error {
 		lhs := n.LHS().AsExpr()
 		mhs := n.MHS().AsExpr()
 		rhs := n.RHS().AsExpr()
+
+		mcv := (*big.Int)(nil)
+		rcv := (*big.Int)(nil)
+		lhsIsArray := lhs.MType().IsArrayType()
+		if lhsIsArray {
+			if (mhs != nil) && (mhs.ConstValue() != nil) {
+				mcv = mhs.ConstValue()
+				mhs = nil
+			}
+			if (rhs != nil) && (rhs.ConstValue() != nil) {
+				rcv = rhs.ConstValue()
+				rhs = nil
+			}
+		}
+
 		switch {
 		case mhs != nil && rhs == nil:
 			b.writes("wuffs_base__slice_u8__subslice_i(")
@@ -178,17 +194,32 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, depth uint32) error {
 			comma = ",\n"
 		}
 
-		lhsIsArray := lhs.MType().IsArrayType()
 		if lhsIsArray {
 			// TODO: don't assume that the slice is a slice of base.u8.
 			b.writes("wuffs_base__make_slice_u8(")
+			if mcv != nil {
+				b.writeb('(')
+			}
 		}
 		if err := g.writeExpr(b, lhs, depth); err != nil {
 			return err
 		}
 		if lhsIsArray {
+			if mcv != nil {
+				b.writes(") + ")
+				b.writes(mcv.String())
+			}
 			b.writes(comma)
-			b.printf("%v)", lhs.MType().ArrayLength().ConstValue())
+
+			length := lhs.MType().ArrayLength().ConstValue()
+			if rcv != nil {
+				length = rcv
+			}
+			if mcv != nil {
+				length = big.NewInt(0).Sub(length, mcv)
+			}
+			b.writes(length.String())
+			b.writeb(')')
 		}
 
 		if mhs != nil {

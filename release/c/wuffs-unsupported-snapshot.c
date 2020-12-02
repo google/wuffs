@@ -16978,7 +16978,7 @@ wuffs_bmp__decoder__decode_frame(
       }
       v_status = wuffs_base__pixel_swizzler__prepare(&self->private_impl.f_swizzler,
           wuffs_base__pixel_buffer__pixel_format(a_dst),
-          wuffs_base__pixel_buffer__palette_or_else(a_dst, wuffs_base__slice_u8__subslice_i(wuffs_base__make_slice_u8(self->private_data.f_scratch, 2048), 1024)),
+          wuffs_base__pixel_buffer__palette_or_else(a_dst, wuffs_base__make_slice_u8((self->private_data.f_scratch) + 1024, 1024)),
           wuffs_base__utility__make_pixel_format(self->private_impl.f_src_pixfmt),
           wuffs_base__make_slice_u8(self->private_data.f_src_palette, 1024),
           a_blend);
@@ -17090,7 +17090,7 @@ wuffs_bmp__decoder__swizzle_compress0(
   }
   v_dst_bytes_per_pixel = ((uint64_t)((v_dst_bits_per_pixel / 8)));
   v_dst_bytes_per_row = (((uint64_t)(self->private_impl.f_width)) * v_dst_bytes_per_pixel);
-  v_dst_palette = wuffs_base__pixel_buffer__palette_or_else(a_dst, wuffs_base__slice_u8__subslice_i(wuffs_base__make_slice_u8(self->private_data.f_scratch, 2048), 1024));
+  v_dst_palette = wuffs_base__pixel_buffer__palette_or_else(a_dst, wuffs_base__make_slice_u8((self->private_data.f_scratch) + 1024, 1024));
   v_tab = wuffs_base__pixel_buffer__plane(a_dst, 0);
   label__outer__continue:;
   while (true) {
@@ -17195,7 +17195,7 @@ wuffs_bmp__decoder__swizzle_compress3(
   }
   v_dst_bytes_per_pixel = ((uint64_t)((v_dst_bits_per_pixel / 8)));
   v_dst_bytes_per_row = (((uint64_t)(self->private_impl.f_width)) * v_dst_bytes_per_pixel);
-  v_dst_palette = wuffs_base__pixel_buffer__palette_or_else(a_dst, wuffs_base__slice_u8__subslice_i(wuffs_base__make_slice_u8(self->private_data.f_scratch, 2048), 1024));
+  v_dst_palette = wuffs_base__pixel_buffer__palette_or_else(a_dst, wuffs_base__make_slice_u8((self->private_data.f_scratch) + 1024, 1024));
   v_tab = wuffs_base__pixel_buffer__plane(a_dst, 0);
   label__outer__continue:;
   while (true) {
