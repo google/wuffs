@@ -19435,13 +19435,13 @@ wuffs_deflate__decoder__add_history(
   v_s = a_hist;
   if (((uint64_t)(v_s.len)) >= 32768) {
     v_s = wuffs_base__slice_u8__suffix(v_s, 32768);
-    wuffs_base__slice_u8__copy_from_slice(wuffs_base__slice_u8__subslice_j(wuffs_base__make_slice_u8(self->private_data.f_history, 33025), 32768), v_s);
+    wuffs_base__slice_u8__copy_from_slice(wuffs_base__make_slice_u8(self->private_data.f_history, 32768), v_s);
     self->private_impl.f_history_index = 32768;
   } else {
-    v_n_copied = wuffs_base__slice_u8__copy_from_slice(wuffs_base__slice_u8__subslice_ij(wuffs_base__make_slice_u8(self->private_data.f_history, 33025), (self->private_impl.f_history_index & 32767), 32768), v_s);
+    v_n_copied = wuffs_base__slice_u8__copy_from_slice(wuffs_base__slice_u8__subslice_i(wuffs_base__make_slice_u8(self->private_data.f_history, 32768), (self->private_impl.f_history_index & 32767)), v_s);
     if (v_n_copied < ((uint64_t)(v_s.len))) {
       v_s = wuffs_base__slice_u8__subslice_i(v_s, v_n_copied);
-      v_n_copied = wuffs_base__slice_u8__copy_from_slice(wuffs_base__slice_u8__subslice_j(wuffs_base__make_slice_u8(self->private_data.f_history, 33025), 32768), v_s);
+      v_n_copied = wuffs_base__slice_u8__copy_from_slice(wuffs_base__make_slice_u8(self->private_data.f_history, 32768), v_s);
       self->private_impl.f_history_index = (((uint32_t)((v_n_copied & 32767))) + 32768);
     } else {
       v_already_full = 0;
@@ -19451,7 +19451,7 @@ wuffs_deflate__decoder__add_history(
       self->private_impl.f_history_index = ((self->private_impl.f_history_index & 32767) + ((uint32_t)((v_n_copied & 32767))) + v_already_full);
     }
   }
-  wuffs_base__slice_u8__copy_from_slice(wuffs_base__slice_u8__subslice_i(wuffs_base__make_slice_u8(self->private_data.f_history, 33025), 32768), wuffs_base__make_slice_u8(self->private_data.f_history, 33025));
+  wuffs_base__slice_u8__copy_from_slice(wuffs_base__make_slice_u8((self->private_data.f_history) + 32768, 257), wuffs_base__make_slice_u8(self->private_data.f_history, 33025));
   return wuffs_base__make_empty_struct();
 }
 
@@ -20934,7 +20934,7 @@ wuffs_deflate__decoder__decode_huffman_slow(
           v_hdist = (self->private_impl.f_history_index - v_hdist);
           while (true) {
             v_n_copied = wuffs_base__io_writer__limited_copy_u32_from_slice(
-                &iop_a_dst, io2_a_dst,v_hlen, wuffs_base__slice_u8__subslice_ij(wuffs_base__make_slice_u8(self->private_data.f_history, 33025), (v_hdist & 32767), 32768));
+                &iop_a_dst, io2_a_dst,v_hlen, wuffs_base__slice_u8__subslice_i(wuffs_base__make_slice_u8(self->private_data.f_history, 32768), (v_hdist & 32767)));
             if (v_hlen <= v_n_copied) {
               v_hlen = 0;
               goto label__4__break;
@@ -20953,7 +20953,7 @@ wuffs_deflate__decoder__decode_huffman_slow(
           if (v_hlen > 0) {
             while (true) {
               v_n_copied = wuffs_base__io_writer__limited_copy_u32_from_slice(
-                  &iop_a_dst, io2_a_dst,v_hlen, wuffs_base__slice_u8__subslice_ij(wuffs_base__make_slice_u8(self->private_data.f_history, 33025), (v_hdist & 32767), 32768));
+                  &iop_a_dst, io2_a_dst,v_hlen, wuffs_base__slice_u8__subslice_i(wuffs_base__make_slice_u8(self->private_data.f_history, 32768), (v_hdist & 32767)));
               if (v_hlen <= v_n_copied) {
                 v_hlen = 0;
                 goto label__5__break;
