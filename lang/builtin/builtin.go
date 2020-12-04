@@ -518,6 +518,8 @@ var Funcs = []string{
 		"dst: slice u8, dst_palette: slice u8, src: io_reader) u64",
 	"pixel_swizzler.swizzle_interleaved_from_slice!(" +
 		"dst: slice u8, dst_palette: slice u8, src: slice u8) u64",
+	"pixel_swizzler.swizzle_interleaved_transparent_black!(" +
+		"dst: slice u8, dst_palette: slice u8, num_pixels: u64) u64",
 }
 
 var Interfaces = []string{

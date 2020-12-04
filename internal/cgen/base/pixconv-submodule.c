@@ -1687,6 +1687,39 @@ wuffs_base__pixel_swizzler__xxxx__y(uint8_t* dst_ptr,
 
 // --------
 
+static uint64_t  //
+wuffs_base__pixel_swizzler__transparent_black_src(
+    uint8_t* dst_ptr,
+    size_t dst_len,
+    uint8_t* dst_palette_ptr,
+    size_t dst_palette_len,
+    uint64_t num_pixels,
+    uint32_t dst_pixfmt_bytes_per_pixel) {
+  uint64_t n = ((uint64_t)dst_len) / dst_pixfmt_bytes_per_pixel;
+  if (n > num_pixels) {
+    n = num_pixels;
+  }
+  memset(dst_ptr, 0, ((size_t)(n * dst_pixfmt_bytes_per_pixel)));
+  return n;
+}
+
+static uint64_t  //
+wuffs_base__pixel_swizzler__transparent_black_src_over(
+    uint8_t* dst_ptr,
+    size_t dst_len,
+    uint8_t* dst_palette_ptr,
+    size_t dst_palette_len,
+    uint64_t num_pixels,
+    uint32_t dst_pixfmt_bytes_per_pixel) {
+  uint64_t n = ((uint64_t)dst_len) / dst_pixfmt_bytes_per_pixel;
+  if (n > num_pixels) {
+    n = num_pixels;
+  }
+  return n;
+}
+
+// --------
+
 static wuffs_base__pixel_swizzler__func  //
 wuffs_base__pixel_swizzler__prepare__y(wuffs_base__pixel_swizzler* p,
                                        wuffs_base__pixel_format dst_pixfmt,
@@ -2002,9 +2035,22 @@ wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
     return wuffs_base__make_status(wuffs_base__error__bad_receiver);
   }
   p->private_impl.func = NULL;
+  p->private_impl.transparent_black_func = NULL;
+  p->private_impl.dst_pixfmt_bytes_per_pixel = 0;
   p->private_impl.src_pixfmt_bytes_per_pixel = 0;
 
   wuffs_base__pixel_swizzler__func func = NULL;
+  wuffs_base__pixel_swizzler__transparent_black_func transparent_black_func =
+      NULL;
+
+  uint32_t dst_pixfmt_bits_per_pixel =
+      wuffs_base__pixel_format__bits_per_pixel(&dst_pixfmt);
+  if ((dst_pixfmt_bits_per_pixel == 0) ||
+      ((dst_pixfmt_bits_per_pixel & 7) != 0)) {
+    return wuffs_base__make_status(
+        wuffs_base__error__unsupported_pixel_swizzler_option);
+  }
+
   uint32_t src_pixfmt_bits_per_pixel =
       wuffs_base__pixel_format__bits_per_pixel(&src_pixfmt);
   if ((src_pixfmt_bits_per_pixel == 0) ||
@@ -2014,6 +2060,18 @@ wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
   }
 
   // TODO: support many more formats.
+
+  switch (blend) {
+    case WUFFS_BASE__PIXEL_BLEND__SRC:
+      transparent_black_func =
+          wuffs_base__pixel_swizzler__transparent_black_src;
+      break;
+
+    case WUFFS_BASE__PIXEL_BLEND__SRC_OVER:
+      transparent_black_func =
+          wuffs_base__pixel_swizzler__transparent_black_src_over;
+      break;
+  }
 
   switch (src_pixfmt.repr) {
     case WUFFS_BASE__PIXEL_FORMAT__Y:
@@ -2048,6 +2106,8 @@ wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
   }
 
   p->private_impl.func = func;
+  p->private_impl.transparent_black_func = transparent_black_func;
+  p->private_impl.dst_pixfmt_bytes_per_pixel = dst_pixfmt_bits_per_pixel / 8;
   p->private_impl.src_pixfmt_bytes_per_pixel = src_pixfmt_bits_per_pixel / 8;
   return wuffs_base__make_status(
       func ? NULL : wuffs_base__error__unsupported_pixel_swizzler_option);
@@ -2080,6 +2140,20 @@ wuffs_base__pixel_swizzler__swizzle_interleaved_from_slice(
   if (p && p->private_impl.func) {
     return (*p->private_impl.func)(dst.ptr, dst.len, dst_palette.ptr,
                                    dst_palette.len, src.ptr, src.len);
+  }
+  return 0;
+}
+
+WUFFS_BASE__MAYBE_STATIC uint64_t  //
+wuffs_base__pixel_swizzler__swizzle_interleaved_transparent_black(
+    const wuffs_base__pixel_swizzler* p,
+    wuffs_base__slice_u8 dst,
+    wuffs_base__slice_u8 dst_palette,
+    uint64_t num_pixels) {
+  if (p && p->private_impl.transparent_black_func) {
+    return (*p->private_impl.transparent_black_func)(
+        dst.ptr, dst.len, dst_palette.ptr, dst_palette.len, num_pixels,
+        p->private_impl.dst_pixfmt_bytes_per_pixel);
   }
   return 0;
 }

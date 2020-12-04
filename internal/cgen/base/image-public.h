@@ -1359,11 +1359,21 @@ typedef uint64_t (*wuffs_base__pixel_swizzler__func)(uint8_t* dst_ptr,
                                                      const uint8_t* src_ptr,
                                                      size_t src_len);
 
+typedef uint64_t (*wuffs_base__pixel_swizzler__transparent_black_func)(
+    uint8_t* dst_ptr,
+    size_t dst_len,
+    uint8_t* dst_palette_ptr,
+    size_t dst_palette_len,
+    uint64_t num_pixels,
+    uint32_t dst_pixfmt_bytes_per_pixel);
+
 typedef struct wuffs_base__pixel_swizzler__struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so.
   struct {
     wuffs_base__pixel_swizzler__func func;
+    wuffs_base__pixel_swizzler__transparent_black_func transparent_black_func;
+    uint32_t dst_pixfmt_bytes_per_pixel;
     uint32_t src_pixfmt_bytes_per_pixel;
   } private_impl;
 
