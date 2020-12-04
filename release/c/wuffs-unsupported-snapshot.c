@@ -16386,23 +16386,6 @@ wuffs_bmp__decoder__decode_image_config(
       goto exit;
     }
     self->private_impl.f_padding -= self->private_impl.f_bitmap_info_len;
-    if (self->private_impl.f_bitmap_info_len == 40) {
-      if (self->private_impl.f_bits_per_pixel >= 16) {
-        if (self->private_impl.f_padding >= 16) {
-          self->private_impl.f_bitmap_info_len = 56;
-          self->private_impl.f_padding -= 16;
-        } else if (self->private_impl.f_padding >= 12) {
-          self->private_impl.f_bitmap_info_len = 52;
-          self->private_impl.f_padding -= 12;
-        }
-      }
-    } else if ((self->private_impl.f_bitmap_info_len != 52) &&
-        (self->private_impl.f_bitmap_info_len != 56) &&
-        (self->private_impl.f_bitmap_info_len != 108) &&
-        (self->private_impl.f_bitmap_info_len != 124)) {
-      status = wuffs_base__make_status(wuffs_bmp__error__unsupported_bmp_file);
-      goto exit;
-    }
     {
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(8);
       uint32_t t_3;
@@ -16588,6 +16571,23 @@ wuffs_bmp__decoder__decode_image_config(
       goto suspend;
     }
     iop_a_src += self->private_data.s_decode_image_config[0].scratch;
+    if (self->private_impl.f_bitmap_info_len == 40) {
+      if (self->private_impl.f_bits_per_pixel >= 16) {
+        if (self->private_impl.f_padding >= 16) {
+          self->private_impl.f_bitmap_info_len = 56;
+          self->private_impl.f_padding -= 16;
+        } else if (self->private_impl.f_padding >= 12) {
+          self->private_impl.f_bitmap_info_len = 52;
+          self->private_impl.f_padding -= 12;
+        }
+      }
+    } else if ((self->private_impl.f_bitmap_info_len != 52) &&
+        (self->private_impl.f_bitmap_info_len != 56) &&
+        (self->private_impl.f_bitmap_info_len != 108) &&
+        (self->private_impl.f_bitmap_info_len != 124)) {
+      status = wuffs_base__make_status(wuffs_bmp__error__unsupported_bmp_file);
+      goto exit;
+    }
     if (self->private_impl.f_compression == 6) {
       self->private_impl.f_compression = 3;
     }

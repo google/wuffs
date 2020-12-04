@@ -106,23 +106,6 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 	}
 	this.padding -= this.bitmap_info_len
 
-	if this.bitmap_info_len == 40 {
-		if this.bits_per_pixel >= 16 {
-			// It's poorly documented, but "length 40" data can be silently
-			// augmented with RGB or RGBA channel_masks (12 or 16 bytes).
-			if this.padding >= 16 {
-				this.bitmap_info_len = 56
-				this.padding -= 16
-			} else if this.padding >= 12 {
-				this.bitmap_info_len = 52
-				this.padding -= 12
-			}
-		}
-	} else if (this.bitmap_info_len <> 52) and (this.bitmap_info_len <> 56) and
-		(this.bitmap_info_len <> 108) and (this.bitmap_info_len <> 124) {
-		return "#unsupported BMP file"
-	}
-
 	width = args.src.read_u32le?()
 	if width >= 0x8000_0000 {
 		return "#bad header"
@@ -163,6 +146,23 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 	// (4), height (4), planes (2), bpp (2), compression (4). Skip the rest of
 	// the version 3 BITMAPINFOHEADER (whose total size is 40).
 	args.src.skip_u32?(n: 40 - 20)
+
+	if this.bitmap_info_len == 40 {
+		if this.bits_per_pixel >= 16 {
+			// It's poorly documented, but "length 40" data can be silently
+			// augmented with RGB or RGBA channel_masks (12 or 16 bytes).
+			if this.padding >= 16 {
+				this.bitmap_info_len = 56
+				this.padding -= 16
+			} else if this.padding >= 12 {
+				this.bitmap_info_len = 52
+				this.padding -= 12
+			}
+		}
+	} else if (this.bitmap_info_len <> 52) and (this.bitmap_info_len <> 56) and
+		(this.bitmap_info_len <> 108) and (this.bitmap_info_len <> 124) {
+		return "#unsupported BMP file"
+	}
 
 	// Treat 6 (ALPHABITFIELDS) the same as 3 (BITFIELDS).
 	if this.compression == 6 {
