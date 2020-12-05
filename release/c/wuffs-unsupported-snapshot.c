@@ -16072,6 +16072,20 @@ const char wuffs_bmp__note__internal_note_short_read[] = "@bmp: internal note: s
 
 // ---------------- Private Consts
 
+#define WUFFS_BMP__COMPRESSION_NONE 0
+
+#define WUFFS_BMP__COMPRESSION_RLE8 1
+
+#define WUFFS_BMP__COMPRESSION_RLE4 2
+
+#define WUFFS_BMP__COMPRESSION_BITFIELDS 3
+
+#define WUFFS_BMP__COMPRESSION_JPEG 4
+
+#define WUFFS_BMP__COMPRESSION_PNG 5
+
+#define WUFFS_BMP__COMPRESSION_ALPHABITFIELDS 6
+
 // ---------------- Private Initializer Prototypes
 
 // ---------------- Private Function Prototypes

@@ -19,6 +19,14 @@ pri status "@internal note: short read"
 
 pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0
 
+pri const COMPRESSION_NONE           : base.u32 = 0
+pri const COMPRESSION_RLE8           : base.u32 = 1
+pri const COMPRESSION_RLE4           : base.u32 = 2
+pri const COMPRESSION_BITFIELDS      : base.u32 = 3
+pri const COMPRESSION_JPEG           : base.u32 = 4
+pri const COMPRESSION_PNG            : base.u32 = 5
+pri const COMPRESSION_ALPHABITFIELDS : base.u32 = 6
+
 pub struct decoder? implements base.image_decoder(
 	width  : base.u32[..= 0x7FFF_FFFF],
 	height : base.u32[..= 0x7FFF_FFFF],
@@ -132,10 +140,10 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 	this.bits_per_pixel = args.src.read_u16le_as_u32?()
 	this.compression = args.src.read_u32le?()
 	if this.bits_per_pixel == 0 {
-		if this.compression == 4 {
+		if this.compression == COMPRESSION_JPEG {
 			this.io_redirect_fourcc = 'JPEG'be
 			return base."@I/O redirect"
-		} else if this.compression == 5 {
+		} else if this.compression == COMPRESSION_PNG {
 			this.io_redirect_fourcc = 'PNG 'be
 			return base."@I/O redirect"
 		}
@@ -164,13 +172,13 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 		return "#unsupported BMP file"
 	}
 
-	// Treat 6 (ALPHABITFIELDS) the same as 3 (BITFIELDS).
-	if this.compression == 6 {
-		this.compression = 3
+	// Treat COMPRESSION_ALPHABITFIELDS the same as COMPRESSION_BITFIELDS.
+	if this.compression == COMPRESSION_ALPHABITFIELDS {
+		this.compression = COMPRESSION_BITFIELDS
 	}
 
-	// Read the channel_masks when this.compression is 3 (BITFIELDS).
-	if this.compression == 3 {
+	// Read the channel_masks when this.compression is COMPRESSION_BITFIELDS.
+	if this.compression == COMPRESSION_BITFIELDS {
 		if this.bitmap_info_len >= 52 {
 			this.channel_masks[2] = args.src.read_u32le?()
 			this.channel_masks[1] = args.src.read_u32le?()
@@ -186,11 +194,11 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 				(this.channel_masks[1] == 0x0000_FF00) and
 				(this.channel_masks[2] == 0x00FF_0000) {
 				if this.bits_per_pixel == 24 {
-					this.compression = 0
+					this.compression = COMPRESSION_NONE
 				} else if this.bits_per_pixel == 32 {
 					if (this.channel_masks[3] == 0) or
 						(this.channel_masks[3] == 0xFF00_0000) {
-						this.compression = 0
+						this.compression = COMPRESSION_NONE
 					}
 				}
 			}
@@ -207,12 +215,12 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 		return "#unsupported BMP file"
 	}
 
-	if this.compression == 0 {  // 0 means no compression.
+	if this.compression == COMPRESSION_NONE {
 		if this.bits_per_pixel == 8 {
 			this.src_pixfmt = base.PIXEL_FORMAT__INDEXED__BGRA_BINARY
 		} else if this.bits_per_pixel == 16 {
-			// Implement BMP's 16-bit default (BGRX_5551) as BITFIELDS.
-			this.compression = 3
+			// BMP's 16-bit default is BGRX_5551.
+			this.compression = COMPRESSION_BITFIELDS
 			this.channel_masks[0] = 0x001F
 			this.channel_masks[1] = 0x03E0
 			this.channel_masks[2] = 0x7C00
@@ -231,7 +239,7 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 			return "#unsupported BMP file"
 		}
 
-	} else if this.compression == 3 {  // 3 means BITFIELDS.
+	} else if this.compression == COMPRESSION_BITFIELDS {
 		if (this.bits_per_pixel == 16) or (this.bits_per_pixel == 32) {
 			this.src_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE
 		} else {
@@ -348,7 +356,7 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 		}
 
 		while true {
-			if this.compression == 0 {
+			if this.compression == COMPRESSION_NONE {
 				status = this.swizzle_compress0!(dst: args.dst, src: args.src)
 			} else {
 				status = this.swizzle_compress3!(dst: args.dst, src: args.src)
