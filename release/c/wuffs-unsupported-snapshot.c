@@ -17320,7 +17320,7 @@ wuffs_bmp__decoder__swizzle_compress3(
       v_p1_temp = (self->private_impl.f_width - self->private_impl.f_dst_x);
       v_p1 = wuffs_base__u32__min(v_p1_temp, 256);
       v_p0 = 0;
-      while ((v_p0 < v_p1) && (((uint64_t)(io2_a_src - iop_a_src)) >= 2)) {
+      while (v_p0 < v_p1) {
         if (self->private_impl.f_bits_per_pixel == 16) {
           if (((uint64_t)(io2_a_src - iop_a_src)) < 2) {
             goto label__0__break;

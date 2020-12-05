@@ -499,7 +499,7 @@ pri func decoder.swizzle_compress3!(dst: ptr base.pixel_buffer, src: base.io_rea
 			p1_temp = this.width ~mod- this.dst_x
 			p1 = p1_temp.min(a: 256)
 			p0 = 0
-			while (p0 < p1) and (args.src.length() >= 2) {
+			while p0 < p1 {
 				assert p0 < 256 via "a < b: a < c; c <= b"(c: p1)
 				if this.bits_per_pixel == 16 {
 					if args.src.length() < 2 {
