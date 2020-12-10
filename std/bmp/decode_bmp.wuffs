@@ -62,6 +62,11 @@ pub struct decoder? implements base.image_decoder(
 
 	pending_pad : base.u32[..= 3],
 
+	rle_state   : base.u32,
+	rle_length  : base.u32[..= 0xFF],
+	rle_delta_x : base.u8,
+	rle_padded  : base.bool,
+
 	swizzler : base.pixel_swizzler,
 	util     : base.utility,
 )(
@@ -239,6 +244,13 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 			return "#unsupported BMP file"
 		}
 
+	} else if this.compression == COMPRESSION_RLE8 {
+		if this.bits_per_pixel == 8 {
+			this.src_pixfmt = base.PIXEL_FORMAT__INDEXED__BGRA_BINARY
+		} else {
+			return "#unsupported BMP file"
+		}
+
 	} else if this.compression == COMPRESSION_BITFIELDS {
 		if (this.bits_per_pixel == 16) or (this.bits_per_pixel == 32) {
 			this.src_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE
@@ -357,9 +369,11 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 
 		while true {
 			if this.compression == COMPRESSION_NONE {
-				status = this.swizzle_compress0!(dst: args.dst, src: args.src)
+				status = this.swizzle_none!(dst: args.dst, src: args.src)
+			} else if this.compression == COMPRESSION_RLE8 {
+				status = this.swizzle_rle!(dst: args.dst, src: args.src)
 			} else {
-				status = this.swizzle_compress3!(dst: args.dst, src: args.src)
+				status = this.swizzle_bitfields!(dst: args.dst, src: args.src)
 			}
 
 			if status.is_ok() {
@@ -374,7 +388,7 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 	this.call_sequence = 3
 }
 
-pri func decoder.swizzle_compress0!(dst: ptr base.pixel_buffer, src: base.io_reader) base.status {
+pri func decoder.swizzle_none!(dst: ptr base.pixel_buffer, src: base.io_reader) base.status {
 	var dst_pixfmt          : base.pixel_format
 	var dst_bits_per_pixel  : base.u32[..= 256]
 	var dst_bytes_per_pixel : base.u64[..= 32]
@@ -442,7 +456,220 @@ pri func decoder.swizzle_compress0!(dst: ptr base.pixel_buffer, src: base.io_rea
 	return ok
 }
 
-pri func decoder.swizzle_compress3!(dst: ptr base.pixel_buffer, src: base.io_reader) base.status {
+pri const RLE_STATE_NEUTRAL : base.u32 = 0
+pri const RLE_STATE_RUN     : base.u32 = 1
+pri const RLE_STATE_ESCAPE  : base.u32 = 2
+pri const RLE_STATE_LITERAL : base.u32 = 3
+pri const RLE_STATE_DELTA_X : base.u32 = 4
+pri const RLE_STATE_DELTA_Y : base.u32 = 5
+
+pri func decoder.swizzle_rle!(dst: ptr base.pixel_buffer, src: base.io_reader) base.status {
+	var dst_pixfmt          : base.pixel_format
+	var dst_bits_per_pixel  : base.u32[..= 256]
+	var dst_bytes_per_pixel : base.u64[..= 32]
+	var dst_bytes_per_row   : base.u64
+	var dst_palette         : slice base.u8
+	var tab                 : table base.u8
+	var row                 : slice base.u8
+	var dst                 : slice base.u8
+	var i                   : base.u64
+	var n                   : base.u64
+
+	var p0   : base.u32[..= 255]
+	var code : base.u8
+
+	var rle_state : base.u32
+
+	// TODO: the dst_pixfmt variable shouldn't be necessary. We should be able
+	// to chain the two calls: "args.dst.pixel_format().bits_per_pixel()".
+	dst_pixfmt = args.dst.pixel_format()
+	dst_bits_per_pixel = dst_pixfmt.bits_per_pixel()
+	if (dst_bits_per_pixel & 7) <> 0 {
+		return base."#unsupported option"
+	}
+	dst_bytes_per_pixel = (dst_bits_per_pixel / 8) as base.u64
+	dst_bytes_per_row = (this.width as base.u64) * dst_bytes_per_pixel
+	dst_palette = args.dst.palette_or_else(fallback: this.scratch[1024 ..])
+	tab = args.dst.plane(p: 0)
+
+	rle_state = this.rle_state
+
+	while.outer true {
+		row = tab.row(y: this.dst_y)
+		if dst_bytes_per_row < row.length() {
+			row = row[.. dst_bytes_per_row]
+		}
+
+		while.middle true {
+			i = (this.dst_x as base.u64) * dst_bytes_per_pixel
+			if i <= row.length() {
+				dst = row[i ..]
+			} else {
+				dst = this.util.empty_slice_u8()
+			}
+
+			while.goto_suspend true {{
+			while.inner true {
+				if rle_state == RLE_STATE_NEUTRAL {
+					if args.src.length() < 1 {
+						break.goto_suspend
+					}
+					code = args.src.peek_u8()
+					args.src.skip_u32_fast!(actual: 1, worst_case: 1)
+					if code == 0 {
+						rle_state = RLE_STATE_ESCAPE
+						continue.inner
+					}
+					this.rle_length = code as base.u32
+					rle_state = RLE_STATE_RUN
+					continue.inner
+
+				} else if rle_state == RLE_STATE_RUN {
+					if args.src.length() < 1 {
+						break.goto_suspend
+					}
+					code = args.src.peek_u8()
+					args.src.skip_u32_fast!(actual: 1, worst_case: 1)
+					p0 = 0
+					while p0 < this.rle_length {
+						assert p0 < 255 via "a < b: a < c; c <= b"(c: this.rle_length)
+						this.scratch[p0] = code
+						p0 += 1
+					} endwhile
+					this.swizzler.swizzle_interleaved_from_slice!(
+						dst: dst,
+						dst_palette: dst_palette,
+						src: this.scratch[.. this.rle_length])
+					this.dst_x ~sat+= this.rle_length
+					rle_state = RLE_STATE_NEUTRAL
+					continue.middle
+
+				} else if rle_state == RLE_STATE_ESCAPE {
+					if args.src.length() < 1 {
+						break.goto_suspend
+					}
+					code = args.src.peek_u8()
+					args.src.skip_u32_fast!(actual: 1, worst_case: 1)
+					if code < 2 {  // 0=EOL, 1=EOF.
+						this.swizzler.swizzle_interleaved_transparent_black!(
+							dst: dst,
+							dst_palette: dst_palette,
+							num_pixels: 0xFFFF_FFFF_FFFF_FFFF)
+						this.dst_x = 0
+						this.dst_y ~mod+= this.dst_y_inc
+						if code > 0 {
+							break.outer
+						}
+						rle_state = RLE_STATE_NEUTRAL
+						continue.outer
+					} else if code == 2 {  // 2=DELTA.
+						rle_state = RLE_STATE_DELTA_X
+						continue.inner
+					}
+					this.rle_length = code as base.u32
+					this.rle_padded = (code & 1) <> 0
+					rle_state = RLE_STATE_LITERAL
+					continue.inner
+
+				} else if rle_state == RLE_STATE_LITERAL {
+					n = dst_bytes_per_pixel * (this.rle_length as base.u64)
+					if n < dst.length() {
+						dst = dst[.. n]
+					}
+					n = this.swizzler.swizzle_interleaved_from_reader!(
+						dst: dst,
+						dst_palette: dst_palette,
+						src: args.src)
+					this.dst_x ~sat+= (n & 0xFFFF_FFFF) as base.u32
+					this.rle_length ~sat-= (n & 0xFFFF_FFFF) as base.u32
+					if this.rle_length > 0 {
+						break.goto_suspend
+					}
+					if this.rle_padded {
+						if args.src.length() < 1 {
+							break.goto_suspend
+						}
+						args.src.skip_u32_fast!(actual: 1, worst_case: 1)
+						this.rle_padded = false
+					}
+					rle_state = RLE_STATE_NEUTRAL
+					continue.middle
+
+				} else if rle_state == RLE_STATE_DELTA_X {
+					if args.src.length() < 1 {
+						break.goto_suspend
+					}
+					this.rle_delta_x = args.src.peek_u8()
+					args.src.skip_u32_fast!(actual: 1, worst_case: 1)
+					rle_state = RLE_STATE_DELTA_Y
+					continue.inner
+
+				}  // else (rle_state == RLE_STATE_DELTA_Y).
+				if args.src.length() < 1 {
+					break.goto_suspend
+				}
+				code = args.src.peek_u8()
+				args.src.skip_u32_fast!(actual: 1, worst_case: 1)
+				if this.rle_delta_x > 0 {
+					this.swizzler.swizzle_interleaved_transparent_black!(
+						dst: dst,
+						dst_palette: dst_palette,
+						num_pixels: this.rle_delta_x as base.u64)
+					this.dst_x ~sat+= this.rle_delta_x as base.u32
+					this.rle_delta_x = 0
+				}
+
+				// Paint the skipped rows (and the partial final row) with
+				// transparent black.
+				if code > 0 {
+					code -= 1
+					while true {
+						this.dst_y ~mod+= this.dst_y_inc
+						row = tab.row(y: this.dst_y)
+						if dst_bytes_per_row < row.length() {
+							row = row[.. dst_bytes_per_row]
+						}
+						if code <= 0 {
+							this.swizzler.swizzle_interleaved_transparent_black!(
+								dst: row,
+								dst_palette: dst_palette,
+								num_pixels: this.dst_x as base.u64)
+							break
+						}
+						this.swizzler.swizzle_interleaved_transparent_black!(
+							dst: row,
+							dst_palette: dst_palette,
+							num_pixels: 0xFFFF_FFFF_FFFF_FFFF)
+						code -= 1
+					} endwhile
+				}
+
+				rle_state = RLE_STATE_NEUTRAL
+				continue.middle
+
+			} endwhile.inner
+			}} endwhile.goto_suspend
+			this.rle_state = rle_state
+			return "@internal note: short read"
+		} endwhile.middle
+	} endwhile.outer
+
+	while this.dst_y <> this.dst_y_end {
+		row = tab.row(y: this.dst_y)
+		if dst_bytes_per_row < row.length() {
+			row = row[.. dst_bytes_per_row]
+		}
+		this.swizzler.swizzle_interleaved_transparent_black!(
+			dst: row,
+			dst_palette: dst_palette,
+			num_pixels: 0xFFFF_FFFF_FFFF_FFFF)
+		this.dst_y ~mod+= this.dst_y_inc
+	} endwhile
+
+	return ok
+}
+
+pri func decoder.swizzle_bitfields!(dst: ptr base.pixel_buffer, src: base.io_reader) base.status {
 	var dst_pixfmt          : base.pixel_format
 	var dst_bits_per_pixel  : base.u32[..= 256]
 	var dst_bytes_per_pixel : base.u64[..= 32]
