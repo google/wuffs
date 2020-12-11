@@ -663,7 +663,8 @@ const (
 	IDValidUTF8Length = ID(0x249)
 	IDWidth           = ID(0x24A)
 
-	IDSwizzleInterleavedFromReader = ID(0x280)
+	IDLimitedSwizzleU32InterleavedFromReader = ID(0x280)
+	IDSwizzleInterleavedFromReader           = ID(0x281)
 )
 
 var builtInsByID = [nBuiltInIDs]string{
@@ -1026,7 +1027,8 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDValidUTF8Length: "valid_utf_8_length",
 	IDWidth:           "width",
 
-	IDSwizzleInterleavedFromReader: "swizzle_interleaved_from_reader",
+	IDLimitedSwizzleU32InterleavedFromReader: "limited_swizzle_u32_interleaved_from_reader",
+	IDSwizzleInterleavedFromReader:           "swizzle_interleaved_from_reader",
 }
 
 var builtInsByName = map[string]ID{}

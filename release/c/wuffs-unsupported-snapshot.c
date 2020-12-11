@@ -9228,6 +9228,15 @@ wuffs_base__io_writer__set(wuffs_base__io_buffer* b,
 // ---------------- Images
 
 WUFFS_BASE__MAYBE_STATIC uint64_t  //
+wuffs_base__pixel_swizzler__limited_swizzle_u32_interleaved_from_reader(
+    const wuffs_base__pixel_swizzler* p,
+    uint32_t up_to_num_pixels,
+    wuffs_base__slice_u8 dst,
+    wuffs_base__slice_u8 dst_palette,
+    const uint8_t** ptr_iop_r,
+    const uint8_t* io2_r);
+
+WUFFS_BASE__MAYBE_STATIC uint64_t  //
 wuffs_base__pixel_swizzler__swizzle_interleaved_from_reader(
     const wuffs_base__pixel_swizzler* p,
     wuffs_base__slice_u8 dst,
@@ -15620,6 +15629,28 @@ wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
 }
 
 WUFFS_BASE__MAYBE_STATIC uint64_t  //
+wuffs_base__pixel_swizzler__limited_swizzle_u32_interleaved_from_reader(
+    const wuffs_base__pixel_swizzler* p,
+    uint32_t up_to_num_pixels,
+    wuffs_base__slice_u8 dst,
+    wuffs_base__slice_u8 dst_palette,
+    const uint8_t** ptr_iop_r,
+    const uint8_t* io2_r) {
+  if (p && p->private_impl.func) {
+    const uint8_t* iop_r = *ptr_iop_r;
+    uint64_t src_len = wuffs_base__u64__min(
+        ((uint64_t)up_to_num_pixels) *
+            ((uint64_t)p->private_impl.src_pixfmt_bytes_per_pixel),
+        ((uint64_t)(io2_r - iop_r)));
+    uint64_t n = (*p->private_impl.func)(dst.ptr, dst.len, dst_palette.ptr,
+                                         dst_palette.len, iop_r, src_len);
+    *ptr_iop_r += n * p->private_impl.src_pixfmt_bytes_per_pixel;
+    return n;
+  }
+  return 0;
+}
+
+WUFFS_BASE__MAYBE_STATIC uint64_t  //
 wuffs_base__pixel_swizzler__swizzle_interleaved_from_reader(
     const wuffs_base__pixel_swizzler* p,
     wuffs_base__slice_u8 dst,
@@ -15628,9 +15659,9 @@ wuffs_base__pixel_swizzler__swizzle_interleaved_from_reader(
     const uint8_t* io2_r) {
   if (p && p->private_impl.func) {
     const uint8_t* iop_r = *ptr_iop_r;
+    uint64_t src_len = ((uint64_t)(io2_r - iop_r));
     uint64_t n = (*p->private_impl.func)(dst.ptr, dst.len, dst_palette.ptr,
-                                         dst_palette.len, iop_r,
-                                         (size_t)(io2_r - iop_r));
+                                         dst_palette.len, iop_r, src_len);
     *ptr_iop_r += n * p->private_impl.src_pixfmt_bytes_per_pixel;
     return n;
   }
@@ -17411,12 +17442,9 @@ wuffs_bmp__decoder__swizzle_rle(
             v_rle_state = 3;
             goto label__inner__continue;
           } else if (v_rle_state == 3) {
-            v_n = (v_dst_bytes_per_pixel * ((uint64_t)(self->private_impl.f_rle_length)));
-            if (v_n < ((uint64_t)(v_dst.len))) {
-              v_dst = wuffs_base__slice_u8__subslice_j(v_dst, v_n);
-            }
-            v_n = wuffs_base__pixel_swizzler__swizzle_interleaved_from_reader(
+            v_n = wuffs_base__pixel_swizzler__limited_swizzle_u32_interleaved_from_reader(
                 &self->private_impl.f_swizzler,
+                self->private_impl.f_rle_length,
                 v_dst,
                 v_dst_palette,
                 &iop_a_src,

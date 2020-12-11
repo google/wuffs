@@ -572,11 +572,8 @@ pri func decoder.swizzle_rle!(dst: ptr base.pixel_buffer, src: base.io_reader) b
 					continue.inner
 
 				} else if rle_state == RLE_STATE_LITERAL {
-					n = dst_bytes_per_pixel * (this.rle_length as base.u64)
-					if n < dst.length() {
-						dst = dst[.. n]
-					}
-					n = this.swizzler.swizzle_interleaved_from_reader!(
+					n = this.swizzler.limited_swizzle_u32_interleaved_from_reader!(
+						up_to_num_pixels: this.rle_length,
 						dst: dst,
 						dst_palette: dst_palette,
 						src: args.src)

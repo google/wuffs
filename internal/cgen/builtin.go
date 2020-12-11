@@ -103,8 +103,14 @@ func (g *gen) writeBuiltinCall(b *buffer, n *a.Expr, depth uint32) error {
 			return g.writeBuiltinIOWriter(b, recv, method.Ident(), n.Args(), depth)
 		case t.IDPixelSwizzler:
 			switch method.Ident() {
-			case t.IDSwizzleInterleavedFromReader:
-				b.writes("wuffs_base__pixel_swizzler__swizzle_interleaved_from_reader(\n&")
+			case t.IDLimitedSwizzleU32InterleavedFromReader, t.IDSwizzleInterleavedFromReader:
+				b.writes("wuffs_base__pixel_swizzler__")
+				if method.Ident() == t.IDLimitedSwizzleU32InterleavedFromReader {
+					b.writes("limited_swizzle_u32_interleaved_from_reader")
+				} else {
+					b.writes("swizzle_interleaved_from_reader")
+				}
+				b.writes("(\n&")
 				if err := g.writeExpr(b, recv, depth); err != nil {
 					return err
 				}

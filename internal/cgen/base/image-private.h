@@ -17,6 +17,15 @@
 // ---------------- Images
 
 WUFFS_BASE__MAYBE_STATIC uint64_t  //
+wuffs_base__pixel_swizzler__limited_swizzle_u32_interleaved_from_reader(
+    const wuffs_base__pixel_swizzler* p,
+    uint32_t up_to_num_pixels,
+    wuffs_base__slice_u8 dst,
+    wuffs_base__slice_u8 dst_palette,
+    const uint8_t** ptr_iop_r,
+    const uint8_t* io2_r);
+
+WUFFS_BASE__MAYBE_STATIC uint64_t  //
 wuffs_base__pixel_swizzler__swizzle_interleaved_from_reader(
     const wuffs_base__pixel_swizzler* p,
     wuffs_base__slice_u8 dst,
