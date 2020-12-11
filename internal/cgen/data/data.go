@@ -109,7 +109,7 @@ const BaseMemoryPublicH = "" +
 	""
 
 const BaseImagePrivateH = "" +
-	"// ---------------- Images\n\nWUFFS_BASE__MAYBE_STATIC uint64_t  //\nwuffs_base__pixel_swizzler__swizzle_interleaved_from_reader(\n    const wuffs_base__pixel_swizzler* p,\n    wuffs_base__slice_u8 dst,\n    wuffs_base__slice_u8 dst_palette,\n    const uint8_t** ptr_iop_r,\n    const uint8_t* io2_r);\n\n" +
+	"// ---------------- Images\n\nWUFFS_BASE__MAYBE_STATIC uint64_t  //\nwuffs_base__pixel_swizzler__swizzle_interleaved_from_reader(\n    const wuffs_base__pixel_swizzler* p,\n    wuffs_base__slice_u8 dst,\n    wuffs_base__slice_u8 dst_palette,\n    const uint8_t** ptr_iop_r,\n    const uint8_t* io2_r);\n\nWUFFS_BASE__MAYBE_STATIC uint64_t  //\nwuffs_base__pixel_swizzler__swizzle_interleaved_transparent_black(\n    const wuffs_base__pixel_swizzler* p,\n    wuffs_base__slice_u8 dst,\n    wuffs_base__slice_u8 dst_palette,\n    uint64_t num_pixels);\n\n" +
 	"" +
 	"// ---------------- Images (Utility)\n\n#define wuffs_base__utility__make_pixel_format wuffs_base__make_pixel_format\n" +
 	""
