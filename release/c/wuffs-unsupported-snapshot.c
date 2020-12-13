@@ -5445,6 +5445,7 @@ extern "C" {
 // ---------------- Status Codes
 
 extern const char wuffs_bmp__error__bad_header[];
+extern const char wuffs_bmp__error__bad_rle_compression[];
 extern const char wuffs_bmp__error__unsupported_bmp_file[];
 
 // ---------------- Public Consts
@@ -16110,6 +16111,7 @@ wuffs_adler32__hasher__update_u32(
 // ---------------- Status Codes Implementations
 
 const char wuffs_bmp__error__bad_header[] = "#bmp: bad header";
+const char wuffs_bmp__error__bad_rle_compression[] = "#bmp: bad RLE compression";
 const char wuffs_bmp__error__unsupported_bmp_file[] = "#bmp: unsupported BMP file";
 const char wuffs_bmp__note__internal_note_short_read[] = "@bmp: internal note: short read";
 
@@ -17818,6 +17820,10 @@ wuffs_bmp__decoder__swizzle_rle(
             wuffs_base__pixel_swizzler__swizzle_interleaved_transparent_black(&self->private_impl.f_swizzler, v_dst, v_dst_palette, ((uint64_t)(self->private_impl.f_rle_delta_x)));
             wuffs_base__u32__sat_add_indirect(&self->private_impl.f_dst_x, ((uint32_t)(self->private_impl.f_rle_delta_x)));
             self->private_impl.f_rle_delta_x = 0;
+            if (self->private_impl.f_dst_x > self->private_impl.f_width) {
+              status = wuffs_base__make_status(wuffs_bmp__error__bad_rle_compression);
+              goto exit;
+            }
           }
           if (v_code > 0) {
 #if defined(__GNUC__)
@@ -17830,6 +17836,10 @@ wuffs_bmp__decoder__swizzle_rle(
 #endif
             while (true) {
               self->private_impl.f_dst_y += self->private_impl.f_dst_y_inc;
+              if (self->private_impl.f_dst_y == self->private_impl.f_dst_y_end) {
+                status = wuffs_base__make_status(wuffs_bmp__error__bad_rle_compression);
+                goto exit;
+              }
               v_row = wuffs_base__table_u8__row(v_tab, self->private_impl.f_dst_y);
               if (v_dst_bytes_per_row < ((uint64_t)(v_row.len))) {
                 v_row = wuffs_base__slice_u8__subslice_j(v_row, v_dst_bytes_per_row);

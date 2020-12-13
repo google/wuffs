@@ -13,6 +13,7 @@
 // limitations under the License.
 
 pub status "#bad header"
+pub status "#bad RLE compression"
 pub status "#unsupported BMP file"
 
 pri status "@internal note: short read"
@@ -733,6 +734,9 @@ pri func decoder.swizzle_rle!(dst: ptr base.pixel_buffer, src: base.io_reader) b
 						num_pixels: this.rle_delta_x as base.u64)
 					this.dst_x ~sat+= this.rle_delta_x as base.u32
 					this.rle_delta_x = 0
+					if this.dst_x > this.width {
+						return "#bad RLE compression"
+					}
 				}
 
 				// Paint the skipped rows (and the partial final row) with
@@ -741,6 +745,9 @@ pri func decoder.swizzle_rle!(dst: ptr base.pixel_buffer, src: base.io_reader) b
 					code -= 1
 					while true {
 						this.dst_y ~mod+= this.dst_y_inc
+						if this.dst_y == this.dst_y_end {
+							return "#bad RLE compression"
+						}
 						row = tab.row(y: this.dst_y)
 						if dst_bytes_per_row < row.length() {
 							row = row[.. dst_bytes_per_row]
