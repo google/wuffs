@@ -113,7 +113,9 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 	this.padding -= 14
 	this.io_redirect_pos = (this.padding as base.u64) ~sat+ args.src.position()
 
-	// Read the BITMAPINFOHEADER (version 3 / 4 / 5 is 40 / 108 / 124 bytes).
+	// Read the BITMAPINFOHEADER:
+	//  - OS/2 is 12, 16 or 64 bytes.
+	//  - Windows is 40, 108 or 124 bytes.
 
 	this.bitmap_info_len = args.src.read_u32le?()
 	if this.padding < this.bitmap_info_len {
@@ -121,105 +123,140 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 	}
 	this.padding -= this.bitmap_info_len
 
-	width = args.src.read_u32le?()
-	if width >= 0x8000_0000 {
-		return "#bad header"
-	}
-	this.width = width
+	if this.bitmap_info_len == 12 {
+		this.width = args.src.read_u16le_as_u32?()
+		this.height = args.src.read_u16le_as_u32?()
+		planes = args.src.read_u16le_as_u32?()
+		if planes <> 1 {
+			return "#unsupported BMP file"
+		}
+		this.bits_per_pixel = args.src.read_u16le_as_u32?()
 
-	height = args.src.read_u32le?()
-	if height == 0x8000_0000 {
-		return "#bad header"
-	} else if height >= 0x8000_0000 {
-		// The &0x7FFF_FFFF is redundant, but proves to the compiler that the
-		// result is within this.height's refined bounds.
-		this.height = (0 ~mod- height) & 0x7FFF_FFFF
-		this.top_down = true
-	} else {
+	} else if this.bitmap_info_len == 16 {
+		width = args.src.read_u32le?()
+		if width >= 0x8000_0000 {
+			return "#bad header"
+		}
+		this.width = width
+		height = args.src.read_u32le?()
+		if height >= 0x8000_0000 {
+			return "#bad header"
+		}
 		this.height = height
-	}
-
-	planes = args.src.read_u16le_as_u32?()
-	if planes <> 1 {
-		return "#unsupported BMP file"
-	}
-
-	this.bits_per_pixel = args.src.read_u16le_as_u32?()
-	this.compression = args.src.read_u32le?()
-	if this.bits_per_pixel == 0 {
-		if this.compression == COMPRESSION_JPEG {
-			this.io_redirect_fourcc = 'JPEG'be
-			return base."@I/O redirect"
-		} else if this.compression == COMPRESSION_PNG {
-			this.io_redirect_fourcc = 'PNG 'be
-			return base."@I/O redirect"
+		planes = args.src.read_u16le_as_u32?()
+		if planes <> 1 {
+			return "#unsupported BMP file"
 		}
-		return "#unsupported BMP file"
-	}
+		this.bits_per_pixel = args.src.read_u16le_as_u32?()
 
-	// We've already read 20 bytes from the BITMAPINFOHEADER: size (4), width
-	// (4), height (4), planes (2), bpp (2), compression (4). Skip the rest of
-	// the version 3 BITMAPINFOHEADER (whose total size is 40).
-	args.src.skip_u32?(n: 40 - 20)
-
-	if this.bitmap_info_len == 40 {
-		if this.bits_per_pixel >= 16 {
-			// It's poorly documented, but "length 40" data can be silently
-			// augmented with RGB or RGBA channel_masks (12 or 16 bytes).
-			if this.padding >= 16 {
-				this.bitmap_info_len = 56
-				this.padding -= 16
-			} else if this.padding >= 12 {
-				this.bitmap_info_len = 52
-				this.padding -= 12
-			}
+	} else {
+		width = args.src.read_u32le?()
+		if width >= 0x8000_0000 {
+			return "#bad header"
 		}
-	} else if (this.bitmap_info_len <> 52) and (this.bitmap_info_len <> 56) and
-		(this.bitmap_info_len <> 108) and (this.bitmap_info_len <> 124) {
-		return "#unsupported BMP file"
-	}
+		this.width = width
 
-	// Treat COMPRESSION_ALPHABITFIELDS the same as COMPRESSION_BITFIELDS.
-	if this.compression == COMPRESSION_ALPHABITFIELDS {
-		this.compression = COMPRESSION_BITFIELDS
-	}
+		height = args.src.read_u32le?()
+		if height == 0x8000_0000 {
+			return "#bad header"
+		} else if height >= 0x8000_0000 {
+			// The &0x7FFF_FFFF is redundant, but proves to the compiler that
+			// the result is within this.height's refined bounds.
+			this.height = (0 ~mod- height) & 0x7FFF_FFFF
+			this.top_down = true
+		} else {
+			this.height = height
+		}
 
-	// Read the channel_masks when this.compression is COMPRESSION_BITFIELDS.
-	if this.compression == COMPRESSION_BITFIELDS {
-		if this.bitmap_info_len >= 52 {
-			this.channel_masks[2] = args.src.read_u32le?()
-			this.channel_masks[1] = args.src.read_u32le?()
-			this.channel_masks[0] = args.src.read_u32le?()
-			if this.bitmap_info_len >= 56 {
-				this.channel_masks[3] = args.src.read_u32le?()
-				// Skip the rest of the BITMAPINFOHEADER.
-				args.src.skip_u32?(n: this.bitmap_info_len ~mod- 56)
+		planes = args.src.read_u16le_as_u32?()
+		if planes <> 1 {
+			return "#unsupported BMP file"
+		}
+
+		this.bits_per_pixel = args.src.read_u16le_as_u32?()
+		this.compression = args.src.read_u32le?()
+		if this.bits_per_pixel == 0 {
+			if this.compression == COMPRESSION_JPEG {
+				this.io_redirect_fourcc = 'JPEG'be
+				return base."@I/O redirect"
+			} else if this.compression == COMPRESSION_PNG {
+				this.io_redirect_fourcc = 'PNG 'be
+				return base."@I/O redirect"
 			}
-			// If the explicit channel_masks are what the implicit ones would
-			// be for no compression, treat it as no compression.
-			if (this.channel_masks[0] == 0x0000_00FF) and
-				(this.channel_masks[1] == 0x0000_FF00) and
-				(this.channel_masks[2] == 0x00FF_0000) {
-				if this.bits_per_pixel == 24 {
-					this.compression = COMPRESSION_NONE
-				} else if this.bits_per_pixel == 32 {
-					if (this.channel_masks[3] == 0) or
-						(this.channel_masks[3] == 0xFF00_0000) {
-						this.compression = COMPRESSION_NONE
-					}
+			return "#unsupported BMP file"
+		}
+
+		// We've already read 20 bytes from the BITMAPINFOHEADER: size (4),
+		// width (4), height (4), planes (2), bpp (2), compression (4). Skip
+		// the rest of the version 3 BITMAPINFOHEADER (whose total size is 40).
+		args.src.skip_u32?(n: 40 - 20)
+
+		if this.bitmap_info_len == 40 {
+			if this.bits_per_pixel >= 16 {
+				// It's poorly documented, but "length 40" data can be silently
+				// augmented with RGB or RGBA channel_masks (12 or 16 bytes).
+				if this.padding >= 16 {
+					this.bitmap_info_len = 56
+					this.padding -= 16
+				} else if this.padding >= 12 {
+					this.bitmap_info_len = 52
+					this.padding -= 12
 				}
 			}
-			this.process_masks?()
+		} else if (this.bitmap_info_len <> 52) and
+			(this.bitmap_info_len <> 56) and
+			(this.bitmap_info_len <> 64) and
+			(this.bitmap_info_len <> 108) and
+			(this.bitmap_info_len <> 124) {
+			return "#unsupported BMP file"
 		}
-	} else if this.bitmap_info_len >= 40 {
-		// Skip the rest of the BITMAPINFOHEADER.
-		args.src.skip_u32?(n: this.bitmap_info_len - 40)
+
+		// Treat COMPRESSION_ALPHABITFIELDS the same as COMPRESSION_BITFIELDS.
+		if this.compression == COMPRESSION_ALPHABITFIELDS {
+			this.compression = COMPRESSION_BITFIELDS
+		}
+
+		// Read the channel_masks when this.compression is
+		// COMPRESSION_BITFIELDS.
+		if this.compression == COMPRESSION_BITFIELDS {
+			if this.bitmap_info_len >= 52 {
+				this.channel_masks[2] = args.src.read_u32le?()
+				this.channel_masks[1] = args.src.read_u32le?()
+				this.channel_masks[0] = args.src.read_u32le?()
+				if this.bitmap_info_len >= 56 {
+					this.channel_masks[3] = args.src.read_u32le?()
+					// Skip the rest of the BITMAPINFOHEADER.
+					args.src.skip_u32?(n: this.bitmap_info_len ~mod- 56)
+				}
+				// If the explicit channel_masks are what the implicit ones
+				// would be for no compression, treat it as no compression.
+				if (this.channel_masks[0] == 0x0000_00FF) and
+					(this.channel_masks[1] == 0x0000_FF00) and
+					(this.channel_masks[2] == 0x00FF_0000) {
+					if this.bits_per_pixel == 24 {
+						this.compression = COMPRESSION_NONE
+					} else if this.bits_per_pixel == 32 {
+						if (this.channel_masks[3] == 0) or
+							(this.channel_masks[3] == 0xFF00_0000) {
+							this.compression = COMPRESSION_NONE
+						}
+					}
+				}
+				this.process_masks?()
+			}
+		} else if this.bitmap_info_len >= 40 {
+			// Skip the rest of the BITMAPINFOHEADER.
+			args.src.skip_u32?(n: this.bitmap_info_len - 40)
+		} else {
+			return "#unsupported BMP file"
+		}
+	}
+
+	if this.compression <> COMPRESSION_BITFIELDS {
 		// The palette follows the BITMAPINFOHEADER.
 		if this.bits_per_pixel < 16 {
 			this.read_palette?(src: args.src)
 		}
-	} else {
-		return "#unsupported BMP file"
 	}
 
 	if this.compression == COMPRESSION_NONE {
@@ -274,6 +311,15 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 
 	} else {
 		return "#unsupported BMP file"
+	}
+
+	// OS/2 BMP files have fewer valid bits_per_pixel values.
+	if ((this.bitmap_info_len < 40) or (this.bitmap_info_len == 64)) and
+		(this.bits_per_pixel <> 1) and
+		(this.bits_per_pixel <> 4) and
+		(this.bits_per_pixel <> 8) and
+		(this.bits_per_pixel <> 24) {
+		return "#bad header"
 	}
 
 	// The "((x + 3) >> 2) << 2" dance rounds x up to a multiple of 4.
@@ -1098,7 +1144,7 @@ pri func decoder.read_palette?(src: base.io_reader) {
 	var i    : base.u32
 	var argb : base.u32
 
-	if this.bitmap_info_len < 40 {
+	if this.bitmap_info_len == 12 {
 		while (i < 256) and (this.padding >= 3) {
 			this.padding -= 3
 			argb = args.src.read_u24le_as_u32?()
