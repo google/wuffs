@@ -26,6 +26,7 @@ pri const COMPRESSION_BITFIELDS      : base.u32 = 3
 pri const COMPRESSION_JPEG           : base.u32 = 4
 pri const COMPRESSION_PNG            : base.u32 = 5
 pri const COMPRESSION_ALPHABITFIELDS : base.u32 = 6
+pri const COMPRESSION_LOW_BIT_DEPTH  : base.u32 = 0x100
 
 pub struct decoder? implements base.image_decoder(
 	width  : base.u32[..= 0x7FFF_FFFF],
@@ -88,6 +89,7 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 	var height     : base.u32
 	var planes     : base.u32
 	var dst_pixfmt : base.u32
+	var byte_width : base.u32
 
 	if (this.call_sequence <> 0) or (this.io_redirect_fourcc == 1) {
 		return base."#bad call sequence"
@@ -221,7 +223,12 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 	}
 
 	if this.compression == COMPRESSION_NONE {
-		if this.bits_per_pixel == 8 {
+		if (this.bits_per_pixel == 1) or
+			(this.bits_per_pixel == 2) or
+			(this.bits_per_pixel == 4) {
+			this.src_pixfmt = base.PIXEL_FORMAT__INDEXED__BGRA_BINARY
+			this.compression = COMPRESSION_LOW_BIT_DEPTH
+		} else if this.bits_per_pixel == 8 {
 			this.src_pixfmt = base.PIXEL_FORMAT__INDEXED__BGRA_BINARY
 		} else if this.bits_per_pixel == 16 {
 			// BMP's 16-bit default is BGRX_5551.
@@ -251,6 +258,13 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 			return "#unsupported BMP file"
 		}
 
+	} else if this.compression == COMPRESSION_RLE4 {
+		if this.bits_per_pixel == 4 {
+			this.src_pixfmt = base.PIXEL_FORMAT__INDEXED__BGRA_BINARY
+		} else {
+			return "#unsupported BMP file"
+		}
+
 	} else if this.compression == COMPRESSION_BITFIELDS {
 		if (this.bits_per_pixel == 16) or (this.bits_per_pixel == 32) {
 			this.src_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE
@@ -263,7 +277,22 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 	}
 
 	// The "((x + 3) >> 2) << 2" dance rounds x up to a multiple of 4.
-	if this.bits_per_pixel == 8 {
+	if this.bits_per_pixel == 1 {
+		// byte_width is this.width divided by 8, rounding up.
+		byte_width = (this.width >> 3) + (((this.width & 7) + 7) >> 3)
+		this.bytes_per_row = ((((byte_width as base.u64) * 1) + 3) >> 2) << 2
+		this.pad_per_row = (4 - (byte_width & 3)) & 3
+	} else if this.bits_per_pixel == 2 {
+		// byte_width is this.width divided by 4, rounding up.
+		byte_width = (this.width >> 2) + (((this.width & 3) + 3) >> 2)
+		this.bytes_per_row = ((((byte_width as base.u64) * 1) + 3) >> 2) << 2
+		this.pad_per_row = (4 - (byte_width & 3)) & 3
+	} else if this.bits_per_pixel == 4 {
+		// byte_width is this.width divided by 2, rounding up.
+		byte_width = (this.width >> 1) + (this.width & 1)
+		this.bytes_per_row = ((((byte_width as base.u64) * 1) + 3) >> 2) << 2
+		this.pad_per_row = (4 - (byte_width & 3)) & 3
+	} else if this.bits_per_pixel == 8 {
 		this.bytes_per_row = ((((this.width as base.u64) * 1) + 3) >> 2) << 2
 		this.pad_per_row = (4 - (this.width & 3)) & 3
 	} else if this.bits_per_pixel == 16 {
@@ -370,10 +399,12 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 		while true {
 			if this.compression == COMPRESSION_NONE {
 				status = this.swizzle_none!(dst: args.dst, src: args.src)
-			} else if this.compression == COMPRESSION_RLE8 {
+			} else if this.compression < COMPRESSION_BITFIELDS {
 				status = this.swizzle_rle!(dst: args.dst, src: args.src)
-			} else {
+			} else if this.compression == COMPRESSION_BITFIELDS {
 				status = this.swizzle_bitfields!(dst: args.dst, src: args.src)
+			} else {
+				status = this.swizzle_low_bit_depth!(dst: args.dst, src: args.src)
 			}
 
 			if status.is_ok() {
@@ -475,10 +506,14 @@ pri func decoder.swizzle_rle!(dst: ptr base.pixel_buffer, src: base.io_reader) b
 	var i                   : base.u64
 	var n                   : base.u64
 
-	var p0   : base.u32[..= 255]
-	var code : base.u8
+	var p0      : base.u32[..= 259]
+	var code    : base.u8
+	var indexes : array[2] base.u8
 
 	var rle_state : base.u32
+
+	var chunk_bits  : base.u32
+	var chunk_count : base.u32[..= 64]
 
 	// TODO: the dst_pixfmt variable shouldn't be necessary. We should be able
 	// to chain the two calls: "args.dst.pixel_format().bits_per_pixel()".
@@ -530,12 +565,24 @@ pri func decoder.swizzle_rle!(dst: ptr base.pixel_buffer, src: base.io_reader) b
 					}
 					code = args.src.peek_u8()
 					args.src.skip_u32_fast!(actual: 1, worst_case: 1)
-					p0 = 0
-					while p0 < this.rle_length {
-						assert p0 < 255 via "a < b: a < c; c <= b"(c: this.rle_length)
-						this.scratch[p0] = code
-						p0 += 1
-					} endwhile
+					if this.bits_per_pixel == 8 {
+						p0 = 0
+						while p0 < this.rle_length {
+							assert p0 < 255 via "a < b: a < c; c <= b"(c: this.rle_length)
+							this.scratch[p0] = code
+							p0 += 1
+						} endwhile
+					} else {
+						indexes[0] = code >> 4
+						indexes[1] = code & 0x0F
+						p0 = 0
+						while p0 < this.rle_length {
+							assert p0 < 255 via "a < b: a < c; c <= b"(c: this.rle_length)
+							this.scratch[p0 + 0] = indexes[0]
+							this.scratch[p0 + 1] = indexes[1]
+							p0 += 2
+						} endwhile
+					}
 					this.swizzler.swizzle_interleaved_from_slice!(
 						dst: dst,
 						dst_palette: dst_palette,
@@ -567,18 +614,44 @@ pri func decoder.swizzle_rle!(dst: ptr base.pixel_buffer, src: base.io_reader) b
 						continue.inner
 					}
 					this.rle_length = code as base.u32
-					this.rle_padded = (code & 1) <> 0
+					this.rle_padded = (this.bits_per_pixel == 8) and ((code & 1) <> 0)
 					rle_state = RLE_STATE_LITERAL
 					continue.inner
 
 				} else if rle_state == RLE_STATE_LITERAL {
-					n = this.swizzler.limited_swizzle_u32_interleaved_from_reader!(
-						up_to_num_pixels: this.rle_length,
-						dst: dst,
-						dst_palette: dst_palette,
-						src: args.src)
-					this.dst_x ~sat+= (n & 0xFFFF_FFFF) as base.u32
-					this.rle_length ~sat-= (n & 0xFFFF_FFFF) as base.u32
+					if this.bits_per_pixel == 8 {
+						n = this.swizzler.limited_swizzle_u32_interleaved_from_reader!(
+							up_to_num_pixels: this.rle_length,
+							dst: dst,
+							dst_palette: dst_palette,
+							src: args.src)
+						this.dst_x ~sat+= (n & 0xFFFF_FFFF) as base.u32
+						this.rle_length ~sat-= (n & 0xFFFF_FFFF) as base.u32
+					} else {
+						// Calculate the remaining number of 16-bit chunks. At
+						// 4 bits per pixel there are 4 pixels per chunk.
+						// Division rounds up.
+						chunk_count = (this.rle_length + 3) / 4
+						p0 = 0
+						while (chunk_count > 0) and (args.src.length() >= 2) {
+							chunk_bits = args.src.peek_u16be_as_u32()
+							args.src.skip_u32_fast!(actual: 2, worst_case: 2)
+							this.scratch[p0 + 0x00] = (0x0F & (chunk_bits >> 0x0C)) as base.u8
+							this.scratch[p0 + 0x01] = (0x0F & (chunk_bits >> 0x08)) as base.u8
+							this.scratch[p0 + 0x02] = (0x0F & (chunk_bits >> 0x04)) as base.u8
+							this.scratch[p0 + 0x03] = (0x0F & (chunk_bits >> 0x00)) as base.u8
+							p0 = (p0 & 255) + 0x04
+							chunk_count -= 1
+						} endwhile
+						p0 = p0.min(a: this.rle_length)
+						this.swizzler.swizzle_interleaved_from_slice!(
+							dst: dst,
+							dst_palette: dst_palette,
+							src: this.scratch[.. p0])
+						this.dst_x ~sat+= p0
+						this.rle_length ~sat-= p0
+					}
+
 					if this.rle_length > 0 {
 						break.goto_suspend
 					}
@@ -790,6 +863,163 @@ pri func decoder.swizzle_bitfields!(dst: ptr base.pixel_buffer, src: base.io_rea
 			this.dst_x ~sat+= (n & 0xFFFF_FFFF) as base.u32
 		} endwhile.inner
 	} endwhile.outer
+
+	return ok
+}
+
+pri func decoder.swizzle_low_bit_depth!(dst: ptr base.pixel_buffer, src: base.io_reader) base.status {
+	var dst_pixfmt          : base.pixel_format
+	var dst_bits_per_pixel  : base.u32[..= 256]
+	var dst_bytes_per_pixel : base.u64[..= 32]
+	var dst_bytes_per_row   : base.u64
+	var dst_palette         : slice base.u8
+	var tab                 : table base.u8
+	var dst                 : slice base.u8
+	var i                   : base.u64
+	var n                   : base.u64
+
+	var p0 : base.u32[..= 543]
+
+	var chunk_bits  : base.u32
+	var chunk_count : base.u32
+
+	// TODO: the dst_pixfmt variable shouldn't be necessary. We should be able
+	// to chain the two calls: "args.dst.pixel_format().bits_per_pixel()".
+	dst_pixfmt = args.dst.pixel_format()
+	dst_bits_per_pixel = dst_pixfmt.bits_per_pixel()
+	if (dst_bits_per_pixel & 7) <> 0 {
+		return base."#unsupported option"
+	}
+	dst_bytes_per_pixel = (dst_bits_per_pixel / 8) as base.u64
+	dst_bytes_per_row = (this.width as base.u64) * dst_bytes_per_pixel
+	dst_palette = args.dst.palette_or_else(fallback: this.scratch[1024 ..])
+	tab = args.dst.plane(p: 0)
+
+	while.loop true {
+		if this.dst_x == this.width {
+			this.dst_x = 0
+			this.dst_y ~mod+= this.dst_y_inc
+			if this.dst_y == this.dst_y_end {
+				break.loop
+			}
+		}
+
+		dst = tab.row(y: this.dst_y)
+		if dst_bytes_per_row < dst.length() {
+			dst = dst[.. dst_bytes_per_row]
+		}
+		i = (this.dst_x as base.u64) * dst_bytes_per_pixel
+		if i >= dst.length() {
+			// TODO: advance args.src if the dst pixel_buffer bounds is
+			// smaller than this BMP's image bounds?
+			continue.loop
+		}
+		dst = dst[i ..]
+		p0 = 0
+
+		if this.bits_per_pixel == 1 {
+			// Calculate the remaining number of 32-bit chunks. At 1 bit per
+			// pixel there are 32 pixels per chunk. Division rounds up.
+			chunk_count = ((this.width ~sat- this.dst_x) + 31) / 32
+			chunk_count = chunk_count.min(a: 16)  // Keep p0 <= 512.
+			while (chunk_count > 0) and (args.src.length() >= 4) {
+				chunk_bits = args.src.peek_u32be()
+				args.src.skip_u32_fast!(actual: 4, worst_case: 4)
+				this.scratch[p0 + 0x00] = (0x01 & (chunk_bits >> 0x1F)) as base.u8
+				this.scratch[p0 + 0x01] = (0x01 & (chunk_bits >> 0x1E)) as base.u8
+				this.scratch[p0 + 0x02] = (0x01 & (chunk_bits >> 0x1D)) as base.u8
+				this.scratch[p0 + 0x03] = (0x01 & (chunk_bits >> 0x1C)) as base.u8
+				this.scratch[p0 + 0x04] = (0x01 & (chunk_bits >> 0x1B)) as base.u8
+				this.scratch[p0 + 0x05] = (0x01 & (chunk_bits >> 0x1A)) as base.u8
+				this.scratch[p0 + 0x06] = (0x01 & (chunk_bits >> 0x19)) as base.u8
+				this.scratch[p0 + 0x07] = (0x01 & (chunk_bits >> 0x18)) as base.u8
+				this.scratch[p0 + 0x08] = (0x01 & (chunk_bits >> 0x17)) as base.u8
+				this.scratch[p0 + 0x09] = (0x01 & (chunk_bits >> 0x16)) as base.u8
+				this.scratch[p0 + 0x0A] = (0x01 & (chunk_bits >> 0x15)) as base.u8
+				this.scratch[p0 + 0x0B] = (0x01 & (chunk_bits >> 0x14)) as base.u8
+				this.scratch[p0 + 0x0C] = (0x01 & (chunk_bits >> 0x13)) as base.u8
+				this.scratch[p0 + 0x0D] = (0x01 & (chunk_bits >> 0x12)) as base.u8
+				this.scratch[p0 + 0x0E] = (0x01 & (chunk_bits >> 0x11)) as base.u8
+				this.scratch[p0 + 0x0F] = (0x01 & (chunk_bits >> 0x10)) as base.u8
+				this.scratch[p0 + 0x10] = (0x01 & (chunk_bits >> 0x0F)) as base.u8
+				this.scratch[p0 + 0x11] = (0x01 & (chunk_bits >> 0x0E)) as base.u8
+				this.scratch[p0 + 0x12] = (0x01 & (chunk_bits >> 0x0D)) as base.u8
+				this.scratch[p0 + 0x13] = (0x01 & (chunk_bits >> 0x0C)) as base.u8
+				this.scratch[p0 + 0x14] = (0x01 & (chunk_bits >> 0x0B)) as base.u8
+				this.scratch[p0 + 0x15] = (0x01 & (chunk_bits >> 0x0A)) as base.u8
+				this.scratch[p0 + 0x16] = (0x01 & (chunk_bits >> 0x09)) as base.u8
+				this.scratch[p0 + 0x17] = (0x01 & (chunk_bits >> 0x08)) as base.u8
+				this.scratch[p0 + 0x18] = (0x01 & (chunk_bits >> 0x07)) as base.u8
+				this.scratch[p0 + 0x19] = (0x01 & (chunk_bits >> 0x06)) as base.u8
+				this.scratch[p0 + 0x1A] = (0x01 & (chunk_bits >> 0x05)) as base.u8
+				this.scratch[p0 + 0x1B] = (0x01 & (chunk_bits >> 0x04)) as base.u8
+				this.scratch[p0 + 0x1C] = (0x01 & (chunk_bits >> 0x03)) as base.u8
+				this.scratch[p0 + 0x1D] = (0x01 & (chunk_bits >> 0x02)) as base.u8
+				this.scratch[p0 + 0x1E] = (0x01 & (chunk_bits >> 0x01)) as base.u8
+				this.scratch[p0 + 0x1F] = (0x01 & (chunk_bits >> 0x00)) as base.u8
+				p0 = (p0 & 511) + 0x20
+				chunk_count -= 1
+			} endwhile
+
+		} else if this.bits_per_pixel == 2 {
+			// Calculate the remaining number of 32-bit chunks. At 2 bits per
+			// pixel there are 16 pixels per chunk. Division rounds up.
+			chunk_count = ((this.width ~sat- this.dst_x) + 15) / 16
+			chunk_count = chunk_count.min(a: 32)  // Keep p0 <= 512.
+			while (chunk_count > 0) and (args.src.length() >= 4) {
+				chunk_bits = args.src.peek_u32be()
+				args.src.skip_u32_fast!(actual: 4, worst_case: 4)
+				this.scratch[p0 + 0x00] = (0x03 & (chunk_bits >> 0x1E)) as base.u8
+				this.scratch[p0 + 0x01] = (0x03 & (chunk_bits >> 0x1C)) as base.u8
+				this.scratch[p0 + 0x02] = (0x03 & (chunk_bits >> 0x1A)) as base.u8
+				this.scratch[p0 + 0x03] = (0x03 & (chunk_bits >> 0x18)) as base.u8
+				this.scratch[p0 + 0x04] = (0x03 & (chunk_bits >> 0x16)) as base.u8
+				this.scratch[p0 + 0x05] = (0x03 & (chunk_bits >> 0x14)) as base.u8
+				this.scratch[p0 + 0x06] = (0x03 & (chunk_bits >> 0x12)) as base.u8
+				this.scratch[p0 + 0x07] = (0x03 & (chunk_bits >> 0x10)) as base.u8
+				this.scratch[p0 + 0x08] = (0x03 & (chunk_bits >> 0x0E)) as base.u8
+				this.scratch[p0 + 0x09] = (0x03 & (chunk_bits >> 0x0C)) as base.u8
+				this.scratch[p0 + 0x0A] = (0x03 & (chunk_bits >> 0x0A)) as base.u8
+				this.scratch[p0 + 0x0B] = (0x03 & (chunk_bits >> 0x08)) as base.u8
+				this.scratch[p0 + 0x0C] = (0x03 & (chunk_bits >> 0x06)) as base.u8
+				this.scratch[p0 + 0x0D] = (0x03 & (chunk_bits >> 0x04)) as base.u8
+				this.scratch[p0 + 0x0E] = (0x03 & (chunk_bits >> 0x02)) as base.u8
+				this.scratch[p0 + 0x0F] = (0x03 & (chunk_bits >> 0x00)) as base.u8
+				p0 = (p0 & 511) + 0x10
+				chunk_count -= 1
+			} endwhile
+
+		} else if this.bits_per_pixel == 4 {
+			// Calculate the remaining number of 32-bit chunks. At 4 bits per
+			// pixel there are 8 pixels per chunk. Division rounds up.
+			chunk_count = ((this.width ~sat- this.dst_x) + 7) / 8
+			chunk_count = chunk_count.min(a: 64)  // Keep p0 <= 512.
+			while (chunk_count > 0) and (args.src.length() >= 4) {
+				chunk_bits = args.src.peek_u32be()
+				args.src.skip_u32_fast!(actual: 4, worst_case: 4)
+				this.scratch[p0 + 0x00] = (0x0F & (chunk_bits >> 0x1C)) as base.u8
+				this.scratch[p0 + 0x01] = (0x0F & (chunk_bits >> 0x18)) as base.u8
+				this.scratch[p0 + 0x02] = (0x0F & (chunk_bits >> 0x14)) as base.u8
+				this.scratch[p0 + 0x03] = (0x0F & (chunk_bits >> 0x10)) as base.u8
+				this.scratch[p0 + 0x04] = (0x0F & (chunk_bits >> 0x0C)) as base.u8
+				this.scratch[p0 + 0x05] = (0x0F & (chunk_bits >> 0x08)) as base.u8
+				this.scratch[p0 + 0x06] = (0x0F & (chunk_bits >> 0x04)) as base.u8
+				this.scratch[p0 + 0x07] = (0x0F & (chunk_bits >> 0x00)) as base.u8
+				p0 = (p0 & 511) + 0x08
+				chunk_count -= 1
+			} endwhile
+		}
+
+		p0 = p0.min(a: this.width ~sat- this.dst_x)
+		n = this.swizzler.swizzle_interleaved_from_slice!(
+			dst: dst,
+			dst_palette: dst_palette,
+			src: this.scratch[.. p0])
+		if n == 0 {
+			return "@internal note: short read"
+		}
+		this.dst_x ~sat+= (n & 0xFFFF_FFFF) as base.u32
+	} endwhile.loop
 
 	return ok
 }
