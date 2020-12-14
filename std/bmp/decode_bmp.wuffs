@@ -645,6 +645,9 @@ pri func decoder.swizzle_rle!(dst: ptr base.pixel_buffer, src: base.io_reader) b
 					code = args.src.peek_u8()
 					args.src.skip_u32_fast!(actual: 1, worst_case: 1)
 					if code < 2 {  // 0=EOL, 1=EOF.
+						if (this.dst_y == this.dst_y_end) and (code == 0) {
+							return "#bad RLE compression"
+						}
 						this.swizzler.swizzle_interleaved_transparent_black!(
 							dst: dst,
 							dst_palette: dst_palette,

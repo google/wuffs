@@ -17745,6 +17745,10 @@ wuffs_bmp__decoder__swizzle_rle(
             v_code = wuffs_base__load_u8be__no_bounds_check(iop_a_src);
             (iop_a_src += 1, wuffs_base__make_empty_struct());
             if (v_code < 2) {
+              if ((self->private_impl.f_dst_y == self->private_impl.f_dst_y_end) && (v_code == 0)) {
+                status = wuffs_base__make_status(wuffs_bmp__error__bad_rle_compression);
+                goto exit;
+              }
               wuffs_base__pixel_swizzler__swizzle_interleaved_transparent_black(&self->private_impl.f_swizzler, v_dst, v_dst_palette, 18446744073709551615u);
               self->private_impl.f_dst_x = 0;
               self->private_impl.f_dst_y += self->private_impl.f_dst_y_inc;
