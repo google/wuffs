@@ -5608,7 +5608,6 @@ struct wuffs_bmp__decoder__struct {
     uint8_t f_channel_num_bits[4];
     uint32_t f_dst_x;
     uint32_t f_dst_y;
-    uint32_t f_dst_y_end;
     uint32_t f_dst_y_inc;
     uint32_t f_pending_pad;
     uint32_t f_rle_state;
@@ -17436,11 +17435,9 @@ wuffs_bmp__decoder__decode_frame(
       self->private_impl.f_dst_x = 0;
       if (self->private_impl.f_top_down) {
         self->private_impl.f_dst_y = 0;
-        self->private_impl.f_dst_y_end = self->private_impl.f_height;
         self->private_impl.f_dst_y_inc = 1;
       } else {
         self->private_impl.f_dst_y = (self->private_impl.f_height - 1);
-        self->private_impl.f_dst_y_end = 4294967295;
         self->private_impl.f_dst_y_inc = 4294967295;
       }
       v_status = wuffs_base__pixel_swizzler__prepare(&self->private_impl.f_swizzler,
@@ -17591,7 +17588,7 @@ wuffs_bmp__decoder__swizzle_none(
       if (self->private_impl.f_dst_x == self->private_impl.f_width) {
         self->private_impl.f_dst_x = 0;
         self->private_impl.f_dst_y += self->private_impl.f_dst_y_inc;
-        if (self->private_impl.f_dst_y == self->private_impl.f_dst_y_end) {
+        if (self->private_impl.f_dst_y >= self->private_impl.f_height) {
           goto label__outer__break;
         } else if (self->private_impl.f_pad_per_row != 0) {
           self->private_impl.f_pending_pad = self->private_impl.f_pad_per_row;
@@ -17745,7 +17742,7 @@ wuffs_bmp__decoder__swizzle_rle(
             v_code = wuffs_base__load_u8be__no_bounds_check(iop_a_src);
             (iop_a_src += 1, wuffs_base__make_empty_struct());
             if (v_code < 2) {
-              if ((self->private_impl.f_dst_y == self->private_impl.f_dst_y_end) && (v_code == 0)) {
+              if ((self->private_impl.f_dst_y >= self->private_impl.f_height) && (v_code == 0)) {
                 status = wuffs_base__make_status(wuffs_bmp__error__bad_rle_compression);
                 goto exit;
               }
@@ -17840,7 +17837,7 @@ wuffs_bmp__decoder__swizzle_rle(
 #endif
             while (true) {
               self->private_impl.f_dst_y += self->private_impl.f_dst_y_inc;
-              if (self->private_impl.f_dst_y == self->private_impl.f_dst_y_end) {
+              if (self->private_impl.f_dst_y >= self->private_impl.f_height) {
                 status = wuffs_base__make_status(wuffs_bmp__error__bad_rle_compression);
                 goto exit;
               }
@@ -17875,7 +17872,7 @@ wuffs_bmp__decoder__swizzle_rle(
     }
   }
   label__outer__break:;
-  while (self->private_impl.f_dst_y != self->private_impl.f_dst_y_end) {
+  while (self->private_impl.f_dst_y < self->private_impl.f_height) {
     v_row = wuffs_base__table_u8__row(v_tab, self->private_impl.f_dst_y);
     if (v_dst_bytes_per_row < ((uint64_t)(v_row.len))) {
       v_row = wuffs_base__slice_u8__subslice_j(v_row, v_dst_bytes_per_row);
@@ -17959,7 +17956,7 @@ wuffs_bmp__decoder__swizzle_bitfields(
       if (self->private_impl.f_dst_x == self->private_impl.f_width) {
         self->private_impl.f_dst_x = 0;
         self->private_impl.f_dst_y += self->private_impl.f_dst_y_inc;
-        if (self->private_impl.f_dst_y == self->private_impl.f_dst_y_end) {
+        if (self->private_impl.f_dst_y >= self->private_impl.f_height) {
           goto label__outer__break;
         } else if (self->private_impl.f_pad_per_row != 0) {
           self->private_impl.f_pending_pad = self->private_impl.f_pad_per_row;
@@ -18083,7 +18080,7 @@ wuffs_bmp__decoder__swizzle_low_bit_depth(
     if (self->private_impl.f_dst_x == self->private_impl.f_width) {
       self->private_impl.f_dst_x = 0;
       self->private_impl.f_dst_y += self->private_impl.f_dst_y_inc;
-      if (self->private_impl.f_dst_y == self->private_impl.f_dst_y_end) {
+      if (self->private_impl.f_dst_y >= self->private_impl.f_height) {
         goto label__loop__break;
       }
     }

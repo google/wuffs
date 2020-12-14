@@ -59,7 +59,6 @@ pub struct decoder? implements base.image_decoder(
 
 	dst_x     : base.u32,
 	dst_y     : base.u32,
-	dst_y_end : base.u32,
 	dst_y_inc : base.u32,
 
 	pending_pad : base.u32[..= 3],
@@ -425,11 +424,9 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 		this.dst_x = 0
 		if this.top_down {
 			this.dst_y = 0
-			this.dst_y_end = this.height
 			this.dst_y_inc = 1
 		} else {
 			this.dst_y = this.height ~mod- 1
-			this.dst_y_end = 0xFFFF_FFFF  // -1 as a base.u32.
 			this.dst_y_inc = 0xFFFF_FFFF  // -1 as a base.u32.
 		}
 
@@ -502,7 +499,7 @@ pri func decoder.swizzle_none!(dst: ptr base.pixel_buffer, src: base.io_reader) 
 			if this.dst_x == this.width {
 				this.dst_x = 0
 				this.dst_y ~mod+= this.dst_y_inc
-				if this.dst_y == this.dst_y_end {
+				if this.dst_y >= this.height {
 					break.outer
 				} else if this.pad_per_row <> 0 {
 					this.pending_pad = this.pad_per_row
@@ -645,7 +642,7 @@ pri func decoder.swizzle_rle!(dst: ptr base.pixel_buffer, src: base.io_reader) b
 					code = args.src.peek_u8()
 					args.src.skip_u32_fast!(actual: 1, worst_case: 1)
 					if code < 2 {  // 0=EOL, 1=EOF.
-						if (this.dst_y == this.dst_y_end) and (code == 0) {
+						if (this.dst_y >= this.height) and (code == 0) {
 							return "#bad RLE compression"
 						}
 						this.swizzler.swizzle_interleaved_transparent_black!(
@@ -748,7 +745,7 @@ pri func decoder.swizzle_rle!(dst: ptr base.pixel_buffer, src: base.io_reader) b
 					code -= 1
 					while true {
 						this.dst_y ~mod+= this.dst_y_inc
-						if this.dst_y == this.dst_y_end {
+						if this.dst_y >= this.height {
 							return "#bad RLE compression"
 						}
 						row = tab.row(y: this.dst_y)
@@ -780,7 +777,7 @@ pri func decoder.swizzle_rle!(dst: ptr base.pixel_buffer, src: base.io_reader) b
 		} endwhile.middle
 	} endwhile.outer
 
-	while this.dst_y <> this.dst_y_end {
+	while this.dst_y < this.height {
 		row = tab.row(y: this.dst_y)
 		if dst_bytes_per_row < row.length() {
 			row = row[.. dst_bytes_per_row]
@@ -840,7 +837,7 @@ pri func decoder.swizzle_bitfields!(dst: ptr base.pixel_buffer, src: base.io_rea
 			if this.dst_x == this.width {
 				this.dst_x = 0
 				this.dst_y ~mod+= this.dst_y_inc
-				if this.dst_y == this.dst_y_end {
+				if this.dst_y >= this.height {
 					break.outer
 				} else if this.pad_per_row <> 0 {
 					this.pending_pad = this.pad_per_row
@@ -955,7 +952,7 @@ pri func decoder.swizzle_low_bit_depth!(dst: ptr base.pixel_buffer, src: base.io
 		if this.dst_x == this.width {
 			this.dst_x = 0
 			this.dst_y ~mod+= this.dst_y_inc
-			if this.dst_y == this.dst_y_end {
+			if this.dst_y >= this.height {
 				break.loop
 			}
 		}
