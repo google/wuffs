@@ -74,6 +74,7 @@ fuzz(wuffs_base__io_buffer* src, uint64_t hash) {
         &dec, sizeof dec, WUFFS_VERSION,
         (hash & 1) ? WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED
                    : 0);
+    hash >>= 1;
     if (!wuffs_base__status__is_ok(&status)) {
       ret = wuffs_base__status__message(&status);
       goto exit;
@@ -89,6 +90,16 @@ fuzz(wuffs_base__io_buffer* src, uint64_t hash) {
       ret = "invalid image_config";
       goto exit;
     }
+
+    // 50% of the time, choose BGRA_PREMUL instead of the native pixel config.
+    if (hash & 1) {
+      wuffs_base__pixel_config__set(
+          &ic.pixcfg, WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL,
+          WUFFS_BASE__PIXEL_SUBSAMPLING__NONE,
+          wuffs_base__pixel_config__width(&ic.pixcfg),
+          wuffs_base__pixel_config__height(&ic.pixcfg));
+    }
+    hash >>= 1;
 
     // Wuffs allows either statically or dynamically allocated work buffers.
     // This program exercises dynamic allocation.
