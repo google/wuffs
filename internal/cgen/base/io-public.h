@@ -46,6 +46,11 @@ typedef struct wuffs_base__io_buffer__struct {
   inline uint8_t* writer_pointer() const;
   inline uint64_t writer_position() const;
   inline wuffs_base__slice_u8 writer_slice() const;
+
+  // Deprecated: use reader_position.
+  inline uint64_t reader_io_position() const;
+  // Deprecated: use writer_position.
+  inline uint64_t writer_io_position() const;
 #endif  // __cplusplus
 
 } wuffs_base__io_buffer;
@@ -170,6 +175,12 @@ wuffs_base__io_buffer__compact(wuffs_base__io_buffer* buf) {
   buf->meta.ri = 0;
 }
 
+// Deprecated. Use wuffs_base__io_buffer__reader_position.
+static inline uint64_t  //
+wuffs_base__io_buffer__reader_io_position(const wuffs_base__io_buffer* buf) {
+  return buf ? wuffs_base__u64__sat_add(buf->meta.pos, buf->meta.ri) : 0;
+}
+
 static inline size_t  //
 wuffs_base__io_buffer__reader_length(const wuffs_base__io_buffer* buf) {
   return buf ? buf->meta.wi - buf->meta.ri : 0;
@@ -190,6 +201,12 @@ wuffs_base__io_buffer__reader_slice(const wuffs_base__io_buffer* buf) {
   return buf ? wuffs_base__make_slice_u8(buf->data.ptr + buf->meta.ri,
                                          buf->meta.wi - buf->meta.ri)
              : wuffs_base__empty_slice_u8();
+}
+
+// Deprecated. Use wuffs_base__io_buffer__writer_position.
+static inline uint64_t  //
+wuffs_base__io_buffer__writer_io_position(const wuffs_base__io_buffer* buf) {
+  return buf ? wuffs_base__u64__sat_add(buf->meta.pos, buf->meta.wi) : 0;
 }
 
 static inline size_t  //
@@ -226,6 +243,11 @@ wuffs_base__io_buffer::compact() {
   wuffs_base__io_buffer__compact(this);
 }
 
+inline uint64_t  //
+wuffs_base__io_buffer::reader_io_position() const {
+  return wuffs_base__io_buffer__reader_io_position(this);
+}
+
 inline size_t  //
 wuffs_base__io_buffer::reader_length() const {
   return wuffs_base__io_buffer__reader_length(this);
@@ -244,6 +266,11 @@ wuffs_base__io_buffer::reader_position() const {
 inline wuffs_base__slice_u8  //
 wuffs_base__io_buffer::reader_slice() const {
   return wuffs_base__io_buffer__reader_slice(this);
+}
+
+inline uint64_t  //
+wuffs_base__io_buffer::writer_io_position() const {
+  return wuffs_base__io_buffer__writer_io_position(this);
 }
 
 inline size_t  //
