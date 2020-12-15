@@ -17506,6 +17506,16 @@ wuffs_bmp__decoder__decode_frame(
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(3);
       }
       label__0__break:;
+      self->private_data.s_decode_frame[0].scratch = self->private_impl.f_pending_pad;
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
+      if (self->private_data.s_decode_frame[0].scratch > ((uint64_t)(io2_a_src - iop_a_src))) {
+        self->private_data.s_decode_frame[0].scratch -= ((uint64_t)(io2_a_src - iop_a_src));
+        iop_a_src = io2_a_src;
+        status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+        goto suspend;
+      }
+      iop_a_src += self->private_data.s_decode_frame[0].scratch;
+      self->private_impl.f_pending_pad = 0;
     }
     self->private_impl.f_call_sequence = 3;
 
@@ -17589,6 +17599,9 @@ wuffs_bmp__decoder__swizzle_none(
         self->private_impl.f_dst_x = 0;
         self->private_impl.f_dst_y += self->private_impl.f_dst_y_inc;
         if (self->private_impl.f_dst_y >= self->private_impl.f_height) {
+          if (self->private_impl.f_height > 0) {
+            self->private_impl.f_pending_pad = self->private_impl.f_pad_per_row;
+          }
           goto label__outer__break;
         } else if (self->private_impl.f_pad_per_row != 0) {
           self->private_impl.f_pending_pad = self->private_impl.f_pad_per_row;
@@ -17957,6 +17970,9 @@ wuffs_bmp__decoder__swizzle_bitfields(
         self->private_impl.f_dst_x = 0;
         self->private_impl.f_dst_y += self->private_impl.f_dst_y_inc;
         if (self->private_impl.f_dst_y >= self->private_impl.f_height) {
+          if (self->private_impl.f_height > 0) {
+            self->private_impl.f_pending_pad = self->private_impl.f_pad_per_row;
+          }
           goto label__outer__break;
         } else if (self->private_impl.f_pad_per_row != 0) {
           self->private_impl.f_pending_pad = self->private_impl.f_pad_per_row;

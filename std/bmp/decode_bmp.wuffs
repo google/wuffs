@@ -458,6 +458,9 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 			}
 			yield? base."$short read"
 		} endwhile
+
+		args.src.skip_u32?(n: this.pending_pad)
+		this.pending_pad = 0
 	}
 
 	this.call_sequence = 3
@@ -500,6 +503,9 @@ pri func decoder.swizzle_none!(dst: ptr base.pixel_buffer, src: base.io_reader) 
 				this.dst_x = 0
 				this.dst_y ~mod+= this.dst_y_inc
 				if this.dst_y >= this.height {
+					if this.height > 0 {
+						this.pending_pad = this.pad_per_row
+					}
 					break.outer
 				} else if this.pad_per_row <> 0 {
 					this.pending_pad = this.pad_per_row
@@ -838,6 +844,9 @@ pri func decoder.swizzle_bitfields!(dst: ptr base.pixel_buffer, src: base.io_rea
 				this.dst_x = 0
 				this.dst_y ~mod+= this.dst_y_inc
 				if this.dst_y >= this.height {
+					if this.height > 0 {
+						this.pending_pad = this.pad_per_row
+					}
 					break.outer
 				} else if this.pad_per_row <> 0 {
 					this.pending_pad = this.pad_per_row
