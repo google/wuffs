@@ -1059,35 +1059,6 @@ do_test__wuffs_base__hasher_u32(wuffs_base__hasher_u32* b,
 }
 
 const char*  //
-do_test__wuffs_base__image_config_decoder(wuffs_base__image_decoder* b,
-                                          const char* src_filename,
-                                          size_t src_ri,
-                                          size_t src_wi,
-                                          uint64_t want_num_frames) {
-  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = g_src_slice_u8,
-  });
-  CHECK_STRING(read_file_fragment(&src, src_filename, src_ri, src_wi));
-
-  uint64_t have_num_frames;
-  for (have_num_frames = 0;; have_num_frames++) {
-    wuffs_base__status status =
-        wuffs_base__image_decoder__decode_frame_config(b, NULL, &src);
-    if (status.repr == wuffs_base__note__end_of_data) {
-      break;
-    } else if (!wuffs_base__status__is_ok(&status)) {
-      RETURN_FAIL("decode_frame_config: \"%s\"", status.repr);
-    }
-  }
-
-  if (have_num_frames != want_num_frames) {
-    RETURN_FAIL("num_frames: have %" PRIu64 ", want %" PRIu64, have_num_frames,
-                want_num_frames);
-  }
-  return NULL;
-}
-
-const char*  //
 do_test__wuffs_base__image_decoder(
     wuffs_base__image_decoder* b,
     const char* src_filename,

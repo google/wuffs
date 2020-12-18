@@ -14,27 +14,6 @@
 
 // --------
 
-//#USE "go run preprocess-wuffs.go" TO MAKE decode_config.wuffs
-//#WHEN PREPROC000
-//
-// This file defines "struct decoder". It is also preprocessed (copied with
-// automatic edits) to generate the decode_config.wuffs file that defines
-// "struct config_decoder". See preprocess-wuffs.go for more detail about the
-// preprocessor language (the //#FOOBAR comments).
-//
-// config_decoder does not implement decode_frame, only decode_frame_config and
-// decode_image_config (and other miscellaneous methods). The sizeof the
-// config_decoder can be substantially smaller than the sizeof the full
-// decoder, as it does not need any internal buffers for understanding the
-// underlying compression format.
-//
-//#WHEN PREPROC000 decode_config.wuffs
-//#REPLACE   "func decoder" WITH   "func config_decoder"
-//#REPLACE "struct decoder" WITH "struct config_decoder"
-//#DONE PREPROC000
-
-// --------
-
 pub struct decoder? implements base.image_decoder(
 	width  : base.u32,
 	height : base.u32,
@@ -117,7 +96,6 @@ pub struct decoder? implements base.image_decoder(
 	frame_rect_x1 : base.u32,
 	frame_rect_y1 : base.u32,
 
-	//#WHEN PREPROC100
 	// The dst_etc fields are the output cursor during copy_to_image_buffer.
 	dst_x            : base.u32,
 	dst_y            : base.u32,
@@ -128,11 +106,9 @@ pub struct decoder? implements base.image_decoder(
 	compressed_wi : base.u64,
 
 	swizzler : base.pixel_swizzler,
-	//#DONE PREPROC100
 
 	util : base.utility,
 )(
-	//#WHEN PREPROC101
 	compressed : array[4096] base.u8,
 
 	// palettes[0] and palettes[1] are the Global and Local Color Table.
@@ -141,9 +117,6 @@ pub struct decoder? implements base.image_decoder(
 	dst_palette : array[4 * 256] base.u8,
 
 	lzw : lzw.decoder,
-	//#WHEN PREPROC101 decode_config.wuffs
-	//## palettes : array[1] array[4 * 256] base.u8,
-	//#DONE PREPROC101
 )
 
 pub func decoder.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
@@ -308,7 +281,6 @@ pub func decoder.num_decoded_frames() base.u64 {
 }
 
 pub func decoder.frame_dirty_rect() base.rect_ie_u32 {
-	//#WHEN PREPROC200
 	// The "foo.min(a:this.width_or_height)" calls clip the nominal frame_rect
 	// to the image_rect.
 	return this.util.make_rect_ie_u32(
@@ -316,19 +288,12 @@ pub func decoder.frame_dirty_rect() base.rect_ie_u32 {
 		min_incl_y: this.frame_rect_y0.min(a: this.height),
 		max_excl_x: this.frame_rect_x1.min(a: this.width),
 		max_excl_y: this.dirty_max_excl_y.min(a: this.height))
-	//#WHEN PREPROC200 decode_config.wuffs
-	//## return this.util.empty_rect_ie_u32()
-	//#DONE PREPROC200
 }
 
 pub func decoder.workbuf_len() base.range_ii_u64 {
-	//#WHEN PREPROC201
 	return this.util.make_range_ii_u64(
 		min_incl: DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE,
 		max_incl: DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE)
-	//#WHEN PREPROC201 decode_config.wuffs
-	//## return this.util.empty_range_ii_u64()
-	//#DONE PREPROC201
 }
 
 pub func decoder.restart_frame!(index: base.u64, io_position: base.u64) base.status {
@@ -351,9 +316,7 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
 
 	this.ignore_metadata = true
 
-	//#WHEN PREPROC202
 	this.dirty_max_excl_y = 0
-	//#DONE PREPROC202
 
 	if not this.end_of_data {
 		if this.call_sequence == 0 {
@@ -443,7 +406,6 @@ pri func decoder.skip_frame?(src: base.io_reader) {
 
 // TODO: honor args.opts.
 pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, blend: base.pixel_blend, workbuf: slice base.u8, opts: nptr base.decode_frame_options) {
-	//#WHEN PREPROC300
 	this.ignore_metadata = true
 	if this.call_sequence <> 4 {
 		this.decode_frame_config?(dst: nullptr, src: args.src)
@@ -457,9 +419,6 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 
 	this.num_decoded_frames_value ~sat+= 1
 	this.reset_gc!()
-	//#WHEN PREPROC300 decode_config.wuffs
-	//## return base."#unsupported method"
-	//#DONE PREPROC300
 }
 
 pri func decoder.reset_gc!() {
@@ -796,10 +755,8 @@ pri func decoder.decode_id_part0?(src: base.io_reader) {
 	this.frame_rect_y1 = args.src.read_u16le_as_u32?()
 	this.frame_rect_y1 ~mod+= this.frame_rect_y0
 
-	//#WHEN PREPROC400
 	this.dst_x = this.frame_rect_x0
 	this.dst_y = this.frame_rect_y0
-	//#DONE PREPROC400
 
 	// Set the image's overall width and height to be the maximum of the
 	// nominal image width and height (given in the Logical Screen Descriptor)
@@ -812,7 +769,6 @@ pri func decoder.decode_id_part0?(src: base.io_reader) {
 	}
 }
 
-//#WHEN PREPROC900
 pri func decoder.decode_id_part1?(dst: ptr base.pixel_buffer, src: base.io_reader, blend: base.pixel_blend) {
 	var flags               : base.u8
 	var which_palette       : base.u8[..= 1]
@@ -1146,4 +1102,3 @@ pri func decoder.copy_to_image_buffer!(pb: ptr base.pixel_buffer, src: slice bas
 	} endwhile
 	return ok
 }
-//#DONE PREPROC900

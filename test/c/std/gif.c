@@ -170,19 +170,6 @@ test_basic_sub_struct_initializer() {
 // ---------------- GIF Tests
 
 const char*  //
-test_wuffs_gif_decode_interface_image_config_decoder() {
-  CHECK_FOCUS(__func__);
-  wuffs_gif__config_decoder dec;
-  CHECK_STATUS("initialize",
-               wuffs_gif__config_decoder__initialize(
-                   &dec, sizeof dec, WUFFS_VERSION,
-                   WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
-  return do_test__wuffs_base__image_config_decoder(
-      wuffs_gif__config_decoder__upcast_as__wuffs_base__image_decoder(&dec),
-      "test/data/animated-red-blue.gif", 0, SIZE_MAX, 4);
-}
-
-const char*  //
 test_wuffs_gif_decode_interface_image_decoder() {
   CHECK_FOCUS(__func__);
   wuffs_gif__decoder dec;
@@ -1998,21 +1985,6 @@ test_wuffs_gif_small_frame_interlaced() {
   return NULL;
 }
 
-const char*  //
-test_wuffs_gif_sizeof() {
-  CHECK_FOCUS(__func__);
-  size_t n0 = sizeof(wuffs_gif__config_decoder);
-  size_t n1 = sizeof(wuffs_gif__decoder);
-  // As of 2020-02-05, the two sizeof's differ by over 60KiB. The exact
-  // difference doesn't really matter, just that it's non-trivial.
-  if ((n1 < n0) || ((n1 - n0) < 8192)) {
-    RETURN_FAIL(
-        "config_decoder (%zu) not substantially smaller than decoder (%zu)", n0,
-        n1);
-  }
-  return NULL;
-}
-
 // ---------------- Mimic Tests
 
 #ifdef WUFFS_MIMIC
@@ -2358,7 +2330,6 @@ proc g_tests[] = {
     test_wuffs_gif_decode_input_is_a_gif_many_medium_reads,
     test_wuffs_gif_decode_input_is_a_gif_many_small_reads,
     test_wuffs_gif_decode_input_is_a_png,
-    test_wuffs_gif_decode_interface_image_config_decoder,
     test_wuffs_gif_decode_interface_image_decoder,
     test_wuffs_gif_decode_interlaced_truncated,
     test_wuffs_gif_decode_metadata_empty,
@@ -2383,7 +2354,6 @@ proc g_tests[] = {
     test_wuffs_gif_io_position_one_chunk,
     test_wuffs_gif_io_position_two_chunks,
     test_wuffs_gif_small_frame_interlaced,
-    test_wuffs_gif_sizeof,
 
 #ifdef WUFFS_MIMIC
 
