@@ -14,6 +14,8 @@
 
 // +build ignore
 
+// Deprecated: unused as of commit 695a6815 "Remove gif.config_decoder".
+
 // TODO: consider renaming this from script/preprocess-wuffs.go to
 // cmd/wuffspreprocess, making it a "go install"able command line tool.
 
