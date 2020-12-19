@@ -28,8 +28,29 @@ type Options struct {
 	AllowDoubleUnderscoreNames bool
 }
 
-func isDoubleUnderscore(s string) bool {
-	return len(s) >= 2 && s[0] == '_' && s[1] == '_'
+func validConstName(s string) bool {
+	if (len(s) >= 2) && (s[0] == '_') && (s[1] == '_') {
+		return false
+	}
+	for i := 0; i < len(s); i++ {
+		switch c := s[i]; {
+		default:
+			return false
+		case c == '_':
+		case ('0' <= c) && (c <= '9'):
+		case ('A' <= c) && (c <= 'Z'): // Upper A-Z but not lower a-z.
+		}
+	}
+	return true
+}
+
+func containsDoubleUnderscore(s string) bool {
+	for i := 1; i < len(s); i++ {
+		if (s[i-1] == '_') && (s[i] == '_') {
+			return true
+		}
+	}
+	return false
 }
 
 func isStatusMessage(s string) bool {
@@ -138,7 +159,10 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			if err != nil {
 				return nil, err
 			}
-			// TODO: check AllowDoubleUnderscoreNames?
+			if !validConstName(p.tm.ByID(id)) {
+				return nil, fmt.Errorf(`parse: invalid const name %q at %s:%d`,
+					p.tm.ByID(id), p.filename, p.line())
+			}
 
 			if x := p.peek1(); x != t.IDColon {
 				got := p.tm.ByID(x)
@@ -181,7 +205,7 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			}
 			// TODO: should we require id0 != 0? In other words, always methods
 			// (attached to receivers) and never free standing functions?
-			if !p.opts.AllowDoubleUnderscoreNames && isDoubleUnderscore(p.tm.ByID(id1)) {
+			if !p.opts.AllowDoubleUnderscoreNames && containsDoubleUnderscore(p.tm.ByID(id1)) {
 				return nil, fmt.Errorf(`parse: double-underscore %q used for func name at %s:%d`,
 					p.tm.ByID(id1), p.filename, p.line())
 			}
@@ -253,7 +277,7 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			if err != nil {
 				return nil, err
 			}
-			if !p.opts.AllowDoubleUnderscoreNames && isDoubleUnderscore(p.tm.ByID(name)) {
+			if !p.opts.AllowDoubleUnderscoreNames && containsDoubleUnderscore(p.tm.ByID(name)) {
 				return nil, fmt.Errorf(`parse: double-underscore %q used for struct name at %s:%d`,
 					p.tm.ByID(name), p.filename, p.line())
 			}
