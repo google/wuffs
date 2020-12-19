@@ -19,40 +19,49 @@ pub struct decoder? implements base.image_decoder(
 	height : base.u32,
 
 	// Call sequence states:
-	//  - 0: initial state.
-	//  - 1: metadata reported; image config decode is in progress.
-	//  - 2: metadata finished; image config decode is in progress.
-	//  - 3: image config decoded, including the first frame's bounds, but not
-	//       the first frame's pixels.
-	//  - 4: frame config decoded.
-	//  - 5: frame decoded.
+	//  - 0x00: initial state.
+	//  - 0x01: metadata reported; image config decode is in progress.
+	//  - 0x02: metadata finished; image config decode is in progress.
+	//  - 0x03: image config decoded, including the first frame's bounds, but
+	//          not the first frame's pixels.
+	//  - 0x04: frame config decoded.
+	//  - 0x05: frame decoded.
+	//
+	// GIF is unusual (distinguishing state 0x03 / state 0x05) in that the
+	// first frame's bounds can affect the overall image bounds (as per
+	// test/data/artificial/gif-frame-out-of-bounds.gif.make-artificial.txt).
+	// Decoding the first frame's bounds is part of DIC even though,
+	// conceptually, it should be part of the first DFC.
 	//
 	// State transitions:
 	//
-	//  - 0 -> 1: via IC (metadata reported)
-	//  - 0 -> 3: via IC (metadata not reported)
-	//  - 0 -> 4: via FC with implicit IC
-	//  - 0 -> 5: via F  with implicit IC and FC
+	//  - 0x00 -> 0x01: via DIC (metadata reported)
+	//  - 0x00 -> 0x03: via DIC (metadata not reported)
+	//  - 0x00 -> 0x04: via DFC with implicit DIC
+	//  - 0x00 -> 0x05: via DF  with implicit DIC and DFC
 	//
-	//  - 1 -> 2: via AMC
+	//  - 0x01 -> 0x02: via AMC
 	//
-	//  - 2 -> 1: via IC (metadata reported)
-	//  - 2 -> 3: via IC (metadata not reported)
+	//  - 0x02 -> 0x01: via DIC (metadata reported)
+	//  - 0x02 -> 0x03: via DIC (metadata not reported)
 	//
-	//  - 3 -> 4: via FC
-	//  - 3 -> 5: via F  with implicit FC
+	//  - 0x03 -> 0x04: via DFC
+	//  - 0x03 -> 0x05: via DF  with implicit DFC
 	//
-	//  - 4 -> 4: via FC with implicit F
-	//  - 4 -> 5: via F
+	//  - 0x04 -> 0x04: via DFC with implicit DF
+	//  - 0x04 -> 0x05: via DF
 	//
-	//  - 5 -> 4: via FC
-	//  - 5 -> 5: via F  with implicit FC
+	//  - 0x05 -> 0x04: via DFC
+	//  - 0x05 -> 0x05: via DF  with implicit DFC
+	//
+	//  - ???? -> 0x05: via RF  for ???? > 0x00
 	//
 	// Where:
 	//  - AMC is ack_metadata_chunk
-	//  - F   is decode_frame,        implicit means skip_frame
-	//  - FC  is decode_frame_config, implicit means nullptr args.dst
-	//  - IC  is decode_image_config, implicit means nullptr args.dst
+	//  - DF  is decode_frame,        implicit means skip_frame
+	//  - DFC is decode_frame_config, implicit means nullptr args.dst
+	//  - DIC is decode_image_config, implicit means nullptr args.dst
+	//  - RF  is restart_frame
 	call_sequence : base.u8,
 
 	ignore_metadata      : base.bool,

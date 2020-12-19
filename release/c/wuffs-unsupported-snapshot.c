@@ -16885,7 +16885,7 @@ wuffs_bmp__decoder__decode_image_config(
           self->private_impl.f_frame_config_io_position,
           (self->private_impl.f_channel_masks[3] == 0));
     }
-    self->private_impl.f_call_sequence = 1;
+    self->private_impl.f_call_sequence = 3;
 
     goto ok;
     ok:
@@ -16953,7 +16953,7 @@ wuffs_bmp__decoder__decode_frame_config(
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
-    if (self->private_impl.f_call_sequence < 1) {
+    if (self->private_impl.f_call_sequence < 3) {
       if (a_src) {
         a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
       }
@@ -16965,13 +16965,13 @@ wuffs_bmp__decoder__decode_frame_config(
       if (status.repr) {
         goto suspend;
       }
-    } else if (self->private_impl.f_call_sequence == 1) {
+    } else if (self->private_impl.f_call_sequence == 3) {
       if (self->private_impl.f_frame_config_io_position != wuffs_base__u64__sat_add(a_src->meta.pos, ((uint64_t)(iop_a_src - io0_a_src)))) {
         status = wuffs_base__make_status(wuffs_base__error__bad_restart);
         goto exit;
       }
-    } else if (self->private_impl.f_call_sequence == 2) {
-      self->private_impl.f_call_sequence = 3;
+    } else if (self->private_impl.f_call_sequence == 4) {
+      self->private_impl.f_call_sequence = 255;
       status = wuffs_base__make_status(wuffs_base__note__end_of_data);
       goto ok;
     } else {
@@ -16994,7 +16994,7 @@ wuffs_bmp__decoder__decode_frame_config(
           false,
           4278190080);
     }
-    self->private_impl.f_call_sequence = 2;
+    self->private_impl.f_call_sequence = 4;
 
     goto ok;
     ok:
@@ -17070,7 +17070,7 @@ wuffs_bmp__decoder__decode_frame(
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
-    if (self->private_impl.f_call_sequence < 2) {
+    if (self->private_impl.f_call_sequence < 4) {
       if (a_src) {
         a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
       }
@@ -17082,7 +17082,7 @@ wuffs_bmp__decoder__decode_frame(
       if (status.repr) {
         goto suspend;
       }
-    } else if (self->private_impl.f_call_sequence == 2) {
+    } else if (self->private_impl.f_call_sequence == 4) {
     } else {
       status = wuffs_base__make_status(wuffs_base__note__end_of_data);
       goto ok;
@@ -17182,7 +17182,7 @@ wuffs_bmp__decoder__decode_frame(
       iop_a_src += self->private_data.s_decode_frame[0].scratch;
       self->private_impl.f_pending_pad = 0;
     }
-    self->private_impl.f_call_sequence = 3;
+    self->private_impl.f_call_sequence = 255;
 
     goto ok;
     ok:
@@ -17931,7 +17931,7 @@ wuffs_bmp__decoder__num_decoded_frame_configs(
     return 0;
   }
 
-  if (self->private_impl.f_call_sequence > 1) {
+  if (self->private_impl.f_call_sequence > 3) {
     return 1;
   }
   return 0;
@@ -17950,7 +17950,7 @@ wuffs_bmp__decoder__num_decoded_frames(
     return 0;
   }
 
-  if (self->private_impl.f_call_sequence > 2) {
+  if (self->private_impl.f_call_sequence > 4) {
     return 1;
   }
   return 0;
@@ -17979,7 +17979,7 @@ wuffs_bmp__decoder__restart_frame(
   if (a_index != 0) {
     return wuffs_base__make_status(wuffs_base__error__bad_argument);
   }
-  self->private_impl.f_call_sequence = 1;
+  self->private_impl.f_call_sequence = 3;
   self->private_impl.f_frame_config_io_position = a_io_position;
   return wuffs_base__make_status(NULL);
 }
@@ -27625,7 +27625,7 @@ wuffs_wbmp__decoder__decode_image_config(
           self->private_impl.f_frame_config_io_position,
           true);
     }
-    self->private_impl.f_call_sequence = 1;
+    self->private_impl.f_call_sequence = 3;
 
     goto ok;
     ok:
@@ -27695,7 +27695,7 @@ wuffs_wbmp__decoder__decode_frame_config(
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
-    if (self->private_impl.f_call_sequence < 1) {
+    if (self->private_impl.f_call_sequence < 3) {
       if (a_src) {
         a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
       }
@@ -27707,13 +27707,13 @@ wuffs_wbmp__decoder__decode_frame_config(
       if (status.repr) {
         goto suspend;
       }
-    } else if (self->private_impl.f_call_sequence == 1) {
+    } else if (self->private_impl.f_call_sequence == 3) {
       if (self->private_impl.f_frame_config_io_position != wuffs_base__u64__sat_add(a_src->meta.pos, ((uint64_t)(iop_a_src - io0_a_src)))) {
         status = wuffs_base__make_status(wuffs_base__error__bad_restart);
         goto exit;
       }
-    } else if (self->private_impl.f_call_sequence == 2) {
-      self->private_impl.f_call_sequence = 3;
+    } else if (self->private_impl.f_call_sequence == 4) {
+      self->private_impl.f_call_sequence = 255;
       status = wuffs_base__make_status(wuffs_base__note__end_of_data);
       goto ok;
     } else {
@@ -27736,7 +27736,7 @@ wuffs_wbmp__decoder__decode_frame_config(
           false,
           4278190080);
     }
-    self->private_impl.f_call_sequence = 2;
+    self->private_impl.f_call_sequence = 4;
 
     goto ok;
     ok:
@@ -27826,7 +27826,7 @@ wuffs_wbmp__decoder__decode_frame(
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
-    if (self->private_impl.f_call_sequence < 2) {
+    if (self->private_impl.f_call_sequence < 4) {
       if (a_src) {
         a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
       }
@@ -27838,7 +27838,7 @@ wuffs_wbmp__decoder__decode_frame(
       if (status.repr) {
         goto suspend;
       }
-    } else if (self->private_impl.f_call_sequence == 2) {
+    } else if (self->private_impl.f_call_sequence == 4) {
     } else {
       status = wuffs_base__make_status(wuffs_base__note__end_of_data);
       goto ok;
@@ -27901,7 +27901,7 @@ wuffs_wbmp__decoder__decode_frame(
         v_dst_y += 1;
       }
     }
-    self->private_impl.f_call_sequence = 3;
+    self->private_impl.f_call_sequence = 255;
 
     goto ok;
     ok:
@@ -27980,7 +27980,7 @@ wuffs_wbmp__decoder__num_decoded_frame_configs(
     return 0;
   }
 
-  if (self->private_impl.f_call_sequence > 1) {
+  if (self->private_impl.f_call_sequence > 3) {
     return 1;
   }
   return 0;
@@ -27999,7 +27999,7 @@ wuffs_wbmp__decoder__num_decoded_frames(
     return 0;
   }
 
-  if (self->private_impl.f_call_sequence > 2) {
+  if (self->private_impl.f_call_sequence > 4) {
     return 1;
   }
   return 0;
@@ -28028,7 +28028,7 @@ wuffs_wbmp__decoder__restart_frame(
   if (a_index != 0) {
     return wuffs_base__make_status(wuffs_base__error__bad_argument);
   }
-  self->private_impl.f_call_sequence = 1;
+  self->private_impl.f_call_sequence = 3;
   self->private_impl.f_frame_config_io_position = a_io_position;
   return wuffs_base__make_status(NULL);
 }
