@@ -307,10 +307,6 @@ test_wuffs_wbmp_decode_frame_config() {
     RETURN_FAIL("decode_frame_config #1: have \"%s\", want \"%s\"", status.repr,
                 wuffs_base__note__end_of_data);
   }
-  if (src.meta.ri != src.meta.wi) {
-    RETURN_FAIL("at end of data: ri (%zu) doesn't equal wi (%zu)", src.meta.ri,
-                src.meta.wi);
-  }
   return NULL;
 }
 

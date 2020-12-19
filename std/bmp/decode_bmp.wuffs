@@ -35,10 +35,9 @@ pub struct decoder? implements base.image_decoder(
 
 	call_sequence : base.u8,
 
-	top_down      : base.bool,
-	pad_per_row   : base.u32[..= 3],
-	bytes_per_row : base.u64[..= 0x0000_0001_FFFF_FFFC],  // 4 * 0x7FFF_FFFF
-	src_pixfmt    : base.u32,
+	top_down    : base.bool,
+	pad_per_row : base.u32[..= 3],
+	src_pixfmt  : base.u32,
 
 	io_redirect_fourcc : base.u32,
 	io_redirect_pos    : base.u64,
@@ -326,29 +325,22 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 	if this.bits_per_pixel == 1 {
 		// byte_width is this.width divided by 8, rounding up.
 		byte_width = (this.width >> 3) + (((this.width & 7) + 7) >> 3)
-		this.bytes_per_row = ((((byte_width as base.u64) * 1) + 3) >> 2) << 2
 		this.pad_per_row = (4 - (byte_width & 3)) & 3
 	} else if this.bits_per_pixel == 2 {
 		// byte_width is this.width divided by 4, rounding up.
 		byte_width = (this.width >> 2) + (((this.width & 3) + 3) >> 2)
-		this.bytes_per_row = ((((byte_width as base.u64) * 1) + 3) >> 2) << 2
 		this.pad_per_row = (4 - (byte_width & 3)) & 3
 	} else if this.bits_per_pixel == 4 {
 		// byte_width is this.width divided by 2, rounding up.
 		byte_width = (this.width >> 1) + (this.width & 1)
-		this.bytes_per_row = ((((byte_width as base.u64) * 1) + 3) >> 2) << 2
 		this.pad_per_row = (4 - (byte_width & 3)) & 3
 	} else if this.bits_per_pixel == 8 {
-		this.bytes_per_row = ((((this.width as base.u64) * 1) + 3) >> 2) << 2
 		this.pad_per_row = (4 - (this.width & 3)) & 3
 	} else if this.bits_per_pixel == 16 {
-		this.bytes_per_row = ((((this.width as base.u64) * 2) + 3) >> 2) << 2
 		this.pad_per_row = (this.width & 1) * 2
 	} else if this.bits_per_pixel == 24 {
-		this.bytes_per_row = ((((this.width as base.u64) * 3) + 3) >> 2) << 2
 		this.pad_per_row = this.width & 3
 	} else if this.bits_per_pixel == 32 {
-		this.bytes_per_row = (this.width as base.u64) * 4
 		this.pad_per_row = 0
 	}
 
@@ -383,7 +375,7 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
 			return base."#bad restart"
 		}
 	} else if this.call_sequence == 2 {
-		this.skip_frame?(src: args.src)
+		this.call_sequence = 3
 		return base."@end of data"
 	} else {
 		return base."@end of data"
@@ -1084,102 +1076,6 @@ pri func decoder.swizzle_low_bit_depth!(dst: ptr base.pixel_buffer, src: base.io
 	} endwhile.loop
 
 	return ok
-}
-
-pri func decoder.skip_frame?(src: base.io_reader) {
-	var code      : base.u8
-	var rle_state : base.u32
-
-	args.src.skip_u32?(n: this.padding)
-
-	if (this.compression <> COMPRESSION_RLE8) and
-		(this.compression <> COMPRESSION_RLE4) {
-		args.src.skip?(n: this.bytes_per_row * (this.height as base.u64))
-
-	} else {
-		while.loop true {
-			if rle_state == RLE_STATE_NEUTRAL {
-				code = args.src.read_u8?()
-				if code == 0 {
-					rle_state = RLE_STATE_ESCAPE
-					continue.loop
-				}
-				this.rle_length = code as base.u32
-				rle_state = RLE_STATE_RUN
-				continue.loop
-
-			} else if rle_state == RLE_STATE_RUN {
-				code = args.src.read_u8?()
-				this.dst_x ~sat+= this.rle_length
-				rle_state = RLE_STATE_NEUTRAL
-				continue.loop
-
-			} else if rle_state == RLE_STATE_ESCAPE {
-				code = args.src.read_u8?()
-				if code < 2 {  // 0=EOL, 1=EOF.
-					if (this.dst_y >= this.height) and (code == 0) {
-						return "#bad RLE compression"
-					}
-					this.dst_x = 0
-					this.dst_y ~mod+= this.dst_y_inc
-					if code > 0 {
-						break.loop
-					}
-					rle_state = RLE_STATE_NEUTRAL
-					continue.loop
-				} else if code == 2 {  // 2=DELTA.
-					rle_state = RLE_STATE_DELTA_X
-					continue.loop
-				}
-				this.rle_length = code as base.u32
-				rle_state = RLE_STATE_LITERAL
-				continue.loop
-
-			} else if rle_state == RLE_STATE_LITERAL {
-				if this.bits_per_pixel == 8 {
-					args.src.skip_u32?(n: ((this.rle_length + 1) / 2) * 2)
-				} else {
-					args.src.skip_u32?(n: ((this.rle_length + 3) / 4) * 2)
-				}
-				this.dst_x ~sat+= this.rle_length
-				this.rle_length = 0
-				rle_state = RLE_STATE_NEUTRAL
-				continue.loop
-
-			} else if rle_state == RLE_STATE_DELTA_X {
-				this.rle_delta_x = args.src.read_u8?()
-				rle_state = RLE_STATE_DELTA_Y
-				continue.loop
-
-			}  // else (rle_state == RLE_STATE_DELTA_Y).
-			code = args.src.read_u8?()
-			if this.rle_delta_x > 0 {
-				this.dst_x ~sat+= this.rle_delta_x as base.u32
-				this.rle_delta_x = 0
-				if this.dst_x > this.width {
-					return "#bad RLE compression"
-				}
-			}
-
-			if code > 0 {
-				code -= 1
-				while true {
-					this.dst_y ~mod+= this.dst_y_inc
-					if this.dst_y >= this.height {
-						return "#bad RLE compression"
-					}
-					if code <= 0 {
-						break
-					}
-					code -= 1
-				} endwhile
-			}
-
-			rle_state = RLE_STATE_NEUTRAL
-		} endwhile.loop
-	}
-
-	this.call_sequence = 3
 }
 
 pub func decoder.frame_dirty_rect() base.rect_ie_u32 {

@@ -5621,7 +5621,6 @@ struct wuffs_bmp__decoder__struct {
     uint8_t f_call_sequence;
     bool f_top_down;
     uint32_t f_pad_per_row;
-    uint64_t f_bytes_per_row;
     uint32_t f_src_pixfmt;
     uint32_t f_io_redirect_fourcc;
     uint64_t f_io_redirect_pos;
@@ -5646,7 +5645,6 @@ struct wuffs_bmp__decoder__struct {
     uint32_t p_decode_image_config[1];
     uint32_t p_decode_frame_config[1];
     uint32_t p_decode_frame[1];
-    uint32_t p_skip_frame[1];
     uint32_t p_read_palette[1];
   } private_impl;
 
@@ -5661,10 +5659,6 @@ struct wuffs_bmp__decoder__struct {
       wuffs_base__status v_status;
       uint64_t scratch;
     } s_decode_frame[1];
-    struct {
-      uint32_t v_rle_state;
-      uint64_t scratch;
-    } s_skip_frame[1];
     struct {
       uint32_t v_i;
       uint64_t scratch;
@@ -7788,7 +7782,6 @@ struct wuffs_wbmp__decoder__struct {
     uint32_t p_decode_image_config[1];
     uint32_t p_decode_frame_config[1];
     uint32_t p_decode_frame[1];
-    uint32_t p_skip_frame[1];
   } private_impl;
 
   struct {
@@ -7803,9 +7796,6 @@ struct wuffs_wbmp__decoder__struct {
       uint8_t v_src[1];
       uint8_t v_c;
     } s_decode_frame[1];
-    struct {
-      uint64_t scratch;
-    } s_skip_frame[1];
   } private_data;
 
 #ifdef __cplusplus
@@ -15870,11 +15860,6 @@ wuffs_bmp__decoder__swizzle_low_bit_depth(
     wuffs_base__io_buffer* a_src);
 
 static wuffs_base__status
-wuffs_bmp__decoder__skip_frame(
-    wuffs_bmp__decoder* self,
-    wuffs_base__io_buffer* a_src);
-
-static wuffs_base__status
 wuffs_bmp__decoder__read_palette(
     wuffs_bmp__decoder* self,
     wuffs_base__io_buffer* a_src);
@@ -16866,27 +16851,20 @@ wuffs_bmp__decoder__decode_image_config(
     }
     if (self->private_impl.f_bits_per_pixel == 1) {
       v_byte_width = ((self->private_impl.f_width >> 3) + (((self->private_impl.f_width & 7) + 7) >> 3));
-      self->private_impl.f_bytes_per_row = ((((((uint64_t)(v_byte_width)) * 1) + 3) >> 2) << 2);
       self->private_impl.f_pad_per_row = ((4 - (v_byte_width & 3)) & 3);
     } else if (self->private_impl.f_bits_per_pixel == 2) {
       v_byte_width = ((self->private_impl.f_width >> 2) + (((self->private_impl.f_width & 3) + 3) >> 2));
-      self->private_impl.f_bytes_per_row = ((((((uint64_t)(v_byte_width)) * 1) + 3) >> 2) << 2);
       self->private_impl.f_pad_per_row = ((4 - (v_byte_width & 3)) & 3);
     } else if (self->private_impl.f_bits_per_pixel == 4) {
       v_byte_width = ((self->private_impl.f_width >> 1) + (self->private_impl.f_width & 1));
-      self->private_impl.f_bytes_per_row = ((((((uint64_t)(v_byte_width)) * 1) + 3) >> 2) << 2);
       self->private_impl.f_pad_per_row = ((4 - (v_byte_width & 3)) & 3);
     } else if (self->private_impl.f_bits_per_pixel == 8) {
-      self->private_impl.f_bytes_per_row = ((((((uint64_t)(self->private_impl.f_width)) * 1) + 3) >> 2) << 2);
       self->private_impl.f_pad_per_row = ((4 - (self->private_impl.f_width & 3)) & 3);
     } else if (self->private_impl.f_bits_per_pixel == 16) {
-      self->private_impl.f_bytes_per_row = ((((((uint64_t)(self->private_impl.f_width)) * 2) + 3) >> 2) << 2);
       self->private_impl.f_pad_per_row = ((self->private_impl.f_width & 1) * 2);
     } else if (self->private_impl.f_bits_per_pixel == 24) {
-      self->private_impl.f_bytes_per_row = ((((((uint64_t)(self->private_impl.f_width)) * 3) + 3) >> 2) << 2);
       self->private_impl.f_pad_per_row = (self->private_impl.f_width & 3);
     } else if (self->private_impl.f_bits_per_pixel == 32) {
-      self->private_impl.f_bytes_per_row = (((uint64_t)(self->private_impl.f_width)) * 4);
       self->private_impl.f_pad_per_row = 0;
     }
     self->private_impl.f_frame_config_io_position = wuffs_base__u64__sat_add(a_src->meta.pos, ((uint64_t)(iop_a_src - io0_a_src)));
@@ -16993,17 +16971,7 @@ wuffs_bmp__decoder__decode_frame_config(
         goto exit;
       }
     } else if (self->private_impl.f_call_sequence == 2) {
-      if (a_src) {
-        a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
-      }
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
-      status = wuffs_bmp__decoder__skip_frame(self, a_src);
-      if (a_src) {
-        iop_a_src = a_src->data.ptr + a_src->meta.ri;
-      }
-      if (status.repr) {
-        goto suspend;
-      }
+      self->private_impl.f_call_sequence = 3;
       status = wuffs_base__make_status(wuffs_base__note__end_of_data);
       goto ok;
     } else {
@@ -17905,227 +17873,6 @@ wuffs_bmp__decoder__swizzle_low_bit_depth(
 
   goto ok;
   ok:
-  goto exit;
-  exit:
-  if (a_src) {
-    a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
-  }
-
-  return status;
-}
-
-// -------- func bmp.decoder.skip_frame
-
-static wuffs_base__status
-wuffs_bmp__decoder__skip_frame(
-    wuffs_bmp__decoder* self,
-    wuffs_base__io_buffer* a_src) {
-  wuffs_base__status status = wuffs_base__make_status(NULL);
-
-  uint8_t v_code = 0;
-  uint32_t v_rle_state = 0;
-
-  const uint8_t* iop_a_src = NULL;
-  const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
-    io0_a_src = a_src->data.ptr;
-    io1_a_src = io0_a_src + a_src->meta.ri;
-    iop_a_src = io1_a_src;
-    io2_a_src = io0_a_src + a_src->meta.wi;
-  }
-
-  uint32_t coro_susp_point = self->private_impl.p_skip_frame[0];
-  if (coro_susp_point) {
-    v_rle_state = self->private_data.s_skip_frame[0].v_rle_state;
-  }
-  switch (coro_susp_point) {
-    WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
-
-    self->private_data.s_skip_frame[0].scratch = self->private_impl.f_padding;
-    WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
-    if (self->private_data.s_skip_frame[0].scratch > ((uint64_t)(io2_a_src - iop_a_src))) {
-      self->private_data.s_skip_frame[0].scratch -= ((uint64_t)(io2_a_src - iop_a_src));
-      iop_a_src = io2_a_src;
-      status = wuffs_base__make_status(wuffs_base__suspension__short_read);
-      goto suspend;
-    }
-    iop_a_src += self->private_data.s_skip_frame[0].scratch;
-    if ((self->private_impl.f_compression != 1) && (self->private_impl.f_compression != 2)) {
-      self->private_data.s_skip_frame[0].scratch = (self->private_impl.f_bytes_per_row * ((uint64_t)(self->private_impl.f_height)));
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
-      if (self->private_data.s_skip_frame[0].scratch > ((uint64_t)(io2_a_src - iop_a_src))) {
-        self->private_data.s_skip_frame[0].scratch -= ((uint64_t)(io2_a_src - iop_a_src));
-        iop_a_src = io2_a_src;
-        status = wuffs_base__make_status(wuffs_base__suspension__short_read);
-        goto suspend;
-      }
-      iop_a_src += self->private_data.s_skip_frame[0].scratch;
-    } else {
-      label__loop__continue:;
-      while (true) {
-        if (v_rle_state == 0) {
-          {
-            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
-            if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
-              status = wuffs_base__make_status(wuffs_base__suspension__short_read);
-              goto suspend;
-            }
-            uint8_t t_0 = *iop_a_src++;
-            v_code = t_0;
-          }
-          if (v_code == 0) {
-            v_rle_state = 2;
-            goto label__loop__continue;
-          }
-          self->private_impl.f_rle_length = ((uint32_t)(v_code));
-          v_rle_state = 1;
-          goto label__loop__continue;
-        } else if (v_rle_state == 1) {
-          {
-            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
-            if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
-              status = wuffs_base__make_status(wuffs_base__suspension__short_read);
-              goto suspend;
-            }
-            uint8_t t_1 = *iop_a_src++;
-            v_code = t_1;
-          }
-          wuffs_base__u32__sat_add_indirect(&self->private_impl.f_dst_x, self->private_impl.f_rle_length);
-          v_rle_state = 0;
-          goto label__loop__continue;
-        } else if (v_rle_state == 2) {
-          {
-            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
-            if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
-              status = wuffs_base__make_status(wuffs_base__suspension__short_read);
-              goto suspend;
-            }
-            uint8_t t_2 = *iop_a_src++;
-            v_code = t_2;
-          }
-          if (v_code < 2) {
-            if ((self->private_impl.f_dst_y >= self->private_impl.f_height) && (v_code == 0)) {
-              status = wuffs_base__make_status(wuffs_bmp__error__bad_rle_compression);
-              goto exit;
-            }
-            self->private_impl.f_dst_x = 0;
-            self->private_impl.f_dst_y += self->private_impl.f_dst_y_inc;
-            if (v_code > 0) {
-              goto label__loop__break;
-            }
-            v_rle_state = 0;
-            goto label__loop__continue;
-          } else if (v_code == 2) {
-            v_rle_state = 4;
-            goto label__loop__continue;
-          }
-          self->private_impl.f_rle_length = ((uint32_t)(v_code));
-          v_rle_state = 3;
-          goto label__loop__continue;
-        } else if (v_rle_state == 3) {
-          if (self->private_impl.f_bits_per_pixel == 8) {
-            self->private_data.s_skip_frame[0].scratch = (((self->private_impl.f_rle_length + 1) / 2) * 2);
-            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
-            if (self->private_data.s_skip_frame[0].scratch > ((uint64_t)(io2_a_src - iop_a_src))) {
-              self->private_data.s_skip_frame[0].scratch -= ((uint64_t)(io2_a_src - iop_a_src));
-              iop_a_src = io2_a_src;
-              status = wuffs_base__make_status(wuffs_base__suspension__short_read);
-              goto suspend;
-            }
-            iop_a_src += self->private_data.s_skip_frame[0].scratch;
-          } else {
-            self->private_data.s_skip_frame[0].scratch = (((self->private_impl.f_rle_length + 3) / 4) * 2);
-            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(7);
-            if (self->private_data.s_skip_frame[0].scratch > ((uint64_t)(io2_a_src - iop_a_src))) {
-              self->private_data.s_skip_frame[0].scratch -= ((uint64_t)(io2_a_src - iop_a_src));
-              iop_a_src = io2_a_src;
-              status = wuffs_base__make_status(wuffs_base__suspension__short_read);
-              goto suspend;
-            }
-            iop_a_src += self->private_data.s_skip_frame[0].scratch;
-          }
-          wuffs_base__u32__sat_add_indirect(&self->private_impl.f_dst_x, self->private_impl.f_rle_length);
-          self->private_impl.f_rle_length = 0;
-          v_rle_state = 0;
-          goto label__loop__continue;
-        } else if (v_rle_state == 4) {
-          {
-            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(8);
-            if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
-              status = wuffs_base__make_status(wuffs_base__suspension__short_read);
-              goto suspend;
-            }
-            uint8_t t_3 = *iop_a_src++;
-            self->private_impl.f_rle_delta_x = t_3;
-          }
-          v_rle_state = 5;
-          goto label__loop__continue;
-        }
-        {
-          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(9);
-          if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
-            status = wuffs_base__make_status(wuffs_base__suspension__short_read);
-            goto suspend;
-          }
-          uint8_t t_4 = *iop_a_src++;
-          v_code = t_4;
-        }
-        if (self->private_impl.f_rle_delta_x > 0) {
-          wuffs_base__u32__sat_add_indirect(&self->private_impl.f_dst_x, ((uint32_t)(self->private_impl.f_rle_delta_x)));
-          self->private_impl.f_rle_delta_x = 0;
-          if (self->private_impl.f_dst_x > self->private_impl.f_width) {
-            status = wuffs_base__make_status(wuffs_bmp__error__bad_rle_compression);
-            goto exit;
-          }
-        }
-        if (v_code > 0) {
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
-          v_code -= 1;
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-          while (true) {
-            self->private_impl.f_dst_y += self->private_impl.f_dst_y_inc;
-            if (self->private_impl.f_dst_y >= self->private_impl.f_height) {
-              status = wuffs_base__make_status(wuffs_bmp__error__bad_rle_compression);
-              goto exit;
-            }
-            if (v_code <= 0) {
-              goto label__0__break;
-            }
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
-            v_code -= 1;
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-          }
-          label__0__break:;
-        }
-        v_rle_state = 0;
-      }
-      label__loop__break:;
-    }
-    self->private_impl.f_call_sequence = 3;
-
-    goto ok;
-    ok:
-    self->private_impl.p_skip_frame[0] = 0;
-    goto exit;
-  }
-
-  goto suspend;
-  suspend:
-  self->private_impl.p_skip_frame[0] = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
-  self->private_data.s_skip_frame[0].v_rle_state = v_rle_state;
-
   goto exit;
   exit:
   if (a_src) {
@@ -27645,11 +27392,6 @@ const char wuffs_wbmp__error__bad_header[] = "#wbmp: bad header";
 
 // ---------------- Private Function Prototypes
 
-static wuffs_base__status
-wuffs_wbmp__decoder__skip_frame(
-    wuffs_wbmp__decoder* self,
-    wuffs_base__io_buffer* a_src);
-
 // ---------------- VTables
 
 const wuffs_base__image_decoder__func_ptrs
@@ -27971,17 +27713,7 @@ wuffs_wbmp__decoder__decode_frame_config(
         goto exit;
       }
     } else if (self->private_impl.f_call_sequence == 2) {
-      if (a_src) {
-        a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
-      }
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
-      status = wuffs_wbmp__decoder__skip_frame(self, a_src);
-      if (a_src) {
-        iop_a_src = a_src->data.ptr + a_src->meta.ri;
-      }
-      if (status.repr) {
-        goto suspend;
-      }
+      self->private_impl.f_call_sequence = 3;
       status = wuffs_base__make_status(wuffs_base__note__end_of_data);
       goto ok;
     } else {
@@ -28196,64 +27928,6 @@ wuffs_wbmp__decoder__decode_frame(
   if (wuffs_base__status__is_error(&status)) {
     self->private_impl.magic = WUFFS_BASE__DISABLED;
   }
-  return status;
-}
-
-// -------- func wbmp.decoder.skip_frame
-
-static wuffs_base__status
-wuffs_wbmp__decoder__skip_frame(
-    wuffs_wbmp__decoder* self,
-    wuffs_base__io_buffer* a_src) {
-  wuffs_base__status status = wuffs_base__make_status(NULL);
-
-  uint64_t v_bytes_per_row = 0;
-  uint64_t v_total_bytes = 0;
-
-  const uint8_t* iop_a_src = NULL;
-  const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
-    io0_a_src = a_src->data.ptr;
-    io1_a_src = io0_a_src + a_src->meta.ri;
-    iop_a_src = io1_a_src;
-    io2_a_src = io0_a_src + a_src->meta.wi;
-  }
-
-  uint32_t coro_susp_point = self->private_impl.p_skip_frame[0];
-  switch (coro_susp_point) {
-    WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
-
-    v_bytes_per_row = ((((uint64_t)(self->private_impl.f_width)) + 7) / 8);
-    v_total_bytes = (v_bytes_per_row * ((uint64_t)(self->private_impl.f_height)));
-    self->private_data.s_skip_frame[0].scratch = v_total_bytes;
-    WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
-    if (self->private_data.s_skip_frame[0].scratch > ((uint64_t)(io2_a_src - iop_a_src))) {
-      self->private_data.s_skip_frame[0].scratch -= ((uint64_t)(io2_a_src - iop_a_src));
-      iop_a_src = io2_a_src;
-      status = wuffs_base__make_status(wuffs_base__suspension__short_read);
-      goto suspend;
-    }
-    iop_a_src += self->private_data.s_skip_frame[0].scratch;
-    self->private_impl.f_call_sequence = 3;
-
-    goto ok;
-    ok:
-    self->private_impl.p_skip_frame[0] = 0;
-    goto exit;
-  }
-
-  goto suspend;
-  suspend:
-  self->private_impl.p_skip_frame[0] = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
-
-  goto exit;
-  exit:
-  if (a_src) {
-    a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
-  }
-
   return status;
 }
 
