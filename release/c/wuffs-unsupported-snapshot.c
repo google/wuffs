@@ -17973,7 +17973,7 @@ wuffs_bmp__decoder__restart_frame(
         : wuffs_base__error__initialize_not_called);
   }
 
-  if (self->private_impl.f_call_sequence == 0) {
+  if (self->private_impl.f_call_sequence < 3) {
     return wuffs_base__make_status(wuffs_base__error__bad_call_sequence);
   }
   if (a_index != 0) {
@@ -22720,7 +22720,7 @@ wuffs_gif__decoder__restart_frame(
         : wuffs_base__error__initialize_not_called);
   }
 
-  if (self->private_impl.f_call_sequence == 0) {
+  if (self->private_impl.f_call_sequence < 3) {
     return wuffs_base__make_status(wuffs_base__error__bad_call_sequence);
   }
   self->private_impl.f_delayed_num_decoded_frames = false;
@@ -28022,7 +28022,7 @@ wuffs_wbmp__decoder__restart_frame(
         : wuffs_base__error__initialize_not_called);
   }
 
-  if (self->private_impl.f_call_sequence == 0) {
+  if (self->private_impl.f_call_sequence < 3) {
     return wuffs_base__make_status(wuffs_base__error__bad_call_sequence);
   }
   if (a_index != 0) {

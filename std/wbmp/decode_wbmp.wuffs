@@ -276,7 +276,7 @@ pub func decoder.num_decoded_frames() base.u64 {
 }
 
 pub func decoder.restart_frame!(index: base.u64, io_position: base.u64) base.status {
-	if this.call_sequence == 0 {
+	if this.call_sequence < 3 {
 		return base."#bad call sequence"
 	}
 	if args.index <> 0 {
