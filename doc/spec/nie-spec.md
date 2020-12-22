@@ -1,6 +1,6 @@
 # Naïve Image Formats: NIE, NII, NIA
 
-Status: Draft (as of November 2020). There is no compatibility guarantee yet.
+Status: Draft (as of December 2020). There is no compatibility guarantee yet.
 
 A companion document has further discussion of [NIE related
 work](/doc/spec/nie-related-work.md).
@@ -25,8 +25,8 @@ images. The 16 byte header:
     are 4 or 8 bytes per pixel.
   - Future format versions may allow other byte values, but in version 1, it
     must be '\xFF', then 'b' or 'r', then 'n' or 'p', then '4' or '8'.
-- 4 bytes little-endian `uint32` width.
-- 4 bytes little-endian `uint32` height.
+- 4 bytes little-endian `uint32` width. The high bit must not be set.
+- 4 bytes little-endian `uint32` height. The high bit must not be set.
 
 The payload:
 
@@ -72,8 +72,8 @@ The 16 byte NII header:
 - 4 bytes of 'magic': \[0x6E, 0xC3, 0xAF, 0x49\]. The final byte differs from
   NIE: an ASCII 'I' instead of an ASCII 'E'.
 - 4 bytes of version-and-padding, all 0xFF.
-- 4 bytes little-endian `uint32` width.
-- 4 bytes little-endian `uint32` height.
+- 4 bytes little-endian `uint32` width. The high bit must not be set.
+- 4 bytes little-endian `uint32` height. The high bit must not be set.
 
 
 ### NII Payload
@@ -369,4 +369,4 @@ in a long "E", "I" or "A" sound. It's definitely a hard "N", not a soft one.
 
 ---
 
-Updated on November 2020.
+Updated on December 2020.
