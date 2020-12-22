@@ -21,6 +21,7 @@
 - Added `std/cbor`.
 - Added `std/gif.config_decoder`.
 - Added `std/json`.
+- Added `std/nie`.
 - Added `std/wbmp`.
 - Added `tell_me_more?` mechanism.
 - Added alloc functions.

@@ -56,6 +56,7 @@ The Escape key quits.
 #define WUFFS_CONFIG__MODULE__BMP
 #define WUFFS_CONFIG__MODULE__GIF
 #define WUFFS_CONFIG__MODULE__LZW
+#define WUFFS_CONFIG__MODULE__NIE
 #define WUFFS_CONFIG__MODULE__WBMP
 
 // If building this program in an environment that doesn't easily accommodate
@@ -92,6 +93,7 @@ uint32_t g_background_color_index = 0;
 union {
   wuffs_bmp__decoder bmp;
   wuffs_gif__decoder gif;
+  wuffs_nie__decoder nie;
   wuffs_wbmp__decoder wbmp;
 } g_potential_decoders;
 
@@ -160,6 +162,19 @@ load_image_type() {
       g_image_decoder =
           wuffs_gif__decoder__upcast_as__wuffs_base__image_decoder(
               &g_potential_decoders.gif);
+      break;
+
+    case 'n':
+      status = wuffs_nie__decoder__initialize(
+          &g_potential_decoders.nie, sizeof g_potential_decoders.nie,
+          WUFFS_VERSION, WUFFS_INITIALIZE__DEFAULT_OPTIONS);
+      if (!wuffs_base__status__is_ok(&status)) {
+        printf("%s: %s\n", g_filename, wuffs_base__status__message(&status));
+        return false;
+      }
+      g_image_decoder =
+          wuffs_nie__decoder__upcast_as__wuffs_base__image_decoder(
+              &g_potential_decoders.nie);
       break;
 
     default:
