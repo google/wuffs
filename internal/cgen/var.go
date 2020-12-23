@@ -25,29 +25,20 @@ import (
 var errNeedDerivedVar = errors.New("cgen: internal error: need derived var")
 
 func (g *gen) needDerivedVar(name t.ID) bool {
+	if name == 0 {
+		return false
+	}
 	for _, o := range g.currFunk.astFunc.Body() {
 		err := o.Walk(func(p *a.Node) error {
 			// Look for p matching "args.name.etc(etc)".
 			if p.Kind() != a.KExpr {
 				return nil
 			}
-			q := p.AsExpr()
-			if q.Operator() != t.IDOpenParen {
-				return nil
+			recv, _, _ := p.AsExpr().IsMethodCall()
+			if (recv != nil) && (recv.IsArgsDotFoo() == name) {
+				return errNeedDerivedVar
 			}
-			q = q.LHS().AsExpr()
-			if q.Operator() != t.IDDot {
-				return nil
-			}
-			q = q.LHS().AsExpr()
-			if q.Operator() != t.IDDot || q.Ident() != name {
-				return nil
-			}
-			q = q.LHS().AsExpr()
-			if q.Operator() != 0 || q.Ident() != t.IDArgs {
-				return nil
-			}
-			return errNeedDerivedVar
+			return nil
 		})
 		if err == errNeedDerivedVar {
 			return true

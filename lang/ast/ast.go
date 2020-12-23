@@ -371,6 +371,24 @@ func (n *Expr) SetGlobalIdent()                { n.flags |= FlagsGlobalIdent }
 func (n *Expr) SetMBounds(x interval.IntRange) { n.mBounds = x }
 func (n *Expr) SetMType(x *TypeExpr)           { n.mType = x }
 
+func (n *Expr) IsArgsDotFoo() (foo t.ID) {
+	if n.id0 == t.IDDot {
+		if (n.lhs.id0 == 0) && (n.lhs.id2 == t.IDArgs) {
+			return n.id2
+		}
+	}
+	return 0
+}
+
+func (n *Expr) IsMethodCall() (recv *Expr, meth t.ID, args []*Node) {
+	if n.id0 == t.IDOpenParen {
+		if o := n.lhs; o.id0 == t.IDDot {
+			return o.lhs.AsExpr(), o.id2, n.list0
+		}
+	}
+	return nil, 0, nil
+}
+
 func NewExpr(flags Flags, operator t.ID, ident t.ID, lhs *Node, mhs *Node, rhs *Node, args []*Node) *Expr {
 	subExprEffect := Flags(0)
 	if lhs != nil {
