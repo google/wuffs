@@ -52,12 +52,17 @@ The Escape key quits.
 // modules we use makes that process explicit. Preprocessing means that such
 // code simply isn't compiled.
 #define WUFFS_CONFIG__MODULES
+#define WUFFS_CONFIG__MODULE__ADLER32
 #define WUFFS_CONFIG__MODULE__BASE
 #define WUFFS_CONFIG__MODULE__BMP
+#define WUFFS_CONFIG__MODULE__CRC32
+#define WUFFS_CONFIG__MODULE__DEFLATE
 #define WUFFS_CONFIG__MODULE__GIF
 #define WUFFS_CONFIG__MODULE__LZW
 #define WUFFS_CONFIG__MODULE__NIE
+#define WUFFS_CONFIG__MODULE__PNG
 #define WUFFS_CONFIG__MODULE__WBMP
+#define WUFFS_CONFIG__MODULE__ZLIB
 
 // If building this program in an environment that doesn't easily accommodate
 // relative includes, you can use the script/inline-c-relative-includes.go
@@ -94,6 +99,7 @@ union {
   wuffs_bmp__decoder bmp;
   wuffs_gif__decoder gif;
   wuffs_nie__decoder nie;
+  wuffs_png__decoder png;
   wuffs_wbmp__decoder wbmp;
 } g_potential_decoders;
 
@@ -175,6 +181,19 @@ load_image_type() {
       g_image_decoder =
           wuffs_nie__decoder__upcast_as__wuffs_base__image_decoder(
               &g_potential_decoders.nie);
+      break;
+
+    case '\x89':
+      status = wuffs_png__decoder__initialize(
+          &g_potential_decoders.png, sizeof g_potential_decoders.png,
+          WUFFS_VERSION, WUFFS_INITIALIZE__DEFAULT_OPTIONS);
+      if (!wuffs_base__status__is_ok(&status)) {
+        printf("%s: %s\n", g_filename, wuffs_base__status__message(&status));
+        return false;
+      }
+      g_image_decoder =
+          wuffs_png__decoder__upcast_as__wuffs_base__image_decoder(
+              &g_potential_decoders.png);
       break;
 
     default:
