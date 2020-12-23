@@ -24,6 +24,18 @@ import (
 
 var errNeedDerivedVar = errors.New("cgen: internal error: need derived var")
 
+// argsContainsArgsDotFoo returns whether the argNodes, a slice of *ast.Node
+// where each ast.Node is an ast.Arg, contains a "name: value" element whose
+// value is "args.foo".
+func argsContainsArgsDotFoo(argNodes []*a.Node, foo t.ID) bool {
+	for _, o := range argNodes {
+		if foo == o.AsArg().Value().IsArgsDotFoo() {
+			return true
+		}
+	}
+	return false
+}
+
 func (g *gen) needDerivedVar(name t.ID) bool {
 	if name == 0 {
 		return false
@@ -34,9 +46,23 @@ func (g *gen) needDerivedVar(name t.ID) bool {
 			if p.Kind() != a.KExpr {
 				return nil
 			}
-			recv, _, _ := p.AsExpr().IsMethodCall()
-			if (recv != nil) && (recv.IsArgsDotFoo() == name) {
+			recv, meth, args := p.AsExpr().IsMethodCall()
+			if recv == nil {
+				return nil
+			}
+			if recv.IsArgsDotFoo() == name {
 				return errNeedDerivedVar
+			}
+			// Some built-in methods will also need a derived var for their
+			// arguments.
+			//
+			// TODO: use a comprehensive list of such methods.
+			switch meth {
+			case t.IDLimitedSwizzleU32InterleavedFromReader,
+				t.IDSwizzleInterleavedFromReader:
+				if recv.MType().Eq(typeExprPixelSwizzler) && argsContainsArgsDotFoo(args, name) {
+					return errNeedDerivedVar
+				}
 			}
 			return nil
 		})

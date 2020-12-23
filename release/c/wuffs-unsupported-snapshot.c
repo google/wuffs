@@ -28780,8 +28780,6 @@ wuffs_nie__decoder__swizzle(
   v_dst_bytes_per_pixel = ((uint64_t)((v_dst_bits_per_pixel / 8)));
   v_dst_bytes_per_row = (((uint64_t)(self->private_impl.f_width)) * v_dst_bytes_per_pixel);
   v_tab = wuffs_base__pixel_buffer__plane(a_dst, 0);
-  if (((uint64_t)(io2_a_src - iop_a_src)) <= 0) {
-  }
   label__0__continue:;
   while (true) {
     if (self->private_impl.f_dst_x == self->private_impl.f_width) {

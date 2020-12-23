@@ -43,7 +43,8 @@ var (
 
 	maxInt64 = big.NewInt((1 << 63) - 1)
 
-	typeExprUtility = a.NewTypeExpr(0, t.IDBase, t.IDUtility, nil, nil, nil)
+	typeExprPixelSwizzler = a.NewTypeExpr(0, t.IDBase, t.IDPixelSwizzler, nil, nil, nil)
+	typeExprUtility       = a.NewTypeExpr(0, t.IDBase, t.IDUtility, nil, nil, nil)
 )
 
 // Prefixes are prepended to names to form a namespace and to avoid e.g.

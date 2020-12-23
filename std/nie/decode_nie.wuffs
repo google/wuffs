@@ -206,11 +206,6 @@ pri func decoder.swizzle!(dst: ptr base.pixel_buffer, src: base.io_reader) base.
 	dst_bytes_per_row = (this.width as base.u64) * dst_bytes_per_pixel
 	tab = args.dst.plane(p: 0)
 
-	// TODO: this hack (to generate derived variables for args.src) shouldn't
-	// be necessary.
-	if args.src.length() <= 0 {
-	}
-
 	while true {
 		if this.dst_x == this.width {
 			this.dst_x = 0
