@@ -75,17 +75,13 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 	}
 
 	a = args.src.read_u32le?()
-	if (a & 0xFF) <> 0xFF {
-		return "#bad header"
-	}
-	a >>= 8
-	if a == 'bn4'le {
+	if a == '\xFFbn4'le {
 		this.pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL
-	} else if a == 'bn8'le {
+	} else if a == '\xFFbn8'le {
 		this.pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE
-	} else if a == 'bp4'le {
+	} else if a == '\xFFbp4'le {
 		return "#unsupported NIE file"
-	} else if a == 'bp8'le {
+	} else if a == '\xFFbp8'le {
 		return "#unsupported NIE file"
 	} else {
 		return "#bad header"

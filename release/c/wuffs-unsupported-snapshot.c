@@ -28406,19 +28406,14 @@ wuffs_nie__decoder__decode_image_config(
       }
       v_a = t_1;
     }
-    if ((v_a & 255) != 255) {
-      status = wuffs_base__make_status(wuffs_nie__error__bad_header);
-      goto exit;
-    }
-    v_a >>= 8;
-    if (v_a == 3436130) {
+    if (v_a == 879649535) {
       self->private_impl.f_pixfmt = 2164295816;
-    } else if (v_a == 3698274) {
+    } else if (v_a == 946758399) {
       self->private_impl.f_pixfmt = 2164308923;
-    } else if (v_a == 3436642) {
+    } else if (v_a == 879780607) {
       status = wuffs_base__make_status(wuffs_nie__error__unsupported_nie_file);
       goto exit;
-    } else if (v_a == 3698786) {
+    } else if (v_a == 946889471) {
       status = wuffs_base__make_status(wuffs_nie__error__unsupported_nie_file);
       goto exit;
     } else {
