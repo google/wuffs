@@ -9307,6 +9307,15 @@ wuffs_base__io__since(uint64_t mark, uint64_t index, uint8_t* ptr) {
 
 // --------
 
+static inline void  //
+wuffs_base__io_reader__limit(const uint8_t** ptr_io2_r,
+                             const uint8_t* iop_r,
+                             uint64_t limit) {
+  if (((uint64_t)(*ptr_io2_r - iop_r)) > limit) {
+    *ptr_io2_r = iop_r + limit;
+  }
+}
+
 static inline uint32_t  //
 wuffs_base__io_reader__limited_copy_u32_to_slice(const uint8_t** ptr_iop_r,
                                                  const uint8_t* io2_r,
@@ -9402,6 +9411,15 @@ wuffs_base__io_writer__copy_from_slice(uint8_t** ptr_iop_w,
     *ptr_iop_w += n;
   }
   return (uint64_t)(n);
+}
+
+static inline void  //
+wuffs_base__io_writer__limit(uint8_t** ptr_io2_w,
+                             uint8_t* iop_w,
+                             uint64_t limit) {
+  if (((uint64_t)(*ptr_io2_w - iop_w)) > limit) {
+    *ptr_io2_w = iop_w + limit;
+  }
 }
 
 static inline uint32_t  //
@@ -29993,13 +30011,30 @@ wuffs_png__decoder__decode_frame(
   self->private_impl.active_coroutine = 0;
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
+  const uint8_t* iop_a_src = NULL;
+  const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  if (a_src) {
+    io0_a_src = a_src->data.ptr;
+    io1_a_src = io0_a_src + a_src->meta.ri;
+    iop_a_src = io1_a_src;
+    io2_a_src = io0_a_src + a_src->meta.wi;
+  }
+
   uint32_t coro_susp_point = self->private_impl.p_decode_frame[0];
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
     if (self->private_impl.f_call_sequence < 4) {
+      if (a_src) {
+        a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+      }
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
       status = wuffs_png__decoder__decode_frame_config(self, NULL, a_src);
+      if (a_src) {
+        iop_a_src = a_src->data.ptr + a_src->meta.ri;
+      }
       if (status.repr) {
         goto suspend;
       }
@@ -30008,6 +30043,16 @@ wuffs_png__decoder__decode_frame(
       status = wuffs_base__make_status(wuffs_base__note__end_of_data);
       goto ok;
     }
+    while (true) {
+      {
+        const uint8_t *o_0_io2_a_src = io2_a_src;
+        wuffs_base__io_reader__limit(&io2_a_src, iop_a_src,
+            ((uint64_t)(self->private_impl.f_chunk_length)));
+        io2_a_src = o_0_io2_a_src;
+      }
+      goto label__0__break;
+    }
+    label__0__break:;
     self->private_impl.f_call_sequence = 255;
 
     goto ok;
@@ -30023,6 +30068,10 @@ wuffs_png__decoder__decode_frame(
 
   goto exit;
   exit:
+  if (a_src) {
+    a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+  }
+
   if (wuffs_base__status__is_error(&status)) {
     self->private_impl.magic = WUFFS_BASE__DISABLED;
   }

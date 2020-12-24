@@ -245,34 +245,47 @@ func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {
 			cTyp, qualifier = "writer", ""
 		}
 		name := e.Ident().Str(g.tm)
-		b.printf("wuffs_base__io_buffer* %s%d_%s%s = %s%s;\n",
-			oPrefix, ioBindNum, prefix, name, prefix, name)
-
-		// TODO: save / restore all iop vars, not just for local IO vars? How
-		// does this work if the io_bind body advances these pointers, either
-		// directly or by calling other funcs?
-		if e.Operator() == 0 {
-			b.printf("%suint8_t *%s%d_%s%s%s = %s%s%s;\n",
-				qualifier, oPrefix, ioBindNum, iopPrefix, prefix, name, iopPrefix, prefix, name)
-			b.printf("%suint8_t *%s%d_%s%s%s = %s%s%s;\n",
-				qualifier, oPrefix, ioBindNum, io0Prefix, prefix, name, io0Prefix, prefix, name)
-			b.printf("%suint8_t *%s%d_%s%s%s = %s%s%s;\n",
-				qualifier, oPrefix, ioBindNum, io1Prefix, prefix, name, io1Prefix, prefix, name)
-			b.printf("%suint8_t *%s%d_%s%s%s = %s%s%s;\n",
-				qualifier, oPrefix, ioBindNum, io2Prefix, prefix, name, io2Prefix, prefix, name)
-		}
 
 		if n.Keyword() == t.IDIOBind {
-			b.printf("%s%s = wuffs_base__io_%s__set(\n&%s%s,\n&%s%s%s,\n&%s%s%s,\n&%s%s%s,\n&%s%s%s,\n",
-				prefix, name, cTyp, uPrefix, name, iopPrefix, prefix, name,
-				io0Prefix, prefix, name, io1Prefix, prefix, name, io2Prefix, prefix, name)
+			b.printf("wuffs_base__io_buffer* %s%d_%s%s = %s%s;\n",
+				oPrefix, ioBindNum, prefix, name,
+				prefix, name)
+			b.printf("%suint8_t *%s%d_%s%s%s = %s%s%s;\n",
+				qualifier, oPrefix, ioBindNum, iopPrefix, prefix, name,
+				iopPrefix, prefix, name)
+			b.printf("%suint8_t *%s%d_%s%s%s = %s%s%s;\n",
+				qualifier, oPrefix, ioBindNum, io0Prefix, prefix, name,
+				io0Prefix, prefix, name)
+			b.printf("%suint8_t *%s%d_%s%s%s = %s%s%s;\n",
+				qualifier, oPrefix, ioBindNum, io1Prefix, prefix, name,
+				io1Prefix, prefix, name)
+			b.printf("%suint8_t *%s%d_%s%s%s = %s%s%s;\n",
+				qualifier, oPrefix, ioBindNum, io2Prefix, prefix, name,
+				io2Prefix, prefix, name)
+			b.printf("%s%s = wuffs_base__io_%s__set("+
+				"\n&%s%s,\n&%s%s%s,\n&%s%s%s,\n&%s%s%s,\n&%s%s%s,\n",
+				prefix, name, cTyp,
+				uPrefix, name,
+				iopPrefix, prefix, name,
+				io0Prefix, prefix, name,
+				io1Prefix, prefix, name,
+				io2Prefix, prefix, name)
 			if err := g.writeExpr(b, n.Arg1(), 0); err != nil {
 				return err
 			}
 			b.writes(");\n")
 
 		} else {
-			return fmt.Errorf("TODO: implement io_limit (or remove it from the parser)")
+			b.printf("%suint8_t *%s%d_%s%s%s = %s%s%s;\n",
+				qualifier, oPrefix, ioBindNum, io2Prefix, prefix, name, io2Prefix, prefix, name)
+			b.printf("wuffs_base__io_%s__limit(&%s%s%s, %s%s%s,\n",
+				cTyp,
+				io2Prefix, prefix, name,
+				iopPrefix, prefix, name)
+			if err := g.writeExpr(b, n.Arg1(), 0); err != nil {
+				return err
+			}
+			b.writes(");\n")
 		}
 	}
 
@@ -289,18 +302,24 @@ func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {
 			prefix = aPrefix
 		}
 		name := e.Ident().Str(g.tm)
-		b.printf("%s%s = %s%d_%s%s;\n",
-			prefix, name, oPrefix, ioBindNum, prefix, name)
-		if e.Operator() == 0 {
+
+		if n.Keyword() == t.IDIOBind {
+			b.printf("%s%s = %s%d_%s%s;\n",
+				prefix, name,
+				oPrefix, ioBindNum, prefix, name)
 			b.printf("%s%s%s = %s%d_%s%s%s;\n",
-				iopPrefix, prefix, name, oPrefix, ioBindNum, iopPrefix, prefix, name)
+				iopPrefix, prefix, name,
+				oPrefix, ioBindNum, iopPrefix, prefix, name)
 			b.printf("%s%s%s = %s%d_%s%s%s;\n",
-				io0Prefix, prefix, name, oPrefix, ioBindNum, io0Prefix, prefix, name)
+				io0Prefix, prefix, name,
+				oPrefix, ioBindNum, io0Prefix, prefix, name)
 			b.printf("%s%s%s = %s%d_%s%s%s;\n",
-				io1Prefix, prefix, name, oPrefix, ioBindNum, io1Prefix, prefix, name)
-			b.printf("%s%s%s = %s%d_%s%s%s;\n",
-				io2Prefix, prefix, name, oPrefix, ioBindNum, io2Prefix, prefix, name)
+				io1Prefix, prefix, name,
+				oPrefix, ioBindNum, io1Prefix, prefix, name)
 		}
+		b.printf("%s%s%s = %s%d_%s%s%s;\n",
+			io2Prefix, prefix, name,
+			oPrefix, ioBindNum, io2Prefix, prefix, name)
 	}
 	b.writes("}\n")
 	return nil

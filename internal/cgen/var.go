@@ -42,25 +42,30 @@ func (g *gen) needDerivedVar(name t.ID) bool {
 	}
 	for _, o := range g.currFunk.astFunc.Body() {
 		err := o.Walk(func(p *a.Node) error {
-			// Look for p matching "args.name.etc(etc)".
-			if p.Kind() != a.KExpr {
-				return nil
-			}
-			recv, meth, args := p.AsExpr().IsMethodCall()
-			if recv == nil {
-				return nil
-			}
-			if recv.IsArgsDotFoo() == name {
-				return errNeedDerivedVar
-			}
-			// Some built-in methods will also need a derived var for their
-			// arguments.
-			//
-			// TODO: use a comprehensive list of such methods.
-			switch meth {
-			case t.IDLimitedSwizzleU32InterleavedFromReader,
-				t.IDSwizzleInterleavedFromReader:
-				if recv.MType().Eq(typeExprPixelSwizzler) && argsContainsArgsDotFoo(args, name) {
+			switch p.Kind() {
+			case a.KExpr:
+				// Look for p matching "args.name.etc(etc)".
+				recv, meth, args := p.AsExpr().IsMethodCall()
+				if recv == nil {
+					return nil
+				}
+				if recv.IsArgsDotFoo() == name {
+					return errNeedDerivedVar
+				}
+				// Some built-in methods will also need a derived var for their
+				// arguments.
+				//
+				// TODO: use a comprehensive list of such methods.
+				switch meth {
+				case t.IDLimitedSwizzleU32InterleavedFromReader,
+					t.IDSwizzleInterleavedFromReader:
+					if recv.MType().Eq(typeExprPixelSwizzler) && argsContainsArgsDotFoo(args, name) {
+						return errNeedDerivedVar
+					}
+				}
+
+			case a.KIOBind:
+				if p.AsIOBind().IO().IsArgsDotFoo() == name {
 					return errNeedDerivedVar
 				}
 			}

@@ -34,6 +34,15 @@ wuffs_base__io__since(uint64_t mark, uint64_t index, uint8_t* ptr) {
 
 // --------
 
+static inline void  //
+wuffs_base__io_reader__limit(const uint8_t** ptr_io2_r,
+                             const uint8_t* iop_r,
+                             uint64_t limit) {
+  if (((uint64_t)(*ptr_io2_r - iop_r)) > limit) {
+    *ptr_io2_r = iop_r + limit;
+  }
+}
+
 static inline uint32_t  //
 wuffs_base__io_reader__limited_copy_u32_to_slice(const uint8_t** ptr_iop_r,
                                                  const uint8_t* io2_r,
@@ -129,6 +138,15 @@ wuffs_base__io_writer__copy_from_slice(uint8_t** ptr_iop_w,
     *ptr_iop_w += n;
   }
   return (uint64_t)(n);
+}
+
+static inline void  //
+wuffs_base__io_writer__limit(uint8_t** ptr_io2_w,
+                             uint8_t* iop_w,
+                             uint64_t limit) {
+  if (((uint64_t)(*ptr_io2_w - iop_w)) > limit) {
+    *ptr_io2_w = iop_w + limit;
+  }
 }
 
 static inline uint32_t  //
