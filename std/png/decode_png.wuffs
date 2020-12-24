@@ -71,6 +71,8 @@ pub struct decoder? implements base.image_decoder(
 	swizzler : base.pixel_swizzler,
 	util     : base.utility,
 )(
+	crc  : crc32.ieee_hasher,
+	zlib : zlib.decoder,
 )
 
 pub func decoder.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {

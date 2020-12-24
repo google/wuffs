@@ -8356,6 +8356,9 @@ struct wuffs_png__decoder__struct {
   } private_impl;
 
   struct {
+    wuffs_crc32__ieee_hasher f_crc;
+    wuffs_zlib__decoder f_zlib;
+
     struct {
       uint32_t v_dst_pixfmt;
       uint64_t scratch;
@@ -29874,6 +29877,20 @@ wuffs_png__decoder__initialize(
     }
   }
 
+  {
+    wuffs_base__status z = wuffs_crc32__ieee_hasher__initialize(
+        &self->private_data.f_crc, sizeof(self->private_data.f_crc), WUFFS_VERSION, options);
+    if (z.repr) {
+      return z;
+    }
+  }
+  {
+    wuffs_base__status z = wuffs_zlib__decoder__initialize(
+        &self->private_data.f_zlib, sizeof(self->private_data.f_zlib), WUFFS_VERSION, options);
+    if (z.repr) {
+      return z;
+    }
+  }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
   self->private_impl.vtable_for__wuffs_base__image_decoder.vtable_name =
       wuffs_base__image_decoder__vtable_name;
