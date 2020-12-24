@@ -30527,7 +30527,7 @@ wuffs_png__decoder__decode_frame(
     }
     self->private_impl.f_workbuf_wi = 0;
     while (true) {
-      if ((self->private_impl.f_workbuf_wi >= self->private_impl.f_workbuf_length) || (self->private_impl.f_workbuf_length >= ((uint64_t)(a_workbuf.len)))) {
+      if ((self->private_impl.f_workbuf_wi > self->private_impl.f_workbuf_length) || (self->private_impl.f_workbuf_length > ((uint64_t)(a_workbuf.len)))) {
         status = wuffs_base__make_status(wuffs_base__error__bad_workbuf_length);
         goto exit;
       }

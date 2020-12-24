@@ -244,8 +244,8 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 
 	this.workbuf_wi = 0
 	while true {
-		if (this.workbuf_wi >= this.workbuf_length) or (
-			this.workbuf_length >= args.workbuf.length()) {
+		if (this.workbuf_wi > this.workbuf_length) or (
+			this.workbuf_length > args.workbuf.length()) {
 			return base."#bad workbuf length"
 		}
 		io_bind (io: w, data: args.workbuf[this.workbuf_wi .. this.workbuf_length]) {
