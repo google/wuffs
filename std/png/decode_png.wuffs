@@ -26,6 +26,7 @@ pub struct decoder? implements base.image_decoder(
 	// bytes_per_row doesn't include the 1 byte for the per-row filter.
 	bytes_per_row : base.u64[..= 0x07FF_FFF8],
 
+	workbuf_index  : base.u64,
 	workbuf_length : base.u64[..= 0x0007_FFFF_F100_0007],
 
 	// Call sequence states:
@@ -223,6 +224,8 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
 }
 
 pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, blend: base.pixel_blend, workbuf: slice base.u8, opts: nptr base.decode_frame_options) {
+	var w : base.io_writer
+
 	if this.call_sequence < 4 {
 		this.decode_frame_config?(dst: nullptr, src: args.src)
 	} else if this.call_sequence == 4 {
@@ -231,8 +234,15 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 		return base."@end of data"
 	}
 
+	this.workbuf_index = 0
 	while true {
-		io_limit (io: args.src, limit: this.chunk_length as base.u64) {
+		if (this.workbuf_index >= this.workbuf_length) or (
+			this.workbuf_length >= args.workbuf.length()) {
+			return base."#bad workbuf length"
+		}
+		io_bind (io: w, data: args.workbuf[this.workbuf_index .. this.workbuf_length]) {
+			io_limit (io: args.src, limit: this.chunk_length as base.u64) {
+			}
 		}
 		break
 	} endwhile

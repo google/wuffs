@@ -8093,6 +8093,7 @@ struct wuffs_png__decoder__struct {
     uint32_t f_width;
     uint32_t f_height;
     uint64_t f_bytes_per_row;
+    uint64_t f_workbuf_index;
     uint64_t f_workbuf_length;
     uint8_t f_call_sequence;
     uint8_t f_depth;
@@ -30011,6 +30012,13 @@ wuffs_png__decoder__decode_frame(
   self->private_impl.active_coroutine = 0;
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
+  wuffs_base__io_buffer u_w = wuffs_base__empty_io_buffer();
+  wuffs_base__io_buffer* v_w = &u_w;
+  uint8_t* iop_v_w WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  uint8_t* io0_v_w WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  uint8_t* io1_v_w WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  uint8_t* io2_v_w WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+
   const uint8_t* iop_a_src = NULL;
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -30043,12 +30051,38 @@ wuffs_png__decoder__decode_frame(
       status = wuffs_base__make_status(wuffs_base__note__end_of_data);
       goto ok;
     }
+    self->private_impl.f_workbuf_index = 0;
     while (true) {
+      if ((self->private_impl.f_workbuf_index >= self->private_impl.f_workbuf_length) || (self->private_impl.f_workbuf_length >= ((uint64_t)(a_workbuf.len)))) {
+        status = wuffs_base__make_status(wuffs_base__error__bad_workbuf_length);
+        goto exit;
+      }
       {
-        const uint8_t *o_0_io2_a_src = io2_a_src;
-        wuffs_base__io_reader__limit(&io2_a_src, iop_a_src,
-            ((uint64_t)(self->private_impl.f_chunk_length)));
-        io2_a_src = o_0_io2_a_src;
+        wuffs_base__io_buffer* o_0_v_w = v_w;
+        uint8_t *o_0_iop_v_w = iop_v_w;
+        uint8_t *o_0_io0_v_w = io0_v_w;
+        uint8_t *o_0_io1_v_w = io1_v_w;
+        uint8_t *o_0_io2_v_w = io2_v_w;
+        v_w = wuffs_base__io_writer__set(
+            &u_w,
+            &iop_v_w,
+            &io0_v_w,
+            &io1_v_w,
+            &io2_v_w,
+            wuffs_base__slice_u8__subslice_ij(a_workbuf,
+            self->private_impl.f_workbuf_index,
+            self->private_impl.f_workbuf_length));
+        {
+          const uint8_t *o_1_io2_a_src = io2_a_src;
+          wuffs_base__io_reader__limit(&io2_a_src, iop_a_src,
+              ((uint64_t)(self->private_impl.f_chunk_length)));
+          io2_a_src = o_1_io2_a_src;
+        }
+        v_w = o_0_v_w;
+        iop_v_w = o_0_iop_v_w;
+        io0_v_w = o_0_io0_v_w;
+        io1_v_w = o_0_io1_v_w;
+        io2_v_w = o_0_io2_v_w;
       }
       goto label__0__break;
     }
