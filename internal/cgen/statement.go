@@ -228,22 +228,22 @@ func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {
 	ioBindNum := g.currFunk.ioBinds
 	g.currFunk.ioBinds++
 
+	e := n.IO()
+	prefix := vPrefix
+	if e.Operator() != 0 {
+		prefix = aPrefix
+	}
+	cTyp, end, qualifier := "reader", "meta.wi", "const "
+	if e.MType().QID()[1] == t.IDIOWriter {
+		cTyp, end, qualifier = "writer", "data.len", ""
+	}
+	name := e.Ident().Str(g.tm)
+
 	// TODO: do these variables need to be func-scoped (bigger scope)
 	// instead of block-scoped (smaller scope) if the coro_susp_point
 	// switch can jump past this initialization??
 	b.writes("{\n")
 	{
-		e := n.IO()
-		prefix := vPrefix
-		if e.Operator() != 0 {
-			prefix = aPrefix
-		}
-		cTyp, qualifier := "reader", "const "
-		if e.MType().QID()[1] == t.IDIOWriter {
-			cTyp, qualifier = "writer", ""
-		}
-		name := e.Ident().Str(g.tm)
-
 		if n.Keyword() == t.IDIOBind {
 			b.printf("wuffs_base__io_buffer* %s%d_%s%s = %s%s;\n",
 				oPrefix, ioBindNum, prefix, name,
@@ -284,6 +284,11 @@ func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {
 				return err
 			}
 			b.writes(");\n")
+			b.printf("if (%s%s) {\n%s%s->%s = ((size_t)(%s%s%s - %s%s->data.ptr));\n}\n",
+				prefix, name,
+				prefix, name, end,
+				io2Prefix, prefix, name,
+				prefix, name)
 		}
 	}
 
@@ -294,13 +299,6 @@ func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {
 	}
 
 	{
-		e := n.IO()
-		prefix := vPrefix
-		if e.Operator() != 0 {
-			prefix = aPrefix
-		}
-		name := e.Ident().Str(g.tm)
-
 		if n.Keyword() == t.IDIOBind {
 			b.printf("%s%s = %s%d_%s%s;\n",
 				prefix, name,
@@ -318,6 +316,13 @@ func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {
 		b.printf("%s%s%s = %s%d_%s%s%s;\n",
 			io2Prefix, prefix, name,
 			oPrefix, ioBindNum, io2Prefix, prefix, name)
+		if n.Keyword() == t.IDIOLimit {
+			b.printf("if (%s%s) {\n%s%s->%s = ((size_t)(%s%s%s - %s%s->data.ptr));\n}\n",
+				prefix, name,
+				prefix, name, end,
+				io2Prefix, prefix, name,
+				prefix, name)
+		}
 	}
 	b.writes("}\n")
 	return nil

@@ -30550,6 +30550,9 @@ wuffs_png__decoder__decode_frame(
           const uint8_t *o_1_io2_a_src = io2_a_src;
           wuffs_base__io_reader__limit(&io2_a_src, iop_a_src,
               self->private_impl.f_chunk_length);
+          if (a_src) {
+            a_src->meta.wi = ((size_t)(io2_a_src - a_src->data.ptr));
+          }
           v_w_mark = ((uint64_t)(iop_v_w - io0_v_w));
           v_r_mark = ((uint64_t)(iop_a_src - io0_a_src));
           {
@@ -30567,6 +30570,9 @@ wuffs_png__decoder__decode_frame(
           wuffs_base__u64__sat_sub_indirect(&self->private_impl.f_chunk_length, wuffs_base__io__count_since(v_r_mark, ((uint64_t)(iop_a_src - io0_a_src))));
           wuffs_base__u64__sat_add_indirect(&self->private_impl.f_workbuf_wi, wuffs_base__io__count_since(v_w_mark, ((uint64_t)(iop_v_w - io0_v_w))));
           io2_a_src = o_1_io2_a_src;
+          if (a_src) {
+            a_src->meta.wi = ((size_t)(io2_a_src - a_src->data.ptr));
+          }
         }
         v_w = o_0_v_w;
         iop_v_w = o_0_iop_v_w;
