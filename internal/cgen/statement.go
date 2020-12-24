@@ -234,8 +234,6 @@ func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {
 	b.writes("{\n")
 	{
 		e := n.IO()
-		// TODO: restrict (in the type checker or parser) that e is either a
-		// local variable or args.foo?
 		prefix := vPrefix
 		if e.Operator() != 0 {
 			prefix = aPrefix

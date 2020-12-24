@@ -992,16 +992,27 @@ func (p *parser) parseIOBindNode() (*a.Node, error) {
 			io.Str(p.tm), p.filename, p.line())
 	}
 
+	arg1Name := t.ID(0)
+	if keyword == t.IDIOBind {
+		arg1Name = t.IDData
+		if io.Operator() != 0 {
+			return nil, fmt.Errorf(`parse: invalid %s argument %q at %s:%d`,
+				keyword.Str(p.tm), io.Str(p.tm), p.filename, p.line())
+		}
+	} else {
+		arg1Name = t.IDLimit
+		if (io.Operator() != 0) && (io.IsArgsDotFoo() == 0) {
+			return nil, fmt.Errorf(`parse: invalid %s argument %q at %s:%d`,
+				keyword.Str(p.tm), io.Str(p.tm), p.filename, p.line())
+		}
+	}
+
 	if x := p.peek1(); x != t.IDComma {
 		got := p.tm.ByID(x)
 		return nil, fmt.Errorf(`parse: expected ",", got %q at %s:%d`, got, p.filename, p.line())
 	}
 	p.src = p.src[1:]
 
-	arg1Name := t.IDData
-	if keyword == t.IDIOLimit {
-		arg1Name = t.IDLimit
-	}
 	if x := p.peek1(); x != arg1Name {
 		got := p.tm.ByID(x)
 		return nil, fmt.Errorf(`parse: expected %q, got %q at %s:%d`, arg1Name.Str(p.tm), got, p.filename, p.line())
