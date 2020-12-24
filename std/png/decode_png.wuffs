@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use "std/crc32"
+use "std/zlib"
+
 pub status "#bad header"
 pub status "#unsupported PNG file"
 
