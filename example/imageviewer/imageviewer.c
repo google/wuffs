@@ -131,7 +131,7 @@ load_image_type() {
 
   wuffs_base__status status;
   switch (g_src_buffer_array[0]) {
-    case '\x00':
+    case 0x00:
       status = wuffs_wbmp__decoder__initialize(
           &g_potential_decoders.wbmp, sizeof g_potential_decoders.wbmp,
           WUFFS_VERSION, WUFFS_INITIALIZE__DEFAULT_OPTIONS);
@@ -183,7 +183,7 @@ load_image_type() {
               &g_potential_decoders.nie);
       break;
 
-    case '\x89':
+    case 0x89:
       status = wuffs_png__decoder__initialize(
           &g_potential_decoders.png, sizeof g_potential_decoders.png,
           WUFFS_VERSION, WUFFS_INITIALIZE__DEFAULT_OPTIONS);
