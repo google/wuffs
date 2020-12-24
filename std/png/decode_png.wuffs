@@ -15,8 +15,11 @@
 use "std/crc32"
 use "std/zlib"
 
+pub status "#bad chunk"
 pub status "#bad header"
 pub status "#unsupported PNG file"
+
+pri status "#internal error: zlib decoder did not exhaust its input"
 
 pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0
 
@@ -266,7 +269,17 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 		} else if zlib_status <> base."$short read" {
 			return zlib_status
 		} else if this.chunk_length == 0 {
-			// TODO: move to the next IDAT.
+			// TODO: verify CRC-32 checksum.
+			args.src.skip_u32?(n: 4)
+			// The next chunk should be another IDAT.
+			this.chunk_length = args.src.read_u32be_as_u64?()
+			this.chunk_type = args.src.read_u32le?()
+			if this.chunk_type <> 'IDAT'le {
+				return "#bad chunk"
+			}
+			continue
+		} else if args.src.length() > 0 {
+			return "#internal error: zlib decoder did not exhaust its input"
 		}
 		yield? base."$short read"
 	} endwhile
