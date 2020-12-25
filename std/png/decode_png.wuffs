@@ -19,6 +19,7 @@ pub status "#bad chunk"
 pub status "#bad header"
 pub status "#unsupported PNG file"
 
+pri status "#internal error: inconsistent workbuf length"
 pri status "#internal error: zlib decoder did not exhaust its input"
 
 pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0
@@ -76,6 +77,9 @@ pub struct decoder? implements base.image_decoder(
 )(
 	crc  : crc32.ieee_hasher,
 	zlib : zlib.decoder,
+
+	dst_palette : array[4 * 256] base.u8,
+	src_palette : array[4 * 256] base.u8,
 )
 
 pub func decoder.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
@@ -232,10 +236,11 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
 }
 
 pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, blend: base.pixel_blend, workbuf: slice base.u8, opts: nptr base.decode_frame_options) {
-	var w           : base.io_writer
-	var w_mark      : base.u64
-	var r_mark      : base.u64
-	var zlib_status : base.status
+	var w               : base.io_writer
+	var w_mark          : base.u64
+	var r_mark          : base.u64
+	var swizzler_status : base.status
+	var zlib_status     : base.status
 
 	if this.call_sequence < 4 {
 		this.decode_frame_config?(dst: nullptr, src: args.src)
@@ -287,8 +292,83 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 	if this.workbuf_wi <> this.workbuf_length {
 		return base."#not enough data"
 	}
+	swizzler_status = this.swizzler.prepare!(
+		dst_pixfmt: args.dst.pixel_format(),
+		dst_palette: args.dst.palette_or_else(fallback: this.dst_palette[..]),
+		src_pixfmt: this.util.make_pixel_format(repr: this.src_pixfmt),
+		src_palette: this.src_palette[..],
+		blend: args.blend)
+	if not swizzler_status.is_ok() {
+		return swizzler_status
+	}
+	swizzler_status = this.filter_and_swizzle!(dst: args.dst, workbuf: args.workbuf)
+	if not swizzler_status.is_ok() {
+		return swizzler_status
+	}
 
 	this.call_sequence = 0xFF
+}
+
+pri func decoder.filter_and_swizzle!(dst: ptr base.pixel_buffer, workbuf: slice base.u8) base.status {
+	var dst_pixfmt          : base.pixel_format
+	var dst_bits_per_pixel  : base.u32[..= 256]
+	var dst_bytes_per_pixel : base.u64[..= 32]
+	var dst_bytes_per_row   : base.u64
+	var dst_palette         : slice base.u8
+	var tab                 : table base.u8
+
+	var y        : base.u32
+	var dst      : slice base.u8
+	var filter   : base.u8
+	var curr_row : slice base.u8
+	var prev_row : slice base.u8
+
+	// TODO: the dst_pixfmt variable shouldn't be necessary. We should be able
+	// to chain the two calls: "args.dst.pixel_format().bits_per_pixel()".
+	dst_pixfmt = args.dst.pixel_format()
+	dst_bits_per_pixel = dst_pixfmt.bits_per_pixel()
+	if (dst_bits_per_pixel & 7) <> 0 {
+		return base."#unsupported option"
+	}
+	dst_bytes_per_pixel = (dst_bits_per_pixel / 8) as base.u64
+	dst_bytes_per_row = (this.width as base.u64) * dst_bytes_per_pixel
+	dst_palette = args.dst.palette_or_else(fallback: this.dst_palette[..])
+	tab = args.dst.plane(p: 0)
+
+	while y < this.height {
+		assert y < 0xFFFF_FFFF via "a < b: a < c; c <= b"(c: this.height)
+		dst = tab.row(y: y)
+		if dst_bytes_per_row < dst.length() {
+			dst = dst[.. dst_bytes_per_row]
+		}
+
+		if 1 > args.workbuf.length() {
+			return "#internal error: inconsistent workbuf length"
+		}
+		filter = args.workbuf[0]
+		args.workbuf = args.workbuf[1 ..]
+		if this.bytes_per_row > args.workbuf.length() {
+			return "#internal error: inconsistent workbuf length"
+		}
+		curr_row = args.workbuf[.. this.bytes_per_row]
+		args.workbuf = args.workbuf[this.bytes_per_row ..]
+
+		if filter == 0 {
+			// No-op.
+		} else if prev_row.length() == 0 {
+			// TODO.
+		}
+
+		this.swizzler.swizzle_interleaved_from_slice!(
+			dst: dst,
+			dst_palette: dst_palette,
+			src: curr_row)
+
+		prev_row = curr_row
+		y += 1
+	} endwhile
+
+	return ok
 }
 
 pub func decoder.frame_dirty_rect() base.rect_ie_u32 {

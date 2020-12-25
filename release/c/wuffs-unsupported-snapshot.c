@@ -8359,6 +8359,8 @@ struct wuffs_png__decoder__struct {
   struct {
     wuffs_crc32__ieee_hasher f_crc;
     wuffs_zlib__decoder f_zlib;
+    uint8_t f_dst_palette[1024];
+    uint8_t f_src_palette[1024];
 
     struct {
       uint32_t v_dst_pixfmt;
@@ -29798,6 +29800,7 @@ wuffs_zlib__decoder__transform_io(
 const char wuffs_png__error__bad_chunk[] = "#png: bad chunk";
 const char wuffs_png__error__bad_header[] = "#png: bad header";
 const char wuffs_png__error__unsupported_png_file[] = "#png: unsupported PNG file";
+const char wuffs_png__error__internal_error_inconsistent_workbuf_length[] = "#png: internal error: inconsistent workbuf length";
 const char wuffs_png__error__internal_error_zlib_decoder_did_not_exhaust_its_input[] = "#png: internal error: zlib decoder did not exhaust its input";
 
 // ---------------- Private Consts
@@ -29805,6 +29808,12 @@ const char wuffs_png__error__internal_error_zlib_decoder_did_not_exhaust_its_inp
 // ---------------- Private Initializer Prototypes
 
 // ---------------- Private Function Prototypes
+
+static wuffs_base__status
+wuffs_png__decoder__filter_and_swizzle(
+    wuffs_png__decoder* self,
+    wuffs_base__pixel_buffer* a_dst,
+    wuffs_base__slice_u8 a_workbuf);
 
 // ---------------- VTables
 
@@ -30497,6 +30506,7 @@ wuffs_png__decoder__decode_frame(
   uint8_t* io2_v_w WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint64_t v_w_mark = 0;
   uint64_t v_r_mark = 0;
+  wuffs_base__status v_swizzler_status = wuffs_base__make_status(NULL);
   wuffs_base__status v_zlib_status = wuffs_base__make_status(NULL);
 
   const uint8_t* iop_a_src = NULL;
@@ -30686,6 +30696,33 @@ wuffs_png__decoder__decode_frame(
       status = wuffs_base__make_status(wuffs_base__error__not_enough_data);
       goto exit;
     }
+    v_swizzler_status = wuffs_base__pixel_swizzler__prepare(&self->private_impl.f_swizzler,
+        wuffs_base__pixel_buffer__pixel_format(a_dst),
+        wuffs_base__pixel_buffer__palette_or_else(a_dst, wuffs_base__make_slice_u8(self->private_data.f_dst_palette, 1024)),
+        wuffs_base__utility__make_pixel_format(self->private_impl.f_src_pixfmt),
+        wuffs_base__make_slice_u8(self->private_data.f_src_palette, 1024),
+        a_blend);
+    if ( ! wuffs_base__status__is_ok(&v_swizzler_status)) {
+      status = v_swizzler_status;
+      if (wuffs_base__status__is_error(&status)) {
+        goto exit;
+      } else if (wuffs_base__status__is_suspension(&status)) {
+        status = wuffs_base__make_status(wuffs_base__error__cannot_return_a_suspension);
+        goto exit;
+      }
+      goto ok;
+    }
+    v_swizzler_status = wuffs_png__decoder__filter_and_swizzle(self, a_dst, a_workbuf);
+    if ( ! wuffs_base__status__is_ok(&v_swizzler_status)) {
+      status = v_swizzler_status;
+      if (wuffs_base__status__is_error(&status)) {
+        goto exit;
+      } else if (wuffs_base__status__is_suspension(&status)) {
+        status = wuffs_base__make_status(wuffs_base__error__cannot_return_a_suspension);
+        goto exit;
+      }
+      goto ok;
+    }
     self->private_impl.f_call_sequence = 255;
 
     goto ok;
@@ -30709,6 +30746,59 @@ wuffs_png__decoder__decode_frame(
     self->private_impl.magic = WUFFS_BASE__DISABLED;
   }
   return status;
+}
+
+// -------- func png.decoder.filter_and_swizzle
+
+static wuffs_base__status
+wuffs_png__decoder__filter_and_swizzle(
+    wuffs_png__decoder* self,
+    wuffs_base__pixel_buffer* a_dst,
+    wuffs_base__slice_u8 a_workbuf) {
+  wuffs_base__pixel_format v_dst_pixfmt = {0};
+  uint32_t v_dst_bits_per_pixel = 0;
+  uint64_t v_dst_bytes_per_pixel = 0;
+  uint64_t v_dst_bytes_per_row = 0;
+  wuffs_base__slice_u8 v_dst_palette = {0};
+  wuffs_base__table_u8 v_tab = {0};
+  uint32_t v_y = 0;
+  wuffs_base__slice_u8 v_dst = {0};
+  uint8_t v_filter = 0;
+  wuffs_base__slice_u8 v_curr_row = {0};
+  wuffs_base__slice_u8 v_prev_row = {0};
+
+  v_dst_pixfmt = wuffs_base__pixel_buffer__pixel_format(a_dst);
+  v_dst_bits_per_pixel = wuffs_base__pixel_format__bits_per_pixel(&v_dst_pixfmt);
+  if ((v_dst_bits_per_pixel & 7) != 0) {
+    return wuffs_base__make_status(wuffs_base__error__unsupported_option);
+  }
+  v_dst_bytes_per_pixel = ((uint64_t)((v_dst_bits_per_pixel / 8)));
+  v_dst_bytes_per_row = (((uint64_t)(self->private_impl.f_width)) * v_dst_bytes_per_pixel);
+  v_dst_palette = wuffs_base__pixel_buffer__palette_or_else(a_dst, wuffs_base__make_slice_u8(self->private_data.f_dst_palette, 1024));
+  v_tab = wuffs_base__pixel_buffer__plane(a_dst, 0);
+  while (v_y < self->private_impl.f_height) {
+    v_dst = wuffs_base__table_u8__row(v_tab, v_y);
+    if (v_dst_bytes_per_row < ((uint64_t)(v_dst.len))) {
+      v_dst = wuffs_base__slice_u8__subslice_j(v_dst, v_dst_bytes_per_row);
+    }
+    if (1 > ((uint64_t)(a_workbuf.len))) {
+      return wuffs_base__make_status(wuffs_png__error__internal_error_inconsistent_workbuf_length);
+    }
+    v_filter = a_workbuf.ptr[0];
+    a_workbuf = wuffs_base__slice_u8__subslice_i(a_workbuf, 1);
+    if (self->private_impl.f_bytes_per_row > ((uint64_t)(a_workbuf.len))) {
+      return wuffs_base__make_status(wuffs_png__error__internal_error_inconsistent_workbuf_length);
+    }
+    v_curr_row = wuffs_base__slice_u8__subslice_j(a_workbuf, self->private_impl.f_bytes_per_row);
+    a_workbuf = wuffs_base__slice_u8__subslice_i(a_workbuf, self->private_impl.f_bytes_per_row);
+    if (v_filter == 0) {
+    } else if (((uint64_t)(v_prev_row.len)) == 0) {
+    }
+    wuffs_base__pixel_swizzler__swizzle_interleaved_from_slice(&self->private_impl.f_swizzler, v_dst, v_dst_palette, v_curr_row);
+    v_prev_row = v_curr_row;
+    v_y += 1;
+  }
+  return wuffs_base__make_status(NULL);
 }
 
 // -------- func png.decoder.frame_dirty_rect

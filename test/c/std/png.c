@@ -83,7 +83,7 @@ test_wuffs_png_decode_interface() {
                    WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
   return do_test__wuffs_base__image_decoder(
       wuffs_png__decoder__upcast_as__wuffs_base__image_decoder(&dec),
-      "test/data/bricks-gray.png", 0, SIZE_MAX, 160, 120, 0);  // TODO.
+      "test/data/bricks-gray.png", 0, SIZE_MAX, 160, 120, 0xFF060606);
 }
 
 const char*  //
