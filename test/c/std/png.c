@@ -71,6 +71,23 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 // No mimic library.
 #endif
 
+// ---------------- PNG Tests
+
+const char*  //
+wuffs_png_decode(uint64_t* n_bytes_out,
+                 wuffs_base__io_buffer* dst,
+                 uint32_t wuffs_initialize_flags,
+                 wuffs_base__pixel_format pixfmt,
+                 wuffs_base__io_buffer* src) {
+  wuffs_png__decoder dec;
+  CHECK_STATUS("initialize",
+               wuffs_png__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION,
+                                              wuffs_initialize_flags));
+  return do_run__wuffs_base__image_decoder(
+      wuffs_png__decoder__upcast_as__wuffs_base__image_decoder(&dec),
+      n_bytes_out, dst, pixfmt, src);
+}
+
 // --------
 
 const char*  //
@@ -122,7 +139,23 @@ test_wuffs_png_decode_frame_config() {
 
 // ---------------- PNG Benches
 
-// No PNG benches.
+const char*  //
+bench_wuffs_png_decode_19k_y() {
+  CHECK_FOCUS(__func__);
+  return do_bench_image_decode(
+      &wuffs_png_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__Y),
+      "test/data/bricks-gray.png", 0, SIZE_MAX, 80);
+}
+
+const char*  //
+bench_wuffs_png_decode_40k_rgb() {
+  CHECK_FOCUS(__func__);
+  return do_bench_image_decode(
+      &wuffs_png_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
+      "test/data/hat.png", 0, SIZE_MAX, 50);
+}
 
 // ---------------- Mimic Benches
 
@@ -150,7 +183,8 @@ proc g_tests[] = {
 
 proc g_benches[] = {
 
-// No PNG benches.
+    bench_wuffs_png_decode_19k_y,
+    bench_wuffs_png_decode_40k_rgb,
 
 #ifdef WUFFS_MIMIC
 
