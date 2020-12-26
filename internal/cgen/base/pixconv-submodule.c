@@ -2086,6 +2086,9 @@ wuffs_base__pixel_swizzler__prepare__y(wuffs_base__pixel_swizzler* p,
                                        wuffs_base__slice_u8 src_palette,
                                        wuffs_base__pixel_blend blend) {
   switch (dst_pixfmt.repr) {
+    case WUFFS_BASE__PIXEL_FORMAT__Y:
+      return wuffs_base__pixel_swizzler__copy_1_1;
+
     case WUFFS_BASE__PIXEL_FORMAT__BGR_565:
       return wuffs_base__pixel_swizzler__bgr_565__y;
 
