@@ -8194,6 +8194,7 @@ extern "C" {
 // ---------------- Status Codes
 
 extern const char wuffs_png__error__bad_chunk[];
+extern const char wuffs_png__error__bad_filter[];
 extern const char wuffs_png__error__bad_header[];
 extern const char wuffs_png__error__unsupported_png_file[];
 
@@ -8345,6 +8346,7 @@ struct wuffs_png__decoder__struct {
     uint64_t f_workbuf_length;
     uint8_t f_call_sequence;
     uint8_t f_depth;
+    uint8_t f_filter_distance;
     uint32_t f_src_pixfmt;
     uint32_t f_chunk_type;
     uint64_t f_chunk_length;
@@ -29798,6 +29800,7 @@ wuffs_zlib__decoder__transform_io(
 // ---------------- Status Codes Implementations
 
 const char wuffs_png__error__bad_chunk[] = "#png: bad chunk";
+const char wuffs_png__error__bad_filter[] = "#png: bad filter";
 const char wuffs_png__error__bad_header[] = "#png: bad header";
 const char wuffs_png__error__unsupported_png_file[] = "#png: unsupported PNG file";
 const char wuffs_png__error__internal_error_inconsistent_workbuf_length[] = "#png: internal error: inconsistent workbuf length";
@@ -30168,6 +30171,7 @@ wuffs_png__decoder__decode_image_config(
       v_dst_pixfmt = 536870920;
       self->private_impl.f_src_pixfmt = 536870920;
       if (self->private_impl.f_depth == 8) {
+        self->private_impl.f_filter_distance = 1;
         self->private_impl.f_bytes_per_row = (((uint64_t)(self->private_impl.f_width)) * 1);
       } else {
         status = wuffs_base__make_status(wuffs_png__error__unsupported_png_file);
@@ -30177,6 +30181,7 @@ wuffs_png__decoder__decode_image_config(
       v_dst_pixfmt = 2147485832;
       self->private_impl.f_src_pixfmt = 2684356744;
       if (self->private_impl.f_depth == 8) {
+        self->private_impl.f_filter_distance = 3;
         self->private_impl.f_bytes_per_row = (((uint64_t)(self->private_impl.f_width)) * 3);
       } else {
         status = wuffs_base__make_status(wuffs_png__error__unsupported_png_file);
@@ -30761,11 +30766,20 @@ wuffs_png__decoder__filter_and_swizzle(
   uint64_t v_dst_bytes_per_row = 0;
   wuffs_base__slice_u8 v_dst_palette = {0};
   wuffs_base__table_u8 v_tab = {0};
+  uint64_t v_filter_distance = 0;
   uint32_t v_y = 0;
   wuffs_base__slice_u8 v_dst = {0};
   uint8_t v_filter = 0;
   wuffs_base__slice_u8 v_curr_row = {0};
   wuffs_base__slice_u8 v_prev_row = {0};
+  uint64_t v_i = 0;
+  uint32_t v_fa = 0;
+  uint32_t v_fb = 0;
+  uint32_t v_fc = 0;
+  uint32_t v_pp = 0;
+  uint32_t v_pa = 0;
+  uint32_t v_pb = 0;
+  uint32_t v_pc = 0;
 
   v_dst_pixfmt = wuffs_base__pixel_buffer__pixel_format(a_dst);
   v_dst_bits_per_pixel = wuffs_base__pixel_format__bits_per_pixel(&v_dst_pixfmt);
@@ -30776,6 +30790,7 @@ wuffs_png__decoder__filter_and_swizzle(
   v_dst_bytes_per_row = (((uint64_t)(self->private_impl.f_width)) * v_dst_bytes_per_pixel);
   v_dst_palette = wuffs_base__pixel_buffer__palette_or_else(a_dst, wuffs_base__make_slice_u8(self->private_data.f_dst_palette, 1024));
   v_tab = wuffs_base__pixel_buffer__plane(a_dst, 0);
+  v_filter_distance = ((uint64_t)(self->private_impl.f_filter_distance));
   while (v_y < self->private_impl.f_height) {
     v_dst = wuffs_base__table_u8__row(v_tab, v_y);
     if (v_dst_bytes_per_row < ((uint64_t)(v_dst.len))) {
@@ -30792,7 +30807,70 @@ wuffs_png__decoder__filter_and_swizzle(
     v_curr_row = wuffs_base__slice_u8__subslice_j(a_workbuf, self->private_impl.f_bytes_per_row);
     a_workbuf = wuffs_base__slice_u8__subslice_i(a_workbuf, self->private_impl.f_bytes_per_row);
     if (v_filter == 0) {
-    } else if (((uint64_t)(v_prev_row.len)) == 0) {
+    } else if (v_filter == 1) {
+      v_i = v_filter_distance;
+      while (v_i < ((uint64_t)(v_curr_row.len))) {
+        if (v_i >= v_filter_distance) {
+          if ((v_i - v_filter_distance) < ((uint64_t)(v_curr_row.len))) {
+            v_curr_row.ptr[v_i] += v_curr_row.ptr[(v_i - v_filter_distance)];
+          }
+        }
+        v_i += 1;
+      }
+    } else if (v_filter == 2) {
+      v_i = 0;
+      while ((v_i < ((uint64_t)(v_curr_row.len))) && (v_i < ((uint64_t)(v_prev_row.len)))) {
+        v_curr_row.ptr[v_i] += v_prev_row.ptr[v_i];
+        v_i += 1;
+      }
+    } else if (v_filter == 3) {
+      v_i = 0;
+      while ((v_i < ((uint64_t)(v_curr_row.len))) && (v_i < ((uint64_t)(v_prev_row.len)))) {
+        if (v_i >= v_filter_distance) {
+          if ((v_i - v_filter_distance) < ((uint64_t)(v_curr_row.len))) {
+            v_curr_row.ptr[v_i] += ((uint8_t)(((((uint32_t)(v_curr_row.ptr[(v_i - v_filter_distance)])) + ((uint32_t)(v_prev_row.ptr[v_i]))) / 2)));
+          }
+        } else {
+          v_curr_row.ptr[v_i] += (v_prev_row.ptr[v_i] / 2);
+        }
+        v_i += 1;
+      }
+    } else if (v_filter == 4) {
+      v_i = 0;
+      while ((v_i < ((uint64_t)(v_curr_row.len))) && (v_i < ((uint64_t)(v_prev_row.len)))) {
+        if (v_i < v_filter_distance) {
+          v_curr_row.ptr[v_i] += v_prev_row.ptr[v_i];
+        } else {
+          if (((v_i - v_filter_distance) < ((uint64_t)(v_curr_row.len))) && ((v_i - v_filter_distance) < ((uint64_t)(v_prev_row.len)))) {
+            v_fa = ((uint32_t)(v_curr_row.ptr[(v_i - v_filter_distance)]));
+            v_fb = ((uint32_t)(v_prev_row.ptr[v_i]));
+            v_fc = ((uint32_t)(v_prev_row.ptr[(v_i - v_filter_distance)]));
+            v_pp = ((v_fa + v_fb) - v_fc);
+            v_pa = (v_pp - v_fa);
+            if (v_pa >= 2147483648) {
+              v_pa = (0 - v_pa);
+            }
+            v_pb = (v_pp - v_fb);
+            if (v_pb >= 2147483648) {
+              v_pb = (0 - v_pb);
+            }
+            v_pc = (v_pp - v_fc);
+            if (v_pc >= 2147483648) {
+              v_pc = (0 - v_pc);
+            }
+            if ((v_pa <= v_pb) && (v_pa <= v_pc)) {
+              v_curr_row.ptr[v_i] += ((uint8_t)((v_fa & 255)));
+            } else if (v_pb <= v_pc) {
+              v_curr_row.ptr[v_i] += ((uint8_t)((v_fb & 255)));
+            } else {
+              v_curr_row.ptr[v_i] += ((uint8_t)((v_fc & 255)));
+            }
+          }
+        }
+        v_i += 1;
+      }
+    } else {
+      return wuffs_base__make_status(wuffs_png__error__bad_filter);
     }
     wuffs_base__pixel_swizzler__swizzle_interleaved_from_slice(&self->private_impl.f_swizzler, v_dst, v_dst_palette, v_curr_row);
     v_prev_row = v_curr_row;
