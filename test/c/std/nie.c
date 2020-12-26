@@ -67,7 +67,7 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 // No mimic library.
 #endif
 
-// --------
+// ---------------- NIE Tests
 
 const char*  //
 test_wuffs_nie_decode_interface() {
