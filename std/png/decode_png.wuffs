@@ -18,6 +18,7 @@ use "std/zlib"
 pub status "#bad chunk"
 pub status "#bad filter"
 pub status "#bad header"
+pub status "#missing palette"
 pub status "#unsupported PNG file"
 
 pri status "#internal error: inconsistent workbuf length"
@@ -65,7 +66,10 @@ pub struct decoder? implements base.image_decoder(
 	call_sequence : base.u8,
 
 	depth           : base.u8[..= 16],
+	color_type      : base.u8,
 	filter_distance : base.u8[..= 8],
+
+	seen_palette : base.bool,
 
 	src_pixfmt : base.u32,
 
@@ -131,8 +135,8 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 	this.depth = a8
 
 	// Color.
-	a8 = args.src.read_u8?()
-	if a8 == 0 {
+	this.color_type = args.src.read_u8?()
+	if this.color_type == 0 {
 		dst_pixfmt = base.PIXEL_FORMAT__Y
 		this.src_pixfmt = base.PIXEL_FORMAT__Y
 		if this.depth == 8 {
@@ -141,12 +145,31 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 		} else {
 			return "#unsupported PNG file"
 		}
-	} else if a8 == 2 {
+	} else if this.color_type == 2 {
 		dst_pixfmt = base.PIXEL_FORMAT__BGR
 		this.src_pixfmt = base.PIXEL_FORMAT__RGB
 		if this.depth == 8 {
 			this.filter_distance = 3
 			this.bytes_per_row = (this.width as base.u64) * 3
+		} else {
+			return "#unsupported PNG file"
+		}
+	} else if this.color_type == 3 {
+		// TODO: s/BINARY/NONPREMUL/ and decode the tRNS chunk.
+		dst_pixfmt = base.PIXEL_FORMAT__INDEXED__BGRA_BINARY
+		this.src_pixfmt = base.PIXEL_FORMAT__INDEXED__BGRA_BINARY
+		if this.depth == 8 {
+			this.filter_distance = 1
+			this.bytes_per_row = (this.width as base.u64) * 1
+		} else {
+			return "#unsupported PNG file"
+		}
+	} else if this.color_type == 6 {
+		dst_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL
+		this.src_pixfmt = base.PIXEL_FORMAT__RGBA_NONPREMUL
+		if this.depth == 8 {
+			this.filter_distance = 4
+			this.bytes_per_row = (this.width as base.u64) * 4
 		} else {
 			return "#unsupported PNG file"
 		}
@@ -186,11 +209,25 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 		this.chunk_type = args.src.read_u32le?()
 		if this.chunk_type == 'IDAT'le {
 			break
+		} else if this.chunk_type == 'PLTE'le {
+			if this.seen_palette {
+				return "#bad chunk"
+			}
+			this.decode_plte?(src: args.src)
+			this.seen_palette = true
+		} else if this.chunk_type == 'tRNS'le {
+			// TODO.
+			args.src.skip?(n: this.chunk_length)
+		} else {
+			args.src.skip?(n: this.chunk_length)
 		}
-		args.src.skip?(n: this.chunk_length)
 		// TODO: verify CRC-32 checksum.
 		args.src.skip_u32?(n: 4)
 	} endwhile
+
+	if (this.color_type == 3) and (not this.seen_palette) {
+		return "#missing palette"
+	}
 
 	this.frame_config_io_position = args.src.position()
 
@@ -205,6 +242,39 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 	}
 
 	this.call_sequence = 3
+}
+
+pri func decoder.decode_plte?(src: base.io_reader) {
+	var num_palette_entries : base.u32[..= 256]
+	var i                   : base.u32
+	var argb                : base.u32
+
+	if (this.chunk_length > 768) or ((this.chunk_length % 3) <> 0) {
+		return "#bad header"
+	}
+	num_palette_entries = (this.chunk_length as base.u32) / 3
+
+	while i < num_palette_entries {
+		assert i < 256 via "a < b: a < c; c <= b"(c: num_palette_entries)
+		// Convert from RGB (in memory order) to ARGB (in native u32 order)
+		// to BGRA (in memory order).
+		argb = args.src.read_u24be_as_u32?()
+		argb |= 0xFF00_0000
+		this.src_palette[(4 * i) + 0] = ((argb >> 0) & 0xFF) as base.u8
+		this.src_palette[(4 * i) + 1] = ((argb >> 8) & 0xFF) as base.u8
+		this.src_palette[(4 * i) + 2] = ((argb >> 16) & 0xFF) as base.u8
+		this.src_palette[(4 * i) + 3] = ((argb >> 24) & 0xFF) as base.u8
+		i += 1
+	} endwhile
+
+	// Set the remaining palette entries to opaque black.
+	while i < 256 {
+		this.src_palette[(4 * i) + 0] = 0x00
+		this.src_palette[(4 * i) + 1] = 0x00
+		this.src_palette[(4 * i) + 2] = 0x00
+		this.src_palette[(4 * i) + 3] = 0xFF
+		i += 1
+	} endwhile
 }
 
 pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_reader) {
