@@ -365,7 +365,15 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 
 	if this.workbuf_wi <> this.workbuf_length {
 		return base."#not enough data"
+	} else if 0 < args.workbuf.length() {
+		// For the top row, the Paeth filter (4) is equivalent to the Sub
+		// filter (1), but the Paeth implementation is simpler if it can assume
+		// that there is a previous row.
+		if args.workbuf[0] == 4 {
+			args.workbuf[0] = 1
+		}
 	}
+
 	swizzler_status = this.swizzler.prepare!(
 		dst_pixfmt: args.dst.pixel_format(),
 		dst_palette: args.dst.palette_or_else(fallback: this.dst_palette[..]),

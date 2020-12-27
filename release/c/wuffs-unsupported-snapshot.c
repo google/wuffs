@@ -30872,6 +30872,10 @@ wuffs_png__decoder__decode_frame(
     if (self->private_impl.f_workbuf_wi != self->private_impl.f_workbuf_length) {
       status = wuffs_base__make_status(wuffs_base__error__not_enough_data);
       goto exit;
+    } else if (0 < ((uint64_t)(a_workbuf.len))) {
+      if (a_workbuf.ptr[0] == 4) {
+        a_workbuf.ptr[0] = 1;
+      }
     }
     v_swizzler_status = wuffs_base__pixel_swizzler__prepare(&self->private_impl.f_swizzler,
         wuffs_base__pixel_buffer__pixel_format(a_dst),
