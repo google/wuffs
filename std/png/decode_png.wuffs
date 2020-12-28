@@ -471,22 +471,37 @@ pri func decoder.filter_and_swizzle!(dst: ptr base.pixel_buffer, workbuf: slice 
 				i += 1
 			} endwhile
 		} else if filter == 3 {
-			i = 0
-			while (i < curr_row.length()) and (i < prev_row.length()),
-				inv y < 0xFFFF_FFFF,
-			{
-				assert i < 0xFFFF_FFFF_FFFF_FFFF via "a < b: a < c; c <= b"(c: curr_row.length())
-				if i >= filter_distance {
-					if (i - filter_distance) < curr_row.length() {
-						curr_row[i] ~mod+= ((
-							(curr_row[i - filter_distance] as base.u32) +
-							(prev_row[i] as base.u32)) / 2) as base.u8
+			if y == 0 {
+				i = filter_distance
+				while i < curr_row.length(),
+					inv y < 0xFFFF_FFFF,
+				{
+					assert i < 0xFFFF_FFFF_FFFF_FFFF via "a < b: a < c; c <= b"(c: curr_row.length())
+					if i >= filter_distance {
+						if (i - filter_distance) < curr_row.length() {
+							curr_row[i] ~mod+= curr_row[i - filter_distance] / 2
+						}
 					}
-				} else {
-					curr_row[i] ~mod+= prev_row[i] / 2
-				}
-				i += 1
-			} endwhile
+					i += 1
+				} endwhile
+			} else {
+				i = 0
+				while (i < curr_row.length()) and (i < prev_row.length()),
+					inv y < 0xFFFF_FFFF,
+				{
+					assert i < 0xFFFF_FFFF_FFFF_FFFF via "a < b: a < c; c <= b"(c: curr_row.length())
+					if i >= filter_distance {
+						if (i - filter_distance) < curr_row.length() {
+							curr_row[i] ~mod+= ((
+								(curr_row[i - filter_distance] as base.u32) +
+								(prev_row[i] as base.u32)) / 2) as base.u8
+						}
+					} else {
+						curr_row[i] ~mod+= prev_row[i] / 2
+					}
+					i += 1
+				} endwhile
+			}
 		} else if filter == 4 {
 			i = 0
 			while (i < curr_row.length()) and (i < prev_row.length()),

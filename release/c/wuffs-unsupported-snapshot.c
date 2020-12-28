@@ -31000,16 +31000,28 @@ wuffs_png__decoder__filter_and_swizzle(
         v_i += 1;
       }
     } else if (v_filter == 3) {
-      v_i = 0;
-      while ((v_i < ((uint64_t)(v_curr_row.len))) && (v_i < ((uint64_t)(v_prev_row.len)))) {
-        if (v_i >= v_filter_distance) {
-          if ((v_i - v_filter_distance) < ((uint64_t)(v_curr_row.len))) {
-            v_curr_row.ptr[v_i] += ((uint8_t)(((((uint32_t)(v_curr_row.ptr[(v_i - v_filter_distance)])) + ((uint32_t)(v_prev_row.ptr[v_i]))) / 2)));
+      if (v_y == 0) {
+        v_i = v_filter_distance;
+        while (v_i < ((uint64_t)(v_curr_row.len))) {
+          if (v_i >= v_filter_distance) {
+            if ((v_i - v_filter_distance) < ((uint64_t)(v_curr_row.len))) {
+              v_curr_row.ptr[v_i] += (v_curr_row.ptr[(v_i - v_filter_distance)] / 2);
+            }
           }
-        } else {
-          v_curr_row.ptr[v_i] += (v_prev_row.ptr[v_i] / 2);
+          v_i += 1;
         }
-        v_i += 1;
+      } else {
+        v_i = 0;
+        while ((v_i < ((uint64_t)(v_curr_row.len))) && (v_i < ((uint64_t)(v_prev_row.len)))) {
+          if (v_i >= v_filter_distance) {
+            if ((v_i - v_filter_distance) < ((uint64_t)(v_curr_row.len))) {
+              v_curr_row.ptr[v_i] += ((uint8_t)(((((uint32_t)(v_curr_row.ptr[(v_i - v_filter_distance)])) + ((uint32_t)(v_prev_row.ptr[v_i]))) / 2)));
+            }
+          } else {
+            v_curr_row.ptr[v_i] += (v_prev_row.ptr[v_i] / 2);
+          }
+          v_i += 1;
+        }
       }
     } else if (v_filter == 4) {
       v_i = 0;
