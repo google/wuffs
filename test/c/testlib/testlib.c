@@ -79,6 +79,20 @@ wuffs_testlib__initialize_global_xxx_slices() {
   });
 }
 
+uint8_t  //
+unhex(uint8_t b) {
+  if (('0' <= b) && (b <= '9')) {
+    return b - '0';
+  }
+  if (('A' <= b) && (b <= 'F')) {
+    return b + 10 - 'A';
+  }
+  if (('a' <= b) && (b <= 'f')) {
+    return b + 10 - 'a';
+  }
+  return 0;
+}
+
 char g_fail_msg[65536] = {0};
 
 #define RETURN_FAIL(...)                                                \
@@ -568,6 +582,72 @@ copy_to_io_buffer_from_pixel_buffer(wuffs_base__io_buffer* dst,
   return NULL;
 }
 
+bool  //
+skip_read_file_patches(const char** path) {
+  const char* p = *path;
+  while (*p == '@') {
+    p++;
+    while (*p != ';') {
+      if (*p == '\x00') {
+        return false;
+      }
+      p++;
+    }
+    p++;
+  }
+  *path = p;
+  return true;
+}
+
+bool  //
+apply_read_file_patches(wuffs_base__io_buffer* dst,
+                        const char* original_path,
+                        size_t original_wi) {
+  const char* p = original_path;
+  while (*p == '@') {
+    p++;
+    uint64_t offset = 0;
+    while (*p != '=') {
+      if (*p == '\x00') {
+        return false;
+      }
+      offset = (offset << 4) | unhex(*p);
+      p++;
+    }
+    p++;
+    uint8_t before = 0;
+    while (*p != '=') {
+      if (*p == '\x00') {
+        return false;
+      }
+      before = (before << 4) | unhex(*p);
+      p++;
+    }
+    p++;
+    uint8_t after = 0;
+    while (*p != ';') {
+      if (*p == '\x00') {
+        return false;
+      }
+      after = (after << 4) | unhex(*p);
+      p++;
+    }
+    p++;
+
+    size_t i = original_wi + offset;
+    if ((i >= dst->meta.wi) || (dst->data.ptr[i] != before)) {
+      return false;
+    }
+    dst->data.ptr[i] = after;
+  }
+  return true;
+}
+
+// read_file loads path into dst.
+//
+// The path may be preceded by zero or more "@123=45=67;" sub-strings, which
+// denote a one-byte patch at offset 0x123, changing the byte at that offset
+// from 0x45 to 0x67.
 const char*  //
 read_file(wuffs_base__io_buffer* dst, const char* path) {
   if (!dst || !path) {
@@ -576,6 +656,14 @@ read_file(wuffs_base__io_buffer* dst, const char* path) {
   if (dst->meta.closed) {
     RETURN_FAIL("read_file: dst buffer closed for writes");
   }
+
+  const char* original_path = path;
+  size_t original_wi = dst->meta.wi;
+  if (!skip_read_file_patches(&path)) {
+    RETURN_FAIL("read_file(\"%s\"): invalid \"@123=45=67;\" patch",
+                original_path);
+  }
+
   FILE* f = fopen(path, "r");
   if (!f) {
     RETURN_FAIL("read_file(\"%s\"): %s (errno=%d)", path, strerror(errno),
@@ -618,6 +706,11 @@ read_file(wuffs_base__io_buffer* dst, const char* path) {
   fclose(f);
   dst->meta.pos = 0;
   dst->meta.closed = true;
+
+  if (!apply_read_file_patches(dst, original_path, original_wi)) {
+    RETURN_FAIL("read_file(\"%s\"): invalid \"@123=45=67;\" patch",
+                original_path);
+  }
   return NULL;
 }
 

@@ -37,7 +37,7 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 "wuffs mimic cflags" to run the mimic benchmarks.
 */
 
-// !! wuffs mimic cflags: -DWUFFS_MIMIC
+// !! wuffs mimic cflags: -DWUFFS_MIMIC -lpng
 
 // Wuffs ships as a "single file C library" or "header file library" as per
 // https://github.com/nothings/stb/blob/master/docs/stb_howto.txt
@@ -68,7 +68,7 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 #include "../../../release/c/wuffs-unsupported-snapshot.c"
 #include "../testlib/testlib.c"
 #ifdef WUFFS_MIMIC
-// No mimic library.
+#include "../mimiclib/png.c"
 #endif
 
 // ---------------- PNG Tests
@@ -133,35 +133,173 @@ test_wuffs_png_decode_frame_config() {
 
 #ifdef WUFFS_MIMIC
 
-// No mimic tests.
+const char*  //
+do_test_mimic_png_decode(const char* filename) {
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = g_src_slice_u8,
+  });
+  CHECK_STRING(read_file(&src, filename));
+
+  src.meta.ri = 0;
+  wuffs_base__io_buffer have = ((wuffs_base__io_buffer){
+      .data = g_have_slice_u8,
+  });
+  CHECK_STRING(wuffs_png_decode(
+      NULL, &have, WUFFS_INITIALIZE__DEFAULT_OPTIONS,
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
+      &src));
+
+  src.meta.ri = 0;
+  wuffs_base__io_buffer want = ((wuffs_base__io_buffer){
+      .data = g_want_slice_u8,
+  });
+  CHECK_STRING(mimic_png_decode(
+      NULL, &want, WUFFS_INITIALIZE__DEFAULT_OPTIONS,
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
+      &src));
+
+  return check_io_buffers_equal("", &have, &want);
+}
+
+const char*  //
+test_mimic_png_decode_19k_8bpp() {
+  CHECK_FOCUS(__func__);
+  // libpng automatically applies the "gAMA" chunk (with no matching "sRGB"
+  // chunk) but Wuffs does not. To make the comparison more like-for-like,
+  // especially in emitting identical BGRA pixels, patch the source file by
+  // replacing the "gAMA" with the nonsense "hAMA". ASCII 'g' is 0x67.
+  return do_test_mimic_png_decode("@25=67=68;test/data/bricks-gray.png");
+}
+
+const char*  //
+test_mimic_png_decode_40k_24bpp() {
+  CHECK_FOCUS(__func__);
+  return do_test_mimic_png_decode("test/data/hat.png");
+}
+
+const char*  //
+test_mimic_png_decode_77k_8bpp() {
+  CHECK_FOCUS(__func__);
+  return do_test_mimic_png_decode("test/data/bricks-dither.png");
+}
+
+const char*  //
+test_mimic_png_decode_552k_32bpp() {
+  CHECK_FOCUS(__func__);
+  return do_test_mimic_png_decode("test/data/hibiscus.primitive.png");
+}
+
+const char*  //
+test_mimic_png_decode_4002k_24bpp() {
+  CHECK_FOCUS(__func__);
+  return do_test_mimic_png_decode("test/data/harvesters.png");
+}
 
 #endif  // WUFFS_MIMIC
 
 // ---------------- PNG Benches
 
 const char*  //
-bench_wuffs_png_decode_19k_y() {
+bench_wuffs_png_decode_19k_8bpp() {
   CHECK_FOCUS(__func__);
+  // libpng automatically applies the "gAMA" chunk (with no matching "sRGB"
+  // chunk) but Wuffs does not. To make the comparison more like-for-like,
+  // especially in emitting identical BGRA pixels, patch the source file by
+  // replacing the "gAMA" with the nonsense "hAMA". ASCII 'g' is 0x67.
   return do_bench_image_decode(
       &wuffs_png_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
       wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__Y),
-      "test/data/bricks-gray.png", 0, SIZE_MAX, 80);
+      "@25=67=68;test/data/bricks-gray.png", 0, SIZE_MAX, 50);
 }
 
 const char*  //
-bench_wuffs_png_decode_40k_rgb() {
+bench_wuffs_png_decode_40k_24bpp() {
   CHECK_FOCUS(__func__);
   return do_bench_image_decode(
       &wuffs_png_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
       wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
-      "test/data/hat.png", 0, SIZE_MAX, 50);
+      "test/data/hat.png", 0, SIZE_MAX, 30);
+}
+
+const char*  //
+bench_wuffs_png_decode_77k_8bpp() {
+  CHECK_FOCUS(__func__);
+  return do_bench_image_decode(
+      &wuffs_png_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
+      "test/data/bricks-dither.png", 0, SIZE_MAX, 50);
+}
+
+const char*  //
+bench_wuffs_png_decode_552k_32bpp() {
+  CHECK_FOCUS(__func__);
+  return do_bench_image_decode(
+      &wuffs_png_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
+      "test/data/hibiscus.primitive.png", 0, SIZE_MAX, 4);
+}
+
+const char*  //
+bench_wuffs_png_decode_4002k_24bpp() {
+  CHECK_FOCUS(__func__);
+  return do_bench_image_decode(
+      &wuffs_png_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
+      "test/data/harvesters.png", 0, SIZE_MAX, 1);
 }
 
 // ---------------- Mimic Benches
 
 #ifdef WUFFS_MIMIC
 
-// No mimic benches.
+const char*  //
+bench_mimic_png_decode_19k_8bpp() {
+  CHECK_FOCUS(__func__);
+  // libpng automatically applies the "gAMA" chunk (with no matching "sRGB"
+  // chunk) but Wuffs does not. To make the comparison more like-for-like,
+  // especially in emitting identical BGRA pixels, patch the source file by
+  // replacing the "gAMA" with the nonsense "hAMA". ASCII 'g' is 0x67.
+  return do_bench_image_decode(
+      &mimic_png_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__Y),
+      "@25=67=68;test/data/bricks-gray.png", 0, SIZE_MAX, 50);
+}
+
+const char*  //
+bench_mimic_png_decode_40k_24bpp() {
+  CHECK_FOCUS(__func__);
+  return do_bench_image_decode(
+      &mimic_png_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
+      "test/data/hat.png", 0, SIZE_MAX, 30);
+}
+
+const char*  //
+bench_mimic_png_decode_77k_8bpp() {
+  CHECK_FOCUS(__func__);
+  return do_bench_image_decode(
+      &mimic_png_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
+      "test/data/bricks-dither.png", 0, SIZE_MAX, 50);
+}
+
+const char*  //
+bench_mimic_png_decode_552k_32bpp() {
+  CHECK_FOCUS(__func__);
+  return do_bench_image_decode(
+      &mimic_png_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
+      "test/data/hibiscus.primitive.png", 0, SIZE_MAX, 4);
+}
+
+const char*  //
+bench_mimic_png_decode_4002k_24bpp() {
+  CHECK_FOCUS(__func__);
+  return do_bench_image_decode(
+      &mimic_png_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
+      "test/data/harvesters.png", 0, SIZE_MAX, 1);
+}
 
 #endif  // WUFFS_MIMIC
 
@@ -174,7 +312,11 @@ proc g_tests[] = {
 
 #ifdef WUFFS_MIMIC
 
-// No mimic tests.
+    test_mimic_png_decode_19k_8bpp,
+    test_mimic_png_decode_40k_24bpp,
+    test_mimic_png_decode_77k_8bpp,
+    test_mimic_png_decode_552k_32bpp,
+    test_mimic_png_decode_4002k_24bpp,
 
 #endif  // WUFFS_MIMIC
 
@@ -183,12 +325,19 @@ proc g_tests[] = {
 
 proc g_benches[] = {
 
-    bench_wuffs_png_decode_19k_y,
-    bench_wuffs_png_decode_40k_rgb,
+    bench_wuffs_png_decode_19k_8bpp,
+    bench_wuffs_png_decode_40k_24bpp,
+    bench_wuffs_png_decode_77k_8bpp,
+    bench_wuffs_png_decode_552k_32bpp,
+    bench_wuffs_png_decode_4002k_24bpp,
 
 #ifdef WUFFS_MIMIC
 
-// No mimic benches.
+    bench_mimic_png_decode_19k_8bpp,
+    bench_mimic_png_decode_40k_24bpp,
+    bench_mimic_png_decode_77k_8bpp,
+    bench_mimic_png_decode_552k_32bpp,
+    bench_mimic_png_decode_4002k_24bpp,
 
 #endif  // WUFFS_MIMIC
 
