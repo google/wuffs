@@ -73,19 +73,15 @@ mimic_gif_decode(uint64_t* n_bytes_out,
     // further complicates supporting both versions 4 and 5 of giflib. That
     // commit was therefore rolled back.
     struct SavedImage* si = &f->SavedImages[i];
-    size_t num_src =
-        (size_t)(si->ImageDesc.Width) * (size_t)(si->ImageDesc.Height);
-    if (n_bytes_out) {
-      *n_bytes_out += num_src;
+    size_t n = (size_t)(si->ImageDesc.Width) * (size_t)(si->ImageDesc.Height);
+    if (n > wuffs_base__io_buffer__writer_length(dst)) {
+      ret = "GIF image's pixel data won't fit in the dst buffer";
+      goto cleanup1;
     }
-    if (dst) {
-      size_t num_dst = dst->data.len - dst->meta.wi;
-      if (num_dst < num_src) {
-        ret = "GIF image's pixel data won't fit in the dst buffer";
-        goto cleanup1;
-      }
-      memmove(dst->data.ptr + dst->meta.wi, si->RasterBits, num_src);
-      dst->meta.wi += num_src;
+    memmove(wuffs_base__io_buffer__writer_pointer(dst), si->RasterBits, n);
+    dst->meta.wi += n;
+    if (n_bytes_out) {
+      *n_bytes_out += n;
     }
   }
 

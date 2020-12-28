@@ -1120,9 +1120,12 @@ do_bench_image_decode(
   uint64_t i;
   uint64_t iters = iters_unscaled * g_flags.iterscale;
   for (i = 0; i < iters; i++) {
+    wuffs_base__io_buffer dst = ((wuffs_base__io_buffer){
+        .data = g_pixel_slice_u8,
+    });
     src.meta.ri = src_ri;
     CHECK_STRING(
-        (*decode_func)(&n_bytes, NULL, wuffs_initialize_flags, pixfmt, &src));
+        (*decode_func)(&n_bytes, &dst, wuffs_initialize_flags, pixfmt, &src));
   }
   bench_finish(iters, n_bytes);
   return NULL;
