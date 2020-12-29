@@ -20,6 +20,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+#define MIMICLIB_SCRATCH_BUFFER_ARRAY_SIZE (64 * 1024 * 1024)
 #define IO_BUFFER_ARRAY_SIZE (64 * 1024 * 1024)
 #define PIXEL_BUFFER_ARRAY_SIZE (64 * 1024 * 1024)
 #define TOKEN_BUFFER_ARRAY_SIZE (128 * 1024)
@@ -31,6 +32,7 @@ uint8_t g_want_array_u8[IO_BUFFER_ARRAY_SIZE];
 uint8_t g_work_array_u8[IO_BUFFER_ARRAY_SIZE];
 uint8_t g_src_array_u8[IO_BUFFER_ARRAY_SIZE];
 
+uint8_t g_mimiclib_scratch_array_u8[MIMICLIB_SCRATCH_BUFFER_ARRAY_SIZE];
 uint8_t g_pixel_array_u8[PIXEL_BUFFER_ARRAY_SIZE];
 
 wuffs_base__token g_have_array_token[TOKEN_BUFFER_ARRAY_SIZE];
@@ -41,6 +43,7 @@ wuffs_base__slice_u8 g_want_slice_u8;
 wuffs_base__slice_u8 g_work_slice_u8;
 wuffs_base__slice_u8 g_src_slice_u8;
 
+wuffs_base__slice_u8 g_mimiclib_scratch_slice_u8;
 wuffs_base__slice_u8 g_pixel_slice_u8;
 
 wuffs_base__slice_token g_have_slice_token;
@@ -63,6 +66,10 @@ wuffs_testlib__initialize_global_xxx_slices() {
   g_src_slice_u8 = ((wuffs_base__slice_u8){
       .ptr = g_src_array_u8,
       .len = IO_BUFFER_ARRAY_SIZE,
+  });
+  g_mimiclib_scratch_slice_u8 = ((wuffs_base__slice_u8){
+      .ptr = g_mimiclib_scratch_array_u8,
+      .len = MIMICLIB_SCRATCH_BUFFER_ARRAY_SIZE,
   });
   g_pixel_slice_u8 = ((wuffs_base__slice_u8){
       .ptr = g_pixel_array_u8,
