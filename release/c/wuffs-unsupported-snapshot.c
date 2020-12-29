@@ -31021,17 +31021,21 @@ wuffs_png__decoder__filter_1(
     wuffs_png__decoder* self,
     wuffs_base__slice_u8 a_curr) {
   uint64_t v_filter_distance = 0;
+  uint8_t v_fa = 0;
+  uint64_t v_i_start = 0;
   uint64_t v_i = 0;
 
   v_filter_distance = ((uint64_t)(self->private_impl.f_filter_distance));
-  v_i = v_filter_distance;
-  while (v_i < ((uint64_t)(a_curr.len))) {
-    if (v_i >= v_filter_distance) {
-      if ((v_i - v_filter_distance) < ((uint64_t)(a_curr.len))) {
-        a_curr.ptr[v_i] += a_curr.ptr[(v_i - v_filter_distance)];
-      }
+  v_i_start = 0;
+  while (v_i_start < v_filter_distance) {
+    v_fa = 0;
+    v_i = v_i_start;
+    while (v_i < ((uint64_t)(a_curr.len))) {
+      a_curr.ptr[v_i] += v_fa;
+      v_fa = a_curr.ptr[v_i];
+      v_i += v_filter_distance;
     }
-    v_i += 1;
+    v_i_start += 1;
   }
   return wuffs_base__make_empty_struct();
 }

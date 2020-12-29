@@ -463,18 +463,24 @@ pri func decoder.filter_and_swizzle!(dst: ptr base.pixel_buffer, workbuf: slice 
 
 pri func decoder.filter_1!(curr: slice base.u8) {
 	var filter_distance : base.u64[..= 8]
+	var fa              : base.u8
+	var i_start         : base.u64
 	var i               : base.u64
 
 	filter_distance = this.filter_distance as base.u64
-	i = filter_distance
-	while i < args.curr.length() {
-		assert i < 0xFFFF_FFFF_FFFF_FFFF via "a < b: a < c; c <= b"(c: args.curr.length())
-		if i >= filter_distance {
-			if (i - filter_distance) < args.curr.length() {
-				args.curr[i] ~mod+= args.curr[i - filter_distance]
-			}
-		}
-		i += 1
+	i_start = 0
+	while i_start < filter_distance {
+		assert i_start < 8 via "a < b: a < c; c <= b"(c: filter_distance)
+		fa = 0
+		i = i_start
+		while i < args.curr.length(),
+			inv i_start < 8,
+		{
+			args.curr[i] ~mod+= fa
+			fa = args.curr[i]
+			i ~mod+= filter_distance
+		} endwhile
+		i_start += 1
 	} endwhile
 }
 
