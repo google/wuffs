@@ -388,6 +388,97 @@ bench_wuffs_png_decode_4002k_24bpp() {
       "test/data/harvesters.png", 0, SIZE_MAX, 1);
 }
 
+const char*  //
+do_bench_wuffs_png_decode_filter(uint8_t filter, uint64_t iters_unscaled) {
+  const uint32_t width = 160;
+  const uint32_t height = 120;
+  const uint32_t bytes_per_row = 160 * 4;
+  const uint32_t filter_distance = 4;
+  const size_t n = (1 + bytes_per_row) * height;
+
+  wuffs_base__io_buffer workbuf = wuffs_base__slice_u8__writer(g_work_slice_u8);
+  CHECK_STRING(read_file(&workbuf, "test/data/pi.txt"));
+  if (workbuf.meta.wi < n) {
+    return "source data is too short";
+  }
+
+  uint32_t y;
+  for (y = 0; y < height; y++) {
+    workbuf.data.ptr[(1 + bytes_per_row) * y] = filter;
+  }
+
+  // For the top row, the Paeth filter (4) is equivalent to the Sub filter
+  // (1), but the Paeth implementation is simpler if it can assume that
+  // there is a previous row.
+  if (workbuf.data.ptr[0] == 4) {
+    workbuf.data.ptr[0] = 1;
+  }
+
+  wuffs_png__decoder dec;
+  CHECK_STATUS("initialize", wuffs_png__decoder__initialize(
+                                 &dec, sizeof dec, WUFFS_VERSION,
+                                 WUFFS_INITIALIZE__DEFAULT_OPTIONS));
+  dec.private_impl.f_width = width;
+  dec.private_impl.f_height = height;
+  dec.private_impl.f_bytes_per_row = bytes_per_row;
+  dec.private_impl.f_filter_distance = filter_distance;
+
+  CHECK_STATUS("prepare",
+               wuffs_base__pixel_swizzler__prepare(
+                   &dec.private_impl.f_swizzler,
+                   wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__Y),
+                   wuffs_base__empty_slice_u8(),
+                   wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__Y),
+                   wuffs_base__empty_slice_u8(), WUFFS_BASE__PIXEL_BLEND__SRC));
+
+  wuffs_base__pixel_config pc = ((wuffs_base__pixel_config){});
+  wuffs_base__pixel_config__set(&pc, WUFFS_BASE__PIXEL_FORMAT__Y,
+                                WUFFS_BASE__PIXEL_SUBSAMPLING__NONE, width,
+                                height);
+  wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
+
+  CHECK_STATUS("set_from_slice", wuffs_base__pixel_buffer__set_from_slice(
+                                     &pb, &pc, g_pixel_slice_u8));
+
+  bench_start();
+  uint64_t n_bytes = 0;
+  uint64_t i;
+  uint64_t iters = iters_unscaled * g_flags.iterscale;
+  for (i = 0; i < iters; i++) {
+    CHECK_STATUS(
+        "filter_and_swizzle",
+        wuffs_png__decoder__filter_and_swizzle(
+            &dec, &pb, wuffs_base__make_slice_u8(workbuf.data.ptr, n)));
+    n_bytes += n;
+  }
+  bench_finish(iters, n_bytes);
+  return NULL;
+}
+
+const char*  //
+bench_wuffs_png_decode_filter_1_sub() {
+  CHECK_FOCUS(__func__);
+  return do_bench_wuffs_png_decode_filter(1, 200);
+}
+
+const char*  //
+bench_wuffs_png_decode_filter_2_up() {
+  CHECK_FOCUS(__func__);
+  return do_bench_wuffs_png_decode_filter(2, 1000);
+}
+
+const char*  //
+bench_wuffs_png_decode_filter_3_average() {
+  CHECK_FOCUS(__func__);
+  return do_bench_wuffs_png_decode_filter(3, 100);
+}
+
+const char*  //
+bench_wuffs_png_decode_filter_4_paeth() {
+  CHECK_FOCUS(__func__);
+  return do_bench_wuffs_png_decode_filter(4, 20);
+}
+
 // ---------------- Mimic Benches
 
 #ifdef WUFFS_MIMIC
@@ -471,6 +562,10 @@ proc g_benches[] = {
     bench_wuffs_png_decode_77k_8bpp,
     bench_wuffs_png_decode_552k_32bpp,
     bench_wuffs_png_decode_4002k_24bpp,
+    bench_wuffs_png_decode_filter_1_sub,
+    bench_wuffs_png_decode_filter_2_up,
+    bench_wuffs_png_decode_filter_3_average,
+    bench_wuffs_png_decode_filter_4_paeth,
 
 #ifdef WUFFS_MIMIC
 
