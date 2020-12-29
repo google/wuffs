@@ -20,6 +20,17 @@ mimic_png_decode(uint64_t* n_bytes_out,
                  uint32_t wuffs_initialize_flags,
                  wuffs_base__pixel_format pixfmt,
                  wuffs_base__io_buffer* src) {
+  static uint8_t dst_fallback_array_u8[64 * 1024 * 1024];
+  wuffs_base__io_buffer dst_fallback = ((wuffs_base__io_buffer){
+      .data = ((wuffs_base__slice_u8){
+          .ptr = dst_fallback_array_u8,
+          .len = 64 * 1024 * 1024,
+      }),
+  });
+  if (!dst) {
+    dst = &dst_fallback;
+  }
+
   const char* ret = NULL;
 
   png_image pi;
