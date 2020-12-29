@@ -29836,6 +29836,29 @@ wuffs_png__decoder__filter_and_swizzle(
     wuffs_base__pixel_buffer* a_dst,
     wuffs_base__slice_u8 a_workbuf);
 
+static wuffs_base__empty_struct
+wuffs_png__decoder__filter_1(
+    wuffs_png__decoder* self,
+    wuffs_base__slice_u8 a_curr);
+
+static wuffs_base__empty_struct
+wuffs_png__decoder__filter_2(
+    wuffs_png__decoder* self,
+    wuffs_base__slice_u8 a_curr,
+    wuffs_base__slice_u8 a_prev);
+
+static wuffs_base__empty_struct
+wuffs_png__decoder__filter_3(
+    wuffs_png__decoder* self,
+    wuffs_base__slice_u8 a_curr,
+    wuffs_base__slice_u8 a_prev);
+
+static wuffs_base__empty_struct
+wuffs_png__decoder__filter_4(
+    wuffs_png__decoder* self,
+    wuffs_base__slice_u8 a_curr,
+    wuffs_base__slice_u8 a_prev);
+
 // ---------------- VTables
 
 const wuffs_base__image_decoder__func_ptrs
@@ -30942,20 +30965,11 @@ wuffs_png__decoder__filter_and_swizzle(
   uint64_t v_dst_bytes_per_row = 0;
   wuffs_base__slice_u8 v_dst_palette = {0};
   wuffs_base__table_u8 v_tab = {0};
-  uint64_t v_filter_distance = 0;
   uint32_t v_y = 0;
   wuffs_base__slice_u8 v_dst = {0};
   uint8_t v_filter = 0;
   wuffs_base__slice_u8 v_curr_row = {0};
   wuffs_base__slice_u8 v_prev_row = {0};
-  uint64_t v_i = 0;
-  uint32_t v_fa = 0;
-  uint32_t v_fb = 0;
-  uint32_t v_fc = 0;
-  uint32_t v_pp = 0;
-  uint32_t v_pa = 0;
-  uint32_t v_pb = 0;
-  uint32_t v_pc = 0;
 
   v_dst_pixfmt = wuffs_base__pixel_buffer__pixel_format(a_dst);
   v_dst_bits_per_pixel = wuffs_base__pixel_format__bits_per_pixel(&v_dst_pixfmt);
@@ -30966,7 +30980,6 @@ wuffs_png__decoder__filter_and_swizzle(
   v_dst_bytes_per_row = (((uint64_t)(self->private_impl.f_width)) * v_dst_bytes_per_pixel);
   v_dst_palette = wuffs_base__pixel_buffer__palette_or_else(a_dst, wuffs_base__make_slice_u8(self->private_data.f_dst_palette, 1024));
   v_tab = wuffs_base__pixel_buffer__plane(a_dst, 0);
-  v_filter_distance = ((uint64_t)(self->private_impl.f_filter_distance));
   while (v_y < self->private_impl.f_height) {
     v_dst = wuffs_base__table_u8__row(v_tab, v_y);
     if (v_dst_bytes_per_row < ((uint64_t)(v_dst.len))) {
@@ -30984,79 +30997,13 @@ wuffs_png__decoder__filter_and_swizzle(
     a_workbuf = wuffs_base__slice_u8__subslice_i(a_workbuf, self->private_impl.f_bytes_per_row);
     if (v_filter == 0) {
     } else if (v_filter == 1) {
-      v_i = v_filter_distance;
-      while (v_i < ((uint64_t)(v_curr_row.len))) {
-        if (v_i >= v_filter_distance) {
-          if ((v_i - v_filter_distance) < ((uint64_t)(v_curr_row.len))) {
-            v_curr_row.ptr[v_i] += v_curr_row.ptr[(v_i - v_filter_distance)];
-          }
-        }
-        v_i += 1;
-      }
+      wuffs_png__decoder__filter_1(self, v_curr_row);
     } else if (v_filter == 2) {
-      v_i = 0;
-      while ((v_i < ((uint64_t)(v_curr_row.len))) && (v_i < ((uint64_t)(v_prev_row.len)))) {
-        v_curr_row.ptr[v_i] += v_prev_row.ptr[v_i];
-        v_i += 1;
-      }
+      wuffs_png__decoder__filter_2(self, v_curr_row, v_prev_row);
     } else if (v_filter == 3) {
-      if (v_y == 0) {
-        v_i = v_filter_distance;
-        while (v_i < ((uint64_t)(v_curr_row.len))) {
-          if (v_i >= v_filter_distance) {
-            if ((v_i - v_filter_distance) < ((uint64_t)(v_curr_row.len))) {
-              v_curr_row.ptr[v_i] += (v_curr_row.ptr[(v_i - v_filter_distance)] / 2);
-            }
-          }
-          v_i += 1;
-        }
-      } else {
-        v_i = 0;
-        while ((v_i < ((uint64_t)(v_curr_row.len))) && (v_i < ((uint64_t)(v_prev_row.len)))) {
-          if (v_i >= v_filter_distance) {
-            if ((v_i - v_filter_distance) < ((uint64_t)(v_curr_row.len))) {
-              v_curr_row.ptr[v_i] += ((uint8_t)(((((uint32_t)(v_curr_row.ptr[(v_i - v_filter_distance)])) + ((uint32_t)(v_prev_row.ptr[v_i]))) / 2)));
-            }
-          } else {
-            v_curr_row.ptr[v_i] += (v_prev_row.ptr[v_i] / 2);
-          }
-          v_i += 1;
-        }
-      }
+      wuffs_png__decoder__filter_3(self, v_curr_row, v_prev_row);
     } else if (v_filter == 4) {
-      v_i = 0;
-      while ((v_i < ((uint64_t)(v_curr_row.len))) && (v_i < ((uint64_t)(v_prev_row.len)))) {
-        if (v_i < v_filter_distance) {
-          v_curr_row.ptr[v_i] += v_prev_row.ptr[v_i];
-        } else {
-          if (((v_i - v_filter_distance) < ((uint64_t)(v_curr_row.len))) && ((v_i - v_filter_distance) < ((uint64_t)(v_prev_row.len)))) {
-            v_fa = ((uint32_t)(v_curr_row.ptr[(v_i - v_filter_distance)]));
-            v_fb = ((uint32_t)(v_prev_row.ptr[v_i]));
-            v_fc = ((uint32_t)(v_prev_row.ptr[(v_i - v_filter_distance)]));
-            v_pp = ((v_fa + v_fb) - v_fc);
-            v_pa = (v_pp - v_fa);
-            if (v_pa >= 2147483648) {
-              v_pa = (0 - v_pa);
-            }
-            v_pb = (v_pp - v_fb);
-            if (v_pb >= 2147483648) {
-              v_pb = (0 - v_pb);
-            }
-            v_pc = (v_pp - v_fc);
-            if (v_pc >= 2147483648) {
-              v_pc = (0 - v_pc);
-            }
-            if ((v_pa <= v_pb) && (v_pa <= v_pc)) {
-              v_curr_row.ptr[v_i] += ((uint8_t)((v_fa & 255)));
-            } else if (v_pb <= v_pc) {
-              v_curr_row.ptr[v_i] += ((uint8_t)((v_fb & 255)));
-            } else {
-              v_curr_row.ptr[v_i] += ((uint8_t)((v_fc & 255)));
-            }
-          }
-        }
-        v_i += 1;
-      }
+      wuffs_png__decoder__filter_4(self, v_curr_row, v_prev_row);
     } else {
       return wuffs_base__make_status(wuffs_png__error__bad_filter);
     }
@@ -31065,6 +31012,136 @@ wuffs_png__decoder__filter_and_swizzle(
     v_y += 1;
   }
   return wuffs_base__make_status(NULL);
+}
+
+// -------- func png.decoder.filter_1
+
+static wuffs_base__empty_struct
+wuffs_png__decoder__filter_1(
+    wuffs_png__decoder* self,
+    wuffs_base__slice_u8 a_curr) {
+  uint64_t v_filter_distance = 0;
+  uint64_t v_i = 0;
+
+  v_filter_distance = ((uint64_t)(self->private_impl.f_filter_distance));
+  v_i = v_filter_distance;
+  while (v_i < ((uint64_t)(a_curr.len))) {
+    if (v_i >= v_filter_distance) {
+      if ((v_i - v_filter_distance) < ((uint64_t)(a_curr.len))) {
+        a_curr.ptr[v_i] += a_curr.ptr[(v_i - v_filter_distance)];
+      }
+    }
+    v_i += 1;
+  }
+  return wuffs_base__make_empty_struct();
+}
+
+// -------- func png.decoder.filter_2
+
+static wuffs_base__empty_struct
+wuffs_png__decoder__filter_2(
+    wuffs_png__decoder* self,
+    wuffs_base__slice_u8 a_curr,
+    wuffs_base__slice_u8 a_prev) {
+  uint64_t v_i = 0;
+
+  v_i = 0;
+  while ((v_i < ((uint64_t)(a_curr.len))) && (v_i < ((uint64_t)(a_prev.len)))) {
+    a_curr.ptr[v_i] += a_prev.ptr[v_i];
+    v_i += 1;
+  }
+  return wuffs_base__make_empty_struct();
+}
+
+// -------- func png.decoder.filter_3
+
+static wuffs_base__empty_struct
+wuffs_png__decoder__filter_3(
+    wuffs_png__decoder* self,
+    wuffs_base__slice_u8 a_curr,
+    wuffs_base__slice_u8 a_prev) {
+  uint64_t v_filter_distance = 0;
+  uint64_t v_i = 0;
+
+  v_filter_distance = ((uint64_t)(self->private_impl.f_filter_distance));
+  if (((uint64_t)(a_prev.len)) == 0) {
+    v_i = v_filter_distance;
+    while (v_i < ((uint64_t)(a_curr.len))) {
+      if (v_i >= v_filter_distance) {
+        if ((v_i - v_filter_distance) < ((uint64_t)(a_curr.len))) {
+          a_curr.ptr[v_i] += (a_curr.ptr[(v_i - v_filter_distance)] / 2);
+        }
+      }
+      v_i += 1;
+    }
+  } else {
+    v_i = 0;
+    while ((v_i < ((uint64_t)(a_curr.len))) && (v_i < ((uint64_t)(a_prev.len)))) {
+      if (v_i >= v_filter_distance) {
+        if ((v_i - v_filter_distance) < ((uint64_t)(a_curr.len))) {
+          a_curr.ptr[v_i] += ((uint8_t)(((((uint32_t)(a_curr.ptr[(v_i - v_filter_distance)])) + ((uint32_t)(a_prev.ptr[v_i]))) / 2)));
+        }
+      } else {
+        a_curr.ptr[v_i] += (a_prev.ptr[v_i] / 2);
+      }
+      v_i += 1;
+    }
+  }
+  return wuffs_base__make_empty_struct();
+}
+
+// -------- func png.decoder.filter_4
+
+static wuffs_base__empty_struct
+wuffs_png__decoder__filter_4(
+    wuffs_png__decoder* self,
+    wuffs_base__slice_u8 a_curr,
+    wuffs_base__slice_u8 a_prev) {
+  uint64_t v_filter_distance = 0;
+  uint64_t v_i = 0;
+  uint32_t v_fa = 0;
+  uint32_t v_fb = 0;
+  uint32_t v_fc = 0;
+  uint32_t v_pp = 0;
+  uint32_t v_pa = 0;
+  uint32_t v_pb = 0;
+  uint32_t v_pc = 0;
+
+  v_filter_distance = ((uint64_t)(self->private_impl.f_filter_distance));
+  v_i = 0;
+  while ((v_i < ((uint64_t)(a_curr.len))) && (v_i < ((uint64_t)(a_prev.len)))) {
+    if (v_i < v_filter_distance) {
+      a_curr.ptr[v_i] += a_prev.ptr[v_i];
+    } else {
+      if (((v_i - v_filter_distance) < ((uint64_t)(a_curr.len))) && ((v_i - v_filter_distance) < ((uint64_t)(a_prev.len)))) {
+        v_fa = ((uint32_t)(a_curr.ptr[(v_i - v_filter_distance)]));
+        v_fb = ((uint32_t)(a_prev.ptr[v_i]));
+        v_fc = ((uint32_t)(a_prev.ptr[(v_i - v_filter_distance)]));
+        v_pp = ((v_fa + v_fb) - v_fc);
+        v_pa = (v_pp - v_fa);
+        if (v_pa >= 2147483648) {
+          v_pa = (0 - v_pa);
+        }
+        v_pb = (v_pp - v_fb);
+        if (v_pb >= 2147483648) {
+          v_pb = (0 - v_pb);
+        }
+        v_pc = (v_pp - v_fc);
+        if (v_pc >= 2147483648) {
+          v_pc = (0 - v_pc);
+        }
+        if ((v_pa <= v_pb) && (v_pa <= v_pc)) {
+          a_curr.ptr[v_i] += ((uint8_t)((v_fa & 255)));
+        } else if (v_pb <= v_pc) {
+          a_curr.ptr[v_i] += ((uint8_t)((v_fb & 255)));
+        } else {
+          a_curr.ptr[v_i] += ((uint8_t)((v_fc & 255)));
+        }
+      }
+    }
+    v_i += 1;
+  }
+  return wuffs_base__make_empty_struct();
 }
 
 // -------- func png.decoder.frame_dirty_rect

@@ -398,22 +398,12 @@ pri func decoder.filter_and_swizzle!(dst: ptr base.pixel_buffer, workbuf: slice 
 	var dst_bytes_per_row   : base.u64
 	var dst_palette         : slice base.u8
 	var tab                 : table base.u8
-	var filter_distance     : base.u64[..= 8]
 
 	var y        : base.u32
 	var dst      : slice base.u8
 	var filter   : base.u8
 	var curr_row : slice base.u8
 	var prev_row : slice base.u8
-
-	var i  : base.u64
-	var fa : base.u32
-	var fb : base.u32
-	var fc : base.u32
-	var pp : base.u32
-	var pa : base.u32
-	var pb : base.u32
-	var pc : base.u32
 
 	// TODO: the dst_pixfmt variable shouldn't be necessary. We should be able
 	// to chain the two calls: "args.dst.pixel_format().bits_per_pixel()".
@@ -426,7 +416,6 @@ pri func decoder.filter_and_swizzle!(dst: ptr base.pixel_buffer, workbuf: slice 
 	dst_bytes_per_row = (this.width as base.u64) * dst_bytes_per_pixel
 	dst_palette = args.dst.palette_or_else(fallback: this.dst_palette[..])
 	tab = args.dst.plane(p: 0)
-	filter_distance = this.filter_distance as base.u64
 
 	while y < this.height {
 		assert y < 0xFFFF_FFFF via "a < b: a < c; c <= b"(c: this.height)
@@ -449,97 +438,13 @@ pri func decoder.filter_and_swizzle!(dst: ptr base.pixel_buffer, workbuf: slice 
 		if filter == 0 {
 			// No-op.
 		} else if filter == 1 {
-			i = filter_distance
-			while i < curr_row.length(),
-				inv y < 0xFFFF_FFFF,
-			{
-				assert i < 0xFFFF_FFFF_FFFF_FFFF via "a < b: a < c; c <= b"(c: curr_row.length())
-				if i >= filter_distance {
-					if (i - filter_distance) < curr_row.length() {
-						curr_row[i] ~mod+= curr_row[i - filter_distance]
-					}
-				}
-				i += 1
-			} endwhile
+			this.filter_1!(curr: curr_row)
 		} else if filter == 2 {
-			i = 0
-			while (i < curr_row.length()) and (i < prev_row.length()),
-				inv y < 0xFFFF_FFFF,
-			{
-				assert i < 0xFFFF_FFFF_FFFF_FFFF via "a < b: a < c; c <= b"(c: curr_row.length())
-				curr_row[i] ~mod+= prev_row[i]
-				i += 1
-			} endwhile
+			this.filter_2!(curr: curr_row, prev: prev_row)
 		} else if filter == 3 {
-			if y == 0 {
-				i = filter_distance
-				while i < curr_row.length(),
-					inv y < 0xFFFF_FFFF,
-				{
-					assert i < 0xFFFF_FFFF_FFFF_FFFF via "a < b: a < c; c <= b"(c: curr_row.length())
-					if i >= filter_distance {
-						if (i - filter_distance) < curr_row.length() {
-							curr_row[i] ~mod+= curr_row[i - filter_distance] / 2
-						}
-					}
-					i += 1
-				} endwhile
-			} else {
-				i = 0
-				while (i < curr_row.length()) and (i < prev_row.length()),
-					inv y < 0xFFFF_FFFF,
-				{
-					assert i < 0xFFFF_FFFF_FFFF_FFFF via "a < b: a < c; c <= b"(c: curr_row.length())
-					if i >= filter_distance {
-						if (i - filter_distance) < curr_row.length() {
-							curr_row[i] ~mod+= ((
-								(curr_row[i - filter_distance] as base.u32) +
-								(prev_row[i] as base.u32)) / 2) as base.u8
-						}
-					} else {
-						curr_row[i] ~mod+= prev_row[i] / 2
-					}
-					i += 1
-				} endwhile
-			}
+			this.filter_3!(curr: curr_row, prev: prev_row)
 		} else if filter == 4 {
-			i = 0
-			while (i < curr_row.length()) and (i < prev_row.length()),
-				inv y < 0xFFFF_FFFF,
-			{
-				assert i < 0xFFFF_FFFF_FFFF_FFFF via "a < b: a < c; c <= b"(c: curr_row.length())
-				if i < filter_distance {
-					curr_row[i] ~mod+= prev_row[i]
-				} else {
-					if ((i - filter_distance) < curr_row.length()) and
-						((i - filter_distance) < prev_row.length()) {
-						fa = curr_row[i - filter_distance] as base.u32
-						fb = prev_row[i] as base.u32
-						fc = prev_row[i - filter_distance] as base.u32
-						pp = (fa ~mod+ fb) ~mod- fc
-						pa = pp ~mod- fa
-						if pa >= 0x8000_0000 {
-							pa = 0 ~mod- pa
-						}
-						pb = pp ~mod- fb
-						if pb >= 0x8000_0000 {
-							pb = 0 ~mod- pb
-						}
-						pc = pp ~mod- fc
-						if pc >= 0x8000_0000 {
-							pc = 0 ~mod- pc
-						}
-						if (pa <= pb) and (pa <= pc) {
-							curr_row[i] ~mod+= (fa & 0xFF) as base.u8
-						} else if pb <= pc {
-							curr_row[i] ~mod+= (fb & 0xFF) as base.u8
-						} else {
-							curr_row[i] ~mod+= (fc & 0xFF) as base.u8
-						}
-					}
-				}
-				i += 1
-			} endwhile
+			this.filter_4!(curr: curr_row, prev: prev_row)
 		} else {
 			return "#bad filter"
 		}
@@ -554,6 +459,118 @@ pri func decoder.filter_and_swizzle!(dst: ptr base.pixel_buffer, workbuf: slice 
 	} endwhile
 
 	return ok
+}
+
+pri func decoder.filter_1!(curr: slice base.u8) {
+	var filter_distance : base.u64[..= 8]
+	var i               : base.u64
+
+	filter_distance = this.filter_distance as base.u64
+	i = filter_distance
+	while i < args.curr.length() {
+		assert i < 0xFFFF_FFFF_FFFF_FFFF via "a < b: a < c; c <= b"(c: args.curr.length())
+		if i >= filter_distance {
+			if (i - filter_distance) < args.curr.length() {
+				args.curr[i] ~mod+= args.curr[i - filter_distance]
+			}
+		}
+		i += 1
+	} endwhile
+}
+
+pri func decoder.filter_2!(curr: slice base.u8, prev: slice base.u8) {
+	var i : base.u64
+
+	i = 0
+	while (i < args.curr.length()) and (i < args.prev.length()) {
+		assert i < 0xFFFF_FFFF_FFFF_FFFF via "a < b: a < c; c <= b"(c: args.curr.length())
+		args.curr[i] ~mod+= args.prev[i]
+		i += 1
+	} endwhile
+}
+
+pri func decoder.filter_3!(curr: slice base.u8, prev: slice base.u8) {
+	var filter_distance : base.u64[..= 8]
+	var i               : base.u64
+
+	filter_distance = this.filter_distance as base.u64
+	if args.prev.length() == 0 {
+		i = filter_distance
+		while i < args.curr.length() {
+			assert i < 0xFFFF_FFFF_FFFF_FFFF via "a < b: a < c; c <= b"(c: args.curr.length())
+			if i >= filter_distance {
+				if (i - filter_distance) < args.curr.length() {
+					args.curr[i] ~mod+= args.curr[i - filter_distance] / 2
+				}
+			}
+			i += 1
+		} endwhile
+	} else {
+		i = 0
+		while (i < args.curr.length()) and (i < args.prev.length()) {
+			assert i < 0xFFFF_FFFF_FFFF_FFFF via "a < b: a < c; c <= b"(c: args.curr.length())
+			if i >= filter_distance {
+				if (i - filter_distance) < args.curr.length() {
+					args.curr[i] ~mod+= ((
+						(args.curr[i - filter_distance] as base.u32) +
+						(args.prev[i] as base.u32)) / 2) as base.u8
+				}
+			} else {
+				args.curr[i] ~mod+= args.prev[i] / 2
+			}
+			i += 1
+		} endwhile
+	}
+}
+
+pri func decoder.filter_4!(curr: slice base.u8, prev: slice base.u8) {
+	var filter_distance : base.u64[..= 8]
+	var i               : base.u64
+
+	var fa : base.u32
+	var fb : base.u32
+	var fc : base.u32
+	var pp : base.u32
+	var pa : base.u32
+	var pb : base.u32
+	var pc : base.u32
+
+	filter_distance = this.filter_distance as base.u64
+	i = 0
+	while (i < args.curr.length()) and (i < args.prev.length()) {
+		assert i < 0xFFFF_FFFF_FFFF_FFFF via "a < b: a < c; c <= b"(c: args.curr.length())
+		if i < filter_distance {
+			args.curr[i] ~mod+= args.prev[i]
+		} else {
+			if ((i - filter_distance) < args.curr.length()) and
+				((i - filter_distance) < args.prev.length()) {
+				fa = args.curr[i - filter_distance] as base.u32
+				fb = args.prev[i] as base.u32
+				fc = args.prev[i - filter_distance] as base.u32
+				pp = (fa ~mod+ fb) ~mod- fc
+				pa = pp ~mod- fa
+				if pa >= 0x8000_0000 {
+					pa = 0 ~mod- pa
+				}
+				pb = pp ~mod- fb
+				if pb >= 0x8000_0000 {
+					pb = 0 ~mod- pb
+				}
+				pc = pp ~mod- fc
+				if pc >= 0x8000_0000 {
+					pc = 0 ~mod- pc
+				}
+				if (pa <= pb) and (pa <= pc) {
+					args.curr[i] ~mod+= (fa & 0xFF) as base.u8
+				} else if pb <= pc {
+					args.curr[i] ~mod+= (fb & 0xFF) as base.u8
+				} else {
+					args.curr[i] ~mod+= (fc & 0xFF) as base.u8
+				}
+			}
+		}
+		i += 1
+	} endwhile
 }
 
 pub func decoder.frame_dirty_rect() base.rect_ie_u32 {
