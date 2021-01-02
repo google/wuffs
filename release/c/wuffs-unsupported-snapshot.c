@@ -30052,9 +30052,7 @@ wuffs_png__decoder__filter_3(
     v_i = 0;
     while (v_i < v_n) {
       if (v_i >= v_filter_distance) {
-        if ((v_i - v_filter_distance) < ((uint64_t)(a_curr.len))) {
-          a_curr.ptr[v_i] += ((uint8_t)(((((uint32_t)(a_curr.ptr[(v_i - v_filter_distance)])) + ((uint32_t)(a_prev.ptr[v_i]))) / 2)));
-        }
+        a_curr.ptr[v_i] += ((uint8_t)(((((uint32_t)(a_curr.ptr[(v_i - v_filter_distance)])) + ((uint32_t)(a_prev.ptr[v_i]))) / 2)));
       } else {
         a_curr.ptr[v_i] += (a_prev.ptr[v_i] / 2);
       }
@@ -30089,30 +30087,28 @@ wuffs_png__decoder__filter_4(
     if (v_i < v_filter_distance) {
       a_curr.ptr[v_i] += a_prev.ptr[v_i];
     } else {
-      if (((v_i - v_filter_distance) < ((uint64_t)(a_curr.len))) && ((v_i - v_filter_distance) < ((uint64_t)(a_prev.len)))) {
-        v_fa = ((uint32_t)(a_curr.ptr[(v_i - v_filter_distance)]));
-        v_fb = ((uint32_t)(a_prev.ptr[v_i]));
-        v_fc = ((uint32_t)(a_prev.ptr[(v_i - v_filter_distance)]));
-        v_pp = ((v_fa + v_fb) - v_fc);
-        v_pa = (v_pp - v_fa);
-        if (v_pa >= 2147483648) {
-          v_pa = (0 - v_pa);
-        }
-        v_pb = (v_pp - v_fb);
-        if (v_pb >= 2147483648) {
-          v_pb = (0 - v_pb);
-        }
-        v_pc = (v_pp - v_fc);
-        if (v_pc >= 2147483648) {
-          v_pc = (0 - v_pc);
-        }
-        if ((v_pa <= v_pb) && (v_pa <= v_pc)) {
-          a_curr.ptr[v_i] += ((uint8_t)((v_fa & 255)));
-        } else if (v_pb <= v_pc) {
-          a_curr.ptr[v_i] += ((uint8_t)((v_fb & 255)));
-        } else {
-          a_curr.ptr[v_i] += ((uint8_t)((v_fc & 255)));
-        }
+      v_fa = ((uint32_t)(a_curr.ptr[(v_i - v_filter_distance)]));
+      v_fb = ((uint32_t)(a_prev.ptr[v_i]));
+      v_fc = ((uint32_t)(a_prev.ptr[(v_i - v_filter_distance)]));
+      v_pp = ((v_fa + v_fb) - v_fc);
+      v_pa = (v_pp - v_fa);
+      if (v_pa >= 2147483648) {
+        v_pa = (0 - v_pa);
+      }
+      v_pb = (v_pp - v_fb);
+      if (v_pb >= 2147483648) {
+        v_pb = (0 - v_pb);
+      }
+      v_pc = (v_pp - v_fc);
+      if (v_pc >= 2147483648) {
+        v_pc = (0 - v_pc);
+      }
+      if ((v_pa <= v_pb) && (v_pa <= v_pc)) {
+        a_curr.ptr[v_i] += ((uint8_t)((v_fa & 255)));
+      } else if (v_pb <= v_pc) {
+        a_curr.ptr[v_i] += ((uint8_t)((v_fb & 255)));
+      } else {
+        a_curr.ptr[v_i] += ((uint8_t)((v_fc & 255)));
       }
     }
     v_i += 1;

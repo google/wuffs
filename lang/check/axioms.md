@@ -46,3 +46,7 @@ editing this list.
 ---
 
 - `"(a + b) <= c: a <= (c - b)"`
+
+---
+
+- `"(a - b) < c: a < c; 0 <= b"`

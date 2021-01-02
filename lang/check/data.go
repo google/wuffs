@@ -364,4 +364,27 @@ var reasons = [...]struct {
 		_ = xc
 		return nil
 	}},
+
+	{`"(a - b) < c: a < c; 0 <= b"`, func(q *checker, n *a.Assert) error {
+		op, t0, xc := parseBinaryOp(n.Condition())
+		if op != t.IDXBinaryLessThan {
+			return errFailed
+		}
+		op, xa, xb := parseBinaryOp(t0)
+		if op != t.IDXBinaryMinus {
+			return errFailed
+		}
+		// a < c
+		if err := proveReasonRequirement(q, t.IDXBinaryLessThan, xa, xc); err != nil {
+			return err
+		}
+		// 0 <= b
+		if err := proveReasonRequirement(q, t.IDXBinaryLessEq, zeroExpr, xb); err != nil {
+			return err
+		}
+		_ = xa
+		_ = xb
+		_ = xc
+		return nil
+	}},
 }

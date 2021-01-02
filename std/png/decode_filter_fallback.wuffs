@@ -81,11 +81,10 @@ pri func decoder.filter_3!(curr: slice base.u8, prev: slice base.u8) {
 			assert i < args.curr.length() via "a < b: a < c; c <= b"(c: n)
 			assert i < args.prev.length() via "a < b: a < c; c <= b"(c: n)
 			if i >= filter_distance {
-				if (i - filter_distance) < args.curr.length() {
-					args.curr[i] ~mod+= ((
-						(args.curr[i - filter_distance] as base.u32) +
-						(args.prev[i] as base.u32)) / 2) as base.u8
-				}
+				assert (i - filter_distance) < args.curr.length() via "(a - b) < c: a < c; 0 <= b"()
+				args.curr[i] ~mod+= ((
+					(args.curr[i - filter_distance] as base.u32) +
+					(args.prev[i] as base.u32)) / 2) as base.u8
 			} else {
 				args.curr[i] ~mod+= args.prev[i] / 2
 			}
@@ -120,31 +119,30 @@ pri func decoder.filter_4!(curr: slice base.u8, prev: slice base.u8) {
 		if i < filter_distance {
 			args.curr[i] ~mod+= args.prev[i]
 		} else {
-			if ((i - filter_distance) < args.curr.length()) and
-				((i - filter_distance) < args.prev.length()) {
-				fa = args.curr[i - filter_distance] as base.u32
-				fb = args.prev[i] as base.u32
-				fc = args.prev[i - filter_distance] as base.u32
-				pp = (fa ~mod+ fb) ~mod- fc
-				pa = pp ~mod- fa
-				if pa >= 0x8000_0000 {
-					pa = 0 ~mod- pa
-				}
-				pb = pp ~mod- fb
-				if pb >= 0x8000_0000 {
-					pb = 0 ~mod- pb
-				}
-				pc = pp ~mod- fc
-				if pc >= 0x8000_0000 {
-					pc = 0 ~mod- pc
-				}
-				if (pa <= pb) and (pa <= pc) {
-					args.curr[i] ~mod+= (fa & 0xFF) as base.u8
-				} else if pb <= pc {
-					args.curr[i] ~mod+= (fb & 0xFF) as base.u8
-				} else {
-					args.curr[i] ~mod+= (fc & 0xFF) as base.u8
-				}
+			assert (i - filter_distance) < args.curr.length() via "(a - b) < c: a < c; 0 <= b"()
+			assert (i - filter_distance) < args.prev.length() via "(a - b) < c: a < c; 0 <= b"()
+			fa = args.curr[i - filter_distance] as base.u32
+			fb = args.prev[i] as base.u32
+			fc = args.prev[i - filter_distance] as base.u32
+			pp = (fa ~mod+ fb) ~mod- fc
+			pa = pp ~mod- fa
+			if pa >= 0x8000_0000 {
+				pa = 0 ~mod- pa
+			}
+			pb = pp ~mod- fb
+			if pb >= 0x8000_0000 {
+				pb = 0 ~mod- pb
+			}
+			pc = pp ~mod- fc
+			if pc >= 0x8000_0000 {
+				pc = 0 ~mod- pc
+			}
+			if (pa <= pb) and (pa <= pc) {
+				args.curr[i] ~mod+= (fa & 0xFF) as base.u8
+			} else if pb <= pc {
+				args.curr[i] ~mod+= (fb & 0xFF) as base.u8
+			} else {
+				args.curr[i] ~mod+= (fc & 0xFF) as base.u8
 			}
 		}
 		i += 1
