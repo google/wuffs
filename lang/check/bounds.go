@@ -447,6 +447,17 @@ func (q *checker) bcheckAssignment(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 
 		if lhs.MType().IsNumType() && rhs.Effect().Pure() {
 			q.facts.appendBinaryOpFact(t.IDXBinaryEqEq, lhs, rhs)
+
+			if rhs.Operator() == t.IDOpenParen {
+				if lTyp := rhs.LHS().AsExpr().MType(); lTyp.IsFuncType() && lTyp.Receiver().IsNumType() {
+					switch fn := lTyp.FuncName(); fn {
+					case t.IDMax, t.IDMin:
+						if err := q.bcheckAssignmentMaxMin(lhs, fn, rhs); err != nil {
+							return err
+						}
+					}
+				}
+			}
 		}
 
 	} else {
@@ -539,6 +550,36 @@ func (q *checker) bcheckAssignment1(lhs *a.Expr, lTyp *a.TypeExpr, op t.ID, rhs 
 		}
 	}
 	return rb, nil
+}
+
+func (q *checker) bcheckAssignmentMaxMin(lhs *a.Expr, funcName t.ID, rhs *a.Expr) error {
+	if len(rhs.Args()) != 1 {
+		return fmt.Errorf("check: internal error: max/min has unexpected arguments")
+	}
+	op := t.ID(0)
+	switch funcName {
+	case t.IDMax:
+		op = t.IDXBinaryGreaterEq
+	case t.IDMin:
+		op = t.IDXBinaryLessEq
+	default:
+		return fmt.Errorf("check: internal error: max/min has unexpected function name")
+	}
+
+	operands := [2]*a.Expr{
+		rhs.LHS().AsExpr().LHS().AsExpr(),
+		rhs.Args()[0].AsArg().Value(),
+	}
+	for _, operand := range operands {
+		if operand.Mentions(lhs) {
+			continue
+		}
+		o := a.NewExpr(0, op, 0, lhs.AsNode(), nil, operand.AsNode(), nil)
+		o.SetMBounds(bounds{zero, one})
+		o.SetMType(typeExprBool)
+		q.facts.appendFact(o)
+	}
+	return nil
 }
 
 func snapshot(facts []*a.Expr) []*a.Expr {

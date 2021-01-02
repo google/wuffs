@@ -36,11 +36,18 @@ pri func decoder.filter_1!(curr: slice base.u8) {
 }
 
 pri func decoder.filter_2!(curr: slice base.u8, prev: slice base.u8) {
+	var n : base.u64
 	var i : base.u64
 
+	n = args.curr.length().min(a: args.prev.length())
 	i = 0
-	while (i < args.curr.length()) and (i < args.prev.length()) {
-		assert i < 0xFFFF_FFFF_FFFF_FFFF via "a < b: a < c; c <= b"(c: args.curr.length())
+	while i < n,
+		inv n <= args.curr.length(),
+		inv n <= args.prev.length(),
+	{
+		assert i < 0xFFFF_FFFF_FFFF_FFFF via "a < b: a < c; c <= b"(c: n)
+		assert i < args.curr.length() via "a < b: a < c; c <= b"(c: n)
+		assert i < args.prev.length() via "a < b: a < c; c <= b"(c: n)
 		args.curr[i] ~mod+= args.prev[i]
 		i += 1
 	} endwhile
@@ -48,6 +55,7 @@ pri func decoder.filter_2!(curr: slice base.u8, prev: slice base.u8) {
 
 pri func decoder.filter_3!(curr: slice base.u8, prev: slice base.u8) {
 	var filter_distance : base.u64[..= 8]
+	var n               : base.u64
 	var i               : base.u64
 
 	filter_distance = this.filter_distance as base.u64
@@ -63,9 +71,15 @@ pri func decoder.filter_3!(curr: slice base.u8, prev: slice base.u8) {
 			i += 1
 		} endwhile
 	} else {
+		n = args.curr.length().min(a: args.prev.length())
 		i = 0
-		while (i < args.curr.length()) and (i < args.prev.length()) {
-			assert i < 0xFFFF_FFFF_FFFF_FFFF via "a < b: a < c; c <= b"(c: args.curr.length())
+		while i < n,
+			inv n <= args.curr.length(),
+			inv n <= args.prev.length(),
+		{
+			assert i < 0xFFFF_FFFF_FFFF_FFFF via "a < b: a < c; c <= b"(c: n)
+			assert i < args.curr.length() via "a < b: a < c; c <= b"(c: n)
+			assert i < args.prev.length() via "a < b: a < c; c <= b"(c: n)
 			if i >= filter_distance {
 				if (i - filter_distance) < args.curr.length() {
 					args.curr[i] ~mod+= ((
@@ -82,6 +96,7 @@ pri func decoder.filter_3!(curr: slice base.u8, prev: slice base.u8) {
 
 pri func decoder.filter_4!(curr: slice base.u8, prev: slice base.u8) {
 	var filter_distance : base.u64[..= 8]
+	var n               : base.u64
 	var i               : base.u64
 
 	var fa : base.u32
@@ -93,9 +108,15 @@ pri func decoder.filter_4!(curr: slice base.u8, prev: slice base.u8) {
 	var pc : base.u32
 
 	filter_distance = this.filter_distance as base.u64
+	n = args.curr.length().min(a: args.prev.length())
 	i = 0
-	while (i < args.curr.length()) and (i < args.prev.length()) {
-		assert i < 0xFFFF_FFFF_FFFF_FFFF via "a < b: a < c; c <= b"(c: args.curr.length())
+	while i < n,
+		inv n <= args.curr.length(),
+		inv n <= args.prev.length(),
+	{
+		assert i < 0xFFFF_FFFF_FFFF_FFFF via "a < b: a < c; c <= b"(c: n)
+		assert i < args.curr.length() via "a < b: a < c; c <= b"(c: n)
+		assert i < args.prev.length() via "a < b: a < c; c <= b"(c: n)
 		if i < filter_distance {
 			args.curr[i] ~mod+= args.prev[i]
 		} else {

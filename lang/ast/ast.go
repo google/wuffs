@@ -793,6 +793,10 @@ func (n *TypeExpr) IsArrayType() bool {
 	return n.id0 == t.IDArray
 }
 
+func (n *TypeExpr) IsFuncType() bool {
+	return n.id0 == t.IDFunc
+}
+
 func (n *TypeExpr) IsPointerType() bool {
 	return n.id0 == t.IDNptr || n.id0 == t.IDPtr
 }

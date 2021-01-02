@@ -30013,10 +30013,12 @@ wuffs_png__decoder__filter_2(
     wuffs_png__decoder* self,
     wuffs_base__slice_u8 a_curr,
     wuffs_base__slice_u8 a_prev) {
+  uint64_t v_n = 0;
   uint64_t v_i = 0;
 
+  v_n = wuffs_base__u64__min(((uint64_t)(a_curr.len)), ((uint64_t)(a_prev.len)));
   v_i = 0;
-  while ((v_i < ((uint64_t)(a_curr.len))) && (v_i < ((uint64_t)(a_prev.len)))) {
+  while (v_i < v_n) {
     a_curr.ptr[v_i] += a_prev.ptr[v_i];
     v_i += 1;
   }
@@ -30031,6 +30033,7 @@ wuffs_png__decoder__filter_3(
     wuffs_base__slice_u8 a_curr,
     wuffs_base__slice_u8 a_prev) {
   uint64_t v_filter_distance = 0;
+  uint64_t v_n = 0;
   uint64_t v_i = 0;
 
   v_filter_distance = ((uint64_t)(self->private_impl.f_filter_distance));
@@ -30045,8 +30048,9 @@ wuffs_png__decoder__filter_3(
       v_i += 1;
     }
   } else {
+    v_n = wuffs_base__u64__min(((uint64_t)(a_curr.len)), ((uint64_t)(a_prev.len)));
     v_i = 0;
-    while ((v_i < ((uint64_t)(a_curr.len))) && (v_i < ((uint64_t)(a_prev.len)))) {
+    while (v_i < v_n) {
       if (v_i >= v_filter_distance) {
         if ((v_i - v_filter_distance) < ((uint64_t)(a_curr.len))) {
           a_curr.ptr[v_i] += ((uint8_t)(((((uint32_t)(a_curr.ptr[(v_i - v_filter_distance)])) + ((uint32_t)(a_prev.ptr[v_i]))) / 2)));
@@ -30068,6 +30072,7 @@ wuffs_png__decoder__filter_4(
     wuffs_base__slice_u8 a_curr,
     wuffs_base__slice_u8 a_prev) {
   uint64_t v_filter_distance = 0;
+  uint64_t v_n = 0;
   uint64_t v_i = 0;
   uint32_t v_fa = 0;
   uint32_t v_fb = 0;
@@ -30078,8 +30083,9 @@ wuffs_png__decoder__filter_4(
   uint32_t v_pc = 0;
 
   v_filter_distance = ((uint64_t)(self->private_impl.f_filter_distance));
+  v_n = wuffs_base__u64__min(((uint64_t)(a_curr.len)), ((uint64_t)(a_prev.len)));
   v_i = 0;
-  while ((v_i < ((uint64_t)(a_curr.len))) && (v_i < ((uint64_t)(a_prev.len)))) {
+  while (v_i < v_n) {
     if (v_i < v_filter_distance) {
       a_curr.ptr[v_i] += a_prev.ptr[v_i];
     } else {
