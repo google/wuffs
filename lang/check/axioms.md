@@ -25,6 +25,7 @@ editing this list.
 
 ---
 
+- `"a <= b: a == b"`
 - `"a <= b: b >= a"`
 - `"a <= b: a <= c; c <= b"`
 - `"a <= b: a <= c; c == b"`
@@ -32,7 +33,9 @@ editing this list.
 
 ---
 
+- `"a >= b: a == b"`
 - `"a >= b: b <= a"`
+- `"a >= b: a >= (b + c); 0 <= c"`
 
 ---
 

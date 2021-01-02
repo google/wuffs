@@ -169,6 +169,20 @@ var reasons = [...]struct {
 		return nil
 	}},
 
+	{`"a <= b: a == b"`, func(q *checker, n *a.Assert) error {
+		op, xa, xb := parseBinaryOp(n.Condition())
+		if op != t.IDXBinaryLessEq {
+			return errFailed
+		}
+		// a == b
+		if err := proveReasonRequirement(q, t.IDXBinaryEqEq, xa, xb); err != nil {
+			return err
+		}
+		_ = xa
+		_ = xb
+		return nil
+	}},
+
 	{`"a <= b: b >= a"`, func(q *checker, n *a.Assert) error {
 		op, xa, xb := parseBinaryOp(n.Condition())
 		if op != t.IDXBinaryLessEq {
@@ -252,6 +266,20 @@ var reasons = [...]struct {
 		return nil
 	}},
 
+	{`"a >= b: a == b"`, func(q *checker, n *a.Assert) error {
+		op, xa, xb := parseBinaryOp(n.Condition())
+		if op != t.IDXBinaryGreaterEq {
+			return errFailed
+		}
+		// a == b
+		if err := proveReasonRequirement(q, t.IDXBinaryEqEq, xa, xb); err != nil {
+			return err
+		}
+		_ = xa
+		_ = xb
+		return nil
+	}},
+
 	{`"a >= b: b <= a"`, func(q *checker, n *a.Assert) error {
 		op, xa, xb := parseBinaryOp(n.Condition())
 		if op != t.IDXBinaryGreaterEq {
@@ -263,6 +291,30 @@ var reasons = [...]struct {
 		}
 		_ = xa
 		_ = xb
+		return nil
+	}},
+
+	{`"a >= b: a >= (b + c); 0 <= c"`, func(q *checker, n *a.Assert) error {
+		op, xa, xb := parseBinaryOp(n.Condition())
+		if op != t.IDXBinaryGreaterEq {
+			return errFailed
+		}
+		// a >= (b + c)
+		xc := argValue(q.tm, n.Args(), "c")
+		if xc == nil {
+			return errFailed
+		}
+		t0 := a.NewExpr(0, t.IDXBinaryPlus, 0, xb.AsNode(), nil, xc.AsNode(), nil)
+		if err := proveReasonRequirement(q, t.IDXBinaryGreaterEq, xa, t0); err != nil {
+			return err
+		}
+		// 0 <= c
+		if err := proveReasonRequirement(q, t.IDXBinaryLessEq, zeroExpr, xc); err != nil {
+			return err
+		}
+		_ = xa
+		_ = xb
+		_ = xc
 		return nil
 	}},
 
