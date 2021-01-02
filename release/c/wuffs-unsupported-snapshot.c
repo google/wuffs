@@ -30103,12 +30103,12 @@ wuffs_png__decoder__filter_4(
       v_pc = (0 - v_pc);
     }
     if ((v_pa <= v_pb) && (v_pa <= v_pc)) {
-      a_curr.ptr[v_i] += ((uint8_t)((v_fa & 255)));
     } else if (v_pb <= v_pc) {
-      a_curr.ptr[v_i] += ((uint8_t)((v_fb & 255)));
+      v_fa = v_fb;
     } else {
-      a_curr.ptr[v_i] += ((uint8_t)((v_fc & 255)));
+      v_fa = v_fc;
     }
+    a_curr.ptr[v_i] += ((uint8_t)((v_fa & 255)));
     v_i += 1;
   }
   return wuffs_base__make_empty_struct();

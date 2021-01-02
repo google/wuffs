@@ -71,6 +71,7 @@ pri func decoder.filter_3!(curr: slice base.u8, prev: slice base.u8) {
 			i += 1
 			assert i >= filter_distance via "a >= b: a >= (b + c); 0 <= c"(c: 1)
 		} endwhile
+
 	} else {
 		n = args.curr.length().min(a: args.prev.length())
 		i = 0
@@ -161,12 +162,13 @@ pri func decoder.filter_4!(curr: slice base.u8, prev: slice base.u8) {
 			pc = 0 ~mod- pc
 		}
 		if (pa <= pb) and (pa <= pc) {
-			args.curr[i] ~mod+= (fa & 0xFF) as base.u8
+			// No-op.
 		} else if pb <= pc {
-			args.curr[i] ~mod+= (fb & 0xFF) as base.u8
+			fa = fb
 		} else {
-			args.curr[i] ~mod+= (fc & 0xFF) as base.u8
+			fa = fc
 		}
+		args.curr[i] ~mod+= (fa & 0xFF) as base.u8
 		i += 1
 		assert i >= filter_distance via "a >= b: a >= (b + c); 0 <= c"(c: 1)
 	} endwhile
