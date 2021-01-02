@@ -1,0 +1,131 @@
+// Copyright 2020 The Wuffs Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+pri func decoder.filter_1!(curr: slice base.u8) {
+	var filter_distance : base.u64[..= 8]
+	var fa              : base.u8
+	var i_start         : base.u64
+	var i               : base.u64
+
+	filter_distance = this.filter_distance as base.u64
+	i_start = 0
+	while i_start < filter_distance {
+		assert i_start < 8 via "a < b: a < c; c <= b"(c: filter_distance)
+		fa = 0
+		i = i_start
+		while i < args.curr.length(),
+			inv i_start < 8,
+		{
+			args.curr[i] ~mod+= fa
+			fa = args.curr[i]
+			i ~mod+= filter_distance
+		} endwhile
+		i_start += 1
+	} endwhile
+}
+
+pri func decoder.filter_2!(curr: slice base.u8, prev: slice base.u8) {
+	var i : base.u64
+
+	i = 0
+	while (i < args.curr.length()) and (i < args.prev.length()) {
+		assert i < 0xFFFF_FFFF_FFFF_FFFF via "a < b: a < c; c <= b"(c: args.curr.length())
+		args.curr[i] ~mod+= args.prev[i]
+		i += 1
+	} endwhile
+}
+
+pri func decoder.filter_3!(curr: slice base.u8, prev: slice base.u8) {
+	var filter_distance : base.u64[..= 8]
+	var i               : base.u64
+
+	filter_distance = this.filter_distance as base.u64
+	if args.prev.length() == 0 {
+		i = filter_distance
+		while i < args.curr.length() {
+			assert i < 0xFFFF_FFFF_FFFF_FFFF via "a < b: a < c; c <= b"(c: args.curr.length())
+			if i >= filter_distance {
+				if (i - filter_distance) < args.curr.length() {
+					args.curr[i] ~mod+= args.curr[i - filter_distance] / 2
+				}
+			}
+			i += 1
+		} endwhile
+	} else {
+		i = 0
+		while (i < args.curr.length()) and (i < args.prev.length()) {
+			assert i < 0xFFFF_FFFF_FFFF_FFFF via "a < b: a < c; c <= b"(c: args.curr.length())
+			if i >= filter_distance {
+				if (i - filter_distance) < args.curr.length() {
+					args.curr[i] ~mod+= ((
+						(args.curr[i - filter_distance] as base.u32) +
+						(args.prev[i] as base.u32)) / 2) as base.u8
+				}
+			} else {
+				args.curr[i] ~mod+= args.prev[i] / 2
+			}
+			i += 1
+		} endwhile
+	}
+}
+
+pri func decoder.filter_4!(curr: slice base.u8, prev: slice base.u8) {
+	var filter_distance : base.u64[..= 8]
+	var i               : base.u64
+
+	var fa : base.u32
+	var fb : base.u32
+	var fc : base.u32
+	var pp : base.u32
+	var pa : base.u32
+	var pb : base.u32
+	var pc : base.u32
+
+	filter_distance = this.filter_distance as base.u64
+	i = 0
+	while (i < args.curr.length()) and (i < args.prev.length()) {
+		assert i < 0xFFFF_FFFF_FFFF_FFFF via "a < b: a < c; c <= b"(c: args.curr.length())
+		if i < filter_distance {
+			args.curr[i] ~mod+= args.prev[i]
+		} else {
+			if ((i - filter_distance) < args.curr.length()) and
+				((i - filter_distance) < args.prev.length()) {
+				fa = args.curr[i - filter_distance] as base.u32
+				fb = args.prev[i] as base.u32
+				fc = args.prev[i - filter_distance] as base.u32
+				pp = (fa ~mod+ fb) ~mod- fc
+				pa = pp ~mod- fa
+				if pa >= 0x8000_0000 {
+					pa = 0 ~mod- pa
+				}
+				pb = pp ~mod- fb
+				if pb >= 0x8000_0000 {
+					pb = 0 ~mod- pb
+				}
+				pc = pp ~mod- fc
+				if pc >= 0x8000_0000 {
+					pc = 0 ~mod- pc
+				}
+				if (pa <= pb) and (pa <= pc) {
+					args.curr[i] ~mod+= (fa & 0xFF) as base.u8
+				} else if pb <= pc {
+					args.curr[i] ~mod+= (fb & 0xFF) as base.u8
+				} else {
+					args.curr[i] ~mod+= (fc & 0xFF) as base.u8
+				}
+			}
+		}
+		i += 1
+	} endwhile
+}
