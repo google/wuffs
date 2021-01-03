@@ -137,7 +137,7 @@ test_wuffs_png_decode_interface() {
 }
 
 const char*  //
-test_wuffs_png_decode_filters() {
+test_wuffs_png_decode_filters_golden() {
   CHECK_FOCUS(__func__);
 
   uint8_t src_rows[2][12] = {
@@ -231,6 +231,157 @@ test_wuffs_png_decode_filters() {
 
       wuffs_base__io_buffer want =
           wuffs_base__ptr_u8__reader(g_want_slice_u8.ptr, 12 * 2, true);
+      want.meta.ri = want.meta.wi;
+
+      char prefix_buf[256];
+      sprintf(prefix_buf, "filter=%d, filter_distance=%d ", filter,
+              filter_distance);
+      CHECK_STRING(check_io_buffers_equal(prefix_buf, &have, &want));
+    }
+  }
+
+  return NULL;
+}
+
+int32_t  //
+apply_png_abs(int32_t x) {
+  return (x < 0) ? -x : +x;
+}
+
+const char*  //
+apply_png_encode_filters(wuffs_base__slice_u8 dst_rows,
+                         size_t width,
+                         size_t height,
+                         size_t filter_distance,
+                         wuffs_base__slice_u8 src_rows) {
+  if ((((width + 1) * height) != dst_rows.len) ||
+      (((width + 1) * height) != src_rows.len)) {
+    return "apply_png_encode_filters: unexpected rows.len";
+  }
+  size_t y;
+  uint8_t* src_prev = NULL;
+  for (y = 0; y < height; y++) {
+    uint8_t filter = src_rows.ptr[(width + 1) * y];
+    dst_rows.ptr[(width + 1) * y] = filter;
+    uint8_t* dst_curr = &dst_rows.ptr[((width + 1) * y) + 1];
+    uint8_t* src_curr = &src_rows.ptr[((width + 1) * y) + 1];
+
+    size_t x;
+    for (x = 0; x < width; x++) {
+      int32_t fa = 0;
+      int32_t fb = 0;
+      int32_t fc = 0;
+      if (x >= filter_distance) {
+        fa = src_curr[x - filter_distance];
+        if (src_prev) {
+          fc = src_prev[x - filter_distance];
+        }
+      }
+      if (src_prev) {
+        fb = src_prev[x];
+      }
+
+      uint8_t prediction = 0;
+      switch (filter) {
+        case 1:
+          prediction = fa;
+          break;
+        case 2:
+          prediction = fb;
+          break;
+        case 3:
+          prediction = (uint8_t)((fa + fb) / 2);
+          break;
+        case 4: {
+          int32_t p = fa + fb - fc;
+          int32_t pa = apply_png_abs(p - fa);
+          int32_t pb = apply_png_abs(p - fb);
+          int32_t pc = apply_png_abs(p - fc);
+          if ((pa <= pb) && (pa <= pc)) {
+            prediction = fa;
+          } else if (pb <= pc) {
+            prediction = fb;
+          } else {
+            prediction = fc;
+          }
+          break;
+        }
+      }
+      dst_curr[x] = src_curr[x] - prediction;
+    }
+    src_prev = src_curr;
+  }
+  return NULL;
+}
+
+const char*  //
+test_wuffs_png_decode_filters_round_trip() {
+  CHECK_FOCUS(__func__);
+
+  uint8_t src_rows[2][96] = {
+      // "ThoughYouMightHearLaughingSpinningSwingingMadlyA"
+      // "crossTheSun/ItsNotAimedAtAnyone/ItsJustEscapingO"
+      {0x54, 0x68, 0x6F, 0x75, 0x67, 0x68, 0x59, 0x6F, 0x75, 0x4D, 0x69, 0x67,
+       0x68, 0x74, 0x48, 0x65, 0x61, 0x72, 0x4C, 0x61, 0x75, 0x67, 0x68, 0x69,
+       0x6E, 0x67, 0x53, 0x70, 0x69, 0x6E, 0x6E, 0x69, 0x6E, 0x67, 0x53, 0x77,
+       0x69, 0x6E, 0x67, 0x69, 0x6E, 0x67, 0x4D, 0x61, 0x64, 0x6C, 0x79, 0x41,
+       0x63, 0x72, 0x6F, 0x73, 0x73, 0x54, 0x68, 0x65, 0x53, 0x75, 0x6E, 0x2F,
+       0x49, 0x74, 0x73, 0x4E, 0x6F, 0x74, 0x41, 0x69, 0x6D, 0x65, 0x64, 0x41,
+       0x74, 0x41, 0x6E, 0x79, 0x6F, 0x6E, 0x65, 0x2F, 0x49, 0x74, 0x73, 0x4A,
+       0x75, 0x73, 0x74, 0x45, 0x73, 0x63, 0x61, 0x70, 0x69, 0x6E, 0x67, 0x4F},
+      // "YesToDanceBeneathTheDiamondSky/WithOneHandWaving"
+      // "Free/SilhouettedByTheSea/CircledByTheCircusSands"
+      {0x59, 0x65, 0x73, 0x54, 0x6F, 0x44, 0x61, 0x6E, 0x63, 0x65, 0x42, 0x65,
+       0x6E, 0x65, 0x61, 0x74, 0x68, 0x54, 0x68, 0x65, 0x44, 0x69, 0x61, 0x6D,
+       0x6F, 0x6E, 0x64, 0x53, 0x6B, 0x79, 0x2F, 0x57, 0x69, 0x74, 0x68, 0x4F,
+       0x6E, 0x65, 0x48, 0x61, 0x6E, 0x64, 0x57, 0x61, 0x76, 0x69, 0x6E, 0x67,
+       0x46, 0x72, 0x65, 0x65, 0x2F, 0x53, 0x69, 0x6C, 0x68, 0x6F, 0x75, 0x65,
+       0x74, 0x74, 0x65, 0x64, 0x42, 0x79, 0x54, 0x68, 0x65, 0x53, 0x65, 0x61,
+       0x2F, 0x43, 0x69, 0x72, 0x63, 0x6C, 0x65, 0x64, 0x42, 0x79, 0x54, 0x68,
+       0x65, 0x43, 0x69, 0x72, 0x63, 0x75, 0x73, 0x53, 0x61, 0x6E, 0x64, 0x73},
+  };
+
+  wuffs_png__decoder dec;
+  CHECK_STATUS("initialize", wuffs_png__decoder__initialize(
+                                 &dec, sizeof dec, WUFFS_VERSION,
+                                 WUFFS_INITIALIZE__DEFAULT_OPTIONS));
+
+  memcpy(g_src_slice_u8.ptr + (97 * 0) + 1, src_rows[0], 96);
+  memcpy(g_src_slice_u8.ptr + (97 * 1) + 1, src_rows[1], 96);
+
+  int filter;
+  for (filter = 1; filter <= 4; filter++) {
+    int filter_distance;
+    for (filter_distance = 1; filter_distance <= 8; filter_distance++) {
+      if ((filter_distance == 5) || (filter_distance == 7)) {
+        continue;
+      }
+      // For the top row, the Paeth filter (4) is equivalent to the Sub filter
+      // (1), but the Paeth implementation is simpler if it can assume that
+      // there is a previous row.
+      uint8_t top_row_filter = (filter != 4) ? filter : 1;
+
+      g_src_slice_u8.ptr[97 * 0] = top_row_filter;
+      g_src_slice_u8.ptr[97 * 1] = filter;
+
+      CHECK_STRING(apply_png_encode_filters(
+          wuffs_base__make_slice_u8(g_work_slice_u8.ptr, 97 * 2), 96, 2,
+          filter_distance,
+          wuffs_base__make_slice_u8(g_src_slice_u8.ptr, 97 * 2)));
+
+      CHECK_STRING(do_wuffs_png_swizzle(
+          &dec, 96, 2, filter_distance, g_have_slice_u8,
+          wuffs_base__make_slice_u8(g_work_slice_u8.ptr, 97 * 2)));
+
+      wuffs_base__io_buffer have =
+          wuffs_base__ptr_u8__reader(g_have_slice_u8.ptr, 96 * 2, true);
+      have.meta.ri = have.meta.wi;
+
+      memcpy(g_want_slice_u8.ptr + (96 * 0), src_rows[0], 96);
+      memcpy(g_want_slice_u8.ptr + (96 * 1), src_rows[1], 96);
+
+      wuffs_base__io_buffer want =
+          wuffs_base__ptr_u8__reader(g_want_slice_u8.ptr, 96 * 2, true);
       want.meta.ri = want.meta.wi;
 
       char prefix_buf[256];
@@ -538,7 +689,8 @@ bench_mimic_png_decode_4002k_24bpp() {
 
 proc g_tests[] = {
 
-    test_wuffs_png_decode_filters,
+    test_wuffs_png_decode_filters_golden,
+    test_wuffs_png_decode_filters_round_trip,
     test_wuffs_png_decode_frame_config,
     test_wuffs_png_decode_interface,
 
