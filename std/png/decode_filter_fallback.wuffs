@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pri func decoder.filter_1!(curr: slice base.u8) {
+pri func decoder.filter_1!(curr: slice base.u8),
+	choosy,
+{
 	var filter_distance : base.u64[..= 8]
 	var fa              : base.u8
 	var i_start         : base.u64
@@ -35,7 +37,9 @@ pri func decoder.filter_1!(curr: slice base.u8) {
 	} endwhile
 }
 
-pri func decoder.filter_2!(curr: slice base.u8, prev: slice base.u8) {
+pri func decoder.filter_2!(curr: slice base.u8, prev: slice base.u8),
+	choosy,
+{
 	var n : base.u64
 	var i : base.u64
 
@@ -53,7 +57,9 @@ pri func decoder.filter_2!(curr: slice base.u8, prev: slice base.u8) {
 	} endwhile
 }
 
-pri func decoder.filter_3!(curr: slice base.u8, prev: slice base.u8) {
+pri func decoder.filter_3!(curr: slice base.u8, prev: slice base.u8),
+	choosy,
+{
 	var filter_distance : base.u64[..= 8]
 	var n               : base.u64
 	var i               : base.u64
@@ -106,7 +112,9 @@ pri func decoder.filter_3!(curr: slice base.u8, prev: slice base.u8) {
 	}
 }
 
-pri func decoder.filter_4!(curr: slice base.u8, prev: slice base.u8) {
+pri func decoder.filter_4!(curr: slice base.u8, prev: slice base.u8),
+	choosy,
+{
 	var filter_distance : base.u64[..= 8]
 	var n               : base.u64
 	var i               : base.u64

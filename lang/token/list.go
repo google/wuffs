@@ -375,28 +375,30 @@ const (
 
 	IDAssert     = ID(0xB0)
 	IDBreak      = ID(0xB1)
-	IDConst      = ID(0xB2)
-	IDContinue   = ID(0xB3)
-	IDElse       = ID(0xB4)
-	IDEndwhile   = ID(0xB5)
-	IDFunc       = ID(0xB6)
-	IDIOBind     = ID(0xB7)
-	IDIOLimit    = ID(0xB8)
-	IDIf         = ID(0xB9)
-	IDImplements = ID(0xBA)
-	IDInv        = ID(0xBB)
-	IDIterate    = ID(0xBC)
-	IDPost       = ID(0xBD)
-	IDPre        = ID(0xBE)
-	IDPri        = ID(0xBF)
-	IDPub        = ID(0xC0)
-	IDReturn     = ID(0xC1)
-	IDStruct     = ID(0xC2)
-	IDUse        = ID(0xC3)
-	IDVar        = ID(0xC4)
-	IDVia        = ID(0xC5)
-	IDWhile      = ID(0xC6)
-	IDYield      = ID(0xC7)
+	IDChoose     = ID(0xB2)
+	IDChoosy     = ID(0xB3)
+	IDConst      = ID(0xB4)
+	IDContinue   = ID(0xB5)
+	IDElse       = ID(0xB6)
+	IDEndwhile   = ID(0xB7)
+	IDFunc       = ID(0xB8)
+	IDIOBind     = ID(0xB9)
+	IDIOLimit    = ID(0xBA)
+	IDIf         = ID(0xBB)
+	IDImplements = ID(0xBC)
+	IDInv        = ID(0xBD)
+	IDIterate    = ID(0xBE)
+	IDPost       = ID(0xBF)
+	IDPre        = ID(0xC0)
+	IDPri        = ID(0xC1)
+	IDPub        = ID(0xC2)
+	IDReturn     = ID(0xC3)
+	IDStruct     = ID(0xC4)
+	IDUse        = ID(0xC5)
+	IDVar        = ID(0xC6)
+	IDVia        = ID(0xC7)
+	IDWhile      = ID(0xC8)
+	IDYield      = ID(0xC9)
 )
 
 const (
@@ -743,6 +745,8 @@ var builtInsByID = [nBuiltInIDs]string{
 
 	IDAssert:     "assert",
 	IDBreak:      "break",
+	IDChoose:     "choose",
+	IDChoosy:     "choosy",
 	IDConst:      "const",
 	IDContinue:   "continue",
 	IDElse:       "else",

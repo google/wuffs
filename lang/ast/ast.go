@@ -103,6 +103,7 @@ const (
 	FlagsSubExprHasEffect = Flags(0x00002000)
 	FlagsRetsError        = Flags(0x00004000)
 	FlagsPrivateData      = Flags(0x00008000)
+	FlagsChoosy           = Flags(0x00010000)
 )
 
 func (f Flags) AsEffect() Effect { return Effect(f) }
@@ -869,6 +870,7 @@ const MaxBodyDepth = 255
 type Func Node
 
 func (n *Func) AsNode() *Node    { return (*Node)(n) }
+func (n *Func) Choosy() bool     { return n.flags&FlagsChoosy != 0 }
 func (n *Func) Effect() Effect   { return Effect(n.flags) }
 func (n *Func) Public() bool     { return n.flags&FlagsPublic != 0 }
 func (n *Func) Filename() string { return n.filename }

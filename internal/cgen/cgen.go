@@ -1063,22 +1063,32 @@ func (g *gen) writeStructPrivateImpl(b *buffer, n *a.Struct) error {
 					continue
 				}
 				o := tld.AsFunc()
-				if o.Receiver() != n.QID() || !o.Effect().Coroutine() {
+				if o.Receiver() != n.QID() {
 					continue
-				}
-				k := g.funks[o.QQID()]
-				if k.coroSuspPoint == 0 {
-					continue
-				}
 
-				if needEmptyLine {
-					needEmptyLine = false
-					b.writeb('\n')
+				} else if o.Effect().Coroutine() {
+					k := g.funks[o.QQID()]
+					if k.coroSuspPoint == 0 {
+						continue
+					}
+					if needEmptyLine {
+						needEmptyLine = false
+						b.writeb('\n')
+					}
+					b.printf("uint32_t %s%s[%d];\n", pPrefix, o.FuncName().Str(g.tm), maxDepth)
+
+				} else if o.Choosy() {
+					if needEmptyLine {
+						needEmptyLine = false
+						b.writeb('\n')
+					}
+					if err := g.writeFuncSignature(b, o, wfsCFuncPtrFieldChoosy); err != nil {
+						return err
+					}
+					b.writes(";\n")
 				}
-				b.printf("uint32_t %s%s[%d];\n", pPrefix, o.FuncName().Str(g.tm), maxDepth)
 			}
 		}
-
 	}
 	b.writes("} private_impl;\n\n")
 
@@ -1384,6 +1394,26 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 	b.writes("    memset(&(self->private_impl), 0, sizeof(self->private_impl));\n")
 	b.writes("  }\n")
 	b.writes("}\n\n")
+
+	// Initialize any choosy function pointers.
+	hasChoosy := false
+	for _, file := range g.files {
+		for _, tld := range file.TopLevelDecls() {
+			if tld.Kind() != a.KFunc {
+				continue
+			}
+			o := tld.AsFunc()
+			if (o.Receiver() != n.QID()) || !o.Choosy() {
+				continue
+			}
+			hasChoosy = true
+			b.printf("self->private_impl.choosy_%s = &%s__choosy_default;\n",
+				o.FuncName().Str(g.tm), g.funcCName(o))
+		}
+	}
+	if hasChoosy {
+		b.writes("\n")
+	}
 
 	// Call any ctors on sub-structs.
 	for _, f := range n.Fields() {

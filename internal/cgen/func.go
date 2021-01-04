@@ -79,10 +79,12 @@ func (g *gen) funcCName(n *a.Func) string {
 
 // writeFunctionSignature modes.
 const (
-	wfsCDecl         = 0
-	wfsCppDecl       = 1
-	wfsCFuncPtrField = 2
-	wfsCFuncPtrType  = 3
+	wfsCDecl               = 0
+	wfsCDeclChoosy         = 1
+	wfsCppDecl             = 2
+	wfsCFuncPtrField       = 3
+	wfsCFuncPtrFieldChoosy = 4
+	wfsCFuncPtrType        = 5
 )
 
 func (g *gen) writeFuncSignature(b *buffer, n *a.Func, wfs uint32) error {
@@ -94,10 +96,13 @@ func (g *gen) writeFuncSignature(b *buffer, n *a.Func, wfs uint32) error {
 			b.writes("static ")
 		}
 
+	case wfsCDeclChoosy:
+		b.writes("static ")
+
 	case wfsCppDecl:
 		b.writes("  inline ")
 
-	case wfsCFuncPtrField, wfsCFuncPtrType:
+	case wfsCFuncPtrField, wfsCFuncPtrFieldChoosy, wfsCFuncPtrType:
 		// No-op.
 	}
 
@@ -112,18 +117,21 @@ func (g *gen) writeFuncSignature(b *buffer, n *a.Func, wfs uint32) error {
 	}
 
 	switch wfs {
-	case wfsCDecl:
+	case wfsCDecl, wfsCDeclChoosy:
 		b.writes("\n")
 	case wfsCppDecl:
 		b.writes("\n  ")
-	case wfsCFuncPtrField:
+	case wfsCFuncPtrField, wfsCFuncPtrFieldChoosy:
 		b.writes(" ")
 	}
 
 	comma := false
 	switch wfs {
-	case wfsCDecl:
+	case wfsCDecl, wfsCDeclChoosy:
 		b.writes(g.funcCName(n))
+		if wfs == wfsCDeclChoosy {
+			b.writes("__choosy_default")
+		}
 		b.writeb('(')
 		if r := n.Receiver(); !r.IsZero() {
 			b.writes("\n    ")
@@ -141,20 +149,29 @@ func (g *gen) writeFuncSignature(b *buffer, n *a.Func, wfs uint32) error {
 			b.writes("\n      ")
 		}
 
-	case wfsCFuncPtrField, wfsCFuncPtrType:
+	case wfsCFuncPtrField, wfsCFuncPtrFieldChoosy, wfsCFuncPtrType:
 		b.writes("(*")
 		if wfs == wfsCFuncPtrField {
+			b.writes(n.FuncName().Str(g.tm))
+			b.writes(")(\n    ")
+		} else if wfs == wfsCFuncPtrFieldChoosy {
+			b.writes("choosy_")
 			b.writes(n.FuncName().Str(g.tm))
 			b.writes(")(\n    ")
 		} else {
 			b.writes(")(")
 		}
+
 		if n.Effect().Pure() {
 			b.writes("const ")
 		}
-		b.writes("void*")
+
 		if wfs == wfsCFuncPtrField {
-			b.writes(" self")
+			b.writes("void* self")
+		} else if wfs == wfsCFuncPtrFieldChoosy {
+			b.printf("%s%s* self", g.pkgPrefix, n.Receiver()[1].Str(g.tm))
+		} else {
+			b.writes("void*")
 		}
 		comma = true
 	}
@@ -189,6 +206,12 @@ func (g *gen) writeFuncPrototype(b *buffer, n *a.Func) error {
 		return err
 	}
 	b.writes(";\n\n")
+	if n.Choosy() {
+		if err := g.writeFuncSignature(b, n, wfsCDeclChoosy); err != nil {
+			return err
+		}
+		b.writes(";\n\n")
+	}
 	return nil
 }
 
@@ -200,6 +223,19 @@ func (g *gen) writeFuncImpl(b *buffer, n *a.Func) error {
 		return err
 	}
 	b.writes(" {\n")
+
+	if n.Choosy() {
+		b.printf("return (*self->private_impl.choosy_%s)(self", n.FuncName().Str(g.tm))
+		for _, o := range n.In().Fields() {
+			b.printf(", %s%s", aPrefix, o.AsField().Name().Str(g.tm))
+		}
+		b.writes(");\n}\n\n")
+
+		if err := g.writeFuncSignature(b, n, wfsCDeclChoosy); err != nil {
+			return err
+		}
+		b.writes(" {\n")
+	}
 
 	if (len(n.Body()) != 0) || n.Effect().Coroutine() || (n.Out() != nil) {
 		b.writex(k.bPrologue)

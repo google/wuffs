@@ -8356,6 +8356,21 @@ struct wuffs_png__decoder__struct {
     uint64_t f_frame_config_io_position;
     wuffs_base__pixel_swizzler f_swizzler;
 
+    wuffs_base__empty_struct (*choosy_filter_1)(
+        wuffs_png__decoder* self,
+        wuffs_base__slice_u8 a_curr);
+    wuffs_base__empty_struct (*choosy_filter_2)(
+        wuffs_png__decoder* self,
+        wuffs_base__slice_u8 a_curr,
+        wuffs_base__slice_u8 a_prev);
+    wuffs_base__empty_struct (*choosy_filter_3)(
+        wuffs_png__decoder* self,
+        wuffs_base__slice_u8 a_curr,
+        wuffs_base__slice_u8 a_prev);
+    wuffs_base__empty_struct (*choosy_filter_4)(
+        wuffs_png__decoder* self,
+        wuffs_base__slice_u8 a_curr,
+        wuffs_base__slice_u8 a_prev);
     uint32_t p_decode_image_config[1];
     uint32_t p_decode_plte[1];
     uint32_t p_decode_frame_config[1];
@@ -29831,7 +29846,18 @@ wuffs_png__decoder__filter_1(
     wuffs_base__slice_u8 a_curr);
 
 static wuffs_base__empty_struct
+wuffs_png__decoder__filter_1__choosy_default(
+    wuffs_png__decoder* self,
+    wuffs_base__slice_u8 a_curr);
+
+static wuffs_base__empty_struct
 wuffs_png__decoder__filter_2(
+    wuffs_png__decoder* self,
+    wuffs_base__slice_u8 a_curr,
+    wuffs_base__slice_u8 a_prev);
+
+static wuffs_base__empty_struct
+wuffs_png__decoder__filter_2__choosy_default(
     wuffs_png__decoder* self,
     wuffs_base__slice_u8 a_curr,
     wuffs_base__slice_u8 a_prev);
@@ -29843,7 +29869,19 @@ wuffs_png__decoder__filter_3(
     wuffs_base__slice_u8 a_prev);
 
 static wuffs_base__empty_struct
+wuffs_png__decoder__filter_3__choosy_default(
+    wuffs_png__decoder* self,
+    wuffs_base__slice_u8 a_curr,
+    wuffs_base__slice_u8 a_prev);
+
+static wuffs_base__empty_struct
 wuffs_png__decoder__filter_4(
+    wuffs_png__decoder* self,
+    wuffs_base__slice_u8 a_curr,
+    wuffs_base__slice_u8 a_prev);
+
+static wuffs_base__empty_struct
+wuffs_png__decoder__filter_4__choosy_default(
     wuffs_png__decoder* self,
     wuffs_base__slice_u8 a_curr,
     wuffs_base__slice_u8 a_prev);
@@ -29936,6 +29974,11 @@ wuffs_png__decoder__initialize(
     }
   }
 
+  self->private_impl.choosy_filter_1 = &wuffs_png__decoder__filter_1__choosy_default;
+  self->private_impl.choosy_filter_2 = &wuffs_png__decoder__filter_2__choosy_default;
+  self->private_impl.choosy_filter_3 = &wuffs_png__decoder__filter_3__choosy_default;
+  self->private_impl.choosy_filter_4 = &wuffs_png__decoder__filter_4__choosy_default;
+
   {
     wuffs_base__status z = wuffs_crc32__ieee_hasher__initialize(
         &self->private_data.f_crc, sizeof(self->private_data.f_crc), WUFFS_VERSION, options);
@@ -29986,6 +30029,13 @@ static wuffs_base__empty_struct
 wuffs_png__decoder__filter_1(
     wuffs_png__decoder* self,
     wuffs_base__slice_u8 a_curr) {
+  return (*self->private_impl.choosy_filter_1)(self, a_curr);
+}
+
+static wuffs_base__empty_struct
+wuffs_png__decoder__filter_1__choosy_default(
+    wuffs_png__decoder* self,
+    wuffs_base__slice_u8 a_curr) {
   uint64_t v_filter_distance = 0;
   uint8_t v_fa = 0;
   uint64_t v_i_start = 0;
@@ -30013,6 +30063,14 @@ wuffs_png__decoder__filter_2(
     wuffs_png__decoder* self,
     wuffs_base__slice_u8 a_curr,
     wuffs_base__slice_u8 a_prev) {
+  return (*self->private_impl.choosy_filter_2)(self, a_curr, a_prev);
+}
+
+static wuffs_base__empty_struct
+wuffs_png__decoder__filter_2__choosy_default(
+    wuffs_png__decoder* self,
+    wuffs_base__slice_u8 a_curr,
+    wuffs_base__slice_u8 a_prev) {
   uint64_t v_n = 0;
   uint64_t v_i = 0;
 
@@ -30029,6 +30087,14 @@ wuffs_png__decoder__filter_2(
 
 static wuffs_base__empty_struct
 wuffs_png__decoder__filter_3(
+    wuffs_png__decoder* self,
+    wuffs_base__slice_u8 a_curr,
+    wuffs_base__slice_u8 a_prev) {
+  return (*self->private_impl.choosy_filter_3)(self, a_curr, a_prev);
+}
+
+static wuffs_base__empty_struct
+wuffs_png__decoder__filter_3__choosy_default(
     wuffs_png__decoder* self,
     wuffs_base__slice_u8 a_curr,
     wuffs_base__slice_u8 a_prev) {
@@ -30063,6 +30129,14 @@ wuffs_png__decoder__filter_3(
 
 static wuffs_base__empty_struct
 wuffs_png__decoder__filter_4(
+    wuffs_png__decoder* self,
+    wuffs_base__slice_u8 a_curr,
+    wuffs_base__slice_u8 a_prev) {
+  return (*self->private_impl.choosy_filter_4)(self, a_curr, a_prev);
+}
+
+static wuffs_base__empty_struct
+wuffs_png__decoder__filter_4__choosy_default(
     wuffs_png__decoder* self,
     wuffs_base__slice_u8 a_curr,
     wuffs_base__slice_u8 a_prev) {

@@ -217,7 +217,7 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 				return nil, err
 			}
 			out := (*a.TypeExpr)(nil)
-			if p.peek1() != t.IDOpenCurly {
+			if x := p.peek1(); (x != t.IDOpenCurly) && (x != t.IDComma) {
 				out, err = p.parseTypeExpr()
 				if err != nil {
 					return nil, err
@@ -226,6 +226,25 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			asserts := []*a.Node(nil)
 			if p.peek1() == t.IDComma {
 				p.src = p.src[1:]
+				if p.peek1() == t.IDChoosy {
+					p.src = p.src[1:]
+					if (flags & a.FlagsPublic) != 0 {
+						return nil, fmt.Errorf(`parse: choosy function cannot be pub at %s:%d`,
+							p.filename, p.line())
+					} else if p.funcEffect.Coroutine() {
+						return nil, fmt.Errorf(`parse: choosy function cannot be a coroutine at %s:%d`,
+							p.filename, p.line())
+					}
+					flags |= a.FlagsChoosy
+					if p.peek1() != t.IDOpenCurly {
+						if x := p.peek1(); x != t.IDComma {
+							return nil, fmt.Errorf(`parse: expected ",", got %q at %s:%d`,
+								p.tm.ByID(x), p.filename, p.line())
+						}
+						p.src = p.src[1:]
+					}
+				}
+
 				asserts, err = p.parseList(t.IDOpenCurly, (*parser).parseAssertNode)
 				if err != nil {
 					return nil, err
