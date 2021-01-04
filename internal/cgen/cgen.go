@@ -854,8 +854,8 @@ func (g *gen) forEachConst(b *buffer, v visibility, f func(*gen, *buffer, *a.Con
 	for _, file := range g.files {
 		for _, tld := range file.TopLevelDecls() {
 			if tld.Kind() != a.KConst ||
-				(v == pubOnly && tld.AsRaw().Flags()&a.FlagsPublic == 0) ||
-				(v == priOnly && tld.AsRaw().Flags()&a.FlagsPublic != 0) {
+				((v == pubOnly) && !tld.AsConst().Public()) ||
+				((v == priOnly) && tld.AsConst().Public()) {
 				continue
 			}
 			if err := f(g, b, tld.AsConst()); err != nil {
@@ -870,8 +870,8 @@ func (g *gen) forEachFunc(b *buffer, v visibility, f func(*gen, *buffer, *a.Func
 	for _, file := range g.files {
 		for _, tld := range file.TopLevelDecls() {
 			if tld.Kind() != a.KFunc ||
-				(v == pubOnly && tld.AsRaw().Flags()&a.FlagsPublic == 0) ||
-				(v == priOnly && tld.AsRaw().Flags()&a.FlagsPublic != 0) {
+				((v == pubOnly) && !tld.AsFunc().Public()) ||
+				((v == priOnly) && tld.AsFunc().Public()) {
 				continue
 			}
 			if err := f(g, b, tld.AsFunc()); err != nil {
@@ -886,8 +886,8 @@ func (g *gen) forEachStatus(b *buffer, v visibility, f func(*gen, *buffer, *a.St
 	for _, file := range g.files {
 		for _, tld := range file.TopLevelDecls() {
 			if tld.Kind() != a.KStatus ||
-				(v == pubOnly && tld.AsRaw().Flags()&a.FlagsPublic == 0) ||
-				(v == priOnly && tld.AsRaw().Flags()&a.FlagsPublic != 0) {
+				((v == pubOnly) && !tld.AsStatus().Public()) ||
+				((v == priOnly) && tld.AsStatus().Public()) {
 				continue
 			}
 			if err := f(g, b, tld.AsStatus()); err != nil {
@@ -1167,7 +1167,7 @@ func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
 		return err
 	}
 
-	if n.AsNode().AsRaw().Flags()&a.FlagsPublic != 0 {
+	if n.Public() {
 		if err := g.writeCppMethods(b, n); err != nil {
 			return err
 		}
@@ -1244,7 +1244,7 @@ func (g *gen) writeCppMethods(b *buffer, n *a.Struct) error {
 	structID := n.QID()[1]
 	for _, file := range g.files {
 		for _, tld := range file.TopLevelDecls() {
-			if (tld.Kind() != a.KFunc) || (tld.AsRaw().Flags()&a.FlagsPublic == 0) {
+			if (tld.Kind() != a.KFunc) || !tld.AsFunc().Public() {
 				continue
 			}
 			f := tld.AsFunc()
