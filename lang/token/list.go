@@ -457,6 +457,7 @@ const (
 	IDDagger1 = ID(0x106)
 	IDDagger2 = ID(0x107)
 
+	IDQNonNullptr  = ID(0x10A)
 	IDQNullptr     = ID(0x10B)
 	IDQPackage     = ID(0x10C)
 	IDQPlaceholder = ID(0x10D)
@@ -810,6 +811,10 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDT2:      "T2",
 	IDDagger1: "†", // U+2020 DAGGER
 	IDDagger2: "‡", // U+2021 DOUBLE DAGGER
+
+	// IDQNonNullptr is used by the type checker to build an artificial MType
+	// for function pointers.
+	IDQNonNullptr: "«NonNullptr»",
 
 	// IDQNullptr is used by the type checker to build an artificial MType for
 	// the nullptr literal.

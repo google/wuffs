@@ -57,6 +57,8 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 	case a.KAssign:
 		n := n.AsAssign()
 		return g.writeStatementAssign(b, n.Operator(), n.LHS(), n.RHS(), depth)
+	case a.KChoose:
+		return g.writeStatementChoose(b, n.AsChoose(), depth)
 	case a.KIOBind:
 		return g.writeStatementIOBind(b, n.AsIOBind(), depth)
 	case a.KIf:
@@ -218,6 +220,22 @@ func (g *gen) writeStatementAssign1(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr
 		b.writes("#endif\n")
 	}
 
+	return nil
+}
+
+func (g *gen) writeStatementChoose(b *buffer, n *a.Choose, depth uint32) error {
+	recv := g.currFunk.astFunc.Receiver()
+	args := n.Args()
+	if len(args) != 1 {
+		return fmt.Errorf("TODO: multiple choice")
+	}
+	id := args[0].AsExpr().Ident()
+	suffix := ""
+	if n.Name() == id {
+		suffix = "__choosy_default"
+	}
+	b.printf("self->private_impl.choosy_%s = &%s%s__%s%s;\n",
+		n.Name().Str(g.tm), g.pkgPrefix, recv.Str(g.tm), id.Str(g.tm), suffix)
 	return nil
 }
 

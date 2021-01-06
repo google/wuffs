@@ -63,6 +63,11 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 			return err
 		}
 
+	case a.KChoose:
+		if err := q.tcheckChoose(n.AsChoose()); err != nil {
+			return err
+		}
+
 	case a.KIf:
 		for n := n.AsIf(); n != nil; n = n.ElseIf() {
 			cond := n.Condition()
@@ -1058,6 +1063,29 @@ swtch:
 		return fmt.Errorf("check: %q is not a type", typ.Str(q.tm))
 	}
 	typ.AsNode().SetMType(typeExprTypeExpr)
+	return nil
+}
+
+func (q *checker) tcheckChoose(n *a.Choose) error {
+	qqid := q.astFunc.QQID()
+	fQQID := t.QQID{qqid[0], qqid[1], n.Name()}
+	f := q.c.funcs[fQQID]
+	if f == nil {
+		return fmt.Errorf("check: no function named %q", fQQID.Str(q.tm))
+	}
+	for _, o := range n.Args() {
+		o := o.AsExpr()
+		gQQID := t.QQID{qqid[0], qqid[1], o.Ident()}
+		g := q.c.funcs[gQQID]
+		if g == nil {
+			return fmt.Errorf("check: no function named %q", gQQID.Str(q.tm))
+		} else if err := f.CheckChooseCompatible(g); err != nil {
+			return fmt.Errorf("check: incompatible choose functions %q and %q: %v",
+				fQQID.Str(q.tm), gQQID.Str(q.tm), err)
+		}
+		o.SetMBounds(bounds{one, one})
+		o.SetMType(typeExprNonNullptr)
+	}
 	return nil
 }
 

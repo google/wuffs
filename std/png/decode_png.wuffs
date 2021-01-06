@@ -177,6 +177,7 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 		return "#unsupported PNG file"
 	}
 	this.workbuf_length = (this.height as base.u64) * (1 + this.bytes_per_row)
+	this.choose_filter_implementations!()
 
 	// Compression.
 	a8 = args.src.read_u8?()
@@ -242,6 +243,14 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 	}
 
 	this.call_sequence = 3
+}
+
+pri func decoder.choose_filter_implementations!() {
+	if this.filter_distance == 3 {
+		// TODO.
+	} else if this.filter_distance == 4 {
+		choose filter_1 = [filter_1_distance_4_fallback]
+	}
 }
 
 pri func decoder.decode_plte?(src: base.io_reader) {

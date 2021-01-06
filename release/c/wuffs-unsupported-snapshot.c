@@ -29851,6 +29851,11 @@ wuffs_png__decoder__filter_1__choosy_default(
     wuffs_base__slice_u8 a_curr);
 
 static wuffs_base__empty_struct
+wuffs_png__decoder__filter_1_distance_4_fallback(
+    wuffs_png__decoder* self,
+    wuffs_base__slice_u8 a_curr);
+
+static wuffs_base__empty_struct
 wuffs_png__decoder__filter_2(
     wuffs_png__decoder* self,
     wuffs_base__slice_u8 a_curr,
@@ -29885,6 +29890,10 @@ wuffs_png__decoder__filter_4__choosy_default(
     wuffs_png__decoder* self,
     wuffs_base__slice_u8 a_curr,
     wuffs_base__slice_u8 a_prev);
+
+static wuffs_base__empty_struct
+wuffs_png__decoder__choose_filter_implementations(
+    wuffs_png__decoder* self);
 
 static wuffs_base__status
 wuffs_png__decoder__decode_plte(
@@ -30052,6 +30061,38 @@ wuffs_png__decoder__filter_1__choosy_default(
       v_i += v_filter_distance;
     }
     v_i_start += 1;
+  }
+  return wuffs_base__make_empty_struct();
+}
+
+// -------- func png.decoder.filter_1_distance_4_fallback
+
+static wuffs_base__empty_struct
+wuffs_png__decoder__filter_1_distance_4_fallback(
+    wuffs_png__decoder* self,
+    wuffs_base__slice_u8 a_curr) {
+  wuffs_base__slice_u8 v_p = {0};
+  uint8_t v_fa0 = 0;
+  uint8_t v_fa1 = 0;
+  uint8_t v_fa2 = 0;
+  uint8_t v_fa3 = 0;
+
+  {
+    wuffs_base__slice_u8 i_slice_p = a_curr;
+    v_p = i_slice_p;
+    v_p.len = 4;
+    uint8_t* i_end0_p = i_slice_p.ptr + (i_slice_p.len / 4) * 4;
+    while (v_p.ptr < i_end0_p) {
+      v_fa0 += v_p.ptr[0];
+      v_p.ptr[0] = v_fa0;
+      v_fa1 += v_p.ptr[1];
+      v_p.ptr[1] = v_fa1;
+      v_fa2 += v_p.ptr[2];
+      v_p.ptr[2] = v_fa2;
+      v_fa3 += v_p.ptr[3];
+      v_p.ptr[3] = v_fa3;
+      v_p.ptr += 4;
+    }
   }
   return wuffs_base__make_empty_struct();
 }
@@ -30461,6 +30502,7 @@ wuffs_png__decoder__decode_image_config(
       goto exit;
     }
     self->private_impl.f_workbuf_length = (((uint64_t)(self->private_impl.f_height)) * (1 + self->private_impl.f_bytes_per_row));
+    wuffs_png__decoder__choose_filter_implementations(self);
     {
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(11);
       if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
@@ -30662,6 +30704,18 @@ wuffs_png__decoder__decode_image_config(
     self->private_impl.magic = WUFFS_BASE__DISABLED;
   }
   return status;
+}
+
+// -------- func png.decoder.choose_filter_implementations
+
+static wuffs_base__empty_struct
+wuffs_png__decoder__choose_filter_implementations(
+    wuffs_png__decoder* self) {
+  if (self->private_impl.f_filter_distance == 3) {
+  } else if (self->private_impl.f_filter_distance == 4) {
+    self->private_impl.choosy_filter_1 = &wuffs_png__decoder__filter_1_distance_4_fallback;
+  }
+  return wuffs_base__make_empty_struct();
 }
 
 // -------- func png.decoder.decode_plte

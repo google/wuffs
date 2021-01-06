@@ -309,7 +309,7 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			implements := []*a.Node(nil)
 			if p.peek1() == t.IDImplements {
 				p.src = p.src[1:]
-				implements, err = p.parseList(t.IDOpenParen, (*parser).parseQualifiedIdentNode)
+				implements, err = p.parseList(t.IDOpenParen, (*parser).parseQualifiedIdentAsTypeExprNode)
 				if err != nil {
 					return nil, err
 				}
@@ -340,7 +340,7 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 	return nil, fmt.Errorf(`parse: unrecognized top level declaration at %s:%d`, p.filename, line)
 }
 
-func (p *parser) parseQualifiedIdentNode() (*a.Node, error) {
+func (p *parser) parseQualifiedIdentAsTypeExprNode() (*a.Node, error) {
 	pkg, name, err := p.parseQualifiedIdent()
 	if err != nil {
 		return nil, err
@@ -365,6 +365,14 @@ func (p *parser) parseQualifiedIdent() (t.ID, t.ID, error) {
 		return 0, 0, err
 	}
 	return x, y, nil
+}
+
+func (p *parser) parseIdentAsExprNode() (*a.Node, error) {
+	id, err := p.parseIdent()
+	if err != nil {
+		return nil, err
+	}
+	return a.NewExpr(0, 0, id, nil, nil, nil, nil).AsNode(), nil
 }
 
 func (p *parser) parseIdent() (t.ID, error) {
@@ -789,6 +797,31 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 		n := a.NewJump(x, label)
 		n.SetJumpTarget(loop)
 		return n.AsNode(), nil
+
+	case t.IDChoose:
+		p.src = p.src[1:]
+		if p.funcEffect.Pure() {
+			return nil, fmt.Errorf(`parse: choose within pure function at %s:%d`, p.filename, p.line())
+		}
+		name, err := p.parseIdent()
+		if err != nil {
+			return nil, err
+		}
+		if x := p.peek1(); x != t.IDEq {
+			got := p.tm.ByID(x)
+			return nil, fmt.Errorf(`parse: expected "=", got %q at %s:%d`, got, p.filename, p.line())
+		}
+		p.src = p.src[1:]
+		if x := p.peek1(); x != t.IDOpenBracket {
+			got := p.tm.ByID(x)
+			return nil, fmt.Errorf(`parse: expected "[", got %q at %s:%d`, got, p.filename, p.line())
+		}
+		p.src = p.src[1:]
+		args, err := p.parseList(t.IDCloseBracket, (*parser).parseIdentAsExprNode)
+		if err != nil {
+			return nil, err
+		}
+		return a.NewChoose(name, args).AsNode(), nil
 
 	case t.IDIOBind, t.IDIOLimit:
 		return p.parseIOBindNode()

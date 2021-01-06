@@ -245,6 +245,9 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 			return err
 		}
 
+	case a.KChoose:
+		// No-op.
+
 	case a.KIOBind:
 		n := n.AsIOBind()
 		if _, err := q.bcheckExpr(n.IO(), 0); err != nil {

@@ -37,6 +37,25 @@ pri func decoder.filter_1!(curr: slice base.u8),
 	} endwhile
 }
 
+pri func decoder.filter_1_distance_4_fallback!(curr: slice base.u8) {
+	var p   : slice base.u8
+	var fa0 : base.u8
+	var fa1 : base.u8
+	var fa2 : base.u8
+	var fa3 : base.u8
+
+	iterate (p = args.curr)(length: 4, unroll: 1) {
+		fa0 ~mod+= p[0]
+		p[0] = fa0
+		fa1 ~mod+= p[1]
+		p[1] = fa1
+		fa2 ~mod+= p[2]
+		p[2] = fa2
+		fa3 ~mod+= p[3]
+		p[3] = fa3
+	}
+}
+
 pri func decoder.filter_2!(curr: slice base.u8, prev: slice base.u8),
 	choosy,
 {

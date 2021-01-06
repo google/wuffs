@@ -40,6 +40,7 @@ const (
 	KArg
 	KAssert
 	KAssign
+	KChoose
 	KConst
 	KExpr
 	KField
@@ -71,6 +72,7 @@ var kindStrings = [...]string{
 	KArg:      "KArg",
 	KAssert:   "KAssert",
 	KAssign:   "KAssign",
+	KChoose:   "KChoose",
 	KConst:    "KConst",
 	KExpr:     "KExpr",
 	KField:    "KField",
@@ -160,6 +162,7 @@ type Node struct {
 	// Arg           .             .             name          Arg
 	// Assert        keyword       .             lit(reason)   Assert
 	// Assign        operator      .             .             Assign
+	// Choose        .             .             name          Choose
 	// Const         .             pkg           name          Const
 	// Expr          operator      .             literal/ident Expr
 	// Field         .             .             name          Field
@@ -198,6 +201,7 @@ func (n *Node) SetMType(x *TypeExpr)           { n.mType = x }
 func (n *Node) AsArg() *Arg           { return (*Arg)(n) }
 func (n *Node) AsAssert() *Assert     { return (*Assert)(n) }
 func (n *Node) AsAssign() *Assign     { return (*Assign)(n) }
+func (n *Node) AsChoose() *Choose     { return (*Choose)(n) }
 func (n *Node) AsConst() *Const       { return (*Const)(n) }
 func (n *Node) AsExpr() *Expr         { return (*Expr)(n) }
 func (n *Node) AsField() *Field       { return (*Field)(n) }
@@ -647,6 +651,23 @@ func NewIf(condition *Expr, bodyIfTrue []*Node, bodyIfFalse []*Node, elseIf *If)
 	}
 }
 
+// Choose is "choose ID2: List0":
+//  - ID2:   name
+//  - List0: <Expr> method names.
+type Choose Node
+
+func (n *Choose) AsNode() *Node { return (*Node)(n) }
+func (n *Choose) Name() t.ID    { return n.id2 }
+func (n *Choose) Args() []*Node { return n.list0 }
+
+func NewChoose(name t.ID, args []*Node) *Choose {
+	return &Choose{
+		kind:  KChoose,
+		id2:   name,
+		list0: args,
+	}
+}
+
 // Ret is "return LHS" or "yield LHS":
 //  - FlagsReturnsError LHS is an error status
 //  - ID0:   <IDReturn|IDYield>
@@ -891,6 +912,32 @@ func (n *Func) BodyEndsWithReturn() bool {
 	return (end.kind == KRet) && (end.AsRet().Keyword() == t.IDReturn)
 }
 
+func fieldsEq(xs []*Node, ys []*Node) bool {
+	if len(xs) != len(ys) {
+		return false
+	}
+	for i := range xs {
+		x, y := xs[i].AsField(), ys[i].AsField()
+		if (x.Name() != y.Name()) || !x.XType().Eq(y.XType()) {
+			return false
+		}
+	}
+	return true
+}
+
+func (n *Func) CheckChooseCompatible(o *Func) error {
+	if n.Effect() != o.Effect() {
+		return fmt.Errorf("different effects")
+	}
+	if !fieldsEq(n.In().Fields(), o.In().Fields()) {
+		return fmt.Errorf("different args type")
+	}
+	if !n.Out().Eq(o.Out()) {
+		return fmt.Errorf("different return type")
+	}
+	return nil
+}
+
 func NewFunc(flags Flags, filename string, line uint32, receiverName t.ID, funcName t.ID, in *Struct, out *TypeExpr, asserts []*Node, body []*Node) *Func {
 	return &Func{
 		kind:     KFunc,
@@ -1030,6 +1077,7 @@ func NewFile(filename string, topLevelDecls []*Node) *File {
 // Statement means one of:
 //  - Assert
 //  - Assign
+//  - Choose
 //  - IOBind
 //  - If
 //  - Iterate

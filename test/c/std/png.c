@@ -89,20 +89,24 @@ wuffs_png_decode(uint64_t* n_bytes_out,
 }
 
 const char*  //
-do_wuffs_png_swizzle(wuffs_png__decoder* dec,
-                     uint32_t width,
+do_wuffs_png_swizzle(uint32_t width,
                      uint32_t height,
                      uint8_t filter_distance,
                      wuffs_base__slice_u8 dst,
                      wuffs_base__slice_u8 workbuf) {
-  dec->private_impl.f_width = width;
-  dec->private_impl.f_height = height;
-  dec->private_impl.f_bytes_per_row = width;
-  dec->private_impl.f_filter_distance = filter_distance;
+  wuffs_png__decoder dec;
+  CHECK_STATUS("initialize", wuffs_png__decoder__initialize(
+                                 &dec, sizeof dec, WUFFS_VERSION,
+                                 WUFFS_INITIALIZE__DEFAULT_OPTIONS));
+  dec.private_impl.f_width = width;
+  dec.private_impl.f_height = height;
+  dec.private_impl.f_bytes_per_row = width;
+  dec.private_impl.f_filter_distance = filter_distance;
+  wuffs_png__decoder__choose_filter_implementations(&dec);
 
   CHECK_STATUS("prepare",
                wuffs_base__pixel_swizzler__prepare(
-                   &dec->private_impl.f_swizzler,
+                   &dec.private_impl.f_swizzler,
                    wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__Y),
                    wuffs_base__empty_slice_u8(),
                    wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__Y),
@@ -117,7 +121,7 @@ do_wuffs_png_swizzle(wuffs_png__decoder* dec,
   CHECK_STATUS("set_from_slice",
                wuffs_base__pixel_buffer__set_from_slice(&pb, &pc, dst));
   CHECK_STATUS("filter_and_swizzle",
-               wuffs_png__decoder__filter_and_swizzle(dec, &pb, workbuf));
+               wuffs_png__decoder__filter_and_swizzle(&dec, &pb, workbuf));
   return NULL;
 }
 
@@ -198,11 +202,6 @@ test_wuffs_png_decode_filters_golden() {
       {0xAA, 0xD5, 0xC6, 0xE0, 0x36, 0x16, 0x42, 0x33, 0x8F, 0x77, 0xA1, 0x8E},
   };
 
-  wuffs_png__decoder dec;
-  CHECK_STATUS("initialize", wuffs_png__decoder__initialize(
-                                 &dec, sizeof dec, WUFFS_VERSION,
-                                 WUFFS_INITIALIZE__DEFAULT_OPTIONS));
-
   int filter;
   for (filter = 1; filter <= 4; filter++) {
     int filter_distance;
@@ -218,7 +217,7 @@ test_wuffs_png_decode_filters_golden() {
       memcpy(g_work_slice_u8.ptr + (13 * 1) + 1, src_rows[1], 12);
 
       CHECK_STRING(do_wuffs_png_swizzle(
-          &dec, 12, 2, filter_distance, g_have_slice_u8,
+          12, 2, filter_distance, g_have_slice_u8,
           wuffs_base__make_slice_u8(g_work_slice_u8.ptr, 13 * 2)));
 
       wuffs_base__io_buffer have =
@@ -341,11 +340,6 @@ test_wuffs_png_decode_filters_round_trip() {
        0x65, 0x43, 0x69, 0x72, 0x63, 0x75, 0x73, 0x53, 0x61, 0x6E, 0x64, 0x73},
   };
 
-  wuffs_png__decoder dec;
-  CHECK_STATUS("initialize", wuffs_png__decoder__initialize(
-                                 &dec, sizeof dec, WUFFS_VERSION,
-                                 WUFFS_INITIALIZE__DEFAULT_OPTIONS));
-
   memcpy(g_src_slice_u8.ptr + (97 * 0) + 1, src_rows[0], 96);
   memcpy(g_src_slice_u8.ptr + (97 * 1) + 1, src_rows[1], 96);
 
@@ -370,7 +364,7 @@ test_wuffs_png_decode_filters_round_trip() {
           wuffs_base__make_slice_u8(g_src_slice_u8.ptr, 97 * 2)));
 
       CHECK_STRING(do_wuffs_png_swizzle(
-          &dec, 96, 2, filter_distance, g_have_slice_u8,
+          96, 2, filter_distance, g_have_slice_u8,
           wuffs_base__make_slice_u8(g_work_slice_u8.ptr, 97 * 2)));
 
       wuffs_base__io_buffer have =
@@ -573,6 +567,7 @@ do_bench_wuffs_png_decode_filter(uint8_t filter, uint64_t iters_unscaled) {
   dec.private_impl.f_height = height;
   dec.private_impl.f_bytes_per_row = bytes_per_row;
   dec.private_impl.f_filter_distance = filter_distance;
+  wuffs_png__decoder__choose_filter_implementations(&dec);
 
   CHECK_STATUS("prepare",
                wuffs_base__pixel_swizzler__prepare(
