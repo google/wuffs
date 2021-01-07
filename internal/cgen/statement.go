@@ -396,22 +396,26 @@ func (g *gen) writeStatementIterate(b *buffer, n *a.Iterate, depth uint32) error
 	if len(assigns) == 0 {
 		return nil
 	}
-	if len(assigns) != 1 {
-		return fmt.Errorf("TODO: iterate over more than one assign")
-	}
-	o := assigns[0].AsAssign()
-	name := o.LHS().Ident().Str(g.tm)
+	name0 := assigns[0].AsAssign().LHS().Ident().Str(g.tm)
 	b.writes("{\n")
 
 	// TODO: don't assume that the slice is a slice of base.u8. In
 	// particular, the code gen can be subtle if the slice element type has
 	// zero size, such as the empty struct.
-	b.printf("wuffs_base__slice_u8 %sslice_%s = ", iPrefix, name)
-	if err := g.writeExpr(b, o.RHS(), 0); err != nil {
-		return err
+	for i, o := range assigns {
+		o := o.AsAssign()
+		name := o.LHS().Ident().Str(g.tm)
+		b.printf("wuffs_base__slice_u8 %sslice_%s = ", iPrefix, name)
+		if err := g.writeExpr(b, o.RHS(), 0); err != nil {
+			return err
+		}
+		b.writes(";\n")
+		b.printf("%s%s = %sslice_%s;\n", vPrefix, name, iPrefix, name)
+		if i > 0 {
+			b.printf("%sslice_%s.len = wuffs_base__u64__min(%sslice_%s.len, %sslice_%s.len);\n",
+				iPrefix, name0, iPrefix, name0, iPrefix, name)
+		}
 	}
-	b.writes(";\n")
-	b.printf("%s%s = %sslice_%s;\n", vPrefix, name, iPrefix, name)
 	// TODO: look at n.HasContinue() and n.HasBreak().
 
 	round := uint32(0)
@@ -425,7 +429,7 @@ func (g *gen) writeStatementIterate(b *buffer, n *a.Iterate, depth uint32) error
 			return err
 		}
 		for {
-			if err := g.writeIterateRound(b, name, n.Body(), round, depth, length, unroll); err != nil {
+			if err := g.writeIterateRound(b, assigns, n.Body(), round, depth, length, unroll); err != nil {
 				return err
 			}
 			round++
@@ -566,18 +570,25 @@ func (g *gen) writeStatementWhile(b *buffer, n *a.While, depth uint32) error {
 	return nil
 }
 
-func (g *gen) writeIterateRound(b *buffer, name string, body []*a.Node, round uint32, depth uint32, length int, unroll int) error {
-	b.printf("%s%s.len = %d;\n", vPrefix, name, length)
+func (g *gen) writeIterateRound(b *buffer, assigns []*a.Node, body []*a.Node, round uint32, depth uint32, length int, unroll int) error {
+	for _, o := range assigns {
+		name := o.AsAssign().LHS().Ident().Str(g.tm)
+		b.printf("%s%s.len = %d;\n", vPrefix, name, length)
+	}
+	name0 := assigns[0].AsAssign().LHS().Ident().Str(g.tm)
 	b.printf("uint8_t* %send%d_%s = %sslice_%s.ptr + (%sslice_%s.len / %d) * %d;\n",
-		iPrefix, round, name, iPrefix, name, iPrefix, name, length*unroll, length*unroll)
-	b.printf("while (%s%s.ptr < %send%d_%s) {\n", vPrefix, name, iPrefix, round, name)
+		iPrefix, round, name0, iPrefix, name0, iPrefix, name0, length*unroll, length*unroll)
+	b.printf("while (%s%s.ptr < %send%d_%s) {\n", vPrefix, name0, iPrefix, round, name0)
 	for i := 0; i < unroll; i++ {
 		for _, o := range body {
 			if err := g.writeStatement(b, o, depth); err != nil {
 				return err
 			}
 		}
-		b.printf("%s%s.ptr += %d;\n", vPrefix, name, length)
+		for _, o := range assigns {
+			name := o.AsAssign().LHS().Ident().Str(g.tm)
+			b.printf("%s%s.ptr += %d;\n", vPrefix, name, length)
+		}
 	}
 	b.writes("}\n")
 	return nil

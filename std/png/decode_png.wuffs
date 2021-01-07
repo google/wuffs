@@ -246,10 +246,14 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 }
 
 pri func decoder.choose_filter_implementations!() {
+	// Filter 0 is a no-op. Filter 2, the up filter, should already vectorize
+	// easily by a good optimizing C compiler.
 	if this.filter_distance == 3 {
 		// TODO.
 	} else if this.filter_distance == 4 {
 		choose filter_1 = [filter_1_distance_4_fallback]
+		choose filter_3 = [filter_3_distance_4_fallback]
+		choose filter_4 = [filter_4_distance_4_fallback]
 	}
 }
 

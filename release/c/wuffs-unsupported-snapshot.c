@@ -29880,6 +29880,12 @@ wuffs_png__decoder__filter_3__choosy_default(
     wuffs_base__slice_u8 a_prev);
 
 static wuffs_base__empty_struct
+wuffs_png__decoder__filter_3_distance_4_fallback(
+    wuffs_png__decoder* self,
+    wuffs_base__slice_u8 a_curr,
+    wuffs_base__slice_u8 a_prev);
+
+static wuffs_base__empty_struct
 wuffs_png__decoder__filter_4(
     wuffs_png__decoder* self,
     wuffs_base__slice_u8 a_curr,
@@ -29887,6 +29893,12 @@ wuffs_png__decoder__filter_4(
 
 static wuffs_base__empty_struct
 wuffs_png__decoder__filter_4__choosy_default(
+    wuffs_png__decoder* self,
+    wuffs_base__slice_u8 a_curr,
+    wuffs_base__slice_u8 a_prev);
+
+static wuffs_base__empty_struct
+wuffs_png__decoder__filter_4_distance_4_fallback(
     wuffs_png__decoder* self,
     wuffs_base__slice_u8 a_curr,
     wuffs_base__slice_u8 a_prev);
@@ -30071,27 +30083,27 @@ static wuffs_base__empty_struct
 wuffs_png__decoder__filter_1_distance_4_fallback(
     wuffs_png__decoder* self,
     wuffs_base__slice_u8 a_curr) {
-  wuffs_base__slice_u8 v_p = {0};
+  wuffs_base__slice_u8 v_c = {0};
   uint8_t v_fa0 = 0;
   uint8_t v_fa1 = 0;
   uint8_t v_fa2 = 0;
   uint8_t v_fa3 = 0;
 
   {
-    wuffs_base__slice_u8 i_slice_p = a_curr;
-    v_p = i_slice_p;
-    v_p.len = 4;
-    uint8_t* i_end0_p = i_slice_p.ptr + (i_slice_p.len / 4) * 4;
-    while (v_p.ptr < i_end0_p) {
-      v_fa0 += v_p.ptr[0];
-      v_p.ptr[0] = v_fa0;
-      v_fa1 += v_p.ptr[1];
-      v_p.ptr[1] = v_fa1;
-      v_fa2 += v_p.ptr[2];
-      v_p.ptr[2] = v_fa2;
-      v_fa3 += v_p.ptr[3];
-      v_p.ptr[3] = v_fa3;
-      v_p.ptr += 4;
+    wuffs_base__slice_u8 i_slice_c = a_curr;
+    v_c = i_slice_c;
+    v_c.len = 4;
+    uint8_t* i_end0_c = i_slice_c.ptr + (i_slice_c.len / 4) * 4;
+    while (v_c.ptr < i_end0_c) {
+      v_fa0 += v_c.ptr[0];
+      v_c.ptr[0] = v_fa0;
+      v_fa1 += v_c.ptr[1];
+      v_c.ptr[1] = v_fa1;
+      v_fa2 += v_c.ptr[2];
+      v_c.ptr[2] = v_fa2;
+      v_fa3 += v_c.ptr[3];
+      v_c.ptr[3] = v_fa3;
+      v_c.ptr += 4;
     }
   }
   return wuffs_base__make_empty_struct();
@@ -30166,6 +30178,65 @@ wuffs_png__decoder__filter_3__choosy_default(
   return wuffs_base__make_empty_struct();
 }
 
+// -------- func png.decoder.filter_3_distance_4_fallback
+
+static wuffs_base__empty_struct
+wuffs_png__decoder__filter_3_distance_4_fallback(
+    wuffs_png__decoder* self,
+    wuffs_base__slice_u8 a_curr,
+    wuffs_base__slice_u8 a_prev) {
+  wuffs_base__slice_u8 v_c = {0};
+  wuffs_base__slice_u8 v_p = {0};
+  uint8_t v_fa0 = 0;
+  uint8_t v_fa1 = 0;
+  uint8_t v_fa2 = 0;
+  uint8_t v_fa3 = 0;
+
+  if (((uint64_t)(a_prev.len)) == 0) {
+    {
+      wuffs_base__slice_u8 i_slice_c = a_curr;
+      v_c = i_slice_c;
+      v_c.len = 4;
+      uint8_t* i_end0_c = i_slice_c.ptr + (i_slice_c.len / 4) * 4;
+      while (v_c.ptr < i_end0_c) {
+        v_fa0 = ((v_fa0 / 2) + v_c.ptr[0]);
+        v_c.ptr[0] = v_fa0;
+        v_fa1 = ((v_fa1 / 2) + v_c.ptr[1]);
+        v_c.ptr[1] = v_fa1;
+        v_fa2 = ((v_fa2 / 2) + v_c.ptr[2]);
+        v_c.ptr[2] = v_fa2;
+        v_fa3 = ((v_fa3 / 2) + v_c.ptr[3]);
+        v_c.ptr[3] = v_fa3;
+        v_c.ptr += 4;
+      }
+    }
+  } else {
+    {
+      wuffs_base__slice_u8 i_slice_c = a_curr;
+      v_c = i_slice_c;
+      wuffs_base__slice_u8 i_slice_p = a_prev;
+      v_p = i_slice_p;
+      i_slice_c.len = wuffs_base__u64__min(i_slice_c.len, i_slice_p.len);
+      v_c.len = 4;
+      v_p.len = 4;
+      uint8_t* i_end0_c = i_slice_c.ptr + (i_slice_c.len / 4) * 4;
+      while (v_c.ptr < i_end0_c) {
+        v_fa0 = (((uint8_t)(((((uint32_t)(v_fa0)) + ((uint32_t)(v_p.ptr[0]))) / 2))) + v_c.ptr[0]);
+        v_c.ptr[0] = v_fa0;
+        v_fa1 = (((uint8_t)(((((uint32_t)(v_fa1)) + ((uint32_t)(v_p.ptr[1]))) / 2))) + v_c.ptr[1]);
+        v_c.ptr[1] = v_fa1;
+        v_fa2 = (((uint8_t)(((((uint32_t)(v_fa2)) + ((uint32_t)(v_p.ptr[2]))) / 2))) + v_c.ptr[2]);
+        v_c.ptr[2] = v_fa2;
+        v_fa3 = (((uint8_t)(((((uint32_t)(v_fa3)) + ((uint32_t)(v_p.ptr[3]))) / 2))) + v_c.ptr[3]);
+        v_c.ptr[3] = v_fa3;
+        v_c.ptr += 4;
+        v_p.ptr += 4;
+      }
+    }
+  }
+  return wuffs_base__make_empty_struct();
+}
+
 // -------- func png.decoder.filter_4
 
 static wuffs_base__empty_struct
@@ -30225,6 +30296,153 @@ wuffs_png__decoder__filter_4__choosy_default(
     }
     a_curr.ptr[v_i] += ((uint8_t)((v_fa & 255)));
     v_i += 1;
+  }
+  return wuffs_base__make_empty_struct();
+}
+
+// -------- func png.decoder.filter_4_distance_4_fallback
+
+static wuffs_base__empty_struct
+wuffs_png__decoder__filter_4_distance_4_fallback(
+    wuffs_png__decoder* self,
+    wuffs_base__slice_u8 a_curr,
+    wuffs_base__slice_u8 a_prev) {
+  wuffs_base__slice_u8 v_c = {0};
+  wuffs_base__slice_u8 v_p = {0};
+  uint32_t v_fa0 = 0;
+  uint32_t v_fa1 = 0;
+  uint32_t v_fa2 = 0;
+  uint32_t v_fa3 = 0;
+  uint32_t v_fb0 = 0;
+  uint32_t v_fb1 = 0;
+  uint32_t v_fb2 = 0;
+  uint32_t v_fb3 = 0;
+  uint32_t v_fc0 = 0;
+  uint32_t v_fc1 = 0;
+  uint32_t v_fc2 = 0;
+  uint32_t v_fc3 = 0;
+  uint32_t v_pp0 = 0;
+  uint32_t v_pp1 = 0;
+  uint32_t v_pp2 = 0;
+  uint32_t v_pp3 = 0;
+  uint32_t v_pa0 = 0;
+  uint32_t v_pa1 = 0;
+  uint32_t v_pa2 = 0;
+  uint32_t v_pa3 = 0;
+  uint32_t v_pb0 = 0;
+  uint32_t v_pb1 = 0;
+  uint32_t v_pb2 = 0;
+  uint32_t v_pb3 = 0;
+  uint32_t v_pc0 = 0;
+  uint32_t v_pc1 = 0;
+  uint32_t v_pc2 = 0;
+  uint32_t v_pc3 = 0;
+
+  {
+    wuffs_base__slice_u8 i_slice_c = a_curr;
+    v_c = i_slice_c;
+    wuffs_base__slice_u8 i_slice_p = a_prev;
+    v_p = i_slice_p;
+    i_slice_c.len = wuffs_base__u64__min(i_slice_c.len, i_slice_p.len);
+    v_c.len = 4;
+    v_p.len = 4;
+    uint8_t* i_end0_c = i_slice_c.ptr + (i_slice_c.len / 4) * 4;
+    while (v_c.ptr < i_end0_c) {
+      v_fb0 = ((uint32_t)(v_p.ptr[0]));
+      v_pp0 = ((v_fa0 + v_fb0) - v_fc0);
+      v_pa0 = (v_pp0 - v_fa0);
+      if (v_pa0 >= 2147483648) {
+        v_pa0 = (0 - v_pa0);
+      }
+      v_pb0 = (v_pp0 - v_fb0);
+      if (v_pb0 >= 2147483648) {
+        v_pb0 = (0 - v_pb0);
+      }
+      v_pc0 = (v_pp0 - v_fc0);
+      if (v_pc0 >= 2147483648) {
+        v_pc0 = (0 - v_pc0);
+      }
+      if ((v_pa0 <= v_pb0) && (v_pa0 <= v_pc0)) {
+      } else if (v_pb0 <= v_pc0) {
+        v_fa0 = v_fb0;
+      } else {
+        v_fa0 = v_fc0;
+      }
+      v_c.ptr[0] += ((uint8_t)((v_fa0 & 255)));
+      v_fa0 = ((uint32_t)(v_c.ptr[0]));
+      v_fc0 = v_fb0;
+      v_fb1 = ((uint32_t)(v_p.ptr[1]));
+      v_pp1 = ((v_fa1 + v_fb1) - v_fc1);
+      v_pa1 = (v_pp1 - v_fa1);
+      if (v_pa1 >= 2147483648) {
+        v_pa1 = (0 - v_pa1);
+      }
+      v_pb1 = (v_pp1 - v_fb1);
+      if (v_pb1 >= 2147483648) {
+        v_pb1 = (0 - v_pb1);
+      }
+      v_pc1 = (v_pp1 - v_fc1);
+      if (v_pc1 >= 2147483648) {
+        v_pc1 = (0 - v_pc1);
+      }
+      if ((v_pa1 <= v_pb1) && (v_pa1 <= v_pc1)) {
+      } else if (v_pb1 <= v_pc1) {
+        v_fa1 = v_fb1;
+      } else {
+        v_fa1 = v_fc1;
+      }
+      v_c.ptr[1] += ((uint8_t)((v_fa1 & 255)));
+      v_fa1 = ((uint32_t)(v_c.ptr[1]));
+      v_fc1 = v_fb1;
+      v_fb2 = ((uint32_t)(v_p.ptr[2]));
+      v_pp2 = ((v_fa2 + v_fb2) - v_fc2);
+      v_pa2 = (v_pp2 - v_fa2);
+      if (v_pa2 >= 2147483648) {
+        v_pa2 = (0 - v_pa2);
+      }
+      v_pb2 = (v_pp2 - v_fb2);
+      if (v_pb2 >= 2147483648) {
+        v_pb2 = (0 - v_pb2);
+      }
+      v_pc2 = (v_pp2 - v_fc2);
+      if (v_pc2 >= 2147483648) {
+        v_pc2 = (0 - v_pc2);
+      }
+      if ((v_pa2 <= v_pb2) && (v_pa2 <= v_pc2)) {
+      } else if (v_pb2 <= v_pc2) {
+        v_fa2 = v_fb2;
+      } else {
+        v_fa2 = v_fc2;
+      }
+      v_c.ptr[2] += ((uint8_t)((v_fa2 & 255)));
+      v_fa2 = ((uint32_t)(v_c.ptr[2]));
+      v_fc2 = v_fb2;
+      v_fb3 = ((uint32_t)(v_p.ptr[3]));
+      v_pp3 = ((v_fa3 + v_fb3) - v_fc3);
+      v_pa3 = (v_pp3 - v_fa3);
+      if (v_pa3 >= 2147483648) {
+        v_pa3 = (0 - v_pa3);
+      }
+      v_pb3 = (v_pp3 - v_fb3);
+      if (v_pb3 >= 2147483648) {
+        v_pb3 = (0 - v_pb3);
+      }
+      v_pc3 = (v_pp3 - v_fc3);
+      if (v_pc3 >= 2147483648) {
+        v_pc3 = (0 - v_pc3);
+      }
+      if ((v_pa3 <= v_pb3) && (v_pa3 <= v_pc3)) {
+      } else if (v_pb3 <= v_pc3) {
+        v_fa3 = v_fb3;
+      } else {
+        v_fa3 = v_fc3;
+      }
+      v_c.ptr[3] += ((uint8_t)((v_fa3 & 255)));
+      v_fa3 = ((uint32_t)(v_c.ptr[3]));
+      v_fc3 = v_fb3;
+      v_c.ptr += 4;
+      v_p.ptr += 4;
+    }
   }
   return wuffs_base__make_empty_struct();
 }
@@ -30714,6 +30932,8 @@ wuffs_png__decoder__choose_filter_implementations(
   if (self->private_impl.f_filter_distance == 3) {
   } else if (self->private_impl.f_filter_distance == 4) {
     self->private_impl.choosy_filter_1 = &wuffs_png__decoder__filter_1_distance_4_fallback;
+    self->private_impl.choosy_filter_3 = &wuffs_png__decoder__filter_3_distance_4_fallback;
+    self->private_impl.choosy_filter_4 = &wuffs_png__decoder__filter_4_distance_4_fallback;
   }
   return wuffs_base__make_empty_struct();
 }

@@ -38,21 +38,21 @@ pri func decoder.filter_1!(curr: slice base.u8),
 }
 
 pri func decoder.filter_1_distance_4_fallback!(curr: slice base.u8) {
-	var p   : slice base.u8
+	var c   : slice base.u8
 	var fa0 : base.u8
 	var fa1 : base.u8
 	var fa2 : base.u8
 	var fa3 : base.u8
 
-	iterate (p = args.curr)(length: 4, unroll: 1) {
-		fa0 ~mod+= p[0]
-		p[0] = fa0
-		fa1 ~mod+= p[1]
-		p[1] = fa1
-		fa2 ~mod+= p[2]
-		p[2] = fa2
-		fa3 ~mod+= p[3]
-		p[3] = fa3
+	iterate (c = args.curr)(length: 4, unroll: 1) {
+		fa0 ~mod+= c[0]
+		c[0] = fa0
+		fa1 ~mod+= c[1]
+		c[1] = fa1
+		fa2 ~mod+= c[2]
+		c[2] = fa2
+		fa3 ~mod+= c[3]
+		c[3] = fa3
 	}
 }
 
@@ -131,6 +131,40 @@ pri func decoder.filter_3!(curr: slice base.u8, prev: slice base.u8),
 	}
 }
 
+pri func decoder.filter_3_distance_4_fallback!(curr: slice base.u8, prev: slice base.u8) {
+	var c   : slice base.u8
+	var p   : slice base.u8
+	var fa0 : base.u8
+	var fa1 : base.u8
+	var fa2 : base.u8
+	var fa3 : base.u8
+
+	if args.prev.length() == 0 {
+		iterate (c = args.curr)(length: 4, unroll: 1) {
+			fa0 = (fa0 / 2) ~mod+ c[0]
+			c[0] = fa0
+			fa1 = (fa1 / 2) ~mod+ c[1]
+			c[1] = fa1
+			fa2 = (fa2 / 2) ~mod+ c[2]
+			c[2] = fa2
+			fa3 = (fa3 / 2) ~mod+ c[3]
+			c[3] = fa3
+		}
+
+	} else {
+		iterate (c = args.curr, p = args.prev)(length: 4, unroll: 1) {
+			fa0 = ((((fa0 as base.u32) + (p[0] as base.u32)) / 2) as base.u8) ~mod+ c[0]
+			c[0] = fa0
+			fa1 = ((((fa1 as base.u32) + (p[1] as base.u32)) / 2) as base.u8) ~mod+ c[1]
+			c[1] = fa1
+			fa2 = ((((fa2 as base.u32) + (p[2] as base.u32)) / 2) as base.u8) ~mod+ c[2]
+			c[2] = fa2
+			fa3 = ((((fa3 as base.u32) + (p[3] as base.u32)) / 2) as base.u8) ~mod+ c[3]
+			c[3] = fa3
+		}
+	}
+}
+
 pri func decoder.filter_4!(curr: slice base.u8, prev: slice base.u8),
 	choosy,
 {
@@ -199,4 +233,139 @@ pri func decoder.filter_4!(curr: slice base.u8, prev: slice base.u8),
 		i += 1
 		assert i >= filter_distance via "a >= b: a >= (b + c); 0 <= c"(c: 1)
 	} endwhile
+}
+
+pri func decoder.filter_4_distance_4_fallback!(curr: slice base.u8, prev: slice base.u8) {
+	var c   : slice base.u8
+	var p   : slice base.u8
+	var fa0 : base.u32
+	var fa1 : base.u32
+	var fa2 : base.u32
+	var fa3 : base.u32
+	var fb0 : base.u32
+	var fb1 : base.u32
+	var fb2 : base.u32
+	var fb3 : base.u32
+	var fc0 : base.u32
+	var fc1 : base.u32
+	var fc2 : base.u32
+	var fc3 : base.u32
+	var pp0 : base.u32
+	var pp1 : base.u32
+	var pp2 : base.u32
+	var pp3 : base.u32
+	var pa0 : base.u32
+	var pa1 : base.u32
+	var pa2 : base.u32
+	var pa3 : base.u32
+	var pb0 : base.u32
+	var pb1 : base.u32
+	var pb2 : base.u32
+	var pb3 : base.u32
+	var pc0 : base.u32
+	var pc1 : base.u32
+	var pc2 : base.u32
+	var pc3 : base.u32
+
+	iterate (c = args.curr, p = args.prev)(length: 4, unroll: 1) {
+		fb0 = p[0] as base.u32
+		pp0 = (fa0 ~mod+ fb0) ~mod- fc0
+		pa0 = pp0 ~mod- fa0
+		if pa0 >= 0x8000_0000 {
+			pa0 = 0 ~mod- pa0
+		}
+		pb0 = pp0 ~mod- fb0
+		if pb0 >= 0x8000_0000 {
+			pb0 = 0 ~mod- pb0
+		}
+		pc0 = pp0 ~mod- fc0
+		if pc0 >= 0x8000_0000 {
+			pc0 = 0 ~mod- pc0
+		}
+		if (pa0 <= pb0) and (pa0 <= pc0) {
+			// No-op.
+		} else if pb0 <= pc0 {
+			fa0 = fb0
+		} else {
+			fa0 = fc0
+		}
+		c[0] ~mod+= (fa0 & 0xFF) as base.u8
+		fa0 = c[0] as base.u32
+		fc0 = fb0
+
+		fb1 = p[1] as base.u32
+		pp1 = (fa1 ~mod+ fb1) ~mod- fc1
+		pa1 = pp1 ~mod- fa1
+		if pa1 >= 0x8000_0000 {
+			pa1 = 0 ~mod- pa1
+		}
+		pb1 = pp1 ~mod- fb1
+		if pb1 >= 0x8000_0000 {
+			pb1 = 0 ~mod- pb1
+		}
+		pc1 = pp1 ~mod- fc1
+		if pc1 >= 0x8000_0000 {
+			pc1 = 0 ~mod- pc1
+		}
+		if (pa1 <= pb1) and (pa1 <= pc1) {
+			// No-op.
+		} else if pb1 <= pc1 {
+			fa1 = fb1
+		} else {
+			fa1 = fc1
+		}
+		c[1] ~mod+= (fa1 & 0xFF) as base.u8
+		fa1 = c[1] as base.u32
+		fc1 = fb1
+
+		fb2 = p[2] as base.u32
+		pp2 = (fa2 ~mod+ fb2) ~mod- fc2
+		pa2 = pp2 ~mod- fa2
+		if pa2 >= 0x8000_0000 {
+			pa2 = 0 ~mod- pa2
+		}
+		pb2 = pp2 ~mod- fb2
+		if pb2 >= 0x8000_0000 {
+			pb2 = 0 ~mod- pb2
+		}
+		pc2 = pp2 ~mod- fc2
+		if pc2 >= 0x8000_0000 {
+			pc2 = 0 ~mod- pc2
+		}
+		if (pa2 <= pb2) and (pa2 <= pc2) {
+			// No-op.
+		} else if pb2 <= pc2 {
+			fa2 = fb2
+		} else {
+			fa2 = fc2
+		}
+		c[2] ~mod+= (fa2 & 0xFF) as base.u8
+		fa2 = c[2] as base.u32
+		fc2 = fb2
+
+		fb3 = p[3] as base.u32
+		pp3 = (fa3 ~mod+ fb3) ~mod- fc3
+		pa3 = pp3 ~mod- fa3
+		if pa3 >= 0x8000_0000 {
+			pa3 = 0 ~mod- pa3
+		}
+		pb3 = pp3 ~mod- fb3
+		if pb3 >= 0x8000_0000 {
+			pb3 = 0 ~mod- pb3
+		}
+		pc3 = pp3 ~mod- fc3
+		if pc3 >= 0x8000_0000 {
+			pc3 = 0 ~mod- pc3
+		}
+		if (pa3 <= pb3) and (pa3 <= pc3) {
+			// No-op.
+		} else if pb3 <= pc3 {
+			fa3 = fb3
+		} else {
+			fa3 = fc3
+		}
+		c[3] ~mod+= (fa3 & 0xFF) as base.u8
+		fa3 = c[3] as base.u32
+		fc3 = fb3
+	}
 }
