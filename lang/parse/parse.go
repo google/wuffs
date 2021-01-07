@@ -1177,8 +1177,8 @@ func (p *parser) parseIterateBlock(label t.ID, assigns []*a.Node) (*a.Iterate, e
 	p.src = p.src[1:]
 
 	length := p.peek1()
-	if length.SmallPowerOf2Value() == 0 {
-		return nil, fmt.Errorf(`parse: expected power-of-2 length count in [1 ..= 256], got %q at %s:%d`,
+	if !isSmallPositiveInt256(p.tm, length) {
+		return nil, fmt.Errorf(`parse: expected length count in [1 ..= 256], got %q at %s:%d`,
 			p.tm.ByID(length), p.filename, p.line())
 	}
 	p.src = p.src[1:]
@@ -1202,8 +1202,8 @@ func (p *parser) parseIterateBlock(label t.ID, assigns []*a.Node) (*a.Iterate, e
 	p.src = p.src[1:]
 
 	unroll := p.peek1()
-	if unroll.SmallPowerOf2Value() == 0 {
-		return nil, fmt.Errorf(`parse: expected power-of-2 unroll count in [1 ..= 256], got %q at %s:%d`,
+	if !isSmallPositiveInt256(p.tm, unroll) {
+		return nil, fmt.Errorf(`parse: expected unroll count in [1 ..= 256], got %q at %s:%d`,
 			p.tm.ByID(unroll), p.filename, p.line())
 	}
 	p.src = p.src[1:]
@@ -1241,6 +1241,26 @@ func (p *parser) parseIterateBlock(label t.ID, assigns []*a.Node) (*a.Iterate, e
 	}
 
 	return n, nil
+}
+
+// isSmallPositiveInt256 returns whether id is a numeric literal in the range
+// [1 ..= 256].
+func isSmallPositiveInt256(tm *t.Map, id t.ID) bool {
+	if !id.IsNumLiteral(tm) {
+		return false
+	}
+	s := id.Str(tm)
+	if (len(s) > 3) || (len(s) == 0) || (s[0] < '1') || ('9' < s[0]) {
+		return false
+	}
+	n, s := int(s[0]-'0'), s[1:]
+	for ; len(s) > 0; s = s[1:] {
+		if (s[0] < '0') || ('9' < s[0]) {
+			return false
+		}
+		n = (10 * n) + int(s[0]-'0')
+	}
+	return n <= 256
 }
 
 func (p *parser) parseArgNode() (*a.Node, error) {

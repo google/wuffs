@@ -130,30 +130,6 @@ func (x ID) IsXUnaryOp() bool       { return minXOp <= x && x <= maxXOp && unary
 func (x ID) IsXBinaryOp() bool      { return minXOp <= x && x <= maxXOp && binaryForms[x] != 0 }
 func (x ID) IsXAssociativeOp() bool { return minXOp <= x && x <= maxXOp && associativeForms[x] != 0 }
 
-func (x ID) SmallPowerOf2Value() int {
-	switch x {
-	case ID1:
-		return 1
-	case ID2:
-		return 2
-	case ID4:
-		return 4
-	case ID8:
-		return 8
-	case ID16:
-		return 16
-	case ID32:
-		return 32
-	case ID64:
-		return 64
-	case ID128:
-		return 128
-	case ID256:
-		return 256
-	}
-	return 0
-}
-
 // QID is a qualified ID, such as "foo.bar". QID[0] is "foo"'s ID and QID[1] is
 // "bar"'s. QID[0] may be 0 for a plain "bar".
 type QID [2]ID
@@ -424,16 +400,7 @@ const (
 	IDNullptr = ID(0xE3)
 	IDOk      = ID(0xE4)
 
-	ID0   = ID(0xF0)
-	ID1   = ID(0xF1)
-	ID2   = ID(0xF2)
-	ID4   = ID(0xF3)
-	ID8   = ID(0xF4)
-	ID16  = ID(0xF5)
-	ID32  = ID(0xF6)
-	ID64  = ID(0xF7)
-	ID128 = ID(0xF8)
-	ID256 = ID(0xF9)
+	ID0 = ID(0xF0)
 )
 
 const (
@@ -783,16 +750,7 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDNullptr: "nullptr",
 	IDOk:      "ok",
 
-	ID0:   "0",
-	ID1:   "1",
-	ID2:   "2",
-	ID4:   "4",
-	ID8:   "8",
-	ID16:  "16",
-	ID32:  "32",
-	ID64:  "64",
-	ID128: "128",
-	ID256: "256",
+	ID0: "0",
 
 	// -------- 0x100 block.
 

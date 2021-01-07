@@ -16,6 +16,7 @@ package cgen
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	a "github.com/google/wuffs/lang/ast"
@@ -415,8 +416,14 @@ func (g *gen) writeStatementIterate(b *buffer, n *a.Iterate, depth uint32) error
 
 	round := uint32(0)
 	for ; n != nil; n = n.ElseIterate() {
-		length := n.Length().SmallPowerOf2Value()
-		unroll := n.Unroll().SmallPowerOf2Value()
+		length, err := strconv.Atoi(n.Length().Str(g.tm))
+		if err != nil {
+			return err
+		}
+		unroll, err := strconv.Atoi(n.Unroll().Str(g.tm))
+		if err != nil {
+			return err
+		}
 		for {
 			if err := g.writeIterateRound(b, name, n.Body(), round, depth, length, unroll); err != nil {
 				return err

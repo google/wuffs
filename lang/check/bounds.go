@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"strconv"
 
 	"github.com/google/wuffs/lib/interval"
 
@@ -283,7 +284,8 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 			q.facts = q.facts[:0]
 			for _, o := range assigns {
 				lhs := o.AsAssign().LHS()
-				q.facts = append(q.facts, makeSliceLengthEqEq(lhs.Ident(), lhs.MType(), n.Length()))
+				q.facts = append(q.facts,
+					q.makeSliceLengthEqEq(lhs.Ident(), lhs.MType(), n.Length()))
 			}
 			if err := q.bcheckBlock(n.Body()); err != nil {
 				return err
@@ -1343,17 +1345,15 @@ func makeSliceLength(slice *a.Expr) *a.Expr {
 }
 
 // makeSliceLengthEqEq returns "x.length() == n".
-//
-// n must be the t.ID of a small power of 2.
-func makeSliceLengthEqEq(x t.ID, xTyp *a.TypeExpr, n t.ID) *a.Expr {
+func (q *checker) makeSliceLengthEqEq(x t.ID, xTyp *a.TypeExpr, n t.ID) *a.Expr {
 	xExpr := a.NewExpr(0, 0, x, nil, nil, nil, nil)
 	xExpr.SetMType(xTyp)
 
 	lhs := makeSliceLength(xExpr)
 
-	nValue := n.SmallPowerOf2Value()
-	if nValue == 0 {
-		panic("check: internal error: makeSliceLengthEqEq called but not with a small power of 2")
+	nValue, err := strconv.Atoi(n.Str(q.tm))
+	if err != nil {
+		panic("check: internal error: makeSliceLengthEqEq called but not with a small integer")
 	}
 	cv := big.NewInt(int64(nValue))
 
