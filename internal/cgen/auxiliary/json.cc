@@ -86,7 +86,7 @@ const char DecodeJson_NoMatch[] = "wuffs_aux::DecodeJson: no match";
   }                                                                      \
   uint8_t* token_ptr = io_buf->data.ptr + cursor_index;                  \
   (void)(token_ptr);                                                     \
-  cursor_index += token_len
+  cursor_index += static_cast<size_t>(token_len)
 
 // --------
 
@@ -201,7 +201,7 @@ do_dict:
                      WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY) {
             const char* ptr =  // Convert from (uint8_t*).
                 static_cast<const char*>(static_cast<void*>(token_ptr));
-            str.append(ptr, token_len);
+            str.append(ptr, static_cast<size_t>(token_len));
           } else {
             goto fail;
           }
@@ -311,7 +311,7 @@ check_that_a_value_follows:
     // Undo the last part of WUFFS_AUX__DECODE_JSON__GET_THE_NEXT_TOKEN, so that
     // we're only peeking at the next token.
     tok_buf.meta.ri--;
-    cursor_index -= token_len;
+    cursor_index -= static_cast<size_t>(token_len);
 
     if ((vbc == WUFFS_BASE__TOKEN__VBC__STRUCTURE) &&
         (vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__POP)) {
@@ -431,7 +431,7 @@ DecodeJson(DecodeJsonCallbacks& callbacks,
                      WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY) {
             const char* ptr =  // Convert from (uint8_t*).
                 static_cast<const char*>(static_cast<void*>(token_ptr));
-            str.append(ptr, token_len);
+            str.append(ptr, static_cast<size_t>(token_len));
           } else {
             goto fail;
           }
@@ -471,7 +471,8 @@ DecodeJson(DecodeJsonCallbacks& callbacks,
           if (vbd & WUFFS_BASE__TOKEN__VBD__NUMBER__FORMAT_TEXT) {
             if (vbd & WUFFS_BASE__TOKEN__VBD__NUMBER__CONTENT_INTEGER_SIGNED) {
               wuffs_base__result_i64 r = wuffs_base__parse_number_i64(
-                  wuffs_base__make_slice_u8(token_ptr, token_len),
+                  wuffs_base__make_slice_u8(token_ptr,
+                                            static_cast<size_t>(token_len)),
                   WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS);
               if (r.status.is_ok()) {
                 ret_error_message = callbacks.AppendI64(r.value);
@@ -480,7 +481,8 @@ DecodeJson(DecodeJsonCallbacks& callbacks,
             }
             if (vbd & WUFFS_BASE__TOKEN__VBD__NUMBER__CONTENT_FLOATING_POINT) {
               wuffs_base__result_f64 r = wuffs_base__parse_number_f64(
-                  wuffs_base__make_slice_u8(token_ptr, token_len),
+                  wuffs_base__make_slice_u8(token_ptr,
+                                            static_cast<size_t>(token_len)),
                   WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS);
               if (r.status.is_ok()) {
                 ret_error_message = callbacks.AppendF64(r.value);

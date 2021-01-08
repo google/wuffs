@@ -27,7 +27,7 @@ wuffs_base__io__count_since(uint64_t mark, uint64_t index) {
 static inline wuffs_base__slice_u8  //
 wuffs_base__io__since(uint64_t mark, uint64_t index, uint8_t* ptr) {
   if (index >= mark) {
-    return wuffs_base__make_slice_u8(ptr + mark, index - mark);
+    return wuffs_base__make_slice_u8(ptr + mark, ((size_t)(index - mark)));
   }
   return wuffs_base__make_slice_u8(NULL, 0);
 }

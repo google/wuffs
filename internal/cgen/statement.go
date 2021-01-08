@@ -412,7 +412,7 @@ func (g *gen) writeStatementIterate(b *buffer, n *a.Iterate, depth uint32) error
 		b.writes(";\n")
 		b.printf("%s%s = %sslice_%s;\n", vPrefix, name, iPrefix, name)
 		if i > 0 {
-			b.printf("%sslice_%s.len = wuffs_base__u64__min(%sslice_%s.len, %sslice_%s.len);\n",
+			b.printf("%sslice_%s.len = ((size_t)(wuffs_base__u64__min(%sslice_%s.len, %sslice_%s.len)));\n",
 				iPrefix, name0, iPrefix, name0, iPrefix, name)
 		}
 	}

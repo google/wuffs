@@ -32,9 +32,9 @@
 static inline wuffs_base__slice_u8  //
 wuffs_base__malloc_slice_u8(void* (*malloc_func)(size_t), uint64_t num_u8) {
   if (malloc_func && (num_u8 <= (SIZE_MAX / sizeof(uint8_t)))) {
-    void* p = (*malloc_func)(num_u8 * sizeof(uint8_t));
+    void* p = (*malloc_func)((size_t)(num_u8 * sizeof(uint8_t)));
     if (p) {
-      return wuffs_base__make_slice_u8((uint8_t*)(p), num_u8);
+      return wuffs_base__make_slice_u8((uint8_t*)(p), (size_t)num_u8);
     }
   }
   return wuffs_base__make_slice_u8(NULL, 0);
@@ -43,9 +43,9 @@ wuffs_base__malloc_slice_u8(void* (*malloc_func)(size_t), uint64_t num_u8) {
 static inline wuffs_base__slice_u16  //
 wuffs_base__malloc_slice_u16(void* (*malloc_func)(size_t), uint64_t num_u16) {
   if (malloc_func && (num_u16 <= (SIZE_MAX / sizeof(uint16_t)))) {
-    void* p = (*malloc_func)(num_u16 * sizeof(uint16_t));
+    void* p = (*malloc_func)((size_t)(num_u16 * sizeof(uint16_t)));
     if (p) {
-      return wuffs_base__make_slice_u16((uint16_t*)(p), num_u16);
+      return wuffs_base__make_slice_u16((uint16_t*)(p), (size_t)num_u16);
     }
   }
   return wuffs_base__make_slice_u16(NULL, 0);
@@ -54,9 +54,9 @@ wuffs_base__malloc_slice_u16(void* (*malloc_func)(size_t), uint64_t num_u16) {
 static inline wuffs_base__slice_u32  //
 wuffs_base__malloc_slice_u32(void* (*malloc_func)(size_t), uint64_t num_u32) {
   if (malloc_func && (num_u32 <= (SIZE_MAX / sizeof(uint32_t)))) {
-    void* p = (*malloc_func)(num_u32 * sizeof(uint32_t));
+    void* p = (*malloc_func)((size_t)(num_u32 * sizeof(uint32_t)));
     if (p) {
-      return wuffs_base__make_slice_u32((uint32_t*)(p), num_u32);
+      return wuffs_base__make_slice_u32((uint32_t*)(p), (size_t)num_u32);
     }
   }
   return wuffs_base__make_slice_u32(NULL, 0);
@@ -65,9 +65,9 @@ wuffs_base__malloc_slice_u32(void* (*malloc_func)(size_t), uint64_t num_u32) {
 static inline wuffs_base__slice_u64  //
 wuffs_base__malloc_slice_u64(void* (*malloc_func)(size_t), uint64_t num_u64) {
   if (malloc_func && (num_u64 <= (SIZE_MAX / sizeof(uint64_t)))) {
-    void* p = (*malloc_func)(num_u64 * sizeof(uint64_t));
+    void* p = (*malloc_func)((size_t)(num_u64 * sizeof(uint64_t)));
     if (p) {
-      return wuffs_base__make_slice_u64((uint64_t*)(p), num_u64);
+      return wuffs_base__make_slice_u64((uint64_t*)(p), (size_t)num_u64);
     }
   }
   return wuffs_base__make_slice_u64(NULL, 0);

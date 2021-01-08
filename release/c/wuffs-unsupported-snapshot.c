@@ -982,7 +982,7 @@ wuffs_base__empty_table_u64() {
 static inline wuffs_base__slice_u8  //
 wuffs_base__slice_u8__subslice_i(wuffs_base__slice_u8 s, uint64_t i) {
   if ((i <= SIZE_MAX) && (i <= s.len)) {
-    return wuffs_base__make_slice_u8(s.ptr + i, s.len - i);
+    return wuffs_base__make_slice_u8(s.ptr + i, ((size_t)(s.len - i)));
   }
   return wuffs_base__make_slice_u8(NULL, 0);
 }
@@ -993,7 +993,7 @@ wuffs_base__slice_u8__subslice_i(wuffs_base__slice_u8 s, uint64_t i) {
 static inline wuffs_base__slice_u8  //
 wuffs_base__slice_u8__subslice_j(wuffs_base__slice_u8 s, uint64_t j) {
   if ((j <= SIZE_MAX) && (j <= s.len)) {
-    return wuffs_base__make_slice_u8(s.ptr, j);
+    return wuffs_base__make_slice_u8(s.ptr, ((size_t)j));
   }
   return wuffs_base__make_slice_u8(NULL, 0);
 }
@@ -1006,7 +1006,7 @@ wuffs_base__slice_u8__subslice_ij(wuffs_base__slice_u8 s,
                                   uint64_t i,
                                   uint64_t j) {
   if ((i <= j) && (j <= SIZE_MAX) && (j <= s.len)) {
-    return wuffs_base__make_slice_u8(s.ptr + i, j - i);
+    return wuffs_base__make_slice_u8(s.ptr + i, ((size_t)(j - i)));
   }
   return wuffs_base__make_slice_u8(NULL, 0);
 }
@@ -2757,9 +2757,9 @@ wuffs_base__token_buffer::writer_token_position() const {
 static inline wuffs_base__slice_u8  //
 wuffs_base__malloc_slice_u8(void* (*malloc_func)(size_t), uint64_t num_u8) {
   if (malloc_func && (num_u8 <= (SIZE_MAX / sizeof(uint8_t)))) {
-    void* p = (*malloc_func)(num_u8 * sizeof(uint8_t));
+    void* p = (*malloc_func)((size_t)(num_u8 * sizeof(uint8_t)));
     if (p) {
-      return wuffs_base__make_slice_u8((uint8_t*)(p), num_u8);
+      return wuffs_base__make_slice_u8((uint8_t*)(p), (size_t)num_u8);
     }
   }
   return wuffs_base__make_slice_u8(NULL, 0);
@@ -2768,9 +2768,9 @@ wuffs_base__malloc_slice_u8(void* (*malloc_func)(size_t), uint64_t num_u8) {
 static inline wuffs_base__slice_u16  //
 wuffs_base__malloc_slice_u16(void* (*malloc_func)(size_t), uint64_t num_u16) {
   if (malloc_func && (num_u16 <= (SIZE_MAX / sizeof(uint16_t)))) {
-    void* p = (*malloc_func)(num_u16 * sizeof(uint16_t));
+    void* p = (*malloc_func)((size_t)(num_u16 * sizeof(uint16_t)));
     if (p) {
-      return wuffs_base__make_slice_u16((uint16_t*)(p), num_u16);
+      return wuffs_base__make_slice_u16((uint16_t*)(p), (size_t)num_u16);
     }
   }
   return wuffs_base__make_slice_u16(NULL, 0);
@@ -2779,9 +2779,9 @@ wuffs_base__malloc_slice_u16(void* (*malloc_func)(size_t), uint64_t num_u16) {
 static inline wuffs_base__slice_u32  //
 wuffs_base__malloc_slice_u32(void* (*malloc_func)(size_t), uint64_t num_u32) {
   if (malloc_func && (num_u32 <= (SIZE_MAX / sizeof(uint32_t)))) {
-    void* p = (*malloc_func)(num_u32 * sizeof(uint32_t));
+    void* p = (*malloc_func)((size_t)(num_u32 * sizeof(uint32_t)));
     if (p) {
-      return wuffs_base__make_slice_u32((uint32_t*)(p), num_u32);
+      return wuffs_base__make_slice_u32((uint32_t*)(p), (size_t)num_u32);
     }
   }
   return wuffs_base__make_slice_u32(NULL, 0);
@@ -2790,9 +2790,9 @@ wuffs_base__malloc_slice_u32(void* (*malloc_func)(size_t), uint64_t num_u32) {
 static inline wuffs_base__slice_u64  //
 wuffs_base__malloc_slice_u64(void* (*malloc_func)(size_t), uint64_t num_u64) {
   if (malloc_func && (num_u64 <= (SIZE_MAX / sizeof(uint64_t)))) {
-    void* p = (*malloc_func)(num_u64 * sizeof(uint64_t));
+    void* p = (*malloc_func)((size_t)(num_u64 * sizeof(uint64_t)));
     if (p) {
-      return wuffs_base__make_slice_u64((uint64_t*)(p), num_u64);
+      return wuffs_base__make_slice_u64((uint64_t*)(p), (size_t)num_u64);
     }
   }
   return wuffs_base__make_slice_u64(NULL, 0);
@@ -3933,7 +3933,7 @@ wuffs_base__pixel_buffer__set_from_slice(wuffs_base__pixel_buffer* pb,
     return wuffs_base__make_status(wuffs_base__error__bad_argument);
   }
   wh *= bytes_per_pixel;
-  width *= bytes_per_pixel;
+  width = ((size_t)(width * bytes_per_pixel));
   if (wh > len) {
     return wuffs_base__make_status(
         wuffs_base__error__bad_argument_length_too_short);
@@ -9221,8 +9221,8 @@ wuffs_base__u64__sat_sub_indirect(uint64_t* x, uint64_t y) {
 // wuffs_base__slice_u8__prefix returns up to the first up_to bytes of s.
 static inline wuffs_base__slice_u8  //
 wuffs_base__slice_u8__prefix(wuffs_base__slice_u8 s, uint64_t up_to) {
-  if ((uint64_t)(s.len) > up_to) {
-    s.len = up_to;
+  if (((uint64_t)(s.len)) > up_to) {
+    s.len = ((size_t)up_to);
   }
   return s;
 }
@@ -9230,9 +9230,9 @@ wuffs_base__slice_u8__prefix(wuffs_base__slice_u8 s, uint64_t up_to) {
 // wuffs_base__slice_u8__suffix returns up to the last up_to bytes of s.
 static inline wuffs_base__slice_u8  //
 wuffs_base__slice_u8__suffix(wuffs_base__slice_u8 s, uint64_t up_to) {
-  if ((uint64_t)(s.len) > up_to) {
-    s.ptr += (uint64_t)(s.len) - up_to;
-    s.len = up_to;
+  if (((uint64_t)(s.len)) > up_to) {
+    s.ptr += ((uint64_t)(s.len)) - up_to;
+    s.len = ((size_t)up_to);
   }
   return s;
 }
@@ -9336,7 +9336,7 @@ wuffs_base__io__count_since(uint64_t mark, uint64_t index) {
 static inline wuffs_base__slice_u8  //
 wuffs_base__io__since(uint64_t mark, uint64_t index, uint8_t* ptr) {
   if (index >= mark) {
-    return wuffs_base__make_slice_u8(ptr + mark, index - mark);
+    return wuffs_base__make_slice_u8(ptr + mark, ((size_t)(index - mark)));
   }
   return wuffs_base__make_slice_u8(NULL, 0);
 }
@@ -13366,7 +13366,7 @@ wuffs_base__private_implementation__render_number_u64(wuffs_base__slice_u8 dst,
   uint8_t* ptr = &buf[0] + sizeof(buf);
 
   while (x >= 100) {
-    size_t index = (x % 100) * 2;
+    size_t index = ((size_t)((x % 100) * 2));
     x /= 100;
     uint8_t s0 = wuffs_base__render_number__first_hundred[index + 0];
     uint8_t s1 = wuffs_base__render_number__first_hundred[index + 1];
@@ -13379,7 +13379,7 @@ wuffs_base__private_implementation__render_number_u64(wuffs_base__slice_u8 dst,
     ptr -= 1;
     ptr[0] = (uint8_t)('0' + x);
   } else {
-    size_t index = x * 2;
+    size_t index = ((size_t)(x * 2));
     uint8_t s0 = wuffs_base__render_number__first_hundred[index + 0];
     uint8_t s1 = wuffs_base__render_number__first_hundred[index + 1];
     ptr -= 2;
@@ -16485,8 +16485,9 @@ wuffs_base__pixel_swizzler__limited_swizzle_u32_interleaved_from_reader(
         ((uint64_t)up_to_num_pixels) *
             ((uint64_t)p->private_impl.src_pixfmt_bytes_per_pixel),
         ((uint64_t)(io2_r - iop_r)));
-    uint64_t n = (*p->private_impl.func)(dst.ptr, dst.len, dst_palette.ptr,
-                                         dst_palette.len, iop_r, src_len);
+    uint64_t n =
+        (*p->private_impl.func)(dst.ptr, dst.len, dst_palette.ptr,
+                                dst_palette.len, iop_r, (size_t)src_len);
     *ptr_iop_r += n * p->private_impl.src_pixfmt_bytes_per_pixel;
     return n;
   }
@@ -16503,8 +16504,9 @@ wuffs_base__pixel_swizzler__swizzle_interleaved_from_reader(
   if (p && p->private_impl.func) {
     const uint8_t* iop_r = *ptr_iop_r;
     uint64_t src_len = ((uint64_t)(io2_r - iop_r));
-    uint64_t n = (*p->private_impl.func)(dst.ptr, dst.len, dst_palette.ptr,
-                                         dst_palette.len, iop_r, src_len);
+    uint64_t n =
+        (*p->private_impl.func)(dst.ptr, dst.len, dst_palette.ptr,
+                                dst_palette.len, iop_r, (size_t)src_len);
     *ptr_iop_r += n * p->private_impl.src_pixfmt_bytes_per_pixel;
     return n;
   }
@@ -30259,7 +30261,7 @@ wuffs_png__decoder__filter_3_distance_3_fallback(
       v_c = i_slice_c;
       wuffs_base__slice_u8 i_slice_p = a_prev;
       v_p = i_slice_p;
-      i_slice_c.len = wuffs_base__u64__min(i_slice_c.len, i_slice_p.len);
+      i_slice_c.len = ((size_t)(wuffs_base__u64__min(i_slice_c.len, i_slice_p.len)));
       v_c.len = 3;
       v_p.len = 3;
       uint8_t* i_end0_c = i_slice_c.ptr + (i_slice_c.len / 3) * 3;
@@ -30316,7 +30318,7 @@ wuffs_png__decoder__filter_3_distance_4_fallback(
       v_c = i_slice_c;
       wuffs_base__slice_u8 i_slice_p = a_prev;
       v_p = i_slice_p;
-      i_slice_c.len = wuffs_base__u64__min(i_slice_c.len, i_slice_p.len);
+      i_slice_c.len = ((size_t)(wuffs_base__u64__min(i_slice_c.len, i_slice_p.len)));
       v_c.len = 4;
       v_p.len = 4;
       uint8_t* i_end0_c = i_slice_c.ptr + (i_slice_c.len / 4) * 4;
@@ -30436,7 +30438,7 @@ wuffs_png__decoder__filter_4_distance_3_fallback(
     v_c = i_slice_c;
     wuffs_base__slice_u8 i_slice_p = a_prev;
     v_p = i_slice_p;
-    i_slice_c.len = wuffs_base__u64__min(i_slice_c.len, i_slice_p.len);
+    i_slice_c.len = ((size_t)(wuffs_base__u64__min(i_slice_c.len, i_slice_p.len)));
     v_c.len = 3;
     v_p.len = 3;
     uint8_t* i_end0_c = i_slice_c.ptr + (i_slice_c.len / 3) * 3;
@@ -30560,7 +30562,7 @@ wuffs_png__decoder__filter_4_distance_4_fallback(
     v_c = i_slice_c;
     wuffs_base__slice_u8 i_slice_p = a_prev;
     v_p = i_slice_p;
-    i_slice_c.len = wuffs_base__u64__min(i_slice_c.len, i_slice_p.len);
+    i_slice_c.len = ((size_t)(wuffs_base__u64__min(i_slice_c.len, i_slice_p.len)));
     v_c.len = 4;
     v_p.len = 4;
     uint8_t* i_end0_c = i_slice_c.ptr + (i_slice_c.len / 4) * 4;
@@ -32810,7 +32812,7 @@ DecodeCbor(DecodeCborCallbacks& callbacks,
         goto done;
       }
       uint8_t* token_ptr = io_buf->data.ptr + cursor_index;
-      cursor_index += token_len;
+      cursor_index += static_cast<size_t>(token_len);
 
       // 2. Process that token.
 
@@ -32871,7 +32873,7 @@ DecodeCbor(DecodeCborCallbacks& callbacks,
                      WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY) {
             const char* ptr =  // Convert from (uint8_t*).
                 static_cast<const char*>(static_cast<void*>(token_ptr));
-            str.append(ptr, token_len);
+            str.append(ptr, static_cast<size_t>(token_len));
           } else {
             goto fail;
           }
@@ -33092,7 +33094,7 @@ const char DecodeJson_NoMatch[] = "wuffs_aux::DecodeJson: no match";
   }                                                                      \
   uint8_t* token_ptr = io_buf->data.ptr + cursor_index;                  \
   (void)(token_ptr);                                                     \
-  cursor_index += token_len
+  cursor_index += static_cast<size_t>(token_len)
 
 // --------
 
@@ -33207,7 +33209,7 @@ do_dict:
                      WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY) {
             const char* ptr =  // Convert from (uint8_t*).
                 static_cast<const char*>(static_cast<void*>(token_ptr));
-            str.append(ptr, token_len);
+            str.append(ptr, static_cast<size_t>(token_len));
           } else {
             goto fail;
           }
@@ -33317,7 +33319,7 @@ check_that_a_value_follows:
     // Undo the last part of WUFFS_AUX__DECODE_JSON__GET_THE_NEXT_TOKEN, so that
     // we're only peeking at the next token.
     tok_buf.meta.ri--;
-    cursor_index -= token_len;
+    cursor_index -= static_cast<size_t>(token_len);
 
     if ((vbc == WUFFS_BASE__TOKEN__VBC__STRUCTURE) &&
         (vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__POP)) {
@@ -33437,7 +33439,7 @@ DecodeJson(DecodeJsonCallbacks& callbacks,
                      WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY) {
             const char* ptr =  // Convert from (uint8_t*).
                 static_cast<const char*>(static_cast<void*>(token_ptr));
-            str.append(ptr, token_len);
+            str.append(ptr, static_cast<size_t>(token_len));
           } else {
             goto fail;
           }
@@ -33477,7 +33479,8 @@ DecodeJson(DecodeJsonCallbacks& callbacks,
           if (vbd & WUFFS_BASE__TOKEN__VBD__NUMBER__FORMAT_TEXT) {
             if (vbd & WUFFS_BASE__TOKEN__VBD__NUMBER__CONTENT_INTEGER_SIGNED) {
               wuffs_base__result_i64 r = wuffs_base__parse_number_i64(
-                  wuffs_base__make_slice_u8(token_ptr, token_len),
+                  wuffs_base__make_slice_u8(token_ptr,
+                                            static_cast<size_t>(token_len)),
                   WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS);
               if (r.status.is_ok()) {
                 ret_error_message = callbacks.AppendI64(r.value);
@@ -33486,7 +33489,8 @@ DecodeJson(DecodeJsonCallbacks& callbacks,
             }
             if (vbd & WUFFS_BASE__TOKEN__VBD__NUMBER__CONTENT_FLOATING_POINT) {
               wuffs_base__result_f64 r = wuffs_base__parse_number_f64(
-                  wuffs_base__make_slice_u8(token_ptr, token_len),
+                  wuffs_base__make_slice_u8(token_ptr,
+                                            static_cast<size_t>(token_len)),
                   WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS);
               if (r.status.is_ok()) {
                 ret_error_message = callbacks.AppendF64(r.value);

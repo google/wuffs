@@ -144,8 +144,8 @@ wuffs_base__u64__sat_sub_indirect(uint64_t* x, uint64_t y) {
 // wuffs_base__slice_u8__prefix returns up to the first up_to bytes of s.
 static inline wuffs_base__slice_u8  //
 wuffs_base__slice_u8__prefix(wuffs_base__slice_u8 s, uint64_t up_to) {
-  if ((uint64_t)(s.len) > up_to) {
-    s.len = up_to;
+  if (((uint64_t)(s.len)) > up_to) {
+    s.len = ((size_t)up_to);
   }
   return s;
 }
@@ -153,9 +153,9 @@ wuffs_base__slice_u8__prefix(wuffs_base__slice_u8 s, uint64_t up_to) {
 // wuffs_base__slice_u8__suffix returns up to the last up_to bytes of s.
 static inline wuffs_base__slice_u8  //
 wuffs_base__slice_u8__suffix(wuffs_base__slice_u8 s, uint64_t up_to) {
-  if ((uint64_t)(s.len) > up_to) {
-    s.ptr += (uint64_t)(s.len) - up_to;
-    s.len = up_to;
+  if (((uint64_t)(s.len)) > up_to) {
+    s.ptr += ((uint64_t)(s.len)) - up_to;
+    s.len = ((size_t)up_to);
   }
   return s;
 }

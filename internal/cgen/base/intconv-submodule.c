@@ -359,7 +359,7 @@ wuffs_base__private_implementation__render_number_u64(wuffs_base__slice_u8 dst,
   uint8_t* ptr = &buf[0] + sizeof(buf);
 
   while (x >= 100) {
-    size_t index = (x % 100) * 2;
+    size_t index = ((size_t)((x % 100) * 2));
     x /= 100;
     uint8_t s0 = wuffs_base__render_number__first_hundred[index + 0];
     uint8_t s1 = wuffs_base__render_number__first_hundred[index + 1];
@@ -372,7 +372,7 @@ wuffs_base__private_implementation__render_number_u64(wuffs_base__slice_u8 dst,
     ptr -= 1;
     ptr[0] = (uint8_t)('0' + x);
   } else {
-    size_t index = x * 2;
+    size_t index = ((size_t)(x * 2));
     uint8_t s0 = wuffs_base__render_number__first_hundred[index + 0];
     uint8_t s1 = wuffs_base__render_number__first_hundred[index + 1];
     ptr -= 2;

@@ -1149,7 +1149,7 @@ wuffs_base__pixel_buffer__set_from_slice(wuffs_base__pixel_buffer* pb,
     return wuffs_base__make_status(wuffs_base__error__bad_argument);
   }
   wh *= bytes_per_pixel;
-  width *= bytes_per_pixel;
+  width = ((size_t)(width * bytes_per_pixel));
   if (wh > len) {
     return wuffs_base__make_status(
         wuffs_base__error__bad_argument_length_too_short);

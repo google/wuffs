@@ -1285,7 +1285,7 @@ do_test__wuffs_base__token_decoder(wuffs_base__token_decoder* b,
   if (gt->src_filename) {
     CHECK_STRING(
         read_file_fragment(&src, gt->src_filename, gt->src_offset0,
-                           gt->src_offset1 ? gt->src_offset1 : UINT64_MAX));
+                           gt->src_offset1 ? gt->src_offset1 : SIZE_MAX));
   } else {
     src.meta.closed = true;
   }

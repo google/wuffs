@@ -135,7 +135,7 @@ DecodeCbor(DecodeCborCallbacks& callbacks,
         goto done;
       }
       uint8_t* token_ptr = io_buf->data.ptr + cursor_index;
-      cursor_index += token_len;
+      cursor_index += static_cast<size_t>(token_len);
 
       // 2. Process that token.
 
@@ -196,7 +196,7 @@ DecodeCbor(DecodeCborCallbacks& callbacks,
                      WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY) {
             const char* ptr =  // Convert from (uint8_t*).
                 static_cast<const char*>(static_cast<void*>(token_ptr));
-            str.append(ptr, token_len);
+            str.append(ptr, static_cast<size_t>(token_len));
           } else {
             goto fail;
           }

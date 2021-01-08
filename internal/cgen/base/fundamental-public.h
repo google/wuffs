@@ -908,7 +908,7 @@ wuffs_base__empty_table_u64() {
 static inline wuffs_base__slice_u8  //
 wuffs_base__slice_u8__subslice_i(wuffs_base__slice_u8 s, uint64_t i) {
   if ((i <= SIZE_MAX) && (i <= s.len)) {
-    return wuffs_base__make_slice_u8(s.ptr + i, s.len - i);
+    return wuffs_base__make_slice_u8(s.ptr + i, ((size_t)(s.len - i)));
   }
   return wuffs_base__make_slice_u8(NULL, 0);
 }
@@ -919,7 +919,7 @@ wuffs_base__slice_u8__subslice_i(wuffs_base__slice_u8 s, uint64_t i) {
 static inline wuffs_base__slice_u8  //
 wuffs_base__slice_u8__subslice_j(wuffs_base__slice_u8 s, uint64_t j) {
   if ((j <= SIZE_MAX) && (j <= s.len)) {
-    return wuffs_base__make_slice_u8(s.ptr, j);
+    return wuffs_base__make_slice_u8(s.ptr, ((size_t)j));
   }
   return wuffs_base__make_slice_u8(NULL, 0);
 }
@@ -932,7 +932,7 @@ wuffs_base__slice_u8__subslice_ij(wuffs_base__slice_u8 s,
                                   uint64_t i,
                                   uint64_t j) {
   if ((i <= j) && (j <= SIZE_MAX) && (j <= s.len)) {
-    return wuffs_base__make_slice_u8(s.ptr + i, j - i);
+    return wuffs_base__make_slice_u8(s.ptr + i, ((size_t)(j - i)));
   }
   return wuffs_base__make_slice_u8(NULL, 0);
 }
