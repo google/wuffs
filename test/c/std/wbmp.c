@@ -360,7 +360,135 @@ test_wuffs_wbmp_decode_image_config() {
 
 // ---------------- WBMP Benches
 
-// No WBMP benches.
+const char*  //
+do_bench_wuffs_pixel_swizzler(uint32_t dst_pixfmt_repr,
+                              uint32_t src_pixfmt_repr,
+                              wuffs_base__pixel_blend pixblend,
+                              uint64_t iters_unscaled) {
+  const uint32_t width = 80;
+  const uint32_t height = 60;
+
+  wuffs_base__pixel_format dst_pixfmt =
+      wuffs_base__make_pixel_format(dst_pixfmt_repr);
+  wuffs_base__pixel_format src_pixfmt =
+      wuffs_base__make_pixel_format(src_pixfmt_repr);
+  if ((wuffs_base__pixel_format__bits_per_pixel(&dst_pixfmt) & 7) != 0) {
+    return "dst pixfmt has fractional bytes per pixel";
+  }
+  if ((wuffs_base__pixel_format__bits_per_pixel(&src_pixfmt) & 7) != 0) {
+    return "src pixfmt has fractional bytes per pixel";
+  }
+  const uint32_t dst_bytes_per_row =
+      width * wuffs_base__pixel_format__bits_per_pixel(&dst_pixfmt) / 8;
+  const uint32_t src_bytes_per_row =
+      width * wuffs_base__pixel_format__bits_per_pixel(&src_pixfmt) / 8;
+
+  if (g_have_slice_u8.len < (dst_bytes_per_row * height)) {
+    return "dst buffer is too short";
+  }
+  wuffs_base__io_buffer src = wuffs_base__slice_u8__writer(g_src_slice_u8);
+  CHECK_STRING(read_file(&src, "test/data/pi.txt"));
+  if (src.meta.wi < (src_bytes_per_row * height)) {
+    return "src data is too short";
+  }
+
+  uint8_t dst_palette[1024];
+  uint8_t src_palette[1024];
+  memcpy(dst_palette, g_src_slice_u8.ptr, 1024);
+  memcpy(src_palette, g_src_slice_u8.ptr, 1024);
+
+  wuffs_base__pixel_swizzler swizzler;
+  CHECK_STATUS(
+      "prepare",
+      wuffs_base__pixel_swizzler__prepare(
+          &swizzler, dst_pixfmt, wuffs_base__make_slice_u8(dst_palette, 1024),
+          src_pixfmt, wuffs_base__make_slice_u8(src_palette, 1024), pixblend));
+
+  bench_start();
+  uint64_t n_bytes = 0;
+  uint64_t i;
+  uint64_t iters = iters_unscaled * g_flags.iterscale;
+  for (i = 0; i < iters; i++) {
+    uint32_t y;
+    for (y = 0; y < height; y++) {
+      wuffs_base__pixel_swizzler__swizzle_interleaved_from_slice(
+          &swizzler,
+          wuffs_base__make_slice_u8(
+              g_have_slice_u8.ptr + (dst_bytes_per_row * y), dst_bytes_per_row),
+          wuffs_base__make_slice_u8(dst_palette, 1024),
+          wuffs_base__make_slice_u8(
+              g_src_slice_u8.ptr + (src_bytes_per_row * y), src_bytes_per_row));
+    }
+    n_bytes += dst_bytes_per_row * height;
+  }
+  bench_finish(iters, n_bytes);
+  return NULL;
+}
+
+const char*  //
+bench_wuffs_pixel_swizzler_bgr_565_rgba_nonpremul_src() {
+  CHECK_FOCUS(__func__);
+  return do_bench_wuffs_pixel_swizzler(WUFFS_BASE__PIXEL_FORMAT__BGR_565,
+                                       WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL,
+                                       WUFFS_BASE__PIXEL_BLEND__SRC, 400);
+}
+
+const char*  //
+bench_wuffs_pixel_swizzler_bgr_rgba_nonpremul_src() {
+  CHECK_FOCUS(__func__);
+  return do_bench_wuffs_pixel_swizzler(WUFFS_BASE__PIXEL_FORMAT__BGR,
+                                       WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL,
+                                       WUFFS_BASE__PIXEL_BLEND__SRC, 500);
+}
+
+const char*  //
+bench_wuffs_pixel_swizzler_bgra_non_premul_rgba_nonpremul_src() {
+  CHECK_FOCUS(__func__);
+  return do_bench_wuffs_pixel_swizzler(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL,
+                                       WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL,
+                                       WUFFS_BASE__PIXEL_BLEND__SRC, 8000);
+}
+
+const char*  //
+bench_wuffs_pixel_swizzler_bgra_premul_y_src() {
+  CHECK_FOCUS(__func__);
+  return do_bench_wuffs_pixel_swizzler(WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL,
+                                       WUFFS_BASE__PIXEL_FORMAT__Y,
+                                       WUFFS_BASE__PIXEL_BLEND__SRC, 3000);
+}
+
+const char*  //
+bench_wuffs_pixel_swizzler_bgra_premul_indexed_bgra_binary_src() {
+  CHECK_FOCUS(__func__);
+  return do_bench_wuffs_pixel_swizzler(
+      WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL,
+      WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY,
+      WUFFS_BASE__PIXEL_BLEND__SRC, 2000);
+}
+
+const char*  //
+bench_wuffs_pixel_swizzler_bgra_premul_rgb_src() {
+  CHECK_FOCUS(__func__);
+  return do_bench_wuffs_pixel_swizzler(WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL,
+                                       WUFFS_BASE__PIXEL_FORMAT__RGB,
+                                       WUFFS_BASE__PIXEL_BLEND__SRC, 2000);
+}
+
+const char*  //
+bench_wuffs_pixel_swizzler_bgra_premul_rgba_nonpremul_src() {
+  CHECK_FOCUS(__func__);
+  return do_bench_wuffs_pixel_swizzler(WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL,
+                                       WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL,
+                                       WUFFS_BASE__PIXEL_BLEND__SRC, 1000);
+}
+
+const char*  //
+bench_wuffs_pixel_swizzler_bgra_premul_rgba_nonpremul_src_over() {
+  CHECK_FOCUS(__func__);
+  return do_bench_wuffs_pixel_swizzler(WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL,
+                                       WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL,
+                                       WUFFS_BASE__PIXEL_BLEND__SRC_OVER, 300);
+}
 
 // ---------------- Mimic Benches
 
@@ -394,7 +522,14 @@ proc g_tests[] = {
 
 proc g_benches[] = {
 
-// No WBMP benches.
+    bench_wuffs_pixel_swizzler_bgr_565_rgba_nonpremul_src,
+    bench_wuffs_pixel_swizzler_bgr_rgba_nonpremul_src,
+    bench_wuffs_pixel_swizzler_bgra_non_premul_rgba_nonpremul_src,
+    bench_wuffs_pixel_swizzler_bgra_premul_y_src,
+    bench_wuffs_pixel_swizzler_bgra_premul_indexed_bgra_binary_src,
+    bench_wuffs_pixel_swizzler_bgra_premul_rgb_src,
+    bench_wuffs_pixel_swizzler_bgra_premul_rgba_nonpremul_src,
+    bench_wuffs_pixel_swizzler_bgra_premul_rgba_nonpremul_src_over,
 
 #ifdef WUFFS_MIMIC
 
