@@ -604,11 +604,13 @@ const (
 
 	// -------- 0x200 block.
 
-	IDInitialize = ID(0x200)
-	IDReset      = ID(0x201)
-	IDSet        = ID(0x202)
-	IDUnroll     = ID(0x203)
-	IDUpdate     = ID(0x204)
+	IDAdvance    = ID(0x200)
+	IDInitialize = ID(0x201)
+	IDLength     = ID(0x202)
+	IDReset      = ID(0x203)
+	IDSet        = ID(0x204)
+	IDUnroll     = ID(0x205)
+	IDUpdate     = ID(0x206)
 
 	// TODO: range/rect methods like intersection and contains?
 
@@ -624,14 +626,13 @@ const (
 	IDData            = ID(0x240)
 	IDHeight          = ID(0x241)
 	IDIO              = ID(0x242)
-	IDLength          = ID(0x243)
-	IDLimit           = ID(0x244)
-	IDPrefix          = ID(0x245)
-	IDRow             = ID(0x246)
-	IDStride          = ID(0x247)
-	IDSuffix          = ID(0x248)
-	IDValidUTF8Length = ID(0x249)
-	IDWidth           = ID(0x24A)
+	IDLimit           = ID(0x243)
+	IDPrefix          = ID(0x244)
+	IDRow             = ID(0x245)
+	IDStride          = ID(0x246)
+	IDSuffix          = ID(0x247)
+	IDValidUTF8Length = ID(0x248)
+	IDWidth           = ID(0x249)
 
 	IDLimitedSwizzleU32InterleavedFromReader = ID(0x280)
 	IDSwizzleInterleavedFromReader           = ID(0x281)
@@ -967,7 +968,9 @@ var builtInsByID = [nBuiltInIDs]string{
 
 	// -------- 0x200 block.
 
+	IDAdvance:    "advance",
 	IDInitialize: "initialize",
+	IDLength:     "length",
 	IDReset:      "reset",
 	IDSet:        "set",
 	IDUnroll:     "unroll",
@@ -985,7 +988,6 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDData:            "data",
 	IDHeight:          "height",
 	IDIO:              "io",
-	IDLength:          "length",
 	IDLimit:           "limit",
 	IDPrefix:          "prefix",
 	IDRow:             "row",

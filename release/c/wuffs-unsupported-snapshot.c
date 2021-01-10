@@ -9162,6 +9162,48 @@ wuffs_base__status__ensure_not_a_suspension(wuffs_base__status z) {
   return z;
 }
 
+// --------
+
+// wuffs_base__iterate_total_advance returns the exclusive pointer-offset at
+// which iteration should stop. The overall slice has length total_len, each
+// iteration's sub-slice has length iter_len and are placed iter_advance apart.
+//
+// The iter_advance may not be larger than iter_len. The iter_advance may be
+// smaller than iter_len, in which case the sub-slices will overlap.
+//
+// The return value r satisfies ((0 <= r) && (r <= total_len)).
+//
+// For example, if total_len = 15, iter_len = 5 and iter_advance = 3, there are
+// four iterations at offsets 0, 3, 6 and 9. This function returns 12.
+//
+// 0123456789012345
+// [....]
+//    [....]
+//       [....]
+//          [....]
+//             $
+// 0123456789012345
+//
+// For example, if total_len = 15, iter_len = 5 and iter_advance = 5, there are
+// three iterations at offsets 0, 5 and 10. This function returns 15.
+//
+// 0123456789012345
+// [....]
+//      [....]
+//           [....]
+//                $
+// 0123456789012345
+static inline size_t  //
+wuffs_base__iterate_total_advance(size_t total_len,
+                                  size_t iter_len,
+                                  size_t iter_advance) {
+  if (total_len >= iter_len) {
+    size_t n = total_len - iter_len;
+    return ((n / iter_advance) * iter_advance) + iter_advance;
+  }
+  return 0;
+}
+
 // ---------------- Numeric Types
 
 extern const uint8_t wuffs_base__low_bits_mask__u8[9];
@@ -16905,7 +16947,7 @@ wuffs_adler32__hasher__update_u32(
       wuffs_base__slice_u8 i_slice_p = a_x;
       v_p = i_slice_p;
       v_p.len = 1;
-      uint8_t* i_end0_p = i_slice_p.ptr + (i_slice_p.len / 8) * 8;
+      uint8_t* i_end0_p = i_slice_p.ptr + ((i_slice_p.len / 8) * 8);
       while (v_p.ptr < i_end0_p) {
         v_s1 += ((uint32_t)(v_p.ptr[0]));
         v_s2 += v_s1;
@@ -16933,7 +16975,7 @@ wuffs_adler32__hasher__update_u32(
         v_p.ptr += 1;
       }
       v_p.len = 1;
-      uint8_t* i_end1_p = i_slice_p.ptr + (i_slice_p.len / 1) * 1;
+      uint8_t* i_end1_p = i_slice_p.ptr + i_slice_p.len;
       while (v_p.ptr < i_end1_p) {
         v_s1 += ((uint32_t)(v_p.ptr[0]));
         v_s2 += v_s1;
@@ -20805,7 +20847,7 @@ wuffs_crc32__ieee_hasher__update_u32(
     wuffs_base__slice_u8 i_slice_p = a_x;
     v_p = i_slice_p;
     v_p.len = 16;
-    uint8_t* i_end0_p = i_slice_p.ptr + (i_slice_p.len / 32) * 32;
+    uint8_t* i_end0_p = i_slice_p.ptr + ((i_slice_p.len / 32) * 32);
     while (v_p.ptr < i_end0_p) {
       v_s ^= ((((uint32_t)(v_p.ptr[0])) << 0) |
           (((uint32_t)(v_p.ptr[1])) << 8) |
@@ -20851,7 +20893,7 @@ wuffs_crc32__ieee_hasher__update_u32(
       v_p.ptr += 16;
     }
     v_p.len = 16;
-    uint8_t* i_end1_p = i_slice_p.ptr + (i_slice_p.len / 16) * 16;
+    uint8_t* i_end1_p = i_slice_p.ptr + ((i_slice_p.len / 16) * 16);
     while (v_p.ptr < i_end1_p) {
       v_s ^= ((((uint32_t)(v_p.ptr[0])) << 0) |
           (((uint32_t)(v_p.ptr[1])) << 8) |
@@ -20876,7 +20918,7 @@ wuffs_crc32__ieee_hasher__update_u32(
       v_p.ptr += 16;
     }
     v_p.len = 1;
-    uint8_t* i_end2_p = i_slice_p.ptr + (i_slice_p.len / 1) * 1;
+    uint8_t* i_end2_p = i_slice_p.ptr + i_slice_p.len;
     while (v_p.ptr < i_end2_p) {
       v_s = (WUFFS_CRC32__IEEE_TABLE[0][(((uint8_t)((v_s & 255))) ^ v_p.ptr[0])] ^ (v_s >> 8));
       v_p.ptr += 1;
@@ -30111,7 +30153,7 @@ wuffs_png__decoder__filter_1_distance_3_fallback(
     wuffs_base__slice_u8 i_slice_c = a_curr;
     v_c = i_slice_c;
     v_c.len = 3;
-    uint8_t* i_end0_c = i_slice_c.ptr + (i_slice_c.len / 3) * 3;
+    uint8_t* i_end0_c = i_slice_c.ptr + ((i_slice_c.len / 3) * 3);
     while (v_c.ptr < i_end0_c) {
       v_fa0 += v_c.ptr[0];
       v_c.ptr[0] = v_fa0;
@@ -30141,7 +30183,7 @@ wuffs_png__decoder__filter_1_distance_4_fallback(
     wuffs_base__slice_u8 i_slice_c = a_curr;
     v_c = i_slice_c;
     v_c.len = 4;
-    uint8_t* i_end0_c = i_slice_c.ptr + (i_slice_c.len / 4) * 4;
+    uint8_t* i_end0_c = i_slice_c.ptr + ((i_slice_c.len / 4) * 4);
     while (v_c.ptr < i_end0_c) {
       v_fa0 += v_c.ptr[0];
       v_c.ptr[0] = v_fa0;
@@ -30244,7 +30286,7 @@ wuffs_png__decoder__filter_3_distance_3_fallback(
       wuffs_base__slice_u8 i_slice_c = a_curr;
       v_c = i_slice_c;
       v_c.len = 3;
-      uint8_t* i_end0_c = i_slice_c.ptr + (i_slice_c.len / 3) * 3;
+      uint8_t* i_end0_c = i_slice_c.ptr + ((i_slice_c.len / 3) * 3);
       while (v_c.ptr < i_end0_c) {
         v_fa0 = ((v_fa0 / 2) + v_c.ptr[0]);
         v_c.ptr[0] = v_fa0;
@@ -30264,7 +30306,7 @@ wuffs_png__decoder__filter_3_distance_3_fallback(
       i_slice_c.len = ((size_t)(wuffs_base__u64__min(i_slice_c.len, i_slice_p.len)));
       v_c.len = 3;
       v_p.len = 3;
-      uint8_t* i_end0_c = i_slice_c.ptr + (i_slice_c.len / 3) * 3;
+      uint8_t* i_end0_c = i_slice_c.ptr + ((i_slice_c.len / 3) * 3);
       while (v_c.ptr < i_end0_c) {
         v_fa0 = (((uint8_t)(((((uint32_t)(v_fa0)) + ((uint32_t)(v_p.ptr[0]))) / 2))) + v_c.ptr[0]);
         v_c.ptr[0] = v_fa0;
@@ -30299,7 +30341,7 @@ wuffs_png__decoder__filter_3_distance_4_fallback(
       wuffs_base__slice_u8 i_slice_c = a_curr;
       v_c = i_slice_c;
       v_c.len = 4;
-      uint8_t* i_end0_c = i_slice_c.ptr + (i_slice_c.len / 4) * 4;
+      uint8_t* i_end0_c = i_slice_c.ptr + ((i_slice_c.len / 4) * 4);
       while (v_c.ptr < i_end0_c) {
         v_fa0 = ((v_fa0 / 2) + v_c.ptr[0]);
         v_c.ptr[0] = v_fa0;
@@ -30321,7 +30363,7 @@ wuffs_png__decoder__filter_3_distance_4_fallback(
       i_slice_c.len = ((size_t)(wuffs_base__u64__min(i_slice_c.len, i_slice_p.len)));
       v_c.len = 4;
       v_p.len = 4;
-      uint8_t* i_end0_c = i_slice_c.ptr + (i_slice_c.len / 4) * 4;
+      uint8_t* i_end0_c = i_slice_c.ptr + ((i_slice_c.len / 4) * 4);
       while (v_c.ptr < i_end0_c) {
         v_fa0 = (((uint8_t)(((((uint32_t)(v_fa0)) + ((uint32_t)(v_p.ptr[0]))) / 2))) + v_c.ptr[0]);
         v_c.ptr[0] = v_fa0;
@@ -30441,7 +30483,7 @@ wuffs_png__decoder__filter_4_distance_3_fallback(
     i_slice_c.len = ((size_t)(wuffs_base__u64__min(i_slice_c.len, i_slice_p.len)));
     v_c.len = 3;
     v_p.len = 3;
-    uint8_t* i_end0_c = i_slice_c.ptr + (i_slice_c.len / 3) * 3;
+    uint8_t* i_end0_c = i_slice_c.ptr + ((i_slice_c.len / 3) * 3);
     while (v_c.ptr < i_end0_c) {
       v_fb0 = ((uint32_t)(v_p.ptr[0]));
       v_pp0 = ((v_fa0 + v_fb0) - v_fc0);
@@ -30565,7 +30607,7 @@ wuffs_png__decoder__filter_4_distance_4_fallback(
     i_slice_c.len = ((size_t)(wuffs_base__u64__min(i_slice_c.len, i_slice_p.len)));
     v_c.len = 4;
     v_p.len = 4;
-    uint8_t* i_end0_c = i_slice_c.ptr + (i_slice_c.len / 4) * 4;
+    uint8_t* i_end0_c = i_slice_c.ptr + ((i_slice_c.len / 4) * 4);
     while (v_c.ptr < i_end0_c) {
       v_fb0 = ((uint32_t)(v_p.ptr[0]));
       v_pp0 = ((v_fa0 + v_fb0) - v_fc0);

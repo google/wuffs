@@ -30,6 +30,7 @@
 - Added colons to const syntax.
 - Added double-curly blocks.
 - Added interfaces.
+- Added iterate advance parameter.
 - Added preprocessor.
 - Added single-quoted strings.
 - Added tokens.

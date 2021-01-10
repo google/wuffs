@@ -170,7 +170,7 @@ type Node struct {
 	// Func          funcName      receiverPkg   receiverName  Func
 	// IOBind        .             .             .             IOBind
 	// If            .             .             .             If
-	// Iterate       unroll        label         length        Iterate
+	// Iterate       advance       label         length        Iterate
 	// Jump          keyword       label         .             Jump
 	// Ret           keyword       .             .             Ret
 	// Status        keyword       pkg           lit(message)  Status
@@ -550,12 +550,13 @@ func NewIOBind(keyword t.ID, io *Expr, arg1 *Expr, body []*Node) *IOBind {
 }
 
 // Iterate is
-// "iterate.ID1 (assigns)(length:ID2, unroll:ID0), List1 { List2 } else RHS":
+// "iterate.ID1 (assigns)(length:ID2, advance:ID0, unroll:LHS), List1 { List2 } else RHS":
 //  - FlagsHasBreak    is the iterate has an explicit break
 //  - FlagsHasContinue is the iterate has an explicit continue
-//  - ID0:   unroll
+//  - ID0:   advance
 //  - ID1:   <0|label>
 //  - ID2:   length
+//  - LHS:   <Expr> unroll
 //  - RHS:   <nil|Iterate>
 //  - List0: <Assign> assigns
 //  - List1: <Assert> asserts
@@ -566,9 +567,11 @@ func (n *Iterate) AsNode() *Node         { return (*Node)(n) }
 func (n *Iterate) HasBreak() bool        { return n.flags&FlagsHasBreak != 0 }
 func (n *Iterate) HasContinue() bool     { return n.flags&FlagsHasContinue != 0 }
 func (n *Iterate) Keyword() t.ID         { return t.IDIterate }
-func (n *Iterate) Unroll() t.ID          { return n.id0 }
+func (n *Iterate) Advance() t.ID         { return n.id0 }
 func (n *Iterate) Label() t.ID           { return n.id1 }
 func (n *Iterate) Length() t.ID          { return n.id2 }
+func (n *Iterate) Unroll() t.ID          { return n.lhs.id2 }
+func (n *Iterate) UnrollAsExpr() *Expr   { return n.lhs.AsExpr() }
 func (n *Iterate) ElseIterate() *Iterate { return n.rhs.AsIterate() }
 func (n *Iterate) Assigns() []*Node      { return n.list0 }
 func (n *Iterate) Asserts() []*Node      { return n.list1 }
@@ -579,12 +582,13 @@ func (n *Iterate) SetElseIterate(o *Iterate) { n.rhs = o.AsNode() }
 func (n *Iterate) SetHasBreak()              { n.flags |= FlagsHasBreak }
 func (n *Iterate) SetHasContinue()           { n.flags |= FlagsHasContinue }
 
-func NewIterate(label t.ID, assigns []*Node, length t.ID, unroll t.ID, asserts []*Node) *Iterate {
+func NewIterate(label t.ID, assigns []*Node, length t.ID, advance t.ID, unroll t.ID, asserts []*Node) *Iterate {
 	return &Iterate{
 		kind:  KIterate,
-		id0:   unroll,
+		id0:   advance,
 		id1:   label,
 		id2:   length,
+		lhs:   NewExpr(0, 0, unroll, nil, nil, nil, nil).AsNode(),
 		list0: assigns,
 		list1: asserts,
 	}

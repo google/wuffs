@@ -269,6 +269,9 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 
 	case a.KIterate:
 		n := n.AsIterate()
+		if _, err := q.bcheckExpr(n.UnrollAsExpr(), 0); err != nil {
+			return err
+		}
 		for _, o := range n.Assigns() {
 			o := o.AsAssign()
 			if err := q.bcheckAssignment(o.LHS(), o.Operator(), o.RHS()); err != nil {
@@ -281,6 +284,9 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 
 		assigns := n.Assigns()
 		for ; n != nil; n = n.ElseIterate() {
+			if _, err := q.bcheckExpr(n.UnrollAsExpr(), 0); err != nil {
+				return err
+			}
 			q.facts = q.facts[:0]
 			for _, o := range assigns {
 				lhs := o.AsAssign().LHS()

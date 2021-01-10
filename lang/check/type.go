@@ -129,6 +129,9 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 
 	case a.KIterate:
 		for n := n.AsIterate(); n != nil; n = n.ElseIterate() {
+			if err := q.tcheckExpr(n.UnrollAsExpr(), 0); err != nil {
+				return err
+			}
 			for _, o := range n.Assigns() {
 				if err := q.tcheckStatement(o); err != nil {
 					return err

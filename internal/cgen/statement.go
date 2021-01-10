@@ -424,12 +424,16 @@ func (g *gen) writeStatementIterate(b *buffer, n *a.Iterate, depth uint32) error
 		if err != nil {
 			return err
 		}
+		advance, err := strconv.Atoi(n.Advance().Str(g.tm))
+		if err != nil {
+			return err
+		}
 		unroll, err := strconv.Atoi(n.Unroll().Str(g.tm))
 		if err != nil {
 			return err
 		}
 		for {
-			if err := g.writeIterateRound(b, assigns, n.Body(), round, depth, length, unroll); err != nil {
+			if err := g.writeIterateRound(b, assigns, n.Body(), round, depth, length, advance, unroll); err != nil {
 				return err
 			}
 			round++
@@ -570,14 +574,24 @@ func (g *gen) writeStatementWhile(b *buffer, n *a.While, depth uint32) error {
 	return nil
 }
 
-func (g *gen) writeIterateRound(b *buffer, assigns []*a.Node, body []*a.Node, round uint32, depth uint32, length int, unroll int) error {
+func (g *gen) writeIterateRound(b *buffer, assigns []*a.Node, body []*a.Node, round uint32, depth uint32, length int, advance int, unroll int) error {
 	for _, o := range assigns {
 		name := o.AsAssign().LHS().Ident().Str(g.tm)
 		b.printf("%s%s.len = %d;\n", vPrefix, name, length)
 	}
 	name0 := assigns[0].AsAssign().LHS().Ident().Str(g.tm)
-	b.printf("uint8_t* %send%d_%s = %sslice_%s.ptr + (%sslice_%s.len / %d) * %d;\n",
-		iPrefix, round, name0, iPrefix, name0, iPrefix, name0, length*unroll, length*unroll)
+	b.printf("uint8_t* %send%d_%s = %sslice_%s.ptr + ",
+		iPrefix, round, name0, iPrefix, name0)
+	if (length == 1) && (advance == 1) && (unroll == 1) {
+		b.printf("%sslice_%s.len;\n",
+			iPrefix, name0)
+	} else if length == advance {
+		b.printf("((%sslice_%s.len / %d) * %d);\n",
+			iPrefix, name0, length*unroll, length*unroll)
+	} else {
+		b.printf("wuffs_base__iterate_total_advance(%sslice_%s.len, %d, %d);\n",
+			iPrefix, name0, length*unroll, advance*unroll)
+	}
 	b.printf("while (%s%s.ptr < %send%d_%s) {\n", vPrefix, name0, iPrefix, round, name0)
 	for i := 0; i < unroll; i++ {
 		for _, o := range body {
@@ -587,7 +601,7 @@ func (g *gen) writeIterateRound(b *buffer, assigns []*a.Node, body []*a.Node, ro
 		}
 		for _, o := range assigns {
 			name := o.AsAssign().LHS().Ident().Str(g.tm)
-			b.printf("%s%s.ptr += %d;\n", vPrefix, name, length)
+			b.printf("%s%s.ptr += %d;\n", vPrefix, name, advance)
 		}
 	}
 	b.writes("}\n")

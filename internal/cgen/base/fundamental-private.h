@@ -85,6 +85,48 @@ wuffs_base__status__ensure_not_a_suspension(wuffs_base__status z) {
   return z;
 }
 
+// --------
+
+// wuffs_base__iterate_total_advance returns the exclusive pointer-offset at
+// which iteration should stop. The overall slice has length total_len, each
+// iteration's sub-slice has length iter_len and are placed iter_advance apart.
+//
+// The iter_advance may not be larger than iter_len. The iter_advance may be
+// smaller than iter_len, in which case the sub-slices will overlap.
+//
+// The return value r satisfies ((0 <= r) && (r <= total_len)).
+//
+// For example, if total_len = 15, iter_len = 5 and iter_advance = 3, there are
+// four iterations at offsets 0, 3, 6 and 9. This function returns 12.
+//
+// 0123456789012345
+// [....]
+//    [....]
+//       [....]
+//          [....]
+//             $
+// 0123456789012345
+//
+// For example, if total_len = 15, iter_len = 5 and iter_advance = 5, there are
+// three iterations at offsets 0, 5 and 10. This function returns 15.
+//
+// 0123456789012345
+// [....]
+//      [....]
+//           [....]
+//                $
+// 0123456789012345
+static inline size_t  //
+wuffs_base__iterate_total_advance(size_t total_len,
+                                  size_t iter_len,
+                                  size_t iter_advance) {
+  if (total_len >= iter_len) {
+    size_t n = total_len - iter_len;
+    return ((n / iter_advance) * iter_advance) + iter_advance;
+  }
+  return 0;
+}
+
 // ---------------- Numeric Types
 
 extern const uint8_t wuffs_base__low_bits_mask__u8[9];

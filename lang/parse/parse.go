@@ -1177,9 +1177,39 @@ func (p *parser) parseIterateBlock(label t.ID, assigns []*a.Node) (*a.Iterate, e
 	p.src = p.src[1:]
 
 	length := p.peek1()
-	if !isSmallPositiveInt256(p.tm, length) {
+	lengthInt := asSmallPositiveInt256(p.tm, length)
+	if lengthInt == 0 {
 		return nil, fmt.Errorf(`parse: expected length count in [1 ..= 256], got %q at %s:%d`,
 			p.tm.ByID(length), p.filename, p.line())
+	}
+	p.src = p.src[1:]
+
+	if x := p.peek1(); x != t.IDComma {
+		got := p.tm.ByID(x)
+		return nil, fmt.Errorf(`parse: expected ",", got %q at %s:%d`, got, p.filename, p.line())
+	}
+	p.src = p.src[1:]
+
+	if x := p.peek1(); x != t.IDAdvance {
+		got := p.tm.ByID(x)
+		return nil, fmt.Errorf(`parse: expected "advance", got %q at %s:%d`, got, p.filename, p.line())
+	}
+	p.src = p.src[1:]
+
+	if x := p.peek1(); x != t.IDColon {
+		got := p.tm.ByID(x)
+		return nil, fmt.Errorf(`parse: expected ":", got %q at %s:%d`, got, p.filename, p.line())
+	}
+	p.src = p.src[1:]
+
+	advance := p.peek1()
+	advanceInt := asSmallPositiveInt256(p.tm, advance)
+	if advanceInt == 0 {
+		return nil, fmt.Errorf(`parse: expected advance count in [1 ..= 256], got %q at %s:%d`,
+			p.tm.ByID(advance), p.filename, p.line())
+	} else if advanceInt > lengthInt {
+		return nil, fmt.Errorf(`parse: advance %d is larger than length %d at %s:%d`,
+			advanceInt, lengthInt, p.filename, p.line())
 	}
 	p.src = p.src[1:]
 
@@ -1202,7 +1232,7 @@ func (p *parser) parseIterateBlock(label t.ID, assigns []*a.Node) (*a.Iterate, e
 	p.src = p.src[1:]
 
 	unroll := p.peek1()
-	if !isSmallPositiveInt256(p.tm, unroll) {
+	if asSmallPositiveInt256(p.tm, unroll) == 0 {
 		return nil, fmt.Errorf(`parse: expected unroll count in [1 ..= 256], got %q at %s:%d`,
 			p.tm.ByID(unroll), p.filename, p.line())
 	}
@@ -1218,7 +1248,7 @@ func (p *parser) parseIterateBlock(label t.ID, assigns []*a.Node) (*a.Iterate, e
 	if err != nil {
 		return nil, err
 	}
-	n := a.NewIterate(label, assigns, length, unroll, asserts)
+	n := a.NewIterate(label, assigns, length, advance, unroll, asserts)
 	// TODO: decide how break/continue work with iterate loops.
 	if !p.loops.Push(n) {
 		return nil, fmt.Errorf(`parse: duplicate loop label %s at %s:%d`,
@@ -1243,24 +1273,27 @@ func (p *parser) parseIterateBlock(label t.ID, assigns []*a.Node) (*a.Iterate, e
 	return n, nil
 }
 
-// isSmallPositiveInt256 returns whether id is a numeric literal in the range
-// [1 ..= 256].
-func isSmallPositiveInt256(tm *t.Map, id t.ID) bool {
+// asSmallPositiveInt256 returns id's value when id is a numeric literal in the
+// range [1 ..= 256]. Otherwise, it returns 0.
+func asSmallPositiveInt256(tm *t.Map, id t.ID) int {
 	if !id.IsNumLiteral(tm) {
-		return false
+		return 0
 	}
 	s := id.Str(tm)
 	if (len(s) > 3) || (len(s) == 0) || (s[0] < '1') || ('9' < s[0]) {
-		return false
+		return 0
 	}
 	n, s := int(s[0]-'0'), s[1:]
 	for ; len(s) > 0; s = s[1:] {
 		if (s[0] < '0') || ('9' < s[0]) {
-			return false
+			return 0
 		}
 		n = (10 * n) + int(s[0]-'0')
 	}
-	return n <= 256
+	if n > 256 {
+		return 0
+	}
+	return n
 }
 
 func (p *parser) parseArgNode() (*a.Node, error) {

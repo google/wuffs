@@ -31,7 +31,7 @@ pub func ieee_hasher.update_u32!(x: slice base.u8) base.u32 {
 
 	// See "Multi-Byte Lookup Tables" in std/crc32/README.md for more detail on
 	// the slicing-by-M algorithm. We use an M of 16.
-	iterate (p = args.x)(length: 16, unroll: 2) {
+	iterate (p = args.x)(length: 16, advance: 16, unroll: 2) {
 		s ^= ((p[0x00] as base.u32) << 0) |
 			((p[0x01] as base.u32) << 8) |
 			((p[0x02] as base.u32) << 16) |
@@ -52,7 +52,7 @@ pub func ieee_hasher.update_u32!(x: slice base.u8) base.u32 {
 			IEEE_TABLE[0x0D][0xFF & (s >> 16)] ^
 			IEEE_TABLE[0x0E][0xFF & (s >> 8)] ^
 			IEEE_TABLE[0x0F][0xFF & (s >> 0)]
-	} else (length: 1, unroll: 1) {
+	} else (length: 1, advance: 1, unroll: 1) {
 		s = IEEE_TABLE[0][((s & 0xFF) as base.u8) ^ p[0]] ^ (s >> 8)
 	}
 
