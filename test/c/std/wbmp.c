@@ -442,7 +442,7 @@ bench_wuffs_pixel_swizzler_bgr_rgba_nonpremul_src() {
 }
 
 const char*  //
-bench_wuffs_pixel_swizzler_bgra_non_premul_rgba_nonpremul_src() {
+bench_wuffs_pixel_swizzler_bgra_nonpremul_rgba_nonpremul_src() {
   CHECK_FOCUS(__func__);
   return do_bench_wuffs_pixel_swizzler(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL,
                                        WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL,
@@ -524,7 +524,7 @@ proc g_benches[] = {
 
     bench_wuffs_pixel_swizzler_bgr_565_rgba_nonpremul_src,
     bench_wuffs_pixel_swizzler_bgr_rgba_nonpremul_src,
-    bench_wuffs_pixel_swizzler_bgra_non_premul_rgba_nonpremul_src,
+    bench_wuffs_pixel_swizzler_bgra_nonpremul_rgba_nonpremul_src,
     bench_wuffs_pixel_swizzler_bgra_premul_y_src,
     bench_wuffs_pixel_swizzler_bgra_premul_indexed_bgra_binary_src,
     bench_wuffs_pixel_swizzler_bgra_premul_rgb_src,
