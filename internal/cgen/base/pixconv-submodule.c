@@ -2017,6 +2017,57 @@ wuffs_base__pixel_swizzler__xxxx__index_binary_alpha__src_over(
   return len;
 }
 
+#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(__GNUC__)
+__attribute__((target("sse4.2")))
+#endif
+static uint64_t  //
+wuffs_base__pixel_swizzler__xxxx__y__sse128(uint8_t* dst_ptr,
+                                            size_t dst_len,
+                                            uint8_t* dst_palette_ptr,
+                                            size_t dst_palette_len,
+                                            const uint8_t* src_ptr,
+                                            size_t src_len) {
+  size_t dst_len4 = dst_len / 4;
+  size_t len = (dst_len4 < src_len) ? dst_len4 : src_len;
+  uint8_t* d = dst_ptr;
+  const uint8_t* s = src_ptr;
+  size_t n = len;
+
+  __m128i shuffle = _mm_set_epi8(0x03, 0x03, 0x03, 0x03,  //
+                                 0x02, 0x02, 0x02, 0x02,  //
+                                 0x01, 0x01, 0x01, 0x01,  //
+                                 0x00, 0x00, 0x00, 0x00);
+  __m128i or = _mm_set_epi8(0xFF, 0x00, 0x00, 0x00,  //
+                            0xFF, 0x00, 0x00, 0x00,  //
+                            0xFF, 0x00, 0x00, 0x00,  //
+                            0xFF, 0x00, 0x00, 0x00);
+
+  while (n >= 4) {
+    __m128i x;
+    x = _mm_cvtsi32_si128(wuffs_base__load_u32le__no_bounds_check(s));
+    x = _mm_shuffle_epi8(x, shuffle);
+    x = _mm_or_si128(x, or);
+    _mm_storeu_si128((void*)d, x);
+
+    s += 4 * 1;
+    d += 4 * 4;
+    n -= 4;
+  }
+
+  while (n >= 1) {
+    wuffs_base__store_u32le__no_bounds_check(
+        d + (0 * 4), 0xFF000000 | (0x010101 * (uint32_t)s[0]));
+
+    s += 1 * 1;
+    d += 1 * 4;
+    n -= 1;
+  }
+
+  return len;
+}
+#endif
+
 static uint64_t  //
 wuffs_base__pixel_swizzler__xxxx__y(uint8_t* dst_ptr,
                                     size_t dst_len,
@@ -2029,8 +2080,6 @@ wuffs_base__pixel_swizzler__xxxx__y(uint8_t* dst_ptr,
   uint8_t* d = dst_ptr;
   const uint8_t* s = src_ptr;
   size_t n = len;
-
-  // TODO: unroll.
 
   while (n >= 1) {
     wuffs_base__store_u32le__no_bounds_check(
@@ -2104,6 +2153,12 @@ wuffs_base__pixel_swizzler__prepare__y(wuffs_base__pixel_swizzler* p,
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_BINARY:
     case WUFFS_BASE__PIXEL_FORMAT__RGBX:
+#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+      if (wuffs_base__cpu_arch__x86_64__capabilities() &
+          WUFFS_BASE__CPU_ARCH__X86_64__SSE128) {
+        return wuffs_base__pixel_swizzler__xxxx__y__sse128;
+      }
+#endif
       return wuffs_base__pixel_swizzler__xxxx__y;
   }
   return NULL;

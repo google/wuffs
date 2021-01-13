@@ -26,6 +26,7 @@
 - Added `std/png`.
 - Added `std/wbmp`.
 - Added `tell_me_more?` mechanism.
+- Added SIMD.
 - Added alloc functions.
 - Added colons to const syntax.
 - Added double-curly blocks.

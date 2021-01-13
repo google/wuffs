@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// ---------------- Fundamentals
+// ---------------- Version
 
 // WUFFS_VERSION is the major.minor.patch version, as per https://semver.org/,
 // as a uint64_t. The major number is the high 32 bits. The minor number is the
@@ -40,17 +40,77 @@
 #define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 0
 #define WUFFS_VERSION_STRING "0.0.0+0.00000000"
 
+// ---------------- Configuration
+
+// Define WUFFS_CONFIG__AVOID_CPU_ARCH to avoid any code tied to a specific CPU
+// architecture, such as SSE SIMD for the x86 CPU family.
+#if defined(WUFFS_CONFIG__AVOID_CPU_ARCH)
+// No-op.
+#else
+#if defined(__GNUC__) && defined(__x86_64__)
+#include <cpuid.h>
+#include <x86intrin.h>
+#define WUFFS_BASE__CPU_ARCH__X86_64
+#endif  // defined(__GNUC__) && defined(__x86_64__)
+#endif  // defined(WUFFS_CONFIG__AVOID_CPU_ARCH)
+
+// --------
+
 // Define WUFFS_CONFIG__STATIC_FUNCTIONS to make all of Wuffs' functions have
 // static storage. The motivation is discussed in the "ALLOW STATIC
 // IMPLEMENTATION" section of
 // https://raw.githubusercontent.com/nothings/stb/master/docs/stb_howto.txt
-#ifdef WUFFS_CONFIG__STATIC_FUNCTIONS
+#if defined(WUFFS_CONFIG__STATIC_FUNCTIONS)
 #define WUFFS_BASE__MAYBE_STATIC static
 #else
 #define WUFFS_BASE__MAYBE_STATIC
-#endif
+#endif  // defined(WUFFS_CONFIG__STATIC_FUNCTIONS)
 
-// --------
+// ---------------- CPU Architecture
+
+// WUFFS_BASE__CPU_ARCH__X86_64__ETC are bits returned by
+// wuffs_base__cpu_arch__x86_64__capabilities.
+// - "SSE128" means all of SSE, SSE2, SSE3, SSSE3, SSE4.1, SSE4.2 and POPCNT.
+// - "AVX256" means all of AVX and AVX2.
+// - "AVX512ETC" is reserved, pending need. Note that AVX-512 consists of
+//   multiple extensions that may be implemented independently.
+#define WUFFS_BASE__CPU_ARCH__X86_64__SSE128 0x01
+#define WUFFS_BASE__CPU_ARCH__X86_64__AVX256 0x02
+
+static inline uint32_t  //
+wuffs_base__cpu_arch__x86_64__capabilities() {
+#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+  uint32_t ret = 0;
+
+  unsigned int eax1 = 0;
+  unsigned int ebx1 = 0;
+  unsigned int ecx1 = 0;
+  unsigned int edx1 = 0;
+  if (__get_cpuid(1, &eax1, &ebx1, &ecx1, &edx1)) {
+    const unsigned int sse128_ecx1 = bit_SSE4_2 | bit_POPCNT;
+    if ((ecx1 & sse128_ecx1) == sse128_ecx1) {
+      ret |= WUFFS_BASE__CPU_ARCH__X86_64__SSE128;
+    }
+  }
+
+  unsigned int eax7 = 0;
+  unsigned int ebx7 = 0;
+  unsigned int ecx7 = 0;
+  unsigned int edx7 = 0;
+  if (__get_cpuid_count(7, 0, &eax7, &ebx7, &ecx7, &edx7)) {
+    const unsigned int avx256_ebx7 = bit_AVX2;
+    if ((ebx7 & avx256_ebx7) == avx256_ebx7) {
+      ret |= WUFFS_BASE__CPU_ARCH__X86_64__AVX256;
+    }
+  }
+
+  return ret;
+#else
+  return 0;
+#endif  // defined( WUFFS_BASE__CPU_ARCH__X86_64)
+}
+
+// ---------------- Fundamentals
 
 // Wuffs assumes that:
 //  - converting a uint32_t to a size_t will never overflow.
