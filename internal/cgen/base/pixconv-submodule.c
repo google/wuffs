@@ -546,16 +546,16 @@ wuffs_base__pixel_swizzler__swap_rgbx_bgrx__sse128(uint8_t* dst_ptr,
   const uint8_t* s = src_ptr;
   size_t n = len;
 
-  __m128i shuffle = _mm_set_epi8(0x0F, 0x0C, 0x0D, 0x0E,  //
-                                 0x0B, 0x08, 0x09, 0x0A,  //
-                                 0x07, 0x04, 0x05, 0x06,  //
-                                 0x03, 0x00, 0x01, 0x02);
+  __m128i shuffle = _mm_set_epi8(+0x0F, +0x0C, +0x0D, +0x0E,  //
+                                 +0x0B, +0x08, +0x09, +0x0A,  //
+                                 +0x07, +0x04, +0x05, +0x06,  //
+                                 +0x03, +0x00, +0x01, +0x02);
 
   while (n >= 4) {
     __m128i x;
-    x = _mm_loadu_si128((const void*)s);
+    x = _mm_loadu_si128((const __m128i*)(const void*)s);
     x = _mm_shuffle_epi8(x, shuffle);
-    _mm_storeu_si128((void*)d, x);
+    _mm_storeu_si128((__m128i*)(void*)d, x);
 
     s += 4 * 4;
     d += 4 * 4;
@@ -576,7 +576,7 @@ wuffs_base__pixel_swizzler__swap_rgbx_bgrx__sse128(uint8_t* dst_ptr,
   }
   return len;
 }
-#endif
+#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
 
 static uint64_t  //
 wuffs_base__pixel_swizzler__swap_rgbx_bgrx(uint8_t* dst_ptr,
@@ -1760,21 +1760,21 @@ wuffs_base__pixel_swizzler__bgrw__rgb__sse128(uint8_t* dst_ptr,
   const uint8_t* s = src_ptr;
   size_t n = len;
 
-  __m128i shuffle = _mm_set_epi8(0x00, 0x09, 0x0A, 0x0B,  //
-                                 0x00, 0x06, 0x07, 0x08,  //
-                                 0x00, 0x03, 0x04, 0x05,  //
-                                 0x00, 0x00, 0x01, 0x02);
-  __m128i or = _mm_set_epi8(0xFF, 0x00, 0x00, 0x00,  //
-                            0xFF, 0x00, 0x00, 0x00,  //
-                            0xFF, 0x00, 0x00, 0x00,  //
-                            0xFF, 0x00, 0x00, 0x00);
+  __m128i shuffle = _mm_set_epi8(+0x00, +0x09, +0x0A, +0x0B,  //
+                                 +0x00, +0x06, +0x07, +0x08,  //
+                                 +0x00, +0x03, +0x04, +0x05,  //
+                                 +0x00, +0x00, +0x01, +0x02);
+  __m128i or_ff = _mm_set_epi8(-0x01, +0x00, +0x00, +0x00,  //
+                               -0x01, +0x00, +0x00, +0x00,  //
+                               -0x01, +0x00, +0x00, +0x00,  //
+                               -0x01, +0x00, +0x00, +0x00);
 
   while (n >= 6) {
     __m128i x;
-    x = _mm_loadu_si128((const void*)s);
+    x = _mm_loadu_si128((const __m128i*)(const void*)s);
     x = _mm_shuffle_epi8(x, shuffle);
-    x = _mm_or_si128(x, or);
-    _mm_storeu_si128((void*)d, x);
+    x = _mm_or_si128(x, or_ff);
+    _mm_storeu_si128((__m128i*)(void*)d, x);
 
     s += 4 * 3;
     d += 4 * 4;
@@ -1797,7 +1797,7 @@ wuffs_base__pixel_swizzler__bgrw__rgb__sse128(uint8_t* dst_ptr,
 
   return len;
 }
-#endif
+#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
 
 static uint64_t  //
 wuffs_base__pixel_swizzler__bgrw__rgb(uint8_t* dst_ptr,
@@ -2137,21 +2137,21 @@ wuffs_base__pixel_swizzler__xxxx__y__sse128(uint8_t* dst_ptr,
   const uint8_t* s = src_ptr;
   size_t n = len;
 
-  __m128i shuffle = _mm_set_epi8(0x03, 0x03, 0x03, 0x03,  //
-                                 0x02, 0x02, 0x02, 0x02,  //
-                                 0x01, 0x01, 0x01, 0x01,  //
-                                 0x00, 0x00, 0x00, 0x00);
-  __m128i or = _mm_set_epi8(0xFF, 0x00, 0x00, 0x00,  //
-                            0xFF, 0x00, 0x00, 0x00,  //
-                            0xFF, 0x00, 0x00, 0x00,  //
-                            0xFF, 0x00, 0x00, 0x00);
+  __m128i shuffle = _mm_set_epi8(+0x03, +0x03, +0x03, +0x03,  //
+                                 +0x02, +0x02, +0x02, +0x02,  //
+                                 +0x01, +0x01, +0x01, +0x01,  //
+                                 +0x00, +0x00, +0x00, +0x00);
+  __m128i or_ff = _mm_set_epi8(-0x01, +0x00, +0x00, +0x00,  //
+                               -0x01, +0x00, +0x00, +0x00,  //
+                               -0x01, +0x00, +0x00, +0x00,  //
+                               -0x01, +0x00, +0x00, +0x00);
 
   while (n >= 4) {
     __m128i x;
-    x = _mm_cvtsi32_si128(wuffs_base__load_u32le__no_bounds_check(s));
+    x = _mm_cvtsi32_si128((int)(wuffs_base__load_u32le__no_bounds_check(s)));
     x = _mm_shuffle_epi8(x, shuffle);
-    x = _mm_or_si128(x, or);
-    _mm_storeu_si128((void*)d, x);
+    x = _mm_or_si128(x, or_ff);
+    _mm_storeu_si128((__m128i*)(void*)d, x);
 
     s += 4 * 1;
     d += 4 * 4;
@@ -2169,7 +2169,7 @@ wuffs_base__pixel_swizzler__xxxx__y__sse128(uint8_t* dst_ptr,
 
   return len;
 }
-#endif
+#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
 
 static uint64_t  //
 wuffs_base__pixel_swizzler__xxxx__y(uint8_t* dst_ptr,
