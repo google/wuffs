@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// --------
+
+// Filter 1: Sub.
+
 pri func decoder.filter_1!(curr: slice base.u8),
 	choosy,
 {
@@ -72,6 +76,8 @@ pri func decoder.filter_1_distance_4_fallback!(curr: slice base.u8) {
 	}
 }
 
+// Filter 2: Up.
+
 pri func decoder.filter_2!(curr: slice base.u8, prev: slice base.u8),
 	choosy,
 {
@@ -91,6 +97,8 @@ pri func decoder.filter_2!(curr: slice base.u8, prev: slice base.u8),
 		i += 1
 	} endwhile
 }
+
+// Filter 3: Average.
 
 pri func decoder.filter_3!(curr: slice base.u8, prev: slice base.u8),
 	choosy,
@@ -209,6 +217,8 @@ pri func decoder.filter_3_distance_4_fallback!(curr: slice base.u8, prev: slice 
 		}
 	}
 }
+
+// Filter 4: Paeth.
 
 pri func decoder.filter_4!(curr: slice base.u8, prev: slice base.u8),
 	choosy,
