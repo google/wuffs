@@ -227,17 +227,53 @@ func (g *gen) writeStatementAssign1(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr
 func (g *gen) writeStatementChoose(b *buffer, n *a.Choose, depth uint32) error {
 	recv := g.currFunk.astFunc.Receiver()
 	args := n.Args()
-	if len(args) != 1 {
-		return fmt.Errorf("TODO: multiple choice")
+	if len(args) == 0 {
+		return nil
 	}
-	id := args[0].AsExpr().Ident()
-	suffix := ""
-	if n.Name() == id {
-		suffix = "__choosy_default"
+	b.printf("self->private_impl.choosy_%s = (\n", n.Name().Str(g.tm))
+
+	conclusive := false
+	for _, o := range args {
+		id := o.AsExpr().Ident()
+		suffix := ""
+		if n.Name() == id {
+			suffix = "__choosy_default"
+		}
+		caMacro, caName, _ := cpuArchCNames(g.funks[t.QQID{recv[0], recv[1], id}].astFunc.Asserts())
+		if caMacro == "" {
+			b.printf("&%s%s__%s%s", g.pkgPrefix, recv.Str(g.tm), id.Str(g.tm), suffix)
+			conclusive = true
+			break
+		}
+		b.printf("#if defined(WUFFS_BASE__CPU_ARCH__%s)\n"+
+			"wuffs_base__cpu_arch__have_%s() ? &%s%s__%s%s :\n"+
+			"#endif\n",
+			caMacro, caName, g.pkgPrefix, recv.Str(g.tm), id.Str(g.tm), suffix)
 	}
-	b.printf("self->private_impl.choosy_%s = &%s%s__%s%s;\n",
-		n.Name().Str(g.tm), g.pkgPrefix, recv.Str(g.tm), id.Str(g.tm), suffix)
+
+	if !conclusive {
+		b.printf("self->private_impl.choosy_%s", n.Name().Str(g.tm))
+	}
+	b.writes(");\n")
 	return nil
+}
+
+func cpuArchCNames(asserts []*a.Node) (caMacro string, caName string, caAttribute string) {
+	sse128 := false
+	for _, o := range asserts {
+		o := o.AsAssert()
+		if !o.IsChooseCPUArch() {
+			continue
+		}
+		switch o.Condition().RHS().AsExpr().Ident() {
+		case t.IDSSE128:
+			sse128 = true
+		}
+	}
+	if sse128 {
+		return "X86_64", "sse128", "__attribute__((target(\"sse4.2\")))"
+	}
+	return "", "", ""
 }
 
 func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {

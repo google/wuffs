@@ -249,8 +249,19 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 				if err != nil {
 					return nil, err
 				}
-				if err := p.assertsSorted(asserts); err != nil {
+				if err := p.assertsSorted(asserts, true); err != nil {
 					return nil, err
+				}
+				for _, o := range asserts {
+					o := o.AsAssert()
+					if o.Keyword() != t.IDChoose {
+						continue
+					} else if o.IsChooseCPUArch() {
+						flags |= a.FlagsHasChooseCPUArch
+					} else {
+						return nil, fmt.Errorf(`parse: invalid "choose" condition at %s:%d`,
+							p.filename, p.line())
+					}
 				}
 			}
 
@@ -266,6 +277,17 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 				return nil, fmt.Errorf(`parse: expected (implicit) ";", got %q at %s:%d`, got, p.filename, p.line())
 			}
 			p.src = p.src[1:]
+
+			if (flags & a.FlagsHasChooseCPUArch) != 0 {
+				if (flags & a.FlagsPublic) != 0 {
+					return nil, fmt.Errorf(`parse: cpu_arch function cannot be public at %s:%d`,
+						p.filename, p.line())
+				}
+				if (flags & a.FlagsChoosy) != 0 {
+					return nil, fmt.Errorf(`parse: cpu_arch function cannot be choosy at %s:%d`,
+						p.filename, p.line())
+				}
+			}
 			p.funcEffect = 0
 			in := a.NewStruct(0, p.filename, line, t.IDArgs, nil, argFields)
 			return a.NewFunc(flags, p.filename, line, id0, id1, in, out, asserts, body).AsNode(), nil
@@ -638,17 +660,26 @@ func (p *parser) parseBlock(doubleCurly bool) ([]*a.Node, error) {
 	return block, nil
 }
 
-func (p *parser) assertsSorted(asserts []*a.Node) error {
-	seenInv, seenPost := false, false
-	for _, a := range asserts {
-		switch a.AsAssert().Keyword() {
+func (p *parser) assertsSorted(asserts []*a.Node, allowChoose bool) error {
+	seenPre, seenInv, seenPost := false, false, false
+	for _, o := range asserts {
+		switch o.AsAssert().Keyword() {
 		case t.IDAssert:
 			return fmt.Errorf(`parse: assertion chain cannot contain "assert", `+
 				`only "pre", "inv" and "post" at %s:%d`, p.filename, p.line())
+		case t.IDChoose:
+			if !allowChoose {
+				return fmt.Errorf(`parse: invalid "choose" at %s:%d`, p.filename, p.line())
+			}
+			if seenPre || seenPost || seenInv {
+				break
+			}
+			continue
 		case t.IDPre:
 			if seenPost || seenInv {
 				break
 			}
+			seenPre = true
 			continue
 		case t.IDInv:
 			if seenPost {
@@ -660,7 +691,7 @@ func (p *parser) assertsSorted(asserts []*a.Node) error {
 			seenPost = true
 			continue
 		}
-		return fmt.Errorf(`parse: assertion chain not in "pre", "inv", "post" order at %s:%d`,
+		return fmt.Errorf(`parse: assertion chain not in "choose", "pre", "inv", "post" order at %s:%d`,
 			p.filename, p.line())
 	}
 	return nil
@@ -668,7 +699,7 @@ func (p *parser) assertsSorted(asserts []*a.Node) error {
 
 func (p *parser) parseAssertNode() (*a.Node, error) {
 	switch x := p.peek1(); x {
-	case t.IDAssert, t.IDPre, t.IDInv, t.IDPost:
+	case t.IDAssert, t.IDChoose, t.IDPre, t.IDInv, t.IDPost:
 		p.src = p.src[1:]
 		condition, err := p.parseExpr()
 		if err != nil {
@@ -753,7 +784,7 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 	p.allowVar = false
 
 	switch x {
-	case t.IDAssert, t.IDPre, t.IDPost:
+	case t.IDAssert:
 		return p.parseAssertNode()
 
 	case t.IDBreak, t.IDContinue:
@@ -1006,7 +1037,7 @@ func (p *parser) parseAsserts() ([]*a.Node, error) {
 		if asserts, err = p.parseList(t.IDOpenDoubleCurly, (*parser).parseAssertNode); err != nil {
 			return nil, err
 		}
-		if err := p.assertsSorted(asserts); err != nil {
+		if err := p.assertsSorted(asserts, false); err != nil {
 			return nil, err
 		}
 	}

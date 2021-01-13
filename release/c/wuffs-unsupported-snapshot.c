@@ -141,7 +141,22 @@ wuffs_base__cpu_arch__x86_64__capabilities() {
   return ret;
 #else
   return 0;
-#endif  // defined( WUFFS_BASE__CPU_ARCH__X86_64)
+#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+}
+
+static inline bool  //
+wuffs_base__cpu_arch__have_sse128() {
+#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+  unsigned int eax1 = 0;
+  unsigned int ebx1 = 0;
+  unsigned int ecx1 = 0;
+  unsigned int edx1 = 0;
+  if (__get_cpuid(1, &eax1, &ebx1, &ecx1, &edx1)) {
+    const unsigned int sse128_ecx1 = bit_SSE4_2 | bit_POPCNT;
+    return (ecx1 & sse128_ecx1) == sse128_ecx1;
+  }
+#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+  return false;
 }
 
 // ---------------- Fundamentals
@@ -16256,8 +16271,7 @@ wuffs_base__pixel_swizzler__prepare__y(wuffs_base__pixel_swizzler* p,
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_BINARY:
     case WUFFS_BASE__PIXEL_FORMAT__RGBX:
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
-      if (wuffs_base__cpu_arch__x86_64__capabilities() &
-          WUFFS_BASE__CPU_ARCH__X86_64__SSE128) {
+      if (wuffs_base__cpu_arch__have_sse128()) {
         return wuffs_base__pixel_swizzler__xxxx__y__sse128;
       }
 #endif
@@ -16562,8 +16576,7 @@ wuffs_base__pixel_swizzler__prepare__rgb(wuffs_base__pixel_swizzler* p,
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_BINARY:
     case WUFFS_BASE__PIXEL_FORMAT__BGRX:
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
-      if (wuffs_base__cpu_arch__x86_64__capabilities() &
-          WUFFS_BASE__CPU_ARCH__X86_64__SSE128) {
+      if (wuffs_base__cpu_arch__have_sse128()) {
         return wuffs_base__pixel_swizzler__bgrw__rgb__sse128;
       }
 #endif
@@ -16610,8 +16623,7 @@ wuffs_base__pixel_swizzler__prepare__rgba_nonpremul(
       switch (blend) {
         case WUFFS_BASE__PIXEL_BLEND__SRC:
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
-          if (wuffs_base__cpu_arch__x86_64__capabilities() &
-              WUFFS_BASE__CPU_ARCH__X86_64__SSE128) {
+          if (wuffs_base__cpu_arch__have_sse128()) {
             return wuffs_base__pixel_swizzler__swap_rgbx_bgrx__sse128;
           }
 #endif
@@ -30198,6 +30210,13 @@ wuffs_png__decoder__filter_4_distance_4_fallback(
     wuffs_base__slice_u8 a_curr,
     wuffs_base__slice_u8 a_prev);
 
+#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+static wuffs_base__empty_struct
+wuffs_png__decoder__filter_1_distance_4_sse128(
+    wuffs_png__decoder* self,
+    wuffs_base__slice_u8 a_curr);
+#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+
 static wuffs_base__empty_struct
 wuffs_png__decoder__choose_filter_implementations(
     wuffs_png__decoder* self);
@@ -30942,6 +30961,43 @@ wuffs_png__decoder__filter_4_distance_4_fallback(
   return wuffs_base__make_empty_struct();
 }
 
+// -------- func png.decoder.filter_1_distance_4_sse128
+
+#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(__GNUC__)
+__attribute__((target("sse4.2")))
+#endif
+static wuffs_base__empty_struct
+wuffs_png__decoder__filter_1_distance_4_sse128(
+    wuffs_png__decoder* self,
+    wuffs_base__slice_u8 a_curr) {
+  wuffs_base__slice_u8 v_c = {0};
+  uint8_t v_fa0 = 0;
+  uint8_t v_fa1 = 0;
+  uint8_t v_fa2 = 0;
+  uint8_t v_fa3 = 0;
+
+  {
+    wuffs_base__slice_u8 i_slice_c = a_curr;
+    v_c = i_slice_c;
+    v_c.len = 4;
+    uint8_t* i_end0_c = i_slice_c.ptr + ((i_slice_c.len / 4) * 4);
+    while (v_c.ptr < i_end0_c) {
+      v_fa0 += v_c.ptr[0];
+      v_c.ptr[0] = v_fa0;
+      v_fa1 += v_c.ptr[1];
+      v_c.ptr[1] = v_fa1;
+      v_fa2 += v_c.ptr[2];
+      v_c.ptr[2] = v_fa2;
+      v_fa3 += v_c.ptr[3];
+      v_c.ptr[3] = v_fa3;
+      v_c.ptr += 4;
+    }
+  }
+  return wuffs_base__make_empty_struct();
+}
+#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+
 // -------- func png.decoder.set_quirk_enabled
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct
@@ -31425,13 +31481,22 @@ static wuffs_base__empty_struct
 wuffs_png__decoder__choose_filter_implementations(
     wuffs_png__decoder* self) {
   if (self->private_impl.f_filter_distance == 3) {
-    self->private_impl.choosy_filter_1 = &wuffs_png__decoder__filter_1_distance_3_fallback;
-    self->private_impl.choosy_filter_3 = &wuffs_png__decoder__filter_3_distance_3_fallback;
-    self->private_impl.choosy_filter_4 = &wuffs_png__decoder__filter_4_distance_3_fallback;
+    self->private_impl.choosy_filter_1 = (
+        &wuffs_png__decoder__filter_1_distance_3_fallback);
+    self->private_impl.choosy_filter_3 = (
+        &wuffs_png__decoder__filter_3_distance_3_fallback);
+    self->private_impl.choosy_filter_4 = (
+        &wuffs_png__decoder__filter_4_distance_3_fallback);
   } else if (self->private_impl.f_filter_distance == 4) {
-    self->private_impl.choosy_filter_1 = &wuffs_png__decoder__filter_1_distance_4_fallback;
-    self->private_impl.choosy_filter_3 = &wuffs_png__decoder__filter_3_distance_4_fallback;
-    self->private_impl.choosy_filter_4 = &wuffs_png__decoder__filter_4_distance_4_fallback;
+    self->private_impl.choosy_filter_1 = (
+#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+        wuffs_base__cpu_arch__have_sse128() ? &wuffs_png__decoder__filter_1_distance_4_sse128 :
+#endif
+        &wuffs_png__decoder__filter_1_distance_4_fallback);
+    self->private_impl.choosy_filter_3 = (
+        &wuffs_png__decoder__filter_3_distance_4_fallback);
+    self->private_impl.choosy_filter_4 = (
+        &wuffs_png__decoder__filter_4_distance_4_fallback);
   }
   return wuffs_base__make_empty_struct();
 }

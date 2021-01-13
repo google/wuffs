@@ -10,6 +10,7 @@
 - Added `base` library support for UTF-8.
 - Added `base` library support for `atoi`-like string conversion.
 - Added `choose` and `choosy`.
+- Added `cpu_arch`.
 - Added `doc/logo`.
 - Added `endwhile` syntax.
 - Added `example/cbor-to-json`.

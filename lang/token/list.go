@@ -605,12 +605,13 @@ const (
 	// -------- 0x200 block.
 
 	IDAdvance    = ID(0x200)
-	IDInitialize = ID(0x201)
-	IDLength     = ID(0x202)
-	IDReset      = ID(0x203)
-	IDSet        = ID(0x204)
-	IDUnroll     = ID(0x205)
-	IDUpdate     = ID(0x206)
+	IDCPUArch    = ID(0x201)
+	IDInitialize = ID(0x202)
+	IDLength     = ID(0x203)
+	IDReset      = ID(0x204)
+	IDSet        = ID(0x205)
+	IDUnroll     = ID(0x206)
+	IDUpdate     = ID(0x207)
 
 	// TODO: range/rect methods like intersection and contains?
 
@@ -636,6 +637,15 @@ const (
 
 	IDLimitedSwizzleU32InterleavedFromReader = ID(0x280)
 	IDSwizzleInterleavedFromReader           = ID(0x281)
+
+	// -------- 0x300 block.
+
+	// 0x30? are reserved for NEON.
+
+	IDSSE128  = ID(0x310)
+	IDSSE128I = ID(0x311)
+
+	// 0x32? are reserved for AVX256.
 )
 
 var builtInsByID = [nBuiltInIDs]string{
@@ -969,6 +979,7 @@ var builtInsByID = [nBuiltInIDs]string{
 	// -------- 0x200 block.
 
 	IDAdvance:    "advance",
+	IDCPUArch:    "cpu_arch",
 	IDInitialize: "initialize",
 	IDLength:     "length",
 	IDReset:      "reset",
@@ -998,6 +1009,11 @@ var builtInsByID = [nBuiltInIDs]string{
 
 	IDLimitedSwizzleU32InterleavedFromReader: "limited_swizzle_u32_interleaved_from_reader",
 	IDSwizzleInterleavedFromReader:           "swizzle_interleaved_from_reader",
+
+	// -------- 0x300 block.
+
+	IDSSE128:  "sse128",
+	IDSSE128I: "sse128_i",
 }
 
 var builtInsByName = map[string]ID{}

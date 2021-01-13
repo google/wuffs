@@ -107,7 +107,22 @@ wuffs_base__cpu_arch__x86_64__capabilities() {
   return ret;
 #else
   return 0;
-#endif  // defined( WUFFS_BASE__CPU_ARCH__X86_64)
+#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+}
+
+static inline bool  //
+wuffs_base__cpu_arch__have_sse128() {
+#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+  unsigned int eax1 = 0;
+  unsigned int ebx1 = 0;
+  unsigned int ecx1 = 0;
+  unsigned int edx1 = 0;
+  if (__get_cpuid(1, &eax1, &ebx1, &ecx1, &edx1)) {
+    const unsigned int sse128_ecx1 = bit_SSE4_2 | bit_POPCNT;
+    return (ecx1 & sse128_ecx1) == sse128_ecx1;
+  }
+#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+  return false;
 }
 
 // ---------------- Fundamentals

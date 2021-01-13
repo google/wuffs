@@ -624,7 +624,11 @@ func (c *Checker) checkFuncContract(node *a.Node) error {
 		tm: c.tm,
 	}
 	for _, o := range n.Asserts() {
-		if err := q.tcheckAssert(o.AsAssert()); err != nil {
+		setPlaceholderMBoundsMType(o)
+		if err := q.tcheckFuncAssert(o.AsAssert()); err != nil {
+			return err
+		}
+		if err := q.bcheckFuncAssert(o.AsAssert()); err != nil {
 			return err
 		}
 	}

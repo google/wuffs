@@ -202,10 +202,18 @@ func (g *gen) writeFuncSignature(b *buffer, n *a.Func, wfs uint32) error {
 }
 
 func (g *gen) writeFuncPrototype(b *buffer, n *a.Func) error {
+	caMacro, _, _ := cpuArchCNames(n.Asserts())
+	if caMacro != "" {
+		b.printf("#if defined(WUFFS_BASE__CPU_ARCH__%s)\n", caMacro)
+	}
 	if err := g.writeFuncSignature(b, n, wfsCDecl); err != nil {
 		return err
 	}
-	b.writes(";\n\n")
+	b.writes(";\n")
+	if caMacro != "" {
+		b.printf("#endif  // defined(WUFFS_BASE__CPU_ARCH__%s)\n", caMacro)
+	}
+	b.writes("\n")
 	if n.Choosy() {
 		if err := g.writeFuncSignature(b, n, wfsCDeclChoosy); err != nil {
 			return err
@@ -219,6 +227,15 @@ func (g *gen) writeFuncImpl(b *buffer, n *a.Func) error {
 	k := g.funks[n.QQID()]
 
 	b.printf("// -------- func %s.%s\n\n", g.pkgName, n.QQID().Str(g.tm))
+
+	caMacro, _, caAttribute := cpuArchCNames(n.Asserts())
+	if caMacro != "" {
+		b.printf("#if defined(WUFFS_BASE__CPU_ARCH__%s)\n", caMacro)
+	}
+	if caAttribute != "" {
+		b.printf("#if defined(__GNUC__)\n%s\n#endif\n", caAttribute)
+	}
+
 	if err := g.writeFuncSignature(b, n, wfsCDecl); err != nil {
 		return err
 	}
@@ -251,7 +268,11 @@ func (g *gen) writeFuncImpl(b *buffer, n *a.Func) error {
 	}
 
 	b.writex(k.bEpilogue)
-	b.writes("}\n\n")
+	b.writes("}\n")
+	if caMacro != "" {
+		b.printf("#endif  // defined(WUFFS_BASE__CPU_ARCH__%s)\n", caMacro)
+	}
+	b.writes("\n")
 	return nil
 }
 

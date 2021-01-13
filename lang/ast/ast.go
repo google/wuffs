@@ -106,6 +106,7 @@ const (
 	FlagsRetsError        = Flags(0x00004000)
 	FlagsPrivateData      = Flags(0x00008000)
 	FlagsChoosy           = Flags(0x00010000)
+	FlagsHasChooseCPUArch = Flags(0x00020000)
 )
 
 func (f Flags) AsEffect() Effect { return Effect(f) }
@@ -424,8 +425,9 @@ func NewExpr(flags Flags, operator t.ID, ident t.ID, lhs *Node, mhs *Node, rhs *
 	}
 }
 
-// Assert is "assert RHS via ID2(args)", "pre etc", "inv etc" or "post etc":
-//  - ID0:   <IDAssert|IDPre|IDInv|IDPost>
+// Assert is "assert RHS via ID2(args)", "choose etc", "pre etc", "inv etc" or
+// "post etc":
+//  - ID0:   <IDAssert|IDChoose|IDPre|IDInv|IDPost>
 //  - ID2:   <"-string literal> reason
 //  - RHS:   <Expr>
 //  - List0: <Arg> reason arguments
@@ -438,6 +440,26 @@ func (n *Assert) Condition() *Expr { return n.rhs.AsExpr() }
 func (n *Assert) Args() []*Node    { return n.list0 }
 
 func (n *Assert) DropExprCachedMBounds() error { return n.AsNode().Walk(dropExprCachedMBounds) }
+
+func (n *Assert) IsChooseCPUArch() bool {
+	if n.id0 != t.IDChoose {
+		return false
+	}
+	cond := n.Condition()
+	if cond.Operator() != t.IDXBinaryGreaterEq {
+		return false
+	}
+	lhs := cond.LHS().AsExpr()
+	rhs := cond.RHS().AsExpr()
+	if (lhs.Operator() != 0) || (lhs.Ident() != t.IDCPUArch) || (rhs.Operator() != 0) {
+		return false
+	}
+	switch rhs.Ident() {
+	case t.IDSSE128:
+		return true
+	}
+	return false
+}
 
 func NewAssert(keyword t.ID, condition *Expr, reason t.ID, args []*Node) *Assert {
 	return &Assert{
@@ -894,19 +916,20 @@ const MaxBodyDepth = 255
 //  - List2: <Statement> body
 type Func Node
 
-func (n *Func) AsNode() *Node    { return (*Node)(n) }
-func (n *Func) Choosy() bool     { return n.flags&FlagsChoosy != 0 }
-func (n *Func) Effect() Effect   { return Effect(n.flags) }
-func (n *Func) Public() bool     { return n.flags&FlagsPublic != 0 }
-func (n *Func) Filename() string { return n.filename }
-func (n *Func) Line() uint32     { return n.line }
-func (n *Func) QQID() t.QQID     { return t.QQID{n.id1, n.id2, n.id0} }
-func (n *Func) Receiver() t.QID  { return t.QID{n.id1, n.id2} }
-func (n *Func) FuncName() t.ID   { return n.id0 }
-func (n *Func) In() *Struct      { return n.lhs.AsStruct() }
-func (n *Func) Out() *TypeExpr   { return n.rhs.AsTypeExpr() }
-func (n *Func) Asserts() []*Node { return n.list1 }
-func (n *Func) Body() []*Node    { return n.list2 }
+func (n *Func) AsNode() *Node          { return (*Node)(n) }
+func (n *Func) Choosy() bool           { return n.flags&FlagsChoosy != 0 }
+func (n *Func) Effect() Effect         { return Effect(n.flags) }
+func (n *Func) HasChooseCPUArch() bool { return n.flags&FlagsHasChooseCPUArch != 0 }
+func (n *Func) Public() bool           { return n.flags&FlagsPublic != 0 }
+func (n *Func) Filename() string       { return n.filename }
+func (n *Func) Line() uint32           { return n.line }
+func (n *Func) QQID() t.QQID           { return t.QQID{n.id1, n.id2, n.id0} }
+func (n *Func) Receiver() t.QID        { return t.QID{n.id1, n.id2} }
+func (n *Func) FuncName() t.ID         { return n.id0 }
+func (n *Func) In() *Struct            { return n.lhs.AsStruct() }
+func (n *Func) Out() *TypeExpr         { return n.rhs.AsTypeExpr() }
+func (n *Func) Asserts() []*Node       { return n.list1 }
+func (n *Func) Body() []*Node          { return n.list2 }
 
 func (n *Func) BodyEndsWithReturn() bool {
 	if len(n.list2) == 0 {

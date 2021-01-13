@@ -206,6 +206,17 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 	return nil
 }
 
+func (q *checker) tcheckFuncAssert(n *a.Assert) error {
+	if n.IsChooseCPUArch() {
+		cond := n.Condition()
+		cond.SetMType(typeExprBool)
+		cond.LHS().AsExpr().SetMType(typeExprU32)
+		cond.RHS().AsExpr().SetMType(typeExprU32)
+		return nil
+	}
+	return fmt.Errorf("check: function assertions are not supported yet")
+}
+
 func (q *checker) tcheckAssert(n *a.Assert) error {
 	cond := n.Condition()
 	if err := q.tcheckExpr(cond, 0); err != nil {
@@ -530,6 +541,10 @@ func (q *checker) tcheckExprCall(n *a.Expr, depth uint32) error {
 	if ne, fe := n.Effect(), f.Effect(); ne != fe {
 		return fmt.Errorf("check: %q has effect %q but %q has effect %q",
 			n.Str(q.tm), ne, f.QQID().Str(q.tm), fe)
+	}
+	if f.HasChooseCPUArch() {
+		return fmt.Errorf(`check: cannot call cpu_arch function %q directly, only via "choose"`,
+			f.QQID().Str(q.tm))
 	}
 
 	genericType1 := (*a.TypeExpr)(nil)

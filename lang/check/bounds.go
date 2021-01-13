@@ -370,6 +370,18 @@ func (q *checker) hasIsErrorFact(id t.ID) bool {
 	return false
 }
 
+func (q *checker) bcheckFuncAssert(n *a.Assert) error {
+	if n.IsChooseCPUArch() {
+		b := bounds{zero, one}
+		cond := n.Condition()
+		cond.SetMBounds(b)
+		cond.LHS().AsExpr().SetMBounds(b)
+		cond.RHS().AsExpr().SetMBounds(b)
+		return nil
+	}
+	return fmt.Errorf("check: function assertions are not supported yet")
+}
+
 func (q *checker) bcheckAssert(n *a.Assert) error {
 	if err := n.DropExprCachedMBounds(); err != nil {
 		return err

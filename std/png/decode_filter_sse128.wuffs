@@ -1,0 +1,38 @@
+// Copyright 2021 The Wuffs Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// --------
+
+// Filter 1: Sub.
+
+pri func decoder.filter_1_distance_4_sse128!(curr: slice base.u8),
+	choose cpu_arch >= sse128,
+{
+	var c   : slice base.u8
+	var fa0 : base.u8
+	var fa1 : base.u8
+	var fa2 : base.u8
+	var fa3 : base.u8
+
+	iterate (c = args.curr)(length: 4, advance: 4, unroll: 1) {
+		fa0 ~mod+= c[0]
+		c[0] = fa0
+		fa1 ~mod+= c[1]
+		c[1] = fa1
+		fa2 ~mod+= c[2]
+		c[2] = fa2
+		fa3 ~mod+= c[3]
+		c[3] = fa3
+	}
+}
