@@ -3035,9 +3035,13 @@ typedef uint8_t wuffs_base__pixel_blend;
 typedef uint32_t wuffs_base__pixel_alpha_transparency;
 
 #define WUFFS_BASE__PIXEL_ALPHA_TRANSPARENCY__OPAQUE 0
-#define WUFFS_BASE__PIXEL_ALPHA_TRANSPARENCY__NON_PREMULTIPLIED_ALPHA 1
+#define WUFFS_BASE__PIXEL_ALPHA_TRANSPARENCY__NONPREMULTIPLIED_ALPHA 1
 #define WUFFS_BASE__PIXEL_ALPHA_TRANSPARENCY__PREMULTIPLIED_ALPHA 2
 #define WUFFS_BASE__PIXEL_ALPHA_TRANSPARENCY__BINARY_ALPHA 3
+
+// Deprecated: use WUFFS_BASE__PIXEL_ALPHA_TRANSPARENCY__NONPREMULTIPLIED_ALPHA
+// instead.
+#define WUFFS_BASE__PIXEL_ALPHA_TRANSPARENCY__NON_PREMULTIPLIED_ALPHA 1
 
 // --------
 
@@ -14525,6 +14529,54 @@ wuffs_base__pixel_swizzler__swap_rgb_bgr(uint8_t* dst_ptr,
   return len;
 }
 
+#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(__GNUC__)
+__attribute__((target("sse4.2")))
+#endif
+static uint64_t  //
+wuffs_base__pixel_swizzler__swap_rgbx_bgrx__sse128(uint8_t* dst_ptr,
+                                                   size_t dst_len,
+                                                   uint8_t* dst_palette_ptr,
+                                                   size_t dst_palette_len,
+                                                   const uint8_t* src_ptr,
+                                                   size_t src_len) {
+  size_t len = (dst_len < src_len ? dst_len : src_len) / 4;
+  uint8_t* d = dst_ptr;
+  const uint8_t* s = src_ptr;
+  size_t n = len;
+
+  __m128i shuffle = _mm_set_epi8(0x0F, 0x0C, 0x0D, 0x0E,  //
+                                 0x0B, 0x08, 0x09, 0x0A,  //
+                                 0x07, 0x04, 0x05, 0x06,  //
+                                 0x03, 0x00, 0x01, 0x02);
+
+  while (n >= 4) {
+    __m128i x;
+    x = _mm_loadu_si128((const void*)s);
+    x = _mm_shuffle_epi8(x, shuffle);
+    _mm_storeu_si128((void*)d, x);
+
+    s += 4 * 4;
+    d += 4 * 4;
+    n -= 4;
+  }
+
+  while (n--) {
+    uint8_t b0 = s[0];
+    uint8_t b1 = s[1];
+    uint8_t b2 = s[2];
+    uint8_t b3 = s[3];
+    d[0] = b2;
+    d[1] = b1;
+    d[2] = b0;
+    d[3] = b3;
+    s += 4;
+    d += 4;
+  }
+  return len;
+}
+#endif
+
 static uint64_t  //
 wuffs_base__pixel_swizzler__swap_rgbx_bgrx(uint8_t* dst_ptr,
                                            size_t dst_len,
@@ -15689,6 +15741,63 @@ wuffs_base__pixel_swizzler__bgrw__bgrx(uint8_t* dst_ptr,
   return len;
 }
 
+#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(__GNUC__)
+__attribute__((target("sse4.2")))
+#endif
+static uint64_t  //
+wuffs_base__pixel_swizzler__bgrw__rgb__sse128(uint8_t* dst_ptr,
+                                              size_t dst_len,
+                                              uint8_t* dst_palette_ptr,
+                                              size_t dst_palette_len,
+                                              const uint8_t* src_ptr,
+                                              size_t src_len) {
+  size_t dst_len4 = dst_len / 4;
+  size_t src_len3 = src_len / 3;
+  size_t len = (dst_len4 < src_len3) ? dst_len4 : src_len3;
+  uint8_t* d = dst_ptr;
+  const uint8_t* s = src_ptr;
+  size_t n = len;
+
+  __m128i shuffle = _mm_set_epi8(0x00, 0x09, 0x0A, 0x0B,  //
+                                 0x00, 0x06, 0x07, 0x08,  //
+                                 0x00, 0x03, 0x04, 0x05,  //
+                                 0x00, 0x00, 0x01, 0x02);
+  __m128i or = _mm_set_epi8(0xFF, 0x00, 0x00, 0x00,  //
+                            0xFF, 0x00, 0x00, 0x00,  //
+                            0xFF, 0x00, 0x00, 0x00,  //
+                            0xFF, 0x00, 0x00, 0x00);
+
+  while (n >= 6) {
+    __m128i x;
+    x = _mm_loadu_si128((const void*)s);
+    x = _mm_shuffle_epi8(x, shuffle);
+    x = _mm_or_si128(x, or);
+    _mm_storeu_si128((void*)d, x);
+
+    s += 4 * 3;
+    d += 4 * 4;
+    n -= 4;
+  }
+
+  while (n >= 1) {
+    uint8_t b0 = s[0];
+    uint8_t b1 = s[1];
+    uint8_t b2 = s[2];
+    d[0] = b2;
+    d[1] = b1;
+    d[2] = b0;
+    d[3] = 0xFF;
+
+    s += 1 * 3;
+    d += 1 * 4;
+    n -= 1;
+  }
+
+  return len;
+}
+#endif
+
 static uint64_t  //
 wuffs_base__pixel_swizzler__bgrw__rgb(uint8_t* dst_ptr,
                                       size_t dst_len,
@@ -15702,8 +15811,6 @@ wuffs_base__pixel_swizzler__bgrw__rgb(uint8_t* dst_ptr,
   uint8_t* d = dst_ptr;
   const uint8_t* s = src_ptr;
   size_t n = len;
-
-  // TODO: unroll.
 
   while (n >= 1) {
     uint8_t b0 = s[0];
@@ -16454,6 +16561,12 @@ wuffs_base__pixel_swizzler__prepare__rgb(wuffs_base__pixel_swizzler* p,
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_BINARY:
     case WUFFS_BASE__PIXEL_FORMAT__BGRX:
+#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+      if (wuffs_base__cpu_arch__x86_64__capabilities() &
+          WUFFS_BASE__CPU_ARCH__X86_64__SSE128) {
+        return wuffs_base__pixel_swizzler__bgrw__rgb__sse128;
+      }
+#endif
       return wuffs_base__pixel_swizzler__bgrw__rgb;
 
     case WUFFS_BASE__PIXEL_FORMAT__RGB:
@@ -16496,6 +16609,12 @@ wuffs_base__pixel_swizzler__prepare__rgba_nonpremul(
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
       switch (blend) {
         case WUFFS_BASE__PIXEL_BLEND__SRC:
+#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+          if (wuffs_base__cpu_arch__x86_64__capabilities() &
+              WUFFS_BASE__CPU_ARCH__X86_64__SSE128) {
+            return wuffs_base__pixel_swizzler__swap_rgbx_bgrx__sse128;
+          }
+#endif
           return wuffs_base__pixel_swizzler__swap_rgbx_bgrx;
         case WUFFS_BASE__PIXEL_BLEND__SRC_OVER:
           return wuffs_base__pixel_swizzler__bgra_nonpremul__rgba_nonpremul__src_over;

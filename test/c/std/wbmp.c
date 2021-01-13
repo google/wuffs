@@ -105,7 +105,7 @@ const char*  //
 test_wuffs_pixel_swizzler_swizzle() {
   CHECK_FOCUS(__func__);
 
-  const uint32_t width = 5;
+  const uint32_t width = 22;
   const uint32_t height = 5;
   uint8_t dummy_palette_array[1024];
   wuffs_base__pixel_swizzler swizzler;
