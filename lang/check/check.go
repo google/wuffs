@@ -681,7 +681,7 @@ func (c *Checker) checkFuncBody(node *a.Node) error {
 	}
 
 	// Fill in the TypeMap with all local variables.
-	if err := q.tcheckVars(n.Body()); err != nil {
+	if err := q.tcheckVars(calcCPUArchBits(q.astFunc), n.Body()); err != nil {
 		return &Error{
 			Err:      err,
 			Filename: q.errFilename,

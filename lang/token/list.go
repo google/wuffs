@@ -114,6 +114,7 @@ func (x ID) IsTightLeft() bool  { return x < ID(len(isTightLeft)) && isTightLeft
 func (x ID) IsTightRight() bool { return x < ID(len(isTightRight)) && isTightRight[x] }
 
 func (x ID) IsAssign() bool         { return minAssign <= x && x <= maxAssign }
+func (x ID) IsBuiltInLoad() bool    { return minBuiltInLoad <= x && x <= maxBuiltInLoad }
 func (x ID) IsCannotAssignTo() bool { return minCannotAssignTo <= x && x <= maxCannotAssignTo }
 func (x ID) IsClose() bool          { return minClose <= x && x <= maxClose }
 func (x ID) IsKeyword() bool        { return minKeyword <= x && x <= maxKeyword }
@@ -646,6 +647,19 @@ const (
 	IDSSE128I = ID(0x311)
 
 	// 0x32? are reserved for AVX256.
+
+	// --------
+
+	minBuiltInLoad = 0x380
+	maxBuiltInLoad = 0x387
+
+	IDLoadSlice = ID(0x380)
+	IDLoadU32   = ID(0x381)
+	IDLoadU64   = ID(0x382)
+
+	IDStoreSlice  = ID(0x388)
+	IDTruncateU32 = ID(0x389)
+	IDTruncateU64 = ID(0x38A)
 )
 
 var builtInsByID = [nBuiltInIDs]string{
@@ -1014,6 +1028,14 @@ var builtInsByID = [nBuiltInIDs]string{
 
 	IDSSE128:  "sse128",
 	IDSSE128I: "sse128_i",
+
+	IDLoadSlice: "load_slice",
+	IDLoadU32:   "load_u32",
+	IDLoadU64:   "load_u64",
+
+	IDStoreSlice:  "store_slice",
+	IDTruncateU32: "truncate_u32",
+	IDTruncateU64: "truncate_u64",
 }
 
 var builtInsByName = map[string]ID{}

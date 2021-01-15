@@ -572,6 +572,8 @@ var cTypeNames = [...]string{
 	t.IDIOWriter:    "wuffs_base__io_buffer*",
 	t.IDTokenReader: "wuffs_base__token_buffer*",
 	t.IDTokenWriter: "wuffs_base__token_buffer*",
+
+	t.IDSSE128I: "__m128i",
 }
 
 const noSuchCOperator = " no_such_C_operator "

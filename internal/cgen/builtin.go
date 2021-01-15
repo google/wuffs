@@ -141,6 +141,8 @@ func (g *gen) writeBuiltinCall(b *buffer, n *a.Expr, depth uint32) error {
 				b.writes("&empty_io_buffer")
 				return nil
 			}
+		case t.IDSSE128I:
+			return g.writeBuiltinCPUArch(b, recv, method.Ident(), n.Args(), depth)
 		}
 	}
 	return errNoSuchBuiltin
@@ -422,6 +424,38 @@ func (g *gen) writeBuiltinTokenWriter(b *buffer, recv *a.Expr, method t.ID, args
 	}
 
 	return g.writeBuiltinIO(b, recv, method, args, depth)
+}
+
+func (g *gen) writeBuiltinCPUArch(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, depth uint32) error {
+	switch method {
+	case t.IDLoadU32:
+		// TODO: ensure that the receiver is a variable, not an arbitrary expression.
+		//
+		// Generate a two part expression using the comma operator: "(etc,
+		// return_empty_struct call)". The final part is a function call (to a
+		// static inline function) instead of a struct literal, to avoid a
+		// "expression result unused" compiler error.
+		b.writes("(")
+		if err := g.writeExpr(b, recv, depth); err != nil {
+			return err
+		}
+		b.writes(" = _mm_cvtsi32_si128((int)(")
+		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
+			return err
+		}
+		b.writes(")), wuffs_base__make_empty_struct())")
+		return nil
+
+	case t.IDTruncateU32:
+		b.writes("((uint32_t)(_mm_cvtsi128_si32(")
+		if err := g.writeExpr(b, recv, depth); err != nil {
+			return err
+		}
+		b.writes(")))")
+		return nil
+	}
+
+	return errNoSuchBuiltin
 }
 
 func (g *gen) writeBuiltinNumType(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, depth uint32) error {

@@ -30976,6 +30976,8 @@ wuffs_png__decoder__filter_1_distance_4_sse128(
   uint8_t v_fa1 = 0;
   uint8_t v_fa2 = 0;
   uint8_t v_fa3 = 0;
+  uint32_t v_x32 = 0;
+  __m128i v_x128 = {0};
 
   {
     wuffs_base__slice_u8 i_slice_c = a_curr;
@@ -30983,6 +30985,10 @@ wuffs_png__decoder__filter_1_distance_4_sse128(
     v_c.len = 4;
     uint8_t* i_end0_c = i_slice_c.ptr + ((i_slice_c.len / 4) * 4);
     while (v_c.ptr < i_end0_c) {
+      (v_x128 = _mm_cvtsi32_si128((int)(v_x32)), wuffs_base__make_empty_struct());
+      v_x32 = ((uint32_t)(_mm_cvtsi128_si32(v_x128)));
+      if (v_x32 == 0) {
+      }
       v_fa0 += v_c.ptr[0];
       v_c.ptr[0] = v_fa0;
       v_fa1 += v_c.ptr[1];

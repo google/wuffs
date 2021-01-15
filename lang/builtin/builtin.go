@@ -236,6 +236,10 @@ var Types = []string{
 	"pixel_swizzler",
 
 	"decode_frame_options",
+
+	// ----
+
+	"sse128_i",
 }
 
 var Funcs = []string{
@@ -523,6 +527,13 @@ var Funcs = []string{
 		"dst: slice u8, dst_palette: slice u8, src: slice u8) u64",
 	"pixel_swizzler.swizzle_interleaved_transparent_black!(" +
 		"dst: slice u8, dst_palette: slice u8, num_pixels: u64) u64",
+
+	// ---- sse128_i
+
+	"sse128_i.load_slice!(a: slice base.u8)",
+	"sse128_i.load_u32!(a: u32)",
+	"sse128_i.store_slice!(a: slice base.u8)",
+	"sse128_i.truncate_u32() u32",
 }
 
 var Interfaces = []string{

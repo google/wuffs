@@ -22,7 +22,41 @@ import (
 	t "github.com/google/wuffs/lang/token"
 )
 
-func (q *checker) tcheckVars(block []*a.Node) error {
+type cpuArchBits uint32
+
+const (
+	cpuArchBitsSSE128 = cpuArchBits(0x00000001)
+)
+
+func calcCPUArchBits(n *a.Func) (ret cpuArchBits) {
+	for _, o := range n.Asserts() {
+		o := o.AsAssert()
+		if !o.IsChooseCPUArch() {
+			continue
+		}
+		switch o.Condition().RHS().AsExpr().Ident() {
+		case t.IDSSE128:
+			ret |= cpuArchBitsSSE128
+		}
+	}
+	return ret
+}
+
+func (q *checker) tcheckCPUArchBits(cab cpuArchBits, typ *a.TypeExpr) error {
+	if qid := typ.Innermost().QID(); qid[0] == t.IDBase {
+		need := cpuArchBits(0)
+		switch qid[1] {
+		case t.IDSSE128I:
+			need = cpuArchBitsSSE128
+		}
+		if (cab & need) != need {
+			return fmt.Errorf("check: missing cpu_arch for %q", typ.Innermost().Str(q.tm))
+		}
+	}
+	return nil
+}
+
+func (q *checker) tcheckVars(cab cpuArchBits, block []*a.Node) error {
 	for _, o := range block {
 		if o.Kind() != a.KVar {
 			break
@@ -42,6 +76,9 @@ func (q *checker) tcheckVars(block []*a.Node) error {
 			}
 		}
 		if err := q.tcheckTypeExpr(o.XType(), 0); err != nil {
+			return err
+		}
+		if err := q.tcheckCPUArchBits(cab, o.XType()); err != nil {
 			return err
 		}
 		q.localVars[name] = o.XType()
@@ -549,15 +586,22 @@ func (q *checker) tcheckExprCall(n *a.Expr, depth uint32) error {
 
 	genericType1 := (*a.TypeExpr)(nil)
 	genericType2 := (*a.TypeExpr)(nil)
-	switch f.Receiver() {
-	case t.QID{t.IDBase, t.IDDagger1}:
-		genericType1 = lhs.MType().Receiver()
-	case t.QID{t.IDBase, t.IDDagger2}:
-		genericType2 = lhs.MType().Receiver()
-		if genericType2.Decorator() != t.IDTable {
-			return fmt.Errorf("check: internal error: %q is not a generic table", genericType2.Str(q.tm))
+	if recv := f.Receiver(); recv[0] == t.IDBase {
+		switch recv[1] {
+		case t.IDDagger1:
+			genericType1 = lhs.MType().Receiver()
+		case t.IDDagger2:
+			genericType2 = lhs.MType().Receiver()
+			if genericType2.Decorator() != t.IDTable {
+				return fmt.Errorf("check: internal error: %q is not a generic table", genericType2.Str(q.tm))
+			}
+			genericType1 = a.NewTypeExpr(t.IDSlice, 0, 0, nil, nil, genericType2.Inner())
 		}
-		genericType1 = a.NewTypeExpr(t.IDSlice, 0, 0, nil, nil, genericType2.Inner())
+
+		if f.FuncName().IsBuiltInLoad() && (lhs.LHS().AsExpr().Operator() != 0) {
+			return fmt.Errorf(`check: %q receiver %q must be a local variable`,
+				f.QQID().Str(q.tm), lhs.LHS().AsExpr().Str(q.tm))
+		}
 	}
 
 	// Check that the func's in type matches the arguments.
