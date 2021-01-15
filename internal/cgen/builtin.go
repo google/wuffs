@@ -455,7 +455,18 @@ func (g *gen) writeBuiltinCPUArch(b *buffer, recv *a.Expr, method t.ID, args []*
 		return nil
 	}
 
-	return errNoSuchBuiltin
+	b.printf("%s(", method.Str(g.tm))
+	if err := g.writeExpr(b, recv, depth); err != nil {
+		return err
+	}
+	for _, o := range args {
+		b.writes(", ")
+		if err := g.writeExpr(b, o.AsArg().Value(), depth); err != nil {
+			return err
+		}
+	}
+	b.writes(")")
+	return nil
 }
 
 func (g *gen) writeBuiltinNumType(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, depth uint32) error {

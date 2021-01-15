@@ -534,6 +534,9 @@ var Funcs = []string{
 	"sse128_i.load_u32!(a: u32)",
 	"sse128_i.store_slice!(a: slice base.u8)",
 	"sse128_i.truncate_u32() u32",
+
+	// TODO: generate these methods automatically?
+	"sse128_i._mm_add_epi8!(b: sse128_i) sse128_i",
 }
 
 var Interfaces = []string{

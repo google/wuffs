@@ -30972,12 +30972,9 @@ wuffs_png__decoder__filter_1_distance_4_sse128(
     wuffs_png__decoder* self,
     wuffs_base__slice_u8 a_curr) {
   wuffs_base__slice_u8 v_c = {0};
-  uint8_t v_fa0 = 0;
-  uint8_t v_fa1 = 0;
-  uint8_t v_fa2 = 0;
-  uint8_t v_fa3 = 0;
   uint32_t v_x32 = 0;
   __m128i v_x128 = {0};
+  __m128i v_a128 = {0};
 
   {
     wuffs_base__slice_u8 i_slice_c = a_curr;
@@ -30985,18 +30982,18 @@ wuffs_png__decoder__filter_1_distance_4_sse128(
     v_c.len = 4;
     uint8_t* i_end0_c = i_slice_c.ptr + ((i_slice_c.len / 4) * 4);
     while (v_c.ptr < i_end0_c) {
+      v_x32 = ((((uint32_t)(v_c.ptr[0])) << 0) |
+          (((uint32_t)(v_c.ptr[1])) << 8) |
+          (((uint32_t)(v_c.ptr[2])) << 16) |
+          (((uint32_t)(v_c.ptr[3])) << 24));
       (v_x128 = _mm_cvtsi32_si128((int)(v_x32)), wuffs_base__make_empty_struct());
+      v_x128 = _mm_add_epi8(v_x128, v_a128);
+      v_a128 = v_x128;
       v_x32 = ((uint32_t)(_mm_cvtsi128_si32(v_x128)));
-      if (v_x32 == 0) {
-      }
-      v_fa0 += v_c.ptr[0];
-      v_c.ptr[0] = v_fa0;
-      v_fa1 += v_c.ptr[1];
-      v_c.ptr[1] = v_fa1;
-      v_fa2 += v_c.ptr[2];
-      v_c.ptr[2] = v_fa2;
-      v_fa3 += v_c.ptr[3];
-      v_c.ptr[3] = v_fa3;
+      v_c.ptr[0] = ((uint8_t)((255 & (v_x32 >> 0))));
+      v_c.ptr[1] = ((uint8_t)((255 & (v_x32 >> 8))));
+      v_c.ptr[2] = ((uint8_t)((255 & (v_x32 >> 16))));
+      v_c.ptr[3] = ((uint8_t)((255 & (v_x32 >> 24))));
       v_c.ptr += 4;
     }
   }
