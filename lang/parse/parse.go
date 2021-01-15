@@ -556,6 +556,12 @@ func (p *parser) parseTypeExpr() (*a.TypeExpr, error) {
 		if err != nil {
 			return nil, err
 		}
+		if name.IsNumType() &&
+			((pkg == t.IDBase) || ((pkg == 0) && p.opts.AllowBuiltInNames)) {
+			// No-op.
+		} else {
+			return nil, fmt.Errorf(`parse: cannot refine non-numeric type at %s:%d`, p.filename, p.line())
+		}
 	}
 
 	return a.NewTypeExpr(0, pkg, name, lhs.AsNode(), mhs, nil), nil
