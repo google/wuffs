@@ -20,18 +20,13 @@ pri func decoder.filter_1_distance_4_sse128!(curr: slice base.u8),
 	choose cpu_arch >= sse128,
 {
 	var c    : slice base.u8
-	var x32  : base.u32
 	var x128 : base.sse128_i
 	var a128 : base.sse128_i
 
 	iterate (c = args.curr)(length: 4, advance: 4, unroll: 1) {
-		x32 = c.peek_u32le()
-		x128.load_u32!(a: x32)
-
+		x128.load_u32!(a: c.peek_u32le())
 		x128 = x128._mm_add_epi8!(b: a128)
 		a128 = x128
-
-		x32 = x128.truncate_u32()
-		c.poke_u32le!(a: x32)
+		c.poke_u32le!(a: x128.truncate_u32())
 	}
 }
