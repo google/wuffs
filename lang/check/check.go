@@ -91,8 +91,9 @@ func Check(tm *t.Map, files []*a.File, resolveUse func(usePath string) ([]byte, 
 		funcs:     map[t.QQID]*a.Func{},
 		localVars: map[t.QQID]typeMap{},
 
-		builtInSliceFuncs: map[t.QQID]*a.Func{},
-		builtInTableFuncs: map[t.QQID]*a.Func{},
+		builtInSliceFuncs:   map[t.QQID]*a.Func{},
+		builtInSliceU8Funcs: map[t.QQID]*a.Func{},
+		builtInTableFuncs:   map[t.QQID]*a.Func{},
 
 		builtInInterfaces:     map[t.QID][]t.QQID{},
 		builtInInterfaceFuncs: map[t.QQID]*a.Func{},
@@ -103,6 +104,9 @@ func Check(tm *t.Map, files []*a.File, resolveUse func(usePath string) ([]byte, 
 		return nil, err
 	}
 	if err := c.parseBuiltInFuncs(c.builtInSliceFuncs, builtin.SliceFuncs); err != nil {
+		return nil, err
+	}
+	if err := c.parseBuiltInFuncs(c.builtInSliceU8Funcs, builtin.SliceU8Funcs); err != nil {
 		return nil, err
 	}
 	if err := c.parseBuiltInFuncs(c.builtInTableFuncs, builtin.TableFuncs); err != nil {
@@ -221,8 +225,9 @@ type Checker struct {
 	funcs     map[t.QQID]*a.Func
 	localVars map[t.QQID]typeMap
 
-	builtInSliceFuncs map[t.QQID]*a.Func
-	builtInTableFuncs map[t.QQID]*a.Func
+	builtInSliceFuncs   map[t.QQID]*a.Func
+	builtInSliceU8Funcs map[t.QQID]*a.Func
+	builtInTableFuncs   map[t.QQID]*a.Func
 
 	builtInInterfaces     map[t.QID][]t.QQID
 	builtInInterfaceFuncs map[t.QQID]*a.Func

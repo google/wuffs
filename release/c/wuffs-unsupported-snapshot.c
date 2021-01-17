@@ -792,8 +792,14 @@ wuffs_base__poke_u16be__no_bounds_check(uint8_t* p, uint16_t x) {
 
 static inline void  //
 wuffs_base__poke_u16le__no_bounds_check(uint8_t* p, uint16_t x) {
+#if defined(__GNUC__) && !defined(__clang__) && defined(__x86_64__)
+  // This seems to perform better on gcc 10 (but not clang 9). Clang also
+  // defines "__GNUC__".
+  memcpy(p, &x, 2);
+#else
   p[0] = (uint8_t)(x >> 0);
   p[1] = (uint8_t)(x >> 8);
+#endif
 }
 
 static inline void  //
@@ -820,10 +826,16 @@ wuffs_base__poke_u32be__no_bounds_check(uint8_t* p, uint32_t x) {
 
 static inline void  //
 wuffs_base__poke_u32le__no_bounds_check(uint8_t* p, uint32_t x) {
+#if defined(__GNUC__) && !defined(__clang__) && defined(__x86_64__)
+  // This seems to perform better on gcc 10 (but not clang 9). Clang also
+  // defines "__GNUC__".
+  memcpy(p, &x, 4);
+#else
   p[0] = (uint8_t)(x >> 0);
   p[1] = (uint8_t)(x >> 8);
   p[2] = (uint8_t)(x >> 16);
   p[3] = (uint8_t)(x >> 24);
+#endif
 }
 
 static inline void  //
@@ -900,6 +912,11 @@ wuffs_base__poke_u64be__no_bounds_check(uint8_t* p, uint64_t x) {
 
 static inline void  //
 wuffs_base__poke_u64le__no_bounds_check(uint8_t* p, uint64_t x) {
+#if defined(__GNUC__) && !defined(__clang__) && defined(__x86_64__)
+  // This seems to perform better on gcc 10 (but not clang 9). Clang also
+  // defines "__GNUC__".
+  memcpy(p, &x, 8);
+#else
   p[0] = (uint8_t)(x >> 0);
   p[1] = (uint8_t)(x >> 8);
   p[2] = (uint8_t)(x >> 16);
@@ -908,6 +925,7 @@ wuffs_base__poke_u64le__no_bounds_check(uint8_t* p, uint64_t x) {
   p[5] = (uint8_t)(x >> 40);
   p[6] = (uint8_t)(x >> 48);
   p[7] = (uint8_t)(x >> 56);
+#endif
 }
 
 // --------
@@ -31045,18 +31063,12 @@ wuffs_png__decoder__filter_1_distance_4_sse128(
     v_c.len = 4;
     uint8_t* i_end0_c = i_slice_c.ptr + ((i_slice_c.len / 4) * 4);
     while (v_c.ptr < i_end0_c) {
-      v_x32 = ((((uint32_t)(v_c.ptr[0])) << 0) |
-          (((uint32_t)(v_c.ptr[1])) << 8) |
-          (((uint32_t)(v_c.ptr[2])) << 16) |
-          (((uint32_t)(v_c.ptr[3])) << 24));
+      v_x32 = wuffs_base__peek_u32le__no_bounds_check(v_c.ptr);
       (v_x128 = _mm_cvtsi32_si128((int)(v_x32)), wuffs_base__make_empty_struct());
       v_x128 = _mm_add_epi8(v_x128, v_a128);
       v_a128 = v_x128;
       v_x32 = ((uint32_t)(_mm_cvtsi128_si32(v_x128)));
-      v_c.ptr[0] = ((uint8_t)((255 & (v_x32 >> 0))));
-      v_c.ptr[1] = ((uint8_t)((255 & (v_x32 >> 8))));
-      v_c.ptr[2] = ((uint8_t)((255 & (v_x32 >> 16))));
-      v_c.ptr[3] = ((uint8_t)((255 & (v_x32 >> 24))));
+      (wuffs_base__poke_u32le__no_bounds_check(v_c.ptr, v_x32), wuffs_base__make_empty_struct());
       v_c.ptr += 4;
     }
   }

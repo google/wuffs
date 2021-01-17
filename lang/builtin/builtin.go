@@ -608,6 +608,40 @@ var SliceFuncs = []string{
 	"GENERIC T1.suffix(up_to: u64) T1",
 }
 
+var SliceU8Funcs = []string{
+	"GENERIC T1.peek_u8() u8",
+	"GENERIC T1.peek_u16be() u16",
+	"GENERIC T1.peek_u16le() u16",
+	"GENERIC T1.peek_u24be() u32",
+	"GENERIC T1.peek_u24le() u32",
+	"GENERIC T1.peek_u32be() u32",
+	"GENERIC T1.peek_u32le() u32",
+	"GENERIC T1.peek_u40be() u64",
+	"GENERIC T1.peek_u40le() u64",
+	"GENERIC T1.peek_u48be() u64",
+	"GENERIC T1.peek_u48le() u64",
+	"GENERIC T1.peek_u56be() u64",
+	"GENERIC T1.peek_u56le() u64",
+	"GENERIC T1.peek_u64be() u64",
+	"GENERIC T1.peek_u64le() u64",
+
+	"GENERIC T1.poke_u8!(a: u8)",
+	"GENERIC T1.poke_u16be!(a: u16)",
+	"GENERIC T1.poke_u16le!(a: u16)",
+	"GENERIC T1.poke_u24be!(a: u32)",
+	"GENERIC T1.poke_u24le!(a: u32)",
+	"GENERIC T1.poke_u32be!(a: u32)",
+	"GENERIC T1.poke_u32le!(a: u32)",
+	"GENERIC T1.poke_u40be!(a: u64)",
+	"GENERIC T1.poke_u40le!(a: u64)",
+	"GENERIC T1.poke_u48be!(a: u64)",
+	"GENERIC T1.poke_u48le!(a: u64)",
+	"GENERIC T1.poke_u56be!(a: u64)",
+	"GENERIC T1.poke_u56le!(a: u64)",
+	"GENERIC T1.poke_u64be!(a: u64)",
+	"GENERIC T1.poke_u64le!(a: u64)",
+}
+
 var TableFuncs = []string{
 	"GENERIC T2.height() u64",
 	"GENERIC T2.stride() u64",

@@ -19,6 +19,7 @@
 - Added `example/json-to-cbor`.
 - Added `example/jsonfindptrs`.
 - Added `example/jsonptr`.
+- Added `slice base.u8 peek/poke` methods.
 - Added `std/bmp`.
 - Added `std/cbor`.
 - Added `std/gif.config_decoder`.

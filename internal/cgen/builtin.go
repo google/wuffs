@@ -591,6 +591,29 @@ func (g *gen) writeBuiltinSlice(b *buffer, recv *a.Expr, method t.ID, args []*a.
 		b.writes(", ")
 		return g.writeArgs(b, args, depth)
 	}
+
+	if (t.IDPeekU8 <= method) && (method <= t.IDPeekU64LE) {
+		b.printf("wuffs_base__%s__no_bounds_check(", method.Str(g.tm))
+		if err := g.writeExpr(b, recv, depth); err != nil {
+			return err
+		}
+		b.writes(".ptr)")
+		return nil
+	}
+
+	if (t.IDPokeU8 <= method) && (method <= t.IDPokeU64LE) {
+		b.printf("(wuffs_base__%s__no_bounds_check(", method.Str(g.tm))
+		if err := g.writeExpr(b, recv, depth); err != nil {
+			return err
+		}
+		b.writes(".ptr, ")
+		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
+			return err
+		}
+		b.writes("), wuffs_base__make_empty_struct())")
+		return nil
+	}
+
 	return errNoSuchBuiltin
 }
 

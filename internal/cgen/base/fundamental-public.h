@@ -718,8 +718,14 @@ wuffs_base__poke_u16be__no_bounds_check(uint8_t* p, uint16_t x) {
 
 static inline void  //
 wuffs_base__poke_u16le__no_bounds_check(uint8_t* p, uint16_t x) {
+#if defined(__GNUC__) && !defined(__clang__) && defined(__x86_64__)
+  // This seems to perform better on gcc 10 (but not clang 9). Clang also
+  // defines "__GNUC__".
+  memcpy(p, &x, 2);
+#else
   p[0] = (uint8_t)(x >> 0);
   p[1] = (uint8_t)(x >> 8);
+#endif
 }
 
 static inline void  //
@@ -746,10 +752,16 @@ wuffs_base__poke_u32be__no_bounds_check(uint8_t* p, uint32_t x) {
 
 static inline void  //
 wuffs_base__poke_u32le__no_bounds_check(uint8_t* p, uint32_t x) {
+#if defined(__GNUC__) && !defined(__clang__) && defined(__x86_64__)
+  // This seems to perform better on gcc 10 (but not clang 9). Clang also
+  // defines "__GNUC__".
+  memcpy(p, &x, 4);
+#else
   p[0] = (uint8_t)(x >> 0);
   p[1] = (uint8_t)(x >> 8);
   p[2] = (uint8_t)(x >> 16);
   p[3] = (uint8_t)(x >> 24);
+#endif
 }
 
 static inline void  //
@@ -826,6 +838,11 @@ wuffs_base__poke_u64be__no_bounds_check(uint8_t* p, uint64_t x) {
 
 static inline void  //
 wuffs_base__poke_u64le__no_bounds_check(uint8_t* p, uint64_t x) {
+#if defined(__GNUC__) && !defined(__clang__) && defined(__x86_64__)
+  // This seems to perform better on gcc 10 (but not clang 9). Clang also
+  // defines "__GNUC__".
+  memcpy(p, &x, 8);
+#else
   p[0] = (uint8_t)(x >> 0);
   p[1] = (uint8_t)(x >> 8);
   p[2] = (uint8_t)(x >> 16);
@@ -834,6 +851,7 @@ wuffs_base__poke_u64le__no_bounds_check(uint8_t* p, uint64_t x) {
   p[5] = (uint8_t)(x >> 40);
   p[6] = (uint8_t)(x >> 48);
   p[7] = (uint8_t)(x >> 56);
+#endif
 }
 
 // --------

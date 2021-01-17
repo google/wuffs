@@ -665,20 +665,21 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 	if lTyp.IsSliceType() {
 		qqid[0] = t.IDBase
 		qqid[1] = t.IDDagger1
-		if q.c.builtInSliceFuncs[qqid] == nil {
-			return fmt.Errorf("check: no slice method %q", n.Ident().Str(q.tm))
+		if (q.c.builtInSliceFuncs[qqid] != nil) ||
+			((q.c.builtInSliceU8Funcs[qqid] != nil) && lTyp.Eq(typeExprSliceU8)) {
+			n.SetMType(a.NewTypeExpr(t.IDFunc, 0, n.Ident(), lTyp.AsNode(), nil, nil))
+			return nil
 		}
-		n.SetMType(a.NewTypeExpr(t.IDFunc, 0, n.Ident(), lTyp.AsNode(), nil, nil))
-		return nil
+		return fmt.Errorf("check: no slice method %q", n.Ident().Str(q.tm))
 
 	} else if lTyp.IsTableType() {
 		qqid[0] = t.IDBase
 		qqid[1] = t.IDDagger2
-		if q.c.builtInTableFuncs[qqid] == nil {
-			return fmt.Errorf("check: no table method %q", n.Ident().Str(q.tm))
+		if q.c.builtInTableFuncs[qqid] != nil {
+			n.SetMType(a.NewTypeExpr(t.IDFunc, 0, n.Ident(), lTyp.AsNode(), nil, nil))
+			return nil
 		}
-		n.SetMType(a.NewTypeExpr(t.IDFunc, 0, n.Ident(), lTyp.AsNode(), nil, nil))
-		return nil
+		return fmt.Errorf("check: no table method %q", n.Ident().Str(q.tm))
 
 	} else if lTyp.Decorator() != 0 {
 		return fmt.Errorf("check: invalid type %q for dot-expression LHS %q", lTyp.Str(q.tm), lhs.Str(q.tm))

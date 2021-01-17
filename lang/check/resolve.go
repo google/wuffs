@@ -154,6 +154,11 @@ func (c *Checker) resolveFunc(typ *a.TypeExpr) (*a.Func, error) {
 		if f := c.builtInSliceFuncs[qqid]; f != nil {
 			return f, nil
 		}
+		if lTyp.Eq(typeExprSliceU8) {
+			if f := c.builtInSliceU8Funcs[qqid]; f != nil {
+				return f, nil
+			}
+		}
 
 	} else if lTyp.IsTableType() {
 		qqid[0] = t.IDBase

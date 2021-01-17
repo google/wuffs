@@ -582,6 +582,24 @@ const (
 
 	// --------
 
+	IDPokeU8    = ID(0x1D1)
+	IDPokeU16BE = ID(0x1D2)
+	IDPokeU16LE = ID(0x1D3)
+	IDPokeU24BE = ID(0x1D4)
+	IDPokeU24LE = ID(0x1D5)
+	IDPokeU32BE = ID(0x1D6)
+	IDPokeU32LE = ID(0x1D7)
+	IDPokeU40BE = ID(0x1D8)
+	IDPokeU40LE = ID(0x1D9)
+	IDPokeU48BE = ID(0x1DA)
+	IDPokeU48LE = ID(0x1DB)
+	IDPokeU56BE = ID(0x1DC)
+	IDPokeU56LE = ID(0x1DD)
+	IDPokeU64BE = ID(0x1DE)
+	IDPokeU64LE = ID(0x1DF)
+
+	// --------
+
 	IDWriteU8Fast    = ID(0x1E1)
 	IDWriteU16BEFast = ID(0x1E2)
 	IDWriteU16LEFast = ID(0x1E3)
@@ -966,6 +984,24 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDWriteU56LE: "write_u56le",
 	IDWriteU64BE: "write_u64be",
 	IDWriteU64LE: "write_u64le",
+
+	// --------
+
+	IDPokeU8:    "poke_u8",
+	IDPokeU16BE: "poke_u16be",
+	IDPokeU16LE: "poke_u16le",
+	IDPokeU24BE: "poke_u24be",
+	IDPokeU24LE: "poke_u24le",
+	IDPokeU32BE: "poke_u32be",
+	IDPokeU32LE: "poke_u32le",
+	IDPokeU40BE: "poke_u40be",
+	IDPokeU40LE: "poke_u40le",
+	IDPokeU48BE: "poke_u48be",
+	IDPokeU48LE: "poke_u48le",
+	IDPokeU56BE: "poke_u56be",
+	IDPokeU56LE: "poke_u56le",
+	IDPokeU64BE: "poke_u64be",
+	IDPokeU64LE: "poke_u64le",
 
 	// --------
 

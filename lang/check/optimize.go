@@ -58,7 +58,9 @@ func (q *checker) optimizeIOMethodAdvance(receiver *a.Expr, advance *big.Int, ad
 		// receiver.length(), even if they aren't an exact match.
 
 		op := x.Operator()
-		if op != t.IDXBinaryGreaterEq && op != t.IDXBinaryGreaterThan {
+		if (op != t.IDXBinaryGreaterEq) &&
+			(op != t.IDXBinaryGreaterThan) &&
+			(op != t.IDXBinaryEqEq) {
 			return x, nil
 		}
 

@@ -1051,6 +1051,8 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (bounds, e
 	recv := lhs.LHS().AsExpr()
 	method := lhs.Ident()
 
+	advance, advanceExpr, update := (*big.Int)(nil), (*a.Expr)(nil), false
+
 	if recvTyp := recv.MType(); recvTyp == nil {
 		return bounds{}, errNotASpecialCase
 
@@ -1094,8 +1096,6 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (bounds, e
 		}
 
 	} else if recvTyp.IsIOTokenType() {
-		advance, advanceExpr, update := (*big.Int)(nil), (*a.Expr)(nil), false
-
 		if method == t.IDUndoByte {
 			if err := q.canUndoByte(recv); err != nil {
 				return bounds{}, err
@@ -1146,21 +1146,29 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (bounds, e
 			}
 		}
 
-		if (advance != nil) || (advanceExpr != nil) {
-			if ok, err := q.optimizeIOMethodAdvance(recv, advance, advanceExpr, update); err != nil {
-				return bounds{}, err
-			} else if !ok {
-				adv := ""
-				if advance != nil {
-					adv = advance.String()
-				} else {
-					adv = advanceExpr.Str(q.tm)
-				}
-				return bounds{}, fmt.Errorf("check: could not prove %s pre-condition: %s.length() >= %s",
-					method.Str(q.tm), recv.Str(q.tm), adv)
+	} else if recvTyp.Eq(typeExprSliceU8) {
+		if method >= t.IDPeekU8 {
+			if m := method - t.IDPeekU8; m < t.ID(len(ioMethodAdvances)) {
+				au := ioMethodAdvances[m]
+				advance, update = au.advance, au.update
 			}
-			// TODO: drop other recv-related facts?
 		}
+	}
+
+	if (advance != nil) || (advanceExpr != nil) {
+		if ok, err := q.optimizeIOMethodAdvance(recv, advance, advanceExpr, update); err != nil {
+			return bounds{}, err
+		} else if !ok {
+			adv := ""
+			if advance != nil {
+				adv = advance.String()
+			} else {
+				adv = advanceExpr.Str(q.tm)
+			}
+			return bounds{}, fmt.Errorf("check: could not prove %s pre-condition: %s.length() >= %s",
+				method.Str(q.tm), recv.Str(q.tm), adv)
+		}
+		// TODO: drop other recv-related facts?
 	}
 
 	return bounds{}, errNotASpecialCase
@@ -1318,6 +1326,22 @@ var ioMethodAdvances = [...]struct {
 	t.IDPeekU56LEAsU64 - t.IDPeekU8: {seven, false},
 	t.IDPeekU64BE - t.IDPeekU8:      {eight, false},
 	t.IDPeekU64LE - t.IDPeekU8:      {eight, false},
+
+	t.IDPokeU8 - t.IDPeekU8:    {one, false},
+	t.IDPokeU16BE - t.IDPeekU8: {two, false},
+	t.IDPokeU16LE - t.IDPeekU8: {two, false},
+	t.IDPokeU24BE - t.IDPeekU8: {three, false},
+	t.IDPokeU24LE - t.IDPeekU8: {three, false},
+	t.IDPokeU32BE - t.IDPeekU8: {four, false},
+	t.IDPokeU32LE - t.IDPeekU8: {four, false},
+	t.IDPokeU40BE - t.IDPeekU8: {five, false},
+	t.IDPokeU40LE - t.IDPeekU8: {five, false},
+	t.IDPokeU48BE - t.IDPeekU8: {six, false},
+	t.IDPokeU48LE - t.IDPeekU8: {six, false},
+	t.IDPokeU56BE - t.IDPeekU8: {seven, false},
+	t.IDPokeU56LE - t.IDPeekU8: {seven, false},
+	t.IDPokeU64BE - t.IDPeekU8: {eight, false},
+	t.IDPokeU64LE - t.IDPeekU8: {eight, false},
 
 	t.IDWriteU8Fast - t.IDPeekU8:    {one, true},
 	t.IDWriteU16BEFast - t.IDPeekU8: {two, true},
