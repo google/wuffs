@@ -60,15 +60,15 @@ func TestString(tt *testing.T) {
 
 		"x as base.bool",
 		"x as base.u32",
+		"x as base.u32[1 ..=]",
+		"x as base.u32[..= 2]",
+		"x as base.u32[1 ..= 2]",
 		"x as T",
 		"x as T",
-		"x as T[i ..=]",
-		"x as T[..= j]",
-		"x as T[i ..= j]",
 		"x as pkg.T",
 		"x as ptr T",
 		"x as array[4] T",
-		"x as array[8 + (2 * N)] ptr array[4] ptr pkg.T[i ..= j]",
+		"x as array[8 + (2 * N)] ptr array[4] ptr base.u8[10 ..= 20]",
 	}
 
 	tm := &t.Map{}
