@@ -651,47 +651,51 @@ var TableFuncs = []string{
 }
 
 func ParseFuncs(tm *t.Map, ss []string, callback func(*a.Func) error) error {
+	if len(ss) == 0 {
+		return nil
+	}
 	const GENERIC = "GENERIC "
+	generic := strings.HasPrefix(ss[0], GENERIC)
+
 	buf := []byte(nil)
 	for _, s := range ss {
-		generic := strings.HasPrefix(s, GENERIC)
-		if generic {
+		if generic && (len(s) >= len(GENERIC)) {
 			s = s[len(GENERIC):]
 		}
-
-		buf = buf[:0]
 		buf = append(buf, "pub func "...)
 		buf = append(buf, s...)
 		buf = append(buf, "{}\n"...)
+	}
 
-		const filename = "builtin.wuffs"
-		tokens, _, err := t.Tokenize(tm, filename, buf)
-		if err != nil {
-			return fmt.Errorf("parsing %q: could not tokenize built-in funcs: %v", s, err)
-		}
-		if generic {
-			for i := range tokens {
-				if id := tokens[i].ID; id == genericOldName1 {
-					tokens[i].ID = genericNewName1
-				} else if id == genericOldName2 {
-					tokens[i].ID = genericNewName2
-				}
+	const filename = "builtin.wuffs"
+	tokens, _, err := t.Tokenize(tm, filename, buf)
+	if err != nil {
+		return fmt.Errorf("could not tokenize built-in funcs: %v", err)
+	}
+
+	if generic {
+		for i := range tokens {
+			if id := tokens[i].ID; id == genericOldName1 {
+				tokens[i].ID = genericNewName1
+			} else if id == genericOldName2 {
+				tokens[i].ID = genericNewName2
 			}
 		}
-		file, err := parse.Parse(tm, filename, tokens, &parse.Options{
-			AllowBuiltInNames: true,
-		})
-		if err != nil {
-			return fmt.Errorf("parsing %q: could not parse built-in funcs: %v", s, err)
-		}
+	}
 
-		tlds := file.TopLevelDecls()
-		if len(tlds) != 1 || tlds[0].Kind() != a.KFunc {
-			return fmt.Errorf("parsing %q: got %d top level decls, want %d", s, len(tlds), 1)
+	file, err := parse.Parse(tm, filename, tokens, &parse.Options{
+		AllowBuiltInNames: true,
+	})
+	if err != nil {
+		return fmt.Errorf("could not parse built-in funcs: %v", err)
+	}
+
+	for _, tld := range file.TopLevelDecls() {
+		if tld.Kind() != a.KFunc {
+			continue
 		}
-		f := tlds[0].AsFunc()
+		f := tld.AsFunc()
 		f.AsNode().AsRaw().SetPackage(tm, t.IDBase)
-
 		if callback != nil {
 			if err := callback(f); err != nil {
 				return err
