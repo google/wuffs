@@ -46,12 +46,12 @@ wuffs_base__pixel_buffer__color_u32_at(const wuffs_base__pixel_buffer* pb,
   switch (pb->pixcfg.private_impl.pixfmt.repr) {
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_BINARY:
-      return wuffs_base__load_u32le__no_bounds_check(row + (4 * ((size_t)x)));
+      return wuffs_base__peek_u32le__no_bounds_check(row + (4 * ((size_t)x)));
 
     case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_PREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY: {
       uint8_t* palette = pb->private_impl.planes[3].ptr;
-      return wuffs_base__load_u32le__no_bounds_check(palette +
+      return wuffs_base__peek_u32le__no_bounds_check(palette +
                                                      (4 * ((size_t)row[x])));
     }
 
@@ -63,43 +63,43 @@ wuffs_base__pixel_buffer__color_u32_at(const wuffs_base__pixel_buffer* pb,
     case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL: {
       uint8_t* palette = pb->private_impl.planes[3].ptr;
       return wuffs_base__color_u32_argb_nonpremul__as__color_u32_argb_premul(
-          wuffs_base__load_u32le__no_bounds_check(palette +
+          wuffs_base__peek_u32le__no_bounds_check(palette +
                                                   (4 * ((size_t)row[x]))));
     }
 
     case WUFFS_BASE__PIXEL_FORMAT__BGR_565:
       return wuffs_base__color_u16_rgb_565__as__color_u32_argb_premul(
-          wuffs_base__load_u16le__no_bounds_check(row + (2 * ((size_t)x))));
+          wuffs_base__peek_u16le__no_bounds_check(row + (2 * ((size_t)x))));
     case WUFFS_BASE__PIXEL_FORMAT__BGR:
       return 0xFF000000 |
-             wuffs_base__load_u24le__no_bounds_check(row + (3 * ((size_t)x)));
+             wuffs_base__peek_u24le__no_bounds_check(row + (3 * ((size_t)x)));
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
       return wuffs_base__color_u32_argb_nonpremul__as__color_u32_argb_premul(
-          wuffs_base__load_u32le__no_bounds_check(row + (4 * ((size_t)x))));
+          wuffs_base__peek_u32le__no_bounds_check(row + (4 * ((size_t)x))));
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE:
       return wuffs_base__color_u64_argb_nonpremul__as__color_u32_argb_premul(
-          wuffs_base__load_u64le__no_bounds_check(row + (8 * ((size_t)x))));
+          wuffs_base__peek_u64le__no_bounds_check(row + (8 * ((size_t)x))));
     case WUFFS_BASE__PIXEL_FORMAT__BGRX:
       return 0xFF000000 |
-             wuffs_base__load_u32le__no_bounds_check(row + (4 * ((size_t)x)));
+             wuffs_base__peek_u32le__no_bounds_check(row + (4 * ((size_t)x)));
 
     case WUFFS_BASE__PIXEL_FORMAT__RGB:
       return wuffs_base__swap_u32_argb_abgr(
           0xFF000000 |
-          wuffs_base__load_u24le__no_bounds_check(row + (3 * ((size_t)x))));
+          wuffs_base__peek_u24le__no_bounds_check(row + (3 * ((size_t)x))));
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
       return wuffs_base__swap_u32_argb_abgr(
           wuffs_base__color_u32_argb_nonpremul__as__color_u32_argb_premul(
-              wuffs_base__load_u32le__no_bounds_check(row +
+              wuffs_base__peek_u32le__no_bounds_check(row +
                                                       (4 * ((size_t)x)))));
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_BINARY:
       return wuffs_base__swap_u32_argb_abgr(
-          wuffs_base__load_u32le__no_bounds_check(row + (4 * ((size_t)x))));
+          wuffs_base__peek_u32le__no_bounds_check(row + (4 * ((size_t)x))));
     case WUFFS_BASE__PIXEL_FORMAT__RGBX:
       return wuffs_base__swap_u32_argb_abgr(
           0xFF000000 |
-          wuffs_base__load_u32le__no_bounds_check(row + (4 * ((size_t)x))));
+          wuffs_base__peek_u32le__no_bounds_check(row + (4 * ((size_t)x))));
 
     default:
       // TODO: support more formats.
@@ -134,58 +134,58 @@ wuffs_base__pixel_buffer__set_color_u32_at(
   switch (pb->pixcfg.private_impl.pixfmt.repr) {
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__BGRX:
-      wuffs_base__store_u32le__no_bounds_check(row + (4 * ((size_t)x)), color);
+      wuffs_base__poke_u32le__no_bounds_check(row + (4 * ((size_t)x)), color);
       break;
 
       // Common formats above. Rarer formats below.
 
     case WUFFS_BASE__PIXEL_FORMAT__Y:
-      wuffs_base__store_u8__no_bounds_check(
+      wuffs_base__poke_u8__no_bounds_check(
           row + ((size_t)x),
           wuffs_base__color_u32_argb_premul__as__color_u8_gray(color));
       break;
 
     case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY:
-      wuffs_base__store_u8__no_bounds_check(
+      wuffs_base__poke_u8__no_bounds_check(
           row + ((size_t)x), wuffs_base__pixel_palette__closest_element(
                                  wuffs_base__pixel_buffer__palette(pb),
                                  pb->pixcfg.private_impl.pixfmt, color));
       break;
 
     case WUFFS_BASE__PIXEL_FORMAT__BGR_565:
-      wuffs_base__store_u16le__no_bounds_check(
+      wuffs_base__poke_u16le__no_bounds_check(
           row + (2 * ((size_t)x)),
           wuffs_base__color_u32_argb_premul__as__color_u16_rgb_565(color));
       break;
     case WUFFS_BASE__PIXEL_FORMAT__BGR:
-      wuffs_base__store_u24le__no_bounds_check(row + (3 * ((size_t)x)), color);
+      wuffs_base__poke_u24le__no_bounds_check(row + (3 * ((size_t)x)), color);
       break;
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
-      wuffs_base__store_u32le__no_bounds_check(
+      wuffs_base__poke_u32le__no_bounds_check(
           row + (4 * ((size_t)x)),
           wuffs_base__color_u32_argb_premul__as__color_u32_argb_nonpremul(
               color));
       break;
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE:
-      wuffs_base__store_u64le__no_bounds_check(
+      wuffs_base__poke_u64le__no_bounds_check(
           row + (8 * ((size_t)x)),
           wuffs_base__color_u32_argb_premul__as__color_u64_argb_nonpremul(
               color));
       break;
 
     case WUFFS_BASE__PIXEL_FORMAT__RGB:
-      wuffs_base__store_u24le__no_bounds_check(
+      wuffs_base__poke_u24le__no_bounds_check(
           row + (3 * ((size_t)x)), wuffs_base__swap_u32_argb_abgr(color));
       break;
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
-      wuffs_base__store_u32le__no_bounds_check(
+      wuffs_base__poke_u32le__no_bounds_check(
           row + (4 * ((size_t)x)),
           wuffs_base__color_u32_argb_premul__as__color_u32_argb_nonpremul(
               wuffs_base__swap_u32_argb_abgr(color)));
       break;
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__RGBX:
-      wuffs_base__store_u32le__no_bounds_check(
+      wuffs_base__poke_u32le__no_bounds_check(
           row + (4 * ((size_t)x)), wuffs_base__swap_u32_argb_abgr(color));
       break;
 
@@ -492,12 +492,12 @@ wuffs_base__pixel_swizzler__squash_align4_bgr_565_888(uint8_t* dst_ptr,
 
   size_t n = len;
   while (n--) {
-    uint32_t argb = wuffs_base__load_u32le__no_bounds_check(s);
+    uint32_t argb = wuffs_base__peek_u32le__no_bounds_check(s);
     uint32_t b5 = 0x1F & (argb >> (8 - 5));
     uint32_t g6 = 0x3F & (argb >> (16 - 6));
     uint32_t r5 = 0x1F & (argb >> (24 - 5));
     uint32_t alpha = argb & 0xFF000000;
-    wuffs_base__store_u32le__no_bounds_check(
+    wuffs_base__poke_u32le__no_bounds_check(
         d, alpha | (r5 << 11) | (g6 << 5) | (b5 << 0));
     s += 4;
     d += 4;
@@ -622,9 +622,9 @@ wuffs_base__pixel_swizzler__squash_tight_4x8_4x16le(uint8_t* dst_ptr,
 
   size_t n = len;
   while (n >= 1) {
-    wuffs_base__store_u32le__no_bounds_check(
+    wuffs_base__poke_u32le__no_bounds_check(
         d + (0 * 4), wuffs_base__color_u64__as__color_u32(
-                         wuffs_base__load_u64le__no_bounds_check(s + (0 * 8))));
+                         wuffs_base__peek_u64le__no_bounds_check(s + (0 * 8))));
 
     s += 1 * 8;
     d += 1 * 4;
@@ -704,7 +704,7 @@ wuffs_base__pixel_swizzler__bgr_565__bgr(uint8_t* dst_ptr,
     uint32_t g6 = s[1] >> 2;
     uint32_t r5 = s[2] >> 3;
     uint32_t rgb_565 = (r5 << 11) | (g6 << 5) | (b5 << 0);
-    wuffs_base__store_u16le__no_bounds_check(d + (0 * 2), (uint16_t)rgb_565);
+    wuffs_base__poke_u16le__no_bounds_check(d + (0 * 2), (uint16_t)rgb_565);
 
     s += 1 * 3;
     d += 1 * 2;
@@ -735,7 +735,7 @@ wuffs_base__pixel_swizzler__bgr_565__bgrx(uint8_t* dst_ptr,
     uint32_t g6 = s[1] >> 2;
     uint32_t r5 = s[2] >> 3;
     uint32_t rgb_565 = (r5 << 11) | (g6 << 5) | (b5 << 0);
-    wuffs_base__store_u16le__no_bounds_check(d + (0 * 2), (uint16_t)rgb_565);
+    wuffs_base__poke_u16le__no_bounds_check(d + (0 * 2), (uint16_t)rgb_565);
 
     s += 1 * 4;
     d += 1 * 2;
@@ -763,11 +763,11 @@ wuffs_base__pixel_swizzler__bgr_565__bgra_nonpremul__src(
   // TODO: unroll.
 
   while (n >= 1) {
-    wuffs_base__store_u16le__no_bounds_check(
+    wuffs_base__poke_u16le__no_bounds_check(
         d + (0 * 2),
         wuffs_base__color_u32_argb_premul__as__color_u16_rgb_565(
             wuffs_base__color_u32_argb_nonpremul__as__color_u32_argb_premul(
-                wuffs_base__load_u32le__no_bounds_check(s + (0 * 4)))));
+                wuffs_base__peek_u32le__no_bounds_check(s + (0 * 4)))));
 
     s += 1 * 4;
     d += 1 * 2;
@@ -795,11 +795,11 @@ wuffs_base__pixel_swizzler__bgr_565__bgra_nonpremul_4x16le__src(
   // TODO: unroll.
 
   while (n >= 1) {
-    wuffs_base__store_u16le__no_bounds_check(
+    wuffs_base__poke_u16le__no_bounds_check(
         d + (0 * 2),
         wuffs_base__color_u32_argb_premul__as__color_u16_rgb_565(
             wuffs_base__color_u64_argb_nonpremul__as__color_u32_argb_premul(
-                wuffs_base__load_u64le__no_bounds_check(s + (0 * 8)))));
+                wuffs_base__peek_u64le__no_bounds_check(s + (0 * 8)))));
 
     s += 1 * 8;
     d += 1 * 2;
@@ -834,7 +834,7 @@ wuffs_base__pixel_swizzler__bgr_565__bgra_nonpremul__src_over(
     uint32_t sb = 0x101 * ((uint32_t)s[0]);
 
     // Convert from 565 color to 16-bit color.
-    uint32_t old_rgb_565 = wuffs_base__load_u16le__no_bounds_check(d + (0 * 2));
+    uint32_t old_rgb_565 = wuffs_base__peek_u16le__no_bounds_check(d + (0 * 2));
     uint32_t old_r5 = 0x1F & (old_rgb_565 >> 11);
     uint32_t dr = (0x8421 * old_r5) >> 4;
     uint32_t old_g6 = 0x3F & (old_rgb_565 >> 5);
@@ -855,8 +855,7 @@ wuffs_base__pixel_swizzler__bgr_565__bgra_nonpremul__src_over(
     uint32_t new_g6 = 0x3F & (dg >> 10);
     uint32_t new_b5 = 0x1F & (db >> 11);
     uint32_t new_rgb_565 = (new_r5 << 11) | (new_g6 << 5) | (new_b5 << 0);
-    wuffs_base__store_u16le__no_bounds_check(d + (0 * 2),
-                                             (uint16_t)new_rgb_565);
+    wuffs_base__poke_u16le__no_bounds_check(d + (0 * 2), (uint16_t)new_rgb_565);
 
     s += 1 * 4;
     d += 1 * 2;
@@ -885,13 +884,13 @@ wuffs_base__pixel_swizzler__bgr_565__bgra_nonpremul_4x16le__src_over(
 
   while (n >= 1) {
     // Extract 16-bit color components.
-    uint32_t sa = ((uint32_t)wuffs_base__load_u16le__no_bounds_check(s + 6));
-    uint32_t sr = ((uint32_t)wuffs_base__load_u16le__no_bounds_check(s + 4));
-    uint32_t sg = ((uint32_t)wuffs_base__load_u16le__no_bounds_check(s + 2));
-    uint32_t sb = ((uint32_t)wuffs_base__load_u16le__no_bounds_check(s + 0));
+    uint32_t sa = ((uint32_t)wuffs_base__peek_u16le__no_bounds_check(s + 6));
+    uint32_t sr = ((uint32_t)wuffs_base__peek_u16le__no_bounds_check(s + 4));
+    uint32_t sg = ((uint32_t)wuffs_base__peek_u16le__no_bounds_check(s + 2));
+    uint32_t sb = ((uint32_t)wuffs_base__peek_u16le__no_bounds_check(s + 0));
 
     // Convert from 565 color to 16-bit color.
-    uint32_t old_rgb_565 = wuffs_base__load_u16le__no_bounds_check(d + (0 * 2));
+    uint32_t old_rgb_565 = wuffs_base__peek_u16le__no_bounds_check(d + (0 * 2));
     uint32_t old_r5 = 0x1F & (old_rgb_565 >> 11);
     uint32_t dr = (0x8421 * old_r5) >> 4;
     uint32_t old_g6 = 0x3F & (old_rgb_565 >> 5);
@@ -912,8 +911,7 @@ wuffs_base__pixel_swizzler__bgr_565__bgra_nonpremul_4x16le__src_over(
     uint32_t new_g6 = 0x3F & (dg >> 10);
     uint32_t new_b5 = 0x1F & (db >> 11);
     uint32_t new_rgb_565 = (new_r5 << 11) | (new_g6 << 5) | (new_b5 << 0);
-    wuffs_base__store_u16le__no_bounds_check(d + (0 * 2),
-                                             (uint16_t)new_rgb_565);
+    wuffs_base__poke_u16le__no_bounds_check(d + (0 * 2), (uint16_t)new_rgb_565);
 
     s += 1 * 8;
     d += 1 * 2;
@@ -944,7 +942,7 @@ wuffs_base__pixel_swizzler__bgr_565__rgb(uint8_t* dst_ptr,
     uint32_t g6 = s[1] >> 2;
     uint32_t b5 = s[2] >> 3;
     uint32_t rgb_565 = (r5 << 11) | (g6 << 5) | (b5 << 0);
-    wuffs_base__store_u16le__no_bounds_check(d + (0 * 2), (uint16_t)rgb_565);
+    wuffs_base__poke_u16le__no_bounds_check(d + (0 * 2), (uint16_t)rgb_565);
 
     s += 1 * 3;
     d += 1 * 2;
@@ -972,12 +970,12 @@ wuffs_base__pixel_swizzler__bgr_565__rgba_nonpremul__src(
   // TODO: unroll.
 
   while (n >= 1) {
-    wuffs_base__store_u16le__no_bounds_check(
+    wuffs_base__poke_u16le__no_bounds_check(
         d + (0 * 2),
         wuffs_base__color_u32_argb_premul__as__color_u16_rgb_565(
             wuffs_base__swap_u32_argb_abgr(
                 wuffs_base__color_u32_argb_nonpremul__as__color_u32_argb_premul(
-                    wuffs_base__load_u32le__no_bounds_check(s + (0 * 4))))));
+                    wuffs_base__peek_u32le__no_bounds_check(s + (0 * 4))))));
 
     s += 1 * 4;
     d += 1 * 2;
@@ -1012,7 +1010,7 @@ wuffs_base__pixel_swizzler__bgr_565__rgba_nonpremul__src_over(
     uint32_t sr = 0x101 * ((uint32_t)s[0]);
 
     // Convert from 565 color to 16-bit color.
-    uint32_t old_rgb_565 = wuffs_base__load_u16le__no_bounds_check(d + (0 * 2));
+    uint32_t old_rgb_565 = wuffs_base__peek_u16le__no_bounds_check(d + (0 * 2));
     uint32_t old_r5 = 0x1F & (old_rgb_565 >> 11);
     uint32_t dr = (0x8421 * old_r5) >> 4;
     uint32_t old_g6 = 0x3F & (old_rgb_565 >> 5);
@@ -1033,8 +1031,7 @@ wuffs_base__pixel_swizzler__bgr_565__rgba_nonpremul__src_over(
     uint32_t new_g6 = 0x3F & (dg >> 10);
     uint32_t new_b5 = 0x1F & (db >> 11);
     uint32_t new_rgb_565 = (new_r5 << 11) | (new_g6 << 5) | (new_b5 << 0);
-    wuffs_base__store_u16le__no_bounds_check(d + (0 * 2),
-                                             (uint16_t)new_rgb_565);
+    wuffs_base__poke_u16le__no_bounds_check(d + (0 * 2), (uint16_t)new_rgb_565);
 
     s += 1 * 4;
     d += 1 * 2;
@@ -1063,7 +1060,7 @@ wuffs_base__pixel_swizzler__bgr_565__y(uint8_t* dst_ptr,
     uint32_t y5 = s[0] >> 3;
     uint32_t y6 = s[0] >> 2;
     uint32_t rgb_565 = (y5 << 11) | (y6 << 5) | (y5 << 0);
-    wuffs_base__store_u16le__no_bounds_check(d + (0 * 2), (uint16_t)rgb_565);
+    wuffs_base__poke_u16le__no_bounds_check(d + (0 * 2), (uint16_t)rgb_565);
 
     s += 1 * 1;
     d += 1 * 2;
@@ -1092,17 +1089,17 @@ wuffs_base__pixel_swizzler__bgr_565__index__src(uint8_t* dst_ptr,
   const size_t loop_unroll_count = 4;
 
   while (n >= loop_unroll_count) {
-    wuffs_base__store_u16le__no_bounds_check(
-        d + (0 * 2), wuffs_base__load_u16le__no_bounds_check(
+    wuffs_base__poke_u16le__no_bounds_check(
+        d + (0 * 2), wuffs_base__peek_u16le__no_bounds_check(
                          dst_palette_ptr + ((size_t)s[0] * 4)));
-    wuffs_base__store_u16le__no_bounds_check(
-        d + (1 * 2), wuffs_base__load_u16le__no_bounds_check(
+    wuffs_base__poke_u16le__no_bounds_check(
+        d + (1 * 2), wuffs_base__peek_u16le__no_bounds_check(
                          dst_palette_ptr + ((size_t)s[1] * 4)));
-    wuffs_base__store_u16le__no_bounds_check(
-        d + (2 * 2), wuffs_base__load_u16le__no_bounds_check(
+    wuffs_base__poke_u16le__no_bounds_check(
+        d + (2 * 2), wuffs_base__peek_u16le__no_bounds_check(
                          dst_palette_ptr + ((size_t)s[2] * 4)));
-    wuffs_base__store_u16le__no_bounds_check(
-        d + (3 * 2), wuffs_base__load_u16le__no_bounds_check(
+    wuffs_base__poke_u16le__no_bounds_check(
+        d + (3 * 2), wuffs_base__peek_u16le__no_bounds_check(
                          dst_palette_ptr + ((size_t)s[3] * 4)));
 
     s += loop_unroll_count * 1;
@@ -1111,8 +1108,8 @@ wuffs_base__pixel_swizzler__bgr_565__index__src(uint8_t* dst_ptr,
   }
 
   while (n >= 1) {
-    wuffs_base__store_u16le__no_bounds_check(
-        d + (0 * 2), wuffs_base__load_u16le__no_bounds_check(
+    wuffs_base__poke_u16le__no_bounds_check(
+        d + (0 * 2), wuffs_base__peek_u16le__no_bounds_check(
                          dst_palette_ptr + ((size_t)s[0] * 4)));
 
     s += 1 * 1;
@@ -1143,10 +1140,10 @@ wuffs_base__pixel_swizzler__bgr_565__index_binary_alpha__src_over(
   // TODO: unroll.
 
   while (n >= 1) {
-    uint32_t s0 = wuffs_base__load_u32le__no_bounds_check(dst_palette_ptr +
+    uint32_t s0 = wuffs_base__peek_u32le__no_bounds_check(dst_palette_ptr +
                                                           ((size_t)s[0] * 4));
     if (s0) {
-      wuffs_base__store_u16le__no_bounds_check(d + (0 * 2), (uint16_t)s0);
+      wuffs_base__poke_u16le__no_bounds_check(d + (0 * 2), (uint16_t)s0);
     }
 
     s += 1 * 1;
@@ -1178,8 +1175,8 @@ wuffs_base__pixel_swizzler__bgr__bgra_nonpremul__src(uint8_t* dst_ptr,
   while (n >= 1) {
     uint32_t s0 =
         wuffs_base__color_u32_argb_nonpremul__as__color_u32_argb_premul(
-            wuffs_base__load_u32le__no_bounds_check(s + (0 * 4)));
-    wuffs_base__store_u24le__no_bounds_check(d + (0 * 3), s0);
+            wuffs_base__peek_u32le__no_bounds_check(s + (0 * 4)));
+    wuffs_base__poke_u24le__no_bounds_check(d + (0 * 3), s0);
 
     s += 1 * 4;
     d += 1 * 3;
@@ -1209,8 +1206,8 @@ wuffs_base__pixel_swizzler__bgr__bgra_nonpremul_4x16le__src(
   while (n >= 1) {
     uint32_t s0 =
         wuffs_base__color_u64_argb_nonpremul__as__color_u32_argb_premul(
-            wuffs_base__load_u64le__no_bounds_check(s + (0 * 8)));
-    wuffs_base__store_u24le__no_bounds_check(d + (0 * 3), s0);
+            wuffs_base__peek_u64le__no_bounds_check(s + (0 * 8)));
+    wuffs_base__poke_u24le__no_bounds_check(d + (0 * 3), s0);
 
     s += 1 * 8;
     d += 1 * 3;
@@ -1287,10 +1284,10 @@ wuffs_base__pixel_swizzler__bgr__bgra_nonpremul_4x16le__src_over(
 
   while (n >= 1) {
     // Extract 16-bit color components.
-    uint32_t sa = ((uint32_t)wuffs_base__load_u16le__no_bounds_check(s + 6));
-    uint32_t sr = ((uint32_t)wuffs_base__load_u16le__no_bounds_check(s + 4));
-    uint32_t sg = ((uint32_t)wuffs_base__load_u16le__no_bounds_check(s + 2));
-    uint32_t sb = ((uint32_t)wuffs_base__load_u16le__no_bounds_check(s + 0));
+    uint32_t sa = ((uint32_t)wuffs_base__peek_u16le__no_bounds_check(s + 6));
+    uint32_t sr = ((uint32_t)wuffs_base__peek_u16le__no_bounds_check(s + 4));
+    uint32_t sg = ((uint32_t)wuffs_base__peek_u16le__no_bounds_check(s + 2));
+    uint32_t sb = ((uint32_t)wuffs_base__peek_u16le__no_bounds_check(s + 0));
     uint32_t dr = 0x101 * ((uint32_t)d[2]);
     uint32_t dg = 0x101 * ((uint32_t)d[1]);
     uint32_t db = 0x101 * ((uint32_t)d[0]);
@@ -1335,8 +1332,8 @@ wuffs_base__pixel_swizzler__bgr__rgba_nonpremul__src(uint8_t* dst_ptr,
   while (n >= 1) {
     uint32_t s0 = wuffs_base__swap_u32_argb_abgr(
         wuffs_base__color_u32_argb_nonpremul__as__color_u32_argb_premul(
-            wuffs_base__load_u32le__no_bounds_check(s + (0 * 4))));
-    wuffs_base__store_u24le__no_bounds_check(d + (0 * 3), s0);
+            wuffs_base__peek_u32le__no_bounds_check(s + (0 * 4))));
+    wuffs_base__poke_u24le__no_bounds_check(d + (0 * 3), s0);
 
     s += 1 * 4;
     d += 1 * 3;
@@ -1412,9 +1409,9 @@ wuffs_base__pixel_swizzler__bgra_nonpremul__bgra_nonpremul__src_over(
   size_t n = len;
 
   while (n >= 1) {
-    uint32_t d0 = wuffs_base__load_u32le__no_bounds_check(d + (0 * 4));
-    uint32_t s0 = wuffs_base__load_u32le__no_bounds_check(s + (0 * 4));
-    wuffs_base__store_u32le__no_bounds_check(
+    uint32_t d0 = wuffs_base__peek_u32le__no_bounds_check(d + (0 * 4));
+    uint32_t s0 = wuffs_base__peek_u32le__no_bounds_check(s + (0 * 4));
+    wuffs_base__poke_u32le__no_bounds_check(
         d + (0 * 4),
         wuffs_base__composite_nonpremul_nonpremul_u32_axxx(d0, s0));
 
@@ -1443,9 +1440,9 @@ wuffs_base__pixel_swizzler__bgra_nonpremul__bgra_nonpremul_4x16le__src_over(
 
   while (n >= 1) {
     uint64_t d0 = wuffs_base__color_u32__as__color_u64(
-        wuffs_base__load_u32le__no_bounds_check(d + (0 * 4)));
-    uint64_t s0 = wuffs_base__load_u64le__no_bounds_check(s + (0 * 8));
-    wuffs_base__store_u32le__no_bounds_check(
+        wuffs_base__peek_u32le__no_bounds_check(d + (0 * 4)));
+    uint64_t s0 = wuffs_base__peek_u64le__no_bounds_check(s + (0 * 8));
+    wuffs_base__poke_u32le__no_bounds_check(
         d + (0 * 4),
         wuffs_base__color_u64__as__color_u32(
             wuffs_base__composite_nonpremul_nonpremul_u64_axxx(d0, s0)));
@@ -1474,10 +1471,10 @@ wuffs_base__pixel_swizzler__bgra_nonpremul__rgba_nonpremul__src_over(
   size_t n = len;
 
   while (n >= 1) {
-    uint32_t d0 = wuffs_base__load_u32le__no_bounds_check(d + (0 * 4));
+    uint32_t d0 = wuffs_base__peek_u32le__no_bounds_check(d + (0 * 4));
     uint32_t s0 = wuffs_base__swap_u32_argb_abgr(
-        wuffs_base__load_u32le__no_bounds_check(s + (0 * 4)));
-    wuffs_base__store_u32le__no_bounds_check(
+        wuffs_base__peek_u32le__no_bounds_check(s + (0 * 4)));
+    wuffs_base__poke_u32le__no_bounds_check(
         d + (0 * 4),
         wuffs_base__composite_nonpremul_nonpremul_u32_axxx(d0, s0));
 
@@ -1509,8 +1506,8 @@ wuffs_base__pixel_swizzler__bgra_premul__bgra_nonpremul__src(
   // TODO: unroll.
 
   while (n >= 1) {
-    uint32_t s0 = wuffs_base__load_u32le__no_bounds_check(s + (0 * 4));
-    wuffs_base__store_u32le__no_bounds_check(
+    uint32_t s0 = wuffs_base__peek_u32le__no_bounds_check(s + (0 * 4));
+    wuffs_base__poke_u32le__no_bounds_check(
         d + (0 * 4),
         wuffs_base__color_u32_argb_nonpremul__as__color_u32_argb_premul(s0));
 
@@ -1540,8 +1537,8 @@ wuffs_base__pixel_swizzler__bgra_premul__bgra_nonpremul_4x16le__src(
   // TODO: unroll.
 
   while (n >= 1) {
-    uint64_t s0 = wuffs_base__load_u64le__no_bounds_check(s + (0 * 8));
-    wuffs_base__store_u32le__no_bounds_check(
+    uint64_t s0 = wuffs_base__peek_u64le__no_bounds_check(s + (0 * 8));
+    wuffs_base__poke_u32le__no_bounds_check(
         d + (0 * 4),
         wuffs_base__color_u64_argb_nonpremul__as__color_u32_argb_premul(s0));
 
@@ -1571,9 +1568,9 @@ wuffs_base__pixel_swizzler__bgra_premul__bgra_nonpremul__src_over(
   // TODO: unroll.
 
   while (n >= 1) {
-    uint32_t d0 = wuffs_base__load_u32le__no_bounds_check(d + (0 * 4));
-    uint32_t s0 = wuffs_base__load_u32le__no_bounds_check(s + (0 * 4));
-    wuffs_base__store_u32le__no_bounds_check(
+    uint32_t d0 = wuffs_base__peek_u32le__no_bounds_check(d + (0 * 4));
+    uint32_t s0 = wuffs_base__peek_u32le__no_bounds_check(s + (0 * 4));
+    wuffs_base__poke_u32le__no_bounds_check(
         d + (0 * 4), wuffs_base__composite_premul_nonpremul_u32_axxx(d0, s0));
 
     s += 1 * 4;
@@ -1603,9 +1600,9 @@ wuffs_base__pixel_swizzler__bgra_premul__bgra_nonpremul_4x16le__src_over(
 
   while (n >= 1) {
     uint64_t d0 = wuffs_base__color_u32__as__color_u64(
-        wuffs_base__load_u32le__no_bounds_check(d + (0 * 4)));
-    uint64_t s0 = wuffs_base__load_u64le__no_bounds_check(s + (0 * 8));
-    wuffs_base__store_u32le__no_bounds_check(
+        wuffs_base__peek_u32le__no_bounds_check(d + (0 * 4)));
+    uint64_t s0 = wuffs_base__peek_u64le__no_bounds_check(s + (0 * 8));
+    wuffs_base__poke_u32le__no_bounds_check(
         d + (0 * 4),
         wuffs_base__color_u64__as__color_u32(
             wuffs_base__composite_premul_nonpremul_u64_axxx(d0, s0)));
@@ -1637,8 +1634,8 @@ wuffs_base__pixel_swizzler__bgra_premul__rgba_nonpremul__src(
 
   while (n >= 1) {
     uint32_t s0 = wuffs_base__swap_u32_argb_abgr(
-        wuffs_base__load_u32le__no_bounds_check(s + (0 * 4)));
-    wuffs_base__store_u32le__no_bounds_check(
+        wuffs_base__peek_u32le__no_bounds_check(s + (0 * 4)));
+    wuffs_base__poke_u32le__no_bounds_check(
         d + (0 * 4),
         wuffs_base__color_u32_argb_nonpremul__as__color_u32_argb_premul(s0));
 
@@ -1668,10 +1665,10 @@ wuffs_base__pixel_swizzler__bgra_premul__rgba_nonpremul__src_over(
   // TODO: unroll.
 
   while (n >= 1) {
-    uint32_t d0 = wuffs_base__load_u32le__no_bounds_check(d + (0 * 4));
+    uint32_t d0 = wuffs_base__peek_u32le__no_bounds_check(d + (0 * 4));
     uint32_t s0 = wuffs_base__swap_u32_argb_abgr(
-        wuffs_base__load_u32le__no_bounds_check(s + (0 * 4)));
-    wuffs_base__store_u32le__no_bounds_check(
+        wuffs_base__peek_u32le__no_bounds_check(s + (0 * 4)));
+    wuffs_base__poke_u32le__no_bounds_check(
         d + (0 * 4), wuffs_base__composite_premul_nonpremul_u32_axxx(d0, s0));
 
     s += 1 * 4;
@@ -1701,9 +1698,9 @@ wuffs_base__pixel_swizzler__bgrw__bgr(uint8_t* dst_ptr,
   // TODO: unroll.
 
   while (n >= 1) {
-    wuffs_base__store_u32le__no_bounds_check(
+    wuffs_base__poke_u32le__no_bounds_check(
         d + (0 * 4),
-        0xFF000000 | wuffs_base__load_u24le__no_bounds_check(s + (0 * 3)));
+        0xFF000000 | wuffs_base__peek_u24le__no_bounds_check(s + (0 * 3)));
 
     s += 1 * 3;
     d += 1 * 4;
@@ -1730,9 +1727,9 @@ wuffs_base__pixel_swizzler__bgrw__bgrx(uint8_t* dst_ptr,
   // TODO: unroll.
 
   while (n >= 1) {
-    wuffs_base__store_u32le__no_bounds_check(
+    wuffs_base__poke_u32le__no_bounds_check(
         d + (0 * 4),
-        0xFF000000 | wuffs_base__load_u32le__no_bounds_check(s + (0 * 4)));
+        0xFF000000 | wuffs_base__peek_u32le__no_bounds_check(s + (0 * 4)));
 
     s += 1 * 4;
     d += 1 * 4;
@@ -1858,17 +1855,17 @@ wuffs_base__pixel_swizzler__xxx__index__src(uint8_t* dst_ptr,
   // store, whether a 4-byte store in this loop or a 1-byte store in the
   // next loop.
   while (n > loop_unroll_count) {
-    wuffs_base__store_u32le__no_bounds_check(
-        d + (0 * 3), wuffs_base__load_u32le__no_bounds_check(
+    wuffs_base__poke_u32le__no_bounds_check(
+        d + (0 * 3), wuffs_base__peek_u32le__no_bounds_check(
                          dst_palette_ptr + ((size_t)s[0] * 4)));
-    wuffs_base__store_u32le__no_bounds_check(
-        d + (1 * 3), wuffs_base__load_u32le__no_bounds_check(
+    wuffs_base__poke_u32le__no_bounds_check(
+        d + (1 * 3), wuffs_base__peek_u32le__no_bounds_check(
                          dst_palette_ptr + ((size_t)s[1] * 4)));
-    wuffs_base__store_u32le__no_bounds_check(
-        d + (2 * 3), wuffs_base__load_u32le__no_bounds_check(
+    wuffs_base__poke_u32le__no_bounds_check(
+        d + (2 * 3), wuffs_base__peek_u32le__no_bounds_check(
                          dst_palette_ptr + ((size_t)s[2] * 4)));
-    wuffs_base__store_u32le__no_bounds_check(
-        d + (3 * 3), wuffs_base__load_u32le__no_bounds_check(
+    wuffs_base__poke_u32le__no_bounds_check(
+        d + (3 * 3), wuffs_base__peek_u32le__no_bounds_check(
                          dst_palette_ptr + ((size_t)s[3] * 4)));
 
     s += loop_unroll_count * 1;
@@ -1877,9 +1874,9 @@ wuffs_base__pixel_swizzler__xxx__index__src(uint8_t* dst_ptr,
   }
 
   while (n >= 1) {
-    uint32_t s0 = wuffs_base__load_u32le__no_bounds_check(dst_palette_ptr +
+    uint32_t s0 = wuffs_base__peek_u32le__no_bounds_check(dst_palette_ptr +
                                                           ((size_t)s[0] * 4));
-    wuffs_base__store_u24le__no_bounds_check(d + (0 * 3), s0);
+    wuffs_base__poke_u24le__no_bounds_check(d + (0 * 3), s0);
 
     s += 1 * 1;
     d += 1 * 3;
@@ -1909,25 +1906,25 @@ wuffs_base__pixel_swizzler__xxx__index_binary_alpha__src_over(
   const size_t loop_unroll_count = 4;
 
   while (n >= loop_unroll_count) {
-    uint32_t s0 = wuffs_base__load_u32le__no_bounds_check(dst_palette_ptr +
+    uint32_t s0 = wuffs_base__peek_u32le__no_bounds_check(dst_palette_ptr +
                                                           ((size_t)s[0] * 4));
     if (s0) {
-      wuffs_base__store_u24le__no_bounds_check(d + (0 * 3), s0);
+      wuffs_base__poke_u24le__no_bounds_check(d + (0 * 3), s0);
     }
-    uint32_t s1 = wuffs_base__load_u32le__no_bounds_check(dst_palette_ptr +
+    uint32_t s1 = wuffs_base__peek_u32le__no_bounds_check(dst_palette_ptr +
                                                           ((size_t)s[1] * 4));
     if (s1) {
-      wuffs_base__store_u24le__no_bounds_check(d + (1 * 3), s1);
+      wuffs_base__poke_u24le__no_bounds_check(d + (1 * 3), s1);
     }
-    uint32_t s2 = wuffs_base__load_u32le__no_bounds_check(dst_palette_ptr +
+    uint32_t s2 = wuffs_base__peek_u32le__no_bounds_check(dst_palette_ptr +
                                                           ((size_t)s[2] * 4));
     if (s2) {
-      wuffs_base__store_u24le__no_bounds_check(d + (2 * 3), s2);
+      wuffs_base__poke_u24le__no_bounds_check(d + (2 * 3), s2);
     }
-    uint32_t s3 = wuffs_base__load_u32le__no_bounds_check(dst_palette_ptr +
+    uint32_t s3 = wuffs_base__peek_u32le__no_bounds_check(dst_palette_ptr +
                                                           ((size_t)s[3] * 4));
     if (s3) {
-      wuffs_base__store_u24le__no_bounds_check(d + (3 * 3), s3);
+      wuffs_base__poke_u24le__no_bounds_check(d + (3 * 3), s3);
     }
 
     s += loop_unroll_count * 1;
@@ -1936,10 +1933,10 @@ wuffs_base__pixel_swizzler__xxx__index_binary_alpha__src_over(
   }
 
   while (n >= 1) {
-    uint32_t s0 = wuffs_base__load_u32le__no_bounds_check(dst_palette_ptr +
+    uint32_t s0 = wuffs_base__peek_u32le__no_bounds_check(dst_palette_ptr +
                                                           ((size_t)s[0] * 4));
     if (s0) {
-      wuffs_base__store_u24le__no_bounds_check(d + (0 * 3), s0);
+      wuffs_base__poke_u24le__no_bounds_check(d + (0 * 3), s0);
     }
 
     s += 1 * 1;
@@ -1967,8 +1964,8 @@ wuffs_base__pixel_swizzler__xxx__xxxx(uint8_t* dst_ptr,
   // TODO: unroll.
 
   while (n >= 1) {
-    wuffs_base__store_u24le__no_bounds_check(
-        d + (0 * 3), wuffs_base__load_u32le__no_bounds_check(s + (0 * 4)));
+    wuffs_base__poke_u24le__no_bounds_check(
+        d + (0 * 3), wuffs_base__peek_u32le__no_bounds_check(s + (0 * 4)));
 
     s += 1 * 4;
     d += 1 * 3;
@@ -2028,17 +2025,17 @@ wuffs_base__pixel_swizzler__xxxx__index__src(uint8_t* dst_ptr,
   const size_t loop_unroll_count = 4;
 
   while (n >= loop_unroll_count) {
-    wuffs_base__store_u32le__no_bounds_check(
-        d + (0 * 4), wuffs_base__load_u32le__no_bounds_check(
+    wuffs_base__poke_u32le__no_bounds_check(
+        d + (0 * 4), wuffs_base__peek_u32le__no_bounds_check(
                          dst_palette_ptr + ((size_t)s[0] * 4)));
-    wuffs_base__store_u32le__no_bounds_check(
-        d + (1 * 4), wuffs_base__load_u32le__no_bounds_check(
+    wuffs_base__poke_u32le__no_bounds_check(
+        d + (1 * 4), wuffs_base__peek_u32le__no_bounds_check(
                          dst_palette_ptr + ((size_t)s[1] * 4)));
-    wuffs_base__store_u32le__no_bounds_check(
-        d + (2 * 4), wuffs_base__load_u32le__no_bounds_check(
+    wuffs_base__poke_u32le__no_bounds_check(
+        d + (2 * 4), wuffs_base__peek_u32le__no_bounds_check(
                          dst_palette_ptr + ((size_t)s[2] * 4)));
-    wuffs_base__store_u32le__no_bounds_check(
-        d + (3 * 4), wuffs_base__load_u32le__no_bounds_check(
+    wuffs_base__poke_u32le__no_bounds_check(
+        d + (3 * 4), wuffs_base__peek_u32le__no_bounds_check(
                          dst_palette_ptr + ((size_t)s[3] * 4)));
 
     s += loop_unroll_count * 1;
@@ -2047,8 +2044,8 @@ wuffs_base__pixel_swizzler__xxxx__index__src(uint8_t* dst_ptr,
   }
 
   while (n >= 1) {
-    wuffs_base__store_u32le__no_bounds_check(
-        d + (0 * 4), wuffs_base__load_u32le__no_bounds_check(
+    wuffs_base__poke_u32le__no_bounds_check(
+        d + (0 * 4), wuffs_base__peek_u32le__no_bounds_check(
                          dst_palette_ptr + ((size_t)s[0] * 4)));
 
     s += 1 * 1;
@@ -2079,25 +2076,25 @@ wuffs_base__pixel_swizzler__xxxx__index_binary_alpha__src_over(
   const size_t loop_unroll_count = 4;
 
   while (n >= loop_unroll_count) {
-    uint32_t s0 = wuffs_base__load_u32le__no_bounds_check(dst_palette_ptr +
+    uint32_t s0 = wuffs_base__peek_u32le__no_bounds_check(dst_palette_ptr +
                                                           ((size_t)s[0] * 4));
     if (s0) {
-      wuffs_base__store_u32le__no_bounds_check(d + (0 * 4), s0);
+      wuffs_base__poke_u32le__no_bounds_check(d + (0 * 4), s0);
     }
-    uint32_t s1 = wuffs_base__load_u32le__no_bounds_check(dst_palette_ptr +
+    uint32_t s1 = wuffs_base__peek_u32le__no_bounds_check(dst_palette_ptr +
                                                           ((size_t)s[1] * 4));
     if (s1) {
-      wuffs_base__store_u32le__no_bounds_check(d + (1 * 4), s1);
+      wuffs_base__poke_u32le__no_bounds_check(d + (1 * 4), s1);
     }
-    uint32_t s2 = wuffs_base__load_u32le__no_bounds_check(dst_palette_ptr +
+    uint32_t s2 = wuffs_base__peek_u32le__no_bounds_check(dst_palette_ptr +
                                                           ((size_t)s[2] * 4));
     if (s2) {
-      wuffs_base__store_u32le__no_bounds_check(d + (2 * 4), s2);
+      wuffs_base__poke_u32le__no_bounds_check(d + (2 * 4), s2);
     }
-    uint32_t s3 = wuffs_base__load_u32le__no_bounds_check(dst_palette_ptr +
+    uint32_t s3 = wuffs_base__peek_u32le__no_bounds_check(dst_palette_ptr +
                                                           ((size_t)s[3] * 4));
     if (s3) {
-      wuffs_base__store_u32le__no_bounds_check(d + (3 * 4), s3);
+      wuffs_base__poke_u32le__no_bounds_check(d + (3 * 4), s3);
     }
 
     s += loop_unroll_count * 1;
@@ -2106,10 +2103,10 @@ wuffs_base__pixel_swizzler__xxxx__index_binary_alpha__src_over(
   }
 
   while (n >= 1) {
-    uint32_t s0 = wuffs_base__load_u32le__no_bounds_check(dst_palette_ptr +
+    uint32_t s0 = wuffs_base__peek_u32le__no_bounds_check(dst_palette_ptr +
                                                           ((size_t)s[0] * 4));
     if (s0) {
-      wuffs_base__store_u32le__no_bounds_check(d + (0 * 4), s0);
+      wuffs_base__poke_u32le__no_bounds_check(d + (0 * 4), s0);
     }
 
     s += 1 * 1;
@@ -2148,7 +2145,7 @@ wuffs_base__pixel_swizzler__xxxx__y__sse128(uint8_t* dst_ptr,
 
   while (n >= 4) {
     __m128i x;
-    x = _mm_cvtsi32_si128((int)(wuffs_base__load_u32le__no_bounds_check(s)));
+    x = _mm_cvtsi32_si128((int)(wuffs_base__peek_u32le__no_bounds_check(s)));
     x = _mm_shuffle_epi8(x, shuffle);
     x = _mm_or_si128(x, or_ff);
     _mm_storeu_si128((__m128i*)(void*)d, x);
@@ -2159,7 +2156,7 @@ wuffs_base__pixel_swizzler__xxxx__y__sse128(uint8_t* dst_ptr,
   }
 
   while (n >= 1) {
-    wuffs_base__store_u32le__no_bounds_check(
+    wuffs_base__poke_u32le__no_bounds_check(
         d + (0 * 4), 0xFF000000 | (0x010101 * (uint32_t)s[0]));
 
     s += 1 * 1;
@@ -2185,7 +2182,7 @@ wuffs_base__pixel_swizzler__xxxx__y(uint8_t* dst_ptr,
   size_t n = len;
 
   while (n >= 1) {
-    wuffs_base__store_u32le__no_bounds_check(
+    wuffs_base__poke_u32le__no_bounds_check(
         d + (0 * 4), 0xFF000000 | (0x010101 * (uint32_t)s[0]));
 
     s += 1 * 1;

@@ -1670,7 +1670,7 @@ wuffs_base__private_implementation__render_inf(wuffs_base__slice_u8 dst,
     if (dst.len < 4) {
       return 0;
     }
-    wuffs_base__store_u32le__no_bounds_check(dst.ptr, 0x666E492D);  // '-Inf'le.
+    wuffs_base__poke_u32le__no_bounds_check(dst.ptr, 0x666E492D);  // '-Inf'le.
     return 4;
   }
 
@@ -1678,14 +1678,14 @@ wuffs_base__private_implementation__render_inf(wuffs_base__slice_u8 dst,
     if (dst.len < 4) {
       return 0;
     }
-    wuffs_base__store_u32le__no_bounds_check(dst.ptr, 0x666E492B);  // '+Inf'le.
+    wuffs_base__poke_u32le__no_bounds_check(dst.ptr, 0x666E492B);  // '+Inf'le.
     return 4;
   }
 
   if (dst.len < 3) {
     return 0;
   }
-  wuffs_base__store_u24le__no_bounds_check(dst.ptr, 0x666E49);  // 'Inf'le.
+  wuffs_base__poke_u24le__no_bounds_check(dst.ptr, 0x666E49);  // 'Inf'le.
   return 3;
 }
 
@@ -1694,7 +1694,7 @@ wuffs_base__private_implementation__render_nan(wuffs_base__slice_u8 dst) {
   if (dst.len < 3) {
     return 0;
   }
-  wuffs_base__store_u24le__no_bounds_check(dst.ptr, 0x4E614E);  // 'NaN'le.
+  wuffs_base__poke_u24le__no_bounds_check(dst.ptr, 0x4E614E);  // 'NaN'le.
   return 3;
 }
 

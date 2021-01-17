@@ -1208,7 +1208,7 @@ do_test__wuffs_base__image_decoder(
     RETURN_FAIL("pixbuf_len too large");
   } else {
     wuffs_base__color_u32_argb_premul have_final_pixel =
-        wuffs_base__load_u32le__no_bounds_check(&g_pixel_array_u8[n - 4]);
+        wuffs_base__peek_u32le__no_bounds_check(&g_pixel_array_u8[n - 4]);
     if (have_final_pixel != want_final_pixel) {
       RETURN_FAIL("final pixel: have 0x%08" PRIX32 ", want 0x%08" PRIX32,
                   have_final_pixel, want_final_pixel);
@@ -1309,22 +1309,22 @@ do_test__wuffs_base__token_decoder(wuffs_base__token_decoder* b,
       // `script/print-json-token-debug-format.c`.
       uint8_t* ptr = have.data.ptr + have.meta.wi;
 
-      wuffs_base__store_u32be__no_bounds_check(ptr + 0x0, (uint32_t)(pos));
-      wuffs_base__store_u16be__no_bounds_check(ptr + 0x4, len);
-      wuffs_base__store_u16be__no_bounds_check(ptr + 0x6, con);
+      wuffs_base__poke_u32be__no_bounds_check(ptr + 0x0, (uint32_t)(pos));
+      wuffs_base__poke_u16be__no_bounds_check(ptr + 0x4, len);
+      wuffs_base__poke_u16be__no_bounds_check(ptr + 0x6, con);
       if (vmajor > 0) {
-        wuffs_base__store_u32be__no_bounds_check(ptr + 0x8, vmajor);
+        wuffs_base__poke_u32be__no_bounds_check(ptr + 0x8, vmajor);
         uint32_t vminor = wuffs_base__token__value_minor(t);
-        wuffs_base__store_u32be__no_bounds_check(ptr + 0xC, vminor);
+        wuffs_base__poke_u32be__no_bounds_check(ptr + 0xC, vminor);
       } else if (vmajor == 0) {
         uint8_t vbc = wuffs_base__token__value_base_category(t);
         uint32_t vbd = wuffs_base__token__value_base_detail(t);
-        wuffs_base__store_u32be__no_bounds_check(ptr + 0x8, 0);
-        wuffs_base__store_u8__no_bounds_check(ptr + 0x000C, vbc);
-        wuffs_base__store_u24be__no_bounds_check(ptr + 0xD, vbd);
+        wuffs_base__poke_u32be__no_bounds_check(ptr + 0x8, 0);
+        wuffs_base__poke_u8__no_bounds_check(ptr + 0x000C, vbc);
+        wuffs_base__poke_u24be__no_bounds_check(ptr + 0xD, vbd);
       } else {
-        wuffs_base__store_u8__no_bounds_check(ptr + 0x0008, 0x01);
-        wuffs_base__store_u56be__no_bounds_check(
+        wuffs_base__poke_u8__no_bounds_check(ptr + 0x0008, 0x01);
+        wuffs_base__poke_u56be__no_bounds_check(
             ptr + 0x9, wuffs_base__token__value_extension(t));
       }
       have.meta.wi += 16;

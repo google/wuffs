@@ -210,7 +210,7 @@ restore_background(wuffs_base__pixel_buffer* pb,
     size_t x;
     uint8_t* d = g_curr_dst_buffer + (y * width4) + (bounds.min_incl_x * 4);
     for (x = bounds.min_incl_x; x < bounds.max_excl_x; x++) {
-      wuffs_base__store_u32le__no_bounds_check(d, background_color);
+      wuffs_base__poke_u32le__no_bounds_check(d, background_color);
       d += sizeof(wuffs_base__color_u32_argb_premul);
     }
   }
@@ -229,7 +229,7 @@ print_ascii_art(wuffs_base__pixel_buffer* pb) {
     uint32_t x;
     for (x = 0; x < width; x++) {
       wuffs_base__color_u32_argb_premul c =
-          wuffs_base__load_u32le__no_bounds_check(d);
+          wuffs_base__peek_u32le__no_bounds_check(d);
       d += sizeof(wuffs_base__color_u32_argb_premul);
       // Convert to grayscale via the formula
       //  Y = (0.299 * R) + (0.587 * G) + (0.114 * B)
@@ -260,7 +260,7 @@ print_color_art(wuffs_base__pixel_buffer* pb) {
     uint32_t x;
     for (x = 0; x < width; x++) {
       wuffs_base__color_u32_argb_premul c =
-          wuffs_base__load_u32le__no_bounds_check(d);
+          wuffs_base__peek_u32le__no_bounds_check(d);
       d += sizeof(wuffs_base__color_u32_argb_premul);
       int b = 0xFF & (c >> 0);
       int g = 0xFF & (c >> 8);
@@ -410,7 +410,7 @@ play() {
       size_t n = g_dst_len / sizeof(wuffs_base__color_u32_argb_premul);
       uint8_t* p = g_curr_dst_buffer;
       for (i = 0; i < n; i++) {
-        wuffs_base__store_u32le__no_bounds_check(p, background_color);
+        wuffs_base__poke_u32le__no_bounds_check(p, background_color);
         p += sizeof(wuffs_base__color_u32_argb_premul);
       }
     }

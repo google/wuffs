@@ -2345,7 +2345,7 @@ test_wuffs_strconv_render_number_u64() {
     if (n != 5) {
       RETURN_FAIL("ALIGN_RIGHT | LEADING_PLUS_SIGN: have %zu, want 5", n);
     }
-    uint64_t have = wuffs_base__load_u64be__no_bounds_check(&dst[0]);
+    uint64_t have = wuffs_base__peek_u64be__no_bounds_check(&dst[0]);
     uint64_t want = 0x41422B3132333400;  // "AB+1234\x00".
     if (have != want) {
       RETURN_FAIL("ALIGN_RIGHT | LEADING_PLUS_SIGN: have 0x%" PRIX64

@@ -229,7 +229,7 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 		return nil
 
 	case t.IDPeekU64LEAt:
-		b.printf("wuffs_base__load_u64le__no_bounds_check(%s%s + ", iopPrefix, recvName)
+		b.printf("wuffs_base__peek_u64le__no_bounds_check(%s%s + ", iopPrefix, recvName)
 		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
 			return err
 		}
@@ -269,7 +269,7 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 				if p.size != p.n {
 					b.printf("((uint%d_t)(", p.size)
 				}
-				b.printf("wuffs_base__load_u%d%ce__no_bounds_check(%s%s)",
+				b.printf("wuffs_base__peek_u%d%ce__no_bounds_check(%s%s)",
 					p.n, p.endianness, iopPrefix, recvName)
 				if p.size != p.n {
 					b.writes("))")
@@ -364,7 +364,7 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 				// final part is a function call (to a static inline function)
 				// instead of a struct literal, to avoid a "expression result
 				// unused" compiler error.
-				b.printf("(wuffs_base__store_u%d%ce__no_bounds_check(%s%s,",
+				b.printf("(wuffs_base__poke_u%d%ce__no_bounds_check(%s%s,",
 					p.n, p.endianness, iopPrefix, recvName)
 				if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
 					return err
@@ -874,7 +874,7 @@ func (g *gen) writeReadUxxAsUyy(b *buffer, n *a.Expr, preName string, xx uint8, 
 	if xx != yy {
 		b.printf("((uint%d_t)(", yy)
 	}
-	b.printf("wuffs_base__load_u%d%ce__no_bounds_check(iop_%s)", xx, endianness, recvName)
+	b.printf("wuffs_base__peek_u%d%ce__no_bounds_check(iop_%s)", xx, endianness, recvName)
 	if xx != yy {
 		b.writes("))")
 	}

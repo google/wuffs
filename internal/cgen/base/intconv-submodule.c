@@ -708,7 +708,7 @@ wuffs_base__base_64__decode(wuffs_base__slice_u8 dst,
   bool pad = false;
 
   while (s_len >= 4) {
-    uint32_t s = wuffs_base__load_u32le__no_bounds_check(s_ptr);
+    uint32_t s = wuffs_base__peek_u32le__no_bounds_check(s_ptr);
     uint32_t s0 = alphabet[0xFF & (s >> 0)];
     uint32_t s1 = alphabet[0xFF & (s >> 8)];
     uint32_t s2 = alphabet[0xFF & (s >> 16)];
@@ -764,7 +764,7 @@ wuffs_base__base_64__decode(wuffs_base__slice_u8 dst,
 
 src3:
   do {
-    uint32_t s = wuffs_base__load_u24le__no_bounds_check(s_ptr);
+    uint32_t s = wuffs_base__peek_u24le__no_bounds_check(s_ptr);
     uint32_t s0 = alphabet[0xFF & (s >> 0)];
     uint32_t s1 = alphabet[0xFF & (s >> 8)];
     uint32_t s2 = alphabet[0xFF & (s >> 16)];
@@ -786,7 +786,7 @@ src3:
 
 src2:
   do {
-    uint32_t s = wuffs_base__load_u16le__no_bounds_check(s_ptr);
+    uint32_t s = wuffs_base__peek_u16le__no_bounds_check(s_ptr);
     uint32_t s0 = alphabet[0xFF & (s >> 0)];
     uint32_t s1 = alphabet[0xFF & (s >> 8)];
     if ((s0 & 0xC0) || (s1 & 0xCF)) {
@@ -830,7 +830,7 @@ wuffs_base__base_64__encode(wuffs_base__slice_u8 dst,
         o.status.repr = wuffs_base__suspension__short_write;
         goto done;
       }
-      uint32_t s = wuffs_base__load_u24be__no_bounds_check(s_ptr);
+      uint32_t s = wuffs_base__peek_u24be__no_bounds_check(s_ptr);
       s_ptr += 3;
       s_len -= 3;
       *d_ptr++ = alphabet[0x3F & (s >> 18)];
@@ -851,7 +851,7 @@ wuffs_base__base_64__encode(wuffs_base__slice_u8 dst,
         o.status.repr = wuffs_base__suspension__short_write;
         goto done;
       }
-      uint32_t s = ((uint32_t)(wuffs_base__load_u16be__no_bounds_check(s_ptr)))
+      uint32_t s = ((uint32_t)(wuffs_base__peek_u16be__no_bounds_check(s_ptr)))
                    << 8;
       s_ptr += 2;
       *d_ptr++ = alphabet[0x3F & (s >> 18)];
@@ -869,7 +869,7 @@ wuffs_base__base_64__encode(wuffs_base__slice_u8 dst,
         o.status.repr = wuffs_base__suspension__short_write;
         goto done;
       }
-      uint32_t s = ((uint32_t)(wuffs_base__load_u8__no_bounds_check(s_ptr)))
+      uint32_t s = ((uint32_t)(wuffs_base__peek_u8__no_bounds_check(s_ptr)))
                    << 16;
       s_ptr += 1;
       *d_ptr++ = alphabet[0x3F & (s >> 18)];

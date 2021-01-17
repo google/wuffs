@@ -346,7 +346,7 @@ fill_rectangle(wuffs_base__rect_ie_u32 rect,
         tab.ptr + (y * tab.stride) + (rect.min_incl_x * BYTES_PER_PIXEL);
     uint32_t x;
     for (x = rect.min_incl_x; x < rect.max_excl_x; x++) {
-      wuffs_base__store_u32le__no_bounds_check(p, nonpremul);
+      wuffs_base__poke_u32le__no_bounds_check(p, nonpremul);
       p += BYTES_PER_PIXEL;
     }
   }
@@ -356,17 +356,17 @@ void  //
 print_nix_header(uint32_t magic_u32le) {
   static const uint32_t version1_bn4_u32le = 0x346E62FF;
   uint8_t data[16];
-  wuffs_base__store_u32le__no_bounds_check(data + 0x00, magic_u32le);
-  wuffs_base__store_u32le__no_bounds_check(data + 0x04, version1_bn4_u32le);
-  wuffs_base__store_u32le__no_bounds_check(data + 0x08, g_width);
-  wuffs_base__store_u32le__no_bounds_check(data + 0x0C, g_height);
+  wuffs_base__poke_u32le__no_bounds_check(data + 0x00, magic_u32le);
+  wuffs_base__poke_u32le__no_bounds_check(data + 0x04, version1_bn4_u32le);
+  wuffs_base__poke_u32le__no_bounds_check(data + 0x08, g_width);
+  wuffs_base__poke_u32le__no_bounds_check(data + 0x0C, g_height);
   ignore_return_value(write(STDOUT_FD, &data[0], 16));
 }
 
 void  //
 print_nia_duration(wuffs_base__flicks duration) {
   uint8_t data[8];
-  wuffs_base__store_u64le__no_bounds_check(data + 0x00, duration);
+  wuffs_base__poke_u64le__no_bounds_check(data + 0x00, duration);
   ignore_return_value(write(STDOUT_FD, &data[0], 8));
 }
 
@@ -390,7 +390,7 @@ void  //
 print_nia_padding() {
   if (g_width & g_height & 1) {
     uint8_t data[4];
-    wuffs_base__store_u32le__no_bounds_check(data + 0x00, 0);
+    wuffs_base__poke_u32le__no_bounds_check(data + 0x00, 0);
     ignore_return_value(write(STDOUT_FD, &data[0], 4));
   }
 }
@@ -398,10 +398,10 @@ print_nia_padding() {
 void  //
 print_nia_footer() {
   uint8_t data[8];
-  wuffs_base__store_u32le__no_bounds_check(
+  wuffs_base__poke_u32le__no_bounds_check(
       data + 0x00,
       wuffs_base__image_decoder__num_animation_loops(g_image_decoder));
-  wuffs_base__store_u32le__no_bounds_check(data + 0x04, 0x80000000);
+  wuffs_base__poke_u32le__no_bounds_check(data + 0x04, 0x80000000);
   ignore_return_value(write(STDOUT_FD, &data[0], 8));
 }
 

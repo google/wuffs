@@ -248,15 +248,15 @@ DecodeCbor(DecodeCborCallbacks& callbacks,
             switch (token_len) {
               case 3:
                 f = wuffs_base__ieee_754_bit_representation__from_u16_to_f64(
-                    wuffs_base__load_u16be__no_bounds_check(token_ptr + 1));
+                    wuffs_base__peek_u16be__no_bounds_check(token_ptr + 1));
                 break;
               case 5:
                 f = wuffs_base__ieee_754_bit_representation__from_u32_to_f64(
-                    wuffs_base__load_u32be__no_bounds_check(token_ptr + 1));
+                    wuffs_base__peek_u32be__no_bounds_check(token_ptr + 1));
                 break;
               case 9:
                 f = wuffs_base__ieee_754_bit_representation__from_u64_to_f64(
-                    wuffs_base__load_u64be__no_bounds_check(token_ptr + 1));
+                    wuffs_base__peek_u64be__no_bounds_check(token_ptr + 1));
                 break;
               default:
                 goto fail;
@@ -296,7 +296,7 @@ DecodeCbor(DecodeCborCallbacks& callbacks,
         if (value_minor & WUFFS_CBOR__TOKEN_VALUE_MINOR__MINUS_1_MINUS_X) {
           if (token_len == 9) {
             ret_error_message = callbacks.AppendMinus1MinusX(
-                wuffs_base__load_u64be__no_bounds_check(token_ptr + 1));
+                wuffs_base__peek_u64be__no_bounds_check(token_ptr + 1));
             goto parsed_a_value;
           }
         } else if (value_minor & WUFFS_CBOR__TOKEN_VALUE_MINOR__SIMPLE_VALUE) {

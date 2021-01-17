@@ -125,7 +125,7 @@ wuffs_base__utf_8__next(const uint8_t* s_ptr, size_t s_len) {
       if (s_len < 2) {
         break;
       }
-      c = wuffs_base__load_u16le__no_bounds_check(s_ptr);
+      c = wuffs_base__peek_u16le__no_bounds_check(s_ptr);
       if ((c & 0xC000) != 0x8000) {
         break;
       }
@@ -136,7 +136,7 @@ wuffs_base__utf_8__next(const uint8_t* s_ptr, size_t s_len) {
       if (s_len < 3) {
         break;
       }
-      c = wuffs_base__load_u24le__no_bounds_check(s_ptr);
+      c = wuffs_base__peek_u24le__no_bounds_check(s_ptr);
       if ((c & 0xC0C000) != 0x808000) {
         break;
       }
@@ -151,7 +151,7 @@ wuffs_base__utf_8__next(const uint8_t* s_ptr, size_t s_len) {
       if (s_len < 4) {
         break;
       }
-      c = wuffs_base__load_u32le__no_bounds_check(s_ptr);
+      c = wuffs_base__peek_u32le__no_bounds_check(s_ptr);
       if ((c & 0xC0C0C000) != 0x80808000) {
         break;
       }

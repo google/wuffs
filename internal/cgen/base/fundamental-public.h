@@ -594,80 +594,80 @@ wuffs_base__count_leading_zeroes_u64(uint64_t u) {
 
 // --------
 
-#define wuffs_base__load_u8be__no_bounds_check \
-  wuffs_base__load_u8__no_bounds_check
-#define wuffs_base__load_u8le__no_bounds_check \
-  wuffs_base__load_u8__no_bounds_check
+#define wuffs_base__peek_u8be__no_bounds_check \
+  wuffs_base__peek_u8__no_bounds_check
+#define wuffs_base__peek_u8le__no_bounds_check \
+  wuffs_base__peek_u8__no_bounds_check
 
 static inline uint8_t  //
-wuffs_base__load_u8__no_bounds_check(const uint8_t* p) {
+wuffs_base__peek_u8__no_bounds_check(const uint8_t* p) {
   return p[0];
 }
 
 static inline uint16_t  //
-wuffs_base__load_u16be__no_bounds_check(const uint8_t* p) {
+wuffs_base__peek_u16be__no_bounds_check(const uint8_t* p) {
   return (uint16_t)(((uint16_t)(p[0]) << 8) | ((uint16_t)(p[1]) << 0));
 }
 
 static inline uint16_t  //
-wuffs_base__load_u16le__no_bounds_check(const uint8_t* p) {
+wuffs_base__peek_u16le__no_bounds_check(const uint8_t* p) {
   return (uint16_t)(((uint16_t)(p[0]) << 0) | ((uint16_t)(p[1]) << 8));
 }
 
 static inline uint32_t  //
-wuffs_base__load_u24be__no_bounds_check(const uint8_t* p) {
+wuffs_base__peek_u24be__no_bounds_check(const uint8_t* p) {
   return ((uint32_t)(p[0]) << 16) | ((uint32_t)(p[1]) << 8) |
          ((uint32_t)(p[2]) << 0);
 }
 
 static inline uint32_t  //
-wuffs_base__load_u24le__no_bounds_check(const uint8_t* p) {
+wuffs_base__peek_u24le__no_bounds_check(const uint8_t* p) {
   return ((uint32_t)(p[0]) << 0) | ((uint32_t)(p[1]) << 8) |
          ((uint32_t)(p[2]) << 16);
 }
 
 static inline uint32_t  //
-wuffs_base__load_u32be__no_bounds_check(const uint8_t* p) {
+wuffs_base__peek_u32be__no_bounds_check(const uint8_t* p) {
   return ((uint32_t)(p[0]) << 24) | ((uint32_t)(p[1]) << 16) |
          ((uint32_t)(p[2]) << 8) | ((uint32_t)(p[3]) << 0);
 }
 
 static inline uint32_t  //
-wuffs_base__load_u32le__no_bounds_check(const uint8_t* p) {
+wuffs_base__peek_u32le__no_bounds_check(const uint8_t* p) {
   return ((uint32_t)(p[0]) << 0) | ((uint32_t)(p[1]) << 8) |
          ((uint32_t)(p[2]) << 16) | ((uint32_t)(p[3]) << 24);
 }
 
 static inline uint64_t  //
-wuffs_base__load_u40be__no_bounds_check(const uint8_t* p) {
+wuffs_base__peek_u40be__no_bounds_check(const uint8_t* p) {
   return ((uint64_t)(p[0]) << 32) | ((uint64_t)(p[1]) << 24) |
          ((uint64_t)(p[2]) << 16) | ((uint64_t)(p[3]) << 8) |
          ((uint64_t)(p[4]) << 0);
 }
 
 static inline uint64_t  //
-wuffs_base__load_u40le__no_bounds_check(const uint8_t* p) {
+wuffs_base__peek_u40le__no_bounds_check(const uint8_t* p) {
   return ((uint64_t)(p[0]) << 0) | ((uint64_t)(p[1]) << 8) |
          ((uint64_t)(p[2]) << 16) | ((uint64_t)(p[3]) << 24) |
          ((uint64_t)(p[4]) << 32);
 }
 
 static inline uint64_t  //
-wuffs_base__load_u48be__no_bounds_check(const uint8_t* p) {
+wuffs_base__peek_u48be__no_bounds_check(const uint8_t* p) {
   return ((uint64_t)(p[0]) << 40) | ((uint64_t)(p[1]) << 32) |
          ((uint64_t)(p[2]) << 24) | ((uint64_t)(p[3]) << 16) |
          ((uint64_t)(p[4]) << 8) | ((uint64_t)(p[5]) << 0);
 }
 
 static inline uint64_t  //
-wuffs_base__load_u48le__no_bounds_check(const uint8_t* p) {
+wuffs_base__peek_u48le__no_bounds_check(const uint8_t* p) {
   return ((uint64_t)(p[0]) << 0) | ((uint64_t)(p[1]) << 8) |
          ((uint64_t)(p[2]) << 16) | ((uint64_t)(p[3]) << 24) |
          ((uint64_t)(p[4]) << 32) | ((uint64_t)(p[5]) << 40);
 }
 
 static inline uint64_t  //
-wuffs_base__load_u56be__no_bounds_check(const uint8_t* p) {
+wuffs_base__peek_u56be__no_bounds_check(const uint8_t* p) {
   return ((uint64_t)(p[0]) << 48) | ((uint64_t)(p[1]) << 40) |
          ((uint64_t)(p[2]) << 32) | ((uint64_t)(p[3]) << 24) |
          ((uint64_t)(p[4]) << 16) | ((uint64_t)(p[5]) << 8) |
@@ -675,7 +675,7 @@ wuffs_base__load_u56be__no_bounds_check(const uint8_t* p) {
 }
 
 static inline uint64_t  //
-wuffs_base__load_u56le__no_bounds_check(const uint8_t* p) {
+wuffs_base__peek_u56le__no_bounds_check(const uint8_t* p) {
   return ((uint64_t)(p[0]) << 0) | ((uint64_t)(p[1]) << 8) |
          ((uint64_t)(p[2]) << 16) | ((uint64_t)(p[3]) << 24) |
          ((uint64_t)(p[4]) << 32) | ((uint64_t)(p[5]) << 40) |
@@ -683,7 +683,7 @@ wuffs_base__load_u56le__no_bounds_check(const uint8_t* p) {
 }
 
 static inline uint64_t  //
-wuffs_base__load_u64be__no_bounds_check(const uint8_t* p) {
+wuffs_base__peek_u64be__no_bounds_check(const uint8_t* p) {
   return ((uint64_t)(p[0]) << 56) | ((uint64_t)(p[1]) << 48) |
          ((uint64_t)(p[2]) << 40) | ((uint64_t)(p[3]) << 32) |
          ((uint64_t)(p[4]) << 24) | ((uint64_t)(p[5]) << 16) |
@@ -691,7 +691,7 @@ wuffs_base__load_u64be__no_bounds_check(const uint8_t* p) {
 }
 
 static inline uint64_t  //
-wuffs_base__load_u64le__no_bounds_check(const uint8_t* p) {
+wuffs_base__peek_u64le__no_bounds_check(const uint8_t* p) {
   return ((uint64_t)(p[0]) << 0) | ((uint64_t)(p[1]) << 8) |
          ((uint64_t)(p[2]) << 16) | ((uint64_t)(p[3]) << 24) |
          ((uint64_t)(p[4]) << 32) | ((uint64_t)(p[5]) << 40) |
@@ -700,44 +700,44 @@ wuffs_base__load_u64le__no_bounds_check(const uint8_t* p) {
 
 // --------
 
-#define wuffs_base__store_u8be__no_bounds_check \
-  wuffs_base__store_u8__no_bounds_check
-#define wuffs_base__store_u8le__no_bounds_check \
-  wuffs_base__store_u8__no_bounds_check
+#define wuffs_base__poke_u8be__no_bounds_check \
+  wuffs_base__poke_u8__no_bounds_check
+#define wuffs_base__poke_u8le__no_bounds_check \
+  wuffs_base__poke_u8__no_bounds_check
 
 static inline void  //
-wuffs_base__store_u8__no_bounds_check(uint8_t* p, uint8_t x) {
+wuffs_base__poke_u8__no_bounds_check(uint8_t* p, uint8_t x) {
   p[0] = x;
 }
 
 static inline void  //
-wuffs_base__store_u16be__no_bounds_check(uint8_t* p, uint16_t x) {
+wuffs_base__poke_u16be__no_bounds_check(uint8_t* p, uint16_t x) {
   p[0] = (uint8_t)(x >> 8);
   p[1] = (uint8_t)(x >> 0);
 }
 
 static inline void  //
-wuffs_base__store_u16le__no_bounds_check(uint8_t* p, uint16_t x) {
+wuffs_base__poke_u16le__no_bounds_check(uint8_t* p, uint16_t x) {
   p[0] = (uint8_t)(x >> 0);
   p[1] = (uint8_t)(x >> 8);
 }
 
 static inline void  //
-wuffs_base__store_u24be__no_bounds_check(uint8_t* p, uint32_t x) {
+wuffs_base__poke_u24be__no_bounds_check(uint8_t* p, uint32_t x) {
   p[0] = (uint8_t)(x >> 16);
   p[1] = (uint8_t)(x >> 8);
   p[2] = (uint8_t)(x >> 0);
 }
 
 static inline void  //
-wuffs_base__store_u24le__no_bounds_check(uint8_t* p, uint32_t x) {
+wuffs_base__poke_u24le__no_bounds_check(uint8_t* p, uint32_t x) {
   p[0] = (uint8_t)(x >> 0);
   p[1] = (uint8_t)(x >> 8);
   p[2] = (uint8_t)(x >> 16);
 }
 
 static inline void  //
-wuffs_base__store_u32be__no_bounds_check(uint8_t* p, uint32_t x) {
+wuffs_base__poke_u32be__no_bounds_check(uint8_t* p, uint32_t x) {
   p[0] = (uint8_t)(x >> 24);
   p[1] = (uint8_t)(x >> 16);
   p[2] = (uint8_t)(x >> 8);
@@ -745,7 +745,7 @@ wuffs_base__store_u32be__no_bounds_check(uint8_t* p, uint32_t x) {
 }
 
 static inline void  //
-wuffs_base__store_u32le__no_bounds_check(uint8_t* p, uint32_t x) {
+wuffs_base__poke_u32le__no_bounds_check(uint8_t* p, uint32_t x) {
   p[0] = (uint8_t)(x >> 0);
   p[1] = (uint8_t)(x >> 8);
   p[2] = (uint8_t)(x >> 16);
@@ -753,7 +753,7 @@ wuffs_base__store_u32le__no_bounds_check(uint8_t* p, uint32_t x) {
 }
 
 static inline void  //
-wuffs_base__store_u40be__no_bounds_check(uint8_t* p, uint64_t x) {
+wuffs_base__poke_u40be__no_bounds_check(uint8_t* p, uint64_t x) {
   p[0] = (uint8_t)(x >> 32);
   p[1] = (uint8_t)(x >> 24);
   p[2] = (uint8_t)(x >> 16);
@@ -762,7 +762,7 @@ wuffs_base__store_u40be__no_bounds_check(uint8_t* p, uint64_t x) {
 }
 
 static inline void  //
-wuffs_base__store_u40le__no_bounds_check(uint8_t* p, uint64_t x) {
+wuffs_base__poke_u40le__no_bounds_check(uint8_t* p, uint64_t x) {
   p[0] = (uint8_t)(x >> 0);
   p[1] = (uint8_t)(x >> 8);
   p[2] = (uint8_t)(x >> 16);
@@ -771,7 +771,7 @@ wuffs_base__store_u40le__no_bounds_check(uint8_t* p, uint64_t x) {
 }
 
 static inline void  //
-wuffs_base__store_u48be__no_bounds_check(uint8_t* p, uint64_t x) {
+wuffs_base__poke_u48be__no_bounds_check(uint8_t* p, uint64_t x) {
   p[0] = (uint8_t)(x >> 40);
   p[1] = (uint8_t)(x >> 32);
   p[2] = (uint8_t)(x >> 24);
@@ -781,7 +781,7 @@ wuffs_base__store_u48be__no_bounds_check(uint8_t* p, uint64_t x) {
 }
 
 static inline void  //
-wuffs_base__store_u48le__no_bounds_check(uint8_t* p, uint64_t x) {
+wuffs_base__poke_u48le__no_bounds_check(uint8_t* p, uint64_t x) {
   p[0] = (uint8_t)(x >> 0);
   p[1] = (uint8_t)(x >> 8);
   p[2] = (uint8_t)(x >> 16);
@@ -791,7 +791,7 @@ wuffs_base__store_u48le__no_bounds_check(uint8_t* p, uint64_t x) {
 }
 
 static inline void  //
-wuffs_base__store_u56be__no_bounds_check(uint8_t* p, uint64_t x) {
+wuffs_base__poke_u56be__no_bounds_check(uint8_t* p, uint64_t x) {
   p[0] = (uint8_t)(x >> 48);
   p[1] = (uint8_t)(x >> 40);
   p[2] = (uint8_t)(x >> 32);
@@ -802,7 +802,7 @@ wuffs_base__store_u56be__no_bounds_check(uint8_t* p, uint64_t x) {
 }
 
 static inline void  //
-wuffs_base__store_u56le__no_bounds_check(uint8_t* p, uint64_t x) {
+wuffs_base__poke_u56le__no_bounds_check(uint8_t* p, uint64_t x) {
   p[0] = (uint8_t)(x >> 0);
   p[1] = (uint8_t)(x >> 8);
   p[2] = (uint8_t)(x >> 16);
@@ -813,7 +813,7 @@ wuffs_base__store_u56le__no_bounds_check(uint8_t* p, uint64_t x) {
 }
 
 static inline void  //
-wuffs_base__store_u64be__no_bounds_check(uint8_t* p, uint64_t x) {
+wuffs_base__poke_u64be__no_bounds_check(uint8_t* p, uint64_t x) {
   p[0] = (uint8_t)(x >> 56);
   p[1] = (uint8_t)(x >> 48);
   p[2] = (uint8_t)(x >> 40);
@@ -825,7 +825,7 @@ wuffs_base__store_u64be__no_bounds_check(uint8_t* p, uint64_t x) {
 }
 
 static inline void  //
-wuffs_base__store_u64le__no_bounds_check(uint8_t* p, uint64_t x) {
+wuffs_base__poke_u64le__no_bounds_check(uint8_t* p, uint64_t x) {
   p[0] = (uint8_t)(x >> 0);
   p[1] = (uint8_t)(x >> 8);
   p[2] = (uint8_t)(x >> 16);
@@ -835,6 +835,72 @@ wuffs_base__store_u64le__no_bounds_check(uint8_t* p, uint64_t x) {
   p[6] = (uint8_t)(x >> 48);
   p[7] = (uint8_t)(x >> 56);
 }
+
+// --------
+
+// Load and Store functions are deprecated. Use Peek and Poke instead.
+
+#define wuffs_base__load_u8__no_bounds_check \
+  wuffs_base__peek_u8__no_bounds_check
+#define wuffs_base__load_u16be__no_bounds_check \
+  wuffs_base__peek_u16be__no_bounds_check
+#define wuffs_base__load_u16le__no_bounds_check \
+  wuffs_base__peek_u16le__no_bounds_check
+#define wuffs_base__load_u24be__no_bounds_check \
+  wuffs_base__peek_u24be__no_bounds_check
+#define wuffs_base__load_u24le__no_bounds_check \
+  wuffs_base__peek_u24le__no_bounds_check
+#define wuffs_base__load_u32be__no_bounds_check \
+  wuffs_base__peek_u32be__no_bounds_check
+#define wuffs_base__load_u32le__no_bounds_check \
+  wuffs_base__peek_u32le__no_bounds_check
+#define wuffs_base__load_u40be__no_bounds_check \
+  wuffs_base__peek_u40be__no_bounds_check
+#define wuffs_base__load_u40le__no_bounds_check \
+  wuffs_base__peek_u40le__no_bounds_check
+#define wuffs_base__load_u48be__no_bounds_check \
+  wuffs_base__peek_u48be__no_bounds_check
+#define wuffs_base__load_u48le__no_bounds_check \
+  wuffs_base__peek_u48le__no_bounds_check
+#define wuffs_base__load_u56be__no_bounds_check \
+  wuffs_base__peek_u56be__no_bounds_check
+#define wuffs_base__load_u56le__no_bounds_check \
+  wuffs_base__peek_u56le__no_bounds_check
+#define wuffs_base__load_u64be__no_bounds_check \
+  wuffs_base__peek_u64be__no_bounds_check
+#define wuffs_base__load_u64le__no_bounds_check \
+  wuffs_base__peek_u64le__no_bounds_check
+
+#define wuffs_base__store_u8__no_bounds_check \
+  wuffs_base__poke_u8__no_bounds_check
+#define wuffs_base__store_u16be__no_bounds_check \
+  wuffs_base__poke_u16be__no_bounds_check
+#define wuffs_base__store_u16le__no_bounds_check \
+  wuffs_base__poke_u16le__no_bounds_check
+#define wuffs_base__store_u24be__no_bounds_check \
+  wuffs_base__poke_u24be__no_bounds_check
+#define wuffs_base__store_u24le__no_bounds_check \
+  wuffs_base__poke_u24le__no_bounds_check
+#define wuffs_base__store_u32be__no_bounds_check \
+  wuffs_base__poke_u32be__no_bounds_check
+#define wuffs_base__store_u32le__no_bounds_check \
+  wuffs_base__poke_u32le__no_bounds_check
+#define wuffs_base__store_u40be__no_bounds_check \
+  wuffs_base__poke_u40be__no_bounds_check
+#define wuffs_base__store_u40le__no_bounds_check \
+  wuffs_base__poke_u40le__no_bounds_check
+#define wuffs_base__store_u48be__no_bounds_check \
+  wuffs_base__poke_u48be__no_bounds_check
+#define wuffs_base__store_u48le__no_bounds_check \
+  wuffs_base__poke_u48le__no_bounds_check
+#define wuffs_base__store_u56be__no_bounds_check \
+  wuffs_base__poke_u56be__no_bounds_check
+#define wuffs_base__store_u56le__no_bounds_check \
+  wuffs_base__poke_u56le__no_bounds_check
+#define wuffs_base__store_u64be__no_bounds_check \
+  wuffs_base__poke_u64be__no_bounds_check
+#define wuffs_base__store_u64le__no_bounds_check \
+  wuffs_base__poke_u64le__no_bounds_check
 
 // ---------------- Slices and Tables
 

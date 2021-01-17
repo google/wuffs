@@ -272,7 +272,7 @@ load_image_config() {
     wuffs_base__color_u32_argb_premul color =
         g_background_colors[g_background_color_index];
     for (size_t i = 0; i < num_pixels; i++) {
-      wuffs_base__store_u32le__no_bounds_check(ptr, color);
+      wuffs_base__poke_u32le__no_bounds_check(ptr, color);
       ptr += 4;
     }
   }

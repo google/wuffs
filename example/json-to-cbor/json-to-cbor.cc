@@ -244,15 +244,15 @@ class Callbacks : public wuffs_aux::DecodeJsonCallbacks {
       return write_dst(&c[0], 2);
     } else if (n <= 0xFFFF) {
       c[0] = base | 0x19;
-      wuffs_base__store_u16be__no_bounds_check(&c[1], static_cast<uint16_t>(n));
+      wuffs_base__poke_u16be__no_bounds_check(&c[1], static_cast<uint16_t>(n));
       return write_dst(&c[0], 3);
     } else if (n <= 0xFFFFFFFF) {
       c[0] = base | 0x1A;
-      wuffs_base__store_u32be__no_bounds_check(&c[1], static_cast<uint32_t>(n));
+      wuffs_base__poke_u32be__no_bounds_check(&c[1], static_cast<uint32_t>(n));
       return write_dst(&c[0], 5);
     }
     c[0] = base | 0x1B;
-    wuffs_base__store_u64be__no_bounds_check(&c[1], n);
+    wuffs_base__poke_u64be__no_bounds_check(&c[1], n);
     return write_dst(&c[0], 9);
   }
 
@@ -268,18 +268,18 @@ class Callbacks : public wuffs_aux::DecodeJsonCallbacks {
         wuffs_base__ieee_754_bit_representation__from_f64_to_u16_truncate(val);
     if (!lv16.lossy) {
       c[0] = 0xF9;
-      wuffs_base__store_u16be__no_bounds_check(&c[1], lv16.value);
+      wuffs_base__poke_u16be__no_bounds_check(&c[1], lv16.value);
       return write_dst(&c[0], 3);
     }
     wuffs_base__lossy_value_u32 lv32 =
         wuffs_base__ieee_754_bit_representation__from_f64_to_u32_truncate(val);
     if (!lv32.lossy) {
       c[0] = 0xFA;
-      wuffs_base__store_u32be__no_bounds_check(&c[1], lv32.value);
+      wuffs_base__poke_u32be__no_bounds_check(&c[1], lv32.value);
       return write_dst(&c[0], 5);
     }
     c[0] = 0xFB;
-    wuffs_base__store_u64be__no_bounds_check(
+    wuffs_base__poke_u64be__no_bounds_check(
         &c[1], wuffs_base__ieee_754_bit_representation__from_f64_to_u64(val));
     return write_dst(&c[0], 9);
   }
