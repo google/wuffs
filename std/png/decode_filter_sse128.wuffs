@@ -16,6 +16,28 @@
 
 // Filter 1: Sub.
 
+// This (filter = 1, distance = 3) implementation doesn't actually bench faster
+// than the non-SIMD one.
+//
+// pri func decoder.filter_1_distance_3_sse128!(curr: slice base.u8),
+//     choose cpu_arch >= sse128,
+// {
+//     var c    : slice base.u8
+//     var x128 : base.sse128_i
+//     var a128 : base.sse128_i
+//
+//     iterate (c = args.curr)(length: 4, advance: 3, unroll: 1) {
+//         x128.load_u32!(a: c.peek_u32le())
+//         x128 = x128._mm_add_epi8!(b: a128)
+//         a128 = x128
+//         c.poke_u24le!(a: x128.truncate_u32())
+//     } else (length: 3, advance: 3, unroll: 1) {
+//         x128.load_u32!(a: c.peek_u24le_as_u32())
+//         x128 = x128._mm_add_epi8!(b: a128)
+//         c.poke_u24le!(a: x128.truncate_u32())
+//     }
+// }
+
 pri func decoder.filter_1_distance_4_sse128!(curr: slice base.u8),
 	choose cpu_arch >= sse128,
 {

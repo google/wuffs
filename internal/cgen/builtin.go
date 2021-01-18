@@ -593,7 +593,11 @@ func (g *gen) writeBuiltinSlice(b *buffer, recv *a.Expr, method t.ID, args []*a.
 	}
 
 	if (t.IDPeekU8 <= method) && (method <= t.IDPeekU64LE) {
-		b.printf("wuffs_base__%s__no_bounds_check(", method.Str(g.tm))
+		s := method.Str(g.tm)
+		if i := strings.Index(s, "_as_"); i >= 0 {
+			s = s[:i]
+		}
+		b.printf("wuffs_base__%s__no_bounds_check(", s)
 		if err := g.writeExpr(b, recv, depth); err != nil {
 			return err
 		}
