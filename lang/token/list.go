@@ -678,6 +678,8 @@ const (
 	IDStoreSlice  = ID(0x388)
 	IDTruncateU32 = ID(0x389)
 	IDTruncateU64 = ID(0x38A)
+
+	IDCreateMMSet1EPI8 = ID(0x390)
 )
 
 var builtInsByID = [nBuiltInIDs]string{
@@ -1072,6 +1074,8 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDStoreSlice:  "store_slice",
 	IDTruncateU32: "truncate_u32",
 	IDTruncateU64: "truncate_u64",
+
+	IDCreateMMSet1EPI8: "create_mm_set1_epi8",
 }
 
 var builtInsByName = map[string]ID{}

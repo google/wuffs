@@ -536,7 +536,14 @@ var Funcs = []string{
 	"sse128_i.truncate_u32() u32",
 
 	// TODO: generate these methods automatically?
-	"sse128_i._mm_add_epi8!(b: sse128_i) sse128_i",
+
+	"sse128_i.create_mm_set1_epi8(a: u8) sse128_i",
+
+	"sse128_i._mm_add_epi8(b: sse128_i) sse128_i",
+	"sse128_i._mm_and_si128(b: sse128_i) sse128_i",
+	"sse128_i._mm_avg_epu8(b: sse128_i) sse128_i",
+	"sse128_i._mm_sub_epi8(b: sse128_i) sse128_i",
+	"sse128_i._mm_xor_si128(b: sse128_i) sse128_i",
 }
 
 var Interfaces = []string{

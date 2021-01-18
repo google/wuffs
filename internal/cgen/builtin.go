@@ -455,14 +455,35 @@ func (g *gen) writeBuiltinCPUArch(b *buffer, recv *a.Expr, method t.ID, args []*
 		return nil
 	}
 
-	b.printf("%s(", method.Str(g.tm))
-	if err := g.writeExpr(b, recv, depth); err != nil {
-		return err
-	}
-	for _, o := range args {
-		b.writes(", ")
-		if err := g.writeExpr(b, o.AsArg().Value(), depth); err != nil {
+	const create = "create"
+	methodStr := method.Str(g.tm)
+	if strings.HasPrefix(methodStr, create) {
+		b.printf("%s(", methodStr[len(create):])
+		for i, o := range args {
+			if i > 0 {
+				b.writes(", ")
+			}
+			after := ""
+			switch method {
+			case t.IDCreateMMSet1EPI8:
+				b.writes("(char)(")
+				after = ")"
+			}
+			if err := g.writeExpr(b, o.AsArg().Value(), depth); err != nil {
+				return err
+			}
+			b.writes(after)
+		}
+	} else {
+		b.printf("%s(", methodStr)
+		if err := g.writeExpr(b, recv, depth); err != nil {
 			return err
+		}
+		for _, o := range args {
+			b.writes(", ")
+			if err := g.writeExpr(b, o.AsArg().Value(), depth); err != nil {
+				return err
+			}
 		}
 	}
 	b.writes(")")

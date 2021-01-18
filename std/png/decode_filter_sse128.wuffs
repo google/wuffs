@@ -47,8 +47,74 @@ pri func decoder.filter_1_distance_4_sse128!(curr: slice base.u8),
 
 	iterate (c = args.curr)(length: 4, advance: 4, unroll: 1) {
 		x128.load_u32!(a: c.peek_u32le())
-		x128 = x128._mm_add_epi8!(b: a128)
+		x128 = x128._mm_add_epi8(b: a128)
 		a128 = x128
 		c.poke_u32le!(a: x128.truncate_u32())
+	}
+}
+
+// --------
+
+// Filter 3: Average.
+
+// Similar to filter_1_distance_3_sse128, the SIMD implementation for (filter =
+// 3, distance = 3) doesn't actually bench faster than the non-SIMD one.
+//
+// pri func decoder.filter_3_distance_3_sse128!(curr: slice base.u8, prev: slice base.u8),
+//     choose cpu_arch >= sse128,
+// {
+//     etc
+// }
+
+pri func decoder.filter_3_distance_4_sse128!(curr: slice base.u8, prev: slice base.u8),
+	choose cpu_arch >= sse128,
+{
+	var c    : slice base.u8
+	var p    : slice base.u8
+	var x128 : base.sse128_i
+	var a128 : base.sse128_i
+	var b128 : base.sse128_i
+	var p128 : base.sse128_i
+	var k128 : base.sse128_i
+
+	if args.prev.length() == 0 {
+		k128 = k128.create_mm_set1_epi8(a: 0xFE)
+		iterate (c = args.curr)(length: 4, advance: 4, unroll: 1) {
+			// The predictor, p128, is just half (rounded down) of the previous
+			// pixel, a128. In this branch, b128 stays zero so the average of
+			// a128 and b128 is just half of a128. _mm_avg_epu8 rounds up, but
+			// (a128 & 0xFE_repeated) takes out the low bits of a128's bytes.
+			p128 = a128._mm_and_si128(b: k128)._mm_avg_epu8(b: b128)
+
+			// Add the predictor to the residual and, for the next iteration,
+			// set its previous pixel, a128, to this one, x128.
+			x128.load_u32!(a: c.peek_u32le())
+			x128 = x128._mm_add_epi8(b: p128)
+			a128 = x128
+			c.poke_u32le!(a: x128.truncate_u32())
+		}
+
+	} else {
+		k128 = k128.create_mm_set1_epi8(a: 0x01)
+		iterate (c = args.curr, p = args.prev)(length: 4, advance: 4, unroll: 1) {
+			// Load the pixel from the row above.
+			b128.load_u32!(a: p.peek_u32le())
+
+			// The predictor, p128, is the average (rounded down) of the
+			// previous pixel, a128, and the pixel above, b128.
+			p128 = a128._mm_avg_epu8(b: b128)
+
+			// Subtract a correction term because _mm_avg_epu8 rounds up but
+			// the PNG filter rounds down. The correction term is the low bit
+			// of each byte of (a128 ^ b128).
+			p128 = p128._mm_sub_epi8(b: k128._mm_and_si128(b: a128._mm_xor_si128(b: b128)))
+
+			// Add the predictor to the residual and, for the next iteration,
+			// set its previous pixel, a128, to this one, x128.
+			x128.load_u32!(a: c.peek_u32le())
+			x128 = x128._mm_add_epi8(b: p128)
+			a128 = x128
+			c.poke_u32le!(a: x128.truncate_u32())
+		}
 	}
 }
