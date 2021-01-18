@@ -534,11 +534,12 @@ bench_wuffs_png_decode_4002k_24bpp() {
 }
 
 const char*  //
-do_bench_wuffs_png_decode_filter(uint8_t filter, uint64_t iters_unscaled) {
+do_bench_wuffs_png_decode_filter(uint8_t filter,
+                                 uint8_t filter_distance,
+                                 uint64_t iters_unscaled) {
   const uint32_t width = 160;
   const uint32_t height = 120;
   const uint32_t bytes_per_row = 160 * 4;
-  const uint32_t filter_distance = 4;
   const size_t n = (1 + bytes_per_row) * height;
 
   wuffs_base__io_buffer workbuf = wuffs_base__slice_u8__writer(g_work_slice_u8);
@@ -602,27 +603,51 @@ do_bench_wuffs_png_decode_filter(uint8_t filter, uint64_t iters_unscaled) {
 }
 
 const char*  //
-bench_wuffs_png_decode_filter_1_sub() {
+bench_wuffs_png_decode_filt_1_dist_3() {
   CHECK_FOCUS(__func__);
-  return do_bench_wuffs_png_decode_filter(1, 200);
+  return do_bench_wuffs_png_decode_filter(1, 3, 200);
 }
 
 const char*  //
-bench_wuffs_png_decode_filter_2_up() {
+bench_wuffs_png_decode_filt_1_dist_4() {
   CHECK_FOCUS(__func__);
-  return do_bench_wuffs_png_decode_filter(2, 1000);
+  return do_bench_wuffs_png_decode_filter(1, 4, 200);
 }
 
 const char*  //
-bench_wuffs_png_decode_filter_3_average() {
+bench_wuffs_png_decode_filt_2_dist_3() {
   CHECK_FOCUS(__func__);
-  return do_bench_wuffs_png_decode_filter(3, 100);
+  return do_bench_wuffs_png_decode_filter(2, 3, 1000);
 }
 
 const char*  //
-bench_wuffs_png_decode_filter_4_paeth() {
+bench_wuffs_png_decode_filt_2_dist_4() {
   CHECK_FOCUS(__func__);
-  return do_bench_wuffs_png_decode_filter(4, 20);
+  return do_bench_wuffs_png_decode_filter(2, 4, 1000);
+}
+
+const char*  //
+bench_wuffs_png_decode_filt_3_dist_3() {
+  CHECK_FOCUS(__func__);
+  return do_bench_wuffs_png_decode_filter(3, 3, 100);
+}
+
+const char*  //
+bench_wuffs_png_decode_filt_3_dist_4() {
+  CHECK_FOCUS(__func__);
+  return do_bench_wuffs_png_decode_filter(3, 4, 100);
+}
+
+const char*  //
+bench_wuffs_png_decode_filt_4_dist_3() {
+  CHECK_FOCUS(__func__);
+  return do_bench_wuffs_png_decode_filter(4, 3, 20);
+}
+
+const char*  //
+bench_wuffs_png_decode_filt_4_dist_4() {
+  CHECK_FOCUS(__func__);
+  return do_bench_wuffs_png_decode_filter(4, 4, 20);
 }
 
 // ---------------- Mimic Benches
@@ -709,10 +734,14 @@ proc g_benches[] = {
     bench_wuffs_png_decode_77k_8bpp,
     bench_wuffs_png_decode_552k_32bpp,
     bench_wuffs_png_decode_4002k_24bpp,
-    bench_wuffs_png_decode_filter_1_sub,
-    bench_wuffs_png_decode_filter_2_up,
-    bench_wuffs_png_decode_filter_3_average,
-    bench_wuffs_png_decode_filter_4_paeth,
+    bench_wuffs_png_decode_filt_1_dist_3,
+    bench_wuffs_png_decode_filt_1_dist_4,
+    bench_wuffs_png_decode_filt_2_dist_3,
+    bench_wuffs_png_decode_filt_2_dist_4,
+    bench_wuffs_png_decode_filt_3_dist_3,
+    bench_wuffs_png_decode_filt_3_dist_4,
+    bench_wuffs_png_decode_filt_4_dist_3,
+    bench_wuffs_png_decode_filt_4_dist_4,
 
 #ifdef WUFFS_MIMIC
 
