@@ -539,10 +539,18 @@ var Funcs = []string{
 
 	"sse128_i.create_mm_set1_epi8(a: u8) sse128_i",
 
+	"sse128_i._mm_abs_epi16() sse128_i",
+	"sse128_i._mm_add_epi16(b: sse128_i) sse128_i",
 	"sse128_i._mm_add_epi8(b: sse128_i) sse128_i",
 	"sse128_i._mm_and_si128(b: sse128_i) sse128_i",
 	"sse128_i._mm_avg_epu8(b: sse128_i) sse128_i",
+	"sse128_i._mm_blendv_epi8(b: sse128_i, mask: sse128_i) sse128_i",
+	"sse128_i._mm_cmpeq_epi16(b: sse128_i) sse128_i",
+	"sse128_i._mm_min_epi16(b: sse128_i) sse128_i",
+	"sse128_i._mm_packus_epi16(b: sse128_i) sse128_i",
+	"sse128_i._mm_sub_epi16(b: sse128_i) sse128_i",
 	"sse128_i._mm_sub_epi8(b: sse128_i) sse128_i",
+	"sse128_i._mm_unpacklo_epi8(b: sse128_i) sse128_i",
 	"sse128_i._mm_xor_si128(b: sse128_i) sse128_i",
 }
 
