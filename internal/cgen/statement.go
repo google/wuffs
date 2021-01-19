@@ -480,6 +480,10 @@ func (g *gen) writeStatementIterate(b *buffer, n *a.Iterate, depth uint32) error
 			unroll = 1
 		}
 	}
+	for _, o := range assigns {
+		name := o.AsAssign().LHS().Ident().Str(g.tm)
+		b.printf("%s%s.len = 0;\n", vPrefix, name)
+	}
 
 	b.writes("}\n")
 	return nil

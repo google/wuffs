@@ -17308,6 +17308,7 @@ wuffs_adler32__hasher__update_u32(
         v_s2 += v_s1;
         v_p.ptr += 1;
       }
+      v_p.len = 0;
     }
     v_s1 %= 65521;
     v_s2 %= 65521;
@@ -21250,6 +21251,7 @@ wuffs_crc32__ieee_hasher__update_u32(
       v_s = (WUFFS_CRC32__IEEE_TABLE[0][(((uint8_t)((v_s & 255))) ^ v_p.ptr[0])] ^ (v_s >> 8));
       v_p.ptr += 1;
     }
+    v_p.len = 0;
   }
   self->private_impl.f_state = (4294967295 ^ v_s);
   return self->private_impl.f_state;
@@ -30521,6 +30523,7 @@ wuffs_png__decoder__filter_1_distance_3_fallback(
       v_c.ptr[2] = v_fa2;
       v_c.ptr += 3;
     }
+    v_c.len = 0;
   }
   return wuffs_base__make_empty_struct();
 }
@@ -30553,6 +30556,7 @@ wuffs_png__decoder__filter_1_distance_4_fallback(
       v_c.ptr[3] = v_fa3;
       v_c.ptr += 4;
     }
+    v_c.len = 0;
   }
   return wuffs_base__make_empty_struct();
 }
@@ -30654,6 +30658,7 @@ wuffs_png__decoder__filter_3_distance_3_fallback(
         v_c.ptr[2] = v_fa2;
         v_c.ptr += 3;
       }
+      v_c.len = 0;
     }
   } else {
     {
@@ -30675,6 +30680,8 @@ wuffs_png__decoder__filter_3_distance_3_fallback(
         v_c.ptr += 3;
         v_p.ptr += 3;
       }
+      v_c.len = 0;
+      v_p.len = 0;
     }
   }
   return wuffs_base__make_empty_struct();
@@ -30711,6 +30718,7 @@ wuffs_png__decoder__filter_3_distance_4_fallback(
         v_c.ptr[3] = v_fa3;
         v_c.ptr += 4;
       }
+      v_c.len = 0;
     }
   } else {
     {
@@ -30734,6 +30742,8 @@ wuffs_png__decoder__filter_3_distance_4_fallback(
         v_c.ptr += 4;
         v_p.ptr += 4;
       }
+      v_c.len = 0;
+      v_p.len = 0;
     }
   }
   return wuffs_base__make_empty_struct();
@@ -30915,6 +30925,8 @@ wuffs_png__decoder__filter_4_distance_3_fallback(
       v_c.ptr += 3;
       v_p.ptr += 3;
     }
+    v_c.len = 0;
+    v_p.len = 0;
   }
   return wuffs_base__make_empty_struct();
 }
@@ -31062,6 +31074,8 @@ wuffs_png__decoder__filter_4_distance_4_fallback(
       v_c.ptr += 4;
       v_p.ptr += 4;
     }
+    v_c.len = 0;
+    v_p.len = 0;
   }
   return wuffs_base__make_empty_struct();
 }
@@ -31092,6 +31106,7 @@ wuffs_png__decoder__filter_1_distance_4_sse128(
       (wuffs_base__poke_u32le__no_bounds_check(v_c.ptr, ((uint32_t)(_mm_cvtsi128_si32(v_x128)))), wuffs_base__make_empty_struct());
       v_c.ptr += 4;
     }
+    v_c.len = 0;
   }
   return wuffs_base__make_empty_struct();
 }
@@ -31131,6 +31146,7 @@ wuffs_png__decoder__filter_3_distance_4_sse128(
         (wuffs_base__poke_u32le__no_bounds_check(v_c.ptr, ((uint32_t)(_mm_cvtsi128_si32(v_x128)))), wuffs_base__make_empty_struct());
         v_c.ptr += 4;
       }
+      v_c.len = 0;
     }
   } else {
     v_k128 = _mm_set1_epi8((char)(1));
@@ -31154,6 +31170,8 @@ wuffs_png__decoder__filter_3_distance_4_sse128(
         v_c.ptr += 4;
         v_p.ptr += 4;
       }
+      v_c.len = 0;
+      v_p.len = 0;
     }
   }
   return wuffs_base__make_empty_struct();
@@ -31236,6 +31254,8 @@ wuffs_png__decoder__filter_4_distance_3_sse128(
       v_c.ptr += 3;
       v_p.ptr += 3;
     }
+    v_c.len = 0;
+    v_p.len = 0;
   }
   return wuffs_base__make_empty_struct();
 }
@@ -31295,6 +31315,8 @@ wuffs_png__decoder__filter_4_distance_4_sse128(
       v_c.ptr += 4;
       v_p.ptr += 4;
     }
+    v_c.len = 0;
+    v_p.len = 0;
   }
   return wuffs_base__make_empty_struct();
 }
