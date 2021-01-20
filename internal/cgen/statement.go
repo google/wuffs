@@ -446,7 +446,7 @@ func (g *gen) writeStatementIterate(b *buffer, n *a.Iterate, depth uint32) error
 			return err
 		}
 		b.writes(";\n")
-		b.printf("%s%s = %sslice_%s;\n", vPrefix, name, iPrefix, name)
+		b.printf("%s%s.ptr = %sslice_%s.ptr;\n", vPrefix, name, iPrefix, name)
 		if i > 0 {
 			b.printf("%sslice_%s.len = ((size_t)(wuffs_base__u64__min(%sslice_%s.len, %sslice_%s.len)));\n",
 				iPrefix, name0, iPrefix, name0, iPrefix, name)
@@ -620,17 +620,21 @@ func (g *gen) writeIterateRound(b *buffer, assigns []*a.Node, body []*a.Node, ro
 		b.printf("%s%s.len = %d;\n", vPrefix, name, length)
 	}
 	name0 := assigns[0].AsAssign().LHS().Ident().Str(g.tm)
-	b.printf("uint8_t* %send%d_%s = %sslice_%s.ptr + ",
-		iPrefix, round, name0, iPrefix, name0)
+	b.printf("uint8_t* %send%d_%s = ", iPrefix, round, name0)
 	if (length == 1) && (advance == 1) && (unroll == 1) {
-		b.printf("%sslice_%s.len;\n",
-			iPrefix, name0)
+		b.printf("%sslice_%s.ptr + %sslice_%s.len;\n",
+			iPrefix, name0, iPrefix, name0)
 	} else if length == advance {
-		b.printf("((%sslice_%s.len / %d) * %d);\n",
-			iPrefix, name0, length*unroll, length*unroll)
+		b.printf("%s%s.ptr + (((%sslice_%s.len - (size_t)(%s%s.ptr - %sslice_%s.ptr)) / %d) * %d);\n",
+			vPrefix, name0, iPrefix, name0,
+			vPrefix, name0, iPrefix, name0,
+			length*unroll, length*unroll)
 	} else {
-		b.printf("wuffs_base__iterate_total_advance(%sslice_%s.len, %d, %d);\n",
-			iPrefix, name0, length*unroll, advance*unroll)
+		b.printf("%s%s.ptr + wuffs_base__iterate_total_advance("+
+			"(%sslice_%s.len - (size_t)(%s%s.ptr - %sslice_%s.ptr)), %d, %d);\n",
+			vPrefix, name0, iPrefix, name0,
+			vPrefix, name0, iPrefix, name0,
+			length+(advance*(unroll-1)), advance*unroll)
 	}
 	b.printf("while (%s%s.ptr < %send%d_%s) {\n", vPrefix, name0, iPrefix, round, name0)
 	for i := 0; i < unroll; i++ {
