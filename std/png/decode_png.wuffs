@@ -102,8 +102,7 @@ pub func decoder.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
 }
 
 pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_reader) {
-	var magic32       : base.u32
-	var magic64       : base.u64
+	var magic         : base.u64
 	var mark          : base.u64
 	var checksum_have : base.u32
 	var checksum_want : base.u32
@@ -113,15 +112,20 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 		return base."#bad call sequence"
 	}
 
-	magic64 = args.src.read_u64le?()
-	if magic64 <> '\x89PNG\x0D\x0A\x1A\x0A'le {
+	magic = args.src.read_u64le?()
+	if magic <> '\x89PNG\x0D\x0A\x1A\x0A'le {
 		return "#bad header"
 	}
-
-	magic32 = args.src.read_u32le?()
-	if magic32 <> '\x00\x00\x00\x0D'le {
+	magic = args.src.read_u64le?()
+	if magic <> '\x00\x00\x00\x0DIHDR'le {
 		return "#bad header"
 	}
+	this.crc32.reset!()
+	this.chunk_type_array[0] = 'I'
+	this.chunk_type_array[1] = 'H'
+	this.chunk_type_array[2] = 'D'
+	this.chunk_type_array[3] = 'R'
+	this.crc32.update_u32!(x: this.chunk_type_array[..])
 
 	while true {
 		mark = args.src.mark()
@@ -209,14 +213,8 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 }
 
 pri func decoder.decode_ihdr?(src: base.io_reader) {
-	var magic32 : base.u32
-	var a32     : base.u32
-	var a8      : base.u8
-
-	magic32 = args.src.read_u32le?()
-	if magic32 <> 'IHDR'le {
-		return "#bad header"
-	}
+	var a32 : base.u32
+	var a8  : base.u8
 
 	a32 = args.src.read_u32be?()
 	if a32 >= 0x8000_0000 {
