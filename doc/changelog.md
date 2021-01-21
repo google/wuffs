@@ -51,6 +51,7 @@
 - Renamed `example/library` to `example/toy-genlib`.
 - Renamed `load` and `store` to `peek` and `poke`.
 - Renamed `{read,writ}er_io_position` to `{read,writ}er_position`.
+- Renamed `set_ignore_checksum!` as a quirk.
 - Renamed `swizzle_interleaved!` to `swizzle_interleaved_from_slice!`.
 - Renamed warnings to notes.
 

@@ -7367,11 +7367,6 @@ wuffs_gzip__decoder__upcast_as__wuffs_base__io_transformer(
 // ---------------- Public Function Prototypes
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct
-wuffs_gzip__decoder__set_ignore_checksum(
-    wuffs_gzip__decoder* self,
-    bool a_ic);
-
-WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct
 wuffs_gzip__decoder__set_quirk_enabled(
     wuffs_gzip__decoder* self,
     uint32_t a_quirk,
@@ -7487,12 +7482,6 @@ struct wuffs_gzip__decoder__struct {
   inline wuffs_base__io_transformer*
   upcast_as__wuffs_base__io_transformer() {
     return (wuffs_base__io_transformer*)this;
-  }
-
-  inline wuffs_base__empty_struct
-  set_ignore_checksum(
-      bool a_ic) {
-    return wuffs_gzip__decoder__set_ignore_checksum(this, a_ic);
   }
 
   inline wuffs_base__empty_struct
@@ -8184,11 +8173,6 @@ wuffs_zlib__decoder__add_dictionary(
     wuffs_base__slice_u8 a_dict);
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct
-wuffs_zlib__decoder__set_ignore_checksum(
-    wuffs_zlib__decoder* self,
-    bool a_ic);
-
-WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct
 wuffs_zlib__decoder__set_quirk_enabled(
     wuffs_zlib__decoder* self,
     uint32_t a_quirk,
@@ -8322,12 +8306,6 @@ struct wuffs_zlib__decoder__struct {
   }
 
   inline wuffs_base__empty_struct
-  set_ignore_checksum(
-      bool a_ic) {
-    return wuffs_zlib__decoder__set_ignore_checksum(this, a_ic);
-  }
-
-  inline wuffs_base__empty_struct
   set_quirk_enabled(
       uint32_t a_quirk,
       bool a_enabled) {
@@ -8420,11 +8398,6 @@ wuffs_png__decoder__upcast_as__wuffs_base__image_decoder(
 }
 
 // ---------------- Public Function Prototypes
-
-WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct
-wuffs_png__decoder__set_ignore_checksum(
-    wuffs_png__decoder* self,
-    bool a_ic);
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct
 wuffs_png__decoder__set_quirk_enabled(
@@ -8642,12 +8615,6 @@ struct wuffs_png__decoder__struct {
   inline wuffs_base__image_decoder*
   upcast_as__wuffs_base__image_decoder() {
     return (wuffs_base__image_decoder*)this;
-  }
-
-  inline wuffs_base__empty_struct
-  set_ignore_checksum(
-      bool a_ic) {
-    return wuffs_png__decoder__set_ignore_checksum(this, a_ic);
   }
 
   inline wuffs_base__empty_struct
@@ -26324,23 +26291,6 @@ sizeof__wuffs_gzip__decoder() {
 
 // ---------------- Function Implementations
 
-// -------- func gzip.decoder.set_ignore_checksum
-
-WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct
-wuffs_gzip__decoder__set_ignore_checksum(
-    wuffs_gzip__decoder* self,
-    bool a_ic) {
-  if (!self) {
-    return wuffs_base__make_empty_struct();
-  }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    return wuffs_base__make_empty_struct();
-  }
-
-  self->private_impl.f_ignore_checksum = a_ic;
-  return wuffs_base__make_empty_struct();
-}
-
 // -------- func gzip.decoder.set_quirk_enabled
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct
@@ -29953,23 +29903,6 @@ wuffs_zlib__decoder__add_dictionary(
   return wuffs_base__make_empty_struct();
 }
 
-// -------- func zlib.decoder.set_ignore_checksum
-
-WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct
-wuffs_zlib__decoder__set_ignore_checksum(
-    wuffs_zlib__decoder* self,
-    bool a_ic) {
-  if (!self) {
-    return wuffs_base__make_empty_struct();
-  }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    return wuffs_base__make_empty_struct();
-  }
-
-  self->private_impl.f_ignore_checksum = a_ic;
-  return wuffs_base__make_empty_struct();
-}
-
 // -------- func zlib.decoder.set_quirk_enabled
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct
@@ -31392,24 +31325,6 @@ wuffs_png__decoder__filter_4_distance_4_sse128(
   return wuffs_base__make_empty_struct();
 }
 #endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
-
-// -------- func png.decoder.set_ignore_checksum
-
-WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct
-wuffs_png__decoder__set_ignore_checksum(
-    wuffs_png__decoder* self,
-    bool a_ic) {
-  if (!self) {
-    return wuffs_base__make_empty_struct();
-  }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    return wuffs_base__make_empty_struct();
-  }
-
-  self->private_impl.f_ignore_checksum = a_ic;
-  wuffs_zlib__decoder__set_ignore_checksum(&self->private_data.f_zlib, a_ic);
-  return wuffs_base__make_empty_struct();
-}
 
 // -------- func png.decoder.set_quirk_enabled
 

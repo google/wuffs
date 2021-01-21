@@ -59,10 +59,6 @@ pub func decoder.add_dictionary!(dict: slice base.u8) {
 	this.got_dictionary = true
 }
 
-pub func decoder.set_ignore_checksum!(ic: base.bool) {
-	this.ignore_checksum = args.ic
-}
-
 pub func decoder.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
 	if args.quirk == base.QUIRK_IGNORE_CHECKSUM {
 		this.ignore_checksum = args.enabled
