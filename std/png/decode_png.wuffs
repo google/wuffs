@@ -15,6 +15,7 @@
 use "std/crc32"
 use "std/zlib"
 
+pub status "#bad checksum"
 pub status "#bad chunk"
 pub status "#bad filter"
 pub status "#bad header"
@@ -65,49 +66,143 @@ pub struct decoder? implements base.image_decoder(
 	//  - RF  is restart_frame
 	call_sequence : base.u8,
 
+	ignore_checksum : base.bool,
+
 	depth           : base.u8[..= 16],
 	color_type      : base.u8,
 	filter_distance : base.u8[..= 8],
 
 	seen_palette : base.bool,
 
+	dst_pixfmt : base.u32,
 	src_pixfmt : base.u32,
 
-	chunk_type   : base.u32,
-	chunk_length : base.u64,
+	chunk_type       : base.u32,
+	chunk_type_array : array[4] base.u8,
+	chunk_length     : base.u64,
 
 	frame_config_io_position : base.u64,
 
 	swizzler : base.pixel_swizzler,
 	util     : base.utility,
 )(
-	crc  : crc32.ieee_hasher,
-	zlib : zlib.decoder,
+	crc32 : crc32.ieee_hasher,
+	zlib  : zlib.decoder,
 
 	dst_palette : array[4 * 256] base.u8,
 	src_palette : array[4 * 256] base.u8,
 )
 
+pub func decoder.set_ignore_checksum!(ic: base.bool) {
+	this.ignore_checksum = args.ic
+	this.zlib.set_ignore_checksum!(ic: args.ic)
+}
+
 pub func decoder.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
 }
 
 pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_reader) {
-	var magic      : base.u64
-	var a32        : base.u32
-	var a8         : base.u8
-	var dst_pixfmt : base.u32
+	var magic32       : base.u32
+	var magic64       : base.u64
+	var mark          : base.u64
+	var checksum_have : base.u32
+	var checksum_want : base.u32
+	var status        : base.status
 
 	if this.call_sequence <> 0 {
 		return base."#bad call sequence"
 	}
 
-	magic = args.src.read_u64le?()
-	if magic <> '\x89PNG\x0D\x0A\x1A\x0A'le {
+	magic64 = args.src.read_u64le?()
+	if magic64 <> '\x89PNG\x0D\x0A\x1A\x0A'le {
 		return "#bad header"
 	}
 
-	magic = args.src.read_u64le?()
-	if magic <> '\x00\x00\x00\x0DIHDR'le {
+	magic32 = args.src.read_u32le?()
+	if magic32 <> '\x00\x00\x00\x0D'le {
+		return "#bad header"
+	}
+
+	while true {
+		mark = args.src.mark()
+		status =? this.decode_ihdr?(src: args.src)
+		if not this.ignore_checksum {
+			checksum_have = this.crc32.update_u32!(x: args.src.since(mark: mark))
+		}
+		if status.is_ok() {
+			break
+		}
+		yield? status
+	} endwhile
+
+	// Verify CRC-32 checksum.
+	checksum_want = args.src.read_u32be?()
+	if (not this.ignore_checksum) and (checksum_have <> checksum_want) {
+		return "#bad checksum"
+	}
+
+	// Read up until an IDAT chunk.
+	while true {
+		this.chunk_length = args.src.read_u32be_as_u64?()
+		this.chunk_type = args.src.read_u32le?()
+		if not this.ignore_checksum {
+			this.crc32.reset!()
+			this.chunk_type_array[0] = ((this.chunk_type >> 0) & 0xFF) as base.u8
+			this.chunk_type_array[1] = ((this.chunk_type >> 8) & 0xFF) as base.u8
+			this.chunk_type_array[2] = ((this.chunk_type >> 16) & 0xFF) as base.u8
+			this.chunk_type_array[3] = ((this.chunk_type >> 24) & 0xFF) as base.u8
+			this.crc32.update_u32!(x: this.chunk_type_array[..])
+		}
+
+		if this.chunk_type == 'IDAT'le {
+			break
+		}
+
+		while true {
+			mark = args.src.mark()
+			status =? this.decode_other_chunk?(src: args.src)
+			if not this.ignore_checksum {
+				checksum_have = this.crc32.update_u32!(x: args.src.since(mark: mark))
+			}
+			if status.is_ok() {
+				break
+			}
+			yield? status
+		} endwhile
+		checksum_want = args.src.read_u32be?()
+		if (not this.ignore_checksum) and (checksum_have <> checksum_want) {
+			// TODO: uncomment and fix test_mimic_png_decode_19k_8bpp.
+			// return "#bad checksum"
+		}
+
+	} endwhile
+
+	if (this.color_type == 3) and (not this.seen_palette) {
+		return "#missing palette"
+	}
+
+	this.frame_config_io_position = args.src.position()
+
+	if args.dst <> nullptr {
+		args.dst.set!(
+			pixfmt: this.dst_pixfmt,
+			pixsub: 0,
+			width: this.width,
+			height: this.height,
+			first_frame_io_position: this.frame_config_io_position,
+			first_frame_is_opaque: false)
+	}
+
+	this.call_sequence = 3
+}
+
+pri func decoder.decode_ihdr?(src: base.io_reader) {
+	var magic32 : base.u32
+	var a32     : base.u32
+	var a8      : base.u8
+
+	magic32 = args.src.read_u32le?()
+	if magic32 <> 'IHDR'le {
 		return "#bad header"
 	}
 
@@ -137,7 +232,7 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 	// Color.
 	this.color_type = args.src.read_u8?()
 	if this.color_type == 0 {
-		dst_pixfmt = base.PIXEL_FORMAT__Y
+		this.dst_pixfmt = base.PIXEL_FORMAT__Y
 		this.src_pixfmt = base.PIXEL_FORMAT__Y
 		if this.depth == 8 {
 			this.filter_distance = 1
@@ -146,7 +241,7 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 			return "#unsupported PNG file"
 		}
 	} else if this.color_type == 2 {
-		dst_pixfmt = base.PIXEL_FORMAT__BGR
+		this.dst_pixfmt = base.PIXEL_FORMAT__BGR
 		this.src_pixfmt = base.PIXEL_FORMAT__RGB
 		if this.depth == 8 {
 			this.filter_distance = 3
@@ -156,7 +251,7 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 		}
 	} else if this.color_type == 3 {
 		// TODO: s/BINARY/NONPREMUL/ and decode the tRNS chunk.
-		dst_pixfmt = base.PIXEL_FORMAT__INDEXED__BGRA_BINARY
+		this.dst_pixfmt = base.PIXEL_FORMAT__INDEXED__BGRA_BINARY
 		this.src_pixfmt = base.PIXEL_FORMAT__INDEXED__BGRA_BINARY
 		if this.depth == 8 {
 			this.filter_distance = 1
@@ -165,7 +260,7 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 			return "#unsupported PNG file"
 		}
 	} else if this.color_type == 6 {
-		dst_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL
+		this.dst_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL
 		this.src_pixfmt = base.PIXEL_FORMAT__RGBA_NONPREMUL
 		if this.depth == 8 {
 			this.filter_distance = 4
@@ -200,49 +295,6 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 	} else {
 		return "#bad header"
 	}
-
-	// TODO: verify CRC-32 checksum.
-	args.src.skip_u32?(n: 4)
-
-	// Read up until an IDAT chunk.
-	while true {
-		this.chunk_length = args.src.read_u32be_as_u64?()
-		this.chunk_type = args.src.read_u32le?()
-		if this.chunk_type == 'IDAT'le {
-			break
-		} else if this.chunk_type == 'PLTE'le {
-			if this.seen_palette {
-				return "#bad chunk"
-			}
-			this.decode_plte?(src: args.src)
-			this.seen_palette = true
-		} else if this.chunk_type == 'tRNS'le {
-			// TODO.
-			args.src.skip?(n: this.chunk_length)
-		} else {
-			args.src.skip?(n: this.chunk_length)
-		}
-		// TODO: verify CRC-32 checksum.
-		args.src.skip_u32?(n: 4)
-	} endwhile
-
-	if (this.color_type == 3) and (not this.seen_palette) {
-		return "#missing palette"
-	}
-
-	this.frame_config_io_position = args.src.position()
-
-	if args.dst <> nullptr {
-		args.dst.set!(
-			pixfmt: dst_pixfmt,
-			pixsub: 0,
-			width: this.width,
-			height: this.height,
-			first_frame_io_position: this.frame_config_io_position,
-			first_frame_is_opaque: false)
-	}
-
-	this.call_sequence = 3
 }
 
 pri func decoder.choose_filter_implementations!() {
@@ -264,6 +316,21 @@ pri func decoder.choose_filter_implementations!() {
 		choose filter_4 = [
 			filter_4_distance_4_sse128,
 			filter_4_distance_4_fallback]
+	}
+}
+
+pri func decoder.decode_other_chunk?(src: base.io_reader) {
+	if this.chunk_type == 'PLTE'le {
+		if this.seen_palette {
+			return "#bad chunk"
+		}
+		this.decode_plte?(src: args.src)
+		this.seen_palette = true
+	} else if this.chunk_type == 'tRNS'le {
+		// TODO.
+		args.src.skip?(n: this.chunk_length)
+	} else {
+		args.src.skip?(n: this.chunk_length)
 	}
 }
 
@@ -338,6 +405,8 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 	var r_mark          : base.u64
 	var swizzler_status : base.status
 	var zlib_status     : base.status
+	var checksum_have   : base.u32
+	var checksum_want   : base.u32
 
 	if this.call_sequence < 4 {
 		this.decode_frame_config?(dst: nullptr, src: args.src)
@@ -359,6 +428,9 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 				r_mark = args.src.mark()
 				zlib_status =? this.zlib.transform_io?(
 					dst: w, src: args.src, workbuf: this.util.empty_slice_u8())
+				if not this.ignore_checksum {
+					this.crc32.update_u32!(x: args.src.since(mark: r_mark))
+				}
 				this.chunk_length ~sat-= args.src.count_since(mark: r_mark)
 				this.workbuf_wi ~sat+= w.count_since(mark: w_mark)
 			}
@@ -371,13 +443,30 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 		} else if zlib_status <> base."$short read" {
 			return zlib_status
 		} else if this.chunk_length == 0 {
-			// TODO: verify CRC-32 checksum.
-			args.src.skip_u32?(n: 4)
+			// Verify the non-final IDAT chunk's CRC-32 checksum.
+			checksum_want = args.src.read_u32be?()
+			if not this.ignore_checksum {
+				checksum_have = this.crc32.update_u32!(x: this.util.empty_slice_u8())
+				if checksum_have <> checksum_want {
+					return "#bad checksum"
+				}
+			}
+
 			// The next chunk should be another IDAT.
 			this.chunk_length = args.src.read_u32be_as_u64?()
 			this.chunk_type = args.src.read_u32le?()
 			if this.chunk_type <> 'IDAT'le {
 				return "#bad chunk"
+			}
+
+			// The 'IDAT'be is part of the next CRC-32 checksum's input.
+			if not this.ignore_checksum {
+				this.crc32.reset!()
+				this.chunk_type_array[0] = 'I'
+				this.chunk_type_array[1] = 'D'
+				this.chunk_type_array[2] = 'A'
+				this.chunk_type_array[3] = 'T'
+				this.crc32.update_u32!(x: this.chunk_type_array[..])
 			}
 			continue
 		} else if args.src.length() > 0 {
@@ -385,6 +474,19 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 		}
 		yield? base."$short read"
 	} endwhile
+
+	// Verify the final IDAT chunk's CRC-32 checksum.
+	if not this.ignore_checksum {
+		if this.chunk_length > 0 {
+			// TODO: should this be a fatal error?
+			return base."#too much data"
+		}
+		checksum_have = this.crc32.update_u32!(x: this.util.empty_slice_u8())
+		checksum_want = args.src.read_u32be?()
+		if checksum_have <> checksum_want {
+			return "#bad checksum"
+		}
+	}
 
 	if this.workbuf_wi <> this.workbuf_length {
 		return base."#not enough data"

@@ -89,6 +89,46 @@ wuffs_png_decode(uint64_t* n_bytes_out,
 }
 
 const char*  //
+do_test_xxxxx_png_decode_bad_crc32_checksum(
+    const char* (*decode_func)(uint64_t* n_bytes_out,
+                               wuffs_base__io_buffer* dst,
+                               uint32_t wuffs_initialize_flags,
+                               wuffs_base__pixel_format pixfmt,
+                               wuffs_base__io_buffer* src)) {
+  const char* test_cases[] = {
+      // Change a byte in the IHDR CRC-32 checksum.
+      "@001F=8A=00;test/data/hippopotamus.regular.png",
+      // Change a byte in a final IDAT Adler-32 checksum.
+      "@084E=26=00;test/data/hippopotamus.regular.png",
+      // Change a byte in a final IDAT CRC-32 checksum.
+      "@084F=F4=00;test/data/hippopotamus.regular.png",
+      // Change a byte in a non-final IDAT CRC-32 checksum.
+      "@2029=B7=00;test/data/bricks-color.png",
+      // TODO: Change a byte in an ancillary chunk's CRC-32 checksum.
+  };
+
+  int tc;
+  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+    wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+        .data = g_src_slice_u8,
+    });
+    CHECK_STRING(read_file(&src, test_cases[tc]));
+
+    wuffs_base__io_buffer have = ((wuffs_base__io_buffer){
+        .data = g_have_slice_u8,
+    });
+    if (NULL == (*decode_func)(NULL, &have, WUFFS_INITIALIZE__DEFAULT_OPTIONS,
+                               wuffs_base__make_pixel_format(
+                                   WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
+                               &src)) {
+      RETURN_FAIL("tc=%d (filename=\"%s\"): bad checksum not rejected", tc,
+                  test_cases[tc]);
+    }
+  }
+  return NULL;
+}
+
+const char*  //
 do_wuffs_png_swizzle(uint32_t width,
                      uint32_t height,
                      uint8_t filter_distance,
@@ -138,6 +178,12 @@ test_wuffs_png_decode_interface() {
   return do_test__wuffs_base__image_decoder(
       wuffs_png__decoder__upcast_as__wuffs_base__image_decoder(&dec),
       "test/data/bricks-gray.png", 0, SIZE_MAX, 160, 120, 0xFF060606);
+}
+
+const char*  //
+test_wuffs_png_decode_bad_crc32_checksum() {
+  CHECK_FOCUS(__func__);
+  return do_test_xxxxx_png_decode_bad_crc32_checksum(&wuffs_png_decode);
 }
 
 const char*  //
@@ -480,6 +526,12 @@ test_mimic_png_decode_4002k_24bpp() {
   return do_test_mimic_png_decode("test/data/harvesters.png");
 }
 
+const char*  //
+test_mimic_png_decode_bad_crc32_checksum() {
+  CHECK_FOCUS(__func__);
+  return do_test_xxxxx_png_decode_bad_crc32_checksum(&mimic_png_decode);
+}
+
 #endif  // WUFFS_MIMIC
 
 // ---------------- PNG Benches
@@ -709,6 +761,7 @@ bench_mimic_png_decode_4002k_24bpp() {
 
 proc g_tests[] = {
 
+    test_wuffs_png_decode_bad_crc32_checksum,
     test_wuffs_png_decode_filters_golden,
     test_wuffs_png_decode_filters_round_trip,
     test_wuffs_png_decode_frame_config,
@@ -721,6 +774,7 @@ proc g_tests[] = {
     test_mimic_png_decode_77k_8bpp,
     test_mimic_png_decode_552k_32bpp,
     test_mimic_png_decode_4002k_24bpp,
+    test_mimic_png_decode_bad_crc32_checksum,
 
 #endif  // WUFFS_MIMIC
 

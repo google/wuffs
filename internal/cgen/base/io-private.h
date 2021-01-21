@@ -24,13 +24,23 @@ wuffs_base__io__count_since(uint64_t mark, uint64_t index) {
   return 0;
 }
 
+// TODO: drop the "const" in "const uint8_t* ptr". Some though required about
+// the base.io_reader.since method returning a mutable "slice base.u8".
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-qual"
+#endif
 static inline wuffs_base__slice_u8  //
-wuffs_base__io__since(uint64_t mark, uint64_t index, uint8_t* ptr) {
+wuffs_base__io__since(uint64_t mark, uint64_t index, const uint8_t* ptr) {
   if (index >= mark) {
-    return wuffs_base__make_slice_u8(ptr + mark, ((size_t)(index - mark)));
+    return wuffs_base__make_slice_u8(((uint8_t*)ptr) + mark,
+                                     ((size_t)(index - mark)));
   }
   return wuffs_base__make_slice_u8(NULL, 0);
 }
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
 
 // --------
 
