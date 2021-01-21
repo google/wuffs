@@ -499,31 +499,31 @@ do_test_mimic_png_decode(const char* filename) {
 }
 
 const char*  //
-test_mimic_png_decode_19k_8bpp() {
+test_mimic_png_decode_image_19k_8bpp() {
   CHECK_FOCUS(__func__);
   return do_test_mimic_png_decode("test/data/bricks-gray.no-ancillary.png");
 }
 
 const char*  //
-test_mimic_png_decode_40k_24bpp() {
+test_mimic_png_decode_image_40k_24bpp() {
   CHECK_FOCUS(__func__);
   return do_test_mimic_png_decode("test/data/hat.png");
 }
 
 const char*  //
-test_mimic_png_decode_77k_8bpp() {
+test_mimic_png_decode_image_77k_8bpp() {
   CHECK_FOCUS(__func__);
   return do_test_mimic_png_decode("test/data/bricks-dither.png");
 }
 
 const char*  //
-test_mimic_png_decode_552k_32bpp() {
+test_mimic_png_decode_image_552k_32bpp() {
   CHECK_FOCUS(__func__);
   return do_test_mimic_png_decode("test/data/hibiscus.primitive.png");
 }
 
 const char*  //
-test_mimic_png_decode_4002k_24bpp() {
+test_mimic_png_decode_image_4002k_24bpp() {
   CHECK_FOCUS(__func__);
   return do_test_mimic_png_decode("test/data/harvesters.png");
 }
@@ -556,7 +556,7 @@ test_mimic_png_decode_bad_crc32_checksum_critical() {
 // ---------------- PNG Benches
 
 const char*  //
-bench_wuffs_png_decode_19k_8bpp() {
+bench_wuffs_png_decode_image_19k_8bpp() {
   CHECK_FOCUS(__func__);
   // libpng automatically applies the "gAMA" chunk (with no matching "sRGB"
   // chunk) but Wuffs does not. To make the comparison more like-for-like,
@@ -569,7 +569,7 @@ bench_wuffs_png_decode_19k_8bpp() {
 }
 
 const char*  //
-bench_wuffs_png_decode_40k_24bpp() {
+bench_wuffs_png_decode_image_40k_24bpp() {
   CHECK_FOCUS(__func__);
   return do_bench_image_decode(
       &wuffs_png_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
@@ -578,7 +578,7 @@ bench_wuffs_png_decode_40k_24bpp() {
 }
 
 const char*  //
-bench_wuffs_png_decode_77k_8bpp() {
+bench_wuffs_png_decode_image_77k_8bpp() {
   CHECK_FOCUS(__func__);
   return do_bench_image_decode(
       &wuffs_png_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
@@ -587,7 +587,7 @@ bench_wuffs_png_decode_77k_8bpp() {
 }
 
 const char*  //
-bench_wuffs_png_decode_552k_32bpp() {
+bench_wuffs_png_decode_image_552k_32bpp() {
   CHECK_FOCUS(__func__);
   return do_bench_image_decode(
       &wuffs_png_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
@@ -596,7 +596,7 @@ bench_wuffs_png_decode_552k_32bpp() {
 }
 
 const char*  //
-bench_wuffs_png_decode_4002k_24bpp() {
+bench_wuffs_png_decode_image_4002k_24bpp() {
   CHECK_FOCUS(__func__);
   return do_bench_image_decode(
       &wuffs_png_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
@@ -726,7 +726,7 @@ bench_wuffs_png_decode_filt_4_dist_4() {
 #ifdef WUFFS_MIMIC
 
 const char*  //
-bench_mimic_png_decode_19k_8bpp() {
+bench_mimic_png_decode_image_19k_8bpp() {
   CHECK_FOCUS(__func__);
   // libpng automatically applies the "gAMA" chunk (with no matching "sRGB"
   // chunk) but Wuffs does not. To make the comparison more like-for-like,
@@ -739,7 +739,7 @@ bench_mimic_png_decode_19k_8bpp() {
 }
 
 const char*  //
-bench_mimic_png_decode_40k_24bpp() {
+bench_mimic_png_decode_image_40k_24bpp() {
   CHECK_FOCUS(__func__);
   return do_bench_image_decode(
       &mimic_png_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
@@ -748,7 +748,7 @@ bench_mimic_png_decode_40k_24bpp() {
 }
 
 const char*  //
-bench_mimic_png_decode_77k_8bpp() {
+bench_mimic_png_decode_image_77k_8bpp() {
   CHECK_FOCUS(__func__);
   return do_bench_image_decode(
       &mimic_png_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
@@ -757,7 +757,7 @@ bench_mimic_png_decode_77k_8bpp() {
 }
 
 const char*  //
-bench_mimic_png_decode_552k_32bpp() {
+bench_mimic_png_decode_image_552k_32bpp() {
   CHECK_FOCUS(__func__);
   return do_bench_image_decode(
       &mimic_png_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
@@ -766,7 +766,7 @@ bench_mimic_png_decode_552k_32bpp() {
 }
 
 const char*  //
-bench_mimic_png_decode_4002k_24bpp() {
+bench_mimic_png_decode_image_4002k_24bpp() {
   CHECK_FOCUS(__func__);
   return do_bench_image_decode(
       &mimic_png_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
@@ -788,13 +788,13 @@ proc g_tests[] = {
 
 #ifdef WUFFS_MIMIC
 
-    test_mimic_png_decode_19k_8bpp,
-    test_mimic_png_decode_40k_24bpp,
-    test_mimic_png_decode_77k_8bpp,
-    test_mimic_png_decode_552k_32bpp,
-    test_mimic_png_decode_4002k_24bpp,
     test_mimic_png_decode_bad_crc32_checksum_ancillary,
     test_mimic_png_decode_bad_crc32_checksum_critical,
+    test_mimic_png_decode_image_19k_8bpp,
+    test_mimic_png_decode_image_40k_24bpp,
+    test_mimic_png_decode_image_77k_8bpp,
+    test_mimic_png_decode_image_552k_32bpp,
+    test_mimic_png_decode_image_4002k_24bpp,
 
 #endif  // WUFFS_MIMIC
 
@@ -803,11 +803,6 @@ proc g_tests[] = {
 
 proc g_benches[] = {
 
-    bench_wuffs_png_decode_19k_8bpp,
-    bench_wuffs_png_decode_40k_24bpp,
-    bench_wuffs_png_decode_77k_8bpp,
-    bench_wuffs_png_decode_552k_32bpp,
-    bench_wuffs_png_decode_4002k_24bpp,
     bench_wuffs_png_decode_filt_1_dist_3,
     bench_wuffs_png_decode_filt_1_dist_4,
     bench_wuffs_png_decode_filt_2_dist_3,
@@ -816,14 +811,19 @@ proc g_benches[] = {
     bench_wuffs_png_decode_filt_3_dist_4,
     bench_wuffs_png_decode_filt_4_dist_3,
     bench_wuffs_png_decode_filt_4_dist_4,
+    bench_wuffs_png_decode_image_19k_8bpp,
+    bench_wuffs_png_decode_image_40k_24bpp,
+    bench_wuffs_png_decode_image_77k_8bpp,
+    bench_wuffs_png_decode_image_552k_32bpp,
+    bench_wuffs_png_decode_image_4002k_24bpp,
 
 #ifdef WUFFS_MIMIC
 
-    bench_mimic_png_decode_19k_8bpp,
-    bench_mimic_png_decode_40k_24bpp,
-    bench_mimic_png_decode_77k_8bpp,
-    bench_mimic_png_decode_552k_32bpp,
-    bench_mimic_png_decode_4002k_24bpp,
+    bench_mimic_png_decode_image_19k_8bpp,
+    bench_mimic_png_decode_image_40k_24bpp,
+    bench_mimic_png_decode_image_77k_8bpp,
+    bench_mimic_png_decode_image_552k_32bpp,
+    bench_mimic_png_decode_image_4002k_24bpp,
 
 #endif  // WUFFS_MIMIC
 
