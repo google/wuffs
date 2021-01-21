@@ -163,7 +163,8 @@ do_test_wuffs_zlib_checksum(bool ignore_checksum, uint32_t bad_checksum) {
                  wuffs_zlib__decoder__initialize(
                      &dec, sizeof dec, WUFFS_VERSION,
                      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
-    wuffs_zlib__decoder__set_ignore_checksum(&dec, ignore_checksum);
+    wuffs_zlib__decoder__set_quirk_enabled(
+        &dec, WUFFS_BASE__QUIRK_IGNORE_CHECKSUM, ignore_checksum);
     have.meta.wi = 0;
     src.meta.ri = 0;
 

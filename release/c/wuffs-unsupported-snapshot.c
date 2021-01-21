@@ -26348,6 +26348,16 @@ wuffs_gzip__decoder__set_quirk_enabled(
     wuffs_gzip__decoder* self,
     uint32_t a_quirk,
     bool a_enabled) {
+  if (!self) {
+    return wuffs_base__make_empty_struct();
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_empty_struct();
+  }
+
+  if (a_quirk == 1) {
+    self->private_impl.f_ignore_checksum = a_enabled;
+  }
   return wuffs_base__make_empty_struct();
 }
 
@@ -29967,6 +29977,16 @@ wuffs_zlib__decoder__set_quirk_enabled(
     wuffs_zlib__decoder* self,
     uint32_t a_quirk,
     bool a_enabled) {
+  if (!self) {
+    return wuffs_base__make_empty_struct();
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_empty_struct();
+  }
+
+  if (a_quirk == 1) {
+    self->private_impl.f_ignore_checksum = a_enabled;
+  }
   return wuffs_base__make_empty_struct();
 }
 
@@ -31398,6 +31418,17 @@ wuffs_png__decoder__set_quirk_enabled(
     wuffs_png__decoder* self,
     uint32_t a_quirk,
     bool a_enabled) {
+  if (!self) {
+    return wuffs_base__make_empty_struct();
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_empty_struct();
+  }
+
+  if (a_quirk == 1) {
+    self->private_impl.f_ignore_checksum = a_enabled;
+    wuffs_zlib__decoder__set_quirk_enabled(&self->private_data.f_zlib, a_quirk, a_enabled);
+  }
   return wuffs_base__make_empty_struct();
 }
 

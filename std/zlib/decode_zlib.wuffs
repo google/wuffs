@@ -64,6 +64,9 @@ pub func decoder.set_ignore_checksum!(ic: base.bool) {
 }
 
 pub func decoder.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
+	if args.quirk == base.QUIRK_IGNORE_CHECKSUM {
+		this.ignore_checksum = args.enabled
+	}
 }
 
 pub func decoder.workbuf_len() base.range_ii_u64 {
