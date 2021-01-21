@@ -31632,7 +31632,7 @@ wuffs_png__decoder__decode_image_config(
         }
         self->private_impl.f_chunk_type = t_5;
       }
-      if ( ! self->private_impl.f_ignore_checksum) {
+      if ( ! self->private_impl.f_ignore_checksum && ((self->private_impl.f_chunk_type == 1413563465) || (self->private_impl.f_chunk_type == 1163152464))) {
         wuffs_base__ignore_status(wuffs_crc32__ieee_hasher__initialize(&self->private_data.f_crc32, sizeof (wuffs_crc32__ieee_hasher), WUFFS_VERSION, 0));
         self->private_impl.f_chunk_type_array[0] = ((uint8_t)(((self->private_impl.f_chunk_type >> 0) & 255)));
         self->private_impl.f_chunk_type_array[1] = ((uint8_t)(((self->private_impl.f_chunk_type >> 8) & 255)));
@@ -31655,7 +31655,7 @@ wuffs_png__decoder__decode_image_config(
             iop_a_src = a_src->data.ptr + a_src->meta.ri;
           }
         }
-        if ( ! self->private_impl.f_ignore_checksum) {
+        if ( ! self->private_impl.f_ignore_checksum && (self->private_impl.f_chunk_type == 1163152464)) {
           v_checksum_have = wuffs_crc32__ieee_hasher__update_u32(&self->private_data.f_crc32, wuffs_base__io__since(v_mark, ((uint64_t)(iop_a_src - io0_a_src)), io0_a_src));
         }
         if (wuffs_base__status__is_ok(&v_status)) {
@@ -31694,7 +31694,9 @@ wuffs_png__decoder__decode_image_config(
         }
         v_checksum_want = t_7;
       }
-      if ( ! self->private_impl.f_ignore_checksum && (v_checksum_have != v_checksum_want)) {
+      if ( ! self->private_impl.f_ignore_checksum && (self->private_impl.f_chunk_type == 1163152464) && (v_checksum_have != v_checksum_want)) {
+        status = wuffs_base__make_status(wuffs_png__error__bad_checksum);
+        goto exit;
       }
     }
     label__1__break:;

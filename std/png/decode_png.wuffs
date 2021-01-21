@@ -142,10 +142,22 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 	}
 
 	// Read up until an IDAT chunk.
+	//
+	// By default, libpng "warns and discards" when seeing ancillary chunk
+	// checksum failures (as opposed to critical chunk checksum failures) but
+	// it still continues to decode the image. Wuffs' decoder is similar,
+	// simply always ignoring ancillary chunks' CRC-32 checksums.
+	//
+	// https://github.com/glennrp/libpng/blob/dbe3e0c43e549a1602286144d94b0666549b18e6/png.h#L1436
+	//
+	// We've already seen the IHDR chunk. We're not expecting an IEND chunk. An
+	// IDAT chunk breaks the loop. The only other possible critical chunk is a
+	// PLTE chunk. We verify PLTE checksums here but ignore other checksums.
 	while true {
 		this.chunk_length = args.src.read_u32be_as_u64?()
 		this.chunk_type = args.src.read_u32le?()
-		if not this.ignore_checksum {
+		if (not this.ignore_checksum) and
+			((this.chunk_type == 'IDAT'le) or (this.chunk_type == 'PLTE'le)) {
 			this.crc32.reset!()
 			this.chunk_type_array[0] = ((this.chunk_type >> 0) & 0xFF) as base.u8
 			this.chunk_type_array[1] = ((this.chunk_type >> 8) & 0xFF) as base.u8
@@ -161,7 +173,7 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 		while true {
 			mark = args.src.mark()
 			status =? this.decode_other_chunk?(src: args.src)
-			if not this.ignore_checksum {
+			if (not this.ignore_checksum) and (this.chunk_type == 'PLTE'le) {
 				checksum_have = this.crc32.update_u32!(x: args.src.since(mark: mark))
 			}
 			if status.is_ok() {
@@ -170,9 +182,9 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 			yield? status
 		} endwhile
 		checksum_want = args.src.read_u32be?()
-		if (not this.ignore_checksum) and (checksum_have <> checksum_want) {
-			// TODO: uncomment and fix test_mimic_png_decode_19k_8bpp.
-			// return "#bad checksum"
+		if (not this.ignore_checksum) and (this.chunk_type == 'PLTE'le) and
+			(checksum_have <> checksum_want) {
+			return "#bad checksum"
 		}
 
 	} endwhile

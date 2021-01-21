@@ -89,7 +89,7 @@ wuffs_png_decode(uint64_t* n_bytes_out,
 }
 
 const char*  //
-do_test_xxxxx_png_decode_bad_crc32_checksum(
+do_test_xxxxx_png_decode_bad_crc32_checksum_critical(
     const char* (*decode_func)(uint64_t* n_bytes_out,
                                wuffs_base__io_buffer* dst,
                                uint32_t wuffs_initialize_flags,
@@ -98,13 +98,14 @@ do_test_xxxxx_png_decode_bad_crc32_checksum(
   const char* test_cases[] = {
       // Change a byte in the IHDR CRC-32 checksum.
       "@001F=8A=00;test/data/hippopotamus.regular.png",
+      // Change a byte in a PLTE CRC-32 checksum.
+      "@0372=52=00;test/data/bricks-dither.png",
       // Change a byte in a final IDAT Adler-32 checksum.
       "@084E=26=00;test/data/hippopotamus.regular.png",
       // Change a byte in a final IDAT CRC-32 checksum.
       "@084F=F4=00;test/data/hippopotamus.regular.png",
       // Change a byte in a non-final IDAT CRC-32 checksum.
       "@2029=B7=00;test/data/bricks-color.png",
-      // TODO: Change a byte in an ancillary chunk's CRC-32 checksum.
   };
 
   int tc;
@@ -181,9 +182,10 @@ test_wuffs_png_decode_interface() {
 }
 
 const char*  //
-test_wuffs_png_decode_bad_crc32_checksum() {
+test_wuffs_png_decode_bad_crc32_checksum_critical() {
   CHECK_FOCUS(__func__);
-  return do_test_xxxxx_png_decode_bad_crc32_checksum(&wuffs_png_decode);
+  return do_test_xxxxx_png_decode_bad_crc32_checksum_critical(
+      &wuffs_png_decode);
 }
 
 const char*  //
@@ -495,11 +497,7 @@ do_test_mimic_png_decode(const char* filename) {
 const char*  //
 test_mimic_png_decode_19k_8bpp() {
   CHECK_FOCUS(__func__);
-  // libpng automatically applies the "gAMA" chunk (with no matching "sRGB"
-  // chunk) but Wuffs does not. To make the comparison more like-for-like,
-  // especially in emitting identical BGRA pixels, patch the source file by
-  // replacing the "gAMA" with the nonsense "hAMA". ASCII 'g' is 0x67.
-  return do_test_mimic_png_decode("@25=67=68;test/data/bricks-gray.png");
+  return do_test_mimic_png_decode("test/data/bricks-gray.no-ancillary.png");
 }
 
 const char*  //
@@ -527,9 +525,26 @@ test_mimic_png_decode_4002k_24bpp() {
 }
 
 const char*  //
-test_mimic_png_decode_bad_crc32_checksum() {
+test_mimic_png_decode_bad_crc32_checksum_ancillary() {
   CHECK_FOCUS(__func__);
-  return do_test_xxxxx_png_decode_bad_crc32_checksum(&mimic_png_decode);
+  // libpng automatically applies the "gAMA" chunk (with no matching "sRGB"
+  // chunk) but Wuffs does not. To make the comparison more like-for-like,
+  // especially in emitting identical BGRA pixels, patch the source file by
+  // replacing the "gAMA" with the nonsense "hAMA". ASCII 'g' is 0x67.
+  //
+  // This makes the "hAMA" CRC-32 checksum no longer verify, since the checksum
+  // input includes the chunk type. By default, libpng "warns and discards"
+  // when seeing ancillary chunk checksum failures (as opposed to critical
+  // chunk checksum failures) but it still continues to decode the image.
+  // Wuffs' decoder likewise ignores the bad ancillary chunk checksum.
+  return do_test_mimic_png_decode("@25=67=68;test/data/bricks-gray.png");
+}
+
+const char*  //
+test_mimic_png_decode_bad_crc32_checksum_critical() {
+  CHECK_FOCUS(__func__);
+  return do_test_xxxxx_png_decode_bad_crc32_checksum_critical(
+      &mimic_png_decode);
 }
 
 #endif  // WUFFS_MIMIC
@@ -546,7 +561,7 @@ bench_wuffs_png_decode_19k_8bpp() {
   return do_bench_image_decode(
       &wuffs_png_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
       wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__Y),
-      "@25=67=68;test/data/bricks-gray.png", 0, SIZE_MAX, 50);
+      "test/data/bricks-gray.no-ancillary.png", 0, SIZE_MAX, 50);
 }
 
 const char*  //
@@ -716,7 +731,7 @@ bench_mimic_png_decode_19k_8bpp() {
   return do_bench_image_decode(
       &mimic_png_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
       wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__Y),
-      "@25=67=68;test/data/bricks-gray.png", 0, SIZE_MAX, 50);
+      "test/data/bricks-gray.no-ancillary.png", 0, SIZE_MAX, 50);
 }
 
 const char*  //
@@ -761,7 +776,7 @@ bench_mimic_png_decode_4002k_24bpp() {
 
 proc g_tests[] = {
 
-    test_wuffs_png_decode_bad_crc32_checksum,
+    test_wuffs_png_decode_bad_crc32_checksum_critical,
     test_wuffs_png_decode_filters_golden,
     test_wuffs_png_decode_filters_round_trip,
     test_wuffs_png_decode_frame_config,
@@ -774,7 +789,8 @@ proc g_tests[] = {
     test_mimic_png_decode_77k_8bpp,
     test_mimic_png_decode_552k_32bpp,
     test_mimic_png_decode_4002k_24bpp,
-    test_mimic_png_decode_bad_crc32_checksum,
+    test_mimic_png_decode_bad_crc32_checksum_ancillary,
+    test_mimic_png_decode_bad_crc32_checksum_critical,
 
 #endif  // WUFFS_MIMIC
 
