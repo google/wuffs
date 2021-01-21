@@ -78,6 +78,8 @@ const BaseFundamentalPublicH = "" +
 	"" +
 	"// --------\n\n// FourCC constants.\n\n// !! INSERT FourCCs.\n\n" +
 	"" +
+	"// --------\n\n// Quirks.\n\n// !! INSERT Quirks.\n\n" +
+	"" +
 	"// --------\n\n// Flicks are a unit of time. One flick (frame-tick) is 1 / 705_600_000 of a\n// second. See https://github.com/OculusVR/Flicks\ntypedef int64_t wuffs_base__flicks;\n\n#define WUFFS_BASE__FLICKS_PER_SECOND ((uint64_t)705600000)\n#define WUFFS_BASE__FLICKS_PER_MILLISECOND ((uint64_t)705600)\n\n" +
 	"" +
 	"// ---------------- Numeric Types\n\n// The helpers below are functions, instead of macros, because their arguments\n// can be an expression that we shouldn't evaluate more than once.\n//\n// They are static, so that linking multiple wuffs .o files won't complain about\n// duplicate function definitions.\n//\n// They are explicitly marked inline, even if modern compilers don't use the\n// inline attribute to guide optimizations such as inlining, to avoid the\n// -Wunused-function warning, and we like to compile with -Wall -Werror.\n\nstatic inline int8_t  //\nwuffs_base__i8__min(int8_t x, int8_t y) {\n  return x < y ? x : y;\n}\n\nstatic inline int8_t  //\nwuffs_base__i8__max(int8_t x, int8_t y) {\n  return x > y ? x : y;\n}\n\nstatic inline int16_t  //\nwuffs_base__i16__min(int16_t x, int16_t y) {\n  return x < y ? x : y;\n}\n\nstatic inline int16_t  //\nwuffs_base__i16__max(int16_t x, int16_t y) {\n  return x > y ? x : y;\n}\n\nstatic inline int32_t  //\nwuffs_base__i32__min(int32_t x, int32_t y) {\n  return x < y ? x : y;\n}\n\nstatic inline " +

@@ -302,6 +302,21 @@ func insertBaseAllPublicH(buf *buffer) error {
 			}
 			return nil
 		},
+		"// !! INSERT Quirks.\n": func(b *buffer) error {
+			first := true
+			for _, z := range builtin.Consts {
+				if (z.Name == "") || (z.Name[0] != 'Q') || !strings.HasPrefix(z.Name, "QUIRK_") {
+					continue
+				}
+				if first {
+					first = false
+				} else {
+					b.writeb('\n')
+				}
+				b.printf("#define WUFFS_BASE__%s %s\n", z.Name, z.Value)
+			}
+			return nil
+		},
 		"// !! INSERT wuffs_base__status names.\n": func(b *buffer) error {
 			for _, z := range builtin.Statuses {
 				msg, _ := t.Unescape(z)

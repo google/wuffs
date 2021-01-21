@@ -347,6 +347,12 @@ typedef struct wuffs_base__transform__output__struct {
 
 // --------
 
+// Quirks.
+
+// !! INSERT Quirks.
+
+// --------
+
 // Flicks are a unit of time. One flick (frame-tick) is 1 / 705_600_000 of a
 // second. See https://github.com/OculusVR/Flicks
 typedef int64_t wuffs_base__flicks;

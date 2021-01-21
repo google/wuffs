@@ -79,6 +79,10 @@ var Consts = [...]struct {
 
 	// ----
 
+	{t.IDU32, "1", "QUIRK_IGNORE_CHECKSUM"},
+
+	// ----
+
 	{t.IDU32, "46", "TOKEN__VALUE_EXTENSION__NUM_BITS"},
 
 	// ----
