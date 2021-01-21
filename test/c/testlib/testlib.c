@@ -1050,10 +1050,17 @@ do_run__wuffs_base__image_decoder(wuffs_base__image_decoder* b,
                                   uint64_t* n_bytes_out,
                                   wuffs_base__io_buffer* dst,
                                   wuffs_base__pixel_format pixfmt,
+                                  uint32_t* quirks_ptr,
+                                  size_t quirks_len,
                                   wuffs_base__io_buffer* src) {
   wuffs_base__image_config ic = ((wuffs_base__image_config){});
   wuffs_base__frame_config fc = ((wuffs_base__frame_config){});
   wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
+
+  size_t i;
+  for (i = 0; i < quirks_len; i++) {
+    wuffs_base__image_decoder__set_quirk_enabled(b, quirks_ptr[i], true);
+  }
 
   uint32_t bits_per_pixel = wuffs_base__pixel_format__bits_per_pixel(&pixfmt);
   if (bits_per_pixel == 0) {
@@ -1110,9 +1117,13 @@ do_bench_image_decode(
                                wuffs_base__io_buffer* dst,
                                uint32_t wuffs_initialize_flags,
                                wuffs_base__pixel_format pixfmt,
+                               uint32_t* quirks_ptr,
+                               size_t quirks_len,
                                wuffs_base__io_buffer* src),
     uint32_t wuffs_initialize_flags,
     wuffs_base__pixel_format pixfmt,
+    uint32_t* quirks_ptr,
+    size_t quirks_len,
     const char* src_filename,
     size_t src_ri,
     size_t src_wi,
@@ -1128,8 +1139,8 @@ do_bench_image_decode(
   uint64_t iters = iters_unscaled * g_flags.iterscale;
   for (i = 0; i < iters; i++) {
     src.meta.ri = src_ri;
-    CHECK_STRING(
-        (*decode_func)(&n_bytes, NULL, wuffs_initialize_flags, pixfmt, &src));
+    CHECK_STRING((*decode_func)(&n_bytes, NULL, wuffs_initialize_flags, pixfmt,
+                                quirks_ptr, quirks_len, &src));
   }
   bench_finish(iters, n_bytes);
   return NULL;

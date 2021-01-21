@@ -78,6 +78,8 @@ wuffs_png_decode(uint64_t* n_bytes_out,
                  wuffs_base__io_buffer* dst,
                  uint32_t wuffs_initialize_flags,
                  wuffs_base__pixel_format pixfmt,
+                 uint32_t* quirks_ptr,
+                 size_t quirks_len,
                  wuffs_base__io_buffer* src) {
   wuffs_png__decoder dec;
   CHECK_STATUS("initialize",
@@ -85,7 +87,7 @@ wuffs_png_decode(uint64_t* n_bytes_out,
                                               wuffs_initialize_flags));
   return do_run__wuffs_base__image_decoder(
       wuffs_png__decoder__upcast_as__wuffs_base__image_decoder(&dec),
-      n_bytes_out, dst, pixfmt, src);
+      n_bytes_out, dst, pixfmt, quirks_ptr, quirks_len, src);
 }
 
 const char*  //
@@ -94,6 +96,8 @@ do_test_xxxxx_png_decode_bad_crc32_checksum_critical(
                                wuffs_base__io_buffer* dst,
                                uint32_t wuffs_initialize_flags,
                                wuffs_base__pixel_format pixfmt,
+                               uint32_t* quirks_ptr,
+                               size_t quirks_len,
                                wuffs_base__io_buffer* src)) {
   const char* test_cases[] = {
       // Change a byte in the IHDR CRC-32 checksum.
@@ -121,7 +125,7 @@ do_test_xxxxx_png_decode_bad_crc32_checksum_critical(
     if (NULL == (*decode_func)(NULL, &have, WUFFS_INITIALIZE__DEFAULT_OPTIONS,
                                wuffs_base__make_pixel_format(
                                    WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
-                               &src)) {
+                               NULL, 0, &src)) {
       RETURN_FAIL("tc=%d (filename=\"%s\"): bad checksum not rejected", tc,
                   test_cases[tc]);
     }
@@ -480,7 +484,7 @@ do_test_mimic_png_decode(const char* filename) {
   CHECK_STRING(wuffs_png_decode(
       NULL, &have, WUFFS_INITIALIZE__DEFAULT_OPTIONS,
       wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
-      &src));
+      NULL, 0, &src));
 
   src.meta.ri = 0;
   wuffs_base__io_buffer want = ((wuffs_base__io_buffer){
@@ -489,7 +493,7 @@ do_test_mimic_png_decode(const char* filename) {
   CHECK_STRING(mimic_png_decode(
       NULL, &want, WUFFS_INITIALIZE__DEFAULT_OPTIONS,
       wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
-      &src));
+      NULL, 0, &src));
 
   return check_io_buffers_equal("", &have, &want);
 }
@@ -560,7 +564,7 @@ bench_wuffs_png_decode_19k_8bpp() {
   // replacing the "gAMA" with the nonsense "hAMA". ASCII 'g' is 0x67.
   return do_bench_image_decode(
       &wuffs_png_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
-      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__Y),
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__Y), NULL, 0,
       "test/data/bricks-gray.no-ancillary.png", 0, SIZE_MAX, 50);
 }
 
@@ -570,7 +574,7 @@ bench_wuffs_png_decode_40k_24bpp() {
   return do_bench_image_decode(
       &wuffs_png_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
       wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
-      "test/data/hat.png", 0, SIZE_MAX, 30);
+      NULL, 0, "test/data/hat.png", 0, SIZE_MAX, 30);
 }
 
 const char*  //
@@ -579,7 +583,7 @@ bench_wuffs_png_decode_77k_8bpp() {
   return do_bench_image_decode(
       &wuffs_png_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
       wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
-      "test/data/bricks-dither.png", 0, SIZE_MAX, 50);
+      NULL, 0, "test/data/bricks-dither.png", 0, SIZE_MAX, 50);
 }
 
 const char*  //
@@ -588,7 +592,7 @@ bench_wuffs_png_decode_552k_32bpp() {
   return do_bench_image_decode(
       &wuffs_png_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
       wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
-      "test/data/hibiscus.primitive.png", 0, SIZE_MAX, 4);
+      NULL, 0, "test/data/hibiscus.primitive.png", 0, SIZE_MAX, 4);
 }
 
 const char*  //
@@ -597,7 +601,7 @@ bench_wuffs_png_decode_4002k_24bpp() {
   return do_bench_image_decode(
       &wuffs_png_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
       wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
-      "test/data/harvesters.png", 0, SIZE_MAX, 1);
+      NULL, 0, "test/data/harvesters.png", 0, SIZE_MAX, 1);
 }
 
 const char*  //
@@ -730,7 +734,7 @@ bench_mimic_png_decode_19k_8bpp() {
   // replacing the "gAMA" with the nonsense "hAMA". ASCII 'g' is 0x67.
   return do_bench_image_decode(
       &mimic_png_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
-      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__Y),
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__Y), NULL, 0,
       "test/data/bricks-gray.no-ancillary.png", 0, SIZE_MAX, 50);
 }
 
@@ -740,7 +744,7 @@ bench_mimic_png_decode_40k_24bpp() {
   return do_bench_image_decode(
       &mimic_png_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
       wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
-      "test/data/hat.png", 0, SIZE_MAX, 30);
+      NULL, 0, "test/data/hat.png", 0, SIZE_MAX, 30);
 }
 
 const char*  //
@@ -749,7 +753,7 @@ bench_mimic_png_decode_77k_8bpp() {
   return do_bench_image_decode(
       &mimic_png_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
       wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
-      "test/data/bricks-dither.png", 0, SIZE_MAX, 50);
+      NULL, 0, "test/data/bricks-dither.png", 0, SIZE_MAX, 50);
 }
 
 const char*  //
@@ -758,7 +762,7 @@ bench_mimic_png_decode_552k_32bpp() {
   return do_bench_image_decode(
       &mimic_png_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
       wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
-      "test/data/hibiscus.primitive.png", 0, SIZE_MAX, 4);
+      NULL, 0, "test/data/hibiscus.primitive.png", 0, SIZE_MAX, 4);
 }
 
 const char*  //
@@ -767,7 +771,7 @@ bench_mimic_png_decode_4002k_24bpp() {
   return do_bench_image_decode(
       &mimic_png_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
       wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
-      "test/data/harvesters.png", 0, SIZE_MAX, 1);
+      NULL, 0, "test/data/harvesters.png", 0, SIZE_MAX, 1);
 }
 
 #endif  // WUFFS_MIMIC

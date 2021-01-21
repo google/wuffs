@@ -19,6 +19,8 @@ mimic_png_decode(uint64_t* n_bytes_out,
                  wuffs_base__io_buffer* dst,
                  uint32_t wuffs_initialize_flags,
                  wuffs_base__pixel_format pixfmt,
+                 uint32_t* quirks_ptr,
+                 size_t quirks_len,
                  wuffs_base__io_buffer* src) {
   wuffs_base__io_buffer dst_fallback =
       wuffs_base__slice_u8__writer(g_mimiclib_scratch_slice_u8);

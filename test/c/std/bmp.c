@@ -74,6 +74,8 @@ wuffs_bmp_decode(uint64_t* n_bytes_out,
                  wuffs_base__io_buffer* dst,
                  uint32_t wuffs_initialize_flags,
                  wuffs_base__pixel_format pixfmt,
+                 uint32_t* quirks_ptr,
+                 size_t quirks_len,
                  wuffs_base__io_buffer* src) {
   wuffs_bmp__decoder dec;
   CHECK_STATUS("initialize",
@@ -81,7 +83,7 @@ wuffs_bmp_decode(uint64_t* n_bytes_out,
                                               wuffs_initialize_flags));
   return do_run__wuffs_base__image_decoder(
       wuffs_bmp__decoder__upcast_as__wuffs_base__image_decoder(&dec),
-      n_bytes_out, dst, pixfmt, src);
+      n_bytes_out, dst, pixfmt, quirks_ptr, quirks_len, src);
 }
 
 // --------
@@ -193,7 +195,7 @@ bench_wuffs_bmp_decode_40k() {
   return do_bench_image_decode(
       &wuffs_bmp_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
       wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
-      "test/data/hat.bmp", 0, SIZE_MAX, 1000);
+      NULL, 0, "test/data/hat.bmp", 0, SIZE_MAX, 1000);
 }
 
 // ---------------- Mimic Benches
