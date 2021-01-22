@@ -26,7 +26,7 @@
 //     var x128 : base.sse128_i
 //     var a128 : base.sse128_i
 //
-//     iterate (c = args.curr)(length: 4, advance: 3, unroll: 1) {
+//     iterate (c = args.curr)(length: 4, advance: 3, unroll: 2) {
 //         x128.load_u32!(a: c.peek_u32le())
 //         x128 = x128._mm_add_epi8!(b: a128)
 //         a128 = x128
@@ -45,7 +45,7 @@ pri func decoder.filter_1_distance_4_sse128!(curr: slice base.u8),
 	var x128 : base.sse128_i
 	var a128 : base.sse128_i
 
-	iterate (c = args.curr)(length: 4, advance: 4, unroll: 1) {
+	iterate (c = args.curr)(length: 4, advance: 4, unroll: 2) {
 		x128.load_u32!(a: c.peek_u32le())
 		x128 = x128._mm_add_epi8(b: a128)
 		a128 = x128
@@ -79,7 +79,7 @@ pri func decoder.filter_3_distance_4_sse128!(curr: slice base.u8, prev: slice ba
 
 	if args.prev.length() == 0 {
 		k128 = k128.create_mm_set1_epi8(a: 0xFE)
-		iterate (c = args.curr)(length: 4, advance: 4, unroll: 1) {
+		iterate (c = args.curr)(length: 4, advance: 4, unroll: 2) {
 			// The predictor, p128, is just half (rounded down) of the previous
 			// pixel, a128. In this branch, b128 stays zero so the average of
 			// a128 and b128 is just half of a128. _mm_avg_epu8 rounds up, but
@@ -96,7 +96,7 @@ pri func decoder.filter_3_distance_4_sse128!(curr: slice base.u8, prev: slice ba
 
 	} else {
 		k128 = k128.create_mm_set1_epi8(a: 0x01)
-		iterate (c = args.curr, p = args.prev)(length: 4, advance: 4, unroll: 1) {
+		iterate (c = args.curr, p = args.prev)(length: 4, advance: 4, unroll: 2) {
 			// Load the pixel from the row above.
 			b128.load_u32!(a: p.peek_u32le())
 
@@ -147,7 +147,7 @@ pri func decoder.filter_4_distance_3_sse128!(curr: slice base.u8, prev: slice ba
 	var z128        : base.sse128_i
 
 	// § The advance is 3, not 4.
-	iterate (c = args.curr, p = args.prev)(length: 4, advance: 3, unroll: 1) {
+	iterate (c = args.curr, p = args.prev)(length: 4, advance: 3, unroll: 2) {
 		b128.load_u32!(a: p.peek_u32le())
 		b128 = b128._mm_unpacklo_epi8(b: z128)
 		pa128 = b128._mm_sub_epi16(b: c128)
@@ -217,7 +217,7 @@ pri func decoder.filter_4_distance_4_sse128!(curr: slice base.u8, prev: slice ba
 	var smallest128 : base.sse128_i
 	var z128        : base.sse128_i
 
-	iterate (c = args.curr, p = args.prev)(length: 4, advance: 4, unroll: 1) {
+	iterate (c = args.curr, p = args.prev)(length: 4, advance: 4, unroll: 2) {
 		// Load the pixel from the row above.
 		b128.load_u32!(a: p.peek_u32le())
 

@@ -31102,8 +31102,22 @@ wuffs_png__decoder__filter_1_distance_4_sse128(
     wuffs_base__slice_u8 i_slice_c = a_curr;
     v_c.ptr = i_slice_c.ptr;
     v_c.len = 4;
-    uint8_t* i_end0_c = v_c.ptr + (((i_slice_c.len - (size_t)(v_c.ptr - i_slice_c.ptr)) / 4) * 4);
+    uint8_t* i_end0_c = v_c.ptr + (((i_slice_c.len - (size_t)(v_c.ptr - i_slice_c.ptr)) / 8) * 8);
     while (v_c.ptr < i_end0_c) {
+      v_x128 = _mm_cvtsi32_si128((int)(wuffs_base__peek_u32le__no_bounds_check(v_c.ptr)));
+      v_x128 = _mm_add_epi8(v_x128, v_a128);
+      v_a128 = v_x128;
+      wuffs_base__poke_u32le__no_bounds_check(v_c.ptr, ((uint32_t)(_mm_cvtsi128_si32(v_x128))));
+      v_c.ptr += 4;
+      v_x128 = _mm_cvtsi32_si128((int)(wuffs_base__peek_u32le__no_bounds_check(v_c.ptr)));
+      v_x128 = _mm_add_epi8(v_x128, v_a128);
+      v_a128 = v_x128;
+      wuffs_base__poke_u32le__no_bounds_check(v_c.ptr, ((uint32_t)(_mm_cvtsi128_si32(v_x128))));
+      v_c.ptr += 4;
+    }
+    v_c.len = 4;
+    uint8_t* i_end1_c = v_c.ptr + (((i_slice_c.len - (size_t)(v_c.ptr - i_slice_c.ptr)) / 4) * 4);
+    while (v_c.ptr < i_end1_c) {
       v_x128 = _mm_cvtsi32_si128((int)(wuffs_base__peek_u32le__no_bounds_check(v_c.ptr)));
       v_x128 = _mm_add_epi8(v_x128, v_a128);
       v_a128 = v_x128;
@@ -31141,8 +31155,24 @@ wuffs_png__decoder__filter_3_distance_4_sse128(
       wuffs_base__slice_u8 i_slice_c = a_curr;
       v_c.ptr = i_slice_c.ptr;
       v_c.len = 4;
-      uint8_t* i_end0_c = v_c.ptr + (((i_slice_c.len - (size_t)(v_c.ptr - i_slice_c.ptr)) / 4) * 4);
+      uint8_t* i_end0_c = v_c.ptr + (((i_slice_c.len - (size_t)(v_c.ptr - i_slice_c.ptr)) / 8) * 8);
       while (v_c.ptr < i_end0_c) {
+        v_p128 = _mm_avg_epu8(_mm_and_si128(v_a128, v_k128), v_b128);
+        v_x128 = _mm_cvtsi32_si128((int)(wuffs_base__peek_u32le__no_bounds_check(v_c.ptr)));
+        v_x128 = _mm_add_epi8(v_x128, v_p128);
+        v_a128 = v_x128;
+        wuffs_base__poke_u32le__no_bounds_check(v_c.ptr, ((uint32_t)(_mm_cvtsi128_si32(v_x128))));
+        v_c.ptr += 4;
+        v_p128 = _mm_avg_epu8(_mm_and_si128(v_a128, v_k128), v_b128);
+        v_x128 = _mm_cvtsi32_si128((int)(wuffs_base__peek_u32le__no_bounds_check(v_c.ptr)));
+        v_x128 = _mm_add_epi8(v_x128, v_p128);
+        v_a128 = v_x128;
+        wuffs_base__poke_u32le__no_bounds_check(v_c.ptr, ((uint32_t)(_mm_cvtsi128_si32(v_x128))));
+        v_c.ptr += 4;
+      }
+      v_c.len = 4;
+      uint8_t* i_end1_c = v_c.ptr + (((i_slice_c.len - (size_t)(v_c.ptr - i_slice_c.ptr)) / 4) * 4);
+      while (v_c.ptr < i_end1_c) {
         v_p128 = _mm_avg_epu8(_mm_and_si128(v_a128, v_k128), v_b128);
         v_x128 = _mm_cvtsi32_si128((int)(wuffs_base__peek_u32le__no_bounds_check(v_c.ptr)));
         v_x128 = _mm_add_epi8(v_x128, v_p128);
@@ -31162,8 +31192,31 @@ wuffs_png__decoder__filter_3_distance_4_sse128(
       i_slice_c.len = ((size_t)(wuffs_base__u64__min(i_slice_c.len, i_slice_p.len)));
       v_c.len = 4;
       v_p.len = 4;
-      uint8_t* i_end0_c = v_c.ptr + (((i_slice_c.len - (size_t)(v_c.ptr - i_slice_c.ptr)) / 4) * 4);
+      uint8_t* i_end0_c = v_c.ptr + (((i_slice_c.len - (size_t)(v_c.ptr - i_slice_c.ptr)) / 8) * 8);
       while (v_c.ptr < i_end0_c) {
+        v_b128 = _mm_cvtsi32_si128((int)(wuffs_base__peek_u32le__no_bounds_check(v_p.ptr)));
+        v_p128 = _mm_avg_epu8(v_a128, v_b128);
+        v_p128 = _mm_sub_epi8(v_p128, _mm_and_si128(v_k128, _mm_xor_si128(v_a128, v_b128)));
+        v_x128 = _mm_cvtsi32_si128((int)(wuffs_base__peek_u32le__no_bounds_check(v_c.ptr)));
+        v_x128 = _mm_add_epi8(v_x128, v_p128);
+        v_a128 = v_x128;
+        wuffs_base__poke_u32le__no_bounds_check(v_c.ptr, ((uint32_t)(_mm_cvtsi128_si32(v_x128))));
+        v_c.ptr += 4;
+        v_p.ptr += 4;
+        v_b128 = _mm_cvtsi32_si128((int)(wuffs_base__peek_u32le__no_bounds_check(v_p.ptr)));
+        v_p128 = _mm_avg_epu8(v_a128, v_b128);
+        v_p128 = _mm_sub_epi8(v_p128, _mm_and_si128(v_k128, _mm_xor_si128(v_a128, v_b128)));
+        v_x128 = _mm_cvtsi32_si128((int)(wuffs_base__peek_u32le__no_bounds_check(v_c.ptr)));
+        v_x128 = _mm_add_epi8(v_x128, v_p128);
+        v_a128 = v_x128;
+        wuffs_base__poke_u32le__no_bounds_check(v_c.ptr, ((uint32_t)(_mm_cvtsi128_si32(v_x128))));
+        v_c.ptr += 4;
+        v_p.ptr += 4;
+      }
+      v_c.len = 4;
+      v_p.len = 4;
+      uint8_t* i_end1_c = v_c.ptr + (((i_slice_c.len - (size_t)(v_c.ptr - i_slice_c.ptr)) / 4) * 4);
+      while (v_c.ptr < i_end1_c) {
         v_b128 = _mm_cvtsi32_si128((int)(wuffs_base__peek_u32le__no_bounds_check(v_p.ptr)));
         v_p128 = _mm_avg_epu8(v_a128, v_b128);
         v_p128 = _mm_sub_epi8(v_p128, _mm_and_si128(v_k128, _mm_xor_si128(v_a128, v_b128)));
@@ -31214,8 +31267,51 @@ wuffs_png__decoder__filter_4_distance_3_sse128(
     i_slice_c.len = ((size_t)(wuffs_base__u64__min(i_slice_c.len, i_slice_p.len)));
     v_c.len = 4;
     v_p.len = 4;
-    uint8_t* i_end0_c = v_c.ptr + wuffs_base__iterate_total_advance((i_slice_c.len - (size_t)(v_c.ptr - i_slice_c.ptr)), 4, 3);
+    uint8_t* i_end0_c = v_c.ptr + wuffs_base__iterate_total_advance((i_slice_c.len - (size_t)(v_c.ptr - i_slice_c.ptr)), 7, 6);
     while (v_c.ptr < i_end0_c) {
+      v_b128 = _mm_cvtsi32_si128((int)(wuffs_base__peek_u32le__no_bounds_check(v_p.ptr)));
+      v_b128 = _mm_unpacklo_epi8(v_b128, v_z128);
+      v_pa128 = _mm_sub_epi16(v_b128, v_c128);
+      v_pb128 = _mm_sub_epi16(v_a128, v_c128);
+      v_pc128 = _mm_add_epi16(v_pa128, v_pb128);
+      v_pa128 = _mm_abs_epi16(v_pa128);
+      v_pb128 = _mm_abs_epi16(v_pb128);
+      v_pc128 = _mm_abs_epi16(v_pc128);
+      v_smallest128 = _mm_min_epi16(v_pc128, _mm_min_epi16(v_pb128, v_pa128));
+      v_p128 = _mm_blendv_epi8(_mm_blendv_epi8(v_c128, v_b128, _mm_cmpeq_epi16(v_smallest128, v_pb128)), v_a128, _mm_cmpeq_epi16(v_smallest128, v_pa128));
+      v_x128 = _mm_cvtsi32_si128((int)(wuffs_base__peek_u32le__no_bounds_check(v_c.ptr)));
+      v_x128 = _mm_unpacklo_epi8(v_x128, v_z128);
+      v_x128 = _mm_add_epi8(v_x128, v_p128);
+      v_a128 = v_x128;
+      v_c128 = v_b128;
+      v_x128 = _mm_packus_epi16(v_x128, v_x128);
+      wuffs_base__poke_u24le__no_bounds_check(v_c.ptr, ((uint32_t)(_mm_cvtsi128_si32(v_x128))));
+      v_c.ptr += 3;
+      v_p.ptr += 3;
+      v_b128 = _mm_cvtsi32_si128((int)(wuffs_base__peek_u32le__no_bounds_check(v_p.ptr)));
+      v_b128 = _mm_unpacklo_epi8(v_b128, v_z128);
+      v_pa128 = _mm_sub_epi16(v_b128, v_c128);
+      v_pb128 = _mm_sub_epi16(v_a128, v_c128);
+      v_pc128 = _mm_add_epi16(v_pa128, v_pb128);
+      v_pa128 = _mm_abs_epi16(v_pa128);
+      v_pb128 = _mm_abs_epi16(v_pb128);
+      v_pc128 = _mm_abs_epi16(v_pc128);
+      v_smallest128 = _mm_min_epi16(v_pc128, _mm_min_epi16(v_pb128, v_pa128));
+      v_p128 = _mm_blendv_epi8(_mm_blendv_epi8(v_c128, v_b128, _mm_cmpeq_epi16(v_smallest128, v_pb128)), v_a128, _mm_cmpeq_epi16(v_smallest128, v_pa128));
+      v_x128 = _mm_cvtsi32_si128((int)(wuffs_base__peek_u32le__no_bounds_check(v_c.ptr)));
+      v_x128 = _mm_unpacklo_epi8(v_x128, v_z128);
+      v_x128 = _mm_add_epi8(v_x128, v_p128);
+      v_a128 = v_x128;
+      v_c128 = v_b128;
+      v_x128 = _mm_packus_epi16(v_x128, v_x128);
+      wuffs_base__poke_u24le__no_bounds_check(v_c.ptr, ((uint32_t)(_mm_cvtsi128_si32(v_x128))));
+      v_c.ptr += 3;
+      v_p.ptr += 3;
+    }
+    v_c.len = 4;
+    v_p.len = 4;
+    uint8_t* i_end1_c = v_c.ptr + wuffs_base__iterate_total_advance((i_slice_c.len - (size_t)(v_c.ptr - i_slice_c.ptr)), 4, 3);
+    while (v_c.ptr < i_end1_c) {
       v_b128 = _mm_cvtsi32_si128((int)(wuffs_base__peek_u32le__no_bounds_check(v_p.ptr)));
       v_b128 = _mm_unpacklo_epi8(v_b128, v_z128);
       v_pa128 = _mm_sub_epi16(v_b128, v_c128);
@@ -31238,8 +31334,8 @@ wuffs_png__decoder__filter_4_distance_3_sse128(
     }
     v_c.len = 3;
     v_p.len = 3;
-    uint8_t* i_end1_c = v_c.ptr + (((i_slice_c.len - (size_t)(v_c.ptr - i_slice_c.ptr)) / 3) * 3);
-    while (v_c.ptr < i_end1_c) {
+    uint8_t* i_end2_c = v_c.ptr + (((i_slice_c.len - (size_t)(v_c.ptr - i_slice_c.ptr)) / 3) * 3);
+    while (v_c.ptr < i_end2_c) {
       v_b128 = _mm_cvtsi32_si128((int)(wuffs_base__peek_u24le__no_bounds_check(v_p.ptr)));
       v_b128 = _mm_unpacklo_epi8(v_b128, v_z128);
       v_pa128 = _mm_sub_epi16(v_b128, v_c128);
@@ -31297,8 +31393,51 @@ wuffs_png__decoder__filter_4_distance_4_sse128(
     i_slice_c.len = ((size_t)(wuffs_base__u64__min(i_slice_c.len, i_slice_p.len)));
     v_c.len = 4;
     v_p.len = 4;
-    uint8_t* i_end0_c = v_c.ptr + (((i_slice_c.len - (size_t)(v_c.ptr - i_slice_c.ptr)) / 4) * 4);
+    uint8_t* i_end0_c = v_c.ptr + (((i_slice_c.len - (size_t)(v_c.ptr - i_slice_c.ptr)) / 8) * 8);
     while (v_c.ptr < i_end0_c) {
+      v_b128 = _mm_cvtsi32_si128((int)(wuffs_base__peek_u32le__no_bounds_check(v_p.ptr)));
+      v_b128 = _mm_unpacklo_epi8(v_b128, v_z128);
+      v_pa128 = _mm_sub_epi16(v_b128, v_c128);
+      v_pb128 = _mm_sub_epi16(v_a128, v_c128);
+      v_pc128 = _mm_add_epi16(v_pa128, v_pb128);
+      v_pa128 = _mm_abs_epi16(v_pa128);
+      v_pb128 = _mm_abs_epi16(v_pb128);
+      v_pc128 = _mm_abs_epi16(v_pc128);
+      v_smallest128 = _mm_min_epi16(v_pc128, _mm_min_epi16(v_pb128, v_pa128));
+      v_p128 = _mm_blendv_epi8(_mm_blendv_epi8(v_c128, v_b128, _mm_cmpeq_epi16(v_smallest128, v_pb128)), v_a128, _mm_cmpeq_epi16(v_smallest128, v_pa128));
+      v_x128 = _mm_cvtsi32_si128((int)(wuffs_base__peek_u32le__no_bounds_check(v_c.ptr)));
+      v_x128 = _mm_unpacklo_epi8(v_x128, v_z128);
+      v_x128 = _mm_add_epi8(v_x128, v_p128);
+      v_a128 = v_x128;
+      v_c128 = v_b128;
+      v_x128 = _mm_packus_epi16(v_x128, v_x128);
+      wuffs_base__poke_u32le__no_bounds_check(v_c.ptr, ((uint32_t)(_mm_cvtsi128_si32(v_x128))));
+      v_c.ptr += 4;
+      v_p.ptr += 4;
+      v_b128 = _mm_cvtsi32_si128((int)(wuffs_base__peek_u32le__no_bounds_check(v_p.ptr)));
+      v_b128 = _mm_unpacklo_epi8(v_b128, v_z128);
+      v_pa128 = _mm_sub_epi16(v_b128, v_c128);
+      v_pb128 = _mm_sub_epi16(v_a128, v_c128);
+      v_pc128 = _mm_add_epi16(v_pa128, v_pb128);
+      v_pa128 = _mm_abs_epi16(v_pa128);
+      v_pb128 = _mm_abs_epi16(v_pb128);
+      v_pc128 = _mm_abs_epi16(v_pc128);
+      v_smallest128 = _mm_min_epi16(v_pc128, _mm_min_epi16(v_pb128, v_pa128));
+      v_p128 = _mm_blendv_epi8(_mm_blendv_epi8(v_c128, v_b128, _mm_cmpeq_epi16(v_smallest128, v_pb128)), v_a128, _mm_cmpeq_epi16(v_smallest128, v_pa128));
+      v_x128 = _mm_cvtsi32_si128((int)(wuffs_base__peek_u32le__no_bounds_check(v_c.ptr)));
+      v_x128 = _mm_unpacklo_epi8(v_x128, v_z128);
+      v_x128 = _mm_add_epi8(v_x128, v_p128);
+      v_a128 = v_x128;
+      v_c128 = v_b128;
+      v_x128 = _mm_packus_epi16(v_x128, v_x128);
+      wuffs_base__poke_u32le__no_bounds_check(v_c.ptr, ((uint32_t)(_mm_cvtsi128_si32(v_x128))));
+      v_c.ptr += 4;
+      v_p.ptr += 4;
+    }
+    v_c.len = 4;
+    v_p.len = 4;
+    uint8_t* i_end1_c = v_c.ptr + (((i_slice_c.len - (size_t)(v_c.ptr - i_slice_c.ptr)) / 4) * 4);
+    while (v_c.ptr < i_end1_c) {
       v_b128 = _mm_cvtsi32_si128((int)(wuffs_base__peek_u32le__no_bounds_check(v_p.ptr)));
       v_b128 = _mm_unpacklo_epi8(v_b128, v_z128);
       v_pa128 = _mm_sub_epi16(v_b128, v_c128);
