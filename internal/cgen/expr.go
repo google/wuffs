@@ -23,7 +23,7 @@ import (
 	t "github.com/google/wuffs/lang/token"
 )
 
-func (g *gen) writeExpr(b *buffer, n *a.Expr, depth uint32) error {
+func (g *gen) writeExpr(b *buffer, n *a.Expr, sideEffectsOnly bool, depth uint32) error {
 	if depth > a.MaxExprDepth {
 		return fmt.Errorf("expression recursion depth too large")
 	}
@@ -59,10 +59,10 @@ func (g *gen) writeExpr(b *buffer, n *a.Expr, depth uint32) error {
 	case op.IsXAssociativeOp():
 		return g.writeExprAssociativeOp(b, n, depth)
 	}
-	return g.writeExprOther(b, n, depth)
+	return g.writeExprOther(b, n, sideEffectsOnly, depth)
 }
 
-func (g *gen) writeExprOther(b *buffer, n *a.Expr, depth uint32) error {
+func (g *gen) writeExprOther(b *buffer, n *a.Expr, sideEffectsOnly bool, depth uint32) error {
 	switch n.Operator() {
 	case 0:
 		if ident := n.Ident(); ident == t.IDThis {
@@ -101,7 +101,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, depth uint32) error {
 
 	case t.IDOpenParen:
 		// n is a function call.
-		if err := g.writeBuiltinCall(b, n, depth); err != errNoSuchBuiltin {
+		if err := g.writeBuiltinCall(b, n, sideEffectsOnly, depth); err != errNoSuchBuiltin {
 			return err
 		}
 
@@ -119,20 +119,26 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, depth uint32) error {
 			qid := recvTyp.QID()
 
 			if isBaseRangeType(qid) {
-				// Generate a 2 part expression using the comma operator: "(memset
-				// call, return_empty_struct call)". The final part is a function
-				// call (to a static inline function) instead of a struct literal,
-				// to avoid a "expression result unused" compiler error.
-				b.printf("(memset(%s", addr)
-				if err := g.writeExpr(b, recv, depth); err != nil {
+				if !sideEffectsOnly {
+					// Generate a two part expression using the comma operator:
+					// "(etc, return_empty_struct call)". The final part is a
+					// function call (to a static inline function) instead of a
+					// struct literal, to avoid a "expression result unused"
+					// compiler error.
+					b.writes("(")
+				}
+				b.printf("memset(%s", addr)
+				if err := g.writeExpr(b, recv, false, depth); err != nil {
 					return err
 				}
-				b.printf(", 0, sizeof (%s%s)), wuffs_base__make_empty_struct())",
-					g.packagePrefix(qid), qid[1].Str(g.tm))
+				b.printf(", 0, sizeof (%s%s))", g.packagePrefix(qid), qid[1].Str(g.tm))
+				if !sideEffectsOnly {
+					b.writes(", wuffs_base__make_empty_struct())")
+				}
 			} else {
 				b.printf("wuffs_base__ignore_status("+
 					"%s%s__initialize(%s", g.packagePrefix(qid), qid[1].Str(g.tm), addr)
-				if err := g.writeExpr(b, recv, depth); err != nil {
+				if err := g.writeExpr(b, recv, false, depth); err != nil {
 					return err
 				}
 				b.printf(", sizeof (%s%s), WUFFS_VERSION, 0))", g.packagePrefix(qid), qid[1].Str(g.tm))
@@ -145,7 +151,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, depth uint32) error {
 
 	case t.IDOpenBracket:
 		// n is an index.
-		if err := g.writeExpr(b, n.LHS().AsExpr(), depth); err != nil {
+		if err := g.writeExpr(b, n.LHS().AsExpr(), false, depth); err != nil {
 			return err
 		}
 		if lTyp := n.LHS().AsExpr().MType(); lTyp.IsSliceType() {
@@ -153,7 +159,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, depth uint32) error {
 			b.writes(".ptr")
 		}
 		b.writeb('[')
-		if err := g.writeExpr(b, n.RHS().AsExpr(), depth); err != nil {
+		if err := g.writeExpr(b, n.RHS().AsExpr(), false, depth); err != nil {
 			return err
 		}
 		b.writeb(']')
@@ -201,7 +207,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, depth uint32) error {
 				b.writeb('(')
 			}
 		}
-		if err := g.writeExpr(b, lhs, depth); err != nil {
+		if err := g.writeExpr(b, lhs, false, depth); err != nil {
 			return err
 		}
 		if lhsIsArray {
@@ -224,13 +230,13 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, depth uint32) error {
 
 		if mhs != nil {
 			b.writes(comma)
-			if err := g.writeExpr(b, mhs, depth); err != nil {
+			if err := g.writeExpr(b, mhs, false, depth); err != nil {
 				return err
 			}
 		}
 		if rhs != nil {
 			b.writes(comma)
-			if err := g.writeExpr(b, rhs, depth); err != nil {
+			if err := g.writeExpr(b, rhs, false, depth); err != nil {
 				return err
 			}
 		}
@@ -255,7 +261,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, depth uint32) error {
 			return fmt.Errorf("unrecognized status %s", n.Str(g.tm))
 		}
 
-		if err := g.writeExpr(b, lhs, depth); err != nil {
+		if err := g.writeExpr(b, lhs, false, depth); err != nil {
 			return err
 		}
 		if p := lhs.MType().Decorator(); p == t.IDNptr || p == t.IDPtr {
@@ -294,7 +300,7 @@ func (g *gen) writeExprUnaryOp(b *buffer, n *a.Expr, depth uint32) error {
 	}
 
 	b.writes(opName)
-	return g.writeExpr(b, n.RHS().AsExpr(), depth)
+	return g.writeExpr(b, n.RHS().AsExpr(), false, depth)
 }
 
 func (g *gen) writeExprBinaryOp(b *buffer, n *a.Expr, depth uint32) error {
@@ -370,7 +376,7 @@ func (g *gen) writeExprRepr(b *buffer, n *a.Expr, depth uint32) error {
 			}
 		}
 	}
-	if err := g.writeExpr(b, n, depth); err != nil {
+	if err := g.writeExpr(b, n, false, depth); err != nil {
 		return err
 	}
 	if isStatus {
@@ -387,7 +393,7 @@ func (g *gen) writeExprAs(b *buffer, lhs *a.Expr, rhs *a.TypeExpr, depth uint32)
 		return err
 	}
 	b.writes(")(")
-	if err := g.writeExpr(b, lhs, depth); err != nil {
+	if err := g.writeExpr(b, lhs, false, depth); err != nil {
 		return err
 	}
 	b.writes("))")
@@ -409,7 +415,7 @@ func (g *gen) writeExprAssociativeOp(b *buffer, n *a.Expr, depth uint32) error {
 		if i != 0 {
 			b.writes(opName)
 		}
-		if err := g.writeExpr(b, o.AsExpr(), depth); err != nil {
+		if err := g.writeExpr(b, o.AsExpr(), false, depth); err != nil {
 			return err
 		}
 	}
@@ -432,7 +438,7 @@ func (g *gen) writeExprUserDefinedCall(b *buffer, n *a.Expr, depth uint32) error
 	b.printf("%s%s__%s(", g.packagePrefix(qid), qid[1].Str(g.tm), method.Ident().Str(g.tm))
 	if !recvTyp.Eq(typeExprUtility) {
 		b.writes(addr)
-		if err := g.writeExpr(b, recv, depth); err != nil {
+		if err := g.writeExpr(b, recv, false, depth); err != nil {
 			return err
 		}
 		if len(n.Args()) > 0 {

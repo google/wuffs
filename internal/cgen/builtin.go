@@ -29,7 +29,7 @@ var (
 	errOptimizationNotApplicable = errors.New("cgen: internal error: optimization not applicable")
 )
 
-func (g *gen) writeBuiltinCall(b *buffer, n *a.Expr, depth uint32) error {
+func (g *gen) writeBuiltinCall(b *buffer, n *a.Expr, sideEffectsOnly bool, depth uint32) error {
 	if n.Operator() != t.IDOpenParen {
 		return errNoSuchBuiltin
 	}
@@ -70,7 +70,7 @@ func (g *gen) writeBuiltinCall(b *buffer, n *a.Expr, depth uint32) error {
 				}
 				b.writes("((wuffs_base__flicks)(")
 			}
-			if err := g.writeExpr(b, o.AsArg().Value(), depth); err != nil {
+			if err := g.writeExpr(b, o.AsArg().Value(), false, depth); err != nil {
 				return err
 			}
 			if i == u64ToFlicksIndex {
@@ -81,9 +81,9 @@ func (g *gen) writeBuiltinCall(b *buffer, n *a.Expr, depth uint32) error {
 		return nil
 
 	case t.IDSlice:
-		return g.writeBuiltinSlice(b, recv, method.Ident(), n.Args(), depth)
+		return g.writeBuiltinSlice(b, recv, method.Ident(), n.Args(), sideEffectsOnly, depth)
 	case t.IDTable:
-		return g.writeBuiltinTable(b, recv, method.Ident(), n.Args(), depth)
+		return g.writeBuiltinTable(b, recv, method.Ident(), n.Args(), sideEffectsOnly, depth)
 	default:
 		return errNoSuchBuiltin
 	}
@@ -98,9 +98,9 @@ func (g *gen) writeBuiltinCall(b *buffer, n *a.Expr, depth uint32) error {
 	} else {
 		switch qid[1] {
 		case t.IDIOReader:
-			return g.writeBuiltinIOReader(b, recv, method.Ident(), n.Args(), depth)
+			return g.writeBuiltinIOReader(b, recv, method.Ident(), n.Args(), sideEffectsOnly, depth)
 		case t.IDIOWriter:
-			return g.writeBuiltinIOWriter(b, recv, method.Ident(), n.Args(), depth)
+			return g.writeBuiltinIOWriter(b, recv, method.Ident(), n.Args(), sideEffectsOnly, depth)
 		case t.IDPixelSwizzler:
 			switch method.Ident() {
 			case t.IDLimitedSwizzleU32InterleavedFromReader, t.IDSwizzleInterleavedFromReader:
@@ -111,13 +111,13 @@ func (g *gen) writeBuiltinCall(b *buffer, n *a.Expr, depth uint32) error {
 					b.writes("swizzle_interleaved_from_reader")
 				}
 				b.writes("(\n&")
-				if err := g.writeExpr(b, recv, depth); err != nil {
+				if err := g.writeExpr(b, recv, false, depth); err != nil {
 					return err
 				}
 				args := n.Args()
 				for _, o := range args[:len(args)-1] {
 					b.writes(",\n")
-					if err := g.writeExpr(b, o.AsArg().Value(), depth); err != nil {
+					if err := g.writeExpr(b, o.AsArg().Value(), false, depth); err != nil {
 						return err
 					}
 				}
@@ -142,7 +142,7 @@ func (g *gen) writeBuiltinCall(b *buffer, n *a.Expr, depth uint32) error {
 				return nil
 			}
 		case t.IDSSE128I:
-			return g.writeBuiltinCPUArch(b, recv, method.Ident(), n.Args(), depth)
+			return g.writeBuiltinCPUArch(b, recv, method.Ident(), n.Args(), sideEffectsOnly, depth)
 		}
 	}
 	return errNoSuchBuiltin
@@ -173,7 +173,7 @@ func (g *gen) writeBuiltinIO(b *buffer, recv *a.Expr, method t.ID, args []*a.Nod
 	return errNoSuchBuiltin
 }
 
-func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, depth uint32) error {
+func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, sideEffectsOnly bool, depth uint32) error {
 	recvName, err := g.recvName(recv)
 	if err != nil {
 		return err
@@ -184,14 +184,24 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 		b.printf("((uint64_t)(wuffs_base__utf_8__longest_valid_prefix(%s%s,\n"+
 			"((size_t)(wuffs_base__u64__min(((uint64_t)(%s%s - %s%s)), ",
 			iopPrefix, recvName, io2Prefix, recvName, iopPrefix, recvName)
-		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
+		if err := g.writeExpr(b, args[0].AsArg().Value(), false, depth); err != nil {
 			return err
 		}
 		b.writes("))))))")
 		return nil
 
 	case t.IDUndoByte:
-		b.printf("(%s%s--, wuffs_base__make_empty_struct())", iopPrefix, recvName)
+		if !sideEffectsOnly {
+			// Generate a two part expression using the comma operator: "(etc,
+			// return_empty_struct call)". The final part is a function call
+			// (to a static inline function) instead of a struct literal, to
+			// avoid a "expression result unused" compiler error.
+			b.writes("(")
+		}
+		b.printf("%s%s--", iopPrefix, recvName)
+		if !sideEffectsOnly {
+			b.writes(", wuffs_base__make_empty_struct())")
+		}
 		return nil
 
 	case t.IDCanUndoByte:
@@ -205,7 +215,7 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 
 	case t.IDCountSince:
 		b.printf("wuffs_base__io__count_since(")
-		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
+		if err := g.writeExpr(b, args[0].AsArg().Value(), false, depth); err != nil {
 			return err
 		}
 		b.printf(", ((uint64_t)(%s%s - %s%s)))", iopPrefix, recvName, io0Prefix, recvName)
@@ -222,7 +232,7 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 	case t.IDMatch7:
 		b.printf("wuffs_base__io_reader__match7(%s%s, %s%s, %s,",
 			iopPrefix, recvName, io2Prefix, recvName, recvName)
-		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
+		if err := g.writeExpr(b, args[0].AsArg().Value(), false, depth); err != nil {
 			return err
 		}
 		b.writeb(')')
@@ -230,7 +240,7 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 
 	case t.IDPeekU64LEAt:
 		b.printf("wuffs_base__peek_u64le__no_bounds_check(%s%s + ", iopPrefix, recvName)
-		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
+		if err := g.writeExpr(b, args[0].AsArg().Value(), false, depth); err != nil {
 			return err
 		}
 		b.writeb(')')
@@ -243,7 +253,7 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 
 	case t.IDSince:
 		b.printf("wuffs_base__io__since(")
-		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
+		if err := g.writeExpr(b, args[0].AsArg().Value(), false, depth); err != nil {
 			return err
 		}
 		b.printf(", ((uint64_t)(%s%s - %s%s)), %s%s)",
@@ -251,15 +261,20 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 		return nil
 
 	case t.IDSkipU32Fast:
-		// Generate a two part expression using the comma operator: "(pointer
-		// increment, return_empty_struct call)". The final part is a function
-		// call (to a static inline function) instead of a struct literal, to
-		// avoid a "expression result unused" compiler error.
-		b.printf("(%s%s += ", iopPrefix, recvName)
-		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
+		if !sideEffectsOnly {
+			// Generate a two part expression using the comma operator: "(etc,
+			// return_empty_struct call)". The final part is a function call
+			// (to a static inline function) instead of a struct literal, to
+			// avoid a "expression result unused" compiler error.
+			b.writes("(")
+		}
+		b.printf("%s%s += ", iopPrefix, recvName)
+		if err := g.writeExpr(b, args[0].AsArg().Value(), false, depth); err != nil {
 			return err
 		}
-		b.writes(", wuffs_base__make_empty_struct())")
+		if !sideEffectsOnly {
+			b.writes(", wuffs_base__make_empty_struct())")
+		}
 		return nil
 	}
 
@@ -282,7 +297,7 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 	return g.writeBuiltinIO(b, recv, method, args, depth)
 }
 
-func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, depth uint32) error {
+func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, sideEffectsOnly bool, depth uint32) error {
 	recvName, err := g.recvName(recv)
 	if err != nil {
 		return err
@@ -298,7 +313,7 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 			suffix, iopPrefix, recvName, io0Prefix, recvName, io2Prefix, recvName)
 		for _, o := range args {
 			b.writes(", ")
-			if err := g.writeExpr(b, o.AsArg().Value(), depth); err != nil {
+			if err := g.writeExpr(b, o.AsArg().Value(), false, depth); err != nil {
 				return err
 			}
 		}
@@ -313,7 +328,7 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 
 		b.printf("wuffs_base__io_writer__limited_copy_u32_from_reader(\n&%s%s, %s%s,",
 			iopPrefix, recvName, io2Prefix, recvName)
-		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
+		if err := g.writeExpr(b, args[0].AsArg().Value(), false, depth); err != nil {
 			return err
 		}
 		b.printf(", &%s%s, %s%s)", iopPrefix, readerName, io2Prefix, readerName)
@@ -331,7 +346,7 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 
 	case t.IDCountSince:
 		b.printf("wuffs_base__io__count_since(")
-		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
+		if err := g.writeExpr(b, args[0].AsArg().Value(), false, depth); err != nil {
 			return err
 		}
 		b.printf(", ((uint64_t)(%s%s - %s%s)))", iopPrefix, recvName, io0Prefix, recvName)
@@ -348,7 +363,7 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 
 	case t.IDSince:
 		b.printf("wuffs_base__io__since(")
-		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
+		if err := g.writeExpr(b, args[0].AsArg().Value(), false, depth); err != nil {
 			return err
 		}
 		b.printf(", ((uint64_t)(%s%s - %s%s)), %s%s)",
@@ -359,18 +374,21 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 	if method >= writeFastMethodsBase {
 		if m := method - writeFastMethodsBase; m < t.ID(len(writeFastMethods)) {
 			if p := writeFastMethods[m]; p.n != 0 {
-				// Generate a three part expression using the comma operator:
-				// "(store, pointer increment, return_empty_struct call)". The
-				// final part is a function call (to a static inline function)
-				// instead of a struct literal, to avoid a "expression result
-				// unused" compiler error.
-				b.printf("(wuffs_base__poke_u%d%ce__no_bounds_check(%s%s,",
+				// Generate a two/three part expression using the comma
+				// operator: "(store, pointer increment, return_empty_struct
+				// call)". The final part is a function call (to a static
+				// inline function) instead of a struct literal, to avoid a
+				// "expression result unused" compiler error.
+				b.printf("(wuffs_base__poke_u%d%ce__no_bounds_check(%s%s, ",
 					p.n, p.endianness, iopPrefix, recvName)
-				if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
+				if err := g.writeExpr(b, args[0].AsArg().Value(), false, depth); err != nil {
 					return err
 				}
-				b.printf("), %s%s += %d, wuffs_base__make_empty_struct())",
-					iopPrefix, recvName, p.n/8)
+				b.printf("), %s%s += %d", iopPrefix, recvName, p.n/8)
+				if !sideEffectsOnly {
+					b.writes(", wuffs_base__make_empty_struct()")
+				}
+				b.writes(")")
 				return nil
 			}
 		}
@@ -391,32 +409,32 @@ func (g *gen) writeBuiltinTokenWriter(b *buffer, recv *a.Expr, method t.ID, args
 		if method == t.IDWriteSimpleTokenFast {
 			b.writes("(((uint64_t)(")
 			if cv := args[0].AsArg().Value().ConstValue(); (cv == nil) || (cv.Sign() != 0) {
-				if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
+				if err := g.writeExpr(b, args[0].AsArg().Value(), false, depth); err != nil {
 					return err
 				}
 				b.writes(")) << WUFFS_BASE__TOKEN__VALUE_MAJOR__SHIFT) |\n(((uint64_t)(")
 			}
 
-			if err := g.writeExpr(b, args[1].AsArg().Value(), depth); err != nil {
+			if err := g.writeExpr(b, args[1].AsArg().Value(), false, depth); err != nil {
 				return err
 			}
 			b.writes(")) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |\n(((uint64_t)(")
 		} else {
 			b.writes("(~")
-			if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
+			if err := g.writeExpr(b, args[0].AsArg().Value(), false, depth); err != nil {
 				return err
 			}
 			b.writes(" << WUFFS_BASE__TOKEN__VALUE_EXTENSION__SHIFT) |\n(((uint64_t)(")
 		}
 
 		if cv := args[len(args)-2].AsArg().Value().ConstValue(); (cv == nil) || (cv.Sign() != 0) {
-			if err := g.writeExpr(b, args[len(args)-2].AsArg().Value(), depth); err != nil {
+			if err := g.writeExpr(b, args[len(args)-2].AsArg().Value(), false, depth); err != nil {
 				return err
 			}
 			b.writes(")) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |\n(((uint64_t)(")
 		}
 
-		if err := g.writeExpr(b, args[len(args)-1].AsArg().Value(), depth); err != nil {
+		if err := g.writeExpr(b, args[len(args)-1].AsArg().Value(), false, depth); err != nil {
 			return err
 		}
 		b.writes(")) << WUFFS_BASE__TOKEN__LENGTH__SHIFT))")
@@ -426,29 +444,33 @@ func (g *gen) writeBuiltinTokenWriter(b *buffer, recv *a.Expr, method t.ID, args
 	return g.writeBuiltinIO(b, recv, method, args, depth)
 }
 
-func (g *gen) writeBuiltinCPUArch(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, depth uint32) error {
+func (g *gen) writeBuiltinCPUArch(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, sideEffectsOnly bool, depth uint32) error {
 	switch method {
 	case t.IDLoadU32:
 		// TODO: ensure that the receiver is a variable, not an arbitrary expression.
-		//
-		// Generate a two part expression using the comma operator: "(etc,
-		// return_empty_struct call)". The final part is a function call (to a
-		// static inline function) instead of a struct literal, to avoid a
-		// "expression result unused" compiler error.
-		b.writes("(")
-		if err := g.writeExpr(b, recv, depth); err != nil {
+		if !sideEffectsOnly {
+			// Generate a two part expression using the comma operator: "(etc,
+			// return_empty_struct call)". The final part is a function call
+			// (to a static inline function) instead of a struct literal, to
+			// avoid a "expression result unused" compiler error.
+			b.writes("(")
+		}
+		if err := g.writeExpr(b, recv, false, depth); err != nil {
 			return err
 		}
 		b.writes(" = _mm_cvtsi32_si128((int)(")
-		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
+		if err := g.writeExpr(b, args[0].AsArg().Value(), false, depth); err != nil {
 			return err
 		}
-		b.writes(")), wuffs_base__make_empty_struct())")
+		b.writes("))")
+		if !sideEffectsOnly {
+			b.writes(", wuffs_base__make_empty_struct())")
+		}
 		return nil
 
 	case t.IDTruncateU32:
 		b.writes("((uint32_t)(_mm_cvtsi128_si32(")
-		if err := g.writeExpr(b, recv, depth); err != nil {
+		if err := g.writeExpr(b, recv, false, depth); err != nil {
 			return err
 		}
 		b.writes(")))")
@@ -469,19 +491,19 @@ func (g *gen) writeBuiltinCPUArch(b *buffer, recv *a.Expr, method t.ID, args []*
 				b.writes("(char)(")
 				after = ")"
 			}
-			if err := g.writeExpr(b, o.AsArg().Value(), depth); err != nil {
+			if err := g.writeExpr(b, o.AsArg().Value(), false, depth); err != nil {
 				return err
 			}
 			b.writes(after)
 		}
 	} else {
 		b.printf("%s(", methodStr)
-		if err := g.writeExpr(b, recv, depth); err != nil {
+		if err := g.writeExpr(b, recv, false, depth); err != nil {
 			return err
 		}
 		for _, o := range args {
 			b.writes(", ")
-			if err := g.writeExpr(b, o.AsArg().Value(), depth); err != nil {
+			if err := g.writeExpr(b, o.AsArg().Value(), false, depth); err != nil {
 				return err
 			}
 		}
@@ -497,7 +519,7 @@ func (g *gen) writeBuiltinNumType(b *buffer, recv *a.Expr, method t.ID, args []*
 		//  - "((recv) & constant)"
 		//  - "((recv) & WUFFS_BASE__LOW_BITS_MASK__UXX(n))"
 		b.writes("((")
-		if err := g.writeExpr(b, recv, depth); err != nil {
+		if err := g.writeExpr(b, recv, false, depth); err != nil {
 			return err
 		}
 		b.writes(") & ")
@@ -513,7 +535,7 @@ func (g *gen) writeBuiltinNumType(b *buffer, recv *a.Expr, method t.ID, args []*
 			} else {
 				b.printf("WUFFS_BASE__LOW_BITS_MASK__U%d(", 8*sz)
 			}
-			if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
+			if err := g.writeExpr(b, args[0].AsArg().Value(), false, depth); err != nil {
 				return err
 			}
 			b.writes(")")
@@ -525,7 +547,7 @@ func (g *gen) writeBuiltinNumType(b *buffer, recv *a.Expr, method t.ID, args []*
 	case t.IDHighBits:
 		// "recv.high_bits(n:etc)" in C is "((recv) >> (8*sizeof(recv) - (n)))".
 		b.writes("((")
-		if err := g.writeExpr(b, recv, depth); err != nil {
+		if err := g.writeExpr(b, recv, false, depth); err != nil {
 			return err
 		}
 		b.writes(") >> (")
@@ -535,7 +557,7 @@ func (g *gen) writeBuiltinNumType(b *buffer, recv *a.Expr, method t.ID, args []*
 			b.printf("%d", 8*sz)
 		}
 		b.writes(" - (")
-		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
+		if err := g.writeExpr(b, args[0].AsArg().Value(), false, depth); err != nil {
 			return err
 		}
 		b.writes(")))")
@@ -549,11 +571,11 @@ func (g *gen) writeBuiltinNumType(b *buffer, recv *a.Expr, method t.ID, args []*
 			b.printf("%d", 8*sz)
 		}
 		b.writes("__max(")
-		if err := g.writeExpr(b, recv, depth); err != nil {
+		if err := g.writeExpr(b, recv, false, depth); err != nil {
 			return err
 		}
 		b.writes(", ")
-		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
+		if err := g.writeExpr(b, args[0].AsArg().Value(), false, depth); err != nil {
 			return err
 		}
 		b.writes(")")
@@ -567,11 +589,11 @@ func (g *gen) writeBuiltinNumType(b *buffer, recv *a.Expr, method t.ID, args []*
 			b.printf("%d", 8*sz)
 		}
 		b.writes("__min(")
-		if err := g.writeExpr(b, recv, depth); err != nil {
+		if err := g.writeExpr(b, recv, false, depth); err != nil {
 			return err
 		}
 		b.writes(", ")
-		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
+		if err := g.writeExpr(b, args[0].AsArg().Value(), false, depth); err != nil {
 			return err
 		}
 		b.writes(")")
@@ -580,7 +602,7 @@ func (g *gen) writeBuiltinNumType(b *buffer, recv *a.Expr, method t.ID, args []*
 	return errNoSuchBuiltin
 }
 
-func (g *gen) writeBuiltinSlice(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, depth uint32) error {
+func (g *gen) writeBuiltinSlice(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, sideEffectsOnly bool, depth uint32) error {
 	switch method {
 	case t.IDCopyFromSlice:
 		if err := g.writeBuiltinSliceCopyFromSlice8(b, recv, method, args, depth); err != errOptimizationNotApplicable {
@@ -589,7 +611,7 @@ func (g *gen) writeBuiltinSlice(b *buffer, recv *a.Expr, method t.ID, args []*a.
 
 		// TODO: don't assume that the slice is a slice of base.u8.
 		b.writes("wuffs_base__slice_u8__copy_from_slice(")
-		if err := g.writeExpr(b, recv, depth); err != nil {
+		if err := g.writeExpr(b, recv, false, depth); err != nil {
 			return err
 		}
 		b.writes(", ")
@@ -597,7 +619,7 @@ func (g *gen) writeBuiltinSlice(b *buffer, recv *a.Expr, method t.ID, args []*a.
 
 	case t.IDLength:
 		b.writes("((uint64_t)(")
-		if err := g.writeExpr(b, recv, depth); err != nil {
+		if err := g.writeExpr(b, recv, false, depth); err != nil {
 			return err
 		}
 		b.writes(".len))")
@@ -606,7 +628,7 @@ func (g *gen) writeBuiltinSlice(b *buffer, recv *a.Expr, method t.ID, args []*a.
 	case t.IDSuffix:
 		// TODO: don't assume that the slice is a slice of base.u8.
 		b.writes("wuffs_base__slice_u8__suffix(")
-		if err := g.writeExpr(b, recv, depth); err != nil {
+		if err := g.writeExpr(b, recv, false, depth); err != nil {
 			return err
 		}
 		b.writes(", ")
@@ -619,7 +641,7 @@ func (g *gen) writeBuiltinSlice(b *buffer, recv *a.Expr, method t.ID, args []*a.
 			s = s[:i]
 		}
 		b.printf("wuffs_base__%s__no_bounds_check(", s)
-		if err := g.writeExpr(b, recv, depth); err != nil {
+		if err := g.writeExpr(b, recv, false, depth); err != nil {
 			return err
 		}
 		b.writes(".ptr)")
@@ -627,15 +649,25 @@ func (g *gen) writeBuiltinSlice(b *buffer, recv *a.Expr, method t.ID, args []*a.
 	}
 
 	if (t.IDPokeU8 <= method) && (method <= t.IDPokeU64LE) {
-		b.printf("(wuffs_base__%s__no_bounds_check(", method.Str(g.tm))
-		if err := g.writeExpr(b, recv, depth); err != nil {
+		if !sideEffectsOnly {
+			// Generate a two part expression using the comma operator: "(etc,
+			// return_empty_struct call)". The final part is a function call
+			// (to a static inline function) instead of a struct literal, to
+			// avoid a "expression result unused" compiler error.
+			b.writes("(")
+		}
+		b.printf("wuffs_base__%s__no_bounds_check(", method.Str(g.tm))
+		if err := g.writeExpr(b, recv, false, depth); err != nil {
 			return err
 		}
 		b.writes(".ptr, ")
-		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
+		if err := g.writeExpr(b, args[0].AsArg().Value(), false, depth); err != nil {
 			return err
 		}
-		b.writes("), wuffs_base__make_empty_struct())")
+		b.writes(")")
+		if !sideEffectsOnly {
+			b.writes(", wuffs_base__make_empty_struct())")
+		}
 		return nil
 	}
 
@@ -655,7 +687,7 @@ func (g *gen) writeBuiltinSliceCopyFromSlice8(b *buffer, recv *a.Expr, method t.
 		return errOptimizationNotApplicable
 	}
 	b.writes("memcpy((")
-	if err := g.writeExpr(b, foo, depth); err != nil {
+	if err := g.writeExpr(b, foo, false, depth); err != nil {
 		return err
 	}
 	if foo.MType().IsSliceType() {
@@ -663,12 +695,12 @@ func (g *gen) writeBuiltinSliceCopyFromSlice8(b *buffer, recv *a.Expr, method t.
 	}
 	if fIndex != nil {
 		b.writes(")+(")
-		if err := g.writeExpr(b, fIndex, depth); err != nil {
+		if err := g.writeExpr(b, fIndex, false, depth); err != nil {
 			return err
 		}
 	}
 	b.writes("), (")
-	if err := g.writeExpr(b, bar, depth); err != nil {
+	if err := g.writeExpr(b, bar, false, depth); err != nil {
 		return err
 	}
 	if bar.MType().IsSliceType() {
@@ -676,7 +708,7 @@ func (g *gen) writeBuiltinSliceCopyFromSlice8(b *buffer, recv *a.Expr, method t.
 	}
 	if bIndex != nil {
 		b.writes(")+(")
-		if err := g.writeExpr(b, bIndex, depth); err != nil {
+		if err := g.writeExpr(b, bIndex, false, depth); err != nil {
 			return err
 		}
 	}
@@ -712,7 +744,7 @@ func matchFooIndexIndexPlus8(n *a.Expr) (foo *a.Expr, index *a.Expr) {
 	return foo, index
 }
 
-func (g *gen) writeBuiltinTable(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, depth uint32) error {
+func (g *gen) writeBuiltinTable(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, sideEffectsOnly bool, depth uint32) error {
 	field := ""
 
 	switch method {
@@ -726,7 +758,7 @@ func (g *gen) writeBuiltinTable(b *buffer, recv *a.Expr, method t.ID, args []*a.
 	case t.IDRow:
 		// TODO: don't assume that the table is a table of base.u8.
 		b.writes("wuffs_base__table_u8__row(")
-		if err := g.writeExpr(b, recv, depth); err != nil {
+		if err := g.writeExpr(b, recv, false, depth); err != nil {
 			return err
 		}
 		b.writes(", ")
@@ -735,7 +767,7 @@ func (g *gen) writeBuiltinTable(b *buffer, recv *a.Expr, method t.ID, args []*a.
 
 	if field != "" {
 		b.writes("((uint64_t)(")
-		if err := g.writeExpr(b, recv, depth); err != nil {
+		if err := g.writeExpr(b, recv, false, depth); err != nil {
 			return err
 		}
 		b.printf(".%s))", field)
@@ -757,7 +789,7 @@ func (g *gen) writeArgs(b *buffer, args []*a.Node, depth uint32) error {
 				b.writes(", ")
 			}
 		}
-		if err := g.writeExpr(b, o.AsArg().Value(), depth); err != nil {
+		if err := g.writeExpr(b, o.AsArg().Value(), false, depth); err != nil {
 			return err
 		}
 	}
@@ -827,7 +859,7 @@ func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error
 				sPrefix, g.currFunk.astFunc.FuncName().Str(g.tm))
 
 			b.printf("%s = ", scratchName)
-			if err := g.writeExpr(b, x, depth); err != nil {
+			if err := g.writeExpr(b, x, false, depth); err != nil {
 				return err
 			}
 			b.writes(";\n")
@@ -866,7 +898,7 @@ func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error
 
 			b.printf("%s = ", scratchName)
 			x := n.Args()[0].AsArg().Value()
-			if err := g.writeExpr(b, x, depth); err != nil {
+			if err := g.writeExpr(b, x, false, depth); err != nil {
 				return err
 			}
 			b.writes(";\n")

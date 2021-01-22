@@ -132,7 +132,7 @@ func (g *gen) writeStatementAssign1(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr
 	opName, closer, disableWconversion := "", "", false
 
 	if lhs != nil {
-		if err := g.writeExpr(&lhsBuf, lhs, 0); err != nil {
+		if err := g.writeExpr(&lhsBuf, lhs, false, 0); err != nil {
 			return err
 		}
 
@@ -152,7 +152,7 @@ func (g *gen) writeStatementAssign1(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr
 
 				b.printf("wuffs_base__status %s%d = ", tPrefix, temp)
 
-				if err := g.writeExpr(b, rhs, 0); err != nil {
+				if err := g.writeExpr(b, rhs, false, 0); err != nil {
 					return err
 				}
 				b.writes(";\n")
@@ -185,7 +185,6 @@ func (g *gen) writeStatementAssign1(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr
 			}
 		}
 	}
-
 	// "x += 1" triggers -Wconversion, if x is smaller than an int (i.e. a
 	// uint8_t or a uint16_t). This is arguably a clang/gcc bug, but in any
 	// case, we work around it in Wuffs.
@@ -207,7 +206,7 @@ func (g *gen) writeStatementAssign1(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr
 		g.currFunk.tempR++
 	} else if skipRHS {
 		// No-op.
-	} else if err := g.writeExpr(b, rhs, 0); err != nil {
+	} else if err := g.writeExpr(b, rhs, lhs == nil, 0); err != nil {
 		return err
 	}
 	b.writes(closer)
@@ -323,7 +322,7 @@ func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {
 				io0Prefix, prefix, name,
 				io1Prefix, prefix, name,
 				io2Prefix, prefix, name)
-			if err := g.writeExpr(b, n.Arg1(), 0); err != nil {
+			if err := g.writeExpr(b, n.Arg1(), false, 0); err != nil {
 				return err
 			}
 			b.writes(");\n")
@@ -335,7 +334,7 @@ func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {
 				cTyp,
 				io2Prefix, prefix, name,
 				iopPrefix, prefix, name)
-			if err := g.writeExpr(b, n.Arg1(), 0); err != nil {
+			if err := g.writeExpr(b, n.Arg1(), false, 0); err != nil {
 				return err
 			}
 			b.writes(");\n")
@@ -398,7 +397,7 @@ func (g *gen) writeStatementIf(b *buffer, n *a.If, depth uint32) error {
 
 	for {
 		condition := buffer(nil)
-		if err := g.writeExpr(&condition, n.Condition(), 0); err != nil {
+		if err := g.writeExpr(&condition, n.Condition(), false, 0); err != nil {
 			return err
 		}
 		// Calling trimParens avoids clang's -Wparentheses-equality warning.
@@ -442,7 +441,7 @@ func (g *gen) writeStatementIterate(b *buffer, n *a.Iterate, depth uint32) error
 		o := o.AsAssign()
 		name := o.LHS().Ident().Str(g.tm)
 		b.printf("wuffs_base__slice_u8 %sslice_%s = ", iPrefix, name)
-		if err := g.writeExpr(b, o.RHS(), 0); err != nil {
+		if err := g.writeExpr(b, o.RHS(), false, 0); err != nil {
 			return err
 		}
 		b.writes(";\n")
@@ -518,8 +517,7 @@ func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 				msg, _ := t.Unescape(retExpr.Ident().Str(g.tm))
 				isComplete = statusMsgIsNote(msg)
 			}
-			if err := g.writeExpr(
-				b, retExpr, depth); err != nil {
+			if err := g.writeExpr(b, retExpr, false, depth); err != nil {
 				return err
 			}
 		}
@@ -572,7 +570,7 @@ func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 		if couldBeSuspension {
 			b.writes("wuffs_base__status__ensure_not_a_suspension(")
 		}
-		if err := g.writeExpr(b, retExpr, depth); err != nil {
+		if err := g.writeExpr(b, retExpr, false, depth); err != nil {
 			return err
 		}
 		if couldBeSuspension {
@@ -593,7 +591,7 @@ func (g *gen) writeStatementWhile(b *buffer, n *a.While, depth uint32) error {
 		b.printf("label__%s__continue:;\n", jt)
 	}
 	condition := buffer(nil)
-	if err := g.writeExpr(&condition, n.Condition(), 0); err != nil {
+	if err := g.writeExpr(&condition, n.Condition(), false, 0); err != nil {
 		return err
 	}
 	// Calling trimParens avoids clang's -Wparentheses-equality warning.
