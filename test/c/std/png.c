@@ -37,7 +37,11 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 "wuffs mimic cflags" to run the mimic benchmarks.
 */
 
-// !! wuffs mimic cflags: -DWUFFS_MIMIC -lpng
+// Libpng requires -lpng (and nothing else). Libspng (note the 's') requires
+// -lm and -lz (and nothing else). It's easiest to just link with the union of
+// all of these libraries.
+//
+// !! wuffs mimic cflags: -DWUFFS_MIMIC -lm -lpng -lz
 
 // Wuffs ships as a "single file C library" or "header file library" as per
 // https://github.com/nothings/stb/blob/master/docs/stb_howto.txt
@@ -104,12 +108,14 @@ do_test_xxxxx_png_decode_bad_crc32_checksum_critical(
       "@001F=8A=00;test/data/hippopotamus.regular.png",
       // Change a byte in a PLTE CRC-32 checksum.
       "@0372=52=00;test/data/bricks-dither.png",
+      // Change a byte in a non-final IDAT CRC-32 checksum.
+      "@2029=B7=00;test/data/bricks-color.png",
+#ifndef WUFFS_MIMICLIB_PNG_DOES_NOT_VERIFY_FINAL_IDAT_CHECKSUMS
       // Change a byte in a final IDAT Adler-32 checksum.
       "@084E=26=00;test/data/hippopotamus.regular.png",
       // Change a byte in a final IDAT CRC-32 checksum.
       "@084F=F4=00;test/data/hippopotamus.regular.png",
-      // Change a byte in a non-final IDAT CRC-32 checksum.
-      "@2029=B7=00;test/data/bricks-color.png",
+#endif
   };
 
   int tc;
