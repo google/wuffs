@@ -48,5 +48,16 @@ values, such as `WUFFS_JSON__QUIRK_ALLOW_LEADING_UNICODE_BYTE_ORDER_MARK`.
 
 ## Listing
 
+Common quirks:
+
+- `WUFFS_BASE__QUIRK_IGNORE_CHECKSUM` configures decoders (but not encoders) to
+  skip checksum verification. This can result in [noticably faster
+  decodes](https://github.com/google/wuffs/commit/170a8104867fa818d329d85921012c922577c955),
+  at a cost of being less able to detect data corruption and to deviate from a
+  strict reading of the relevant file format specifications, accepting some
+  inputs that are technically invalid (but otherwise decode fine).
+
+Package-specific quirks:
+
 - [GIF image decoder quirks](/std/gif/decode_quirks.wuffs)
 - [JSON decoder quirks](/std/json/decode_quirks.wuffs)
