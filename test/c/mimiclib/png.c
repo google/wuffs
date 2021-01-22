@@ -14,6 +14,8 @@
 
 #include "png.h"
 
+#define WUFFS_MIMICLIB_PNG_DOES_NOT_SUPPORT_QUIRK_IGNORE_CHECKSUM 1
+
 const char*  //
 mimic_png_decode(uint64_t* n_bytes_out,
                  wuffs_base__io_buffer* dst,
@@ -38,6 +40,25 @@ mimic_png_decode(uint64_t* n_bytes_out,
                                         src->meta.wi - src->meta.ri)) {
     ret = "mimic_png_decode: png_image_begin_read_from_memory failed";
     goto cleanup0;
+  }
+
+  size_t i;
+  for (i = 0; i < quirks_len; i++) {
+    uint32_t q = quirks_ptr[i];
+    if (q == WUFFS_BASE__QUIRK_IGNORE_CHECKSUM) {
+      // TODO: configure libpng to ignore Adler-32 and CRC-32 checksums.
+      //
+      // The libpng "simplified API" (based on the png_image struct type) does
+      // not offer an equivalent of libpng's lower level API's
+      // png_set_crc_action and png_set_option(etc, PNG_IGNORE_ADLER32, etc).
+      // But the lower level API is complicated (hence why libpng introduced a
+      // "simplified API" in the first place), especially trying to make the
+      // equivalent of the png_image.format field work.
+      //
+      // Instead, we simply disable (via the
+      // WUFFS_MIMICLIB_PNG_DOES_NOT_SUPPORT_QUIRK_IGNORE_CHECKSUM macro) any
+      // tests or benches that try to use WUFFS_BASE__QUIRK_IGNORE_CHECKSUM.
+    }
   }
 
   switch (pixfmt.repr) {

@@ -587,7 +587,17 @@ bench_wuffs_png_decode_image_77k_8bpp() {
 }
 
 const char*  //
-bench_wuffs_png_decode_image_552k_32bpp() {
+bench_wuffs_png_decode_image_552k_32bpp_ignore_checksum() {
+  uint32_t q = WUFFS_BASE__QUIRK_IGNORE_CHECKSUM;
+  CHECK_FOCUS(__func__);
+  return do_bench_image_decode(
+      &wuffs_png_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
+      &q, 1, "test/data/hibiscus.primitive.png", 0, SIZE_MAX, 4);
+}
+
+const char*  //
+bench_wuffs_png_decode_image_552k_32bpp_verify_checksum() {
   CHECK_FOCUS(__func__);
   return do_bench_image_decode(
       &wuffs_png_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
@@ -757,7 +767,17 @@ bench_mimic_png_decode_image_77k_8bpp() {
 }
 
 const char*  //
-bench_mimic_png_decode_image_552k_32bpp() {
+bench_mimic_png_decode_image_552k_32bpp_ignore_checksum() {
+  uint32_t q = WUFFS_BASE__QUIRK_IGNORE_CHECKSUM;
+  CHECK_FOCUS(__func__);
+  return do_bench_image_decode(
+      &mimic_png_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
+      &q, 1, "test/data/hibiscus.primitive.png", 0, SIZE_MAX, 4);
+}
+
+const char*  //
+bench_mimic_png_decode_image_552k_32bpp_verify_checksum() {
   CHECK_FOCUS(__func__);
   return do_bench_image_decode(
       &mimic_png_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
@@ -814,7 +834,8 @@ proc g_benches[] = {
     bench_wuffs_png_decode_image_19k_8bpp,
     bench_wuffs_png_decode_image_40k_24bpp,
     bench_wuffs_png_decode_image_77k_8bpp,
-    bench_wuffs_png_decode_image_552k_32bpp,
+    bench_wuffs_png_decode_image_552k_32bpp_ignore_checksum,
+    bench_wuffs_png_decode_image_552k_32bpp_verify_checksum,
     bench_wuffs_png_decode_image_4002k_24bpp,
 
 #ifdef WUFFS_MIMIC
@@ -822,7 +843,10 @@ proc g_benches[] = {
     bench_mimic_png_decode_image_19k_8bpp,
     bench_mimic_png_decode_image_40k_24bpp,
     bench_mimic_png_decode_image_77k_8bpp,
-    bench_mimic_png_decode_image_552k_32bpp,
+#ifndef WUFFS_MIMICLIB_PNG_DOES_NOT_SUPPORT_QUIRK_IGNORE_CHECKSUM
+    bench_mimic_png_decode_image_552k_32bpp_ignore_checksum,
+#endif
+    bench_mimic_png_decode_image_552k_32bpp_verify_checksum,
     bench_mimic_png_decode_image_4002k_24bpp,
 
 #endif  // WUFFS_MIMIC
