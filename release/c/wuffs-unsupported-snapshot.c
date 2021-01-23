@@ -14658,7 +14658,7 @@ wuffs_base__pixel_swizzler__swap_rgbx_bgrx__sse128(uint8_t* dst_ptr,
 
   while (n >= 4) {
     __m128i x;
-    x = _mm_loadu_si128((const __m128i*)(const void*)s);
+    x = _mm_lddqu_si128((const __m128i*)(const void*)s);
     x = _mm_shuffle_epi8(x, shuffle);
     _mm_storeu_si128((__m128i*)(void*)d, x);
 
@@ -15873,7 +15873,7 @@ wuffs_base__pixel_swizzler__bgrw__rgb__sse128(uint8_t* dst_ptr,
 
   while (n >= 6) {
     __m128i x;
-    x = _mm_loadu_si128((const __m128i*)(const void*)s);
+    x = _mm_lddqu_si128((const __m128i*)(const void*)s);
     x = _mm_shuffle_epi8(x, shuffle);
     x = _mm_or_si128(x, or_ff);
     _mm_storeu_si128((__m128i*)(void*)d, x);
