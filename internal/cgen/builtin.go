@@ -446,8 +446,7 @@ func (g *gen) writeBuiltinTokenWriter(b *buffer, recv *a.Expr, method t.ID, args
 
 func (g *gen) writeBuiltinCPUArch(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, sideEffectsOnly bool, depth uint32) error {
 	switch method {
-	case t.IDLoadU32:
-		// TODO: ensure that the receiver is a variable, not an arbitrary expression.
+	case t.IDLoadU32, t.IDLoadU64, t.IDLoadSlice128:
 		if !sideEffectsOnly {
 			// Generate a two part expression using the comma operator: "(etc,
 			// return_empty_struct call)". The final part is a function call
@@ -458,22 +457,66 @@ func (g *gen) writeBuiltinCPUArch(b *buffer, recv *a.Expr, method t.ID, args []*
 		if err := g.writeExpr(b, recv, false, depth); err != nil {
 			return err
 		}
-		b.writes(" = _mm_cvtsi32_si128((int)(")
+
+		switch method {
+		case t.IDLoadU32:
+			b.writes(" = _mm_cvtsi32_si128((int)(")
+		case t.IDLoadU64:
+			b.writes(" = _mm_cvtsi64_si128((int64_t)(")
+		case t.IDLoadSlice128:
+			b.writes(" = _mm_lddqu_si128((const __m128i*)(const void*)(")
+		}
+
 		if err := g.writeExpr(b, args[0].AsArg().Value(), false, depth); err != nil {
 			return err
 		}
-		b.writes("))")
+
+		switch method {
+		case t.IDLoadSlice128:
+			b.writes(".ptr))")
+		default:
+			b.writes("))")
+		}
+
 		if !sideEffectsOnly {
 			b.writes(", wuffs_base__make_empty_struct())")
 		}
 		return nil
 
-	case t.IDTruncateU32:
-		b.writes("((uint32_t)(_mm_cvtsi128_si32(")
+	case t.IDTruncateU32, t.IDTruncateU64, t.IDStoreSlice128:
+		switch method {
+		case t.IDTruncateU32:
+			b.writes("((uint32_t)(_mm_cvtsi128_si32(")
+		case t.IDTruncateU64:
+			b.writes("((uint64_t)(_mm_cvtsi128_si64(")
+		case t.IDStoreSlice128:
+			if !sideEffectsOnly {
+				// Generate a two part expression using the comma operator: "(etc,
+				// return_empty_struct call)". The final part is a function call
+				// (to a static inline function) instead of a struct literal, to
+				// avoid a "expression result unused" compiler error.
+				b.writes("(")
+			}
+			b.writes("_mm_storeu_si128((__m128i*)(void*)(")
+			if err := g.writeExpr(b, args[0].AsArg().Value(), false, depth); err != nil {
+				return err
+			}
+			b.writes(".ptr), ")
+		}
+
 		if err := g.writeExpr(b, recv, false, depth); err != nil {
 			return err
 		}
-		b.writes(")))")
+
+		switch method {
+		case t.IDStoreSlice128:
+			b.writes(")")
+			if !sideEffectsOnly {
+				b.writes(", wuffs_base__make_empty_struct())")
+			}
+		default:
+			b.writes(")))")
+		}
 		return nil
 	}
 
@@ -503,9 +546,16 @@ func (g *gen) writeBuiltinCPUArch(b *buffer, recv *a.Expr, method t.ID, args []*
 		}
 		for _, o := range args {
 			b.writes(", ")
-			if err := g.writeExpr(b, o.AsArg().Value(), false, depth); err != nil {
+			after := ""
+			v := o.AsArg().Value()
+			if !v.MType().IsCPUArchType() {
+				b.writes("(int32_t)(")
+				after = ")"
+			}
+			if err := g.writeExpr(b, v, false, depth); err != nil {
 				return err
 			}
+			b.writes(after)
 		}
 	}
 	b.writes(")")

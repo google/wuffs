@@ -114,6 +114,7 @@ func (x ID) IsTightLeft() bool  { return x < ID(len(isTightLeft)) && isTightLeft
 func (x ID) IsTightRight() bool { return x < ID(len(isTightRight)) && isTightRight[x] }
 
 func (x ID) IsAssign() bool         { return minAssign <= x && x <= maxAssign }
+func (x ID) IsBuiltInCPUArch() bool { return minBuiltInCPUArch <= x && x <= maxBuiltInCPUArch }
 func (x ID) IsBuiltInLoad() bool    { return minBuiltInLoad <= x && x <= maxBuiltInLoad }
 func (x ID) IsCannotAssignTo() bool { return minCannotAssignTo <= x && x <= maxCannotAssignTo }
 func (x ID) IsClose() bool          { return minClose <= x && x <= maxClose }
@@ -659,6 +660,9 @@ const (
 
 	// -------- 0x300 block.
 
+	minBuiltInCPUArch = 0x300
+	maxBuiltInCPUArch = 0x32F
+
 	// 0x30? are reserved for NEON.
 
 	IDSSE128  = ID(0x310)
@@ -671,13 +675,17 @@ const (
 	minBuiltInLoad = 0x380
 	maxBuiltInLoad = 0x387
 
-	IDLoadSlice = ID(0x380)
-	IDLoadU32   = ID(0x381)
-	IDLoadU64   = ID(0x382)
+	IDLoadU32      = ID(0x380)
+	IDLoadU64      = ID(0x381)
+	IDLoadSlice128 = ID(0x382)
+	IDLoadSlice256 = ID(0x383)
+	IDLoadSlice512 = ID(0x384)
 
-	IDStoreSlice  = ID(0x388)
-	IDTruncateU32 = ID(0x389)
-	IDTruncateU64 = ID(0x38A)
+	IDTruncateU32   = ID(0x388)
+	IDTruncateU64   = ID(0x389)
+	IDStoreSlice128 = ID(0x38A)
+	IDStoreSlice256 = ID(0x38B)
+	IDStoreSlice512 = ID(0x38C)
 
 	IDCreateMMSet1EPI8 = ID(0x390)
 )
@@ -1067,13 +1075,17 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDSSE128:  "sse128",
 	IDSSE128I: "sse128_i",
 
-	IDLoadSlice: "load_slice",
-	IDLoadU32:   "load_u32",
-	IDLoadU64:   "load_u64",
+	IDLoadU32:      "load_u32",
+	IDLoadU64:      "load_u64",
+	IDLoadSlice128: "load_slice128",
+	IDLoadSlice256: "load_slice256",
+	IDLoadSlice512: "load_slice512",
 
-	IDStoreSlice:  "store_slice",
-	IDTruncateU32: "truncate_u32",
-	IDTruncateU64: "truncate_u64",
+	IDTruncateU32:   "truncate_u32",
+	IDTruncateU64:   "truncate_u64",
+	IDStoreSlice128: "store_slice128",
+	IDStoreSlice256: "store_slice256",
+	IDStoreSlice512: "store_slice512",
 
 	IDCreateMMSet1EPI8: "create_mm_set1_epi8",
 }

@@ -797,6 +797,10 @@ func (n *TypeExpr) IsBool() bool {
 	return n.id0 == 0 && n.id1 == t.IDBase && n.id2 == t.IDBool
 }
 
+func (n *TypeExpr) IsCPUArchType() bool {
+	return n.id0 == 0 && n.id1 == t.IDBase && n.id2.IsBuiltInCPUArch()
+}
+
 func (n *TypeExpr) IsIdeal() bool {
 	return n.id0 == 0 && n.id1 == t.IDBase && n.id2 == t.IDQIdeal
 }

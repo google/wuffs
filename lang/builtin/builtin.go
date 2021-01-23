@@ -534,10 +534,12 @@ var Funcs = []string{
 
 	// ---- sse128_i
 
-	"sse128_i.load_slice!(a: slice base.u8)",
 	"sse128_i.load_u32!(a: u32)",
-	"sse128_i.store_slice!(a: slice base.u8)",
+	"sse128_i.load_u64!(a: u64)",
+	"sse128_i.load_slice128!(a: slice base.u8)",
 	"sse128_i.truncate_u32() u32",
+	"sse128_i.truncate_u64() u64",
+	"sse128_i.store_slice128!(a: slice base.u8)",
 
 	// TODO: generate these methods automatically?
 
@@ -552,6 +554,8 @@ var Funcs = []string{
 	"sse128_i._mm_cmpeq_epi16(b: sse128_i) sse128_i",
 	"sse128_i._mm_min_epi16(b: sse128_i) sse128_i",
 	"sse128_i._mm_packus_epi16(b: sse128_i) sse128_i",
+	"sse128_i._mm_slli_si128(imm8: u32) sse128_i",
+	"sse128_i._mm_srli_si128(imm8: u32) sse128_i",
 	"sse128_i._mm_sub_epi16(b: sse128_i) sse128_i",
 	"sse128_i._mm_sub_epi8(b: sse128_i) sse128_i",
 	"sse128_i._mm_unpacklo_epi8(b: sse128_i) sse128_i",

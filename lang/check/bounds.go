@@ -1153,10 +1153,21 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (bounds, e
 				advance, update = au.advance, au.update
 			}
 		}
+
+	} else if recvTyp.IsCPUArchType() {
+		if method >= t.IDLoadSlice128 {
+			if m := method - t.IDLoadSlice128; m < t.ID(len(lsMethodAdvances)) {
+				advance, update = lsMethodAdvances[m], false
+			}
+		}
 	}
 
 	if (advance != nil) || (advanceExpr != nil) {
-		if ok, err := q.optimizeIOMethodAdvance(recv, advance, advanceExpr, update); err != nil {
+		subject := recv
+		if recv.MType().IsCPUArchType() {
+			subject = n.Args()[0].AsArg().Value()
+		}
+		if ok, err := q.optimizeIOMethodAdvance(subject, advance, advanceExpr, update); err != nil {
 			return bounds{}, err
 		} else if !ok {
 			adv := ""
@@ -1166,9 +1177,9 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (bounds, e
 				adv = advanceExpr.Str(q.tm)
 			}
 			return bounds{}, fmt.Errorf("check: could not prove %s pre-condition: %s.length() >= %s",
-				method.Str(q.tm), recv.Str(q.tm), adv)
+				method.Str(q.tm), subject.Str(q.tm), adv)
 		}
-		// TODO: drop other recv-related facts?
+		// TODO: drop other subject-related facts?
 	}
 
 	return bounds{}, errNotASpecialCase
@@ -1361,6 +1372,18 @@ var ioMethodAdvances = [...]struct {
 
 	t.IDWriteSimpleTokenFast - t.IDPeekU8:   {one, true},
 	t.IDWriteExtendedTokenFast - t.IDPeekU8: {one, true},
+}
+
+var lsMethodAdvances = [...]*big.Int{
+	// 128 bits is 16 bytes. 256 bits is 32 bytes. 512 bits is 64 bytes.
+
+	t.IDLoadSlice128 - t.IDLoadSlice128: sixteen,
+	t.IDLoadSlice256 - t.IDLoadSlice128: thirtyTwo,
+	t.IDLoadSlice512 - t.IDLoadSlice128: sixtyFour,
+
+	t.IDStoreSlice128 - t.IDLoadSlice128: sixteen,
+	t.IDStoreSlice256 - t.IDLoadSlice128: thirtyTwo,
+	t.IDStoreSlice512 - t.IDLoadSlice128: sixtyFour,
 }
 
 func makeConstValueExpr(tm *t.Map, cv *big.Int) (*a.Expr, error) {
