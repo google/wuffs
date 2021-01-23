@@ -53,8 +53,8 @@
 #define WUFFS_IMPLEMENTATION
 
 // Defining the WUFFS_CONFIG__MODULE* macros are optional, but it lets users of
-// release/c/etc.c whitelist which parts of Wuffs to build. That file contains
-// the entire Wuffs standard library, implementing a variety of codecs and file
+// release/c/etc.c choose which parts of Wuffs to build. That file contains the
+// entire Wuffs standard library, implementing a variety of codecs and file
 // formats. Without this macro definition, an optimizing compiler or linker may
 // very well discard Wuffs code for unused codecs, but listing the Wuffs
 // modules we use makes that process explicit. Preprocessing means that such

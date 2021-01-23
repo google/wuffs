@@ -75,7 +75,7 @@ const (
 	gap = 1 << 10
 )
 
-// Interpolate translates from Level (a codec-agnostic concept) to a
+// Interpolate translates from Level (a codec-independent concept) to a
 // codec-specific compression level numbering scheme. For exampe, a zlib
 // package might translate LevelFastest to 1 and LevelSmallest to 9 by calling
 // Interpolate(1, 2, 6, 9, 9).

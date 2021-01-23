@@ -461,8 +461,8 @@ func decode(inFile *os.File) error {
 
 	if !*singlethreadedFlag {
 		n := runtime.NumCPU()
-		// After 16 workers, we seem to hit diminishing speed returns, but
-		// still face increasing memory costs.
+		// After 16 workers, we see diminishing speed returns, but still face
+		// increasing memory costs.
 		if n > 16 {
 			n = 16
 		}

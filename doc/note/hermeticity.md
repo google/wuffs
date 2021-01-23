@@ -79,13 +79,13 @@ code](https://github.com/google/wuffs/blob/master/doc/benchmarks.md) (albeit
 requiring re-writing those libraries).
 
 
-## Termination
+## Halting
 
-Wuffs functions are not guaranteed to terminate. We do not solve the [Halting
+Wuffs functions are not guaranteed to halt. We do not solve the [Halting
 Problem](https://en.wikipedia.org/wiki/Halting_problem). Furthermore, while
-there is a difference in theory between a function that doesn't terminate and
-one that terminates in 99 years, in practice there is not. Systems that already
-need to cope with the latter can also cope with the former.
+there is a difference in theory between a function that doesn't halt and one
+that halts in 99 years, in practice there is not. Systems that already need to
+cope with the latter can also cope with the former.
 
 
 ## Timing and Other Attacks

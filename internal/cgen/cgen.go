@@ -678,7 +678,7 @@ func (g *gen) genIncludes(b *buffer) error {
 			useDirname := g.tm.ByID(tld.AsUse().Path())
 			useDirname, _ = t.Unescape(useDirname)
 
-			// TODO: sanity check useDirname via commonflags.IsValidUsePath?
+			// TODO: coherence check useDirname via commonflags.IsValidUsePath?
 
 			if _, ok := usesMap[useDirname]; ok {
 				continue

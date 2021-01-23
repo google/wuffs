@@ -808,7 +808,7 @@ var builtInsByID = [nBuiltInIDs]string{
 	// specifically non-ASCII so that no user-defined (non built-in) identifier
 	// will conflict with them.
 
-	// IDDaggerN is used by the type checker as a dummy-valued built-in ID to
+	// IDDaggerN is used by the type checker as a placeholder built-in ID to
 	// represent a generic type.
 	IDT1:      "T1",
 	IDT2:      "T2",

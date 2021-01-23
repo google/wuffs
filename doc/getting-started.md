@@ -71,7 +71,7 @@ libpng for PNG, etc.
 
 If your library change is an optimization, run `wuffs bench` or `wuffs bench
 -mimic` both before and after your change to quantify the improvement. The
-mimic benchmark numbers shouldn't change if you're only changing `.wuffs`
-code, but seeing zero change in those numbers is a sanity check on any
-unrelated system variance, such as software updates or virus checkers running
-in the background.
+mimic benchmark numbers shouldn't change if you're only changing `.wuffs` code,
+but seeing zero change in those numbers is a coherence check on any unrelated
+system variance, such as software updates or virus checkers running in the
+background.

@@ -48,8 +48,8 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 #define WUFFS_IMPLEMENTATION
 
 // Defining the WUFFS_CONFIG__MODULE* macros are optional, but it lets users of
-// release/c/etc.c whitelist which parts of Wuffs to build. That file contains
-// the entire Wuffs standard library, implementing a variety of codecs and file
+// release/c/etc.c choose which parts of Wuffs to build. That file contains the
+// entire Wuffs standard library, implementing a variety of codecs and file
 // formats. Without this macro definition, an optimizing compiler or linker may
 // very well discard Wuffs code for unused codecs, but listing the Wuffs
 // modules we use makes that process explicit. Preprocessing means that such
@@ -107,7 +107,7 @@ test_wuffs_pixel_swizzler_swizzle() {
 
   const uint32_t width = 22;
   const uint32_t height = 5;
-  uint8_t dummy_palette_array[1024];
+  uint8_t fallback_palette_array[1024];
   wuffs_base__pixel_swizzler swizzler;
 
   const struct {
@@ -221,8 +221,8 @@ test_wuffs_pixel_swizzler_swizzle() {
           wuffs_base__pixel_buffer__palette(&dst_pixbuf);
       if (dst_palette.len == 0) {
         dst_palette = wuffs_base__make_slice_u8(
-            &dummy_palette_array[0],
-            WUFFS_TESTLIB_ARRAY_SIZE(dummy_palette_array));
+            &fallback_palette_array[0],
+            WUFFS_TESTLIB_ARRAY_SIZE(fallback_palette_array));
       }
 
       int b;

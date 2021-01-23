@@ -114,7 +114,7 @@ type Reader struct {
 	//
 	//  - "State B" (decompressor is non-zero, inImplicitZeroes is zero): a RAC
 	//    chunk is loaded, but not fully exhausted: decompressing the e.g. zlib
-	//    stream has not hit io.EOF yet.
+	//    stream has not seen io.EOF yet.
 	//
 	//  - "State C" (decompressor is zero, inImplicitZeroes is non-zero): a RAC
 	//    chunk was exhausted, and we now serve the implicit NUL bytes after a

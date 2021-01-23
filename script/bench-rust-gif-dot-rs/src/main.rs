@@ -98,7 +98,7 @@ fn main() {
 }
 
 fn decode(dst: &mut [u8], src: &[u8]) {
-    // Set up the hard-coded sanity check, executed below.
+    // Set up the hard-coded coherence check, executed below.
     dst[0] = 0xFE;
     dst[NUM_BYTES - 1] = 0xFE;
 
@@ -123,7 +123,7 @@ fn decode(dst: &mut [u8], src: &[u8]) {
         panic!("wrong num_bytes")
     }
 
-    // A hard-coded sanity check that we decoded the pixel data correctly.
+    // A hard-coded coherence check that we decoded the pixel data correctly.
     if (dst[0] != FIRST_PIXEL) || (dst[NUM_BYTES - 1] != LAST_PIXEL) {
         panic!("wrong dst pixels")
     }

@@ -453,7 +453,7 @@ func (a *nAssignedCodes) fillPrimaryValues(primLen uint32) {
 		panic("did not finish with one unassigned zero-length code")
 	}
 
-	// As a sanity check of the "negative two's complement" theory, loop
+	// As a coherence check of the "negative two's complement" theory, loop
 	// forwards to calculate the number of unassigned primLen length codes,
 	// which should match nUnassignedPrimLen.
 	nUnassigned := uint32(1)

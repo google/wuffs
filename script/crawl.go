@@ -101,7 +101,7 @@ func main1() error {
 		urlsChan <- u
 	}
 	close(urlsChan)
-	log.Printf("master: no more work (inlimit is %d)", *inlimitFlag)
+	log.Printf("controller: no more work (inlimit is %d)", *inlimitFlag)
 	wg.Wait()
 
 	return flush(global.manifest.m)

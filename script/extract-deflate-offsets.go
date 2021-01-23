@@ -110,7 +110,7 @@ func decode(filename string) error {
 		return fmt.Errorf("TODO: support gzip HCRC flag")
 	}
 
-	// As a sanity check, the result should be valid deflate.
+	// As a coherence check, the result should be valid deflate.
 	uncompressed, err := checkDeflate(src[i:])
 	if err != nil {
 		return err
@@ -161,7 +161,7 @@ func doWriteZlib(deflateCompressed []byte, uncompressed []byte, filename string)
 
 	asZlib := buf.Bytes()
 
-	// As a sanity check, the result should be valid zlib.
+	// As a coherence check, the result should be valid zlib.
 	if _, err := checkZlib(asZlib); err != nil {
 		return err
 	}

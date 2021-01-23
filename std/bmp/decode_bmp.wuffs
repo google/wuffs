@@ -1157,8 +1157,8 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 			y: this.io_redirect_pos,
 			z: 0xFFFF_FFFF_FFFF_FFFF)
 	}
-	// Setting io_redirect_fourcc to a dummy value of 1 will cause future calls
-	// to return an error.
+	// Setting io_redirect_fourcc to a placeholder value of 1 will cause future
+	// calls to return an error.
 	this.io_redirect_fourcc = 1
 }
 

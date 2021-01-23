@@ -677,18 +677,18 @@ read_file(wuffs_base__io_buffer* dst, const char* path) {
                 errno);
   }
 
-  uint8_t dummy[1];
+  uint8_t placeholder[1];
   uint8_t* ptr = dst->data.ptr + dst->meta.wi;
   size_t len = dst->data.len - dst->meta.wi;
   while (true) {
     if (!len) {
       // We have read all that dst can hold. Check that we have read the full
       // file by trying to read one more byte, which should fail with EOF.
-      ptr = dummy;
+      ptr = placeholder;
       len = 1;
     }
     size_t n = fread(ptr, 1, len, f);
-    if (ptr != dummy) {
+    if (ptr != placeholder) {
       ptr += n;
       len -= n;
       dst->meta.wi += n;

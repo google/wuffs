@@ -15,8 +15,8 @@
 
 # ----------------
 
-# This script, build-all.sh, is a simple sanity check that the tests pass and
-# the example programs (including fuzz programs) compile.
+# This script, build-all.sh, is a simple coherence check that the tests pass
+# and the example programs (including fuzz programs) compile.
 #
 # If you're just looking to get started with Wuffs, running this script isn't
 # necessary (as Wuffs doesn't have the "configure; make; make install" dance or

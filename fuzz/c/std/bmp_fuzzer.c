@@ -22,7 +22,7 @@
 This fuzzer (the fuzz function) is typically run indirectly, by a framework
 such as https://github.com/google/oss-fuzz calling LLVMFuzzerTestOneInput.
 
-When working on the fuzz implementation, or as a sanity check, defining
+When working on the fuzz implementation, or as a coherence check, defining
 WUFFS_CONFIG__FUZZLIB_MAIN will let you manually run fuzz over a set of files:
 
 gcc -DWUFFS_CONFIG__FUZZLIB_MAIN bmp_fuzzer.c
@@ -43,8 +43,8 @@ It should print "PASS", amongst other information, and exit(0).
 #define WUFFS_IMPLEMENTATION
 
 // Defining the WUFFS_CONFIG__MODULE* macros are optional, but it lets users of
-// release/c/etc.c whitelist which parts of Wuffs to build. That file contains
-// the entire Wuffs standard library, implementing a variety of codecs and file
+// release/c/etc.c choose which parts of Wuffs to build. That file contains the
+// entire Wuffs standard library, implementing a variety of codecs and file
 // formats. Without this macro definition, an optimizing compiler or linker may
 // very well discard Wuffs code for unused codecs, but listing the Wuffs
 // modules we use makes that process explicit. Preprocessing means that such

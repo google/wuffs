@@ -175,7 +175,7 @@ When copying the suffix to a buffer (either an intermediate buffer or a final
 buffer), it is often unnecessary to copy *exactly* suffix length bytes,
 provided that there is enough destination buffer space for all Q bytes. Even if
 we write excess bytes, decoding subsequent codes will overwrite the excess, or
-else we'll hit an end code and the excess will be ignored. Again, on modern
+else we'll get an end code and the excess will be ignored. Again, on modern
 CPUs, it can be faster to write *at least 7* bytes (i.e. *exactly 8*) than to
 write *exactly 7*.
 
