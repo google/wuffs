@@ -47,7 +47,7 @@ pri func decoder.filter_1_distance_3_fallback!(curr: slice base.u8) {
 	var fa1 : base.u8
 	var fa2 : base.u8
 
-	iterate (c = args.curr)(length: 3, advance: 3, unroll: 1) {
+	iterate (c = args.curr)(length: 3, advance: 3, unroll: 2) {
 		fa0 ~mod+= c[0]
 		c[0] = fa0
 		fa1 ~mod+= c[1]
@@ -163,7 +163,7 @@ pri func decoder.filter_3_distance_3_fallback!(curr: slice base.u8, prev: slice 
 	var fa2 : base.u8
 
 	if args.prev.length() == 0 {
-		iterate (c = args.curr)(length: 3, advance: 3, unroll: 1) {
+		iterate (c = args.curr)(length: 3, advance: 3, unroll: 2) {
 			fa0 = (fa0 / 2) ~mod+ c[0]
 			c[0] = fa0
 			fa1 = (fa1 / 2) ~mod+ c[1]
@@ -173,7 +173,7 @@ pri func decoder.filter_3_distance_3_fallback!(curr: slice base.u8, prev: slice 
 		}
 
 	} else {
-		iterate (c = args.curr, p = args.prev)(length: 3, advance: 3, unroll: 1) {
+		iterate (c = args.curr, p = args.prev)(length: 3, advance: 3, unroll: 2) {
 			fa0 = ((((fa0 as base.u32) + (p[0] as base.u32)) / 2) as base.u8) ~mod+ c[0]
 			c[0] = fa0
 			fa1 = ((((fa1 as base.u32) + (p[1] as base.u32)) / 2) as base.u8) ~mod+ c[1]
