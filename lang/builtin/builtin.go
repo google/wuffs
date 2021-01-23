@@ -550,6 +550,7 @@ var Funcs = []string{
 	"sse128_i._mm_add_epi8(b: sse128_i) sse128_i",
 	"sse128_i._mm_and_si128(b: sse128_i) sse128_i",
 	"sse128_i._mm_avg_epu8(b: sse128_i) sse128_i",
+	"sse128_i._mm_blend_epi16(b: sse128_i, imm8: u32) sse128_i",
 	"sse128_i._mm_blendv_epi8(b: sse128_i, mask: sse128_i) sse128_i",
 	"sse128_i._mm_cmpeq_epi16(b: sse128_i) sse128_i",
 	"sse128_i._mm_min_epi16(b: sse128_i) sse128_i",
