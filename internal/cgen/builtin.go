@@ -460,7 +460,7 @@ func (g *gen) writeBuiltinCPUArch(b *buffer, recv *a.Expr, method t.ID, args []*
 
 		switch method {
 		case t.IDLoadU32:
-			b.writes(" = _mm_cvtsi32_si128((int)(")
+			b.writes(" = _mm_cvtsi32_si128((int32_t)(")
 		case t.IDLoadU64:
 			b.writes(" = _mm_cvtsi64_si128((int64_t)(")
 		case t.IDLoadSlice128:
