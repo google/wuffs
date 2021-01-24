@@ -455,7 +455,7 @@ func (n *Assert) IsChooseCPUArch() bool {
 		return false
 	}
 	switch rhs.Ident() {
-	case t.IDSSE128:
+	case t.IDX86SSE42, t.IDX86AVX2:
 		return true
 	}
 	return false

@@ -661,14 +661,14 @@ const (
 	// -------- 0x300 block.
 
 	minBuiltInCPUArch = 0x300
-	maxBuiltInCPUArch = 0x32F
+	maxBuiltInCPUArch = 0x33F
 
-	// 0x30? are reserved for NEON.
+	// [0x300 ..= 0x31F] are reserved for ARM/NEON.
 
-	IDSSE128  = ID(0x310)
-	IDSSE128I = ID(0x311)
+	IDX86SSE42 = ID(0x320)
+	IDX86AVX2  = ID(0x321)
 
-	// 0x32? are reserved for AVX256.
+	IDX86M128I = ID(0x330)
 
 	// --------
 
@@ -1072,8 +1072,10 @@ var builtInsByID = [nBuiltInIDs]string{
 
 	// -------- 0x300 block.
 
-	IDSSE128:  "sse128",
-	IDSSE128I: "sse128_i",
+	IDX86SSE42: "x86_sse42",
+	IDX86AVX2:  "x86_avx2",
+
+	IDX86M128I: "x86_m128i",
 
 	IDLoadU32:      "load_u32",
 	IDLoadU64:      "load_u64",

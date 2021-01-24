@@ -20,30 +20,30 @@
 // than the non-SIMD one.
 //
 // pri func decoder.filter_1_distance_3_sse128!(curr: slice base.u8),
-//     choose cpu_arch >= sse128,
+//     choose cpu_arch >= x86_sse42,
 // {
 //     var c    : slice base.u8
-//     var x128 : base.sse128_i
-//     var a128 : base.sse128_i
+//     var x128 : base.x86_m128i
+//     var a128 : base.x86_m128i
 //
 //     iterate (c = args.curr)(length: 4, advance: 3, unroll: 2) {
 //         x128.load_u32!(a: c.peek_u32le())
-//         x128 = x128._mm_add_epi8!(b: a128)
+//         x128 = x128._mm_add_epi8(b: a128)
 //         a128 = x128
 //         c.poke_u24le!(a: x128.truncate_u32())
 //     } else (length: 3, advance: 3, unroll: 1) {
 //         x128.load_u32!(a: c.peek_u24le_as_u32())
-//         x128 = x128._mm_add_epi8!(b: a128)
+//         x128 = x128._mm_add_epi8(b: a128)
 //         c.poke_u24le!(a: x128.truncate_u32())
 //     }
 // }
 
 pri func decoder.filter_1_distance_4_sse128!(curr: slice base.u8),
-	choose cpu_arch >= sse128,
+	choose cpu_arch >= x86_sse42,
 {
 	var c    : slice base.u8
-	var x128 : base.sse128_i
-	var a128 : base.sse128_i
+	var x128 : base.x86_m128i
+	var a128 : base.x86_m128i
 
 	iterate (c = args.curr)(length: 4, advance: 4, unroll: 2) {
 		x128.load_u32!(a: c.peek_u32le())
@@ -61,21 +61,21 @@ pri func decoder.filter_1_distance_4_sse128!(curr: slice base.u8),
 // 3, distance = 3) doesn't actually bench faster than the non-SIMD one.
 //
 // pri func decoder.filter_3_distance_3_sse128!(curr: slice base.u8, prev: slice base.u8),
-//     choose cpu_arch >= sse128,
+//     choose cpu_arch >= x86_sse42,
 // {
 //     etc
 // }
 
 pri func decoder.filter_3_distance_4_sse128!(curr: slice base.u8, prev: slice base.u8),
-	choose cpu_arch >= sse128,
+	choose cpu_arch >= x86_sse42,
 {
 	var c    : slice base.u8
 	var p    : slice base.u8
-	var x128 : base.sse128_i
-	var a128 : base.sse128_i
-	var b128 : base.sse128_i
-	var p128 : base.sse128_i
-	var k128 : base.sse128_i
+	var x128 : base.x86_m128i
+	var a128 : base.x86_m128i
+	var b128 : base.x86_m128i
+	var p128 : base.x86_m128i
+	var k128 : base.x86_m128i
 
 	if args.prev.length() == 0 {
 		k128 = k128.create_mm_set1_epi8(a: 0xFE)
@@ -124,7 +124,7 @@ pri func decoder.filter_3_distance_4_sse128!(curr: slice base.u8, prev: slice ba
 // Filter 4: Paeth.
 
 pri func decoder.filter_4_distance_3_sse128!(curr: slice base.u8, prev: slice base.u8),
-	choose cpu_arch >= sse128,
+	choose cpu_arch >= x86_sse42,
 {
 	// See the comments in filter_4_distance_4_sse128 for an explanation of how
 	// this works. That function's single loop is copied twice here, once with
@@ -135,16 +135,16 @@ pri func decoder.filter_4_distance_3_sse128!(curr: slice base.u8, prev: slice ba
 
 	var c           : slice base.u8
 	var p           : slice base.u8
-	var x128        : base.sse128_i
-	var a128        : base.sse128_i
-	var b128        : base.sse128_i
-	var c128        : base.sse128_i
-	var p128        : base.sse128_i
-	var pa128       : base.sse128_i
-	var pb128       : base.sse128_i
-	var pc128       : base.sse128_i
-	var smallest128 : base.sse128_i
-	var z128        : base.sse128_i
+	var x128        : base.x86_m128i
+	var a128        : base.x86_m128i
+	var b128        : base.x86_m128i
+	var c128        : base.x86_m128i
+	var p128        : base.x86_m128i
+	var pa128       : base.x86_m128i
+	var pb128       : base.x86_m128i
+	var pc128       : base.x86_m128i
+	var smallest128 : base.x86_m128i
+	var z128        : base.x86_m128i
 
 	// § The advance is 3, not 4.
 	iterate (c = args.curr, p = args.prev)(length: 4, advance: 3, unroll: 2) {
@@ -202,20 +202,20 @@ pri func decoder.filter_4_distance_3_sse128!(curr: slice base.u8, prev: slice ba
 }
 
 pri func decoder.filter_4_distance_4_sse128!(curr: slice base.u8, prev: slice base.u8),
-	choose cpu_arch >= sse128,
+	choose cpu_arch >= x86_sse42,
 {
 	var c           : slice base.u8
 	var p           : slice base.u8
-	var x128        : base.sse128_i
-	var a128        : base.sse128_i
-	var b128        : base.sse128_i
-	var c128        : base.sse128_i
-	var p128        : base.sse128_i
-	var pa128       : base.sse128_i
-	var pb128       : base.sse128_i
-	var pc128       : base.sse128_i
-	var smallest128 : base.sse128_i
-	var z128        : base.sse128_i
+	var x128        : base.x86_m128i
+	var a128        : base.x86_m128i
+	var b128        : base.x86_m128i
+	var c128        : base.x86_m128i
+	var p128        : base.x86_m128i
+	var pa128       : base.x86_m128i
+	var pb128       : base.x86_m128i
+	var pc128       : base.x86_m128i
+	var smallest128 : base.x86_m128i
+	var z128        : base.x86_m128i
 
 	iterate (c = args.curr, p = args.prev)(length: 4, advance: 4, unroll: 2) {
 		// Load the pixel from the row above.

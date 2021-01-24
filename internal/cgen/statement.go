@@ -258,18 +258,18 @@ func (g *gen) writeStatementChoose(b *buffer, n *a.Choose, depth uint32) error {
 }
 
 func cpuArchCNames(asserts []*a.Node) (caMacro string, caName string, caAttribute string) {
-	sse128 := false
+	sse42 := false
 	for _, o := range asserts {
 		o := o.AsAssert()
 		if !o.IsChooseCPUArch() {
 			continue
 		}
 		switch o.Condition().RHS().AsExpr().Ident() {
-		case t.IDSSE128:
-			sse128 = true
+		case t.IDX86SSE42:
+			sse42 = true
 		}
 	}
-	if sse128 {
+	if sse42 {
 		return "X86_64", "sse128", "__attribute__((target(\"sse4.2\")))"
 	}
 	return "", "", ""

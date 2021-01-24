@@ -141,7 +141,7 @@ func (g *gen) writeBuiltinCall(b *buffer, n *a.Expr, sideEffectsOnly bool, depth
 				b.writes("&empty_io_buffer")
 				return nil
 			}
-		case t.IDSSE128I:
+		case t.IDX86M128I:
 			return g.writeBuiltinCPUArch(b, recv, method.Ident(), n.Args(), sideEffectsOnly, depth)
 		}
 	}

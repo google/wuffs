@@ -243,7 +243,7 @@ var Types = []string{
 
 	// ----
 
-	"sse128_i",
+	"x86_m128i",
 }
 
 var Funcs = []string{
@@ -532,35 +532,35 @@ var Funcs = []string{
 	"pixel_swizzler.swizzle_interleaved_transparent_black!(" +
 		"dst: slice u8, dst_palette: slice u8, num_pixels: u64) u64",
 
-	// ---- sse128_i
+	// ---- x86_m128i
 
-	"sse128_i.load_u32!(a: u32)",
-	"sse128_i.load_u64!(a: u64)",
-	"sse128_i.load_slice128!(a: slice base.u8)",
-	"sse128_i.truncate_u32() u32",
-	"sse128_i.truncate_u64() u64",
-	"sse128_i.store_slice128!(a: slice base.u8)",
+	"x86_m128i.load_u32!(a: u32)",
+	"x86_m128i.load_u64!(a: u64)",
+	"x86_m128i.load_slice128!(a: slice base.u8)",
+	"x86_m128i.truncate_u32() u32",
+	"x86_m128i.truncate_u64() u64",
+	"x86_m128i.store_slice128!(a: slice base.u8)",
 
 	// TODO: generate these methods automatically?
 
-	"sse128_i.create_mm_set1_epi8(a: u8) sse128_i",
+	"x86_m128i.create_mm_set1_epi8(a: u8) x86_m128i",
 
-	"sse128_i._mm_abs_epi16() sse128_i",
-	"sse128_i._mm_add_epi16(b: sse128_i) sse128_i",
-	"sse128_i._mm_add_epi8(b: sse128_i) sse128_i",
-	"sse128_i._mm_and_si128(b: sse128_i) sse128_i",
-	"sse128_i._mm_avg_epu8(b: sse128_i) sse128_i",
-	"sse128_i._mm_blend_epi16(b: sse128_i, imm8: u32) sse128_i",
-	"sse128_i._mm_blendv_epi8(b: sse128_i, mask: sse128_i) sse128_i",
-	"sse128_i._mm_cmpeq_epi16(b: sse128_i) sse128_i",
-	"sse128_i._mm_min_epi16(b: sse128_i) sse128_i",
-	"sse128_i._mm_packus_epi16(b: sse128_i) sse128_i",
-	"sse128_i._mm_slli_si128(imm8: u32) sse128_i",
-	"sse128_i._mm_srli_si128(imm8: u32) sse128_i",
-	"sse128_i._mm_sub_epi16(b: sse128_i) sse128_i",
-	"sse128_i._mm_sub_epi8(b: sse128_i) sse128_i",
-	"sse128_i._mm_unpacklo_epi8(b: sse128_i) sse128_i",
-	"sse128_i._mm_xor_si128(b: sse128_i) sse128_i",
+	"x86_m128i._mm_abs_epi16() x86_m128i",
+	"x86_m128i._mm_add_epi16(b: x86_m128i) x86_m128i",
+	"x86_m128i._mm_add_epi8(b: x86_m128i) x86_m128i",
+	"x86_m128i._mm_and_si128(b: x86_m128i) x86_m128i",
+	"x86_m128i._mm_avg_epu8(b: x86_m128i) x86_m128i",
+	"x86_m128i._mm_blend_epi16(b: x86_m128i, imm8: u32) x86_m128i",
+	"x86_m128i._mm_blendv_epi8(b: x86_m128i, mask: x86_m128i) x86_m128i",
+	"x86_m128i._mm_cmpeq_epi16(b: x86_m128i) x86_m128i",
+	"x86_m128i._mm_min_epi16(b: x86_m128i) x86_m128i",
+	"x86_m128i._mm_packus_epi16(b: x86_m128i) x86_m128i",
+	"x86_m128i._mm_slli_si128(imm8: u32) x86_m128i",
+	"x86_m128i._mm_srli_si128(imm8: u32) x86_m128i",
+	"x86_m128i._mm_sub_epi16(b: x86_m128i) x86_m128i",
+	"x86_m128i._mm_sub_epi8(b: x86_m128i) x86_m128i",
+	"x86_m128i._mm_unpacklo_epi8(b: x86_m128i) x86_m128i",
+	"x86_m128i._mm_xor_si128(b: x86_m128i) x86_m128i",
 }
 
 var Interfaces = []string{
