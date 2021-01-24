@@ -16,36 +16,95 @@
 
 // Filter 1: Sub.
 
-// This (filter = 1, distance = 3) implementation doesn't actually bench faster
-// than the non-SIMD one.
-//
-// pri func decoder.filter_1_distance_3_sse42!(curr: slice base.u8),
-//     choose cpu_arch >= x86_sse42,
-// {
-//     var c    : slice base.u8
-//     var x128 : base.x86_m128i
-//     var a128 : base.x86_m128i
-//
-//     iterate (c = args.curr)(length: 4, advance: 3, unroll: 2) {
-//         x128.load_u32!(a: c.peek_u32le())
-//         x128 = x128._mm_add_epi8(b: a128)
-//         a128 = x128
-//         c.poke_u24le!(a: x128.truncate_u32())
-//     } else (length: 3, advance: 3, unroll: 1) {
-//         x128.load_u32!(a: c.peek_u24le_as_u32())
-//         x128 = x128._mm_add_epi8(b: a128)
-//         c.poke_u24le!(a: x128.truncate_u32())
-//     }
-// }
+pri func decoder.filter_1_distance_3_sse42!(curr: slice base.u8),
+	choose cpu_arch >= x86_sse42,
+{
+	var c    : slice base.u8
+	var x128 : base.x86_m128i
+	var i128 : base.x86_m128i
+	var j128 : base.x86_m128i
+	var k128 : base.x86_m128i
+	var a128 : base.x86_m128i
+
+	iterate (c = args.curr)(length: 16, advance: 12, unroll: 1) {
+		// For distance_3, we only use the first 12 bytes (96 bits) of the
+		// 128-bit registers. The final 4 bytes (32 bits) are usually junk:
+		//  - [R0 G0 B0 R1 G1 B1 R2 G2 B2 R3 G3 B3 ; junkC junkD junkE junkF]
+		// For x128, the final bytes are the upcoming pixels:
+		//  - [R0 G0 B0 R1 G1 B1 R2 G2 B2 R3 G3 B3 ;    R4    G4    B4    R5]
+		// For a128, the final bytes are zeroes.
+
+		// x128 = [x0, x1, x2, x3; upcoming]
+		x128.load_slice128!(a: c)
+
+		// i128 = [a+x0, x1, x2, x3; junk]
+		i128 = x128._mm_add_epi8(b: a128)
+
+		// j128 = [0, a+x0, x1, x2; junk]
+		j128 = i128._mm_slli_si128(imm8: 3)
+
+		// j128 = [a+x0, a+x0+x1, x1+x2, x2+x3; junk]
+		j128 = j128._mm_add_epi8(b: i128)
+
+		// k128 = [0, 0, a+x0, a+x0+x1; junk]
+		k128 = j128._mm_slli_si128(imm8: 6)
+
+		// k128 = [a+x0, a+x0+x1, a+x0+x1+x2, a+x0+x1+x2+x3; junk]
+		k128 = k128._mm_add_epi8(b: j128)
+
+		// k128 = [a+x0, a+x0+x1, a+x0+x1+x2, a+x0+x1+x2+x3; upcoming]
+		k128 = k128._mm_blend_epi16(b: x128, imm8: 0xC0)
+
+		// Store.
+		k128.store_slice128!(a: c)
+
+		// a128 = [a+x0+x1+x2+x3, 0, 0, 0; zeroes]
+		a128 = k128._mm_slli_si128(imm8: 4)._mm_srli_si128(imm8: 13)
+
+	} else (length: 3, advance: 3, unroll: 1) {
+		x128.load_u32!(a: c.peek_u24le_as_u32())
+		x128 = x128._mm_add_epi8(b: a128)
+		a128 = x128
+		c.poke_u24le!(a: x128.truncate_u32())
+	}
+}
 
 pri func decoder.filter_1_distance_4_sse42!(curr: slice base.u8),
 	choose cpu_arch >= x86_sse42,
 {
 	var c    : slice base.u8
 	var x128 : base.x86_m128i
+	var i128 : base.x86_m128i
+	var j128 : base.x86_m128i
+	var k128 : base.x86_m128i
 	var a128 : base.x86_m128i
 
-	iterate (c = args.curr)(length: 4, advance: 4, unroll: 2) {
+	iterate (c = args.curr)(length: 16, advance: 16, unroll: 1) {
+		// x128 = [x0, x1, x2, x3]
+		x128.load_slice128!(a: c)
+
+		// i128 = [a+x0, x1, x2, x3]
+		i128 = x128._mm_add_epi8(b: a128)
+
+		// j128 = [0, a+x0, x1, x2]
+		j128 = i128._mm_slli_si128(imm8: 4)
+
+		// j128 = [a+x0, a+x0+x1, x1+x2, x2+x3]
+		j128 = j128._mm_add_epi8(b: i128)
+
+		// k128 = [0, 0, a+x0, a+x0+x1]
+		k128 = j128._mm_slli_si128(imm8: 8)
+
+		// k128 = [a+x0, a+x0+x1, a+x0+x1+x2, a+x0+x1+x2+x3]
+		k128 = k128._mm_add_epi8(b: j128)
+
+		// Store.
+		k128.store_slice128!(a: c)
+
+		// a128 = [a+x0+x1+x2+x3, 0, 0, 0]
+		a128 = k128._mm_srli_si128(imm8: 12)
+
+	} else (length: 4, advance: 4, unroll: 1) {
 		x128.load_u32!(a: c.peek_u32le())
 		x128 = x128._mm_add_epi8(b: a128)
 		a128 = x128
