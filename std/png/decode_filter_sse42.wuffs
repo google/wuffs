@@ -37,6 +37,10 @@
 //         c.poke_u24le!(a: x128.truncate_u32())
 //     }
 // }
+//
+// Note that "more SIMD" doesn't always mean faster compute. See
+// https://github.com/google/wuffs/commit/1660f9268621ed4415b3b363f0a0e1026d4aa83d
+// "Have std/png filter_1_distance_? use more SIMD" for a pessimizing example.
 
 pri func decoder.filter_1_distance_4_sse42!(curr: slice base.u8),
 	choose cpu_arch >= x86_sse42,
