@@ -310,9 +310,7 @@ pri func decoder.choose_filter_implementations!() {
 	// Filter 0 is a no-op. Filter 2, the up filter, should already vectorize
 	// easily by a good optimizing C compiler.
 	if this.filter_distance == 3 {
-		choose filter_1 = [
-			filter_1_distance_3_sse42,
-			filter_1_distance_3_fallback]
+		choose filter_1 = [filter_1_distance_3_fallback]
 		choose filter_3 = [filter_3_distance_3_fallback]
 		choose filter_4 = [
 			filter_4_distance_3_sse42,

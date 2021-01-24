@@ -30290,13 +30290,6 @@ wuffs_png__decoder__filter_4_distance_4_fallback(
 
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
 static wuffs_base__empty_struct
-wuffs_png__decoder__filter_1_distance_3_sse42(
-    wuffs_png__decoder* self,
-    wuffs_base__slice_u8 a_curr);
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
-
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
-static wuffs_base__empty_struct
 wuffs_png__decoder__filter_1_distance_4_sse42(
     wuffs_png__decoder* self,
     wuffs_base__slice_u8 a_curr);
@@ -31149,55 +31142,6 @@ wuffs_png__decoder__filter_4_distance_4_fallback(
   return wuffs_base__make_empty_struct();
 }
 
-// -------- func png.decoder.filter_1_distance_3_sse42
-
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
-#if defined(__GNUC__)
-__attribute__((target("sse4.2")))
-#endif
-static wuffs_base__empty_struct
-wuffs_png__decoder__filter_1_distance_3_sse42(
-    wuffs_png__decoder* self,
-    wuffs_base__slice_u8 a_curr) {
-  wuffs_base__slice_u8 v_c = {0};
-  __m128i v_x128 = {0};
-  __m128i v_i128 = {0};
-  __m128i v_j128 = {0};
-  __m128i v_k128 = {0};
-  __m128i v_a128 = {0};
-
-  {
-    wuffs_base__slice_u8 i_slice_c = a_curr;
-    v_c.ptr = i_slice_c.ptr;
-    v_c.len = 16;
-    uint8_t* i_end0_c = v_c.ptr + wuffs_base__iterate_total_advance((i_slice_c.len - (size_t)(v_c.ptr - i_slice_c.ptr)), 16, 12);
-    while (v_c.ptr < i_end0_c) {
-      v_x128 = _mm_lddqu_si128((const __m128i*)(const void*)(v_c.ptr));
-      v_i128 = _mm_add_epi8(v_x128, v_a128);
-      v_j128 = _mm_slli_si128(v_i128, (int32_t)(3));
-      v_j128 = _mm_add_epi8(v_j128, v_i128);
-      v_k128 = _mm_slli_si128(v_j128, (int32_t)(6));
-      v_k128 = _mm_add_epi8(v_k128, v_j128);
-      v_k128 = _mm_blend_epi16(v_k128, v_x128, (int32_t)(192));
-      _mm_storeu_si128((__m128i*)(void*)(v_c.ptr), v_k128);
-      v_a128 = _mm_srli_si128(_mm_slli_si128(v_k128, (int32_t)(4)), (int32_t)(13));
-      v_c.ptr += 12;
-    }
-    v_c.len = 3;
-    uint8_t* i_end1_c = v_c.ptr + (((i_slice_c.len - (size_t)(v_c.ptr - i_slice_c.ptr)) / 3) * 3);
-    while (v_c.ptr < i_end1_c) {
-      v_x128 = _mm_cvtsi32_si128((int32_t)(wuffs_base__peek_u24le__no_bounds_check(v_c.ptr)));
-      v_x128 = _mm_add_epi8(v_x128, v_a128);
-      v_a128 = v_x128;
-      wuffs_base__poke_u24le__no_bounds_check(v_c.ptr, ((uint32_t)(_mm_cvtsi128_si32(v_x128))));
-      v_c.ptr += 3;
-    }
-    v_c.len = 0;
-  }
-  return wuffs_base__make_empty_struct();
-}
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
-
 // -------- func png.decoder.filter_1_distance_4_sse42
 
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
@@ -31210,26 +31154,24 @@ wuffs_png__decoder__filter_1_distance_4_sse42(
     wuffs_base__slice_u8 a_curr) {
   wuffs_base__slice_u8 v_c = {0};
   __m128i v_x128 = {0};
-  __m128i v_i128 = {0};
-  __m128i v_j128 = {0};
-  __m128i v_k128 = {0};
   __m128i v_a128 = {0};
 
   {
     wuffs_base__slice_u8 i_slice_c = a_curr;
     v_c.ptr = i_slice_c.ptr;
-    v_c.len = 16;
-    uint8_t* i_end0_c = v_c.ptr + (((i_slice_c.len - (size_t)(v_c.ptr - i_slice_c.ptr)) / 16) * 16);
+    v_c.len = 4;
+    uint8_t* i_end0_c = v_c.ptr + (((i_slice_c.len - (size_t)(v_c.ptr - i_slice_c.ptr)) / 8) * 8);
     while (v_c.ptr < i_end0_c) {
-      v_x128 = _mm_lddqu_si128((const __m128i*)(const void*)(v_c.ptr));
-      v_i128 = _mm_add_epi8(v_x128, v_a128);
-      v_j128 = _mm_slli_si128(v_i128, (int32_t)(4));
-      v_j128 = _mm_add_epi8(v_j128, v_i128);
-      v_k128 = _mm_slli_si128(v_j128, (int32_t)(8));
-      v_k128 = _mm_add_epi8(v_k128, v_j128);
-      _mm_storeu_si128((__m128i*)(void*)(v_c.ptr), v_k128);
-      v_a128 = _mm_srli_si128(v_k128, (int32_t)(12));
-      v_c.ptr += 16;
+      v_x128 = _mm_cvtsi32_si128((int32_t)(wuffs_base__peek_u32le__no_bounds_check(v_c.ptr)));
+      v_x128 = _mm_add_epi8(v_x128, v_a128);
+      v_a128 = v_x128;
+      wuffs_base__poke_u32le__no_bounds_check(v_c.ptr, ((uint32_t)(_mm_cvtsi128_si32(v_x128))));
+      v_c.ptr += 4;
+      v_x128 = _mm_cvtsi32_si128((int32_t)(wuffs_base__peek_u32le__no_bounds_check(v_c.ptr)));
+      v_x128 = _mm_add_epi8(v_x128, v_a128);
+      v_a128 = v_x128;
+      wuffs_base__poke_u32le__no_bounds_check(v_c.ptr, ((uint32_t)(_mm_cvtsi128_si32(v_x128))));
+      v_c.ptr += 4;
     }
     v_c.len = 4;
     uint8_t* i_end1_c = v_c.ptr + (((i_slice_c.len - (size_t)(v_c.ptr - i_slice_c.ptr)) / 4) * 4);
@@ -32192,9 +32134,6 @@ wuffs_png__decoder__choose_filter_implementations(
     wuffs_png__decoder* self) {
   if (self->private_impl.f_filter_distance == 3) {
     self->private_impl.choosy_filter_1 = (
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
-        wuffs_base__cpu_arch__have_sse42() ? &wuffs_png__decoder__filter_1_distance_3_sse42 :
-#endif
         &wuffs_png__decoder__filter_1_distance_3_fallback);
     self->private_impl.choosy_filter_3 = (
         &wuffs_png__decoder__filter_3_distance_3_fallback);
