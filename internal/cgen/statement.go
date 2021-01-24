@@ -270,7 +270,7 @@ func cpuArchCNames(asserts []*a.Node) (caMacro string, caName string, caAttribut
 		}
 	}
 	if sse42 {
-		return "X86_64", "sse128", "__attribute__((target(\"sse4.2\")))"
+		return "X86_64", "sse42", "__attribute__((target(\"sse4.2\")))"
 	}
 	return "", "", ""
 }

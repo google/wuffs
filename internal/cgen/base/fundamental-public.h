@@ -70,12 +70,12 @@
 
 // WUFFS_BASE__CPU_ARCH__X86_64__ETC are bits returned by
 // wuffs_base__cpu_arch__x86_64__capabilities.
-// - "SSE128" means all of SSE, SSE2, SSE3, SSSE3, SSE4.1, SSE4.2 and POPCNT.
-// - "AVX256" means all of AVX and AVX2.
+// - "SSE42" means all of SSE, SSE2, SSE3, SSSE3, SSE4.1, SSE4.2 and POPCNT.
+// - "AVX2"  means all of AVX and AVX2.
 // - "AVX512ETC" is reserved, pending need. Note that AVX-512 consists of
 //   multiple extensions that may be implemented independently.
-#define WUFFS_BASE__CPU_ARCH__X86_64__SSE128 0x01
-#define WUFFS_BASE__CPU_ARCH__X86_64__AVX256 0x02
+#define WUFFS_BASE__CPU_ARCH__X86_64__SSE42 0x01
+#define WUFFS_BASE__CPU_ARCH__X86_64__AVX2 0x02
 
 static inline uint32_t  //
 wuffs_base__cpu_arch__x86_64__capabilities() {
@@ -87,9 +87,9 @@ wuffs_base__cpu_arch__x86_64__capabilities() {
   unsigned int ecx1 = 0;
   unsigned int edx1 = 0;
   if (__get_cpuid(1, &eax1, &ebx1, &ecx1, &edx1)) {
-    const unsigned int sse128_ecx1 = bit_SSE4_2 | bit_POPCNT;
-    if ((ecx1 & sse128_ecx1) == sse128_ecx1) {
-      ret |= WUFFS_BASE__CPU_ARCH__X86_64__SSE128;
+    const unsigned int sse42_ecx1 = bit_SSE4_2 | bit_POPCNT;
+    if ((ecx1 & sse42_ecx1) == sse42_ecx1) {
+      ret |= WUFFS_BASE__CPU_ARCH__X86_64__SSE42;
     }
   }
 
@@ -100,7 +100,7 @@ wuffs_base__cpu_arch__x86_64__capabilities() {
   if (__get_cpuid_count(7, 0, &eax7, &ebx7, &ecx7, &edx7)) {
     const unsigned int avx256_ebx7 = bit_AVX2;
     if ((ebx7 & avx256_ebx7) == avx256_ebx7) {
-      ret |= WUFFS_BASE__CPU_ARCH__X86_64__AVX256;
+      ret |= WUFFS_BASE__CPU_ARCH__X86_64__AVX2;
     }
   }
 
@@ -111,15 +111,15 @@ wuffs_base__cpu_arch__x86_64__capabilities() {
 }
 
 static inline bool  //
-wuffs_base__cpu_arch__have_sse128() {
+wuffs_base__cpu_arch__have_sse42() {
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
   unsigned int eax1 = 0;
   unsigned int ebx1 = 0;
   unsigned int ecx1 = 0;
   unsigned int edx1 = 0;
   if (__get_cpuid(1, &eax1, &ebx1, &ecx1, &edx1)) {
-    const unsigned int sse128_ecx1 = bit_SSE4_2 | bit_POPCNT;
-    return (ecx1 & sse128_ecx1) == sse128_ecx1;
+    const unsigned int sse42_ecx1 = bit_SSE4_2 | bit_POPCNT;
+    return (ecx1 & sse42_ecx1) == sse42_ecx1;
   }
 #endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
   return false;

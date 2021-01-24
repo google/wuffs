@@ -535,12 +535,12 @@ wuffs_base__pixel_swizzler__swap_rgb_bgr(uint8_t* dst_ptr,
 __attribute__((target("sse4.2")))
 #endif
 static uint64_t  //
-wuffs_base__pixel_swizzler__swap_rgbx_bgrx__sse128(uint8_t* dst_ptr,
-                                                   size_t dst_len,
-                                                   uint8_t* dst_palette_ptr,
-                                                   size_t dst_palette_len,
-                                                   const uint8_t* src_ptr,
-                                                   size_t src_len) {
+wuffs_base__pixel_swizzler__swap_rgbx_bgrx__sse42(uint8_t* dst_ptr,
+                                                  size_t dst_len,
+                                                  uint8_t* dst_palette_ptr,
+                                                  size_t dst_palette_len,
+                                                  const uint8_t* src_ptr,
+                                                  size_t src_len) {
   size_t len = (dst_len < src_len ? dst_len : src_len) / 4;
   uint8_t* d = dst_ptr;
   const uint8_t* s = src_ptr;
@@ -1744,12 +1744,12 @@ wuffs_base__pixel_swizzler__bgrw__bgrx(uint8_t* dst_ptr,
 __attribute__((target("sse4.2")))
 #endif
 static uint64_t  //
-wuffs_base__pixel_swizzler__bgrw__rgb__sse128(uint8_t* dst_ptr,
-                                              size_t dst_len,
-                                              uint8_t* dst_palette_ptr,
-                                              size_t dst_palette_len,
-                                              const uint8_t* src_ptr,
-                                              size_t src_len) {
+wuffs_base__pixel_swizzler__bgrw__rgb__sse42(uint8_t* dst_ptr,
+                                             size_t dst_len,
+                                             uint8_t* dst_palette_ptr,
+                                             size_t dst_palette_len,
+                                             const uint8_t* src_ptr,
+                                             size_t src_len) {
   size_t dst_len4 = dst_len / 4;
   size_t src_len3 = src_len / 3;
   size_t len = (dst_len4 < src_len3) ? dst_len4 : src_len3;
@@ -2122,12 +2122,12 @@ wuffs_base__pixel_swizzler__xxxx__index_binary_alpha__src_over(
 __attribute__((target("sse4.2")))
 #endif
 static uint64_t  //
-wuffs_base__pixel_swizzler__xxxx__y__sse128(uint8_t* dst_ptr,
-                                            size_t dst_len,
-                                            uint8_t* dst_palette_ptr,
-                                            size_t dst_palette_len,
-                                            const uint8_t* src_ptr,
-                                            size_t src_len) {
+wuffs_base__pixel_swizzler__xxxx__y__sse42(uint8_t* dst_ptr,
+                                           size_t dst_len,
+                                           uint8_t* dst_palette_ptr,
+                                           size_t dst_palette_len,
+                                           const uint8_t* src_ptr,
+                                           size_t src_len) {
   size_t dst_len4 = dst_len / 4;
   size_t len = (dst_len4 < src_len) ? dst_len4 : src_len;
   uint8_t* d = dst_ptr;
@@ -2254,8 +2254,8 @@ wuffs_base__pixel_swizzler__prepare__y(wuffs_base__pixel_swizzler* p,
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_BINARY:
     case WUFFS_BASE__PIXEL_FORMAT__RGBX:
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
-      if (wuffs_base__cpu_arch__have_sse128()) {
-        return wuffs_base__pixel_swizzler__xxxx__y__sse128;
+      if (wuffs_base__cpu_arch__have_sse42()) {
+        return wuffs_base__pixel_swizzler__xxxx__y__sse42;
       }
 #endif
       return wuffs_base__pixel_swizzler__xxxx__y;
@@ -2559,8 +2559,8 @@ wuffs_base__pixel_swizzler__prepare__rgb(wuffs_base__pixel_swizzler* p,
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_BINARY:
     case WUFFS_BASE__PIXEL_FORMAT__BGRX:
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
-      if (wuffs_base__cpu_arch__have_sse128()) {
-        return wuffs_base__pixel_swizzler__bgrw__rgb__sse128;
+      if (wuffs_base__cpu_arch__have_sse42()) {
+        return wuffs_base__pixel_swizzler__bgrw__rgb__sse42;
       }
 #endif
       return wuffs_base__pixel_swizzler__bgrw__rgb;
@@ -2606,8 +2606,8 @@ wuffs_base__pixel_swizzler__prepare__rgba_nonpremul(
       switch (blend) {
         case WUFFS_BASE__PIXEL_BLEND__SRC:
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
-          if (wuffs_base__cpu_arch__have_sse128()) {
-            return wuffs_base__pixel_swizzler__swap_rgbx_bgrx__sse128;
+          if (wuffs_base__cpu_arch__have_sse42()) {
+            return wuffs_base__pixel_swizzler__swap_rgbx_bgrx__sse42;
           }
 #endif
           return wuffs_base__pixel_swizzler__swap_rgbx_bgrx;

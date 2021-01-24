@@ -104,12 +104,12 @@ extern "C" {
 
 // WUFFS_BASE__CPU_ARCH__X86_64__ETC are bits returned by
 // wuffs_base__cpu_arch__x86_64__capabilities.
-// - "SSE128" means all of SSE, SSE2, SSE3, SSSE3, SSE4.1, SSE4.2 and POPCNT.
-// - "AVX256" means all of AVX and AVX2.
+// - "SSE42" means all of SSE, SSE2, SSE3, SSSE3, SSE4.1, SSE4.2 and POPCNT.
+// - "AVX2"  means all of AVX and AVX2.
 // - "AVX512ETC" is reserved, pending need. Note that AVX-512 consists of
 //   multiple extensions that may be implemented independently.
-#define WUFFS_BASE__CPU_ARCH__X86_64__SSE128 0x01
-#define WUFFS_BASE__CPU_ARCH__X86_64__AVX256 0x02
+#define WUFFS_BASE__CPU_ARCH__X86_64__SSE42 0x01
+#define WUFFS_BASE__CPU_ARCH__X86_64__AVX2 0x02
 
 static inline uint32_t  //
 wuffs_base__cpu_arch__x86_64__capabilities() {
@@ -121,9 +121,9 @@ wuffs_base__cpu_arch__x86_64__capabilities() {
   unsigned int ecx1 = 0;
   unsigned int edx1 = 0;
   if (__get_cpuid(1, &eax1, &ebx1, &ecx1, &edx1)) {
-    const unsigned int sse128_ecx1 = bit_SSE4_2 | bit_POPCNT;
-    if ((ecx1 & sse128_ecx1) == sse128_ecx1) {
-      ret |= WUFFS_BASE__CPU_ARCH__X86_64__SSE128;
+    const unsigned int sse42_ecx1 = bit_SSE4_2 | bit_POPCNT;
+    if ((ecx1 & sse42_ecx1) == sse42_ecx1) {
+      ret |= WUFFS_BASE__CPU_ARCH__X86_64__SSE42;
     }
   }
 
@@ -134,7 +134,7 @@ wuffs_base__cpu_arch__x86_64__capabilities() {
   if (__get_cpuid_count(7, 0, &eax7, &ebx7, &ecx7, &edx7)) {
     const unsigned int avx256_ebx7 = bit_AVX2;
     if ((ebx7 & avx256_ebx7) == avx256_ebx7) {
-      ret |= WUFFS_BASE__CPU_ARCH__X86_64__AVX256;
+      ret |= WUFFS_BASE__CPU_ARCH__X86_64__AVX2;
     }
   }
 
@@ -145,15 +145,15 @@ wuffs_base__cpu_arch__x86_64__capabilities() {
 }
 
 static inline bool  //
-wuffs_base__cpu_arch__have_sse128() {
+wuffs_base__cpu_arch__have_sse42() {
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
   unsigned int eax1 = 0;
   unsigned int ebx1 = 0;
   unsigned int ecx1 = 0;
   unsigned int edx1 = 0;
   if (__get_cpuid(1, &eax1, &ebx1, &ecx1, &edx1)) {
-    const unsigned int sse128_ecx1 = bit_SSE4_2 | bit_POPCNT;
-    return (ecx1 & sse128_ecx1) == sse128_ecx1;
+    const unsigned int sse42_ecx1 = bit_SSE4_2 | bit_POPCNT;
+    return (ecx1 & sse42_ecx1) == sse42_ecx1;
   }
 #endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
   return false;
@@ -14640,12 +14640,12 @@ wuffs_base__pixel_swizzler__swap_rgb_bgr(uint8_t* dst_ptr,
 __attribute__((target("sse4.2")))
 #endif
 static uint64_t  //
-wuffs_base__pixel_swizzler__swap_rgbx_bgrx__sse128(uint8_t* dst_ptr,
-                                                   size_t dst_len,
-                                                   uint8_t* dst_palette_ptr,
-                                                   size_t dst_palette_len,
-                                                   const uint8_t* src_ptr,
-                                                   size_t src_len) {
+wuffs_base__pixel_swizzler__swap_rgbx_bgrx__sse42(uint8_t* dst_ptr,
+                                                  size_t dst_len,
+                                                  uint8_t* dst_palette_ptr,
+                                                  size_t dst_palette_len,
+                                                  const uint8_t* src_ptr,
+                                                  size_t src_len) {
   size_t len = (dst_len < src_len ? dst_len : src_len) / 4;
   uint8_t* d = dst_ptr;
   const uint8_t* s = src_ptr;
@@ -15849,12 +15849,12 @@ wuffs_base__pixel_swizzler__bgrw__bgrx(uint8_t* dst_ptr,
 __attribute__((target("sse4.2")))
 #endif
 static uint64_t  //
-wuffs_base__pixel_swizzler__bgrw__rgb__sse128(uint8_t* dst_ptr,
-                                              size_t dst_len,
-                                              uint8_t* dst_palette_ptr,
-                                              size_t dst_palette_len,
-                                              const uint8_t* src_ptr,
-                                              size_t src_len) {
+wuffs_base__pixel_swizzler__bgrw__rgb__sse42(uint8_t* dst_ptr,
+                                             size_t dst_len,
+                                             uint8_t* dst_palette_ptr,
+                                             size_t dst_palette_len,
+                                             const uint8_t* src_ptr,
+                                             size_t src_len) {
   size_t dst_len4 = dst_len / 4;
   size_t src_len3 = src_len / 3;
   size_t len = (dst_len4 < src_len3) ? dst_len4 : src_len3;
@@ -16227,12 +16227,12 @@ wuffs_base__pixel_swizzler__xxxx__index_binary_alpha__src_over(
 __attribute__((target("sse4.2")))
 #endif
 static uint64_t  //
-wuffs_base__pixel_swizzler__xxxx__y__sse128(uint8_t* dst_ptr,
-                                            size_t dst_len,
-                                            uint8_t* dst_palette_ptr,
-                                            size_t dst_palette_len,
-                                            const uint8_t* src_ptr,
-                                            size_t src_len) {
+wuffs_base__pixel_swizzler__xxxx__y__sse42(uint8_t* dst_ptr,
+                                           size_t dst_len,
+                                           uint8_t* dst_palette_ptr,
+                                           size_t dst_palette_len,
+                                           const uint8_t* src_ptr,
+                                           size_t src_len) {
   size_t dst_len4 = dst_len / 4;
   size_t len = (dst_len4 < src_len) ? dst_len4 : src_len;
   uint8_t* d = dst_ptr;
@@ -16359,8 +16359,8 @@ wuffs_base__pixel_swizzler__prepare__y(wuffs_base__pixel_swizzler* p,
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_BINARY:
     case WUFFS_BASE__PIXEL_FORMAT__RGBX:
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
-      if (wuffs_base__cpu_arch__have_sse128()) {
-        return wuffs_base__pixel_swizzler__xxxx__y__sse128;
+      if (wuffs_base__cpu_arch__have_sse42()) {
+        return wuffs_base__pixel_swizzler__xxxx__y__sse42;
       }
 #endif
       return wuffs_base__pixel_swizzler__xxxx__y;
@@ -16664,8 +16664,8 @@ wuffs_base__pixel_swizzler__prepare__rgb(wuffs_base__pixel_swizzler* p,
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_BINARY:
     case WUFFS_BASE__PIXEL_FORMAT__BGRX:
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
-      if (wuffs_base__cpu_arch__have_sse128()) {
-        return wuffs_base__pixel_swizzler__bgrw__rgb__sse128;
+      if (wuffs_base__cpu_arch__have_sse42()) {
+        return wuffs_base__pixel_swizzler__bgrw__rgb__sse42;
       }
 #endif
       return wuffs_base__pixel_swizzler__bgrw__rgb;
@@ -16711,8 +16711,8 @@ wuffs_base__pixel_swizzler__prepare__rgba_nonpremul(
       switch (blend) {
         case WUFFS_BASE__PIXEL_BLEND__SRC:
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
-          if (wuffs_base__cpu_arch__have_sse128()) {
-            return wuffs_base__pixel_swizzler__swap_rgbx_bgrx__sse128;
+          if (wuffs_base__cpu_arch__have_sse42()) {
+            return wuffs_base__pixel_swizzler__swap_rgbx_bgrx__sse42;
           }
 #endif
           return wuffs_base__pixel_swizzler__swap_rgbx_bgrx;
@@ -30289,14 +30289,14 @@ wuffs_png__decoder__filter_4_distance_4_fallback(
 
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
 static wuffs_base__empty_struct
-wuffs_png__decoder__filter_1_distance_4_sse128(
+wuffs_png__decoder__filter_1_distance_4_sse42(
     wuffs_png__decoder* self,
     wuffs_base__slice_u8 a_curr);
 #endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
 
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
 static wuffs_base__empty_struct
-wuffs_png__decoder__filter_3_distance_4_sse128(
+wuffs_png__decoder__filter_3_distance_4_sse42(
     wuffs_png__decoder* self,
     wuffs_base__slice_u8 a_curr,
     wuffs_base__slice_u8 a_prev);
@@ -30304,7 +30304,7 @@ wuffs_png__decoder__filter_3_distance_4_sse128(
 
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
 static wuffs_base__empty_struct
-wuffs_png__decoder__filter_4_distance_3_sse128(
+wuffs_png__decoder__filter_4_distance_3_sse42(
     wuffs_png__decoder* self,
     wuffs_base__slice_u8 a_curr,
     wuffs_base__slice_u8 a_prev);
@@ -30312,7 +30312,7 @@ wuffs_png__decoder__filter_4_distance_3_sse128(
 
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
 static wuffs_base__empty_struct
-wuffs_png__decoder__filter_4_distance_4_sse128(
+wuffs_png__decoder__filter_4_distance_4_sse42(
     wuffs_png__decoder* self,
     wuffs_base__slice_u8 a_curr,
     wuffs_base__slice_u8 a_prev);
@@ -31141,14 +31141,14 @@ wuffs_png__decoder__filter_4_distance_4_fallback(
   return wuffs_base__make_empty_struct();
 }
 
-// -------- func png.decoder.filter_1_distance_4_sse128
+// -------- func png.decoder.filter_1_distance_4_sse42
 
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
 #if defined(__GNUC__)
 __attribute__((target("sse4.2")))
 #endif
 static wuffs_base__empty_struct
-wuffs_png__decoder__filter_1_distance_4_sse128(
+wuffs_png__decoder__filter_1_distance_4_sse42(
     wuffs_png__decoder* self,
     wuffs_base__slice_u8 a_curr) {
   wuffs_base__slice_u8 v_c = {0};
@@ -31187,14 +31187,14 @@ wuffs_png__decoder__filter_1_distance_4_sse128(
 }
 #endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
 
-// -------- func png.decoder.filter_3_distance_4_sse128
+// -------- func png.decoder.filter_3_distance_4_sse42
 
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
 #if defined(__GNUC__)
 __attribute__((target("sse4.2")))
 #endif
 static wuffs_base__empty_struct
-wuffs_png__decoder__filter_3_distance_4_sse128(
+wuffs_png__decoder__filter_3_distance_4_sse42(
     wuffs_png__decoder* self,
     wuffs_base__slice_u8 a_curr,
     wuffs_base__slice_u8 a_prev) {
@@ -31292,14 +31292,14 @@ wuffs_png__decoder__filter_3_distance_4_sse128(
 }
 #endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
 
-// -------- func png.decoder.filter_4_distance_3_sse128
+// -------- func png.decoder.filter_4_distance_3_sse42
 
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
 #if defined(__GNUC__)
 __attribute__((target("sse4.2")))
 #endif
 static wuffs_base__empty_struct
-wuffs_png__decoder__filter_4_distance_3_sse128(
+wuffs_png__decoder__filter_4_distance_3_sse42(
     wuffs_png__decoder* self,
     wuffs_base__slice_u8 a_curr,
     wuffs_base__slice_u8 a_prev) {
@@ -31418,14 +31418,14 @@ wuffs_png__decoder__filter_4_distance_3_sse128(
 }
 #endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
 
-// -------- func png.decoder.filter_4_distance_4_sse128
+// -------- func png.decoder.filter_4_distance_4_sse42
 
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
 #if defined(__GNUC__)
 __attribute__((target("sse4.2")))
 #endif
 static wuffs_base__empty_struct
-wuffs_png__decoder__filter_4_distance_4_sse128(
+wuffs_png__decoder__filter_4_distance_4_sse42(
     wuffs_png__decoder* self,
     wuffs_base__slice_u8 a_curr,
     wuffs_base__slice_u8 a_prev) {
@@ -32138,23 +32138,23 @@ wuffs_png__decoder__choose_filter_implementations(
         &wuffs_png__decoder__filter_3_distance_3_fallback);
     self->private_impl.choosy_filter_4 = (
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
-        wuffs_base__cpu_arch__have_sse128() ? &wuffs_png__decoder__filter_4_distance_3_sse128 :
+        wuffs_base__cpu_arch__have_sse42() ? &wuffs_png__decoder__filter_4_distance_3_sse42 :
 #endif
         &wuffs_png__decoder__filter_4_distance_3_fallback);
   } else if (self->private_impl.f_filter_distance == 4) {
     self->private_impl.choosy_filter_1 = (
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
-        wuffs_base__cpu_arch__have_sse128() ? &wuffs_png__decoder__filter_1_distance_4_sse128 :
+        wuffs_base__cpu_arch__have_sse42() ? &wuffs_png__decoder__filter_1_distance_4_sse42 :
 #endif
         &wuffs_png__decoder__filter_1_distance_4_fallback);
     self->private_impl.choosy_filter_3 = (
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
-        wuffs_base__cpu_arch__have_sse128() ? &wuffs_png__decoder__filter_3_distance_4_sse128 :
+        wuffs_base__cpu_arch__have_sse42() ? &wuffs_png__decoder__filter_3_distance_4_sse42 :
 #endif
         &wuffs_png__decoder__filter_3_distance_4_fallback);
     self->private_impl.choosy_filter_4 = (
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
-        wuffs_base__cpu_arch__have_sse128() ? &wuffs_png__decoder__filter_4_distance_4_sse128 :
+        wuffs_base__cpu_arch__have_sse42() ? &wuffs_png__decoder__filter_4_distance_4_sse42 :
 #endif
         &wuffs_png__decoder__filter_4_distance_4_fallback);
   }
