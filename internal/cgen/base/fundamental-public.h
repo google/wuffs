@@ -70,7 +70,8 @@
 
 // WUFFS_BASE__CPU_ARCH__X86_64__ETC are bits returned by
 // wuffs_base__cpu_arch__x86_64__capabilities.
-// - "SSE42" means all of SSE, SSE2, SSE3, SSSE3, SSE4.1, SSE4.2 and POPCNT.
+// - "SSE42" means all of SSE, SSE2, SSE3, SSSE3, SSE4.1, SSE4.2, PCLMUL and
+//   POPCNT.
 // - "AVX2"  means all of AVX and AVX2.
 // - "AVX512ETC" is reserved, pending need. Note that AVX-512 consists of
 //   multiple extensions that may be implemented independently.
@@ -87,7 +88,7 @@ wuffs_base__cpu_arch__x86_64__capabilities() {
   unsigned int ecx1 = 0;
   unsigned int edx1 = 0;
   if (__get_cpuid(1, &eax1, &ebx1, &ecx1, &edx1)) {
-    const unsigned int sse42_ecx1 = bit_SSE4_2 | bit_POPCNT;
+    const unsigned int sse42_ecx1 = bit_PCLMUL | bit_POPCNT | bit_SSE4_2;
     if ((ecx1 & sse42_ecx1) == sse42_ecx1) {
       ret |= WUFFS_BASE__CPU_ARCH__X86_64__SSE42;
     }
@@ -118,7 +119,7 @@ wuffs_base__cpu_arch__have_sse42() {
   unsigned int ecx1 = 0;
   unsigned int edx1 = 0;
   if (__get_cpuid(1, &eax1, &ebx1, &ecx1, &edx1)) {
-    const unsigned int sse42_ecx1 = bit_SSE4_2 | bit_POPCNT;
+    const unsigned int sse42_ecx1 = bit_PCLMUL | bit_POPCNT | bit_SSE4_2;
     return (ecx1 & sse42_ecx1) == sse42_ecx1;
   }
 #endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
