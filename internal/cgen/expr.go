@@ -118,31 +118,12 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, sideEffectsOnly bool, depth u
 			}
 			qid := recvTyp.QID()
 
-			if isBaseRangeType(qid) {
-				if !sideEffectsOnly {
-					// Generate a two part expression using the comma operator:
-					// "(etc, return_empty_struct call)". The final part is a
-					// function call (to a static inline function) instead of a
-					// struct literal, to avoid a "expression result unused"
-					// compiler error.
-					b.writes("(")
-				}
-				b.printf("memset(%s", addr)
-				if err := g.writeExpr(b, recv, false, depth); err != nil {
-					return err
-				}
-				b.printf(", 0, sizeof (%s%s))", g.packagePrefix(qid), qid[1].Str(g.tm))
-				if !sideEffectsOnly {
-					b.writes(", wuffs_base__make_empty_struct())")
-				}
-			} else {
-				b.printf("wuffs_base__ignore_status("+
-					"%s%s__initialize(%s", g.packagePrefix(qid), qid[1].Str(g.tm), addr)
-				if err := g.writeExpr(b, recv, false, depth); err != nil {
-					return err
-				}
-				b.printf(", sizeof (%s%s), WUFFS_VERSION, 0))", g.packagePrefix(qid), qid[1].Str(g.tm))
+			b.printf("wuffs_base__ignore_status("+
+				"%s%s__initialize(%s", g.packagePrefix(qid), qid[1].Str(g.tm), addr)
+			if err := g.writeExpr(b, recv, false, depth); err != nil {
+				return err
 			}
+			b.printf(", sizeof (%s%s), WUFFS_VERSION, 0))", g.packagePrefix(qid), qid[1].Str(g.tm))
 
 			return nil
 		}

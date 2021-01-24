@@ -290,25 +290,21 @@ var Funcs = []string{
 
 	// ---- ranges
 
-	"range_ie_u32.reset!()",
 	"range_ie_u32.get_min_incl() u32",
 	"range_ie_u32.get_max_excl() u32",
 	"range_ie_u32.intersect(r: range_ie_u32) range_ie_u32",
 	"range_ie_u32.unite(r: range_ie_u32) range_ie_u32",
 
-	"range_ii_u32.reset!()",
 	"range_ii_u32.get_min_incl() u32",
 	"range_ii_u32.get_max_incl() u32",
 	"range_ii_u32.intersect(r: range_ii_u32) range_ii_u32",
 	"range_ii_u32.unite(r: range_ii_u32) range_ii_u32",
 
-	"range_ie_u64.reset!()",
 	"range_ie_u64.get_min_incl() u64",
 	"range_ie_u64.get_max_excl() u64",
 	"range_ie_u64.intersect(r: range_ie_u64) range_ie_u64",
 	"range_ie_u64.unite(r: range_ie_u64) range_ie_u64",
 
-	"range_ii_u64.reset!()",
 	"range_ii_u64.get_min_incl() u64",
 	"range_ii_u64.get_max_incl() u64",
 	"range_ii_u64.intersect(r: range_ii_u64) range_ii_u64",
