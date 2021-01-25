@@ -530,8 +530,17 @@ func (g *gen) writeBuiltinCPUArch(b *buffer, recv *a.Expr, method t.ID, args []*
 			}
 			after := ""
 			switch method {
-			case t.IDCreateMMSet1EPI8:
-				b.writes("(char)(")
+			case t.IDCreateMMSet1EPI8, t.IDCreateMMSetEPI8:
+				b.writes("(int8_t)(")
+				after = ")"
+			case t.IDCreateMMSet1EPI16, t.IDCreateMMSetEPI16:
+				b.writes("(int16_t)(")
+				after = ")"
+			case t.IDCreateMMSet1EPI32, t.IDCreateMMSetEPI32:
+				b.writes("(int32_t)(")
+				after = ")"
+			case t.IDCreateMMSet1EPI64X, t.IDCreateMMSetEPI64X:
+				b.writes("(int64_t)(")
 				after = ")"
 			}
 			if err := g.writeExpr(b, o.AsArg().Value(), false, depth); err != nil {

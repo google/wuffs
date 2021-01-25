@@ -687,7 +687,14 @@ const (
 	IDStoreSlice256 = ID(0x38B)
 	IDStoreSlice512 = ID(0x38C)
 
-	IDCreateMMSet1EPI8 = ID(0x390)
+	IDCreateMMSet1EPI8   = ID(0x390)
+	IDCreateMMSet1EPI16  = ID(0x391)
+	IDCreateMMSet1EPI32  = ID(0x392)
+	IDCreateMMSet1EPI64X = ID(0x393)
+	IDCreateMMSetEPI8    = ID(0x394)
+	IDCreateMMSetEPI16   = ID(0x395)
+	IDCreateMMSetEPI32   = ID(0x396)
+	IDCreateMMSetEPI64X  = ID(0x397)
 )
 
 var builtInsByID = [nBuiltInIDs]string{
@@ -1089,7 +1096,14 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDStoreSlice256: "store_slice256",
 	IDStoreSlice512: "store_slice512",
 
-	IDCreateMMSet1EPI8: "create_mm_set1_epi8",
+	IDCreateMMSet1EPI8:   "create_mm_set1_epi8",
+	IDCreateMMSet1EPI16:  "create_mm_set1_epi16",
+	IDCreateMMSet1EPI32:  "create_mm_set1_epi32",
+	IDCreateMMSet1EPI64X: "create_mm_set1_epi64x",
+	IDCreateMMSetEPI8:    "create_mm_set_epi8",
+	IDCreateMMSetEPI16:   "create_mm_set_epi16",
+	IDCreateMMSetEPI32:   "create_mm_set_epi32",
+	IDCreateMMSetEPI64X:  "create_mm_set_epi64x",
 }
 
 var builtInsByName = map[string]ID{}

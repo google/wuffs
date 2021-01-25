@@ -31208,7 +31208,7 @@ wuffs_png__decoder__filter_3_distance_4_sse42(
   __m128i v_k128 = {0};
 
   if (((uint64_t)(a_prev.len)) == 0) {
-    v_k128 = _mm_set1_epi8((char)(254));
+    v_k128 = _mm_set1_epi8((int8_t)(254));
     {
       wuffs_base__slice_u8 i_slice_c = a_curr;
       v_c.ptr = i_slice_c.ptr;
@@ -31241,7 +31241,7 @@ wuffs_png__decoder__filter_3_distance_4_sse42(
       v_c.len = 0;
     }
   } else {
-    v_k128 = _mm_set1_epi8((char)(1));
+    v_k128 = _mm_set1_epi8((int8_t)(1));
     {
       wuffs_base__slice_u8 i_slice_c = a_curr;
       v_c.ptr = i_slice_c.ptr;
