@@ -184,7 +184,7 @@ func Example_indexLocationAtStart() {
 		fmt.Printf("[%2d, %2d): ", chunk.DRange[0], chunk.DRange[1])
 
 		// Parse the RAC+Zlib secondary data. For details, see
-		// https://github.com/google/wuffs/blob/master/doc/spec/rac-spec.md#rac--zlib
+		// https://github.com/google/wuffs/blob/main/doc/spec/rac-spec.md#rac--zlib
 		dict := []byte(nil)
 		if secondary := encoded[chunk.CSecondary[0]:chunk.CSecondary[1]]; len(secondary) > 0 {
 			if len(secondary) < 8 {

@@ -77,7 +77,7 @@ pub const QUIRK_IGNORE_TOO_MUCH_PIXEL_DATA : base.u32 = 0x3E16_1800 | 0x03
 // frame's bounds (but not necessarily subsequent frame's bounds).
 //
 // For more discussion, see
-// https://github.com/google/wuffs/blob/master/test/data/artificial/gif-frame-out-of-bounds.gif.make-artificial.txt
+// https://github.com/google/wuffs/blob/main/test/data/artificial/gif-frame-out-of-bounds.gif.make-artificial.txt
 pub const QUIRK_IMAGE_BOUNDS_ARE_STRICT : base.u32 = 0x3E16_1800 | 0x04
 
 // When this quirk is enabled, a frame with zero width or height is rejected

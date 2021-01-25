@@ -5,4 +5,4 @@ screencast was made in February 2018, shortly after Wuffs version 0.1 was
 released. Since then, the `test/testdata` directory was re-named to
 `test/data`.
 
-![Screencast](https://github.com/google/wuffs/blob/master/test/data/gifplayer-muybridge.gif?raw=true)
+![Screencast](https://github.com/google/wuffs/blob/main/test/data/gifplayer-muybridge.gif?raw=true)

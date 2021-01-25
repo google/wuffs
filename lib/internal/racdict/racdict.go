@@ -18,7 +18,7 @@
 // common dictionary format.
 //
 // See
-// https://github.com/google/wuffs/blob/master/doc/spec/rac-spec.md#common-dictionary-format
+// https://github.com/google/wuffs/blob/main/doc/spec/rac-spec.md#common-dictionary-format
 package racdict
 
 import (

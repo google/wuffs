@@ -88,7 +88,7 @@ static const char* g_usage =
     "the -first-frame-only flag is given).\n"
     "\n"
     "NIA/NIE is a trivial animated/still image file format, specified at\n"
-    "https://github.com/google/wuffs/blob/master/doc/spec/nie-spec.md\n"
+    "https://github.com/google/wuffs/blob/main/doc/spec/nie-spec.md\n"
     "\n"
     "The -fail-if-unsandboxed flag causes the program to exit if it does not\n"
     "self-impose a sandbox. On Linux, it self-imposes a SECCOMP_MODE_STRICT\n"

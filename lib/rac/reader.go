@@ -318,7 +318,7 @@ func (r *Reader) transitionFromStateBToStateC() error {
 
 // readImplicitZeroes serves the implicit NUL bytes after a chunk's explicit
 // data. As
-// https://github.com/google/wuffs/blob/master/doc/spec/rac-spec.md#decompressing-a-leaf-node
+// https://github.com/google/wuffs/blob/main/doc/spec/rac-spec.md#decompressing-a-leaf-node
 // says, "The Codec may produce fewer bytes than the DRange size. In that case,
 // the remaining bytes (in DSpace) are set to NUL (memset to zero)."
 func (r *Reader) readImplicitZeroes(p []byte) (int, error) {

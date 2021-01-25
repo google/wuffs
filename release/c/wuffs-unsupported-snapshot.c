@@ -204,7 +204,7 @@ wuffs_base__cpu_arch__have_sse42() {
 // passed as a separately allocated "work buffer".
 //
 // For more detail, see:
-// https://github.com/google/wuffs/blob/master/doc/note/initialization.md
+// https://github.com/google/wuffs/blob/main/doc/note/initialization.md
 #define WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED \
   ((uint32_t)0x00000002)
 
@@ -255,7 +255,7 @@ typedef struct wuffs_base__vtable__struct {
 
 // --------
 
-// See https://github.com/google/wuffs/blob/master/doc/note/statuses.md
+// See https://github.com/google/wuffs/blob/main/doc/note/statuses.md
 typedef struct wuffs_base__status__struct {
   const char* repr;
 
@@ -1179,7 +1179,7 @@ wuffs_base__slice_u8__subslice_ij(wuffs_base__slice_u8 s,
 
 // ---------------- Ranges and Rects
 
-// See https://github.com/google/wuffs/blob/master/doc/note/ranges-and-rects.md
+// See https://github.com/google/wuffs/blob/main/doc/note/ranges-and-rects.md
 
 typedef struct wuffs_base__range_ii_u32__struct {
   uint32_t min_incl;
@@ -2391,7 +2391,7 @@ wuffs_base__io_buffer::writer_slice() const {
 
 // wuffs_base__token is an element of a byte stream's tokenization.
 //
-// See https://github.com/google/wuffs/blob/master/doc/note/tokens.md
+// See https://github.com/google/wuffs/blob/main/doc/note/tokens.md
 typedef struct wuffs_base__token__struct {
   uint64_t repr;
 
@@ -3159,7 +3159,7 @@ typedef uint32_t wuffs_base__pixel_alpha_transparency;
 // wuffs_base__pixel_format encodes the format of the bytes that constitute an
 // image frame's pixel data.
 //
-// See https://github.com/google/wuffs/blob/master/doc/note/pixel-formats.md
+// See https://github.com/google/wuffs/blob/main/doc/note/pixel-formats.md
 //
 // Do not manipulate its bits directly; they are private implementation
 // details. Use methods such as wuffs_base__pixel_format__num_planes instead.
@@ -3328,7 +3328,7 @@ wuffs_base__pixel_format::transparency() const {
 // wuffs_base__pixel_subsampling encodes whether sample values cover one pixel
 // or cover multiple pixels.
 //
-// See https://github.com/google/wuffs/blob/master/doc/note/pixel-subsampling.md
+// See https://github.com/google/wuffs/blob/main/doc/note/pixel-subsampling.md
 //
 // Do not manipulate its bits directly; they are private implementation
 // details. Use methods such as wuffs_base__pixel_subsampling__bias_x instead.
@@ -9031,7 +9031,7 @@ struct wuffs_wbmp__decoder__struct {
 // ---------------- Auxiliary - Base
 
 // Auxiliary code is discussed at
-// https://github.com/google/wuffs/blob/master/doc/note/auxiliary-code.md
+// https://github.com/google/wuffs/blob/main/doc/note/auxiliary-code.md
 
 #include <stdio.h>
 
@@ -33785,7 +33785,7 @@ wuffs_wbmp__decoder__workbuf_len(
 // ---------------- Auxiliary - Base
 
 // Auxiliary code is discussed at
-// https://github.com/google/wuffs/blob/master/doc/note/auxiliary-code.md
+// https://github.com/google/wuffs/blob/main/doc/note/auxiliary-code.md
 
 #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__AUX__BASE)
 

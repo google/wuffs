@@ -17,7 +17,7 @@
 // ---------------- Auxiliary - Base
 
 // Auxiliary code is discussed at
-// https://github.com/google/wuffs/blob/master/doc/note/auxiliary-code.md
+// https://github.com/google/wuffs/blob/main/doc/note/auxiliary-code.md
 
 #include <stdio.h>
 

@@ -170,7 +170,7 @@ wuffs_base__cpu_arch__have_sse42() {
 // passed as a separately allocated "work buffer".
 //
 // For more detail, see:
-// https://github.com/google/wuffs/blob/master/doc/note/initialization.md
+// https://github.com/google/wuffs/blob/main/doc/note/initialization.md
 #define WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED \
   ((uint32_t)0x00000002)
 
@@ -221,7 +221,7 @@ typedef struct wuffs_base__vtable__struct {
 
 // --------
 
-// See https://github.com/google/wuffs/blob/master/doc/note/statuses.md
+// See https://github.com/google/wuffs/blob/main/doc/note/statuses.md
 typedef struct wuffs_base__status__struct {
   const char* repr;
 

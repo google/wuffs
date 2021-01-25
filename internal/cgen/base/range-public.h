@@ -16,7 +16,7 @@
 
 // ---------------- Ranges and Rects
 
-// See https://github.com/google/wuffs/blob/master/doc/note/ranges-and-rects.md
+// See https://github.com/google/wuffs/blob/main/doc/note/ranges-and-rects.md
 
 typedef struct wuffs_base__range_ii_u32__struct {
   uint32_t min_incl;

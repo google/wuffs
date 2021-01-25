@@ -75,7 +75,7 @@ larger (memory-unsafe) C/C++ programs. The difference is that Wasm lets you
 re-use existing C/C++ libraries (albeit with a run-time [performance
 penalty](https://kripken.github.io/blog/wasm/2020/07/27/wasmboxc.html)) but
 Wuffs performs [on par with C
-code](https://github.com/google/wuffs/blob/master/doc/benchmarks.md) (albeit
+code](https://github.com/google/wuffs/blob/main/doc/benchmarks.md) (albeit
 requiring re-writing those libraries).
 
 

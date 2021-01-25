@@ -209,7 +209,7 @@ typedef uint32_t wuffs_base__pixel_alpha_transparency;
 // wuffs_base__pixel_format encodes the format of the bytes that constitute an
 // image frame's pixel data.
 //
-// See https://github.com/google/wuffs/blob/master/doc/note/pixel-formats.md
+// See https://github.com/google/wuffs/blob/main/doc/note/pixel-formats.md
 //
 // Do not manipulate its bits directly; they are private implementation
 // details. Use methods such as wuffs_base__pixel_format__num_planes instead.
@@ -378,7 +378,7 @@ wuffs_base__pixel_format::transparency() const {
 // wuffs_base__pixel_subsampling encodes whether sample values cover one pixel
 // or cover multiple pixels.
 //
-// See https://github.com/google/wuffs/blob/master/doc/note/pixel-subsampling.md
+// See https://github.com/google/wuffs/blob/main/doc/note/pixel-subsampling.md
 //
 // Do not manipulate its bits directly; they are private implementation
 // details. Use methods such as wuffs_base__pixel_subsampling__bias_x instead.

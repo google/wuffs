@@ -18,7 +18,7 @@
 
 // wuffs_base__token is an element of a byte stream's tokenization.
 //
-// See https://github.com/google/wuffs/blob/master/doc/note/tokens.md
+// See https://github.com/google/wuffs/blob/main/doc/note/tokens.md
 typedef struct wuffs_base__token__struct {
   uint64_t repr;
 

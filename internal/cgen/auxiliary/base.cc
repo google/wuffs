@@ -17,7 +17,7 @@
 // ---------------- Auxiliary - Base
 
 // Auxiliary code is discussed at
-// https://github.com/google/wuffs/blob/master/doc/note/auxiliary-code.md
+// https://github.com/google/wuffs/blob/main/doc/note/auxiliary-code.md
 
 #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__AUX__BASE)
 

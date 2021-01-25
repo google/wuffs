@@ -18,7 +18,7 @@
 // with the Zlib compression codec.
 //
 // The RAC specification is at
-// https://github.com/google/wuffs/blob/master/doc/spec/rac-spec.md
+// https://github.com/google/wuffs/blob/main/doc/spec/rac-spec.md
 package raczlib
 
 import (
