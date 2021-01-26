@@ -53,6 +53,29 @@ func (q *checker) optimizeIOMethodAdvance(receiver *a.Expr, advance *big.Int, ad
 		return q.optimizeIOMethodAdvanceExpr(receiver, advanceExpr, update)
 	}
 
+	// Check if receiver looks like "a[i .. j]" where i and j are constants and
+	// ((j - i) >= advance).
+	if receiver.Operator() == t.IDDotDot {
+		icv := (*big.Int)(nil)
+		if i := receiver.MHS().AsExpr(); i == nil {
+			icv = zero
+		} else if i.ConstValue() != nil {
+			icv = i.ConstValue()
+		}
+
+		jcv := (*big.Int)(nil)
+		if j := receiver.RHS().AsExpr(); (j != nil) && (j.ConstValue() != nil) {
+			jcv = j.ConstValue()
+		}
+
+		if (icv != nil) && (jcv != nil) {
+			n := big.NewInt(0).Sub(jcv, icv)
+			if n.Cmp(advance) >= 0 {
+				retOK = true
+			}
+		}
+	}
+
 	retErr = q.facts.update(func(x *a.Expr) (*a.Expr, error) {
 		// TODO: update (discard?) any facts that merely mention
 		// receiver.length(), even if they aren't an exact match.

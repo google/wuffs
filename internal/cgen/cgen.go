@@ -913,6 +913,17 @@ func (g *gen) forEachStatus(b *buffer, v visibility, f func(*gen, *buffer, *a.St
 	return nil
 }
 
+func (g *gen) findAstFunc(qqid t.QQID) *a.Func {
+	for _, file := range g.files {
+		for _, tld := range file.TopLevelDecls() {
+			if (tld.Kind() == a.KFunc) && (tld.AsFunc().QQID() == qqid) {
+				return tld.AsFunc()
+			}
+		}
+	}
+	return nil
+}
+
 func (g *gen) cName(name string) string {
 	return cName(name, g.pkgPrefix)
 }

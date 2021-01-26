@@ -238,7 +238,7 @@ func (g *gen) writeStatementChoose(b *buffer, n *a.Choose, depth uint32) error {
 		if n.Name() == id {
 			suffix = "__choosy_default"
 		}
-		caMacro, caName, _ := cpuArchCNames(g.funks[t.QQID{recv[0], recv[1], id}].astFunc.Asserts())
+		caMacro, caName, _ := cpuArchCNames(g.findAstFunc(t.QQID{recv[0], recv[1], id}).Asserts())
 		if caMacro == "" {
 			b.printf("&%s%s__%s%s", g.pkgPrefix, recv.Str(g.tm), id.Str(g.tm), suffix)
 			conclusive = true
