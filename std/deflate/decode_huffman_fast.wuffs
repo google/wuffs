@@ -20,12 +20,12 @@ pri func decoder.decode_huffman_fast!(dst: base.io_writer, src: base.io_reader) 
 	// decode_huffman_*.wuffs files as small as possible, while retaining both
 	// correctness and performance.
 
-	var bits               : base.u32
+	var bits               : base.u64
 	var n_bits             : base.u32
 	var table_entry        : base.u32
 	var table_entry_n_bits : base.u32[..= 15]
-	var lmask              : base.u32[..= 511]
-	var dmask              : base.u32[..= 511]
+	var lmask              : base.u64[..= 511]
+	var dmask              : base.u64[..= 511]
 	var redir_top          : base.u32[..= 0xFFFF]
 	var redir_mask         : base.u32[..= 0x7FFF]
 	var length             : base.u32[..= 258]
@@ -37,17 +37,16 @@ pri func decoder.decode_huffman_fast!(dst: base.io_writer, src: base.io_reader) 
 		return "#internal error: inconsistent n_bits"
 	}
 
-	bits = this.bits
+	bits = this.bits as base.u64
 	n_bits = this.n_bits
 
-	lmask = ((1 as base.u32) << this.n_huffs_bits[0]) - 1
-	dmask = ((1 as base.u32) << this.n_huffs_bits[1]) - 1
+	lmask = ((1 as base.u64) << this.n_huffs_bits[0]) - 1
+	dmask = ((1 as base.u64) << this.n_huffs_bits[1]) - 1
 
 	// Check up front, on each iteration, that we have enough buffer space to
-	// both read (12 bytes) and write (258 bytes) as much as we need to. Doing
+	// both read (8 bytes) and write (258 bytes) as much as we need to. Doing
 	// this check once (per iteration), up front, removes the need to check
-	// (and possibly suspend the coroutine) multiple times inside the loop
-	// body, so it's faster overall.
+	// multiple times inside the loop body, so it's faster overall.
 	//
 	// For writing, a literal code obviously corresponds to writing 1 byte, and
 	// 258 is the maximum length in a length-distance pair, as specified in the
@@ -56,45 +55,28 @@ pri func decoder.decode_huffman_fast!(dst: base.io_writer, src: base.io_reader) 
 	// For reading, strictly speaking, we only need 6 bytes (48 bits) of
 	// available input, because the H-L Literal/Length code is up to 15 bits
 	// plus up to 5 extra bits, the H-D Distance code is up to 15 bits plus up
-	// to 13 extra bits and 15 + 5 + 15 + 13 == 48. However,
-	// args.src.length() assertions are made in terms of bytes, not bits.
-	//
-	// In theory, we could write assertions that mixed bytes and bits, such as:
-	//
-	// assert ((args.src.length() >= 6) and (n_bits >=  5)) or
-	//        ((args.src.length() >= 4) and (n_bits >= 21))
-	//
-	// but that looks clumsy and makes the proofs more complicated. Instead, we
-	// are conservative and work in terms of bytes only. In bytes, each code
-	// requires either one (direct) or two (redirect) lookups, up to 2 bytes
-	// for each. There are also up to 13 extra bits, or 2 bytes. Thus, each
-	// code requires up to 2 + 2 + 2 == 6 bytes, and there are two codes (one
-	// from H-L and one from H-D). Therefore, we check for at least 12 bytes.
-	while.loop(args.dst.length() >= 258) and (args.src.length() >= 12) {
-		// Ensure that we have at least 15 bits of input.
-		if n_bits < 15 {
-			assert n_bits >= 0  // TODO: this shouldn't be necessary.
-			bits |= args.src.peek_u8_as_u32() << n_bits
-			args.src.skip_u32_fast!(actual: 1, worst_case: 1)
-			n_bits += 8
-			bits |= args.src.peek_u8_as_u32() << n_bits
-			args.src.skip_u32_fast!(actual: 1, worst_case: 1)
-			n_bits += 8
-			assert n_bits >= 15
-		} else {
-			assert args.src.length() >= 10
-		}
-		// These assertions are redundant, but are listed explicitly for
-		// clarity. They must hold regardless of which branch was taken for the
-		// if statement above.
-		assert args.src.length() >= 10
-		assert n_bits >= 15
+	// to 13 extra bits and 15 + 5 + 15 + 13 == 48. However, it's faster to
+	// read 64 bits than 48 bits or (48 - n_bits) bits.
+	while.loop(args.dst.length() >= 258) and (args.src.length() >= 8) {
+		// Ensure that we have at least 56 bits of input.
+		//
+		// This is "Variant 4" of
+		// https://fgiesen.wordpress.com/2018/02/20/reading-bits-in-far-too-many-ways-part-2/
+		//
+		// 56, the number of bits in 7 bytes, is a property of that "Variant 4"
+		// bit-reading technique, and not related to the DEFLATE format per se.
+		//
+		// The "& 63" is a no-op, and not part of the original "Variant 4"
+		// technique, but satisfies Wuffs' overflow/underflow checks.
+		bits |= args.src.peek_u64le() ~mod<< (n_bits & 63)
+		args.src.skip_u32_fast!(actual: (63 - (n_bits & 63)) >> 3, worst_case: 8)
+		n_bits |= 56
 
 		// Decode an lcode symbol from H-L.
 		table_entry = this.huffs[0][bits & lmask]
 		table_entry_n_bits = table_entry & 0x0F
 		bits >>= table_entry_n_bits
-		n_bits -= table_entry_n_bits
+		n_bits ~mod-= table_entry_n_bits
 
 		if (table_entry >> 31) <> 0 {
 			// Literal.
@@ -102,37 +84,19 @@ pri func decoder.decode_huffman_fast!(dst: base.io_writer, src: base.io_reader) 
 			continue.loop
 		} else if (table_entry >> 30) <> 0 {
 			// No-op; code continues past the if-else chain.
-			assert args.src.length() >= 8
 		} else if (table_entry >> 29) <> 0 {
 			// End of block.
 			this.end_of_block = true
 			break.loop
 		} else if (table_entry >> 28) <> 0 {
 			// Redirect.
-
-			// Ensure that we have at least 15 bits of input.
-			if n_bits < 15 {
-				assert n_bits >= 0  // TODO: this shouldn't be necessary.
-				bits |= args.src.peek_u8_as_u32() << n_bits
-				args.src.skip_u32_fast!(actual: 1, worst_case: 1)
-				n_bits += 8
-				bits |= args.src.peek_u8_as_u32() << n_bits
-				args.src.skip_u32_fast!(actual: 1, worst_case: 1)
-				n_bits += 8
-				assert n_bits >= 15
-			} else {
-				assert args.src.length() >= 8
-			}
-			// Once again, redundant but explicit assertions.
-			assert args.src.length() >= 8
-			assert n_bits >= 15
-
 			redir_top = (table_entry >> 8) & 0xFFFF
 			redir_mask = ((1 as base.u32) << ((table_entry >> 4) & 0x0F)) - 1
-			table_entry = this.huffs[0][(redir_top + (bits & redir_mask)) & HUFFS_TABLE_MASK]
+			table_entry = this.huffs[0][
+				(redir_top + (((bits & 0xFFFF_FFFF) as base.u32) & redir_mask)) & HUFFS_TABLE_MASK]
 			table_entry_n_bits = table_entry & 0x0F
 			bits >>= table_entry_n_bits
-			n_bits -= table_entry_n_bits
+			n_bits ~mod-= table_entry_n_bits
 
 			if (table_entry >> 31) <> 0 {
 				// Literal.
@@ -152,9 +116,6 @@ pri func decoder.decode_huffman_fast!(dst: base.io_writer, src: base.io_reader) 
 				return "#internal error: inconsistent Huffman decoder state"
 			}
 
-			// Once again, redundant but explicit assertions.
-			assert args.src.length() >= 8
-
 		} else if (table_entry >> 27) <> 0 {
 			return "#bad Huffman code"
 		} else {
@@ -168,83 +129,28 @@ pri func decoder.decode_huffman_fast!(dst: base.io_writer, src: base.io_reader) 
 		length = ((table_entry >> 8) & 0xFF) + 3
 		table_entry_n_bits = (table_entry >> 4) & 0x0F
 		if table_entry_n_bits > 0 {
-			// Ensure that we have at least 15 bits of input.
-			if n_bits < 15 {
-				assert n_bits >= 0  // TODO: this shouldn't be necessary.
-				bits |= args.src.peek_u8_as_u32() << n_bits
-				args.src.skip_u32_fast!(actual: 1, worst_case: 1)
-				n_bits += 8
-				bits |= args.src.peek_u8_as_u32() << n_bits
-				args.src.skip_u32_fast!(actual: 1, worst_case: 1)
-				n_bits += 8
-				assert n_bits >= 15
-			} else {
-				assert args.src.length() >= 6
-			}
-			// Once again, redundant but explicit assertions.
-			assert args.src.length() >= 6
-			assert n_bits >= 15
-
 			// The "+ 253" is the same as "- 3", after the "& 0xFF", but the
 			// plus form won't require an underflow check.
-			length = ((length + 253 + bits.low_bits(n: table_entry_n_bits)) & 0xFF) + 3
+			length = ((length + 253 + (bits.low_bits(n: table_entry_n_bits) as base.u32)) & 0xFF) + 3
 			bits >>= table_entry_n_bits
-			n_bits -= table_entry_n_bits
-
-		} else {
-			assert args.src.length() >= 6
+			n_bits ~mod-= table_entry_n_bits
 		}
-
-		// Ensure that we have at least 15 bits of input.
-		if n_bits < 15 {
-			assert n_bits >= 0  // TODO: this shouldn't be necessary.
-			bits |= args.src.peek_u8_as_u32() << n_bits
-			args.src.skip_u32_fast!(actual: 1, worst_case: 1)
-			n_bits += 8
-			bits |= args.src.peek_u8_as_u32() << n_bits
-			args.src.skip_u32_fast!(actual: 1, worst_case: 1)
-			n_bits += 8
-			assert n_bits >= 15
-		} else {
-			assert args.src.length() >= 4
-		}
-		// Once again, redundant but explicit assertions.
-		assert args.src.length() >= 4
-		assert n_bits >= 15
 
 		// Decode a dcode symbol from H-D.
 		table_entry = this.huffs[1][bits & dmask]
 		table_entry_n_bits = table_entry & 15
 		bits >>= table_entry_n_bits
-		n_bits -= table_entry_n_bits
+		n_bits ~mod-= table_entry_n_bits
 
 		// Check for a redirect.
 		if (table_entry >> 28) == 1 {
-			// Ensure that we have at least 15 bits of input.
-			if n_bits < 15 {
-				assert n_bits >= 0  // TODO: this shouldn't be necessary.
-				bits |= args.src.peek_u8_as_u32() << n_bits
-				args.src.skip_u32_fast!(actual: 1, worst_case: 1)
-				n_bits += 8
-				bits |= args.src.peek_u8_as_u32() << n_bits
-				args.src.skip_u32_fast!(actual: 1, worst_case: 1)
-				n_bits += 8
-				assert n_bits >= 15
-			} else {
-				assert args.src.length() >= 2
-			}
-			// Once again, redundant but explicit assertions.
-			assert args.src.length() >= 2
-			assert n_bits >= 15
-
 			redir_top = (table_entry >> 8) & 0xFFFF
 			redir_mask = ((1 as base.u32) << ((table_entry >> 4) & 0x0F)) - 1
-			table_entry = this.huffs[1][(redir_top + (bits & redir_mask)) & HUFFS_TABLE_MASK]
+			table_entry = this.huffs[1][
+				(redir_top + (((bits & 0xFFFF_FFFF) as base.u32) & redir_mask)) & HUFFS_TABLE_MASK]
 			table_entry_n_bits = table_entry & 0x0F
 			bits >>= table_entry_n_bits
-			n_bits -= table_entry_n_bits
-		} else {
-			assert args.src.length() >= 2
+			n_bits ~mod-= table_entry_n_bits
 		}
 
 		// For H-D, all symbols should be base_number + extra_bits.
@@ -263,25 +169,10 @@ pri func decoder.decode_huffman_fast!(dst: base.io_writer, src: base.io_reader) 
 		// undoing that bias makes proving (dist_minus_1 + 1) > 0 trivial.
 		dist_minus_1 = (table_entry >> 8) & 0x7FFF
 		table_entry_n_bits = (table_entry >> 4) & 0x0F
-		// Ensure that we have at least table_entry_n_bits bits of input.
-		if n_bits < table_entry_n_bits {
-			assert n_bits < 15 via "a < b: a < c; c <= b"(c: table_entry_n_bits)
-			assert n_bits >= 0  // TODO: this shouldn't be necessary.
-			bits |= args.src.peek_u8_as_u32() << n_bits
-			args.src.skip_u32_fast!(actual: 1, worst_case: 1)
-			n_bits += 8
-			bits |= args.src.peek_u8_as_u32() << n_bits
-			args.src.skip_u32_fast!(actual: 1, worst_case: 1)
-			n_bits += 8
-			assert table_entry_n_bits <= n_bits via "a <= b: a <= c; c <= b"(c: 16)
-			assert n_bits >= table_entry_n_bits via "a >= b: b <= a"()
-		}
-		// Once again, redundant but explicit assertions.
-		assert n_bits >= table_entry_n_bits
 
-		dist_minus_1 = (dist_minus_1 + bits.low_bits(n: table_entry_n_bits)) & 0x7FFF
+		dist_minus_1 = (dist_minus_1 + (bits.low_bits(n: table_entry_n_bits) as base.u32)) & 0x7FFF
 		bits >>= table_entry_n_bits
-		n_bits -= table_entry_n_bits
+		n_bits ~mod-= table_entry_n_bits
 
 		// The "while true { etc; break }" is a redundant version of "etc", but
 		// its presence minimizes the diff between decode_huffman_fast and
@@ -355,6 +246,9 @@ pri func decoder.decode_huffman_fast!(dst: base.io_writer, src: base.io_reader) 
 	// mean that the (possibly different) args.src is no longer rewindable,
 	// even if conceptually, this function was responsible for reading the
 	// bytes we want to rewind.
+	if n_bits > 63 {
+		return "#internal error: inconsistent n_bits"
+	}
 	while n_bits >= 8,
 		post n_bits < 8,
 	{
@@ -366,7 +260,7 @@ pri func decoder.decode_huffman_fast!(dst: base.io_writer, src: base.io_reader) 
 		}
 	} endwhile
 
-	this.bits = bits & (((1 as base.u32) << n_bits) - 1)
+	this.bits = (bits & (((1 as base.u64) << n_bits) - 1)) as base.u32
 	this.n_bits = n_bits
 
 	if (this.n_bits >= 8) or ((this.bits >> this.n_bits) <> 0) {
