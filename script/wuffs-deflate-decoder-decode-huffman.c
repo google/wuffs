@@ -97,9 +97,9 @@ index c570e34..0d080d8 100644
 #include <stdio.h>  // For manual printf debugging.
 #include <string.h>
 
-extern const char* wuffs_deflate__error__internal_error_inconsistent_distance;
-extern const char*
-    wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
+extern const char wuffs_deflate__error__internal_error_inconsistent_distance[];
+extern const char
+    wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state[];
 
 // ----------------
 
@@ -157,12 +157,12 @@ typedef struct wuffs_deflate__decoder__struct {
   } private_data;
 } wuffs_deflate__decoder;
 
-const char* wuffs_base__error__bad_argument = "?base: bad argument";
-const char* wuffs_deflate__error__bad_distance = "?deflate: bad distance";
-const char* wuffs_deflate__error__internal_error_inconsistent_distance =
+const char wuffs_base__error__bad_argument[] = "?base: bad argument";
+const char wuffs_deflate__error__bad_distance[] = "?deflate: bad distance";
+const char wuffs_deflate__error__internal_error_inconsistent_distance[] =
     "?deflate: internal error: inconsistent distance";
-const char*
-    wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state =
+const char
+    wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state[] =
         "?deflate: internal error: inconsistent Huffman decoder state";
 
 static wuffs_base__status  //
