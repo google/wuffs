@@ -250,10 +250,16 @@ func appendComment(buf []byte, comments []string, line uint32, indent int, other
 
 func appendNum(buf []byte, s string) []byte {
 	groupLen := uint32(6)
-	if (len(s) >= 2) && (s[0] == '0') && ((s[1] == 'X') || (s[1] == 'x')) {
-		buf = append(buf, "0x"...)
-		s = s[2:]
-		groupLen = 4
+	if (len(s) >= 2) && (s[0] == '0') {
+		if (s[1] == 'X') || (s[1] == 'x') {
+			buf = append(buf, "0x"...)
+			s = s[2:]
+			groupLen = 4
+		} else if (s[1] == 'B') || (s[1] == 'b') {
+			buf = append(buf, "0b"...)
+			s = s[2:]
+			groupLen = 4
+		}
 	}
 
 	nonUnderscores := uint32(0)

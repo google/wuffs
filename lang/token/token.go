@@ -210,6 +210,10 @@ func hexaNumericUnderscore(c byte) bool {
 	return ('A' <= c && c <= 'F') || ('a' <= c && c <= 'f') || (c == '_') || ('0' <= c && c <= '9')
 }
 
+func zeroOneUnderscore(c byte) bool {
+	return (c == '_') || ('0' <= c && c <= '1')
+}
+
 func numeric(c byte) bool {
 	return ('0' <= c && c <= '9')
 }
@@ -336,6 +340,8 @@ loop:
 			if c == '0' && j < len(src) {
 				if next := src[j]; next == 'x' || next == 'X' {
 					j, isDigit = j+1, hexaNumericUnderscore
+				} else if next == 'b' || next == 'B' {
+					j, isDigit = j+1, zeroOneUnderscore
 				} else if numeric(next) {
 					return nil, nil, fmt.Errorf("token: legacy octal syntax at %s:%d", filename, line)
 				}

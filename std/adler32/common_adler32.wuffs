@@ -198,8 +198,8 @@ pri func hasher.up_sse42!(x: slice base.u8),
 		//  - shuffling with 0b0100_1110 gives [x2+x3, x2+x3, x0+x1, x0+x1].
 		//  - adding gives [x0+x1+x2+x3, ditto, ditto, ditto].
 		// The truncate_u32 call extracts the first u32: x0+x1+x2+x3.
-		v1 = v1._mm_add_epi32(b: v1._mm_shuffle_epi32(imm8: 0xB1))  // 0b1011_0001
-		v1 = v1._mm_add_epi32(b: v1._mm_shuffle_epi32(imm8: 0x4E))  // 0b0100_1110
+		v1 = v1._mm_add_epi32(b: v1._mm_shuffle_epi32(imm8: 0b1011_0001))
+		v1 = v1._mm_add_epi32(b: v1._mm_shuffle_epi32(imm8: 0b0100_1110))
 		s1 ~mod+= v1.truncate_u32()
 
 		// Combine v2j and v2k. The slli (shift logical left immediate) by 5
@@ -207,8 +207,8 @@ pri func hasher.up_sse42!(x: slice base.u8),
 		v2 = v2k._mm_add_epi32(b: v2j._mm_slli_epi32(imm8: 5))
 
 		// Similarly merge v2 (a 4×u32 vector) into s2 (a scalar u32 scalar).
-		v2 = v2._mm_add_epi32(b: v2._mm_shuffle_epi32(imm8: 0xB1))  // 0b1011_0001
-		v2 = v2._mm_add_epi32(b: v2._mm_shuffle_epi32(imm8: 0x4E))  // 0b0100_1110
+		v2 = v2._mm_add_epi32(b: v2._mm_shuffle_epi32(imm8: 0b1011_0001))
+		v2 = v2._mm_add_epi32(b: v2._mm_shuffle_epi32(imm8: 0b0100_1110))
 		s2 ~mod+= v2.truncate_u32()
 
 		// Handle the tail of args.x that wasn't a complete 32-byte chunk.
