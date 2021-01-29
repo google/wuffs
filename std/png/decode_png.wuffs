@@ -91,6 +91,10 @@ pub struct decoder? implements base.image_decoder(
 
 	dst_palette : array[4 * 256] base.u8,
 	src_palette : array[4 * 256] base.u8,
+
+	// scratch is used for low bit depths, expanding less-than-1 byte per pixel
+	// to 1 byte per pixel before passing to this.swizzler.
+	scratch : array[1024] base.u8,
 )
 
 pub func decoder.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
@@ -240,44 +244,10 @@ pri func decoder.decode_ihdr?(src: base.io_reader) {
 
 	// Color.
 	this.color_type = args.src.read_u8?()
-	if this.color_type == 0 {
-		this.dst_pixfmt = base.PIXEL_FORMAT__Y
-		this.src_pixfmt = base.PIXEL_FORMAT__Y
-		if this.depth == 8 {
-			this.filter_distance = 1
-			this.bytes_per_row = (this.width as base.u64) * 1
-		} else {
-			return "#unsupported PNG file"
-		}
-	} else if this.color_type == 2 {
-		this.dst_pixfmt = base.PIXEL_FORMAT__BGR
-		this.src_pixfmt = base.PIXEL_FORMAT__RGB
-		if this.depth == 8 {
-			this.filter_distance = 3
-			this.bytes_per_row = (this.width as base.u64) * 3
-		} else {
-			return "#unsupported PNG file"
-		}
-	} else if this.color_type == 3 {
-		// TODO: s/BINARY/NONPREMUL/ and decode the tRNS chunk.
-		this.dst_pixfmt = base.PIXEL_FORMAT__INDEXED__BGRA_BINARY
-		this.src_pixfmt = base.PIXEL_FORMAT__INDEXED__BGRA_BINARY
-		if this.depth == 8 {
-			this.filter_distance = 1
-			this.bytes_per_row = (this.width as base.u64) * 1
-		} else {
-			return "#unsupported PNG file"
-		}
-	} else if this.color_type == 6 {
-		this.dst_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL
-		this.src_pixfmt = base.PIXEL_FORMAT__RGBA_NONPREMUL
-		if this.depth == 8 {
-			this.filter_distance = 4
-			this.bytes_per_row = (this.width as base.u64) * 4
-		} else {
-			return "#unsupported PNG file"
-		}
-	} else {
+	// TODO: uncomment.
+	// this.bytes_per_row = 0
+	this.calculate_bytes_per_row!()
+	if this.bytes_per_row == 0 {
 		return "#unsupported PNG file"
 	}
 	this.workbuf_length = (this.height as base.u64) * (1 + this.bytes_per_row)
@@ -303,6 +273,64 @@ pri func decoder.decode_ihdr?(src: base.io_reader) {
 		return "#unsupported PNG file"
 	} else {
 		return "#bad header"
+	}
+}
+
+pri func decoder.calculate_bytes_per_row!() {
+	if this.depth < 8 {
+		if this.color_type == 0 {
+			this.dst_pixfmt = base.PIXEL_FORMAT__Y
+			this.src_pixfmt = base.PIXEL_FORMAT__Y
+		} else if this.color_type == 3 {
+			// TODO: s/BINARY/NONPREMUL/ and decode the tRNS chunk.
+			this.dst_pixfmt = base.PIXEL_FORMAT__INDEXED__BGRA_BINARY
+			this.src_pixfmt = base.PIXEL_FORMAT__INDEXED__BGRA_BINARY
+		} else {
+			return nothing
+		}
+
+		this.filter_distance = 1
+		if this.depth == 4 {
+			this.bytes_per_row = ((this.width + 1) / 2) as base.u64
+		} else if this.depth == 2 {
+			this.bytes_per_row = ((this.width + 3) / 4) as base.u64
+		} else if this.depth == 1 {
+			this.bytes_per_row = ((this.width + 7) / 8) as base.u64
+		}
+		choose filter_and_swizzle = [filter_and_swizzle_low_bit_depth]
+
+	} else if this.color_type == 0 {
+		this.dst_pixfmt = base.PIXEL_FORMAT__Y
+		this.src_pixfmt = base.PIXEL_FORMAT__Y
+		if this.depth == 8 {
+			this.filter_distance = 1
+			this.bytes_per_row = (this.width as base.u64) * 1
+		}
+
+	} else if this.color_type == 2 {
+		this.dst_pixfmt = base.PIXEL_FORMAT__BGR
+		this.src_pixfmt = base.PIXEL_FORMAT__RGB
+		if this.depth == 8 {
+			this.filter_distance = 3
+			this.bytes_per_row = (this.width as base.u64) * 3
+		}
+
+	} else if this.color_type == 3 {
+		// TODO: s/BINARY/NONPREMUL/ and decode the tRNS chunk.
+		this.dst_pixfmt = base.PIXEL_FORMAT__INDEXED__BGRA_BINARY
+		this.src_pixfmt = base.PIXEL_FORMAT__INDEXED__BGRA_BINARY
+		if this.depth == 8 {
+			this.filter_distance = 1
+			this.bytes_per_row = (this.width as base.u64) * 1
+		}
+
+	} else if this.color_type == 6 {
+		this.dst_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL
+		this.src_pixfmt = base.PIXEL_FORMAT__RGBA_NONPREMUL
+		if this.depth == 8 {
+			this.filter_distance = 4
+			this.bytes_per_row = (this.width as base.u64) * 4
+		}
 	}
 }
 
@@ -525,7 +553,9 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 	this.call_sequence = 0xFF
 }
 
-pri func decoder.filter_and_swizzle!(dst: ptr base.pixel_buffer, workbuf: slice base.u8) base.status {
+pri func decoder.filter_and_swizzle!(dst: ptr base.pixel_buffer, workbuf: slice base.u8) base.status,
+	choosy,
+{
 	var dst_pixfmt          : base.pixel_format
 	var dst_bits_per_pixel  : base.u32[..= 256]
 	var dst_bytes_per_pixel : base.u64[..= 32]
@@ -583,6 +613,9 @@ pri func decoder.filter_and_swizzle!(dst: ptr base.pixel_buffer, workbuf: slice 
 			return "#bad filter"
 		}
 
+		// filter_and_swizzle_low_bit_depth copy-pastes this filter_and_swizzle
+		// function and adds code here to expand to 8 bits per pixel.
+
 		this.swizzler.swizzle_interleaved_from_slice!(
 			dst: dst,
 			dst_palette: dst_palette,
@@ -593,6 +626,179 @@ pri func decoder.filter_and_swizzle!(dst: ptr base.pixel_buffer, workbuf: slice 
 	} endwhile
 
 	return ok
+}
+
+pri func decoder.filter_and_swizzle_low_bit_depth!(dst: ptr base.pixel_buffer, workbuf: slice base.u8) base.status {
+	// This function is largely copy-pasted from filter_and_swizzle.
+	// Differences are marked with a §.
+
+	var dst_pixfmt          : base.pixel_format
+	var dst_bits_per_pixel  : base.u32[..= 256]
+	var dst_bytes_per_pixel : base.u64[..= 32]
+	var dst_bytes_per_row   : base.u64
+	var dst_palette         : slice base.u8
+	var tab                 : table base.u8
+
+	var y        : base.u32
+	var dst      : slice base.u8
+	var filter   : base.u8
+	var curr_row : slice base.u8
+	var prev_row : slice base.u8
+
+	// TODO: the dst_pixfmt variable shouldn't be necessary. We should be able
+	// to chain the two calls: "args.dst.pixel_format().bits_per_pixel()".
+	dst_pixfmt = args.dst.pixel_format()
+	dst_bits_per_pixel = dst_pixfmt.bits_per_pixel()
+	if (dst_bits_per_pixel & 7) <> 0 {
+		return base."#unsupported option"
+	}
+	dst_bytes_per_pixel = (dst_bits_per_pixel / 8) as base.u64
+	dst_bytes_per_row = (this.width as base.u64) * dst_bytes_per_pixel
+	dst_palette = args.dst.palette_or_else(fallback: this.dst_palette[..])
+	tab = args.dst.plane(p: 0)
+
+	while y < this.height {
+		assert y < 0xFFFF_FFFF via "a < b: a < c; c <= b"(c: this.height)
+		dst = tab.row(y: y)
+		if dst_bytes_per_row < dst.length() {
+			dst = dst[.. dst_bytes_per_row]
+		}
+
+		if 1 > args.workbuf.length() {
+			return "#internal error: inconsistent workbuf length"
+		}
+		filter = args.workbuf[0]
+		args.workbuf = args.workbuf[1 ..]
+		if this.bytes_per_row > args.workbuf.length() {
+			return "#internal error: inconsistent workbuf length"
+		}
+		curr_row = args.workbuf[.. this.bytes_per_row]
+		args.workbuf = args.workbuf[this.bytes_per_row ..]
+
+		if filter == 0 {
+			// No-op.
+		} else if filter == 1 {
+			this.filter_1!(curr: curr_row)
+		} else if filter == 2 {
+			this.filter_2!(curr: curr_row, prev: prev_row)
+		} else if filter == 3 {
+			this.filter_3!(curr: curr_row, prev: prev_row)
+		} else if filter == 4 {
+			this.filter_4!(curr: curr_row, prev: prev_row)
+		} else {
+			return "#bad filter"
+		}
+
+		this.swizzle_low_bit_depth!(  // §
+			dst: dst,
+			dst_palette: dst_palette,
+			dst_bytes_per_pixel: dst_bytes_per_pixel,
+			curr_row: curr_row)
+
+		prev_row = curr_row
+		y += 1
+	} endwhile
+
+	return ok
+}
+
+pri func decoder.swizzle_low_bit_depth!(dst: slice base.u8, dst_palette: slice base.u8, dst_bytes_per_pixel: base.u64[..= 32], curr_row: slice base.u8) {
+	var multiplier : base.u8
+	var c          : base.u8
+	var i          : base.u64
+	var n          : base.u64
+	var fragment   : slice base.u8
+	var remaining  : slice base.u8
+
+	multiplier = 1
+	if this.color_type == 0 {  // Color type 0 means base.PIXEL_FORMAT__Y.
+		multiplier = LOW_BIT_DEPTH_MULTIPLIER[this.depth & 7]
+	}
+
+	remaining = args.curr_row
+	while args.dst.length() > 0 {
+		fragment = remaining
+		remaining = this.util.empty_slice_u8()
+
+		if this.depth == 1 {
+			if fragment.length() > 128 {
+				remaining = fragment[128 ..]
+				fragment = fragment[.. 128]
+				if fragment.length() > 128 {  // TODO: unnecessary.
+					return nothing
+				}
+			}
+			i = 0
+			while i < fragment.length(),
+				inv fragment.length() <= 128,
+			{
+				assert i < 128 via "a < b: a < c; c <= b"(c: fragment.length())
+				c = fragment[i]
+				this.scratch[(i * 8) + 0] = (0b0001 & (c >> 7)) ~mod* multiplier
+				this.scratch[(i * 8) + 1] = (0b0001 & (c >> 6)) ~mod* multiplier
+				this.scratch[(i * 8) + 2] = (0b0001 & (c >> 5)) ~mod* multiplier
+				this.scratch[(i * 8) + 3] = (0b0001 & (c >> 4)) ~mod* multiplier
+				this.scratch[(i * 8) + 4] = (0b0001 & (c >> 3)) ~mod* multiplier
+				this.scratch[(i * 8) + 5] = (0b0001 & (c >> 2)) ~mod* multiplier
+				this.scratch[(i * 8) + 6] = (0b0001 & (c >> 1)) ~mod* multiplier
+				this.scratch[(i * 8) + 7] = (0b0001 & (c >> 0)) ~mod* multiplier
+				i += 1
+			} endwhile
+
+		} else if this.depth == 2 {
+			if fragment.length() > 256 {
+				remaining = fragment[256 ..]
+				fragment = fragment[.. 256]
+				if fragment.length() > 256 {  // TODO: unnecessary.
+					return nothing
+				}
+			}
+			i = 0
+			while i < fragment.length(),
+				inv fragment.length() <= 256,
+			{
+				assert i < 256 via "a < b: a < c; c <= b"(c: fragment.length())
+				c = fragment[i]
+				this.scratch[(i * 4) + 0] = (0b0011 & (c >> 6)) ~mod* multiplier
+				this.scratch[(i * 4) + 1] = (0b0011 & (c >> 4)) ~mod* multiplier
+				this.scratch[(i * 4) + 2] = (0b0011 & (c >> 2)) ~mod* multiplier
+				this.scratch[(i * 4) + 3] = (0b0011 & (c >> 0)) ~mod* multiplier
+				i += 1
+			} endwhile
+
+		} else {
+			if fragment.length() > 512 {
+				remaining = fragment[512 ..]
+				fragment = fragment[.. 512]
+				if fragment.length() > 512 {  // TODO: unnecessary.
+					return nothing
+				}
+			}
+			i = 0
+			while i < fragment.length(),
+				inv fragment.length() <= 512,
+			{
+				assert i < 512 via "a < b: a < c; c <= b"(c: fragment.length())
+				c = fragment[i]
+				this.scratch[(i * 2) + 0] = (0b1111 & (c >> 4)) ~mod* multiplier
+				this.scratch[(i * 2) + 1] = (0b1111 & (c >> 0)) ~mod* multiplier
+				i += 1
+			} endwhile
+		}
+
+		this.swizzler.swizzle_interleaved_from_slice!(
+			dst: args.dst,
+			dst_palette: args.dst_palette,
+			src: this.scratch[..])
+
+		// TODO: replace 1024 with this.scratch.length().
+		n = 1024 * args.dst_bytes_per_pixel
+		if n < args.dst.length() {
+			args.dst = args.dst[n ..]
+		} else {
+			args.dst = this.util.empty_slice_u8()
+		}
+	} endwhile
 }
 
 pub func decoder.frame_dirty_rect() base.rect_ie_u32 {
@@ -646,3 +852,14 @@ pub func decoder.workbuf_len() base.range_ii_u64 {
 		min_incl: this.workbuf_length,
 		max_incl: this.workbuf_length)
 }
+
+pri const LOW_BIT_DEPTH_MULTIPLIER : array[8] base.u8 = [
+	0,
+	0b1111_1111,  // depth == 1
+	0b0101_0101,  // depth == 2
+	0,
+	0b0001_0001,  // depth == 4
+	0,
+	0,
+	0,
+]
