@@ -285,7 +285,7 @@ func (g *gen) writeExprUnaryOp(b *buffer, n *a.Expr, depth uint32) error {
 }
 
 func (g *gen) writeExprBinaryOp(b *buffer, n *a.Expr, depth uint32) error {
-	opName, lhsCast := "", false
+	opName, lhsCast, tildeMod := "", false, false
 
 	op := n.Operator()
 	switch op {
@@ -304,13 +304,20 @@ func (g *gen) writeExprBinaryOp(b *buffer, n *a.Expr, depth uint32) error {
 	case t.IDXBinaryAs:
 		return g.writeExprAs(b, n.LHS().AsExpr(), n.RHS().AsTypeExpr(), depth)
 
-	case t.IDXBinaryShiftL, t.IDXBinaryShiftR, t.IDXBinaryTildeModShiftL:
+	case t.IDXBinaryTildeModPlus, t.IDXBinaryTildeModMinus, t.IDXBinaryTildeModStar:
+		tildeMod = true
+
+	case t.IDXBinaryTildeModShiftL:
+		tildeMod = true
+		fallthrough
+
+	case t.IDXBinaryShiftL, t.IDXBinaryShiftR:
 		if lhs := n.LHS().AsExpr(); lhs.ConstValue() != nil {
 			lhsCast = true
 		}
-		fallthrough
+	}
 
-	default:
+	if opName == "" {
 		opName = cOpName(op)
 		if opName == "" {
 			return fmt.Errorf("unrecognized operator %q", op.AmbiguousForm().Str(g.tm))
@@ -318,6 +325,13 @@ func (g *gen) writeExprBinaryOp(b *buffer, n *a.Expr, depth uint32) error {
 	}
 
 	b.writeb('(')
+	if tildeMod {
+		b.writeb('(')
+		if err := g.writeCTypeName(b, n.MType(), "", ""); err != nil {
+			return err
+		}
+		b.writes(")(")
+	}
 
 	if lhsCast {
 		b.writes("((")
@@ -339,6 +353,9 @@ func (g *gen) writeExprBinaryOp(b *buffer, n *a.Expr, depth uint32) error {
 		return err
 	}
 
+	if tildeMod {
+		b.writeb(')')
+	}
 	b.writeb(')')
 	return nil
 }
