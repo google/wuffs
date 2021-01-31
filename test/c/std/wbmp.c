@@ -84,6 +84,21 @@ fill_palette_with_grays(wuffs_base__pixel_buffer* pb) {
   }
 }
 
+void  //
+fill_palette_with_nrgba_transparent_yellows(wuffs_base__pixel_buffer* pb) {
+  wuffs_base__slice_u8 palette = wuffs_base__pixel_buffer__palette(pb);
+  if (palette.len != 1024) {
+    return;
+  }
+  int i;
+  for (i = 0; i < 256; i++) {
+    palette.ptr[(4 * i) + 0] = 0x00;
+    palette.ptr[(4 * i) + 1] = 0x99;
+    palette.ptr[(4 * i) + 2] = 0xCC;
+    palette.ptr[(4 * i) + 3] = i;
+  }
+}
+
 bool  //
 colors_differ(wuffs_base__color_u32_argb_premul color0,
               wuffs_base__color_u32_argb_premul color1,
@@ -117,6 +132,10 @@ test_wuffs_pixel_swizzler_swizzle() {
       {
           .pixel = 0xFF444444,
           .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__Y,
+      },
+      {
+          .pixel = 0x55443300,
+          .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL,
       },
       {
           .pixel = 0xFF444444,
@@ -186,7 +205,12 @@ test_wuffs_pixel_swizzler_swizzle() {
     CHECK_STATUS("set_from_slice",
                  wuffs_base__pixel_buffer__set_from_slice(
                      &src_pixbuf, &src_pixcfg, g_src_slice_u8));
-    fill_palette_with_grays(&src_pixbuf);
+    if (srcs[s].pixfmt_repr ==
+        WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL) {
+      fill_palette_with_nrgba_transparent_yellows(&src_pixbuf);
+    } else {
+      fill_palette_with_grays(&src_pixbuf);
+    }
 
     // Set and check the middle src pixel.
     CHECK_STATUS("set_color_u32_at",
@@ -211,7 +235,6 @@ test_wuffs_pixel_swizzler_swizzle() {
       CHECK_STATUS("set_from_slice",
                    wuffs_base__pixel_buffer__set_from_slice(
                        &dst_pixbuf, &dst_pixcfg, g_have_slice_u8));
-      fill_palette_with_grays(&dst_pixbuf);
       wuffs_base__pixel_format dst_pixfmt =
           wuffs_base__make_pixel_format(dsts[d].pixfmt_repr);
       wuffs_base__pixel_alpha_transparency dst_transparency =
