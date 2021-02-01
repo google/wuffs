@@ -827,9 +827,8 @@ pri func decoder.swizzle_low_bit_depth!(dst: slice base.u8, dst_palette: slice b
 		this.swizzler.swizzle_interleaved_from_slice!(
 			dst: args.dst,
 			dst_palette: args.dst_palette,
-			src: this.scratch[..])
+			src: this.scratch[.. 1024])
 
-		// TODO: replace 1024 with this.scratch.length().
 		n = 1024 * args.dst_bytes_per_pixel
 		if n < args.dst.length() {
 			args.dst = args.dst[n ..]
