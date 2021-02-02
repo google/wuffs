@@ -15269,7 +15269,7 @@ wuffs_base__pixel_swizzler__bgr_565__index_bgra_nonpremul__src_over(
   // TODO: unroll.
 
   while (n >= 1) {
-    uint32_t d0 = (
+    uint32_t d0 = wuffs_base__color_u16_rgb_565__as__color_u32_argb_premul(
         wuffs_base__peek_u16le__no_bounds_check(d + (0 * 2)));
     uint32_t s0 = wuffs_base__peek_u32le__no_bounds_check(dst_palette_ptr +
                                                           ((size_t)s[0] * 4));
