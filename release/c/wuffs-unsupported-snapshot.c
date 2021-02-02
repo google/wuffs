@@ -32404,6 +32404,7 @@ wuffs_png__decoder__decode_ihdr(
       uint8_t t_3 = *iop_a_src++;
       self->private_impl.f_color_type = t_3;
     }
+    self->private_impl.f_bytes_per_row = 0;
     wuffs_png__decoder__calculate_bytes_per_row(self);
     if (self->private_impl.f_bytes_per_row == 0) {
       status = wuffs_base__make_status(wuffs_png__error__unsupported_png_file);

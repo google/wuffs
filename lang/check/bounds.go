@@ -434,6 +434,14 @@ func (q *checker) bcheckAssert(n *a.Assert) error {
 }
 
 func (q *checker) bcheckAssignment(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
+	oldFacts := (map[*a.Expr]struct{})(nil)
+	if (rhs.Operator() == t.IDOpenParen) && rhs.Effect().Impure() {
+		oldFacts = map[*a.Expr]struct{}{}
+		for _, x := range q.facts {
+			oldFacts[x] = struct{}{}
+		}
+	}
+
 	lTyp := (*a.TypeExpr)(nil)
 	if lhs != nil {
 		if _, err := q.bcheckExpr(lhs, 0); err != nil {
@@ -447,8 +455,39 @@ func (q *checker) bcheckAssignment(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 		return err
 	}
 
-	if rhs.Effect().Coroutine() && (op != t.IDEqQuestion) {
-		if err := q.facts.update(updateFactsForSuspension); err != nil {
+	if (rhs.Operator() == t.IDOpenParen) && rhs.Effect().Impure() {
+		if rhs.Effect().Coroutine() && (op != t.IDEqQuestion) {
+			if err := q.facts.update(updateFactsForSuspension); err != nil {
+				return err
+			}
+		}
+
+		recv := rhs.LHS().AsExpr().LHS().AsExpr()
+		if err := q.facts.update(func(x *a.Expr) (*a.Expr, error) {
+			if _, ok := oldFacts[x]; !ok {
+				// No-op. Don't drop any newly minted facts.
+			} else {
+				// Drop any old facts involving the receiver.
+				if x.Mentions(recv) {
+					return nil, nil
+				}
+				// Drop any facts involving a pass-by-reference argument.
+				for _, arg := range rhs.Args() {
+					v := arg.AsArg().Value()
+					if typ := v.MType(); typ.IsBool() || typ.IsNullptr() ||
+						typ.IsNumTypeOrIdeal() || typ.IsStatus() {
+						continue
+					}
+					// TODO: take extra care if v is a slice? For example,
+					// facts involving "v.length()" aren't affected by passing
+					// v to an impure function.
+					if x.Mentions(v) {
+						return nil, nil
+					}
+				}
+			}
+			return x, nil
+		}); err != nil {
 			return err
 		}
 	}

@@ -247,8 +247,7 @@ pri func decoder.decode_ihdr?(src: base.io_reader) {
 
 	// Color.
 	this.color_type = args.src.read_u8?()
-	// TODO: uncomment.
-	// this.bytes_per_row = 0
+	this.bytes_per_row = 0
 	this.calculate_bytes_per_row!()
 	if this.bytes_per_row == 0 {
 		return "#unsupported PNG file"
