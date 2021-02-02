@@ -23030,10 +23030,11 @@ wuffs_deflate__decoder__decode_huffman_fast(
         if (v_length == 0) {
           goto label__loop__continue;
         }
-        if (((uint64_t)((v_dist_minus_1 + 1))) > ((uint64_t)(iop_a_dst - io0_a_dst))) {
+        if ((((uint64_t)((v_dist_minus_1 + 1))) > ((uint64_t)(iop_a_dst - io0_a_dst))) || (((uint64_t)(v_length)) > ((uint64_t)(io2_a_dst - iop_a_dst)))) {
           status = wuffs_base__make_status(wuffs_deflate__error__internal_error_inconsistent_distance);
           goto exit;
         }
+      } else {
       }
       wuffs_base__io_writer__limited_copy_u32_from_history_fast(
           &iop_a_dst, io0_a_dst, io2_a_dst, v_length, (v_dist_minus_1 + 1));

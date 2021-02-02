@@ -1210,17 +1210,17 @@ func (q *checker) canUndoByte(recv *a.Expr) error {
 
 func (q *checker) canLimitedCopyU32FromHistoryFast(recv *a.Expr, args []*a.Node) error {
 	// As per cgen's io-private.h, there are three pre-conditions:
-	//  - n <= this.length()
+	//  - upTo <= this.length()
 	//  - distance > 0
 	//  - distance <= this.history_length()
 
 	if len(args) != 2 {
-		return fmt.Errorf("check: internal error: inconsistent copy_n_from_history_fast arguments")
+		return fmt.Errorf("check: internal error: inconsistent limited_copy_u32_from_history_fast arguments")
 	}
-	n := args[0].AsArg().Value()
+	upTo := args[0].AsArg().Value()
 	distance := args[1].AsArg().Value()
 
-	// Check "n <= this.length()".
+	// Check "upTo <= this.length()".
 check0:
 	for {
 		for _, x := range q.facts {
@@ -1228,13 +1228,13 @@ check0:
 				continue
 			}
 
-			// Check that the LHS is "n as base.u64".
+			// Check that the LHS is "upTo as base.u64".
 			lhs := x.LHS().AsExpr()
 			if lhs.Operator() != t.IDXBinaryAs {
 				continue
 			}
 			llhs, lrhs := lhs.LHS().AsExpr(), lhs.RHS().AsTypeExpr()
-			if !llhs.Eq(n) || !lrhs.Eq(typeExprU64) {
+			if !llhs.Eq(upTo) || !lrhs.Eq(typeExprU64) {
 				continue
 			}
 
@@ -1249,7 +1249,7 @@ check0:
 
 			break check0
 		}
-		return fmt.Errorf("check: could not prove n <= %s.length()", recv.Str(q.tm))
+		return fmt.Errorf("check: could not prove (up_to as base.u64) <= %s.length()", recv.Str(q.tm))
 	}
 
 	// Check "distance > 0".

@@ -216,18 +216,20 @@ pri func decoder.decode_huffman_fast!(dst: base.io_writer, src: base.io_reader) 
 					continue.loop
 				}
 
-				if ((dist_minus_1 + 1) as base.u64) > args.dst.history_length() {
+				if (((dist_minus_1 + 1) as base.u64) > args.dst.history_length()) or
+					((length as base.u64) > args.dst.length()) {
 					return "#internal error: inconsistent distance"
 				}
+			} else {
+				assert (length as base.u64) <= 258
+				assert args.dst.length() >= 258
+				// We can therefore prove:
+				assert (length as base.u64) <= args.dst.length() via "a <= b: a <= c; c <= b"(c: 258)
 			}
 			// Once again, redundant but explicit assertions.
-			assert ((dist_minus_1 + 1) as base.u64) <= args.dst.history_length()
-			assert args.dst.length() >= 258
-
-			// We can therefore prove:
 			assert (dist_minus_1 + 1) > 0
-			assert (length as base.u64) <= 258
-			assert (length as base.u64) <= args.dst.length() via "a <= b: a <= c; c <= b"(c: 258)
+			assert ((dist_minus_1 + 1) as base.u64) <= args.dst.history_length()
+			assert (length as base.u64) <= args.dst.length()
 
 			// Copy from args.dst.
 			args.dst.limited_copy_u32_from_history_fast!(
