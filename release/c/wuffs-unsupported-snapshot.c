@@ -33481,9 +33481,6 @@ wuffs_png__decoder__swizzle_low_bit_depth(
       if (((uint64_t)(v_fragment.len)) > 128) {
         v_remaining = wuffs_base__slice_u8__subslice_i(v_fragment, 128);
         v_fragment = wuffs_base__slice_u8__subslice_j(v_fragment, 128);
-        if (((uint64_t)(v_fragment.len)) > 128) {
-          return wuffs_base__make_empty_struct();
-        }
       }
       v_i = 0;
       while (v_i < ((uint64_t)(v_fragment.len))) {
@@ -33502,9 +33499,6 @@ wuffs_png__decoder__swizzle_low_bit_depth(
       if (((uint64_t)(v_fragment.len)) > 256) {
         v_remaining = wuffs_base__slice_u8__subslice_i(v_fragment, 256);
         v_fragment = wuffs_base__slice_u8__subslice_j(v_fragment, 256);
-        if (((uint64_t)(v_fragment.len)) > 256) {
-          return wuffs_base__make_empty_struct();
-        }
       }
       v_i = 0;
       while (v_i < ((uint64_t)(v_fragment.len))) {
@@ -33519,9 +33513,6 @@ wuffs_png__decoder__swizzle_low_bit_depth(
       if (((uint64_t)(v_fragment.len)) > 512) {
         v_remaining = wuffs_base__slice_u8__subslice_i(v_fragment, 512);
         v_fragment = wuffs_base__slice_u8__subslice_j(v_fragment, 512);
-        if (((uint64_t)(v_fragment.len)) > 512) {
-          return wuffs_base__make_empty_struct();
-        }
       }
       v_i = 0;
       while (v_i < ((uint64_t)(v_fragment.len))) {

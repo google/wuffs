@@ -290,8 +290,9 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 			q.facts = q.facts[:0]
 			for _, o := range assigns {
 				lhs := o.AsAssign().LHS()
-				q.facts = append(q.facts,
-					q.makeSliceLengthEqEq(lhs.Ident(), lhs.MType(), n.Length()))
+				lhsExpr := a.NewExpr(0, 0, lhs.Ident(), nil, nil, nil, nil)
+				lhsExpr.SetMType(lhs.MType())
+				q.facts = append(q.facts, q.makeSliceLengthEqEq(lhsExpr, n.Length()))
 			}
 			if err := q.bcheckBlock(n.Body()); err != nil {
 				return err
@@ -519,6 +520,31 @@ func (q *checker) bcheckAssignment(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 						}
 					}
 				}
+			}
+		}
+
+		// Look for "lhs = x[i .. j]" where i and j are constants.
+		if rhs.Operator() == t.IDDotDot {
+			icv := (*big.Int)(nil)
+			if i := rhs.MHS().AsExpr(); i == nil {
+				icv = zero
+			} else if i.ConstValue() != nil {
+				icv = i.ConstValue()
+			}
+
+			jcv := (*big.Int)(nil)
+			if j := rhs.RHS().AsExpr(); (j != nil) && (j.ConstValue() != nil) {
+				jcv = j.ConstValue()
+			}
+
+			if (icv != nil) && (jcv != nil) {
+				n := big.NewInt(0).Sub(jcv, icv)
+				id, err := q.tm.Insert(n.String())
+				if err != nil {
+					return err
+				}
+				// TODO: dupe lhs before making a new fact referencing it?
+				q.facts = append(q.facts, q.makeSliceLengthEqEq(lhs, id))
 			}
 		}
 
@@ -1449,11 +1475,8 @@ func makeSliceLength(slice *a.Expr) *a.Expr {
 }
 
 // makeSliceLengthEqEq returns "x.length() == n".
-func (q *checker) makeSliceLengthEqEq(x t.ID, xTyp *a.TypeExpr, n t.ID) *a.Expr {
-	xExpr := a.NewExpr(0, 0, x, nil, nil, nil, nil)
-	xExpr.SetMType(xTyp)
-
-	lhs := makeSliceLength(xExpr)
+func (q *checker) makeSliceLengthEqEq(x *a.Expr, n t.ID) *a.Expr {
+	lhs := makeSliceLength(x)
 
 	nValue, err := strconv.Atoi(n.Str(q.tm))
 	if err != nil {

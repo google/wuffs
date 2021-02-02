@@ -761,9 +761,7 @@ pri func decoder.swizzle_low_bit_depth!(dst: slice base.u8, dst_palette: slice b
 			if fragment.length() > 128 {
 				remaining = fragment[128 ..]
 				fragment = fragment[.. 128]
-				if fragment.length() > 128 {  // TODO: unnecessary.
-					return nothing
-				}
+				assert fragment.length() <= 128
 			}
 			i = 0
 			while i < fragment.length(),
@@ -786,9 +784,7 @@ pri func decoder.swizzle_low_bit_depth!(dst: slice base.u8, dst_palette: slice b
 			if fragment.length() > 256 {
 				remaining = fragment[256 ..]
 				fragment = fragment[.. 256]
-				if fragment.length() > 256 {  // TODO: unnecessary.
-					return nothing
-				}
+				assert fragment.length() <= 256
 			}
 			i = 0
 			while i < fragment.length(),
@@ -807,9 +803,7 @@ pri func decoder.swizzle_low_bit_depth!(dst: slice base.u8, dst_palette: slice b
 			if fragment.length() > 512 {
 				remaining = fragment[512 ..]
 				fragment = fragment[.. 512]
-				if fragment.length() > 512 {  // TODO: unnecessary.
-					return nothing
-				}
+				assert fragment.length() <= 512
 			}
 			i = 0
 			while i < fragment.length(),
