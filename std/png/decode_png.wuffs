@@ -301,25 +301,30 @@ pri func decoder.calculate_bytes_per_row!() {
 		choose filter_and_swizzle = [filter_and_swizzle_low_bit_depth]
 
 	} else if this.color_type == 0 {
-		this.dst_pixfmt = base.PIXEL_FORMAT__Y
-		this.src_pixfmt = base.PIXEL_FORMAT__Y
 		if this.depth == 8 {
+			this.dst_pixfmt = base.PIXEL_FORMAT__Y
+			this.src_pixfmt = base.PIXEL_FORMAT__Y
 			this.filter_distance = 1
 			this.bytes_per_row = (this.width as base.u64) * 1
+		} else if this.depth == 16 {
+			this.dst_pixfmt = base.PIXEL_FORMAT__Y  // TODO: PIXEL_FORMAT__Y_16LE
+			this.src_pixfmt = base.PIXEL_FORMAT__Y_16BE
+			this.filter_distance = 2
+			this.bytes_per_row = (this.width as base.u64) * 2
 		}
 
 	} else if this.color_type == 2 {
-		this.dst_pixfmt = base.PIXEL_FORMAT__BGR
-		this.src_pixfmt = base.PIXEL_FORMAT__RGB
 		if this.depth == 8 {
+			this.dst_pixfmt = base.PIXEL_FORMAT__BGR
+			this.src_pixfmt = base.PIXEL_FORMAT__RGB
 			this.filter_distance = 3
 			this.bytes_per_row = (this.width as base.u64) * 3
 		}
 
 	} else if this.color_type == 3 {
-		this.dst_pixfmt = base.PIXEL_FORMAT__INDEXED__BGRA_BINARY
-		this.src_pixfmt = base.PIXEL_FORMAT__INDEXED__BGRA_BINARY
 		if this.depth == 8 {
+			this.dst_pixfmt = base.PIXEL_FORMAT__INDEXED__BGRA_BINARY
+			this.src_pixfmt = base.PIXEL_FORMAT__INDEXED__BGRA_BINARY
 			this.filter_distance = 1
 			this.bytes_per_row = (this.width as base.u64) * 1
 		}
@@ -328,9 +333,9 @@ pri func decoder.calculate_bytes_per_row!() {
 		// TODO: PIXEL_FORMAT__YA_NONPREMUL
 
 	} else if this.color_type == 6 {
-		this.dst_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL
-		this.src_pixfmt = base.PIXEL_FORMAT__RGBA_NONPREMUL
 		if this.depth == 8 {
+			this.dst_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL
+			this.src_pixfmt = base.PIXEL_FORMAT__RGBA_NONPREMUL
 			this.filter_distance = 4
 			this.bytes_per_row = (this.width as base.u64) * 4
 		}

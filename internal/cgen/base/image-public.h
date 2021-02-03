@@ -59,6 +59,22 @@ wuffs_base__color_u32_argb_premul__as__color_u8_gray(
   return (uint8_t)(weighted_average >> 24);
 }
 
+static inline uint16_t  //
+wuffs_base__color_u32_argb_premul__as__color_u16_gray(
+    wuffs_base__color_u32_argb_premul c) {
+  // Work in 16-bit color.
+  uint32_t cr = 0x101 * (0xFF & (c >> 16));
+  uint32_t cg = 0x101 * (0xFF & (c >> 8));
+  uint32_t cb = 0x101 * (0xFF & (c >> 0));
+
+  // These coefficients (the fractions 0.299, 0.587 and 0.114) are the same
+  // as those given by the JFIF specification.
+  //
+  // Note that 19595 + 38470 + 7471 equals 65536, also known as (1 << 16).
+  uint32_t weighted_average = (19595 * cr) + (38470 * cg) + (7471 * cb) + 32768;
+  return (uint16_t)(weighted_average >> 16);
+}
+
 // wuffs_base__color_u32_argb_nonpremul__as__color_u32_argb_premul converts
 // from non-premultiplied alpha to premultiplied alpha.
 static inline wuffs_base__color_u32_argb_premul  //
@@ -244,6 +260,8 @@ wuffs_base__make_pixel_format(uint32_t repr) {
 #define WUFFS_BASE__PIXEL_FORMAT__A 0x02000008
 
 #define WUFFS_BASE__PIXEL_FORMAT__Y 0x20000008
+#define WUFFS_BASE__PIXEL_FORMAT__Y_16LE 0x2000000B
+#define WUFFS_BASE__PIXEL_FORMAT__Y_16BE 0x2010000B
 #define WUFFS_BASE__PIXEL_FORMAT__YA_NONPREMUL 0x21000008
 #define WUFFS_BASE__PIXEL_FORMAT__YA_PREMUL 0x22000008
 
