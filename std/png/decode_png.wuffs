@@ -33,11 +33,12 @@ pub struct decoder? implements base.image_decoder(
 	width  : base.u32[..= 0x00FF_FFFF],
 	height : base.u32[..= 0x00FF_FFFF],
 
-	// bytes_per_row doesn't include the 1 byte for the per-row filter.
-	bytes_per_row : base.u64[..= 0x07FF_FFF8],
+	// pass_bytes_per_row doesn't include the 1 byte for the per-row filter.
+	pass_bytes_per_row : base.u64[..= 0x07FF_FFF8],
 
-	workbuf_wi     : base.u64,
-	workbuf_length : base.u64[..= 0x0007_FFFF_F100_0007],
+	workbuf_wi             : base.u64,
+	overall_workbuf_length : base.u64[..= 0x0007_FFFF_F100_0007],
+	pass_workbuf_length    : base.u64[..= 0x0007_FFFF_F100_0007],
 
 	// Call sequence states:
 	//  - 0x00: initial state.
@@ -71,6 +72,7 @@ pub struct decoder? implements base.image_decoder(
 	depth           : base.u8[..= 16],
 	color_type      : base.u8[..= 6],
 	filter_distance : base.u8[..= 8],
+	interlace_pass  : base.u8[..= 7],
 
 	seen_plte : base.bool,
 	seen_trns : base.bool,
@@ -266,10 +268,9 @@ pri func decoder.decode_ihdr?(src: base.io_reader) {
 
 	// Interlace.
 	a8 = args.src.read_u8?()
-	if a8 == 0 {
-		// No-op.
-	} else if a8 == 1 {
-		return "#unsupported PNG file"
+	if a8 <= 1 {
+		this.interlace_pass = a8
+		this.tricky = this.tricky or (a8 >= 1)
 	} else {
 		return "#bad header"
 	}
@@ -280,9 +281,12 @@ pri func decoder.decode_ihdr?(src: base.io_reader) {
 	if this.filter_distance == 0 {
 		return "#unsupported PNG file"
 	}
-	this.bytes_per_row = this.calculate_bytes_per_row(width: this.width)
-	this.workbuf_length = (this.height as base.u64) * (1 + this.bytes_per_row)
+	this.overall_workbuf_length = (this.height as base.u64) *
+		(1 + this.calculate_bytes_per_row(width: this.width))
 	this.choose_filter_implementations!()
+	if this.tricky {
+		choose filter_and_swizzle = [filter_and_swizzle_tricky]
+	}
 }
 
 pri func decoder.assign_filter_distance!() {
@@ -489,7 +493,9 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
 }
 
 pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, blend: base.pixel_blend, workbuf: slice base.u8, opts: nptr base.decode_frame_options) {
-	var swizzler_status : base.status
+	var status      : base.status
+	var pass_width  : base.u32[..= 0x00FF_FFFF]
+	var pass_height : base.u32[..= 0x00FF_FFFF]
 
 	if this.call_sequence < 4 {
 		this.decode_frame_config?(dst: nullptr, src: args.src)
@@ -499,26 +505,39 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 		return base."@end of data"
 	}
 
-	if (this.width <= 0) or (this.height <= 0) {
-		return ok
-	}
-
-	swizzler_status = this.swizzler.prepare!(
+	status = this.swizzler.prepare!(
 		dst_pixfmt: args.dst.pixel_format(),
 		dst_palette: args.dst.palette_or_else(fallback: this.dst_palette[..]),
 		src_pixfmt: this.util.make_pixel_format(repr: this.src_pixfmt),
 		src_palette: this.src_palette[..],
 		blend: args.blend)
-	if not swizzler_status.is_ok() {
-		return swizzler_status
+	if not status.is_ok() {
+		return status
 	}
 
-	this.decode_pass?(src: args.src, workbuf: args.workbuf)
+	while true {
+		pass_width = 0x00FF_FFFF &
+			(((INTERLACING[this.interlace_pass][1] as base.u32) + this.width) >>
+			INTERLACING[this.interlace_pass][0])
+		pass_height = 0x00FF_FFFF &
+			(((INTERLACING[this.interlace_pass][4] as base.u32) + this.height) >>
+			INTERLACING[this.interlace_pass][3])
 
-	swizzler_status = this.filter_and_swizzle!(dst: args.dst, workbuf: args.workbuf)
-	if not swizzler_status.is_ok() {
-		return swizzler_status
-	}
+		if (pass_width > 0) and (pass_height > 0) {
+			this.pass_bytes_per_row = this.calculate_bytes_per_row(width: pass_width)
+			this.pass_workbuf_length = (pass_height as base.u64) * (1 + this.pass_bytes_per_row)
+			this.decode_pass?(src: args.src, workbuf: args.workbuf)
+			status = this.filter_and_swizzle!(dst: args.dst, workbuf: args.workbuf)
+			if not status.is_ok() {
+				return status
+			}
+		}
+
+		if (this.interlace_pass == 0) or (this.interlace_pass >= 7) {
+			break
+		}
+		this.interlace_pass += 1
+	} endwhile
 
 	this.call_sequence = 0xFF
 }
@@ -533,11 +552,11 @@ pri func decoder.decode_pass?(src: base.io_reader, workbuf: slice base.u8) {
 
 	this.workbuf_wi = 0
 	while true {
-		if (this.workbuf_wi > this.workbuf_length) or (
-			this.workbuf_length > args.workbuf.length()) {
+		if (this.workbuf_wi > this.pass_workbuf_length) or (
+			this.pass_workbuf_length > args.workbuf.length()) {
 			return base."#bad workbuf length"
 		}
-		io_bind (io: w, data: args.workbuf[this.workbuf_wi .. this.workbuf_length]) {
+		io_bind (io: w, data: args.workbuf[this.workbuf_wi .. this.pass_workbuf_length]) {
 			io_limit (io: args.src, limit: this.chunk_length) {
 				w_mark = w.mark()
 				r_mark = args.src.mark()
@@ -552,8 +571,23 @@ pri func decoder.decode_pass?(src: base.io_reader, workbuf: slice base.u8) {
 		}
 
 		if zlib_status.is_ok() {
+			// Verify the final IDAT chunk's CRC-32 checksum.
+			if not this.ignore_checksum {
+				if this.chunk_length > 0 {
+					// TODO: should this really be a fatal error?
+					return base."#too much data"
+				}
+				checksum_have = this.crc32.update_u32!(x: this.util.empty_slice_u8())
+				checksum_want = args.src.read_u32be?()
+				if checksum_have <> checksum_want {
+					return "#bad checksum"
+				}
+			}
 			break
 		} else if zlib_status == base."$short write" {
+			if (1 <= this.interlace_pass) and (this.interlace_pass <= 6) {
+				break
+			}
 			return base."#too much data"
 		} else if zlib_status <> base."$short read" {
 			return zlib_status
@@ -590,20 +624,7 @@ pri func decoder.decode_pass?(src: base.io_reader, workbuf: slice base.u8) {
 		yield? base."$short read"
 	} endwhile
 
-	// Verify the final IDAT chunk's CRC-32 checksum.
-	if not this.ignore_checksum {
-		if this.chunk_length > 0 {
-			// TODO: should this be a fatal error?
-			return base."#too much data"
-		}
-		checksum_have = this.crc32.update_u32!(x: this.util.empty_slice_u8())
-		checksum_want = args.src.read_u32be?()
-		if checksum_have <> checksum_want {
-			return "#bad checksum"
-		}
-	}
-
-	if this.workbuf_wi <> this.workbuf_length {
+	if this.workbuf_wi <> this.pass_workbuf_length {
 		return base."#not enough data"
 	} else if 0 < args.workbuf.length() {
 		// For the top row, the Paeth filter (4) is equivalent to the Sub
@@ -644,7 +665,7 @@ pri func decoder.filter_and_swizzle!(dst: ptr base.pixel_buffer, workbuf: slice 
 	tab = args.dst.plane(p: 0)
 
 	while y < this.height {
-		assert y < 0xFFFF_FFFF via "a < b: a < c; c <= b"(c: this.height)
+		assert y < 0x00FF_FFFF via "a < b: a < c; c <= b"(c: this.height)
 		dst = tab.row(y: y)
 		if dst_bytes_per_row < dst.length() {
 			dst = dst[.. dst_bytes_per_row]
@@ -655,11 +676,11 @@ pri func decoder.filter_and_swizzle!(dst: ptr base.pixel_buffer, workbuf: slice 
 		}
 		filter = args.workbuf[0]
 		args.workbuf = args.workbuf[1 ..]
-		if this.bytes_per_row > args.workbuf.length() {
+		if this.pass_bytes_per_row > args.workbuf.length() {
 			return "#internal error: inconsistent workbuf length"
 		}
-		curr_row = args.workbuf[.. this.bytes_per_row]
-		args.workbuf = args.workbuf[this.bytes_per_row ..]
+		curr_row = args.workbuf[.. this.pass_bytes_per_row]
+		args.workbuf = args.workbuf[this.pass_bytes_per_row ..]
 
 		if filter == 0 {
 			// No-op.
@@ -720,7 +741,7 @@ pri func decoder.filter_and_swizzle_low_bit_depth!(dst: ptr base.pixel_buffer, w
 	tab = args.dst.plane(p: 0)
 
 	while y < this.height {
-		assert y < 0xFFFF_FFFF via "a < b: a < c; c <= b"(c: this.height)
+		assert y < 0x00FF_FFFF via "a < b: a < c; c <= b"(c: this.height)
 		dst = tab.row(y: y)
 		if dst_bytes_per_row < dst.length() {
 			dst = dst[.. dst_bytes_per_row]
@@ -731,11 +752,11 @@ pri func decoder.filter_and_swizzle_low_bit_depth!(dst: ptr base.pixel_buffer, w
 		}
 		filter = args.workbuf[0]
 		args.workbuf = args.workbuf[1 ..]
-		if this.bytes_per_row > args.workbuf.length() {
+		if this.pass_bytes_per_row > args.workbuf.length() {
 			return "#internal error: inconsistent workbuf length"
 		}
-		curr_row = args.workbuf[.. this.bytes_per_row]
-		args.workbuf = args.workbuf[this.bytes_per_row ..]
+		curr_row = args.workbuf[.. this.pass_bytes_per_row]
+		args.workbuf = args.workbuf[this.pass_bytes_per_row ..]
 
 		if filter == 0 {
 			// No-op.
@@ -774,7 +795,7 @@ pri func decoder.swizzle_low_bit_depth!(dst: slice base.u8, dst_palette: slice b
 
 	multiplier = 1
 	if this.color_type == 0 {  // Color type 0 means base.PIXEL_FORMAT__Y.
-		multiplier = LOW_BIT_DEPTH_MULTIPLIER[this.depth & 7]
+		multiplier = LOW_BIT_DEPTH_MULTIPLIERS[this.depth & 7]
 	}
 
 	remaining = args.curr_row
@@ -890,6 +911,9 @@ pub func decoder.restart_frame!(index: base.u64, io_position: base.u64) base.sta
 		return base."#bad argument"
 	}
 	this.call_sequence = 3
+	if this.interlace_pass >= 1 {
+		this.interlace_pass = 1
+	}
 	this.frame_config_io_position = args.io_position
 	return ok
 }
@@ -904,11 +928,41 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 
 pub func decoder.workbuf_len() base.range_ii_u64 {
 	return this.util.make_range_ii_u64(
-		min_incl: this.workbuf_length,
-		max_incl: this.workbuf_length)
+		min_incl: this.overall_workbuf_length,
+		max_incl: this.overall_workbuf_length)
 }
 
-pri const LOW_BIT_DEPTH_MULTIPLIER : array[8] base.u8 = [
+// INTERLACING holds the Adam7 interlacing pattern, involving 7 passes:
+//  1 6 4 6 2 6 4 6
+//  7 7 7 7 7 7 7 7
+//  5 6 5 6 5 6 5 6
+//  7 7 7 7 7 7 7 7
+//  3 6 4 6 3 6 4 6
+//  7 7 7 7 7 7 7 7
+//  5 6 5 6 5 6 5 6
+//  7 7 7 7 7 7 7 7
+//
+// The six elements of each inner array are:
+//  0: log2(x_stride)
+//  1: x_stride - x_offset - 1
+//  2: x_offset
+//  3: log2(y_stride)
+//  4: y_stride - y_offset - 1
+//  5: y_offset
+pri const INTERLACING : array[8] array[6] base.u8[..= 8] = [
+	[0, 0, 0, 0, 0, 0],  // non-interlaced; xy_stride=1, xy_offset=0
+	[3, 7, 0, 3, 7, 0],  // interlace_pass == 1
+	[3, 3, 4, 3, 7, 0],  // interlace_pass == 2
+	[2, 3, 0, 3, 3, 4],  // interlace_pass == 3
+	[2, 1, 2, 2, 3, 0],  // interlace_pass == 4
+	[1, 1, 0, 2, 1, 2],  // interlace_pass == 5
+	[1, 0, 1, 1, 1, 0],  // interlace_pass == 6
+	[0, 0, 0, 1, 0, 1],  // interlace_pass == 7
+]
+
+// LOW_BIT_DEPTH_MULTIPLIERS holds multipliers that convert D-bit values into
+// 8-bit values, for depth D.
+pri const LOW_BIT_DEPTH_MULTIPLIERS : array[8] base.u8 = [
 	0,
 	0b1111_1111,  // depth == 1
 	0b0101_0101,  // depth == 2
@@ -919,13 +973,27 @@ pri const LOW_BIT_DEPTH_MULTIPLIER : array[8] base.u8 = [
 	0,
 ]
 
+// LOW_BIT_DEPTH_NUM_PACKS holds the number of smaller-than-1-byte units that
+// are packed into each byte.
+pri const LOW_BIT_DEPTH_NUM_PACKS : array[8] base.u8 = [
+	0,
+	8,  // depth == 1
+	4,  // depth == 2
+	0,
+	2,  // depth == 4
+	0,
+	0,
+	0,
+]
+
+// NUM_CHANNELS holds the number of channels for each valid color type.
 pri const NUM_CHANNELS : array[8] base.u8[..= 4] = [
 	1,  // color_type == 0: Y
-	0,  // Unused.
+	0,
 	3,  // color_type == 2: RGB
 	1,  // color_type == 3: indexed
 	2,  // color_type == 4: YA
-	0,  // Unused.
+	0,
 	4,  // color_type == 6: RGBA
-	0,  // Unused.
+	0,
 ]

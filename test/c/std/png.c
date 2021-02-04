@@ -151,7 +151,7 @@ do_wuffs_png_swizzle(uint32_t width,
                                  WUFFS_INITIALIZE__DEFAULT_OPTIONS));
   dec.private_impl.f_width = width;
   dec.private_impl.f_height = height;
-  dec.private_impl.f_bytes_per_row = width;
+  dec.private_impl.f_pass_bytes_per_row = width;
   dec.private_impl.f_filter_distance = filter_distance;
   wuffs_png__decoder__choose_filter_implementations(&dec);
 
@@ -653,7 +653,7 @@ do_bench_wuffs_png_decode_filter(uint8_t filter,
                                  WUFFS_INITIALIZE__DEFAULT_OPTIONS));
   dec.private_impl.f_width = width;
   dec.private_impl.f_height = height;
-  dec.private_impl.f_bytes_per_row = bytes_per_row;
+  dec.private_impl.f_pass_bytes_per_row = bytes_per_row;
   dec.private_impl.f_filter_distance = filter_distance;
   wuffs_png__decoder__choose_filter_implementations(&dec);
 
