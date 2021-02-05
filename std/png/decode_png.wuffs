@@ -77,8 +77,6 @@ pub struct decoder? implements base.image_decoder(
 	seen_plte : base.bool,
 	seen_trns : base.bool,
 
-	tricky : base.bool,
-
 	dst_pixfmt : base.u32,
 	src_pixfmt : base.u32,
 
@@ -264,9 +262,11 @@ pri func decoder.decode_ihdr?(src: base.io_reader) {
 
 	// Interlace.
 	a8 = args.src.read_u8?()
-	if a8 <= 1 {
-		this.interlace_pass = a8
-		this.tricky = this.tricky or (a8 >= 1)
+	if a8 == 0 {
+		this.interlace_pass = 0
+	} else if a8 == 1 {
+		this.interlace_pass = 1
+		choose filter_and_swizzle = [filter_and_swizzle_tricky]
 	} else {
 		return "#bad header"
 	}
@@ -280,9 +280,6 @@ pri func decoder.decode_ihdr?(src: base.io_reader) {
 	this.overall_workbuf_length = (this.height as base.u64) *
 		(1 + this.calculate_bytes_per_row(width: this.width))
 	this.choose_filter_implementations!()
-	if this.tricky {
-		choose filter_and_swizzle = [filter_and_swizzle_tricky]
-	}
 }
 
 pri func decoder.assign_filter_distance!() {
@@ -298,7 +295,7 @@ pri func decoder.assign_filter_distance!() {
 		}
 
 		this.filter_distance = 1
-		this.tricky = true
+		choose filter_and_swizzle = [filter_and_swizzle_tricky]
 
 	} else if this.color_type == 0 {
 		if this.depth == 8 {
@@ -441,18 +438,19 @@ pri func decoder.decode_trns?(src: base.io_reader) {
 		i += 1
 	} endwhile
 
-	if this.color_type == 0 {
-		// TODO: PIXEL_FORMAT__YA_NONPREMUL
-		this.dst_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL
-		this.src_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE
-		this.tricky = true
-	} else if this.color_type == 2 {
-		this.dst_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL
-		this.src_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE
-		this.tricky = true
-	} else if this.color_type == 3 {
+	if this.color_type == 3 {
 		this.dst_pixfmt = base.PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL
 		this.src_pixfmt = base.PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL
+	} else {
+		choose filter_and_swizzle = [filter_and_swizzle_tricky]
+		if this.color_type == 0 {
+			// TODO: PIXEL_FORMAT__YA_NONPREMUL
+			this.dst_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL
+			this.src_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE
+		} else if this.color_type == 2 {
+			this.dst_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL
+			this.src_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE
+		}
 	}
 }
 

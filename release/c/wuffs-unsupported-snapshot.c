@@ -8525,7 +8525,6 @@ struct wuffs_png__decoder__struct {
     uint8_t f_interlace_pass;
     bool f_seen_plte;
     bool f_seen_trns;
-    bool f_tricky;
     uint32_t f_dst_pixfmt;
     uint32_t f_src_pixfmt;
     uint32_t f_chunk_type;
@@ -32662,9 +32661,12 @@ wuffs_png__decoder__decode_ihdr(
       uint8_t t_6 = *iop_a_src++;
       v_a8 = t_6;
     }
-    if (v_a8 <= 1) {
-      self->private_impl.f_interlace_pass = v_a8;
-      self->private_impl.f_tricky = (self->private_impl.f_tricky || (v_a8 >= 1));
+    if (v_a8 == 0) {
+      self->private_impl.f_interlace_pass = 0;
+    } else if (v_a8 == 1) {
+      self->private_impl.f_interlace_pass = 1;
+      self->private_impl.choosy_filter_and_swizzle = (
+          &wuffs_png__decoder__filter_and_swizzle_tricky);
     } else {
       status = wuffs_base__make_status(wuffs_png__error__bad_header);
       goto exit;
@@ -32677,10 +32679,6 @@ wuffs_png__decoder__decode_ihdr(
     }
     self->private_impl.f_overall_workbuf_length = (((uint64_t)(self->private_impl.f_height)) * (1 + wuffs_png__decoder__calculate_bytes_per_row(self, self->private_impl.f_width)));
     wuffs_png__decoder__choose_filter_implementations(self);
-    if (self->private_impl.f_tricky) {
-      self->private_impl.choosy_filter_and_swizzle = (
-          &wuffs_png__decoder__filter_and_swizzle_tricky);
-    }
 
     goto ok;
     ok:
@@ -32717,7 +32715,8 @@ wuffs_png__decoder__assign_filter_distance(
       return wuffs_base__make_empty_struct();
     }
     self->private_impl.f_filter_distance = 1;
-    self->private_impl.f_tricky = true;
+    self->private_impl.choosy_filter_and_swizzle = (
+        &wuffs_png__decoder__filter_and_swizzle_tricky);
   } else if (self->private_impl.f_color_type == 0) {
     if (self->private_impl.f_depth == 8) {
       self->private_impl.f_dst_pixfmt = 536870920;
@@ -33042,17 +33041,19 @@ wuffs_png__decoder__decode_trns(
       }
       v_i += 1;
     }
-    if (self->private_impl.f_color_type == 0) {
-      self->private_impl.f_dst_pixfmt = 2164295816;
-      self->private_impl.f_src_pixfmt = 2164308923;
-      self->private_impl.f_tricky = true;
-    } else if (self->private_impl.f_color_type == 2) {
-      self->private_impl.f_dst_pixfmt = 2164295816;
-      self->private_impl.f_src_pixfmt = 2164308923;
-      self->private_impl.f_tricky = true;
-    } else if (self->private_impl.f_color_type == 3) {
+    if (self->private_impl.f_color_type == 3) {
       self->private_impl.f_dst_pixfmt = 2164523016;
       self->private_impl.f_src_pixfmt = 2164523016;
+    } else {
+      self->private_impl.choosy_filter_and_swizzle = (
+          &wuffs_png__decoder__filter_and_swizzle_tricky);
+      if (self->private_impl.f_color_type == 0) {
+        self->private_impl.f_dst_pixfmt = 2164295816;
+        self->private_impl.f_src_pixfmt = 2164308923;
+      } else if (self->private_impl.f_color_type == 2) {
+        self->private_impl.f_dst_pixfmt = 2164295816;
+        self->private_impl.f_src_pixfmt = 2164308923;
+      }
     }
 
     goto ok;
