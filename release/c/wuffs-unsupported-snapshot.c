@@ -8568,7 +8568,6 @@ struct wuffs_png__decoder__struct {
     wuffs_zlib__decoder f_zlib;
     uint8_t f_dst_palette[1024];
     uint8_t f_src_palette[1024];
-    uint8_t f_scratch[1024];
 
     struct {
       uint32_t v_checksum_have;
@@ -30943,20 +30942,6 @@ wuffs_png__decoder__filter_and_swizzle__choosy_default(
     wuffs_base__slice_u8 a_workbuf);
 
 static wuffs_base__status
-wuffs_png__decoder__filter_and_swizzle_low_bit_depth(
-    wuffs_png__decoder* self,
-    wuffs_base__pixel_buffer* a_dst,
-    wuffs_base__slice_u8 a_workbuf);
-
-static wuffs_base__empty_struct
-wuffs_png__decoder__swizzle_low_bit_depth(
-    wuffs_png__decoder* self,
-    wuffs_base__slice_u8 a_dst,
-    wuffs_base__slice_u8 a_dst_palette,
-    uint64_t a_dst_bytes_per_pixel,
-    wuffs_base__slice_u8 a_curr_row);
-
-static wuffs_base__status
 wuffs_png__decoder__filter_and_swizzle_tricky(
     wuffs_png__decoder* self,
     wuffs_base__pixel_buffer* a_dst,
@@ -32732,8 +32717,7 @@ wuffs_png__decoder__assign_filter_distance(
       return wuffs_base__make_empty_struct();
     }
     self->private_impl.f_filter_distance = 1;
-    self->private_impl.choosy_filter_and_swizzle = (
-        &wuffs_png__decoder__filter_and_swizzle_low_bit_depth);
+    self->private_impl.f_tricky = true;
   } else if (self->private_impl.f_color_type == 0) {
     if (self->private_impl.f_depth == 8) {
       self->private_impl.f_dst_pixfmt = 536870920;
@@ -33692,152 +33676,6 @@ wuffs_png__decoder__filter_and_swizzle__choosy_default(
     v_y += 1;
   }
   return wuffs_base__make_status(NULL);
-}
-
-// -------- func png.decoder.filter_and_swizzle_low_bit_depth
-
-static wuffs_base__status
-wuffs_png__decoder__filter_and_swizzle_low_bit_depth(
-    wuffs_png__decoder* self,
-    wuffs_base__pixel_buffer* a_dst,
-    wuffs_base__slice_u8 a_workbuf) {
-  wuffs_base__pixel_format v_dst_pixfmt = {0};
-  uint32_t v_dst_bits_per_pixel = 0;
-  uint64_t v_dst_bytes_per_pixel = 0;
-  uint64_t v_dst_bytes_per_row = 0;
-  wuffs_base__slice_u8 v_dst_palette = {0};
-  wuffs_base__table_u8 v_tab = {0};
-  uint32_t v_y = 0;
-  wuffs_base__slice_u8 v_dst = {0};
-  uint8_t v_filter = 0;
-  wuffs_base__slice_u8 v_curr_row = {0};
-  wuffs_base__slice_u8 v_prev_row = {0};
-
-  v_dst_pixfmt = wuffs_base__pixel_buffer__pixel_format(a_dst);
-  v_dst_bits_per_pixel = wuffs_base__pixel_format__bits_per_pixel(&v_dst_pixfmt);
-  if ((v_dst_bits_per_pixel & 7) != 0) {
-    return wuffs_base__make_status(wuffs_base__error__unsupported_option);
-  }
-  v_dst_bytes_per_pixel = ((uint64_t)((v_dst_bits_per_pixel / 8)));
-  v_dst_bytes_per_row = (((uint64_t)(self->private_impl.f_width)) * v_dst_bytes_per_pixel);
-  v_dst_palette = wuffs_base__pixel_buffer__palette_or_else(a_dst, wuffs_base__make_slice_u8(self->private_data.f_dst_palette, 1024));
-  v_tab = wuffs_base__pixel_buffer__plane(a_dst, 0);
-  while (v_y < self->private_impl.f_height) {
-    v_dst = wuffs_base__table_u8__row(v_tab, v_y);
-    if (v_dst_bytes_per_row < ((uint64_t)(v_dst.len))) {
-      v_dst = wuffs_base__slice_u8__subslice_j(v_dst, v_dst_bytes_per_row);
-    }
-    if (1 > ((uint64_t)(a_workbuf.len))) {
-      return wuffs_base__make_status(wuffs_png__error__internal_error_inconsistent_workbuf_length);
-    }
-    v_filter = a_workbuf.ptr[0];
-    a_workbuf = wuffs_base__slice_u8__subslice_i(a_workbuf, 1);
-    if (self->private_impl.f_pass_bytes_per_row > ((uint64_t)(a_workbuf.len))) {
-      return wuffs_base__make_status(wuffs_png__error__internal_error_inconsistent_workbuf_length);
-    }
-    v_curr_row = wuffs_base__slice_u8__subslice_j(a_workbuf, self->private_impl.f_pass_bytes_per_row);
-    a_workbuf = wuffs_base__slice_u8__subslice_i(a_workbuf, self->private_impl.f_pass_bytes_per_row);
-    if (v_filter == 0) {
-    } else if (v_filter == 1) {
-      wuffs_png__decoder__filter_1(self, v_curr_row);
-    } else if (v_filter == 2) {
-      wuffs_png__decoder__filter_2(self, v_curr_row, v_prev_row);
-    } else if (v_filter == 3) {
-      wuffs_png__decoder__filter_3(self, v_curr_row, v_prev_row);
-    } else if (v_filter == 4) {
-      wuffs_png__decoder__filter_4(self, v_curr_row, v_prev_row);
-    } else {
-      return wuffs_base__make_status(wuffs_png__error__bad_filter);
-    }
-    wuffs_png__decoder__swizzle_low_bit_depth(self,
-        v_dst,
-        v_dst_palette,
-        v_dst_bytes_per_pixel,
-        v_curr_row);
-    v_prev_row = v_curr_row;
-    v_y += 1;
-  }
-  return wuffs_base__make_status(NULL);
-}
-
-// -------- func png.decoder.swizzle_low_bit_depth
-
-static wuffs_base__empty_struct
-wuffs_png__decoder__swizzle_low_bit_depth(
-    wuffs_png__decoder* self,
-    wuffs_base__slice_u8 a_dst,
-    wuffs_base__slice_u8 a_dst_palette,
-    uint64_t a_dst_bytes_per_pixel,
-    wuffs_base__slice_u8 a_curr_row) {
-  uint8_t v_multiplier = 0;
-  uint8_t v_c = 0;
-  uint64_t v_i = 0;
-  uint64_t v_n = 0;
-  wuffs_base__slice_u8 v_fragment = {0};
-  wuffs_base__slice_u8 v_remaining = {0};
-
-  v_multiplier = 1;
-  if (self->private_impl.f_color_type == 0) {
-    v_multiplier = WUFFS_PNG__LOW_BIT_DEPTH_MULTIPLIERS[(self->private_impl.f_depth & 7)];
-  }
-  v_remaining = a_curr_row;
-  while (((uint64_t)(a_dst.len)) > 0) {
-    v_fragment = v_remaining;
-    v_remaining = wuffs_base__utility__empty_slice_u8();
-    if (self->private_impl.f_depth == 1) {
-      if (((uint64_t)(v_fragment.len)) > 128) {
-        v_remaining = wuffs_base__slice_u8__subslice_i(v_fragment, 128);
-        v_fragment = wuffs_base__slice_u8__subslice_j(v_fragment, 128);
-      }
-      v_i = 0;
-      while (v_i < ((uint64_t)(v_fragment.len))) {
-        v_c = v_fragment.ptr[v_i];
-        self->private_data.f_scratch[((v_i * 8) + 0)] = ((uint8_t)((1 & (v_c >> 7)) * v_multiplier));
-        self->private_data.f_scratch[((v_i * 8) + 1)] = ((uint8_t)((1 & (v_c >> 6)) * v_multiplier));
-        self->private_data.f_scratch[((v_i * 8) + 2)] = ((uint8_t)((1 & (v_c >> 5)) * v_multiplier));
-        self->private_data.f_scratch[((v_i * 8) + 3)] = ((uint8_t)((1 & (v_c >> 4)) * v_multiplier));
-        self->private_data.f_scratch[((v_i * 8) + 4)] = ((uint8_t)((1 & (v_c >> 3)) * v_multiplier));
-        self->private_data.f_scratch[((v_i * 8) + 5)] = ((uint8_t)((1 & (v_c >> 2)) * v_multiplier));
-        self->private_data.f_scratch[((v_i * 8) + 6)] = ((uint8_t)((1 & (v_c >> 1)) * v_multiplier));
-        self->private_data.f_scratch[((v_i * 8) + 7)] = ((uint8_t)((1 & (v_c >> 0)) * v_multiplier));
-        v_i += 1;
-      }
-    } else if (self->private_impl.f_depth == 2) {
-      if (((uint64_t)(v_fragment.len)) > 256) {
-        v_remaining = wuffs_base__slice_u8__subslice_i(v_fragment, 256);
-        v_fragment = wuffs_base__slice_u8__subslice_j(v_fragment, 256);
-      }
-      v_i = 0;
-      while (v_i < ((uint64_t)(v_fragment.len))) {
-        v_c = v_fragment.ptr[v_i];
-        self->private_data.f_scratch[((v_i * 4) + 0)] = ((uint8_t)((3 & (v_c >> 6)) * v_multiplier));
-        self->private_data.f_scratch[((v_i * 4) + 1)] = ((uint8_t)((3 & (v_c >> 4)) * v_multiplier));
-        self->private_data.f_scratch[((v_i * 4) + 2)] = ((uint8_t)((3 & (v_c >> 2)) * v_multiplier));
-        self->private_data.f_scratch[((v_i * 4) + 3)] = ((uint8_t)((3 & (v_c >> 0)) * v_multiplier));
-        v_i += 1;
-      }
-    } else {
-      if (((uint64_t)(v_fragment.len)) > 512) {
-        v_remaining = wuffs_base__slice_u8__subslice_i(v_fragment, 512);
-        v_fragment = wuffs_base__slice_u8__subslice_j(v_fragment, 512);
-      }
-      v_i = 0;
-      while (v_i < ((uint64_t)(v_fragment.len))) {
-        v_c = v_fragment.ptr[v_i];
-        self->private_data.f_scratch[((v_i * 2) + 0)] = ((uint8_t)((15 & (v_c >> 4)) * v_multiplier));
-        self->private_data.f_scratch[((v_i * 2) + 1)] = ((uint8_t)((15 & (v_c >> 0)) * v_multiplier));
-        v_i += 1;
-      }
-    }
-    wuffs_base__pixel_swizzler__swizzle_interleaved_from_slice(&self->private_impl.f_swizzler, a_dst, a_dst_palette, wuffs_base__make_slice_u8(self->private_data.f_scratch, 1024));
-    v_n = (1024 * a_dst_bytes_per_pixel);
-    if (v_n < ((uint64_t)(a_dst.len))) {
-      a_dst = wuffs_base__slice_u8__subslice_i(a_dst, v_n);
-    } else {
-      a_dst = wuffs_base__utility__empty_slice_u8();
-    }
-  }
-  return wuffs_base__make_empty_struct();
 }
 
 // -------- func png.decoder.frame_dirty_rect
