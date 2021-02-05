@@ -33608,76 +33608,6 @@ wuffs_png__decoder__decode_pass(
   return status;
 }
 
-// -------- func png.decoder.filter_and_swizzle
-
-static wuffs_base__status
-wuffs_png__decoder__filter_and_swizzle(
-    wuffs_png__decoder* self,
-    wuffs_base__pixel_buffer* a_dst,
-    wuffs_base__slice_u8 a_workbuf) {
-  return (*self->private_impl.choosy_filter_and_swizzle)(self, a_dst, a_workbuf);
-}
-
-static wuffs_base__status
-wuffs_png__decoder__filter_and_swizzle__choosy_default(
-    wuffs_png__decoder* self,
-    wuffs_base__pixel_buffer* a_dst,
-    wuffs_base__slice_u8 a_workbuf) {
-  wuffs_base__pixel_format v_dst_pixfmt = {0};
-  uint32_t v_dst_bits_per_pixel = 0;
-  uint64_t v_dst_bytes_per_pixel = 0;
-  uint64_t v_dst_bytes_per_row = 0;
-  wuffs_base__slice_u8 v_dst_palette = {0};
-  wuffs_base__table_u8 v_tab = {0};
-  uint32_t v_y = 0;
-  wuffs_base__slice_u8 v_dst = {0};
-  uint8_t v_filter = 0;
-  wuffs_base__slice_u8 v_curr_row = {0};
-  wuffs_base__slice_u8 v_prev_row = {0};
-
-  v_dst_pixfmt = wuffs_base__pixel_buffer__pixel_format(a_dst);
-  v_dst_bits_per_pixel = wuffs_base__pixel_format__bits_per_pixel(&v_dst_pixfmt);
-  if ((v_dst_bits_per_pixel & 7) != 0) {
-    return wuffs_base__make_status(wuffs_base__error__unsupported_option);
-  }
-  v_dst_bytes_per_pixel = ((uint64_t)((v_dst_bits_per_pixel / 8)));
-  v_dst_bytes_per_row = (((uint64_t)(self->private_impl.f_width)) * v_dst_bytes_per_pixel);
-  v_dst_palette = wuffs_base__pixel_buffer__palette_or_else(a_dst, wuffs_base__make_slice_u8(self->private_data.f_dst_palette, 1024));
-  v_tab = wuffs_base__pixel_buffer__plane(a_dst, 0);
-  while (v_y < self->private_impl.f_height) {
-    v_dst = wuffs_base__table_u8__row(v_tab, v_y);
-    if (v_dst_bytes_per_row < ((uint64_t)(v_dst.len))) {
-      v_dst = wuffs_base__slice_u8__subslice_j(v_dst, v_dst_bytes_per_row);
-    }
-    if (1 > ((uint64_t)(a_workbuf.len))) {
-      return wuffs_base__make_status(wuffs_png__error__internal_error_inconsistent_workbuf_length);
-    }
-    v_filter = a_workbuf.ptr[0];
-    a_workbuf = wuffs_base__slice_u8__subslice_i(a_workbuf, 1);
-    if (self->private_impl.f_pass_bytes_per_row > ((uint64_t)(a_workbuf.len))) {
-      return wuffs_base__make_status(wuffs_png__error__internal_error_inconsistent_workbuf_length);
-    }
-    v_curr_row = wuffs_base__slice_u8__subslice_j(a_workbuf, self->private_impl.f_pass_bytes_per_row);
-    a_workbuf = wuffs_base__slice_u8__subslice_i(a_workbuf, self->private_impl.f_pass_bytes_per_row);
-    if (v_filter == 0) {
-    } else if (v_filter == 1) {
-      wuffs_png__decoder__filter_1(self, v_curr_row);
-    } else if (v_filter == 2) {
-      wuffs_png__decoder__filter_2(self, v_curr_row, v_prev_row);
-    } else if (v_filter == 3) {
-      wuffs_png__decoder__filter_3(self, v_curr_row, v_prev_row);
-    } else if (v_filter == 4) {
-      wuffs_png__decoder__filter_4(self, v_curr_row, v_prev_row);
-    } else {
-      return wuffs_base__make_status(wuffs_png__error__bad_filter);
-    }
-    wuffs_base__pixel_swizzler__swizzle_interleaved_from_slice(&self->private_impl.f_swizzler, v_dst, v_dst_palette, v_curr_row);
-    v_prev_row = v_curr_row;
-    v_y += 1;
-  }
-  return wuffs_base__make_status(NULL);
-}
-
 // -------- func png.decoder.frame_dirty_rect
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__rect_ie_u32
@@ -33849,6 +33779,76 @@ wuffs_png__decoder__workbuf_len(
   }
 
   return wuffs_base__utility__make_range_ii_u64(self->private_impl.f_overall_workbuf_length, self->private_impl.f_overall_workbuf_length);
+}
+
+// -------- func png.decoder.filter_and_swizzle
+
+static wuffs_base__status
+wuffs_png__decoder__filter_and_swizzle(
+    wuffs_png__decoder* self,
+    wuffs_base__pixel_buffer* a_dst,
+    wuffs_base__slice_u8 a_workbuf) {
+  return (*self->private_impl.choosy_filter_and_swizzle)(self, a_dst, a_workbuf);
+}
+
+static wuffs_base__status
+wuffs_png__decoder__filter_and_swizzle__choosy_default(
+    wuffs_png__decoder* self,
+    wuffs_base__pixel_buffer* a_dst,
+    wuffs_base__slice_u8 a_workbuf) {
+  wuffs_base__pixel_format v_dst_pixfmt = {0};
+  uint32_t v_dst_bits_per_pixel = 0;
+  uint64_t v_dst_bytes_per_pixel = 0;
+  uint64_t v_dst_bytes_per_row = 0;
+  wuffs_base__slice_u8 v_dst_palette = {0};
+  wuffs_base__table_u8 v_tab = {0};
+  uint32_t v_y = 0;
+  wuffs_base__slice_u8 v_dst = {0};
+  uint8_t v_filter = 0;
+  wuffs_base__slice_u8 v_curr_row = {0};
+  wuffs_base__slice_u8 v_prev_row = {0};
+
+  v_dst_pixfmt = wuffs_base__pixel_buffer__pixel_format(a_dst);
+  v_dst_bits_per_pixel = wuffs_base__pixel_format__bits_per_pixel(&v_dst_pixfmt);
+  if ((v_dst_bits_per_pixel & 7) != 0) {
+    return wuffs_base__make_status(wuffs_base__error__unsupported_option);
+  }
+  v_dst_bytes_per_pixel = ((uint64_t)((v_dst_bits_per_pixel / 8)));
+  v_dst_bytes_per_row = (((uint64_t)(self->private_impl.f_width)) * v_dst_bytes_per_pixel);
+  v_dst_palette = wuffs_base__pixel_buffer__palette_or_else(a_dst, wuffs_base__make_slice_u8(self->private_data.f_dst_palette, 1024));
+  v_tab = wuffs_base__pixel_buffer__plane(a_dst, 0);
+  while (v_y < self->private_impl.f_height) {
+    v_dst = wuffs_base__table_u8__row(v_tab, v_y);
+    if (v_dst_bytes_per_row < ((uint64_t)(v_dst.len))) {
+      v_dst = wuffs_base__slice_u8__subslice_j(v_dst, v_dst_bytes_per_row);
+    }
+    if (1 > ((uint64_t)(a_workbuf.len))) {
+      return wuffs_base__make_status(wuffs_png__error__internal_error_inconsistent_workbuf_length);
+    }
+    v_filter = a_workbuf.ptr[0];
+    a_workbuf = wuffs_base__slice_u8__subslice_i(a_workbuf, 1);
+    if (self->private_impl.f_pass_bytes_per_row > ((uint64_t)(a_workbuf.len))) {
+      return wuffs_base__make_status(wuffs_png__error__internal_error_inconsistent_workbuf_length);
+    }
+    v_curr_row = wuffs_base__slice_u8__subslice_j(a_workbuf, self->private_impl.f_pass_bytes_per_row);
+    a_workbuf = wuffs_base__slice_u8__subslice_i(a_workbuf, self->private_impl.f_pass_bytes_per_row);
+    if (v_filter == 0) {
+    } else if (v_filter == 1) {
+      wuffs_png__decoder__filter_1(self, v_curr_row);
+    } else if (v_filter == 2) {
+      wuffs_png__decoder__filter_2(self, v_curr_row, v_prev_row);
+    } else if (v_filter == 3) {
+      wuffs_png__decoder__filter_3(self, v_curr_row, v_prev_row);
+    } else if (v_filter == 4) {
+      wuffs_png__decoder__filter_4(self, v_curr_row, v_prev_row);
+    } else {
+      return wuffs_base__make_status(wuffs_png__error__bad_filter);
+    }
+    wuffs_base__pixel_swizzler__swizzle_interleaved_from_slice(&self->private_impl.f_swizzler, v_dst, v_dst_palette, v_curr_row);
+    v_prev_row = v_curr_row;
+    v_y += 1;
+  }
+  return wuffs_base__make_status(NULL);
 }
 
 // -------- func png.decoder.filter_and_swizzle_tricky
