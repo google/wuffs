@@ -32732,6 +32732,12 @@ wuffs_png__decoder__assign_filter_distance(
       self->private_impl.f_dst_pixfmt = 2147485832;
       self->private_impl.f_src_pixfmt = 2684356744;
       self->private_impl.f_filter_distance = 3;
+    } else if (self->private_impl.f_depth == 16) {
+      self->private_impl.f_dst_pixfmt = 2164308923;
+      self->private_impl.f_src_pixfmt = 2164308923;
+      self->private_impl.f_filter_distance = 6;
+      self->private_impl.choosy_filter_and_swizzle = (
+          &wuffs_png__decoder__filter_and_swizzle_tricky);
     }
   } else if (self->private_impl.f_color_type == 3) {
     if (self->private_impl.f_depth == 8) {
@@ -32740,11 +32746,30 @@ wuffs_png__decoder__assign_filter_distance(
       self->private_impl.f_filter_distance = 1;
     }
   } else if (self->private_impl.f_color_type == 4) {
+    if (self->private_impl.f_depth == 8) {
+      self->private_impl.f_dst_pixfmt = 2164295816;
+      self->private_impl.f_src_pixfmt = 2164295816;
+      self->private_impl.f_filter_distance = 2;
+      self->private_impl.choosy_filter_and_swizzle = (
+          &wuffs_png__decoder__filter_and_swizzle_tricky);
+    } else if (self->private_impl.f_depth == 16) {
+      self->private_impl.f_dst_pixfmt = 2164308923;
+      self->private_impl.f_src_pixfmt = 2164308923;
+      self->private_impl.f_filter_distance = 4;
+      self->private_impl.choosy_filter_and_swizzle = (
+          &wuffs_png__decoder__filter_and_swizzle_tricky);
+    }
   } else if (self->private_impl.f_color_type == 6) {
     if (self->private_impl.f_depth == 8) {
       self->private_impl.f_dst_pixfmt = 2164295816;
       self->private_impl.f_src_pixfmt = 2701166728;
       self->private_impl.f_filter_distance = 4;
+    } else if (self->private_impl.f_depth == 16) {
+      self->private_impl.f_dst_pixfmt = 2164308923;
+      self->private_impl.f_src_pixfmt = 2164308923;
+      self->private_impl.f_filter_distance = 8;
+      self->private_impl.choosy_filter_and_swizzle = (
+          &wuffs_png__decoder__filter_and_swizzle_tricky);
     }
   }
   return wuffs_base__make_empty_struct();
@@ -33874,8 +33899,8 @@ wuffs_png__decoder__filter_and_swizzle_tricky(
   wuffs_base__slice_u8 v_s = {0};
   wuffs_base__slice_u8 v_curr_row = {0};
   wuffs_base__slice_u8 v_prev_row = {0};
+  uint8_t v_bits_unpacked[8] = {0};
   uint8_t v_bits_packed = 0;
-  uint8_t v_bits_unpacked[1] = {0};
   uint8_t v_packs_remaining = 0;
   uint8_t v_multiplier = 0;
   uint8_t v_shift = 0;
@@ -33893,6 +33918,14 @@ wuffs_png__decoder__filter_and_swizzle_tricky(
   if (self->private_impl.f_depth >= 8) {
     v_src_bytes_per_pixel = (((uint64_t)(WUFFS_PNG__NUM_CHANNELS[self->private_impl.f_color_type])) * ((uint64_t)((self->private_impl.f_depth >> 3))));
   }
+  v_bits_unpacked[0] = 255;
+  v_bits_unpacked[1] = 255;
+  v_bits_unpacked[2] = 255;
+  v_bits_unpacked[3] = 255;
+  v_bits_unpacked[4] = 255;
+  v_bits_unpacked[5] = 255;
+  v_bits_unpacked[6] = 255;
+  v_bits_unpacked[7] = 255;
   v_y = ((uint32_t)(WUFFS_PNG__INTERLACING[self->private_impl.f_interlace_pass][5]));
   while (v_y < self->private_impl.f_height) {
     v_dst = wuffs_base__table_u8__row(v_tab, v_y);
@@ -33923,16 +33956,27 @@ wuffs_png__decoder__filter_and_swizzle_tricky(
     }
     v_s = v_curr_row;
     v_x = ((uint32_t)(WUFFS_PNG__INTERLACING[self->private_impl.f_interlace_pass][2]));
-    if (self->private_impl.f_depth >= 8) {
+    if (self->private_impl.f_depth == 8) {
       while (v_x < self->private_impl.f_width) {
         v_i = (((uint64_t)(v_x)) * v_dst_bytes_per_pixel);
-        if ((v_i <= ((uint64_t)(v_dst.len))) && (v_src_bytes_per_pixel <= ((uint64_t)(v_s.len)))) {
-          wuffs_base__pixel_swizzler__swizzle_interleaved_from_slice(&self->private_impl.f_swizzler, wuffs_base__slice_u8__subslice_i(v_dst, v_i), v_dst_palette, wuffs_base__slice_u8__subslice_j(v_s, v_src_bytes_per_pixel));
-          v_s = wuffs_base__slice_u8__subslice_i(v_s, v_src_bytes_per_pixel);
+        if (v_i <= ((uint64_t)(v_dst.len))) {
+          if (self->private_impl.f_color_type == 4) {
+            if (2 <= ((uint64_t)(v_s.len))) {
+              v_bits_unpacked[0] = v_s.ptr[0];
+              v_bits_unpacked[1] = v_s.ptr[0];
+              v_bits_unpacked[2] = v_s.ptr[0];
+              v_bits_unpacked[3] = v_s.ptr[1];
+              v_s = wuffs_base__slice_u8__subslice_i(v_s, 2);
+              wuffs_base__pixel_swizzler__swizzle_interleaved_from_slice(&self->private_impl.f_swizzler, wuffs_base__slice_u8__subslice_i(v_dst, v_i), v_dst_palette, wuffs_base__make_slice_u8(v_bits_unpacked, 4));
+            }
+          } else if (v_src_bytes_per_pixel <= ((uint64_t)(v_s.len))) {
+            wuffs_base__pixel_swizzler__swizzle_interleaved_from_slice(&self->private_impl.f_swizzler, wuffs_base__slice_u8__subslice_i(v_dst, v_i), v_dst_palette, wuffs_base__slice_u8__subslice_j(v_s, v_src_bytes_per_pixel));
+            v_s = wuffs_base__slice_u8__subslice_i(v_s, v_src_bytes_per_pixel);
+          }
         }
         v_x += (((uint32_t)(1)) << WUFFS_PNG__INTERLACING[self->private_impl.f_interlace_pass][0]);
       }
-    } else {
+    } else if (self->private_impl.f_depth < 8) {
       v_multiplier = 1;
       if (self->private_impl.f_color_type == 0) {
         v_multiplier = WUFFS_PNG__LOW_BIT_DEPTH_MULTIPLIERS[self->private_impl.f_depth];
@@ -33951,6 +33995,59 @@ wuffs_png__decoder__filter_and_swizzle_tricky(
           v_bits_packed <<= self->private_impl.f_depth;
           v_packs_remaining -= 1;
           wuffs_base__pixel_swizzler__swizzle_interleaved_from_slice(&self->private_impl.f_swizzler, wuffs_base__slice_u8__subslice_i(v_dst, v_i), v_dst_palette, wuffs_base__make_slice_u8(v_bits_unpacked, 1));
+        }
+        v_x += (((uint32_t)(1)) << WUFFS_PNG__INTERLACING[self->private_impl.f_interlace_pass][0]);
+      }
+    } else {
+      while (v_x < self->private_impl.f_width) {
+        v_i = (((uint64_t)(v_x)) * v_dst_bytes_per_pixel);
+        if (v_i <= ((uint64_t)(v_dst.len))) {
+          if (self->private_impl.f_color_type == 0) {
+            if (2 <= ((uint64_t)(v_s.len))) {
+              v_bits_unpacked[0] = v_s.ptr[1];
+              v_bits_unpacked[1] = v_s.ptr[0];
+              v_bits_unpacked[2] = v_s.ptr[1];
+              v_bits_unpacked[3] = v_s.ptr[0];
+              v_bits_unpacked[4] = v_s.ptr[1];
+              v_bits_unpacked[5] = v_s.ptr[0];
+              v_s = wuffs_base__slice_u8__subslice_i(v_s, 2);
+            }
+          } else if (self->private_impl.f_color_type == 2) {
+            if (6 <= ((uint64_t)(v_s.len))) {
+              v_bits_unpacked[0] = v_s.ptr[5];
+              v_bits_unpacked[1] = v_s.ptr[4];
+              v_bits_unpacked[2] = v_s.ptr[3];
+              v_bits_unpacked[3] = v_s.ptr[2];
+              v_bits_unpacked[4] = v_s.ptr[1];
+              v_bits_unpacked[5] = v_s.ptr[0];
+              v_s = wuffs_base__slice_u8__subslice_i(v_s, 6);
+            }
+          } else if (self->private_impl.f_color_type == 4) {
+            if (4 <= ((uint64_t)(v_s.len))) {
+              v_bits_unpacked[0] = v_s.ptr[1];
+              v_bits_unpacked[1] = v_s.ptr[0];
+              v_bits_unpacked[2] = v_s.ptr[1];
+              v_bits_unpacked[3] = v_s.ptr[0];
+              v_bits_unpacked[4] = v_s.ptr[1];
+              v_bits_unpacked[5] = v_s.ptr[0];
+              v_bits_unpacked[6] = v_s.ptr[3];
+              v_bits_unpacked[7] = v_s.ptr[2];
+              v_s = wuffs_base__slice_u8__subslice_i(v_s, 4);
+            }
+          } else {
+            if (8 <= ((uint64_t)(v_s.len))) {
+              v_bits_unpacked[0] = v_s.ptr[5];
+              v_bits_unpacked[1] = v_s.ptr[4];
+              v_bits_unpacked[2] = v_s.ptr[3];
+              v_bits_unpacked[3] = v_s.ptr[2];
+              v_bits_unpacked[4] = v_s.ptr[1];
+              v_bits_unpacked[5] = v_s.ptr[0];
+              v_bits_unpacked[6] = v_s.ptr[7];
+              v_bits_unpacked[7] = v_s.ptr[6];
+              v_s = wuffs_base__slice_u8__subslice_i(v_s, 8);
+            }
+          }
+          wuffs_base__pixel_swizzler__swizzle_interleaved_from_slice(&self->private_impl.f_swizzler, wuffs_base__slice_u8__subslice_i(v_dst, v_i), v_dst_palette, wuffs_base__make_slice_u8(v_bits_unpacked, 8));
         }
         v_x += (((uint32_t)(1)) << WUFFS_PNG__INTERLACING[self->private_impl.f_interlace_pass][0]);
       }

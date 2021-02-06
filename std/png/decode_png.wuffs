@@ -313,6 +313,11 @@ pri func decoder.assign_filter_distance!() {
 			this.dst_pixfmt = base.PIXEL_FORMAT__BGR
 			this.src_pixfmt = base.PIXEL_FORMAT__RGB
 			this.filter_distance = 3
+		} else if this.depth == 16 {
+			this.dst_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE
+			this.src_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE
+			this.filter_distance = 6
+			choose filter_and_swizzle = [filter_and_swizzle_tricky]
 		}
 
 	} else if this.color_type == 3 {
@@ -323,13 +328,28 @@ pri func decoder.assign_filter_distance!() {
 		}
 
 	} else if this.color_type == 4 {
-		// TODO: PIXEL_FORMAT__YA_NONPREMUL
+		if this.depth == 8 {
+			this.dst_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL
+			this.src_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL
+			this.filter_distance = 2
+			choose filter_and_swizzle = [filter_and_swizzle_tricky]
+		} else if this.depth == 16 {
+			this.dst_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE
+			this.src_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE
+			this.filter_distance = 4
+			choose filter_and_swizzle = [filter_and_swizzle_tricky]
+		}
 
 	} else if this.color_type == 6 {
 		if this.depth == 8 {
 			this.dst_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL
 			this.src_pixfmt = base.PIXEL_FORMAT__RGBA_NONPREMUL
 			this.filter_distance = 4
+		} else if this.depth == 16 {
+			this.dst_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE
+			this.src_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE
+			this.filter_distance = 8
+			choose filter_and_swizzle = [filter_and_swizzle_tricky]
 		}
 	}
 }
