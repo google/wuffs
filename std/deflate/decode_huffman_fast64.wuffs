@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// TODO: describe how the xxx_fast version differs from the xxx_slow one, the
-// assumptions that xxx_fast makes, and how that makes it fast.
-pri func decoder.decode_huffman_fast!(dst: base.io_writer, src: base.io_reader) base.status {
+// TODO: describe how the xxx_fastxx version differs from the xxx_slow one, the
+// assumptions that xxx_fastxx makes, and how that makes it fast.
+pri func decoder.decode_huffman_fast64!(dst: base.io_writer, src: base.io_reader) base.status {
 	// When editing this function, consider making the equivalent change to the
 	// decode_huffman_slow function. Keep the diff between the two
 	// decode_huffman_*.wuffs files as small as possible, while retaining both
@@ -175,7 +175,7 @@ pri func decoder.decode_huffman_fast!(dst: base.io_writer, src: base.io_reader) 
 		n_bits ~mod-= table_entry_n_bits
 
 		// The "while true { etc; break }" is a redundant version of "etc", but
-		// its presence minimizes the diff between decode_huffman_fast and
+		// its presence minimizes the diff between decode_huffman_fastxx and
 		// decode_huffman_slow.
 		while true,
 			pre args.dst.length() >= 258,

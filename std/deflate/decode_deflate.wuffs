@@ -258,7 +258,7 @@ pri func decoder.decode_blocks?(dst: base.io_writer, src: base.io_reader) {
 
 		this.end_of_block = false
 		while true {
-			status = this.decode_huffman_fast!(dst: args.dst, src: args.src)
+			status = this.decode_huffman_fast64!(dst: args.dst, src: args.src)
 			if status.is_error() {
 				return status
 			}
@@ -281,7 +281,7 @@ pri func decoder.decode_uncompressed?(dst: base.io_writer, src: base.io_reader) 
 
 	// TODO: make this "if" into a function invariant?
 	//
-	// Ditto for decode_huffman_slow and decode_huffman_fast.
+	// Ditto for decode_huffman_slow and decode_huffman_fastxx.
 	if (this.n_bits >= 8) or ((this.bits >> (this.n_bits & 7)) <> 0) {
 		return "#internal error: inconsistent n_bits"
 	}

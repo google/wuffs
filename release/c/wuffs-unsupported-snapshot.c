@@ -21969,7 +21969,7 @@ wuffs_deflate__decoder__init_huff(
     uint32_t a_base_symbol);
 
 static wuffs_base__status
-wuffs_deflate__decoder__decode_huffman_fast(
+wuffs_deflate__decoder__decode_huffman_fast64(
     wuffs_deflate__decoder* self,
     wuffs_base__io_buffer* a_dst,
     wuffs_base__io_buffer* a_src);
@@ -22328,7 +22328,7 @@ wuffs_deflate__decoder__decode_blocks(
         if (a_src) {
           a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
         }
-        v_status = wuffs_deflate__decoder__decode_huffman_fast(self, a_dst, a_src);
+        v_status = wuffs_deflate__decoder__decode_huffman_fast64(self, a_dst, a_src);
         if (a_src) {
           iop_a_src = a_src->data.ptr + a_src->meta.ri;
         }
@@ -23059,10 +23059,10 @@ wuffs_deflate__decoder__init_huff(
   return wuffs_base__make_status(NULL);
 }
 
-// -------- func deflate.decoder.decode_huffman_fast
+// -------- func deflate.decoder.decode_huffman_fast64
 
 static wuffs_base__status
-wuffs_deflate__decoder__decode_huffman_fast(
+wuffs_deflate__decoder__decode_huffman_fast64(
     wuffs_deflate__decoder* self,
     wuffs_base__io_buffer* a_dst,
     wuffs_base__io_buffer* a_src) {

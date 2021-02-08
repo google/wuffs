@@ -34,7 +34,7 @@ pri func decoder.decode_huffman_slow?(dst: base.io_writer, src: base.io_reader) 
 	var hdist              : base.u32
 
 	// When editing this function, consider making the equivalent change to the
-	// decode_huffman_fast function. Keep the diff between the two
+	// decode_huffman_fastxx functions. Keep the diff between the two
 	// decode_huffman_*.wuffs files as small as possible, while retaining both
 	// correctness and performance.
 
