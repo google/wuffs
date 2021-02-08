@@ -259,7 +259,7 @@ pri func decoder.decode_blocks?(dst: base.io_writer, src: base.io_reader) {
 		this.end_of_block = false
 		while true {
 			if this.util.cpu_arch_is_32_bit() {
-				status = this.decode_huffman_fast64!(dst: args.dst, src: args.src)
+				status = this.decode_huffman_fast32!(dst: args.dst, src: args.src)
 			} else {
 				status = this.decode_huffman_fast64!(dst: args.dst, src: args.src)
 			}
