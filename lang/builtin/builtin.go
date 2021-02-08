@@ -271,6 +271,7 @@ var Funcs = []string{
 
 	// ---- utility
 
+	"utility.cpu_arch_is_32_bit() bool",
 	"utility.empty_io_reader() io_reader",
 	"utility.empty_io_writer() io_writer",
 	"utility.empty_range_ii_u32() range_ii_u32",

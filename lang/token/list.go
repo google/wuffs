@@ -624,14 +624,15 @@ const (
 
 	// -------- 0x200 block.
 
-	IDAdvance    = ID(0x200)
-	IDCPUArch    = ID(0x201)
-	IDInitialize = ID(0x202)
-	IDLength     = ID(0x203)
-	IDReset      = ID(0x204)
-	IDSet        = ID(0x205)
-	IDUnroll     = ID(0x206)
-	IDUpdate     = ID(0x207)
+	IDAdvance        = ID(0x200)
+	IDCPUArch        = ID(0x201)
+	IDCPUArchIs32Bit = ID(0x202)
+	IDInitialize     = ID(0x203)
+	IDLength         = ID(0x204)
+	IDReset          = ID(0x205)
+	IDSet            = ID(0x206)
+	IDUnroll         = ID(0x207)
+	IDUpdate         = ID(0x208)
 
 	// TODO: range/rect methods like intersection and contains?
 
@@ -1045,14 +1046,15 @@ var builtInsByID = [nBuiltInIDs]string{
 
 	// -------- 0x200 block.
 
-	IDAdvance:    "advance",
-	IDCPUArch:    "cpu_arch",
-	IDInitialize: "initialize",
-	IDLength:     "length",
-	IDReset:      "reset",
-	IDSet:        "set",
-	IDUnroll:     "unroll",
-	IDUpdate:     "update",
+	IDAdvance:        "advance",
+	IDCPUArch:        "cpu_arch",
+	IDCPUArchIs32Bit: "cpu_arch_is_32_bit",
+	IDInitialize:     "initialize",
+	IDLength:         "length",
+	IDReset:          "reset",
+	IDSet:            "set",
+	IDUnroll:         "unroll",
+	IDUpdate:         "update",
 
 	IDHighBits: "high_bits",
 	IDLowBits:  "low_bits",

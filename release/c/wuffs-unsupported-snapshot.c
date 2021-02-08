@@ -22325,12 +22325,22 @@ wuffs_deflate__decoder__decode_blocks(
       }
       self->private_impl.f_end_of_block = false;
       while (true) {
-        if (a_src) {
-          a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
-        }
-        v_status = wuffs_deflate__decoder__decode_huffman_fast64(self, a_dst, a_src);
-        if (a_src) {
-          iop_a_src = a_src->data.ptr + a_src->meta.ri;
+        if (sizeof(void*) == 4) {
+          if (a_src) {
+            a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+          }
+          v_status = wuffs_deflate__decoder__decode_huffman_fast64(self, a_dst, a_src);
+          if (a_src) {
+            iop_a_src = a_src->data.ptr + a_src->meta.ri;
+          }
+        } else {
+          if (a_src) {
+            a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+          }
+          v_status = wuffs_deflate__decoder__decode_huffman_fast64(self, a_dst, a_src);
+          if (a_src) {
+            iop_a_src = a_src->data.ptr + a_src->meta.ri;
+          }
         }
         if (wuffs_base__status__is_error(&v_status)) {
           status = v_status;

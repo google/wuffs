@@ -132,6 +132,9 @@ func (g *gen) writeBuiltinCall(b *buffer, n *a.Expr, sideEffectsOnly bool, depth
 			return g.writeBuiltinTokenWriter(b, recv, method.Ident(), n.Args(), depth)
 		case t.IDUtility:
 			switch method.Ident() {
+			case t.IDCPUArchIs32Bit:
+				b.writes("(sizeof(void*) == 4)")
+				return nil
 			case t.IDEmptyIOReader, t.IDEmptyIOWriter:
 				if !g.currFunk.usesEmptyIOBuffer {
 					g.currFunk.usesEmptyIOBuffer = true
