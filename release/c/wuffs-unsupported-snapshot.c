@@ -23084,12 +23084,12 @@ wuffs_deflate__decoder__decode_huffman_fast32(
     wuffs_base__io_buffer* a_src) {
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
-  uint64_t v_bits = 0;
+  uint32_t v_bits = 0;
   uint32_t v_n_bits = 0;
   uint32_t v_table_entry = 0;
   uint32_t v_table_entry_n_bits = 0;
-  uint64_t v_lmask = 0;
-  uint64_t v_dmask = 0;
+  uint32_t v_lmask = 0;
+  uint32_t v_dmask = 0;
   uint32_t v_redir_top = 0;
   uint32_t v_redir_mask = 0;
   uint32_t v_length = 0;
@@ -23125,15 +23125,21 @@ wuffs_deflate__decoder__decode_huffman_fast32(
     status = wuffs_base__make_status(wuffs_deflate__error__internal_error_inconsistent_n_bits);
     goto exit;
   }
-  v_bits = ((uint64_t)(self->private_impl.f_bits));
+  v_bits = self->private_impl.f_bits;
   v_n_bits = self->private_impl.f_n_bits;
-  v_lmask = ((((uint64_t)(1)) << self->private_impl.f_n_huffs_bits[0]) - 1);
-  v_dmask = ((((uint64_t)(1)) << self->private_impl.f_n_huffs_bits[1]) - 1);
+  v_lmask = ((((uint32_t)(1)) << self->private_impl.f_n_huffs_bits[0]) - 1);
+  v_dmask = ((((uint32_t)(1)) << self->private_impl.f_n_huffs_bits[1]) - 1);
   label__loop__continue:;
-  while ((((uint64_t)(io2_a_dst - iop_a_dst)) >= 258) && (((uint64_t)(io2_a_src - iop_a_src)) >= 8)) {
-    v_bits |= ((uint64_t)(wuffs_base__peek_u64le__no_bounds_check(iop_a_src) << (v_n_bits & 63)));
-    iop_a_src += ((63 - (v_n_bits & 63)) >> 3);
-    v_n_bits |= 56;
+  while ((((uint64_t)(io2_a_dst - iop_a_dst)) >= 258) && (((uint64_t)(io2_a_src - iop_a_src)) >= 12)) {
+    if (v_n_bits < 15) {
+      v_bits |= (((uint32_t)(wuffs_base__peek_u8be__no_bounds_check(iop_a_src))) << v_n_bits);
+      iop_a_src += 1;
+      v_n_bits += 8;
+      v_bits |= (((uint32_t)(wuffs_base__peek_u8be__no_bounds_check(iop_a_src))) << v_n_bits);
+      iop_a_src += 1;
+      v_n_bits += 8;
+    } else {
+    }
     v_table_entry = self->private_data.f_huffs[0][(v_bits & v_lmask)];
     v_table_entry_n_bits = (v_table_entry & 15);
     v_bits >>= v_table_entry_n_bits;
@@ -23146,9 +23152,18 @@ wuffs_deflate__decoder__decode_huffman_fast32(
       self->private_impl.f_end_of_block = true;
       goto label__loop__break;
     } else if ((v_table_entry >> 28) != 0) {
+      if (v_n_bits < 15) {
+        v_bits |= (((uint32_t)(wuffs_base__peek_u8be__no_bounds_check(iop_a_src))) << v_n_bits);
+        iop_a_src += 1;
+        v_n_bits += 8;
+        v_bits |= (((uint32_t)(wuffs_base__peek_u8be__no_bounds_check(iop_a_src))) << v_n_bits);
+        iop_a_src += 1;
+        v_n_bits += 8;
+      } else {
+      }
       v_redir_top = ((v_table_entry >> 8) & 65535);
       v_redir_mask = ((((uint32_t)(1)) << ((v_table_entry >> 4) & 15)) - 1);
-      v_table_entry = self->private_data.f_huffs[0][((v_redir_top + (((uint32_t)((v_bits & 4294967295))) & v_redir_mask)) & 1023)];
+      v_table_entry = self->private_data.f_huffs[0][((v_redir_top + (v_bits & v_redir_mask)) & 1023)];
       v_table_entry_n_bits = (v_table_entry & 15);
       v_bits >>= v_table_entry_n_bits;
       v_n_bits -= v_table_entry_n_bits;
@@ -23179,21 +23194,50 @@ wuffs_deflate__decoder__decode_huffman_fast32(
     v_length = (((v_table_entry >> 8) & 255) + 3);
     v_table_entry_n_bits = ((v_table_entry >> 4) & 15);
     if (v_table_entry_n_bits > 0) {
-      v_length = (((v_length + 253 + ((uint32_t)(((v_bits) & WUFFS_BASE__LOW_BITS_MASK__U64(v_table_entry_n_bits))))) & 255) + 3);
+      if (v_n_bits < 15) {
+        v_bits |= (((uint32_t)(wuffs_base__peek_u8be__no_bounds_check(iop_a_src))) << v_n_bits);
+        iop_a_src += 1;
+        v_n_bits += 8;
+        v_bits |= (((uint32_t)(wuffs_base__peek_u8be__no_bounds_check(iop_a_src))) << v_n_bits);
+        iop_a_src += 1;
+        v_n_bits += 8;
+      } else {
+      }
+      v_length = (((v_length + 253 + ((v_bits) & WUFFS_BASE__LOW_BITS_MASK__U32(v_table_entry_n_bits))) & 255) + 3);
       v_bits >>= v_table_entry_n_bits;
       v_n_bits -= v_table_entry_n_bits;
+    } else {
+    }
+    if (v_n_bits < 15) {
+      v_bits |= (((uint32_t)(wuffs_base__peek_u8be__no_bounds_check(iop_a_src))) << v_n_bits);
+      iop_a_src += 1;
+      v_n_bits += 8;
+      v_bits |= (((uint32_t)(wuffs_base__peek_u8be__no_bounds_check(iop_a_src))) << v_n_bits);
+      iop_a_src += 1;
+      v_n_bits += 8;
+    } else {
     }
     v_table_entry = self->private_data.f_huffs[1][(v_bits & v_dmask)];
     v_table_entry_n_bits = (v_table_entry & 15);
     v_bits >>= v_table_entry_n_bits;
     v_n_bits -= v_table_entry_n_bits;
     if ((v_table_entry >> 28) == 1) {
+      if (v_n_bits < 15) {
+        v_bits |= (((uint32_t)(wuffs_base__peek_u8be__no_bounds_check(iop_a_src))) << v_n_bits);
+        iop_a_src += 1;
+        v_n_bits += 8;
+        v_bits |= (((uint32_t)(wuffs_base__peek_u8be__no_bounds_check(iop_a_src))) << v_n_bits);
+        iop_a_src += 1;
+        v_n_bits += 8;
+      } else {
+      }
       v_redir_top = ((v_table_entry >> 8) & 65535);
       v_redir_mask = ((((uint32_t)(1)) << ((v_table_entry >> 4) & 15)) - 1);
-      v_table_entry = self->private_data.f_huffs[1][((v_redir_top + (((uint32_t)((v_bits & 4294967295))) & v_redir_mask)) & 1023)];
+      v_table_entry = self->private_data.f_huffs[1][((v_redir_top + (v_bits & v_redir_mask)) & 1023)];
       v_table_entry_n_bits = (v_table_entry & 15);
       v_bits >>= v_table_entry_n_bits;
       v_n_bits -= v_table_entry_n_bits;
+    } else {
     }
     if ((v_table_entry >> 24) != 64) {
       if ((v_table_entry >> 24) == 8) {
@@ -23205,7 +23249,15 @@ wuffs_deflate__decoder__decode_huffman_fast32(
     }
     v_dist_minus_1 = ((v_table_entry >> 8) & 32767);
     v_table_entry_n_bits = ((v_table_entry >> 4) & 15);
-    v_dist_minus_1 = ((v_dist_minus_1 + ((uint32_t)(((v_bits) & WUFFS_BASE__LOW_BITS_MASK__U64(v_table_entry_n_bits))))) & 32767);
+    if (v_n_bits < v_table_entry_n_bits) {
+      v_bits |= (((uint32_t)(wuffs_base__peek_u8be__no_bounds_check(iop_a_src))) << v_n_bits);
+      iop_a_src += 1;
+      v_n_bits += 8;
+      v_bits |= (((uint32_t)(wuffs_base__peek_u8be__no_bounds_check(iop_a_src))) << v_n_bits);
+      iop_a_src += 1;
+      v_n_bits += 8;
+    }
+    v_dist_minus_1 = ((v_dist_minus_1 + ((v_bits) & WUFFS_BASE__LOW_BITS_MASK__U32(v_table_entry_n_bits))) & 32767);
     v_bits >>= v_table_entry_n_bits;
     v_n_bits -= v_table_entry_n_bits;
     while (true) {
@@ -23242,10 +23294,6 @@ wuffs_deflate__decoder__decode_huffman_fast32(
     label__0__break:;
   }
   label__loop__break:;
-  if (v_n_bits > 63) {
-    status = wuffs_base__make_status(wuffs_deflate__error__internal_error_inconsistent_n_bits);
-    goto exit;
-  }
   while (v_n_bits >= 8) {
     v_n_bits -= 8;
     if (iop_a_src > io1_a_src) {
@@ -23255,7 +23303,7 @@ wuffs_deflate__decoder__decode_huffman_fast32(
       goto exit;
     }
   }
-  self->private_impl.f_bits = ((uint32_t)((v_bits & ((((uint64_t)(1)) << v_n_bits) - 1))));
+  self->private_impl.f_bits = (v_bits & ((((uint32_t)(1)) << v_n_bits) - 1));
   self->private_impl.f_n_bits = v_n_bits;
   if ((self->private_impl.f_n_bits >= 8) || ((self->private_impl.f_bits >> self->private_impl.f_n_bits) != 0)) {
     status = wuffs_base__make_status(wuffs_deflate__error__internal_error_inconsistent_n_bits);
