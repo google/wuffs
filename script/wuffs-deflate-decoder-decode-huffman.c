@@ -39,25 +39,25 @@
 //
 // #include "../../script/wuffs-deflate-decoder-decode-huffman.c"
 //
-// Then find the call to wuffs_deflate__decoder__decode_huffman_fast. It should
-// be inside the wuffs_deflate__decoder__decode_blocks function body, and the
-// lines of code should look something like
+// Then find the calls to wuffs_deflate__decoder__decode_huffman_fastxx. They
+// should be inside the wuffs_deflate__decoder__decode_blocks function body,
+// and the lines of code should look something like
+//   v_status = wuffs_deflate__decoder__decode_huffman_fast32(etc);
+// and
+//   v_status = wuffs_deflate__decoder__decode_huffman_fast64(etc);
 //
-// v_status =
-//     wuffs_deflate__decoder__decode_huffman_fast(self, a_dst, a_src);
-//
-// Change the "wuffs" to "c_wuffs", i.e. add a "c_" prefix. The net result
-// should look something like:
+// Change the "wuffs_etc_fastxx" to "c_wuffs_etc_fast", i.e. add a "c_" prefix
+// and drop the "32" or "64" suffix. The net result should look something like:
 //
 // clang-format off
 /*
 
 $ git diff release/c/wuffs-unsupported-snapshot.c
 diff --git a/release/c/wuffs-unsupported-snapshot.c b/release/c/wuffs-unsupported-snapshot.c
-index c570e34..0d080d8 100644
+index 1e1941ae..d2d59fef 100644
 --- a/release/c/wuffs-unsupported-snapshot.c
 +++ b/release/c/wuffs-unsupported-snapshot.c
-@@ -3151,6 +3151,8 @@ struct wuffs_zlib__decoder__struct {
+@@ -9283,6 +9283,8 @@ DecodeJsonResult DecodeJson(
  // WUFFS C HEADER ENDS HERE.
  #ifdef WUFFS_IMPLEMENTATION
 
@@ -66,22 +66,31 @@ index c570e34..0d080d8 100644
  #ifdef __cplusplus
  extern "C" {
  #endif
-@@ -5557,7 +5559,7 @@ wuffs_deflate__decoder__decode_blocks(wuffs_deflate__decoder* self,
-             iop_a_src - a_src.private_impl.buf->data.ptr;
-       }
-       v_status =
--          wuffs_deflate__decoder__decode_huffman_fast(self, a_dst, a_src);
-+          c_wuffs_deflate__decoder__decode_huffman_fast(self, a_dst, a_src);
-       if (a_src.private_impl.buf) {
-         iop_a_src =
-             a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.ri;
+@@ -22335,7 +22337,7 @@ wuffs_deflate__decoder__decode_blocks(
+           if (a_src) {
+             a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+           }
+-          v_status = wuffs_deflate__decoder__decode_huffman_fast32(self, a_dst, a_src);
++          v_status = c_wuffs_deflate__decoder__decode_huffman_fast(self, a_dst, a_src);
+           if (a_src) {
+             iop_a_src = a_src->data.ptr + a_src->meta.ri;
+           }
+@@ -22343,7 +22345,7 @@ wuffs_deflate__decoder__decode_blocks(
+           if (a_src) {
+             a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+           }
+-          v_status = wuffs_deflate__decoder__decode_huffman_fast64(self, a_dst, a_src);
++          v_status = c_wuffs_deflate__decoder__decode_huffman_fast(self, a_dst, a_src);
+           if (a_src) {
+             iop_a_src = a_src->data.ptr + a_src->meta.ri;
+           }
 
 */
 // clang-format on
 //
-// That concludes the two edits to release/c/wuffs-unsupported-snapshot.c. Run
-// the tests and benchmarks with the "-skipgen" flag, otherwise the "wuffs"
-// tool will re-generate the C code and override your edits:
+// That concludes the edits to release/c/wuffs-unsupported-snapshot.c. Run the
+// tests and benchmarks with the "-skipgen" flag, otherwise the "wuffs" tool
+// will re-generate the C code and override your edits:
 //
 // wuffs test  -skipgen std/deflate
 // wuffs bench -skipgen std/deflate
@@ -215,12 +224,16 @@ static const uint32_t wuffs_base__width_to_mask_table[33] = {
 
 // ----------------
 
-// This is the generated function that we are explicitly overriding. Note that
-// the function name is "wuffs_etc", not "c_wuffs_etc".
+// These are the generated functions that we are explicitly overriding. Note
+// that the function name is "wuffs_etc", not "c_wuffs_etc".
 static wuffs_base__status  //
-wuffs_deflate__decoder__decode_huffman_fast(wuffs_deflate__decoder* self,
-                                            wuffs_base__io_buffer* a_dst,
-                                            wuffs_base__io_buffer* a_src);
+wuffs_deflate__decoder__decode_huffman_fast32(wuffs_deflate__decoder* self,
+                                              wuffs_base__io_buffer* a_dst,
+                                              wuffs_base__io_buffer* a_src);
+static wuffs_base__status  //
+wuffs_deflate__decoder__decode_huffman_fast64(wuffs_deflate__decoder* self,
+                                              wuffs_base__io_buffer* a_dst,
+                                              wuffs_base__io_buffer* a_src);
 
 // This is the overriding implementation.
 wuffs_base__status  //
@@ -228,8 +241,9 @@ c_wuffs_deflate__decoder__decode_huffman_fast(wuffs_deflate__decoder* self,
                                               wuffs_base__io_buffer* a_dst,
                                               wuffs_base__io_buffer* a_src) {
   // Avoid the -Werror=unused-function warning for the now-unused
-  // overridden wuffs_deflate__decoder__decode_huffman_fast.
-  (void)(wuffs_deflate__decoder__decode_huffman_fast);
+  // overridden wuffs_deflate__decoder__decode_huffman_fastxx functions.
+  (void)(wuffs_deflate__decoder__decode_huffman_fast32);
+  (void)(wuffs_deflate__decoder__decode_huffman_fast64);
 
   if (!a_dst || !a_src) {
     return wuffs_base__make_status(wuffs_base__error__bad_argument);
@@ -285,7 +299,9 @@ outer_loop:
     //
     // The fact that the 48 we need is less than the 56 we get is a happy
     // coincidence. It lets us eliminate any other loads in the loop body.
-    bits |= *((uint64_t*)psrc) << n_bits;
+    uint64_t src_u64;
+    memcpy(&src_u64, psrc, 8);
+    bits |= src_u64 << n_bits;
     psrc += (63 - n_bits) >> 3;
     n_bits |= 56;
 #else
