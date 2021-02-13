@@ -645,16 +645,17 @@ const (
 	IDIsOK         = ID(0x231)
 	IDIsSuspension = ID(0x232)
 
-	IDData            = ID(0x240)
-	IDHeight          = ID(0x241)
-	IDIO              = ID(0x242)
-	IDLimit           = ID(0x243)
-	IDPrefix          = ID(0x244)
-	IDRow             = ID(0x245)
-	IDStride          = ID(0x246)
-	IDSuffix          = ID(0x247)
-	IDValidUTF8Length = ID(0x248)
-	IDWidth           = ID(0x249)
+	IDData             = ID(0x240)
+	IDHeight           = ID(0x241)
+	IDIO               = ID(0x242)
+	IDLimit            = ID(0x243)
+	IDPrefix           = ID(0x244)
+	IDRow              = ID(0x245)
+	IDStride           = ID(0x246)
+	IDSuffix           = ID(0x247)
+	IDUintptrLow12Bits = ID(0x248)
+	IDValidUTF8Length  = ID(0x249)
+	IDWidth            = ID(0x24A)
 
 	IDLimitedSwizzleU32InterleavedFromReader = ID(0x280)
 	IDSwizzleInterleavedFromReader           = ID(0x281)
@@ -1066,16 +1067,17 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDIsOK:         "is_ok",
 	IDIsSuspension: "is_suspension",
 
-	IDData:            "data",
-	IDHeight:          "height",
-	IDIO:              "io",
-	IDLimit:           "limit",
-	IDPrefix:          "prefix",
-	IDRow:             "row",
-	IDStride:          "stride",
-	IDSuffix:          "suffix",
-	IDValidUTF8Length: "valid_utf_8_length",
-	IDWidth:           "width",
+	IDData:             "data",
+	IDHeight:           "height",
+	IDIO:               "io",
+	IDLimit:            "limit",
+	IDPrefix:           "prefix",
+	IDRow:              "row",
+	IDStride:           "stride",
+	IDSuffix:           "suffix",
+	IDUintptrLow12Bits: "uintptr_low_12_bits",
+	IDValidUTF8Length:  "valid_utf_8_length",
+	IDWidth:            "width",
 
 	IDLimitedSwizzleU32InterleavedFromReader: "limited_swizzle_u32_interleaved_from_reader",
 	IDSwizzleInterleavedFromReader:           "swizzle_interleaved_from_reader",

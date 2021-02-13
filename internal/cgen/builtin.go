@@ -687,6 +687,14 @@ func (g *gen) writeBuiltinSlice(b *buffer, recv *a.Expr, method t.ID, args []*a.
 		b.writes(".len))")
 		return nil
 
+	case t.IDUintptrLow12Bits:
+		b.writes("((uint32_t)(0xFFF & (uintptr_t)(")
+		if err := g.writeExpr(b, recv, false, depth); err != nil {
+			return err
+		}
+		b.writes(".ptr)))")
+		return nil
+
 	case t.IDSuffix:
 		// TODO: don't assume that the slice is a slice of base.u8.
 		b.writes("wuffs_base__slice_u8__suffix(")

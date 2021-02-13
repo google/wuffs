@@ -77,6 +77,12 @@ pri func ieee_hasher.up_arm_crc32!(x: slice base.u8),
 
 	s = 0xFFFF_FFFF ^ this.state
 
+	// Align to a 16-byte boundary.
+	while (args.x.length() > 0) and ((15 & args.x.uintptr_low_12_bits()) <> 0) {
+		s = IEEE_TABLE[0][((s & 0xFF) as base.u8) ^ args.x[0]] ^ (s >> 8)
+		args.x = args.x[1 ..]
+	} endwhile
+
 	// See "Multi-Byte Lookup Tables" in std/crc32/README.md for more detail on
 	// the slicing-by-M algorithm. We use an M of 16.
 	iterate (p = args.x)(length: 16, advance: 16, unroll: 2) {

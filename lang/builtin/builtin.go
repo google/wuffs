@@ -680,6 +680,7 @@ var SliceFuncs = []string{
 	"GENERIC T1.copy_from_slice!(s: T1) u64",
 	"GENERIC T1.length() u64",
 	"GENERIC T1.prefix(up_to: u64) T1",
+	"GENERIC T1.uintptr_low_12_bits() u32[..= 4095]",
 	"GENERIC T1.suffix(up_to: u64) T1",
 }
 

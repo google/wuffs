@@ -37,6 +37,7 @@
 - Added iterate advance parameter.
 - Added preprocessor.
 - Added single-quoted strings.
+- Added slice `uintptr_low_12_bits` method.
 - Added tokens.
 - Changed `gif.decoder_workbuf_len_max_incl_worst_case` from 1 to 0.
 - Changed default C compilers from `clang-5.0,gcc` to `clang-9,gcc`.
