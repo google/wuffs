@@ -664,7 +664,8 @@ const (
 	minBuiltInCPUArch = 0x300
 	maxBuiltInCPUArch = 0x33F
 
-	// [0x300 ..= 0x31F] are reserved for ARM/NEON.
+	IDARMCRC32 = ID(0x300)
+	IDARMNeon  = ID(0x301)
 
 	IDX86SSE42 = ID(0x320)
 	IDX86AVX2  = ID(0x321)
@@ -1080,6 +1081,9 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDSwizzleInterleavedFromReader:           "swizzle_interleaved_from_reader",
 
 	// -------- 0x300 block.
+
+	IDARMCRC32: "arm_crc32",
+	IDARMNeon:  "arm_neon",
 
 	IDX86SSE42: "x86_sse42",
 	IDX86AVX2:  "x86_avx2",

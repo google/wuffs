@@ -47,11 +47,33 @@
 #if defined(WUFFS_CONFIG__AVOID_CPU_ARCH)
 // No-op.
 #else
-#if defined(__GNUC__) && defined(__x86_64__)
+#if defined(__GNUC__)
+
+// To simplify Wuffs code, "cpu_arch >= arm_xxx" requires xxx but also
+// unaligned little-endian load/stores.
+#if defined(__ARM_FEATURE_UNALIGNED) && defined(__BYTE_ORDER__) && \
+    (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
+// Not all gcc versions define __ARM_ACLE, even if they support crc32
+// intrinsics. Look for __ARM_FEATURE_CRC32 instead.
+#if defined(__ARM_FEATURE_CRC32)
+#include <arm_acle.h>
+#define WUFFS_BASE__CPU_ARCH__ARM_CRC32
+#endif  // defined(__ARM_FEATURE_CRC32)
+#if defined(__ARM_NEON)
+#include <arm_neon.h>
+#define WUFFS_BASE__CPU_ARCH__ARM_NEON
+#endif  // defined(__ARM_NEON)
+#endif  // defined(__ARM_FEATURE_UNALIGNED) etc
+
+// Similarly, "cpu_arch >= x86_sse42" requires SSE4.2 but also PCLMUL and
+// POPCNT. This is checked at runtime via cpuid, not at compile time.
+#if defined(__x86_64__)
 #include <cpuid.h>
 #include <x86intrin.h>
 #define WUFFS_BASE__CPU_ARCH__X86_64
-#endif  // defined(__GNUC__) && defined(__x86_64__)
+#endif  // defined(__x86_64__)
+
+#endif  // defined(__GNUC__)
 #endif  // defined(WUFFS_CONFIG__AVOID_CPU_ARCH)
 
 // --------
@@ -67,6 +89,24 @@
 #endif  // defined(WUFFS_CONFIG__STATIC_FUNCTIONS)
 
 // ---------------- CPU Architecture
+
+static inline bool  //
+wuffs_base__cpu_arch__have_arm_crc32() {
+#if defined(WUFFS_BASE__CPU_ARCH__ARM_CRC32)
+  return true;
+#else
+  return false;
+#endif  // defined(WUFFS_BASE__CPU_ARCH__ARM_CRC32)
+}
+
+static inline bool  //
+wuffs_base__cpu_arch__have_arm_neon() {
+#if defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
+  return true;
+#else
+  return false;
+#endif  // defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
+}
 
 // WUFFS_BASE__CPU_ARCH__X86_64__ETC are bits returned by
 // wuffs_base__cpu_arch__x86_64__capabilities.

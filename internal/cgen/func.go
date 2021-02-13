@@ -202,7 +202,10 @@ func (g *gen) writeFuncSignature(b *buffer, n *a.Func, wfs uint32) error {
 }
 
 func (g *gen) writeFuncPrototype(b *buffer, n *a.Func) error {
-	caMacro, _, _ := cpuArchCNames(n.Asserts())
+	caMacro, _, _, err := cpuArchCNames(n.Asserts())
+	if err != nil {
+		return err
+	}
 	if caMacro != "" {
 		b.printf("#if defined(WUFFS_BASE__CPU_ARCH__%s)\n", caMacro)
 	}
@@ -228,7 +231,10 @@ func (g *gen) writeFuncImpl(b *buffer, n *a.Func) error {
 
 	b.printf("// -------- func %s.%s\n\n", g.pkgName, n.QQID().Str(g.tm))
 
-	caMacro, _, caAttribute := cpuArchCNames(n.Asserts())
+	caMacro, _, caAttribute, err := cpuArchCNames(n.Asserts())
+	if err != nil {
+		return err
+	}
 	if caMacro != "" {
 		b.printf("#if defined(WUFFS_BASE__CPU_ARCH__%s)\n", caMacro)
 	}

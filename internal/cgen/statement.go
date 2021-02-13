@@ -238,7 +238,10 @@ func (g *gen) writeStatementChoose(b *buffer, n *a.Choose, depth uint32) error {
 		if n.Name() == id {
 			suffix = "__choosy_default"
 		}
-		caMacro, caName, _ := cpuArchCNames(g.findAstFunc(t.QQID{recv[0], recv[1], id}).Asserts())
+		caMacro, caName, _, err := cpuArchCNames(g.findAstFunc(t.QQID{recv[0], recv[1], id}).Asserts())
+		if err != nil {
+			return err
+		}
 		if caMacro == "" {
 			b.printf("&%s%s__%s%s", g.pkgPrefix, recv.Str(g.tm), id.Str(g.tm), suffix)
 			conclusive = true
@@ -257,22 +260,27 @@ func (g *gen) writeStatementChoose(b *buffer, n *a.Choose, depth uint32) error {
 	return nil
 }
 
-func cpuArchCNames(asserts []*a.Node) (caMacro string, caName string, caAttribute string) {
-	sse42 := false
+func cpuArchCNames(asserts []*a.Node) (caMacro string, caName string, caAttribute string, retErr error) {
+	match := false
 	for _, o := range asserts {
-		o := o.AsAssert()
-		if !o.IsChooseCPUArch() {
-			continue
-		}
-		switch o.Condition().RHS().AsExpr().Ident() {
-		case t.IDX86SSE42:
-			sse42 = true
+		if o := o.AsAssert(); o.IsChooseCPUArch() {
+			if match {
+				// TODO: support multiple choose-cpu_arch preconditions?
+				return "", "", "", fmt.Errorf("too many choose-cpu_arch preconditions")
+			}
+			match = true
+
+			switch o.Condition().RHS().AsExpr().Ident() {
+			case t.IDARMCRC32:
+				caMacro, caName, caAttribute = "ARM_CRC32", "arm_crc32", ""
+			case t.IDARMNeon:
+				caMacro, caName, caAttribute = "ARM_NEON", "arm_neon", ""
+			case t.IDX86SSE42:
+				caMacro, caName, caAttribute = "X86_64", "sse42", "__attribute__((target(\"sse4.2\")))"
+			}
 		}
 	}
-	if sse42 {
-		return "X86_64", "sse42", "__attribute__((target(\"sse4.2\")))"
-	}
-	return "", "", ""
+	return caMacro, caName, caAttribute, nil
 }
 
 func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {
