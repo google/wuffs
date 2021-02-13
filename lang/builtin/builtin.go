@@ -245,6 +245,7 @@ var Types = []string{
 
 	// ----
 
+	"arm_crc32_u32",
 	"x86_m128i",
 }
 
@@ -530,6 +531,16 @@ var Funcs = []string{
 		"dst: slice u8, dst_palette: slice u8, src: slice u8) u64",
 	"pixel_swizzler.swizzle_interleaved_transparent_black!(" +
 		"dst: slice u8, dst_palette: slice u8, num_pixels: u64) u64",
+
+	// ---- arm_crc32_u32
+
+	"arm_crc32_u32.create(a: u32) arm_crc32_u32",
+	"arm_crc32_u32.value() u32",
+
+	"arm_crc32_u32._crc32b(b: u8) arm_crc32_u32",
+	"arm_crc32_u32._crc32h(b: u16) arm_crc32_u32",
+	"arm_crc32_u32._crc32w(b: u32) arm_crc32_u32",
+	"arm_crc32_u32._crc32d(b: u64) arm_crc32_u32",
 
 	// ---- x86_m128i
 

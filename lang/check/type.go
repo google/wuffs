@@ -25,7 +25,9 @@ import (
 type cpuArchBits uint32
 
 const (
-	cpuArchBitsX86SSE42 = cpuArchBits(0x00000001)
+	cpuArchBitsARMCRC32 = cpuArchBits(0x00000001)
+	cpuArchBitsARMNeon  = cpuArchBits(0x00000002)
+	cpuArchBitsX86SSE42 = cpuArchBits(0x00000004)
 )
 
 func calcCPUArchBits(n *a.Func) (ret cpuArchBits) {
@@ -35,6 +37,10 @@ func calcCPUArchBits(n *a.Func) (ret cpuArchBits) {
 			continue
 		}
 		switch o.Condition().RHS().AsExpr().Ident() {
+		case t.IDARMCRC32:
+			ret |= cpuArchBitsARMCRC32
+		case t.IDARMNeon:
+			ret |= cpuArchBitsARMNeon
 		case t.IDX86SSE42:
 			ret |= cpuArchBitsX86SSE42
 		}
@@ -46,6 +52,8 @@ func (q *checker) tcheckCPUArchBits(cab cpuArchBits, typ *a.TypeExpr) error {
 	if qid := typ.Innermost().QID(); qid[0] == t.IDBase {
 		need := cpuArchBits(0)
 		switch qid[1] {
+		case t.IDARMCRC32U32:
+			need = cpuArchBitsARMCRC32
 		case t.IDX86M128I:
 			need = cpuArchBitsX86SSE42
 		}

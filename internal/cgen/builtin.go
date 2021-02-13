@@ -95,6 +95,8 @@ func (g *gen) writeBuiltinCall(b *buffer, n *a.Expr, sideEffectsOnly bool, depth
 
 	if qid[1].IsNumType() {
 		return g.writeBuiltinNumType(b, recv, method.Ident(), n.Args(), depth)
+	} else if qid[1].IsBuiltInCPUArch() {
+		return g.writeBuiltinCPUArch(b, recv, method.Ident(), n.Args(), sideEffectsOnly, depth)
 	} else {
 		switch qid[1] {
 		case t.IDIOReader:
@@ -144,8 +146,6 @@ func (g *gen) writeBuiltinCall(b *buffer, n *a.Expr, sideEffectsOnly bool, depth
 				b.writes("&empty_io_buffer")
 				return nil
 			}
-		case t.IDX86M128I:
-			return g.writeBuiltinCPUArch(b, recv, method.Ident(), n.Args(), sideEffectsOnly, depth)
 		}
 	}
 	return errNoSuchBuiltin
@@ -524,8 +524,11 @@ func (g *gen) writeBuiltinCPUArch(b *buffer, recv *a.Expr, method t.ID, args []*
 	}
 
 	const create = "create"
-	methodStr := method.Str(g.tm)
-	if strings.HasPrefix(methodStr, create) {
+	if methodStr := method.Str(g.tm); methodStr == "value" {
+		return g.writeExpr(b, recv, false, depth)
+	} else if methodStr == create {
+		return g.writeExpr(b, args[0].AsArg().Value(), false, depth)
+	} else if strings.HasPrefix(methodStr, create) {
 		b.printf("%s(", methodStr[len(create):])
 		for i, o := range args {
 			if i > 0 {
@@ -552,6 +555,10 @@ func (g *gen) writeBuiltinCPUArch(b *buffer, recv *a.Expr, method t.ID, args []*
 			b.writes(after)
 		}
 	} else {
+		armCRC32U32 := recv.MType().Eq(typeExprARMCRC32U32)
+		if armCRC32U32 {
+			b.writeb('_')
+		}
 		b.printf("%s(", methodStr)
 		if err := g.writeExpr(b, recv, false, depth); err != nil {
 			return err
@@ -560,7 +567,9 @@ func (g *gen) writeBuiltinCPUArch(b *buffer, recv *a.Expr, method t.ID, args []*
 			b.writes(", ")
 			after := ""
 			v := o.AsArg().Value()
-			if !v.MType().IsCPUArchType() {
+			if armCRC32U32 {
+				// No-op.
+			} else if !v.MType().IsCPUArchType() {
 				b.writes("(int32_t)(")
 				after = ")"
 			}

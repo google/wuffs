@@ -351,6 +351,8 @@ func (g *gen) writeVars(b *buffer, f *funk, inStructDecl bool) error {
 			b.writes(" = wuffs_base__make_status(NULL);\n")
 		} else if typ.IsIOType() {
 			b.printf(" = &%s%s;\n", uPrefix, name)
+		} else if typ.Eq(typeExprARMCRC32U32) {
+			b.writes(" = 0;\n")
 		} else {
 			b.writes(" = {0};\n")
 		}

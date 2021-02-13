@@ -21945,87 +21945,58 @@ wuffs_crc32__ieee_hasher__up_arm_crc32(
 
   v_s = (4294967295 ^ self->private_impl.f_state);
   while ((((uint64_t)(a_x.len)) > 0) && ((15 & ((uint32_t)(0xFFF & (uintptr_t)(a_x.ptr)))) != 0)) {
-    v_s = (WUFFS_CRC32__IEEE_TABLE[0][(((uint8_t)((v_s & 255))) ^ a_x.ptr[0])] ^ (v_s >> 8));
+    v_s = __crc32b(v_s, a_x.ptr[0]);
     a_x = wuffs_base__slice_u8__subslice_i(a_x, 1);
   }
   {
     wuffs_base__slice_u8 i_slice_p = a_x;
     v_p.ptr = i_slice_p.ptr;
-    v_p.len = 16;
-    uint8_t* i_end0_p = v_p.ptr + (((i_slice_p.len - (size_t)(v_p.ptr - i_slice_p.ptr)) / 32) * 32);
+    v_p.len = 8;
+    uint8_t* i_end0_p = v_p.ptr + (((i_slice_p.len - (size_t)(v_p.ptr - i_slice_p.ptr)) / 128) * 128);
     while (v_p.ptr < i_end0_p) {
-      v_s ^= ((((uint32_t)(v_p.ptr[0])) << 0) |
-          (((uint32_t)(v_p.ptr[1])) << 8) |
-          (((uint32_t)(v_p.ptr[2])) << 16) |
-          (((uint32_t)(v_p.ptr[3])) << 24));
-      v_s = (WUFFS_CRC32__IEEE_TABLE[0][v_p.ptr[15]] ^
-          WUFFS_CRC32__IEEE_TABLE[1][v_p.ptr[14]] ^
-          WUFFS_CRC32__IEEE_TABLE[2][v_p.ptr[13]] ^
-          WUFFS_CRC32__IEEE_TABLE[3][v_p.ptr[12]] ^
-          WUFFS_CRC32__IEEE_TABLE[4][v_p.ptr[11]] ^
-          WUFFS_CRC32__IEEE_TABLE[5][v_p.ptr[10]] ^
-          WUFFS_CRC32__IEEE_TABLE[6][v_p.ptr[9]] ^
-          WUFFS_CRC32__IEEE_TABLE[7][v_p.ptr[8]] ^
-          WUFFS_CRC32__IEEE_TABLE[8][v_p.ptr[7]] ^
-          WUFFS_CRC32__IEEE_TABLE[9][v_p.ptr[6]] ^
-          WUFFS_CRC32__IEEE_TABLE[10][v_p.ptr[5]] ^
-          WUFFS_CRC32__IEEE_TABLE[11][v_p.ptr[4]] ^
-          WUFFS_CRC32__IEEE_TABLE[12][(255 & (v_s >> 24))] ^
-          WUFFS_CRC32__IEEE_TABLE[13][(255 & (v_s >> 16))] ^
-          WUFFS_CRC32__IEEE_TABLE[14][(255 & (v_s >> 8))] ^
-          WUFFS_CRC32__IEEE_TABLE[15][(255 & (v_s >> 0))]);
-      v_p.ptr += 16;
-      v_s ^= ((((uint32_t)(v_p.ptr[0])) << 0) |
-          (((uint32_t)(v_p.ptr[1])) << 8) |
-          (((uint32_t)(v_p.ptr[2])) << 16) |
-          (((uint32_t)(v_p.ptr[3])) << 24));
-      v_s = (WUFFS_CRC32__IEEE_TABLE[0][v_p.ptr[15]] ^
-          WUFFS_CRC32__IEEE_TABLE[1][v_p.ptr[14]] ^
-          WUFFS_CRC32__IEEE_TABLE[2][v_p.ptr[13]] ^
-          WUFFS_CRC32__IEEE_TABLE[3][v_p.ptr[12]] ^
-          WUFFS_CRC32__IEEE_TABLE[4][v_p.ptr[11]] ^
-          WUFFS_CRC32__IEEE_TABLE[5][v_p.ptr[10]] ^
-          WUFFS_CRC32__IEEE_TABLE[6][v_p.ptr[9]] ^
-          WUFFS_CRC32__IEEE_TABLE[7][v_p.ptr[8]] ^
-          WUFFS_CRC32__IEEE_TABLE[8][v_p.ptr[7]] ^
-          WUFFS_CRC32__IEEE_TABLE[9][v_p.ptr[6]] ^
-          WUFFS_CRC32__IEEE_TABLE[10][v_p.ptr[5]] ^
-          WUFFS_CRC32__IEEE_TABLE[11][v_p.ptr[4]] ^
-          WUFFS_CRC32__IEEE_TABLE[12][(255 & (v_s >> 24))] ^
-          WUFFS_CRC32__IEEE_TABLE[13][(255 & (v_s >> 16))] ^
-          WUFFS_CRC32__IEEE_TABLE[14][(255 & (v_s >> 8))] ^
-          WUFFS_CRC32__IEEE_TABLE[15][(255 & (v_s >> 0))]);
-      v_p.ptr += 16;
+      v_s = __crc32d(v_s, wuffs_base__peek_u64le__no_bounds_check(v_p.ptr));
+      v_p.ptr += 8;
+      v_s = __crc32d(v_s, wuffs_base__peek_u64le__no_bounds_check(v_p.ptr));
+      v_p.ptr += 8;
+      v_s = __crc32d(v_s, wuffs_base__peek_u64le__no_bounds_check(v_p.ptr));
+      v_p.ptr += 8;
+      v_s = __crc32d(v_s, wuffs_base__peek_u64le__no_bounds_check(v_p.ptr));
+      v_p.ptr += 8;
+      v_s = __crc32d(v_s, wuffs_base__peek_u64le__no_bounds_check(v_p.ptr));
+      v_p.ptr += 8;
+      v_s = __crc32d(v_s, wuffs_base__peek_u64le__no_bounds_check(v_p.ptr));
+      v_p.ptr += 8;
+      v_s = __crc32d(v_s, wuffs_base__peek_u64le__no_bounds_check(v_p.ptr));
+      v_p.ptr += 8;
+      v_s = __crc32d(v_s, wuffs_base__peek_u64le__no_bounds_check(v_p.ptr));
+      v_p.ptr += 8;
+      v_s = __crc32d(v_s, wuffs_base__peek_u64le__no_bounds_check(v_p.ptr));
+      v_p.ptr += 8;
+      v_s = __crc32d(v_s, wuffs_base__peek_u64le__no_bounds_check(v_p.ptr));
+      v_p.ptr += 8;
+      v_s = __crc32d(v_s, wuffs_base__peek_u64le__no_bounds_check(v_p.ptr));
+      v_p.ptr += 8;
+      v_s = __crc32d(v_s, wuffs_base__peek_u64le__no_bounds_check(v_p.ptr));
+      v_p.ptr += 8;
+      v_s = __crc32d(v_s, wuffs_base__peek_u64le__no_bounds_check(v_p.ptr));
+      v_p.ptr += 8;
+      v_s = __crc32d(v_s, wuffs_base__peek_u64le__no_bounds_check(v_p.ptr));
+      v_p.ptr += 8;
+      v_s = __crc32d(v_s, wuffs_base__peek_u64le__no_bounds_check(v_p.ptr));
+      v_p.ptr += 8;
+      v_s = __crc32d(v_s, wuffs_base__peek_u64le__no_bounds_check(v_p.ptr));
+      v_p.ptr += 8;
     }
-    v_p.len = 16;
-    uint8_t* i_end1_p = v_p.ptr + (((i_slice_p.len - (size_t)(v_p.ptr - i_slice_p.ptr)) / 16) * 16);
+    v_p.len = 8;
+    uint8_t* i_end1_p = v_p.ptr + (((i_slice_p.len - (size_t)(v_p.ptr - i_slice_p.ptr)) / 8) * 8);
     while (v_p.ptr < i_end1_p) {
-      v_s ^= ((((uint32_t)(v_p.ptr[0])) << 0) |
-          (((uint32_t)(v_p.ptr[1])) << 8) |
-          (((uint32_t)(v_p.ptr[2])) << 16) |
-          (((uint32_t)(v_p.ptr[3])) << 24));
-      v_s = (WUFFS_CRC32__IEEE_TABLE[0][v_p.ptr[15]] ^
-          WUFFS_CRC32__IEEE_TABLE[1][v_p.ptr[14]] ^
-          WUFFS_CRC32__IEEE_TABLE[2][v_p.ptr[13]] ^
-          WUFFS_CRC32__IEEE_TABLE[3][v_p.ptr[12]] ^
-          WUFFS_CRC32__IEEE_TABLE[4][v_p.ptr[11]] ^
-          WUFFS_CRC32__IEEE_TABLE[5][v_p.ptr[10]] ^
-          WUFFS_CRC32__IEEE_TABLE[6][v_p.ptr[9]] ^
-          WUFFS_CRC32__IEEE_TABLE[7][v_p.ptr[8]] ^
-          WUFFS_CRC32__IEEE_TABLE[8][v_p.ptr[7]] ^
-          WUFFS_CRC32__IEEE_TABLE[9][v_p.ptr[6]] ^
-          WUFFS_CRC32__IEEE_TABLE[10][v_p.ptr[5]] ^
-          WUFFS_CRC32__IEEE_TABLE[11][v_p.ptr[4]] ^
-          WUFFS_CRC32__IEEE_TABLE[12][(255 & (v_s >> 24))] ^
-          WUFFS_CRC32__IEEE_TABLE[13][(255 & (v_s >> 16))] ^
-          WUFFS_CRC32__IEEE_TABLE[14][(255 & (v_s >> 8))] ^
-          WUFFS_CRC32__IEEE_TABLE[15][(255 & (v_s >> 0))]);
-      v_p.ptr += 16;
+      v_s = __crc32d(v_s, wuffs_base__peek_u64le__no_bounds_check(v_p.ptr));
+      v_p.ptr += 8;
     }
     v_p.len = 1;
     uint8_t* i_end2_p = i_slice_p.ptr + i_slice_p.len;
     while (v_p.ptr < i_end2_p) {
-      v_s = (WUFFS_CRC32__IEEE_TABLE[0][(((uint8_t)((v_s & 255))) ^ v_p.ptr[0])] ^ (v_s >> 8));
+      v_s = __crc32b(v_s, v_p.ptr[0]);
       v_p.ptr += 1;
     }
     v_p.len = 0;

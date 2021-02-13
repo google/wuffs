@@ -72,45 +72,24 @@ pri func ieee_hasher.up!(x: slice base.u8),
 pri func ieee_hasher.up_arm_crc32!(x: slice base.u8),
 	choose cpu_arch >= arm_crc32,
 {
-	var s : base.u32
+	var s : base.arm_crc32_u32
 	var p : slice base.u8
 
-	s = 0xFFFF_FFFF ^ this.state
+	s = s.create(a: 0xFFFF_FFFF ^ this.state)
 
 	// Align to a 16-byte boundary.
 	while (args.x.length() > 0) and ((15 & args.x.uintptr_low_12_bits()) <> 0) {
-		s = IEEE_TABLE[0][((s & 0xFF) as base.u8) ^ args.x[0]] ^ (s >> 8)
+		s = s._crc32b(b: args.x[0])
 		args.x = args.x[1 ..]
 	} endwhile
 
-	// See "Multi-Byte Lookup Tables" in std/crc32/README.md for more detail on
-	// the slicing-by-M algorithm. We use an M of 16.
-	iterate (p = args.x)(length: 16, advance: 16, unroll: 2) {
-		s ^= ((p[0x00] as base.u32) << 0) |
-			((p[0x01] as base.u32) << 8) |
-			((p[0x02] as base.u32) << 16) |
-			((p[0x03] as base.u32) << 24)
-		s = IEEE_TABLE[0x00][p[0x0F]] ^
-			IEEE_TABLE[0x01][p[0x0E]] ^
-			IEEE_TABLE[0x02][p[0x0D]] ^
-			IEEE_TABLE[0x03][p[0x0C]] ^
-			IEEE_TABLE[0x04][p[0x0B]] ^
-			IEEE_TABLE[0x05][p[0x0A]] ^
-			IEEE_TABLE[0x06][p[0x09]] ^
-			IEEE_TABLE[0x07][p[0x08]] ^
-			IEEE_TABLE[0x08][p[0x07]] ^
-			IEEE_TABLE[0x09][p[0x06]] ^
-			IEEE_TABLE[0x0A][p[0x05]] ^
-			IEEE_TABLE[0x0B][p[0x04]] ^
-			IEEE_TABLE[0x0C][0xFF & (s >> 24)] ^
-			IEEE_TABLE[0x0D][0xFF & (s >> 16)] ^
-			IEEE_TABLE[0x0E][0xFF & (s >> 8)] ^
-			IEEE_TABLE[0x0F][0xFF & (s >> 0)]
+	iterate (p = args.x)(length: 8, advance: 8, unroll: 16) {
+		s = s._crc32d(b: p.peek_u64le())
 	} else (length: 1, advance: 1, unroll: 1) {
-		s = IEEE_TABLE[0][((s & 0xFF) as base.u8) ^ p[0]] ^ (s >> 8)
+		s = s._crc32b(b: p[0])
 	}
 
-	this.state = 0xFFFF_FFFF ^ s
+	this.state = 0xFFFF_FFFF ^ s.value()
 }
 
 // The table below was created by script/print-crc32-magic-numbers.go.

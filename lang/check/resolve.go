@@ -75,7 +75,8 @@ var (
 
 	typeExprDecodeFrameOptions = a.NewTypeExpr(0, t.IDBase, t.IDDecodeFrameOptions, nil, nil, nil)
 
-	typeExprX86M128I = a.NewTypeExpr(0, t.IDBase, t.IDX86M128I, nil, nil, nil)
+	typeExprARMCRC32U32 = a.NewTypeExpr(0, t.IDBase, t.IDARMCRC32U32, nil, nil, nil)
+	typeExprX86M128I    = a.NewTypeExpr(0, t.IDBase, t.IDX86M128I, nil, nil, nil)
 
 	typeExprSliceU8 = a.NewTypeExpr(t.IDSlice, 0, 0, nil, nil, typeExprU8)
 	typeExprTableU8 = a.NewTypeExpr(t.IDTable, 0, 0, nil, nil, typeExprU8)
@@ -125,7 +126,8 @@ var builtInTypeMap = typeMap{
 
 	t.IDDecodeFrameOptions: typeExprDecodeFrameOptions,
 
-	t.IDX86M128I: typeExprX86M128I,
+	t.IDARMCRC32U32: typeExprARMCRC32U32,
+	t.IDX86M128I:    typeExprX86M128I,
 }
 
 func (c *Checker) parseBuiltInFuncs(m map[t.QQID]*a.Func, ss []string) error {
