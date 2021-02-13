@@ -6359,6 +6359,10 @@ struct wuffs_crc32__ieee_hasher__struct {
     wuffs_base__vtable null_vtable;
 
     uint32_t f_state;
+
+    wuffs_base__empty_struct (*choosy_up)(
+        wuffs_crc32__ieee_hasher* self,
+        wuffs_base__slice_u8 a_x);
   } private_impl;
 
 #ifdef __cplusplus
@@ -21691,6 +21695,23 @@ WUFFS_CRC32__IEEE_TABLE[16][256] WUFFS_BASE__POTENTIALLY_UNUSED = {
 
 // ---------------- Private Function Prototypes
 
+static wuffs_base__empty_struct
+wuffs_crc32__ieee_hasher__up(
+    wuffs_crc32__ieee_hasher* self,
+    wuffs_base__slice_u8 a_x);
+
+static wuffs_base__empty_struct
+wuffs_crc32__ieee_hasher__up__choosy_default(
+    wuffs_crc32__ieee_hasher* self,
+    wuffs_base__slice_u8 a_x);
+
+#if defined(WUFFS_BASE__CPU_ARCH__ARM_CRC32)
+static wuffs_base__empty_struct
+wuffs_crc32__ieee_hasher__up_arm_crc32(
+    wuffs_crc32__ieee_hasher* self,
+    wuffs_base__slice_u8 a_x);
+#endif  // defined(WUFFS_BASE__CPU_ARCH__ARM_CRC32)
+
 // ---------------- VTables
 
 const wuffs_base__hasher_u32__func_ptrs
@@ -21742,6 +21763,8 @@ wuffs_crc32__ieee_hasher__initialize(
       memset(&(self->private_impl), 0, sizeof(self->private_impl));
     }
   }
+
+  self->private_impl.choosy_up = &wuffs_crc32__ieee_hasher__up__choosy_default;
 
   self->private_impl.magic = WUFFS_BASE__MAGIC;
   self->private_impl.vtable_for__wuffs_base__hasher_u32.vtable_name =
@@ -21796,6 +21819,30 @@ wuffs_crc32__ieee_hasher__update_u32(
     return 0;
   }
 
+  if (self->private_impl.f_state == 0) {
+    self->private_impl.choosy_up = (
+#if defined(WUFFS_BASE__CPU_ARCH__ARM_CRC32)
+        wuffs_base__cpu_arch__have_arm_crc32() ? &wuffs_crc32__ieee_hasher__up_arm_crc32 :
+#endif
+        self->private_impl.choosy_up);
+  }
+  wuffs_crc32__ieee_hasher__up(self, a_x);
+  return self->private_impl.f_state;
+}
+
+// -------- func crc32.ieee_hasher.up
+
+static wuffs_base__empty_struct
+wuffs_crc32__ieee_hasher__up(
+    wuffs_crc32__ieee_hasher* self,
+    wuffs_base__slice_u8 a_x) {
+  return (*self->private_impl.choosy_up)(self, a_x);
+}
+
+static wuffs_base__empty_struct
+wuffs_crc32__ieee_hasher__up__choosy_default(
+    wuffs_crc32__ieee_hasher* self,
+    wuffs_base__slice_u8 a_x) {
   uint32_t v_s = 0;
   wuffs_base__slice_u8 v_p = {0};
 
@@ -21883,8 +21930,106 @@ wuffs_crc32__ieee_hasher__update_u32(
     v_p.len = 0;
   }
   self->private_impl.f_state = (4294967295 ^ v_s);
-  return self->private_impl.f_state;
+  return wuffs_base__make_empty_struct();
 }
+
+// -------- func crc32.ieee_hasher.up_arm_crc32
+
+#if defined(WUFFS_BASE__CPU_ARCH__ARM_CRC32)
+static wuffs_base__empty_struct
+wuffs_crc32__ieee_hasher__up_arm_crc32(
+    wuffs_crc32__ieee_hasher* self,
+    wuffs_base__slice_u8 a_x) {
+  uint32_t v_s = 0;
+  wuffs_base__slice_u8 v_p = {0};
+
+  v_s = (4294967295 ^ self->private_impl.f_state);
+  {
+    wuffs_base__slice_u8 i_slice_p = a_x;
+    v_p.ptr = i_slice_p.ptr;
+    v_p.len = 16;
+    uint8_t* i_end0_p = v_p.ptr + (((i_slice_p.len - (size_t)(v_p.ptr - i_slice_p.ptr)) / 32) * 32);
+    while (v_p.ptr < i_end0_p) {
+      v_s ^= ((((uint32_t)(v_p.ptr[0])) << 0) |
+          (((uint32_t)(v_p.ptr[1])) << 8) |
+          (((uint32_t)(v_p.ptr[2])) << 16) |
+          (((uint32_t)(v_p.ptr[3])) << 24));
+      v_s = (WUFFS_CRC32__IEEE_TABLE[0][v_p.ptr[15]] ^
+          WUFFS_CRC32__IEEE_TABLE[1][v_p.ptr[14]] ^
+          WUFFS_CRC32__IEEE_TABLE[2][v_p.ptr[13]] ^
+          WUFFS_CRC32__IEEE_TABLE[3][v_p.ptr[12]] ^
+          WUFFS_CRC32__IEEE_TABLE[4][v_p.ptr[11]] ^
+          WUFFS_CRC32__IEEE_TABLE[5][v_p.ptr[10]] ^
+          WUFFS_CRC32__IEEE_TABLE[6][v_p.ptr[9]] ^
+          WUFFS_CRC32__IEEE_TABLE[7][v_p.ptr[8]] ^
+          WUFFS_CRC32__IEEE_TABLE[8][v_p.ptr[7]] ^
+          WUFFS_CRC32__IEEE_TABLE[9][v_p.ptr[6]] ^
+          WUFFS_CRC32__IEEE_TABLE[10][v_p.ptr[5]] ^
+          WUFFS_CRC32__IEEE_TABLE[11][v_p.ptr[4]] ^
+          WUFFS_CRC32__IEEE_TABLE[12][(255 & (v_s >> 24))] ^
+          WUFFS_CRC32__IEEE_TABLE[13][(255 & (v_s >> 16))] ^
+          WUFFS_CRC32__IEEE_TABLE[14][(255 & (v_s >> 8))] ^
+          WUFFS_CRC32__IEEE_TABLE[15][(255 & (v_s >> 0))]);
+      v_p.ptr += 16;
+      v_s ^= ((((uint32_t)(v_p.ptr[0])) << 0) |
+          (((uint32_t)(v_p.ptr[1])) << 8) |
+          (((uint32_t)(v_p.ptr[2])) << 16) |
+          (((uint32_t)(v_p.ptr[3])) << 24));
+      v_s = (WUFFS_CRC32__IEEE_TABLE[0][v_p.ptr[15]] ^
+          WUFFS_CRC32__IEEE_TABLE[1][v_p.ptr[14]] ^
+          WUFFS_CRC32__IEEE_TABLE[2][v_p.ptr[13]] ^
+          WUFFS_CRC32__IEEE_TABLE[3][v_p.ptr[12]] ^
+          WUFFS_CRC32__IEEE_TABLE[4][v_p.ptr[11]] ^
+          WUFFS_CRC32__IEEE_TABLE[5][v_p.ptr[10]] ^
+          WUFFS_CRC32__IEEE_TABLE[6][v_p.ptr[9]] ^
+          WUFFS_CRC32__IEEE_TABLE[7][v_p.ptr[8]] ^
+          WUFFS_CRC32__IEEE_TABLE[8][v_p.ptr[7]] ^
+          WUFFS_CRC32__IEEE_TABLE[9][v_p.ptr[6]] ^
+          WUFFS_CRC32__IEEE_TABLE[10][v_p.ptr[5]] ^
+          WUFFS_CRC32__IEEE_TABLE[11][v_p.ptr[4]] ^
+          WUFFS_CRC32__IEEE_TABLE[12][(255 & (v_s >> 24))] ^
+          WUFFS_CRC32__IEEE_TABLE[13][(255 & (v_s >> 16))] ^
+          WUFFS_CRC32__IEEE_TABLE[14][(255 & (v_s >> 8))] ^
+          WUFFS_CRC32__IEEE_TABLE[15][(255 & (v_s >> 0))]);
+      v_p.ptr += 16;
+    }
+    v_p.len = 16;
+    uint8_t* i_end1_p = v_p.ptr + (((i_slice_p.len - (size_t)(v_p.ptr - i_slice_p.ptr)) / 16) * 16);
+    while (v_p.ptr < i_end1_p) {
+      v_s ^= ((((uint32_t)(v_p.ptr[0])) << 0) |
+          (((uint32_t)(v_p.ptr[1])) << 8) |
+          (((uint32_t)(v_p.ptr[2])) << 16) |
+          (((uint32_t)(v_p.ptr[3])) << 24));
+      v_s = (WUFFS_CRC32__IEEE_TABLE[0][v_p.ptr[15]] ^
+          WUFFS_CRC32__IEEE_TABLE[1][v_p.ptr[14]] ^
+          WUFFS_CRC32__IEEE_TABLE[2][v_p.ptr[13]] ^
+          WUFFS_CRC32__IEEE_TABLE[3][v_p.ptr[12]] ^
+          WUFFS_CRC32__IEEE_TABLE[4][v_p.ptr[11]] ^
+          WUFFS_CRC32__IEEE_TABLE[5][v_p.ptr[10]] ^
+          WUFFS_CRC32__IEEE_TABLE[6][v_p.ptr[9]] ^
+          WUFFS_CRC32__IEEE_TABLE[7][v_p.ptr[8]] ^
+          WUFFS_CRC32__IEEE_TABLE[8][v_p.ptr[7]] ^
+          WUFFS_CRC32__IEEE_TABLE[9][v_p.ptr[6]] ^
+          WUFFS_CRC32__IEEE_TABLE[10][v_p.ptr[5]] ^
+          WUFFS_CRC32__IEEE_TABLE[11][v_p.ptr[4]] ^
+          WUFFS_CRC32__IEEE_TABLE[12][(255 & (v_s >> 24))] ^
+          WUFFS_CRC32__IEEE_TABLE[13][(255 & (v_s >> 16))] ^
+          WUFFS_CRC32__IEEE_TABLE[14][(255 & (v_s >> 8))] ^
+          WUFFS_CRC32__IEEE_TABLE[15][(255 & (v_s >> 0))]);
+      v_p.ptr += 16;
+    }
+    v_p.len = 1;
+    uint8_t* i_end2_p = i_slice_p.ptr + i_slice_p.len;
+    while (v_p.ptr < i_end2_p) {
+      v_s = (WUFFS_CRC32__IEEE_TABLE[0][(((uint8_t)((v_s & 255))) ^ v_p.ptr[0])] ^ (v_s >> 8));
+      v_p.ptr += 1;
+    }
+    v_p.len = 0;
+  }
+  self->private_impl.f_state = (4294967295 ^ v_s);
+  return wuffs_base__make_empty_struct();
+}
+#endif  // defined(WUFFS_BASE__CPU_ARCH__ARM_CRC32)
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__CRC32)
 
