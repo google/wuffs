@@ -376,6 +376,7 @@ pri func decoder.choose_filter_implementations!() {
 		choose filter_1 = [filter_1_distance_3_fallback]
 		choose filter_3 = [filter_3_distance_3_fallback]
 		choose filter_4 = [
+			filter_4_distance_3_arm_neon,
 			filter_4_distance_3_sse42,
 			filter_4_distance_3_fallback]
 	} else if this.filter_distance == 4 {
@@ -388,6 +389,7 @@ pri func decoder.choose_filter_implementations!() {
 			filter_3_distance_4_sse42,
 			filter_3_distance_4_fallback]
 		choose filter_4 = [
+			filter_4_distance_4_arm_neon,
 			filter_4_distance_4_sse42,
 			filter_4_distance_4_fallback]
 	}

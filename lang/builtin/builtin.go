@@ -553,10 +553,17 @@ var Funcs = []string{
 	"arm_neon_64.create_vdup_n_u64(a: u64) arm_neon_64",
 	"arm_neon_64.create_vdup_n_u8(a: u8) arm_neon_64",
 
+	"arm_neon_64.vabdl_u16(b: arm_neon_64) arm_neon_128",
+	"arm_neon_64.vabdl_u32(b: arm_neon_64) arm_neon_128",
+	"arm_neon_64.vabdl_u8(b: arm_neon_64) arm_neon_128",
 	"arm_neon_64.vadd_u16(b: arm_neon_64) arm_neon_64",
 	"arm_neon_64.vadd_u32(b: arm_neon_64) arm_neon_64",
 	"arm_neon_64.vadd_u64(b: arm_neon_64) arm_neon_64",
 	"arm_neon_64.vadd_u8(b: arm_neon_64) arm_neon_64",
+	"arm_neon_64.vaddl_u16(b: arm_neon_64) arm_neon_128",
+	"arm_neon_64.vaddl_u32(b: arm_neon_64) arm_neon_128",
+	"arm_neon_64.vaddl_u8(b: arm_neon_64) arm_neon_128",
+	"arm_neon_64.vbsl_u8(b: arm_neon_64, c: arm_neon_64) arm_neon_64",
 	"arm_neon_64.vget_lane_u16(b: u32[..= 3]) u16",
 	"arm_neon_64.vget_lane_u32(b: u32[..= 1]) u32",
 	"arm_neon_64.vget_lane_u64(b: u32[..= 0]) u64",
@@ -566,6 +573,17 @@ var Funcs = []string{
 	"arm_neon_64.vhadd_u8(b: arm_neon_64) arm_neon_64",
 
 	// ---- arm_neon_128
+
+	"arm_neon_128.vabdq_u16(b: arm_neon_128) arm_neon_128",
+	"arm_neon_128.vabdq_u32(b: arm_neon_128) arm_neon_128",
+	"arm_neon_128.vabdq_u8(b: arm_neon_128) arm_neon_128",
+	"arm_neon_128.vandq_u8(b: arm_neon_128) arm_neon_128",
+	"arm_neon_128.vcleq_u16(b: arm_neon_128) arm_neon_128",
+	"arm_neon_128.vcleq_u32(b: arm_neon_128) arm_neon_128",
+	"arm_neon_128.vcleq_u8(b: arm_neon_128) arm_neon_128",
+	"arm_neon_128.vmovn_u16() arm_neon_64",
+	"arm_neon_128.vmovn_u32() arm_neon_64",
+	"arm_neon_128.vmovn_u64() arm_neon_64",
 
 	// ---- x86_m128i
 

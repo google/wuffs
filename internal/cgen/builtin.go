@@ -529,19 +529,37 @@ func (g *gen) writeBuiltinCPUArch(b *buffer, recv *a.Expr, method t.ID, args []*
 	methodStr := method.Str(g.tm)
 	vreinterpretU8Uxx, vreinterpretUxxU8, vreinterpretClose := "", "", ""
 	if armNeon {
+		vreinterpretClose = ")"
 		switch {
+		case methodStr == "vmovn_u16":
+			vreinterpretU8Uxx = "("
+			vreinterpretUxxU8 = "vreinterpretq_u16_u8("
+		case methodStr == "vmovn_u32":
+			vreinterpretU8Uxx = "vreinterpret_u8_u16("
+			vreinterpretUxxU8 = "vreinterpretq_u32_u8("
+		case methodStr == "vmovn_u64":
+			vreinterpretU8Uxx = "vreinterpret_u8_u32("
+			vreinterpretUxxU8 = "vreinterpretq_u64_u8("
+		case strings.HasSuffix(methodStr, "q_u16"):
+			vreinterpretU8Uxx = "vreinterpretq_u8_u16("
+			vreinterpretUxxU8 = "vreinterpretq_u16_u8("
+		case strings.HasSuffix(methodStr, "q_u32"):
+			vreinterpretU8Uxx = "vreinterpretq_u8_u32("
+			vreinterpretUxxU8 = "vreinterpretq_u32_u8("
+		case strings.HasSuffix(methodStr, "q_u64"):
+			vreinterpretU8Uxx = "vreinterpretq_u8_u64("
+			vreinterpretUxxU8 = "vreinterpretq_u64_u8("
 		case strings.HasSuffix(methodStr, "_u16"):
 			vreinterpretU8Uxx = "vreinterpret_u8_u16("
 			vreinterpretUxxU8 = "vreinterpret_u16_u8("
-			vreinterpretClose = ")"
 		case strings.HasSuffix(methodStr, "_u32"):
 			vreinterpretU8Uxx = "vreinterpret_u8_u32("
 			vreinterpretUxxU8 = "vreinterpret_u32_u8("
-			vreinterpretClose = ")"
 		case strings.HasSuffix(methodStr, "_u64"):
 			vreinterpretU8Uxx = "vreinterpret_u8_u64("
 			vreinterpretUxxU8 = "vreinterpret_u64_u8("
-			vreinterpretClose = ")"
+		default:
+			vreinterpretClose = ""
 		}
 	}
 
@@ -587,8 +605,24 @@ func (g *gen) writeBuiltinCPUArch(b *buffer, recv *a.Expr, method t.ID, args []*
 		b.writes(vreinterpretClose)
 
 	} else {
+		postArgsAfter := ""
 		if armCRC32U32 {
 			b.writeb('_')
+		} else if armNeon {
+			// TODO: generate this table automatically?
+			postArgsAfter = ")"
+			switch methodStr {
+			case "vabdl_u16", "vaddl_u16",
+				"vabdq_u32", "vcleq_u32":
+				b.writes("vreinterpretq_u8_u32(")
+			case "vabdl_u32", "vaddl_u32":
+				b.writes("vreinterpretq_u8_u64(")
+			case "vabdl_u8", "vaddl_u8",
+				"vabdq_u16", "vcleq_u16":
+				b.writes("vreinterpretq_u8_u16(")
+			default:
+				postArgsAfter = ""
+			}
 		}
 		b.printf("%s(", methodStr)
 
@@ -622,6 +656,7 @@ func (g *gen) writeBuiltinCPUArch(b *buffer, recv *a.Expr, method t.ID, args []*
 			}
 			b.writes(after)
 		}
+		b.writes(postArgsAfter)
 	}
 
 	b.writes(")")
