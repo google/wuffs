@@ -384,6 +384,7 @@ pri func decoder.choose_filter_implementations!() {
 			filter_1_distance_4_sse42,
 			filter_1_distance_4_fallback]
 		choose filter_3 = [
+			filter_3_distance_4_arm_neon,
 			filter_3_distance_4_sse42,
 			filter_3_distance_4_fallback]
 		choose filter_4 = [

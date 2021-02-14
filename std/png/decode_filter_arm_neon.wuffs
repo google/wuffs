@@ -44,3 +44,38 @@ pri func decoder.filter_1_distance_4_arm_neon!(curr: slice base.u8),
 		fa = fx
 	}
 }
+
+// --------
+
+// Filter 3: Average.
+
+pri func decoder.filter_3_distance_4_arm_neon!(curr: slice base.u8, prev: slice base.u8),
+	choose cpu_arch >= arm_neon,
+{
+	var c  : slice base.u8
+	var p  : slice base.u8
+	var fa : base.arm_neon_64
+	var fb : base.arm_neon_64
+	var fx : base.arm_neon_64
+
+	fa = fa.create_vdup_n_u32(a: 0)
+	fb = fb.create_vdup_n_u32(a: 0)
+
+	if args.prev.length() == 0 {
+		iterate (c = args.curr)(length: 4, advance: 4, unroll: 2) {
+			fx = fx.create_vdup_n_u32(a: c.peek_u32le())
+			fx = fx.vadd_u8(b: fa.vhadd_u8(b: fb))
+			c.poke_u32le!(a: fx.vget_lane_u32(b: 0))
+			fa = fx
+		}
+
+	} else {
+		iterate (c = args.curr, p = args.prev)(length: 4, advance: 4, unroll: 2) {
+			fb = fb.create_vdup_n_u32(a: p.peek_u32le())
+			fx = fx.create_vdup_n_u32(a: c.peek_u32le())
+			fx = fx.vadd_u8(b: fa.vhadd_u8(b: fb))
+			c.poke_u32le!(a: fx.vget_lane_u32(b: 0))
+			fa = fx
+		}
+	}
+}

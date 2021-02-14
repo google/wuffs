@@ -561,6 +561,9 @@ var Funcs = []string{
 	"arm_neon_64.vget_lane_u32(b: u32[..= 1]) u32",
 	"arm_neon_64.vget_lane_u64(b: u32[..= 0]) u64",
 	"arm_neon_64.vget_lane_u8(b: u32[..= 7]) u8",
+	"arm_neon_64.vhadd_u16(b: arm_neon_64) arm_neon_64",
+	"arm_neon_64.vhadd_u32(b: arm_neon_64) arm_neon_64",
+	"arm_neon_64.vhadd_u8(b: arm_neon_64) arm_neon_64",
 
 	// ---- arm_neon_128
 
