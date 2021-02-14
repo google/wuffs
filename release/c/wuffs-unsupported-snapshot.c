@@ -31200,6 +31200,13 @@ WUFFS_PNG__NUM_CHANNELS[8] WUFFS_BASE__POTENTIALLY_UNUSED = {
 
 // ---------------- Private Function Prototypes
 
+#if defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
+static wuffs_base__empty_struct
+wuffs_png__decoder__filter_1_distance_4_arm_neon(
+    wuffs_png__decoder* self,
+    wuffs_base__slice_u8 a_curr);
+#endif  // defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
+
 static wuffs_base__empty_struct
 wuffs_png__decoder__filter_1(
     wuffs_png__decoder* self,
@@ -31494,6 +31501,50 @@ sizeof__wuffs_png__decoder() {
 }
 
 // ---------------- Function Implementations
+
+// -------- func png.decoder.filter_1_distance_4_arm_neon
+
+#if defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
+static wuffs_base__empty_struct
+wuffs_png__decoder__filter_1_distance_4_arm_neon(
+    wuffs_png__decoder* self,
+    wuffs_base__slice_u8 a_curr) {
+  wuffs_base__slice_u8 v_c = {0};
+  uint8x8_t v_fa = {0};
+  uint8x8_t v_fx = {0};
+
+  v_fa = vreinterpret_u8_u32(vdup_n_u32(0));
+  {
+    wuffs_base__slice_u8 i_slice_c = a_curr;
+    v_c.ptr = i_slice_c.ptr;
+    v_c.len = 4;
+    uint8_t* i_end0_c = v_c.ptr + (((i_slice_c.len - (size_t)(v_c.ptr - i_slice_c.ptr)) / 8) * 8);
+    while (v_c.ptr < i_end0_c) {
+      v_fx = vreinterpret_u8_u32(vdup_n_u32(wuffs_base__peek_u32le__no_bounds_check(v_c.ptr)));
+      v_fx = vadd_u8(v_fx, v_fa);
+      wuffs_base__poke_u32le__no_bounds_check(v_c.ptr, vget_lane_u32(vreinterpret_u32_u8(v_fx), 0));
+      v_fa = v_fx;
+      v_c.ptr += 4;
+      v_fx = vreinterpret_u8_u32(vdup_n_u32(wuffs_base__peek_u32le__no_bounds_check(v_c.ptr)));
+      v_fx = vadd_u8(v_fx, v_fa);
+      wuffs_base__poke_u32le__no_bounds_check(v_c.ptr, vget_lane_u32(vreinterpret_u32_u8(v_fx), 0));
+      v_fa = v_fx;
+      v_c.ptr += 4;
+    }
+    v_c.len = 4;
+    uint8_t* i_end1_c = v_c.ptr + (((i_slice_c.len - (size_t)(v_c.ptr - i_slice_c.ptr)) / 4) * 4);
+    while (v_c.ptr < i_end1_c) {
+      v_fx = vreinterpret_u8_u32(vdup_n_u32(wuffs_base__peek_u32le__no_bounds_check(v_c.ptr)));
+      v_fx = vadd_u8(v_fx, v_fa);
+      wuffs_base__poke_u32le__no_bounds_check(v_c.ptr, vget_lane_u32(vreinterpret_u32_u8(v_fx), 0));
+      v_fa = v_fx;
+      v_c.ptr += 4;
+    }
+    v_c.len = 0;
+  }
+  return wuffs_base__make_empty_struct();
+}
+#endif  // defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
 
 // -------- func png.decoder.filter_1
 
@@ -33233,6 +33284,9 @@ wuffs_png__decoder__choose_filter_implementations(
         &wuffs_png__decoder__filter_4_distance_3_fallback);
   } else if (self->private_impl.f_filter_distance == 4) {
     self->private_impl.choosy_filter_1 = (
+#if defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
+        wuffs_base__cpu_arch__have_arm_neon() ? &wuffs_png__decoder__filter_1_distance_4_arm_neon :
+#endif
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
         wuffs_base__cpu_arch__have_sse42() ? &wuffs_png__decoder__filter_1_distance_4_sse42 :
 #endif

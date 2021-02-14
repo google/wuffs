@@ -76,6 +76,8 @@ var (
 	typeExprDecodeFrameOptions = a.NewTypeExpr(0, t.IDBase, t.IDDecodeFrameOptions, nil, nil, nil)
 
 	typeExprARMCRC32U32 = a.NewTypeExpr(0, t.IDBase, t.IDARMCRC32U32, nil, nil, nil)
+	typeExprARMNeon64   = a.NewTypeExpr(0, t.IDBase, t.IDARMNeon64, nil, nil, nil)
+	typeExprARMNeon128  = a.NewTypeExpr(0, t.IDBase, t.IDARMNeon128, nil, nil, nil)
 	typeExprX86M128I    = a.NewTypeExpr(0, t.IDBase, t.IDX86M128I, nil, nil, nil)
 
 	typeExprSliceU8 = a.NewTypeExpr(t.IDSlice, 0, 0, nil, nil, typeExprU8)
@@ -127,6 +129,8 @@ var builtInTypeMap = typeMap{
 	t.IDDecodeFrameOptions: typeExprDecodeFrameOptions,
 
 	t.IDARMCRC32U32: typeExprARMCRC32U32,
+	t.IDARMNeon64:   typeExprARMNeon64,
+	t.IDARMNeon128:  typeExprARMNeon128,
 	t.IDX86M128I:    typeExprX86M128I,
 }
 

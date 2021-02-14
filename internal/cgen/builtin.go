@@ -523,13 +523,43 @@ func (g *gen) writeBuiltinCPUArch(b *buffer, recv *a.Expr, method t.ID, args []*
 		return nil
 	}
 
+	armCRC32U32 := recv.MType().Eq(typeExprARMCRC32U32)
+	armNeon := recv.MType().Eq(typeExprARMNeon64) || recv.MType().Eq(typeExprARMNeon128)
+
+	methodStr := method.Str(g.tm)
+	vreinterpretU8Uxx, vreinterpretUxxU8, vreinterpretClose := "", "", ""
+	if armNeon {
+		switch {
+		case strings.HasSuffix(methodStr, "_u16"):
+			vreinterpretU8Uxx = "vreinterpret_u8_u16("
+			vreinterpretUxxU8 = "vreinterpret_u16_u8("
+			vreinterpretClose = ")"
+		case strings.HasSuffix(methodStr, "_u32"):
+			vreinterpretU8Uxx = "vreinterpret_u8_u32("
+			vreinterpretUxxU8 = "vreinterpret_u32_u8("
+			vreinterpretClose = ")"
+		case strings.HasSuffix(methodStr, "_u64"):
+			vreinterpretU8Uxx = "vreinterpret_u8_u64("
+			vreinterpretUxxU8 = "vreinterpret_u64_u8("
+			vreinterpretClose = ")"
+		}
+	}
+
 	const create = "create"
-	if methodStr := method.Str(g.tm); methodStr == "value" {
+	if methodStr == "value" {
 		return g.writeExpr(b, recv, false, depth)
+
 	} else if methodStr == create {
 		return g.writeExpr(b, args[0].AsArg().Value(), false, depth)
+
 	} else if strings.HasPrefix(methodStr, create) {
-		b.printf("%s(", methodStr[len(create):])
+		methodStr = methodStr[len(create):]
+		if armNeon && (methodStr != "") && (methodStr[0] == '_') {
+			methodStr = methodStr[1:]
+		}
+
+		b.writes(vreinterpretU8Uxx)
+		b.printf("%s(", methodStr)
 		for i, o := range args {
 			if i > 0 {
 				b.writes(", ")
@@ -554,21 +584,35 @@ func (g *gen) writeBuiltinCPUArch(b *buffer, recv *a.Expr, method t.ID, args []*
 			}
 			b.writes(after)
 		}
+		b.writes(vreinterpretClose)
+
 	} else {
-		armCRC32U32 := recv.MType().Eq(typeExprARMCRC32U32)
 		if armCRC32U32 {
 			b.writeb('_')
 		}
 		b.printf("%s(", methodStr)
+
+		if armNeon && recv.MType().IsCPUArchType() {
+			b.writes(vreinterpretUxxU8)
+		}
 		if err := g.writeExpr(b, recv, false, depth); err != nil {
 			return err
 		}
+		if armNeon && recv.MType().IsCPUArchType() {
+			b.writes(vreinterpretClose)
+		}
+
 		for _, o := range args {
 			b.writes(", ")
 			after := ""
 			v := o.AsArg().Value()
 			if armCRC32U32 {
 				// No-op.
+			} else if armNeon {
+				if v.MType().IsCPUArchType() {
+					b.writes(vreinterpretUxxU8)
+					after = vreinterpretClose
+				}
 			} else if !v.MType().IsCPUArchType() {
 				b.writes("(int32_t)(")
 				after = ")"
@@ -579,6 +623,7 @@ func (g *gen) writeBuiltinCPUArch(b *buffer, recv *a.Expr, method t.ID, args []*
 			b.writes(after)
 		}
 	}
+
 	b.writes(")")
 	return nil
 }

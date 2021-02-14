@@ -670,6 +670,9 @@ const (
 
 	IDARMCRC32U32 = ID(0x308)
 
+	IDARMNeon64  = ID(0x310) //  64-bit D (double-word) register
+	IDARMNeon128 = ID(0x311) // 128-bit Q (  quad-word) register
+
 	IDX86SSE42 = ID(0x320)
 	IDX86AVX2  = ID(0x321)
 
@@ -1090,6 +1093,9 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDARMNeon:  "arm_neon",
 
 	IDARMCRC32U32: "arm_crc32_u32",
+
+	IDARMNeon64:  "arm_neon_64",
+	IDARMNeon128: "arm_neon_128",
 
 	IDX86SSE42: "x86_sse42",
 	IDX86AVX2:  "x86_avx2",

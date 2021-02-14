@@ -246,6 +246,8 @@ var Types = []string{
 	// ----
 
 	"arm_crc32_u32",
+	"arm_neon_64",
+	"arm_neon_128",
 	"x86_m128i",
 }
 
@@ -541,6 +543,26 @@ var Funcs = []string{
 	"arm_crc32_u32._crc32h(b: u16) arm_crc32_u32",
 	"arm_crc32_u32._crc32w(b: u32) arm_crc32_u32",
 	"arm_crc32_u32._crc32d(b: u64) arm_crc32_u32",
+
+	// ---- arm_neon_64
+
+	// TODO: generate these methods automatically?
+
+	"arm_neon_64.create_vdup_n_u16(a: u16) arm_neon_64",
+	"arm_neon_64.create_vdup_n_u32(a: u32) arm_neon_64",
+	"arm_neon_64.create_vdup_n_u64(a: u64) arm_neon_64",
+	"arm_neon_64.create_vdup_n_u8(a: u8) arm_neon_64",
+
+	"arm_neon_64.vadd_u16(b: arm_neon_64) arm_neon_64",
+	"arm_neon_64.vadd_u32(b: arm_neon_64) arm_neon_64",
+	"arm_neon_64.vadd_u64(b: arm_neon_64) arm_neon_64",
+	"arm_neon_64.vadd_u8(b: arm_neon_64) arm_neon_64",
+	"arm_neon_64.vget_lane_u16(b: u32[..= 3]) u16",
+	"arm_neon_64.vget_lane_u32(b: u32[..= 1]) u32",
+	"arm_neon_64.vget_lane_u64(b: u32[..= 0]) u64",
+	"arm_neon_64.vget_lane_u8(b: u32[..= 7]) u8",
+
+	// ---- arm_neon_128
 
 	// ---- x86_m128i
 

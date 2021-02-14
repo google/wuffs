@@ -1,0 +1,46 @@
+// Copyright 2021 The Wuffs Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// --------
+
+// Compared to libpng's ARM NEON implementation, this implementation cannot
+// assume that the row pointers are 16-byte aligned. libpng allocates its own
+// buffers, Wuffs code cannot call malloc and instead uses whatever buffers it
+// is given. Wuffs also uncompresses the entire zlib stream into a continuous
+// array. Rows are therefore not necessarily padded to alignment boundaries,
+// especially considering the one additional filter byte per row.
+//
+// Wuffs' "cpu_arch >= arm_neon" requires __ARM_FEATURE_UNALIGNED but still, we
+// can't e.g. cast a uint8_t* to a uint32_t* without proving alignment.
+
+// --------
+
+// Filter 1: Sub.
+
+pri func decoder.filter_1_distance_4_arm_neon!(curr: slice base.u8),
+	choose cpu_arch >= arm_neon,
+{
+	var c  : slice base.u8
+	var fa : base.arm_neon_64
+	var fx : base.arm_neon_64
+
+	fa = fa.create_vdup_n_u32(a: 0)
+
+	iterate (c = args.curr)(length: 4, advance: 4, unroll: 2) {
+		fx = fx.create_vdup_n_u32(a: c.peek_u32le())
+		fx = fx.vadd_u8(b: fa)
+		c.poke_u32le!(a: fx.vget_lane_u32(b: 0))
+		fa = fx
+	}
+}
