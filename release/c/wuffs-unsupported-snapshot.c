@@ -17665,6 +17665,13 @@ wuffs_adler32__hasher__up_sse42(
     wuffs_base__slice_u8 a_x);
 #endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
 
+#if defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
+static wuffs_base__empty_struct
+wuffs_adler32__hasher__up_arm_neon(
+    wuffs_adler32__hasher* self,
+    wuffs_base__slice_u8 a_x);
+#endif  // defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
+
 // ---------------- VTables
 
 const wuffs_base__hasher_u32__func_ptrs
@@ -17776,6 +17783,9 @@ wuffs_adler32__hasher__update_u32(
     self->private_impl.f_started = true;
     self->private_impl.f_state = 1;
     self->private_impl.choosy_up = (
+#if defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
+        wuffs_base__cpu_arch__have_arm_neon() ? &wuffs_adler32__hasher__up_arm_neon :
+#endif
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
         wuffs_base__cpu_arch__have_sse42() ? &wuffs_adler32__hasher__up_sse42 :
 #endif
@@ -17950,6 +17960,110 @@ wuffs_adler32__hasher__up_sse42(
   return wuffs_base__make_empty_struct();
 }
 #endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+
+// -------- func adler32.hasher.up_arm_neon
+
+#if defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
+static wuffs_base__empty_struct
+wuffs_adler32__hasher__up_arm_neon(
+    wuffs_adler32__hasher* self,
+    wuffs_base__slice_u8 a_x) {
+  uint32_t v_s1 = 0;
+  uint32_t v_s2 = 0;
+  wuffs_base__slice_u8 v_remaining = {0};
+  wuffs_base__slice_u8 v_p = {0};
+  uint8x16_t v_p__left = {0};
+  uint8x16_t v_p_right = {0};
+  uint8x16_t v_v1 = {0};
+  uint8x16_t v_v2 = {0};
+  uint8x16_t v_col0 = {0};
+  uint8x16_t v_col1 = {0};
+  uint8x16_t v_col2 = {0};
+  uint8x16_t v_col3 = {0};
+  uint8x8_t v_sum1 = {0};
+  uint8x8_t v_sum2 = {0};
+  uint8x8_t v_sum12 = {0};
+  uint32_t v_num_iterate_bytes = 0;
+  uint64_t v_tail_index = 0;
+
+  v_s1 = ((self->private_impl.f_state) & 0xFFFF);
+  v_s2 = ((self->private_impl.f_state) >> (32 - (16)));
+  while ((((uint64_t)(a_x.len)) > 0) && ((15 & ((uint32_t)(0xFFF & (uintptr_t)(a_x.ptr)))) != 0)) {
+    v_s1 += ((uint32_t)(a_x.ptr[0]));
+    v_s2 += v_s1;
+    a_x = wuffs_base__slice_u8__subslice_i(a_x, 1);
+  }
+  v_s1 %= 65521;
+  v_s2 %= 65521;
+  while (((uint64_t)(a_x.len)) > 0) {
+    v_remaining = wuffs_base__slice_u8__subslice_j(a_x, 0);
+    if (((uint64_t)(a_x.len)) > 5536) {
+      v_remaining = wuffs_base__slice_u8__subslice_i(a_x, 5536);
+      a_x = wuffs_base__slice_u8__subslice_j(a_x, 5536);
+    }
+    v_num_iterate_bytes = ((uint32_t)((((uint64_t)(a_x.len)) & 4294967264)));
+    v_s2 += ((uint32_t)(v_s1 * v_num_iterate_bytes));
+    v_v1 = vreinterpretq_u8_u32(vdupq_n_u32(0));
+    v_v2 = vreinterpretq_u8_u32(vdupq_n_u32(0));
+    v_col0 = vreinterpretq_u8_u16(vdupq_n_u16(0));
+    v_col1 = vreinterpretq_u8_u16(vdupq_n_u16(0));
+    v_col2 = vreinterpretq_u8_u16(vdupq_n_u16(0));
+    v_col3 = vreinterpretq_u8_u16(vdupq_n_u16(0));
+    {
+      wuffs_base__slice_u8 i_slice_p = a_x;
+      v_p.ptr = i_slice_p.ptr;
+      v_p.len = 32;
+      uint8_t* i_end0_p = v_p.ptr + (((i_slice_p.len - (size_t)(v_p.ptr - i_slice_p.ptr)) / 32) * 32);
+      while (v_p.ptr < i_end0_p) {
+        v_p__left = vld1q_u8(wuffs_base__slice_u8__subslice_j(v_p, 16).ptr);
+        v_p_right = vld1q_u8(wuffs_base__slice_u8__subslice_ij(v_p, 16, 32).ptr);
+        v_v2 = vreinterpretq_u8_u32(vaddq_u32(vreinterpretq_u32_u8(v_v2), vreinterpretq_u32_u8(v_v1)));
+        v_v1 = vreinterpretq_u8_u32(vpadalq_u16(vreinterpretq_u32_u8(v_v1), vreinterpretq_u16_u8(vreinterpretq_u8_u16(vpadalq_u8(vreinterpretq_u16_u8(vreinterpretq_u8_u16(vpaddlq_u8(v_p__left))), v_p_right)))));
+        v_col0 = vreinterpretq_u8_u16(vaddw_u8(vreinterpretq_u16_u8(v_col0), vget_low_u8(v_p__left)));
+        v_col1 = vreinterpretq_u8_u16(vaddw_u8(vreinterpretq_u16_u8(v_col1), vget_high_u8(v_p__left)));
+        v_col2 = vreinterpretq_u8_u16(vaddw_u8(vreinterpretq_u16_u8(v_col2), vget_low_u8(v_p_right)));
+        v_col3 = vreinterpretq_u8_u16(vaddw_u8(vreinterpretq_u16_u8(v_col3), vget_high_u8(v_p_right)));
+        v_p.ptr += 32;
+      }
+      v_p.len = 0;
+    }
+    v_v2 = vreinterpretq_u8_u32(vshlq_n_u32(vreinterpretq_u32_u8(v_v2), 5));
+    v_v2 = vreinterpretq_u8_u32(vmlal_u16(vreinterpretq_u32_u8(v_v2), vreinterpret_u16_u8(vreinterpret_u8_u16(vget_low_u16(vreinterpretq_u16_u8(v_col0)))), vreinterpret_u16_u8(vreinterpret_u8_u16((uint16x4_t){32, 31, 30, 29}))));
+    v_v2 = vreinterpretq_u8_u32(vmlal_u16(vreinterpretq_u32_u8(v_v2), vreinterpret_u16_u8(vreinterpret_u8_u16(vget_high_u16(vreinterpretq_u16_u8(v_col0)))), vreinterpret_u16_u8(vreinterpret_u8_u16((uint16x4_t){28, 27, 26, 25}))));
+    v_v2 = vreinterpretq_u8_u32(vmlal_u16(vreinterpretq_u32_u8(v_v2), vreinterpret_u16_u8(vreinterpret_u8_u16(vget_low_u16(vreinterpretq_u16_u8(v_col1)))), vreinterpret_u16_u8(vreinterpret_u8_u16((uint16x4_t){24, 23, 22, 21}))));
+    v_v2 = vreinterpretq_u8_u32(vmlal_u16(vreinterpretq_u32_u8(v_v2), vreinterpret_u16_u8(vreinterpret_u8_u16(vget_high_u16(vreinterpretq_u16_u8(v_col1)))), vreinterpret_u16_u8(vreinterpret_u8_u16((uint16x4_t){20, 19, 18, 17}))));
+    v_v2 = vreinterpretq_u8_u32(vmlal_u16(vreinterpretq_u32_u8(v_v2), vreinterpret_u16_u8(vreinterpret_u8_u16(vget_low_u16(vreinterpretq_u16_u8(v_col2)))), vreinterpret_u16_u8(vreinterpret_u8_u16((uint16x4_t){16, 15, 14, 13}))));
+    v_v2 = vreinterpretq_u8_u32(vmlal_u16(vreinterpretq_u32_u8(v_v2), vreinterpret_u16_u8(vreinterpret_u8_u16(vget_high_u16(vreinterpretq_u16_u8(v_col2)))), vreinterpret_u16_u8(vreinterpret_u8_u16((uint16x4_t){12, 11, 10, 9}))));
+    v_v2 = vreinterpretq_u8_u32(vmlal_u16(vreinterpretq_u32_u8(v_v2), vreinterpret_u16_u8(vreinterpret_u8_u16(vget_low_u16(vreinterpretq_u16_u8(v_col3)))), vreinterpret_u16_u8(vreinterpret_u8_u16((uint16x4_t){8, 7, 6, 5}))));
+    v_v2 = vreinterpretq_u8_u32(vmlal_u16(vreinterpretq_u32_u8(v_v2), vreinterpret_u16_u8(vreinterpret_u8_u16(vget_high_u16(vreinterpretq_u16_u8(v_col3)))), vreinterpret_u16_u8(vreinterpret_u8_u16((uint16x4_t){4, 3, 2, 1}))));
+    v_sum1 = vreinterpret_u8_u32(vpadd_u32(vreinterpret_u32_u8(vreinterpret_u8_u32(vget_low_u32(vreinterpretq_u32_u8(v_v1)))), vreinterpret_u32_u8(vreinterpret_u8_u32(vget_high_u32(vreinterpretq_u32_u8(v_v1))))));
+    v_sum2 = vreinterpret_u8_u32(vpadd_u32(vreinterpret_u32_u8(vreinterpret_u8_u32(vget_low_u32(vreinterpretq_u32_u8(v_v2)))), vreinterpret_u32_u8(vreinterpret_u8_u32(vget_high_u32(vreinterpretq_u32_u8(v_v2))))));
+    v_sum12 = vreinterpret_u8_u32(vpadd_u32(vreinterpret_u32_u8(v_sum1), vreinterpret_u32_u8(v_sum2)));
+    v_s1 += vget_lane_u32(vreinterpret_u32_u8(v_sum12), 0);
+    v_s2 += vget_lane_u32(vreinterpret_u32_u8(v_sum12), 1);
+    v_tail_index = (((uint64_t)(a_x.len)) & 18446744073709551584u);
+    if (v_tail_index < ((uint64_t)(a_x.len))) {
+      {
+        wuffs_base__slice_u8 i_slice_p = wuffs_base__slice_u8__subslice_i(a_x, v_tail_index);
+        v_p.ptr = i_slice_p.ptr;
+        v_p.len = 1;
+        uint8_t* i_end0_p = i_slice_p.ptr + i_slice_p.len;
+        while (v_p.ptr < i_end0_p) {
+          v_s1 += ((uint32_t)(v_p.ptr[0]));
+          v_s2 += v_s1;
+          v_p.ptr += 1;
+        }
+        v_p.len = 0;
+      }
+    }
+    v_s1 %= 65521;
+    v_s2 %= 65521;
+    a_x = v_remaining;
+  }
+  self->private_impl.f_state = (((v_s2 & 65535) << 16) | (v_s1 & 65535));
+  return wuffs_base__make_empty_struct();
+}
+#endif  // defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__ADLER32)
 

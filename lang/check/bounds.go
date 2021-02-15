@@ -1440,7 +1440,10 @@ var ioMethodAdvances = [...]struct {
 }
 
 var lsMethodAdvances = [...]*big.Int{
-	// 128 bits is 16 bytes. 256 bits is 32 bytes. 512 bits is 64 bytes.
+	//  64 bits is  8 bytes.
+	// 128 bits is 16 bytes.
+	// 256 bits is 32 bytes.
+	// 512 bits is 64 bytes.
 
 	t.IDLoadSlice128 - t.IDLoadSlice128: sixteen,
 	t.IDLoadSlice256 - t.IDLoadSlice128: thirtyTwo,
@@ -1449,6 +1452,9 @@ var lsMethodAdvances = [...]*big.Int{
 	t.IDStoreSlice128 - t.IDLoadSlice128: sixteen,
 	t.IDStoreSlice256 - t.IDLoadSlice128: thirtyTwo,
 	t.IDStoreSlice512 - t.IDLoadSlice128: sixtyFour,
+
+	t.IDCreateSlice64 - t.IDLoadSlice128:  eight,
+	t.IDCreateSlice128 - t.IDLoadSlice128: sixteen,
 }
 
 func makeConstValueExpr(tm *t.Map, cv *big.Int) (*a.Expr, error) {

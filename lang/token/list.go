@@ -695,14 +695,17 @@ const (
 	IDStoreSlice256 = ID(0x38B)
 	IDStoreSlice512 = ID(0x38C)
 
-	IDCreateMMSet1EPI8   = ID(0x390)
-	IDCreateMMSet1EPI16  = ID(0x391)
-	IDCreateMMSet1EPI32  = ID(0x392)
-	IDCreateMMSet1EPI64X = ID(0x393)
-	IDCreateMMSetEPI8    = ID(0x394)
-	IDCreateMMSetEPI16   = ID(0x395)
-	IDCreateMMSetEPI32   = ID(0x396)
-	IDCreateMMSetEPI64X  = ID(0x397)
+	IDCreateSlice64  = ID(0x390)
+	IDCreateSlice128 = ID(0x391)
+
+	IDCreateMMSet1EPI8   = ID(0x3A0)
+	IDCreateMMSet1EPI16  = ID(0x3A1)
+	IDCreateMMSet1EPI32  = ID(0x3A2)
+	IDCreateMMSet1EPI64X = ID(0x3A3)
+	IDCreateMMSetEPI8    = ID(0x3A4)
+	IDCreateMMSetEPI16   = ID(0x3A5)
+	IDCreateMMSetEPI32   = ID(0x3A6)
+	IDCreateMMSetEPI64X  = ID(0x3A7)
 )
 
 var builtInsByID = [nBuiltInIDs]string{
@@ -1113,6 +1116,9 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDStoreSlice128: "store_slice128",
 	IDStoreSlice256: "store_slice256",
 	IDStoreSlice512: "store_slice512",
+
+	IDCreateSlice64:  "create_slice64",
+	IDCreateSlice128: "create_slice128",
 
 	IDCreateMMSet1EPI8:   "create_mm_set1_epi8",
 	IDCreateMMSet1EPI16:  "create_mm_set1_epi16",

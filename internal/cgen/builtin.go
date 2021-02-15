@@ -448,6 +448,9 @@ func (g *gen) writeBuiltinTokenWriter(b *buffer, recv *a.Expr, method t.ID, args
 }
 
 func (g *gen) writeBuiltinCPUArch(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, sideEffectsOnly bool, depth uint32) error {
+	armCRC32U32 := recv.MType().Eq(typeExprARMCRC32U32)
+	armNeon := recv.MType().Eq(typeExprARMNeon64) || recv.MType().Eq(typeExprARMNeon128)
+
 	switch method {
 	case t.IDLoadU32, t.IDLoadU64, t.IDLoadSlice128:
 		if !sideEffectsOnly {
@@ -521,16 +524,37 @@ func (g *gen) writeBuiltinCPUArch(b *buffer, recv *a.Expr, method t.ID, args []*
 			b.writes(")))")
 		}
 		return nil
-	}
 
-	armCRC32U32 := recv.MType().Eq(typeExprARMCRC32U32)
-	armNeon := recv.MType().Eq(typeExprARMNeon64) || recv.MType().Eq(typeExprARMNeon128)
+	case t.IDCreateSlice64, t.IDCreateSlice128:
+		if armNeon {
+			switch method {
+			case t.IDCreateSlice64:
+				b.writes("vld1_u8(")
+			case t.IDCreateSlice128:
+				b.writes("vld1q_u8(")
+			}
+		}
+		if err := g.writeExpr(b, args[0].AsArg().Value(), false, depth); err != nil {
+			return err
+		}
+		b.writes(".ptr)")
+		return nil
+	}
 
 	methodStr := method.Str(g.tm)
 	vreinterpretU8Uxx, vreinterpretUxxU8, vreinterpretClose := "", "", ""
 	if armNeon {
 		vreinterpretClose = ")"
 		switch {
+		case methodStr == "create_vdupq_n_u16":
+			vreinterpretU8Uxx = "vreinterpretq_u8_u16("
+			vreinterpretUxxU8 = "("
+		case methodStr == "create_vdupq_n_u32":
+			vreinterpretU8Uxx = "vreinterpretq_u8_u32("
+			vreinterpretUxxU8 = "("
+		case methodStr == "create_vdupq_n_u64":
+			vreinterpretU8Uxx = "vreinterpretq_u8_u64("
+			vreinterpretUxxU8 = "("
 		case methodStr == "vmovn_u16":
 			vreinterpretU8Uxx = "("
 			vreinterpretUxxU8 = "vreinterpretq_u16_u8("
@@ -563,12 +587,45 @@ func (g *gen) writeBuiltinCPUArch(b *buffer, recv *a.Expr, method t.ID, args []*
 		}
 	}
 
-	const create = "create"
+	const (
+		create         = "create"
+		createLiteralU = "create_literal_u"
+	)
 	if methodStr == "value" {
 		return g.writeExpr(b, recv, false, depth)
 
 	} else if methodStr == create {
 		return g.writeExpr(b, args[0].AsArg().Value(), false, depth)
+
+	} else if strings.HasPrefix(methodStr, createLiteralU) {
+		methodStr = methodStr[len(createLiteralU):]
+		switch methodStr {
+		case "16x4":
+			b.writes("vreinterpret_u8_u16")
+		case "16x8":
+			b.writes("vreinterpretq_u8_u16")
+		case "32x2":
+			b.writes("vreinterpret_u8_u32")
+		case "32x4":
+			b.writes("vreinterpretq_u8_u32")
+		case "64x1":
+			b.writes("vreinterpret_u8_u64")
+		case "64x2":
+			b.writes("vreinterpretq_u8_u64")
+		}
+		b.writes("((uint")
+		b.writes(methodStr)
+		b.writes("_t){")
+		for i, o := range args {
+			if i > 0 {
+				b.writes(", ")
+			}
+			if err := g.writeExpr(b, o.AsArg().Value(), false, depth); err != nil {
+				return err
+			}
+		}
+		b.writes("})")
+		return nil
 
 	} else if strings.HasPrefix(methodStr, create) {
 		methodStr = methodStr[len(create):]
@@ -602,9 +659,133 @@ func (g *gen) writeBuiltinCPUArch(b *buffer, recv *a.Expr, method t.ID, args []*
 			}
 			b.writes(after)
 		}
+		b.writes(")")
 		b.writes(vreinterpretClose)
+		return nil
 
-	} else {
+	}
+
+	switch methodStr {
+	case "vaddw_u8":
+		b.writes("vreinterpretq_u8_u16(")
+		b.writes(methodStr)
+		b.writes("(vreinterpretq_u16_u8(")
+		if err := g.writeExpr(b, recv, false, depth); err != nil {
+			return err
+		}
+		b.writes("), ")
+		if err := g.writeExpr(b, args[0].AsArg().Value(), false, depth); err != nil {
+			return err
+		}
+		b.writes("))")
+		return nil
+
+	case "vget_low_u16", "vget_high_u16":
+		b.writes("vreinterpret_u8_u16(")
+		b.writes(methodStr)
+		b.writes("(vreinterpretq_u16_u8(")
+		if err := g.writeExpr(b, recv, false, depth); err != nil {
+			return err
+		}
+		b.writes(")))")
+		return nil
+
+	case "vget_low_u32", "vget_high_u32":
+		b.writes("vreinterpret_u8_u32(")
+		b.writes(methodStr)
+		b.writes("(vreinterpretq_u32_u8(")
+		if err := g.writeExpr(b, recv, false, depth); err != nil {
+			return err
+		}
+		b.writes(")))")
+		return nil
+
+	case "vget_low_u64", "vget_high_u64":
+		b.writes("vreinterpret_u8_u64(")
+		b.writes(methodStr)
+		b.writes("(vreinterpretq_u64_u8(")
+		if err := g.writeExpr(b, recv, false, depth); err != nil {
+			return err
+		}
+		b.writes(")))")
+		return nil
+
+	case "vget_low_u8", "vget_high_u8":
+		b.writes(methodStr)
+		b.writes("(")
+		if err := g.writeExpr(b, recv, false, depth); err != nil {
+			return err
+		}
+		b.writes(")")
+		return nil
+
+	case "vmlal_u16":
+		b.writes("vreinterpretq_u8_u32(")
+		b.writes(methodStr)
+		b.writes("(vreinterpretq_u32_u8(")
+		if err := g.writeExpr(b, recv, false, depth); err != nil {
+			return err
+		}
+		b.writes(")")
+		for i := range args {
+			b.writes(", vreinterpret_u16_u8(")
+			if err := g.writeExpr(b, args[i].AsArg().Value(), false, depth); err != nil {
+				return err
+			}
+			b.writes(")")
+		}
+		b.writes("))")
+
+	case "vshlq_n_u32":
+		b.writes("vreinterpretq_u8_u32(")
+		b.writes(methodStr)
+		b.writes("(vreinterpretq_u32_u8(")
+		if err := g.writeExpr(b, recv, false, depth); err != nil {
+			return err
+		}
+		b.writes("), ")
+		if err := g.writeExpr(b, args[0].AsArg().Value(), false, depth); err != nil {
+			return err
+		}
+		b.writes("))")
+
+	case "vpadalq_u16":
+		b.writes("vreinterpretq_u8_u32(vpadalq_u16(vreinterpretq_u32_u8(")
+		if err := g.writeExpr(b, recv, false, depth); err != nil {
+			return err
+		}
+		b.writes("), vreinterpretq_u16_u8(")
+		if err := g.writeExpr(b, args[0].AsArg().Value(), false, depth); err != nil {
+			return err
+		}
+		b.writes(")))")
+		return nil
+
+	case "vpadalq_u32":
+		b.writes("vreinterpretq_u8_u64(vpadalq_u32(vreinterpretq_u64_u8(")
+		if err := g.writeExpr(b, recv, false, depth); err != nil {
+			return err
+		}
+		b.writes("), vreinterpretq_u32_u8(")
+		if err := g.writeExpr(b, args[0].AsArg().Value(), false, depth); err != nil {
+			return err
+		}
+		b.writes(")))")
+		return nil
+
+	case "vpadalq_u8":
+		b.writes("vreinterpretq_u8_u16(vpadalq_u8(vreinterpretq_u16_u8(")
+		if err := g.writeExpr(b, recv, false, depth); err != nil {
+			return err
+		}
+		b.writes("), ")
+		if err := g.writeExpr(b, args[0].AsArg().Value(), false, depth); err != nil {
+			return err
+		}
+		b.writes("))")
+		return nil
+
+	default:
 		postArgsAfter := ""
 		if armCRC32U32 {
 			b.writeb('_')
@@ -612,14 +793,24 @@ func (g *gen) writeBuiltinCPUArch(b *buffer, recv *a.Expr, method t.ID, args []*
 			// TODO: generate this table automatically?
 			postArgsAfter = ")"
 			switch methodStr {
-			case "vabdl_u16", "vaddl_u16",
-				"vabdq_u32", "vcleq_u32":
-				b.writes("vreinterpretq_u8_u32(")
-			case "vabdl_u32", "vaddl_u32":
-				b.writes("vreinterpretq_u8_u64(")
+			case "vpadd_u16":
+				b.writes("vreinterpret_u8_u16(")
+			case "vpadd_u32":
+				b.writes("vreinterpret_u8_u32(")
 			case "vabdl_u8", "vaddl_u8",
-				"vabdq_u16", "vcleq_u16":
+				"vabdq_u16", "vcleq_u16",
+				"vaddq_u16",
+				"vpaddlq_u8":
 				b.writes("vreinterpretq_u8_u16(")
+			case "vabdl_u16", "vaddl_u16",
+				"vabdq_u32", "vcleq_u32",
+				"vaddq_u32",
+				"vpaddlq_u16":
+				b.writes("vreinterpretq_u8_u32(")
+			case "vabdl_u32", "vaddl_u32",
+				"vaddq_u64",
+				"vpaddlq_u32":
+				b.writes("vreinterpretq_u8_u64(")
 			default:
 				postArgsAfter = ""
 			}
@@ -656,10 +847,9 @@ func (g *gen) writeBuiltinCPUArch(b *buffer, recv *a.Expr, method t.ID, args []*
 			}
 			b.writes(after)
 		}
+		b.writes(")")
 		b.writes(postArgsAfter)
 	}
-
-	b.writes(")")
 	return nil
 }
 
