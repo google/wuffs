@@ -17658,19 +17658,19 @@ wuffs_adler32__hasher__up__choosy_default(
     wuffs_adler32__hasher* self,
     wuffs_base__slice_u8 a_x);
 
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
-static wuffs_base__empty_struct
-wuffs_adler32__hasher__up_sse42(
-    wuffs_adler32__hasher* self,
-    wuffs_base__slice_u8 a_x);
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
-
 #if defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
 static wuffs_base__empty_struct
 wuffs_adler32__hasher__up_arm_neon(
     wuffs_adler32__hasher* self,
     wuffs_base__slice_u8 a_x);
 #endif  // defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
+
+#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+static wuffs_base__empty_struct
+wuffs_adler32__hasher__up_sse42(
+    wuffs_adler32__hasher* self,
+    wuffs_base__slice_u8 a_x);
+#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
 
 // ---------------- VTables
 
@@ -17869,98 +17869,6 @@ wuffs_adler32__hasher__up__choosy_default(
   return wuffs_base__make_empty_struct();
 }
 
-// -------- func adler32.hasher.up_sse42
-
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
-#if defined(__GNUC__)
-__attribute__((target("sse4.2")))
-#endif
-static wuffs_base__empty_struct
-wuffs_adler32__hasher__up_sse42(
-    wuffs_adler32__hasher* self,
-    wuffs_base__slice_u8 a_x) {
-  uint32_t v_s1 = 0;
-  uint32_t v_s2 = 0;
-  wuffs_base__slice_u8 v_remaining = {0};
-  wuffs_base__slice_u8 v_p = {0};
-  __m128i v_zeroes = {0};
-  __m128i v_ones = {0};
-  __m128i v_weights__left = {0};
-  __m128i v_weights_right = {0};
-  __m128i v_p__left = {0};
-  __m128i v_p_right = {0};
-  __m128i v_v1 = {0};
-  __m128i v_v2 = {0};
-  __m128i v_v2j = {0};
-  __m128i v_v2k = {0};
-  uint32_t v_num_iterate_bytes = 0;
-  uint64_t v_tail_index = 0;
-
-  v_zeroes = _mm_set1_epi16((int16_t)(0));
-  v_ones = _mm_set1_epi16((int16_t)(1));
-  v_weights__left = _mm_set_epi8((int8_t)(17), (int8_t)(18), (int8_t)(19), (int8_t)(20), (int8_t)(21), (int8_t)(22), (int8_t)(23), (int8_t)(24), (int8_t)(25), (int8_t)(26), (int8_t)(27), (int8_t)(28), (int8_t)(29), (int8_t)(30), (int8_t)(31), (int8_t)(32));
-  v_weights_right = _mm_set_epi8((int8_t)(1), (int8_t)(2), (int8_t)(3), (int8_t)(4), (int8_t)(5), (int8_t)(6), (int8_t)(7), (int8_t)(8), (int8_t)(9), (int8_t)(10), (int8_t)(11), (int8_t)(12), (int8_t)(13), (int8_t)(14), (int8_t)(15), (int8_t)(16));
-  v_s1 = ((self->private_impl.f_state) & 0xFFFF);
-  v_s2 = ((self->private_impl.f_state) >> (32 - (16)));
-  while (((uint64_t)(a_x.len)) > 0) {
-    v_remaining = wuffs_base__slice_u8__subslice_j(a_x, 0);
-    if (((uint64_t)(a_x.len)) > 5536) {
-      v_remaining = wuffs_base__slice_u8__subslice_i(a_x, 5536);
-      a_x = wuffs_base__slice_u8__subslice_j(a_x, 5536);
-    }
-    v_num_iterate_bytes = ((uint32_t)((((uint64_t)(a_x.len)) & 4294967264)));
-    v_s2 += ((uint32_t)(v_s1 * v_num_iterate_bytes));
-    v_v1 = _mm_setzero_si128();
-    v_v2j = _mm_setzero_si128();
-    v_v2k = _mm_setzero_si128();
-    {
-      wuffs_base__slice_u8 i_slice_p = a_x;
-      v_p.ptr = i_slice_p.ptr;
-      v_p.len = 32;
-      uint8_t* i_end0_p = v_p.ptr + (((i_slice_p.len - (size_t)(v_p.ptr - i_slice_p.ptr)) / 32) * 32);
-      while (v_p.ptr < i_end0_p) {
-        v_p__left = _mm_lddqu_si128((const __m128i*)(const void*)(wuffs_base__slice_u8__subslice_j(v_p, 16).ptr));
-        v_p_right = _mm_lddqu_si128((const __m128i*)(const void*)(wuffs_base__slice_u8__subslice_ij(v_p, 16, 32).ptr));
-        v_v2j = _mm_add_epi32(v_v2j, v_v1);
-        v_v1 = _mm_add_epi32(v_v1, _mm_sad_epu8(v_p__left, v_zeroes));
-        v_v1 = _mm_add_epi32(v_v1, _mm_sad_epu8(v_p_right, v_zeroes));
-        v_v2k = _mm_add_epi32(v_v2k, _mm_madd_epi16(v_ones, _mm_maddubs_epi16(v_p__left, v_weights__left)));
-        v_v2k = _mm_add_epi32(v_v2k, _mm_madd_epi16(v_ones, _mm_maddubs_epi16(v_p_right, v_weights_right)));
-        v_p.ptr += 32;
-      }
-      v_p.len = 0;
-    }
-    v_v1 = _mm_add_epi32(v_v1, _mm_shuffle_epi32(v_v1, (int32_t)(177)));
-    v_v1 = _mm_add_epi32(v_v1, _mm_shuffle_epi32(v_v1, (int32_t)(78)));
-    v_s1 += ((uint32_t)(_mm_cvtsi128_si32(v_v1)));
-    v_v2 = _mm_add_epi32(v_v2k, _mm_slli_epi32(v_v2j, (int32_t)(5)));
-    v_v2 = _mm_add_epi32(v_v2, _mm_shuffle_epi32(v_v2, (int32_t)(177)));
-    v_v2 = _mm_add_epi32(v_v2, _mm_shuffle_epi32(v_v2, (int32_t)(78)));
-    v_s2 += ((uint32_t)(_mm_cvtsi128_si32(v_v2)));
-    v_tail_index = (((uint64_t)(a_x.len)) & 18446744073709551584u);
-    if (v_tail_index < ((uint64_t)(a_x.len))) {
-      {
-        wuffs_base__slice_u8 i_slice_p = wuffs_base__slice_u8__subslice_i(a_x, v_tail_index);
-        v_p.ptr = i_slice_p.ptr;
-        v_p.len = 1;
-        uint8_t* i_end0_p = i_slice_p.ptr + i_slice_p.len;
-        while (v_p.ptr < i_end0_p) {
-          v_s1 += ((uint32_t)(v_p.ptr[0]));
-          v_s2 += v_s1;
-          v_p.ptr += 1;
-        }
-        v_p.len = 0;
-      }
-    }
-    v_s1 %= 65521;
-    v_s2 %= 65521;
-    a_x = v_remaining;
-  }
-  self->private_impl.f_state = (((v_s2 & 65535) << 16) | (v_s1 & 65535));
-  return wuffs_base__make_empty_struct();
-}
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
-
 // -------- func adler32.hasher.up_arm_neon
 
 #if defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
@@ -18064,6 +17972,98 @@ wuffs_adler32__hasher__up_arm_neon(
   return wuffs_base__make_empty_struct();
 }
 #endif  // defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
+
+// -------- func adler32.hasher.up_sse42
+
+#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(__GNUC__)
+__attribute__((target("sse4.2")))
+#endif
+static wuffs_base__empty_struct
+wuffs_adler32__hasher__up_sse42(
+    wuffs_adler32__hasher* self,
+    wuffs_base__slice_u8 a_x) {
+  uint32_t v_s1 = 0;
+  uint32_t v_s2 = 0;
+  wuffs_base__slice_u8 v_remaining = {0};
+  wuffs_base__slice_u8 v_p = {0};
+  __m128i v_zeroes = {0};
+  __m128i v_ones = {0};
+  __m128i v_weights__left = {0};
+  __m128i v_weights_right = {0};
+  __m128i v_p__left = {0};
+  __m128i v_p_right = {0};
+  __m128i v_v1 = {0};
+  __m128i v_v2 = {0};
+  __m128i v_v2j = {0};
+  __m128i v_v2k = {0};
+  uint32_t v_num_iterate_bytes = 0;
+  uint64_t v_tail_index = 0;
+
+  v_zeroes = _mm_set1_epi16((int16_t)(0));
+  v_ones = _mm_set1_epi16((int16_t)(1));
+  v_weights__left = _mm_set_epi8((int8_t)(17), (int8_t)(18), (int8_t)(19), (int8_t)(20), (int8_t)(21), (int8_t)(22), (int8_t)(23), (int8_t)(24), (int8_t)(25), (int8_t)(26), (int8_t)(27), (int8_t)(28), (int8_t)(29), (int8_t)(30), (int8_t)(31), (int8_t)(32));
+  v_weights_right = _mm_set_epi8((int8_t)(1), (int8_t)(2), (int8_t)(3), (int8_t)(4), (int8_t)(5), (int8_t)(6), (int8_t)(7), (int8_t)(8), (int8_t)(9), (int8_t)(10), (int8_t)(11), (int8_t)(12), (int8_t)(13), (int8_t)(14), (int8_t)(15), (int8_t)(16));
+  v_s1 = ((self->private_impl.f_state) & 0xFFFF);
+  v_s2 = ((self->private_impl.f_state) >> (32 - (16)));
+  while (((uint64_t)(a_x.len)) > 0) {
+    v_remaining = wuffs_base__slice_u8__subslice_j(a_x, 0);
+    if (((uint64_t)(a_x.len)) > 5536) {
+      v_remaining = wuffs_base__slice_u8__subslice_i(a_x, 5536);
+      a_x = wuffs_base__slice_u8__subslice_j(a_x, 5536);
+    }
+    v_num_iterate_bytes = ((uint32_t)((((uint64_t)(a_x.len)) & 4294967264)));
+    v_s2 += ((uint32_t)(v_s1 * v_num_iterate_bytes));
+    v_v1 = _mm_setzero_si128();
+    v_v2j = _mm_setzero_si128();
+    v_v2k = _mm_setzero_si128();
+    {
+      wuffs_base__slice_u8 i_slice_p = a_x;
+      v_p.ptr = i_slice_p.ptr;
+      v_p.len = 32;
+      uint8_t* i_end0_p = v_p.ptr + (((i_slice_p.len - (size_t)(v_p.ptr - i_slice_p.ptr)) / 32) * 32);
+      while (v_p.ptr < i_end0_p) {
+        v_p__left = _mm_lddqu_si128((const __m128i*)(const void*)(wuffs_base__slice_u8__subslice_j(v_p, 16).ptr));
+        v_p_right = _mm_lddqu_si128((const __m128i*)(const void*)(wuffs_base__slice_u8__subslice_ij(v_p, 16, 32).ptr));
+        v_v2j = _mm_add_epi32(v_v2j, v_v1);
+        v_v1 = _mm_add_epi32(v_v1, _mm_sad_epu8(v_p__left, v_zeroes));
+        v_v1 = _mm_add_epi32(v_v1, _mm_sad_epu8(v_p_right, v_zeroes));
+        v_v2k = _mm_add_epi32(v_v2k, _mm_madd_epi16(v_ones, _mm_maddubs_epi16(v_p__left, v_weights__left)));
+        v_v2k = _mm_add_epi32(v_v2k, _mm_madd_epi16(v_ones, _mm_maddubs_epi16(v_p_right, v_weights_right)));
+        v_p.ptr += 32;
+      }
+      v_p.len = 0;
+    }
+    v_v1 = _mm_add_epi32(v_v1, _mm_shuffle_epi32(v_v1, (int32_t)(177)));
+    v_v1 = _mm_add_epi32(v_v1, _mm_shuffle_epi32(v_v1, (int32_t)(78)));
+    v_s1 += ((uint32_t)(_mm_cvtsi128_si32(v_v1)));
+    v_v2 = _mm_add_epi32(v_v2k, _mm_slli_epi32(v_v2j, (int32_t)(5)));
+    v_v2 = _mm_add_epi32(v_v2, _mm_shuffle_epi32(v_v2, (int32_t)(177)));
+    v_v2 = _mm_add_epi32(v_v2, _mm_shuffle_epi32(v_v2, (int32_t)(78)));
+    v_s2 += ((uint32_t)(_mm_cvtsi128_si32(v_v2)));
+    v_tail_index = (((uint64_t)(a_x.len)) & 18446744073709551584u);
+    if (v_tail_index < ((uint64_t)(a_x.len))) {
+      {
+        wuffs_base__slice_u8 i_slice_p = wuffs_base__slice_u8__subslice_i(a_x, v_tail_index);
+        v_p.ptr = i_slice_p.ptr;
+        v_p.len = 1;
+        uint8_t* i_end0_p = i_slice_p.ptr + i_slice_p.len;
+        while (v_p.ptr < i_end0_p) {
+          v_s1 += ((uint32_t)(v_p.ptr[0]));
+          v_s2 += v_s1;
+          v_p.ptr += 1;
+        }
+        v_p.len = 0;
+      }
+    }
+    v_s1 %= 65521;
+    v_s2 %= 65521;
+    a_x = v_remaining;
+  }
+  self->private_impl.f_state = (((v_s2 & 65535) << 16) | (v_s1 & 65535));
+  return wuffs_base__make_empty_struct();
+}
+#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__ADLER32)
 
