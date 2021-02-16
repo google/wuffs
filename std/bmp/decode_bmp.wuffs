@@ -640,7 +640,7 @@ pri func decoder.swizzle_rle!(dst: ptr base.pixel_buffer, src: base.io_reader) b
 							p0 += 1
 						} endwhile
 					} else {
-						indexes[0] = code >> 4
+						indexes[0] = (code >> 4) as base.u8
 						indexes[1] = code & 0x0F
 						p0 = 0
 						while p0 < this.rle_length {

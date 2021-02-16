@@ -150,8 +150,8 @@ pri func decoder.filter_and_swizzle_tricky!(dst: ptr base.pixel_buffer, workbuf:
 						s = s[1 ..]
 					}
 					bits_unpacked[0] = (bits_packed >> shift) ~mod* multiplier
-					bits_packed ~mod<<= this.depth
-					packs_remaining ~mod-= 1
+					bits_packed = bits_packed ~mod<< this.depth
+					packs_remaining = packs_remaining ~mod- 1
 
 					this.swizzler.swizzle_interleaved_from_slice!(
 						dst: dst[i ..],
