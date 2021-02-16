@@ -35,8 +35,6 @@ pri func decoder.filter_1_distance_4_arm_neon!(curr: slice base.u8),
 	var fa : base.arm_neon_64
 	var fx : base.arm_neon_64
 
-	fa = fa.create_vdup_n_u32(a: 0)
-
 	iterate (c = args.curr)(length: 4, advance: 4, unroll: 2) {
 		fx = fx.create_vdup_n_u32(a: c.peek_u32le())
 		fx = fx.vadd_u8(b: fa)
@@ -57,9 +55,6 @@ pri func decoder.filter_3_distance_4_arm_neon!(curr: slice base.u8, prev: slice 
 	var fa : base.arm_neon_64
 	var fb : base.arm_neon_64
 	var fx : base.arm_neon_64
-
-	fa = fa.create_vdup_n_u32(a: 0)
-	fb = fb.create_vdup_n_u32(a: 0)
 
 	if args.prev.length() == 0 {
 		iterate (c = args.curr)(length: 4, advance: 4, unroll: 2) {
@@ -109,9 +104,6 @@ pri func decoder.filter_4_distance_3_arm_neon!(curr: slice base.u8, prev: slice 
 	var cmpac : base.arm_neon_128
 	var picka : base.arm_neon_64
 	var pickb : base.arm_neon_64
-
-	fa = fa.create_vdup_n_u32(a: 0)
-	fc = fc.create_vdup_n_u32(a: 0)
 
 	// § The advance is 3, not 4.
 	iterate (c = args.curr, p = args.prev)(length: 4, advance: 3, unroll: 2) {
@@ -176,9 +168,6 @@ pri func decoder.filter_4_distance_4_arm_neon!(curr: slice base.u8, prev: slice 
 	var cmpac : base.arm_neon_128
 	var picka : base.arm_neon_64
 	var pickb : base.arm_neon_64
-
-	fa = fa.create_vdup_n_u32(a: 0)
-	fc = fc.create_vdup_n_u32(a: 0)
 
 	iterate (c = args.curr, p = args.prev)(length: 4, advance: 4, unroll: 2) {
 		fb = fb.create_vdup_n_u32(a: p.peek_u32le())

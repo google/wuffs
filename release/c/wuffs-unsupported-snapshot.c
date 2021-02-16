@@ -31651,7 +31651,6 @@ wuffs_png__decoder__filter_1_distance_4_arm_neon(
   uint8x8_t v_fa = {0};
   uint8x8_t v_fx = {0};
 
-  v_fa = vreinterpret_u8_u32(vdup_n_u32(0));
   {
     wuffs_base__slice_u8 i_slice_c = a_curr;
     v_c.ptr = i_slice_c.ptr;
@@ -31698,8 +31697,6 @@ wuffs_png__decoder__filter_3_distance_4_arm_neon(
   uint8x8_t v_fb = {0};
   uint8x8_t v_fx = {0};
 
-  v_fa = vreinterpret_u8_u32(vdup_n_u32(0));
-  v_fb = vreinterpret_u8_u32(vdup_n_u32(0));
   if (((uint64_t)(a_prev.len)) == 0) {
     {
       wuffs_base__slice_u8 i_slice_c = a_curr;
@@ -31799,8 +31796,6 @@ wuffs_png__decoder__filter_4_distance_3_arm_neon(
   uint8x8_t v_picka = {0};
   uint8x8_t v_pickb = {0};
 
-  v_fa = vreinterpret_u8_u32(vdup_n_u32(0));
-  v_fc = vreinterpret_u8_u32(vdup_n_u32(0));
   {
     wuffs_base__slice_u8 i_slice_c = a_curr;
     v_c.ptr = i_slice_c.ptr;
@@ -31919,8 +31914,6 @@ wuffs_png__decoder__filter_4_distance_4_arm_neon(
   uint8x8_t v_picka = {0};
   uint8x8_t v_pickb = {0};
 
-  v_fa = vreinterpret_u8_u32(vdup_n_u32(0));
-  v_fc = vreinterpret_u8_u32(vdup_n_u32(0));
   {
     wuffs_base__slice_u8 i_slice_c = a_curr;
     v_c.ptr = i_slice_c.ptr;
