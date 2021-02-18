@@ -448,6 +448,10 @@ func (g *gen) writeBuiltinTokenWriter(b *buffer, recv *a.Expr, method t.ID, args
 }
 
 func (g *gen) writeBuiltinCPUArch(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, sideEffectsOnly bool, depth uint32) error {
+	switch recv.MType().QID()[1] {
+	case t.IDX86SSE42Utility:
+		return g.writeBuiltinCPUArchX86(b, recv, method, args, sideEffectsOnly, depth)
+	}
 	armCRC32U32 := recv.MType().Eq(typeExprARMCRC32U32)
 	armNeon := recv.MType().Eq(typeExprARMNeon64) || recv.MType().Eq(typeExprARMNeon128)
 
@@ -639,25 +643,9 @@ func (g *gen) writeBuiltinCPUArch(b *buffer, recv *a.Expr, method t.ID, args []*
 			if i > 0 {
 				b.writes(", ")
 			}
-			after := ""
-			switch method {
-			case t.IDCreateMMSet1EPI8, t.IDCreateMMSetEPI8:
-				b.writes("(int8_t)(")
-				after = ")"
-			case t.IDCreateMMSet1EPI16, t.IDCreateMMSetEPI16:
-				b.writes("(int16_t)(")
-				after = ")"
-			case t.IDCreateMMSet1EPI32, t.IDCreateMMSetEPI32:
-				b.writes("(int32_t)(")
-				after = ")"
-			case t.IDCreateMMSet1EPI64X, t.IDCreateMMSetEPI64X:
-				b.writes("(int64_t)(")
-				after = ")"
-			}
 			if err := g.writeExpr(b, o.AsArg().Value(), false, depth); err != nil {
 				return err
 			}
-			b.writes(after)
 		}
 		b.writes(")")
 		b.writes(vreinterpretClose)
@@ -849,6 +837,52 @@ func (g *gen) writeBuiltinCPUArch(b *buffer, recv *a.Expr, method t.ID, args []*
 		}
 		b.writes(")")
 		b.writes(postArgsAfter)
+	}
+	return nil
+}
+
+func (g *gen) writeBuiltinCPUArchX86(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, sideEffectsOnly bool, depth uint32) error {
+	methodStr := method.Str(g.tm)
+	if strings.HasPrefix(methodStr, "make_") {
+		fName, tName := "", ""
+		switch methodStr {
+		case "make_m128i_multiple_u8":
+			fName, tName = "_mm_set_epi8", "int8_t"
+		case "make_m128i_multiple_u16":
+			fName, tName = "_mm_set_epi16", "int16_t"
+		case "make_m128i_multiple_u32":
+			fName, tName = "_mm_set_epi32", "int32_t"
+		case "make_m128i_multiple_u64":
+			fName, tName = "_mm_set_epi64x", "int64_t"
+		case "make_m128i_repeat_u8":
+			fName, tName = "_mm_set1_epi8", "int8_t"
+		case "make_m128i_repeat_u16":
+			fName, tName = "_mm_set1_epi16", "int16_t"
+		case "make_m128i_repeat_u32":
+			fName, tName = "_mm_set1_epi32", "int32_t"
+		case "make_m128i_repeat_u64":
+			fName, tName = "_mm_set1_epi64x", "int64_t"
+		case "make_m128i_zeroes":
+			fName, tName = "_mm_setzero_si128", ""
+		default:
+			return fmt.Errorf("internal error: unsupported cpu_arch method %q", methodStr)
+		}
+		b.printf("%s(", fName)
+		for i := range args {
+			// Iterate backwards to match _mm_setetc arg order.
+			o := args[len(args)-1-i].AsArg()
+
+			if i > 0 {
+				b.writes(", ")
+			}
+			b.printf("(%s)(", tName)
+			if err := g.writeExpr(b, o.Value(), false, depth); err != nil {
+				return err
+			}
+			b.writes(")")
+		}
+		b.writes(")")
+		return nil
 	}
 	return nil
 }

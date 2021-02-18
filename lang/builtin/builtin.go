@@ -659,6 +659,26 @@ var Funcs = []string{
 
 	// ---- x86_sse42_utility
 
+	"x86_sse42_utility.make_m128i_multiple_u8(" +
+		"a00: u8, a01: u8, a02: u8, a03: u8," +
+		"a04: u8, a05: u8, a06: u8, a07: u8," +
+		"a08: u8, a09: u8, a10: u8, a11: u8," +
+		"a12: u8, a13: u8, a14: u8, a15: u8) x86_m128i",
+	"x86_sse42_utility.make_m128i_multiple_u16(" +
+		"a00: u16, a01: u16, a02: u16, a03: u16," +
+		"a04: u16, a05: u16, a06: u16, a07: u16) x86_m128i",
+	"x86_sse42_utility.make_m128i_multiple_u32(" +
+		"a00: u32, a01: u32, a02: u32, a03: u32) x86_m128i",
+	"x86_sse42_utility.make_m128i_multiple_u64(" +
+		"a00: u64, a01: u64) x86_m128i",
+
+	"x86_sse42_utility.make_m128i_repeat_u8(a: u8) x86_m128i",
+	"x86_sse42_utility.make_m128i_repeat_u16(a: u16) x86_m128i",
+	"x86_sse42_utility.make_m128i_repeat_u32(a: u32) x86_m128i",
+	"x86_sse42_utility.make_m128i_repeat_u64(a: u64) x86_m128i",
+
+	"x86_sse42_utility.make_m128i_zeroes() x86_m128i",
+
 	// ---- x86_m128i
 
 	"x86_m128i.load_u32!(a: u32)",
@@ -669,23 +689,6 @@ var Funcs = []string{
 	"x86_m128i.store_slice128!(a: slice base.u8)",
 
 	// TODO: generate these methods automatically?
-
-	"x86_m128i.create_mm_set1_epi16(a: u16) x86_m128i",
-	"x86_m128i.create_mm_set1_epi32(a: u32) x86_m128i",
-	"x86_m128i.create_mm_set1_epi64x(a: u64) x86_m128i",
-	"x86_m128i.create_mm_set1_epi8(a: u8) x86_m128i",
-	"x86_m128i.create_mm_set_epi16(" +
-		"e7: u16, e6: u16, e5: u16, e4: u16," +
-		"e3: u16, e2: u16, e1: u16, e0: u16) x86_m128i",
-	"x86_m128i.create_mm_set_epi32(" +
-		"e3: u32, e2: u32, e1: u32, e0: u32) x86_m128i",
-	"x86_m128i.create_mm_set_epi64x(e1: u64, e0: u64) x86_m128i",
-	"x86_m128i.create_mm_set_epi8(" +
-		"e15: u8, e14: u8, e13: u8, e12: u8," +
-		"e11: u8, e10: u8, e9: u8, e8: u8," +
-		"e7: u8, e6: u8, e5: u8, e4: u8," +
-		"e3: u8, e2: u8, e1: u8, e0: u8) x86_m128i",
-	"x86_m128i.create_mm_setzero_si128() x86_m128i",
 
 	"x86_m128i._mm_abs_epi16() x86_m128i",
 	"x86_m128i._mm_add_epi16(b: x86_m128i) x86_m128i",
