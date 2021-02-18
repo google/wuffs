@@ -136,7 +136,7 @@ var builtInTypeMap = typeMap{
 
 func (c *Checker) parseBuiltInFuncs(m map[t.QQID]*a.Func, ss []string) error {
 	return builtin.ParseFuncs(c.tm, ss, func(f *a.Func) error {
-		if err := c.checkFuncSignature(f.AsNode()); err != nil {
+		if err := c.checkFuncSignature1(f.AsNode(), false); err != nil {
 			return err
 		}
 		if m != nil {
