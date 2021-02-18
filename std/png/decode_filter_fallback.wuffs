@@ -78,9 +78,7 @@ pri func decoder.filter_1_distance_4_fallback!(curr: slice base.u8) {
 
 // Filter 2: Up.
 
-pri func decoder.filter_2!(curr: slice base.u8, prev: slice base.u8),
-	choosy,
-{
+pri func decoder.filter_2!(curr: slice base.u8, prev: slice base.u8) {
 	var n : base.u64
 	var i : base.u64
 

@@ -8537,10 +8537,6 @@ struct wuffs_png__decoder__struct {
     wuffs_base__empty_struct (*choosy_filter_1)(
         wuffs_png__decoder* self,
         wuffs_base__slice_u8 a_curr);
-    wuffs_base__empty_struct (*choosy_filter_2)(
-        wuffs_png__decoder* self,
-        wuffs_base__slice_u8 a_curr,
-        wuffs_base__slice_u8 a_prev);
     wuffs_base__empty_struct (*choosy_filter_3)(
         wuffs_png__decoder* self,
         wuffs_base__slice_u8 a_curr,
@@ -31329,12 +31325,6 @@ wuffs_png__decoder__filter_2(
     wuffs_base__slice_u8 a_prev);
 
 static wuffs_base__empty_struct
-wuffs_png__decoder__filter_2__choosy_default(
-    wuffs_png__decoder* self,
-    wuffs_base__slice_u8 a_curr,
-    wuffs_base__slice_u8 a_prev);
-
-static wuffs_base__empty_struct
 wuffs_png__decoder__filter_3(
     wuffs_png__decoder* self,
     wuffs_base__slice_u8 a_curr,
@@ -31548,7 +31538,6 @@ wuffs_png__decoder__initialize(
   }
 
   self->private_impl.choosy_filter_1 = &wuffs_png__decoder__filter_1__choosy_default;
-  self->private_impl.choosy_filter_2 = &wuffs_png__decoder__filter_2__choosy_default;
   self->private_impl.choosy_filter_3 = &wuffs_png__decoder__filter_3__choosy_default;
   self->private_impl.choosy_filter_4 = &wuffs_png__decoder__filter_4__choosy_default;
   self->private_impl.choosy_filter_and_swizzle = &wuffs_png__decoder__filter_and_swizzle__choosy_default;
@@ -32063,14 +32052,6 @@ wuffs_png__decoder__filter_1_distance_4_fallback(
 
 static wuffs_base__empty_struct
 wuffs_png__decoder__filter_2(
-    wuffs_png__decoder* self,
-    wuffs_base__slice_u8 a_curr,
-    wuffs_base__slice_u8 a_prev) {
-  return (*self->private_impl.choosy_filter_2)(self, a_curr, a_prev);
-}
-
-static wuffs_base__empty_struct
-wuffs_png__decoder__filter_2__choosy_default(
     wuffs_png__decoder* self,
     wuffs_base__slice_u8 a_curr,
     wuffs_base__slice_u8 a_prev) {
