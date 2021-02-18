@@ -1145,6 +1145,8 @@ func (q *checker) tcheckChoose(n *a.Choose) error {
 	f := q.c.funcs[fQQID]
 	if f == nil {
 		return fmt.Errorf("check: no function named %q", fQQID.Str(q.tm))
+	} else if !f.Choosy() {
+		return fmt.Errorf("check: choose assignee %q is not choosy", fQQID[2].Str(q.tm))
 	}
 	for _, o := range n.Args() {
 		o := o.AsExpr()
