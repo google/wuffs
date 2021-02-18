@@ -686,9 +686,11 @@ var Funcs = []string{
 
 	// ---- x86_m128i
 
+	"x86_m128i.store_slice64!(a: slice base.u8)",
+	"x86_m128i.store_slice128!(a: slice base.u8)",
+
 	"x86_m128i.truncate_u32() u32",
 	"x86_m128i.truncate_u64() u64",
-	"x86_m128i.store_slice128!(a: slice base.u8)",
 
 	// TODO: generate these methods automatically?
 

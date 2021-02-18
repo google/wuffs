@@ -698,14 +698,6 @@ const (
 
 	// --------
 
-	IDStoreSlice64  = ID(0x380)
-	IDStoreSlice128 = ID(0x381)
-	IDStoreSlice256 = ID(0x382)
-	IDStoreSlice512 = ID(0x383)
-
-	IDTruncateU32 = ID(0x388)
-	IDTruncateU64 = ID(0x389)
-
 	IDCreateSlice64  = ID(0x390)
 	IDCreateSlice128 = ID(0x391)
 )
@@ -1110,14 +1102,6 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDX86AVX2Utility:  "x86_avx2_utility",
 
 	IDX86M128I: "x86_m128i",
-
-	IDStoreSlice64:  "store_slice64",
-	IDStoreSlice128: "store_slice128",
-	IDStoreSlice256: "store_slice256",
-	IDStoreSlice512: "store_slice512",
-
-	IDTruncateU32: "truncate_u32",
-	IDTruncateU64: "truncate_u64",
 
 	IDCreateSlice64:  "create_slice64",
 	IDCreateSlice128: "create_slice128",

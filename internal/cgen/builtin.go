@@ -449,49 +449,13 @@ func (g *gen) writeBuiltinTokenWriter(b *buffer, recv *a.Expr, method t.ID, args
 
 func (g *gen) writeBuiltinCPUArch(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, sideEffectsOnly bool, depth uint32) error {
 	switch recv.MType().QID()[1] {
-	case t.IDX86SSE42Utility:
+	case t.IDX86SSE42Utility, t.IDX86M128I:
 		return g.writeBuiltinCPUArchX86(b, recv, method, args, sideEffectsOnly, depth)
 	}
 	armCRC32U32 := recv.MType().Eq(typeExprARMCRC32U32)
 	armNeon := recv.MType().Eq(typeExprARMNeon64) || recv.MType().Eq(typeExprARMNeon128)
 
 	switch method {
-	case t.IDTruncateU32, t.IDTruncateU64, t.IDStoreSlice128:
-		switch method {
-		case t.IDTruncateU32:
-			b.writes("((uint32_t)(_mm_cvtsi128_si32(")
-		case t.IDTruncateU64:
-			b.writes("((uint64_t)(_mm_cvtsi128_si64(")
-		case t.IDStoreSlice128:
-			if !sideEffectsOnly {
-				// Generate a two part expression using the comma operator: "(etc,
-				// return_empty_struct call)". The final part is a function call
-				// (to a static inline function) instead of a struct literal, to
-				// avoid a "expression result unused" compiler error.
-				b.writes("(")
-			}
-			b.writes("_mm_storeu_si128((__m128i*)(void*)(")
-			if err := g.writeExpr(b, args[0].AsArg().Value(), false, depth); err != nil {
-				return err
-			}
-			b.writes(".ptr), ")
-		}
-
-		if err := g.writeExpr(b, recv, false, depth); err != nil {
-			return err
-		}
-
-		switch method {
-		case t.IDStoreSlice128:
-			b.writes(")")
-			if !sideEffectsOnly {
-				b.writes(", wuffs_base__make_empty_struct())")
-			}
-		default:
-			b.writes(")))")
-		}
-		return nil
-
 	case t.IDCreateSlice64, t.IDCreateSlice128:
 		if armNeon {
 			switch method {
@@ -858,7 +822,62 @@ func (g *gen) writeBuiltinCPUArchX86(b *buffer, recv *a.Expr, method t.ID, args 
 		}
 		b.writes(")")
 		return nil
+
+	} else if strings.HasPrefix(methodStr, "store_") {
+		if !sideEffectsOnly {
+			// Generate a two part expression using the comma operator: "(etc,
+			// return_empty_struct call)". The final part is a function call
+			// (to a static inline function) instead of a struct literal, to
+			// avoid a "expression result unused" compiler error.
+			b.writes("(")
+		}
+		switch methodStr {
+		case "store_slice64":
+			b.writes("_mm_storeu_si64((void*)(")
+		case "store_slice128":
+			b.writes("_mm_storeu_si128((__m128i*)(void*)(")
+		}
+		if err := g.writeExprDotPtr(b, args[0].AsArg().Value(), false, depth); err != nil {
+			return err
+		}
+		b.writes("), ")
+		if err := g.writeExpr(b, recv, false, depth); err != nil {
+			return err
+		}
+		b.writes(")")
+		if !sideEffectsOnly {
+			b.writes(", wuffs_base__make_empty_struct())")
+		}
+		return nil
+
+	} else if strings.HasPrefix(methodStr, "truncate_u") {
+		size := methodStr[len("truncate_u"):]
+		b.printf("((uint%s_t)(_mm_cvtsi128_si%s(", size, size)
+		if err := g.writeExpr(b, recv, false, depth); err != nil {
+			return err
+		}
+		b.writes(")))")
+		return nil
 	}
+
+	b.writes(methodStr)
+	b.writes("(")
+	if err := g.writeExpr(b, recv, false, depth); err != nil {
+		return err
+	}
+	for _, o := range args {
+		b.writes(", ")
+		argAfter := ""
+		if o.AsArg().Value().MType().IsNumTypeOrIdeal() {
+			b.writes("(int32_t)(")
+			argAfter = ")"
+		}
+		if err := g.writeExpr(b, o.AsArg().Value(), false, depth); err != nil {
+			return err
+		}
+		b.writes(argAfter)
+	}
+	b.writes(")")
 	return nil
 }
 
