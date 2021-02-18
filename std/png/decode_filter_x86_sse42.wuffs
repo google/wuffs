@@ -19,7 +19,7 @@
 // This (filter = 1, distance = 3) implementation doesn't actually bench faster
 // than the non-SIMD one.
 //
-// pri func decoder.filter_1_distance_3_sse42!(curr: slice base.u8),
+// pri func decoder.filter_1_distance_3_x86_sse42!(curr: slice base.u8),
 //     choose cpu_arch >= x86_sse42,
 // {
 //     var c    : slice base.u8
@@ -42,7 +42,7 @@
 // https://github.com/google/wuffs/commit/1660f9268621ed4415b3b363f0a0e1026d4aa83d
 // "Have std/png filter_1_distance_? use more SIMD" for a pessimizing example.
 
-pri func decoder.filter_1_distance_4_sse42!(curr: slice base.u8),
+pri func decoder.filter_1_distance_4_x86_sse42!(curr: slice base.u8),
 	choose cpu_arch >= x86_sse42,
 {
 	var c    : slice base.u8
@@ -61,16 +61,16 @@ pri func decoder.filter_1_distance_4_sse42!(curr: slice base.u8),
 
 // Filter 3: Average.
 
-// Similar to filter_1_distance_3_sse42, the SIMD implementation for (filter =
-// 3, distance = 3) doesn't actually bench faster than the non-SIMD one.
+// Similar to filter_1_distance_3_x86_sse42, the SIMD implementation for
+// (filter = 3, distance = 3) doesn't actually bench faster than non-SIMD.
 //
-// pri func decoder.filter_3_distance_3_sse42!(curr: slice base.u8, prev: slice base.u8),
+// pri func decoder.filter_3_distance_3_x86_sse42!(curr: slice base.u8, prev: slice base.u8),
 //     choose cpu_arch >= x86_sse42,
 // {
 //     etc
 // }
 
-pri func decoder.filter_3_distance_4_sse42!(curr: slice base.u8, prev: slice base.u8),
+pri func decoder.filter_3_distance_4_x86_sse42!(curr: slice base.u8, prev: slice base.u8),
 	choose cpu_arch >= x86_sse42,
 {
 	var c    : slice base.u8
@@ -127,13 +127,13 @@ pri func decoder.filter_3_distance_4_sse42!(curr: slice base.u8, prev: slice bas
 
 // Filter 4: Paeth.
 
-pri func decoder.filter_4_distance_3_sse42!(curr: slice base.u8, prev: slice base.u8),
+pri func decoder.filter_4_distance_3_x86_sse42!(curr: slice base.u8, prev: slice base.u8),
 	choose cpu_arch >= x86_sse42,
 {
-	// See the comments in filter_4_distance_4_sse42 for an explanation of how
-	// this works. That function's single loop is copied twice here, once with
-	// "length: 4" and once with "length: 3". It's generally faster to load 4
-	// bytes at a time instead of 3.
+	// See the comments in filter_4_distance_4_x86_sse42 for an explanation of
+	// how this works. That function's single loop is copied twice here, once
+	// with "length: 4" and once with "length: 3". It's generally faster to
+	// load 4 bytes at a time instead of 3.
 	//
 	// Differences between that function and this one are marked with a §.
 
@@ -205,7 +205,7 @@ pri func decoder.filter_4_distance_3_sse42!(curr: slice base.u8, prev: slice bas
 	}
 }
 
-pri func decoder.filter_4_distance_4_sse42!(curr: slice base.u8, prev: slice base.u8),
+pri func decoder.filter_4_distance_4_x86_sse42!(curr: slice base.u8, prev: slice base.u8),
 	choose cpu_arch >= x86_sse42,
 {
 	var c           : slice base.u8
