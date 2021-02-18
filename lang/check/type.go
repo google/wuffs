@@ -607,11 +607,6 @@ func (q *checker) tcheckExprCall(n *a.Expr, depth uint32) error {
 			}
 			genericType1 = a.NewTypeExpr(t.IDSlice, 0, 0, nil, nil, genericType2.Inner())
 		}
-
-		if f.FuncName().IsBuiltInLoad() && (lhs.LHS().AsExpr().Operator() != 0) {
-			return fmt.Errorf(`check: %q receiver %q must be a local variable`,
-				f.QQID().Str(q.tm), lhs.LHS().AsExpr().Str(q.tm))
-		}
 	}
 
 	// Check that the func's in type matches the arguments.

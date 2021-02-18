@@ -115,7 +115,6 @@ func (x ID) IsTightRight() bool { return x < ID(len(isTightRight)) && isTightRig
 
 func (x ID) IsAssign() bool         { return minAssign <= x && x <= maxAssign }
 func (x ID) IsBuiltInCPUArch() bool { return minBuiltInCPUArch <= x && x <= maxBuiltInCPUArch }
-func (x ID) IsBuiltInLoad() bool    { return minBuiltInLoad <= x && x <= maxBuiltInLoad }
 func (x ID) IsCannotAssignTo() bool { return minCannotAssignTo <= x && x <= maxCannotAssignTo }
 func (x ID) IsClose() bool          { return minClose <= x && x <= maxClose }
 func (x ID) IsKeyword() bool        { return minKeyword <= x && x <= maxKeyword }
@@ -699,18 +698,13 @@ const (
 
 	// --------
 
-	minBuiltInLoad = 0x380
-	maxBuiltInLoad = 0x387
+	IDStoreSlice64  = ID(0x380)
+	IDStoreSlice128 = ID(0x381)
+	IDStoreSlice256 = ID(0x382)
+	IDStoreSlice512 = ID(0x383)
 
-	IDLoadSlice128 = ID(0x382)
-	IDLoadSlice256 = ID(0x383)
-	IDLoadSlice512 = ID(0x384)
-
-	IDTruncateU32   = ID(0x388)
-	IDTruncateU64   = ID(0x389)
-	IDStoreSlice128 = ID(0x38A)
-	IDStoreSlice256 = ID(0x38B)
-	IDStoreSlice512 = ID(0x38C)
+	IDTruncateU32 = ID(0x388)
+	IDTruncateU64 = ID(0x389)
 
 	IDCreateSlice64  = ID(0x390)
 	IDCreateSlice128 = ID(0x391)
@@ -1117,15 +1111,13 @@ var builtInsByID = [nBuiltInIDs]string{
 
 	IDX86M128I: "x86_m128i",
 
-	IDLoadSlice128: "load_slice128",
-	IDLoadSlice256: "load_slice256",
-	IDLoadSlice512: "load_slice512",
-
-	IDTruncateU32:   "truncate_u32",
-	IDTruncateU64:   "truncate_u64",
+	IDStoreSlice64:  "store_slice64",
 	IDStoreSlice128: "store_slice128",
 	IDStoreSlice256: "store_slice256",
 	IDStoreSlice512: "store_slice512",
+
+	IDTruncateU32: "truncate_u32",
+	IDTruncateU64: "truncate_u64",
 
 	IDCreateSlice64:  "create_slice64",
 	IDCreateSlice128: "create_slice128",

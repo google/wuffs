@@ -680,13 +680,12 @@ var Funcs = []string{
 	"x86_sse42_utility.make_m128i_single_u32(a: u32) x86_m128i",
 	"x86_sse42_utility.make_m128i_single_u64(a: u64) x86_m128i",
 
+	"x86_sse42_utility.make_m128i_slice128(a: slice base.u8) x86_m128i",
+
 	"x86_sse42_utility.make_m128i_zeroes() x86_m128i",
 
 	// ---- x86_m128i
 
-	"x86_m128i.load_u32!(a: u32)",
-	"x86_m128i.load_u64!(a: u64)",
-	"x86_m128i.load_slice128!(a: slice base.u8)",
 	"x86_m128i.truncate_u32() u32",
 	"x86_m128i.truncate_u64() u64",
 	"x86_m128i.store_slice128!(a: slice base.u8)",

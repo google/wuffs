@@ -456,29 +456,6 @@ func (g *gen) writeBuiltinCPUArch(b *buffer, recv *a.Expr, method t.ID, args []*
 	armNeon := recv.MType().Eq(typeExprARMNeon64) || recv.MType().Eq(typeExprARMNeon128)
 
 	switch method {
-	case t.IDLoadSlice128:
-		if !sideEffectsOnly {
-			// Generate a two part expression using the comma operator: "(etc,
-			// return_empty_struct call)". The final part is a function call
-			// (to a static inline function) instead of a struct literal, to
-			// avoid a "expression result unused" compiler error.
-			b.writes("(")
-		}
-		if err := g.writeExpr(b, recv, false, depth); err != nil {
-			return err
-		}
-
-		b.writes(" = _mm_lddqu_si128((const __m128i*)(const void*)(")
-		if err := g.writeExpr(b, args[0].AsArg().Value(), false, depth); err != nil {
-			return err
-		}
-		b.writes(".ptr))")
-
-		if !sideEffectsOnly {
-			b.writes(", wuffs_base__make_empty_struct())")
-		}
-		return nil
-
 	case t.IDTruncateU32, t.IDTruncateU64, t.IDStoreSlice128:
 		switch method {
 		case t.IDTruncateU32:
@@ -830,7 +807,7 @@ func (g *gen) writeBuiltinCPUArch(b *buffer, recv *a.Expr, method t.ID, args []*
 func (g *gen) writeBuiltinCPUArchX86(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, sideEffectsOnly bool, depth uint32) error {
 	methodStr := method.Str(g.tm)
 	if strings.HasPrefix(methodStr, "make_") {
-		fName, tName := "", ""
+		fName, tName, ptr := "", "", false
 		switch methodStr {
 		case "make_m128i_multiple_u8":
 			fName, tName = "_mm_set_epi8", "int8_t"
@@ -852,6 +829,8 @@ func (g *gen) writeBuiltinCPUArchX86(b *buffer, recv *a.Expr, method t.ID, args 
 			fName, tName = "_mm_cvtsi32_si128", "int32_t"
 		case "make_m128i_single_u64":
 			fName, tName = "_mm_cvtsi64x_si128", "int64_t"
+		case "make_m128i_slice128":
+			fName, tName, ptr = "_mm_lddqu_si128", "const __m128i*)(const void*", true
 		case "make_m128i_zeroes":
 			fName, tName = "_mm_setzero_si128", ""
 		default:
@@ -868,6 +847,9 @@ func (g *gen) writeBuiltinCPUArchX86(b *buffer, recv *a.Expr, method t.ID, args 
 			b.printf("(%s)(", tName)
 			if err := g.writeExpr(b, o.Value(), false, depth); err != nil {
 				return err
+			}
+			if ptr {
+				b.writes(".ptr")
 			}
 			b.writes(")")
 		}

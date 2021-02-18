@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"math/big"
 	"strconv"
+	"strings"
 
 	"github.com/google/wuffs/lib/interval"
 
@@ -1220,9 +1221,16 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (bounds, e
 		}
 
 	} else if recvTyp.IsCPUArchType() {
-		if method >= t.IDLoadSlice128 {
-			if m := method - t.IDLoadSlice128; m < t.ID(len(lsMethodAdvances)) {
-				advance, update = lsMethodAdvances[m], false
+		if s := method.Str(q.tm); strings.HasPrefix(s, "make_") || strings.HasPrefix(s, "store_") {
+			switch {
+			case strings.HasSuffix(s, "_slice64"): //   64 bits is  8 bytes.
+				advance = eight
+			case strings.HasSuffix(s, "_slice128"): // 128 bits is 16 bytes.
+				advance = sixteen
+			case strings.HasSuffix(s, "_slice256"): // 256 bits is 32 bytes.
+				advance = thirtyTwo
+			case strings.HasSuffix(s, "_slice512"): // 512 bits is 64 bytes.
+				advance = sixtyFour
 			}
 		}
 	}
@@ -1437,24 +1445,6 @@ var ioMethodAdvances = [...]struct {
 
 	t.IDWriteSimpleTokenFast - t.IDPeekU8:   {one, true},
 	t.IDWriteExtendedTokenFast - t.IDPeekU8: {one, true},
-}
-
-var lsMethodAdvances = [...]*big.Int{
-	//  64 bits is  8 bytes.
-	// 128 bits is 16 bytes.
-	// 256 bits is 32 bytes.
-	// 512 bits is 64 bytes.
-
-	t.IDLoadSlice128 - t.IDLoadSlice128: sixteen,
-	t.IDLoadSlice256 - t.IDLoadSlice128: thirtyTwo,
-	t.IDLoadSlice512 - t.IDLoadSlice128: sixtyFour,
-
-	t.IDStoreSlice128 - t.IDLoadSlice128: sixteen,
-	t.IDStoreSlice256 - t.IDLoadSlice128: thirtyTwo,
-	t.IDStoreSlice512 - t.IDLoadSlice128: sixtyFour,
-
-	t.IDCreateSlice64 - t.IDLoadSlice128:  eight,
-	t.IDCreateSlice128 - t.IDLoadSlice128: sixteen,
 }
 
 func makeConstValueExpr(tm *t.Map, cv *big.Int) (*a.Expr, error) {
