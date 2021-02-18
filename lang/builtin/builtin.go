@@ -677,6 +677,9 @@ var Funcs = []string{
 	"x86_sse42_utility.make_m128i_repeat_u32(a: u32) x86_m128i",
 	"x86_sse42_utility.make_m128i_repeat_u64(a: u64) x86_m128i",
 
+	"x86_sse42_utility.make_m128i_single_u32(a: u32) x86_m128i",
+	"x86_sse42_utility.make_m128i_single_u64(a: u64) x86_m128i",
+
 	"x86_sse42_utility.make_m128i_zeroes() x86_m128i",
 
 	// ---- x86_m128i

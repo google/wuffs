@@ -702,8 +702,6 @@ const (
 	minBuiltInLoad = 0x380
 	maxBuiltInLoad = 0x387
 
-	IDLoadU32      = ID(0x380)
-	IDLoadU64      = ID(0x381)
 	IDLoadSlice128 = ID(0x382)
 	IDLoadSlice256 = ID(0x383)
 	IDLoadSlice512 = ID(0x384)
@@ -1119,8 +1117,6 @@ var builtInsByID = [nBuiltInIDs]string{
 
 	IDX86M128I: "x86_m128i",
 
-	IDLoadU32:      "load_u32",
-	IDLoadU64:      "load_u64",
 	IDLoadSlice128: "load_slice128",
 	IDLoadSlice256: "load_slice256",
 	IDLoadSlice512: "load_slice512",

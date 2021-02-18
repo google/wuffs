@@ -456,7 +456,7 @@ func (g *gen) writeBuiltinCPUArch(b *buffer, recv *a.Expr, method t.ID, args []*
 	armNeon := recv.MType().Eq(typeExprARMNeon64) || recv.MType().Eq(typeExprARMNeon128)
 
 	switch method {
-	case t.IDLoadU32, t.IDLoadU64, t.IDLoadSlice128:
+	case t.IDLoadSlice128:
 		if !sideEffectsOnly {
 			// Generate a two part expression using the comma operator: "(etc,
 			// return_empty_struct call)". The final part is a function call
@@ -468,25 +468,11 @@ func (g *gen) writeBuiltinCPUArch(b *buffer, recv *a.Expr, method t.ID, args []*
 			return err
 		}
 
-		switch method {
-		case t.IDLoadU32:
-			b.writes(" = _mm_cvtsi32_si128((int32_t)(")
-		case t.IDLoadU64:
-			b.writes(" = _mm_cvtsi64_si128((int64_t)(")
-		case t.IDLoadSlice128:
-			b.writes(" = _mm_lddqu_si128((const __m128i*)(const void*)(")
-		}
-
+		b.writes(" = _mm_lddqu_si128((const __m128i*)(const void*)(")
 		if err := g.writeExpr(b, args[0].AsArg().Value(), false, depth); err != nil {
 			return err
 		}
-
-		switch method {
-		case t.IDLoadSlice128:
-			b.writes(".ptr))")
-		default:
-			b.writes("))")
-		}
+		b.writes(".ptr))")
 
 		if !sideEffectsOnly {
 			b.writes(", wuffs_base__make_empty_struct())")
@@ -862,6 +848,10 @@ func (g *gen) writeBuiltinCPUArchX86(b *buffer, recv *a.Expr, method t.ID, args 
 			fName, tName = "_mm_set1_epi32", "int32_t"
 		case "make_m128i_repeat_u64":
 			fName, tName = "_mm_set1_epi64x", "int64_t"
+		case "make_m128i_single_u32":
+			fName, tName = "_mm_cvtsi32_si128", "int32_t"
+		case "make_m128i_single_u64":
+			fName, tName = "_mm_cvtsi64x_si128", "int64_t"
 		case "make_m128i_zeroes":
 			fName, tName = "_mm_setzero_si128", ""
 		default:
