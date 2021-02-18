@@ -22,19 +22,20 @@
 // pri func decoder.filter_1_distance_3_x86_sse42!(curr: slice base.u8),
 //     choose cpu_arch >= x86_sse42,
 // {
-//     var c    : slice base.u8
+//     var curr : slice base.u8
+//
 //     var x128 : base.x86_m128i
 //     var a128 : base.x86_m128i
 //
-//     iterate (c = args.curr)(length: 4, advance: 3, unroll: 2) {
-//         x128.load_u32!(a: c.peek_u32le())
+//     iterate (curr = args.curr)(length: 4, advance: 3, unroll: 2) {
+//         x128.load_u32!(a: curr.peek_u32le())
 //         x128 = x128._mm_add_epi8(b: a128)
 //         a128 = x128
-//         c.poke_u24le!(a: x128.truncate_u32())
+//         curr.poke_u24le!(a: x128.truncate_u32())
 //     } else (length: 3, advance: 3, unroll: 1) {
-//         x128.load_u32!(a: c.peek_u24le_as_u32())
+//         x128.load_u32!(a: curr.peek_u24le_as_u32())
 //         x128 = x128._mm_add_epi8(b: a128)
-//         c.poke_u24le!(a: x128.truncate_u32())
+//         curr.poke_u24le!(a: x128.truncate_u32())
 //     }
 // }
 //
@@ -45,15 +46,16 @@
 pri func decoder.filter_1_distance_4_x86_sse42!(curr: slice base.u8),
 	choose cpu_arch >= x86_sse42,
 {
-	var c    : slice base.u8
+	var curr : slice base.u8
+
 	var x128 : base.x86_m128i
 	var a128 : base.x86_m128i
 
-	iterate (c = args.curr)(length: 4, advance: 4, unroll: 2) {
-		x128.load_u32!(a: c.peek_u32le())
+	iterate (curr = args.curr)(length: 4, advance: 4, unroll: 2) {
+		x128.load_u32!(a: curr.peek_u32le())
 		x128 = x128._mm_add_epi8(b: a128)
 		a128 = x128
-		c.poke_u32le!(a: x128.truncate_u32())
+		curr.poke_u32le!(a: x128.truncate_u32())
 	}
 }
 
@@ -73,8 +75,9 @@ pri func decoder.filter_1_distance_4_x86_sse42!(curr: slice base.u8),
 pri func decoder.filter_3_distance_4_x86_sse42!(curr: slice base.u8, prev: slice base.u8),
 	choose cpu_arch >= x86_sse42,
 {
-	var c    : slice base.u8
-	var p    : slice base.u8
+	var curr : slice base.u8
+	var prev : slice base.u8
+
 	var x128 : base.x86_m128i
 	var a128 : base.x86_m128i
 	var b128 : base.x86_m128i
@@ -83,7 +86,7 @@ pri func decoder.filter_3_distance_4_x86_sse42!(curr: slice base.u8, prev: slice
 
 	if args.prev.length() == 0 {
 		k128 = k128.create_mm_set1_epi8(a: 0xFE)
-		iterate (c = args.curr)(length: 4, advance: 4, unroll: 2) {
+		iterate (curr = args.curr)(length: 4, advance: 4, unroll: 2) {
 			// The predictor, p128, is just half (rounded down) of the previous
 			// pixel, a128. In this branch, b128 stays zero so the average of
 			// a128 and b128 is just half of a128. _mm_avg_epu8 rounds up, but
@@ -92,17 +95,17 @@ pri func decoder.filter_3_distance_4_x86_sse42!(curr: slice base.u8, prev: slice
 
 			// Add the predictor to the residual and, for the next iteration,
 			// set its previous pixel, a128, to this one, x128.
-			x128.load_u32!(a: c.peek_u32le())
+			x128.load_u32!(a: curr.peek_u32le())
 			x128 = x128._mm_add_epi8(b: p128)
 			a128 = x128
-			c.poke_u32le!(a: x128.truncate_u32())
+			curr.poke_u32le!(a: x128.truncate_u32())
 		}
 
 	} else {
 		k128 = k128.create_mm_set1_epi8(a: 0x01)
-		iterate (c = args.curr, p = args.prev)(length: 4, advance: 4, unroll: 2) {
+		iterate (curr = args.curr, prev = args.prev)(length: 4, advance: 4, unroll: 2) {
 			// Load the pixel from the row above.
-			b128.load_u32!(a: p.peek_u32le())
+			b128.load_u32!(a: prev.peek_u32le())
 
 			// The predictor, p128, is the average (rounded down) of the
 			// previous pixel, a128, and the pixel above, b128.
@@ -115,10 +118,10 @@ pri func decoder.filter_3_distance_4_x86_sse42!(curr: slice base.u8, prev: slice
 
 			// Add the predictor to the residual and, for the next iteration,
 			// set its previous pixel, a128, to this one, x128.
-			x128.load_u32!(a: c.peek_u32le())
+			x128.load_u32!(a: curr.peek_u32le())
 			x128 = x128._mm_add_epi8(b: p128)
 			a128 = x128
-			c.poke_u32le!(a: x128.truncate_u32())
+			curr.poke_u32le!(a: x128.truncate_u32())
 		}
 	}
 }
@@ -137,8 +140,9 @@ pri func decoder.filter_4_distance_3_x86_sse42!(curr: slice base.u8, prev: slice
 	//
 	// Differences between that function and this one are marked with a §.
 
-	var c           : slice base.u8
-	var p           : slice base.u8
+	var curr : slice base.u8
+	var prev : slice base.u8
+
 	var x128        : base.x86_m128i
 	var a128        : base.x86_m128i
 	var b128        : base.x86_m128i
@@ -151,8 +155,8 @@ pri func decoder.filter_4_distance_3_x86_sse42!(curr: slice base.u8, prev: slice
 	var z128        : base.x86_m128i
 
 	// § The advance is 3, not 4.
-	iterate (c = args.curr, p = args.prev)(length: 4, advance: 3, unroll: 2) {
-		b128.load_u32!(a: p.peek_u32le())
+	iterate (curr = args.curr, prev = args.prev)(length: 4, advance: 3, unroll: 2) {
+		b128.load_u32!(a: prev.peek_u32le())
 		b128 = b128._mm_unpacklo_epi8(b: z128)
 		pa128 = b128._mm_sub_epi16(b: c128)
 		pb128 = a128._mm_sub_epi16(b: c128)
@@ -166,19 +170,19 @@ pri func decoder.filter_4_distance_3_x86_sse42!(curr: slice base.u8, prev: slice
 			mask: smallest128._mm_cmpeq_epi16(b: pb128))._mm_blendv_epi8(
 			b: a128,
 			mask: smallest128._mm_cmpeq_epi16(b: pa128))
-		x128.load_u32!(a: c.peek_u32le())
+		x128.load_u32!(a: curr.peek_u32le())
 		x128 = x128._mm_unpacklo_epi8(b: z128)
 		x128 = x128._mm_add_epi8(b: p128)
 		a128 = x128
 		c128 = b128
 		x128 = x128._mm_packus_epi16(b: x128)
 		// § poke_u24le replaces poke_u32le.
-		c.poke_u24le!(a: x128.truncate_u32())
+		curr.poke_u24le!(a: x128.truncate_u32())
 
 		// § The length and advance are both 3, not 4.
 	} else (length: 3, advance: 3, unroll: 1) {
 		// § peek_u24le_as_u32 replaces peek_u32le.
-		b128.load_u32!(a: p.peek_u24le_as_u32())
+		b128.load_u32!(a: prev.peek_u24le_as_u32())
 		b128 = b128._mm_unpacklo_epi8(b: z128)
 		pa128 = b128._mm_sub_epi16(b: c128)
 		pb128 = a128._mm_sub_epi16(b: c128)
@@ -193,7 +197,7 @@ pri func decoder.filter_4_distance_3_x86_sse42!(curr: slice base.u8, prev: slice
 			b: a128,
 			mask: smallest128._mm_cmpeq_epi16(b: pa128))
 		// § peek_u24le_as_u32 replaces peek_u32le.
-		x128.load_u32!(a: c.peek_u24le_as_u32())
+		x128.load_u32!(a: curr.peek_u24le_as_u32())
 		x128 = x128._mm_unpacklo_epi8(b: z128)
 		x128 = x128._mm_add_epi8(b: p128)
 		// § These assignments are unnecessary; this is the last iteration.
@@ -201,15 +205,16 @@ pri func decoder.filter_4_distance_3_x86_sse42!(curr: slice base.u8, prev: slice
 		// c128 = b128
 		x128 = x128._mm_packus_epi16(b: x128)
 		// § poke_u24le replaces poke_u32le.
-		c.poke_u24le!(a: x128.truncate_u32())
+		curr.poke_u24le!(a: x128.truncate_u32())
 	}
 }
 
 pri func decoder.filter_4_distance_4_x86_sse42!(curr: slice base.u8, prev: slice base.u8),
 	choose cpu_arch >= x86_sse42,
 {
-	var c           : slice base.u8
-	var p           : slice base.u8
+	var curr : slice base.u8
+	var prev : slice base.u8
+
 	var x128        : base.x86_m128i
 	var a128        : base.x86_m128i
 	var b128        : base.x86_m128i
@@ -221,9 +226,9 @@ pri func decoder.filter_4_distance_4_x86_sse42!(curr: slice base.u8, prev: slice
 	var smallest128 : base.x86_m128i
 	var z128        : base.x86_m128i
 
-	iterate (c = args.curr, p = args.prev)(length: 4, advance: 4, unroll: 2) {
+	iterate (curr = args.curr, prev = args.prev)(length: 4, advance: 4, unroll: 2) {
 		// Load the pixel from the row above.
-		b128.load_u32!(a: p.peek_u32le())
+		b128.load_u32!(a: prev.peek_u32le())
 
 		// Convert from u8 to i16 by unpacking it with zeroes.
 		b128 = b128._mm_unpacklo_epi8(b: z128)
@@ -258,12 +263,12 @@ pri func decoder.filter_4_distance_4_x86_sse42!(curr: slice base.u8, prev: slice
 		// its previous pixels, a128 and c128, to x128 and b128.
 		//
 		// Again, convert between u8 and i16 by unpacking and re-packing.
-		x128.load_u32!(a: c.peek_u32le())
+		x128.load_u32!(a: curr.peek_u32le())
 		x128 = x128._mm_unpacklo_epi8(b: z128)
 		x128 = x128._mm_add_epi8(b: p128)
 		a128 = x128
 		c128 = b128
 		x128 = x128._mm_packus_epi16(b: x128)
-		c.poke_u32le!(a: x128.truncate_u32())
+		curr.poke_u32le!(a: x128.truncate_u32())
 	}
 }

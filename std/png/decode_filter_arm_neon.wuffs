@@ -31,14 +31,15 @@
 pri func decoder.filter_1_distance_4_arm_neon!(curr: slice base.u8),
 	choose cpu_arch >= arm_neon,
 {
-	var c  : slice base.u8
+	var curr : slice base.u8
+
 	var fa : base.arm_neon_64
 	var fx : base.arm_neon_64
 
-	iterate (c = args.curr)(length: 4, advance: 4, unroll: 2) {
-		fx = fx.create_vdup_n_u32(a: c.peek_u32le())
+	iterate (curr = args.curr)(length: 4, advance: 4, unroll: 2) {
+		fx = fx.create_vdup_n_u32(a: curr.peek_u32le())
 		fx = fx.vadd_u8(b: fa)
-		c.poke_u32le!(a: fx.vget_lane_u32(b: 0))
+		curr.poke_u32le!(a: fx.vget_lane_u32(b: 0))
 		fa = fx
 	}
 }
@@ -50,26 +51,27 @@ pri func decoder.filter_1_distance_4_arm_neon!(curr: slice base.u8),
 pri func decoder.filter_3_distance_4_arm_neon!(curr: slice base.u8, prev: slice base.u8),
 	choose cpu_arch >= arm_neon,
 {
-	var c  : slice base.u8
-	var p  : slice base.u8
+	var curr : slice base.u8
+	var prev : slice base.u8
+
 	var fa : base.arm_neon_64
 	var fb : base.arm_neon_64
 	var fx : base.arm_neon_64
 
 	if args.prev.length() == 0 {
-		iterate (c = args.curr)(length: 4, advance: 4, unroll: 2) {
-			fx = fx.create_vdup_n_u32(a: c.peek_u32le())
+		iterate (curr = args.curr)(length: 4, advance: 4, unroll: 2) {
+			fx = fx.create_vdup_n_u32(a: curr.peek_u32le())
 			fx = fx.vadd_u8(b: fa.vhadd_u8(b: fb))
-			c.poke_u32le!(a: fx.vget_lane_u32(b: 0))
+			curr.poke_u32le!(a: fx.vget_lane_u32(b: 0))
 			fa = fx
 		}
 
 	} else {
-		iterate (c = args.curr, p = args.prev)(length: 4, advance: 4, unroll: 2) {
-			fb = fb.create_vdup_n_u32(a: p.peek_u32le())
-			fx = fx.create_vdup_n_u32(a: c.peek_u32le())
+		iterate (curr = args.curr, prev = args.prev)(length: 4, advance: 4, unroll: 2) {
+			fb = fb.create_vdup_n_u32(a: prev.peek_u32le())
+			fx = fx.create_vdup_n_u32(a: curr.peek_u32le())
 			fx = fx.vadd_u8(b: fa.vhadd_u8(b: fb))
-			c.poke_u32le!(a: fx.vget_lane_u32(b: 0))
+			curr.poke_u32le!(a: fx.vget_lane_u32(b: 0))
 			fa = fx
 		}
 	}
@@ -89,8 +91,9 @@ pri func decoder.filter_4_distance_3_arm_neon!(curr: slice base.u8, prev: slice 
 	//
 	// Differences between that function and this one are marked with a §.
 
-	var c     : slice base.u8
-	var p     : slice base.u8
+	var curr : slice base.u8
+	var prev : slice base.u8
+
 	var fa    : base.arm_neon_64
 	var fb    : base.arm_neon_64
 	var fc    : base.arm_neon_64
@@ -106,9 +109,9 @@ pri func decoder.filter_4_distance_3_arm_neon!(curr: slice base.u8, prev: slice 
 	var pickb : base.arm_neon_64
 
 	// § The advance is 3, not 4.
-	iterate (c = args.curr, p = args.prev)(length: 4, advance: 3, unroll: 2) {
-		fb = fb.create_vdup_n_u32(a: p.peek_u32le())
-		fx = fx.create_vdup_n_u32(a: c.peek_u32le())
+	iterate (curr = args.curr, prev = args.prev)(length: 4, advance: 3, unroll: 2) {
+		fb = fb.create_vdup_n_u32(a: prev.peek_u32le())
+		fx = fx.create_vdup_n_u32(a: curr.peek_u32le())
 		fafb = fa.vaddl_u8(b: fb)
 		fcfc = fc.vaddl_u8(b: fc)
 		pa = fb.vabdl_u8(b: fc)
@@ -122,14 +125,14 @@ pri func decoder.filter_4_distance_3_arm_neon!(curr: slice base.u8, prev: slice 
 			b: picka.vbsl_u8(b: fa,
 			c: pickb.vbsl_u8(b: fb, c: fc)))
 		// § poke_u24le replaces poke_u32le.
-		c.poke_u24le!(a: fx.vget_lane_u32(b: 0))
+		curr.poke_u24le!(a: fx.vget_lane_u32(b: 0))
 		fc = fb
 		fa = fx
 	} else (length: 3, advance: 3, unroll: 1) {
 		// § peek_u24le_as_u32 replaces peek_u32le.
-		fb = fb.create_vdup_n_u32(a: p.peek_u24le_as_u32())
+		fb = fb.create_vdup_n_u32(a: prev.peek_u24le_as_u32())
 		// § peek_u24le_as_u32 replaces peek_u32le.
-		fx = fx.create_vdup_n_u32(a: c.peek_u24le_as_u32())
+		fx = fx.create_vdup_n_u32(a: curr.peek_u24le_as_u32())
 		fafb = fa.vaddl_u8(b: fb)
 		fcfc = fc.vaddl_u8(b: fc)
 		pa = fb.vabdl_u8(b: fc)
@@ -143,7 +146,7 @@ pri func decoder.filter_4_distance_3_arm_neon!(curr: slice base.u8, prev: slice 
 			b: picka.vbsl_u8(b: fa,
 			c: pickb.vbsl_u8(b: fb, c: fc)))
 		// § poke_u24le replaces poke_u32le.
-		c.poke_u24le!(a: fx.vget_lane_u32(b: 0))
+		curr.poke_u24le!(a: fx.vget_lane_u32(b: 0))
 		// § These assignments are unnecessary; this is the last iteration.
 		// fc = fb
 		// fa = fx
@@ -153,8 +156,9 @@ pri func decoder.filter_4_distance_3_arm_neon!(curr: slice base.u8, prev: slice 
 pri func decoder.filter_4_distance_4_arm_neon!(curr: slice base.u8, prev: slice base.u8),
 	choose cpu_arch >= arm_neon,
 {
-	var c     : slice base.u8
-	var p     : slice base.u8
+	var curr : slice base.u8
+	var prev : slice base.u8
+
 	var fa    : base.arm_neon_64
 	var fb    : base.arm_neon_64
 	var fc    : base.arm_neon_64
@@ -169,9 +173,9 @@ pri func decoder.filter_4_distance_4_arm_neon!(curr: slice base.u8, prev: slice 
 	var picka : base.arm_neon_64
 	var pickb : base.arm_neon_64
 
-	iterate (c = args.curr, p = args.prev)(length: 4, advance: 4, unroll: 2) {
-		fb = fb.create_vdup_n_u32(a: p.peek_u32le())
-		fx = fx.create_vdup_n_u32(a: c.peek_u32le())
+	iterate (curr = args.curr, prev = args.prev)(length: 4, advance: 4, unroll: 2) {
+		fb = fb.create_vdup_n_u32(a: prev.peek_u32le())
+		fx = fx.create_vdup_n_u32(a: curr.peek_u32le())
 
 		fafb = fa.vaddl_u8(b: fb)  // fafb = (fa + fb)
 		fcfc = fc.vaddl_u8(b: fc)  // fcfc = (fc + fc)
@@ -191,7 +195,7 @@ pri func decoder.filter_4_distance_4_arm_neon!(curr: slice base.u8, prev: slice 
 			b: picka.vbsl_u8(b: fa,
 			c: pickb.vbsl_u8(b: fb, c: fc)))
 
-		c.poke_u32le!(a: fx.vget_lane_u32(b: 0))
+		curr.poke_u32le!(a: fx.vget_lane_u32(b: 0))
 		fc = fb
 		fa = fx
 	}
