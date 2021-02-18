@@ -2530,7 +2530,7 @@ wuffs_base__pixel_swizzler__prepare__y(wuffs_base__pixel_swizzler* p,
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_BINARY:
     case WUFFS_BASE__PIXEL_FORMAT__RGBX:
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
-      if (wuffs_base__cpu_arch__have_sse42()) {
+      if (wuffs_base__cpu_arch__have_x86_sse42()) {
         return wuffs_base__pixel_swizzler__xxxx__y__sse42;
       }
 #endif
@@ -2962,7 +2962,7 @@ wuffs_base__pixel_swizzler__prepare__rgb(wuffs_base__pixel_swizzler* p,
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_BINARY:
     case WUFFS_BASE__PIXEL_FORMAT__BGRX:
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
-      if (wuffs_base__cpu_arch__have_sse42()) {
+      if (wuffs_base__cpu_arch__have_x86_sse42()) {
         return wuffs_base__pixel_swizzler__bgrw__rgb__sse42;
       }
 #endif
@@ -3009,7 +3009,7 @@ wuffs_base__pixel_swizzler__prepare__rgba_nonpremul(
       switch (blend) {
         case WUFFS_BASE__PIXEL_BLEND__SRC:
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
-          if (wuffs_base__cpu_arch__have_sse42()) {
+          if (wuffs_base__cpu_arch__have_x86_sse42()) {
             return wuffs_base__pixel_swizzler__swap_rgbx_bgrx__sse42;
           }
 #endif

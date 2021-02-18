@@ -109,7 +109,7 @@ wuffs_base__cpu_arch__have_arm_neon() {
 }
 
 static inline bool  //
-wuffs_base__cpu_arch__have_sse42() {
+wuffs_base__cpu_arch__have_x86_sse42() {
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
   unsigned int eax1 = 0;
   unsigned int ebx1 = 0;

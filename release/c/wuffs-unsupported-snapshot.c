@@ -143,7 +143,7 @@ wuffs_base__cpu_arch__have_arm_neon() {
 }
 
 static inline bool  //
-wuffs_base__cpu_arch__have_sse42() {
+wuffs_base__cpu_arch__have_x86_sse42() {
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
   unsigned int eax1 = 0;
   unsigned int ebx1 = 0;
@@ -16668,7 +16668,7 @@ wuffs_base__pixel_swizzler__prepare__y(wuffs_base__pixel_swizzler* p,
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_BINARY:
     case WUFFS_BASE__PIXEL_FORMAT__RGBX:
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
-      if (wuffs_base__cpu_arch__have_sse42()) {
+      if (wuffs_base__cpu_arch__have_x86_sse42()) {
         return wuffs_base__pixel_swizzler__xxxx__y__sse42;
       }
 #endif
@@ -17100,7 +17100,7 @@ wuffs_base__pixel_swizzler__prepare__rgb(wuffs_base__pixel_swizzler* p,
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_BINARY:
     case WUFFS_BASE__PIXEL_FORMAT__BGRX:
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
-      if (wuffs_base__cpu_arch__have_sse42()) {
+      if (wuffs_base__cpu_arch__have_x86_sse42()) {
         return wuffs_base__pixel_swizzler__bgrw__rgb__sse42;
       }
 #endif
@@ -17147,7 +17147,7 @@ wuffs_base__pixel_swizzler__prepare__rgba_nonpremul(
       switch (blend) {
         case WUFFS_BASE__PIXEL_BLEND__SRC:
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
-          if (wuffs_base__cpu_arch__have_sse42()) {
+          if (wuffs_base__cpu_arch__have_x86_sse42()) {
             return wuffs_base__pixel_swizzler__swap_rgbx_bgrx__sse42;
           }
 #endif
@@ -17740,7 +17740,7 @@ wuffs_adler32__hasher__update_u32(
         wuffs_base__cpu_arch__have_arm_neon() ? &wuffs_adler32__hasher__up_arm_neon :
 #endif
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
-        wuffs_base__cpu_arch__have_sse42() ? &wuffs_adler32__hasher__up_sse42 :
+        wuffs_base__cpu_arch__have_x86_sse42() ? &wuffs_adler32__hasher__up_sse42 :
 #endif
         self->private_impl.choosy_up);
   }
@@ -33662,7 +33662,7 @@ wuffs_png__decoder__choose_filter_implementations(
         wuffs_base__cpu_arch__have_arm_neon() ? &wuffs_png__decoder__filter_4_distance_3_arm_neon :
 #endif
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
-        wuffs_base__cpu_arch__have_sse42() ? &wuffs_png__decoder__filter_4_distance_3_sse42 :
+        wuffs_base__cpu_arch__have_x86_sse42() ? &wuffs_png__decoder__filter_4_distance_3_sse42 :
 #endif
         &wuffs_png__decoder__filter_4_distance_3_fallback);
   } else if (self->private_impl.f_filter_distance == 4) {
@@ -33671,7 +33671,7 @@ wuffs_png__decoder__choose_filter_implementations(
         wuffs_base__cpu_arch__have_arm_neon() ? &wuffs_png__decoder__filter_1_distance_4_arm_neon :
 #endif
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
-        wuffs_base__cpu_arch__have_sse42() ? &wuffs_png__decoder__filter_1_distance_4_sse42 :
+        wuffs_base__cpu_arch__have_x86_sse42() ? &wuffs_png__decoder__filter_1_distance_4_sse42 :
 #endif
         &wuffs_png__decoder__filter_1_distance_4_fallback);
     self->private_impl.choosy_filter_3 = (
@@ -33679,7 +33679,7 @@ wuffs_png__decoder__choose_filter_implementations(
         wuffs_base__cpu_arch__have_arm_neon() ? &wuffs_png__decoder__filter_3_distance_4_arm_neon :
 #endif
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
-        wuffs_base__cpu_arch__have_sse42() ? &wuffs_png__decoder__filter_3_distance_4_sse42 :
+        wuffs_base__cpu_arch__have_x86_sse42() ? &wuffs_png__decoder__filter_3_distance_4_sse42 :
 #endif
         &wuffs_png__decoder__filter_3_distance_4_fallback);
     self->private_impl.choosy_filter_4 = (
@@ -33687,7 +33687,7 @@ wuffs_png__decoder__choose_filter_implementations(
         wuffs_base__cpu_arch__have_arm_neon() ? &wuffs_png__decoder__filter_4_distance_4_arm_neon :
 #endif
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
-        wuffs_base__cpu_arch__have_sse42() ? &wuffs_png__decoder__filter_4_distance_4_sse42 :
+        wuffs_base__cpu_arch__have_x86_sse42() ? &wuffs_png__decoder__filter_4_distance_4_sse42 :
 #endif
         &wuffs_png__decoder__filter_4_distance_4_fallback);
   }
