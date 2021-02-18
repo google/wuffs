@@ -47,7 +47,6 @@ var (
 	typeExprARMNeon64     = a.NewTypeExpr(0, t.IDBase, t.IDARMNeon64, nil, nil, nil)
 	typeExprARMNeon128    = a.NewTypeExpr(0, t.IDBase, t.IDARMNeon128, nil, nil, nil)
 	typeExprPixelSwizzler = a.NewTypeExpr(0, t.IDBase, t.IDPixelSwizzler, nil, nil, nil)
-	typeExprUtility       = a.NewTypeExpr(0, t.IDBase, t.IDUtility, nil, nil, nil)
 )
 
 // Prefixes are prepended to names to form a namespace and to avoid e.g.
@@ -1075,7 +1074,7 @@ func (g *gen) writeStructPrivateImpl(b *buffer, n *a.Struct) error {
 
 	for _, o := range n.Fields() {
 		o := o.AsField()
-		if o.PrivateData() || o.XType().Eq(typeExprUtility) {
+		if o.PrivateData() || o.XType().IsEtcUtilityType() {
 			continue
 		}
 		if err := g.writeCTypeName(b, o.XType(), fPrefix, o.Name().Str(g.tm)); err != nil {
@@ -1128,7 +1127,7 @@ func (g *gen) writeStructPrivateImpl(b *buffer, n *a.Struct) error {
 
 		for _, o := range n.Fields() {
 			o := o.AsField()
-			if !o.PrivateData() || o.XType().Eq(typeExprUtility) {
+			if !o.PrivateData() || o.XType().IsEtcUtilityType() {
 				continue
 			}
 			if err := g.writeCTypeName(b, o.XType(), fPrefix, o.Name().Str(g.tm)); err != nil {

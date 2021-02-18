@@ -238,7 +238,7 @@ func (g *gen) couldHaveDerivedVar(n *a.Expr) bool {
 	case t.IDOpenParen:
 		switch n.LHS().AsExpr().Ident() {
 		case t.IDEmptyIOReader, t.IDEmptyIOWriter:
-			if n.LHS().AsExpr().LHS().AsExpr().MType().Eq(typeExprUtility) {
+			if n.LHS().AsExpr().LHS().AsExpr().MType().IsEtcUtilityType() {
 				return false
 			}
 		}
@@ -324,10 +324,11 @@ func (g *gen) writeResumeSuspend(b *buffer, f *funk, suspend bool) error {
 func (g *gen) writeVars(b *buffer, f *funk, inStructDecl bool) error {
 	for _, n := range f.varList {
 		typ := n.XType()
-		if inStructDecl {
-			if typ.HasPointers() || f.varResumables == nil || !f.varResumables[n.Name()] {
-				continue
-			}
+		if typ.Innermost().IsEtcUtilityType() {
+			continue
+		} else if inStructDecl &&
+			(typ.HasPointers() || f.varResumables == nil || !f.varResumables[n.Name()]) {
+			continue
 		}
 
 		name := n.Name().Str(g.tm)

@@ -49,14 +49,14 @@ func calcCPUArchBits(n *a.Func) (ret cpuArchBits) {
 }
 
 func (q *checker) tcheckCPUArchBits(cab cpuArchBits, typ *a.TypeExpr) error {
-	if qid := typ.Innermost().QID(); qid[0] == t.IDBase {
+	if qid := typ.Innermost().QID(); (qid[0] == t.IDBase) && qid[1].IsBuiltInCPUArch() {
 		need := cpuArchBits(0)
 		switch qid[1] {
-		case t.IDARMCRC32U32:
+		case t.IDARMCRC32Utility, t.IDARMCRC32U32:
 			need = cpuArchBitsARMCRC32
-		case t.IDARMNeon64, t.IDARMNeon128:
+		case t.IDARMNeonUtility, t.IDARMNeon64, t.IDARMNeon128:
 			need = cpuArchBitsARMNeon
-		case t.IDX86M128I:
+		case t.IDX86SSE42Utility, t.IDX86M128I:
 			need = cpuArchBitsX86SSE42
 		}
 		if (cab & need) != need {

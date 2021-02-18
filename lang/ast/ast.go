@@ -801,6 +801,10 @@ func (n *TypeExpr) IsCPUArchType() bool {
 	return n.id0 == 0 && n.id1 == t.IDBase && n.id2.IsBuiltInCPUArch()
 }
 
+func (n *TypeExpr) IsEtcUtilityType() bool {
+	return n.id0 == 0 && n.id1 == t.IDBase && n.id2.IsEtcUtility()
+}
+
 func (n *TypeExpr) IsIdeal() bool {
 	return n.id0 == 0 && n.id1 == t.IDBase && n.id2 == t.IDQIdeal
 }

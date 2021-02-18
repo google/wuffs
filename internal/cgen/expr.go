@@ -434,7 +434,7 @@ func (g *gen) writeExprUserDefinedCall(b *buffer, n *a.Expr, depth uint32) error
 	}
 	qid := recvTyp.QID()
 	b.printf("%s%s__%s(", g.packagePrefix(qid), qid[1].Str(g.tm), method.Ident().Str(g.tm))
-	if !recvTyp.Eq(typeExprUtility) {
+	if !recvTyp.IsEtcUtilityType() {
 		b.writes(addr)
 		if err := g.writeExpr(b, recv, false, depth); err != nil {
 			return err

@@ -245,9 +245,14 @@ var Types = []string{
 
 	// ----
 
+	"arm_crc32_utility",
 	"arm_crc32_u32",
+
+	"arm_neon_utility",
 	"arm_neon_64",
 	"arm_neon_128",
+
+	"x86_sse42_utility",
 	"x86_m128i",
 }
 
@@ -534,6 +539,8 @@ var Funcs = []string{
 	"pixel_swizzler.swizzle_interleaved_transparent_black!(" +
 		"dst: slice u8, dst_palette: slice u8, num_pixels: u64) u64",
 
+	// ---- arm_crc32_utility
+
 	// ---- arm_crc32_u32
 
 	"arm_crc32_u32.create(a: u32) arm_crc32_u32",
@@ -543,6 +550,8 @@ var Funcs = []string{
 	"arm_crc32_u32._crc32h(b: u16) arm_crc32_u32",
 	"arm_crc32_u32._crc32w(b: u32) arm_crc32_u32",
 	"arm_crc32_u32._crc32d(b: u64) arm_crc32_u32",
+
+	// ---- arm_neon_utility
 
 	// ---- arm_neon_64
 
@@ -647,6 +656,8 @@ var Funcs = []string{
 	"arm_neon_128.vshlq_n_u32(b: u32) arm_neon_128",
 	"arm_neon_128.vshlq_n_u64(b: u32) arm_neon_128",
 	"arm_neon_128.vshlq_n_u8(b: u32) arm_neon_128",
+
+	// ---- x86_sse42_utility
 
 	// ---- x86_m128i
 

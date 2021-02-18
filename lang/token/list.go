@@ -132,6 +132,19 @@ func (x ID) IsXUnaryOp() bool       { return minXOp <= x && x <= maxXOp && unary
 func (x ID) IsXBinaryOp() bool      { return minXOp <= x && x <= maxXOp && binaryForms[x] != 0 }
 func (x ID) IsXAssociativeOp() bool { return minXOp <= x && x <= maxXOp && associativeForms[x] != 0 }
 
+func (x ID) IsEtcUtility() bool {
+	if (minBuiltInCPUArch <= x) && (x <= maxBuiltInCPUArch) {
+		switch x {
+		case IDARMCRC32Utility,
+			IDARMNeonUtility,
+			IDX86SSE42Utility,
+			IDX86AVX2Utility:
+			return true
+		}
+	}
+	return x == IDUtility
+}
+
 // QID is a qualified ID, such as "foo.bar". QID[0] is "foo"'s ID and QID[1] is
 // "bar"'s. QID[0] may be 0 for a plain "bar".
 type QID [2]ID
@@ -665,16 +678,22 @@ const (
 	minBuiltInCPUArch = 0x300
 	maxBuiltInCPUArch = 0x33F
 
-	IDARMCRC32 = ID(0x300)
-	IDARMNeon  = ID(0x301)
+	// If adding more CPUArch utility types, also update IsEtcUtility.
+
+	IDARMCRC32        = ID(0x300)
+	IDARMCRC32Utility = ID(0x301)
+	IDARMNeon         = ID(0x302)
+	IDARMNeonUtility  = ID(0x303)
 
 	IDARMCRC32U32 = ID(0x308)
 
 	IDARMNeon64  = ID(0x310) //  64-bit D (double-word) register
 	IDARMNeon128 = ID(0x311) // 128-bit Q (  quad-word) register
 
-	IDX86SSE42 = ID(0x320)
-	IDX86AVX2  = ID(0x321)
+	IDX86SSE42        = ID(0x320)
+	IDX86SSE42Utility = ID(0x321)
+	IDX86AVX2         = ID(0x322)
+	IDX86AVX2Utility  = ID(0x323)
 
 	IDX86M128I = ID(0x330)
 
@@ -1092,16 +1111,20 @@ var builtInsByID = [nBuiltInIDs]string{
 
 	// -------- 0x300 block.
 
-	IDARMCRC32: "arm_crc32",
-	IDARMNeon:  "arm_neon",
+	IDARMCRC32:        "arm_crc32",
+	IDARMCRC32Utility: "arm_crc32_utility",
+	IDARMNeon:         "arm_neon",
+	IDARMNeonUtility:  "arm_neon_utility",
 
 	IDARMCRC32U32: "arm_crc32_u32",
 
 	IDARMNeon64:  "arm_neon_64",
 	IDARMNeon128: "arm_neon_128",
 
-	IDX86SSE42: "x86_sse42",
-	IDX86AVX2:  "x86_avx2",
+	IDX86SSE42:        "x86_sse42",
+	IDX86SSE42Utility: "x86_sse42_utility",
+	IDX86AVX2:         "x86_avx2",
+	IDX86AVX2Utility:  "x86_avx2_utility",
 
 	IDX86M128I: "x86_m128i",
 
