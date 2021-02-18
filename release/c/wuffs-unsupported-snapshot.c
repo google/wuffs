@@ -17976,8 +17976,8 @@ wuffs_adler32__hasher__up_x86_sse42(
       v_p.len = 32;
       uint8_t* i_end0_p = v_p.ptr + (((i_slice_p.len - (size_t)(v_p.ptr - i_slice_p.ptr)) / 32) * 32);
       while (v_p.ptr < i_end0_p) {
-        v_p__left = _mm_lddqu_si128((const __m128i*)(const void*)(wuffs_base__slice_u8__subslice_j(v_p, 16).ptr));
-        v_p_right = _mm_lddqu_si128((const __m128i*)(const void*)(wuffs_base__slice_u8__subslice_ij(v_p, 16, 32).ptr));
+        v_p__left = _mm_lddqu_si128((const __m128i*)(const void*)(v_p.ptr));
+        v_p_right = _mm_lddqu_si128((const __m128i*)(const void*)(v_p.ptr + 16));
         v_v2j = _mm_add_epi32(v_v2j, v_v1);
         v_v1 = _mm_add_epi32(v_v1, _mm_sad_epu8(v_p__left, v_zeroes));
         v_v1 = _mm_add_epi32(v_v1, _mm_sad_epu8(v_p_right, v_zeroes));

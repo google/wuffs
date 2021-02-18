@@ -845,17 +845,42 @@ func (g *gen) writeBuiltinCPUArchX86(b *buffer, recv *a.Expr, method t.ID, args 
 				b.writes(", ")
 			}
 			b.printf("(%s)(", tName)
-			if err := g.writeExpr(b, o.Value(), false, depth); err != nil {
-				return err
-			}
 			if ptr {
-				b.writes(".ptr")
+				if err := g.writeExprDotPtr(b, o.Value(), false, depth); err != nil {
+					return err
+				}
+			} else {
+				if err := g.writeExpr(b, o.Value(), false, depth); err != nil {
+					return err
+				}
 			}
 			b.writes(")")
 		}
 		b.writes(")")
 		return nil
 	}
+	return nil
+}
+
+func (g *gen) writeExprDotPtr(b *buffer, n *a.Expr, sideEffectsOnly bool, depth uint32) error {
+	if n.Operator() == t.IDDotDot {
+		if err := g.writeExpr(b, n.LHS().AsExpr(), sideEffectsOnly, depth); err != nil {
+			return err
+		}
+		b.writes(".ptr")
+		if n.MHS() != nil {
+			b.writes(" + ")
+			if err := g.writeExpr(b, n.MHS().AsExpr(), sideEffectsOnly, depth); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	if err := g.writeExpr(b, n, sideEffectsOnly, depth); err != nil {
+		return err
+	}
+	b.writes(".ptr")
 	return nil
 }
 
