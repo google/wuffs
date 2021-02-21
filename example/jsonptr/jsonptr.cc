@@ -200,6 +200,9 @@ static const char* g_usage =
     "occur after arbitrarily many comments, so -output-comments also requires\n"
     "that one or both of -compact-output and -output-extra-comma be set.\n"
     "\n"
+    "With -output-comments, consecutive blank lines collapse to a single\n"
+    "blank line. Without that flag, all blank lines are removed.\n"
+    "\n"
     "The -output-extra-comma flag writes output like \"[1,2,]\", with a comma\n"
     "after the final element of a JSON list or dictionary. Such commas are\n"
     "non-compliant with the JSON specification but many parsers accept them\n"
@@ -422,21 +425,21 @@ bool g_sandboxed = false;
 
 int g_input_file_descriptor = 0;  // A 0 default means stdin.
 
-#define NEW_LINE_THEN_256_SPACES                                               \
-  "\n                                                                        " \
+#define TWO_NEW_LINES_THEN_256_SPACES                                          \
+  "\n\n                                                                      " \
   "                                                                          " \
   "                                                                          " \
-  "                                    "
-#define NEW_LINE_THEN_256_TABS                                                 \
-  "\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t" \
+  "                                      "
+#define TWO_NEW_LINES_THEN_256_TABS                                            \
+  "\n\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t" \
   "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t" \
   "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t" \
   "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t" \
   "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t" \
   "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t" \
-  "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t"
+  "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t"
 
-const char* g_new_line_then_256_indent_bytes;
+const char* g_two_new_lines_then_256_indent_bytes;
 uint32_t g_bytes_per_indent_depth;
 
 #ifndef DST_BUFFER_ARRAY_SIZE
@@ -479,6 +482,8 @@ in_dict_before_key() {
   return (g_ctx == context::in_dict_after_brace) ||
          (g_ctx == context::in_dict_after_value);
 }
+
+uint64_t g_num_input_blank_lines;
 
 bool g_is_after_comment;
 
@@ -903,6 +908,8 @@ initialize_globals(int argc, char** argv) {
 
   g_ctx = context::none;
 
+  g_num_input_blank_lines = 0;
+
   g_is_after_comment = false;
 
   TRY(parse_flags(argc, argv));
@@ -924,8 +931,9 @@ initialize_globals(int argc, char** argv) {
     return g_usage;
   }
 
-  g_new_line_then_256_indent_bytes =
-      g_flags.tabs ? NEW_LINE_THEN_256_TABS : NEW_LINE_THEN_256_SPACES;
+  g_two_new_lines_then_256_indent_bytes = g_flags.tabs
+                                              ? TWO_NEW_LINES_THEN_256_TABS
+                                              : TWO_NEW_LINES_THEN_256_SPACES;
   g_bytes_per_indent_depth = g_flags.tabs ? 1 : g_flags.spaces;
 
   g_query.reset(g_flags.query_c_string);
@@ -1047,24 +1055,30 @@ write_dst(const void* s, size_t n) {
   return write_dst_slow(s, n);
 }
 
-#define TRY_INDENT_WITH_LEADING_NEW_LINE                                   \
-  do {                                                                     \
-    uint32_t indent = g_depth * g_bytes_per_indent_depth;                  \
-    TRY(write_dst(g_new_line_then_256_indent_bytes, 1 + (indent & 0xFF))); \
-    for (indent >>= 8; indent > 0; indent--) {                             \
-      TRY(write_dst(g_new_line_then_256_indent_bytes + 1, 0x100));         \
-    }                                                                      \
+#define TRY_INDENT_WITH_LEADING_NEW_LINE                                \
+  do {                                                                  \
+    uint32_t adj = (g_num_input_blank_lines > 1) ? 1 : 0;               \
+    g_num_input_blank_lines = 0;                                        \
+    uint32_t indent = g_depth * g_bytes_per_indent_depth;               \
+    TRY(write_dst(g_two_new_lines_then_256_indent_bytes + 1 - adj,      \
+                  1 + adj + (indent & 0xFF)));                          \
+    for (indent >>= 8; indent > 0; indent--) {                          \
+      TRY(write_dst(g_two_new_lines_then_256_indent_bytes + 2, 0x100)); \
+    }                                                                   \
   } while (false)
 
 // TRY_INDENT_SANS_LEADING_NEW_LINE is used after comments, which print their
 // own "\n".
-#define TRY_INDENT_SANS_LEADING_NEW_LINE                                   \
-  do {                                                                     \
-    uint32_t indent = g_depth * g_bytes_per_indent_depth;                  \
-    TRY(write_dst(g_new_line_then_256_indent_bytes + 1, (indent & 0xFF))); \
-    for (indent >>= 8; indent > 0; indent--) {                             \
-      TRY(write_dst(g_new_line_then_256_indent_bytes + 1, 0x100));         \
-    }                                                                      \
+#define TRY_INDENT_SANS_LEADING_NEW_LINE                                \
+  do {                                                                  \
+    uint32_t adj = (g_num_input_blank_lines > 1) ? 1 : 0;               \
+    g_num_input_blank_lines = 0;                                        \
+    uint32_t indent = g_depth * g_bytes_per_indent_depth;               \
+    TRY(write_dst(g_two_new_lines_then_256_indent_bytes + 2 - adj,      \
+                  adj + (indent & 0xFF)));                              \
+    for (indent >>= 8; indent > 0; indent--) {                          \
+      TRY(write_dst(g_two_new_lines_then_256_indent_bytes + 2, 0x100)); \
+    }                                                                   \
   } while (false)
 
 // ----
@@ -1129,6 +1143,8 @@ handle_token(wuffs_base__token t, bool start_of_token_chain) {
             }
             TRY_INDENT_WITH_LEADING_NEW_LINE;
           }
+        } else {
+          g_num_input_blank_lines = 0;
         }
 
         TRY(write_dst(
@@ -1212,6 +1228,7 @@ handle_token(wuffs_base__token t, bool start_of_token_chain) {
         g_ctx = (vbd & WUFFS_BASE__TOKEN__VBD__STRUCTURE__TO_LIST)
                     ? context::in_list_after_bracket
                     : context::in_dict_after_brace;
+        g_num_input_blank_lines = 0;
         return nullptr;
 
       case WUFFS_BASE__TOKEN__VBC__STRING:
@@ -1293,12 +1310,14 @@ main1(int argc, char** argv) {
       // Handle filler tokens (e.g. whitespace, punctuation and comments).
       // These are skipped, unless -output-comments is enabled.
       if (t.value_base_category() == WUFFS_BASE__TOKEN__VBC__FILLER) {
-        if (g_flags.output_comments &&
-            (t.value_base_detail() &
-             WUFFS_BASE__TOKEN__VBD__FILLER__COMMENT_ANY)) {
+        if (!g_flags.output_comments) {
+          // No-op.
+        } else if (t.value_base_detail() &
+                   WUFFS_BASE__TOKEN__VBD__FILLER__COMMENT_ANY) {
           if (g_flags.compact_output) {
             TRY(write_dst(g_src.data.ptr + g_cursor_index - token_length,
                           token_length));
+
           } else {
             if (start_of_token_chain) {
               if (g_is_after_comment) {
@@ -1311,9 +1330,7 @@ main1(int argc, char** argv) {
                            (g_ctx != context::end_of_data)) {
                   TRY(write_dst(",", 1));
                 }
-                if (!g_flags.compact_output) {
-                  TRY_INDENT_WITH_LEADING_NEW_LINE;
-                }
+                TRY_INDENT_WITH_LEADING_NEW_LINE;
               }
             }
             TRY(write_dst(g_src.data.ptr + g_cursor_index - token_length,
@@ -1325,7 +1342,27 @@ main1(int argc, char** argv) {
             }
             g_is_after_comment = true;
           }
+          if (g_ctx == context::in_list_after_bracket) {
+            g_ctx = context::in_list_after_value;
+          } else if (g_ctx == context::in_dict_after_brace) {
+            g_ctx = context::in_dict_after_value;
+          }
+          g_num_input_blank_lines =
+              (t.value_base_detail() &
+               WUFFS_BASE__TOKEN__VBD__FILLER__COMMENT_LINE)
+                  ? 1
+                  : 0;
+
+        } else {
+          uint8_t* p = g_src.data.ptr + g_cursor_index - token_length;
+          uint8_t* q = g_src.data.ptr + g_cursor_index;
+          for (; p < q; p++) {
+            if (*p == '\n') {
+              g_num_input_blank_lines++;
+            }
+          }
         }
+
         start_of_token_chain = !t.continued();
         continue;
       }
