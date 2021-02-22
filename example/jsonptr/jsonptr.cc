@@ -161,6 +161,7 @@ static const char* g_usage =
     "            -input-allow-comments\n"
     "            -input-allow-extra-comma\n"
     "            -input-allow-inf-nan-numbers\n"
+    "            -input-jwcc\n"
     "            -jwcc\n"
     "            -output-comments\n"
     "            -output-extra-comma\n"
@@ -209,12 +210,18 @@ static const char* g_usage =
     "and they can produce simpler line-based diffs. This flag is ignored when\n"
     "-compact-output is set.\n"
     "\n"
-    "The -jwcc flag (JSON With Commas and Comments) enables all of:\n"
+    "Combining some of those flags results in speaking JWCC (JSON With Commas\n"
+    "and Comments), not plain JSON. For convenience, the -input-jwcc or -jwcc\n"
+    "flags enables the first two or all four of:\n"
     "            -input-allow-comments\n"
     "            -input-allow-extra-comma\n"
     "            -output-comments\n"
     "            -output-extra-comma\n"
     "\n"
+#if defined(WUFFS_EXAMPLE_SPEAK_JWCC_NOT_JSON)
+    "This program was configured at compile time to always use -jwcc.\n"
+    "\n"
+#endif
     "----\n"
     "\n"
     "The -q=STR or -query=STR flag gives an optional JSON Pointer query, to\n"
@@ -775,6 +782,13 @@ parse_flags(int argc, char** argv) {
   g_flags.spaces = 4;
   g_flags.max_output_depth = 0xFFFFFFFF;
 
+#if defined(WUFFS_EXAMPLE_SPEAK_JWCC_NOT_JSON)
+  g_flags.input_allow_comments = true;
+  g_flags.input_allow_extra_comma = true;
+  g_flags.output_comments = true;
+  g_flags.output_extra_comma = true;
+#endif
+
   int c = (argc > 0) ? 1 : 0;  // Skip argv[0], the program name.
   for (; c < argc; c++) {
     char* arg = argv[c];
@@ -829,6 +843,11 @@ parse_flags(int argc, char** argv) {
     }
     if (!strcmp(arg, "input-allow-inf-nan-numbers")) {
       g_flags.input_allow_inf_nan_numbers = true;
+      continue;
+    }
+    if (!strcmp(arg, "input-jwcc")) {
+      g_flags.input_allow_comments = true;
+      g_flags.input_allow_extra_comma = true;
       continue;
     }
     if (!strcmp(arg, "jwcc")) {

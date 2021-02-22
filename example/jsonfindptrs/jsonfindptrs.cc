@@ -113,6 +113,8 @@ static const char* g_usage =
     "            -input-allow-comments\n"
     "            -input-allow-extra-comma\n"
     "            -input-allow-inf-nan-numbers\n"
+    "            -input-jwcc\n"
+    "            -jwcc\n"
     "            -only-parse-dont-output\n"
     "            -strict-json-pointer-syntax\n"
     "\n"
@@ -167,6 +169,16 @@ static const char* g_usage =
     "The -input-allow-inf-nan-numbers flag allows non-finite floating point\n"
     "numbers (infinities and not-a-numbers) within JSON input.\n"
     "\n"
+    "Combining some of those flags results in speaking JWCC (JSON With Commas\n"
+    "and Comments), not plain JSON. For convenience, the -input-jwcc or -jwcc\n"
+    "flags enables all of:\n"
+    "            -input-allow-comments\n"
+    "            -input-allow-extra-comma\n"
+    "\n"
+#if defined(WUFFS_EXAMPLE_SPEAK_JWCC_NOT_JSON)
+    "This program was configured at compile time to always use -jwcc.\n"
+    "\n"
+#endif
     "----\n"
     "\n"
     "The -only-parse-dont-output flag means to write nothing to stdout. An\n"
@@ -220,6 +232,12 @@ std::string  //
 parse_flags(int argc, char** argv) {
   g_flags.max_output_depth = 0xFFFFFFFF;
 
+#if defined(WUFFS_EXAMPLE_SPEAK_JWCC_NOT_JSON)
+  g_quirks.push_back(WUFFS_JSON__QUIRK_ALLOW_COMMENT_BLOCK);
+  g_quirks.push_back(WUFFS_JSON__QUIRK_ALLOW_COMMENT_LINE);
+  g_quirks.push_back(WUFFS_JSON__QUIRK_ALLOW_EXTRA_COMMA);
+#endif
+
   int c = (argc > 0) ? 1 : 0;  // Skip argv[0], the program name.
   for (; c < argc; c++) {
     char* arg = argv[c];
@@ -267,6 +285,12 @@ parse_flags(int argc, char** argv) {
     }
     if (!strcmp(arg, "input-allow-inf-nan-numbers")) {
       g_quirks.push_back(WUFFS_JSON__QUIRK_ALLOW_INF_NAN_NUMBERS);
+      continue;
+    }
+    if (!strcmp(arg, "input-jwcc") || !strcmp(arg, "jwcc")) {
+      g_quirks.push_back(WUFFS_JSON__QUIRK_ALLOW_COMMENT_BLOCK);
+      g_quirks.push_back(WUFFS_JSON__QUIRK_ALLOW_COMMENT_LINE);
+      g_quirks.push_back(WUFFS_JSON__QUIRK_ALLOW_EXTRA_COMMA);
       continue;
     }
     if (!strncmp(arg, "q=", 2) || !strncmp(arg, "query=", 6)) {
