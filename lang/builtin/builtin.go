@@ -251,8 +251,6 @@ var Types = []string{
 	"arm_crc32_u32",
 
 	"arm_neon_utility",
-	"arm_neon_64",
-	"arm_neon_128",
 	"arm_neon_u8x8",
 	"arm_neon_u16x4",
 	"arm_neon_u32x2",
@@ -267,8 +265,8 @@ var Types = []string{
 }
 
 var Funcs = [][]string{
-	funcsOther[:],
-	funcsARMNeon[:],
+	funcsOther[:],   // Manually authored methods.
+	funcsARMNeon[:], // Automatically generated methods (intrinsics).
 }
 
 var funcsOther = [...]string{
@@ -621,110 +619,6 @@ var funcsOther = [...]string{
 	"arm_neon_u16x8.as_u8x16() arm_neon_u8x16",
 	"arm_neon_u32x4.as_u8x16() arm_neon_u8x16",
 	"arm_neon_u64x2.as_u8x16() arm_neon_u8x16",
-
-	// ---- arm_neon_64
-
-	// TODO: generate these methods automatically?
-
-	"arm_neon_64.create_slice64(a: slice base.u8) arm_neon_64",
-
-	"arm_neon_64.create_literal_u8x8(" +
-		"a0: u8, a1: u8, a2: u8, a3: u8," +
-		"a4: u8, a5: u8, a6: u8, a7: u8) arm_neon_64",
-	"arm_neon_64.create_literal_u16x4(" +
-		"a0: u16, a1: u16, a2: u16, a3: u16) arm_neon_64",
-	"arm_neon_64.create_literal_u32x2(" +
-		"a0: u32, a1: u32) arm_neon_64",
-	"arm_neon_64.create_literal_u64x1(" +
-		"a0: u64) arm_neon_64",
-
-	"arm_neon_64.create_vdup_n_u16(a: u16) arm_neon_64",
-	"arm_neon_64.create_vdup_n_u32(a: u32) arm_neon_64",
-	"arm_neon_64.create_vdup_n_u64(a: u64) arm_neon_64",
-	"arm_neon_64.create_vdup_n_u8(a: u8) arm_neon_64",
-
-	"arm_neon_64.vabdl_u16(b: arm_neon_64) arm_neon_128",
-	"arm_neon_64.vabdl_u32(b: arm_neon_64) arm_neon_128",
-	"arm_neon_64.vabdl_u8(b: arm_neon_64) arm_neon_128",
-	"arm_neon_64.vadd_u16(b: arm_neon_64) arm_neon_64",
-	"arm_neon_64.vadd_u32(b: arm_neon_64) arm_neon_64",
-	"arm_neon_64.vadd_u64(b: arm_neon_64) arm_neon_64",
-	"arm_neon_64.vadd_u8(b: arm_neon_64) arm_neon_64",
-	"arm_neon_64.vaddl_u16(b: arm_neon_64) arm_neon_128",
-	"arm_neon_64.vaddl_u32(b: arm_neon_64) arm_neon_128",
-	"arm_neon_64.vaddl_u8(b: arm_neon_64) arm_neon_128",
-	"arm_neon_64.vbsl_u8(b: arm_neon_64, c: arm_neon_64) arm_neon_64",
-	"arm_neon_64.vget_lane_u16(b: u32[..= 3]) u16",
-	"arm_neon_64.vget_lane_u32(b: u32[..= 1]) u32",
-	"arm_neon_64.vget_lane_u64(b: u32[..= 0]) u64",
-	"arm_neon_64.vget_lane_u8(b: u32[..= 7]) u8",
-	"arm_neon_64.vhadd_u16(b: arm_neon_64) arm_neon_64",
-	"arm_neon_64.vhadd_u32(b: arm_neon_64) arm_neon_64",
-	"arm_neon_64.vhadd_u8(b: arm_neon_64) arm_neon_64",
-	"arm_neon_64.vpadd_u16(b: arm_neon_64) arm_neon_64",
-	"arm_neon_64.vpadd_u32(b: arm_neon_64) arm_neon_64",
-	"arm_neon_64.vpadd_u8(b: arm_neon_64) arm_neon_64",
-
-	// ---- arm_neon_128
-
-	"arm_neon_128.create_slice128(a: slice base.u8) arm_neon_128",
-
-	"arm_neon_128.create_literal_u8x16(" +
-		"a0: u8, a1: u8, a2: u8, a3: u8," +
-		"a4: u8, a5: u8, a6: u8, a7: u8," +
-		"a8: u8, a9: u8, a10: u8, a11: u8," +
-		"a12: u8, a13: u8, a14: u8, a15: u8) arm_neon_128",
-	"arm_neon_128.create_literal_u16x8(" +
-		"a0: u16, a1: u16, a2: u16, a3: u16," +
-		"a4: u16, a5: u16, a6: u16, a7: u16) arm_neon_128",
-	"arm_neon_128.create_literal_u32x4(" +
-		"a0: u32, a1: u32, a2: u32, a3: u32) arm_neon_128",
-	"arm_neon_128.create_literal_u64x2(" +
-		"a0: u64, a1: u64) arm_neon_128",
-
-	"arm_neon_128.create_vdupq_n_u16(a: u16) arm_neon_128",
-	"arm_neon_128.create_vdupq_n_u32(a: u32) arm_neon_128",
-	"arm_neon_128.create_vdupq_n_u64(a: u64) arm_neon_128",
-	"arm_neon_128.create_vdupq_n_u8(a: u8) arm_neon_128",
-
-	"arm_neon_128.vabdq_u16(b: arm_neon_128) arm_neon_128",
-	"arm_neon_128.vabdq_u32(b: arm_neon_128) arm_neon_128",
-	"arm_neon_128.vabdq_u8(b: arm_neon_128) arm_neon_128",
-	"arm_neon_128.vaddq_u16(b: arm_neon_128) arm_neon_128",
-	"arm_neon_128.vaddq_u32(b: arm_neon_128) arm_neon_128",
-	"arm_neon_128.vaddq_u64(b: arm_neon_128) arm_neon_128",
-	"arm_neon_128.vaddq_u8(b: arm_neon_128) arm_neon_128",
-	"arm_neon_128.vaddw_u16(b: arm_neon_64) arm_neon_128",
-	"arm_neon_128.vaddw_u32(b: arm_neon_64) arm_neon_128",
-	"arm_neon_128.vaddw_u8(b: arm_neon_64) arm_neon_128",
-	"arm_neon_128.vpadalq_u16(b: arm_neon_128) arm_neon_128",
-	"arm_neon_128.vpadalq_u32(b: arm_neon_128) arm_neon_128",
-	"arm_neon_128.vpadalq_u8(b: arm_neon_128) arm_neon_128",
-	"arm_neon_128.vpaddlq_u16() arm_neon_128",
-	"arm_neon_128.vpaddlq_u32() arm_neon_128",
-	"arm_neon_128.vpaddlq_u8() arm_neon_128",
-	"arm_neon_128.vandq_u8(b: arm_neon_128) arm_neon_128",
-	"arm_neon_128.vcleq_u16(b: arm_neon_128) arm_neon_128",
-	"arm_neon_128.vcleq_u32(b: arm_neon_128) arm_neon_128",
-	"arm_neon_128.vcleq_u8(b: arm_neon_128) arm_neon_128",
-	"arm_neon_128.vget_high_u16() arm_neon_64",
-	"arm_neon_128.vget_high_u32() arm_neon_64",
-	"arm_neon_128.vget_high_u64() arm_neon_64",
-	"arm_neon_128.vget_high_u8() arm_neon_64",
-	"arm_neon_128.vget_low_u16() arm_neon_64",
-	"arm_neon_128.vget_low_u32() arm_neon_64",
-	"arm_neon_128.vget_low_u64() arm_neon_64",
-	"arm_neon_128.vget_low_u8() arm_neon_64",
-	"arm_neon_128.vmlal_u16(b: arm_neon_64, c: arm_neon_64) arm_neon_128",
-	"arm_neon_128.vmlal_u32(b: arm_neon_64, c: arm_neon_64) arm_neon_128",
-	"arm_neon_128.vmlal_u8(b: arm_neon_64, c: arm_neon_64) arm_neon_128",
-	"arm_neon_128.vmovn_u16() arm_neon_64",
-	"arm_neon_128.vmovn_u32() arm_neon_64",
-	"arm_neon_128.vmovn_u64() arm_neon_64",
-	"arm_neon_128.vshlq_n_u16(b: u32) arm_neon_128",
-	"arm_neon_128.vshlq_n_u32(b: u32) arm_neon_128",
-	"arm_neon_128.vshlq_n_u64(b: u32) arm_neon_128",
-	"arm_neon_128.vshlq_n_u8(b: u32) arm_neon_128",
 
 	// ---- x86_sse42_utility
 

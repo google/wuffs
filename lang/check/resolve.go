@@ -79,8 +79,6 @@ var (
 	typeExprARMCRC32U32     = a.NewTypeExpr(0, t.IDBase, t.IDARMCRC32U32, nil, nil, nil)
 
 	typeExprARMNeonUtility = a.NewTypeExpr(0, t.IDBase, t.IDARMNeonUtility, nil, nil, nil)
-	typeExprARMNeon64      = a.NewTypeExpr(0, t.IDBase, t.IDARMNeon64, nil, nil, nil)
-	typeExprARMNeon128     = a.NewTypeExpr(0, t.IDBase, t.IDARMNeon128, nil, nil, nil)
 	typeExprARMNeonU8x8    = a.NewTypeExpr(0, t.IDBase, t.IDARMNeonU8x8, nil, nil, nil)
 	typeExprARMNeonU16x4   = a.NewTypeExpr(0, t.IDBase, t.IDARMNeonU16x4, nil, nil, nil)
 	typeExprARMNeonU32x2   = a.NewTypeExpr(0, t.IDBase, t.IDARMNeonU32x2, nil, nil, nil)
@@ -145,8 +143,6 @@ var builtInTypeMap = typeMap{
 	t.IDARMCRC32U32:     typeExprARMCRC32U32,
 
 	t.IDARMNeonUtility: typeExprARMNeonUtility,
-	t.IDARMNeon64:      typeExprARMNeon64,
-	t.IDARMNeon128:     typeExprARMNeon128,
 	t.IDARMNeonU8x8:    typeExprARMNeonU8x8,
 	t.IDARMNeonU16x4:   typeExprARMNeonU16x4,
 	t.IDARMNeonU32x2:   typeExprARMNeonU32x2,

@@ -44,8 +44,6 @@ var (
 	maxInt64 = big.NewInt((1 << 63) - 1)
 
 	typeExprARMCRC32U32   = a.NewTypeExpr(0, t.IDBase, t.IDARMCRC32U32, nil, nil, nil)
-	typeExprARMNeon64     = a.NewTypeExpr(0, t.IDBase, t.IDARMNeon64, nil, nil, nil)
-	typeExprARMNeon128    = a.NewTypeExpr(0, t.IDBase, t.IDARMNeon128, nil, nil, nil)
 	typeExprPixelSwizzler = a.NewTypeExpr(0, t.IDBase, t.IDPixelSwizzler, nil, nil, nil)
 )
 

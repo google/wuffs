@@ -689,10 +689,6 @@ const (
 
 	IDARMCRC32U32 = ID(0x302)
 
-	// Deprecated.
-	IDARMNeon64  = ID(0x308)
-	IDARMNeon128 = ID(0x309)
-
 	IDARMNeon        = ID(0x30E)
 	IDARMNeonUtility = ID(0x30F)
 
@@ -714,11 +710,6 @@ const (
 	IDX86AVX2Utility  = ID(0x393)
 
 	IDX86M128I = ID(0x3A0)
-
-	// --------
-
-	IDCreateSlice64  = ID(0x3AE)
-	IDCreateSlice128 = ID(0x3AF)
 )
 
 var builtInsByID = [nBuiltInIDs]string{
@@ -1110,9 +1101,6 @@ var builtInsByID = [nBuiltInIDs]string{
 
 	IDARMCRC32U32: "arm_crc32_u32",
 
-	IDARMNeon64:  "arm_neon_64",
-	IDARMNeon128: "arm_neon_128",
-
 	IDARMNeon:        "arm_neon",
 	IDARMNeonUtility: "arm_neon_utility",
 
@@ -1132,9 +1120,6 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDX86AVX2Utility:  "x86_avx2_utility",
 
 	IDX86M128I: "x86_m128i",
-
-	IDCreateSlice64:  "create_slice64",
-	IDCreateSlice128: "create_slice128",
 }
 
 var builtInsByName = map[string]ID{}

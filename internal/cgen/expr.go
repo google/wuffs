@@ -578,8 +578,6 @@ var cTypeNames = [...]string{
 	t.IDTokenWriter: "wuffs_base__token_buffer*",
 
 	t.IDARMCRC32U32:  "uint32_t",
-	t.IDARMNeon64:    "uint8x8_t",
-	t.IDARMNeon128:   "uint8x16_t",
 	t.IDARMNeonU8x8:  "uint8x8_t",
 	t.IDARMNeonU16x4: "uint16x4_t",
 	t.IDARMNeonU32x2: "uint32x2_t",
