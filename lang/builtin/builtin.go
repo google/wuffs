@@ -251,12 +251,30 @@ var Types = []string{
 	"arm_neon_utility",
 	"arm_neon_64",
 	"arm_neon_128",
+	"arm_neon_u8x8",
+	"arm_neon_u16x4",
+	"arm_neon_u32x2",
+	"arm_neon_u64x1",
+	"arm_neon_u8x16",
+	"arm_neon_u16x8",
+	"arm_neon_u32x4",
+	"arm_neon_u64x2",
 
 	"x86_sse42_utility",
 	"x86_m128i",
 }
 
-var Funcs = []string{
+var Funcs = [][]string{
+	funcsOther[:],
+	funcsARMNeon[:],
+}
+
+var funcsARMNeon = [...]string{
+	"arm_neon_u8x8.vadd_u8(b: arm_neon_u8x8) arm_neon_u8x8",
+	"arm_neon_u32x2.vget_lane_u32(b: u32[..= 1]) u32",
+}
+
+var funcsOther = [...]string{
 	"u8.high_bits(n: u32[..= 8]) u8",
 	"u8.low_bits(n: u32[..= 8]) u8",
 	"u8.max(a: u8) u8",
@@ -552,6 +570,29 @@ var Funcs = []string{
 	"arm_crc32_u32._crc32d(b: u64) arm_crc32_u32",
 
 	// ---- arm_neon_utility
+
+	"arm_neon_utility.make_u8x8_repeat(a: u8) arm_neon_u8x8",
+	"arm_neon_utility.make_u16x4_repeat(a: u16) arm_neon_u16x4",
+	"arm_neon_utility.make_u32x2_repeat(a: u32) arm_neon_u32x2",
+	"arm_neon_utility.make_u64x1_repeat(a: u64) arm_neon_u64x1",
+
+	// ---- arm_neon_uAxB.as_uCxD
+
+	"arm_neon_u8x8.as_u16x4() arm_neon_u16x4",
+	"arm_neon_u8x8.as_u32x2() arm_neon_u32x2",
+	"arm_neon_u8x8.as_u64x1() arm_neon_u64x1",
+
+	"arm_neon_u16x4.as_u8x8() arm_neon_u8x8",
+	"arm_neon_u32x2.as_u8x8() arm_neon_u8x8",
+	"arm_neon_u64x1.as_u8x8() arm_neon_u8x8",
+
+	"arm_neon_u16x8.as_u16x8() arm_neon_u16x8",
+	"arm_neon_u16x8.as_u32x4() arm_neon_u32x4",
+	"arm_neon_u16x8.as_u64x2() arm_neon_u64x2",
+
+	"arm_neon_u16x8.as_u8x16() arm_neon_u8x16",
+	"arm_neon_u32x4.as_u8x16() arm_neon_u8x16",
+	"arm_neon_u64x2.as_u8x16() arm_neon_u8x16",
 
 	// ---- arm_neon_64
 

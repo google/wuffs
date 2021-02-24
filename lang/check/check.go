@@ -100,8 +100,10 @@ func Check(tm *t.Map, files []*a.File, resolveUse func(usePath string) ([]byte, 
 		unseenInterfaceImpls:  map[t.QQID]*a.Func{},
 	}
 
-	if err := c.parseBuiltInFuncs(nil, builtin.Funcs); err != nil {
-		return nil, err
+	for _, funcs := range builtin.Funcs {
+		if err := c.parseBuiltInFuncs(nil, funcs); err != nil {
+			return nil, err
+		}
 	}
 	if err := c.parseBuiltInFuncs(c.builtInSliceFuncs, builtin.SliceFuncs); err != nil {
 		return nil, err

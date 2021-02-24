@@ -33,13 +33,14 @@ pri func decoder.filter_1_distance_4_arm_neon!(curr: slice base.u8),
 {
 	var curr : slice base.u8
 
-	var fa : base.arm_neon_64
-	var fx : base.arm_neon_64
+	var util : base.arm_neon_utility
+	var fa   : base.arm_neon_u8x8
+	var fx   : base.arm_neon_u8x8
 
 	iterate (curr = args.curr)(length: 4, advance: 4, unroll: 2) {
-		fx = fx.create_vdup_n_u32(a: curr.peek_u32le())
+		fx = util.make_u32x2_repeat(a: curr.peek_u32le()).as_u8x8()
 		fx = fx.vadd_u8(b: fa)
-		curr.poke_u32le!(a: fx.vget_lane_u32(b: 0))
+		curr.poke_u32le!(a: fx.as_u32x2().vget_lane_u32(b: 0))
 		fa = fx
 	}
 }

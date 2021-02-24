@@ -448,7 +448,11 @@ func (g *gen) writeBuiltinTokenWriter(b *buffer, recv *a.Expr, method t.ID, args
 }
 
 func (g *gen) writeBuiltinCPUArch(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, sideEffectsOnly bool, depth uint32) error {
-	switch recv.MType().QID()[1] {
+	id := recv.MType().QID()[1]
+	if id.IsBuiltInCPUArchARMNeon() {
+		return g.writeBuiltinCPUArchARMNeon(b, recv, method, args, sideEffectsOnly, depth)
+	}
+	switch id {
 	case t.IDX86SSE42Utility, t.IDX86M128I:
 		return g.writeBuiltinCPUArchX86(b, recv, method, args, sideEffectsOnly, depth)
 	}
@@ -765,6 +769,84 @@ func (g *gen) writeBuiltinCPUArch(b *buffer, recv *a.Expr, method t.ID, args []*
 		b.writes(")")
 		b.writes(postArgsAfter)
 	}
+	return nil
+}
+
+func (g *gen) writeBuiltinCPUArchARMNeon(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, sideEffectsOnly bool, depth uint32) error {
+	methodStr := method.Str(g.tm)
+	if strings.HasPrefix(methodStr, "make_") {
+		fName := ""
+		switch methodStr {
+		case "make_u8x8_repeat":
+			fName = "vdup_n_u8"
+		case "make_u16x4_repeat":
+			fName = "vdup_n_u16"
+		case "make_u32x2_repeat":
+			fName = "vdup_n_u32"
+		case "make_u64x1_repeat":
+			fName = "vdup_n_u64"
+		default:
+			return fmt.Errorf("internal error: unsupported cpu_arch method %q", methodStr)
+		}
+		b.printf("%s(", fName)
+		for i, o := range args {
+			if i > 0 {
+				b.writes(", ")
+			}
+			if err := g.writeExpr(b, o.AsArg().Value(), false, depth); err != nil {
+				return err
+			}
+		}
+		b.writes(")")
+		return nil
+
+	} else if strings.HasPrefix(methodStr, "as_") {
+		switch recv.MType().QID()[1] {
+		case t.IDARMNeonU8x8:
+			switch methodStr {
+			case "as_u16x4":
+				methodStr = "vreinterpret_u16_u8"
+			case "as_u32x2":
+				methodStr = "vreinterpret_u32_u8"
+			case "as_u64x1":
+				methodStr = "vreinterpret_u64_u8"
+			}
+		case t.IDARMNeonU16x4:
+			methodStr = "vreinterpret_u8_u16"
+		case t.IDARMNeonU32x2:
+			methodStr = "vreinterpret_u8_u32"
+		case t.IDARMNeonU64x1:
+			methodStr = "vreinterpret_u8_u64"
+		case t.IDARMNeonU8x16:
+			switch methodStr {
+			case "as_u16x8":
+				methodStr = "vreinterpretq_u16_u8"
+			case "as_u32x4":
+				methodStr = "vreinterpretq_u32_u8"
+			case "as_u64x2":
+				methodStr = "vreinterpretq_u64_u8"
+			}
+		case t.IDARMNeonU16x8:
+			methodStr = "vreinterpretq_u8_u16"
+		case t.IDARMNeonU32x4:
+			methodStr = "vreinterpretq_u8_u32"
+		case t.IDARMNeonU64x2:
+			methodStr = "vreinterpretq_u8_u64"
+		}
+	}
+
+	b.writes(methodStr)
+	b.writes("(")
+	if err := g.writeExpr(b, recv, false, depth); err != nil {
+		return err
+	}
+	for _, o := range args {
+		b.writes(", ")
+		if err := g.writeExpr(b, o.AsArg().Value(), false, depth); err != nil {
+			return err
+		}
+	}
+	b.writes(")")
 	return nil
 }
 

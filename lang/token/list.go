@@ -115,6 +115,9 @@ func (x ID) IsTightRight() bool { return x < ID(len(isTightRight)) && isTightRig
 
 func (x ID) IsAssign() bool         { return minAssign <= x && x <= maxAssign }
 func (x ID) IsBuiltInCPUArch() bool { return minBuiltInCPUArch <= x && x <= maxBuiltInCPUArch }
+func (x ID) IsBuiltInCPUArchARMNeon() bool {
+	return minBuiltInCPUArchARMNeon <= x && x <= maxBuiltInCPUArchARMNeon
+}
 func (x ID) IsCannotAssignTo() bool { return minCannotAssignTo <= x && x <= maxCannotAssignTo }
 func (x ID) IsClose() bool          { return minClose <= x && x <= maxClose }
 func (x ID) IsKeyword() bool        { return minKeyword <= x && x <= maxKeyword }
@@ -674,32 +677,48 @@ const (
 
 	// -------- 0x300 block.
 
-	minBuiltInCPUArch = 0x300
-	maxBuiltInCPUArch = 0x33F
+	minBuiltInCPUArch        = 0x300
+	minBuiltInCPUArchARMNeon = 0x30E
+	maxBuiltInCPUArchARMNeon = 0x38F
+	maxBuiltInCPUArch        = 0x3AF
 
 	// If adding more CPUArch utility types, also update IsEtcUtility.
 
 	IDARMCRC32        = ID(0x300)
 	IDARMCRC32Utility = ID(0x301)
-	IDARMNeon         = ID(0x302)
-	IDARMNeonUtility  = ID(0x303)
 
-	IDARMCRC32U32 = ID(0x308)
+	IDARMCRC32U32 = ID(0x302)
 
-	IDARMNeon64  = ID(0x310) //  64-bit D (double-word) register
-	IDARMNeon128 = ID(0x311) // 128-bit Q (  quad-word) register
+	// Deprecated.
+	IDARMNeon64  = ID(0x308)
+	IDARMNeon128 = ID(0x309)
 
-	IDX86SSE42        = ID(0x320)
-	IDX86SSE42Utility = ID(0x321)
-	IDX86AVX2         = ID(0x322)
-	IDX86AVX2Utility  = ID(0x323)
+	IDARMNeon        = ID(0x30E)
+	IDARMNeonUtility = ID(0x30F)
 
-	IDX86M128I = ID(0x330)
+	// ARM Neon D register (64-bit double-word) types.
+	IDARMNeonU8x8  = ID(0x310)
+	IDARMNeonU16x4 = ID(0x311)
+	IDARMNeonU32x2 = ID(0x312)
+	IDARMNeonU64x1 = ID(0x313)
+
+	// ARM Neon Q register (128-bit quad-word) types.
+	IDARMNeonU8x16 = ID(0x320)
+	IDARMNeonU16x8 = ID(0x321)
+	IDARMNeonU32x4 = ID(0x322)
+	IDARMNeonU64x2 = ID(0x323)
+
+	IDX86SSE42        = ID(0x390)
+	IDX86SSE42Utility = ID(0x391)
+	IDX86AVX2         = ID(0x392)
+	IDX86AVX2Utility  = ID(0x393)
+
+	IDX86M128I = ID(0x3A0)
 
 	// --------
 
-	IDCreateSlice64  = ID(0x390)
-	IDCreateSlice128 = ID(0x391)
+	IDCreateSlice64  = ID(0x3AE)
+	IDCreateSlice128 = ID(0x3AF)
 )
 
 var builtInsByID = [nBuiltInIDs]string{
@@ -1088,13 +1107,24 @@ var builtInsByID = [nBuiltInIDs]string{
 
 	IDARMCRC32:        "arm_crc32",
 	IDARMCRC32Utility: "arm_crc32_utility",
-	IDARMNeon:         "arm_neon",
-	IDARMNeonUtility:  "arm_neon_utility",
 
 	IDARMCRC32U32: "arm_crc32_u32",
 
 	IDARMNeon64:  "arm_neon_64",
 	IDARMNeon128: "arm_neon_128",
+
+	IDARMNeon:        "arm_neon",
+	IDARMNeonUtility: "arm_neon_utility",
+
+	IDARMNeonU8x8:  "arm_neon_u8x8",
+	IDARMNeonU16x4: "arm_neon_u16x4",
+	IDARMNeonU32x2: "arm_neon_u32x2",
+	IDARMNeonU64x1: "arm_neon_u64x1",
+
+	IDARMNeonU8x16: "arm_neon_u8x16",
+	IDARMNeonU16x8: "arm_neon_u16x8",
+	IDARMNeonU32x4: "arm_neon_u32x4",
+	IDARMNeonU64x2: "arm_neon_u64x2",
 
 	IDX86SSE42:        "x86_sse42",
 	IDX86SSE42Utility: "x86_sse42_utility",

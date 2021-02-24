@@ -54,7 +54,9 @@ func (q *checker) tcheckCPUArchBits(cab cpuArchBits, typ *a.TypeExpr) error {
 		switch qid[1] {
 		case t.IDARMCRC32Utility, t.IDARMCRC32U32:
 			need = cpuArchBitsARMCRC32
-		case t.IDARMNeonUtility, t.IDARMNeon64, t.IDARMNeon128:
+		case t.IDARMNeonUtility, t.IDARMNeon64, t.IDARMNeon128,
+			t.IDARMNeonU8x8, t.IDARMNeonU16x4, t.IDARMNeonU32x2, t.IDARMNeonU64x1,
+			t.IDARMNeonU8x16, t.IDARMNeonU16x8, t.IDARMNeonU32x4, t.IDARMNeonU64x2:
 			need = cpuArchBitsARMNeon
 		case t.IDX86SSE42Utility, t.IDX86M128I:
 			need = cpuArchBitsX86SSE42

@@ -577,10 +577,18 @@ var cTypeNames = [...]string{
 	t.IDTokenReader: "wuffs_base__token_buffer*",
 	t.IDTokenWriter: "wuffs_base__token_buffer*",
 
-	t.IDARMCRC32U32: "uint32_t",
-	t.IDARMNeon64:   "uint8x8_t",
-	t.IDARMNeon128:  "uint8x16_t",
-	t.IDX86M128I:    "__m128i",
+	t.IDARMCRC32U32:  "uint32_t",
+	t.IDARMNeon64:    "uint8x8_t",
+	t.IDARMNeon128:   "uint8x16_t",
+	t.IDARMNeonU8x8:  "uint8x8_t",
+	t.IDARMNeonU16x4: "uint16x4_t",
+	t.IDARMNeonU32x2: "uint32x2_t",
+	t.IDARMNeonU64x1: "uint64x1_t",
+	t.IDARMNeonU8x16: "uint8x16_t",
+	t.IDARMNeonU16x8: "uint16x8_t",
+	t.IDARMNeonU32x4: "uint32x4_t",
+	t.IDARMNeonU64x2: "uint64x2_t",
+	t.IDX86M128I:     "__m128i",
 }
 
 const noSuchCOperator = " no_such_C_operator "

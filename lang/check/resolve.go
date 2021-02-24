@@ -81,6 +81,14 @@ var (
 	typeExprARMNeonUtility = a.NewTypeExpr(0, t.IDBase, t.IDARMNeonUtility, nil, nil, nil)
 	typeExprARMNeon64      = a.NewTypeExpr(0, t.IDBase, t.IDARMNeon64, nil, nil, nil)
 	typeExprARMNeon128     = a.NewTypeExpr(0, t.IDBase, t.IDARMNeon128, nil, nil, nil)
+	typeExprARMNeonU8x8    = a.NewTypeExpr(0, t.IDBase, t.IDARMNeonU8x8, nil, nil, nil)
+	typeExprARMNeonU16x4   = a.NewTypeExpr(0, t.IDBase, t.IDARMNeonU16x4, nil, nil, nil)
+	typeExprARMNeonU32x2   = a.NewTypeExpr(0, t.IDBase, t.IDARMNeonU32x2, nil, nil, nil)
+	typeExprARMNeonU64x1   = a.NewTypeExpr(0, t.IDBase, t.IDARMNeonU64x1, nil, nil, nil)
+	typeExprARMNeonU8x16   = a.NewTypeExpr(0, t.IDBase, t.IDARMNeonU8x16, nil, nil, nil)
+	typeExprARMNeonU16x8   = a.NewTypeExpr(0, t.IDBase, t.IDARMNeonU16x8, nil, nil, nil)
+	typeExprARMNeonU32x4   = a.NewTypeExpr(0, t.IDBase, t.IDARMNeonU32x4, nil, nil, nil)
+	typeExprARMNeonU64x2   = a.NewTypeExpr(0, t.IDBase, t.IDARMNeonU64x2, nil, nil, nil)
 
 	typeExprX86SSE42Utility = a.NewTypeExpr(0, t.IDBase, t.IDX86SSE42Utility, nil, nil, nil)
 	typeExprX86M128I        = a.NewTypeExpr(0, t.IDBase, t.IDX86M128I, nil, nil, nil)
@@ -139,6 +147,14 @@ var builtInTypeMap = typeMap{
 	t.IDARMNeonUtility: typeExprARMNeonUtility,
 	t.IDARMNeon64:      typeExprARMNeon64,
 	t.IDARMNeon128:     typeExprARMNeon128,
+	t.IDARMNeonU8x8:    typeExprARMNeonU8x8,
+	t.IDARMNeonU16x4:   typeExprARMNeonU16x4,
+	t.IDARMNeonU32x2:   typeExprARMNeonU32x2,
+	t.IDARMNeonU64x1:   typeExprARMNeonU64x1,
+	t.IDARMNeonU8x16:   typeExprARMNeonU8x16,
+	t.IDARMNeonU16x8:   typeExprARMNeonU16x8,
+	t.IDARMNeonU32x4:   typeExprARMNeonU32x4,
+	t.IDARMNeonU64x2:   typeExprARMNeonU64x2,
 
 	t.IDX86SSE42Utility: typeExprX86SSE42Utility,
 	t.IDX86M128I:        typeExprX86M128I,
