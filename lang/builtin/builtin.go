@@ -556,15 +556,15 @@ var funcsOther = [...]string{
 
 	// ---- arm_crc32_utility
 
+	"arm_crc32_utility.make_u32(a: u32) arm_crc32_u32",
+
 	// ---- arm_crc32_u32
 
-	"arm_crc32_u32.create(a: u32) arm_crc32_u32",
+	"arm_crc32_u32.crc32b(b: u8) arm_crc32_u32",
+	"arm_crc32_u32.crc32h(b: u16) arm_crc32_u32",
+	"arm_crc32_u32.crc32w(b: u32) arm_crc32_u32",
+	"arm_crc32_u32.crc32d(b: u64) arm_crc32_u32",
 	"arm_crc32_u32.value() u32",
-
-	"arm_crc32_u32._crc32b(b: u8) arm_crc32_u32",
-	"arm_crc32_u32._crc32h(b: u16) arm_crc32_u32",
-	"arm_crc32_u32._crc32w(b: u32) arm_crc32_u32",
-	"arm_crc32_u32._crc32d(b: u64) arm_crc32_u32",
 
 	// ---- arm_neon_utility
 

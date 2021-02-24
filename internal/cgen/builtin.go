@@ -453,9 +453,14 @@ func (g *gen) writeBuiltinCPUArch(b *buffer, recv *a.Expr, method t.ID, args []*
 		return g.writeBuiltinCPUArchARMNeon(b, recv, method, args, sideEffectsOnly, depth)
 	}
 	switch id {
+	case t.IDARMCRC32Utility, t.IDARMCRC32U32:
+		return g.writeBuiltinCPUArchARMCRC32(b, recv, method, args, sideEffectsOnly, depth)
 	case t.IDX86SSE42Utility, t.IDX86M128I:
 		return g.writeBuiltinCPUArchX86(b, recv, method, args, sideEffectsOnly, depth)
 	}
+	return fmt.Errorf("internal error: unsupported cpu_arch method %s.%s",
+		recv.MType().Str(g.tm), method.Str(g.tm))
+
 	armCRC32U32 := recv.MType().Eq(typeExprARMCRC32U32)
 	armNeon := recv.MType().Eq(typeExprARMNeon64) || recv.MType().Eq(typeExprARMNeon128)
 
@@ -769,6 +774,30 @@ func (g *gen) writeBuiltinCPUArch(b *buffer, recv *a.Expr, method t.ID, args []*
 		b.writes(")")
 		b.writes(postArgsAfter)
 	}
+	return nil
+}
+
+func (g *gen) writeBuiltinCPUArchARMCRC32(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, sideEffectsOnly bool, depth uint32) error {
+	methodStr := method.Str(g.tm)
+	if methodStr == "make_u32" {
+		return g.writeExpr(b, args[0].AsArg().Value(), false, depth)
+	} else if methodStr == "value" {
+		return g.writeExpr(b, recv, false, depth)
+	}
+
+	b.writes("__")
+	b.writes(methodStr)
+	b.writes("(")
+	if err := g.writeExpr(b, recv, false, depth); err != nil {
+		return err
+	}
+	for _, o := range args {
+		b.writes(", ")
+		if err := g.writeExpr(b, o.AsArg().Value(), false, depth); err != nil {
+			return err
+		}
+	}
+	b.writes(")")
 	return nil
 }
 
