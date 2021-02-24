@@ -775,29 +775,69 @@ func (g *gen) writeBuiltinCPUArch(b *buffer, recv *a.Expr, method t.ID, args []*
 func (g *gen) writeBuiltinCPUArchARMNeon(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, sideEffectsOnly bool, depth uint32) error {
 	methodStr := method.Str(g.tm)
 	if strings.HasPrefix(methodStr, "make_") {
-		fName := ""
-		switch methodStr {
-		case "make_u8x8_repeat":
-			fName = "vdup_n_u8"
-		case "make_u16x4_repeat":
-			fName = "vdup_n_u16"
-		case "make_u32x2_repeat":
-			fName = "vdup_n_u32"
-		case "make_u64x1_repeat":
-			fName = "vdup_n_u64"
-		default:
-			return fmt.Errorf("internal error: unsupported cpu_arch method %q", methodStr)
+		before, after, ptr := "", ")", false
+		if strings.HasSuffix(methodStr, "_multiple") {
+			after = "})"
+			switch methodStr {
+			case "make_u8x8_multiple":
+				before = "((uint8x8_t){"
+			case "make_u16x4_multiple":
+				before = "((uint16x4_t){"
+			case "make_u32x2_multiple":
+				before = "((uint32x2_t){"
+			case "make_u64x1_multiple":
+				before = "((uint64x1_t){"
+			case "make_u8x16_multiple":
+				before = "((uint8x16_t){"
+			case "make_u16x8_multiple":
+				before = "((uint16x8_t){"
+			case "make_u32x4_multiple":
+				before = "((uint32x4_t){"
+			case "make_u64x2_multiple":
+				before = "((uint64x2_t){"
+			}
+		} else {
+			switch methodStr {
+			case "make_u8x8_repeat":
+				before = "vdup_n_u8("
+			case "make_u16x4_repeat":
+				before = "vdup_n_u16("
+			case "make_u32x2_repeat":
+				before = "vdup_n_u32("
+			case "make_u64x1_repeat":
+				before = "vdup_n_u64("
+			case "make_u8x16_repeat":
+				before = "vdupq_n_u8("
+			case "make_u16x8_repeat":
+				before = "vdupq_n_u16("
+			case "make_u32x4_repeat":
+				before = "vdupq_n_u32("
+			case "make_u64x2_repeat":
+				before = "vdupq_n_u64("
+			case "make_u8x8_slice64":
+				before, ptr = "vld1_u8(", true
+			case "make_u8x16_slice128":
+				before, ptr = "vld1q_u8(", true
+			default:
+				return fmt.Errorf("internal error: unsupported cpu_arch method %q", methodStr)
+			}
 		}
-		b.printf("%s(", fName)
+		b.writes(before)
 		for i, o := range args {
 			if i > 0 {
 				b.writes(", ")
 			}
-			if err := g.writeExpr(b, o.AsArg().Value(), false, depth); err != nil {
-				return err
+			if ptr {
+				if err := g.writeExprDotPtr(b, o.AsArg().Value(), false, depth); err != nil {
+					return err
+				}
+			} else {
+				if err := g.writeExpr(b, o.AsArg().Value(), false, depth); err != nil {
+					return err
+				}
 			}
 		}
-		b.writes(")")
+		b.writes(after)
 		return nil
 
 	} else if strings.HasPrefix(methodStr, "as_") {

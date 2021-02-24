@@ -568,10 +568,41 @@ var funcsOther = [...]string{
 
 	// ---- arm_neon_utility
 
+	"arm_neon_utility.make_u8x8_multiple(" +
+		"a00: u8, a01: u8, a02: u8, a03: u8," +
+		"a04: u8, a05: u8, a06: u8, a07: u8) arm_neon_u8x8",
+	"arm_neon_utility.make_u16x4_multiple(" +
+		"a00: u16, a01: u16, a02: u16, a03: u16) arm_neon_u16x4",
+	"arm_neon_utility.make_u32x2_multiple(" +
+		"a00: u32, a01: u32) arm_neon_u32x2",
+	"arm_neon_utility.make_u64x1_multiple(" +
+		"a00: u64) arm_neon_u64x1",
+
+	"arm_neon_utility.make_u8x16_multiple(" +
+		"a00: u8, a01: u8, a02: u8, a03: u8," +
+		"a04: u8, a05: u8, a06: u8, a07: u8," +
+		"a08: u8, a09: u8, a10: u8, a11: u8," +
+		"a12: u8, a13: u8, a14: u8, a15: u8) arm_neon_u8x16",
+	"arm_neon_utility.make_u16x8_multiple(" +
+		"a00: u16, a01: u16, a02: u16, a03: u16," +
+		"a04: u16, a05: u16, a06: u16, a07: u16) arm_neon_u16x8",
+	"arm_neon_utility.make_u32x4_multiple(" +
+		"a00: u32, a01: u32, a02: u32, a03: u32) arm_neon_u32x4",
+	"arm_neon_utility.make_u64x2_multiple(" +
+		"a00: u64, a01: u64) arm_neon_u64x2",
+
 	"arm_neon_utility.make_u8x8_repeat(a: u8) arm_neon_u8x8",
 	"arm_neon_utility.make_u16x4_repeat(a: u16) arm_neon_u16x4",
 	"arm_neon_utility.make_u32x2_repeat(a: u32) arm_neon_u32x2",
 	"arm_neon_utility.make_u64x1_repeat(a: u64) arm_neon_u64x1",
+
+	"arm_neon_utility.make_u8x16_repeat(a: u8) arm_neon_u8x16",
+	"arm_neon_utility.make_u16x8_repeat(a: u16) arm_neon_u16x8",
+	"arm_neon_utility.make_u32x4_repeat(a: u32) arm_neon_u32x4",
+	"arm_neon_utility.make_u64x2_repeat(a: u64) arm_neon_u64x2",
+
+	"arm_neon_utility.make_u8x8_slice64(a: slice base.u8) arm_neon_u8x8",
+	"arm_neon_utility.make_u8x16_slice128(a: slice base.u8) arm_neon_u8x16",
 
 	// ---- arm_neon_uAxB.as_uCxD
 
