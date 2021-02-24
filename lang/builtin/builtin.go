@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:generate go run gen.go
+
 // Package builtin lists Wuffs' built-in concepts such as status codes.
 package builtin
 
@@ -267,11 +269,6 @@ var Types = []string{
 var Funcs = [][]string{
 	funcsOther[:],
 	funcsARMNeon[:],
-}
-
-var funcsARMNeon = [...]string{
-	"arm_neon_u8x8.vadd_u8(b: arm_neon_u8x8) arm_neon_u8x8",
-	"arm_neon_u32x2.vget_lane_u32(b: u32[..= 1]) u32",
 }
 
 var funcsOther = [...]string{
