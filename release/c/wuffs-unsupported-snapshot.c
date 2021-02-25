@@ -405,17 +405,149 @@ typedef struct wuffs_base__transform__output__struct {
 
 // FourCC constants.
 
+// Bitmap.
+#define WUFFS_BASE__FOURCC__BMP 0x424D5020
+
+// Brotli.
+#define WUFFS_BASE__FOURCC__BRTL 0x4252544C
+
+// Bzip2.
+#define WUFFS_BASE__FOURCC__BZ2 0x425A3220
+
+// Concise Binary Object Representation.
+#define WUFFS_BASE__FOURCC__CBOR 0x43424F52
+
+// Cascading Style Sheets.
+#define WUFFS_BASE__FOURCC__CSS 0x43535320
+
+// Encapsulated PostScript.
+#define WUFFS_BASE__FOURCC__EPS 0x45505320
+
+// Free Lossless Audio Codec.
+#define WUFFS_BASE__FOURCC__FLAC 0x464C4143
+
+// Graphics Interchange Format.
+#define WUFFS_BASE__FOURCC__GIF 0x47494620
+
+// GNU Zip.
+#define WUFFS_BASE__FOURCC__GZ 0x475A2020
+
+// High Efficiency Image File.
+#define WUFFS_BASE__FOURCC__HEIF 0x48454946
+
+// Hypertext Markup Language.
+#define WUFFS_BASE__FOURCC__HTML 0x48544D4C
+
 // International Color Consortium Profile.
 #define WUFFS_BASE__FOURCC__ICCP 0x49434350
+
+// Icon.
+#define WUFFS_BASE__FOURCC__ICO 0x49434F20
+
+// Icon Vector Graphics.
+#define WUFFS_BASE__FOURCC__ICVG 0x49435647
+
+// Initialization.
+#define WUFFS_BASE__FOURCC__INI 0x494E4920
 
 // Joint Photographic Experts Group.
 #define WUFFS_BASE__FOURCC__JPEG 0x4A504547
 
+// JavaScript.
+#define WUFFS_BASE__FOURCC__JS 0x4A532020
+
+// JavaScript Object Notation.
+#define WUFFS_BASE__FOURCC__JSON 0x4A534F4E
+
+// JSON With Commas and Comments.
+#define WUFFS_BASE__FOURCC__JWCC 0x4A574343
+
+// Lempel–Ziv 4.
+#define WUFFS_BASE__FOURCC__LZ4 0x4C5A3420
+
+// Markdown.
+#define WUFFS_BASE__FOURCC__MD 0x4D442020
+
+// MPEG-1 Audio Layer III.
+#define WUFFS_BASE__FOURCC__MP3 0x4D503320
+
+// Naive Image.
+#define WUFFS_BASE__FOURCC__NIE 0x4E494520
+
+// Open Type Format.
+#define WUFFS_BASE__FOURCC__OTF 0x4F544620
+
+// Portable Document Format.
+#define WUFFS_BASE__FOURCC__PDF 0x50444620
+
 // Portable Network Graphics.
 #define WUFFS_BASE__FOURCC__PNG 0x504E4720
 
+// Portable Anymap.
+#define WUFFS_BASE__FOURCC__PNM 0x504E4D20
+
+// PostScript.
+#define WUFFS_BASE__FOURCC__PS 0x50532020
+
+// Random Access Compression.
+#define WUFFS_BASE__FOURCC__RAC 0x52414320
+
+// Raw.
+#define WUFFS_BASE__FOURCC__RAW 0x52415720
+
+// Resource Interchange File Format.
+#define WUFFS_BASE__FOURCC__RIFF 0x52494646
+
+// Riegeli Records.
+#define WUFFS_BASE__FOURCC__RIGL 0x5249474C
+
+// Snappy.
+#define WUFFS_BASE__FOURCC__SNPY 0x534E5059
+
+// Scalable Vector Graphics.
+#define WUFFS_BASE__FOURCC__SVG 0x53564720
+
+// Tape Archive.
+#define WUFFS_BASE__FOURCC__TAR 0x54415220
+
+// Tagged Image File Format.
+#define WUFFS_BASE__FOURCC__TIFF 0x54494646
+
+// Tom's Obvious Minimal Language.
+#define WUFFS_BASE__FOURCC__TOML 0x544F4D4C
+
+// Waveform.
+#define WUFFS_BASE__FOURCC__WAVE 0x57415645
+
+// Wireless Bitmap.
+#define WUFFS_BASE__FOURCC__WBMP 0x57424D50
+
+// Web Open Font Format.
+#define WUFFS_BASE__FOURCC__WOFF 0x574F4646
+
+// Web Picture (VP8).
+#define WUFFS_BASE__FOURCC__WP8 0x57503820
+
+// Web Picture (VP8 Lossless).
+#define WUFFS_BASE__FOURCC__WP8L 0x5750384C
+
+// Extensible Markup Language.
+#define WUFFS_BASE__FOURCC__XML 0x584D4C20
+
 // Extensible Metadata Platform.
 #define WUFFS_BASE__FOURCC__XMP 0x584D5020
+
+// Xz.
+#define WUFFS_BASE__FOURCC__XZ 0x585A2020
+
+// Zip.
+#define WUFFS_BASE__FOURCC__ZIP 0x5A495020
+
+// Zlib.
+#define WUFFS_BASE__FOURCC__ZLIB 0x5A4C4942
+
+// Zstandard.
+#define WUFFS_BASE__FOURCC__ZSTD 0x5A535444
 
 // --------
 
