@@ -1099,3 +1099,29 @@ wuffs_base__slice_u8__subslice_ij(wuffs_base__slice_u8 s,
   }
   return wuffs_base__make_slice_u8(NULL, 0);
 }
+
+// ---------------- Magic Numbers
+
+// wuffs_base__magic_number_guess_fourcc guesses the file format of some data,
+// given its opening bytes. It returns a positive FourCC value on success.
+//
+// It returns zero if nothing matches its hard-coded list of 'magic numbers'.
+//
+// It returns a negative value if a longer prefix is required for a conclusive
+// result. For example, seeing a single 'B' byte is not enough to discriminate
+// the BMP and BPG image file formats.
+//
+// It does not do a full validity check. Like any guess made from a short
+// prefix of the data, it may return false positives. Data that starts with 99
+// bytes of valid JPEG followed by corruption or truncation is an invalid JPEG
+// image overall, but this function will still return WUFFS_BASE__FOURCC__JPEG.
+//
+// Another source of false positives is that some 'magic numbers' are valid
+// ASCII data. A file starting with "GIF87a and GIF89a are the two versions of
+// GIF" will match GIF's 'magic number' even if it's plain text, not an image.
+//
+// For modular builds that divide the base module into sub-modules, using this
+// function requires the WUFFS_CONFIG__MODULE__BASE__MAGIC sub-module, not just
+// WUFFS_CONFIG__MODULE__BASE__CORE.
+WUFFS_BASE__MAYBE_STATIC int32_t  //
+wuffs_base__magic_number_guess_fourcc(wuffs_base__slice_u8 prefix);

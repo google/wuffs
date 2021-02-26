@@ -123,15 +123,23 @@ read_more_src() {
 
 bool  //
 load_image_type() {
-  while (g_src.meta.wi == 0) {
-    if (!read_more_src()) {
+  int32_t fourcc = 0;
+  while (true) {
+    fourcc = wuffs_base__magic_number_guess_fourcc(
+        wuffs_base__io_buffer__reader_slice(&g_src));
+    if (fourcc >= 0) {
+      break;
+    } else if (wuffs_base__io_buffer__writer_length(&g_src) == 0) {
+      printf("%s: could not determine file format\n", g_filename);
+      return false;
+    } else if (!read_more_src()) {
       return false;
     }
   }
 
   wuffs_base__status status;
-  switch (g_src_buffer_array[0]) {
-    case 0x00:
+  switch (fourcc) {
+    case WUFFS_BASE__FOURCC__WBMP:
       status = wuffs_wbmp__decoder__initialize(
           &g_potential_decoders.wbmp, sizeof g_potential_decoders.wbmp,
           WUFFS_VERSION, WUFFS_INITIALIZE__DEFAULT_OPTIONS);
@@ -144,7 +152,7 @@ load_image_type() {
               &g_potential_decoders.wbmp);
       break;
 
-    case 'B':
+    case WUFFS_BASE__FOURCC__BMP:
       status = wuffs_bmp__decoder__initialize(
           &g_potential_decoders.bmp, sizeof g_potential_decoders.bmp,
           WUFFS_VERSION, WUFFS_INITIALIZE__DEFAULT_OPTIONS);
@@ -157,7 +165,7 @@ load_image_type() {
               &g_potential_decoders.bmp);
       break;
 
-    case 'G':
+    case WUFFS_BASE__FOURCC__GIF:
       status = wuffs_gif__decoder__initialize(
           &g_potential_decoders.gif, sizeof g_potential_decoders.gif,
           WUFFS_VERSION, WUFFS_INITIALIZE__DEFAULT_OPTIONS);
@@ -170,7 +178,7 @@ load_image_type() {
               &g_potential_decoders.gif);
       break;
 
-    case 'n':
+    case WUFFS_BASE__FOURCC__NIE:
       status = wuffs_nie__decoder__initialize(
           &g_potential_decoders.nie, sizeof g_potential_decoders.nie,
           WUFFS_VERSION, WUFFS_INITIALIZE__DEFAULT_OPTIONS);
@@ -183,7 +191,7 @@ load_image_type() {
               &g_potential_decoders.nie);
       break;
 
-    case 0x89:
+    case WUFFS_BASE__FOURCC__PNG:
       status = wuffs_png__decoder__initialize(
           &g_potential_decoders.png, sizeof g_potential_decoders.png,
           WUFFS_VERSION, WUFFS_INITIALIZE__DEFAULT_OPTIONS);

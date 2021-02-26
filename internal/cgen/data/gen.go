@@ -94,6 +94,7 @@ func genData(out *bytes.Buffer) error {
 		{"../base/floatconv-submodule-code.c", "BaseFloatConvSubmoduleCodeC"},
 		{"../base/floatconv-submodule-data.c", "BaseFloatConvSubmoduleDataC"},
 		{"../base/intconv-submodule.c", "BaseIntConvSubmoduleC"},
+		{"../base/magic-submodule.c", "BaseMagicSubmoduleC"},
 		{"../base/pixconv-submodule.c", "BasePixConvSubmoduleC"},
 		{"../base/utf8-submodule.c", "BaseUTF8SubmoduleC"},
 

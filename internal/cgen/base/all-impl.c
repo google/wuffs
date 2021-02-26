@@ -152,6 +152,15 @@ const uint32_t wuffs_base__pixel_format__bits_per_channel[16] = {
         // defined(WUFFS_CONFIG__MODULE__BASE__INTCONV)
 
 #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BASE) || \
+    defined(WUFFS_CONFIG__MODULE__BASE__MAGIC)
+
+// !! INSERT base/magic-submodule.c.
+
+#endif  // !defined(WUFFS_CONFIG__MODULES) ||
+        // defined(WUFFS_CONFIG__MODULE__BASE) ||
+        // defined(WUFFS_CONFIG__MODULE__BASE__MAGIC)
+
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BASE) || \
     defined(WUFFS_CONFIG__MODULE__BASE__PIXCONV)
 
 // !! INSERT base/pixconv-submodule.c.

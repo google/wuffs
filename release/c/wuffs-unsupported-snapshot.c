@@ -1306,6 +1306,32 @@ wuffs_base__slice_u8__subslice_ij(wuffs_base__slice_u8 s,
   return wuffs_base__make_slice_u8(NULL, 0);
 }
 
+// ---------------- Magic Numbers
+
+// wuffs_base__magic_number_guess_fourcc guesses the file format of some data,
+// given its opening bytes. It returns a positive FourCC value on success.
+//
+// It returns zero if nothing matches its hard-coded list of 'magic numbers'.
+//
+// It returns a negative value if a longer prefix is required for a conclusive
+// result. For example, seeing a single 'B' byte is not enough to discriminate
+// the BMP and BPG image file formats.
+//
+// It does not do a full validity check. Like any guess made from a short
+// prefix of the data, it may return false positives. Data that starts with 99
+// bytes of valid JPEG followed by corruption or truncation is an invalid JPEG
+// image overall, but this function will still return WUFFS_BASE__FOURCC__JPEG.
+//
+// Another source of false positives is that some 'magic numbers' are valid
+// ASCII data. A file starting with "GIF87a and GIF89a are the two versions of
+// GIF" will match GIF's 'magic number' even if it's plain text, not an image.
+//
+// For modular builds that divide the base module into sub-modules, using this
+// function requires the WUFFS_CONFIG__MODULE__BASE__MAGIC sub-module, not just
+// WUFFS_CONFIG__MODULE__BASE__CORE.
+WUFFS_BASE__MAYBE_STATIC int32_t  //
+wuffs_base__magic_number_guess_fourcc(wuffs_base__slice_u8 prefix);
+
 // ---------------- Ranges and Rects
 
 // See https://github.com/google/wuffs/blob/main/doc/note/ranges-and-rects.md
@@ -14280,6 +14306,94 @@ done:
 #endif  // !defined(WUFFS_CONFIG__MODULES) ||
         // defined(WUFFS_CONFIG__MODULE__BASE) ||
         // defined(WUFFS_CONFIG__MODULE__BASE__INTCONV)
+
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BASE) || \
+    defined(WUFFS_CONFIG__MODULE__BASE__MAGIC)
+
+// ---------------- Magic Numbers
+
+WUFFS_BASE__MAYBE_STATIC int32_t  //
+wuffs_base__magic_number_guess_fourcc(wuffs_base__slice_u8 prefix) {
+  // table holds the 'magic numbers' (which are actually variable length
+  // strings). The strings may contain NUL bytes, so the "const char* magic"
+  // value starts with the length-minus-1 of the 'magic number'.
+  //
+  // Keep it sorted by magic[1], then magic[0] descending and finally by
+  // magic[2:]. When multiple entries match, the longest one wins.
+  static struct {
+    int32_t fourcc;
+    const char* magic;
+  } table[] = {
+      {0x57424D50, "\x01\x00\x00"},          // WBMP
+      {0x424D5020, "\x01\x42\x4D"},          // BMP
+      {0x47494620, "\x03\x47\x49\x46\x38"},  // GIF
+      {0x54494646, "\x03\x49\x49\x2A\x00"},  // TIFF (little-endian)
+      {0x54494646, "\x03\x4D\x4D\x00\x2A"},  // TIFF (big-endian)
+      {0x52494646, "\x03\x52\x49\x46\x46"},  // RIFF (see § below)
+      {0x4E494520, "\x02\x6E\xC3\xAF"},      // NIE
+      {0x504E4720, "\x03\x89\x50\x4E\x47"},  // PNG
+      {0x4A504547, "\x01\xFF\xD8"},          // JPEG
+  };
+  static const size_t table_len = sizeof(table) / sizeof(table[0]);
+
+  if (prefix.len == 0) {
+    return -1;
+  }
+  uint8_t pre_first_byte = prefix.ptr[0];
+
+  int32_t fourcc = 0;
+  size_t i;
+  for (i = 0; i < table_len; i++) {
+    uint8_t mag_first_byte = table[i].magic[1];
+    if (pre_first_byte < mag_first_byte) {
+      break;
+    } else if (pre_first_byte > mag_first_byte) {
+      continue;
+    }
+    fourcc = table[i].fourcc;
+
+    uint8_t mag_remaining_len = table[i].magic[0];
+    if (mag_remaining_len == 0) {
+      goto match;
+    }
+
+    const char* mag_remaining_ptr = table[i].magic + 2;
+    uint8_t* pre_remaining_ptr = prefix.ptr + 1;
+    size_t pre_remaining_len = prefix.len - 1;
+    if (pre_remaining_len < mag_remaining_len) {
+      if (!memcmp(pre_remaining_ptr, mag_remaining_ptr, pre_remaining_len)) {
+        return -1;
+      }
+    } else {
+      if (!memcmp(pre_remaining_ptr, mag_remaining_ptr, mag_remaining_len)) {
+        goto match;
+      }
+    }
+  }
+  return 0;
+
+match:
+  // Some FourCC values (see § above) are further specialized.
+  if (fourcc == 0x52494646) {  // 'RIFF'be
+    if (prefix.len < 16) {
+      return -1;
+    }
+    uint32_t x = wuffs_base__peek_u32be__no_bounds_check(prefix.ptr + 8);
+    if (x == 0x57454250) {  // 'WEBP'be
+      uint32_t y = wuffs_base__peek_u32be__no_bounds_check(prefix.ptr + 12);
+      if (y == 0x56503820) {         // 'VP8 'be
+        return 0x57503820;           // 'WP8 'be
+      } else if (y == 0x5650384C) {  // 'VP8L'be
+        return 0x5750384C;           // 'WP8L'be
+      }
+    }
+  }
+  return fourcc;
+}
+
+#endif  // !defined(WUFFS_CONFIG__MODULES) ||
+        // defined(WUFFS_CONFIG__MODULE__BASE) ||
+        // defined(WUFFS_CONFIG__MODULE__BASE__MAGIC)
 
 #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BASE) || \
     defined(WUFFS_CONFIG__MODULE__BASE__PIXCONV)

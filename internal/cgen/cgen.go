@@ -100,6 +100,7 @@ var BaseSubModules = []string{
 	"floatconv",
 	"intconv",
 	"interfaces",
+	"magic",
 	"pixconv",
 	"utf8",
 }
@@ -129,6 +130,7 @@ func Do(args []string) error {
 				"// !! INSERT base/copyright\n":              insertBaseCopyright,
 				"// !! INSERT base/floatconv-submodule.c.\n": insertBaseFloatConvSubmoduleC,
 				"// !! INSERT base/intconv-submodule.c.\n":   insertBaseIntConvSubmoduleC,
+				"// !! INSERT base/magic-submodule.c.\n":     insertBaseMagicSubmoduleC,
 				"// !! INSERT base/pixconv-submodule.c.\n":   insertBasePixConvSubmoduleC,
 				"// !! INSERT base/utf8-submodule.c.\n":      insertBaseUTF8SubmoduleC,
 				"// !! INSERT vtable names.\n": func(b *buffer) error {
@@ -366,6 +368,11 @@ func insertBaseFloatConvSubmoduleC(buf *buffer) error {
 
 func insertBaseIntConvSubmoduleC(buf *buffer) error {
 	buf.writes(data.BaseIntConvSubmoduleC)
+	return nil
+}
+
+func insertBaseMagicSubmoduleC(buf *buffer) error {
+	buf.writes(data.BaseMagicSubmoduleC)
 	return nil
 }
 
