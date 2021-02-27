@@ -18,10 +18,10 @@
 imageviewer is a simple GUI program for viewing images. On Linux, GUI means
 X11. To run:
 
-$CC imageviewer.c -lxcb -lxcb-image && \
+$CXX imageviewer.cc -lxcb -lxcb-image && \
   ./a.out ../../test/data/bricks-*.gif; rm -f a.out
 
-for a C compiler $CC, such as clang or gcc.
+for a C++ compiler $CXX, such as clang++ or g++.
 
 The Space and BackSpace keys cycle through the files, if more than one was
 given as command line arguments. If none were given, the program reads from
