@@ -53,6 +53,8 @@ The Escape key quits.
 // code simply isn't compiled.
 #define WUFFS_CONFIG__MODULES
 #define WUFFS_CONFIG__MODULE__ADLER32
+#define WUFFS_CONFIG__MODULE__AUX__BASE
+#define WUFFS_CONFIG__MODULE__AUX__IMAGE
 #define WUFFS_CONFIG__MODULE__BASE
 #define WUFFS_CONFIG__MODULE__BMP
 #define WUFFS_CONFIG__MODULE__CRC32
@@ -70,7 +72,7 @@ The Escape key quits.
 #include "../../release/c/wuffs-unsupported-snapshot.c"
 
 // X11 limits its image dimensions to uint16_t.
-#define MAX_DIMENSION 65535
+#define MAX_INCL_DIMENSION 65535
 
 #define NUM_BACKGROUND_COLORS 3
 #define SRC_BUFFER_ARRAY_SIZE (64 * 1024)
@@ -81,313 +83,110 @@ wuffs_base__color_u32_argb_premul g_background_colors[NUM_BACKGROUND_COLORS] = {
     0xFFA9009A,
 };
 
-FILE* g_file = NULL;
-const char* g_filename = NULL;
 uint32_t g_width = 0;
 uint32_t g_height = 0;
-wuffs_base__slice_u8 g_workbuf_slice = {0};
-wuffs_base__slice_u8 g_pixbuf_slice = {0};
-wuffs_base__pixel_buffer g_pixbuf = {0};
-uint8_t g_src_buffer_array[SRC_BUFFER_ARRAY_SIZE] = {0};
-wuffs_base__io_buffer g_src = {0};
-wuffs_base__image_config g_image_config = {0};
-wuffs_base__frame_config g_frame_config = {0};
-wuffs_base__image_decoder* g_image_decoder = NULL;
+wuffs_aux::MemOwner g_pixbuf_mem_owner(nullptr, &free);
+wuffs_base__slice_u8 g_pixbuf_mem_slice = {0};
 uint32_t g_background_color_index = 0;
 
-union {
-  wuffs_bmp__decoder bmp;
-  wuffs_gif__decoder gif;
-  wuffs_nie__decoder nie;
-  wuffs_png__decoder png;
-  wuffs_wbmp__decoder wbmp;
-} g_potential_decoders;
-
-bool  //
-read_more_src() {
-  if (g_src.meta.closed) {
-    printf("%s: unexpected end of file\n", g_filename);
-    return false;
-  }
-  wuffs_base__io_buffer__compact(&g_src);
-  g_src.meta.wi += fread(g_src.data.ptr + g_src.meta.wi, sizeof(uint8_t),
-                         g_src.data.len - g_src.meta.wi, g_file);
-  if (feof(g_file)) {
-    g_src.meta.closed = true;
-  } else if (ferror(g_file)) {
-    printf("%s: read error\n", g_filename);
-    return false;
-  }
-  return true;
-}
-
-bool  //
-load_image_type() {
-  int32_t fourcc = 0;
-  while (true) {
-    fourcc = wuffs_base__magic_number_guess_fourcc(
-        wuffs_base__io_buffer__reader_slice(&g_src));
-    if (fourcc >= 0) {
-      break;
-    } else if (wuffs_base__io_buffer__writer_length(&g_src) == 0) {
-      printf("%s: could not determine file format\n", g_filename);
-      return false;
-    } else if (!read_more_src()) {
-      return false;
+class Callbacks : public wuffs_aux::DecodeImageCallbacks {
+  wuffs_base__image_decoder::unique_ptr  //
+  OnImageFormat(uint32_t fourcc, wuffs_base__slice_u8 prefix) override {
+    switch (fourcc) {
+      case WUFFS_BASE__FOURCC__BMP:
+        return wuffs_bmp__decoder::alloc_as__wuffs_base__image_decoder();
+      case WUFFS_BASE__FOURCC__GIF:
+        return wuffs_gif__decoder::alloc_as__wuffs_base__image_decoder();
+      case WUFFS_BASE__FOURCC__NIE:
+        return wuffs_nie__decoder::alloc_as__wuffs_base__image_decoder();
+      case WUFFS_BASE__FOURCC__PNG: {
+        auto dec = wuffs_png__decoder::alloc_as__wuffs_base__image_decoder();
+        dec->set_quirk_enabled(WUFFS_BASE__QUIRK_IGNORE_CHECKSUM, true);
+        return dec;
+      }
+      case WUFFS_BASE__FOURCC__WBMP:
+        return wuffs_wbmp__decoder::alloc_as__wuffs_base__image_decoder();
     }
+    return wuffs_base__image_decoder::unique_ptr(nullptr, &free);
   }
 
-  wuffs_base__status status;
-  switch (fourcc) {
-    case WUFFS_BASE__FOURCC__WBMP:
-      status = wuffs_wbmp__decoder__initialize(
-          &g_potential_decoders.wbmp, sizeof g_potential_decoders.wbmp,
-          WUFFS_VERSION, WUFFS_INITIALIZE__DEFAULT_OPTIONS);
-      if (!wuffs_base__status__is_ok(&status)) {
-        printf("%s: %s\n", g_filename, wuffs_base__status__message(&status));
-        return false;
-      }
-      g_image_decoder =
-          wuffs_wbmp__decoder__upcast_as__wuffs_base__image_decoder(
-              &g_potential_decoders.wbmp);
-      break;
-
-    case WUFFS_BASE__FOURCC__BMP:
-      status = wuffs_bmp__decoder__initialize(
-          &g_potential_decoders.bmp, sizeof g_potential_decoders.bmp,
-          WUFFS_VERSION, WUFFS_INITIALIZE__DEFAULT_OPTIONS);
-      if (!wuffs_base__status__is_ok(&status)) {
-        printf("%s: %s\n", g_filename, wuffs_base__status__message(&status));
-        return false;
-      }
-      g_image_decoder =
-          wuffs_bmp__decoder__upcast_as__wuffs_base__image_decoder(
-              &g_potential_decoders.bmp);
-      break;
-
-    case WUFFS_BASE__FOURCC__GIF:
-      status = wuffs_gif__decoder__initialize(
-          &g_potential_decoders.gif, sizeof g_potential_decoders.gif,
-          WUFFS_VERSION, WUFFS_INITIALIZE__DEFAULT_OPTIONS);
-      if (!wuffs_base__status__is_ok(&status)) {
-        printf("%s: %s\n", g_filename, wuffs_base__status__message(&status));
-        return false;
-      }
-      g_image_decoder =
-          wuffs_gif__decoder__upcast_as__wuffs_base__image_decoder(
-              &g_potential_decoders.gif);
-      break;
-
-    case WUFFS_BASE__FOURCC__NIE:
-      status = wuffs_nie__decoder__initialize(
-          &g_potential_decoders.nie, sizeof g_potential_decoders.nie,
-          WUFFS_VERSION, WUFFS_INITIALIZE__DEFAULT_OPTIONS);
-      if (!wuffs_base__status__is_ok(&status)) {
-        printf("%s: %s\n", g_filename, wuffs_base__status__message(&status));
-        return false;
-      }
-      g_image_decoder =
-          wuffs_nie__decoder__upcast_as__wuffs_base__image_decoder(
-              &g_potential_decoders.nie);
-      break;
-
-    case WUFFS_BASE__FOURCC__PNG:
-      status = wuffs_png__decoder__initialize(
-          &g_potential_decoders.png, sizeof g_potential_decoders.png,
-          WUFFS_VERSION, WUFFS_INITIALIZE__DEFAULT_OPTIONS);
-      if (!wuffs_base__status__is_ok(&status)) {
-        printf("%s: %s\n", g_filename, wuffs_base__status__message(&status));
-        return false;
-      }
-      g_image_decoder =
-          wuffs_png__decoder__upcast_as__wuffs_base__image_decoder(
-              &g_potential_decoders.png);
-      break;
-
-    default:
-      printf("%s: unrecognized file format\n", g_filename);
-      return false;
-  }
-  return true;
-}
-
-bool  //
-load_image_config() {
-  // Decode the wuffs_base__image_config.
-  while (true) {
-    wuffs_base__status status = wuffs_base__image_decoder__decode_image_config(
-        g_image_decoder, &g_image_config, &g_src);
-
-    if (status.repr == NULL) {
-      break;
-    } else if (status.repr != wuffs_base__suspension__short_read) {
-      // TODO: handle wuffs_base__note__i_o_redirect.
-      printf("%s: %s\n", g_filename, wuffs_base__status__message(&status));
-      return false;
+  DecodeImageCallbacks::AllocResult  //
+  OnImageConfig(const wuffs_base__image_config& image_config) {
+    uint32_t w = image_config.pixcfg.width();
+    uint32_t h = image_config.pixcfg.height();
+    if ((w == 0) || (h == 0)) {
+      return DecodeImageCallbacks::AllocResult("");
+    }
+    uint64_t len = image_config.pixcfg.pixbuf_len();
+    if ((len == 0) || (SIZE_MAX < len)) {
+      return DecodeImageCallbacks::AllocResult(
+          wuffs_aux::DecodeImage_UnsupportedPixelConfiguration);
+    }
+    void* ptr = malloc((size_t)len);
+    if (!ptr) {
+      return DecodeImageCallbacks::AllocResult(
+          wuffs_aux::DecodeImage_OutOfMemory);
     }
 
-    if (!read_more_src()) {
-      return false;
-    }
-  }
-
-  // Read the dimensions.
-  uint32_t w = wuffs_base__pixel_config__width(&g_image_config.pixcfg);
-  uint32_t h = wuffs_base__pixel_config__height(&g_image_config.pixcfg);
-  if ((w > MAX_DIMENSION) || (h > MAX_DIMENSION)) {
-    printf("%s: image is too large\n", g_filename);
-    return false;
-  }
-  g_width = w;
-  g_height = h;
-
-  // Override the image's native pixel format to be BGRA_PREMUL.
-  wuffs_base__pixel_config__set(&g_image_config.pixcfg,
-                                WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL,
-                                WUFFS_BASE__PIXEL_SUBSAMPLING__NONE, w, h);
-
-  // Allocate the work buffer memory.
-  uint64_t workbuf_len =
-      wuffs_base__image_decoder__workbuf_len(g_image_decoder).max_incl;
-  if (workbuf_len > SIZE_MAX) {
-    printf("%s: out of memory\n", g_filename);
-    return false;
-  }
-  if (workbuf_len > 0) {
-    void* p = malloc(workbuf_len);
-    if (!p) {
-      printf("%s: out of memory\n", g_filename);
-      return false;
-    }
-    g_workbuf_slice.ptr = (uint8_t*)p;
-    g_workbuf_slice.len = workbuf_len;
-  }
-
-  // Allocate the pixel buffer memory.
-  uint64_t num_pixels = ((uint64_t)w) * ((uint64_t)h);
-  if (num_pixels > (SIZE_MAX / sizeof(wuffs_base__color_u32_argb_premul))) {
-    printf("%s: image is too large\n", g_filename);
-    return false;
-  }
-  size_t n = num_pixels * sizeof(wuffs_base__color_u32_argb_premul);
-  void* p = malloc(n);
-  if (!p) {
-    printf("%s: out of memory\n", g_filename);
-    return false;
-  }
-  {
-    uint8_t* ptr = (uint8_t*)p;
+    // Fill in the background color. The default OnImageConfig implementation
+    // fills with zeroes (transparent black).
     wuffs_base__color_u32_argb_premul color =
         g_background_colors[g_background_color_index];
-    for (size_t i = 0; i < num_pixels; i++) {
-      wuffs_base__poke_u32le__no_bounds_check(ptr, color);
-      ptr += 4;
+    uint8_t* p4 = (uint8_t*)ptr;
+    size_t n4 = ((size_t)len) / 4;
+    for (size_t i = 0; i < n4; i++) {
+      wuffs_base__poke_u32le__no_bounds_check(p4, color);
+      p4 += 4;
     }
+
+    return DecodeImageCallbacks::AllocResult(
+        wuffs_aux::MemOwner(ptr, &free),
+        wuffs_base__make_slice_u8((uint8_t*)ptr, (size_t)len));
   }
-  g_pixbuf_slice.ptr = (uint8_t*)p;
-  g_pixbuf_slice.len = n;
-
-  // Configure the wuffs_base__pixel_buffer struct.
-  wuffs_base__status status = wuffs_base__pixel_buffer__set_from_slice(
-      &g_pixbuf, &g_image_config.pixcfg, g_pixbuf_slice);
-  if (!wuffs_base__status__is_ok(&status)) {
-    printf("%s: %s\n", g_filename, wuffs_base__status__message(&status));
-    return false;
-  }
-
-  return true;
-}
-
-bool  //
-load_image_frame() {
-  // Decode the wuffs_base__frame_config.
-  while (true) {
-    wuffs_base__status status = wuffs_base__image_decoder__decode_frame_config(
-        g_image_decoder, &g_frame_config, &g_src);
-
-    if (status.repr == NULL) {
-      break;
-    } else if (status.repr != wuffs_base__suspension__short_read) {
-      printf("%s: %s\n", g_filename, wuffs_base__status__message(&status));
-      return false;
-    }
-
-    if (!read_more_src()) {
-      return false;
-    }
-  }
-
-  // From here on, this function always returns true. If we get this far, we
-  // still display a partial image, even if we encounter an error.
-
-  // Decode the frame (the pixels).
-  while (true) {
-    wuffs_base__status status = wuffs_base__image_decoder__decode_frame(
-        g_image_decoder, &g_pixbuf, &g_src,
-        wuffs_base__frame_config__overwrite_instead_of_blend(&g_frame_config)
-            ? WUFFS_BASE__PIXEL_BLEND__SRC
-            : WUFFS_BASE__PIXEL_BLEND__SRC_OVER,
-        g_workbuf_slice, NULL);
-
-    if (status.repr == NULL) {
-      break;
-    } else if (status.repr != wuffs_base__suspension__short_read) {
-      printf("%s: %s\n", g_filename, wuffs_base__status__message(&status));
-      return true;
-    }
-
-    if (!read_more_src()) {
-      return true;
-    }
-  }
-
-  uint32_t w = wuffs_base__pixel_config__width(&g_image_config.pixcfg);
-  uint32_t h = wuffs_base__pixel_config__height(&g_image_config.pixcfg);
-  printf("%s: ok (%" PRIu32 " x %" PRIu32 ")\n", g_filename, w, h);
-  return true;
-}
+};
 
 bool  //
 load_image(const char* filename) {
-  if (g_workbuf_slice.ptr != NULL) {
-    free(g_workbuf_slice.ptr);
-    g_workbuf_slice.ptr = NULL;
-    g_workbuf_slice.len = 0;
-  }
-  if (g_pixbuf_slice.ptr != NULL) {
-    free(g_pixbuf_slice.ptr);
-    g_pixbuf_slice.ptr = NULL;
-    g_pixbuf_slice.len = 0;
-  }
-  g_width = 0;
-  g_height = 0;
-  g_src.data.ptr = g_src_buffer_array;
-  g_src.data.len = SRC_BUFFER_ARRAY_SIZE;
-  g_src.meta.wi = 0;
-  g_src.meta.ri = 0;
-  g_src.meta.pos = 0;
-  g_src.meta.closed = false;
-  g_image_config = wuffs_base__null_image_config();
-  g_image_decoder = NULL;
-
-  g_file = stdin;
-  g_filename = "<stdin>";
+  FILE* file = stdin;
+  const char* adj_filename = "<stdin>";
   if (filename) {
     FILE* f = fopen(filename, "r");
     if (f == NULL) {
       printf("%s: could not open file\n", filename);
       return false;
     }
-    g_file = f;
-    g_filename = filename;
+    file = f;
+    adj_filename = filename;
   }
 
-  bool ret = load_image_type() && load_image_config() && load_image_frame();
+  g_width = 0;
+  g_height = 0;
+  g_pixbuf_mem_owner.reset();
+  g_pixbuf_mem_slice = wuffs_base__empty_slice_u8();
+
+  Callbacks callbacks;
+  wuffs_aux::sync_io::FileInput input(file);
+  wuffs_aux::DecodeImageResult res = wuffs_aux::DecodeImage(
+      callbacks, input, WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL,
+      // Use PIXEL_BLEND__SRC_OVER, not the default PIXEL_BLEND__SRC, because
+      // we override OnImageConfig to fill in the background color.
+      WUFFS_BASE__PIXEL_BLEND__SRC_OVER, MAX_INCL_DIMENSION);
   if (filename) {
-    fclose(g_file);
-    g_file = NULL;
+    fclose(file);
   }
-  return ret;
+
+  g_width = res.pixbuf.pixcfg.width();
+  g_height = res.pixbuf.pixcfg.height();
+  g_pixbuf_mem_owner = std::move(res.pixbuf_mem_owner);
+  g_pixbuf_mem_slice = res.pixbuf_mem_slice;
+
+  if (res.error_message.empty()) {
+    printf("%s: ok (%" PRIu32 " x %" PRIu32 ")\n", adj_filename, g_width,
+           g_height);
+  } else {
+    printf("%s: %s\n", adj_filename, res.error_message.c_str());
+  }
+  return res.pixbuf.pixcfg.is_valid();
 }
 
 // ---------------------------------------------------------------------
@@ -453,7 +252,7 @@ load(xcb_connection_t* c,
   xcb_create_pixmap(c, s->root_depth, g_pixmap, w, g_width, g_height);
   xcb_image_t* image = xcb_image_create_native(
       c, g_width, g_height, XCB_IMAGE_FORMAT_Z_PIXMAP, s->root_depth, NULL,
-      g_pixbuf_slice.len, g_pixbuf_slice.ptr);
+      g_pixbuf_mem_slice.len, g_pixbuf_mem_slice.ptr);
   xcb_image_put(c, g_pixmap, g, image, 0, 0, 0);
   xcb_image_destroy(image);
   return true;

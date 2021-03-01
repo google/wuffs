@@ -64,9 +64,8 @@ class DecodeCborCallbacks {
   // as DecodeCbor may then de-allocate the backing array.
   //
   // The default Done implementation is a no-op.
-  virtual void Done(DecodeCborResult& result,
-                    sync_io::Input& input,
-                    IOBuffer& buffer);
+  virtual void  //
+  Done(DecodeCborResult& result, sync_io::Input& input, IOBuffer& buffer);
 };
 
 // DecodeCbor calls callbacks based on the CBOR-formatted data in input.
@@ -75,9 +74,9 @@ class DecodeCborCallbacks {
 // the number of bytes consumed. On failure, error_message is non-empty and
 // cursor_position is the location of the error. That error may be a content
 // error (invalid CBOR) or an input error (e.g. network failure).
-DecodeCborResult DecodeCbor(
-    DecodeCborCallbacks& callbacks,
-    sync_io::Input& input,
-    wuffs_base__slice_u32 quirks = wuffs_base__empty_slice_u32());
+DecodeCborResult  //
+DecodeCbor(DecodeCborCallbacks& callbacks,
+           sync_io::Input& input,
+           wuffs_base__slice_u32 quirks = wuffs_base__empty_slice_u32());
 
 }  // namespace wuffs_aux

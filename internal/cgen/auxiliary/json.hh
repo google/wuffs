@@ -62,9 +62,8 @@ class DecodeJsonCallbacks {
   // as DecodeJson may then de-allocate the backing array.
   //
   // The default Done implementation is a no-op.
-  virtual void Done(DecodeJsonResult& result,
-                    sync_io::Input& input,
-                    IOBuffer& buffer);
+  virtual void  //
+  Done(DecodeJsonResult& result, sync_io::Input& input, IOBuffer& buffer);
 };
 
 extern const char DecodeJson_BadJsonPointer[];
@@ -84,10 +83,10 @@ extern const char DecodeJson_NoMatch[];
 //
 // The JSON Pointer implementation is greedy: duplicate keys are not rejected
 // but only the first match for each '/'-separated fragment is followed.
-DecodeJsonResult DecodeJson(
-    DecodeJsonCallbacks& callbacks,
-    sync_io::Input& input,
-    wuffs_base__slice_u32 quirks = wuffs_base__empty_slice_u32(),
-    std::string json_pointer = std::string());
+DecodeJsonResult  //
+DecodeJson(DecodeJsonCallbacks& callbacks,
+           sync_io::Input& input,
+           wuffs_base__slice_u32 quirks = wuffs_base__empty_slice_u32(),
+           std::string json_pointer = std::string());
 
 }  // namespace wuffs_aux

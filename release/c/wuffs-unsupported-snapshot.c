@@ -9231,6 +9231,13 @@ namespace wuffs_aux {
 
 using IOBuffer = wuffs_base__io_buffer;
 
+// MemOwner represents ownership of some memory. Dynamically allocated memory
+// (e.g. from malloc or new) is typically paired with free or delete, invoked
+// when the std::unique_ptr is destroyed. Statically allocated memory might use
+// MemOwner(nullptr, &free), even if that statically allocated memory is not
+// nullptr, since calling free(nullptr) is a no-op.
+using MemOwner = std::unique_ptr<void, decltype(&free)>;
+
 namespace sync_io {
 
 // --------
@@ -9337,9 +9344,8 @@ class DecodeCborCallbacks {
   // as DecodeCbor may then de-allocate the backing array.
   //
   // The default Done implementation is a no-op.
-  virtual void Done(DecodeCborResult& result,
-                    sync_io::Input& input,
-                    IOBuffer& buffer);
+  virtual void  //
+  Done(DecodeCborResult& result, sync_io::Input& input, IOBuffer& buffer);
 };
 
 // DecodeCbor calls callbacks based on the CBOR-formatted data in input.
@@ -9348,10 +9354,148 @@ class DecodeCborCallbacks {
 // the number of bytes consumed. On failure, error_message is non-empty and
 // cursor_position is the location of the error. That error may be a content
 // error (invalid CBOR) or an input error (e.g. network failure).
-DecodeCborResult DecodeCbor(
-    DecodeCborCallbacks& callbacks,
-    sync_io::Input& input,
-    wuffs_base__slice_u32 quirks = wuffs_base__empty_slice_u32());
+DecodeCborResult  //
+DecodeCbor(DecodeCborCallbacks& callbacks,
+           sync_io::Input& input,
+           wuffs_base__slice_u32 quirks = wuffs_base__empty_slice_u32());
+
+}  // namespace wuffs_aux
+
+// ---------------- Auxiliary - Image
+
+namespace wuffs_aux {
+
+struct DecodeImageResult {
+  DecodeImageResult(MemOwner&& pixbuf_mem_owner0,
+                    wuffs_base__slice_u8 pixbuf_mem_slice0,
+                    wuffs_base__pixel_buffer pixbuf0,
+                    std::string&& error_message0);
+  DecodeImageResult(std::string&& error_message0);
+
+  MemOwner pixbuf_mem_owner;
+  wuffs_base__slice_u8 pixbuf_mem_slice;
+  wuffs_base__pixel_buffer pixbuf;
+  std::string error_message;
+};
+
+// DecodeImageCallbacks are the callbacks given to DecodeImage. They are always
+// called in this order:
+//  1. OnImageFormat
+//  2. OnImageConfig
+//  3. AllocWorkbuf
+//  4. Done
+//
+// It may return early - the third callback might not be invoked if the second
+// one fails (returns a non-empty error message) - but the final callback
+// (Done) is always invoked.
+class DecodeImageCallbacks {
+ public:
+  // AllocResult holds a memory allocation (the result of malloc or new, a
+  // statically allocated pointer, etc), or an error message. The memory is
+  // de-allocated when mem_owner goes out of scope and is destroyed.
+  struct AllocResult {
+    AllocResult(MemOwner&& mem_owner0, wuffs_base__slice_u8 mem_slice0);
+    AllocResult(std::string&& error_message0);
+
+    MemOwner mem_owner;
+    wuffs_base__slice_u8 mem_slice;
+    std::string error_message;
+  };
+
+  // OnImageFormat returns the image decoder for the input data's file format.
+  // Returning a nullptr means failure (DecodeImage_UnsupportedImageFormat).
+  //
+  // Common formats will have a non-zero FourCC value, such as
+  // WUFFS_BASE__FOURCC__JPEG. A zero FourCC code means that the caller is
+  // responsible for examining the opening bytes (a prefix) of the input data.
+  // OnImageFormat implementations should not modify those bytes.
+  //
+  // OnImageFormat might be called more than once, since some image file
+  // formats can wrap others. For example, a nominal BMP file can actually
+  // contain a JPEG or a PNG.
+  //
+  // There is no default implementation, as modular Wuffs builds (those that
+  // define WUFFS_CONFIG__MODULES) may enable or disable particular codecs.
+  virtual wuffs_base__image_decoder::unique_ptr  //
+  OnImageFormat(uint32_t fourcc, wuffs_base__slice_u8 prefix) = 0;
+
+  // OnImageConfig allocates the pixel buffer.
+  //
+  // The default OnImageConfig implementation allocates zeroed memory.
+  virtual AllocResult  //
+  OnImageConfig(const wuffs_base__image_config& image_config);
+
+  // AllocWorkbuf allocates the work buffer. The allocated buffer's length
+  // should be at least len.min_incl, but larger allocations (up to
+  // len.max_incl) may have better performance (by using more memory).
+  //
+  // The default AllocWorkbuf implementation allocates len.max_incl bytes of
+  // zeroed memory.
+  virtual AllocResult  //
+  AllocWorkbuf(wuffs_base__range_ii_u64 len);
+
+  // Done is always the last Callback method called by DecodeImage, whether or
+  // not parsing the input encountered an error. Even when successful, trailing
+  // data may remain in input and buffer.
+  //
+  // Do not keep a reference to buffer or buffer.data.ptr after Done returns,
+  // as DecodeImage may then de-allocate the backing array.
+  //
+  // The default Done implementation is a no-op.
+  virtual void  //
+  Done(DecodeImageResult& result, sync_io::Input& input, IOBuffer& buffer);
+};
+
+extern const char DecodeImage_BufferIsTooShort[];
+extern const char DecodeImage_MaxInclDimensionExceeded[];
+extern const char DecodeImage_OutOfMemory[];
+extern const char DecodeImage_UnexpectedEndOfFile[];
+extern const char DecodeImage_UnsupportedImageFormat[];
+extern const char DecodeImage_UnsupportedPixelBlend[];
+extern const char DecodeImage_UnsupportedPixelConfiguration[];
+extern const char DecodeImage_UnsupportedPixelFormat[];
+
+// DecodeImage decodes the image data in input. A variety of image file formats
+// can be decoded, depending on what callbacks.OnImageFormat returns. For
+// animated formats, only the first frame is returned.
+//
+//  - On total success, the returned error_message is empty.
+//  - On partial success (e.g. the input file was truncated but we are still
+//    able to decode some pixels), error_message is non-empty but the returned
+//    pixbuf.pixcfg.is_valid() is true.
+//  - On failure, the error_message is non_empty and pixbuf.pixcfg.is_valid()
+//    is false.
+//
+// The callbacks allocate the pixel buffer memory and work buffer memory. On
+// success, pixel buffer memory ownership is passed to the DecodeImage caller
+// as the returned pixbuf_mem_owner. Regardless of success or failure, the work
+// buffer memory is deleted.
+//
+// If override_pixel_format_repr is zero then the pixel buffer will have the
+// image file's natural pixel format. For example, GIF images' natural pixel
+// format is an indexed one.
+//
+// If override_pixel_format_repr is non-zero (and one of the constants listed
+// below) then the image will be decoded to that particular pixel format:
+//  - WUFFS_BASE__PIXEL_FORMAT__BGR_565
+//  - WUFFS_BASE__PIXEL_FORMAT__BGR
+//  - WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL
+//  - WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL
+//
+// The pixel_blend (one of the constants listed below) determines how to
+// composite the decoded image over the pixel buffer's original pixels (as
+// returned by callbacks.OnImageConfig):
+//  - WUFFS_BASE__PIXEL_BLEND__SRC
+//  - WUFFS_BASE__PIXEL_BLEND__SRC_OVER
+//
+// Decoding fails (with DecodeImage_MaxInclDimensionExceeded) if the image's
+// width or height is greater than max_incl_dimension.
+DecodeImageResult  //
+DecodeImage(DecodeImageCallbacks& callbacks,
+            sync_io::Input& input,
+            uint32_t override_pixel_format_repr,
+            wuffs_base__pixel_blend pixel_blend = WUFFS_BASE__PIXEL_BLEND__SRC,
+            uint32_t max_incl_dimension = 1048575);  // 0x000F_FFFF
 
 }  // namespace wuffs_aux
 
@@ -9403,9 +9547,8 @@ class DecodeJsonCallbacks {
   // as DecodeJson may then de-allocate the backing array.
   //
   // The default Done implementation is a no-op.
-  virtual void Done(DecodeJsonResult& result,
-                    sync_io::Input& input,
-                    IOBuffer& buffer);
+  virtual void  //
+  Done(DecodeJsonResult& result, sync_io::Input& input, IOBuffer& buffer);
 };
 
 extern const char DecodeJson_BadJsonPointer[];
@@ -9425,11 +9568,11 @@ extern const char DecodeJson_NoMatch[];
 //
 // The JSON Pointer implementation is greedy: duplicate keys are not rejected
 // but only the first match for each '/'-separated fragment is followed.
-DecodeJsonResult DecodeJson(
-    DecodeJsonCallbacks& callbacks,
-    sync_io::Input& input,
-    wuffs_base__slice_u32 quirks = wuffs_base__empty_slice_u32(),
-    std::string json_pointer = std::string());
+DecodeJsonResult  //
+DecodeJson(DecodeJsonCallbacks& callbacks,
+           sync_io::Input& input,
+           wuffs_base__slice_u32 quirks = wuffs_base__empty_slice_u32(),
+           std::string json_pointer = std::string());
 
 }  // namespace wuffs_aux
 
@@ -36302,6 +36445,297 @@ done:
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) ||
         // defined(WUFFS_CONFIG__MODULE__AUX__CBOR)
+
+// ---------------- Auxiliary - Image
+
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__AUX__IMAGE)
+
+#include <utility>
+
+namespace wuffs_aux {
+
+DecodeImageResult::DecodeImageResult(MemOwner&& pixbuf_mem_owner0,
+                                     wuffs_base__slice_u8 pixbuf_mem_slice0,
+                                     wuffs_base__pixel_buffer pixbuf0,
+                                     std::string&& error_message0)
+    : pixbuf_mem_owner(std::move(pixbuf_mem_owner0)),
+      pixbuf_mem_slice(pixbuf_mem_slice0),
+      pixbuf(pixbuf0),
+      error_message(std::move(error_message0)) {}
+
+DecodeImageResult::DecodeImageResult(std::string&& error_message0)
+    : pixbuf_mem_owner(nullptr, &free),
+      pixbuf_mem_slice(wuffs_base__empty_slice_u8()),
+      pixbuf({0}),
+      error_message(std::move(error_message0)) {}
+
+DecodeImageCallbacks::AllocResult::AllocResult(MemOwner&& mem_owner0,
+                                               wuffs_base__slice_u8 mem_slice0)
+    : mem_owner(std::move(mem_owner0)),
+      mem_slice(mem_slice0),
+      error_message("") {}
+
+DecodeImageCallbacks::AllocResult::AllocResult(std::string&& error_message0)
+    : mem_owner(nullptr, &free),
+      mem_slice(wuffs_base__empty_slice_u8()),
+      error_message(std::move(error_message0)) {}
+
+DecodeImageCallbacks::AllocResult  //
+DecodeImageCallbacks::OnImageConfig(
+    const wuffs_base__image_config& image_config) {
+  uint32_t w = image_config.pixcfg.width();
+  uint32_t h = image_config.pixcfg.height();
+  if ((w == 0) || (h == 0)) {
+    return AllocResult("");
+  }
+  uint64_t len = image_config.pixcfg.pixbuf_len();
+  if ((len == 0) || (SIZE_MAX < len)) {
+    return AllocResult(DecodeImage_UnsupportedPixelConfiguration);
+  }
+  void* ptr = calloc((size_t)len, 1);
+  if (!ptr) {
+    return AllocResult(DecodeImage_OutOfMemory);
+  }
+  return AllocResult(MemOwner(ptr, &free),
+                     wuffs_base__make_slice_u8((uint8_t*)ptr, (size_t)len));
+}
+
+DecodeImageCallbacks::AllocResult  //
+DecodeImageCallbacks::AllocWorkbuf(wuffs_base__range_ii_u64 len) {
+  if (len.max_incl == 0) {
+    return DecodeImageCallbacks::AllocResult("");
+  } else if (SIZE_MAX < len.max_incl) {
+    return DecodeImageCallbacks::AllocResult(DecodeImage_OutOfMemory);
+  }
+  void* p = calloc((size_t)len.max_incl, 1);
+  if (!p) {
+    return DecodeImageCallbacks::AllocResult(DecodeImage_OutOfMemory);
+  }
+  return DecodeImageCallbacks::AllocResult(
+      MemOwner(p, &free),
+      wuffs_base__make_slice_u8((uint8_t*)p, (size_t)len.max_incl));
+}
+
+void  //
+DecodeImageCallbacks::Done(DecodeImageResult& result,
+                           sync_io::Input& input,
+                           IOBuffer& buffer) {}
+
+const char DecodeImage_BufferIsTooShort[] =  //
+    "wuffs_aux::DecodeImage: buffer is too short";
+const char DecodeImage_MaxInclDimensionExceeded[] =  //
+    "wuffs_aux::DecodeImage: max_incl_dimension exceeded";
+const char DecodeImage_OutOfMemory[] =  //
+    "wuffs_aux::DecodeImage: out of memory";
+const char DecodeImage_UnexpectedEndOfFile[] =  //
+    "wuffs_aux::DecodeImage: unexpected end of file";
+const char DecodeImage_UnsupportedImageFormat[] =  //
+    "wuffs_aux::DecodeImage: unsupported image format";
+const char DecodeImage_UnsupportedPixelBlend[] =  //
+    "wuffs_aux::DecodeImage: unsupported pixel blend";
+const char DecodeImage_UnsupportedPixelConfiguration[] =  //
+    "wuffs_aux::DecodeImage: unsupported pixel configuration";
+const char DecodeImage_UnsupportedPixelFormat[] =  //
+    "wuffs_aux::DecodeImage: unsupported pixel format";
+
+// --------
+
+namespace {
+
+DecodeImageResult  //
+DecodeImage0(DecodeImageCallbacks& callbacks,
+             sync_io::Input& input,
+             wuffs_base__io_buffer& io_buf,
+             uint32_t override_pixel_format_repr,
+             wuffs_base__pixel_blend pixel_blend,
+             uint32_t max_incl_dimension) {
+  // Check args.
+  switch (override_pixel_format_repr) {
+    case 0:
+    case WUFFS_BASE__PIXEL_FORMAT__BGR_565:
+    case WUFFS_BASE__PIXEL_FORMAT__BGR:
+    case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
+    case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
+      break;
+    default:
+      return DecodeImageResult(DecodeImage_UnsupportedPixelFormat);
+  }
+  switch (pixel_blend) {
+    case WUFFS_BASE__PIXEL_BLEND__SRC:
+    case WUFFS_BASE__PIXEL_BLEND__SRC_OVER:
+      break;
+    default:
+      return DecodeImageResult(DecodeImage_UnsupportedPixelBlend);
+  }
+
+  // Determine the image format.
+  int32_t fourcc = 0;
+  while (true) {
+    fourcc = wuffs_base__magic_number_guess_fourcc(io_buf.reader_slice());
+    if (fourcc > 0) {
+      break;
+    } else if ((fourcc == 0) && (io_buf.reader_length() >= 64)) {
+      break;
+    } else if (io_buf.meta.closed || (io_buf.writer_length() == 0)) {
+      fourcc = 0;
+      break;
+    }
+    std::string error_message = input.CopyIn(&io_buf);
+    if (!error_message.empty()) {
+      return DecodeImageResult(std::move(error_message));
+    }
+  }
+  wuffs_base__image_decoder::unique_ptr image_decoder =
+      callbacks.OnImageFormat(fourcc, io_buf.reader_slice());
+  if (!image_decoder) {
+    return DecodeImageResult(DecodeImage_UnsupportedImageFormat);
+  }
+
+  // Decode the image config.
+  wuffs_base__image_config image_config;
+  while (true) {
+    wuffs_base__status id_dic_status =
+        image_decoder->decode_image_config(&image_config, &io_buf);
+    if (id_dic_status.repr == NULL) {
+      break;
+    } else if (id_dic_status.repr != wuffs_base__suspension__short_read) {
+      // TODO: handle wuffs_base__note__i_o_redirect.
+      return DecodeImageResult(id_dic_status.message());
+    } else if (io_buf.meta.closed) {
+      return DecodeImageResult(DecodeImage_UnexpectedEndOfFile);
+    } else {
+      std::string error_message = input.CopyIn(&io_buf);
+      if (!error_message.empty()) {
+        return DecodeImageResult(std::move(error_message));
+      }
+    }
+  }
+
+  // Apply the override pixel format.
+  uint32_t w = image_config.pixcfg.width();
+  uint32_t h = image_config.pixcfg.height();
+  if ((w > max_incl_dimension) || (h > max_incl_dimension)) {
+    return DecodeImageResult(DecodeImage_MaxInclDimensionExceeded);
+  }
+  if (override_pixel_format_repr != 0) {
+    image_config.pixcfg.set(override_pixel_format_repr,
+                            WUFFS_BASE__PIXEL_SUBSAMPLING__NONE, w, h);
+  }
+
+  // Allocate the pixel buffer.
+  size_t pixbuf_len_min_incl = 0;
+  if ((w > 0) && (h > 0)) {
+    pixbuf_len_min_incl = image_config.pixcfg.pixbuf_len();
+    if (pixbuf_len_min_incl == 0) {
+      return DecodeImageResult(DecodeImage_UnsupportedPixelFormat);
+    }
+  }
+  DecodeImageCallbacks::AllocResult oic_result =
+      callbacks.OnImageConfig(image_config);
+  if (!oic_result.error_message.empty()) {
+    return DecodeImageResult(std::move(oic_result.error_message));
+  } else if (oic_result.mem_slice.len < pixbuf_len_min_incl) {
+    return DecodeImageResult(DecodeImage_BufferIsTooShort);
+  }
+  wuffs_base__pixel_buffer pixel_buffer;
+  wuffs_base__status pb_sfs_status =
+      pixel_buffer.set_from_slice(&image_config.pixcfg, oic_result.mem_slice);
+  if (!pb_sfs_status.is_ok()) {
+    return DecodeImageResult(pb_sfs_status.message());
+  }
+
+  // Allocate the work buffer.
+  wuffs_base__range_ii_u64 workbuf_len = image_decoder->workbuf_len();
+  DecodeImageCallbacks::AllocResult alloc_workbuf_result =
+      callbacks.AllocWorkbuf(workbuf_len);
+  if (!alloc_workbuf_result.error_message.empty()) {
+    return DecodeImageResult(std::move(alloc_workbuf_result.error_message));
+  } else if (alloc_workbuf_result.mem_slice.len < workbuf_len.min_incl) {
+    return DecodeImageResult(DecodeImage_BufferIsTooShort);
+  }
+
+  // Decode the frame config.
+  wuffs_base__frame_config frame_config;
+  while (true) {
+    wuffs_base__status id_dfc_status =
+        image_decoder->decode_frame_config(&frame_config, &io_buf);
+    if (id_dfc_status.repr == NULL) {
+      break;
+    } else if (id_dfc_status.repr != wuffs_base__suspension__short_read) {
+      return DecodeImageResult(id_dfc_status.message());
+    } else if (io_buf.meta.closed) {
+      return DecodeImageResult(DecodeImage_UnexpectedEndOfFile);
+    } else {
+      std::string error_message = input.CopyIn(&io_buf);
+      if (!error_message.empty()) {
+        return DecodeImageResult(std::move(error_message));
+      }
+    }
+  }
+
+  // Decode the frame (the pixels).
+  //
+  // From here on, always returns the pixel_buffer. If we get this far, we can
+  // still display a partial image, even if we encounter an error.
+  std::string message("");
+  if ((pixel_blend == WUFFS_BASE__PIXEL_BLEND__SRC_OVER) &&
+      frame_config.overwrite_instead_of_blend()) {
+    pixel_blend = WUFFS_BASE__PIXEL_BLEND__SRC;
+  }
+  while (true) {
+    wuffs_base__status id_df_status =
+        image_decoder->decode_frame(&pixel_buffer, &io_buf, pixel_blend,
+                                    alloc_workbuf_result.mem_slice, NULL);
+    if (id_df_status.repr == NULL) {
+      break;
+    } else if (id_df_status.repr != wuffs_base__suspension__short_read) {
+      message = id_df_status.message();
+      break;
+    } else if (io_buf.meta.closed) {
+      message = DecodeImage_UnexpectedEndOfFile;
+      break;
+    } else {
+      std::string error_message = input.CopyIn(&io_buf);
+      if (!error_message.empty()) {
+        message = std::move(error_message);
+        break;
+      }
+    }
+  }
+  return DecodeImageResult(std::move(oic_result.mem_owner),
+                           oic_result.mem_slice, pixel_buffer,
+                           std::move(message));
+}
+
+}  // namespace
+
+DecodeImageResult  //
+DecodeImage(DecodeImageCallbacks& callbacks,
+            sync_io::Input& input,
+            uint32_t override_pixel_format_repr,
+            wuffs_base__pixel_blend pixel_blend,
+            uint32_t max_incl_dimension) {
+  wuffs_base__io_buffer* io_buf = input.BringsItsOwnIOBuffer();
+  wuffs_base__io_buffer fallback_io_buf = wuffs_base__empty_io_buffer();
+  std::unique_ptr<uint8_t[]> fallback_io_array(nullptr);
+  if (!io_buf) {
+    fallback_io_array = std::unique_ptr<uint8_t[]>(new uint8_t[32768]);
+    fallback_io_buf =
+        wuffs_base__ptr_u8__writer(fallback_io_array.get(), 32768);
+    io_buf = &fallback_io_buf;
+  }
+
+  DecodeImageResult result =
+      DecodeImage0(callbacks, input, *io_buf, override_pixel_format_repr,
+                   pixel_blend, max_incl_dimension);
+  callbacks.Done(result, input, *io_buf);
+  return result;
+}
+
+}  // namespace wuffs_aux
+
+#endif  // !defined(WUFFS_CONFIG__MODULES) ||
+        // defined(WUFFS_CONFIG__MODULE__AUX__IMAGE)
 
 // ---------------- Auxiliary - JSON
 

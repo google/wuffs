@@ -27,6 +27,13 @@ namespace wuffs_aux {
 
 using IOBuffer = wuffs_base__io_buffer;
 
+// MemOwner represents ownership of some memory. Dynamically allocated memory
+// (e.g. from malloc or new) is typically paired with free or delete, invoked
+// when the std::unique_ptr is destroyed. Statically allocated memory might use
+// MemOwner(nullptr, &free), even if that statically allocated memory is not
+// nullptr, since calling free(nullptr) is a no-op.
+using MemOwner = std::unique_ptr<void, decltype(&free)>;
+
 namespace sync_io {
 
 // --------

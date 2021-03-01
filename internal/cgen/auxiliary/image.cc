@@ -1,0 +1,306 @@
+// After editing this file, run "go generate" in the ../data directory.
+
+// Copyright 2021 The Wuffs Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// ---------------- Auxiliary - Image
+
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__AUX__IMAGE)
+
+#include <utility>
+
+namespace wuffs_aux {
+
+DecodeImageResult::DecodeImageResult(MemOwner&& pixbuf_mem_owner0,
+                                     wuffs_base__slice_u8 pixbuf_mem_slice0,
+                                     wuffs_base__pixel_buffer pixbuf0,
+                                     std::string&& error_message0)
+    : pixbuf_mem_owner(std::move(pixbuf_mem_owner0)),
+      pixbuf_mem_slice(pixbuf_mem_slice0),
+      pixbuf(pixbuf0),
+      error_message(std::move(error_message0)) {}
+
+DecodeImageResult::DecodeImageResult(std::string&& error_message0)
+    : pixbuf_mem_owner(nullptr, &free),
+      pixbuf_mem_slice(wuffs_base__empty_slice_u8()),
+      pixbuf({0}),
+      error_message(std::move(error_message0)) {}
+
+DecodeImageCallbacks::AllocResult::AllocResult(MemOwner&& mem_owner0,
+                                               wuffs_base__slice_u8 mem_slice0)
+    : mem_owner(std::move(mem_owner0)),
+      mem_slice(mem_slice0),
+      error_message("") {}
+
+DecodeImageCallbacks::AllocResult::AllocResult(std::string&& error_message0)
+    : mem_owner(nullptr, &free),
+      mem_slice(wuffs_base__empty_slice_u8()),
+      error_message(std::move(error_message0)) {}
+
+DecodeImageCallbacks::AllocResult  //
+DecodeImageCallbacks::OnImageConfig(
+    const wuffs_base__image_config& image_config) {
+  uint32_t w = image_config.pixcfg.width();
+  uint32_t h = image_config.pixcfg.height();
+  if ((w == 0) || (h == 0)) {
+    return AllocResult("");
+  }
+  uint64_t len = image_config.pixcfg.pixbuf_len();
+  if ((len == 0) || (SIZE_MAX < len)) {
+    return AllocResult(DecodeImage_UnsupportedPixelConfiguration);
+  }
+  void* ptr = calloc((size_t)len, 1);
+  if (!ptr) {
+    return AllocResult(DecodeImage_OutOfMemory);
+  }
+  return AllocResult(MemOwner(ptr, &free),
+                     wuffs_base__make_slice_u8((uint8_t*)ptr, (size_t)len));
+}
+
+DecodeImageCallbacks::AllocResult  //
+DecodeImageCallbacks::AllocWorkbuf(wuffs_base__range_ii_u64 len) {
+  if (len.max_incl == 0) {
+    return DecodeImageCallbacks::AllocResult("");
+  } else if (SIZE_MAX < len.max_incl) {
+    return DecodeImageCallbacks::AllocResult(DecodeImage_OutOfMemory);
+  }
+  void* p = calloc((size_t)len.max_incl, 1);
+  if (!p) {
+    return DecodeImageCallbacks::AllocResult(DecodeImage_OutOfMemory);
+  }
+  return DecodeImageCallbacks::AllocResult(
+      MemOwner(p, &free),
+      wuffs_base__make_slice_u8((uint8_t*)p, (size_t)len.max_incl));
+}
+
+void  //
+DecodeImageCallbacks::Done(DecodeImageResult& result,
+                           sync_io::Input& input,
+                           IOBuffer& buffer) {}
+
+const char DecodeImage_BufferIsTooShort[] =  //
+    "wuffs_aux::DecodeImage: buffer is too short";
+const char DecodeImage_MaxInclDimensionExceeded[] =  //
+    "wuffs_aux::DecodeImage: max_incl_dimension exceeded";
+const char DecodeImage_OutOfMemory[] =  //
+    "wuffs_aux::DecodeImage: out of memory";
+const char DecodeImage_UnexpectedEndOfFile[] =  //
+    "wuffs_aux::DecodeImage: unexpected end of file";
+const char DecodeImage_UnsupportedImageFormat[] =  //
+    "wuffs_aux::DecodeImage: unsupported image format";
+const char DecodeImage_UnsupportedPixelBlend[] =  //
+    "wuffs_aux::DecodeImage: unsupported pixel blend";
+const char DecodeImage_UnsupportedPixelConfiguration[] =  //
+    "wuffs_aux::DecodeImage: unsupported pixel configuration";
+const char DecodeImage_UnsupportedPixelFormat[] =  //
+    "wuffs_aux::DecodeImage: unsupported pixel format";
+
+// --------
+
+namespace {
+
+DecodeImageResult  //
+DecodeImage0(DecodeImageCallbacks& callbacks,
+             sync_io::Input& input,
+             wuffs_base__io_buffer& io_buf,
+             uint32_t override_pixel_format_repr,
+             wuffs_base__pixel_blend pixel_blend,
+             uint32_t max_incl_dimension) {
+  // Check args.
+  switch (override_pixel_format_repr) {
+    case 0:
+    case WUFFS_BASE__PIXEL_FORMAT__BGR_565:
+    case WUFFS_BASE__PIXEL_FORMAT__BGR:
+    case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
+    case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
+      break;
+    default:
+      return DecodeImageResult(DecodeImage_UnsupportedPixelFormat);
+  }
+  switch (pixel_blend) {
+    case WUFFS_BASE__PIXEL_BLEND__SRC:
+    case WUFFS_BASE__PIXEL_BLEND__SRC_OVER:
+      break;
+    default:
+      return DecodeImageResult(DecodeImage_UnsupportedPixelBlend);
+  }
+
+  // Determine the image format.
+  int32_t fourcc = 0;
+  while (true) {
+    fourcc = wuffs_base__magic_number_guess_fourcc(io_buf.reader_slice());
+    if (fourcc > 0) {
+      break;
+    } else if ((fourcc == 0) && (io_buf.reader_length() >= 64)) {
+      break;
+    } else if (io_buf.meta.closed || (io_buf.writer_length() == 0)) {
+      fourcc = 0;
+      break;
+    }
+    std::string error_message = input.CopyIn(&io_buf);
+    if (!error_message.empty()) {
+      return DecodeImageResult(std::move(error_message));
+    }
+  }
+  wuffs_base__image_decoder::unique_ptr image_decoder =
+      callbacks.OnImageFormat(fourcc, io_buf.reader_slice());
+  if (!image_decoder) {
+    return DecodeImageResult(DecodeImage_UnsupportedImageFormat);
+  }
+
+  // Decode the image config.
+  wuffs_base__image_config image_config;
+  while (true) {
+    wuffs_base__status id_dic_status =
+        image_decoder->decode_image_config(&image_config, &io_buf);
+    if (id_dic_status.repr == NULL) {
+      break;
+    } else if (id_dic_status.repr != wuffs_base__suspension__short_read) {
+      // TODO: handle wuffs_base__note__i_o_redirect.
+      return DecodeImageResult(id_dic_status.message());
+    } else if (io_buf.meta.closed) {
+      return DecodeImageResult(DecodeImage_UnexpectedEndOfFile);
+    } else {
+      std::string error_message = input.CopyIn(&io_buf);
+      if (!error_message.empty()) {
+        return DecodeImageResult(std::move(error_message));
+      }
+    }
+  }
+
+  // Apply the override pixel format.
+  uint32_t w = image_config.pixcfg.width();
+  uint32_t h = image_config.pixcfg.height();
+  if ((w > max_incl_dimension) || (h > max_incl_dimension)) {
+    return DecodeImageResult(DecodeImage_MaxInclDimensionExceeded);
+  }
+  if (override_pixel_format_repr != 0) {
+    image_config.pixcfg.set(override_pixel_format_repr,
+                            WUFFS_BASE__PIXEL_SUBSAMPLING__NONE, w, h);
+  }
+
+  // Allocate the pixel buffer.
+  size_t pixbuf_len_min_incl = 0;
+  if ((w > 0) && (h > 0)) {
+    pixbuf_len_min_incl = image_config.pixcfg.pixbuf_len();
+    if (pixbuf_len_min_incl == 0) {
+      return DecodeImageResult(DecodeImage_UnsupportedPixelFormat);
+    }
+  }
+  DecodeImageCallbacks::AllocResult oic_result =
+      callbacks.OnImageConfig(image_config);
+  if (!oic_result.error_message.empty()) {
+    return DecodeImageResult(std::move(oic_result.error_message));
+  } else if (oic_result.mem_slice.len < pixbuf_len_min_incl) {
+    return DecodeImageResult(DecodeImage_BufferIsTooShort);
+  }
+  wuffs_base__pixel_buffer pixel_buffer;
+  wuffs_base__status pb_sfs_status =
+      pixel_buffer.set_from_slice(&image_config.pixcfg, oic_result.mem_slice);
+  if (!pb_sfs_status.is_ok()) {
+    return DecodeImageResult(pb_sfs_status.message());
+  }
+
+  // Allocate the work buffer.
+  wuffs_base__range_ii_u64 workbuf_len = image_decoder->workbuf_len();
+  DecodeImageCallbacks::AllocResult alloc_workbuf_result =
+      callbacks.AllocWorkbuf(workbuf_len);
+  if (!alloc_workbuf_result.error_message.empty()) {
+    return DecodeImageResult(std::move(alloc_workbuf_result.error_message));
+  } else if (alloc_workbuf_result.mem_slice.len < workbuf_len.min_incl) {
+    return DecodeImageResult(DecodeImage_BufferIsTooShort);
+  }
+
+  // Decode the frame config.
+  wuffs_base__frame_config frame_config;
+  while (true) {
+    wuffs_base__status id_dfc_status =
+        image_decoder->decode_frame_config(&frame_config, &io_buf);
+    if (id_dfc_status.repr == NULL) {
+      break;
+    } else if (id_dfc_status.repr != wuffs_base__suspension__short_read) {
+      return DecodeImageResult(id_dfc_status.message());
+    } else if (io_buf.meta.closed) {
+      return DecodeImageResult(DecodeImage_UnexpectedEndOfFile);
+    } else {
+      std::string error_message = input.CopyIn(&io_buf);
+      if (!error_message.empty()) {
+        return DecodeImageResult(std::move(error_message));
+      }
+    }
+  }
+
+  // Decode the frame (the pixels).
+  //
+  // From here on, always returns the pixel_buffer. If we get this far, we can
+  // still display a partial image, even if we encounter an error.
+  std::string message("");
+  if ((pixel_blend == WUFFS_BASE__PIXEL_BLEND__SRC_OVER) &&
+      frame_config.overwrite_instead_of_blend()) {
+    pixel_blend = WUFFS_BASE__PIXEL_BLEND__SRC;
+  }
+  while (true) {
+    wuffs_base__status id_df_status =
+        image_decoder->decode_frame(&pixel_buffer, &io_buf, pixel_blend,
+                                    alloc_workbuf_result.mem_slice, NULL);
+    if (id_df_status.repr == NULL) {
+      break;
+    } else if (id_df_status.repr != wuffs_base__suspension__short_read) {
+      message = id_df_status.message();
+      break;
+    } else if (io_buf.meta.closed) {
+      message = DecodeImage_UnexpectedEndOfFile;
+      break;
+    } else {
+      std::string error_message = input.CopyIn(&io_buf);
+      if (!error_message.empty()) {
+        message = std::move(error_message);
+        break;
+      }
+    }
+  }
+  return DecodeImageResult(std::move(oic_result.mem_owner),
+                           oic_result.mem_slice, pixel_buffer,
+                           std::move(message));
+}
+
+}  // namespace
+
+DecodeImageResult  //
+DecodeImage(DecodeImageCallbacks& callbacks,
+            sync_io::Input& input,
+            uint32_t override_pixel_format_repr,
+            wuffs_base__pixel_blend pixel_blend,
+            uint32_t max_incl_dimension) {
+  wuffs_base__io_buffer* io_buf = input.BringsItsOwnIOBuffer();
+  wuffs_base__io_buffer fallback_io_buf = wuffs_base__empty_io_buffer();
+  std::unique_ptr<uint8_t[]> fallback_io_array(nullptr);
+  if (!io_buf) {
+    fallback_io_array = std::unique_ptr<uint8_t[]>(new uint8_t[32768]);
+    fallback_io_buf =
+        wuffs_base__ptr_u8__writer(fallback_io_array.get(), 32768);
+    io_buf = &fallback_io_buf;
+  }
+
+  DecodeImageResult result =
+      DecodeImage0(callbacks, input, *io_buf, override_pixel_format_repr,
+                   pixel_blend, max_incl_dimension);
+  callbacks.Done(result, input, *io_buf);
+  return result;
+}
+
+}  // namespace wuffs_aux
+
+#endif  // !defined(WUFFS_CONFIG__MODULES) ||
+        // defined(WUFFS_CONFIG__MODULE__AUX__IMAGE)
