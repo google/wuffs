@@ -36542,6 +36542,36 @@ const char DecodeImage_UnsupportedPixelFormat[] =  //
 
 namespace {
 
+std::string  //
+DecodeImageAdvanceIOBuf(sync_io::Input& input,
+                        wuffs_base__io_buffer& io_buf,
+                        bool compactable,
+                        uint64_t min_excl_pos,
+                        uint64_t pos) {
+  if ((pos <= min_excl_pos) || (pos < io_buf.reader_position())) {
+    // Redirects must go forward.
+    return DecodeImage_UnsupportedImageFormat;
+  }
+  while (true) {
+    uint64_t relative_pos = pos - io_buf.reader_position();
+    if (relative_pos <= io_buf.reader_length()) {
+      io_buf.meta.ri += (size_t)relative_pos;
+      break;
+    } else if (io_buf.meta.closed) {
+      return DecodeImage_UnexpectedEndOfFile;
+    }
+    io_buf.meta.ri = io_buf.meta.wi;
+    if (compactable) {
+      io_buf.compact();
+    }
+    std::string error_message = input.CopyIn(&io_buf);
+    if (!error_message.empty()) {
+      return std::move(error_message);
+    }
+  }
+  return "";
+}
+
 DecodeImageResult  //
 DecodeImage0(DecodeImageCallbacks& callbacks,
              sync_io::Input& input,
@@ -36568,48 +36598,83 @@ DecodeImage0(DecodeImageCallbacks& callbacks,
       return DecodeImageResult(DecodeImage_UnsupportedPixelBlend);
   }
 
-  // Determine the image format.
+  wuffs_base__image_config image_config = wuffs_base__null_image_config();
+  wuffs_base__image_decoder::unique_ptr image_decoder(nullptr, &free);
+  uint64_t start_pos = io_buf.reader_position();
+  bool redirected = false;
   int32_t fourcc = 0;
-  while (true) {
-    fourcc = wuffs_base__magic_number_guess_fourcc(io_buf.reader_slice());
-    if (fourcc > 0) {
-      break;
-    } else if ((fourcc == 0) && (io_buf.reader_length() >= 64)) {
-      break;
-    } else if (io_buf.meta.closed || (io_buf.writer_length() == 0)) {
-      fourcc = 0;
-      break;
-    }
-    std::string error_message = input.CopyIn(&io_buf);
-    if (!error_message.empty()) {
-      return DecodeImageResult(std::move(error_message));
-    }
-  }
-  wuffs_base__image_decoder::unique_ptr image_decoder =
-      callbacks.OnImageFormat(fourcc, io_buf.reader_slice());
-  if (!image_decoder) {
-    return DecodeImageResult(DecodeImage_UnsupportedImageFormat);
-  }
-
-  // Decode the image config.
-  wuffs_base__image_config image_config;
-  while (true) {
-    wuffs_base__status id_dic_status =
-        image_decoder->decode_image_config(&image_config, &io_buf);
-    if (id_dic_status.repr == NULL) {
-      break;
-    } else if (id_dic_status.repr != wuffs_base__suspension__short_read) {
-      // TODO: handle wuffs_base__note__i_o_redirect.
-      return DecodeImageResult(id_dic_status.message());
-    } else if (io_buf.meta.closed) {
-      return DecodeImageResult(DecodeImage_UnexpectedEndOfFile);
+redirect:
+  do {
+    // Determine the image format.
+    if (!redirected) {
+      while (true) {
+        fourcc = wuffs_base__magic_number_guess_fourcc(io_buf.reader_slice());
+        if (fourcc > 0) {
+          break;
+        } else if ((fourcc == 0) && (io_buf.reader_length() >= 64)) {
+          break;
+        } else if (io_buf.meta.closed || (io_buf.writer_length() == 0)) {
+          fourcc = 0;
+          break;
+        }
+        std::string error_message = input.CopyIn(&io_buf);
+        if (!error_message.empty()) {
+          return DecodeImageResult(std::move(error_message));
+        }
+      }
     } else {
-      std::string error_message = input.CopyIn(&io_buf);
+      wuffs_base__io_buffer empty = wuffs_base__empty_io_buffer();
+      wuffs_base__more_information minfo = wuffs_base__empty_more_information();
+      wuffs_base__status tmm_status =
+          image_decoder->tell_me_more(&empty, &minfo, &io_buf);
+      if (minfo.flavor != WUFFS_BASE__MORE_INFORMATION__FLAVOR__IO_REDIRECT) {
+        return DecodeImageResult(DecodeImage_UnsupportedImageFormat);
+      }
+      uint64_t pos = minfo.io_redirect__range().min_incl;
+      std::string error_message = DecodeImageAdvanceIOBuf(
+          input, io_buf, !input.BringsItsOwnIOBuffer(), start_pos, pos);
       if (!error_message.empty()) {
         return DecodeImageResult(std::move(error_message));
       }
+      fourcc = (int32_t)(minfo.io_redirect__fourcc());
+      if (fourcc == 0) {
+        return DecodeImageResult(DecodeImage_UnsupportedImageFormat);
+      }
+      image_decoder.reset();
     }
-  }
+
+    // Make the image decoder.
+    image_decoder = callbacks.OnImageFormat(
+        (uint32_t)fourcc,
+        fourcc ? wuffs_base__empty_slice_u8() : io_buf.reader_slice());
+    if (!image_decoder) {
+      return DecodeImageResult(DecodeImage_UnsupportedImageFormat);
+    }
+
+    // Decode the image config.
+    while (true) {
+      wuffs_base__status id_dic_status =
+          image_decoder->decode_image_config(&image_config, &io_buf);
+      if (id_dic_status.repr == NULL) {
+        break;
+      } else if (id_dic_status.repr == wuffs_base__note__i_o_redirect) {
+        if (redirected) {
+          return DecodeImageResult(DecodeImage_UnsupportedImageFormat);
+        }
+        redirected = true;
+        goto redirect;
+      } else if (id_dic_status.repr != wuffs_base__suspension__short_read) {
+        return DecodeImageResult(id_dic_status.message());
+      } else if (io_buf.meta.closed) {
+        return DecodeImageResult(DecodeImage_UnexpectedEndOfFile);
+      } else {
+        std::string error_message = input.CopyIn(&io_buf);
+        if (!error_message.empty()) {
+          return DecodeImageResult(std::move(error_message));
+        }
+      }
+    }
+  } while (false);
 
   // Apply the override pixel format.
   uint32_t w = image_config.pixcfg.width();
@@ -36655,7 +36720,7 @@ DecodeImage0(DecodeImageCallbacks& callbacks,
   }
 
   // Decode the frame config.
-  wuffs_base__frame_config frame_config;
+  wuffs_base__frame_config frame_config = wuffs_base__null_frame_config();
   while (true) {
     wuffs_base__status id_dfc_status =
         image_decoder->decode_frame_config(&frame_config, &io_buf);
