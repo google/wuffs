@@ -18,13 +18,13 @@ would have a `transform_io` method. In C, this would be invoked as
 wuffs_foo__decoder* dec = etc;
 
 // Do the work. Error checking is not shown, for brevity.
-const char* status = wuffs_foo__decoder__transform_io(dec, etc);
+wuffs_base__status status = wuffs_foo__decoder__transform_io(dec, etc);
 ```
 
 When that C library is used as C++, that last line can be shortened:
 
 ```
-const char* status = dec->transform_io(etc);
+wuffs_base__status status = dec->transform_io(etc);
 ```
 
 See also the [glossary](/doc/glossary.md), as well as the notes on:
