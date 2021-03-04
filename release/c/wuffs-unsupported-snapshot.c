@@ -1271,6 +1271,12 @@ wuffs_base__empty_table_u64() {
   return ret;
 }
 
+static inline bool  //
+wuffs_base__slice_u8__overlaps(wuffs_base__slice_u8 s, wuffs_base__slice_u8 t) {
+  return ((s.ptr <= t.ptr) && (t.ptr < (s.ptr + s.len))) ||
+         ((t.ptr <= s.ptr) && (s.ptr < (t.ptr + t.len)));
+}
+
 // wuffs_base__slice_u8__subslice_i returns s[i:].
 //
 // It returns an empty slice if i is out of bounds.
@@ -36065,7 +36071,12 @@ std::string  //
 FileInput::CopyIn(IOBuffer* dst) {
   if (!m_f) {
     return "wuffs_aux::sync_io::FileInput: nullptr file";
-  } else if (dst && !dst->meta.closed) {
+  } else if (!dst) {
+    return "wuffs_aux::sync_io::FileInput: nullptr IOBuffer";
+  } else if (dst->meta.closed) {
+    return "wuffs_aux::sync_io::FileInput: end of file";
+  } else {
+    dst->compact();
     size_t n = fread(dst->writer_pointer(), 1, dst->writer_length(), m_f);
     dst->meta.wi += n;
     dst->meta.closed = feof(m_f);
@@ -36094,7 +36105,16 @@ MemoryInput::BringsItsOwnIOBuffer() {
 
 std::string  //
 MemoryInput::CopyIn(IOBuffer* dst) {
-  if (dst && !dst->meta.closed && (dst != &m_io)) {
+  if (!dst) {
+    return "wuffs_aux::sync_io::MemoryInput: nullptr IOBuffer";
+  } else if (dst->meta.closed) {
+    return "wuffs_aux::sync_io::MemoryInput: end of file";
+  } else if (wuffs_base__slice_u8__overlaps(dst->data, m_io.data)) {
+    // Treat m_io's data as immutable, so don't compact dst or otherwise write
+    // to it.
+    return "wuffs_aux::sync_io::MemoryInput: overlapping buffers";
+  } else {
+    dst->compact();
     size_t nd = dst->writer_length();
     size_t ns = m_io.reader_length();
     size_t n = (nd < ns) ? nd : ns;

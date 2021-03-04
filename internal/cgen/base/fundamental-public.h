@@ -1065,6 +1065,12 @@ wuffs_base__empty_table_u64() {
   return ret;
 }
 
+static inline bool  //
+wuffs_base__slice_u8__overlaps(wuffs_base__slice_u8 s, wuffs_base__slice_u8 t) {
+  return ((s.ptr <= t.ptr) && (t.ptr < (s.ptr + s.len))) ||
+         ((t.ptr <= s.ptr) && (s.ptr < (t.ptr + t.len)));
+}
+
 // wuffs_base__slice_u8__subslice_i returns s[i:].
 //
 // It returns an empty slice if i is out of bounds.
