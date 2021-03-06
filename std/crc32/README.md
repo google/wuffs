@@ -78,10 +78,11 @@ polynomial is `N=4, LSB, BITS=0xC`. If `N` and `LSB`-ness is agreed beforehand,
 `0xC` is all you need to specify the polynomial.
 
 For 32 bit CRCs, the two popular polynomials (presented in `LSB` order) are
-`0xEDB88320` and `0x82F63B78`, also called the IEEE and Castagnoli polynomials,
-also called CRC-32 and CRC-32C. For example, the bit string representation of
-the IEEE polynomial `0xEDB88320`, un-reversed and with the implicit high bit,
-is `0b1_00000100_11000001_00011101_10110111`.
+`0xEDB8_8320` and `0x82F6_3B78`, also called the IEEE and Castagnoli
+polynomials, also called CRC-32 and CRC-32C. For example, the bit string
+representation of the IEEE polynomial `0xEDB8_8320`, un-reversed and with the
+implicit high bit, is `0b1_00000100_11000001_00011101_10110111 =
+0x1_04C1_1DB7`.
 
 
 # Worked Example
@@ -138,8 +139,8 @@ invert                             01011001 00111100 01000100 10101011
 hex                                   A   9    C   3    2   2    5   D
 ```
 
-The final line says that the CRC-32 checksum of "Hi\n" is 0xD5223C9A. This can
-be verified by running the `/usr/bin/crc32` program:
+The final line says that the CRC-32 checksum of "Hi\n" is `0xD522_3C9A`. This
+can be verified by running the `/usr/bin/crc32` program:
 
 ```
 $ echo Hi | xxd   /dev/stdin
@@ -225,8 +226,6 @@ See [Fast CRC Computation for Generic Polynomials Using PCLMULQDQ
 Instruction](https://www.intel.com/content/dam/www/public/us/en/documents/white-papers/fast-crc-computation-generic-polynomials-pclmulqdq-paper.pdf)
 by Gopal, Ozturk, Guilford, Wolrich, Feghali and Dixon of Intel Corporation and
 Karakoyunlu of the Worcester Polytechnic Institute.
-
-Wuffs does not currently implement the SIMD algorithm.
 
 
 # Further Reading

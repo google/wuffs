@@ -720,7 +720,9 @@ func (g *gen) writeExprDotPtr(b *buffer, n *a.Expr, sideEffectsOnly bool, depth 
 		if err := g.writeExpr(b, n.LHS().AsExpr(), sideEffectsOnly, depth); err != nil {
 			return err
 		}
-		b.writes(".ptr")
+		if n.LHS().AsExpr().MType().IsSliceType() {
+			b.writes(".ptr")
+		}
 		if n.MHS() != nil {
 			b.writes(" + ")
 			if err := g.writeExpr(b, n.MHS().AsExpr(), sideEffectsOnly, depth); err != nil {
@@ -733,7 +735,9 @@ func (g *gen) writeExprDotPtr(b *buffer, n *a.Expr, sideEffectsOnly bool, depth 
 	if err := g.writeExpr(b, n, sideEffectsOnly, depth); err != nil {
 		return err
 	}
-	b.writes(".ptr")
+	if n.MType().IsSliceType() {
+		b.writes(".ptr")
+	}
 	return nil
 }
 
