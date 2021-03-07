@@ -131,9 +131,50 @@ pri func ieee_hasher.up_x86_sse42!(x: slice base.u8),
 	this.state = 0xFFFF_FFFF ^ s
 }
 
-// These constants come from page 22 of Gopal et al.
+// These constants come from page 22 of Gopal et al. They are also reproduced
+// by script/print-crc32-x86-sse42-magic-numbers.go which is runnable online at
+// https://play.golang.org/p/wH1q6GfhKOE
 //
-// (†) TODO: explain the discrepancy.
+// (†) There is a discrepancy in the k6' constant. The Gopal paper gives the
+// least significant byte as 0x40 and this is confirmed by the reproduction
+// script. Indeed, the formula on page 22 ends with a left-shift by 1, so the
+// final hex digit must be even.
+//
+// Nonetheless, we use 0x41 here, the same as the Linux kernel
+// (https://github.com/torvalds/linux/blob/v5.11/arch/x86/crypto/crc32-pclmul_asm.S#L72).
+// It's there in 2021 unchanged since that code was introduced in 2013
+// (https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/commit/?id=78c37d191dd6899d8c219fee597a17d6e3c5d288).
+//
+// The Linux kernel's 0x41 (instead of 0x40) also turns up in e.g. Chromium
+// (https://source.chromium.org/chromium/chromium/src/+/master:third_party/zlib/crc32_simd.c;l=36;drc=9d4ec9349a1bf609eedb917c44c69eb0df9ff6bb)
+// and Go
+// (https://github.com/golang/go/blob/414fa8c35e7c2f65e2c767d6db2f25791e53b5c1/src/hash/crc32/crc32_amd64.s#L143).
+// The 0x41 has surely been copy/pasted to other software too.
+//
+// Code (0x41) and documentation (0x40) disagree. We went with code here, for
+// interoperability. Even though it's mathematical documentation, it's very
+// widely used code.
+//
+// For academic curiosity, there are at least two possible sources of the k6'
+// constant discrepancy.
+//
+// One is a transcription error. The Gopal paper has two consecutive lines:
+//  k6' = ... = 0x1DB710640
+//  μ'  = ... = 0x1F7011641
+// The final hex digits are 640 and 641.
+//
+// Two is that there's also this line a little earlier on the same page:
+//  P(x)'     = 0x1DB710641
+// This P(x)' number differs from k6' only in the final bit: 0x41 vs 0x40. This
+// isn't coincidental. Calculating k6' (in the Galois Field GF(2) space) means
+// dividing (i.e. bitwise XOR-ing) a 33-bit polynomial (x³², with only one 'on'
+// bit) by the 33-bit polynomial P(x)'.
+//
+// The discrepancy might not matter in practice because Barrett reduction is
+// already an integer approximation to a fraction. 0x40 vs 0x41 is essentially
+// rounding down vs up. The approximation diverges for large inputs but might
+// not matter for 'small' inputs that fit into e.g. a uint32 or uint64. The
+// tests seem to pass either way (and fail with 0x3F or 0x42).
 
 pri const IEEE_X86_SSE42_K1K2 : array[16] base.u8 = [
 	0xD4, 0x2B, 0x44, 0x54, 0x01, 0x00, 0x00, 0x00,  // k1' = 0x1_5444_2BD4
