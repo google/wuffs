@@ -44,7 +44,7 @@ pri func decoder.decode_huffman_fast64!(dst: base.io_writer, src: base.io_reader
 	dmask = ((1 as base.u64) << this.n_huffs_bits[1]) - 1
 
 	// Check up front, on each iteration, that we have enough buffer space to
-	// both read (8 bytes) and write (258 bytes) as much as we need to. Doing
+	// both read (8 bytes) and write (266 bytes) as much as we need to. Doing
 	// this check once (per iteration), up front, removes the need to check
 	// multiple times inside the loop body, so it's faster overall.
 	//
@@ -52,12 +52,18 @@ pri func decoder.decode_huffman_fast64!(dst: base.io_writer, src: base.io_reader
 	// 258 is the maximum length in a length-distance pair, as specified in the
 	// RFC section 3.2.5. Compressed blocks (length and distance codes).
 	//
+	// We adjust 258 up to (258 + 8) = 266 since it can be faster to overshoot
+	// a little and make multiple-of-8-byte copies even when the length in the
+	// length-distance pair isn't an exact multiple-of-8. Strictly speaking,
+	// 264 (an exact multiple-of-8) is the tight bound but (258 + 8) is easier
+	// for the Wuffs proof system, as length's type is refined to [..= 258],
+	//
 	// For reading, strictly speaking, we only need 6 bytes (48 bits) of
 	// available input, because the H-L Literal/Length code is up to 15 bits
 	// plus up to 5 extra bits, the H-D Distance code is up to 15 bits plus up
 	// to 13 extra bits and 15 + 5 + 15 + 13 == 48. However, it's faster to
 	// read 64 bits than 48 bits or (48 - n_bits) bits.
-	while.loop(args.dst.length() >= 258) and (args.src.length() >= 8) {
+	while.loop(args.dst.length() >= 266) and (args.src.length() >= 8) {
 		// Ensure that we have at least 56 bits of input.
 		//
 		// This is "Variant 4" of
@@ -178,8 +184,12 @@ pri func decoder.decode_huffman_fast64!(dst: base.io_writer, src: base.io_reader
 		// its presence minimizes the diff between decode_huffman_fastxx and
 		// decode_huffman_slow.
 		while true,
-			pre args.dst.length() >= 258,
+			pre args.dst.length() >= 266,
 		{
+			// We can therefore prove:
+			assert (length as base.u64) <= args.dst.length() via "a <= b: a <= c; c <= b"(c: 266)
+			assert ((length + 8) as base.u64) <= args.dst.length() via "a <= b: a <= c; c <= b"(c: 266)
+
 			// Copy from this.history.
 			if ((dist_minus_1 + 1) as base.u64) > args.dst.history_length() {
 				// Set (hlen, hdist) to be the length-distance pair to copy
@@ -217,23 +227,33 @@ pri func decoder.decode_huffman_fast64!(dst: base.io_writer, src: base.io_reader
 				}
 
 				if (((dist_minus_1 + 1) as base.u64) > args.dst.history_length()) or
-					((length as base.u64) > args.dst.length()) {
+					((length as base.u64) > args.dst.length()) or
+					(((length + 8) as base.u64) > args.dst.length()) {
 					return "#internal error: inconsistent distance"
 				}
-			} else {
-				assert (length as base.u64) <= 258
-				assert args.dst.length() >= 258
-				// We can therefore prove:
-				assert (length as base.u64) <= args.dst.length() via "a <= b: a <= c; c <= b"(c: 258)
 			}
 			// Once again, redundant but explicit assertions.
 			assert (dist_minus_1 + 1) > 0
 			assert ((dist_minus_1 + 1) as base.u64) <= args.dst.history_length()
 			assert (length as base.u64) <= args.dst.length()
+			assert ((length + 8) as base.u64) <= args.dst.length()
 
 			// Copy from args.dst.
-			args.dst.limited_copy_u32_from_history_fast!(
-				up_to: length, distance: (dist_minus_1 + 1))
+			//
+			// For short distances, less than 8 bytes, copying atomic 8-byte
+			// chunks can result in incorrect output, so we fall back to a
+			// slower 1-byte-at-a-time copy. Deflate's copy-from-history can
+			// pick up freshly written bytes. A length = 5, distance = 2 copy
+			// starting with "abc" should give "abcbcbcb" but the 8-byte chunk
+			// technique would give "abcbc???", the exact output depending on
+			// what was previously in the writer buffer.
+			if (dist_minus_1 + 1) >= 8 {
+				args.dst.limited_copy_u32_from_history_8_byte_chunks_fast!(
+					up_to: length, distance: (dist_minus_1 + 1))
+			} else {
+				args.dst.limited_copy_u32_from_history_fast!(
+					up_to: length, distance: (dist_minus_1 + 1))
+			}
 			break
 		} endwhile
 	} endwhile.loop

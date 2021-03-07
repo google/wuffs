@@ -204,7 +204,9 @@ wuffs_base__io_writer__limited_copy_u32_from_history(uint8_t** ptr_iop_w,
 
 // wuffs_base__io_writer__limited_copy_u32_from_history_fast is like the
 // wuffs_base__io_writer__limited_copy_u32_from_history function above, but has
-// stronger pre-conditions. The caller needs to prove that:
+// stronger pre-conditions.
+//
+// The caller needs to prove that:
 //  - distance >  0
 //  - distance <= (*ptr_iop_w - io1_w)
 //  - length   <= (io2_w      - *ptr_iop_w)
@@ -224,6 +226,44 @@ wuffs_base__io_writer__limited_copy_u32_from_history_fast(uint8_t** ptr_iop_w,
   }
   for (; n; n--) {
     *p++ = *q++;
+  }
+  *ptr_iop_w = p;
+  return length;
+}
+
+// wuffs_base__io_writer__limited_copy_u32_from_history_8_byte_chunks_fast is
+// like the wuffs_base__io_writer__limited_copy_u32_from_history_fast function
+// above, but copies 8 byte chunks at a time.
+//
+// In terms of number of bytes copied, length is rounded up to a multiple of 8.
+// As a special case, a zero length rounds up to 8 (even though 0 is already a
+// multiple of 8), since there is always at least one 8 byte chunk copied.
+//
+// In terms of advancing *ptr_iop_w, length is not rounded up.
+//
+// The caller needs to prove that:
+//  - distance     >  0
+//  - distance     <= (*ptr_iop_w - io1_w)
+//  - (length + 8) <= (io2_w      - *ptr_iop_w)
+static inline uint32_t  //
+wuffs_base__io_writer__limited_copy_u32_from_history_8_byte_chunks_fast(
+    uint8_t** ptr_iop_w,
+    uint8_t* io1_w,
+    uint8_t* io2_w,
+    uint32_t length,
+    uint32_t distance) {
+  uint8_t* p = *ptr_iop_w;
+  uint8_t* q = p - distance;
+  uint32_t n = length;
+  while (1) {
+    memcpy(p, q, 8);
+    if (n <= 8) {
+      p += n;
+      break;
+    }
+    p += 8;
+    q += 8;
+    n -= 8;
   }
   *ptr_iop_w = p;
   return length;

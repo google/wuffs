@@ -307,13 +307,11 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 	}
 
 	switch method {
-	case t.IDLimitedCopyU32FromHistory, t.IDLimitedCopyU32FromHistoryFast:
-		suffix := ""
-		if method == t.IDLimitedCopyU32FromHistoryFast {
-			suffix = "_fast"
-		}
-		b.printf("wuffs_base__io_writer__limited_copy_u32_from_history%s(\n&%s%s, %s%s, %s%s",
-			suffix, iopPrefix, recvName, io0Prefix, recvName, io2Prefix, recvName)
+	case t.IDLimitedCopyU32FromHistory,
+		t.IDLimitedCopyU32FromHistory8ByteChunksFast,
+		t.IDLimitedCopyU32FromHistoryFast:
+		b.printf("wuffs_base__io_writer__%s(\n&%s%s, %s%s, %s%s",
+			method.Str(g.tm), iopPrefix, recvName, io0Prefix, recvName, io2Prefix, recvName)
 		for _, o := range args {
 			b.writes(", ")
 			if err := g.writeExpr(b, o.AsArg().Value(), false, depth); err != nil {

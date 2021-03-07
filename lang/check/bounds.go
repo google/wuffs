@@ -1167,8 +1167,13 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (bounds, e
 				return bounds{}, err
 			}
 
+		} else if method == t.IDLimitedCopyU32FromHistory8ByteChunksFast {
+			if err := q.canLimitedCopyU32FromHistoryFast(recv, n.Args(), eight); err != nil {
+				return bounds{}, err
+			}
+
 		} else if method == t.IDLimitedCopyU32FromHistoryFast {
-			if err := q.canLimitedCopyU32FromHistoryFast(recv, n.Args()); err != nil {
+			if err := q.canLimitedCopyU32FromHistoryFast(recv, n.Args(), nil); err != nil {
 				return bounds{}, err
 			}
 
@@ -1281,11 +1286,13 @@ func (q *checker) canUndoByte(recv *a.Expr) error {
 	return fmt.Errorf("check: could not prove %s.can_undo_byte()", recv.Str(q.tm))
 }
 
-func (q *checker) canLimitedCopyU32FromHistoryFast(recv *a.Expr, args []*a.Node) error {
+func (q *checker) canLimitedCopyU32FromHistoryFast(recv *a.Expr, args []*a.Node, adj *big.Int) error {
 	// As per cgen's io-private.h, there are three pre-conditions:
-	//  - upTo <= this.length()
+	//  - (upTo + adj) <= this.length()
 	//  - distance > 0
 	//  - distance <= this.history_length()
+	//
+	// adj may be nil, in which case (upTo + adj) is just upTo.
 
 	if len(args) != 2 {
 		return fmt.Errorf("check: internal error: inconsistent limited_copy_u32_from_history_fast arguments")
@@ -1301,14 +1308,25 @@ check0:
 				continue
 			}
 
-			// Check that the LHS is "upTo as base.u64".
+			// Check that the LHS is "(upTo + adj) as base.u64".
 			lhs := x.LHS().AsExpr()
 			if lhs.Operator() != t.IDXBinaryAs {
 				continue
 			}
 			llhs, lrhs := lhs.LHS().AsExpr(), lhs.RHS().AsTypeExpr()
-			if !llhs.Eq(upTo) || !lrhs.Eq(typeExprU64) {
+			if !lrhs.Eq(typeExprU64) {
 				continue
+			}
+			if adj == nil {
+				if !llhs.Eq(upTo) {
+					continue
+				}
+			} else {
+				if (llhs.Operator() != t.IDXBinaryPlus) || !llhs.LHS().AsExpr().Eq(upTo) {
+					continue
+				} else if cv := llhs.RHS().AsExpr().ConstValue(); (cv == nil) || (cv.Cmp(adj) != 0) {
+					continue
+				}
 			}
 
 			// Check that the RHS is "recv.length()".
@@ -1322,7 +1340,12 @@ check0:
 
 			break check0
 		}
-		return fmt.Errorf("check: could not prove (up_to as base.u64) <= %s.length()", recv.Str(q.tm))
+		if adj == nil {
+			return fmt.Errorf("check: could not prove (%s as base.u64) <= %s.length()",
+				upTo.Str(q.tm), recv.Str(q.tm))
+		}
+		return fmt.Errorf("check: could not prove ((%s + %v) as base.u64) <= %s.length()",
+			upTo.Str(q.tm), adj, recv.Str(q.tm))
 	}
 
 	// Check "distance > 0".
@@ -1340,7 +1363,7 @@ check1:
 			}
 			break check1
 		}
-		return fmt.Errorf("check: could not prove distance > 0")
+		return fmt.Errorf("check: could not prove %s > 0", distance.Str(q.tm))
 	}
 
 	// Check "distance <= this.history_length()".
@@ -1372,7 +1395,8 @@ check2:
 
 			break check2
 		}
-		return fmt.Errorf("check: could not prove distance <= %s.history_length()", recv.Str(q.tm))
+		return fmt.Errorf("check: could not prove %s <= %s.history_length()",
+			distance.Str(q.tm), recv.Str(q.tm))
 	}
 
 	return nil
