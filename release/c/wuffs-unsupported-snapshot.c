@@ -23953,7 +23953,7 @@ wuffs_deflate__decoder__decode_huffman_fast32(
   v_lmask = ((((uint32_t)(1)) << self->private_impl.f_n_huffs_bits[0]) - 1);
   v_dmask = ((((uint32_t)(1)) << self->private_impl.f_n_huffs_bits[1]) - 1);
   label__loop__continue:;
-  while ((((uint64_t)(io2_a_dst - iop_a_dst)) >= 258) && (((uint64_t)(io2_a_src - iop_a_src)) >= 12)) {
+  while ((((uint64_t)(io2_a_dst - iop_a_dst)) >= 266) && (((uint64_t)(io2_a_src - iop_a_src)) >= 12)) {
     if (v_n_bits < 15) {
       v_bits |= (((uint32_t)(wuffs_base__peek_u8be__no_bounds_check(iop_a_src))) << v_n_bits);
       iop_a_src += 1;
@@ -24104,14 +24104,18 @@ wuffs_deflate__decoder__decode_huffman_fast32(
         if (v_length == 0) {
           goto label__loop__continue;
         }
-        if ((((uint64_t)((v_dist_minus_1 + 1))) > ((uint64_t)(iop_a_dst - io0_a_dst))) || (((uint64_t)(v_length)) > ((uint64_t)(io2_a_dst - iop_a_dst)))) {
+        if ((((uint64_t)((v_dist_minus_1 + 1))) > ((uint64_t)(iop_a_dst - io0_a_dst))) || (((uint64_t)(v_length)) > ((uint64_t)(io2_a_dst - iop_a_dst))) || (((uint64_t)((v_length + 8))) > ((uint64_t)(io2_a_dst - iop_a_dst)))) {
           status = wuffs_base__make_status(wuffs_deflate__error__internal_error_inconsistent_distance);
           goto exit;
         }
-      } else {
       }
-      wuffs_base__io_writer__limited_copy_u32_from_history_fast(
-          &iop_a_dst, io0_a_dst, io2_a_dst, v_length, (v_dist_minus_1 + 1));
+      if ((v_dist_minus_1 + 1) >= 8) {
+        wuffs_base__io_writer__limited_copy_u32_from_history_8_byte_chunks_fast(
+            &iop_a_dst, io0_a_dst, io2_a_dst, v_length, (v_dist_minus_1 + 1));
+      } else {
+        wuffs_base__io_writer__limited_copy_u32_from_history_fast(
+            &iop_a_dst, io0_a_dst, io2_a_dst, v_length, (v_dist_minus_1 + 1));
+      }
       goto label__0__break;
     }
     label__0__break:;
