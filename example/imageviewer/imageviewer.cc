@@ -111,7 +111,7 @@ class Callbacks : public wuffs_aux::DecodeImageCallbacks {
   }
 
   DecodeImageCallbacks::AllocResult  //
-  OnImageConfig(const wuffs_base__image_config& image_config) {
+  OnImageConfig(const wuffs_base__image_config& image_config) override {
     uint32_t w = image_config.pixcfg.width();
     uint32_t h = image_config.pixcfg.height();
     if ((w == 0) || (h == 0)) {
