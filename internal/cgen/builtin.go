@@ -690,6 +690,20 @@ func (g *gen) writeBuiltinCPUArchX86(b *buffer, recv *a.Expr, method t.ID, args 
 		}
 		b.writes(")))")
 		return nil
+
+	} else if strings.HasPrefix(methodStr, "_mm_extract_epi") {
+		size := methodStr[len("_mm_extract_epi"):]
+		b.printf("((uint%s_t)(_mm_extract_epi%s(", size, size)
+		if err := g.writeExpr(b, recv, false, depth); err != nil {
+			return err
+		}
+		b.writes(", ")
+		b.writes("(int32_t)(")
+		if err := g.writeExpr(b, args[0].AsArg().Value(), false, depth); err != nil {
+			return err
+		}
+		b.writes("))))")
+		return nil
 	}
 
 	b.writes(methodStr)

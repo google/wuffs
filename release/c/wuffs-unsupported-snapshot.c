@@ -14561,7 +14561,7 @@ wuffs_base__magic_number_guess_fourcc(wuffs_base__slice_u8 prefix) {
   int32_t fourcc = 0;
   size_t i;
   for (i = 0; i < table_len; i++) {
-    uint8_t mag_first_byte = table[i].magic[1];
+    uint8_t mag_first_byte = ((uint8_t)(table[i].magic[1]));
     if (pre_first_byte < mag_first_byte) {
       break;
     } else if (pre_first_byte > mag_first_byte) {
@@ -14569,7 +14569,7 @@ wuffs_base__magic_number_guess_fourcc(wuffs_base__slice_u8 prefix) {
     }
     fourcc = table[i].fourcc;
 
-    uint8_t mag_remaining_len = table[i].magic[0];
+    uint8_t mag_remaining_len = ((uint8_t)(table[i].magic[0]));
     if (mag_remaining_len == 0) {
       goto match;
     }
@@ -22669,7 +22669,7 @@ wuffs_crc32__ieee_hasher__up_x86_sse42(
   v_x1 = _mm_and_si128(v_x1, v_x2);
   v_x1 = _mm_clmulepi64_si128(v_x1, v_k, (int32_t)(0));
   v_x0 = _mm_xor_si128(v_x0, v_x1);
-  v_s = _mm_extract_epi32(v_x0, (int32_t)(1));
+  v_s = ((uint32_t)(_mm_extract_epi32(v_x0, (int32_t)(1))));
   v_tail_index = (((uint64_t)(a_x.len)) & 18446744073709551552u);
   if (v_tail_index < ((uint64_t)(a_x.len))) {
     {
