@@ -34,7 +34,7 @@ DecodeImageResult::DecodeImageResult(MemOwner&& pixbuf_mem_owner0,
 DecodeImageResult::DecodeImageResult(std::string&& error_message0)
     : pixbuf_mem_owner(nullptr, &free),
       pixbuf_mem_slice(wuffs_base__empty_slice_u8()),
-      pixbuf({0}),
+      pixbuf(wuffs_base__null_pixel_buffer()),
       error_message(std::move(error_message0)) {}
 
 DecodeImageCallbacks::AllocResult::AllocResult(MemOwner&& mem_owner0,
@@ -136,7 +136,7 @@ DecodeImageAdvanceIOBuf(sync_io::Input& input,
     }
     std::string error_message = input.CopyIn(&io_buf);
     if (!error_message.empty()) {
-      return std::move(error_message);
+      return error_message;
     }
   }
   return "";
