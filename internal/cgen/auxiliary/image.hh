@@ -91,12 +91,20 @@ class DecodeImageCallbacks {
   // not parsing the input encountered an error. Even when successful, trailing
   // data may remain in input and buffer.
   //
+  // The image_decoder is the one returned by OnImageFormat (if OnImageFormat
+  // was successful), or a no-op unique_ptr otherwise. Like any unique_ptr,
+  // ownership moves to the Done implementation.
+  //
   // Do not keep a reference to buffer or buffer.data.ptr after Done returns,
   // as DecodeImage may then de-allocate the backing array.
   //
-  // The default Done implementation is a no-op.
+  // The default Done implementation is a no-op, other than running the
+  // image_decoder unique_ptr destructor.
   virtual void  //
-  Done(DecodeImageResult& result, sync_io::Input& input, IOBuffer& buffer);
+  Done(DecodeImageResult& result,
+       sync_io::Input& input,
+       IOBuffer& buffer,
+       wuffs_base__image_decoder::unique_ptr image_decoder);
 };
 
 extern const char DecodeImage_BufferIsTooShort[];

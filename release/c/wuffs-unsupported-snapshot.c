@@ -9444,12 +9444,20 @@ class DecodeImageCallbacks {
   // not parsing the input encountered an error. Even when successful, trailing
   // data may remain in input and buffer.
   //
+  // The image_decoder is the one returned by OnImageFormat (if OnImageFormat
+  // was successful), or a no-op unique_ptr otherwise. Like any unique_ptr,
+  // ownership moves to the Done implementation.
+  //
   // Do not keep a reference to buffer or buffer.data.ptr after Done returns,
   // as DecodeImage may then de-allocate the backing array.
   //
-  // The default Done implementation is a no-op.
+  // The default Done implementation is a no-op, other than running the
+  // image_decoder unique_ptr destructor.
   virtual void  //
-  Done(DecodeImageResult& result, sync_io::Input& input, IOBuffer& buffer);
+  Done(DecodeImageResult& result,
+       sync_io::Input& input,
+       IOBuffer& buffer,
+       wuffs_base__image_decoder::unique_ptr image_decoder);
 };
 
 extern const char DecodeImage_BufferIsTooShort[];
@@ -36734,9 +36742,11 @@ DecodeImageCallbacks::AllocWorkbuf(wuffs_base__range_ii_u64 len) {
 }
 
 void  //
-DecodeImageCallbacks::Done(DecodeImageResult& result,
-                           sync_io::Input& input,
-                           IOBuffer& buffer) {}
+DecodeImageCallbacks::Done(
+    DecodeImageResult& result,
+    sync_io::Input& input,
+    IOBuffer& buffer,
+    wuffs_base__image_decoder::unique_ptr image_decoder) {}
 
 const char DecodeImage_BufferIsTooShort[] =  //
     "wuffs_aux::DecodeImage: buffer is too short";
@@ -36790,7 +36800,8 @@ DecodeImageAdvanceIOBuf(sync_io::Input& input,
 }
 
 DecodeImageResult  //
-DecodeImage0(DecodeImageCallbacks& callbacks,
+DecodeImage0(wuffs_base__image_decoder::unique_ptr& image_decoder,
+             DecodeImageCallbacks& callbacks,
              sync_io::Input& input,
              wuffs_base__io_buffer& io_buf,
              uint32_t override_pixel_format_repr,
@@ -36816,7 +36827,6 @@ DecodeImage0(DecodeImageCallbacks& callbacks,
   }
 
   wuffs_base__image_config image_config = wuffs_base__null_image_config();
-  wuffs_base__image_decoder::unique_ptr image_decoder(nullptr, &free);
   uint64_t start_pos = io_buf.reader_position();
   bool redirected = false;
   int32_t fourcc = 0;
@@ -37007,10 +37017,11 @@ DecodeImage(DecodeImageCallbacks& callbacks,
     io_buf = &fallback_io_buf;
   }
 
+  wuffs_base__image_decoder::unique_ptr image_decoder(nullptr, &free);
   DecodeImageResult result =
-      DecodeImage0(callbacks, input, *io_buf, override_pixel_format_repr,
-                   pixel_blend, max_incl_dimension);
-  callbacks.Done(result, input, *io_buf);
+      DecodeImage0(image_decoder, callbacks, input, *io_buf,
+                   override_pixel_format_repr, pixel_blend, max_incl_dimension);
+  callbacks.Done(result, input, *io_buf, std::move(image_decoder));
   return result;
 }
 
