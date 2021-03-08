@@ -37,8 +37,9 @@
 
 // Note that Clang also defines __GNUC__.
 #ifdef __cplusplus
-#if __cplusplus >= 201103L
+#if (__cplusplus >= 201103L) || defined(_MSC_VER)
 #include <memory>
+#define WUFFS_BASE__HAVE_UNIQUE_PTR
 #elif defined(__GNUC__)
 #warning "Wuffs' C++ code expects -std=c++11 or later"
 #elif defined(_MSC_VER)
@@ -5250,7 +5251,7 @@ struct wuffs_base__hasher_u32__struct {
   } private_impl;
 
 #ifdef __cplusplus
-#if (__cplusplus >= 201103L)
+#if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
   using unique_ptr = std::unique_ptr<wuffs_base__hasher_u32, decltype(&free)>;
 #endif
 
@@ -5401,7 +5402,7 @@ struct wuffs_base__image_decoder__struct {
   } private_impl;
 
 #ifdef __cplusplus
-#if (__cplusplus >= 201103L)
+#if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
   using unique_ptr = std::unique_ptr<wuffs_base__image_decoder, decltype(&free)>;
 #endif
 
@@ -5542,7 +5543,7 @@ struct wuffs_base__io_transformer__struct {
   } private_impl;
 
 #ifdef __cplusplus
-#if (__cplusplus >= 201103L)
+#if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
   using unique_ptr = std::unique_ptr<wuffs_base__io_transformer, decltype(&free)>;
 #endif
 
@@ -5620,7 +5621,7 @@ struct wuffs_base__token_decoder__struct {
   } private_impl;
 
 #ifdef __cplusplus
-#if (__cplusplus >= 201103L)
+#if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
   using unique_ptr = std::unique_ptr<wuffs_base__token_decoder, decltype(&free)>;
 #endif
 
@@ -5756,7 +5757,7 @@ struct wuffs_adler32__hasher__struct {
   } private_impl;
 
 #ifdef __cplusplus
-#if (__cplusplus >= 201103L)
+#if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
   using unique_ptr = std::unique_ptr<wuffs_adler32__hasher, decltype(&free)>;
 
   // On failure, the alloc_etc functions return nullptr. They don't throw.
@@ -5771,7 +5772,7 @@ struct wuffs_adler32__hasher__struct {
     return wuffs_base__hasher_u32::unique_ptr(
         wuffs_adler32__hasher__alloc_as__wuffs_base__hasher_u32(), &free);
   }
-#endif  // (__cplusplus >= 201103L)
+#endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
 #if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
@@ -6038,7 +6039,7 @@ struct wuffs_bmp__decoder__struct {
   } private_data;
 
 #ifdef __cplusplus
-#if (__cplusplus >= 201103L)
+#if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
   using unique_ptr = std::unique_ptr<wuffs_bmp__decoder, decltype(&free)>;
 
   // On failure, the alloc_etc functions return nullptr. They don't throw.
@@ -6053,7 +6054,7 @@ struct wuffs_bmp__decoder__struct {
     return wuffs_base__image_decoder::unique_ptr(
         wuffs_bmp__decoder__alloc_as__wuffs_base__image_decoder(), &free);
   }
-#endif  // (__cplusplus >= 201103L)
+#endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
 #if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
@@ -6320,7 +6321,7 @@ struct wuffs_cbor__decoder__struct {
   } private_data;
 
 #ifdef __cplusplus
-#if (__cplusplus >= 201103L)
+#if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
   using unique_ptr = std::unique_ptr<wuffs_cbor__decoder, decltype(&free)>;
 
   // On failure, the alloc_etc functions return nullptr. They don't throw.
@@ -6335,7 +6336,7 @@ struct wuffs_cbor__decoder__struct {
     return wuffs_base__token_decoder::unique_ptr(
         wuffs_cbor__decoder__alloc_as__wuffs_base__token_decoder(), &free);
   }
-#endif  // (__cplusplus >= 201103L)
+#endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
 #if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
@@ -6506,7 +6507,7 @@ struct wuffs_crc32__ieee_hasher__struct {
   } private_impl;
 
 #ifdef __cplusplus
-#if (__cplusplus >= 201103L)
+#if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
   using unique_ptr = std::unique_ptr<wuffs_crc32__ieee_hasher, decltype(&free)>;
 
   // On failure, the alloc_etc functions return nullptr. They don't throw.
@@ -6521,7 +6522,7 @@ struct wuffs_crc32__ieee_hasher__struct {
     return wuffs_base__hasher_u32::unique_ptr(
         wuffs_crc32__ieee_hasher__alloc_as__wuffs_base__hasher_u32(), &free);
   }
-#endif  // (__cplusplus >= 201103L)
+#endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
 #if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
@@ -6760,7 +6761,7 @@ struct wuffs_deflate__decoder__struct {
   } private_data;
 
 #ifdef __cplusplus
-#if (__cplusplus >= 201103L)
+#if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
   using unique_ptr = std::unique_ptr<wuffs_deflate__decoder, decltype(&free)>;
 
   // On failure, the alloc_etc functions return nullptr. They don't throw.
@@ -6775,7 +6776,7 @@ struct wuffs_deflate__decoder__struct {
     return wuffs_base__io_transformer::unique_ptr(
         wuffs_deflate__decoder__alloc_as__wuffs_base__io_transformer(), &free);
   }
-#endif  // (__cplusplus >= 201103L)
+#endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
 #if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
@@ -6988,7 +6989,7 @@ struct wuffs_lzw__decoder__struct {
   } private_data;
 
 #ifdef __cplusplus
-#if (__cplusplus >= 201103L)
+#if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
   using unique_ptr = std::unique_ptr<wuffs_lzw__decoder, decltype(&free)>;
 
   // On failure, the alloc_etc functions return nullptr. They don't throw.
@@ -7003,7 +7004,7 @@ struct wuffs_lzw__decoder__struct {
     return wuffs_base__io_transformer::unique_ptr(
         wuffs_lzw__decoder__alloc_as__wuffs_base__io_transformer(), &free);
   }
-#endif  // (__cplusplus >= 201103L)
+#endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
 #if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
@@ -7364,7 +7365,7 @@ struct wuffs_gif__decoder__struct {
   } private_data;
 
 #ifdef __cplusplus
-#if (__cplusplus >= 201103L)
+#if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
   using unique_ptr = std::unique_ptr<wuffs_gif__decoder, decltype(&free)>;
 
   // On failure, the alloc_etc functions return nullptr. They don't throw.
@@ -7379,7 +7380,7 @@ struct wuffs_gif__decoder__struct {
     return wuffs_base__image_decoder::unique_ptr(
         wuffs_gif__decoder__alloc_as__wuffs_base__image_decoder(), &free);
   }
-#endif  // (__cplusplus >= 201103L)
+#endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
 #if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
@@ -7632,7 +7633,7 @@ struct wuffs_gzip__decoder__struct {
   } private_data;
 
 #ifdef __cplusplus
-#if (__cplusplus >= 201103L)
+#if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
   using unique_ptr = std::unique_ptr<wuffs_gzip__decoder, decltype(&free)>;
 
   // On failure, the alloc_etc functions return nullptr. They don't throw.
@@ -7647,7 +7648,7 @@ struct wuffs_gzip__decoder__struct {
     return wuffs_base__io_transformer::unique_ptr(
         wuffs_gzip__decoder__alloc_as__wuffs_base__io_transformer(), &free);
   }
-#endif  // (__cplusplus >= 201103L)
+#endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
 #if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
@@ -7901,7 +7902,7 @@ struct wuffs_json__decoder__struct {
   } private_data;
 
 #ifdef __cplusplus
-#if (__cplusplus >= 201103L)
+#if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
   using unique_ptr = std::unique_ptr<wuffs_json__decoder, decltype(&free)>;
 
   // On failure, the alloc_etc functions return nullptr. They don't throw.
@@ -7916,7 +7917,7 @@ struct wuffs_json__decoder__struct {
     return wuffs_base__token_decoder::unique_ptr(
         wuffs_json__decoder__alloc_as__wuffs_base__token_decoder(), &free);
   }
-#endif  // (__cplusplus >= 201103L)
+#endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
 #if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
@@ -8159,7 +8160,7 @@ struct wuffs_nie__decoder__struct {
   } private_data;
 
 #ifdef __cplusplus
-#if (__cplusplus >= 201103L)
+#if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
   using unique_ptr = std::unique_ptr<wuffs_nie__decoder, decltype(&free)>;
 
   // On failure, the alloc_etc functions return nullptr. They don't throw.
@@ -8174,7 +8175,7 @@ struct wuffs_nie__decoder__struct {
     return wuffs_base__image_decoder::unique_ptr(
         wuffs_nie__decoder__alloc_as__wuffs_base__image_decoder(), &free);
   }
-#endif  // (__cplusplus >= 201103L)
+#endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
 #if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
@@ -8442,7 +8443,7 @@ struct wuffs_zlib__decoder__struct {
   } private_data;
 
 #ifdef __cplusplus
-#if (__cplusplus >= 201103L)
+#if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
   using unique_ptr = std::unique_ptr<wuffs_zlib__decoder, decltype(&free)>;
 
   // On failure, the alloc_etc functions return nullptr. They don't throw.
@@ -8457,7 +8458,7 @@ struct wuffs_zlib__decoder__struct {
     return wuffs_base__io_transformer::unique_ptr(
         wuffs_zlib__decoder__alloc_as__wuffs_base__io_transformer(), &free);
   }
-#endif  // (__cplusplus >= 201103L)
+#endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
 #if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
@@ -8774,7 +8775,7 @@ struct wuffs_png__decoder__struct {
   } private_data;
 
 #ifdef __cplusplus
-#if (__cplusplus >= 201103L)
+#if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
   using unique_ptr = std::unique_ptr<wuffs_png__decoder, decltype(&free)>;
 
   // On failure, the alloc_etc functions return nullptr. They don't throw.
@@ -8789,7 +8790,7 @@ struct wuffs_png__decoder__struct {
     return wuffs_base__image_decoder::unique_ptr(
         wuffs_png__decoder__alloc_as__wuffs_base__image_decoder(), &free);
   }
-#endif  // (__cplusplus >= 201103L)
+#endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
 #if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
@@ -9095,7 +9096,7 @@ struct wuffs_wbmp__decoder__struct {
   } private_data;
 
 #ifdef __cplusplus
-#if (__cplusplus >= 201103L)
+#if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
   using unique_ptr = std::unique_ptr<wuffs_wbmp__decoder, decltype(&free)>;
 
   // On failure, the alloc_etc functions return nullptr. They don't throw.
@@ -9110,7 +9111,7 @@ struct wuffs_wbmp__decoder__struct {
     return wuffs_base__image_decoder::unique_ptr(
         wuffs_wbmp__decoder__alloc_as__wuffs_base__image_decoder(), &free);
   }
-#endif  // (__cplusplus >= 201103L)
+#endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
 #if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,

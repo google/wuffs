@@ -439,7 +439,7 @@ func insertInterfaceDeclarations(buf *buffer) error {
 		buf.writes("  } private_impl;\n\n")
 
 		buf.writes("#ifdef __cplusplus\n")
-		buf.writes("#if (__cplusplus >= 201103L)\n")
+		buf.writes("#if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)\n")
 		buf.printf("  using unique_ptr = std::unique_ptr<wuffs_base__%s, decltype(&free)>;\n", n)
 		buf.writes("#endif\n\n")
 
@@ -1215,7 +1215,7 @@ func (g *gen) writeCppMethods(b *buffer, n *a.Struct) error {
 	fullStructName := g.pkgPrefix + structName + "__struct"
 	b.writes("#ifdef __cplusplus\n")
 
-	b.writes("#if (__cplusplus >= 201103L)\n")
+	b.writes("#if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)\n")
 	b.printf("using unique_ptr = std::unique_ptr<%s%s, decltype(&free)>;\n\n", g.pkgPrefix, structName)
 	b.writes("// On failure, the alloc_etc functions return nullptr. They don't throw.\n\n")
 	b.writes("static inline unique_ptr\n")
@@ -1231,7 +1231,7 @@ func (g *gen) writeCppMethods(b *buffer, n *a.Struct) error {
 			iName, g.pkgPrefix, structName, iName)
 		b.printf("}\n")
 	}
-	b.writes("#endif  // (__cplusplus >= 201103L)\n\n")
+	b.writes("#endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)\n\n")
 
 	b.writes("#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)\n")
 	b.writes("// Disallow constructing or copying an object via standard C++ mechanisms,\n")

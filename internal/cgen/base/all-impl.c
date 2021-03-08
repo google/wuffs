@@ -33,8 +33,9 @@
 
 // Note that Clang also defines __GNUC__.
 #ifdef __cplusplus
-#if __cplusplus >= 201103L
+#if (__cplusplus >= 201103L) || defined(_MSC_VER)
 #include <memory>
+#define WUFFS_BASE__HAVE_UNIQUE_PTR
 #elif defined(__GNUC__)
 #warning "Wuffs' C++ code expects -std=c++11 or later"
 #elif defined(_MSC_VER)
