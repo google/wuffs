@@ -36854,6 +36854,9 @@ redirect:
       wuffs_base__more_information minfo = wuffs_base__empty_more_information();
       wuffs_base__status tmm_status =
           image_decoder->tell_me_more(&empty, &minfo, &io_buf);
+      if (!tmm_status.is_ok()) {
+        return DecodeImageResult(tmm_status.message());
+      }
       if (minfo.flavor != WUFFS_BASE__MORE_INFORMATION__FLAVOR__IO_REDIRECT) {
         return DecodeImageResult(DecodeImage_UnsupportedImageFormat);
       }
@@ -36915,7 +36918,7 @@ redirect:
   }
 
   // Allocate the pixel buffer.
-  size_t pixbuf_len_min_incl = 0;
+  uint64_t pixbuf_len_min_incl = 0;
   if ((w > 0) && (h > 0)) {
     pixbuf_len_min_incl = image_config.pixcfg.pixbuf_len();
     if (pixbuf_len_min_incl == 0) {
