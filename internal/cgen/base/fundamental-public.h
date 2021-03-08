@@ -73,7 +73,14 @@
 #define WUFFS_BASE__CPU_ARCH__X86_64
 #endif  // defined(__x86_64__)
 
-#endif  // defined(__GNUC__)
+#elif defined(_MSC_VER)  // defined(__GNUC__)
+
+#if defined(_M_X64)
+#include <intrin.h>
+#define WUFFS_BASE__CPU_ARCH__X86_64
+#endif  // defined(__x86_64__)
+
+#endif  // defined(__GNUC__); defined(_MSC_VER)
 #endif  // defined(WUFFS_CONFIG__AVOID_CPU_ARCH)
 
 // --------
@@ -111,14 +118,26 @@ wuffs_base__cpu_arch__have_arm_neon() {
 static inline bool  //
 wuffs_base__cpu_arch__have_x86_sse42() {
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+  // GCC defines these macros but MSVC does not.
+  //  - bit_PCLMUL = (1 <<  1)
+  //  - bit_POPCNT = (1 << 23)
+  //  - bit_SSE4_2 = (1 << 20)
+  const unsigned int sse42_ecx1 = 0x00900002;
+#if defined(__GNUC__)
   unsigned int eax1 = 0;
   unsigned int ebx1 = 0;
   unsigned int ecx1 = 0;
   unsigned int edx1 = 0;
   if (__get_cpuid(1, &eax1, &ebx1, &ecx1, &edx1)) {
-    const unsigned int sse42_ecx1 = bit_PCLMUL | bit_POPCNT | bit_SSE4_2;
     return (ecx1 & sse42_ecx1) == sse42_ecx1;
   }
+#elif defined(_MSC_VER)  // defined(__GNUC__)
+  int x[4];
+  __cpuid(x, 1);
+  return (((unsigned int)(x[2])) & sse42_ecx1) == sse42_ecx1;
+#else
+#error "WUFFS_BASE__CPU_ARCH__ETC combined with an unsupported compiler"
+#endif  // defined(__GNUC__); defined(_MSC_VER)
 #endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
   return false;
 }
