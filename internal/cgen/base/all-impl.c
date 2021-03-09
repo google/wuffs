@@ -38,8 +38,6 @@
 #define WUFFS_BASE__HAVE_UNIQUE_PTR
 #elif defined(__GNUC__)
 #warning "Wuffs' C++ code expects -std=c++11 or later"
-#elif defined(_MSC_VER)
-#pragma message("Wuffs' C++ code expects C++11 or later")
 #endif
 
 extern "C" {
