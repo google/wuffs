@@ -1235,7 +1235,7 @@ func (g *gen) writeCppMethods(b *buffer, n *a.Struct) error {
 	}
 	b.writes("#endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)\n\n")
 
-	b.writes("#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)\n")
+	b.writes("#if defined(WUFFS_BASE__HAVE_EQ_DELETE) && !defined(WUFFS_IMPLEMENTATION)\n")
 	b.writes("// Disallow constructing or copying an object via standard C++ mechanisms,\n")
 	b.writes("// e.g. the \"new\" operator, as this struct is intentionally opaque. Its total\n")
 	b.writes("// size and field layout is not part of the public, stable, memory-safe API.\n")
@@ -1250,7 +1250,9 @@ func (g *gen) writeCppMethods(b *buffer, n *a.Struct) error {
 	b.printf("%s() = delete;\n", fullStructName)
 	b.printf("%s(const %s&) = delete;\n", fullStructName, fullStructName)
 	b.printf("%s& operator=(\nconst %s&) = delete;\n", fullStructName, fullStructName)
-	b.writes("\n")
+	b.writes("#endif  // defined(WUFFS_BASE__HAVE_EQ_DELETE) && !defined(WUFFS_IMPLEMENTATION)\n\n")
+
+	b.writes("#if !defined(WUFFS_IMPLEMENTATION)\n")
 	b.writes("// As above, the size of the struct is not part of the public API, and unless\n")
 	b.writes("// WUFFS_IMPLEMENTATION is #define'd, this struct type T should be heap\n")
 	b.writes("// allocated, not stack allocated. Its size is not intended to be known at\n")
@@ -1260,7 +1262,7 @@ func (g *gen) writeCppMethods(b *buffer, n *a.Struct) error {
 	b.writes("// different, so that passing the latter will be rejected by the initialize\n")
 	b.writes("// function, we add an arbitrary amount of dead weight.\n")
 	b.writes("uint8_t dead_weight[123000000];  // 123 MB.\n")
-	b.writes("#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)\n\n")
+	b.writes("#endif  // !defined(WUFFS_IMPLEMENTATION)\n\n")
 
 	b.writes("inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT\n" +
 		"initialize(\nsize_t sizeof_star_self,\nuint64_t wuffs_version,\nuint32_t options) {\n")

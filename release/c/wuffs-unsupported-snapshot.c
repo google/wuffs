@@ -39,6 +39,7 @@
 #ifdef __cplusplus
 #if (__cplusplus >= 201103L) || defined(_MSC_VER)
 #include <memory>
+#define WUFFS_BASE__HAVE_EQ_DELETE
 #define WUFFS_BASE__HAVE_UNIQUE_PTR
 #elif defined(__GNUC__)
 #warning "Wuffs' C++ code expects -std=c++11 or later"
@@ -5776,7 +5777,7 @@ struct wuffs_adler32__hasher__struct {
   }
 #endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
-#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+#if defined(WUFFS_BASE__HAVE_EQ_DELETE) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
   // e.g. the "new" operator, as this struct is intentionally opaque. Its total
   // size and field layout is not part of the public, stable, memory-safe API.
@@ -5792,7 +5793,9 @@ struct wuffs_adler32__hasher__struct {
   wuffs_adler32__hasher__struct(const wuffs_adler32__hasher__struct&) = delete;
   wuffs_adler32__hasher__struct& operator=(
       const wuffs_adler32__hasher__struct&) = delete;
+#endif  // defined(WUFFS_BASE__HAVE_EQ_DELETE) && !defined(WUFFS_IMPLEMENTATION)
 
+#if !defined(WUFFS_IMPLEMENTATION)
   // As above, the size of the struct is not part of the public API, and unless
   // WUFFS_IMPLEMENTATION is #define'd, this struct type T should be heap
   // allocated, not stack allocated. Its size is not intended to be known at
@@ -5802,7 +5805,7 @@ struct wuffs_adler32__hasher__struct {
   // different, so that passing the latter will be rejected by the initialize
   // function, we add an arbitrary amount of dead weight.
   uint8_t dead_weight[123000000];  // 123 MB.
-#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+#endif  // !defined(WUFFS_IMPLEMENTATION)
 
   inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
   initialize(
@@ -6058,7 +6061,7 @@ struct wuffs_bmp__decoder__struct {
   }
 #endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
-#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+#if defined(WUFFS_BASE__HAVE_EQ_DELETE) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
   // e.g. the "new" operator, as this struct is intentionally opaque. Its total
   // size and field layout is not part of the public, stable, memory-safe API.
@@ -6074,7 +6077,9 @@ struct wuffs_bmp__decoder__struct {
   wuffs_bmp__decoder__struct(const wuffs_bmp__decoder__struct&) = delete;
   wuffs_bmp__decoder__struct& operator=(
       const wuffs_bmp__decoder__struct&) = delete;
+#endif  // defined(WUFFS_BASE__HAVE_EQ_DELETE) && !defined(WUFFS_IMPLEMENTATION)
 
+#if !defined(WUFFS_IMPLEMENTATION)
   // As above, the size of the struct is not part of the public API, and unless
   // WUFFS_IMPLEMENTATION is #define'd, this struct type T should be heap
   // allocated, not stack allocated. Its size is not intended to be known at
@@ -6084,7 +6089,7 @@ struct wuffs_bmp__decoder__struct {
   // different, so that passing the latter will be rejected by the initialize
   // function, we add an arbitrary amount of dead weight.
   uint8_t dead_weight[123000000];  // 123 MB.
-#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+#endif  // !defined(WUFFS_IMPLEMENTATION)
 
   inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
   initialize(
@@ -6340,7 +6345,7 @@ struct wuffs_cbor__decoder__struct {
   }
 #endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
-#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+#if defined(WUFFS_BASE__HAVE_EQ_DELETE) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
   // e.g. the "new" operator, as this struct is intentionally opaque. Its total
   // size and field layout is not part of the public, stable, memory-safe API.
@@ -6356,7 +6361,9 @@ struct wuffs_cbor__decoder__struct {
   wuffs_cbor__decoder__struct(const wuffs_cbor__decoder__struct&) = delete;
   wuffs_cbor__decoder__struct& operator=(
       const wuffs_cbor__decoder__struct&) = delete;
+#endif  // defined(WUFFS_BASE__HAVE_EQ_DELETE) && !defined(WUFFS_IMPLEMENTATION)
 
+#if !defined(WUFFS_IMPLEMENTATION)
   // As above, the size of the struct is not part of the public API, and unless
   // WUFFS_IMPLEMENTATION is #define'd, this struct type T should be heap
   // allocated, not stack allocated. Its size is not intended to be known at
@@ -6366,7 +6373,7 @@ struct wuffs_cbor__decoder__struct {
   // different, so that passing the latter will be rejected by the initialize
   // function, we add an arbitrary amount of dead weight.
   uint8_t dead_weight[123000000];  // 123 MB.
-#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+#endif  // !defined(WUFFS_IMPLEMENTATION)
 
   inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
   initialize(
@@ -6526,7 +6533,7 @@ struct wuffs_crc32__ieee_hasher__struct {
   }
 #endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
-#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+#if defined(WUFFS_BASE__HAVE_EQ_DELETE) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
   // e.g. the "new" operator, as this struct is intentionally opaque. Its total
   // size and field layout is not part of the public, stable, memory-safe API.
@@ -6542,7 +6549,9 @@ struct wuffs_crc32__ieee_hasher__struct {
   wuffs_crc32__ieee_hasher__struct(const wuffs_crc32__ieee_hasher__struct&) = delete;
   wuffs_crc32__ieee_hasher__struct& operator=(
       const wuffs_crc32__ieee_hasher__struct&) = delete;
+#endif  // defined(WUFFS_BASE__HAVE_EQ_DELETE) && !defined(WUFFS_IMPLEMENTATION)
 
+#if !defined(WUFFS_IMPLEMENTATION)
   // As above, the size of the struct is not part of the public API, and unless
   // WUFFS_IMPLEMENTATION is #define'd, this struct type T should be heap
   // allocated, not stack allocated. Its size is not intended to be known at
@@ -6552,7 +6561,7 @@ struct wuffs_crc32__ieee_hasher__struct {
   // different, so that passing the latter will be rejected by the initialize
   // function, we add an arbitrary amount of dead weight.
   uint8_t dead_weight[123000000];  // 123 MB.
-#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+#endif  // !defined(WUFFS_IMPLEMENTATION)
 
   inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
   initialize(
@@ -6780,7 +6789,7 @@ struct wuffs_deflate__decoder__struct {
   }
 #endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
-#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+#if defined(WUFFS_BASE__HAVE_EQ_DELETE) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
   // e.g. the "new" operator, as this struct is intentionally opaque. Its total
   // size and field layout is not part of the public, stable, memory-safe API.
@@ -6796,7 +6805,9 @@ struct wuffs_deflate__decoder__struct {
   wuffs_deflate__decoder__struct(const wuffs_deflate__decoder__struct&) = delete;
   wuffs_deflate__decoder__struct& operator=(
       const wuffs_deflate__decoder__struct&) = delete;
+#endif  // defined(WUFFS_BASE__HAVE_EQ_DELETE) && !defined(WUFFS_IMPLEMENTATION)
 
+#if !defined(WUFFS_IMPLEMENTATION)
   // As above, the size of the struct is not part of the public API, and unless
   // WUFFS_IMPLEMENTATION is #define'd, this struct type T should be heap
   // allocated, not stack allocated. Its size is not intended to be known at
@@ -6806,7 +6817,7 @@ struct wuffs_deflate__decoder__struct {
   // different, so that passing the latter will be rejected by the initialize
   // function, we add an arbitrary amount of dead weight.
   uint8_t dead_weight[123000000];  // 123 MB.
-#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+#endif  // !defined(WUFFS_IMPLEMENTATION)
 
   inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
   initialize(
@@ -7008,7 +7019,7 @@ struct wuffs_lzw__decoder__struct {
   }
 #endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
-#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+#if defined(WUFFS_BASE__HAVE_EQ_DELETE) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
   // e.g. the "new" operator, as this struct is intentionally opaque. Its total
   // size and field layout is not part of the public, stable, memory-safe API.
@@ -7024,7 +7035,9 @@ struct wuffs_lzw__decoder__struct {
   wuffs_lzw__decoder__struct(const wuffs_lzw__decoder__struct&) = delete;
   wuffs_lzw__decoder__struct& operator=(
       const wuffs_lzw__decoder__struct&) = delete;
+#endif  // defined(WUFFS_BASE__HAVE_EQ_DELETE) && !defined(WUFFS_IMPLEMENTATION)
 
+#if !defined(WUFFS_IMPLEMENTATION)
   // As above, the size of the struct is not part of the public API, and unless
   // WUFFS_IMPLEMENTATION is #define'd, this struct type T should be heap
   // allocated, not stack allocated. Its size is not intended to be known at
@@ -7034,7 +7047,7 @@ struct wuffs_lzw__decoder__struct {
   // different, so that passing the latter will be rejected by the initialize
   // function, we add an arbitrary amount of dead weight.
   uint8_t dead_weight[123000000];  // 123 MB.
-#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+#endif  // !defined(WUFFS_IMPLEMENTATION)
 
   inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
   initialize(
@@ -7384,7 +7397,7 @@ struct wuffs_gif__decoder__struct {
   }
 #endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
-#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+#if defined(WUFFS_BASE__HAVE_EQ_DELETE) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
   // e.g. the "new" operator, as this struct is intentionally opaque. Its total
   // size and field layout is not part of the public, stable, memory-safe API.
@@ -7400,7 +7413,9 @@ struct wuffs_gif__decoder__struct {
   wuffs_gif__decoder__struct(const wuffs_gif__decoder__struct&) = delete;
   wuffs_gif__decoder__struct& operator=(
       const wuffs_gif__decoder__struct&) = delete;
+#endif  // defined(WUFFS_BASE__HAVE_EQ_DELETE) && !defined(WUFFS_IMPLEMENTATION)
 
+#if !defined(WUFFS_IMPLEMENTATION)
   // As above, the size of the struct is not part of the public API, and unless
   // WUFFS_IMPLEMENTATION is #define'd, this struct type T should be heap
   // allocated, not stack allocated. Its size is not intended to be known at
@@ -7410,7 +7425,7 @@ struct wuffs_gif__decoder__struct {
   // different, so that passing the latter will be rejected by the initialize
   // function, we add an arbitrary amount of dead weight.
   uint8_t dead_weight[123000000];  // 123 MB.
-#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+#endif  // !defined(WUFFS_IMPLEMENTATION)
 
   inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
   initialize(
@@ -7652,7 +7667,7 @@ struct wuffs_gzip__decoder__struct {
   }
 #endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
-#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+#if defined(WUFFS_BASE__HAVE_EQ_DELETE) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
   // e.g. the "new" operator, as this struct is intentionally opaque. Its total
   // size and field layout is not part of the public, stable, memory-safe API.
@@ -7668,7 +7683,9 @@ struct wuffs_gzip__decoder__struct {
   wuffs_gzip__decoder__struct(const wuffs_gzip__decoder__struct&) = delete;
   wuffs_gzip__decoder__struct& operator=(
       const wuffs_gzip__decoder__struct&) = delete;
+#endif  // defined(WUFFS_BASE__HAVE_EQ_DELETE) && !defined(WUFFS_IMPLEMENTATION)
 
+#if !defined(WUFFS_IMPLEMENTATION)
   // As above, the size of the struct is not part of the public API, and unless
   // WUFFS_IMPLEMENTATION is #define'd, this struct type T should be heap
   // allocated, not stack allocated. Its size is not intended to be known at
@@ -7678,7 +7695,7 @@ struct wuffs_gzip__decoder__struct {
   // different, so that passing the latter will be rejected by the initialize
   // function, we add an arbitrary amount of dead weight.
   uint8_t dead_weight[123000000];  // 123 MB.
-#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+#endif  // !defined(WUFFS_IMPLEMENTATION)
 
   inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
   initialize(
@@ -7921,7 +7938,7 @@ struct wuffs_json__decoder__struct {
   }
 #endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
-#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+#if defined(WUFFS_BASE__HAVE_EQ_DELETE) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
   // e.g. the "new" operator, as this struct is intentionally opaque. Its total
   // size and field layout is not part of the public, stable, memory-safe API.
@@ -7937,7 +7954,9 @@ struct wuffs_json__decoder__struct {
   wuffs_json__decoder__struct(const wuffs_json__decoder__struct&) = delete;
   wuffs_json__decoder__struct& operator=(
       const wuffs_json__decoder__struct&) = delete;
+#endif  // defined(WUFFS_BASE__HAVE_EQ_DELETE) && !defined(WUFFS_IMPLEMENTATION)
 
+#if !defined(WUFFS_IMPLEMENTATION)
   // As above, the size of the struct is not part of the public API, and unless
   // WUFFS_IMPLEMENTATION is #define'd, this struct type T should be heap
   // allocated, not stack allocated. Its size is not intended to be known at
@@ -7947,7 +7966,7 @@ struct wuffs_json__decoder__struct {
   // different, so that passing the latter will be rejected by the initialize
   // function, we add an arbitrary amount of dead weight.
   uint8_t dead_weight[123000000];  // 123 MB.
-#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+#endif  // !defined(WUFFS_IMPLEMENTATION)
 
   inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
   initialize(
@@ -8179,7 +8198,7 @@ struct wuffs_nie__decoder__struct {
   }
 #endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
-#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+#if defined(WUFFS_BASE__HAVE_EQ_DELETE) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
   // e.g. the "new" operator, as this struct is intentionally opaque. Its total
   // size and field layout is not part of the public, stable, memory-safe API.
@@ -8195,7 +8214,9 @@ struct wuffs_nie__decoder__struct {
   wuffs_nie__decoder__struct(const wuffs_nie__decoder__struct&) = delete;
   wuffs_nie__decoder__struct& operator=(
       const wuffs_nie__decoder__struct&) = delete;
+#endif  // defined(WUFFS_BASE__HAVE_EQ_DELETE) && !defined(WUFFS_IMPLEMENTATION)
 
+#if !defined(WUFFS_IMPLEMENTATION)
   // As above, the size of the struct is not part of the public API, and unless
   // WUFFS_IMPLEMENTATION is #define'd, this struct type T should be heap
   // allocated, not stack allocated. Its size is not intended to be known at
@@ -8205,7 +8226,7 @@ struct wuffs_nie__decoder__struct {
   // different, so that passing the latter will be rejected by the initialize
   // function, we add an arbitrary amount of dead weight.
   uint8_t dead_weight[123000000];  // 123 MB.
-#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+#endif  // !defined(WUFFS_IMPLEMENTATION)
 
   inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
   initialize(
@@ -8462,7 +8483,7 @@ struct wuffs_zlib__decoder__struct {
   }
 #endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
-#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+#if defined(WUFFS_BASE__HAVE_EQ_DELETE) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
   // e.g. the "new" operator, as this struct is intentionally opaque. Its total
   // size and field layout is not part of the public, stable, memory-safe API.
@@ -8478,7 +8499,9 @@ struct wuffs_zlib__decoder__struct {
   wuffs_zlib__decoder__struct(const wuffs_zlib__decoder__struct&) = delete;
   wuffs_zlib__decoder__struct& operator=(
       const wuffs_zlib__decoder__struct&) = delete;
+#endif  // defined(WUFFS_BASE__HAVE_EQ_DELETE) && !defined(WUFFS_IMPLEMENTATION)
 
+#if !defined(WUFFS_IMPLEMENTATION)
   // As above, the size of the struct is not part of the public API, and unless
   // WUFFS_IMPLEMENTATION is #define'd, this struct type T should be heap
   // allocated, not stack allocated. Its size is not intended to be known at
@@ -8488,7 +8511,7 @@ struct wuffs_zlib__decoder__struct {
   // different, so that passing the latter will be rejected by the initialize
   // function, we add an arbitrary amount of dead weight.
   uint8_t dead_weight[123000000];  // 123 MB.
-#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+#endif  // !defined(WUFFS_IMPLEMENTATION)
 
   inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
   initialize(
@@ -8794,7 +8817,7 @@ struct wuffs_png__decoder__struct {
   }
 #endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
-#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+#if defined(WUFFS_BASE__HAVE_EQ_DELETE) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
   // e.g. the "new" operator, as this struct is intentionally opaque. Its total
   // size and field layout is not part of the public, stable, memory-safe API.
@@ -8810,7 +8833,9 @@ struct wuffs_png__decoder__struct {
   wuffs_png__decoder__struct(const wuffs_png__decoder__struct&) = delete;
   wuffs_png__decoder__struct& operator=(
       const wuffs_png__decoder__struct&) = delete;
+#endif  // defined(WUFFS_BASE__HAVE_EQ_DELETE) && !defined(WUFFS_IMPLEMENTATION)
 
+#if !defined(WUFFS_IMPLEMENTATION)
   // As above, the size of the struct is not part of the public API, and unless
   // WUFFS_IMPLEMENTATION is #define'd, this struct type T should be heap
   // allocated, not stack allocated. Its size is not intended to be known at
@@ -8820,7 +8845,7 @@ struct wuffs_png__decoder__struct {
   // different, so that passing the latter will be rejected by the initialize
   // function, we add an arbitrary amount of dead weight.
   uint8_t dead_weight[123000000];  // 123 MB.
-#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+#endif  // !defined(WUFFS_IMPLEMENTATION)
 
   inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
   initialize(
@@ -9115,7 +9140,7 @@ struct wuffs_wbmp__decoder__struct {
   }
 #endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
-#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+#if defined(WUFFS_BASE__HAVE_EQ_DELETE) && !defined(WUFFS_IMPLEMENTATION)
   // Disallow constructing or copying an object via standard C++ mechanisms,
   // e.g. the "new" operator, as this struct is intentionally opaque. Its total
   // size and field layout is not part of the public, stable, memory-safe API.
@@ -9131,7 +9156,9 @@ struct wuffs_wbmp__decoder__struct {
   wuffs_wbmp__decoder__struct(const wuffs_wbmp__decoder__struct&) = delete;
   wuffs_wbmp__decoder__struct& operator=(
       const wuffs_wbmp__decoder__struct&) = delete;
+#endif  // defined(WUFFS_BASE__HAVE_EQ_DELETE) && !defined(WUFFS_IMPLEMENTATION)
 
+#if !defined(WUFFS_IMPLEMENTATION)
   // As above, the size of the struct is not part of the public API, and unless
   // WUFFS_IMPLEMENTATION is #define'd, this struct type T should be heap
   // allocated, not stack allocated. Its size is not intended to be known at
@@ -9141,7 +9168,7 @@ struct wuffs_wbmp__decoder__struct {
   // different, so that passing the latter will be rejected by the initialize
   // function, we add an arbitrary amount of dead weight.
   uint8_t dead_weight[123000000];  // 123 MB.
-#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+#endif  // !defined(WUFFS_IMPLEMENTATION)
 
   inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
   initialize(
