@@ -239,7 +239,11 @@ load_image_type() {
     }
     TRY(read_more_src());
   }
+  return NULL;
+}
 
+const char*  //
+initialize_image_decoder() {
   wuffs_base__status status;
   switch (g_fourcc) {
     case WUFFS_BASE__FOURCC__BMP:
@@ -286,13 +290,62 @@ load_image_type() {
 }
 
 const char*  //
+advance_for_redirect() {
+  wuffs_base__io_buffer empty = wuffs_base__empty_io_buffer();
+  wuffs_base__more_information minfo = wuffs_base__empty_more_information();
+  wuffs_base__status status = wuffs_base__image_decoder__tell_me_more(
+      g_image_decoder, &empty, &minfo, &g_src);
+  if (status.repr != NULL) {
+    return wuffs_base__status__message(&status);
+  } else if (minfo.flavor !=
+             WUFFS_BASE__MORE_INFORMATION__FLAVOR__IO_REDIRECT) {
+    return "main: unsupported file format";
+  }
+  g_fourcc =
+      (int32_t)(wuffs_base__more_information__io_redirect__fourcc(&minfo));
+  if (g_fourcc <= 0) {
+    return "main: unsupported file format";
+  }
+
+  // Advance g_src's reader_position to pos.
+  uint64_t pos =
+      wuffs_base__more_information__io_redirect__range(&minfo).min_incl;
+  if (pos < wuffs_base__io_buffer__reader_position(&g_src)) {
+    // Redirects must go forward.
+    return "main: unsupported file format";
+  }
+  while (true) {
+    uint64_t relative_pos =
+        pos - wuffs_base__io_buffer__reader_position(&g_src);
+    if (relative_pos <= (g_src.meta.wi - g_src.meta.ri)) {
+      g_src.meta.ri += relative_pos;
+      break;
+    }
+    g_src.meta.ri = g_src.meta.wi;
+    TRY(read_more_src());
+  }
+  return NULL;
+}
+
+const char*  //
 load_image_config() {
+  bool redirected = false;
+redirect:
+  TRY(initialize_image_decoder());
+
   // Decode the wuffs_base__image_config.
   while (true) {
     wuffs_base__status status = wuffs_base__image_decoder__decode_image_config(
         g_image_decoder, &g_image_config, &g_src);
     if (status.repr == NULL) {
       break;
+    } else if (status.repr == wuffs_base__note__i_o_redirect) {
+      if (redirected) {
+        return "main: unsupported file format";
+      }
+      redirected = true;
+      TRY(advance_for_redirect());
+      goto redirect;
     } else if (status.repr != wuffs_base__suspension__short_read) {
       return wuffs_base__status__message(&status);
     }
