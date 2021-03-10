@@ -47,11 +47,16 @@ https://skia-review.googlesource.com/c/skia/+/290618
 // modules we use makes that process explicit. Preprocessing means that such
 // code simply isn't compiled.
 #define WUFFS_CONFIG__MODULES
+#define WUFFS_CONFIG__MODULE__ADLER32
 #define WUFFS_CONFIG__MODULE__BASE
 #define WUFFS_CONFIG__MODULE__BMP
+#define WUFFS_CONFIG__MODULE__CRC32
+#define WUFFS_CONFIG__MODULE__DEFLATE
 #define WUFFS_CONFIG__MODULE__GIF
 #define WUFFS_CONFIG__MODULE__LZW
+#define WUFFS_CONFIG__MODULE__PNG
 #define WUFFS_CONFIG__MODULE__WBMP
+#define WUFFS_CONFIG__MODULE__ZLIB
 
 // If building this program in an environment that doesn't easily accommodate
 // relative includes, you can use the script/inline-c-relative-includes.go
@@ -110,6 +115,7 @@ wuffs_base__slice_u8 g_workbuf_slice = {0};
 
 wuffs_base__image_config g_image_config = {0};
 wuffs_base__frame_config g_frame_config = {0};
+int32_t g_fourcc = 0;
 uint32_t g_width = 0;
 uint32_t g_height = 0;
 
@@ -117,6 +123,7 @@ wuffs_base__image_decoder* g_image_decoder = NULL;
 union {
   wuffs_bmp__decoder bmp;
   wuffs_gif__decoder gif;
+  wuffs_png__decoder png;
   wuffs_wbmp__decoder wbmp;
 } g_potential_decoders;
 
@@ -222,23 +229,20 @@ read_more_src() {
 
 const char*  //
 load_image_type() {
-  while (g_src.meta.ri >= g_src.meta.wi) {
+  g_fourcc = 0;
+  while (true) {
+    g_fourcc = wuffs_base__magic_number_guess_fourcc(
+        wuffs_base__io_buffer__reader_slice(&g_src));
+    if ((g_fourcc >= 0) ||
+        (wuffs_base__io_buffer__reader_length(&g_src) == g_src.data.len)) {
+      break;
+    }
     TRY(read_more_src());
   }
 
   wuffs_base__status status;
-  switch (g_src_buffer_array[0]) {
-    case '\x00':
-      status = wuffs_wbmp__decoder__initialize(
-          &g_potential_decoders.wbmp, sizeof g_potential_decoders.wbmp,
-          WUFFS_VERSION, WUFFS_INITIALIZE__DEFAULT_OPTIONS);
-      TRY(wuffs_base__status__message(&status));
-      g_image_decoder =
-          wuffs_wbmp__decoder__upcast_as__wuffs_base__image_decoder(
-              &g_potential_decoders.wbmp);
-      break;
-
-    case 'B':
+  switch (g_fourcc) {
+    case WUFFS_BASE__FOURCC__BMP:
       status = wuffs_bmp__decoder__initialize(
           &g_potential_decoders.bmp, sizeof g_potential_decoders.bmp,
           WUFFS_VERSION, WUFFS_INITIALIZE__DEFAULT_OPTIONS);
@@ -246,9 +250,9 @@ load_image_type() {
       g_image_decoder =
           wuffs_bmp__decoder__upcast_as__wuffs_base__image_decoder(
               &g_potential_decoders.bmp);
-      break;
+      return NULL;
 
-    case 'G':
+    case WUFFS_BASE__FOURCC__GIF:
       status = wuffs_gif__decoder__initialize(
           &g_potential_decoders.gif, sizeof g_potential_decoders.gif,
           WUFFS_VERSION, WUFFS_INITIALIZE__DEFAULT_OPTIONS);
@@ -256,12 +260,29 @@ load_image_type() {
       g_image_decoder =
           wuffs_gif__decoder__upcast_as__wuffs_base__image_decoder(
               &g_potential_decoders.gif);
-      break;
+      return NULL;
 
-    default:
-      return "main: unrecognized file format";
+    case WUFFS_BASE__FOURCC__PNG:
+      status = wuffs_png__decoder__initialize(
+          &g_potential_decoders.png, sizeof g_potential_decoders.png,
+          WUFFS_VERSION, WUFFS_INITIALIZE__DEFAULT_OPTIONS);
+      TRY(wuffs_base__status__message(&status));
+      g_image_decoder =
+          wuffs_png__decoder__upcast_as__wuffs_base__image_decoder(
+              &g_potential_decoders.png);
+      return NULL;
+
+    case WUFFS_BASE__FOURCC__WBMP:
+      status = wuffs_wbmp__decoder__initialize(
+          &g_potential_decoders.wbmp, sizeof g_potential_decoders.wbmp,
+          WUFFS_VERSION, WUFFS_INITIALIZE__DEFAULT_OPTIONS);
+      TRY(wuffs_base__status__message(&status));
+      g_image_decoder =
+          wuffs_wbmp__decoder__upcast_as__wuffs_base__image_decoder(
+              &g_potential_decoders.wbmp);
+      return NULL;
   }
-  return NULL;
+  return "main: unsupported file format";
 }
 
 const char*  //
