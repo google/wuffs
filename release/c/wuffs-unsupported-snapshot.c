@@ -758,6 +758,7 @@ wuffs_base__multiply_u64(uint64_t x, uint64_t y) {
   o.hi = ((uint64_t)(z >> 64));
   return o;
 #else
+  // TODO: consider using the _mul128 intrinsic if defined(_MSC_VER).
   uint64_t x0 = x & 0xFFFFFFFF;
   uint64_t x1 = x >> 32;
   uint64_t y0 = y & 0xFFFFFFFF;
@@ -784,6 +785,7 @@ wuffs_base__count_leading_zeroes_u64(uint64_t u) {
 }
 
 #else
+// TODO: consider using the _BitScanReverse intrinsic if defined(_MSC_VER).
 
 static inline uint32_t  //
 wuffs_base__count_leading_zeroes_u64(uint64_t u) {
