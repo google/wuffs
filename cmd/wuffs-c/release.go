@@ -107,14 +107,14 @@ func doGenrelease(args []string) error {
 		}
 	}
 
-	out.WriteString("#if defined(__cplusplus) && (__cplusplus >= 201103L)\n\n")
+	out.WriteString("#if defined(__cplusplus) && defined(WUFFS_BASE__HAVE_UNIQUE_PTR)\n\n")
 	out.WriteString(data.AuxBaseHh)
 	out.WriteString("\n")
 	for _, f := range data.AuxNonBaseHhFiles {
 		out.WriteString(f)
 		out.WriteString("\n")
 	}
-	out.WriteString("#endif  // defined(__cplusplus) && (__cplusplus >= 201103L)\n")
+	out.WriteString("#endif  // defined(__cplusplus) && defined(WUFFS_BASE__HAVE_UNIQUE_PTR)\n")
 
 	out.Write(grImplStartsHere)
 	out.WriteString("\n")
@@ -126,14 +126,14 @@ func doGenrelease(args []string) error {
 		}
 	}
 
-	out.WriteString("#if defined(__cplusplus) && (__cplusplus >= 201103L)\n\n")
+	out.WriteString("#if defined(__cplusplus) && defined(WUFFS_BASE__HAVE_UNIQUE_PTR)\n\n")
 	out.WriteString(data.AuxBaseCc)
 	out.WriteString("\n")
 	for _, f := range data.AuxNonBaseCcFiles {
 		out.WriteString(f)
 		out.WriteString("\n")
 	}
-	out.WriteString("#endif  // defined(__cplusplus) && (__cplusplus >= 201103L)\n\n")
+	out.WriteString("#endif  // defined(__cplusplus) && defined(WUFFS_BASE__HAVE_UNIQUE_PTR)\n\n")
 
 	out.Write(grImplEndsHere)
 	out.WriteString(grPragmaPop)

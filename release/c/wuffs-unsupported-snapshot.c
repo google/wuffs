@@ -9269,7 +9269,7 @@ struct wuffs_wbmp__decoder__struct {
 
 #endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
-#if defined(__cplusplus) && (__cplusplus >= 201103L)
+#if defined(__cplusplus) && defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
 // ---------------- Auxiliary - Base
 
@@ -9637,7 +9637,7 @@ DecodeJson(DecodeJsonCallbacks& callbacks,
 
 }  // namespace wuffs_aux
 
-#endif  // defined(__cplusplus) && (__cplusplus >= 201103L)
+#endif  // defined(__cplusplus) && defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
 // WUFFS C HEADER ENDS HERE.
 #ifdef WUFFS_IMPLEMENTATION
@@ -36299,7 +36299,7 @@ wuffs_wbmp__decoder__workbuf_len(
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__WBMP)
 
-#if defined(__cplusplus) && (__cplusplus >= 201103L)
+#if defined(__cplusplus) && defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
 // ---------------- Auxiliary - Base
 
@@ -37611,7 +37611,7 @@ done:
 #endif  // !defined(WUFFS_CONFIG__MODULES) ||
         // defined(WUFFS_CONFIG__MODULE__AUX__JSON)
 
-#endif  // defined(__cplusplus) && (__cplusplus >= 201103L)
+#endif  // defined(__cplusplus) && defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
 #endif  // WUFFS_IMPLEMENTATION
 
