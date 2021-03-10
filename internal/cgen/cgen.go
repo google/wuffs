@@ -67,10 +67,10 @@ const (
 // reading or writing the next byte (and advancing the stream) is essentially
 // "etc = *iop_a_src++" or "*io_a_dst++ = etc".
 //
-// The other two prefixes, giving names like io1_etc and io2_etc, are
-// auxilliary pointers: lower and upper inclusive bounds. As an iop_etc pointer
-// advances, it cannot advance past io2_etc. In the rarer case that an iop_etc
-// pointer retreats, undoing a read or write, it cannot retreat past io1_etc.
+// The other two prefixes, giving names like io1_etc and io2_etc, are auxiliary
+// pointers: lower and upper inclusive bounds. As an iop_etc pointer advances,
+// it cannot advance past io2_etc. In the rarer case that an iop_etc pointer
+// retreats, undoing a read or write, it cannot retreat past io1_etc.
 //
 // The iop_etc pointer can change over the lifetime of a function. The ioN_etc
 // pointers, for numeric N, cannot.
