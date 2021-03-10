@@ -129,10 +129,10 @@ wuffs_base__iterate_total_advance(size_t total_len,
 
 // ---------------- Numeric Types
 
-extern const uint8_t wuffs_base__low_bits_mask__u8[9];
-extern const uint16_t wuffs_base__low_bits_mask__u16[17];
-extern const uint32_t wuffs_base__low_bits_mask__u32[33];
-extern const uint64_t wuffs_base__low_bits_mask__u64[65];
+extern const uint8_t wuffs_base__low_bits_mask__u8[8];
+extern const uint16_t wuffs_base__low_bits_mask__u16[16];
+extern const uint32_t wuffs_base__low_bits_mask__u32[32];
+extern const uint64_t wuffs_base__low_bits_mask__u64[64];
 
 #define WUFFS_BASE__LOW_BITS_MASK__U8(n) (wuffs_base__low_bits_mask__u8[n])
 #define WUFFS_BASE__LOW_BITS_MASK__U16(n) (wuffs_base__low_bits_mask__u16[n])

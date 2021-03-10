@@ -9761,10 +9761,10 @@ wuffs_base__iterate_total_advance(size_t total_len,
 
 // ---------------- Numeric Types
 
-extern const uint8_t wuffs_base__low_bits_mask__u8[9];
-extern const uint16_t wuffs_base__low_bits_mask__u16[17];
-extern const uint32_t wuffs_base__low_bits_mask__u32[33];
-extern const uint64_t wuffs_base__low_bits_mask__u64[65];
+extern const uint8_t wuffs_base__low_bits_mask__u8[8];
+extern const uint16_t wuffs_base__low_bits_mask__u16[16];
+extern const uint32_t wuffs_base__low_bits_mask__u32[32];
+extern const uint64_t wuffs_base__low_bits_mask__u64[64];
 
 #define WUFFS_BASE__LOW_BITS_MASK__U8(n) (wuffs_base__low_bits_mask__u8[n])
 #define WUFFS_BASE__LOW_BITS_MASK__U16(n) (wuffs_base__low_bits_mask__u16[n])
@@ -10289,25 +10289,25 @@ wuffs_base__pixel_swizzler__swizzle_interleaved_transparent_black(
 #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BASE) || \
     defined(WUFFS_CONFIG__MODULE__BASE__CORE)
 
-const uint8_t wuffs_base__low_bits_mask__u8[9] = {
-    0x00, 0x01, 0x03, 0x07, 0x0F, 0x1F, 0x3F, 0x7F, 0xFF,
+const uint8_t wuffs_base__low_bits_mask__u8[8] = {
+    0x00, 0x01, 0x03, 0x07, 0x0F, 0x1F, 0x3F, 0x7F,
 };
 
-const uint16_t wuffs_base__low_bits_mask__u16[17] = {
-    0x0000, 0x0001, 0x0003, 0x0007, 0x000F, 0x001F, 0x003F, 0x007F, 0x00FF,
-    0x01FF, 0x03FF, 0x07FF, 0x0FFF, 0x1FFF, 0x3FFF, 0x7FFF, 0xFFFF,
+const uint16_t wuffs_base__low_bits_mask__u16[16] = {
+    0x0000, 0x0001, 0x0003, 0x0007, 0x000F, 0x001F, 0x003F, 0x007F,
+    0x00FF, 0x01FF, 0x03FF, 0x07FF, 0x0FFF, 0x1FFF, 0x3FFF, 0x7FFF,
 };
 
-const uint32_t wuffs_base__low_bits_mask__u32[33] = {
+const uint32_t wuffs_base__low_bits_mask__u32[32] = {
     0x00000000, 0x00000001, 0x00000003, 0x00000007, 0x0000000F, 0x0000001F,
     0x0000003F, 0x0000007F, 0x000000FF, 0x000001FF, 0x000003FF, 0x000007FF,
     0x00000FFF, 0x00001FFF, 0x00003FFF, 0x00007FFF, 0x0000FFFF, 0x0001FFFF,
     0x0003FFFF, 0x0007FFFF, 0x000FFFFF, 0x001FFFFF, 0x003FFFFF, 0x007FFFFF,
     0x00FFFFFF, 0x01FFFFFF, 0x03FFFFFF, 0x07FFFFFF, 0x0FFFFFFF, 0x1FFFFFFF,
-    0x3FFFFFFF, 0x7FFFFFFF, 0xFFFFFFFF,
+    0x3FFFFFFF, 0x7FFFFFFF,
 };
 
-const uint64_t wuffs_base__low_bits_mask__u64[65] = {
+const uint64_t wuffs_base__low_bits_mask__u64[64] = {
     0x0000000000000000, 0x0000000000000001, 0x0000000000000003,
     0x0000000000000007, 0x000000000000000F, 0x000000000000001F,
     0x000000000000003F, 0x000000000000007F, 0x00000000000000FF,
@@ -10329,7 +10329,7 @@ const uint64_t wuffs_base__low_bits_mask__u64[65] = {
     0x003FFFFFFFFFFFFF, 0x007FFFFFFFFFFFFF, 0x00FFFFFFFFFFFFFF,
     0x01FFFFFFFFFFFFFF, 0x03FFFFFFFFFFFFFF, 0x07FFFFFFFFFFFFFF,
     0x0FFFFFFFFFFFFFFF, 0x1FFFFFFFFFFFFFFF, 0x3FFFFFFFFFFFFFFF,
-    0x7FFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF,
+    0x7FFFFFFFFFFFFFFF,
 };
 
 const uint32_t wuffs_base__pixel_format__bits_per_channel[16] = {
