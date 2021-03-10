@@ -5656,10 +5656,6 @@ struct wuffs_base__token_decoder__struct {
 }  // extern "C"
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 // ---------------- Status Codes
 
 // ---------------- Public Consts
@@ -5667,6 +5663,10 @@ extern "C" {
 // ---------------- Struct Declarations
 
 typedef struct wuffs_adler32__hasher__struct wuffs_adler32__hasher;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // ---------------- Public Initializer Prototypes
 
@@ -5722,6 +5722,10 @@ WUFFS_BASE__MAYBE_STATIC uint32_t
 wuffs_adler32__hasher__update_u32(
     wuffs_adler32__hasher* self,
     wuffs_base__slice_u8 a_x);
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif
 
 // ---------------- Struct Definitions
 
@@ -5832,14 +5836,6 @@ struct wuffs_adler32__hasher__struct {
 
 #endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
-#ifdef __cplusplus
-}  // extern "C"
-#endif
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 // ---------------- Status Codes
 
 extern const char wuffs_bmp__error__bad_header[];
@@ -5853,6 +5849,10 @@ extern const char wuffs_bmp__error__unsupported_bmp_file[];
 // ---------------- Struct Declarations
 
 typedef struct wuffs_bmp__decoder__struct wuffs_bmp__decoder;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // ---------------- Public Initializer Prototypes
 
@@ -5963,6 +5963,10 @@ wuffs_bmp__decoder__tell_me_more(
 WUFFS_BASE__MAYBE_STATIC wuffs_base__range_ii_u64
 wuffs_bmp__decoder__workbuf_len(
     const wuffs_bmp__decoder* self);
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif
 
 // ---------------- Struct Definitions
 
@@ -6179,14 +6183,6 @@ struct wuffs_bmp__decoder__struct {
 
 #endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
-#ifdef __cplusplus
-}  // extern "C"
-#endif
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 // ---------------- Status Codes
 
 extern const char wuffs_cbor__error__bad_input[];
@@ -6215,6 +6211,10 @@ extern const char wuffs_cbor__error__unsupported_recursion_depth[];
 // ---------------- Struct Declarations
 
 typedef struct wuffs_cbor__decoder__struct wuffs_cbor__decoder;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // ---------------- Public Initializer Prototypes
 
@@ -6276,6 +6276,10 @@ wuffs_cbor__decoder__decode_tokens(
     wuffs_base__token_buffer* a_dst,
     wuffs_base__io_buffer* a_src,
     wuffs_base__slice_u8 a_workbuf);
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif
 
 // ---------------- Struct Definitions
 
@@ -6403,14 +6407,6 @@ struct wuffs_cbor__decoder__struct {
 
 #endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
-#ifdef __cplusplus
-}  // extern "C"
-#endif
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 // ---------------- Status Codes
 
 // ---------------- Public Consts
@@ -6418,6 +6414,10 @@ extern "C" {
 // ---------------- Struct Declarations
 
 typedef struct wuffs_crc32__ieee_hasher__struct wuffs_crc32__ieee_hasher;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // ---------------- Public Initializer Prototypes
 
@@ -6473,6 +6473,10 @@ WUFFS_BASE__MAYBE_STATIC uint32_t
 wuffs_crc32__ieee_hasher__update_u32(
     wuffs_crc32__ieee_hasher* self,
     wuffs_base__slice_u8 a_x);
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif
 
 // ---------------- Struct Definitions
 
@@ -6582,14 +6586,6 @@ struct wuffs_crc32__ieee_hasher__struct {
 
 #endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
-#ifdef __cplusplus
-}  // extern "C"
-#endif
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 // ---------------- Status Codes
 
 extern const char wuffs_deflate__error__bad_huffman_code_over_subscribed[];
@@ -6613,6 +6609,10 @@ extern const char wuffs_deflate__error__no_huffman_codes[];
 // ---------------- Struct Declarations
 
 typedef struct wuffs_deflate__decoder__struct wuffs_deflate__decoder;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // ---------------- Public Initializer Prototypes
 
@@ -6679,6 +6679,10 @@ wuffs_deflate__decoder__transform_io(
     wuffs_base__io_buffer* a_dst,
     wuffs_base__io_buffer* a_src,
     wuffs_base__slice_u8 a_workbuf);
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif
 
 // ---------------- Struct Definitions
 
@@ -6849,14 +6853,6 @@ struct wuffs_deflate__decoder__struct {
 
 #endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
-#ifdef __cplusplus
-}  // extern "C"
-#endif
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 // ---------------- Status Codes
 
 extern const char wuffs_lzw__error__bad_code[];
@@ -6868,6 +6864,10 @@ extern const char wuffs_lzw__error__bad_code[];
 // ---------------- Struct Declarations
 
 typedef struct wuffs_lzw__decoder__struct wuffs_lzw__decoder;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // ---------------- Public Initializer Prototypes
 
@@ -6938,6 +6938,10 @@ wuffs_lzw__decoder__transform_io(
 WUFFS_BASE__MAYBE_STATIC wuffs_base__slice_u8
 wuffs_lzw__decoder__flush(
     wuffs_lzw__decoder* self);
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif
 
 // ---------------- Struct Definitions
 
@@ -7082,14 +7086,6 @@ struct wuffs_lzw__decoder__struct {
 
 #endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
-#ifdef __cplusplus
-}  // extern "C"
-#endif
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 // ---------------- Status Codes
 
 extern const char wuffs_gif__error__bad_extension_label[];
@@ -7120,6 +7116,10 @@ extern const char wuffs_gif__error__bad_palette[];
 // ---------------- Struct Declarations
 
 typedef struct wuffs_gif__decoder__struct wuffs_gif__decoder;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // ---------------- Public Initializer Prototypes
 
@@ -7230,6 +7230,10 @@ wuffs_gif__decoder__decode_frame(
     wuffs_base__pixel_blend a_blend,
     wuffs_base__slice_u8 a_workbuf,
     wuffs_base__decode_frame_options* a_opts);
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif
 
 // ---------------- Struct Definitions
 
@@ -7505,14 +7509,6 @@ struct wuffs_gif__decoder__struct {
 
 #endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
-#ifdef __cplusplus
-}  // extern "C"
-#endif
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 // ---------------- Status Codes
 
 extern const char wuffs_gzip__error__bad_checksum[];
@@ -7527,6 +7523,10 @@ extern const char wuffs_gzip__error__bad_header[];
 // ---------------- Struct Declarations
 
 typedef struct wuffs_gzip__decoder__struct wuffs_gzip__decoder;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // ---------------- Public Initializer Prototypes
 
@@ -7588,6 +7588,10 @@ wuffs_gzip__decoder__transform_io(
     wuffs_base__io_buffer* a_dst,
     wuffs_base__io_buffer* a_src,
     wuffs_base__slice_u8 a_workbuf);
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif
 
 // ---------------- Struct Definitions
 
@@ -7715,14 +7719,6 @@ struct wuffs_gzip__decoder__struct {
 
 #endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
-#ifdef __cplusplus
-}  // extern "C"
-#endif
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 // ---------------- Status Codes
 
 extern const char wuffs_json__error__bad_c0_control_code[];
@@ -7788,6 +7784,10 @@ extern const char wuffs_json__error__unsupported_recursion_depth[];
 
 typedef struct wuffs_json__decoder__struct wuffs_json__decoder;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // ---------------- Public Initializer Prototypes
 
 // For any given "wuffs_foo__bar* self", "wuffs_foo__bar__initialize(self,
@@ -7848,6 +7848,10 @@ wuffs_json__decoder__decode_tokens(
     wuffs_base__token_buffer* a_dst,
     wuffs_base__io_buffer* a_src,
     wuffs_base__slice_u8 a_workbuf);
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif
 
 // ---------------- Struct Definitions
 
@@ -7984,14 +7988,6 @@ struct wuffs_json__decoder__struct {
 
 #endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
-#ifdef __cplusplus
-}  // extern "C"
-#endif
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 // ---------------- Status Codes
 
 extern const char wuffs_nie__error__bad_header[];
@@ -8004,6 +8000,10 @@ extern const char wuffs_nie__error__unsupported_nie_file[];
 // ---------------- Struct Declarations
 
 typedef struct wuffs_nie__decoder__struct wuffs_nie__decoder;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // ---------------- Public Initializer Prototypes
 
@@ -8114,6 +8114,10 @@ wuffs_nie__decoder__tell_me_more(
 WUFFS_BASE__MAYBE_STATIC wuffs_base__range_ii_u64
 wuffs_nie__decoder__workbuf_len(
     const wuffs_nie__decoder* self);
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif
 
 // ---------------- Struct Definitions
 
@@ -8300,14 +8304,6 @@ struct wuffs_nie__decoder__struct {
 
 #endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
-#ifdef __cplusplus
-}  // extern "C"
-#endif
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 // ---------------- Status Codes
 
 extern const char wuffs_zlib__note__dictionary_required[];
@@ -8324,6 +8320,10 @@ extern const char wuffs_zlib__error__incorrect_dictionary[];
 // ---------------- Struct Declarations
 
 typedef struct wuffs_zlib__decoder__struct wuffs_zlib__decoder;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // ---------------- Public Initializer Prototypes
 
@@ -8394,6 +8394,10 @@ wuffs_zlib__decoder__transform_io(
     wuffs_base__io_buffer* a_dst,
     wuffs_base__io_buffer* a_src,
     wuffs_base__slice_u8 a_workbuf);
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif
 
 // ---------------- Struct Definitions
 
@@ -8536,14 +8540,6 @@ struct wuffs_zlib__decoder__struct {
 
 #endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
-#ifdef __cplusplus
-}  // extern "C"
-#endif
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 // ---------------- Status Codes
 
 extern const char wuffs_png__error__bad_checksum[];
@@ -8560,6 +8556,10 @@ extern const char wuffs_png__error__unsupported_png_file[];
 // ---------------- Struct Declarations
 
 typedef struct wuffs_png__decoder__struct wuffs_png__decoder;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // ---------------- Public Initializer Prototypes
 
@@ -8670,6 +8670,10 @@ wuffs_png__decoder__tell_me_more(
 WUFFS_BASE__MAYBE_STATIC wuffs_base__range_ii_u64
 wuffs_png__decoder__workbuf_len(
     const wuffs_png__decoder* self);
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif
 
 // ---------------- Struct Definitions
 
@@ -8915,14 +8919,6 @@ struct wuffs_png__decoder__struct {
 
 #endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
-#ifdef __cplusplus
-}  // extern "C"
-#endif
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 // ---------------- Status Codes
 
 extern const char wuffs_wbmp__error__bad_header[];
@@ -8934,6 +8930,10 @@ extern const char wuffs_wbmp__error__bad_header[];
 // ---------------- Struct Declarations
 
 typedef struct wuffs_wbmp__decoder__struct wuffs_wbmp__decoder;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // ---------------- Public Initializer Prototypes
 
@@ -9044,6 +9044,10 @@ wuffs_wbmp__decoder__tell_me_more(
 WUFFS_BASE__MAYBE_STATIC wuffs_base__range_ii_u64
 wuffs_wbmp__decoder__workbuf_len(
     const wuffs_wbmp__decoder* self);
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif
 
 // ---------------- Struct Definitions
 
@@ -9235,10 +9239,6 @@ struct wuffs_wbmp__decoder__struct {
 };  // struct wuffs_wbmp__decoder__struct
 
 #endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
-
-#ifdef __cplusplus
-}  // extern "C"
-#endif
 
 #if defined(__cplusplus) && (__cplusplus >= 201103L)
 

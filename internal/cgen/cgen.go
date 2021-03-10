@@ -707,8 +707,7 @@ func (g *gen) genIncludes(b *buffer) error {
 }
 
 func (g *gen) genHeader(b *buffer) error {
-	b.writes("\n#ifdef __cplusplus\nextern \"C\" {\n#endif\n\n")
-
+	b.writes("\n")
 	b.writes("// ---------------- Status Codes\n\n")
 
 	wroteStatus := false
@@ -733,6 +732,8 @@ func (g *gen) genHeader(b *buffer) error {
 		structName := n.QID().Str(g.tm)
 		b.printf("typedef struct %s%s__struct %s%s;\n\n", g.pkgPrefix, structName, g.pkgPrefix, structName)
 	}
+
+	b.writes("#ifdef __cplusplus\nextern \"C\" {\n#endif\n\n")
 
 	b.writes("// ---------------- Public Initializer Prototypes\n\n")
 	b.writes("// For any given \"wuffs_foo__bar* self\", \"wuffs_foo__bar__initialize(self,\n")
@@ -794,6 +795,8 @@ func (g *gen) genHeader(b *buffer) error {
 		return err
 	}
 
+	b.writes("#ifdef __cplusplus\n}  // extern \"C\"\n#endif\n\n")
+
 	b.writes("// ---------------- Struct Definitions\n\n")
 	b.writes("// These structs' fields, and the sizeof them, are private implementation\n")
 	b.writes("// details that aren't guaranteed to be stable across Wuffs versions.\n")
@@ -806,9 +809,8 @@ func (g *gen) genHeader(b *buffer) error {
 			return err
 		}
 	}
-	b.writes("#endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)\n")
+	b.writes("#endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)\n\n")
 
-	b.writes("\n#ifdef __cplusplus\n}  // extern \"C\"\n#endif\n\n")
 	return nil
 }
 
