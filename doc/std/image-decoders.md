@@ -21,7 +21,7 @@ wuffs_base__io_buffer src = etc;
 wuffs_gif__decoder* dec = etc;
 
 wuffs_base__image_config ic;
-const char* status = wuffs_gif__decoder__decode_image_config(dec, &ic, &src);
+wuffs_base__status status = wuffs_gif__decoder__decode_image_config(dec, &ic, &src);
 // Error checking (inspecting the status variable) is not shown, for brevity.
 // See the example programs, listed below, for how to handle errors.
 
@@ -31,7 +31,7 @@ wuffs_base__pixel_buffer pb = etc;
 while (true) {
   wuffs_base__frame_config fc;
   status = wuffs_gif__decoder__decode_frame_config(dec, &fc, &src);
-  if (status == wuffs_base__note__end_of_data) {
+  if (status.repr == wuffs_base__note__end_of_data) {
     break;
   }
   // Ditto re error checking.
@@ -113,12 +113,18 @@ caller can go back to the `decode_image_config` method.
 
 ## Implementations
 
+- [std/bmp](/std/bmp)
 - [std/gif](/std/gif)
+- [std/nie](/std/nie)
+- [std/png](/std/png)
+- [std/wbmp](/std/wbmp)
 
 
 ## Examples
 
+- [example/convert-to-nia](/example/convert-to-nia)
 - [example/gifplayer](/example/gifplayer)
+- [example/imageviewer](/example/imageviewer)
 
 Examples in other repositories:
 
