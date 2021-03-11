@@ -82,18 +82,26 @@ class DecodeImageCallbacks {
 
   // OnImageConfig allocates the pixel buffer.
   //
-  // The default OnImageConfig implementation allocates zeroed memory.
+  // allow_uninitialized_memory will be true if a valid background_color was
+  // passed to DecodeImage, since the pixel buffer's contents will be
+  // overwritten with that color after OnImageConfig returns.
+  //
+  // The default OnImageConfig implementation allocates either uninitialized or
+  // zeroed memory. Zeroed memory typically corresponds to filling with opaque
+  // black or transparent black, depending on the pixel format.
   virtual AllocResult  //
-  OnImageConfig(const wuffs_base__image_config& image_config);
+  OnImageConfig(const wuffs_base__image_config& image_config,
+                bool allow_uninitialized_memory);
 
   // AllocWorkbuf allocates the work buffer. The allocated buffer's length
-  // should be at least len.min_incl, but larger allocations (up to
-  // len.max_incl) may have better performance (by using more memory).
+  // should be at least len_range.min_incl, but larger allocations (up to
+  // len_range.max_incl) may have better performance (by using more memory).
   //
-  // The default AllocWorkbuf implementation allocates len.max_incl bytes of
-  // zeroed memory.
+  // The default AllocWorkbuf implementation allocates len_range.max_incl bytes
+  // of either uninitialized or zeroed memory.
   virtual AllocResult  //
-  AllocWorkbuf(wuffs_base__range_ii_u64 len);
+  AllocWorkbuf(wuffs_base__range_ii_u64 len_range,
+               bool allow_uninitialized_memory);
 
   // Done is always the last Callback method called by DecodeImage, whether or
   // not parsing the input encountered an error. Even when successful, trailing
@@ -167,6 +175,15 @@ extern const char DecodeImage_UnsupportedPixelFormat[];
 //  - WUFFS_BASE__PIXEL_BLEND__SRC
 //  - WUFFS_BASE__PIXEL_BLEND__SRC_OVER
 //
+// The background_color is used to fill the pixel buffer after
+// callbacks.OnImageConfig returns, if it is valid in the
+// wuffs_base__color_u32_argb_premul__is_valid sense. The default value,
+// 0x0000_0001, is not valid since its Blue channel value (0x01) is greater
+// than its Alpha channel value (0x00). A valid background_color will typically
+// be overwritten when pixel_blend is WUFFS_BASE__PIXEL_BLEND__SRC, but might
+// still be visible on partial (not total) success or when pixel_blend is
+// WUFFS_BASE__PIXEL_BLEND__SRC_OVER and the decoded image is not fully opaque.
+//
 // Decoding fails (with DecodeImage_MaxInclDimensionExceeded) if the image's
 // width or height is greater than max_incl_dimension.
 DecodeImageResult  //
@@ -174,6 +191,7 @@ DecodeImage(DecodeImageCallbacks& callbacks,
             sync_io::Input& input,
             uint32_t override_pixel_format_repr,
             wuffs_base__pixel_blend pixel_blend = WUFFS_BASE__PIXEL_BLEND__SRC,
+            wuffs_base__color_u32_argb_premul background_color = 1,  // Invalid.
             uint32_t max_incl_dimension = 1048575);  // 0x000F_FFFF
 
 }  // namespace wuffs_aux

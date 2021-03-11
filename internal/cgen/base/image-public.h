@@ -21,6 +21,20 @@
 // 0xAARRGGBB (Alpha most significant, Blue least), regardless of endianness.
 typedef uint32_t wuffs_base__color_u32_argb_premul;
 
+// wuffs_base__color_u32_argb_premul__is_valid returns whether c's Red, Green
+// and Blue channels are all less than or equal to its Alpha channel. c uses
+// premultiplied alpha, so 50% opaque 100% saturated red is 0x7F7F_0000 and a
+// value like 0x7F80_0000 is invalid.
+static inline bool  //
+wuffs_base__color_u32_argb_premul__is_valid(
+    wuffs_base__color_u32_argb_premul c) {
+  uint32_t a = 0xFF & (c >> 24);
+  uint32_t r = 0xFF & (c >> 16);
+  uint32_t g = 0xFF & (c >> 8);
+  uint32_t b = 0xFF & (c >> 0);
+  return (a >= r) && (a >= g) && (a >= b);
+}
+
 static inline uint16_t  //
 wuffs_base__color_u32_argb_premul__as__color_u16_rgb_565(
     wuffs_base__color_u32_argb_premul c) {
@@ -1103,6 +1117,9 @@ typedef struct wuffs_base__pixel_buffer__struct {
       uint32_t x,
       uint32_t y,
       wuffs_base__color_u32_argb_premul color);
+  inline wuffs_base__status set_color_u32_fill_rect(
+      wuffs_base__rect_ie_u32 rect,
+      wuffs_base__color_u32_argb_premul color);
 #endif  // __cplusplus
 
 } wuffs_base__pixel_buffer;
@@ -1283,6 +1300,12 @@ wuffs_base__pixel_buffer__set_color_u32_at(
     uint32_t y,
     wuffs_base__color_u32_argb_premul color);
 
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
+wuffs_base__pixel_buffer__set_color_u32_fill_rect(
+    wuffs_base__pixel_buffer* pb,
+    wuffs_base__rect_ie_u32 rect,
+    wuffs_base__color_u32_argb_premul color);
+
 #ifdef __cplusplus
 
 inline wuffs_base__status  //
@@ -1326,12 +1349,25 @@ wuffs_base__pixel_buffer::color_u32_at(uint32_t x, uint32_t y) const {
   return wuffs_base__pixel_buffer__color_u32_at(this, x, y);
 }
 
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
+wuffs_base__pixel_buffer__set_color_u32_fill_rect(
+    wuffs_base__pixel_buffer* pb,
+    wuffs_base__rect_ie_u32 rect,
+    wuffs_base__color_u32_argb_premul color);
+
 inline wuffs_base__status  //
 wuffs_base__pixel_buffer::set_color_u32_at(
     uint32_t x,
     uint32_t y,
     wuffs_base__color_u32_argb_premul color) {
   return wuffs_base__pixel_buffer__set_color_u32_at(this, x, y, color);
+}
+
+inline wuffs_base__status  //
+wuffs_base__pixel_buffer::set_color_u32_fill_rect(
+    wuffs_base__rect_ie_u32 rect,
+    wuffs_base__color_u32_argb_premul color) {
+  return wuffs_base__pixel_buffer__set_color_u32_fill_rect(this, rect, color);
 }
 
 #endif  // __cplusplus

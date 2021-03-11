@@ -87,7 +87,8 @@ DecodeImageCallbacks::OnImageFormat(uint32_t fourcc,
 
 DecodeImageCallbacks::AllocResult  //
 DecodeImageCallbacks::OnImageConfig(
-    const wuffs_base__image_config& image_config) {
+    const wuffs_base__image_config& image_config,
+    bool allow_uninitialized_memory) {
   uint32_t w = image_config.pixcfg.width();
   uint32_t h = image_config.pixcfg.height();
   if ((w == 0) || (h == 0)) {
@@ -97,28 +98,29 @@ DecodeImageCallbacks::OnImageConfig(
   if ((len == 0) || (SIZE_MAX < len)) {
     return AllocResult(DecodeImage_UnsupportedPixelConfiguration);
   }
-  void* ptr = calloc((size_t)len, 1);
-  if (!ptr) {
-    return AllocResult(DecodeImage_OutOfMemory);
-  }
-  return AllocResult(MemOwner(ptr, &free),
-                     wuffs_base__make_slice_u8((uint8_t*)ptr, (size_t)len));
+  void* ptr =
+      allow_uninitialized_memory ? malloc((size_t)len) : calloc((size_t)len, 1);
+  return ptr ? AllocResult(
+                   MemOwner(ptr, &free),
+                   wuffs_base__make_slice_u8((uint8_t*)ptr, (size_t)len))
+             : AllocResult(DecodeImage_OutOfMemory);
 }
 
 DecodeImageCallbacks::AllocResult  //
-DecodeImageCallbacks::AllocWorkbuf(wuffs_base__range_ii_u64 len) {
-  if (len.max_incl == 0) {
-    return DecodeImageCallbacks::AllocResult("");
-  } else if (SIZE_MAX < len.max_incl) {
-    return DecodeImageCallbacks::AllocResult(DecodeImage_OutOfMemory);
+DecodeImageCallbacks::AllocWorkbuf(wuffs_base__range_ii_u64 len_range,
+                                   bool allow_uninitialized_memory) {
+  uint64_t len = len_range.max_incl;
+  if (len == 0) {
+    return AllocResult("");
+  } else if (SIZE_MAX < len) {
+    return AllocResult(DecodeImage_OutOfMemory);
   }
-  void* p = calloc((size_t)len.max_incl, 1);
-  if (!p) {
-    return DecodeImageCallbacks::AllocResult(DecodeImage_OutOfMemory);
-  }
-  return DecodeImageCallbacks::AllocResult(
-      MemOwner(p, &free),
-      wuffs_base__make_slice_u8((uint8_t*)p, (size_t)len.max_incl));
+  void* ptr =
+      allow_uninitialized_memory ? malloc((size_t)len) : calloc((size_t)len, 1);
+  return ptr ? AllocResult(
+                   MemOwner(ptr, &free),
+                   wuffs_base__make_slice_u8((uint8_t*)ptr, (size_t)len))
+             : AllocResult(DecodeImage_OutOfMemory);
 }
 
 void  //
@@ -186,6 +188,7 @@ DecodeImage0(wuffs_base__image_decoder::unique_ptr& image_decoder,
              wuffs_base__io_buffer& io_buf,
              uint32_t override_pixel_format_repr,
              wuffs_base__pixel_blend pixel_blend,
+             wuffs_base__color_u32_argb_premul background_color,
              uint32_t max_incl_dimension) {
   // Check args.
   switch (override_pixel_format_repr) {
@@ -234,7 +237,7 @@ redirect:
       wuffs_base__more_information minfo = wuffs_base__empty_more_information();
       wuffs_base__status tmm_status =
           image_decoder->tell_me_more(&empty, &minfo, &io_buf);
-      if (!tmm_status.is_ok()) {
+      if (tmm_status.repr != nullptr) {
         return DecodeImageResult(tmm_status.message());
       }
       if (minfo.flavor != WUFFS_BASE__MORE_INFORMATION__FLAVOR__IO_REDIRECT) {
@@ -265,7 +268,7 @@ redirect:
     while (true) {
       wuffs_base__status id_dic_status =
           image_decoder->decode_image_config(&image_config, &io_buf);
-      if (id_dic_status.repr == NULL) {
+      if (id_dic_status.repr == nullptr) {
         break;
       } else if (id_dic_status.repr == wuffs_base__note__i_o_redirect) {
         if (redirected) {
@@ -305,8 +308,10 @@ redirect:
       return DecodeImageResult(DecodeImage_UnsupportedPixelFormat);
     }
   }
+  bool valid_background_color =
+      wuffs_base__color_u32_argb_premul__is_valid(background_color);
   DecodeImageCallbacks::AllocResult oic_result =
-      callbacks.OnImageConfig(image_config);
+      callbacks.OnImageConfig(image_config, valid_background_color);
   if (!oic_result.error_message.empty()) {
     return DecodeImageResult(std::move(oic_result.error_message));
   } else if (oic_result.mem_slice.len < pixbuf_len_min_incl) {
@@ -318,11 +323,19 @@ redirect:
   if (!pb_sfs_status.is_ok()) {
     return DecodeImageResult(pb_sfs_status.message());
   }
+  if (valid_background_color) {
+    wuffs_base__status pb_scufr_status = pixel_buffer.set_color_u32_fill_rect(
+        pixel_buffer.pixcfg.bounds(), background_color);
+    if (pb_scufr_status.repr != nullptr) {
+      return DecodeImageResult(pb_scufr_status.message());
+    }
+  }
 
-  // Allocate the work buffer.
+  // Allocate the work buffer. Wuffs' decoders conventionally assume that this
+  // can be uninitialized memory.
   wuffs_base__range_ii_u64 workbuf_len = image_decoder->workbuf_len();
   DecodeImageCallbacks::AllocResult alloc_workbuf_result =
-      callbacks.AllocWorkbuf(workbuf_len);
+      callbacks.AllocWorkbuf(workbuf_len, true);
   if (!alloc_workbuf_result.error_message.empty()) {
     return DecodeImageResult(std::move(alloc_workbuf_result.error_message));
   } else if (alloc_workbuf_result.mem_slice.len < workbuf_len.min_incl) {
@@ -334,7 +347,7 @@ redirect:
   while (true) {
     wuffs_base__status id_dfc_status =
         image_decoder->decode_frame_config(&frame_config, &io_buf);
-    if (id_dfc_status.repr == NULL) {
+    if (id_dfc_status.repr == nullptr) {
       break;
     } else if (id_dfc_status.repr != wuffs_base__suspension__short_read) {
       return DecodeImageResult(id_dfc_status.message());
@@ -360,8 +373,8 @@ redirect:
   while (true) {
     wuffs_base__status id_df_status =
         image_decoder->decode_frame(&pixel_buffer, &io_buf, pixel_blend,
-                                    alloc_workbuf_result.mem_slice, NULL);
-    if (id_df_status.repr == NULL) {
+                                    alloc_workbuf_result.mem_slice, nullptr);
+    if (id_df_status.repr == nullptr) {
       break;
     } else if (id_df_status.repr != wuffs_base__suspension__short_read) {
       message = id_df_status.message();
@@ -389,6 +402,7 @@ DecodeImage(DecodeImageCallbacks& callbacks,
             sync_io::Input& input,
             uint32_t override_pixel_format_repr,
             wuffs_base__pixel_blend pixel_blend,
+            wuffs_base__color_u32_argb_premul background_color,
             uint32_t max_incl_dimension) {
   wuffs_base__io_buffer* io_buf = input.BringsItsOwnIOBuffer();
   wuffs_base__io_buffer fallback_io_buf = wuffs_base__empty_io_buffer();
@@ -401,9 +415,9 @@ DecodeImage(DecodeImageCallbacks& callbacks,
   }
 
   wuffs_base__image_decoder::unique_ptr image_decoder(nullptr, &free);
-  DecodeImageResult result =
-      DecodeImage0(image_decoder, callbacks, input, *io_buf,
-                   override_pixel_format_repr, pixel_blend, max_incl_dimension);
+  DecodeImageResult result = DecodeImage0(
+      image_decoder, callbacks, input, *io_buf, override_pixel_format_repr,
+      pixel_blend, background_color, max_incl_dimension);
   callbacks.Done(result, input, *io_buf, std::move(image_decoder));
   return result;
 }

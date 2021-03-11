@@ -217,6 +217,87 @@ wuffs_base__pixel_buffer__set_color_u32_at(
 
 // --------
 
+static inline void  //
+wuffs_base__pixel_buffer__set_color_u32_fill_rect__xxxx(
+    wuffs_base__pixel_buffer* pb,
+    wuffs_base__rect_ie_u32 rect,
+    uint32_t color) {
+  size_t stride = pb->private_impl.planes[0].stride;
+  uint32_t width = wuffs_base__rect_ie_u32__width(&rect);
+  if (((stride & 3) == 0) && ((stride >> 2) == width) &&
+      (rect.min_incl_x == 0)) {
+    uint8_t* ptr =
+        pb->private_impl.planes[0].ptr + (stride * ((size_t)rect.min_incl_y));
+    uint32_t height = wuffs_base__rect_ie_u32__height(&rect);
+    size_t n;
+    for (n = ((size_t)width) * ((size_t)height); n > 0; n--) {
+      wuffs_base__poke_u32le__no_bounds_check(ptr, color);
+      ptr += 4;
+    }
+    return;
+  }
+
+  uint32_t y;
+  for (y = rect.min_incl_y; y < rect.max_excl_y; y++) {
+    uint8_t* ptr = pb->private_impl.planes[0].ptr + (stride * ((size_t)y)) +
+                   (4 * ((size_t)rect.min_incl_x));
+    uint32_t n;
+    for (n = width; n > 0; n--) {
+      wuffs_base__poke_u32le__no_bounds_check(ptr, color);
+      ptr += 4;
+    }
+  }
+}
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
+wuffs_base__pixel_buffer__set_color_u32_fill_rect(
+    wuffs_base__pixel_buffer* pb,
+    wuffs_base__rect_ie_u32 rect,
+    wuffs_base__color_u32_argb_premul color) {
+  if (!pb) {
+    return wuffs_base__make_status(wuffs_base__error__bad_receiver);
+  } else if (wuffs_base__rect_ie_u32__is_empty(&rect)) {
+    return wuffs_base__make_status(NULL);
+  }
+  wuffs_base__rect_ie_u32 bounds =
+      wuffs_base__pixel_config__bounds(&pb->pixcfg);
+  if (!wuffs_base__rect_ie_u32__contains_rect(&bounds, rect)) {
+    return wuffs_base__make_status(wuffs_base__error__bad_argument);
+  }
+
+  if (wuffs_base__pixel_format__is_planar(&pb->pixcfg.private_impl.pixfmt)) {
+    // TODO: support planar formats.
+    return wuffs_base__make_status(wuffs_base__error__unsupported_option);
+  }
+
+  switch (pb->pixcfg.private_impl.pixfmt.repr) {
+    case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
+      wuffs_base__pixel_buffer__set_color_u32_fill_rect__xxxx(
+          pb, rect,
+          wuffs_base__color_u32_argb_premul__as__color_u32_argb_nonpremul(
+              color));
+      return wuffs_base__make_status(NULL);
+
+    case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
+    case WUFFS_BASE__PIXEL_FORMAT__BGRX:
+      wuffs_base__pixel_buffer__set_color_u32_fill_rect__xxxx(pb, rect, color);
+      return wuffs_base__make_status(NULL);
+
+      // TODO: fast paths for other formats.
+  }
+
+  uint32_t y;
+  for (y = rect.min_incl_y; y < rect.max_excl_y; y++) {
+    uint32_t x;
+    for (x = rect.min_incl_x; x < rect.max_excl_x; x++) {
+      wuffs_base__pixel_buffer__set_color_u32_at(pb, x, y, color);
+    }
+  }
+  return wuffs_base__make_status(NULL);
+}
+
+// --------
+
 WUFFS_BASE__MAYBE_STATIC uint8_t  //
 wuffs_base__pixel_palette__closest_element(
     wuffs_base__slice_u8 palette_slice,

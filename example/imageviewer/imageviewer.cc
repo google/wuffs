@@ -89,42 +89,6 @@ wuffs_aux::MemOwner g_pixbuf_mem_owner(nullptr, &free);
 wuffs_base__slice_u8 g_pixbuf_mem_slice = {0};
 uint32_t g_background_color_index = 0;
 
-class Callbacks : public wuffs_aux::DecodeImageCallbacks {
-  DecodeImageCallbacks::AllocResult  //
-  OnImageConfig(const wuffs_base__image_config& image_config) override {
-    uint32_t w = image_config.pixcfg.width();
-    uint32_t h = image_config.pixcfg.height();
-    if ((w == 0) || (h == 0)) {
-      return DecodeImageCallbacks::AllocResult("");
-    }
-    uint64_t len = image_config.pixcfg.pixbuf_len();
-    if ((len == 0) || (SIZE_MAX < len)) {
-      return DecodeImageCallbacks::AllocResult(
-          wuffs_aux::DecodeImage_UnsupportedPixelConfiguration);
-    }
-    void* ptr = malloc((size_t)len);
-    if (!ptr) {
-      return DecodeImageCallbacks::AllocResult(
-          wuffs_aux::DecodeImage_OutOfMemory);
-    }
-
-    // Fill in the background color. The default OnImageConfig implementation
-    // fills with zeroes (transparent black).
-    wuffs_base__color_u32_argb_premul color =
-        g_background_colors[g_background_color_index];
-    uint8_t* p4 = (uint8_t*)ptr;
-    size_t n4 = ((size_t)len) / 4;
-    for (size_t i = 0; i < n4; i++) {
-      wuffs_base__poke_u32le__no_bounds_check(p4, color);
-      p4 += 4;
-    }
-
-    return DecodeImageCallbacks::AllocResult(
-        wuffs_aux::MemOwner(ptr, &free),
-        wuffs_base__make_slice_u8((uint8_t*)ptr, (size_t)len));
-  }
-};
-
 bool  //
 load_image(const char* filename) {
   FILE* file = stdin;
@@ -144,13 +108,14 @@ load_image(const char* filename) {
   g_pixbuf_mem_owner.reset();
   g_pixbuf_mem_slice = wuffs_base__empty_slice_u8();
 
-  Callbacks callbacks;
+  wuffs_aux::DecodeImageCallbacks callbacks;
   wuffs_aux::sync_io::FileInput input(file);
   wuffs_aux::DecodeImageResult res = wuffs_aux::DecodeImage(
       callbacks, input, WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL,
       // Use PIXEL_BLEND__SRC_OVER, not the default PIXEL_BLEND__SRC, because
-      // we override OnImageConfig to fill in the background color.
-      WUFFS_BASE__PIXEL_BLEND__SRC_OVER, MAX_INCL_DIMENSION);
+      // we also pass a background color.
+      WUFFS_BASE__PIXEL_BLEND__SRC_OVER,
+      g_background_colors[g_background_color_index], MAX_INCL_DIMENSION);
   if (filename) {
     fclose(file);
   }
