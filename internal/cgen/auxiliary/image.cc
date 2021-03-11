@@ -49,7 +49,7 @@ DecodeImageCallbacks::AllocResult::AllocResult(std::string&& error_message0)
       error_message(std::move(error_message0)) {}
 
 wuffs_base__image_decoder::unique_ptr  //
-DecodeImageCallbacks::OnImageFormat(uint32_t fourcc,
+DecodeImageCallbacks::SelectDecoder(uint32_t fourcc,
                                     wuffs_base__slice_u8 prefix) {
   switch (fourcc) {
 #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BMP)
@@ -85,10 +85,16 @@ DecodeImageCallbacks::OnImageFormat(uint32_t fourcc,
   return wuffs_base__image_decoder::unique_ptr(nullptr, &free);
 }
 
+wuffs_base__pixel_format  //
+DecodeImageCallbacks::SelectPixfmt(
+    const wuffs_base__image_config& image_config) {
+  return wuffs_base__make_pixel_format(
+      WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL);
+}
+
 DecodeImageCallbacks::AllocResult  //
-DecodeImageCallbacks::OnImageConfig(
-    const wuffs_base__image_config& image_config,
-    bool allow_uninitialized_memory) {
+DecodeImageCallbacks::AllocPixbuf(const wuffs_base__image_config& image_config,
+                                  bool allow_uninitialized_memory) {
   uint32_t w = image_config.pixcfg.width();
   uint32_t h = image_config.pixcfg.height();
   if ((w == 0) || (h == 0)) {
@@ -186,21 +192,10 @@ DecodeImage0(wuffs_base__image_decoder::unique_ptr& image_decoder,
              DecodeImageCallbacks& callbacks,
              sync_io::Input& input,
              wuffs_base__io_buffer& io_buf,
-             uint32_t override_pixel_format_repr,
              wuffs_base__pixel_blend pixel_blend,
              wuffs_base__color_u32_argb_premul background_color,
              uint32_t max_incl_dimension) {
   // Check args.
-  switch (override_pixel_format_repr) {
-    case 0:
-    case WUFFS_BASE__PIXEL_FORMAT__BGR_565:
-    case WUFFS_BASE__PIXEL_FORMAT__BGR:
-    case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
-    case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
-      break;
-    default:
-      return DecodeImageResult(DecodeImage_UnsupportedPixelFormat);
-  }
   switch (pixel_blend) {
     case WUFFS_BASE__PIXEL_BLEND__SRC:
     case WUFFS_BASE__PIXEL_BLEND__SRC_OVER:
@@ -256,8 +251,8 @@ redirect:
       image_decoder.reset();
     }
 
-    // Make the image decoder.
-    image_decoder = callbacks.OnImageFormat(
+    // Select the image decoder.
+    image_decoder = callbacks.SelectDecoder(
         (uint32_t)fourcc,
         fourcc ? wuffs_base__empty_slice_u8() : io_buf.reader_slice());
     if (!image_decoder) {
@@ -289,14 +284,24 @@ redirect:
     }
   } while (false);
 
-  // Apply the override pixel format.
+  // Select the pixel format.
   uint32_t w = image_config.pixcfg.width();
   uint32_t h = image_config.pixcfg.height();
   if ((w > max_incl_dimension) || (h > max_incl_dimension)) {
     return DecodeImageResult(DecodeImage_MaxInclDimensionExceeded);
   }
-  if (override_pixel_format_repr != 0) {
-    image_config.pixcfg.set(override_pixel_format_repr,
+  wuffs_base__pixel_format pixel_format = callbacks.SelectPixfmt(image_config);
+  if (pixel_format.repr != image_config.pixcfg.pixel_format().repr) {
+    switch (pixel_format.repr) {
+      case WUFFS_BASE__PIXEL_FORMAT__BGR_565:
+      case WUFFS_BASE__PIXEL_FORMAT__BGR:
+      case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
+      case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
+        break;
+      default:
+        return DecodeImageResult(DecodeImage_UnsupportedPixelFormat);
+    }
+    image_config.pixcfg.set(pixel_format.repr,
                             WUFFS_BASE__PIXEL_SUBSAMPLING__NONE, w, h);
   }
 
@@ -310,16 +315,16 @@ redirect:
   }
   bool valid_background_color =
       wuffs_base__color_u32_argb_premul__is_valid(background_color);
-  DecodeImageCallbacks::AllocResult oic_result =
-      callbacks.OnImageConfig(image_config, valid_background_color);
-  if (!oic_result.error_message.empty()) {
-    return DecodeImageResult(std::move(oic_result.error_message));
-  } else if (oic_result.mem_slice.len < pixbuf_len_min_incl) {
+  DecodeImageCallbacks::AllocResult alloc_pixbuf_result =
+      callbacks.AllocPixbuf(image_config, valid_background_color);
+  if (!alloc_pixbuf_result.error_message.empty()) {
+    return DecodeImageResult(std::move(alloc_pixbuf_result.error_message));
+  } else if (alloc_pixbuf_result.mem_slice.len < pixbuf_len_min_incl) {
     return DecodeImageResult(DecodeImage_BufferIsTooShort);
   }
   wuffs_base__pixel_buffer pixel_buffer;
-  wuffs_base__status pb_sfs_status =
-      pixel_buffer.set_from_slice(&image_config.pixcfg, oic_result.mem_slice);
+  wuffs_base__status pb_sfs_status = pixel_buffer.set_from_slice(
+      &image_config.pixcfg, alloc_pixbuf_result.mem_slice);
   if (!pb_sfs_status.is_ok()) {
     return DecodeImageResult(pb_sfs_status.message());
   }
@@ -390,8 +395,8 @@ redirect:
       }
     }
   }
-  return DecodeImageResult(std::move(oic_result.mem_owner),
-                           oic_result.mem_slice, pixel_buffer,
+  return DecodeImageResult(std::move(alloc_pixbuf_result.mem_owner),
+                           alloc_pixbuf_result.mem_slice, pixel_buffer,
                            std::move(message));
 }
 
@@ -400,7 +405,6 @@ redirect:
 DecodeImageResult  //
 DecodeImage(DecodeImageCallbacks& callbacks,
             sync_io::Input& input,
-            uint32_t override_pixel_format_repr,
             wuffs_base__pixel_blend pixel_blend,
             wuffs_base__color_u32_argb_premul background_color,
             uint32_t max_incl_dimension) {
@@ -415,9 +419,9 @@ DecodeImage(DecodeImageCallbacks& callbacks,
   }
 
   wuffs_base__image_decoder::unique_ptr image_decoder(nullptr, &free);
-  DecodeImageResult result = DecodeImage0(
-      image_decoder, callbacks, input, *io_buf, override_pixel_format_repr,
-      pixel_blend, background_color, max_incl_dimension);
+  DecodeImageResult result =
+      DecodeImage0(image_decoder, callbacks, input, *io_buf, pixel_blend,
+                   background_color, max_incl_dimension);
   callbacks.Done(result, input, *io_buf, std::move(image_decoder));
   return result;
 }

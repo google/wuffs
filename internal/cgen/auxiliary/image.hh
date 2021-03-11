@@ -33,14 +33,14 @@ struct DecodeImageResult {
 
 // DecodeImageCallbacks are the callbacks given to DecodeImage. They are always
 // called in this order:
-//  1. OnImageFormat
-//  2. OnImageConfig
-//  3. AllocWorkbuf
-//  4. Done
+//  1. SelectDecoder
+//  2. SelectPixfmt
+//  3. AllocPixbuf
+//  4. AllocWorkbuf
+//  5. Done
 //
 // It may return early - the third callback might not be invoked if the second
-// one fails (returns a non-empty error message) - but the final callback
-// (Done) is always invoked.
+// one fails - but the final callback (Done) is always invoked.
 class DecodeImageCallbacks {
  public:
   // AllocResult holds a memory allocation (the result of malloc or new, a
@@ -55,19 +55,19 @@ class DecodeImageCallbacks {
     std::string error_message;
   };
 
-  // OnImageFormat returns the image decoder for the input data's file format.
+  // SelectDecoder returns the image decoder for the input data's file format.
   // Returning a nullptr means failure (DecodeImage_UnsupportedImageFormat).
   //
   // Common formats will have a FourCC value in the range [1 ..= 0x7FFF_FFFF],
   // such as WUFFS_BASE__FOURCC__JPEG. A zero FourCC value means that the
   // caller is responsible for examining the opening bytes (a prefix) of the
-  // input data. OnImageFormat implementations should not modify those bytes.
+  // input data. SelectDecoder implementations should not modify those bytes.
   //
-  // OnImageFormat might be called more than once, since some image file
+  // SelectDecoder might be called more than once, since some image file
   // formats can wrap others. For example, a nominal BMP file can actually
   // contain a JPEG or a PNG.
   //
-  // The default OnImageFormat accepts the FOURCC codes listed below. For
+  // The default SelectDecoder accepts the FOURCC codes listed below. For
   // modular builds (i.e. when #define'ing WUFFS_CONFIG__MODULES), acceptance
   // of the ETC file format is optional (for each value of ETC) and depends on
   // the corresponding module to be enabled at compile time (i.e. #define'ing
@@ -78,20 +78,38 @@ class DecodeImageCallbacks {
   //  - WUFFS_BASE__FOURCC__PNG
   //  - WUFFS_BASE__FOURCC__WBMP
   virtual wuffs_base__image_decoder::unique_ptr  //
-  OnImageFormat(uint32_t fourcc, wuffs_base__slice_u8 prefix);
+  SelectDecoder(uint32_t fourcc, wuffs_base__slice_u8 prefix);
 
-  // OnImageConfig allocates the pixel buffer.
+  // SelectPixfmt returns the destination pixel format for AllocPixbuf. It
+  // should return wuffs_base__make_pixel_format(etc) called with one of:
+  //  - WUFFS_BASE__PIXEL_FORMAT__BGR_565
+  //  - WUFFS_BASE__PIXEL_FORMAT__BGR
+  //  - WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL
+  //  - WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL
+  // or return image_config.pixcfg.pixel_format(). The latter means to use the
+  // image file's natural pixel format. For example, GIF images' natural pixel
+  // format is an indexed one.
+  //
+  // Returning otherwise means failure (DecodeImage_UnsupportedPixelFormat).
+  //
+  // The default SelectPixfmt implementation returns
+  // wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL)
+  // which is 4 bytes per pixel (8 bits per channel × 4 channels).
+  virtual wuffs_base__pixel_format  //
+  SelectPixfmt(const wuffs_base__image_config& image_config);
+
+  // AllocPixbuf allocates the pixel buffer.
   //
   // allow_uninitialized_memory will be true if a valid background_color was
   // passed to DecodeImage, since the pixel buffer's contents will be
-  // overwritten with that color after OnImageConfig returns.
+  // overwritten with that color after AllocPixbuf returns.
   //
-  // The default OnImageConfig implementation allocates either uninitialized or
+  // The default AllocPixbuf implementation allocates either uninitialized or
   // zeroed memory. Zeroed memory typically corresponds to filling with opaque
   // black or transparent black, depending on the pixel format.
   virtual AllocResult  //
-  OnImageConfig(const wuffs_base__image_config& image_config,
-                bool allow_uninitialized_memory);
+  AllocPixbuf(const wuffs_base__image_config& image_config,
+              bool allow_uninitialized_memory);
 
   // AllocWorkbuf allocates the work buffer. The allocated buffer's length
   // should be at least len_range.min_incl, but larger allocations (up to
@@ -107,7 +125,7 @@ class DecodeImageCallbacks {
   // not parsing the input encountered an error. Even when successful, trailing
   // data may remain in input and buffer.
   //
-  // The image_decoder is the one returned by OnImageFormat (if OnImageFormat
+  // The image_decoder is the one returned by SelectDecoder (if SelectDecoder
   // was successful), or a no-op unique_ptr otherwise. Like any unique_ptr,
   // ownership moves to the Done implementation.
   //
@@ -133,7 +151,7 @@ extern const char DecodeImage_UnsupportedPixelConfiguration[];
 extern const char DecodeImage_UnsupportedPixelFormat[];
 
 // DecodeImage decodes the image data in input. A variety of image file formats
-// can be decoded, depending on what callbacks.OnImageFormat returns.
+// can be decoded, depending on what callbacks.SelectDecoder returns.
 //
 // For animated formats, only the first frame is returned, since the API is
 // simpler for synchronous I/O and having DecodeImage only return when
@@ -158,25 +176,14 @@ extern const char DecodeImage_UnsupportedPixelFormat[];
 // as the returned pixbuf_mem_owner. Regardless of success or failure, the work
 // buffer memory is deleted.
 //
-// If override_pixel_format_repr is zero then the pixel buffer will have the
-// image file's natural pixel format. For example, GIF images' natural pixel
-// format is an indexed one.
-//
-// If override_pixel_format_repr is non-zero (and one of the constants listed
-// below) then the image will be decoded to that particular pixel format:
-//  - WUFFS_BASE__PIXEL_FORMAT__BGR_565
-//  - WUFFS_BASE__PIXEL_FORMAT__BGR
-//  - WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL
-//  - WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL
-//
 // The pixel_blend (one of the constants listed below) determines how to
 // composite the decoded image over the pixel buffer's original pixels (as
-// returned by callbacks.OnImageConfig):
+// returned by callbacks.AllocPixbuf):
 //  - WUFFS_BASE__PIXEL_BLEND__SRC
 //  - WUFFS_BASE__PIXEL_BLEND__SRC_OVER
 //
 // The background_color is used to fill the pixel buffer after
-// callbacks.OnImageConfig returns, if it is valid in the
+// callbacks.AllocPixbuf returns, if it is valid in the
 // wuffs_base__color_u32_argb_premul__is_valid sense. The default value,
 // 0x0000_0001, is not valid since its Blue channel value (0x01) is greater
 // than its Alpha channel value (0x00). A valid background_color will typically
@@ -189,7 +196,6 @@ extern const char DecodeImage_UnsupportedPixelFormat[];
 DecodeImageResult  //
 DecodeImage(DecodeImageCallbacks& callbacks,
             sync_io::Input& input,
-            uint32_t override_pixel_format_repr,
             wuffs_base__pixel_blend pixel_blend = WUFFS_BASE__PIXEL_BLEND__SRC,
             wuffs_base__color_u32_argb_premul background_color = 1,  // Invalid.
             uint32_t max_incl_dimension = 1048575);  // 0x000F_FFFF
