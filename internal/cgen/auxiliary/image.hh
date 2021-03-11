@@ -117,13 +117,23 @@ extern const char DecodeImage_UnsupportedPixelConfiguration[];
 extern const char DecodeImage_UnsupportedPixelFormat[];
 
 // DecodeImage decodes the image data in input. A variety of image file formats
-// can be decoded, depending on what callbacks.OnImageFormat returns. For
-// animated formats, only the first frame is returned.
+// can be decoded, depending on what callbacks.OnImageFormat returns.
 //
-//  - On total success, the returned error_message is empty.
+// For animated formats, only the first frame is returned, since the API is
+// simpler for synchronous I/O and having DecodeImage only return when
+// completely done, but rendering animation often involves handling other
+// events in between animation frames. To decode multiple frames of animated
+// images, or for asynchronous I/O (e.g. when decoding an image streamed over
+// the network), use Wuffs' lower level C API instead of its higher level,
+// simplified C++ API (the wuffs_aux API).
+//
+// The DecodeImageResult's fields depend on whether decoding succeeded:
+//  - On total success, the error_message is empty and pixbuf.pixcfg.is_valid()
+//    is true.
 //  - On partial success (e.g. the input file was truncated but we are still
-//    able to decode some pixels), error_message is non-empty but the returned
-//    pixbuf.pixcfg.is_valid() is true.
+//    able to decode some of the pixels), error_message is non-empty but
+//    pixbuf.pixcfg.is_valid() is still true. It is up to the caller whether to
+//    accept or reject partial success.
 //  - On failure, the error_message is non_empty and pixbuf.pixcfg.is_valid()
 //    is false.
 //
