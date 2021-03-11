@@ -117,6 +117,103 @@ colors_differ(wuffs_base__color_u32_argb_premul color0,
 }
 
 const char*  //
+test_wuffs_pixel_buffer_fill_rect() {
+  CHECK_FOCUS(__func__);
+
+  const uint32_t width = 5;
+  const uint32_t height = 5;
+
+  const struct {
+    wuffs_base__color_u32_argb_premul color;
+    uint32_t pixfmt_repr;
+  } dsts[] = {
+      {
+          .color = 0xFF000010,
+          .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__BGR_565,
+      },
+      {
+          .color = 0xFF000040,
+          .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__BGR,
+      },
+      {
+          .color = 0x88000048,
+          .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL,
+      },
+      {
+          .color = 0x88000048,
+          .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE,
+      },
+      {
+          .color = 0x88000048,
+          .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL,
+      },
+      {
+          .color = 0xFF000040,
+          .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__BGRX,
+      },
+      {
+          .color = 0x88000048,
+          .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL,
+      },
+      {
+          .color = 0x88000048,
+          .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL,
+      },
+  };
+
+  int d;
+  for (d = 0; d < WUFFS_TESTLIB_ARRAY_SIZE(dsts); d++) {
+    // Allocate the dst_pixbuf.
+    wuffs_base__pixel_config dst_pixcfg = ((wuffs_base__pixel_config){});
+    wuffs_base__pixel_config__set(&dst_pixcfg, dsts[d].pixfmt_repr,
+                                  WUFFS_BASE__PIXEL_SUBSAMPLING__NONE, width,
+                                  height);
+    wuffs_base__pixel_buffer dst_pixbuf = ((wuffs_base__pixel_buffer){});
+    CHECK_STATUS("set_from_slice",
+                 wuffs_base__pixel_buffer__set_from_slice(
+                     &dst_pixbuf, &dst_pixcfg, g_have_slice_u8));
+
+    int orientation;
+    for (orientation = 0; orientation < 2; orientation++) {
+      // Reset to transparent black (or its closest approximation).
+      uint32_t y;
+      for (y = 0; y < height; y++) {
+        uint32_t x;
+        for (x = 0; x < width; x++) {
+          CHECK_STATUS(
+              "set_color_u32_at",
+              wuffs_base__pixel_buffer__set_color_u32_at(&dst_pixbuf, x, y, 0));
+        }
+      }
+
+      // Fill a rectangle:
+      //  - orientation == 0 means 1 pixel wide.
+      //  - orientation == 1 means 1 pixel high.
+      wuffs_base__rect_ie_u32 rect =
+          orientation ? wuffs_base__make_rect_ie_u32(0, height / 2, width,
+                                                     1 + (height / 2))
+                      : wuffs_base__make_rect_ie_u32(width / 2, 0,
+                                                     1 + (width / 2), height);
+      CHECK_STATUS("set_color_u32_fill_rect",
+                   wuffs_base__pixel_buffer__set_color_u32_fill_rect(
+                       &dst_pixbuf, rect, dsts[d].color));
+
+      // Check the middle dst pixel.
+      wuffs_base__color_u32_argb_premul want_dst_pixel = dsts[d].color;
+      wuffs_base__color_u32_argb_premul have_dst_pixel =
+          wuffs_base__pixel_buffer__color_u32_at(&dst_pixbuf, width / 2,
+                                                 height / 2);
+      if (colors_differ(have_dst_pixel, want_dst_pixel, 0)) {
+        RETURN_FAIL("d=%d, orientation=%d: dst_pixel: have 0x%08" PRIX32
+                    ", want 0x%08" PRIX32,
+                    d, orientation, have_dst_pixel, want_dst_pixel);
+      }
+    }
+  }
+  return NULL;
+}
+
+const char*  //
 test_wuffs_pixel_swizzler_swizzle() {
   CHECK_FOCUS(__func__);
 
@@ -126,69 +223,69 @@ test_wuffs_pixel_swizzler_swizzle() {
   wuffs_base__pixel_swizzler swizzler;
 
   const struct {
-    wuffs_base__color_u32_argb_premul pixel;
+    wuffs_base__color_u32_argb_premul color;
     uint32_t pixfmt_repr;
   } srcs[] = {
       {
-          .pixel = 0xFF444444,
+          .color = 0xFF444444,
           .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__Y,
       },
       {
-          .pixel = 0xFF444444,
+          .color = 0xFF444444,
           .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__Y_16BE,
       },
       {
-          .pixel = 0x55443300,
+          .color = 0x55443300,
           .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL,
       },
       {
-          .pixel = 0xFF444444,
+          .color = 0xFF444444,
           .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY,
       },
       {
-          .pixel = 0xFF443300,
+          .color = 0xFF443300,
           .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__BGR,
       },
       {
-          .pixel = 0x55443300,
+          .color = 0x55443300,
           .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL,
       },
       {
-          .pixel = 0x55443300,
+          .color = 0x55443300,
           .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE,
       },
       {
-          .pixel = 0xFF443300,
+          .color = 0xFF443300,
           .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__BGRX,
       },
       {
-          .pixel = 0xFF443300,
+          .color = 0xFF443300,
           .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__RGB,
       },
       {
-          .pixel = 0x55443300,
+          .color = 0x55443300,
           .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL,
       },
   };
 
   const struct {
-    wuffs_base__color_u32_argb_premul pixel;
+    wuffs_base__color_u32_argb_premul color;
     uint32_t pixfmt_repr;
   } dsts[] = {
       {
-          .pixel = 0xFF000010,
+          .color = 0xFF000010,
           .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__BGR_565,
       },
       {
-          .pixel = 0xFF000040,
+          .color = 0xFF000040,
           .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__BGR,
       },
       {
-          .pixel = 0x80000040,
+          .color = 0x80000040,
           .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL,
       },
       {
-          .pixel = 0x80000040,
+          .color = 0x80000040,
           .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL,
       },
   };
@@ -219,13 +316,13 @@ test_wuffs_pixel_swizzler_swizzle() {
     // Set and check the middle src pixel.
     CHECK_STATUS("set_color_u32_at",
                  wuffs_base__pixel_buffer__set_color_u32_at(
-                     &src_pixbuf, width / 2, height / 2, srcs[s].pixel));
+                     &src_pixbuf, width / 2, height / 2, srcs[s].color));
     wuffs_base__color_u32_argb_premul have_src_pixel =
         wuffs_base__pixel_buffer__color_u32_at(&src_pixbuf, width / 2,
                                                height / 2);
-    if (have_src_pixel != srcs[s].pixel) {
+    if (have_src_pixel != srcs[s].color) {
       RETURN_FAIL("s=%d: src_pixel: have 0x%08" PRIX32 ", want 0x%08" PRIX32, s,
-                  have_src_pixel, srcs[s].pixel);
+                  have_src_pixel, srcs[s].color);
     }
 
     int d;
@@ -257,7 +354,7 @@ test_wuffs_pixel_swizzler_swizzle() {
         // Set the middle dst pixel.
         CHECK_STATUS("set_color_u32_at",
                      wuffs_base__pixel_buffer__set_color_u32_at(
-                         &dst_pixbuf, width / 2, height / 2, dsts[d].pixel));
+                         &dst_pixbuf, width / 2, height / 2, dsts[d].color));
 
         // Swizzle.
         CHECK_STATUS(
@@ -279,11 +376,11 @@ test_wuffs_pixel_swizzler_swizzle() {
             (dsts[d].pixfmt_repr == WUFFS_BASE__PIXEL_FORMAT__BGR_565) ? 4 : 0;
         wuffs_base__color_u32_argb_premul want_dst_pixel = 0;
         if (blends[b] == WUFFS_BASE__PIXEL_BLEND__SRC) {
-          want_dst_pixel = srcs[s].pixel;
+          want_dst_pixel = srcs[s].color;
         } else if (blends[b] == WUFFS_BASE__PIXEL_BLEND__SRC_OVER) {
           tolerance += 1;
           want_dst_pixel = wuffs_base__composite_premul_premul_u32_axxx(
-              dsts[d].pixel, srcs[s].pixel);
+              dsts[d].color, srcs[s].color);
         } else {
           return "unsupported blend";
         }
@@ -529,9 +626,10 @@ bench_wuffs_pixel_swizzler_bgra_premul_rgba_nonpremul_src_over() {
 
 proc g_tests[] = {
 
-    // These pixel_swizzler tests are really testing the Wuffs base library.
-    // They aren't specific to the std/wbmp code, but putting them here is as
-    // good as any other place.
+    // These pixel_buffer / pixel_swizzler tests are really testing the Wuffs
+    // base library. They aren't specific to the std/wbmp code, but putting
+    // them here is as good as any other place.
+    test_wuffs_pixel_buffer_fill_rect,
     test_wuffs_pixel_swizzler_swizzle,
 
     test_wuffs_wbmp_decode_frame_config,

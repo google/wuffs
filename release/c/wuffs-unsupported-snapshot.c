@@ -14924,14 +14924,75 @@ wuffs_base__pixel_buffer__set_color_u32_at(
 // --------
 
 static inline void  //
+wuffs_base__pixel_buffer__set_color_u32_fill_rect__xx(
+    wuffs_base__pixel_buffer* pb,
+    wuffs_base__rect_ie_u32 rect,
+    uint16_t color) {
+  size_t stride = pb->private_impl.planes[0].stride;
+  uint32_t width = wuffs_base__rect_ie_u32__width(&rect);
+  if ((stride == (2 * ((uint64_t)width))) && (rect.min_incl_x == 0)) {
+    uint8_t* ptr =
+        pb->private_impl.planes[0].ptr + (stride * ((size_t)rect.min_incl_y));
+    uint32_t height = wuffs_base__rect_ie_u32__height(&rect);
+    size_t n;
+    for (n = ((size_t)width) * ((size_t)height); n > 0; n--) {
+      wuffs_base__poke_u16le__no_bounds_check(ptr, color);
+      ptr += 2;
+    }
+    return;
+  }
+
+  uint32_t y;
+  for (y = rect.min_incl_y; y < rect.max_excl_y; y++) {
+    uint8_t* ptr = pb->private_impl.planes[0].ptr + (stride * ((size_t)y)) +
+                   (2 * ((size_t)rect.min_incl_x));
+    uint32_t n;
+    for (n = width; n > 0; n--) {
+      wuffs_base__poke_u16le__no_bounds_check(ptr, color);
+      ptr += 2;
+    }
+  }
+}
+
+static inline void  //
+wuffs_base__pixel_buffer__set_color_u32_fill_rect__xxx(
+    wuffs_base__pixel_buffer* pb,
+    wuffs_base__rect_ie_u32 rect,
+    uint32_t color) {
+  size_t stride = pb->private_impl.planes[0].stride;
+  uint32_t width = wuffs_base__rect_ie_u32__width(&rect);
+  if ((stride == (3 * ((uint64_t)width))) && (rect.min_incl_x == 0)) {
+    uint8_t* ptr =
+        pb->private_impl.planes[0].ptr + (stride * ((size_t)rect.min_incl_y));
+    uint32_t height = wuffs_base__rect_ie_u32__height(&rect);
+    size_t n;
+    for (n = ((size_t)width) * ((size_t)height); n > 0; n--) {
+      wuffs_base__poke_u24le__no_bounds_check(ptr, color);
+      ptr += 3;
+    }
+    return;
+  }
+
+  uint32_t y;
+  for (y = rect.min_incl_y; y < rect.max_excl_y; y++) {
+    uint8_t* ptr = pb->private_impl.planes[0].ptr + (stride * ((size_t)y)) +
+                   (3 * ((size_t)rect.min_incl_x));
+    uint32_t n;
+    for (n = width; n > 0; n--) {
+      wuffs_base__poke_u24le__no_bounds_check(ptr, color);
+      ptr += 3;
+    }
+  }
+}
+
+static inline void  //
 wuffs_base__pixel_buffer__set_color_u32_fill_rect__xxxx(
     wuffs_base__pixel_buffer* pb,
     wuffs_base__rect_ie_u32 rect,
     uint32_t color) {
   size_t stride = pb->private_impl.planes[0].stride;
   uint32_t width = wuffs_base__rect_ie_u32__width(&rect);
-  if (((stride & 3) == 0) && ((stride >> 2) == width) &&
-      (rect.min_incl_x == 0)) {
+  if ((stride == (4 * ((uint64_t)width))) && (rect.min_incl_x == 0)) {
     uint8_t* ptr =
         pb->private_impl.planes[0].ptr + (stride * ((size_t)rect.min_incl_y));
     uint32_t height = wuffs_base__rect_ie_u32__height(&rect);
@@ -14951,6 +15012,37 @@ wuffs_base__pixel_buffer__set_color_u32_fill_rect__xxxx(
     for (n = width; n > 0; n--) {
       wuffs_base__poke_u32le__no_bounds_check(ptr, color);
       ptr += 4;
+    }
+  }
+}
+
+static inline void  //
+wuffs_base__pixel_buffer__set_color_u32_fill_rect__xxxxxxxx(
+    wuffs_base__pixel_buffer* pb,
+    wuffs_base__rect_ie_u32 rect,
+    uint64_t color) {
+  size_t stride = pb->private_impl.planes[0].stride;
+  uint32_t width = wuffs_base__rect_ie_u32__width(&rect);
+  if ((stride == (8 * ((uint64_t)width))) && (rect.min_incl_x == 0)) {
+    uint8_t* ptr =
+        pb->private_impl.planes[0].ptr + (stride * ((size_t)rect.min_incl_y));
+    uint32_t height = wuffs_base__rect_ie_u32__height(&rect);
+    size_t n;
+    for (n = ((size_t)width) * ((size_t)height); n > 0; n--) {
+      wuffs_base__poke_u64le__no_bounds_check(ptr, color);
+      ptr += 8;
+    }
+    return;
+  }
+
+  uint32_t y;
+  for (y = rect.min_incl_y; y < rect.max_excl_y; y++) {
+    uint8_t* ptr = pb->private_impl.planes[0].ptr + (stride * ((size_t)y)) +
+                   (8 * ((size_t)rect.min_incl_x));
+    uint32_t n;
+    for (n = width; n > 0; n--) {
+      wuffs_base__poke_u64le__no_bounds_check(ptr, color);
+      ptr += 8;
     }
   }
 }
@@ -14977,6 +15069,23 @@ wuffs_base__pixel_buffer__set_color_u32_fill_rect(
   }
 
   switch (pb->pixcfg.private_impl.pixfmt.repr) {
+    case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
+    case WUFFS_BASE__PIXEL_FORMAT__BGRX:
+      wuffs_base__pixel_buffer__set_color_u32_fill_rect__xxxx(pb, rect, color);
+      return wuffs_base__make_status(NULL);
+
+      // Common formats above. Rarer formats below.
+
+    case WUFFS_BASE__PIXEL_FORMAT__BGR_565:
+      wuffs_base__pixel_buffer__set_color_u32_fill_rect__xx(
+          pb, rect,
+          wuffs_base__color_u32_argb_premul__as__color_u16_rgb_565(color));
+      return wuffs_base__make_status(NULL);
+
+    case WUFFS_BASE__PIXEL_FORMAT__BGR:
+      wuffs_base__pixel_buffer__set_color_u32_fill_rect__xxx(pb, rect, color);
+      return wuffs_base__make_status(NULL);
+
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
       wuffs_base__pixel_buffer__set_color_u32_fill_rect__xxxx(
           pb, rect,
@@ -14984,12 +15093,25 @@ wuffs_base__pixel_buffer__set_color_u32_fill_rect(
               color));
       return wuffs_base__make_status(NULL);
 
-    case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
-    case WUFFS_BASE__PIXEL_FORMAT__BGRX:
-      wuffs_base__pixel_buffer__set_color_u32_fill_rect__xxxx(pb, rect, color);
+    case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE:
+      wuffs_base__pixel_buffer__set_color_u32_fill_rect__xxxxxxxx(
+          pb, rect,
+          wuffs_base__color_u32_argb_premul__as__color_u64_argb_nonpremul(
+              color));
       return wuffs_base__make_status(NULL);
 
-      // TODO: fast paths for other formats.
+    case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
+      wuffs_base__pixel_buffer__set_color_u32_fill_rect__xxxx(
+          pb, rect,
+          wuffs_base__color_u32_argb_premul__as__color_u32_argb_nonpremul(
+              wuffs_base__swap_u32_argb_abgr(color)));
+      return wuffs_base__make_status(NULL);
+
+    case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
+    case WUFFS_BASE__PIXEL_FORMAT__RGBX:
+      wuffs_base__pixel_buffer__set_color_u32_fill_rect__xxxx(
+          pb, rect, wuffs_base__swap_u32_argb_abgr(color));
+      return wuffs_base__make_status(NULL);
   }
 
   uint32_t y;
