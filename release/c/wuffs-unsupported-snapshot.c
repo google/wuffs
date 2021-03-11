@@ -10191,9 +10191,9 @@ wuffs_base__io_writer__limited_copy_u32_from_history(uint8_t** ptr_iop_w,
 // stronger pre-conditions.
 //
 // The caller needs to prove that:
-//  - distance >  0
-//  - distance <= (*ptr_iop_w - io1_w)
 //  - length   <= (io2_w      - *ptr_iop_w)
+//  - distance >= 1
+//  - distance <= (*ptr_iop_w - io1_w)
 static inline uint32_t  //
 wuffs_base__io_writer__limited_copy_u32_from_history_fast(uint8_t** ptr_iop_w,
                                                           uint8_t* io1_w,
@@ -10226,9 +10226,9 @@ wuffs_base__io_writer__limited_copy_u32_from_history_fast(uint8_t** ptr_iop_w,
 // In terms of advancing *ptr_iop_w, length is not rounded up.
 //
 // The caller needs to prove that:
-//  - distance     >  0
-//  - distance     <= (*ptr_iop_w - io1_w)
 //  - (length + 8) <= (io2_w      - *ptr_iop_w)
+//  - distance     >= 8
+//  - distance     <= (*ptr_iop_w - io1_w)
 static inline uint32_t  //
 wuffs_base__io_writer__limited_copy_u32_from_history_8_byte_chunks_fast(
     uint8_t** ptr_iop_w,

@@ -341,7 +341,7 @@ pri func decoder.decode_huffman_fast32!(dst: base.io_writer, src: base.io_reader
 				}
 			}
 			// Once again, redundant but explicit assertions.
-			assert (dist_minus_1 + 1) > 0
+			assert (dist_minus_1 + 1) >= 1
 			assert ((dist_minus_1 + 1) as base.u64) <= args.dst.history_length()
 			assert (length as base.u64) <= args.dst.length()
 			assert ((length + 8) as base.u64) <= args.dst.length()

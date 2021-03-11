@@ -1168,12 +1168,12 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (bounds, e
 			}
 
 		} else if method == t.IDLimitedCopyU32FromHistory8ByteChunksFast {
-			if err := q.canLimitedCopyU32FromHistoryFast(recv, n.Args(), eight); err != nil {
+			if err := q.canLimitedCopyU32FromHistoryFast(recv, n.Args(), eight, eight); err != nil {
 				return bounds{}, err
 			}
 
 		} else if method == t.IDLimitedCopyU32FromHistoryFast {
-			if err := q.canLimitedCopyU32FromHistoryFast(recv, n.Args(), nil); err != nil {
+			if err := q.canLimitedCopyU32FromHistoryFast(recv, n.Args(), nil, one); err != nil {
 				return bounds{}, err
 			}
 
@@ -1286,10 +1286,10 @@ func (q *checker) canUndoByte(recv *a.Expr) error {
 	return fmt.Errorf("check: could not prove %s.can_undo_byte()", recv.Str(q.tm))
 }
 
-func (q *checker) canLimitedCopyU32FromHistoryFast(recv *a.Expr, args []*a.Node, adj *big.Int) error {
+func (q *checker) canLimitedCopyU32FromHistoryFast(recv *a.Expr, args []*a.Node, adj *big.Int, minDistance *big.Int) error {
 	// As per cgen's io-private.h, there are three pre-conditions:
 	//  - (upTo + adj) <= this.length()
-	//  - distance > 0
+	//  - distance >= minDistance
 	//  - distance <= this.history_length()
 	//
 	// adj may be nil, in which case (upTo + adj) is just upTo.
@@ -1348,22 +1348,22 @@ check0:
 			upTo.Str(q.tm), adj, recv.Str(q.tm))
 	}
 
-	// Check "distance > 0".
+	// Check "distance >= minDistance".
 check1:
 	for {
 		for _, x := range q.facts {
-			if x.Operator() != t.IDXBinaryGreaterThan {
+			if x.Operator() != t.IDXBinaryGreaterEq {
 				continue
 			}
 			if lhs := x.LHS().AsExpr(); !lhs.Eq(distance) {
 				continue
 			}
-			if rcv := x.RHS().AsExpr().ConstValue(); rcv == nil || rcv.Sign() != 0 {
+			if rcv := x.RHS().AsExpr().ConstValue(); (rcv == nil) || (rcv.Cmp(minDistance) < 0) {
 				continue
 			}
 			break check1
 		}
-		return fmt.Errorf("check: could not prove %s > 0", distance.Str(q.tm))
+		return fmt.Errorf("check: could not prove %s >= %v", distance.Str(q.tm), minDistance)
 	}
 
 	// Check "distance <= this.history_length()".
