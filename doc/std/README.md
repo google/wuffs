@@ -32,3 +32,36 @@ See also the [glossary](/doc/glossary.md), as well as the notes on:
 - [Coroutines](/doc/note/coroutines.md).
 - [Initialization](/doc/note/initialization.md).
 - [Statuses](/doc/note/statuses.md).
+
+
+## Modules and Dependencies
+
+By default, building Wuffs' standard library builds the entire thing (provided
+that you've defined the `WUFFS_IMPLEMENTATION` C macro), implementing a variety
+of codecs and file formats.
+
+Packages can be individually allow-listed, for smaller binaries and faster
+compiles. Opt in by also defining `WUFFS_CONFIG__MODULES` and then also
+`WUFFS_CONFIG__MODULE__ETC` for each `ETC` (and its dependencies, listed below)
+to enable.
+
+- `ADLER32: BASE`
+- `BMP:     BASE`
+- `CBOR:    BASE`
+- `CRC32:   BASE`
+- `DEFLATE: BASE`
+- `GIF:     BASE, LZW`
+- `GZIP:    BASE, CRC32, DEFLATE`
+- `JSON:    BASE`
+- `LZW:     BASE`
+- `NIE:     BASE`
+- `PNG:     BASE, ADLER32, CRC32, DEFLATE, ZLIB`
+- `WBMP:    BASE`
+- `ZLIB:    BASE, ADLER32, DEFLATE`
+
+For the [auxiliary modules](/doc/note/auxiliary-code.md):
+
+- `AUX_CBOR:  AUX_BASE, BASE, CBOR`
+- `AUX_IMAGE: AUX_BASE, BASE` and whichever image-related modules (and their
+  dependencies) you want, e.g. `GIF`, `PNG`, etc.
+- `AUX_JSON:  AUX_BASE, BASE, JSON`
