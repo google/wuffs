@@ -48,6 +48,43 @@ DecodeImageCallbacks::AllocResult::AllocResult(std::string&& error_message0)
       mem_slice(wuffs_base__empty_slice_u8()),
       error_message(std::move(error_message0)) {}
 
+wuffs_base__image_decoder::unique_ptr  //
+DecodeImageCallbacks::OnImageFormat(uint32_t fourcc,
+                                    wuffs_base__slice_u8 prefix) {
+  switch (fourcc) {
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BMP)
+    case WUFFS_BASE__FOURCC__BMP:
+      return wuffs_bmp__decoder::alloc_as__wuffs_base__image_decoder();
+#endif
+
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__GIF)
+    case WUFFS_BASE__FOURCC__GIF:
+      return wuffs_gif__decoder::alloc_as__wuffs_base__image_decoder();
+#endif
+
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__NIE)
+    case WUFFS_BASE__FOURCC__NIE:
+      return wuffs_nie__decoder::alloc_as__wuffs_base__image_decoder();
+#endif
+
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__PNG)
+    case WUFFS_BASE__FOURCC__PNG: {
+      auto dec = wuffs_png__decoder::alloc_as__wuffs_base__image_decoder();
+      // Favor faster decodes over rejecting invalid checksums.
+      dec->set_quirk_enabled(WUFFS_BASE__QUIRK_IGNORE_CHECKSUM, true);
+      return dec;
+    }
+#endif
+
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__WBMP)
+    case WUFFS_BASE__FOURCC__WBMP:
+      return wuffs_wbmp__decoder::alloc_as__wuffs_base__image_decoder();
+#endif
+  }
+
+  return wuffs_base__image_decoder::unique_ptr(nullptr, &free);
+}
+
 DecodeImageCallbacks::AllocResult  //
 DecodeImageCallbacks::OnImageConfig(
     const wuffs_base__image_config& image_config) {

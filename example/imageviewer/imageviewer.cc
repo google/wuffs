@@ -90,26 +90,6 @@ wuffs_base__slice_u8 g_pixbuf_mem_slice = {0};
 uint32_t g_background_color_index = 0;
 
 class Callbacks : public wuffs_aux::DecodeImageCallbacks {
-  wuffs_base__image_decoder::unique_ptr  //
-  OnImageFormat(uint32_t fourcc, wuffs_base__slice_u8 prefix) override {
-    switch (fourcc) {
-      case WUFFS_BASE__FOURCC__BMP:
-        return wuffs_bmp__decoder::alloc_as__wuffs_base__image_decoder();
-      case WUFFS_BASE__FOURCC__GIF:
-        return wuffs_gif__decoder::alloc_as__wuffs_base__image_decoder();
-      case WUFFS_BASE__FOURCC__NIE:
-        return wuffs_nie__decoder::alloc_as__wuffs_base__image_decoder();
-      case WUFFS_BASE__FOURCC__PNG: {
-        auto dec = wuffs_png__decoder::alloc_as__wuffs_base__image_decoder();
-        dec->set_quirk_enabled(WUFFS_BASE__QUIRK_IGNORE_CHECKSUM, true);
-        return dec;
-      }
-      case WUFFS_BASE__FOURCC__WBMP:
-        return wuffs_wbmp__decoder::alloc_as__wuffs_base__image_decoder();
-    }
-    return wuffs_base__image_decoder::unique_ptr(nullptr, &free);
-  }
-
   DecodeImageCallbacks::AllocResult  //
   OnImageConfig(const wuffs_base__image_config& image_config) override {
     uint32_t w = image_config.pixcfg.width();

@@ -58,19 +58,27 @@ class DecodeImageCallbacks {
   // OnImageFormat returns the image decoder for the input data's file format.
   // Returning a nullptr means failure (DecodeImage_UnsupportedImageFormat).
   //
-  // Common formats will have a non-zero FourCC value, such as
-  // WUFFS_BASE__FOURCC__JPEG. A zero FourCC code means that the caller is
-  // responsible for examining the opening bytes (a prefix) of the input data.
-  // OnImageFormat implementations should not modify those bytes.
+  // Common formats will have a FourCC value in the range [1 ..= 0x7FFF_FFFF],
+  // such as WUFFS_BASE__FOURCC__JPEG. A zero FourCC value means that the
+  // caller is responsible for examining the opening bytes (a prefix) of the
+  // input data. OnImageFormat implementations should not modify those bytes.
   //
   // OnImageFormat might be called more than once, since some image file
   // formats can wrap others. For example, a nominal BMP file can actually
   // contain a JPEG or a PNG.
   //
-  // There is no default implementation, as modular Wuffs builds (those that
-  // define WUFFS_CONFIG__MODULES) may enable or disable particular codecs.
+  // The default OnImageFormat accepts the FOURCC codes listed below. For
+  // modular builds (i.e. when #define'ing WUFFS_CONFIG__MODULES), acceptance
+  // of the ETC file format is optional (for each value of ETC) and depends on
+  // the corresponding module to be enabled at compile time (i.e. #define'ing
+  // WUFFS_CONFIG__MODULE__ETC).
+  //  - WUFFS_BASE__FOURCC__BMP
+  //  - WUFFS_BASE__FOURCC__GIF
+  //  - WUFFS_BASE__FOURCC__NIE
+  //  - WUFFS_BASE__FOURCC__PNG
+  //  - WUFFS_BASE__FOURCC__WBMP
   virtual wuffs_base__image_decoder::unique_ptr  //
-  OnImageFormat(uint32_t fourcc, wuffs_base__slice_u8 prefix) = 0;
+  OnImageFormat(uint32_t fourcc, wuffs_base__slice_u8 prefix);
 
   // OnImageConfig allocates the pixel buffer.
   //
