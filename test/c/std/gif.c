@@ -2232,7 +2232,7 @@ bench_mimic_gif_decode_1k_bw() {
 }
 
 const char*  //
-bench_mimic_gif_decode_1k_color() {
+bench_mimic_gif_decode_1k_color_full_init() {
   CHECK_FOCUS(__func__);
   return do_bench_image_decode(
       mimic_gif_decode, 0,
@@ -2282,7 +2282,7 @@ bench_mimic_gif_decode_100k_realistic() {
 }
 
 const char*  //
-bench_mimic_gif_decode_1000k() {
+bench_mimic_gif_decode_1000k_full_init() {
   CHECK_FOCUS(__func__);
   return do_bench_image_decode(
       mimic_gif_decode, 0,
@@ -2395,12 +2395,12 @@ proc g_benches[] = {
 #ifdef WUFFS_MIMIC
 
     bench_mimic_gif_decode_1k_bw,
-    bench_mimic_gif_decode_1k_color,
+    bench_mimic_gif_decode_1k_color_full_init,
     bench_mimic_gif_decode_10k_indexed,
     bench_mimic_gif_decode_20k,
     bench_mimic_gif_decode_100k_artificial,
     bench_mimic_gif_decode_100k_realistic,
-    bench_mimic_gif_decode_1000k,
+    bench_mimic_gif_decode_1000k_full_init,
     bench_mimic_gif_decode_anim_screencap,
 
 #endif  // WUFFS_MIMIC

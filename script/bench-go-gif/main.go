@@ -53,7 +53,7 @@ var testCases = []testCase{{
 	src:           mustLoad("test/data/pjw-thumbnail.gif"),
 	itersUnscaled: 2000,
 }, {
-	benchname:     "go_gif_decode_1k_color",
+	benchname:     "go_gif_decode_1k_color_full_init",
 	src:           mustLoad("test/data/hippopotamus.regular.gif"),
 	itersUnscaled: 1000,
 }, {
@@ -77,7 +77,7 @@ var testCases = []testCase{{
 	src:           mustLoad("test/data/hibiscus.regular.gif"),
 	itersUnscaled: 10,
 }, {
-	benchname:     "go_gif_decode_1000k",
+	benchname:     "go_gif_decode_1000k_full_init",
 	src:           mustLoad("test/data/harvesters.gif"),
 	itersUnscaled: 1,
 }, {

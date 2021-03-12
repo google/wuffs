@@ -48,15 +48,15 @@ type testCase = struct {
 
 // The various magic constants below are copied from test/c/std/deflate.c
 var testCases = []testCase{{
-	benchname:     "go_deflate_decode_1k",
+	benchname:     "go_deflate_decode_1k_full_init",
 	src:           mustLoad("test/data/romeo.txt.gz")[20:550],
 	itersUnscaled: 2000,
 }, {
-	benchname:     "go_deflate_decode_10k",
+	benchname:     "go_deflate_decode_10k_full_init",
 	src:           mustLoad("test/data/midsummer.txt.gz")[24:5166],
 	itersUnscaled: 300,
 }, {
-	benchname:     "go_deflate_decode_100k",
+	benchname:     "go_deflate_decode_100k_just_one_read",
 	src:           mustLoad("test/data/pi.txt.gz")[17:48335],
 	itersUnscaled: 30,
 }}

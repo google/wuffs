@@ -54,7 +54,7 @@ fn main() {
     // The various magic constants below are copied from test/c/std/deflate.c
     for i in 0..(1 + REPS) {
         bench(
-            "1k",
+            "1k_full_init",
             &mut dst[..],
             &include_bytes!("../../../test/data/romeo.txt.gz")[20..550],
             i == 0, // warm_up
@@ -63,7 +63,7 @@ fn main() {
         );
 
         bench(
-            "10k",
+            "10k_full_init",
             &mut dst[..],
             &include_bytes!("../../../test/data/midsummer.txt.gz")[24..5166],
             i == 0, // warm_up
@@ -72,7 +72,7 @@ fn main() {
         );
 
         bench(
-            "100k",
+            "100k_just_one_read",
             &mut dst[..],
             &include_bytes!("../../../test/data/pi.txt.gz")[17..48335],
             i == 0, // warm_up

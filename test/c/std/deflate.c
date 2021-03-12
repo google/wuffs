@@ -861,14 +861,14 @@ bench_wuffs_deflate_decode_100k_many_big_reads() {
 #ifdef WUFFS_MIMIC
 
 const char*  //
-bench_mimic_deflate_decode_1k() {
+bench_mimic_deflate_decode_1k_full_init() {
   CHECK_FOCUS(__func__);
   return do_bench_io_buffers(mimic_deflate_decode, 0, tcounter_dst,
                              &g_deflate_romeo_gt, UINT64_MAX, UINT64_MAX, 2000);
 }
 
 const char*  //
-bench_mimic_deflate_decode_10k() {
+bench_mimic_deflate_decode_10k_full_init() {
   CHECK_FOCUS(__func__);
   return do_bench_io_buffers(mimic_deflate_decode, 0, tcounter_dst,
                              &g_deflate_midsummer_gt, UINT64_MAX, UINT64_MAX,
@@ -944,8 +944,8 @@ proc g_benches[] = {
 
 #ifdef WUFFS_MIMIC
 
-    bench_mimic_deflate_decode_1k,
-    bench_mimic_deflate_decode_10k,
+    bench_mimic_deflate_decode_1k_full_init,
+    bench_mimic_deflate_decode_10k_full_init,
     bench_mimic_deflate_decode_100k_just_one_read,
     bench_mimic_deflate_decode_100k_many_big_reads,
 

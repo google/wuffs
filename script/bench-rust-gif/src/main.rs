@@ -68,7 +68,7 @@ fn main() {
         );
 
         bench(
-            "1k_color",
+            "1k_color_full_init",
             &mut dst[..],
             include_bytes!("../../../test/data/hippopotamus.regular.gif"),
             i == 0, // warm_up
@@ -122,7 +122,7 @@ fn main() {
         );
 
         bench(
-            "1000k",
+            "1000k_full_init",
             &mut dst[..],
             include_bytes!("../../../test/data/harvesters.gif"),
             i == 0, // warm_up
