@@ -66,12 +66,6 @@ It should print "PASS", amongst other information, and exit(0).
 
 const char*  //
 fuzz(wuffs_base__io_buffer* src, uint64_t hash) {
-  // This "smoke alarm test" should trigger the OSS-Fuzz infrastructure to send
-  // e-mail saying that it found a reproducible crash.
-  if ((hash & 0xFFFF) == 0xDEAD) {
-    return "internal error: smoke alarm test";
-  }
-
   wuffs_png__decoder dec;
   wuffs_base__status status = wuffs_png__decoder__initialize(
       &dec, sizeof dec, WUFFS_VERSION,
