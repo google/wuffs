@@ -192,7 +192,7 @@ func baselineKeyFor(key string) (bKey string) {
 	}
 	j := strings.IndexByte(key[i:], '/')
 	if j < 0 {
-		return ""
+		j = len(key) - i
 	}
 	return key[:1] + *baseline + key[i:i+j] + gccSuffix
 }
