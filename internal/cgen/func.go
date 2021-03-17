@@ -239,7 +239,7 @@ func (g *gen) writeFuncImpl(b *buffer, n *a.Func) error {
 		b.printf("#if defined(WUFFS_BASE__CPU_ARCH__%s)\n", caMacro)
 	}
 	if caAttribute != "" {
-		b.printf("#if defined(__GNUC__)\n%s\n#endif\n", caAttribute)
+		b.printf("%s\n", caAttribute)
 	}
 
 	if err := g.writeFuncSignature(b, n, wfsCDecl); err != nil {

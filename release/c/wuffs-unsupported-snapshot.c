@@ -78,10 +78,19 @@ extern "C" {
 
 // Define WUFFS_CONFIG__AVOID_CPU_ARCH to avoid any code tied to a specific CPU
 // architecture, such as SSE SIMD for the x86 CPU family.
-#if defined(WUFFS_CONFIG__AVOID_CPU_ARCH)
+#if defined(WUFFS_CONFIG__AVOID_CPU_ARCH)  // (#if-chain ref AVOID_CPU_ARCH_0)
 // No-op.
+#else  // (#if-chain ref AVOID_CPU_ARCH_0)
+
+// The "defined(__clang__)" isn't redundant. While vanilla clang defines
+// __GNUC__, clang-cl (which mimics MSVC's cl.exe) does not.
+#if defined(__GNUC__) || defined(__clang__)
+#define WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET(arg) __attribute__((target(arg)))
 #else
-#if defined(__GNUC__)
+#define WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET(arg)
+#endif  // defined(__GNUC__) || defined(__clang__)
+
+#if defined(__GNUC__)  // (#if-chain ref AVOID_CPU_ARCH_1)
 
 // To simplify Wuffs code, "cpu_arch >= arm_xxx" requires xxx but also
 // unaligned little-endian load/stores.
@@ -107,15 +116,24 @@ extern "C" {
 #define WUFFS_BASE__CPU_ARCH__X86_64
 #endif  // defined(__x86_64__)
 
-#elif defined(_MSC_VER)  // defined(__GNUC__)
+#elif defined(_MSC_VER)  // (#if-chain ref AVOID_CPU_ARCH_1)
 
 #if defined(_M_X64)
+#if defined(__clang__)
+// No-op. clang-cl (which defines both __clang__ and _MSC_VER) supports
+// "__attribute__((target(arg)))".
+#elif !defined(__AVX__)
+// For MSVC's cl.exe (unlike clang or gcc), SIMD capability is a compile-time
+// property of the source file (e.g. a /arch:AVX or -mavx compiler flag), not
+// of individual functions (that can be conditionally selected at runtime).
+#error "Wuffs with MSVC+X64 needs /arch:AVX or /DWUFFS_CONFIG__AVOID_CPU_ARCH"
+#endif  // defined(__clang__); !defined(__AVX__)
 #include <intrin.h>
 #define WUFFS_BASE__CPU_ARCH__X86_64
-#endif  // defined(__x86_64__)
+#endif  // defined(_M_X64)
 
-#endif  // defined(__GNUC__); defined(_MSC_VER)
-#endif  // defined(WUFFS_CONFIG__AVOID_CPU_ARCH)
+#endif  // (#if-chain ref AVOID_CPU_ARCH_1)
+#endif  // (#if-chain ref AVOID_CPU_ARCH_0)
 
 // --------
 
@@ -157,6 +175,8 @@ wuffs_base__cpu_arch__have_x86_sse42() {
   //  - bit_POPCNT = (1 << 23)
   //  - bit_SSE4_2 = (1 << 20)
   const unsigned int sse42_ecx1 = 0x00900002;
+
+  // clang defines __GNUC__ and clang-cl defines _MSC_VER (but not __GNUC__).
 #if defined(__GNUC__)
   unsigned int eax1 = 0;
   unsigned int ebx1 = 0;
@@ -15463,9 +15483,7 @@ wuffs_base__pixel_swizzler__swap_rgb_bgr(uint8_t* dst_ptr,
 }
 
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
-#if defined(__GNUC__)
-__attribute__((target("sse4.2")))
-#endif
+WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("sse4.2")
 static uint64_t  //
 wuffs_base__pixel_swizzler__swap_rgbx_bgrx__sse42(uint8_t* dst_ptr,
                                                   size_t dst_len,
@@ -16808,9 +16826,7 @@ wuffs_base__pixel_swizzler__bgrw__bgrx(uint8_t* dst_ptr,
 }
 
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
-#if defined(__GNUC__)
-__attribute__((target("sse4.2")))
-#endif
+WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("sse4.2")
 static uint64_t  //
 wuffs_base__pixel_swizzler__bgrw__rgb__sse42(uint8_t* dst_ptr,
                                              size_t dst_len,
@@ -17251,9 +17267,7 @@ wuffs_base__pixel_swizzler__xxxx__index_binary_alpha__src_over(
 }
 
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
-#if defined(__GNUC__)
-__attribute__((target("sse4.2")))
-#endif
+WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("sse4.2")
 static uint64_t  //
 wuffs_base__pixel_swizzler__xxxx__y__sse42(uint8_t* dst_ptr,
                                            size_t dst_len,
@@ -18700,9 +18714,7 @@ wuffs_adler32__hasher__up_arm_neon(
 // -------- func adler32.hasher.up_x86_sse42
 
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
-#if defined(__GNUC__)
-__attribute__((target("pclmul,popcnt,sse4.2")))
-#endif
+WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2")
 static wuffs_base__empty_struct
 wuffs_adler32__hasher__up_x86_sse42(
     wuffs_adler32__hasher* self,
@@ -22881,9 +22893,7 @@ wuffs_crc32__ieee_hasher__up_arm_crc32(
 // -------- func crc32.ieee_hasher.up_x86_sse42
 
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
-#if defined(__GNUC__)
-__attribute__((target("pclmul,popcnt,sse4.2")))
-#endif
+WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2")
 static wuffs_base__empty_struct
 wuffs_crc32__ieee_hasher__up_x86_sse42(
     wuffs_crc32__ieee_hasher* self,
@@ -33533,9 +33543,7 @@ wuffs_png__decoder__filter_4_distance_4_fallback(
 // -------- func png.decoder.filter_1_distance_4_x86_sse42
 
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
-#if defined(__GNUC__)
-__attribute__((target("pclmul,popcnt,sse4.2")))
-#endif
+WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2")
 static wuffs_base__empty_struct
 wuffs_png__decoder__filter_1_distance_4_x86_sse42(
     wuffs_png__decoder* self,
@@ -33579,9 +33587,7 @@ wuffs_png__decoder__filter_1_distance_4_x86_sse42(
 // -------- func png.decoder.filter_3_distance_4_x86_sse42
 
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
-#if defined(__GNUC__)
-__attribute__((target("pclmul,popcnt,sse4.2")))
-#endif
+WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2")
 static wuffs_base__empty_struct
 wuffs_png__decoder__filter_3_distance_4_x86_sse42(
     wuffs_png__decoder* self,
@@ -33684,9 +33690,7 @@ wuffs_png__decoder__filter_3_distance_4_x86_sse42(
 // -------- func png.decoder.filter_4_distance_3_x86_sse42
 
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
-#if defined(__GNUC__)
-__attribute__((target("pclmul,popcnt,sse4.2")))
-#endif
+WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2")
 static wuffs_base__empty_struct
 wuffs_png__decoder__filter_4_distance_3_x86_sse42(
     wuffs_png__decoder* self,
@@ -33810,9 +33814,7 @@ wuffs_png__decoder__filter_4_distance_3_x86_sse42(
 // -------- func png.decoder.filter_4_distance_4_x86_sse42
 
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
-#if defined(__GNUC__)
-__attribute__((target("pclmul,popcnt,sse4.2")))
-#endif
+WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2")
 static wuffs_base__empty_struct
 wuffs_png__decoder__filter_4_distance_4_x86_sse42(
     wuffs_png__decoder* self,

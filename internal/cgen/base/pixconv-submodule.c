@@ -757,9 +757,7 @@ wuffs_base__pixel_swizzler__swap_rgb_bgr(uint8_t* dst_ptr,
 }
 
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
-#if defined(__GNUC__)
-__attribute__((target("sse4.2")))
-#endif
+WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("sse4.2")
 static uint64_t  //
 wuffs_base__pixel_swizzler__swap_rgbx_bgrx__sse42(uint8_t* dst_ptr,
                                                   size_t dst_len,
@@ -2102,9 +2100,7 @@ wuffs_base__pixel_swizzler__bgrw__bgrx(uint8_t* dst_ptr,
 }
 
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
-#if defined(__GNUC__)
-__attribute__((target("sse4.2")))
-#endif
+WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("sse4.2")
 static uint64_t  //
 wuffs_base__pixel_swizzler__bgrw__rgb__sse42(uint8_t* dst_ptr,
                                              size_t dst_len,
@@ -2545,9 +2541,7 @@ wuffs_base__pixel_swizzler__xxxx__index_binary_alpha__src_over(
 }
 
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
-#if defined(__GNUC__)
-__attribute__((target("sse4.2")))
-#endif
+WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("sse4.2")
 static uint64_t  //
 wuffs_base__pixel_swizzler__xxxx__y__sse42(uint8_t* dst_ptr,
                                            size_t dst_len,

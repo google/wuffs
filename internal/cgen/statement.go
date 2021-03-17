@@ -277,7 +277,8 @@ func cpuArchCNames(asserts []*a.Node) (caMacro string, caName string, caAttribut
 				caMacro, caName, caAttribute = "ARM_NEON", "arm_neon", ""
 			case t.IDX86SSE42:
 				caMacro, caName, caAttribute =
-					"X86_64", "x86_sse42", "__attribute__((target(\"pclmul,popcnt,sse4.2\")))"
+					"X86_64", "x86_sse42",
+					"WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET(\"pclmul,popcnt,sse4.2\")"
 			}
 		}
 	}
