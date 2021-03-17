@@ -170,11 +170,10 @@ pri func ieee_hasher.up_x86_sse42!(x: slice base.u8),
 // dividing (i.e. bitwise XOR-ing) a 33-bit polynomial (x³², with only one 'on'
 // bit) by the 33-bit polynomial P(x)'.
 //
-// The discrepancy might not matter in practice because Barrett reduction is
-// already an integer approximation to a fraction. 0x40 vs 0x41 is essentially
-// rounding down vs up. The approximation diverges for large inputs but might
-// not matter for 'small' inputs that fit into e.g. a uint32 or uint64. The
-// tests seem to pass either way (and fail with 0x3F or 0x42).
+// In practice, 0x40 vs 0x41 is a harmless difference. The least significant
+// bit doesn't affect the result. The tests pass either way (and fail with 0x3F
+// or 0x42). A more thorough analysis of why the low bit doesn't matter is at
+// https://danlark.org/2021/03/08/how-a-bug-in-the-linux-crc-32-checksum-turned-out-not-to-be-a-bug/
 
 pri const IEEE_X86_SSE42_K1K2 : array[16] base.u8 = [
 	0xD4, 0x2B, 0x44, 0x54, 0x01, 0x00, 0x00, 0x00,  // k1' = 0x1_5444_2BD4
