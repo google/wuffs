@@ -65,15 +65,15 @@ extern "C" {
 // each major.minor branch, the commit count should increase monotonically.
 //
 // WUFFS_VERSION was overridden by "wuffs gen -version" based on revision
-// 9914f7314deef16817481ceb41f07b04bd79b428 committed on 2021-03-17.
+// 8d909717823535088cacaa2cb43043449fc028c7 committed on 2021-03-18.
 #define WUFFS_VERSION 0x000030000
 #define WUFFS_VERSION_MAJOR 0
 #define WUFFS_VERSION_MINOR 3
 #define WUFFS_VERSION_PATCH 0
-#define WUFFS_VERSION_PRE_RELEASE_LABEL "alpha.20"
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 2985
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20210317
-#define WUFFS_VERSION_STRING "0.3.0-alpha.20+2985.20210317"
+#define WUFFS_VERSION_PRE_RELEASE_LABEL "alpha.21"
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 2990
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20210318
+#define WUFFS_VERSION_STRING "0.3.0-alpha.21+2990.20210318"
 
 // ---------------- Configuration
 
@@ -120,17 +120,32 @@ extern "C" {
 #elif defined(_MSC_VER)  // (#if-chain ref AVOID_CPU_ARCH_1)
 
 #if defined(_M_X64)
-#if defined(__clang__)
-// No-op. clang-cl (which defines both __clang__ and _MSC_VER) supports
+#if defined(__AVX__) || defined(__clang__)
+
+// We need <intrin.h> for the __cpuid function.
+#include <intrin.h>
+// That's not enough for X64 SIMD, with clang-cl, if we want to use
+// "__attribute__((target(arg)))" without e.g. "/arch:AVX".
+//
+// Some web pages suggest that <immintrin.h> is all you need, as it pulls in
+// the earlier SIMD families like SSE4.2, but that doesn't seem to work in
+// practice, possibly for the same reason that just <intrin.h> doesn't work.
+#include <immintrin.h>  // AVX, AVX2, FMA, POPCNT
+#include <nmmintrin.h>  // SSE4.2
+#include <wmmintrin.h>  // AES, PCLMUL
+#define WUFFS_BASE__CPU_ARCH__X86_64
+
+#else  // defined(__AVX__) || defined(__clang__)
+
+// clang-cl (which defines both __clang__ and _MSC_VER) supports
 // "__attribute__((target(arg)))".
-#elif !defined(__AVX__)
+//
 // For MSVC's cl.exe (unlike clang or gcc), SIMD capability is a compile-time
 // property of the source file (e.g. a /arch:AVX or -mavx compiler flag), not
 // of individual functions (that can be conditionally selected at runtime).
-#error "Wuffs with MSVC+X64 needs /arch:AVX or /DWUFFS_CONFIG__AVOID_CPU_ARCH"
-#endif  // defined(__clang__); !defined(__AVX__)
-#include <intrin.h>
-#define WUFFS_BASE__CPU_ARCH__X86_64
+#pragma message("Wuffs with MSVC+X64 needs /arch:AVX for best performance")
+
+#endif  // defined(__AVX__) || defined(__clang__)
 #endif  // defined(_M_X64)
 
 #endif  // (#if-chain ref AVOID_CPU_ARCH_1)
@@ -22561,7 +22576,7 @@ WUFFS_CRC32__IEEE_X86_SSE42_K5ZZ[16] WUFFS_BASE__POTENTIALLY_UNUSED = {
 };
 
 static const uint8_t
-WUFFS_CRC32__IEEE_X86_SSE42_K6MU[16] WUFFS_BASE__POTENTIALLY_UNUSED = {
+WUFFS_CRC32__IEEE_X86_SSE42_PXMU[16] WUFFS_BASE__POTENTIALLY_UNUSED = {
   65, 6, 113, 219, 1, 0, 0, 0,
   65, 22, 1, 247, 1, 0, 0, 0,
 };
@@ -22982,7 +22997,7 @@ wuffs_crc32__ieee_hasher__up_x86_sse42(
   v_x0 = _mm_and_si128(v_x0, v_x2);
   v_x0 = _mm_clmulepi64_si128(v_x0, v_k, (int32_t)(0));
   v_x0 = _mm_xor_si128(v_x0, v_x1);
-  v_k = _mm_lddqu_si128((const __m128i*)(const void*)(WUFFS_CRC32__IEEE_X86_SSE42_K6MU));
+  v_k = _mm_lddqu_si128((const __m128i*)(const void*)(WUFFS_CRC32__IEEE_X86_SSE42_PXMU));
   v_x1 = _mm_and_si128(v_x0, v_x2);
   v_x1 = _mm_clmulepi64_si128(v_x1, v_k, (int32_t)(16));
   v_x1 = _mm_and_si128(v_x1, v_x2);
