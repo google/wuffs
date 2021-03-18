@@ -128,7 +128,17 @@ extern "C" {
 // of individual functions (that can be conditionally selected at runtime).
 #error "Wuffs with MSVC+X64 needs /arch:AVX or /DWUFFS_CONFIG__AVOID_CPU_ARCH"
 #endif  // defined(__clang__); !defined(__AVX__)
+// We need <intrin.h> for the __cpuid function.
 #include <intrin.h>
+// That's not enough for X64 SIMD, with clang-cl, if we want to use
+// "__attribute__((target(arg)))" without e.g. "/arch:AVX".
+//
+// Some web pages suggest that <immintrin.h> is all you need, as it pulls in
+// the earlier SIMD families like SSE4.2, but that doesn't seem to work in
+// practice, possibly for the same reason that just <intrin.h> doesn't work.
+#include <immintrin.h>  // AVX, AVX2, FMA, POPCNT
+#include <nmmintrin.h>  // SSE4.2
+#include <wmmintrin.h>  // AES, PCLMUL
 #define WUFFS_BASE__CPU_ARCH__X86_64
 #endif  // defined(_M_X64)
 
