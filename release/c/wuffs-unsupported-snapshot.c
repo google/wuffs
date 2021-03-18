@@ -22560,7 +22560,7 @@ WUFFS_CRC32__IEEE_X86_SSE42_K5ZZ[16] WUFFS_BASE__POTENTIALLY_UNUSED = {
 };
 
 static const uint8_t
-WUFFS_CRC32__IEEE_X86_SSE42_K6MU[16] WUFFS_BASE__POTENTIALLY_UNUSED = {
+WUFFS_CRC32__IEEE_X86_SSE42_PXMU[16] WUFFS_BASE__POTENTIALLY_UNUSED = {
   65, 6, 113, 219, 1, 0, 0, 0,
   65, 22, 1, 247, 1, 0, 0, 0,
 };
@@ -22981,7 +22981,7 @@ wuffs_crc32__ieee_hasher__up_x86_sse42(
   v_x0 = _mm_and_si128(v_x0, v_x2);
   v_x0 = _mm_clmulepi64_si128(v_x0, v_k, (int32_t)(0));
   v_x0 = _mm_xor_si128(v_x0, v_x1);
-  v_k = _mm_lddqu_si128((const __m128i*)(const void*)(WUFFS_CRC32__IEEE_X86_SSE42_K6MU));
+  v_k = _mm_lddqu_si128((const __m128i*)(const void*)(WUFFS_CRC32__IEEE_X86_SSE42_PXMU));
   v_x1 = _mm_and_si128(v_x0, v_x2);
   v_x1 = _mm_clmulepi64_si128(v_x1, v_k, (int32_t)(16));
   v_x1 = _mm_and_si128(v_x1, v_x2);
