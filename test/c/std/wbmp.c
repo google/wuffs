@@ -288,6 +288,14 @@ test_wuffs_pixel_swizzler_swizzle() {
           .color = 0x80000040,
           .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL,
       },
+      {
+          .color = 0x33002233,
+          .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL,
+      },
+      {
+          .color = 0x33002233,
+          .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL,
+      },
   };
 
   const wuffs_base__pixel_blend blends[] = {
