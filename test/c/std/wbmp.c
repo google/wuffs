@@ -285,6 +285,10 @@ test_wuffs_pixel_swizzler_swizzle() {
           .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL,
       },
       {
+          .color = 0x80123456,
+          .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE,
+      },
+      {
           .color = 0x80000040,
           .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL,
       },
