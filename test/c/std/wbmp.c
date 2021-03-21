@@ -284,6 +284,8 @@ test_wuffs_pixel_swizzler_swizzle() {
     wuffs_base__color_u32_argb_premul color;
     uint32_t pixfmt_repr;
   } dsts[] = {
+      // When updating this list, also consider updating the pixel formats that
+      // wuffs_aux::DecodeImageCallbacks::SelectPixfmt accepts.
       {
           .color = 0xFF000010,
           .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__BGR_565,
