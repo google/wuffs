@@ -270,6 +270,10 @@ test_wuffs_pixel_swizzler_swizzle() {
           .color = 0x55443300,
           .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL,
       },
+      {
+          .color = 0x55443300,
+          .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL,
+      },
   };
 
   const struct {
