@@ -52,6 +52,9 @@ It should print "PASS", amongst other information, and exit(0).
 #define WUFFS_CONFIG__MODULES
 #define WUFFS_CONFIG__MODULE__BASE
 
+#include <sys/mman.h>
+#include <unistd.h>
+
 // If building this program in an environment that doesn't easily accommodate
 // relative includes, you can use the script/inline-c-relative-includes.go
 // program to generate a stand-alone C file.
@@ -79,6 +82,23 @@ const wuffs_base__pixel_blend blends[] = {
     WUFFS_BASE__PIXEL_BLEND__SRC_OVER,
 };
 
+// allocate_guarded_page allocates (2 * page_size) bytes of memory. The first
+// page has read|write permissions. The second page has no permissions, so that
+// attempting to read or write to it will cause a segmentation fault.
+const char*  //
+allocate_guarded_page(uint8_t** ptr_out, int page_size) {
+  void* ptr =
+      mmap(NULL, 2 * page_size, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+  if (ptr == MAP_FAILED) {
+    return "fuzz: internal error: mmap failed";
+  }
+  if (mprotect(ptr, page_size, PROT_READ | PROT_WRITE)) {
+    return "fuzz: internal error: mprotect failed";
+  }
+  *ptr_out = ptr;
+  return NULL;
+}
+
 // fuzz tests that, regardless of the randomized inputs, calling
 // wuffs_base__pixel_swizzler__swizzle_interleaved_from_slice will not crash
 // the fuzzer (e.g. due to reads or write past buffer bounds).
@@ -87,7 +107,7 @@ fuzz(wuffs_base__io_buffer* src, uint64_t hash) {
   uint8_t dst_palette_array[1024];
   uint8_t src_palette_array[1024];
   if ((src->meta.wi - src->meta.ri) < 2048) {
-    return "not enough data";
+    return "fuzz: not enough data";
   }
   memcpy(dst_palette_array, src->data.ptr + src->meta.ri, 1024);
   src->meta.ri += 1024;
@@ -117,43 +137,45 @@ fuzz(wuffs_base__io_buffer* src, uint64_t hash) {
     return wuffs_base__status__message(&status);
   }
 
-  const char* ret = NULL;
-  wuffs_base__slice_u8 dst_slice = ((wuffs_base__slice_u8){});
-  wuffs_base__slice_u8 src_slice = ((wuffs_base__slice_u8){});
-
-  // Use a {} code block so that "goto exit" doesn't trigger "jump bypasses
-  // variable initialization" warnings.
-  {
-    if ((src->meta.wi - src->meta.ri) < dst_len) {
-      ret = "not enough data";
-      goto exit;
-    }
-    dst_slice = wuffs_base__malloc_slice_u8(malloc, dst_len);
-    if (!dst_slice.ptr) {
-      ret = "out of memory";
-      goto exit;
-    }
-    memcpy(dst_slice.ptr, src->data.ptr + src->meta.ri, dst_len);
-    src->meta.ri += dst_len;
-
-    if ((src->meta.wi - src->meta.ri) < src_len) {
-      ret = "not enough data";
-      goto exit;
-    }
-    src_slice = wuffs_base__malloc_slice_u8(malloc, src_len);
-    if (!src_slice.ptr) {
-      ret = "out of memory";
-      goto exit;
-    }
-    memcpy(src_slice.ptr, src->data.ptr + src->meta.ri, src_len);
-    src->meta.ri += src_len;
-
-    wuffs_base__pixel_swizzler__swizzle_interleaved_from_slice(
-        &swizzler, dst_slice, dst_palette, src_slice);
+  int page_size = getpagesize();
+  if (page_size < 0x100) {
+    return "fuzz: internal error: page_size is too small";
   }
 
-exit:
-  free(src_slice.ptr);
-  free(dst_slice.ptr);
-  return ret;
+  static uint8_t* dst_alloc = NULL;
+  if (!dst_alloc) {
+    const char* z = allocate_guarded_page(&dst_alloc, page_size);
+    if (z != NULL) {
+      return z;
+    }
+  }
+
+  static uint8_t* src_alloc = NULL;
+  if (!src_alloc) {
+    const char* z = allocate_guarded_page(&src_alloc, page_size);
+    if (z != NULL) {
+      return z;
+    }
+  }
+
+  // Position dst_slice and src_slice so that reading or writing one byte past
+  // their end will cause a segmentation fault.
+  if ((src->meta.wi - src->meta.ri) < (dst_len + src_len)) {
+    return "fuzz: not enough data";
+  }
+  wuffs_base__slice_u8 dst_slice =
+      wuffs_base__make_slice_u8(dst_alloc + page_size - dst_len, dst_len);
+  memcpy(dst_slice.ptr, src->data.ptr + src->meta.ri, dst_len);
+  src->meta.ri += dst_len;
+  wuffs_base__slice_u8 src_slice =
+      wuffs_base__make_slice_u8(src_alloc + page_size - src_len, src_len);
+  memcpy(src_slice.ptr, src->data.ptr + src->meta.ri, src_len);
+  src->meta.ri += src_len;
+
+  // Calling etc__swizzle_interleaved_from_slice should not crash, whether for
+  // reading/writing out of bounds or for other reasons.
+  wuffs_base__pixel_swizzler__swizzle_interleaved_from_slice(
+      &swizzler, dst_slice, dst_palette, src_slice);
+
+  return NULL;
 }
