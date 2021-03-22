@@ -22,3 +22,7 @@ json:   test/data/*.json  ../rapidjson_corpus/*  ../simdjson_corpus/*  ../JSONTe
 png:    test/data/*.png   ../pngsuite_corpus/*.png
 wbmp:   test/data/*.wbmp
 zlib:   test/data/*.zlib
+
+# Wuffs' pixel_swizzler doesn't process any particular file format. We just
+# want some random inputs and bricks* is as good a seed corpus as any.
+pixel_swizzler: test/data/bricks*
