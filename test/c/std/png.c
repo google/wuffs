@@ -815,7 +815,9 @@ proc g_tests[] = {
 #ifdef WUFFS_MIMIC
 
     test_mimic_png_decode_bad_crc32_checksum_ancillary,
+#ifndef WUFFS_MIMICLIB_PNG_DOES_NOT_VERIFY_CHECKSUM
     test_mimic_png_decode_bad_crc32_checksum_critical,
+#endif
     test_mimic_png_decode_image_19k_8bpp,
     test_mimic_png_decode_image_40k_24bpp,
     test_mimic_png_decode_image_77k_8bpp,
@@ -852,7 +854,9 @@ proc g_benches[] = {
 #ifndef WUFFS_MIMICLIB_PNG_DOES_NOT_SUPPORT_QUIRK_IGNORE_CHECKSUM
     bench_mimic_png_decode_image_552k_32bpp_ignore_checksum,
 #endif
+#ifndef WUFFS_MIMICLIB_PNG_DOES_NOT_VERIFY_CHECKSUM
     bench_mimic_png_decode_image_552k_32bpp_verify_checksum,
+#endif
     bench_mimic_png_decode_image_4002k_24bpp,
 
 #endif  // WUFFS_MIMIC
