@@ -37,7 +37,7 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 "wuffs mimic cflags" to run the mimic benchmarks.
 */
 
-// !! wuffs mimic cflags: -DWUFFS_MIMIC -lgif
+// ¿ wuffs mimic cflags: -DWUFFS_MIMIC -lgif
 
 // Wuffs ships as a "single file C library" or "header file library" as per
 // https://github.com/nothings/stb/blob/master/docs/stb_howto.txt

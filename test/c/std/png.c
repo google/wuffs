@@ -41,7 +41,7 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 // -lm and -lz (and nothing else). It's easiest to just link with the union of
 // all of these libraries.
 //
-// !! wuffs mimic cflags: -DWUFFS_MIMIC -lm -lpng -lz
+// ¿ wuffs mimic cflags: -DWUFFS_MIMIC -lm -lpng -lz
 
 // Wuffs ships as a "single file C library" or "header file library" as per
 // https://github.com/nothings/stb/blob/master/docs/stb_howto.txt
