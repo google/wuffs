@@ -46,13 +46,15 @@ fn main() {
     print!("# https://godoc.org/golang.org/x/perf/cmd/benchstat tool. To install it, first\n");
     print!("# install Go, then run \"go get golang.org/x/perf/cmd/benchstat\".\n");
 
-    let mut dst = vec![0u8; 64 * 1024 * 1024];
+    let mut dst0 = vec![0u8; 64 * 1024 * 1024];
+    let mut dst1 = vec![0u8; 64 * 1024 * 1024];
 
     // The various magic constants below are copied from test/c/std/png.c
     for i in 0..(1 + REPS) {
         bench(
             "19k_8bpp",
-            &mut dst[..],
+            &mut dst0[..],
+            &mut dst1[..],
             include_bytes!("../../../test/data/bricks-gray.no-ancillary.png"),
             i == 0,        // warm_up
             160 * 120 * 1, // want_num_bytes = 19_200
@@ -61,7 +63,8 @@ fn main() {
 
         bench(
             "40k_24bpp",
-            &mut dst[..],
+            &mut dst0[..],
+            &mut dst1[..],
             include_bytes!("../../../test/data/hat.png"),
             i == 0,       // warm_up
             90 * 112 * 4, // want_num_bytes = 40_320
@@ -70,7 +73,8 @@ fn main() {
 
         bench(
             "77k_8bpp",
-            &mut dst[..],
+            &mut dst0[..],
+            &mut dst1[..],
             include_bytes!("../../../test/data/bricks-dither.png"),
             i == 0,        // warm_up
             160 * 120 * 4, // want_num_bytes = 76_800
@@ -79,7 +83,8 @@ fn main() {
 
         bench(
             "552k_32bpp_verify_checksum",
-            &mut dst[..],
+            &mut dst0[..],
+            &mut dst1[..],
             include_bytes!("../../../test/data/hibiscus.primitive.png"),
             i == 0,        // warm_up
             312 * 442 * 4, // want_num_bytes = 551_616
@@ -88,7 +93,8 @@ fn main() {
 
         bench(
             "4002k_24bpp",
-            &mut dst[..],
+            &mut dst0[..],
+            &mut dst1[..],
             include_bytes!("../../../test/data/harvesters.png"),
             i == 0,         // warm_up
             1165 * 859 * 4, // want_num_bytes = 4_002_940
@@ -99,7 +105,8 @@ fn main() {
 
 fn bench(
     name: &str,          // Benchmark name.
-    dst: &mut [u8],      // Destination buffer.
+    dst0: &mut [u8],     // Destination buffer #0.
+    dst1: &mut [u8],     // Destination buffer #1.
     src: &[u8],          // Source data.
     warm_up: bool,       // Whether this is a warm up rep.
     want_num_bytes: u64, // Expected num_bytes per iteration.
@@ -110,7 +117,7 @@ fn bench(
 
     let start = Instant::now();
     for _ in 0..iters {
-        let n = decode(&mut dst[..], src);
+        let n = decode(&mut dst0[..], &mut dst1[..], src);
         if n != want_num_bytes {
             panic!("num_bytes: got {}, want {}", n, want_num_bytes);
         }
@@ -136,17 +143,32 @@ fn bench(
 }
 
 // decode returns the number of bytes processed.
-fn decode(dst: &mut [u8], src: &[u8]) -> u64 {
+fn decode(dst0: &mut [u8], dst1: &mut [u8], src: &[u8]) -> u64 {
     let decoder = png::Decoder::new(src);
     let (info, mut reader) = decoder.read_info().unwrap();
     let num_bytes = info.buffer_size() as u64;
-    reader.next_frame(dst).unwrap();
-    if info.color_type == png::ColorType::RGB {
-        // If the PNG image is RGB (not RGBA) then Rust's png crate will decode
-        // to 3 bytes per pixel. Wuffs' std/png benchmarks decode to 4 bytes
-        // per pixel (and in BGRA order, not RGB or RGBA). We'll hand-wave the
-        // difference away and say that we decoded 33% more pixels than we did.
+    reader.next_frame(dst0).unwrap();
+    if info.color_type == png::ColorType::Grayscale {
+        // No conversion necessary.
+        return num_bytes;
+    } else if info.color_type == png::ColorType::RGB {
+        // Convert RGB => BGRA.
+        for i in 0..((num_bytes / 3) as usize) {
+            dst1[(4 * i) + 0] = dst0[(3 * i) + 2];
+            dst1[(4 * i) + 1] = dst0[(3 * i) + 1];
+            dst1[(4 * i) + 2] = dst0[(3 * i) + 0];
+            dst1[(4 * i) + 3] = 0xFF;
+        }
         return (num_bytes / 3) * 4;
+    } else if info.color_type == png::ColorType::RGBA {
+        // Convert RGBA => BGRA.
+        for i in 0..((num_bytes / 4) as usize) {
+            let d = dst0[(4 * i) + 0];
+            dst0[(4 * i) + 0] = dst0[(4 * i) + 2];
+            dst0[(4 * i) + 2] = d;
+        }
+        return num_bytes;
     }
-    num_bytes
+    // Returning 0 should lead to a panic (when want_num_bytes != 0).
+    0
 }

@@ -99,13 +99,13 @@ func main1() error {
 			start := time.Now()
 
 			iters := uint64(tc.itersUnscaled) * iterscale
-			bgra := strings.HasSuffix(tc.benchname, "_77k_8bpp")
-			numBytes, err := decode(tc.src, bgra)
+			expandPalette := strings.HasSuffix(tc.benchname, "_77k_8bpp")
+			numBytes, err := decode(tc.src, expandPalette)
 			if err != nil {
 				return err
 			}
 			for j := uint64(1); j < iters; j++ {
-				decode(tc.src, bgra)
+				decode(tc.src, expandPalette)
 			}
 
 			elapsedNanos := time.Since(start)
@@ -124,7 +124,7 @@ func main1() error {
 	return nil
 }
 
-func decode(src []byte, bgra bool) (numBytes uint64, retErr error) {
+func decode(src []byte, expandPalette bool) (numBytes uint64, retErr error) {
 	m, err := png.Decode(bytes.NewReader(src))
 	if err != nil {
 		return 0, err
@@ -133,24 +133,31 @@ func decode(src []byte, bgra bool) (numBytes uint64, retErr error) {
 	b := m.Bounds()
 	n := uint64(b.Dx()) * uint64(b.Dy())
 
-	// Go converts to RGBA (as that's what Go's image/draw standard library is
-	// optimized for); Wuffs converts to BGRA. The difference isn't important,
-	// as we just want measure how long it takes.
-	if bgra {
+	if expandPalette {
 		dst := image.NewRGBA(b)
 		draw.Draw(dst, b, m, b.Min, draw.Src)
 		m = dst
 	}
 
-	switch m.(type) {
+	pix := []byte(nil)
+	switch m := m.(type) {
 	case *image.Gray:
 		n *= 1
 	case *image.NRGBA:
 		n *= 4
+		pix = m.Pix
 	case *image.RGBA:
 		n *= 4
+		pix = m.Pix
 	default:
 		return 0, fmt.Errorf("unexpected image type %T", m)
+	}
+
+	// Convert RGBA => BGRA.
+	if pix != nil {
+		for i, iEnd := 0, len(pix)/4; i < iEnd; i += 4 {
+			pix[(4*i)+0], pix[(4*i)+2] = pix[(4*i)+2], pix[(4*i)+0]
+		}
 	}
 
 	return n, nil
