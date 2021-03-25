@@ -54,7 +54,7 @@ extern "C" {
 }  // extern "C"
 #endif
 
-// WUFFS C HEADER ENDS HERE.
+// ‼ WUFFS C HEADER ENDS HERE.
 #ifdef WUFFS_IMPLEMENTATION
 
 #ifdef __cplusplus

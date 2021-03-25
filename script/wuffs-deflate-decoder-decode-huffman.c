@@ -32,7 +32,7 @@
 // implementation, edit release/c/wuffs-unsupported-snapshot.c and find the
 // lines that say
 //
-// // WUFFS C HEADER ENDS HERE.
+// // ‼ WUFFS C HEADER ENDS HERE.
 // #ifdef WUFFS_IMPLEMENTATION
 //
 // After that, add this line:
@@ -54,11 +54,11 @@
 
 $ git diff release/c/wuffs-unsupported-snapshot.c
 diff --git a/release/c/wuffs-unsupported-snapshot.c b/release/c/wuffs-unsupported-snapshot.c
-index 1e1941ae..d2d59fef 100644
+index d255a788..2a112728 100644
 --- a/release/c/wuffs-unsupported-snapshot.c
 +++ b/release/c/wuffs-unsupported-snapshot.c
-@@ -9283,6 +9283,8 @@ DecodeJsonResult DecodeJson(
- // WUFFS C HEADER ENDS HERE.
+@@ -9758,6 +9758,8 @@ DecodeJson(DecodeJsonCallbacks& callbacks,
+ // ‼ WUFFS C HEADER ENDS HERE.
  #ifdef WUFFS_IMPLEMENTATION
 
 +#include "../../script/wuffs-deflate-decoder-decode-huffman.c"
@@ -66,7 +66,7 @@ index 1e1941ae..d2d59fef 100644
  #ifdef __cplusplus
  extern "C" {
  #endif
-@@ -22335,7 +22337,7 @@ wuffs_deflate__decoder__decode_blocks(
+@@ -25326,7 +25328,7 @@ wuffs_deflate__decoder__decode_blocks(
            if (a_src) {
              a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
            }
@@ -75,7 +75,7 @@ index 1e1941ae..d2d59fef 100644
            if (a_src) {
              iop_a_src = a_src->data.ptr + a_src->meta.ri;
            }
-@@ -22343,7 +22345,7 @@ wuffs_deflate__decoder__decode_blocks(
+@@ -25334,7 +25336,7 @@ wuffs_deflate__decoder__decode_blocks(
            if (a_src) {
              a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
            }

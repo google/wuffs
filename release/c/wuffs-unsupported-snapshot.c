@@ -9755,7 +9755,7 @@ DecodeJson(DecodeJsonCallbacks& callbacks,
 
 #endif  // defined(__cplusplus) && defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
-// WUFFS C HEADER ENDS HERE.
+// ‼ WUFFS C HEADER ENDS HERE.
 #ifdef WUFFS_IMPLEMENTATION
 
 #ifdef __cplusplus

@@ -144,7 +144,7 @@ func doGenrelease(args []string) error {
 }
 
 var (
-	grImplStartsHere = []byte("\n// WUFFS C HEADER ENDS HERE.\n#ifdef WUFFS_IMPLEMENTATION\n")
+	grImplStartsHere = []byte("\n// ‼ WUFFS C HEADER ENDS HERE.\n#ifdef WUFFS_IMPLEMENTATION\n")
 	grImplEndsHere   = []byte("#endif  // WUFFS_IMPLEMENTATION\n")
 	grIncludeQuote   = []byte("#include \"")
 	grNN             = []byte("\n\n")

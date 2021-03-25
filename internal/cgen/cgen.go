@@ -664,7 +664,7 @@ func (g *gen) generate() ([]byte, error) {
 }
 
 var (
-	wiStartImpl = []byte("\n// WUFFS C HEADER ENDS HERE.\n#ifdef WUFFS_IMPLEMENTATION\n\n")
+	wiStartImpl = []byte("\n// ‼ WUFFS C HEADER ENDS HERE.\n#ifdef WUFFS_IMPLEMENTATION\n\n")
 	wiEnd       = []byte("\n#endif  // WUFFS_IMPLEMENTATION\n\n")
 )
 
