@@ -2,25 +2,23 @@
 
 Short term:
 
-- Decode BMP.
-- Decode ICO.
-- Decode NIE.
-- Decode PNG.
-- Decode RAC.
-- Decode Zip.
-- Decode Zstandard.
-- Optimize Adler-32, CRC-32 hashes.
-- Optimize Deflate decoding.
-- Support SIMD (ARM, X86).
+- [Image decode API for color spaces and gamma
+  correction.](https://github.com/google/wuffs/issues/39)
+- [Image decode API for Region of
+  Interest.](https://github.com/google/wuffs/issues/40)
+- [Decode APNG.](https://github.com/google/wuffs/issues/41)
+- [Decode JPEG.](https://github.com/google/wuffs/issues/42)
+- [Decode LZ4.](https://github.com/google/wuffs/issues/43)
+- [Decode RAC.](https://github.com/google/wuffs/issues/22)
+- [Decode Zstandard.](https://github.com/google/wuffs/issues/44)
 
 Medium term:
 
-- Decode JPEG.
-- Decode JSON/CBOR.
-- Decode LZ4.
+- Decode ICO.
 - Decode TIFF.
 - Decode WEBP/Lossless.
 - Decode WEBP/Lossy.
+- Decode Zip.
 - Encode Deflate.
 - Encode JPEG.
 - Encode NIE.
@@ -43,4 +41,4 @@ Long term:
 
 ---
 
-Updated on November 2019.
+Updated on March 2021.
