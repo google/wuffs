@@ -187,9 +187,6 @@ wuffs_base__io_writer__limited_copy_u32_from_history(uint8_t** ptr_iop_w,
   // expression '3'.
   //
   // See also wuffs_base__io_writer__limited_copy_u32_from_history_fast below.
-  //
-  // Alternatively or additionally, have a sloppy_limited_copy_u32_from_history
-  // method that copies 8 bytes at a time, which can more than length bytes?
   for (; n >= 3; n -= 3) {
     *p++ = *q++;
     *p++ = *q++;
