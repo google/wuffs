@@ -22,9 +22,9 @@
 #define WUFFS_CONFIG__MODULE__BASE
 #endif
 
-// !! WUFFS MONOLITHIC RELEASE DISCARDS EVERYTHING ABOVE.
+// ¡ WUFFS MONOLITHIC RELEASE DISCARDS EVERYTHING ABOVE.
 
-// !! INSERT base/copyright
+// ¡ INSERT base/copyright
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -44,9 +44,9 @@
 extern "C" {
 #endif
 
-// !! INSERT base/all-public.h.
+// ¡ INSERT base/all-public.h.
 
-// !! INSERT InterfaceDeclarations.
+// ¡ INSERT InterfaceDeclarations.
 
 // ----------------
 
@@ -61,7 +61,7 @@ extern "C" {
 extern "C" {
 #endif
 
-// !! INSERT base/all-private.h.
+// ¡ INSERT base/all-private.h.
 
 // ----------------
 
@@ -116,9 +116,9 @@ const uint32_t wuffs_base__pixel_format__bits_per_channel[16] = {
     0x08, 0x0A, 0x0C, 0x10, 0x18, 0x20, 0x30, 0x40,
 };
 
-// !! INSERT wuffs_base__status strings.
+// ¡ INSERT wuffs_base__status strings.
 
-// !! INSERT vtable names.
+// ¡ INSERT vtable names.
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) ||
         // defined(WUFFS_CONFIG__MODULE__BASE)  ||
@@ -127,7 +127,7 @@ const uint32_t wuffs_base__pixel_format__bits_per_channel[16] = {
 #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BASE) || \
     defined(WUFFS_CONFIG__MODULE__BASE__INTERFACES)
 
-// !! INSERT InterfaceDefinitions.
+// ¡ INSERT InterfaceDefinitions.
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) ||
         // defined(WUFFS_CONFIG__MODULE__BASE) ||
@@ -136,7 +136,7 @@ const uint32_t wuffs_base__pixel_format__bits_per_channel[16] = {
 #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BASE) || \
     defined(WUFFS_CONFIG__MODULE__BASE__FLOATCONV)
 
-// !! INSERT base/floatconv-submodule.c.
+// ¡ INSERT base/floatconv-submodule.c.
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) ||
         // defined(WUFFS_CONFIG__MODULE__BASE) ||
@@ -145,7 +145,7 @@ const uint32_t wuffs_base__pixel_format__bits_per_channel[16] = {
 #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BASE) || \
     defined(WUFFS_CONFIG__MODULE__BASE__INTCONV)
 
-// !! INSERT base/intconv-submodule.c.
+// ¡ INSERT base/intconv-submodule.c.
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) ||
         // defined(WUFFS_CONFIG__MODULE__BASE) ||
@@ -154,7 +154,7 @@ const uint32_t wuffs_base__pixel_format__bits_per_channel[16] = {
 #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BASE) || \
     defined(WUFFS_CONFIG__MODULE__BASE__MAGIC)
 
-// !! INSERT base/magic-submodule.c.
+// ¡ INSERT base/magic-submodule.c.
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) ||
         // defined(WUFFS_CONFIG__MODULE__BASE) ||
@@ -163,7 +163,7 @@ const uint32_t wuffs_base__pixel_format__bits_per_channel[16] = {
 #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BASE) || \
     defined(WUFFS_CONFIG__MODULE__BASE__PIXCONV)
 
-// !! INSERT base/pixconv-submodule.c.
+// ¡ INSERT base/pixconv-submodule.c.
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) ||
         // defined(WUFFS_CONFIG__MODULE__BASE) ||
@@ -172,7 +172,7 @@ const uint32_t wuffs_base__pixel_format__bits_per_channel[16] = {
 #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BASE) || \
     defined(WUFFS_CONFIG__MODULE__BASE__UTF8)
 
-// !! INSERT base/utf8-submodule.c.
+// ¡ INSERT base/utf8-submodule.c.
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) ||
         // defined(WUFFS_CONFIG__MODULE__BASE) ||
@@ -184,6 +184,6 @@ const uint32_t wuffs_base__pixel_format__bits_per_channel[16] = {
 
 #endif  // WUFFS_IMPLEMENTATION
 
-// !! WUFFS MONOLITHIC RELEASE DISCARDS EVERYTHING BELOW.
+// ¡ WUFFS MONOLITHIC RELEASE DISCARDS EVERYTHING BELOW.
 
 #endif  // WUFFS_INCLUDE_GUARD__BASE

@@ -123,24 +123,24 @@ func Do(args []string) error {
 			}
 			buf := make(buffer, 0, 128*1024)
 			if err := expandBangBangInsert(&buf, data.BaseAllImplC, map[string]func(*buffer) error{
-				"// !! INSERT InterfaceDeclarations.\n":      insertInterfaceDeclarations,
-				"// !! INSERT InterfaceDefinitions.\n":       insertInterfaceDefinitions,
-				"// !! INSERT base/all-private.h.\n":         insertBaseAllPrivateH,
-				"// !! INSERT base/all-public.h.\n":          insertBaseAllPublicH,
-				"// !! INSERT base/copyright\n":              insertBaseCopyright,
-				"// !! INSERT base/floatconv-submodule.c.\n": insertBaseFloatConvSubmoduleC,
-				"// !! INSERT base/intconv-submodule.c.\n":   insertBaseIntConvSubmoduleC,
-				"// !! INSERT base/magic-submodule.c.\n":     insertBaseMagicSubmoduleC,
-				"// !! INSERT base/pixconv-submodule.c.\n":   insertBasePixConvSubmoduleC,
-				"// !! INSERT base/utf8-submodule.c.\n":      insertBaseUTF8SubmoduleC,
-				"// !! INSERT vtable names.\n": func(b *buffer) error {
+				"// ¡ INSERT InterfaceDeclarations.\n":      insertInterfaceDeclarations,
+				"// ¡ INSERT InterfaceDefinitions.\n":       insertInterfaceDefinitions,
+				"// ¡ INSERT base/all-private.h.\n":         insertBaseAllPrivateH,
+				"// ¡ INSERT base/all-public.h.\n":          insertBaseAllPublicH,
+				"// ¡ INSERT base/copyright\n":              insertBaseCopyright,
+				"// ¡ INSERT base/floatconv-submodule.c.\n": insertBaseFloatConvSubmoduleC,
+				"// ¡ INSERT base/intconv-submodule.c.\n":   insertBaseIntConvSubmoduleC,
+				"// ¡ INSERT base/magic-submodule.c.\n":     insertBaseMagicSubmoduleC,
+				"// ¡ INSERT base/pixconv-submodule.c.\n":   insertBasePixConvSubmoduleC,
+				"// ¡ INSERT base/utf8-submodule.c.\n":      insertBaseUTF8SubmoduleC,
+				"// ¡ INSERT vtable names.\n": func(b *buffer) error {
 					for _, n := range builtin.Interfaces {
 						buf.printf("const char wuffs_base__%s__vtable_name[] = "+
 							"\"{vtable}wuffs_base__%s\";\n", n, n)
 					}
 					return nil
 				},
-				"// !! INSERT wuffs_base__status strings.\n": func(b *buffer) error {
+				"// ¡ INSERT wuffs_base__status strings.\n": func(b *buffer) error {
 					for _, z := range builtin.Statuses {
 						msg, _ := t.Unescape(z)
 						if msg == "" {
@@ -242,7 +242,7 @@ func expandBangBangInsert(b *buffer, s string, m map[string]func(*buffer) error)
 			s, remaining = s[:i+1], s[i+1:]
 		}
 
-		const prefix = "// !! INSERT "
+		const prefix = "// ¡ INSERT "
 		if !strings.HasPrefix(s, prefix) {
 			b.writes(s)
 		} else if f := m[s]; f == nil {
@@ -288,7 +288,7 @@ func insertBaseAllPrivateH(buf *buffer) error {
 
 func insertBaseAllPublicH(buf *buffer) error {
 	if err := expandBangBangInsert(buf, data.BaseFundamentalPublicH, map[string]func(*buffer) error{
-		"// !! INSERT FourCCs.\n": func(b *buffer) error {
+		"// ¡ INSERT FourCCs.\n": func(b *buffer) error {
 			for i, z := range builtin.FourCCs {
 				if i != 0 {
 					b.writeb('\n')
@@ -304,7 +304,7 @@ func insertBaseAllPublicH(buf *buffer) error {
 			}
 			return nil
 		},
-		"// !! INSERT Quirks.\n": func(b *buffer) error {
+		"// ¡ INSERT Quirks.\n": func(b *buffer) error {
 			first := true
 			for _, z := range builtin.Consts {
 				if (z.Name == "") || (z.Name[0] != 'Q') || !strings.HasPrefix(z.Name, "QUIRK_") {
@@ -319,7 +319,7 @@ func insertBaseAllPublicH(buf *buffer) error {
 			}
 			return nil
 		},
-		"// !! INSERT wuffs_base__status names.\n": func(b *buffer) error {
+		"// ¡ INSERT wuffs_base__status names.\n": func(b *buffer) error {
 			for _, z := range builtin.Statuses {
 				msg, _ := t.Unescape(z)
 				if msg == "" {
@@ -646,7 +646,7 @@ func (g *gen) generate() ([]byte, error) {
 		return nil, err
 	}
 
-	b.writes("// !! WUFFS MONOLITHIC RELEASE DISCARDS EVERYTHING ABOVE.\n\n")
+	b.writes("// ¡ WUFFS MONOLITHIC RELEASE DISCARDS EVERYTHING ABOVE.\n\n")
 
 	if err := g.genHeader(b); err != nil {
 		return nil, err
@@ -657,7 +657,7 @@ func (g *gen) generate() ([]byte, error) {
 	}
 	b.writex(wiEnd)
 
-	b.writes("// !! WUFFS MONOLITHIC RELEASE DISCARDS EVERYTHING BELOW.\n\n")
+	b.writes("// ¡ WUFFS MONOLITHIC RELEASE DISCARDS EVERYTHING BELOW.\n\n")
 
 	b.printf("#endif  // %s\n\n", includeGuard)
 	return *b, nil

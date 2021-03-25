@@ -30,7 +30,7 @@
 // the last commit date in the repository used to build this library. Within
 // each major.minor branch, the commit count should increase monotonically.
 //
-// !! Some code generation programs can override WUFFS_VERSION.
+// ¡ Some code generation programs can override WUFFS_VERSION.
 #define WUFFS_VERSION 0
 #define WUFFS_VERSION_MAJOR 0
 #define WUFFS_VERSION_MINOR 0
@@ -287,7 +287,7 @@ typedef struct wuffs_base__status__struct {
 
 } wuffs_base__status;
 
-// !! INSERT wuffs_base__status names.
+// ¡ INSERT wuffs_base__status names.
 
 static inline wuffs_base__status  //
 wuffs_base__make_status(const char* repr) {
@@ -395,13 +395,13 @@ typedef struct wuffs_base__transform__output__struct {
 
 // FourCC constants.
 
-// !! INSERT FourCCs.
+// ¡ INSERT FourCCs.
 
 // --------
 
 // Quirks.
 
-// !! INSERT Quirks.
+// ¡ INSERT Quirks.
 
 // --------
 

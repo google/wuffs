@@ -64,7 +64,7 @@ extern "C" {
 // the last commit date in the repository used to build this library. Within
 // each major.minor branch, the commit count should increase monotonically.
 //
-// !! Some code generation programs can override WUFFS_VERSION.
+// ¡ Some code generation programs can override WUFFS_VERSION.
 #define WUFFS_VERSION 0
 #define WUFFS_VERSION_MAJOR 0
 #define WUFFS_VERSION_MINOR 0

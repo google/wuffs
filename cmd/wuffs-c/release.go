@@ -148,10 +148,10 @@ var (
 	grImplEndsHere   = []byte("#endif  // WUFFS_IMPLEMENTATION\n")
 	grIncludeQuote   = []byte("#include \"")
 	grNN             = []byte("\n\n")
-	grVOverride      = []byte("// !! Some code generation programs can override WUFFS_VERSION.\n")
+	grVOverride      = []byte("// ¡ Some code generation programs can override WUFFS_VERSION.\n")
 	grVEnd           = []byte(`#define WUFFS_VERSION_STRING "0.0.0+0.00000000"`)
-	grWmrAbove       = []byte("// !! WUFFS MONOLITHIC RELEASE DISCARDS EVERYTHING ABOVE.\n")
-	grWmrBelow       = []byte("// !! WUFFS MONOLITHIC RELEASE DISCARDS EVERYTHING BELOW.\n")
+	grWmrAbove       = []byte("// ¡ WUFFS MONOLITHIC RELEASE DISCARDS EVERYTHING ABOVE.\n")
+	grWmrBelow       = []byte("// ¡ WUFFS MONOLITHIC RELEASE DISCARDS EVERYTHING BELOW.\n")
 )
 
 const grSingleFileGuidance = `
