@@ -15555,8 +15555,9 @@ wuffs_base__pixel_swizzler__swap_rgb_bgr(uint8_t* dst_ptr,
   return len;
 }
 
+// ‼ WUFFS MULTI-FILE SECTION +x86_sse42
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
-WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("sse4.2")
+WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2")
 static uint64_t  //
 wuffs_base__pixel_swizzler__swap_rgbx_bgrx__sse42(uint8_t* dst_ptr,
                                                   size_t dst_len,
@@ -15600,6 +15601,7 @@ wuffs_base__pixel_swizzler__swap_rgbx_bgrx__sse42(uint8_t* dst_ptr,
   return len;
 }
 #endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+// ‼ WUFFS MULTI-FILE SECTION -x86_sse42
 
 static uint64_t  //
 wuffs_base__pixel_swizzler__swap_rgbx_bgrx(uint8_t* dst_ptr,
@@ -17872,8 +17874,9 @@ wuffs_base__pixel_swizzler__bgrw__bgrx(uint8_t* dst_ptr,
   return len;
 }
 
+// ‼ WUFFS MULTI-FILE SECTION +x86_sse42
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
-WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("sse4.2")
+WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2")
 static uint64_t  //
 wuffs_base__pixel_swizzler__bgrw__rgb__sse42(uint8_t* dst_ptr,
                                              size_t dst_len,
@@ -17926,6 +17929,7 @@ wuffs_base__pixel_swizzler__bgrw__rgb__sse42(uint8_t* dst_ptr,
   return len;
 }
 #endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+// ‼ WUFFS MULTI-FILE SECTION -x86_sse42
 
 static uint64_t  //
 wuffs_base__pixel_swizzler__bgrw__rgb(uint8_t* dst_ptr,
@@ -18577,8 +18581,9 @@ wuffs_base__pixel_swizzler__xxxx__index_binary_alpha__src_over(
   return len;
 }
 
+// ‼ WUFFS MULTI-FILE SECTION +x86_sse42
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
-WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("sse4.2")
+WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2")
 static uint64_t  //
 wuffs_base__pixel_swizzler__xxxx__y__sse42(uint8_t* dst_ptr,
                                            size_t dst_len,
@@ -18625,6 +18630,7 @@ wuffs_base__pixel_swizzler__xxxx__y__sse42(uint8_t* dst_ptr,
   return len;
 }
 #endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+// ‼ WUFFS MULTI-FILE SECTION -x86_sse42
 
 static uint64_t  //
 wuffs_base__pixel_swizzler__xxxx__y(uint8_t* dst_ptr,
@@ -20423,6 +20429,7 @@ wuffs_adler32__hasher__up__choosy_default(
   return wuffs_base__make_empty_struct();
 }
 
+// ‼ WUFFS MULTI-FILE SECTION +arm_neon
 // -------- func adler32.hasher.up_arm_neon
 
 #if defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
@@ -20526,7 +20533,9 @@ wuffs_adler32__hasher__up_arm_neon(
   return wuffs_base__make_empty_struct();
 }
 #endif  // defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
+// ‼ WUFFS MULTI-FILE SECTION -arm_neon
 
+// ‼ WUFFS MULTI-FILE SECTION +x86_sse42
 // -------- func adler32.hasher.up_x86_sse42
 
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
@@ -20616,6 +20625,7 @@ wuffs_adler32__hasher__up_x86_sse42(
   return wuffs_base__make_empty_struct();
 }
 #endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+// ‼ WUFFS MULTI-FILE SECTION -x86_sse42
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__ADLER32)
 
@@ -24633,6 +24643,7 @@ wuffs_crc32__ieee_hasher__up__choosy_default(
   return wuffs_base__make_empty_struct();
 }
 
+// ‼ WUFFS MULTI-FILE SECTION +arm_crc32
 // -------- func crc32.ieee_hasher.up_arm_crc32
 
 #if defined(WUFFS_BASE__CPU_ARCH__ARM_CRC32)
@@ -24705,7 +24716,9 @@ wuffs_crc32__ieee_hasher__up_arm_crc32(
   return wuffs_base__make_empty_struct();
 }
 #endif  // defined(WUFFS_BASE__CPU_ARCH__ARM_CRC32)
+// ‼ WUFFS MULTI-FILE SECTION -arm_crc32
 
+// ‼ WUFFS MULTI-FILE SECTION +x86_sse42
 // -------- func crc32.ieee_hasher.up_x86_sse42
 
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
@@ -24822,6 +24835,7 @@ wuffs_crc32__ieee_hasher__up_x86_sse42(
   return wuffs_base__make_empty_struct();
 }
 #endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+// ‼ WUFFS MULTI-FILE SECTION -x86_sse42
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__CRC32)
 
@@ -34344,6 +34358,7 @@ sizeof__wuffs_png__decoder() {
 
 // ---------------- Function Implementations
 
+// ‼ WUFFS MULTI-FILE SECTION +arm_neon
 // -------- func png.decoder.filter_1_distance_4_arm_neon
 
 #if defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
@@ -34386,7 +34401,9 @@ wuffs_png__decoder__filter_1_distance_4_arm_neon(
   return wuffs_base__make_empty_struct();
 }
 #endif  // defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
+// ‼ WUFFS MULTI-FILE SECTION -arm_neon
 
+// ‼ WUFFS MULTI-FILE SECTION +arm_neon
 // -------- func png.decoder.filter_3_distance_4_arm_neon
 
 #if defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
@@ -34475,7 +34492,9 @@ wuffs_png__decoder__filter_3_distance_4_arm_neon(
   return wuffs_base__make_empty_struct();
 }
 #endif  // defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
+// ‼ WUFFS MULTI-FILE SECTION -arm_neon
 
+// ‼ WUFFS MULTI-FILE SECTION +arm_neon
 // -------- func png.decoder.filter_4_distance_3_arm_neon
 
 #if defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
@@ -34593,7 +34612,9 @@ wuffs_png__decoder__filter_4_distance_3_arm_neon(
   return wuffs_base__make_empty_struct();
 }
 #endif  // defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
+// ‼ WUFFS MULTI-FILE SECTION -arm_neon
 
+// ‼ WUFFS MULTI-FILE SECTION +arm_neon
 // -------- func png.decoder.filter_4_distance_4_arm_neon
 
 #if defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
@@ -34691,6 +34712,7 @@ wuffs_png__decoder__filter_4_distance_4_arm_neon(
   return wuffs_base__make_empty_struct();
 }
 #endif  // defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
+// ‼ WUFFS MULTI-FILE SECTION -arm_neon
 
 // -------- func png.decoder.filter_1
 
@@ -35356,6 +35378,7 @@ wuffs_png__decoder__filter_4_distance_4_fallback(
   return wuffs_base__make_empty_struct();
 }
 
+// ‼ WUFFS MULTI-FILE SECTION +x86_sse42
 // -------- func png.decoder.filter_1_distance_4_x86_sse42
 
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
@@ -35399,7 +35422,9 @@ wuffs_png__decoder__filter_1_distance_4_x86_sse42(
   return wuffs_base__make_empty_struct();
 }
 #endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+// ‼ WUFFS MULTI-FILE SECTION -x86_sse42
 
+// ‼ WUFFS MULTI-FILE SECTION +x86_sse42
 // -------- func png.decoder.filter_3_distance_4_x86_sse42
 
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
@@ -35502,7 +35527,9 @@ wuffs_png__decoder__filter_3_distance_4_x86_sse42(
   return wuffs_base__make_empty_struct();
 }
 #endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+// ‼ WUFFS MULTI-FILE SECTION -x86_sse42
 
+// ‼ WUFFS MULTI-FILE SECTION +x86_sse42
 // -------- func png.decoder.filter_4_distance_3_x86_sse42
 
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
@@ -35626,7 +35653,9 @@ wuffs_png__decoder__filter_4_distance_3_x86_sse42(
   return wuffs_base__make_empty_struct();
 }
 #endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+// ‼ WUFFS MULTI-FILE SECTION -x86_sse42
 
+// ‼ WUFFS MULTI-FILE SECTION +x86_sse42
 // -------- func png.decoder.filter_4_distance_4_x86_sse42
 
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
@@ -35728,6 +35757,7 @@ wuffs_png__decoder__filter_4_distance_4_x86_sse42(
   return wuffs_base__make_empty_struct();
 }
 #endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+// ‼ WUFFS MULTI-FILE SECTION -x86_sse42
 
 // -------- func png.decoder.set_quirk_enabled
 

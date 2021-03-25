@@ -229,12 +229,14 @@ func (g *gen) writeFuncPrototype(b *buffer, n *a.Func) error {
 func (g *gen) writeFuncImpl(b *buffer, n *a.Func) error {
 	k := g.funks[n.QQID()]
 
-	b.printf("// -------- func %s.%s\n\n", g.pkgName, n.QQID().Str(g.tm))
-
-	caMacro, _, caAttribute, err := cpuArchCNames(n.Asserts())
+	caMacro, caName, caAttribute, err := cpuArchCNames(n.Asserts())
 	if err != nil {
 		return err
 	}
+	if caName != "" {
+		b.printf("// ‼ WUFFS MULTI-FILE SECTION +%s\n", caName)
+	}
+	b.printf("// -------- func %s.%s\n\n", g.pkgName, n.QQID().Str(g.tm))
 	if caMacro != "" {
 		b.printf("#if defined(WUFFS_BASE__CPU_ARCH__%s)\n", caMacro)
 	}
@@ -277,6 +279,9 @@ func (g *gen) writeFuncImpl(b *buffer, n *a.Func) error {
 	b.writes("}\n")
 	if caMacro != "" {
 		b.printf("#endif  // defined(WUFFS_BASE__CPU_ARCH__%s)\n", caMacro)
+	}
+	if caName != "" {
+		b.printf("// ‼ WUFFS MULTI-FILE SECTION -%s\n", caName)
 	}
 	b.writes("\n")
 	return nil
