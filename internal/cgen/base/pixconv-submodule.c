@@ -1887,7 +1887,6 @@ wuffs_base__pixel_swizzler__bgr__bgra_premul__src(uint8_t* dst_ptr,
     d[0] = s0;
     d[1] = s1;
     d[2] = s2;
-    d[3] = 0xFF;
 
     s += 1 * 4;
     d += 1 * 3;
@@ -2041,7 +2040,6 @@ wuffs_base__pixel_swizzler__bgr__rgba_premul__src(uint8_t* dst_ptr,
     d[0] = s2;
     d[1] = s1;
     d[2] = s0;
-    d[3] = 0xFF;
 
     s += 1 * 4;
     d += 1 * 3;
