@@ -356,15 +356,8 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 
 func (q *checker) hasIsErrorFact(id t.ID) bool {
 	for _, x := range q.facts {
-		if (x.Operator() != t.IDOpenParen) || (len(x.Args()) != 0) {
-			continue
-		}
-		x = x.LHS().AsExpr()
-		if (x.Operator() != t.IDDot) || (x.Ident() != t.IDIsError) {
-			continue
-		}
-		x = x.LHS().AsExpr()
-		if (x.Operator() != 0) || (x.Ident() != id) {
+		if lhs, meth, args, _ := x.IsMethodCall(); (meth != t.IDIsError) || (len(args) != 0) ||
+			(lhs.Operator() != 0) || (lhs.Ident() != id) {
 			continue
 		}
 		return true
@@ -525,16 +518,16 @@ func (q *checker) bcheckAssignment(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 		}
 
 		// Look for "lhs = x[i .. j]" where i and j are constants.
-		if rhs.Operator() == t.IDDotDot {
+		if _, i, j, ok := rhs.IsSlice(); ok {
 			icv := (*big.Int)(nil)
-			if i := rhs.MHS().AsExpr(); i == nil {
+			if i == nil {
 				icv = zero
 			} else if i.ConstValue() != nil {
 				icv = i.ConstValue()
 			}
 
 			jcv := (*big.Int)(nil)
-			if j := rhs.RHS().AsExpr(); (j != nil) && (j.ConstValue() != nil) {
+			if (j != nil) && (j.ConstValue() != nil) {
 				jcv = j.ConstValue()
 			}
 
@@ -1265,15 +1258,8 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (bounds, e
 
 func (q *checker) canUndoByte(recv *a.Expr) error {
 	for _, x := range q.facts {
-		if x.Operator() != t.IDOpenParen || len(x.Args()) != 0 {
-			continue
-		}
-		x = x.LHS().AsExpr()
-		if x.Operator() != t.IDDot || x.Ident() != t.IDCanUndoByte {
-			continue
-		}
-		x = x.LHS().AsExpr()
-		if !x.Eq(recv) {
+		if lhs, meth, args, _ := x.IsMethodCall(); (meth != t.IDCanUndoByte) || (len(args) != 0) ||
+			!lhs.Eq(recv) {
 			continue
 		}
 		return q.facts.update(func(o *a.Expr) (*a.Expr, error) {

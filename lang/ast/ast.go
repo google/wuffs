@@ -386,13 +386,41 @@ func (n *Expr) IsArgsDotFoo() (foo t.ID) {
 	return 0
 }
 
-func (n *Expr) IsMethodCall() (recv *Expr, meth t.ID, args []*Node) {
+func (n *Expr) IsIndex() (arrayOrSlice *Expr, index *Expr, ok bool) {
+	if n.id0 == t.IDOpenBracket {
+		return n.lhs.AsExpr(), n.rhs.AsExpr(), true
+	}
+	return nil, nil, false
+}
+
+func (n *Expr) IsList() (args []*Node, ok bool) {
+	if n.id0 == t.IDComma {
+		return n.list0, true
+	}
+	return nil, false
+}
+
+func (n *Expr) IsMethodCall() (recv *Expr, meth t.ID, args []*Node, ok bool) {
 	if n.id0 == t.IDOpenParen {
 		if o := n.lhs; o.id0 == t.IDDot {
-			return o.lhs.AsExpr(), o.id2, n.list0
+			return o.lhs.AsExpr(), o.id2, n.list0, true
 		}
 	}
-	return nil, 0, nil
+	return nil, 0, nil, false
+}
+
+func (n *Expr) IsSelector() (lhs *Expr, field t.ID, ok bool) {
+	if n.id0 == t.IDDot {
+		return n.lhs.AsExpr(), n.id2, true
+	}
+	return nil, 0, false
+}
+
+func (n *Expr) IsSlice() (arrayOrSlice *Expr, lo *Expr, hi *Expr, ok bool) {
+	if n.id0 == t.IDDotDot {
+		return n.lhs.AsExpr(), n.mhs.AsExpr(), n.rhs.AsExpr(), true
+	}
+	return nil, nil, nil, false
 }
 
 func NewExpr(flags Flags, operator t.ID, ident t.ID, lhs *Node, mhs *Node, rhs *Node, args []*Node) *Expr {

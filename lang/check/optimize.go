@@ -55,16 +55,16 @@ func (q *checker) optimizeIOMethodAdvance(receiver *a.Expr, advance *big.Int, ad
 
 	// Check if receiver looks like "a[i .. j]" where i and j are constants and
 	// ((j - i) >= advance).
-	if receiver.Operator() == t.IDDotDot {
+	if _, i, j, ok := receiver.IsSlice(); ok {
 		icv := (*big.Int)(nil)
-		if i := receiver.MHS().AsExpr(); i == nil {
+		if i == nil {
 			icv = zero
 		} else if i.ConstValue() != nil {
 			icv = i.ConstValue()
 		}
 
 		jcv := (*big.Int)(nil)
-		if j := receiver.RHS().AsExpr(); (j != nil) && (j.ConstValue() != nil) {
+		if (j != nil) && (j.ConstValue() != nil) {
 			jcv = j.ConstValue()
 		}
 

@@ -728,16 +728,16 @@ func (g *gen) writeBuiltinCPUArchX86(b *buffer, recv *a.Expr, method t.ID, args 
 }
 
 func (g *gen) writeExprDotPtr(b *buffer, n *a.Expr, sideEffectsOnly bool, depth uint32) error {
-	if n.Operator() == t.IDDotDot {
-		if err := g.writeExpr(b, n.LHS().AsExpr(), sideEffectsOnly, depth); err != nil {
+	if arrayOrSlice, lo, _, ok := n.IsSlice(); ok {
+		if err := g.writeExpr(b, arrayOrSlice, sideEffectsOnly, depth); err != nil {
 			return err
 		}
-		if n.LHS().AsExpr().MType().IsSliceType() {
+		if arrayOrSlice.MType().IsSliceType() {
 			b.writes(".ptr")
 		}
-		if n.MHS() != nil {
+		if lo != nil {
 			b.writes(" + ")
-			if err := g.writeExpr(b, n.MHS().AsExpr(), sideEffectsOnly, depth); err != nil {
+			if err := g.writeExpr(b, lo, sideEffectsOnly, depth); err != nil {
 				return err
 			}
 		}
@@ -969,13 +969,8 @@ func (g *gen) writeBuiltinSliceCopyFromSlice8(b *buffer, recv *a.Expr, method t.
 // matchFooIndexIndexPlus8 matches n with "foo[index .. index + 8]" or "foo[..
 // 8]". It returns a nil foo if there isn't a match.
 func matchFooIndexIndexPlus8(n *a.Expr) (foo *a.Expr, index *a.Expr) {
-	if n.Operator() != t.IDDotDot {
-		return nil, nil
-	}
-	foo = n.LHS().AsExpr()
-	index = n.MHS().AsExpr()
-	rhs := n.RHS().AsExpr()
-	if rhs == nil {
+	foo, index, rhs, ok := n.IsSlice()
+	if !ok || (rhs == nil) {
 		return nil, nil
 	}
 

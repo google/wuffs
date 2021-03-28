@@ -391,12 +391,13 @@ func (c *Checker) checkConst(node *a.Node) error {
 func (c *Checker) checkConstElement(n *a.Expr, nb bounds, nLists int) error {
 	if nLists > 0 {
 		nLists--
-		if n.Operator() != t.IDComma {
+		if args, ok := n.IsList(); !ok {
 			return fmt.Errorf("invalid const value %q", n.Str(c.tm))
-		}
-		for _, o := range n.Args() {
-			if err := c.checkConstElement(o.AsExpr(), nb, nLists); err != nil {
-				return err
+		} else {
+			for _, o := range args {
+				if err := c.checkConstElement(o.AsExpr(), nb, nLists); err != nil {
+					return err
+				}
 			}
 		}
 		return nil

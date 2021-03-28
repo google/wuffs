@@ -45,8 +45,8 @@ func (g *gen) needDerivedVar(name t.ID) bool {
 			switch p.Kind() {
 			case a.KExpr:
 				// Look for p matching "args.name.etc(etc)".
-				recv, meth, args := p.AsExpr().IsMethodCall()
-				if recv == nil {
+				recv, meth, args, ok := p.AsExpr().IsMethodCall()
+				if !ok {
 					return nil
 				}
 				if recv.IsArgsDotFoo() == name {

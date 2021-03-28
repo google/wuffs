@@ -1035,9 +1035,9 @@ func (g *gen) writeConst(b *buffer, n *a.Const) error {
 }
 
 func (g *gen) writeConstList(b *buffer, n *a.Expr) error {
-	if n.Operator() == t.IDComma {
+	if args, ok := n.IsList(); ok {
 		b.writeb('{')
-		for i, o := range n.Args() {
+		for i, o := range args {
 			if i&7 == 0 {
 				b.writeb('\n')
 			}
