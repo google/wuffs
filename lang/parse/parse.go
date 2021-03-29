@@ -591,7 +591,7 @@ func (p *parser) parseBracket(sep t.ID) (op t.ID, ei *a.Expr, ej *a.Expr, err er
 
 	case x == t.IDCloseBracket && sep == t.IDDotDot:
 		p.src = p.src[1:]
-		return t.IDOpenBracket, nil, ei, nil
+		return a.ExprOperatorIndex, nil, ei, nil
 
 	default:
 		extra := ``
@@ -1000,7 +1000,7 @@ func (p *parser) parseAssignNode() (*a.Node, error) {
 		}
 
 		if op == t.IDEqQuestion {
-			if (rhs.Operator() != t.IDOpenParen) || (!rhs.Effect().Coroutine()) {
+			if (rhs.Operator() != a.ExprOperatorCall) || (!rhs.Effect().Coroutine()) {
 				return nil, fmt.Errorf(`parse: expected ?-function call after "=?", got %q at %s:%d`,
 					rhs.Str(p.tm), p.filename, p.line())
 			}
@@ -1405,7 +1405,7 @@ func (p *parser) parsePossibleListExpr() (*a.Expr, error) {
 	if err != nil {
 		return nil, err
 	}
-	return a.NewExpr(0, t.IDComma, 0, nil, nil, nil, args), nil
+	return a.NewExpr(0, a.ExprOperatorList, 0, nil, nil, nil, args), nil
 }
 
 func (p *parser) parseExpr() (*a.Expr, error) {
@@ -1521,7 +1521,7 @@ func (p *parser) parseOperand() (*a.Expr, error) {
 			if err != nil {
 				return nil, err
 			}
-			lhs = a.NewExpr(flags, t.IDOpenParen, 0, lhs.AsNode(), nil, nil, args)
+			lhs = a.NewExpr(flags, a.ExprOperatorCall, 0, lhs.AsNode(), nil, nil, args)
 
 		case t.IDOpenBracket:
 			id0, mhs, rhs, err := p.parseBracket(t.IDDotDot)
@@ -1541,7 +1541,7 @@ func (p *parser) parseOperand() (*a.Expr, error) {
 					return nil, err
 				}
 			}
-			lhs = a.NewExpr(0, t.IDDot, selector, lhs.AsNode(), nil, nil, nil)
+			lhs = a.NewExpr(0, a.ExprOperatorSelector, selector, lhs.AsNode(), nil, nil, nil)
 		}
 	}
 }

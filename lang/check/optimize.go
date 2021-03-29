@@ -33,12 +33,12 @@ import (
 // splitReceiverMethodArgs returns the "receiver", "method" and "args" in the
 // expression "receiver.method(args)".
 func splitReceiverMethodArgs(n *a.Expr) (receiver *a.Expr, method t.ID, args []*a.Node) {
-	if n.Operator() != t.IDOpenParen {
+	if n.Operator() != a.ExprOperatorCall {
 		return nil, 0, nil
 	}
 	args = n.Args()
 	n = n.LHS().AsExpr()
-	if n.Operator() != t.IDDot {
+	if n.Operator() != a.ExprOperatorSelector {
 		return nil, 0, nil
 	}
 	return n.LHS().AsExpr(), n.Ident(), args
@@ -94,11 +94,11 @@ func (q *checker) optimizeIOMethodAdvance(receiver *a.Expr, advance *big.Int, ad
 
 		// Check that lhs is "receiver.length()".
 		lhs := x.LHS().AsExpr()
-		if lhs.Operator() != t.IDOpenParen || len(lhs.Args()) != 0 {
+		if (lhs.Operator() != a.ExprOperatorCall) || (len(lhs.Args()) != 0) {
 			return x, nil
 		}
 		lhs = lhs.LHS().AsExpr()
-		if lhs.Operator() != t.IDDot || lhs.Ident() != t.IDLength {
+		if (lhs.Operator() != a.ExprOperatorSelector) || (lhs.Ident() != t.IDLength) {
 			return x, nil
 		}
 		lhs = lhs.LHS().AsExpr()
@@ -155,11 +155,11 @@ func (q *checker) optimizeIOMethodAdvanceExpr(receiver *a.Expr, advanceExpr *a.E
 
 		// Check that lhs is "receiver.length()".
 		lhs := x.LHS().AsExpr()
-		if lhs.Operator() != t.IDOpenParen || len(lhs.Args()) != 0 {
+		if (lhs.Operator() != a.ExprOperatorCall) || (len(lhs.Args()) != 0) {
 			return x, nil
 		}
 		lhs = lhs.LHS().AsExpr()
-		if lhs.Operator() != t.IDDot || lhs.Ident() != t.IDLength {
+		if (lhs.Operator() != a.ExprOperatorSelector) || (lhs.Ident() != t.IDLength) {
 			return x, nil
 		}
 		lhs = lhs.LHS().AsExpr()

@@ -358,6 +358,14 @@ const MaxExprDepth = 255
 // For lists, like "[0, 1, 2]", ID0 is IDComma.
 type Expr Node
 
+const (
+	ExprOperatorCall     = t.IDOpenParen
+	ExprOperatorIndex    = t.IDOpenBracket
+	ExprOperatorList     = t.IDComma
+	ExprOperatorSelector = t.IDDot
+	ExprOperatorSlice    = t.IDDotDot
+)
+
 func (n *Expr) AsNode() *Node              { return (*Node)(n) }
 func (n *Expr) Effect() Effect             { return Effect(n.flags) }
 func (n *Expr) GlobalIdent() bool          { return n.flags&FlagsGlobalIdent != 0 }
@@ -387,21 +395,21 @@ func (n *Expr) IsArgsDotFoo() (foo t.ID) {
 }
 
 func (n *Expr) IsIndex() (arrayOrSlice *Expr, index *Expr, ok bool) {
-	if n.id0 == t.IDOpenBracket {
+	if n.id0 == ExprOperatorIndex {
 		return n.lhs.AsExpr(), n.rhs.AsExpr(), true
 	}
 	return nil, nil, false
 }
 
 func (n *Expr) IsList() (args []*Node, ok bool) {
-	if n.id0 == t.IDComma {
+	if n.id0 == ExprOperatorList {
 		return n.list0, true
 	}
 	return nil, false
 }
 
 func (n *Expr) IsMethodCall() (recv *Expr, meth t.ID, args []*Node, ok bool) {
-	if n.id0 == t.IDOpenParen {
+	if n.id0 == ExprOperatorCall {
 		if o := n.lhs; o.id0 == t.IDDot {
 			return o.lhs.AsExpr(), o.id2, n.list0, true
 		}
@@ -410,14 +418,14 @@ func (n *Expr) IsMethodCall() (recv *Expr, meth t.ID, args []*Node, ok bool) {
 }
 
 func (n *Expr) IsSelector() (lhs *Expr, field t.ID, ok bool) {
-	if n.id0 == t.IDDot {
+	if n.id0 == ExprOperatorSelector {
 		return n.lhs.AsExpr(), n.id2, true
 	}
 	return nil, 0, false
 }
 
 func (n *Expr) IsSlice() (arrayOrSlice *Expr, lo *Expr, hi *Expr, ok bool) {
-	if n.id0 == t.IDDotDot {
+	if n.id0 == ExprOperatorSlice {
 		return n.lhs.AsExpr(), n.mhs.AsExpr(), n.rhs.AsExpr(), true
 	}
 	return nil, nil, nil, false

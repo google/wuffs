@@ -363,7 +363,7 @@ func (g *gen) writeExprBinaryOp(b *buffer, n *a.Expr, depth uint32) error {
 func (g *gen) writeExprRepr(b *buffer, n *a.Expr, depth uint32) error {
 	isStatus := n.MType().IsStatus()
 	if isStatus {
-		if op := n.Operator(); ((op == 0) || (op == t.IDDot)) && n.Ident().IsDQStrLiteral(g.tm) {
+		if op := n.Operator(); ((op == 0) || (op == a.ExprOperatorSelector)) && n.Ident().IsDQStrLiteral(g.tm) {
 			qid := t.QID{0, n.Ident()}
 			if op == t.IDDot {
 				qid[0] = n.LHS().AsExpr().Ident()

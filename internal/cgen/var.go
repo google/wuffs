@@ -248,7 +248,7 @@ func (g *gen) couldHaveDerivedVar(n *a.Expr) bool {
 }
 
 func (g *gen) writeLoadExprDerivedVars(b *buffer, n *a.Expr) error {
-	if (g.currFunk.derivedVars != nil) && (n.Operator() == t.IDOpenParen) {
+	if (g.currFunk.derivedVars != nil) && (n.Operator() == a.ExprOperatorCall) {
 		for _, o := range n.Args() {
 			if v := o.AsArg().Value(); g.couldHaveDerivedVar(v) {
 				if err := g.writeLoadDerivedVar(b, v); err != nil {
@@ -261,7 +261,7 @@ func (g *gen) writeLoadExprDerivedVars(b *buffer, n *a.Expr) error {
 }
 
 func (g *gen) writeSaveExprDerivedVars(b *buffer, n *a.Expr) error {
-	if (g.currFunk.derivedVars != nil) && (n.Operator() == t.IDOpenParen) {
+	if (g.currFunk.derivedVars != nil) && (n.Operator() == a.ExprOperatorCall) {
 		for _, o := range n.Args() {
 			if v := o.AsArg().Value(); g.couldHaveDerivedVar(v) {
 				if err := g.writeSaveDerivedVar(b, v); err != nil {

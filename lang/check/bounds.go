@@ -331,7 +331,7 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 		}
 
 		if lTyp.IsStatus() {
-			if v := n.Value(); (v.Operator() == 0) || (v.Operator() == t.IDDot) {
+			if v := n.Value(); (v.Operator() == 0) || (v.Operator() == a.ExprOperatorSelector) {
 				if id := v.Ident(); (id != t.IDOk) && (q.hasIsErrorFact(id) || isErrorStatus(id, q.tm)) {
 					n.SetRetsError()
 				}
@@ -430,7 +430,7 @@ func (q *checker) bcheckAssert(n *a.Assert) error {
 
 func (q *checker) bcheckAssignment(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 	oldFacts := (map[*a.Expr]struct{})(nil)
-	if (rhs.Operator() == t.IDOpenParen) && rhs.Effect().Impure() {
+	if (rhs.Operator() == a.ExprOperatorCall) && rhs.Effect().Impure() {
 		oldFacts = map[*a.Expr]struct{}{}
 		for _, x := range q.facts {
 			oldFacts[x] = struct{}{}
@@ -450,7 +450,7 @@ func (q *checker) bcheckAssignment(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 		return err
 	}
 
-	if (rhs.Operator() == t.IDOpenParen) && rhs.Effect().Impure() {
+	if (rhs.Operator() == a.ExprOperatorCall) && rhs.Effect().Impure() {
 		if rhs.Effect().Coroutine() && (op != t.IDEqQuestion) {
 			if err := q.facts.update(updateFactsForSuspension); err != nil {
 				return err
@@ -505,7 +505,7 @@ func (q *checker) bcheckAssignment(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 		if lhs.MType().IsNumType() && rhs.Effect().Pure() {
 			q.facts.appendBinaryOpFact(t.IDXBinaryEqEq, lhs, rhs)
 
-			if rhs.Operator() == t.IDOpenParen {
+			if rhs.Operator() == a.ExprOperatorCall {
 				if lTyp := rhs.LHS().AsExpr().MType(); lTyp.IsFuncType() && lTyp.Receiver().IsNumType() {
 					switch fn := lTyp.FuncName(); fn {
 					case t.IDMax, t.IDMin:

@@ -86,7 +86,7 @@ func (g *gen) writeStatementAssign(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr,
 
 	needWriteLoadExprDerivedVars := false
 	if (len(g.currFunk.derivedVars) > 0) &&
-		(rhs.Operator() == t.IDOpenParen) {
+		(rhs.Operator() == a.ExprOperatorCall) {
 		method := rhs.LHS().AsExpr()
 		recvTyp := method.LHS().MType().Pointee()
 		if (recvTyp.Decorator() == 0) && (recvTyp.QID()[0] != t.IDBase) {
