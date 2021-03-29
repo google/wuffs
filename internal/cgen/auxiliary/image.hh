@@ -96,8 +96,8 @@ class DecodeImageCallbacks {
   // Returning otherwise means failure (DecodeImage_UnsupportedPixelFormat).
   //
   // The default SelectPixfmt implementation returns
-  // wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL)
-  // which is 4 bytes per pixel (8 bits per channel × 4 channels).
+  // wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL) which
+  // is 4 bytes per pixel (8 bits per channel × 4 channels).
   virtual wuffs_base__pixel_format  //
   SelectPixfmt(const wuffs_base__image_config& image_config);
 

@@ -88,8 +88,7 @@ DecodeImageCallbacks::SelectDecoder(uint32_t fourcc,
 wuffs_base__pixel_format  //
 DecodeImageCallbacks::SelectPixfmt(
     const wuffs_base__image_config& image_config) {
-  return wuffs_base__make_pixel_format(
-      WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL);
+  return wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL);
 }
 
 DecodeImageCallbacks::AllocResult  //

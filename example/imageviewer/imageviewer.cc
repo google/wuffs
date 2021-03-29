@@ -89,6 +89,17 @@ wuffs_aux::MemOwner g_pixbuf_mem_owner(nullptr, &free);
 wuffs_base__slice_u8 g_pixbuf_mem_slice = {0};
 uint32_t g_background_color_index = 0;
 
+class MyCallbacks : public wuffs_aux::DecodeImageCallbacks {
+ public:
+  // This override is redundant - it is the same as the default
+  // implementation. It exists because this is example code and shows how to
+  // decode to other pixel formats such as BGR_565 or RGBA_NONPREMUL.
+  wuffs_base__pixel_format  //
+  SelectPixfmt(const wuffs_base__image_config& image_config) override {
+    return wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL);
+  }
+};
+
 bool  //
 load_image(const char* filename) {
   FILE* file = stdin;
@@ -108,7 +119,7 @@ load_image(const char* filename) {
   g_pixbuf_mem_owner.reset();
   g_pixbuf_mem_slice = wuffs_base__empty_slice_u8();
 
-  wuffs_aux::DecodeImageCallbacks callbacks;
+  MyCallbacks callbacks;
   wuffs_aux::sync_io::FileInput input(file);
   wuffs_aux::DecodeImageResult res = wuffs_aux::DecodeImage(
       callbacks, input,
