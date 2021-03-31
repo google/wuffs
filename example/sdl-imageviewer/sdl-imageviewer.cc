@@ -1,0 +1,357 @@
+// Copyright 2021 The Wuffs Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// ----------------
+
+/*
+sdl-imageviewer is a simple GUI program for viewing an image. To run:
+
+$CXX sdl-imageviewer.cc -lSDL2 -lSDL2_image && \
+  ./a.out ../../test/data/bricks-color.png; rm -f a.out
+
+for a C++ compiler $CXX, such as clang++ or g++.
+
+The Tab key switches between decoding the image via Wuffs or via SDL2_image.
+There should be no difference unless you uncomment the § line of code below.
+
+The Escape key quits.
+
+----
+
+This program (in Wuffs' example directory) is like example/imageviewer but with
+fewer features. It focuses on showing how to integrate the Wuffs image decoders
+with SDL (as an alternative to the SDL_image extension).
+
+While SDL is cross-platform, this program is not as good as example/imageviewer
+for general use. SDL (which is designed for full-screen games) uses a noticable
+amount of CPU (and therefore power) polling for events even when the program
+isn't otherwise doing anything.
+*/
+
+#include <inttypes.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+// Wuffs ships as a "single file C library" or "header file library" as per
+// https://github.com/nothings/stb/blob/master/docs/stb_howto.txt
+//
+// To use that single file as a "foo.c"-like implementation, instead of a
+// "foo.h"-like header, #define WUFFS_IMPLEMENTATION before #include'ing or
+// compiling it.
+#define WUFFS_IMPLEMENTATION
+
+// Defining the WUFFS_CONFIG__MODULE* macros are optional, but it lets users of
+// release/c/etc.c choose which parts of Wuffs to build. That file contains the
+// entire Wuffs standard library, implementing a variety of codecs and file
+// formats. Without this macro definition, an optimizing compiler or linker may
+// very well discard Wuffs code for unused codecs, but listing the Wuffs
+// modules we use makes that process explicit. Preprocessing means that such
+// code simply isn't compiled.
+#define WUFFS_CONFIG__MODULES
+#define WUFFS_CONFIG__MODULE__ADLER32
+#define WUFFS_CONFIG__MODULE__AUX__BASE
+#define WUFFS_CONFIG__MODULE__AUX__IMAGE
+#define WUFFS_CONFIG__MODULE__BASE
+#define WUFFS_CONFIG__MODULE__BMP
+#define WUFFS_CONFIG__MODULE__CRC32
+#define WUFFS_CONFIG__MODULE__DEFLATE
+#define WUFFS_CONFIG__MODULE__GIF
+#define WUFFS_CONFIG__MODULE__LZW
+#define WUFFS_CONFIG__MODULE__PNG
+#define WUFFS_CONFIG__MODULE__ZLIB
+
+// If building this program in an environment that doesn't easily accommodate
+// relative includes, you can use the script/inline-c-relative-includes.go
+// program to generate a stand-alone C file.
+#include "../../release/c/wuffs-unsupported-snapshot.c"
+
+// ----------------
+
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
+
+// --------
+
+class Wuffs_Load_RW_Callbacks : public wuffs_aux::DecodeImageCallbacks {
+ public:
+  Wuffs_Load_RW_Callbacks(SDL_PixelFormat* pixfmt)
+      : m_rmask(pixfmt->Rmask),
+        m_gmask(pixfmt->Gmask),
+        m_bmask(pixfmt->Bmask),
+        m_amask(0xFFFFFFFFu ^ pixfmt->Rmask ^ pixfmt->Gmask ^ pixfmt->Bmask),
+        m_surface(NULL) {}
+
+  ~Wuffs_Load_RW_Callbacks() {
+    if (m_surface) {
+      SDL_UnlockSurface(m_surface);
+      SDL_FreeSurface(m_surface);
+      m_surface = NULL;
+    }
+  }
+
+  SDL_Surface*  //
+  TakeSurface() {
+    if (!m_surface) {
+      return NULL;
+    }
+    SDL_UnlockSurface(m_surface);
+    SDL_Surface* ret = m_surface;
+    m_surface = NULL;
+    return ret;
+  }
+
+ private:
+  wuffs_base__pixel_format  //
+  SelectPixfmt(const wuffs_base__image_config& image_config) override {
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+    bool red_first = (m_rmask)&0x80000000u;
+#else
+    bool red_first = (m_rmask)&0x00000001u;
+#endif
+
+    // (§) Uncomment this line of code to invert the BGRA/RGBA color order.
+    // This isn't a generally useful feature for an image viewer, but it should
+    // make it obvious, when pressing the TAB key, whether you're using the
+    // Wuffs (inverted) or SDL_image (correct) decoder.
+    //
+    // red_first = !red_first;
+
+    wuffs_base__pixel_format pixfmt = wuffs_base__make_pixel_format(
+        red_first ? WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL
+                  : WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL);
+    return pixfmt;
+  }
+
+  AllocResult  //
+  AllocPixbuf(const wuffs_base__image_config& image_config,
+              bool allow_uninitialized_memory) override {
+    if (m_surface) {
+      SDL_UnlockSurface(m_surface);
+      SDL_FreeSurface(m_surface);
+      m_surface = NULL;
+    }
+    uint32_t w = image_config.pixcfg.width();
+    uint32_t h = image_config.pixcfg.height();
+    if ((w > 0xFFFFFF) || (h > 0xFFFFFF)) {
+      return AllocResult("Wuffs_Load_RW_Callbacks: image is too large");
+    }
+    m_surface =
+        SDL_CreateRGBSurface(0, static_cast<int>(w), static_cast<int>(h), 32,
+                             m_rmask, m_gmask, m_bmask, m_amask);
+    if (!m_surface) {
+      return AllocResult(
+          "Wuffs_Load_RW_Callbacks: SDL_CreateRGBSurface failed");
+    }
+    SDL_LockSurface(m_surface);
+    return AllocResult(
+        wuffs_aux::MemOwner(NULL, &free),
+        wuffs_base__make_slice_u8(static_cast<uint8_t*>(m_surface->pixels),
+                                  m_surface->h * m_surface->pitch));
+  }
+
+  const uint32_t m_rmask;
+  const uint32_t m_gmask;
+  const uint32_t m_bmask;
+  const uint32_t m_amask;
+  SDL_Surface* m_surface;
+};
+
+// --------
+
+class Wuffs_Load_RW_Input : public wuffs_aux::sync_io::Input {
+ public:
+  Wuffs_Load_RW_Input(SDL_RWops* rw, bool take_ownership_of_rw)
+      : m_rw(rw), m_ownership(take_ownership_of_rw) {}
+
+  ~Wuffs_Load_RW_Input() {
+    if (m_rw && m_ownership) {
+      m_rw->close(m_rw);
+    }
+  }
+
+ private:
+  std::string  //
+  CopyIn(wuffs_aux::IOBuffer* dst) override {
+    if (!m_rw) {
+      return "Wuffs_Load_RW_Input: NULL SDL_RWops";
+    } else if (!dst) {
+      return "Wuffs_Load_RW_Input: NULL IOBuffer";
+    } else if (dst->meta.closed) {
+      return "Wuffs_Load_RW_Input: end of file";
+    }
+    dst->compact();
+    if (dst->writer_length() == 0) {
+      return "Wuffs_Load_RW_Input: full IOBuffer";
+    }
+    size_t n = m_rw->read(m_rw, dst->writer_pointer(), 1, dst->writer_length());
+    dst->meta.wi += n;
+    return std::string();
+  }
+
+  SDL_RWops* m_rw;
+  const bool m_ownership;
+};
+
+// --------
+
+// Wuffs_Load_RW loads the image from the given file into the given format
+// (which must be 32-bits per pixel). It is similar to SDL_image's IMG_Load_RW
+// function but it returns any error in-band (as a std::string) instead of
+// separately (global state accessible via SDL_GetError).
+//
+// On success, the SDL_Surface* returned will be non-NULL and the caller owns
+// it. Ownership means that they are responsible for calling SDL_FreeSurface on
+// it when done.
+std::pair<SDL_Surface*, std::string>  //
+Wuffs_Load_RW(SDL_RWops* rw,
+              bool take_ownership_of_rw,
+              SDL_PixelFormat* format) {
+  Wuffs_Load_RW_Input input(rw, take_ownership_of_rw);
+
+  if (!format || (format->BitsPerPixel != 32)) {
+    return std::make_pair<SDL_Surface*, std::string>(
+        NULL, "Wuffs_Load_RW: invalid pixel format");
+  }
+  Wuffs_Load_RW_Callbacks callbacks(format);
+
+  wuffs_aux::DecodeImageResult res = wuffs_aux::DecodeImage(callbacks, input);
+  if (!res.error_message.empty()) {
+    return std::make_pair<SDL_Surface*, std::string>(
+        NULL, std::move(res.error_message));
+  }
+  return std::make_pair<SDL_Surface*, std::string>(callbacks.TakeSurface(),
+                                                   std::string());
+}
+
+// ----------------
+
+SDL_Surface* g_image = NULL;
+bool g_load_via_sdl_image = false;
+
+bool  //
+draw(SDL_Window* window) {
+  SDL_Surface* ws = SDL_GetWindowSurface(window);
+  SDL_FillRect(ws, NULL, SDL_MapRGB(ws->format, 0x00, 0x00, 0x00));
+  if (g_image) {
+    SDL_BlitSurface(g_image, NULL, ws, NULL);
+  }
+  SDL_UpdateWindowSurface(window);
+  return true;
+}
+
+bool  //
+load_image(SDL_Window* window, const char* filename) {
+  if (g_image) {
+    SDL_FreeSurface(g_image);
+    g_image = NULL;
+  }
+
+  SDL_RWops* rw = SDL_RWFromFile(filename, "rb");
+  if (!rw) {
+    fprintf(stderr, "main: SDL_RWFromFile(\"%s\"): %s\n", filename,
+            SDL_GetError());
+    return false;
+  }
+
+  constexpr bool take_ownership_of_rw = true;
+  if (g_load_via_sdl_image) {
+    g_image = IMG_Load_RW(rw, take_ownership_of_rw);
+    if (!g_image) {
+      fprintf(stderr, "main: IMG_Load_RW(\"%s\"): %s\n", filename,
+              SDL_GetError());
+      return false;
+    }
+  } else {
+    std::pair<SDL_Surface*, std::string> p = Wuffs_Load_RW(
+        rw, take_ownership_of_rw, SDL_GetWindowSurface(window)->format);
+    if (!p.second.empty()) {
+      fprintf(stderr, "main: Wuffs_Load_RW(\"%s\"): %s\n", filename,
+              p.second.c_str());
+      return false;
+    }
+    g_image = p.first;
+  }
+
+  return true;
+}
+
+int  //
+main(int argc, char** argv) {
+  if (argc != 2) {
+    fprintf(stderr, "usage: %s filename\n", argv[0]);
+    return 1;
+  }
+  if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+    fprintf(stderr, "main: SDL_Init: %s\n", SDL_GetError());
+    return 1;
+  }
+  SDL_Window* window =
+      SDL_CreateWindow("sdl-imageviewer", SDL_WINDOWPOS_UNDEFINED,
+                       SDL_WINDOWPOS_UNDEFINED, 1024, 768, SDL_WINDOW_SHOWN);
+  if (!window) {
+    fprintf(stderr, "main: SDL_CreateWindow: %s\n", SDL_GetError());
+    return 1;
+  }
+
+  if (!load_image(window, argv[1])) {
+    return 1;
+  }
+
+  while (true) {
+    SDL_Event event;
+    if (!SDL_WaitEvent(&event)) {
+      fprintf(stderr, "main: SDL_WaitEvent: %s\n", SDL_GetError());
+      return 1;
+    }
+
+    switch (event.type) {
+      case SDL_QUIT:
+        goto cleanup;
+
+      case SDL_WINDOWEVENT:
+        switch (event.window.event) {
+          case SDL_WINDOWEVENT_EXPOSED:
+            if (!draw(window)) {
+              return 1;
+            }
+            break;
+        }
+        break;
+
+      case SDL_KEYDOWN:
+        switch (event.key.keysym.sym) {
+          case SDLK_ESCAPE:
+            goto cleanup;
+          case SDLK_TAB:
+            g_load_via_sdl_image = !g_load_via_sdl_image;
+            printf("Switched to %s.\n",
+                   g_load_via_sdl_image ? "SDL_image" : "Wuffs");
+            if (!load_image(window, argv[1]) || !draw(window)) {
+              return 1;
+            }
+            break;
+        }
+        break;
+    }
+  }
+
+cleanup:
+  if (g_image) {
+    SDL_FreeSurface(g_image);
+    g_image = NULL;
+  }
+  SDL_DestroyWindow(window);
+  SDL_Quit();
+  return 0;
+}

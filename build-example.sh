@@ -42,7 +42,11 @@ for f in $sources; do
   if [ $f = imageviewer ]; then
     # example/imageviewer is unusual in that needs additional libraries.
     echo "Building gen/bin/example-$f"
-    $CXX -O3 example/$f/*.cc -lxcb -lxcb-image -o gen/bin/example-$f
+    $CXX -O3 example/$f/*.cc -lxcb -lxcb-image   -o gen/bin/example-$f
+  elif [ $f = "sdl-imageviewer" ]; then
+    # example/sdl-imageviewer is unusual in that needs additional libraries.
+    echo "Building gen/bin/example-$f"
+    $CXX -O3 example/$f/*.cc -lSDL2 -lSDL2_image -o gen/bin/example-$f
   elif [ $f = "toy-genlib" ]; then
     # example/toy-genlib is unusual in that it uses separately compiled
     # libraries (built by "wuffs genlib", e.g. by running build-all.sh) instead
