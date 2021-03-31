@@ -21,3 +21,15 @@ its API won't change any further, but being a "version 0.x" means that:
 
 - It will not have long term support.
 - Newer versions make no promises about compatibility.
+
+
+# Mirror
+
+Wuffs' canonical repository is located at
+[github.com/google/wuffs](https://github.com/google/wuffs). If you just want to
+*use* Wuffs-the-library in its C form (instead of *modifying* its Wuffs form or
+otherwise needing Wuffs-the-language tools), a mirror of just the `release/c`
+directory is located at
+[github.com/google/wuffs-mirror-release-c](https://github.com/google/wuffs-mirror-release-c).
+By excluding everything else, the mirror is much smaller than and changes much
+less frequently than the canonical repository.
