@@ -1201,7 +1201,7 @@ wuffs_base__poke_u64le__no_bounds_check(uint8_t* p, uint64_t x) {
 
 // WUFFS_BASE__TABLE is a 2-dimensional buffer.
 //
-// width height, and stride measure a number of elements, not necessarily a
+// width, height and stride measure a number of elements, not necessarily a
 // size in bytes.
 //
 // A value with all fields NULL or zero is a valid, empty table.
