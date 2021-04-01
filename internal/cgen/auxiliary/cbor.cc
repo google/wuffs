@@ -27,6 +27,8 @@ DecodeCborResult::DecodeCborResult(std::string&& error_message0,
     : error_message(std::move(error_message0)),
       cursor_position(cursor_position0) {}
 
+DecodeCborCallbacks::~DecodeCborCallbacks() {}
+
 void  //
 DecodeCborCallbacks::Done(DecodeCborResult& result,
                           sync_io::Input& input,

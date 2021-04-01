@@ -27,6 +27,8 @@ namespace sync_io {
 
 // --------
 
+Input::~Input() {}
+
 IOBuffer*  //
 Input::BringsItsOwnIOBuffer() {
   return nullptr;

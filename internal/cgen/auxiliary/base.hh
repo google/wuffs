@@ -40,6 +40,8 @@ namespace sync_io {
 
 class Input {
  public:
+  virtual ~Input();
+
   virtual IOBuffer* BringsItsOwnIOBuffer();
   virtual std::string CopyIn(IOBuffer* dst) = 0;
 };

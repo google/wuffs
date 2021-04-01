@@ -27,6 +27,8 @@ struct DecodeCborResult {
 
 class DecodeCborCallbacks {
  public:
+  virtual ~DecodeCborCallbacks();
+
   // AppendXxx are called for leaf nodes: literals, numbers, strings, etc.
 
   virtual std::string AppendNull() = 0;

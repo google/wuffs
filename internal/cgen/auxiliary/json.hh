@@ -27,6 +27,8 @@ struct DecodeJsonResult {
 
 class DecodeJsonCallbacks {
  public:
+  virtual ~DecodeJsonCallbacks();
+
   // AppendXxx are called for leaf nodes: literals, numbers and strings. For
   // strings, the Callbacks implementation is responsible for tracking map keys
   // versus other values.

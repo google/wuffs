@@ -55,6 +55,8 @@ class DecodeImageCallbacks {
     std::string error_message;
   };
 
+  virtual ~DecodeImageCallbacks();
+
   // SelectDecoder returns the image decoder for the input data's file format.
   // Returning a nullptr means failure (DecodeImage_UnsupportedImageFormat).
   //

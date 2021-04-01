@@ -27,6 +27,8 @@ DecodeJsonResult::DecodeJsonResult(std::string&& error_message0,
     : error_message(std::move(error_message0)),
       cursor_position(cursor_position0) {}
 
+DecodeJsonCallbacks::~DecodeJsonCallbacks() {}
+
 void  //
 DecodeJsonCallbacks::Done(DecodeJsonResult& result,
                           sync_io::Input& input,

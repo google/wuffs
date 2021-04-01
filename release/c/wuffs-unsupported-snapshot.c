@@ -9368,6 +9368,8 @@ namespace sync_io {
 
 class Input {
  public:
+  virtual ~Input();
+
   virtual IOBuffer* BringsItsOwnIOBuffer();
   virtual std::string CopyIn(IOBuffer* dst) = 0;
 };
@@ -9431,6 +9433,8 @@ struct DecodeCborResult {
 
 class DecodeCborCallbacks {
  public:
+  virtual ~DecodeCborCallbacks();
+
   // AppendXxx are called for leaf nodes: literals, numbers, strings, etc.
 
   virtual std::string AppendNull() = 0;
@@ -9525,6 +9529,8 @@ class DecodeImageCallbacks {
     wuffs_base__slice_u8 mem_slice;
     std::string error_message;
   };
+
+  virtual ~DecodeImageCallbacks();
 
   // SelectDecoder returns the image decoder for the input data's file format.
   // Returning a nullptr means failure (DecodeImage_UnsupportedImageFormat).
@@ -9689,6 +9695,8 @@ struct DecodeJsonResult {
 
 class DecodeJsonCallbacks {
  public:
+  virtual ~DecodeJsonCallbacks();
+
   // AppendXxx are called for leaf nodes: literals, numbers and strings. For
   // strings, the Callbacks implementation is responsible for tracking map keys
   // versus other values.
@@ -38438,6 +38446,8 @@ namespace sync_io {
 
 // --------
 
+Input::~Input() {}
+
 IOBuffer*  //
 Input::BringsItsOwnIOBuffer() {
   return nullptr;
@@ -38527,6 +38537,8 @@ DecodeCborResult::DecodeCborResult(std::string&& error_message0,
                                    uint64_t cursor_position0)
     : error_message(std::move(error_message0)),
       cursor_position(cursor_position0) {}
+
+DecodeCborCallbacks::~DecodeCborCallbacks() {}
 
 void  //
 DecodeCborCallbacks::Done(DecodeCborResult& result,
@@ -38868,6 +38880,8 @@ DecodeImageResult::DecodeImageResult(std::string&& error_message0)
       pixbuf_mem_slice(wuffs_base__empty_slice_u8()),
       pixbuf(wuffs_base__null_pixel_buffer()),
       error_message(std::move(error_message0)) {}
+
+DecodeImageCallbacks::~DecodeImageCallbacks() {}
 
 DecodeImageCallbacks::AllocResult::AllocResult(MemOwner&& mem_owner0,
                                                wuffs_base__slice_u8 mem_slice0)
@@ -39277,6 +39291,8 @@ DecodeJsonResult::DecodeJsonResult(std::string&& error_message0,
                                    uint64_t cursor_position0)
     : error_message(std::move(error_message0)),
       cursor_position(cursor_position0) {}
+
+DecodeJsonCallbacks::~DecodeJsonCallbacks() {}
 
 void  //
 DecodeJsonCallbacks::Done(DecodeJsonResult& result,

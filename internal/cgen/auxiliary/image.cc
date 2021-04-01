@@ -37,6 +37,8 @@ DecodeImageResult::DecodeImageResult(std::string&& error_message0)
       pixbuf(wuffs_base__null_pixel_buffer()),
       error_message(std::move(error_message0)) {}
 
+DecodeImageCallbacks::~DecodeImageCallbacks() {}
+
 DecodeImageCallbacks::AllocResult::AllocResult(MemOwner&& mem_owner0,
                                                wuffs_base__slice_u8 mem_slice0)
     : mem_owner(std::move(mem_owner0)),
