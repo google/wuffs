@@ -443,8 +443,8 @@ wuffs_base__pixel_palette__closest_element(
     wuffs_base__pixel_format palette_format,
     wuffs_base__color_u32_argb_premul c) {
   size_t n = palette_slice.len / 4;
-  if (n > 256) {
-    n = 256;
+  if (n > (WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH / 4)) {
+    n = (WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH / 4);
   }
   size_t best_index = 0;
   uint64_t best_score = 0xFFFFFFFFFFFFFFFF;
@@ -1564,7 +1564,8 @@ wuffs_base__pixel_swizzler__bgr_565__index__src(uint8_t* dst_ptr,
                                                 size_t dst_palette_len,
                                                 const uint8_t* src_ptr,
                                                 size_t src_len) {
-  if (dst_palette_len != 1024) {
+  if (dst_palette_len !=
+      WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH) {
     return 0;
   }
   size_t dst_len2 = dst_len / 2;
@@ -1615,7 +1616,8 @@ wuffs_base__pixel_swizzler__bgr_565__index_bgra_nonpremul__src_over(
     size_t dst_palette_len,
     const uint8_t* src_ptr,
     size_t src_len) {
-  if (dst_palette_len != 1024) {
+  if (dst_palette_len !=
+      WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH) {
     return 0;
   }
   size_t dst_len2 = dst_len / 2;
@@ -1652,7 +1654,8 @@ wuffs_base__pixel_swizzler__bgr_565__index_binary_alpha__src_over(
     size_t dst_palette_len,
     const uint8_t* src_ptr,
     size_t src_len) {
-  if (dst_palette_len != 1024) {
+  if (dst_palette_len !=
+      WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH) {
     return 0;
   }
   size_t dst_len2 = dst_len / 2;
@@ -2251,7 +2254,8 @@ wuffs_base__pixel_swizzler__bgra_nonpremul__index_bgra_nonpremul__src_over(
     size_t dst_palette_len,
     const uint8_t* src_ptr,
     size_t src_len) {
-  if (dst_palette_len != 1024) {
+  if (dst_palette_len !=
+      WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH) {
     return 0;
   }
   size_t dst_len4 = dst_len / 4;
@@ -2531,7 +2535,8 @@ wuffs_base__pixel_swizzler__bgra_nonpremul_4x16le__index_bgra_nonpremul__src_ove
     size_t dst_palette_len,
     const uint8_t* src_ptr,
     size_t src_len) {
-  if (dst_palette_len != 1024) {
+  if (dst_palette_len !=
+      WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH) {
     return 0;
   }
   size_t dst_len8 = dst_len / 8;
@@ -2851,7 +2856,8 @@ wuffs_base__pixel_swizzler__bgra_premul__index_bgra_nonpremul__src_over(
     size_t dst_palette_len,
     const uint8_t* src_ptr,
     size_t src_len) {
-  if (dst_palette_len != 1024) {
+  if (dst_palette_len !=
+      WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH) {
     return 0;
   }
   size_t dst_len4 = dst_len / 4;
@@ -3489,7 +3495,8 @@ wuffs_base__pixel_swizzler__xxx__index__src(uint8_t* dst_ptr,
                                             size_t dst_palette_len,
                                             const uint8_t* src_ptr,
                                             size_t src_len) {
-  if (dst_palette_len != 1024) {
+  if (dst_palette_len !=
+      WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH) {
     return 0;
   }
   size_t dst_len3 = dst_len / 3;
@@ -3547,7 +3554,8 @@ wuffs_base__pixel_swizzler__xxx__index_bgra_nonpremul__src_over(
     size_t dst_palette_len,
     const uint8_t* src_ptr,
     size_t src_len) {
-  if (dst_palette_len != 1024) {
+  if (dst_palette_len !=
+      WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH) {
     return 0;
   }
   size_t dst_len3 = dst_len / 3;
@@ -3582,7 +3590,8 @@ wuffs_base__pixel_swizzler__xxx__index_binary_alpha__src_over(
     size_t dst_palette_len,
     const uint8_t* src_ptr,
     size_t src_len) {
-  if (dst_palette_len != 1024) {
+  if (dst_palette_len !=
+      WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH) {
     return 0;
   }
   size_t dst_len3 = dst_len / 3;
@@ -3731,7 +3740,8 @@ wuffs_base__pixel_swizzler__xxxx__index__src(uint8_t* dst_ptr,
                                              size_t dst_palette_len,
                                              const uint8_t* src_ptr,
                                              size_t src_len) {
-  if (dst_palette_len != 1024) {
+  if (dst_palette_len !=
+      WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH) {
     return 0;
   }
   size_t dst_len4 = dst_len / 4;
@@ -3782,7 +3792,8 @@ wuffs_base__pixel_swizzler__xxxx__index_binary_alpha__src_over(
     size_t dst_palette_len,
     const uint8_t* src_ptr,
     size_t src_len) {
-  if (dst_palette_len != 1024) {
+  if (dst_palette_len !=
+      WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH) {
     return 0;
   }
   size_t dst_len4 = dst_len / 4;
@@ -3946,7 +3957,8 @@ wuffs_base__pixel_swizzler__xxxxxxxx__index__src(uint8_t* dst_ptr,
                                                  size_t dst_palette_len,
                                                  const uint8_t* src_ptr,
                                                  size_t src_len) {
-  if (dst_palette_len != 1024) {
+  if (dst_palette_len !=
+      WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH) {
     return 0;
   }
   size_t dst_len8 = dst_len / 8;
@@ -3977,7 +3989,8 @@ wuffs_base__pixel_swizzler__xxxxxxxx__index_binary_alpha__src_over(
     size_t dst_palette_len,
     const uint8_t* src_ptr,
     size_t src_len) {
-  if (dst_palette_len != 1024) {
+  if (dst_palette_len !=
+      WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH) {
     return 0;
   }
   size_t dst_len8 = dst_len / 8;
@@ -4204,7 +4217,7 @@ wuffs_base__pixel_swizzler__prepare__indexed__bgra_nonpremul(
   switch (dst_pixfmt.repr) {
     case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL:
       if (wuffs_base__slice_u8__copy_from_slice(dst_palette, src_palette) !=
-          1024) {
+          WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH) {
         return NULL;
       }
       switch (blend) {
@@ -4218,13 +4231,14 @@ wuffs_base__pixel_swizzler__prepare__indexed__bgra_nonpremul(
         case WUFFS_BASE__PIXEL_BLEND__SRC:
           if (wuffs_base__pixel_swizzler__squash_align4_bgr_565_8888(
                   dst_palette.ptr, dst_palette.len, src_palette.ptr,
-                  src_palette.len, true) != 256) {
+                  src_palette.len, true) !=
+              (WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH / 4)) {
             return NULL;
           }
           return wuffs_base__pixel_swizzler__bgr_565__index__src;
         case WUFFS_BASE__PIXEL_BLEND__SRC_OVER:
           if (wuffs_base__slice_u8__copy_from_slice(dst_palette, src_palette) !=
-              1024) {
+              WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH) {
             return NULL;
           }
           return wuffs_base__pixel_swizzler__bgr_565__index_bgra_nonpremul__src_over;
@@ -4236,13 +4250,14 @@ wuffs_base__pixel_swizzler__prepare__indexed__bgra_nonpremul(
         case WUFFS_BASE__PIXEL_BLEND__SRC:
           if (wuffs_base__pixel_swizzler__bgra_premul__bgra_nonpremul__src(
                   dst_palette.ptr, dst_palette.len, NULL, 0, src_palette.ptr,
-                  src_palette.len) != 256) {
+                  src_palette.len) !=
+              (WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH / 4)) {
             return NULL;
           }
           return wuffs_base__pixel_swizzler__xxx__index__src;
         case WUFFS_BASE__PIXEL_BLEND__SRC_OVER:
           if (wuffs_base__slice_u8__copy_from_slice(dst_palette, src_palette) !=
-              1024) {
+              WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH) {
             return NULL;
           }
           return wuffs_base__pixel_swizzler__xxx__index_bgra_nonpremul__src_over;
@@ -4251,7 +4266,7 @@ wuffs_base__pixel_swizzler__prepare__indexed__bgra_nonpremul(
 
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
       if (wuffs_base__slice_u8__copy_from_slice(dst_palette, src_palette) !=
-          1024) {
+          WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH) {
         return NULL;
       }
       switch (blend) {
@@ -4264,7 +4279,7 @@ wuffs_base__pixel_swizzler__prepare__indexed__bgra_nonpremul(
 
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE:
       if (wuffs_base__slice_u8__copy_from_slice(dst_palette, src_palette) !=
-          1024) {
+          WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH) {
         return NULL;
       }
       switch (blend) {
@@ -4280,13 +4295,14 @@ wuffs_base__pixel_swizzler__prepare__indexed__bgra_nonpremul(
         case WUFFS_BASE__PIXEL_BLEND__SRC:
           if (wuffs_base__pixel_swizzler__bgra_premul__bgra_nonpremul__src(
                   dst_palette.ptr, dst_palette.len, NULL, 0, src_palette.ptr,
-                  src_palette.len) != 256) {
+                  src_palette.len) !=
+              (WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH / 4)) {
             return NULL;
           }
           return wuffs_base__pixel_swizzler__xxxx__index__src;
         case WUFFS_BASE__PIXEL_BLEND__SRC_OVER:
           if (wuffs_base__slice_u8__copy_from_slice(dst_palette, src_palette) !=
-              1024) {
+              WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH) {
             return NULL;
           }
           return wuffs_base__pixel_swizzler__bgra_premul__index_bgra_nonpremul__src_over;
@@ -4300,7 +4316,8 @@ wuffs_base__pixel_swizzler__prepare__indexed__bgra_nonpremul(
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
       if (wuffs_base__pixel_swizzler__swap_rgbx_bgrx(
               dst_palette.ptr, dst_palette.len, NULL, 0, src_palette.ptr,
-              src_palette.len) != 256) {
+              src_palette.len) !=
+          (WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH / 4)) {
         return NULL;
       }
       switch (blend) {
@@ -4316,14 +4333,16 @@ wuffs_base__pixel_swizzler__prepare__indexed__bgra_nonpremul(
         case WUFFS_BASE__PIXEL_BLEND__SRC:
           if (wuffs_base__pixel_swizzler__bgra_premul__rgba_nonpremul__src(
                   dst_palette.ptr, dst_palette.len, NULL, 0, src_palette.ptr,
-                  src_palette.len) != 256) {
+                  src_palette.len) !=
+              (WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH / 4)) {
             return NULL;
           }
           return wuffs_base__pixel_swizzler__xxxx__index__src;
         case WUFFS_BASE__PIXEL_BLEND__SRC_OVER:
           if (wuffs_base__pixel_swizzler__swap_rgbx_bgrx(
                   dst_palette.ptr, dst_palette.len, NULL, 0, src_palette.ptr,
-                  src_palette.len) != 256) {
+                  src_palette.len) !=
+              (WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH / 4)) {
             return NULL;
           }
           return wuffs_base__pixel_swizzler__bgra_premul__index_bgra_nonpremul__src_over;
@@ -4349,7 +4368,7 @@ wuffs_base__pixel_swizzler__prepare__indexed__bgra_binary(
     case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_PREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY:
       if (wuffs_base__slice_u8__copy_from_slice(dst_palette, src_palette) !=
-          1024) {
+          WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH) {
         return NULL;
       }
       switch (blend) {
@@ -4361,7 +4380,8 @@ wuffs_base__pixel_swizzler__prepare__indexed__bgra_binary(
     case WUFFS_BASE__PIXEL_FORMAT__BGR_565:
       if (wuffs_base__pixel_swizzler__squash_align4_bgr_565_8888(
               dst_palette.ptr, dst_palette.len, src_palette.ptr,
-              src_palette.len, false) != 256) {
+              src_palette.len, false) !=
+          (WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH / 4)) {
         return NULL;
       }
       switch (blend) {
@@ -4374,7 +4394,7 @@ wuffs_base__pixel_swizzler__prepare__indexed__bgra_binary(
 
     case WUFFS_BASE__PIXEL_FORMAT__BGR:
       if (wuffs_base__slice_u8__copy_from_slice(dst_palette, src_palette) !=
-          1024) {
+          WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH) {
         return NULL;
       }
       switch (blend) {
@@ -4389,7 +4409,7 @@ wuffs_base__pixel_swizzler__prepare__indexed__bgra_binary(
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_BINARY:
       if (wuffs_base__slice_u8__copy_from_slice(dst_palette, src_palette) !=
-          1024) {
+          WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH) {
         return NULL;
       }
       switch (blend) {
@@ -4403,7 +4423,7 @@ wuffs_base__pixel_swizzler__prepare__indexed__bgra_binary(
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE:
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL_4X16LE:
       if (wuffs_base__slice_u8__copy_from_slice(dst_palette, src_palette) !=
-          1024) {
+          WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH) {
         return NULL;
       }
       switch (blend) {
@@ -4417,7 +4437,8 @@ wuffs_base__pixel_swizzler__prepare__indexed__bgra_binary(
     case WUFFS_BASE__PIXEL_FORMAT__RGB:
       if (wuffs_base__pixel_swizzler__swap_rgbx_bgrx(
               dst_palette.ptr, dst_palette.len, NULL, 0, src_palette.ptr,
-              src_palette.len) != 256) {
+              src_palette.len) !=
+          (WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH / 4)) {
         return NULL;
       }
       switch (blend) {
@@ -4433,7 +4454,8 @@ wuffs_base__pixel_swizzler__prepare__indexed__bgra_binary(
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_BINARY:
       if (wuffs_base__pixel_swizzler__swap_rgbx_bgrx(
               dst_palette.ptr, dst_palette.len, NULL, 0, src_palette.ptr,
-              src_palette.len) != 256) {
+              src_palette.len) !=
+          (WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH / 4)) {
         return NULL;
       }
       switch (blend) {

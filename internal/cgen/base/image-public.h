@@ -236,6 +236,9 @@ typedef uint32_t wuffs_base__pixel_alpha_transparency;
 #define WUFFS_BASE__PIXEL_FORMAT__INDEXED__INDEX_PLANE 0
 #define WUFFS_BASE__PIXEL_FORMAT__INDEXED__COLOR_PLANE 3
 
+// A palette is 256 entries × 4 bytes per entry (e.g. BGRA).
+#define WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH 1024
+
 // wuffs_base__pixel_format encodes the format of the bytes that constitute an
 // image frame's pixel data.
 //
@@ -645,10 +648,11 @@ wuffs_base__pixel_config__pixbuf_len(const wuffs_base__pixel_config* c) {
   n *= bytes_per_pixel;
 
   if (wuffs_base__pixel_format__is_indexed(&c->private_impl.pixfmt)) {
-    if (n > (UINT64_MAX - 1024)) {
+    if (n >
+        (UINT64_MAX - WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH)) {
       return 0;
     }
-    n += 1024;
+    n += WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH;
   }
 
   return n;
@@ -1161,11 +1165,12 @@ wuffs_base__pixel_buffer__set_from_slice(wuffs_base__pixel_buffer* pb,
   uint8_t* ptr = pixbuf_memory.ptr;
   uint64_t len = pixbuf_memory.len;
   if (wuffs_base__pixel_format__is_indexed(&pixcfg->private_impl.pixfmt)) {
-    // Split a 1024 byte chunk (256 palette entries × 4 bytes per entry) from
-    // the start of pixbuf_memory. We split from the start, not the end, so
-    // that the both chunks' pointers have the same alignment as the original
+    // Split a WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH byte
+    // chunk (1024 bytes = 256 palette entries × 4 bytes per entry) from the
+    // start of pixbuf_memory. We split from the start, not the end, so that
+    // the both chunks' pointers have the same alignment as the original
     // pointer, up to an alignment of 1024.
-    if (len < 1024) {
+    if (len < WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH) {
       return wuffs_base__make_status(
           wuffs_base__error__bad_argument_length_too_short);
     }
@@ -1173,11 +1178,11 @@ wuffs_base__pixel_buffer__set_from_slice(wuffs_base__pixel_buffer* pb,
         &pb->private_impl
              .planes[WUFFS_BASE__PIXEL_FORMAT__INDEXED__COLOR_PLANE];
     tab->ptr = ptr;
-    tab->width = 1024;
+    tab->width = WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH;
     tab->height = 1;
-    tab->stride = 1024;
-    ptr += 1024;
-    len -= 1024;
+    tab->stride = WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH;
+    ptr += WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH;
+    len -= WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH;
   }
 
   uint64_t wh = ((uint64_t)pixcfg->private_impl.width) *
@@ -1236,7 +1241,8 @@ wuffs_base__pixel_buffer__set_from_table(wuffs_base__pixel_buffer* pb,
 }
 
 // wuffs_base__pixel_buffer__palette returns the palette color data. If
-// non-empty, it will have length 1024.
+// non-empty, it will have length
+// WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH.
 static inline wuffs_base__slice_u8  //
 wuffs_base__pixel_buffer__palette(wuffs_base__pixel_buffer* pb) {
   if (pb &&
@@ -1244,8 +1250,11 @@ wuffs_base__pixel_buffer__palette(wuffs_base__pixel_buffer* pb) {
     wuffs_base__table_u8* tab =
         &pb->private_impl
              .planes[WUFFS_BASE__PIXEL_FORMAT__INDEXED__COLOR_PLANE];
-    if ((tab->width == 1024) && (tab->height == 1)) {
-      return wuffs_base__make_slice_u8(tab->ptr, 1024);
+    if ((tab->width ==
+         WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH) &&
+        (tab->height == 1)) {
+      return wuffs_base__make_slice_u8(
+          tab->ptr, WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH);
     }
   }
   return wuffs_base__make_slice_u8(NULL, 0);
@@ -1259,8 +1268,11 @@ wuffs_base__pixel_buffer__palette_or_else(wuffs_base__pixel_buffer* pb,
     wuffs_base__table_u8* tab =
         &pb->private_impl
              .planes[WUFFS_BASE__PIXEL_FORMAT__INDEXED__COLOR_PLANE];
-    if ((tab->width == 1024) && (tab->height == 1)) {
-      return wuffs_base__make_slice_u8(tab->ptr, 1024);
+    if ((tab->width ==
+         WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH) &&
+        (tab->height == 1)) {
+      return wuffs_base__make_slice_u8(
+          tab->ptr, WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH);
     }
   }
   return fallback;
