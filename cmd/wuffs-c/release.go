@@ -167,17 +167,20 @@ const grSingleFileGuidance = `
 const grPragmaPush = `
 // Wuffs' C code is generated automatically, not hand-written. These warnings'
 // costs outweigh the benefits.
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunreachable-code"
-#pragma clang diagnostic ignored "-Wunused-function"
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wunreachable-code"
+#pragma GCC diagnostic ignored "-Wunused-function"
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 #endif
 
 `
 
 const grPragmaPop = `
-#ifdef __clang__
-#pragma clang diagnostic pop
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
 #endif
 
 `

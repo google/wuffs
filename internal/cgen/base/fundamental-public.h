@@ -182,16 +182,10 @@ wuffs_base__cpu_arch__have_x86_sse42() {
 // Wuffs assumes that:
 //  - converting a uint32_t to a size_t will never overflow.
 //  - converting a size_t to a uint64_t will never overflow.
-#ifdef __WORDSIZE
+#if defined(__WORDSIZE)
 #if (__WORDSIZE != 32) && (__WORDSIZE != 64)
 #error "Wuffs requires a word size of either 32 or 64 bits"
 #endif
-#endif
-
-#if defined(__clang__)
-#define WUFFS_BASE__POTENTIALLY_UNUSED_FIELD __attribute__((unused))
-#else
-#define WUFFS_BASE__POTENTIALLY_UNUSED_FIELD
 #endif
 
 // Clang also defines "__GNUC__".
