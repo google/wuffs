@@ -1076,6 +1076,58 @@ wuffs_base__empty_slice_u64() {
 }
 
 static inline wuffs_base__table_u8  //
+wuffs_base__make_table_u8(uint8_t* ptr,
+                          size_t width,
+                          size_t height,
+                          size_t stride) {
+  wuffs_base__table_u8 ret;
+  ret.ptr = ptr;
+  ret.width = width;
+  ret.height = height;
+  ret.stride = stride;
+  return ret;
+}
+
+static inline wuffs_base__table_u16  //
+wuffs_base__make_table_u16(uint16_t* ptr,
+                           size_t width,
+                           size_t height,
+                           size_t stride) {
+  wuffs_base__table_u16 ret;
+  ret.ptr = ptr;
+  ret.width = width;
+  ret.height = height;
+  ret.stride = stride;
+  return ret;
+}
+
+static inline wuffs_base__table_u32  //
+wuffs_base__make_table_u32(uint32_t* ptr,
+                           size_t width,
+                           size_t height,
+                           size_t stride) {
+  wuffs_base__table_u32 ret;
+  ret.ptr = ptr;
+  ret.width = width;
+  ret.height = height;
+  ret.stride = stride;
+  return ret;
+}
+
+static inline wuffs_base__table_u64  //
+wuffs_base__make_table_u64(uint64_t* ptr,
+                           size_t width,
+                           size_t height,
+                           size_t stride) {
+  wuffs_base__table_u64 ret;
+  ret.ptr = ptr;
+  ret.width = width;
+  ret.height = height;
+  ret.stride = stride;
+  return ret;
+}
+
+static inline wuffs_base__table_u8  //
 wuffs_base__empty_table_u8() {
   wuffs_base__table_u8 ret;
   ret.ptr = NULL;

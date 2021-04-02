@@ -20,13 +20,11 @@ namespace wuffs_aux {
 
 struct DecodeImageResult {
   DecodeImageResult(MemOwner&& pixbuf_mem_owner0,
-                    wuffs_base__slice_u8 pixbuf_mem_slice0,
                     wuffs_base__pixel_buffer pixbuf0,
                     std::string&& error_message0);
   DecodeImageResult(std::string&& error_message0);
 
   MemOwner pixbuf_mem_owner;
-  wuffs_base__slice_u8 pixbuf_mem_slice;
   wuffs_base__pixel_buffer pixbuf;
   std::string error_message;
 };
@@ -43,15 +41,27 @@ struct DecodeImageResult {
 // one fails - but the final callback (Done) is always invoked.
 class DecodeImageCallbacks {
  public:
-  // AllocResult holds a memory allocation (the result of malloc or new, a
-  // statically allocated pointer, etc), or an error message. The memory is
+  // AllocPixbufResult holds a memory allocation (the result of malloc or new,
+  // a statically allocated pointer, etc), or an error message. The memory is
   // de-allocated when mem_owner goes out of scope and is destroyed.
-  struct AllocResult {
-    AllocResult(MemOwner&& mem_owner0, wuffs_base__slice_u8 mem_slice0);
-    AllocResult(std::string&& error_message0);
+  struct AllocPixbufResult {
+    AllocPixbufResult(MemOwner&& mem_owner0, wuffs_base__pixel_buffer pixbuf0);
+    AllocPixbufResult(std::string&& error_message0);
 
     MemOwner mem_owner;
-    wuffs_base__slice_u8 mem_slice;
+    wuffs_base__pixel_buffer pixbuf;
+    std::string error_message;
+  };
+
+  // AllocWorkbufResult holds a memory allocation (the result of malloc or new,
+  // a statically allocated pointer, etc), or an error message. The memory is
+  // de-allocated when mem_owner goes out of scope and is destroyed.
+  struct AllocWorkbufResult {
+    AllocWorkbufResult(MemOwner&& mem_owner0, wuffs_base__slice_u8 workbuf0);
+    AllocWorkbufResult(std::string&& error_message0);
+
+    MemOwner mem_owner;
+    wuffs_base__slice_u8 workbuf;
     std::string error_message;
   };
 
@@ -112,7 +122,7 @@ class DecodeImageCallbacks {
   // The default AllocPixbuf implementation allocates either uninitialized or
   // zeroed memory. Zeroed memory typically corresponds to filling with opaque
   // black or transparent black, depending on the pixel format.
-  virtual AllocResult  //
+  virtual AllocPixbufResult  //
   AllocPixbuf(const wuffs_base__image_config& image_config,
               bool allow_uninitialized_memory);
 
@@ -122,7 +132,7 @@ class DecodeImageCallbacks {
   //
   // The default AllocWorkbuf implementation allocates len_range.max_incl bytes
   // of either uninitialized or zeroed memory.
-  virtual AllocResult  //
+  virtual AllocWorkbufResult  //
   AllocWorkbuf(wuffs_base__range_ii_u64 len_range,
                bool allow_uninitialized_memory);
 

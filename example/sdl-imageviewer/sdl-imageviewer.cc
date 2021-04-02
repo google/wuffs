@@ -115,7 +115,7 @@ class Wuffs_Load_RW_Callbacks : public wuffs_aux::DecodeImageCallbacks {
         WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL);
   }
 
-  AllocResult  //
+  AllocPixbufResult  //
   AllocPixbuf(const wuffs_base__image_config& image_config,
               bool allow_uninitialized_memory) override {
     if (m_surface) {
@@ -126,7 +126,7 @@ class Wuffs_Load_RW_Callbacks : public wuffs_aux::DecodeImageCallbacks {
     uint32_t w = image_config.pixcfg.width();
     uint32_t h = image_config.pixcfg.height();
     if ((w > 0xFFFFFF) || (h > 0xFFFFFF)) {
-      return AllocResult("Wuffs_Load_RW_Callbacks: image is too large");
+      return AllocPixbufResult("Wuffs_Load_RW_Callbacks: image is too large");
     }
     uint32_t sdl_pixelformat = SDL_PIXELFORMAT_BGRA32;
 
@@ -140,14 +140,24 @@ class Wuffs_Load_RW_Callbacks : public wuffs_aux::DecodeImageCallbacks {
     m_surface = SDL_CreateRGBSurfaceWithFormat(
         0, static_cast<int>(w), static_cast<int>(h), 32, sdl_pixelformat);
     if (!m_surface) {
-      return AllocResult(
+      return AllocPixbufResult(
           "Wuffs_Load_RW_Callbacks: SDL_CreateRGBSurface failed");
     }
     SDL_LockSurface(m_surface);
-    return AllocResult(
-        wuffs_aux::MemOwner(NULL, &free),
-        wuffs_base__make_slice_u8(static_cast<uint8_t*>(m_surface->pixels),
-                                  m_surface->h * m_surface->pitch));
+    wuffs_base__pixel_buffer pixbuf;
+    wuffs_base__status status = pixbuf.set_interleaved(
+        &image_config.pixcfg,
+        wuffs_base__make_table_u8(static_cast<uint8_t*>(m_surface->pixels),
+                                  m_surface->w * 4, m_surface->h,
+                                  m_surface->pitch),
+        wuffs_base__empty_slice_u8());
+    if (!status.is_ok()) {
+      SDL_UnlockSurface(m_surface);
+      SDL_FreeSurface(m_surface);
+      m_surface = NULL;
+      return AllocPixbufResult(status.message());
+    }
+    return AllocPixbufResult(wuffs_aux::MemOwner(NULL, &free), pixbuf);
   }
 
   SDL_Surface* m_surface;

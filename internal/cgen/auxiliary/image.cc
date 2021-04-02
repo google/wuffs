@@ -23,31 +23,39 @@
 namespace wuffs_aux {
 
 DecodeImageResult::DecodeImageResult(MemOwner&& pixbuf_mem_owner0,
-                                     wuffs_base__slice_u8 pixbuf_mem_slice0,
                                      wuffs_base__pixel_buffer pixbuf0,
                                      std::string&& error_message0)
     : pixbuf_mem_owner(std::move(pixbuf_mem_owner0)),
-      pixbuf_mem_slice(pixbuf_mem_slice0),
       pixbuf(pixbuf0),
       error_message(std::move(error_message0)) {}
 
 DecodeImageResult::DecodeImageResult(std::string&& error_message0)
     : pixbuf_mem_owner(nullptr, &free),
-      pixbuf_mem_slice(wuffs_base__empty_slice_u8()),
       pixbuf(wuffs_base__null_pixel_buffer()),
       error_message(std::move(error_message0)) {}
 
 DecodeImageCallbacks::~DecodeImageCallbacks() {}
 
-DecodeImageCallbacks::AllocResult::AllocResult(MemOwner&& mem_owner0,
-                                               wuffs_base__slice_u8 mem_slice0)
-    : mem_owner(std::move(mem_owner0)),
-      mem_slice(mem_slice0),
-      error_message("") {}
+DecodeImageCallbacks::AllocPixbufResult::AllocPixbufResult(
+    MemOwner&& mem_owner0,
+    wuffs_base__pixel_buffer pixbuf0)
+    : mem_owner(std::move(mem_owner0)), pixbuf(pixbuf0), error_message("") {}
 
-DecodeImageCallbacks::AllocResult::AllocResult(std::string&& error_message0)
+DecodeImageCallbacks::AllocPixbufResult::AllocPixbufResult(
+    std::string&& error_message0)
     : mem_owner(nullptr, &free),
-      mem_slice(wuffs_base__empty_slice_u8()),
+      pixbuf(wuffs_base__null_pixel_buffer()),
+      error_message(std::move(error_message0)) {}
+
+DecodeImageCallbacks::AllocWorkbufResult::AllocWorkbufResult(
+    MemOwner&& mem_owner0,
+    wuffs_base__slice_u8 workbuf0)
+    : mem_owner(std::move(mem_owner0)), workbuf(workbuf0), error_message("") {}
+
+DecodeImageCallbacks::AllocWorkbufResult::AllocWorkbufResult(
+    std::string&& error_message0)
+    : mem_owner(nullptr, &free),
+      workbuf(wuffs_base__empty_slice_u8()),
       error_message(std::move(error_message0)) {}
 
 wuffs_base__image_decoder::unique_ptr  //
@@ -93,41 +101,51 @@ DecodeImageCallbacks::SelectPixfmt(
   return wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL);
 }
 
-DecodeImageCallbacks::AllocResult  //
+DecodeImageCallbacks::AllocPixbufResult  //
 DecodeImageCallbacks::AllocPixbuf(const wuffs_base__image_config& image_config,
                                   bool allow_uninitialized_memory) {
   uint32_t w = image_config.pixcfg.width();
   uint32_t h = image_config.pixcfg.height();
   if ((w == 0) || (h == 0)) {
-    return AllocResult("");
+    return AllocPixbufResult("");
   }
   uint64_t len = image_config.pixcfg.pixbuf_len();
   if ((len == 0) || (SIZE_MAX < len)) {
-    return AllocResult(DecodeImage_UnsupportedPixelConfiguration);
+    return AllocPixbufResult(DecodeImage_UnsupportedPixelConfiguration);
   }
   void* ptr =
       allow_uninitialized_memory ? malloc((size_t)len) : calloc((size_t)len, 1);
-  return ptr ? AllocResult(
-                   MemOwner(ptr, &free),
-                   wuffs_base__make_slice_u8((uint8_t*)ptr, (size_t)len))
-             : AllocResult(DecodeImage_OutOfMemory);
+  if (!ptr) {
+    return AllocPixbufResult(DecodeImage_OutOfMemory);
+  }
+  wuffs_base__pixel_buffer pixbuf;
+  wuffs_base__status status = pixbuf.set_from_slice(
+      &image_config.pixcfg,
+      wuffs_base__make_slice_u8((uint8_t*)ptr, (size_t)len));
+  if (!status.is_ok()) {
+    free(ptr);
+    return AllocPixbufResult(status.message());
+  }
+  return AllocPixbufResult(MemOwner(ptr, &free), pixbuf);
 }
 
-DecodeImageCallbacks::AllocResult  //
+DecodeImageCallbacks::AllocWorkbufResult  //
 DecodeImageCallbacks::AllocWorkbuf(wuffs_base__range_ii_u64 len_range,
                                    bool allow_uninitialized_memory) {
   uint64_t len = len_range.max_incl;
   if (len == 0) {
-    return AllocResult("");
+    return AllocWorkbufResult("");
   } else if (SIZE_MAX < len) {
-    return AllocResult(DecodeImage_OutOfMemory);
+    return AllocWorkbufResult(DecodeImage_OutOfMemory);
   }
   void* ptr =
       allow_uninitialized_memory ? malloc((size_t)len) : calloc((size_t)len, 1);
-  return ptr ? AllocResult(
-                   MemOwner(ptr, &free),
-                   wuffs_base__make_slice_u8((uint8_t*)ptr, (size_t)len))
-             : AllocResult(DecodeImage_OutOfMemory);
+  if (!ptr) {
+    return AllocWorkbufResult(DecodeImage_OutOfMemory);
+  }
+  return AllocWorkbufResult(
+      MemOwner(ptr, &free),
+      wuffs_base__make_slice_u8((uint8_t*)ptr, (size_t)len));
 }
 
 void  //
@@ -310,28 +328,14 @@ redirect:
   }
 
   // Allocate the pixel buffer.
-  uint64_t pixbuf_len_min_incl = 0;
-  if ((w > 0) && (h > 0)) {
-    pixbuf_len_min_incl = image_config.pixcfg.pixbuf_len();
-    if (pixbuf_len_min_incl == 0) {
-      return DecodeImageResult(DecodeImage_UnsupportedPixelFormat);
-    }
-  }
   bool valid_background_color =
       wuffs_base__color_u32_argb_premul__is_valid(background_color);
-  DecodeImageCallbacks::AllocResult alloc_pixbuf_result =
+  DecodeImageCallbacks::AllocPixbufResult alloc_pixbuf_result =
       callbacks.AllocPixbuf(image_config, valid_background_color);
   if (!alloc_pixbuf_result.error_message.empty()) {
     return DecodeImageResult(std::move(alloc_pixbuf_result.error_message));
-  } else if (alloc_pixbuf_result.mem_slice.len < pixbuf_len_min_incl) {
-    return DecodeImageResult(DecodeImage_BufferIsTooShort);
   }
-  wuffs_base__pixel_buffer pixel_buffer;
-  wuffs_base__status pb_sfs_status = pixel_buffer.set_from_slice(
-      &image_config.pixcfg, alloc_pixbuf_result.mem_slice);
-  if (!pb_sfs_status.is_ok()) {
-    return DecodeImageResult(pb_sfs_status.message());
-  }
+  wuffs_base__pixel_buffer pixel_buffer = alloc_pixbuf_result.pixbuf;
   if (valid_background_color) {
     wuffs_base__status pb_scufr_status = pixel_buffer.set_color_u32_fill_rect(
         pixel_buffer.pixcfg.bounds(), background_color);
@@ -343,11 +347,11 @@ redirect:
   // Allocate the work buffer. Wuffs' decoders conventionally assume that this
   // can be uninitialized memory.
   wuffs_base__range_ii_u64 workbuf_len = image_decoder->workbuf_len();
-  DecodeImageCallbacks::AllocResult alloc_workbuf_result =
+  DecodeImageCallbacks::AllocWorkbufResult alloc_workbuf_result =
       callbacks.AllocWorkbuf(workbuf_len, true);
   if (!alloc_workbuf_result.error_message.empty()) {
     return DecodeImageResult(std::move(alloc_workbuf_result.error_message));
-  } else if (alloc_workbuf_result.mem_slice.len < workbuf_len.min_incl) {
+  } else if (alloc_workbuf_result.workbuf.len < workbuf_len.min_incl) {
     return DecodeImageResult(DecodeImage_BufferIsTooShort);
   }
 
@@ -382,7 +386,7 @@ redirect:
   while (true) {
     wuffs_base__status id_df_status =
         image_decoder->decode_frame(&pixel_buffer, &io_buf, pixel_blend,
-                                    alloc_workbuf_result.mem_slice, nullptr);
+                                    alloc_workbuf_result.workbuf, nullptr);
     if (id_df_status.repr == nullptr) {
       break;
     } else if (id_df_status.repr != wuffs_base__suspension__short_read) {
@@ -400,8 +404,7 @@ redirect:
     }
   }
   return DecodeImageResult(std::move(alloc_pixbuf_result.mem_owner),
-                           alloc_pixbuf_result.mem_slice, pixel_buffer,
-                           std::move(message));
+                           pixel_buffer, std::move(message));
 }
 
 }  // namespace
