@@ -85,12 +85,7 @@ isn't otherwise doing anything.
 
 class Wuffs_Load_RW_Callbacks : public wuffs_aux::DecodeImageCallbacks {
  public:
-  Wuffs_Load_RW_Callbacks(SDL_PixelFormat* pixfmt)
-      : m_rmask(pixfmt->Rmask),
-        m_gmask(pixfmt->Gmask),
-        m_bmask(pixfmt->Bmask),
-        m_amask(0xFFFFFFFFu ^ pixfmt->Rmask ^ pixfmt->Gmask ^ pixfmt->Bmask),
-        m_surface(NULL) {}
+  Wuffs_Load_RW_Callbacks() : m_surface(NULL) {}
 
   ~Wuffs_Load_RW_Callbacks() {
     if (m_surface) {
@@ -114,23 +109,10 @@ class Wuffs_Load_RW_Callbacks : public wuffs_aux::DecodeImageCallbacks {
  private:
   wuffs_base__pixel_format  //
   SelectPixfmt(const wuffs_base__image_config& image_config) override {
-#if SDL_BYTEORDER == SDL_BIG_ENDIAN
-    bool red_first = (m_rmask)&0x80000000u;
-#else
-    bool red_first = (m_rmask)&0x00000001u;
-#endif
-
-    // (§) Uncomment this line of code to invert the BGRA/RGBA color order.
-    // This isn't a generally useful feature for an image viewer, but it should
-    // make it obvious, when pressing the TAB key, whether you're using the
-    // Wuffs (inverted) or SDL_image (correct) decoder.
-    //
-    // red_first = !red_first;
-
-    wuffs_base__pixel_format pixfmt = wuffs_base__make_pixel_format(
-        red_first ? WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL
-                  : WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL);
-    return pixfmt;
+    // Regardless of endianness, SDL_PIXELFORMAT_BGRA32 (from a few lines
+    // below) is equivalent to WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL.
+    return wuffs_base__make_pixel_format(
+        WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL);
   }
 
   AllocResult  //
@@ -146,9 +128,17 @@ class Wuffs_Load_RW_Callbacks : public wuffs_aux::DecodeImageCallbacks {
     if ((w > 0xFFFFFF) || (h > 0xFFFFFF)) {
       return AllocResult("Wuffs_Load_RW_Callbacks: image is too large");
     }
-    m_surface =
-        SDL_CreateRGBSurface(0, static_cast<int>(w), static_cast<int>(h), 32,
-                             m_rmask, m_gmask, m_bmask, m_amask);
+    uint32_t sdl_pixelformat = SDL_PIXELFORMAT_BGRA32;
+
+    // (§) Uncomment this line of code to invert the BGRA/RGBA color order.
+    // This isn't a generally useful feature for an image viewer, but it should
+    // make it obvious, when pressing the TAB key, whether you're using the
+    // Wuffs (inverted) or SDL_image (correct) decoder.
+    //
+    // sdl_pixelformat = SDL_PIXELFORMAT_RGBA32;
+
+    m_surface = SDL_CreateRGBSurfaceWithFormat(
+        0, static_cast<int>(w), static_cast<int>(h), 32, sdl_pixelformat);
     if (!m_surface) {
       return AllocResult(
           "Wuffs_Load_RW_Callbacks: SDL_CreateRGBSurface failed");
@@ -160,10 +150,6 @@ class Wuffs_Load_RW_Callbacks : public wuffs_aux::DecodeImageCallbacks {
                                   m_surface->h * m_surface->pitch));
   }
 
-  const uint32_t m_rmask;
-  const uint32_t m_gmask;
-  const uint32_t m_bmask;
-  const uint32_t m_amask;
   SDL_Surface* m_surface;
 };
 
@@ -205,26 +191,17 @@ class Wuffs_Load_RW_Input : public wuffs_aux::sync_io::Input {
 
 // --------
 
-// Wuffs_Load_RW loads the image from the given file into the given format
-// (which must be 32-bits per pixel). It is similar to SDL_image's IMG_Load_RW
-// function but it returns any error in-band (as a std::string) instead of
-// separately (global state accessible via SDL_GetError).
+// Wuffs_Load_RW loads the image from the input rw. It is like SDL_image's
+// IMG_Load_RW function but it returns any error in-band (as a std::string)
+// instead of separately (global state accessible via SDL_GetError).
 //
 // On success, the SDL_Surface* returned will be non-NULL and the caller owns
 // it. Ownership means that they are responsible for calling SDL_FreeSurface on
 // it when done.
 std::pair<SDL_Surface*, std::string>  //
-Wuffs_Load_RW(SDL_RWops* rw,
-              bool take_ownership_of_rw,
-              SDL_PixelFormat* format) {
+Wuffs_Load_RW(SDL_RWops* rw, bool take_ownership_of_rw) {
+  Wuffs_Load_RW_Callbacks callbacks;
   Wuffs_Load_RW_Input input(rw, take_ownership_of_rw);
-
-  if (!format || (format->BitsPerPixel != 32)) {
-    return std::make_pair<SDL_Surface*, std::string>(
-        NULL, "Wuffs_Load_RW: invalid pixel format");
-  }
-  Wuffs_Load_RW_Callbacks callbacks(format);
-
   wuffs_aux::DecodeImageResult res = wuffs_aux::DecodeImage(callbacks, input);
   if (!res.error_message.empty()) {
     return std::make_pair<SDL_Surface*, std::string>(
@@ -251,7 +228,7 @@ draw(SDL_Window* window) {
 }
 
 bool  //
-load_image(SDL_Window* window, const char* filename) {
+load_image(const char* filename) {
   if (g_image) {
     SDL_FreeSurface(g_image);
     g_image = NULL;
@@ -273,8 +250,8 @@ load_image(SDL_Window* window, const char* filename) {
       return false;
     }
   } else {
-    std::pair<SDL_Surface*, std::string> p = Wuffs_Load_RW(
-        rw, take_ownership_of_rw, SDL_GetWindowSurface(window)->format);
+    std::pair<SDL_Surface*, std::string> p =
+        Wuffs_Load_RW(rw, take_ownership_of_rw);
     if (!p.second.empty()) {
       fprintf(stderr, "main: Wuffs_Load_RW(\"%s\"): %s\n", filename,
               p.second.c_str());
@@ -304,7 +281,7 @@ main(int argc, char** argv) {
     return 1;
   }
 
-  if (!load_image(window, argv[1])) {
+  if (!load_image(argv[1])) {
     return 1;
   }
 
@@ -337,7 +314,7 @@ main(int argc, char** argv) {
             g_load_via_sdl_image = !g_load_via_sdl_image;
             printf("Switched to %s.\n",
                    g_load_via_sdl_image ? "SDL_image" : "Wuffs");
-            if (!load_image(window, argv[1]) || !draw(window)) {
+            if (!load_image(argv[1]) || !draw(window)) {
               return 1;
             }
             break;
