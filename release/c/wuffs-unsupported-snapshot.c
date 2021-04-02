@@ -13,10 +13,12 @@
 #if defined(__GNUC__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
-#pragma GCC diagnostic ignored "-Wold-style-cast"
 #pragma GCC diagnostic ignored "-Wunreachable-code"
 #pragma GCC diagnostic ignored "-Wunused-function"
 #pragma GCC diagnostic ignored "-Wunused-parameter"
+#if defined(__cplusplus)
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#endif
 #endif
 
 // Copyright 2017 The Wuffs Authors.
