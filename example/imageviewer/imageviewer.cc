@@ -120,6 +120,25 @@ load_image(const char* filename) {
     fclose(file);
   }
 
+  // wuffs_aux::DecodeImageCallbacks's default implementation should give us an
+  // interleaved (not multi-planar) pixel buffer, so that all of the pixel data
+  // is in a single 2-dimensional table (plane 0). Later on, we re-interpret
+  // that table as XCB image data, which isn't something we could do if we had
+  // e.g. multi-planar YCbCr.
+  if (!res.pixbuf.pixcfg.pixel_format().is_interleaved()) {
+    printf("%s: non-interleaved pixbuf\n", adj_filename);
+    return false;
+  }
+  wuffs_base__table_u8 tab = res.pixbuf.plane(0);
+  if (tab.width != tab.stride) {
+    // The xcb_image_create_native call, later on, assumes that (tab.height *
+    // tab.stride) bytes are readable, which isn't quite the same as what
+    // wuffs_base__table__flattened_length(tab.width, tab.height, tab.stride)
+    // returns unless the table is tight (its width equals its stride).
+    printf("%s: could not allocate tight pixbuf\n", adj_filename);
+    return false;
+  }
+
   g_width = res.pixbuf.pixcfg.width();
   g_height = res.pixbuf.pixcfg.height();
   g_pixbuf_mem_owner = std::move(res.pixbuf_mem_owner);

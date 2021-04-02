@@ -1208,6 +1208,45 @@ wuffs_base__slice_u8__subslice_ij(wuffs_base__slice_u8 s,
   return wuffs_base__make_slice_u8(NULL, 0);
 }
 
+// wuffs_base__table__flattened_length returns the number of elements covered
+// by the 1-dimensional span that backs a 2-dimensional table. This counts the
+// elements inside the table and, when width != stride, the elements outside
+// the table but between its rows.
+//
+// For example, consider a width 10, height 4, stride 10 table. Mark its first
+// and last (inclusive) elements with 'a' and 'z'. This function returns 40.
+//
+//    a123456789
+//    0123456789
+//    0123456789
+//    012345678z
+//
+// Now consider the sub-table of that from (2, 1) inclusive to (8, 4) exclusive.
+//
+//    a123456789
+//    01iiiiiioo
+//    ooiiiiiioo
+//    ooiiiiii8z
+//
+// This function (called with width 6, height 3, stride 10) returns 26: 18 'i'
+// inside elements plus 8 'o' outside elements. Note that 26 is less than a
+// naive (height * stride = 30) computation. Indeed, advancing 29 elements from
+// the first 'i' would venture past 'z', out of bounds of the original table.
+//
+// It does not check for overflow, but if the arguments come from a table that
+// exists in memory and each element occupies a positive number of bytes then
+// the result should be bounded by the amount of allocatable memory (which
+// shouldn't overflow SIZE_MAX).
+static inline size_t  //
+wuffs_base__table__flattened_length(size_t width,
+                                    size_t height,
+                                    size_t stride) {
+  if (height == 0) {
+    return 0;
+  }
+  return ((height - 1) * stride) + width;
+}
+
 // ---------------- Magic Numbers
 
 // wuffs_base__magic_number_guess_fourcc guesses the file format of some data,
