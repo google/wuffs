@@ -27,7 +27,7 @@ if x < 5 {
 
 } else {
     x = 1
-	// At this point, "x == 1" is a fact, but "x < 5" is not.
+    // At this point, "x == 1" is a fact, but "x < 5" is not.
 
     // This assertion creates the "x < 5" fact.
     assert x < 5
