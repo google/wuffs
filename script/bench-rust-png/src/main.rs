@@ -31,6 +31,7 @@ extern crate png;
 extern crate rustc_version_runtime;
 
 use std::time::Instant;
+use std::convert::TryInto;
 
 const ITERSCALE: u64 = 50;
 const REPS: u64 = 5;
@@ -153,13 +154,9 @@ fn decode(dst0: &mut [u8], dst1: &mut [u8], src: &[u8]) -> u64 {
         return num_bytes;
     } else if info.color_type == png::ColorType::RGB {
         // Convert RGB => BGRA.
-        for i in 0..((num_bytes / 3) as usize) {
-            dst1[(4 * i) + 0] = dst0[(3 * i) + 2];
-            dst1[(4 * i) + 1] = dst0[(3 * i) + 1];
-            dst1[(4 * i) + 2] = dst0[(3 * i) + 0];
-            dst1[(4 * i) + 3] = 0xFF;
-        }
-        return (num_bytes / 3) * 4;
+        let new_size = ((num_bytes / 3) * 4) as usize;
+        rgb_to_bgra(&dst0[..num_bytes as usize], &mut dst1[..new_size]);
+        return new_size as u64;
     } else if info.color_type == png::ColorType::RGBA {
         // Convert RGBA => BGRA.
         for i in 0..((num_bytes / 4) as usize) {
@@ -171,4 +168,36 @@ fn decode(dst0: &mut [u8], dst1: &mut [u8], src: &[u8]) -> u64 {
     }
     // Returning 0 should lead to a panic (when want_num_bytes != 0).
     0
+}
+
+/// Copy `src` (treated as 3-byte chunks) into `dst`
+/// (treated as 4-byte chunks), filling out `dst` by adding
+/// a `0xff` "alpha value" at the end of each entry.
+///
+/// # Panics:
+///
+/// Will panic if
+///
+/// * The length of `src` is not a multiple of 3.
+/// * The length of `dst` is not a multiple of 4.
+/// * `src` and `dst` do not have the same length in chunks.
+#[inline]
+pub fn rgb_to_bgra(src: &[u8], dst: &mut [u8]) {
+    let nsrc = src.len();
+    let ndst = dst.len();
+    assert_eq!(0, nsrc % 3);
+    assert_eq!(0, ndst % 4);
+    assert_eq!(nsrc, (ndst / 4) * 3);
+    for (s, d) in src.chunks_exact(3).zip(dst.chunks_exact_mut(4)) {
+        let s: &[u8; 3] = s.try_into().unwrap();
+        let d: &mut [u8; 4] = d.try_into().unwrap();
+        // R
+        d[0] = s[2];
+        // G
+        d[1] = s[1];
+        // B
+        d[2] = s[0];
+        // A
+        d[3] = 0xff;
+    }
 }
