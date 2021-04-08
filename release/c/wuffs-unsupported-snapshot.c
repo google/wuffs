@@ -6966,6 +6966,10 @@ struct wuffs_deflate__decoder__struct {
     uint32_t p_decode_blocks[1];
     uint32_t p_decode_uncompressed[1];
     uint32_t p_init_dynamic_huffman[1];
+    wuffs_base__status (*choosy_decode_huffman_fast64)(
+        wuffs_deflate__decoder* self,
+        wuffs_base__io_buffer* a_dst,
+        wuffs_base__io_buffer* a_src);
     uint32_t p_decode_huffman_slow[1];
   } private_impl;
 
@@ -25174,6 +25178,12 @@ wuffs_deflate__decoder__decode_huffman_fast64(
     wuffs_base__io_buffer* a_src);
 
 static wuffs_base__status
+wuffs_deflate__decoder__decode_huffman_fast64__choosy_default(
+    wuffs_deflate__decoder* self,
+    wuffs_base__io_buffer* a_dst,
+    wuffs_base__io_buffer* a_src);
+
+static wuffs_base__status
 wuffs_deflate__decoder__decode_huffman_slow(
     wuffs_deflate__decoder* self,
     wuffs_base__io_buffer* a_dst,
@@ -25233,6 +25243,8 @@ wuffs_deflate__decoder__initialize(
       memset(&(self->private_impl), 0, sizeof(self->private_impl));
     }
   }
+
+  self->private_impl.choosy_decode_huffman_fast64 = &wuffs_deflate__decoder__decode_huffman_fast64__choosy_default;
 
   self->private_impl.magic = WUFFS_BASE__MAGIC;
   self->private_impl.vtable_for__wuffs_base__io_transformer.vtable_name =
@@ -26522,6 +26534,14 @@ wuffs_deflate__decoder__decode_huffman_fast32(
 
 static wuffs_base__status
 wuffs_deflate__decoder__decode_huffman_fast64(
+    wuffs_deflate__decoder* self,
+    wuffs_base__io_buffer* a_dst,
+    wuffs_base__io_buffer* a_src) {
+  return (*self->private_impl.choosy_decode_huffman_fast64)(self, a_dst, a_src);
+}
+
+static wuffs_base__status
+wuffs_deflate__decoder__decode_huffman_fast64__choosy_default(
     wuffs_deflate__decoder* self,
     wuffs_base__io_buffer* a_dst,
     wuffs_base__io_buffer* a_src) {

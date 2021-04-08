@@ -14,7 +14,9 @@
 
 // TODO: describe how the xxx_fastxx version differs from the xxx_slow one, the
 // assumptions that xxx_fastxx makes, and how that makes it fast.
-pri func decoder.decode_huffman_fast64!(dst: base.io_writer, src: base.io_reader) base.status {
+pri func decoder.decode_huffman_fast64!(dst: base.io_writer, src: base.io_reader) base.status,
+	choosy,
+{
 	// When editing this function, consider making the equivalent change to the
 	// decode_huffman_slow function. Keep the diff between the two
 	// decode_huffman_*.wuffs files as small as possible, while retaining both
