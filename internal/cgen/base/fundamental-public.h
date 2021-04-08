@@ -149,6 +149,33 @@ wuffs_base__cpu_arch__have_arm_neon() {
 }
 
 static inline bool  //
+wuffs_base__cpu_arch__have_x86_bmi2() {
+#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+  // GCC defines these macros but MSVC does not.
+  //  - bit_BMI2 = (1 <<  8)
+  const unsigned int bmi2_ebx7 = 0x00000100;
+
+  // clang defines __GNUC__ and clang-cl defines _MSC_VER (but not __GNUC__).
+#if defined(__GNUC__)
+  unsigned int eax7 = 0;
+  unsigned int ebx7 = 0;
+  unsigned int ecx7 = 0;
+  unsigned int edx7 = 0;
+  if (__get_cpuid_count(7, 0, &eax7, &ebx7, &ecx7, &edx7)) {
+    return (ebx7 & bmi2_ebx7) == bmi2_ebx7;
+  }
+#elif defined(_MSC_VER)  // defined(__GNUC__)
+  int x[4];
+  __cpuidex(x, 7, 0);
+  return (((unsigned int)(x[1])) & bmi2_ebx7) == bmi2_ebx7;
+#else
+#error "WUFFS_BASE__CPU_ARCH__ETC combined with an unsupported compiler"
+#endif  // defined(__GNUC__); defined(_MSC_VER)
+#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+  return false;
+}
+
+static inline bool  //
 wuffs_base__cpu_arch__have_x86_sse42() {
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
   // GCC defines these macros but MSVC does not.

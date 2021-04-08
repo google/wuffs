@@ -203,6 +203,8 @@ pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf
 	var mark   : base.u64
 	var status : base.status
 
+	choose decode_huffman_fast64 = [decode_huffman_bmi2]
+
 	while true {
 		mark = args.dst.mark()
 		status =? this.decode_blocks?(dst: args.dst, src: args.src)

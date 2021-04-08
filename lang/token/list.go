@@ -709,6 +709,7 @@ const (
 	IDX86SSE42Utility = ID(0x391)
 	IDX86AVX2         = ID(0x392)
 	IDX86AVX2Utility  = ID(0x393)
+	IDX86BMI2         = ID(0x394)
 
 	IDX86M128I = ID(0x3A0)
 )
@@ -1120,6 +1121,7 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDX86SSE42Utility: "x86_sse42_utility",
 	IDX86AVX2:         "x86_avx2",
 	IDX86AVX2Utility:  "x86_avx2_utility",
+	IDX86BMI2:         "x86_bmi2",
 
 	IDX86M128I: "x86_m128i",
 }
