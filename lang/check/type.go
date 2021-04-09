@@ -28,6 +28,7 @@ const (
 	cpuArchBitsARMCRC32 = cpuArchBits(0x00000001)
 	cpuArchBitsARMNeon  = cpuArchBits(0x00000002)
 	cpuArchBitsX86SSE42 = cpuArchBits(0x00000004)
+	cpuArchBitsX86AVX2  = cpuArchBits(0x00000008)
 )
 
 func calcCPUArchBits(n *a.Func) (ret cpuArchBits) {
@@ -43,6 +44,8 @@ func calcCPUArchBits(n *a.Func) (ret cpuArchBits) {
 			ret |= cpuArchBitsARMNeon
 		case t.IDX86SSE42:
 			ret |= cpuArchBitsX86SSE42
+		case t.IDX86AVX2:
+			ret |= cpuArchBitsX86SSE42 | cpuArchBitsX86AVX2
 		}
 	}
 	return ret

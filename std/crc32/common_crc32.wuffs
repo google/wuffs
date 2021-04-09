@@ -27,6 +27,7 @@ pub func ieee_hasher.update_u32!(x: slice base.u8) base.u32 {
 	if this.state == 0 {
 		choose up = [
 			up_arm_crc32,
+			up_x86_avx2,
 			up_x86_sse42]
 	}
 	this.up!(x: args.x)

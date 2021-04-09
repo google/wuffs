@@ -188,6 +188,33 @@ wuffs_base__cpu_arch__have_arm_neon() {
 }
 
 static inline bool  //
+wuffs_base__cpu_arch__have_x86_avx2() {
+#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+  // GCC defines these macros but MSVC does not.
+  //  - bit_BMI2 = (1 <<  5)
+  const unsigned int avx2_ebx7 = 0x00000020;
+
+  // clang defines __GNUC__ and clang-cl defines _MSC_VER (but not __GNUC__).
+#if defined(__GNUC__)
+  unsigned int eax7 = 0;
+  unsigned int ebx7 = 0;
+  unsigned int ecx7 = 0;
+  unsigned int edx7 = 0;
+  if (__get_cpuid_count(7, 0, &eax7, &ebx7, &ecx7, &edx7)) {
+    return (ebx7 & avx2_ebx7) == avx2_ebx7;
+  }
+#elif defined(_MSC_VER)  // defined(__GNUC__)
+  int x[4];
+  __cpuidex(x, 7, 0);
+  return (((unsigned int)(x[1])) & avx2_ebx7) == avx2_ebx7;
+#else
+#error "WUFFS_BASE__CPU_ARCH__ETC combined with an unsupported compiler"
+#endif  // defined(__GNUC__); defined(_MSC_VER)
+#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+  return false;
+}
+
+static inline bool  //
 wuffs_base__cpu_arch__have_x86_bmi2() {
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
   // GCC defines these macros but MSVC does not.
@@ -24687,6 +24714,13 @@ wuffs_crc32__ieee_hasher__up_arm_crc32(
 
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
 static wuffs_base__empty_struct
+wuffs_crc32__ieee_hasher__up_x86_avx2(
+    wuffs_crc32__ieee_hasher* self,
+    wuffs_base__slice_u8 a_x);
+#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+
+#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+static wuffs_base__empty_struct
 wuffs_crc32__ieee_hasher__up_x86_sse42(
     wuffs_crc32__ieee_hasher* self,
     wuffs_base__slice_u8 a_x);
@@ -24803,6 +24837,9 @@ wuffs_crc32__ieee_hasher__update_u32(
     self->private_impl.choosy_up = (
 #if defined(WUFFS_BASE__CPU_ARCH__ARM_CRC32)
         wuffs_base__cpu_arch__have_arm_crc32() ? &wuffs_crc32__ieee_hasher__up_arm_crc32 :
+#endif
+#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+        wuffs_base__cpu_arch__have_x86_avx2() ? &wuffs_crc32__ieee_hasher__up_x86_avx2 :
 #endif
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
         wuffs_base__cpu_arch__have_x86_sse42() ? &wuffs_crc32__ieee_hasher__up_x86_sse42 :
@@ -24990,6 +25027,125 @@ wuffs_crc32__ieee_hasher__up_arm_crc32(
 }
 #endif  // defined(WUFFS_BASE__CPU_ARCH__ARM_CRC32)
 // ‼ WUFFS MULTI-FILE SECTION -arm_crc32
+
+// ‼ WUFFS MULTI-FILE SECTION +x86_avx2
+// -------- func crc32.ieee_hasher.up_x86_avx2
+
+#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2,avx2")
+static wuffs_base__empty_struct
+wuffs_crc32__ieee_hasher__up_x86_avx2(
+    wuffs_crc32__ieee_hasher* self,
+    wuffs_base__slice_u8 a_x) {
+  uint32_t v_s = 0;
+  wuffs_base__slice_u8 v_p = {0};
+  __m128i v_k = {0};
+  __m128i v_x0 = {0};
+  __m128i v_x1 = {0};
+  __m128i v_x2 = {0};
+  __m128i v_x3 = {0};
+  __m128i v_y0 = {0};
+  __m128i v_y1 = {0};
+  __m128i v_y2 = {0};
+  __m128i v_y3 = {0};
+  uint64_t v_tail_index = 0;
+
+  v_s = (4294967295 ^ self->private_impl.f_state);
+  while ((((uint64_t)(a_x.len)) > 0) && ((15 & ((uint32_t)(0xFFF & (uintptr_t)(a_x.ptr)))) != 0)) {
+    v_s = (WUFFS_CRC32__IEEE_TABLE[0][(((uint8_t)((v_s & 255))) ^ a_x.ptr[0])] ^ (v_s >> 8));
+    a_x = wuffs_base__slice_u8__subslice_i(a_x, 1);
+  }
+  if (((uint64_t)(a_x.len)) < 64) {
+    {
+      wuffs_base__slice_u8 i_slice_p = a_x;
+      v_p.ptr = i_slice_p.ptr;
+      v_p.len = 1;
+      uint8_t* i_end0_p = i_slice_p.ptr + i_slice_p.len;
+      while (v_p.ptr < i_end0_p) {
+        v_s = (WUFFS_CRC32__IEEE_TABLE[0][(((uint8_t)((v_s & 255))) ^ v_p.ptr[0])] ^ (v_s >> 8));
+        v_p.ptr += 1;
+      }
+      v_p.len = 0;
+    }
+    self->private_impl.f_state = (4294967295 ^ v_s);
+    return wuffs_base__make_empty_struct();
+  }
+  v_x0 = _mm_lddqu_si128((const __m128i*)(const void*)(a_x.ptr + 0));
+  v_x1 = _mm_lddqu_si128((const __m128i*)(const void*)(a_x.ptr + 16));
+  v_x2 = _mm_lddqu_si128((const __m128i*)(const void*)(a_x.ptr + 32));
+  v_x3 = _mm_lddqu_si128((const __m128i*)(const void*)(a_x.ptr + 48));
+  v_x0 = _mm_xor_si128(v_x0, _mm_cvtsi32_si128((int32_t)(v_s)));
+  v_k = _mm_lddqu_si128((const __m128i*)(const void*)(WUFFS_CRC32__IEEE_X86_SSE42_K1K2));
+  {
+    wuffs_base__slice_u8 i_slice_p = wuffs_base__slice_u8__subslice_i(a_x, 64);
+    v_p.ptr = i_slice_p.ptr;
+    v_p.len = 64;
+    uint8_t* i_end0_p = v_p.ptr + (((i_slice_p.len - (size_t)(v_p.ptr - i_slice_p.ptr)) / 64) * 64);
+    while (v_p.ptr < i_end0_p) {
+      v_y0 = _mm_clmulepi64_si128(v_x0, v_k, (int32_t)(0));
+      v_y1 = _mm_clmulepi64_si128(v_x1, v_k, (int32_t)(0));
+      v_y2 = _mm_clmulepi64_si128(v_x2, v_k, (int32_t)(0));
+      v_y3 = _mm_clmulepi64_si128(v_x3, v_k, (int32_t)(0));
+      v_x0 = _mm_clmulepi64_si128(v_x0, v_k, (int32_t)(17));
+      v_x1 = _mm_clmulepi64_si128(v_x1, v_k, (int32_t)(17));
+      v_x2 = _mm_clmulepi64_si128(v_x2, v_k, (int32_t)(17));
+      v_x3 = _mm_clmulepi64_si128(v_x3, v_k, (int32_t)(17));
+      v_x0 = _mm_xor_si128(_mm_xor_si128(v_x0, v_y0), _mm_lddqu_si128((const __m128i*)(const void*)(v_p.ptr + 0)));
+      v_x1 = _mm_xor_si128(_mm_xor_si128(v_x1, v_y1), _mm_lddqu_si128((const __m128i*)(const void*)(v_p.ptr + 16)));
+      v_x2 = _mm_xor_si128(_mm_xor_si128(v_x2, v_y2), _mm_lddqu_si128((const __m128i*)(const void*)(v_p.ptr + 32)));
+      v_x3 = _mm_xor_si128(_mm_xor_si128(v_x3, v_y3), _mm_lddqu_si128((const __m128i*)(const void*)(v_p.ptr + 48)));
+      v_p.ptr += 64;
+    }
+    v_p.len = 0;
+  }
+  v_k = _mm_lddqu_si128((const __m128i*)(const void*)(WUFFS_CRC32__IEEE_X86_SSE42_K3K4));
+  v_y0 = _mm_clmulepi64_si128(v_x0, v_k, (int32_t)(0));
+  v_x0 = _mm_clmulepi64_si128(v_x0, v_k, (int32_t)(17));
+  v_x0 = _mm_xor_si128(v_x0, v_x1);
+  v_x0 = _mm_xor_si128(v_x0, v_y0);
+  v_y0 = _mm_clmulepi64_si128(v_x0, v_k, (int32_t)(0));
+  v_x0 = _mm_clmulepi64_si128(v_x0, v_k, (int32_t)(17));
+  v_x0 = _mm_xor_si128(v_x0, v_x2);
+  v_x0 = _mm_xor_si128(v_x0, v_y0);
+  v_y0 = _mm_clmulepi64_si128(v_x0, v_k, (int32_t)(0));
+  v_x0 = _mm_clmulepi64_si128(v_x0, v_k, (int32_t)(17));
+  v_x0 = _mm_xor_si128(v_x0, v_x3);
+  v_x0 = _mm_xor_si128(v_x0, v_y0);
+  v_x1 = _mm_clmulepi64_si128(v_x0, v_k, (int32_t)(16));
+  v_x2 = _mm_set_epi32((int32_t)(0), (int32_t)(4294967295), (int32_t)(0), (int32_t)(4294967295));
+  v_x0 = _mm_srli_si128(v_x0, (int32_t)(8));
+  v_x0 = _mm_xor_si128(v_x0, v_x1);
+  v_k = _mm_lddqu_si128((const __m128i*)(const void*)(WUFFS_CRC32__IEEE_X86_SSE42_K5ZZ));
+  v_x1 = _mm_srli_si128(v_x0, (int32_t)(4));
+  v_x0 = _mm_and_si128(v_x0, v_x2);
+  v_x0 = _mm_clmulepi64_si128(v_x0, v_k, (int32_t)(0));
+  v_x0 = _mm_xor_si128(v_x0, v_x1);
+  v_k = _mm_lddqu_si128((const __m128i*)(const void*)(WUFFS_CRC32__IEEE_X86_SSE42_PXMU));
+  v_x1 = _mm_and_si128(v_x0, v_x2);
+  v_x1 = _mm_clmulepi64_si128(v_x1, v_k, (int32_t)(16));
+  v_x1 = _mm_and_si128(v_x1, v_x2);
+  v_x1 = _mm_clmulepi64_si128(v_x1, v_k, (int32_t)(0));
+  v_x0 = _mm_xor_si128(v_x0, v_x1);
+  v_s = ((uint32_t)(_mm_extract_epi32(v_x0, (int32_t)(1))));
+  v_tail_index = (((uint64_t)(a_x.len)) & 18446744073709551552u);
+  if (v_tail_index < ((uint64_t)(a_x.len))) {
+    {
+      wuffs_base__slice_u8 i_slice_p = wuffs_base__slice_u8__subslice_i(a_x, v_tail_index);
+      v_p.ptr = i_slice_p.ptr;
+      v_p.len = 1;
+      uint8_t* i_end0_p = i_slice_p.ptr + i_slice_p.len;
+      while (v_p.ptr < i_end0_p) {
+        v_s = (WUFFS_CRC32__IEEE_TABLE[0][(((uint8_t)((v_s & 255))) ^ v_p.ptr[0])] ^ (v_s >> 8));
+        v_p.ptr += 1;
+      }
+      v_p.len = 0;
+    }
+  }
+  self->private_impl.f_state = (4294967295 ^ v_s);
+  return wuffs_base__make_empty_struct();
+}
+#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+// ‼ WUFFS MULTI-FILE SECTION -x86_avx2
 
 // ‼ WUFFS MULTI-FILE SECTION +x86_sse42
 // -------- func crc32.ieee_hasher.up_x86_sse42
