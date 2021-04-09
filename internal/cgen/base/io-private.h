@@ -228,6 +228,46 @@ wuffs_base__io_writer__limited_copy_u32_from_history_fast(uint8_t** ptr_iop_w,
   return length;
 }
 
+// wuffs_base__io_writer__limited_copy_u32_from_history_8_byte_chunks_distance_1_fast
+// copies the previous byte (the one immediately before *ptr_iop_w), copying 8
+// byte chunks at a time. Each chunk contains 8 repetitions of the same byte.
+//
+// In terms of number of bytes copied, length is rounded up to a multiple of 8.
+// As a special case, a zero length rounds up to 8 (even though 0 is already a
+// multiple of 8), since there is always at least one 8 byte chunk copied.
+//
+// In terms of advancing *ptr_iop_w, length is not rounded up.
+//
+// The caller needs to prove that:
+//  - (length + 8) <= (io2_w      - *ptr_iop_w)
+//  - distance     == 1
+//  - distance     <= (*ptr_iop_w - io1_w)
+static inline uint32_t  //
+wuffs_base__io_writer__limited_copy_u32_from_history_8_byte_chunks_distance_1_fast(
+    uint8_t** ptr_iop_w,
+    uint8_t* io1_w,
+    uint8_t* io2_w,
+    uint32_t length,
+    uint32_t distance) {
+  uint8_t* p = *ptr_iop_w;
+  uint64_t x = p[-1];
+  x |= x << 8;
+  x |= x << 16;
+  x |= x << 32;
+  uint32_t n = length;
+  while (1) {
+    wuffs_base__poke_u64le__no_bounds_check(p, x);
+    if (n <= 8) {
+      p += n;
+      break;
+    }
+    p += 8;
+    n -= 8;
+  }
+  *ptr_iop_w = p;
+  return length;
+}
+
 // wuffs_base__io_writer__limited_copy_u32_from_history_8_byte_chunks_fast is
 // like the wuffs_base__io_writer__limited_copy_u32_from_history_fast function
 // above, but copies 8 byte chunks at a time.

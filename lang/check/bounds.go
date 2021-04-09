@@ -1160,13 +1160,18 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (bounds, e
 				return bounds{}, err
 			}
 
+		} else if method == t.IDLimitedCopyU32FromHistory8ByteChunksDistance1Fast {
+			if err := q.canLimitedCopyU32FromHistoryFast(recv, n.Args(), eight, nil, one); err != nil {
+				return bounds{}, err
+			}
+
 		} else if method == t.IDLimitedCopyU32FromHistory8ByteChunksFast {
-			if err := q.canLimitedCopyU32FromHistoryFast(recv, n.Args(), eight, eight); err != nil {
+			if err := q.canLimitedCopyU32FromHistoryFast(recv, n.Args(), eight, eight, nil); err != nil {
 				return bounds{}, err
 			}
 
 		} else if method == t.IDLimitedCopyU32FromHistoryFast {
-			if err := q.canLimitedCopyU32FromHistoryFast(recv, n.Args(), nil, one); err != nil {
+			if err := q.canLimitedCopyU32FromHistoryFast(recv, n.Args(), nil, one, nil); err != nil {
 				return bounds{}, err
 			}
 
@@ -1272,10 +1277,11 @@ func (q *checker) canUndoByte(recv *a.Expr) error {
 	return fmt.Errorf("check: could not prove %s.can_undo_byte()", recv.Str(q.tm))
 }
 
-func (q *checker) canLimitedCopyU32FromHistoryFast(recv *a.Expr, args []*a.Node, adj *big.Int, minDistance *big.Int) error {
+func (q *checker) canLimitedCopyU32FromHistoryFast(recv *a.Expr, args []*a.Node, adj *big.Int, minDistance *big.Int, exactDistance *big.Int) error {
 	// As per cgen's io-private.h, there are three pre-conditions:
 	//  - (upTo + adj) <= this.length()
-	//  - distance >= minDistance
+	//  - either (distance >= minDistance) or (distance == exactDistance),
+	//    depending on which of minDistance and exactDistance is non-nil.
 	//  - distance <= this.history_length()
 	//
 	// adj may be nil, in which case (upTo + adj) is just upTo.
@@ -1335,8 +1341,8 @@ check0:
 	}
 
 	// Check "distance >= minDistance".
-check1:
-	for {
+check1a:
+	for minDistance != nil {
 		for _, x := range q.facts {
 			if x.Operator() != t.IDXBinaryGreaterEq {
 				continue
@@ -1347,9 +1353,27 @@ check1:
 			if rcv := x.RHS().AsExpr().ConstValue(); (rcv == nil) || (rcv.Cmp(minDistance) < 0) {
 				continue
 			}
-			break check1
+			break check1a
 		}
 		return fmt.Errorf("check: could not prove %s >= %v", distance.Str(q.tm), minDistance)
+	}
+
+	// Check "distance == exactDistance".
+check1b:
+	for exactDistance != nil {
+		for _, x := range q.facts {
+			if x.Operator() != t.IDXBinaryEqEq {
+				continue
+			}
+			if lhs := x.LHS().AsExpr(); !lhs.Eq(distance) {
+				continue
+			}
+			if rcv := x.RHS().AsExpr().ConstValue(); (rcv == nil) || (rcv.Cmp(exactDistance) != 0) {
+				continue
+			}
+			break check1b
+		}
+		return fmt.Errorf("check: could not prove %s == %v", distance.Str(q.tm), exactDistance)
 	}
 
 	// Check "distance <= this.history_length()".

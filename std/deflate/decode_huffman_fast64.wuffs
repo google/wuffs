@@ -252,6 +252,11 @@ pri func decoder.decode_huffman_fast64!(dst: base.io_writer, src: base.io_reader
 			if (dist_minus_1 + 1) >= 8 {
 				args.dst.limited_copy_u32_from_history_8_byte_chunks_fast!(
 					up_to: length, distance: (dist_minus_1 + 1))
+			} else if (dist_minus_1 + 1) == 1 {
+				// (distance == 1) is essentially RLE (Run Length Encoding). It
+				// happens often enough that it's worth special-casing.
+				args.dst.limited_copy_u32_from_history_8_byte_chunks_distance_1_fast!(
+					up_to: length, distance: (dist_minus_1 + 1))
 			} else {
 				args.dst.limited_copy_u32_from_history_fast!(
 					up_to: length, distance: (dist_minus_1 + 1))

@@ -549,6 +549,13 @@ var funcsOther = [...]string{
 	// For now, that's all implicitly checked (i.e. hard coded).
 	"io_writer.limited_copy_u32_from_history_8_byte_chunks_fast!(up_to: u32, distance: u32) u32",
 
+	// TODO: this should have explicit pre-conditions:
+	//  - (up_to + 8) <= this.length()
+	//  - distance == 1
+	//  - distance <= this.history_length()
+	// For now, that's all implicitly checked (i.e. hard coded).
+	"io_writer.limited_copy_u32_from_history_8_byte_chunks_distance_1_fast!(up_to: u32, distance: u32) u32",
+
 	// ---- token_writer
 
 	"token_writer.write_simple_token_fast!(" +

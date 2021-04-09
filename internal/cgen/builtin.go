@@ -308,6 +308,7 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 
 	switch method {
 	case t.IDLimitedCopyU32FromHistory,
+		t.IDLimitedCopyU32FromHistory8ByteChunksDistance1Fast,
 		t.IDLimitedCopyU32FromHistory8ByteChunksFast,
 		t.IDLimitedCopyU32FromHistoryFast:
 		b.printf("wuffs_base__io_writer__%s(\n&%s%s, %s%s, %s%s",
