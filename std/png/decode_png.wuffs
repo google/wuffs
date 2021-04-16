@@ -303,7 +303,7 @@ pri func decoder.assign_filter_distance!() {
 			this.src_pixfmt = base.PIXEL_FORMAT__Y
 			this.filter_distance = 1
 		} else if this.depth == 16 {
-			this.dst_pixfmt = base.PIXEL_FORMAT__Y  // TODO: PIXEL_FORMAT__Y_16LE
+			this.dst_pixfmt = base.PIXEL_FORMAT__Y_16LE
 			this.src_pixfmt = base.PIXEL_FORMAT__Y_16BE
 			this.filter_distance = 2
 		}
