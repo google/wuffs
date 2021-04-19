@@ -37,7 +37,7 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 "wuffs mimic cflags" to run the mimic benchmarks.
 */
 
-// ¿ wuffs mimic cflags: -DWUFFS_MIMIC -lz
+// ¿ wuffs mimic cflags: -DWUFFS_MIMIC -ldeflate -lz
 
 // Wuffs ships as a "single file C library" or "header file library" as per
 // https://github.com/nothings/stb/blob/master/docs/stb_howto.txt
@@ -749,10 +749,9 @@ test_mimic_deflate_decode_deflate_distance_code_31() {
   const char* have = do_test_io_buffers(mimic_deflate_decode,
                                         &g_deflate_deflate_distance_code_31_gt,
                                         UINT64_MAX, UINT64_MAX);
-  const char* want = "inflate failed (data error)";
-  if ((have != want) &&
-      ((have == NULL) || (want == NULL) || strcmp(have, want))) {
-    RETURN_FAIL("have \"%s\", want \"%s\"", have, want);
+  if (!strings_are_equal(have, "inflate failed (data error)") &&
+      !strings_are_equal(have, "libdeflate: bad data")) {
+    RETURN_FAIL("have \"%s\", want \"bad data\" or similar", have);
   }
   return NULL;
 }
@@ -924,7 +923,9 @@ proc g_tests[] = {
     test_mimic_deflate_decode_deflate_huffman_primlen_9,
     test_mimic_deflate_decode_midsummer,
     test_mimic_deflate_decode_pi_just_one_read,
+#ifndef WUFFS_MIMICLIB_DEFLATE_DOES_NOT_SUPPORT_STREAMING
     test_mimic_deflate_decode_pi_many_big_reads,
+#endif
     test_mimic_deflate_decode_romeo,
     test_mimic_deflate_decode_romeo_fixed,
 
@@ -947,7 +948,9 @@ proc g_benches[] = {
     bench_mimic_deflate_decode_1k_full_init,
     bench_mimic_deflate_decode_10k_full_init,
     bench_mimic_deflate_decode_100k_just_one_read,
+#ifndef WUFFS_MIMICLIB_DEFLATE_DOES_NOT_SUPPORT_STREAMING
     bench_mimic_deflate_decode_100k_many_big_reads,
+#endif
 
 #endif  // WUFFS_MIMIC
 

@@ -819,6 +819,16 @@ check_io_buffers_equal(const char* prefix,
   return g_fail_msg;
 }
 
+bool  //
+strings_are_equal(const char* s, const char* t) {
+  if (s == t) {
+    return true;
+  } else if ((s == NULL) || (t == NULL)) {
+    return false;
+  }
+  return strcmp(s, t) == 0;
+}
+
 // throughput_counter is whether to count dst or src bytes, or neither, when
 // calculating a benchmark's MB/s throughput number.
 //

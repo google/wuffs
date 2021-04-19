@@ -14,11 +14,170 @@
 
 // ----------------
 
-// Uncomment this line to test and bench miniz instead of zlib-the-library.
+// Uncomment one of these #define lines to test and bench alternative mimic
+// libraries (libdeflate or miniz) instead of zlib-the-library.
+//
+// These are collectively referred to as
+// WUFFS_MIMICLIB_USE_XXX_INSTEAD_OF_ZLIB.
+//
+// #define WUFFS_MIMICLIB_USE_LIBDEFLATE_INSTEAD_OF_ZLIB 1
 // #define WUFFS_MIMICLIB_USE_MINIZ_INSTEAD_OF_ZLIB 1
 
-#ifdef WUFFS_MIMICLIB_USE_MINIZ_INSTEAD_OF_ZLIB
+// -------------------------------- WUFFS_MIMICLIB_USE_XXX_INSTEAD_OF_ZLIB
+#if defined(WUFFS_MIMICLIB_USE_LIBDEFLATE_INSTEAD_OF_ZLIB)
+#include "libdeflate.h"
+
+#define WUFFS_MIMICLIB_DEFLATE_DOES_NOT_SUPPORT_STREAMING 1
+
+#define WUFFS_MIMICLIB_ZLIB_DOES_NOT_SUPPORT_DICTIONARIES 1
+
+uint32_t global_mimiclib_deflate_unused_u32;
+
+typedef enum libdeflate_result (*libdeflate_decompress_func)(
+    struct libdeflate_decompressor* decompressor,
+    const void* in,
+    size_t in_nbytes,
+    void* out,
+    size_t out_nbytes_avail,
+    size_t* actual_in_nbytes_ret,
+    size_t* actual_out_nbytes_ret);
+
+const char*  //
+libdeflate_result_as_const_char_star(enum libdeflate_result r) {
+  switch (r) {
+    case LIBDEFLATE_SUCCESS:
+      return NULL;
+    case LIBDEFLATE_BAD_DATA:
+      return "libdeflate: bad data";
+    case LIBDEFLATE_SHORT_OUTPUT:
+      return "libdeflate: short output";
+    case LIBDEFLATE_INSUFFICIENT_SPACE:
+      return "libdeflate: insufficient space";
+  }
+  return "libdeflate: unknown error";
+}
+
+const char*  //
+mimic_bench_adler32(wuffs_base__io_buffer* dst,
+                    wuffs_base__io_buffer* src,
+                    uint32_t wuffs_initialize_flags,
+                    uint64_t wlimit,
+                    uint64_t rlimit) {
+  global_mimiclib_deflate_unused_u32 = 1;
+  while (src->meta.ri < src->meta.wi) {
+    uint8_t* ptr = src->data.ptr + src->meta.ri;
+    size_t len = src->meta.wi - src->meta.ri;
+    if (len > 0x7FFFFFFF) {
+      return "src length is too large";
+    } else if (len > rlimit) {
+      len = rlimit;
+    }
+    global_mimiclib_deflate_unused_u32 =
+        libdeflate_adler32(global_mimiclib_deflate_unused_u32, ptr, len);
+    src->meta.ri += len;
+  }
+  return NULL;
+}
+
+const char*  //
+mimic_bench_crc32_ieee(wuffs_base__io_buffer* dst,
+                       wuffs_base__io_buffer* src,
+                       uint32_t wuffs_initialize_flags,
+                       uint64_t wlimit,
+                       uint64_t rlimit) {
+  global_mimiclib_deflate_unused_u32 = 0;
+  while (src->meta.ri < src->meta.wi) {
+    uint8_t* ptr = src->data.ptr + src->meta.ri;
+    size_t len = src->meta.wi - src->meta.ri;
+    if (len > 0x7FFFFFFF) {
+      return "src length is too large";
+    } else if (len > rlimit) {
+      len = rlimit;
+    }
+    global_mimiclib_deflate_unused_u32 =
+        libdeflate_crc32(global_mimiclib_deflate_unused_u32, ptr, len);
+    src->meta.ri += len;
+  }
+  return NULL;
+}
+
+const char*  //
+mimic_deflate_gzip_zlib_decode(wuffs_base__io_buffer* dst,
+                               wuffs_base__io_buffer* src,
+                               uint32_t wuffs_initialize_flags,
+                               uint64_t wlimit,
+                               uint64_t rlimit,
+                               libdeflate_decompress_func func) {
+  struct libdeflate_decompressor* dec = libdeflate_alloc_decompressor();
+  if (!dec) {
+    return "libdeflate: alloc failed";
+  }
+  size_t n_dst = 0;
+  size_t n_src = 0;
+  enum libdeflate_result res =
+      (*func)(dec, wuffs_base__io_buffer__reader_pointer(src),
+              ((size_t)wuffs_base__u64__min(
+                  rlimit, wuffs_base__io_buffer__reader_length(src))),
+              wuffs_base__io_buffer__writer_pointer(dst),
+              ((size_t)wuffs_base__u64__min(
+                  wlimit, wuffs_base__io_buffer__writer_length(dst))),
+              &n_src, &n_dst);
+  if (res == LIBDEFLATE_SUCCESS) {
+    dst->meta.wi += n_dst;
+    src->meta.ri += n_src;
+  }
+  libdeflate_free_decompressor(dec);
+  return libdeflate_result_as_const_char_star(res);
+}
+
+const char*  //
+mimic_deflate_decode(wuffs_base__io_buffer* dst,
+                     wuffs_base__io_buffer* src,
+                     uint32_t wuffs_initialize_flags,
+                     uint64_t wlimit,
+                     uint64_t rlimit) {
+  return mimic_deflate_gzip_zlib_decode(dst, src, wuffs_initialize_flags,
+                                        wlimit, rlimit,
+                                        &libdeflate_deflate_decompress_ex);
+}
+
+const char*  //
+mimic_gzip_decode(wuffs_base__io_buffer* dst,
+                  wuffs_base__io_buffer* src,
+                  uint32_t wuffs_initialize_flags,
+                  uint64_t wlimit,
+                  uint64_t rlimit) {
+  return mimic_deflate_gzip_zlib_decode(dst, src, wuffs_initialize_flags,
+                                        wlimit, rlimit,
+                                        &libdeflate_gzip_decompress_ex);
+}
+
+const char*  //
+mimic_zlib_decode(wuffs_base__io_buffer* dst,
+                  wuffs_base__io_buffer* src,
+                  uint32_t wuffs_initialize_flags,
+                  uint64_t wlimit,
+                  uint64_t rlimit) {
+  return mimic_deflate_gzip_zlib_decode(dst, src, wuffs_initialize_flags,
+                                        wlimit, rlimit,
+                                        &libdeflate_zlib_decompress_ex);
+}
+
+const char*  //
+mimic_zlib_decode_with_dictionary(wuffs_base__io_buffer* dst,
+                                  wuffs_base__io_buffer* src,
+                                  wuffs_base__slice_u8 dictionary) {
+  return "libdeflate does not implement zlib dictionaries";
+}
+
+// -------------------------------- WUFFS_MIMICLIB_USE_XXX_INSTEAD_OF_ZLIB
+#elif defined(WUFFS_MIMICLIB_USE_MINIZ_INSTEAD_OF_ZLIB)
 #include "/path/to/your/copy/of/github.com/richgel999/miniz/miniz_tinfl.c"
+
+// We deliberately do not define the
+// WUFFS_MIMICLIB_DEFLATE_DOES_NOT_SUPPORT_STREAMING macro.
+
+#define WUFFS_MIMICLIB_ZLIB_DOES_NOT_SUPPORT_DICTIONARIES 1
 
 const char*  //
 mimic_bench_adler32(wuffs_base__io_buffer* dst,
@@ -101,8 +260,15 @@ mimic_zlib_decode_with_dictionary(wuffs_base__io_buffer* dst,
   return "miniz does not implement zlib dictionaries";
 }
 
-#else  // WUFFS_MIMICLIB_USE_MINIZ_INSTEAD_OF_ZLIB
+// -------------------------------- WUFFS_MIMICLIB_USE_XXX_INSTEAD_OF_ZLIB
+#else
 #include "zlib.h"
+
+// We deliberately do not define the
+// WUFFS_MIMICLIB_DEFLATE_DOES_NOT_SUPPORT_STREAMING macro.
+
+// We deliberately do not define the
+// WUFFS_MIMICLIB_ZLIB_DOES_NOT_SUPPORT_DICTIONARIES macro.
 
 uint32_t global_mimiclib_deflate_unused_u32;
 
@@ -299,4 +465,5 @@ mimic_zlib_decode_with_dictionary(wuffs_base__io_buffer* dst,
                                         UINT64_MAX, zlib_flavor_zlib);
 }
 
-#endif  // WUFFS_MIMICLIB_USE_MINIZ_INSTEAD_OF_ZLIB
+#endif
+// -------------------------------- WUFFS_MIMICLIB_USE_XXX_INSTEAD_OF_ZLIB
