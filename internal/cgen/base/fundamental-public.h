@@ -152,7 +152,7 @@ static inline bool  //
 wuffs_base__cpu_arch__have_x86_avx2() {
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
   // GCC defines these macros but MSVC does not.
-  //  - bit_BMI2 = (1 <<  5)
+  //  - bit_AVX2 = (1 <<  5)
   const unsigned int avx2_ebx7 = 0x00000020;
 
   // clang defines __GNUC__ and clang-cl defines _MSC_VER (but not __GNUC__).
