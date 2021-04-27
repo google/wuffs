@@ -28,8 +28,8 @@ pri func hasher.up_x86_sse42!(x: slice base.u8),
 	var ones          : base.x86_m128i
 	var weights__left : base.x86_m128i
 	var weights_right : base.x86_m128i
-	var p__left       : base.x86_m128i
-	var p_right       : base.x86_m128i
+	var q__left       : base.x86_m128i
+	var q_right       : base.x86_m128i
 	var v1            : base.x86_m128i
 	var v2            : base.x86_m128i
 	var v2j           : base.x86_m128i
@@ -92,13 +92,13 @@ pri func hasher.up_x86_sse42!(x: slice base.u8),
 
 		// The inner loop.
 		iterate (p = args.x)(length: 32, advance: 32, unroll: 1) {
-			// Split the 32-byte p into left and right halves. SSE4.2 works
-			// with 16-byte registers.
+			// SSE4.2 works with 16-byte registers. Split the 32-byte p into
+			// left and right halves.
 			//
-			// Let p__left = [u8×16: p00, p01, p02, ..., p15]
-			// Let p_right = [u8×16: p16, p17, p18, ..., p31]
-			p__left = util.make_m128i_slice128(a: p[.. 16])
-			p_right = util.make_m128i_slice128(a: p[16 .. 32])
+			// Let q__left = [u8×16: p00, p01, p02, ..., p15]
+			// Let q_right = [u8×16: p16, p17, p18, ..., p31]
+			q__left = util.make_m128i_slice128(a: p[.. 16])
+			q_right = util.make_m128i_slice128(a: p[16 .. 32])
 
 			// For v2j, we need to calculate the sums of the s1j terms for each
 			// of p's 32 elements. This is simply 32 times the same number,
@@ -108,14 +108,14 @@ pri func hasher.up_x86_sse42!(x: slice base.u8),
 
 			// For v1, we need to add the elements of p. Computing the sum of
 			// absolute differences (_mm_sad_epu8) with zero just sums the
-			// elements. p__left._mm_sad_epu8(b: zeroes) equals
+			// elements. q__left._mm_sad_epu8(b: zeroes) equals
 			//   [u64×2: p00 + p01 + ... + p07, p08 + p09 + ... + p15]
 			// This is equivalent (little-endian) to:
 			//   [u32×4: p00 + p01 + ... + p07, 0, p08 + p09 + ... + p15, 0]
-			// We accumulate those "sum of p__left elements" in v1, and ditto
-			// for the p_right elements.
-			v1 = v1._mm_add_epi32(b: p__left._mm_sad_epu8(b: zeroes))
-			v1 = v1._mm_add_epi32(b: p_right._mm_sad_epu8(b: zeroes))
+			// We accumulate those "sum of q__left's elements" in v1, and ditto
+			// for q_right's elements.
+			v1 = v1._mm_add_epi32(b: q__left._mm_sad_epu8(b: zeroes))
+			v1 = v1._mm_add_epi32(b: q_right._mm_sad_epu8(b: zeroes))
 
 			// For v2k, we need to calculate a weighted sum: ((32 * p00) + (31
 			// * p01) + (30 * p02) + ... + (1 * p31)), which splits naturally
@@ -128,19 +128,19 @@ pri func hasher.up_x86_sse42!(x: slice base.u8),
 			//           ...
 			//           ((18*p14)+(17*p15))]
 			//
-			// The ones._mm_madd_epi16(b: etc) call is likewise a multiply-add
-			// (note that it's "madd" not "add"). Multiplying by 1 is a no-op,
-			// so this sums u16 pairs to produce u32 values:
+			// The ones._mm_madd_epi16(b: etc) call is a multiply-add (note
+			// that it's "madd" not "add"). Multiplying by 1 is a no-op, so
+			// this sums u16 pairs to produce u32 values:
 			//   [u32×4: ((32*p00)+(31*p01)+(30*p02)+(29*p03)),
 			//           ((28*p04)+(27*p05)+(26*p06)+(25*p07)),
 			//           ...
 			//           ((20*p12)+(19*p13)+(18*p14)+(17*p15))]
 			//
-			// Ditto again for the p_right elements.
+			// Ditto again for q_right's elements.
 			v2k = v2k._mm_add_epi32(b: ones._mm_madd_epi16(b:
-				p__left._mm_maddubs_epi16(b: weights__left)))
+				q__left._mm_maddubs_epi16(b: weights__left)))
 			v2k = v2k._mm_add_epi32(b: ones._mm_madd_epi16(b:
-				p_right._mm_maddubs_epi16(b: weights_right)))
+				q_right._mm_maddubs_epi16(b: weights_right)))
 		}
 
 		// Merge the four parallel u32 sums (v1) into the single u32 sum (s1).

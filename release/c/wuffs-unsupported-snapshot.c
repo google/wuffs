@@ -20886,8 +20886,8 @@ wuffs_adler32__hasher__up_x86_sse42(
   __m128i v_ones = {0};
   __m128i v_weights__left = {0};
   __m128i v_weights_right = {0};
-  __m128i v_p__left = {0};
-  __m128i v_p_right = {0};
+  __m128i v_q__left = {0};
+  __m128i v_q_right = {0};
   __m128i v_v1 = {0};
   __m128i v_v2 = {0};
   __m128i v_v2j = {0};
@@ -20918,13 +20918,13 @@ wuffs_adler32__hasher__up_x86_sse42(
       v_p.len = 32;
       uint8_t* i_end0_p = v_p.ptr + (((i_slice_p.len - (size_t)(v_p.ptr - i_slice_p.ptr)) / 32) * 32);
       while (v_p.ptr < i_end0_p) {
-        v_p__left = _mm_lddqu_si128((const __m128i*)(const void*)(v_p.ptr));
-        v_p_right = _mm_lddqu_si128((const __m128i*)(const void*)(v_p.ptr + 16));
+        v_q__left = _mm_lddqu_si128((const __m128i*)(const void*)(v_p.ptr));
+        v_q_right = _mm_lddqu_si128((const __m128i*)(const void*)(v_p.ptr + 16));
         v_v2j = _mm_add_epi32(v_v2j, v_v1);
-        v_v1 = _mm_add_epi32(v_v1, _mm_sad_epu8(v_p__left, v_zeroes));
-        v_v1 = _mm_add_epi32(v_v1, _mm_sad_epu8(v_p_right, v_zeroes));
-        v_v2k = _mm_add_epi32(v_v2k, _mm_madd_epi16(v_ones, _mm_maddubs_epi16(v_p__left, v_weights__left)));
-        v_v2k = _mm_add_epi32(v_v2k, _mm_madd_epi16(v_ones, _mm_maddubs_epi16(v_p_right, v_weights_right)));
+        v_v1 = _mm_add_epi32(v_v1, _mm_sad_epu8(v_q__left, v_zeroes));
+        v_v1 = _mm_add_epi32(v_v1, _mm_sad_epu8(v_q_right, v_zeroes));
+        v_v2k = _mm_add_epi32(v_v2k, _mm_madd_epi16(v_ones, _mm_maddubs_epi16(v_q__left, v_weights__left)));
+        v_v2k = _mm_add_epi32(v_v2k, _mm_madd_epi16(v_ones, _mm_maddubs_epi16(v_q_right, v_weights_right)));
         v_p.ptr += 32;
       }
       v_p.len = 0;
