@@ -27,7 +27,6 @@ pub func hasher.update_u32!(x: slice base.u8) base.u32 {
 		this.state = 1
 		choose up = [
 			up_arm_neon,
-			up_x86_avx2,
 			up_x86_sse42]
 	}
 	this.up!(x: args.x)
