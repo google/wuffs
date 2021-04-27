@@ -587,6 +587,7 @@ var cTypeNames = [...]string{
 	t.IDARMNeonU32x4: "uint32x4_t",
 	t.IDARMNeonU64x2: "uint64x2_t",
 	t.IDX86M128I:     "__m128i",
+	t.IDX86M256I:     "__m256i",
 }
 
 const noSuchCOperator = " no_such_C_operator "

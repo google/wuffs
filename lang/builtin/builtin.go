@@ -306,6 +306,9 @@ var Types = []string{
 
 	"x86_sse42_utility",
 	"x86_m128i",
+
+	"x86_avx2_utility",
+	"x86_m256i",
 }
 
 var Funcs = [][]string{
@@ -773,6 +776,58 @@ var funcsOther = [...]string{
 	"x86_m128i._mm_unpacklo_epi64(b: x86_m128i) x86_m128i",
 	"x86_m128i._mm_unpacklo_epi8(b: x86_m128i) x86_m128i",
 	"x86_m128i._mm_xor_si128(b: x86_m128i) x86_m128i",
+
+	// ---- x86_avx2_utility
+
+	"x86_avx2_utility.make_m256i_multiple_u8(" +
+		"a00: u8, a01: u8, a02: u8, a03: u8," +
+		"a04: u8, a05: u8, a06: u8, a07: u8," +
+		"a08: u8, a09: u8, a10: u8, a11: u8," +
+		"a12: u8, a13: u8, a14: u8, a15: u8," +
+		"a16: u8, a17: u8, a18: u8, a19: u8," +
+		"a20: u8, a21: u8, a22: u8, a23: u8," +
+		"a24: u8, a25: u8, a26: u8, a27: u8," +
+		"a28: u8, a29: u8, a30: u8, a31: u8) x86_m256i",
+	"x86_avx2_utility.make_m256i_multiple_u16(" +
+		"a00: u16, a01: u16, a02: u16, a03: u16," +
+		"a04: u16, a05: u16, a06: u16, a07: u16," +
+		"a08: u16, a09: u16, a10: u16, a11: u16," +
+		"a12: u16, a13: u16, a14: u16, a15: u16) x86_m256i",
+	"x86_avx2_utility.make_m256i_multiple_u32(" +
+		"a00: u32, a01: u32, a02: u32, a03: u32," +
+		"a04: u32, a05: u32, a06: u32, a07: u32) x86_m256i",
+	"x86_avx2_utility.make_m256i_multiple_u64(" +
+		"a00: u64, a01: u64, a02: u64, a03: u64) x86_m256i",
+
+	"x86_avx2_utility.make_m256i_repeat_u8(a: u8) x86_m256i",
+	"x86_avx2_utility.make_m256i_repeat_u16(a: u16) x86_m256i",
+	"x86_avx2_utility.make_m256i_repeat_u32(a: u32) x86_m256i",
+	"x86_avx2_utility.make_m256i_repeat_u64(a: u64) x86_m256i",
+
+	"x86_avx2_utility.make_m256i_slice256(a: slice base.u8) x86_m256i",
+
+	"x86_avx2_utility.make_m256i_zeroes() x86_m256i",
+
+	// ---- x86_m256i
+
+	// TODO: generate these methods automatically?
+
+	"x86_m256i._mm256_add_epi16(b: x86_m256i) x86_m256i",
+	"x86_m256i._mm256_add_epi32(b: x86_m256i) x86_m256i",
+	"x86_m256i._mm256_add_epi64(b: x86_m256i) x86_m256i",
+	"x86_m256i._mm256_add_epi8(b: x86_m256i) x86_m256i",
+	"x86_m256i._mm256_extracti128_si256(imm8: u32) x86_m128i",
+	"x86_m256i._mm256_madd_epi16(b: x86_m256i) x86_m256i",
+	"x86_m256i._mm256_maddubs_epi16(b: x86_m256i) x86_m256i",
+	"x86_m256i._mm256_sad_epu8(b: x86_m256i) x86_m256i",
+	"x86_m256i._mm256_slli_epi16(imm8: u32) x86_m256i",
+	"x86_m256i._mm256_slli_epi32(imm8: u32) x86_m256i",
+	"x86_m256i._mm256_slli_epi64(imm8: u32) x86_m256i",
+	"x86_m256i._mm256_slli_si256(imm8: u32) x86_m256i",
+	"x86_m256i._mm256_srli_epi16(imm8: u32) x86_m256i",
+	"x86_m256i._mm256_srli_epi32(imm8: u32) x86_m256i",
+	"x86_m256i._mm256_srli_epi64(imm8: u32) x86_m256i",
+	"x86_m256i._mm256_srli_si256(imm8: u32) x86_m256i",
 }
 
 var Interfaces = []string{

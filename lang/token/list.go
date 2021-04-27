@@ -713,6 +713,7 @@ const (
 	IDX86BMI2         = ID(0x394)
 
 	IDX86M128I = ID(0x3A0)
+	IDX86M256I = ID(0x3A1)
 )
 
 var builtInsByID = [nBuiltInIDs]string{
@@ -1126,6 +1127,7 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDX86BMI2:         "x86_bmi2",
 
 	IDX86M128I: "x86_m128i",
+	IDX86M256I: "x86_m256i",
 }
 
 var builtInsByName = map[string]ID{}
