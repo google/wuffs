@@ -25,6 +25,10 @@ pub func hasher.update_u32!(x: slice base.u8) base.u32 {
 	if not this.started {
 		this.started = true
 		this.state = 1
+		// There used to be an up_x86_avx2 implementation too, but while it
+		// made the std/adler32 micro-benchmarks better, it also made the
+		// std/zlib and std/png micro-benchmarks worse. See commit baec831f
+		// "Add std/adler32 hasher.up_x86_avx2".
 		choose up = [
 			up_arm_neon,
 			up_x86_sse42]
