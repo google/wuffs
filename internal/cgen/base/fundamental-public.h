@@ -161,13 +161,16 @@ wuffs_base__cpu_arch__have_x86_avx2() {
   unsigned int ebx7 = 0;
   unsigned int ecx7 = 0;
   unsigned int edx7 = 0;
-  if (__get_cpuid_count(7, 0, &eax7, &ebx7, &ecx7, &edx7)) {
-    return (ebx7 & avx2_ebx7) == avx2_ebx7;
+  if (__get_cpuid_count(7, 0, &eax7, &ebx7, &ecx7, &edx7) &&
+      ((ebx7 & avx2_ebx7) == avx2_ebx7)) {
+    return true;
   }
 #elif defined(_MSC_VER)  // defined(__GNUC__)
-  int x[4];
-  __cpuidex(x, 7, 0);
-  return (((unsigned int)(x[1])) & avx2_ebx7) == avx2_ebx7;
+  int x7[4];
+  __cpuidex(x7, 7, 0);
+  if ((((unsigned int)(x7[1])) & avx2_ebx7) == avx2_ebx7) {
+    return true;
+  }
 #else
 #error "WUFFS_BASE__CPU_ARCH__ETC combined with an unsupported compiler"
 #endif  // defined(__GNUC__); defined(_MSC_VER)
@@ -188,13 +191,16 @@ wuffs_base__cpu_arch__have_x86_bmi2() {
   unsigned int ebx7 = 0;
   unsigned int ecx7 = 0;
   unsigned int edx7 = 0;
-  if (__get_cpuid_count(7, 0, &eax7, &ebx7, &ecx7, &edx7)) {
-    return (ebx7 & bmi2_ebx7) == bmi2_ebx7;
+  if (__get_cpuid_count(7, 0, &eax7, &ebx7, &ecx7, &edx7) &&
+      ((ebx7 & bmi2_ebx7) == bmi2_ebx7)) {
+    return true;
   }
 #elif defined(_MSC_VER)  // defined(__GNUC__)
-  int x[4];
-  __cpuidex(x, 7, 0);
-  return (((unsigned int)(x[1])) & bmi2_ebx7) == bmi2_ebx7;
+  int x7[4];
+  __cpuidex(x7, 7, 0);
+  if ((((unsigned int)(x7[1])) & bmi2_ebx7) == bmi2_ebx7) {
+    return true;
+  }
 #else
 #error "WUFFS_BASE__CPU_ARCH__ETC combined with an unsupported compiler"
 #endif  // defined(__GNUC__); defined(_MSC_VER)
@@ -217,13 +223,16 @@ wuffs_base__cpu_arch__have_x86_sse42() {
   unsigned int ebx1 = 0;
   unsigned int ecx1 = 0;
   unsigned int edx1 = 0;
-  if (__get_cpuid(1, &eax1, &ebx1, &ecx1, &edx1)) {
-    return (ecx1 & sse42_ecx1) == sse42_ecx1;
+  if (__get_cpuid(1, &eax1, &ebx1, &ecx1, &edx1) &&
+      ((ecx1 & sse42_ecx1) == sse42_ecx1)) {
+    return true;
   }
 #elif defined(_MSC_VER)  // defined(__GNUC__)
-  int x[4];
-  __cpuid(x, 1);
-  return (((unsigned int)(x[2])) & sse42_ecx1) == sse42_ecx1;
+  int x1[4];
+  __cpuid(x1, 1);
+  if ((((unsigned int)(x1[2])) & sse42_ecx1) == sse42_ecx1) {
+    return true;
+  }
 #else
 #error "WUFFS_BASE__CPU_ARCH__ETC combined with an unsupported compiler"
 #endif  // defined(__GNUC__); defined(_MSC_VER)
