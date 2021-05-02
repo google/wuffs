@@ -292,6 +292,9 @@ func (g *gen) gatherFuncImpl(_ *buffer, n *a.Func) error {
 	if n.Public() && n.Effect().Coroutine() {
 		g.numPublicCoroutines[n.Receiver()]++
 		coroID = g.numPublicCoroutines[n.Receiver()]
+		if coroID >= 0x8000 {
+			return fmt.Errorf("too many coroutines for %q", n.Receiver().Str(g.tm))
+		}
 	}
 
 	g.currFunk = funk{
