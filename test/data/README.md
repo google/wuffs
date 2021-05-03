@@ -24,6 +24,12 @@ world examples of various file formats, or deriviations of them.
 
 ---
 
+The non-ascii directory holds trivial UTF-8 (but not ASCII) text files.
+
+---
+
+`archive.*` archives a subset of other files in this directory.
+
 `animated-red-blue.gif` is an original animation by Nigel Tao
 <nigeltao@golang.org>.
 
@@ -59,6 +65,8 @@ lists that image as in the public domain.
 Museum of art.
 [www.metmuseum.org](http://www.metmuseum.org/art/collection/search/436532)
 lists that image as in the public domain.
+
+`hello.sh` is a trivial shell script.
 
 `hibiscus.regular.*` are various encodings of a photo of "Hibiscus and Parrots"
 by Louis Comfort Tiffany, held by the Metropolitan Museum of Art.
