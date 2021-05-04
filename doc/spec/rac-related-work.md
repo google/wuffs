@@ -190,5 +190,5 @@ on its title, but primarily concerns lossy compression of volumetric data.
 
 Robert and Nadarajan's ["New Algorithms For Random Access Text
 Compression"](https://www.researchgate.net/publication/4231766_New_Algorithms_For_Random_Access_Text_Compression)
-cannot compress aribrary data, only 7-bit ASCII. The largest document they
+cannot compress arbitrary data, only 7-bit ASCII. The largest document they
 consider is also only 17 KiB in size.
