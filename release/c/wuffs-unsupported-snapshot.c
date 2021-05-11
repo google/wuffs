@@ -36900,7 +36900,7 @@ wuffs_png__decoder__decode_ihdr(
       }
       v_a32 = t_0;
     }
-    if (v_a32 >= 2147483648) {
+    if ((v_a32 == 0) || (v_a32 >= 2147483648)) {
       status = wuffs_base__make_status(wuffs_png__error__bad_header);
       goto exit;
     } else if (v_a32 >= 16777216) {
@@ -36937,7 +36937,7 @@ wuffs_png__decoder__decode_ihdr(
       }
       v_a32 = t_1;
     }
-    if (v_a32 >= 2147483648) {
+    if ((v_a32 == 0) || (v_a32 >= 2147483648)) {
       status = wuffs_base__make_status(wuffs_png__error__bad_header);
       goto exit;
     } else if (v_a32 >= 16777216) {

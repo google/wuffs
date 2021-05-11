@@ -219,7 +219,7 @@ pri func decoder.decode_ihdr?(src: base.io_reader) {
 	var a8  : base.u8
 
 	a32 = args.src.read_u32be?()
-	if a32 >= 0x8000_0000 {
+	if (a32 == 0) or (a32 >= 0x8000_0000) {
 		return "#bad header"
 	} else if a32 >= 0x0100_0000 {
 		return "#unsupported PNG file"
@@ -227,7 +227,7 @@ pri func decoder.decode_ihdr?(src: base.io_reader) {
 	this.width = a32
 
 	a32 = args.src.read_u32be?()
-	if a32 >= 0x8000_0000 {
+	if (a32 == 0) or (a32 >= 0x8000_0000) {
 		return "#bad header"
 	} else if a32 >= 0x0100_0000 {
 		return "#unsupported PNG file"
