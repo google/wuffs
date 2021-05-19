@@ -1446,7 +1446,7 @@ compute_exit_code(const char* status_msg) {
   const int stderr_fd = 2;
   ignore_return_value(write(stderr_fd, status_msg, n));
   ignore_return_value(write(stderr_fd, "\n", 1));
-  // Return an exit code of 1 for regular (forseen) errors, e.g. badly
+  // Return an exit code of 1 for regular (foreseen) errors, e.g. badly
   // formatted or unsupported input.
   //
   // Return an exit code of 2 for internal (exceptional) errors, e.g. defensive

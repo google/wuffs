@@ -416,7 +416,7 @@ compute_exit_code(const char* status_msg) {
     n = strnlen(status_msg, 2047);
   }
   fprintf(stderr, "%s\n", status_msg);
-  // Return an exit code of 1 for regular (forseen) errors, e.g. badly
+  // Return an exit code of 1 for regular (foreseen) errors, e.g. badly
   // formatted or unsupported input.
   //
   // Return an exit code of 2 for internal (exceptional) errors, e.g. defensive

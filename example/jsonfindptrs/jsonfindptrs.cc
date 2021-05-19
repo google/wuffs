@@ -571,7 +571,7 @@ compute_exit_code(std::string status_msg) {
     return 0;
   }
   std::cerr << status_msg << '\n';
-  // Return an exit code of 1 for regular (forseen) errors, e.g. badly
+  // Return an exit code of 1 for regular (foreseen) errors, e.g. badly
   // formatted or unsupported input.
   //
   // Return an exit code of 2 for internal (exceptional) errors, e.g. defensive
