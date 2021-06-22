@@ -115,6 +115,8 @@ extern "C" {
 
 // Similarly, "cpu_arch >= x86_sse42" requires SSE4.2 but also PCLMUL and
 // POPCNT. This is checked at runtime via cpuid, not at compile time.
+//
+// Likewise, "cpu_arch >= x86_avx2" also requires PCLMUL, POPCNT and SSE4.2.
 #if defined(__x86_64__)
 #include <cpuid.h>
 #include <x86intrin.h>
@@ -193,6 +195,11 @@ wuffs_base__cpu_arch__have_x86_avx2() {
   // GCC defines these macros but MSVC does not.
   //  - bit_AVX2 = (1 <<  5)
   const unsigned int avx2_ebx7 = 0x00000020;
+  // GCC defines these macros but MSVC does not.
+  //  - bit_PCLMUL = (1 <<  1)
+  //  - bit_POPCNT = (1 << 23)
+  //  - bit_SSE4_2 = (1 << 20)
+  const unsigned int avx2_ecx1 = 0x00900002;
 
   // clang defines __GNUC__ and clang-cl defines _MSC_VER (but not __GNUC__).
 #if defined(__GNUC__)
@@ -202,13 +209,24 @@ wuffs_base__cpu_arch__have_x86_avx2() {
   unsigned int edx7 = 0;
   if (__get_cpuid_count(7, 0, &eax7, &ebx7, &ecx7, &edx7) &&
       ((ebx7 & avx2_ebx7) == avx2_ebx7)) {
-    return true;
+    unsigned int eax1 = 0;
+    unsigned int ebx1 = 0;
+    unsigned int ecx1 = 0;
+    unsigned int edx1 = 0;
+    if (__get_cpuid(1, &eax1, &ebx1, &ecx1, &edx1) &&
+        ((ecx1 & avx2_ecx1) == avx2_ecx1)) {
+      return true;
+    }
   }
 #elif defined(_MSC_VER)  // defined(__GNUC__)
   int x7[4];
   __cpuidex(x7, 7, 0);
   if ((((unsigned int)(x7[1])) & avx2_ebx7) == avx2_ebx7) {
-    return true;
+    int x1[4];
+    __cpuid(x1, 1);
+    if ((((unsigned int)(x1[2])) & avx2_ecx1) == avx2_ecx1) {
+      return true;
+    }
   }
 #else
 #error "WUFFS_BASE__CPU_ARCH__ETC combined with an unsupported compiler"
