@@ -60,8 +60,8 @@
 
 // To simplify Wuffs code, "cpu_arch >= arm_xxx" requires xxx but also
 // unaligned little-endian load/stores.
-#if defined(__ARM_FEATURE_UNALIGNED) && defined(__BYTE_ORDER__) && \
-    (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
+#if defined(__ARM_FEATURE_UNALIGNED) && !defined(__native_client__) && \
+    defined(__BYTE_ORDER__) && (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
 // Not all gcc versions define __ARM_ACLE, even if they support crc32
 // intrinsics. Look for __ARM_FEATURE_CRC32 instead.
 #if defined(__ARM_FEATURE_CRC32)
@@ -78,11 +78,11 @@
 // POPCNT. This is checked at runtime via cpuid, not at compile time.
 //
 // Likewise, "cpu_arch >= x86_avx2" also requires PCLMUL, POPCNT and SSE4.2.
-#if defined(__x86_64__)
+#if defined(__x86_64__) && !defined(__native_client__)
 #include <cpuid.h>
 #include <x86intrin.h>
 #define WUFFS_BASE__CPU_ARCH__X86_64
-#endif  // defined(__x86_64__)
+#endif  // defined(__x86_64__) && !defined(__native_client__)
 
 #elif defined(_MSC_VER)  // (#if-chain ref AVOID_CPU_ARCH_1)
 
