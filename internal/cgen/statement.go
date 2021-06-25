@@ -678,6 +678,7 @@ func (g *gen) writeCoroSuspPoint(b *buffer, maybeSuspend bool) error {
 	macro := ""
 	if maybeSuspend {
 		macro = "_MAYBE_SUSPEND"
+		g.currFunk.hasGotoOK = true
 	}
 	b.printf("WUFFS_BASE__COROUTINE_SUSPENSION_POINT%s(%d);\n", macro, g.currFunk.coroSuspPoint)
 	return nil

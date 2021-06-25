@@ -271,7 +271,7 @@ func (g *gen) writeFuncImpl(b *buffer, n *a.Func) error {
 		if n.Effect().Coroutine() {
 			b.writex(k.bBodySuspend)
 		} else if k.hasGotoOK {
-			b.writes("\ngoto ok;\nok:\n") // The goto avoids the "unused label" warning.
+			b.writes("\nok:\n")
 		}
 	}
 
@@ -501,11 +501,17 @@ func (g *gen) writeFuncImplBody(b *buffer) error {
 }
 
 func (g *gen) writeFuncImplBodySuspend(b *buffer) error {
+	if (g.currFunk.coroSuspPoint > 0) || g.currFunk.astFunc.Effect().Coroutine() {
+		if !g.currFunk.hasGotoOK {
+			b.writes("\ngoto ok;") // Avoid the "unused label" warning.
+		}
+		b.writes("\nok:\n")
+	}
+
 	if g.currFunk.coroSuspPoint > 0 {
 		// We've reached the end of the function body. Reset the coroutine
 		// suspension point so that the next call to this function starts at
 		// the top.
-		b.writes("\ngoto ok;\nok:\n") // The goto avoids the "unused label" warning.
 		b.printf("self->private_impl.%s%s[0] = 0;\n",
 			pPrefix, g.currFunk.astFunc.FuncName().Str(g.tm))
 		b.writes("goto exit;\n}\n\n") // Close the coroutine switch.
@@ -523,9 +529,6 @@ func (g *gen) writeFuncImplBodySuspend(b *buffer) error {
 			return err
 		}
 		b.writes("\n")
-
-	} else if g.currFunk.astFunc.Effect().Coroutine() {
-		b.writes("\ngoto ok;\nok:\n") // The goto avoids the "unused label" warning.
 	}
 	return nil
 }

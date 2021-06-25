@@ -22097,7 +22097,6 @@ wuffs_bmp__decoder__decode_image_config(
     }
     self->private_impl.f_call_sequence = 3;
 
-    goto ok;
     ok:
     self->private_impl.p_decode_image_config[0] = 0;
     goto exit;
@@ -22206,7 +22205,6 @@ wuffs_bmp__decoder__decode_frame_config(
     }
     self->private_impl.f_call_sequence = 4;
 
-    goto ok;
     ok:
     self->private_impl.p_decode_frame_config[0] = 0;
     goto exit;
@@ -22394,7 +22392,6 @@ wuffs_bmp__decoder__decode_frame(
     }
     self->private_impl.f_call_sequence = 255;
 
-    goto ok;
     ok:
     self->private_impl.p_decode_frame[0] = 0;
     goto exit;
@@ -22508,7 +22505,6 @@ wuffs_bmp__decoder__swizzle_none(
   status = wuffs_base__make_status(NULL);
   goto ok;
 
-  goto ok;
   ok:
   goto exit;
   exit:
@@ -22771,7 +22767,6 @@ wuffs_bmp__decoder__swizzle_rle(
   status = wuffs_base__make_status(NULL);
   goto ok;
 
-  goto ok;
   ok:
   goto exit;
   exit:
@@ -22912,7 +22907,6 @@ wuffs_bmp__decoder__swizzle_bitfields(
   status = wuffs_base__make_status(NULL);
   goto ok;
 
-  goto ok;
   ok:
   goto exit;
   exit:
@@ -23081,7 +23075,6 @@ wuffs_bmp__decoder__swizzle_low_bit_depth(
   status = wuffs_base__make_status(NULL);
   goto ok;
 
-  goto ok;
   ok:
   goto exit;
   exit:
@@ -24167,7 +24160,6 @@ wuffs_cbor__decoder__decode_tokens(
     label__outer__break:;
     self->private_impl.f_end_of_data = true;
 
-    goto ok;
     ok:
     self->private_impl.p_decode_tokens[0] = 0;
     goto exit;
@@ -25728,7 +25720,6 @@ wuffs_deflate__decoder__transform_io(
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(1);
     }
 
-    goto ok;
     ok:
     self->private_impl.p_transform_io[0] = 0;
     goto exit;
@@ -25886,7 +25877,6 @@ wuffs_deflate__decoder__decode_blocks(
       }
     }
 
-    goto ok;
     ok:
     self->private_impl.p_decode_blocks[0] = 0;
     goto exit;
@@ -26006,7 +25996,6 @@ wuffs_deflate__decoder__decode_uncompressed(
       }
     }
 
-    goto ok;
     ok:
     self->private_impl.p_decode_uncompressed[0] = 0;
     goto exit;
@@ -27597,7 +27586,6 @@ wuffs_deflate__decoder__decode_huffman_slow(
       goto exit;
     }
 
-    goto ok;
     ok:
     self->private_impl.p_decode_huffman_slow[0] = 0;
     goto exit;
@@ -27869,7 +27857,6 @@ wuffs_lzw__decoder__transform_io(
     }
     label__0__break:;
 
-    goto ok;
     ok:
     self->private_impl.p_transform_io[0] = 0;
     goto exit;
@@ -28113,7 +28100,6 @@ wuffs_lzw__decoder__write_to(
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(1);
     }
 
-    goto ok;
     ok:
     self->private_impl.p_write_to[0] = 0;
     goto exit;
@@ -28669,7 +28655,6 @@ wuffs_gif__decoder__tell_me_more(
     status = wuffs_base__make_status(NULL);
     goto ok;
 
-    goto ok;
     ok:
     self->private_impl.p_tell_me_more[0] = 0;
     goto exit;
@@ -28937,7 +28922,6 @@ wuffs_gif__decoder__decode_frame_config(
     wuffs_base__u64__sat_add_indirect(&self->private_impl.f_num_decoded_frame_configs_value, 1);
     self->private_impl.f_call_sequence = 4;
 
-    goto ok;
     ok:
     self->private_impl.p_decode_frame_config[0] = 0;
     goto exit;
@@ -29603,7 +29587,6 @@ wuffs_gif__decoder__decode_extension(
       goto suspend;
     }
 
-    goto ok;
     ok:
     self->private_impl.p_decode_extension[0] = 0;
     goto exit;
@@ -29672,7 +29655,6 @@ wuffs_gif__decoder__skip_blocks(
       iop_a_src += self->private_data.s_skip_blocks[0].scratch;
     }
 
-    goto ok;
     ok:
     self->private_impl.p_skip_blocks[0] = 0;
     goto exit;
@@ -29891,7 +29873,6 @@ wuffs_gif__decoder__decode_ae(
       goto suspend;
     }
 
-    goto ok;
     ok:
     self->private_impl.p_decode_ae[0] = 0;
     goto exit;
@@ -30361,7 +30342,6 @@ wuffs_gif__decoder__decode_id_part1(
     wuffs_lzw__decoder__set_literal_width(&self->private_data.f_lzw, ((uint32_t)(v_lw)));
     self->private_impl.f_previous_lzw_decode_ended_abruptly = true;
 
-    goto ok;
     ok:
     self->private_impl.p_decode_id_part1[0] = 0;
     goto exit;
@@ -30568,7 +30548,6 @@ wuffs_gif__decoder__decode_id_part2(
       goto exit;
     }
 
-    goto ok;
     ok:
     self->private_impl.p_decode_id_part2[0] = 0;
     goto exit;
@@ -31178,7 +31157,6 @@ wuffs_gzip__decoder__transform_io(
       goto exit;
     }
 
-    goto ok;
     ok:
     self->private_impl.p_transform_io[0] = 0;
     goto exit;
@@ -32635,7 +32613,6 @@ wuffs_json__decoder__decode_tokens(
     }
     self->private_impl.f_end_of_data = true;
 
-    goto ok;
     ok:
     self->private_impl.p_decode_tokens[0] = 0;
     goto exit;
@@ -32937,7 +32914,6 @@ wuffs_json__decoder__decode_leading(
     }
     label__0__break:;
 
-    goto ok;
     ok:
     self->private_impl.p_decode_leading[0] = 0;
     goto exit;
@@ -33118,7 +33094,6 @@ wuffs_json__decoder__decode_comment(
       }
     }
 
-    goto ok;
     ok:
     self->private_impl.p_decode_comment[0] = 0;
     goto exit;
@@ -33279,7 +33254,6 @@ wuffs_json__decoder__decode_inf_nan(
       goto exit;
     }
 
-    goto ok;
     ok:
     self->private_impl.p_decode_inf_nan[0] = 0;
     goto exit;
@@ -33425,7 +33399,6 @@ wuffs_json__decoder__decode_trailer(
     }
     label__outer__break:;
 
-    goto ok;
     ok:
     self->private_impl.p_decode_trailer[0] = 0;
     goto exit;
@@ -33900,7 +33873,6 @@ wuffs_nie__decoder__decode_frame_config(
     }
     self->private_impl.f_call_sequence = 4;
 
-    goto ok;
     ok:
     self->private_impl.p_decode_frame_config[0] = 0;
     goto exit;
@@ -34009,7 +33981,6 @@ wuffs_nie__decoder__decode_frame(
     label__0__break:;
     self->private_impl.f_call_sequence = 255;
 
-    goto ok;
     ok:
     self->private_impl.p_decode_frame[0] = 0;
     goto exit;
@@ -34099,7 +34070,6 @@ wuffs_nie__decoder__swizzle(
   status = wuffs_base__make_status(NULL);
   goto ok;
 
-  goto ok;
   ok:
   goto exit;
   exit:
@@ -34699,7 +34669,6 @@ wuffs_zlib__decoder__transform_io(
       goto exit;
     }
 
-    goto ok;
     ok:
     self->private_impl.p_transform_io[0] = 0;
     goto exit;
@@ -36851,7 +36820,6 @@ wuffs_png__decoder__decode_image_config(
     }
     self->private_impl.f_call_sequence = 3;
 
-    goto ok;
     ok:
     self->private_impl.p_decode_image_config[0] = 0;
     goto exit;
@@ -37577,7 +37545,6 @@ wuffs_png__decoder__decode_frame_config(
     }
     self->private_impl.f_call_sequence = 4;
 
-    goto ok;
     ok:
     self->private_impl.p_decode_frame_config[0] = 0;
     goto exit;
@@ -37704,7 +37671,6 @@ wuffs_png__decoder__decode_frame(
     label__0__break:;
     self->private_impl.f_call_sequence = 255;
 
-    goto ok;
     ok:
     self->private_impl.p_decode_frame[0] = 0;
     goto exit;
@@ -38003,7 +37969,6 @@ wuffs_png__decoder__decode_pass(
       }
     }
 
-    goto ok;
     ok:
     self->private_impl.p_decode_pass[0] = 0;
     goto exit;
@@ -38807,7 +38772,6 @@ wuffs_wbmp__decoder__decode_frame_config(
     }
     self->private_impl.f_call_sequence = 4;
 
-    goto ok;
     ok:
     self->private_impl.p_decode_frame_config[0] = 0;
     goto exit;
@@ -38972,7 +38936,6 @@ wuffs_wbmp__decoder__decode_frame(
     }
     self->private_impl.f_call_sequence = 255;
 
-    goto ok;
     ok:
     self->private_impl.p_decode_frame[0] = 0;
     goto exit;
