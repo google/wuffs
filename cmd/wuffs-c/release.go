@@ -167,6 +167,9 @@ const grSingleFileGuidance = `
 const grPragmaPush = `
 // Wuffs' C code is generated automatically, not hand-written. These warnings'
 // costs outweigh the benefits.
+//
+// The "elif defined(__clang__)" isn't redundant. While vanilla clang defines
+// __GNUC__, clang-cl (which mimics MSVC's cl.exe) does not.
 #if defined(__GNUC__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
@@ -176,6 +179,15 @@ const grPragmaPush = `
 #if defined(__cplusplus)
 #pragma GCC diagnostic ignored "-Wold-style-cast"
 #endif
+#elif defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmissing-field-initializers"
+#pragma clang diagnostic ignored "-Wunreachable-code"
+#pragma clang diagnostic ignored "-Wunused-function"
+#pragma clang diagnostic ignored "-Wunused-parameter"
+#if defined(__cplusplus)
+#pragma clang diagnostic ignored "-Wold-style-cast"
+#endif
 #endif
 
 `
@@ -183,6 +195,8 @@ const grPragmaPush = `
 const grPragmaPop = `
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop
+#elif defined(__clang__)
+#pragma clang diagnostic pop
 #endif
 
 `
