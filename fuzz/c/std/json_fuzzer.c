@@ -209,12 +209,13 @@ fuzz_one_token(wuffs_base__token t,
 }
 
 uint64_t  //
-buffer_limit(uint64_t hash_6_bits, uint64_t min, uint64_t max) {
+buffer_limit(uint64_t hash, uint64_t min, uint64_t max) {
+  hash &= 0x3F;
   uint64_t n;
-  if (hash_6_bits < 0x20) {
-    n = min + hash_6_bits;
+  if (hash < 0x20) {
+    n = min + hash;
   } else {
-    n = max - (0x3F - hash_6_bits);
+    n = max - (0x3F - hash);
   }
   if (n < min) {
     return min;
@@ -224,7 +225,7 @@ buffer_limit(uint64_t hash_6_bits, uint64_t min, uint64_t max) {
   return n;
 }
 
-void set_quirks(wuffs_json__decoder* dec, uint64_t hash_44_bits) {
+void set_quirks(wuffs_json__decoder* dec, uint64_t hash) {
   uint32_t quirks[] = {
       WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_A,
       WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_CAPITAL_U,
@@ -247,24 +248,23 @@ void set_quirks(wuffs_json__decoder* dec, uint64_t hash_44_bits) {
 
   uint32_t i;
   for (i = 0; quirks[i]; i++) {
-    uint64_t bit = 1 << (i % 44);
-    if (hash_44_bits & bit) {
+    uint64_t bit = 1 << (i & 63);
+    if (hash & bit) {
       wuffs_json__decoder__set_quirk_enabled(dec, quirks[i], true);
     }
   }
 }
 
 const char*  //
-fuzz_complex(wuffs_base__io_buffer* full_src, uint64_t hash_56_bits) {
+fuzz_complex(wuffs_base__io_buffer* full_src, uint64_t hash) {
   uint64_t tok_limit = buffer_limit(
-      hash_56_bits & 0x3F, WUFFS_JSON__DECODER_DST_TOKEN_BUFFER_LENGTH_MIN_INCL,
+      hash & 0x3F, WUFFS_JSON__DECODER_DST_TOKEN_BUFFER_LENGTH_MIN_INCL,
       TOK_BUFFER_ARRAY_SIZE);
-  uint64_t hash_50_bits = hash_56_bits >> 6;
+  hash = wuffs_base__u64__rotate_right(hash, 6);
 
-  uint64_t src_limit =
-      buffer_limit(hash_50_bits & 0x3F,
-                   WUFFS_JSON__DECODER_SRC_IO_BUFFER_LENGTH_MIN_INCL, 4096);
-  uint64_t hash_44_bits = hash_50_bits >> 6;
+  uint64_t src_limit = buffer_limit(
+      hash & 0x3F, WUFFS_JSON__DECODER_SRC_IO_BUFFER_LENGTH_MIN_INCL, 4096);
+  hash = wuffs_base__u64__rotate_right(hash, 6);
 
   // ----
 
@@ -275,7 +275,7 @@ fuzz_complex(wuffs_base__io_buffer* full_src, uint64_t hash_56_bits) {
   if (!wuffs_base__status__is_ok(&status)) {
     return wuffs_base__status__message(&status);
   }
-  set_quirks(&dec, hash_44_bits);
+  set_quirks(&dec, hash);
 
   wuffs_base__token tok_array[TOK_BUFFER_ARRAY_SIZE];
   wuffs_base__token_buffer tok = ((wuffs_base__token_buffer){
@@ -427,7 +427,7 @@ fuzz(wuffs_base__io_buffer* full_src, uint64_t hash) {
   // The fuzz_complex implementation adds many more Wuffs API specific checks
   // (e.g. that the sum of the tokens' lengths do not exceed the input length).
   if ((hash & 0xFF) != 0xA5) {
-    return fuzz_complex(full_src, hash >> 8);
+    return fuzz_complex(full_src, wuffs_base__u64__rotate_right(hash, 8));
   }
   return fuzz_simple(full_src);
 }

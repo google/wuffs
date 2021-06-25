@@ -221,12 +221,13 @@ fuzz_one_token(wuffs_base__token t,
 }
 
 uint64_t  //
-buffer_limit(uint64_t hash_6_bits, uint64_t min, uint64_t max) {
+buffer_limit(uint64_t hash, uint64_t min, uint64_t max) {
+  hash &= 0x3F;
   uint64_t n;
-  if (hash_6_bits < 0x20) {
-    n = min + hash_6_bits;
+  if (hash < 0x20) {
+    n = min + hash;
   } else {
-    n = max - (0x3F - hash_6_bits);
+    n = max - (0x3F - hash);
   }
   if (n < min) {
     return min;
@@ -237,15 +238,15 @@ buffer_limit(uint64_t hash_6_bits, uint64_t min, uint64_t max) {
 }
 
 const char*  //
-fuzz_complex(wuffs_base__io_buffer* full_src, uint64_t hash_56_bits) {
+fuzz_complex(wuffs_base__io_buffer* full_src, uint64_t hash) {
   uint64_t tok_limit = buffer_limit(
-      hash_56_bits & 0x3F, WUFFS_CBOR__DECODER_DST_TOKEN_BUFFER_LENGTH_MIN_INCL,
+      hash & 0x3F, WUFFS_CBOR__DECODER_DST_TOKEN_BUFFER_LENGTH_MIN_INCL,
       TOK_BUFFER_ARRAY_SIZE);
-  uint64_t hash_50_bits = hash_56_bits >> 6;
+  hash = wuffs_base__u64__rotate_right(hash, 6);
 
-  uint64_t src_limit =
-      buffer_limit(hash_50_bits & 0x3F,
-                   WUFFS_CBOR__DECODER_SRC_IO_BUFFER_LENGTH_MIN_INCL, 4096);
+  uint64_t src_limit = buffer_limit(
+      hash & 0x3F, WUFFS_CBOR__DECODER_SRC_IO_BUFFER_LENGTH_MIN_INCL, 4096);
+  hash = wuffs_base__u64__rotate_right(hash, 6);
 
   // ----
 
@@ -407,7 +408,7 @@ fuzz(wuffs_base__io_buffer* full_src, uint64_t hash) {
   // The fuzz_complex implementation adds many more Wuffs API specific checks
   // (e.g. that the sum of the tokens' lengths do not exceed the input length).
   if ((hash & 0xFF) != 0xA5) {
-    return fuzz_complex(full_src, hash >> 8);
+    return fuzz_complex(full_src, wuffs_base__u64__rotate_right(hash, 8));
   }
   return fuzz_simple(full_src);
 }

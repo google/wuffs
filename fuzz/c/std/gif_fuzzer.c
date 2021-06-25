@@ -61,7 +61,7 @@ It should print "PASS", amongst other information, and exit(0).
 #include "../fuzzlib/fuzzlib.c"
 #include "../fuzzlib/fuzzlib_image_decoder.c"
 
-void set_quirks(wuffs_gif__decoder* dec, uint64_t hash_55_bits) {
+void set_quirks(wuffs_gif__decoder* dec, uint64_t hash) {
   uint32_t quirks[] = {
       WUFFS_GIF__QUIRK_DELAY_NUM_DECODED_FRAMES,
       WUFFS_GIF__QUIRK_FIRST_FRAME_LOCAL_PALETTE_MEANS_BLACK_BACKGROUND,
@@ -75,8 +75,8 @@ void set_quirks(wuffs_gif__decoder* dec, uint64_t hash_55_bits) {
 
   uint32_t i;
   for (i = 0; quirks[i]; i++) {
-    uint64_t bit = 1 << (i % 55);
-    if (hash_55_bits & bit) {
+    uint64_t bit = 1 << (i & 63);
+    if (hash & bit) {
       wuffs_gif__decoder__set_quirk_enabled(dec, quirks[i], true);
     }
   }
@@ -88,13 +88,13 @@ fuzz(wuffs_base__io_buffer* src, uint64_t hash) {
   wuffs_base__status status = wuffs_gif__decoder__initialize(
       &dec, sizeof dec, WUFFS_VERSION,
       (hash & 1) ? WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED : 0);
-  hash >>= 1;
+  hash = wuffs_base__u64__rotate_right(hash, 1);
   uint64_t hash_8_bits = hash & 0xFF;
-  uint64_t hash_55_bits = hash >> 8;
+  hash = wuffs_base__u64__rotate_right(hash, 8);
   if (!wuffs_base__status__is_ok(&status)) {
     return wuffs_base__status__message(&status);
   }
-  set_quirks(&dec, hash_55_bits);
+  set_quirks(&dec, hash);
   return fuzz_image_decoder(
       src, hash_8_bits,
       wuffs_gif__decoder__upcast_as__wuffs_base__image_decoder(&dec));

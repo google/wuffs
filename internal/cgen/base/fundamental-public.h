@@ -581,6 +581,56 @@ wuffs_base__u64__max(uint64_t x, uint64_t y) {
 
 // --------
 
+static inline uint8_t  //
+wuffs_base__u8__rotate_left(uint8_t x, uint32_t n) {
+  n &= 7;
+  return (x << n) | (x >> (8 - n));
+}
+
+static inline uint8_t  //
+wuffs_base__u8__rotate_right(uint8_t x, uint32_t n) {
+  n &= 7;
+  return (x >> n) | (x << (8 - n));
+}
+
+static inline uint16_t  //
+wuffs_base__u16__rotate_left(uint16_t x, uint32_t n) {
+  n &= 15;
+  return (x << n) | (x >> (16 - n));
+}
+
+static inline uint16_t  //
+wuffs_base__u16__rotate_right(uint16_t x, uint32_t n) {
+  n &= 15;
+  return (x >> n) | (x << (16 - n));
+}
+
+static inline uint32_t  //
+wuffs_base__u32__rotate_left(uint32_t x, uint32_t n) {
+  n &= 31;
+  return (x << n) | (x >> (32 - n));
+}
+
+static inline uint32_t  //
+wuffs_base__u32__rotate_right(uint32_t x, uint32_t n) {
+  n &= 31;
+  return (x >> n) | (x << (32 - n));
+}
+
+static inline uint64_t  //
+wuffs_base__u64__rotate_left(uint64_t x, uint32_t n) {
+  n &= 63;
+  return (x << n) | (x >> (64 - n));
+}
+
+static inline uint64_t  //
+wuffs_base__u64__rotate_right(uint64_t x, uint32_t n) {
+  n &= 63;
+  return (x >> n) | (x << (64 - n));
+}
+
+// --------
+
 // Saturating arithmetic (sat_add, sat_sub) branchless bit-twiddling algorithms
 // are per https://locklessinc.com/articles/sat_arithmetic/
 //

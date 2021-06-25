@@ -66,7 +66,7 @@ fuzz(wuffs_base__io_buffer* src, uint64_t hash) {
   wuffs_base__status status = wuffs_bmp__decoder__initialize(
       &dec, sizeof dec, WUFFS_VERSION,
       (hash & 1) ? WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED : 0);
-  hash >>= 1;
+  hash = wuffs_base__u64__rotate_right(hash, 1);
   if (!wuffs_base__status__is_ok(&status)) {
     return wuffs_base__status__message(&status);
   }
