@@ -31,11 +31,15 @@
 
 // Denote intentional fallthroughs for -Wimplicit-fallthrough.
 //
-// The order matters here. Clang also defines "__GNUC__".
-#if defined(__clang__) && defined(__cplusplus) && (__cplusplus >= 201103L)
-#define WUFFS_BASE__FALLTHROUGH [[clang::fallthrough]]
-#elif !defined(__clang__) && defined(__GNUC__) && (__GNUC__ >= 7)
+// As noted on
+// https:// gcc.gnu.org/onlinedocs/cpp/_005f_005fhas_005fattribute.html ,
+// combining the two tests in one conditional would not be portable.
+#if defined __has_attribute
+#if __has_attribute(fallthrough)
 #define WUFFS_BASE__FALLTHROUGH __attribute__((fallthrough))
+#else
+#define WUFFS_BASE__FALLTHROUGH
+#endif
 #else
 #define WUFFS_BASE__FALLTHROUGH
 #endif
