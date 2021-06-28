@@ -31,10 +31,10 @@
 
 // Denote intentional fallthroughs for -Wimplicit-fallthrough.
 //
-// As noted on
-// https:// gcc.gnu.org/onlinedocs/cpp/_005f_005fhas_005fattribute.html ,
-// combining the two tests in one conditional would not be portable.
-#if defined __has_attribute
+// The two #if lines are deliberately separate. Combining the two conditions
+// into a single "#if foo && bar" line would not be portable. See
+// https://gcc.gnu.org/onlinedocs/cpp/_005f_005fhas_005fattribute.html
+#if defined(__has_attribute)
 #if __has_attribute(fallthrough)
 #define WUFFS_BASE__FALLTHROUGH __attribute__((fallthrough))
 #else
