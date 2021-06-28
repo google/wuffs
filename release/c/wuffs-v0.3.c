@@ -82,15 +82,15 @@ extern "C" {
 // each major.minor branch, the commit count should increase monotonically.
 //
 // WUFFS_VERSION was overridden by "wuffs gen -version" based on revision
-// f6945c061289cfbc6f6e415b0fd77b70f6cd46f2 committed on 2021-06-25.
+// b9a10d051a05c5749d54e2db8d0bd1848dd57181 committed on 2021-06-28.
 #define WUFFS_VERSION 0x000030000
 #define WUFFS_VERSION_MAJOR 0
 #define WUFFS_VERSION_MINOR 3
 #define WUFFS_VERSION_PATCH 0
-#define WUFFS_VERSION_PRE_RELEASE_LABEL "beta.3"
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 3051
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20210625
-#define WUFFS_VERSION_STRING "0.3.0-beta.3+3051.20210625"
+#define WUFFS_VERSION_PRE_RELEASE_LABEL "beta.4"
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 3058
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20210628
+#define WUFFS_VERSION_STRING "0.3.0-beta.4+3058.20210628"
 
 // ---------------- Configuration
 
@@ -801,6 +801,56 @@ wuffs_base__u64__min(uint64_t x, uint64_t y) {
 static inline uint64_t  //
 wuffs_base__u64__max(uint64_t x, uint64_t y) {
   return x > y ? x : y;
+}
+
+// --------
+
+static inline uint8_t  //
+wuffs_base__u8__rotate_left(uint8_t x, uint32_t n) {
+  n &= 7;
+  return ((uint8_t)(x << n)) | ((uint8_t)(x >> (8 - n)));
+}
+
+static inline uint8_t  //
+wuffs_base__u8__rotate_right(uint8_t x, uint32_t n) {
+  n &= 7;
+  return ((uint8_t)(x >> n)) | ((uint8_t)(x << (8 - n)));
+}
+
+static inline uint16_t  //
+wuffs_base__u16__rotate_left(uint16_t x, uint32_t n) {
+  n &= 15;
+  return ((uint16_t)(x << n)) | ((uint16_t)(x >> (16 - n)));
+}
+
+static inline uint16_t  //
+wuffs_base__u16__rotate_right(uint16_t x, uint32_t n) {
+  n &= 15;
+  return ((uint16_t)(x >> n)) | ((uint16_t)(x << (16 - n)));
+}
+
+static inline uint32_t  //
+wuffs_base__u32__rotate_left(uint32_t x, uint32_t n) {
+  n &= 31;
+  return ((uint32_t)(x << n)) | ((uint32_t)(x >> (32 - n)));
+}
+
+static inline uint32_t  //
+wuffs_base__u32__rotate_right(uint32_t x, uint32_t n) {
+  n &= 31;
+  return ((uint32_t)(x >> n)) | ((uint32_t)(x << (32 - n)));
+}
+
+static inline uint64_t  //
+wuffs_base__u64__rotate_left(uint64_t x, uint32_t n) {
+  n &= 63;
+  return ((uint64_t)(x << n)) | ((uint64_t)(x >> (64 - n)));
+}
+
+static inline uint64_t  //
+wuffs_base__u64__rotate_right(uint64_t x, uint32_t n) {
+  n &= 63;
+  return ((uint64_t)(x >> n)) | ((uint64_t)(x << (64 - n)));
 }
 
 // --------
@@ -10062,11 +10112,15 @@ extern "C" {
 
 // Denote intentional fallthroughs for -Wimplicit-fallthrough.
 //
-// The order matters here. Clang also defines "__GNUC__".
-#if defined(__clang__) && defined(__cplusplus) && (__cplusplus >= 201103L)
-#define WUFFS_BASE__FALLTHROUGH [[clang::fallthrough]]
-#elif !defined(__clang__) && defined(__GNUC__) && (__GNUC__ >= 7)
+// The two #if lines are deliberately separate. Combining the two conditions
+// into a single "#if foo && bar" line would not be portable. See
+// https://gcc.gnu.org/onlinedocs/cpp/_005f_005fhas_005fattribute.html
+#if defined(__has_attribute)
+#if __has_attribute(fallthrough)
 #define WUFFS_BASE__FALLTHROUGH __attribute__((fallthrough))
+#else
+#define WUFFS_BASE__FALLTHROUGH
+#endif
 #else
 #define WUFFS_BASE__FALLTHROUGH
 #endif
