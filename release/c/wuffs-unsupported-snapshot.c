@@ -19337,7 +19337,6 @@ wuffs_base__pixel_swizzler__prepare__y_16be(wuffs_base__pixel_swizzler* p,
     case WUFFS_BASE__PIXEL_FORMAT__BGR:
     case WUFFS_BASE__PIXEL_FORMAT__RGB:
       return wuffs_base__pixel_swizzler__xxx__y_16be;
-      break;
 
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
