@@ -82,15 +82,15 @@ extern "C" {
 // each major.minor branch, the commit count should increase monotonically.
 //
 // WUFFS_VERSION was overridden by "wuffs gen -version" based on revision
-// b9a10d051a05c5749d54e2db8d0bd1848dd57181 committed on 2021-06-28.
+// 3a516e512c9236c72deaf3fe65b03d377796767e committed on 2021-07-02.
 #define WUFFS_VERSION 0x000030000
 #define WUFFS_VERSION_MAJOR 0
 #define WUFFS_VERSION_MINOR 3
 #define WUFFS_VERSION_PATCH 0
-#define WUFFS_VERSION_PRE_RELEASE_LABEL "beta.4"
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 3058
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20210628
-#define WUFFS_VERSION_STRING "0.3.0-beta.4+3058.20210628"
+#define WUFFS_VERSION_PRE_RELEASE_LABEL "beta.5"
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 3062
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20210702
+#define WUFFS_VERSION_STRING "0.3.0-beta.5+3062.20210702"
 
 // ---------------- Configuration
 
@@ -19338,7 +19338,6 @@ wuffs_base__pixel_swizzler__prepare__y_16be(wuffs_base__pixel_swizzler* p,
     case WUFFS_BASE__PIXEL_FORMAT__BGR:
     case WUFFS_BASE__PIXEL_FORMAT__RGB:
       return wuffs_base__pixel_swizzler__xxx__y_16be;
-      break;
 
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
