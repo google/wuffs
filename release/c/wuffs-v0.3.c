@@ -15,6 +15,7 @@
 // __GNUC__, clang-cl (which mimics MSVC's cl.exe) does not.
 #if defined(__GNUC__)
 #pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 #pragma GCC diagnostic ignored "-Wunreachable-code"
 #pragma GCC diagnostic ignored "-Wunused-function"
@@ -24,6 +25,7 @@
 #endif
 #elif defined(__clang__)
 #pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wimplicit-fallthrough"
 #pragma clang diagnostic ignored "-Wmissing-field-initializers"
 #pragma clang diagnostic ignored "-Wunreachable-code"
 #pragma clang diagnostic ignored "-Wunused-function"
@@ -82,15 +84,15 @@ extern "C" {
 // each major.minor branch, the commit count should increase monotonically.
 //
 // WUFFS_VERSION was overridden by "wuffs gen -version" based on revision
-// 3a516e512c9236c72deaf3fe65b03d377796767e committed on 2021-07-02.
+// 3842c519c9961500d96efee0ff7aafbd20833570 committed on 2021-07-05.
 #define WUFFS_VERSION 0x000030000
 #define WUFFS_VERSION_MAJOR 0
 #define WUFFS_VERSION_MINOR 3
 #define WUFFS_VERSION_PATCH 0
-#define WUFFS_VERSION_PRE_RELEASE_LABEL "beta.5"
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 3062
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20210702
-#define WUFFS_VERSION_STRING "0.3.0-beta.5+3062.20210702"
+#define WUFFS_VERSION_PRE_RELEASE_LABEL "beta.6"
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 3065
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20210705
+#define WUFFS_VERSION_STRING "0.3.0-beta.6+3065.20210705"
 
 // ---------------- Configuration
 
@@ -10110,30 +10112,16 @@ extern "C" {
 // Its (non-zero) value is arbitrary, based on md5sum("disabled").
 #define WUFFS_BASE__DISABLED ((uint32_t)0x075AE3D2)
 
-// Denote intentional fallthroughs for -Wimplicit-fallthrough.
-//
-// The two #if lines are deliberately separate. Combining the two conditions
-// into a single "#if foo && bar" line would not be portable. See
-// https://gcc.gnu.org/onlinedocs/cpp/_005f_005fhas_005fattribute.html
-#if defined(__has_attribute)
-#if __has_attribute(fallthrough)
-#define WUFFS_BASE__FALLTHROUGH __attribute__((fallthrough))
-#else
-#define WUFFS_BASE__FALLTHROUGH
-#endif
-#else
-#define WUFFS_BASE__FALLTHROUGH
-#endif
-
 // Use switch cases for coroutine suspension points, similar to the technique
 // in https://www.chiark.greenend.org.uk/~sgtatham/coroutines.html
+//
+// The implicit fallthrough is intentional.
 //
 // We use trivial macros instead of an explicit assignment and case statement
 // so that clang-format doesn't get confused by the unusual "case"s.
 #define WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0 case 0:;
 #define WUFFS_BASE__COROUTINE_SUSPENSION_POINT(n) \
   coro_susp_point = n;                            \
-  WUFFS_BASE__FALLTHROUGH;                        \
   case n:;
 
 #define WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(n) \
