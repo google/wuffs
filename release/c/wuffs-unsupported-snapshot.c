@@ -10111,17 +10111,24 @@ extern "C" {
 
 // Denote intentional fallthroughs for -Wimplicit-fallthrough.
 //
-// The two #if lines are deliberately separate. Combining the two conditions
-// into a single "#if foo && bar" line would not be portable. See
+// The next two #if lines are deliberately separate. Combining the two
+// conditions into a single "#if foo && bar" line would not be portable. See
 // https://gcc.gnu.org/onlinedocs/cpp/_005f_005fhas_005fattribute.html
 #if defined(__has_attribute)
 #if __has_attribute(fallthrough)
 #define WUFFS_BASE__FALLTHROUGH __attribute__((fallthrough))
+#endif
+#endif
+// Newer C/C++ compilers are handled above. Other compilers are handled below.
+#if !defined(WUFFS_BASE__FALLTHROUGH)
+// Chromium's clang-based PNaCl compiler does define __has_attribute, but
+// "__has_attribute(fallthrough)" is false and "__attribute__((fallthrough))"
+// has no effect. Use the C++ style "[[clang::fallthrough]]" instead.
+#if defined(__clang__) && defined(__cplusplus) && (__cplusplus >= 201103L)
+#define WUFFS_BASE__FALLTHROUGH [[clang::fallthrough]]
 #else
 #define WUFFS_BASE__FALLTHROUGH
 #endif
-#else
-#define WUFFS_BASE__FALLTHROUGH
 #endif
 
 // Use switch cases for coroutine suspension points, similar to the technique
