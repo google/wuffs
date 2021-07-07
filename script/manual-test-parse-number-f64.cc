@@ -261,7 +261,7 @@ process_file(char* filename) {
     g_file = NULL;
   }
   g_filename = filename;
-  g_file = fopen(g_filename, "r");
+  g_file = fopen(g_filename, "rb");
   if (!g_file) {
     fprintf(stderr, "main: could not open %s\n", g_filename);
     return false;

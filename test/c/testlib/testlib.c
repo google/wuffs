@@ -671,7 +671,7 @@ read_file(wuffs_base__io_buffer* dst, const char* path) {
                 original_path);
   }
 
-  FILE* f = fopen(path, "r");
+  FILE* f = fopen(path, "rb");
   if (!f) {
     RETURN_FAIL("read_file(\"%s\"): %s (errno=%d)", path, strerror(errno),
                 errno);

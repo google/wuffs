@@ -94,7 +94,7 @@ load_image(const char* filename) {
   FILE* file = stdin;
   const char* adj_filename = "<stdin>";
   if (filename) {
-    FILE* f = fopen(filename, "r");
+    FILE* f = fopen(filename, "rb");
     if (f == NULL) {
       printf("%s: could not open file\n", filename);
       return false;

@@ -747,7 +747,7 @@ main1(int argc, char** argv) {
   if (g_flags.remaining_argc > 1) {
     return g_usage;
   } else if (g_flags.remaining_argc == 1) {
-    in = fopen(g_flags.remaining_argv[0], "r");
+    in = fopen(g_flags.remaining_argv[0], "rb");
     if (!in) {
       return std::string("main: cannot read input file");
     }
