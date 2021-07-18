@@ -40056,6 +40056,7 @@ const char DecodeJson_NoMatch[] = "wuffs_aux::DecodeJson: no match";
 #define WUFFS_AUX__DECODE_JSON__GET_THE_NEXT_TOKEN                       \
   while (tok_buf.meta.ri >= tok_buf.meta.wi) {                           \
     if (tok_status.repr == nullptr) {                                    \
+      goto done;                                                         \
     } else if (tok_status.repr == wuffs_base__suspension__short_write) { \
       tok_buf.compact();                                                 \
     } else if (tok_status.repr == wuffs_base__suspension__short_read) {  \
@@ -40081,11 +40082,6 @@ const char DecodeJson_NoMatch[] = "wuffs_aux::DecodeJson: no match";
       io_error_message = input.CopyIn(io_buf);                           \
     } else {                                                             \
       ret_error_message = tok_status.message();                          \
-      goto done;                                                         \
-    }                                                                    \
-    if (WUFFS_JSON__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE != 0) {      \
-      ret_error_message =                                                \
-          "wuffs_aux::DecodeJson: internal error: bad WORKBUF_LEN";      \
       goto done;                                                         \
     }                                                                    \
     wuffs_base__slice_u8 work_buf = wuffs_base__empty_slice_u8();        \
@@ -40371,6 +40367,10 @@ DecodeJson(DecodeJsonCallbacks& callbacks,
     if (!dec) {
       ret_error_message = "wuffs_aux::DecodeJson: out of memory";
       goto done;
+    } else if (WUFFS_JSON__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE != 0) {
+      ret_error_message =
+          "wuffs_aux::DecodeJson: internal error: bad WORKBUF_LEN";
+      goto done;
     }
     bool allow_tilde_n_tilde_r_tilde_t = false;
     for (size_t i = 0; i < quirks.len; i++) {
@@ -40386,7 +40386,8 @@ DecodeJson(DecodeJsonCallbacks& callbacks,
     wuffs_base__token_buffer tok_buf =
         wuffs_base__slice_token__writer(wuffs_base__make_slice_token(
             &tok_array[0], (sizeof(tok_array) / sizeof(tok_array[0]))));
-    wuffs_base__status tok_status = wuffs_base__make_status(nullptr);
+    wuffs_base__status tok_status =
+        dec->decode_tokens(&tok_buf, io_buf, wuffs_base__empty_slice_u8());
 
     // Prepare other state.
     uint32_t depth = 0;
@@ -40400,7 +40401,7 @@ DecodeJson(DecodeJsonCallbacks& callbacks,
       }
       std::pair<std::string, size_t> split = DecodeJson_SplitJsonPointer(
           json_pointer, i + 1, allow_tilde_n_tilde_r_tilde_t);
-      i = std::move(split.second);
+      i = split.second;
       if (i == 0) {
         ret_error_message = DecodeJson_BadJsonPointer;
         goto done;
@@ -40535,7 +40536,22 @@ DecodeJson(DecodeJsonCallbacks& callbacks,
       goto done;
 
     parsed_a_value:
-      if (!ret_error_message.empty() || (depth == 0)) {
+      // If an error was encountered, we are done. Otherwise, (depth == 0)
+      // after parsing a value is equivalent to having decoded the entire JSON
+      // value (for an empty json_pointer query) or having decoded the
+      // pointed-to JSON value (for a non-empty json_pointer query). In the
+      // latter case, we are also done.
+      //
+      // However, if quirks like WUFFS_JSON__QUIRK_ALLOW_TRAILING_FILLER or
+      // WUFFS_JSON__QUIRK_EXPECT_TRAILING_NEW_LINE_OR_EOF are passed, decoding
+      // the entire JSON value should also consume any trailing filler, in case
+      // the DecodeJson caller wants to subsequently check that the input is
+      // completely exhausted (and otherwise raise "valid JSON followed by
+      // further (unexpected) data"). We aren't done yet. Instead, keep the
+      // loop running until WUFFS_AUX__DECODE_JSON__GET_THE_NEXT_TOKEN's
+      // decode_tokens returns an ok status.
+      if (!ret_error_message.empty() ||
+          ((depth == 0) && !json_pointer.empty())) {
         goto done;
       }
     }
