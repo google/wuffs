@@ -33096,15 +33096,18 @@ wuffs_json__decoder__decode_comment(
         }
         while (true) {
           if (((uint64_t)(io2_a_src - iop_a_src)) <= 0) {
-            if (v_length > 0) {
+            if (a_src && a_src->meta.closed) {
+              *iop_a_dst++ = wuffs_base__make_token(
+                  (((uint64_t)(4)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                  (((uint64_t)(v_length)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+              self->private_impl.f_comment_type = 2;
+              status = wuffs_base__make_status(NULL);
+              goto ok;
+            } else if (v_length > 0) {
               *iop_a_dst++ = wuffs_base__make_token(
                   (((uint64_t)(4)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                   (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
                   (((uint64_t)(v_length)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
-            }
-            if (a_src && a_src->meta.closed) {
-              status = wuffs_base__make_status(wuffs_json__error__bad_input);
-              goto exit;
             }
             status = wuffs_base__make_status(wuffs_base__suspension__short_read);
             WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(6);
@@ -33113,10 +33116,9 @@ wuffs_json__decoder__decode_comment(
           }
           v_c = wuffs_base__peek_u8be__no_bounds_check(iop_a_src);
           if (v_c == 10) {
-            iop_a_src += 1;
             *iop_a_dst++ = wuffs_base__make_token(
                 (((uint64_t)(4)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
-                (((uint64_t)((v_length + 1))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+                (((uint64_t)(v_length)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
             self->private_impl.f_comment_type = 2;
             status = wuffs_base__make_status(NULL);
             goto ok;

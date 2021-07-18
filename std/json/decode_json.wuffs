@@ -1530,16 +1530,22 @@ pri func decoder.decode_comment?(dst: base.token_writer, src: base.io_reader) {
 				pre args.dst.length() > 0,
 			{
 				if args.src.length() <= 0 {
-					if length > 0 {
+					if args.src.is_closed() {
+						args.dst.write_simple_token_fast!(
+							value_major: 0,
+							value_minor: (base.TOKEN__VBC__FILLER << 21) |
+							base.TOKEN__VBD__FILLER__COMMENT_LINE,
+							continued: 0,
+							length: length)
+						this.comment_type = 2
+						return ok
+					} else if length > 0 {
 						args.dst.write_simple_token_fast!(
 							value_major: 0,
 							value_minor: (base.TOKEN__VBC__FILLER << 21) |
 							base.TOKEN__VBD__FILLER__COMMENT_LINE,
 							continued: 1,
 							length: length)
-					}
-					if args.src.is_closed() {
-						return "#bad input"
 					}
 					yield? base."$short read"
 					length = 0
@@ -1548,13 +1554,12 @@ pri func decoder.decode_comment?(dst: base.token_writer, src: base.io_reader) {
 
 				c = args.src.peek_u8()
 				if c == '\n' {
-					args.src.skip_u32_fast!(actual: 1, worst_case: 1)
 					args.dst.write_simple_token_fast!(
 						value_major: 0,
 						value_minor: (base.TOKEN__VBC__FILLER << 21) |
 						base.TOKEN__VBD__FILLER__COMMENT_LINE,
 						continued: 0,
-						length: length + 1)
+						length: length)
 					this.comment_type = 2
 					return ok
 				}

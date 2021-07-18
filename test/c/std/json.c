@@ -3451,7 +3451,7 @@ test_wuffs_json_decode_quirk_allow_trailing_comments() {
       "306 /*foo*/ \n",              //
       "307 /*foo*/ \n\n",            //
       "308/*bar\nbaz*/\n\n",         //
-      "309 // qux\n",                // TODO: drop the "\n".
+      "309 // qux",                  //
       "310 // qux\n",                //
       "311 // qux\n\n",              //
       "312 /*c0*/ /*c1*/\n\n",       //

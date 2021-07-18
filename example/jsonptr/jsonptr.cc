@@ -1074,27 +1074,13 @@ write_dst(const void* s, size_t n) {
   return write_dst_slow(s, n);
 }
 
-#define TRY_INDENT_WITH_LEADING_NEW_LINE                                \
+#define TRY_INDENT                                                      \
   do {                                                                  \
     uint32_t adj = (g_num_input_blank_lines > 1) ? 1 : 0;               \
     g_num_input_blank_lines = 0;                                        \
     uint32_t indent = g_depth * g_bytes_per_indent_depth;               \
     TRY(write_dst(g_two_new_lines_then_256_indent_bytes + 1 - adj,      \
                   1 + adj + (indent & 0xFF)));                          \
-    for (indent >>= 8; indent > 0; indent--) {                          \
-      TRY(write_dst(g_two_new_lines_then_256_indent_bytes + 2, 0x100)); \
-    }                                                                   \
-  } while (false)
-
-// TRY_INDENT_SANS_LEADING_NEW_LINE is used after comments, which print their
-// own "\n".
-#define TRY_INDENT_SANS_LEADING_NEW_LINE                                \
-  do {                                                                  \
-    uint32_t adj = (g_num_input_blank_lines > 1) ? 1 : 0;               \
-    g_num_input_blank_lines = 0;                                        \
-    uint32_t indent = g_depth * g_bytes_per_indent_depth;               \
-    TRY(write_dst(g_two_new_lines_then_256_indent_bytes + 2 - adj,      \
-                  adj + (indent & 0xFF)));                              \
     for (indent >>= 8; indent > 0; indent--) {                          \
       TRY(write_dst(g_two_new_lines_then_256_indent_bytes + 2, 0x100)); \
     }                                                                   \
@@ -1155,12 +1141,12 @@ handle_token(wuffs_base__token t, bool start_of_token_chain) {
             (g_ctx != context::in_dict_after_brace) &&
             !g_flags.compact_output) {
           if (g_is_after_comment) {
-            TRY_INDENT_SANS_LEADING_NEW_LINE;
+            TRY_INDENT;
           } else {
             if (g_flags.output_extra_comma) {
               TRY(write_dst(",", 1));
             }
-            TRY_INDENT_WITH_LEADING_NEW_LINE;
+            TRY_INDENT;
           }
         } else {
           g_num_input_blank_lines = 0;
@@ -1181,7 +1167,7 @@ handle_token(wuffs_base__token t, bool start_of_token_chain) {
     // continuation of a multi-token chain.
     if (start_of_token_chain) {
       if (g_is_after_comment) {
-        TRY_INDENT_SANS_LEADING_NEW_LINE;
+        TRY_INDENT;
       } else if (g_ctx == context::in_dict_after_key) {
         TRY(write_dst(": ", g_flags.compact_output ? 1 : 2));
       } else if (g_ctx != context::none) {
@@ -1190,7 +1176,7 @@ handle_token(wuffs_base__token t, bool start_of_token_chain) {
           TRY(write_dst(",", 1));
         }
         if (!g_flags.compact_output) {
-          TRY_INDENT_WITH_LEADING_NEW_LINE;
+          TRY_INDENT;
         }
       }
 
@@ -1336,11 +1322,16 @@ main1(int argc, char** argv) {
           if (g_flags.compact_output) {
             TRY(write_dst(g_src.data.ptr + g_cursor_index - token_length,
                           token_length));
+            if (!t.continued() &&
+                (t.value_base_detail() &
+                 WUFFS_BASE__TOKEN__VBD__FILLER__COMMENT_LINE)) {
+              TRY(write_dst("\n", 1));
+            }
 
           } else {
             if (start_of_token_chain) {
               if (g_is_after_comment) {
-                TRY_INDENT_SANS_LEADING_NEW_LINE;
+                TRY_INDENT;
               } else if (g_ctx != context::none) {
                 if (g_ctx == context::in_dict_after_key) {
                   TRY(write_dst(":", 1));
@@ -1349,16 +1340,11 @@ main1(int argc, char** argv) {
                            (g_ctx != context::end_of_data)) {
                   TRY(write_dst(",", 1));
                 }
-                TRY_INDENT_WITH_LEADING_NEW_LINE;
+                TRY_INDENT;
               }
             }
             TRY(write_dst(g_src.data.ptr + g_cursor_index - token_length,
                           token_length));
-            if (!t.continued() &&
-                (t.value_base_detail() &
-                 WUFFS_BASE__TOKEN__VBD__FILLER__COMMENT_BLOCK)) {
-              TRY(write_dst("\n", 1));
-            }
             g_is_after_comment = true;
           }
           if (g_ctx == context::in_list_after_bracket) {
@@ -1366,11 +1352,7 @@ main1(int argc, char** argv) {
           } else if (g_ctx == context::in_dict_after_brace) {
             g_ctx = context::in_dict_after_value;
           }
-          g_num_input_blank_lines =
-              (t.value_base_detail() &
-               WUFFS_BASE__TOKEN__VBD__FILLER__COMMENT_LINE)
-                  ? 1
-                  : 0;
+          g_num_input_blank_lines = 0;
 
         } else {
           uint8_t* p = g_src.data.ptr + g_cursor_index - token_length;
