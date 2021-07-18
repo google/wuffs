@@ -84,15 +84,15 @@ extern "C" {
 // each major.minor branch, the commit count should increase monotonically.
 //
 // WUFFS_VERSION was overridden by "wuffs gen -version" based on revision
-// 3842c519c9961500d96efee0ff7aafbd20833570 committed on 2021-07-05.
+// 6a30c1ede0dc765fbbc443b2536b7691485be9fb committed on 2021-07-18.
 #define WUFFS_VERSION 0x000030000
 #define WUFFS_VERSION_MAJOR 0
 #define WUFFS_VERSION_MINOR 3
 #define WUFFS_VERSION_PATCH 0
-#define WUFFS_VERSION_PRE_RELEASE_LABEL "beta.6"
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 3065
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20210705
-#define WUFFS_VERSION_STRING "0.3.0-beta.6+3065.20210705"
+#define WUFFS_VERSION_PRE_RELEASE_LABEL "beta.7"
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 3069
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20210718
+#define WUFFS_VERSION_STRING "0.3.0-beta.7+3069.20210718"
 
 // ---------------- Configuration
 
@@ -40054,54 +40054,50 @@ const char DecodeJson_NoMatch[] = "wuffs_aux::DecodeJson: no match";
 
 // --------
 
-#define WUFFS_AUX__DECODE_JSON__GET_THE_NEXT_TOKEN                       \
-  while (tok_buf.meta.ri >= tok_buf.meta.wi) {                           \
-    if (tok_status.repr == nullptr) {                                    \
-    } else if (tok_status.repr == wuffs_base__suspension__short_write) { \
-      tok_buf.compact();                                                 \
-    } else if (tok_status.repr == wuffs_base__suspension__short_read) {  \
-      if (!io_error_message.empty()) {                                   \
-        ret_error_message = std::move(io_error_message);                 \
-        goto done;                                                       \
-      } else if (cursor_index != io_buf->meta.ri) {                      \
-        ret_error_message =                                              \
-            "wuffs_aux::DecodeJson: internal error: bad cursor_index";   \
-        goto done;                                                       \
-      } else if (io_buf->meta.closed) {                                  \
-        ret_error_message =                                              \
-            "wuffs_aux::DecodeJson: internal error: io_buf is closed";   \
-        goto done;                                                       \
-      }                                                                  \
-      io_buf->compact();                                                 \
-      if (io_buf->meta.wi >= io_buf->data.len) {                         \
-        ret_error_message =                                              \
-            "wuffs_aux::DecodeJson: internal error: io_buf is full";     \
-        goto done;                                                       \
-      }                                                                  \
-      cursor_index = io_buf->meta.ri;                                    \
-      io_error_message = input.CopyIn(io_buf);                           \
-    } else {                                                             \
-      ret_error_message = tok_status.message();                          \
-      goto done;                                                         \
-    }                                                                    \
-    if (WUFFS_JSON__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE != 0) {      \
-      ret_error_message =                                                \
-          "wuffs_aux::DecodeJson: internal error: bad WORKBUF_LEN";      \
-      goto done;                                                         \
-    }                                                                    \
-    wuffs_base__slice_u8 work_buf = wuffs_base__empty_slice_u8();        \
-    tok_status = dec->decode_tokens(&tok_buf, io_buf, work_buf);         \
-  }                                                                      \
-  wuffs_base__token token = tok_buf.data.ptr[tok_buf.meta.ri++];         \
-  uint64_t token_len = token.length();                                   \
-  if ((io_buf->meta.ri < cursor_index) ||                                \
-      ((io_buf->meta.ri - cursor_index) < token_len)) {                  \
-    ret_error_message =                                                  \
-        "wuffs_aux::DecodeJson: internal error: bad token indexes";      \
-    goto done;                                                           \
-  }                                                                      \
-  uint8_t* token_ptr = io_buf->data.ptr + cursor_index;                  \
-  (void)(token_ptr);                                                     \
+#define WUFFS_AUX__DECODE_JSON__GET_THE_NEXT_TOKEN                          \
+  while (tok_buf.meta.ri >= tok_buf.meta.wi) {                              \
+    if (tok_status.repr == nullptr) {                                       \
+      goto done;                                                            \
+    } else if (tok_status.repr == wuffs_base__suspension__short_write) {    \
+      tok_buf.compact();                                                    \
+    } else if (tok_status.repr == wuffs_base__suspension__short_read) {     \
+      if (!io_error_message.empty()) {                                      \
+        ret_error_message = std::move(io_error_message);                    \
+        goto done;                                                          \
+      } else if (cursor_index != io_buf->meta.ri) {                         \
+        ret_error_message =                                                 \
+            "wuffs_aux::DecodeJson: internal error: bad cursor_index";      \
+        goto done;                                                          \
+      } else if (io_buf->meta.closed) {                                     \
+        ret_error_message =                                                 \
+            "wuffs_aux::DecodeJson: internal error: io_buf is closed";      \
+        goto done;                                                          \
+      }                                                                     \
+      io_buf->compact();                                                    \
+      if (io_buf->meta.wi >= io_buf->data.len) {                            \
+        ret_error_message =                                                 \
+            "wuffs_aux::DecodeJson: internal error: io_buf is full";        \
+        goto done;                                                          \
+      }                                                                     \
+      cursor_index = io_buf->meta.ri;                                       \
+      io_error_message = input.CopyIn(io_buf);                              \
+    } else {                                                                \
+      ret_error_message = tok_status.message();                             \
+      goto done;                                                            \
+    }                                                                       \
+    tok_status =                                                            \
+        dec->decode_tokens(&tok_buf, io_buf, wuffs_base__empty_slice_u8()); \
+  }                                                                         \
+  wuffs_base__token token = tok_buf.data.ptr[tok_buf.meta.ri++];            \
+  uint64_t token_len = token.length();                                      \
+  if ((io_buf->meta.ri < cursor_index) ||                                   \
+      ((io_buf->meta.ri - cursor_index) < token_len)) {                     \
+    ret_error_message =                                                     \
+        "wuffs_aux::DecodeJson: internal error: bad token indexes";         \
+    goto done;                                                              \
+  }                                                                         \
+  uint8_t* token_ptr = io_buf->data.ptr + cursor_index;                     \
+  (void)(token_ptr);                                                        \
   cursor_index += static_cast<size_t>(token_len)
 
 // --------
@@ -40372,6 +40368,10 @@ DecodeJson(DecodeJsonCallbacks& callbacks,
     if (!dec) {
       ret_error_message = "wuffs_aux::DecodeJson: out of memory";
       goto done;
+    } else if (WUFFS_JSON__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE != 0) {
+      ret_error_message =
+          "wuffs_aux::DecodeJson: internal error: bad WORKBUF_LEN";
+      goto done;
     }
     bool allow_tilde_n_tilde_r_tilde_t = false;
     for (size_t i = 0; i < quirks.len; i++) {
@@ -40387,7 +40387,8 @@ DecodeJson(DecodeJsonCallbacks& callbacks,
     wuffs_base__token_buffer tok_buf =
         wuffs_base__slice_token__writer(wuffs_base__make_slice_token(
             &tok_array[0], (sizeof(tok_array) / sizeof(tok_array[0]))));
-    wuffs_base__status tok_status = wuffs_base__make_status(nullptr);
+    wuffs_base__status tok_status =
+        dec->decode_tokens(&tok_buf, io_buf, wuffs_base__empty_slice_u8());
 
     // Prepare other state.
     uint32_t depth = 0;
@@ -40401,7 +40402,7 @@ DecodeJson(DecodeJsonCallbacks& callbacks,
       }
       std::pair<std::string, size_t> split = DecodeJson_SplitJsonPointer(
           json_pointer, i + 1, allow_tilde_n_tilde_r_tilde_t);
-      i = std::move(split.second);
+      i = split.second;
       if (i == 0) {
         ret_error_message = DecodeJson_BadJsonPointer;
         goto done;
@@ -40536,7 +40537,22 @@ DecodeJson(DecodeJsonCallbacks& callbacks,
       goto done;
 
     parsed_a_value:
-      if (!ret_error_message.empty() || (depth == 0)) {
+      // If an error was encountered, we are done. Otherwise, (depth == 0)
+      // after parsing a value is equivalent to having decoded the entire JSON
+      // value (for an empty json_pointer query) or having decoded the
+      // pointed-to JSON value (for a non-empty json_pointer query). In the
+      // latter case, we are also done.
+      //
+      // However, if quirks like WUFFS_JSON__QUIRK_ALLOW_TRAILING_FILLER or
+      // WUFFS_JSON__QUIRK_EXPECT_TRAILING_NEW_LINE_OR_EOF are passed, decoding
+      // the entire JSON value should also consume any trailing filler, in case
+      // the DecodeJson caller wants to subsequently check that the input is
+      // completely exhausted (and otherwise raise "valid JSON followed by
+      // further (unexpected) data"). We aren't done yet. Instead, keep the
+      // loop running until WUFFS_AUX__DECODE_JSON__GET_THE_NEXT_TOKEN's
+      // decode_tokens returns an ok status.
+      if (!ret_error_message.empty() ||
+          ((depth == 0) && !json_pointer.empty())) {
         goto done;
       }
     }
