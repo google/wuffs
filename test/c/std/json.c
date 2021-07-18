@@ -3427,6 +3427,14 @@ test_wuffs_json_decode_quirk_allow_trailing_comments() {
   //  - '4' means that there is non-filler after  eof-or-'\n'
   //  - '5' means that there is non-filler before eof-or-'\n'
   //
+  // The second and third bytes are digits such that the overall string starts
+  // with a three digit number, which is parsed as the top-level JSON value and
+  // everything afterwards is trailer.
+  //
+  // That three digit number modulo 100 also acts as a 'line number' (matching
+  // the tc loop variable), starting counting from zero, so that the 6th test
+  // case, tc == 5, is the line starting with "something hundred and five".
+  //
   // WUFFS_JSON__QUIRK_ALLOW_TRAILING_FILLER (together with
   // WUFFS_JSON__QUIRK_ALLOW_COMMENT_ETC) should decode the '1's, '2's and '3's
   // completely and the '4's and '5's up to but excluding the non-filler.
@@ -3443,11 +3451,13 @@ test_wuffs_json_decode_quirk_allow_trailing_comments() {
       "306 /*foo*/ \n",              //
       "307 /*foo*/ \n\n",            //
       "308/*bar\nbaz*/\n\n",         //
-      "309 // qux\n\n",              //
-      "310 /*c0*/ /*c1*/\n\n",       //
-      "311 /*c0*/ \n\n // c2 \n\n",  //
-      "412 \n9",                     //
-      "513 9",                       //
+      "309 // qux\n",                // TODO: drop the "\n".
+      "310 // qux\n",                //
+      "311 // qux\n\n",              //
+      "312 /*c0*/ /*c1*/\n\n",       //
+      "313 /*c0*/ \n\n // c2 \n\n",  //
+      "414 \n9",                     //
+      "515 9",                       //
   };
 
   int tc;
