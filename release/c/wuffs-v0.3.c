@@ -84,15 +84,15 @@ extern "C" {
 // each major.minor branch, the commit count should increase monotonically.
 //
 // WUFFS_VERSION was overridden by "wuffs gen -version" based on revision
-// 6a30c1ede0dc765fbbc443b2536b7691485be9fb committed on 2021-07-18.
+// 77f855206d6b458ffe892dd5cf19150b1de63f24 committed on 2021-07-20.
 #define WUFFS_VERSION 0x000030000
 #define WUFFS_VERSION_MAJOR 0
 #define WUFFS_VERSION_MINOR 3
 #define WUFFS_VERSION_PATCH 0
-#define WUFFS_VERSION_PRE_RELEASE_LABEL "beta.7"
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 3069
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20210718
-#define WUFFS_VERSION_STRING "0.3.0-beta.7+3069.20210718"
+#define WUFFS_VERSION_PRE_RELEASE_LABEL "beta.8"
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 3072
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20210720
+#define WUFFS_VERSION_STRING "0.3.0-beta.8+3072.20210720"
 
 // ---------------- Configuration
 
@@ -33097,15 +33097,18 @@ wuffs_json__decoder__decode_comment(
         }
         while (true) {
           if (((uint64_t)(io2_a_src - iop_a_src)) <= 0) {
-            if (v_length > 0) {
+            if (a_src && a_src->meta.closed) {
+              *iop_a_dst++ = wuffs_base__make_token(
+                  (((uint64_t)(4)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+                  (((uint64_t)(v_length)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+              self->private_impl.f_comment_type = 2;
+              status = wuffs_base__make_status(NULL);
+              goto ok;
+            } else if (v_length > 0) {
               *iop_a_dst++ = wuffs_base__make_token(
                   (((uint64_t)(4)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                   (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
                   (((uint64_t)(v_length)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
-            }
-            if (a_src && a_src->meta.closed) {
-              status = wuffs_base__make_status(wuffs_json__error__bad_input);
-              goto exit;
             }
             status = wuffs_base__make_status(wuffs_base__suspension__short_read);
             WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(6);
@@ -33114,10 +33117,9 @@ wuffs_json__decoder__decode_comment(
           }
           v_c = wuffs_base__peek_u8be__no_bounds_check(iop_a_src);
           if (v_c == 10) {
-            iop_a_src += 1;
             *iop_a_dst++ = wuffs_base__make_token(
                 (((uint64_t)(4)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
-                (((uint64_t)((v_length + 1))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+                (((uint64_t)(v_length)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
             self->private_impl.f_comment_type = 2;
             status = wuffs_base__make_status(NULL);
             goto ok;
