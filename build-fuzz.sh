@@ -29,17 +29,23 @@ mkdir -p gen/bin
 
 sources=$@
 if [ $# -eq 0 ]; then
-  sources=fuzz/c/std/*_fuzzer.c
+  sources=fuzz/c/std/*_fuzzer.c*
 fi
 
 for f in $sources; do
   f=${f%_fuzzer.c}
+  f=${f%_fuzzer.cc}
   f=${f%/}
   f=${f##*/}
   if [ -z $f ]; then
     continue
   fi
-  echo "Building gen/bin/fuzz-$f"
 
-  $CC -DWUFFS_CONFIG__FUZZLIB_MAIN fuzz/c/std/${f}_fuzzer.c -o gen/bin/fuzz-$f
+  if [   -e fuzz/c/std/${f}_fuzzer.c  ]; then
+    echo "Building (C)   gen/bin/fuzz-$f"
+    $CC  -DWUFFS_CONFIG__FUZZLIB_MAIN fuzz/c/std/${f}_fuzzer.c  -o gen/bin/fuzz-$f
+  elif [ -e fuzz/c/std/${f}_fuzzer.cc ]; then
+    echo "Building (C++) gen/bin/fuzz-$f"
+    $CXX -DWUFFS_CONFIG__FUZZLIB_MAIN fuzz/c/std/${f}_fuzzer.cc -o gen/bin/fuzz-$f
+  fi
 done

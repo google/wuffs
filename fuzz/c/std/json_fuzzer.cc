@@ -50,6 +50,8 @@ It should print "PASS", amongst other information, and exit(0).
 // modules we use makes that process explicit. Preprocessing means that such
 // code simply isn't compiled.
 #define WUFFS_CONFIG__MODULES
+#define WUFFS_CONFIG__MODULE__AUX__BASE
+#define WUFFS_CONFIG__MODULE__AUX__JSON
 #define WUFFS_CONFIG__MODULE__BASE
 #define WUFFS_CONFIG__MODULE__JSON
 
@@ -225,32 +227,33 @@ buffer_limit(uint64_t hash, uint64_t min, uint64_t max) {
   return n;
 }
 
-void set_quirks(wuffs_json__decoder* dec, uint64_t hash) {
-  uint32_t quirks[] = {
-      WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_A,
-      WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_CAPITAL_U,
-      WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_E,
-      WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_QUESTION_MARK,
-      WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_SINGLE_QUOTE,
-      WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_V,
-      WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_X_AS_CODE_POINTS,
-      WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_ZERO,
-      WUFFS_JSON__QUIRK_ALLOW_COMMENT_BLOCK,
-      WUFFS_JSON__QUIRK_ALLOW_COMMENT_LINE,
-      WUFFS_JSON__QUIRK_ALLOW_EXTRA_COMMA,
-      WUFFS_JSON__QUIRK_ALLOW_INF_NAN_NUMBERS,
-      WUFFS_JSON__QUIRK_ALLOW_LEADING_ASCII_RECORD_SEPARATOR,
-      WUFFS_JSON__QUIRK_ALLOW_LEADING_UNICODE_BYTE_ORDER_MARK,
-      WUFFS_JSON__QUIRK_ALLOW_TRAILING_FILLER,
-      WUFFS_JSON__QUIRK_REPLACE_INVALID_UNICODE,
-      0,
-  };
+uint32_t g_quirks[] = {
+    WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_A,
+    WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_CAPITAL_U,
+    WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_E,
+    WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_QUESTION_MARK,
+    WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_SINGLE_QUOTE,
+    WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_V,
+    WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_X_AS_CODE_POINTS,
+    WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_ZERO,
+    WUFFS_JSON__QUIRK_ALLOW_COMMENT_BLOCK,
+    WUFFS_JSON__QUIRK_ALLOW_COMMENT_LINE,
+    WUFFS_JSON__QUIRK_ALLOW_EXTRA_COMMA,
+    WUFFS_JSON__QUIRK_ALLOW_INF_NAN_NUMBERS,
+    WUFFS_JSON__QUIRK_ALLOW_LEADING_ASCII_RECORD_SEPARATOR,
+    WUFFS_JSON__QUIRK_ALLOW_LEADING_UNICODE_BYTE_ORDER_MARK,
+    WUFFS_JSON__QUIRK_ALLOW_TRAILING_FILLER,
+    WUFFS_JSON__QUIRK_JSON_POINTER_ALLOW_TILDE_N_TILDE_R_TILDE_T,
+    WUFFS_JSON__QUIRK_REPLACE_INVALID_UNICODE,
+    0,
+};
 
+void set_quirks(wuffs_json__decoder* dec, uint64_t hash) {
   uint32_t i;
-  for (i = 0; quirks[i]; i++) {
+  for (i = 0; g_quirks[i]; i++) {
     uint64_t bit = 1 << (i & 63);
     if (hash & bit) {
-      wuffs_json__decoder__set_quirk_enabled(dec, quirks[i], true);
+      wuffs_json__decoder__set_quirk_enabled(dec, g_quirks[i], true);
     }
   }
 }
@@ -413,8 +416,94 @@ fuzz_simple(wuffs_base__io_buffer* full_src) {
   return NULL;
 }
 
+#if defined(__cplusplus)
+#include <vector>
+
+class Callbacks : public wuffs_aux::DecodeJsonCallbacks {
+ public:
+  Callbacks() : m_depth(0) {}
+
+  std::string AppendNull() override { return ""; }
+
+  std::string AppendBool(bool val) override { return ""; }
+
+  std::string AppendI64(int64_t val) override { return ""; }
+
+  std::string AppendF64(double val) override { return ""; }
+
+  std::string AppendTextString(std::string&& val) override { return ""; }
+
+  std::string Push(uint32_t flags) override {
+    m_depth++;
+    return "";
+  }
+
+  std::string Pop(uint32_t flags) override {
+    m_depth--;
+    if (m_depth < 0) {
+      intentional_segfault();
+    }
+    return "";
+  }
+
+  void Done(wuffs_aux::DecodeJsonResult& result,
+            wuffs_aux::sync_io::Input& input,
+            wuffs_aux::IOBuffer& buffer) override {
+    if (result.error_message.empty() && (m_depth != 0)) {
+      intentional_segfault();
+    }
+  }
+
+ private:
+  int64_t m_depth;
+};
+
+void  //
+fuzz_cpp(const uint8_t* in_ptr, size_t in_len, uint64_t hash) {
+  static const char* json_pointers[16] = {
+      "",           //
+      "",           //
+      "",           //
+      "",           //
+      "",           //
+      "",           //
+      "",           //
+      "",           //
+      "",           //
+      "",           //
+      "/",          //
+      "/2/3/4/5",   //
+      "/k0",        //
+      "/k0/1",      //
+      "/x/y",       //
+      "/~0/~1/~n",  //
+  };
+  const char* json_pointer = json_pointers[hash & 15];
+  hash = wuffs_base__u64__rotate_right(hash, 4);
+
+  std::vector<uint32_t> quirks;
+  for (uint32_t i = 0; g_quirks[i]; i++) {
+    uint64_t bit = 1 << (i & 63);
+    if (hash & bit) {
+      quirks.push_back(g_quirks[i]);
+    }
+  }
+
+  Callbacks callbacks;
+  wuffs_aux::sync_io::MemoryInput input(in_ptr, in_len);
+  wuffs_aux::DecodeJson(
+      callbacks, input,
+      wuffs_base__make_slice_u32(quirks.data(), quirks.size()), json_pointer);
+}
+#endif  // defined(__cplusplus)
+
 const char*  //
 fuzz(wuffs_base__io_buffer* full_src, uint64_t hash) {
+#if defined(__cplusplus)
+  fuzz_cpp(full_src->reader_pointer(), full_src->reader_length(),
+           wuffs_base__u64__rotate_right(hash, 32));
+#endif  // defined(__cplusplus)
+
   // Send 99.6% of inputs to fuzz_complex and the remainder to fuzz_simple. The
   // 0xA5 constant is arbitrary but non-zero. If the hash function maps the
   // empty input to 0, this still sends the empty input to fuzz_complex.
