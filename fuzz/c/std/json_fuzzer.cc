@@ -441,6 +441,7 @@ class Callbacks : public wuffs_aux::DecodeJsonCallbacks {
   std::string Pop(uint32_t flags) override {
     m_depth--;
     if (m_depth < 0) {
+      fprintf(stderr, "negative depth\n");
       intentional_segfault();
     }
     return "";
@@ -449,7 +450,15 @@ class Callbacks : public wuffs_aux::DecodeJsonCallbacks {
   void Done(wuffs_aux::DecodeJsonResult& result,
             wuffs_aux::sync_io::Input& input,
             wuffs_aux::IOBuffer& buffer) override {
-    if (result.error_message.empty() && (m_depth != 0)) {
+    if (result.error_message.empty()) {
+      if (m_depth != 0) {
+        fprintf(stderr, "no error message but final depth is non-zero\n");
+        intentional_segfault();
+      }
+    } else if (result.error_message.find("internal error:") !=
+               std::string::npos) {
+      fprintf(stderr, "internal errors shouldn't occur: \"%s\"\n",
+              result.error_message.c_str());
       intentional_segfault();
     }
   }
