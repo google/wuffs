@@ -284,8 +284,9 @@ fuzz_complex(wuffs_base__io_buffer* full_src, uint64_t hash) {
   wuffs_base__token_buffer tok = ((wuffs_base__token_buffer){
       .data = ((wuffs_base__slice_token){
           .ptr = tok_array,
-          .len = (tok_limit < TOK_BUFFER_ARRAY_SIZE) ? tok_limit
-                                                     : TOK_BUFFER_ARRAY_SIZE,
+          .len = (size_t)((tok_limit < TOK_BUFFER_ARRAY_SIZE)
+                              ? tok_limit
+                              : TOK_BUFFER_ARRAY_SIZE),
       }),
   });
 
