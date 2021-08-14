@@ -149,8 +149,8 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 		}
 		return nil
 
-	case a.KIOBind:
-		n := n.AsIOBind()
+	case a.KIOManip:
+		n := n.AsIOManip()
 		if err := q.tcheckExpr(n.IO(), 0); err != nil {
 			return err
 		}

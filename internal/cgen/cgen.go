@@ -200,8 +200,8 @@ const (
 )
 
 const (
-	maxIOBinds = 100
-	maxTemp    = 10000
+	maxIOManips = 100
+	maxTemp     = 10000
 )
 
 type status struct {

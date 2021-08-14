@@ -185,8 +185,8 @@ loop:
 				return err
 			}
 
-		case a.KIOBind:
-			if err := h.doIOBind(r, o.AsIOBind(), depth); err != nil {
+		case a.KIOManip:
+			if err := h.doIOManip(r, o.AsIOManip(), depth); err != nil {
 				return err
 			}
 
@@ -324,7 +324,7 @@ func (h *livenessHelper) doExpr1(r livenesses, n *a.Expr, allToStrong bool, dept
 	return nil
 }
 
-func (h *livenessHelper) doIOBind(r livenesses, n *a.IOBind, depth uint32) error {
+func (h *livenessHelper) doIOManip(r livenesses, n *a.IOManip, depth uint32) error {
 	if err := h.doExpr(r, n.IO()); err != nil {
 		return err
 	}

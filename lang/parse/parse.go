@@ -861,7 +861,7 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 		return a.NewChoose(name, args).AsNode(), nil
 
 	case t.IDIOBind, t.IDIOLimit:
-		return p.parseIOBindNode()
+		return p.parseIOManipNode()
 
 	case t.IDIf:
 		o, err := p.parseIf()
@@ -1050,7 +1050,7 @@ func (p *parser) parseAsserts() ([]*a.Node, error) {
 	return asserts, nil
 }
 
-func (p *parser) parseIOBindNode() (*a.Node, error) {
+func (p *parser) parseIOManipNode() (*a.Node, error) {
 	keyword := p.peek1()
 	p.src = p.src[1:]
 
@@ -1164,7 +1164,7 @@ func (p *parser) parseIOBindNode() (*a.Node, error) {
 		return nil, err
 	}
 
-	return a.NewIOBind(keyword, io, arg1, histPos, body).AsNode(), nil
+	return a.NewIOManip(keyword, io, arg1, histPos, body).AsNode(), nil
 }
 
 func (p *parser) parseIf() (*a.If, error) {
@@ -1382,22 +1382,6 @@ func (p *parser) parseArgNode() (*a.Node, error) {
 			value.Str(p.tm), p.filename, p.line())
 	}
 	return a.NewArg(name, value).AsNode(), nil
-}
-
-func (p *parser) parseIOBindExprNode() (*a.Node, error) {
-	e, err := p.parseExpr()
-	if err != nil {
-		return nil, err
-	}
-	switch e.Operator() {
-	case 0:
-		return e.AsNode(), nil
-	case t.IDDot:
-		if lhs := e.LHS().AsExpr(); lhs.Operator() == 0 && lhs.Ident() == t.IDArgs {
-			return e.AsNode(), nil
-		}
-	}
-	return nil, fmt.Errorf(`parse: expected "args.something", got %q at %s:%d`, e.Str(p.tm), p.filename, p.line())
 }
 
 func (p *parser) parseVarNode() (*a.Node, error) {

@@ -64,8 +64,8 @@ func (g *gen) needDerivedVar(name t.ID) bool {
 					}
 				}
 
-			case a.KIOBind:
-				if p.AsIOBind().IO().IsArgsDotFoo() == name {
+			case a.KIOManip:
+				if p.AsIOManip().IO().IsArgsDotFoo() == name {
 					return errNeedDerivedVar
 				}
 			}

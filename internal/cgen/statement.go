@@ -60,8 +60,8 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 		return g.writeStatementAssign(b, n.Operator(), n.LHS(), n.RHS(), depth)
 	case a.KChoose:
 		return g.writeStatementChoose(b, n.AsChoose(), depth)
-	case a.KIOBind:
-		return g.writeStatementIOBind(b, n.AsIOBind(), depth)
+	case a.KIOManip:
+		return g.writeStatementIOManip(b, n.AsIOManip(), depth)
 	case a.KIf:
 		return g.writeStatementIf(b, n.AsIf(), depth)
 	case a.KIterate:
@@ -293,12 +293,12 @@ func cpuArchCNames(asserts []*a.Node) (caMacro string, caName string, caAttribut
 	return caMacro, caName, caAttribute, nil
 }
 
-func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {
-	if g.currFunk.ioBinds > maxIOBinds {
+func (g *gen) writeStatementIOManip(b *buffer, n *a.IOManip, depth uint32) error {
+	if g.currFunk.ioManips > maxIOManips {
 		return fmt.Errorf("too many temporary variables required")
 	}
-	ioBindNum := g.currFunk.ioBinds
-	g.currFunk.ioBinds++
+	ioBindNum := g.currFunk.ioManips
+	g.currFunk.ioManips++
 
 	e := n.IO()
 	prefix := vPrefix

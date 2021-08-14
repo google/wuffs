@@ -40,7 +40,7 @@ type funk struct {
 	derivedVars       map[t.ID]struct{}
 	jumpTargets       map[a.Loop]string
 	coroSuspPoint     uint32
-	ioBinds           uint32
+	ioManips          uint32
 	tempW             uint32
 	tempR             uint32
 	usesEmptyIOBuffer bool

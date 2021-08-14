@@ -46,7 +46,7 @@ const (
 	KField
 	KFile
 	KFunc
-	KIOBind
+	KIOManip
 	KIf
 	KIterate
 	KJump
@@ -78,7 +78,7 @@ var kindStrings = [...]string{
 	KField:    "KField",
 	KFile:     "KFile",
 	KFunc:     "KFunc",
-	KIOBind:   "KIOBind",
+	KIOManip:  "KIOManip",
 	KIf:       "KIf",
 	KIterate:  "KIterate",
 	KJump:     "KJump",
@@ -169,7 +169,7 @@ type Node struct {
 	// Field         .             .             name          Field
 	// File          .             .             .             File
 	// Func          funcName      receiverPkg   receiverName  Func
-	// IOBind        .             .             .             IOBind
+	// IOManip       keyword       .             .             IOManip
 	// If            .             .             .             If
 	// Iterate       advance       label         length        Iterate
 	// Jump          keyword       label         .             Jump
@@ -208,7 +208,7 @@ func (n *Node) AsExpr() *Expr         { return (*Expr)(n) }
 func (n *Node) AsField() *Field       { return (*Field)(n) }
 func (n *Node) AsFile() *File         { return (*File)(n) }
 func (n *Node) AsFunc() *Func         { return (*Func)(n) }
-func (n *Node) AsIOBind() *IOBind     { return (*IOBind)(n) }
+func (n *Node) AsIOManip() *IOManip   { return (*IOManip)(n) }
 func (n *Node) AsIf() *If             { return (*If)(n) }
 func (n *Node) AsIterate() *Iterate   { return (*Iterate)(n) }
 func (n *Node) AsJump() *Jump         { return (*Jump)(n) }
@@ -583,25 +583,25 @@ func NewField(flags Flags, name t.ID, xType *TypeExpr) *Field {
 	}
 }
 
-// IOBind is "io_bind (io:LHS, data:MHS, history_position:RHS) { List2 }" or
+// IOManip is "io_bind (io:LHS, data:MHS, history_position:RHS) { List2 }" or
 // "io_limit (io:LHS, limit:MHS) { List2 }":
 //  - ID0:   <IDIOBind|IDIOLimit>
 //  - LHS:   <Expr>
 //  - MHS:   <Expr>
 //  - RHS:   <Expr>
 //  - List2: <Statement> body
-type IOBind Node
+type IOManip Node
 
-func (n *IOBind) AsNode() *Node          { return (*Node)(n) }
-func (n *IOBind) Keyword() t.ID          { return n.id0 }
-func (n *IOBind) IO() *Expr              { return n.lhs.AsExpr() }
-func (n *IOBind) Arg1() *Expr            { return n.mhs.AsExpr() }
-func (n *IOBind) HistoryPosition() *Expr { return n.rhs.AsExpr() }
-func (n *IOBind) Body() []*Node          { return n.list2 }
+func (n *IOManip) AsNode() *Node          { return (*Node)(n) }
+func (n *IOManip) Keyword() t.ID          { return n.id0 }
+func (n *IOManip) IO() *Expr              { return n.lhs.AsExpr() }
+func (n *IOManip) Arg1() *Expr            { return n.mhs.AsExpr() }
+func (n *IOManip) HistoryPosition() *Expr { return n.rhs.AsExpr() }
+func (n *IOManip) Body() []*Node          { return n.list2 }
 
-func NewIOBind(keyword t.ID, io *Expr, arg1 *Expr, historyPosition *Expr, body []*Node) *IOBind {
-	return &IOBind{
-		kind:  KIOBind,
+func NewIOManip(keyword t.ID, io *Expr, arg1 *Expr, historyPosition *Expr, body []*Node) *IOManip {
+	return &IOManip{
+		kind:  KIOManip,
 		id0:   keyword,
 		lhs:   io.AsNode(),
 		mhs:   arg1.AsNode(),
@@ -1152,7 +1152,7 @@ func NewFile(filename string, topLevelDecls []*Node) *File {
 //  - Assert
 //  - Assign
 //  - Choose
-//  - IOBind
+//  - IOManip
 //  - If
 //  - Iterate
 //  - Jump
