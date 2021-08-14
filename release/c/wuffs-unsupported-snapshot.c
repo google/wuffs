@@ -10463,11 +10463,12 @@ wuffs_base__io_reader__set(wuffs_base__io_buffer* b,
                            const uint8_t** ptr_io0_r,
                            const uint8_t** ptr_io1_r,
                            const uint8_t** ptr_io2_r,
-                           wuffs_base__slice_u8 data) {
+                           wuffs_base__slice_u8 data,
+                           uint64_t history_position) {
   b->data = data;
   b->meta.wi = data.len;
   b->meta.ri = 0;
-  b->meta.pos = 0;
+  b->meta.pos = history_position;
   b->meta.closed = false;
 
   *ptr_iop_r = data.ptr;
@@ -10701,11 +10702,12 @@ wuffs_base__io_writer__set(wuffs_base__io_buffer* b,
                            uint8_t** ptr_io0_w,
                            uint8_t** ptr_io1_w,
                            uint8_t** ptr_io2_w,
-                           wuffs_base__slice_u8 data) {
+                           wuffs_base__slice_u8 data,
+                           uint64_t history_position) {
   b->data = data;
   b->meta.wi = 0;
   b->meta.ri = 0;
-  b->meta.pos = 0;
+  b->meta.pos = history_position;
   b->meta.closed = false;
 
   *ptr_iop_w = data.ptr;
@@ -30518,7 +30520,8 @@ wuffs_gif__decoder__decode_id_part2(
               wuffs_base__slice_u8__subslice_ij(wuffs_base__make_slice_u8(self->private_data.f_compressed,
               4096),
               self->private_impl.f_compressed_ri,
-              self->private_impl.f_compressed_wi));
+              self->private_impl.f_compressed_wi),
+              0);
           v_mark = ((uint64_t)(iop_v_r - io0_v_r));
           {
             u_r.meta.ri = ((size_t)(iop_v_r - u_r.data.ptr));
@@ -37792,7 +37795,8 @@ wuffs_png__decoder__decode_pass(
             &io2_v_w,
             wuffs_base__slice_u8__subslice_ij(a_workbuf,
             self->private_impl.f_workbuf_wi,
-            self->private_impl.f_pass_workbuf_length));
+            self->private_impl.f_pass_workbuf_length),
+            self->private_impl.f_workbuf_wi);
         {
           const uint8_t *o_1_io2_a_src = io2_a_src;
           wuffs_base__io_reader__limit(&io2_a_src, iop_a_src,

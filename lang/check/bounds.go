@@ -258,6 +258,11 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 		if _, err := q.bcheckExpr(n.Arg1(), 0); err != nil {
 			return err
 		}
+		if histPos := n.HistoryPosition(); histPos != nil {
+			if _, err := q.bcheckExpr(histPos, 0); err != nil {
+				return err
+			}
+		}
 		if err := q.bcheckBlock(n.Body()); err != nil {
 			return err
 		}

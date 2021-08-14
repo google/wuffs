@@ -331,6 +331,11 @@ func (h *livenessHelper) doIOBind(r livenesses, n *a.IOBind, depth uint32) error
 	if err := h.doExpr(r, n.Arg1()); err != nil {
 		return err
 	}
+	if histPos := n.HistoryPosition(); histPos != nil {
+		if err := h.doExpr(r, n.HistoryPosition()); err != nil {
+			return err
+		}
+	}
 	return h.doBlock(r, n.Body(), depth)
 }
 

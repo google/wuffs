@@ -343,6 +343,10 @@ func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {
 			if err := g.writeExpr(b, n.Arg1(), false, 0); err != nil {
 				return err
 			}
+			b.writes(",\n")
+			if err := g.writeExpr(b, n.HistoryPosition(), false, 0); err != nil {
+				return err
+			}
 			b.writes(");\n")
 
 		} else {

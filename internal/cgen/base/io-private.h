@@ -117,11 +117,12 @@ wuffs_base__io_reader__set(wuffs_base__io_buffer* b,
                            const uint8_t** ptr_io0_r,
                            const uint8_t** ptr_io1_r,
                            const uint8_t** ptr_io2_r,
-                           wuffs_base__slice_u8 data) {
+                           wuffs_base__slice_u8 data,
+                           uint64_t history_position) {
   b->data = data;
   b->meta.wi = data.len;
   b->meta.ri = 0;
-  b->meta.pos = 0;
+  b->meta.pos = history_position;
   b->meta.closed = false;
 
   *ptr_iop_r = data.ptr;
@@ -355,11 +356,12 @@ wuffs_base__io_writer__set(wuffs_base__io_buffer* b,
                            uint8_t** ptr_io0_w,
                            uint8_t** ptr_io1_w,
                            uint8_t** ptr_io2_w,
-                           wuffs_base__slice_u8 data) {
+                           wuffs_base__slice_u8 data,
+                           uint64_t history_position) {
   b->data = data;
   b->meta.wi = 0;
   b->meta.ri = 0;
-  b->meta.pos = 0;
+  b->meta.pos = history_position;
   b->meta.closed = false;
 
   *ptr_iop_w = data.ptr;

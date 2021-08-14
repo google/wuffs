@@ -574,7 +574,7 @@ pri func decoder.decode_pass?(src: base.io_reader, workbuf: slice base.u8) {
 			this.pass_workbuf_length > args.workbuf.length()) {
 			return base."#bad workbuf length"
 		}
-		io_bind (io: w, data: args.workbuf[this.workbuf_wi .. this.pass_workbuf_length]) {
+		io_bind (io: w, data: args.workbuf[this.workbuf_wi .. this.pass_workbuf_length], history_position: this.workbuf_wi) {
 			io_limit (io: args.src, limit: this.chunk_length) {
 				w_mark = w.mark()
 				r_mark = args.src.mark()

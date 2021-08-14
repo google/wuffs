@@ -929,7 +929,7 @@ pri func decoder.decode_id_part2?(dst: ptr base.pixel_buffer, src: base.io_reade
 			if (this.compressed_ri > this.compressed_wi) or (this.compressed_wi > 4096) {
 				return "#internal error: inconsistent ri/wi"
 			}
-			io_bind (io: r, data: this.compressed[this.compressed_ri .. this.compressed_wi]) {
+			io_bind (io: r, data: this.compressed[this.compressed_ri .. this.compressed_wi], history_position: 0) {
 				mark = r.mark()
 				lzw_status =? this.lzw.transform_io?(
 					dst: this.util.empty_io_writer(), src: r, workbuf: this.util.empty_slice_u8())

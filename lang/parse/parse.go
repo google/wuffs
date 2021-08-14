@@ -1123,6 +1123,36 @@ func (p *parser) parseIOBindNode() (*a.Node, error) {
 			io.Str(p.tm), p.filename, p.line())
 	}
 
+	histPos := (*a.Expr)(nil)
+	if keyword == t.IDIOBind {
+		if x := p.peek1(); x != t.IDComma {
+			got := p.tm.ByID(x)
+			return nil, fmt.Errorf(`parse: expected ",", got %q at %s:%d`, got, p.filename, p.line())
+		}
+		p.src = p.src[1:]
+
+		if x := p.peek1(); x != t.IDHistoryPosition {
+			got := p.tm.ByID(x)
+			return nil, fmt.Errorf(`parse: expected "history_position", got %q at %s:%d`, got, p.filename, p.line())
+		}
+		p.src = p.src[1:]
+
+		if x := p.peek1(); x != t.IDColon {
+			got := p.tm.ByID(x)
+			return nil, fmt.Errorf(`parse: expected ":", got %q at %s:%d`, got, p.filename, p.line())
+		}
+		p.src = p.src[1:]
+
+		histPos, err = p.parseExpr()
+		if err != nil {
+			return nil, err
+		}
+		if histPos.Effect() != 0 {
+			return nil, fmt.Errorf(`parse: argument %q is not effect-free at %s:%d`,
+				io.Str(p.tm), p.filename, p.line())
+		}
+	}
+
 	if x := p.peek1(); x != t.IDCloseParen {
 		got := p.tm.ByID(x)
 		return nil, fmt.Errorf(`parse: expected ")", got %q at %s:%d`, got, p.filename, p.line())
@@ -1134,7 +1164,7 @@ func (p *parser) parseIOBindNode() (*a.Node, error) {
 		return nil, err
 	}
 
-	return a.NewIOBind(keyword, io, arg1, body).AsNode(), nil
+	return a.NewIOBind(keyword, io, arg1, histPos, body).AsNode(), nil
 }
 
 func (p *parser) parseIf() (*a.If, error) {

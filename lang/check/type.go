@@ -171,6 +171,16 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 				n.Keyword().Str(q.tm), n.Arg1().Str(q.tm), typ.Str(q.tm), arg1Typ.Str(q.tm))
 		}
 
+		if n.Keyword() == t.IDIOBind {
+			if err := q.tcheckExpr(n.HistoryPosition(), 0); err != nil {
+				return err
+			}
+			if typ := n.HistoryPosition().MType(); !typ.IsIdeal() && !typ.EqIgnoringRefinements(typeExprU64) {
+				return fmt.Errorf("check: %s expression %q, of type %q, does not have type %q",
+					n.Keyword().Str(q.tm), n.HistoryPosition().Str(q.tm), typ.Str(q.tm), typeExprU64.Str(q.tm))
+			}
+		}
+
 		for _, o := range n.Body() {
 			// TODO: prohibit jumps (breaks, continues), rets (returns, yields)
 			// and retry-calling ? methods while inside an io_bind body.
