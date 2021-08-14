@@ -358,6 +358,10 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 		b.printf("((uint64_t)(%s%s - %s%s))", iopPrefix, recvName, io0Prefix, recvName)
 		return nil
 
+	case t.IDHistoryPosition:
+		b.printf("(%s ? %s->meta.pos : 0)", recvName, recvName)
+		return nil
+
 	case t.IDPosition:
 		b.printf("wuffs_base__u64__sat_add(%s->meta.pos, ((uint64_t)(%s%s - %s%s)))",
 			recvName, iopPrefix, recvName, io0Prefix, recvName)

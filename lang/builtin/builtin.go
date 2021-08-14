@@ -528,6 +528,7 @@ var funcsOther = [...]string{
 
 	"io_writer.count_since(mark: u64) u64",
 	"io_writer.history_length() u64",
+	"io_writer.history_position() u64",
 	"io_writer.length() u64",
 	"io_writer.mark() u64",
 	"io_writer.position() u64",
