@@ -34,9 +34,10 @@ DecodeJsonCallbacks::Done(DecodeJsonResult& result,
                           sync_io::Input& input,
                           IOBuffer& buffer) {}
 
-const char DecodeJson_BadJsonPointer[] =
+const char DecodeJson_BadJsonPointer[] =  //
     "wuffs_aux::DecodeJson: bad JSON Pointer";
-const char DecodeJson_NoMatch[] = "wuffs_aux::DecodeJson: no match";
+const char DecodeJson_NoMatch[] =  //
+    "wuffs_aux::DecodeJson: no match";
 
 // --------
 
@@ -73,6 +74,14 @@ const char DecodeJson_NoMatch[] = "wuffs_aux::DecodeJson: no match";
     }                                                                       \
     tok_status =                                                            \
         dec->decode_tokens(&tok_buf, io_buf, wuffs_base__empty_slice_u8()); \
+    if ((tok_buf.meta.ri > tok_buf.meta.wi) ||                              \
+        (tok_buf.meta.wi > tok_buf.data.len) ||                             \
+        (io_buf->meta.ri > io_buf->meta.wi) ||                              \
+        (io_buf->meta.wi > io_buf->data.len)) {                             \
+      ret_error_message =                                                   \
+          "wuffs_aux::DecodeJson: internal error: bad buffer indexes";      \
+      goto done;                                                            \
+    }                                                                       \
   }                                                                         \
   wuffs_base__token token = tok_buf.data.ptr[tok_buf.meta.ri++];            \
   uint64_t token_len = token.length();                                      \
@@ -91,7 +100,8 @@ const char DecodeJson_NoMatch[] = "wuffs_aux::DecodeJson: no match";
 namespace {
 
 // DecodeJson_SplitJsonPointer returns ("bar", 8) for ("/foo/bar/b~1z/qux", 5,
-// etc). It returns a 0 size_t when s has invalid JSON Pointer syntax.
+// etc). It returns a 0 size_t when s has invalid JSON Pointer syntax or i is
+// out of bounds.
 //
 // The string returned is unescaped. If calling it again, this time with i=8,
 // the "b~1z" substring would be returned as "b/z".
@@ -100,6 +110,9 @@ DecodeJson_SplitJsonPointer(std::string& s,
                             size_t i,
                             bool allow_tilde_n_tilde_r_tilde_t) {
   std::string fragment;
+  if (i > s.size()) {
+    return std::make_pair(std::string(), 0);
+  }
   while (i < s.size()) {
     char c = s[i];
     if (c == '/') {
@@ -306,8 +319,8 @@ check_that_a_value_follows:
       continue;
     }
 
-    // Undo the last part of WUFFS_AUX__DECODE_JSON__GET_THE_NEXT_TOKEN, so that
-    // we're only peeking at the next token.
+    // Undo the last part of WUFFS_AUX__DECODE_JSON__GET_THE_NEXT_TOKEN, so
+    // that we're only peeking at the next token.
     tok_buf.meta.ri--;
     cursor_index -= static_cast<size_t>(token_len);
 
@@ -377,7 +390,7 @@ DecodeJson(DecodeJsonCallbacks& callbacks,
         dec->decode_tokens(&tok_buf, io_buf, wuffs_base__empty_slice_u8());
 
     // Prepare other state.
-    uint32_t depth = 0;
+    int32_t depth = 0;
     std::string str;
 
     // Walk the (optional) JSON Pointer.
@@ -420,10 +433,20 @@ DecodeJson(DecodeJsonCallbacks& callbacks,
               goto done;
             }
             depth++;
+            if (depth > WUFFS_JSON__DECODER_DEPTH_MAX_INCL) {
+              ret_error_message =
+                  "wuffs_aux::DecodeJson: internal error: bad depth";
+              goto done;
+            }
             continue;
           }
           ret_error_message = callbacks.Pop(static_cast<uint32_t>(vbd));
           depth--;
+          if (depth < 0) {
+            ret_error_message =
+                "wuffs_aux::DecodeJson: internal error: bad depth";
+            goto done;
+          }
           goto parsed_a_value;
         }
 

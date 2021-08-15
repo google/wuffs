@@ -39348,7 +39348,7 @@ DecodeCbor(DecodeCborCallbacks& callbacks,
     // Prepare the low-level CBOR decoder.
     wuffs_cbor__decoder::unique_ptr dec = wuffs_cbor__decoder::alloc();
     if (!dec) {
-      ret_error_message = "wuffs_aux::CborDecoder: out of memory";
+      ret_error_message = "wuffs_aux::DecodeCbor: out of memory";
       goto done;
     }
     for (size_t i = 0; i < quirks.len; i++) {
@@ -39363,7 +39363,7 @@ DecodeCbor(DecodeCborCallbacks& callbacks,
     wuffs_base__status tok_status = wuffs_base__make_status(nullptr);
 
     // Prepare other state.
-    uint32_t depth = 0;
+    int32_t depth = 0;
     std::string str;
     int64_t extension_category = 0;
     uint64_t extension_detail = 0;
@@ -39390,17 +39390,17 @@ DecodeCbor(DecodeCborCallbacks& callbacks,
             goto done;
           } else if (cursor_index != io_buf->meta.ri) {
             ret_error_message =
-                "wuffs_aux::CborDecoder: internal error: bad cursor_index";
+                "wuffs_aux::DecodeCbor: internal error: bad cursor_index";
             goto done;
           } else if (io_buf->meta.closed) {
             ret_error_message =
-                "wuffs_aux::CborDecoder: internal error: io_buf is closed";
+                "wuffs_aux::DecodeCbor: internal error: io_buf is closed";
             goto done;
           }
           io_buf->compact();
           if (io_buf->meta.wi >= io_buf->data.len) {
             ret_error_message =
-                "wuffs_aux::CborDecoder: internal error: io_buf is full";
+                "wuffs_aux::DecodeCbor: internal error: io_buf is full";
             goto done;
           }
           cursor_index = io_buf->meta.ri;
@@ -39412,11 +39412,19 @@ DecodeCbor(DecodeCborCallbacks& callbacks,
 
         if (WUFFS_CBOR__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE != 0) {
           ret_error_message =
-              "wuffs_aux::CborDecoder: internal error: bad WORKBUF_LEN";
+              "wuffs_aux::DecodeCbor: internal error: bad WORKBUF_LEN";
           goto done;
         }
         wuffs_base__slice_u8 work_buf = wuffs_base__empty_slice_u8();
         tok_status = dec->decode_tokens(&tok_buf, io_buf, work_buf);
+        if ((tok_buf.meta.ri > tok_buf.meta.wi) ||
+            (tok_buf.meta.wi > tok_buf.data.len) ||
+            (io_buf->meta.ri > io_buf->meta.wi) ||
+            (io_buf->meta.wi > io_buf->data.len)) {
+          ret_error_message =
+              "wuffs_aux::DecodeCbor: internal error: bad buffer indexes";
+          goto done;
+        }
       }
 
       wuffs_base__token token = tok_buf.data.ptr[tok_buf.meta.ri++];
@@ -39424,7 +39432,7 @@ DecodeCbor(DecodeCborCallbacks& callbacks,
       if ((io_buf->meta.ri < cursor_index) ||
           ((io_buf->meta.ri - cursor_index) < token_len)) {
         ret_error_message =
-            "wuffs_aux::CborDecoder: internal error: bad token indexes";
+            "wuffs_aux::DecodeCbor: internal error: bad token indexes";
         goto done;
       }
       uint8_t* token_ptr = io_buf->data.ptr + cursor_index;
@@ -39460,7 +39468,7 @@ DecodeCbor(DecodeCborCallbacks& callbacks,
           }
         }
         ret_error_message =
-            "wuffs_aux::CborDecoder: internal error: bad extended token";
+            "wuffs_aux::DecodeCbor: internal error: bad extended token";
         goto done;
       }
 
@@ -39475,10 +39483,20 @@ DecodeCbor(DecodeCborCallbacks& callbacks,
               goto done;
             }
             depth++;
+            if (depth > WUFFS_CBOR__DECODER_DEPTH_MAX_INCL) {
+              ret_error_message =
+                  "wuffs_aux::DecodeCbor: internal error: bad depth";
+              goto done;
+            }
             continue;
           }
           ret_error_message = callbacks.Pop(static_cast<uint32_t>(vbd));
           depth--;
+          if (depth < 0) {
+            ret_error_message =
+                "wuffs_aux::DecodeCbor: internal error: bad depth";
+            goto done;
+          }
           goto parsed_a_value;
         }
 
@@ -39615,7 +39633,7 @@ DecodeCbor(DecodeCborCallbacks& callbacks,
 
     fail:
       ret_error_message =
-          "wuffs_aux::CborDecoder: internal error: unexpected token";
+          "wuffs_aux::DecodeCbor: internal error: unexpected token";
       goto done;
 
     parsed_a_value:
@@ -40082,9 +40100,10 @@ DecodeJsonCallbacks::Done(DecodeJsonResult& result,
                           sync_io::Input& input,
                           IOBuffer& buffer) {}
 
-const char DecodeJson_BadJsonPointer[] =
+const char DecodeJson_BadJsonPointer[] =  //
     "wuffs_aux::DecodeJson: bad JSON Pointer";
-const char DecodeJson_NoMatch[] = "wuffs_aux::DecodeJson: no match";
+const char DecodeJson_NoMatch[] =  //
+    "wuffs_aux::DecodeJson: no match";
 
 // --------
 
@@ -40121,6 +40140,14 @@ const char DecodeJson_NoMatch[] = "wuffs_aux::DecodeJson: no match";
     }                                                                       \
     tok_status =                                                            \
         dec->decode_tokens(&tok_buf, io_buf, wuffs_base__empty_slice_u8()); \
+    if ((tok_buf.meta.ri > tok_buf.meta.wi) ||                              \
+        (tok_buf.meta.wi > tok_buf.data.len) ||                             \
+        (io_buf->meta.ri > io_buf->meta.wi) ||                              \
+        (io_buf->meta.wi > io_buf->data.len)) {                             \
+      ret_error_message =                                                   \
+          "wuffs_aux::DecodeJson: internal error: bad buffer indexes";      \
+      goto done;                                                            \
+    }                                                                       \
   }                                                                         \
   wuffs_base__token token = tok_buf.data.ptr[tok_buf.meta.ri++];            \
   uint64_t token_len = token.length();                                      \
@@ -40139,7 +40166,8 @@ const char DecodeJson_NoMatch[] = "wuffs_aux::DecodeJson: no match";
 namespace {
 
 // DecodeJson_SplitJsonPointer returns ("bar", 8) for ("/foo/bar/b~1z/qux", 5,
-// etc). It returns a 0 size_t when s has invalid JSON Pointer syntax.
+// etc). It returns a 0 size_t when s has invalid JSON Pointer syntax or i is
+// out of bounds.
 //
 // The string returned is unescaped. If calling it again, this time with i=8,
 // the "b~1z" substring would be returned as "b/z".
@@ -40148,6 +40176,9 @@ DecodeJson_SplitJsonPointer(std::string& s,
                             size_t i,
                             bool allow_tilde_n_tilde_r_tilde_t) {
   std::string fragment;
+  if (i > s.size()) {
+    return std::make_pair(std::string(), 0);
+  }
   while (i < s.size()) {
     char c = s[i];
     if (c == '/') {
@@ -40354,8 +40385,8 @@ check_that_a_value_follows:
       continue;
     }
 
-    // Undo the last part of WUFFS_AUX__DECODE_JSON__GET_THE_NEXT_TOKEN, so that
-    // we're only peeking at the next token.
+    // Undo the last part of WUFFS_AUX__DECODE_JSON__GET_THE_NEXT_TOKEN, so
+    // that we're only peeking at the next token.
     tok_buf.meta.ri--;
     cursor_index -= static_cast<size_t>(token_len);
 
@@ -40425,7 +40456,7 @@ DecodeJson(DecodeJsonCallbacks& callbacks,
         dec->decode_tokens(&tok_buf, io_buf, wuffs_base__empty_slice_u8());
 
     // Prepare other state.
-    uint32_t depth = 0;
+    int32_t depth = 0;
     std::string str;
 
     // Walk the (optional) JSON Pointer.
@@ -40468,10 +40499,20 @@ DecodeJson(DecodeJsonCallbacks& callbacks,
               goto done;
             }
             depth++;
+            if (depth > WUFFS_JSON__DECODER_DEPTH_MAX_INCL) {
+              ret_error_message =
+                  "wuffs_aux::DecodeJson: internal error: bad depth";
+              goto done;
+            }
             continue;
           }
           ret_error_message = callbacks.Pop(static_cast<uint32_t>(vbd));
           depth--;
+          if (depth < 0) {
+            ret_error_message =
+                "wuffs_aux::DecodeJson: internal error: bad depth";
+            goto done;
+          }
           goto parsed_a_value;
         }
 
