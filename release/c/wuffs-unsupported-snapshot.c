@@ -14273,13 +14273,18 @@ wuffs_base__parse_number_i64(wuffs_base__slice_u8 s, uint32_t options) {
       ret.value = 0;
       return ret;
     } else if (negative) {
-      if (r.value > 0x8000000000000000) {
-        goto fail_out_of_bounds;
+      if (r.value < 0x8000000000000000) {
+        wuffs_base__result_i64 ret;
+        ret.status.repr = NULL;
+        ret.value = -(int64_t)(r.value);
+        return ret;
+      } else if (r.value == 0x8000000000000000) {
+        wuffs_base__result_i64 ret;
+        ret.status.repr = NULL;
+        ret.value = -0x8000000000000000;
+        return ret;
       }
-      wuffs_base__result_i64 ret;
-      ret.status.repr = NULL;
-      ret.value = -(int64_t)(r.value);
-      return ret;
+      goto fail_out_of_bounds;
     } else if (r.value > 0x7FFFFFFFFFFFFFFF) {
       goto fail_out_of_bounds;
     } else {
