@@ -84,15 +84,15 @@ extern "C" {
 // each major.minor branch, the commit count should increase monotonically.
 //
 // WUFFS_VERSION was overridden by "wuffs gen -version" based on revision
-// 77f855206d6b458ffe892dd5cf19150b1de63f24 committed on 2021-07-20.
+// a86fd7fa795943a91dd80f2c92c8194286682ad8 committed on 2021-08-15.
 #define WUFFS_VERSION 0x000030000
 #define WUFFS_VERSION_MAJOR 0
 #define WUFFS_VERSION_MINOR 3
 #define WUFFS_VERSION_PATCH 0
-#define WUFFS_VERSION_PRE_RELEASE_LABEL "beta.8"
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 3072
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20210720
-#define WUFFS_VERSION_STRING "0.3.0-beta.8+3072.20210720"
+#define WUFFS_VERSION_PRE_RELEASE_LABEL "beta.9"
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 3084
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20210815
+#define WUFFS_VERSION_STRING "0.3.0-beta.9+3084.20210815"
 
 // ---------------- Configuration
 
@@ -7104,6 +7104,7 @@ struct wuffs_deflate__decoder__struct {
 
     uint32_t f_bits;
     uint32_t f_n_bits;
+    uint64_t f_transformed_history_count;
     uint32_t f_history_index;
     uint32_t f_n_huffs_bits[2];
     bool f_end_of_block;
@@ -10464,11 +10465,12 @@ wuffs_base__io_reader__set(wuffs_base__io_buffer* b,
                            const uint8_t** ptr_io0_r,
                            const uint8_t** ptr_io1_r,
                            const uint8_t** ptr_io2_r,
-                           wuffs_base__slice_u8 data) {
+                           wuffs_base__slice_u8 data,
+                           uint64_t history_position) {
   b->data = data;
   b->meta.wi = data.len;
   b->meta.ri = 0;
-  b->meta.pos = 0;
+  b->meta.pos = history_position;
   b->meta.closed = false;
 
   *ptr_iop_r = data.ptr;
@@ -10702,11 +10704,12 @@ wuffs_base__io_writer__set(wuffs_base__io_buffer* b,
                            uint8_t** ptr_io0_w,
                            uint8_t** ptr_io1_w,
                            uint8_t** ptr_io2_w,
-                           wuffs_base__slice_u8 data) {
+                           wuffs_base__slice_u8 data,
+                           uint64_t history_position) {
   b->data = data;
   b->meta.wi = 0;
   b->meta.ri = 0;
-  b->meta.pos = 0;
+  b->meta.pos = history_position;
   b->meta.closed = false;
 
   *ptr_iop_w = data.ptr;
@@ -14271,13 +14274,18 @@ wuffs_base__parse_number_i64(wuffs_base__slice_u8 s, uint32_t options) {
       ret.value = 0;
       return ret;
     } else if (negative) {
-      if (r.value > 0x8000000000000000) {
-        goto fail_out_of_bounds;
+      if (r.value < 0x8000000000000000) {
+        wuffs_base__result_i64 ret;
+        ret.status.repr = NULL;
+        ret.value = -(int64_t)(r.value);
+        return ret;
+      } else if (r.value == 0x8000000000000000) {
+        wuffs_base__result_i64 ret;
+        ret.status.repr = NULL;
+        ret.value = INT64_MIN;
+        return ret;
       }
-      wuffs_base__result_i64 ret;
-      ret.status.repr = NULL;
-      ret.value = -(int64_t)(r.value);
-      return ret;
+      goto fail_out_of_bounds;
     } else if (r.value > 0x7FFFFFFFFFFFFFFF) {
       goto fail_out_of_bounds;
     } else {
@@ -21370,7 +21378,7 @@ wuffs_bmp__decoder__decode_image_config(
       goto exit;
     }
     self->private_impl.f_padding -= 14;
-    self->private_impl.f_io_redirect_pos = wuffs_base__u64__sat_add(((uint64_t)(self->private_impl.f_padding)), wuffs_base__u64__sat_add(a_src->meta.pos, ((uint64_t)(iop_a_src - io0_a_src))));
+    self->private_impl.f_io_redirect_pos = wuffs_base__u64__sat_add(((uint64_t)(self->private_impl.f_padding)), wuffs_base__u64__sat_add((a_src ? a_src->meta.pos : 0), ((uint64_t)(iop_a_src - io0_a_src))));
     {
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
       uint32_t t_2;
@@ -22119,7 +22127,7 @@ wuffs_bmp__decoder__decode_image_config(
     } else if (self->private_impl.f_bits_per_pixel == 32) {
       self->private_impl.f_pad_per_row = 0;
     }
-    self->private_impl.f_frame_config_io_position = wuffs_base__u64__sat_add(a_src->meta.pos, ((uint64_t)(iop_a_src - io0_a_src)));
+    self->private_impl.f_frame_config_io_position = wuffs_base__u64__sat_add((a_src ? a_src->meta.pos : 0), ((uint64_t)(iop_a_src - io0_a_src)));
     if (a_dst != NULL) {
       v_dst_pixfmt = 2164295816;
       if ((self->private_impl.f_channel_num_bits[0] > 8) ||
@@ -22217,7 +22225,7 @@ wuffs_bmp__decoder__decode_frame_config(
         goto suspend;
       }
     } else if (self->private_impl.f_call_sequence == 3) {
-      if (self->private_impl.f_frame_config_io_position != wuffs_base__u64__sat_add(a_src->meta.pos, ((uint64_t)(iop_a_src - io0_a_src)))) {
+      if (self->private_impl.f_frame_config_io_position != wuffs_base__u64__sat_add((a_src ? a_src->meta.pos : 0), ((uint64_t)(iop_a_src - io0_a_src)))) {
         status = wuffs_base__make_status(wuffs_base__error__bad_restart);
         goto exit;
       }
@@ -25757,6 +25765,7 @@ wuffs_deflate__decoder__transform_io(
         }
         goto ok;
       }
+      wuffs_base__u64__sat_add_indirect(&self->private_impl.f_transformed_history_count, wuffs_base__io__count_since(v_mark, ((uint64_t)(iop_a_dst - io0_a_dst))));
       wuffs_deflate__decoder__add_history(self, wuffs_base__io__since(v_mark, ((uint64_t)(iop_a_dst - io0_a_dst)), io0_a_dst));
       status = v_status;
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(1);
@@ -26644,6 +26653,7 @@ wuffs_deflate__decoder__decode_huffman_bmi2(
   uint32_t v_dist_minus_1 = 0;
   uint32_t v_hlen = 0;
   uint32_t v_hdist = 0;
+  uint32_t v_hdist_adjustment = 0;
 
   uint8_t* iop_a_dst = NULL;
   uint8_t* io0_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -26677,6 +26687,11 @@ wuffs_deflate__decoder__decode_huffman_bmi2(
   v_n_bits = self->private_impl.f_n_bits;
   v_lmask = ((((uint64_t)(1)) << self->private_impl.f_n_huffs_bits[0]) - 1);
   v_dmask = ((((uint64_t)(1)) << self->private_impl.f_n_huffs_bits[1]) - 1);
+  if (self->private_impl.f_transformed_history_count < (a_dst ? a_dst->meta.pos : 0)) {
+    status = wuffs_base__make_status(wuffs_base__error__bad_i_o_position);
+    goto exit;
+  }
+  v_hdist_adjustment = ((uint32_t)(((self->private_impl.f_transformed_history_count - (a_dst ? a_dst->meta.pos : 0)) & 4294967295)));
   label__loop__continue:;
   while ((((uint64_t)(io2_a_dst - iop_a_dst)) >= 266) && (((uint64_t)(io2_a_src - iop_a_src)) >= 8)) {
     v_bits |= ((uint64_t)(wuffs_base__peek_u64le__no_bounds_check(iop_a_src) << (v_n_bits & 63)));
@@ -26767,6 +26782,7 @@ wuffs_deflate__decoder__decode_huffman_bmi2(
           v_hlen = v_length;
           v_length = 0;
         }
+        v_hdist += v_hdist_adjustment;
         if (self->private_impl.f_history_index < v_hdist) {
           status = wuffs_base__make_status(wuffs_deflate__error__bad_distance);
           goto exit;
@@ -26851,6 +26867,7 @@ wuffs_deflate__decoder__decode_huffman_fast32(
   uint32_t v_dist_minus_1 = 0;
   uint32_t v_hlen = 0;
   uint32_t v_hdist = 0;
+  uint32_t v_hdist_adjustment = 0;
 
   uint8_t* iop_a_dst = NULL;
   uint8_t* io0_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -26884,6 +26901,11 @@ wuffs_deflate__decoder__decode_huffman_fast32(
   v_n_bits = self->private_impl.f_n_bits;
   v_lmask = ((((uint32_t)(1)) << self->private_impl.f_n_huffs_bits[0]) - 1);
   v_dmask = ((((uint32_t)(1)) << self->private_impl.f_n_huffs_bits[1]) - 1);
+  if (self->private_impl.f_transformed_history_count < (a_dst ? a_dst->meta.pos : 0)) {
+    status = wuffs_base__make_status(wuffs_base__error__bad_i_o_position);
+    goto exit;
+  }
+  v_hdist_adjustment = ((uint32_t)(((self->private_impl.f_transformed_history_count - (a_dst ? a_dst->meta.pos : 0)) & 4294967295)));
   label__loop__continue:;
   while ((((uint64_t)(io2_a_dst - iop_a_dst)) >= 266) && (((uint64_t)(io2_a_src - iop_a_src)) >= 12)) {
     if (v_n_bits < 15) {
@@ -27026,6 +27048,7 @@ wuffs_deflate__decoder__decode_huffman_fast32(
           v_hlen = v_length;
           v_length = 0;
         }
+        v_hdist += v_hdist_adjustment;
         if (self->private_impl.f_history_index < v_hdist) {
           status = wuffs_base__make_status(wuffs_deflate__error__bad_distance);
           goto exit;
@@ -27109,6 +27132,7 @@ wuffs_deflate__decoder__decode_huffman_fast64__choosy_default(
   uint32_t v_dist_minus_1 = 0;
   uint32_t v_hlen = 0;
   uint32_t v_hdist = 0;
+  uint32_t v_hdist_adjustment = 0;
 
   uint8_t* iop_a_dst = NULL;
   uint8_t* io0_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -27142,6 +27166,11 @@ wuffs_deflate__decoder__decode_huffman_fast64__choosy_default(
   v_n_bits = self->private_impl.f_n_bits;
   v_lmask = ((((uint64_t)(1)) << self->private_impl.f_n_huffs_bits[0]) - 1);
   v_dmask = ((((uint64_t)(1)) << self->private_impl.f_n_huffs_bits[1]) - 1);
+  if (self->private_impl.f_transformed_history_count < (a_dst ? a_dst->meta.pos : 0)) {
+    status = wuffs_base__make_status(wuffs_base__error__bad_i_o_position);
+    goto exit;
+  }
+  v_hdist_adjustment = ((uint32_t)(((self->private_impl.f_transformed_history_count - (a_dst ? a_dst->meta.pos : 0)) & 4294967295)));
   label__loop__continue:;
   while ((((uint64_t)(io2_a_dst - iop_a_dst)) >= 266) && (((uint64_t)(io2_a_src - iop_a_src)) >= 8)) {
     v_bits |= ((uint64_t)(wuffs_base__peek_u64le__no_bounds_check(iop_a_src) << (v_n_bits & 63)));
@@ -27232,6 +27261,7 @@ wuffs_deflate__decoder__decode_huffman_fast64__choosy_default(
           v_hlen = v_length;
           v_length = 0;
         }
+        v_hdist += v_hdist_adjustment;
         if (self->private_impl.f_history_index < v_hdist) {
           status = wuffs_base__make_status(wuffs_deflate__error__bad_distance);
           goto exit;
@@ -27566,6 +27596,7 @@ wuffs_deflate__decoder__decode_huffman_slow(
             v_hlen = v_length;
             v_length = 0;
           }
+          v_hdist += ((uint32_t)((((uint64_t)(self->private_impl.f_transformed_history_count - (a_dst ? a_dst->meta.pos : 0))) & 4294967295)));
           if (self->private_impl.f_history_index < v_hdist) {
             status = wuffs_base__make_status(wuffs_deflate__error__bad_distance);
             goto exit;
@@ -28631,7 +28662,7 @@ wuffs_gif__decoder__tell_me_more(
     while (true) {
       label__0__continue:;
       while (true) {
-        if (wuffs_base__u64__sat_add(a_src->meta.pos, ((uint64_t)(iop_a_src - io0_a_src))) != self->private_impl.f_metadata_io_position) {
+        if (wuffs_base__u64__sat_add((a_src ? a_src->meta.pos : 0), ((uint64_t)(iop_a_src - io0_a_src))) != self->private_impl.f_metadata_io_position) {
           if (a_minfo != NULL) {
             wuffs_base__more_information__set(a_minfo,
                 2,
@@ -28670,13 +28701,13 @@ wuffs_gif__decoder__tell_me_more(
       } else {
         iop_a_src += 1;
       }
-      self->private_impl.f_metadata_io_position = wuffs_base__u64__sat_add(wuffs_base__u64__sat_add(a_src->meta.pos, ((uint64_t)(iop_a_src - io0_a_src))), v_chunk_length);
+      self->private_impl.f_metadata_io_position = wuffs_base__u64__sat_add(wuffs_base__u64__sat_add((a_src ? a_src->meta.pos : 0), ((uint64_t)(iop_a_src - io0_a_src))), v_chunk_length);
       if (a_minfo != NULL) {
         wuffs_base__more_information__set(a_minfo,
             3,
             self->private_impl.f_metadata_fourcc,
             0,
-            wuffs_base__u64__sat_add(a_src->meta.pos, ((uint64_t)(iop_a_src - io0_a_src))),
+            wuffs_base__u64__sat_add((a_src ? a_src->meta.pos : 0), ((uint64_t)(iop_a_src - io0_a_src))),
             self->private_impl.f_metadata_io_position);
       }
       status = wuffs_base__make_status(wuffs_base__suspension__even_more_information);
@@ -29202,9 +29233,9 @@ wuffs_gif__decoder__decode_up_to_id_part1(
 
     if ( ! self->private_impl.f_restarted) {
       if (self->private_impl.f_call_sequence != 2) {
-        self->private_impl.f_frame_config_io_position = wuffs_base__u64__sat_add(a_src->meta.pos, ((uint64_t)(iop_a_src - io0_a_src)));
+        self->private_impl.f_frame_config_io_position = wuffs_base__u64__sat_add((a_src ? a_src->meta.pos : 0), ((uint64_t)(iop_a_src - io0_a_src)));
       }
-    } else if (self->private_impl.f_frame_config_io_position != wuffs_base__u64__sat_add(a_src->meta.pos, ((uint64_t)(iop_a_src - io0_a_src)))) {
+    } else if (self->private_impl.f_frame_config_io_position != wuffs_base__u64__sat_add((a_src ? a_src->meta.pos : 0), ((uint64_t)(iop_a_src - io0_a_src)))) {
       status = wuffs_base__make_status(wuffs_base__error__bad_restart);
       goto exit;
     } else {
@@ -29889,13 +29920,13 @@ wuffs_gif__decoder__decode_ae(
       } else if (self->private_impl.f_ignore_metadata) {
       } else if (v_is_iccp && self->private_impl.f_report_metadata_iccp) {
         self->private_impl.f_metadata_fourcc = 1229144912;
-        self->private_impl.f_metadata_io_position = wuffs_base__u64__sat_add(a_src->meta.pos, ((uint64_t)(iop_a_src - io0_a_src)));
+        self->private_impl.f_metadata_io_position = wuffs_base__u64__sat_add((a_src ? a_src->meta.pos : 0), ((uint64_t)(iop_a_src - io0_a_src)));
         self->private_impl.f_call_sequence = 1;
         status = wuffs_base__make_status(wuffs_base__note__metadata_reported);
         goto ok;
       } else if (v_is_xmp && self->private_impl.f_report_metadata_xmp) {
         self->private_impl.f_metadata_fourcc = 1481461792;
-        self->private_impl.f_metadata_io_position = wuffs_base__u64__sat_add(a_src->meta.pos, ((uint64_t)(iop_a_src - io0_a_src)));
+        self->private_impl.f_metadata_io_position = wuffs_base__u64__sat_add((a_src ? a_src->meta.pos : 0), ((uint64_t)(iop_a_src - io0_a_src)));
         self->private_impl.f_call_sequence = 1;
         status = wuffs_base__make_status(wuffs_base__note__metadata_reported);
         goto ok;
@@ -30519,7 +30550,8 @@ wuffs_gif__decoder__decode_id_part2(
               wuffs_base__slice_u8__subslice_ij(wuffs_base__make_slice_u8(self->private_data.f_compressed,
               4096),
               self->private_impl.f_compressed_ri,
-              self->private_impl.f_compressed_wi));
+              self->private_impl.f_compressed_wi),
+              0);
           v_mark = ((uint64_t)(iop_v_r - io0_v_r));
           {
             u_r.meta.ri = ((size_t)(iop_v_r - u_r.data.ptr));
@@ -33887,7 +33919,7 @@ wuffs_nie__decoder__decode_frame_config(
         goto suspend;
       }
     } else if (self->private_impl.f_call_sequence == 3) {
-      if (16 != wuffs_base__u64__sat_add(a_src->meta.pos, ((uint64_t)(iop_a_src - io0_a_src)))) {
+      if (16 != wuffs_base__u64__sat_add((a_src ? a_src->meta.pos : 0), ((uint64_t)(iop_a_src - io0_a_src)))) {
         status = wuffs_base__make_status(wuffs_base__error__bad_restart);
         goto exit;
       }
@@ -36851,7 +36883,7 @@ wuffs_png__decoder__decode_image_config(
       status = wuffs_base__make_status(wuffs_png__error__missing_palette);
       goto exit;
     }
-    self->private_impl.f_frame_config_io_position = wuffs_base__u64__sat_add(a_src->meta.pos, ((uint64_t)(iop_a_src - io0_a_src)));
+    self->private_impl.f_frame_config_io_position = wuffs_base__u64__sat_add((a_src ? a_src->meta.pos : 0), ((uint64_t)(iop_a_src - io0_a_src)));
     if (a_dst != NULL) {
       wuffs_base__image_config__set(
           a_dst,
@@ -37559,7 +37591,7 @@ wuffs_png__decoder__decode_frame_config(
         goto suspend;
       }
     } else if (self->private_impl.f_call_sequence == 3) {
-      if (self->private_impl.f_frame_config_io_position != wuffs_base__u64__sat_add(a_src->meta.pos, ((uint64_t)(iop_a_src - io0_a_src)))) {
+      if (self->private_impl.f_frame_config_io_position != wuffs_base__u64__sat_add((a_src ? a_src->meta.pos : 0), ((uint64_t)(iop_a_src - io0_a_src)))) {
         status = wuffs_base__make_status(wuffs_base__error__bad_restart);
         goto exit;
       }
@@ -37793,7 +37825,8 @@ wuffs_png__decoder__decode_pass(
             &io2_v_w,
             wuffs_base__slice_u8__subslice_ij(a_workbuf,
             self->private_impl.f_workbuf_wi,
-            self->private_impl.f_pass_workbuf_length));
+            self->private_impl.f_pass_workbuf_length),
+            self->private_impl.f_workbuf_wi);
         {
           const uint8_t *o_1_io2_a_src = io2_a_src;
           wuffs_base__io_reader__limit(&io2_a_src, iop_a_src,
@@ -38692,7 +38725,7 @@ wuffs_wbmp__decoder__decode_image_config(
       }
       v_i += 1;
     }
-    self->private_impl.f_frame_config_io_position = wuffs_base__u64__sat_add(a_src->meta.pos, ((uint64_t)(iop_a_src - io0_a_src)));
+    self->private_impl.f_frame_config_io_position = wuffs_base__u64__sat_add((a_src ? a_src->meta.pos : 0), ((uint64_t)(iop_a_src - io0_a_src)));
     if (a_dst != NULL) {
       wuffs_base__image_config__set(
           a_dst,
@@ -38786,7 +38819,7 @@ wuffs_wbmp__decoder__decode_frame_config(
         goto suspend;
       }
     } else if (self->private_impl.f_call_sequence == 3) {
-      if (self->private_impl.f_frame_config_io_position != wuffs_base__u64__sat_add(a_src->meta.pos, ((uint64_t)(iop_a_src - io0_a_src)))) {
+      if (self->private_impl.f_frame_config_io_position != wuffs_base__u64__sat_add((a_src ? a_src->meta.pos : 0), ((uint64_t)(iop_a_src - io0_a_src)))) {
         status = wuffs_base__make_status(wuffs_base__error__bad_restart);
         goto exit;
       }
@@ -39316,7 +39349,7 @@ DecodeCbor(DecodeCborCallbacks& callbacks,
     // Prepare the low-level CBOR decoder.
     wuffs_cbor__decoder::unique_ptr dec = wuffs_cbor__decoder::alloc();
     if (!dec) {
-      ret_error_message = "wuffs_aux::CborDecoder: out of memory";
+      ret_error_message = "wuffs_aux::DecodeCbor: out of memory";
       goto done;
     }
     for (size_t i = 0; i < quirks.len; i++) {
@@ -39331,7 +39364,7 @@ DecodeCbor(DecodeCborCallbacks& callbacks,
     wuffs_base__status tok_status = wuffs_base__make_status(nullptr);
 
     // Prepare other state.
-    uint32_t depth = 0;
+    int32_t depth = 0;
     std::string str;
     int64_t extension_category = 0;
     uint64_t extension_detail = 0;
@@ -39358,17 +39391,17 @@ DecodeCbor(DecodeCborCallbacks& callbacks,
             goto done;
           } else if (cursor_index != io_buf->meta.ri) {
             ret_error_message =
-                "wuffs_aux::CborDecoder: internal error: bad cursor_index";
+                "wuffs_aux::DecodeCbor: internal error: bad cursor_index";
             goto done;
           } else if (io_buf->meta.closed) {
             ret_error_message =
-                "wuffs_aux::CborDecoder: internal error: io_buf is closed";
+                "wuffs_aux::DecodeCbor: internal error: io_buf is closed";
             goto done;
           }
           io_buf->compact();
           if (io_buf->meta.wi >= io_buf->data.len) {
             ret_error_message =
-                "wuffs_aux::CborDecoder: internal error: io_buf is full";
+                "wuffs_aux::DecodeCbor: internal error: io_buf is full";
             goto done;
           }
           cursor_index = io_buf->meta.ri;
@@ -39380,11 +39413,19 @@ DecodeCbor(DecodeCborCallbacks& callbacks,
 
         if (WUFFS_CBOR__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE != 0) {
           ret_error_message =
-              "wuffs_aux::CborDecoder: internal error: bad WORKBUF_LEN";
+              "wuffs_aux::DecodeCbor: internal error: bad WORKBUF_LEN";
           goto done;
         }
         wuffs_base__slice_u8 work_buf = wuffs_base__empty_slice_u8();
         tok_status = dec->decode_tokens(&tok_buf, io_buf, work_buf);
+        if ((tok_buf.meta.ri > tok_buf.meta.wi) ||
+            (tok_buf.meta.wi > tok_buf.data.len) ||
+            (io_buf->meta.ri > io_buf->meta.wi) ||
+            (io_buf->meta.wi > io_buf->data.len)) {
+          ret_error_message =
+              "wuffs_aux::DecodeCbor: internal error: bad buffer indexes";
+          goto done;
+        }
       }
 
       wuffs_base__token token = tok_buf.data.ptr[tok_buf.meta.ri++];
@@ -39392,7 +39433,7 @@ DecodeCbor(DecodeCborCallbacks& callbacks,
       if ((io_buf->meta.ri < cursor_index) ||
           ((io_buf->meta.ri - cursor_index) < token_len)) {
         ret_error_message =
-            "wuffs_aux::CborDecoder: internal error: bad token indexes";
+            "wuffs_aux::DecodeCbor: internal error: bad token indexes";
         goto done;
       }
       uint8_t* token_ptr = io_buf->data.ptr + cursor_index;
@@ -39428,7 +39469,7 @@ DecodeCbor(DecodeCborCallbacks& callbacks,
           }
         }
         ret_error_message =
-            "wuffs_aux::CborDecoder: internal error: bad extended token";
+            "wuffs_aux::DecodeCbor: internal error: bad extended token";
         goto done;
       }
 
@@ -39443,10 +39484,20 @@ DecodeCbor(DecodeCborCallbacks& callbacks,
               goto done;
             }
             depth++;
+            if (depth > WUFFS_CBOR__DECODER_DEPTH_MAX_INCL) {
+              ret_error_message =
+                  "wuffs_aux::DecodeCbor: internal error: bad depth";
+              goto done;
+            }
             continue;
           }
           ret_error_message = callbacks.Pop(static_cast<uint32_t>(vbd));
           depth--;
+          if (depth < 0) {
+            ret_error_message =
+                "wuffs_aux::DecodeCbor: internal error: bad depth";
+            goto done;
+          }
           goto parsed_a_value;
         }
 
@@ -39583,7 +39634,7 @@ DecodeCbor(DecodeCborCallbacks& callbacks,
 
     fail:
       ret_error_message =
-          "wuffs_aux::CborDecoder: internal error: unexpected token";
+          "wuffs_aux::DecodeCbor: internal error: unexpected token";
       goto done;
 
     parsed_a_value:
@@ -40050,9 +40101,10 @@ DecodeJsonCallbacks::Done(DecodeJsonResult& result,
                           sync_io::Input& input,
                           IOBuffer& buffer) {}
 
-const char DecodeJson_BadJsonPointer[] =
+const char DecodeJson_BadJsonPointer[] =  //
     "wuffs_aux::DecodeJson: bad JSON Pointer";
-const char DecodeJson_NoMatch[] = "wuffs_aux::DecodeJson: no match";
+const char DecodeJson_NoMatch[] =  //
+    "wuffs_aux::DecodeJson: no match";
 
 // --------
 
@@ -40089,6 +40141,14 @@ const char DecodeJson_NoMatch[] = "wuffs_aux::DecodeJson: no match";
     }                                                                       \
     tok_status =                                                            \
         dec->decode_tokens(&tok_buf, io_buf, wuffs_base__empty_slice_u8()); \
+    if ((tok_buf.meta.ri > tok_buf.meta.wi) ||                              \
+        (tok_buf.meta.wi > tok_buf.data.len) ||                             \
+        (io_buf->meta.ri > io_buf->meta.wi) ||                              \
+        (io_buf->meta.wi > io_buf->data.len)) {                             \
+      ret_error_message =                                                   \
+          "wuffs_aux::DecodeJson: internal error: bad buffer indexes";      \
+      goto done;                                                            \
+    }                                                                       \
   }                                                                         \
   wuffs_base__token token = tok_buf.data.ptr[tok_buf.meta.ri++];            \
   uint64_t token_len = token.length();                                      \
@@ -40107,7 +40167,8 @@ const char DecodeJson_NoMatch[] = "wuffs_aux::DecodeJson: no match";
 namespace {
 
 // DecodeJson_SplitJsonPointer returns ("bar", 8) for ("/foo/bar/b~1z/qux", 5,
-// etc). It returns a 0 size_t when s has invalid JSON Pointer syntax.
+// etc). It returns a 0 size_t when s has invalid JSON Pointer syntax or i is
+// out of bounds.
 //
 // The string returned is unescaped. If calling it again, this time with i=8,
 // the "b~1z" substring would be returned as "b/z".
@@ -40116,6 +40177,9 @@ DecodeJson_SplitJsonPointer(std::string& s,
                             size_t i,
                             bool allow_tilde_n_tilde_r_tilde_t) {
   std::string fragment;
+  if (i > s.size()) {
+    return std::make_pair(std::string(), 0);
+  }
   while (i < s.size()) {
     char c = s[i];
     if (c == '/') {
@@ -40322,8 +40386,8 @@ check_that_a_value_follows:
       continue;
     }
 
-    // Undo the last part of WUFFS_AUX__DECODE_JSON__GET_THE_NEXT_TOKEN, so that
-    // we're only peeking at the next token.
+    // Undo the last part of WUFFS_AUX__DECODE_JSON__GET_THE_NEXT_TOKEN, so
+    // that we're only peeking at the next token.
     tok_buf.meta.ri--;
     cursor_index -= static_cast<size_t>(token_len);
 
@@ -40393,7 +40457,7 @@ DecodeJson(DecodeJsonCallbacks& callbacks,
         dec->decode_tokens(&tok_buf, io_buf, wuffs_base__empty_slice_u8());
 
     // Prepare other state.
-    uint32_t depth = 0;
+    int32_t depth = 0;
     std::string str;
 
     // Walk the (optional) JSON Pointer.
@@ -40436,10 +40500,20 @@ DecodeJson(DecodeJsonCallbacks& callbacks,
               goto done;
             }
             depth++;
+            if (depth > WUFFS_JSON__DECODER_DEPTH_MAX_INCL) {
+              ret_error_message =
+                  "wuffs_aux::DecodeJson: internal error: bad depth";
+              goto done;
+            }
             continue;
           }
           ret_error_message = callbacks.Pop(static_cast<uint32_t>(vbd));
           depth--;
+          if (depth < 0) {
+            ret_error_message =
+                "wuffs_aux::DecodeJson: internal error: bad depth";
+            goto done;
+          }
           goto parsed_a_value;
         }
 
