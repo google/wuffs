@@ -7103,6 +7103,7 @@ struct wuffs_deflate__decoder__struct {
 
     uint32_t f_bits;
     uint32_t f_n_bits;
+    uint64_t f_transformed_history_count;
     uint32_t f_history_index;
     uint32_t f_n_huffs_bits[2];
     bool f_end_of_block;
@@ -25758,6 +25759,7 @@ wuffs_deflate__decoder__transform_io(
         }
         goto ok;
       }
+      wuffs_base__u64__sat_add_indirect(&self->private_impl.f_transformed_history_count, wuffs_base__io__count_since(v_mark, ((uint64_t)(iop_a_dst - io0_a_dst))));
       wuffs_deflate__decoder__add_history(self, wuffs_base__io__since(v_mark, ((uint64_t)(iop_a_dst - io0_a_dst)), io0_a_dst));
       status = v_status;
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(1);
@@ -26645,6 +26647,7 @@ wuffs_deflate__decoder__decode_huffman_bmi2(
   uint32_t v_dist_minus_1 = 0;
   uint32_t v_hlen = 0;
   uint32_t v_hdist = 0;
+  uint32_t v_hdist_adjustment = 0;
 
   uint8_t* iop_a_dst = NULL;
   uint8_t* io0_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -26678,6 +26681,11 @@ wuffs_deflate__decoder__decode_huffman_bmi2(
   v_n_bits = self->private_impl.f_n_bits;
   v_lmask = ((((uint64_t)(1)) << self->private_impl.f_n_huffs_bits[0]) - 1);
   v_dmask = ((((uint64_t)(1)) << self->private_impl.f_n_huffs_bits[1]) - 1);
+  if (self->private_impl.f_transformed_history_count < (a_dst ? a_dst->meta.pos : 0)) {
+    status = wuffs_base__make_status(wuffs_base__error__bad_i_o_position);
+    goto exit;
+  }
+  v_hdist_adjustment = ((uint32_t)(((self->private_impl.f_transformed_history_count - (a_dst ? a_dst->meta.pos : 0)) & 4294967295)));
   label__loop__continue:;
   while ((((uint64_t)(io2_a_dst - iop_a_dst)) >= 266) && (((uint64_t)(io2_a_src - iop_a_src)) >= 8)) {
     v_bits |= ((uint64_t)(wuffs_base__peek_u64le__no_bounds_check(iop_a_src) << (v_n_bits & 63)));
@@ -26768,6 +26776,7 @@ wuffs_deflate__decoder__decode_huffman_bmi2(
           v_hlen = v_length;
           v_length = 0;
         }
+        v_hdist += v_hdist_adjustment;
         if (self->private_impl.f_history_index < v_hdist) {
           status = wuffs_base__make_status(wuffs_deflate__error__bad_distance);
           goto exit;
@@ -26852,6 +26861,7 @@ wuffs_deflate__decoder__decode_huffman_fast32(
   uint32_t v_dist_minus_1 = 0;
   uint32_t v_hlen = 0;
   uint32_t v_hdist = 0;
+  uint32_t v_hdist_adjustment = 0;
 
   uint8_t* iop_a_dst = NULL;
   uint8_t* io0_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -26885,6 +26895,11 @@ wuffs_deflate__decoder__decode_huffman_fast32(
   v_n_bits = self->private_impl.f_n_bits;
   v_lmask = ((((uint32_t)(1)) << self->private_impl.f_n_huffs_bits[0]) - 1);
   v_dmask = ((((uint32_t)(1)) << self->private_impl.f_n_huffs_bits[1]) - 1);
+  if (self->private_impl.f_transformed_history_count < (a_dst ? a_dst->meta.pos : 0)) {
+    status = wuffs_base__make_status(wuffs_base__error__bad_i_o_position);
+    goto exit;
+  }
+  v_hdist_adjustment = ((uint32_t)(((self->private_impl.f_transformed_history_count - (a_dst ? a_dst->meta.pos : 0)) & 4294967295)));
   label__loop__continue:;
   while ((((uint64_t)(io2_a_dst - iop_a_dst)) >= 266) && (((uint64_t)(io2_a_src - iop_a_src)) >= 12)) {
     if (v_n_bits < 15) {
@@ -27027,6 +27042,7 @@ wuffs_deflate__decoder__decode_huffman_fast32(
           v_hlen = v_length;
           v_length = 0;
         }
+        v_hdist += v_hdist_adjustment;
         if (self->private_impl.f_history_index < v_hdist) {
           status = wuffs_base__make_status(wuffs_deflate__error__bad_distance);
           goto exit;
@@ -27110,6 +27126,7 @@ wuffs_deflate__decoder__decode_huffman_fast64__choosy_default(
   uint32_t v_dist_minus_1 = 0;
   uint32_t v_hlen = 0;
   uint32_t v_hdist = 0;
+  uint32_t v_hdist_adjustment = 0;
 
   uint8_t* iop_a_dst = NULL;
   uint8_t* io0_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -27143,6 +27160,11 @@ wuffs_deflate__decoder__decode_huffman_fast64__choosy_default(
   v_n_bits = self->private_impl.f_n_bits;
   v_lmask = ((((uint64_t)(1)) << self->private_impl.f_n_huffs_bits[0]) - 1);
   v_dmask = ((((uint64_t)(1)) << self->private_impl.f_n_huffs_bits[1]) - 1);
+  if (self->private_impl.f_transformed_history_count < (a_dst ? a_dst->meta.pos : 0)) {
+    status = wuffs_base__make_status(wuffs_base__error__bad_i_o_position);
+    goto exit;
+  }
+  v_hdist_adjustment = ((uint32_t)(((self->private_impl.f_transformed_history_count - (a_dst ? a_dst->meta.pos : 0)) & 4294967295)));
   label__loop__continue:;
   while ((((uint64_t)(io2_a_dst - iop_a_dst)) >= 266) && (((uint64_t)(io2_a_src - iop_a_src)) >= 8)) {
     v_bits |= ((uint64_t)(wuffs_base__peek_u64le__no_bounds_check(iop_a_src) << (v_n_bits & 63)));
@@ -27233,6 +27255,7 @@ wuffs_deflate__decoder__decode_huffman_fast64__choosy_default(
           v_hlen = v_length;
           v_length = 0;
         }
+        v_hdist += v_hdist_adjustment;
         if (self->private_impl.f_history_index < v_hdist) {
           status = wuffs_base__make_status(wuffs_deflate__error__bad_distance);
           goto exit;
@@ -27567,6 +27590,7 @@ wuffs_deflate__decoder__decode_huffman_slow(
             v_hlen = v_length;
             v_length = 0;
           }
+          v_hdist += ((uint32_t)((((uint64_t)(self->private_impl.f_transformed_history_count - (a_dst ? a_dst->meta.pos : 0))) & 4294967295)));
           if (self->private_impl.f_history_index < v_hdist) {
             status = wuffs_base__make_status(wuffs_deflate__error__bad_distance);
             goto exit;

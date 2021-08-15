@@ -217,6 +217,7 @@ pri func decoder.decode_huffman_slow?(dst: base.io_writer, src: base.io_reader) 
 					hlen = length
 					length = 0
 				}
+				hdist ~mod+= ((this.transformed_history_count ~mod- args.dst.history_position()) & 0xFFFF_FFFF) as base.u32
 				if this.history_index < hdist {
 					return "#bad distance"
 				}

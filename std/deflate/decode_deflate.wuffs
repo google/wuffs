@@ -70,6 +70,14 @@ pub struct decoder? implements base.io_transformer(
 	bits   : base.u32,
 	n_bits : base.u32,
 
+	// transformed_history_count is the number of bytes written to the history
+	// ringbuffer due to calling transform_io. It excludes any pre-history
+	// written by explicit calls to add_history. It also excludes any bytes
+	// decoded from the final transform_io call (the one that doesn't suspend)
+	// as there is no further need for tracking history (for resolving back-
+	// references) once the decoding completes.
+	transformed_history_count : base.u64,
+
 	// history_index indexes the history array, defined below.
 	history_index : base.u32,
 
@@ -211,6 +219,7 @@ pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf
 		if not status.is_suspension() {
 			return status
 		}
+		this.transformed_history_count ~sat+= args.dst.count_since(mark: mark)
 		// TODO: should "since" be "since!", as the return value lets you
 		// modify the state of args.dst, so future mutations (via the slice)
 		// can change the veracity of any args.dst assertions?

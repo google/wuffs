@@ -32,6 +32,7 @@ pri func decoder.decode_huffman_fast32!(dst: base.io_writer, src: base.io_reader
 	var dist_minus_1       : base.u32[..= 0x7FFF]
 	var hlen               : base.u32[..= 0x7FFF]
 	var hdist              : base.u32
+	var hdist_adjustment   : base.u32
 
 	if (this.n_bits >= 8) or ((this.bits >> (this.n_bits & 7)) <> 0) {
 		return "#internal error: inconsistent n_bits"
@@ -42,6 +43,11 @@ pri func decoder.decode_huffman_fast32!(dst: base.io_writer, src: base.io_reader
 
 	lmask = ((1 as base.u32) << this.n_huffs_bits[0]) - 1
 	dmask = ((1 as base.u32) << this.n_huffs_bits[1]) - 1
+
+	if this.transformed_history_count < args.dst.history_position() {
+		return base."#bad I/O position"
+	}
+	hdist_adjustment = ((this.transformed_history_count - args.dst.history_position()) & 0xFFFF_FFFF) as base.u32
 
 	// Check up front, on each iteration, that we have enough buffer space to
 	// both read (12 bytes) and write (266 bytes) as much as we need to. Doing
@@ -314,6 +320,7 @@ pri func decoder.decode_huffman_fast32!(dst: base.io_writer, src: base.io_reader
 					hlen = length
 					length = 0
 				}
+				hdist ~mod+= hdist_adjustment
 				if this.history_index < hdist {
 					return "#bad distance"
 				}
