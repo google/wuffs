@@ -250,8 +250,8 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 		return nil
 
 	case t.IDPosition:
-		b.printf("wuffs_base__u64__sat_add(%s->meta.pos, ((uint64_t)(%s%s - %s%s)))",
-			recvName, iopPrefix, recvName, io0Prefix, recvName)
+		b.printf("wuffs_base__u64__sat_add((%s ? %s->meta.pos : 0), ((uint64_t)(%s%s - %s%s)))",
+			recvName, recvName, iopPrefix, recvName, io0Prefix, recvName)
 		return nil
 
 	case t.IDSince:
@@ -363,8 +363,8 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 		return nil
 
 	case t.IDPosition:
-		b.printf("wuffs_base__u64__sat_add(%s->meta.pos, ((uint64_t)(%s%s - %s%s)))",
-			recvName, iopPrefix, recvName, io0Prefix, recvName)
+		b.printf("wuffs_base__u64__sat_add((%s ? %s->meta.pos : 0), ((uint64_t)(%s%s - %s%s)))",
+			recvName, recvName, iopPrefix, recvName, io0Prefix, recvName)
 		return nil
 
 	case t.IDSince:
