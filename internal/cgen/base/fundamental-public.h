@@ -79,7 +79,7 @@
 #if defined(__x86_64__) && !defined(__native_client__)
 #include <cpuid.h>
 #include <x86intrin.h>
-#define WUFFS_BASE__CPU_ARCH__X86_64
+#define WUFFS_BASE__CPU_ARCH__X86_FAMILY
 #endif  // defined(__x86_64__) && !defined(__native_client__)
 
 #elif defined(_MSC_VER)  // (#if-chain ref AVOID_CPU_ARCH_1)
@@ -98,7 +98,7 @@
 #include <immintrin.h>  // AVX, AVX2, FMA, POPCNT
 #include <nmmintrin.h>  // SSE4.2
 #include <wmmintrin.h>  // AES, PCLMUL
-#define WUFFS_BASE__CPU_ARCH__X86_64
+#define WUFFS_BASE__CPU_ARCH__X86_FAMILY
 
 #else  // defined(__AVX__) || defined(__clang__)
 
@@ -150,7 +150,7 @@ wuffs_base__cpu_arch__have_arm_neon() {
 
 static inline bool  //
 wuffs_base__cpu_arch__have_x86_avx2() {
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
   // GCC defines these macros but MSVC does not.
   //  - bit_AVX2 = (1 <<  5)
   const unsigned int avx2_ebx7 = 0x00000020;
@@ -190,13 +190,13 @@ wuffs_base__cpu_arch__have_x86_avx2() {
 #else
 #error "WUFFS_BASE__CPU_ARCH__ETC combined with an unsupported compiler"
 #endif  // defined(__GNUC__); defined(_MSC_VER)
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
   return false;
 }
 
 static inline bool  //
 wuffs_base__cpu_arch__have_x86_bmi2() {
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
   // GCC defines these macros but MSVC does not.
   //  - bit_BMI2 = (1 <<  8)
   const unsigned int bmi2_ebx7 = 0x00000100;
@@ -220,13 +220,13 @@ wuffs_base__cpu_arch__have_x86_bmi2() {
 #else
 #error "WUFFS_BASE__CPU_ARCH__ETC combined with an unsupported compiler"
 #endif  // defined(__GNUC__); defined(_MSC_VER)
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
   return false;
 }
 
 static inline bool  //
 wuffs_base__cpu_arch__have_x86_sse42() {
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
   // GCC defines these macros but MSVC does not.
   //  - bit_PCLMUL = (1 <<  1)
   //  - bit_POPCNT = (1 << 23)
@@ -252,7 +252,7 @@ wuffs_base__cpu_arch__have_x86_sse42() {
 #else
 #error "WUFFS_BASE__CPU_ARCH__ETC combined with an unsupported compiler"
 #endif  // defined(__GNUC__); defined(_MSC_VER)
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
   return false;
 }
 
