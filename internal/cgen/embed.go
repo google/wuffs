@@ -26,11 +26,6 @@ type EmbeddedString string
 // Trim removes the leading "Copyright etc" boilerplate.
 func (e EmbeddedString) Trim() string {
 	s := string(e)
-	if strings.HasPrefix(s, "// After editing ") {
-		if i := strings.Index(s, "\n\n"); i >= 0 {
-			s = s[i+2:]
-		}
-	}
 	if strings.HasPrefix(s, "// Copyright ") {
 		if i := strings.Index(s, "\n\n"); i >= 0 {
 			s = s[i+2:]

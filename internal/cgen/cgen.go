@@ -355,11 +355,6 @@ func insertBaseAllPublicH(buf *buffer) error {
 
 func insertBaseCopyright(buf *buffer) error {
 	s := string(embedBaseAllImplC)
-	if strings.HasPrefix(s, "// After editing ") {
-		if i := strings.Index(s, "\n\n"); i >= 0 {
-			s = s[i+2:]
-		}
-	}
 	if i := strings.Index(s, "\n\n"); i >= 0 {
 		buf.writes(s[:i+1])
 	}

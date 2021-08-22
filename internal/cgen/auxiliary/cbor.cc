@@ -1,5 +1,3 @@
-// After editing this file, run "go generate" in the ../data directory.
-
 // Copyright 2020 The Wuffs Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
