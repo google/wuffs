@@ -22,7 +22,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/google/wuffs/internal/cgen/data"
 	"github.com/google/wuffs/lang/builtin"
 	"github.com/google/wuffs/lang/generate"
 	"github.com/google/wuffs/lib/dumbindent"
@@ -122,7 +121,7 @@ func Do(args []string) error {
 				return nil, fmt.Errorf("base package shouldn't have any .wuffs files")
 			}
 			buf := make(buffer, 0, 128*1024)
-			if err := expandBangBangInsert(&buf, data.BaseAllImplC, map[string]func(*buffer) error{
+			if err := expandBangBangInsert(&buf, embedBaseAllImplC.Trim(), map[string]func(*buffer) error{
 				"// ¡ INSERT InterfaceDeclarations.\n":      insertInterfaceDeclarations,
 				"// ¡ INSERT InterfaceDefinitions.\n":       insertInterfaceDefinitions,
 				"// ¡ INSERT base/all-private.h.\n":         insertBaseAllPrivateH,
@@ -270,24 +269,24 @@ func expandBangBangInsert(b *buffer, s string, m map[string]func(*buffer) error)
 }
 
 func insertBaseAllPrivateH(buf *buffer) error {
-	buf.writes(data.BaseFundamentalPrivateH)
+	buf.writes(embedBaseFundamentalPrivateH.Trim())
 	buf.writeb('\n')
-	buf.writes(data.BaseRangePrivateH)
+	buf.writes(embedBaseRangePrivateH.Trim())
 	buf.writeb('\n')
-	buf.writes(data.BaseIOPrivateH)
+	buf.writes(embedBaseIOPrivateH.Trim())
 	buf.writeb('\n')
-	buf.writes(data.BaseTokenPrivateH)
+	buf.writes(embedBaseTokenPrivateH.Trim())
 	buf.writeb('\n')
-	buf.writes(data.BaseMemoryPrivateH)
+	buf.writes(embedBaseMemoryPrivateH.Trim())
 	buf.writeb('\n')
-	buf.writes(data.BaseImagePrivateH)
+	buf.writes(embedBaseImagePrivateH.Trim())
 	buf.writeb('\n')
-	buf.writes(data.BaseStrConvPrivateH)
+	buf.writes(embedBaseStrConvPrivateH.Trim())
 	return nil
 }
 
 func insertBaseAllPublicH(buf *buffer) error {
-	if err := expandBangBangInsert(buf, data.BaseFundamentalPublicH, map[string]func(*buffer) error{
+	if err := expandBangBangInsert(buf, embedBaseFundamentalPublicH.Trim(), map[string]func(*buffer) error{
 		"// ¡ INSERT FourCCs.\n": func(b *buffer) error {
 			for i, z := range builtin.FourCCs {
 				if i != 0 {
@@ -340,49 +339,57 @@ func insertBaseAllPublicH(buf *buffer) error {
 	}
 	buf.writeb('\n')
 
-	buf.writes(data.BaseRangePublicH)
+	buf.writes(embedBaseRangePublicH.Trim())
 	buf.writeb('\n')
-	buf.writes(data.BaseIOPublicH)
+	buf.writes(embedBaseIOPublicH.Trim())
 	buf.writeb('\n')
-	buf.writes(data.BaseTokenPublicH)
+	buf.writes(embedBaseTokenPublicH.Trim())
 	buf.writeb('\n')
-	buf.writes(data.BaseMemoryPublicH)
+	buf.writes(embedBaseMemoryPublicH.Trim())
 	buf.writeb('\n')
-	buf.writes(data.BaseImagePublicH)
+	buf.writes(embedBaseImagePublicH.Trim())
 	buf.writeb('\n')
-	buf.writes(data.BaseStrConvPublicH)
+	buf.writes(embedBaseStrConvPublicH.Trim())
 	return nil
 }
 
 func insertBaseCopyright(buf *buffer) error {
-	buf.writes(data.BaseCopyright)
+	s := string(embedBaseAllImplC)
+	if strings.HasPrefix(s, "// After editing ") {
+		if i := strings.Index(s, "\n\n"); i >= 0 {
+			s = s[i+2:]
+		}
+	}
+	if i := strings.Index(s, "\n\n"); i >= 0 {
+		buf.writes(s[:i+1])
+	}
 	return nil
 }
 
 func insertBaseFloatConvSubmoduleC(buf *buffer) error {
-	buf.writes(data.BaseFloatConvSubmoduleDataC)
+	buf.writes(embedBaseFloatConvSubmoduleDataC.Trim())
 	buf.writeb('\n')
-	buf.writes(data.BaseFloatConvSubmoduleCodeC)
+	buf.writes(embedBaseFloatConvSubmoduleCodeC.Trim())
 	return nil
 }
 
 func insertBaseIntConvSubmoduleC(buf *buffer) error {
-	buf.writes(data.BaseIntConvSubmoduleC)
+	buf.writes(embedBaseIntConvSubmoduleC.Trim())
 	return nil
 }
 
 func insertBaseMagicSubmoduleC(buf *buffer) error {
-	buf.writes(data.BaseMagicSubmoduleC)
+	buf.writes(embedBaseMagicSubmoduleC.Trim())
 	return nil
 }
 
 func insertBasePixConvSubmoduleC(buf *buffer) error {
-	buf.writes(data.BasePixConvSubmoduleC)
+	buf.writes(embedBasePixConvSubmoduleC.Trim())
 	return nil
 }
 
 func insertBaseUTF8SubmoduleC(buf *buffer) error {
-	buf.writes(data.BaseUTF8SubmoduleC)
+	buf.writes(embedBaseUTF8SubmoduleC.Trim())
 	return nil
 }
 

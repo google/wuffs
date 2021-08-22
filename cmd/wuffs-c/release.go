@@ -23,7 +23,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/google/wuffs/internal/cgen/data"
+	"github.com/google/wuffs/internal/cgen"
 
 	cf "github.com/google/wuffs/cmd/commonflags"
 )
@@ -107,10 +107,10 @@ func doGenrelease(args []string) error {
 	}
 
 	out.WriteString("#if defined(__cplusplus) && defined(WUFFS_BASE__HAVE_UNIQUE_PTR)\n\n")
-	out.WriteString(data.AuxBaseHh)
+	out.WriteString(cgen.EmbeddedString_AuxBaseHh.Trim())
 	out.WriteString("\n")
-	for _, f := range data.AuxNonBaseHhFiles {
-		out.WriteString(f)
+	for _, f := range cgen.EmbeddedStrings_AuxNonBaseHhFiles {
+		out.WriteString(f.Trim())
 		out.WriteString("\n")
 	}
 	out.WriteString("#endif  // defined(__cplusplus) && defined(WUFFS_BASE__HAVE_UNIQUE_PTR)\n")
@@ -126,10 +126,10 @@ func doGenrelease(args []string) error {
 	}
 
 	out.WriteString("#if defined(__cplusplus) && defined(WUFFS_BASE__HAVE_UNIQUE_PTR)\n\n")
-	out.WriteString(data.AuxBaseCc)
+	out.WriteString(cgen.EmbeddedString_AuxBaseCc.Trim())
 	out.WriteString("\n")
-	for _, f := range data.AuxNonBaseCcFiles {
-		out.WriteString(f)
+	for _, f := range cgen.EmbeddedStrings_AuxNonBaseCcFiles {
+		out.WriteString(f.Trim())
 		out.WriteString("\n")
 	}
 	out.WriteString("#endif  // defined(__cplusplus) && defined(WUFFS_BASE__HAVE_UNIQUE_PTR)\n\n")
