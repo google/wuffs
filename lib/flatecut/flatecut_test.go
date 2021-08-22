@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"compress/flate"
 	"io"
-	"io/ioutil"
 	"testing"
 
 	"github.com/google/wuffs/internal/testcut"
@@ -43,7 +42,7 @@ func newReader(r io.Reader) (io.ReadCloser, error) {
 }
 
 func decodeFlate(src []byte) string {
-	dst, err := ioutil.ReadAll(flate.NewReader(bytes.NewReader(src)))
+	dst, err := io.ReadAll(flate.NewReader(bytes.NewReader(src)))
 	if err != nil {
 		return err.Error()
 	}

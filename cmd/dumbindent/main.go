@@ -61,7 +61,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -146,9 +145,9 @@ func walk(filename string, info os.FileInfo, err error) error {
 func do(r io.Reader, filename string) error {
 	src, err := []byte(nil), error(nil)
 	if r != nil {
-		src, err = ioutil.ReadAll(r)
+		src, err = io.ReadAll(r)
 	} else {
-		src, err = ioutil.ReadFile(filename)
+		src, err = os.ReadFile(filename)
 	}
 	if err != nil {
 		return err
@@ -180,7 +179,7 @@ func do(r io.Reader, filename string) error {
 const chmodSupported = runtime.GOOS != "windows"
 
 func writeFile(filename string, b []byte) error {
-	f, err := ioutil.TempFile(filepath.Dir(filename), filepath.Base(filename))
+	f, err := os.CreateTemp(filepath.Dir(filename), filepath.Base(filename))
 	if err != nil {
 		return err
 	}

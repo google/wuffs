@@ -111,7 +111,6 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -167,7 +166,7 @@ func main1() error {
 	sort.Strings(sortedFilenames)
 	for _, filename := range sortedFilenames {
 		contents := globalTargets[filename]
-		if x, err := ioutil.ReadFile(filename); (err == nil) && bytes.Equal(x, contents) {
+		if x, err := os.ReadFile(filename); (err == nil) && bytes.Equal(x, contents) {
 			fmt.Printf("gen unchanged:  %s\n", filename)
 
 			continue
@@ -241,7 +240,7 @@ type filter struct {
 }
 
 func do(filename string) error {
-	src, err := ioutil.ReadFile(filename)
+	src, err := os.ReadFile(filename)
 	if err != nil {
 		return err
 	}
@@ -396,7 +395,7 @@ func wuffsfmt(src []byte) []byte {
 const chmodSupported = runtime.GOOS != "windows"
 
 func writeFile(filename string, b []byte) error {
-	f, err := ioutil.TempFile(filepath.Dir(filename), filepath.Base(filename))
+	f, err := os.CreateTemp(filepath.Dir(filename), filepath.Base(filename))
 	if err != nil {
 		return err
 	}

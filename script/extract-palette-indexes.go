@@ -30,7 +30,6 @@ import (
 	"image"
 	"image/gif"
 	"image/png"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 )
@@ -61,12 +60,12 @@ func main1() error {
 		}
 	}
 	if bPalette != nil {
-		if err := ioutil.WriteFile(baseFilename+".palette", bPalette, 0644); err != nil {
+		if err := os.WriteFile(baseFilename+".palette", bPalette, 0644); err != nil {
 			return err
 		}
 	}
 	if bIndexes != nil {
-		if err := ioutil.WriteFile(baseFilename+".indexes", bIndexes, 0644); err != nil {
+		if err := os.WriteFile(baseFilename+".indexes", bIndexes, 0644); err != nil {
 			return err
 		}
 	}

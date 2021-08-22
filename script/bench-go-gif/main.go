@@ -31,7 +31,6 @@ import (
 	"image"
 	"image/draw"
 	"image/gif"
-	"io/ioutil"
 	"os"
 	"runtime"
 	"strings"
@@ -88,7 +87,7 @@ var testCases = []testCase{{
 }}
 
 func mustLoad(filename string) []byte {
-	src, err := ioutil.ReadFile("../../" + filename)
+	src, err := os.ReadFile("../../" + filename)
 	if err != nil {
 		panic(err.Error())
 	}

@@ -21,7 +21,6 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
@@ -142,14 +141,14 @@ func appendDir(dstQF []string, qualDirname string, suffix string, returnSubdirs 
 }
 
 func writeFile(filename string, contents []byte) error {
-	if existing, err := ioutil.ReadFile(filename); err == nil && bytes.Equal(existing, contents) {
+	if existing, err := os.ReadFile(filename); err == nil && bytes.Equal(existing, contents) {
 		fmt.Println("gen unchanged: ", filename)
 		return nil
 	}
 	if err := os.MkdirAll(filepath.Dir(filename), 0755); err != nil {
 		return err
 	}
-	if err := ioutil.WriteFile(filename, contents, 0644); err != nil {
+	if err := os.WriteFile(filename, contents, 0644); err != nil {
 		return err
 	}
 	fmt.Println("gen wrote:     ", filename)

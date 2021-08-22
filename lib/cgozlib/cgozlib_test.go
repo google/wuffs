@@ -18,7 +18,7 @@ import (
 	"bytes"
 	"compress/zlib"
 	"io"
-	"io/ioutil"
+	"os"
 	"strings"
 	"testing"
 )
@@ -57,7 +57,7 @@ func testReadAll(tt *testing.T, r resetReadCloser, src io.Reader, dict []byte, w
 		tt.Fatalf("Reset: %v", err)
 	}
 
-	got, err := ioutil.ReadAll(r)
+	got, err := io.ReadAll(r)
 	if err != nil {
 		tt.Fatalf("ReadAll: %v", err)
 	}
@@ -87,7 +87,7 @@ func benchmarkReader(b *testing.B, r resetReadCloser) {
 	}
 
 	src := bytes.NewReader(nil)
-	srcBytes, err := ioutil.ReadFile("../../test/data/pi.txt.zlib")
+	srcBytes, err := os.ReadFile("../../test/data/pi.txt.zlib")
 	if err != nil {
 		b.Fatalf("ReadFile: %v", err)
 	}
@@ -100,7 +100,7 @@ func benchmarkReader(b *testing.B, r resetReadCloser) {
 			b.Fatalf("Reset: %v", err)
 		}
 
-		if n, err := io.Copy(ioutil.Discard, r); err != nil {
+		if n, err := io.Copy(io.Discard, r); err != nil {
 			b.Fatalf("Copy: %v", err)
 		} else if n != 100003 {
 			b.Fatalf("Copy: got %d, want %d", n, 100003)

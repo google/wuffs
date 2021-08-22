@@ -25,7 +25,6 @@ import (
 	"bytes"
 	"fmt"
 	"go/format"
-	"io/ioutil"
 	"os"
 	"sort"
 	"strings"
@@ -57,11 +56,11 @@ func main1() error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile("data.go", formatted, 0644)
+	return os.WriteFile("data.go", formatted, 0644)
 }
 
 func loadReasons() ([]string, error) {
-	s, err := ioutil.ReadFile("axioms.md")
+	s, err := os.ReadFile("axioms.md")
 	if err != nil {
 		return nil, err
 	}

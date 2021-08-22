@@ -18,7 +18,6 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -83,7 +82,7 @@ func doBenchTest(args []string, bench bool) error {
 func doBenchTest1(filename string, bench bool, ccompilers string, focus string,
 	iterscale int, mimic bool, reps int) (failed bool, err error) {
 
-	workDir, err := ioutil.TempDir("", "wuffs-c")
+	workDir, err := os.MkdirTemp("", "wuffs-c")
 	if err != nil {
 		return false, err
 	}

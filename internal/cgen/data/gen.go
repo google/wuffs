@@ -25,7 +25,6 @@ import (
 	"bytes"
 	"fmt"
 	"go/format"
-	"io/ioutil"
 	"os"
 	"strings"
 )
@@ -68,7 +67,7 @@ func main1() error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile("data.go", formatted, 0644)
+	return os.WriteFile("data.go", formatted, 0644)
 }
 
 func genData(out *bytes.Buffer) error {
@@ -114,7 +113,7 @@ func genData(out *bytes.Buffer) error {
 	copyright := []byte(nil)
 
 	for _, f := range files {
-		in, err := ioutil.ReadFile(f.filename)
+		in, err := os.ReadFile(f.filename)
 		if err != nil {
 			return err
 		}

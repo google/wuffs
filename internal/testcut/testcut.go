@@ -18,7 +18,7 @@ package testcut
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
+	"os"
 	"testing"
 )
 
@@ -29,7 +29,7 @@ func calculateDecodedLen(b []byte,
 	if err != nil {
 		return 0, err
 	}
-	n, err := io.Copy(ioutil.Discard, r)
+	n, err := io.Copy(io.Discard, r)
 	if err != nil {
 		r.Close()
 		return 0, err
@@ -48,7 +48,7 @@ func Test(tt *testing.T,
 	filenames []string) {
 
 	for _, filename := range filenames {
-		full, err := ioutil.ReadFile("../../test/data/" + filename)
+		full, err := os.ReadFile("../../test/data/" + filename)
 		if err != nil {
 			tt.Errorf("f=%q: ReadFile: %v", filename, err)
 			continue
@@ -151,7 +151,7 @@ func Benchmark(b *testing.B,
 	trimSuffix int,
 	decodedLen int64) {
 
-	full, err := ioutil.ReadFile("../../test/data/" + filename)
+	full, err := os.ReadFile("../../test/data/" + filename)
 	if err != nil {
 		b.Fatalf("ReadFile: %v", err)
 	}

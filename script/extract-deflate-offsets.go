@@ -34,7 +34,7 @@ import (
 	"flag"
 	"fmt"
 	"hash/adler32"
-	"io/ioutil"
+	"io"
 	"os"
 	"strings"
 )
@@ -72,7 +72,7 @@ func main1() error {
 }
 
 func decode(filename string) error {
-	src, err := ioutil.ReadFile(filename)
+	src, err := os.ReadFile(filename)
 	if err != nil {
 		return err
 	}
@@ -131,7 +131,7 @@ func doWriteDeflate(deflateCompressed []byte, uncompressed []byte, filename stri
 		filename = filename[:len(filename)-3]
 	}
 	filename += ".deflate"
-	if err := ioutil.WriteFile(filename, deflateCompressed, 0666); err != nil {
+	if err := os.WriteFile(filename, deflateCompressed, 0666); err != nil {
 		return err
 	}
 	fmt.Printf("wrote %s\n", filename)
@@ -171,7 +171,7 @@ func doWriteZlib(deflateCompressed []byte, uncompressed []byte, filename string)
 		filename = filename[:len(filename)-3]
 	}
 	filename += ".zlib"
-	if err := ioutil.WriteFile(filename, asZlib, 0666); err != nil {
+	if err := os.WriteFile(filename, asZlib, 0666); err != nil {
 		return err
 	}
 	fmt.Printf("wrote %s\n", filename)
@@ -193,7 +193,7 @@ func readString(src []byte, i int) (int, error) {
 func checkDeflate(x []byte) ([]byte, error) {
 	rc := flate.NewReader(bytes.NewReader(x))
 	defer rc.Close()
-	x, err := ioutil.ReadAll(rc)
+	x, err := io.ReadAll(rc)
 	if err != nil {
 		return nil, fmt.Errorf("data is not valid deflate: %v", err)
 	}
@@ -206,7 +206,7 @@ func checkZlib(x []byte) ([]byte, error) {
 		return nil, fmt.Errorf("data is not valid zlib: %v", err)
 	}
 	defer rc.Close()
-	x, err = ioutil.ReadAll(rc)
+	x, err = io.ReadAll(rc)
 	if err != nil {
 		return nil, fmt.Errorf("data is not valid zlib: %v", err)
 	}

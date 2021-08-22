@@ -26,7 +26,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math/rand"
 	"os"
 
@@ -42,7 +41,7 @@ func main() {
 }
 
 func main1() error {
-	input, err := ioutil.ReadAll(os.Stdin)
+	input, err := io.ReadAll(os.Stdin)
 	if err != nil {
 		return err
 	}

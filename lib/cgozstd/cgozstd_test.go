@@ -16,7 +16,7 @@ package cgozstd
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 	"strings"
 	"testing"
 )
@@ -87,7 +87,7 @@ func TestRoundTrip(tt *testing.T) {
 				r.Close()
 				tt.Fatalf("i=%d: Reset: %v", i, err)
 			}
-			gotBytes, err := ioutil.ReadAll(r)
+			gotBytes, err := io.ReadAll(r)
 			if err != nil {
 				r.Close()
 				tt.Fatalf("i=%d: ReadAll: %v", i, err)
@@ -149,7 +149,7 @@ func TestDictionary(tt *testing.T) {
 			r.Close()
 			tt.Fatalf("%s: Reset: %v", name, err)
 		}
-		gotBytes, err := ioutil.ReadAll(r)
+		gotBytes, err := io.ReadAll(r)
 		if err != nil {
 			r.Close()
 			tt.Fatalf("%s: ReadAll: %v", name, err)

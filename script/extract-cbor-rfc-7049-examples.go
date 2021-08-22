@@ -36,7 +36,7 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 )
 
@@ -113,7 +113,7 @@ func emit() error {
 	}
 	filename := fmt.Sprintf("cbor-rfc-7049-examples/%02d.cbor", fileNumber)
 	fileNumber++
-	err := ioutil.WriteFile(filename, contents, 0644)
+	err := os.WriteFile(filename, contents, 0644)
 	contents = nil
 	return err
 }
@@ -129,7 +129,7 @@ func readExampleTable() ([]byte, error) {
 	appendixA := []byte("Appendix A.  Examples\n\n")
 	ruler := []byte("+------------------------------+------------------------------------+\n")
 
-	src, err := ioutil.ReadAll(os.Stdin)
+	src, err := io.ReadAll(os.Stdin)
 	if err != nil {
 		return nil, err
 	}

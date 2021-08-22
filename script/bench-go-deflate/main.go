@@ -30,7 +30,6 @@ import (
 	"compress/flate"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"runtime"
 	"time"
@@ -63,7 +62,7 @@ var testCases = []testCase{{
 }}
 
 func mustLoad(filename string) []byte {
-	src, err := ioutil.ReadFile("../../" + filename)
+	src, err := os.ReadFile("../../" + filename)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -118,6 +117,6 @@ func main1() error {
 func decode(src []byte) (numBytes uint64, retErr error) {
 	r := flate.NewReader(bytes.NewReader(src))
 	defer r.Close()
-	n, err := io.Copy(ioutil.Discard, r)
+	n, err := io.Copy(io.Discard, r)
 	return uint64(n), err
 }

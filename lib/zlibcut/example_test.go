@@ -18,7 +18,7 @@ import (
 	"bytes"
 	"compress/zlib"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"strings"
 
@@ -83,7 +83,7 @@ func ExampleCut() {
 	if err != nil {
 		log.Fatalf("NewReader: %v", err)
 	}
-	uncompressed, err := ioutil.ReadAll(r)
+	uncompressed, err := io.ReadAll(r)
 	if err != nil {
 		log.Fatalf("ReadAll: %v", err)
 	}

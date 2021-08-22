@@ -251,7 +251,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"runtime"
 	"strconv"
@@ -415,7 +414,7 @@ func decode(inFile *os.File) error {
 		// This seek-to-end error isn't fatal. The input might not actually be
 		// seekable, despite being an *os.File: "cat foo | ractool -decode".
 		// Instead, read all of the inFile into memory.
-		if inBytes, err := ioutil.ReadAll(inFile); err != nil {
+		if inBytes, err := io.ReadAll(inFile); err != nil {
 			return err
 		} else {
 			rs = bytes.NewReader(inBytes)
@@ -532,7 +531,7 @@ func encode(r io.Reader) error {
 
 	if *resourcesFlag != "" {
 		for _, filename := range strings.Split(*resourcesFlag, ",") {
-			resource, err := ioutil.ReadFile(filename)
+			resource, err := os.ReadFile(filename)
 			if err != nil {
 				return err
 			}
@@ -590,7 +589,7 @@ func makeTempFile() (io.ReadWriter, error) {
 		return &bytes.Buffer{}, nil
 	}
 
-	f, err := ioutil.TempFile(*tmpdirFlag, "ractool-")
+	f, err := os.CreateTemp(*tmpdirFlag, "ractool-")
 	if err != nil {
 		return nil, err
 	}

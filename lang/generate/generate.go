@@ -17,7 +17,7 @@ package generate
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -98,7 +98,7 @@ func checkPackageName(s string) string {
 func parseFiles(tm *t.Map, filenames []string) (files []*a.File, err error) {
 	if len(filenames) == 0 {
 		const filename = "stdin"
-		src, err := ioutil.ReadAll(os.Stdin)
+		src, err := io.ReadAll(os.Stdin)
 		if err != nil {
 			return nil, err
 		}
@@ -117,7 +117,7 @@ func parseFiles(tm *t.Map, filenames []string) (files []*a.File, err error) {
 
 func ParseFiles(tm *t.Map, filenames []string, opts *parse.Options) (files []*a.File, err error) {
 	for _, filename := range filenames {
-		src, err := ioutil.ReadFile(filename)
+		src, err := os.ReadFile(filename)
 		if err != nil {
 			return nil, err
 		}
@@ -139,5 +139,5 @@ func resolveUse(usePath string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return ioutil.ReadFile(filepath.Join(wuffsRoot, "gen", "wuffs", filepath.FromSlash(usePath)))
+	return os.ReadFile(filepath.Join(wuffsRoot, "gen", "wuffs", filepath.FromSlash(usePath)))
 }

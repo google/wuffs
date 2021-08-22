@@ -25,7 +25,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"sort"
@@ -152,7 +151,7 @@ func main1() error {
 		fmt.Fprintf(w, "// %4d entries have %2d%s probes\n", x, i, plus)
 	}
 
-	return ioutil.WriteFile("data.go", w.Bytes(), 0644)
+	return os.WriteFile("data.go", w.Bytes(), 0644)
 }
 
 func build() error {

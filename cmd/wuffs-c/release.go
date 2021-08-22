@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
@@ -83,7 +82,7 @@ func doGenrelease(args []string) error {
 		}
 		relFilename := filename[len(baseDirSlash):]
 
-		s, err := ioutil.ReadFile(filename)
+		s, err := os.ReadFile(filename)
 		if err != nil {
 			return err
 		}

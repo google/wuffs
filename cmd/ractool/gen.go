@@ -25,7 +25,6 @@ import (
 	"bytes"
 	"fmt"
 	"go/format"
-	"io/ioutil"
 	"os"
 )
 
@@ -37,7 +36,7 @@ func main() {
 }
 
 func main1() error {
-	src, err := ioutil.ReadFile("main.go")
+	src, err := os.ReadFile("main.go")
 	if err != nil {
 		return err
 	}
@@ -81,5 +80,5 @@ const usageStr = ` + "`")
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile("data.go", formatted, 0644)
+	return os.WriteFile("data.go", formatted, 0644)
 }

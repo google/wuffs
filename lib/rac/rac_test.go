@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"hash/crc32"
 	"io"
-	"io/ioutil"
 	"math/rand"
 	"os"
 	"strings"
@@ -165,7 +164,7 @@ func TestWriterILAStartMemTempFile(tt *testing.T) {
 }
 
 func TestWriterILAStartRealTempFile(tt *testing.T) {
-	f, err := ioutil.TempFile("", "rac_test")
+	f, err := os.CreateTemp("", "rac_test")
 	if err != nil {
 		tt.Fatalf("TempFile: %v", err)
 	}
@@ -560,7 +559,7 @@ func TestReaderEmpty(tt *testing.T) {
 		CompressedSize: int64(len(encoded)),
 	}
 	defer r.Close()
-	got, err := ioutil.ReadAll(r)
+	got, err := io.ReadAll(r)
 	if err != nil {
 		tt.Fatalf("ReadAll: %v", err)
 	}
@@ -587,7 +586,7 @@ func TestReaderZeroes(tt *testing.T) {
 		CompressedSize: int64(len(encoded)),
 	}
 	defer r.Close()
-	got, err := ioutil.ReadAll(r)
+	got, err := io.ReadAll(r)
 	if err != nil {
 		tt.Fatalf("ReadAll: %v", err)
 	}

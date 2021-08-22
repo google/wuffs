@@ -16,7 +16,7 @@ package cgolz4
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 	"strings"
 	"testing"
 )
@@ -74,7 +74,7 @@ func TestRoundTrip(tt *testing.T) {
 		// Uncompress.
 		{
 			r.Reset(strings.NewReader(compressed), nil)
-			gotBytes, err := ioutil.ReadAll(r)
+			gotBytes, err := io.ReadAll(r)
 			if err != nil {
 				r.Close()
 				tt.Fatalf("i=%d: ReadAll: %v", i, err)

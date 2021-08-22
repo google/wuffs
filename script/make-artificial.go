@@ -27,7 +27,7 @@ import (
 	"bytes"
 	"compress/lzw"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"strconv"
 	"strings"
@@ -55,7 +55,7 @@ func main() {
 }
 
 func main1() error {
-	stdin, err := ioutil.ReadAll(os.Stdin)
+	stdin, err := io.ReadAll(os.Stdin)
 	if err != nil {
 		return err
 	}

@@ -38,7 +38,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
@@ -106,7 +105,7 @@ func main1() error {
 }
 
 func visit(r *renderer, filename string) error {
-	src, err := ioutil.ReadFile(filename)
+	src, err := os.ReadFile(filename)
 	if err != nil {
 		return err
 	}

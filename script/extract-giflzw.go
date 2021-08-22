@@ -37,7 +37,7 @@ import (
 	"compress/lzw"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 )
@@ -91,7 +91,7 @@ func main1() error {
 					filename = fmt.Sprintf("%s-frame-%03d", filename, argIndex)
 				}
 				filename += ".indexes.giflzw"
-				if err := ioutil.WriteFile(filename, frame, 0644); err != nil {
+				if err := os.WriteFile(filename, frame, 0644); err != nil {
 					return err
 				}
 			}
@@ -117,7 +117,7 @@ func main1() error {
 }
 
 func extractLZWFrames(filename string) (ret [][]byte, err error) {
-	src, err := ioutil.ReadFile(filename)
+	src, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
@@ -238,7 +238,7 @@ func checkLZW(data []byte) error {
 	}
 	rc := lzw.NewReader(bytes.NewReader(data[1:]), lzw.LSB, int(data[0]))
 	defer rc.Close()
-	_, err := ioutil.ReadAll(rc)
+	_, err := io.ReadAll(rc)
 	if err != nil {
 		return fmt.Errorf("block data is not valid LZW: %v", err)
 	}

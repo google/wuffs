@@ -34,7 +34,7 @@ import (
 	"crypto/sha256"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"math/rand"
 	"net/http"
@@ -485,7 +485,7 @@ func (w worker) work1(u *url.URL, followHTML bool) (e entry, links []*url.URL, f
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
 		log.Printf("worker #%03d: writing %q", w, urlString)
 		os.MkdirAll(filepath.Dir(filename), 0755)
-		if err := ioutil.WriteFile(filename, data, 0644); err != nil {
+		if err := os.WriteFile(filename, data, 0644); err != nil {
 			log.Println(err)
 			return entry{}, nil, true
 		}
@@ -509,7 +509,7 @@ func fetch(urlString string) (statusCode uint32, body []byte, retErr error) {
 	}
 	defer res.Body.Close()
 
-	body, err = ioutil.ReadAll(res.Body)
+	body, err = io.ReadAll(res.Body)
 	if err != nil {
 		return 0, nil, err
 	}
