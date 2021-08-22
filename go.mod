@@ -3,7 +3,6 @@ module github.com/google/wuffs
 go 1.16
 
 require (
-	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
-	golang.org/x/image v0.0.0-20200119044424-58c23975cae1 // indirect
-	gopkg.in/russross/blackfriday.v2 v2.0.0 // indirect
+	github.com/russross/blackfriday/v2 v2.1.0 // indirect
+	golang.org/x/image v0.0.0-20210628002857-a66eb6448b8d // indirect
 )
