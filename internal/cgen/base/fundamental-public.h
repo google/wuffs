@@ -76,15 +76,18 @@
 // POPCNT. This is checked at runtime via cpuid, not at compile time.
 //
 // Likewise, "cpu_arch >= x86_avx2" also requires PCLMUL, POPCNT and SSE4.2.
-#if defined(__x86_64__) && !defined(__native_client__)
+#if defined(__i386__) || defined(__x86_64__)
+#if !defined(__native_client__)
 #include <cpuid.h>
 #include <x86intrin.h>
+// X86_FAMILY means X86 (32-bit) or X86_64 (64-bit, obviously).
 #define WUFFS_BASE__CPU_ARCH__X86_FAMILY
-#endif  // defined(__x86_64__) && !defined(__native_client__)
+#endif  // !defined(__native_client__)
+#endif  // defined(__i386__) || defined(__x86_64__)
 
 #elif defined(_MSC_VER)  // (#if-chain ref AVOID_CPU_ARCH_1)
 
-#if defined(_M_X64)
+#if defined(_M_IX86) || defined(_M_X64)
 #if defined(__AVX__) || defined(__clang__)
 
 // We need <intrin.h> for the __cpuid function.
@@ -98,6 +101,7 @@
 #include <immintrin.h>  // AVX, AVX2, FMA, POPCNT
 #include <nmmintrin.h>  // SSE4.2
 #include <wmmintrin.h>  // AES, PCLMUL
+// X86_FAMILY means X86 (32-bit) or X86_64 (64-bit, obviously).
 #define WUFFS_BASE__CPU_ARCH__X86_FAMILY
 
 #else  // defined(__AVX__) || defined(__clang__)
@@ -108,10 +112,10 @@
 // For MSVC's cl.exe (unlike clang or gcc), SIMD capability is a compile-time
 // property of the source file (e.g. a /arch:AVX or -mavx compiler flag), not
 // of individual functions (that can be conditionally selected at runtime).
-#pragma message("Wuffs with MSVC+X64 needs /arch:AVX for best performance")
+#pragma message("Wuffs with MSVC+IX86/X64 needs /arch:AVX for best performance")
 
 #endif  // defined(__AVX__) || defined(__clang__)
-#endif  // defined(_M_X64)
+#endif  // defined(_M_IX86) || defined(_M_X64)
 
 #endif  // (#if-chain ref AVOID_CPU_ARCH_1)
 #endif  // (#if-chain ref AVOID_CPU_ARCH_0)
