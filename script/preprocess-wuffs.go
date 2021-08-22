@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build ignore
 // +build ignore
 
 // Deprecated: unused as of commit 695a6815 "Remove gif.config_decoder".

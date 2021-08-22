@@ -14,6 +14,7 @@
 
 // ----------------
 
+//go:build !cgo
 // +build !cgo
 
 package cgolz4
