@@ -126,6 +126,10 @@ var f64TestCases = []float64{
 	6.022141e23,
 	6.0221408e23,
 	6.02214076e23,
+
+	// Some "parse to float64" implementations find this one tricky.
+	// https://github.com/serde-rs/json/issues/707
+	122.416294033786585,
 }
 
 var u64TestCases = []uint64{
