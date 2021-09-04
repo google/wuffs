@@ -82,9 +82,9 @@ reserved for impure effects.
 Expressions involving the standard arithmetic operators (e.g. `*`, `+`), will
 not compile if overflow is possible. Some of these operators have alternative
 'tilde' forms (e.g. `~mod*`, `~sat+`) which provide
-[modular](/doc/glossary.md#modular-arithmetic.md) and
-[saturating](/doc/glossary.md#saturating-arithmetic.md) arithmetic. By
-definition, these never overflow.
+[modular](/doc/glossary.md#modular-arithmetic) and
+[saturating](/doc/glossary.md#saturating-arithmetic) arithmetic. By definition,
+these never overflow.
 
 The `as` operator, e.g. `x as T`, converts an expression `x` to the type `T`.
 
