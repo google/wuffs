@@ -564,10 +564,6 @@ test_mimic_png_decode_bad_crc32_checksum_critical() {
 const char*  //
 bench_wuffs_png_decode_image_19k_8bpp() {
   CHECK_FOCUS(__func__);
-  // libpng automatically applies the "gAMA" chunk (with no matching "sRGB"
-  // chunk) but Wuffs does not. To make the comparison more like-for-like,
-  // especially in emitting identical BGRA pixels, patch the source file by
-  // replacing the "gAMA" with the nonsense "hAMA". ASCII 'g' is 0x67.
   return do_bench_image_decode(
       &wuffs_png_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
       wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__Y), NULL, 0,
@@ -744,10 +740,6 @@ bench_wuffs_png_decode_filt_4_dist_4() {
 const char*  //
 bench_mimic_png_decode_image_19k_8bpp() {
   CHECK_FOCUS(__func__);
-  // libpng automatically applies the "gAMA" chunk (with no matching "sRGB"
-  // chunk) but Wuffs does not. To make the comparison more like-for-like,
-  // especially in emitting identical BGRA pixels, patch the source file by
-  // replacing the "gAMA" with the nonsense "hAMA". ASCII 'g' is 0x67.
   return do_bench_image_decode(
       &mimic_png_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
       wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__Y), NULL, 0,
