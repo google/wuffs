@@ -263,8 +263,15 @@ main(int argc, char** argv) {
 
   while (true) {
     xcb_generic_event_t* event = xcb_wait_for_event(c);
-    bool reload = false;
+    // XXX: Large pictures may cause XCB_CONN_CLOSED_REQ_LEN_EXCEED because,
+    // e.g., 4_194_303 * 4 = 16_777_212 = not nearly enough,
+    // requiring some trickery to be uploaded to the server.
+    if (!event) {
+        printf("XCB failure (error code %d)\n", xcb_connection_has_error(c));
+        exit(EXIT_FAILURE);
+    }
 
+    bool reload = false;
     switch (event->response_type & 0x7F) {
       case XCB_EXPOSE: {
         xcb_expose_event_t* e = (xcb_expose_event_t*)event;
