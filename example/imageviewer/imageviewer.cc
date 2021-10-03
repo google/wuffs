@@ -215,7 +215,7 @@ make_window(xcb_connection_t* c, xcb_screen_t* s) {
 
 void  //
 apply_zoom_and_filter(xcb_connection_t* c) {
-  static xcb_render_fixed_t zooms[NUM_ZOOMS] = {
+  static const xcb_render_fixed_t zooms[NUM_ZOOMS] = {
       0x10000,  // 1/1 as 16.16 fixed point
       0x08000,  // 1/2
       0x04000,  // 1/4
