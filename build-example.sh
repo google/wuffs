@@ -23,7 +23,10 @@ if [ ! -e release/c/wuffs-unsupported-snapshot.c ]; then
 fi
 
 CC=${CC:-gcc}
+CFLAGS=${CFLAGS:--O3}
 CXX=${CXX:-g++}
+CXXFLAGS=${CXXFLAGS:--O3}
+LDFLAGS=${LDFLAGS:-}
 
 mkdir -p gen/bin
 
@@ -41,35 +44,35 @@ for f in $sources; do
 
   if [ $f = imageviewer ]; then
     # example/imageviewer is unusual in that needs additional libraries.
-    echo "Building gen/bin/example-$f"
-    $CXX -O3 example/$f/*.cc \
-        -lxcb -lxcb-image -lxcb-render -lxcb-render-util \
+    echo "Building (C++) gen/bin/example-$f"
+    $CXX $CXXFLAGS example/$f/*.cc \
+        $LDFLAGS -lxcb -lxcb-image -lxcb-render -lxcb-render-util \
         -o gen/bin/example-$f
   elif [ $f = "sdl-imageviewer" ]; then
     # example/sdl-imageviewer is unusual in that needs additional libraries.
-    echo "Building gen/bin/example-$f"
-    $CXX -O3 example/$f/*.cc \
-        -lSDL2 -lSDL2_image \
+    echo "Building (C++) gen/bin/example-$f"
+    $CXX $CXXFLAGS example/$f/*.cc \
+        $LDFLAGS -lSDL2 -lSDL2_image \
         -o gen/bin/example-$f
   elif [ $f = "toy-genlib" ]; then
     # example/toy-genlib is unusual in that it uses separately compiled
     # libraries (built by "wuffs genlib", e.g. by running build-all.sh) instead
     # of directly #include'ing Wuffs' .c files.
     if [ -e gen/lib/c/$CC-static/libwuffs.a ]; then
-      echo "Building gen/bin/example-$f"
-      $CC -O3 -static -I.. example/$f/*.c gen/lib/c/$CC-static/libwuffs.a \
-          -o gen/bin/example-$f
+      echo "Building (C)   gen/bin/example-$f"
+      $CC $CFLAGS -static -I.. example/$f/*.c gen/lib/c/$CC-static/libwuffs.a \
+          $LDFLAGS -o gen/bin/example-$f
     else
       echo "Skipping gen/bin/example-$f; run \"wuffs genlib\" first"
     fi
   elif [ -e example/$f/*.c ]; then
-    echo "Building gen/bin/example-$f"
-    $CC  -O3            example/$f/*.c  -o gen/bin/example-$f
+    echo "Building (C)   gen/bin/example-$f"
+    $CC  $CFLAGS              example/$f/*.c  $LDFLAGS -o gen/bin/example-$f
   elif [ $f = "jsonfindptrs" ]; then
-    echo "Building gen/bin/example-$f"
-    $CXX -O3 -std=c++17 example/$f/*.cc -o gen/bin/example-$f
+    echo "Building (C++) gen/bin/example-$f"
+    $CXX $CXXFLAGS -std=c++17 example/$f/*.cc $LDFLAGS -o gen/bin/example-$f
   elif [ -e example/$f/*.cc ]; then
-    echo "Building gen/bin/example-$f"
-    $CXX -O3            example/$f/*.cc -o gen/bin/example-$f
+    echo "Building (C++) gen/bin/example-$f"
+    $CXX $CXXFLAGS            example/$f/*.cc $LDFLAGS -o gen/bin/example-$f
   fi
 done
