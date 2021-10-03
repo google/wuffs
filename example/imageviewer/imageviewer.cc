@@ -29,6 +29,12 @@ stdin.
 
 The Return key is equivalent to the Space key.
 
+The ',' Comma and '.' Period keys cycle through background colors, which
+matters if the image has fully or partially transparent pixels.
+
+The '1' to '8' keys change the magnification zoom. The '0' key toggles nearest
+neighbor and bilinear filtering.
+
 The Escape key quits.
 */
 
@@ -75,6 +81,7 @@ The Escape key quits.
 #define MAX_INCL_DIMENSION 65535
 
 #define NUM_BACKGROUND_COLORS 3
+#define NUM_ZOOMS 8
 #define SRC_BUFFER_ARRAY_SIZE (64 * 1024)
 
 wuffs_base__color_u32_argb_premul g_background_colors[NUM_BACKGROUND_COLORS] = {
@@ -88,6 +95,8 @@ uint32_t g_height = 0;
 wuffs_aux::MemOwner g_pixbuf_mem_owner(nullptr, &free);
 wuffs_base__pixel_buffer g_pixbuf = {0};
 uint32_t g_background_color_index = 0;
+uint32_t g_zoom = 0;
+bool g_filter = false;
 
 bool  //
 load_image(const char* filename) {
@@ -204,6 +213,52 @@ make_window(xcb_connection_t* c, xcb_screen_t* s) {
   return w;
 }
 
+void  //
+apply_zoom_and_filter(xcb_connection_t* c) {
+  static xcb_render_fixed_t zooms[NUM_ZOOMS] = {
+      0x10000,  // 1/1 as 16.16 fixed point
+      0x08000,  // 1/2
+      0x04000,  // 1/4
+      0x02000,  // 1/8
+      0x01000,  // 1/16
+      0x00800,  // 1/32
+      0x00400,  // 1/64
+      0x00200,  // 1/128
+  };
+
+  xcb_render_fixed_t z = zooms[g_zoom % NUM_ZOOMS];
+  xcb_render_set_picture_transform(c, g_pixmap_picture,
+                                   ((xcb_render_transform_t){
+                                       z, 0, 0,        //
+                                       0, z, 0,        //
+                                       0, 0, 0x10000,  //
+                                   }));
+
+  uint16_t f_len = 7;
+  const char* f_ptr = "nearest";
+  if (g_filter && (g_zoom != 0)) {
+    f_len = 8;
+    f_ptr = "bilinear";
+  }
+  xcb_render_set_picture_filter(c, g_pixmap_picture, f_len, f_ptr, 0, NULL);
+}
+
+// zoom_shift returns (a << g_zoom), roughly speaking, but saturates at an
+// arbitrary value called M.
+//
+// The final two arguments to xcb_render_composite have uint16_t type (and
+// UINT16_MAX is 65535), but in practice, values above M sometimes don't work
+// in that the xcb_render_composite call has no visible effect.
+//
+// Some xrender debugging could potentially derive a more accurate maximum but
+// for now, the M = 30000 round number will do.
+uint16_t  //
+zoom_shift(uint32_t a) {
+  uint16_t M = 30000;
+  uint64_t b = ((uint64_t)a) << (g_zoom % NUM_ZOOMS);
+  return (b < M) ? b : M;
+}
+
 bool  //
 load(xcb_connection_t* c, xcb_window_t w, const char* filename) {
   if (g_pixmap != XCB_NONE) {
@@ -221,6 +276,7 @@ load(xcb_connection_t* c, xcb_window_t w, const char* filename) {
   xcb_create_gc(c, g_pixmap_gc, g_pixmap, 0, NULL);
   xcb_render_create_picture(c, g_pixmap_picture, g_pixmap, g_pictforminfo->id,
                             0, NULL);
+  apply_zoom_and_filter(c);
 
   // Make libxcb-image interpret WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL as
   // XCB_PICT_STANDARD_ARGB_32 with byte_order XCB_IMAGE_ORDER_LSB_FIRST.
@@ -314,8 +370,8 @@ main(int argc, char** argv) {
         xcb_expose_event_t* e = (xcb_expose_event_t*)event;
         if (loaded && (e->count == 0)) {
           xcb_render_composite(c, XCB_RENDER_PICT_OP_SRC, g_pixmap_picture,
-                               XCB_NONE, p, 0, 0, 0, 0, 0, 0, g_width,
-                               g_height);
+                               XCB_NONE, p, 0, 0, 0, 0, 0, 0,
+                               zoom_shift(g_width), zoom_shift(g_height));
           xcb_flush(c);
         }
         break;
@@ -352,6 +408,25 @@ main(int argc, char** argv) {
                   (i == ',') ? (NUM_BACKGROUND_COLORS - 1) : 1;
               g_background_color_index %= NUM_BACKGROUND_COLORS;
               reload = true;
+              break;
+
+            case '0':
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+            case '5':
+            case '6':
+            case '7':
+            case '8':
+              if (i == '0') {
+                g_filter = !g_filter;
+              } else {
+                g_zoom = i - '1';
+              }
+              apply_zoom_and_filter(c);
+              xcb_clear_area(c, 1, w, 0, 0, 0xFFFF, 0xFFFF);
+              xcb_flush(c);
               break;
           }
         }
