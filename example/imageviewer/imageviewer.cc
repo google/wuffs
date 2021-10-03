@@ -158,9 +158,9 @@ load_image(const char* filename) {
 #if defined(__linux__)
 #define SUPPORTED_OPERATING_SYSTEM
 
+#include <xcb/render.h>
 #include <xcb/xcb.h>
 #include <xcb/xcb_image.h>
-#include <xcb/render.h>
 #include <xcb/xcb_renderutil.h>
 
 #define XK_BackSpace 0xFF08
@@ -205,9 +205,7 @@ make_window(xcb_connection_t* c, xcb_screen_t* s) {
 }
 
 bool  //
-load(xcb_connection_t* c,
-     xcb_window_t w,
-     const char* filename) {
+load(xcb_connection_t* c, xcb_window_t w, const char* filename) {
   if (g_pixmap != XCB_NONE) {
     xcb_free_gc(c, g_pixmap_gc);
     xcb_render_free_picture(c, g_pixmap_picture);
@@ -225,18 +223,26 @@ load(xcb_connection_t* c,
   xcb_create_gc(c, g_pixmap_gc, g_pixmap, 0, NULL);
   xcb_render_create_picture(c, g_pixmap_picture, g_pixmap, format->id, 0, NULL);
 
-  // We'll make libxcb-image interpret WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL
-  // as XCB_PICT_STANDARD_ARGB_32 with XCB_IMAGE_ORDER_LSB_FIRST.
-  xcb_image_t* unconverted = xcb_image_create(
-      g_width, g_height, XCB_IMAGE_FORMAT_Z_PIXMAP,
-      32 /* xpad */, format->depth, 32 /* bpp */, 32 /* unit */,
-      XCB_IMAGE_ORDER_LSB_FIRST /* byte order */,
-      XCB_IMAGE_ORDER_MSB_FIRST /* bit order */,
-      NULL /* base */, tab.height * tab.stride /* bytes */, tab.ptr /* data */);
+  // We'll make libxcb-image interpret WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL as
+  // XCB_PICT_STANDARD_ARGB_32 with XCB_IMAGE_ORDER_LSB_FIRST.
+  xcb_image_t* unconverted =
+      xcb_image_create(g_width,                    // width
+                       g_height,                   // height
+                       XCB_IMAGE_FORMAT_Z_PIXMAP,  // format
+                       32,                         // xpad
+                       format->depth,              // depth
+                       32,                         // bpp
+                       32,                         // unit
+                       XCB_IMAGE_ORDER_LSB_FIRST,  // byte_order
+                       XCB_IMAGE_ORDER_MSB_FIRST,  // bit_order
+                       NULL,                       // base
+                       tab.height * tab.stride,    // bytes
+                       tab.ptr);                   // data
 
-  xcb_image_t* image = xcb_image_native(c, unconverted, true /* convert */);
+  xcb_image_t* image =
+      xcb_image_native(c, unconverted, true);  // true means to convert.
   if (image != unconverted) {
-      xcb_image_destroy(unconverted);
+    xcb_image_destroy(unconverted);
   }
 
   xcb_image_put(c, g_pixmap, g_pixmap_gc, image, 0, 0, 0);
@@ -275,8 +281,11 @@ main(int argc, char** argv) {
 
   xcb_window_t w = make_window(c, s);
   xcb_render_picture_t p = xcb_generate_id(c);
-  xcb_render_create_picture(c, p, w, xcb_render_util_find_visual_format(
-      g_pict_formats, s->root_visual)->format, 0, NULL);
+  xcb_render_create_picture(
+      c, p, w,
+      xcb_render_util_find_visual_format(g_pict_formats, s->root_visual)
+          ->format,
+      0, NULL);
   init_keymap(c, z);
   xcb_flush(c);
 
@@ -293,8 +302,8 @@ main(int argc, char** argv) {
     // e.g., 4_194_303 * 4 = 16_777_212 = not nearly enough,
     // requiring some trickery to be uploaded to the server.
     if (!event) {
-        printf("XCB failure (error code %d)\n", xcb_connection_has_error(c));
-        exit(EXIT_FAILURE);
+      printf("XCB failure (error code %d)\n", xcb_connection_has_error(c));
+      exit(EXIT_FAILURE);
     }
 
     bool reload = false;
@@ -303,7 +312,8 @@ main(int argc, char** argv) {
         xcb_expose_event_t* e = (xcb_expose_event_t*)event;
         if (loaded && (e->count == 0)) {
           xcb_render_composite(c, XCB_RENDER_PICT_OP_SRC, g_pixmap_picture,
-              XCB_NONE, p, 0, 0, 0, 0, 0, 0, g_width, g_height);
+                               XCB_NONE, p, 0, 0, 0, 0, 0, 0, g_width,
+                               g_height);
           xcb_flush(c);
         }
         break;
