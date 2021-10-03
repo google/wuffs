@@ -42,18 +42,23 @@ for f in $sources; do
   if [ $f = imageviewer ]; then
     # example/imageviewer is unusual in that needs additional libraries.
     echo "Building gen/bin/example-$f"
-    $CXX -O3 example/$f/*.cc -lxcb -lxcb-image   -o gen/bin/example-$f
+    $CXX -O3 example/$f/*.cc \
+        -lxcb -lxcb-image -lxcb-render -lxcb-render-util \
+        -o gen/bin/example-$f
   elif [ $f = "sdl-imageviewer" ]; then
     # example/sdl-imageviewer is unusual in that needs additional libraries.
     echo "Building gen/bin/example-$f"
-    $CXX -O3 example/$f/*.cc -lSDL2 -lSDL2_image -o gen/bin/example-$f
+    $CXX -O3 example/$f/*.cc \
+        -lSDL2 -lSDL2_image \
+        -o gen/bin/example-$f
   elif [ $f = "toy-genlib" ]; then
     # example/toy-genlib is unusual in that it uses separately compiled
     # libraries (built by "wuffs genlib", e.g. by running build-all.sh) instead
     # of directly #include'ing Wuffs' .c files.
     if [ -e gen/lib/c/$CC-static/libwuffs.a ]; then
       echo "Building gen/bin/example-$f"
-      $CC -O3 -static -I.. example/$f/*.c gen/lib/c/$CC-static/libwuffs.a -o gen/bin/example-$f
+      $CC -O3 -static -I.. example/$f/*.c gen/lib/c/$CC-static/libwuffs.a \
+          -o gen/bin/example-$f
     else
       echo "Skipping gen/bin/example-$f; run \"wuffs genlib\" first"
     fi
