@@ -231,8 +231,15 @@ bool  //
 draw(SDL_Window* window) {
   SDL_Surface* ws = SDL_GetWindowSurface(window);
   if (!ws) {
-    // This resolves DefaultDepth 30 X.org, in a slightly inefficient manner.
+    // Use an indirect approach, for exotic window pixel formats (e.g. X.org 10
+    // bits per RGB channel), when we can't get the window surface directly.
+    //
+    // See https://github.com/google/wuffs/issues/51
     SDL_Renderer* r = SDL_CreateRenderer(window, -1, 0);
+    if (!r) {
+      fprintf(stderr, "main: SDL_CreateRenderer: %s\n", SDL_GetError());
+      return false;
+    }
     SDL_RenderClear(r);
     if (g_image) {
       SDL_Texture* texture = SDL_CreateTextureFromSurface(r, g_image);
@@ -243,6 +250,8 @@ draw(SDL_Window* window) {
     SDL_DestroyRenderer(r);
     return true;
   }
+
+  // Use a direct approach.
   SDL_FillRect(ws, NULL, SDL_MapRGB(ws->format, 0x00, 0x00, 0x00));
   if (g_image) {
     SDL_BlitSurface(g_image, NULL, ws, NULL);

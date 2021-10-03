@@ -174,7 +174,7 @@ xcb_atom_t g_atom_wm_delete_window = XCB_NONE;
 xcb_pixmap_t g_pixmap = XCB_NONE;
 xcb_gcontext_t g_pixmap_gc = XCB_NONE;
 xcb_render_picture_t g_pixmap_picture = XCB_NONE;
-const xcb_render_query_pict_formats_reply_t* g_pict_formats = NULL;
+xcb_render_pictforminfo_t* g_pictforminfo = NULL;
 xcb_keysym_t* g_keysyms = NULL;
 xcb_get_keyboard_mapping_reply_t* g_keyboard_mapping = NULL;
 
@@ -207,8 +207,8 @@ make_window(xcb_connection_t* c, xcb_screen_t* s) {
 bool  //
 load(xcb_connection_t* c, xcb_window_t w, const char* filename) {
   if (g_pixmap != XCB_NONE) {
-    xcb_free_gc(c, g_pixmap_gc);
     xcb_render_free_picture(c, g_pixmap_picture);
+    xcb_free_gc(c, g_pixmap_gc);
     xcb_free_pixmap(c, g_pixmap);
   }
 
@@ -217,20 +217,19 @@ load(xcb_connection_t* c, xcb_window_t w, const char* filename) {
   }
   wuffs_base__table_u8 tab = g_pixbuf.plane(0);
 
-  xcb_render_pictforminfo_t* format = xcb_render_util_find_standard_format(
-      g_pict_formats, XCB_PICT_STANDARD_ARGB_32);
-  xcb_create_pixmap(c, format->depth, g_pixmap, w, g_width, g_height);
+  xcb_create_pixmap(c, g_pictforminfo->depth, g_pixmap, w, g_width, g_height);
   xcb_create_gc(c, g_pixmap_gc, g_pixmap, 0, NULL);
-  xcb_render_create_picture(c, g_pixmap_picture, g_pixmap, format->id, 0, NULL);
+  xcb_render_create_picture(c, g_pixmap_picture, g_pixmap, g_pictforminfo->id,
+                            0, NULL);
 
-  // We'll make libxcb-image interpret WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL as
-  // XCB_PICT_STANDARD_ARGB_32 with XCB_IMAGE_ORDER_LSB_FIRST.
+  // Make libxcb-image interpret WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL as
+  // XCB_PICT_STANDARD_ARGB_32 with byte_order XCB_IMAGE_ORDER_LSB_FIRST.
   xcb_image_t* unconverted =
       xcb_image_create(g_width,                    // width
                        g_height,                   // height
                        XCB_IMAGE_FORMAT_Z_PIXMAP,  // format
                        32,                         // xpad
-                       format->depth,              // depth
+                       g_pictforminfo->depth,      // depth
                        32,                         // bpp
                        32,                         // unit
                        XCB_IMAGE_ORDER_LSB_FIRST,  // byte_order
@@ -239,14 +238,14 @@ load(xcb_connection_t* c, xcb_window_t w, const char* filename) {
                        tab.height * tab.stride,    // bytes
                        tab.ptr);                   // data
 
-  xcb_image_t* image =
+  xcb_image_t* converted =
       xcb_image_native(c, unconverted, true);  // true means to convert.
-  if (image != unconverted) {
+  if (converted != unconverted) {
     xcb_image_destroy(unconverted);
   }
 
-  xcb_image_put(c, g_pixmap, g_pixmap_gc, image, 0, 0, 0);
-  xcb_image_destroy(image);
+  xcb_image_put(c, g_pixmap, g_pixmap_gc, converted, 0, 0, 0);
+  xcb_image_destroy(converted);
   return true;
 }
 
@@ -255,7 +254,11 @@ main(int argc, char** argv) {
   xcb_connection_t* c = xcb_connect(NULL, NULL);
   const xcb_setup_t* z = xcb_get_setup(c);
   xcb_screen_t* s = xcb_setup_roots_iterator(z).data;
-  g_pict_formats = xcb_render_util_query_formats(c);
+
+  const xcb_render_query_pict_formats_reply_t* pict_formats =
+      xcb_render_util_query_formats(c);
+  g_pictforminfo = xcb_render_util_find_standard_format(
+      pict_formats, XCB_PICT_STANDARD_ARGB_32);
 
   {
     xcb_intern_atom_cookie_t cookie0 =
@@ -283,8 +286,7 @@ main(int argc, char** argv) {
   xcb_render_picture_t p = xcb_generate_id(c);
   xcb_render_create_picture(
       c, p, w,
-      xcb_render_util_find_visual_format(g_pict_formats, s->root_visual)
-          ->format,
+      xcb_render_util_find_visual_format(pict_formats, s->root_visual)->format,
       0, NULL);
   init_keymap(c, z);
   xcb_flush(c);
