@@ -79,6 +79,7 @@ isn't otherwise doing anything.
 // ----------------
 
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_render.h>
 #include <SDL2/SDL_image.h>
 
 // --------
@@ -229,6 +230,19 @@ bool g_load_via_sdl_image = false;
 bool  //
 draw(SDL_Window* window) {
   SDL_Surface* ws = SDL_GetWindowSurface(window);
+  if (!ws) {
+    // This resolves DefaultDepth 30 X.org, in a slightly inefficient manner.
+    SDL_Renderer* r = SDL_CreateRenderer(window, -1, 0);
+    SDL_RenderClear(r);
+    if (g_image) {
+      SDL_Texture* texture = SDL_CreateTextureFromSurface(r, g_image);
+      SDL_RenderCopy(r, texture, NULL, &g_image->clip_rect);
+      SDL_DestroyTexture(texture);
+    }
+    SDL_RenderPresent(r);
+    SDL_DestroyRenderer(r);
+    return true;
+  }
   SDL_FillRect(ws, NULL, SDL_MapRGB(ws->format, 0x00, 0x00, 0x00));
   if (g_image) {
     SDL_BlitSurface(g_image, NULL, ws, NULL);

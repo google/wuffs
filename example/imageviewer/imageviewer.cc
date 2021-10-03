@@ -18,7 +18,7 @@
 imageviewer is a simple GUI program for viewing images. On Linux, GUI means
 X11. To run:
 
-$CXX imageviewer.cc -lxcb -lxcb-image && \
+$CXX imageviewer.cc -lxcb -lxcb-image -lxcb-render -lxcb-render-util && \
   ./a.out ../../test/data/bricks-*.gif; rm -f a.out
 
 for a C++ compiler $CXX, such as clang++ or g++.
@@ -160,6 +160,8 @@ load_image(const char* filename) {
 
 #include <xcb/xcb.h>
 #include <xcb/xcb_image.h>
+#include <xcb/render.h>
+#include <xcb/xcb_renderutil.h>
 
 #define XK_BackSpace 0xFF08
 #define XK_Escape 0xFF1B
@@ -170,6 +172,9 @@ xcb_atom_t g_atom_utf8_string = XCB_NONE;
 xcb_atom_t g_atom_wm_protocols = XCB_NONE;
 xcb_atom_t g_atom_wm_delete_window = XCB_NONE;
 xcb_pixmap_t g_pixmap = XCB_NONE;
+xcb_gcontext_t g_pixmap_gc = XCB_NONE;
+xcb_render_picture_t g_pixmap_picture = XCB_NONE;
+const xcb_render_query_pict_formats_reply_t* g_pict_formats = NULL;
 xcb_keysym_t* g_keysyms = NULL;
 xcb_get_keyboard_mapping_reply_t* g_keyboard_mapping = NULL;
 
@@ -201,11 +206,11 @@ make_window(xcb_connection_t* c, xcb_screen_t* s) {
 
 bool  //
 load(xcb_connection_t* c,
-     xcb_screen_t* s,
      xcb_window_t w,
-     xcb_gcontext_t g,
      const char* filename) {
   if (g_pixmap != XCB_NONE) {
+    xcb_free_gc(c, g_pixmap_gc);
+    xcb_render_free_picture(c, g_pixmap_picture);
     xcb_free_pixmap(c, g_pixmap);
   }
 
@@ -214,11 +219,27 @@ load(xcb_connection_t* c,
   }
   wuffs_base__table_u8 tab = g_pixbuf.plane(0);
 
-  xcb_create_pixmap(c, s->root_depth, g_pixmap, w, g_width, g_height);
-  xcb_image_t* image = xcb_image_create_native(
-      c, g_width, g_height, XCB_IMAGE_FORMAT_Z_PIXMAP, s->root_depth, NULL,
-      tab.height * tab.stride, tab.ptr);
-  xcb_image_put(c, g_pixmap, g, image, 0, 0, 0);
+  xcb_render_pictforminfo_t* format = xcb_render_util_find_standard_format(
+      g_pict_formats, XCB_PICT_STANDARD_ARGB_32);
+  xcb_create_pixmap(c, format->depth, g_pixmap, w, g_width, g_height);
+  xcb_create_gc(c, g_pixmap_gc, g_pixmap, 0, NULL);
+  xcb_render_create_picture(c, g_pixmap_picture, g_pixmap, format->id, 0, NULL);
+
+  // We'll make libxcb-image interpret WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL
+  // as XCB_PICT_STANDARD_ARGB_32 with XCB_IMAGE_ORDER_LSB_FIRST.
+  xcb_image_t* unconverted = xcb_image_create(
+      g_width, g_height, XCB_IMAGE_FORMAT_Z_PIXMAP,
+      32 /* xpad */, format->depth, 32 /* bpp */, 32 /* unit */,
+      XCB_IMAGE_ORDER_LSB_FIRST /* byte order */,
+      XCB_IMAGE_ORDER_MSB_FIRST /* bit order */,
+      NULL /* base */, tab.height * tab.stride /* bytes */, tab.ptr /* data */);
+
+  xcb_image_t* image = xcb_image_native(c, unconverted, true /* convert */);
+  if (image != unconverted) {
+      xcb_image_destroy(unconverted);
+  }
+
+  xcb_image_put(c, g_pixmap, g_pixmap_gc, image, 0, 0, 0);
   xcb_image_destroy(image);
   return true;
 }
@@ -228,6 +249,7 @@ main(int argc, char** argv) {
   xcb_connection_t* c = xcb_connect(NULL, NULL);
   const xcb_setup_t* z = xcb_get_setup(c);
   xcb_screen_t* s = xcb_setup_roots_iterator(z).data;
+  g_pict_formats = xcb_render_util_query_formats(c);
 
   {
     xcb_intern_atom_cookie_t cookie0 =
@@ -252,24 +274,36 @@ main(int argc, char** argv) {
   }
 
   xcb_window_t w = make_window(c, s);
-  xcb_gcontext_t g = xcb_generate_id(c);
-  xcb_create_gc(c, g, w, 0, NULL);
+  xcb_render_picture_t p = xcb_generate_id(c);
+  xcb_render_create_picture(c, p, w, xcb_render_util_find_visual_format(
+      g_pict_formats, s->root_visual)->format, 0, NULL);
   init_keymap(c, z);
   xcb_flush(c);
-  g_pixmap = xcb_generate_id(c);
 
-  bool loaded = load(c, s, w, g, (argc > 1) ? argv[1] : NULL);
+  g_pixmap = xcb_generate_id(c);
+  g_pixmap_gc = xcb_generate_id(c);
+  g_pixmap_picture = xcb_generate_id(c);
+
+  bool loaded = load(c, w, (argc > 1) ? argv[1] : NULL);
   int arg = 1;
 
   while (true) {
     xcb_generic_event_t* event = xcb_wait_for_event(c);
-    bool reload = false;
+    // XXX: Large pictures may cause XCB_CONN_CLOSED_REQ_LEN_EXCEED because,
+    // e.g., 4_194_303 * 4 = 16_777_212 = not nearly enough,
+    // requiring some trickery to be uploaded to the server.
+    if (!event) {
+        printf("XCB failure (error code %d)\n", xcb_connection_has_error(c));
+        exit(EXIT_FAILURE);
+    }
 
+    bool reload = false;
     switch (event->response_type & 0x7F) {
       case XCB_EXPOSE: {
         xcb_expose_event_t* e = (xcb_expose_event_t*)event;
         if (loaded && (e->count == 0)) {
-          xcb_copy_area(c, g_pixmap, w, g, 0, 0, 0, 0, g_width, g_height);
+          xcb_render_composite(c, XCB_RENDER_PICT_OP_SRC, g_pixmap_picture,
+              XCB_NONE, p, 0, 0, 0, 0, 0, 0, g_width, g_height);
           xcb_flush(c);
         }
         break;
@@ -324,7 +358,7 @@ main(int argc, char** argv) {
     free(event);
 
     if (reload) {
-      loaded = load(c, s, w, g, argv[arg]);
+      loaded = load(c, w, argv[arg]);
       xcb_clear_area(c, 1, w, 0, 0, 0xFFFF, 0xFFFF);
       xcb_flush(c);
     }
