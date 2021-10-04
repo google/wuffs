@@ -23,9 +23,9 @@ if [ ! -e release/c/wuffs-unsupported-snapshot.c ]; then
 fi
 
 CC=${CC:-gcc}
-CFLAGS=${CFLAGS:--O3}
+CFLAGS=${CFLAGS:--O3 -fdata-sections -ffunction-sections -Wl,--gc-sections}
 CXX=${CXX:-g++}
-CXXFLAGS=${CXXFLAGS:--O3}
+CXXFLAGS=${CXXFLAGS:--O3 -fdata-sections -ffunction-sections -Wl,--gc-sections}
 LDFLAGS=${LDFLAGS:-}
 
 mkdir -p gen/bin
