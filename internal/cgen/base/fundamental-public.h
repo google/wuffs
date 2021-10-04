@@ -122,9 +122,12 @@
 
 // --------
 
-// Define WUFFS_CONFIG__STATIC_FUNCTIONS to make all of Wuffs' functions have
-// static storage. The motivation is discussed in the "ALLOW STATIC
-// IMPLEMENTATION" section of
+// Define WUFFS_CONFIG__STATIC_FUNCTIONS (combined with WUFFS_IMPLEMENTATION)
+// to make all of Wuffs' functions have static storage.
+//
+// This can help the compiler ignore or discard unused code, which can produce
+// faster compiles and smaller binaries. Other motivations are discussed in the
+// "ALLOW STATIC IMPLEMENTATION" section of
 // https://raw.githubusercontent.com/nothings/stb/master/docs/stb_howto.txt
 #if defined(WUFFS_CONFIG__STATIC_FUNCTIONS)
 #define WUFFS_BASE__MAYBE_STATIC static
