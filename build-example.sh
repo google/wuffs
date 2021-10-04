@@ -23,10 +23,13 @@ if [ ! -e release/c/wuffs-unsupported-snapshot.c ]; then
 fi
 
 CC=${CC:-gcc}
-CFLAGS=${CFLAGS:--O3 -fdata-sections -ffunction-sections -Wl,--gc-sections}
 CXX=${CXX:-g++}
-CXXFLAGS=${CXXFLAGS:--O3 -fdata-sections -ffunction-sections -Wl,--gc-sections}
 LDFLAGS=${LDFLAGS:-}
+
+# The "-fdata-sections -ffunction-sections -Wl,--gc-sections" produces smaller
+# binaries. See commit 41fce8a8 "Strip examples of unused data and functions".
+CFLAGS=${CFLAGS:--O3 -fdata-sections -ffunction-sections -Wl,--gc-sections}
+CXXFLAGS=${CXXFLAGS:--O3 -fdata-sections -ffunction-sections -Wl,--gc-sections}
 
 mkdir -p gen/bin
 
