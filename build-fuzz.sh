@@ -24,6 +24,12 @@ fi
 
 CC=${CC:-gcc}
 CXX=${CXX:-g++}
+LDFLAGS=${LDFLAGS:-}
+
+# The "-fdata-sections -ffunction-sections -Wl,--gc-sections" produces smaller
+# binaries. See commit 41fce8a8 "Strip examples of unused data and functions".
+CFLAGS=${CFLAGS:--O3 -fdata-sections -ffunction-sections -Wl,--gc-sections}
+CXXFLAGS=${CXXFLAGS:--O3 -fdata-sections -ffunction-sections -Wl,--gc-sections}
 
 mkdir -p gen/bin
 
@@ -43,9 +49,11 @@ for f in $sources; do
 
   if [   -e fuzz/c/std/${f}_fuzzer.c  ]; then
     echo "Building (C)   gen/bin/fuzz-$f"
-    $CC  -DWUFFS_CONFIG__FUZZLIB_MAIN fuzz/c/std/${f}_fuzzer.c  -o gen/bin/fuzz-$f
+    $CC  $CFLAGS   -DWUFFS_CONFIG__FUZZLIB_MAIN fuzz/c/std/${f}_fuzzer.c  \
+        $LDFLAGS -o gen/bin/fuzz-$f
   elif [ -e fuzz/c/std/${f}_fuzzer.cc ]; then
     echo "Building (C++) gen/bin/fuzz-$f"
-    $CXX -DWUFFS_CONFIG__FUZZLIB_MAIN fuzz/c/std/${f}_fuzzer.cc -o gen/bin/fuzz-$f
+    $CXX $CXXFLAGS -DWUFFS_CONFIG__FUZZLIB_MAIN fuzz/c/std/${f}_fuzzer.cc \
+        $LDFLAGS -o gen/bin/fuzz-$f
   fi
 done
