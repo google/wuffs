@@ -37,6 +37,7 @@ pub struct decoder? implements base.image_decoder(
 	pass_bytes_per_row : base.u64[..= 0x07FF_FFF8],
 
 	workbuf_wi             : base.u64,
+	workbuf_hist_pos_base  : base.u64,
 	overall_workbuf_length : base.u64[..= 0x0007_FFFF_F100_0007],
 	pass_workbuf_length    : base.u64[..= 0x0007_FFFF_F100_0007],
 
@@ -533,6 +534,7 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 		return status
 	}
 
+	this.workbuf_hist_pos_base = 0
 	while true {
 		pass_width = 0x00FF_FFFF &
 			(((INTERLACING[this.interlace_pass][1] as base.u32) + this.width) >>
@@ -549,6 +551,7 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 			if not status.is_ok() {
 				return status
 			}
+			this.workbuf_hist_pos_base ~mod+= this.pass_workbuf_length
 		}
 
 		if (this.interlace_pass == 0) or (this.interlace_pass >= 7) {
@@ -574,7 +577,7 @@ pri func decoder.decode_pass?(src: base.io_reader, workbuf: slice base.u8) {
 			this.pass_workbuf_length > args.workbuf.length()) {
 			return base."#bad workbuf length"
 		}
-		io_bind (io: w, data: args.workbuf[this.workbuf_wi .. this.pass_workbuf_length], history_position: this.workbuf_wi) {
+		io_bind (io: w, data: args.workbuf[this.workbuf_wi .. this.pass_workbuf_length], history_position: this.workbuf_hist_pos_base ~mod+ this.workbuf_wi) {
 			io_limit (io: args.src, limit: this.chunk_length) {
 				w_mark = w.mark()
 				r_mark = args.src.mark()

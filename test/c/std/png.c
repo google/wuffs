@@ -182,13 +182,29 @@ const char*  //
 test_wuffs_png_decode_interface() {
   CHECK_FOCUS(__func__);
   wuffs_png__decoder dec;
-  CHECK_STATUS("initialize",
-               wuffs_png__decoder__initialize(
-                   &dec, sizeof dec, WUFFS_VERSION,
-                   WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
-  return do_test__wuffs_base__image_decoder(
-      wuffs_png__decoder__upcast_as__wuffs_base__image_decoder(&dec),
-      "test/data/bricks-gray.png", 0, SIZE_MAX, 160, 120, 0xFF060606);
+
+  {
+    CHECK_STATUS("initialize",
+                 wuffs_png__decoder__initialize(
+                     &dec, sizeof dec, WUFFS_VERSION,
+                     WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+    CHECK_STRING(do_test__wuffs_base__image_decoder(
+        wuffs_png__decoder__upcast_as__wuffs_base__image_decoder(&dec),
+        "test/data/bricks-gray.png", 0, SIZE_MAX, 160, 120, 0xFF060606));
+  }
+
+  {
+    CHECK_STATUS("initialize",
+                 wuffs_png__decoder__initialize(
+                     &dec, sizeof dec, WUFFS_VERSION,
+                     WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+    CHECK_STRING(do_test__wuffs_base__image_decoder(
+        wuffs_png__decoder__upcast_as__wuffs_base__image_decoder(&dec),
+        "test/data/hippopotamus.interlaced.png", 0, SIZE_MAX, 36, 28,
+        0xFFF5F5F5));
+  }
+
+  return NULL;
 }
 
 const char*  //

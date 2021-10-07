@@ -9122,6 +9122,7 @@ struct wuffs_png__decoder__struct {
     uint32_t f_height;
     uint64_t f_pass_bytes_per_row;
     uint64_t f_workbuf_wi;
+    uint64_t f_workbuf_hist_pos_base;
     uint64_t f_overall_workbuf_length;
     uint64_t f_pass_workbuf_length;
     uint8_t f_call_sequence;
@@ -37715,6 +37716,7 @@ wuffs_png__decoder__decode_frame(
       }
       goto ok;
     }
+    self->private_impl.f_workbuf_hist_pos_base = 0;
     while (true) {
       v_pass_width = (16777215 & ((((uint32_t)(WUFFS_PNG__INTERLACING[self->private_impl.f_interlace_pass][1])) + self->private_impl.f_width) >> WUFFS_PNG__INTERLACING[self->private_impl.f_interlace_pass][0]));
       v_pass_height = (16777215 & ((((uint32_t)(WUFFS_PNG__INTERLACING[self->private_impl.f_interlace_pass][4])) + self->private_impl.f_height) >> WUFFS_PNG__INTERLACING[self->private_impl.f_interlace_pass][3]));
@@ -37737,6 +37739,7 @@ wuffs_png__decoder__decode_frame(
           }
           goto ok;
         }
+        self->private_impl.f_workbuf_hist_pos_base += self->private_impl.f_pass_workbuf_length;
       }
       if ((self->private_impl.f_interlace_pass == 0) || (self->private_impl.f_interlace_pass >= 7)) {
         goto label__0__break;
@@ -37832,7 +37835,7 @@ wuffs_png__decoder__decode_pass(
             wuffs_base__slice_u8__subslice_ij(a_workbuf,
             self->private_impl.f_workbuf_wi,
             self->private_impl.f_pass_workbuf_length),
-            self->private_impl.f_workbuf_wi);
+            ((uint64_t)(self->private_impl.f_workbuf_hist_pos_base + self->private_impl.f_workbuf_wi)));
         {
           const uint8_t *o_1_io2_a_src = io2_a_src;
           wuffs_base__io_reader__limit(&io2_a_src, iop_a_src,
