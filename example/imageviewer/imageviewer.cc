@@ -32,8 +32,8 @@ The Return key is equivalent to the Space key.
 The ',' Comma and '.' Period keys cycle through background colors, which
 matters if the image has fully or partially transparent pixels.
 
-The '1' to '8' keys change the magnification zoom. The '0' key toggles nearest
-neighbor and bilinear filtering.
+The '1' to '8' keys change the magnification zoom (or minification zoom with
+the shift key). The '0' key toggles nearest neighbor and bilinear filtering.
 
 The Escape key quits.
 */
@@ -105,7 +105,7 @@ uint32_t g_height = 0;
 wuffs_aux::MemOwner g_pixbuf_mem_owner(nullptr, &free);
 wuffs_base__pixel_buffer g_pixbuf = {0};
 uint32_t g_background_color_index = 0;
-uint32_t g_zoom = 0;
+int32_t g_zoom = 0;
 bool g_filter = false;
 
 bool  //
@@ -226,18 +226,30 @@ make_window(xcb_connection_t* c, xcb_screen_t* s) {
 
 void  //
 apply_zoom_and_filter(xcb_connection_t* c) {
-  static const xcb_render_fixed_t zooms[NUM_ZOOMS] = {
-      0x10000,  // 1/1 as 16.16 fixed point
-      0x08000,  // 1/2
-      0x04000,  // 1/4
-      0x02000,  // 1/8
-      0x01000,  // 1/16
-      0x00800,  // 1/32
-      0x00400,  // 1/64
-      0x00200,  // 1/128
+  static const xcb_render_fixed_t neg_zooms[NUM_ZOOMS] = {
+      0x00010000,  // 1/1 as 16.16 fixed point
+      0x00020000,  // 2/1
+      0x00040000,  // 4/1
+      0x00080000,  // 8/1
+      0x00100000,  // 16/1
+      0x00200000,  // 32/1
+      0x00400000,  // 64/1
+      0x00800000,  // 128/1
+  };
+  static const xcb_render_fixed_t pos_zooms[NUM_ZOOMS] = {
+      0x00010000,  // 1/1 as 16.16 fixed point
+      0x00008000,  // 1/2
+      0x00004000,  // 1/4
+      0x00002000,  // 1/8
+      0x00001000,  // 1/16
+      0x00000800,  // 1/32
+      0x00000400,  // 1/64
+      0x00000200,  // 1/128
   };
 
-  xcb_render_fixed_t z = zooms[g_zoom % NUM_ZOOMS];
+  xcb_render_fixed_t z = g_zoom < 0
+                             ? neg_zooms[((uint32_t)(-g_zoom)) % NUM_ZOOMS]
+                             : pos_zooms[((uint32_t)(+g_zoom)) % NUM_ZOOMS];
   xcb_render_set_picture_transform(c, g_pixmap_picture,
                                    ((xcb_render_transform_t){
                                        z, 0, 0,        //
@@ -266,7 +278,9 @@ apply_zoom_and_filter(xcb_connection_t* c) {
 uint16_t  //
 zoom_shift(uint32_t a) {
   uint16_t M = 30000;
-  uint64_t b = ((uint64_t)a) << (g_zoom % NUM_ZOOMS);
+  uint64_t b = g_zoom < 0
+                   ? (((uint64_t)a) >> (((uint32_t)(-g_zoom)) % NUM_ZOOMS))
+                   : (((uint64_t)a) << (((uint32_t)(+g_zoom)) % NUM_ZOOMS));
   return (b < M) ? b : M;
 }
 
@@ -457,7 +471,14 @@ main(int argc, char** argv) {
               if (i == '0') {
                 g_filter = !g_filter;
               } else {
-                g_zoom = i - '1';
+                int32_t z = i - '1';
+                if (e->state & XCB_MOD_MASK_SHIFT) {
+                  z = -z;
+                }
+                if (g_zoom == z) {
+                  break;
+                }
+                g_zoom = z;
               }
               apply_zoom_and_filter(c);
               xcb_clear_area(c, 1, w, 0, 0, 0xFFFF, 0xFFFF);
