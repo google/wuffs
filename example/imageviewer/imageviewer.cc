@@ -87,8 +87,8 @@ The Escape key quits.
 // program to generate a stand-alone C file.
 #include "../../release/c/wuffs-unsupported-snapshot.c"
 
-// X11 limits its image dimensions to uint16_t.
-#define MAX_INCL_DIMENSION 65535
+// X11 limits its image dimensions to uint16_t and some coordinates to int16_t.
+#define MAX_INCL_DIMENSION 32767
 
 #define NUM_BACKGROUND_COLORS 3
 #define NUM_ZOOMS 8
@@ -186,6 +186,7 @@ load_image(const char* filename) {
 #define XK_Escape 0xFF1B
 #define XK_Return 0xFF0D
 
+uint32_t g_maximum_request_length = 0;  // Measured in 4-byte units.
 xcb_atom_t g_atom_net_wm_name = XCB_NONE;
 xcb_atom_t g_atom_utf8_string = XCB_NONE;
 xcb_atom_t g_atom_wm_protocols = XCB_NONE;
@@ -288,36 +289,63 @@ load(xcb_connection_t* c, xcb_window_t w, const char* filename) {
                             0, NULL);
   apply_zoom_and_filter(c);
 
-  // Make libxcb-image interpret WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL as
-  // XCB_PICT_STANDARD_ARGB_32 with byte_order XCB_IMAGE_ORDER_LSB_FIRST.
-  xcb_image_t* unconverted =
-      xcb_image_create(g_width,                    // width
-                       g_height,                   // height
-                       XCB_IMAGE_FORMAT_Z_PIXMAP,  // format
-                       32,                         // xpad
-                       g_pictforminfo->depth,      // depth
-                       32,                         // bpp
-                       32,                         // unit
-                       XCB_IMAGE_ORDER_LSB_FIRST,  // byte_order
-                       XCB_IMAGE_ORDER_MSB_FIRST,  // bit_order
-                       NULL,                       // base
-                       tab.height * tab.stride,    // bytes
-                       tab.ptr);                   // data
+  // Copy the pixels from the X11 client process (this process) to the X11
+  // server process. For large images, this may involve multiple xcb_image_put
+  // calls, each copying part of the pixels (a strip that has the same width
+  // but smaller height), to avoid XCB_CONN_CLOSED_REQ_LEN_EXCEED.
+  if (g_width > 0) {
+    uint32_t max_strip_height = g_maximum_request_length / g_width;
+    for (uint32_t y = 0; y < g_height;) {
+      uint32_t h = g_height - y;
+      if (h > max_strip_height) {
+        h = max_strip_height;
+      }
 
-  xcb_image_t* converted =
-      xcb_image_native(c, unconverted, true);  // true means to convert.
-  if (converted != unconverted) {
-    xcb_image_destroy(unconverted);
+      // Make libxcb-image interpret WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL as
+      // XCB_PICT_STANDARD_ARGB_32 with byte_order XCB_IMAGE_ORDER_LSB_FIRST.
+      xcb_image_t* unconverted =
+          xcb_image_create(g_width,                      // width
+                           h,                            // height
+                           XCB_IMAGE_FORMAT_Z_PIXMAP,    // format
+                           32,                           // xpad
+                           g_pictforminfo->depth,        // depth
+                           32,                           // bpp
+                           32,                           // unit
+                           XCB_IMAGE_ORDER_LSB_FIRST,    // byte_order
+                           XCB_IMAGE_ORDER_MSB_FIRST,    // bit_order
+                           NULL,                         // base
+                           h * tab.stride,               // bytes
+                           tab.ptr + (y * tab.stride));  // data
+
+      xcb_image_t* converted =
+          xcb_image_native(c, unconverted, true);  // true means to convert.
+      if (converted != unconverted) {
+        xcb_image_destroy(unconverted);
+      }
+      xcb_image_put(c, g_pixmap, g_pixmap_gc, converted, 0, y, 0);
+      xcb_image_destroy(converted);
+
+      y += h;
+    }
   }
 
-  xcb_image_put(c, g_pixmap, g_pixmap_gc, converted, 0, 0, 0);
-  xcb_image_destroy(converted);
   return true;
 }
 
 int  //
 main(int argc, char** argv) {
   xcb_connection_t* c = xcb_connect(NULL, NULL);
+
+  g_maximum_request_length = xcb_get_maximum_request_length(c);
+  // Our X11 requests (especially xcb_image_put) also need a header, in terms
+  // of wire format. 256 4-byte units should be big enough.
+  const uint32_t max_req_len_adjustment = 256;
+  if (g_maximum_request_length < max_req_len_adjustment) {
+    printf("XCB failure (maximum request length is too short)\n");
+    exit(EXIT_FAILURE);
+  }
+  g_maximum_request_length -= max_req_len_adjustment;
+
   const xcb_setup_t* z = xcb_get_setup(c);
   xcb_screen_t* s = xcb_setup_roots_iterator(z).data;
 
@@ -366,9 +394,6 @@ main(int argc, char** argv) {
 
   while (true) {
     xcb_generic_event_t* event = xcb_wait_for_event(c);
-    // XXX: Large pictures may cause XCB_CONN_CLOSED_REQ_LEN_EXCEED because,
-    // e.g., 4_194_303 * 4 = 16_777_212 = not nearly enough,
-    // requiring some trickery to be uploaded to the server.
     if (!event) {
       printf("XCB failure (error code %d)\n", xcb_connection_has_error(c));
       exit(EXIT_FAILURE);
