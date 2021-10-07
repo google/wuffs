@@ -37,6 +37,16 @@
 // compiling it.
 #define WUFFS_IMPLEMENTATION
 
+// Defining the WUFFS_CONFIG__STATIC_FUNCTIONS macro is optional, but when
+// combined with WUFFS_IMPLEMENTATION, it demonstrates making all of Wuffs'
+// functions have static storage.
+//
+// This can help the compiler ignore or discard unused code, which can produce
+// faster compiles and smaller binaries. Other motivations are discussed in the
+// "ALLOW STATIC IMPLEMENTATION" section of
+// https://raw.githubusercontent.com/nothings/stb/master/docs/stb_howto.txt
+#define WUFFS_CONFIG__STATIC_FUNCTIONS
+
 // Defining the WUFFS_CONFIG__MODULE* macros are optional, but it lets users of
 // release/c/etc.c choose which parts of Wuffs to build. That file contains the
 // entire Wuffs standard library, implementing a variety of codecs and file
