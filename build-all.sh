@@ -70,12 +70,19 @@ wuffs test   -skipgen -mimic
 wuffs bench  -skipgen -mimic -reps=1 -iterscale=1
 
 ./build-example.sh
+./build-fuzz.sh
+
+# ----
+
 echo "Running  gen/bin/example-crc32"
 JSON_THINGS_CRC32=$(gen/bin/example-crc32 < test/data/json-things.formatted.json)
 if [ "$JSON_THINGS_CRC32" != "cdcc7e35" ]; then
   echo "example-crc32 failed on json-things data"
   exit 1
 fi
+
+# ----
+
 echo "Running  gen/bin/example-jsonptr"
 JSON_THINGS_CRC32=$(gen/bin/example-jsonptr < test/data/json-things.unformatted.json | gen/bin/example-crc32)
 if [ "$JSON_THINGS_CRC32" != "cdcc7e35" ]; then
@@ -83,8 +90,25 @@ if [ "$JSON_THINGS_CRC32" != "cdcc7e35" ]; then
   exit 1
 fi
 
-./build-fuzz.sh
+# ----
+
+echo "Running  gen/bin/example-convert-to-nia"
+set +e
+script/print-nia-checksums.sh | \
+    diff --unified test/nia-checksums-of-data.txt /dev/stdin
+if [ $? != 0 ]; then
+  echo "Unexpected change in test/nia-checksums-of-data.txt"
+  exit 1
+fi
+set -e
+
+# ----
+
 for f in gen/bin/fuzz-*; do
   echo "Running  $f"
   $f test/data > /dev/null
 done
+
+# ----
+
+echo "DONE: build-all.sh"
