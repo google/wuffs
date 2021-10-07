@@ -37,7 +37,7 @@
 # gcc ./example/zcat/zcat.c
 # ./a.out < ./test/data/romeo.txt.gz
 
-if [ ! -e release/c/wuffs-unsupported-snapshot.c ]; then
+if [ ! -e wuffs-root-directory.txt ]; then
   echo "$0 should be run from the Wuffs root directory."
   exit 1
 fi
