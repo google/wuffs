@@ -42,6 +42,7 @@ It should print "PASS", amongst other information, and exit(0).
 // compiling it.
 #define WUFFS_IMPLEMENTATION
 
+#if defined(WUFFS_CONFIG__FUZZLIB_MAIN)
 // Defining the WUFFS_CONFIG__STATIC_FUNCTIONS macro is optional, but when
 // combined with WUFFS_IMPLEMENTATION, it demonstrates making all of Wuffs'
 // functions have static storage.
@@ -51,6 +52,7 @@ It should print "PASS", amongst other information, and exit(0).
 // "ALLOW STATIC IMPLEMENTATION" section of
 // https://raw.githubusercontent.com/nothings/stb/master/docs/stb_howto.txt
 #define WUFFS_CONFIG__STATIC_FUNCTIONS
+#endif  // defined(WUFFS_CONFIG__FUZZLIB_MAIN)
 
 // Defining the WUFFS_CONFIG__MODULE* macros are optional, but it lets users of
 // release/c/etc.c choose which parts of Wuffs to build. That file contains the
