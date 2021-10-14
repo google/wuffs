@@ -24,6 +24,7 @@ package main
 
 import (
 	"bytes"
+	"compress/zlib"
 	"flag"
 	"hash/crc32"
 	"image"
@@ -34,7 +35,8 @@ import (
 )
 
 var (
-	gama = flag.Float64("gama", 2.2, "Gamma correction value (e.g. 2.2)")
+	gama = flag.Float64("gama", 0, "Gamma correction value (e.g. 2.2)")
+	iccp = flag.String("iccp", "", "ICC filename (e.g. foo/bar.icc)")
 )
 
 func main() {
@@ -71,7 +73,8 @@ func main1() error {
 	out := []byte(nil)
 	out = append(out, prefix...)
 
-	// Insert the optional gAMA chunk between the prefix and suffix.
+	// Insert the optional chunks between the prefix and suffix.
+
 	if *gama > 0 {
 		g := uint32(math.Round(100000 / *gama))
 		out = appendPNGChunk(out, "gAMA",
@@ -80,6 +83,20 @@ func main1() error {
 			byte(g>>8),
 			byte(g>>0),
 		)
+	}
+
+	if *iccp != "" {
+		raw, err := os.ReadFile(*iccp)
+		if err != nil {
+			return err
+		}
+		data := &bytes.Buffer{}
+		data.WriteString("icc\x00") // An arbitrary NUL terminated name.
+		data.WriteByte(0x00)        // 0x00 means zlib compression.
+		w := zlib.NewWriter(data)
+		w.Write(raw)
+		w.Close()
+		out = appendPNGChunk(out, "iCCP", data.Bytes()...)
 	}
 
 	// Append the suffix and write to stdout.
