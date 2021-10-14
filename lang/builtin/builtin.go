@@ -32,9 +32,12 @@ var FourCCs = [...][2]string{
 	{"BRTL", "Brotli"},
 	{"BZ2 ", "Bzip2"},
 	{"CBOR", "Concise Binary Object Representation"},
+	{"CHRM", "Primary Chromaticities and White Point"},
 	{"CSS ", "Cascading Style Sheets"},
 	{"EPS ", "Encapsulated PostScript"},
+	{"EXIF", "Exchangeable Image File Format"},
 	{"FLAC", "Free Lossless Audio Codec"},
+	{"GAMA", "Gamma Correction"},
 	{"GIF ", "Graphics Interchange Format"},
 	{"GZ  ", "GNU Zip"},
 	{"HEIF", "High Efficiency Image File"},
@@ -61,6 +64,7 @@ var FourCCs = [...][2]string{
 	{"RIFF", "Resource Interchange File Format"},
 	{"RIGL", "Riegeli Records"},
 	{"SNPY", "Snappy"},
+	{"SRGB", "Standard Red Green Blue (Rendering Intent)"},
 	{"SVG ", "Scalable Vector Graphics"},
 	{"TAR ", "Tape Archive"},
 	{"TIFF", "Tagged Image File Format"},
@@ -83,6 +87,13 @@ var Consts = [...]struct {
 	Value string
 	Name  string
 }{
+	// ----
+
+	{t.IDU32, "1", "MORE_INFORMATION__FLAVOR__IO_REDIRECT"},
+	{t.IDU32, "2", "MORE_INFORMATION__FLAVOR__IO_SEEK"},
+	{t.IDU32, "3", "MORE_INFORMATION__FLAVOR__METADATA_RAW"},
+	{t.IDU32, "4", "MORE_INFORMATION__FLAVOR__METADATA_PARSED"},
+
 	// ----
 
 	{t.IDU32, "0x02000008", "PIXEL_FORMAT__A"},

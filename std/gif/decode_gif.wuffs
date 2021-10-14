@@ -205,7 +205,7 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 			if args.src.position() <> this.metadata_io_position {
 				if args.minfo <> nullptr {
 					args.minfo.set!(
-						flavor: 2,  // WUFFS_BASE__MORE_INFORMATION__FLAVOR__IO_SEEK
+						flavor: base.MORE_INFORMATION__FLAVOR__IO_SEEK,
 						w: 0,
 						x: this.metadata_io_position,
 						y: 0,
@@ -250,7 +250,7 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 
 		if args.minfo <> nullptr {
 			args.minfo.set!(
-				flavor: 3,  // WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA
+				flavor: base.MORE_INFORMATION__FLAVOR__METADATA_RAW,
 				w: this.metadata_fourcc,
 				x: 0,
 				y: args.src.position(),
@@ -262,7 +262,7 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 
 	if args.minfo <> nullptr {
 		args.minfo.set!(
-			flavor: 3,  // WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA
+			flavor: base.MORE_INFORMATION__FLAVOR__METADATA_RAW,
 			w: this.metadata_fourcc,
 			x: 0,
 			y: this.metadata_io_position,

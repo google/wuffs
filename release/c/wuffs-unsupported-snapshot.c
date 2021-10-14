@@ -572,14 +572,23 @@ typedef struct wuffs_base__transform__output__struct {
 // Concise Binary Object Representation.
 #define WUFFS_BASE__FOURCC__CBOR 0x43424F52
 
+// Primary Chromaticities and White Point.
+#define WUFFS_BASE__FOURCC__CHRM 0x4348524D
+
 // Cascading Style Sheets.
 #define WUFFS_BASE__FOURCC__CSS 0x43535320
 
 // Encapsulated PostScript.
 #define WUFFS_BASE__FOURCC__EPS 0x45505320
 
+// Exchangeable Image File Format.
+#define WUFFS_BASE__FOURCC__EXIF 0x45584946
+
 // Free Lossless Audio Codec.
 #define WUFFS_BASE__FOURCC__FLAC 0x464C4143
+
+// Gamma Correction.
+#define WUFFS_BASE__FOURCC__GAMA 0x47414D41
 
 // Graphics Interchange Format.
 #define WUFFS_BASE__FOURCC__GIF 0x47494620
@@ -658,6 +667,9 @@ typedef struct wuffs_base__transform__output__struct {
 
 // Snappy.
 #define WUFFS_BASE__FOURCC__SNPY 0x534E5059
+
+// Standard Red Green Blue (Rendering Intent).
+#define WUFFS_BASE__FOURCC__SRGB 0x53524742
 
 // Scalable Vector Graphics.
 #define WUFFS_BASE__FOURCC__SVG 0x53564720
@@ -2453,14 +2465,22 @@ typedef struct wuffs_base__more_information__struct {
   inline wuffs_base__range_ie_u64 io_redirect__range() const;
   inline uint64_t io_seek__position() const;
   inline uint32_t metadata__fourcc() const;
+  // Deprecated: use metadata_raw__range.
   inline wuffs_base__range_ie_u64 metadata__range() const;
+  inline wuffs_base__range_ie_u64 metadata_raw__range() const;
+  inline int32_t metadata_parsed__chrm(uint32_t component) const;
+  inline uint32_t metadata_parsed__gama() const;
+  inline uint32_t metadata_parsed__srgb() const;
 #endif  // __cplusplus
 
 } wuffs_base__more_information;
 
 #define WUFFS_BASE__MORE_INFORMATION__FLAVOR__IO_REDIRECT 1
 #define WUFFS_BASE__MORE_INFORMATION__FLAVOR__IO_SEEK 2
+// Deprecated: use WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA_RAW.
 #define WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA 3
+#define WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA_RAW 3
+#define WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA_PARSED 4
 
 static inline wuffs_base__more_information  //
 wuffs_base__empty_more_information() {
@@ -2517,6 +2537,7 @@ wuffs_base__more_information__metadata__fourcc(
   return m->w;
 }
 
+// Deprecated: use wuffs_base__more_information__metadata_raw__range.
 static inline wuffs_base__range_ie_u64  //
 wuffs_base__more_information__metadata__range(
     const wuffs_base__more_information* m) {
@@ -2524,6 +2545,95 @@ wuffs_base__more_information__metadata__range(
   ret.min_incl = m->y;
   ret.max_excl = m->z;
   return ret;
+}
+
+static inline wuffs_base__range_ie_u64  //
+wuffs_base__more_information__metadata_raw__range(
+    const wuffs_base__more_information* m) {
+  wuffs_base__range_ie_u64 ret;
+  ret.min_incl = m->y;
+  ret.max_excl = m->z;
+  return ret;
+}
+
+#define WUFFS_BASE__MORE_INFORMATION__METADATA_PARSED__CHRM__WHITE_X 0
+#define WUFFS_BASE__MORE_INFORMATION__METADATA_PARSED__CHRM__WHITE_Y 1
+#define WUFFS_BASE__MORE_INFORMATION__METADATA_PARSED__CHRM__RED_X 2
+#define WUFFS_BASE__MORE_INFORMATION__METADATA_PARSED__CHRM__RED_Y 3
+#define WUFFS_BASE__MORE_INFORMATION__METADATA_PARSED__CHRM__GREEN_X 4
+#define WUFFS_BASE__MORE_INFORMATION__METADATA_PARSED__CHRM__GREEN_Y 5
+#define WUFFS_BASE__MORE_INFORMATION__METADATA_PARSED__CHRM__BLUE_X 6
+#define WUFFS_BASE__MORE_INFORMATION__METADATA_PARSED__CHRM__BLUE_Y 7
+
+// wuffs_base__more_information__metadata_parsed__chrm returns chromaticity
+// values (scaled by 100000) like the PNG "cHRM" chunk. For example, the sRGB
+// color space corresponds to:
+//  - ETC__CHRM__WHITE_X 31270
+//  - ETC__CHRM__WHITE_Y 32900
+//  - ETC__CHRM__RED_X   64000
+//  - ETC__CHRM__RED_Y   33000
+//  - ETC__CHRM__GREEN_X 30000
+//  - ETC__CHRM__GREEN_Y 60000
+//  - ETC__CHRM__BLUE_X  15000
+//  - ETC__CHRM__BLUE_Y   6000
+//
+// See
+// https://ciechanow.ski/color-spaces/#chromaticity-and-white-point-coordinates
+static inline int32_t  //
+wuffs_base__more_information__metadata_parsed__chrm(
+    const wuffs_base__more_information* m,
+    uint32_t component) {
+  // After the flavor and the w field (holding a FourCC), a
+  // wuffs_base__more_information holds 24 bytes of data in three uint64_t
+  // typed fields (x, y and z). We pack the eight chromaticity values (wx, wy,
+  // rx, ..., by), basically int24_t values, into 24 bytes like this:
+  //  -    LSB                 MSB
+  //  - x: wx wx wx wy wy wy rx rx
+  //  - y: rx ry ry ry gx gx gx gy
+  //  - z: gy gy bx bx bx by by by
+  uint32_t u = 0;
+  switch (component & 7) {
+    case 0:
+      u = ((uint32_t)(m->x >> 0));
+    case 1:
+      u = ((uint32_t)(m->x >> 24));
+    case 2:
+      u = ((uint32_t)((m->x >> 48) | (m->y << 16)));
+    case 3:
+      u = ((uint32_t)(m->y >> 8));
+    case 4:
+      u = ((uint32_t)(m->y >> 32));
+    case 5:
+      u = ((uint32_t)((m->y >> 56) | (m->z << 8)));
+    case 6:
+      u = ((uint32_t)(m->z >> 16));
+    case 7:
+      u = ((uint32_t)(m->z >> 40));
+  }
+  // The left-right shifts sign-extend from 24-bit to 32-bit integers.
+  return ((int32_t)(u << 8)) >> 8;
+}
+
+// wuffs_base__more_information__metadata_parsed__gama returns inverse gamma
+// correction values (scaled by 100000) like the PNG "gAMA" chunk. For example,
+// for gamma = 2.2, this returns 45455 (approximating 100000 / 2.2).
+static inline uint32_t  //
+wuffs_base__more_information__metadata_parsed__gama(
+    const wuffs_base__more_information* m) {
+  return ((uint32_t)(m->x));
+}
+
+#define WUFFS_BASE__SRGB_RENDERING_INTENT__PERCEPTUAL 0
+#define WUFFS_BASE__SRGB_RENDERING_INTENT__RELATIVE_COLORIMETRIC 1
+#define WUFFS_BASE__SRGB_RENDERING_INTENT__SATURATION 2
+#define WUFFS_BASE__SRGB_RENDERING_INTENT__ABSOLUTE_COLORIMETRIC 3
+
+// wuffs_base__more_information__metadata_parsed__srgb returns the sRGB
+// rendering intent like the PNG "sRGB" chunk.
+static inline uint32_t  //
+wuffs_base__more_information__metadata_parsed__srgb(
+    const wuffs_base__more_information* m) {
+  return m->x & 3;
 }
 
 #ifdef __cplusplus
@@ -2561,6 +2671,26 @@ wuffs_base__more_information::metadata__fourcc() const {
 inline wuffs_base__range_ie_u64  //
 wuffs_base__more_information::metadata__range() const {
   return wuffs_base__more_information__metadata__range(this);
+}
+
+inline wuffs_base__range_ie_u64  //
+wuffs_base__more_information::metadata_raw__range() const {
+  return wuffs_base__more_information__metadata_raw__range(this);
+}
+
+inline int32_t  //
+wuffs_base__more_information::metadata_parsed__chrm(uint32_t component) const {
+  return wuffs_base__more_information__metadata_parsed__chrm(this, component);
+}
+
+inline uint32_t  //
+wuffs_base__more_information::metadata_parsed__gama() const {
+  return wuffs_base__more_information__metadata_parsed__gama(this);
+}
+
+inline uint32_t  //
+wuffs_base__more_information::metadata_parsed__srgb() const {
+  return wuffs_base__more_information__metadata_parsed__srgb(this);
 }
 
 #endif  // __cplusplus

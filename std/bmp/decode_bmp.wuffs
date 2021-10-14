@@ -1151,7 +1151,7 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 	}
 	if args.minfo <> nullptr {
 		args.minfo.set!(
-			flavor: 1,  // WUFFS_BASE__MORE_INFORMATION__FLAVOR__IO_REDIRECT
+			flavor: base.MORE_INFORMATION__FLAVOR__IO_REDIRECT,
 			w: this.io_redirect_fourcc,
 			x: 0,
 			y: this.io_redirect_pos,
