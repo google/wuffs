@@ -43,15 +43,23 @@ pub struct decoder? implements base.image_decoder(
 
 	// Call sequence states:
 	//  - 0x00: initial state.
+	//  - 0x01: metadata reported; image config decode is in progress.
+	//  - 0x02: metadata finished; image config decode is in progress.
 	//  - 0x03: image config decoded.
 	//  - 0x04: frame config decoded.
 	//  - 0xFF: end-of-data, usually after (the non-animated) frame decoded.
 	//
 	// State transitions:
 	//
-	//  - 0x00 -> 0x03: via DIC
+	//  - 0x00 -> 0x01: via DIC (metadata reported)
+	//  - 0x00 -> 0x03: via DIC (metadata not reported)
 	//  - 0x00 -> 0x04: via DFC with implicit DIC
 	//  - 0x00 -> 0xFF: via DF  with implicit DIC and DFC
+	//
+	//  - 0x01 -> 0x02: via TMM
+	//
+	//  - 0x02 -> 0x01: via DIC (metadata reported)
+	//  - 0x02 -> 0x03: via DIC (metadata not reported)
 	//
 	//  - 0x03 -> 0x04: via DFC
 	//  - 0x03 -> 0xFF: via DF  with implicit DFC
@@ -66,7 +74,12 @@ pub struct decoder? implements base.image_decoder(
 	//  - DFC is decode_frame_config, implicit means nullptr args.dst
 	//  - DIC is decode_image_config, implicit means nullptr args.dst
 	//  - RF  is restart_frame
+	//  - TMM is tell_me_more
 	call_sequence : base.u8,
+
+	report_metadata_chrm : base.bool,
+	report_metadata_gama : base.bool,
+	report_metadata_iccp : base.bool,
 
 	ignore_checksum : base.bool,
 
@@ -75,6 +88,9 @@ pub struct decoder? implements base.image_decoder(
 	filter_distance : base.u8[..= 8],
 	interlace_pass  : base.u8[..= 7],
 
+	seen_chrm : base.bool,
+	seen_gama : base.bool,
+	seen_iccp : base.bool,
 	seen_plte : base.bool,
 	seen_trns : base.bool,
 
@@ -86,6 +102,12 @@ pub struct decoder? implements base.image_decoder(
 	chunk_length     : base.u64,
 
 	frame_config_io_position : base.u64,
+
+	metadata_flavor : base.u32,
+	metadata_fourcc : base.u32,
+	metadata_x      : base.u64,
+	metadata_y      : base.u64,
+	metadata_z      : base.u64,
 
 	swizzler : base.pixel_swizzler,
 	util     : base.utility,
@@ -111,7 +133,9 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 	var checksum_want : base.u32
 	var status        : base.status
 
-	if this.call_sequence <> 0 {
+	if this.call_sequence == 2 {
+		// No-op.
+	} else if this.call_sequence <> 0 {
 		return base."#bad call sequence"
 	} else {
 		magic = args.src.read_u64le?()
@@ -194,6 +218,10 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 			return "#bad checksum"
 		}
 
+		if this.metadata_fourcc <> 0 {
+			this.call_sequence = 1
+			return base."@metadata reported"
+		}
 	} endwhile
 
 	if (this.color_type == 3) and (not this.seen_plte) {
@@ -403,6 +431,21 @@ pri func decoder.decode_other_chunk?(src: base.io_reader) {
 		}
 		this.decode_plte?(src: args.src)
 		this.seen_plte = true
+
+	} else if (this.chunk_type == 'cHRM'le) and this.report_metadata_chrm {
+		if this.seen_chrm {
+			return "#bad chunk"
+		}
+		this.decode_chrm?(src: args.src)
+		this.seen_chrm = true
+
+	} else if (this.chunk_type == 'gAMA'le) and this.report_metadata_gama {
+		if this.seen_gama {
+			return "#bad chunk"
+		}
+		this.decode_gama?(src: args.src)
+		this.seen_gama = true
+
 	} else if this.chunk_type == 'tRNS'le {
 		if this.seen_trns or (this.color_type > 3) or
 			((this.color_type == 3) and (not this.seen_plte)) {
@@ -410,9 +453,57 @@ pri func decoder.decode_other_chunk?(src: base.io_reader) {
 		}
 		this.decode_trns?(src: args.src)
 		this.seen_trns = true
+
 	} else {
 		args.src.skip?(n: this.chunk_length)
 	}
+}
+
+pri func decoder.decode_chrm?(src: base.io_reader) {
+	var u : base.u64
+
+	if this.chunk_length <> 32 {
+		return "#bad chunk"
+	}
+	this.metadata_flavor = base.MORE_INFORMATION__FLAVOR__METADATA_PARSED
+	this.metadata_fourcc = 'CHRM'be
+	this.metadata_x = 0
+	this.metadata_y = 0
+	this.metadata_z = 0
+
+	// See the wuffs_base__more_information__metadata_parsed__chrm comments for
+	// how we pack the eight chromaticity values into three u64 fields. This
+	// admittedly truncates chromaticity values from 32 to 24 bits, but in
+	// practice they only range between 0 and 100000 (which is 0x01_86A0).
+	u = args.src.read_u32be_as_u64?()
+	this.metadata_x |= (0xFF_FFFF & u) << 0
+	u = args.src.read_u32be_as_u64?()
+	this.metadata_x |= (0xFF_FFFF & u) << 24
+	u = args.src.read_u32be_as_u64?()
+	this.metadata_x |= (0xFF_FFFF & u) ~mod<< 48
+	this.metadata_y |= (0xFF_FFFF & u) >> 16
+	u = args.src.read_u32be_as_u64?()
+	this.metadata_y |= (0xFF_FFFF & u) << 8
+	u = args.src.read_u32be_as_u64?()
+	this.metadata_y |= (0xFF_FFFF & u) << 32
+	u = args.src.read_u32be_as_u64?()
+	this.metadata_y |= (0xFF_FFFF & u) ~mod<< 56
+	this.metadata_z |= (0xFF_FFFF & u) >> 8
+	u = args.src.read_u32be_as_u64?()
+	this.metadata_z |= (0xFF_FFFF & u) << 16
+	u = args.src.read_u32be_as_u64?()
+	this.metadata_z |= (0xFF_FFFF & u) << 40
+}
+
+pri func decoder.decode_gama?(src: base.io_reader) {
+	if this.chunk_length <> 4 {
+		return "#bad chunk"
+	}
+	this.metadata_flavor = base.MORE_INFORMATION__FLAVOR__METADATA_PARSED
+	this.metadata_fourcc = 'GAMA'be
+	this.metadata_x = args.src.read_u32be_as_u64?()
+	this.metadata_y = 0
+	this.metadata_z = 0
 }
 
 pri func decoder.decode_plte?(src: base.io_reader) {
@@ -699,11 +790,37 @@ pub func decoder.restart_frame!(index: base.u64, io_position: base.u64) base.sta
 }
 
 pub func decoder.set_report_metadata!(fourcc: base.u32, report: base.bool) {
-	// TODO.
+	if args.fourcc == 'CHRM'be {
+		this.report_metadata_chrm = args.report
+	} else if args.fourcc == 'GAMA'be {
+		this.report_metadata_gama = args.report
+	} else if args.fourcc == 'ICCP'be {
+		this.report_metadata_iccp = args.report
+	}
 }
 
 pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_information, src: base.io_reader) {
-	return base."#no more information"
+	if this.call_sequence <> 1 {
+		return base."#bad call sequence"
+	}
+	if this.metadata_fourcc == 0 {
+		return base."#no more information"
+	}
+	if args.minfo <> nullptr {
+		args.minfo.set!(
+			flavor: this.metadata_flavor,
+			w: this.metadata_fourcc,
+			x: this.metadata_x,
+			y: this.metadata_y,
+			z: this.metadata_z)
+	}
+	this.call_sequence = 2
+	this.metadata_flavor = 0
+	this.metadata_fourcc = 0
+	this.metadata_x = 0
+	this.metadata_y = 0
+	this.metadata_z = 0
+	return ok
 }
 
 pub func decoder.workbuf_len() base.range_ii_u64 {

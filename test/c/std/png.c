@@ -472,6 +472,96 @@ test_wuffs_png_decode_frame_config() {
   return NULL;
 }
 
+const char*  //
+test_wuffs_png_decode_metadata_chrm_gama() {
+  CHECK_FOCUS(__func__);
+  wuffs_png__decoder dec;
+
+  int q;
+  for (q = 0; q < 3; q++) {
+    wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+        .data = g_src_slice_u8,
+    });
+    CHECK_STRING(read_file(
+        &src, (q == 1) ? "test/data/bricks-dither.png"
+                       : "test/data/red-blue-gradient.gamma1dot8.png"));
+    wuffs_base__image_config ic = ((wuffs_base__image_config){});
+
+    CHECK_STATUS("initialize",
+                 wuffs_png__decoder__initialize(
+                     &dec, sizeof dec, WUFFS_VERSION,
+                     WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+
+    uint32_t want_fourcc = 0;
+    uint32_t want[8] = {0};
+    uint32_t have[8] = {0};
+    if (q == 1) {
+      want_fourcc = WUFFS_BASE__FOURCC__CHRM;
+      want[0] = 31270;
+      want[1] = 32900;
+      want[2] = 64000;
+      want[3] = 33000;
+      want[4] = 30000;
+      want[5] = 60000;
+      want[6] = 15000;
+      want[7] = 6000;
+    } else if (q == 2) {
+      want_fourcc = WUFFS_BASE__FOURCC__GAMA;
+      want[0] = 55556;
+    }
+    wuffs_png__decoder__set_report_metadata(&dec, want_fourcc, true);
+
+    while (true) {
+      wuffs_base__status status =
+          wuffs_png__decoder__decode_image_config(&dec, &ic, &src);
+      if (wuffs_base__status__is_ok(&status)) {
+        break;
+      } else if (status.repr != wuffs_base__note__metadata_reported) {
+        RETURN_FAIL("decode_image_config (q=%d): have \"%s\", want \"%s\"", q,
+                    status.repr, wuffs_base__note__metadata_reported);
+      }
+
+      wuffs_base__io_buffer empty = wuffs_base__empty_io_buffer();
+      wuffs_base__more_information minfo = wuffs_base__empty_more_information();
+      status = wuffs_png__decoder__tell_me_more(&dec, &empty, &minfo, &src);
+      if (wuffs_base__status__is_error(&status)) {
+        RETURN_FAIL("tell_me_more (q=%d): \"%s\"", q, status.repr);
+      } else if (minfo.flavor !=
+                 WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA_PARSED) {
+        RETURN_FAIL("tell_me_more (q=%d): flavor: have %" PRIu32
+                    ", want %" PRIu32,
+                    q, minfo.flavor,
+                    WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA_PARSED);
+      }
+      uint32_t have_fourcc =
+          wuffs_base__more_information__metadata__fourcc(&minfo);
+      if (have_fourcc != want_fourcc) {
+        RETURN_FAIL("tell_me_more (q=%d): fourcc: have 0x%08" PRIX32
+                    ", want 0x%08" PRIX32,
+                    q, have_fourcc, want_fourcc);
+      } else if (have_fourcc == WUFFS_BASE__FOURCC__CHRM) {
+        int i;
+        for (i = 0; i < 8; i++) {
+          have[i] = ((uint32_t)(
+              wuffs_base__more_information__metadata_parsed__chrm(&minfo, i)));
+        }
+      } else if (have_fourcc == WUFFS_BASE__FOURCC__GAMA) {
+        have[0] = wuffs_base__more_information__metadata_parsed__gama(&minfo);
+      }
+    }
+
+    int i;
+    for (i = 0; i < 8; i++) {
+      if (have[i] != want[i]) {
+        RETURN_FAIL("(q=%d, i=%d): have %" PRIu32 ", want %" PRIu32, q, i,
+                    have[i], want[i]);
+      }
+    }
+  }
+
+  return NULL;
+}
+
 // ---------------- Mimic Tests
 
 #ifdef WUFFS_MIMIC
@@ -803,6 +893,7 @@ proc g_tests[] = {
     test_wuffs_png_decode_filters_round_trip,
     test_wuffs_png_decode_frame_config,
     test_wuffs_png_decode_interface,
+    test_wuffs_png_decode_metadata_chrm_gama,
 
 #ifdef WUFFS_MIMIC
 

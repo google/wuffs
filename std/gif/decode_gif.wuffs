@@ -40,7 +40,7 @@ pub struct decoder? implements base.image_decoder(
 	//  - 0x00 -> 0x04: via DFC with implicit DIC
 	//  - 0x00 -> 0x05: via DF  with implicit DIC and DFC
 	//
-	//  - 0x01 -> 0x02: via AMC
+	//  - 0x01 -> 0x02: via TMM
 	//
 	//  - 0x02 -> 0x01: via DIC (metadata reported)
 	//  - 0x02 -> 0x03: via DIC (metadata not reported)
@@ -57,11 +57,11 @@ pub struct decoder? implements base.image_decoder(
 	//  - ???? -> 0x05: via RF  for ???? > 0x00
 	//
 	// Where:
-	//  - AMC is ack_metadata_chunk
 	//  - DF  is decode_frame,        implicit means skip_frame
 	//  - DFC is decode_frame_config, implicit means nullptr args.dst
 	//  - DIC is decode_image_config, implicit means nullptr args.dst
 	//  - RF  is restart_frame
+	//  - TMM is tell_me_more
 	call_sequence : base.u8,
 
 	ignore_metadata      : base.bool,
