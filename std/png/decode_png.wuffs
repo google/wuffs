@@ -80,6 +80,7 @@ pub struct decoder? implements base.image_decoder(
 	report_metadata_chrm : base.bool,
 	report_metadata_gama : base.bool,
 	report_metadata_iccp : base.bool,
+	report_metadata_srgb : base.bool,
 
 	ignore_checksum : base.bool,
 
@@ -92,6 +93,7 @@ pub struct decoder? implements base.image_decoder(
 	seen_gama : base.bool,
 	seen_iccp : base.bool,
 	seen_plte : base.bool,
+	seen_srgb : base.bool,
 	seen_trns : base.bool,
 
 	dst_pixfmt : base.u32,
@@ -446,6 +448,13 @@ pri func decoder.decode_other_chunk?(src: base.io_reader) {
 		this.decode_gama?(src: args.src)
 		this.seen_gama = true
 
+	} else if (this.chunk_type == 'sRGB'le) and this.report_metadata_srgb {
+		if this.seen_srgb {
+			return "#bad chunk"
+		}
+		this.decode_srgb?(src: args.src)
+		this.seen_srgb = true
+
 	} else if this.chunk_type == 'tRNS'le {
 		if this.seen_trns or (this.color_type > 3) or
 			((this.color_type == 3) and (not this.seen_plte)) {
@@ -537,6 +546,17 @@ pri func decoder.decode_plte?(src: base.io_reader) {
 		this.src_palette[(4 * i) + 3] = 0xFF
 		i += 1
 	} endwhile
+}
+
+pri func decoder.decode_srgb?(src: base.io_reader) {
+	if this.chunk_length <> 1 {
+		return "#bad chunk"
+	}
+	this.metadata_flavor = base.MORE_INFORMATION__FLAVOR__METADATA_PARSED
+	this.metadata_fourcc = 'SRGB'be
+	this.metadata_x = args.src.read_u8_as_u64?()
+	this.metadata_y = 0
+	this.metadata_z = 0
 }
 
 pri func decoder.decode_trns?(src: base.io_reader) {
@@ -796,6 +816,8 @@ pub func decoder.set_report_metadata!(fourcc: base.u32, report: base.bool) {
 		this.report_metadata_gama = args.report
 	} else if args.fourcc == 'ICCP'be {
 		this.report_metadata_iccp = args.report
+	} else if args.fourcc == 'SRGB'be {
+		this.report_metadata_srgb = args.report
 	}
 }
 

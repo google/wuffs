@@ -473,18 +473,16 @@ test_wuffs_png_decode_frame_config() {
 }
 
 const char*  //
-test_wuffs_png_decode_metadata_chrm_gama() {
+test_wuffs_png_decode_metadata_chrm_gama_srgb() {
   CHECK_FOCUS(__func__);
   wuffs_png__decoder dec;
 
   int q;
-  for (q = 0; q < 3; q++) {
+  for (q = 0; q < 4; q++) {
     wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
         .data = g_src_slice_u8,
     });
-    CHECK_STRING(read_file(
-        &src, (q == 1) ? "test/data/bricks-dither.png"
-                       : "test/data/red-blue-gradient.gamma1dot8.png"));
+    CHECK_STRING(read_file(&src, "test/data/bricks-dither.png"));
     wuffs_base__image_config ic = ((wuffs_base__image_config){});
 
     CHECK_STATUS("initialize",
@@ -507,7 +505,11 @@ test_wuffs_png_decode_metadata_chrm_gama() {
       want[7] = 6000;
     } else if (q == 2) {
       want_fourcc = WUFFS_BASE__FOURCC__GAMA;
-      want[0] = 55556;
+      want[0] = 45455;
+    } else if (q == 3) {
+      want_fourcc = WUFFS_BASE__FOURCC__SRGB;
+      want[0] = WUFFS_BASE__SRGB_RENDERING_INTENT__PERCEPTUAL;
+      have[0] = 123;
     }
     wuffs_png__decoder__set_report_metadata(&dec, want_fourcc, true);
 
@@ -547,6 +549,8 @@ test_wuffs_png_decode_metadata_chrm_gama() {
         }
       } else if (have_fourcc == WUFFS_BASE__FOURCC__GAMA) {
         have[0] = wuffs_base__more_information__metadata_parsed__gama(&minfo);
+      } else if (have_fourcc == WUFFS_BASE__FOURCC__SRGB) {
+        have[0] = wuffs_base__more_information__metadata_parsed__srgb(&minfo);
       }
     }
 
@@ -893,7 +897,7 @@ proc g_tests[] = {
     test_wuffs_png_decode_filters_round_trip,
     test_wuffs_png_decode_frame_config,
     test_wuffs_png_decode_interface,
-    test_wuffs_png_decode_metadata_chrm_gama,
+    test_wuffs_png_decode_metadata_chrm_gama_srgb,
 
 #ifdef WUFFS_MIMIC
 
