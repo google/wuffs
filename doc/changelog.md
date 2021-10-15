@@ -20,10 +20,10 @@
 - Added `example/json-to-cbor`.
 - Added `example/jsonfindptrs`.
 - Added `example/jsonptr`.
+- Added `example/sdl-imageviewer`.
 - Added `slice base.u8 peek/poke` methods.
 - Added `std/bmp`.
 - Added `std/cbor`.
-- Added `std/gif.config_decoder`.
 - Added `std/json`.
 - Added `std/nie`.
 - Added `std/png`.
