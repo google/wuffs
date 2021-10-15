@@ -113,39 +113,39 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 
 	if this.call_sequence <> 0 {
 		return base."#bad call sequence"
-	}
-
-	magic = args.src.read_u64le?()
-	if magic <> '\x89PNG\x0D\x0A\x1A\x0A'le {
-		return "#bad header"
-	}
-	magic = args.src.read_u64le?()
-	if magic <> '\x00\x00\x00\x0DIHDR'le {
-		return "#bad header"
-	}
-	this.crc32.reset!()
-	this.chunk_type_array[0] = 'I'
-	this.chunk_type_array[1] = 'H'
-	this.chunk_type_array[2] = 'D'
-	this.chunk_type_array[3] = 'R'
-	this.crc32.update_u32!(x: this.chunk_type_array[..])
-
-	while true {
-		mark = args.src.mark()
-		status =? this.decode_ihdr?(src: args.src)
-		if not this.ignore_checksum {
-			checksum_have = this.crc32.update_u32!(x: args.src.since(mark: mark))
+	} else {
+		magic = args.src.read_u64le?()
+		if magic <> '\x89PNG\x0D\x0A\x1A\x0A'le {
+			return "#bad header"
 		}
-		if status.is_ok() {
-			break
+		magic = args.src.read_u64le?()
+		if magic <> '\x00\x00\x00\x0DIHDR'le {
+			return "#bad header"
 		}
-		yield? status
-	} endwhile
+		this.crc32.reset!()
+		this.chunk_type_array[0] = 'I'
+		this.chunk_type_array[1] = 'H'
+		this.chunk_type_array[2] = 'D'
+		this.chunk_type_array[3] = 'R'
+		this.crc32.update_u32!(x: this.chunk_type_array[..])
 
-	// Verify CRC-32 checksum.
-	checksum_want = args.src.read_u32be?()
-	if (not this.ignore_checksum) and (checksum_have <> checksum_want) {
-		return "#bad checksum"
+		while true {
+			mark = args.src.mark()
+			status =? this.decode_ihdr?(src: args.src)
+			if not this.ignore_checksum {
+				checksum_have = this.crc32.update_u32!(x: args.src.since(mark: mark))
+			}
+			if status.is_ok() {
+				break
+			}
+			yield? status
+		} endwhile
+
+		// Verify CRC-32 checksum.
+		checksum_want = args.src.read_u32be?()
+		if (not this.ignore_checksum) and (checksum_have <> checksum_want) {
+			return "#bad checksum"
+		}
 	}
 
 	// Read up until an IDAT chunk.
