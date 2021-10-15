@@ -959,20 +959,28 @@ wuffs_base__more_information__metadata_parsed__chrm(
   switch (component & 7) {
     case 0:
       u = ((uint32_t)(m->x >> 0));
+      break;
     case 1:
       u = ((uint32_t)(m->x >> 24));
+      break;
     case 2:
       u = ((uint32_t)((m->x >> 48) | (m->y << 16)));
+      break;
     case 3:
       u = ((uint32_t)(m->y >> 8));
+      break;
     case 4:
       u = ((uint32_t)(m->y >> 32));
+      break;
     case 5:
       u = ((uint32_t)((m->y >> 56) | (m->z << 8)));
+      break;
     case 6:
       u = ((uint32_t)(m->z >> 16));
+      break;
     case 7:
       u = ((uint32_t)(m->z >> 40));
+      break;
   }
   // The left-right shifts sign-extend from 24-bit to 32-bit integers.
   return ((int32_t)(u << 8)) >> 8;
