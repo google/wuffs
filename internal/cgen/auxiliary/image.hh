@@ -172,6 +172,17 @@ extern const char DecodeImage_UnsupportedPixelFormat[];
 //  - It provides some type safety against accidentally transposing or omitting
 //    adjacent fundamentally-numeric-typed optional arguments.
 
+// DecodeImageArgQuirks wraps an optional argument to DecodeImage.
+struct DecodeImageArgQuirks {
+  explicit DecodeImageArgQuirks(wuffs_base__slice_u32 repr0);
+  explicit DecodeImageArgQuirks(uint32_t* ptr, size_t len);
+
+  // DefaultValue returns an empty slice.
+  static DecodeImageArgQuirks DefaultValue();
+
+  wuffs_base__slice_u32 repr;
+};
+
 // DecodeImageArgPixelBlend wraps an optional argument to DecodeImage.
 struct DecodeImageArgPixelBlend {
   explicit DecodeImageArgPixelBlend(wuffs_base__pixel_blend repr0);
@@ -249,6 +260,7 @@ struct DecodeImageArgMaxInclDimension {
 DecodeImageResult  //
 DecodeImage(DecodeImageCallbacks& callbacks,
             sync_io::Input& input,
+            DecodeImageArgQuirks quirks = DecodeImageArgQuirks::DefaultValue(),
             DecodeImageArgPixelBlend pixel_blend =
                 DecodeImageArgPixelBlend::DefaultValue(),
             DecodeImageArgBackgroundColor background_color =

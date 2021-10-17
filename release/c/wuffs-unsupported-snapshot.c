@@ -10168,6 +10168,17 @@ extern const char DecodeImage_UnsupportedPixelFormat[];
 //  - It provides some type safety against accidentally transposing or omitting
 //    adjacent fundamentally-numeric-typed optional arguments.
 
+// DecodeImageArgQuirks wraps an optional argument to DecodeImage.
+struct DecodeImageArgQuirks {
+  explicit DecodeImageArgQuirks(wuffs_base__slice_u32 repr0);
+  explicit DecodeImageArgQuirks(uint32_t* ptr, size_t len);
+
+  // DefaultValue returns an empty slice.
+  static DecodeImageArgQuirks DefaultValue();
+
+  wuffs_base__slice_u32 repr;
+};
+
 // DecodeImageArgPixelBlend wraps an optional argument to DecodeImage.
 struct DecodeImageArgPixelBlend {
   explicit DecodeImageArgPixelBlend(wuffs_base__pixel_blend repr0);
@@ -10245,6 +10256,7 @@ struct DecodeImageArgMaxInclDimension {
 DecodeImageResult  //
 DecodeImage(DecodeImageCallbacks& callbacks,
             sync_io::Input& input,
+            DecodeImageArgQuirks quirks = DecodeImageArgQuirks::DefaultValue(),
             DecodeImageArgPixelBlend pixel_blend =
                 DecodeImageArgPixelBlend::DefaultValue(),
             DecodeImageArgBackgroundColor background_color =
@@ -40659,6 +40671,17 @@ const char DecodeImage_UnsupportedPixelConfiguration[] =  //
 const char DecodeImage_UnsupportedPixelFormat[] =  //
     "wuffs_aux::DecodeImage: unsupported pixel format";
 
+DecodeImageArgQuirks::DecodeImageArgQuirks(wuffs_base__slice_u32 repr0)
+    : repr(repr0) {}
+
+DecodeImageArgQuirks::DecodeImageArgQuirks(uint32_t* ptr0, size_t len0)
+    : repr(wuffs_base__make_slice_u32(ptr0, len0)) {}
+
+DecodeImageArgQuirks  //
+DecodeImageArgQuirks::DefaultValue() {
+  return DecodeImageArgQuirks(wuffs_base__empty_slice_u32());
+}
+
 DecodeImageArgPixelBlend::DecodeImageArgPixelBlend(
     wuffs_base__pixel_blend repr0)
     : repr(repr0) {}
@@ -40724,6 +40747,7 @@ DecodeImage0(wuffs_base__image_decoder::unique_ptr& image_decoder,
              DecodeImageCallbacks& callbacks,
              sync_io::Input& input,
              wuffs_base__io_buffer& io_buf,
+             wuffs_base__slice_u32 quirks,
              wuffs_base__pixel_blend pixel_blend,
              wuffs_base__color_u32_argb_premul background_color,
              uint32_t max_incl_dimension) {
@@ -40789,6 +40813,11 @@ redirect:
         fourcc ? wuffs_base__empty_slice_u8() : io_buf.reader_slice());
     if (!image_decoder) {
       return DecodeImageResult(DecodeImage_UnsupportedImageFormat);
+    }
+
+    // Apply quirks.
+    for (size_t i = 0; i < quirks.len; i++) {
+      image_decoder->set_quirk_enabled(quirks.ptr[i], true);
     }
 
     // Decode the image config.
@@ -40925,6 +40954,7 @@ redirect:
 DecodeImageResult  //
 DecodeImage(DecodeImageCallbacks& callbacks,
             sync_io::Input& input,
+            DecodeImageArgQuirks quirks,
             DecodeImageArgPixelBlend pixel_blend,
             DecodeImageArgBackgroundColor background_color,
             DecodeImageArgMaxInclDimension max_incl_dimension) {
@@ -40939,9 +40969,9 @@ DecodeImage(DecodeImageCallbacks& callbacks,
   }
 
   wuffs_base__image_decoder::unique_ptr image_decoder(nullptr, &free);
-  DecodeImageResult result =
-      DecodeImage0(image_decoder, callbacks, input, *io_buf, pixel_blend.repr,
-                   background_color.repr, max_incl_dimension.repr);
+  DecodeImageResult result = DecodeImage0(
+      image_decoder, callbacks, input, *io_buf, quirks.repr, pixel_blend.repr,
+      background_color.repr, max_incl_dimension.repr);
   callbacks.Done(result, input, *io_buf, std::move(image_decoder));
   return result;
 }

@@ -130,7 +130,7 @@ load_image(const char* filename) {
   wuffs_aux::DecodeImageCallbacks callbacks;
   wuffs_aux::sync_io::FileInput input(file);
   wuffs_aux::DecodeImageResult res = wuffs_aux::DecodeImage(
-      callbacks, input,
+      callbacks, input, wuffs_aux::DecodeImageArgQuirks::DefaultValue(),
       // Use PIXEL_BLEND__SRC_OVER, not the default PIXEL_BLEND__SRC, because
       // we also pass a background color.
       wuffs_aux::DecodeImageArgPixelBlend(WUFFS_BASE__PIXEL_BLEND__SRC_OVER),
