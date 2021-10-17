@@ -170,6 +170,32 @@ const char DecodeImage_UnsupportedPixelConfiguration[] =  //
 const char DecodeImage_UnsupportedPixelFormat[] =  //
     "wuffs_aux::DecodeImage: unsupported pixel format";
 
+DecodeImageArgPixelBlend::DecodeImageArgPixelBlend(
+    wuffs_base__pixel_blend repr0)
+    : repr(repr0) {}
+
+DecodeImageArgPixelBlend  //
+DecodeImageArgPixelBlend::DefaultValue() {
+  return DecodeImageArgPixelBlend(WUFFS_BASE__PIXEL_BLEND__SRC);
+}
+
+DecodeImageArgBackgroundColor::DecodeImageArgBackgroundColor(
+    wuffs_base__color_u32_argb_premul repr0)
+    : repr(repr0) {}
+
+DecodeImageArgBackgroundColor  //
+DecodeImageArgBackgroundColor::DefaultValue() {
+  return DecodeImageArgBackgroundColor(1);
+}
+
+DecodeImageArgMaxInclDimension::DecodeImageArgMaxInclDimension(uint32_t repr0)
+    : repr(repr0) {}
+
+DecodeImageArgMaxInclDimension  //
+DecodeImageArgMaxInclDimension::DefaultValue() {
+  return DecodeImageArgMaxInclDimension(1048575);
+}
+
 // --------
 
 namespace {
@@ -410,9 +436,9 @@ redirect:
 DecodeImageResult  //
 DecodeImage(DecodeImageCallbacks& callbacks,
             sync_io::Input& input,
-            wuffs_base__pixel_blend pixel_blend,
-            wuffs_base__color_u32_argb_premul background_color,
-            uint32_t max_incl_dimension) {
+            DecodeImageArgPixelBlend pixel_blend,
+            DecodeImageArgBackgroundColor background_color,
+            DecodeImageArgMaxInclDimension max_incl_dimension) {
   wuffs_base__io_buffer* io_buf = input.BringsItsOwnIOBuffer();
   wuffs_base__io_buffer fallback_io_buf = wuffs_base__empty_io_buffer();
   std::unique_ptr<uint8_t[]> fallback_io_array(nullptr);
@@ -425,8 +451,8 @@ DecodeImage(DecodeImageCallbacks& callbacks,
 
   wuffs_base__image_decoder::unique_ptr image_decoder(nullptr, &free);
   DecodeImageResult result =
-      DecodeImage0(image_decoder, callbacks, input, *io_buf, pixel_blend,
-                   background_color, max_incl_dimension);
+      DecodeImage0(image_decoder, callbacks, input, *io_buf, pixel_blend.repr,
+                   background_color.repr, max_incl_dimension.repr);
   callbacks.Done(result, input, *io_buf, std::move(image_decoder));
   return result;
 }

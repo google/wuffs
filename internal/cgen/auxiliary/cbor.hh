@@ -68,6 +68,26 @@ class DecodeCborCallbacks {
   Done(DecodeCborResult& result, sync_io::Input& input, IOBuffer& buffer);
 };
 
+// The FooArgBar types add structure to Foo's optional arguments. They wrap
+// inner representations for several reasons:
+//  - It provides a home for the DefaultValue static method, for Foo callers
+//    that want to override some but not all optional arguments.
+//  - It provides the "Bar" name at Foo call sites, which can help self-
+//    document Foo calls with many arguemnts.
+//  - It provides some type safety against accidentally transposing or omitting
+//    adjacent fundamentally-numeric-typed optional arguments.
+
+// DecodeCborArgQuirks wraps an optional argument to DecodeCbor.
+struct DecodeCborArgQuirks {
+  explicit DecodeCborArgQuirks(wuffs_base__slice_u32 repr0);
+  explicit DecodeCborArgQuirks(uint32_t* ptr, size_t len);
+
+  // DefaultValue returns an empty slice.
+  static DecodeCborArgQuirks DefaultValue();
+
+  wuffs_base__slice_u32 repr;
+};
+
 // DecodeCbor calls callbacks based on the CBOR-formatted data in input.
 //
 // On success, the returned error_message is empty and cursor_position counts
@@ -77,6 +97,6 @@ class DecodeCborCallbacks {
 DecodeCborResult  //
 DecodeCbor(DecodeCborCallbacks& callbacks,
            sync_io::Input& input,
-           wuffs_base__slice_u32 quirks = wuffs_base__empty_slice_u32());
+           DecodeCborArgQuirks quirks = DecodeCborArgQuirks::DefaultValue());
 
 }  // namespace wuffs_aux

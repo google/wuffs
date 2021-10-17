@@ -69,6 +69,36 @@ class DecodeJsonCallbacks {
 extern const char DecodeJson_BadJsonPointer[];
 extern const char DecodeJson_NoMatch[];
 
+// The FooArgBar types add structure to Foo's optional arguments. They wrap
+// inner representations for several reasons:
+//  - It provides a home for the DefaultValue static method, for Foo callers
+//    that want to override some but not all optional arguments.
+//  - It provides the "Bar" name at Foo call sites, which can help self-
+//    document Foo calls with many arguemnts.
+//  - It provides some type safety against accidentally transposing or omitting
+//    adjacent fundamentally-numeric-typed optional arguments.
+
+// DecodeJsonArgQuirks wraps an optional argument to DecodeJson.
+struct DecodeJsonArgQuirks {
+  explicit DecodeJsonArgQuirks(wuffs_base__slice_u32 repr0);
+  explicit DecodeJsonArgQuirks(uint32_t* ptr, size_t len);
+
+  // DefaultValue returns an empty slice.
+  static DecodeJsonArgQuirks DefaultValue();
+
+  wuffs_base__slice_u32 repr;
+};
+
+// DecodeJsonArgJsonPointer wraps an optional argument to DecodeJson.
+struct DecodeJsonArgJsonPointer {
+  explicit DecodeJsonArgJsonPointer(std::string repr0);
+
+  // DefaultValue returns an empty string.
+  static DecodeJsonArgJsonPointer DefaultValue();
+
+  std::string repr;
+};
+
 // DecodeJson calls callbacks based on the JSON-formatted data in input.
 //
 // On success, the returned error_message is empty and cursor_position counts
@@ -86,7 +116,8 @@ extern const char DecodeJson_NoMatch[];
 DecodeJsonResult  //
 DecodeJson(DecodeJsonCallbacks& callbacks,
            sync_io::Input& input,
-           wuffs_base__slice_u32 quirks = wuffs_base__empty_slice_u32(),
-           std::string json_pointer = std::string());
+           DecodeJsonArgQuirks quirks = DecodeJsonArgQuirks::DefaultValue(),
+           DecodeJsonArgJsonPointer json_pointer =
+               DecodeJsonArgJsonPointer::DefaultValue());
 
 }  // namespace wuffs_aux

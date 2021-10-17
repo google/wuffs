@@ -133,8 +133,10 @@ load_image(const char* filename) {
       callbacks, input,
       // Use PIXEL_BLEND__SRC_OVER, not the default PIXEL_BLEND__SRC, because
       // we also pass a background color.
-      WUFFS_BASE__PIXEL_BLEND__SRC_OVER,
-      g_background_colors[g_background_color_index], MAX_INCL_DIMENSION);
+      wuffs_aux::DecodeImageArgPixelBlend(WUFFS_BASE__PIXEL_BLEND__SRC_OVER),
+      wuffs_aux::DecodeImageArgBackgroundColor(
+          g_background_colors[g_background_color_index]),
+      wuffs_aux::DecodeImageArgMaxInclDimension(MAX_INCL_DIMENSION));
   if (filename) {
     fclose(file);
   }

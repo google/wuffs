@@ -9975,6 +9975,26 @@ class DecodeCborCallbacks {
   Done(DecodeCborResult& result, sync_io::Input& input, IOBuffer& buffer);
 };
 
+// The FooArgBar types add structure to Foo's optional arguments. They wrap
+// inner representations for several reasons:
+//  - It provides a home for the DefaultValue static method, for Foo callers
+//    that want to override some but not all optional arguments.
+//  - It provides the "Bar" name at Foo call sites, which can help self-
+//    document Foo calls with many arguemnts.
+//  - It provides some type safety against accidentally transposing or omitting
+//    adjacent fundamentally-numeric-typed optional arguments.
+
+// DecodeCborArgQuirks wraps an optional argument to DecodeCbor.
+struct DecodeCborArgQuirks {
+  explicit DecodeCborArgQuirks(wuffs_base__slice_u32 repr0);
+  explicit DecodeCborArgQuirks(uint32_t* ptr, size_t len);
+
+  // DefaultValue returns an empty slice.
+  static DecodeCborArgQuirks DefaultValue();
+
+  wuffs_base__slice_u32 repr;
+};
+
 // DecodeCbor calls callbacks based on the CBOR-formatted data in input.
 //
 // On success, the returned error_message is empty and cursor_position counts
@@ -9984,7 +10004,7 @@ class DecodeCborCallbacks {
 DecodeCborResult  //
 DecodeCbor(DecodeCborCallbacks& callbacks,
            sync_io::Input& input,
-           wuffs_base__slice_u32 quirks = wuffs_base__empty_slice_u32());
+           DecodeCborArgQuirks quirks = DecodeCborArgQuirks::DefaultValue());
 
 }  // namespace wuffs_aux
 
@@ -10139,6 +10159,46 @@ extern const char DecodeImage_UnsupportedPixelBlend[];
 extern const char DecodeImage_UnsupportedPixelConfiguration[];
 extern const char DecodeImage_UnsupportedPixelFormat[];
 
+// The FooArgBar types add structure to Foo's optional arguments. They wrap
+// inner representations for several reasons:
+//  - It provides a home for the DefaultValue static method, for Foo callers
+//    that want to override some but not all optional arguments.
+//  - It provides the "Bar" name at Foo call sites, which can help self-
+//    document Foo calls with many arguemnts.
+//  - It provides some type safety against accidentally transposing or omitting
+//    adjacent fundamentally-numeric-typed optional arguments.
+
+// DecodeImageArgPixelBlend wraps an optional argument to DecodeImage.
+struct DecodeImageArgPixelBlend {
+  explicit DecodeImageArgPixelBlend(wuffs_base__pixel_blend repr0);
+
+  // DefaultValue returns WUFFS_BASE__PIXEL_BLEND__SRC.
+  static DecodeImageArgPixelBlend DefaultValue();
+
+  wuffs_base__pixel_blend repr;
+};
+
+// DecodeImageArgBackgroundColor wraps an optional argument to DecodeImage.
+struct DecodeImageArgBackgroundColor {
+  explicit DecodeImageArgBackgroundColor(
+      wuffs_base__color_u32_argb_premul repr0);
+
+  // DefaultValue returns 1, an invalid wuffs_base__color_u32_argb_premul.
+  static DecodeImageArgBackgroundColor DefaultValue();
+
+  wuffs_base__color_u32_argb_premul repr;
+};
+
+// DecodeImageArgMaxInclDimension wraps an optional argument to DecodeImage.
+struct DecodeImageArgMaxInclDimension {
+  explicit DecodeImageArgMaxInclDimension(uint32_t repr0);
+
+  // DefaultValue returns 1048575 = 0x000F_FFFF.
+  static DecodeImageArgMaxInclDimension DefaultValue();
+
+  uint32_t repr;
+};
+
 // DecodeImage decodes the image data in input. A variety of image file formats
 // can be decoded, depending on what callbacks.SelectDecoder returns.
 //
@@ -10185,9 +10245,12 @@ extern const char DecodeImage_UnsupportedPixelFormat[];
 DecodeImageResult  //
 DecodeImage(DecodeImageCallbacks& callbacks,
             sync_io::Input& input,
-            wuffs_base__pixel_blend pixel_blend = WUFFS_BASE__PIXEL_BLEND__SRC,
-            wuffs_base__color_u32_argb_premul background_color = 1,  // Invalid.
-            uint32_t max_incl_dimension = 1048575);  // 0x000F_FFFF
+            DecodeImageArgPixelBlend pixel_blend =
+                DecodeImageArgPixelBlend::DefaultValue(),
+            DecodeImageArgBackgroundColor background_color =
+                DecodeImageArgBackgroundColor::DefaultValue(),
+            DecodeImageArgMaxInclDimension max_incl_dimension =
+                DecodeImageArgMaxInclDimension::DefaultValue());
 
 }  // namespace wuffs_aux
 
@@ -10248,6 +10311,36 @@ class DecodeJsonCallbacks {
 extern const char DecodeJson_BadJsonPointer[];
 extern const char DecodeJson_NoMatch[];
 
+// The FooArgBar types add structure to Foo's optional arguments. They wrap
+// inner representations for several reasons:
+//  - It provides a home for the DefaultValue static method, for Foo callers
+//    that want to override some but not all optional arguments.
+//  - It provides the "Bar" name at Foo call sites, which can help self-
+//    document Foo calls with many arguemnts.
+//  - It provides some type safety against accidentally transposing or omitting
+//    adjacent fundamentally-numeric-typed optional arguments.
+
+// DecodeJsonArgQuirks wraps an optional argument to DecodeJson.
+struct DecodeJsonArgQuirks {
+  explicit DecodeJsonArgQuirks(wuffs_base__slice_u32 repr0);
+  explicit DecodeJsonArgQuirks(uint32_t* ptr, size_t len);
+
+  // DefaultValue returns an empty slice.
+  static DecodeJsonArgQuirks DefaultValue();
+
+  wuffs_base__slice_u32 repr;
+};
+
+// DecodeJsonArgJsonPointer wraps an optional argument to DecodeJson.
+struct DecodeJsonArgJsonPointer {
+  explicit DecodeJsonArgJsonPointer(std::string repr0);
+
+  // DefaultValue returns an empty string.
+  static DecodeJsonArgJsonPointer DefaultValue();
+
+  std::string repr;
+};
+
 // DecodeJson calls callbacks based on the JSON-formatted data in input.
 //
 // On success, the returned error_message is empty and cursor_position counts
@@ -10265,8 +10358,9 @@ extern const char DecodeJson_NoMatch[];
 DecodeJsonResult  //
 DecodeJson(DecodeJsonCallbacks& callbacks,
            sync_io::Input& input,
-           wuffs_base__slice_u32 quirks = wuffs_base__empty_slice_u32(),
-           std::string json_pointer = std::string());
+           DecodeJsonArgQuirks quirks = DecodeJsonArgQuirks::DefaultValue(),
+           DecodeJsonArgJsonPointer json_pointer =
+               DecodeJsonArgJsonPointer::DefaultValue());
 
 }  // namespace wuffs_aux
 
@@ -40065,10 +40159,21 @@ DecodeCborCallbacks::Done(DecodeCborResult& result,
                           sync_io::Input& input,
                           IOBuffer& buffer) {}
 
+DecodeCborArgQuirks::DecodeCborArgQuirks(wuffs_base__slice_u32 repr0)
+    : repr(repr0) {}
+
+DecodeCborArgQuirks::DecodeCborArgQuirks(uint32_t* ptr0, size_t len0)
+    : repr(wuffs_base__make_slice_u32(ptr0, len0)) {}
+
+DecodeCborArgQuirks  //
+DecodeCborArgQuirks::DefaultValue() {
+  return DecodeCborArgQuirks(wuffs_base__empty_slice_u32());
+}
+
 DecodeCborResult  //
 DecodeCbor(DecodeCborCallbacks& callbacks,
            sync_io::Input& input,
-           wuffs_base__slice_u32 quirks) {
+           DecodeCborArgQuirks quirks) {
   // Prepare the wuffs_base__io_buffer and the resultant error_message.
   wuffs_base__io_buffer* io_buf = input.BringsItsOwnIOBuffer();
   wuffs_base__io_buffer fallback_io_buf = wuffs_base__empty_io_buffer();
@@ -40091,8 +40196,8 @@ DecodeCbor(DecodeCborCallbacks& callbacks,
       ret_error_message = "wuffs_aux::DecodeCbor: out of memory";
       goto done;
     }
-    for (size_t i = 0; i < quirks.len; i++) {
-      dec->set_quirk_enabled(quirks.ptr[i], true);
+    for (size_t i = 0; i < quirks.repr.len; i++) {
+      dec->set_quirk_enabled(quirks.repr.ptr[i], true);
     }
 
     // Prepare the wuffs_base__tok_buffer. 256 tokens is 2KiB.
@@ -40554,6 +40659,32 @@ const char DecodeImage_UnsupportedPixelConfiguration[] =  //
 const char DecodeImage_UnsupportedPixelFormat[] =  //
     "wuffs_aux::DecodeImage: unsupported pixel format";
 
+DecodeImageArgPixelBlend::DecodeImageArgPixelBlend(
+    wuffs_base__pixel_blend repr0)
+    : repr(repr0) {}
+
+DecodeImageArgPixelBlend  //
+DecodeImageArgPixelBlend::DefaultValue() {
+  return DecodeImageArgPixelBlend(WUFFS_BASE__PIXEL_BLEND__SRC);
+}
+
+DecodeImageArgBackgroundColor::DecodeImageArgBackgroundColor(
+    wuffs_base__color_u32_argb_premul repr0)
+    : repr(repr0) {}
+
+DecodeImageArgBackgroundColor  //
+DecodeImageArgBackgroundColor::DefaultValue() {
+  return DecodeImageArgBackgroundColor(1);
+}
+
+DecodeImageArgMaxInclDimension::DecodeImageArgMaxInclDimension(uint32_t repr0)
+    : repr(repr0) {}
+
+DecodeImageArgMaxInclDimension  //
+DecodeImageArgMaxInclDimension::DefaultValue() {
+  return DecodeImageArgMaxInclDimension(1048575);
+}
+
 // --------
 
 namespace {
@@ -40794,9 +40925,9 @@ redirect:
 DecodeImageResult  //
 DecodeImage(DecodeImageCallbacks& callbacks,
             sync_io::Input& input,
-            wuffs_base__pixel_blend pixel_blend,
-            wuffs_base__color_u32_argb_premul background_color,
-            uint32_t max_incl_dimension) {
+            DecodeImageArgPixelBlend pixel_blend,
+            DecodeImageArgBackgroundColor background_color,
+            DecodeImageArgMaxInclDimension max_incl_dimension) {
   wuffs_base__io_buffer* io_buf = input.BringsItsOwnIOBuffer();
   wuffs_base__io_buffer fallback_io_buf = wuffs_base__empty_io_buffer();
   std::unique_ptr<uint8_t[]> fallback_io_array(nullptr);
@@ -40809,8 +40940,8 @@ DecodeImage(DecodeImageCallbacks& callbacks,
 
   wuffs_base__image_decoder::unique_ptr image_decoder(nullptr, &free);
   DecodeImageResult result =
-      DecodeImage0(image_decoder, callbacks, input, *io_buf, pixel_blend,
-                   background_color, max_incl_dimension);
+      DecodeImage0(image_decoder, callbacks, input, *io_buf, pixel_blend.repr,
+                   background_color.repr, max_incl_dimension.repr);
   callbacks.Done(result, input, *io_buf, std::move(image_decoder));
   return result;
 }
@@ -40844,6 +40975,25 @@ const char DecodeJson_BadJsonPointer[] =  //
     "wuffs_aux::DecodeJson: bad JSON Pointer";
 const char DecodeJson_NoMatch[] =  //
     "wuffs_aux::DecodeJson: no match";
+
+DecodeJsonArgQuirks::DecodeJsonArgQuirks(wuffs_base__slice_u32 repr0)
+    : repr(repr0) {}
+
+DecodeJsonArgQuirks::DecodeJsonArgQuirks(uint32_t* ptr0, size_t len0)
+    : repr(wuffs_base__make_slice_u32(ptr0, len0)) {}
+
+DecodeJsonArgQuirks  //
+DecodeJsonArgQuirks::DefaultValue() {
+  return DecodeJsonArgQuirks(wuffs_base__empty_slice_u32());
+}
+
+DecodeJsonArgJsonPointer::DecodeJsonArgJsonPointer(std::string repr0)
+    : repr(repr0) {}
+
+DecodeJsonArgJsonPointer  //
+DecodeJsonArgJsonPointer::DefaultValue() {
+  return DecodeJsonArgJsonPointer(std::string());
+}
 
 // --------
 
@@ -41150,8 +41300,8 @@ done:
 DecodeJsonResult  //
 DecodeJson(DecodeJsonCallbacks& callbacks,
            sync_io::Input& input,
-           wuffs_base__slice_u32 quirks,
-           std::string json_pointer) {
+           DecodeJsonArgQuirks quirks,
+           DecodeJsonArgJsonPointer json_pointer) {
   // Prepare the wuffs_base__io_buffer and the resultant error_message.
   wuffs_base__io_buffer* io_buf = input.BringsItsOwnIOBuffer();
   wuffs_base__io_buffer fallback_io_buf = wuffs_base__empty_io_buffer();
@@ -41179,9 +41329,9 @@ DecodeJson(DecodeJsonCallbacks& callbacks,
       goto done;
     }
     bool allow_tilde_n_tilde_r_tilde_t = false;
-    for (size_t i = 0; i < quirks.len; i++) {
-      dec->set_quirk_enabled(quirks.ptr[i], true);
-      if (quirks.ptr[i] ==
+    for (size_t i = 0; i < quirks.repr.len; i++) {
+      dec->set_quirk_enabled(quirks.repr.ptr[i], true);
+      if (quirks.repr.ptr[i] ==
           WUFFS_JSON__QUIRK_JSON_POINTER_ALLOW_TILDE_N_TILDE_R_TILDE_T) {
         allow_tilde_n_tilde_r_tilde_t = true;
       }
@@ -41200,13 +41350,13 @@ DecodeJson(DecodeJsonCallbacks& callbacks,
     std::string str;
 
     // Walk the (optional) JSON Pointer.
-    for (size_t i = 0; i < json_pointer.size();) {
-      if (json_pointer[i] != '/') {
+    for (size_t i = 0; i < json_pointer.repr.size();) {
+      if (json_pointer.repr[i] != '/') {
         ret_error_message = DecodeJson_BadJsonPointer;
         goto done;
       }
       std::pair<std::string, size_t> split = DecodeJson_SplitJsonPointer(
-          json_pointer, i + 1, allow_tilde_n_tilde_r_tilde_t);
+          json_pointer.repr, i + 1, allow_tilde_n_tilde_r_tilde_t);
       i = split.second;
       if (i == 0) {
         ret_error_message = DecodeJson_BadJsonPointer;
@@ -41367,7 +41517,7 @@ DecodeJson(DecodeJsonCallbacks& callbacks,
       // loop running until WUFFS_AUX__DECODE_JSON__GET_THE_NEXT_TOKEN's
       // decode_tokens returns an ok status.
       if (!ret_error_message.empty() ||
-          ((depth == 0) && !json_pointer.empty())) {
+          ((depth == 0) && !json_pointer.repr.empty())) {
         goto done;
       }
     }

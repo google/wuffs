@@ -568,8 +568,9 @@ main1(int argc, char** argv) {
   wuffs_aux::sync_io::FileInput input(in);
   return wuffs_aux::DecodeJson(
              callbacks, input,
-             wuffs_base__make_slice_u32(g_quirks.data(), g_quirks.size()),
-             (g_flags.query_c_string ? g_flags.query_c_string : ""))
+             wuffs_aux::DecodeJsonArgQuirks(g_quirks.data(), g_quirks.size()),
+             wuffs_aux::DecodeJsonArgJsonPointer(
+                 g_flags.query_c_string ? g_flags.query_c_string : ""))
       .error_message;
 }
 
