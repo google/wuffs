@@ -560,7 +560,17 @@ typedef struct wuffs_base__transform__output__struct {
 
 // --------
 
-// FourCC constants.
+// FourCC constants. Four Character Codes are literally four ASCII characters
+// (sometimes padded with ' ' spaces) that pack neatly into a signed or
+// unsigned 32-bit integer. ASCII letters are conventionally upper case.
+//
+// They are often used to identify video codecs (e.g. "H265") and pixel formats
+// (e.g. "YV12"). Wuffs uses them for that but also generally for naming
+// various things: compression formats (e.g. "BZ2 "), image metadata (e.g.
+// "EXIF"), file formats (e.g. "HTML"), etc.
+//
+// Wuffs' u32 values are big-endian ("JPEG" is 0x4A504547 not 0x4745504A) to
+// preserve ordering: "JPEG" < "MP3 " and 0x4A504547 < 0x4D503320.
 
 // Bitmap.
 #define WUFFS_BASE__FOURCC__BMP 0x424D5020
