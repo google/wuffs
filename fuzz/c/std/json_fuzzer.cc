@@ -515,7 +515,8 @@ fuzz_cpp(const uint8_t* in_ptr, size_t in_len, uint64_t hash) {
   wuffs_aux::sync_io::MemoryInput input(in_ptr, in_len);
   wuffs_aux::DecodeJson(
       callbacks, input,
-      wuffs_base__make_slice_u32(quirks.data(), quirks.size()), json_pointer);
+      wuffs_aux::DecodeJsonArgQuirks(quirks.data(), quirks.size()),
+      wuffs_aux::DecodeJsonArgJsonPointer(json_pointer));
 }
 #endif  // defined(__cplusplus)
 
