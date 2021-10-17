@@ -89,6 +89,15 @@ match:
         return 0x5750384C;           // 'WP8L'be
       }
     }
+  } else if (fourcc == 0x57424D50) {  // 'WBMP'be
+    if (prefix.len < 4) {
+      return -1;
+    } else if ((prefix.ptr[2] == 0x00) ||
+               ((prefix.ptr[2] < 0x80) && (prefix.ptr[3] == 0x00))) {
+      // Reject 0-width or 0-height WBMP images. Binary data starting with
+      // multiple 0x00 NUL bytes is quite common.
+      return 0;
+    }
   }
   return fourcc;
 }
