@@ -54,13 +54,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-// Note that Clang also defines __GNUC__.
 #ifdef __cplusplus
 #if (__cplusplus >= 201103L) || defined(_MSC_VER)
 #include <memory>
 #define WUFFS_BASE__HAVE_EQ_DELETE
 #define WUFFS_BASE__HAVE_UNIQUE_PTR
-#elif defined(__GNUC__)
+// The "defined(__clang__)" isn't redundant. While vanilla clang defines
+// __GNUC__, clang-cl (which mimics MSVC's cl.exe) does not.
+#elif defined(__GNUC__) || defined(__clang__)
 #warning "Wuffs' C++ code expects -std=c++11 or later"
 #endif
 
@@ -329,8 +330,9 @@ wuffs_base__cpu_arch__have_x86_sse42() {
 #endif
 #endif
 
-// Clang also defines "__GNUC__".
-#if defined(__GNUC__)
+// The "defined(__clang__)" isn't redundant. While vanilla clang defines
+// __GNUC__, clang-cl (which mimics MSVC's cl.exe) does not.
+#if defined(__GNUC__) || defined(__clang__)
 #define WUFFS_BASE__POTENTIALLY_UNUSED __attribute__((unused))
 #define WUFFS_BASE__WARN_UNUSED_RESULT __attribute__((warn_unused_result))
 #else
@@ -975,7 +977,9 @@ wuffs_base__multiply_u64(uint64_t x, uint64_t y) {
 
 // --------
 
-#if defined(__GNUC__) && (__SIZEOF_LONG__ == 8)
+// The "defined(__clang__)" isn't redundant. While vanilla clang defines
+// __GNUC__, clang-cl (which mimics MSVC's cl.exe) does not.
+#if (defined(__GNUC__) || defined(__clang__)) && (__SIZEOF_LONG__ == 8)
 
 static inline uint32_t  //
 wuffs_base__count_leading_zeroes_u64(uint64_t u) {
@@ -1019,7 +1023,7 @@ wuffs_base__count_leading_zeroes_u64(uint64_t u) {
   return n;
 }
 
-#endif  // defined(__GNUC__) && (__SIZEOF_LONG__ == 8)
+#endif  // (defined(__GNUC__) || defined(__clang__)) && (__SIZEOF_LONG__ == 8)
 
 // --------
 
@@ -10302,8 +10306,9 @@ extern "C" {
   goto suspend;                                                 \
   case n:;
 
-// Clang also defines "__GNUC__".
-#if defined(__GNUC__)
+// The "defined(__clang__)" isn't redundant. While vanilla clang defines
+// __GNUC__, clang-cl (which mimics MSVC's cl.exe) does not.
+#if defined(__GNUC__) || defined(__clang__)
 #define WUFFS_BASE__LIKELY(expr) (__builtin_expect(!!(expr), 1))
 #define WUFFS_BASE__UNLIKELY(expr) (__builtin_expect(!!(expr), 0))
 #else

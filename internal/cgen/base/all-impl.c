@@ -29,13 +29,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-// Note that Clang also defines __GNUC__.
 #ifdef __cplusplus
 #if (__cplusplus >= 201103L) || defined(_MSC_VER)
 #include <memory>
 #define WUFFS_BASE__HAVE_EQ_DELETE
 #define WUFFS_BASE__HAVE_UNIQUE_PTR
-#elif defined(__GNUC__)
+// The "defined(__clang__)" isn't redundant. While vanilla clang defines
+// __GNUC__, clang-cl (which mimics MSVC's cl.exe) does not.
+#elif defined(__GNUC__) || defined(__clang__)
 #warning "Wuffs' C++ code expects -std=c++11 or later"
 #endif
 

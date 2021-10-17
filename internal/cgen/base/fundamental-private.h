@@ -49,8 +49,9 @@
   goto suspend;                                                 \
   case n:;
 
-// Clang also defines "__GNUC__".
-#if defined(__GNUC__)
+// The "defined(__clang__)" isn't redundant. While vanilla clang defines
+// __GNUC__, clang-cl (which mimics MSVC's cl.exe) does not.
+#if defined(__GNUC__) || defined(__clang__)
 #define WUFFS_BASE__LIKELY(expr) (__builtin_expect(!!(expr), 1))
 #define WUFFS_BASE__UNLIKELY(expr) (__builtin_expect(!!(expr), 0))
 #else
