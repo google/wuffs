@@ -30,10 +30,11 @@ struct DecodeImageResult {
 // DecodeImageCallbacks are the callbacks given to DecodeImage. They are always
 // called in this order:
 //  1. SelectDecoder
-//  2. SelectPixfmt
-//  3. AllocPixbuf
-//  4. AllocWorkbuf
-//  5. Done
+//  2. HandleMetadata
+//  3. SelectPixfmt
+//  4. AllocPixbuf
+//  5. AllocWorkbuf
+//  6. Done
 //
 // It may return early - the third callback might not be invoked if the second
 // one fails - but the final callback (Done) is always invoked.
@@ -89,6 +90,21 @@ class DecodeImageCallbacks {
   //  - WUFFS_BASE__FOURCC__WBMP
   virtual wuffs_base__image_decoder::unique_ptr  //
   SelectDecoder(uint32_t fourcc, wuffs_base__slice_u8 prefix);
+
+  // HandleMetadata acknowledges image metadata. minfo.flavor will be one of:
+  //  - WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA_RAW
+  //  - WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA_PARSED
+  // If it is ETC__METADATA_RAW then raw contains the metadata bytes.
+  //
+  // minfo.metadata__fourcc() will typically match one of the
+  // DecodeImageArgFlags bits. For example, if (REPORT_METADATA_CHRM |
+  // REPORT_METADATA_GAMA) was passed to DecodeImage then the metadata FourCC
+  // will be either WUFFS_BASE__FOURCC__CHRM or WUFFS_BASE__FOURCC__GAMA.
+  //
+  // It returns an error message, or an empty string on success.
+  virtual std::string  //
+  HandleMetadata(const wuffs_base__more_information& minfo,
+                 std::vector<uint8_t>&& raw);
 
   // SelectPixfmt returns the destination pixel format for AllocPixbuf. It
   // should return wuffs_base__make_pixel_format(etc) called with one of:
@@ -183,6 +199,42 @@ struct DecodeImageArgQuirks {
   wuffs_base__slice_u32 repr;
 };
 
+// DecodeImageArgFlags wraps an optional argument to DecodeImage.
+struct DecodeImageArgFlags {
+  explicit DecodeImageArgFlags(uint64_t repr0);
+
+  // DefaultValue returns 0.
+  static DecodeImageArgFlags DefaultValue();
+
+  // TODO: support all of the REPORT_METADATA_ETC flags, not just CHRM, GAMA
+  // and SRGB.
+
+  // Background Color.
+  static constexpr uint64_t REPORT_METADATA_BGCL = 0x0001;
+  // Primary Chromaticities and White Point.
+  static constexpr uint64_t REPORT_METADATA_CHRM = 0x0002;
+  // Exchangeable Image File Format.
+  static constexpr uint64_t REPORT_METADATA_EXIF = 0x0004;
+  // Gamma Correction.
+  static constexpr uint64_t REPORT_METADATA_GAMA = 0x0008;
+  // International Color Consortium Profile.
+  static constexpr uint64_t REPORT_METADATA_ICCP = 0x0010;
+  // Modification Time.
+  static constexpr uint64_t REPORT_METADATA_MTIM = 0x0020;
+  // Offset (2-Dimensional).
+  static constexpr uint64_t REPORT_METADATA_OFS2 = 0x0040;
+  // Physical Dimensions.
+  static constexpr uint64_t REPORT_METADATA_PHYD = 0x0080;
+  // Standard Red Green Blue (Rendering Intent).
+  static constexpr uint64_t REPORT_METADATA_SRGB = 0x0100;
+  // Text.
+  static constexpr uint64_t REPORT_METADATA_TEXT = 0x0200;
+  // Extensible Metadata Platform.
+  static constexpr uint64_t REPORT_METADATA_XMP = 0x0400;
+
+  uint64_t repr;
+};
+
 // DecodeImageArgPixelBlend wraps an optional argument to DecodeImage.
 struct DecodeImageArgPixelBlend {
   explicit DecodeImageArgPixelBlend(wuffs_base__pixel_blend repr0);
@@ -261,6 +313,7 @@ DecodeImageResult  //
 DecodeImage(DecodeImageCallbacks& callbacks,
             sync_io::Input& input,
             DecodeImageArgQuirks quirks = DecodeImageArgQuirks::DefaultValue(),
+            DecodeImageArgFlags flags = DecodeImageArgFlags::DefaultValue(),
             DecodeImageArgPixelBlend pixel_blend =
                 DecodeImageArgPixelBlend::DefaultValue(),
             DecodeImageArgBackgroundColor background_color =

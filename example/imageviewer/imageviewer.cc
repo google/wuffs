@@ -39,6 +39,7 @@ The Escape key quits.
 */
 
 #include <inttypes.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -100,6 +101,7 @@ wuffs_base__color_u32_argb_premul g_background_colors[NUM_BACKGROUND_COLORS] = {
     0xFFA9009A,
 };
 
+double g_screen_gamma = 2.2;  // TODO: make a command-line flag.
 uint32_t g_width = 0;
 uint32_t g_height = 0;
 wuffs_aux::MemOwner g_pixbuf_mem_owner(nullptr, &free);
@@ -107,6 +109,69 @@ wuffs_base__pixel_buffer g_pixbuf = {0};
 uint32_t g_background_color_index = 0;
 int32_t g_zoom = 0;
 bool g_filter = false;
+
+class MyDecodeImageCallbacks : public wuffs_aux::DecodeImageCallbacks {
+ public:
+  MyDecodeImageCallbacks() : m_combined_gamma(1.0) {}
+
+ private:
+  std::string  //
+  HandleMetadata(const wuffs_base__more_information& minfo,
+                 std::vector<uint8_t>&& raw) override {
+    if (minfo.flavor == WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA_PARSED) {
+      switch (minfo.metadata__fourcc()) {
+        case WUFFS_BASE__FOURCC__GAMA:
+          // metadata_parsed__gama returns the inverse gamma scaled by 1e5.
+          m_combined_gamma =
+              1e5 / (g_screen_gamma * minfo.metadata_parsed__gama());
+          break;
+      }
+    }
+    return "";
+  }
+
+  void  //
+  Done(wuffs_aux::DecodeImageResult& result,
+       wuffs_aux::sync_io::Input& input,
+       wuffs_aux::IOBuffer& buffer,
+       wuffs_base__image_decoder::unique_ptr image_decoder) override {
+    // Apply basic color correction - gamma correction. Proper color correction
+    // should also involve considering any CHRM, ICCP and SRGB metadata but
+    // that requires a non-trivial amount of code (such as skcms, Skia's Color
+    // Management System). To keep this example program simple, we only
+    // consider GAMA metadata (and 8-bit color channels) here.
+    //
+    // This code also assumes that wuffs_aux::DecodeImageCallbacks defaults to
+    // producing a WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL pixel buffer.
+    if ((result.pixbuf.pixel_format().repr ==
+         WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL) &&
+        ((m_combined_gamma < 0.9999) || (1.0001 < m_combined_gamma))) {
+      uint8_t lut[256];
+      lut[0x00] = 0x00;
+      lut[0xFF] = 0xFF;
+      for (uint32_t i = 1; i < 0xFF; i++) {
+        lut[i] =
+            (uint8_t)(floor(255.0 * pow(i / 255.0, m_combined_gamma) + 0.5));
+      }
+
+      wuffs_base__table_u8 t = result.pixbuf.plane(0);
+      size_t w4 = t.width / 4;
+      for (size_t y = 0; y < t.height; y++) {
+        uint8_t* ptr = t.ptr + (y * t.stride);
+        for (size_t x = 0; x < w4; x++) {
+          ptr[0] = lut[ptr[0]];
+          ptr[1] = lut[ptr[1]];
+          ptr[2] = lut[ptr[2]];
+          ptr += 4;
+        }
+      }
+    }
+  }
+
+  // m_combined_gamma holds the product of the screen gamma and the image
+  // file's inverse gamma.
+  double m_combined_gamma;
+};
 
 bool  //
 load_image(const char* filename) {
@@ -127,10 +192,12 @@ load_image(const char* filename) {
   g_pixbuf_mem_owner.reset();
   g_pixbuf = wuffs_base__null_pixel_buffer();
 
-  wuffs_aux::DecodeImageCallbacks callbacks;
+  MyDecodeImageCallbacks callbacks;
   wuffs_aux::sync_io::FileInput input(file);
   wuffs_aux::DecodeImageResult res = wuffs_aux::DecodeImage(
       callbacks, input, wuffs_aux::DecodeImageArgQuirks::DefaultValue(),
+      wuffs_aux::DecodeImageArgFlags(
+          wuffs_aux::DecodeImageArgFlags::REPORT_METADATA_GAMA),
       // Use PIXEL_BLEND__SRC_OVER, not the default PIXEL_BLEND__SRC, because
       // we also pass a background color.
       wuffs_aux::DecodeImageArgPixelBlend(WUFFS_BASE__PIXEL_BLEND__SRC_OVER),

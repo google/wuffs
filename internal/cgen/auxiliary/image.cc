@@ -93,6 +93,12 @@ DecodeImageCallbacks::SelectDecoder(uint32_t fourcc,
   return wuffs_base__image_decoder::unique_ptr(nullptr, &free);
 }
 
+std::string  //
+DecodeImageCallbacks::HandleMetadata(const wuffs_base__more_information& minfo,
+                                     std::vector<uint8_t>&& raw) {
+  return "";
+}
+
 wuffs_base__pixel_format  //
 DecodeImageCallbacks::SelectPixfmt(
     const wuffs_base__image_config& image_config) {
@@ -181,6 +187,13 @@ DecodeImageArgQuirks::DefaultValue() {
   return DecodeImageArgQuirks(wuffs_base__empty_slice_u32());
 }
 
+DecodeImageArgFlags::DecodeImageArgFlags(uint64_t repr0) : repr(repr0) {}
+
+DecodeImageArgFlags  //
+DecodeImageArgFlags::DefaultValue() {
+  return DecodeImageArgFlags(0);
+}
+
 DecodeImageArgPixelBlend::DecodeImageArgPixelBlend(
     wuffs_base__pixel_blend repr0)
     : repr(repr0) {}
@@ -241,12 +254,29 @@ DecodeImageAdvanceIOBuf(sync_io::Input& input,
   return "";
 }
 
+std::string  //
+DecodeImageHandleMetadata(wuffs_base__image_decoder::unique_ptr& image_decoder,
+                          DecodeImageCallbacks& callbacks,
+                          sync_io::Input& input,
+                          wuffs_base__io_buffer& io_buf) {
+  std::vector<uint8_t> raw;
+  wuffs_base__io_buffer empty = wuffs_base__empty_io_buffer();
+  wuffs_base__more_information minfo = wuffs_base__empty_more_information();
+  wuffs_base__status status =
+      image_decoder->tell_me_more(&empty, &minfo, &io_buf);
+  if (status.repr != NULL) {
+    return status.message();
+  }
+  return callbacks.HandleMetadata(minfo, std::move(raw));
+}
+
 DecodeImageResult  //
 DecodeImage0(wuffs_base__image_decoder::unique_ptr& image_decoder,
              DecodeImageCallbacks& callbacks,
              sync_io::Input& input,
              wuffs_base__io_buffer& io_buf,
              wuffs_base__slice_u32 quirks,
+             uint64_t flags,
              wuffs_base__pixel_blend pixel_blend,
              wuffs_base__color_u32_argb_premul background_color,
              uint32_t max_incl_dimension) {
@@ -319,6 +349,19 @@ redirect:
       image_decoder->set_quirk_enabled(quirks.ptr[i], true);
     }
 
+    // Apply flags.
+    if (flags != 0) {
+      if (flags & DecodeImageArgFlags::REPORT_METADATA_CHRM) {
+        image_decoder->set_report_metadata(WUFFS_BASE__FOURCC__CHRM, true);
+      }
+      if (flags & DecodeImageArgFlags::REPORT_METADATA_GAMA) {
+        image_decoder->set_report_metadata(WUFFS_BASE__FOURCC__GAMA, true);
+      }
+      if (flags & DecodeImageArgFlags::REPORT_METADATA_SRGB) {
+        image_decoder->set_report_metadata(WUFFS_BASE__FOURCC__SRGB, true);
+      }
+    }
+
     // Decode the image config.
     while (true) {
       wuffs_base__status id_dic_status =
@@ -331,6 +374,12 @@ redirect:
         }
         redirected = true;
         goto redirect;
+      } else if (id_dic_status.repr == wuffs_base__note__metadata_reported) {
+        std::string error_message =
+            DecodeImageHandleMetadata(image_decoder, callbacks, input, io_buf);
+        if (!error_message.empty()) {
+          return DecodeImageResult(std::move(error_message));
+        }
       } else if (id_dic_status.repr != wuffs_base__suspension__short_read) {
         return DecodeImageResult(id_dic_status.message());
       } else if (io_buf.meta.closed) {
@@ -454,6 +503,7 @@ DecodeImageResult  //
 DecodeImage(DecodeImageCallbacks& callbacks,
             sync_io::Input& input,
             DecodeImageArgQuirks quirks,
+            DecodeImageArgFlags flags,
             DecodeImageArgPixelBlend pixel_blend,
             DecodeImageArgBackgroundColor background_color,
             DecodeImageArgMaxInclDimension max_incl_dimension) {
@@ -469,8 +519,8 @@ DecodeImage(DecodeImageCallbacks& callbacks,
 
   wuffs_base__image_decoder::unique_ptr image_decoder(nullptr, &free);
   DecodeImageResult result = DecodeImage0(
-      image_decoder, callbacks, input, *io_buf, quirks.repr, pixel_blend.repr,
-      background_color.repr, max_incl_dimension.repr);
+      image_decoder, callbacks, input, *io_buf, quirks.repr, flags.repr,
+      pixel_blend.repr, background_color.repr, max_incl_dimension.repr);
   callbacks.Done(result, input, *io_buf, std::move(image_decoder));
   return result;
 }

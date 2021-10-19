@@ -572,6 +572,9 @@ typedef struct wuffs_base__transform__output__struct {
 // Wuffs' u32 values are big-endian ("JPEG" is 0x4A504547 not 0x4745504A) to
 // preserve ordering: "JPEG" < "MP3 " and 0x4A504547 < 0x4D503320.
 
+// Background Color.
+#define WUFFS_BASE__FOURCC__BGCL 0x4247434C
+
 // Bitmap.
 #define WUFFS_BASE__FOURCC__BMP 0x424D5020
 
@@ -644,17 +647,26 @@ typedef struct wuffs_base__transform__output__struct {
 // Markdown.
 #define WUFFS_BASE__FOURCC__MD 0x4D442020
 
+// Modification Time.
+#define WUFFS_BASE__FOURCC__MTIM 0x4D54494D
+
 // MPEG-1 Audio Layer III.
 #define WUFFS_BASE__FOURCC__MP3 0x4D503320
 
 // Naive Image.
 #define WUFFS_BASE__FOURCC__NIE 0x4E494520
 
+// Offset (2-Dimensional).
+#define WUFFS_BASE__FOURCC__OFS2 0x4F465332
+
 // Open Type Format.
 #define WUFFS_BASE__FOURCC__OTF 0x4F544620
 
 // Portable Document Format.
 #define WUFFS_BASE__FOURCC__PDF 0x50444620
+
+// Physical Dimensions.
+#define WUFFS_BASE__FOURCC__PHYD 0x50485944
 
 // Portable Network Graphics.
 #define WUFFS_BASE__FOURCC__PNG 0x504E4720
@@ -688,6 +700,9 @@ typedef struct wuffs_base__transform__output__struct {
 
 // Tape Archive.
 #define WUFFS_BASE__FOURCC__TAR 0x54415220
+
+// Text.
+#define WUFFS_BASE__FOURCC__TEXT 0x54455854
 
 // Tagged Image File Format.
 #define WUFFS_BASE__FOURCC__TIFF 0x54494646
@@ -9849,6 +9864,7 @@ struct wuffs_wbmp__decoder__struct {
 #include <stdio.h>
 
 #include <string>
+#include <vector>
 
 namespace wuffs_aux {
 
@@ -10026,10 +10042,11 @@ struct DecodeImageResult {
 // DecodeImageCallbacks are the callbacks given to DecodeImage. They are always
 // called in this order:
 //  1. SelectDecoder
-//  2. SelectPixfmt
-//  3. AllocPixbuf
-//  4. AllocWorkbuf
-//  5. Done
+//  2. HandleMetadata
+//  3. SelectPixfmt
+//  4. AllocPixbuf
+//  5. AllocWorkbuf
+//  6. Done
 //
 // It may return early - the third callback might not be invoked if the second
 // one fails - but the final callback (Done) is always invoked.
@@ -10085,6 +10102,21 @@ class DecodeImageCallbacks {
   //  - WUFFS_BASE__FOURCC__WBMP
   virtual wuffs_base__image_decoder::unique_ptr  //
   SelectDecoder(uint32_t fourcc, wuffs_base__slice_u8 prefix);
+
+  // HandleMetadata acknowledges image metadata. minfo.flavor will be one of:
+  //  - WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA_RAW
+  //  - WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA_PARSED
+  // If it is ETC__METADATA_RAW then raw contains the metadata bytes.
+  //
+  // minfo.metadata__fourcc() will typically match one of the
+  // DecodeImageArgFlags bits. For example, if (REPORT_METADATA_CHRM |
+  // REPORT_METADATA_GAMA) was passed to DecodeImage then the metadata FourCC
+  // will be either WUFFS_BASE__FOURCC__CHRM or WUFFS_BASE__FOURCC__GAMA.
+  //
+  // It returns an error message, or an empty string on success.
+  virtual std::string  //
+  HandleMetadata(const wuffs_base__more_information& minfo,
+                 std::vector<uint8_t>&& raw);
 
   // SelectPixfmt returns the destination pixel format for AllocPixbuf. It
   // should return wuffs_base__make_pixel_format(etc) called with one of:
@@ -10179,6 +10211,42 @@ struct DecodeImageArgQuirks {
   wuffs_base__slice_u32 repr;
 };
 
+// DecodeImageArgFlags wraps an optional argument to DecodeImage.
+struct DecodeImageArgFlags {
+  explicit DecodeImageArgFlags(uint64_t repr0);
+
+  // DefaultValue returns 0.
+  static DecodeImageArgFlags DefaultValue();
+
+  // TODO: support all of the REPORT_METADATA_ETC flags, not just CHRM, GAMA
+  // and SRGB.
+
+  // Background Color.
+  static constexpr uint64_t REPORT_METADATA_BGCL = 0x0001;
+  // Primary Chromaticities and White Point.
+  static constexpr uint64_t REPORT_METADATA_CHRM = 0x0002;
+  // Exchangeable Image File Format.
+  static constexpr uint64_t REPORT_METADATA_EXIF = 0x0004;
+  // Gamma Correction.
+  static constexpr uint64_t REPORT_METADATA_GAMA = 0x0008;
+  // International Color Consortium Profile.
+  static constexpr uint64_t REPORT_METADATA_ICCP = 0x0010;
+  // Modification Time.
+  static constexpr uint64_t REPORT_METADATA_MTIM = 0x0020;
+  // Offset (2-Dimensional).
+  static constexpr uint64_t REPORT_METADATA_OFS2 = 0x0040;
+  // Physical Dimensions.
+  static constexpr uint64_t REPORT_METADATA_PHYD = 0x0080;
+  // Standard Red Green Blue (Rendering Intent).
+  static constexpr uint64_t REPORT_METADATA_SRGB = 0x0100;
+  // Text.
+  static constexpr uint64_t REPORT_METADATA_TEXT = 0x0200;
+  // Extensible Metadata Platform.
+  static constexpr uint64_t REPORT_METADATA_XMP = 0x0400;
+
+  uint64_t repr;
+};
+
 // DecodeImageArgPixelBlend wraps an optional argument to DecodeImage.
 struct DecodeImageArgPixelBlend {
   explicit DecodeImageArgPixelBlend(wuffs_base__pixel_blend repr0);
@@ -10257,6 +10325,7 @@ DecodeImageResult  //
 DecodeImage(DecodeImageCallbacks& callbacks,
             sync_io::Input& input,
             DecodeImageArgQuirks quirks = DecodeImageArgQuirks::DefaultValue(),
+            DecodeImageArgFlags flags = DecodeImageArgFlags::DefaultValue(),
             DecodeImageArgPixelBlend pixel_blend =
                 DecodeImageArgPixelBlend::DefaultValue(),
             DecodeImageArgBackgroundColor background_color =
@@ -40594,6 +40663,12 @@ DecodeImageCallbacks::SelectDecoder(uint32_t fourcc,
   return wuffs_base__image_decoder::unique_ptr(nullptr, &free);
 }
 
+std::string  //
+DecodeImageCallbacks::HandleMetadata(const wuffs_base__more_information& minfo,
+                                     std::vector<uint8_t>&& raw) {
+  return "";
+}
+
 wuffs_base__pixel_format  //
 DecodeImageCallbacks::SelectPixfmt(
     const wuffs_base__image_config& image_config) {
@@ -40682,6 +40757,13 @@ DecodeImageArgQuirks::DefaultValue() {
   return DecodeImageArgQuirks(wuffs_base__empty_slice_u32());
 }
 
+DecodeImageArgFlags::DecodeImageArgFlags(uint64_t repr0) : repr(repr0) {}
+
+DecodeImageArgFlags  //
+DecodeImageArgFlags::DefaultValue() {
+  return DecodeImageArgFlags(0);
+}
+
 DecodeImageArgPixelBlend::DecodeImageArgPixelBlend(
     wuffs_base__pixel_blend repr0)
     : repr(repr0) {}
@@ -40742,12 +40824,29 @@ DecodeImageAdvanceIOBuf(sync_io::Input& input,
   return "";
 }
 
+std::string  //
+DecodeImageHandleMetadata(wuffs_base__image_decoder::unique_ptr& image_decoder,
+                          DecodeImageCallbacks& callbacks,
+                          sync_io::Input& input,
+                          wuffs_base__io_buffer& io_buf) {
+  std::vector<uint8_t> raw;
+  wuffs_base__io_buffer empty = wuffs_base__empty_io_buffer();
+  wuffs_base__more_information minfo = wuffs_base__empty_more_information();
+  wuffs_base__status status =
+      image_decoder->tell_me_more(&empty, &minfo, &io_buf);
+  if (status.repr != NULL) {
+    return status.message();
+  }
+  return callbacks.HandleMetadata(minfo, std::move(raw));
+}
+
 DecodeImageResult  //
 DecodeImage0(wuffs_base__image_decoder::unique_ptr& image_decoder,
              DecodeImageCallbacks& callbacks,
              sync_io::Input& input,
              wuffs_base__io_buffer& io_buf,
              wuffs_base__slice_u32 quirks,
+             uint64_t flags,
              wuffs_base__pixel_blend pixel_blend,
              wuffs_base__color_u32_argb_premul background_color,
              uint32_t max_incl_dimension) {
@@ -40820,6 +40919,19 @@ redirect:
       image_decoder->set_quirk_enabled(quirks.ptr[i], true);
     }
 
+    // Apply flags.
+    if (flags != 0) {
+      if (flags & DecodeImageArgFlags::REPORT_METADATA_CHRM) {
+        image_decoder->set_report_metadata(WUFFS_BASE__FOURCC__CHRM, true);
+      }
+      if (flags & DecodeImageArgFlags::REPORT_METADATA_GAMA) {
+        image_decoder->set_report_metadata(WUFFS_BASE__FOURCC__GAMA, true);
+      }
+      if (flags & DecodeImageArgFlags::REPORT_METADATA_SRGB) {
+        image_decoder->set_report_metadata(WUFFS_BASE__FOURCC__SRGB, true);
+      }
+    }
+
     // Decode the image config.
     while (true) {
       wuffs_base__status id_dic_status =
@@ -40832,6 +40944,12 @@ redirect:
         }
         redirected = true;
         goto redirect;
+      } else if (id_dic_status.repr == wuffs_base__note__metadata_reported) {
+        std::string error_message =
+            DecodeImageHandleMetadata(image_decoder, callbacks, input, io_buf);
+        if (!error_message.empty()) {
+          return DecodeImageResult(std::move(error_message));
+        }
       } else if (id_dic_status.repr != wuffs_base__suspension__short_read) {
         return DecodeImageResult(id_dic_status.message());
       } else if (io_buf.meta.closed) {
@@ -40955,6 +41073,7 @@ DecodeImageResult  //
 DecodeImage(DecodeImageCallbacks& callbacks,
             sync_io::Input& input,
             DecodeImageArgQuirks quirks,
+            DecodeImageArgFlags flags,
             DecodeImageArgPixelBlend pixel_blend,
             DecodeImageArgBackgroundColor background_color,
             DecodeImageArgMaxInclDimension max_incl_dimension) {
@@ -40970,8 +41089,8 @@ DecodeImage(DecodeImageCallbacks& callbacks,
 
   wuffs_base__image_decoder::unique_ptr image_decoder(nullptr, &free);
   DecodeImageResult result = DecodeImage0(
-      image_decoder, callbacks, input, *io_buf, quirks.repr, pixel_blend.repr,
-      background_color.repr, max_incl_dimension.repr);
+      image_decoder, callbacks, input, *io_buf, quirks.repr, flags.repr,
+      pixel_blend.repr, background_color.repr, max_incl_dimension.repr);
   callbacks.Done(result, input, *io_buf, std::move(image_decoder));
   return result;
 }

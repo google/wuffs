@@ -20,6 +20,7 @@
 #include <stdio.h>
 
 #include <string>
+#include <vector>
 
 namespace wuffs_aux {
 

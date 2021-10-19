@@ -28,6 +28,7 @@ import (
 )
 
 var FourCCs = [...][2]string{
+	{"BGCL", "Background Color"},
 	{"BMP ", "Bitmap"},
 	{"BRTL", "Brotli"},
 	{"BZ2 ", "Bzip2"},
@@ -52,10 +53,13 @@ var FourCCs = [...][2]string{
 	{"JWCC", "JSON With Commas and Comments"},
 	{"LZ4 ", "Lempel–Ziv 4"},
 	{"MD  ", "Markdown"},
+	{"MTIM", "Modification Time"},
 	{"MP3 ", "MPEG-1 Audio Layer III"},
 	{"NIE ", "Naive Image"},
+	{"OFS2", "Offset (2-Dimensional)"},
 	{"OTF ", "Open Type Format"},
 	{"PDF ", "Portable Document Format"},
+	{"PHYD", "Physical Dimensions"},
 	{"PNG ", "Portable Network Graphics"},
 	{"PNM ", "Portable Anymap"},
 	{"PS  ", "PostScript"},
@@ -67,6 +71,7 @@ var FourCCs = [...][2]string{
 	{"SRGB", "Standard Red Green Blue (Rendering Intent)"},
 	{"SVG ", "Scalable Vector Graphics"},
 	{"TAR ", "Tape Archive"},
+	{"TEXT", "Text"},
 	{"TIFF", "Tagged Image File Format"},
 	{"TOML", "Tom's Obvious Minimal Language"},
 	{"WAVE", "Waveform"},
