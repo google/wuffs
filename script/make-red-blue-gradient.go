@@ -35,8 +35,9 @@ import (
 )
 
 var (
-	gama = flag.Float64("gama", 0, "Gamma correction value (e.g. 2.2)")
-	iccp = flag.String("iccp", "", "ICC filename (e.g. foo/bar.icc)")
+	checkerboard = flag.Bool("checkerboard", false, "Create a checkerboard pattern instead")
+	gama         = flag.Float64("gama", 0, "Gamma correction value (e.g. 2.2)")
+	iccp         = flag.String("iccp", "", "ICC filename (e.g. foo/bar.icc)")
 )
 
 func main() {
@@ -49,22 +50,42 @@ func main() {
 func main1() error {
 	flag.Parse()
 
-	// Make a red-blue gradient.
-	m := image.NewRGBA(image.Rect(0, 0, 16, 16))
-	for y := 0; y < 16; y++ {
-		for x := 0; x < 16; x++ {
-			m.SetRGBA(x, y, color.RGBA{
-				R: uint8(x * 0x11),
-				G: 0x00,
-				B: uint8(y * 0x11),
-				A: 0xFF,
-			})
+	// Make a checkerboard or red-blue gradient.
+	src := image.Image(nil)
+	if *checkerboard {
+		// With -gama=1.0 (or -gama=2.2), the two halves of this image should
+		// have roughly equal (or un-equal) brightness.
+		m := image.NewGray(image.Rect(0, 0, 256, 256))
+		for y := 0; y < 256; y++ {
+			for x := 0; x < 256; x++ {
+				if x < 128 {
+					m.SetGray(x, y, color.Gray{0x80})
+				} else if ((x ^ y) & 1) == 1 {
+					m.SetGray(x, y, color.Gray{0xFF})
+				} else {
+					m.SetGray(x, y, color.Gray{0x00})
+				}
+			}
 		}
+		src = m
+	} else {
+		m := image.NewRGBA(image.Rect(0, 0, 16, 16))
+		for y := 0; y < 16; y++ {
+			for x := 0; x < 16; x++ {
+				m.SetRGBA(x, y, color.RGBA{
+					R: uint8(x * 0x11),
+					G: 0x00,
+					B: uint8(y * 0x11),
+					A: 0xFF,
+				})
+			}
+		}
+		src = m
 	}
 
 	// Encode to PNG.
 	buf := &bytes.Buffer{}
-	png.Encode(buf, m)
+	png.Encode(buf, src)
 	original := buf.Bytes()
 
 	// Split the encoding into a magic+IHDR prefix and an IDAT+IEND suffix. The
