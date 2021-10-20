@@ -29,6 +29,8 @@ c2bce675 test/data/bricks-gray.png
 b641fef2 test/data/bricks-nodither.gif
 7aebfe6c test/data/bricks-nodither.png
 ae2e547d test/data/bricks-nodither.wbmp
+b47730a2 test/data/checkerboard.gamma1dot0.png
+b47730a2 test/data/checkerboard.gamma2dot2.png
 3014b4c0 test/data/gifplayer-muybridge.gif
 030f5a48 test/data/harvesters.bmp
 0d213dc4 test/data/harvesters.gif
