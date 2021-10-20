@@ -101,7 +101,6 @@ wuffs_base__color_u32_argb_premul g_background_colors[NUM_BACKGROUND_COLORS] = {
     0xFFA9009A,
 };
 
-double g_screen_gamma = 2.2;  // TODO: make a command-line flag.
 uint32_t g_width = 0;
 uint32_t g_height = 0;
 wuffs_aux::MemOwner g_pixbuf_mem_owner(nullptr, &free);
@@ -109,6 +108,56 @@ wuffs_base__pixel_buffer g_pixbuf = {0};
 uint32_t g_background_color_index = 0;
 int32_t g_zoom = 0;
 bool g_filter = false;
+
+struct {
+  int remaining_argc;
+  char** remaining_argv;
+
+  double screen_gamma;
+} g_flags = {0};
+
+static const char* g_usage =
+    "Usage: imageviewer -flags input0.gif input1.png\n"
+    "\n"
+    "Flags:\n"
+    "    -screen_gamma=N.N (default 2.2; 0 disables gamma correction)";
+
+const char*  //
+parse_flags(int argc, char** argv) {
+  g_flags.screen_gamma = 2.2;
+
+  int c = (argc > 0) ? 1 : 0;  // Skip argv[0], the program name.
+  for (; c < argc; c++) {
+    char* arg = argv[c];
+    if (*arg++ != '-') {
+      break;
+    }
+
+    // A double-dash "--foo" is equivalent to a single-dash "-foo". As special
+    // cases, a bare "-" is not a flag (some programs may interpret it as
+    // stdin) and a bare "--" means to stop parsing flags.
+    if (*arg == '\x00') {
+      break;
+    } else if (*arg == '-') {
+      arg++;
+      if (*arg == '\x00') {
+        c++;
+        break;
+      }
+    }
+
+    if (!strncmp(arg, "screen_gamma=", 13)) {
+      g_flags.screen_gamma = atof(arg + 13);
+      continue;
+    }
+
+    return g_usage;
+  }
+
+  g_flags.remaining_argc = argc - c;
+  g_flags.remaining_argv = argv + c;
+  return NULL;
+}
 
 class MyDecodeImageCallbacks : public wuffs_aux::DecodeImageCallbacks {
  public:
@@ -123,7 +172,7 @@ class MyDecodeImageCallbacks : public wuffs_aux::DecodeImageCallbacks {
         case WUFFS_BASE__FOURCC__GAMA:
           // metadata_parsed__gama returns the inverse gamma scaled by 1e5.
           m_combined_gamma =
-              1e5 / (g_screen_gamma * minfo.metadata_parsed__gama());
+              1e5 / (g_flags.screen_gamma * minfo.metadata_parsed__gama());
           break;
       }
     }
@@ -192,12 +241,16 @@ load_image(const char* filename) {
   g_pixbuf_mem_owner.reset();
   g_pixbuf = wuffs_base__null_pixel_buffer();
 
+  uint64_t dia_flags = 0;
+  if (g_flags.screen_gamma > 0) {
+    dia_flags |= wuffs_aux::DecodeImageArgFlags::REPORT_METADATA_GAMA;
+  }
+
   MyDecodeImageCallbacks callbacks;
   wuffs_aux::sync_io::FileInput input(file);
   wuffs_aux::DecodeImageResult res = wuffs_aux::DecodeImage(
       callbacks, input, wuffs_aux::DecodeImageArgQuirks::DefaultValue(),
-      wuffs_aux::DecodeImageArgFlags(
-          wuffs_aux::DecodeImageArgFlags::REPORT_METADATA_GAMA),
+      wuffs_aux::DecodeImageArgFlags(dia_flags),
       // Use PIXEL_BLEND__SRC_OVER, not the default PIXEL_BLEND__SRC, because
       // we also pass a background color.
       wuffs_aux::DecodeImageArgPixelBlend(WUFFS_BASE__PIXEL_BLEND__SRC_OVER),
@@ -417,6 +470,12 @@ load(xcb_connection_t* c, xcb_window_t w, const char* filename) {
 
 int  //
 main(int argc, char** argv) {
+  const char* status = parse_flags(argc, argv);
+  if (status) {
+    fprintf(stderr, "%s\n", status);
+    return 1;
+  }
+
   xcb_connection_t* c = xcb_connect(NULL, NULL);
 
   g_maximum_request_length = xcb_get_maximum_request_length(c);
@@ -472,8 +531,9 @@ main(int argc, char** argv) {
   g_pixmap_gc = xcb_generate_id(c);
   g_pixmap_picture = xcb_generate_id(c);
 
-  bool loaded = load(c, w, (argc > 1) ? argv[1] : NULL);
-  int arg = 1;
+  bool loaded = load(
+      c, w, (g_flags.remaining_argc > 0) ? g_flags.remaining_argv[0] : NULL);
+  int arg = 0;
 
   while (true) {
     xcb_generic_event_t* event = xcb_wait_for_event(c);
@@ -508,14 +568,14 @@ main(int argc, char** argv) {
             case ' ':
             case XK_BackSpace:
             case XK_Return:
-              if (argc <= 2) {
+              if (g_flags.remaining_argc <= 1) {
                 break;
               }
               arg += (i != XK_BackSpace) ? +1 : -1;
-              if (arg == 0) {
-                arg = argc - 1;
-              } else if (arg == argc) {
-                arg = 1;
+              if (arg < 0) {
+                arg = g_flags.remaining_argc - 1;
+              } else if (arg == g_flags.remaining_argc) {
+                arg = 0;
               }
               reload = true;
               break;
@@ -570,7 +630,7 @@ main(int argc, char** argv) {
     free(event);
 
     if (reload) {
-      loaded = load(c, w, argv[arg]);
+      loaded = load(c, w, g_flags.remaining_argv[arg]);
       xcb_clear_area(c, 1, w, 0, 0, 0xFFFF, 0xFFFF);
       xcb_flush(c);
     }
