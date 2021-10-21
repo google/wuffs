@@ -69,13 +69,13 @@ func main1() error {
 		}
 		src = m
 	} else {
-		m := image.NewRGBA(image.Rect(0, 0, 16, 16))
-		for y := 0; y < 16; y++ {
-			for x := 0; x < 16; x++ {
+		m := image.NewRGBA(image.Rect(0, 0, 256, 256))
+		for y := 0; y < 256; y++ {
+			for x := 0; x < 256; x++ {
 				m.SetRGBA(x, y, color.RGBA{
-					R: uint8(x * 0x11),
+					R: uint8(x),
 					G: 0x00,
-					B: uint8(y * 0x11),
+					B: uint8(y),
 					A: 0xFF,
 				})
 			}
