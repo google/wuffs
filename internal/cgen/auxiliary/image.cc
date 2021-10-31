@@ -95,7 +95,7 @@ DecodeImageCallbacks::SelectDecoder(uint32_t fourcc,
 
 std::string  //
 DecodeImageCallbacks::HandleMetadata(const wuffs_base__more_information& minfo,
-                                     std::vector<uint8_t>&& raw) {
+                                     wuffs_base__slice_u8 raw) {
   return "";
 }
 
@@ -163,12 +163,16 @@ const char DecodeImage_BufferIsTooShort[] =  //
     "wuffs_aux::DecodeImage: buffer is too short";
 const char DecodeImage_MaxInclDimensionExceeded[] =  //
     "wuffs_aux::DecodeImage: max_incl_dimension exceeded";
+const char DecodeImage_MaxInclMetadataLengthExceeded[] =  //
+    "wuffs_aux::DecodeImage: max_incl_metadata_length exceeded";
 const char DecodeImage_OutOfMemory[] =  //
     "wuffs_aux::DecodeImage: out of memory";
 const char DecodeImage_UnexpectedEndOfFile[] =  //
     "wuffs_aux::DecodeImage: unexpected end of file";
 const char DecodeImage_UnsupportedImageFormat[] =  //
     "wuffs_aux::DecodeImage: unsupported image format";
+const char DecodeImage_UnsupportedMetadata[] =  //
+    "wuffs_aux::DecodeImage: unsupported metadata";
 const char DecodeImage_UnsupportedPixelBlend[] =  //
     "wuffs_aux::DecodeImage: unsupported pixel blend";
 const char DecodeImage_UnsupportedPixelConfiguration[] =  //
@@ -220,54 +224,69 @@ DecodeImageArgMaxInclDimension::DefaultValue() {
   return DecodeImageArgMaxInclDimension(1048575);
 }
 
+DecodeImageArgMaxInclMetadataLength::DecodeImageArgMaxInclMetadataLength(
+    uint64_t repr0)
+    : repr(repr0) {}
+
+DecodeImageArgMaxInclMetadataLength  //
+DecodeImageArgMaxInclMetadataLength::DefaultValue() {
+  return DecodeImageArgMaxInclMetadataLength(16777215);
+}
+
 // --------
 
 namespace {
 
 std::string  //
-DecodeImageAdvanceIOBuf(sync_io::Input& input,
-                        wuffs_base__io_buffer& io_buf,
-                        bool compactable,
-                        uint64_t min_excl_pos,
-                        uint64_t pos) {
-  if ((pos <= min_excl_pos) || (pos < io_buf.reader_position())) {
-    // Redirects must go forward.
-    return DecodeImage_UnsupportedImageFormat;
-  }
-  while (true) {
-    uint64_t relative_pos = pos - io_buf.reader_position();
-    if (relative_pos <= io_buf.reader_length()) {
-      io_buf.meta.ri += (size_t)relative_pos;
-      break;
-    } else if (io_buf.meta.closed) {
+DecodeImageErrorMessage(std::string s) {
+  if (!s.empty()) {
+    if (s == private_impl::ErrMsg_MaxInclMetadataLengthExceeded) {
+      return DecodeImage_MaxInclMetadataLengthExceeded;
+    } else if (s == private_impl::ErrMsg_UnexpectedEndOfFile) {
       return DecodeImage_UnexpectedEndOfFile;
-    }
-    io_buf.meta.ri = io_buf.meta.wi;
-    if (compactable) {
-      io_buf.compact();
-    }
-    std::string error_message = input.CopyIn(&io_buf);
-    if (!error_message.empty()) {
-      return error_message;
+    } else if (s == private_impl::ErrMsg_UnsupportedMetadata) {
+      return DecodeImage_UnsupportedMetadata;
+    } else if (s == private_impl::ErrMsg_UnsupportedNegativeAdvance) {
+      return DecodeImage_UnsupportedImageFormat;
     }
   }
-  return "";
+  return s;
+}
+
+std::string  //
+DecodeImageAdvanceIOBufferTo(sync_io::Input& input,
+                             wuffs_base__io_buffer& io_buf,
+                             uint64_t absolute_position) {
+  return DecodeImageErrorMessage(
+      private_impl::AdvanceIOBufferTo(input, io_buf, absolute_position));
+}
+
+wuffs_base__status  //
+DIHM0(void* self,
+      wuffs_base__io_buffer* a_dst,
+      wuffs_base__more_information* a_minfo,
+      wuffs_base__io_buffer* a_src) {
+  return wuffs_base__image_decoder__tell_me_more(
+      static_cast<wuffs_base__image_decoder*>(self), a_dst, a_minfo, a_src);
+}
+
+std::string  //
+DIHM1(void* self,
+      const wuffs_base__more_information* minfo,
+      wuffs_base__slice_u8 raw) {
+  return static_cast<DecodeImageCallbacks*>(self)->HandleMetadata(*minfo, raw);
 }
 
 std::string  //
 DecodeImageHandleMetadata(wuffs_base__image_decoder::unique_ptr& image_decoder,
                           DecodeImageCallbacks& callbacks,
                           sync_io::Input& input,
-                          wuffs_base__io_buffer& io_buf) {
-  std::vector<uint8_t> raw;
-  wuffs_base__io_buffer empty = wuffs_base__empty_io_buffer();
-  wuffs_base__more_information minfo = wuffs_base__empty_more_information();
-  wuffs_base__status status =
-      image_decoder->tell_me_more(&empty, &minfo, &io_buf);
-  if (status.repr != NULL) {
-    return status.message();
-  }
-  return callbacks.HandleMetadata(minfo, std::move(raw));
+                          wuffs_base__io_buffer& io_buf,
+                          uint64_t max_incl_metadata_length) {
+  return DecodeImageErrorMessage(private_impl::HandleMetadata(
+      input, io_buf, max_incl_metadata_length, DIHM0,
+      static_cast<void*>(image_decoder.get()), DIHM1,
+      static_cast<void*>(&callbacks)));
 }
 
 DecodeImageResult  //
@@ -279,7 +298,8 @@ DecodeImage0(wuffs_base__image_decoder::unique_ptr& image_decoder,
              uint64_t flags,
              wuffs_base__pixel_blend pixel_blend,
              wuffs_base__color_u32_argb_premul background_color,
-             uint32_t max_incl_dimension) {
+             uint32_t max_incl_dimension,
+             uint64_t max_incl_metadata_length) {
   // Check args.
   switch (pixel_blend) {
     case WUFFS_BASE__PIXEL_BLEND__SRC:
@@ -324,8 +344,12 @@ redirect:
         return DecodeImageResult(DecodeImage_UnsupportedImageFormat);
       }
       uint64_t pos = minfo.io_redirect__range().min_incl;
-      std::string error_message = DecodeImageAdvanceIOBuf(
-          input, io_buf, !input.BringsItsOwnIOBuffer(), start_pos, pos);
+      if (pos <= start_pos) {
+        // Redirects must go forward.
+        return DecodeImageResult(DecodeImage_UnsupportedImageFormat);
+      }
+      std::string error_message =
+          DecodeImageAdvanceIOBufferTo(input, io_buf, pos);
       if (!error_message.empty()) {
         return DecodeImageResult(std::move(error_message));
       }
@@ -357,8 +381,14 @@ redirect:
       if (flags & DecodeImageArgFlags::REPORT_METADATA_GAMA) {
         image_decoder->set_report_metadata(WUFFS_BASE__FOURCC__GAMA, true);
       }
+      if (flags & DecodeImageArgFlags::REPORT_METADATA_ICCP) {
+        image_decoder->set_report_metadata(WUFFS_BASE__FOURCC__ICCP, true);
+      }
       if (flags & DecodeImageArgFlags::REPORT_METADATA_SRGB) {
         image_decoder->set_report_metadata(WUFFS_BASE__FOURCC__SRGB, true);
+      }
+      if (flags & DecodeImageArgFlags::REPORT_METADATA_XMP) {
+        image_decoder->set_report_metadata(WUFFS_BASE__FOURCC__XMP, true);
       }
     }
 
@@ -375,8 +405,8 @@ redirect:
         redirected = true;
         goto redirect;
       } else if (id_dic_status.repr == wuffs_base__note__metadata_reported) {
-        std::string error_message =
-            DecodeImageHandleMetadata(image_decoder, callbacks, input, io_buf);
+        std::string error_message = DecodeImageHandleMetadata(
+            image_decoder, callbacks, input, io_buf, max_incl_metadata_length);
         if (!error_message.empty()) {
           return DecodeImageResult(std::move(error_message));
         }
@@ -506,7 +536,8 @@ DecodeImage(DecodeImageCallbacks& callbacks,
             DecodeImageArgFlags flags,
             DecodeImageArgPixelBlend pixel_blend,
             DecodeImageArgBackgroundColor background_color,
-            DecodeImageArgMaxInclDimension max_incl_dimension) {
+            DecodeImageArgMaxInclDimension max_incl_dimension,
+            DecodeImageArgMaxInclMetadataLength max_incl_metadata_length) {
   wuffs_base__io_buffer* io_buf = input.BringsItsOwnIOBuffer();
   wuffs_base__io_buffer fallback_io_buf = wuffs_base__empty_io_buffer();
   std::unique_ptr<uint8_t[]> fallback_io_array(nullptr);
@@ -518,9 +549,10 @@ DecodeImage(DecodeImageCallbacks& callbacks,
   }
 
   wuffs_base__image_decoder::unique_ptr image_decoder(nullptr, &free);
-  DecodeImageResult result = DecodeImage0(
-      image_decoder, callbacks, input, *io_buf, quirks.repr, flags.repr,
-      pixel_blend.repr, background_color.repr, max_incl_dimension.repr);
+  DecodeImageResult result =
+      DecodeImage0(image_decoder, callbacks, input, *io_buf, quirks.repr,
+                   flags.repr, pixel_blend.repr, background_color.repr,
+                   max_incl_dimension.repr, max_incl_metadata_length.repr);
   callbacks.Done(result, input, *io_buf, std::move(image_decoder));
   return result;
 }

@@ -94,7 +94,8 @@ class DecodeImageCallbacks {
   // HandleMetadata acknowledges image metadata. minfo.flavor will be one of:
   //  - WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA_RAW
   //  - WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA_PARSED
-  // If it is ETC__METADATA_RAW then raw contains the metadata bytes.
+  // If it is ETC__METADATA_RAW then raw contains the metadata bytes. Those
+  // bytes should not be retained beyond the the HandleMetadata call.
   //
   // minfo.metadata__fourcc() will typically match one of the
   // DecodeImageArgFlags bits. For example, if (REPORT_METADATA_CHRM |
@@ -104,7 +105,7 @@ class DecodeImageCallbacks {
   // It returns an error message, or an empty string on success.
   virtual std::string  //
   HandleMetadata(const wuffs_base__more_information& minfo,
-                 std::vector<uint8_t>&& raw);
+                 wuffs_base__slice_u8 raw);
 
   // SelectPixfmt returns the destination pixel format for AllocPixbuf. It
   // should return wuffs_base__make_pixel_format(etc) called with one of:
@@ -172,9 +173,11 @@ class DecodeImageCallbacks {
 
 extern const char DecodeImage_BufferIsTooShort[];
 extern const char DecodeImage_MaxInclDimensionExceeded[];
+extern const char DecodeImage_MaxInclMetadataLengthExceeded[];
 extern const char DecodeImage_OutOfMemory[];
 extern const char DecodeImage_UnexpectedEndOfFile[];
 extern const char DecodeImage_UnsupportedImageFormat[];
+extern const char DecodeImage_UnsupportedMetadata[];
 extern const char DecodeImage_UnsupportedPixelBlend[];
 extern const char DecodeImage_UnsupportedPixelConfiguration[];
 extern const char DecodeImage_UnsupportedPixelFormat[];
@@ -260,10 +263,21 @@ struct DecodeImageArgBackgroundColor {
 struct DecodeImageArgMaxInclDimension {
   explicit DecodeImageArgMaxInclDimension(uint32_t repr0);
 
-  // DefaultValue returns 1048575 = 0x000F_FFFF.
+  // DefaultValue returns 1048575 = 0x000F_FFFF, more than 1 million pixels.
   static DecodeImageArgMaxInclDimension DefaultValue();
 
   uint32_t repr;
+};
+
+// DecodeImageArgMaxInclMetadataLength wraps an optional argument to
+// DecodeImage.
+struct DecodeImageArgMaxInclMetadataLength {
+  explicit DecodeImageArgMaxInclMetadataLength(uint64_t repr0);
+
+  // DefaultValue returns 16777215 = 0x00FF_FFFF, one less than 16 MiB.
+  static DecodeImageArgMaxInclMetadataLength DefaultValue();
+
+  uint64_t repr;
 };
 
 // DecodeImage decodes the image data in input. A variety of image file formats
@@ -308,7 +322,8 @@ struct DecodeImageArgMaxInclDimension {
 // WUFFS_BASE__PIXEL_BLEND__SRC_OVER and the decoded image is not fully opaque.
 //
 // Decoding fails (with DecodeImage_MaxInclDimensionExceeded) if the image's
-// width or height is greater than max_incl_dimension.
+// width or height is greater than max_incl_dimension or if any opted-in (via
+// flags bits) metadata is longer than max_incl_metadata_length.
 DecodeImageResult  //
 DecodeImage(DecodeImageCallbacks& callbacks,
             sync_io::Input& input,
@@ -319,6 +334,8 @@ DecodeImage(DecodeImageCallbacks& callbacks,
             DecodeImageArgBackgroundColor background_color =
                 DecodeImageArgBackgroundColor::DefaultValue(),
             DecodeImageArgMaxInclDimension max_incl_dimension =
-                DecodeImageArgMaxInclDimension::DefaultValue());
+                DecodeImageArgMaxInclDimension::DefaultValue(),
+            DecodeImageArgMaxInclMetadataLength max_incl_metadata_length =
+                DecodeImageArgMaxInclMetadataLength::DefaultValue());
 
 }  // namespace wuffs_aux

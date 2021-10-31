@@ -166,7 +166,7 @@ class MyDecodeImageCallbacks : public wuffs_aux::DecodeImageCallbacks {
  private:
   std::string  //
   HandleMetadata(const wuffs_base__more_information& minfo,
-                 std::vector<uint8_t>&& raw) override {
+                 wuffs_base__slice_u8 raw) override {
     if (minfo.flavor == WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA_PARSED) {
       switch (minfo.metadata__fourcc()) {
         case WUFFS_BASE__FOURCC__GAMA:
@@ -176,7 +176,7 @@ class MyDecodeImageCallbacks : public wuffs_aux::DecodeImageCallbacks {
           break;
       }
     }
-    return "";
+    return wuffs_aux::DecodeImageCallbacks::HandleMetadata(minfo, raw);
   }
 
   void  //
