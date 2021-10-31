@@ -25,6 +25,7 @@ package main
 import (
 	"bytes"
 	"compress/zlib"
+	"errors"
 	"flag"
 	"hash/crc32"
 	"image"
@@ -32,6 +33,8 @@ import (
 	"image/png"
 	"math"
 	"os"
+	"path/filepath"
+	"strings"
 )
 
 var (
@@ -111,9 +114,14 @@ func main1() error {
 		if err != nil {
 			return err
 		}
+		name, err := iccpName(*iccp)
+		if err != nil {
+			return err
+		}
 		data := &bytes.Buffer{}
-		data.WriteString("icc\x00") // An arbitrary NUL terminated name.
-		data.WriteByte(0x00)        // 0x00 means zlib compression.
+		data.WriteString(name)
+		data.WriteByte(0x00) // The name is NUL terminated.
+		data.WriteByte(0x00) // 0x00 means zlib compression.
 		w := zlib.NewWriter(data)
 		w.Write(raw)
 		w.Close()
@@ -146,4 +154,28 @@ func appendPNGChunk(b []byte, name string, chunk ...byte) []byte {
 		byte(c>>8),
 		byte(c>>0),
 	)
+}
+
+// iccpName determines a "bar" iCCP profile name (that satisifes the PNG
+// specification re the iCCP chunk) based on the "foo/bar.icc" filename.
+func iccpName(filename string) (string, error) {
+	s := filepath.Base(filename)
+	if i := strings.IndexByte(s, '.'); i >= 0 {
+		s = s[:i]
+	}
+	s = strings.TrimSpace(s)
+	if strings.Index(s, "  ") >= 0 {
+		return "", errors.New("ICCP name cannot contain consecutive spaces")
+	} else if (len(s) < 1) || (79 < len(s)) {
+		return "", errors.New("ICCP name has invalid length.")
+	}
+	for i := 0; i < len(s); i++ {
+		if (s[i] < ' ') || ('~' < s[i]) {
+			// Strictly speaking, the PNG specification allows the iCCP name to
+			// be printable Latin-1, not just printable ASCII, but printable
+			// ASCII is easier and avoids any later Latin-1 vs UTF-8 ambiguity.
+			return "", errors.New("ICCP name is not printable ASCII")
+		}
+	}
+	return s, nil
 }
