@@ -15427,19 +15427,22 @@ wuffs_base__magic_number_guess_fourcc(wuffs_base__slice_u8 prefix) {
   //
   // Keep it sorted by magic[1], then magic[0] descending and finally by
   // magic[2:]. When multiple entries match, the longest one wins.
+  //
+  // The fourcc field might be negated, in which case there's further
+  // specialization (see § below).
   static struct {
     int32_t fourcc;
     const char* magic;
   } table[] = {
-      {0x30302020, "\x01\x00\x00"},          // '00  'be (see § below)
-      {0x424D5020, "\x01\x42\x4D"},          // BMP
-      {0x47494620, "\x03\x47\x49\x46\x38"},  // GIF
-      {0x54494646, "\x03\x49\x49\x2A\x00"},  // TIFF (little-endian)
-      {0x54494646, "\x03\x4D\x4D\x00\x2A"},  // TIFF (big-endian)
-      {0x52494646, "\x03\x52\x49\x46\x46"},  // RIFF (see § below)
-      {0x4E494520, "\x02\x6E\xC3\xAF"},      // NIE
-      {0x504E4720, "\x03\x89\x50\x4E\x47"},  // PNG
-      {0x4A504547, "\x01\xFF\xD8"},          // JPEG
+      {-0x30302020, "\x01\x00\x00"},          // '00  'be
+      {+0x424D5020, "\x01\x42\x4D"},          // BMP
+      {+0x47494620, "\x03\x47\x49\x46\x38"},  // GIF
+      {+0x54494646, "\x03\x49\x49\x2A\x00"},  // TIFF (little-endian)
+      {+0x54494646, "\x03\x4D\x4D\x00\x2A"},  // TIFF (big-endian)
+      {-0x52494646, "\x03\x52\x49\x46\x46"},  // RIFF
+      {+0x4E494520, "\x02\x6E\xC3\xAF"},      // NIE
+      {+0x504E4720, "\x03\x89\x50\x4E\x47"},  // PNG
+      {+0x4A504547, "\x01\xFF\xD8"},          // JPEG
   };
   static const size_t table_len = sizeof(table) / sizeof(table[0]);
 
@@ -15480,34 +15483,39 @@ wuffs_base__magic_number_guess_fourcc(wuffs_base__slice_u8 prefix) {
   return 0;
 
 match:
-  // Some FourCC values (see § above) are further specialized.
-  if (fourcc == 0x52494646) {  // 'RIFF'be
-    if (prefix.len < 16) {
-      return -1;
-    }
-    uint32_t x = wuffs_base__peek_u32be__no_bounds_check(prefix.ptr + 8);
-    if (x == 0x57454250) {  // 'WEBP'be
-      uint32_t y = wuffs_base__peek_u32be__no_bounds_check(prefix.ptr + 12);
-      if (y == 0x56503820) {         // 'VP8 'be
-        return 0x57503820;           // 'WP8 'be
-      } else if (y == 0x5650384C) {  // 'VP8L'be
-        return 0x5750384C;           // 'WP8L'be
+  // Negative FourCC values (see § above) are further specialized.
+  if (fourcc < 0) {
+    fourcc = -fourcc;
+
+    if (fourcc == 0x52494646) {  // 'RIFF'be
+      if (prefix.len < 16) {
+        return -1;
       }
+      uint32_t x = wuffs_base__peek_u32be__no_bounds_check(prefix.ptr + 8);
+      if (x == 0x57454250) {  // 'WEBP'be
+        uint32_t y = wuffs_base__peek_u32be__no_bounds_check(prefix.ptr + 12);
+        if (y == 0x56503820) {         // 'VP8 'be
+          return 0x57503820;           // 'WP8 'be
+        } else if (y == 0x5650384C) {  // 'VP8L'be
+          return 0x5750384C;           // 'WP8L'be
+        }
+      }
+
+    } else if (fourcc == 0x30302020) {  // '00  'be
+      // Binary data starting with multiple 0x00 NUL bytes is quite common.
+      if (prefix.len < 4) {
+        return -1;
+      } else if ((prefix.ptr[2] != 0x00) &&
+                 ((prefix.ptr[2] >= 0x80) || (prefix.ptr[3] != 0x00))) {
+        // Roughly speaking, this could be a non-degenerate (non-0-width and
+        // non-0-height) WBMP image.
+        return 0x57424D50;  // 'WBMP'be
+      } else if (((prefix.ptr[2] == 0x01) || (prefix.ptr[2] == 0x02)) &&
+                 (prefix.ptr[3] == 0x00)) {
+        return 0x49434F20;  // 'ICO 'be
+      }
+      return 0;
     }
-  } else if (fourcc == 0x30302020) {  // '00  'be
-    // Binary data starting with multiple 0x00 NUL bytes is quite common.
-    if (prefix.len < 4) {
-      return -1;
-    } else if ((prefix.ptr[2] != 0x00) &&
-               ((prefix.ptr[2] >= 0x80) || (prefix.ptr[3] != 0x00))) {
-      // Roughly speaking, this could be a non-degenerate (non-0-width and
-      // non-0-height) WBMP image.
-      return 0x57424D50;  // 'WBMP'be
-    } else if (((prefix.ptr[2] == 0x01) || (prefix.ptr[2] == 0x02)) &&
-               (prefix.ptr[3] == 0x00)) {
-      return 0x49434F20;  // 'ICO 'be
-    }
-    return 0;
   }
   return fourcc;
 }
