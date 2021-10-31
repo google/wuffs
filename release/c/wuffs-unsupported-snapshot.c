@@ -40321,11 +40321,12 @@ HandleMetadata(
           return ErrMsg_MaxInclMetadataLengthExceeded;
         } else if (io_buf.reader_position() > r.min_incl) {
           return ErrMsg_UnsupportedMetadata;
-        }
-        std::string error_message =
-            AdvanceIOBufferTo(input, io_buf, r.min_incl);
-        if (!error_message.empty()) {
-          return error_message;
+        } else {
+          std::string error_message =
+              AdvanceIOBufferTo(input, io_buf, r.min_incl);
+          if (!error_message.empty()) {
+            return error_message;
+          }
         }
 
         for (uint64_t num_to_copy = r.length(); num_to_copy > 0;) {
