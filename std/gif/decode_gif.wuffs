@@ -250,7 +250,7 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 
 		if args.minfo <> nullptr {
 			args.minfo.set!(
-				flavor: base.MORE_INFORMATION__FLAVOR__METADATA_RAW,
+				flavor: base.MORE_INFORMATION__FLAVOR__METADATA_RAW_PASSTHROUGH,
 				w: this.metadata_fourcc,
 				x: 0,
 				y: args.src.position(),
@@ -262,7 +262,7 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 
 	if args.minfo <> nullptr {
 		args.minfo.set!(
-			flavor: base.MORE_INFORMATION__FLAVOR__METADATA_RAW,
+			flavor: base.MORE_INFORMATION__FLAVOR__METADATA_RAW_PASSTHROUGH,
 			w: this.metadata_fourcc,
 			x: 0,
 			y: this.metadata_io_position,

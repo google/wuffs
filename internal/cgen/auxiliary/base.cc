@@ -164,8 +164,8 @@ HandleMetadata(
       case WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA_PARSED:
         break;
 
-      case WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA_RAW: {
-        wuffs_base__range_ie_u64 r = minfo.metadata_raw__range();
+      case WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA_RAW_PASSTHROUGH: {
+        wuffs_base__range_ie_u64 r = minfo.metadata_raw_passthrough__range();
         if (r.is_empty()) {
           break;
         } else if (r.length() > (max_incl_metadata_length - raw.size())) {

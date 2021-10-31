@@ -92,9 +92,9 @@ class DecodeImageCallbacks {
   SelectDecoder(uint32_t fourcc, wuffs_base__slice_u8 prefix);
 
   // HandleMetadata acknowledges image metadata. minfo.flavor will be one of:
-  //  - WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA_RAW
+  //  - WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA_RAW_PASSTHROUGH
   //  - WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA_PARSED
-  // If it is ETC__METADATA_RAW then raw contains the metadata bytes. Those
+  // If it is ETC__METADATA_RAW_ETC then raw contains the metadata bytes. Those
   // bytes should not be retained beyond the the HandleMetadata call.
   //
   // minfo.metadata__fourcc() will typically match one of the
