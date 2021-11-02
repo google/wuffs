@@ -312,8 +312,7 @@ main1(int argc, char** argv) {
         WUFFS_JSON__QUIRK_REPLACE_INVALID_UNICODE,
         0,
     };
-    uint32_t i;
-    for (i = 0; quirks[i]; i++) {
+    for (uint32_t i = 0; quirks[i]; i++) {
       wuffs_base__token_decoder__set_quirk_enabled(g_dec, quirks[i], true);
     }
   }

@@ -118,8 +118,7 @@ do_test_xxxxx_png_decode_bad_crc32_checksum_critical(
 #endif
   };
 
-  int tc;
-  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+  for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
     wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
         .data = g_src_slice_u8,
     });
@@ -132,7 +131,7 @@ do_test_xxxxx_png_decode_bad_crc32_checksum_critical(
                                wuffs_base__make_pixel_format(
                                    WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
                                NULL, 0, &src)) {
-      RETURN_FAIL("tc=%d (filename=\"%s\"): bad checksum not rejected", tc,
+      RETURN_FAIL("tc=%zu (filename=\"%s\"): bad checksum not rejected", tc,
                   test_cases[tc]);
     }
   }
@@ -315,16 +314,14 @@ apply_png_encode_filters(wuffs_base__slice_u8 dst_rows,
       (((width + 1) * height) != src_rows.len)) {
     return "apply_png_encode_filters: unexpected rows.len";
   }
-  size_t y;
   uint8_t* src_prev = NULL;
-  for (y = 0; y < height; y++) {
+  for (size_t y = 0; y < height; y++) {
     uint8_t filter = src_rows.ptr[(width + 1) * y];
     dst_rows.ptr[(width + 1) * y] = filter;
     uint8_t* dst_curr = &dst_rows.ptr[((width + 1) * y) + 1];
     uint8_t* src_curr = &src_rows.ptr[((width + 1) * y) + 1];
 
-    size_t x;
-    for (x = 0; x < width; x++) {
+    for (size_t x = 0; x < width; x++) {
       int32_t fa = 0;
       int32_t fb = 0;
       int32_t fc = 0;
@@ -477,8 +474,7 @@ test_wuffs_png_decode_metadata_chrm_gama_srgb() {
   CHECK_FOCUS(__func__);
   wuffs_png__decoder dec;
 
-  int q;
-  for (q = 0; q < 4; q++) {
+  for (int q = 0; q < 4; q++) {
     wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
         .data = g_src_slice_u8,
     });
@@ -542,8 +538,7 @@ test_wuffs_png_decode_metadata_chrm_gama_srgb() {
                     ", want 0x%08" PRIX32,
                     q, have_fourcc, want_fourcc);
       } else if (have_fourcc == WUFFS_BASE__FOURCC__CHRM) {
-        int i;
-        for (i = 0; i < 8; i++) {
+        for (int i = 0; i < 8; i++) {
           have[i] = ((uint32_t)(
               wuffs_base__more_information__metadata_parsed__chrm(&minfo, i)));
         }
@@ -554,8 +549,7 @@ test_wuffs_png_decode_metadata_chrm_gama_srgb() {
       }
     }
 
-    int i;
-    for (i = 0; i < 8; i++) {
+    for (int i = 0; i < 8; i++) {
       if (have[i] != want[i]) {
         RETURN_FAIL("(q=%d, i=%d): have %" PRIu32 ", want %" PRIu32, q, i,
                     have[i], want[i]);
@@ -725,8 +719,7 @@ do_bench_wuffs_png_decode_filter(uint8_t filter,
     return "source data is too short";
   }
 
-  uint32_t y;
-  for (y = 0; y < height; y++) {
+  for (uint32_t y = 0; y < height; y++) {
     workbuf.data.ptr[(1 + bytes_per_row) * y] = filter;
   }
 
@@ -766,9 +759,8 @@ do_bench_wuffs_png_decode_filter(uint8_t filter,
 
   bench_start();
   uint64_t n_bytes = 0;
-  uint64_t i;
   uint64_t iters = iters_unscaled * g_flags.iterscale;
-  for (i = 0; i < iters; i++) {
+  for (uint64_t i = 0; i < iters; i++) {
     CHECK_STATUS(
         "filter_and_swizzle",
         wuffs_png__decoder__filter_and_swizzle(

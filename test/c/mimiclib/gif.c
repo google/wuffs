@@ -62,8 +62,7 @@ mimic_gif_decode(uint64_t* n_bytes_out,
     goto cleanup1;
   }
 
-  int i;
-  for (i = 0; i < f->ImageCount; i++) {
+  for (int i = 0; i < f->ImageCount; i++) {
     // Copy the pixel data from the GifFileType* f to the dst buffer, since the
     // former is free'd at the end of this function.
     //

@@ -225,8 +225,7 @@ test_wuffs_lzw_decode_output_bad() {
   // (0x41, 0x42, 0x43) then a bad 8-bit code 0xFF. Decoding should produce 3
   // bytes and consume 4 bytes.
   src.meta.wi = 20;
-  int i;
-  for (i = 0; i < src.meta.wi; i++) {
+  for (int i = 0; i < src.meta.wi; i++) {
     src.data.ptr[i] = 0;
   }
   src.data.ptr[0] = 0x41;
@@ -271,8 +270,7 @@ test_wuffs_lzw_decode_output_empty() {
   // Set up src to be 20 bytes long, starting with the 9-bit end code 0x101.
   // Decoding should produce 0 bytes and consume 2 bytes.
   src.meta.wi = 20;
-  int i;
-  for (i = 0; i < src.meta.wi; i++) {
+  for (int i = 0; i < src.meta.wi; i++) {
     src.data.ptr[i] = 0;
   }
   src.data.ptr[0] = 0x01;
@@ -405,9 +403,8 @@ do_bench_wuffs_lzw_decode(const char* filename, uint64_t iters_unscaled) {
 
   bench_start();
   uint64_t n_bytes = 0;
-  uint64_t i;
   uint64_t iters = iters_unscaled * g_flags.iterscale;
-  for (i = 0; i < iters; i++) {
+  for (uint64_t i = 0; i < iters; i++) {
     have.meta.wi = 0;
     src.meta.ri = 1;  // Skip the literal width.
     wuffs_lzw__decoder dec;

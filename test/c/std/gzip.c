@@ -160,8 +160,7 @@ do_test_wuffs_gzip_checksum(bool ignore_checksum, uint32_t bad_checksum) {
 
     // Decode the src data in 1 or 2 chunks, depending on whether end_limit is
     // or isn't zero.
-    int i;
-    for (i = 0; i < 2; i++) {
+    for (int i = 0; i < 2; i++) {
       uint64_t rlimit = UINT64_MAX;
       const char* want_z = NULL;
       if (i == 0) {

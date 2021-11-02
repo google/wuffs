@@ -355,8 +355,7 @@ do_test_wuffs_gif_decode(const char* filename,
     }
 
     if (dst_pixfmt.repr == WUFFS_BASE__PIXEL_FORMAT__BGR) {
-      size_t i;
-      for (i = 0; i < ind_want.meta.wi; i++) {
+      for (size_t i = 0; i < ind_want.meta.wi; i++) {
         uint8_t index = ind_want.data.ptr[i];
         expanded_want.data.ptr[3 * i + 0] = pal_want_array[4 * index + 0];
         expanded_want.data.ptr[3 * i + 1] = pal_want_array[4 * index + 1];
@@ -364,8 +363,7 @@ do_test_wuffs_gif_decode(const char* filename,
       }
       expanded_want.meta.wi = 3 * ind_want.meta.wi;
     } else if (dst_pixfmt.repr == WUFFS_BASE__PIXEL_FORMAT__BGR_565) {
-      size_t i;
-      for (i = 0; i < ind_want.meta.wi; i++) {
+      for (size_t i = 0; i < ind_want.meta.wi; i++) {
         uint8_t index = ind_want.data.ptr[i];
         uint32_t b5 = pal_want_array[4 * index + 0] >> 3;
         uint32_t g6 = pal_want_array[4 * index + 1] >> 2;
@@ -376,8 +374,7 @@ do_test_wuffs_gif_decode(const char* filename,
       }
       expanded_want.meta.wi = 2 * ind_want.meta.wi;
     } else if (dst_pixfmt.repr == WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL) {
-      size_t i;
-      for (i = 0; i < ind_want.meta.wi; i++) {
+      for (size_t i = 0; i < ind_want.meta.wi; i++) {
         uint8_t index = ind_want.data.ptr[i];
         expanded_want.data.ptr[4 * i + 0] = pal_want_array[4 * index + 0];
         expanded_want.data.ptr[4 * i + 1] = pal_want_array[4 * index + 1];
@@ -386,8 +383,7 @@ do_test_wuffs_gif_decode(const char* filename,
       }
       expanded_want.meta.wi = 4 * ind_want.meta.wi;
     } else if (dst_pixfmt.repr == WUFFS_BASE__PIXEL_FORMAT__RGB) {
-      size_t i;
-      for (i = 0; i < ind_want.meta.wi; i++) {
+      for (size_t i = 0; i < ind_want.meta.wi; i++) {
         uint8_t index = ind_want.data.ptr[i];
         expanded_want.data.ptr[3 * i + 0] = pal_want_array[4 * index + 2];
         expanded_want.data.ptr[3 * i + 1] = pal_want_array[4 * index + 1];
@@ -395,8 +391,7 @@ do_test_wuffs_gif_decode(const char* filename,
       }
       expanded_want.meta.wi = 3 * ind_want.meta.wi;
     } else if (dst_pixfmt.repr == WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL) {
-      size_t i;
-      for (i = 0; i < ind_want.meta.wi; i++) {
+      for (size_t i = 0; i < ind_want.meta.wi; i++) {
         uint8_t index = ind_want.data.ptr[i];
         expanded_want.data.ptr[4 * i + 0] = pal_want_array[4 * index + 2];
         expanded_want.data.ptr[4 * i + 1] = pal_want_array[4 * index + 1];
@@ -580,8 +575,7 @@ do_test_wuffs_gif_decode_animated(
   CHECK_STATUS("set_from_slice", wuffs_base__pixel_buffer__set_from_slice(
                                      &pb, &ic.pixcfg, g_pixel_slice_u8));
 
-  uint32_t i;
-  for (i = 0; i < want_num_frames; i++) {
+  for (uint32_t i = 0; i < want_num_frames; i++) {
     wuffs_base__frame_config fc = ((wuffs_base__frame_config){});
     wuffs_base__status status =
         wuffs_gif__decoder__decode_frame_config(&dec, &fc, &src);
@@ -618,7 +612,7 @@ do_test_wuffs_gif_decode_animated(
 
   // There should be no more frames, no matter how many times we call
   // decode_frame.
-  for (i = 0; i < 3; i++) {
+  for (uint32_t i = 0; i < 3; i++) {
     wuffs_base__status status = wuffs_gif__decoder__decode_frame(
         &dec, &pb, &src, WUFFS_BASE__PIXEL_BLEND__SRC, g_work_slice_u8, NULL);
     if (status.repr != wuffs_base__note__end_of_data) {
@@ -685,8 +679,7 @@ test_wuffs_gif_decode_delay_num_frames_decoded() {
   }
   src.meta.wi--;
 
-  int q;
-  for (q = 0; q < 2; q++) {
+  for (int q = 0; q < 2; q++) {
     src.meta.ri = 0;
 
     wuffs_gif__decoder dec;
@@ -722,8 +715,7 @@ test_wuffs_gif_decode_empty_palette() {
       .data = g_src_slice_u8,
   });
   CHECK_STRING(read_file(&src, "test/data/artificial/gif-empty-palette.gif"));
-  int q;
-  for (q = 0; q < 2; q++) {
+  for (int q = 0; q < 2; q++) {
     src.meta.ri = 0;
 
     wuffs_gif__decoder dec;
@@ -748,8 +740,7 @@ test_wuffs_gif_decode_empty_palette() {
       RETURN_FAIL("q=%d: set_from_slice: \"%s\"", q, status.repr);
     }
 
-    int i;
-    for (i = 0; i < 2; i++) {
+    for (int i = 0; i < 2; i++) {
       status = wuffs_gif__decoder__decode_frame(
           &dec, &pb, &src, WUFFS_BASE__PIXEL_BLEND__SRC, g_work_slice_u8, NULL);
       if ((q == 1) && (i == 1)) {
@@ -790,8 +781,7 @@ test_wuffs_gif_decode_background_color() {
   });
   CHECK_STRING(
       read_file(&src, "test/data/artificial/gif-background-color.gif"));
-  int q;
-  for (q = 0; q < 2; q++) {
+  for (int q = 0; q < 2; q++) {
     src.meta.ri = 0;
 
     wuffs_gif__decoder dec;
@@ -829,8 +819,7 @@ test_wuffs_gif_decode_first_frame_is_opaque() {
   });
   CHECK_STRING(
       read_file(&src, "test/data/artificial/gif-frame-out-of-bounds.gif"));
-  int q;
-  for (q = 0; q < 2; q++) {
+  for (int q = 0; q < 2; q++) {
     src.meta.ri = 0;
 
     wuffs_gif__decoder dec;
@@ -867,8 +856,7 @@ test_wuffs_gif_decode_frame_out_of_bounds() {
   });
   CHECK_STRING(
       read_file(&src, "test/data/artificial/gif-frame-out-of-bounds.gif"));
-  int q;
-  for (q = 0; q < 2; q++) {
+  for (int q = 0; q < 2; q++) {
     src.meta.ri = 0;
 
     wuffs_gif__decoder dec;
@@ -931,8 +919,7 @@ test_wuffs_gif_decode_frame_out_of_bounds() {
         q ? "...." : "..45..89",
     };
 
-    uint32_t i;
-    for (i = 0; true; i++) {
+    for (uint32_t i = 0; true; i++) {
       wuffs_base__frame_config fc = ((wuffs_base__frame_config){});
       {
         status = wuffs_gif__decoder__decode_frame_config(&dec, &fc, &src);
@@ -964,14 +951,13 @@ test_wuffs_gif_decode_frame_out_of_bounds() {
 
       {
         wuffs_base__table_u8 p = wuffs_base__pixel_buffer__plane(&pb, 0);
-        uint32_t y, x;
-        for (y = 0; y < 5; y++) {
-          for (x = 0; x < 5; x++) {
+        for (uint32_t y = 0; y < 5; y++) {
+          for (uint32_t x = 0; x < 5; x++) {
             p.ptr[(y * p.stride) + x] = 0xEE;
           }
         }
-        for (y = 0; y < height; y++) {
-          for (x = 0; x < width; x++) {
+        for (uint32_t y = 0; y < height; y++) {
+          for (uint32_t x = 0; x < width; x++) {
             p.ptr[(y * p.stride) + x] = 0;
           }
         }
@@ -984,8 +970,8 @@ test_wuffs_gif_decode_frame_out_of_bounds() {
                       status.repr);
         }
 
-        for (y = 0; y < 5; y++) {
-          for (x = 0; x < 5; x++) {
+        for (uint32_t y = 0; y < 5; y++) {
+          for (uint32_t x = 0; x < 5; x++) {
             if ((x < width) && (y < height)) {
               continue;
             }
@@ -1009,8 +995,8 @@ test_wuffs_gif_decode_frame_out_of_bounds() {
         }
 
         char have[(width * height) + 1];
-        for (y = 0; y < height; y++) {
-          for (x = 0; x < width; x++) {
+        for (uint32_t y = 0; y < height; y++) {
+          for (uint32_t x = 0; x < width; x++) {
             uint8_t index = 0x0F & p.ptr[(y * p.stride) + x];
             have[(y * width) + x] = index ? ('0' + index) : '.';
           }
@@ -1037,8 +1023,7 @@ test_wuffs_gif_decode_zero_width_frame() {
   });
   CHECK_STRING(
       read_file(&src, "test/data/artificial/gif-zero-width-frame.gif"));
-  int q;
-  for (q = 0; q < 3; q++) {
+  for (int q = 0; q < 3; q++) {
     src.meta.ri = 0;
 
     wuffs_gif__decoder dec;
@@ -1525,22 +1510,20 @@ test_wuffs_gif_decode_multiple_loop_counts() {
 
   uint32_t want_num_animation_loops[4] = {1, 1, 51, 31};
 
-  uint32_t i;
-  for (i = 0; true; i++) {
-    {
-      wuffs_base__status status =
-          wuffs_gif__decoder__decode_frame_config(&dec, NULL, &src);
-      if (i == WUFFS_TESTLIB_ARRAY_SIZE(want_num_animation_loops)) {
-        if (status.repr != wuffs_base__note__end_of_data) {
-          RETURN_FAIL("decode_frame_config #%" PRIu32
-                      ": have \"%s\", want \"%s\"",
-                      i, status.repr, wuffs_base__note__end_of_data);
-        }
-        break;
+  uint32_t i = 0;
+  while (true) {
+    wuffs_base__status status =
+        wuffs_gif__decoder__decode_frame_config(&dec, NULL, &src);
+    if (i == WUFFS_TESTLIB_ARRAY_SIZE(want_num_animation_loops)) {
+      if (status.repr != wuffs_base__note__end_of_data) {
+        RETURN_FAIL("decode_frame_config #%" PRIu32
+                    ": have \"%s\", want \"%s\"",
+                    i, status.repr, wuffs_base__note__end_of_data);
       }
-      if (!wuffs_base__status__is_ok(&status)) {
-        RETURN_FAIL("decode_frame_config #%" PRIu32 ": \"%s\"", i, status.repr);
-      }
+      break;
+    }
+    if (!wuffs_base__status__is_ok(&status)) {
+      RETURN_FAIL("decode_frame_config #%" PRIu32 ": \"%s\"", i, status.repr);
     }
 
     uint32_t have = wuffs_gif__decoder__num_animation_loops(&dec);
@@ -1550,6 +1533,7 @@ test_wuffs_gif_decode_multiple_loop_counts() {
                   ", want %" PRIu32,
                   i, have, want);
     }
+    i++;
   }
 
   uint32_t have = wuffs_gif__decoder__num_animation_loops(&dec);
@@ -1815,8 +1799,7 @@ do_test_wuffs_gif_io_position(bool chunked) {
   wuffs_base__frame_config fcs[4];
   uint32_t width_wants[4] = {64, 37, 49, 49};
   uint64_t pos_wants[4] = {781, 2126, 2187, 2542};
-  int i;
-  for (i = 0; i < 4; i++) {
+  for (int i = 0; i < 4; i++) {
     fcs[i] = ((wuffs_base__frame_config){});
     wuffs_base__status status =
         wuffs_gif__decoder__decode_frame_config(&dec, &fcs[i], &src);
@@ -1878,7 +1861,7 @@ do_test_wuffs_gif_io_position(bool chunked) {
     return NULL;
   }
 
-  for (i = 0; i < 4; i++) {
+  for (int i = 0; i < 4; i++) {
     src.meta.ri = pos_wants[i];
 
     status = wuffs_gif__decoder__restart_frame(
@@ -1887,8 +1870,7 @@ do_test_wuffs_gif_io_position(bool chunked) {
       RETURN_FAIL("restart_frame #%d: \"%s\"", i, status.repr);
     }
 
-    int j;
-    for (j = i; j < 4; j++) {
+    for (int j = i; j < 4; j++) {
       wuffs_base__frame_config fc = ((wuffs_base__frame_config){});
       status = wuffs_gif__decoder__decode_frame_config(&dec, &fc, &src);
       if (!wuffs_base__status__is_ok(&status)) {

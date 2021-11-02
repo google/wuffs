@@ -337,8 +337,7 @@ main(int argc, char** argv) {
     fprintf(stderr, "FAIL: %s\n", z);
     return 1;
   }
-  int i;
-  for (i = 0; i < g_flags.remaining_argc; i++) {
+  for (int i = 0; i < g_flags.remaining_argc; i++) {
     int v = visit(g_flags.remaining_argv[i]);
     if (v) {
       return v;

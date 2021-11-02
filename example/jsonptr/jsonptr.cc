@@ -1460,8 +1460,7 @@ main(int argc, char** argv) {
   // Flags start with "-", unless it comes after a bare "--" arg.
   {
     bool dash_dash = false;
-    int a;
-    for (a = 1; a < argc; a++) {
+    for (int a = 1; a < argc; a++) {
       char* arg = argv[a];
       if ((arg[0] == '-') && !dash_dash) {
         dash_dash = (arg[1] == '-') && (arg[2] == '\x00');

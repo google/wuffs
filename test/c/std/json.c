@@ -86,8 +86,7 @@ test_wuffs_core_count_leading_zeroes_u64() {
       {.num = 0xFFFFFFFFFFFFFFFF, .want = 0},
   };
 
-  int tc;
-  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+  for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
     uint32_t have = wuffs_base__count_leading_zeroes_u64(test_cases[tc].num);
     if (have != test_cases[tc].want) {
       RETURN_FAIL("0x%" PRIX64 ": have %" PRIu32 ", want %" PRIu32,
@@ -122,8 +121,7 @@ test_wuffs_core_multiply_u64() {
        .want_lo = 0x89B3DE09506618CF},
   };
 
-  int tc;
-  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+  for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
     wuffs_base__multiply_u64__output have =
         wuffs_base__multiply_u64(test_cases[tc].x, test_cases[tc].y);
     if ((have.hi != test_cases[tc].want_hi) ||
@@ -343,8 +341,7 @@ test_wuffs_strconv_hpd_rounded_integer() {
       {.want = UINT64_MAX, .str = "1234567890123456789"},
   };
 
-  int tc;
-  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+  for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
     wuffs_base__private_implementation__high_prec_dec hpd;
     CHECK_STATUS("hpd__parse",
                  wuffs_base__private_implementation__high_prec_dec__parse(
@@ -389,8 +386,7 @@ test_wuffs_strconv_hpd_shift() {
        .want = "+314159000000000000000000000."},
   };
 
-  int tc;
-  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+  for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
     wuffs_base__private_implementation__high_prec_dec hpd;
     CHECK_STATUS("hpd__parse",
                  wuffs_base__private_implementation__high_prec_dec__parse(
@@ -499,8 +495,7 @@ test_wuffs_strconv_ieee_754_bit_representation_from_u16() {
       },
   };
 
-  int tc;
-  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+  for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
     double have_f64 = wuffs_base__ieee_754_bit_representation__from_u16_to_f64(
         test_cases[tc].u16_bits);
     double want_f64 = test_cases[tc].want_f64;
@@ -508,7 +503,7 @@ test_wuffs_strconv_ieee_754_bit_representation_from_u16() {
     bool equal = ((have_f64 == want_f64) ||
                   ((have_f64 != have_f64) && (want_f64 != want_f64)));
     if (!equal) {
-      RETURN_FAIL("tc=%d: to_f64: have %g, want %g", tc, have_f64, want_f64);
+      RETURN_FAIL("tc=%zu: to_f64: have %g, want %g", tc, have_f64, want_f64);
     }
 
     uint64_t have_u64 =
@@ -516,7 +511,7 @@ test_wuffs_strconv_ieee_754_bit_representation_from_u16() {
     uint64_t want_u64 = test_cases[tc].want_u64;
     // There's more than one representation of NaN.
     if ((have_u64 != want_u64) && (want_u64 != nan_u64)) {
-      RETURN_FAIL("tc=%d: to_u64: have 0x%016" PRIX64 ", want 0x%016" PRIX64,
+      RETURN_FAIL("tc=%zu: to_u64: have 0x%016" PRIX64 ", want 0x%016" PRIX64,
                   tc, have_u64, want_u64);
     }
 
@@ -530,13 +525,13 @@ test_wuffs_strconv_ieee_754_bit_representation_from_u16() {
               wuffs_base__ieee_754_bit_representation__from_u64_to_f64(
                   want_u64 ^ ((uint64_t)noise)));
       if (lv.value != test_cases[tc].u16_bits) {
-        RETURN_FAIL("tc=%d: noise=%d: to_u16 value: have 0x%04" PRIX16
+        RETURN_FAIL("tc=%zu: noise=%d: to_u16 value: have 0x%04" PRIX16
                     ", want 0x%04" PRIX16,
                     tc, noise, lv.value, test_cases[tc].u16_bits);
       }
       int want_lossy = (want_f64 == want_f64) ? noise : 0;
       if (((int)lv.lossy) != want_lossy) {
-        RETURN_FAIL("tc=%d: noise=%d: to_u16 lossy: have %d, want %d", tc,
+        RETURN_FAIL("tc=%zu: noise=%d: to_u16 lossy: have %d, want %d", tc,
                     noise, ((int)(lv.lossy)), want_lossy);
       }
     }
@@ -621,8 +616,7 @@ test_wuffs_strconv_ieee_754_bit_representation_from_u32() {
       },
   };
 
-  int tc;
-  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+  for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
     double have_f64 = wuffs_base__ieee_754_bit_representation__from_u32_to_f64(
         test_cases[tc].u32_bits);
     double want_f64 = test_cases[tc].want_f64;
@@ -630,7 +624,7 @@ test_wuffs_strconv_ieee_754_bit_representation_from_u32() {
     bool equal = ((have_f64 == want_f64) ||
                   ((have_f64 != have_f64) && (want_f64 != want_f64)));
     if (!equal) {
-      RETURN_FAIL("tc=%d: to_f64: have %g, want %g", tc, have_f64, want_f64);
+      RETURN_FAIL("tc=%zu: to_f64: have %g, want %g", tc, have_f64, want_f64);
     }
 
     uint64_t have_u64 =
@@ -638,7 +632,7 @@ test_wuffs_strconv_ieee_754_bit_representation_from_u32() {
     uint64_t want_u64 = test_cases[tc].want_u64;
     // There's more than one representation of NaN.
     if ((have_u64 != want_u64) && (want_u64 != nan_u64)) {
-      RETURN_FAIL("tc=%d: to_u64: have 0x%016" PRIX64 ", want 0x%016" PRIX64,
+      RETURN_FAIL("tc=%zu: to_u64: have 0x%016" PRIX64 ", want 0x%016" PRIX64,
                   tc, have_u64, want_u64);
     }
 
@@ -652,13 +646,13 @@ test_wuffs_strconv_ieee_754_bit_representation_from_u32() {
               wuffs_base__ieee_754_bit_representation__from_u64_to_f64(
                   want_u64 ^ ((uint64_t)noise)));
       if (lv.value != test_cases[tc].u32_bits) {
-        RETURN_FAIL("tc=%d: noise=%d: to_u32 value: have 0x%08" PRIX32
+        RETURN_FAIL("tc=%zu: noise=%d: to_u32 value: have 0x%08" PRIX32
                     ", want 0x%08" PRIX32,
                     tc, noise, lv.value, test_cases[tc].u32_bits);
       }
       int want_lossy = (want_f64 == want_f64) ? noise : 0;
       if (((int)lv.lossy) != want_lossy) {
-        RETURN_FAIL("tc=%d: noise=%d: to_u32 lossy: have %d, want %d", tc,
+        RETURN_FAIL("tc=%zu: noise=%d: to_u32 lossy: have %d, want %d", tc,
                     noise, ((int)(lv.lossy)), want_lossy);
       }
     }
@@ -749,8 +743,7 @@ test_wuffs_strconv_base_64() {
       "Zm9vYmFy",  //
   };
 
-  size_t tc;
-  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(wants); tc++) {
+  for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(wants); tc++) {
     const bool src_closed = true;
 
     wuffs_base__transform__output e = wuffs_base__base_64__encode(
@@ -828,8 +821,7 @@ test_wuffs_strconv_parse_number_f64_options() {
 
   // Test WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_MULTIPLE_LEADING_ZEROES.
   {
-    int o;
-    for (o = 0; o < 2; o++) {
+    for (int o = 0; o < 2; o++) {
       const char* str = "001.25";
       wuffs_base__result_f64 r = wuffs_base__parse_number_f64(
           wuffs_base__make_slice_u8((void*)str, strlen(str)),
@@ -859,8 +851,7 @@ test_wuffs_strconv_parse_number_f64_options() {
 
   // Test WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES.
   {
-    int o;
-    for (o = 0; o < 2; o++) {
+    for (int o = 0; o < 2; o++) {
       const char* str = "_1.2__5";
       wuffs_base__result_f64 r = wuffs_base__parse_number_f64(
           wuffs_base__make_slice_u8((void*)str, strlen(str)),
@@ -889,8 +880,7 @@ test_wuffs_strconv_parse_number_f64_options() {
 
   // Test WUFFS_BASE__PARSE_NUMBER_FXX__DECIMAL_SEPARATOR_IS_A_COMMA.
   {
-    int o;
-    for (o = 0; o < 2; o++) {
+    for (int o = 0; o < 2; o++) {
       const char* str = "1,75";
       wuffs_base__result_f64 r = wuffs_base__parse_number_f64(
           wuffs_base__make_slice_u8((void*)str, strlen(str)),
@@ -920,8 +910,7 @@ test_wuffs_strconv_parse_number_f64_options() {
 
   // Test WUFFS_BASE__PARSE_NUMBER_FXX__REJECT_INF_AND_NAN.
   {
-    int o;
-    for (o = 0; o < 4; o++) {
+    for (int o = 0; o < 4; o++) {
       const char* str = (o & 2) ? "1e999" : "nan";
       wuffs_base__result_f64 r = wuffs_base__parse_number_f64(
           wuffs_base__make_slice_u8((void*)str, strlen(str)),
@@ -1085,8 +1074,7 @@ test_wuffs_strconv_parse_number_f64_regular() {
       {.want = fail, .str = "nun"},
   };
 
-  int tc;
-  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+  for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
     wuffs_base__result_f64 r = wuffs_base__parse_number_f64(
         wuffs_base__make_slice_u8((void*)test_cases[tc].str,
                                   strlen(test_cases[tc].str)),
@@ -1138,8 +1126,7 @@ test_wuffs_strconv_parse_number_i64() {
       {.want = fail, .str = "9223372036854775808"},  // 1 << 63.
   };
 
-  int tc;
-  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+  for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
     wuffs_base__result_i64 r = wuffs_base__parse_number_i64(
         wuffs_base__make_slice_u8((void*)test_cases[tc].str,
                                   strlen(test_cases[tc].str)),
@@ -1225,8 +1212,7 @@ test_wuffs_strconv_parse_number_u64() {
       {.want = fail, .str = "x"},
   };
 
-  int tc;
-  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+  for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
     wuffs_base__result_u64 r = wuffs_base__parse_number_u64(
         wuffs_base__make_slice_u8((void*)test_cases[tc].str,
                                   strlen(test_cases[tc].str)),
@@ -1240,8 +1226,7 @@ test_wuffs_strconv_parse_number_u64() {
 
   // Test WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_MULTIPLE_LEADING_ZEROES.
   {
-    int o;
-    for (o = 0; o < 2; o++) {
+    for (int o = 0; o < 2; o++) {
       const char* str = "007";
       wuffs_base__result_u64 r = wuffs_base__parse_number_u64(
           wuffs_base__make_slice_u8((void*)str, strlen(str)),
@@ -1269,8 +1254,7 @@ test_wuffs_strconv_parse_number_u64() {
 
   // Test WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES.
   {
-    int o;
-    for (o = 0; o < 2; o++) {
+    for (int o = 0; o < 2; o++) {
       const char* str = "56_7__8";
       wuffs_base__result_u64 r = wuffs_base__parse_number_u64(
           wuffs_base__make_slice_u8((void*)str, strlen(str)),
@@ -2135,12 +2119,10 @@ test_wuffs_strconv_render_number_f64() {
       },
   };
 
-  int tc;
-  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+  for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
     double f64 = wuffs_base__ieee_754_bit_representation__from_u64_to_f64(
         test_cases[tc].x);
-    int o;
-    for (o = 0; o < 6; o++) {
+    for (int o = 0; o < 6; o++) {
       uint32_t precision = 0;
       uint32_t options = 0;
       const char* want = NULL;
@@ -2189,8 +2171,7 @@ test_wuffs_strconv_render_number_f64() {
 
   // Test WUFFS_BASE__RENDER_NUMBER_FXX__DECIMAL_SEPARATOR_IS_A_COMMA.
   {
-    int o;
-    for (o = 0; o < 2; o++) {
+    for (int o = 0; o < 2; o++) {
       uint8_t dst[8] = {0};
       const double f64 = 1.75;
       const uint32_t precision = 2;
@@ -2263,8 +2244,7 @@ test_wuffs_strconv_render_number_i64() {
     return "g_have_slice_u8.len is too short";
   }
 
-  int tc;
-  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+  for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
     size_t n = wuffs_base__render_number_i64(
         g_have_slice_u8, test_cases[tc].x,
         WUFFS_BASE__RENDER_NUMBER_XXX__DEFAULT_OPTIONS);
@@ -2318,8 +2298,7 @@ test_wuffs_strconv_render_number_u64() {
     return "g_have_slice_u8.len is too short";
   }
 
-  int tc;
-  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+  for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
     size_t n = wuffs_base__render_number_u64(
         g_have_slice_u8, test_cases[tc].x,
         WUFFS_BASE__RENDER_NUMBER_XXX__DEFAULT_OPTIONS);
@@ -2466,8 +2445,7 @@ test_wuffs_strconv_utf_8_next() {
       {.want0 = 0x0100FFFD, .want1 = 0x0100FFFD, .str = "\xED\xBF\xBF"},
   };
 
-  int tc;
-  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+  for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
     wuffs_base__slice_u8 s = wuffs_base__make_slice_u8(
         (void*)test_cases[tc].str, strlen(test_cases[tc].str));
     // Override "The <NUL> byte" with "\x00".
@@ -2590,8 +2568,7 @@ test_wuffs_json_decode_interface() {
                  wuffs_json__decoder__initialize(
                      &dec, sizeof dec, WUFFS_VERSION,
                      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
-    uint32_t i;
-    for (i = 0; quirks[i]; i++) {
+    for (size_t i = 0; quirks[i]; i++) {
       wuffs_json__decoder__set_quirk_enabled(&dec, quirks[i], true);
     }
     CHECK_STRING(do_test__wuffs_base__token_decoder(
@@ -2638,8 +2615,7 @@ const char*  //
 test_wuffs_json_decode_end_of_data() {
   CHECK_FOCUS(__func__);
 
-  int i;
-  for (i = 0; i < 2; i++) {
+  for (int i = 0; i < 2; i++) {
     uint8_t* src_ptr = (uint8_t*)("123null89");
     size_t src_len = i ? 3 : 9;
 
@@ -2731,11 +2707,10 @@ test_wuffs_json_decode_long_numbers() {
 
   wuffs_json__decoder dec;
 
-  int tc;
-  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+  for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
     size_t suffix_length = strlen(test_cases[tc].suffix);
     if ((suffix_length + 1) > (119 - 102)) {  // +1 for the terminal NUL.
-      RETURN_FAIL("tc=%d: src_array is too short", tc);
+      RETURN_FAIL("tc=%zu: src_array is too short", tc);
     }
     bool ends_with_space = (suffix_length > 0) &&
                            (test_cases[tc].suffix[suffix_length - 1] == ' ');
@@ -2776,7 +2751,7 @@ test_wuffs_json_decode_long_numbers() {
         }
         if (total_length != src.meta.ri) {
           RETURN_FAIL(
-              "tc=%d, nines_length=%zu, closed=%d: total_length: have %zu, "
+              "tc=%zu, nines_length=%zu, closed=%d: total_length: have %zu, "
               "want %zu",
               tc, nines_length, closed, total_length, src.meta.ri);
         }
@@ -2792,7 +2767,7 @@ test_wuffs_json_decode_long_numbers() {
 
         if (have != want) {
           RETURN_FAIL(
-              "tc=%d, nines_length=%zu, closed=%d: have \"%s\", want \"%s\"",
+              "tc=%zu, nines_length=%zu, closed=%d: have \"%s\", want \"%s\"",
               tc, nines_length, closed, have, want);
         }
       }
@@ -2861,8 +2836,7 @@ test_wuffs_json_decode_prior_valid_utf_8() {
 
   wuffs_json__decoder dec;
 
-  int tc;
-  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+  for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
     size_t n = strlen(test_cases[tc]);
     size_t num_preceding = 0;
     while (num_preceding < n) {
@@ -2874,7 +2848,7 @@ test_wuffs_json_decode_prior_valid_utf_8() {
       }
       num_preceding += x.byte_length;
       if (num_preceding > n) {
-        RETURN_FAIL("tc=%d: utf_8__next overflow", tc);
+        RETURN_FAIL("tc=%zu: utf_8__next overflow", tc);
       }
     }
 
@@ -2922,7 +2896,7 @@ test_wuffs_json_decode_prior_valid_utf_8() {
               have += wuffs_base__token__length(t);
             } else {
               RETURN_FAIL(
-                  "tc=%d, prefix=%zu, suffix=%zu, closed=%d: unexpected token",
+                  "tc=%zu, prefix=%zu, suffix=%zu, closed=%d: unexpected token",
                   tc, prefix, suffix, closed);
             }
           }
@@ -2932,7 +2906,7 @@ test_wuffs_json_decode_prior_valid_utf_8() {
           }
           if (have != want) {
             RETURN_FAIL(
-                "tc=%d, prefix=%zu, suffix=%zu, closed=%d: have %zu, want %zu",
+                "tc=%zu, prefix=%zu, suffix=%zu, closed=%d: have %zu, want %zu",
                 tc, prefix, suffix, closed, have, want);
           }
         }
@@ -2999,10 +2973,8 @@ test_wuffs_json_decode_quirk_allow_backslash_etc() {
       },
   };
 
-  int tc;
-  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
-    int q;
-    for (q = 0; q < 2; q++) {
+  for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+    for (int q = 0; q < 2; q++) {
       wuffs_json__decoder dec;
       CHECK_STATUS("initialize", wuffs_json__decoder__initialize(
                                      &dec, sizeof dec, WUFFS_VERSION,
@@ -3025,7 +2997,7 @@ test_wuffs_json_decode_quirk_allow_backslash_etc() {
         want_status_repr = wuffs_json__error__bad_c0_control_code;
       }
       if (have_status_repr != want_status_repr) {
-        RETURN_FAIL("tc=%d, q=%d: decode_tokens: have \"%s\", want \"%s\"", tc,
+        RETURN_FAIL("tc=%zu, q=%d: decode_tokens: have \"%s\", want \"%s\"", tc,
                     q, have_status_repr, want_status_repr);
       }
       if (want_status_repr != NULL) {
@@ -3043,7 +3015,7 @@ test_wuffs_json_decode_quirk_allow_backslash_etc() {
         }
       }
       if (have != test_cases[tc].want) {
-        RETURN_FAIL("tc=%d, q=%d: Unicode code point: have U+%04" PRIX32
+        RETURN_FAIL("tc=%zu, q=%d: Unicode code point: have U+%04" PRIX32
                     ", want U+%04" PRIX32,
                     tc, q, have, test_cases[tc].want);
       }
@@ -3084,8 +3056,7 @@ test_wuffs_json_decode_quirk_allow_backslash_x() {
        .str = "\"a\\x\""},
   };
 
-  int tc;
-  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+  for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
     wuffs_json__decoder dec;
     CHECK_STATUS("initialize", wuffs_json__decoder__initialize(
                                    &dec, sizeof dec, WUFFS_VERSION,
@@ -3102,7 +3073,7 @@ test_wuffs_json_decode_quirk_allow_backslash_x() {
         wuffs_json__decoder__decode_tokens(&dec, &tok, &src, g_work_slice_u8)
             .repr;
     if (have_status_repr != test_cases[tc].want_status_repr) {
-      RETURN_FAIL("tc=%d: decode_tokens: have \"%s\", want \"%s\"", tc,
+      RETURN_FAIL("tc=%zu: decode_tokens: have \"%s\", want \"%s\"", tc,
                   have_status_repr, test_cases[tc].want_status_repr);
     }
 
@@ -3130,7 +3101,7 @@ test_wuffs_json_decode_quirk_allow_backslash_x() {
     }
     uint64_t want = test_cases[tc].want_code_points;
     if (have != want) {
-      RETURN_FAIL("tc=%d: have U+%08" PRIX64 ", want U+%08" PRIX64, tc, have,
+      RETURN_FAIL("tc=%zu: have U+%08" PRIX64 ", want U+%08" PRIX64, tc, have,
                   want);
     }
   }
@@ -3156,10 +3127,8 @@ test_wuffs_json_decode_quirk_allow_extra_comma() {
       {.want = "--", .str = "{,}"},
   };
 
-  int tc;
-  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
-    int q;
-    for (q = 0; q < 2; q++) {
+  for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+    for (int q = 0; q < 2; q++) {
       wuffs_json__decoder dec;
       CHECK_STATUS("initialize", wuffs_json__decoder__initialize(
                                      &dec, sizeof dec, WUFFS_VERSION,
@@ -3177,7 +3146,7 @@ test_wuffs_json_decode_quirk_allow_extra_comma() {
       const char* want =
           (test_cases[tc].want[q] != '-') ? NULL : wuffs_json__error__bad_input;
       if (have != want) {
-        RETURN_FAIL("tc=%d, q=%d: decode_tokens: have \"%s\", want \"%s\"", tc,
+        RETURN_FAIL("tc=%zu, q=%d: decode_tokens: have \"%s\", want \"%s\"", tc,
                     q, have, want);
       }
 
@@ -3186,17 +3155,17 @@ test_wuffs_json_decode_quirk_allow_extra_comma() {
         total_length += wuffs_base__token__length(&tok.data.ptr[tok.meta.ri++]);
       }
       if (total_length != src.meta.ri) {
-        RETURN_FAIL("tc=%d, q=%d: total_length: have %zu, want %zu", tc, q,
+        RETURN_FAIL("tc=%zu, q=%d: total_length: have %zu, want %zu", tc, q,
                     total_length, src.meta.ri);
       }
       if (test_cases[tc].want[q] == 'X') {
         if (total_length != src.data.len) {
-          RETURN_FAIL("tc=%d, q=%d: total_length: have %zu, want %zu", tc, q,
+          RETURN_FAIL("tc=%zu, q=%d: total_length: have %zu, want %zu", tc, q,
                       total_length, src.data.len);
         }
       } else if (test_cases[tc].want[q] == '+') {
         if (total_length >= src.data.len) {
-          RETURN_FAIL("tc=%d, q=%d: total_length: have %zu, want < %zu", tc, q,
+          RETURN_FAIL("tc=%zu, q=%d: total_length: have %zu, want < %zu", tc, q,
                       total_length, src.data.len);
         }
       }
@@ -3231,10 +3200,8 @@ test_wuffs_json_decode_quirk_allow_inf_nan_numbers() {
       {.want = "--", .str = "∞"},
   };
 
-  int tc;
-  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
-    int q;
-    for (q = 0; q < 2; q++) {
+  for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+    for (int q = 0; q < 2; q++) {
       wuffs_json__decoder dec;
       CHECK_STATUS("initialize", wuffs_json__decoder__initialize(
                                      &dec, sizeof dec, WUFFS_VERSION,
@@ -3252,7 +3219,7 @@ test_wuffs_json_decode_quirk_allow_inf_nan_numbers() {
       const char* want =
           (test_cases[tc].want[q] != '-') ? NULL : wuffs_json__error__bad_input;
       if (have != want) {
-        RETURN_FAIL("tc=%d, q=%d: decode_tokens: have \"%s\", want \"%s\"", tc,
+        RETURN_FAIL("tc=%zu, q=%d: decode_tokens: have \"%s\", want \"%s\"", tc,
                     q, have, want);
       }
 
@@ -3261,17 +3228,17 @@ test_wuffs_json_decode_quirk_allow_inf_nan_numbers() {
         total_length += wuffs_base__token__length(&tok.data.ptr[tok.meta.ri++]);
       }
       if (total_length != src.meta.ri) {
-        RETURN_FAIL("tc=%d, q=%d: total_length: have %zu, want %zu", tc, q,
+        RETURN_FAIL("tc=%zu, q=%d: total_length: have %zu, want %zu", tc, q,
                     total_length, src.meta.ri);
       }
       if (test_cases[tc].want[q] == 'X') {
         if (total_length != src.data.len) {
-          RETURN_FAIL("tc=%d, q=%d: total_length: have %zu, want %zu", tc, q,
+          RETURN_FAIL("tc=%zu, q=%d: total_length: have %zu, want %zu", tc, q,
                       total_length, src.data.len);
         }
       } else if (test_cases[tc].want[q] == '+') {
         if (total_length >= src.data.len) {
-          RETURN_FAIL("tc=%d, q=%d: total_length: have %zu, want < %zu", tc, q,
+          RETURN_FAIL("tc=%zu, q=%d: total_length: have %zu, want < %zu", tc, q,
                       total_length, src.data.len);
         }
       }
@@ -3300,10 +3267,8 @@ test_wuffs_json_decode_quirk_allow_comment_etc() {
       {.want = "----", .str = "[4/5]"},  // Lone slash.
   };
 
-  int tc;
-  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
-    int q;
-    for (q = 0; q < 4; q++) {
+  for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+    for (int q = 0; q < 4; q++) {
       wuffs_json__decoder dec;
       CHECK_STATUS("initialize", wuffs_json__decoder__initialize(
                                      &dec, sizeof dec, WUFFS_VERSION,
@@ -3323,7 +3288,7 @@ test_wuffs_json_decode_quirk_allow_comment_etc() {
       const char* want =
           (test_cases[tc].want[q] != '-') ? NULL : wuffs_json__error__bad_input;
       if (have != want) {
-        RETURN_FAIL("tc=%d, q=%d: decode_tokens: have \"%s\", want \"%s\"", tc,
+        RETURN_FAIL("tc=%zu, q=%d: decode_tokens: have \"%s\", want \"%s\"", tc,
                     q, have, want);
       }
 
@@ -3332,17 +3297,17 @@ test_wuffs_json_decode_quirk_allow_comment_etc() {
         total_length += wuffs_base__token__length(&tok.data.ptr[tok.meta.ri++]);
       }
       if (total_length != src.meta.ri) {
-        RETURN_FAIL("tc=%d, q=%d: total_length: have %zu, want %zu", tc, q,
+        RETURN_FAIL("tc=%zu, q=%d: total_length: have %zu, want %zu", tc, q,
                     total_length, src.meta.ri);
       }
       if (test_cases[tc].want[q] == 'X') {
         if (total_length != src.data.len) {
-          RETURN_FAIL("tc=%d, q=%d: total_length: have %zu, want %zu", tc, q,
+          RETURN_FAIL("tc=%zu, q=%d: total_length: have %zu, want %zu", tc, q,
                       total_length, src.data.len);
         }
       } else if (test_cases[tc].want[q] == '+') {
         if (total_length >= src.data.len) {
-          RETURN_FAIL("tc=%d, q=%d: total_length: have %zu, want < %zu", tc, q,
+          RETURN_FAIL("tc=%zu, q=%d: total_length: have %zu, want < %zu", tc, q,
                       total_length, src.data.len);
         }
       }
@@ -3377,10 +3342,8 @@ test_wuffs_json_decode_quirk_allow_leading_etc() {
       {.want = "----", .str = "\xEFtrue"},
   };
 
-  int tc;
-  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
-    int q;
-    for (q = 0; q < 4; q++) {
+  for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+    for (int q = 0; q < 4; q++) {
       wuffs_json__decoder dec;
       CHECK_STATUS("initialize", wuffs_json__decoder__initialize(
                                      &dec, sizeof dec, WUFFS_VERSION,
@@ -3400,7 +3363,7 @@ test_wuffs_json_decode_quirk_allow_leading_etc() {
       const char* want =
           (test_cases[tc].want[q] != '-') ? NULL : wuffs_json__error__bad_input;
       if (have != want) {
-        RETURN_FAIL("tc=%d, q=%d: decode_tokens: have \"%s\", want \"%s\"", tc,
+        RETURN_FAIL("tc=%zu, q=%d: decode_tokens: have \"%s\", want \"%s\"", tc,
                     q, have, want);
       }
 
@@ -3409,17 +3372,17 @@ test_wuffs_json_decode_quirk_allow_leading_etc() {
         total_length += wuffs_base__token__length(&tok.data.ptr[tok.meta.ri++]);
       }
       if (total_length != src.meta.ri) {
-        RETURN_FAIL("tc=%d, q=%d: total_length: have %zu, want %zu", tc, q,
+        RETURN_FAIL("tc=%zu, q=%d: total_length: have %zu, want %zu", tc, q,
                     total_length, src.meta.ri);
       }
       if (test_cases[tc].want[q] == 'X') {
         if (total_length != src.data.len) {
-          RETURN_FAIL("tc=%d, q=%d: total_length: have %zu, want %zu", tc, q,
+          RETURN_FAIL("tc=%zu, q=%d: total_length: have %zu, want %zu", tc, q,
                       total_length, src.data.len);
         }
       } else if (test_cases[tc].want[q] == '+') {
         if (total_length >= src.data.len) {
-          RETURN_FAIL("tc=%d, q=%d: total_length: have %zu, want < %zu", tc, q,
+          RETURN_FAIL("tc=%zu, q=%d: total_length: have %zu, want < %zu", tc, q,
                       total_length, src.data.len);
         }
       }
@@ -3472,10 +3435,8 @@ test_wuffs_json_decode_quirk_allow_trailing_comments() {
       "515 9",                       //
   };
 
-  int tc;
-
   // Test ALLOW_ETC.
-  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+  for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
     void* tc_ptr = (void*)(test_cases[tc]);
     size_t tc_len = strlen(test_cases[tc]);
     char code = test_cases[tc][0];
@@ -3499,8 +3460,8 @@ test_wuffs_json_decode_quirk_allow_trailing_comments() {
         wuffs_json__decoder__decode_tokens(&dec, &tok, &src, g_work_slice_u8)
             .repr;
     if (have_repr != NULL) {
-      RETURN_FAIL("tc=%d, ALLOW_ETC: decode_tokens: have \"%s\", want NULL", tc,
-                  have_repr);
+      RETURN_FAIL("tc=%zu, ALLOW_ETC: decode_tokens: have \"%s\", want NULL",
+                  tc, have_repr);
     }
 
     size_t have_total_length = 0;
@@ -3510,16 +3471,16 @@ test_wuffs_json_decode_quirk_allow_trailing_comments() {
     }
     size_t want_total_length = tc_len - ((code >= '4') ? 1 : 0);
     if (have_total_length != src.meta.ri) {
-      RETURN_FAIL("tc=%d, ALLOW_ETC: total_length: have %zu, want %zu", tc,
+      RETURN_FAIL("tc=%zu, ALLOW_ETC: total_length: have %zu, want %zu", tc,
                   have_total_length, src.meta.ri);
     } else if (have_total_length != want_total_length) {
-      RETURN_FAIL("tc=%d, ALLOW_ETC: total_length: have %zu, want %zu", tc,
+      RETURN_FAIL("tc=%zu, ALLOW_ETC: total_length: have %zu, want %zu", tc,
                   have_total_length, want_total_length);
     }
   }
 
   // Test EXPECT_ETC.
-  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+  for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
     void* tc_ptr = (void*)(test_cases[tc]);
     size_t tc_len = strlen(test_cases[tc]);
     char code = test_cases[tc][0];
@@ -3541,7 +3502,7 @@ test_wuffs_json_decode_quirk_allow_trailing_comments() {
     const char* want_repr =
         ((code == '3') || (code == '5')) ? wuffs_json__error__bad_input : NULL;
     if (have_repr != want_repr) {
-      RETURN_FAIL("tc=%d, EXPECT_ETC: decode_tokens: have \"%s\", want \"%s\"",
+      RETURN_FAIL("tc=%zu, EXPECT_ETC: decode_tokens: have \"%s\", want \"%s\"",
                   tc, have_repr, want_repr);
     } else if (have_repr != NULL) {
       continue;
@@ -3554,10 +3515,10 @@ test_wuffs_json_decode_quirk_allow_trailing_comments() {
     }
     size_t want_total_length = tc_len - ((code == '1') ? 0 : 1);
     if (have_total_length != src.meta.ri) {
-      RETURN_FAIL("tc=%d, EXPECT_ETC: total_length: have %zu, want %zu", tc,
+      RETURN_FAIL("tc=%zu, EXPECT_ETC: total_length: have %zu, want %zu", tc,
                   have_total_length, src.meta.ri);
     } else if (have_total_length != want_total_length) {
-      RETURN_FAIL("tc=%d, EXPECT_ETC: total_length: have %zu, want %zu", tc,
+      RETURN_FAIL("tc=%zu, EXPECT_ETC: total_length: have %zu, want %zu", tc,
                   have_total_length, want_total_length);
     }
   }
@@ -3594,10 +3555,8 @@ test_wuffs_json_decode_quirk_allow_trailing_filler() {
       {.want = "XXX", .str = "0"},          //
   };
 
-  int tc;
-  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
-    int q;
-    for (q = 0; q < 3; q++) {
+  for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+    for (int q = 0; q < 3; q++) {
       wuffs_json__decoder dec;
       CHECK_STATUS("initialize", wuffs_json__decoder__initialize(
                                      &dec, sizeof dec, WUFFS_VERSION,
@@ -3617,7 +3576,7 @@ test_wuffs_json_decode_quirk_allow_trailing_filler() {
       const char* want =
           (test_cases[tc].want[q] != '-') ? NULL : wuffs_json__error__bad_input;
       if (have != want) {
-        RETURN_FAIL("tc=%d, q=%d: decode_tokens: have \"%s\", want \"%s\"", tc,
+        RETURN_FAIL("tc=%zu, q=%d: decode_tokens: have \"%s\", want \"%s\"", tc,
                     q, have, want);
       }
 
@@ -3626,17 +3585,17 @@ test_wuffs_json_decode_quirk_allow_trailing_filler() {
         total_length += wuffs_base__token__length(&tok.data.ptr[tok.meta.ri++]);
       }
       if (total_length != src.meta.ri) {
-        RETURN_FAIL("tc=%d, q=%d: total_length: have %zu, want %zu", tc, q,
+        RETURN_FAIL("tc=%zu, q=%d: total_length: have %zu, want %zu", tc, q,
                     total_length, src.meta.ri);
       }
       if (test_cases[tc].want[q] == 'X') {
         if (total_length != src.data.len) {
-          RETURN_FAIL("tc=%d, q=%d: total_length: have %zu, want %zu", tc, q,
+          RETURN_FAIL("tc=%zu, q=%d: total_length: have %zu, want %zu", tc, q,
                       total_length, src.data.len);
         }
       } else if (test_cases[tc].want[q] == '+') {
         if (total_length >= src.data.len) {
-          RETURN_FAIL("tc=%d, q=%d: total_length: have %zu, want < %zu", tc, q,
+          RETURN_FAIL("tc=%zu, q=%d: total_length: have %zu, want < %zu", tc, q,
                       total_length, src.data.len);
         }
       }
@@ -3694,8 +3653,7 @@ test_wuffs_json_decode_quirk_replace_invalid_unicode() {
       {.want = "a\xF0\x90\x80\x80?z", .str = "\"a\\uD800\\uDC00\\uDFFFz\""},
   };
 
-  int tc;
-  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+  for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
     wuffs_json__decoder dec;
     CHECK_STATUS("initialize", wuffs_json__decoder__initialize(
                                    &dec, sizeof dec, WUFFS_VERSION,
@@ -3729,7 +3687,7 @@ test_wuffs_json_decode_quirk_replace_invalid_unicode() {
           n = 1;
         }
         if ((have.data.len - have.meta.wi) < n) {
-          RETURN_FAIL("tc=%d: token too long", tc);
+          RETURN_FAIL("tc=%zu: token too long", tc);
         }
         memcpy(&have.data.ptr[have.meta.wi], &u[0], n);
         have.meta.wi += n;
@@ -3740,35 +3698,35 @@ test_wuffs_json_decode_quirk_replace_invalid_unicode() {
         } else if (vbd &
                    WUFFS_BASE__TOKEN__VBD__STRING__CONVERT_1_DST_1_SRC_COPY) {
           if ((have.data.len - have.meta.wi) < token_length) {
-            RETURN_FAIL("tc=%d: token too long", tc);
+            RETURN_FAIL("tc=%zu: token too long", tc);
           }
           memcpy(&have.data.ptr[have.meta.wi], &test_cases[tc].str[src_index],
                  token_length);
           have.meta.wi += token_length;
         } else {
-          RETURN_FAIL("tc=%d: unexpected string-token conversion", tc);
+          RETURN_FAIL("tc=%zu: unexpected string-token conversion", tc);
         }
 
       } else {
-        RETURN_FAIL("tc=%d: unexpected token", tc);
+        RETURN_FAIL("tc=%zu: unexpected token", tc);
       }
 
       src_index += token_length;
     }
 
     if (src_index != src.meta.ri) {
-      RETURN_FAIL("tc=%d: src_index: have %" PRIu64 ", want %zu", tc, src_index,
-                  src.meta.ri);
+      RETURN_FAIL("tc=%zu: src_index: have %" PRIu64 ", want %zu", tc,
+                  src_index, src.meta.ri);
     }
 
     if (have.meta.wi >= have.data.len) {
-      RETURN_FAIL("tc=%d: too many have bytes", tc);
+      RETURN_FAIL("tc=%zu: too many have bytes", tc);
     }
     have.data.ptr[have.meta.wi] = '\x00';
     size_t len = strlen(test_cases[tc].want);
     if ((len != have.meta.wi) ||
         (memcmp(have.data.ptr, test_cases[tc].want, len) != 0)) {
-      RETURN_FAIL("tc=%d: have \"%s\", want \"%s\"", tc, have.data.ptr,
+      RETURN_FAIL("tc=%zu: have \"%s\", want \"%s\"", tc, have.data.ptr,
                   test_cases[tc].want);
     }
   }
@@ -3829,8 +3787,7 @@ test_wuffs_json_decode_unicode4_escapes() {
   };
 
   wuffs_json__decoder dec;
-  int tc;
-  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+  for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
     CHECK_STATUS("initialize",
                  wuffs_json__decoder__initialize(
                      &dec, sizeof dec, WUFFS_VERSION,
@@ -3844,8 +3801,7 @@ test_wuffs_json_decode_unicode4_escapes() {
 
     uint32_t have = fail;
     uint64_t total_length = 0;
-    size_t i;
-    for (i = tok.meta.ri; i < tok.meta.wi; i++) {
+    for (size_t i = tok.meta.ri; i < tok.meta.wi; i++) {
       wuffs_base__token* t = &tok.data.ptr[i];
       total_length =
           wuffs_base__u64__sat_add(total_length, wuffs_base__token__length(t));
@@ -3907,8 +3863,7 @@ test_wuffs_json_decode_src_io_buffer_length() {
 
   wuffs_json__decoder dec;
 
-  int i;
-  for (i = WUFFS_JSON__DECODER_NUMBER_LENGTH_MAX_INCL - 2;
+  for (int i = WUFFS_JSON__DECODER_NUMBER_LENGTH_MAX_INCL - 2;
        i <= WUFFS_JSON__DECODER_NUMBER_LENGTH_MAX_INCL + 2; i++) {
     if (i < 0) {
       RETURN_FAIL("invalid test case: i=%d", i);
@@ -4019,8 +3974,7 @@ test_wuffs_json_decode_string() {
   };
 
   wuffs_json__decoder dec;
-  int tc;
-  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+  for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
     CHECK_STATUS("initialize",
                  wuffs_json__decoder__initialize(
                      &dec, sizeof dec, WUFFS_VERSION,
@@ -4034,8 +3988,7 @@ test_wuffs_json_decode_string() {
         wuffs_json__decoder__decode_tokens(&dec, &tok, &src, g_work_slice_u8);
 
     uint64_t total_length = 0;
-    size_t i;
-    for (i = tok.meta.ri; i < tok.meta.wi; i++) {
+    for (size_t i = tok.meta.ri; i < tok.meta.wi; i++) {
       wuffs_base__token* t = &tok.data.ptr[i];
       total_length =
           wuffs_base__u64__sat_add(total_length, wuffs_base__token__length(t));
@@ -4071,9 +4024,8 @@ do_bench_wuffs_strconv_parse_number_f64(const char* str,
   wuffs_base__slice_u8 s = wuffs_base__make_slice_u8((void*)str, strlen(str));
 
   bench_start();
-  uint64_t i;
   uint64_t iters = iters_unscaled * g_flags.iterscale;
-  for (i = 0; i < iters; i++) {
+  for (uint64_t i = 0; i < iters; i++) {
     CHECK_STATUS("", wuffs_base__parse_number_f64(
                          s, WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS)
                          .status);
@@ -4114,11 +4066,9 @@ const char*  //
 do_bench_wuffs_strconv_render_number_f64(wuffs_base__slice_u64 test_cases,
                                          uint64_t iters_unscaled) {
   bench_start();
-  uint64_t i;
   uint64_t iters = iters_unscaled * g_flags.iterscale;
-  for (i = 0; i < iters; i++) {
-    size_t tc;
-    for (tc = 0; tc < test_cases.len; tc++) {
+  for (uint64_t i = 0; i < iters; i++) {
+    for (size_t tc = 0; tc < test_cases.len; tc++) {
       size_t n = wuffs_base__render_number_f64(
           g_have_slice_u8,
           wuffs_base__ieee_754_bit_representation__from_u64_to_f64(

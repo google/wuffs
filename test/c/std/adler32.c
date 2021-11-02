@@ -131,15 +131,13 @@ test_wuffs_adler32_golden() {
       },
   };
 
-  int tc;
-  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+  for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
     wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
         .data = g_src_slice_u8,
     });
     CHECK_STRING(read_file(&src, test_cases[tc].filename));
 
-    int j;
-    for (j = 0; j < 2; j++) {
+    for (int j = 0; j < 2; j++) {
       wuffs_adler32__hasher checksum;
       CHECK_STATUS("initialize",
                    wuffs_adler32__hasher__initialize(
@@ -164,7 +162,7 @@ test_wuffs_adler32_golden() {
       } while (num_bytes < src.meta.wi);
 
       if (have != test_cases[tc].want) {
-        RETURN_FAIL("tc=%d, j=%d, filename=\"%s\": have 0x%08" PRIX32
+        RETURN_FAIL("tc=%zu, j=%d, filename=\"%s\": have 0x%08" PRIX32
                     ", want 0x%08" PRIX32 "\n",
                     tc, j, test_cases[tc].filename, have, test_cases[tc].want);
       }
@@ -208,8 +206,7 @@ test_wuffs_adler32_pi() {
       0xBEAA13C1, 0xD29C13F2, 0xE6C51429, 0xFB1E1459,
   };
 
-  int i;
-  for (i = 0; i < 100; i++) {
+  for (int i = 0; i < 100; i++) {
     wuffs_adler32__hasher checksum;
     CHECK_STATUS("initialize",
                  wuffs_adler32__hasher__initialize(

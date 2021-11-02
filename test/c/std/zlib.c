@@ -170,8 +170,7 @@ do_test_wuffs_zlib_checksum(bool ignore_checksum, uint32_t bad_checksum) {
 
     // Decode the src data in 1 or 2 chunks, depending on whether end_limit is
     // or isn't zero.
-    int i;
-    for (i = 0; i < 2; i++) {
+    for (int i = 0; i < 2; i++) {
       uint64_t rlimit = UINT64_MAX;
       const char* want_z = NULL;
       if (i == 0) {
@@ -255,8 +254,7 @@ test_wuffs_zlib_decode_sheep() {
                                  &dec, sizeof dec, WUFFS_VERSION,
                                  WUFFS_INITIALIZE__DEFAULT_OPTIONS));
 
-  int i;
-  for (i = 0; i < 3; i++) {
+  for (int i = 0; i < 3; i++) {
     wuffs_base__status status =
         wuffs_zlib__decoder__transform_io(&dec, &have, &src, g_work_slice_u8);
 

@@ -117,8 +117,7 @@ test_wuffs_cbor_decode_invalid() {
       "\xFE",
   };
 
-  int tc;
-  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+  for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
     wuffs_base__token tok_array[256];
     wuffs_base__token_buffer tok_buf =
         wuffs_base__slice_token__writer(wuffs_base__make_slice_token(
@@ -138,7 +137,7 @@ test_wuffs_cbor_decode_invalid() {
     wuffs_base__status status = wuffs_cbor__decoder__decode_tokens(
         &dec, &tok_buf, &io_buf, g_work_slice_u8);
     if (!wuffs_base__status__is_error(&status)) {
-      RETURN_FAIL("tc=%d: have \"%s\", want an error", tc, status.repr);
+      RETURN_FAIL("tc=%zu: have \"%s\", want an error", tc, status.repr);
     }
   }
   return NULL;
@@ -159,8 +158,7 @@ test_wuffs_cbor_decode_valid() {
       "\xD0\xBF\xFF",
   };
 
-  int tc;
-  for (tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+  for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
     wuffs_base__token tok_array[256];
     wuffs_base__token_buffer tok_buf =
         wuffs_base__slice_token__writer(wuffs_base__make_slice_token(
@@ -180,7 +178,7 @@ test_wuffs_cbor_decode_valid() {
     wuffs_base__status status = wuffs_cbor__decoder__decode_tokens(
         &dec, &tok_buf, &io_buf, g_work_slice_u8);
     if (!wuffs_base__status__is_ok(&status)) {
-      RETURN_FAIL("tc=%d: have \"%s\", want no error", tc, status.repr);
+      RETURN_FAIL("tc=%zu: have \"%s\", want no error", tc, status.repr);
     }
   }
   return NULL;

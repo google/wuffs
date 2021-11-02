@@ -64,8 +64,7 @@ mimic_png_decode(uint64_t* n_bytes_out,
 
   spng_ctx* ctx = spng_ctx_new(0);
 
-  size_t i;
-  for (i = 0; i < quirks_len; i++) {
+  for (size_t i = 0; i < quirks_len; i++) {
     uint32_t q = quirks_ptr[i];
     if (q == WUFFS_BASE__QUIRK_IGNORE_CHECKSUM) {
       spng_set_crc_action(ctx, SPNG_CRC_USE, SPNG_CRC_USE);
@@ -358,8 +357,7 @@ mimic_png_decode(uint64_t* n_bytes_out,
     goto cleanup0;
   }
 
-  size_t i;
-  for (i = 0; i < quirks_len; i++) {
+  for (size_t i = 0; i < quirks_len; i++) {
     uint32_t q = quirks_ptr[i];
     if (q == WUFFS_BASE__QUIRK_IGNORE_CHECKSUM) {
       // TODO: configure libpng to ignore Adler-32 and CRC-32 checksums.

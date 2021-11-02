@@ -424,12 +424,10 @@ fill_rectangle(wuffs_base__rect_ie_u32 rect,
       wuffs_base__color_u32_argb_premul__as__color_u32_argb_nonpremul(color);
   wuffs_base__table_u8 tab = wuffs_base__pixel_buffer__plane(&g_pixbuf, 0);
 
-  uint32_t y;
-  for (y = rect.min_incl_y; y < rect.max_excl_y; y++) {
+  for (uint32_t y = rect.min_incl_y; y < rect.max_excl_y; y++) {
     uint8_t* p =
         tab.ptr + (y * tab.stride) + (rect.min_incl_x * BYTES_PER_PIXEL);
-    uint32_t x;
-    for (x = rect.min_incl_x; x < rect.max_excl_x; x++) {
+    for (uint32_t x = rect.min_incl_x; x < rect.max_excl_x; x++) {
       wuffs_base__poke_u32le__no_bounds_check(p, nonpremul);
       p += BYTES_PER_PIXEL;
     }
@@ -461,8 +459,7 @@ print_nie_frame() {
   if (tab.width == tab.stride) {
     ignore_return_value(write(STDOUT_FD, tab.ptr, tab.width * tab.height));
   } else {
-    size_t y;
-    for (y = 0; y < tab.height; y++) {
+    for (size_t y = 0; y < tab.height; y++) {
       ignore_return_value(
           write(STDOUT_FD, tab.ptr + (y * tab.stride), tab.width));
       break;

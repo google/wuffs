@@ -75,8 +75,7 @@ fill_palette_with_grays(wuffs_base__pixel_buffer* pb) {
   if (palette.len != 1024) {
     return;
   }
-  int i;
-  for (i = 0; i < 256; i++) {
+  for (int i = 0; i < 256; i++) {
     palette.ptr[(4 * i) + 0] = i;
     palette.ptr[(4 * i) + 1] = i;
     palette.ptr[(4 * i) + 2] = i;
@@ -90,8 +89,7 @@ fill_palette_with_nrgba_transparent_yellows(wuffs_base__pixel_buffer* pb) {
   if (palette.len != 1024) {
     return;
   }
-  int i;
-  for (i = 0; i < 256; i++) {
+  for (int i = 0; i < 256; i++) {
     palette.ptr[(4 * i) + 0] = 0x00;
     palette.ptr[(4 * i) + 1] = 0x99;
     palette.ptr[(4 * i) + 2] = 0xCC;
@@ -161,8 +159,7 @@ test_wuffs_pixel_buffer_fill_rect() {
       },
   };
 
-  int d;
-  for (d = 0; d < WUFFS_TESTLIB_ARRAY_SIZE(dsts); d++) {
+  for (size_t d = 0; d < WUFFS_TESTLIB_ARRAY_SIZE(dsts); d++) {
     // Allocate the dst_pixbuf.
     wuffs_base__pixel_config dst_pixcfg = ((wuffs_base__pixel_config){});
     wuffs_base__pixel_config__set(&dst_pixcfg, dsts[d].pixfmt_repr,
@@ -173,13 +170,10 @@ test_wuffs_pixel_buffer_fill_rect() {
                  wuffs_base__pixel_buffer__set_from_slice(
                      &dst_pixbuf, &dst_pixcfg, g_have_slice_u8));
 
-    int orientation;
-    for (orientation = 0; orientation < 2; orientation++) {
+    for (int orientation = 0; orientation < 2; orientation++) {
       // Reset to transparent black (or its closest approximation).
-      uint32_t y;
-      for (y = 0; y < height; y++) {
-        uint32_t x;
-        for (x = 0; x < width; x++) {
+      for (uint32_t y = 0; y < height; y++) {
+        for (uint32_t x = 0; x < width; x++) {
           CHECK_STATUS(
               "set_color_u32_at",
               wuffs_base__pixel_buffer__set_color_u32_at(&dst_pixbuf, x, y, 0));
@@ -204,7 +198,7 @@ test_wuffs_pixel_buffer_fill_rect() {
           wuffs_base__pixel_buffer__color_u32_at(&dst_pixbuf, width / 2,
                                                  height / 2);
       if (colors_differ(have_dst_pixel, want_dst_pixel, 0)) {
-        RETURN_FAIL("d=%d, orientation=%d: dst_pixel: have 0x%08" PRIX32
+        RETURN_FAIL("d=%zu, orientation=%d: dst_pixel: have 0x%08" PRIX32
                     ", want 0x%08" PRIX32,
                     d, orientation, have_dst_pixel, want_dst_pixel);
       }
@@ -324,8 +318,7 @@ test_wuffs_pixel_swizzler_swizzle() {
       WUFFS_BASE__PIXEL_BLEND__SRC_OVER,
   };
 
-  int s;
-  for (s = 0; s < WUFFS_TESTLIB_ARRAY_SIZE(srcs); s++) {
+  for (size_t s = 0; s < WUFFS_TESTLIB_ARRAY_SIZE(srcs); s++) {
     // Allocate the src_pixbuf.
     wuffs_base__pixel_config src_pixcfg = ((wuffs_base__pixel_config){});
     wuffs_base__pixel_config__set(&src_pixcfg, srcs[s].pixfmt_repr,
@@ -350,12 +343,11 @@ test_wuffs_pixel_swizzler_swizzle() {
         wuffs_base__pixel_buffer__color_u32_at(&src_pixbuf, width / 2,
                                                height / 2);
     if (have_src_pixel != srcs[s].color) {
-      RETURN_FAIL("s=%d: src_pixel: have 0x%08" PRIX32 ", want 0x%08" PRIX32, s,
-                  have_src_pixel, srcs[s].color);
+      RETURN_FAIL("s=%zu: src_pixel: have 0x%08" PRIX32 ", want 0x%08" PRIX32,
+                  s, have_src_pixel, srcs[s].color);
     }
 
-    int d;
-    for (d = 0; d < WUFFS_TESTLIB_ARRAY_SIZE(dsts); d++) {
+    for (size_t d = 0; d < WUFFS_TESTLIB_ARRAY_SIZE(dsts); d++) {
       // Allocate the dst_pixbuf.
       wuffs_base__pixel_config dst_pixcfg = ((wuffs_base__pixel_config){});
       wuffs_base__pixel_config__set(&dst_pixcfg, dsts[d].pixfmt_repr,
@@ -378,8 +370,7 @@ test_wuffs_pixel_swizzler_swizzle() {
             WUFFS_TESTLIB_ARRAY_SIZE(fallback_palette_array));
       }
 
-      int b;
-      for (b = 0; b < WUFFS_TESTLIB_ARRAY_SIZE(blends); b++) {
+      for (size_t b = 0; b < WUFFS_TESTLIB_ARRAY_SIZE(blends); b++) {
         // Set the middle dst pixel.
         CHECK_STATUS("set_color_u32_at",
                      wuffs_base__pixel_buffer__set_color_u32_at(
@@ -420,7 +411,7 @@ test_wuffs_pixel_swizzler_swizzle() {
             wuffs_base__pixel_buffer__color_u32_at(&dst_pixbuf, width / 2,
                                                    height / 2);
         if (colors_differ(have_dst_pixel, want_dst_pixel, tolerance)) {
-          RETURN_FAIL("s=%d, d=%d, b=%d: dst_pixel: have 0x%08" PRIX32
+          RETURN_FAIL("s=%zu, d=%zu, b=%zu: dst_pixel: have 0x%08" PRIX32
                       ", want 0x%08" PRIX32 ", per-channel tolerance=%" PRId32,
                       s, d, b, have_dst_pixel, want_dst_pixel, tolerance);
         }
@@ -559,11 +550,9 @@ do_bench_wuffs_pixel_swizzler(uint32_t dst_pixfmt_repr,
 
   bench_start();
   uint64_t n_bytes = 0;
-  uint64_t i;
   uint64_t iters = iters_unscaled * g_flags.iterscale;
-  for (i = 0; i < iters; i++) {
-    uint32_t y;
-    for (y = 0; y < height; y++) {
+  for (uint64_t i = 0; i < iters; i++) {
+    for (uint32_t y = 0; y < height; y++) {
       wuffs_base__pixel_swizzler__swizzle_interleaved_from_slice(
           &swizzler,
           wuffs_base__make_slice_u8(

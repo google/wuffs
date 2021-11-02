@@ -175,9 +175,8 @@ main(int argc, char** argv) {
   // https://play.golang.org/p/IU2T58P00C
   const uint32_t expected_hash_of_1mib_of_zeroes = 0x00f00001UL;
 
-  int i;
   int num_bad = 0;
-  for (i = 0; i < num_reps; i++) {
+  for (int i = 0; i < num_reps; i++) {
     uint32_t actual_hash = calculate_hash(g_buffer, BUFFER_SIZE);
     if (!g_flags.no_check && (actual_hash != expected_hash_of_1mib_of_zeroes)) {
       num_bad++;

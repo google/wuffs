@@ -369,8 +369,7 @@ chdir_to_the_wuffs_root_directory() {
   // Chdir to the Wuffs root directory, assuming that we're starting from
   // somewhere in the Wuffs repository, so we can find the root directory by
   // running chdir("..") a number of times.
-  int n;
-  for (n = 0; n < 64; n++) {
+  for (int n = 0; n < 64; n++) {
     if (access("wuffs-root-directory.txt", F_OK) == 0) {
       return NULL;
     }
@@ -426,11 +425,9 @@ test_main(int argc, char** argv, proc* tests, proc* benches) {
         "# install Go, then run \"go get golang.org/x/perf/cmd/benchstat\".\n");
   }
 
-  int i;
-  for (i = 0; i < reps; i++) {
+  for (int i = 0; i < reps; i++) {
     g_bench_warm_up = i == 0;
-    proc* p;
-    for (p = procs; *p; p++) {
+    for (proc* p = procs; *p; p++) {
       g_proc_func_name = "unknown_func_name";
       g_fail_msg[0] = 0;
       g_in_focus = false;
@@ -562,11 +559,9 @@ copy_to_io_buffer_from_pixel_buffer(wuffs_base__io_buffer* dst,
   }
   size_t bytes_per_pixel = bits_per_pixel / 8;
 
-  uint32_t p;
-  for (p = 0; p < 1; p++) {
+  for (uint32_t p = 0; p < 1; p++) {
     wuffs_base__table_u8 tab = wuffs_base__pixel_buffer__plane(src, p);
-    uint32_t y;
-    for (y = r.min_incl_y; y < r.max_excl_y; y++) {
+    for (uint32_t y = r.min_incl_y; y < r.max_excl_y; y++) {
       wuffs_base__slice_u8 row = wuffs_base__table_u8__row(tab, y);
       if ((r.min_incl_x >= r.max_excl_x) ||
           (r.max_excl_x > (row.len / bytes_per_pixel))) {
@@ -748,8 +743,7 @@ hex_dump(char* msg, wuffs_base__io_buffer* buf, size_t i) {
     return msg;
   }
   size_t base = i - (i & 15);
-  int j;
-  for (j = -3 * 16; j <= +3 * 16; j += 16) {
+  for (int j = -3 * 16; j <= +3 * 16; j += 16) {
     if ((j < 0) && (base < (size_t)(-j))) {
       continue;
     }
@@ -759,8 +753,7 @@ hex_dump(char* msg, wuffs_base__io_buffer* buf, size_t i) {
     }
     size_t n = buf->meta.wi - b;
     INCR_FAIL(msg, "  %06zx:", b);
-    size_t k;
-    for (k = 0; k < 16; k++) {
+    for (size_t k = 0; k < 16; k++) {
       if (k % 2 == 0) {
         INCR_FAIL(msg, " ");
       }
@@ -771,7 +764,7 @@ hex_dump(char* msg, wuffs_base__io_buffer* buf, size_t i) {
       }
     }
     INCR_FAIL(msg, "  ");
-    for (k = 0; k < 16; k++) {
+    for (size_t k = 0; k < 16; k++) {
       char c = ' ';
       if (k < n) {
         c = buf->data.ptr[b + k];
@@ -797,12 +790,10 @@ check_io_buffers_equal(const char* prefix,
     RETURN_FAIL("%sio_buffers_equal: NULL argument", prefix);
   }
   char* msg = g_fail_msg;
-  size_t i;
+  size_t i = 0;
   size_t n = have->meta.wi < want->meta.wi ? have->meta.wi : want->meta.wi;
-  for (i = 0; i < n; i++) {
-    if (have->data.ptr[i] != want->data.ptr[i]) {
-      break;
-    }
+  while ((i < n) && (have->data.ptr[i] == want->data.ptr[i])) {
+    i++;
   }
   if (have->meta.wi != want->meta.wi) {
     INCR_FAIL(msg, "%sio_buffers_equal: wi: have %zu, want %zu.\n", prefix,
@@ -893,8 +884,7 @@ proc_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
     bench_start();
   }
   uint64_t n_bytes = 0;
-  uint64_t i;
-  for (i = 0; i < iters; i++) {
+  for (uint64_t i = 0; i < iters; i++) {
     have.meta.wi = 0;
     src.meta.ri = gt->src_offset0;
     const char* status =
@@ -979,8 +969,7 @@ proc_token_decoder(const char* (*codec_func)(wuffs_base__token_buffer*,
     bench_start();
   }
   uint64_t n_bytes = 0;
-  uint64_t i;
-  for (i = 0; i < iters; i++) {
+  for (uint64_t i = 0; i < iters; i++) {
     have.meta.wi = 0;
     src.meta.ri = gt->src_offset0;
     const char* status =
@@ -1067,8 +1056,7 @@ do_run__wuffs_base__image_decoder(wuffs_base__image_decoder* b,
   wuffs_base__frame_config fc = ((wuffs_base__frame_config){});
   wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
 
-  size_t i;
-  for (i = 0; i < quirks_len; i++) {
+  for (size_t i = 0; i < quirks_len; i++) {
     wuffs_base__image_decoder__set_quirk_enabled(b, quirks_ptr[i], true);
   }
 
@@ -1145,9 +1133,8 @@ do_bench_image_decode(
 
   bench_start();
   uint64_t n_bytes = 0;
-  uint64_t i;
   uint64_t iters = iters_unscaled * g_flags.iterscale;
-  for (i = 0; i < iters; i++) {
+  for (uint64_t i = 0; i < iters; i++) {
     src.meta.ri = src_ri;
     CHECK_STRING((*decode_func)(&n_bytes, NULL, wuffs_initialize_flags, pixfmt,
                                 quirks_ptr, quirks_len, &src));

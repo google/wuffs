@@ -330,8 +330,7 @@ decode(bool frag_dst, bool frag_idat) {
   struct timeval bench_start_tv;
   gettimeofday(&bench_start_tv, NULL);
 
-  int i;
-  for (i = 0; i < reps; i++) {
+  for (int i = 0; i < reps; i++) {
     const char* msg = decode_once(frag_dst, frag_idat);
     if (msg) {
       return msg;
@@ -399,8 +398,7 @@ main(int argc, char** argv) {
       "it, first\n"
       "# install Go, then run \"go get golang.org/x/perf/cmd/benchstat\".\n");
 
-  int i;
-  for (i = 0; i < 5; i++) {
+  for (int i = 0; i < 5; i++) {
     msg = decode(true, true);
     if (msg) {
       return fail(msg);

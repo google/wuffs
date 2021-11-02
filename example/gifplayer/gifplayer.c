@@ -215,11 +215,9 @@ restore_background(wuffs_base__pixel_buffer* pb,
                    wuffs_base__rect_ie_u32 bounds,
                    wuffs_base__color_u32_argb_premul background_color) {
   size_t width4 = (size_t)(wuffs_base__pixel_config__width(&pb->pixcfg)) * 4;
-  size_t y;
-  for (y = bounds.min_incl_y; y < bounds.max_excl_y; y++) {
-    size_t x;
+  for (size_t y = bounds.min_incl_y; y < bounds.max_excl_y; y++) {
     uint8_t* d = g_curr_dst_buffer + (y * width4) + (bounds.min_incl_x * 4);
-    for (x = bounds.min_incl_x; x < bounds.max_excl_x; x++) {
+    for (size_t x = bounds.min_incl_x; x < bounds.max_excl_x; x++) {
       wuffs_base__poke_u32le__no_bounds_check(d, background_color);
       d += sizeof(wuffs_base__color_u32_argb_premul);
     }
@@ -234,10 +232,8 @@ print_ascii_art(wuffs_base__pixel_buffer* pb) {
   uint8_t* d = g_curr_dst_buffer;
   uint8_t* p = g_printbuf.ptr;
   *p++ = '\n';
-  uint32_t y;
-  for (y = 0; y < height; y++) {
-    uint32_t x;
-    for (x = 0; x < width; x++) {
+  for (uint32_t y = 0; y < height; y++) {
+    for (uint32_t x = 0; x < width; x++) {
       wuffs_base__color_u32_argb_premul c =
           wuffs_base__peek_u32le__no_bounds_check(d);
       d += sizeof(wuffs_base__color_u32_argb_premul);
@@ -265,10 +261,8 @@ print_color_art(wuffs_base__pixel_buffer* pb) {
   uint8_t* p = g_printbuf.ptr;
   *p++ = '\n';
   p += sprintf((char*)p, "%s", g_reset_color);
-  uint32_t y;
-  for (y = 0; y < height; y++) {
-    uint32_t x;
-    for (x = 0; x < width; x++) {
+  for (uint32_t y = 0; y < height; y++) {
+    for (uint32_t x = 0; x < width; x++) {
       wuffs_base__color_u32_argb_premul c =
           wuffs_base__peek_u32le__no_bounds_check(d);
       d += sizeof(wuffs_base__color_u32_argb_premul);
@@ -416,10 +410,9 @@ play() {
     if (wuffs_base__frame_config__index(&fc) == 0) {
       wuffs_base__color_u32_argb_premul background_color =
           wuffs_base__frame_config__background_color(&fc);
-      size_t i;
       size_t n = g_dst_len / sizeof(wuffs_base__color_u32_argb_premul);
       uint8_t* p = g_curr_dst_buffer;
-      for (i = 0; i < n; i++) {
+      for (size_t i = 0; i < n; i++) {
         wuffs_base__poke_u32le__no_bounds_check(p, background_color);
         p += sizeof(wuffs_base__color_u32_argb_premul);
       }

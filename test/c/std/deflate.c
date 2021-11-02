@@ -269,8 +269,7 @@ test_wuffs_deflate_decode_deflate_huffman_primlen_9() {
   CHECK_STATUS("transform_io", wuffs_deflate__decoder__transform_io(
                                    &dec, &have, &src, g_work_slice_u8));
 
-  int i;
-  for (i = 0; i < 2; i++) {
+  for (int i = 0; i < 2; i++) {
     // Find the first unused (i.e. zero) entry in the i'th huffs table.
     int have = WUFFS_DEFLATE__HUFFS_TABLE_SIZE;
     while ((have > 0) && (dec.private_data.f_huffs[i][have - 1] == 0)) {
@@ -354,8 +353,7 @@ test_wuffs_deflate_decode_split_src() {
   CHECK_STRING(read_file(&src, gt->src_filename));
   CHECK_STRING(read_file(&want, gt->want_filename));
 
-  int i;
-  for (i = 1; i < 32; i++) {
+  for (int i = 1; i < 32; i++) {
     size_t split = gt->src_offset0 + i;
     if (split >= gt->src_offset1) {
       RETURN_FAIL("i=%d: split was not an interior split", i);
@@ -468,8 +466,7 @@ test_wuffs_deflate_history_full() {
   CHECK_STRING(read_file(&want, gt->want_filename));
 
   const int full_history_size = 0x8000;
-  int i;
-  for (i = -2; i <= +2; i++) {
+  for (int i = -2; i <= +2; i++) {
     wuffs_deflate__decoder dec;
     CHECK_STATUS("initialize",
                  wuffs_deflate__decoder__initialize(
@@ -531,8 +528,7 @@ test_wuffs_deflate_history_partial() {
       0x8000, 0x8001, 0x9234, 0xFFFB, 0xFFFC, 0xFFFD, 0xFFFE, 0xFFFF,
   };
 
-  int i;
-  for (i = 0; i < WUFFS_TESTLIB_ARRAY_SIZE(starting_history_indexes); i++) {
+  for (int i = 0; i < WUFFS_TESTLIB_ARRAY_SIZE(starting_history_indexes); i++) {
     uint32_t starting_history_index = starting_history_indexes[i];
 
     // The flate_pi_gt golden test file decodes to the digits of pi.
@@ -564,8 +560,7 @@ test_wuffs_deflate_history_partial() {
                   have_history_index, (int)(want_full), want_history_index);
     }
 
-    int j;
-    for (j = -2; j < (int)(fragment_length) + 2; j++) {
+    for (int j = -2; j < (int)(fragment_length) + 2; j++) {
       uint32_t index = (starting_history_index + j) & 0x7FFF;
       uint8_t have = dec.private_data.f_history[index];
       uint8_t want = (0 <= j && j < fragment_length) ? fragment[j] : 0;
@@ -633,7 +628,6 @@ test_wuffs_deflate_table_redirect() {
                    WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
   memset(&(dec.private_data.f_huffs), 0, sizeof(dec.private_data.f_huffs));
 
-  int i;
   int n = 0;
   dec.private_data.f_code_lengths[n++] = 1;
   dec.private_data.f_code_lengths[n++] = 2;
@@ -644,7 +638,7 @@ test_wuffs_deflate_table_redirect() {
   dec.private_data.f_code_lengths[n++] = 7;
   dec.private_data.f_code_lengths[n++] = 9;
   dec.private_data.f_code_lengths[n++] = 10;
-  for (i = 0; i < 19; i++) {
+  for (int i = 0; i < 19; i++) {
     dec.private_data.f_code_lengths[n++] = 12;
   }
   dec.private_data.f_code_lengths[n++] = 13;
@@ -658,7 +652,7 @@ test_wuffs_deflate_table_redirect() {
   // should be zero outside of those tables.
   const int n_f_huffs = sizeof(dec.private_data.f_huffs[0]) /
                         sizeof(dec.private_data.f_huffs[0][0]);
-  for (i = 0; i < n_f_huffs; i++) {
+  for (int i = 0; i < n_f_huffs; i++) {
     bool have = dec.private_data.f_huffs[0][i] == 0;
     bool want = i >= (1 << 9) + (1 << 3) + (1 << 3) + (1 << 4);
     if (have != want) {
@@ -696,7 +690,7 @@ test_wuffs_deflate_table_redirect() {
       0x80000801, 0x80000903, 0x80000801, 0x80000B03,
       0x80000801, 0x80000A03, 0x80000801, 0x80000C03,
   };
-  for (i = 0; i < 8; i++) {
+  for (int i = 0; i < 8; i++) {
     have = dec.private_data.f_huffs[0][0x0200 + i];
     want = wants[i];
     if (have != want) {
