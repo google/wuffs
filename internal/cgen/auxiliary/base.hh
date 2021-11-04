@@ -20,7 +20,6 @@
 #include <stdio.h>
 
 #include <string>
-#include <vector>
 
 namespace wuffs_aux {
 
@@ -34,6 +33,59 @@ using IOBuffer = wuffs_base__io_buffer;
 using MemOwner = std::unique_ptr<void, decltype(&free)>;
 
 namespace sync_io {
+
+// --------
+
+// DynIOBuffer is an IOBuffer that is backed by a dynamically sized byte array.
+// It owns that backing array and will free it in its destructor.
+//
+// The array size can be explicitly extended (by calling the grow method) but,
+// unlike a C++ std::vector, there is no implicit extension (e.g. by calling
+// std::vector::insert) and its maximum size is capped by the max_incl
+// constructor argument.
+//
+// It contains an IOBuffer-typed field whose reader side provides access to
+// previously written bytes and whose writer side provides access to the
+// allocated but not-yet-written-to slack space. For Go programmers, this slack
+// space is roughly analogous to the s[len(s):cap(s)] space of a slice s.
+class DynIOBuffer {
+ public:
+  enum GrowResult {
+    OK = 0,
+    FailedMaxInclExceeded = 1,
+    FailedOutOfMemory = 2,
+  };
+
+  // m_buf holds the dynamically sized byte array and its read/write indexes:
+  //  - m_buf.meta.wi  is roughly analogous to a Go slice's length.
+  //  - m_buf.data.len is roughly analogous to a Go slice's capacity. It is
+  //    also equal to the m_buf.data.ptr malloc/realloc size.
+  //
+  // Users should not modify the m_buf.data.ptr or m_buf.data.len fields (as
+  // they are conceptually private to this class), but they can modify the
+  // bytes referenced by that pointer-length pair (e.g. compactions).
+  IOBuffer m_buf;
+
+  // Constructor and destructor.
+  explicit DynIOBuffer(uint64_t max_incl);
+  ~DynIOBuffer();
+
+  // grow ensures that the byte array size is at least min_incl and at most
+  // max_incl. It returns FailedMaxInclExceeded if that would require
+  // allocating more than max_incl bytes, including the case where (min_incl >
+  // max_incl). It returns FailedOutOfMemory if memory allocation failed.
+  GrowResult grow(uint64_t min_incl);
+
+ private:
+  // m_max_incl is an inclusive upper bound on the backing array size.
+  const uint64_t m_max_incl;
+
+  // Delete the copy and assign constructors.
+  DynIOBuffer(const DynIOBuffer&) = delete;
+  DynIOBuffer& operator=(const DynIOBuffer&) = delete;
+
+  static uint64_t round_up(uint64_t min_incl, uint64_t max_incl);
+};
 
 // --------
 

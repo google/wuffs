@@ -9867,7 +9867,6 @@ struct wuffs_wbmp__decoder__struct {
 #include <stdio.h>
 
 #include <string>
-#include <vector>
 
 namespace wuffs_aux {
 
@@ -9881,6 +9880,59 @@ using IOBuffer = wuffs_base__io_buffer;
 using MemOwner = std::unique_ptr<void, decltype(&free)>;
 
 namespace sync_io {
+
+// --------
+
+// DynIOBuffer is an IOBuffer that is backed by a dynamically sized byte array.
+// It owns that backing array and will free it in its destructor.
+//
+// The array size can be explicitly extended (by calling the grow method) but,
+// unlike a C++ std::vector, there is no implicit extension (e.g. by calling
+// std::vector::insert) and its maximum size is capped by the max_incl
+// constructor argument.
+//
+// It contains an IOBuffer-typed field whose reader side provides access to
+// previously written bytes and whose writer side provides access to the
+// allocated but not-yet-written-to slack space. For Go programmers, this slack
+// space is roughly analogous to the s[len(s):cap(s)] space of a slice s.
+class DynIOBuffer {
+ public:
+  enum GrowResult {
+    OK = 0,
+    FailedMaxInclExceeded = 1,
+    FailedOutOfMemory = 2,
+  };
+
+  // m_buf holds the dynamically sized byte array and its read/write indexes:
+  //  - m_buf.meta.wi  is roughly analogous to a Go slice's length.
+  //  - m_buf.data.len is roughly analogous to a Go slice's capacity. It is
+  //    also equal to the m_buf.data.ptr malloc/realloc size.
+  //
+  // Users should not modify the m_buf.data.ptr or m_buf.data.len fields (as
+  // they are conceptually private to this class), but they can modify the
+  // bytes referenced by that pointer-length pair (e.g. compactions).
+  IOBuffer m_buf;
+
+  // Constructor and destructor.
+  explicit DynIOBuffer(uint64_t max_incl);
+  ~DynIOBuffer();
+
+  // grow ensures that the byte array size is at least min_incl and at most
+  // max_incl. It returns FailedMaxInclExceeded if that would require
+  // allocating more than max_incl bytes, including the case where (min_incl >
+  // max_incl). It returns FailedOutOfMemory if memory allocation failed.
+  GrowResult grow(uint64_t min_incl);
+
+ private:
+  // m_max_incl is an inclusive upper bound on the backing array size.
+  const uint64_t m_max_incl;
+
+  // Delete the copy and assign constructors.
+  DynIOBuffer(const DynIOBuffer&) = delete;
+  DynIOBuffer& operator=(const DynIOBuffer&) = delete;
+
+  static uint64_t round_up(uint64_t min_incl, uint64_t max_incl);
+};
 
 // --------
 
@@ -40174,6 +40226,63 @@ namespace sync_io {
 
 // --------
 
+DynIOBuffer::DynIOBuffer(uint64_t max_incl)
+    : m_buf(wuffs_base__empty_io_buffer()), m_max_incl(max_incl) {}
+
+DynIOBuffer::~DynIOBuffer() {
+  if (m_buf.data.ptr) {
+    free(m_buf.data.ptr);
+  }
+}
+
+DynIOBuffer::GrowResult  //
+DynIOBuffer::grow(uint64_t min_incl) {
+  uint64_t n = round_up(min_incl, m_max_incl);
+  if (n == 0) {
+    return ((min_incl == 0) && (m_max_incl == 0))
+               ? DynIOBuffer::GrowResult::OK
+               : DynIOBuffer::GrowResult::FailedMaxInclExceeded;
+  } else if (n > m_buf.data.len) {
+    uint8_t* ptr = static_cast<uint8_t*>(realloc(m_buf.data.ptr, n));
+    if (!ptr) {
+      return DynIOBuffer::GrowResult::FailedOutOfMemory;
+    }
+    m_buf.data.ptr = ptr;
+    m_buf.data.len = n;
+  }
+  return DynIOBuffer::GrowResult::OK;
+}
+
+// round_up rounds min_incl up, returning the smallest value x satisfying
+// (min_incl <= x) and (x <= max_incl) and some other constraints. It returns 0
+// if there is no such x.
+//
+// When max_incl <= 4096, the other constraints are:
+//  - (x == max_incl)
+//
+// When max_incl >  4096, the other constraints are:
+//  - (x == max_incl) or (x is a power of 2)
+//  - (x >= 4096)
+uint64_t  //
+DynIOBuffer::round_up(uint64_t min_incl, uint64_t max_incl) {
+  if (min_incl > max_incl) {
+    return 0;
+  }
+  uint64_t n = 4096;
+  if (n >= max_incl) {
+    return max_incl;
+  }
+  while (n < min_incl) {
+    if (n >= (max_incl / 2)) {
+      return max_incl;
+    }
+    n *= 2;
+  }
+  return n;
+}
+
+// --------
+
 Input::~Input() {}
 
 IOBuffer*  //
@@ -40252,6 +40361,8 @@ namespace private_impl {
 
 const char ErrMsg_MaxInclMetadataLengthExceeded[] =  //
     "wuffs_aux::private_impl: max_incl_metadata_length exceeded";
+const char ErrMsg_OutOfMemory[] =  //
+    "wuffs_aux::private_impl: out of memory";
 const char ErrMsg_UnexpectedEndOfFile[] =  //
     "wuffs_aux::private_impl: unexpected end of file";
 const char ErrMsg_UnsupportedMetadata[] =  //
@@ -40301,15 +40412,15 @@ HandleMetadata(
                                         wuffs_base__slice_u8),
     void* handle_metadata_receiver) {
   wuffs_base__more_information minfo = wuffs_base__empty_more_information();
-  std::vector<uint8_t> raw;
+  sync_io::DynIOBuffer raw(max_incl_metadata_length);
 
   while (true) {
-    wuffs_base__io_buffer empty = wuffs_base__empty_io_buffer();
     minfo = wuffs_base__empty_more_information();
-    wuffs_base__status status =
-        (*tell_me_more_func)(tell_me_more_receiver, &empty, &minfo, &io_buf);
+    wuffs_base__status status = (*tell_me_more_func)(
+        tell_me_more_receiver, &raw.m_buf, &minfo, &io_buf);
     switch (minfo.flavor) {
       case 0:
+      case WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA_RAW_TRANSFORM:
       case WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA_PARSED:
         break;
 
@@ -40317,9 +40428,22 @@ HandleMetadata(
         wuffs_base__range_ie_u64 r = minfo.metadata_raw_passthrough__range();
         if (r.is_empty()) {
           break;
-        } else if (r.length() > (max_incl_metadata_length - raw.size())) {
+        }
+        uint64_t num_to_copy = r.length();
+        if (num_to_copy > (max_incl_metadata_length - raw.m_buf.meta.wi)) {
           return ErrMsg_MaxInclMetadataLengthExceeded;
-        } else if (io_buf.reader_position() > r.min_incl) {
+        } else if (num_to_copy > (raw.m_buf.data.len - raw.m_buf.meta.wi)) {
+          switch (raw.grow(num_to_copy + raw.m_buf.meta.wi)) {
+            case sync_io::DynIOBuffer::GrowResult::OK:
+              break;
+            case sync_io::DynIOBuffer::GrowResult::FailedMaxInclExceeded:
+              return ErrMsg_MaxInclMetadataLengthExceeded;
+            case sync_io::DynIOBuffer::GrowResult::FailedOutOfMemory:
+              return ErrMsg_OutOfMemory;
+          }
+        }
+
+        if (io_buf.reader_position() > r.min_incl) {
           return ErrMsg_UnsupportedMetadata;
         } else {
           std::string error_message =
@@ -40330,12 +40454,12 @@ HandleMetadata(
         }
 
         for (uint64_t num_to_copy = r.length(); num_to_copy > 0;) {
-          uint8_t* ptr = io_buf.reader_pointer();
-          uint64_t len =
+          uint64_t n =
               wuffs_base__u64__min(num_to_copy, io_buf.reader_length());
-          raw.insert(raw.end(), ptr, ptr + len);
-          io_buf.meta.ri += len;
-          num_to_copy -= len;
+          memcpy(raw.m_buf.writer_pointer(), io_buf.reader_pointer(), n);
+          raw.m_buf.meta.wi += n;
+          io_buf.meta.ri += n;
+          num_to_copy -= n;
           if (num_to_copy == 0) {
             break;
           } else if (io_buf.meta.closed) {
@@ -40358,13 +40482,22 @@ HandleMetadata(
     if (status.repr == nullptr) {
       break;
     } else if (status.repr != wuffs_base__suspension__even_more_information) {
-      return status.message();
+      if (status.repr != wuffs_base__suspension__short_write) {
+        return status.message();
+      }
+      switch (raw.grow(wuffs_base__u64__sat_add(raw.m_buf.data.len, 1))) {
+        case sync_io::DynIOBuffer::GrowResult::OK:
+          break;
+        case sync_io::DynIOBuffer::GrowResult::FailedMaxInclExceeded:
+          return ErrMsg_MaxInclMetadataLengthExceeded;
+        case sync_io::DynIOBuffer::GrowResult::FailedOutOfMemory:
+          return ErrMsg_OutOfMemory;
+      }
     }
   }
 
-  return (*handle_metadata_func)(
-      handle_metadata_receiver, &minfo,
-      wuffs_base__make_slice_u8(raw.data(), raw.size()));
+  return (*handle_metadata_func)(handle_metadata_receiver, &minfo,
+                                 raw.m_buf.reader_slice());
 }
 
 }  // namespace private_impl
@@ -40966,6 +41099,8 @@ DecodeImageErrorMessage(std::string s) {
   if (!s.empty()) {
     if (s == private_impl::ErrMsg_MaxInclMetadataLengthExceeded) {
       return DecodeImage_MaxInclMetadataLengthExceeded;
+    } else if (s == private_impl::ErrMsg_OutOfMemory) {
+      return DecodeImage_OutOfMemory;
     } else if (s == private_impl::ErrMsg_UnexpectedEndOfFile) {
       return DecodeImage_UnexpectedEndOfFile;
     } else if (s == private_impl::ErrMsg_UnsupportedMetadata) {

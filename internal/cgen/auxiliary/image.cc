@@ -242,6 +242,8 @@ DecodeImageErrorMessage(std::string s) {
   if (!s.empty()) {
     if (s == private_impl::ErrMsg_MaxInclMetadataLengthExceeded) {
       return DecodeImage_MaxInclMetadataLengthExceeded;
+    } else if (s == private_impl::ErrMsg_OutOfMemory) {
+      return DecodeImage_OutOfMemory;
     } else if (s == private_impl::ErrMsg_UnexpectedEndOfFile) {
       return DecodeImage_UnexpectedEndOfFile;
     } else if (s == private_impl::ErrMsg_UnsupportedMetadata) {
