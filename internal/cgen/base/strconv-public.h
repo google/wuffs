@@ -96,9 +96,9 @@
 
 // wuffs_base__ieee_754_bit_representation__etc converts between a double
 // precision numerical value and its IEEE 754 representations:
-//   - 16-bit: 1 sign bit,  5 exponent bits, 10 explicit significand bits.
-//   - 32-bit: 1 sign bit,  8 exponent bits, 23 explicit significand bits.
-//   - 64-bit: 1 sign bit, 11 exponent bits, 52 explicit significand bits.
+//  - 16-bit: 1 sign bit,  5 exponent bits, 10 explicit significand bits.
+//  - 32-bit: 1 sign bit,  8 exponent bits, 23 explicit significand bits.
+//  - 64-bit: 1 sign bit, 11 exponent bits, 52 explicit significand bits.
 //
 // For example, it converts between:
 //  - +1.0 and 0x3C00, 0x3F80_0000 or 0x3FF0_0000_0000_0000.

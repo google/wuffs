@@ -5239,9 +5239,9 @@ wuffs_base__pixel_swizzler::swizzle_interleaved_from_slice(
 
 // wuffs_base__ieee_754_bit_representation__etc converts between a double
 // precision numerical value and its IEEE 754 representations:
-//   - 16-bit: 1 sign bit,  5 exponent bits, 10 explicit significand bits.
-//   - 32-bit: 1 sign bit,  8 exponent bits, 23 explicit significand bits.
-//   - 64-bit: 1 sign bit, 11 exponent bits, 52 explicit significand bits.
+//  - 16-bit: 1 sign bit,  5 exponent bits, 10 explicit significand bits.
+//  - 32-bit: 1 sign bit,  8 exponent bits, 23 explicit significand bits.
+//  - 64-bit: 1 sign bit, 11 exponent bits, 52 explicit significand bits.
 //
 // For example, it converts between:
 //  - +1.0 and 0x3C00, 0x3F80_0000 or 0x3FF0_0000_0000_0000.
@@ -12797,14 +12797,14 @@ wuffs_base__ieee_754_bit_representation__from_f64_to_u32_truncate(double f) {
 // padded with implicit zeroes.
 //
 // For example, if num_digits is 3 and digits is "\x07\x08\x09":
-//   - A decimal_point of -2 means ".00789"
-//   - A decimal_point of -1 means ".0789"
-//   - A decimal_point of +0 means ".789"
-//   - A decimal_point of +1 means "7.89"
-//   - A decimal_point of +2 means "78.9"
-//   - A decimal_point of +3 means "789."
-//   - A decimal_point of +4 means "7890."
-//   - A decimal_point of +5 means "78900."
+//  - A decimal_point of -2 means ".00789"
+//  - A decimal_point of -1 means ".0789"
+//  - A decimal_point of +0 means ".789"
+//  - A decimal_point of +1 means "7.89"
+//  - A decimal_point of +2 means "78.9"
+//  - A decimal_point of +3 means "789."
+//  - A decimal_point of +4 means "7890."
+//  - A decimal_point of +5 means "78900."
 //
 // As above, a decimal_point higher than +2047 means that the overall value is
 // infinity, lower than -2047 means zero.
@@ -13149,10 +13149,10 @@ wuffs_base__private_implementation__high_prec_dec__lshift_num_new_digits(
 // wuffs_base__private_implementation__high_prec_dec__rounded_integer returns
 // the integral (non-fractional) part of h, provided that it is 18 or fewer
 // decimal digits. For 19 or more digits, it returns UINT64_MAX. Note that:
-//   - (1 << 53) is    9007199254740992, which has 16 decimal digits.
-//   - (1 << 56) is   72057594037927936, which has 17 decimal digits.
-//   - (1 << 59) is  576460752303423488, which has 18 decimal digits.
-//   - (1 << 63) is 9223372036854775808, which has 19 decimal digits.
+//  - (1 << 53) is    9007199254740992, which has 16 decimal digits.
+//  - (1 << 56) is   72057594037927936, which has 17 decimal digits.
+//  - (1 << 59) is  576460752303423488, which has 18 decimal digits.
+//  - (1 << 63) is 9223372036854775808, which has 19 decimal digits.
 // and that IEEE 754 double precision has 52 mantissa bits.
 //
 // That integral part is rounded-to-even: rounding 7.5 or 8.5 both give 8.
