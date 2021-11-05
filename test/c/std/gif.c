@@ -1312,12 +1312,14 @@ do_test_wuffs_gif_decode_metadata(bool full) {
           if (wuffs_base__status__is_error(&status)) {
             RETURN_FAIL("tell_me_more (iccp=%d, xmp=%d): \"%s\"", iccp, xmp,
                         status.repr);
-          } else if (minfo.flavor !=
-                     WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA) {
-            RETURN_FAIL("tell_me_more (iccp=%d, xmp=%d): flavor: have %" PRIu32
-                        ", want %" PRIu32,
-                        iccp, xmp, minfo.flavor,
-                        WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA);
+          } else if (
+              minfo.flavor !=
+              WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA_RAW_PASSTHROUGH) {
+            RETURN_FAIL(
+                "tell_me_more (iccp=%d, xmp=%d): flavor: have %" PRIu32
+                ", want %" PRIu32,
+                iccp, xmp, minfo.flavor,
+                WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA_RAW_PASSTHROUGH);
           }
 
           have_fourcc = wuffs_base__more_information__metadata__fourcc(&minfo);
