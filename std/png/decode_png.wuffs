@@ -965,7 +965,7 @@ pub func decoder.workbuf_len() base.range_ii_u64 {
 //  3: log2(y_stride)
 //  4: y_stride - y_offset - 1
 //  5: y_offset
-pri const INTERLACING : array[8] array[6] base.u8[..= 8] = [
+pri const INTERLACING : array[8] array[6] base.u8[..= 7] = [
 	[0, 0, 0, 0, 0, 0],  // non-interlaced; xy_stride=1, xy_offset=0
 	[3, 7, 0, 3, 7, 0],  // interlace_pass == 1
 	[3, 3, 4, 3, 7, 0],  // interlace_pass == 2
