@@ -560,6 +560,97 @@ test_wuffs_png_decode_metadata_chrm_gama_srgb() {
   return NULL;
 }
 
+const char*  //
+test_wuffs_png_decode_metadata_iccp() {
+  CHECK_FOCUS(__func__);
+  wuffs_base__io_buffer have = ((wuffs_base__io_buffer){
+      .data = g_have_slice_u8,
+  });
+  wuffs_base__io_buffer want = ((wuffs_base__io_buffer){
+      .data = g_want_slice_u8,
+  });
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = g_src_slice_u8,
+  });
+  CHECK_STRING(read_file(&want, "test/data/DCI-P3-D65.icc"));
+  CHECK_STRING(read_file(
+      &src, "test/data/red-blue-gradient.dcip3d65-no-chrm-no-gama.png"));
+
+  bool seen_iccp = false;
+
+  wuffs_png__decoder dec;
+  CHECK_STATUS("initialize",
+               wuffs_png__decoder__initialize(
+                   &dec, sizeof dec, WUFFS_VERSION,
+                   WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+  wuffs_png__decoder__set_report_metadata(&dec, WUFFS_BASE__FOURCC__ICCP, true);
+
+  wuffs_base__image_config ic = ((wuffs_base__image_config){});
+
+  while (true) {
+    wuffs_base__status status =
+        wuffs_png__decoder__decode_image_config(&dec, &ic, &src);
+    if (wuffs_base__status__is_ok(&status)) {
+      break;
+    } else if (status.repr != wuffs_base__note__metadata_reported) {
+      RETURN_FAIL("decode_image_config: have \"%s\", want \"%s\"", status.repr,
+                  wuffs_base__note__metadata_reported);
+    }
+
+    {
+      wuffs_base__more_information minfo = wuffs_base__empty_more_information();
+      wuffs_base__status status =
+          wuffs_png__decoder__tell_me_more(&dec, &have, &minfo, &src);
+      if (!wuffs_base__status__is_ok(&status)) {
+        RETURN_FAIL("tell_me_more: \"%s\"", status.repr);
+      } else if (minfo.flavor !=
+                 WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA_RAW_TRANSFORM) {
+        RETURN_FAIL(
+            "tell_me_more: flavor: have %" PRIu32 ", want %" PRIu32,
+            minfo.flavor,
+            WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA_RAW_TRANSFORM);
+      } else if (wuffs_base__more_information__metadata__fourcc(&minfo) !=
+                 WUFFS_BASE__FOURCC__ICCP) {
+        RETURN_FAIL("tell_me_more: fourcc: have %" PRIu32 ", want %" PRIu32,
+                    wuffs_base__more_information__metadata__fourcc(&minfo),
+                    WUFFS_BASE__FOURCC__ICCP);
+      }
+      CHECK_STRING(check_io_buffers_equal("", &have, &want));
+      seen_iccp = true;
+    }
+  }
+
+  if (!seen_iccp) {
+    RETURN_FAIL("seen_iccp: have %d, want %d", seen_iccp, true);
+  }
+
+  {
+    uint64_t have = wuffs_base__image_config__first_frame_io_position(&ic);
+    uint64_t want = 431;
+    if (have != want) {
+      RETURN_FAIL("first_frame_io_position: have %" PRIu64 ", want %" PRIu64,
+                  have, want);
+    }
+  }
+
+  {
+    wuffs_base__frame_config fc = ((wuffs_base__frame_config){});
+    wuffs_base__status status =
+        wuffs_png__decoder__decode_frame_config(&dec, &fc, &src);
+    if (!wuffs_base__status__is_ok(&status)) {
+      RETURN_FAIL("decode_frame_config: %s", status.repr);
+    }
+    uint32_t have = wuffs_base__frame_config__width(&fc);
+    uint32_t want = 256;
+    if (have != want) {
+      RETURN_FAIL("decode_frame_config: width: have %" PRIu32 ", want %" PRIu32,
+                  have, want);
+    }
+  }
+
+  return NULL;
+}
+
 // ---------------- Mimic Tests
 
 #ifdef WUFFS_MIMIC
@@ -890,6 +981,7 @@ proc g_tests[] = {
     test_wuffs_png_decode_frame_config,
     test_wuffs_png_decode_interface,
     test_wuffs_png_decode_metadata_chrm_gama_srgb,
+    test_wuffs_png_decode_metadata_iccp,
 
 #ifdef WUFFS_MIMIC
 

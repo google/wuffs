@@ -96,6 +96,8 @@ pub struct decoder? implements base.image_decoder(
 	seen_srgb : base.bool,
 	seen_trns : base.bool,
 
+	zlib_is_dirty : base.bool,
+
 	dst_pixfmt : base.u32,
 	src_pixfmt : base.u32,
 
@@ -214,15 +216,18 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 			}
 			yield? status
 		} endwhile
+
+		// If we have metadata, delay reading (skipping) the ancillary chunk's
+		// CRC-32 checksum until the end of tell_me_more.
+		if this.metadata_fourcc <> 0 {
+			this.call_sequence = 1
+			return base."@metadata reported"
+		}
+
 		checksum_want = args.src.read_u32be?()
 		if (not this.ignore_checksum) and (this.chunk_type == 'PLTE'le) and
 			(checksum_have <> checksum_want) {
 			return "#bad checksum"
-		}
-
-		if this.metadata_fourcc <> 0 {
-			this.call_sequence = 1
-			return base."@metadata reported"
 		}
 	} endwhile
 
@@ -448,6 +453,13 @@ pri func decoder.decode_other_chunk?(src: base.io_reader) {
 		this.decode_gama?(src: args.src)
 		this.seen_gama = true
 
+	} else if (this.chunk_type == 'iCCP'le) and this.report_metadata_iccp {
+		if this.seen_iccp {
+			return "#bad chunk"
+		}
+		this.decode_iccp?(src: args.src)
+		this.seen_iccp = true
+
 	} else if (this.chunk_type == 'sRGB'le) and this.report_metadata_srgb {
 		if this.seen_srgb {
 			return "#bad chunk"
@@ -474,6 +486,7 @@ pri func decoder.decode_chrm?(src: base.io_reader) {
 	if this.chunk_length <> 32 {
 		return "#bad chunk"
 	}
+	this.chunk_length = 0
 	this.metadata_flavor = base.MORE_INFORMATION__FLAVOR__METADATA_PARSED
 	this.metadata_fourcc = 'CHRM'be
 	this.metadata_x = 0
@@ -508,9 +521,42 @@ pri func decoder.decode_gama?(src: base.io_reader) {
 	if this.chunk_length <> 4 {
 		return "#bad chunk"
 	}
+	this.chunk_length = 0
 	this.metadata_flavor = base.MORE_INFORMATION__FLAVOR__METADATA_PARSED
 	this.metadata_fourcc = 'GAMA'be
 	this.metadata_x = args.src.read_u32be_as_u64?()
+	this.metadata_y = 0
+	this.metadata_z = 0
+}
+
+pri func decoder.decode_iccp?(src: base.io_reader) {
+	var c : base.u8
+
+	// Skip the NUL-terminated color profile name.
+	while true {
+		if this.chunk_length <= 0 {
+			return "#bad chunk"
+		}
+		this.chunk_length -= 1
+		c = args.src.read_u8?()
+		if c == 0 {
+			break
+		}
+	} endwhile
+
+	// The compression method byte must be zero.
+	if this.chunk_length <= 0 {
+		return "#bad chunk"
+	}
+	this.chunk_length -= 1
+	c = args.src.read_u8?()
+	if c <> 0 {
+		return "#bad chunk"
+	}
+
+	this.metadata_flavor = base.MORE_INFORMATION__FLAVOR__METADATA_RAW_TRANSFORM
+	this.metadata_fourcc = 'ICCP'be
+	this.metadata_x = 0
 	this.metadata_y = 0
 	this.metadata_z = 0
 }
@@ -552,6 +598,7 @@ pri func decoder.decode_srgb?(src: base.io_reader) {
 	if this.chunk_length <> 1 {
 		return "#bad chunk"
 	}
+	this.chunk_length = 0
 	this.metadata_flavor = base.MORE_INFORMATION__FLAVOR__METADATA_PARSED
 	this.metadata_fourcc = 'SRGB'be
 	this.metadata_x = args.src.read_u8_as_u64?()
@@ -634,6 +681,14 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 	} else {
 		return base."@end of data"
 	}
+
+	if this.zlib_is_dirty {
+		this.zlib.reset!()
+		if this.ignore_checksum {
+			this.zlib.set_quirk_enabled!(quirk: base.QUIRK_IGNORE_CHECKSUM, enabled: true)
+		}
+	}
+	this.zlib_is_dirty = true
 
 	status = this.swizzler.prepare!(
 		dst_pixfmt: args.dst.pixel_format(),
@@ -822,20 +877,62 @@ pub func decoder.set_report_metadata!(fourcc: base.u32, report: base.bool) {
 }
 
 pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_information, src: base.io_reader) {
+	var r_mark      : base.u64
+	var zlib_status : base.status
+
 	if this.call_sequence <> 1 {
 		return base."#bad call sequence"
 	}
 	if this.metadata_fourcc == 0 {
 		return base."#no more information"
 	}
-	if args.minfo <> nullptr {
-		args.minfo.set!(
-			flavor: this.metadata_flavor,
-			w: this.metadata_fourcc,
-			x: this.metadata_x,
-			y: this.metadata_y,
-			z: this.metadata_z)
+
+	if this.metadata_flavor == base.MORE_INFORMATION__FLAVOR__METADATA_RAW_TRANSFORM {
+		if this.zlib_is_dirty {
+			this.zlib.reset!()
+			if this.ignore_checksum {
+				this.zlib.set_quirk_enabled!(quirk: base.QUIRK_IGNORE_CHECKSUM, enabled: true)
+			}
+		}
+		this.zlib_is_dirty = true
 	}
+
+	while true {
+		if args.minfo <> nullptr {
+			args.minfo.set!(
+				flavor: this.metadata_flavor,
+				w: this.metadata_fourcc,
+				x: this.metadata_x,
+				y: this.metadata_y,
+				z: this.metadata_z)
+		}
+
+		if this.metadata_flavor <> base.MORE_INFORMATION__FLAVOR__METADATA_RAW_TRANSFORM {
+			break
+		}
+
+		io_limit (io: args.src, limit: this.chunk_length) {
+			r_mark = args.src.mark()
+			zlib_status =? this.zlib.transform_io?(
+				dst: args.dst, src: args.src, workbuf: this.util.empty_slice_u8())
+			this.chunk_length ~sat-= args.src.count_since(mark: r_mark)
+		}
+
+		if zlib_status.is_ok() {
+			break
+		} else if not zlib_status.is_suspension() {
+			return zlib_status
+		}
+		yield? zlib_status
+	} endwhile
+
+	if this.chunk_length <> 0 {
+		return "#bad chunk"
+	}
+
+	// Skip the ancillary chunk's CRC-32 checksum.
+	args.src.skip?(n: 4)
+
 	this.call_sequence = 2
 	this.metadata_flavor = 0
 	this.metadata_fourcc = 0

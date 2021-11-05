@@ -9311,6 +9311,7 @@ struct wuffs_png__decoder__struct {
     bool f_seen_plte;
     bool f_seen_srgb;
     bool f_seen_trns;
+    bool f_zlib_is_dirty;
     uint32_t f_dst_pixfmt;
     uint32_t f_src_pixfmt;
     uint32_t f_chunk_type;
@@ -9340,12 +9341,14 @@ struct wuffs_png__decoder__struct {
     uint32_t p_decode_other_chunk[1];
     uint32_t p_decode_chrm[1];
     uint32_t p_decode_gama[1];
+    uint32_t p_decode_iccp[1];
     uint32_t p_decode_plte[1];
     uint32_t p_decode_srgb[1];
     uint32_t p_decode_trns[1];
     uint32_t p_decode_frame_config[1];
     uint32_t p_decode_frame[1];
     uint32_t p_decode_pass[1];
+    uint32_t p_tell_me_more[1];
     wuffs_base__status (*choosy_filter_and_swizzle)(
         wuffs_png__decoder* self,
         wuffs_base__pixel_buffer* a_dst,
@@ -9387,6 +9390,9 @@ struct wuffs_png__decoder__struct {
       uint32_t v_checksum_have;
       uint64_t scratch;
     } s_decode_pass[1];
+    struct {
+      uint64_t scratch;
+    } s_tell_me_more[1];
   } private_data;
 
 #ifdef __cplusplus
@@ -35449,6 +35455,11 @@ wuffs_png__decoder__decode_gama(
     wuffs_base__io_buffer* a_src);
 
 static wuffs_base__status
+wuffs_png__decoder__decode_iccp(
+    wuffs_png__decoder* self,
+    wuffs_base__io_buffer* a_src);
+
+static wuffs_base__status
 wuffs_png__decoder__decode_plte(
     wuffs_png__decoder* self,
     wuffs_base__io_buffer* a_src);
@@ -37312,6 +37323,11 @@ wuffs_png__decoder__decode_image_config(
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(12);
       }
       label__2__break:;
+      if (self->private_impl.f_metadata_fourcc != 0) {
+        self->private_impl.f_call_sequence = 1;
+        status = wuffs_base__make_status(wuffs_base__note__metadata_reported);
+        goto ok;
+      }
       {
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(13);
         uint32_t t_7;
@@ -37344,11 +37360,6 @@ wuffs_png__decoder__decode_image_config(
       if ( ! self->private_impl.f_ignore_checksum && (self->private_impl.f_chunk_type == 1163152464) && (v_checksum_have != v_checksum_want)) {
         status = wuffs_base__make_status(wuffs_png__error__bad_checksum);
         goto exit;
-      }
-      if (self->private_impl.f_metadata_fourcc != 0) {
-        self->private_impl.f_call_sequence = 1;
-        status = wuffs_base__make_status(wuffs_base__note__metadata_reported);
-        goto ok;
       }
     }
     label__1__break:;
@@ -37809,6 +37820,23 @@ wuffs_png__decoder__decode_other_chunk(
         goto suspend;
       }
       self->private_impl.f_seen_gama = true;
+    } else if ((self->private_impl.f_chunk_type == 1346585449) && self->private_impl.f_report_metadata_iccp) {
+      if (self->private_impl.f_seen_iccp) {
+        status = wuffs_base__make_status(wuffs_png__error__bad_chunk);
+        goto exit;
+      }
+      if (a_src) {
+        a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+      }
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
+      status = wuffs_png__decoder__decode_iccp(self, a_src);
+      if (a_src) {
+        iop_a_src = a_src->data.ptr + a_src->meta.ri;
+      }
+      if (status.repr) {
+        goto suspend;
+      }
+      self->private_impl.f_seen_iccp = true;
     } else if ((self->private_impl.f_chunk_type == 1111970419) && self->private_impl.f_report_metadata_srgb) {
       if (self->private_impl.f_seen_srgb) {
         status = wuffs_base__make_status(wuffs_png__error__bad_chunk);
@@ -37817,7 +37845,7 @@ wuffs_png__decoder__decode_other_chunk(
       if (a_src) {
         a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
       }
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
       status = wuffs_png__decoder__decode_srgb(self, a_src);
       if (a_src) {
         iop_a_src = a_src->data.ptr + a_src->meta.ri;
@@ -37834,7 +37862,7 @@ wuffs_png__decoder__decode_other_chunk(
       if (a_src) {
         a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
       }
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
       status = wuffs_png__decoder__decode_trns(self, a_src);
       if (a_src) {
         iop_a_src = a_src->data.ptr + a_src->meta.ri;
@@ -37845,7 +37873,7 @@ wuffs_png__decoder__decode_other_chunk(
       self->private_impl.f_seen_trns = true;
     } else {
       self->private_data.s_decode_other_chunk[0].scratch = self->private_impl.f_chunk_length;
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(7);
       if (self->private_data.s_decode_other_chunk[0].scratch > ((uint64_t)(io2_a_src - iop_a_src))) {
         self->private_data.s_decode_other_chunk[0].scratch -= ((uint64_t)(io2_a_src - iop_a_src));
         iop_a_src = io2_a_src;
@@ -37903,6 +37931,7 @@ wuffs_png__decoder__decode_chrm(
       status = wuffs_base__make_status(wuffs_png__error__bad_chunk);
       goto exit;
     }
+    self->private_impl.f_chunk_length = 0;
     self->private_impl.f_metadata_flavor = 5;
     self->private_impl.f_metadata_fourcc = 1128813133;
     self->private_impl.f_metadata_x = 0;
@@ -38197,6 +38226,7 @@ wuffs_png__decoder__decode_gama(
       status = wuffs_base__make_status(wuffs_png__error__bad_chunk);
       goto exit;
     }
+    self->private_impl.f_chunk_length = 0;
     self->private_impl.f_metadata_flavor = 5;
     self->private_impl.f_metadata_fourcc = 1195461953;
     {
@@ -38240,6 +38270,94 @@ wuffs_png__decoder__decode_gama(
   goto suspend;
   suspend:
   self->private_impl.p_decode_gama[0] = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
+
+  goto exit;
+  exit:
+  if (a_src) {
+    a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+  }
+
+  return status;
+}
+
+// -------- func png.decoder.decode_iccp
+
+static wuffs_base__status
+wuffs_png__decoder__decode_iccp(
+    wuffs_png__decoder* self,
+    wuffs_base__io_buffer* a_src) {
+  wuffs_base__status status = wuffs_base__make_status(NULL);
+
+  uint8_t v_c = 0;
+
+  const uint8_t* iop_a_src = NULL;
+  const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  if (a_src) {
+    io0_a_src = a_src->data.ptr;
+    io1_a_src = io0_a_src + a_src->meta.ri;
+    iop_a_src = io1_a_src;
+    io2_a_src = io0_a_src + a_src->meta.wi;
+  }
+
+  uint32_t coro_susp_point = self->private_impl.p_decode_iccp[0];
+  switch (coro_susp_point) {
+    WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
+
+    while (true) {
+      if (self->private_impl.f_chunk_length <= 0) {
+        status = wuffs_base__make_status(wuffs_png__error__bad_chunk);
+        goto exit;
+      }
+      self->private_impl.f_chunk_length -= 1;
+      {
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
+        if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
+          status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+          goto suspend;
+        }
+        uint8_t t_0 = *iop_a_src++;
+        v_c = t_0;
+      }
+      if (v_c == 0) {
+        goto label__0__break;
+      }
+    }
+    label__0__break:;
+    if (self->private_impl.f_chunk_length <= 0) {
+      status = wuffs_base__make_status(wuffs_png__error__bad_chunk);
+      goto exit;
+    }
+    self->private_impl.f_chunk_length -= 1;
+    {
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
+      if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
+        status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+        goto suspend;
+      }
+      uint8_t t_1 = *iop_a_src++;
+      v_c = t_1;
+    }
+    if (v_c != 0) {
+      status = wuffs_base__make_status(wuffs_png__error__bad_chunk);
+      goto exit;
+    }
+    self->private_impl.f_metadata_flavor = 4;
+    self->private_impl.f_metadata_fourcc = 1229144912;
+    self->private_impl.f_metadata_x = 0;
+    self->private_impl.f_metadata_y = 0;
+    self->private_impl.f_metadata_z = 0;
+
+    goto ok;
+    ok:
+    self->private_impl.p_decode_iccp[0] = 0;
+    goto exit;
+  }
+
+  goto suspend;
+  suspend:
+  self->private_impl.p_decode_iccp[0] = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
 
   goto exit;
   exit:
@@ -38379,6 +38497,7 @@ wuffs_png__decoder__decode_srgb(
       status = wuffs_base__make_status(wuffs_png__error__bad_chunk);
       goto exit;
     }
+    self->private_impl.f_chunk_length = 0;
     self->private_impl.f_metadata_flavor = 5;
     self->private_impl.f_metadata_fourcc = 1397901122;
     {
@@ -38653,6 +38772,13 @@ wuffs_png__decoder__decode_frame(
       status = wuffs_base__make_status(wuffs_base__note__end_of_data);
       goto ok;
     }
+    if (self->private_impl.f_zlib_is_dirty) {
+      wuffs_base__ignore_status(wuffs_zlib__decoder__initialize(&self->private_data.f_zlib, sizeof (wuffs_zlib__decoder), WUFFS_VERSION, 0));
+      if (self->private_impl.f_ignore_checksum) {
+        wuffs_zlib__decoder__set_quirk_enabled(&self->private_data.f_zlib, 1, true);
+      }
+    }
+    self->private_impl.f_zlib_is_dirty = true;
     v_status = wuffs_base__pixel_swizzler__prepare(&self->private_impl.f_swizzler,
         wuffs_base__pixel_buffer__pixel_format(a_dst),
         wuffs_base__pixel_buffer__palette_or_else(a_dst, wuffs_base__make_slice_u8(self->private_data.f_dst_palette, 1024)),
@@ -39187,34 +39313,131 @@ wuffs_png__decoder__tell_me_more(
   self->private_impl.active_coroutine = 0;
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
-  if (self->private_impl.f_call_sequence != 1) {
-    status = wuffs_base__make_status(wuffs_base__error__bad_call_sequence);
-    goto exit;
-  }
-  if (self->private_impl.f_metadata_fourcc == 0) {
-    status = wuffs_base__make_status(wuffs_base__error__no_more_information);
-    goto exit;
-  }
-  if (a_minfo != NULL) {
-    wuffs_base__more_information__set(a_minfo,
-        self->private_impl.f_metadata_flavor,
-        self->private_impl.f_metadata_fourcc,
-        self->private_impl.f_metadata_x,
-        self->private_impl.f_metadata_y,
-        self->private_impl.f_metadata_z);
-  }
-  self->private_impl.f_call_sequence = 2;
-  self->private_impl.f_metadata_flavor = 0;
-  self->private_impl.f_metadata_fourcc = 0;
-  self->private_impl.f_metadata_x = 0;
-  self->private_impl.f_metadata_y = 0;
-  self->private_impl.f_metadata_z = 0;
-  status = wuffs_base__make_status(NULL);
-  goto ok;
+  uint64_t v_r_mark = 0;
+  wuffs_base__status v_zlib_status = wuffs_base__make_status(NULL);
 
-  ok:
+  const uint8_t* iop_a_src = NULL;
+  const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  if (a_src) {
+    io0_a_src = a_src->data.ptr;
+    io1_a_src = io0_a_src + a_src->meta.ri;
+    iop_a_src = io1_a_src;
+    io2_a_src = io0_a_src + a_src->meta.wi;
+  }
+
+  uint32_t coro_susp_point = self->private_impl.p_tell_me_more[0];
+  switch (coro_susp_point) {
+    WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
+
+    if (self->private_impl.f_call_sequence != 1) {
+      status = wuffs_base__make_status(wuffs_base__error__bad_call_sequence);
+      goto exit;
+    }
+    if (self->private_impl.f_metadata_fourcc == 0) {
+      status = wuffs_base__make_status(wuffs_base__error__no_more_information);
+      goto exit;
+    }
+    if (self->private_impl.f_metadata_flavor == 4) {
+      if (self->private_impl.f_zlib_is_dirty) {
+        wuffs_base__ignore_status(wuffs_zlib__decoder__initialize(&self->private_data.f_zlib, sizeof (wuffs_zlib__decoder), WUFFS_VERSION, 0));
+        if (self->private_impl.f_ignore_checksum) {
+          wuffs_zlib__decoder__set_quirk_enabled(&self->private_data.f_zlib, 1, true);
+        }
+      }
+      self->private_impl.f_zlib_is_dirty = true;
+    }
+    while (true) {
+      if (a_minfo != NULL) {
+        wuffs_base__more_information__set(a_minfo,
+            self->private_impl.f_metadata_flavor,
+            self->private_impl.f_metadata_fourcc,
+            self->private_impl.f_metadata_x,
+            self->private_impl.f_metadata_y,
+            self->private_impl.f_metadata_z);
+      }
+      if (self->private_impl.f_metadata_flavor != 4) {
+        goto label__0__break;
+      }
+      {
+        const uint8_t *o_0_io2_a_src = io2_a_src;
+        wuffs_base__io_reader__limit(&io2_a_src, iop_a_src,
+            self->private_impl.f_chunk_length);
+        if (a_src) {
+          a_src->meta.wi = ((size_t)(io2_a_src - a_src->data.ptr));
+        }
+        v_r_mark = ((uint64_t)(iop_a_src - io0_a_src));
+        {
+          if (a_src) {
+            a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+          }
+          wuffs_base__status t_0 = wuffs_zlib__decoder__transform_io(&self->private_data.f_zlib, a_dst, a_src, wuffs_base__utility__empty_slice_u8());
+          v_zlib_status = t_0;
+          if (a_src) {
+            iop_a_src = a_src->data.ptr + a_src->meta.ri;
+          }
+        }
+        wuffs_base__u64__sat_sub_indirect(&self->private_impl.f_chunk_length, wuffs_base__io__count_since(v_r_mark, ((uint64_t)(iop_a_src - io0_a_src))));
+        io2_a_src = o_0_io2_a_src;
+        if (a_src) {
+          a_src->meta.wi = ((size_t)(io2_a_src - a_src->data.ptr));
+        }
+      }
+      if (wuffs_base__status__is_ok(&v_zlib_status)) {
+        goto label__0__break;
+      } else if ( ! wuffs_base__status__is_suspension(&v_zlib_status)) {
+        status = v_zlib_status;
+        if (wuffs_base__status__is_error(&status)) {
+          goto exit;
+        } else if (wuffs_base__status__is_suspension(&status)) {
+          status = wuffs_base__make_status(wuffs_base__error__cannot_return_a_suspension);
+          goto exit;
+        }
+        goto ok;
+      }
+      status = v_zlib_status;
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(1);
+    }
+    label__0__break:;
+    if (self->private_impl.f_chunk_length != 0) {
+      status = wuffs_base__make_status(wuffs_png__error__bad_chunk);
+      goto exit;
+    }
+    self->private_data.s_tell_me_more[0].scratch = 4;
+    WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
+    if (self->private_data.s_tell_me_more[0].scratch > ((uint64_t)(io2_a_src - iop_a_src))) {
+      self->private_data.s_tell_me_more[0].scratch -= ((uint64_t)(io2_a_src - iop_a_src));
+      iop_a_src = io2_a_src;
+      status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+      goto suspend;
+    }
+    iop_a_src += self->private_data.s_tell_me_more[0].scratch;
+    self->private_impl.f_call_sequence = 2;
+    self->private_impl.f_metadata_flavor = 0;
+    self->private_impl.f_metadata_fourcc = 0;
+    self->private_impl.f_metadata_x = 0;
+    self->private_impl.f_metadata_y = 0;
+    self->private_impl.f_metadata_z = 0;
+    status = wuffs_base__make_status(NULL);
+    goto ok;
+
+    ok:
+    self->private_impl.p_tell_me_more[0] = 0;
+    goto exit;
+  }
+
+  goto suspend;
+  suspend:
+  self->private_impl.p_tell_me_more[0] = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
+  self->private_impl.active_coroutine = wuffs_base__status__is_suspension(&status) ? 4 : 0;
+
   goto exit;
   exit:
+  if (a_src) {
+    a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+  }
+
   if (wuffs_base__status__is_error(&status)) {
     self->private_impl.magic = WUFFS_BASE__DISABLED;
   }
