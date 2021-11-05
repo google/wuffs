@@ -252,7 +252,7 @@ HandleMetadata(
           }
         }
 
-        for (uint64_t num_to_copy = r.length(); num_to_copy > 0;) {
+        while (true) {
           uint64_t n =
               wuffs_base__u64__min(num_to_copy, io_buf.reader_length());
           memcpy(raw.m_buf.writer_pointer(), io_buf.reader_pointer(), n);
