@@ -98,6 +98,17 @@ pub struct decoder? implements base.image_decoder(
 
 	zlib_is_dirty : base.bool,
 
+	// remap_transparency, if non-zero, is the 32-bit or 64-bit (depending on
+	// this.depth) argb_nonpremul color that is nominally opaque but remapped
+	// to transparent black.
+	//
+	// "Remapped" is an unofficial term. This is where the IHDR color type is 0
+	// (Y) or 2 (RGB) but there's also a tRNS chunk.
+	//
+	// PNG transparency that isn't "remapped" is color type 3 (indexed) with
+	// tRNS, color type 4 (YA) or color type 6 (RGBA).
+	remap_transparency : base.u64,
+
 	dst_pixfmt : base.u32,
 	src_pixfmt : base.u32,
 
@@ -311,7 +322,7 @@ pri func decoder.decode_ihdr?(src: base.io_reader) {
 	this.filter_distance = 0
 	this.assign_filter_distance!()
 	if this.filter_distance == 0 {
-		return "#unsupported PNG file"
+		return "#bad header"
 	}
 	this.overall_workbuf_length = (this.height as base.u64) *
 		(1 + this.calculate_bytes_per_row(width: this.width))
@@ -320,7 +331,9 @@ pri func decoder.decode_ihdr?(src: base.io_reader) {
 
 pri func decoder.assign_filter_distance!() {
 	if this.depth < 8 {
-		if this.color_type == 0 {
+		if (this.depth <> 1) and (this.depth <> 2) and (this.depth <> 4) {
+			return nothing
+		} else if this.color_type == 0 {
 			this.dst_pixfmt = base.PIXEL_FORMAT__Y
 			this.src_pixfmt = base.PIXEL_FORMAT__Y
 		} else if this.color_type == 3 {
@@ -607,33 +620,78 @@ pri func decoder.decode_srgb?(src: base.io_reader) {
 }
 
 pri func decoder.decode_trns?(src: base.io_reader) {
-	var num_entries : base.u32[..= 256]
-	var i           : base.u32
+	var i : base.u32
+	var n : base.u32[..= 256]
+	var u : base.u64
 
-	if this.chunk_length > 256 {
-		return "#bad chunk"
-	}
-	num_entries = this.chunk_length as base.u32
-
-	while i < num_entries {
-		assert i < 256 via "a < b: a < c; c <= b"(c: num_entries)
-		this.src_palette[(4 * i) + 3] = args.src.read_u8?()
-		i += 1
-	} endwhile
-
-	if this.color_type == 3 {
-		this.dst_pixfmt = base.PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL
-		this.src_pixfmt = base.PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL
-	} else {
+	if this.color_type == 0 {
 		choose filter_and_swizzle = [filter_and_swizzle_tricky]
-		if this.color_type == 0 {
-			// TODO: PIXEL_FORMAT__YA_NONPREMUL
+		if this.depth <= 8 {
 			this.dst_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL
-			this.src_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE
-		} else if this.color_type == 2 {
-			this.dst_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL
+			this.src_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL
+		} else {
+			this.dst_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE
 			this.src_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE
 		}
+		if this.chunk_length <> 2 {
+			return "#bad chunk"
+		}
+		this.chunk_length = 0
+
+		u = args.src.read_u16be_as_u64?()
+		if this.depth <= 1 {
+			this.remap_transparency = ((u & 0x01) * 0xFF_FFFF) | 0xFF00_0000
+		} else if this.depth <= 2 {
+			this.remap_transparency = ((u & 0x03) * 0x55_5555) | 0xFF00_0000
+		} else if this.depth <= 4 {
+			this.remap_transparency = ((u & 0x0F) * 0x11_1111) | 0xFF00_0000
+		} else if this.depth <= 8 {
+			this.remap_transparency = ((u & 0xFF) * 0x01_0101) | 0xFF00_0000
+		} else {
+			this.remap_transparency = (u * 0x0001_0001_0001) | 0xFFFF_0000_0000_0000
+		}
+
+	} else if this.color_type == 2 {
+		choose filter_and_swizzle = [filter_and_swizzle_tricky]
+		if this.depth <= 8 {
+			this.dst_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL
+			this.src_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL
+		} else {
+			this.dst_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE
+			this.src_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE
+		}
+		if this.chunk_length <> 6 {
+			return "#bad chunk"
+		}
+		this.chunk_length = 0
+
+		u = args.src.read_u48be_as_u64?()
+		if this.depth <= 8 {
+			this.remap_transparency =
+				(0x0000_00FF & (u >> 0)) |
+				(0x0000_FF00 & (u >> 8)) |
+				(0x00FF_0000 & (u >> 16)) |
+				0xFF00_0000
+		} else {
+			this.remap_transparency = u | 0xFFFF_0000_0000_0000
+		}
+
+	} else if this.color_type == 3 {
+		this.dst_pixfmt = base.PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL
+		this.src_pixfmt = base.PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL
+		if this.chunk_length > 256 {
+			return "#bad chunk"
+		}
+		n = this.chunk_length as base.u32
+		this.chunk_length = 0
+		while i < n {
+			assert i < 256 via "a < b: a < c; c <= b"(c: n)
+			this.src_palette[(4 * i) + 3] = args.src.read_u8?()
+			i += 1
+		} endwhile
+
+	} else {
+		return "#bad chunk"
 	}
 }
 

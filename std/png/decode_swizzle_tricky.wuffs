@@ -55,15 +55,6 @@ pri func decoder.filter_and_swizzle_tricky!(dst: ptr base.pixel_buffer, workbuf:
 			((this.depth >> 3) as base.u64)
 	}
 
-	bits_unpacked[0] = 0xFF
-	bits_unpacked[1] = 0xFF
-	bits_unpacked[2] = 0xFF
-	bits_unpacked[3] = 0xFF
-	bits_unpacked[4] = 0xFF
-	bits_unpacked[5] = 0xFF
-	bits_unpacked[6] = 0xFF
-	bits_unpacked[7] = 0xFF
-
 	y = INTERLACING[this.interlace_pass][5] as base.u32
 	while y < this.height {
 		assert y < 0x00FF_FFFF via "a < b: a < c; c <= b"(c: this.height)
@@ -118,6 +109,54 @@ pri func decoder.filter_and_swizzle_tricky!(dst: ptr base.pixel_buffer, workbuf:
 								dst_palette: dst_palette,
 								src: bits_unpacked[.. 4])
 						}
+
+					} else if ((this.remap_transparency & 0xFFFF_FFFF) as base.u32) <> 0 {
+						if this.color_type == 0 {
+							if 1 <= s.length() {
+								bits_unpacked[0] = s[0]
+								bits_unpacked[1] = s[0]
+								bits_unpacked[2] = s[0]
+								bits_unpacked[3] = 0xFF
+								s = s[1 ..]
+								if ((this.remap_transparency & 0xFFFF_FFFF) as base.u32) == (
+									((bits_unpacked[0] as base.u32) << 0) |
+									((bits_unpacked[1] as base.u32) << 8) |
+									((bits_unpacked[2] as base.u32) << 16) |
+									((bits_unpacked[3] as base.u32) << 24)) {
+									bits_unpacked[0] = 0
+									bits_unpacked[1] = 0
+									bits_unpacked[2] = 0
+									bits_unpacked[3] = 0
+								}
+								this.swizzler.swizzle_interleaved_from_slice!(
+									dst: dst[i ..],
+									dst_palette: dst_palette,
+									src: bits_unpacked[.. 4])
+							}
+						} else {
+							if 3 <= s.length() {
+								bits_unpacked[0] = s[2]
+								bits_unpacked[1] = s[1]
+								bits_unpacked[2] = s[0]
+								bits_unpacked[3] = 0xFF
+								s = s[3 ..]
+								if ((this.remap_transparency & 0xFFFF_FFFF) as base.u32) == (
+									((bits_unpacked[0] as base.u32) << 0) |
+									((bits_unpacked[1] as base.u32) << 8) |
+									((bits_unpacked[2] as base.u32) << 16) |
+									((bits_unpacked[3] as base.u32) << 24)) {
+									bits_unpacked[0] = 0
+									bits_unpacked[1] = 0
+									bits_unpacked[2] = 0
+									bits_unpacked[3] = 0
+								}
+								this.swizzler.swizzle_interleaved_from_slice!(
+									dst: dst[i ..],
+									dst_palette: dst_palette,
+									src: bits_unpacked[.. 4])
+							}
+						}
+
 					} else if src_bytes_per_pixel <= s.length() {
 						this.swizzler.swizzle_interleaved_from_slice!(
 							dst: dst[i ..],
@@ -153,10 +192,31 @@ pri func decoder.filter_and_swizzle_tricky!(dst: ptr base.pixel_buffer, workbuf:
 					bits_packed = bits_packed ~mod<< this.depth
 					packs_remaining = packs_remaining ~mod- 1
 
-					this.swizzler.swizzle_interleaved_from_slice!(
-						dst: dst[i ..],
-						dst_palette: dst_palette,
-						src: bits_unpacked[.. 1])
+					if ((this.remap_transparency & 0xFFFF_FFFF) as base.u32) <> 0 {
+						bits_unpacked[1] = bits_unpacked[0]
+						bits_unpacked[2] = bits_unpacked[0]
+						bits_unpacked[3] = 0xFF
+						if ((this.remap_transparency & 0xFFFF_FFFF) as base.u32) == (
+							((bits_unpacked[0] as base.u32) << 0) |
+							((bits_unpacked[1] as base.u32) << 8) |
+							((bits_unpacked[2] as base.u32) << 16) |
+							((bits_unpacked[3] as base.u32) << 24)) {
+							bits_unpacked[0] = 0
+							bits_unpacked[1] = 0
+							bits_unpacked[2] = 0
+							bits_unpacked[3] = 0
+						}
+						this.swizzler.swizzle_interleaved_from_slice!(
+							dst: dst[i ..],
+							dst_palette: dst_palette,
+							src: bits_unpacked[.. 4])
+
+					} else {
+						this.swizzler.swizzle_interleaved_from_slice!(
+							dst: dst[i ..],
+							dst_palette: dst_palette,
+							src: bits_unpacked[.. 1])
+					}
 				}
 				x += (1 as base.u32) << INTERLACING[this.interlace_pass][0]
 			} endwhile
@@ -176,8 +236,29 @@ pri func decoder.filter_and_swizzle_tricky!(dst: ptr base.pixel_buffer, workbuf:
 							bits_unpacked[3] = s[0]
 							bits_unpacked[4] = s[1]
 							bits_unpacked[5] = s[0]
+							bits_unpacked[6] = 0xFF
+							bits_unpacked[7] = 0xFF
 							s = s[2 ..]
+							if this.remap_transparency == (
+								((bits_unpacked[0] as base.u64) << 0) |
+								((bits_unpacked[1] as base.u64) << 8) |
+								((bits_unpacked[2] as base.u64) << 16) |
+								((bits_unpacked[3] as base.u64) << 24) |
+								((bits_unpacked[4] as base.u64) << 32) |
+								((bits_unpacked[5] as base.u64) << 40) |
+								((bits_unpacked[6] as base.u64) << 48) |
+								((bits_unpacked[7] as base.u64) << 56)) {
+								bits_unpacked[0] = 0
+								bits_unpacked[1] = 0
+								bits_unpacked[2] = 0
+								bits_unpacked[3] = 0
+								bits_unpacked[4] = 0
+								bits_unpacked[5] = 0
+								bits_unpacked[6] = 0
+								bits_unpacked[7] = 0
+							}
 						}
+
 					} else if this.color_type == 2 {
 						if 6 <= s.length() {
 							bits_unpacked[0] = s[5]
@@ -186,8 +267,29 @@ pri func decoder.filter_and_swizzle_tricky!(dst: ptr base.pixel_buffer, workbuf:
 							bits_unpacked[3] = s[2]
 							bits_unpacked[4] = s[1]
 							bits_unpacked[5] = s[0]
+							bits_unpacked[6] = 0xFF
+							bits_unpacked[7] = 0xFF
 							s = s[6 ..]
+							if this.remap_transparency == (
+								((bits_unpacked[0] as base.u64) << 0) |
+								((bits_unpacked[1] as base.u64) << 8) |
+								((bits_unpacked[2] as base.u64) << 16) |
+								((bits_unpacked[3] as base.u64) << 24) |
+								((bits_unpacked[4] as base.u64) << 32) |
+								((bits_unpacked[5] as base.u64) << 40) |
+								((bits_unpacked[6] as base.u64) << 48) |
+								((bits_unpacked[7] as base.u64) << 56)) {
+								bits_unpacked[0] = 0
+								bits_unpacked[1] = 0
+								bits_unpacked[2] = 0
+								bits_unpacked[3] = 0
+								bits_unpacked[4] = 0
+								bits_unpacked[5] = 0
+								bits_unpacked[6] = 0
+								bits_unpacked[7] = 0
+							}
 						}
+
 					} else if this.color_type == 4 {
 						if 4 <= s.length() {
 							bits_unpacked[0] = s[1]
@@ -200,6 +302,7 @@ pri func decoder.filter_and_swizzle_tricky!(dst: ptr base.pixel_buffer, workbuf:
 							bits_unpacked[7] = s[2]
 							s = s[4 ..]
 						}
+
 					} else {
 						if 8 <= s.length() {
 							bits_unpacked[0] = s[5]
