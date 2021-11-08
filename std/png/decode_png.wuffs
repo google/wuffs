@@ -452,33 +452,41 @@ pri func decoder.decode_other_chunk?(src: base.io_reader) {
 		this.decode_plte?(src: args.src)
 		this.seen_plte = true
 
-	} else if (this.chunk_type == 'cHRM'le) and this.report_metadata_chrm {
-		if this.seen_chrm {
-			return "#bad chunk"
+	} else if this.chunk_type == 'cHRM'le {
+		if this.report_metadata_chrm {
+			if this.seen_chrm {
+				return "#bad chunk"
+			}
+			this.decode_chrm?(src: args.src)
+			this.seen_chrm = true
 		}
-		this.decode_chrm?(src: args.src)
-		this.seen_chrm = true
 
-	} else if (this.chunk_type == 'gAMA'le) and this.report_metadata_gama {
-		if this.seen_gama {
-			return "#bad chunk"
+	} else if this.chunk_type == 'gAMA'le {
+		if this.report_metadata_gama {
+			if this.seen_gama {
+				return "#bad chunk"
+			}
+			this.decode_gama?(src: args.src)
+			this.seen_gama = true
 		}
-		this.decode_gama?(src: args.src)
-		this.seen_gama = true
 
-	} else if (this.chunk_type == 'iCCP'le) and this.report_metadata_iccp {
-		if this.seen_iccp {
-			return "#bad chunk"
+	} else if this.chunk_type == 'iCCP'le {
+		if this.report_metadata_iccp {
+			if this.seen_iccp {
+				return "#bad chunk"
+			}
+			this.decode_iccp?(src: args.src)
+			this.seen_iccp = true
 		}
-		this.decode_iccp?(src: args.src)
-		this.seen_iccp = true
 
-	} else if (this.chunk_type == 'sRGB'le) and this.report_metadata_srgb {
-		if this.seen_srgb {
-			return "#bad chunk"
+	} else if this.chunk_type == 'sRGB'le {
+		if this.report_metadata_srgb {
+			if this.seen_srgb {
+				return "#bad chunk"
+			}
+			this.decode_srgb?(src: args.src)
+			this.seen_srgb = true
 		}
-		this.decode_srgb?(src: args.src)
-		this.seen_srgb = true
 
 	} else if this.chunk_type == 'tRNS'le {
 		if this.seen_trns or (this.color_type > 3) or
