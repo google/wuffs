@@ -135,6 +135,10 @@ func Check(tm *t.Map, files []*a.File, resolveUse func(usePath string) ([]byte, 
 		}
 		xType := (*a.TypeExpr)(nil)
 		switch z.Type {
+		case t.IDU8:
+			xType = typeExprU8
+		case t.IDU16:
+			xType = typeExprU16
 		case t.IDU32:
 			xType = typeExprU32
 		case t.IDU64:

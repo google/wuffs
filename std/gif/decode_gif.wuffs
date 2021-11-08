@@ -722,16 +722,13 @@ pri func decoder.decode_gc?(src: base.io_reader) {
 	// in the range [4 ..= 7] are "to be defined". In practice, some encoders also
 	// use 4 for "restore previous". See
 	// https://cs.chromium.org/chromium/src/third_party/blink/renderer/platform/image-decoders/gif/gif_image_reader.cc?rcl=5161173c43324da2b13e1aa45bbe69901daa1279&l=625
-	//
-	// TODO: named constants instead of assigning 1 for
-	// WUFFS_BASE__ANIMATION_DISPOSAL__RESTORE_BACKGROUND, etc.
 	flags = (flags >> 2) & 0x07
 	if flags == 2 {
-		this.gc_disposal = 1  // 1 is WUFFS_BASE__ANIMATION_DISPOSAL__RESTORE_BACKGROUND
+		this.gc_disposal = base.ANIMATION_DISPOSAL__RESTORE_BACKGROUND
 	} else if (flags == 3) or (flags == 4) {
-		this.gc_disposal = 2  // 2 is WUFFS_BASE__ANIMATION_DISPOSAL__RESTORE_PREVIOUS
+		this.gc_disposal = base.ANIMATION_DISPOSAL__RESTORE_PREVIOUS
 	} else {
-		this.gc_disposal = 0
+		this.gc_disposal = base.ANIMATION_DISPOSAL__NONE
 	}
 
 	// There are 7_056000 flicks per centisecond.
