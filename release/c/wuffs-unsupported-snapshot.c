@@ -7853,8 +7853,8 @@ struct wuffs_gif__decoder__struct {
     bool f_previous_lzw_decode_ended_abruptly;
     bool f_has_global_palette;
     uint8_t f_interlace;
-    bool f_seen_num_loops;
-    uint32_t f_num_loops;
+    bool f_seen_num_animation_loops_value;
+    uint32_t f_num_animation_loops_value;
     uint32_t f_background_color_u32_argb_premul;
     uint32_t f_black_color_u32_argb_premul;
     bool f_gc_has_transparent_index;
@@ -29222,8 +29222,8 @@ wuffs_gif__decoder__num_animation_loops(
     return 0;
   }
 
-  if (self->private_impl.f_seen_num_loops) {
-    return self->private_impl.f_num_loops;
+  if (self->private_impl.f_seen_num_animation_loops_value) {
+    return self->private_impl.f_num_animation_loops_value;
   }
   return 1;
 }
@@ -30370,11 +30370,11 @@ wuffs_gif__decoder__decode_ae(
               *scratch |= ((uint64_t)(num_bits_4)) << 56;
             }
           }
-          self->private_impl.f_num_loops = t_4;
+          self->private_impl.f_num_animation_loops_value = t_4;
         }
-        self->private_impl.f_seen_num_loops = true;
-        if ((0 < self->private_impl.f_num_loops) && (self->private_impl.f_num_loops <= 65535)) {
-          self->private_impl.f_num_loops += 1;
+        self->private_impl.f_seen_num_animation_loops_value = true;
+        if ((0 < self->private_impl.f_num_animation_loops_value) && (self->private_impl.f_num_animation_loops_value <= 65535)) {
+          self->private_impl.f_num_animation_loops_value += 1;
         }
       } else if (self->private_impl.f_ignore_metadata) {
       } else if (v_is_iccp && self->private_impl.f_report_metadata_iccp) {

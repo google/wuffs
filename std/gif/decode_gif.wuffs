@@ -84,8 +84,8 @@ pub struct decoder? implements base.image_decoder(
 
 	// Absent an ANIMEXTS1.0 or NETSCAPE2.0 extension, the implicit number of
 	// animation loops is 1.
-	seen_num_loops : base.bool,
-	num_loops      : base.u32,
+	seen_num_animation_loops_value : base.bool,
+	num_animation_loops_value      : base.u32,
 
 	background_color_u32_argb_premul : base.u32,
 	black_color_u32_argb_premul      : base.u32,
@@ -96,7 +96,8 @@ pub struct decoder? implements base.image_decoder(
 	// There are 7_056000 flicks per centisecond.
 	gc_duration : base.u64[..= 0xFFFF * 7_056000],
 
-	frame_config_io_position        : base.u64,
+	frame_config_io_position : base.u64,
+
 	num_decoded_frame_configs_value : base.u64,
 	num_decoded_frames_value        : base.u64,
 
@@ -275,8 +276,8 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 }
 
 pub func decoder.num_animation_loops() base.u32 {
-	if this.seen_num_loops {
-		return this.num_loops
+	if this.seen_num_animation_loops_value {
+		return this.num_animation_loops_value
 	}
 	return 1
 }
@@ -662,8 +663,8 @@ pri func decoder.decode_ae?(src: base.io_reader) {
 			args.src.skip_u32?(n: 2)
 			break.goto_done
 		}
-		this.num_loops = args.src.read_u16le_as_u32?()
-		this.seen_num_loops = true
+		this.num_animation_loops_value = args.src.read_u16le_as_u32?()
+		this.seen_num_animation_loops_value = true
 
 		// A loop count of N, in the wire format, actually means "repeat N
 		// times after the first play", if N is positive. A zero N means to
@@ -675,8 +676,8 @@ pri func decoder.decode_ae?(src: base.io_reader) {
 		//
 		// Thus, we increment N if it is positive. The comparison against
 		// 0xFFFF will never fail, but is necessary for the overflow checker.
-		if (0 < this.num_loops) and (this.num_loops <= 0xFFFF) {
-			this.num_loops += 1
+		if (0 < this.num_animation_loops_value) and (this.num_animation_loops_value <= 0xFFFF) {
+			this.num_animation_loops_value += 1
 		}
 
 	} else if this.ignore_metadata {
