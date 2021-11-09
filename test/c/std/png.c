@@ -625,8 +625,9 @@ test_wuffs_png_decode_metadata_iccp() {
   }
 
   {
+    // 423 = 0x1A7 is just before the "????IDAT" bytes.
     uint64_t have = wuffs_base__image_config__first_frame_io_position(&ic);
-    uint64_t want = 431;
+    uint64_t want = 423;
     if (have != want) {
       RETURN_FAIL("first_frame_io_position: have %" PRIu64 ", want %" PRIu64,
                   have, want);
@@ -645,6 +646,65 @@ test_wuffs_png_decode_metadata_iccp() {
     if (have != want) {
       RETURN_FAIL("decode_frame_config: width: have %" PRIu32 ", want %" PRIu32,
                   have, want);
+    }
+  }
+
+  return NULL;
+}
+
+const char*  //
+test_wuffs_png_decode_restart_frame() {
+  CHECK_FOCUS(__func__);
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = g_src_slice_u8,
+  });
+  CHECK_STRING(read_file(&src, "test/data/pjw-thumbnail.png"));
+
+  wuffs_png__decoder dec;
+  CHECK_STATUS("initialize",
+               wuffs_png__decoder__initialize(
+                   &dec, sizeof dec, WUFFS_VERSION,
+                   WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+
+  wuffs_base__image_config ic = ((wuffs_base__image_config){});
+  CHECK_STATUS("decode_image_config",
+               wuffs_png__decoder__decode_image_config(&dec, &ic, &src));
+  // 51 = 0x33 is just before the "????IDAT" bytes.
+  uint64_t ffio = wuffs_base__image_config__first_frame_io_position(&ic);
+  if (ffio != 51) {
+    RETURN_FAIL("first_frame_io_position: have %" PRIu64 ", want 51", ffio);
+  }
+
+  wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
+  CHECK_STATUS("set_from_slice", wuffs_base__pixel_buffer__set_from_slice(
+                                     &pb, &ic.pixcfg, g_pixel_slice_u8));
+
+  for (int i = 0; i < 2; i++) {
+    if (i > 0) {
+      CHECK_STATUS("restart_frame",
+                   wuffs_png__decoder__restart_frame(&dec, 0, 51));
+      if (51 <= src.meta.wi) {
+        src.meta.ri = 51;
+      }
+    }
+
+    uint64_t rpos = wuffs_base__io_buffer__reader_position(&src);
+    if (rpos != 51) {
+      RETURN_FAIL("reader_position (before) #%d: have %" PRIu64 ", want 51", i,
+                  rpos);
+    }
+
+    wuffs_base__status status = wuffs_png__decoder__decode_frame(
+        &dec, &pb, &src, WUFFS_BASE__PIXEL_BLEND__SRC, g_work_slice_u8, NULL);
+    if (!wuffs_base__status__is_ok(&status)) {
+      RETURN_FAIL("decode_frame #%d: %s", i, status.repr);
+    }
+
+    // 196 = 0xC4 is just before the "????IEND" bytes.
+    rpos = wuffs_base__io_buffer__reader_position(&src);
+    if (rpos != 196) {
+      RETURN_FAIL("reader_position (after) #%d: have %" PRIu64 ", want 196", i,
+                  rpos);
     }
   }
 
@@ -982,6 +1042,7 @@ proc g_tests[] = {
     test_wuffs_png_decode_interface,
     test_wuffs_png_decode_metadata_chrm_gama_srgb,
     test_wuffs_png_decode_metadata_iccp,
+    test_wuffs_png_decode_restart_frame,
 
 #ifdef WUFFS_MIMIC
 

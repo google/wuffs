@@ -200,20 +200,29 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 	// IDAT chunk breaks the loop. The only other possible critical chunk is a
 	// PLTE chunk. We verify PLTE checksums here but ignore other checksums.
 	while true {
-		this.chunk_length = args.src.read_u32be_as_u64?()
-		this.chunk_type = args.src.read_u32le?()
-		if (not this.ignore_checksum) and
-			((this.chunk_type == 'IDAT'le) or (this.chunk_type == 'PLTE'le)) {
+		while args.src.length() < 8,
+			post args.src.length() >= 8,
+		{
+			if args.src.is_closed() {
+				return "#bad chunk"
+			}
+			yield? base."$short read"
+		} endwhile
+
+		this.chunk_length = args.src.peek_u32be_as_u64()
+		this.chunk_type = (args.src.peek_u64le() >> 32) as base.u32
+		if this.chunk_type == 'IDAT'le {
+			break
+		}
+		args.src.skip_u32_fast!(actual: 8, worst_case: 8)
+
+		if (not this.ignore_checksum) and (this.chunk_type == 'PLTE'le) {
 			this.crc32.reset!()
 			this.chunk_type_array[0] = ((this.chunk_type >> 0) & 0xFF) as base.u8
 			this.chunk_type_array[1] = ((this.chunk_type >> 8) & 0xFF) as base.u8
 			this.chunk_type_array[2] = ((this.chunk_type >> 16) & 0xFF) as base.u8
 			this.chunk_type_array[3] = ((this.chunk_type >> 24) & 0xFF) as base.u8
 			this.crc32.update_u32!(x: this.chunk_type_array[..])
-		}
-
-		if this.chunk_type == 'IDAT'le {
-			break
 		}
 
 		while true {
@@ -748,6 +757,17 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 		// No-op.
 	} else {
 		return base."@end of data"
+	}
+
+	this.chunk_length = args.src.read_u32be_as_u64?()
+	this.chunk_type = args.src.read_u32le?()
+	if (not this.ignore_checksum) and (this.chunk_type == 'IDAT'le) {
+		this.crc32.reset!()
+		this.chunk_type_array[0] = ((this.chunk_type >> 0) & 0xFF) as base.u8
+		this.chunk_type_array[1] = ((this.chunk_type >> 8) & 0xFF) as base.u8
+		this.chunk_type_array[2] = ((this.chunk_type >> 16) & 0xFF) as base.u8
+		this.chunk_type_array[3] = ((this.chunk_type >> 24) & 0xFF) as base.u8
+		this.crc32.update_u32!(x: this.chunk_type_array[..])
 	}
 
 	if this.zlib_is_dirty {
