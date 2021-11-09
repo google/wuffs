@@ -37883,7 +37883,8 @@ wuffs_png__decoder__decode_other_chunk(
         goto suspend;
       }
       self->private_impl.f_seen_trns = true;
-    } else {
+    }
+    if (self->private_impl.f_metadata_fourcc == 0) {
       self->private_data.s_decode_other_chunk[0].scratch = self->private_impl.f_chunk_length;
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(7);
       if (self->private_data.s_decode_other_chunk[0].scratch > ((uint64_t)(io2_a_src - iop_a_src))) {
@@ -38416,6 +38417,7 @@ wuffs_png__decoder__decode_plte(
       goto exit;
     }
     v_num_entries = (((uint32_t)(self->private_impl.f_chunk_length)) / 3);
+    self->private_impl.f_chunk_length = 0;
     while (v_i < v_num_entries) {
       {
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);

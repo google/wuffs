@@ -495,8 +495,9 @@ pri func decoder.decode_other_chunk?(src: base.io_reader) {
 		}
 		this.decode_trns?(src: args.src)
 		this.seen_trns = true
+	}
 
-	} else {
+	if this.metadata_fourcc == 0 {
 		args.src.skip?(n: this.chunk_length)
 	}
 }
@@ -591,6 +592,7 @@ pri func decoder.decode_plte?(src: base.io_reader) {
 		return "#bad chunk"
 	}
 	num_entries = (this.chunk_length as base.u32) / 3
+	this.chunk_length = 0
 
 	while i < num_entries {
 		assert i < 256 via "a < b: a < c; c <= b"(c: num_entries)
