@@ -16,7 +16,7 @@ pri func decoder.filter_and_swizzle_tricky!(dst: ptr base.pixel_buffer, workbuf:
 	var dst_pixfmt          : base.pixel_format
 	var dst_bits_per_pixel  : base.u32[..= 256]
 	var dst_bytes_per_pixel : base.u64[..= 32]
-	var dst_bytes_per_row   : base.u64
+	var dst_bytes_per_row1  : base.u64
 	var dst_palette         : slice base.u8
 	var tab                 : table base.u8
 
@@ -45,7 +45,7 @@ pri func decoder.filter_and_swizzle_tricky!(dst: ptr base.pixel_buffer, workbuf:
 		return base."#unsupported option"
 	}
 	dst_bytes_per_pixel = (dst_bits_per_pixel / 8) as base.u64
-	dst_bytes_per_row = (this.width as base.u64) * dst_bytes_per_pixel
+	dst_bytes_per_row1 = (this.frame_rect_x1 as base.u64) * dst_bytes_per_pixel
 	dst_palette = args.dst.palette_or_else(fallback: this.dst_palette[..])
 	tab = args.dst.plane(p: 0)
 
@@ -55,12 +55,16 @@ pri func decoder.filter_and_swizzle_tricky!(dst: ptr base.pixel_buffer, workbuf:
 			((this.depth >> 3) as base.u64)
 	}
 
-	y = INTERLACING[this.interlace_pass][5] as base.u32
-	while y < this.height {
-		assert y < 0x00FF_FFFF via "a < b: a < c; c <= b"(c: this.height)
+	if (this.chunk_type_array[0] == 'I') {
+		y = INTERLACING[this.interlace_pass][5] as base.u32
+	} else {
+		y = this.frame_rect_y0
+	}
+	while y < this.frame_rect_y1 {
+		assert y < 0x00FF_FFFF via "a < b: a < c; c <= b"(c: this.frame_rect_y1)
 		dst = tab.row(y: y)
-		if dst_bytes_per_row < dst.length() {
-			dst = dst[.. dst_bytes_per_row]
+		if dst_bytes_per_row1 < dst.length() {
+			dst = dst[.. dst_bytes_per_row1]
 		}
 
 		if 1 > args.workbuf.length() {
@@ -89,12 +93,16 @@ pri func decoder.filter_and_swizzle_tricky!(dst: ptr base.pixel_buffer, workbuf:
 		}
 
 		s = curr_row
-		x = INTERLACING[this.interlace_pass][2] as base.u32
+		if (this.chunk_type_array[0] == 'I') {
+			x = INTERLACING[this.interlace_pass][2] as base.u32
+		} else {
+			x = this.frame_rect_x0
+		}
 		if this.depth == 8 {
-			while x < this.width,
+			while x < this.frame_rect_x1,
 				inv y < 0x00FF_FFFF,
 			{
-				assert x < 0x00FF_FFFF via "a < b: a < c; c <= b"(c: this.width)
+				assert x < 0x00FF_FFFF via "a < b: a < c; c <= b"(c: this.frame_rect_x1)
 				i = (x as base.u64) * dst_bytes_per_pixel
 				if i <= dst.length() {
 					if this.color_type == 4 {
@@ -176,11 +184,11 @@ pri func decoder.filter_and_swizzle_tricky!(dst: ptr base.pixel_buffer, workbuf:
 			shift = (8 - this.depth) & 7
 			packs_remaining = 0
 
-			while x < this.width,
+			while x < this.frame_rect_x1,
 				inv y < 0x00FF_FFFF,
 				inv this.depth < 8,
 			{
-				assert x < 0x00FF_FFFF via "a < b: a < c; c <= b"(c: this.width)
+				assert x < 0x00FF_FFFF via "a < b: a < c; c <= b"(c: this.frame_rect_x1)
 				i = (x as base.u64) * dst_bytes_per_pixel
 				if i <= dst.length() {
 					if (packs_remaining == 0) and (1 <= s.length()) {
@@ -222,10 +230,10 @@ pri func decoder.filter_and_swizzle_tricky!(dst: ptr base.pixel_buffer, workbuf:
 			} endwhile
 
 		} else {
-			while x < this.width,
+			while x < this.frame_rect_x1,
 				inv y < 0x00FF_FFFF,
 			{
-				assert x < 0x00FF_FFFF via "a < b: a < c; c <= b"(c: this.width)
+				assert x < 0x00FF_FFFF via "a < b: a < c; c <= b"(c: this.frame_rect_x1)
 				i = (x as base.u64) * dst_bytes_per_pixel
 				if i <= dst.length() {
 					if this.color_type == 0 {

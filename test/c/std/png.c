@@ -148,6 +148,10 @@ do_wuffs_png_swizzle(uint32_t width,
   CHECK_STATUS("initialize", wuffs_png__decoder__initialize(
                                  &dec, sizeof dec, WUFFS_VERSION,
                                  WUFFS_INITIALIZE__DEFAULT_OPTIONS));
+  dec.private_impl.f_frame_rect_x0 = 0;
+  dec.private_impl.f_frame_rect_y0 = 0;
+  dec.private_impl.f_frame_rect_x1 = width;
+  dec.private_impl.f_frame_rect_y1 = height;
   dec.private_impl.f_width = width;
   dec.private_impl.f_height = height;
   dec.private_impl.f_pass_bytes_per_row = width;
@@ -446,26 +450,96 @@ test_wuffs_png_decode_filters_round_trip() {
 const char*  //
 test_wuffs_png_decode_frame_config() {
   CHECK_FOCUS(__func__);
-  wuffs_png__decoder dec;
-  CHECK_STATUS("initialize",
-               wuffs_png__decoder__initialize(
-                   &dec, sizeof dec, WUFFS_VERSION,
-                   WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
 
-  wuffs_base__frame_config fc = ((wuffs_base__frame_config){});
-  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = g_src_slice_u8,
-  });
-  CHECK_STRING(read_file(&src, "test/data/hibiscus.regular.png"));
-  CHECK_STATUS("decode_frame_config #0",
-               wuffs_png__decoder__decode_frame_config(&dec, &fc, &src));
+  static const uint64_t hibiscus_regular_want_areas[] = {
+      312 * 442,
+  };
+  static const uint64_t hibiscus_regular_want_io_ps[] = {
+      0x0021,
+  };
+  static const uint64_t animated_red_blue_want_areas[] = {
+      64 * 48,
+      37 * 9,
+      49 * 40,
+      37 * 9,
+  };
+  static const uint64_t animated_red_blue_want_io_ps[] = {
+      0x006D,
+      0x044A,
+      0x04D1,
+      0x0720,
+  };
 
-  wuffs_base__status status =
-      wuffs_png__decoder__decode_frame_config(&dec, &fc, &src);
-  if (status.repr != wuffs_base__note__end_of_data) {
-    RETURN_FAIL("decode_frame_config #1: have \"%s\", want \"%s\"", status.repr,
-                wuffs_base__note__end_of_data);
+  struct {
+    const char* filename;
+    uint64_t want_count;
+    const uint64_t* want_areas;
+    const uint64_t* want_io_ps;
+  } test_cases[] = {
+      {
+          .filename = "test/data/hibiscus.regular.png",
+          .want_count = WUFFS_TESTLIB_ARRAY_SIZE(hibiscus_regular_want_areas),
+          .want_areas = hibiscus_regular_want_areas,
+          .want_io_ps = hibiscus_regular_want_io_ps,
+      },
+      {
+          .filename = "test/data/animated-red-blue.apng",
+          .want_count = WUFFS_TESTLIB_ARRAY_SIZE(animated_red_blue_want_areas),
+          .want_areas = animated_red_blue_want_areas,
+          .want_io_ps = animated_red_blue_want_io_ps,
+      },
+  };
+
+  for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
+    wuffs_png__decoder dec;
+    CHECK_STATUS("initialize",
+                 wuffs_png__decoder__initialize(
+                     &dec, sizeof dec, WUFFS_VERSION,
+                     WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+    wuffs_base__frame_config fc = ((wuffs_base__frame_config){});
+    wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+        .data = g_src_slice_u8,
+    });
+    CHECK_STRING(read_file(&src, test_cases[tc].filename));
+
+    uint64_t have_count = 0;
+    while (true) {
+      wuffs_base__status status =
+          wuffs_png__decoder__decode_frame_config(&dec, &fc, &src);
+      if (status.repr == wuffs_base__note__end_of_data) {
+        break;
+      } else if (!wuffs_base__status__is_ok(&status)) {
+        RETURN_FAIL("decode_frame_config tc=%zu #%" PRIu64 ": %s", tc,
+                    have_count, status.repr);
+      }
+
+      if (have_count < test_cases[tc].want_count) {
+        uint64_t have_area = ((uint64_t)wuffs_base__frame_config__width(&fc)) *
+                             ((uint64_t)wuffs_base__frame_config__height(&fc));
+        if (have_area != test_cases[tc].want_areas[have_count]) {
+          RETURN_FAIL(
+              "area tc=%zu #%" PRIu64 ": have %" PRIu64 ", want %" PRIu64, tc,
+              have_count, have_area, test_cases[tc].want_areas[have_count]);
+        }
+
+        uint64_t have_io_p = wuffs_base__frame_config__io_position(&fc);
+        if (have_io_p != test_cases[tc].want_io_ps[have_count]) {
+          RETURN_FAIL("io_position tc=%zu #%" PRIu64 ": have %" PRIu64
+                      ", want %" PRIu64,
+                      tc, have_count, have_io_p,
+                      test_cases[tc].want_io_ps[have_count]);
+        }
+      }
+
+      have_count++;
+    }
+
+    if (have_count != test_cases[tc].want_count) {
+      RETURN_FAIL("count tc=%zu: have %" PRIu64 ", want %" PRIu64, tc,
+                  have_count, test_cases[tc].want_count);
+    }
   }
+
   return NULL;
 }
 

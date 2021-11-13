@@ -15,6 +15,7 @@
 use "std/crc32"
 use "std/zlib"
 
+pub status "#bad animation sequence number"
 pub status "#bad checksum"
 pub status "#bad chunk"
 pub status "#bad filter"
@@ -22,10 +23,15 @@ pub status "#bad header"
 pub status "#missing palette"
 pub status "#unsupported PNG file"
 
+pri status "#internal error: inconsistent frame bounds"
 pri status "#internal error: inconsistent workbuf length"
 pri status "#internal error: zlib decoder did not exhaust its input"
 
 pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0
+
+// DECODER_SRC_IO_BUFFER_LENGTH_MIN_INCL is the minimum length of the src
+// wuffs_base__io_buffer passed to the decoder.
+pub const DECODER_SRC_IO_BUFFER_LENGTH_MIN_INCL : base.u64 = 8
 
 pub struct decoder? implements base.image_decoder(
 	// The 0x00FF_FFFF limit is arbitrary (the PNG spec says 0x7FFF_FFFF) but
@@ -47,13 +53,15 @@ pub struct decoder? implements base.image_decoder(
 	//  - 0x02: metadata finished; image config decode is in progress.
 	//  - 0x03: image config decoded.
 	//  - 0x04: frame config decoded.
-	//  - 0xFF: end-of-data, usually after (the non-animated) frame decoded.
+	//  - 0x05: frame decoded.
+	//  - 0xFF: end-of-data, after the final frame decoded.
 	//
 	// State transitions:
 	//
 	//  - 0x00 -> 0x01: via DIC (metadata reported)
 	//  - 0x00 -> 0x03: via DIC (metadata not reported)
 	//  - 0x00 -> 0x04: via DFC with implicit DIC
+	//  - 0x00 -> 0x05: via DF  with implicit DIC and DFC
 	//  - 0x00 -> 0xFF: via DF  with implicit DIC and DFC
 	//
 	//  - 0x01 -> 0x02: via TMM
@@ -62,15 +70,22 @@ pub struct decoder? implements base.image_decoder(
 	//  - 0x02 -> 0x03: via DIC (metadata not reported)
 	//
 	//  - 0x03 -> 0x04: via DFC
+	//  - 0x03 -> 0x05: via DF  with implicit DFC
 	//  - 0x03 -> 0xFF: via DF  with implicit DFC
 	//
-	//  - 0x04 -> 0xFF: via DFC
+	//  - 0x04 -> 0x04: via DFC with implicit DF
+	//  - 0x04 -> 0x05: via DF
+	//  - 0x04 -> 0xFF: via DFC with implicit DF
 	//  - 0x04 -> 0xFF: via DF
+	//
+	//  - 0x05 -> 0x04: via DFC
+	//  - 0x05 -> 0x05: via DF  with implicit DFC
+	//  - 0x05 -> 0xFF: via DF  with implicit DFC
 	//
 	//  - ???? -> 0x03: via RF  for ???? > 0x00
 	//
 	// Where:
-	//  - DF  is decode_frame
+	//  - DF  is decode_frame,        implicit means skip_frame
 	//  - DFC is decode_frame_config, implicit means nullptr args.dst
 	//  - DIC is decode_image_config, implicit means nullptr args.dst
 	//  - RF  is restart_frame
@@ -89,7 +104,9 @@ pub struct decoder? implements base.image_decoder(
 	filter_distance : base.u8[..= 8],
 	interlace_pass  : base.u8[..= 7],
 
+	seen_actl : base.bool,
 	seen_chrm : base.bool,
+	seen_fctl : base.bool,
 	seen_gama : base.bool,
 	seen_iccp : base.bool,
 	seen_plte : base.bool,
@@ -114,9 +131,48 @@ pub struct decoder? implements base.image_decoder(
 
 	chunk_type       : base.u32,
 	chunk_type_array : array[4] base.u8,
-	chunk_length     : base.u64,
+	chunk_length     : base.u64[..= 0xFFFF_FFFF],
 
-	frame_config_io_position : base.u64,
+	num_animation_frames_value      : base.u32,
+	num_animation_loops_value       : base.u32,
+	num_decoded_frame_configs_value : base.u32,
+	num_decoded_frames_value        : base.u32,
+
+	// The frame_etc fields correspond to the base.frame_config argument passed
+	// to decode_frame_config. For animated APNG, these are explicitly given in
+	// the file's fcTL chunks. For still PNG, these are implicitly given in the
+	// file's IHDR chunk.
+	//
+	// Either way, decode_image_config has to read all the way to the start of
+	// the first IDAT / fdAT chunk (e.g. to see if there's a PLTE chunk). While
+	// later frame's restart io_positions are located just before fcTL chunks,
+	// the first frame's restart io_position is located just before the IDAT /
+	// fdAT chunk, so we also have to cache the first frame's configuration as
+	// we cannot re-read the first fcTL. Hence, there are first_etc fields for
+	// every frame_etc field.
+	//
+	// For the etc_duration fields, there are 705_600000 flicks per second and
+	// the maximum frame duration is 65535 seconds.
+	//
+	// The fields are ordered to minimize alignment wastage.
+	frame_rect_x0                    : base.u32[..= 0x00FF_FFFF],
+	frame_rect_y0                    : base.u32[..= 0x00FF_FFFF],
+	frame_rect_x1                    : base.u32[..= 0x00FF_FFFF],
+	frame_rect_y1                    : base.u32[..= 0x00FF_FFFF],
+	first_rect_x0                    : base.u32[..= 0x00FF_FFFF],
+	first_rect_y0                    : base.u32[..= 0x00FF_FFFF],
+	first_rect_x1                    : base.u32[..= 0x00FF_FFFF],
+	first_rect_y1                    : base.u32[..= 0x00FF_FFFF],
+	frame_config_io_position         : base.u64,
+	first_config_io_position         : base.u64,
+	frame_duration                   : base.u64[..= 0x2A0E_6FF1_6600],
+	first_duration                   : base.u64[..= 0x2A0E_6FF1_6600],
+	frame_disposal                   : base.u8,
+	first_disposal                   : base.u8,
+	frame_overwrite_instead_of_blend : base.bool,
+	first_overwrite_instead_of_blend : base.bool,
+
+	next_animation_seq_num : base.u32,
 
 	metadata_flavor : base.u32,
 	metadata_fourcc : base.u32,
@@ -212,16 +268,21 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 		this.chunk_length = args.src.peek_u32be_as_u64()
 		this.chunk_type = (args.src.peek_u64le() >> 32) as base.u32
 		if this.chunk_type == 'IDAT'le {
+			// TODO: support APNG images whose first frame is not the
+			// IDAT-fallback frame.
+			if this.seen_actl and (not this.seen_fctl) {
+				return "#unsupported PNG file"
+			}
 			break
 		}
 		args.src.skip_u32_fast!(actual: 8, worst_case: 8)
 
 		if (not this.ignore_checksum) and (this.chunk_type == 'PLTE'le) {
 			this.crc32.reset!()
-			this.chunk_type_array[0] = ((this.chunk_type >> 0) & 0xFF) as base.u8
-			this.chunk_type_array[1] = ((this.chunk_type >> 8) & 0xFF) as base.u8
-			this.chunk_type_array[2] = ((this.chunk_type >> 16) & 0xFF) as base.u8
-			this.chunk_type_array[3] = ((this.chunk_type >> 24) & 0xFF) as base.u8
+			this.chunk_type_array[0] = 'P'
+			this.chunk_type_array[1] = 'L'
+			this.chunk_type_array[2] = 'T'
+			this.chunk_type_array[3] = 'E'
 			this.crc32.update_u32!(x: this.chunk_type_array[..])
 		}
 
@@ -256,6 +317,7 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 	}
 
 	this.frame_config_io_position = args.src.position()
+	this.first_config_io_position = this.frame_config_io_position
 
 	if args.dst <> nullptr {
 		args.dst.set!(
@@ -263,8 +325,21 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 			pixsub: 0,
 			width: this.width,
 			height: this.height,
-			first_frame_io_position: this.frame_config_io_position,
+			first_frame_io_position: this.first_config_io_position,
 			first_frame_is_opaque: (this.color_type <= 3) and (not this.seen_trns))
+	}
+
+	// For still (non-animated) PNGs, the first and only frame's configuration
+	// is implied by the IHDR chunk instead of an explicit fcTL chunk.
+	if not this.seen_actl {
+		this.num_animation_frames_value = 1
+		this.first_rect_x0 = 0
+		this.first_rect_y0 = 0
+		this.first_rect_x1 = this.width
+		this.first_rect_y1 = this.height
+		this.first_duration = 0
+		this.first_disposal = base.ANIMATION_DISPOSAL__NONE
+		this.first_overwrite_instead_of_blend = false
 	}
 
 	this.call_sequence = 3
@@ -461,6 +536,13 @@ pri func decoder.decode_other_chunk?(src: base.io_reader) {
 		this.decode_plte?(src: args.src)
 		this.seen_plte = true
 
+	} else if this.chunk_type == 'acTL'le {
+		if this.seen_actl {
+			return "#bad chunk"
+		}
+		this.decode_actl?(src: args.src)
+		this.seen_actl = true
+
 	} else if this.chunk_type == 'cHRM'le {
 		if this.report_metadata_chrm {
 			if this.seen_chrm {
@@ -469,6 +551,16 @@ pri func decoder.decode_other_chunk?(src: base.io_reader) {
 			this.decode_chrm?(src: args.src)
 			this.seen_chrm = true
 		}
+
+	} else if this.chunk_type == 'fcTL'le {
+		if this.seen_fctl {
+			return "#bad chunk"
+		}
+		this.decode_fctl?(src: args.src)
+		this.seen_fctl = true
+
+	} else if this.chunk_type == 'fdAT'le {
+		return "#bad chunk"
 
 	} else if this.chunk_type == 'gAMA'le {
 		if this.report_metadata_gama {
@@ -511,6 +603,23 @@ pri func decoder.decode_other_chunk?(src: base.io_reader) {
 	}
 }
 
+pri func decoder.decode_actl?(src: base.io_reader) {
+	if this.chunk_length <> 8 {
+		return "#bad chunk"
+	} else if this.interlace_pass > 0 {
+		// https://wiki.mozilla.org/APNG_Specification doesn't say whether the
+		// interlace pattern starts at the image or frame top-left corner. We
+		// avoid the question by returning "unsupported" for now.
+		return "#unsupported PNG file"
+	}
+	this.chunk_length = 0
+	this.num_animation_frames_value = args.src.read_u32be?()
+	if this.num_animation_frames_value == 0 {
+		return "#bad chunk"
+	}
+	this.num_animation_loops_value = args.src.read_u32be?()
+}
+
 pri func decoder.decode_chrm?(src: base.io_reader) {
 	var u : base.u64
 
@@ -546,6 +655,85 @@ pri func decoder.decode_chrm?(src: base.io_reader) {
 	this.metadata_z |= (0xFF_FFFF & u) << 16
 	u = args.src.read_u32be_as_u64?()
 	this.metadata_z |= (0xFF_FFFF & u) << 40
+}
+
+pri func decoder.decode_fctl?(src: base.io_reader) {
+	var x0 : base.u32
+	var y0 : base.u32
+	var x1 : base.u32
+	var y1 : base.u32
+
+	if this.chunk_length <> 26 {
+		return "#bad chunk"
+	}
+	this.chunk_length = 0
+
+	x0 = args.src.read_u32be?()
+	if x0 <> this.next_animation_seq_num {
+		return "#bad animation sequence number"
+	} else if this.next_animation_seq_num >= 0xFFFF_FFFF {
+		return "#unsupported PNG file"
+	}
+	this.next_animation_seq_num += 1
+
+	x1 = args.src.read_u32be?()
+	y1 = args.src.read_u32be?()
+	x0 = args.src.read_u32be?()
+	y0 = args.src.read_u32be?()
+	x1 ~mod+= x0
+	y1 ~mod+= y0
+	if (x0 >= x1) or (x0 > this.width) or (x1 > this.width) or
+		(y0 >= y1) or (y0 > this.height) or (y1 > this.height) {
+		return "#bad chunk"
+	}
+	assert x1 <= 0x00FF_FFFF via "a <= b: a <= c; c <= b"(c: this.width)
+	assert y1 <= 0x00FF_FFFF via "a <= b: a <= c; c <= b"(c: this.height)
+	assert x0 <= 0x00FF_FFFF via "a <= b: a <= c; c <= b"(c: x1)
+	assert y0 <= 0x00FF_FFFF via "a <= b: a <= c; c <= b"(c: y1)
+	this.frame_rect_x0 = x0
+	this.frame_rect_y0 = y0
+	this.frame_rect_x1 = x1
+	this.frame_rect_y1 = y1
+
+	// There are 705_600000 flicks per second. A nominally zero denominator
+	// means to use 100 instead (the units are centiseconds, the same as GIF).
+	x0 = args.src.read_u16be_as_u32?()
+	x1 = args.src.read_u16be_as_u32?()
+	if x1 <= 0 {
+		this.frame_duration = (x0 as base.u64) * 7_056000
+	} else {
+		this.frame_duration = ((x0 as base.u64) * 705_600000) / (x1 as base.u64)
+	}
+
+	x0 = args.src.read_u8_as_u32?()
+	if x0 == 0 {
+		this.frame_disposal = base.ANIMATION_DISPOSAL__NONE
+	} else if x0 == 1 {
+		this.frame_disposal = base.ANIMATION_DISPOSAL__RESTORE_BACKGROUND
+	} else if x0 == 2 {
+		this.frame_disposal = base.ANIMATION_DISPOSAL__RESTORE_PREVIOUS
+	} else {
+		return "#bad chunk"
+	}
+
+	x0 = args.src.read_u8_as_u32?()
+	if x0 == 0 {
+		this.frame_overwrite_instead_of_blend = true
+	} else if x0 == 1 {
+		this.frame_overwrite_instead_of_blend = false
+	} else {
+		return "#bad chunk"
+	}
+
+	if this.num_decoded_frame_configs_value == 0 {
+		this.first_rect_x0 = this.frame_rect_x0
+		this.first_rect_y0 = this.frame_rect_y0
+		this.first_rect_x1 = this.frame_rect_x1
+		this.first_rect_y1 = this.frame_rect_y1
+		this.first_duration = this.frame_duration
+		this.first_disposal = this.frame_disposal
+		this.first_overwrite_instead_of_blend = this.frame_overwrite_instead_of_blend
+	}
 }
 
 pri func decoder.decode_gama?(src: base.io_reader) {
@@ -715,60 +903,204 @@ pri func decoder.decode_trns?(src: base.io_reader) {
 }
 
 pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_reader) {
-	if this.call_sequence < 3 {
+	if this.call_sequence == 0xFF {
+		return base."@end of data"
+	} else if this.call_sequence < 3 {
 		this.decode_image_config?(dst: nullptr, src: args.src)
 	} else if this.call_sequence == 3 {
 		if this.frame_config_io_position <> args.src.position() {
 			return base."#bad restart"
 		}
 	} else if this.call_sequence == 4 {
-		this.call_sequence = 0xFF
-		return base."@end of data"
+		this.skip_frame?(src: args.src)
+		if this.call_sequence == 0xFF {
+			return base."@end of data"
+		}
+	}
+
+	if this.num_decoded_frame_configs_value == 0 {
+		this.frame_rect_x0 = this.first_rect_x0
+		this.frame_rect_y0 = this.first_rect_y0
+		this.frame_rect_x1 = this.first_rect_x1
+		this.frame_rect_y1 = this.first_rect_y1
+		this.frame_config_io_position = this.first_config_io_position
+		this.frame_duration = this.first_duration
+		this.frame_disposal = this.first_disposal
+		this.frame_overwrite_instead_of_blend = this.first_overwrite_instead_of_blend
+
 	} else {
-		return base."@end of data"
+		// Decode the next fcTL chunk.
+		while true {
+			this.chunk_length = args.src.read_u32be_as_u64?()
+			this.chunk_type = args.src.read_u32le?()
+			if this.chunk_type == 'fdAT'le {
+				return "#bad chunk"
+			} else if this.chunk_type == 'fcTL'le {
+				this.frame_config_io_position = args.src.position() ~mod- 8
+				this.decode_fctl?(src: args.src)
+				args.src.skip?(n: 4)  // Skip the checksum.
+				break
+			}
+			args.src.skip?(n: this.chunk_length + 4)  // +4 for the checksum.
+			this.chunk_length = 0
+		} endwhile
 	}
 
 	if args.dst <> nullptr {
 		args.dst.set!(bounds: this.util.make_rect_ie_u32(
-			min_incl_x: 0,
-			min_incl_y: 0,
-			max_excl_x: this.width,
-			max_excl_y: this.height),
-			duration: 0,
-			index: 0,
+			min_incl_x: this.frame_rect_x0,
+			min_incl_y: this.frame_rect_y0,
+			max_excl_x: this.frame_rect_x1,
+			max_excl_y: this.frame_rect_y1),
+			duration: this.frame_duration,
+			index: this.num_decoded_frame_configs_value as base.u64,
 			io_position: this.frame_config_io_position,
-			disposal: 0,
-			opaque_within_bounds: false,
-			overwrite_instead_of_blend: false,
+			disposal: this.frame_disposal,
+			opaque_within_bounds: (this.color_type <= 3) and (not this.seen_trns),
+			overwrite_instead_of_blend: this.frame_overwrite_instead_of_blend,
 			background_color: 0x0000_0000)
 	}
 
+	this.num_decoded_frame_configs_value ~sat+= 1
 	this.call_sequence = 4
 }
 
+pri func decoder.skip_frame?(src: base.io_reader) {
+	var seq_num : base.u32
+
+	this.chunk_type_array[0] = 0
+	this.chunk_type_array[1] = 0
+	this.chunk_type_array[2] = 0
+	this.chunk_type_array[3] = 0
+
+	while true {
+		while args.src.length() < 8,
+			post args.src.length() >= 8,
+		{
+			if args.src.is_closed() {
+				return "#bad chunk"
+			}
+			yield? base."$short read"
+		} endwhile
+
+		this.chunk_length = args.src.peek_u32be_as_u64()
+		this.chunk_type = (args.src.peek_u64le() >> 32) as base.u32
+
+		if this.chunk_type == 'IDAT'le {
+			if this.chunk_type_array[0] == 'f' {
+				return "#bad chunk"
+			}
+			this.chunk_type_array[0] = 'I'
+			this.chunk_type_array[1] = 'D'
+			this.chunk_type_array[2] = 'A'
+			this.chunk_type_array[3] = 'T'
+
+		} else if this.chunk_type == 'fdAT'le {
+			if this.chunk_type_array[0] == 'I' {
+				return "#bad chunk"
+			}
+			this.chunk_type_array[0] = 'f'
+			this.chunk_type_array[1] = 'd'
+			this.chunk_type_array[2] = 'A'
+			this.chunk_type_array[3] = 'T'
+			if this.chunk_length < 4 {
+				return "#bad chunk"
+			}
+			this.chunk_length -= 4
+			args.src.skip_u32_fast!(actual: 8, worst_case: 8)
+			seq_num = args.src.read_u32be?()
+			if seq_num <> this.next_animation_seq_num {
+				return "#bad animation sequence number"
+			} else if this.next_animation_seq_num >= 0xFFFF_FFFF {
+				return "#unsupported PNG file"
+			}
+			this.next_animation_seq_num += 1
+			args.src.skip?(n: this.chunk_length + 4)  // +4 for the checksum.
+			this.chunk_length = 0
+			continue
+
+		} else if this.chunk_type_array[0] <> 0 {
+			break
+
+		} else if this.chunk_type == 'fcTL'le {
+			return "#bad chunk"
+		}
+
+		args.src.skip?(n: this.chunk_length + 12)  // +12 for chunk length, type and checksum.
+		this.chunk_length = 0
+	} endwhile
+
+	this.num_decoded_frames_value ~sat+= 1
+	if this.num_decoded_frames_value < this.num_animation_frames_value {
+		this.call_sequence = 5
+	} else {
+		this.call_sequence = 0xFF
+	}
+}
+
 pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, blend: base.pixel_blend, workbuf: slice base.u8, opts: nptr base.decode_frame_options) {
+	var seq_num     : base.u32
 	var status      : base.status
 	var pass_width  : base.u32[..= 0x00FF_FFFF]
 	var pass_height : base.u32[..= 0x00FF_FFFF]
 
-	if this.call_sequence < 4 {
-		this.decode_frame_config?(dst: nullptr, src: args.src)
-	} else if this.call_sequence == 4 {
-		// No-op.
-	} else {
+	if this.call_sequence == 0xFF {
 		return base."@end of data"
+	} else if this.call_sequence <> 4 {
+		this.decode_frame_config?(dst: nullptr, src: args.src)
 	}
 
-	this.chunk_length = args.src.read_u32be_as_u64?()
-	this.chunk_type = args.src.read_u32le?()
-	if (not this.ignore_checksum) and (this.chunk_type == 'IDAT'le) {
-		this.crc32.reset!()
-		this.chunk_type_array[0] = ((this.chunk_type >> 0) & 0xFF) as base.u8
-		this.chunk_type_array[1] = ((this.chunk_type >> 8) & 0xFF) as base.u8
-		this.chunk_type_array[2] = ((this.chunk_type >> 16) & 0xFF) as base.u8
-		this.chunk_type_array[3] = ((this.chunk_type >> 24) & 0xFF) as base.u8
-		this.crc32.update_u32!(x: this.chunk_type_array[..])
-	}
+	while true {
+		while args.src.length() < 8,
+			post args.src.length() >= 8,
+		{
+			if args.src.is_closed() {
+				return "#bad chunk"
+			}
+			yield? base."$short read"
+		} endwhile
+
+		this.chunk_length = args.src.peek_u32be_as_u64()
+		this.chunk_type = (args.src.peek_u64le() >> 32) as base.u32
+
+		if this.chunk_type == 'IDAT'le {
+			this.chunk_type_array[0] = 'I'
+			this.chunk_type_array[1] = 'D'
+			this.chunk_type_array[2] = 'A'
+			this.chunk_type_array[3] = 'T'
+			args.src.skip_u32_fast!(actual: 8, worst_case: 8)
+			if not this.ignore_checksum {
+				this.crc32.reset!()
+				this.crc32.update_u32!(x: this.chunk_type_array[..])
+			}
+			break
+
+		} else if this.chunk_type == 'fdAT'le {
+			this.chunk_type_array[0] = 'f'
+			this.chunk_type_array[1] = 'd'
+			this.chunk_type_array[2] = 'A'
+			this.chunk_type_array[3] = 'T'
+			if this.chunk_length < 4 {
+				return "#bad chunk"
+			}
+			this.chunk_length -= 4
+			args.src.skip_u32_fast!(actual: 8, worst_case: 8)
+			seq_num = args.src.read_u32be?()
+			if seq_num <> this.next_animation_seq_num {
+				return "#bad animation sequence number"
+			} else if this.next_animation_seq_num >= 0xFFFF_FFFF {
+				return "#unsupported PNG file"
+			}
+			this.next_animation_seq_num += 1
+			break
+
+		} else if this.chunk_type == 'fcTL'le {
+			return "#bad chunk"
+		}
+
+		args.src.skip?(n: this.chunk_length + 12)  // +12 for chunk length, type and checksum.
+		this.chunk_length = 0
+	} endwhile
 
 	if this.zlib_is_dirty {
 		this.zlib.reset!()
@@ -790,12 +1122,17 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 
 	this.workbuf_hist_pos_base = 0
 	while true {
-		pass_width = 0x00FF_FFFF &
-			(((INTERLACING[this.interlace_pass][1] as base.u32) + this.width) >>
-			INTERLACING[this.interlace_pass][0])
-		pass_height = 0x00FF_FFFF &
-			(((INTERLACING[this.interlace_pass][4] as base.u32) + this.height) >>
-			INTERLACING[this.interlace_pass][3])
+		if (this.chunk_type_array[0] == 'I') {
+			pass_width = 0x00FF_FFFF &
+				(((INTERLACING[this.interlace_pass][1] as base.u32) + this.width) >>
+				INTERLACING[this.interlace_pass][0])
+			pass_height = 0x00FF_FFFF &
+				(((INTERLACING[this.interlace_pass][4] as base.u32) + this.height) >>
+				INTERLACING[this.interlace_pass][3])
+		} else {
+			pass_width = 0x00FF_FFFF & (this.frame_rect_x1 ~mod- this.frame_rect_x0)
+			pass_height = 0x00FF_FFFF & (this.frame_rect_y1 ~mod- this.frame_rect_y0)
+		}
 
 		if (pass_width > 0) and (pass_height > 0) {
 			this.pass_bytes_per_row = this.calculate_bytes_per_row(width: pass_width)
@@ -814,7 +1151,12 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 		this.interlace_pass += 1
 	} endwhile
 
-	this.call_sequence = 0xFF
+	this.num_decoded_frames_value ~sat+= 1
+	if this.num_decoded_frames_value < this.num_animation_frames_value {
+		this.call_sequence = 5
+	} else {
+		this.call_sequence = 0xFF
+	}
 }
 
 pri func decoder.decode_pass?(src: base.io_reader, workbuf: slice base.u8) {
@@ -824,6 +1166,7 @@ pri func decoder.decode_pass?(src: base.io_reader, workbuf: slice base.u8) {
 	var zlib_status   : base.status
 	var checksum_have : base.u32
 	var checksum_want : base.u32
+	var seq_num       : base.u32
 
 	this.workbuf_wi = 0
 	while true {
@@ -846,14 +1189,14 @@ pri func decoder.decode_pass?(src: base.io_reader, workbuf: slice base.u8) {
 		}
 
 		if zlib_status.is_ok() {
+			if this.chunk_length > 0 {
+				// TODO: should this really be a fatal error?
+				return base."#too much data"
+			}
+			checksum_want = args.src.read_u32be?()
 			// Verify the final IDAT chunk's CRC-32 checksum.
-			if not this.ignore_checksum {
-				if this.chunk_length > 0 {
-					// TODO: should this really be a fatal error?
-					return base."#too much data"
-				}
+			if (not this.ignore_checksum) and (this.chunk_type_array[0] == 'I') {
 				checksum_have = this.crc32.update_u32!(x: this.util.empty_slice_u8())
-				checksum_want = args.src.read_u32be?()
 				if checksum_have <> checksum_want {
 					return "#bad checksum"
 				}
@@ -869,28 +1212,37 @@ pri func decoder.decode_pass?(src: base.io_reader, workbuf: slice base.u8) {
 		} else if this.chunk_length == 0 {
 			// Verify the non-final IDAT chunk's CRC-32 checksum.
 			checksum_want = args.src.read_u32be?()
-			if not this.ignore_checksum {
+			if (not this.ignore_checksum) and (this.chunk_type_array[0] == 'I') {
 				checksum_have = this.crc32.update_u32!(x: this.util.empty_slice_u8())
 				if checksum_have <> checksum_want {
 					return "#bad checksum"
 				}
 			}
 
-			// The next chunk should be another IDAT.
+			// The next chunk should be another IDAT or fdAT.
 			this.chunk_length = args.src.read_u32be_as_u64?()
 			this.chunk_type = args.src.read_u32le?()
-			if this.chunk_type <> 'IDAT'le {
-				return "#bad chunk"
-			}
-
-			// The 'IDAT'be is part of the next CRC-32 checksum's input.
-			if not this.ignore_checksum {
-				this.crc32.reset!()
-				this.chunk_type_array[0] = 'I'
-				this.chunk_type_array[1] = 'D'
-				this.chunk_type_array[2] = 'A'
-				this.chunk_type_array[3] = 'T'
-				this.crc32.update_u32!(x: this.chunk_type_array[..])
+			if (this.chunk_type_array[0] == 'I') {
+				if this.chunk_type <> 'IDAT'le {
+					return "#bad chunk"
+				}
+				// The IDAT is part of the next CRC-32 checksum's input.
+				if not this.ignore_checksum {
+					this.crc32.reset!()
+					this.crc32.update_u32!(x: this.chunk_type_array[..])
+				}
+			} else {
+				if (this.chunk_type <> 'fdAT'le) or (this.chunk_length < 4) {
+					return "#bad chunk"
+				}
+				this.chunk_length -= 4
+				seq_num = args.src.read_u32be?()
+				if seq_num <> this.next_animation_seq_num {
+					return "#bad animation sequence number"
+				} else if this.next_animation_seq_num >= 0xFFFF_FFFF {
+					return "#unsupported PNG file"
+				}
+				this.next_animation_seq_num += 1
 			}
 			continue
 		} else if args.src.length() > 0 {
@@ -920,28 +1272,22 @@ pub func decoder.frame_dirty_rect() base.rect_ie_u32 {
 }
 
 pub func decoder.num_animation_loops() base.u32 {
-	return 0
+	return this.num_animation_loops_value
 }
 
 pub func decoder.num_decoded_frame_configs() base.u64 {
-	if this.call_sequence > 3 {
-		return 1
-	}
-	return 0
+	return this.num_decoded_frame_configs_value as base.u64
 }
 
 pub func decoder.num_decoded_frames() base.u64 {
-	if this.call_sequence > 4 {
-		return 1
-	}
-	return 0
+	return this.num_decoded_frames_value as base.u64
 }
 
 pub func decoder.restart_frame!(index: base.u64, io_position: base.u64) base.status {
 	if this.call_sequence < 3 {
 		return base."#bad call sequence"
-	}
-	if args.index <> 0 {
+	} else if (args.index >= (this.num_animation_frames_value as base.u64)) or
+		((args.index == 0) and (args.io_position <> this.first_config_io_position)) {
 		return base."#bad argument"
 	}
 	this.call_sequence = 3
@@ -949,6 +1295,8 @@ pub func decoder.restart_frame!(index: base.u64, io_position: base.u64) base.sta
 		this.interlace_pass = 1
 	}
 	this.frame_config_io_position = args.io_position
+	this.num_decoded_frame_configs_value = (args.index & 0xFFFF_FFFF) as base.u32
+	this.num_decoded_frames_value = this.num_decoded_frame_configs_value
 	return ok
 }
 

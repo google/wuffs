@@ -4,7 +4,7 @@ d3bb0beb test/data/DCI-P3-D65.icc
 181c6916 test/data/animated-red-blue.000001.nie
 e651a889 test/data/animated-red-blue.000002.nie
 14a5b4b0 test/data/animated-red-blue.000003.nie
-646e081a test/data/animated-red-blue.apng
+76e40058 test/data/animated-red-blue.apng
 76e40058 test/data/animated-red-blue.gif
 f9a10dac test/data/artificial/gif-background-color.gif
 36e7d9c7 test/data/artificial/gif-empty-palette.gif
@@ -60,7 +60,7 @@ dcbb225a test/data/hippopotamus.nie
 21e17862 test/data/hippopotamus.regular.gif
 dcbb225a test/data/hippopotamus.regular.png
 2dccfe56 test/data/muybridge-frame-000.wbmp
-3a4145fa test/data/muybridge.apng
+db2733f5 test/data/muybridge.apng
 db2733f5 test/data/muybridge.gif
 bf7e8c96 test/data/pjw-thumbnail.bmp
 73d48c08 test/data/pjw-thumbnail.gif
