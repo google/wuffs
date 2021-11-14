@@ -964,6 +964,8 @@ var TableFuncs = []string{
 	"GENERIC T2.width() u64",
 
 	"GENERIC T2.row(y: u32) T1",
+	"GENERIC T2.subtable(" +
+		"min_incl_x: u64, min_incl_y: u64, max_incl_x: u64, max_incl_y: u64) T2",
 }
 
 func ParseFuncs(tm *t.Map, ss []string, callback func(*a.Func) error) error {

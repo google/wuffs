@@ -1357,6 +1357,25 @@ wuffs_base__slice_u8__subslice_ij(wuffs_base__slice_u8 s,
   return wuffs_base__make_slice_u8(NULL, 0);
 }
 
+// wuffs_base__table_u8__subtable_ij returns t[ix:jx, iy:jy].
+//
+// It returns an empty table if i or j is out of bounds.
+static inline wuffs_base__table_u8  //
+wuffs_base__table_u8__subtable_ij(wuffs_base__table_u8 t,
+                                  uint64_t ix,
+                                  uint64_t iy,
+                                  uint64_t jx,
+                                  uint64_t jy) {
+  if ((ix <= jx) && (jx <= SIZE_MAX) && (jx <= t.width) &&  //
+      (iy <= jy) && (jy <= SIZE_MAX) && (jy <= t.height)) {
+    return wuffs_base__make_table_u8(t.ptr + ix + (iy * t.stride),  //
+                                     ((size_t)(jx - ix)),           //
+                                     ((size_t)(jy - iy)),           //
+                                     t.stride);                     //
+  }
+  return wuffs_base__make_table_u8(NULL, 0, 0, 0);
+}
+
 // wuffs_base__table__flattened_length returns the number of elements covered
 // by the 1-dimensional span that backs a 2-dimensional table. This counts the
 // elements inside the table and, when width != stride, the elements outside

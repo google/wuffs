@@ -670,10 +670,12 @@ const (
 	IDPrefix           = ID(0x244)
 	IDRow              = ID(0x245)
 	IDStride           = ID(0x246)
-	IDSuffix           = ID(0x247)
-	IDUintptrLow12Bits = ID(0x248)
-	IDValidUTF8Length  = ID(0x249)
-	IDWidth            = ID(0x24A)
+	IDSubslice         = ID(0x247)
+	IDSubtable         = ID(0x248)
+	IDSuffix           = ID(0x249)
+	IDUintptrLow12Bits = ID(0x24A)
+	IDValidUTF8Length  = ID(0x24B)
+	IDWidth            = ID(0x24C)
 
 	IDLimitedSwizzleU32InterleavedFromReader = ID(0x280)
 	IDSwizzleInterleavedFromReader           = ID(0x281)
@@ -1094,6 +1096,8 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDPrefix:           "prefix",
 	IDRow:              "row",
 	IDStride:           "stride",
+	IDSubslice:         "subslice",
+	IDSubtable:         "subtable",
 	IDSuffix:           "suffix",
 	IDUintptrLow12Bits: "uintptr_low_12_bits",
 	IDValidUTF8Length:  "valid_utf_8_length",
