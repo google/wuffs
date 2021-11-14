@@ -62,7 +62,7 @@ pri func decoder.filter_and_swizzle_tricky!(dst: ptr base.pixel_buffer, workbuf:
 	}
 	while y < this.frame_rect_y1 {
 		assert y < 0x00FF_FFFF via "a < b: a < c; c <= b"(c: this.frame_rect_y1)
-		dst = tab.row(y: y)
+		dst = tab.row_u32(y: y)
 		if dst_bytes_per_row1 < dst.length() {
 			dst = dst[.. dst_bytes_per_row1]
 		}

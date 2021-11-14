@@ -196,7 +196,7 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 		tab = args.dst.plane(p: 0)
 		while dst_y < this.height {
 			assert dst_y < 0xFFFF_FFFF via "a < b: a < c; c <= b"(c: this.height)
-			dst = tab.row(y: dst_y)
+			dst = tab.row_u32(y: dst_y)
 			dst_x = 0
 
 			while dst_x < this.width,
@@ -212,7 +212,7 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 					{
 						yield? base."$short read"
 						tab = args.dst.plane(p: 0)
-						dst = tab.row(y: dst_y)
+						dst = tab.row_u32(y: dst_y)
 						dst_x_in_bytes = (dst_x as base.u64) * dst_bytes_per_pixel
 						if dst_x_in_bytes <= dst.length() {
 							dst = dst[dst_x_in_bytes ..]

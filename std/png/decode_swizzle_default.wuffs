@@ -67,7 +67,7 @@ pri func decoder.filter_and_swizzle!(dst: ptr base.pixel_buffer, workbuf: slice 
 	y = this.frame_rect_y0
 	while y < this.frame_rect_y1 {
 		assert y < 0x00FF_FFFF via "a < b: a < c; c <= b"(c: this.frame_rect_y1)
-		dst = tab.row(y: y)
+		dst = tab.row_u32(y: y)
 
 		if 1 > args.workbuf.length() {
 			return "#internal error: inconsistent workbuf length"

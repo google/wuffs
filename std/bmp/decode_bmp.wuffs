@@ -530,7 +530,7 @@ pri func decoder.swizzle_none!(dst: ptr base.pixel_buffer, src: base.io_reader) 
 				}
 			}
 
-			dst = tab.row(y: this.dst_y)
+			dst = tab.row_u32(y: this.dst_y)
 			if dst_bytes_per_row < dst.length() {
 				dst = dst[.. dst_bytes_per_row]
 			}
@@ -597,7 +597,7 @@ pri func decoder.swizzle_rle!(dst: ptr base.pixel_buffer, src: base.io_reader) b
 	rle_state = this.rle_state
 
 	while.outer true {
-		row = tab.row(y: this.dst_y)
+		row = tab.row_u32(y: this.dst_y)
 		if dst_bytes_per_row < row.length() {
 			row = row[.. dst_bytes_per_row]
 		}
@@ -771,7 +771,7 @@ pri func decoder.swizzle_rle!(dst: ptr base.pixel_buffer, src: base.io_reader) b
 						if this.dst_y >= this.height {
 							return "#bad RLE compression"
 						}
-						row = tab.row(y: this.dst_y)
+						row = tab.row_u32(y: this.dst_y)
 						if dst_bytes_per_row < row.length() {
 							row = row[.. dst_bytes_per_row]
 						}
@@ -801,7 +801,7 @@ pri func decoder.swizzle_rle!(dst: ptr base.pixel_buffer, src: base.io_reader) b
 	} endwhile.outer
 
 	while this.dst_y < this.height {
-		row = tab.row(y: this.dst_y)
+		row = tab.row_u32(y: this.dst_y)
 		if dst_bytes_per_row < row.length() {
 			row = row[.. dst_bytes_per_row]
 		}
@@ -921,7 +921,7 @@ pri func decoder.swizzle_bitfields!(dst: ptr base.pixel_buffer, src: base.io_rea
 			} endwhile
 			// -------- END   convert to PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE.
 
-			dst = tab.row(y: this.dst_y)
+			dst = tab.row_u32(y: this.dst_y)
 			if dst_bytes_per_row < dst.length() {
 				dst = dst[.. dst_bytes_per_row]
 			}
@@ -983,7 +983,7 @@ pri func decoder.swizzle_low_bit_depth!(dst: ptr base.pixel_buffer, src: base.io
 			}
 		}
 
-		dst = tab.row(y: this.dst_y)
+		dst = tab.row_u32(y: this.dst_y)
 		if dst_bytes_per_row < dst.length() {
 			dst = dst[.. dst_bytes_per_row]
 		}

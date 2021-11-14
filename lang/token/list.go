@@ -668,7 +668,7 @@ const (
 	IDIO               = ID(0x242)
 	IDLimit            = ID(0x243)
 	IDPrefix           = ID(0x244)
-	IDRow              = ID(0x245)
+	IDRowU32           = ID(0x245)
 	IDStride           = ID(0x246)
 	IDSubslice         = ID(0x247)
 	IDSubtable         = ID(0x248)
@@ -1094,7 +1094,7 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDIO:               "io",
 	IDLimit:            "limit",
 	IDPrefix:           "prefix",
-	IDRow:              "row",
+	IDRowU32:           "row_u32",
 	IDStride:           "stride",
 	IDSubslice:         "subslice",
 	IDSubtable:         "subtable",
