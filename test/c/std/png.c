@@ -959,6 +959,10 @@ do_bench_wuffs_png_decode_filter(uint8_t filter,
   CHECK_STATUS("initialize", wuffs_png__decoder__initialize(
                                  &dec, sizeof dec, WUFFS_VERSION,
                                  WUFFS_INITIALIZE__DEFAULT_OPTIONS));
+  dec.private_impl.f_frame_rect_x0 = 0;
+  dec.private_impl.f_frame_rect_y0 = 0;
+  dec.private_impl.f_frame_rect_x1 = width;
+  dec.private_impl.f_frame_rect_y1 = height;
   dec.private_impl.f_width = width;
   dec.private_impl.f_height = height;
   dec.private_impl.f_pass_bytes_per_row = bytes_per_row;
