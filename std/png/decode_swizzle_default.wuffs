@@ -42,18 +42,32 @@ pri func decoder.filter_and_swizzle!(dst: ptr base.pixel_buffer, workbuf: slice 
 	dst_palette = args.dst.palette_or_else(fallback: this.dst_palette[..])
 	tab = args.dst.plane(p: 0)
 
+	if dst_bytes_per_row1 < tab.width() {
+		tab = tab.subtable(
+			min_incl_x: 0,
+			min_incl_y: 0,
+			max_incl_x: dst_bytes_per_row1,
+			max_incl_y: tab.height())
+	}
+
+	if dst_bytes_per_row0 < tab.width() {
+		tab = tab.subtable(
+			min_incl_x: dst_bytes_per_row0,
+			min_incl_y: 0,
+			max_incl_x: tab.width(),
+			max_incl_y: tab.height())
+	} else {
+		tab = tab.subtable(
+			min_incl_x: 0,
+			min_incl_y: 0,
+			max_incl_x: 0,
+			max_incl_y: 0)
+	}
+
 	y = this.frame_rect_y0
 	while y < this.frame_rect_y1 {
 		assert y < 0x00FF_FFFF via "a < b: a < c; c <= b"(c: this.frame_rect_y1)
 		dst = tab.row(y: y)
-		if dst_bytes_per_row1 < dst.length() {
-			dst = dst[.. dst_bytes_per_row1]
-		}
-		if dst_bytes_per_row0 < dst.length() {
-			dst = dst[dst_bytes_per_row0 ..]
-		} else {
-			dst = this.util.empty_slice_u8()
-		}
 
 		if 1 > args.workbuf.length() {
 			return "#internal error: inconsistent workbuf length"

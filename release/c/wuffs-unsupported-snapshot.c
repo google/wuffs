@@ -40585,17 +40585,29 @@ wuffs_png__decoder__filter_and_swizzle__choosy_default(
   v_dst_bytes_per_row1 = (((uint64_t)(self->private_impl.f_frame_rect_x1)) * v_dst_bytes_per_pixel);
   v_dst_palette = wuffs_base__pixel_buffer__palette_or_else(a_dst, wuffs_base__make_slice_u8(self->private_data.f_dst_palette, 1024));
   v_tab = wuffs_base__pixel_buffer__plane(a_dst, 0);
+  if (v_dst_bytes_per_row1 < ((uint64_t)(v_tab.width))) {
+    v_tab = wuffs_base__table_u8__subtable_ij(v_tab,
+        0,
+        0,
+        v_dst_bytes_per_row1,
+        ((uint64_t)(v_tab.height)));
+  }
+  if (v_dst_bytes_per_row0 < ((uint64_t)(v_tab.width))) {
+    v_tab = wuffs_base__table_u8__subtable_ij(v_tab,
+        v_dst_bytes_per_row0,
+        0,
+        ((uint64_t)(v_tab.width)),
+        ((uint64_t)(v_tab.height)));
+  } else {
+    v_tab = wuffs_base__table_u8__subtable_ij(v_tab,
+        0,
+        0,
+        0,
+        0);
+  }
   v_y = self->private_impl.f_frame_rect_y0;
   while (v_y < self->private_impl.f_frame_rect_y1) {
     v_dst = wuffs_base__table_u8__row(v_tab, v_y);
-    if (v_dst_bytes_per_row1 < ((uint64_t)(v_dst.len))) {
-      v_dst = wuffs_base__slice_u8__subslice_j(v_dst, v_dst_bytes_per_row1);
-    }
-    if (v_dst_bytes_per_row0 < ((uint64_t)(v_dst.len))) {
-      v_dst = wuffs_base__slice_u8__subslice_i(v_dst, v_dst_bytes_per_row0);
-    } else {
-      v_dst = wuffs_base__utility__empty_slice_u8();
-    }
     if (1 > ((uint64_t)(a_workbuf.len))) {
       return wuffs_base__make_status(wuffs_png__error__internal_error_inconsistent_workbuf_length);
     }
