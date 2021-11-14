@@ -40259,10 +40259,10 @@ wuffs_png__decoder__frame_dirty_rect(
   }
 
   return wuffs_base__utility__make_rect_ie_u32(
-      0,
-      0,
-      self->private_impl.f_width,
-      self->private_impl.f_height);
+      self->private_impl.f_frame_rect_x0,
+      self->private_impl.f_frame_rect_y0,
+      self->private_impl.f_frame_rect_x1,
+      self->private_impl.f_frame_rect_y1);
 }
 
 // -------- func png.decoder.num_animation_loops
