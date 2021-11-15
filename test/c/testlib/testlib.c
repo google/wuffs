@@ -562,7 +562,7 @@ copy_to_io_buffer_from_pixel_buffer(wuffs_base__io_buffer* dst,
   for (uint32_t p = 0; p < 1; p++) {
     wuffs_base__table_u8 tab = wuffs_base__pixel_buffer__plane(src, p);
     for (uint32_t y = r.min_incl_y; y < r.max_excl_y; y++) {
-      wuffs_base__slice_u8 row = wuffs_base__table_u8__row(tab, y);
+      wuffs_base__slice_u8 row = wuffs_base__table_u8__row_u32(tab, y);
       if ((r.min_incl_x >= r.max_excl_x) ||
           (r.max_excl_x > (row.len / bytes_per_pixel))) {
         break;

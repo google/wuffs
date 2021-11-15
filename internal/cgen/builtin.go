@@ -1028,7 +1028,7 @@ func (g *gen) writeBuiltinTable(b *buffer, recv *a.Expr, method t.ID, args []*a.
 
 	case t.IDRowU32:
 		// TODO: don't assume that the table is a table of base.u8.
-		b.writes("wuffs_base__table_u8__row(")
+		b.writes("wuffs_base__table_u8__row_u32(")
 		if err := g.writeExpr(b, recv, false, depth); err != nil {
 			return err
 		}
