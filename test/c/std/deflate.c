@@ -74,8 +74,8 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 // go run script/extract-flate-offsets.go test/data/*.gz
 
 golden_test g_deflate_256_bytes_gt = {
-    .want_filename = "test/data/artificial/256.bytes",
-    .src_filename = "test/data/artificial/256.bytes.gz",
+    .want_filename = "test/data/256.bytes",
+    .src_filename = "test/data/256.bytes.gz",
     .src_offset0 = 20,
     .src_offset1 = 281,
 };
