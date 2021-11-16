@@ -33,6 +33,10 @@ pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0
 // wuffs_base__io_buffer passed to the decoder.
 pub const DECODER_SRC_IO_BUFFER_LENGTH_MIN_INCL : base.u64 = 8
 
+// ANCILLARY_BIT is the upper/lower case bit on the chunk type's first byte (in
+// little-endian order).
+pri const ANCILLARY_BIT : base.u32 = 0x0000_0020
+
 pub struct decoder? implements base.image_decoder(
 	// The 0x00FF_FFFF limit is arbitrary (the PNG spec says 0x7FFF_FFFF) but
 	// it means that (width * height * bytes_per_pixel) doesn't overflow.
@@ -109,6 +113,7 @@ pub struct decoder? implements base.image_decoder(
 	seen_fctl : base.bool,
 	seen_gama : base.bool,
 	seen_iccp : base.bool,
+	seen_idat : base.bool,
 	seen_plte : base.bool,
 	seen_srgb : base.bool,
 	seen_trns : base.bool,
@@ -217,11 +222,11 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 		if magic <> '\x00\x00\x00\x0DIHDR'le {
 			return "#bad header"
 		}
-		this.crc32.reset!()
 		this.chunk_type_array[0] = 'I'
 		this.chunk_type_array[1] = 'H'
 		this.chunk_type_array[2] = 'D'
 		this.chunk_type_array[3] = 'R'
+		this.crc32.reset!()
 		this.crc32.update_u32!(x: this.chunk_type_array[..])
 
 		while true {
@@ -243,7 +248,7 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 		}
 	}
 
-	// Read up until an IDAT chunk.
+	// Read up until an IDAT or fdAT chunk.
 	//
 	// By default, libpng "warns and discards" when seeing ancillary chunk
 	// checksum failures (as opposed to critical chunk checksum failures) but
@@ -268,28 +273,31 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 		this.chunk_length = args.src.peek_u32be_as_u64()
 		this.chunk_type = (args.src.peek_u64le() >> 32) as base.u32
 		if this.chunk_type == 'IDAT'le {
-			// TODO: support APNG images whose first frame is not the
-			// IDAT-fallback frame.
-			if this.seen_actl and (not this.seen_fctl) {
-				return "#unsupported PNG file"
+			if (not this.seen_actl) or this.seen_fctl {
+				break
 			}
-			break
+			this.seen_idat = true
+		} else if this.chunk_type == 'fdAT'le {
+			if this.seen_idat and this.seen_fctl {
+				break
+			}
+			return "#bad chunk"
 		}
 		args.src.skip_u32_fast!(actual: 8, worst_case: 8)
 
-		if (not this.ignore_checksum) and (this.chunk_type == 'PLTE'le) {
+		if (not this.ignore_checksum) and ((this.chunk_type & ANCILLARY_BIT) == 0) {
+			this.chunk_type_array[0] = ((this.chunk_type >> 0) & 0xFF) as base.u8
+			this.chunk_type_array[1] = ((this.chunk_type >> 8) & 0xFF) as base.u8
+			this.chunk_type_array[2] = ((this.chunk_type >> 16) & 0xFF) as base.u8
+			this.chunk_type_array[3] = ((this.chunk_type >> 24) & 0xFF) as base.u8
 			this.crc32.reset!()
-			this.chunk_type_array[0] = 'P'
-			this.chunk_type_array[1] = 'L'
-			this.chunk_type_array[2] = 'T'
-			this.chunk_type_array[3] = 'E'
 			this.crc32.update_u32!(x: this.chunk_type_array[..])
 		}
 
 		while true {
 			mark = args.src.mark()
 			status =? this.decode_other_chunk?(src: args.src)
-			if (not this.ignore_checksum) and (this.chunk_type == 'PLTE'le) {
+			if (not this.ignore_checksum) and ((this.chunk_type & ANCILLARY_BIT) == 0) {
 				checksum_have = this.crc32.update_u32!(x: args.src.since(mark: mark))
 			}
 			if status.is_ok() {
@@ -306,7 +314,7 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 		}
 
 		checksum_want = args.src.read_u32be?()
-		if (not this.ignore_checksum) and (this.chunk_type == 'PLTE'le) and
+		if (not this.ignore_checksum) and ((this.chunk_type & ANCILLARY_BIT) == 0) and
 			(checksum_have <> checksum_want) {
 			return "#bad checksum"
 		}
@@ -536,6 +544,11 @@ pri func decoder.decode_other_chunk?(src: base.io_reader) {
 		this.decode_plte?(src: args.src)
 		this.seen_plte = true
 
+	} else if (this.chunk_type & ANCILLARY_BIT) == 0 {
+		if this.chunk_type <> 'IDAT'le {
+			return "#bad chunk"
+		}
+
 	} else if this.chunk_type == 'acTL'le {
 		if this.seen_actl {
 			return "#bad chunk"
@@ -558,9 +571,6 @@ pri func decoder.decode_other_chunk?(src: base.io_reader) {
 		}
 		this.decode_fctl?(src: args.src)
 		this.seen_fctl = true
-
-	} else if this.chunk_type == 'fdAT'le {
-		return "#bad chunk"
 
 	} else if this.chunk_type == 'gAMA'le {
 		if this.report_metadata_gama {

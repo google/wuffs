@@ -9332,6 +9332,7 @@ struct wuffs_png__decoder__struct {
     bool f_seen_fctl;
     bool f_seen_gama;
     bool f_seen_iccp;
+    bool f_seen_idat;
     bool f_seen_plte;
     bool f_seen_srgb;
     bool f_seen_trns;
@@ -35313,6 +35314,8 @@ const char wuffs_png__error__internal_error_zlib_decoder_did_not_exhaust_its_inp
 
 // ---------------- Private Consts
 
+#define WUFFS_PNG__ANCILLARY_BIT 32
+
 static const uint8_t
 WUFFS_PNG__INTERLACING[8][6] WUFFS_BASE__POTENTIALLY_UNUSED = {
   {
@@ -37252,11 +37255,11 @@ wuffs_png__decoder__decode_image_config(
         status = wuffs_base__make_status(wuffs_png__error__bad_header);
         goto exit;
       }
-      wuffs_base__ignore_status(wuffs_crc32__ieee_hasher__initialize(&self->private_data.f_crc32, sizeof (wuffs_crc32__ieee_hasher), WUFFS_VERSION, 0));
       self->private_impl.f_chunk_type_array[0] = 73;
       self->private_impl.f_chunk_type_array[1] = 72;
       self->private_impl.f_chunk_type_array[2] = 68;
       self->private_impl.f_chunk_type_array[3] = 82;
+      wuffs_base__ignore_status(wuffs_crc32__ieee_hasher__initialize(&self->private_data.f_crc32, sizeof (wuffs_crc32__ieee_hasher), WUFFS_VERSION, 0));
       wuffs_crc32__ieee_hasher__update_u32(&self->private_data.f_crc32, wuffs_base__make_slice_u8(self->private_impl.f_chunk_type_array, 4));
       while (true) {
         v_mark = ((uint64_t)(iop_a_src - io0_a_src));
@@ -37326,19 +37329,24 @@ wuffs_png__decoder__decode_image_config(
       self->private_impl.f_chunk_length = ((uint64_t)(wuffs_base__peek_u32be__no_bounds_check(iop_a_src)));
       self->private_impl.f_chunk_type = ((uint32_t)((wuffs_base__peek_u64le__no_bounds_check(iop_a_src) >> 32)));
       if (self->private_impl.f_chunk_type == 1413563465) {
-        if (self->private_impl.f_seen_actl &&  ! self->private_impl.f_seen_fctl) {
-          status = wuffs_base__make_status(wuffs_png__error__unsupported_png_file);
-          goto exit;
+        if ( ! self->private_impl.f_seen_actl || self->private_impl.f_seen_fctl) {
+          goto label__1__break;
         }
-        goto label__1__break;
+        self->private_impl.f_seen_idat = true;
+      } else if (self->private_impl.f_chunk_type == 1413571686) {
+        if (self->private_impl.f_seen_idat && self->private_impl.f_seen_fctl) {
+          goto label__1__break;
+        }
+        status = wuffs_base__make_status(wuffs_png__error__bad_chunk);
+        goto exit;
       }
       iop_a_src += 8;
-      if ( ! self->private_impl.f_ignore_checksum && (self->private_impl.f_chunk_type == 1163152464)) {
+      if ( ! self->private_impl.f_ignore_checksum && ((self->private_impl.f_chunk_type & 32) == 0)) {
+        self->private_impl.f_chunk_type_array[0] = ((uint8_t)(((self->private_impl.f_chunk_type >> 0) & 255)));
+        self->private_impl.f_chunk_type_array[1] = ((uint8_t)(((self->private_impl.f_chunk_type >> 8) & 255)));
+        self->private_impl.f_chunk_type_array[2] = ((uint8_t)(((self->private_impl.f_chunk_type >> 16) & 255)));
+        self->private_impl.f_chunk_type_array[3] = ((uint8_t)(((self->private_impl.f_chunk_type >> 24) & 255)));
         wuffs_base__ignore_status(wuffs_crc32__ieee_hasher__initialize(&self->private_data.f_crc32, sizeof (wuffs_crc32__ieee_hasher), WUFFS_VERSION, 0));
-        self->private_impl.f_chunk_type_array[0] = 80;
-        self->private_impl.f_chunk_type_array[1] = 76;
-        self->private_impl.f_chunk_type_array[2] = 84;
-        self->private_impl.f_chunk_type_array[3] = 69;
         wuffs_crc32__ieee_hasher__update_u32(&self->private_data.f_crc32, wuffs_base__make_slice_u8(self->private_impl.f_chunk_type_array, 4));
       }
       while (true) {
@@ -37353,7 +37361,7 @@ wuffs_png__decoder__decode_image_config(
             iop_a_src = a_src->data.ptr + a_src->meta.ri;
           }
         }
-        if ( ! self->private_impl.f_ignore_checksum && (self->private_impl.f_chunk_type == 1163152464)) {
+        if ( ! self->private_impl.f_ignore_checksum && ((self->private_impl.f_chunk_type & 32) == 0)) {
           v_checksum_have = wuffs_crc32__ieee_hasher__update_u32(&self->private_data.f_crc32, wuffs_base__io__since(v_mark, ((uint64_t)(iop_a_src - io0_a_src)), io0_a_src));
         }
         if (wuffs_base__status__is_ok(&v_status)) {
@@ -37397,7 +37405,7 @@ wuffs_png__decoder__decode_image_config(
         }
         v_checksum_want = t_5;
       }
-      if ( ! self->private_impl.f_ignore_checksum && (self->private_impl.f_chunk_type == 1163152464) && (v_checksum_have != v_checksum_want)) {
+      if ( ! self->private_impl.f_ignore_checksum && ((self->private_impl.f_chunk_type & 32) == 0) && (v_checksum_have != v_checksum_want)) {
         status = wuffs_base__make_status(wuffs_png__error__bad_checksum);
         goto exit;
       }
@@ -37839,6 +37847,11 @@ wuffs_png__decoder__decode_other_chunk(
         goto suspend;
       }
       self->private_impl.f_seen_plte = true;
+    } else if ((self->private_impl.f_chunk_type & 32) == 0) {
+      if (self->private_impl.f_chunk_type != 1413563465) {
+        status = wuffs_base__make_status(wuffs_png__error__bad_chunk);
+        goto exit;
+      }
     } else if (self->private_impl.f_chunk_type == 1280598881) {
       if (self->private_impl.f_seen_actl) {
         status = wuffs_base__make_status(wuffs_png__error__bad_chunk);
@@ -37892,9 +37905,6 @@ wuffs_png__decoder__decode_other_chunk(
         goto suspend;
       }
       self->private_impl.f_seen_fctl = true;
-    } else if (self->private_impl.f_chunk_type == 1413571686) {
-      status = wuffs_base__make_status(wuffs_png__error__bad_chunk);
-      goto exit;
     } else if (self->private_impl.f_chunk_type == 1095582055) {
       if (self->private_impl.f_report_metadata_gama) {
         if (self->private_impl.f_seen_gama) {
