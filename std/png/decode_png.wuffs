@@ -120,6 +120,10 @@ pub struct decoder? implements base.image_decoder(
 
 	zlib_is_dirty : base.bool,
 
+	chunk_type       : base.u32,
+	chunk_type_array : array[4] base.u8,
+	chunk_length     : base.u32,
+
 	// remap_transparency, if non-zero, is the 32-bit or 64-bit (depending on
 	// this.depth) argb_nonpremul color that is nominally opaque but remapped
 	// to transparent black.
@@ -133,10 +137,6 @@ pub struct decoder? implements base.image_decoder(
 
 	dst_pixfmt : base.u32,
 	src_pixfmt : base.u32,
-
-	chunk_type       : base.u32,
-	chunk_type_array : array[4] base.u8,
-	chunk_length     : base.u64[..= 0xFFFF_FFFF],
 
 	num_animation_frames_value      : base.u32,
 	num_animation_loops_value       : base.u32,
@@ -270,7 +270,7 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 			yield? base."$short read"
 		} endwhile
 
-		this.chunk_length = args.src.peek_u32be_as_u64()
+		this.chunk_length = args.src.peek_u32be()
 		this.chunk_type = (args.src.peek_u64le() >> 32) as base.u32
 		if this.chunk_type == 'IDAT'le {
 			if (not this.seen_actl) or this.seen_fctl {
@@ -609,7 +609,7 @@ pri func decoder.decode_other_chunk?(src: base.io_reader) {
 	}
 
 	if this.metadata_fourcc == 0 {
-		args.src.skip?(n: this.chunk_length)
+		args.src.skip_u32?(n: this.chunk_length)
 	}
 }
 
@@ -941,7 +941,7 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
 	} else {
 		// Decode the next fcTL chunk.
 		while true {
-			this.chunk_length = args.src.read_u32be_as_u64?()
+			this.chunk_length = args.src.read_u32be?()
 			this.chunk_type = args.src.read_u32le?()
 			if this.chunk_type == 'fdAT'le {
 				return "#bad chunk"
@@ -951,7 +951,7 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
 				args.src.skip?(n: 4)  // Skip the checksum.
 				break
 			}
-			args.src.skip?(n: this.chunk_length + 4)  // +4 for the checksum.
+			args.src.skip?(n: (this.chunk_length as base.u64) + 4)  // +4 for the checksum.
 			this.chunk_length = 0
 		} endwhile
 	}
@@ -993,7 +993,7 @@ pri func decoder.skip_frame?(src: base.io_reader) {
 			yield? base."$short read"
 		} endwhile
 
-		this.chunk_length = args.src.peek_u32be_as_u64()
+		this.chunk_length = args.src.peek_u32be()
 		this.chunk_type = (args.src.peek_u64le() >> 32) as base.u32
 
 		if this.chunk_type == 'IDAT'le {
@@ -1025,7 +1025,7 @@ pri func decoder.skip_frame?(src: base.io_reader) {
 				return "#unsupported PNG file"
 			}
 			this.next_animation_seq_num += 1
-			args.src.skip?(n: this.chunk_length + 4)  // +4 for the checksum.
+			args.src.skip?(n: (this.chunk_length as base.u64) + 4)  // +4 for the checksum.
 			this.chunk_length = 0
 			continue
 
@@ -1036,7 +1036,8 @@ pri func decoder.skip_frame?(src: base.io_reader) {
 			return "#bad chunk"
 		}
 
-		args.src.skip?(n: this.chunk_length + 12)  // +12 for chunk length, type and checksum.
+		// +12 for chunk length, chunk type and checksum.
+		args.src.skip?(n: (this.chunk_length as base.u64) + 12)
 		this.chunk_length = 0
 	} endwhile
 
@@ -1070,7 +1071,7 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 			yield? base."$short read"
 		} endwhile
 
-		this.chunk_length = args.src.peek_u32be_as_u64()
+		this.chunk_length = args.src.peek_u32be()
 		this.chunk_type = (args.src.peek_u64le() >> 32) as base.u32
 
 		if this.chunk_type == 'IDAT'le {
@@ -1108,7 +1109,8 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 			return "#bad chunk"
 		}
 
-		args.src.skip?(n: this.chunk_length + 12)  // +12 for chunk length, type and checksum.
+		// +12 for chunk length, chunk type and checksum.
+		args.src.skip?(n: (this.chunk_length as base.u64) + 12)
 		this.chunk_length = 0
 	} endwhile
 
@@ -1185,7 +1187,7 @@ pri func decoder.decode_pass?(src: base.io_reader, workbuf: slice base.u8) {
 			return base."#bad workbuf length"
 		}
 		io_bind (io: w, data: args.workbuf[this.workbuf_wi .. this.pass_workbuf_length], history_position: this.workbuf_hist_pos_base ~mod+ this.workbuf_wi) {
-			io_limit (io: args.src, limit: this.chunk_length) {
+			io_limit (io: args.src, limit: (this.chunk_length as base.u64)) {
 				w_mark = w.mark()
 				r_mark = args.src.mark()
 				zlib_status =? this.zlib.transform_io?(
@@ -1193,7 +1195,7 @@ pri func decoder.decode_pass?(src: base.io_reader, workbuf: slice base.u8) {
 				if not this.ignore_checksum {
 					this.crc32.update_u32!(x: args.src.since(mark: r_mark))
 				}
-				this.chunk_length ~sat-= args.src.count_since(mark: r_mark)
+				this.chunk_length ~sat-= (args.src.count_since(mark: r_mark) & 0xFFFF_FFFF) as base.u32
 				this.workbuf_wi ~sat+= w.count_since(mark: w_mark)
 			}
 		}
@@ -1230,7 +1232,7 @@ pri func decoder.decode_pass?(src: base.io_reader, workbuf: slice base.u8) {
 			}
 
 			// The next chunk should be another IDAT or fdAT.
-			this.chunk_length = args.src.read_u32be_as_u64?()
+			this.chunk_length = args.src.read_u32be?()
 			this.chunk_type = args.src.read_u32le?()
 			if (this.chunk_type_array[0] == 'I') {
 				if this.chunk_type <> 'IDAT'le {
@@ -1357,11 +1359,11 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 			break
 		}
 
-		io_limit (io: args.src, limit: this.chunk_length) {
+		io_limit (io: args.src, limit: this.chunk_length as base.u64) {
 			r_mark = args.src.mark()
 			zlib_status =? this.zlib.transform_io?(
 				dst: args.dst, src: args.src, workbuf: this.util.empty_slice_u8())
-			this.chunk_length ~sat-= args.src.count_since(mark: r_mark)
+			this.chunk_length ~sat-= (args.src.count_since(mark: r_mark) & 0xFFFF_FFFF) as base.u32
 		}
 
 		if zlib_status.is_ok() {
