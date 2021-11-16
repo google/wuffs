@@ -26,7 +26,9 @@ package main
 import (
 	"bytes"
 	"compress/lzw"
+	"compress/zlib"
 	"fmt"
+	"hash/crc32"
 	"io"
 	"os"
 	"strconv"
@@ -136,6 +138,10 @@ func main1() error {
 
 func appendU16LE(b []byte, u uint16) []byte {
 	return append(b, uint8(u), uint8(u>>8))
+}
+
+func appendU32BE(b []byte, u uint32) []byte {
+	return append(b, uint8(u>>24), uint8(u>>16), uint8(u>>8), uint8(u))
 }
 
 func log2(u uint32) (i int32) {
@@ -1219,4 +1225,107 @@ func stateGifFramePalette(line string) (stateFunc, error) {
 	}
 
 	return nil, fmt.Errorf("bad stateGifFramePalette command: %q", line)
+}
+
+// ----
+
+func init() {
+	formats["png"] = statePng
+}
+
+var pngGlobals struct {
+	scratch [4]byte
+
+	animSeqNum uint32
+	chunkData  bytes.Buffer
+	chunkType  string
+	zlibWriter *zlib.Writer
+}
+
+func statePng(line string) (stateFunc, error) {
+	g := &pngGlobals
+	switch {
+	case line == "":
+		return statePng, nil
+
+	case line == "magic":
+		out = append(out, "\x89PNG\x0D\x0A\x1A\x0A"...)
+		return statePng, nil
+
+	case (len(line) == 6) && (line[4] == ' ') && (line[5] == '{'):
+		g.chunkData.Reset()
+		g.chunkType = line[:4]
+		return statePngChunk, nil
+	}
+
+	return nil, fmt.Errorf("bad statePng command: %q", line)
+}
+
+func statePngChunk(line string) (stateFunc, error) {
+	g := &pngGlobals
+	if line == "}" {
+		if n := g.chunkData.Len(); n > 0xFFFF_FFFF {
+			return nil, fmt.Errorf("chunkData is too long")
+		}
+		out = appendU32BE(out, uint32(g.chunkData.Len()))
+		n := len(out)
+		out = append(out, g.chunkType...)
+		out = append(out, g.chunkData.Bytes()...)
+		out = appendU32BE(out, crc32.ChecksumIEEE(out[n:]))
+		return statePng, nil
+	}
+
+	switch {
+	case line == "animSeqNum++":
+		g.chunkData.Write(appendU32BE(g.scratch[:0], g.animSeqNum))
+		g.animSeqNum++
+		return statePngChunk, nil
+
+	case line == "raw {":
+		return statePngRaw, nil
+
+	case line == "zlib {":
+		g.zlibWriter = zlib.NewWriter(&g.chunkData)
+		return statePngZlib, nil
+	}
+
+	return nil, fmt.Errorf("bad statePngChunk command: %q", line)
+}
+
+func statePngRaw(line string) (stateFunc, error) {
+	g := &pngGlobals
+	if line == "}" {
+		return statePngChunk, nil
+	}
+
+	for s := line; s != ""; {
+		if x, remaining, ok := parseHex(s); ok {
+			g.chunkData.WriteByte(byte(x))
+			s = remaining
+		} else {
+			return nil, fmt.Errorf("bad statePngRaw command: %q", line)
+		}
+	}
+	return statePngRaw, nil
+}
+
+func statePngZlib(line string) (stateFunc, error) {
+	g := &pngGlobals
+	if line == "}" {
+		if err := g.zlibWriter.Close(); err != nil {
+			return nil, fmt.Errorf("statePngZlib: %w", err)
+		}
+		return statePngChunk, nil
+	}
+
+	for s := line; s != ""; {
+		if x, remaining, ok := parseHex(s); ok {
+			g.scratch[0] = byte(x)
+			g.zlibWriter.Write(g.scratch[:1])
+			s = remaining
+		} else {
+			return nil, fmt.Errorf("bad statePngZlib command: %q", line)
+		}
+	}
+	return statePngZlib, nil
 }
