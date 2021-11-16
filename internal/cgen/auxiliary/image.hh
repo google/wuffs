@@ -210,7 +210,7 @@ struct DecodeImageArgFlags {
   static DecodeImageArgFlags DefaultValue();
 
   // TODO: support all of the REPORT_METADATA_ETC flags, not just CHRM, GAMA,
-  // ICCP, SRGB and XMP.
+  // ICCP, KVP, SRGB and XMP.
 
   // Background Color.
   static constexpr uint64_t REPORT_METADATA_BGCL = 0x0001;
@@ -222,16 +222,19 @@ struct DecodeImageArgFlags {
   static constexpr uint64_t REPORT_METADATA_GAMA = 0x0008;
   // International Color Consortium Profile.
   static constexpr uint64_t REPORT_METADATA_ICCP = 0x0010;
+  // Key-Value Pair.
+  //
+  // For PNG files, this includes iTXt, tEXt and zTXt chunks. In the
+  // HandleMetadata callback, the raw argument contains UTF-8 strings.
+  static constexpr uint64_t REPORT_METADATA_KVP = 0x0020;
   // Modification Time.
-  static constexpr uint64_t REPORT_METADATA_MTIM = 0x0020;
+  static constexpr uint64_t REPORT_METADATA_MTIM = 0x0040;
   // Offset (2-Dimensional).
-  static constexpr uint64_t REPORT_METADATA_OFS2 = 0x0040;
+  static constexpr uint64_t REPORT_METADATA_OFS2 = 0x0080;
   // Physical Dimensions.
-  static constexpr uint64_t REPORT_METADATA_PHYD = 0x0080;
+  static constexpr uint64_t REPORT_METADATA_PHYD = 0x0100;
   // Standard Red Green Blue (Rendering Intent).
-  static constexpr uint64_t REPORT_METADATA_SRGB = 0x0100;
-  // Text.
-  static constexpr uint64_t REPORT_METADATA_TEXT = 0x0200;
+  static constexpr uint64_t REPORT_METADATA_SRGB = 0x0200;
   // Extensible Metadata Platform.
   static constexpr uint64_t REPORT_METADATA_XMP = 0x0400;
 

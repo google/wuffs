@@ -23,6 +23,7 @@ pub status "#bad header"
 pub status "#missing palette"
 pub status "#unsupported PNG file"
 
+pri status "#internal error: inconsistent chunk type"
 pri status "#internal error: inconsistent frame bounds"
 pri status "#internal error: inconsistent workbuf length"
 pri status "#internal error: zlib decoder did not exhaust its input"
@@ -99,6 +100,7 @@ pub struct decoder? implements base.image_decoder(
 	report_metadata_chrm : base.bool,
 	report_metadata_gama : base.bool,
 	report_metadata_iccp : base.bool,
+	report_metadata_kvp  : base.bool,
 	report_metadata_srgb : base.bool,
 
 	ignore_checksum : base.bool,
@@ -117,6 +119,8 @@ pub struct decoder? implements base.image_decoder(
 	seen_plte : base.bool,
 	seen_srgb : base.bool,
 	seen_trns : base.bool,
+
+	metadata_is_zlib_compressed : base.bool,
 
 	zlib_is_dirty : base.bool,
 
@@ -210,7 +214,10 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 	var status        : base.status
 
 	if this.call_sequence == 2 {
-		// No-op.
+		if this.metadata_fourcc <> 0 {
+			this.call_sequence = 1
+			return base."@metadata reported"
+		}
 	} else if this.call_sequence <> 0 {
 		return base."#bad call sequence"
 	} else {
@@ -606,6 +613,17 @@ pri func decoder.decode_other_chunk?(src: base.io_reader) {
 		}
 		this.decode_trns?(src: args.src)
 		this.seen_trns = true
+
+	} else if (this.chunk_type == 'iTXt'le) or
+		(this.chunk_type == 'tEXt'le) or
+		(this.chunk_type == 'zTXt'le) {
+		if this.report_metadata_kvp {
+			this.metadata_flavor = base.MORE_INFORMATION__FLAVOR__METADATA_RAW_TRANSFORM
+			this.metadata_fourcc = 'KVPK'be
+			this.metadata_x = 0
+			this.metadata_y = 0
+			this.metadata_z = 0
+		}
 	}
 
 	if this.metadata_fourcc == 0 {
@@ -783,6 +801,7 @@ pri func decoder.decode_iccp?(src: base.io_reader) {
 		return "#bad chunk"
 	}
 
+	this.metadata_is_zlib_compressed = true
 	this.metadata_flavor = base.MORE_INFORMATION__FLAVOR__METADATA_RAW_TRANSFORM
 	this.metadata_fourcc = 'ICCP'be
 	this.metadata_x = 0
@@ -1319,12 +1338,15 @@ pub func decoder.set_report_metadata!(fourcc: base.u32, report: base.bool) {
 		this.report_metadata_gama = args.report
 	} else if args.fourcc == 'ICCP'be {
 		this.report_metadata_iccp = args.report
+	} else if args.fourcc == 'KVP 'be {
+		this.report_metadata_kvp = args.report
 	} else if args.fourcc == 'SRGB'be {
 		this.report_metadata_srgb = args.report
 	}
 }
 
 pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_information, src: base.io_reader) {
+	var c           : base.u8
 	var r_mark      : base.u64
 	var zlib_status : base.status
 
@@ -1335,7 +1357,7 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 		return base."#no more information"
 	}
 
-	if this.metadata_flavor == base.MORE_INFORMATION__FLAVOR__METADATA_RAW_TRANSFORM {
+	if this.metadata_is_zlib_compressed {
 		if this.zlib_is_dirty {
 			this.zlib.reset!()
 			if this.ignore_checksum {
@@ -1359,34 +1381,163 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 			break
 		}
 
-		io_limit (io: args.src, limit: this.chunk_length as base.u64) {
-			r_mark = args.src.mark()
-			zlib_status =? this.zlib.transform_io?(
-				dst: args.dst, src: args.src, workbuf: this.util.empty_slice_u8())
-			this.chunk_length ~sat-= (args.src.count_since(mark: r_mark) & 0xFFFF_FFFF) as base.u32
-		}
+		if this.metadata_is_zlib_compressed {
+			if this.chunk_type == 'iCCP'le {
+				io_limit (io: args.src, limit: this.chunk_length as base.u64) {
+					r_mark = args.src.mark()
+					zlib_status =? this.zlib.transform_io?(
+						dst: args.dst, src: args.src, workbuf: this.util.empty_slice_u8())
+					this.chunk_length ~sat-=
+						(args.src.count_since(mark: r_mark) & 0xFFFF_FFFF) as base.u32
+				}
 
-		if zlib_status.is_ok() {
+				if zlib_status.is_ok() {
+					this.metadata_is_zlib_compressed = false
+					break
+				} else if not zlib_status.is_suspension() {
+					return zlib_status
+				}
+				yield? zlib_status
+
+			} else if this.chunk_type == 'iTXt'le {
+				// TODO: verify uncompressed data is UTF-8.
+				io_limit (io: args.src, limit: this.chunk_length as base.u64) {
+					r_mark = args.src.mark()
+					zlib_status =? this.zlib.transform_io?(
+						dst: args.dst, src: args.src, workbuf: this.util.empty_slice_u8())
+					this.chunk_length ~sat-=
+						(args.src.count_since(mark: r_mark) & 0xFFFF_FFFF) as base.u32
+				}
+
+				if zlib_status.is_ok() {
+					this.metadata_is_zlib_compressed = false
+					break
+				} else if not zlib_status.is_suspension() {
+					return zlib_status
+				}
+				yield? zlib_status
+
+			} else if this.chunk_type == 'zTXt'le {
+				// TODO: Convert uncompressed data from Latin-1 to UTF-8.
+				io_limit (io: args.src, limit: this.chunk_length as base.u64) {
+					r_mark = args.src.mark()
+					zlib_status =? this.zlib.transform_io?(
+						dst: args.dst, src: args.src, workbuf: this.util.empty_slice_u8())
+					this.chunk_length ~sat-=
+						(args.src.count_since(mark: r_mark) & 0xFFFF_FFFF) as base.u32
+				}
+
+				if zlib_status.is_ok() {
+					this.metadata_is_zlib_compressed = false
+					break
+				} else if not zlib_status.is_suspension() {
+					return zlib_status
+				}
+				yield? zlib_status
+
+			} else {
+				return "#internal error: inconsistent chunk type"
+			}
+
+		} else {
+			while true {
+				if this.chunk_length <= 0 {
+					// Keys are NUL-terminated but values are not.
+					if this.metadata_fourcc == 'KVPK'be {
+						return "#bad chunk"
+					}
+					break
+				} else if args.src.length() <= 0 {
+					yield? base."$short read"
+					continue
+				}
+				c = args.src.peek_u8()
+				if c == 0 {
+					this.chunk_length -= 1
+					args.src.skip_u32_fast!(actual: 1, worst_case: 1)
+					break
+				}
+				// TODO: Convert from Latin-1 to UTF-8.
+				if args.dst.length() <= 0 {
+					yield? base."$short write"
+					continue
+				}
+				this.chunk_length -= 1
+				args.src.skip_u32_fast!(actual: 1, worst_case: 1)
+				args.dst.write_u8_fast!(a: c)
+			} endwhile
 			break
-		} else if not zlib_status.is_suspension() {
-			return zlib_status
 		}
-		yield? zlib_status
 	} endwhile
 
-	if this.chunk_length <> 0 {
-		return "#bad chunk"
+	// Key-value pairs come in... pairs.
+	if this.metadata_fourcc == 'KVPK'be {
+		this.metadata_fourcc = 'KVPV'be
+		if this.chunk_type == 'iTXt'le {
+			// Compression flag, compression method.
+			if this.chunk_length <= 1 {
+				return "#bad chunk"
+			}
+			this.chunk_length -= 2
+			c = args.src.read_u8?()
+			if c == 0 {
+				this.metadata_is_zlib_compressed = false
+			} else if c == 1 {
+				this.metadata_is_zlib_compressed = true
+			} else {
+				return "#bad chunk"
+			}
+			c = args.src.read_u8?()
+			if (c <> 0) and this.metadata_is_zlib_compressed {
+				return "#bad chunk"
+			}
+
+			// Skip the language tag and translated keyword: two iterations
+			// looking for a NUL terminator.
+			this.metadata_fourcc ~mod-= 2
+			while this.metadata_fourcc <> 'KVPV'be {
+				this.metadata_fourcc ~mod+= 1
+				while true {
+					if this.chunk_length <= 0 {
+						return "#bad chunk"
+					}
+					this.chunk_length -= 1
+					c = args.src.read_u8?()
+					if c == 0 {
+						break
+					}
+				} endwhile
+			} endwhile
+
+		} else if this.chunk_type == 'zTXt'le {
+			// Compression method.
+			if this.chunk_length <= 0 {
+				return "#bad chunk"
+			}
+			this.chunk_length -= 1
+			c = args.src.read_u8?()
+			if c <> 0 {
+				return "#bad chunk"
+			}
+			this.metadata_is_zlib_compressed = true
+		}
+
+	} else {
+		if this.chunk_length <> 0 {
+			return "#bad chunk"
+		}
+
+		// Skip the ancillary chunk's CRC-32 checksum.
+		args.src.skip?(n: 4)
+
+		this.metadata_flavor = 0
+		this.metadata_fourcc = 0
+		this.metadata_x = 0
+		this.metadata_y = 0
+		this.metadata_z = 0
 	}
 
-	// Skip the ancillary chunk's CRC-32 checksum.
-	args.src.skip?(n: 4)
-
 	this.call_sequence = 2
-	this.metadata_flavor = 0
-	this.metadata_fourcc = 0
-	this.metadata_x = 0
-	this.metadata_y = 0
-	this.metadata_z = 0
 	return ok
 }
 

@@ -685,7 +685,7 @@ test_wuffs_png_decode_metadata_iccp() {
             WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA_RAW_TRANSFORM);
       } else if (wuffs_base__more_information__metadata__fourcc(&minfo) !=
                  WUFFS_BASE__FOURCC__ICCP) {
-        RETURN_FAIL("tell_me_more: fourcc: have %" PRIu32 ", want %" PRIu32,
+        RETURN_FAIL("tell_me_more: fourcc: have %" PRIX32 ", want %" PRIX32,
                     wuffs_base__more_information__metadata__fourcc(&minfo),
                     WUFFS_BASE__FOURCC__ICCP);
       }
@@ -723,6 +723,89 @@ test_wuffs_png_decode_metadata_iccp() {
     }
   }
 
+  return NULL;
+}
+
+const char*  //
+test_wuffs_png_decode_metadata_kvp() {
+  CHECK_FOCUS(__func__);
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = g_src_slice_u8,
+  });
+  CHECK_STRING(read_file(&src, "test/data/artificial-png/key-value-pairs.png"));
+
+  const char* wants[] = {
+      // TODO: the callee should produce UTF-8, not Latin-1.
+      "Key",             //
+      "English",         //
+      "Cl\xE9",          //
+      "Fran\xE7\x61is",  //
+      "zl\xEF\x62K",     //
+      "zl\xEF\x62V",     //
+      "U-Key",           //
+      "U-значение",      //
+      "Z-K\xEBy",        //
+      "Z-значение",      //
+  };
+
+  wuffs_png__decoder dec;
+  CHECK_STATUS("initialize",
+               wuffs_png__decoder__initialize(
+                   &dec, sizeof dec, WUFFS_VERSION,
+                   WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+  wuffs_png__decoder__set_report_metadata(&dec, WUFFS_BASE__FOURCC__KVP, true);
+
+  wuffs_base__image_config ic = ((wuffs_base__image_config){});
+  wuffs_base__more_information minfo = wuffs_base__empty_more_information();
+
+  size_t i = 0;
+  for (;; i++) {
+    wuffs_base__status status =
+        wuffs_png__decoder__decode_image_config(&dec, &ic, &src);
+    if (wuffs_base__status__is_ok(&status)) {
+      break;
+    } else if (status.repr != wuffs_base__note__metadata_reported) {
+      RETURN_FAIL("decode_image_config i=%zu: %s", i, status.repr);
+    }
+
+    wuffs_base__io_buffer have = ((wuffs_base__io_buffer){
+        .data = g_have_slice_u8,
+    });
+    status = wuffs_png__decoder__tell_me_more(&dec, &have, &minfo, &src);
+    if (!wuffs_base__status__is_ok(&status)) {
+      RETURN_FAIL("tell_me_more i=%zu: \"%s\"", i, status.repr);
+    } else if (minfo.flavor !=
+               WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA_RAW_TRANSFORM) {
+      RETURN_FAIL("tell_me_more i=%zu: flavor: have %" PRIu32 ", want %" PRIu32,
+                  i, minfo.flavor,
+                  WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA_RAW_TRANSFORM);
+    }
+
+    uint32_t have_fourcc =
+        wuffs_base__more_information__metadata__fourcc(&minfo);
+    uint32_t want_fourcc =
+        (i & 1) ? WUFFS_BASE__FOURCC__KVPV : WUFFS_BASE__FOURCC__KVPK;
+    if (have_fourcc != want_fourcc) {
+      RETURN_FAIL("tell_me_more i=%zu: fourcc: have %" PRIX32 ", want %" PRIX32,
+                  i, have_fourcc, want_fourcc);
+    }
+
+    wuffs_base__io_buffer want = ((wuffs_base__io_buffer){
+        .data = g_want_slice_u8,
+    });
+    if (i < WUFFS_TESTLIB_ARRAY_SIZE(wants)) {
+      size_t n = strlen(wants[i]);
+      if (n < want.data.len) {
+        memcpy(want.data.ptr, wants[i], n);
+        want.meta.wi = n;
+      }
+    }
+    CHECK_STRING(check_io_buffers_equal("", &have, &want));
+  }
+
+  if (i != WUFFS_TESTLIB_ARRAY_SIZE(wants)) {
+    RETURN_FAIL("i: have %zu, want %zu", i, WUFFS_TESTLIB_ARRAY_SIZE(wants));
+  }
   return NULL;
 }
 
@@ -1120,6 +1203,7 @@ proc g_tests[] = {
     test_wuffs_png_decode_interface,
     test_wuffs_png_decode_metadata_chrm_gama_srgb,
     test_wuffs_png_decode_metadata_iccp,
+    test_wuffs_png_decode_metadata_kvp,
     test_wuffs_png_decode_restart_frame,
 
 #ifdef WUFFS_MIMIC

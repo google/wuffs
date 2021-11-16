@@ -386,6 +386,9 @@ redirect:
       if (flags & DecodeImageArgFlags::REPORT_METADATA_ICCP) {
         image_decoder->set_report_metadata(WUFFS_BASE__FOURCC__ICCP, true);
       }
+      if (flags & DecodeImageArgFlags::REPORT_METADATA_KVP) {
+        image_decoder->set_report_metadata(WUFFS_BASE__FOURCC__KVP, true);
+      }
       if (flags & DecodeImageArgFlags::REPORT_METADATA_SRGB) {
         image_decoder->set_report_metadata(WUFFS_BASE__FOURCC__SRGB, true);
       }
