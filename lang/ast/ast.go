@@ -386,10 +386,15 @@ func (n *Expr) SetMBounds(x interval.IntRange) { n.mBounds = x }
 func (n *Expr) SetMType(x *TypeExpr)           { n.mType = x }
 
 func (n *Expr) IsArgsDotFoo() (foo t.ID) {
-	if n.id0 == t.IDDot {
-		if (n.lhs.id0 == 0) && (n.lhs.id2 == t.IDArgs) {
-			return n.id2
-		}
+	if (n.id0 == t.IDDot) && (n.lhs.id0 == 0) && (n.lhs.id2 == t.IDArgs) {
+		return n.id2
+	}
+	return 0
+}
+
+func (n *Expr) IsThisDotFoo() (foo t.ID) {
+	if (n.id0 == t.IDDot) && (n.lhs.id0 == 0) && (n.lhs.id2 == t.IDThis) {
+		return n.id2
 	}
 	return 0
 }

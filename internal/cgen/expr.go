@@ -123,7 +123,12 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, sideEffectsOnly bool, depth u
 			if err := g.writeExpr(b, recv, false, depth); err != nil {
 				return err
 			}
-			b.printf(", sizeof (%s%s), WUFFS_VERSION, 0))", g.packagePrefix(qid), qid[1].Str(g.tm))
+			b.printf(",\nsizeof (%s%s), WUFFS_VERSION, ", g.packagePrefix(qid), qid[1].Str(g.tm))
+			if recv.IsThisDotFoo() != 0 {
+				b.writes("WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED))")
+			} else {
+				b.writes("0))")
+			}
 
 			return nil
 		}

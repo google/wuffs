@@ -30921,7 +30921,8 @@ wuffs_gif__decoder__decode_id_part1(
       goto ok;
     }
     if (self->private_impl.f_previous_lzw_decode_ended_abruptly) {
-      wuffs_base__ignore_status(wuffs_lzw__decoder__initialize(&self->private_data.f_lzw, sizeof (wuffs_lzw__decoder), WUFFS_VERSION, 0));
+      wuffs_base__ignore_status(wuffs_lzw__decoder__initialize(&self->private_data.f_lzw,
+          sizeof (wuffs_lzw__decoder), WUFFS_VERSION, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
     }
     {
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
@@ -37259,7 +37260,8 @@ wuffs_png__decoder__decode_image_config(
       self->private_impl.f_chunk_type_array[1] = 72;
       self->private_impl.f_chunk_type_array[2] = 68;
       self->private_impl.f_chunk_type_array[3] = 82;
-      wuffs_base__ignore_status(wuffs_crc32__ieee_hasher__initialize(&self->private_data.f_crc32, sizeof (wuffs_crc32__ieee_hasher), WUFFS_VERSION, 0));
+      wuffs_base__ignore_status(wuffs_crc32__ieee_hasher__initialize(&self->private_data.f_crc32,
+          sizeof (wuffs_crc32__ieee_hasher), WUFFS_VERSION, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
       wuffs_crc32__ieee_hasher__update_u32(&self->private_data.f_crc32, wuffs_base__make_slice_u8(self->private_impl.f_chunk_type_array, 4));
       while (true) {
         v_mark = ((uint64_t)(iop_a_src - io0_a_src));
@@ -37346,7 +37348,8 @@ wuffs_png__decoder__decode_image_config(
         self->private_impl.f_chunk_type_array[1] = ((uint8_t)(((self->private_impl.f_chunk_type >> 8) & 255)));
         self->private_impl.f_chunk_type_array[2] = ((uint8_t)(((self->private_impl.f_chunk_type >> 16) & 255)));
         self->private_impl.f_chunk_type_array[3] = ((uint8_t)(((self->private_impl.f_chunk_type >> 24) & 255)));
-        wuffs_base__ignore_status(wuffs_crc32__ieee_hasher__initialize(&self->private_data.f_crc32, sizeof (wuffs_crc32__ieee_hasher), WUFFS_VERSION, 0));
+        wuffs_base__ignore_status(wuffs_crc32__ieee_hasher__initialize(&self->private_data.f_crc32,
+            sizeof (wuffs_crc32__ieee_hasher), WUFFS_VERSION, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
         wuffs_crc32__ieee_hasher__update_u32(&self->private_data.f_crc32, wuffs_base__make_slice_u8(self->private_impl.f_chunk_type_array, 4));
       }
       while (true) {
@@ -39747,7 +39750,8 @@ wuffs_png__decoder__decode_frame(
         self->private_impl.f_chunk_type_array[3] = 84;
         iop_a_src += 8;
         if ( ! self->private_impl.f_ignore_checksum) {
-          wuffs_base__ignore_status(wuffs_crc32__ieee_hasher__initialize(&self->private_data.f_crc32, sizeof (wuffs_crc32__ieee_hasher), WUFFS_VERSION, 0));
+          wuffs_base__ignore_status(wuffs_crc32__ieee_hasher__initialize(&self->private_data.f_crc32,
+              sizeof (wuffs_crc32__ieee_hasher), WUFFS_VERSION, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
           wuffs_crc32__ieee_hasher__update_u32(&self->private_data.f_crc32, wuffs_base__make_slice_u8(self->private_impl.f_chunk_type_array, 4));
         }
         goto label__0__break;
@@ -39817,7 +39821,8 @@ wuffs_png__decoder__decode_frame(
     }
     label__0__break:;
     if (self->private_impl.f_zlib_is_dirty) {
-      wuffs_base__ignore_status(wuffs_zlib__decoder__initialize(&self->private_data.f_zlib, sizeof (wuffs_zlib__decoder), WUFFS_VERSION, 0));
+      wuffs_base__ignore_status(wuffs_zlib__decoder__initialize(&self->private_data.f_zlib,
+          sizeof (wuffs_zlib__decoder), WUFFS_VERSION, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
       if (self->private_impl.f_ignore_checksum) {
         wuffs_zlib__decoder__set_quirk_enabled(&self->private_data.f_zlib, 1, true);
       }
@@ -40172,7 +40177,8 @@ wuffs_png__decoder__decode_pass(
             goto exit;
           }
           if ( ! self->private_impl.f_ignore_checksum) {
-            wuffs_base__ignore_status(wuffs_crc32__ieee_hasher__initialize(&self->private_data.f_crc32, sizeof (wuffs_crc32__ieee_hasher), WUFFS_VERSION, 0));
+            wuffs_base__ignore_status(wuffs_crc32__ieee_hasher__initialize(&self->private_data.f_crc32,
+                sizeof (wuffs_crc32__ieee_hasher), WUFFS_VERSION, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
             wuffs_crc32__ieee_hasher__update_u32(&self->private_data.f_crc32, wuffs_base__make_slice_u8(self->private_impl.f_chunk_type_array, 4));
           }
         } else {
@@ -40438,7 +40444,8 @@ wuffs_png__decoder__tell_me_more(
     }
     if (self->private_impl.f_metadata_flavor == 4) {
       if (self->private_impl.f_zlib_is_dirty) {
-        wuffs_base__ignore_status(wuffs_zlib__decoder__initialize(&self->private_data.f_zlib, sizeof (wuffs_zlib__decoder), WUFFS_VERSION, 0));
+        wuffs_base__ignore_status(wuffs_zlib__decoder__initialize(&self->private_data.f_zlib,
+            sizeof (wuffs_zlib__decoder), WUFFS_VERSION, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
         if (self->private_impl.f_ignore_checksum) {
           wuffs_zlib__decoder__set_quirk_enabled(&self->private_data.f_zlib, 1, true);
         }
