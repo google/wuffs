@@ -1,4 +1,4 @@
-Running deflate-distance-32768.deflate through script/print-bits.go and adding
+Running distance-32768.deflate through script/print-bits.go and adding
 commentary:
 
     offset  xoffset ASCII   hex     binary

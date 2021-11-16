@@ -1,5 +1,5 @@
-Running deflate-huffman-primlen-9.deflate through script/print-bits.go and
-adding commentary:
+Running huffman-primlen-9.deflate through script/print-bits.go and adding
+commentary:
 
     offset  xoffset ASCII   hex     binary
     000000  0x0000  .       0xED    0b_...._.101  Dynamic Huffman block, final

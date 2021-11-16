@@ -82,47 +82,47 @@ golden_test g_deflate_256_bytes_gt = {
 
 golden_test g_deflate_deflate_backref_crosses_blocks_gt = {
     .want_filename =
-        "test/data/artificial/"
-        "deflate-backref-crosses-blocks.deflate.decompressed",
+        "test/data/artificial-deflate/"
+        "backref-crosses-blocks.deflate.decompressed",
     .src_filename =
-        "test/data/artificial/"
-        "deflate-backref-crosses-blocks.deflate",
+        "test/data/artificial-deflate/"
+        "backref-crosses-blocks.deflate",
 };
 
 golden_test g_deflate_deflate_degenerate_huffman_unused_gt = {
     .want_filename =
-        "test/data/artificial/"
-        "deflate-degenerate-huffman-unused.deflate.decompressed",
+        "test/data/artificial-deflate/"
+        "degenerate-huffman-unused.deflate.decompressed",
     .src_filename =
-        "test/data/artificial/"
-        "deflate-degenerate-huffman-unused.deflate",
+        "test/data/artificial-deflate/"
+        "degenerate-huffman-unused.deflate",
 };
 
 golden_test g_deflate_deflate_distance_32768_gt = {
     .want_filename =
-        "test/data/artificial/"
-        "deflate-distance-32768.deflate.decompressed",
+        "test/data/artificial-deflate/"
+        "distance-32768.deflate.decompressed",
     .src_filename =
-        "test/data/artificial/"
-        "deflate-distance-32768.deflate",
+        "test/data/artificial-deflate/"
+        "distance-32768.deflate",
 };
 
 golden_test g_deflate_deflate_distance_code_31_gt = {
     .want_filename =
-        "test/data/artificial/"
-        "qdeflate-distance-code-31.deflate.decompressed",
+        "test/data/artificial-deflate/"
+        "qdistance-code-31.deflate.decompressed",
     .src_filename =
-        "test/data/artificial/"
-        "deflate-distance-code-31.deflate",
+        "test/data/artificial-deflate/"
+        "distance-code-31.deflate",
 };
 
 golden_test g_deflate_deflate_huffman_primlen_9_gt = {
     .want_filename =
-        "test/data/artificial/"
-        "deflate-huffman-primlen-9.deflate.decompressed",
+        "test/data/artificial-deflate/"
+        "huffman-primlen-9.deflate.decompressed",
     .src_filename =
-        "test/data/artificial/"
-        "deflate-huffman-primlen-9.deflate",
+        "test/data/artificial-deflate/"
+        "huffman-primlen-9.deflate",
 };
 
 golden_test g_deflate_midsummer_gt = {

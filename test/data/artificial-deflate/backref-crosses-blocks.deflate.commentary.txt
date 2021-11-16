@@ -1,5 +1,5 @@
-Running deflate-backref-crosses-blocks.deflate through script/print-bits.go and
-adding commentary:
+Running backref-crosses-blocks.deflate through script/print-bits.go and adding
+commentary:
 
     offset  xoffset ASCII   hex     binary
     000000  0x0000  .       0x00    0b_...._.000  Uncompressed block, non-final

@@ -1,5 +1,5 @@
-Running deflate-degenerate-huffman-unused.deflate through script/print-bits.go
-and adding commentary:
+Running degenerate-huffman-unused.deflate through script/print-bits.go and
+adding commentary:
 
     offset  xoffset ASCII   hex     binary
     000000  0x0000  .       0x05    0b_...._.101  Dynamic Huffman block, final

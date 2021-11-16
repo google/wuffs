@@ -714,7 +714,7 @@ test_wuffs_gif_decode_empty_palette() {
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
       .data = g_src_slice_u8,
   });
-  CHECK_STRING(read_file(&src, "test/data/artificial/gif-empty-palette.gif"));
+  CHECK_STRING(read_file(&src, "test/data/artificial-gif/empty-palette.gif"));
   for (int q = 0; q < 2; q++) {
     src.meta.ri = 0;
 
@@ -780,7 +780,7 @@ test_wuffs_gif_decode_background_color() {
       .data = g_src_slice_u8,
   });
   CHECK_STRING(
-      read_file(&src, "test/data/artificial/gif-background-color.gif"));
+      read_file(&src, "test/data/artificial-gif/background-color.gif"));
   for (int q = 0; q < 2; q++) {
     src.meta.ri = 0;
 
@@ -818,7 +818,7 @@ test_wuffs_gif_decode_first_frame_is_opaque() {
       .data = g_src_slice_u8,
   });
   CHECK_STRING(
-      read_file(&src, "test/data/artificial/gif-frame-out-of-bounds.gif"));
+      read_file(&src, "test/data/artificial-gif/frame-out-of-bounds.gif"));
   for (int q = 0; q < 2; q++) {
     src.meta.ri = 0;
 
@@ -855,7 +855,7 @@ test_wuffs_gif_decode_frame_out_of_bounds() {
       .data = g_src_slice_u8,
   });
   CHECK_STRING(
-      read_file(&src, "test/data/artificial/gif-frame-out-of-bounds.gif"));
+      read_file(&src, "test/data/artificial-gif/frame-out-of-bounds.gif"));
   for (int q = 0; q < 2; q++) {
     src.meta.ri = 0;
 
@@ -876,7 +876,7 @@ test_wuffs_gif_decode_frame_out_of_bounds() {
 
     // The nominal width and height for the overall image is 2×2, but its first
     // frame extends those bounds to 4×2. See
-    // test/data/artificial/gif-frame-out-of-bounds.gif.make-artificial.txt for
+    // test/data/artificial-gif/frame-out-of-bounds.gif.make-artificial.txt for
     // more discussion.
 
     const uint32_t width = q ? 2 : 4;
@@ -902,7 +902,7 @@ test_wuffs_gif_decode_frame_out_of_bounds() {
       RETURN_FAIL("q=%d: set_from_slice: \"%s\"", q, status.repr);
     }
 
-    // See test/data/artificial/gif-frame-out-of-bounds.gif.make-artificial.txt
+    // See test/data/artificial-gif/frame-out-of-bounds.gif.make-artificial.txt
     // for the want_frame_config_bounds and want_pixel_indexes source.
 
     wuffs_base__rect_ie_u32 want_frame_config_bounds[4] = {
@@ -1022,7 +1022,7 @@ test_wuffs_gif_decode_zero_width_frame() {
       .data = g_src_slice_u8,
   });
   CHECK_STRING(
-      read_file(&src, "test/data/artificial/gif-zero-width-frame.gif"));
+      read_file(&src, "test/data/artificial-gif/zero-width-frame.gif"));
   for (int q = 0; q < 3; q++) {
     src.meta.ri = 0;
 
@@ -1259,8 +1259,8 @@ do_test_wuffs_gif_decode_metadata(bool full) {
       .data = g_src_slice_u8,
   });
   CHECK_STRING(
-      read_file(&src, full ? "test/data/artificial/gif-metadata-full.gif"
-                           : "test/data/artificial/gif-metadata-empty.gif"));
+      read_file(&src, full ? "test/data/artificial-gif/metadata-full.gif"
+                           : "test/data/artificial-gif/metadata-empty.gif"));
 
   int iccp;
   for (iccp = 0; iccp < 2; iccp++) {
@@ -1467,7 +1467,7 @@ test_wuffs_gif_decode_multiple_graphic_controls() {
       .data = g_src_slice_u8,
   });
   CHECK_STRING(read_file(
-      &src, "test/data/artificial/gif-multiple-graphic-controls.gif"));
+      &src, "test/data/artificial-gif/multiple-graphic-controls.gif"));
 
   wuffs_gif__decoder dec;
   CHECK_STATUS("initialize",
@@ -1494,7 +1494,7 @@ test_wuffs_gif_decode_multiple_loop_counts() {
       .data = g_src_slice_u8,
   });
   CHECK_STRING(
-      read_file(&src, "test/data/artificial/gif-multiple-loop-counts.gif"));
+      read_file(&src, "test/data/artificial-gif/multiple-loop-counts.gif"));
 
   wuffs_gif__decoder dec;
   CHECK_STATUS("initialize",
@@ -1505,7 +1505,7 @@ test_wuffs_gif_decode_multiple_loop_counts() {
   CHECK_STATUS("decode_image_config",
                wuffs_gif__decoder__decode_image_config(&dec, &ic, &src));
 
-  // See test/data/artificial/gif-multiple-loop-counts.gif.make-artificial.txt
+  // See test/data/artificial-gif/multiple-loop-counts.gif.make-artificial.txt
   // for the want_num_animation_loops source. Note that the GIF wire format's
   // loop counts are the number of animation loops *after* the first play
   // through, and Wuffs' are the number *including* the first play through.
@@ -1573,7 +1573,7 @@ test_wuffs_gif_decode_pixel_data_none() {
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
       .data = g_src_slice_u8,
   });
-  CHECK_STRING(read_file(&src, "test/data/artificial/gif-pixel-data-none.gif"));
+  CHECK_STRING(read_file(&src, "test/data/artificial-gif/pixel-data-none.gif"));
 
   return do_test_wuffs_gif_decode_expecting(
       src, 0, wuffs_base__error__not_enough_data, true);
@@ -1586,7 +1586,7 @@ test_wuffs_gif_decode_pixel_data_not_enough() {
       .data = g_src_slice_u8,
   });
   CHECK_STRING(
-      read_file(&src, "test/data/artificial/gif-pixel-data-not-enough.gif"));
+      read_file(&src, "test/data/artificial-gif/pixel-data-not-enough.gif"));
 
   return do_test_wuffs_gif_decode_expecting(
       src, 0, wuffs_base__error__not_enough_data, false);
@@ -1599,7 +1599,7 @@ test_wuffs_gif_decode_pixel_data_too_much_sans_quirk() {
       .data = g_src_slice_u8,
   });
   CHECK_STRING(
-      read_file(&src, "test/data/artificial/gif-pixel-data-too-much.gif"));
+      read_file(&src, "test/data/artificial-gif/pixel-data-too-much.gif"));
 
   return do_test_wuffs_gif_decode_expecting(
       src, 0, wuffs_base__error__too_much_data, false);
@@ -1612,7 +1612,7 @@ test_wuffs_gif_decode_pixel_data_too_much_with_quirk() {
       .data = g_src_slice_u8,
   });
   CHECK_STRING(
-      read_file(&src, "test/data/artificial/gif-pixel-data-too-much.gif"));
+      read_file(&src, "test/data/artificial-gif/pixel-data-too-much.gif"));
 
   return do_test_wuffs_gif_decode_expecting(
       src, WUFFS_GIF__QUIRK_IGNORE_TOO_MUCH_PIXEL_DATA, NULL, false);
@@ -1923,7 +1923,7 @@ test_wuffs_gif_small_frame_interlaced() {
       .data = g_src_slice_u8,
   });
   CHECK_STRING(
-      read_file(&src, "test/data/artificial/gif-small-frame-interlaced.gif"));
+      read_file(&src, "test/data/artificial-gif/small-frame-interlaced.gif"));
 
   wuffs_gif__decoder dec;
   CHECK_STATUS("initialize",
