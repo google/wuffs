@@ -1344,7 +1344,7 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 		this.zlib_is_dirty = true
 	}
 
-	while true {
+	while.loop true {
 		if args.minfo <> nullptr {
 			args.minfo.set!(
 				flavor: this.metadata_flavor,
@@ -1355,7 +1355,7 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 		}
 
 		if this.metadata_flavor <> base.MORE_INFORMATION__FLAVOR__METADATA_RAW_TRANSFORM {
-			break
+			break.loop
 		}
 
 		if this.metadata_is_zlib_compressed {
@@ -1370,7 +1370,7 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 
 				if zlib_status.is_ok() {
 					this.metadata_is_zlib_compressed = false
-					break
+					break.loop
 				} else if not zlib_status.is_suspension() {
 					return zlib_status
 				}
@@ -1388,7 +1388,7 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 
 				if zlib_status.is_ok() {
 					this.metadata_is_zlib_compressed = false
-					break
+					break.loop
 				} else if not zlib_status.is_suspension() {
 					return zlib_status
 				}
@@ -1406,7 +1406,7 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 
 				if zlib_status.is_ok() {
 					this.metadata_is_zlib_compressed = false
-					break
+					break.loop
 				} else if not zlib_status.is_suspension() {
 					return zlib_status
 				}
@@ -1443,9 +1443,9 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 				args.src.skip_u32_fast!(actual: 1, worst_case: 1)
 				args.dst.write_u8_fast!(a: c)
 			} endwhile
-			break
+			break.loop
 		}
-	} endwhile
+	} endwhile.loop
 
 	// Key-value pairs come in... pairs.
 	if this.metadata_fourcc == 'KVPK'be {
