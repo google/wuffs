@@ -40507,6 +40507,7 @@ wuffs_png__decoder__tell_me_more(
       }
       self->private_impl.f_zlib_is_dirty = true;
     }
+    label__loop__continue:;
     while (true) {
       if (a_minfo != NULL) {
         wuffs_base__more_information__set(a_minfo,
@@ -40663,36 +40664,33 @@ wuffs_png__decoder__tell_me_more(
           goto exit;
         }
       } else {
-        label__0__continue:;
         while (true) {
           if (self->private_impl.f_chunk_length <= 0) {
             if (self->private_impl.f_metadata_fourcc == 1263947851) {
               status = wuffs_base__make_status(wuffs_png__error__bad_chunk);
               goto exit;
             }
-            goto label__0__break;
+            goto label__loop__break;
           } else if (((uint64_t)(io2_a_src - iop_a_src)) <= 0) {
             status = wuffs_base__make_status(wuffs_base__suspension__short_read);
             WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(4);
-            goto label__0__continue;
+            goto label__loop__continue;
           }
           v_c = wuffs_base__peek_u8be__no_bounds_check(iop_a_src);
           if (v_c == 0) {
             self->private_impl.f_chunk_length -= 1;
             iop_a_src += 1;
-            goto label__0__break;
+            goto label__loop__break;
           }
           if (((uint64_t)(io2_a_dst - iop_a_dst)) <= 0) {
             status = wuffs_base__make_status(wuffs_base__suspension__short_write);
             WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(5);
-            goto label__0__continue;
+            goto label__loop__continue;
           }
           self->private_impl.f_chunk_length -= 1;
           iop_a_src += 1;
           (wuffs_base__poke_u8be__no_bounds_check(iop_a_dst, v_c), iop_a_dst += 1);
         }
-        label__0__break:;
-        goto label__loop__break;
       }
     }
     label__loop__break:;
@@ -40753,10 +40751,10 @@ wuffs_png__decoder__tell_me_more(
               v_c = t_5;
             }
             if (v_c == 0) {
-              goto label__1__break;
+              goto label__0__break;
             }
           }
-          label__1__break:;
+          label__0__break:;
         }
       } else if (self->private_impl.f_chunk_type == 1951945850) {
         if (self->private_impl.f_chunk_length <= 0) {

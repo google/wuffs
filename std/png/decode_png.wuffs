@@ -1423,27 +1423,26 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 					if this.metadata_fourcc == 'KVPK'be {
 						return "#bad chunk"
 					}
-					break
+					break.loop
 				} else if args.src.length() <= 0 {
 					yield? base."$short read"
-					continue
+					continue.loop
 				}
 				c = args.src.peek_u8()
 				if c == 0 {
 					this.chunk_length -= 1
 					args.src.skip_u32_fast!(actual: 1, worst_case: 1)
-					break
+					break.loop
 				}
 				// TODO: Convert from Latin-1 to UTF-8.
 				if args.dst.length() <= 0 {
 					yield? base."$short write"
-					continue
+					continue.loop
 				}
 				this.chunk_length -= 1
 				args.src.skip_u32_fast!(actual: 1, worst_case: 1)
 				args.dst.write_u8_fast!(a: c)
 			} endwhile
-			break.loop
 		}
 	} endwhile.loop
 
