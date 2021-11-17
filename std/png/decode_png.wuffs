@@ -374,7 +374,7 @@ pri func decoder.decode_ihdr?(src: base.io_reader) {
 	// Compression.
 	a8 = args.src.read_u8?()
 	if a8 <> 0 {
-		return "#bad header"
+		return "#unsupported PNG compression method"
 	}
 
 	// Filter.
@@ -768,14 +768,14 @@ pri func decoder.decode_iccp?(src: base.io_reader) {
 		}
 	} endwhile
 
-	// The compression method byte must be zero.
+	// Compression method.
 	if this.chunk_length <= 0 {
 		return "#bad chunk"
 	}
 	this.chunk_length -= 1
 	c = args.src.read_u8?()
 	if c <> 0 {
-		return "#bad chunk"
+		return "#unsupported PNG compression method"
 	}
 
 	this.metadata_is_zlib_compressed = true
@@ -1466,7 +1466,7 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 			}
 			c = args.src.read_u8?()
 			if (c <> 0) and this.metadata_is_zlib_compressed {
-				return "#bad chunk"
+				return "#unsupported PNG compression method"
 			}
 
 			// Skip the language tag and translated keyword: two iterations
@@ -1494,7 +1494,7 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 			this.chunk_length -= 1
 			c = args.src.read_u8?()
 			if c <> 0 {
-				return "#bad chunk"
+				return "#unsupported PNG compression method"
 			}
 			this.metadata_is_zlib_compressed = true
 		}

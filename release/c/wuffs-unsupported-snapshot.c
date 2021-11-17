@@ -9166,6 +9166,7 @@ extern const char wuffs_png__error__bad_chunk[];
 extern const char wuffs_png__error__bad_filter[];
 extern const char wuffs_png__error__bad_header[];
 extern const char wuffs_png__error__missing_palette[];
+extern const char wuffs_png__error__unsupported_png_compression_method[];
 extern const char wuffs_png__error__unsupported_png_file[];
 
 // ---------------- Public Consts
@@ -35323,6 +35324,7 @@ const char wuffs_png__error__bad_chunk[] = "#png: bad chunk";
 const char wuffs_png__error__bad_filter[] = "#png: bad filter";
 const char wuffs_png__error__bad_header[] = "#png: bad header";
 const char wuffs_png__error__missing_palette[] = "#png: missing palette";
+const char wuffs_png__error__unsupported_png_compression_method[] = "#png: unsupported PNG compression method";
 const char wuffs_png__error__unsupported_png_file[] = "#png: unsupported PNG file";
 const char wuffs_png__error__internal_error_inconsistent_chunk_type[] = "#png: internal error: inconsistent chunk type";
 const char wuffs_png__error__internal_error_inconsistent_frame_bounds[] = "#png: internal error: inconsistent frame bounds";
@@ -37624,7 +37626,7 @@ wuffs_png__decoder__decode_ihdr(
       v_a8 = t_4;
     }
     if (v_a8 != 0) {
-      status = wuffs_base__make_status(wuffs_png__error__bad_header);
+      status = wuffs_base__make_status(wuffs_png__error__unsupported_png_compression_method);
       goto exit;
     }
     {
@@ -38931,7 +38933,7 @@ wuffs_png__decoder__decode_iccp(
       v_c = t_1;
     }
     if (v_c != 0) {
-      status = wuffs_base__make_status(wuffs_png__error__bad_chunk);
+      status = wuffs_base__make_status(wuffs_png__error__unsupported_png_compression_method);
       goto exit;
     }
     self->private_impl.f_metadata_is_zlib_compressed = true;
@@ -40725,7 +40727,7 @@ wuffs_png__decoder__tell_me_more(
           v_c = t_4;
         }
         if ((v_c != 0) && self->private_impl.f_metadata_is_zlib_compressed) {
-          status = wuffs_base__make_status(wuffs_png__error__bad_chunk);
+          status = wuffs_base__make_status(wuffs_png__error__unsupported_png_compression_method);
           goto exit;
         }
         self->private_impl.f_metadata_fourcc -= 2;
@@ -40768,7 +40770,7 @@ wuffs_png__decoder__tell_me_more(
           v_c = t_6;
         }
         if (v_c != 0) {
-          status = wuffs_base__make_status(wuffs_png__error__bad_chunk);
+          status = wuffs_base__make_status(wuffs_png__error__unsupported_png_compression_method);
           goto exit;
         }
         self->private_impl.f_metadata_is_zlib_compressed = true;

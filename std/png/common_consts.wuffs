@@ -18,6 +18,7 @@ pub status "#bad chunk"
 pub status "#bad filter"
 pub status "#bad header"
 pub status "#missing palette"
+pub status "#unsupported PNG compression method"
 pub status "#unsupported PNG file"
 
 pri status "#internal error: inconsistent chunk type"
