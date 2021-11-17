@@ -25,8 +25,8 @@ import (
 
 func TestCut(tt *testing.T) {
 	testcut.Test(tt, SmallestValidMaxEncodedLen, Cut, newReader, []string{
-		"artificial/deflate-backref-crosses-blocks.deflate",
-		"artificial/deflate-distance-32768.deflate",
+		"artificial-deflate/backref-crosses-blocks.deflate",
+		"artificial-deflate/distance-32768.deflate",
 		"romeo.txt.deflate",
 		"romeo.txt.fixed-huff.deflate",
 	})
