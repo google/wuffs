@@ -166,12 +166,25 @@ pub struct decoder? implements base.image_decoder(
 	metadata_y      : base.u64,
 	metadata_z      : base.u64,
 
+	// ztxt_ri and ztxt_wi are read and write indexes into the dst_palette
+	// buffer, re-purposed as a zlib uncompression buffer for zTXt chunks. The
+	// upper bound, 1024, is the same as the dst_palette length.
+	ztxt_ri : base.u32[..= 1024],
+	ztxt_wi : base.u32[..= 1024],
+	// ztxt_hist_pos is the history position: how many uncompressed bytes have
+	// been generated.
+	ztxt_hist_pos : base.u64,
+
 	swizzler : base.pixel_swizzler,
 	util     : base.utility,
 )(
 	crc32 : crc32.ieee_hasher,
 	zlib  : zlib.decoder,
 
+	// dst_palette and src_palette are used by the swizzler, during
+	// decode_frame. src_palette is initialized by processing the PLTE chunk.
+	// dst_palette is also re-purposed as a zlib uncompression buffer for zTXt
+	// chunks, during decode_image_config.
 	dst_palette : array[4 * 256] base.u8,
 	src_palette : array[4 * 256] base.u8,
 )
@@ -1324,6 +1337,10 @@ pub func decoder.set_report_metadata!(fourcc: base.u32, report: base.bool) {
 
 pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_information, src: base.io_reader) {
 	var c           : base.u8
+	var c2          : base.u16
+	var w           : base.io_writer
+	var num_written : base.u64
+	var w_mark      : base.u64
 	var r_mark      : base.u64
 	var zlib_status : base.status
 
@@ -1342,6 +1359,7 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 			}
 		}
 		this.zlib_is_dirty = true
+		this.ztxt_hist_pos = 0
 	}
 
 	while.loop true {
@@ -1395,28 +1413,87 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 				yield? zlib_status
 
 			} else if this.chunk_type == 'zTXt'le {
-				// TODO: Convert uncompressed data from Latin-1 to UTF-8.
-				io_limit (io: args.src, limit: this.chunk_length as base.u64) {
-					r_mark = args.src.mark()
-					zlib_status =? this.zlib.transform_io?(
-						dst: args.dst, src: args.src, workbuf: this.util.empty_slice_u8())
-					this.chunk_length ~sat-=
-						(args.src.count_since(mark: r_mark) & 0xFFFF_FFFF) as base.u32
+				// Fill this.dst_palette, zlib-uncompressing producing Latin-1.
+				if this.ztxt_ri == this.ztxt_wi {
+					io_bind (io: w, data: this.dst_palette[..], history_position: this.ztxt_hist_pos) {
+						io_limit (io: args.src, limit: this.chunk_length as base.u64) {
+							w_mark = w.mark()
+							r_mark = args.src.mark()
+							zlib_status =? this.zlib.transform_io?(
+								dst: w, src: args.src, workbuf: this.util.empty_slice_u8())
+							this.chunk_length ~sat-=
+								(args.src.count_since(mark: r_mark) & 0xFFFF_FFFF) as base.u32
+							num_written = w.count_since(mark: w_mark)
+						}
+					}
+					if num_written > 1024 {
+						return "#internal error: inconsistent I/O"
+					}
+					this.ztxt_ri = 0
+					this.ztxt_wi = num_written as base.u32
+					this.ztxt_hist_pos ~sat+= num_written
 				}
+
+				// Drain this.dst_palette, converting from Latin-1 to UTF-8.
+				while this.ztxt_ri < this.ztxt_wi {
+					assert this.ztxt_ri < 1024 via "a < b: a < c; c <= b"(c: this.ztxt_wi)
+					c2 = LATIN_1[this.dst_palette[this.ztxt_ri]]
+					if c2 == 0 {
+						return "#bad text chunk (not Latin-1)"
+					} else if c2 <= 0x7F {
+						if args.dst.length() <= 0 {
+							yield? base."$short write"
+							c2 = 0
+							continue.loop
+						}
+						this.ztxt_ri += 1
+						args.dst.write_u8_fast!(a: c2 as base.u8)
+					} else {
+						if args.dst.length() <= 1 {
+							yield? base."$short write"
+							c2 = 0
+							continue.loop
+						}
+						this.ztxt_ri += 1
+						args.dst.write_u16le_fast!(a: c2)
+					}
+				} endwhile
 
 				if zlib_status.is_ok() {
 					this.metadata_is_zlib_compressed = false
 					break.loop
 				} else if not zlib_status.is_suspension() {
 					return zlib_status
+				} else if zlib_status <> base."$short write" {
+					yield? zlib_status
 				}
-				yield? zlib_status
 
 			} else {
 				return "#internal error: inconsistent chunk type"
 			}
 
+		} else if (this.chunk_type == 'iTXt'le) and (this.metadata_fourcc == 'KVPV'be) {
+			// iTXt value is UTF-8.
+			//
+			// TODO: verify data is UTF-8.
+			while true {
+				if this.chunk_length <= 0 {
+					break.loop
+				} else if args.src.length() <= 0 {
+					yield? base."$short read"
+					continue.loop
+				} else if args.dst.length() <= 0 {
+					yield? base."$short write"
+					continue.loop
+				}
+				this.chunk_length -= 1
+				c = args.src.peek_u8()
+				args.src.skip_u32_fast!(actual: 1, worst_case: 1)
+				args.dst.write_u8_fast!(a: c)
+			} endwhile
+
 		} else {
+			// Other uncompressed keys and values are Latin-1.
 			while true {
 				if this.chunk_length <= 0 {
 					// Keys are NUL-terminated but values are not.
@@ -1434,14 +1511,28 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 					args.src.skip_u32_fast!(actual: 1, worst_case: 1)
 					break.loop
 				}
-				// TODO: Convert from Latin-1 to UTF-8.
-				if args.dst.length() <= 0 {
-					yield? base."$short write"
-					continue.loop
+				c2 = LATIN_1[c]
+				if c2 == 0 {
+					return "#bad text chunk (not Latin-1)"
+				} else if c2 <= 0x7F {
+					if args.dst.length() <= 0 {
+						yield? base."$short write"
+						c2 = 0
+						continue.loop
+					}
+					this.chunk_length -= 1
+					args.src.skip_u32_fast!(actual: 1, worst_case: 1)
+					args.dst.write_u8_fast!(a: c2 as base.u8)
+				} else {
+					if args.dst.length() <= 1 {
+						yield? base."$short write"
+						c2 = 0
+						continue.loop
+					}
+					this.chunk_length -= 1
+					args.src.skip_u32_fast!(actual: 1, worst_case: 1)
+					args.dst.write_u16le_fast!(a: c2)
 				}
-				this.chunk_length -= 1
-				args.src.skip_u32_fast!(actual: 1, worst_case: 1)
-				args.dst.write_u8_fast!(a: c)
 			} endwhile
 		}
 	} endwhile.loop

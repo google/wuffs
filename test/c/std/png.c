@@ -735,17 +735,16 @@ test_wuffs_png_decode_metadata_kvp() {
   CHECK_STRING(read_file(&src, "test/data/artificial-png/key-value-pairs.png"));
 
   const char* wants[] = {
-      // TODO: the callee should produce UTF-8, not Latin-1.
-      "Key",             //
-      "English",         //
-      "Cl\xE9",          //
-      "Fran\xE7\x61is",  //
-      "zl\xEF\x62K",     //
-      "zl\xEF\x62V",     //
-      "U-Key",           //
-      "U-значение",      //
-      "Z-K\xEBy",        //
-      "Z-значение",      //
+      "Key",         //
+      "English",     //
+      "Clé",         //
+      "Français",    //
+      "zlïbK",       //
+      "zlïbV",       //
+      "U-Key",       //
+      "U-значение",  //
+      "Z-Këy",       //
+      "Z-значение",  //
   };
 
   wuffs_png__decoder dec;
