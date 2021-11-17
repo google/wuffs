@@ -15,29 +15,6 @@
 use "std/crc32"
 use "std/zlib"
 
-pub status "#bad animation sequence number"
-pub status "#bad checksum"
-pub status "#bad chunk"
-pub status "#bad filter"
-pub status "#bad header"
-pub status "#missing palette"
-pub status "#unsupported PNG file"
-
-pri status "#internal error: inconsistent chunk type"
-pri status "#internal error: inconsistent frame bounds"
-pri status "#internal error: inconsistent workbuf length"
-pri status "#internal error: zlib decoder did not exhaust its input"
-
-pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0
-
-// DECODER_SRC_IO_BUFFER_LENGTH_MIN_INCL is the minimum length of the src
-// wuffs_base__io_buffer passed to the decoder.
-pub const DECODER_SRC_IO_BUFFER_LENGTH_MIN_INCL : base.u64 = 8
-
-// ANCILLARY_BIT is the upper/lower case bit on the chunk type's first byte (in
-// little-endian order).
-pri const ANCILLARY_BIT : base.u32 = 0x0000_0020
-
 pub struct decoder? implements base.image_decoder(
 	// The 0x00FF_FFFF limit is arbitrary (the PNG spec says 0x7FFF_FFFF) but
 	// it means that (width * height * bytes_per_pixel) doesn't overflow.
@@ -1546,69 +1523,3 @@ pub func decoder.workbuf_len() base.range_ii_u64 {
 		min_incl: this.overall_workbuf_length,
 		max_incl: this.overall_workbuf_length)
 }
-
-// INTERLACING holds the Adam7 interlacing pattern, involving 7 passes:
-//  1 6 4 6 2 6 4 6
-//  7 7 7 7 7 7 7 7
-//  5 6 5 6 5 6 5 6
-//  7 7 7 7 7 7 7 7
-//  3 6 4 6 3 6 4 6
-//  7 7 7 7 7 7 7 7
-//  5 6 5 6 5 6 5 6
-//  7 7 7 7 7 7 7 7
-//
-// The six elements of each inner array are:
-//  0: log2(x_stride)
-//  1: x_stride - x_offset - 1
-//  2: x_offset
-//  3: log2(y_stride)
-//  4: y_stride - y_offset - 1
-//  5: y_offset
-pri const INTERLACING : array[8] array[6] base.u8[..= 7] = [
-	[0, 0, 0, 0, 0, 0],  // non-interlaced; xy_stride=1, xy_offset=0
-	[3, 7, 0, 3, 7, 0],  // interlace_pass == 1
-	[3, 3, 4, 3, 7, 0],  // interlace_pass == 2
-	[2, 3, 0, 3, 3, 4],  // interlace_pass == 3
-	[2, 1, 2, 2, 3, 0],  // interlace_pass == 4
-	[1, 1, 0, 2, 1, 2],  // interlace_pass == 5
-	[1, 0, 1, 1, 1, 0],  // interlace_pass == 6
-	[0, 0, 0, 1, 0, 1],  // interlace_pass == 7
-]
-
-// LOW_BIT_DEPTH_MULTIPLIERS holds multipliers that convert D-bit values into
-// 8-bit values, for depth D.
-pri const LOW_BIT_DEPTH_MULTIPLIERS : array[8] base.u8 = [
-	0,
-	0b1111_1111,  // depth == 1
-	0b0101_0101,  // depth == 2
-	0,
-	0b0001_0001,  // depth == 4
-	0,
-	0,
-	0,
-]
-
-// LOW_BIT_DEPTH_NUM_PACKS holds the number of smaller-than-1-byte units that
-// are packed into each byte.
-pri const LOW_BIT_DEPTH_NUM_PACKS : array[8] base.u8 = [
-	0,
-	8,  // depth == 1
-	4,  // depth == 2
-	0,
-	2,  // depth == 4
-	0,
-	0,
-	0,
-]
-
-// NUM_CHANNELS holds the number of channels for each valid color type.
-pri const NUM_CHANNELS : array[8] base.u8[..= 4] = [
-	1,  // color_type == 0: Y
-	0,
-	3,  // color_type == 2: RGB
-	1,  // color_type == 3: indexed
-	2,  // color_type == 4: YA
-	0,
-	4,  // color_type == 6: RGBA
-	0,
-]
