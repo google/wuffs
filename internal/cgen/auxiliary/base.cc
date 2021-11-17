@@ -34,6 +34,14 @@ DynIOBuffer::~DynIOBuffer() {
   }
 }
 
+void  //
+DynIOBuffer::drop() {
+  if (m_buf.data.ptr) {
+    free(m_buf.data.ptr);
+  }
+  m_buf = wuffs_base__empty_io_buffer();
+}
+
 DynIOBuffer::GrowResult  //
 DynIOBuffer::grow(uint64_t min_incl) {
   uint64_t n = round_up(min_incl, m_max_incl);
@@ -200,7 +208,7 @@ std::string  //
 HandleMetadata(
     sync_io::Input& input,
     wuffs_base__io_buffer& io_buf,
-    uint64_t max_incl_metadata_length,
+    sync_io::DynIOBuffer& raw,
     wuffs_base__status (*tell_me_more_func)(void*,
                                             wuffs_base__io_buffer*,
                                             wuffs_base__more_information*,
@@ -211,7 +219,8 @@ HandleMetadata(
                                         wuffs_base__slice_u8),
     void* handle_metadata_receiver) {
   wuffs_base__more_information minfo = wuffs_base__empty_more_information();
-  sync_io::DynIOBuffer raw(max_incl_metadata_length);
+  // Reset raw but keep its backing array (the raw.m_buf.data slice).
+  raw.m_buf.meta = wuffs_base__empty_io_buffer_meta();
 
   while (true) {
     minfo = wuffs_base__empty_more_information();
@@ -229,7 +238,7 @@ HandleMetadata(
           break;
         }
         uint64_t num_to_copy = r.length();
-        if (num_to_copy > (max_incl_metadata_length - raw.m_buf.meta.wi)) {
+        if (num_to_copy > (raw.m_max_incl - raw.m_buf.meta.wi)) {
           return ErrMsg_MaxInclMetadataLengthExceeded;
         } else if (num_to_copy > (raw.m_buf.data.len - raw.m_buf.meta.wi)) {
           switch (raw.grow(num_to_copy + raw.m_buf.meta.wi)) {

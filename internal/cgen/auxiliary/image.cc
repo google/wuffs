@@ -284,11 +284,11 @@ DecodeImageHandleMetadata(wuffs_base__image_decoder::unique_ptr& image_decoder,
                           DecodeImageCallbacks& callbacks,
                           sync_io::Input& input,
                           wuffs_base__io_buffer& io_buf,
-                          uint64_t max_incl_metadata_length) {
-  return DecodeImageErrorMessage(private_impl::HandleMetadata(
-      input, io_buf, max_incl_metadata_length, DIHM0,
-      static_cast<void*>(image_decoder.get()), DIHM1,
-      static_cast<void*>(&callbacks)));
+                          sync_io::DynIOBuffer& raw_metadata_buf) {
+  return DecodeImageErrorMessage(
+      private_impl::HandleMetadata(input, io_buf, raw_metadata_buf, DIHM0,
+                                   static_cast<void*>(image_decoder.get()),
+                                   DIHM1, static_cast<void*>(&callbacks)));
 }
 
 DecodeImageResult  //
@@ -312,6 +312,7 @@ DecodeImage0(wuffs_base__image_decoder::unique_ptr& image_decoder,
   }
 
   wuffs_base__image_config image_config = wuffs_base__null_image_config();
+  sync_io::DynIOBuffer raw_metadata_buf(max_incl_metadata_length);
   uint64_t start_pos = io_buf.reader_position();
   bool redirected = false;
   int32_t fourcc = 0;
@@ -411,7 +412,7 @@ redirect:
         goto redirect;
       } else if (id_dic_status.repr == wuffs_base__note__metadata_reported) {
         std::string error_message = DecodeImageHandleMetadata(
-            image_decoder, callbacks, input, io_buf, max_incl_metadata_length);
+            image_decoder, callbacks, input, io_buf, raw_metadata_buf);
         if (!error_message.empty()) {
           return DecodeImageResult(std::move(error_message));
         }
@@ -427,6 +428,7 @@ redirect:
       }
     }
   } while (false);
+  raw_metadata_buf.drop();
 
   // Select the pixel format.
   uint32_t w = image_config.pixcfg.width();

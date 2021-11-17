@@ -9999,9 +9999,16 @@ class DynIOBuffer {
   // bytes referenced by that pointer-length pair (e.g. compactions).
   IOBuffer m_buf;
 
+  // m_max_incl is an inclusive upper bound on the backing array size.
+  const uint64_t m_max_incl;
+
   // Constructor and destructor.
   explicit DynIOBuffer(uint64_t max_incl);
   ~DynIOBuffer();
+
+  // Drop frees the byte array and resets m_buf. The DynIOBuffer can still be
+  // used after a drop call. It just restarts from zero.
+  void drop();
 
   // grow ensures that the byte array size is at least min_incl and at most
   // max_incl. It returns FailedMaxInclExceeded if that would require
@@ -10010,9 +10017,6 @@ class DynIOBuffer {
   GrowResult grow(uint64_t min_incl);
 
  private:
-  // m_max_incl is an inclusive upper bound on the backing array size.
-  const uint64_t m_max_incl;
-
   // Delete the copy and assign constructors.
   DynIOBuffer(const DynIOBuffer&) = delete;
   DynIOBuffer& operator=(const DynIOBuffer&) = delete;
@@ -41951,6 +41955,14 @@ DynIOBuffer::~DynIOBuffer() {
   }
 }
 
+void  //
+DynIOBuffer::drop() {
+  if (m_buf.data.ptr) {
+    free(m_buf.data.ptr);
+  }
+  m_buf = wuffs_base__empty_io_buffer();
+}
+
 DynIOBuffer::GrowResult  //
 DynIOBuffer::grow(uint64_t min_incl) {
   uint64_t n = round_up(min_incl, m_max_incl);
@@ -42117,7 +42129,7 @@ std::string  //
 HandleMetadata(
     sync_io::Input& input,
     wuffs_base__io_buffer& io_buf,
-    uint64_t max_incl_metadata_length,
+    sync_io::DynIOBuffer& raw,
     wuffs_base__status (*tell_me_more_func)(void*,
                                             wuffs_base__io_buffer*,
                                             wuffs_base__more_information*,
@@ -42128,7 +42140,8 @@ HandleMetadata(
                                         wuffs_base__slice_u8),
     void* handle_metadata_receiver) {
   wuffs_base__more_information minfo = wuffs_base__empty_more_information();
-  sync_io::DynIOBuffer raw(max_incl_metadata_length);
+  // Reset raw but keep its backing array (the raw.m_buf.data slice).
+  raw.m_buf.meta = wuffs_base__empty_io_buffer_meta();
 
   while (true) {
     minfo = wuffs_base__empty_more_information();
@@ -42146,7 +42159,7 @@ HandleMetadata(
           break;
         }
         uint64_t num_to_copy = r.length();
-        if (num_to_copy > (max_incl_metadata_length - raw.m_buf.meta.wi)) {
+        if (num_to_copy > (raw.m_max_incl - raw.m_buf.meta.wi)) {
           return ErrMsg_MaxInclMetadataLengthExceeded;
         } else if (num_to_copy > (raw.m_buf.data.len - raw.m_buf.meta.wi)) {
           switch (raw.grow(num_to_copy + raw.m_buf.meta.wi)) {
@@ -42857,11 +42870,11 @@ DecodeImageHandleMetadata(wuffs_base__image_decoder::unique_ptr& image_decoder,
                           DecodeImageCallbacks& callbacks,
                           sync_io::Input& input,
                           wuffs_base__io_buffer& io_buf,
-                          uint64_t max_incl_metadata_length) {
-  return DecodeImageErrorMessage(private_impl::HandleMetadata(
-      input, io_buf, max_incl_metadata_length, DIHM0,
-      static_cast<void*>(image_decoder.get()), DIHM1,
-      static_cast<void*>(&callbacks)));
+                          sync_io::DynIOBuffer& raw_metadata_buf) {
+  return DecodeImageErrorMessage(
+      private_impl::HandleMetadata(input, io_buf, raw_metadata_buf, DIHM0,
+                                   static_cast<void*>(image_decoder.get()),
+                                   DIHM1, static_cast<void*>(&callbacks)));
 }
 
 DecodeImageResult  //
@@ -42885,6 +42898,7 @@ DecodeImage0(wuffs_base__image_decoder::unique_ptr& image_decoder,
   }
 
   wuffs_base__image_config image_config = wuffs_base__null_image_config();
+  sync_io::DynIOBuffer raw_metadata_buf(max_incl_metadata_length);
   uint64_t start_pos = io_buf.reader_position();
   bool redirected = false;
   int32_t fourcc = 0;
@@ -42984,7 +42998,7 @@ redirect:
         goto redirect;
       } else if (id_dic_status.repr == wuffs_base__note__metadata_reported) {
         std::string error_message = DecodeImageHandleMetadata(
-            image_decoder, callbacks, input, io_buf, max_incl_metadata_length);
+            image_decoder, callbacks, input, io_buf, raw_metadata_buf);
         if (!error_message.empty()) {
           return DecodeImageResult(std::move(error_message));
         }
@@ -43000,6 +43014,7 @@ redirect:
       }
     }
   } while (false);
+  raw_metadata_buf.drop();
 
   // Select the pixel format.
   uint32_t w = image_config.pixcfg.width();

@@ -66,9 +66,16 @@ class DynIOBuffer {
   // bytes referenced by that pointer-length pair (e.g. compactions).
   IOBuffer m_buf;
 
+  // m_max_incl is an inclusive upper bound on the backing array size.
+  const uint64_t m_max_incl;
+
   // Constructor and destructor.
   explicit DynIOBuffer(uint64_t max_incl);
   ~DynIOBuffer();
+
+  // Drop frees the byte array and resets m_buf. The DynIOBuffer can still be
+  // used after a drop call. It just restarts from zero.
+  void drop();
 
   // grow ensures that the byte array size is at least min_incl and at most
   // max_incl. It returns FailedMaxInclExceeded if that would require
@@ -77,9 +84,6 @@ class DynIOBuffer {
   GrowResult grow(uint64_t min_incl);
 
  private:
-  // m_max_incl is an inclusive upper bound on the backing array size.
-  const uint64_t m_max_incl;
-
   // Delete the copy and assign constructors.
   DynIOBuffer(const DynIOBuffer&) = delete;
   DynIOBuffer& operator=(const DynIOBuffer&) = delete;
