@@ -21,6 +21,7 @@ f50d1d50 test/data/artificial-gif/small-frame-interlaced.gif
 beaec397 test/data/artificial-gif/transparent-index.gif
 6ec818c3 test/data/artificial-gif/zero-width-frame.gif
 0564b364 test/data/artificial-png/apng-skip-idat.png
+e08a7cc8 test/data/artificial-png/key-value-pairs.png
 076cb375 test/data/bricks-color.bmp
 076cb375 test/data/bricks-color.png
 f36c2e80 test/data/bricks-dither.bmp
