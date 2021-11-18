@@ -794,7 +794,7 @@ test_wuffs_png_decode_metadata_kvp() {
     });
     if (i < WUFFS_TESTLIB_ARRAY_SIZE(wants)) {
       size_t n = strlen(wants[i]);
-      if (n < want.data.len) {
+      if (n <= want.data.len) {
         memcpy(want.data.ptr, wants[i], n);
         want.meta.wi = n;
       }
