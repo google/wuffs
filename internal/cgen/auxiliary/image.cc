@@ -237,30 +237,20 @@ DecodeImageArgMaxInclMetadataLength::DefaultValue() {
 
 namespace {
 
-std::string  //
-DecodeImageErrorMessage(std::string s) {
-  if (!s.empty()) {
-    if (s == private_impl::ErrMsg_MaxInclMetadataLengthExceeded) {
-      return DecodeImage_MaxInclMetadataLengthExceeded;
-    } else if (s == private_impl::ErrMsg_OutOfMemory) {
-      return DecodeImage_OutOfMemory;
-    } else if (s == private_impl::ErrMsg_UnexpectedEndOfFile) {
-      return DecodeImage_UnexpectedEndOfFile;
-    } else if (s == private_impl::ErrMsg_UnsupportedMetadata) {
-      return DecodeImage_UnsupportedMetadata;
-    } else if (s == private_impl::ErrMsg_UnsupportedNegativeAdvance) {
-      return DecodeImage_UnsupportedImageFormat;
-    }
-  }
-  return s;
-}
+const private_impl::ErrorMessages DecodeImageErrorMessages = {
+    DecodeImage_MaxInclMetadataLengthExceeded,  //
+    DecodeImage_OutOfMemory,                    //
+    DecodeImage_UnexpectedEndOfFile,            //
+    DecodeImage_UnsupportedMetadata,            //
+    DecodeImage_UnsupportedImageFormat,         //
+};
 
 std::string  //
 DecodeImageAdvanceIOBufferTo(sync_io::Input& input,
                              wuffs_base__io_buffer& io_buf,
                              uint64_t absolute_position) {
-  return DecodeImageErrorMessage(
-      private_impl::AdvanceIOBufferTo(input, io_buf, absolute_position));
+  return private_impl::AdvanceIOBufferTo(DecodeImageErrorMessages, input,
+                                         io_buf, absolute_position);
 }
 
 wuffs_base__status  //
@@ -285,10 +275,10 @@ DecodeImageHandleMetadata(wuffs_base__image_decoder::unique_ptr& image_decoder,
                           sync_io::Input& input,
                           wuffs_base__io_buffer& io_buf,
                           sync_io::DynIOBuffer& raw_metadata_buf) {
-  return DecodeImageErrorMessage(
-      private_impl::HandleMetadata(input, io_buf, raw_metadata_buf, DIHM0,
-                                   static_cast<void*>(image_decoder.get()),
-                                   DIHM1, static_cast<void*>(&callbacks)));
+  return private_impl::HandleMetadata(DecodeImageErrorMessages, input, io_buf,
+                                      raw_metadata_buf, DIHM0,
+                                      static_cast<void*>(image_decoder.get()),
+                                      DIHM1, static_cast<void*>(&callbacks));
 }
 
 DecodeImageResult  //

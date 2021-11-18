@@ -42225,23 +42225,30 @@ MemoryInput::CopyIn(IOBuffer* dst) {
 
 namespace private_impl {
 
-const char ErrMsg_MaxInclMetadataLengthExceeded[] =  //
-    "wuffs_aux::private_impl: max_incl_metadata_length exceeded";
-const char ErrMsg_OutOfMemory[] =  //
-    "wuffs_aux::private_impl: out of memory";
-const char ErrMsg_UnexpectedEndOfFile[] =  //
-    "wuffs_aux::private_impl: unexpected end of file";
-const char ErrMsg_UnsupportedMetadata[] =  //
-    "wuffs_aux::private_impl: unsupported metadata";
-const char ErrMsg_UnsupportedNegativeAdvance[] =  //
-    "wuffs_aux::private_impl: unsupported negative advance";
+struct ErrorMessages {
+  const char* max_incl_metadata_length_exceeded;
+  const char* out_of_memory;
+  const char* unexpected_end_of_file;
+  const char* unsupported_metadata;
+  const char* unsupported_negative_advance;
+
+  // If adding new "const char*" typed fields to this struct, either add them
+  // after existing fields or, if re-ordering fields, make sure that you update
+  // all of the "const private_impl::ErrorMessages FooBarErrorMessages" values
+  // in all of the sibling *.cc files.
+
+  static inline const char* resolve(const char* s) {
+    return s ? s : "wuffs_aux::private_impl: unknown error";
+  };
+};
 
 std::string  //
-AdvanceIOBufferTo(sync_io::Input& input,
+AdvanceIOBufferTo(const ErrorMessages& error_messages,
+                  sync_io::Input& input,
                   IOBuffer& io_buf,
                   uint64_t absolute_position) {
   if (absolute_position < io_buf.reader_position()) {
-    return ErrMsg_UnsupportedNegativeAdvance;
+    return error_messages.resolve(error_messages.unsupported_negative_advance);
   }
   while (true) {
     uint64_t relative_position = absolute_position - io_buf.reader_position();
@@ -42249,7 +42256,7 @@ AdvanceIOBufferTo(sync_io::Input& input,
       io_buf.meta.ri += (size_t)relative_position;
       break;
     } else if (io_buf.meta.closed) {
-      return ErrMsg_UnexpectedEndOfFile;
+      return error_messages.resolve(error_messages.unexpected_end_of_file);
     }
     io_buf.meta.ri = io_buf.meta.wi;
     if (!input.BringsItsOwnIOBuffer()) {
@@ -42265,6 +42272,7 @@ AdvanceIOBufferTo(sync_io::Input& input,
 
 std::string  //
 HandleMetadata(
+    const ErrorMessages& error_messages,
     sync_io::Input& input,
     wuffs_base__io_buffer& io_buf,
     sync_io::DynIOBuffer& raw,
@@ -42298,23 +42306,25 @@ HandleMetadata(
         }
         uint64_t num_to_copy = r.length();
         if (num_to_copy > (raw.m_max_incl - raw.m_buf.meta.wi)) {
-          return ErrMsg_MaxInclMetadataLengthExceeded;
+          return error_messages.resolve(
+              error_messages.max_incl_metadata_length_exceeded);
         } else if (num_to_copy > (raw.m_buf.data.len - raw.m_buf.meta.wi)) {
           switch (raw.grow(num_to_copy + raw.m_buf.meta.wi)) {
             case sync_io::DynIOBuffer::GrowResult::OK:
               break;
             case sync_io::DynIOBuffer::GrowResult::FailedMaxInclExceeded:
-              return ErrMsg_MaxInclMetadataLengthExceeded;
+              return error_messages.resolve(
+                  error_messages.max_incl_metadata_length_exceeded);
             case sync_io::DynIOBuffer::GrowResult::FailedOutOfMemory:
-              return ErrMsg_OutOfMemory;
+              return error_messages.resolve(error_messages.out_of_memory);
           }
         }
 
         if (io_buf.reader_position() > r.min_incl) {
-          return ErrMsg_UnsupportedMetadata;
+          return error_messages.resolve(error_messages.unsupported_metadata);
         } else {
           std::string error_message =
-              AdvanceIOBufferTo(input, io_buf, r.min_incl);
+              AdvanceIOBufferTo(error_messages, input, io_buf, r.min_incl);
           if (!error_message.empty()) {
             return error_message;
           }
@@ -42330,7 +42340,8 @@ HandleMetadata(
           if (num_to_copy == 0) {
             break;
           } else if (io_buf.meta.closed) {
-            return ErrMsg_UnexpectedEndOfFile;
+            return error_messages.resolve(
+                error_messages.unexpected_end_of_file);
           } else if (!input.BringsItsOwnIOBuffer()) {
             io_buf.compact();
           }
@@ -42343,7 +42354,7 @@ HandleMetadata(
       }
 
       default:
-        return ErrMsg_UnsupportedMetadata;
+        return error_messages.resolve(error_messages.unsupported_metadata);
     }
 
     if (status.repr == nullptr) {
@@ -42356,9 +42367,10 @@ HandleMetadata(
         case sync_io::DynIOBuffer::GrowResult::OK:
           break;
         case sync_io::DynIOBuffer::GrowResult::FailedMaxInclExceeded:
-          return ErrMsg_MaxInclMetadataLengthExceeded;
+          return error_messages.resolve(
+              error_messages.max_incl_metadata_length_exceeded);
         case sync_io::DynIOBuffer::GrowResult::FailedOutOfMemory:
-          return ErrMsg_OutOfMemory;
+          return error_messages.resolve(error_messages.out_of_memory);
       }
     }
   }
@@ -42961,30 +42973,20 @@ DecodeImageArgMaxInclMetadataLength::DefaultValue() {
 
 namespace {
 
-std::string  //
-DecodeImageErrorMessage(std::string s) {
-  if (!s.empty()) {
-    if (s == private_impl::ErrMsg_MaxInclMetadataLengthExceeded) {
-      return DecodeImage_MaxInclMetadataLengthExceeded;
-    } else if (s == private_impl::ErrMsg_OutOfMemory) {
-      return DecodeImage_OutOfMemory;
-    } else if (s == private_impl::ErrMsg_UnexpectedEndOfFile) {
-      return DecodeImage_UnexpectedEndOfFile;
-    } else if (s == private_impl::ErrMsg_UnsupportedMetadata) {
-      return DecodeImage_UnsupportedMetadata;
-    } else if (s == private_impl::ErrMsg_UnsupportedNegativeAdvance) {
-      return DecodeImage_UnsupportedImageFormat;
-    }
-  }
-  return s;
-}
+const private_impl::ErrorMessages DecodeImageErrorMessages = {
+    DecodeImage_MaxInclMetadataLengthExceeded,  //
+    DecodeImage_OutOfMemory,                    //
+    DecodeImage_UnexpectedEndOfFile,            //
+    DecodeImage_UnsupportedMetadata,            //
+    DecodeImage_UnsupportedImageFormat,         //
+};
 
 std::string  //
 DecodeImageAdvanceIOBufferTo(sync_io::Input& input,
                              wuffs_base__io_buffer& io_buf,
                              uint64_t absolute_position) {
-  return DecodeImageErrorMessage(
-      private_impl::AdvanceIOBufferTo(input, io_buf, absolute_position));
+  return private_impl::AdvanceIOBufferTo(DecodeImageErrorMessages, input,
+                                         io_buf, absolute_position);
 }
 
 wuffs_base__status  //
@@ -43009,10 +43011,10 @@ DecodeImageHandleMetadata(wuffs_base__image_decoder::unique_ptr& image_decoder,
                           sync_io::Input& input,
                           wuffs_base__io_buffer& io_buf,
                           sync_io::DynIOBuffer& raw_metadata_buf) {
-  return DecodeImageErrorMessage(
-      private_impl::HandleMetadata(input, io_buf, raw_metadata_buf, DIHM0,
-                                   static_cast<void*>(image_decoder.get()),
-                                   DIHM1, static_cast<void*>(&callbacks)));
+  return private_impl::HandleMetadata(DecodeImageErrorMessages, input, io_buf,
+                                      raw_metadata_buf, DIHM0,
+                                      static_cast<void*>(image_decoder.get()),
+                                      DIHM1, static_cast<void*>(&callbacks));
 }
 
 DecodeImageResult  //
