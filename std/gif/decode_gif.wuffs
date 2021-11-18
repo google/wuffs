@@ -99,10 +99,11 @@ pub struct decoder? implements base.image_decoder(
 	num_decoded_frame_configs_value : base.u64,
 	num_decoded_frames_value        : base.u64,
 
-	frame_rect_x0 : base.u32,
-	frame_rect_y0 : base.u32,
-	frame_rect_x1 : base.u32,
-	frame_rect_y1 : base.u32,
+	frame_rect_x0   : base.u32,
+	frame_rect_y0   : base.u32,
+	frame_rect_x1   : base.u32,
+	frame_rect_y1   : base.u32,
+	frame_rect_size : base.u64,
 
 	// The dst_etc fields are the output cursor during copy_to_image_buffer.
 	dst_x            : base.u32,
@@ -756,8 +757,9 @@ pri func decoder.decode_id_part0?(src: base.io_reader) {
 	this.frame_rect_x0 = args.src.read_u16le_as_u32?()
 	this.frame_rect_y0 = args.src.read_u16le_as_u32?()
 	this.frame_rect_x1 = args.src.read_u16le_as_u32?()
-	this.frame_rect_x1 ~mod+= this.frame_rect_x0
 	this.frame_rect_y1 = args.src.read_u16le_as_u32?()
+	this.frame_rect_size = (this.frame_rect_x1 as base.u64) * (this.frame_rect_y1 as base.u64)
+	this.frame_rect_x1 ~mod+= this.frame_rect_x0
 	this.frame_rect_y1 ~mod+= this.frame_rect_y0
 
 	this.dst_x = this.frame_rect_x0
@@ -772,6 +774,8 @@ pri func decoder.decode_id_part0?(src: base.io_reader) {
 		this.width = this.width.max(a: this.frame_rect_x1)
 		this.height = this.height.max(a: this.frame_rect_y1)
 	}
+
+	this.lzw.set_unread_data_size!(size: this.frame_rect_size)
 }
 
 pri func decoder.decode_id_part1?(dst: ptr base.pixel_buffer, src: base.io_reader, blend: base.pixel_blend) {
