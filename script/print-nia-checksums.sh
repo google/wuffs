@@ -64,7 +64,7 @@ for f in $sources; do
   if [ -f $f ]; then
     handle $f
   elif [ -d $f ]; then
-    for g in `find $f -type f | sort`; do
+    for g in `find $f -type f | LANG=C sort`; do
       handle $g
     done
   else
