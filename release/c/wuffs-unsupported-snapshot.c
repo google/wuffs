@@ -31152,6 +31152,30 @@ wuffs_gif__decoder__decode_id_part2(
           goto label__outer__continue;
         } else if (v_lzw_status.repr == wuffs_base__suspension__short_write) {
           goto label__inner__continue;
+        } else if (self->private_impl.f_quirks[3] && (self->private_impl.f_dst_y >= self->private_impl.f_frame_rect_y1) && (self->private_impl.f_interlace == 0)) {
+          if (v_need_block_size || (v_block_size > 0)) {
+            self->private_data.s_decode_id_part2[0].scratch = ((uint32_t)(v_block_size));
+            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
+            if (self->private_data.s_decode_id_part2[0].scratch > ((uint64_t)(io2_a_src - iop_a_src))) {
+              self->private_data.s_decode_id_part2[0].scratch -= ((uint64_t)(io2_a_src - iop_a_src));
+              iop_a_src = io2_a_src;
+              status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+              goto suspend;
+            }
+            iop_a_src += self->private_data.s_decode_id_part2[0].scratch;
+            if (a_src) {
+              a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+            }
+            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
+            status = wuffs_gif__decoder__skip_blocks(self, a_src);
+            if (a_src) {
+              iop_a_src = a_src->data.ptr + a_src->meta.ri;
+            }
+            if (status.repr) {
+              goto suspend;
+            }
+          }
+          goto label__outer__break;
         }
         status = v_lzw_status;
         if (wuffs_base__status__is_error(&status)) {

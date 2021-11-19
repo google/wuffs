@@ -954,6 +954,17 @@ pri func decoder.decode_id_part2?(dst: ptr base.pixel_buffer, src: base.io_reade
 				continue.outer
 			} else if lzw_status == base."$short write" {
 				continue.inner
+			} else if this.quirks[QUIRK_IGNORE_TOO_MUCH_PIXEL_DATA - QUIRKS_BASE] and
+				(this.dst_y >= this.frame_rect_y1) and (this.interlace == 0) {
+				// It's invalid LZW-compressed data, but we still have a full
+				// frame and have opted in to QUIRK_IGNORE_TOO_MUCH_PIXEL_DATA,
+				// so treat it like the lzw_status.is_ok() case, other than not
+				// clearing this.previous_lzw_decode_ended_abruptly.
+				if need_block_size or (block_size > 0) {
+					args.src.skip_u32?(n: block_size as base.u32)
+					this.skip_blocks?(src: args.src)
+				}
+				break.outer
 			}
 			return lzw_status
 		} endwhile.inner

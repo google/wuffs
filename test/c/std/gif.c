@@ -1598,11 +1598,20 @@ test_wuffs_gif_decode_pixel_data_too_much_sans_quirk() {
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
       .data = g_src_slice_u8,
   });
+
+  src.meta = wuffs_base__empty_io_buffer_meta();
+  CHECK_STRING(read_file(
+      &src, "test/data/artificial-gif/pixel-data-too-much-bad-lzw.gif"));
+  CHECK_STRING(do_test_wuffs_gif_decode_expecting(
+      src, 0, wuffs_lzw__error__bad_code, false));
+
+  src.meta = wuffs_base__empty_io_buffer_meta();
   CHECK_STRING(read_file(
       &src, "test/data/artificial-gif/pixel-data-too-much-good-lzw.gif"));
+  CHECK_STRING(do_test_wuffs_gif_decode_expecting(
+      src, 0, wuffs_base__error__too_much_data, false));
 
-  return do_test_wuffs_gif_decode_expecting(
-      src, 0, wuffs_base__error__too_much_data, false);
+  return NULL;
 }
 
 const char*  //
@@ -1611,11 +1620,20 @@ test_wuffs_gif_decode_pixel_data_too_much_with_quirk() {
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
       .data = g_src_slice_u8,
   });
+
+  src.meta = wuffs_base__empty_io_buffer_meta();
+  CHECK_STRING(read_file(
+      &src, "test/data/artificial-gif/pixel-data-too-much-bad-lzw.gif"));
+  CHECK_STRING(do_test_wuffs_gif_decode_expecting(
+      src, WUFFS_GIF__QUIRK_IGNORE_TOO_MUCH_PIXEL_DATA, NULL, false));
+
+  src.meta = wuffs_base__empty_io_buffer_meta();
   CHECK_STRING(read_file(
       &src, "test/data/artificial-gif/pixel-data-too-much-good-lzw.gif"));
+  CHECK_STRING(do_test_wuffs_gif_decode_expecting(
+      src, WUFFS_GIF__QUIRK_IGNORE_TOO_MUCH_PIXEL_DATA, NULL, false));
 
-  return do_test_wuffs_gif_decode_expecting(
-      src, WUFFS_GIF__QUIRK_IGNORE_TOO_MUCH_PIXEL_DATA, NULL, false);
+  return NULL;
 }
 
 const char*  //
