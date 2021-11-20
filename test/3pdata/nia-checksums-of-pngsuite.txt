@@ -117,11 +117,11 @@ ad298c62 test/3pdata/pngsuite/s03n3p01.png
 2c30132c test/3pdata/pngsuite/s04n3p01.png
 5fb20358 test/3pdata/pngsuite/s05i3p02.png
 5fb20358 test/3pdata/pngsuite/s05n3p02.png
-4b1198df test/3pdata/pngsuite/s06i3p02.png
+764e90bd test/3pdata/pngsuite/s06i3p02.png
 764e90bd test/3pdata/pngsuite/s06n3p02.png
 9eebca92 test/3pdata/pngsuite/s07i3p02.png
 9eebca92 test/3pdata/pngsuite/s07n3p02.png
-222e5ceb test/3pdata/pngsuite/s08i3p02.png
+d57f2e84 test/3pdata/pngsuite/s08i3p02.png
 d57f2e84 test/3pdata/pngsuite/s08n3p02.png
 7585127f test/3pdata/pngsuite/s09i3p02.png
 7585127f test/3pdata/pngsuite/s09n3p02.png
@@ -129,7 +129,7 @@ d57f2e84 test/3pdata/pngsuite/s08n3p02.png
 034051a8 test/3pdata/pngsuite/s32n3p04.png
 a377dcdd test/3pdata/pngsuite/s33i3p04.png
 a377dcdd test/3pdata/pngsuite/s33n3p04.png
-88952d26 test/3pdata/pngsuite/s34i3p04.png
+5bcd998d test/3pdata/pngsuite/s34i3p04.png
 5bcd998d test/3pdata/pngsuite/s34n3p04.png
 1cefbbe2 test/3pdata/pngsuite/s35i3p04.png
 1cefbbe2 test/3pdata/pngsuite/s35n3p04.png

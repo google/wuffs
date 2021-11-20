@@ -205,18 +205,17 @@ pri func decoder.decode_huffman_slow?(dst: base.io_writer, src: base.io_reader) 
 			// Copy from this.history.
 			if ((dist_minus_1 + 1) as base.u64) > args.dst.history_length() {
 				// Set (hlen, hdist) to be the length-distance pair to copy
-				// from this.history, and (length, distance) to be the
-				// remaining length-distance pair to copy from args.dst.
+				// from this.history.
 				hdist = (((dist_minus_1 + 1) as base.u64) - args.dst.history_length()) as base.u32
-				if length > hdist {
-					assert hdist < length via "a < b: b > a"()
+				if hdist < length {
 					assert hdist < 0x8000 via "a < b: a < c; c <= b"(c: length)
-					length -= hdist
 					hlen = hdist
+					assert hlen <= length via "a <= b: a == c; c <= b"(c: hdist)
 				} else {
 					hlen = length
-					length = 0
+					assert hlen <= length via "a <= b: a == b"()
 				}
+
 				hdist ~mod+= ((this.transformed_history_count ~mod- args.dst.history_position()) & 0xFFFF_FFFF) as base.u32
 				if this.history_index < hdist {
 					return "#bad distance"
@@ -226,24 +225,17 @@ pri func decoder.decode_huffman_slow?(dst: base.io_writer, src: base.io_reader) 
 				hdist = this.history_index - hdist
 
 				// Copy from hdist to the end of this.history.
-				while true {
-					n_copied = args.dst.limited_copy_u32_from_slice!(
-						up_to: hlen, s: this.history[hdist & 0x7FFF ..])
-					if hlen <= n_copied {
-						hlen = 0
-						break
-					}
-					if n_copied > 0 {
-						hlen -= n_copied
-						hdist = (hdist ~mod+ n_copied) & 0x7FFF
-						if hdist == 0 {
-							// Wrap around the this.history ringbuffer.
-							break
-						}
-					}
+				n_copied = args.dst.limited_copy_u32_from_slice!(
+					up_to: hlen, s: this.history[hdist & 0x7FFF ..])
+				if n_copied < hlen {
+					assert n_copied < length via "a < b: a < c; c <= b"(c: hlen)
+					assert length > n_copied via "a > b: b < a"()
+					length -= n_copied
 					yield? base."$short write"
-				} endwhile
-
+					continue.inner
+				}
+				assert length >= hlen via "a >= b: b <= a"()
+				length -= hlen
 				if length == 0 {
 					// No need to copy from args.dst.
 					continue.loop
@@ -254,8 +246,7 @@ pri func decoder.decode_huffman_slow?(dst: base.io_writer, src: base.io_reader) 
 			n_copied = args.dst.limited_copy_u32_from_history!(
 				up_to: length, distance: (dist_minus_1 + 1))
 			if length <= n_copied {
-				length = 0
-				break.inner
+				continue.loop
 			}
 			length -= n_copied
 			yield? base."$short write"
