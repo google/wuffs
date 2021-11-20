@@ -201,7 +201,7 @@ pri func decoder.decode_huffman_slow?(dst: base.io_writer, src: base.io_reader) 
 			n_bits -= table_entry_n_bits
 		}
 
-		while true {
+		while.inner true {
 			// Copy from this.history.
 			if ((dist_minus_1 + 1) as base.u64) > args.dst.history_length() {
 				// Set (hlen, hdist) to be the length-distance pair to copy
@@ -255,11 +255,11 @@ pri func decoder.decode_huffman_slow?(dst: base.io_writer, src: base.io_reader) 
 				up_to: length, distance: (dist_minus_1 + 1))
 			if length <= n_copied {
 				length = 0
-				break
+				break.inner
 			}
 			length -= n_copied
 			yield? base."$short write"
-		} endwhile
+		} endwhile.inner
 	} endwhile.loop
 
 	// TODO: "assert n_bits < 8"? What about (bits >> n_bits)?

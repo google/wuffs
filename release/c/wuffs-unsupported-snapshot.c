@@ -28176,13 +28176,13 @@ wuffs_deflate__decoder__decode_huffman_slow(
             &iop_a_dst, io0_a_dst, io2_a_dst, v_length, (v_dist_minus_1 + 1));
         if (v_length <= v_n_copied) {
           v_length = 0;
-          goto label__5__break;
+          goto label__inner__break;
         }
         v_length -= v_n_copied;
         status = wuffs_base__make_status(wuffs_base__suspension__short_write);
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(10);
       }
-      label__5__break:;
+      label__inner__break:;
     }
     label__loop__break:;
     self->private_impl.f_bits = v_bits;
