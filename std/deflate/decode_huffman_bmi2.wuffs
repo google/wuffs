@@ -219,18 +219,14 @@ pri func decoder.decode_huffman_bmi2!(dst: base.io_writer, src: base.io_reader) 
 				if this.history_index < hdist {
 					return "#bad distance"
 				}
-				// Re-purpose the hdist variable as the this.history index to
-				// start copying from.
-				hdist = this.history_index - hdist
 
-				// Copy from hdist to the end of this.history.
+				// Copy from this.history[(this.history_index - hdist) ..].
 				//
 				// This copying is simpler than the decode_huffman_slow version
 				// because it cannot yield. We have already checked that
 				// args.dst.length() is large enough.
 				args.dst.limited_copy_u32_from_slice!(
-					up_to: hlen, s: this.history[hdist & 0x7FFF ..])
-
+					up_to: hlen, s: this.history[(this.history_index - hdist) & 0x7FFF ..])
 				if length == 0 {
 					// No need to copy from args.dst.
 					continue.loop

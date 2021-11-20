@@ -27334,9 +27334,8 @@ wuffs_deflate__decoder__decode_huffman_bmi2(
           status = wuffs_base__make_status(wuffs_deflate__error__bad_distance);
           goto exit;
         }
-        v_hdist = (self->private_impl.f_history_index - v_hdist);
         wuffs_base__io_writer__limited_copy_u32_from_slice(
-            &iop_a_dst, io2_a_dst,v_hlen, wuffs_base__slice_u8__subslice_i(wuffs_base__make_slice_u8(self->private_data.f_history, 33025), (v_hdist & 32767)));
+            &iop_a_dst, io2_a_dst,v_hlen, wuffs_base__slice_u8__subslice_i(wuffs_base__make_slice_u8(self->private_data.f_history, 33025), ((self->private_impl.f_history_index - v_hdist) & 32767)));
         if (v_length == 0) {
           goto label__loop__continue;
         }
@@ -27600,9 +27599,8 @@ wuffs_deflate__decoder__decode_huffman_fast32(
           status = wuffs_base__make_status(wuffs_deflate__error__bad_distance);
           goto exit;
         }
-        v_hdist = (self->private_impl.f_history_index - v_hdist);
         wuffs_base__io_writer__limited_copy_u32_from_slice(
-            &iop_a_dst, io2_a_dst,v_hlen, wuffs_base__slice_u8__subslice_i(wuffs_base__make_slice_u8(self->private_data.f_history, 33025), (v_hdist & 32767)));
+            &iop_a_dst, io2_a_dst,v_hlen, wuffs_base__slice_u8__subslice_i(wuffs_base__make_slice_u8(self->private_data.f_history, 33025), ((self->private_impl.f_history_index - v_hdist) & 32767)));
         if (v_length == 0) {
           goto label__loop__continue;
         }
@@ -27813,9 +27811,8 @@ wuffs_deflate__decoder__decode_huffman_fast64__choosy_default(
           status = wuffs_base__make_status(wuffs_deflate__error__bad_distance);
           goto exit;
         }
-        v_hdist = (self->private_impl.f_history_index - v_hdist);
         wuffs_base__io_writer__limited_copy_u32_from_slice(
-            &iop_a_dst, io2_a_dst,v_hlen, wuffs_base__slice_u8__subslice_i(wuffs_base__make_slice_u8(self->private_data.f_history, 33025), (v_hdist & 32767)));
+            &iop_a_dst, io2_a_dst,v_hlen, wuffs_base__slice_u8__subslice_i(wuffs_base__make_slice_u8(self->private_data.f_history, 33025), ((self->private_impl.f_history_index - v_hdist) & 32767)));
         if (v_length == 0) {
           goto label__loop__continue;
         }
@@ -28146,9 +28143,8 @@ wuffs_deflate__decoder__decode_huffman_slow(
             status = wuffs_base__make_status(wuffs_deflate__error__bad_distance);
             goto exit;
           }
-          v_hdist = (self->private_impl.f_history_index - v_hdist);
           v_n_copied = wuffs_base__io_writer__limited_copy_u32_from_slice(
-              &iop_a_dst, io2_a_dst,v_hlen, wuffs_base__slice_u8__subslice_i(wuffs_base__make_slice_u8(self->private_data.f_history, 33025), (v_hdist & 32767)));
+              &iop_a_dst, io2_a_dst,v_hlen, wuffs_base__slice_u8__subslice_i(wuffs_base__make_slice_u8(self->private_data.f_history, 33025), ((self->private_impl.f_history_index - v_hdist) & 32767)));
           if (v_n_copied < v_hlen) {
             v_length -= v_n_copied;
             status = wuffs_base__make_status(wuffs_base__suspension__short_write);
