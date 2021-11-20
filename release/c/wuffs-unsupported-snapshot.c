@@ -28152,7 +28152,7 @@ wuffs_deflate__decoder__decode_huffman_slow(
           v_hdist = (self->private_impl.f_history_index - v_hdist);
           while (true) {
             v_n_copied = wuffs_base__io_writer__limited_copy_u32_from_slice(
-                &iop_a_dst, io2_a_dst,v_hlen, wuffs_base__slice_u8__subslice_i(wuffs_base__make_slice_u8(self->private_data.f_history, 32768), (v_hdist & 32767)));
+                &iop_a_dst, io2_a_dst,v_hlen, wuffs_base__slice_u8__subslice_i(wuffs_base__make_slice_u8(self->private_data.f_history, 33025), (v_hdist & 32767)));
             if (v_hlen <= v_n_copied) {
               v_hlen = 0;
               goto label__4__break;
@@ -28168,21 +28168,6 @@ wuffs_deflate__decoder__decode_huffman_slow(
             WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(9);
           }
           label__4__break:;
-          if (v_hlen > 0) {
-            while (true) {
-              v_n_copied = wuffs_base__io_writer__limited_copy_u32_from_slice(
-                  &iop_a_dst, io2_a_dst,v_hlen, wuffs_base__slice_u8__subslice_i(wuffs_base__make_slice_u8(self->private_data.f_history, 32768), (v_hdist & 32767)));
-              if (v_hlen <= v_n_copied) {
-                v_hlen = 0;
-                goto label__5__break;
-              }
-              v_hlen -= v_n_copied;
-              v_hdist += v_n_copied;
-              status = wuffs_base__make_status(wuffs_base__suspension__short_write);
-              WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(10);
-            }
-            label__5__break:;
-          }
           if (v_length == 0) {
             goto label__loop__continue;
           }
@@ -28191,13 +28176,13 @@ wuffs_deflate__decoder__decode_huffman_slow(
             &iop_a_dst, io0_a_dst, io2_a_dst, v_length, (v_dist_minus_1 + 1));
         if (v_length <= v_n_copied) {
           v_length = 0;
-          goto label__6__break;
+          goto label__5__break;
         }
         v_length -= v_n_copied;
         status = wuffs_base__make_status(wuffs_base__suspension__short_write);
-        WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(11);
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(10);
       }
-      label__6__break:;
+      label__5__break:;
     }
     label__loop__break:;
     self->private_impl.f_bits = v_bits;
