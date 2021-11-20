@@ -16,10 +16,10 @@
 
 bmp:    test/data/*.bmp   ../bmpsuite_corpus/*.bmp
 cbor:   test/data/*.cbor
-gif:    test/data/*.gif   test/data/artificial/*.gif
-gzip:   test/data/*.gz    test/data/artificial/*.gz
+gif:    test/data/*.gif   test/data/artificial-gif/*.gif
+gzip:   test/data/*.gz
 json:   test/data/*.json  ../rapidjson_corpus/*  ../simdjson_corpus/*  ../JSONTestSuite/test_*/*.json
-png:    test/data/*.png   ../pngsuite_corpus/*.png
+png:    test/data/*.png   test/data/artificial-png/*.png  ../pngsuite_corpus/*.png
 wbmp:   test/data/*.wbmp
 zlib:   test/data/*.zlib
 
