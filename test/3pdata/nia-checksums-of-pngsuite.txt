@@ -101,6 +101,8 @@ bb956205 test/3pdata/pngsuite/oi4n0g16.png
 84bc9be8 test/3pdata/pngsuite/oi4n2c16.png
 bb956205 test/3pdata/pngsuite/oi9n0g16.png
 84bc9be8 test/3pdata/pngsuite/oi9n2c16.png
+84bc9be8 test/3pdata/pngsuite/pp0n2c16.png
+91dbb0d0 test/3pdata/pngsuite/pp0n6a08.png
 024cf410 test/3pdata/pngsuite/ps1n0g08.png
 84bc9be8 test/3pdata/pngsuite/ps1n2c16.png
 024cf410 test/3pdata/pngsuite/ps2n0g08.png

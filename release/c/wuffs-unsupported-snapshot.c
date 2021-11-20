@@ -37927,20 +37927,25 @@ wuffs_png__decoder__decode_other_chunk(
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
     if (self->private_impl.f_chunk_type == 1163152464) {
-      if (self->private_impl.f_seen_plte || (self->private_impl.f_color_type != 3)) {
+      if (self->private_impl.f_seen_plte) {
         status = wuffs_base__make_status(wuffs_png__error__bad_chunk);
         goto exit;
-      }
-      if (a_src) {
-        a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
-      }
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
-      status = wuffs_png__decoder__decode_plte(self, a_src);
-      if (a_src) {
-        iop_a_src = a_src->data.ptr + a_src->meta.ri;
-      }
-      if (status.repr) {
-        goto suspend;
+      } else if (self->private_impl.f_color_type == 3) {
+        if (a_src) {
+          a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+        }
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
+        status = wuffs_png__decoder__decode_plte(self, a_src);
+        if (a_src) {
+          iop_a_src = a_src->data.ptr + a_src->meta.ri;
+        }
+        if (status.repr) {
+          goto suspend;
+        }
+      } else if ((self->private_impl.f_color_type == 2) || (self->private_impl.f_color_type == 6)) {
+      } else {
+        status = wuffs_base__make_status(wuffs_png__error__bad_chunk);
+        goto exit;
       }
       self->private_impl.f_seen_plte = true;
     } else if ((self->private_impl.f_chunk_type & 32) == 0) {

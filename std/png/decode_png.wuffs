@@ -535,10 +535,18 @@ pri func decoder.choose_filter_implementations!() {
 
 pri func decoder.decode_other_chunk?(src: base.io_reader) {
 	if this.chunk_type == 'PLTE'le {
-		if this.seen_plte or (this.color_type <> 3) {
+		if this.seen_plte {
+			return "#bad chunk"
+		} else if this.color_type == 3 {
+			// Color type 3 means paletted.
+			this.decode_plte?(src: args.src)
+		} else if (this.color_type == 2) or (this.color_type == 6) {
+			// Color types 2 and 6 means RGB and RGBA. In these cases, the PLTE
+			// chunk is merely a hint, like a sPLT "suggested palette" chunk.
+			// We ignore it.
+		} else {
 			return "#bad chunk"
 		}
-		this.decode_plte?(src: args.src)
 		this.seen_plte = true
 
 	} else if (this.chunk_type & ANCILLARY_BIT) == 0 {
