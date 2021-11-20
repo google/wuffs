@@ -37751,8 +37751,13 @@ wuffs_png__decoder__assign_filter_distance(
       self->private_impl.f_src_pixfmt = 536870920;
       self->private_impl.f_filter_distance = 1;
     } else if (self->private_impl.f_depth == 16) {
-      self->private_impl.f_dst_pixfmt = 536870923;
-      self->private_impl.f_src_pixfmt = 537919499;
+      if (self->private_impl.f_interlace_pass == 0) {
+        self->private_impl.f_dst_pixfmt = 536870923;
+        self->private_impl.f_src_pixfmt = 537919499;
+      } else {
+        self->private_impl.f_dst_pixfmt = 2164308923;
+        self->private_impl.f_src_pixfmt = 2164308923;
+      }
       self->private_impl.f_filter_distance = 2;
     }
   } else if (self->private_impl.f_color_type == 2) {

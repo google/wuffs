@@ -4,7 +4,7 @@ aac44167 test/3pdata/pngsuite/PngSuite.png
 8f50bdc6 test/3pdata/pngsuite/basi0g02.png
 6d612626 test/3pdata/pngsuite/basi0g04.png
 024cf410 test/3pdata/pngsuite/basi0g08.png
-5a525ac0 test/3pdata/pngsuite/basi0g16.png
+bb956205 test/3pdata/pngsuite/basi0g16.png
 d1ae61d3 test/3pdata/pngsuite/basi2c08.png
 84bc9be8 test/3pdata/pngsuite/basi2c16.png
 49bc6b98 test/3pdata/pngsuite/basi3p01.png
