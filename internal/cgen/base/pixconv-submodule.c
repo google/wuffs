@@ -501,14 +501,23 @@ static inline uint32_t  //
 wuffs_base__composite_nonpremul_nonpremul_u32_axxx(uint32_t dst_nonpremul,
                                                    uint32_t src_nonpremul) {
   // Extract 16-bit color components.
+  //
+  // If the destination is transparent then SRC_OVER is equivalent to SRC: just
+  // return src_nonpremul. This isn't just an optimization (skipping the rest
+  // of the function's computation). It also preserves the nonpremul
+  // distinction between e.g. transparent red and transparent blue that would
+  // otherwise be lost by converting from nonpremul to premul and back.
+  uint32_t da = 0x101 * (0xFF & (dst_nonpremul >> 24));
+  if (da == 0) {
+    return src_nonpremul;
+  }
+  uint32_t dr = 0x101 * (0xFF & (dst_nonpremul >> 16));
+  uint32_t dg = 0x101 * (0xFF & (dst_nonpremul >> 8));
+  uint32_t db = 0x101 * (0xFF & (dst_nonpremul >> 0));
   uint32_t sa = 0x101 * (0xFF & (src_nonpremul >> 24));
   uint32_t sr = 0x101 * (0xFF & (src_nonpremul >> 16));
   uint32_t sg = 0x101 * (0xFF & (src_nonpremul >> 8));
   uint32_t sb = 0x101 * (0xFF & (src_nonpremul >> 0));
-  uint32_t da = 0x101 * (0xFF & (dst_nonpremul >> 24));
-  uint32_t dr = 0x101 * (0xFF & (dst_nonpremul >> 16));
-  uint32_t dg = 0x101 * (0xFF & (dst_nonpremul >> 8));
-  uint32_t db = 0x101 * (0xFF & (dst_nonpremul >> 0));
 
   // Convert dst from nonpremul to premul.
   dr = (dr * da) / 0xFFFF;
@@ -545,14 +554,23 @@ static inline uint64_t  //
 wuffs_base__composite_nonpremul_nonpremul_u64_axxx(uint64_t dst_nonpremul,
                                                    uint64_t src_nonpremul) {
   // Extract components.
+  //
+  // If the destination is transparent then SRC_OVER is equivalent to SRC: just
+  // return src_nonpremul. This isn't just an optimization (skipping the rest
+  // of the function's computation). It also preserves the nonpremul
+  // distinction between e.g. transparent red and transparent blue that would
+  // otherwise be lost by converting from nonpremul to premul and back.
+  uint64_t da = 0xFFFF & (dst_nonpremul >> 48);
+  if (da == 0) {
+    return src_nonpremul;
+  }
+  uint64_t dr = 0xFFFF & (dst_nonpremul >> 32);
+  uint64_t dg = 0xFFFF & (dst_nonpremul >> 16);
+  uint64_t db = 0xFFFF & (dst_nonpremul >> 0);
   uint64_t sa = 0xFFFF & (src_nonpremul >> 48);
   uint64_t sr = 0xFFFF & (src_nonpremul >> 32);
   uint64_t sg = 0xFFFF & (src_nonpremul >> 16);
   uint64_t sb = 0xFFFF & (src_nonpremul >> 0);
-  uint64_t da = 0xFFFF & (dst_nonpremul >> 48);
-  uint64_t dr = 0xFFFF & (dst_nonpremul >> 32);
-  uint64_t dg = 0xFFFF & (dst_nonpremul >> 16);
-  uint64_t db = 0xFFFF & (dst_nonpremul >> 0);
 
   // Convert dst from nonpremul to premul.
   dr = (dr * da) / 0xFFFF;
