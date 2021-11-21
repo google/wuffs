@@ -16264,14 +16264,14 @@ static inline uint32_t  //
 wuffs_base__composite_nonpremul_premul_u32_axxx(uint32_t dst_nonpremul,
                                                 uint32_t src_premul) {
   // Extract 16-bit color components.
-  uint32_t sa = 0x101 * (0xFF & (src_premul >> 24));
-  uint32_t sr = 0x101 * (0xFF & (src_premul >> 16));
-  uint32_t sg = 0x101 * (0xFF & (src_premul >> 8));
-  uint32_t sb = 0x101 * (0xFF & (src_premul >> 0));
   uint32_t da = 0x101 * (0xFF & (dst_nonpremul >> 24));
   uint32_t dr = 0x101 * (0xFF & (dst_nonpremul >> 16));
   uint32_t dg = 0x101 * (0xFF & (dst_nonpremul >> 8));
   uint32_t db = 0x101 * (0xFF & (dst_nonpremul >> 0));
+  uint32_t sa = 0x101 * (0xFF & (src_premul >> 24));
+  uint32_t sr = 0x101 * (0xFF & (src_premul >> 16));
+  uint32_t sg = 0x101 * (0xFF & (src_premul >> 8));
+  uint32_t sb = 0x101 * (0xFF & (src_premul >> 0));
 
   // Convert dst from nonpremul to premul.
   dr = (dr * da) / 0xFFFF;
@@ -16308,14 +16308,14 @@ static inline uint64_t  //
 wuffs_base__composite_nonpremul_premul_u64_axxx(uint64_t dst_nonpremul,
                                                 uint64_t src_premul) {
   // Extract components.
-  uint64_t sa = 0xFFFF & (src_premul >> 48);
-  uint64_t sr = 0xFFFF & (src_premul >> 32);
-  uint64_t sg = 0xFFFF & (src_premul >> 16);
-  uint64_t sb = 0xFFFF & (src_premul >> 0);
   uint64_t da = 0xFFFF & (dst_nonpremul >> 48);
   uint64_t dr = 0xFFFF & (dst_nonpremul >> 32);
   uint64_t dg = 0xFFFF & (dst_nonpremul >> 16);
   uint64_t db = 0xFFFF & (dst_nonpremul >> 0);
+  uint64_t sa = 0xFFFF & (src_premul >> 48);
+  uint64_t sr = 0xFFFF & (src_premul >> 32);
+  uint64_t sg = 0xFFFF & (src_premul >> 16);
+  uint64_t sb = 0xFFFF & (src_premul >> 0);
 
   // Convert dst from nonpremul to premul.
   dr = (dr * da) / 0xFFFF;
@@ -16346,14 +16346,14 @@ static inline uint32_t  //
 wuffs_base__composite_premul_nonpremul_u32_axxx(uint32_t dst_premul,
                                                 uint32_t src_nonpremul) {
   // Extract 16-bit color components.
-  uint32_t sa = 0x101 * (0xFF & (src_nonpremul >> 24));
-  uint32_t sr = 0x101 * (0xFF & (src_nonpremul >> 16));
-  uint32_t sg = 0x101 * (0xFF & (src_nonpremul >> 8));
-  uint32_t sb = 0x101 * (0xFF & (src_nonpremul >> 0));
   uint32_t da = 0x101 * (0xFF & (dst_premul >> 24));
   uint32_t dr = 0x101 * (0xFF & (dst_premul >> 16));
   uint32_t dg = 0x101 * (0xFF & (dst_premul >> 8));
   uint32_t db = 0x101 * (0xFF & (dst_premul >> 0));
+  uint32_t sa = 0x101 * (0xFF & (src_nonpremul >> 24));
+  uint32_t sr = 0x101 * (0xFF & (src_nonpremul >> 16));
+  uint32_t sg = 0x101 * (0xFF & (src_nonpremul >> 8));
+  uint32_t sb = 0x101 * (0xFF & (src_nonpremul >> 0));
 
   // Calculate the inverse of the src-alpha: how much of the dst to keep.
   uint32_t ia = 0xFFFF - sa;
@@ -16378,14 +16378,14 @@ static inline uint64_t  //
 wuffs_base__composite_premul_nonpremul_u64_axxx(uint64_t dst_premul,
                                                 uint64_t src_nonpremul) {
   // Extract components.
-  uint64_t sa = 0xFFFF & (src_nonpremul >> 48);
-  uint64_t sr = 0xFFFF & (src_nonpremul >> 32);
-  uint64_t sg = 0xFFFF & (src_nonpremul >> 16);
-  uint64_t sb = 0xFFFF & (src_nonpremul >> 0);
   uint64_t da = 0xFFFF & (dst_premul >> 48);
   uint64_t dr = 0xFFFF & (dst_premul >> 32);
   uint64_t dg = 0xFFFF & (dst_premul >> 16);
   uint64_t db = 0xFFFF & (dst_premul >> 0);
+  uint64_t sa = 0xFFFF & (src_nonpremul >> 48);
+  uint64_t sr = 0xFFFF & (src_nonpremul >> 32);
+  uint64_t sg = 0xFFFF & (src_nonpremul >> 16);
+  uint64_t sb = 0xFFFF & (src_nonpremul >> 0);
 
   // Calculate the inverse of the src-alpha: how much of the dst to keep.
   uint64_t ia = 0xFFFF - sa;
@@ -16404,14 +16404,14 @@ static inline uint32_t  //
 wuffs_base__composite_premul_premul_u32_axxx(uint32_t dst_premul,
                                              uint32_t src_premul) {
   // Extract 16-bit color components.
-  uint32_t sa = 0x101 * (0xFF & (src_premul >> 24));
-  uint32_t sr = 0x101 * (0xFF & (src_premul >> 16));
-  uint32_t sg = 0x101 * (0xFF & (src_premul >> 8));
-  uint32_t sb = 0x101 * (0xFF & (src_premul >> 0));
   uint32_t da = 0x101 * (0xFF & (dst_premul >> 24));
   uint32_t dr = 0x101 * (0xFF & (dst_premul >> 16));
   uint32_t dg = 0x101 * (0xFF & (dst_premul >> 8));
   uint32_t db = 0x101 * (0xFF & (dst_premul >> 0));
+  uint32_t sa = 0x101 * (0xFF & (src_premul >> 24));
+  uint32_t sr = 0x101 * (0xFF & (src_premul >> 16));
+  uint32_t sg = 0x101 * (0xFF & (src_premul >> 8));
+  uint32_t sb = 0x101 * (0xFF & (src_premul >> 0));
 
   // Calculate the inverse of the src-alpha: how much of the dst to keep.
   uint32_t ia = 0xFFFF - sa;
@@ -17471,13 +17471,13 @@ wuffs_base__pixel_swizzler__bgr__bgra_nonpremul__src_over(
 
   while (n >= 1) {
     // Extract 16-bit color components.
+    uint32_t dr = 0x101 * ((uint32_t)d[2]);
+    uint32_t dg = 0x101 * ((uint32_t)d[1]);
+    uint32_t db = 0x101 * ((uint32_t)d[0]);
     uint32_t sa = 0x101 * ((uint32_t)s[3]);
     uint32_t sr = 0x101 * ((uint32_t)s[2]);
     uint32_t sg = 0x101 * ((uint32_t)s[1]);
     uint32_t sb = 0x101 * ((uint32_t)s[0]);
-    uint32_t dr = 0x101 * ((uint32_t)d[2]);
-    uint32_t dg = 0x101 * ((uint32_t)d[1]);
-    uint32_t db = 0x101 * ((uint32_t)d[0]);
 
     // Calculate the inverse of the src-alpha: how much of the dst to keep.
     uint32_t ia = 0xFFFF - sa;
@@ -17519,13 +17519,13 @@ wuffs_base__pixel_swizzler__bgr__bgra_nonpremul_4x16le__src_over(
 
   while (n >= 1) {
     // Extract 16-bit color components.
+    uint32_t dr = 0x101 * ((uint32_t)d[2]);
+    uint32_t dg = 0x101 * ((uint32_t)d[1]);
+    uint32_t db = 0x101 * ((uint32_t)d[0]);
     uint32_t sa = ((uint32_t)wuffs_base__peek_u16le__no_bounds_check(s + 6));
     uint32_t sr = ((uint32_t)wuffs_base__peek_u16le__no_bounds_check(s + 4));
     uint32_t sg = ((uint32_t)wuffs_base__peek_u16le__no_bounds_check(s + 2));
     uint32_t sb = ((uint32_t)wuffs_base__peek_u16le__no_bounds_check(s + 0));
-    uint32_t dr = 0x101 * ((uint32_t)d[2]);
-    uint32_t dg = 0x101 * ((uint32_t)d[1]);
-    uint32_t db = 0x101 * ((uint32_t)d[0]);
 
     // Calculate the inverse of the src-alpha: how much of the dst to keep.
     uint32_t ia = 0xFFFF - sa;
@@ -17594,13 +17594,13 @@ wuffs_base__pixel_swizzler__bgr__bgra_premul__src_over(uint8_t* dst_ptr,
 
   while (n >= 1) {
     // Extract 16-bit color components.
+    uint32_t dr = 0x101 * ((uint32_t)d[2]);
+    uint32_t dg = 0x101 * ((uint32_t)d[1]);
+    uint32_t db = 0x101 * ((uint32_t)d[0]);
     uint32_t sa = 0x101 * ((uint32_t)s[3]);
     uint32_t sr = 0x101 * ((uint32_t)s[2]);
     uint32_t sg = 0x101 * ((uint32_t)s[1]);
     uint32_t sb = 0x101 * ((uint32_t)s[0]);
-    uint32_t dr = 0x101 * ((uint32_t)d[2]);
-    uint32_t dg = 0x101 * ((uint32_t)d[1]);
-    uint32_t db = 0x101 * ((uint32_t)d[0]);
 
     // Calculate the inverse of the src-alpha: how much of the dst to keep.
     uint32_t ia = 0xFFFF - sa;
@@ -17672,13 +17672,13 @@ wuffs_base__pixel_swizzler__bgr__rgba_nonpremul__src_over(
 
   while (n >= 1) {
     // Extract 16-bit color components.
+    uint32_t dr = 0x101 * ((uint32_t)d[2]);
+    uint32_t dg = 0x101 * ((uint32_t)d[1]);
+    uint32_t db = 0x101 * ((uint32_t)d[0]);
     uint32_t sa = 0x101 * ((uint32_t)s[3]);
     uint32_t sb = 0x101 * ((uint32_t)s[2]);
     uint32_t sg = 0x101 * ((uint32_t)s[1]);
     uint32_t sr = 0x101 * ((uint32_t)s[0]);
-    uint32_t dr = 0x101 * ((uint32_t)d[2]);
-    uint32_t dg = 0x101 * ((uint32_t)d[1]);
-    uint32_t db = 0x101 * ((uint32_t)d[0]);
 
     // Calculate the inverse of the src-alpha: how much of the dst to keep.
     uint32_t ia = 0xFFFF - sa;
@@ -17747,13 +17747,13 @@ wuffs_base__pixel_swizzler__bgr__rgba_premul__src_over(uint8_t* dst_ptr,
 
   while (n >= 1) {
     // Extract 16-bit color components.
+    uint32_t dr = 0x101 * ((uint32_t)d[2]);
+    uint32_t dg = 0x101 * ((uint32_t)d[1]);
+    uint32_t db = 0x101 * ((uint32_t)d[0]);
     uint32_t sa = 0x101 * ((uint32_t)s[3]);
     uint32_t sb = 0x101 * ((uint32_t)s[2]);
     uint32_t sg = 0x101 * ((uint32_t)s[1]);
     uint32_t sr = 0x101 * ((uint32_t)s[0]);
-    uint32_t dr = 0x101 * ((uint32_t)d[2]);
-    uint32_t dg = 0x101 * ((uint32_t)d[1]);
-    uint32_t db = 0x101 * ((uint32_t)d[0]);
 
     // Calculate the inverse of the src-alpha: how much of the dst to keep.
     uint32_t ia = 0xFFFF - sa;
