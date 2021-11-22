@@ -32,9 +32,19 @@ save=`git log -1 --pretty=format:"%H"`
 
 i=0
 while [ $i -lt $num_commits ]; do
-  this_hash=`git log -1 --pretty=format:"%h"`
+  set +e
   $cc -O3 -o bench-history.out test/c/std/$package.c
-  this_metric=`./bench-history.out -bench -focus=$focus -iterscale=$iterscale -reps=$reps | benchstat /dev/stdin | sed -ne '/^name.*speed$/,$ p' | grep $focus`
+  if [ $? -ne 0 ]; then
+    this_metric='compile_failed'
+  else
+    this_metric=`./bench-history.out -bench -focus=$focus -iterscale=$iterscale -reps=$reps | benchstat /dev/stdin | sed -ne '/^name.*speed$/,$ p' | grep $focus`
+    if [ $? -ne 0 ]; then
+      this_metric='bench_failed'
+    fi
+  fi
+  set -e
+
+  this_hash=`git log -1 --pretty=format:"%h"`
   echo $this_hash $this_metric
   git checkout --quiet HEAD^
   i=$((i + 1))
