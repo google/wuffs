@@ -493,7 +493,7 @@ print_nia_padding() {
 
 void  //
 print_nia_footer() {
-  // For still (non-animated) frames, the number of animation loops has no
+  // For still (non-animated) images, the number of animation loops has no
   // practical effect: the pixels on screen do not change over time regardless
   // of its value. In the wire format encoding, there might be no explicit
   // "number of animation loops" value listed in the source bytes. Various
