@@ -545,6 +545,7 @@ convert_frames() {
 
     // Decode the frame (the pixels).
     wuffs_base__status df_status;
+    const char* decode_frame_io_error_message = NULL;
     while (true) {
       df_status = wuffs_base__image_decoder__decode_frame(
           g_image_decoder, &g_pixbuf, &g_src,
@@ -555,7 +556,13 @@ convert_frames() {
       if (df_status.repr != wuffs_base__suspension__short_read) {
         break;
       }
-      TRY(read_more_src());
+      decode_frame_io_error_message = read_more_src();
+      if (decode_frame_io_error_message != NULL) {
+        // Neuter the "short read" df_status so that convert_frames returns the
+        // I/O error message instead.
+        df_status.repr = NULL;
+        break;
+      }
     }
 
     if (!g_flags.first_frame_only) {
@@ -568,6 +575,8 @@ convert_frames() {
 
     if (df_status.repr != NULL) {
       return wuffs_base__status__message(&df_status);
+    } else if (decode_frame_io_error_message != NULL) {
+      return decode_frame_io_error_message;
     } else if (g_flags.first_frame_only) {
       return NULL;
     }
