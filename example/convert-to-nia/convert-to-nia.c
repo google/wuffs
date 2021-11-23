@@ -525,9 +525,6 @@ convert_frames() {
       return "main: animation frame duration overflow";
     }
     total_duration += duration;
-    if (!g_flags.first_frame_only) {
-      print_nia_duration(total_duration);
-    }
 
     if (wuffs_base__frame_config__index(&g_frame_config) == 0) {
       fill_rectangle(
@@ -561,14 +558,19 @@ convert_frames() {
       TRY(read_more_src());
     }
 
+    if (!g_flags.first_frame_only) {
+      print_nia_duration(total_duration);
+    }
     print_nie_frame();
+    if (!g_flags.first_frame_only) {
+      print_nia_padding();
+    }
 
     if (df_status.repr != NULL) {
       return wuffs_base__status__message(&df_status);
     } else if (g_flags.first_frame_only) {
       return NULL;
     }
-    print_nia_padding();
 
     switch (wuffs_base__frame_config__disposal(&g_frame_config)) {
       case WUFFS_BASE__ANIMATION_DISPOSAL__RESTORE_BACKGROUND: {
@@ -605,11 +607,11 @@ main1(int argc, char** argv) {
   if (!g_flags.first_frame_only) {
     print_nix_header(0x41AFC36E);  // "nïA" as a u32le.
   }
-  TRY(convert_frames());
+  const char* ret = convert_frames();
   if (!g_flags.first_frame_only) {
     print_nia_footer();
   }
-  return NULL;
+  return ret;
 }
 
 int  //

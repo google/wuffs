@@ -14,13 +14,13 @@ fdcc644f test/data/artificial-gif/metadata-full.gif
 a1a9b56d test/data/artificial-gif/multiple-graphic-controls.gif
 47c877fd test/data/artificial-gif/multiple-loop-counts.gif
 ba6e48f8 test/data/artificial-gif/no-frames.gif
-6ec818c3 test/data/artificial-gif/pixel-data-none.gif
-5e57adb2 test/data/artificial-gif/pixel-data-not-enough.gif
-3e29f88a test/data/artificial-gif/pixel-data-too-much-bad-lzw.gif
-3e29f88a test/data/artificial-gif/pixel-data-too-much-good-lzw.gif
+f33b9bc1 test/data/artificial-gif/pixel-data-none.gif
+ac9d76d8 test/data/artificial-gif/pixel-data-not-enough.gif
+2342e3fc test/data/artificial-gif/pixel-data-too-much-bad-lzw.gif
+2342e3fc test/data/artificial-gif/pixel-data-too-much-good-lzw.gif
 39a71dce test/data/artificial-gif/small-frame-interlaced.gif
 beaec397 test/data/artificial-gif/transparent-index.gif
-6ec818c3 test/data/artificial-gif/zero-width-frame.gif
+f33b9bc1 test/data/artificial-gif/zero-width-frame.gif
 0564b364 test/data/artificial-png/apng-skip-idat.png
 e08a7cc8 test/data/artificial-png/key-value-pairs.png
 076cb375 test/data/bricks-color.bmp
@@ -57,7 +57,7 @@ b727da8b test/data/hibiscus.regular.gif
 dcbb225a test/data/hippopotamus.bmp
 ed4b78fc test/data/hippopotamus.interlaced.gif
 dcbb225a test/data/hippopotamus.interlaced.png
-a80781a1 test/data/hippopotamus.interlaced.truncated.gif
+45bf0281 test/data/hippopotamus.interlaced.truncated.gif
 d3bbed27 test/data/hippopotamus.masked-with-muybridge.gif
 7e6acf01 test/data/hippopotamus.masked-with-muybridge.png
 dcbb225a test/data/hippopotamus.nie
