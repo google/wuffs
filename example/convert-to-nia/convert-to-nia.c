@@ -499,21 +499,7 @@ print_nia_footer() {
 }
 
 const char*  //
-main1(int argc, char** argv) {
-  TRY(parse_flags(argc, argv));
-  if (g_flags.fail_if_unsandboxed && !g_sandboxed) {
-    return "main: unsandboxed";
-  }
-
-  g_src.data.ptr = g_src_buffer_array;
-  g_src.data.len = SRC_BUFFER_ARRAY_SIZE;
-
-  TRY(load_image_type());
-  TRY(load_image_config());
-  if (!g_flags.first_frame_only) {
-    print_nix_header(0x41AFC36E);  // "nïA" as a u32le.
-  }
-
+convert_frames() {
   wuffs_base__flicks total_duration = 0;
   while (true) {
     // Decode the wuffs_base__frame_config.
@@ -524,7 +510,7 @@ main1(int argc, char** argv) {
       if (dfc_status.repr == NULL) {
         break;
       } else if (dfc_status.repr == wuffs_base__note__end_of_data) {
-        goto done;
+        return NULL;
       } else if (dfc_status.repr != wuffs_base__suspension__short_read) {
         return wuffs_base__status__message(&dfc_status);
       }
@@ -601,9 +587,28 @@ main1(int argc, char** argv) {
       }
     }
   }
+  return "main: unreachable";
+}
 
-done:
-  print_nia_footer();
+const char*  //
+main1(int argc, char** argv) {
+  TRY(parse_flags(argc, argv));
+  if (g_flags.fail_if_unsandboxed && !g_sandboxed) {
+    return "main: unsandboxed";
+  }
+
+  g_src.data.ptr = g_src_buffer_array;
+  g_src.data.len = SRC_BUFFER_ARRAY_SIZE;
+
+  TRY(load_image_type());
+  TRY(load_image_config());
+  if (!g_flags.first_frame_only) {
+    print_nix_header(0x41AFC36E);  // "nïA" as a u32le.
+  }
+  TRY(convert_frames());
+  if (!g_flags.first_frame_only) {
+    print_nia_footer();
+  }
   return NULL;
 }
 
