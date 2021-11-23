@@ -43,6 +43,7 @@ aa3e6c7c test/data/crude-flag.nie
 3014b4c0 test/data/gifplayer-muybridge.gif
 030f5a48 test/data/harvesters.bmp
 0d213dc4 test/data/harvesters.gif
+030f5a48 test/data/harvesters.png
 e776c90f test/data/hat.bmp
 a161a63a test/data/hat.gif
 e776c90f test/data/hat.png

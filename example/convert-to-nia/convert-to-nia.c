@@ -152,7 +152,7 @@ union {
 #endif
 
 #ifndef WORKBUF_ARRAY_SIZE
-#define WORKBUF_ARRAY_SIZE (1024 * 1024)
+#define WORKBUF_ARRAY_SIZE (256 * 1024 * 1024)
 #endif
 
 #ifndef PIXBUF_ARRAY_SIZE
