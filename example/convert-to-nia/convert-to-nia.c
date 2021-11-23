@@ -130,6 +130,7 @@ int32_t g_fourcc = 0;
 uint32_t g_width = 0;
 uint32_t g_height = 0;
 uint32_t g_num_animation_loops = 0;
+uint64_t g_num_printed_frames = 0;
 
 wuffs_base__image_decoder* g_image_decoder = NULL;
 union {
@@ -467,6 +468,7 @@ print_nia_duration(wuffs_base__flicks duration) {
 
 void  //
 print_nie_frame() {
+  g_num_printed_frames++;
   print_nix_header(0x45AFC36E);  // "nïE" as a u32le.
   wuffs_base__table_u8 tab = wuffs_base__pixel_buffer__plane(&g_pixbuf, 0);
   if (tab.width == tab.stride) {
@@ -491,8 +493,23 @@ print_nia_padding() {
 
 void  //
 print_nia_footer() {
+  // For still (non-animated) frames, the number of animation loops has no
+  // practical effect: the pixels on screen do not change over time regardless
+  // of its value. In the wire format encoding, there might be no explicit
+  // "number of animation loops" value listed in the source bytes. Various
+  // codec implementations may therefore choose an implicit default of 0 ("loop
+  // forever") or 1 ("loop exactly once"). Either is equally valid.
+  //
+  // However, when comparing the output of this convert-to-NIA program (backed
+  // by Wuffs' image codecs) with other convert-to-NIA programs, it is useful
+  // to canonicalize still images' "number of animation loops" to 0.
+  uint32_t n = g_num_animation_loops;
+  if (g_num_printed_frames <= 1) {
+    n = 0;
+  }
+
   uint8_t data[8];
-  wuffs_base__poke_u32le__no_bounds_check(data + 0x00, g_num_animation_loops);
+  wuffs_base__poke_u32le__no_bounds_check(data + 0x00, n);
   wuffs_base__poke_u32le__no_bounds_check(data + 0x04, 0x80000000);
   ignore_return_value(write(STDOUT_FD, &data[0], 8));
 }
