@@ -129,6 +129,7 @@ wuffs_base__frame_config g_frame_config = {0};
 int32_t g_fourcc = 0;
 uint32_t g_width = 0;
 uint32_t g_height = 0;
+uint32_t g_num_animation_loops = 0;
 
 wuffs_base__image_decoder* g_image_decoder = NULL;
 union {
@@ -491,9 +492,7 @@ print_nia_padding() {
 void  //
 print_nia_footer() {
   uint8_t data[8];
-  wuffs_base__poke_u32le__no_bounds_check(
-      data + 0x00,
-      wuffs_base__image_decoder__num_animation_loops(g_image_decoder));
+  wuffs_base__poke_u32le__no_bounds_check(data + 0x00, g_num_animation_loops);
   wuffs_base__poke_u32le__no_bounds_check(data + 0x04, 0x80000000);
   ignore_return_value(write(STDOUT_FD, &data[0], 8));
 }
@@ -565,6 +564,30 @@ convert_frames() {
       }
     }
 
+    // Update g_num_animation_loops. It's rare in practice, but the animation
+    // loop count can change over the course of decoding an image file.
+    //
+    // This program updates the global once per frame (even though the Wuffs
+    // API also lets you call wuffs_base__image_decoder__num_animation_loops
+    // just once, after the decoding is complete) to more closely match the
+    // Chromium web browser. This program emits (via print_nia_footer) the
+    // value from the final animation frame's update.
+    //
+    // Chromium image decoding uses two passes. (Wuffs' API lets you use a
+    // single pass but Chromium also wraps other libraries). Its first pass
+    // counts the number of animation frames (call it N). The second pass
+    // decodes exactly N frames. In particular, if the animation loop count
+    // would change between the end of frame N and the end of the file then
+    // Chromium's design will not pick up that change, even if it's a valid
+    // change in terms of the image file format.
+    //
+    // Specifically, for the test/data/artificial-gif/multiple-loop-counts.gif
+    // file this program emits 31 (0x1F) to match Chromium, even though the
+    // file arguably has a 41 (0x29) loop count after a complete decode.
+    g_num_animation_loops =
+        wuffs_base__image_decoder__num_animation_loops(g_image_decoder);
+
+    // Print a complete NIE frame (and surrounding bytes, for NIA).
     if (!g_flags.first_frame_only) {
       print_nia_duration(total_duration);
     }
@@ -573,6 +596,7 @@ convert_frames() {
       print_nia_padding();
     }
 
+    // Return early if there was an error decoding the frame.
     if (df_status.repr != NULL) {
       return wuffs_base__status__message(&df_status);
     } else if (decode_frame_io_error_message != NULL) {
@@ -581,6 +605,7 @@ convert_frames() {
       return NULL;
     }
 
+    // Dispose the frame.
     switch (wuffs_base__frame_config__disposal(&g_frame_config)) {
       case WUFFS_BASE__ANIMATION_DISPOSAL__RESTORE_BACKGROUND: {
         fill_rectangle(

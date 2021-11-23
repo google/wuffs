@@ -12,7 +12,7 @@ db4c30eb test/data/artificial-gif/frame-out-of-bounds.gif
 fdcc644f test/data/artificial-gif/metadata-empty.gif
 fdcc644f test/data/artificial-gif/metadata-full.gif
 a1a9b56d test/data/artificial-gif/multiple-graphic-controls.gif
-47c877fd test/data/artificial-gif/multiple-loop-counts.gif
+046a2d07 test/data/artificial-gif/multiple-loop-counts.gif
 ba6e48f8 test/data/artificial-gif/no-frames.gif
 f33b9bc1 test/data/artificial-gif/pixel-data-none.gif
 ac9d76d8 test/data/artificial-gif/pixel-data-not-enough.gif
