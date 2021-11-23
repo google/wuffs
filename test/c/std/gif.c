@@ -252,11 +252,6 @@ do_test_wuffs_gif_decode(const char* filename,
 
     CHECK_STATUS("set_from_slice", wuffs_base__pixel_buffer__set_from_slice(
                                        &pb, &ic.pixcfg, g_pixel_slice_u8));
-
-    uint32_t have = wuffs_gif__decoder__num_animation_loops(&dec);
-    if (have != 1) {
-      RETURN_FAIL("num_animation_loops: have %" PRIu32 ", want 1", have);
-    }
   }
 
   int num_iters = 0;
@@ -419,6 +414,16 @@ do_test_wuffs_gif_decode(const char* filename,
     if (src.meta.ri != src.meta.wi) {
       RETURN_FAIL(
           "decode_frame returned \"end of data\" but src was not exhausted");
+    }
+  }
+
+  {
+    uint32_t have = wuffs_gif__decoder__num_animation_loops(&dec);
+    uint32_t want =
+        (wuffs_gif__decoder__num_decoded_frame_configs(&dec) > 1) ? 1 : 0;
+    if (have != want) {
+      RETURN_FAIL("num_animation_loops: have %" PRIu32 ", want %" PRIu32, have,
+                  want);
     }
   }
 
@@ -1510,7 +1515,7 @@ test_wuffs_gif_decode_multiple_loop_counts() {
   // loop counts are the number of animation loops *after* the first play
   // through, and Wuffs' are the number *including* the first play through.
 
-  uint32_t want_num_animation_loops[4] = {1, 1, 51, 31};
+  uint32_t want_num_animation_loops[4] = {0, 1, 51, 31};
 
   uint32_t i = 0;
   while (true) {

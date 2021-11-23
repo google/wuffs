@@ -29298,7 +29298,10 @@ wuffs_gif__decoder__num_animation_loops(
   if (self->private_impl.f_seen_num_animation_loops_value) {
     return self->private_impl.f_num_animation_loops_value;
   }
-  return 1;
+  if (self->private_impl.f_num_decoded_frame_configs_value > 1) {
+    return 1;
+  }
+  return 0;
 }
 
 // -------- func gif.decoder.num_decoded_frame_configs

@@ -277,7 +277,21 @@ pub func decoder.num_animation_loops() base.u32 {
 	if this.seen_num_animation_loops_value {
 		return this.num_animation_loops_value
 	}
-	return 1
+	// Absent an explicit animation loop count, default to 1 meaning "play each
+	// frame exactly once" for animated GIFs and 0 meaning "loop forever" for
+	// still (non-animated) GIFs.
+	//
+	// In practice, returning 1 or 0 has no difference for still GIFs, in that
+	// either way, the pixels on screen do not change over time. However,
+	// returning 0 here matches other Wuffs image decoders (e.g. BMP, PNG)
+	// returning 0 for their still images.
+	//
+	// As a consequence, if a still GIF is losslessly converted to a still BMP
+	// and both of those are then converted to NIA, the two NIA outputs match.
+	if this.num_decoded_frame_configs_value > 1 {
+		return 1
+	}
+	return 0
 }
 
 pub func decoder.num_decoded_frame_configs() base.u64 {
