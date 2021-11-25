@@ -18,13 +18,14 @@ images. The 16 byte header:
     is not valid UTF-8) denotes version 1. There are no other valid versions at
     this time.
   - The second byte must be an ASCII 'b'. This denotes that the payload is in
-    BGRA order (in terms of the wire format, independent of CPU endianness).
+    BGRA order (not RGBA), in terms of the wire format, independent of CPU
+    endianness.
   - The third byte, either an ASCII 'n' or an ASCII 'p', denotes whether the
     payload contains non-premultiplied or premultiplied alpha.
   - The fourth byte, either an ASCII '4' or an ASCII '8', denotes whether there
     are 4 or 8 bytes per pixel.
   - Future format versions may allow other byte values, but in version 1, it
-    must be '\xFF', then 'b' or 'r', then 'n' or 'p', then '4' or '8'.
+    must be '\xFF', then 'b', then 'n' or 'p', then '4' or '8'.
 - 4 bytes little-endian `uint32` width. The high bit must not be set.
 - 4 bytes little-endian `uint32` height. The high bit must not be set.
 
