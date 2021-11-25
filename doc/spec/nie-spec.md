@@ -1,6 +1,6 @@
 # Naïve Image Formats: NIE, NII, NIA
 
-Status: Draft (as of December 2020). There is no compatibility guarantee yet.
+Status: Draft (as of November 2021). There is no compatibility guarantee yet.
 
 A companion document has further discussion of [NIE related
 work](/doc/spec/nie-related-work.md).
@@ -370,4 +370,4 @@ in a long "E", "I" or "A" sound. It's definitely a hard "N", not a soft one.
 
 ---
 
-Updated on December 2020.
+Updated on November 2021.
