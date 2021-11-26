@@ -635,6 +635,71 @@ test_wuffs_png_decode_metadata_chrm_gama_srgb() {
 }
 
 const char*  //
+test_wuffs_png_decode_metadata_exif() {
+  CHECK_FOCUS(__func__);
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = g_src_slice_u8,
+  });
+  CHECK_STRING(read_file(&src, "test/data/artificial-png/exif.png"));
+
+  wuffs_png__decoder dec;
+  CHECK_STATUS("initialize",
+               wuffs_png__decoder__initialize(
+                   &dec, sizeof dec, WUFFS_VERSION,
+                   WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+  wuffs_png__decoder__set_report_metadata(&dec, WUFFS_BASE__FOURCC__EXIF, true);
+
+  wuffs_base__image_config ic = ((wuffs_base__image_config){});
+  wuffs_base__io_buffer empty = wuffs_base__empty_io_buffer();
+  wuffs_base__more_information minfo = wuffs_base__empty_more_information();
+
+  wuffs_base__status status =
+      wuffs_png__decoder__decode_image_config(&dec, &ic, &src);
+  if (status.repr != wuffs_base__note__metadata_reported) {
+    RETURN_FAIL("decode_image_config #0: have \"%s\", want \"%s\"", status.repr,
+                wuffs_base__note__metadata_reported);
+  }
+
+  status = wuffs_png__decoder__tell_me_more(&dec, &empty, &minfo, &src);
+  if (status.repr != wuffs_base__suspension__even_more_information) {
+    RETURN_FAIL("tell_me_more #0: have \"%s\", want \"%s\"", status.repr,
+                wuffs_base__suspension__even_more_information);
+  }
+
+  // "hd test/data/artificial-png/exif.png" says 0x29..0x33 holds "LoremIpsum".
+  wuffs_base__range_ie_u64 have =
+      wuffs_base__more_information__metadata_raw_passthrough__range(&minfo);
+  wuffs_base__range_ie_u64 want = wuffs_base__make_range_ie_u64(0x29, 0x33);
+  if (!wuffs_base__range_ie_u64__equals(&have, want)) {
+    RETURN_FAIL("range #0: have 0x%" PRIx64 "..0x%" PRIX64 ", want 0x%" PRIx64
+                "..0x%" PRIX64,
+                have.min_incl, have.max_excl, want.min_incl, want.max_excl);
+  } else if ((src.meta.ri == 0x29) && (src.meta.wi >= 0x33)) {
+    src.meta.ri = 0x33;
+  }
+
+  status = wuffs_png__decoder__tell_me_more(&dec, &empty, &minfo, &src);
+  if (status.repr != NULL) {
+    RETURN_FAIL("tell_me_more #1: have \"%s\", want \"(null)\"", status.repr);
+  }
+  have = wuffs_base__more_information__metadata_raw_passthrough__range(&minfo);
+  if (!wuffs_base__range_ie_u64__is_empty(&have)) {
+    RETURN_FAIL("tell_me_more #1: non-empty range");
+  }
+
+  status = wuffs_png__decoder__decode_image_config(&dec, &ic, &src);
+  if (status.repr != NULL) {
+    RETURN_FAIL("decode_image_config #1: have \"%s\", want \"(null)\"",
+                status.repr);
+  } else if (wuffs_base__pixel_config__width(&ic.pixcfg) != 1) {
+    RETURN_FAIL("decode_image_config #1: have %" PRIu32 ", want 1",
+                wuffs_base__pixel_config__width(&ic.pixcfg));
+  }
+
+  return NULL;
+}
+
+const char*  //
 test_wuffs_png_decode_metadata_iccp() {
   CHECK_FOCUS(__func__);
   wuffs_base__io_buffer have = ((wuffs_base__io_buffer){
@@ -1201,6 +1266,7 @@ proc g_tests[] = {
     test_wuffs_png_decode_frame_config,
     test_wuffs_png_decode_interface,
     test_wuffs_png_decode_metadata_chrm_gama_srgb,
+    test_wuffs_png_decode_metadata_exif,
     test_wuffs_png_decode_metadata_iccp,
     test_wuffs_png_decode_metadata_kvp,
     test_wuffs_png_decode_restart_frame,

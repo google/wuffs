@@ -371,6 +371,9 @@ redirect:
       if (flags & DecodeImageArgFlags::REPORT_METADATA_CHRM) {
         image_decoder->set_report_metadata(WUFFS_BASE__FOURCC__CHRM, true);
       }
+      if (flags & DecodeImageArgFlags::REPORT_METADATA_EXIF) {
+        image_decoder->set_report_metadata(WUFFS_BASE__FOURCC__EXIF, true);
+      }
       if (flags & DecodeImageArgFlags::REPORT_METADATA_GAMA) {
         image_decoder->set_report_metadata(WUFFS_BASE__FOURCC__GAMA, true);
       }

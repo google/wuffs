@@ -75,6 +75,7 @@ pub struct decoder? implements base.image_decoder(
 	call_sequence : base.u8,
 
 	report_metadata_chrm : base.bool,
+	report_metadata_exif : base.bool,
 	report_metadata_gama : base.bool,
 	report_metadata_iccp : base.bool,
 	report_metadata_kvp  : base.bool,
@@ -90,6 +91,7 @@ pub struct decoder? implements base.image_decoder(
 	seen_actl : base.bool,
 	seen_chrm : base.bool,
 	seen_fctl : base.bool,
+	seen_exif : base.bool,
 	seen_gama : base.bool,
 	seen_iccp : base.bool,
 	seen_idat : base.bool,
@@ -576,6 +578,15 @@ pri func decoder.decode_other_chunk?(src: base.io_reader) {
 			this.seen_chrm = true
 		}
 
+	} else if this.chunk_type == 'eXIf'le {
+		if this.report_metadata_exif {
+			if this.seen_exif {
+				return "#bad chunk"
+			}
+			this.decode_exif?(src: args.src)
+			this.seen_exif = true
+		}
+
 	} else if this.chunk_type == 'fcTL'le {
 		if this.seen_fctl {
 			return "#bad chunk"
@@ -687,6 +698,18 @@ pri func decoder.decode_chrm?(src: base.io_reader) {
 	this.metadata_z |= (0xFF_FFFF & u) << 16
 	u = args.src.read_u32be_as_u64?()
 	this.metadata_z |= (0xFF_FFFF & u) << 40
+}
+
+pri func decoder.decode_exif?(src: base.io_reader) {
+	if this.chunk_length < 4 {
+		return "#bad chunk"
+	}
+	this.metadata_flavor = base.MORE_INFORMATION__FLAVOR__METADATA_RAW_PASSTHROUGH
+	this.metadata_fourcc = 'EXIF'be
+	this.metadata_x = 0
+	this.metadata_y = args.src.position()
+	this.metadata_z = this.metadata_y ~sat+ (this.chunk_length as base.u64)
+	this.chunk_length = 0
 }
 
 pri func decoder.decode_fctl?(src: base.io_reader) {
@@ -1338,6 +1361,8 @@ pub func decoder.restart_frame!(index: base.u64, io_position: base.u64) base.sta
 pub func decoder.set_report_metadata!(fourcc: base.u32, report: base.bool) {
 	if args.fourcc == 'CHRM'be {
 		this.report_metadata_chrm = args.report
+	} else if args.fourcc == 'EXIF'be {
+		this.report_metadata_exif = args.report
 	} else if args.fourcc == 'GAMA'be {
 		this.report_metadata_gama = args.report
 	} else if args.fourcc == 'ICCP'be {
@@ -1366,6 +1391,26 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 	}
 
 	while.goto_done true {{
+	if this.metadata_flavor == base.MORE_INFORMATION__FLAVOR__METADATA_RAW_PASSTHROUGH {
+		while true {
+			if args.src.position() <> this.metadata_y {
+				return base."#bad I/O position"
+			} else if args.minfo <> nullptr {
+				args.minfo.set!(
+					flavor: this.metadata_flavor,
+					w: this.metadata_fourcc,
+					x: this.metadata_x,
+					y: this.metadata_y,
+					z: this.metadata_z)
+			}
+			if this.metadata_y >= this.metadata_z {
+				break.goto_done
+			}
+			this.metadata_y = this.metadata_z
+			yield? base."$even more information"
+		} endwhile
+	}
+
 	if this.metadata_is_zlib_compressed {
 		if this.zlib_is_dirty {
 			this.zlib.reset!()

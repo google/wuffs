@@ -209,8 +209,8 @@ struct DecodeImageArgFlags {
   // DefaultValue returns 0.
   static DecodeImageArgFlags DefaultValue();
 
-  // TODO: support all of the REPORT_METADATA_ETC flags, not just CHRM, GAMA,
-  // ICCP, KVP, SRGB and XMP.
+  // TODO: support all of the REPORT_METADATA_ETC flags, not just CHRM, EXIF,
+  // GAMA, ICCP, KVP, SRGB and XMP.
 
   // Background Color.
   static constexpr uint64_t REPORT_METADATA_BGCL = 0x0001;
