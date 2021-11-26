@@ -33,6 +33,8 @@ pub struct decoder? implements base.io_transformer(
 	got_dictionary  : base.bool,
 	want_dictionary : base.bool,
 
+	quirks : array[QUIRKS_COUNT] base.bool,
+
 	ignore_checksum : base.bool,
 	checksum        : adler32.hasher,
 
@@ -60,8 +62,15 @@ pub func decoder.add_dictionary!(dict: slice base.u8) {
 }
 
 pub func decoder.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
-	if args.quirk == base.QUIRK_IGNORE_CHECKSUM {
+	if this.header_complete {
+		this.bad_call_sequence = true
+	} else if args.quirk == base.QUIRK_IGNORE_CHECKSUM {
 		this.ignore_checksum = args.enabled
+	} else if args.quirk >= QUIRKS_BASE {
+		args.quirk -= QUIRKS_BASE
+		if args.quirk < QUIRKS_COUNT {
+			this.quirks[args.quirk] = args.enabled
+		}
 	}
 }
 
@@ -80,6 +89,8 @@ pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf
 
 	if this.bad_call_sequence {
 		return base."#bad call sequence"
+	} else if this.quirks[QUIRK_JUST_RAW_DEFLATE - QUIRKS_BASE] {
+		// No-op.
 	} else if not this.want_dictionary {
 		x = args.src.read_u16be?()
 		if ((x >> 8) & 0x0F) <> 0x08 {
@@ -112,7 +123,7 @@ pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf
 	while true {
 		mark = args.dst.mark()
 		status =? this.flate.transform_io?(dst: args.dst, src: args.src, workbuf: args.workbuf)
-		if not this.ignore_checksum {
+		if (not this.ignore_checksum) and (not this.quirks[QUIRK_JUST_RAW_DEFLATE - QUIRKS_BASE]) {
 			checksum_got = this.checksum.update_u32!(x: args.dst.since(mark: mark))
 		}
 		if status.is_ok() {
@@ -120,9 +131,12 @@ pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf
 		}
 		yield? status
 	} endwhile
-	checksum_want = args.src.read_u32be?()
-	if (not this.ignore_checksum) and (checksum_got <> checksum_want) {
-		return "#bad checksum"
+
+	if not this.quirks[QUIRK_JUST_RAW_DEFLATE - QUIRKS_BASE] {
+		checksum_want = args.src.read_u32be?()
+		if (not this.ignore_checksum) and (checksum_got <> checksum_want) {
+			return "#bad checksum"
+		}
 	}
 
 	// TODO: reset state (e.g. want_dictionary), so that we can read concat'ed

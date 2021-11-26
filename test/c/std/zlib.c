@@ -71,6 +71,11 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 
 // ---------------- Golden Tests
 
+golden_test g_deflate_romeo_gt = {
+    .want_filename = "test/data/romeo.txt",
+    .src_filename = "test/data/romeo.txt.deflate",
+};
+
 golden_test g_zlib_midsummer_gt = {
     .want_filename = "test/data/midsummer.txt",
     .src_filename = "test/data/midsummer.txt.zlib",
@@ -105,6 +110,42 @@ test_wuffs_zlib_decode_interface() {
   return do_test__wuffs_base__io_transformer(
       wuffs_zlib__decoder__upcast_as__wuffs_base__io_transformer(&dec),
       "test/data/romeo.txt.zlib", 0, SIZE_MAX, 942, 0x0A);
+}
+
+const char*  //
+wuffs_raw_deflate_decode(wuffs_base__io_buffer* dst,
+                         wuffs_base__io_buffer* src,
+                         uint32_t wuffs_initialize_flags,
+                         uint64_t wlimit,
+                         uint64_t rlimit) {
+  wuffs_zlib__decoder dec;
+  CHECK_STATUS("initialize",
+               wuffs_zlib__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION,
+                                               wuffs_initialize_flags));
+
+  // This wuffs_zlib__decoder__set_quirk_enabled call is the only difference
+  // between wuffs_raw_deflate_decode and wuffs_zlib_decode immediately below.
+  wuffs_zlib__decoder__set_quirk_enabled(
+      &dec, WUFFS_ZLIB__QUIRK_JUST_RAW_DEFLATE, true);
+
+  while (true) {
+    wuffs_base__io_buffer limited_dst = make_limited_writer(*dst, wlimit);
+    wuffs_base__io_buffer limited_src = make_limited_reader(*src, rlimit);
+
+    wuffs_base__status status = wuffs_zlib__decoder__transform_io(
+        &dec, &limited_dst, &limited_src, g_work_slice_u8);
+
+    dst->meta.wi += limited_dst.meta.wi;
+    src->meta.ri += limited_src.meta.ri;
+
+    if (((wlimit < UINT64_MAX) &&
+         (status.repr == wuffs_base__suspension__short_write)) ||
+        ((rlimit < UINT64_MAX) &&
+         (status.repr == wuffs_base__suspension__short_read))) {
+      continue;
+    }
+    return status.repr;
+  }
 }
 
 const char*  //
@@ -238,6 +279,13 @@ test_wuffs_zlib_decode_pi() {
   CHECK_FOCUS(__func__);
   return do_test_io_buffers(wuffs_zlib_decode, &g_zlib_pi_gt, UINT64_MAX,
                             UINT64_MAX);
+}
+
+const char*  //
+test_wuffs_zlib_decode_raw_deflate_romeo() {
+  CHECK_FOCUS(__func__);
+  return do_test_io_buffers(wuffs_raw_deflate_decode, &g_deflate_romeo_gt,
+                            UINT64_MAX, UINT64_MAX);
 }
 
 const char*  //
@@ -376,6 +424,7 @@ proc g_tests[] = {
     test_wuffs_zlib_decode_interface,
     test_wuffs_zlib_decode_midsummer,
     test_wuffs_zlib_decode_pi,
+    test_wuffs_zlib_decode_raw_deflate_romeo,
     test_wuffs_zlib_decode_sheep,
 
 #ifdef WUFFS_MIMIC

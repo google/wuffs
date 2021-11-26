@@ -61,3 +61,4 @@ Package-specific quirks:
 
 - [GIF image decoder quirks](/std/gif/decode_quirks.wuffs)
 - [JSON decoder quirks](/std/json/decode_quirks.wuffs)
+- [ZLIB decoder quirks](/std/zlib/decode_quirks.wuffs)

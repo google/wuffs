@@ -8930,6 +8930,8 @@ extern const char wuffs_zlib__error__incorrect_dictionary[];
 
 // ---------------- Public Consts
 
+#define WUFFS_ZLIB__QUIRK_JUST_RAW_DEFLATE 2113790976
+
 #define WUFFS_ZLIB__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE 1
 
 // ---------------- Struct Declarations
@@ -9041,6 +9043,7 @@ struct wuffs_zlib__decoder__struct {
     bool f_header_complete;
     bool f_got_dictionary;
     bool f_want_dictionary;
+    bool f_quirks[1];
     bool f_ignore_checksum;
     uint32_t f_dict_id_got;
     uint32_t f_dict_id_want;
@@ -34902,6 +34905,10 @@ const char wuffs_zlib__error__incorrect_dictionary[] = "#zlib: incorrect diction
 
 // ---------------- Private Consts
 
+#define WUFFS_ZLIB__QUIRKS_BASE 2113790976
+
+#define WUFFS_ZLIB__QUIRKS_COUNT 1
+
 // ---------------- Private Initializer Prototypes
 
 // ---------------- Private Function Prototypes
@@ -35065,8 +35072,15 @@ wuffs_zlib__decoder__set_quirk_enabled(
     return wuffs_base__make_empty_struct();
   }
 
-  if (a_quirk == 1) {
+  if (self->private_impl.f_header_complete) {
+    self->private_impl.f_bad_call_sequence = true;
+  } else if (a_quirk == 1) {
     self->private_impl.f_ignore_checksum = a_enabled;
+  } else if (a_quirk >= 2113790976) {
+    a_quirk -= 2113790976;
+    if (a_quirk < 1) {
+      self->private_impl.f_quirks[a_quirk] = a_enabled;
+    }
   }
   return wuffs_base__make_empty_struct();
 }
@@ -35156,6 +35170,7 @@ wuffs_zlib__decoder__transform_io(
     if (self->private_impl.f_bad_call_sequence) {
       status = wuffs_base__make_status(wuffs_base__error__bad_call_sequence);
       goto exit;
+    } else if (self->private_impl.f_quirks[0]) {
     } else if ( ! self->private_impl.f_want_dictionary) {
       {
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
@@ -35263,7 +35278,7 @@ wuffs_zlib__decoder__transform_io(
           iop_a_src = a_src->data.ptr + a_src->meta.ri;
         }
       }
-      if ( ! self->private_impl.f_ignore_checksum) {
+      if ( ! self->private_impl.f_ignore_checksum &&  ! self->private_impl.f_quirks[0]) {
         v_checksum_got = wuffs_adler32__hasher__update_u32(&self->private_data.f_checksum, wuffs_base__io__since(v_mark, ((uint64_t)(iop_a_dst - io0_a_dst)), io0_a_dst));
       }
       if (wuffs_base__status__is_ok(&v_status)) {
@@ -35273,38 +35288,40 @@ wuffs_zlib__decoder__transform_io(
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(5);
     }
     label__0__break:;
-    {
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
-      uint32_t t_3;
-      if (WUFFS_BASE__LIKELY(io2_a_src - iop_a_src >= 4)) {
-        t_3 = wuffs_base__peek_u32be__no_bounds_check(iop_a_src);
-        iop_a_src += 4;
-      } else {
-        self->private_data.s_transform_io[0].scratch = 0;
-        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(7);
-        while (true) {
-          if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
-            status = wuffs_base__make_status(wuffs_base__suspension__short_read);
-            goto suspend;
+    if ( ! self->private_impl.f_quirks[0]) {
+      {
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
+        uint32_t t_3;
+        if (WUFFS_BASE__LIKELY(io2_a_src - iop_a_src >= 4)) {
+          t_3 = wuffs_base__peek_u32be__no_bounds_check(iop_a_src);
+          iop_a_src += 4;
+        } else {
+          self->private_data.s_transform_io[0].scratch = 0;
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(7);
+          while (true) {
+            if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
+              status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+              goto suspend;
+            }
+            uint64_t* scratch = &self->private_data.s_transform_io[0].scratch;
+            uint32_t num_bits_3 = ((uint32_t)(*scratch & 0xFF));
+            *scratch >>= 8;
+            *scratch <<= 8;
+            *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_3);
+            if (num_bits_3 == 24) {
+              t_3 = ((uint32_t)(*scratch >> 32));
+              break;
+            }
+            num_bits_3 += 8;
+            *scratch |= ((uint64_t)(num_bits_3));
           }
-          uint64_t* scratch = &self->private_data.s_transform_io[0].scratch;
-          uint32_t num_bits_3 = ((uint32_t)(*scratch & 0xFF));
-          *scratch >>= 8;
-          *scratch <<= 8;
-          *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_3);
-          if (num_bits_3 == 24) {
-            t_3 = ((uint32_t)(*scratch >> 32));
-            break;
-          }
-          num_bits_3 += 8;
-          *scratch |= ((uint64_t)(num_bits_3));
         }
+        v_checksum_want = t_3;
       }
-      v_checksum_want = t_3;
-    }
-    if ( ! self->private_impl.f_ignore_checksum && (v_checksum_got != v_checksum_want)) {
-      status = wuffs_base__make_status(wuffs_zlib__error__bad_checksum);
-      goto exit;
+      if ( ! self->private_impl.f_ignore_checksum && (v_checksum_got != v_checksum_want)) {
+        status = wuffs_base__make_status(wuffs_zlib__error__bad_checksum);
+        goto exit;
+      }
     }
 
     ok:
