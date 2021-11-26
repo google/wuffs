@@ -40946,96 +40946,96 @@ wuffs_png__decoder__tell_me_more(
         }
       }
       label__loop__break:;
+      if (self->private_impl.f_metadata_fourcc == 1263947851) {
+        self->private_impl.f_metadata_fourcc = 1263947862;
+        if (self->private_impl.f_chunk_type == 1951945833) {
+          if (self->private_impl.f_chunk_length <= 1) {
+            status = wuffs_base__make_status(wuffs_png__error__bad_chunk);
+            goto exit;
+          }
+          self->private_impl.f_chunk_length -= 2;
+          {
+            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(12);
+            if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
+              status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+              goto suspend;
+            }
+            uint8_t t_3 = *iop_a_src++;
+            v_c = t_3;
+          }
+          if (v_c == 0) {
+            self->private_impl.f_metadata_is_zlib_compressed = false;
+          } else if (v_c == 1) {
+            self->private_impl.f_metadata_is_zlib_compressed = true;
+          } else {
+            status = wuffs_base__make_status(wuffs_png__error__bad_chunk);
+            goto exit;
+          }
+          {
+            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(13);
+            if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
+              status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+              goto suspend;
+            }
+            uint8_t t_4 = *iop_a_src++;
+            v_c = t_4;
+          }
+          if ((v_c != 0) && self->private_impl.f_metadata_is_zlib_compressed) {
+            status = wuffs_base__make_status(wuffs_png__error__unsupported_png_compression_method);
+            goto exit;
+          }
+          self->private_impl.f_metadata_fourcc -= 2;
+          while (self->private_impl.f_metadata_fourcc != 1263947862) {
+            self->private_impl.f_metadata_fourcc += 1;
+            while (true) {
+              if (self->private_impl.f_chunk_length <= 0) {
+                status = wuffs_base__make_status(wuffs_png__error__bad_chunk);
+                goto exit;
+              }
+              self->private_impl.f_chunk_length -= 1;
+              {
+                WUFFS_BASE__COROUTINE_SUSPENSION_POINT(14);
+                if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
+                  status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+                  goto suspend;
+                }
+                uint8_t t_5 = *iop_a_src++;
+                v_c = t_5;
+              }
+              if (v_c == 0) {
+                goto label__0__break;
+              }
+            }
+            label__0__break:;
+          }
+        } else if (self->private_impl.f_chunk_type == 1951945850) {
+          if (self->private_impl.f_chunk_length <= 0) {
+            status = wuffs_base__make_status(wuffs_png__error__bad_chunk);
+            goto exit;
+          }
+          self->private_impl.f_chunk_length -= 1;
+          {
+            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(15);
+            if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
+              status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+              goto suspend;
+            }
+            uint8_t t_6 = *iop_a_src++;
+            v_c = t_6;
+          }
+          if (v_c != 0) {
+            status = wuffs_base__make_status(wuffs_png__error__unsupported_png_compression_method);
+            goto exit;
+          }
+          self->private_impl.f_metadata_is_zlib_compressed = true;
+        }
+        self->private_impl.f_call_sequence = 2;
+        status = wuffs_base__make_status(NULL);
+        goto ok;
+      }
       goto label__goto_done__break;
     }
     label__goto_done__break:;
-    if (self->private_impl.f_metadata_fourcc == 1263947851) {
-      self->private_impl.f_metadata_fourcc = 1263947862;
-      if (self->private_impl.f_chunk_type == 1951945833) {
-        if (self->private_impl.f_chunk_length <= 1) {
-          status = wuffs_base__make_status(wuffs_png__error__bad_chunk);
-          goto exit;
-        }
-        self->private_impl.f_chunk_length -= 2;
-        {
-          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(12);
-          if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
-            status = wuffs_base__make_status(wuffs_base__suspension__short_read);
-            goto suspend;
-          }
-          uint8_t t_3 = *iop_a_src++;
-          v_c = t_3;
-        }
-        if (v_c == 0) {
-          self->private_impl.f_metadata_is_zlib_compressed = false;
-        } else if (v_c == 1) {
-          self->private_impl.f_metadata_is_zlib_compressed = true;
-        } else {
-          status = wuffs_base__make_status(wuffs_png__error__bad_chunk);
-          goto exit;
-        }
-        {
-          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(13);
-          if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
-            status = wuffs_base__make_status(wuffs_base__suspension__short_read);
-            goto suspend;
-          }
-          uint8_t t_4 = *iop_a_src++;
-          v_c = t_4;
-        }
-        if ((v_c != 0) && self->private_impl.f_metadata_is_zlib_compressed) {
-          status = wuffs_base__make_status(wuffs_png__error__unsupported_png_compression_method);
-          goto exit;
-        }
-        self->private_impl.f_metadata_fourcc -= 2;
-        while (self->private_impl.f_metadata_fourcc != 1263947862) {
-          self->private_impl.f_metadata_fourcc += 1;
-          while (true) {
-            if (self->private_impl.f_chunk_length <= 0) {
-              status = wuffs_base__make_status(wuffs_png__error__bad_chunk);
-              goto exit;
-            }
-            self->private_impl.f_chunk_length -= 1;
-            {
-              WUFFS_BASE__COROUTINE_SUSPENSION_POINT(14);
-              if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
-                status = wuffs_base__make_status(wuffs_base__suspension__short_read);
-                goto suspend;
-              }
-              uint8_t t_5 = *iop_a_src++;
-              v_c = t_5;
-            }
-            if (v_c == 0) {
-              goto label__0__break;
-            }
-          }
-          label__0__break:;
-        }
-      } else if (self->private_impl.f_chunk_type == 1951945850) {
-        if (self->private_impl.f_chunk_length <= 0) {
-          status = wuffs_base__make_status(wuffs_png__error__bad_chunk);
-          goto exit;
-        }
-        self->private_impl.f_chunk_length -= 1;
-        {
-          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(15);
-          if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
-            status = wuffs_base__make_status(wuffs_base__suspension__short_read);
-            goto suspend;
-          }
-          uint8_t t_6 = *iop_a_src++;
-          v_c = t_6;
-        }
-        if (v_c != 0) {
-          status = wuffs_base__make_status(wuffs_png__error__unsupported_png_compression_method);
-          goto exit;
-        }
-        self->private_impl.f_metadata_is_zlib_compressed = true;
-      }
-      self->private_impl.f_call_sequence = 2;
-      status = wuffs_base__make_status(NULL);
-      goto ok;
-    }
     if (self->private_impl.f_chunk_length != 0) {
       status = wuffs_base__make_status(wuffs_png__error__bad_chunk);
       goto exit;

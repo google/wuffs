@@ -1596,8 +1596,6 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 			} endwhile
 		}
 	} endwhile.loop
-	break.goto_done
-	}} endwhile.goto_done
 
 	// Key-value pairs come in... pairs.
 	if this.metadata_fourcc == 'KVPK'be {
@@ -1654,6 +1652,8 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 		this.call_sequence = 2
 		return ok
 	}
+	break.goto_done
+	}} endwhile.goto_done
 
 	if this.chunk_length <> 0 {
 		return "#bad chunk"
