@@ -1365,6 +1365,7 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 		return base."#no more information"
 	}
 
+	while.goto_done true {{
 	if this.metadata_is_zlib_compressed {
 		if this.zlib_is_dirty {
 			this.zlib.reset!()
@@ -1550,6 +1551,8 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 			} endwhile
 		}
 	} endwhile.loop
+	break.goto_done
+	}} endwhile.goto_done
 
 	// Key-value pairs come in... pairs.
 	if this.metadata_fourcc == 'KVPK'be {
