@@ -41032,26 +41032,28 @@ wuffs_png__decoder__tell_me_more(
         }
         self->private_impl.f_metadata_is_zlib_compressed = true;
       }
-    } else {
-      if (self->private_impl.f_chunk_length != 0) {
-        status = wuffs_base__make_status(wuffs_png__error__bad_chunk);
-        goto exit;
-      }
-      self->private_data.s_tell_me_more[0].scratch = 4;
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(16);
-      if (self->private_data.s_tell_me_more[0].scratch > ((uint64_t)(io2_a_src - iop_a_src))) {
-        self->private_data.s_tell_me_more[0].scratch -= ((uint64_t)(io2_a_src - iop_a_src));
-        iop_a_src = io2_a_src;
-        status = wuffs_base__make_status(wuffs_base__suspension__short_read);
-        goto suspend;
-      }
-      iop_a_src += self->private_data.s_tell_me_more[0].scratch;
-      self->private_impl.f_metadata_flavor = 0;
-      self->private_impl.f_metadata_fourcc = 0;
-      self->private_impl.f_metadata_x = 0;
-      self->private_impl.f_metadata_y = 0;
-      self->private_impl.f_metadata_z = 0;
+      self->private_impl.f_call_sequence = 2;
+      status = wuffs_base__make_status(NULL);
+      goto ok;
     }
+    if (self->private_impl.f_chunk_length != 0) {
+      status = wuffs_base__make_status(wuffs_png__error__bad_chunk);
+      goto exit;
+    }
+    self->private_data.s_tell_me_more[0].scratch = 4;
+    WUFFS_BASE__COROUTINE_SUSPENSION_POINT(16);
+    if (self->private_data.s_tell_me_more[0].scratch > ((uint64_t)(io2_a_src - iop_a_src))) {
+      self->private_data.s_tell_me_more[0].scratch -= ((uint64_t)(io2_a_src - iop_a_src));
+      iop_a_src = io2_a_src;
+      status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+      goto suspend;
+    }
+    iop_a_src += self->private_data.s_tell_me_more[0].scratch;
+    self->private_impl.f_metadata_flavor = 0;
+    self->private_impl.f_metadata_fourcc = 0;
+    self->private_impl.f_metadata_x = 0;
+    self->private_impl.f_metadata_y = 0;
+    self->private_impl.f_metadata_z = 0;
     self->private_impl.f_call_sequence = 2;
     status = wuffs_base__make_status(NULL);
     goto ok;
