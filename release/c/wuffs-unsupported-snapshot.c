@@ -725,14 +725,11 @@ typedef struct wuffs_base__transform__output__struct {
 // Wireless Bitmap.
 #define WUFFS_BASE__FOURCC__WBMP 0x57424D50
 
+// Web Picture.
+#define WUFFS_BASE__FOURCC__WEBP 0x57454250
+
 // Web Open Font Format.
 #define WUFFS_BASE__FOURCC__WOFF 0x574F4646
-
-// Web Picture (VP8).
-#define WUFFS_BASE__FOURCC__WP8 0x57503820
-
-// Web Picture (VP8 Lossless).
-#define WUFFS_BASE__FOURCC__WP8L 0x5750384C
 
 // Extensible Markup Language.
 #define WUFFS_BASE__FOURCC__XML 0x584D4C20
@@ -15641,17 +15638,12 @@ match:
     fourcc = -fourcc;
 
     if (fourcc == 0x52494646) {  // 'RIFF'be
-      if (prefix.len < 16) {
+      if (prefix.len < 12) {
         return -1;
       }
       uint32_t x = wuffs_base__peek_u32be__no_bounds_check(prefix.ptr + 8);
       if (x == 0x57454250) {  // 'WEBP'be
-        uint32_t y = wuffs_base__peek_u32be__no_bounds_check(prefix.ptr + 12);
-        if (y == 0x56503820) {         // 'VP8 'be
-          return 0x57503820;           // 'WP8 'be
-        } else if (y == 0x5650384C) {  // 'VP8L'be
-          return 0x5750384C;           // 'WP8L'be
-        }
+        return 0x57454250;    // 'WEBP'be
       }
 
     } else if (fourcc == 0x30302020) {  // '00  'be
