@@ -38,7 +38,7 @@ The output of those benchmark programs is compatible with the
 [benchstat](https://godoc.org/golang.org/x/perf/cmd/benchstat) tool. For
 example, that tool can calculate confidence intervals based on multiple
 benchmark runs, or calculate p-values when comparing numbers before and after a
-code change. To install it, first install Go, then run `go get
+code change. To install it, first install Go, then run `go install
 golang.org/x/perf/cmd/benchstat`.
 
 

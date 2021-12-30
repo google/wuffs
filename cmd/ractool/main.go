@@ -125,7 +125,7 @@ Installation:
 
 Like any other implemented-in-Go program, to install the ractool program:
 
-    go get github.com/google/wuffs/cmd/ractool
+    go install github.com/google/wuffs/cmd/ractool
 
 Extended Example:
 

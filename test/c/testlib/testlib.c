@@ -422,7 +422,7 @@ test_main(int argc, char** argv, proc* tests, proc* benches) {
         "compatible with the\n"
         "# https://godoc.org/golang.org/x/perf/cmd/benchstat tool. To install "
         "it, first\n"
-        "# install Go, then run \"go get golang.org/x/perf/cmd/benchstat\".\n");
+        "# install Go, then run \"go install golang.org/x/perf/cmd/benchstat\".\n");
   }
 
   for (int i = 0; i < reps; i++) {

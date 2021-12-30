@@ -661,7 +661,7 @@ Go programming language libraries:
   - [RAC](https://godoc.org/github.com/google/wuffs/lib/rac)
   - [RAC + Zlib](https://godoc.org/github.com/google/wuffs/lib/raczlib)
 
-Command line tool, installable via `go get
+Command line tool, installable via `go install
 github.com/google/wuffs/cmd/ractool`:
 
   - [ractool](https://godoc.org/github.com/google/wuffs/cmd/ractool)

@@ -106,7 +106,7 @@ func main1() error {
 	fmt.Printf("#\n")
 	fmt.Printf("# The output format, including the \"Benchmark\" prefixes, is compatible with the\n")
 	fmt.Printf("# https://godoc.org/golang.org/x/perf/cmd/benchstat tool. To install it, first\n")
-	fmt.Printf("# install Go, then run \"go get golang.org/x/perf/cmd/benchstat\".\n")
+	fmt.Printf("# install Go, then run \"go install golang.org/x/perf/cmd/benchstat\".\n")
 
 	for i := -1; i < reps; i++ {
 		for _, tc := range testCases {

@@ -22,15 +22,25 @@ test suite, you might also have to install C compilers like clang and gcc, as
 well as C libraries (and their .h files) like libjpeg and libpng, as some tests
 compare that Wuffs produces exactly the same output as these other libraries.
 
-Running `go get -v github.com/google/wuffs/cmd/...` will download and install
-the Wuffs tools. Change `get` to `install` to re-install those programs without
-downloading, e.g. after you've modified their source code, or after a manually
-issued `git pull`. The Wuffs tools that you'll most often use are `wuffsfmt`
+Run `git clone https://github.com/google/wuffs.git` to get the latest Wuffs
+code, `cd` into its directory and run `go install -v ./cmd/wuffs*` to install
+the Wuffs tools. The Wuffs tools that you'll most often use are `wuffsfmt`
 (analogous to `clang-format`, `gofmt` or `rustfmt`) and `wuffs` (roughly
 analogous to `make`, `go` or `cargo`).
 
-You should now be able to run `wuffs test`. If all goes well, you should see
-some output containing the word "PASS" multiple times.
+You should now be able to run `wuffs test`. If you only have the `gcc` C
+compiler installed, but not `clang`, then you can run `wuffs
+test -ccompilers=gcc` instead. If all goes well, you should see some output
+containing the word "PASS" multiple times.
+
+Remember to re-run `go install etc` whenever you've modified the Wuffs *tools'*
+source code (i.e. `*.go` files) or after a manually issued `git pull`. If
+you're only modifying the Wuffs *standard library's* source code (i.e.
+`*.wuffs` files), re-running `go install etc` is unnecessary.
+
+If you're modifying just one particular codec in the standard library, such as
+the `std/png/*.wuffs` files, then you can exclude unrelated tests by running
+`wuffs test std/png`.
 
 
 ## Poking Around

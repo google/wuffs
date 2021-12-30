@@ -52,7 +52,7 @@ fn main() {
     print!("#\n");
     print!("# The output format, including the \"Benchmark\" prefixes, is compatible with the\n");
     print!("# https://godoc.org/golang.org/x/perf/cmd/benchstat tool. To install it, first\n");
-    print!("# install Go, then run \"go get golang.org/x/perf/cmd/benchstat\".\n");
+    print!("# install Go, then run \"go install golang.org/x/perf/cmd/benchstat\".\n");
 
     let mut dst = vec![0u8; 64 * 1024 * 1024];
 

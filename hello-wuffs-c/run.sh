@@ -18,7 +18,7 @@
 CC=${CC:-gcc}
 
 # You may need to run
-#   go get github.com/google/wuffs/cmd/wuffs-c
+#   go install github.com/google/wuffs/cmd/wuffs-c
 # beforehand, to install the wuffs-c compiler.
 wuffs-c gen -package_name demo < parse.wuffs > parse.c
 
