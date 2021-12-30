@@ -37,7 +37,12 @@ func doGen(wuffsRoot string, args []string) error    { return doGenGenlib(wuffsR
 func doGenlib(wuffsRoot string, args []string) error { return doGenGenlib(wuffsRoot, args, true) }
 
 func doGenGenlib(wuffsRoot string, args []string, genlib bool) error {
-	flags := flag.NewFlagSet("gen", flag.ExitOnError)
+	flagSetName := `"wuffs gen <flags> std/pkg1 std/pkg2 etc"`
+	if genlib {
+		flagSetName = `"wuffs genlib <flags> std/pkg1 std/pkg2 etc"`
+	}
+
+	flags := flag.NewFlagSet(flagSetName, flag.ExitOnError)
 	genlinenumFlag := flags.Bool("genlinenum", cf.GenlinenumDefault, cf.GenlinenumUsage)
 	langsFlag := flags.String("langs", langsDefault, langsUsage)
 	skipgendepsFlag := flags.Bool("skipgendeps", skipgendepsDefault, skipgendepsUsage)

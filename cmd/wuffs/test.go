@@ -29,15 +29,25 @@ func doBench(wuffsRoot string, args []string) error { return doBenchTest(wuffsRo
 func doTest(wuffsRoot string, args []string) error  { return doBenchTest(wuffsRoot, args, false) }
 
 func doBenchTest(wuffsRoot string, args []string, bench bool) error {
-	flags := flag.NewFlagSet("test", flag.ExitOnError)
+	flagSetName := `"wuffs test <flags> std/pkg1 std/pkg2 etc"`
+	if bench {
+		flagSetName = `"wuffs bench <flags> std/pkg1 std/pkg2 etc"`
+	}
+
+	flags := flag.NewFlagSet(flagSetName, flag.ExitOnError)
 	ccompilersFlag := flags.String("ccompilers", cf.CcompilersDefault, cf.CcompilersUsage)
 	focusFlag := flags.String("focus", cf.FocusDefault, cf.FocusUsage)
-	iterscaleFlag := flags.Int("iterscale", cf.IterscaleDefault, cf.IterscaleUsage)
 	langsFlag := flags.String("langs", langsDefault, langsUsage)
 	mimicFlag := flags.Bool("mimic", cf.MimicDefault, cf.MimicUsage)
-	repsFlag := flags.Int("reps", cf.RepsDefault, cf.RepsUsage)
 	skipgenFlag := flags.Bool("skipgen", skipgenDefault, skipgenUsage)
 	skipgendepsFlag := flags.Bool("skipgendeps", skipgendepsDefault, skipgendepsUsage)
+
+	iterscaleFlag := (*int)(nil)
+	repsFlag := (*int)(nil)
+	if bench {
+		iterscaleFlag = flags.Int("iterscale", cf.IterscaleDefault, cf.IterscaleUsage)
+		repsFlag = flags.Int("reps", cf.RepsDefault, cf.RepsUsage)
+	}
 
 	if err := flags.Parse(args); err != nil {
 		return err
@@ -53,13 +63,15 @@ func doBenchTest(wuffsRoot string, args []string, bench bool) error {
 	if !cf.IsAlphaNumericIsh(*focusFlag) {
 		return fmt.Errorf("bad -focus flag value %q", *focusFlag)
 	}
-	if *iterscaleFlag < cf.IterscaleMin || cf.IterscaleMax < *iterscaleFlag {
-		return fmt.Errorf("bad -iterscale flag value %d, outside the range [%d ..= %d]",
-			*iterscaleFlag, cf.IterscaleMin, cf.IterscaleMax)
-	}
-	if *repsFlag < cf.RepsMin || cf.RepsMax < *repsFlag {
-		return fmt.Errorf("bad -reps flag value %d, outside the range [%d ..= %d]",
-			*repsFlag, cf.RepsMin, cf.RepsMax)
+	if bench {
+		if *iterscaleFlag < cf.IterscaleMin || cf.IterscaleMax < *iterscaleFlag {
+			return fmt.Errorf("bad -iterscale flag value %d, outside the range [%d ..= %d]",
+				*iterscaleFlag, cf.IterscaleMin, cf.IterscaleMax)
+		}
+		if *repsFlag < cf.RepsMin || cf.RepsMax < *repsFlag {
+			return fmt.Errorf("bad -reps flag value %d, outside the range [%d ..= %d]",
+				*repsFlag, cf.RepsMin, cf.RepsMax)
+		}
 	}
 
 	args = flags.Args()

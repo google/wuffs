@@ -52,6 +52,8 @@ The commands are:
 	gen     generate code for packages and dependencies
 	genlib  generate software libraries
 	test    test packages
+
+Use "wuffs help <command>" for more information about a command.
 `)
 }
 
@@ -74,6 +76,13 @@ func main1() error {
 		for _, c := range commands {
 			if args[0] == c.name {
 				return c.do(wuffsRoot, args[1:])
+			}
+		}
+		if (len(args) == 2) && (args[0] == "help") {
+			for _, c := range commands {
+				if args[1] == c.name {
+					return c.do(wuffsRoot, []string{"-help"})
+				}
 			}
 		}
 	}
