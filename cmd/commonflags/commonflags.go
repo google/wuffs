@@ -27,7 +27,7 @@ import (
 )
 
 const (
-	CcompilersDefault = "clang-9,gcc"
+	CcompilersDefault = "clang,gcc"
 	CcompilersUsage   = `comma-separated list of C compilers`
 
 	FocusDefault = ""
