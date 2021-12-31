@@ -17,6 +17,8 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
+
+// See naive-parse.c and wuffs-parse.c for implementations of this function
 uint32_t parse(char *, size_t);
 
 void run(char* p) {
