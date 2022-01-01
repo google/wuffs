@@ -12,14 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// ----------------
-
 #include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
 
-// See naive-parse.c and wuffs-parse.c for implementations of this function
-uint32_t parse(char *, size_t);
+// See naive-parse.c and wuffs-parse.c for implementations of this function.
+uint32_t parse(char*, size_t);
 
 void run(char* p) {
   size_t n = strlen(p) + 1;  // +1 for the trailing NUL that ends a C string.

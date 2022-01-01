@@ -22,10 +22,10 @@ CC=${CC:-gcc}
 # beforehand, to install the wuffs-c compiler.
 wuffs-c gen -package_name demo < parse.wuffs > parse.c
 
-echo --- C Implementation prints ---
-$CC main.c naive-parse.c
-./a.out
+echo --- C Implementation Prints ---
+$CC main.c naive-parse.c -o n.out
+./n.out
 
 echo ------ Wuffs Impl Prints ------
-$CC main.c wuffs-parse.c
-./a.out
+$CC main.c wuffs-parse.c -o w.out
+./w.out

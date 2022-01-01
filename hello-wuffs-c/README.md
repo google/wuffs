@@ -20,7 +20,7 @@ pointer. Anyway, here's what the output should look like:
 
 ```
 $ ./run.sh
---- C Implementation prints ---
+--- C Implementation Prints ---
 0
 12
 56789
