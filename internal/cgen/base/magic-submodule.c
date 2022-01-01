@@ -36,6 +36,7 @@ wuffs_base__magic_number_guess_fourcc(wuffs_base__slice_u8 prefix) {
       {+0x54494646, "\x03\x4D\x4D\x00\x2A"},  // TIFF (big-endian)
       {-0x52494646, "\x03\x52\x49\x46\x46"},  // RIFF
       {+0x4E494520, "\x02\x6E\xC3\xAF"},      // NIE
+      {+0x514F4920, "\x03\x71\x6F\x69\x66"},  // QOI
       {+0x504E4720, "\x03\x89\x50\x4E\x47"},  // PNG
       {+0x4A504547, "\x01\xFF\xD8"},          // JPEG
   };

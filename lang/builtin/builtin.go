@@ -66,6 +66,7 @@ var FourCCs = [...][2]string{
 	{"PNG ", "Portable Network Graphics"},
 	{"PNM ", "Portable Anymap"},
 	{"PS  ", "PostScript"},
+	{"QOI ", "Quite OK Image"},
 	{"RAC ", "Random Access Compression"},
 	{"RAW ", "Raw"},
 	{"RIFF", "Resource Interchange File Format"},
