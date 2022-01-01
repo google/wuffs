@@ -20,13 +20,14 @@ pointer. Anyway, here's what the output should look like:
 
 ```
 $ ./run.sh
+--- C Implementation prints ---
 0
 12
 56789
 4294967295
 0
 3197704724
---------
+------ Wuffs Impl Prints ------
 0
 12
 56789
