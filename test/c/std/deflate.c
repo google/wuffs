@@ -89,13 +89,13 @@ golden_test g_deflate_deflate_backref_crosses_blocks_gt = {
         "backref-crosses-blocks.deflate",
 };
 
-golden_test g_deflate_deflate_degenerate_huffman_unused_gt = {
+golden_test g_deflate_deflate_degenerate_huffman_gt = {
     .want_filename =
         "test/data/artificial-deflate/"
-        "degenerate-huffman-unused.deflate.decompressed",
+        "degenerate-huffman.deflate.decompressed",
     .src_filename =
         "test/data/artificial-deflate/"
-        "degenerate-huffman-unused.deflate",
+        "degenerate-huffman.deflate",
 };
 
 golden_test g_deflate_deflate_distance_32768_gt = {
@@ -213,10 +213,10 @@ test_wuffs_deflate_decode_deflate_backref_crosses_blocks() {
 }
 
 const char*  //
-test_wuffs_deflate_decode_deflate_degenerate_huffman_unused() {
+test_wuffs_deflate_decode_deflate_degenerate_huffman() {
   CHECK_FOCUS(__func__);
   return do_test_io_buffers(wuffs_deflate_decode,
-                            &g_deflate_deflate_degenerate_huffman_unused_gt,
+                            &g_deflate_deflate_degenerate_huffman_gt,
                             UINT64_MAX, UINT64_MAX);
 }
 
@@ -722,10 +722,10 @@ test_mimic_deflate_decode_deflate_backref_crosses_blocks() {
 }
 
 const char*  //
-test_mimic_deflate_decode_deflate_degenerate_huffman_unused() {
+test_mimic_deflate_decode_deflate_degenerate_huffman() {
   CHECK_FOCUS(__func__);
   return do_test_io_buffers(mimic_deflate_decode,
-                            &g_deflate_deflate_degenerate_huffman_unused_gt,
+                            &g_deflate_deflate_degenerate_huffman_gt,
                             UINT64_MAX, UINT64_MAX);
 }
 
@@ -890,7 +890,7 @@ proc g_tests[] = {
 
     test_wuffs_deflate_decode_256_bytes,
     test_wuffs_deflate_decode_deflate_backref_crosses_blocks,
-    test_wuffs_deflate_decode_deflate_degenerate_huffman_unused,
+    test_wuffs_deflate_decode_deflate_degenerate_huffman,
     test_wuffs_deflate_decode_deflate_distance_32768,
     test_wuffs_deflate_decode_deflate_distance_code_31,
     test_wuffs_deflate_decode_deflate_huffman_primlen_9,
@@ -911,7 +911,7 @@ proc g_tests[] = {
 
     test_mimic_deflate_decode_256_bytes,
     test_mimic_deflate_decode_deflate_backref_crosses_blocks,
-    test_mimic_deflate_decode_deflate_degenerate_huffman_unused,
+    test_mimic_deflate_decode_deflate_degenerate_huffman,
     test_mimic_deflate_decode_deflate_distance_32768,
     test_mimic_deflate_decode_deflate_distance_code_31,
     test_mimic_deflate_decode_deflate_huffman_primlen_9,
