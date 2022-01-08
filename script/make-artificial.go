@@ -587,20 +587,20 @@ func stateDeflateDynamicHuffman(line string) (stateFunc, error) {
 		return stateDeflateDynamicHuffman, nil
 
 	} else if l, d, ok := deflateParseLenDist(line); ok {
-		if (l != 3) || (d != 2) {
-			return nil, fmt.Errorf("TODO: support len/dist pairs for dynamic Huffman blocks")
+		if (l > 10) || (d > 4) {
+			return nil, fmt.Errorf("TODO: support len/dist ExtraBits > 0 for dynamic Huffman blocks")
 		}
-		// len 3 is code 257, with no extra bits.
-		if s := g.huffmans[2][257]; s != "" {
+		// len 3 is code 257, len 4 is code 258, etc. All with no ExtraBits.
+		if s := g.huffmans[2][l+254]; s != "" {
 			deflateGlobalsWriteDynamicHuffmanBits(s)
 		} else {
-			return nil, fmt.Errorf("no code for literal/length symbol 257")
+			return nil, fmt.Errorf("no code for literal/length symbol %d", l+254)
 		}
-		// dist 2 is code 1, with no extra bits.
-		if s := g.huffmans[3][1]; s != "" {
+		// dist 1 is code 0, dist 2 is code 1, etc. All with no ExtraBits.
+		if s := g.huffmans[3][d-1]; s != "" {
 			deflateGlobalsWriteDynamicHuffmanBits(s)
 		} else {
-			return nil, fmt.Errorf("no code for distance symbol 2")
+			return nil, fmt.Errorf("no code for distance symbol %d", d-1)
 		}
 		return stateDeflateDynamicHuffman, nil
 

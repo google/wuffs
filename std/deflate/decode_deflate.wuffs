@@ -628,17 +628,21 @@ pri func decoder.init_huff!(which: base.u32[..= 1], n_codes0: base.u32[..= 288],
 	} endwhile
 	if remaining <> 0 {
 		// As a special case, allow a degenerate H-D Huffman table, with only
-		// one 1-bit code, for the smallest possible distance.
+		// one 1-bit code.
 		if (args.which == 1) and (counts[1] == 1) and
-			(this.code_lengths[args.n_codes0] == 1) and
 			(((counts[0] as base.u32) + args.n_codes0 + 1) == args.n_codes1) {
 
-			this.n_huffs_bits[1] = 1
-			this.huffs[1][0] = DCODE_MAGIC_NUMBERS[0] | 1
-			this.huffs[1][1] = DCODE_MAGIC_NUMBERS[31] | 1
-			return ok
+			i = 0
+			while i <= 29 {
+				if this.code_lengths[args.n_codes0 + i] == 1 {
+					this.n_huffs_bits[1] = 1
+					this.huffs[1][0] = DCODE_MAGIC_NUMBERS[i] | 1
+					this.huffs[1][1] = DCODE_MAGIC_NUMBERS[31] | 1
+					return ok
+				}
+				i += 1
+			} endwhile
 		}
-
 		return "#bad Huffman code (under-subscribed)"
 	}
 

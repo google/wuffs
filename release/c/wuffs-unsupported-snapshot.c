@@ -27008,14 +27008,17 @@ wuffs_deflate__decoder__init_huff(
     v_i += 1;
   }
   if (v_remaining != 0) {
-    if ((a_which == 1) &&
-        (v_counts[1] == 1) &&
-        (self->private_data.f_code_lengths[a_n_codes0] == 1) &&
-        ((((uint32_t)(v_counts[0])) + a_n_codes0 + 1) == a_n_codes1)) {
-      self->private_impl.f_n_huffs_bits[1] = 1;
-      self->private_data.f_huffs[1][0] = (WUFFS_DEFLATE__DCODE_MAGIC_NUMBERS[0] | 1);
-      self->private_data.f_huffs[1][1] = (WUFFS_DEFLATE__DCODE_MAGIC_NUMBERS[31] | 1);
-      return wuffs_base__make_status(NULL);
+    if ((a_which == 1) && (v_counts[1] == 1) && ((((uint32_t)(v_counts[0])) + a_n_codes0 + 1) == a_n_codes1)) {
+      v_i = 0;
+      while (v_i <= 29) {
+        if (self->private_data.f_code_lengths[(a_n_codes0 + v_i)] == 1) {
+          self->private_impl.f_n_huffs_bits[1] = 1;
+          self->private_data.f_huffs[1][0] = (WUFFS_DEFLATE__DCODE_MAGIC_NUMBERS[v_i] | 1);
+          self->private_data.f_huffs[1][1] = (WUFFS_DEFLATE__DCODE_MAGIC_NUMBERS[31] | 1);
+          return wuffs_base__make_status(NULL);
+        }
+        v_i += 1;
+      }
     }
     return wuffs_base__make_status(wuffs_deflate__error__bad_huffman_code_under_subscribed);
   }
