@@ -31,6 +31,7 @@ import (
 	"hash/crc32"
 	"io"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -244,16 +245,23 @@ var deflateCodeOrder = [19]uint32{
 	16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15,
 }
 
+var deflateHuffmanNames = [4]string{
+	0: "Unused",
+	1: "CodeLength",
+	2: "Literal/Length",
+	3: "Distance",
+}
+
 type deflateHuffmanTable map[uint32]string
 
 var deflateGlobals struct {
 	bncData []byte
 	stream  deflateBitStream
 
-	// Dynamic Huffman state.
+	// Dynamic Huffman state. whichHuffman indexes the huffmans array. See also
+	// deflateHuffmanNames.
 	whichHuffman uint32
-	// 0=Unused, 1=CodeLength, 2=Literal/Length, 3=Distance.
-	huffmans [4]deflateHuffmanTable
+	huffmans     [4]deflateHuffmanTable
 
 	// DHH (Dynamic Huffman, inside a Huffman table) state.
 	prevLine string
@@ -297,6 +305,67 @@ func deflateGlobalsCountCodes() (numLCodes uint32, numDCodes uint32, numCLCodeLe
 	}
 
 	return numLCodes, numDCodes, numCLCodeLengths, nil
+}
+
+func deflateGlobalsIsHuffmanCanonical() bool {
+	g := &deflateGlobals
+
+	// Gather the code+bitstring pairs. Deflate bitstrings cannot be longer
+	// than 15 bits.
+	type pair struct {
+		k uint32
+		v string
+	}
+	pairs := []pair{}
+	for k, v := range g.huffmans[g.whichHuffman] {
+		if len(v) > 15 {
+			return false
+		}
+		pairs = append(pairs, pair{k, v})
+	}
+	if len(pairs) == 0 {
+		return false
+	}
+
+	// Sort by bitstring-length and then code.
+	sort.Slice(pairs, func(i, j int) bool {
+		pi, pj := &pairs[i], &pairs[j]
+		if len(pi.v) != len(pj.v) {
+			return len(pi.v) < len(pj.v)
+		}
+		return pi.k < pj.k
+	})
+
+	// Set up a generator for the canonical bitstrings.
+	buf := [15]byte{'0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0'}
+	prevV := ""
+	next := func() bool {
+		if i := len(prevV); i > 0 {
+			for {
+				i--
+				if i < 0 {
+					return false
+				}
+				if buf[i] == '0' {
+					buf[i] = '1'
+					break
+				}
+				buf[i] = '0'
+			}
+		}
+		return true
+	}
+
+	// Verify the bitstrings.
+	for _, p := range pairs {
+		if !next() {
+			return false // Over-subscribed.
+		} else if p.v != string(buf[:len(p.v)]) {
+			return false // Non-canonical.
+		}
+		prevV = p.v
+	}
+	return true
 }
 
 func deflateGlobalsWriteDynamicHuffmanTables() error {
@@ -621,6 +690,9 @@ func stateDeflateDynamicHuffmanHuffman(line string) (stateFunc, error) {
 outer:
 	switch {
 	case line == "}":
+		if !deflateGlobalsIsHuffmanCanonical() {
+			return nil, fmt.Errorf(`"huffman %s" is non-canonical`, deflateHuffmanNames[g.whichHuffman])
+		}
 		g.whichHuffman = 0
 		g.prevLine = ""
 		g.etcetera = false
