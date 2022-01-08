@@ -264,8 +264,9 @@ var deflateGlobals struct {
 	huffmans     [4]deflateHuffmanTable
 
 	// DHH (Dynamic Huffman, inside a Huffman table) state.
-	prevLine string
-	etcetera bool
+	prevLine   string
+	etcetera   bool
+	incomplete bool
 }
 
 func deflateGlobalsClearDynamicHuffmanState() {
@@ -273,6 +274,7 @@ func deflateGlobalsClearDynamicHuffmanState() {
 	deflateGlobals.huffmans = [4]deflateHuffmanTable{}
 	deflateGlobals.prevLine = ""
 	deflateGlobals.etcetera = false
+	deflateGlobals.incomplete = false
 }
 
 func deflateGlobalsCountCodes() (numLCodes uint32, numDCodes uint32, numCLCodeLengths uint32, retErr error) {
@@ -364,6 +366,9 @@ func deflateGlobalsIsHuffmanCanonical() bool {
 			return false // Non-canonical.
 		}
 		prevV = p.v
+	}
+	if next() != g.incomplete {
+		return false // Under-subscribed.
 	}
 	return true
 }
@@ -696,6 +701,7 @@ outer:
 		g.whichHuffman = 0
 		g.prevLine = ""
 		g.etcetera = false
+		g.incomplete = false
 
 		// If we have all three Huffman tables, write them.
 		for i := 1; ; i++ {
@@ -714,6 +720,10 @@ outer:
 
 	case line == "etcetera":
 		g.etcetera = true
+		return stateDeflateDynamicHuffmanHuffman, nil
+
+	case line == "incomplete":
+		g.incomplete = true
 		return stateDeflateDynamicHuffmanHuffman, nil
 
 	default:

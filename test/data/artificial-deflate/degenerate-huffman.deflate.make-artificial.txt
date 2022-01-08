@@ -22,6 +22,7 @@ blockDynamicHuffman (nonFinal) {
 		#
 		# The sole key/value pair is also unused. (The one below is used.)
 		0 0
+		incomplete
 	}
 
 	literal "foo"
@@ -56,6 +57,7 @@ blockDynamicHuffman (final) {
 		# Per the second table in RFC 1951 section 3.2.5. "Compressed blocks
 		# (length and distance codes)", code 3 means a distance of 4.
 		3 0
+		incomplete
 	}
 
 	literal "ABCD"
