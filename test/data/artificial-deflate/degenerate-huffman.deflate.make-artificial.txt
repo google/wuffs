@@ -41,12 +41,12 @@ blockDynamicHuffman (final) {
 
 	huffman Literal/Length {
 		# 65='A', 66='B', 67='C', 68='D', 256=EOB, 257=Length3
+		256 00
+		257 01
 		65  100
 		66  101
 		67  110
 		68  111
-		256 00
-		257 01
 	}
 
 	huffman Distance {
