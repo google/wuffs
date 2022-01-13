@@ -14,8 +14,54 @@
 
 // ---------------- Magic Numbers
 
+// ICO doesn't start with a magic identifier. Instead, see if the opening bytes
+// are plausibly ICO.
+//
+// Callers should have already verified that (prefix.len >= 2) and the first
+// two bytes are 0x00.
+//
+// See:
+//  - https://docs.fileformat.com/image/ico/
+static int32_t  //
+wuffs_base__magic_number_guess_fourcc__maybe_ico(wuffs_base__slice_u8 prefix) {
+  // Allow-list for the Image Type field.
+  if (prefix.len < 4) {
+    return -1;
+  } else if (prefix.ptr[3] != 0) {
+    return 0;
+  }
+  switch (prefix.ptr[2]) {
+    case 0x01:  // ICO
+    case 0x02:  // CUR
+      break;
+    default:
+      return 0;
+  }
+
+  // The Number Of Images should be positive.
+  if (prefix.len < 6) {
+    return -1;
+  } else if ((prefix.ptr[4] == 0) && (prefix.ptr[5] == 0)) {
+    return 0;
+  }
+
+  // The first ICONDIRENTRY's fourth byte should be zero.
+  if (prefix.len < 10) {
+    return -1;
+  } else if (prefix.ptr[9] != 0) {
+    return 0;
+  }
+
+  // TODO: have a separate FourCC for CUR?
+  return 0x49434F20;  // 'ICO 'be
+}
+
 WUFFS_BASE__MAYBE_STATIC int32_t  //
 wuffs_base__magic_number_guess_fourcc(wuffs_base__slice_u8 prefix) {
+  // This is similar to (but different from):
+  //  - the magic/Magdir tables under https://github.com/file/file
+  //  - the MIME Sniffing algorithm at https://mimesniff.spec.whatwg.org/
+
   // table holds the 'magic numbers' (which are actually variable length
   // strings). The strings may contain NUL bytes, so the "const char* magic"
   // value starts with the length-minus-1 of the 'magic number'.
@@ -94,6 +140,14 @@ match:
 
     } else if (fourcc == 0x30302020) {  // '00  'be
       // Binary data starting with multiple 0x00 NUL bytes is quite common.
+      // Unfortunately, some file formats also don't start with a magic
+      // identifier, so we have to use heuristics (where the order matters, the
+      // same as /usr/bin/file's magic/Magdir tables) as best we can. Maybe
+      // it's TGA, ICO/CUR, etc. Maybe it's something else.
+      int32_t ico = wuffs_base__magic_number_guess_fourcc__maybe_ico(prefix);
+      if (ico != 0) {
+        return ico;
+      }
       if (prefix.len < 4) {
         return -1;
       } else if ((prefix.ptr[2] != 0x00) &&
@@ -101,9 +155,6 @@ match:
         // Roughly speaking, this could be a non-degenerate (non-0-width and
         // non-0-height) WBMP image.
         return 0x57424D50;  // 'WBMP'be
-      } else if (((prefix.ptr[2] == 0x01) || (prefix.ptr[2] == 0x02)) &&
-                 (prefix.ptr[3] == 0x00)) {
-        return 0x49434F20;  // 'ICO 'be
       }
       return 0;
     }
