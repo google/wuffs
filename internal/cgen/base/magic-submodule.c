@@ -56,6 +56,69 @@ wuffs_base__magic_number_guess_fourcc__maybe_ico(wuffs_base__slice_u8 prefix) {
   return 0x49434F20;  // 'ICO 'be
 }
 
+// TGA doesn't start with a magic identifier. Instead, see if the opening bytes
+// are plausibly TGA.
+//
+// Callers should have already verified that (prefix.len >= 2) and the second
+// byte (prefix.ptr[1], the Color Map Type byte), is either 0x00 or 0x01.
+//
+// See:
+//  - https://docs.fileformat.com/image/tga/
+//  - https://www.dca.fee.unicamp.br/~martino/disciplinas/ea978/tgaffs.pdf
+static int32_t  //
+wuffs_base__magic_number_guess_fourcc__maybe_tga(wuffs_base__slice_u8 prefix) {
+  // Allow-list for the Image Type field.
+  if (prefix.len < 3) {
+    return -1;
+  }
+  switch (prefix.ptr[2]) {
+    case 0x01:
+    case 0x02:
+    case 0x03:
+    case 0x09:
+    case 0x0A:
+    case 0x0B:
+      break;
+    default:
+      // TODO: 0x20 and 0x21 are invalid, according to the spec, but are
+      // apparently unofficial extensions.
+      return 0;
+  }
+
+  // Allow-list for the Color Map Entry Size field.
+  if (prefix.len < 8) {
+    return -1;
+  }
+  switch (prefix.ptr[7]) {
+    case 0x00:
+    case 0x0F:
+    case 0x10:
+    case 0x18:
+    case 0x20:
+      break;
+    default:
+      return 0;
+  }
+
+  // Allow-list for the Pixel Depth field.
+  if (prefix.len < 17) {
+    return -1;
+  }
+  switch (prefix.ptr[16]) {
+    case 0x01:
+    case 0x08:
+    case 0x0F:
+    case 0x10:
+    case 0x18:
+    case 0x20:
+      break;
+    default:
+      return 0;
+  }
+
+  return 0x54474120;  // 'TGA 'be
+}
+
 WUFFS_BASE__MAYBE_STATIC int32_t  //
 wuffs_base__magic_number_guess_fourcc(wuffs_base__slice_u8 prefix) {
   // This is similar to (but different from):
@@ -122,6 +185,13 @@ wuffs_base__magic_number_guess_fourcc(wuffs_base__slice_u8 prefix) {
       }
     }
   }
+
+  if (prefix.len < 2) {
+    return -1;
+  } else if ((prefix.ptr[1] == 0x00) || (prefix.ptr[1] == 0x01)) {
+    return wuffs_base__magic_number_guess_fourcc__maybe_tga(prefix);
+  }
+
   return 0;
 
 match:
@@ -144,6 +214,10 @@ match:
       // identifier, so we have to use heuristics (where the order matters, the
       // same as /usr/bin/file's magic/Magdir tables) as best we can. Maybe
       // it's TGA, ICO/CUR, etc. Maybe it's something else.
+      int32_t tga = wuffs_base__magic_number_guess_fourcc__maybe_tga(prefix);
+      if (tga != 0) {
+        return tga;
+      }
       int32_t ico = wuffs_base__magic_number_guess_fourcc__maybe_ico(prefix);
       if (ico != 0) {
         return ico;
