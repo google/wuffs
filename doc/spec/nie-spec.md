@@ -353,7 +353,7 @@ synonymous with `octet` and `uint8`.
 
 The recommended filename extensions are `.nie`, `.nii` and `.nia`.
 
-The recommended MIME types are `image/nie`, `image/nii` and `image/nia`.
+The recommended MIME types are `image/x-nie`, `image/x-nii` and `image/x-nia`.
 
 
 ## Why NIE and not NIF (for Naïve Image Format)?
@@ -370,4 +370,4 @@ in a long "E", "I" or "A" sound. It's definitely a hard "N", not a soft one.
 
 ---
 
-Updated on November 2021.
+Updated on January 2022.
