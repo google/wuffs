@@ -246,7 +246,7 @@ load_image_type() {
   g_fourcc = 0;
   while (true) {
     g_fourcc = wuffs_base__magic_number_guess_fourcc(
-        wuffs_base__io_buffer__reader_slice(&g_src));
+        wuffs_base__io_buffer__reader_slice(&g_src), g_src.meta.closed);
     if ((g_fourcc >= 0) ||
         (wuffs_base__io_buffer__reader_length(&g_src) == g_src.data.len)) {
       break;

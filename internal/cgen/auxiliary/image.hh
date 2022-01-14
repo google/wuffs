@@ -70,9 +70,13 @@ class DecodeImageCallbacks {
   // Returning a nullptr means failure (DecodeImage_UnsupportedImageFormat).
   //
   // Common formats will have a FourCC value in the range [1 ..= 0x7FFF_FFFF],
-  // such as WUFFS_BASE__FOURCC__JPEG. A zero FourCC value means that the
-  // caller is responsible for examining the opening bytes (a prefix) of the
-  // input data. SelectDecoder implementations should not modify those bytes.
+  // such as WUFFS_BASE__FOURCC__JPEG. A zero FourCC value means that Wuffs'
+  // standard library did not recognize the image format but if SelectDecoder
+  // was overridden, it may examine the input data's starting bytes and still
+  // provide its own image decoder, e.g. for an exotic image file format that's
+  // not in Wuffs' standard library. The prefix_etc fields have the same
+  // meaning as wuffs_base__magic_number_guess_fourcc arguments. SelectDecoder
+  // implementations should not modify prefix_data's contents.
   //
   // SelectDecoder might be called more than once, since some image file
   // formats can wrap others. For example, a nominal BMP file can actually
@@ -89,7 +93,9 @@ class DecodeImageCallbacks {
   //  - WUFFS_BASE__FOURCC__PNG
   //  - WUFFS_BASE__FOURCC__WBMP
   virtual wuffs_base__image_decoder::unique_ptr  //
-  SelectDecoder(uint32_t fourcc, wuffs_base__slice_u8 prefix);
+  SelectDecoder(uint32_t fourcc,
+                wuffs_base__slice_u8 prefix_data,
+                bool prefix_closed);
 
   // HandleMetadata acknowledges image metadata. minfo.flavor will be one of:
   //  - WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA_RAW_PASSTHROUGH

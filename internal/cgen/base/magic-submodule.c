@@ -23,7 +23,8 @@
 // See:
 //  - https://docs.fileformat.com/image/ico/
 static int32_t  //
-wuffs_base__magic_number_guess_fourcc__maybe_ico(wuffs_base__slice_u8 prefix) {
+wuffs_base__magic_number_guess_fourcc__maybe_ico(wuffs_base__slice_u8 prefix,
+                                                 bool prefix_closed) {
   // Allow-list for the Image Type field.
   if (prefix.len < 4) {
     return -1;
@@ -66,7 +67,8 @@ wuffs_base__magic_number_guess_fourcc__maybe_ico(wuffs_base__slice_u8 prefix) {
 //  - https://docs.fileformat.com/image/tga/
 //  - https://www.dca.fee.unicamp.br/~martino/disciplinas/ea978/tgaffs.pdf
 static int32_t  //
-wuffs_base__magic_number_guess_fourcc__maybe_tga(wuffs_base__slice_u8 prefix) {
+wuffs_base__magic_number_guess_fourcc__maybe_tga(wuffs_base__slice_u8 prefix,
+                                                 bool prefix_closed) {
   // Allow-list for the Image Type field.
   if (prefix.len < 3) {
     return -1;
@@ -120,7 +122,8 @@ wuffs_base__magic_number_guess_fourcc__maybe_tga(wuffs_base__slice_u8 prefix) {
 }
 
 WUFFS_BASE__MAYBE_STATIC int32_t  //
-wuffs_base__magic_number_guess_fourcc(wuffs_base__slice_u8 prefix) {
+wuffs_base__magic_number_guess_fourcc(wuffs_base__slice_u8 prefix,
+                                      bool prefix_closed) {
   // This is similar to (but different from):
   //  - the magic/Magdir tables under https://github.com/file/file
   //  - the MIME Sniffing algorithm at https://mimesniff.spec.whatwg.org/
@@ -189,7 +192,8 @@ wuffs_base__magic_number_guess_fourcc(wuffs_base__slice_u8 prefix) {
   if (prefix.len < 2) {
     return -1;
   } else if ((prefix.ptr[1] == 0x00) || (prefix.ptr[1] == 0x01)) {
-    return wuffs_base__magic_number_guess_fourcc__maybe_tga(prefix);
+    return wuffs_base__magic_number_guess_fourcc__maybe_tga(prefix,
+                                                            prefix_closed);
   }
 
   return 0;
@@ -214,11 +218,13 @@ match:
       // identifier, so we have to use heuristics (where the order matters, the
       // same as /usr/bin/file's magic/Magdir tables) as best we can. Maybe
       // it's TGA, ICO/CUR, etc. Maybe it's something else.
-      int32_t tga = wuffs_base__magic_number_guess_fourcc__maybe_tga(prefix);
+      int32_t tga = wuffs_base__magic_number_guess_fourcc__maybe_tga(
+          prefix, prefix_closed);
       if (tga != 0) {
         return tga;
       }
-      int32_t ico = wuffs_base__magic_number_guess_fourcc__maybe_ico(prefix);
+      int32_t ico = wuffs_base__magic_number_guess_fourcc__maybe_ico(
+          prefix, prefix_closed);
       if (ico != 0) {
         return ico;
       }

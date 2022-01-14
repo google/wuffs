@@ -1685,13 +1685,19 @@ wuffs_base__table__flattened_length(size_t width,
 // ---------------- Magic Numbers
 
 // wuffs_base__magic_number_guess_fourcc guesses the file format of some data,
-// given its opening bytes. It returns a positive FourCC value on success.
+// given its starting bytes (the prefix_data argument) and whether or not there
+// may be further bytes (the prefix_closed argument; true means that
+// prefix_data is the entire data).
+//
+// It returns a positive FourCC value on success.
 //
 // It returns zero if nothing matches its hard-coded list of 'magic numbers'.
 //
-// It returns a negative value if a longer prefix is required for a conclusive
-// result. For example, seeing a single 'B' byte is not enough to discriminate
-// the BMP and BPG image file formats.
+// It returns a negative value if prefix_closed is false and a longer prefix is
+// required for a conclusive result. For example, a single 'B' byte (without
+// further data) is not enough to discriminate the BMP and BPG image file
+// formats. Similarly, a single '\xFF' byte might be the start of JPEG data or
+// it might be the start of some other binary data.
 //
 // It does not do a full validity check. Like any guess made from a short
 // prefix of the data, it may return false positives. Data that starts with 99
@@ -1706,7 +1712,8 @@ wuffs_base__table__flattened_length(size_t width,
 // function requires the WUFFS_CONFIG__MODULE__BASE__MAGIC sub-module, not just
 // WUFFS_CONFIG__MODULE__BASE__CORE.
 WUFFS_BASE__MAYBE_STATIC int32_t  //
-wuffs_base__magic_number_guess_fourcc(wuffs_base__slice_u8 prefix);
+wuffs_base__magic_number_guess_fourcc(wuffs_base__slice_u8 prefix_data,
+                                      bool prefix_closed);
 
 // ---------------- Ranges and Rects
 
@@ -10238,9 +10245,13 @@ class DecodeImageCallbacks {
   // Returning a nullptr means failure (DecodeImage_UnsupportedImageFormat).
   //
   // Common formats will have a FourCC value in the range [1 ..= 0x7FFF_FFFF],
-  // such as WUFFS_BASE__FOURCC__JPEG. A zero FourCC value means that the
-  // caller is responsible for examining the opening bytes (a prefix) of the
-  // input data. SelectDecoder implementations should not modify those bytes.
+  // such as WUFFS_BASE__FOURCC__JPEG. A zero FourCC value means that Wuffs'
+  // standard library did not recognize the image format but if SelectDecoder
+  // was overridden, it may examine the input data's starting bytes and still
+  // provide its own image decoder, e.g. for an exotic image file format that's
+  // not in Wuffs' standard library. The prefix_etc fields have the same
+  // meaning as wuffs_base__magic_number_guess_fourcc arguments. SelectDecoder
+  // implementations should not modify prefix_data's contents.
   //
   // SelectDecoder might be called more than once, since some image file
   // formats can wrap others. For example, a nominal BMP file can actually
@@ -10257,7 +10268,9 @@ class DecodeImageCallbacks {
   //  - WUFFS_BASE__FOURCC__PNG
   //  - WUFFS_BASE__FOURCC__WBMP
   virtual wuffs_base__image_decoder::unique_ptr  //
-  SelectDecoder(uint32_t fourcc, wuffs_base__slice_u8 prefix);
+  SelectDecoder(uint32_t fourcc,
+                wuffs_base__slice_u8 prefix_data,
+                bool prefix_closed);
 
   // HandleMetadata acknowledges image metadata. minfo.flavor will be one of:
   //  - WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA_RAW_PASSTHROUGH
@@ -15584,7 +15597,8 @@ done:
 // See:
 //  - https://docs.fileformat.com/image/ico/
 static int32_t  //
-wuffs_base__magic_number_guess_fourcc__maybe_ico(wuffs_base__slice_u8 prefix) {
+wuffs_base__magic_number_guess_fourcc__maybe_ico(wuffs_base__slice_u8 prefix,
+                                                 bool prefix_closed) {
   // Allow-list for the Image Type field.
   if (prefix.len < 4) {
     return -1;
@@ -15627,7 +15641,8 @@ wuffs_base__magic_number_guess_fourcc__maybe_ico(wuffs_base__slice_u8 prefix) {
 //  - https://docs.fileformat.com/image/tga/
 //  - https://www.dca.fee.unicamp.br/~martino/disciplinas/ea978/tgaffs.pdf
 static int32_t  //
-wuffs_base__magic_number_guess_fourcc__maybe_tga(wuffs_base__slice_u8 prefix) {
+wuffs_base__magic_number_guess_fourcc__maybe_tga(wuffs_base__slice_u8 prefix,
+                                                 bool prefix_closed) {
   // Allow-list for the Image Type field.
   if (prefix.len < 3) {
     return -1;
@@ -15681,7 +15696,8 @@ wuffs_base__magic_number_guess_fourcc__maybe_tga(wuffs_base__slice_u8 prefix) {
 }
 
 WUFFS_BASE__MAYBE_STATIC int32_t  //
-wuffs_base__magic_number_guess_fourcc(wuffs_base__slice_u8 prefix) {
+wuffs_base__magic_number_guess_fourcc(wuffs_base__slice_u8 prefix,
+                                      bool prefix_closed) {
   // This is similar to (but different from):
   //  - the magic/Magdir tables under https://github.com/file/file
   //  - the MIME Sniffing algorithm at https://mimesniff.spec.whatwg.org/
@@ -15750,7 +15766,8 @@ wuffs_base__magic_number_guess_fourcc(wuffs_base__slice_u8 prefix) {
   if (prefix.len < 2) {
     return -1;
   } else if ((prefix.ptr[1] == 0x00) || (prefix.ptr[1] == 0x01)) {
-    return wuffs_base__magic_number_guess_fourcc__maybe_tga(prefix);
+    return wuffs_base__magic_number_guess_fourcc__maybe_tga(prefix,
+                                                            prefix_closed);
   }
 
   return 0;
@@ -15775,11 +15792,13 @@ match:
       // identifier, so we have to use heuristics (where the order matters, the
       // same as /usr/bin/file's magic/Magdir tables) as best we can. Maybe
       // it's TGA, ICO/CUR, etc. Maybe it's something else.
-      int32_t tga = wuffs_base__magic_number_guess_fourcc__maybe_tga(prefix);
+      int32_t tga = wuffs_base__magic_number_guess_fourcc__maybe_tga(
+          prefix, prefix_closed);
       if (tga != 0) {
         return tga;
       }
-      int32_t ico = wuffs_base__magic_number_guess_fourcc__maybe_ico(prefix);
+      int32_t ico = wuffs_base__magic_number_guess_fourcc__maybe_ico(
+          prefix, prefix_closed);
       if (ico != 0) {
         return ico;
       }
@@ -43055,7 +43074,8 @@ DecodeImageCallbacks::AllocWorkbufResult::AllocWorkbufResult(
 
 wuffs_base__image_decoder::unique_ptr  //
 DecodeImageCallbacks::SelectDecoder(uint32_t fourcc,
-                                    wuffs_base__slice_u8 prefix) {
+                                    wuffs_base__slice_u8 prefix_data,
+                                    bool prefix_closed) {
   switch (fourcc) {
 #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BMP)
     case WUFFS_BASE__FOURCC__BMP:
@@ -43308,10 +43328,17 @@ redirect:
     // Determine the image format.
     if (!redirected) {
       while (true) {
-        fourcc = wuffs_base__magic_number_guess_fourcc(io_buf.reader_slice());
+        fourcc = wuffs_base__magic_number_guess_fourcc(io_buf.reader_slice(),
+                                                       io_buf.meta.closed);
         if (fourcc > 0) {
           break;
         } else if ((fourcc == 0) && (io_buf.reader_length() >= 64)) {
+          // Having (fourcc == 0) means that Wuffs' built in MIME sniffer
+          // didn't recognize the image format. Nonetheless, custom callbacks
+          // may still be able to do their own MIME sniffing, for exotic image
+          // types. We try to give them at least 64 bytes of prefix data when
+          // one-shot-calling callbacks.SelectDecoder. There is no mechanism
+          // for the callbacks to request a longer prefix.
           break;
         } else if (io_buf.meta.closed || (io_buf.writer_length() == 0)) {
           fourcc = 0;
@@ -43352,8 +43379,7 @@ redirect:
 
     // Select the image decoder.
     image_decoder = callbacks.SelectDecoder(
-        (uint32_t)fourcc,
-        fourcc ? wuffs_base__empty_slice_u8() : io_buf.reader_slice());
+        (uint32_t)fourcc, io_buf.reader_slice(), io_buf.meta.closed);
     if (!image_decoder) {
       return DecodeImageResult(DecodeImage_UnsupportedImageFormat);
     }

@@ -58,7 +58,8 @@ DecodeImageCallbacks::AllocWorkbufResult::AllocWorkbufResult(
 
 wuffs_base__image_decoder::unique_ptr  //
 DecodeImageCallbacks::SelectDecoder(uint32_t fourcc,
-                                    wuffs_base__slice_u8 prefix) {
+                                    wuffs_base__slice_u8 prefix_data,
+                                    bool prefix_closed) {
   switch (fourcc) {
 #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BMP)
     case WUFFS_BASE__FOURCC__BMP:
@@ -311,10 +312,17 @@ redirect:
     // Determine the image format.
     if (!redirected) {
       while (true) {
-        fourcc = wuffs_base__magic_number_guess_fourcc(io_buf.reader_slice());
+        fourcc = wuffs_base__magic_number_guess_fourcc(io_buf.reader_slice(),
+                                                       io_buf.meta.closed);
         if (fourcc > 0) {
           break;
         } else if ((fourcc == 0) && (io_buf.reader_length() >= 64)) {
+          // Having (fourcc == 0) means that Wuffs' built in MIME sniffer
+          // didn't recognize the image format. Nonetheless, custom callbacks
+          // may still be able to do their own MIME sniffing, for exotic image
+          // types. We try to give them at least 64 bytes of prefix data when
+          // one-shot-calling callbacks.SelectDecoder. There is no mechanism
+          // for the callbacks to request a longer prefix.
           break;
         } else if (io_buf.meta.closed || (io_buf.writer_length() == 0)) {
           fourcc = 0;
@@ -355,8 +363,7 @@ redirect:
 
     // Select the image decoder.
     image_decoder = callbacks.SelectDecoder(
-        (uint32_t)fourcc,
-        fourcc ? wuffs_base__empty_slice_u8() : io_buf.reader_slice());
+        (uint32_t)fourcc, io_buf.reader_slice(), io_buf.meta.closed);
     if (!image_decoder) {
       return DecodeImageResult(DecodeImage_UnsupportedImageFormat);
     }

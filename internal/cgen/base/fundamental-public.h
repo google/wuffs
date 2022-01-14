@@ -1418,13 +1418,19 @@ wuffs_base__table__flattened_length(size_t width,
 // ---------------- Magic Numbers
 
 // wuffs_base__magic_number_guess_fourcc guesses the file format of some data,
-// given its opening bytes. It returns a positive FourCC value on success.
+// given its starting bytes (the prefix_data argument) and whether or not there
+// may be further bytes (the prefix_closed argument; true means that
+// prefix_data is the entire data).
+//
+// It returns a positive FourCC value on success.
 //
 // It returns zero if nothing matches its hard-coded list of 'magic numbers'.
 //
-// It returns a negative value if a longer prefix is required for a conclusive
-// result. For example, seeing a single 'B' byte is not enough to discriminate
-// the BMP and BPG image file formats.
+// It returns a negative value if prefix_closed is false and a longer prefix is
+// required for a conclusive result. For example, a single 'B' byte (without
+// further data) is not enough to discriminate the BMP and BPG image file
+// formats. Similarly, a single '\xFF' byte might be the start of JPEG data or
+// it might be the start of some other binary data.
 //
 // It does not do a full validity check. Like any guess made from a short
 // prefix of the data, it may return false positives. Data that starts with 99
@@ -1439,4 +1445,5 @@ wuffs_base__table__flattened_length(size_t width,
 // function requires the WUFFS_CONFIG__MODULE__BASE__MAGIC sub-module, not just
 // WUFFS_CONFIG__MODULE__BASE__CORE.
 WUFFS_BASE__MAYBE_STATIC int32_t  //
-wuffs_base__magic_number_guess_fourcc(wuffs_base__slice_u8 prefix);
+wuffs_base__magic_number_guess_fourcc(wuffs_base__slice_u8 prefix_data,
+                                      bool prefix_closed);
