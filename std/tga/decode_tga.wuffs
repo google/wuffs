@@ -18,8 +18,8 @@ pub status "#unsupported TGA file"
 pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0
 
 pub struct decoder? implements base.image_decoder(
-	width  : base.u32,
-	height : base.u32,
+	width  : base.u32[..= 0xFFFF],
+	height : base.u32[..= 0xFFFF],
 
 	// Call sequence states:
 	//  - 0x00: initial state.
@@ -58,6 +58,11 @@ pub struct decoder? implements base.image_decoder(
 	header_y_origin                    : base.u16,
 	header_pixel_depth                 : base.u8,
 	header_image_descriptor            : base.u8,
+
+	opaque : base.bool,
+
+	src_bytes_per_pixel : base.u32[..= 4],
+	src_pixfmt          : base.u32,
 
 	frame_config_io_position : base.u64,
 
@@ -137,6 +142,35 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 		return "#bad header"
 	}
 
+	if (this.header_image_type | 8) == 0x09 {
+		// TODO: base.PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL
+		this.src_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL
+
+	} else if (this.header_image_type | 8) == 0x0A {
+		if this.header_pixel_depth == 0x10 {
+			// TODO: implement.
+			this.src_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL
+		} else if this.header_pixel_depth == 0x18 {
+			this.src_bytes_per_pixel = 3
+			this.src_pixfmt = base.PIXEL_FORMAT__BGR
+			this.opaque = true
+		} else if this.header_pixel_depth == 0x20 {
+			this.src_bytes_per_pixel = 4
+			this.src_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL
+		} else {
+			return "#unsupported TGA file"
+		}
+
+	} else {
+		if this.header_pixel_depth == 0x08 {
+			this.src_bytes_per_pixel = 1
+			this.src_pixfmt = base.PIXEL_FORMAT__Y
+			this.opaque = true
+		} else {
+			return "#unsupported TGA file"
+		}
+	}
+
 	this.header_image_descriptor = args.src.read_u8?()
 	if (this.header_image_descriptor & 0x10) <> 0 {
 		// We don't support right-to-left, only left-to-right pixel order.
@@ -154,7 +188,7 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 
 	if args.dst <> nullptr {
 		args.dst.set!(
-			pixfmt: base.PIXEL_FORMAT__BGRA_NONPREMUL,
+			pixfmt: this.src_pixfmt,
 			pixsub: 0,
 			width: this.width,
 			height: this.height,
@@ -189,9 +223,9 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
 			index: 0,
 			io_position: this.frame_config_io_position,
 			disposal: 0,
-			opaque_within_bounds: true,
+			opaque_within_bounds: this.opaque,
 			overwrite_instead_of_blend: false,
-			background_color: 0x0000_0000)
+			background_color: 0xFF00_0000)
 	}
 
 	this.call_sequence = 4
@@ -206,7 +240,14 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 	var dst_y               : base.u32
 	var tab                 : table base.u8
 	var dst                 : slice base.u8
+	var dst_start           : base.u64
 	var src                 : array[4] base.u8
+	var mark                : base.u64
+	var num_pixels64        : base.u64
+	var num_pixels32        : base.u32[..= 0xFFFF]
+	var lit_length          : base.u32[..= 0xFFFF]
+	var num_dst_bytes       : base.u64[..= 0x1F_FFE0]
+	var num_src_bytes       : base.u32[..= 0x3_FFFC]
 
 	if this.call_sequence < 4 {
 		this.decode_frame_config?(dst: nullptr, src: args.src)
@@ -219,7 +260,7 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 	status = this.swizzler.prepare!(
 		dst_pixfmt: args.dst.pixel_format(),
 		dst_palette: args.dst.palette(),
-		src_pixfmt: this.util.make_pixel_format(repr: base.PIXEL_FORMAT__BGRA_NONPREMUL),
+		src_pixfmt: this.util.make_pixel_format(repr: this.src_pixfmt),
 		src_palette: this.util.empty_slice_u8(),
 		blend: args.blend)
 	if not status.is_ok() {
@@ -235,34 +276,67 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 	}
 	dst_bytes_per_pixel = (dst_bits_per_pixel / 8) as base.u64
 
-	// TODO: don't hard-code reddish purple.
-	src[0] = 0x7F
-	src[1] = 0x00
-	src[2] = 0xFF
-	src[3] = 0xFF
-
 	if (this.header_image_descriptor & 0x20) == 0 {  // Bottom-to-top.
 		dst_y = this.height ~mod- 1
 	}
+	lit_length = this.width
 
-	// TODO: add "continue.resume" lines after short reads.
 	while.resume true {
 		tab = args.dst.plane(p: 0)
 		while dst_y < this.height {
 			dst = tab.row_u32(y: dst_y)
+			dst_start = (dst_x as base.u64) * dst_bytes_per_pixel
+			if dst_start <= dst.length() {
+				dst = dst[dst_start ..]
+			} else {
+				dst = this.util.empty_slice_u8()
+			}
 
 			while dst_x < this.width {
 				assert dst_x < 0xFFFF_FFFF via "a < b: a < c; c <= b"(c: this.width)
 
-				// TODO: be more efficient than swizzling one pixel at a time.
-				this.swizzler.swizzle_interleaved_from_slice!(
-					dst: dst, dst_palette: args.dst.palette(), src: src[..])
+				if this.src_bytes_per_pixel > 0 {
+					if lit_length > 0 {
+						mark = args.src.mark()
+						num_pixels64 = args.src.length() / (this.src_bytes_per_pixel as base.u64)
+						num_pixels32 = num_pixels64.min(a: lit_length as base.u64) as base.u32
+						num_dst_bytes = (num_pixels32 as base.u64) * dst_bytes_per_pixel
+						num_src_bytes = num_pixels32 * this.src_bytes_per_pixel
+						args.src.skip_u32?(n: num_src_bytes)
+						this.swizzler.swizzle_interleaved_from_slice!(
+							dst: dst,
+							dst_palette: args.dst.palette(),
+							src: args.src.since(mark: mark))
+						if num_dst_bytes <= dst.length() {
+							dst = dst[num_dst_bytes ..]
+						} else {
+							dst = this.util.empty_slice_u8()
+						}
+						dst_x ~mod+= num_pixels32
+						lit_length = (lit_length ~mod- num_pixels32) & 0xFFFF
+						if lit_length > 0 {
+							yield? base."$short read"
+							continue.resume
+						}
+					}
 
-				if dst_bytes_per_pixel <= dst.length() {
-					dst = dst[dst_bytes_per_pixel ..]
+				} else {
+					if lit_length > 0 {
+						// TODO: don't hard-code reddish purple.
+						src[0] = 0x7F
+						src[1] = 0x00
+						src[2] = 0xFF
+						src[3] = 0xFF
+						// TODO: be more efficient than swizzling one pixel at a time.
+						this.swizzler.swizzle_interleaved_from_slice!(
+							dst: dst, dst_palette: args.dst.palette(), src: src[..])
+						if dst_bytes_per_pixel <= dst.length() {
+							dst = dst[dst_bytes_per_pixel ..]
+						}
+						dst_x += 1
+						lit_length -= 1
+					}
 				}
-
-				dst_x += 1
 			} endwhile
 			dst_x = 0
 
@@ -271,6 +345,7 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 			} else {  // Top-to-bottom.
 				dst_y ~mod+= 1
 			}
+			lit_length = this.width
 		} endwhile
 		break.resume
 	} endwhile.resume
