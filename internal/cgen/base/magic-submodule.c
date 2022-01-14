@@ -17,21 +17,22 @@
 // ICO doesn't start with a magic identifier. Instead, see if the opening bytes
 // are plausibly ICO.
 //
-// Callers should have already verified that (prefix.len >= 2) and the first
-// two bytes are 0x00.
+// Callers should have already verified that (prefix_data.len >= 2) and the
+// first two bytes are 0x00.
 //
 // See:
 //  - https://docs.fileformat.com/image/ico/
 static int32_t  //
-wuffs_base__magic_number_guess_fourcc__maybe_ico(wuffs_base__slice_u8 prefix,
-                                                 bool prefix_closed) {
+wuffs_base__magic_number_guess_fourcc__maybe_ico(
+    wuffs_base__slice_u8 prefix_data,
+    bool prefix_closed) {
   // Allow-list for the Image Type field.
-  if (prefix.len < 4) {
+  if (prefix_data.len < 4) {
     return -1;
-  } else if (prefix.ptr[3] != 0) {
+  } else if (prefix_data.ptr[3] != 0) {
     return 0;
   }
-  switch (prefix.ptr[2]) {
+  switch (prefix_data.ptr[2]) {
     case 0x01:  // ICO
     case 0x02:  // CUR
       break;
@@ -40,16 +41,16 @@ wuffs_base__magic_number_guess_fourcc__maybe_ico(wuffs_base__slice_u8 prefix,
   }
 
   // The Number Of Images should be positive.
-  if (prefix.len < 6) {
+  if (prefix_data.len < 6) {
     return -1;
-  } else if ((prefix.ptr[4] == 0) && (prefix.ptr[5] == 0)) {
+  } else if ((prefix_data.ptr[4] == 0) && (prefix_data.ptr[5] == 0)) {
     return 0;
   }
 
   // The first ICONDIRENTRY's fourth byte should be zero.
-  if (prefix.len < 10) {
+  if (prefix_data.len < 10) {
     return -1;
-  } else if (prefix.ptr[9] != 0) {
+  } else if (prefix_data.ptr[9] != 0) {
     return 0;
   }
 
@@ -60,20 +61,22 @@ wuffs_base__magic_number_guess_fourcc__maybe_ico(wuffs_base__slice_u8 prefix,
 // TGA doesn't start with a magic identifier. Instead, see if the opening bytes
 // are plausibly TGA.
 //
-// Callers should have already verified that (prefix.len >= 2) and the second
-// byte (prefix.ptr[1], the Color Map Type byte), is either 0x00 or 0x01.
+// Callers should have already verified that (prefix_data.len >= 2) and the
+// second byte (prefix_data.ptr[1], the Color Map Type byte), is either 0x00 or
+// 0x01.
 //
 // See:
 //  - https://docs.fileformat.com/image/tga/
 //  - https://www.dca.fee.unicamp.br/~martino/disciplinas/ea978/tgaffs.pdf
 static int32_t  //
-wuffs_base__magic_number_guess_fourcc__maybe_tga(wuffs_base__slice_u8 prefix,
-                                                 bool prefix_closed) {
+wuffs_base__magic_number_guess_fourcc__maybe_tga(
+    wuffs_base__slice_u8 prefix_data,
+    bool prefix_closed) {
   // Allow-list for the Image Type field.
-  if (prefix.len < 3) {
+  if (prefix_data.len < 3) {
     return -1;
   }
-  switch (prefix.ptr[2]) {
+  switch (prefix_data.ptr[2]) {
     case 0x01:
     case 0x02:
     case 0x03:
@@ -88,10 +91,10 @@ wuffs_base__magic_number_guess_fourcc__maybe_tga(wuffs_base__slice_u8 prefix,
   }
 
   // Allow-list for the Color Map Entry Size field.
-  if (prefix.len < 8) {
+  if (prefix_data.len < 8) {
     return -1;
   }
-  switch (prefix.ptr[7]) {
+  switch (prefix_data.ptr[7]) {
     case 0x00:
     case 0x0F:
     case 0x10:
@@ -103,10 +106,10 @@ wuffs_base__magic_number_guess_fourcc__maybe_tga(wuffs_base__slice_u8 prefix,
   }
 
   // Allow-list for the Pixel Depth field.
-  if (prefix.len < 17) {
+  if (prefix_data.len < 17) {
     return -1;
   }
-  switch (prefix.ptr[16]) {
+  switch (prefix_data.ptr[16]) {
     case 0x01:
     case 0x08:
     case 0x0F:
@@ -122,7 +125,7 @@ wuffs_base__magic_number_guess_fourcc__maybe_tga(wuffs_base__slice_u8 prefix,
 }
 
 WUFFS_BASE__MAYBE_STATIC int32_t  //
-wuffs_base__magic_number_guess_fourcc(wuffs_base__slice_u8 prefix,
+wuffs_base__magic_number_guess_fourcc(wuffs_base__slice_u8 prefix_data,
                                       bool prefix_closed) {
   // This is similar to (but different from):
   //  - the magic/Magdir tables under https://github.com/file/file
@@ -154,10 +157,10 @@ wuffs_base__magic_number_guess_fourcc(wuffs_base__slice_u8 prefix,
   };
   static const size_t table_len = sizeof(table) / sizeof(table[0]);
 
-  if (prefix.len == 0) {
+  if (prefix_data.len == 0) {
     return -1;
   }
-  uint8_t pre_first_byte = prefix.ptr[0];
+  uint8_t pre_first_byte = prefix_data.ptr[0];
 
   int32_t fourcc = 0;
   size_t i;
@@ -176,8 +179,8 @@ wuffs_base__magic_number_guess_fourcc(wuffs_base__slice_u8 prefix,
     }
 
     const char* mag_remaining_ptr = table[i].magic + 2;
-    uint8_t* pre_remaining_ptr = prefix.ptr + 1;
-    size_t pre_remaining_len = prefix.len - 1;
+    uint8_t* pre_remaining_ptr = prefix_data.ptr + 1;
+    size_t pre_remaining_len = prefix_data.len - 1;
     if (pre_remaining_len < mag_remaining_len) {
       if (!memcmp(pre_remaining_ptr, mag_remaining_ptr, pre_remaining_len)) {
         return -1;
@@ -189,10 +192,10 @@ wuffs_base__magic_number_guess_fourcc(wuffs_base__slice_u8 prefix,
     }
   }
 
-  if (prefix.len < 2) {
+  if (prefix_data.len < 2) {
     return -1;
-  } else if ((prefix.ptr[1] == 0x00) || (prefix.ptr[1] == 0x01)) {
-    return wuffs_base__magic_number_guess_fourcc__maybe_tga(prefix,
+  } else if ((prefix_data.ptr[1] == 0x00) || (prefix_data.ptr[1] == 0x01)) {
+    return wuffs_base__magic_number_guess_fourcc__maybe_tga(prefix_data,
                                                             prefix_closed);
   }
 
@@ -204,10 +207,10 @@ match:
     fourcc = -fourcc;
 
     if (fourcc == 0x52494646) {  // 'RIFF'be
-      if (prefix.len < 12) {
+      if (prefix_data.len < 12) {
         return -1;
       }
-      uint32_t x = wuffs_base__peek_u32be__no_bounds_check(prefix.ptr + 8);
+      uint32_t x = wuffs_base__peek_u32be__no_bounds_check(prefix_data.ptr + 8);
       if (x == 0x57454250) {  // 'WEBP'be
         return 0x57454250;    // 'WEBP'be
       }
@@ -219,19 +222,20 @@ match:
       // same as /usr/bin/file's magic/Magdir tables) as best we can. Maybe
       // it's TGA, ICO/CUR, etc. Maybe it's something else.
       int32_t tga = wuffs_base__magic_number_guess_fourcc__maybe_tga(
-          prefix, prefix_closed);
+          prefix_data, prefix_closed);
       if (tga != 0) {
         return tga;
       }
       int32_t ico = wuffs_base__magic_number_guess_fourcc__maybe_ico(
-          prefix, prefix_closed);
+          prefix_data, prefix_closed);
       if (ico != 0) {
         return ico;
       }
-      if (prefix.len < 4) {
+      if (prefix_data.len < 4) {
         return -1;
-      } else if ((prefix.ptr[2] != 0x00) &&
-                 ((prefix.ptr[2] >= 0x80) || (prefix.ptr[3] != 0x00))) {
+      } else if ((prefix_data.ptr[2] != 0x00) &&
+                 ((prefix_data.ptr[2] >= 0x80) ||
+                  (prefix_data.ptr[3] != 0x00))) {
         // Roughly speaking, this could be a non-degenerate (non-0-width and
         // non-0-height) WBMP image.
         return 0x57424D50;  // 'WBMP'be
