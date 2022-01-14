@@ -28,7 +28,7 @@ wuffs_base__magic_number_guess_fourcc__maybe_ico(
     bool prefix_closed) {
   // Allow-list for the Image Type field.
   if (prefix_data.len < 4) {
-    return -1;
+    return prefix_closed ? 0 : -1;
   } else if (prefix_data.ptr[3] != 0) {
     return 0;
   }
@@ -42,14 +42,14 @@ wuffs_base__magic_number_guess_fourcc__maybe_ico(
 
   // The Number Of Images should be positive.
   if (prefix_data.len < 6) {
-    return -1;
+    return prefix_closed ? 0 : -1;
   } else if ((prefix_data.ptr[4] == 0) && (prefix_data.ptr[5] == 0)) {
     return 0;
   }
 
   // The first ICONDIRENTRY's fourth byte should be zero.
   if (prefix_data.len < 10) {
-    return -1;
+    return prefix_closed ? 0 : -1;
   } else if (prefix_data.ptr[9] != 0) {
     return 0;
   }
@@ -74,7 +74,7 @@ wuffs_base__magic_number_guess_fourcc__maybe_tga(
     bool prefix_closed) {
   // Allow-list for the Image Type field.
   if (prefix_data.len < 3) {
-    return -1;
+    return prefix_closed ? 0 : -1;
   }
   switch (prefix_data.ptr[2]) {
     case 0x01:
@@ -92,7 +92,7 @@ wuffs_base__magic_number_guess_fourcc__maybe_tga(
 
   // Allow-list for the Color Map Entry Size field.
   if (prefix_data.len < 8) {
-    return -1;
+    return prefix_closed ? 0 : -1;
   }
   switch (prefix_data.ptr[7]) {
     case 0x00:
@@ -107,7 +107,7 @@ wuffs_base__magic_number_guess_fourcc__maybe_tga(
 
   // Allow-list for the Pixel Depth field.
   if (prefix_data.len < 17) {
-    return -1;
+    return prefix_closed ? 0 : -1;
   }
   switch (prefix_data.ptr[16]) {
     case 0x01:
@@ -158,7 +158,7 @@ wuffs_base__magic_number_guess_fourcc(wuffs_base__slice_u8 prefix_data,
   static const size_t table_len = sizeof(table) / sizeof(table[0]);
 
   if (prefix_data.len == 0) {
-    return -1;
+    return prefix_closed ? 0 : -1;
   }
   uint8_t pre_first_byte = prefix_data.ptr[0];
 
@@ -183,7 +183,7 @@ wuffs_base__magic_number_guess_fourcc(wuffs_base__slice_u8 prefix_data,
     size_t pre_remaining_len = prefix_data.len - 1;
     if (pre_remaining_len < mag_remaining_len) {
       if (!memcmp(pre_remaining_ptr, mag_remaining_ptr, pre_remaining_len)) {
-        return -1;
+        return prefix_closed ? 0 : -1;
       }
     } else {
       if (!memcmp(pre_remaining_ptr, mag_remaining_ptr, mag_remaining_len)) {
@@ -193,7 +193,7 @@ wuffs_base__magic_number_guess_fourcc(wuffs_base__slice_u8 prefix_data,
   }
 
   if (prefix_data.len < 2) {
-    return -1;
+    return prefix_closed ? 0 : -1;
   } else if ((prefix_data.ptr[1] == 0x00) || (prefix_data.ptr[1] == 0x01)) {
     return wuffs_base__magic_number_guess_fourcc__maybe_tga(prefix_data,
                                                             prefix_closed);
@@ -208,7 +208,7 @@ match:
 
     if (fourcc == 0x52494646) {  // 'RIFF'be
       if (prefix_data.len < 12) {
-        return -1;
+        return prefix_closed ? 0 : -1;
       }
       uint32_t x = wuffs_base__peek_u32be__no_bounds_check(prefix_data.ptr + 8);
       if (x == 0x57454250) {  // 'WEBP'be
@@ -232,7 +232,7 @@ match:
         return ico;
       }
       if (prefix_data.len < 4) {
-        return -1;
+        return prefix_closed ? 0 : -1;
       } else if ((prefix_data.ptr[2] != 0x00) &&
                  ((prefix_data.ptr[2] >= 0x80) ||
                   (prefix_data.ptr[3] != 0x00))) {
