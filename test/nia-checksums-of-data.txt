@@ -26,6 +26,7 @@ e08a7cc8 test/data/artificial-png/exif.png
 e08a7cc8 test/data/artificial-png/key-value-pairs.png
 076cb375 test/data/bricks-color.bmp
 076cb375 test/data/bricks-color.png
+1f87b217 test/data/bricks-color.tga
 f36c2e80 test/data/bricks-dither.bmp
 f36c2e80 test/data/bricks-dither.gif
 f36c2e80 test/data/bricks-dither.no-ancillary.png
@@ -34,10 +35,13 @@ c2bce675 test/data/bricks-gray.bmp
 c2bce675 test/data/bricks-gray.gif
 c2bce675 test/data/bricks-gray.no-ancillary.png
 c2bce675 test/data/bricks-gray.png
+1f87b217 test/data/bricks-gray.tga
 7aebfe6c test/data/bricks-nodither.bmp
 7aebfe6c test/data/bricks-nodither.gif
 7aebfe6c test/data/bricks-nodither.png
+1f87b217 test/data/bricks-nodither.tga
 ae2e547d test/data/bricks-nodither.wbmp
+1f87b217 test/data/cbor-rfc-7049-examples.cbor
 b47730a2 test/data/checkerboard.gamma1dot0.png
 b47730a2 test/data/checkerboard.gamma2dot2.png
 aa3e6c7c test/data/crude-flag.nie

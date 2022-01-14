@@ -27,6 +27,7 @@
 - Added `std/json`.
 - Added `std/nie`.
 - Added `std/png`.
+- Added `std/tga`.
 - Added `std/wbmp`.
 - Added `tell_me_more?` mechanism.
 - Added SIMD.
