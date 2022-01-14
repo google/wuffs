@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+pub status "#bad header"
+pub status "#unsupported TGA file"
+
 pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0
 
 pub struct decoder? implements base.image_decoder(
@@ -45,6 +48,17 @@ pub struct decoder? implements base.image_decoder(
 	//  - RF  is restart_frame
 	call_sequence : base.u8,
 
+	header_id_length                   : base.u8,
+	header_color_map_type              : base.u8,
+	header_image_type                  : base.u8,
+	header_color_map_first_entry_index : base.u16,
+	header_color_map_length            : base.u16,
+	header_color_map_entry_size        : base.u8,
+	header_x_origin                    : base.u16,
+	header_y_origin                    : base.u16,
+	header_pixel_depth                 : base.u8,
+	header_image_descriptor            : base.u8,
+
 	frame_config_io_position : base.u64,
 
 	swizzler : base.pixel_swizzler,
@@ -59,8 +73,82 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 		return base."#bad call sequence"
 	}
 
-	this.width = 1
-	this.height = 1
+	this.header_id_length = args.src.read_u8?()
+	this.header_color_map_type = args.src.read_u8?()
+	if this.header_color_map_type > 1 {
+		return "#bad header"
+	}
+
+	this.header_image_type = args.src.read_u8?()
+	if (this.header_image_type == 0x01) or
+		(this.header_image_type == 0x02) or
+		(this.header_image_type == 0x03) {
+		// No-op.
+	} else if (this.header_image_type == 0x09) or
+		(this.header_image_type == 0x0A) or
+		(this.header_image_type == 0x0B) {
+		// TODO: support run-length encoding.
+		return "#unsupported TGA file"
+	} else {
+		// TODO: 0x20 and 0x21 are invalid, according to the spec, but are
+		// apparently unofficial extensions.
+		return "#bad header"
+	}
+
+	this.header_color_map_first_entry_index = args.src.read_u16le?()
+	this.header_color_map_length = args.src.read_u16le?()
+	this.header_color_map_entry_size = args.src.read_u8?()
+	if this.header_color_map_type <> 0 {
+		// We have a color-mapped image (in Wuffs, an indexed pixel format).
+		if (this.header_color_map_first_entry_index <> 0) or
+			(this.header_color_map_length > 0x100) {
+			return "#unsupported TGA file"
+		} else if (this.header_color_map_entry_size <> 0x0F) and
+			(this.header_color_map_entry_size <> 0x10) and
+			(this.header_color_map_entry_size <> 0x18) and
+			(this.header_color_map_entry_size <> 0x20) {
+			return "#bad header"
+		}
+	} else {
+		// The color-map fields must be zero.
+		if (this.header_color_map_first_entry_index <> 0) or
+			(this.header_color_map_length <> 0) or
+			(this.header_color_map_entry_size <> 0) {
+			return "#bad header"
+		}
+	}
+
+	this.header_x_origin = args.src.read_u16le?()
+	this.header_y_origin = args.src.read_u16le?()
+	if (this.header_x_origin <> 0) or (this.header_y_origin <> 0) {
+		return "#unsupported TGA file"
+	}
+
+	this.width = args.src.read_u16le_as_u32?()
+	this.height = args.src.read_u16le_as_u32?()
+
+	this.header_pixel_depth = args.src.read_u8?()
+	if (this.header_pixel_depth <> 0x01) and
+		(this.header_pixel_depth <> 0x08) and
+		(this.header_pixel_depth <> 0x0F) and
+		(this.header_pixel_depth <> 0x10) and
+		(this.header_pixel_depth <> 0x18) and
+		(this.header_pixel_depth <> 0x20) {
+		return "#bad header"
+	}
+
+	this.header_image_descriptor = args.src.read_u8?()
+	if (this.header_image_descriptor & 0x10) <> 0 {
+		// We don't support right-to-left, only left-to-right pixel order.
+		return "#unsupported TGA file"
+	}
+
+	// Skip the Image ID.
+	args.src.skip_u32?(n: this.header_id_length as base.u32)
+
+	if this.header_color_map_type <> 0 {
+		// TODO: read the color map.
+	}
 
 	this.frame_config_io_position = args.src.position()
 
@@ -110,12 +198,15 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
 }
 
 pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, blend: base.pixel_blend, workbuf: slice base.u8, opts: nptr base.decode_frame_options) {
-	var status             : base.status
-	var dst_pixfmt         : base.pixel_format
-	var dst_bits_per_pixel : base.u32[..= 256]
-	var tab                : table base.u8
-	var dst                : slice base.u8
-	var src                : array[4] base.u8
+	var status              : base.status
+	var dst_pixfmt          : base.pixel_format
+	var dst_bits_per_pixel  : base.u32[..= 256]
+	var dst_bytes_per_pixel : base.u64[..= 32]
+	var dst_x               : base.u32
+	var dst_y               : base.u32
+	var tab                 : table base.u8
+	var dst                 : slice base.u8
+	var src                 : array[4] base.u8
 
 	if this.call_sequence < 4 {
 		this.decode_frame_config?(dst: nullptr, src: args.src)
@@ -142,15 +233,47 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 	if (dst_bits_per_pixel & 7) <> 0 {
 		return base."#unsupported option"
 	}
+	dst_bytes_per_pixel = (dst_bits_per_pixel / 8) as base.u64
 
-	tab = args.dst.plane(p: 0)
-	dst = tab.row_u32(y: 0)
+	// TODO: don't hard-code reddish purple.
 	src[0] = 0x7F
 	src[1] = 0x00
 	src[2] = 0xFF
 	src[3] = 0xFF
-	this.swizzler.swizzle_interleaved_from_slice!(
-		dst: dst, dst_palette: args.dst.palette(), src: src[..])
+
+	if (this.header_image_descriptor & 0x20) == 0 {  // Bottom-to-top.
+		dst_y = this.height ~mod- 1
+	}
+
+	// TODO: add "continue.resume" lines after short reads.
+	while.resume true {
+		tab = args.dst.plane(p: 0)
+		while dst_y < this.height {
+			dst = tab.row_u32(y: dst_y)
+
+			while dst_x < this.width {
+				assert dst_x < 0xFFFF_FFFF via "a < b: a < c; c <= b"(c: this.width)
+
+				// TODO: be more efficient than swizzling one pixel at a time.
+				this.swizzler.swizzle_interleaved_from_slice!(
+					dst: dst, dst_palette: args.dst.palette(), src: src[..])
+
+				if dst_bytes_per_pixel <= dst.length() {
+					dst = dst[dst_bytes_per_pixel ..]
+				}
+
+				dst_x += 1
+			} endwhile
+			dst_x = 0
+
+			if (this.header_image_descriptor & 0x20) == 0 {  // Bottom-to-top.
+				dst_y ~mod-= 1
+			} else {  // Top-to-bottom.
+				dst_y ~mod+= 1
+			}
+		} endwhile
+		break.resume
+	} endwhile.resume
 
 	this.call_sequence = 0xFF
 }
