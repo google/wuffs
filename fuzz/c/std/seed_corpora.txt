@@ -20,6 +20,7 @@ gif:    test/data/*.gif   test/data/artificial-gif/*.gif
 gzip:   test/data/*.gz
 json:   test/data/*.json  ../rapidjson_corpus/*  ../simdjson_corpus/*  ../JSONTestSuite/test_*/*.json
 png:    test/data/*.png   test/data/artificial-png/*.png  ../pngsuite_corpus/*.png
+tga:    test/data/*.tga
 wbmp:   test/data/*.wbmp
 zlib:   test/data/*.zlib
 
