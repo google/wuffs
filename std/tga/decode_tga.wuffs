@@ -155,8 +155,8 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 		this.src_bytes_per_pixel = 1
 		this.src_pixfmt = base.PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL
 		this.opaque =
-			(this.header_color_map_entry_size <> 0x0F) or
-			(this.header_color_map_entry_size <> 0x18)
+			(this.header_color_map_entry_size == 0x0F) or
+			(this.header_color_map_entry_size == 0x18)
 
 	} else if (this.header_image_type | 8) == 0x0A {
 		if (this.header_pixel_depth == 0x0F) or
@@ -247,7 +247,7 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 			width: this.width,
 			height: this.height,
 			first_frame_io_position: this.frame_config_io_position,
-			first_frame_is_opaque: false)
+			first_frame_is_opaque: this.opaque)
 	}
 
 	this.call_sequence = 3

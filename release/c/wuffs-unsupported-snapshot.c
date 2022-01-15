@@ -42432,7 +42432,7 @@ wuffs_tga__decoder__decode_image_config(
       self->private_impl.f_scratch_bytes_per_pixel = 1;
       self->private_impl.f_src_bytes_per_pixel = 1;
       self->private_impl.f_src_pixfmt = 2164523016;
-      self->private_impl.f_opaque = ((self->private_impl.f_header_color_map_entry_size != 15) || (self->private_impl.f_header_color_map_entry_size != 24));
+      self->private_impl.f_opaque = ((self->private_impl.f_header_color_map_entry_size == 15) || (self->private_impl.f_header_color_map_entry_size == 24));
     } else if ((self->private_impl.f_header_image_type | 8) == 10) {
       if ((self->private_impl.f_header_pixel_depth == 15) || (self->private_impl.f_header_pixel_depth == 16)) {
         self->private_impl.f_scratch_bytes_per_pixel = 4;
@@ -42611,7 +42611,7 @@ wuffs_tga__decoder__decode_image_config(
           self->private_impl.f_width,
           self->private_impl.f_height,
           self->private_impl.f_frame_config_io_position,
-          false);
+          self->private_impl.f_opaque);
     }
     self->private_impl.f_call_sequence = 3;
 
