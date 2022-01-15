@@ -16012,19 +16012,23 @@ wuffs_base__magic_number_guess_fourcc__maybe_tga(
       return 0;
   }
 
-  // Allow-list for the Color Map Entry Size field.
+  // Allow-list for the Color Map Entry Size field (if the Color Map Type field
+  // is non-zero) or else all the Color Map fields should be zero.
   if (prefix_data.len < 8) {
     return prefix_closed ? 0 : -1;
-  }
-  switch (prefix_data.ptr[7]) {
-    case 0x00:
-    case 0x0F:
-    case 0x10:
-    case 0x18:
-    case 0x20:
-      break;
-    default:
-      return 0;
+  } else if (prefix_data.ptr[1] != 0x00) {
+    switch (prefix_data.ptr[7]) {
+      case 0x0F:
+      case 0x10:
+      case 0x18:
+      case 0x20:
+        break;
+      default:
+        return 0;
+    }
+  } else if ((prefix_data.ptr[3] | prefix_data.ptr[4] | prefix_data.ptr[5] |
+              prefix_data.ptr[6] | prefix_data.ptr[7]) != 0x00) {
+    return 0;
   }
 
   // Allow-list for the Pixel Depth field.
