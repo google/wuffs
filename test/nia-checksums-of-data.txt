@@ -39,7 +39,7 @@ c2bce675 test/data/bricks-gray.png
 7aebfe6c test/data/bricks-nodither.bmp
 7aebfe6c test/data/bricks-nodither.gif
 7aebfe6c test/data/bricks-nodither.png
-0a9502ff test/data/bricks-nodither.tga
+7aebfe6c test/data/bricks-nodither.tga
 ae2e547d test/data/bricks-nodither.wbmp
 b47730a2 test/data/checkerboard.gamma1dot0.png
 b47730a2 test/data/checkerboard.gamma2dot2.png
