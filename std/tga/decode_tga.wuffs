@@ -55,8 +55,6 @@ pub struct decoder? implements base.image_decoder(
 	header_color_map_first_entry_index : base.u16,
 	header_color_map_length            : base.u16,
 	header_color_map_entry_size        : base.u8,
-	header_x_origin                    : base.u16,
-	header_y_origin                    : base.u16,
 	header_pixel_depth                 : base.u8,
 	header_image_descriptor            : base.u8,
 
@@ -131,11 +129,8 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 		}
 	}
 
-	this.header_x_origin = args.src.read_u16le?()
-	this.header_y_origin = args.src.read_u16le?()
-	if (this.header_x_origin <> 0) or (this.header_y_origin <> 0) {
-		return "#unsupported TGA file"
-	}
+	// Ignore the X-Origin and Y-Origin fields.
+	args.src.skip_u32?(n: 4)
 
 	this.width = args.src.read_u16le_as_u32?()
 	this.height = args.src.read_u16le_as_u32?()
