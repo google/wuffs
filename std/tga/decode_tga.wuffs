@@ -71,6 +71,7 @@ pub struct decoder? implements base.image_decoder(
 )(
 	dst_palette : array[4 * 256] base.u8,
 	src_palette : array[4 * 256] base.u8,
+	scratch     : array[4] base.u8,
 )
 
 pub func decoder.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
@@ -158,7 +159,6 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 
 	} else if (this.header_image_type | 8) == 0x0A {
 		if this.header_pixel_depth == 0x10 {
-			// TODO: implement.
 			this.src_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL
 		} else if this.header_pixel_depth == 0x18 {
 			this.src_bytes_per_pixel = 3
@@ -215,7 +215,7 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 				this.src_palette[((i & 0xFF) * 4) + 1] = ((c5 << 3) | (c5 >> 2)) as base.u8
 				c5 = 0x1F & (c >> 10)
 				this.src_palette[((i & 0xFF) * 4) + 2] = ((c5 << 3) | (c5 >> 2)) as base.u8
-				// TODO: can the alpha value be zero (BGRA5551)?
+				// TODO: can the alpha value be zero (BGRA5551 not BGRX5551)?
 				this.src_palette[((i & 0xFF) * 4) + 3] = 0xFF
 			}
 			i += 1
@@ -288,13 +288,14 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 	var dst                 : slice base.u8
 	var dst_start           : base.u64
 	var src_palette         : slice base.u8
-	var src                 : array[4] base.u8
 	var mark                : base.u64
 	var num_pixels64        : base.u64
 	var num_pixels32        : base.u32[..= 0xFFFF]
 	var lit_length          : base.u32[..= 0xFFFF]
 	var num_dst_bytes       : base.u64[..= 0x1F_FFE0]
 	var num_src_bytes       : base.u32[..= 0x3_FFFC]
+	var c                   : base.u32
+	var c5                  : base.u32[..= 0x1F]
 
 	if this.call_sequence < 4 {
 		this.decode_frame_config?(dst: nullptr, src: args.src)
@@ -373,15 +374,28 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 					}
 
 				} else {
+					// Wuffs' base.pixel_swizzler doesn't support BGRX5551, so
+					// we manually convert to BGRX8888, one pixel at a time.
+
 					if lit_length > 0 {
-						// TODO: don't hard-code reddish purple.
-						src[0] = 0x7F
-						src[1] = 0x00
-						src[2] = 0xFF
-						src[3] = 0xFF
-						// TODO: be more efficient than swizzling one pixel at a time.
+						if args.src.length() < 2 {
+							yield? base."$short read"
+							continue.resume
+						}
+						c = args.src.peek_u16le_as_u32()
+						args.src.skip_u32_fast!(actual: 2, worst_case: 2)
+						c5 = 0x1F & (c >> 0)
+						this.scratch[0] = ((c5 << 3) | (c5 >> 2)) as base.u8
+						c5 = 0x1F & (c >> 5)
+						this.scratch[1] = ((c5 << 3) | (c5 >> 2)) as base.u8
+						c5 = 0x1F & (c >> 10)
+						this.scratch[2] = ((c5 << 3) | (c5 >> 2)) as base.u8
+						// TODO: can the alpha value be zero (BGRA5551 not BGRX5551)?
+						this.scratch[3] = 0xFF
 						this.swizzler.swizzle_interleaved_from_slice!(
-							dst: dst, dst_palette: args.dst.palette(), src: src[..])
+							dst: dst,
+							dst_palette: dst_palette,
+							src: this.scratch[.. 4])
 						if dst_bytes_per_pixel <= dst.length() {
 							dst = dst[dst_bytes_per_pixel ..]
 						}

@@ -9819,6 +9819,7 @@ struct wuffs_tga__decoder__struct {
   struct {
     uint8_t f_dst_palette[1024];
     uint8_t f_src_palette[1024];
+    uint8_t f_scratch[4];
 
     struct {
       uint32_t v_i;
@@ -9828,7 +9829,6 @@ struct wuffs_tga__decoder__struct {
       uint64_t v_dst_bytes_per_pixel;
       uint32_t v_dst_x;
       uint32_t v_dst_y;
-      uint8_t v_src[4];
       uint64_t v_mark;
       uint32_t v_num_pixels32;
       uint32_t v_lit_length;
@@ -42777,13 +42777,14 @@ wuffs_tga__decoder__decode_frame(
   wuffs_base__slice_u8 v_dst = {0};
   uint64_t v_dst_start = 0;
   wuffs_base__slice_u8 v_src_palette = {0};
-  uint8_t v_src[4] = {0};
   uint64_t v_mark = 0;
   uint64_t v_num_pixels64 = 0;
   uint32_t v_num_pixels32 = 0;
   uint32_t v_lit_length = 0;
   uint64_t v_num_dst_bytes = 0;
   uint32_t v_num_src_bytes = 0;
+  uint32_t v_c = 0;
+  uint32_t v_c5 = 0;
 
   const uint8_t* iop_a_src = NULL;
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -42801,7 +42802,6 @@ wuffs_tga__decoder__decode_frame(
     v_dst_bytes_per_pixel = self->private_data.s_decode_frame[0].v_dst_bytes_per_pixel;
     v_dst_x = self->private_data.s_decode_frame[0].v_dst_x;
     v_dst_y = self->private_data.s_decode_frame[0].v_dst_y;
-    memcpy(v_src, self->private_data.s_decode_frame[0].v_src, sizeof(v_src));
     v_mark = self->private_data.s_decode_frame[0].v_mark;
     v_num_pixels32 = self->private_data.s_decode_frame[0].v_num_pixels32;
     v_lit_length = self->private_data.s_decode_frame[0].v_lit_length;
@@ -42902,11 +42902,21 @@ wuffs_tga__decoder__decode_frame(
             }
           } else {
             if (v_lit_length > 0) {
-              v_src[0] = 127;
-              v_src[1] = 0;
-              v_src[2] = 255;
-              v_src[3] = 255;
-              wuffs_base__pixel_swizzler__swizzle_interleaved_from_slice(&self->private_impl.f_swizzler, v_dst, wuffs_base__pixel_buffer__palette(a_dst), wuffs_base__make_slice_u8(v_src, 4));
+              if (((uint64_t)(io2_a_src - iop_a_src)) < 2) {
+                status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+                WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(4);
+                goto label__resume__continue;
+              }
+              v_c = ((uint32_t)(wuffs_base__peek_u16le__no_bounds_check(iop_a_src)));
+              iop_a_src += 2;
+              v_c5 = (31 & (v_c >> 0));
+              self->private_data.f_scratch[0] = ((uint8_t)(((v_c5 << 3) | (v_c5 >> 2))));
+              v_c5 = (31 & (v_c >> 5));
+              self->private_data.f_scratch[1] = ((uint8_t)(((v_c5 << 3) | (v_c5 >> 2))));
+              v_c5 = (31 & (v_c >> 10));
+              self->private_data.f_scratch[2] = ((uint8_t)(((v_c5 << 3) | (v_c5 >> 2))));
+              self->private_data.f_scratch[3] = 255;
+              wuffs_base__pixel_swizzler__swizzle_interleaved_from_slice(&self->private_impl.f_swizzler, v_dst, v_dst_palette, wuffs_base__make_slice_u8(self->private_data.f_scratch, 4));
               if (v_dst_bytes_per_pixel <= ((uint64_t)(v_dst.len))) {
                 v_dst = wuffs_base__slice_u8__subslice_i(v_dst, v_dst_bytes_per_pixel);
               }
@@ -42940,7 +42950,6 @@ wuffs_tga__decoder__decode_frame(
   self->private_data.s_decode_frame[0].v_dst_bytes_per_pixel = v_dst_bytes_per_pixel;
   self->private_data.s_decode_frame[0].v_dst_x = v_dst_x;
   self->private_data.s_decode_frame[0].v_dst_y = v_dst_y;
-  memcpy(self->private_data.s_decode_frame[0].v_src, v_src, sizeof(v_src));
   self->private_data.s_decode_frame[0].v_mark = v_mark;
   self->private_data.s_decode_frame[0].v_num_pixels32 = v_num_pixels32;
   self->private_data.s_decode_frame[0].v_lit_length = v_lit_length;
