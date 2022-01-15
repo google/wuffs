@@ -35,7 +35,6 @@
 extern crate gif;
 extern crate rustc_version_runtime;
 
-use gif::SetParameter;
 use std::time::Instant;
 
 const ITERSCALE: u64 = 10;
@@ -183,15 +182,14 @@ fn bench(
 // decode returns the number of bytes processed.
 fn decode(dst: &mut [u8], src: &[u8], output_32_bit_color: bool) -> u64 {
     let mut num_bytes = 0u64;
-    let mut decoder = gif::Decoder::new(src);
+    let mut options = gif::DecodeOptions::new();
     if output_32_bit_color {
-        decoder.set(gif::ColorOutput::RGBA);
+        options.set_color_output(gif::ColorOutput::RGBA);
     }
-
-    let mut reader = decoder.read_info().unwrap();
-    while let Some(_) = reader.next_frame_info().unwrap() {
-        num_bytes += reader.buffer_size() as u64;
-        reader.read_into_buffer(dst).unwrap();
+    let mut decoder = options.read_info(src).unwrap();
+    while let Some(_) = decoder.next_frame_info().unwrap() {
+        num_bytes += decoder.buffer_size() as u64;
+        decoder.read_into_buffer(dst).unwrap();
     }
     num_bytes
 }
