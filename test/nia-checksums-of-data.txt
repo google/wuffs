@@ -35,7 +35,7 @@ c2bce675 test/data/bricks-gray.bmp
 c2bce675 test/data/bricks-gray.gif
 c2bce675 test/data/bricks-gray.no-ancillary.png
 c2bce675 test/data/bricks-gray.png
-0319cb08 test/data/bricks-gray.tga
+c2bce675 test/data/bricks-gray.tga
 7aebfe6c test/data/bricks-nodither.bmp
 7aebfe6c test/data/bricks-nodither.gif
 7aebfe6c test/data/bricks-nodither.png
