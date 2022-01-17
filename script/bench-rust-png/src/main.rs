@@ -145,19 +145,20 @@ fn bench(
 
 // decode returns the number of bytes processed.
 fn decode(dst0: &mut [u8], dst1: &mut [u8], src: &[u8]) -> u64 {
-    let decoder = png::Decoder::new(src);
-    let (info, mut reader) = decoder.read_info().unwrap();
+    let mut decoder = png::Decoder::new(src);
+    decoder.set_transformations(png::Transformations::normalize_to_color8());
+    let mut reader = decoder.read_info().unwrap();
+    let info = reader.next_frame(dst0).unwrap();
     let num_bytes = info.buffer_size() as u64;
-    reader.next_frame(dst0).unwrap();
     if info.color_type == png::ColorType::Grayscale {
         // No conversion necessary.
         return num_bytes;
-    } else if info.color_type == png::ColorType::RGB {
+    } else if info.color_type == png::ColorType::Rgb {
         // Convert RGB => BGRA.
         let new_size = ((num_bytes / 3) * 4) as usize;
         rgb_to_bgra(&dst0[..num_bytes as usize], &mut dst1[..new_size]);
         return new_size as u64;
-    } else if info.color_type == png::ColorType::RGBA {
+    } else if info.color_type == png::ColorType::Rgba {
         // Convert RGBA => BGRA.
         for i in 0..((num_bytes / 4) as usize) {
             let d = dst0[(4 * i) + 0];

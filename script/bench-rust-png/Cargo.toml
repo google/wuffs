@@ -4,5 +4,5 @@ version = "0.0.1"
 authors = ["Nigel Tao <nigeltao@golang.org>"]
 
 [dependencies]
-png     = "*"
+png     = "0.17"
 rustc_version_runtime = "*"
