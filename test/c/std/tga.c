@@ -70,6 +70,23 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 // ---------------- TGA Tests
 
 const char*  //
+wuffs_tga_decode(uint64_t* n_bytes_out,
+                 wuffs_base__io_buffer* dst,
+                 uint32_t wuffs_initialize_flags,
+                 wuffs_base__pixel_format pixfmt,
+                 uint32_t* quirks_ptr,
+                 size_t quirks_len,
+                 wuffs_base__io_buffer* src) {
+  wuffs_tga__decoder dec;
+  CHECK_STATUS("initialize",
+               wuffs_tga__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION,
+                                              wuffs_initialize_flags));
+  return do_run__wuffs_base__image_decoder(
+      wuffs_tga__decoder__upcast_as__wuffs_base__image_decoder(&dec),
+      n_bytes_out, dst, pixfmt, quirks_ptr, quirks_len, src);
+}
+
+const char*  //
 test_wuffs_tga_decode_interface() {
   CHECK_FOCUS(__func__);
   wuffs_tga__decoder dec;
@@ -92,7 +109,24 @@ test_wuffs_tga_decode_interface() {
 
 // ---------------- TGA Benches
 
-// No TGA benches.
+const char*  //
+bench_wuffs_tga_decode_19k_8bpp() {
+  CHECK_FOCUS(__func__);
+  return do_bench_image_decode(
+      &wuffs_tga_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      wuffs_base__make_pixel_format(
+          WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL),
+      NULL, 0, "test/data/bricks-nodither.tga", 0, SIZE_MAX, 1000);
+}
+
+const char*  //
+bench_wuffs_tga_decode_77k_24bpp() {
+  CHECK_FOCUS(__func__);
+  return do_bench_image_decode(
+      &wuffs_tga_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
+      NULL, 0, "test/data/bricks-color.tga", 0, SIZE_MAX, 200);
+}
 
 // ---------------- Mimic Benches
 
@@ -119,7 +153,8 @@ proc g_tests[] = {
 
 proc g_benches[] = {
 
-// No TGA benches.
+    bench_wuffs_tga_decode_19k_8bpp,
+    bench_wuffs_tga_decode_77k_24bpp,
 
 #ifdef WUFFS_MIMIC
 
