@@ -62,11 +62,13 @@ dcbb225a test/data/hippopotamus.bmp
 ed4b78fc test/data/hippopotamus.interlaced.gif
 dcbb225a test/data/hippopotamus.interlaced.png
 c3c4bd65 test/data/hippopotamus.interlaced.truncated.gif
+29d02ead test/data/hippopotamus.interlaced.truncated.png
 d3bbed27 test/data/hippopotamus.masked-with-muybridge.gif
 7e6acf01 test/data/hippopotamus.masked-with-muybridge.png
 dcbb225a test/data/hippopotamus.nie
 ed4b78fc test/data/hippopotamus.regular.gif
 dcbb225a test/data/hippopotamus.regular.png
+2427e42e test/data/hippopotamus.regular.truncated.png
 2dccfe56 test/data/muybridge-frame-000.wbmp
 db2733f5 test/data/muybridge.apng
 db2733f5 test/data/muybridge.gif
