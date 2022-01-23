@@ -40539,17 +40539,33 @@ wuffs_png__decoder__decode_frame(
       if ((v_pass_width > 0) && (v_pass_height > 0)) {
         self->private_impl.f_pass_bytes_per_row = wuffs_png__decoder__calculate_bytes_per_row(self, v_pass_width);
         self->private_impl.f_pass_workbuf_length = (((uint64_t)(v_pass_height)) * (1 + self->private_impl.f_pass_bytes_per_row));
-        if (a_src) {
-          a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+        while (true) {
+          {
+            if (a_src) {
+              a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+            }
+            wuffs_base__status t_1 = wuffs_png__decoder__decode_pass(self, a_src, a_workbuf);
+            v_status = t_1;
+            if (a_src) {
+              iop_a_src = a_src->data.ptr + a_src->meta.ri;
+            }
+          }
+          if (wuffs_base__status__is_ok(&v_status)) {
+            goto label__1__break;
+          } else if ((v_status.repr == wuffs_base__suspension__short_read) && (a_src && a_src->meta.closed)) {
+            if (self->private_impl.f_workbuf_wi <= ((uint64_t)(a_workbuf.len))) {
+              wuffs_png__decoder__filter_and_swizzle(self, a_dst, wuffs_base__slice_u8__subslice_j(a_workbuf, self->private_impl.f_workbuf_wi));
+            }
+            while (true) {
+              status = v_status;
+              WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(6);
+              v_status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+            }
+          }
+          status = v_status;
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(7);
         }
-        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
-        status = wuffs_png__decoder__decode_pass(self, a_src, a_workbuf);
-        if (a_src) {
-          iop_a_src = a_src->data.ptr + a_src->meta.ri;
-        }
-        if (status.repr) {
-          goto suspend;
-        }
+        label__1__break:;
         v_status = wuffs_png__decoder__filter_and_swizzle(self, a_dst, a_workbuf);
         if ( ! wuffs_base__status__is_ok(&v_status)) {
           status = v_status;
@@ -40564,7 +40580,7 @@ wuffs_png__decoder__decode_frame(
         self->private_impl.f_workbuf_hist_pos_base += self->private_impl.f_pass_workbuf_length;
       }
       if ((self->private_impl.f_interlace_pass == 0) || (self->private_impl.f_interlace_pass >= 7)) {
-        goto label__1__break;
+        goto label__2__break;
       }
 #if defined(__GNUC__)
 #pragma GCC diagnostic push
@@ -40575,7 +40591,7 @@ wuffs_png__decoder__decode_frame(
 #pragma GCC diagnostic pop
 #endif
     }
-    label__1__break:;
+    label__2__break:;
     wuffs_base__u32__sat_add_indirect(&self->private_impl.f_num_decoded_frames_value, 1);
     if (self->private_impl.f_num_decoded_frames_value < self->private_impl.f_num_animation_frames_value) {
       self->private_impl.f_call_sequence = 5;

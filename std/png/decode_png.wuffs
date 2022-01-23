@@ -1195,7 +1195,26 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 		if (pass_width > 0) and (pass_height > 0) {
 			this.pass_bytes_per_row = this.calculate_bytes_per_row(width: pass_width)
 			this.pass_workbuf_length = (pass_height as base.u64) * (1 + this.pass_bytes_per_row)
-			this.decode_pass?(src: args.src, workbuf: args.workbuf)
+			while true {
+				status =? this.decode_pass?(src: args.src, workbuf: args.workbuf)
+				if status.is_ok() {
+					break
+				} else if (status == base."$short read") and args.src.is_closed() {
+					// The input was truncated. Produce whatever pixels we can
+					// and then generate "$short read" forever.
+					if this.workbuf_wi <= args.workbuf.length() {
+						// This might return "#internal error: inconsistent
+						// workbuf length" because of the ".. this.workbuf_wi".
+						// We just ignore the error.
+						this.filter_and_swizzle!(dst: args.dst, workbuf: args.workbuf[.. this.workbuf_wi])
+					}
+					while true {
+						yield? status
+						status = base."$short read"
+					} endwhile
+				}
+				yield? status
+			} endwhile
 			status = this.filter_and_swizzle!(dst: args.dst, workbuf: args.workbuf)
 			if not status.is_ok() {
 				return status
