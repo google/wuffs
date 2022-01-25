@@ -385,9 +385,9 @@ func (h *livenessHelper) doJump(r livenesses, n *a.Jump, depth uint32) error {
 	l := h.loops[n.JumpTarget()]
 	switch n.Keyword() {
 	case t.IDBreak:
-		l.changed = l.before.reconcile(r) || l.changed
-	case t.IDContinue:
 		l.changed = l.after.reconcile(r) || l.changed
+	case t.IDContinue:
+		l.changed = l.before.reconcile(r) || l.changed
 	default:
 		return fmt.Errorf("unrecognized ast.Jump keyword")
 	}
