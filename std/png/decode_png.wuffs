@@ -1525,7 +1525,6 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 					} else if c2 <= 0x7F {
 						if args.dst.length() <= 0 {
 							yield? base."$short write"
-							c2 = 0
 							continue.loop
 						}
 						this.ztxt_ri += 1
@@ -1533,7 +1532,6 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 					} else {
 						if args.dst.length() <= 1 {
 							yield? base."$short write"
-							c2 = 0
 							continue.loop
 						}
 						this.ztxt_ri += 1
@@ -1599,7 +1597,6 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 				} else if c2 <= 0x7F {
 					if args.dst.length() <= 0 {
 						yield? base."$short write"
-						c2 = 0
 						continue.loop
 					}
 					this.chunk_length -= 1
@@ -1608,7 +1605,6 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 				} else {
 					if args.dst.length() <= 1 {
 						yield? base."$short write"
-						c2 = 0
 						continue.loop
 					}
 					this.chunk_length -= 1

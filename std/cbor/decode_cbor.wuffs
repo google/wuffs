@@ -226,8 +226,6 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 					return "#bad input"
 				}
 				yield? base."$short read"
-				c_major = 0
-				c_minor = 0
 				continue.outer
 			}
 			return "#internal error: inconsistent I/O"

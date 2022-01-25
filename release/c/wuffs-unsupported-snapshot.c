@@ -24852,8 +24852,6 @@ wuffs_cbor__decoder__decode_tokens(
                 }
                 status = wuffs_base__make_status(wuffs_base__suspension__short_read);
                 WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(3);
-                v_c_major = 0;
-                v_c_minor = 0;
                 goto label__outer__continue;
               }
               status = wuffs_base__make_status(wuffs_cbor__error__internal_error_inconsistent_i_o);
@@ -41326,7 +41324,6 @@ wuffs_png__decoder__tell_me_more(
                 if (((uint64_t)(io2_a_dst - iop_a_dst)) <= 0) {
                   status = wuffs_base__make_status(wuffs_base__suspension__short_write);
                   WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(4);
-                  v_c2 = 0;
                   goto label__loop__continue;
                 }
                 self->private_impl.f_ztxt_ri += 1;
@@ -41335,7 +41332,6 @@ wuffs_png__decoder__tell_me_more(
                 if (((uint64_t)(io2_a_dst - iop_a_dst)) <= 1) {
                   status = wuffs_base__make_status(wuffs_base__suspension__short_write);
                   WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(5);
-                  v_c2 = 0;
                   goto label__loop__continue;
                 }
                 self->private_impl.f_ztxt_ri += 1;
@@ -41407,7 +41403,6 @@ wuffs_png__decoder__tell_me_more(
               if (((uint64_t)(io2_a_dst - iop_a_dst)) <= 0) {
                 status = wuffs_base__make_status(wuffs_base__suspension__short_write);
                 WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(10);
-                v_c2 = 0;
                 goto label__loop__continue;
               }
               self->private_impl.f_chunk_length -= 1;
@@ -41417,7 +41412,6 @@ wuffs_png__decoder__tell_me_more(
               if (((uint64_t)(io2_a_dst - iop_a_dst)) <= 1) {
                 status = wuffs_base__make_status(wuffs_base__suspension__short_write);
                 WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(11);
-                v_c2 = 0;
                 goto label__loop__continue;
               }
               self->private_impl.f_chunk_length -= 1;
