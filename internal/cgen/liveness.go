@@ -439,7 +439,7 @@ func (h *livenessHelper) doWhile(r livenesses, n *a.While, depth uint32) error {
 
 		if err := h.doExpr(r, n.Condition()); err != nil {
 			return err
-		} else {
+		} else if !n.IsWhileTrue() {
 			l.changed = l.after.reconcile(r) || l.changed
 		}
 

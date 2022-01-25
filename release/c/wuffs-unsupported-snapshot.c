@@ -7354,7 +7354,6 @@ struct wuffs_deflate__decoder__struct {
       uint32_t v_n_clen;
       uint32_t v_i;
       uint32_t v_mask;
-      uint32_t v_table_entry;
       uint32_t v_n_extra_bits;
       uint8_t v_rep_symbol;
       uint32_t v_rep_count;
@@ -27229,7 +27228,6 @@ wuffs_deflate__decoder__init_dynamic_huffman(
     v_n_clen = self->private_data.s_init_dynamic_huffman[0].v_n_clen;
     v_i = self->private_data.s_init_dynamic_huffman[0].v_i;
     v_mask = self->private_data.s_init_dynamic_huffman[0].v_mask;
-    v_table_entry = self->private_data.s_init_dynamic_huffman[0].v_table_entry;
     v_n_extra_bits = self->private_data.s_init_dynamic_huffman[0].v_n_extra_bits;
     v_rep_symbol = self->private_data.s_init_dynamic_huffman[0].v_rep_symbol;
     v_rep_count = self->private_data.s_init_dynamic_huffman[0].v_rep_count;
@@ -27429,7 +27427,6 @@ wuffs_deflate__decoder__init_dynamic_huffman(
   self->private_data.s_init_dynamic_huffman[0].v_n_clen = v_n_clen;
   self->private_data.s_init_dynamic_huffman[0].v_i = v_i;
   self->private_data.s_init_dynamic_huffman[0].v_mask = v_mask;
-  self->private_data.s_init_dynamic_huffman[0].v_table_entry = v_table_entry;
   self->private_data.s_init_dynamic_huffman[0].v_n_extra_bits = v_n_extra_bits;
   self->private_data.s_init_dynamic_huffman[0].v_rep_symbol = v_rep_symbol;
   self->private_data.s_init_dynamic_huffman[0].v_rep_count = v_rep_count;
