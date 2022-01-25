@@ -82,6 +82,12 @@ const (
 // livenesses is a slice of liveness values, one per local variable.
 type livenesses []liveness
 
+func (r livenesses) clear() {
+	for i := range r {
+		r[i] = livenessNone
+	}
+}
+
 func (r livenesses) clone() livenesses {
 	return append(livenesses(nil), r...)
 }
@@ -394,6 +400,7 @@ func (h *livenessHelper) doJump(r livenesses, n *a.Jump, depth uint32) error {
 	default:
 		return fmt.Errorf("unrecognized ast.Jump keyword")
 	}
+	r.clear()
 	return nil
 }
 
@@ -405,6 +412,7 @@ func (h *livenessHelper) doRet(r livenesses, n *a.Ret, depth uint32) error {
 	switch n.Keyword() {
 	case t.IDReturn:
 		h.final.reconcile(r)
+		r.clear()
 	case t.IDYield:
 		r.raiseNoneToWeak()
 	default:

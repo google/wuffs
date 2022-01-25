@@ -6921,7 +6921,6 @@ struct wuffs_cbor__decoder__struct {
     struct {
       uint64_t v_string_length;
       uint32_t v_depth;
-      uint32_t v_token_length;
       bool v_tagged;
       uint8_t v_indefinite_string_major_type;
     } s_decode_tokens[1];
@@ -7361,7 +7360,6 @@ struct wuffs_deflate__decoder__struct {
     struct {
       uint32_t v_bits;
       uint32_t v_n_bits;
-      uint32_t v_table_entry;
       uint32_t v_table_entry_n_bits;
       uint32_t v_lmask;
       uint32_t v_dmask;
@@ -7369,7 +7367,6 @@ struct wuffs_deflate__decoder__struct {
       uint32_t v_redir_mask;
       uint32_t v_length;
       uint32_t v_dist_minus_1;
-      uint32_t v_hlen;
       uint64_t scratch;
     } s_decode_huffman_slow[1];
   } private_data;
@@ -7977,7 +7974,6 @@ struct wuffs_gif__decoder__struct {
     struct {
       uint64_t v_block_size;
       bool v_need_block_size;
-      wuffs_base__status v_lzw_status;
       uint64_t scratch;
     } s_decode_id_part2[1];
   } private_data;
@@ -24776,7 +24772,6 @@ wuffs_cbor__decoder__decode_tokens(
   if (coro_susp_point) {
     v_string_length = self->private_data.s_decode_tokens[0].v_string_length;
     v_depth = self->private_data.s_decode_tokens[0].v_depth;
-    v_token_length = self->private_data.s_decode_tokens[0].v_token_length;
     v_tagged = self->private_data.s_decode_tokens[0].v_tagged;
     v_indefinite_string_major_type = self->private_data.s_decode_tokens[0].v_indefinite_string_major_type;
   }
@@ -25287,7 +25282,6 @@ wuffs_cbor__decoder__decode_tokens(
   self->private_impl.active_coroutine = wuffs_base__status__is_suspension(&status) ? 1 : 0;
   self->private_data.s_decode_tokens[0].v_string_length = v_string_length;
   self->private_data.s_decode_tokens[0].v_depth = v_depth;
-  self->private_data.s_decode_tokens[0].v_token_length = v_token_length;
   self->private_data.s_decode_tokens[0].v_tagged = v_tagged;
   self->private_data.s_decode_tokens[0].v_indefinite_string_major_type = v_indefinite_string_major_type;
 
@@ -28444,7 +28438,6 @@ wuffs_deflate__decoder__decode_huffman_slow(
   if (coro_susp_point) {
     v_bits = self->private_data.s_decode_huffman_slow[0].v_bits;
     v_n_bits = self->private_data.s_decode_huffman_slow[0].v_n_bits;
-    v_table_entry = self->private_data.s_decode_huffman_slow[0].v_table_entry;
     v_table_entry_n_bits = self->private_data.s_decode_huffman_slow[0].v_table_entry_n_bits;
     v_lmask = self->private_data.s_decode_huffman_slow[0].v_lmask;
     v_dmask = self->private_data.s_decode_huffman_slow[0].v_dmask;
@@ -28452,7 +28445,6 @@ wuffs_deflate__decoder__decode_huffman_slow(
     v_redir_mask = self->private_data.s_decode_huffman_slow[0].v_redir_mask;
     v_length = self->private_data.s_decode_huffman_slow[0].v_length;
     v_dist_minus_1 = self->private_data.s_decode_huffman_slow[0].v_dist_minus_1;
-    v_hlen = self->private_data.s_decode_huffman_slow[0].v_hlen;
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
@@ -28704,7 +28696,6 @@ wuffs_deflate__decoder__decode_huffman_slow(
   self->private_impl.p_decode_huffman_slow[0] = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
   self->private_data.s_decode_huffman_slow[0].v_bits = v_bits;
   self->private_data.s_decode_huffman_slow[0].v_n_bits = v_n_bits;
-  self->private_data.s_decode_huffman_slow[0].v_table_entry = v_table_entry;
   self->private_data.s_decode_huffman_slow[0].v_table_entry_n_bits = v_table_entry_n_bits;
   self->private_data.s_decode_huffman_slow[0].v_lmask = v_lmask;
   self->private_data.s_decode_huffman_slow[0].v_dmask = v_dmask;
@@ -28712,7 +28703,6 @@ wuffs_deflate__decoder__decode_huffman_slow(
   self->private_data.s_decode_huffman_slow[0].v_redir_mask = v_redir_mask;
   self->private_data.s_decode_huffman_slow[0].v_length = v_length;
   self->private_data.s_decode_huffman_slow[0].v_dist_minus_1 = v_dist_minus_1;
-  self->private_data.s_decode_huffman_slow[0].v_hlen = v_hlen;
 
   goto exit;
   exit:
@@ -31516,7 +31506,6 @@ wuffs_gif__decoder__decode_id_part2(
   if (coro_susp_point) {
     v_block_size = self->private_data.s_decode_id_part2[0].v_block_size;
     v_need_block_size = self->private_data.s_decode_id_part2[0].v_need_block_size;
-    v_lzw_status = self->private_data.s_decode_id_part2[0].v_lzw_status;
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
@@ -31694,7 +31683,6 @@ wuffs_gif__decoder__decode_id_part2(
   self->private_impl.p_decode_id_part2[0] = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
   self->private_data.s_decode_id_part2[0].v_block_size = v_block_size;
   self->private_data.s_decode_id_part2[0].v_need_block_size = v_need_block_size;
-  self->private_data.s_decode_id_part2[0].v_lzw_status = v_lzw_status;
 
   goto exit;
   exit:
