@@ -1199,18 +1199,22 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 				status =? this.decode_pass?(src: args.src, workbuf: args.workbuf)
 				if status.is_ok() {
 					break
-				} else if (status == base."$short read") and args.src.is_closed() {
-					// The input was truncated. Produce whatever pixels we can
-					// and then generate "$short read" forever.
+				} else if status.is_error() or
+					((status == base."$short read") and args.src.is_closed()) {
+					// The input was truncated or invalid. Produce whatever
+					// pixels we can and then, if truncated, generate "$short
+					// read" forever.
 					if this.workbuf_wi <= args.workbuf.length() {
 						// This might return "#internal error: inconsistent
 						// workbuf length" because of the ".. this.workbuf_wi".
 						// We just ignore the error.
 						this.filter_and_swizzle!(dst: args.dst, workbuf: args.workbuf[.. this.workbuf_wi])
 					}
-					while true {
-						yield? base."$short read"
-					} endwhile
+					if status == base."$short read" {
+						while true {
+							yield? base."$short read"
+						} endwhile
+					}
 				}
 				yield? status
 			} endwhile

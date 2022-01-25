@@ -40549,13 +40549,15 @@ wuffs_png__decoder__decode_frame(
           }
           if (wuffs_base__status__is_ok(&v_status)) {
             goto label__1__break;
-          } else if ((v_status.repr == wuffs_base__suspension__short_read) && (a_src && a_src->meta.closed)) {
+          } else if (wuffs_base__status__is_error(&v_status) || ((v_status.repr == wuffs_base__suspension__short_read) && (a_src && a_src->meta.closed))) {
             if (self->private_impl.f_workbuf_wi <= ((uint64_t)(a_workbuf.len))) {
               wuffs_png__decoder__filter_and_swizzle(self, a_dst, wuffs_base__slice_u8__subslice_j(a_workbuf, self->private_impl.f_workbuf_wi));
             }
-            while (true) {
-              status = wuffs_base__make_status(wuffs_base__suspension__short_read);
-              WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(6);
+            if (v_status.repr == wuffs_base__suspension__short_read) {
+              while (true) {
+                status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+                WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(6);
+              }
             }
           }
           status = v_status;
