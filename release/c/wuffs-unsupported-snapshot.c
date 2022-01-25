@@ -34094,106 +34094,102 @@ wuffs_json__decoder__decode_comment(
       v_length = 2;
       label__comment_block__continue:;
       while (true) {
-        while (true) {
-          if (((uint64_t)(io2_a_src - iop_a_src)) <= 1) {
-            if (v_length > 0) {
-              *iop_a_dst++ = wuffs_base__make_token(
-                  (((uint64_t)(2)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
-                  (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
-                  (((uint64_t)(v_length)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
-            }
-            if (a_src && a_src->meta.closed) {
-              status = wuffs_base__make_status(wuffs_json__error__bad_input);
-              goto exit;
-            }
-            status = wuffs_base__make_status(wuffs_base__suspension__short_read);
-            WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(3);
-            while (((uint64_t)(io2_a_dst - iop_a_dst)) <= 0) {
-              status = wuffs_base__make_status(wuffs_base__suspension__short_write);
-              WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(4);
-            }
-            v_length = 0;
-            goto label__comment_block__continue;
-          }
-          v_c2 = wuffs_base__peek_u16le__no_bounds_check(iop_a_src);
-          if (v_c2 == 12074) {
-            iop_a_src += 2;
-            *iop_a_dst++ = wuffs_base__make_token(
-                (((uint64_t)(2)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
-                (((uint64_t)((v_length + 2))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
-            self->private_impl.f_comment_type = 1;
-            status = wuffs_base__make_status(NULL);
-            goto ok;
-          }
-          iop_a_src += 1;
-          if (v_length >= 65533) {
+        if (((uint64_t)(io2_a_src - iop_a_src)) <= 1) {
+          if (v_length > 0) {
             *iop_a_dst++ = wuffs_base__make_token(
                 (((uint64_t)(2)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                 (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
-                (((uint64_t)((v_length + 1))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
-            while (((uint64_t)(io2_a_dst - iop_a_dst)) <= 0) {
-              status = wuffs_base__make_status(wuffs_base__suspension__short_write);
-              WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(5);
-            }
-            v_length = 0;
-            goto label__comment_block__continue;
+                (((uint64_t)(v_length)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
           }
-          v_length += 1;
+          if (a_src && a_src->meta.closed) {
+            status = wuffs_base__make_status(wuffs_json__error__bad_input);
+            goto exit;
+          }
+          status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(3);
+          while (((uint64_t)(io2_a_dst - iop_a_dst)) <= 0) {
+            status = wuffs_base__make_status(wuffs_base__suspension__short_write);
+            WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(4);
+          }
+          v_length = 0;
+          goto label__comment_block__continue;
         }
+        v_c2 = wuffs_base__peek_u16le__no_bounds_check(iop_a_src);
+        if (v_c2 == 12074) {
+          iop_a_src += 2;
+          *iop_a_dst++ = wuffs_base__make_token(
+              (((uint64_t)(2)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+              (((uint64_t)((v_length + 2))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+          self->private_impl.f_comment_type = 1;
+          status = wuffs_base__make_status(NULL);
+          goto ok;
+        }
+        iop_a_src += 1;
+        if (v_length >= 65533) {
+          *iop_a_dst++ = wuffs_base__make_token(
+              (((uint64_t)(2)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+              (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
+              (((uint64_t)((v_length + 1))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+          while (((uint64_t)(io2_a_dst - iop_a_dst)) <= 0) {
+            status = wuffs_base__make_status(wuffs_base__suspension__short_write);
+            WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(5);
+          }
+          v_length = 0;
+          goto label__comment_block__continue;
+        }
+        v_length += 1;
       }
     } else if ((v_c2 == 12079) && self->private_impl.f_quirks[12]) {
       iop_a_src += 2;
       v_length = 2;
       label__comment_line__continue:;
       while (true) {
-        while (true) {
-          if (((uint64_t)(io2_a_src - iop_a_src)) <= 0) {
-            if (a_src && a_src->meta.closed) {
-              *iop_a_dst++ = wuffs_base__make_token(
-                  (((uint64_t)(4)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
-                  (((uint64_t)(v_length)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
-              self->private_impl.f_comment_type = 2;
-              status = wuffs_base__make_status(NULL);
-              goto ok;
-            } else if (v_length > 0) {
-              *iop_a_dst++ = wuffs_base__make_token(
-                  (((uint64_t)(4)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
-                  (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
-                  (((uint64_t)(v_length)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
-            }
-            status = wuffs_base__make_status(wuffs_base__suspension__short_read);
-            WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(6);
-            while (((uint64_t)(io2_a_dst - iop_a_dst)) <= 0) {
-              status = wuffs_base__make_status(wuffs_base__suspension__short_write);
-              WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(7);
-            }
-            v_length = 0;
-            goto label__comment_line__continue;
-          }
-          v_c = wuffs_base__peek_u8be__no_bounds_check(iop_a_src);
-          if (v_c == 10) {
+        if (((uint64_t)(io2_a_src - iop_a_src)) <= 0) {
+          if (a_src && a_src->meta.closed) {
             *iop_a_dst++ = wuffs_base__make_token(
                 (((uint64_t)(4)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                 (((uint64_t)(v_length)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
             self->private_impl.f_comment_type = 2;
             status = wuffs_base__make_status(NULL);
             goto ok;
-          }
-          iop_a_src += 1;
-          if (v_length >= 65533) {
+          } else if (v_length > 0) {
             *iop_a_dst++ = wuffs_base__make_token(
                 (((uint64_t)(4)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                 (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
-                (((uint64_t)((v_length + 1))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
-            while (((uint64_t)(io2_a_dst - iop_a_dst)) <= 0) {
-              status = wuffs_base__make_status(wuffs_base__suspension__short_write);
-              WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(8);
-            }
-            v_length = 0;
-            goto label__comment_line__continue;
+                (((uint64_t)(v_length)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
           }
-          v_length += 1;
+          status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(6);
+          while (((uint64_t)(io2_a_dst - iop_a_dst)) <= 0) {
+            status = wuffs_base__make_status(wuffs_base__suspension__short_write);
+            WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(7);
+          }
+          v_length = 0;
+          goto label__comment_line__continue;
         }
+        v_c = wuffs_base__peek_u8be__no_bounds_check(iop_a_src);
+        if (v_c == 10) {
+          *iop_a_dst++ = wuffs_base__make_token(
+              (((uint64_t)(4)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+              (((uint64_t)(v_length)) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+          self->private_impl.f_comment_type = 2;
+          status = wuffs_base__make_status(NULL);
+          goto ok;
+        }
+        iop_a_src += 1;
+        if (v_length >= 65533) {
+          *iop_a_dst++ = wuffs_base__make_token(
+              (((uint64_t)(4)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
+              (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
+              (((uint64_t)((v_length + 1))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+          while (((uint64_t)(io2_a_dst - iop_a_dst)) <= 0) {
+            status = wuffs_base__make_status(wuffs_base__suspension__short_write);
+            WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(8);
+          }
+          v_length = 0;
+          goto label__comment_line__continue;
+        }
+        v_length += 1;
       }
     }
 

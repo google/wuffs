@@ -1444,62 +1444,58 @@ pri func decoder.decode_comment?(dst: base.token_writer, src: base.io_reader) {
 		while.comment_block true,
 			pre args.dst.length() > 0,
 		{
-			while true,
-				pre args.dst.length() > 0,
-			{
-				if args.src.length() <= 1 {
-					if length > 0 {
-						args.dst.write_simple_token_fast!(
-							value_major: 0,
-							value_minor: (base.TOKEN__VBC__FILLER << 21) |
-							base.TOKEN__VBD__FILLER__COMMENT_BLOCK,
-							continued: 1,
-							length: length)
-					}
-					if args.src.is_closed() {
-						return "#bad input"
-					}
-					yield? base."$short read"
-					while args.dst.length() <= 0,
-						post args.dst.length() > 0,
-					{
-						yield? base."$short write"
-					} endwhile
-					length = 0
-					continue.comment_block
-				}
-
-				c2 = args.src.peek_u16le()
-				if c2 == '*/'le {
-					args.src.skip_u32_fast!(actual: 2, worst_case: 2)
-					args.dst.write_simple_token_fast!(
-						value_major: 0,
-						value_minor: (base.TOKEN__VBC__FILLER << 21) |
-						base.TOKEN__VBD__FILLER__COMMENT_BLOCK,
-						continued: 0,
-						length: length + 2)
-					this.comment_type = 1
-					return ok
-				}
-
-				args.src.skip_u32_fast!(actual: 1, worst_case: 1)
-				if length >= 0xFFFD {
+			if args.src.length() <= 1 {
+				if length > 0 {
 					args.dst.write_simple_token_fast!(
 						value_major: 0,
 						value_minor: (base.TOKEN__VBC__FILLER << 21) |
 						base.TOKEN__VBD__FILLER__COMMENT_BLOCK,
 						continued: 1,
-						length: length + 1)
-					while args.dst.length() <= 0,
-						post args.dst.length() > 0,
-					{
-						yield? base."$short write"
-					} endwhile
-					length = 0
-					continue.comment_block
+						length: length)
 				}
-				length += 1
-			} endwhile
+				if args.src.is_closed() {
+					return "#bad input"
+				}
+				yield? base."$short read"
+				while args.dst.length() <= 0,
+					post args.dst.length() > 0,
+				{
+					yield? base."$short write"
+				} endwhile
+				length = 0
+				continue.comment_block
+			}
+
+			c2 = args.src.peek_u16le()
+			if c2 == '*/'le {
+				args.src.skip_u32_fast!(actual: 2, worst_case: 2)
+				args.dst.write_simple_token_fast!(
+					value_major: 0,
+					value_minor: (base.TOKEN__VBC__FILLER << 21) |
+					base.TOKEN__VBD__FILLER__COMMENT_BLOCK,
+					continued: 0,
+					length: length + 2)
+				this.comment_type = 1
+				return ok
+			}
+
+			args.src.skip_u32_fast!(actual: 1, worst_case: 1)
+			if length >= 0xFFFD {
+				args.dst.write_simple_token_fast!(
+					value_major: 0,
+					value_minor: (base.TOKEN__VBC__FILLER << 21) |
+					base.TOKEN__VBD__FILLER__COMMENT_BLOCK,
+					continued: 1,
+					length: length + 1)
+				while args.dst.length() <= 0,
+					post args.dst.length() > 0,
+				{
+					yield? base."$short write"
+				} endwhile
+				length = 0
+				continue.comment_block
+			}
+			length += 1
 		} endwhile.comment_block
 
 	} else if (c2 == '//'le) and this.quirks[QUIRK_ALLOW_COMMENT_LINE - QUIRKS_BASE] {
@@ -1509,39 +1505,8 @@ pri func decoder.decode_comment?(dst: base.token_writer, src: base.io_reader) {
 		while.comment_line true,
 			pre args.dst.length() > 0,
 		{
-			while true,
-				pre args.dst.length() > 0,
-			{
-				if args.src.length() <= 0 {
-					if args.src.is_closed() {
-						args.dst.write_simple_token_fast!(
-							value_major: 0,
-							value_minor: (base.TOKEN__VBC__FILLER << 21) |
-							base.TOKEN__VBD__FILLER__COMMENT_LINE,
-							continued: 0,
-							length: length)
-						this.comment_type = 2
-						return ok
-					} else if length > 0 {
-						args.dst.write_simple_token_fast!(
-							value_major: 0,
-							value_minor: (base.TOKEN__VBC__FILLER << 21) |
-							base.TOKEN__VBD__FILLER__COMMENT_LINE,
-							continued: 1,
-							length: length)
-					}
-					yield? base."$short read"
-					while args.dst.length() <= 0,
-						post args.dst.length() > 0,
-					{
-						yield? base."$short write"
-					} endwhile
-					length = 0
-					continue.comment_line
-				}
-
-				c = args.src.peek_u8()
-				if c == '\n' {
+			if args.src.length() <= 0 {
+				if args.src.is_closed() {
 					args.dst.write_simple_token_fast!(
 						value_major: 0,
 						value_minor: (base.TOKEN__VBC__FILLER << 21) |
@@ -1550,26 +1515,53 @@ pri func decoder.decode_comment?(dst: base.token_writer, src: base.io_reader) {
 						length: length)
 					this.comment_type = 2
 					return ok
-				}
-
-				args.src.skip_u32_fast!(actual: 1, worst_case: 1)
-				if length >= 0xFFFD {
+				} else if length > 0 {
 					args.dst.write_simple_token_fast!(
 						value_major: 0,
 						value_minor: (base.TOKEN__VBC__FILLER << 21) |
 						base.TOKEN__VBD__FILLER__COMMENT_LINE,
 						continued: 1,
-						length: length + 1)
-					while args.dst.length() <= 0,
-						post args.dst.length() > 0,
-					{
-						yield? base."$short write"
-					} endwhile
-					length = 0
-					continue.comment_line
+						length: length)
 				}
-				length += 1
-			} endwhile
+				yield? base."$short read"
+				while args.dst.length() <= 0,
+					post args.dst.length() > 0,
+				{
+					yield? base."$short write"
+				} endwhile
+				length = 0
+				continue.comment_line
+			}
+
+			c = args.src.peek_u8()
+			if c == '\n' {
+				args.dst.write_simple_token_fast!(
+					value_major: 0,
+					value_minor: (base.TOKEN__VBC__FILLER << 21) |
+					base.TOKEN__VBD__FILLER__COMMENT_LINE,
+					continued: 0,
+					length: length)
+				this.comment_type = 2
+				return ok
+			}
+
+			args.src.skip_u32_fast!(actual: 1, worst_case: 1)
+			if length >= 0xFFFD {
+				args.dst.write_simple_token_fast!(
+					value_major: 0,
+					value_minor: (base.TOKEN__VBC__FILLER << 21) |
+					base.TOKEN__VBD__FILLER__COMMENT_LINE,
+					continued: 1,
+					length: length + 1)
+				while args.dst.length() <= 0,
+					post args.dst.length() > 0,
+				{
+					yield? base."$short write"
+				} endwhile
+				length = 0
+				continue.comment_line
+			}
+			length += 1
 		} endwhile.comment_line
 	}
 }
