@@ -1441,13 +1441,9 @@ pri func decoder.decode_comment?(dst: base.token_writer, src: base.io_reader) {
 		args.src.skip_u32_fast!(actual: 2, worst_case: 2)
 		length = 2
 
-		while.comment_block true {
-			if args.dst.length() <= 0 {
-				yield? base."$short write"
-				length = 0
-				continue.comment_block
-			}
-
+		while.comment_block true,
+			pre args.dst.length() > 0,
+		{
 			while true,
 				pre args.dst.length() > 0,
 			{
@@ -1464,6 +1460,11 @@ pri func decoder.decode_comment?(dst: base.token_writer, src: base.io_reader) {
 						return "#bad input"
 					}
 					yield? base."$short read"
+					while args.dst.length() <= 0,
+						post args.dst.length() > 0,
+					{
+						yield? base."$short write"
+					} endwhile
 					length = 0
 					continue.comment_block
 				}
@@ -1489,6 +1490,11 @@ pri func decoder.decode_comment?(dst: base.token_writer, src: base.io_reader) {
 						base.TOKEN__VBD__FILLER__COMMENT_BLOCK,
 						continued: 1,
 						length: length + 1)
+					while args.dst.length() <= 0,
+						post args.dst.length() > 0,
+					{
+						yield? base."$short write"
+					} endwhile
 					length = 0
 					continue.comment_block
 				}
@@ -1500,13 +1506,9 @@ pri func decoder.decode_comment?(dst: base.token_writer, src: base.io_reader) {
 		args.src.skip_u32_fast!(actual: 2, worst_case: 2)
 		length = 2
 
-		while.comment_line true {
-			if args.dst.length() <= 0 {
-				yield? base."$short write"
-				length = 0
-				continue.comment_line
-			}
-
+		while.comment_line true,
+			pre args.dst.length() > 0,
+		{
 			while true,
 				pre args.dst.length() > 0,
 			{
@@ -1529,6 +1531,11 @@ pri func decoder.decode_comment?(dst: base.token_writer, src: base.io_reader) {
 							length: length)
 					}
 					yield? base."$short read"
+					while args.dst.length() <= 0,
+						post args.dst.length() > 0,
+					{
+						yield? base."$short write"
+					} endwhile
 					length = 0
 					continue.comment_line
 				}
@@ -1553,6 +1560,11 @@ pri func decoder.decode_comment?(dst: base.token_writer, src: base.io_reader) {
 						base.TOKEN__VBD__FILLER__COMMENT_LINE,
 						continued: 1,
 						length: length + 1)
+					while args.dst.length() <= 0,
+						post args.dst.length() > 0,
+					{
+						yield? base."$short write"
+					} endwhile
 					length = 0
 					continue.comment_line
 				}

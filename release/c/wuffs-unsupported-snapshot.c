@@ -34094,12 +34094,6 @@ wuffs_json__decoder__decode_comment(
       v_length = 2;
       label__comment_block__continue:;
       while (true) {
-        if (((uint64_t)(io2_a_dst - iop_a_dst)) <= 0) {
-          status = wuffs_base__make_status(wuffs_base__suspension__short_write);
-          WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(3);
-          v_length = 0;
-          goto label__comment_block__continue;
-        }
         while (true) {
           if (((uint64_t)(io2_a_src - iop_a_src)) <= 1) {
             if (v_length > 0) {
@@ -34113,7 +34107,11 @@ wuffs_json__decoder__decode_comment(
               goto exit;
             }
             status = wuffs_base__make_status(wuffs_base__suspension__short_read);
-            WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(4);
+            WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(3);
+            while (((uint64_t)(io2_a_dst - iop_a_dst)) <= 0) {
+              status = wuffs_base__make_status(wuffs_base__suspension__short_write);
+              WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(4);
+            }
             v_length = 0;
             goto label__comment_block__continue;
           }
@@ -34133,6 +34131,10 @@ wuffs_json__decoder__decode_comment(
                 (((uint64_t)(2)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                 (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
                 (((uint64_t)((v_length + 1))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+            while (((uint64_t)(io2_a_dst - iop_a_dst)) <= 0) {
+              status = wuffs_base__make_status(wuffs_base__suspension__short_write);
+              WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(5);
+            }
             v_length = 0;
             goto label__comment_block__continue;
           }
@@ -34144,12 +34146,6 @@ wuffs_json__decoder__decode_comment(
       v_length = 2;
       label__comment_line__continue:;
       while (true) {
-        if (((uint64_t)(io2_a_dst - iop_a_dst)) <= 0) {
-          status = wuffs_base__make_status(wuffs_base__suspension__short_write);
-          WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(5);
-          v_length = 0;
-          goto label__comment_line__continue;
-        }
         while (true) {
           if (((uint64_t)(io2_a_src - iop_a_src)) <= 0) {
             if (a_src && a_src->meta.closed) {
@@ -34167,6 +34163,10 @@ wuffs_json__decoder__decode_comment(
             }
             status = wuffs_base__make_status(wuffs_base__suspension__short_read);
             WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(6);
+            while (((uint64_t)(io2_a_dst - iop_a_dst)) <= 0) {
+              status = wuffs_base__make_status(wuffs_base__suspension__short_write);
+              WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(7);
+            }
             v_length = 0;
             goto label__comment_line__continue;
           }
@@ -34185,6 +34185,10 @@ wuffs_json__decoder__decode_comment(
                 (((uint64_t)(4)) << WUFFS_BASE__TOKEN__VALUE_MINOR__SHIFT) |
                 (((uint64_t)(1)) << WUFFS_BASE__TOKEN__CONTINUED__SHIFT) |
                 (((uint64_t)((v_length + 1))) << WUFFS_BASE__TOKEN__LENGTH__SHIFT));
+            while (((uint64_t)(io2_a_dst - iop_a_dst)) <= 0) {
+              status = wuffs_base__make_status(wuffs_base__suspension__short_write);
+              WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(8);
+            }
             v_length = 0;
             goto label__comment_line__continue;
           }
