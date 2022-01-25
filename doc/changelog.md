@@ -47,6 +47,7 @@
 - Made `wuffs_base__pixel_format` a struct.
 - Made `wuffs_base__pixel_subsampling` a struct.
 - Made `wuffs_base__status` a struct.
+- Prohibited iterate loops inside coroutines.
 - Removed `ack_metadata_chunk?`.
 - Removed `wuffs_base__frame_config__blend`.
 - Renamed I/O `available` methods to `length`.

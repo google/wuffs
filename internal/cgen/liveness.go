@@ -205,9 +205,7 @@ loop:
 			}
 
 		case a.KIterate:
-			if err := h.doIterate(r, o.AsIterate(), depth); err != nil {
-				return err
-			}
+			return fmt.Errorf("iterate loop is inside a coroutine")
 
 		case a.KJump:
 			if err := h.doJump(r, o.AsJump(), depth); err != nil {
@@ -370,24 +368,6 @@ func (h *livenessHelper) doIf(r livenesses, n *a.If, depth uint32) error {
 	}
 	copy(r, result)
 	return nil
-}
-
-func (h *livenessHelper) doIterate(r livenesses, n *a.Iterate, depth uint32) error {
-	// TODO: ban jumps, rets and coroutine calls inside an iterate. Also ensure
-	// that the iterate variable values are all pure expressions.
-	for _, o := range n.Assigns() {
-		o := o.AsAssign()
-		if err := h.doExpr(r, o.RHS()); err != nil {
-			return err
-		}
-		name := o.LHS().Ident()
-		if i, ok := h.vars[name]; !ok {
-			return fmt.Errorf("unrecognized variable %q", name.Str(h.tm))
-		} else {
-			r.lowerWeakToNone(i)
-		}
-	}
-	return h.doBlock(r, n.Body(), depth)
 }
 
 func (h *livenessHelper) doJump(r livenesses, n *a.Jump, depth uint32) error {

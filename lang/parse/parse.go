@@ -1204,7 +1204,9 @@ func (p *parser) parseIf() (*a.If, error) {
 }
 
 func (p *parser) parseIterateNode() (*a.Node, error) {
-	if x := p.peek1(); x != t.IDIterate {
+	if p.funcEffect.Coroutine() {
+		return nil, fmt.Errorf(`parse: "iterate" inside coroutine at %s:%d`, p.filename, p.line())
+	} else if x := p.peek1(); x != t.IDIterate {
 		got := p.tm.ByID(x)
 		return nil, fmt.Errorf(`parse: expected "iterate", got %q at %s:%d`, got, p.filename, p.line())
 	}
