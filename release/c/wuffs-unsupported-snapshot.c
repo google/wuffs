@@ -40554,9 +40554,8 @@ wuffs_png__decoder__decode_frame(
               wuffs_png__decoder__filter_and_swizzle(self, a_dst, wuffs_base__slice_u8__subslice_j(a_workbuf, self->private_impl.f_workbuf_wi));
             }
             while (true) {
-              status = v_status;
+              status = wuffs_base__make_status(wuffs_base__suspension__short_read);
               WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(6);
-              v_status = wuffs_base__make_status(wuffs_base__suspension__short_read);
             }
           }
           status = v_status;

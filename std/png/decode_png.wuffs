@@ -1209,8 +1209,7 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 						this.filter_and_swizzle!(dst: args.dst, workbuf: args.workbuf[.. this.workbuf_wi])
 					}
 					while true {
-						yield? status
-						status = base."$short read"
+						yield? base."$short read"
 					} endwhile
 				}
 				yield? status
