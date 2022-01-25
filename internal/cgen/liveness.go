@@ -133,6 +133,7 @@ type livenessHelper struct {
 	tm    *t.Map
 	vars  map[t.ID]int // Maps from local variable name to livenesses index.
 	loops map[a.Loop]*loopLivenesses
+	final livenesses
 }
 
 func (g *gen) findVars() error {
@@ -152,14 +153,16 @@ func (g *gen) findVars() error {
 	}
 
 	if f.Effect().Coroutine() {
+		h.final = make(livenesses, len(h.vars))
 		r := make(livenesses, len(h.vars))
 		if err := h.doBlock(r, f.Body(), 0); err != nil {
 			return err
 		}
+		h.final.reconcile(r)
 
 		g.currFunk.varResumables = map[t.ID]bool{}
 		for i, v := range g.currFunk.varList {
-			g.currFunk.varResumables[v.Name()] = r[i] == livenessStrong
+			g.currFunk.varResumables[v.Name()] = h.final[i] == livenessStrong
 		}
 	}
 
@@ -401,7 +404,7 @@ func (h *livenessHelper) doRet(r livenesses, n *a.Ret, depth uint32) error {
 
 	switch n.Keyword() {
 	case t.IDReturn:
-		// No-op.
+		h.final.reconcile(r)
 	case t.IDYield:
 		r.raiseNoneToWeak()
 	default:
