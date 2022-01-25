@@ -122,6 +122,11 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 
 	case a.KIf:
 		for n := n.AsIf(); n != nil; n = n.ElseIf() {
+			if (n.ElseIf() != nil) && (len(n.BodyIfFalse()) > 0) {
+				return fmt.Errorf("check: if has an else-if and an else-not-if")
+			}
+		}
+		for n := n.AsIf(); n != nil; n = n.ElseIf() {
 			cond := n.Condition()
 			if cond.Effect() != 0 {
 				return fmt.Errorf("check: internal error: if-condition is not effect-free")

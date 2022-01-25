@@ -349,7 +349,7 @@ func (h *livenessHelper) doIOManip(r livenesses, n *a.IOManip, depth uint32) err
 func (h *livenessHelper) doIf(r livenesses, n *a.If, depth uint32) error {
 	scratch := make(livenesses, len(r))
 	result := make(livenesses, len(r))
-	for ; n != nil; n = n.ElseIf() {
+	for {
 		if err := h.doExpr(r, n.Condition()); err != nil {
 			return err
 		}
@@ -360,11 +360,17 @@ func (h *livenessHelper) doIf(r livenesses, n *a.If, depth uint32) error {
 		}
 		result.reconcile(scratch)
 
+		if ei := n.ElseIf(); ei != nil {
+			n = ei
+			continue
+		}
+
 		copy(scratch, r)
 		if err := h.doBlock(scratch, n.BodyIfFalse(), depth); err != nil {
 			return err
 		}
 		result.reconcile(scratch)
+		break
 	}
 	copy(r, result)
 	return nil

@@ -6634,7 +6634,6 @@ struct wuffs_bmp__decoder__struct {
       uint64_t scratch;
     } s_decode_image_config[1];
     struct {
-      wuffs_base__status v_status;
       uint64_t scratch;
     } s_decode_frame[1];
     struct {
@@ -8514,9 +8513,6 @@ struct wuffs_json__decoder__struct {
       uint32_t v_expect;
       uint32_t v_expect_after_value;
     } s_decode_tokens[1];
-    struct {
-      uint32_t v_neg;
-    } s_decode_inf_nan[1];
   } private_data;
 
 #ifdef __cplusplus
@@ -23384,9 +23380,6 @@ wuffs_bmp__decoder__decode_frame(
   }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_frame[0];
-  if (coro_susp_point) {
-    v_status = self->private_data.s_decode_frame[0].v_status;
-  }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
@@ -23513,7 +23506,6 @@ wuffs_bmp__decoder__decode_frame(
   suspend:
   self->private_impl.p_decode_frame[0] = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
   self->private_impl.active_coroutine = wuffs_base__status__is_suspension(&status) ? 3 : 0;
-  self->private_data.s_decode_frame[0].v_status = v_status;
 
   goto exit;
   exit:
@@ -34278,9 +34270,6 @@ wuffs_json__decoder__decode_inf_nan(
   }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_inf_nan[0];
-  if (coro_susp_point) {
-    v_neg = self->private_data.s_decode_inf_nan[0].v_neg;
-  }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
@@ -34388,7 +34377,6 @@ wuffs_json__decoder__decode_inf_nan(
   goto suspend;
   suspend:
   self->private_impl.p_decode_inf_nan[0] = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
-  self->private_data.s_decode_inf_nan[0].v_neg = v_neg;
 
   goto exit;
   exit:
