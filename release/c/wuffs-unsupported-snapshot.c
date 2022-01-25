@@ -32866,7 +32866,6 @@ wuffs_json__decoder__decode_tokens(
             }
             status = wuffs_base__make_status(wuffs_base__suspension__short_read);
             WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(3);
-            v_whitespace_length = 0;
             goto label__outer__continue;
           }
           v_c = wuffs_base__peek_u8be__no_bounds_check(iop_a_src);
@@ -32928,7 +32927,6 @@ wuffs_json__decoder__decode_tokens(
                 }
                 status = wuffs_base__make_status(wuffs_base__suspension__short_read);
                 WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(5);
-                v_string_length = 0;
                 goto label__string_loop_outer__continue;
               }
               while (((uint64_t)(io2_a_src - iop_a_src)) > 4) {
@@ -34468,7 +34466,6 @@ wuffs_json__decoder__decode_trailer(
           if (status.repr) {
             goto suspend;
           }
-          v_c = 0;
           if (self->private_impl.f_comment_type > 0) {
             goto label__outer__continue;
           }

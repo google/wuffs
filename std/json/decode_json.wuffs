@@ -167,7 +167,6 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 					return "#bad input"
 				}
 				yield? base."$short read"
-				whitespace_length = 0
 				continue.outer
 			}
 
@@ -255,7 +254,6 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 							return "#bad input"
 						}
 						yield? base."$short read"
-						string_length = 0
 						continue.string_loop_outer
 					}
 
@@ -1717,7 +1715,6 @@ pri func decoder.decode_trailer?(dst: base.token_writer, src: base.io_reader) {
 					return "#bad input"
 				}
 				this.decode_comment?(dst: args.dst, src: args.src)
-				c = 0
 				if this.comment_type > 0 {
 					continue.outer
 				}
