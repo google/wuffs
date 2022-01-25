@@ -429,28 +429,22 @@ func (h *livenessHelper) doWhile(r livenesses, n *a.While, depth uint32) error {
 	h.loops[n] = l
 
 	copy(l.before, r)
-	if err := h.doExpr(r, n.Condition()); err != nil {
-		return err
-	}
-	copy(l.after, r)
 
-	for {
-		copy(r, l.after)
-		if err := h.doBlock(r, n.Body(), depth); err != nil {
-			return err
-		}
-		l.changed = l.before.reconcile(r) || l.changed
-
+	for l.changed = true; l.changed; {
+		l.changed = false
 		copy(r, l.before)
+
 		if err := h.doExpr(r, n.Condition()); err != nil {
 			return err
+		} else {
+			l.changed = l.after.reconcile(r) || l.changed
 		}
-		l.changed = l.after.reconcile(r) || l.changed
 
-		if !l.changed {
-			break
+		if err := h.doBlock(r, n.Body(), depth); err != nil {
+			return err
+		} else {
+			l.changed = l.before.reconcile(r) || l.changed
 		}
-		l.changed = false
 	}
 
 	copy(r, l.after)
