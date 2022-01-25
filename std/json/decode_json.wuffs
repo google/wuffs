@@ -344,8 +344,6 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 								return "#bad backslash-escape"
 							}
 							yield? base."$short read"
-							string_length = 0
-							char = 0
 							continue.string_loop_outer
 						}
 						c = (args.src.peek_u16le() >> 8) as base.u8
@@ -379,8 +377,6 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 									return "#bad backslash-escape"
 								}
 								yield? base."$short read"
-								string_length = 0
-								char = 0
 								continue.string_loop_outer
 							}
 
@@ -441,9 +437,6 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 										return "#bad backslash-escape"
 									}
 									yield? base."$short read"
-									string_length = 0
-									uni4_value = 0
-									char = 0
 									continue.string_loop_outer
 								}
 								uni4_string = args.src.peek_u64le_at(offset: 4) >> 16
@@ -515,8 +508,6 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 									return "#bad backslash-escape"
 								}
 								yield? base."$short read"
-								string_length = 0
-								char = 0
 								continue.string_loop_outer
 							}
 							uni8_string = args.src.peek_u64le_at(offset: 2)
@@ -583,8 +574,6 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 									return "#bad backslash-escape"
 								}
 								yield? base."$short read"
-								string_length = 0
-								char = 0
 								continue.string_loop_outer
 							}
 
@@ -647,8 +636,6 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 								return "#bad UTF-8"
 							}
 							yield? base."$short read"
-							string_length = 0
-							char = 0
 							continue.string_loop_outer
 						}
 						multi_byte_utf8 = args.src.peek_u16le_as_u32()
@@ -702,8 +689,6 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 								return "#bad UTF-8"
 							}
 							yield? base."$short read"
-							string_length = 0
-							char = 0
 							continue.string_loop_outer
 						}
 						multi_byte_utf8 = args.src.peek_u24le_as_u32()
@@ -762,8 +747,6 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 								return "#bad UTF-8"
 							}
 							yield? base."$short read"
-							string_length = 0
-							char = 0
 							continue.string_loop_outer
 						}
 						multi_byte_utf8 = args.src.peek_u32le()
