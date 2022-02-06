@@ -105,7 +105,7 @@ char g_fail_msg[65536] = {0};
 #define RETURN_FAIL(...)                                                \
   return (snprintf(g_fail_msg, sizeof(g_fail_msg), ##__VA_ARGS__) >= 0) \
              ? g_fail_msg                                               \
-             : "unknown failure (snprintf-related)"
+             : strcpy(g_fail_msg, "unknown failure (snprintf-related)")
 
 #define INCR_FAIL(msg, ...) \
   msg += snprintf(msg, sizeof(g_fail_msg) - (msg - g_fail_msg), ##__VA_ARGS__)
@@ -422,7 +422,8 @@ test_main(int argc, char** argv, proc* tests, proc* benches) {
         "compatible with the\n"
         "# https://godoc.org/golang.org/x/perf/cmd/benchstat tool. To install "
         "it, first\n"
-        "# install Go, then run \"go install golang.org/x/perf/cmd/benchstat\".\n");
+        "# install Go, then run \"go install "
+        "golang.org/x/perf/cmd/benchstat\".\n");
   }
 
   for (int i = 0; i < reps; i++) {
