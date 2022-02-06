@@ -97,18 +97,44 @@ done multiple times, each with a different
 [FourCC](/doc/note/base38-and-fourcc.md) code such as `0x49434350` "ICCP" or
 `0x584D5020` "XMP ", to indicate what sorts of metadata the caller is
 interested in. Conversely, when the parser encounters metadata (and returns a
-"@metadata reported" [status](/doc/note/statuses.md)), call `metadata_fourcc`
-to see what sort of metadata it is.
+"@metadata reported" [status](/doc/note/statuses.md)), call `tell_me_more` to
+see what sort of metadata it is.
 
-Embedded metadata needs to be processed by a separate parser. For example,
-processing XMP metadata usually involves some sort of XML parser, regardless of
-what particular image format that XMP metadata was embedded in. That metadata
-might also be in multiple (non-contiguous) chunks. The caller needs to loop,
-repeatedly calling `metadata_chunk_length`, advancing the `io_buffer` by that
-many bytes (after diverting those bytes to the separate parser) and calling
-`ack_metadata_chunk`. If the latter returns "@metadata reported", then repeat
-the loop. If it returns ok, then the metadata was completely consumed, and the
-caller can go back to the `decode_image_config` method.
+Some metadata is short and `tell_me_more` will also fill in its `minfo: nptr
+more_information` out parameter with "parsed metadata". For example, Gamma
+Correction metadata is a single numerical value and Primary Chromaticities
+metadata is only eight numbers. From C++ code, call the `metadata_parsed__gama`
+or `metadata_parsed__chrm` methods to retrieve these value.
+
+Some metadata is long (or at least variable length) and needs processing by a
+separate parser. For example, processing XMP metadata usually involves some
+sort of XML parser, regardless of what particular image format that XMP
+metadata was embedded in. Wuffs decoders will return "raw metadata" instead of
+parsing it themselves. Raw metadata is further sub-divided into two categories:
+"raw passthrough" and "raw transform". Either way, note that raw metadata might
+also be arranged in multiple (non-contiguous) chunks of the source data.
+
+"Raw passthrough" means that the bytes in the wire format can be sent "as is"
+to the separate parser. Call `tell_me_more` in a loop (the `dst: io_writer`
+argument will be ignored) and `metadata_raw_passthrough__range` to identify a
+range (a chunk) of the input stream. Divert the bytes in that range to the
+separate parser (which should advance the `io_buffer` to the end of that range)
+and repeat the loop as long as `tell_me_more` returned a "$even more
+information" status.
+
+"Raw transform" means that the bytes in the wire format have to be further
+processed (e.g. decompressed) before sending them on to the separate parser.
+That processing is done by the `image_decoder` callee, not the caller. Pass a
+writable `dst io_buffer` to `tell_me_more` (where writable means that it has a
+positive `writer_length`) and implementations should fill in that buffer with
+post-transformed (e.g. decompressed) data to send onwards. Like any
+`io_transformer`-like coroutine, this should be in a loop, as it may suspend
+with "$short read" and "$short write" statuses.
+
+Either way, break the loop (after handling the `dst` and `minfo` out
+parameters) when `tell_me_more` returns a NULL status, meaning ok, when the
+metadata is complete. Afterwards, call the original action (e.g.
+`decode_image_config`) again to resume after the "@metadata reported" detour.
 
 
 ## API Listing
@@ -144,6 +170,7 @@ In Wuffs syntax, the `base.image_decoder` methods are:
 - [example/convert-to-nia](/example/convert-to-nia)
 - [example/gifplayer](/example/gifplayer)
 - [example/imageviewer](/example/imageviewer)
+- [example/sdl-imageviewer](/example/sdl-imageviewer)
 
 Examples in other repositories:
 
