@@ -20,6 +20,15 @@ long decompressed output to stdout.
 TODO: standardize the various dictionary APIs, after Wuffs v0.2 is released.
 
 
+## API Listing
+
+In Wuffs syntax, the `base.io_transformer` methods are:
+
+- `set_quirk_enabled!(quirk: u32, enabled: bool)`
+- `transform_io?(dst: io_writer, src: io_reader, workbuf: slice u8)`
+- `workbuf_len() range_ii_u64`
+
+
 ## Implementations
 
 - [std/deflate](/std/deflate)

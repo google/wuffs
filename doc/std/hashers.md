@@ -19,6 +19,14 @@ Wuffs' hasher implementations are not cryptographic. They make no attempt to
 resist timing attacks.
 
 
+## API Listing
+
+In Wuffs syntax, the `base.hasher_u32` methods are:
+
+- `set_quirk_enabled!(quirk: u32, enabled: bool)`
+- `update_u32!(x: slice u8) u32`
+
+
 ## Implementations
 
 - [std/adler32](/std/adler32)

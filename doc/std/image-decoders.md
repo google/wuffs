@@ -111,6 +111,24 @@ the loop. If it returns ok, then the metadata was completely consumed, and the
 caller can go back to the `decode_image_config` method.
 
 
+## API Listing
+
+In Wuffs syntax, the `base.image_decoder` methods are:
+
+- `decode_frame?(dst: ptr pixel_buffer, src: io_reader, blend: pixel_blend, workbuf: slice u8, opts: nptr decode_frame_options)`
+- `decode_frame_config?(dst: nptr frame_config, src: io_reader)`
+- `decode_image_config?(dst: nptr image_config, src: io_reader)`
+- `frame_dirty_rect() rect_ie_u32`
+- `num_animation_loops() u32`
+- `num_decoded_frame_configs() u64`
+- `num_decoded_frames() u64`
+- `restart_frame!(index: u64, io_position: u64) status`
+- `set_quirk_enabled!(quirk: u32, enabled: bool)`
+- `set_report_metadata!(fourcc: u32, report: bool)`
+- `tell_me_more?(dst: io_writer, minfo: nptr more_information, src: io_reader)`
+- `workbuf_len() range_ii_u64`
+
+
 ## Implementations
 
 - [std/bmp](/std/bmp)
