@@ -56,6 +56,7 @@ to enable.
 - `LZW:     BASE`
 - `NIE:     BASE`
 - `PNG:     BASE, ADLER32, CRC32, DEFLATE, ZLIB`
+- `TGA:     BASE`
 - `WBMP:    BASE`
 - `ZLIB:    BASE, ADLER32, DEFLATE`
 

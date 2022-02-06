@@ -117,6 +117,7 @@ caller can go back to the `decode_image_config` method.
 - [std/gif](/std/gif)
 - [std/nie](/std/nie)
 - [std/png](/std/png)
+- [std/tga](/std/tga)
 - [std/wbmp](/std/wbmp)
 
 
