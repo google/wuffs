@@ -3099,6 +3099,12 @@ test_wuffs_json_decode_quirk_allow_backslash_x() {
 
       src_index += token_length;
     }
+
+    if (src_index != src.meta.ri) {
+      RETURN_FAIL("tc=%zu: src_index: have %" PRIu64 ", want %zu", tc,
+                  src_index, src.meta.ri);
+    }
+
     uint64_t want = test_cases[tc].want_code_points;
     if (have != want) {
       RETURN_FAIL("tc=%zu: have U+%08" PRIX64 ", want U+%08" PRIX64, tc, have,
