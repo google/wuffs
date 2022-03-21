@@ -9170,6 +9170,7 @@ extern const char wuffs_png__error__bad_filter[];
 extern const char wuffs_png__error__bad_header[];
 extern const char wuffs_png__error__bad_text_chunk_not_latin_1[];
 extern const char wuffs_png__error__missing_palette[];
+extern const char wuffs_png__error__unsupported_cgbi_extension[];
 extern const char wuffs_png__error__unsupported_png_compression_method[];
 extern const char wuffs_png__error__unsupported_png_file[];
 
@@ -35809,6 +35810,7 @@ const char wuffs_png__error__bad_filter[] = "#png: bad filter";
 const char wuffs_png__error__bad_header[] = "#png: bad header";
 const char wuffs_png__error__bad_text_chunk_not_latin_1[] = "#png: bad text chunk (not Latin-1)";
 const char wuffs_png__error__missing_palette[] = "#png: missing palette";
+const char wuffs_png__error__unsupported_cgbi_extension[] = "#png: unsupported CgBI extension";
 const char wuffs_png__error__unsupported_png_compression_method[] = "#png: unsupported PNG compression method";
 const char wuffs_png__error__unsupported_png_file[] = "#png: unsupported PNG file";
 const char wuffs_png__error__internal_error_inconsistent_i_o[] = "#png: internal error: inconsistent I/O";
@@ -37803,6 +37805,10 @@ wuffs_png__decoder__decode_image_config(
         v_magic = t_1;
       }
       if (v_magic != 5927942488114331648) {
+        if (v_magic == 5278895250759221248) {
+          status = wuffs_base__make_status(wuffs_png__error__unsupported_cgbi_extension);
+          goto exit;
+        }
         status = wuffs_base__make_status(wuffs_png__error__bad_header);
         goto exit;
       }

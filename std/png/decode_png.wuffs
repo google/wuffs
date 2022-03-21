@@ -219,6 +219,12 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 		}
 		magic = args.src.read_u64le?()
 		if magic <> '\x00\x00\x00\x0DIHDR'le {
+			if magic == '\x00\x00\x00\x04CgBI'le {
+				// TODO: add support for Apple's unofficial CgBI extension to
+				// PNG, once there exists good documentation for it. See
+				// https://github.com/w3c/PNG-spec/issues/45
+				return "#unsupported CgBI extension"
+			}
 			return "#bad header"
 		}
 		this.chunk_type_array[0] = 'I'
