@@ -130,6 +130,7 @@ wuffs_base__slice_u8 g_workbuf = {0};
 wuffs_base__slice_u8 g_printbuf = {0};
 
 bool g_first_play = true;
+bool g_still_image = false;
 uint32_t g_num_loops_remaining = 0;
 wuffs_base__image_config g_ic = {0};
 wuffs_base__pixel_buffer g_pb = {0};
@@ -494,6 +495,7 @@ play() {
 
   if (g_first_play) {
     g_first_play = false;
+    g_still_image = wuffs_gif__decoder__num_decoded_frame_configs(&dec) <= 1;
     g_num_loops_remaining = wuffs_gif__decoder__num_animation_loops(&dec);
   }
 
@@ -509,7 +511,9 @@ main1(int argc, char** argv) {
   TRY(read_stdin());
   while (true) {
     TRY(play());
-    if (g_num_loops_remaining == 0) {
+    if (g_still_image) {
+      break;
+    } else if (g_num_loops_remaining == 0) {
       continue;
     }
     g_num_loops_remaining--;
