@@ -51,10 +51,11 @@ uint8_t g_dst_buffer_array[DST_BUFFER_ARRAY_SIZE];
 
 // src_ptr and src_len hold a gzip-encoded "Hello Wuffs."
 //
-// $ echo "Hello Wuffs." | gzip --no-name | xxd
-// 00000000: 1f8b 0800 0000 0000 0003 f348 cdc9 c957  ...........H...W
-// 00000010: 082f 4d4b 2bd6 e302 003c 8475 bb0d 0000  ./MK+....<.u....
-// 00000020: 00                                       .
+// $ echo "Hello Wuffs." | gzip --no-name | hd
+// 00000000  1f 8b 08 00 00 00 00 00  00 03 f3 48 cd c9 c9 57  |...........H...W|
+// 00000010  08 2f 4d 4b 2b d6 e3 02  00 3c 84 75 bb 0d 00 00  |./MK+....<.u....|
+// 00000020  00                                                |.|
+// 00000021
 //
 // Passing --no-name to the gzip command line also means to skip the timestamp,
 // which means that its output is deterministic.

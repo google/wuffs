@@ -143,8 +143,9 @@ The final line says that the CRC-32 checksum of "Hi\n" is `0xD522_3C9A`. This
 can be verified by running the `/usr/bin/crc32` program:
 
 ```
-$ echo Hi | xxd   /dev/stdin
-00000000: 4869 0a                                  Hi.
+$ echo Hi | hd    /dev/stdin
+00000000  48 69 0a                                          |Hi.|
+00000003
 $ echo Hi | crc32 /dev/stdin
 d5223c9a
 ```

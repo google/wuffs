@@ -23,21 +23,23 @@ other formats are TODO.
 
 For example, look at `test/data/romeo.txt*`. First, the uncompressed text:
 
-    $ xxd test/data/romeo.txt
-    00000000: 526f 6d65 6f20 616e 6420 4a75 6c69 6574  Romeo and Juliet
-    00000010: 0a45 7863 6572 7074 2066 726f 6d20 4163  .Excerpt from Ac
+    $ hd test/data/romeo.txt
+    00000000  52 6f 6d 65 6f 20 61 6e  64 20 4a 75 6c 69 65 74  |Romeo and Juliet|
+    00000010  0a 45 78 63 65 72 70 74  20 66 72 6f 6d 20 41 63  |.Excerpt from Ac|
     etc
-    00000390: 740a 536f 2073 7475 6d62 6c65 7374 206f  t.So stumblest o
-    000003a0: 6e20 6d79 2063 6f75 6e73 656c 3f0a       n my counsel?.
+    00000390  74 0a 53 6f 20 73 74 75  6d 62 6c 65 73 74 20 6f  |t.So stumblest o|
+    000003a0  6e 20 6d 79 20 63 6f 75  6e 73 65 6c 3f 0a        |n my counsel?.|
+    000003ae
 
 The raw deflate encoding:
 
-    $ xxd test/data/romeo.txt.deflate
-    00000000: 4d53 c16e db30 0cbd f32b d853 2e46 0e3d  MS.n.0...+.S.F.=
-    00000010: 2e87 20ed 0234 c5ba 0049 861e 861d 149b  .. ..4...I......
+    $ hd test/data/romeo.txt.deflate
+    00000000  4d 53 c1 6e db 30 0c bd  f3 2b d8 53 2e 46 0e 3d  |MS.n.0...+.S.F.=|
+    00000010  2e 87 20 ed 02 34 c5 ba  00 49 86 1e 86 1d 14 9b  |.. ..4...I......|
     etc
-    00000200: 7d13 8ffd b9a3 24bb 68f4 eb30 7a59 610d  }.....$.h..0zYa.
-    00000210: 7f01                                     ..
+    00000200  7d 13 8f fd b9 a3 24 bb  68 f4 eb 30 7a 59 61 0d  |}.....$.h..0zYa.|
+    00000210  7f 01                                             |..|
+    00000212
 
 The gzip format wraps a variable length header (in this case, 20 bytes) and 8
 byte footer around the raw deflate data. The header contains the NUL-terminated
@@ -45,23 +47,25 @@ C string name of the original, uncompressed file, "romeo.txt", amongst other
 data. The footer contains a 4 byte CRC32 checksum and a 4 byte length of the
 uncompressed file (0x3ae = 942 bytes).
 
-    $ xxd test/data/romeo.txt.gz
-    00000000: 1f8b 0808 26d8 5d59 0003 726f 6d65 6f2e  ....&.]Y..romeo.
-    00000010: 7478 7400 4d53 c16e db30 0cbd f32b d853  txt.MS.n.0...+.S
+    $ hd test/data/romeo.txt.gz
+    00000000  1f 8b 08 08 26 d8 5d 59  00 03 72 6f 6d 65 6f 2e  |....&.]Y..romeo.|
+    00000010  74 78 74 00 4d 53 c1 6e  db 30 0c bd f3 2b d8 53  |txt.MS.n.0...+.S|
     etc
-    00000210: de5d 2c67 7d13 8ffd b9a3 24bb 68f4 eb30  .],g}.....$.h..0
-    00000220: 7a59 610d 7f01 ef07 e5ab ae03 0000       zYa...........
+    00000210  de 5d 2c 67 7d 13 8f fd  b9 a3 24 bb 68 f4 eb 30  |.],g}.....$.h..0|
+    00000220  7a 59 61 0d 7f 01 ef 07  e5 ab ae 03 00 00        |zYa...........|
+    0000022e
 
 The zlib format wraps a 2 byte header and 4 byte footer around the raw deflate
 data. The footer contains a 4 byte Adler32 checksum. TODO: move this to
 std/zlib/README.md.
 
-    $ xxd test/data/romeo.txt.zlib
-    00000000: 789c 4d53 c16e db30 0cbd f32b d853 2e46  x.MS.n.0...+.S.F
-    00000010: 0e3d 2e87 20ed 0234 c5ba 0049 861e 861d  .=.. ..4...I....
+    $ hd test/data/romeo.txt.zlib
+    00000000  78 9c 4d 53 c1 6e db 30  0c bd f3 2b d8 53 2e 46  |x.MS.n.0...+.S.F|
+    00000010  0e 3d 2e 87 20 ed 02 34  c5 ba 00 49 86 1e 86 1d  |.=.. ..4...I....|
     etc
-    00000200: 2c67 7d13 8ffd b9a3 24bb 68f4 eb30 7a59  ,g}.....$.h..0zY
-    00000210: 610d 7f01 57bb 3ede                      a...W.>.
+    00000200  2c 67 7d 13 8f fd b9 a3  24 bb 68 f4 eb 30 7a 59  |,g}.....$.h..0zY|
+    00000210  61 0d 7f 01 57 bb 3e de                           |a...W.>.|
+    00000218
 
 
 # Wire Format Worked Example
