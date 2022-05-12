@@ -1,0 +1,45 @@
+// Copyright 2022 The Wuffs Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0
+
+pub struct decoder? implements base.io_transformer(
+	util : base.utility,
+)
+
+pub func decoder.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
+	// TODO: support base.QUIRK_IGNORE_CHECKSUM.
+}
+
+pub func decoder.workbuf_len() base.range_ii_u64 {
+	return this.util.make_range_ii_u64(
+		min_incl: DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE,
+		max_incl: DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE)
+}
+
+pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf: slice base.u8) {
+	// TODO: implement.
+
+	while true {
+		if args.src.length() > 0 {
+			args.src.skip?(n: args.src.length())
+		}
+		if args.src.is_closed() {
+			break
+		}
+		yield? base."$short read"
+	} endwhile
+
+	args.dst.write_u8?(a: 0x42)
+}
