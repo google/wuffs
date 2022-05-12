@@ -17,7 +17,7 @@ use "std/zlib"
 
 pub struct decoder? implements base.image_decoder(
 	// The 0x00FF_FFFF limit is arbitrary (the PNG spec says 0x7FFF_FFFF) but
-	// it means that (width * height * bytes_per_pixel) doesn't overflow.
+	// it means that (width * height * bytes_per_pixel) doesn't overflow a u64.
 	width  : base.u32[..= 0x00FF_FFFF],
 	height : base.u32[..= 0x00FF_FFFF],
 
@@ -26,6 +26,10 @@ pub struct decoder? implements base.image_decoder(
 
 	workbuf_wi             : base.u64,
 	workbuf_hist_pos_base  : base.u64,
+
+	// The inclusive upper bound, DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE, is
+	// derived from the width and height upper bounds at up to 8 bytes per
+	// pixel. It equals (((8 * M) + 1) * M), where M is 0x00FF_FFFF.
 	overall_workbuf_length : base.u64[..= 0x0007_FFFF_F100_0007],
 	pass_workbuf_length    : base.u64[..= 0x0007_FFFF_F100_0007],
 

@@ -9176,7 +9176,7 @@ extern const char wuffs_png__error__unsupported_png_file[];
 
 // ---------------- Public Consts
 
-#define WUFFS_PNG__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE 0
+#define WUFFS_PNG__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE 2251799562027015
 
 #define WUFFS_PNG__DECODER_SRC_IO_BUFFER_LENGTH_MIN_INCL 8
 
