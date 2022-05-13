@@ -84,7 +84,10 @@ pad to byte boundaries (except at the end of the file).
 
 (a) A 16-bit magic number "BZ" meaning the start of the bzip2 file.
 
-(b) The 'h' byte means Huffman compression.
+(b) The 'h' byte means Huffman compression. The original bzip (as in, without
+the "2" in "bzip2") used a '0' byte here to indicate arithmetic codes instead
+of Huffman codes, but arithmetic/bzip was not widely used because of patent
+concerns. This package (and worked example) only considers Huffman/bzip2.
 
 (c) The '9' byte means the uncompressed block size ranges up to 900000
 (inclusive).
