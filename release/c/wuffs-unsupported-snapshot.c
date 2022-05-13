@@ -16250,8 +16250,9 @@ wuffs_base__magic_number_guess_fourcc(wuffs_base__slice_u8 prefix_data,
   // strings). The strings may contain NUL bytes, so the "const char* magic"
   // value starts with the length-minus-1 of the 'magic number'.
   //
-  // Keep it sorted by magic[1], then magic[0] descending and finally by
-  // magic[2:]. When multiple entries match, the longest one wins.
+  // Keep it sorted by magic[1], then magic[0] descending (prioritizing longer
+  // matches) and finally by magic[2:]. When multiple entries match, the
+  // longest one wins.
   //
   // The fourcc field might be negated, in which case there's further
   // specialization (see § below).
@@ -16260,6 +16261,9 @@ wuffs_base__magic_number_guess_fourcc(wuffs_base__slice_u8 prefix_data,
     const char* magic;
   } table[] = {
       {-0x30302020, "\x01\x00\x00"},          // '00  'be
+      {+0x475A2020, "\x02\x1F\x8B\x08"},      // GZ
+      {+0x5A535444, "\x03\x28\xB5\x2F\xFD"},  // ZSTD
+      {+0x425A3220, "\x02\x42\x5A\x68"},      // BZ2
       {+0x424D5020, "\x01\x42\x4D"},          // BMP
       {+0x47494620, "\x03\x47\x49\x46\x38"},  // GIF
       {+0x54494646, "\x03\x49\x49\x2A\x00"},  // TIFF (little-endian)
@@ -16267,6 +16271,7 @@ wuffs_base__magic_number_guess_fourcc(wuffs_base__slice_u8 prefix_data,
       {-0x52494646, "\x03\x52\x49\x46\x46"},  // RIFF
       {+0x4E494520, "\x02\x6E\xC3\xAF"},      // NIE
       {+0x514F4920, "\x03\x71\x6F\x69\x66"},  // QOI
+      {+0x5A4C4942, "\x01\x78\x9C"},          // ZLIB
       {+0x504E4720, "\x03\x89\x50\x4E\x47"},  // PNG
       {+0x4A504547, "\x01\xFF\xD8"},          // JPEG
   };
