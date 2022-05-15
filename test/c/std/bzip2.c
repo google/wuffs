@@ -91,7 +91,7 @@ test_wuffs_bzip2_decode_interface() {
                    WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
   return do_test__wuffs_base__io_transformer(
       wuffs_bzip2__decoder__upcast_as__wuffs_base__io_transformer(&dec),
-      "test/data/romeo.txt.bz2", 0, SIZE_MAX, 1, 0x42);
+      "test/data/romeo.txt.bz2", 0, SIZE_MAX, 942, 0x0A);
 }
 
 const char*  //
@@ -123,6 +123,20 @@ wuffs_bzip2_decode(wuffs_base__io_buffer* dst,
     }
     return status.repr;
   }
+}
+
+const char*  //
+test_wuffs_bzip2_decode_midsummer() {
+  CHECK_FOCUS(__func__);
+  return do_test_io_buffers(wuffs_bzip2_decode, &g_bzip2_midsummer_gt,
+                            UINT64_MAX, UINT64_MAX);
+}
+
+const char*  //
+test_wuffs_bzip2_decode_pi() {
+  CHECK_FOCUS(__func__);
+  return do_test_io_buffers(wuffs_bzip2_decode, &g_bzip2_pi_gt, UINT64_MAX,
+                            UINT64_MAX);
 }
 
 // ---------------- Mimic Tests
@@ -166,6 +180,8 @@ bench_wuffs_bzip2_decode_100k() {
 proc g_tests[] = {
 
     test_wuffs_bzip2_decode_interface,
+    test_wuffs_bzip2_decode_midsummer,
+    test_wuffs_bzip2_decode_pi,
 
 #ifdef WUFFS_MIMIC
 
