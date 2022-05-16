@@ -25495,7 +25495,7 @@ wuffs_bzip2__decoder__prepare_block(
       } else {
         v_sel_ff = (v_selector & 255);
         v_movee = self->private_data.f_mtft[v_sel_ff];
-        wuffs_base__slice_u8__copy_from_slice(wuffs_base__slice_u8__subslice_j(wuffs_base__make_slice_u8((self->private_data.f_mtft) + 1, 255), (1 + v_sel_ff)), wuffs_base__slice_u8__subslice_j(wuffs_base__make_slice_u8(self->private_data.f_mtft, 256), v_sel_ff));
+        wuffs_base__slice_u8__copy_from_slice(wuffs_base__slice_u8__subslice_j(wuffs_base__make_slice_u8((self->private_data.f_mtft) + 1, 255), ((1 + v_sel_ff)) - 1), wuffs_base__slice_u8__subslice_j(wuffs_base__make_slice_u8(self->private_data.f_mtft, 256), v_sel_ff));
         self->private_data.f_mtft[0] = v_movee;
         self->private_data.f_huffman_selectors[v_i] = v_movee;
       }
@@ -25849,7 +25849,7 @@ wuffs_bzip2__decoder__execute_block(
         } else if (v_child < 1280) {
           v_child_ff = ((uint32_t)((v_child & 255)));
           v_output = ((uint32_t)(self->private_data.f_mtft[v_child_ff]));
-          wuffs_base__slice_u8__copy_from_slice(wuffs_base__slice_u8__subslice_j(wuffs_base__make_slice_u8((self->private_data.f_mtft) + 1, 255), (1 + v_child_ff)), wuffs_base__slice_u8__subslice_j(wuffs_base__make_slice_u8(self->private_data.f_mtft, 256), v_child_ff));
+          wuffs_base__slice_u8__copy_from_slice(wuffs_base__slice_u8__subslice_j(wuffs_base__make_slice_u8((self->private_data.f_mtft) + 1, 255), ((1 + v_child_ff)) - 1), wuffs_base__slice_u8__subslice_j(wuffs_base__make_slice_u8(self->private_data.f_mtft, 256), v_child_ff));
           self->private_data.f_mtft[0] = ((uint8_t)(v_output));
           self->private_data.f_bwt[v_bs] = v_output;
           if (v_bs >= self->private_impl.f_max_incl_block_size) {

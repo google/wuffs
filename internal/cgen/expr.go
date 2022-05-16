@@ -222,8 +222,15 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, sideEffectsOnly bool, depth u
 		}
 		if rhs != nil {
 			b.writes(comma)
+			if lhsIsArray && (mcv != nil) && (mcv.Sign() != 0) {
+				b.writeb('(')
+			}
 			if err := g.writeExpr(b, rhs, false, depth); err != nil {
 				return err
+			}
+			if lhsIsArray && (mcv != nil) && (mcv.Sign() != 0) {
+				b.writes(") - ")
+				b.writes(mcv.String())
 			}
 		}
 		if mhs != nil || rhs != nil {

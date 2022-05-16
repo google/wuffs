@@ -69,6 +69,11 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 
 // ---------------- Golden Tests
 
+golden_test g_bzip2_256_bytes_gt = {
+    .want_filename = "test/data/256.bytes",
+    .src_filename = "test/data/256.bytes.bz2",
+};
+
 golden_test g_bzip2_midsummer_gt = {
     .want_filename = "test/data/midsummer.txt",
     .src_filename = "test/data/midsummer.txt.bz2",
@@ -126,6 +131,13 @@ wuffs_bzip2_decode(wuffs_base__io_buffer* dst,
 }
 
 const char*  //
+test_wuffs_bzip2_decode_256_bytes() {
+  CHECK_FOCUS(__func__);
+  return do_test_io_buffers(wuffs_bzip2_decode, &g_bzip2_256_bytes_gt,
+                            UINT64_MAX, UINT64_MAX);
+}
+
+const char*  //
 test_wuffs_bzip2_decode_midsummer() {
   CHECK_FOCUS(__func__);
   return do_test_io_buffers(wuffs_bzip2_decode, &g_bzip2_midsummer_gt,
@@ -179,6 +191,7 @@ bench_wuffs_bzip2_decode_100k() {
 
 proc g_tests[] = {
 
+    test_wuffs_bzip2_decode_256_bytes,
     test_wuffs_bzip2_decode_interface,
     test_wuffs_bzip2_decode_midsummer,
     test_wuffs_bzip2_decode_pi,
