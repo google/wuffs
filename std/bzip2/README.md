@@ -241,13 +241,13 @@ value (relative to each cumulative count) to all the 'a' elements in *L*
 (assigning 0, 1 and 2), all the 'b' elements (assigning 3), all the 'c'
 elements (assinging 4) and all the 'r' elements (assigning 5).
 
-    Index   L  T
-    0       c  4
-    1       a  0
-    2       r  5
-    3       a  1
-    4       a  2
-    5       b  3
+    Index  L  T
+    0      c  4
+    1      a  0
+    2      r  5
+    3      a  1
+    4      a  2
+    5      b  3
 
 Starting with the *I* value given in the (g) bitslice, which was 1, calculate
 *I*, *T[I]*, *T[T[I]]*, *T[T[T[I]]]*, etc to give [1, 0, 4, 2, 5, 3]. Indexing
@@ -258,23 +258,20 @@ uncompressed text.
 ## Alternative BWT Inversion
 
 It's not in the BWT technical report, but instead of walking *I*, *T[I]*,
-*T[T[I]]*, etc, an alternative but equivalent algorithm starts with the *Index
-L T* table but then sorts the rows by *T*, modifying the *Index* and *T*
-columns (to produce *Index2* and *T2*) but leaving the *L* column unchanged.
-For example *Index == 4* matches *T == 2*, so *T2 == 2* matches *Index2 == 4*.
+*T[T[I]]*, etc, an alternative but equivalent algorithm works on *U*, the
+inverse of the *T* vector. For example *T[4] == 2* and so *U[2] == 4*.
 
-    Index2  L  T2
-    1       c  0
-    3       a  1
-    4       r  2
-    5       a  3
-    0       a  4
-    2       b  5
+    Index  L  T  F  U
+    0      c  4  a  1
+    1      a  0  a  3
+    2      r  5  a  4
+    3      a  1  b  5
+    4      a  2  c  0
+    5      b  3  r  2
 
-Our original *I* value was 1, and when *T2* is 1, *Index2* is 3. Call this
-value *I2*. Calculate *I2*, *Index2[I2]*, *Index2[Index2[I2]]*, etc to give [3,
-5, 2, 4, 0, 1]. Indexing *L* with these values gives "abraca", the uncompressed
-text (without being reversed).
+Calculate *U[I]*, *U[U[I]]*, *U[U[U[I]]]*, etc to give [3, 5, 2, 4, 0, 1].
+Indexing *L* with these values gives "abraca", the uncompressed text (without
+being reversed).
 
 
 ## Final Run Length Encoding

@@ -67,7 +67,7 @@ pub struct decoder? implements base.io_transformer(
 
 	// bwt is the Burrows Wheeler Transform state. Per the README.md file, each
 	// entry is a row with the low 8 bits holding the L column and the high 20
-	// bits holding the Index2 column. The middle 4 bits are unused.
+	// bits holding the U column. The middle 4 bits are unused.
 	//
 	// The read_code_lengths and build_huffman_tree methods also re-purpose
 	// this buffer to temporarily hold up to 258 symbols' code lengths.
@@ -727,8 +727,8 @@ pri func decoder.invert_bwt!() {
 		i += 1
 	} endwhile
 
-	// Second data pass, but per the README.md file, calculate the Index2
-	// column instead of the T column calculated by SRC-RR-124.pdf.
+	// Second data pass, but per the README.md file, calculate the U column
+	// instead of the BWT technical report's T column.
 	i = 0
 	while i < this.block_size {
 		assert i < 900000 via "a < b: a < c; c <= b"(c: this.block_size)
