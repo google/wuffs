@@ -658,7 +658,9 @@ convert_frames() {
 const char*  //
 main1(int argc, char** argv) {
   TRY(parse_flags(argc, argv));
-  if (g_flags.fail_if_unsandboxed && !g_sandboxed) {
+  if (g_flags.remaining_argc > 0) {
+    return "main: bad argument: use \"program < input\", not \"program input\"";
+  } else if (g_flags.fail_if_unsandboxed && !g_sandboxed) {
     return "main: unsandboxed";
   }
 

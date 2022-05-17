@@ -146,8 +146,9 @@ main1(int argc, char** argv) {
   const char* z = parse_flags(argc, argv);
   if (z) {
     return z;
-  }
-  if (g_flags.fail_if_unsandboxed && !g_sandboxed) {
+  } else if (g_flags.remaining_argc > 0) {
+    return "main: bad argument: use \"program < input\", not \"program input\"";
+  } else if (g_flags.fail_if_unsandboxed && !g_sandboxed) {
     return "main: unsandboxed";
   }
 
