@@ -15,6 +15,7 @@
 # https://github.com/google/oss-fuzz/blob/master/projects/wuffs/Dockerfile
 
 bmp:    test/data/*.bmp   ../bmpsuite_corpus/*.bmp
+bzip2:  test/data/*.bz2
 cbor:   test/data/*.cbor
 gif:    test/data/*.gif   test/data/artificial-gif/*.gif
 gzip:   test/data/*.gz
