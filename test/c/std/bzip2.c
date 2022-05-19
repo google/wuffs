@@ -37,7 +37,7 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 "wuffs mimic cflags" to run the mimic benchmarks.
 */
 
-// ¿ wuffs mimic cflags: -DWUFFS_MIMIC -ldeflate -lz
+// ¿ wuffs mimic cflags: -DWUFFS_MIMIC -lbz2
 
 // Wuffs ships as a "single file C library" or "header file library" as per
 // https://github.com/nothings/stb/blob/master/docs/stb_howto.txt
@@ -64,7 +64,7 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 #include "../../../release/c/wuffs-unsupported-snapshot.c"
 #include "../testlib/testlib.c"
 #ifdef WUFFS_MIMIC
-// No mimic library.
+#include "../mimiclib/bzip2.c"
 #endif
 
 // ---------------- Golden Tests
@@ -155,7 +155,26 @@ test_wuffs_bzip2_decode_pi() {
 
 #ifdef WUFFS_MIMIC
 
-// No mimic tests.
+const char*  //
+test_mimic_bzip2_decode_256_bytes() {
+  CHECK_FOCUS(__func__);
+  return do_test_io_buffers(mimic_bzip2_decode, &g_bzip2_256_bytes_gt,
+                            UINT64_MAX, UINT64_MAX);
+}
+
+const char*  //
+test_mimic_bzip2_decode_midsummer() {
+  CHECK_FOCUS(__func__);
+  return do_test_io_buffers(mimic_bzip2_decode, &g_bzip2_midsummer_gt,
+                            UINT64_MAX, UINT64_MAX);
+}
+
+const char*  //
+test_mimic_bzip2_decode_pi() {
+  CHECK_FOCUS(__func__);
+  return do_test_io_buffers(mimic_bzip2_decode, &g_bzip2_pi_gt, UINT64_MAX,
+                            UINT64_MAX);
+}
 
 #endif  // WUFFS_MIMIC
 
@@ -167,7 +186,7 @@ bench_wuffs_bzip2_decode_10k() {
   return do_bench_io_buffers(
       wuffs_bzip2_decode,
       WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED, tcounter_dst,
-      &g_bzip2_midsummer_gt, UINT64_MAX, UINT64_MAX, 300);
+      &g_bzip2_midsummer_gt, UINT64_MAX, UINT64_MAX, 20);
 }
 
 const char*  //
@@ -176,14 +195,30 @@ bench_wuffs_bzip2_decode_100k() {
   return do_bench_io_buffers(
       wuffs_bzip2_decode,
       WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED, tcounter_dst,
-      &g_bzip2_pi_gt, UINT64_MAX, UINT64_MAX, 30);
+      &g_bzip2_pi_gt, UINT64_MAX, UINT64_MAX, 2);
 }
 
 // ---------------- Mimic Benches
 
 #ifdef WUFFS_MIMIC
 
-// No mimic benches.
+const char*  //
+bench_mimic_bzip2_decode_10k() {
+  CHECK_FOCUS(__func__);
+  return do_bench_io_buffers(
+      mimic_bzip2_decode,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED, tcounter_dst,
+      &g_bzip2_midsummer_gt, UINT64_MAX, UINT64_MAX, 20);
+}
+
+const char*  //
+bench_mimic_bzip2_decode_100k() {
+  CHECK_FOCUS(__func__);
+  return do_bench_io_buffers(
+      mimic_bzip2_decode,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED, tcounter_dst,
+      &g_bzip2_pi_gt, UINT64_MAX, UINT64_MAX, 2);
+}
 
 #endif  // WUFFS_MIMIC
 
@@ -198,7 +233,9 @@ proc g_tests[] = {
 
 #ifdef WUFFS_MIMIC
 
-// No mimic tests.
+    test_mimic_bzip2_decode_256_bytes,
+    test_mimic_bzip2_decode_midsummer,
+    test_mimic_bzip2_decode_pi,
 
 #endif  // WUFFS_MIMIC
 
@@ -212,7 +249,8 @@ proc g_benches[] = {
 
 #ifdef WUFFS_MIMIC
 
-// No mimic benches.
+    bench_mimic_bzip2_decode_10k,
+    bench_mimic_bzip2_decode_100k,
 
 #endif  // WUFFS_MIMIC
 
