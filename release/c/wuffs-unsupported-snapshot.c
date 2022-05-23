@@ -6963,6 +6963,7 @@ struct wuffs_bzip2__decoder__struct {
     uint8_t f_mtft[256];
     uint8_t f_huffman_selectors[32768];
     uint16_t f_huffman_trees[6][1024][2];
+    uint16_t f_huffman_tables[6][256];
     uint32_t f_bwt[1048576];
 
     struct {
@@ -24939,6 +24940,11 @@ wuffs_bzip2__decoder__build_huffman_tree(
     uint32_t a_which);
 
 static wuffs_base__empty_struct
+wuffs_bzip2__decoder__build_huffman_table(
+    wuffs_bzip2__decoder* self,
+    uint32_t a_which);
+
+static wuffs_base__empty_struct
 wuffs_bzip2__decoder__invert_bwt(
     wuffs_bzip2__decoder* self);
 
@@ -25047,6 +25053,7 @@ wuffs_bzip2__decoder__decode_block_fast(
   uint32_t v_ticks = 0;
   uint32_t v_section = 0;
   uint32_t v_run_shift = 0;
+  uint16_t v_table_entry = 0;
   uint16_t v_child = 0;
   uint32_t v_child_ff = 0;
   uint32_t v_i = 0;
@@ -25085,7 +25092,10 @@ wuffs_bzip2__decoder__decode_block_fast(
     v_bits |= (wuffs_base__peek_u32be__no_bounds_check(iop_a_src) >> v_n_bits);
     iop_a_src += ((31 - v_n_bits) >> 3);
     v_n_bits |= 24;
-    v_child = 0;
+    v_table_entry = self->private_data.f_huffman_tables[v_which][(v_bits >> 24)];
+    v_bits <<= (v_table_entry >> 12);
+    v_n_bits -= ((uint32_t)((v_table_entry >> 12)));
+    v_child = (v_table_entry & 2047);
     while (v_child < 1024) {
       v_child = self->private_data.f_huffman_trees[v_which][v_child][(v_bits >> 31)];
       v_bits <<= 1;
@@ -25833,6 +25843,7 @@ wuffs_bzip2__decoder__prepare_block(
         status = v_status;
         goto exit;
       }
+      wuffs_bzip2__decoder__build_huffman_table(self, v_i);
       v_i += 1;
     }
     v_i = 0;
@@ -26084,6 +26095,39 @@ wuffs_bzip2__decoder__build_huffman_tree(
     return wuffs_base__make_status(wuffs_bzip2__error__bad_huffman_code_under_subscribed);
   }
   return wuffs_base__make_status(NULL);
+}
+
+// -------- func bzip2.decoder.build_huffman_table
+
+static wuffs_base__empty_struct
+wuffs_bzip2__decoder__build_huffman_table(
+    wuffs_bzip2__decoder* self,
+    uint32_t a_which) {
+  uint32_t v_i = 0;
+  uint32_t v_bits = 0;
+  uint16_t v_n_bits = 0;
+  uint16_t v_child = 0;
+
+  while (v_i < 256) {
+    v_bits = (v_i << 24);
+    v_n_bits = 0;
+    v_child = 0;
+    while ((v_child < 1024) && (v_n_bits < 8)) {
+      v_child = self->private_data.f_huffman_trees[a_which][v_child][(v_bits >> 31)];
+      v_bits <<= 1;
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
+#endif
+      v_n_bits += 1;
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
+    }
+    self->private_data.f_huffman_tables[a_which][v_i] = (v_child | (v_n_bits << 12));
+    v_i += 1;
+  }
+  return wuffs_base__make_empty_struct();
 }
 
 // -------- func bzip2.decoder.invert_bwt

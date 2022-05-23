@@ -21,13 +21,14 @@ pri func decoder.decode_block_fast!(src: base.io_reader) base.status {
 	var section    : base.u32
 	var run_shift  : base.u32[..= 23]
 
-	var child    : base.u16
-	var child_ff : base.u32[..= 255]
-	var i        : base.u32
-	var j        : base.u32
-	var output   : base.u32[..= 255]
-	var run      : base.u32[..= 16_777216]  // 16_777216 = (2 << 23)
-	var mtft0    : base.u32[..= 255]
+	var table_entry : base.u16
+	var child       : base.u16
+	var child_ff    : base.u32[..= 255]
+	var i           : base.u32
+	var j           : base.u32
+	var output      : base.u32[..= 255]
+	var run         : base.u32[..= 16_777216]  // 16_777216 = (2 << 23)
+	var mtft0       : base.u32[..= 255]
 
 	bits = this.bits
 	n_bits = this.n_bits
@@ -51,7 +52,10 @@ pri func decoder.decode_block_fast!(src: base.io_reader) base.status {
 		args.src.skip_u32_fast!(actual: (31 - n_bits) >> 3, worst_case: 4)
 		n_bits |= 24
 
-		child = 0
+		table_entry = this.huffman_tables[which][bits >> 24]
+		bits ~mod<<= table_entry >> 12
+		n_bits -= (table_entry >> 12) as base.u32
+		child = table_entry & 0x7FF
 		while child < 1024 {
 			child = this.huffman_trees[which][child][bits >> 31]
 			bits ~mod<<= 1

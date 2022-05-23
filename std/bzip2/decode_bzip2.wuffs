@@ -75,6 +75,16 @@ pub struct decoder? implements base.io_transformer(
 	// more rigorous about deriving this upper bound.
 	huffman_trees : array[6] array[1024] array[2] base.u16,
 
+	// huffman_tables[which] caches the result of walking huffman_trees[which]
+	// for each possible 8-bit input. The base.u16 value decomposes as:
+	//  - The low 11 bits are the final node, where finality comes either from
+	//    hitting a leaf node or from spending all 8 bits of the input. As per
+	//    the build_huffman_tree method, a value of 0x3FF = 1023 or less means
+	//    a branch node and 0x400 = 1024 or more means a leaf node.
+	//  - The middle bit is unused.
+	//  - The high 4 bits are the number of input bits spent.
+	huffman_tables : array[6] array[256] base.u16,
+
 	// bwt is the Burrows Wheeler Transform state. Per the README.md file, each
 	// entry is a row with the low 8 bits holding the L column and the high 20
 	// bits holding the U column. The middle 4 bits are unused.
@@ -400,6 +410,7 @@ pri func decoder.prepare_block?(src: base.io_reader) {
 		if status.is_error() {
 			return status
 		}
+		this.build_huffman_table!(which: i)
 		i += 1
 	} endwhile
 
@@ -630,6 +641,28 @@ pri func decoder.build_huffman_tree!(which: base.u32[..= 5]) base.status {
 		return "#bad Huffman code (under-subscribed)"
 	}
 	return ok
+}
+
+pri func decoder.build_huffman_table!(which: base.u32[..= 5]) {
+	var i      : base.u32
+	var bits   : base.u32
+	var n_bits : base.u16[..= 8]
+	var child  : base.u16
+
+	while i < 256 {
+		bits = i << 24
+		n_bits = 0
+		child = 0
+		while (child < 1024) and (n_bits < 8),
+			inv i < 256,
+		{
+			child = this.huffman_trees[args.which][child][bits >> 31]
+			bits ~mod<<= 1
+			n_bits += 1
+		} endwhile
+		this.huffman_tables[args.which][i] = child | (n_bits << 12)
+		i += 1
+	} endwhile
 }
 
 // invert_bwt performs "two passes over the data, and one pass over the
