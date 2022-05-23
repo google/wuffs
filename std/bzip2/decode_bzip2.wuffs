@@ -95,7 +95,8 @@ pub struct decoder? implements base.io_transformer(
 )
 
 pub func decoder.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
-	// TODO: support base.QUIRK_IGNORE_CHECKSUM.
+	// We do not support base.QUIRK_IGNORE_CHECKSUM. Benchmarks suggest that
+	// checksum calculation has an insignificant effect on performance.
 }
 
 pub func decoder.workbuf_len() base.range_ii_u64 {
