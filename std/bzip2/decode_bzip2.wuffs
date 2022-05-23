@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// TODO: optimize.
-
 pub status "#bad Huffman code (over-subscribed)"
 pub status "#bad Huffman code (under-subscribed)"
 pub status "#bad block header"
@@ -25,6 +23,8 @@ pub status "#bad number of sections"
 pub status "#unsupported Huffman code"
 pub status "#unsupported block randomization"
 
+pri status "#internal error: inconsistent Huffman decoder state"
+
 pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0
 
 pri const CLAMP_TO_5 : array[8] base.u8[..= 5] = [0, 1, 2, 3, 4, 5, 5, 5]
@@ -34,8 +34,14 @@ pub struct decoder? implements base.io_transformer(
 	n_bits : base.u32[..= 31],
 
 	// Block size is measured prior to the RLE1 step.
-	block_size          : base.u32[..= 900000],
 	max_incl_block_size : base.u32[..= 900000],
+
+	block_size             : base.u32[..= 900000],
+	decode_block_finished  : base.bool,
+	decode_block_which     : base.u8[..= 5],
+	decode_block_ticks     : base.u32[..= 50],
+	decode_block_section   : base.u32,
+	decode_block_run_shift : base.u32[..= 23],
 
 	final_checksum_have  : base.u32,
 	block_checksum_want  : base.u32,
@@ -92,6 +98,7 @@ pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf
 	var c                   : base.u8
 	var i                   : base.u32
 	var tag                 : base.u64
+	var status              : base.status
 	var final_checksum_want : base.u32
 
 	// Read the header.
@@ -138,7 +145,23 @@ pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf
 		}
 
 		this.prepare_block?(src: args.src)
-		this.decode_block_slow?(src: args.src)
+
+		this.block_size = 0
+		this.decode_block_finished = false
+		this.decode_block_which = CLAMP_TO_5[this.huffman_selectors[0] & 7]
+		this.decode_block_ticks = 50
+		this.decode_block_section = 0
+		this.decode_block_run_shift = 0
+		while not this.decode_block_finished {
+			status = this.decode_block_fast!(src: args.src)
+			if status.is_error() {
+				return status
+			} else if this.decode_block_finished {
+				break
+			}
+			this.decode_block_slow?(src: args.src)
+		} endwhile
+
 		this.invert_bwt!()
 		this.flush_block?(dst: args.dst)
 	} endwhile
@@ -167,6 +190,7 @@ pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf
 pri func decoder.prepare_block?(src: base.io_reader) {
 	var c        : base.u8
 	var i        : base.u32
+	var j        : base.u32
 	var selector : base.u32
 	var sel_ff   : base.u32
 	var movee    : base.u8
@@ -376,6 +400,24 @@ pri func decoder.prepare_block?(src: base.io_reader) {
 		if status.is_error() {
 			return status
 		}
+		i += 1
+	} endwhile
+
+	// Initialize the MTFT state.
+	i = 0
+	j = 0
+	while i < 256 {
+		if this.presence[i] <> 0 {
+			this.mtft[j & 0xFF] = i as base.u8
+			j ~mod+= 1
+		}
+		i += 1
+	} endwhile
+
+	// Initialize the letter counts.
+	i = 0
+	while i < 256 {
+		this.letter_counts[i] = 0
 		i += 1
 	} endwhile
 }
@@ -592,7 +634,8 @@ pri func decoder.build_huffman_tree!(which: base.u32[..= 5]) base.status {
 
 // invert_bwt performs "two passes over the data, and one pass over the
 // alphabet", per the BWT technical report, except that the first data pass
-// (accumulating this.letter_counts) is integrated into execute_block.
+// (accumulating this.letter_counts) is integrated into the decode_block_etc
+// methods.
 pri func decoder.invert_bwt!() {
 	var i       : base.u32
 	var letter  : base.u32[..= 255]

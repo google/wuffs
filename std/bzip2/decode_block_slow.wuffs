@@ -13,50 +13,25 @@
 // limitations under the License.
 
 pri func decoder.decode_block_slow?(src: base.io_reader) {
-	var which      : base.u8[..= 5]
 	var c          : base.u8
-	var child      : base.u16
-	var child_ff   : base.u32[..= 255]
-	var i          : base.u32
-	var j          : base.u32
-	var ticks      : base.u32[..= 50]
-	var section    : base.u32
-	var bs         : base.u32[..= 1_048575]  // 1_048575 = ((1 << 20) - 1)
-	var output     : base.u32[..= 255]
 	var node_index : base.u32[..= 1023]
-	var run_shift  : base.u32[..= 23]
-	var run        : base.u32[..= 16_777216]  // 16_777216 = (2 << 23)
-	var mtft0      : base.u32[..= 255]
 
-	which = CLAMP_TO_5[this.huffman_selectors[0] & 7]
-	section = 1
-
-	// Initialize the MTFT state.
-	i = 0
-	j = 0
-	while i < 256 {
-		if this.presence[i] <> 0 {
-			this.mtft[j & 0xFF] = i as base.u8
-			j ~mod+= 1
-		}
-		i += 1
-	} endwhile
-
-	i = 0
-	while i < 256 {
-		this.letter_counts[i] = 0
-		i += 1
-	} endwhile
+	var child    : base.u16
+	var child_ff : base.u32[..= 255]
+	var i        : base.u32
+	var j        : base.u32
+	var output   : base.u32[..= 255]
+	var run      : base.u32[..= 16_777216]  // 16_777216 = (2 << 23)
+	var mtft0    : base.u32[..= 255]
 
 	// Apply the Huffman trees.
-	ticks = 50
-	while.outer true {
-		if ticks > 0 {
-			ticks -= 1
+	while.outer not coroutine_resumed {
+		if this.decode_block_ticks > 0 {
+			this.decode_block_ticks -= 1
 		} else {
-			ticks = 49
-			which = CLAMP_TO_5[this.huffman_selectors[section & 32767] & 7]
-			section ~mod+= 1
+			this.decode_block_ticks = 49
+			this.decode_block_section ~mod+= 1
+			this.decode_block_which = CLAMP_TO_5[this.huffman_selectors[this.decode_block_section & 32767] & 7]
 		}
 
 		node_index = 0
@@ -67,7 +42,7 @@ pri func decoder.decode_block_slow?(src: base.io_reader) {
 				this.n_bits = 8
 				assert this.n_bits > 0
 			}
-			child = this.huffman_trees[which][node_index][this.bits >> 31]
+			child = this.huffman_trees[this.decode_block_which][node_index][this.bits >> 31]
 			this.bits ~mod<<= 1
 			this.n_bits -= 1
 
@@ -84,32 +59,33 @@ pri func decoder.decode_block_slow?(src: base.io_reader) {
 				this.mtft[0] = output as base.u8
 
 				this.letter_counts[output] ~mod+= 1
-				this.bwt[bs] = output
-				if bs >= this.max_incl_block_size {
+				this.bwt[this.block_size] = output
+				if this.block_size >= this.max_incl_block_size {
 					return "#bad block length"
 				}
-				assert bs < 900000 via "a < b: a < c; c <= b"(c: this.max_incl_block_size)
-				bs += 1
-				run_shift = 0
+				assert this.block_size < 900000 via "a < b: a < c; c <= b"(c: this.max_incl_block_size)
+				this.block_size += 1
+				this.decode_block_run_shift = 0
 				break
 
 			} else if child > 1281 {  // EOB symbol.
+				this.decode_block_finished = true
 				break.outer
 			}
 
 			// RUNA or RUNB symbol.
-			if run_shift >= 23 {
+			if this.decode_block_run_shift >= 23 {
 				return "#bad block length"
 			}
-			run = ((child - 1279) as base.u32) << run_shift
-			run_shift += 1
-			i = bs
-			j = run + bs
+			run = ((child - 1279) as base.u32) << this.decode_block_run_shift
+			this.decode_block_run_shift += 1
+			i = this.block_size
+			j = run + this.block_size
 			if j > this.max_incl_block_size {
 				return "#bad block length"
 			}
 			assert j <= 900000 via "a <= b: a <= c; c <= b"(c: this.max_incl_block_size)
-			bs = j
+			this.block_size = j
 
 			mtft0 = this.mtft[0] as base.u32
 			this.letter_counts[mtft0] ~mod+= run
@@ -123,10 +99,4 @@ pri func decoder.decode_block_slow?(src: base.io_reader) {
 			break
 		} endwhile
 	} endwhile.outer
-
-	if bs > this.max_incl_block_size {
-		return "#bad block length"
-	}
-	assert bs <= 900000 via "a <= b: a <= c; c <= b"(c: this.max_incl_block_size)
-	this.block_size = bs
 }
