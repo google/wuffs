@@ -6953,6 +6953,7 @@ struct wuffs_bzip2__decoder__struct {
 
   struct {
     uint32_t f_scratch;
+    uint32_t f_letter_counts[256];
     uint8_t f_presence[256];
     uint8_t f_mtft[256];
     uint8_t f_huffman_selectors[32768];
@@ -25847,6 +25848,11 @@ wuffs_bzip2__decoder__execute_block(
       }
       v_i += 1;
     }
+    v_i = 0;
+    while (v_i < 256) {
+      self->private_data.f_letter_counts[v_i] = 0;
+      v_i += 1;
+    }
     v_ticks = 50;
     while (true) {
       if (v_ticks > 0) {
@@ -25883,6 +25889,7 @@ wuffs_bzip2__decoder__execute_block(
           v_output = ((uint32_t)(self->private_data.f_mtft[v_child_ff]));
           wuffs_base__slice_u8__copy_from_slice(wuffs_base__make_slice_u8_ij(self->private_data.f_mtft, 1, (1 + v_child_ff)), wuffs_base__make_slice_u8(self->private_data.f_mtft, v_child_ff));
           self->private_data.f_mtft[0] = ((uint8_t)(v_output));
+          self->private_data.f_letter_counts[v_output] += 1;
           self->private_data.f_bwt[v_bs] = v_output;
           if (v_bs >= self->private_impl.f_max_incl_block_size) {
             status = wuffs_base__make_status(wuffs_bzip2__error__bad_block_length);
@@ -25908,6 +25915,7 @@ wuffs_bzip2__decoder__execute_block(
         }
         v_bs = v_j;
         v_mtft0 = ((uint32_t)(self->private_data.f_mtft[0]));
+        self->private_data.f_letter_counts[v_mtft0] += v_run;
         while (v_i < v_j) {
           self->private_data.f_bwt[v_i] = v_mtft0;
           v_i += 1;
@@ -25955,29 +25963,22 @@ wuffs_bzip2__decoder__invert_bwt(
     wuffs_bzip2__decoder* self) {
   uint32_t v_i = 0;
   uint32_t v_letter = 0;
-  uint32_t v_counts[256] = {0};
   uint32_t v_sum = 0;
   uint32_t v_old_sum = 0;
 
-  v_i = 0;
-  while (v_i < self->private_impl.f_block_size) {
-    v_letter = (self->private_data.f_bwt[v_i] & 255);
-    v_counts[v_letter] += 1;
-    v_i += 1;
-  }
   v_sum = 0;
   v_i = 0;
   while (v_i < 256) {
     v_old_sum = v_sum;
-    v_sum += v_counts[v_i];
-    v_counts[v_i] = v_old_sum;
+    v_sum += self->private_data.f_letter_counts[v_i];
+    self->private_data.f_letter_counts[v_i] = v_old_sum;
     v_i += 1;
   }
   v_i = 0;
   while (v_i < self->private_impl.f_block_size) {
     v_letter = (self->private_data.f_bwt[v_i] & 255);
-    self->private_data.f_bwt[(v_counts[v_letter] & 1048575)] |= (v_i << 12);
-    v_counts[v_letter] += 1;
+    self->private_data.f_bwt[(self->private_data.f_letter_counts[v_letter] & 1048575)] |= (v_i << 12);
+    self->private_data.f_letter_counts[v_letter] += 1;
     v_i += 1;
   }
   return wuffs_base__make_empty_struct();

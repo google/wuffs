@@ -47,6 +47,8 @@ pub struct decoder? implements base.io_transformer(
 )(
 	scratch : base.u32,
 
+	letter_counts : array[256] base.u32,
+
 	// presence[i] being non-zero is whether the byte value i occurs in the
 	// block's decompressed output.
 	presence : array[256] base.u8,
@@ -602,7 +604,7 @@ pri func decoder.execute_block?(src: base.io_reader) {
 	var node_index : base.u32[..= 1023]
 	var run_shift  : base.u32[..= 23]
 	var run        : base.u32[..= 16_777216]  // 16_777216 = (2 << 23)
-	var mtft0      : base.u32
+	var mtft0      : base.u32[..= 255]
 
 	which = CLAMP_TO_5[this.huffman_selectors[0] & 7]
 	section = 1
@@ -615,6 +617,12 @@ pri func decoder.execute_block?(src: base.io_reader) {
 			this.mtft[j & 0xFF] = i as base.u8
 			j ~mod+= 1
 		}
+		i += 1
+	} endwhile
+
+	i = 0
+	while i < 256 {
+		this.letter_counts[i] = 0
 		i += 1
 	} endwhile
 
@@ -653,6 +661,7 @@ pri func decoder.execute_block?(src: base.io_reader) {
 					s: this.mtft[.. child_ff])
 				this.mtft[0] = output as base.u8
 
+				this.letter_counts[output] ~mod+= 1
 				this.bwt[bs] = output
 				if bs >= this.max_incl_block_size {
 					return "#bad block length"
@@ -681,6 +690,7 @@ pri func decoder.execute_block?(src: base.io_reader) {
 			bs = j
 
 			mtft0 = this.mtft[0] as base.u32
+			this.letter_counts[mtft0] ~mod+= run
 			while i < j,
 				pre j <= 900000,
 			{
@@ -700,30 +710,21 @@ pri func decoder.execute_block?(src: base.io_reader) {
 }
 
 // invert_bwt performs "two passes over the data, and one pass over the
-// alphabet", per the BWT technical report.
+// alphabet", per the BWT technical report, except that the first data pass
+// (accumulating this.letter_counts) is integrated into execute_block.
 pri func decoder.invert_bwt!() {
 	var i       : base.u32
 	var letter  : base.u32[..= 255]
-	var counts  : array[256] base.u32
 	var sum     : base.u32
 	var old_sum : base.u32
-
-	// First data pass.
-	i = 0
-	while i < this.block_size {
-		assert i < 900000 via "a < b: a < c; c <= b"(c: this.block_size)
-		letter = this.bwt[i] & 0xFF
-		counts[letter] ~mod+= 1
-		i += 1
-	} endwhile
 
 	// Alphabet pass.
 	sum = 0
 	i = 0
 	while i < 256 {
 		old_sum = sum
-		sum ~mod+= counts[i]
-		counts[i] = old_sum
+		sum ~mod+= this.letter_counts[i]
+		this.letter_counts[i] = old_sum
 		i += 1
 	} endwhile
 
@@ -733,8 +734,8 @@ pri func decoder.invert_bwt!() {
 	while i < this.block_size {
 		assert i < 900000 via "a < b: a < c; c <= b"(c: this.block_size)
 		letter = this.bwt[i] & 0xFF
-		this.bwt[counts[letter] & 1_048575] |= i << 12
-		counts[letter] ~mod+= 1
+		this.bwt[this.letter_counts[letter] & 1_048575] |= i << 12
+		this.letter_counts[letter] ~mod+= 1
 		i += 1
 	} endwhile
 }
