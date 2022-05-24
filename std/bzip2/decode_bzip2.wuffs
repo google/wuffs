@@ -47,6 +47,7 @@ pub struct decoder? implements base.io_transformer(
 	flush_repeat_count : base.u32[..= 255],
 	flush_prev         : base.u8,
 
+	ignore_checksum      : base.bool,
 	final_checksum_have  : base.u32,
 	block_checksum_have  : base.u32,
 	block_checksum_want  : base.u32,
@@ -100,8 +101,9 @@ pub struct decoder? implements base.io_transformer(
 )
 
 pub func decoder.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
-	// We do not support base.QUIRK_IGNORE_CHECKSUM. Benchmarks suggest that
-	// checksum calculation has an insignificant effect on performance.
+	if args.quirk == base.QUIRK_IGNORE_CHECKSUM {
+		this.ignore_checksum = args.enabled
+	}
 }
 
 pub func decoder.workbuf_len() base.range_ii_u64 {
@@ -198,7 +200,7 @@ pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf
 		} endwhile
 
 		this.block_checksum_have ^= 0xFFFF_FFFF
-		if this.block_checksum_have <> this.block_checksum_want {
+		if (not this.ignore_checksum) and (this.block_checksum_have <> this.block_checksum_want) {
 			return "#bad checksum"
 		}
 		this.final_checksum_have = this.block_checksum_have ^ (
@@ -222,7 +224,7 @@ pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf
 		this.n_bits -= 1
 		i += 1
 	} endwhile
-	if this.final_checksum_have <> final_checksum_want {
+	if (not this.ignore_checksum) and (this.final_checksum_have <> final_checksum_want) {
 		return "#bad checksum"
 	}
 }

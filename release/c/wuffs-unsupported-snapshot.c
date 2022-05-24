@@ -6944,6 +6944,7 @@ struct wuffs_bzip2__decoder__struct {
     uint32_t f_flush_pointer;
     uint32_t f_flush_repeat_count;
     uint8_t f_flush_prev;
+    bool f_ignore_checksum;
     uint32_t f_final_checksum_have;
     uint32_t f_block_checksum_have;
     uint32_t f_block_checksum_want;
@@ -25054,6 +25055,16 @@ wuffs_bzip2__decoder__set_quirk_enabled(
     wuffs_bzip2__decoder* self,
     uint32_t a_quirk,
     bool a_enabled) {
+  if (!self) {
+    return wuffs_base__make_empty_struct();
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_empty_struct();
+  }
+
+  if (a_quirk == 1) {
+    self->private_impl.f_ignore_checksum = a_enabled;
+  }
   return wuffs_base__make_empty_struct();
 }
 
@@ -25276,7 +25287,7 @@ wuffs_bzip2__decoder__transform_io(
       }
       label__2__break:;
       self->private_impl.f_block_checksum_have ^= 4294967295;
-      if (self->private_impl.f_block_checksum_have != self->private_impl.f_block_checksum_want) {
+      if ( ! self->private_impl.f_ignore_checksum && (self->private_impl.f_block_checksum_have != self->private_impl.f_block_checksum_want)) {
         status = wuffs_base__make_status(wuffs_bzip2__error__bad_checksum);
         goto exit;
       }
@@ -25305,7 +25316,7 @@ wuffs_bzip2__decoder__transform_io(
       self->private_impl.f_n_bits -= 1;
       v_i += 1;
     }
-    if (self->private_impl.f_final_checksum_have != v_final_checksum_want) {
+    if ( ! self->private_impl.f_ignore_checksum && (self->private_impl.f_final_checksum_have != v_final_checksum_want)) {
       status = wuffs_base__make_status(wuffs_bzip2__error__bad_checksum);
       goto exit;
     }
