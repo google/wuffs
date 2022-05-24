@@ -692,7 +692,7 @@ pri func decoder.build_huffman_table!(which: base.u32[..= 5]) {
 			bits ~mod<<= 1
 			n_bits += 1
 		} endwhile
-		this.huffman_tables[args.which][i] = child | (n_bits << 12)
+		this.huffman_tables[args.which][i] = (child | (n_bits << 12)) as base.u16
 		i += 1
 	} endwhile
 }

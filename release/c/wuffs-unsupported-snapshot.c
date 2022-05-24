@@ -25910,7 +25910,7 @@ wuffs_bzip2__decoder__build_huffman_table(
 #pragma GCC diagnostic pop
 #endif
     }
-    self->private_data.f_huffman_tables[a_which][v_i] = (v_child | (v_n_bits << 12));
+    self->private_data.f_huffman_tables[a_which][v_i] = ((uint16_t)((v_child | (v_n_bits << 12))));
     v_i += 1;
   }
   return wuffs_base__make_empty_struct();
