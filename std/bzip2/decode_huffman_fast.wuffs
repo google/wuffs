@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pri func decoder.decode_block_fast!(src: base.io_reader) base.status {
+pri func decoder.decode_huffman_fast!(src: base.io_reader) base.status {
 	var bits       : base.u32
 	var n_bits     : base.u32[..= 31]
 	var block_size : base.u32[..= 900000]
@@ -33,10 +33,10 @@ pri func decoder.decode_block_fast!(src: base.io_reader) base.status {
 	bits = this.bits
 	n_bits = this.n_bits
 	block_size = this.block_size
-	which = this.decode_block_which
-	ticks = this.decode_block_ticks
-	section = this.decode_block_section
-	run_shift = this.decode_block_run_shift
+	which = this.decode_huffman_which
+	ticks = this.decode_huffman_ticks
+	section = this.decode_huffman_section
+	run_shift = this.decode_huffman_run_shift
 
 	// Apply the Huffman trees.
 	while.outer args.src.length() >= 4 {
@@ -83,7 +83,7 @@ pri func decoder.decode_block_fast!(src: base.io_reader) base.status {
 			run_shift = 0
 			continue.outer
 		} else if child > 1281 {  // EOB symbol.
-			this.decode_block_finished = true
+			this.decode_huffman_finished = true
 			break.outer
 		}
 
@@ -115,10 +115,10 @@ pri func decoder.decode_block_fast!(src: base.io_reader) base.status {
 	this.bits = bits
 	this.n_bits = n_bits
 	this.block_size = block_size
-	this.decode_block_which = which
-	this.decode_block_ticks = ticks
-	this.decode_block_section = section
-	this.decode_block_run_shift = run_shift
+	this.decode_huffman_which = which
+	this.decode_huffman_ticks = ticks
+	this.decode_huffman_section = section
+	this.decode_huffman_run_shift = run_shift
 
 	return ok
 }

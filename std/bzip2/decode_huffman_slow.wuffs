@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pri func decoder.decode_block_slow?(src: base.io_reader) {
+pri func decoder.decode_huffman_slow?(src: base.io_reader) {
 	var c          : base.u8
 	var node_index : base.u32[..= 1023]
 
@@ -26,12 +26,12 @@ pri func decoder.decode_block_slow?(src: base.io_reader) {
 
 	// Apply the Huffman trees.
 	while.outer not coroutine_resumed {
-		if this.decode_block_ticks > 0 {
-			this.decode_block_ticks -= 1
+		if this.decode_huffman_ticks > 0 {
+			this.decode_huffman_ticks -= 1
 		} else {
-			this.decode_block_ticks = 49
-			this.decode_block_section ~mod+= 1
-			this.decode_block_which = CLAMP_TO_5[this.huffman_selectors[this.decode_block_section & 32767] & 7]
+			this.decode_huffman_ticks = 49
+			this.decode_huffman_section ~mod+= 1
+			this.decode_huffman_which = CLAMP_TO_5[this.huffman_selectors[this.decode_huffman_section & 32767] & 7]
 		}
 
 		node_index = 0
@@ -42,7 +42,7 @@ pri func decoder.decode_block_slow?(src: base.io_reader) {
 				this.n_bits = 8
 				assert this.n_bits > 0
 			}
-			child = this.huffman_trees[this.decode_block_which][node_index][this.bits >> 31]
+			child = this.huffman_trees[this.decode_huffman_which][node_index][this.bits >> 31]
 			this.bits ~mod<<= 1
 			this.n_bits -= 1
 
@@ -65,20 +65,20 @@ pri func decoder.decode_block_slow?(src: base.io_reader) {
 				}
 				assert this.block_size < 900000 via "a < b: a < c; c <= b"(c: this.max_incl_block_size)
 				this.block_size += 1
-				this.decode_block_run_shift = 0
+				this.decode_huffman_run_shift = 0
 				break
 
 			} else if child > 1281 {  // EOB symbol.
-				this.decode_block_finished = true
+				this.decode_huffman_finished = true
 				break.outer
 			}
 
 			// RUNA or RUNB symbol.
-			if this.decode_block_run_shift >= 23 {
+			if this.decode_huffman_run_shift >= 23 {
 				return "#bad block length"
 			}
-			run = ((child - 1279) as base.u32) << this.decode_block_run_shift
-			this.decode_block_run_shift += 1
+			run = ((child - 1279) as base.u32) << this.decode_huffman_run_shift
+			this.decode_huffman_run_shift += 1
 			i = this.block_size
 			j = run + this.block_size
 			if j > this.max_incl_block_size {

@@ -6936,11 +6936,11 @@ struct wuffs_bzip2__decoder__struct {
     uint32_t f_n_bits;
     uint32_t f_max_incl_block_size;
     uint32_t f_block_size;
-    bool f_decode_block_finished;
-    uint8_t f_decode_block_which;
-    uint32_t f_decode_block_ticks;
-    uint32_t f_decode_block_section;
-    uint32_t f_decode_block_run_shift;
+    bool f_decode_huffman_finished;
+    uint8_t f_decode_huffman_which;
+    uint32_t f_decode_huffman_ticks;
+    uint32_t f_decode_huffman_section;
+    uint32_t f_decode_huffman_run_shift;
     uint32_t f_final_checksum_have;
     uint32_t f_block_checksum_want;
     uint32_t f_original_pointer;
@@ -6953,7 +6953,7 @@ struct wuffs_bzip2__decoder__struct {
     uint32_t p_prepare_block[1];
     uint32_t p_read_code_lengths[1];
     uint32_t p_flush_block[1];
-    uint32_t p_decode_block_slow[1];
+    uint32_t p_decode_huffman_slow[1];
   } private_impl;
 
   struct {
@@ -6990,7 +6990,7 @@ struct wuffs_bzip2__decoder__struct {
     } s_flush_block[1];
     struct {
       uint32_t v_node_index;
-    } s_decode_block_slow[1];
+    } s_decode_huffman_slow[1];
   } private_data;
 
 #ifdef __cplusplus
@@ -24944,12 +24944,12 @@ wuffs_bzip2__decoder__flush_block(
     wuffs_base__io_buffer* a_dst);
 
 static wuffs_base__status
-wuffs_bzip2__decoder__decode_block_fast(
+wuffs_bzip2__decoder__decode_huffman_fast(
     wuffs_bzip2__decoder* self,
     wuffs_base__io_buffer* a_src);
 
 static wuffs_base__status
-wuffs_bzip2__decoder__decode_block_slow(
+wuffs_bzip2__decoder__decode_huffman_slow(
     wuffs_bzip2__decoder* self,
     wuffs_base__io_buffer* a_src);
 
@@ -25213,30 +25213,30 @@ wuffs_bzip2__decoder__transform_io(
         goto suspend;
       }
       self->private_impl.f_block_size = 0;
-      self->private_impl.f_decode_block_finished = false;
-      self->private_impl.f_decode_block_which = WUFFS_BZIP2__CLAMP_TO_5[(self->private_data.f_huffman_selectors[0] & 7)];
-      self->private_impl.f_decode_block_ticks = 50;
-      self->private_impl.f_decode_block_section = 0;
-      self->private_impl.f_decode_block_run_shift = 0;
-      while ( ! self->private_impl.f_decode_block_finished) {
+      self->private_impl.f_decode_huffman_finished = false;
+      self->private_impl.f_decode_huffman_which = WUFFS_BZIP2__CLAMP_TO_5[(self->private_data.f_huffman_selectors[0] & 7)];
+      self->private_impl.f_decode_huffman_ticks = 50;
+      self->private_impl.f_decode_huffman_section = 0;
+      self->private_impl.f_decode_huffman_run_shift = 0;
+      while ( ! self->private_impl.f_decode_huffman_finished) {
         if (a_src) {
           a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
         }
-        v_status = wuffs_bzip2__decoder__decode_block_fast(self, a_src);
+        v_status = wuffs_bzip2__decoder__decode_huffman_fast(self, a_src);
         if (a_src) {
           iop_a_src = a_src->data.ptr + a_src->meta.ri;
         }
         if (wuffs_base__status__is_error(&v_status)) {
           status = v_status;
           goto exit;
-        } else if (self->private_impl.f_decode_block_finished) {
+        } else if (self->private_impl.f_decode_huffman_finished) {
           goto label__1__break;
         }
         if (a_src) {
           a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
         }
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(7);
-        status = wuffs_bzip2__decoder__decode_block_slow(self, a_src);
+        status = wuffs_bzip2__decoder__decode_huffman_slow(self, a_src);
         if (a_src) {
           iop_a_src = a_src->data.ptr + a_src->meta.ri;
         }
@@ -26026,10 +26026,10 @@ wuffs_bzip2__decoder__flush_block(
   return status;
 }
 
-// -------- func bzip2.decoder.decode_block_fast
+// -------- func bzip2.decoder.decode_huffman_fast
 
 static wuffs_base__status
-wuffs_bzip2__decoder__decode_block_fast(
+wuffs_bzip2__decoder__decode_huffman_fast(
     wuffs_bzip2__decoder* self,
     wuffs_base__io_buffer* a_src) {
   wuffs_base__status status = wuffs_base__make_status(NULL);
@@ -26064,10 +26064,10 @@ wuffs_bzip2__decoder__decode_block_fast(
   v_bits = self->private_impl.f_bits;
   v_n_bits = self->private_impl.f_n_bits;
   v_block_size = self->private_impl.f_block_size;
-  v_which = self->private_impl.f_decode_block_which;
-  v_ticks = self->private_impl.f_decode_block_ticks;
-  v_section = self->private_impl.f_decode_block_section;
-  v_run_shift = self->private_impl.f_decode_block_run_shift;
+  v_which = self->private_impl.f_decode_huffman_which;
+  v_ticks = self->private_impl.f_decode_huffman_ticks;
+  v_section = self->private_impl.f_decode_huffman_section;
+  v_run_shift = self->private_impl.f_decode_huffman_run_shift;
   label__outer__continue:;
   while (((uint64_t)(io2_a_src - iop_a_src)) >= 4) {
     if (v_ticks > 0) {
@@ -26108,7 +26108,7 @@ wuffs_bzip2__decoder__decode_block_fast(
       v_run_shift = 0;
       goto label__outer__continue;
     } else if (v_child > 1281) {
-      self->private_impl.f_decode_block_finished = true;
+      self->private_impl.f_decode_huffman_finished = true;
       goto label__outer__break;
     }
     if (v_run_shift >= 23) {
@@ -26135,10 +26135,10 @@ wuffs_bzip2__decoder__decode_block_fast(
   self->private_impl.f_bits = v_bits;
   self->private_impl.f_n_bits = v_n_bits;
   self->private_impl.f_block_size = v_block_size;
-  self->private_impl.f_decode_block_which = v_which;
-  self->private_impl.f_decode_block_ticks = v_ticks;
-  self->private_impl.f_decode_block_section = v_section;
-  self->private_impl.f_decode_block_run_shift = v_run_shift;
+  self->private_impl.f_decode_huffman_which = v_which;
+  self->private_impl.f_decode_huffman_ticks = v_ticks;
+  self->private_impl.f_decode_huffman_section = v_section;
+  self->private_impl.f_decode_huffman_run_shift = v_run_shift;
   status = wuffs_base__make_status(NULL);
   goto ok;
 
@@ -26152,10 +26152,10 @@ wuffs_bzip2__decoder__decode_block_fast(
   return status;
 }
 
-// -------- func bzip2.decoder.decode_block_slow
+// -------- func bzip2.decoder.decode_huffman_slow
 
 static wuffs_base__status
-wuffs_bzip2__decoder__decode_block_slow(
+wuffs_bzip2__decoder__decode_huffman_slow(
     wuffs_bzip2__decoder* self,
     wuffs_base__io_buffer* a_src) {
   wuffs_base__status status = wuffs_base__make_status(NULL);
@@ -26181,20 +26181,20 @@ wuffs_bzip2__decoder__decode_block_slow(
     io2_a_src = io0_a_src + a_src->meta.wi;
   }
 
-  uint32_t coro_susp_point = self->private_impl.p_decode_block_slow[0];
+  uint32_t coro_susp_point = self->private_impl.p_decode_huffman_slow[0];
   if (coro_susp_point) {
-    v_node_index = self->private_data.s_decode_block_slow[0].v_node_index;
+    v_node_index = self->private_data.s_decode_huffman_slow[0].v_node_index;
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
-    while ( ! (self->private_impl.p_decode_block_slow[0] != 0)) {
-      if (self->private_impl.f_decode_block_ticks > 0) {
-        self->private_impl.f_decode_block_ticks -= 1;
+    while ( ! (self->private_impl.p_decode_huffman_slow[0] != 0)) {
+      if (self->private_impl.f_decode_huffman_ticks > 0) {
+        self->private_impl.f_decode_huffman_ticks -= 1;
       } else {
-        self->private_impl.f_decode_block_ticks = 49;
-        self->private_impl.f_decode_block_section += 1;
-        self->private_impl.f_decode_block_which = WUFFS_BZIP2__CLAMP_TO_5[(self->private_data.f_huffman_selectors[(self->private_impl.f_decode_block_section & 32767)] & 7)];
+        self->private_impl.f_decode_huffman_ticks = 49;
+        self->private_impl.f_decode_huffman_section += 1;
+        self->private_impl.f_decode_huffman_which = WUFFS_BZIP2__CLAMP_TO_5[(self->private_data.f_huffman_selectors[(self->private_impl.f_decode_huffman_section & 32767)] & 7)];
       }
       v_node_index = 0;
       label__0__continue:;
@@ -26212,7 +26212,7 @@ wuffs_bzip2__decoder__decode_block_slow(
           self->private_impl.f_bits = (((uint32_t)(v_c)) << 24);
           self->private_impl.f_n_bits = 8;
         }
-        v_child = self->private_data.f_huffman_trees[self->private_impl.f_decode_block_which][v_node_index][(self->private_impl.f_bits >> 31)];
+        v_child = self->private_data.f_huffman_trees[self->private_impl.f_decode_huffman_which][v_node_index][(self->private_impl.f_bits >> 31)];
         self->private_impl.f_bits <<= 1;
         self->private_impl.f_n_bits -= 1;
         if (v_child < 1024) {
@@ -26230,18 +26230,18 @@ wuffs_bzip2__decoder__decode_block_slow(
             goto exit;
           }
           self->private_impl.f_block_size += 1;
-          self->private_impl.f_decode_block_run_shift = 0;
+          self->private_impl.f_decode_huffman_run_shift = 0;
           goto label__0__break;
         } else if (v_child > 1281) {
-          self->private_impl.f_decode_block_finished = true;
+          self->private_impl.f_decode_huffman_finished = true;
           goto label__outer__break;
         }
-        if (self->private_impl.f_decode_block_run_shift >= 23) {
+        if (self->private_impl.f_decode_huffman_run_shift >= 23) {
           status = wuffs_base__make_status(wuffs_bzip2__error__bad_block_length);
           goto exit;
         }
-        v_run = (((uint32_t)((v_child - 1279))) << self->private_impl.f_decode_block_run_shift);
-        self->private_impl.f_decode_block_run_shift += 1;
+        v_run = (((uint32_t)((v_child - 1279))) << self->private_impl.f_decode_huffman_run_shift);
+        self->private_impl.f_decode_huffman_run_shift += 1;
         v_i = self->private_impl.f_block_size;
         v_j = (v_run + self->private_impl.f_block_size);
         if (v_j > self->private_impl.f_max_incl_block_size) {
@@ -26263,14 +26263,14 @@ wuffs_bzip2__decoder__decode_block_slow(
 
     goto ok;
     ok:
-    self->private_impl.p_decode_block_slow[0] = 0;
+    self->private_impl.p_decode_huffman_slow[0] = 0;
     goto exit;
   }
 
   goto suspend;
   suspend:
-  self->private_impl.p_decode_block_slow[0] = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
-  self->private_data.s_decode_block_slow[0].v_node_index = v_node_index;
+  self->private_impl.p_decode_huffman_slow[0] = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
+  self->private_data.s_decode_huffman_slow[0].v_node_index = v_node_index;
 
   goto exit;
   exit:

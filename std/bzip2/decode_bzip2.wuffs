@@ -36,12 +36,12 @@ pub struct decoder? implements base.io_transformer(
 	// Block size is measured prior to the RLE1 step.
 	max_incl_block_size : base.u32[..= 900000],
 
-	block_size             : base.u32[..= 900000],
-	decode_block_finished  : base.bool,
-	decode_block_which     : base.u8[..= 5],
-	decode_block_ticks     : base.u32[..= 50],
-	decode_block_section   : base.u32,
-	decode_block_run_shift : base.u32[..= 23],
+	block_size               : base.u32[..= 900000],
+	decode_huffman_finished  : base.bool,
+	decode_huffman_which     : base.u8[..= 5],
+	decode_huffman_ticks     : base.u32[..= 50],
+	decode_huffman_section   : base.u32,
+	decode_huffman_run_shift : base.u32[..= 23],
 
 	final_checksum_have  : base.u32,
 	block_checksum_want  : base.u32,
@@ -158,19 +158,19 @@ pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf
 		this.prepare_block?(src: args.src)
 
 		this.block_size = 0
-		this.decode_block_finished = false
-		this.decode_block_which = CLAMP_TO_5[this.huffman_selectors[0] & 7]
-		this.decode_block_ticks = 50
-		this.decode_block_section = 0
-		this.decode_block_run_shift = 0
-		while not this.decode_block_finished {
-			status = this.decode_block_fast!(src: args.src)
+		this.decode_huffman_finished = false
+		this.decode_huffman_which = CLAMP_TO_5[this.huffman_selectors[0] & 7]
+		this.decode_huffman_ticks = 50
+		this.decode_huffman_section = 0
+		this.decode_huffman_run_shift = 0
+		while not this.decode_huffman_finished {
+			status = this.decode_huffman_fast!(src: args.src)
 			if status.is_error() {
 				return status
-			} else if this.decode_block_finished {
+			} else if this.decode_huffman_finished {
 				break
 			}
-			this.decode_block_slow?(src: args.src)
+			this.decode_huffman_slow?(src: args.src)
 		} endwhile
 
 		this.invert_bwt!()
@@ -668,7 +668,7 @@ pri func decoder.build_huffman_table!(which: base.u32[..= 5]) {
 
 // invert_bwt performs "two passes over the data, and one pass over the
 // alphabet", per the BWT technical report, except that the first data pass
-// (accumulating this.letter_counts) is integrated into the decode_block_etc
+// (accumulating this.letter_counts) is integrated into the decode_huffman_etc
 // methods.
 pri func decoder.invert_bwt!() {
 	var i       : base.u32
