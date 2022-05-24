@@ -29,11 +29,10 @@ pri func decoder.flush_fast!(dst: base.io_writer) {
 	block_size = this.block_size
 
 	while (block_size > 0) and (args.dst.length() > 255) {
-		entry = this.bwt[flush_pointer]
-		curr = (entry & 0xFF) as base.u8
-		flush_pointer = entry >> 12
-
 		if flush_repeat_count < 4 {
+			entry = this.bwt[flush_pointer]
+			curr = (entry & 0xFF) as base.u8
+			flush_pointer = entry >> 12
 			if curr == flush_prev {
 				flush_repeat_count += 1
 			} else {
@@ -43,8 +42,13 @@ pri func decoder.flush_fast!(dst: base.io_writer) {
 				REV_CRC32_TABLE[((block_checksum_have >> 24) as base.u8) ^ curr] ^
 				(block_checksum_have ~mod<< 8)
 			args.dst.write_u8_fast!(a: curr)
+			flush_prev = curr
+			block_size -= 1
 
 		} else {
+			entry = this.bwt[flush_pointer]
+			curr = (entry & 0xFF) as base.u8
+			flush_pointer = entry >> 12
 			flush_repeat_count = curr as base.u32
 			while flush_repeat_count > 0,
 				inv block_size > 0,
@@ -58,10 +62,9 @@ pri func decoder.flush_fast!(dst: base.io_writer) {
 				flush_repeat_count -= 1
 			} endwhile
 			flush_repeat_count = 0
+			flush_prev = curr
+			block_size -= 1
 		}
-
-		flush_prev = curr
-		block_size -= 1
 	} endwhile
 
 	this.flush_pointer = flush_pointer

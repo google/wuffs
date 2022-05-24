@@ -25967,10 +25967,10 @@ wuffs_bzip2__decoder__flush_fast(
   v_block_checksum_have = self->private_impl.f_block_checksum_have;
   v_block_size = self->private_impl.f_block_size;
   while ((v_block_size > 0) && (((uint64_t)(io2_a_dst - iop_a_dst)) > 255)) {
-    v_entry = self->private_data.f_bwt[v_flush_pointer];
-    v_curr = ((uint8_t)((v_entry & 255)));
-    v_flush_pointer = (v_entry >> 12);
     if (v_flush_repeat_count < 4) {
+      v_entry = self->private_data.f_bwt[v_flush_pointer];
+      v_curr = ((uint8_t)((v_entry & 255)));
+      v_flush_pointer = (v_entry >> 12);
       if (v_curr == v_flush_prev) {
         v_flush_repeat_count += 1;
       } else {
@@ -25978,7 +25978,12 @@ wuffs_bzip2__decoder__flush_fast(
       }
       v_block_checksum_have = (WUFFS_BZIP2__REV_CRC32_TABLE[(((uint8_t)((v_block_checksum_have >> 24))) ^ v_curr)] ^ ((uint32_t)(v_block_checksum_have << 8)));
       (wuffs_base__poke_u8be__no_bounds_check(iop_a_dst, v_curr), iop_a_dst += 1);
+      v_flush_prev = v_curr;
+      v_block_size -= 1;
     } else {
+      v_entry = self->private_data.f_bwt[v_flush_pointer];
+      v_curr = ((uint8_t)((v_entry & 255)));
+      v_flush_pointer = (v_entry >> 12);
       v_flush_repeat_count = ((uint32_t)(v_curr));
       while (v_flush_repeat_count > 0) {
         v_block_checksum_have = (WUFFS_BZIP2__REV_CRC32_TABLE[(((uint8_t)((v_block_checksum_have >> 24))) ^ v_flush_prev)] ^ ((uint32_t)(v_block_checksum_have << 8)));
@@ -25988,9 +25993,9 @@ wuffs_bzip2__decoder__flush_fast(
         v_flush_repeat_count -= 1;
       }
       v_flush_repeat_count = 0;
+      v_flush_prev = v_curr;
+      v_block_size -= 1;
     }
-    v_flush_prev = v_curr;
-    v_block_size -= 1;
   }
   self->private_impl.f_flush_pointer = v_flush_pointer;
   self->private_impl.f_flush_repeat_count = v_flush_repeat_count;
@@ -26054,10 +26059,10 @@ wuffs_bzip2__decoder__flush_slow(
     v_block_checksum_have = self->private_impl.f_block_checksum_have;
     v_block_size = self->private_impl.f_block_size;
     while ((v_block_size > 0) &&  ! (self->private_impl.p_flush_slow[0] != 0)) {
-      v_entry = self->private_data.f_bwt[v_flush_pointer];
-      v_curr = ((uint8_t)((v_entry & 255)));
-      v_flush_pointer = (v_entry >> 12);
       if (v_flush_repeat_count < 4) {
+        v_entry = self->private_data.f_bwt[v_flush_pointer];
+        v_curr = ((uint8_t)((v_entry & 255)));
+        v_flush_pointer = (v_entry >> 12);
         if (v_curr == v_flush_prev) {
           v_flush_repeat_count += 1;
         } else {
@@ -26071,7 +26076,12 @@ wuffs_bzip2__decoder__flush_slow(
           goto suspend;
         }
         *iop_a_dst++ = ((uint8_t)(self->private_data.s_flush_slow[0].scratch));
+        v_flush_prev = v_curr;
+        v_block_size -= 1;
       } else {
+        v_entry = self->private_data.f_bwt[v_flush_pointer];
+        v_curr = ((uint8_t)((v_entry & 255)));
+        v_flush_pointer = (v_entry >> 12);
         v_flush_repeat_count = ((uint32_t)(v_curr));
         while (v_flush_repeat_count > 0) {
           v_block_checksum_have = (WUFFS_BZIP2__REV_CRC32_TABLE[(((uint8_t)((v_block_checksum_have >> 24))) ^ v_flush_prev)] ^ ((uint32_t)(v_block_checksum_have << 8)));
@@ -26085,9 +26095,9 @@ wuffs_bzip2__decoder__flush_slow(
           v_flush_repeat_count -= 1;
         }
         v_flush_repeat_count = 0;
+        v_flush_prev = v_curr;
+        v_block_size -= 1;
       }
-      v_flush_prev = v_curr;
-      v_block_size -= 1;
     }
     self->private_impl.f_flush_pointer = v_flush_pointer;
     self->private_impl.f_flush_repeat_count = v_flush_repeat_count;
