@@ -19,6 +19,7 @@ package check
 import (
 	"errors"
 	"fmt"
+	"math/big"
 	"path"
 	"sort"
 
@@ -373,33 +374,42 @@ func (c *Checker) checkConst(node *a.Node) error {
 	}
 
 	nLists := 0
-	for typ.IsArrayType() {
-		if nLists == a.MaxTypeExprDepth {
-			return fmt.Errorf("check: type expression recursion depth too large")
+	for elemTyp := typ; ; {
+		if elemTyp.IsArrayType() {
+			if nLists == a.MaxTypeExprDepth {
+				return fmt.Errorf("check: type expression recursion depth too large")
+			}
+			nLists++
+			elemTyp = elemTyp.Inner()
+			continue
+		} else if elemTyp.Decorator() != 0 {
+			return fmt.Errorf("check: invalid const type %q for %s", n.XType().Str(c.tm), qid.Str(c.tm))
 		}
-		nLists++
-		typ = typ.Inner()
-	}
-	if typ.Decorator() != 0 {
-		return fmt.Errorf("check: invalid const type %q for %s", n.XType().Str(c.tm), qid.Str(c.tm))
+		break
 	}
 
 	nb := typ.Innermost().AsNode().MBounds()
-	if err := c.checkConstElement(n.Value(), nb, nLists); err != nil {
+	if err := c.checkConstElement(typ, n.Value(), nb, nLists); err != nil {
 		return fmt.Errorf("check: %v for %s", err, qid.Str(c.tm))
 	}
 	setPlaceholderMBoundsMType(n.AsNode())
 	return nil
 }
 
-func (c *Checker) checkConstElement(n *a.Expr, nb bounds, nLists int) error {
+func (c *Checker) checkConstElement(typ *a.TypeExpr, n *a.Expr, nb bounds, nLists int) error {
 	if nLists > 0 {
 		nLists--
+		if !typ.IsArrayType() {
+			return fmt.Errorf("internal error: inconsistent element type %q", typ.Str(c.tm))
+		}
+		cv := typ.ArrayLength().ConstValue()
 		if args, ok := n.IsList(); !ok {
 			return fmt.Errorf("invalid const value %q", n.Str(c.tm))
+		} else if cv.Cmp(big.NewInt(int64(len(args)))) != 0 {
+			return fmt.Errorf("inconsistent array length (%d) and element count (%d)", cv, len(args))
 		} else {
 			for _, o := range args {
-				if err := c.checkConstElement(o.AsExpr(), nb, nLists); err != nil {
+				if err := c.checkConstElement(typ.Inner(), o.AsExpr(), nb, nLists); err != nil {
 					return err
 				}
 			}
