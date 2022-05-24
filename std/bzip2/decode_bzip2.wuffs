@@ -698,69 +698,6 @@ pri func decoder.invert_bwt!() {
 	} endwhile
 }
 
-pri func decoder.flush_block?(dst: base.io_writer) {
-	var i                   : base.u32[..= 1_048575]
-	var n                   : base.u32
-	var entry               : base.u32
-	var repeat_count        : base.u32[..= 255]
-	var block_checksum_have : base.u32
-	var prev                : base.u8
-	var curr                : base.u8
-
-	if this.original_pointer >= this.block_size {
-		return "#bad block length"
-	}
-	assert this.original_pointer < 900000 via "a < b: a < c; c <= b"(c: this.block_size)
-	i = this.bwt[this.original_pointer] >> 12
-
-	block_checksum_have = 0xFFFF_FFFF
-
-	n = 0
-	while n < this.block_size {
-		assert n < 900000 via "a < b: a < c; c <= b"(c: this.block_size)
-		entry = this.bwt[i]
-		curr = (entry & 0xFF) as base.u8
-		i = entry >> 12
-
-		if repeat_count >= 4 {
-			repeat_count = curr as base.u32
-			while repeat_count > 0,
-				inv n < 900000,
-			{
-				block_checksum_have =
-					REV_CRC32_TABLE[((block_checksum_have >> 24) as base.u8) ^ prev] ^
-					(block_checksum_have ~mod<< 8)
-				args.dst.write_u8?(a: prev)
-				repeat_count -= 1
-			} endwhile
-			repeat_count = 0
-		} else if curr <> prev {
-			repeat_count = 1
-			block_checksum_have =
-				REV_CRC32_TABLE[((block_checksum_have >> 24) as base.u8) ^ curr] ^
-				(block_checksum_have ~mod<< 8)
-			args.dst.write_u8?(a: curr)
-		} else {
-			repeat_count += 1
-			block_checksum_have =
-				REV_CRC32_TABLE[((block_checksum_have >> 24) as base.u8) ^ curr] ^
-				(block_checksum_have ~mod<< 8)
-			args.dst.write_u8?(a: curr)
-		}
-
-		prev = curr
-		n += 1
-	} endwhile
-
-	block_checksum_have ^= 0xFFFF_FFFF
-	if block_checksum_have <> this.block_checksum_want {
-		return "#bad checksum"
-	}
-	this.final_checksum_have = block_checksum_have ^ (
-		(this.final_checksum_have >> 31) |
-		(this.final_checksum_have ~mod<< 1))
-}
-
 // The table below was created by script/print-crc32-magic-numbers.go with the
 // -reverse flag set.
 
