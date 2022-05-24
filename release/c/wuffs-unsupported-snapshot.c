@@ -25966,7 +25966,7 @@ wuffs_bzip2__decoder__flush_fast(
   v_flush_prev = self->private_impl.f_flush_prev;
   v_block_checksum_have = self->private_impl.f_block_checksum_have;
   v_block_size = self->private_impl.f_block_size;
-  while ((v_block_size > 0) && (((uint64_t)(io2_a_dst - iop_a_dst)) > 255)) {
+  while ((v_block_size > 0) && (((uint64_t)(io2_a_dst - iop_a_dst)) >= 255)) {
     if (v_flush_repeat_count < 4) {
       v_entry = self->private_data.f_bwt[v_flush_pointer];
       v_curr = ((uint8_t)((v_entry & 255)));

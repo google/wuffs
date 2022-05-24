@@ -28,7 +28,7 @@ pri func decoder.flush_fast!(dst: base.io_writer) {
 	block_checksum_have = this.block_checksum_have
 	block_size = this.block_size
 
-	while (block_size > 0) and (args.dst.length() > 255) {
+	while (block_size > 0) and (args.dst.length() >= 255) {
 		if flush_repeat_count < 4 {
 			entry = this.bwt[flush_pointer]
 			curr = (entry & 0xFF) as base.u8
