@@ -43,7 +43,12 @@ pub struct decoder? implements base.io_transformer(
 	decode_huffman_section   : base.u32,
 	decode_huffman_run_shift : base.u32[..= 23],
 
+	flush_pointer      : base.u32[..= 1_048575],
+	flush_repeat_count : base.u32[..= 255],
+	flush_prev         : base.u8,
+
 	final_checksum_have  : base.u32,
+	block_checksum_have  : base.u32,
 	block_checksum_want  : base.u32,
 	original_pointer     : base.u32,
 	num_symbols          : base.u32[..= 258],
@@ -174,7 +179,31 @@ pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf
 		} endwhile
 
 		this.invert_bwt!()
-		this.flush_block?(dst: args.dst)
+
+		this.block_checksum_have = 0xFFFF_FFFF
+		if this.original_pointer >= this.block_size {
+			return "#bad block length"
+		}
+		assert this.original_pointer < 900000 via "a < b: a < c; c <= b"(c: this.block_size)
+		this.flush_pointer = this.bwt[this.original_pointer] >> 12
+		this.flush_repeat_count = 0
+		this.flush_prev = 0
+
+		while this.block_size > 0 {
+			this.flush_fast!(dst: args.dst)
+			if this.block_size <= 0 {
+				break
+			}
+			this.flush_slow?(dst: args.dst)
+		} endwhile
+
+		this.block_checksum_have ^= 0xFFFF_FFFF
+		if this.block_checksum_have <> this.block_checksum_want {
+			return "#bad checksum"
+		}
+		this.final_checksum_have = this.block_checksum_have ^ (
+			(this.final_checksum_have >> 31) |
+			(this.final_checksum_have ~mod<< 1))
 	} endwhile
 
 	// Read the 32-bit final checksum.

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pri func decoder.flush_slow?(dst: base.io_writer) {
+pri func decoder.flush_fast!(dst: base.io_writer) {
 	var flush_pointer       : base.u32[..= 1_048575]
 	var flush_repeat_count  : base.u32[..= 255]
 	var flush_prev          : base.u8
@@ -28,7 +28,7 @@ pri func decoder.flush_slow?(dst: base.io_writer) {
 	block_checksum_have = this.block_checksum_have
 	block_size = this.block_size
 
-	while (block_size > 0) and (not coroutine_resumed) {
+	while (block_size > 0) and (args.dst.length() > 255) {
 		entry = this.bwt[flush_pointer]
 		curr = (entry & 0xFF) as base.u8
 		flush_pointer = entry >> 12
@@ -41,7 +41,9 @@ pri func decoder.flush_slow?(dst: base.io_writer) {
 				block_checksum_have =
 					REV_CRC32_TABLE[((block_checksum_have >> 24) as base.u8) ^ flush_prev] ^
 					(block_checksum_have ~mod<< 8)
-				args.dst.write_u8?(a: flush_prev)
+				if args.dst.length() > 0 {
+					args.dst.write_u8_fast!(a: flush_prev)
+				}
 				flush_repeat_count -= 1
 			} endwhile
 			flush_repeat_count = 0
@@ -50,13 +52,13 @@ pri func decoder.flush_slow?(dst: base.io_writer) {
 			block_checksum_have =
 				REV_CRC32_TABLE[((block_checksum_have >> 24) as base.u8) ^ curr] ^
 				(block_checksum_have ~mod<< 8)
-			args.dst.write_u8?(a: curr)
+			args.dst.write_u8_fast!(a: curr)
 		} else {
 			flush_repeat_count += 1
 			block_checksum_have =
 				REV_CRC32_TABLE[((block_checksum_have >> 24) as base.u8) ^ curr] ^
 				(block_checksum_have ~mod<< 8)
-			args.dst.write_u8?(a: curr)
+			args.dst.write_u8_fast!(a: curr)
 		}
 
 		flush_prev = curr
