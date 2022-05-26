@@ -111,6 +111,11 @@ class MyCallbacks : public wuffs_aux::DecodeImageCallbacks {
     // change the code here. For example, if you (the wuffs_aux::DecodeImage
     // caller) want to use an already-allocated buffer, instead of Wuffs (the
     // callee) allocating a new buffer.
+    //
+    // The example/sdl-imageviewer/sdl-imageviewer.cc file demonstrates
+    // overriding the AllocPixbuf method with the "bring your own buffer"
+    // approach. In the sdl-imageviewer case, the pixel buffer is allocated by
+    // SDL and lent to Wuffs, instead of allocated by Wuffs.
     return wuffs_aux::DecodeImageCallbacks::AllocPixbuf(
         image_config, allow_uninitialized_memory);
   }
@@ -122,11 +127,11 @@ handle(const char* filename, FILE* f) {
   wuffs_aux::sync_io::FileInput input(f);
   wuffs_aux::DecodeImageResult res = wuffs_aux::DecodeImage(callbacks, input);
   if (!res.error_message.empty()) {
-    printf("%-32s   %s\n", filename, res.error_message.c_str());
+    printf("%-30s %s\n", filename, res.error_message.c_str());
     return;
   } else if (res.pixbuf.pixcfg.pixel_format().repr !=
              WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL) {
-    printf("%-32s   internal error: inconsistent pixel format\n", filename);
+    printf("%-30s internal error: inconsistent pixel format\n", filename);
     return;
   }
 
@@ -140,7 +145,7 @@ handle(const char* filename, FILE* f) {
   uint64_t color_r = 0;
   uint64_t color_a = 0;
   for (uint32_t y = 0; y < h; y++) {
-    const uint8_t* ptr = table.ptr + y * table.stride;
+    const uint8_t* ptr = table.ptr + (y * table.stride);
     for (uint32_t x = 0; x < w; x++) {
       count++;
       color_b += *ptr++;
@@ -156,7 +161,7 @@ handle(const char* filename, FILE* f) {
     color_a = (color_a + (count / 2)) / count;
   }
 
-  printf("%-32s   %c%c%c%c   %5" PRIu32 " x %5" PRIu32
+  printf("%-30s %c%c%c%c   %5" PRIu32 " x %5" PRIu32
          "   AverageARGB: %02X%02X%02X%02X\n",  //
          filename,                              //
          (0xFF & (callbacks.m_fourcc >> 24)),   //
@@ -184,7 +189,7 @@ main(int argc, char** argv) {
   for (int i = 1; i < argc; i++) {
     FILE* f = fopen(argv[i], "r");
     if (!f) {
-      printf("%-32s   could not open file: %s\n", argv[i], strerror(errno));
+      printf("%-30s could not open file: %s\n", argv[i], strerror(errno));
       continue;
     }
     handle(argv[i], f);
