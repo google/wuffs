@@ -24,31 +24,8 @@ pub struct decoder? implements base.image_decoder(
 	width  : base.u32[..= 0x7FFF_FFFF],
 	height : base.u32[..= 0x7FFF_FFFF],
 
-	// Call sequence states:
-	//  - 0x00: initial state.
-	//  - 0x03: image config decoded.
-	//  - 0x04: frame config decoded.
-	//  - 0xFF: end-of-data, usually after (the non-animated) frame decoded.
-	//
-	// State transitions:
-	//
-	//  - 0x00 -> 0x03: via DIC
-	//  - 0x00 -> 0x04: via DFC with implicit DIC
-	//  - 0x00 -> 0xFF: via DF  with implicit DIC and DFC
-	//
-	//  - 0x03 -> 0x04: via DFC
-	//  - 0x03 -> 0xFF: via DF  with implicit DFC
-	//
-	//  - 0x04 -> 0xFF: via DFC
-	//  - 0x04 -> 0xFF: via DF
-	//
-	//  - ???? -> 0x03: via RF  for ???? > 0x00
-	//
-	// Where:
-	//  - DF  is decode_frame
-	//  - DFC is decode_frame_config, implicit means nullptr args.dst
-	//  - DIC is decode_image_config, implicit means nullptr args.dst
-	//  - RF  is restart_frame
+	// The call sequence state machine is discussed in
+	// (/doc/std/image-decoders-call-sequence.md).
 	call_sequence : base.u8,
 
 	dst_x : base.u32,
@@ -64,7 +41,7 @@ pub func decoder.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
 pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_reader) {
 	var a : base.u32
 
-	if this.call_sequence <> 0 {
+	if this.call_sequence <> 0x00 {
 		return base."#bad call sequence"
 	}
 
@@ -108,18 +85,20 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 			first_frame_is_opaque: false)
 	}
 
-	this.call_sequence = 3
+	this.call_sequence = 0x20
 }
 
 pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_reader) {
-	if this.call_sequence < 3 {
+	if this.call_sequence == 0x20 {
+		// No-op.
+	} else if this.call_sequence < 0x20 {
 		this.decode_image_config?(dst: nullptr, src: args.src)
-	} else if this.call_sequence == 3 {
+	} else if this.call_sequence == 0x28 {
 		if 16 <> args.src.position() {
 			return base."#bad restart"
 		}
-	} else if this.call_sequence == 4 {
-		this.call_sequence = 0xFF
+	} else if this.call_sequence == 0x40 {
+		this.call_sequence = 0x60
 		return base."@end of data"
 	} else {
 		return base."@end of data"
@@ -140,16 +119,16 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
 			background_color: 0x0000_0000)
 	}
 
-	this.call_sequence = 4
+	this.call_sequence = 0x40
 }
 
 pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, blend: base.pixel_blend, workbuf: slice base.u8, opts: nptr base.decode_frame_options) {
 	var status : base.status
 
-	if this.call_sequence < 4 {
-		this.decode_frame_config?(dst: nullptr, src: args.src)
-	} else if this.call_sequence == 4 {
+	if this.call_sequence == 0x40 {
 		// No-op.
+	} else if this.call_sequence < 0x40 {
+		this.decode_frame_config?(dst: nullptr, src: args.src)
 	} else {
 		return base."@end of data"
 	}
@@ -177,7 +156,7 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 		yield? base."$short read"
 	} endwhile
 
-	this.call_sequence = 0xFF
+	this.call_sequence = 0x60
 }
 
 pri func decoder.swizzle!(dst: ptr base.pixel_buffer, src: base.io_reader) base.status {
@@ -246,27 +225,27 @@ pub func decoder.num_animation_loops() base.u32 {
 }
 
 pub func decoder.num_decoded_frame_configs() base.u64 {
-	if this.call_sequence > 3 {
+	if this.call_sequence > 0x20 {
 		return 1
 	}
 	return 0
 }
 
 pub func decoder.num_decoded_frames() base.u64 {
-	if this.call_sequence > 4 {
+	if this.call_sequence > 0x40 {
 		return 1
 	}
 	return 0
 }
 
 pub func decoder.restart_frame!(index: base.u64, io_position: base.u64) base.status {
-	if this.call_sequence < 3 {
+	if this.call_sequence < 0x20 {
 		return base."#bad call sequence"
 	}
 	if (args.index <> 0) or (args.io_position <> 16) {
 		return base."#bad argument"
 	}
-	this.call_sequence = 3
+	this.call_sequence = 0x28
 	return ok
 }
 

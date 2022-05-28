@@ -33,49 +33,8 @@ pub struct decoder? implements base.image_decoder(
 	overall_workbuf_length : base.u64[..= 0x0007_FFFF_F100_0007],
 	pass_workbuf_length    : base.u64[..= 0x0007_FFFF_F100_0007],
 
-	// Call sequence states:
-	//  - 0x00: initial state.
-	//  - 0x01: metadata reported; image config decode is in progress.
-	//  - 0x02: metadata finished; image config decode is in progress.
-	//  - 0x03: image config decoded.
-	//  - 0x04: frame config decoded.
-	//  - 0x05: frame decoded.
-	//  - 0xFF: end-of-data, after the final frame decoded.
-	//
-	// State transitions:
-	//
-	//  - 0x00 -> 0x01: via DIC (metadata reported)
-	//  - 0x00 -> 0x03: via DIC (metadata not reported)
-	//  - 0x00 -> 0x04: via DFC with implicit DIC
-	//  - 0x00 -> 0x05: via DF  with implicit DIC and DFC
-	//  - 0x00 -> 0xFF: via DF  with implicit DIC and DFC
-	//
-	//  - 0x01 -> 0x02: via TMM
-	//
-	//  - 0x02 -> 0x01: via DIC (metadata reported)
-	//  - 0x02 -> 0x03: via DIC (metadata not reported)
-	//
-	//  - 0x03 -> 0x04: via DFC
-	//  - 0x03 -> 0x05: via DF  with implicit DFC
-	//  - 0x03 -> 0xFF: via DF  with implicit DFC
-	//
-	//  - 0x04 -> 0x04: via DFC with implicit DF
-	//  - 0x04 -> 0x05: via DF
-	//  - 0x04 -> 0xFF: via DFC with implicit DF
-	//  - 0x04 -> 0xFF: via DF
-	//
-	//  - 0x05 -> 0x04: via DFC
-	//  - 0x05 -> 0x05: via DF  with implicit DFC
-	//  - 0x05 -> 0xFF: via DF  with implicit DFC
-	//
-	//  - ???? -> 0x03: via RF  for ???? > 0x00
-	//
-	// Where:
-	//  - DF  is decode_frame,        implicit means skip_frame
-	//  - DFC is decode_frame_config, implicit means nullptr args.dst
-	//  - DIC is decode_image_config, implicit means nullptr args.dst
-	//  - RF  is restart_frame
-	//  - TMM is tell_me_more
+	// The call sequence state machine is discussed in
+	// (/doc/std/image-decoders-call-sequence.md).
 	call_sequence : base.u8,
 
 	report_metadata_chrm : base.bool,
@@ -99,6 +58,7 @@ pub struct decoder? implements base.image_decoder(
 	seen_gama : base.bool,
 	seen_iccp : base.bool,
 	seen_idat : base.bool,
+	seen_ihdr : base.bool,
 	seen_plte : base.bool,
 	seen_srgb : base.bool,
 	seen_trns : base.bool,
@@ -209,14 +169,9 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 	var checksum_want : base.u32
 	var status        : base.status
 
-	if this.call_sequence == 2 {
-		if this.metadata_fourcc <> 0 {
-			this.call_sequence = 1
-			return base."@metadata reported"
-		}
-	} else if this.call_sequence <> 0 {
+	if this.call_sequence <> 0x00 {
 		return base."#bad call sequence"
-	} else {
+	} else if not this.seen_ihdr {
 		magic = args.src.read_u64le?()
 		if magic <> '\x89PNG\x0D\x0A\x1A\x0A'le {
 			return "#bad header"
@@ -255,6 +210,10 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 		if (not this.ignore_checksum) and (checksum_have <> checksum_want) {
 			return "#bad checksum"
 		}
+		this.seen_ihdr = true
+	} else if this.metadata_fourcc <> 0 {
+		this.call_sequence = 0x10
+		return base."@metadata reported"
 	}
 
 	// Read up until an IDAT or fdAT chunk.
@@ -318,7 +277,7 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 		// If we have metadata, delay reading (skipping) the ancillary chunk's
 		// CRC-32 checksum until the end of tell_me_more.
 		if this.metadata_fourcc <> 0 {
-			this.call_sequence = 1
+			this.call_sequence = 0x10
 			return base."@metadata reported"
 		}
 
@@ -359,7 +318,7 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 		this.first_overwrite_instead_of_blend = false
 	}
 
-	this.call_sequence = 3
+	this.call_sequence = 0x20
 }
 
 pri func decoder.decode_ihdr?(src: base.io_reader) {
@@ -969,19 +928,23 @@ pri func decoder.decode_trns?(src: base.io_reader) {
 }
 
 pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_reader) {
-	if this.call_sequence == 0xFF {
-		return base."@end of data"
-	} else if this.call_sequence < 3 {
+	if (this.call_sequence & 0x10) <> 0 {
+		return base."#bad call sequence"
+	} else if this.call_sequence == 0x20 {
+		// No-op.
+	} else if this.call_sequence < 0x20 {
 		this.decode_image_config?(dst: nullptr, src: args.src)
-	} else if this.call_sequence == 3 {
+	} else if this.call_sequence == 0x28 {
 		if this.frame_config_io_position <> args.src.position() {
 			return base."#bad restart"
 		}
-	} else if this.call_sequence == 4 {
+	} else if this.call_sequence == 0x40 {
 		this.skip_frame?(src: args.src)
-		if this.call_sequence == 0xFF {
+		if this.call_sequence >= 0x60 {
 			return base."@end of data"
 		}
+	} else {
+		return base."@end of data"
 	}
 
 	if this.num_decoded_frame_configs_value == 0 {
@@ -1028,7 +991,7 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
 	}
 
 	this.num_decoded_frame_configs_value ~sat+= 1
-	this.call_sequence = 4
+	this.call_sequence = 0x40
 }
 
 pri func decoder.skip_frame?(src: base.io_reader) {
@@ -1099,9 +1062,9 @@ pri func decoder.skip_frame?(src: base.io_reader) {
 
 	this.num_decoded_frames_value ~sat+= 1
 	if this.num_decoded_frames_value < this.num_animation_frames_value {
-		this.call_sequence = 5
+		this.call_sequence = 0x20
 	} else {
-		this.call_sequence = 0xFF
+		this.call_sequence = 0x60
 	}
 }
 
@@ -1111,9 +1074,11 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 	var pass_width  : base.u32[..= 0x00FF_FFFF]
 	var pass_height : base.u32[..= 0x00FF_FFFF]
 
-	if this.call_sequence == 0xFF {
+	if (this.call_sequence & 0x10) <> 0 {
+		return base."#bad call sequence"
+	} else if this.call_sequence >= 0x60 {
 		return base."@end of data"
-	} else if this.call_sequence <> 4 {
+	} else if this.call_sequence <> 0x40 {
 		this.decode_frame_config?(dst: nullptr, src: args.src)
 	}
 
@@ -1243,9 +1208,9 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 
 	this.num_decoded_frames_value ~sat+= 1
 	if this.num_decoded_frames_value < this.num_animation_frames_value {
-		this.call_sequence = 5
+		this.call_sequence = 0x20
 	} else {
-		this.call_sequence = 0xFF
+		this.call_sequence = 0x60
 	}
 }
 
@@ -1374,13 +1339,13 @@ pub func decoder.num_decoded_frames() base.u64 {
 }
 
 pub func decoder.restart_frame!(index: base.u64, io_position: base.u64) base.status {
-	if this.call_sequence < 3 {
+	if this.call_sequence < 0x20 {
 		return base."#bad call sequence"
 	} else if (args.index >= (this.num_animation_frames_value as base.u64)) or
 		((args.index == 0) and (args.io_position <> this.first_config_io_position)) {
 		return base."#bad argument"
 	}
-	this.call_sequence = 3
+	this.call_sequence = 0x28
 	if this.interlace_pass >= 1 {
 		this.interlace_pass = 1
 	}
@@ -1415,7 +1380,7 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 	var r_mark      : base.u64
 	var zlib_status : base.status
 
-	if this.call_sequence <> 1 {
+	if (this.call_sequence & 0x10) == 0 {
 		return base."#bad call sequence"
 	}
 	if this.metadata_fourcc == 0 {
@@ -1677,7 +1642,7 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 			this.metadata_is_zlib_compressed = true
 		}
 
-		this.call_sequence = 2
+		this.call_sequence &= 0xEF
 		return ok
 	}
 	break.goto_done
@@ -1696,7 +1661,7 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 	this.metadata_y = 0
 	this.metadata_z = 0
 
-	this.call_sequence = 2
+	this.call_sequence &= 0xEF
 	return ok
 }
 

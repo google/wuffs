@@ -61,7 +61,9 @@ will implicitly parse and verify the image header, before parsing the first
 frame's header. Similarly, you can call only `decode_frame` N times, without
 calling `decode_image_config` or `decode_frame_config`, if you already know
 metadata like N and each frame's rectangle bounds by some other means (e.g.
-this is a first party, statically known image).
+this is a first party, statically known image). The [Image Decoders Call
+Sequence](./image-decoders-call-sequence.md) document has more implementation
+information.
 
 Specifically, starting with an unknown (but re-windable) animated image, if you
 want to just find N (i.e. count the number of frames), you can loop calling
@@ -89,52 +91,8 @@ associated stream will also need to be rewound.
 
 ## Metadata
 
-Images can also contain metadata (e.g. color profiles, time stamps). By
-default, Wuffs' image decoders skip over metadata, but calling
-`set_report_metadata` will opt in to having `decode_image_config` return early
-when encountering metadata in the file. Calling `set_report_metadata` can be
-done multiple times, each with a different
-[FourCC](/doc/note/base38-and-fourcc.md) code such as `0x49434350` "ICCP" or
-`0x584D5020` "XMP ", to indicate what sorts of metadata the caller is
-interested in. Conversely, when the parser encounters metadata (and returns a
-"@metadata reported" [status](/doc/note/statuses.md)), call `tell_me_more` to
-see what sort of metadata it is.
-
-Some metadata is short and `tell_me_more` will also fill in its `minfo: nptr
-more_information` out parameter with "parsed metadata". For example, Gamma
-Correction metadata is a single numerical value and Primary Chromaticities
-metadata is only eight numbers. From C++ code, call the `metadata_parsed__gama`
-or `metadata_parsed__chrm` methods to retrieve these value.
-
-Some metadata is long (or at least variable length) and needs processing by a
-separate parser. For example, processing XMP metadata usually involves some
-sort of XML parser, regardless of what particular image format that XMP
-metadata was embedded in. Wuffs decoders will return "raw metadata" instead of
-parsing it themselves. Raw metadata is further sub-divided into two categories:
-"raw passthrough" and "raw transform". Either way, note that raw metadata might
-also be arranged in multiple (non-contiguous) chunks of the source data.
-
-"Raw passthrough" means that the bytes in the wire format can be sent "as is"
-to the separate parser. Call `tell_me_more` in a loop (the `dst: io_writer`
-argument will be ignored) and `metadata_raw_passthrough__range` to identify a
-range (a chunk) of the input stream. Divert the bytes in that range to the
-separate parser (which should advance the `io_buffer` to the end of that range)
-and repeat the loop as long as `tell_me_more` returned a "$even more
-information" status.
-
-"Raw transform" means that the bytes in the wire format have to be further
-processed (e.g. decompressed) before sending them on to the separate parser.
-That processing is done by the `image_decoder` callee, not the caller. Pass a
-writable `dst io_buffer` to `tell_me_more` (where writable means that it has a
-positive `writer_length`) and implementations should fill in that buffer with
-post-transformed (e.g. decompressed) data to send onwards. Like any
-`io_transformer`-like coroutine, this should be in a loop, as it may suspend
-with "$short read" and "$short write" statuses.
-
-Either way, break the loop (after handling the `dst` and `minfo` out
-parameters) when `tell_me_more` returns a NULL status, meaning ok, when the
-metadata is complete. Afterwards, call the original action (e.g.
-`decode_image_config`) again to resume after the "@metadata reported" detour.
+The [Metadata](./metadata.md) document has more API information, applicable to
+Wuffs' decoders but not specific to Wuffs' image decoders.
 
 
 ## API Listing
@@ -171,6 +129,7 @@ In Wuffs syntax, the `base.image_decoder` methods are:
 - [example/gifplayer](/example/gifplayer)
 - [example/imageviewer](/example/imageviewer)
 - [example/sdl-imageviewer](/example/sdl-imageviewer)
+- [script/print-average-pixel](/script/print-average-pixel.cc)
 
 Examples in other repositories:
 
