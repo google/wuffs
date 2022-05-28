@@ -17,7 +17,8 @@ long decompressed output to stdout.
 
 ## Dictionaries
 
-TODO: standardize the various dictionary APIs, after Wuffs v0.2 is released.
+TODO: standardize the [various dictionary
+APIs](https://github.com/google/wuffs/issues/73), after Wuffs v0.2 is released.
 
 
 ## API Listing
@@ -31,6 +32,7 @@ In Wuffs syntax, the `base.io_transformer` methods are:
 
 ## Implementations
 
+- [std/bzip2](/std/bzip2)
 - [std/deflate](/std/deflate)
 - [std/gzip](/std/gzip)
 - [std/lzw](/std/lzw)
