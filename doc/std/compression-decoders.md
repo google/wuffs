@@ -41,8 +41,14 @@ In Wuffs syntax, the `base.io_transformer` methods are:
 
 ## Examples
 
+- [example/bzcat](/example/bzcat)
 - [example/toy-genlib](/example/toy-genlib)
 - [example/zcat](/example/zcat)
+
+
+## [Quirks](/doc/note/quirks.md)
+
+- [Zlib decoder quirks](/std/zlib/decode_quirks.wuffs)
 
 
 ## Related Documentation
