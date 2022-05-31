@@ -35,6 +35,8 @@ matters if the image has fully or partially transparent pixels.
 The '1' to '8' keys change the magnification zoom (or minification zoom with
 the shift key). The '0' key toggles nearest neighbor and bilinear filtering.
 
+The arrow keys (or hjkl keys) scroll the image. The '`' key resets.
+
 The Escape key quits.
 */
 
@@ -108,6 +110,8 @@ wuffs_aux::MemOwner g_pixbuf_mem_owner(nullptr, &free);
 wuffs_base__pixel_buffer g_pixbuf = {0};
 uint32_t g_background_color_index = 0;
 int32_t g_zoom = 0;
+int32_t g_pos_x = 0;
+int32_t g_pos_y = 0;
 bool g_filter = false;
 
 struct {
@@ -158,6 +162,16 @@ parse_flags(int argc, char** argv) {
   g_flags.remaining_argc = argc - c;
   g_flags.remaining_argv = argv + c;
   return NULL;
+}
+
+static int32_t  //
+i32_min(int32_t a, int32_t b) {
+  return (a < b) ? a : b;
+}
+
+static int32_t  //
+i32_max(int32_t a, int32_t b) {
+  return (a > b) ? a : b;
 }
 
 class MyDecodeImageCallbacks : public wuffs_aux::DecodeImageCallbacks {
@@ -308,6 +322,10 @@ load_image(const char* filename) {
 #define XK_BackSpace 0xFF08
 #define XK_Escape 0xFF1B
 #define XK_Return 0xFF0D
+#define XK_Left 0xFF51
+#define XK_Up 0xFF52
+#define XK_Right 0xFF53
+#define XK_Down 0xFF54
 
 uint32_t g_maximum_request_length = 0;  // Measured in 4-byte units.
 xcb_atom_t g_atom_net_wm_name = XCB_NONE;
@@ -335,7 +353,10 @@ make_window(xcb_connection_t* c, xcb_screen_t* s) {
   uint32_t value_mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
   uint32_t value_list[2];
   value_list[0] = s->black_pixel;
-  value_list[1] = XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_KEY_PRESS;
+  value_list[1] = XCB_EVENT_MASK_KEY_PRESS |        //
+                  XCB_EVENT_MASK_BUTTON_PRESS |     //
+                  XCB_EVENT_MASK_BUTTON_1_MOTION |  //
+                  XCB_EVENT_MASK_EXPOSURE;
   xcb_create_window(c, 0, w, s->root, 0, 0, 1024, 768, 0,
                     XCB_WINDOW_CLASS_INPUT_OUTPUT, s->root_visual, value_mask,
                     value_list);
@@ -407,6 +428,16 @@ zoom_shift(uint32_t a) {
   return (b < M) ? b : M;
 }
 
+int32_t  //
+calculate_delta(uint16_t state) {
+  if (state & XCB_MOD_MASK_SHIFT) {
+    return 256;
+  } else if (state & XCB_MOD_MASK_CONTROL) {
+    return 1;
+  }
+  return 16;
+}
+
 bool  //
 load(xcb_connection_t* c, xcb_window_t w, const char* filename) {
   if (g_pixmap != XCB_NONE) {
@@ -467,6 +498,44 @@ load(xcb_connection_t* c, xcb_window_t w, const char* filename) {
   }
 
   return true;
+}
+
+// clear_area clears the L-shaped difference between old and new rectangles (of
+// equal width and height). It does this in up to two xcb_clear_area calls,
+// labeled A and B in the example below (with old_x=0, old_y=0, width=5,
+// height=4, new_x=2, new_y=2).
+//
+// AAAAA
+// AAAAA
+// BB+---+
+// BB|   |
+//   |   |
+//   +---+
+void  //
+clear_area(xcb_connection_t* c,
+           xcb_window_t w,
+           int32_t old_x,
+           int32_t old_y,
+           int32_t width,
+           int32_t height,
+           int32_t new_x,
+           int32_t new_y) {
+  int32_t dy = new_y - old_y;
+  if (dy < 0) {
+    xcb_clear_area(c, 1, w, old_x, old_y + height + dy, width, -dy);
+  } else if (dy > 0) {
+    xcb_clear_area(c, 1, w, old_x, old_y, width, dy);
+  }
+
+  int32_t y0 = i32_max(old_y, new_y);
+  int32_t y1 = i32_min(old_y + height, new_y + height);
+
+  int32_t dx = new_x - old_x;
+  if (dx < 0) {
+    xcb_clear_area(c, 1, w, old_x + width + dx, y0, -dx, y1 - y0);
+  } else if (dx > 0) {
+    xcb_clear_area(c, 1, w, old_x, y0, dx, y1 - y0);
+  }
 }
 
 int  //
@@ -532,6 +601,9 @@ main(int argc, char** argv) {
   g_pixmap_gc = xcb_generate_id(c);
   g_pixmap_picture = xcb_generate_id(c);
 
+  int32_t button_x = 0;
+  int32_t button_y = 0;
+
   bool loaded = load(
       c, w, (g_flags.remaining_argc > 0) ? g_flags.remaining_argv[0] : NULL);
   int arg = 0;
@@ -544,12 +616,14 @@ main(int argc, char** argv) {
     }
 
     bool reload = false;
+    int32_t old_pos_x = g_pos_x;
+    int32_t old_pos_y = g_pos_y;
     switch (event->response_type & 0x7F) {
       case XCB_EXPOSE: {
         xcb_expose_event_t* e = (xcb_expose_event_t*)event;
         if (loaded && (e->count == 0)) {
           xcb_render_composite(c, XCB_RENDER_PICT_OP_SRC, g_pixmap_picture,
-                               XCB_NONE, p, 0, 0, 0, 0, 0, 0,
+                               XCB_NONE, p, 0, 0, 0, 0, g_pos_x, g_pos_y,
                                zoom_shift(g_width), zoom_shift(g_height));
           xcb_flush(c);
         }
@@ -589,6 +663,31 @@ main(int argc, char** argv) {
               reload = true;
               break;
 
+            case '`':
+              g_pos_x = 0;
+              g_pos_y = 0;
+              break;
+
+            case XK_Left:
+            case 'h':
+              g_pos_x += calculate_delta(e->state);
+              break;
+
+            case XK_Down:
+            case 'j':
+              g_pos_y -= calculate_delta(e->state);
+              break;
+
+            case XK_Up:
+            case 'k':
+              g_pos_y += calculate_delta(e->state);
+              break;
+
+            case XK_Right:
+            case 'l':
+              g_pos_x -= calculate_delta(e->state);
+              break;
+
             case '0':
             case '1':
             case '2':
@@ -619,6 +718,38 @@ main(int argc, char** argv) {
         break;
       }
 
+      case XCB_BUTTON_PRESS: {
+        xcb_button_press_event_t* e = (xcb_button_press_event_t*)event;
+        switch (e->detail) {
+          case 1:
+            button_x = e->event_x;
+            button_y = e->event_y;
+            break;
+          case 4:
+            g_pos_y += calculate_delta(e->state);
+            break;
+          case 5:
+            g_pos_y -= calculate_delta(e->state);
+            break;
+          case 6:
+            g_pos_x += calculate_delta(e->state);
+            break;
+          case 7:
+            g_pos_x -= calculate_delta(e->state);
+            break;
+        }
+        break;
+      }
+
+      case XCB_MOTION_NOTIFY: {
+        xcb_motion_notify_event_t* e = (xcb_motion_notify_event_t*)event;
+        g_pos_x += e->event_x - button_x;
+        g_pos_y += e->event_y - button_y;
+        button_x = e->event_x;
+        button_y = e->event_y;
+        break;
+      }
+
       case XCB_CLIENT_MESSAGE: {
         xcb_client_message_event_t* e = (xcb_client_message_event_t*)event;
         if (e->data.data32[0] == g_atom_wm_delete_window) {
@@ -633,6 +764,14 @@ main(int argc, char** argv) {
     if (reload) {
       loaded = load(c, w, g_flags.remaining_argv[arg]);
       xcb_clear_area(c, 1, w, 0, 0, 0xFFFF, 0xFFFF);
+      xcb_flush(c);
+    } else if (loaded &&  //
+               ((old_pos_x != g_pos_x) || (old_pos_y != g_pos_y))) {
+      clear_area(c, w, old_pos_x, old_pos_y, zoom_shift(g_width),
+                 zoom_shift(g_height), g_pos_x, g_pos_y);
+      xcb_render_composite(c, XCB_RENDER_PICT_OP_SRC, g_pixmap_picture,
+                           XCB_NONE, p, 0, 0, 0, 0, g_pos_x, g_pos_y,
+                           zoom_shift(g_width), zoom_shift(g_height));
       xcb_flush(c);
     }
   }
