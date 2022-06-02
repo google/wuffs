@@ -53,13 +53,13 @@ wuffs gen
 # http://fastcompression.blogspot.com/2019/01/compiler-warnings.html
 WARNING_FLAGS="-Wall -Werror -Wpedantic -Wcast-qual -Wcast-align -Wpointer-arith -Wfloat-equal -Wundef -Wvla -Wconversion -Wshadow"
 
-echo "Checking snapshot compiles cleanly (as C)"
+echo "Checking snapshot compiles cleanly (as C99)"
 $CC -c $WARNING_FLAGS                        -std=c99 -Wc++-compat \
     release/c/wuffs-unsupported-snapshot.c -o /dev/null
 $CC -c $WARNING_FLAGS -DWUFFS_IMPLEMENTATION -std=c99 -Wc++-compat \
     release/c/wuffs-unsupported-snapshot.c -o /dev/null
 
-echo "Checking snapshot compiles cleanly (as C++)"
+echo "Checking snapshot compiles cleanly (as C++11)"
 $CXX -c $WARNING_FLAGS                        -std=c++11 -x c++ \
     release/c/wuffs-unsupported-snapshot.c -o /dev/null
 $CXX -c $WARNING_FLAGS -DWUFFS_IMPLEMENTATION -std=c++11 -x c++ \
