@@ -137,7 +137,9 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 			first_frame_is_opaque: ffio)
 	}
 
-	this.call_sequence = 0x20
+	if this.call_sequence == 0x00 {
+		this.call_sequence = 0x20
+	}
 }
 
 pub func decoder.set_report_metadata!(fourcc: base.u32, report: base.bool) {

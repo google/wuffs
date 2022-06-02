@@ -31424,7 +31424,9 @@ wuffs_gif__decoder__decode_image_config(
           self->private_impl.f_frame_config_io_position,
           v_ffio);
     }
-    self->private_impl.f_call_sequence = 32;
+    if (self->private_impl.f_call_sequence == 0) {
+      self->private_impl.f_call_sequence = 32;
+    }
 
     goto ok;
     ok:
