@@ -24,8 +24,8 @@ pub struct decoder? implements base.image_decoder(
 	// pass_bytes_per_row doesn't include the 1 byte for the per-row filter.
 	pass_bytes_per_row : base.u64[..= 0x07FF_FFF8],
 
-	workbuf_wi             : base.u64,
-	workbuf_hist_pos_base  : base.u64,
+	workbuf_wi            : base.u64,
+	workbuf_hist_pos_base : base.u64,
 
 	// The inclusive upper bound, DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE, is
 	// derived from the width and height upper bounds at up to 8 bytes per
@@ -264,7 +264,7 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 
 		while true {
 			mark = args.src.mark()
-			status =? this.decode_other_chunk?(src: args.src)
+			status =? this.decode_other_chunk?(src: args.src, framy: false)
 			if (not this.ignore_checksum) and ((this.chunk_type & ANCILLARY_BIT) == 0) {
 				checksum_have = this.crc32.update_u32!(x: args.src.since(mark: mark))
 			}
@@ -510,8 +510,11 @@ pri func decoder.choose_filter_implementations!() {
 	}
 }
 
-pri func decoder.decode_other_chunk?(src: base.io_reader) {
-	if this.chunk_type == 'PLTE'le {
+// framy is:
+//  - false when coming from decode_image_config.
+//  - true  when coming from decode_frame_config.
+pri func decoder.decode_other_chunk?(src: base.io_reader, framy: base.bool) {
+	if (this.chunk_type == 'PLTE'le) and (not args.framy) {
 		if this.seen_plte {
 			return "#bad chunk"
 		} else if this.color_type == 3 {
@@ -530,24 +533,9 @@ pri func decoder.decode_other_chunk?(src: base.io_reader) {
 		if this.chunk_type <> 'IDAT'le {
 			return "#bad chunk"
 		}
+	}
 
-	} else if this.chunk_type == 'acTL'le {
-		if this.seen_actl {
-			return "#bad chunk"
-		}
-		this.decode_actl?(src: args.src)
-		this.seen_actl = true
-
-	} else if this.chunk_type == 'cHRM'le {
-		if this.report_metadata_chrm {
-			if this.seen_chrm {
-				return "#bad chunk"
-			}
-			this.decode_chrm?(src: args.src)
-			this.seen_chrm = true
-		}
-
-	} else if this.chunk_type == 'eXIf'le {
+	if this.chunk_type == 'eXIf'le {
 		if this.report_metadata_exif {
 			if this.seen_exif {
 				return "#bad chunk"
@@ -555,48 +543,6 @@ pri func decoder.decode_other_chunk?(src: base.io_reader) {
 			this.decode_exif?(src: args.src)
 			this.seen_exif = true
 		}
-
-	} else if this.chunk_type == 'fcTL'le {
-		if this.seen_fctl {
-			return "#bad chunk"
-		}
-		this.decode_fctl?(src: args.src)
-		this.seen_fctl = true
-
-	} else if this.chunk_type == 'gAMA'le {
-		if this.report_metadata_gama {
-			if this.seen_gama {
-				return "#bad chunk"
-			}
-			this.decode_gama?(src: args.src)
-			this.seen_gama = true
-		}
-
-	} else if this.chunk_type == 'iCCP'le {
-		if this.report_metadata_iccp {
-			if this.seen_iccp {
-				return "#bad chunk"
-			}
-			this.decode_iccp?(src: args.src)
-			this.seen_iccp = true
-		}
-
-	} else if this.chunk_type == 'sRGB'le {
-		if this.report_metadata_srgb {
-			if this.seen_srgb {
-				return "#bad chunk"
-			}
-			this.decode_srgb?(src: args.src)
-			this.seen_srgb = true
-		}
-
-	} else if this.chunk_type == 'tRNS'le {
-		if this.seen_trns or (this.color_type > 3) or
-			((this.color_type == 3) and (not this.seen_plte)) {
-			return "#bad chunk"
-		}
-		this.decode_trns?(src: args.src)
-		this.seen_trns = true
 
 	} else if (this.chunk_type == 'iTXt'le) or
 		(this.chunk_type == 'tEXt'le) or
@@ -607,6 +553,66 @@ pri func decoder.decode_other_chunk?(src: base.io_reader) {
 			this.metadata_x = 0
 			this.metadata_y = 0
 			this.metadata_z = 0
+		}
+
+	} else if not args.framy {
+		if this.chunk_type == 'acTL'le {
+			if this.seen_actl {
+				return "#bad chunk"
+			}
+			this.decode_actl?(src: args.src)
+			this.seen_actl = true
+
+		} else if this.chunk_type == 'cHRM'le {
+			if this.report_metadata_chrm {
+				if this.seen_chrm {
+					return "#bad chunk"
+				}
+				this.decode_chrm?(src: args.src)
+				this.seen_chrm = true
+			}
+
+		} else if this.chunk_type == 'fcTL'le {
+			if this.seen_fctl {
+				return "#bad chunk"
+			}
+			this.decode_fctl?(src: args.src)
+			this.seen_fctl = true
+
+		} else if this.chunk_type == 'gAMA'le {
+			if this.report_metadata_gama {
+				if this.seen_gama {
+					return "#bad chunk"
+				}
+				this.decode_gama?(src: args.src)
+				this.seen_gama = true
+			}
+
+		} else if this.chunk_type == 'iCCP'le {
+			if this.report_metadata_iccp {
+				if this.seen_iccp {
+					return "#bad chunk"
+				}
+				this.decode_iccp?(src: args.src)
+				this.seen_iccp = true
+			}
+
+		} else if this.chunk_type == 'sRGB'le {
+			if this.report_metadata_srgb {
+				if this.seen_srgb {
+					return "#bad chunk"
+				}
+				this.decode_srgb?(src: args.src)
+				this.seen_srgb = true
+			}
+
+		} else if this.chunk_type == 'tRNS'le {
+			if this.seen_trns or (this.color_type > 3) or
+				((this.color_type == 3) and (not this.seen_plte)) {
+				return "#bad chunk"
+			}
+			this.decode_trns?(src: args.src)
+			this.seen_trns = true
 		}
 	}
 
@@ -928,6 +934,8 @@ pri func decoder.decode_trns?(src: base.io_reader) {
 }
 
 pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_reader) {
+	var checksum_have : base.u32
+
 	if (this.call_sequence & 0x10) <> 0 {
 		return base."#bad call sequence"
 	} else if this.call_sequence == 0x20 {
@@ -940,11 +948,13 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
 		}
 	} else if this.call_sequence == 0x40 {
 		this.skip_frame?(src: args.src)
-		if this.call_sequence >= 0x60 {
-			return base."@end of data"
-		}
 	} else {
 		return base."@end of data"
+	}
+
+	if this.metadata_fourcc <> 0 {
+		this.call_sequence = 0x30
+		return base."@metadata reported"
 	}
 
 	if this.num_decoded_frame_configs_value == 0 {
@@ -958,11 +968,21 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
 		this.frame_overwrite_instead_of_blend = this.first_overwrite_instead_of_blend
 
 	} else {
-		// Decode the next fcTL chunk.
+		// Decode the next IEND or fcTL chunk.
 		while true {
 			this.chunk_length = args.src.read_u32be?()
 			this.chunk_type = args.src.read_u32le?()
-			if this.chunk_type == 'fdAT'le {
+			if this.chunk_type == 'IEND'le {
+				if this.chunk_length <> 0 {
+					return "#bad chunk"
+				}
+				checksum_have = args.src.read_u32le?()
+				if (not this.ignore_checksum) and (checksum_have <> 0x8260_42AE) {
+					return "#bad checksum"
+				}
+				this.call_sequence = 0x60
+				return base."@end of data"
+			} else if this.chunk_type == 'fdAT'le {
 				return "#bad chunk"
 			} else if this.chunk_type == 'fcTL'le {
 				this.frame_config_io_position = args.src.position() ~mod- 8
@@ -970,7 +990,13 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
 				args.src.skip?(n: 4)  // Skip the checksum.
 				break
 			}
-			args.src.skip?(n: (this.chunk_length as base.u64) + 4)  // +4 for the checksum.
+
+			this.decode_other_chunk?(src: args.src, framy: true)
+			if this.metadata_fourcc <> 0 {
+				this.call_sequence = 0x30
+				return base."@metadata reported"
+			}
+			args.src.skip_u32?(n: 4)  // Skip the checksum.
 			this.chunk_length = 0
 		} endwhile
 	}
@@ -1061,11 +1087,7 @@ pri func decoder.skip_frame?(src: base.io_reader) {
 	} endwhile
 
 	this.num_decoded_frames_value ~sat+= 1
-	if this.num_decoded_frames_value < this.num_animation_frames_value {
-		this.call_sequence = 0x20
-	} else {
-		this.call_sequence = 0x60
-	}
+	this.call_sequence = 0x20
 }
 
 pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, blend: base.pixel_blend, workbuf: slice base.u8, opts: nptr base.decode_frame_options) {
@@ -1207,11 +1229,7 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 	} endwhile
 
 	this.num_decoded_frames_value ~sat+= 1
-	if this.num_decoded_frames_value < this.num_animation_frames_value {
-		this.call_sequence = 0x20
-	} else {
-		this.call_sequence = 0x60
-	}
+	this.call_sequence = 0x20
 }
 
 pri func decoder.decode_pass?(src: base.io_reader, workbuf: slice base.u8) {

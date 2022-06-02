@@ -310,6 +310,7 @@ DecodeImage0(wuffs_base__image_decoder::unique_ptr& image_decoder,
   wuffs_base__image_config image_config = wuffs_base__null_image_config();
   sync_io::DynIOBuffer raw_metadata_buf(max_incl_metadata_length);
   uint64_t start_pos = io_buf.reader_position();
+  bool interested_in_metadata_after_the_frame = false;
   bool redirected = false;
   int32_t fourcc = 0;
 redirect:
@@ -384,6 +385,7 @@ redirect:
         image_decoder->set_report_metadata(WUFFS_BASE__FOURCC__CHRM, true);
       }
       if (flags & DecodeImageArgFlags::REPORT_METADATA_EXIF) {
+        interested_in_metadata_after_the_frame = true;
         image_decoder->set_report_metadata(WUFFS_BASE__FOURCC__EXIF, true);
       }
       if (flags & DecodeImageArgFlags::REPORT_METADATA_GAMA) {
@@ -393,12 +395,14 @@ redirect:
         image_decoder->set_report_metadata(WUFFS_BASE__FOURCC__ICCP, true);
       }
       if (flags & DecodeImageArgFlags::REPORT_METADATA_KVP) {
+        interested_in_metadata_after_the_frame = true;
         image_decoder->set_report_metadata(WUFFS_BASE__FOURCC__KVP, true);
       }
       if (flags & DecodeImageArgFlags::REPORT_METADATA_SRGB) {
         image_decoder->set_report_metadata(WUFFS_BASE__FOURCC__SRGB, true);
       }
       if (flags & DecodeImageArgFlags::REPORT_METADATA_XMP) {
+        interested_in_metadata_after_the_frame = true;
         image_decoder->set_report_metadata(WUFFS_BASE__FOURCC__XMP, true);
       }
     }
@@ -433,7 +437,9 @@ redirect:
       }
     }
   } while (false);
-  raw_metadata_buf.drop();
+  if (!interested_in_metadata_after_the_frame) {
+    raw_metadata_buf.drop();
+  }
 
   // Select the pixel format.
   uint32_t w = image_config.pixcfg.width();
@@ -494,6 +500,12 @@ redirect:
         image_decoder->decode_frame_config(&frame_config, &io_buf);
     if (id_dfc_status.repr == nullptr) {
       break;
+    } else if (id_dfc_status.repr == wuffs_base__note__metadata_reported) {
+      std::string error_message = DecodeImageHandleMetadata(
+          image_decoder, callbacks, input, io_buf, raw_metadata_buf);
+      if (!error_message.empty()) {
+        return DecodeImageResult(std::move(error_message));
+      }
     } else if (id_dfc_status.repr != wuffs_base__suspension__short_read) {
       return DecodeImageResult(id_dfc_status.message());
     } else if (io_buf.meta.closed) {
@@ -535,6 +547,35 @@ redirect:
       }
     }
   }
+
+  // Decode any metadata after the frame.
+  if (interested_in_metadata_after_the_frame) {
+    while (true) {
+      wuffs_base__status id_dfc_status =
+          image_decoder->decode_frame_config(NULL, &io_buf);
+      if (id_dfc_status.repr == wuffs_base__note__end_of_data) {
+        break;
+      } else if (id_dfc_status.repr == nullptr) {
+        continue;
+      } else if (id_dfc_status.repr == wuffs_base__note__metadata_reported) {
+        std::string error_message = DecodeImageHandleMetadata(
+            image_decoder, callbacks, input, io_buf, raw_metadata_buf);
+        if (!error_message.empty()) {
+          return DecodeImageResult(std::move(error_message));
+        }
+      } else if (id_dfc_status.repr != wuffs_base__suspension__short_read) {
+        return DecodeImageResult(id_dfc_status.message());
+      } else if (io_buf.meta.closed) {
+        return DecodeImageResult(DecodeImage_UnexpectedEndOfFile);
+      } else {
+        std::string error_message = input.CopyIn(&io_buf);
+        if (!error_message.empty()) {
+          return DecodeImageResult(std::move(error_message));
+        }
+      }
+    }
+  }
+
   return DecodeImageResult(std::move(alloc_pixbuf_result.mem_owner),
                            pixel_buffer, std::move(message));
 }

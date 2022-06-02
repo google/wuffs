@@ -95,5 +95,15 @@ IDAT {
 	}
 }
 
+# Basic key-value pair, after the frame (after all of the IDATs).
+tEXt {
+	raw {
+		# "After\x00".
+		0x41 0x66 0x74 0x65 0x72 0x00
+		# "Frame".
+		0x46 0x72 0x61 0x6D 0x65
+	}
+}
+
 IEND {
 }

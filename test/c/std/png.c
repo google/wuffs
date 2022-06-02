@@ -810,6 +810,8 @@ test_wuffs_png_decode_metadata_kvp() {
       "U-значение",  //
       "Z-Këy",       //
       "Z-значение",  //
+      "After",       //
+      "Frame",       //
   };
 
   wuffs_png__decoder dec;
@@ -819,14 +821,15 @@ test_wuffs_png_decode_metadata_kvp() {
                    WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
   wuffs_png__decoder__set_report_metadata(&dec, WUFFS_BASE__FOURCC__KVP, true);
 
-  wuffs_base__image_config ic = ((wuffs_base__image_config){});
   wuffs_base__more_information minfo = wuffs_base__empty_more_information();
 
   size_t i = 0;
-  for (;; i++) {
+  while (true) {
     wuffs_base__status status =
-        wuffs_png__decoder__decode_image_config(&dec, &ic, &src);
+        wuffs_png__decoder__decode_frame_config(&dec, NULL, &src);
     if (wuffs_base__status__is_ok(&status)) {
+      continue;
+    } else if (status.repr == wuffs_base__note__end_of_data) {
       break;
     } else if (status.repr != wuffs_base__note__metadata_reported) {
       RETURN_FAIL("decode_image_config i=%zu: %s", i, status.repr);
@@ -865,6 +868,7 @@ test_wuffs_png_decode_metadata_kvp() {
       }
     }
     CHECK_STRING(check_io_buffers_equal("", &have, &want));
+    i++;
   }
 
   if (i != WUFFS_TESTLIB_ARRAY_SIZE(wants)) {
