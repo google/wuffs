@@ -46,3 +46,17 @@ Either way, break the loop (after handling the `dst` and `minfo` out
 parameters) when `tell_me_more` returns a NULL status, meaning ok, when the
 metadata is complete. Afterwards, call the original action (e.g. `decode_etc`)
 again to resume after the "@metadata reported" detour.
+
+`tell_me_more` both returns a status and fills in the `dst` and `minfo` out
+parameters. Subtly, the caller should process the out parameters before
+considering the status. It is valid for the callee to fill in the out
+parameters with partial results when returning an error status or with full
+results when returning an ok status. 'No partial results' is represented by an
+unchanged `dst` or `minfo`. For example, if `minfo` was reset to zero before
+each `tell_me_more` call then `minfo.flavor` remaining zero means that the
+`minfo` was unchanged, as valid flavor values are non-zero.
+
+
+## Examples
+
+- [script/print-image-metadata](/script/print-image-metadata.cc)

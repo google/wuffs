@@ -130,6 +130,7 @@ In Wuffs syntax, the `base.image_decoder` methods are:
 - [example/imageviewer](/example/imageviewer)
 - [example/sdl-imageviewer](/example/sdl-imageviewer)
 - [script/print-average-pixel](/script/print-average-pixel.cc)
+- [script/print-image-metadata](/script/print-image-metadata.cc)
 
 Examples in other repositories:
 
