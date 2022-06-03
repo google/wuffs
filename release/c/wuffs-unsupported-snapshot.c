@@ -8171,7 +8171,6 @@ struct wuffs_gif__decoder__struct {
     uint32_t f_width;
     uint32_t f_height;
     uint8_t f_call_sequence;
-    bool f_ignore_metadata;
     bool f_report_metadata_iccp;
     bool f_report_metadata_xmp;
     uint32_t f_metadata_fourcc;
@@ -31784,7 +31783,6 @@ wuffs_gif__decoder__decode_frame_config(
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
-    self->private_impl.f_ignore_metadata = true;
     self->private_impl.f_dirty_max_excl_y = 0;
     if ((self->private_impl.f_call_sequence & 16) != 0) {
       status = wuffs_base__make_status(wuffs_base__error__bad_call_sequence);
@@ -32032,7 +32030,6 @@ wuffs_gif__decoder__decode_frame(
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
-    self->private_impl.f_ignore_metadata = true;
     if (self->private_impl.f_call_sequence == 64) {
     } else if (self->private_impl.f_call_sequence < 64) {
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
@@ -32796,7 +32793,7 @@ wuffs_gif__decoder__decode_ae(
         if ((0 < self->private_impl.f_num_animation_loops_value) && (self->private_impl.f_num_animation_loops_value <= 65535)) {
           self->private_impl.f_num_animation_loops_value += 1;
         }
-      } else if (self->private_impl.f_ignore_metadata) {
+      } else if (self->private_impl.f_call_sequence >= 32) {
       } else if (v_is_iccp && self->private_impl.f_report_metadata_iccp) {
         self->private_impl.f_metadata_fourcc = 1229144912;
         self->private_impl.f_metadata_io_position = wuffs_base__u64__sat_add((a_src ? a_src->meta.pos : 0), ((uint64_t)(iop_a_src - io0_a_src)));
