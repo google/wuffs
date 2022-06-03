@@ -164,16 +164,6 @@ parse_flags(int argc, char** argv) {
   return NULL;
 }
 
-static int32_t  //
-i32_min(int32_t a, int32_t b) {
-  return (a < b) ? a : b;
-}
-
-static int32_t  //
-i32_max(int32_t a, int32_t b) {
-  return (a > b) ? a : b;
-}
-
 class MyDecodeImageCallbacks : public wuffs_aux::DecodeImageCallbacks {
  public:
   MyDecodeImageCallbacks() : m_combined_gamma(1.0) {}
@@ -527,8 +517,8 @@ clear_area(xcb_connection_t* c,
     xcb_clear_area(c, 1, w, old_x, old_y, width, dy);
   }
 
-  int32_t y0 = i32_max(old_y, new_y);
-  int32_t y1 = i32_min(old_y + height, new_y + height);
+  int32_t y0 = wuffs_base__i32__max(old_y, new_y);
+  int32_t y1 = wuffs_base__i32__min(old_y + height, new_y + height);
 
   int32_t dx = new_x - old_x;
   if (dx < 0) {
