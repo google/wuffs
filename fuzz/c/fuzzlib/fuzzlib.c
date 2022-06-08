@@ -44,6 +44,19 @@ jenkins_hash_u32(const uint8_t* data, size_t size) {
   return hash;
 }
 
+// memrandomize is like memcpy or memset but it writes pseudo-random values.
+static void*  //
+memrandomize(void* dest, uint64_t seed, size_t n) {
+  unsigned short xsubi[3];  // See "man 3 nrand48".
+  xsubi[0] = (seed >> 0) ^ (seed >> 48);
+  xsubi[1] = (seed >> 16);
+  xsubi[2] = (seed >> 32);
+  for (uint8_t* ptr = (uint8_t*)dest; n--;) {
+    *ptr++ = nrand48(xsubi);
+  }
+  return dest;
+}
+
 const char*  //
 fuzz(wuffs_base__io_buffer* src, uint64_t hash);
 
