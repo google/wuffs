@@ -68,18 +68,8 @@ llvmFuzzerTestOneInput(const uint8_t* data, size_t size) {
   uint32_t hash1 = jenkins_hash_u32(data + s2, size - s2);
   uint64_t hash = (((uint64_t)hash0) << 32) | ((uint64_t)hash1);
 
-  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = ((wuffs_base__slice_u8){
-          .ptr = (uint8_t*)(data),
-          .len = size,
-      }),
-      .meta = ((wuffs_base__io_buffer_meta){
-          .wi = size,
-          .ri = 0,
-          .pos = 0,
-          .closed = true,
-      }),
-  });
+  wuffs_base__io_buffer src =
+      wuffs_base__ptr_u8__reader((uint8_t*)data, size, true);
 
   const char* msg = fuzz(&src, hash);
   if (msg) {

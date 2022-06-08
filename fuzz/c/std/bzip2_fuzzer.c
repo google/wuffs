@@ -101,12 +101,8 @@ fuzz(wuffs_base__io_buffer* src, uint64_t hash) {
       &dec, WUFFS_BASE__QUIRK_IGNORE_CHECKSUM, hash & 0xFFFE);
 
   uint8_t dst_buffer[DST_BUFFER_ARRAY_SIZE];
-  wuffs_base__io_buffer dst = ((wuffs_base__io_buffer){
-      .data = ((wuffs_base__slice_u8){
-          .ptr = dst_buffer,
-          .len = DST_BUFFER_ARRAY_SIZE,
-      }),
-  });
+  wuffs_base__io_buffer dst =
+      wuffs_base__ptr_u8__writer(&dst_buffer[0], DST_BUFFER_ARRAY_SIZE);
 
   while (true) {
     dst.meta.wi = 0;
