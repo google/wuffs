@@ -6827,7 +6827,6 @@ extern const char wuffs_bzip2__error__bad_block_header[];
 extern const char wuffs_bzip2__error__bad_block_length[];
 extern const char wuffs_bzip2__error__bad_checksum[];
 extern const char wuffs_bzip2__error__bad_header[];
-extern const char wuffs_bzip2__error__bad_number_of_huffman_codes[];
 extern const char wuffs_bzip2__error__bad_number_of_sections[];
 extern const char wuffs_bzip2__error__unsupported_huffman_code[];
 extern const char wuffs_bzip2__error__unsupported_block_randomization[];
@@ -24866,7 +24865,6 @@ const char wuffs_bzip2__error__bad_block_header[] = "#bzip2: bad block header";
 const char wuffs_bzip2__error__bad_block_length[] = "#bzip2: bad block length";
 const char wuffs_bzip2__error__bad_checksum[] = "#bzip2: bad checksum";
 const char wuffs_bzip2__error__bad_header[] = "#bzip2: bad header";
-const char wuffs_bzip2__error__bad_number_of_huffman_codes[] = "#bzip2: bad number of Huffman codes";
 const char wuffs_bzip2__error__bad_number_of_sections[] = "#bzip2: bad number of sections";
 const char wuffs_bzip2__error__unsupported_huffman_code[] = "#bzip2: unsupported Huffman code";
 const char wuffs_bzip2__error__unsupported_block_randomization[] = "#bzip2: unsupported block randomization";
@@ -26192,6 +26190,10 @@ wuffs_bzip2__decoder__decode_huffman_fast(
     } else {
       v_ticks = 49;
       v_section += 1;
+      if (v_section >= self->private_impl.f_num_sections) {
+        status = wuffs_base__make_status(wuffs_bzip2__error__bad_number_of_sections);
+        goto exit;
+      }
       v_which = WUFFS_BZIP2__CLAMP_TO_5[(self->private_data.f_huffman_selectors[(v_section & 32767)] & 7)];
     }
     v_bits |= (wuffs_base__peek_u32be__no_bounds_check(iop_a_src) >> v_n_bits);
@@ -26311,6 +26313,10 @@ wuffs_bzip2__decoder__decode_huffman_slow(
       } else {
         self->private_impl.f_decode_huffman_ticks = 49;
         self->private_impl.f_decode_huffman_section += 1;
+        if (self->private_impl.f_decode_huffman_section >= self->private_impl.f_num_sections) {
+          status = wuffs_base__make_status(wuffs_bzip2__error__bad_number_of_sections);
+          goto exit;
+        }
         self->private_impl.f_decode_huffman_which = WUFFS_BZIP2__CLAMP_TO_5[(self->private_data.f_huffman_selectors[(self->private_impl.f_decode_huffman_section & 32767)] & 7)];
       }
       v_node_index = 0;

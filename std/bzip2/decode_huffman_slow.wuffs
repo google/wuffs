@@ -31,6 +31,9 @@ pri func decoder.decode_huffman_slow?(src: base.io_reader) {
 		} else {
 			this.decode_huffman_ticks = 49
 			this.decode_huffman_section ~mod+= 1
+			if this.decode_huffman_section >= this.num_sections {
+				return "#bad number of sections"
+			}
 			this.decode_huffman_which = CLAMP_TO_5[this.huffman_selectors[this.decode_huffman_section & 32767] & 7]
 		}
 

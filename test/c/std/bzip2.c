@@ -74,6 +74,11 @@ golden_test g_bzip2_256_bytes_gt = {
     .src_filename = "test/data/256.bytes.bz2",
 };
 
+golden_test g_bzip2_bad_number_of_sections_gt = {
+    .want_filename = "test/data/0.bytes",
+    .src_filename = "test/data/artificial-bzip2/bad-number-of-sections.bz2",
+};
+
 golden_test g_bzip2_midsummer_gt = {
     .want_filename = "test/data/midsummer.txt",
     .src_filename = "test/data/midsummer.txt.bz2",
@@ -135,6 +140,19 @@ test_wuffs_bzip2_decode_256_bytes() {
   CHECK_FOCUS(__func__);
   return do_test_io_buffers(wuffs_bzip2_decode, &g_bzip2_256_bytes_gt,
                             UINT64_MAX, UINT64_MAX);
+}
+
+const char*  //
+test_wuffs_bzip2_decode_bad_number_of_sections() {
+  CHECK_FOCUS(__func__);
+  const char* have =
+      do_test_io_buffers(wuffs_bzip2_decode, &g_bzip2_bad_number_of_sections_gt,
+                         UINT64_MAX, UINT64_MAX);
+  const char* want = wuffs_bzip2__error__bad_number_of_sections;
+  if (have != want) {
+    RETURN_FAIL("have \"%s\", want \"%s\"", have, want);
+  }
+  return NULL;
 }
 
 const char*  //
@@ -227,6 +245,7 @@ bench_mimic_bzip2_decode_100k() {
 proc g_tests[] = {
 
     test_wuffs_bzip2_decode_256_bytes,
+    test_wuffs_bzip2_decode_bad_number_of_sections,
     test_wuffs_bzip2_decode_interface,
     test_wuffs_bzip2_decode_midsummer,
     test_wuffs_bzip2_decode_pi,

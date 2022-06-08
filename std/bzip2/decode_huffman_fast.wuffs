@@ -45,6 +45,9 @@ pri func decoder.decode_huffman_fast!(src: base.io_reader) base.status {
 		} else {
 			ticks = 49
 			section ~mod+= 1
+			if section >= this.num_sections {
+				return "#bad number of sections"
+			}
 			which = CLAMP_TO_5[this.huffman_selectors[section & 32767] & 7]
 		}
 
