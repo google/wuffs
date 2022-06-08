@@ -490,10 +490,34 @@ load(xcb_connection_t* c, xcb_window_t w, const char* filename) {
   return true;
 }
 
+bool  //
+intersects(int32_t old_x,
+           int32_t old_y,
+           int32_t width,
+           int32_t height,
+           int32_t new_x,
+           int32_t new_y) {
+  if ((width <= 0) || (height <= 0)) {
+    return false;
+  } else if ((old_x > new_x) && ((old_x - new_x) >= width)) {
+    return false;
+  } else if ((new_x > old_x) && ((new_x - old_x) >= width)) {
+    return false;
+  } else if ((old_y > new_y) && ((old_y - new_y) >= height)) {
+    return false;
+  } else if ((new_y > old_y) && ((new_y - old_y) >= height)) {
+    return false;
+  }
+  return true;
+}
+
 // clear_area clears the L-shaped difference between old and new rectangles (of
 // equal width and height). It does this in up to two xcb_clear_area calls,
 // labeled A and B in the example below (with old_x=0, old_y=0, width=5,
 // height=4, new_x=2, new_y=2).
+//
+// If the old and new rectangles do not intersect then the old rectangle (not
+// an L-shape) will be cleared.
 //
 // AAAAA
 // AAAAA
@@ -510,6 +534,13 @@ clear_area(xcb_connection_t* c,
            int32_t height,
            int32_t new_x,
            int32_t new_y) {
+  if ((width <= 0) || (height <= 0)) {
+    return;
+  } else if (!intersects(old_x, old_y, width, height, new_x, new_y)) {
+    xcb_clear_area(c, 1, w, old_x, old_y, width, height);
+    return;
+  }
+
   int32_t dy = new_y - old_y;
   if (dy < 0) {
     xcb_clear_area(c, 1, w, old_x, old_y + height + dy, width, -dy);
