@@ -88,7 +88,7 @@ func main1() error {
 		const rep = "repeat "
 		if strings.HasPrefix(s, rep) {
 			args := s[len(rep):]
-			count, args, ok := parseNum(args)
+			count, args, ok := parseNum32(args)
 			if !ok || count <= 0 || args != "[" {
 				return fmt.Errorf("bad repeat command: %q", s)
 			}
@@ -157,7 +157,7 @@ func log2(u uint32) (i int32) {
 	return -1
 }
 
-func parseHex(s string) (num uint32, remaining string, ok bool) {
+func parseHex32(s string) (num uint32, remaining string, ok bool) {
 	if i := strings.IndexByte(s, ' '); i >= 0 {
 		s, remaining = s[:i], s[i+1:]
 		for len(remaining) > 0 && remaining[0] == ' ' {
@@ -177,7 +177,27 @@ func parseHex(s string) (num uint32, remaining string, ok bool) {
 	return uint32(u), remaining, true
 }
 
-func parseNum(s string) (num uint32, remaining string, ok bool) {
+func parseHex64(s string) (num uint64, remaining string, ok bool) {
+	if i := strings.IndexByte(s, ' '); i >= 0 {
+		s, remaining = s[:i], s[i+1:]
+		for len(remaining) > 0 && remaining[0] == ' ' {
+			remaining = remaining[1:]
+		}
+	}
+
+	if len(s) < 2 || s[0] != '0' || s[1] != 'x' {
+		return 0, "", false
+	}
+	s = s[2:]
+
+	u, err := strconv.ParseUint(s, 16, 64)
+	if err != nil {
+		return 0, "", false
+	}
+	return u, remaining, true
+}
+
+func parseNum32(s string) (num uint32, remaining string, ok bool) {
 	if i := strings.IndexByte(s, ' '); i >= 0 {
 		s, remaining = s[:i], s[i+1:]
 		for len(remaining) > 0 && remaining[0] == ' ' {
@@ -233,6 +253,70 @@ var reverse8 = [256]byte{
 	0x17, 0x97, 0x57, 0xD7, 0x37, 0xB7, 0x77, 0xF7, // 0xE8 - 0xEF
 	0x0F, 0x8F, 0x4F, 0xCF, 0x2F, 0xAF, 0x6F, 0xEF, // 0xF0 - 0xF7
 	0x1F, 0x9F, 0x5F, 0xDF, 0x3F, 0xBF, 0x7F, 0xFF, // 0xF8 - 0xFF
+}
+
+// ----
+
+func init() {
+	formats["bzip2"] = stateBzip2
+}
+
+var bzip2Globals struct {
+	stream bzip2BitStream
+}
+
+func stateBzip2(line string) (stateFunc, error) {
+	g := &bzip2Globals
+	const (
+		cmdB = "bits "
+	)
+	switch {
+	case line == "":
+		g.stream.flush()
+		return stateBzip2, nil
+
+	case strings.HasPrefix(line, cmdB):
+		s := strings.TrimSpace(line[len(cmdB):])
+		n, s, ok := parseNum32(s)
+		if !ok || s == "" {
+			break
+		}
+		x, s, ok := parseHex64(s)
+		if !ok {
+			break
+		}
+		g.stream.writeBits64(x, n)
+		return stateBzip2, nil
+	}
+
+	return nil, fmt.Errorf("bad stateBzip2 command: %q", line)
+}
+
+type bzip2BitStream struct {
+	bits  uint64
+	nBits uint32 // Always within [0, 7].
+}
+
+// writeBits64 writes the low n bits of b to z.
+func (z *bzip2BitStream) writeBits64(b uint64, n uint32) {
+	if n > 56 {
+		panic("writeBits64: n is too large")
+	}
+	z.bits |= b << (64 - n - z.nBits)
+	z.nBits += n
+	for z.nBits >= 8 {
+		out = append(out, uint8(z.bits>>56))
+		z.bits <<= 8
+		z.nBits -= 8
+	}
+}
+
+func (z *bzip2BitStream) flush() {
+	if z.nBits > 0 {
+		out = append(out, uint8(z.bits>>56))
+		z.bits = 0
+		z.nBits = 0
+	}
 }
 
 // ----
@@ -529,7 +613,7 @@ func stateDeflate(line string) (stateFunc, error) {
 		s := line[len(cmdB):]
 		for s != "" {
 			x, ok := uint32(0), false
-			x, s, ok = parseHex(s)
+			x, s, ok = parseHex32(s)
 			if !ok {
 				return nil, fmt.Errorf("bad stateDeflate command: %q", line)
 			}
@@ -728,7 +812,7 @@ outer:
 
 	default:
 		s := line
-		n, s, ok := parseNum(s)
+		n, s, ok := parseNum32(s)
 		if !ok || s == "" {
 			break
 		}
@@ -743,7 +827,7 @@ outer:
 
 		if g.etcetera {
 			g.etcetera = false
-			n0, s0, ok := parseNum(g.prevLine)
+			n0, s0, ok := parseNum32(g.prevLine)
 			if !ok {
 				return nil, fmt.Errorf("bad etcetera command")
 			}
@@ -965,10 +1049,10 @@ func deflateParseLenDist(line string) (l uint32, d uint32, ok bool) {
 	s := line
 	if strings.HasPrefix(s, lStr) {
 		s = s[len(lStr):]
-		if l, s, ok := parseNum(s); ok && 3 <= l && l <= 258 {
+		if l, s, ok := parseNum32(s); ok && 3 <= l && l <= 258 {
 			if strings.HasPrefix(s, dStr) {
 				s = s[len(dStr):]
-				if d, s, ok := parseNum(s); ok && 1 <= d && d <= 32768 && s == "" {
+				if d, s, ok := parseNum32(s); ok && 1 <= d && d <= 32768 && s == "" {
 					return l, d, true
 				}
 			}
@@ -1035,7 +1119,7 @@ outer:
 		s := line[len(cmdB):]
 		for s != "" {
 			x, ok := uint32(0), false
-			x, s, ok = parseHex(s)
+			x, s, ok = parseHex32(s)
 			if !ok {
 				break outer
 			}
@@ -1076,7 +1160,7 @@ outer:
 				flags |= 0x01
 				transparentIndex = uint8(num)
 			case strings.HasSuffix(term, ms):
-				num, remaining, ok := parseNum(term[:len(term)-len(ms)])
+				num, remaining, ok := parseNum32(term[:len(term)-len(ms)])
 				if !ok || remaining != "" {
 					break outer
 				}
@@ -1098,7 +1182,7 @@ outer:
 
 	case strings.HasPrefix(line, cmdL):
 		s := line[len(cmdL):]
-		litWidth, s, ok := parseNum(s)
+		litWidth, s, ok := parseNum32(s)
 		if !ok || litWidth < 2 || 8 < litWidth {
 			break
 		}
@@ -1107,7 +1191,7 @@ outer:
 		uncompressed := []byte(nil)
 		for s != "" {
 			x := uint32(0)
-			x, s, ok = parseHex(s)
+			x, s, ok = parseHex32(s)
 			if !ok {
 				break outer
 			}
@@ -1140,7 +1224,7 @@ outer:
 
 	case strings.HasPrefix(line, cmdLC):
 		s := line[len(cmdLC):]
-		loopCount, _, ok := parseNum(s)
+		loopCount, _, ok := parseNum32(s)
 		if !ok || 0xFFFF < loopCount {
 			break
 		}
@@ -1191,15 +1275,15 @@ func stateGifImage(line string) (stateFunc, error) {
 	switch {
 	case strings.HasPrefix(line, cmdBCI):
 		s := line[len(cmdBCI):]
-		if i, _, ok := parseNum(s); ok {
+		if i, _, ok := parseNum32(s); ok {
 			g.imageBackgroundColorIndex = i
 		}
 		return stateGifImage, nil
 
 	case strings.HasPrefix(line, cmdIWH):
 		s := line[len(cmdIWH):]
-		if w, s, ok := parseNum(s); ok {
-			if h, _, ok := parseNum(s); ok {
+		if w, s, ok := parseNum32(s); ok {
+			if h, _, ok := parseNum32(s); ok {
 				g.imageWidth = w
 				g.imageHeight = h
 				return stateGifImage, nil
@@ -1248,10 +1332,10 @@ func stateGifFrame(line string) (stateFunc, error) {
 
 	case strings.HasPrefix(line, cmdFLTWH):
 		s := line[len(cmdFLTWH):]
-		if l, s, ok := parseNum(s); ok {
-			if t, s, ok := parseNum(s); ok {
-				if w, s, ok := parseNum(s); ok {
-					if h, _, ok := parseNum(s); ok {
+		if l, s, ok := parseNum32(s); ok {
+			if t, s, ok := parseNum32(s); ok {
+				if w, s, ok := parseNum32(s); ok {
+					if h, _, ok := parseNum32(s); ok {
 						g.frameLeft = l
 						g.frameTop = t
 						g.frameWidth = w
@@ -1276,9 +1360,9 @@ func stateGifImagePalette(line string) (stateFunc, error) {
 	}
 
 	s := line
-	if rgb0, s, ok := parseHex(s); ok {
-		if rgb1, s, ok := parseHex(s); ok {
-			if rgb2, _, ok := parseHex(s); ok {
+	if rgb0, s, ok := parseHex32(s); ok {
+		if rgb1, s, ok := parseHex32(s); ok {
+			if rgb2, _, ok := parseHex32(s); ok {
 				g.globalPalette = append(g.globalPalette,
 					[4]uint8{uint8(rgb0), uint8(rgb1), uint8(rgb2), 0xFF})
 				return stateGifImagePalette, nil
@@ -1296,9 +1380,9 @@ func stateGifFramePalette(line string) (stateFunc, error) {
 	}
 
 	s := line
-	if rgb0, s, ok := parseHex(s); ok {
-		if rgb1, s, ok := parseHex(s); ok {
-			if rgb2, _, ok := parseHex(s); ok {
+	if rgb0, s, ok := parseHex32(s); ok {
+		if rgb1, s, ok := parseHex32(s); ok {
+			if rgb2, _, ok := parseHex32(s); ok {
 				g.localPalette = append(g.localPalette,
 					[4]uint8{uint8(rgb0), uint8(rgb1), uint8(rgb2), 0xFF})
 				return stateGifFramePalette, nil
@@ -1381,7 +1465,7 @@ func statePngRaw(line string) (stateFunc, error) {
 	}
 
 	for s := line; s != ""; {
-		if x, remaining, ok := parseHex(s); ok {
+		if x, remaining, ok := parseHex32(s); ok {
 			g.chunkData.WriteByte(byte(x))
 			s = remaining
 		} else {
@@ -1401,7 +1485,7 @@ func statePngZlib(line string) (stateFunc, error) {
 	}
 
 	for s := line; s != ""; {
-		if x, remaining, ok := parseHex(s); ok {
+		if x, remaining, ok := parseHex32(s); ok {
 			g.scratch[0] = byte(x)
 			g.zlibWriter.Write(g.scratch[:1])
 			s = remaining
