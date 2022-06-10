@@ -589,18 +589,18 @@ pri func decoder.read_code_lengths?(src: base.io_reader) {
 // height (here, 3) then it would pop the stack. Otherwise it would push new
 // nodes onto the stack until the stack height matched that code length.
 pri func decoder.build_huffman_tree!(which: base.u32[..= 5]) base.status {
-	var code_length  : base.u32
-	var symbol_index : base.u32
-	var num_nodes    : base.u32[..= 257]
-	var stack_height : base.u32[..= 21]
-	var stack_values : array[21] base.u32[..= 256]
-	var node_index   : base.u32[..= 256]
-	var leaf_value   : base.u16
+	var code_length      : base.u32
+	var symbol_index     : base.u32
+	var num_branch_nodes : base.u32[..= 257]
+	var stack_height     : base.u32[..= 21]
+	var stack_values     : array[21] base.u32[..= 256]
+	var node_index       : base.u32[..= 256]
+	var leaf_value       : base.u16
 
 	// Push a root node.
 	this.huffman_trees[args.which][0][0] = 0
 	this.huffman_trees[args.which][0][1] = 0
-	num_nodes = 1
+	num_branch_nodes = 1
 	stack_height = 1
 	stack_values[0] = 0
 
@@ -634,17 +634,17 @@ pri func decoder.build_huffman_tree!(which: base.u32[..= 5]) base.status {
 
 				node_index = stack_values[stack_height - 1]
 				if this.huffman_trees[args.which][node_index][0] == 0 {
-					this.huffman_trees[args.which][node_index][0] = num_nodes as base.u16
+					this.huffman_trees[args.which][node_index][0] = num_branch_nodes as base.u16
 				} else {
-					this.huffman_trees[args.which][node_index][1] = num_nodes as base.u16
+					this.huffman_trees[args.which][node_index][1] = num_branch_nodes as base.u16
 				}
-				if num_nodes >= 257 {
+				if num_branch_nodes >= 257 {
 					return "#bad Huffman code (under-subscribed)"
 				}
-				stack_values[stack_height] = num_nodes
-				this.huffman_trees[args.which][num_nodes][0] = 0
-				this.huffman_trees[args.which][num_nodes][1] = 0
-				num_nodes += 1
+				stack_values[stack_height] = num_branch_nodes
+				this.huffman_trees[args.which][num_branch_nodes][0] = 0
+				this.huffman_trees[args.which][num_branch_nodes][1] = 0
+				num_branch_nodes += 1
 				stack_height += 1
 			} endwhile
 

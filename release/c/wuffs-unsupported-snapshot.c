@@ -25800,7 +25800,7 @@ wuffs_bzip2__decoder__build_huffman_tree(
     uint32_t a_which) {
   uint32_t v_code_length = 0;
   uint32_t v_symbol_index = 0;
-  uint32_t v_num_nodes = 0;
+  uint32_t v_num_branch_nodes = 0;
   uint32_t v_stack_height = 0;
   uint32_t v_stack_values[21] = {0};
   uint32_t v_node_index = 0;
@@ -25808,7 +25808,7 @@ wuffs_bzip2__decoder__build_huffman_tree(
 
   self->private_data.f_huffman_trees[a_which][0][0] = 0;
   self->private_data.f_huffman_trees[a_which][0][1] = 0;
-  v_num_nodes = 1;
+  v_num_branch_nodes = 1;
   v_stack_height = 1;
   v_stack_values[0] = 0;
   v_code_length = 1;
@@ -25833,17 +25833,17 @@ wuffs_bzip2__decoder__build_huffman_tree(
         }
         v_node_index = v_stack_values[(v_stack_height - 1)];
         if (self->private_data.f_huffman_trees[a_which][v_node_index][0] == 0) {
-          self->private_data.f_huffman_trees[a_which][v_node_index][0] = ((uint16_t)(v_num_nodes));
+          self->private_data.f_huffman_trees[a_which][v_node_index][0] = ((uint16_t)(v_num_branch_nodes));
         } else {
-          self->private_data.f_huffman_trees[a_which][v_node_index][1] = ((uint16_t)(v_num_nodes));
+          self->private_data.f_huffman_trees[a_which][v_node_index][1] = ((uint16_t)(v_num_branch_nodes));
         }
-        if (v_num_nodes >= 257) {
+        if (v_num_branch_nodes >= 257) {
           return wuffs_base__make_status(wuffs_bzip2__error__bad_huffman_code_under_subscribed);
         }
-        v_stack_values[v_stack_height] = v_num_nodes;
-        self->private_data.f_huffman_trees[a_which][v_num_nodes][0] = 0;
-        self->private_data.f_huffman_trees[a_which][v_num_nodes][1] = 0;
-        v_num_nodes += 1;
+        v_stack_values[v_stack_height] = v_num_branch_nodes;
+        self->private_data.f_huffman_trees[a_which][v_num_branch_nodes][0] = 0;
+        self->private_data.f_huffman_trees[a_which][v_num_branch_nodes][1] = 0;
+        v_num_branch_nodes += 1;
         v_stack_height += 1;
       }
       label__2__break:;
