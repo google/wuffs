@@ -21,7 +21,7 @@ pri func decoder.decode_huffman_slow?(src: base.io_reader) {
 	var i        : base.u32
 	var j        : base.u32
 	var output   : base.u32[..= 255]
-	var run      : base.u32[..= 16_777216]  // 16_777216 = (2 << 23)
+	var run      : base.u32[..= 12_582912]  // 12_582912 = (3 << 22)
 	var mtft0    : base.u32[..= 255]
 
 	// Apply the Huffman trees.
@@ -53,7 +53,7 @@ pri func decoder.decode_huffman_slow?(src: base.io_reader) {
 				node_index = child as base.u32
 				continue
 
-			} else if child < 1280 {  // mNN symbol.
+			} else if child < 0x300 {  // mNN symbol.
 				// Move to front.
 				child_ff = (child & 0xFF) as base.u32
 				output = this.mtft[child_ff] as base.u32
@@ -71,7 +71,7 @@ pri func decoder.decode_huffman_slow?(src: base.io_reader) {
 				this.decode_huffman_run_shift = 0
 				break
 
-			} else if child > 1281 {  // EOB symbol.
+			} else if child == 0x300 {  // EOB symbol.
 				this.decode_huffman_finished = true
 				break.outer
 			}
@@ -80,7 +80,7 @@ pri func decoder.decode_huffman_slow?(src: base.io_reader) {
 			if this.decode_huffman_run_shift >= 23 {
 				return "#bad block length"
 			}
-			run = ((child - 1279) as base.u32) << this.decode_huffman_run_shift
+			run = ((child as base.u32) & 3) << this.decode_huffman_run_shift
 			this.decode_huffman_run_shift += 1
 			i = this.block_size
 			j = run + this.block_size

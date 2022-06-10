@@ -91,11 +91,11 @@ pub struct decoder? implements base.io_transformer(
 
 	// huffman_tables[which] caches the result of walking huffman_trees[which]
 	// for each possible 8-bit input. The base.u16 value decomposes as:
-	//  - The low 11 bits are the final node, where finality comes either from
+	//  - The low 10 bits are the final node, where finality comes either from
 	//    hitting a leaf node or from spending all 8 bits of the input. As per
-	//    the build_huffman_tree method, a value of 0x3FF = 1023 or less means
-	//    a branch node and 0x400 = 1024 or more means a leaf node.
-	//  - The middle bit is unused.
+	//    the build_huffman_tree method, a value of 0x100 = 256 or less means
+	//    a branch node and 0x201 = 513 or more means a leaf node.
+	//  - The middle 2 bits are unused.
 	//  - The high 4 bits are the number of input bits spent.
 	huffman_tables : array[6] array[256] base.u16,
 
@@ -544,31 +544,31 @@ pri func decoder.read_code_lengths?(src: base.io_reader) {
 
 // build_huffman_tree builds a canonical Huffman tree given the symbols' code
 // lengths. For the "abraca.txt.bz2" example, the code lengths are:
-//  - symbol=0x500 (RUNA)  cl=3
-//  - symbol=0x501 (RUNB)  cl=3
-//  - symbol=0x401 (m01)   cl=2
-//  - symbol=0x402 (m02)   cl=3
-//  - symbol=0x403 (m03)   cl=2
-//  - symbol=0x7FF (EOB)   cl=3
+//  - symbol=0x301 (RUNA)  cl=3
+//  - symbol=0x302 (RUNB)  cl=3
+//  - symbol=0x201 (m01)   cl=2
+//  - symbol=0x202 (m02)   cl=3
+//  - symbol=0x203 (m03)   cl=2
+//  - symbol=0x300 (EOB)   cl=3
 //
 // The bitstring mapping is:
-//  - "00"   0x401 (m01)
-//  - "01"   0x403 (m03)
-//  - "100"  0x500 (RUNA)
-//  - "101"  0x501 (RUNB)
-//  - "110"  0x402 (m02)
-//  - "111"  0x7FF (EOB)
+//  - "00"   0x201 (m01)
+//  - "01"   0x203 (m03)
+//  - "100"  0x301 (RUNA)
+//  - "101"  0x302 (RUNB)
+//  - "110"  0x202 (m02)
+//  - "111"  0x300 (EOB)
 //
 // The Huffman tree has 5 branch nodes (where 5+1 is both the number of leaf
 // nodes and the number of symbols). Each branch node has two children,
-// represented by a base.u16 value. 256 = 0x100 or less means that the child is
-// a branch node. 1024 = 0x400 or above means a leaf node (with the symbol
-// values as above).
+// represented by a base.u16 value. 0x100 = 256 or less means that the child is
+// a branch node. 0x201 ..= 0x2FF means an mNN leaf node. 0x300, 0x301 and
+// 0x302 mean EOB, RUNA and RUNB leaf nodes.
 //  - node0 = [0x001 (node1), 0x002 (node2)]
-//  - node1 = [0x401 (m01)  , 0x403 (m03)  ]
+//  - node1 = [0x201 (m01)  , 0x203 (m03)  ]
 //  - node2 = [0x003 (node3), 0x004 (node4)]
-//  - node3 = [0x500 (RUNA) , 0x501 (RUNB) ]
-//  - node4 = [0x402 (m02)  , 0x7FF (EOB)  ]
+//  - node3 = [0x301 (RUNA) , 0x302 (RUNB) ]
+//  - node4 = [0x202 (m02)  , 0x300 (EOB)  ]
 //
 // For example, the tree walk from node0 right (1) to node2 left (0) to node3
 // left (0) to RUNA means that the RUNA bitstring is "100".
@@ -577,12 +577,12 @@ pri func decoder.read_code_lengths?(src: base.io_reader) {
 // length order, maintaining a stack of nodes that's the path from the root
 // (node0) to the latest created-but-unfinished node. Created means that their
 // left child is assigned (non-zero). Unfinished means that their right child
-// is pending (zero). For example, after adding the 0x401, 0x403 and 0x500
+// is pending (zero). For example, after adding the 0x201, 0x203 and 0x301
 // symbols, we would have this (in-progress) tree:
 //  - node0 = [0x001 (node1), 0x002 (node2)]
-//  - node1 = [0x401 (m01)  , 0x403 (m03)  ]
+//  - node1 = [0x201 (m01)  , 0x203 (m03)  ]
 //  - node2 = [0x003 (node3), 0            ]
-//  - node3 = [0x500 (RUNA) , 0            ]
+//  - node3 = [0x301 (RUNA) , 0            ]
 //
 // The stack would be [node0, node2, node3]. The next symbol would fill in the
 // top of the stack, node3. If that symbol's code length matches the stack
@@ -650,11 +650,11 @@ pri func decoder.build_huffman_tree!(which: base.u32[..= 5]) base.status {
 
 			node_index = stack_values[stack_height - 1]
 			if symbol_index < 2 {
-				leaf_value = (0x500 + symbol_index) as base.u16
+				leaf_value = (0x301 + symbol_index) as base.u16
 			} else if (symbol_index + 1) < this.num_symbols {
-				leaf_value = (0x3FF + symbol_index) as base.u16
+				leaf_value = (0x1FF + symbol_index) as base.u16
 			} else {
-				leaf_value = 0x7FF
+				leaf_value = 0x300
 			}
 
 			if this.huffman_trees[args.which][node_index][0] == 0 {

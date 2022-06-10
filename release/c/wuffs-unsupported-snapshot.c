@@ -25849,11 +25849,11 @@ wuffs_bzip2__decoder__build_huffman_tree(
       label__2__break:;
       v_node_index = v_stack_values[(v_stack_height - 1)];
       if (v_symbol_index < 2) {
-        v_leaf_value = ((uint16_t)((1280 + v_symbol_index)));
+        v_leaf_value = ((uint16_t)((769 + v_symbol_index)));
       } else if ((v_symbol_index + 1) < self->private_impl.f_num_symbols) {
-        v_leaf_value = ((uint16_t)((1023 + v_symbol_index)));
+        v_leaf_value = ((uint16_t)((511 + v_symbol_index)));
       } else {
-        v_leaf_value = 2047;
+        v_leaf_value = 768;
       }
       if (self->private_data.f_huffman_trees[a_which][v_node_index][0] == 0) {
         self->private_data.f_huffman_trees[a_which][v_node_index][0] = v_leaf_value;
@@ -26200,7 +26200,7 @@ wuffs_bzip2__decoder__decode_huffman_fast(
     v_table_entry = self->private_data.f_huffman_tables[v_which][(v_bits >> 24)];
     v_bits <<= (v_table_entry >> 12);
     v_n_bits -= ((uint32_t)((v_table_entry >> 12)));
-    v_child = (v_table_entry & 2047);
+    v_child = (v_table_entry & 1023);
     while (v_child < 257) {
       v_child = self->private_data.f_huffman_trees[v_which][v_child][(v_bits >> 31)];
       v_bits <<= 1;
@@ -26210,7 +26210,7 @@ wuffs_bzip2__decoder__decode_huffman_fast(
       }
       v_n_bits -= 1;
     }
-    if (v_child < 1280) {
+    if (v_child < 768) {
       v_child_ff = ((uint32_t)((v_child & 255)));
       v_output = ((uint32_t)(self->private_data.f_mtft[v_child_ff]));
       wuffs_base__slice_u8__copy_from_slice(wuffs_base__make_slice_u8_ij(self->private_data.f_mtft, 1, (1 + v_child_ff)), wuffs_base__make_slice_u8(self->private_data.f_mtft, v_child_ff));
@@ -26224,7 +26224,7 @@ wuffs_bzip2__decoder__decode_huffman_fast(
       v_block_size += 1;
       v_run_shift = 0;
       goto label__outer__continue;
-    } else if (v_child > 1281) {
+    } else if (v_child == 768) {
       self->private_impl.f_decode_huffman_finished = true;
       goto label__outer__break;
     }
@@ -26232,7 +26232,7 @@ wuffs_bzip2__decoder__decode_huffman_fast(
       status = wuffs_base__make_status(wuffs_bzip2__error__bad_block_length);
       goto exit;
     }
-    v_run = (((uint32_t)((v_child - 1279))) << v_run_shift);
+    v_run = ((((uint32_t)(v_child)) & 3) << v_run_shift);
     v_run_shift += 1;
     v_i = v_block_size;
     v_j = (v_run + v_block_size);
@@ -26339,7 +26339,7 @@ wuffs_bzip2__decoder__decode_huffman_slow(
         if (v_child < 257) {
           v_node_index = ((uint32_t)(v_child));
           goto label__0__continue;
-        } else if (v_child < 1280) {
+        } else if (v_child < 768) {
           v_child_ff = ((uint32_t)((v_child & 255)));
           v_output = ((uint32_t)(self->private_data.f_mtft[v_child_ff]));
           wuffs_base__slice_u8__copy_from_slice(wuffs_base__make_slice_u8_ij(self->private_data.f_mtft, 1, (1 + v_child_ff)), wuffs_base__make_slice_u8(self->private_data.f_mtft, v_child_ff));
@@ -26353,7 +26353,7 @@ wuffs_bzip2__decoder__decode_huffman_slow(
           self->private_impl.f_block_size += 1;
           self->private_impl.f_decode_huffman_run_shift = 0;
           goto label__0__break;
-        } else if (v_child > 1281) {
+        } else if (v_child == 768) {
           self->private_impl.f_decode_huffman_finished = true;
           goto label__outer__break;
         }
@@ -26361,7 +26361,7 @@ wuffs_bzip2__decoder__decode_huffman_slow(
           status = wuffs_base__make_status(wuffs_bzip2__error__bad_block_length);
           goto exit;
         }
-        v_run = (((uint32_t)((v_child - 1279))) << self->private_impl.f_decode_huffman_run_shift);
+        v_run = ((((uint32_t)(v_child)) & 3) << self->private_impl.f_decode_huffman_run_shift);
         self->private_impl.f_decode_huffman_run_shift += 1;
         v_i = self->private_impl.f_block_size;
         v_j = (v_run + self->private_impl.f_block_size);
