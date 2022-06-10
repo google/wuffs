@@ -6828,7 +6828,6 @@ extern const char wuffs_bzip2__error__bad_block_length[];
 extern const char wuffs_bzip2__error__bad_checksum[];
 extern const char wuffs_bzip2__error__bad_header[];
 extern const char wuffs_bzip2__error__bad_number_of_sections[];
-extern const char wuffs_bzip2__error__unsupported_huffman_code[];
 extern const char wuffs_bzip2__error__unsupported_block_randomization[];
 
 // ---------------- Public Consts
@@ -6966,7 +6965,7 @@ struct wuffs_bzip2__decoder__struct {
     uint8_t f_presence[256];
     uint8_t f_mtft[256];
     uint8_t f_huffman_selectors[32768];
-    uint16_t f_huffman_trees[6][1024][2];
+    uint16_t f_huffman_trees[6][257][2];
     uint16_t f_huffman_tables[6][256];
     uint32_t f_bwt[1048576];
 
@@ -24866,7 +24865,6 @@ const char wuffs_bzip2__error__bad_block_length[] = "#bzip2: bad block length";
 const char wuffs_bzip2__error__bad_checksum[] = "#bzip2: bad checksum";
 const char wuffs_bzip2__error__bad_header[] = "#bzip2: bad header";
 const char wuffs_bzip2__error__bad_number_of_sections[] = "#bzip2: bad number of sections";
-const char wuffs_bzip2__error__unsupported_huffman_code[] = "#bzip2: unsupported Huffman code";
 const char wuffs_bzip2__error__unsupported_block_randomization[] = "#bzip2: unsupported block randomization";
 const char wuffs_bzip2__error__internal_error_inconsistent_huffman_decoder_state[] = "#bzip2: internal error: inconsistent Huffman decoder state";
 
@@ -25839,8 +25837,8 @@ wuffs_bzip2__decoder__build_huffman_tree(
         } else {
           self->private_data.f_huffman_trees[a_which][v_node_index][1] = ((uint16_t)(v_num_nodes));
         }
-        if (v_num_nodes >= 1023) {
-          return wuffs_base__make_status(wuffs_bzip2__error__unsupported_huffman_code);
+        if (v_num_nodes >= 257) {
+          return wuffs_base__make_status(wuffs_bzip2__error__bad_huffman_code_under_subscribed);
         }
         v_stack_values[v_stack_height] = v_num_nodes;
         self->private_data.f_huffman_trees[a_which][v_num_nodes][0] = 0;
@@ -25896,7 +25894,7 @@ wuffs_bzip2__decoder__build_huffman_table(
     v_bits = (v_i << 24);
     v_n_bits = 0;
     v_child = 0;
-    while ((v_child < 1024) && (v_n_bits < 8)) {
+    while ((v_child < 257) && (v_n_bits < 8)) {
       v_child = self->private_data.f_huffman_trees[a_which][v_child][(v_bits >> 31)];
       v_bits <<= 1;
 #if defined(__GNUC__)
@@ -26203,7 +26201,7 @@ wuffs_bzip2__decoder__decode_huffman_fast(
     v_bits <<= (v_table_entry >> 12);
     v_n_bits -= ((uint32_t)((v_table_entry >> 12)));
     v_child = (v_table_entry & 2047);
-    while (v_child < 1024) {
+    while (v_child < 257) {
       v_child = self->private_data.f_huffman_trees[v_which][v_child][(v_bits >> 31)];
       v_bits <<= 1;
       if (v_n_bits <= 0) {
@@ -26338,7 +26336,7 @@ wuffs_bzip2__decoder__decode_huffman_slow(
         v_child = self->private_data.f_huffman_trees[self->private_impl.f_decode_huffman_which][v_node_index][(self->private_impl.f_bits >> 31)];
         self->private_impl.f_bits <<= 1;
         self->private_impl.f_n_bits -= 1;
-        if (v_child < 1024) {
+        if (v_child < 257) {
           v_node_index = ((uint32_t)(v_child));
           goto label__0__continue;
         } else if (v_child < 1280) {

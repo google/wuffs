@@ -19,7 +19,6 @@ pub status "#bad block length"
 pub status "#bad checksum"
 pub status "#bad header"
 pub status "#bad number of sections"
-pub status "#unsupported Huffman code"
 pub status "#unsupported block randomization"
 
 pri status "#internal error: inconsistent Huffman decoder state"
@@ -73,12 +72,22 @@ pub struct decoder? implements base.io_transformer(
 	// 50-symbol section.
 	huffman_selectors : array[32768] base.u8,
 
-	// Each array[2] base.u16 is a Huffman tree node. The build_huffman_tree
-	// method comment details what the base.u16 values mean.
+	// Each array[2] base.u16 is a branch node in the Huffman tree. The
+	// build_huffman_tree method comment details what the base.u16 values mean.
 	//
-	// 1024 is just a guess for the worst case number of nodes needed. TODO: be
-	// more rigorous about deriving this upper bound.
-	huffman_trees : array[6] array[1024] array[2] base.u16,
+	// Each Huffman tree has num_symbols leaf nodes and hence (num_symbols - 1)
+	// branch nodes, also called internal nodes, as per
+	// https://stackoverflow.com/questions/69399994/maximum-number-of-nodes-in-a-huffman-tree/69401083#69401083
+	//
+	// This can be proven inductively. The base case Huffman code (two symbols)
+	// has one branch node (the root node). The inductive case, adding one
+	// symbol to a (complete but possibly non-canonical) Huffman code replaces
+	// one leaf node with one branch node (and two leaf nodes). The net gain in
+	// branch nodes is +1.
+	//
+	// Since num_symbols' inclusive maximum is 258 (for RUNA, RUNB, 255 × mXYZ,
+	// EOB), there are at most 257 branch nodes.
+	huffman_trees : array[6] array[257] array[2] base.u16,
 
 	// huffman_tables[which] caches the result of walking huffman_trees[which]
 	// for each possible 8-bit input. The base.u16 value decomposes as:
@@ -550,9 +559,11 @@ pri func decoder.read_code_lengths?(src: base.io_reader) {
 //  - "110"  0x402 (m02)
 //  - "111"  0x7FF (EOB)
 //
-// The Huffman tree has 5 nodes. Each node has two children, represented by a
-// base.u16 value. 1023 or less means that the child is a branch node. 1024 =
-// 0x400 or above means a leaf node (with the symbol values as above).
+// The Huffman tree has 5 branch nodes (where 5+1 is both the number of leaf
+// nodes and the number of symbols). Each branch node has two children,
+// represented by a base.u16 value. 256 = 0x100 or less means that the child is
+// a branch node. 1024 = 0x400 or above means a leaf node (with the symbol
+// values as above).
 //  - node0 = [0x001 (node1), 0x002 (node2)]
 //  - node1 = [0x401 (m01)  , 0x403 (m03)  ]
 //  - node2 = [0x003 (node3), 0x004 (node4)]
@@ -580,10 +591,10 @@ pri func decoder.read_code_lengths?(src: base.io_reader) {
 pri func decoder.build_huffman_tree!(which: base.u32[..= 5]) base.status {
 	var code_length  : base.u32
 	var symbol_index : base.u32
-	var num_nodes    : base.u32[..= 1023]
+	var num_nodes    : base.u32[..= 257]
 	var stack_height : base.u32[..= 21]
-	var stack_values : array[21] base.u32[..= 1023]
-	var node_index   : base.u32[..= 1023]
+	var stack_values : array[21] base.u32[..= 256]
+	var node_index   : base.u32[..= 256]
 	var leaf_value   : base.u16
 
 	// Push a root node.
@@ -627,8 +638,8 @@ pri func decoder.build_huffman_tree!(which: base.u32[..= 5]) base.status {
 				} else {
 					this.huffman_trees[args.which][node_index][1] = num_nodes as base.u16
 				}
-				if num_nodes >= 1023 {
-					return "#unsupported Huffman code"
+				if num_nodes >= 257 {
+					return "#bad Huffman code (under-subscribed)"
 				}
 				stack_values[stack_height] = num_nodes
 				this.huffman_trees[args.which][num_nodes][0] = 0
@@ -684,7 +695,7 @@ pri func decoder.build_huffman_table!(which: base.u32[..= 5]) {
 		bits = i << 24
 		n_bits = 0
 		child = 0
-		while (child < 1024) and (n_bits < 8),
+		while (child < 257) and (n_bits < 8),
 			inv i < 256,
 		{
 			child = this.huffman_trees[args.which][child][bits >> 31]

@@ -30,8 +30,9 @@ bits 15 0x0001
 bits  1 0x0
 
 # Bitslices (n) ..= (o)
-bits 19 0x0CD34
-bits 19 0x0CD34
+repeat 2 [
+	bits 19 0x0CD34
+]
 
 # Bitslice  (p)
 bits  3 0x6

@@ -14,7 +14,7 @@
 
 pri func decoder.decode_huffman_slow?(src: base.io_reader) {
 	var c          : base.u8
-	var node_index : base.u32[..= 1023]
+	var node_index : base.u32[..= 256]
 
 	var child    : base.u16
 	var child_ff : base.u32[..= 255]
@@ -49,7 +49,7 @@ pri func decoder.decode_huffman_slow?(src: base.io_reader) {
 			this.bits ~mod<<= 1
 			this.n_bits -= 1
 
-			if child < 1024 {  // Branch node.
+			if child < 257 {  // Branch node.
 				node_index = child as base.u32
 				continue
 
