@@ -1064,6 +1064,22 @@ wuffs_base__count_leading_zeroes_u64(uint64_t u) {
 
 // --------
 
+// Normally, the wuffs_base__peek_etc and wuffs_base__poke_etc implementations
+// are both (1) correct regardless of CPU endianness and (2) very fast (e.g. an
+// inlined wuffs_base__peek_u32le__no_bounds_check call, in an optimized clang
+// or gcc build, is a single MOV instruction on x86_64).
+//
+// However, the endian-agnostic implementations are slow on Microsoft's C
+// compiler (MSC). Alternative memcpy-based implementations restore speed, but
+// they are only correct on little-endian CPU architectures. Defining
+// WUFFS_BASE__USE_MEMCPY_LE_PEEK_POKE opts in to these implementations.
+//
+// https://godbolt.org/z/q4MfjzTPh
+#if defined(_MSC_VER) && !defined(__clang__) && \
+    (defined(_M_ARM64) || defined(_M_X64))
+#define WUFFS_BASE__USE_MEMCPY_LE_PEEK_POKE
+#endif
+
 #define wuffs_base__peek_u8be__no_bounds_check \
   wuffs_base__peek_u8__no_bounds_check
 #define wuffs_base__peek_u8le__no_bounds_check \
@@ -1076,12 +1092,24 @@ wuffs_base__peek_u8__no_bounds_check(const uint8_t* p) {
 
 static inline uint16_t  //
 wuffs_base__peek_u16be__no_bounds_check(const uint8_t* p) {
+#if defined(WUFFS_BASE__USE_MEMCPY_LE_PEEK_POKE)
+  uint16_t x;
+  memcpy(&x, p, 2);
+  return _byteswap_ushort(x);
+#else
   return (uint16_t)(((uint16_t)(p[0]) << 8) | ((uint16_t)(p[1]) << 0));
+#endif
 }
 
 static inline uint16_t  //
 wuffs_base__peek_u16le__no_bounds_check(const uint8_t* p) {
+#if defined(WUFFS_BASE__USE_MEMCPY_LE_PEEK_POKE)
+  uint16_t x;
+  memcpy(&x, p, 2);
+  return x;
+#else
   return (uint16_t)(((uint16_t)(p[0]) << 0) | ((uint16_t)(p[1]) << 8));
+#endif
 }
 
 static inline uint32_t  //
@@ -1098,14 +1126,26 @@ wuffs_base__peek_u24le__no_bounds_check(const uint8_t* p) {
 
 static inline uint32_t  //
 wuffs_base__peek_u32be__no_bounds_check(const uint8_t* p) {
+#if defined(WUFFS_BASE__USE_MEMCPY_LE_PEEK_POKE)
+  uint32_t x;
+  memcpy(&x, p, 4);
+  return _byteswap_ulong(x);
+#else
   return ((uint32_t)(p[0]) << 24) | ((uint32_t)(p[1]) << 16) |
          ((uint32_t)(p[2]) << 8) | ((uint32_t)(p[3]) << 0);
+#endif
 }
 
 static inline uint32_t  //
 wuffs_base__peek_u32le__no_bounds_check(const uint8_t* p) {
+#if defined(WUFFS_BASE__USE_MEMCPY_LE_PEEK_POKE)
+  uint32_t x;
+  memcpy(&x, p, 4);
+  return x;
+#else
   return ((uint32_t)(p[0]) << 0) | ((uint32_t)(p[1]) << 8) |
          ((uint32_t)(p[2]) << 16) | ((uint32_t)(p[3]) << 24);
+#endif
 }
 
 static inline uint64_t  //
@@ -1154,18 +1194,30 @@ wuffs_base__peek_u56le__no_bounds_check(const uint8_t* p) {
 
 static inline uint64_t  //
 wuffs_base__peek_u64be__no_bounds_check(const uint8_t* p) {
+#if defined(WUFFS_BASE__USE_MEMCPY_LE_PEEK_POKE)
+  uint64_t x;
+  memcpy(&x, p, 8);
+  return _byteswap_uint64(x);
+#else
   return ((uint64_t)(p[0]) << 56) | ((uint64_t)(p[1]) << 48) |
          ((uint64_t)(p[2]) << 40) | ((uint64_t)(p[3]) << 32) |
          ((uint64_t)(p[4]) << 24) | ((uint64_t)(p[5]) << 16) |
          ((uint64_t)(p[6]) << 8) | ((uint64_t)(p[7]) << 0);
+#endif
 }
 
 static inline uint64_t  //
 wuffs_base__peek_u64le__no_bounds_check(const uint8_t* p) {
+#if defined(WUFFS_BASE__USE_MEMCPY_LE_PEEK_POKE)
+  uint64_t x;
+  memcpy(&x, p, 8);
+  return x;
+#else
   return ((uint64_t)(p[0]) << 0) | ((uint64_t)(p[1]) << 8) |
          ((uint64_t)(p[2]) << 16) | ((uint64_t)(p[3]) << 24) |
          ((uint64_t)(p[4]) << 32) | ((uint64_t)(p[5]) << 40) |
          ((uint64_t)(p[6]) << 48) | ((uint64_t)(p[7]) << 56);
+#endif
 }
 
 // --------
@@ -1188,7 +1240,8 @@ wuffs_base__poke_u16be__no_bounds_check(uint8_t* p, uint16_t x) {
 
 static inline void  //
 wuffs_base__poke_u16le__no_bounds_check(uint8_t* p, uint16_t x) {
-#if defined(__GNUC__) && !defined(__clang__) && defined(__x86_64__)
+#if defined(WUFFS_BASE__USE_MEMCPY_LE_PEEK_POKE) || \
+    (defined(__GNUC__) && !defined(__clang__) && defined(__x86_64__))
   // This seems to perform better on gcc 10 (but not clang 9). Clang also
   // defines "__GNUC__".
   memcpy(p, &x, 2);
@@ -1222,7 +1275,8 @@ wuffs_base__poke_u32be__no_bounds_check(uint8_t* p, uint32_t x) {
 
 static inline void  //
 wuffs_base__poke_u32le__no_bounds_check(uint8_t* p, uint32_t x) {
-#if defined(__GNUC__) && !defined(__clang__) && defined(__x86_64__)
+#if defined(WUFFS_BASE__USE_MEMCPY_LE_PEEK_POKE) || \
+    (defined(__GNUC__) && !defined(__clang__) && defined(__x86_64__))
   // This seems to perform better on gcc 10 (but not clang 9). Clang also
   // defines "__GNUC__".
   memcpy(p, &x, 4);
@@ -1308,7 +1362,8 @@ wuffs_base__poke_u64be__no_bounds_check(uint8_t* p, uint64_t x) {
 
 static inline void  //
 wuffs_base__poke_u64le__no_bounds_check(uint8_t* p, uint64_t x) {
-#if defined(__GNUC__) && !defined(__clang__) && defined(__x86_64__)
+#if defined(WUFFS_BASE__USE_MEMCPY_LE_PEEK_POKE) || \
+    (defined(__GNUC__) && !defined(__clang__) && defined(__x86_64__))
   // This seems to perform better on gcc 10 (but not clang 9). Clang also
   // defines "__GNUC__".
   memcpy(p, &x, 8);
