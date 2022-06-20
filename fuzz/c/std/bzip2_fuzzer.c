@@ -89,7 +89,13 @@ fuzz(wuffs_base__io_buffer* src, uint64_t hash) {
   wuffs_bzip2__decoder dec;
   wuffs_base__status status = wuffs_bzip2__decoder__initialize(
       &dec, sizeof dec, WUFFS_VERSION,
-      (hash & 1) ? WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED : 0);
+      // TODO: uncomment this code, after we figure out why
+      // https://github.com/google/wuffs/issues/79 wasn't automatically closed
+      // by commit 9256fe5e.
+      //
+      // ((hash & 1) ?
+      // WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED : 0);
+      0);
   if (!wuffs_base__status__is_ok(&status)) {
     return wuffs_base__status__message(&status);
   }
