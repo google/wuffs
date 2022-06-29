@@ -87,7 +87,7 @@ func (r *ReadSeeker) Seek(offset int64, whence int) (int64, error) {
 		return 0, errSeekToInvalidWhence
 	}
 
-	if r.offset < 0 {
+	if offset < 0 {
 		return 0, errSeekToNegativePosition
 	}
 	r.offset = offset
