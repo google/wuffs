@@ -85,15 +85,15 @@ extern "C" {
 // each major.minor branch, the commit count should increase monotonically.
 //
 // WUFFS_VERSION was overridden by "wuffs gen -version" based on revision
-// 3ff4bf46746fff230d4704f8c5a35a1665ddbd56 committed on 2022-06-03.
+// fac934b27259f37191285a8d9d1d9629ed2d9f5d committed on 2022-06-29.
 #define WUFFS_VERSION 0x000030000
 #define WUFFS_VERSION_MAJOR 0
 #define WUFFS_VERSION_MINOR 3
 #define WUFFS_VERSION_PATCH 0
-#define WUFFS_VERSION_PRE_RELEASE_LABEL "beta.15"
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 3345
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20220603
-#define WUFFS_VERSION_STRING "0.3.0-beta.15+3345.20220603"
+#define WUFFS_VERSION_PRE_RELEASE_LABEL "rc.1"
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 3360
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20220629
+#define WUFFS_VERSION_STRING "0.3.0-rc.1+3360.20220629"
 
 // ---------------- Configuration
 
@@ -1065,6 +1065,22 @@ wuffs_base__count_leading_zeroes_u64(uint64_t u) {
 
 // --------
 
+// Normally, the wuffs_base__peek_etc and wuffs_base__poke_etc implementations
+// are both (1) correct regardless of CPU endianness and (2) very fast (e.g. an
+// inlined wuffs_base__peek_u32le__no_bounds_check call, in an optimized clang
+// or gcc build, is a single MOV instruction on x86_64).
+//
+// However, the endian-agnostic implementations are slow on Microsoft's C
+// compiler (MSC). Alternative memcpy-based implementations restore speed, but
+// they are only correct on little-endian CPU architectures. Defining
+// WUFFS_BASE__USE_MEMCPY_LE_PEEK_POKE opts in to these implementations.
+//
+// https://godbolt.org/z/q4MfjzTPh
+#if defined(_MSC_VER) && !defined(__clang__) && \
+    (defined(_M_ARM64) || defined(_M_X64))
+#define WUFFS_BASE__USE_MEMCPY_LE_PEEK_POKE
+#endif
+
 #define wuffs_base__peek_u8be__no_bounds_check \
   wuffs_base__peek_u8__no_bounds_check
 #define wuffs_base__peek_u8le__no_bounds_check \
@@ -1077,12 +1093,24 @@ wuffs_base__peek_u8__no_bounds_check(const uint8_t* p) {
 
 static inline uint16_t  //
 wuffs_base__peek_u16be__no_bounds_check(const uint8_t* p) {
+#if defined(WUFFS_BASE__USE_MEMCPY_LE_PEEK_POKE)
+  uint16_t x;
+  memcpy(&x, p, 2);
+  return _byteswap_ushort(x);
+#else
   return (uint16_t)(((uint16_t)(p[0]) << 8) | ((uint16_t)(p[1]) << 0));
+#endif
 }
 
 static inline uint16_t  //
 wuffs_base__peek_u16le__no_bounds_check(const uint8_t* p) {
+#if defined(WUFFS_BASE__USE_MEMCPY_LE_PEEK_POKE)
+  uint16_t x;
+  memcpy(&x, p, 2);
+  return x;
+#else
   return (uint16_t)(((uint16_t)(p[0]) << 0) | ((uint16_t)(p[1]) << 8));
+#endif
 }
 
 static inline uint32_t  //
@@ -1099,14 +1127,26 @@ wuffs_base__peek_u24le__no_bounds_check(const uint8_t* p) {
 
 static inline uint32_t  //
 wuffs_base__peek_u32be__no_bounds_check(const uint8_t* p) {
+#if defined(WUFFS_BASE__USE_MEMCPY_LE_PEEK_POKE)
+  uint32_t x;
+  memcpy(&x, p, 4);
+  return _byteswap_ulong(x);
+#else
   return ((uint32_t)(p[0]) << 24) | ((uint32_t)(p[1]) << 16) |
          ((uint32_t)(p[2]) << 8) | ((uint32_t)(p[3]) << 0);
+#endif
 }
 
 static inline uint32_t  //
 wuffs_base__peek_u32le__no_bounds_check(const uint8_t* p) {
+#if defined(WUFFS_BASE__USE_MEMCPY_LE_PEEK_POKE)
+  uint32_t x;
+  memcpy(&x, p, 4);
+  return x;
+#else
   return ((uint32_t)(p[0]) << 0) | ((uint32_t)(p[1]) << 8) |
          ((uint32_t)(p[2]) << 16) | ((uint32_t)(p[3]) << 24);
+#endif
 }
 
 static inline uint64_t  //
@@ -1155,18 +1195,30 @@ wuffs_base__peek_u56le__no_bounds_check(const uint8_t* p) {
 
 static inline uint64_t  //
 wuffs_base__peek_u64be__no_bounds_check(const uint8_t* p) {
+#if defined(WUFFS_BASE__USE_MEMCPY_LE_PEEK_POKE)
+  uint64_t x;
+  memcpy(&x, p, 8);
+  return _byteswap_uint64(x);
+#else
   return ((uint64_t)(p[0]) << 56) | ((uint64_t)(p[1]) << 48) |
          ((uint64_t)(p[2]) << 40) | ((uint64_t)(p[3]) << 32) |
          ((uint64_t)(p[4]) << 24) | ((uint64_t)(p[5]) << 16) |
          ((uint64_t)(p[6]) << 8) | ((uint64_t)(p[7]) << 0);
+#endif
 }
 
 static inline uint64_t  //
 wuffs_base__peek_u64le__no_bounds_check(const uint8_t* p) {
+#if defined(WUFFS_BASE__USE_MEMCPY_LE_PEEK_POKE)
+  uint64_t x;
+  memcpy(&x, p, 8);
+  return x;
+#else
   return ((uint64_t)(p[0]) << 0) | ((uint64_t)(p[1]) << 8) |
          ((uint64_t)(p[2]) << 16) | ((uint64_t)(p[3]) << 24) |
          ((uint64_t)(p[4]) << 32) | ((uint64_t)(p[5]) << 40) |
          ((uint64_t)(p[6]) << 48) | ((uint64_t)(p[7]) << 56);
+#endif
 }
 
 // --------
@@ -1189,7 +1241,8 @@ wuffs_base__poke_u16be__no_bounds_check(uint8_t* p, uint16_t x) {
 
 static inline void  //
 wuffs_base__poke_u16le__no_bounds_check(uint8_t* p, uint16_t x) {
-#if defined(__GNUC__) && !defined(__clang__) && defined(__x86_64__)
+#if defined(WUFFS_BASE__USE_MEMCPY_LE_PEEK_POKE) || \
+    (defined(__GNUC__) && !defined(__clang__) && defined(__x86_64__))
   // This seems to perform better on gcc 10 (but not clang 9). Clang also
   // defines "__GNUC__".
   memcpy(p, &x, 2);
@@ -1223,7 +1276,8 @@ wuffs_base__poke_u32be__no_bounds_check(uint8_t* p, uint32_t x) {
 
 static inline void  //
 wuffs_base__poke_u32le__no_bounds_check(uint8_t* p, uint32_t x) {
-#if defined(__GNUC__) && !defined(__clang__) && defined(__x86_64__)
+#if defined(WUFFS_BASE__USE_MEMCPY_LE_PEEK_POKE) || \
+    (defined(__GNUC__) && !defined(__clang__) && defined(__x86_64__))
   // This seems to perform better on gcc 10 (but not clang 9). Clang also
   // defines "__GNUC__".
   memcpy(p, &x, 4);
@@ -1309,7 +1363,8 @@ wuffs_base__poke_u64be__no_bounds_check(uint8_t* p, uint64_t x) {
 
 static inline void  //
 wuffs_base__poke_u64le__no_bounds_check(uint8_t* p, uint64_t x) {
-#if defined(__GNUC__) && !defined(__clang__) && defined(__x86_64__)
+#if defined(WUFFS_BASE__USE_MEMCPY_LE_PEEK_POKE) || \
+    (defined(__GNUC__) && !defined(__clang__) && defined(__x86_64__))
   // This seems to perform better on gcc 10 (but not clang 9). Clang also
   // defines "__GNUC__".
   memcpy(p, &x, 8);
@@ -6828,9 +6883,7 @@ extern const char wuffs_bzip2__error__bad_block_header[];
 extern const char wuffs_bzip2__error__bad_block_length[];
 extern const char wuffs_bzip2__error__bad_checksum[];
 extern const char wuffs_bzip2__error__bad_header[];
-extern const char wuffs_bzip2__error__bad_number_of_huffman_codes[];
 extern const char wuffs_bzip2__error__bad_number_of_sections[];
-extern const char wuffs_bzip2__error__unsupported_huffman_code[];
 extern const char wuffs_bzip2__error__unsupported_block_randomization[];
 
 // ---------------- Public Consts
@@ -6968,7 +7021,7 @@ struct wuffs_bzip2__decoder__struct {
     uint8_t f_presence[256];
     uint8_t f_mtft[256];
     uint8_t f_huffman_selectors[32768];
-    uint16_t f_huffman_trees[6][1024][2];
+    uint16_t f_huffman_trees[6][257][2];
     uint16_t f_huffman_tables[6][256];
     uint32_t f_bwt[1048576];
 
@@ -24867,9 +24920,7 @@ const char wuffs_bzip2__error__bad_block_header[] = "#bzip2: bad block header";
 const char wuffs_bzip2__error__bad_block_length[] = "#bzip2: bad block length";
 const char wuffs_bzip2__error__bad_checksum[] = "#bzip2: bad checksum";
 const char wuffs_bzip2__error__bad_header[] = "#bzip2: bad header";
-const char wuffs_bzip2__error__bad_number_of_huffman_codes[] = "#bzip2: bad number of Huffman codes";
 const char wuffs_bzip2__error__bad_number_of_sections[] = "#bzip2: bad number of sections";
-const char wuffs_bzip2__error__unsupported_huffman_code[] = "#bzip2: unsupported Huffman code";
 const char wuffs_bzip2__error__unsupported_block_randomization[] = "#bzip2: unsupported block randomization";
 const char wuffs_bzip2__error__internal_error_inconsistent_huffman_decoder_state[] = "#bzip2: internal error: inconsistent Huffman decoder state";
 
@@ -25805,7 +25856,7 @@ wuffs_bzip2__decoder__build_huffman_tree(
     uint32_t a_which) {
   uint32_t v_code_length = 0;
   uint32_t v_symbol_index = 0;
-  uint32_t v_num_nodes = 0;
+  uint32_t v_num_branch_nodes = 0;
   uint32_t v_stack_height = 0;
   uint32_t v_stack_values[21] = {0};
   uint32_t v_node_index = 0;
@@ -25813,7 +25864,7 @@ wuffs_bzip2__decoder__build_huffman_tree(
 
   self->private_data.f_huffman_trees[a_which][0][0] = 0;
   self->private_data.f_huffman_trees[a_which][0][1] = 0;
-  v_num_nodes = 1;
+  v_num_branch_nodes = 1;
   v_stack_height = 1;
   v_stack_values[0] = 0;
   v_code_length = 1;
@@ -25838,27 +25889,27 @@ wuffs_bzip2__decoder__build_huffman_tree(
         }
         v_node_index = v_stack_values[(v_stack_height - 1)];
         if (self->private_data.f_huffman_trees[a_which][v_node_index][0] == 0) {
-          self->private_data.f_huffman_trees[a_which][v_node_index][0] = ((uint16_t)(v_num_nodes));
+          self->private_data.f_huffman_trees[a_which][v_node_index][0] = ((uint16_t)(v_num_branch_nodes));
         } else {
-          self->private_data.f_huffman_trees[a_which][v_node_index][1] = ((uint16_t)(v_num_nodes));
+          self->private_data.f_huffman_trees[a_which][v_node_index][1] = ((uint16_t)(v_num_branch_nodes));
         }
-        if (v_num_nodes >= 1023) {
-          return wuffs_base__make_status(wuffs_bzip2__error__unsupported_huffman_code);
+        if (v_num_branch_nodes >= 257) {
+          return wuffs_base__make_status(wuffs_bzip2__error__bad_huffman_code_under_subscribed);
         }
-        v_stack_values[v_stack_height] = v_num_nodes;
-        self->private_data.f_huffman_trees[a_which][v_num_nodes][0] = 0;
-        self->private_data.f_huffman_trees[a_which][v_num_nodes][1] = 0;
-        v_num_nodes += 1;
+        v_stack_values[v_stack_height] = v_num_branch_nodes;
+        self->private_data.f_huffman_trees[a_which][v_num_branch_nodes][0] = 0;
+        self->private_data.f_huffman_trees[a_which][v_num_branch_nodes][1] = 0;
+        v_num_branch_nodes += 1;
         v_stack_height += 1;
       }
       label__2__break:;
       v_node_index = v_stack_values[(v_stack_height - 1)];
       if (v_symbol_index < 2) {
-        v_leaf_value = ((uint16_t)((1280 + v_symbol_index)));
+        v_leaf_value = ((uint16_t)((769 + v_symbol_index)));
       } else if ((v_symbol_index + 1) < self->private_impl.f_num_symbols) {
-        v_leaf_value = ((uint16_t)((1023 + v_symbol_index)));
+        v_leaf_value = ((uint16_t)((511 + v_symbol_index)));
       } else {
-        v_leaf_value = 2047;
+        v_leaf_value = 768;
       }
       if (self->private_data.f_huffman_trees[a_which][v_node_index][0] == 0) {
         self->private_data.f_huffman_trees[a_which][v_node_index][0] = v_leaf_value;
@@ -25899,7 +25950,7 @@ wuffs_bzip2__decoder__build_huffman_table(
     v_bits = (v_i << 24);
     v_n_bits = 0;
     v_child = 0;
-    while ((v_child < 1024) && (v_n_bits < 8)) {
+    while ((v_child < 257) && (v_n_bits < 8)) {
       v_child = self->private_data.f_huffman_trees[a_which][v_child][(v_bits >> 31)];
       v_bits <<= 1;
 #if defined(__GNUC__)
@@ -26193,6 +26244,10 @@ wuffs_bzip2__decoder__decode_huffman_fast(
     } else {
       v_ticks = 49;
       v_section += 1;
+      if (v_section >= self->private_impl.f_num_sections) {
+        status = wuffs_base__make_status(wuffs_bzip2__error__bad_number_of_sections);
+        goto exit;
+      }
       v_which = WUFFS_BZIP2__CLAMP_TO_5[(self->private_data.f_huffman_selectors[(v_section & 32767)] & 7)];
     }
     v_bits |= (wuffs_base__peek_u32be__no_bounds_check(iop_a_src) >> v_n_bits);
@@ -26201,8 +26256,8 @@ wuffs_bzip2__decoder__decode_huffman_fast(
     v_table_entry = self->private_data.f_huffman_tables[v_which][(v_bits >> 24)];
     v_bits <<= (v_table_entry >> 12);
     v_n_bits -= ((uint32_t)((v_table_entry >> 12)));
-    v_child = (v_table_entry & 2047);
-    while (v_child < 1024) {
+    v_child = (v_table_entry & 1023);
+    while (v_child < 257) {
       v_child = self->private_data.f_huffman_trees[v_which][v_child][(v_bits >> 31)];
       v_bits <<= 1;
       if (v_n_bits <= 0) {
@@ -26211,7 +26266,7 @@ wuffs_bzip2__decoder__decode_huffman_fast(
       }
       v_n_bits -= 1;
     }
-    if (v_child < 1280) {
+    if (v_child < 768) {
       v_child_ff = ((uint32_t)((v_child & 255)));
       v_output = ((uint32_t)(self->private_data.f_mtft[v_child_ff]));
       wuffs_base__slice_u8__copy_from_slice(wuffs_base__make_slice_u8_ij(self->private_data.f_mtft, 1, (1 + v_child_ff)), wuffs_base__make_slice_u8(self->private_data.f_mtft, v_child_ff));
@@ -26225,7 +26280,7 @@ wuffs_bzip2__decoder__decode_huffman_fast(
       v_block_size += 1;
       v_run_shift = 0;
       goto label__outer__continue;
-    } else if (v_child > 1281) {
+    } else if (v_child == 768) {
       self->private_impl.f_decode_huffman_finished = true;
       goto label__outer__break;
     }
@@ -26233,7 +26288,7 @@ wuffs_bzip2__decoder__decode_huffman_fast(
       status = wuffs_base__make_status(wuffs_bzip2__error__bad_block_length);
       goto exit;
     }
-    v_run = (((uint32_t)((v_child - 1279))) << v_run_shift);
+    v_run = ((((uint32_t)(v_child)) & 3) << v_run_shift);
     v_run_shift += 1;
     v_i = v_block_size;
     v_j = (v_run + v_block_size);
@@ -26312,6 +26367,10 @@ wuffs_bzip2__decoder__decode_huffman_slow(
       } else {
         self->private_impl.f_decode_huffman_ticks = 49;
         self->private_impl.f_decode_huffman_section += 1;
+        if (self->private_impl.f_decode_huffman_section >= self->private_impl.f_num_sections) {
+          status = wuffs_base__make_status(wuffs_bzip2__error__bad_number_of_sections);
+          goto exit;
+        }
         self->private_impl.f_decode_huffman_which = WUFFS_BZIP2__CLAMP_TO_5[(self->private_data.f_huffman_selectors[(self->private_impl.f_decode_huffman_section & 32767)] & 7)];
       }
       v_node_index = 0;
@@ -26333,10 +26392,10 @@ wuffs_bzip2__decoder__decode_huffman_slow(
         v_child = self->private_data.f_huffman_trees[self->private_impl.f_decode_huffman_which][v_node_index][(self->private_impl.f_bits >> 31)];
         self->private_impl.f_bits <<= 1;
         self->private_impl.f_n_bits -= 1;
-        if (v_child < 1024) {
+        if (v_child < 257) {
           v_node_index = ((uint32_t)(v_child));
           goto label__0__continue;
-        } else if (v_child < 1280) {
+        } else if (v_child < 768) {
           v_child_ff = ((uint32_t)((v_child & 255)));
           v_output = ((uint32_t)(self->private_data.f_mtft[v_child_ff]));
           wuffs_base__slice_u8__copy_from_slice(wuffs_base__make_slice_u8_ij(self->private_data.f_mtft, 1, (1 + v_child_ff)), wuffs_base__make_slice_u8(self->private_data.f_mtft, v_child_ff));
@@ -26350,7 +26409,7 @@ wuffs_bzip2__decoder__decode_huffman_slow(
           self->private_impl.f_block_size += 1;
           self->private_impl.f_decode_huffman_run_shift = 0;
           goto label__0__break;
-        } else if (v_child > 1281) {
+        } else if (v_child == 768) {
           self->private_impl.f_decode_huffman_finished = true;
           goto label__outer__break;
         }
@@ -26358,7 +26417,7 @@ wuffs_bzip2__decoder__decode_huffman_slow(
           status = wuffs_base__make_status(wuffs_bzip2__error__bad_block_length);
           goto exit;
         }
-        v_run = (((uint32_t)((v_child - 1279))) << self->private_impl.f_decode_huffman_run_shift);
+        v_run = ((((uint32_t)(v_child)) & 3) << self->private_impl.f_decode_huffman_run_shift);
         self->private_impl.f_decode_huffman_run_shift += 1;
         v_i = self->private_impl.f_block_size;
         v_j = (v_run + self->private_impl.f_block_size);
