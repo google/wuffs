@@ -201,16 +201,16 @@ type Token struct {
 }
 
 // nBuiltInIDs is the number of built-in IDs. The packing is:
-//  -            0x00 is invalid.
-//  -  0x01 ..=  0x0F are squiggly punctuation, such as ";", "." and "?".
-//  -  0x10 ..=  0x1F are squiggly bookends, such as "(", ")" and "]".
-//  -  0x20 ..=  0x3F are squiggly assignments, such as "=" and "+=".
-//  -  0x40 ..=  0x6F are operators, such as "+", "==" and "not".
-//  -  0x70 ..=  0xAF are x-ops (disambiguation forms): unary vs binary "+".
-//  -  0xB0 ..=  0xCF are keywords, such as "if" and "return".
-//  -  0xD0 ..=  0xDF are type modifiers, such as "ptr" and "slice".
-//  -  0xE0 ..=  0xFF are literals, such as "ok" and "true".
-//  - 0x100 ..= 0x3FF are identifiers, such as "bool", "u32" and "read_u8".
+//   - 0x00 is invalid.
+//   - 0x01 ..=  0x0F are squiggly punctuation, such as ";", "." and "?".
+//   - 0x10 ..=  0x1F are squiggly bookends, such as "(", ")" and "]".
+//   - 0x20 ..=  0x3F are squiggly assignments, such as "=" and "+=".
+//   - 0x40 ..=  0x6F are operators, such as "+", "==" and "not".
+//   - 0x70 ..=  0xAF are x-ops (disambiguation forms): unary vs binary "+".
+//   - 0xB0 ..=  0xCF are keywords, such as "if" and "return".
+//   - 0xD0 ..=  0xDF are type modifiers, such as "ptr" and "slice".
+//   - 0xE0 ..=  0xFF are literals, such as "ok" and "true".
+//   - 0x100 ..= 0x3FF are identifiers, such as "bool", "u32" and "read_u8".
 //
 // Squiggly means a sequence of non-alpha-numeric bytes, such as "+" and "&=".
 const (
@@ -1299,9 +1299,12 @@ func init() {
 // addXForms modifies table so that, if table[x] == y, then table[y] = y.
 //
 // For example, for the unaryForms table, the explicit entries are like:
-//  IDPlus:        IDXUnaryPlus,
+//
+//	IDPlus:        IDXUnaryPlus,
+//
 // and this function implicitly addes entries like:
-//  IDXUnaryPlus:  IDXUnaryPlus,
+//
+//	IDXUnaryPlus:  IDXUnaryPlus,
 func addXForms(table *[nBuiltInSymbolicIDs]ID) {
 	implicitEntries := [nBuiltInSymbolicIDs]bool{}
 	for _, y := range table {

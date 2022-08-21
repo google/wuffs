@@ -328,12 +328,12 @@ func (n *Raw) SetPackage(tm *t.Map, pkg t.ID) error {
 const MaxExprDepth = 255
 
 // Expr is an expression, such as "i", "+j" or "k + l[m(n, o)].p":
-//  - ID0:   <0|operator|IDOpenParen|IDOpenBracket|IDDotDot|IDDot>
-//  - ID2:   <0|literal|ident>
-//  - LHS:   <nil|Expr>
-//  - MHS:   <nil|Expr>
-//  - RHS:   <nil|Expr|TypeExpr>
-//  - List0: <Arg|Expr> function call args, assoc. op args or list members.
+//   - ID0:   <0|operator|IDOpenParen|IDOpenBracket|IDDotDot|IDDot>
+//   - ID2:   <0|literal|ident>
+//   - LHS:   <nil|Expr>
+//   - MHS:   <nil|Expr>
+//   - RHS:   <nil|Expr|TypeExpr>
+//   - List0: <Arg|Expr> function call args, assoc. op args or list members.
 //
 // A zero ID0 means an identifier or literal in ID2, like `foo`, `42` or a
 // status literal like `"#foo"`.
@@ -468,10 +468,10 @@ func NewExpr(flags Flags, operator t.ID, ident t.ID, lhs *Node, mhs *Node, rhs *
 
 // Assert is "assert RHS via ID2(args)", "choose etc", "pre etc", "inv etc" or
 // "post etc":
-//  - ID0:   <IDAssert|IDChoose|IDPre|IDInv|IDPost>
-//  - ID2:   <"-string literal> reason
-//  - RHS:   <Expr>
-//  - List0: <Arg> reason arguments
+//   - ID0:   <IDAssert|IDChoose|IDPre|IDInv|IDPost>
+//   - ID2:   <"-string literal> reason
+//   - RHS:   <Expr>
+//   - List0: <Arg> reason arguments
 type Assert Node
 
 func (n *Assert) AsNode() *Node    { return (*Node)(n) }
@@ -513,8 +513,8 @@ func NewAssert(keyword t.ID, condition *Expr, reason t.ID, args []*Node) *Assert
 }
 
 // Arg is "name:value".
-//  - ID2:   <ident> name
-//  - RHS:   <Expr> value
+//   - ID2:   <ident> name
+//   - RHS:   <Expr> value
 type Arg Node
 
 func (n *Arg) AsNode() *Node { return (*Node)(n) }
@@ -530,9 +530,9 @@ func NewArg(name t.ID, value *Expr) *Arg {
 }
 
 // Assign is "LHS = RHS" or "LHS op= RHS" or "RHS":
-//  - ID0:   operator
-//  - LHS:   <nil|Expr>
-//  - RHS:   <Expr>
+//   - ID0:   operator
+//   - LHS:   <nil|Expr>
+//   - RHS:   <Expr>
 type Assign Node
 
 func (n *Assign) AsNode() *Node  { return (*Node)(n) }
@@ -550,8 +550,8 @@ func NewAssign(operator t.ID, lhs *Expr, rhs *Expr) *Assign {
 }
 
 // Var is "var ID2 LHS":
-//  - ID2:   name
-//  - LHS:   <TypeExpr>
+//   - ID2:   name
+//   - LHS:   <TypeExpr>
 type Var Node
 
 func (n *Var) AsNode() *Node    { return (*Node)(n) }
@@ -569,9 +569,9 @@ func NewVar(name t.ID, xType *TypeExpr) *Var {
 }
 
 // Field is a "name : type" struct field:
-//  - FlagsPrivateData is the initializer need not explicitly memset to zero.
-//  - ID2:   name
-//  - LHS:   <TypeExpr>
+//   - FlagsPrivateData is the initializer need not explicitly memset to zero.
+//   - ID2:   name
+//   - LHS:   <TypeExpr>
 type Field Node
 
 func (n *Field) AsNode() *Node     { return (*Node)(n) }
@@ -590,11 +590,11 @@ func NewField(flags Flags, name t.ID, xType *TypeExpr) *Field {
 
 // IOManip is "io_bind (io:LHS, data:MHS, history_position:RHS) { List2 }" or
 // "io_limit (io:LHS, limit:MHS) { List2 }":
-//  - ID0:   <IDIOBind|IDIOLimit>
-//  - LHS:   <Expr>
-//  - MHS:   <Expr>
-//  - RHS:   <Expr>
-//  - List2: <Statement> body
+//   - ID0:   <IDIOBind|IDIOLimit>
+//   - LHS:   <Expr>
+//   - MHS:   <Expr>
+//   - RHS:   <Expr>
+//   - List2: <Statement> body
 type IOManip Node
 
 func (n *IOManip) AsNode() *Node          { return (*Node)(n) }
@@ -617,16 +617,16 @@ func NewIOManip(keyword t.ID, io *Expr, arg1 *Expr, historyPosition *Expr, body 
 
 // Iterate is
 // "iterate.ID1 (assigns)(length:ID2, advance:ID0, unroll:LHS), List1 { List2 } else RHS":
-//  - FlagsHasBreak    is the iterate has an explicit break
-//  - FlagsHasContinue is the iterate has an explicit continue
-//  - ID0:   advance
-//  - ID1:   <0|label>
-//  - ID2:   length
-//  - LHS:   <Expr> unroll
-//  - RHS:   <nil|Iterate>
-//  - List0: <Assign> assigns
-//  - List1: <Assert> asserts
-//  - List2: <Statement> body
+//   - FlagsHasBreak    is the iterate has an explicit break
+//   - FlagsHasContinue is the iterate has an explicit continue
+//   - ID0:   advance
+//   - ID1:   <0|label>
+//   - ID2:   length
+//   - LHS:   <Expr> unroll
+//   - RHS:   <nil|Iterate>
+//   - List0: <Assign> assigns
+//   - List1: <Assert> asserts
+//   - List2: <Statement> body
 type Iterate Node
 
 func (n *Iterate) AsNode() *Node         { return (*Node)(n) }
@@ -661,12 +661,12 @@ func NewIterate(label t.ID, assigns []*Node, length t.ID, advance t.ID, unroll t
 }
 
 // While is "while.ID1 MHS, List1 { List2 } endwhile.ID1":
-//  - FlagsHasBreak    is the while has an explicit break
-//  - FlagsHasContinue is the while has an explicit continue
-//  - ID1:   <0|label>
-//  - MHS:   <Expr>
-//  - List1: <Assert> asserts
-//  - List2: <Statement> body
+//   - FlagsHasBreak    is the while has an explicit break
+//   - FlagsHasContinue is the while has an explicit continue
+//   - ID1:   <0|label>
+//   - MHS:   <Expr>
+//   - List1: <Assert> asserts
+//   - List2: <Statement> body
 //
 // TODO: should we be able to unroll while loops too?
 type While Node
@@ -699,10 +699,10 @@ func NewWhile(label t.ID, condition *Expr, asserts []*Node) *While {
 }
 
 // If is "if MHS { List2 } else RHS" or "if MHS { List2 } else { List1 }":
-//  - MHS:   <Expr>
-//  - RHS:   <nil|If>
-//  - List1: <Statement> if-false body
-//  - List2: <Statement> if-true body
+//   - MHS:   <Expr>
+//   - RHS:   <nil|If>
+//   - List1: <Statement> if-false body
+//   - List2: <Statement> if-true body
 type If Node
 
 func (n *If) AsNode() *Node        { return (*Node)(n) }
@@ -722,8 +722,8 @@ func NewIf(condition *Expr, bodyIfTrue []*Node, bodyIfFalse []*Node, elseIf *If)
 }
 
 // Choose is "choose ID2: List0":
-//  - ID2:   name
-//  - List0: <Expr> method names.
+//   - ID2:   name
+//   - List0: <Expr> method names.
 type Choose Node
 
 func (n *Choose) AsNode() *Node { return (*Node)(n) }
@@ -739,9 +739,9 @@ func NewChoose(name t.ID, args []*Node) *Choose {
 }
 
 // Ret is "return LHS" or "yield LHS":
-//  - FlagsReturnsError LHS is an error status
-//  - ID0:   <IDReturn|IDYield>
-//  - LHS:   <Expr>
+//   - FlagsReturnsError LHS is an error status
+//   - ID0:   <IDReturn|IDYield>
+//   - LHS:   <Expr>
 type Ret Node
 
 func (n *Ret) AsNode() *Node   { return (*Node)(n) }
@@ -760,8 +760,8 @@ func NewRet(keyword t.ID, value *Expr) *Ret {
 }
 
 // Jump is "break" or "continue", with an optional label, "break.label":
-//  - ID0:   <IDBreak|IDContinue>
-//  - ID1:   <0|label>
+//   - ID0:   <IDBreak|IDContinue>
+//   - ID1:   <0|label>
 type Jump Node
 
 func (n *Jump) AsNode() *Node    { return (*Node)(n) }
@@ -784,12 +784,12 @@ const MaxTypeExprDepth = 63
 
 // TypeExpr is a type expression, such as "base.u32", "base.u32[..= 8]", "foo",
 // "pkg.bar", "ptr T", "array[8] T", "slice T" or "table T":
-//  - ID0:   <0|IDArray|IDFunc|IDNptr|IDPtr|IDSlice|IDTable>
-//  - ID1:   <0|pkg>
-//  - ID2:   <0|type name>
-//  - LHS:   <nil|Expr>
-//  - MHS:   <nil|Expr>
-//  - RHS:   <nil|TypeExpr>
+//   - ID0:   <0|IDArray|IDFunc|IDNptr|IDPtr|IDSlice|IDTable>
+//   - ID1:   <0|pkg>
+//   - ID2:   <0|type name>
+//   - LHS:   <nil|Expr>
+//   - MHS:   <nil|Expr>
+//   - RHS:   <nil|TypeExpr>
 //
 // An IDNptr or IDPtr ID0 means "nptr RHS" or "ptr RHS". RHS is the inner type.
 //
@@ -958,14 +958,14 @@ func NewTypeExpr(decorator t.ID, pkg t.ID, name t.ID, alenRecvMin *Node, max *Ex
 const MaxBodyDepth = 255
 
 // Func is "func ID2.ID0(LHS)(RHS) { List2 }":
-//  - FlagsPublic      is "pub" vs "pri"
-//  - ID0:   funcName
-//  - ID1:   <0|receiverPkg> (set by calling SetPackage)
-//  - ID2:   <0|receiverName>
-//  - LHS:   <Struct> in-parameters
-//  - RHS:   <Struct> out-parameters
-//  - List1: <Assert> asserts
-//  - List2: <Statement> body
+//   - FlagsPublic      is "pub" vs "pri"
+//   - ID0:   funcName
+//   - ID1:   <0|receiverPkg> (set by calling SetPackage)
+//   - ID2:   <0|receiverName>
+//   - LHS:   <Struct> in-parameters
+//   - RHS:   <Struct> out-parameters
+//   - List1: <Assert> asserts
+//   - List2: <Statement> body
 type Func Node
 
 func (n *Func) AsNode() *Node          { return (*Node)(n) }
@@ -1033,9 +1033,9 @@ func NewFunc(flags Flags, filename string, line uint32, receiverName t.ID, funcN
 }
 
 // Status is "error (RHS) ID2" or "suspension (RHS) ID2":
-//  - FlagsPublic      is "pub" vs "pri"
-//  - ID1:   <0|pkg> (set by calling SetPackage)
-//  - ID2:   message
+//   - FlagsPublic      is "pub" vs "pri"
+//   - ID1:   <0|pkg> (set by calling SetPackage)
+//   - ID2:   message
 type Status Node
 
 func (n *Status) AsNode() *Node    { return (*Node)(n) }
@@ -1055,11 +1055,11 @@ func NewStatus(flags Flags, filename string, line uint32, message t.ID) *Status 
 }
 
 // Const is "const ID2 LHS = RHS":
-//  - FlagsPublic      is "pub" vs "pri"
-//  - ID1:   <0|pkg> (set by calling SetPackage)
-//  - ID2:   name
-//  - LHS:   <TypeExpr>
-//  - RHS:   <Expr>
+//   - FlagsPublic      is "pub" vs "pri"
+//   - ID1:   <0|pkg> (set by calling SetPackage)
+//   - ID2:   name
+//   - LHS:   <TypeExpr>
+//   - RHS:   <Expr>
 type Const Node
 
 func (n *Const) AsNode() *Node    { return (*Node)(n) }
@@ -1087,12 +1087,12 @@ func NewConst(flags Flags, filename string, line uint32, name t.ID, xType *TypeE
 const MaxImplements = 63
 
 // Struct is "struct ID2? implements List0 (List1)":
-//  - FlagsPublic      is "pub" vs "pri"
-//  - FlagsClassy      is "ID2" vs "ID2?"
-//  - ID1:   <0|pkg> (set by calling SetPackage)
-//  - ID2:   name
-//  - List0: <TypeExpr> implements
-//  - List1: <Field> fields
+//   - FlagsPublic      is "pub" vs "pri"
+//   - FlagsClassy      is "ID2" vs "ID2?"
+//   - ID1:   <0|pkg> (set by calling SetPackage)
+//   - ID2:   name
+//   - List0: <TypeExpr> implements
+//   - List1: <Field> fields
 //
 // The question mark indicates a classy struct - one that supports methods,
 // especially coroutines.
@@ -1120,7 +1120,7 @@ func NewStruct(flags Flags, filename string, line uint32, name t.ID, implements 
 }
 
 // Use is "use ID2":
-//  - ID2:   <"-string literal> package path
+//   - ID2:   <"-string literal> package path
 type Use Node
 
 func (n *Use) AsNode() *Node    { return (*Node)(n) }
@@ -1138,7 +1138,7 @@ func NewUse(filename string, line uint32, path t.ID) *Use {
 }
 
 // File is a file of source code:
-//  - List0: <Const|Func|Status|Struct|Use> top-level declarations
+//   - List0: <Const|Func|Status|Struct|Use> top-level declarations
 type File Node
 
 func (n *File) AsNode() *Node          { return (*Node)(n) }

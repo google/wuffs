@@ -130,23 +130,23 @@ func (b *bitstream) take(nBits uint32) int32 {
 // 4, 4)" example from RFC 1951 section 3.2.2, the huffman struct is
 // initialized by calling:
 //
-// h.construct([]uint32{
-//   'A': 3, 'B': 3, 'C': 3, 'D': 3, 'E': 3, 'F': 2, 'G': 4, 'H': 4,
-// })
+//	h.construct([]uint32{
+//	  'A': 3, 'B': 3, 'C': 3, 'D': 3, 'E': 3, 'F': 2, 'G': 4, 'H': 4,
+//	})
 //
 // which results in:
 //
-// huffman{
-//   counts: [maxCodeBits + 1]uint32{
-//     2: 1, 3: 5, 4: 2,
-//   },
-//   symbols: [maxNumCodes]int32{
-//     0: 'F', 1: 'A', 2: 'B', 3: 'C', 4: 'D', 5: 'E', 6: 'G', 7: 'H',
-//   },
-//   lookUpTable: [256]uint32{
-//     etc,
-//   },
-// }
+//	huffman{
+//	  counts: [maxCodeBits + 1]uint32{
+//	    2: 1, 3: 5, 4: 2,
+//	  },
+//	  symbols: [maxNumCodes]int32{
+//	    0: 'F', 1: 'A', 2: 'B', 3: 'C', 4: 'D', 5: 'E', 6: 'G', 7: 'H',
+//	  },
+//	  lookUpTable: [256]uint32{
+//	    etc,
+//	  },
+//	}
 //
 // Continuing the example from the RFC, decoding "1110" from the bitstream will
 // produce the 'G' symbol.

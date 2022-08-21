@@ -35,20 +35,20 @@
 // To quantify "much faster", on this one C file, this program was 80 times
 // faster than `clang-format`, even without a column limit:
 //
-//     $ wc release/c/wuffs-v0.2.c
-//      11858  35980 431885 release/c/wuffs-v0.2.c
-//     $ time dumbindent                               < release/c/wuffs-v0.2.c > /dev/null
-//     real    0m0.008s
-//     user    0m0.005s
-//     sys     0m0.005s
-//     $ time clang-format-9                           < release/c/wuffs-v0.2.c > /dev/null
-//     real    0m0.668s
-//     user    0m0.618s
-//     sys     0m0.032s
-//     $ time clang-format-9 -style='{ColumnLimit: 0}' < release/c/wuffs-v0.2.c > /dev/null
-//     real    0m0.641s
-//     user    0m0.585s
-//     sys     0m0.037s
+//	$ wc release/c/wuffs-v0.2.c
+//	 11858  35980 431885 release/c/wuffs-v0.2.c
+//	$ time dumbindent                               < release/c/wuffs-v0.2.c > /dev/null
+//	real    0m0.008s
+//	user    0m0.005s
+//	sys     0m0.005s
+//	$ time clang-format-9                           < release/c/wuffs-v0.2.c > /dev/null
+//	real    0m0.668s
+//	user    0m0.618s
+//	sys     0m0.032s
+//	$ time clang-format-9 -style='{ColumnLimit: 0}' < release/c/wuffs-v0.2.c > /dev/null
+//	real    0m0.641s
+//	user    0m0.585s
+//	sys     0m0.037s
 //
 // More commentary is at:
 // https://godoc.org/github.com/google/wuffs/lib/dumbindent

@@ -1057,18 +1057,19 @@ func orOneNegOneNonNeg(neg IntRange, non IntRange) (z IntRange) {
 // possible xx in x and yy in y.
 //
 // Algorithm:
-//  // If the two intervals overlap, the result is the minimum of the two
-//  // intervals' maxima.
-//  //
-//  // This overlaps code path is just an optimization.
-//  if overlaps(x, y) {
-//    return min(xMax, yMax)
-//  }
-//  xFlip   = bitFillRight(bitFillRight(xMax & ~xMin) & xMax & ~yMax)
-//  xResult = yMax & ((xMax & ~xFlip) | (xFlip >> 1))
-//  yFlip   = bitFillRight(bitFillRight(yMax & ~yMin) & yMax & ~xMax)
-//  yResult = xMax & ((yMax & ~yFlip) | (yFlip >> 1))
-//  return max(xResult, yResult)
+//
+//	// If the two intervals overlap, the result is the minimum of the two
+//	// intervals' maxima.
+//	//
+//	// This overlaps code path is just an optimization.
+//	if overlaps(x, y) {
+//	  return min(xMax, yMax)
+//	}
+//	xFlip   = bitFillRight(bitFillRight(xMax & ~xMin) & xMax & ~yMax)
+//	xResult = yMax & ((xMax & ~xFlip) | (xFlip >> 1))
+//	yFlip   = bitFillRight(bitFillRight(yMax & ~yMin) & yMax & ~xMax)
+//	yResult = xMax & ((yMax & ~yFlip) | (yFlip >> 1))
+//	return max(xResult, yResult)
 //
 // If xMin and yMin are both zero, the overlaps branch is taken.
 //
@@ -1189,13 +1190,15 @@ func (x IntRange) andMax(y IntRange) *big.Int {
 // possible xx in x and yy in y.
 //
 // Algorithm:
-//  droppable = bitFillRight((xMax & ~xMin) | (yMax & ~yMin))
-//  available = xMax & yMax & droppable
-//  return xMax | yMax | (bitFillRight(available) >> 1)
+//
+//	droppable = bitFillRight((xMax & ~xMin) | (yMax & ~yMin))
+//	available = xMax & yMax & droppable
+//	return xMax | yMax | (bitFillRight(available) >> 1)
 //
 // If xMin and yMin are both zero, this simplifies to:
-//  available = xMax & yMax
-//  return xMax | yMax | (bitFillRight(available) >> 1)
+//
+//	available = xMax & yMax
+//	return xMax | yMax | (bitFillRight(available) >> 1)
 func (x IntRange) orMax(y IntRange) *big.Int {
 	if x[0].Sign() == 0 && y[0].Sign() == 0 {
 		i := big.NewInt(0)
@@ -1257,17 +1260,17 @@ func (x IntRange) orMax(y IntRange) *big.Int {
 }
 
 // bitFillRight modifies i to round up to the next power of 2 minus 1:
-//  - If i is +0 then bitFillRight(i) sets i to  0.
-//  - If i is +1 then bitFillRight(i) sets i to  1.
-//  - If i is +2 then bitFillRight(i) sets i to  3.
-//  - If i is +3 then bitFillRight(i) sets i to  3.
-//  - If i is +4 then bitFillRight(i) sets i to  7.
-//  - If i is +5 then bitFillRight(i) sets i to  7.
-//  - If i is +6 then bitFillRight(i) sets i to  7.
-//  - If i is +7 then bitFillRight(i) sets i to  7.
-//  - If i is +8 then bitFillRight(i) sets i to 15.
-//  - If i is +9 then bitFillRight(i) sets i to 15.
-//  - Etc.
+//   - If i is +0 then bitFillRight(i) sets i to  0.
+//   - If i is +1 then bitFillRight(i) sets i to  1.
+//   - If i is +2 then bitFillRight(i) sets i to  3.
+//   - If i is +3 then bitFillRight(i) sets i to  3.
+//   - If i is +4 then bitFillRight(i) sets i to  7.
+//   - If i is +5 then bitFillRight(i) sets i to  7.
+//   - If i is +6 then bitFillRight(i) sets i to  7.
+//   - If i is +7 then bitFillRight(i) sets i to  7.
+//   - If i is +8 then bitFillRight(i) sets i to 15.
+//   - If i is +9 then bitFillRight(i) sets i to 15.
+//   - Etc.
 func bitFillRight(i *big.Int) {
 	if s := i.Sign(); s < 0 {
 		panic("pre-condition failure")

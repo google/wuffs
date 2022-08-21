@@ -27,57 +27,57 @@
 // repository was 80 times faster than `clang-format`, even without a column
 // limit:
 //
-//     $ wc release/c/wuffs-v0.2.c
-//      11858  35980 431885 release/c/wuffs-v0.2.c
-//     $ time dumbindent                               < release/c/wuffs-v0.2.c > /dev/null
-//     real    0m0.008s
-//     user    0m0.005s
-//     sys     0m0.005s
-//     $ time clang-format-9                           < release/c/wuffs-v0.2.c > /dev/null
-//     real    0m0.668s
-//     user    0m0.618s
-//     sys     0m0.032s
-//     $ time clang-format-9 -style='{ColumnLimit: 0}' < release/c/wuffs-v0.2.c > /dev/null
-//     real    0m0.641s
-//     user    0m0.585s
-//     sys     0m0.037s
+//	$ wc release/c/wuffs-v0.2.c
+//	 11858  35980 431885 release/c/wuffs-v0.2.c
+//	$ time dumbindent                               < release/c/wuffs-v0.2.c > /dev/null
+//	real    0m0.008s
+//	user    0m0.005s
+//	sys     0m0.005s
+//	$ time clang-format-9                           < release/c/wuffs-v0.2.c > /dev/null
+//	real    0m0.668s
+//	user    0m0.618s
+//	sys     0m0.032s
+//	$ time clang-format-9 -style='{ColumnLimit: 0}' < release/c/wuffs-v0.2.c > /dev/null
+//	real    0m0.641s
+//	user    0m0.585s
+//	sys     0m0.037s
 //
 // Apart from some rare and largely uninteresting exceptions, the dumbindent
 // algorithm only considers:
 //
-//   ∙ '{' and '}' curly braces,
-//   ∙ '(' and ')' round parentheses,
-//   ∙ '\n' line breaks,
-//   ∙ ' ' spaces and '\t' tabs that start or end a line, and
-//   ∙ strings, comments and preprocessor directives (in order to ignore any of
-//     the above special characters within them),
+//	∙ '{' and '}' curly braces,
+//	∙ '(' and ')' round parentheses,
+//	∙ '\n' line breaks,
+//	∙ ' ' spaces and '\t' tabs that start or end a line, and
+//	∙ strings, comments and preprocessor directives (in order to ignore any of
+//	  the above special characters within them),
 //
 // Everything else is an opaque byte. Consider this input:
 //
-//     for (i = 0; i < 3; i++) {
-//     j = 0;  // Ignore { in a comment.
-//     if (i < j) { foo(); }
-//     u = (v +
-//     w);
-//     }
+//	for (i = 0; i < 3; i++) {
+//	j = 0;  // Ignore { in a comment.
+//	if (i < j) { foo(); }
+//	u = (v +
+//	w);
+//	}
 //
 // From the algorithm's point of view, this input is equivalent to:
 //
-//     ....(.................).{
-//     .................................
-//     ...(.....).{....()..}
-//     ....(...
-//     .);
-//     }
+//	....(.................).{
+//	.................................
+//	...(.....).{....()..}
+//	....(...
+//	.);
+//	}
 //
 // The formatted output (using the default of 2 spaces per indent level) is:
 //
-//     ....(.................).{
-//       .................................
-//       ...(.....).{....()..}
-//       ....(...
-//           .);
-//     }
+//	....(.................).{
+//	  .................................
+//	  ...(.....).{....()..}
+//	  ....(...
+//	      .);
+//	}
 //
 // Dumbindent adjusts lines horizontally (indenting) but not vertically (it
 // does not break or un-break lines, or collapse consecutive blank lines),
@@ -103,9 +103,9 @@
 //
 // Similarly, dumbindent will not correct this mis-indentation:
 //
-//     if (condition)
-//       goto fail;
-//       goto fail;
+//	if (condition)
+//	  goto fail;
+//	  goto fail;
 //
 // Instead, when automatically or manually generating the input for dumbindent,
 // it is recommended to always emit curly braces (again, similar to `gofmt`

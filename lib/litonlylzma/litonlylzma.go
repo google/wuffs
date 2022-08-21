@@ -30,23 +30,23 @@
 //
 // Example compression numbers on a small English text file (at
 // https://github.com/google/wuffs/blob/main/test/data/romeo.txt):
-//  - romeo.txt             is 942 bytes (100%).
-//  - romeo.txt.litonlylzma is 659 bytes  (70%).
-//  - romeo.txt.xz          is 644 bytes  (68%).
-//  - romeo.txt.lzma        is 598 bytes  (63%).
-//  - romeo.txt.bz2         is 568 bytes  (60%).
-//  - romeo.txt.zst         is 559 bytes  (59%).
-//  - romeo.txt.gz          is 558 bytes  (59%).
+//   - romeo.txt             is 942 bytes (100%).
+//   - romeo.txt.litonlylzma is 659 bytes  (70%).
+//   - romeo.txt.xz          is 644 bytes  (68%).
+//   - romeo.txt.lzma        is 598 bytes  (63%).
+//   - romeo.txt.bz2         is 568 bytes  (60%).
+//   - romeo.txt.zst         is 559 bytes  (59%).
+//   - romeo.txt.gz          is 558 bytes  (59%).
 //
 // Example compression numbers on a large archive of source code (at
 // https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-5.0.1.tar.xz):
-//  - linux-5.0.1.tar             is 863313920 bytes (100%).
-//  - linux-5.0.1.tar.litonlylzma is 449726070 bytes  (52%).
-//  - linux-5.0.1.tar.gz          is 164575959 bytes  (19%).
-//  - linux-5.0.1.tar.zst         is 156959897 bytes  (18%).
-//  - linux-5.0.1.tar.bz2         is 125873134 bytes  (15%).
-//  - linux-5.0.1.tar.xz          is 108233572 bytes  (13%).
-//  - linux-5.0.1.tar.lzma        is 108216601 bytes  (13%).
+//   - linux-5.0.1.tar             is 863313920 bytes (100%).
+//   - linux-5.0.1.tar.litonlylzma is 449726070 bytes  (52%).
+//   - linux-5.0.1.tar.gz          is 164575959 bytes  (19%).
+//   - linux-5.0.1.tar.zst         is 156959897 bytes  (18%).
+//   - linux-5.0.1.tar.bz2         is 125873134 bytes  (15%).
+//   - linux-5.0.1.tar.xz          is 108233572 bytes  (13%).
+//   - linux-5.0.1.tar.lzma        is 108216601 bytes  (13%).
 //
 // The various tools (/usr/bin/gzip, /usr/bin/xz, etc) were all ran with their
 // default settings, not their "maximum compression" settings. This is why the
@@ -260,39 +260,39 @@ func (p *prob) encodeBit(rEnc *rangeEncoder, bitValue uint32) {
 
 // byteProbs hold probabilities for coding 8 bits (1 byte) of data. It is a 256
 // element array such that:
-//  - The 0th element is unused.
-//  - The 1st element holds the probability that the 7th bit (the highest, most
-//    significant bit) is 0.
-//  - The 2nd element holds the probability that the 6th bit is 0, conditional
-//    on the high bit being 0.
-//  - The 3rd element holds the probability that the 6th bit is 0, conditional
-//    on the high bit being 1.
-//  - The 4th element holds the probability that the 5th bit is 0, conditional
-//    on the high two bits being 00.
-//  - The 5th element holds the probability that the 5th bit is 0, conditional
-//    on the high two bits being 01.
-//  - The 6th element holds the probability that the 5th bit is 0, conditional
-//    on the high two bits being 10.
-//  - The 7th element holds the probability that the 5th bit is 0, conditional
-//    on the high two bits being 11.
-//  - The 8th element holds the probability that the 4th bit is 0, conditional
-//    on the high three bits being 000.
-//  - etc
-//  - The 255th element holds the probability that the 0th bit (the lowest,
-//    least significant bit) is 0, conditional on the high seven bits being
-//    1111111.
+//   - The 0th element is unused.
+//   - The 1st element holds the probability that the 7th bit (the highest, most
+//     significant bit) is 0.
+//   - The 2nd element holds the probability that the 6th bit is 0, conditional
+//     on the high bit being 0.
+//   - The 3rd element holds the probability that the 6th bit is 0, conditional
+//     on the high bit being 1.
+//   - The 4th element holds the probability that the 5th bit is 0, conditional
+//     on the high two bits being 00.
+//   - The 5th element holds the probability that the 5th bit is 0, conditional
+//     on the high two bits being 01.
+//   - The 6th element holds the probability that the 5th bit is 0, conditional
+//     on the high two bits being 10.
+//   - The 7th element holds the probability that the 5th bit is 0, conditional
+//     on the high two bits being 11.
+//   - The 8th element holds the probability that the 4th bit is 0, conditional
+//     on the high three bits being 000.
+//   - etc
+//   - The 255th element holds the probability that the 0th bit (the lowest,
+//     least significant bit) is 0, conditional on the high seven bits being
+//     1111111.
 //
 // Put another way, the 256 elements' value of N, as in "it's a probability for
 // the Nth bit", looks like this (when arranged in 8 rows of 32 elements):
 //
-//   u7665555444444443333333333333333
-//   22222222222222222222222222222222
-//   11111111111111111111111111111111
-//   11111111111111111111111111111111
-//   00000000000000000000000000000000
-//   00000000000000000000000000000000
-//   00000000000000000000000000000000
-//   00000000000000000000000000000000
+//	u7665555444444443333333333333333
+//	22222222222222222222222222222222
+//	11111111111111111111111111111111
+//	11111111111111111111111111111111
+//	00000000000000000000000000000000
+//	00000000000000000000000000000000
+//	00000000000000000000000000000000
+//	00000000000000000000000000000000
 //
 // The 'u' means that the 0th element is unused.
 type byteProbs [0x100]prob
