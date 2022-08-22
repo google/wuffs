@@ -14,23 +14,28 @@
 
 // ----------------
 
-// Package litonlylzma provides a decoder and encoder for Literal Only LZMA, a
-// subset of the LZMA compressed file format.
+// Package litonlylzma provides a decoder and encoder for Literal Only LZMA (or
+// Literal Only Xz), a subset of the LZMA (or Xz) compressed file formats.
 //
-// Subset means that the Encode method's output is a valid LZMA file and can be
-// decompressed by the tools available at https://www.7-zip.org/sdk.html (and
-// available as /usr/bin/lzma on a Debian system).
+// Subset means that:
+//   - the Encode methods' output is a valid LZMA/Xz file and can be
+//     decompressed by the tools available at https://www.7-zip.org/sdk.html or
+//     https://tukaani.org/xz/ (and available as /usr/bin/lzma or /usr/bin/xz
+//     on a Debian system).
+//   - the Decode methods supports the Encode methods' output but they do not
+//     support the full set of valid LZMA/Xz files.
+//   - this codec's compression ratios are not as good as full LZMA/Xz
+//     (although compression times are much faster). Moderate compression is
+//     still achieved, through range coding, but there are no Lempel Ziv
+//     back-references.
 //
-// Subset also means that this codec's compression ratios are not as good as
-// full-LZMA (although compression times are much faster). Moderate compression
-// is still achieved, through range coding, but there are no Lempel Ziv
-// back-references. The main benefit, compared to full-LZMA, is that this
-// implementation is much simpler and hence easier to study. It is only a few
-// hundred lines of code.
+// The main benefit, compared to full LZMA/Xz, is that this implementation is
+// much simpler and hence easier to study. It is around 800 lines of code.
 //
 // Example compression numbers on a small English text file (at
 // https://github.com/google/wuffs/blob/main/test/data/romeo.txt):
 //   - romeo.txt             is 942 bytes (100%).
+//   - romeo.txt.litonlyxz   is 708 bytes  (75%).
 //   - romeo.txt.litonlylzma is 659 bytes  (70%).
 //   - romeo.txt.xz          is 644 bytes  (68%).
 //   - romeo.txt.lzma        is 598 bytes  (63%).
@@ -41,6 +46,7 @@
 // Example compression numbers on a large archive of source code (at
 // https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-5.0.1.tar.xz):
 //   - linux-5.0.1.tar             is 863313920 bytes (100%).
+//   - linux-5.0.1.tar.litonlyxz   is 454480932 bytes  (53%).
 //   - linux-5.0.1.tar.litonlylzma is 449726070 bytes  (52%).
 //   - linux-5.0.1.tar.gz          is 164575959 bytes  (19%).
 //   - linux-5.0.1.tar.zst         is 156959897 bytes  (18%).
@@ -55,13 +61,16 @@ package litonlylzma
 
 import (
 	"errors"
+	"hash/crc32"
 )
 
 var (
-	// ErrUnsupportedLZMAData is potentially returned by Decode.
+	// ErrUnsupportedXxxData is potentially returned by Decode.
 	ErrUnsupportedLZMAData = errors.New("litonlylzma: unsupported LZMA data")
+	ErrUnsupportedXzData   = errors.New("litonlylzma: unsupported Xz data")
 
 	errInvalidLZMAData       = errors.New("litonlylzma: invalid LZMA data")
+	errInvalidXzData         = errors.New("litonlylzma: invalid Xz data")
 	errUnexpectedEOF         = errors.New("litonlylzma: unexpected EOF")
 	errUnsupportedFileFormat = errors.New("litonlylzma: unsupported FileFormat")
 )
@@ -79,12 +88,29 @@ const (
 	pbMask = (1 << pb) - 1
 )
 
-// lzmaHeader5 is the first 5 bytes of the LZMA header using the hard-coded
-// configuration for the subset-of-LZMA that this package supports. 0x5D
-// encodes the (lc, lp, pb) triple and the next four bytes hold the u32le
-// dictionary size. 0x1000 is LZMA's minimum dictionary size, although our
+// lzmaHeader5 is the first 5 bytes of an LZMA file using the hard-coded
+// configuration for the subset-of-LZMA that this package supports.
+//
+// 0x5D encodes the (lc, lp, pb) triple and the next four bytes hold the u32le
+// dictionary size. 0x00001000 is LZMA's minimum dictionary size, although our
 // subset-of-LZMA does not use a dictionary (also called a "sliding window").
 const lzmaHeader5 = "\x5D\x00\x10\x00\x00"
+
+// xzHeader24 is the first 24 bytes of an Xz file using the hard-coded
+// configuration for the subset-of-Xz that this package supports.
+const xzHeader24 = "" +
+	"\xFD\x37\x7A\x58\x5A\x00" + // Stream Header Magic Bytes.
+	// ----
+	"\x00\x01" + // Stream Flags (0x01 means CRC-32).
+	"\x69\x22\xDE\x36" + // CRC-32 of the previous 2 bytes.
+	// ----
+	"\x02" + // Block Header Size (0x02 * 4 = 8 bytes).
+	"\x00" + // Block Flags.
+	"\x21" + // Filter ID (0x21 means LZMA2).
+	"\x01" + // Size of Filter Properties (size of the next line).
+	"\x00" + // Filter Properties (0x00 means an 0x1000 dictionary size).
+	"\x00\x00\x00" + // Padding to 4-byte alignment.
+	"\x37\x27\x97\xD6" // CRC-32 of the previous 8 bytes.
 
 // rangeDecoder and rangeEncoder hold the state for range coding (also known as
 // arithmetic coding, roughly speaking). "range" is a keyword in Go, so in this
@@ -120,13 +146,13 @@ const lzmaHeader5 = "\x5D\x00\x10\x00\x00"
 // digit is stashed as the pendingHead field. low is set to 8872, width is set
 // to (46055 - 38872) = 7183 and we progress until the width drops below 1000,
 // causing a 'zoom in' event. There are three cases:
-//  - if low is less than 9000 (but starts with an '8'), we can emit the '3'
-//    with confidence (and then stash '8' in the pendingHead field).
-//  - if low overflows 9999, we can emit the '4' with confidence (and then stash
-//    low's 'thousands digit' in the pendingHead field).
-//  - if low is in 9000 ..= 9999 then we could still be unsure. Keep the '3'
-//    pending but extend it so that there are two pending digits: '39'. If this
-//    occurs again: '399', and so on.
+//   - if low is less than 9000 (but starts with an '8'), we can emit the '3'
+//     with confidence (and then stash '8' in the pendingHead field).
+//   - if low overflows 9999, we can emit the '4' with confidence (and then
+//     stash low's 'thousands digit' in the pendingHead field).
+//   - if low is in 9000 ..= 9999 then we could still be unsure. Keep the '3'
+//     pending but extend it so that there are two pending digits: '39'. If
+//     this occurs again: '399', and so on.
 //
 // In all three cases, 'zooming in' causes us to shift out the most significant
 // digit of the low field. This method is therefore named shiftLow here, the
@@ -320,7 +346,7 @@ func (p *byteProbs) encodeByte(rEnc *rangeEncoder, byteValue byte) {
 }
 
 // FileFormat is a compressed file format, either the original LZMA format
-// itself or something that builds on or varies that.
+// itself or something like Xz that builds on or varies that.
 //
 // Each valid FileFormatXxx value does not distinguish between the full file
 // format (as spoken by numerous Xxx software tools) and the subset-of-Xxx
@@ -328,25 +354,26 @@ func (p *byteProbs) encodeByte(rEnc *rangeEncoder, byteValue byte) {
 // produce compressed data that is valid full-LZMA (and is also valid
 // subset-of-LZMA). FileFormatLZMA.Decode can decode subset-of-LZMA (but not
 // full-LZMA).
-//
-// This package currently defines only one valid FileFormatXxx value:
-// FileFormatLZMA. Future versions of this package could define e.g.
-// FileFormatLZMA2 or FileFormatXz such that FileFormatXz.Encode would produce
-// valid full-XZ data: a valid XZ file (that could be decoded by official XZ
-// tools) that used the LZMA compression filter, but elected not to use the
-// full capabilities of that filter (using LZ literals only, not matches).
 type FileFormat uint32
 
 const (
 	FileFormatInvalid = FileFormat(0)
 	FileFormatLZMA    = FileFormat(1)
+	FileFormatXz      = FileFormat(2)
 )
 
-// Decode converts src from the Literal Only LZMA compressed file format,
+func (f FileFormat) String() string {
+	switch f {
+	case FileFormatLZMA:
+		return "FileFormatLZMA"
+	case FileFormatXz:
+		return "FileFormatXz"
+	}
+	return "FileFormatInvalid"
+}
+
+// Decode converts src from the Literal Only LZMA/Xz compressed file format,
 // appending the decoding to dst.
-//
-// f should be FileFormatLZMA but future versions of this package may support
-// other file formats.
 //
 // It is valid to pass a nil dst, like the way it's valid to pass nil to the
 // built-in append function.
@@ -356,14 +383,19 @@ const (
 // It can also return partial results. The appendedDst and remainingSrc return
 // values may be non-zero even if retErr is non-zero.
 //
-// It returns ErrUnsupportedLZMAData if the source bytes look like LZMA
-// formatted data that is outside the subset-of-LZMA that this package
-// implements.
+// It returns ErrUnsupportedXxxData if the source bytes look like Xxx formatted
+// data that is outside the subset-of-Xxx that this package implements.
 func (f FileFormat) Decode(dst []byte, src []byte) (appendedDst []byte, remainingSrc []byte, retErr error) {
-	if f != FileFormatLZMA {
-		return dst, nil, errUnsupportedFileFormat
+	switch f {
+	case FileFormatLZMA:
+		return decodeLZMA(dst, src)
+	case FileFormatXz:
+		return decodeXz(dst, src)
 	}
+	return nil, nil, errUnsupportedFileFormat
+}
 
+func decodeLZMA(dst []byte, src []byte) (appendedDst []byte, remainingSrc []byte, retErr error) {
 	// LZMA consists of a 13 byte header and then at least a 5 byte payload
 	// (range coded data). The 13 byte header is:
 	//  - 1 byte for the (lc, lp, pb) triple with max values (8, 4, 4),
@@ -371,12 +403,7 @@ func (f FileFormat) Decode(dst []byte, src []byte) (appendedDst []byte, remainin
 	//  - 8 bytes i64le uncompressed size.
 	if (len(src) < 18) || (src[0] >= (9 * 5 * 5)) {
 		return dst, nil, errInvalidLZMAData
-	} else if (src[0] != lzmaHeader5[0]) ||
-		(src[1] != lzmaHeader5[1]) ||
-		(src[2] != lzmaHeader5[2]) ||
-		(src[3] != lzmaHeader5[3]) ||
-		(src[4] != lzmaHeader5[4]) ||
-		(src[13] != 0x00) {
+	} else if string(src[:5]) != lzmaHeader5 {
 		return dst, nil, ErrUnsupportedLZMAData
 	}
 
@@ -390,12 +417,151 @@ func (f FileFormat) Decode(dst []byte, src []byte) (appendedDst []byte, remainin
 		return dst, nil, ErrUnsupportedLZMAData
 	}
 
+	return decodeRaw(dst, src[13:], size, ErrUnsupportedLZMAData)
+}
+
+func decodeXz(dst []byte, src []byte) (appendedDst []byte, remainingSrc []byte, retErr error) {
+	originalDstLen := len(dst)
+	originalSrcLen := len(src)
+
+	// Decode the headers.
+	if (len(src) < 24) || (string(src[:6]) != xzHeader24[:6]) {
+		return dst, src, errInvalidXzData
+	} else if string(src[6:24]) != xzHeader24[6:24] {
+		return dst, src, ErrUnsupportedXzData
+	}
+	src = src[24:]
+
+	// Decode the payload as multiple chunks.
+	for {
+		if len(src) == 0 {
+			return dst, src, errInvalidXzData
+
+		} else if src[0] == 0x00 { // No more chunks.
+			src = src[1:]
+			break
+
+		} else if src[0] == 0x01 { // Independent uncompressed chunk.
+			if len(src) < 3 {
+				return dst, src, errInvalidXzData
+			}
+			uncompressedSize := (uint32(src[1]) << 8) + (uint32(src[2]) << 0) + 1
+			src = src[3:]
+			if uint64(uncompressedSize) > uint64(len(src)) {
+				return dst, src, errInvalidXzData
+			}
+			dst = append(dst, src[:uncompressedSize]...)
+			src = src[uncompressedSize:]
+
+		} else if src[0] == 0xE0 { // Independent LZMA chunk.
+			if len(src) < 6 {
+				return dst, src, errInvalidXzData
+			} else if src[5] != 0x5D { // Like lzmaHeader5[0], this encodes lc=3, lp=0, pb=2.
+				return dst, src, ErrUnsupportedXzData
+			}
+			uncompressedSize := (uint32(src[1]) << 8) + (uint32(src[2]) << 0) + 1
+			compressedSize := (uint32(src[3]) << 8) + (uint32(src[4]) << 0) + 1
+			src = src[6:]
+			if uint64(compressedSize) > uint64(len(src)) {
+				return dst, src, errInvalidXzData
+			}
+			lenSrc := len(src)
+			dst, src, retErr = decodeRaw(dst, src, uint64(uncompressedSize), ErrUnsupportedXzData)
+			if retErr != nil {
+				return dst, src, retErr
+			} else if lenSrc != (len(src) + int(compressedSize)) {
+				return dst, src, errInvalidXzData
+			}
+
+		} else {
+			return dst, src, ErrUnsupportedXzData
+		}
+	}
+	unpaddedSizeWant := uint64((originalSrcLen - 12) - len(src) + 4)
+	for i := unpaddedSizeWant & 3; (i & 3) != 0; i++ {
+		if (len(src) == 0) || (src[0] != 0x00) {
+			return dst, src, errInvalidXzData
+		}
+		src = src[1:]
+	}
+	if len(src) < 4 {
+		return dst, src, errInvalidXzData
+	}
+	checksum := crc32.ChecksumIEEE(dst[originalDstLen:])
+	if (src[0] != uint8(checksum>>0)) ||
+		(src[1] != uint8(checksum>>8)) ||
+		(src[2] != uint8(checksum>>16)) ||
+		(src[3] != uint8(checksum>>24)) {
+		return dst, src, errInvalidXzData
+	}
+	src = src[4:]
+
+	// Decode the index.
+	srcCheckpoint1 := src
+	if (len(src) < 2) || (src[0] != 0x00) || (src[1] != 0x01) {
+		return dst, src, errInvalidXzData
+	}
+	src = src[2:]
+	src, unpaddedSizeHave, ok := decodeUvarint(src)
+	if !ok || (unpaddedSizeHave != unpaddedSizeWant) {
+		return dst, src, errInvalidXzData
+	}
+	src, uncompressedSize, ok := decodeUvarint(src)
+	if !ok || (uncompressedSize != uint64(len(dst)-originalDstLen)) {
+		return dst, src, errInvalidXzData
+	}
+	for i := (len(srcCheckpoint1) - len(src)) & 3; (i & 3) != 0; i++ {
+		if (len(src) == 0) || (src[0] != 0x00) {
+			return dst, src, errInvalidXzData
+		}
+		src = src[1:]
+	}
+	backwardSize := (len(srcCheckpoint1) - len(src)) >> 2
+	if len(src) < 4 {
+		return dst, src, errInvalidXzData
+	}
+	checksum = crc32.ChecksumIEEE(srcCheckpoint1[:len(srcCheckpoint1)-len(src)])
+	if (src[0] != uint8(checksum>>0)) ||
+		(src[1] != uint8(checksum>>8)) ||
+		(src[2] != uint8(checksum>>16)) ||
+		(src[3] != uint8(checksum>>24)) {
+		return dst, src, errInvalidXzData
+	}
+	src = src[4:]
+
+	// Decode the footer.
+	if len(src) < 12 {
+		return dst, src, errInvalidXzData
+	}
+	checksum = crc32.ChecksumIEEE(src[4:10])
+	if (src[0] != uint8(checksum>>0)) || // Checksum.
+		(src[1] != uint8(checksum>>8)) ||
+		(src[2] != uint8(checksum>>16)) ||
+		(src[3] != uint8(checksum>>24)) ||
+		(src[4] != uint8(backwardSize>>0)) || // Backward Size.
+		(src[5] != uint8(backwardSize>>8)) ||
+		(src[6] != uint8(backwardSize>>16)) ||
+		(src[7] != uint8(backwardSize>>24)) ||
+		(src[8] != xzHeader24[6]) || // Stream Flags again.
+		(src[9] != xzHeader24[7]) ||
+		(src[10] != 0x59) || // Stream Footer Magic Bytes.
+		(src[11] != 0x5A) {
+		return dst, src, errInvalidXzData
+	}
+	return dst, src[12:], nil
+}
+
+func decodeRaw(dst []byte, src []byte, size uint64, errUnsupported error) (appendedDst []byte, remainingSrc []byte, retErr error) {
+	if (len(src) < 5) || (src[0] != 0x00) {
+		return dst, src, errUnsupported
+	}
+
 	rDec := rangeDecoder{
-		src: src[18:],
-		bits: (uint32(src[14]) << 24) |
-			(uint32(src[15]) << 16) |
-			(uint32(src[16]) << 8) |
-			(uint32(src[17]) << 0),
+		src: src[5:],
+		bits: (uint32(src[1]) << 24) |
+			(uint32(src[2]) << 16) |
+			(uint32(src[3]) << 8) |
+			(uint32(src[4]) << 0),
 		width: 0xFFFF_FFFF,
 	}
 
@@ -412,12 +578,12 @@ func (f FileFormat) Decode(dst []byte, src []byte) (appendedDst []byte, remainin
 	curr := byte(0)
 	for ; size > 0; size-- {
 		if bitValue, err := posProbs[pos&pbMask].decodeBit(&rDec); err != nil {
-			return dst, nil, err
+			return dst, rDec.src, err
 		} else if bitValue != 0 {
 			// A full-LZMA decoder would implement Lempel Ziv matches (or the
 			// End of Stream marker) here. Our simpler subset-of-LZMA decoder
 			// only uses literals.
-			return dst, rDec.src, ErrUnsupportedLZMAData
+			return dst, rDec.src, errUnsupported
 		}
 
 		i := (pos & lpMask) << lc
@@ -433,26 +599,141 @@ func (f FileFormat) Decode(dst []byte, src []byte) (appendedDst []byte, remainin
 	return dst, rDec.src, nil
 }
 
+func decodeUvarint(src []byte) (remainingSrc []byte, x uint64, ok bool) {
+	for i := uint32(0); (i < 63) && (len(src) > 0); i += 7 {
+		s := src[0]
+		src = src[1:]
+		x |= uint64(s&0x7F) << i
+		if (s & 0x80) == 0 {
+			return src, x, true
+		}
+	}
+	return src, 0, false
+}
+
 // Encode converts src to the Literal Only LZMA compressed file format,
 // appending the encoding to dst.
-//
-// f should be FileFormatLZMA but future versions of this package may support
-// other file formats.
 //
 // It is valid to pass a nil dst, like the way it's valid to pass nil to the
 // built-in append function.
 func (f FileFormat) Encode(dst []byte, src []byte) (appendedDst []byte, retErr error) {
-	if f != FileFormatLZMA {
-		return nil, errUnsupportedFileFormat
+	switch f {
+	case FileFormatLZMA:
+		return encodeLZMA(dst, src)
+	case FileFormatXz:
+		return encodeXz(dst, src)
 	}
+	return nil, errUnsupportedFileFormat
+}
 
+func encodeLZMA(dst []byte, src []byte) (appendedDst []byte, retErr error) {
 	dst = append(dst, lzmaHeader5...)
 	size := len(src)
 	for i := 0; i < 8; i++ {
 		dst = append(dst, byte(size))
 		size >>= 8
 	}
+	return encodeRaw(dst, src), nil
+}
 
+func encodeXz(dst []byte, src []byte) (appendedDst []byte, retErr error) {
+	// Encode the headers (12 byte stream header then 12 byte block header).
+	// The block's unpaddedSize calculation ignores the stream header.
+	dstLen0 := len(dst) + 12
+	dst = append(dst, xzHeader24...)
+
+	// Encode the payload as multiple chunks.
+	//
+	// Later XZ chunks can depend on earlier ones (and doing so can help
+	// compression ratios) but for simplicity, this encoder emits independent
+	// chunks. Each chunk's maximum compressed and uncompressed size are both
+	// equal to 0x10000 = 65536 bytes, roughly speaking. The encoder partitions
+	// the src into 65536 byte sub-slices. If a sub-slice's LZMA-compressed
+	// form would be longer, the encoder emits an uncompressed chunk instead.
+	rawLZMA := []byte(nil)
+	for remaining := src; len(remaining) > 0; {
+		srcChunk := []byte(nil)
+		if len(remaining) > 0x10000 {
+			srcChunk, remaining = remaining[:0x10000], remaining[0x10000:]
+		} else {
+			srcChunk, remaining = remaining, nil
+		}
+
+		rawLZMA = encodeRaw(rawLZMA[:0], srcChunk)
+		if (len(srcChunk) + 3) <= (len(rawLZMA) + 6) {
+			dst = append(dst,
+				0x01, // Independent uncompressed chunk.
+				uint8((len(srcChunk)-1)>>8),
+				uint8((len(srcChunk)-1)>>0),
+			)
+			dst = append(dst, srcChunk...)
+		} else {
+			dst = append(dst,
+				0xE0, // Independent LZMA chunk.
+				uint8((len(srcChunk)-1)>>8),
+				uint8((len(srcChunk)-1)>>0),
+				uint8((len(rawLZMA)-1)>>8),
+				uint8((len(rawLZMA)-1)>>0),
+				0x5D, // Like lzmaHeader5[0], this encodes lc=3, lp=0, pb=2.
+			)
+			dst = append(dst, rawLZMA...)
+		}
+	}
+	dst = append(dst, 0x00)                      // No more chunks.
+	unpaddedSize := uint64(len(dst)-dstLen0) + 4 // +4 for the upcoming checksum.
+	for 0 != 3&(len(dst)-dstLen0) {
+		dst = append(dst, 0x00) // Padding
+	}
+	checksum := crc32.ChecksumIEEE(src)
+	dst = append(dst,
+		uint8(checksum>>0),
+		uint8(checksum>>8),
+		uint8(checksum>>16),
+		uint8(checksum>>24),
+	)
+
+	// Encode the index.
+	dstLen1 := len(dst)
+	dst = append(dst,
+		0x00, // Index Indicator.
+		0x01, // Number of Records.
+	)
+	dst = encodeUvarint(dst, unpaddedSize)
+	dst = encodeUvarint(dst, uint64(len(src)))
+	for 0 != 3&(len(dst)-dstLen1) {
+		dst = append(dst, 0x00) // Padding
+	}
+	backwardSize := (len(dst) - dstLen1) >> 2
+	checksum = crc32.ChecksumIEEE(dst[dstLen1:])
+	dst = append(dst,
+		uint8(checksum>>0),
+		uint8(checksum>>8),
+		uint8(checksum>>16),
+		uint8(checksum>>24),
+	)
+
+	// Encode the footer.
+	dstLen2 := len(dst)
+	dst = append(dst,
+		0, 0, 0, 0, // Space for the checksum.
+		uint8(backwardSize>>0), // Backward Size.
+		uint8(backwardSize>>8),
+		uint8(backwardSize>>16),
+		uint8(backwardSize>>24),
+		xzHeader24[6], // Stream Flags again.
+		xzHeader24[7],
+		0x59, // Stream Footer Magic Bytes.
+		0x5A,
+	)
+	checksum = crc32.ChecksumIEEE(dst[dstLen2+4 : dstLen2+10])
+	dst[dstLen2+0] = uint8(checksum >> 0)
+	dst[dstLen2+1] = uint8(checksum >> 8)
+	dst[dstLen2+2] = uint8(checksum >> 16)
+	dst[dstLen2+3] = uint8(checksum >> 24)
+	return dst, nil
+}
+
+func encodeRaw(dst []byte, src []byte) (appendedDst []byte) {
 	rEnc := rangeEncoder{
 		dst:   dst,
 		width: 0xFFFF_FFFF,
@@ -487,5 +768,12 @@ func (f FileFormat) Encode(dst []byte, src []byte) (appendedDst []byte, retErr e
 		rEnc.shiftLow()
 	}
 
-	return rEnc.dst, nil
+	return rEnc.dst
+}
+
+func encodeUvarint(dst []byte, x uint64) []byte {
+	for ; x >= 0x80; x >>= 7 {
+		dst = append(dst, byte(x)|0x80)
+	}
+	return append(dst, byte(x))
 }

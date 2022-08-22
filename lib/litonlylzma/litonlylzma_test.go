@@ -43,16 +43,23 @@ func testRoundTrip(tt *testing.T, filename string) {
 		original = o
 	}
 
-	compressed, err := FileFormatLZMA.Encode(nil, original)
-	if err != nil {
-		tt.Fatalf("Encode: %v", err)
+	fileFormats := [...]FileFormat{
+		FileFormatLZMA,
+		FileFormatXz,
 	}
-	recovered, _, err := FileFormatLZMA.Decode(nil, compressed)
-	if err != nil {
-		tt.Fatalf("Decode: %v", err)
-	}
-	if !bytes.Equal(original, recovered) {
-		tt.Fatalf("round trip produced different bytes")
+
+	for _, f := range fileFormats {
+		compressed, err := f.Encode(nil, original)
+		if err != nil {
+			tt.Fatalf("%v.Encode: %v", f, err)
+		}
+		recovered, _, err := f.Decode(nil, compressed)
+		if err != nil {
+			tt.Fatalf("%v.Decode: %v", f, err)
+		}
+		if !bytes.Equal(original, recovered) {
+			tt.Fatalf("%v: round trip produced different bytes", f)
+		}
 	}
 }
 
