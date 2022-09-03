@@ -5,20 +5,34 @@ below. Higher is better.
 
 "Mimic" tests check that Wuffs' output mimics (i.e. exactly matches) other
 libraries' output. "Mimic" benchmarks give the numbers for those other
-libraries, as shipped with Debian. These were measured on a Debian Testing
-system as of October 2019, which meant these compiler versions:
+libraries, as shipped with Debian. These were measured on a Debian Bullseye
+system as of September 2022, which meant these compiler versions:
 
-- clang/llvm 8.0.1
-- gcc 9.2.1
+- clang/llvm 11.0.1
+- gcc 10.2.1
 
-and these "mimic" library versions, all written in C:
+and these popular "mimic" library versions, all written in C:
 
-- libgif 5.1.4
-- zlib 1.2.11
+- libbz2 1.0.8
+- libgif 5.1.9
+- libpng 1.6.37
+- zlib 1.2.11 (we'll call this "ztl" or "zlib the library", as opposed to "zlib
+  the format")
 
-Unless otherwise stated, the numbers below were measured on an Intel x86\_64
-Broadwell, and were taken as of Wuffs git commit ffdce5ef "Have bench-rust-gif
-process animated / RGBA images".
+and these alternative "mimic" library versions, again all written in C:
+
+- [libdeflate](https://github.com/ebiggers/libdeflate) 1.7.1
+- [libspng](https://github.com/randy408/libspng) 0.7.3
+- [lodepng](https://github.com/lvandeve/lodepng) 20220717
+- [miniz](https://github.com/richgel999/miniz) 2.2.0
+- [stb](https://github.com/nothings/stb) 2.27
+
+Unless otherwise stated, the numbers below were taken as of Wuffs git commit
+315b2e52 "wuffs gen -version=0.3.0-rc.1", the first Wuffs v0.3 release
+candidate. As for the CPU model:
+
+    $ cat /proc/cpuinfo | grep model.name | uniq
+    model name: Intel(R) Core(TM) i5-10210U CPU @ 1.60GHz
 
 
 ## Reproducing
@@ -89,65 +103,110 @@ power management can be controlled with:
 
 The `1k`, `10k`, etc. numbers are approximately how many bytes are hashed.
 
-    name                                             speed     vs_mimic
+    name                          speed      vs_mimic
 
-    wuffs_adler32_10k/clang8                         2.41GB/s  0.84x
-    wuffs_adler32_100k/clang8                        2.42GB/s  0.84x
+    wuffs_adler32_10k/clang11     22.3 GB/s   6.4x
+    wuffs_adler32_100k/clang11    26.4 GB/s   7.5x
 
-    wuffs_adler32_10k/gcc9                           3.24GB/s  1.13x
-    wuffs_adler32_100k/gcc9                          3.24GB/s  1.12x
+    wuffs_adler32_10k/gcc10       21.9 GB/s   6.3x
+    wuffs_adler32_100k/gcc10      22.4 GB/s   6.4x
 
-    mimic_adler32_10k                                2.87GB/s  1.00x
-    mimic_adler32_100k                               2.90GB/s  1.00x
+    mimicztl_adler32_10k           3.50 GB/s  1.0x
+    mimicztl_adler32_100k          3.52 GB/s  1.0x
+
+    mimiclibdeflate_adler32_10k   50.4 GB/s  14.4x
+    mimiclibdeflate_adler32_100k  49.4 GB/s  14.0x
+
+
+# Bzip2
+
+The `1k`, `10k`, etc. numbers are approximately how many bytes there are in the
+decoded output.
+
+    name                             speed      vs_mimic
+
+    wuffs_bzip2_decode_10k/clang11   63.0 MB/s  1.86x
+    wuffs_bzip2_decode_100k/clang11  48.9 MB/s  1.62x
+
+    wuffs_bzip2_decode_10k/gcc10     61.1 MB/s  1.81x
+    wuffs_bzip2_decode_100k/gcc10    49.1 MB/s  1.62x
+
+    mimic_bzip2_decode_10k           33.8 MB/s  1.00x
+    mimic_bzip2_decode_100k          30.2 MB/s  1.00x
 
 
 # CRC-32
 
 The `1k`, `10k`, etc. numbers are approximately how many bytes are hashed.
 
-    name                                             speed     vs_mimic
+    name                             speed      vs_mimic
 
-    wuffs_crc32_ieee_10k/clang8                      2.85GB/s  2.11x
-    wuffs_crc32_ieee_100k/clang8                     2.87GB/s  2.13x
+    wuffs_crc32_ieee_10k/clang11     14.7 GB/s   9.1x
+    wuffs_crc32_ieee_100k/clang11    21.6 GB/s  13.3x
 
-    wuffs_crc32_ieee_10k/gcc9                        3.38GB/s  2.50x
-    wuffs_crc32_ieee_100k/gcc9                       3.40GB/s  2.52x
+    wuffs_crc32_ieee_10k/gcc10       14.9 GB/s   9.2x
+    wuffs_crc32_ieee_100k/gcc10      23.8 GB/s  14.7x
 
-    mimic_crc32_ieee_10k                             1.35GB/s  1.00x
-    mimic_crc32_ieee_100k                            1.35GB/s  1.00x
+    mimicztl_crc32_ieee_10k           1.62 GB/s  1.0x
+    mimicztl_crc32_ieee_100k          1.62 GB/s  1.0x
+
+    mimiclibdeflate_crc32_ieee_10k   24.6 GB/s  15.2x
+    mimiclibdeflate_crc32_ieee_100k  25.4 GB/s  15.7x
 
 
 # Deflate
 
-The `1k`, `10k`, etc. numbers are approximately how many bytes there in the
+The `1k`, `10k`, etc. numbers are approximately how many bytes there are in the
 decoded output.
 
 The `full_init` vs `part_init` suffixes are whether
 [`WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED`](/doc/note/initialization.md#partial-zero-initialization)
 is unset or set.
 
-    name                                             speed     vs_mimic
+    name                                                speed     vs_mimic
 
-    wuffs_deflate_decode_1k_full_init/clang8          160MB/s  0.74x
-    wuffs_deflate_decode_1k_part_init/clang8          199MB/s  0.92x
-    wuffs_deflate_decode_10k_full_init/clang8         255MB/s  0.94x
-    wuffs_deflate_decode_10k_part_init/clang8         263MB/s  0.97x
-    wuffs_deflate_decode_100k_just_one_read/clang8    306MB/s  0.93x
-    wuffs_deflate_decode_100k_many_big_reads/clang8   250MB/s  0.98x
+    wuffs_deflate_decode_1k_full_init/clang11           195 MB/s  0.81x
+    wuffs_deflate_decode_1k_part_init/clang11           226 MB/s  0.93x
+    wuffs_deflate_decode_10k_full_init/clang11          409 MB/s  1.41x
+    wuffs_deflate_decode_10k_part_init/clang11          418 MB/s  1.47x
+    wuffs_deflate_decode_100k_just_one_read/clang11     521 MB/s  1.48x
+    wuffs_deflate_decode_100k_many_big_reads/clang11    330 MB/s  1.19x
 
-    wuffs_deflate_decode_1k_full_init/gcc9            164MB/s  0.76x
-    wuffs_deflate_decode_1k_part_init/gcc9            207MB/s  0.95x
-    wuffs_deflate_decode_10k_full_init/gcc9           247MB/s  0.91x
-    wuffs_deflate_decode_10k_part_init/gcc9           254MB/s  0.94x
-    wuffs_deflate_decode_100k_just_one_read/gcc9      333MB/s  1.01x
-    wuffs_deflate_decode_100k_many_big_reads/gcc9     261MB/s  1.02x
+    wuffs_deflate_decode_1k_full_init/gcc10             183 MB/s  0.76x
+    wuffs_deflate_decode_1k_part_init/gcc10             217 MB/s  0.90x
+    wuffs_deflate_decode_10k_full_init/gcc10            402 MB/s  1.39x
+    wuffs_deflate_decode_10k_part_init/gcc10            414 MB/s  1.43x
+    wuffs_deflate_decode_100k_just_one_read/gcc10       522 MB/s  1.48x
+    wuffs_deflate_decode_100k_many_big_reads/gcc10      330 MB/s  1.19x
 
-    mimic_deflate_decode_1k                           217MB/s  1.00x
-    mimic_deflate_decode_10k                          270MB/s  1.00x
-    mimic_deflate_decode_100k_just_one_read           329MB/s  1.00x
-    mimic_deflate_decode_100k_many_big_reads          256MB/s  1.00x
+    mimicztl_deflate_decode_1k_full_init                241 MB/s  1.00x
+    mimicztl_deflate_decode_10k_full_init               289 MB/s  1.00x
+    mimicztl_deflate_decode_100k_just_one_read          352 MB/s  1.00x
+    mimicztl_deflate_decode_100k_many_big_reads         277 MB/s  1.00x
 
-32-bit ARMv7 (2012 era Samsung Exynos 5 Chromebook), Debian Stretch (2017):
+    mimiclibdeflate_deflate_decode_1k_full_init         326 MB/s  1.35x
+    mimiclibdeflate_deflate_decode_10k_full_init        503 MB/s  1.74x
+    mimiclibdeflate_deflate_decode_100k_just_one_read   507 MB/s  1.44x
+
+    mimicminiz_deflate_decode_1k_full_init              204 MB/s  0.85x
+    mimicminiz_deflate_decode_10k_full_init             252 MB/s  0.87x
+    mimicminiz_deflate_decode_100k_just_one_read        287 MB/s  0.82x
+
+    go_deflate_decode_1k_full_init                       71 MB/s  0.29x
+    go_deflate_decode_10k_full_init                     120 MB/s  0.42x
+    go_deflate_decode_100k_just_one_read                135 MB/s  0.38x
+
+    rust_deflate_decode_1k_full_init                    165 MB/s  0.68x
+    rust_deflate_decode_10k_full_init                   259 MB/s  0.90x
+    rust_deflate_decode_100k_just_one_read              272 MB/s  0.77x
+
+To reproduce the libdeflate or miniz numbers, look in
+`test/c/mimiclib/deflate-gzip-zlib.c`. For Go 1.19, run `go run main.go` in
+`script/bench-go-deflate`. For Rust 1.48 / flate2 1.0.24 / miniz\_oxide 0.5.3,
+run `cargo run --release` in `script/bench-rust-deflate`.
+
+Historical (Wuffs v0.2; 2019) numbers for 32-bit ARMv7 (2012 era Samsung Exynos
+5 Chromebook), Debian Stretch (2017):
 
     name                                             speed     vs_mimic
 
@@ -171,63 +230,6 @@ is unset or set.
     mimic_deflate_decode_100k_many_big_reads         90.0MB/s  1.00x
 
 
-## Deflate (C, miniz)
-
-For comparison, here are [miniz](https://github.com/richgel999/miniz) 2.1.0's
-numbers.
-
-    name                                             speed     vs_mimic
-
-    miniz_deflate_decode_1k/clang8                    174MB/s  0.80x
-    miniz_deflate_decode_10k/clang8                   245MB/s  0.91x
-    miniz_deflate_decode_100k_just_one_read/clang8    309MB/s  0.94x
-
-    miniz_deflate_decode_1k/gcc9                      158MB/s  0.73x
-    miniz_deflate_decode_10k/gcc9                     221MB/s  0.82x
-    miniz_deflate_decode_100k_just_one_read/gcc9      250MB/s  0.76x
-
-To reproduce these numbers, look in `test/c/mimiclib/deflate-gzip-zlib.c`.
-
-
-## Deflate (Go)
-
-For comparison, here are Go 1.12.10's numbers, using Go's standard library's
-`compress/flate` package.
-
-    name                                             speed     vs_mimic
-
-    go_deflate_decode_1k                             45.4MB/s  0.21x
-    go_deflate_decode_10k                            82.5MB/s  0.31x
-    go_deflate_decode_100k                           94.0MB/s  0.29x
-
-To reproduce these numbers:
-
-    git clone https://github.com/google/wuffs.git
-    cd wuffs/script/bench-go-deflate/
-    go run main.go
-
-
-## Deflate (Rust)
-
-For comparison, here are Rust 1.37.0's numbers, using the
-[alexcrichton/flate2-rs](https://github.com/alexcrichton/flate2-rs) and
-[Frommi/miniz_oxide](https://github.com/Frommi/miniz_oxide) crates, which [this
-file](https://github.com/sile/libflate/blob/77a1004edf6518a0badab7ce8837bc5338ff9bc3/README.md#an-informal-benchmark)
-suggests is the fastest pure-Rust Deflate decoder.
-
-    name                                             speed     vs_mimic
-
-    rust_deflate_decode_1k                            104MB/s  0.48x
-    rust_deflate_decode_10k                           202MB/s  0.75x
-    rust_deflate_decode_100k                          218MB/s  0.66x
-
-To reproduce these numbers:
-
-    git clone https://github.com/google/wuffs.git
-    cd wuffs/script/bench-rust-deflate/
-    cargo run --release
-
-
 # GIF
 
 The `1k`, `10k`, etc. numbers are approximately how many pixels there are in
@@ -245,42 +247,67 @@ is unset or set.
 The libgif library doesn't export any API for decode-to-BGRA or decode-to-RGBA,
 so there are no mimic numbers to compare to for the `bgra` suffix.
 
-    name                                             speed     vs_mimic
+    name                                         speed      vs_mimic
 
-    wuffs_gif_decode_1k_bw/clang8                     461MB/s  3.18x
-    wuffs_gif_decode_1k_color_full_init/clang8        141MB/s  1.85x
-    wuffs_gif_decode_1k_color_part_init/clang8        189MB/s  2.48x
-    wuffs_gif_decode_10k_bgra/clang8                  743MB/s  n/a
-    wuffs_gif_decode_10k_indexed/clang8               200MB/s  2.11x
-    wuffs_gif_decode_20k/clang8                       245MB/s  2.50x
-    wuffs_gif_decode_100k_artificial/clang8           531MB/s  3.43x
-    wuffs_gif_decode_100k_realistic/clang8            218MB/s  2.27x
-    wuffs_gif_decode_1000k_full_init/clang8           221MB/s  2.25x
-    wuffs_gif_decode_1000k_part_init/clang8           221MB/s  2.25x
-    wuffs_gif_decode_anim_screencap/clang8           1.07GB/s  6.01x
+    wuffs_gif_decode_1k_bw/clang11                758 MB/s  4.38x
+    wuffs_gif_decode_1k_color_full_init/clang11   176 MB/s  1.96x
+    wuffs_gif_decode_1k_color_part_init/clang11   213 MB/s  2.37x
+    wuffs_gif_decode_10k_bgra/clang11             786 MB/s  n/a
+    wuffs_gif_decode_10k_indexed/clang11          208 MB/s  1.98x
+    wuffs_gif_decode_20k/clang11                  262 MB/s  2.47x
+    wuffs_gif_decode_100k_artificial/clang11      580 MB/s  3.52x
+    wuffs_gif_decode_100k_realistic/clang11       225 MB/s  2.18x
+    wuffs_gif_decode_1000k_full_init/clang11      229 MB/s  2.16x
+    wuffs_gif_decode_1000k_part_init/clang11      229 MB/s  2.16x
+    wuffs_gif_decode_anim_screencap/clang11      1.31 GB/s  6.58x
 
-    wuffs_gif_decode_1k_bw/gcc9                       478MB/s  3.30x
-    wuffs_gif_decode_1k_color_full_init/gcc9          148MB/s  1.94x
-    wuffs_gif_decode_1k_color_part_init/gcc9          194MB/s  2.54x
-    wuffs_gif_decode_10k_bgra/gcc9                    645MB/s  n/a
-    wuffs_gif_decode_10k_indexed/gcc9                 203MB/s  2.14x
-    wuffs_gif_decode_20k/gcc9                         244MB/s  2.49x
-    wuffs_gif_decode_100k_artificial/gcc9             532MB/s  3.43x
-    wuffs_gif_decode_100k_realistic/gcc9              214MB/s  2.23x
-    wuffs_gif_decode_1000k_full_init/gcc9             217MB/s  2.21x
-    wuffs_gif_decode_1000k_part_init/gcc9             218MB/s  2.22x
-    wuffs_gif_decode_anim_screencap/gcc9             1.11GB/s  6.24x
+    wuffs_gif_decode_1k_bw/gcc10                  659 MB/s  3.80x
+    wuffs_gif_decode_1k_color_full_init/gcc10     175 MB/s  1.94x
+    wuffs_gif_decode_1k_color_part_init/gcc10     202 MB/s  2.24x
+    wuffs_gif_decode_10k_bgra/gcc10               768 MB/s  n/a
+    wuffs_gif_decode_10k_indexed/gcc10            202 MB/s  1.92x
+    wuffs_gif_decode_20k/gcc10                    250 MB/s  2.36x
+    wuffs_gif_decode_100k_artificial/gcc10        564 MB/s  3.42x
+    wuffs_gif_decode_100k_realistic/gcc10         217 MB/s  2.11x
+    wuffs_gif_decode_1000k_full_init/gcc10        221 MB/s  2.08x
+    wuffs_gif_decode_1000k_part_init/gcc10        221 MB/s  2.08x
+    wuffs_gif_decode_anim_screencap/gcc10        1.31 GB/s  6.58x
 
-    mimic_gif_decode_1k_bw                            145MB/s  1.00x
-    mimic_gif_decode_1k_color                        76.3MB/s  1.00x
-    mimic_gif_decode_10k_indexed                     94.9MB/s  1.00x
-    mimic_gif_decode_20k                             98.1MB/s  1.00x
-    mimic_gif_decode_100k_artificial                  155MB/s  1.00x
-    mimic_gif_decode_100k_realistic                  96.1MB/s  1.00x
-    mimic_gif_decode_1000k                           98.4MB/s  1.00x
-    mimic_gif_decode_anim_screencap                   178MB/s  1.00x
+    mimic_gif_decode_1k_bw                        173 MB/s  1.00x
+    mimic_gif_decode_1k_color_full_init            90 MB/s  1.00x
+    mimic_gif_decode_10k_indexed                  105 MB/s  1.00x
+    mimic_gif_decode_20k                          106 MB/s  1.00x
+    mimic_gif_decode_100k_artificial              165 MB/s  1.00x
+    mimic_gif_decode_100k_realistic               103 MB/s  1.00x
+    mimic_gif_decode_1000k_full_init              106 MB/s  1.00x
+    mimic_gif_decode_anim_screencap               199 MB/s  1.00x
 
-32-bit ARMv7 (2012 era Samsung Exynos 5 Chromebook), Debian Stretch (2017):
+    go_gif_decode_1k_bw                           167 MB/s  0.97x
+    go_gif_decode_1k_color_full_init               63 MB/s  0.70x
+    go_gif_decode_10k_bgra                        216 MB/s  n/a
+    go_gif_decode_10k_indexed                      92 MB/s  0.88x
+    go_gif_decode_20k                             102 MB/s  0.96x
+    go_gif_decode_100k_artificial                 202 MB/s  1.22x
+    go_gif_decode_100k_realistic                  102 MB/s  0.99x
+    go_gif_decode_1000k_full_init                 103 MB/s  0.97x
+    go_gif_decode_anim_screencap                  237 MB/s  1.19x
+
+    rust_gif_decode_1k_bw                         362 MB/s  2.09x
+    rust_gif_decode_1k_color_full_init            113 MB/s  1.26x
+    rust_gif_decode_10k_bgra                      333 MB/s  n/a
+    rust_gif_decode_10k_indexed                   101 MB/s  0.96x
+    rust_gif_decode_20k                           119 MB/s  1.12x
+    rust_gif_decode_100k_artificial               248 MB/s  1.50x
+    rust_gif_decode_100k_realistic                113 MB/s  1.10x
+    rust_gif_decode_1000k_full_init               115 MB/s  1.08x
+    rust_gif_decode_anim_screencap                513 MB/s  2.58x
+
+To reproduce the Go 1.19 numbers, run `go run main.go` in
+`script/bench-go-gif`. For Rust 1.48 / gif 0.11.4, run `cargo run --release` in
+`script/bench-rust-gif`.
+
+Historical (Wuffs v0.2; 2019) numbers for 32-bit ARMv7 (2012 era Samsung Exynos
+5 Chromebook), Debian Stretch (2017):
 
     name                                             speed     vs_mimic
 
@@ -318,106 +345,137 @@ so there are no mimic numbers to compare to for the `bgra` suffix.
     mimic_gif_decode_anim_screencap                  60.3MB/s  1.00x
 
 
-## GIF (Go)
-
-For comparison, here are Go 1.12.10's numbers, using Go's standard library's
-`image/gif` package.
-
-    name                                             speed     vs_mimic
-
-    go_gif_decode_1k_bw                               107MB/s  0.74x
-    go_gif_decode_1k_color                           39.2MB/s  0.51x
-    go_gif_decode_10k_bgra                            117MB/s  n/a
-    go_gif_decode_10k_indexed                        57.8MB/s  0.61x
-    go_gif_decode_20k                                67.2MB/s  0.69x
-    go_gif_decode_100k_artificial                     151MB/s  0.97x
-    go_gif_decode_100k_realistic                     67.2MB/s  0.70x
-    go_gif_decode_1000k                              68.1MB/s  0.69x
-    go_gif_decode_anim_screencap                      206MB/s  1.16x
-
-To reproduce these numbers:
-
-    git clone https://github.com/google/wuffs.git
-    cd wuffs/script/bench-go-gif/
-    go run main.go
-
-
-## GIF (Rust)
-
-For comparison, here are Rust 1.37.0's numbers, using the
-[image-rs/image-gif](https://github.com/image-rs/image-gif) crate, easily the
-top `crates.io` result for ["gif"](https://crates.io/search?q=gif).
-
-    name                                             speed     vs_mimic
-
-    rust_gif_decode_1k_bw                            89.2MB/s  0.62x
-    rust_gif_decode_1k_color                         20.7MB/s  0.27x
-    rust_gif_decode_10k_bgra                         74.5MB/s  n/a
-    rust_gif_decode_10k_indexed                      20.4MB/s  0.21x
-    rust_gif_decode_20k                              28.9MB/s  0.29x
-    rust_gif_decode_100k_artificial                  79.1MB/s  0.51x
-    rust_gif_decode_100k_realistic                   27.9MB/s  0.29x
-    rust_gif_decode_1000k                            27.9MB/s  0.28x
-    rust_gif_decode_anim_screencap                    144MB/s  0.81x
-
-To reproduce these numbers:
-
-    git clone https://github.com/google/wuffs.git
-    cd wuffs/script/bench-rust-gif/
-    cargo run --release
-
-
 # Gzip (Deflate + CRC-32)
 
-The `1k`, `10k`, etc. numbers are approximately how many bytes there in the
+The `1k`, `10k`, etc. numbers are approximately how many bytes there are in the
 decoded output.
 
-    name                                             speed     vs_mimic
+    name                              speed     vs_mimic
 
-    wuffs_gzip_decode_10k/clang8                      238MB/s  1.05x
-    wuffs_gzip_decode_100k/clang8                     273MB/s  1.03x
+    wuffs_gzip_decode_10k/clang11     420 MB/s  1.71x
+    wuffs_gzip_decode_100k/clang11    527 MB/s  1.81x
 
-    wuffs_gzip_decode_10k/gcc9                        239MB/s  1.06x
-    wuffs_gzip_decode_100k/gcc9                       297MB/s  1.12x
+    wuffs_gzip_decode_10k/gcc10       427 MB/s  1.74x
+    wuffs_gzip_decode_100k/gcc10      550 MB/s  1.89x
 
-    mimic_gzip_decode_10k                             226MB/s  1.00x
-    mimic_gzip_decode_100k                            265MB/s  1.00x
+    mimicztl_gzip_decode_10k          246 MB/s  1.00x
+    mimicztl_gzip_decode_100k         291 MB/s  1.00x
+
+    mimiclibdeflate_gzip_decode_10k   494 MB/s  2.01x
+    mimiclibdeflate_gzip_decode_100k  496 MB/s  1.70x
 
 
 # LZW
 
-The `1k`, `10k`, etc. numbers are approximately how many bytes there in the
+The `1k`, `10k`, etc. numbers are approximately how many bytes there are in the
 decoded output.
 
 The libgif library doesn't export its LZW decoder in its API, so there are no
 mimic numbers to compare to.
 
-    name                                             speed     vs_mimic
+    name                           speed     vs_mimic
 
-    wuffs_lzw_decode_20k/clang8                       263MB/s  n/a
-    wuffs_lzw_decode_100k/clang8                      438MB/s  n/a
+    wuffs_lzw_decode_20k/clang11   293 MB/s  n/a
+    wuffs_lzw_decode_100k/clang11  489 MB/s  n/a
 
-    wuffs_lzw_decode_20k/gcc9                         266MB/s  n/a
-    wuffs_lzw_decode_100k/gcc9                        450MB/s  n/a
+    wuffs_lzw_decode_20k/gcc10     259 MB/s  n/a
+    wuffs_lzw_decode_100k/gcc10    516 MB/s  n/a
+
+
+# PNG
+
+The `1k`, `10k`, etc. numbers are approximately how many bytes there are in the
+decoded image. For example, the `test/data/harvesters.*` images are 1165 × 859,
+approximately 1000k pixels and hence 4000k bytes at 4 bytes per pixel.
+
+The `full_init` vs `part_init` suffixes are whether
+[`WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED`](/doc/note/initialization.md#partial-zero-initialization)
+is unset or set.
+
+libpng's "simplified API" doesn't provide a way to ignore the checksum. We copy
+the `verify_checksum` numbers for a 1.00x baseline.
+
+    name                                                        speed     vs_mimic
+
+    wuffs_png_decode_image_19k_8bpp/clang11                     279 MB/s  2.29x
+    wuffs_png_decode_image_40k_24bpp/clang11                    323 MB/s  2.20x
+    wuffs_png_decode_image_77k_8bpp/clang11                     984 MB/s  2.66x
+    wuffs_png_decode_image_552k_32bpp_ignore_checksum/clang11   871 MB/s  3.01x
+    wuffs_png_decode_image_552k_32bpp_verify_checksum/clang11   837 MB/s  2.90x
+    wuffs_png_decode_image_4002k_24bpp/clang11                  331 MB/s  1.55x
+
+    wuffs_png_decode_image_19k_8bpp/gcc10                       277 MB/s  2.27x
+    wuffs_png_decode_image_40k_24bpp/gcc10                      343 MB/s  2.33x
+    wuffs_png_decode_image_77k_8bpp/gcc10                      1.00 GB/s  2.70x
+    wuffs_png_decode_image_552k_32bpp_ignore_checksum/gcc10     914 MB/s  3.16x
+    wuffs_png_decode_image_552k_32bpp_verify_checksum/gcc10     870 MB/s  3.01x
+    wuffs_png_decode_image_4002k_24bpp/gcc10                    353 MB/s  1.65x
+
+    mimiclibpng_png_decode_image_19k_8bpp                       122 MB/s  1.00x
+    mimiclibpng_png_decode_image_40k_24bpp                      147 MB/s  1.00x
+    mimiclibpng_png_decode_image_77k_8bpp                       370 MB/s  1.00x
+    mimiclibpng_png_decode_image_552k_32bpp_verify_checksum     289 MB/s  1.00x
+    mimiclibpng_png_decode_image_4002k_24bpp                    214 MB/s  1.00x
+
+    mimiclibspng_png_decode_image_19k_8bpp                      125 MB/s  1.02x
+    mimiclibspng_png_decode_image_40k_24bpp                     155 MB/s  1.05x
+    mimiclibspng_png_decode_image_77k_8bpp                      384 MB/s  1.04x
+    mimiclibspng_png_decode_image_552k_32bpp_ignore_checksum    461 MB/s  1.60x
+    mimiclibspng_png_decode_image_552k_32bpp_verify_checksum    392 MB/s  1.36x
+    mimiclibspng_png_decode_image_4002k_24bpp                   225 MB/s  1.05x
+
+    mimiclodepng_png_decode_image_19k_8bpp                      138 MB/s  1.13x
+    mimiclodepng_png_decode_image_40k_24bpp                     166 MB/s  1.13x
+    mimiclodepng_png_decode_image_77k_8bpp                      404 MB/s  1.09x
+    mimiclodepng_png_decode_image_552k_32bpp_verify_checksum    258 MB/s  0.89x
+    mimiclodepng_png_decode_image_4002k_24bpp                   165 MB/s  0.77x
+
+    mimicstb_png_decode_image_19k_8bpp                          150 MB/s  1.23x
+    mimicstb_png_decode_image_40k_24bpp                         166 MB/s  1.13x
+    mimicstb_png_decode_image_77k_8bpp                          443 MB/s  1.20x
+    mimicstb_png_decode_image_552k_32bpp_ignore_checksum        288 MB/s  1.00x
+    mimicstb_png_decode_image_4002k_24bpp                       163 MB/s  0.76x
+
+    go_png_decode_image_19k_8bpp                                 92 MB/s  0.75x
+    go_png_decode_image_40k_24bpp                               107 MB/s  0.73x
+    go_png_decode_image_77k_8bpp                                207 MB/s  0.56x
+    go_png_decode_image_552k_32bpp_verify_checksum              246 MB/s  0.85x
+    go_png_decode_image_4002k_24bpp                             116 MB/s  0.54x
+
+    rust_png_decode_image_19k_8bpp                              187 MB/s  1.53x
+    rust_png_decode_image_40k_24bpp                             260 MB/s  1.77x
+    rust_png_decode_image_77k_8bpp                              330 MB/s  0.89x
+    rust_png_decode_image_552k_32bpp_verify_checksum            299 MB/s  1.03x
+    rust_png_decode_image_4002k_24bpp                           264 MB/s  1.23x
+
+To reproduce the Go 1.19 numbers, run `go run main.go` in
+`script/bench-go-png`. For Rust 1.48 / png 0.17.5 / deflate 1.0.0 /
+miniz\_oxide 0.5.3, run `cargo run --release` in `script/bench-rust-png`.
 
 
 # Zlib (Deflate + Adler-32)
 
-The `1k`, `10k`, etc. numbers are approximately how many bytes there in the
+The `1k`, `10k`, etc. numbers are approximately how many bytes there are in the
 decoded output.
 
-    name                                             speed     vs_mimic
+    name                              speed     vs_mimic
 
-    wuffs_zlib_decode_10k/clang8                      237MB/s  0.96x
-    wuffs_zlib_decode_100k/clang8                     272MB/s  0.92x
+    wuffs_zlib_decode_10k/clang11     410 MB/s  1.53x
+    wuffs_zlib_decode_100k/clang11    505 MB/s  1.56x
 
-    wuffs_zlib_decode_10k/gcc9                        242MB/s  0.98x
-    wuffs_zlib_decode_100k/gcc9                       294MB/s  0.99x
+    wuffs_zlib_decode_10k/gcc10       431 MB/s  1.61x
+    wuffs_zlib_decode_100k/gcc10      548 MB/s  1.70x
 
-    mimic_zlib_decode_10k                             247MB/s  1.00x
-    mimic_zlib_decode_100k                            296MB/s  1.00x
+    mimicztl_zlib_decode_10k          268 MB/s  1.00x
+    mimicztl_zlib_decode_100k         323 MB/s  1.00x
+
+    mimiclibdeflate_zlib_decode_10k   497 MB/s  1.85x
+    mimiclibdeflate_zlib_decode_100k  499 MB/s  1.54x
+
+    mimicminiz_zlib_decode_10k        237 MB/s  0.88x
+    mimicminiz_zlib_decode_100k       272 MB/s  0.84x
 
 
 ---
 
-Updated on December 2019.
+Updated on September 2022.
