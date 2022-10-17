@@ -2,11 +2,8 @@
 
 Short term:
 
-- [Image decode API for color spaces and gamma
-  correction.](https://github.com/google/wuffs/issues/39)
 - [Image decode API for Region of
   Interest.](https://github.com/google/wuffs/issues/40)
-- [Decode APNG.](https://github.com/google/wuffs/issues/41)
 - [Decode JPEG.](https://github.com/google/wuffs/issues/42)
 - [Decode LZ4.](https://github.com/google/wuffs/issues/43)
 - [Decode RAC.](https://github.com/google/wuffs/issues/22)
@@ -41,4 +38,4 @@ Long term:
 
 ---
 
-Updated on March 2021.
+Updated on October 2022.
