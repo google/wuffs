@@ -125,7 +125,7 @@ func (g *gen) writeInitialLoadDerivedVar(b *buffer, n *a.Field) error {
 	b.printf("%s%s* %s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;\n", c, elem, io1Prefix, preName)
 	b.printf("%s%s* %s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;\n", c, elem, io2Prefix, preName)
 
-	b.printf("if (%s) {\n", preName)
+	b.printf("if (%s && %s->data.ptr) {\n", preName, preName)
 
 	b.printf("%s%s = %s->data.ptr;\n", io0Prefix, preName, preName)
 	b.printf("%s%s = %s%s + %s->%s;\n", io1Prefix, preName, io0Prefix, preName, preName, i1)
@@ -149,8 +149,8 @@ func (g *gen) writeFinalSaveDerivedVar(b *buffer, n *a.Field) error {
 	}
 	preName := aPrefix + n.Name().Str(g.tm)
 
-	b.printf("if (%s) {\n%s->%s = ((size_t)(%s%s - %s->data.ptr));\n}\n",
-		preName, preName, i1, iopPrefix, preName, preName)
+	b.printf("if (%s && %s->data.ptr) {\n%s->%s = ((size_t)(%s%s - %s->data.ptr));\n}\n",
+		preName, preName, preName, i1, iopPrefix, preName, preName)
 	return nil
 }
 

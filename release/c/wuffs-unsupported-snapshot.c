@@ -22698,7 +22698,7 @@ wuffs_bmp__decoder__decode_image_config(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -23573,7 +23573,7 @@ wuffs_bmp__decoder__decode_image_config(
 
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -23615,7 +23615,7 @@ wuffs_bmp__decoder__decode_frame_config(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -23682,7 +23682,7 @@ wuffs_bmp__decoder__decode_frame_config(
 
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -23729,7 +23729,7 @@ wuffs_bmp__decoder__decode_frame(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -23866,7 +23866,7 @@ wuffs_bmp__decoder__decode_frame(
 
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -23899,7 +23899,7 @@ wuffs_bmp__decoder__swizzle_none(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -23969,7 +23969,7 @@ wuffs_bmp__decoder__swizzle_none(
   ok:
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -24006,7 +24006,7 @@ wuffs_bmp__decoder__swizzle_rle(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -24231,7 +24231,7 @@ wuffs_bmp__decoder__swizzle_rle(
   ok:
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -24268,7 +24268,7 @@ wuffs_bmp__decoder__swizzle_bitfields(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -24371,7 +24371,7 @@ wuffs_bmp__decoder__swizzle_bitfields(
   ok:
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -24404,7 +24404,7 @@ wuffs_bmp__decoder__swizzle_low_bit_depth(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -24539,7 +24539,7 @@ wuffs_bmp__decoder__swizzle_low_bit_depth(
   ok:
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -24742,7 +24742,7 @@ wuffs_bmp__decoder__read_palette(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -24856,7 +24856,7 @@ wuffs_bmp__decoder__read_palette(
 
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -25174,7 +25174,7 @@ wuffs_bzip2__decoder__transform_io(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -25388,7 +25388,7 @@ wuffs_bzip2__decoder__transform_io(
 
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -25418,7 +25418,7 @@ wuffs_bzip2__decoder__prepare_block(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -25712,7 +25712,7 @@ wuffs_bzip2__decoder__prepare_block(
 
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -25735,7 +25735,7 @@ wuffs_bzip2__decoder__read_code_lengths(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -25840,7 +25840,7 @@ wuffs_bzip2__decoder__read_code_lengths(
 
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -26013,7 +26013,7 @@ wuffs_bzip2__decoder__flush_fast(
   uint8_t* io0_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io1_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io2_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_dst) {
+  if (a_dst && a_dst->data.ptr) {
     io0_a_dst = a_dst->data.ptr;
     io1_a_dst = io0_a_dst + a_dst->meta.wi;
     iop_a_dst = io1_a_dst;
@@ -26066,7 +26066,7 @@ wuffs_bzip2__decoder__flush_fast(
   if (v_block_size <= 900000) {
     self->private_impl.f_block_size = v_block_size;
   }
-  if (a_dst) {
+  if (a_dst && a_dst->data.ptr) {
     a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
   }
 
@@ -26093,7 +26093,7 @@ wuffs_bzip2__decoder__flush_slow(
   uint8_t* io0_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io1_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io2_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_dst) {
+  if (a_dst && a_dst->data.ptr) {
     io0_a_dst = a_dst->data.ptr;
     io1_a_dst = io0_a_dst + a_dst->meta.wi;
     iop_a_dst = io1_a_dst;
@@ -26187,7 +26187,7 @@ wuffs_bzip2__decoder__flush_slow(
 
   goto exit;
   exit:
-  if (a_dst) {
+  if (a_dst && a_dst->data.ptr) {
     a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
   }
 
@@ -26222,7 +26222,7 @@ wuffs_bzip2__decoder__decode_huffman_fast(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -26317,7 +26317,7 @@ wuffs_bzip2__decoder__decode_huffman_fast(
   ok:
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -26346,7 +26346,7 @@ wuffs_bzip2__decoder__decode_huffman_slow(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -26450,7 +26450,7 @@ wuffs_bzip2__decoder__decode_huffman_slow(
 
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -26647,7 +26647,7 @@ wuffs_cbor__decoder__decode_tokens(
   wuffs_base__token* io0_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   wuffs_base__token* io1_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   wuffs_base__token* io2_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_dst) {
+  if (a_dst && a_dst->data.ptr) {
     io0_a_dst = a_dst->data.ptr;
     io1_a_dst = io0_a_dst + a_dst->meta.wi;
     iop_a_dst = io1_a_dst;
@@ -26660,7 +26660,7 @@ wuffs_cbor__decoder__decode_tokens(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -27184,10 +27184,10 @@ wuffs_cbor__decoder__decode_tokens(
 
   goto exit;
   exit:
-  if (a_dst) {
+  if (a_dst && a_dst->data.ptr) {
     a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
   }
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -28681,7 +28681,7 @@ wuffs_deflate__decoder__transform_io(
   uint8_t* io0_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io1_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io2_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_dst) {
+  if (a_dst && a_dst->data.ptr) {
     io0_a_dst = a_dst->data.ptr;
     io1_a_dst = io0_a_dst + a_dst->meta.wi;
     iop_a_dst = io1_a_dst;
@@ -28740,7 +28740,7 @@ wuffs_deflate__decoder__transform_io(
 
   goto exit;
   exit:
-  if (a_dst) {
+  if (a_dst && a_dst->data.ptr) {
     a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
   }
 
@@ -28768,7 +28768,7 @@ wuffs_deflate__decoder__decode_blocks(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -28897,7 +28897,7 @@ wuffs_deflate__decoder__decode_blocks(
 
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -28920,7 +28920,7 @@ wuffs_deflate__decoder__decode_uncompressed(
   uint8_t* io0_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io1_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io2_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_dst) {
+  if (a_dst && a_dst->data.ptr) {
     io0_a_dst = a_dst->data.ptr;
     io1_a_dst = io0_a_dst + a_dst->meta.wi;
     iop_a_dst = io1_a_dst;
@@ -28933,7 +28933,7 @@ wuffs_deflate__decoder__decode_uncompressed(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -29016,10 +29016,10 @@ wuffs_deflate__decoder__decode_uncompressed(
 
   goto exit;
   exit:
-  if (a_dst) {
+  if (a_dst && a_dst->data.ptr) {
     a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
   }
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -29103,7 +29103,7 @@ wuffs_deflate__decoder__init_dynamic_huffman(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -29324,7 +29324,7 @@ wuffs_deflate__decoder__init_dynamic_huffman(
 
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -29617,7 +29617,7 @@ wuffs_deflate__decoder__decode_huffman_bmi2(
   uint8_t* io0_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io1_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io2_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_dst) {
+  if (a_dst && a_dst->data.ptr) {
     io0_a_dst = a_dst->data.ptr;
     io1_a_dst = io0_a_dst + a_dst->meta.wi;
     iop_a_dst = io1_a_dst;
@@ -29630,7 +29630,7 @@ wuffs_deflate__decoder__decode_huffman_bmi2(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -29791,10 +29791,10 @@ wuffs_deflate__decoder__decode_huffman_bmi2(
   }
   goto exit;
   exit:
-  if (a_dst) {
+  if (a_dst && a_dst->data.ptr) {
     a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
   }
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -29830,7 +29830,7 @@ wuffs_deflate__decoder__decode_huffman_fast32(
   uint8_t* io0_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io1_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io2_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_dst) {
+  if (a_dst && a_dst->data.ptr) {
     io0_a_dst = a_dst->data.ptr;
     io1_a_dst = io0_a_dst + a_dst->meta.wi;
     iop_a_dst = io1_a_dst;
@@ -29843,7 +29843,7 @@ wuffs_deflate__decoder__decode_huffman_fast32(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -30049,10 +30049,10 @@ wuffs_deflate__decoder__decode_huffman_fast32(
   }
   goto exit;
   exit:
-  if (a_dst) {
+  if (a_dst && a_dst->data.ptr) {
     a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
   }
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -30094,7 +30094,7 @@ wuffs_deflate__decoder__decode_huffman_fast64__choosy_default(
   uint8_t* io0_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io1_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io2_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_dst) {
+  if (a_dst && a_dst->data.ptr) {
     io0_a_dst = a_dst->data.ptr;
     io1_a_dst = io0_a_dst + a_dst->meta.wi;
     iop_a_dst = io1_a_dst;
@@ -30107,7 +30107,7 @@ wuffs_deflate__decoder__decode_huffman_fast64__choosy_default(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -30268,10 +30268,10 @@ wuffs_deflate__decoder__decode_huffman_fast64__choosy_default(
   }
   goto exit;
   exit:
-  if (a_dst) {
+  if (a_dst && a_dst->data.ptr) {
     a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
   }
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -30311,7 +30311,7 @@ wuffs_deflate__decoder__decode_huffman_slow(
   uint8_t* io0_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io1_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io2_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_dst) {
+  if (a_dst && a_dst->data.ptr) {
     io0_a_dst = a_dst->data.ptr;
     io1_a_dst = io0_a_dst + a_dst->meta.wi;
     iop_a_dst = io1_a_dst;
@@ -30324,7 +30324,7 @@ wuffs_deflate__decoder__decode_huffman_slow(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -30603,10 +30603,10 @@ wuffs_deflate__decoder__decode_huffman_slow(
 
   goto exit;
   exit:
-  if (a_dst) {
+  if (a_dst && a_dst->data.ptr) {
     a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
   }
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -30895,7 +30895,7 @@ wuffs_lzw__decoder__read_from(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -31037,7 +31037,7 @@ wuffs_lzw__decoder__read_from(
   self->private_impl.f_bits = v_bits;
   self->private_impl.f_n_bits = v_n_bits;
   self->private_impl.f_output_wi = v_output_wi;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -31059,7 +31059,7 @@ wuffs_lzw__decoder__write_to(
   uint8_t* io0_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io1_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io2_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_dst) {
+  if (a_dst && a_dst->data.ptr) {
     io0_a_dst = a_dst->data.ptr;
     io1_a_dst = io0_a_dst + a_dst->meta.wi;
     iop_a_dst = io1_a_dst;
@@ -31104,7 +31104,7 @@ wuffs_lzw__decoder__write_to(
 
   goto exit;
   exit:
-  if (a_dst) {
+  if (a_dst && a_dst->data.ptr) {
     a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
   }
 
@@ -31562,7 +31562,7 @@ wuffs_gif__decoder__tell_me_more(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -31662,7 +31662,7 @@ wuffs_gif__decoder__tell_me_more(
 
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -31828,7 +31828,7 @@ wuffs_gif__decoder__decode_frame_config(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -31947,7 +31947,7 @@ wuffs_gif__decoder__decode_frame_config(
 
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -31972,7 +31972,7 @@ wuffs_gif__decoder__skip_frame(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -32047,7 +32047,7 @@ wuffs_gif__decoder__skip_frame(
 
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -32162,7 +32162,7 @@ wuffs_gif__decoder__decode_up_to_id_part1(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -32238,7 +32238,7 @@ wuffs_gif__decoder__decode_up_to_id_part1(
 
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -32260,7 +32260,7 @@ wuffs_gif__decoder__decode_header(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -32311,7 +32311,7 @@ wuffs_gif__decoder__decode_header(
 
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -32337,7 +32337,7 @@ wuffs_gif__decoder__decode_lsd(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -32513,7 +32513,7 @@ wuffs_gif__decoder__decode_lsd(
 
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -32534,7 +32534,7 @@ wuffs_gif__decoder__decode_extension(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -32606,7 +32606,7 @@ wuffs_gif__decoder__decode_extension(
 
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -32627,7 +32627,7 @@ wuffs_gif__decoder__skip_blocks(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -32674,7 +32674,7 @@ wuffs_gif__decoder__skip_blocks(
 
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -32700,7 +32700,7 @@ wuffs_gif__decoder__decode_ae(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -32897,7 +32897,7 @@ wuffs_gif__decoder__decode_ae(
 
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -32920,7 +32920,7 @@ wuffs_gif__decoder__decode_gc(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -33027,7 +33027,7 @@ wuffs_gif__decoder__decode_gc(
 
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -33046,7 +33046,7 @@ wuffs_gif__decoder__decode_id_part0(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -33194,7 +33194,7 @@ wuffs_gif__decoder__decode_id_part0(
 
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -33223,7 +33223,7 @@ wuffs_gif__decoder__decode_id_part1(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -33365,7 +33365,7 @@ wuffs_gif__decoder__decode_id_part1(
 
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -33403,7 +33403,7 @@ wuffs_gif__decoder__decode_id_part2(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -33593,7 +33593,7 @@ wuffs_gif__decoder__decode_id_part2(
 
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -33920,7 +33920,7 @@ wuffs_gzip__decoder__transform_io(
   uint8_t* io0_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io1_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io2_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_dst) {
+  if (a_dst && a_dst->data.ptr) {
     io0_a_dst = a_dst->data.ptr;
     io1_a_dst = io0_a_dst + a_dst->meta.wi;
     iop_a_dst = io1_a_dst;
@@ -33933,7 +33933,7 @@ wuffs_gzip__decoder__transform_io(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -34204,10 +34204,10 @@ wuffs_gzip__decoder__transform_io(
 
   goto exit;
   exit:
-  if (a_dst) {
+  if (a_dst && a_dst->data.ptr) {
     a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
   }
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -34697,7 +34697,7 @@ wuffs_json__decoder__decode_tokens(
   wuffs_base__token* io0_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   wuffs_base__token* io1_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   wuffs_base__token* io2_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_dst) {
+  if (a_dst && a_dst->data.ptr) {
     io0_a_dst = a_dst->data.ptr;
     io1_a_dst = io0_a_dst + a_dst->meta.wi;
     iop_a_dst = io1_a_dst;
@@ -34710,7 +34710,7 @@ wuffs_json__decoder__decode_tokens(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -35640,10 +35640,10 @@ wuffs_json__decoder__decode_tokens(
 
   goto exit;
   exit:
-  if (a_dst) {
+  if (a_dst && a_dst->data.ptr) {
     a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
   }
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -35667,7 +35667,7 @@ wuffs_json__decoder__decode_number(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -35782,7 +35782,7 @@ wuffs_json__decoder__decode_number(
     goto label__goto_done__break;
   }
   label__goto_done__break:;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
   return (v_n | v_floating_point);
@@ -35802,7 +35802,7 @@ wuffs_json__decoder__decode_digits(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -35832,7 +35832,7 @@ wuffs_json__decoder__decode_digits(
   if (v_n == a_n) {
     v_n |= 256;
   }
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
   return v_n;
@@ -35854,7 +35854,7 @@ wuffs_json__decoder__decode_leading(
   wuffs_base__token* io0_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   wuffs_base__token* io1_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   wuffs_base__token* io2_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_dst) {
+  if (a_dst && a_dst->data.ptr) {
     io0_a_dst = a_dst->data.ptr;
     io1_a_dst = io0_a_dst + a_dst->meta.wi;
     iop_a_dst = io1_a_dst;
@@ -35867,7 +35867,7 @@ wuffs_json__decoder__decode_leading(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -35937,10 +35937,10 @@ wuffs_json__decoder__decode_leading(
 
   goto exit;
   exit:
-  if (a_dst) {
+  if (a_dst && a_dst->data.ptr) {
     a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
   }
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -35964,7 +35964,7 @@ wuffs_json__decoder__decode_comment(
   wuffs_base__token* io0_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   wuffs_base__token* io1_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   wuffs_base__token* io2_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_dst) {
+  if (a_dst && a_dst->data.ptr) {
     io0_a_dst = a_dst->data.ptr;
     io1_a_dst = io0_a_dst + a_dst->meta.wi;
     iop_a_dst = io1_a_dst;
@@ -35977,7 +35977,7 @@ wuffs_json__decoder__decode_comment(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -36119,10 +36119,10 @@ wuffs_json__decoder__decode_comment(
 
   goto exit;
   exit:
-  if (a_dst) {
+  if (a_dst && a_dst->data.ptr) {
     a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
   }
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -36145,7 +36145,7 @@ wuffs_json__decoder__decode_inf_nan(
   wuffs_base__token* io0_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   wuffs_base__token* io1_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   wuffs_base__token* io2_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_dst) {
+  if (a_dst && a_dst->data.ptr) {
     io0_a_dst = a_dst->data.ptr;
     io1_a_dst = io0_a_dst + a_dst->meta.wi;
     iop_a_dst = io1_a_dst;
@@ -36158,7 +36158,7 @@ wuffs_json__decoder__decode_inf_nan(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -36276,10 +36276,10 @@ wuffs_json__decoder__decode_inf_nan(
 
   goto exit;
   exit:
-  if (a_dst) {
+  if (a_dst && a_dst->data.ptr) {
     a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
   }
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -36302,7 +36302,7 @@ wuffs_json__decoder__decode_trailer(
   wuffs_base__token* io0_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   wuffs_base__token* io1_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   wuffs_base__token* io2_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_dst) {
+  if (a_dst && a_dst->data.ptr) {
     io0_a_dst = a_dst->data.ptr;
     io1_a_dst = io0_a_dst + a_dst->meta.wi;
     iop_a_dst = io1_a_dst;
@@ -36315,7 +36315,7 @@ wuffs_json__decoder__decode_trailer(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -36414,10 +36414,10 @@ wuffs_json__decoder__decode_trailer(
 
   goto exit;
   exit:
-  if (a_dst) {
+  if (a_dst && a_dst->data.ptr) {
     a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
   }
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -36597,7 +36597,7 @@ wuffs_nie__decoder__decode_image_config(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -36781,7 +36781,7 @@ wuffs_nie__decoder__decode_image_config(
 
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -36823,7 +36823,7 @@ wuffs_nie__decoder__decode_frame_config(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -36890,7 +36890,7 @@ wuffs_nie__decoder__decode_frame_config(
 
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -37026,7 +37026,7 @@ wuffs_nie__decoder__swizzle(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -37078,7 +37078,7 @@ wuffs_nie__decoder__swizzle(
   ok:
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -37504,7 +37504,7 @@ wuffs_zlib__decoder__transform_io(
   uint8_t* io0_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io1_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io2_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_dst) {
+  if (a_dst && a_dst->data.ptr) {
     io0_a_dst = a_dst->data.ptr;
     io1_a_dst = io0_a_dst + a_dst->meta.wi;
     iop_a_dst = io1_a_dst;
@@ -37517,7 +37517,7 @@ wuffs_zlib__decoder__transform_io(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -37701,10 +37701,10 @@ wuffs_zlib__decoder__transform_io(
 
   goto exit;
   exit:
-  if (a_dst) {
+  if (a_dst && a_dst->data.ptr) {
     a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
   }
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -39636,7 +39636,7 @@ wuffs_png__decoder__decode_image_config(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -39928,7 +39928,7 @@ wuffs_png__decoder__decode_image_config(
 
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -39953,7 +39953,7 @@ wuffs_png__decoder__decode_ihdr(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -40132,7 +40132,7 @@ wuffs_png__decoder__decode_ihdr(
 
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -40301,7 +40301,7 @@ wuffs_png__decoder__decode_other_chunk(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -40521,7 +40521,7 @@ wuffs_png__decoder__decode_other_chunk(
 
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -40540,7 +40540,7 @@ wuffs_png__decoder__decode_actl(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -40634,7 +40634,7 @@ wuffs_png__decoder__decode_actl(
 
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -40655,7 +40655,7 @@ wuffs_png__decoder__decode_chrm(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -40931,7 +40931,7 @@ wuffs_png__decoder__decode_chrm(
 
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -40950,7 +40950,7 @@ wuffs_png__decoder__decode_exif(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -40972,7 +40972,7 @@ wuffs_png__decoder__decode_exif(
   ok:
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -40996,7 +40996,7 @@ wuffs_png__decoder__decode_fctl(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -41309,7 +41309,7 @@ wuffs_png__decoder__decode_fctl(
 
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -41328,7 +41328,7 @@ wuffs_png__decoder__decode_gama(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -41390,7 +41390,7 @@ wuffs_png__decoder__decode_gama(
 
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -41411,7 +41411,7 @@ wuffs_png__decoder__decode_iccp(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -41479,7 +41479,7 @@ wuffs_png__decoder__decode_iccp(
 
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -41502,7 +41502,7 @@ wuffs_png__decoder__decode_plte(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -41582,7 +41582,7 @@ wuffs_png__decoder__decode_plte(
 
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -41601,7 +41601,7 @@ wuffs_png__decoder__decode_srgb(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -41643,7 +41643,7 @@ wuffs_png__decoder__decode_srgb(
 
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -41666,7 +41666,7 @@ wuffs_png__decoder__decode_trns(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -41828,7 +41828,7 @@ wuffs_png__decoder__decode_trns(
 
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -41869,7 +41869,7 @@ wuffs_png__decoder__decode_frame_config(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -42119,7 +42119,7 @@ wuffs_png__decoder__decode_frame_config(
 
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -42143,7 +42143,7 @@ wuffs_png__decoder__skip_frame(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -42274,7 +42274,7 @@ wuffs_png__decoder__skip_frame(
 
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -42321,7 +42321,7 @@ wuffs_png__decoder__decode_frame(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -42544,7 +42544,7 @@ wuffs_png__decoder__decode_frame(
 
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -42580,7 +42580,7 @@ wuffs_png__decoder__decode_pass(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -42886,7 +42886,7 @@ wuffs_png__decoder__decode_pass(
 
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -43069,7 +43069,7 @@ wuffs_png__decoder__tell_me_more(
   uint8_t* io0_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io1_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io2_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_dst) {
+  if (a_dst && a_dst->data.ptr) {
     io0_a_dst = a_dst->data.ptr;
     io1_a_dst = io0_a_dst + a_dst->meta.wi;
     iop_a_dst = io1_a_dst;
@@ -43082,7 +43082,7 @@ wuffs_png__decoder__tell_me_more(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -43533,10 +43533,10 @@ wuffs_png__decoder__tell_me_more(
 
   goto exit;
   exit:
-  if (a_dst) {
+  if (a_dst && a_dst->data.ptr) {
     a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
   }
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -44094,7 +44094,7 @@ wuffs_tga__decoder__decode_image_config(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -44523,7 +44523,7 @@ wuffs_tga__decoder__decode_image_config(
 
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -44565,7 +44565,7 @@ wuffs_tga__decoder__decode_frame_config(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -44632,7 +44632,7 @@ wuffs_tga__decoder__decode_frame_config(
 
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -44698,7 +44698,7 @@ wuffs_tga__decoder__decode_frame(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -44980,7 +44980,7 @@ wuffs_tga__decoder__decode_frame(
 
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -45328,7 +45328,7 @@ wuffs_wbmp__decoder__decode_image_config(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -45424,7 +45424,7 @@ wuffs_wbmp__decoder__decode_image_config(
 
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -45466,7 +45466,7 @@ wuffs_wbmp__decoder__decode_frame_config(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -45533,7 +45533,7 @@ wuffs_wbmp__decoder__decode_frame_config(
 
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
@@ -45590,7 +45590,7 @@ wuffs_wbmp__decoder__decode_frame(
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     io0_a_src = a_src->data.ptr;
     io1_a_src = io0_a_src + a_src->meta.ri;
     iop_a_src = io1_a_src;
@@ -45702,7 +45702,7 @@ wuffs_wbmp__decoder__decode_frame(
 
   goto exit;
   exit:
-  if (a_src) {
+  if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
