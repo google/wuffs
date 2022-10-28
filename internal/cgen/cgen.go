@@ -76,15 +76,16 @@ const (
 //
 // At the start of a function, these pointers are initialized from an
 // io_buffer's fields (ptr, ri, wi, len). For an io_reader:
-//  - io0_etc = ptr
-//  - io1_etc = ptr + ri
-//  - iop_etc = ptr + ri
-//  - io2_etc = ptr + wi
+//   - io0_etc = ptr
+//   - io1_etc = ptr + ri
+//   - iop_etc = ptr + ri
+//   - io2_etc = ptr + wi
+//
 // and for an io_writer:
-//  - io0_etc = ptr
-//  - io1_etc = ptr + wi
-//  - iop_etc = ptr + wi
-//  - io2_etc = ptr + len
+//   - io0_etc = ptr
+//   - io1_etc = ptr + wi
+//   - iop_etc = ptr + wi
+//   - io2_etc = ptr + len
 const (
 	io0Prefix = "io0_" // Base.
 	io1Prefix = "io1_" // Lower bound.
@@ -674,6 +675,7 @@ func (g *gen) genIncludes(b *buffer) error {
 	b.writes("#if defined(WUFFS_IMPLEMENTATION) && !defined(WUFFS_CONFIG__MODULES)\n")
 	b.writes("#define WUFFS_CONFIG__MODULES\n")
 	b.printf("#define WUFFS_CONFIG__MODULE__%s\n", g.PKGNAME)
+	b.writes("#define WUFFS_NONMONOLITHIC\n")
 	b.writes("#endif\n\n")
 
 	usesList := []string(nil)
@@ -709,7 +711,10 @@ func (g *gen) genIncludes(b *buffer) error {
 }
 
 func (g *gen) genHeader(b *buffer) error {
-	b.writes("\n")
+	module := "!defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__" + g.PKGNAME +
+		") || defined(WUFFS_NONMONOLITHIC)"
+	b.printf("#if %s\n\n", module)
+
 	b.writes("// ---------------- Status Codes\n\n")
 
 	wroteStatus := false
@@ -813,6 +818,7 @@ func (g *gen) genHeader(b *buffer) error {
 	}
 	b.writes("#endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)\n\n")
 
+	b.printf("#endif  // %s\n", module)
 	return nil
 }
 
@@ -872,7 +878,7 @@ func (g *gen) genImpl(b *buffer) error {
 		return err
 	}
 
-	b.printf("#endif  // %s\n\n", module)
+	b.printf("#endif  // %s\n", module)
 	return nil
 }
 

@@ -6344,6 +6344,8 @@ struct wuffs_base__token_decoder__struct {
 }  // extern "C"
 #endif
 
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__ADLER32) || defined(WUFFS_NONMONOLITHIC)
+
 // ---------------- Status Codes
 
 // ---------------- Public Consts
@@ -6525,6 +6527,10 @@ struct wuffs_adler32__hasher__struct {
 };  // struct wuffs_adler32__hasher__struct
 
 #endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
+
+#endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__ADLER32) || defined(WUFFS_NONMONOLITHIC)
+
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BMP) || defined(WUFFS_NONMONOLITHIC)
 
 // ---------------- Status Codes
 
@@ -6874,6 +6880,10 @@ struct wuffs_bmp__decoder__struct {
 
 #endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
+#endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BMP) || defined(WUFFS_NONMONOLITHIC)
+
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BZIP2) || defined(WUFFS_NONMONOLITHIC)
+
 // ---------------- Status Codes
 
 extern const char wuffs_bzip2__error__bad_huffman_code_over_subscribed[];
@@ -7138,6 +7148,10 @@ struct wuffs_bzip2__decoder__struct {
 
 #endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
+#endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BZIP2) || defined(WUFFS_NONMONOLITHIC)
+
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__CBOR) || defined(WUFFS_NONMONOLITHIC)
+
 // ---------------- Status Codes
 
 extern const char wuffs_cbor__error__bad_input[];
@@ -7363,6 +7377,10 @@ struct wuffs_cbor__decoder__struct {
 
 #endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
+#endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__CBOR) || defined(WUFFS_NONMONOLITHIC)
+
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__CRC32) || defined(WUFFS_NONMONOLITHIC)
+
 // ---------------- Status Codes
 
 // ---------------- Public Consts
@@ -7543,6 +7561,10 @@ struct wuffs_crc32__ieee_hasher__struct {
 };  // struct wuffs_crc32__ieee_hasher__struct
 
 #endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
+
+#endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__CRC32) || defined(WUFFS_NONMONOLITHIC)
+
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__DEFLATE) || defined(WUFFS_NONMONOLITHIC)
 
 // ---------------- Status Codes
 
@@ -7814,6 +7836,10 @@ struct wuffs_deflate__decoder__struct {
 
 #endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
+#endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__DEFLATE) || defined(WUFFS_NONMONOLITHIC)
+
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__LZW) || defined(WUFFS_NONMONOLITHIC)
+
 // ---------------- Status Codes
 
 extern const char wuffs_lzw__error__bad_code[];
@@ -8048,6 +8074,10 @@ struct wuffs_lzw__decoder__struct {
 };  // struct wuffs_lzw__decoder__struct
 
 #endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
+
+#endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__LZW) || defined(WUFFS_NONMONOLITHIC)
+
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__GIF) || defined(WUFFS_NONMONOLITHIC)
 
 // ---------------- Status Codes
 
@@ -8471,6 +8501,10 @@ struct wuffs_gif__decoder__struct {
 
 #endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
+#endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__GIF) || defined(WUFFS_NONMONOLITHIC)
+
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__GZIP) || defined(WUFFS_NONMONOLITHIC)
+
 // ---------------- Status Codes
 
 extern const char wuffs_gzip__error__bad_checksum[];
@@ -8682,6 +8716,10 @@ struct wuffs_gzip__decoder__struct {
 };  // struct wuffs_gzip__decoder__struct
 
 #endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
+
+#endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__GZIP) || defined(WUFFS_NONMONOLITHIC)
+
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__JSON) || defined(WUFFS_NONMONOLITHIC)
 
 // ---------------- Status Codes
 
@@ -8950,6 +8988,10 @@ struct wuffs_json__decoder__struct {
 };  // struct wuffs_json__decoder__struct
 
 #endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
+
+#endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__JSON) || defined(WUFFS_NONMONOLITHIC)
+
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__NIE) || defined(WUFFS_NONMONOLITHIC)
 
 // ---------------- Status Codes
 
@@ -9269,6 +9311,10 @@ struct wuffs_nie__decoder__struct {
 
 #endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
+#endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__NIE) || defined(WUFFS_NONMONOLITHIC)
+
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__ZLIB) || defined(WUFFS_NONMONOLITHIC)
+
 // ---------------- Status Codes
 
 extern const char wuffs_zlib__note__dictionary_required[];
@@ -9509,6 +9555,10 @@ struct wuffs_zlib__decoder__struct {
 };  // struct wuffs_zlib__decoder__struct
 
 #endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
+
+#endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__ZLIB) || defined(WUFFS_NONMONOLITHIC)
+
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__PNG) || defined(WUFFS_NONMONOLITHIC)
 
 // ---------------- Status Codes
 
@@ -9980,6 +10030,10 @@ struct wuffs_png__decoder__struct {
 
 #endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
+#endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__PNG) || defined(WUFFS_NONMONOLITHIC)
+
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__TGA) || defined(WUFFS_NONMONOLITHIC)
+
 // ---------------- Status Codes
 
 extern const char wuffs_tga__error__bad_header[];
@@ -10325,6 +10379,10 @@ struct wuffs_tga__decoder__struct {
 
 #endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
+#endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__TGA) || defined(WUFFS_NONMONOLITHIC)
+
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__WBMP) || defined(WUFFS_NONMONOLITHIC)
+
 // ---------------- Status Codes
 
 extern const char wuffs_wbmp__error__bad_header[];
@@ -10647,6 +10705,8 @@ struct wuffs_wbmp__decoder__struct {
 };  // struct wuffs_wbmp__decoder__struct
 
 #endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
+
+#endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__WBMP) || defined(WUFFS_NONMONOLITHIC)
 
 #if defined(__cplusplus) && defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 

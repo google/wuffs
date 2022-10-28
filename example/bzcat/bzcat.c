@@ -78,7 +78,7 @@ for a C compiler $CC, such as clang or gcc.
 #endif
 
 #define WORK_BUFFER_ARRAY_SIZE \
-  WUFFS_GZIP__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE
+  WUFFS_BZIP2__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE
 
 uint8_t g_dst_buffer_array[DST_BUFFER_ARRAY_SIZE];
 uint8_t g_src_buffer_array[SRC_BUFFER_ARRAY_SIZE];
