@@ -215,10 +215,8 @@ flush_dst() {
     if (n == 0) {
       break;
     }
-    ssize_t i = fwrite(g_dst.reader_pointer(), 1, n, stdout);
-    if (i >= 0) {
-      g_dst.meta.ri += i;
-    }
+    size_t i = fwrite(g_dst.reader_pointer(), 1, n, stdout);
+    g_dst.meta.ri += i;
     if (i < n) {
       return "main: error writing to stdout";
     }
