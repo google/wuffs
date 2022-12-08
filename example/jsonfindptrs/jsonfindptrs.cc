@@ -479,7 +479,7 @@ class Callbacks : public wuffs_aux::DecodeJsonCallbacks {
         top.has_map_key = false;
         auto iter = jmap.find(top.map_key);
         if (iter != jmap.end()) {
-          return "main: duplicate key: " + top.map_key;
+          return "main: duplicate key: key=" + top.map_key;
         }
         jmap.insert(iter, JsonMap::value_type(std::move(top.map_key),
                                               std::move(jvalue)));
@@ -593,6 +593,9 @@ compute_exit_code(std::string status_msg) {
   // (other non-zero exit codes). Specifically, exit code 2 for internal
   // invariant violation, exit code 139 (which is 128 + SIGSEGV on x86_64
   // linux) for a segmentation fault (e.g. null pointer dereference).
+  if (size_t i = status_msg.find('='); i != std::string::npos) {
+    status_msg = status_msg.substr(0, i);
+  }
   return (status_msg.find("internal error:") != std::string::npos) ? 2 : 1;
 }
 
