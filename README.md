@@ -5,16 +5,17 @@ written in that language) for **Wrangling Untrusted File Formats Safely**.
 Wrangling includes parsing, decoding and encoding. Example file formats include
 images, audio, video, fonts and compressed archives.
 
-It is **fast**. Per its [benchmarks](/doc/benchmarks.md) and other docs:
+It is **fast**. Per its [benchmarks](/doc/benchmarks.md) and other linked-to
+blog posts:
 
 - It can decode bzip2 **[1.3x faster than `/usr/bin/bzcat`
   (C)](https://nigeltao.github.io/blog/2022/wuffs-bzip2-decoder.html)**.
-- It can decode deflate up to **1.4x faster [than zlib-the-library (C)**.
+- It can decode deflate up to **1.4x faster than zlib-the-library (C)**.
 - It can decode GIF **2x-6x faster than "giflib" (C), "image/gif" (Go) and
   "gif" (Rust)**.
-- It can decode PNG **[1.2x-2.7x faster than "libpng"
-  (C)](https://nigeltao.github.io/blog/2021/fastest-safest-png-decoder.html),
-  "image/png" (Go) and "png" (Rust)**.
+- It can decode PNG **[1.2x-2.7x faster than "libpng" (C), "image/png" (Go) and
+  "png"
+  (Rust)](https://nigeltao.github.io/blog/2021/fastest-safest-png-decoder.html)**.
 
 
 ## Goals and Non-Goals
