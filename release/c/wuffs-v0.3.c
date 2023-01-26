@@ -85,15 +85,15 @@ extern "C" {
 // each major.minor branch, the commit count should increase monotonically.
 //
 // WUFFS_VERSION was overridden by "wuffs gen -version" based on revision
-// c27250f52fcfb936d4f0410d1199fe24c04b9713 committed on 2022-10-28.
+// c698d81b4d6868f3c5e26d2d7c3b39fe97209ec0 committed on 2023-01-26.
 #define WUFFS_VERSION 0x000030000
 #define WUFFS_VERSION_MAJOR 0
 #define WUFFS_VERSION_MINOR 3
 #define WUFFS_VERSION_PATCH 0
-#define WUFFS_VERSION_PRE_RELEASE_LABEL "rc.3"
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 3369
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20221028
-#define WUFFS_VERSION_STRING "0.3.0-rc.3+3369.20221028"
+#define WUFFS_VERSION_PRE_RELEASE_LABEL ""
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 3374
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20230126
+#define WUFFS_VERSION_STRING "0.3.0+3374.20230126"
 
 // ---------------- Configuration
 
