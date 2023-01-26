@@ -1,7 +1,16 @@
 # Changelog
 
 
-## Work In Progress
+## 2023-01-26 version 0.3.0
+
+The headline feature is that we have a production quality PNG decoder. It's
+also [the fastest, safest PNG decoder in the
+world](https://nigeltao.github.io/blog/2021/fastest-safest-png-decoder.html).
+There's also a [memory-safe, zero-allocation JSON
+decoder](https://nigeltao.github.io/blog/2020/jsonptr.html).
+
+The dot points below probably aren't of interest unless you're upgrading from
+Wuffs version 0.2.
 
 - Added `0b` prefixed binary numbers.
 - Added `WUFFS_BASE__PIXEL_BLEND__SRC_OVER`.
@@ -14,6 +23,7 @@
 - Added `cpu_arch`.
 - Added `doc/logo`.
 - Added `endwhile` syntax.
+- Added `example/bzcat`.
 - Added `example/cbor-to-json`.
 - Added `example/convert-to-nia`.
 - Added `example/imageviewer`.
@@ -37,7 +47,6 @@
 - Added double-curly blocks.
 - Added interfaces.
 - Added iterate advance parameter.
-- Added preprocessor.
 - Added single-quoted strings.
 - Added slice `uintptr_low_12_bits` method.
 - Added tokens.
@@ -156,4 +165,4 @@ Wuffs version 0.1.
 
 ---
 
-Updated on January 2020.
+Updated on January 2023.

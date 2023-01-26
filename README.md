@@ -1,17 +1,20 @@
 ![WUFFS Logo](./doc/logo/wuffs-acronym-logo-1536x1024.png)
 
-Wuffs (Wrangling Untrusted File Formats Safely) is [formerly known as
-Puffs](https://groups.google.com/d/topic/puffslang/ZX-ymyf8xh0/discussion)
-(Parsing Untrusted File Formats Safely).
-
 Wuffs is a **memory-safe programming language** (and a **standard library**
-written in that language) for wrangling **untrusted file formats** safely.
+written in that language) for **Wrangling Untrusted File Formats Safely**.
 Wrangling includes parsing, decoding and encoding. Example file formats include
 images, audio, video, fonts and compressed archives.
 
-It is also **fast**. On many of its GIF decoding
-[benchmarks](/doc/benchmarks.md), Wuffs measures **2x faster than "giflib" (C),
-3x faster than "image/gif" (Go) and 7x faster than "gif" (Rust)**.
+It is **fast**. Per its [benchmarks](/doc/benchmarks.md) and other docs:
+
+- It can decode bzip2 **[1.3x faster than `/usr/bin/bzcat`
+  (C)](https://nigeltao.github.io/blog/2022/wuffs-bzip2-decoder.html)**.
+- It can decode deflate up to **1.4x faster [than zlib-the-library (C)**.
+- It can decode GIF **2x-6x faster than "giflib" (C), "image/gif" (Go) and
+  "gif" (Rust)**.
+- It can decode PNG **[1.2x-2.7x faster than "libpng"
+  (C)](https://nigeltao.github.io/blog/2021/fastest-safest-png-decoder.html),
+  "image/png" (Go) and "png" (Rust)**.
 
 
 ## Goals and Non-Goals
@@ -44,11 +47,21 @@ the increment would otherwise overflow. Similarly, an integer arithmetic
 expression like `x / y` is a compile time error unless the compiler can also
 prove that `y` is not zero.
 
+
+## Hermeticity
+
 Wuffs is not a general purpose programming language. **It is for writing
-libraries, not programs**. The idea isn't to write your whole program in Wuffs,
-only the **parts that are both performance-conscious and security-conscious**.
-For example, while technically possible, it is unlikely that a Wuffs compiler
-would be worth writing entirely in Wuffs.
+libraries, not programs**. Wuffs code is [hermetic](/doc/note/hermeticity.md)
+and can only compute (e.g. convert "compressed bytes" to "decompressed bytes").
+**It cannot make any syscalls** (e.g. it has no ambient authority to read your
+files), implying that it cannot allocate or free memory (and is therefore
+trivially safe against things like memory leaks, use-after-frees and
+double-frees).
+
+The idea isn't to write your whole program in Wuffs, **only the parts that are
+both performance-conscious and security-conscious**. For example, while
+technically possible, it is unlikely that a Wuffs compiler would be worth
+writing entirely in Wuffs.
 
 
 ## What Does Wuffs Code Look Like?
@@ -187,11 +200,15 @@ The [Note](/doc/note) directory also contains various short articles.
 
 # Status
 
-Version 0.2. The API and ABI aren't stabilized yet. The compiler undoubtedly
+Version 0.3. The API and ABI aren't stabilized yet. The compiler undoubtedly
 has bugs. Assertion checking needs more rigor, especially around side effects
 and aliasing, and being sufficiently well specified to allow alternative
 implementations. Lots of detail needs work, but the broad brushstrokes are
 there.
+
+Nonetheless, Wuffs' GIF decoder has shipped in the Google Chrome web browser
+[since June
+2021](https://chromium-review.googlesource.com/c/chromium/src/+/2940044).
 
 
 # Discussion
@@ -223,4 +240,4 @@ owned by Google.
 
 ---
 
-Updated on December 2019.
+Updated on January 2023.
