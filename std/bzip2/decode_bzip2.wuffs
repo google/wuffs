@@ -19,6 +19,7 @@ pub status "#bad block length"
 pub status "#bad checksum"
 pub status "#bad header"
 pub status "#bad number of sections"
+pub status "#truncated input"
 pub status "#unsupported block randomization"
 
 pri status "#internal error: inconsistent Huffman decoder state"
@@ -121,6 +122,18 @@ pub func decoder.workbuf_len() base.range_ii_u64 {
 }
 
 pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf: slice base.u8) {
+	var status : base.status
+
+	while true {
+		status =? this.do_transform_io?(dst: args.dst, src: args.src, workbuf: args.workbuf)
+		if (status == base."$short read") and args.src.is_closed() {
+			return "#truncated input"
+		}
+		yield? status
+	} endwhile
+}
+
+pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, workbuf: slice base.u8) {
 	var c                   : base.u8
 	var i                   : base.u32
 	var tag                 : base.u64

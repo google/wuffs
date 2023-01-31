@@ -167,6 +167,36 @@ test_wuffs_deflate_decode_interface() {
 }
 
 const char*  //
+test_wuffs_deflate_decode_truncated_input() {
+  CHECK_FOCUS(__func__);
+
+  wuffs_base__io_buffer have = wuffs_base__ptr_u8__writer(g_have_array_u8, 1);
+  wuffs_base__io_buffer src =
+      wuffs_base__ptr_u8__reader(g_src_array_u8, 0, false);
+  wuffs_deflate__decoder dec;
+  CHECK_STATUS("initialize",
+               wuffs_deflate__decoder__initialize(
+                   &dec, sizeof dec, WUFFS_VERSION,
+                   WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+
+  wuffs_base__status status =
+      wuffs_deflate__decoder__transform_io(&dec, &have, &src, g_work_slice_u8);
+  if (status.repr != wuffs_base__suspension__short_read) {
+    RETURN_FAIL("closed=false: have \"%s\", want \"%s\"", status.repr,
+                wuffs_base__suspension__short_read);
+  }
+
+  src.meta.closed = true;
+  status =
+      wuffs_deflate__decoder__transform_io(&dec, &have, &src, g_work_slice_u8);
+  if (status.repr != wuffs_deflate__error__truncated_input) {
+    RETURN_FAIL("closed=true: have \"%s\", want \"%s\"", status.repr,
+                wuffs_deflate__error__truncated_input);
+  }
+  return NULL;
+}
+
+const char*  //
 wuffs_deflate_decode(wuffs_base__io_buffer* dst,
                      wuffs_base__io_buffer* src,
                      uint32_t wuffs_initialize_flags,
@@ -903,6 +933,7 @@ proc g_tests[] = {
     test_wuffs_deflate_decode_romeo,
     test_wuffs_deflate_decode_romeo_fixed,
     test_wuffs_deflate_decode_split_src,
+    test_wuffs_deflate_decode_truncated_input,
     test_wuffs_deflate_history_full,
     test_wuffs_deflate_history_partial,
     test_wuffs_deflate_table_redirect,

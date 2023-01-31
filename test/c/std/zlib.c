@@ -113,6 +113,36 @@ test_wuffs_zlib_decode_interface() {
 }
 
 const char*  //
+test_wuffs_zlib_decode_truncated_input() {
+  CHECK_FOCUS(__func__);
+
+  wuffs_base__io_buffer have = wuffs_base__ptr_u8__writer(g_have_array_u8, 1);
+  wuffs_base__io_buffer src =
+      wuffs_base__ptr_u8__reader(g_src_array_u8, 0, false);
+  wuffs_zlib__decoder dec;
+  CHECK_STATUS("initialize",
+               wuffs_zlib__decoder__initialize(
+                   &dec, sizeof dec, WUFFS_VERSION,
+                   WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+
+  wuffs_base__status status =
+      wuffs_zlib__decoder__transform_io(&dec, &have, &src, g_work_slice_u8);
+  if (status.repr != wuffs_base__suspension__short_read) {
+    RETURN_FAIL("closed=false: have \"%s\", want \"%s\"", status.repr,
+                wuffs_base__suspension__short_read);
+  }
+
+  src.meta.closed = true;
+  status =
+      wuffs_zlib__decoder__transform_io(&dec, &have, &src, g_work_slice_u8);
+  if (status.repr != wuffs_zlib__error__truncated_input) {
+    RETURN_FAIL("closed=true: have \"%s\", want \"%s\"", status.repr,
+                wuffs_zlib__error__truncated_input);
+  }
+  return NULL;
+}
+
+const char*  //
 wuffs_raw_deflate_decode(wuffs_base__io_buffer* dst,
                          wuffs_base__io_buffer* src,
                          uint32_t wuffs_initialize_flags,
@@ -426,6 +456,7 @@ proc g_tests[] = {
     test_wuffs_zlib_decode_pi,
     test_wuffs_zlib_decode_raw_deflate_romeo,
     test_wuffs_zlib_decode_sheep,
+    test_wuffs_zlib_decode_truncated_input,
 
 #ifdef WUFFS_MIMIC
 

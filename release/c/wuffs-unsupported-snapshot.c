@@ -6893,6 +6893,7 @@ extern const char wuffs_bzip2__error__bad_block_length[];
 extern const char wuffs_bzip2__error__bad_checksum[];
 extern const char wuffs_bzip2__error__bad_header[];
 extern const char wuffs_bzip2__error__bad_number_of_sections[];
+extern const char wuffs_bzip2__error__truncated_input[];
 extern const char wuffs_bzip2__error__unsupported_block_randomization[];
 
 // ---------------- Public Consts
@@ -7018,6 +7019,7 @@ struct wuffs_bzip2__decoder__struct {
     uint32_t f_code_lengths_bitmask;
 
     uint32_t p_transform_io[1];
+    uint32_t p_do_transform_io[1];
     uint32_t p_prepare_block[1];
     uint32_t p_read_code_lengths[1];
     uint32_t p_flush_slow[1];
@@ -7038,7 +7040,7 @@ struct wuffs_bzip2__decoder__struct {
       uint32_t v_i;
       uint64_t v_tag;
       uint32_t v_final_checksum_want;
-    } s_transform_io[1];
+    } s_do_transform_io[1];
     struct {
       uint32_t v_i;
       uint32_t v_selector;
@@ -7581,6 +7583,7 @@ extern const char wuffs_deflate__error__bad_literal_length_code_count[];
 extern const char wuffs_deflate__error__inconsistent_stored_block_length[];
 extern const char wuffs_deflate__error__missing_end_of_block_code[];
 extern const char wuffs_deflate__error__no_huffman_codes[];
+extern const char wuffs_deflate__error__truncated_input[];
 
 // ---------------- Public Consts
 
@@ -7695,6 +7698,7 @@ struct wuffs_deflate__decoder__struct {
     bool f_end_of_block;
 
     uint32_t p_transform_io[1];
+    uint32_t p_do_transform_io[1];
     uint32_t p_decode_blocks[1];
     uint32_t p_decode_uncompressed[1];
     uint32_t p_init_dynamic_huffman[1];
@@ -8512,6 +8516,7 @@ extern const char wuffs_gzip__error__bad_checksum[];
 extern const char wuffs_gzip__error__bad_compression_method[];
 extern const char wuffs_gzip__error__bad_encoding_flags[];
 extern const char wuffs_gzip__error__bad_header[];
+extern const char wuffs_gzip__error__truncated_input[];
 
 // ---------------- Public Consts
 
@@ -8616,6 +8621,7 @@ struct wuffs_gzip__decoder__struct {
     bool f_ignore_checksum;
 
     uint32_t p_transform_io[1];
+    uint32_t p_do_transform_io[1];
   } private_impl;
 
   struct {
@@ -8628,7 +8634,7 @@ struct wuffs_gzip__decoder__struct {
       uint32_t v_decoded_length_got;
       uint32_t v_checksum_want;
       uint64_t scratch;
-    } s_transform_io[1];
+    } s_do_transform_io[1];
   } private_data;
 
 #ifdef __cplusplus
@@ -9324,6 +9330,7 @@ extern const char wuffs_zlib__error__bad_compression_method[];
 extern const char wuffs_zlib__error__bad_compression_window_size[];
 extern const char wuffs_zlib__error__bad_parity_check[];
 extern const char wuffs_zlib__error__incorrect_dictionary[];
+extern const char wuffs_zlib__error__truncated_input[];
 
 // ---------------- Public Consts
 
@@ -9446,6 +9453,7 @@ struct wuffs_zlib__decoder__struct {
     uint32_t f_dict_id_want;
 
     uint32_t p_transform_io[1];
+    uint32_t p_do_transform_io[1];
   } private_impl;
 
   struct {
@@ -9456,7 +9464,7 @@ struct wuffs_zlib__decoder__struct {
     struct {
       uint32_t v_checksum_got;
       uint64_t scratch;
-    } s_transform_io[1];
+    } s_do_transform_io[1];
   } private_data;
 
 #ifdef __cplusplus
@@ -24981,6 +24989,7 @@ const char wuffs_bzip2__error__bad_block_length[] = "#bzip2: bad block length";
 const char wuffs_bzip2__error__bad_checksum[] = "#bzip2: bad checksum";
 const char wuffs_bzip2__error__bad_header[] = "#bzip2: bad header";
 const char wuffs_bzip2__error__bad_number_of_sections[] = "#bzip2: bad number of sections";
+const char wuffs_bzip2__error__truncated_input[] = "#bzip2: truncated input";
 const char wuffs_bzip2__error__unsupported_block_randomization[] = "#bzip2: unsupported block randomization";
 const char wuffs_bzip2__error__internal_error_inconsistent_huffman_decoder_state[] = "#bzip2: internal error: inconsistent Huffman decoder state";
 
@@ -25030,6 +25039,13 @@ WUFFS_BZIP2__REV_CRC32_TABLE[256] WUFFS_BASE__POTENTIALLY_UNUSED = {
 // ---------------- Private Initializer Prototypes
 
 // ---------------- Private Function Prototypes
+
+static wuffs_base__status
+wuffs_bzip2__decoder__do_transform_io(
+    wuffs_bzip2__decoder* self,
+    wuffs_base__io_buffer* a_dst,
+    wuffs_base__io_buffer* a_src,
+    wuffs_base__slice_u8 a_workbuf);
 
 static wuffs_base__status
 wuffs_bzip2__decoder__prepare_block(
@@ -25225,6 +25241,74 @@ wuffs_bzip2__decoder__transform_io(
   self->private_impl.active_coroutine = 0;
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
+  wuffs_base__status v_status = wuffs_base__make_status(NULL);
+
+  const uint8_t* iop_a_src = NULL;
+  const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  if (a_src && a_src->data.ptr) {
+    io0_a_src = a_src->data.ptr;
+    io1_a_src = io0_a_src + a_src->meta.ri;
+    iop_a_src = io1_a_src;
+    io2_a_src = io0_a_src + a_src->meta.wi;
+  }
+
+  uint32_t coro_susp_point = self->private_impl.p_transform_io[0];
+  switch (coro_susp_point) {
+    WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
+
+    while (true) {
+      {
+        if (a_src) {
+          a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+        }
+        wuffs_base__status t_0 = wuffs_bzip2__decoder__do_transform_io(self, a_dst, a_src, a_workbuf);
+        v_status = t_0;
+        if (a_src) {
+          iop_a_src = a_src->data.ptr + a_src->meta.ri;
+        }
+      }
+      if ((v_status.repr == wuffs_base__suspension__short_read) && (a_src && a_src->meta.closed)) {
+        status = wuffs_base__make_status(wuffs_bzip2__error__truncated_input);
+        goto exit;
+      }
+      status = v_status;
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(1);
+    }
+
+    ok:
+    self->private_impl.p_transform_io[0] = 0;
+    goto exit;
+  }
+
+  goto suspend;
+  suspend:
+  self->private_impl.p_transform_io[0] = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
+  self->private_impl.active_coroutine = wuffs_base__status__is_suspension(&status) ? 1 : 0;
+
+  goto exit;
+  exit:
+  if (a_src && a_src->data.ptr) {
+    a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+  }
+
+  if (wuffs_base__status__is_error(&status)) {
+    self->private_impl.magic = WUFFS_BASE__DISABLED;
+  }
+  return status;
+}
+
+// -------- func bzip2.decoder.do_transform_io
+
+static wuffs_base__status
+wuffs_bzip2__decoder__do_transform_io(
+    wuffs_bzip2__decoder* self,
+    wuffs_base__io_buffer* a_dst,
+    wuffs_base__io_buffer* a_src,
+    wuffs_base__slice_u8 a_workbuf) {
+  wuffs_base__status status = wuffs_base__make_status(NULL);
+
   uint8_t v_c = 0;
   uint32_t v_i = 0;
   uint64_t v_tag = 0;
@@ -25242,11 +25326,11 @@ wuffs_bzip2__decoder__transform_io(
     io2_a_src = io0_a_src + a_src->meta.wi;
   }
 
-  uint32_t coro_susp_point = self->private_impl.p_transform_io[0];
+  uint32_t coro_susp_point = self->private_impl.p_do_transform_io[0];
   if (coro_susp_point) {
-    v_i = self->private_data.s_transform_io[0].v_i;
-    v_tag = self->private_data.s_transform_io[0].v_tag;
-    v_final_checksum_want = self->private_data.s_transform_io[0].v_final_checksum_want;
+    v_i = self->private_data.s_do_transform_io[0].v_i;
+    v_tag = self->private_data.s_do_transform_io[0].v_tag;
+    v_final_checksum_want = self->private_data.s_do_transform_io[0].v_final_checksum_want;
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
@@ -25435,17 +25519,16 @@ wuffs_bzip2__decoder__transform_io(
 
     goto ok;
     ok:
-    self->private_impl.p_transform_io[0] = 0;
+    self->private_impl.p_do_transform_io[0] = 0;
     goto exit;
   }
 
   goto suspend;
   suspend:
-  self->private_impl.p_transform_io[0] = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
-  self->private_impl.active_coroutine = wuffs_base__status__is_suspension(&status) ? 1 : 0;
-  self->private_data.s_transform_io[0].v_i = v_i;
-  self->private_data.s_transform_io[0].v_tag = v_tag;
-  self->private_data.s_transform_io[0].v_final_checksum_want = v_final_checksum_want;
+  self->private_impl.p_do_transform_io[0] = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
+  self->private_data.s_do_transform_io[0].v_i = v_i;
+  self->private_data.s_do_transform_io[0].v_tag = v_tag;
+  self->private_data.s_do_transform_io[0].v_final_checksum_want = v_final_checksum_want;
 
   goto exit;
   exit:
@@ -25453,9 +25536,6 @@ wuffs_bzip2__decoder__transform_io(
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
-  if (wuffs_base__status__is_error(&status)) {
-    self->private_impl.magic = WUFFS_BASE__DISABLED;
-  }
   return status;
 }
 
@@ -28418,6 +28498,7 @@ const char wuffs_deflate__error__bad_literal_length_code_count[] = "#deflate: ba
 const char wuffs_deflate__error__inconsistent_stored_block_length[] = "#deflate: inconsistent stored block length";
 const char wuffs_deflate__error__missing_end_of_block_code[] = "#deflate: missing end-of-block code";
 const char wuffs_deflate__error__no_huffman_codes[] = "#deflate: no Huffman codes";
+const char wuffs_deflate__error__truncated_input[] = "#deflate: truncated input";
 const char wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state[] = "#deflate: internal error: inconsistent Huffman decoder state";
 const char wuffs_deflate__error__internal_error_inconsistent_i_o[] = "#deflate: internal error: inconsistent I/O";
 const char wuffs_deflate__error__internal_error_inconsistent_distance[] = "#deflate: internal error: inconsistent distance";
@@ -28491,6 +28572,13 @@ WUFFS_DEFLATE__DCODE_MAGIC_NUMBERS[32] WUFFS_BASE__POTENTIALLY_UNUSED = {
 // ---------------- Private Initializer Prototypes
 
 // ---------------- Private Function Prototypes
+
+static wuffs_base__status
+wuffs_deflate__decoder__do_transform_io(
+    wuffs_deflate__decoder* self,
+    wuffs_base__io_buffer* a_dst,
+    wuffs_base__io_buffer* a_src,
+    wuffs_base__slice_u8 a_workbuf);
 
 static wuffs_base__status
 wuffs_deflate__decoder__decode_blocks(
@@ -28735,6 +28823,74 @@ wuffs_deflate__decoder__transform_io(
   self->private_impl.active_coroutine = 0;
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
+  wuffs_base__status v_status = wuffs_base__make_status(NULL);
+
+  const uint8_t* iop_a_src = NULL;
+  const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  if (a_src && a_src->data.ptr) {
+    io0_a_src = a_src->data.ptr;
+    io1_a_src = io0_a_src + a_src->meta.ri;
+    iop_a_src = io1_a_src;
+    io2_a_src = io0_a_src + a_src->meta.wi;
+  }
+
+  uint32_t coro_susp_point = self->private_impl.p_transform_io[0];
+  switch (coro_susp_point) {
+    WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
+
+    while (true) {
+      {
+        if (a_src) {
+          a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+        }
+        wuffs_base__status t_0 = wuffs_deflate__decoder__do_transform_io(self, a_dst, a_src, a_workbuf);
+        v_status = t_0;
+        if (a_src) {
+          iop_a_src = a_src->data.ptr + a_src->meta.ri;
+        }
+      }
+      if ((v_status.repr == wuffs_base__suspension__short_read) && (a_src && a_src->meta.closed)) {
+        status = wuffs_base__make_status(wuffs_deflate__error__truncated_input);
+        goto exit;
+      }
+      status = v_status;
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(1);
+    }
+
+    ok:
+    self->private_impl.p_transform_io[0] = 0;
+    goto exit;
+  }
+
+  goto suspend;
+  suspend:
+  self->private_impl.p_transform_io[0] = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
+  self->private_impl.active_coroutine = wuffs_base__status__is_suspension(&status) ? 1 : 0;
+
+  goto exit;
+  exit:
+  if (a_src && a_src->data.ptr) {
+    a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+  }
+
+  if (wuffs_base__status__is_error(&status)) {
+    self->private_impl.magic = WUFFS_BASE__DISABLED;
+  }
+  return status;
+}
+
+// -------- func deflate.decoder.do_transform_io
+
+static wuffs_base__status
+wuffs_deflate__decoder__do_transform_io(
+    wuffs_deflate__decoder* self,
+    wuffs_base__io_buffer* a_dst,
+    wuffs_base__io_buffer* a_src,
+    wuffs_base__slice_u8 a_workbuf) {
+  wuffs_base__status status = wuffs_base__make_status(NULL);
+
   uint64_t v_mark = 0;
   wuffs_base__status v_status = wuffs_base__make_status(NULL);
 
@@ -28752,7 +28908,7 @@ wuffs_deflate__decoder__transform_io(
     }
   }
 
-  uint32_t coro_susp_point = self->private_impl.p_transform_io[0];
+  uint32_t coro_susp_point = self->private_impl.p_do_transform_io[0];
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
@@ -28790,14 +28946,13 @@ wuffs_deflate__decoder__transform_io(
     }
 
     ok:
-    self->private_impl.p_transform_io[0] = 0;
+    self->private_impl.p_do_transform_io[0] = 0;
     goto exit;
   }
 
   goto suspend;
   suspend:
-  self->private_impl.p_transform_io[0] = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
-  self->private_impl.active_coroutine = wuffs_base__status__is_suspension(&status) ? 1 : 0;
+  self->private_impl.p_do_transform_io[0] = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
 
   goto exit;
   exit:
@@ -28805,9 +28960,6 @@ wuffs_deflate__decoder__transform_io(
     a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
   }
 
-  if (wuffs_base__status__is_error(&status)) {
-    self->private_impl.magic = WUFFS_BASE__DISABLED;
-  }
   return status;
 }
 
@@ -33808,12 +33960,20 @@ const char wuffs_gzip__error__bad_checksum[] = "#gzip: bad checksum";
 const char wuffs_gzip__error__bad_compression_method[] = "#gzip: bad compression method";
 const char wuffs_gzip__error__bad_encoding_flags[] = "#gzip: bad encoding flags";
 const char wuffs_gzip__error__bad_header[] = "#gzip: bad header";
+const char wuffs_gzip__error__truncated_input[] = "#gzip: truncated input";
 
 // ---------------- Private Consts
 
 // ---------------- Private Initializer Prototypes
 
 // ---------------- Private Function Prototypes
+
+static wuffs_base__status
+wuffs_gzip__decoder__do_transform_io(
+    wuffs_gzip__decoder* self,
+    wuffs_base__io_buffer* a_dst,
+    wuffs_base__io_buffer* a_src,
+    wuffs_base__slice_u8 a_workbuf);
 
 // ---------------- VTables
 
@@ -33979,6 +34139,74 @@ wuffs_gzip__decoder__transform_io(
   self->private_impl.active_coroutine = 0;
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
+  wuffs_base__status v_status = wuffs_base__make_status(NULL);
+
+  const uint8_t* iop_a_src = NULL;
+  const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  if (a_src && a_src->data.ptr) {
+    io0_a_src = a_src->data.ptr;
+    io1_a_src = io0_a_src + a_src->meta.ri;
+    iop_a_src = io1_a_src;
+    io2_a_src = io0_a_src + a_src->meta.wi;
+  }
+
+  uint32_t coro_susp_point = self->private_impl.p_transform_io[0];
+  switch (coro_susp_point) {
+    WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
+
+    while (true) {
+      {
+        if (a_src) {
+          a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+        }
+        wuffs_base__status t_0 = wuffs_gzip__decoder__do_transform_io(self, a_dst, a_src, a_workbuf);
+        v_status = t_0;
+        if (a_src) {
+          iop_a_src = a_src->data.ptr + a_src->meta.ri;
+        }
+      }
+      if ((v_status.repr == wuffs_base__suspension__short_read) && (a_src && a_src->meta.closed)) {
+        status = wuffs_base__make_status(wuffs_gzip__error__truncated_input);
+        goto exit;
+      }
+      status = v_status;
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(1);
+    }
+
+    ok:
+    self->private_impl.p_transform_io[0] = 0;
+    goto exit;
+  }
+
+  goto suspend;
+  suspend:
+  self->private_impl.p_transform_io[0] = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
+  self->private_impl.active_coroutine = wuffs_base__status__is_suspension(&status) ? 1 : 0;
+
+  goto exit;
+  exit:
+  if (a_src && a_src->data.ptr) {
+    a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+  }
+
+  if (wuffs_base__status__is_error(&status)) {
+    self->private_impl.magic = WUFFS_BASE__DISABLED;
+  }
+  return status;
+}
+
+// -------- func gzip.decoder.do_transform_io
+
+static wuffs_base__status
+wuffs_gzip__decoder__do_transform_io(
+    wuffs_gzip__decoder* self,
+    wuffs_base__io_buffer* a_dst,
+    wuffs_base__io_buffer* a_src,
+    wuffs_base__slice_u8 a_workbuf) {
+  wuffs_base__status status = wuffs_base__make_status(NULL);
+
   uint8_t v_c = 0;
   uint8_t v_flags = 0;
   uint16_t v_xlen = 0;
@@ -34013,12 +34241,12 @@ wuffs_gzip__decoder__transform_io(
     io2_a_src = io0_a_src + a_src->meta.wi;
   }
 
-  uint32_t coro_susp_point = self->private_impl.p_transform_io[0];
+  uint32_t coro_susp_point = self->private_impl.p_do_transform_io[0];
   if (coro_susp_point) {
-    v_flags = self->private_data.s_transform_io[0].v_flags;
-    v_checksum_got = self->private_data.s_transform_io[0].v_checksum_got;
-    v_decoded_length_got = self->private_data.s_transform_io[0].v_decoded_length_got;
-    v_checksum_want = self->private_data.s_transform_io[0].v_checksum_want;
+    v_flags = self->private_data.s_do_transform_io[0].v_flags;
+    v_checksum_got = self->private_data.s_do_transform_io[0].v_checksum_got;
+    v_decoded_length_got = self->private_data.s_do_transform_io[0].v_decoded_length_got;
+    v_checksum_want = self->private_data.s_do_transform_io[0].v_checksum_want;
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
@@ -34071,15 +34299,15 @@ wuffs_gzip__decoder__transform_io(
       uint8_t t_3 = *iop_a_src++;
       v_flags = t_3;
     }
-    self->private_data.s_transform_io[0].scratch = 6;
+    self->private_data.s_do_transform_io[0].scratch = 6;
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
-    if (self->private_data.s_transform_io[0].scratch > ((uint64_t)(io2_a_src - iop_a_src))) {
-      self->private_data.s_transform_io[0].scratch -= ((uint64_t)(io2_a_src - iop_a_src));
+    if (self->private_data.s_do_transform_io[0].scratch > ((uint64_t)(io2_a_src - iop_a_src))) {
+      self->private_data.s_do_transform_io[0].scratch -= ((uint64_t)(io2_a_src - iop_a_src));
       iop_a_src = io2_a_src;
       status = wuffs_base__make_status(wuffs_base__suspension__short_read);
       goto suspend;
     }
-    iop_a_src += self->private_data.s_transform_io[0].scratch;
+    iop_a_src += self->private_data.s_do_transform_io[0].scratch;
     if ((v_flags & 4) != 0) {
       {
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
@@ -34088,14 +34316,14 @@ wuffs_gzip__decoder__transform_io(
           t_4 = wuffs_base__peek_u16le__no_bounds_check(iop_a_src);
           iop_a_src += 2;
         } else {
-          self->private_data.s_transform_io[0].scratch = 0;
+          self->private_data.s_do_transform_io[0].scratch = 0;
           WUFFS_BASE__COROUTINE_SUSPENSION_POINT(7);
           while (true) {
             if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
               status = wuffs_base__make_status(wuffs_base__suspension__short_read);
               goto suspend;
             }
-            uint64_t* scratch = &self->private_data.s_transform_io[0].scratch;
+            uint64_t* scratch = &self->private_data.s_do_transform_io[0].scratch;
             uint32_t num_bits_4 = ((uint32_t)(*scratch >> 56));
             *scratch <<= 8;
             *scratch >>= 8;
@@ -34110,15 +34338,15 @@ wuffs_gzip__decoder__transform_io(
         }
         v_xlen = t_4;
       }
-      self->private_data.s_transform_io[0].scratch = ((uint32_t)(v_xlen));
+      self->private_data.s_do_transform_io[0].scratch = ((uint32_t)(v_xlen));
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(8);
-      if (self->private_data.s_transform_io[0].scratch > ((uint64_t)(io2_a_src - iop_a_src))) {
-        self->private_data.s_transform_io[0].scratch -= ((uint64_t)(io2_a_src - iop_a_src));
+      if (self->private_data.s_do_transform_io[0].scratch > ((uint64_t)(io2_a_src - iop_a_src))) {
+        self->private_data.s_do_transform_io[0].scratch -= ((uint64_t)(io2_a_src - iop_a_src));
         iop_a_src = io2_a_src;
         status = wuffs_base__make_status(wuffs_base__suspension__short_read);
         goto suspend;
       }
-      iop_a_src += self->private_data.s_transform_io[0].scratch;
+      iop_a_src += self->private_data.s_do_transform_io[0].scratch;
     }
     if ((v_flags & 8) != 0) {
       while (true) {
@@ -34155,15 +34383,15 @@ wuffs_gzip__decoder__transform_io(
       label__1__break:;
     }
     if ((v_flags & 2) != 0) {
-      self->private_data.s_transform_io[0].scratch = 2;
+      self->private_data.s_do_transform_io[0].scratch = 2;
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(11);
-      if (self->private_data.s_transform_io[0].scratch > ((uint64_t)(io2_a_src - iop_a_src))) {
-        self->private_data.s_transform_io[0].scratch -= ((uint64_t)(io2_a_src - iop_a_src));
+      if (self->private_data.s_do_transform_io[0].scratch > ((uint64_t)(io2_a_src - iop_a_src))) {
+        self->private_data.s_do_transform_io[0].scratch -= ((uint64_t)(io2_a_src - iop_a_src));
         iop_a_src = io2_a_src;
         status = wuffs_base__make_status(wuffs_base__suspension__short_read);
         goto suspend;
       }
-      iop_a_src += self->private_data.s_transform_io[0].scratch;
+      iop_a_src += self->private_data.s_do_transform_io[0].scratch;
     }
     if ((v_flags & 224) != 0) {
       status = wuffs_base__make_status(wuffs_gzip__error__bad_encoding_flags);
@@ -34205,14 +34433,14 @@ wuffs_gzip__decoder__transform_io(
         t_8 = wuffs_base__peek_u32le__no_bounds_check(iop_a_src);
         iop_a_src += 4;
       } else {
-        self->private_data.s_transform_io[0].scratch = 0;
+        self->private_data.s_do_transform_io[0].scratch = 0;
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(14);
         while (true) {
           if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
             status = wuffs_base__make_status(wuffs_base__suspension__short_read);
             goto suspend;
           }
-          uint64_t* scratch = &self->private_data.s_transform_io[0].scratch;
+          uint64_t* scratch = &self->private_data.s_do_transform_io[0].scratch;
           uint32_t num_bits_8 = ((uint32_t)(*scratch >> 56));
           *scratch <<= 8;
           *scratch >>= 8;
@@ -34234,14 +34462,14 @@ wuffs_gzip__decoder__transform_io(
         t_9 = wuffs_base__peek_u32le__no_bounds_check(iop_a_src);
         iop_a_src += 4;
       } else {
-        self->private_data.s_transform_io[0].scratch = 0;
+        self->private_data.s_do_transform_io[0].scratch = 0;
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(16);
         while (true) {
           if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
             status = wuffs_base__make_status(wuffs_base__suspension__short_read);
             goto suspend;
           }
-          uint64_t* scratch = &self->private_data.s_transform_io[0].scratch;
+          uint64_t* scratch = &self->private_data.s_do_transform_io[0].scratch;
           uint32_t num_bits_9 = ((uint32_t)(*scratch >> 56));
           *scratch <<= 8;
           *scratch >>= 8;
@@ -34262,18 +34490,17 @@ wuffs_gzip__decoder__transform_io(
     }
 
     ok:
-    self->private_impl.p_transform_io[0] = 0;
+    self->private_impl.p_do_transform_io[0] = 0;
     goto exit;
   }
 
   goto suspend;
   suspend:
-  self->private_impl.p_transform_io[0] = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
-  self->private_impl.active_coroutine = wuffs_base__status__is_suspension(&status) ? 1 : 0;
-  self->private_data.s_transform_io[0].v_flags = v_flags;
-  self->private_data.s_transform_io[0].v_checksum_got = v_checksum_got;
-  self->private_data.s_transform_io[0].v_decoded_length_got = v_decoded_length_got;
-  self->private_data.s_transform_io[0].v_checksum_want = v_checksum_want;
+  self->private_impl.p_do_transform_io[0] = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
+  self->private_data.s_do_transform_io[0].v_flags = v_flags;
+  self->private_data.s_do_transform_io[0].v_checksum_got = v_checksum_got;
+  self->private_data.s_do_transform_io[0].v_decoded_length_got = v_decoded_length_got;
+  self->private_data.s_do_transform_io[0].v_checksum_want = v_checksum_want;
 
   goto exit;
   exit:
@@ -34284,9 +34511,6 @@ wuffs_gzip__decoder__transform_io(
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
-  if (wuffs_base__status__is_error(&status)) {
-    self->private_impl.magic = WUFFS_BASE__DISABLED;
-  }
   return status;
 }
 
@@ -37339,6 +37563,7 @@ const char wuffs_zlib__error__bad_compression_method[] = "#zlib: bad compression
 const char wuffs_zlib__error__bad_compression_window_size[] = "#zlib: bad compression window size";
 const char wuffs_zlib__error__bad_parity_check[] = "#zlib: bad parity check";
 const char wuffs_zlib__error__incorrect_dictionary[] = "#zlib: incorrect dictionary";
+const char wuffs_zlib__error__truncated_input[] = "#zlib: truncated input";
 
 // ---------------- Private Consts
 
@@ -37349,6 +37574,13 @@ const char wuffs_zlib__error__incorrect_dictionary[] = "#zlib: incorrect diction
 // ---------------- Private Initializer Prototypes
 
 // ---------------- Private Function Prototypes
+
+static wuffs_base__status
+wuffs_zlib__decoder__do_transform_io(
+    wuffs_zlib__decoder* self,
+    wuffs_base__io_buffer* a_dst,
+    wuffs_base__io_buffer* a_src,
+    wuffs_base__slice_u8 a_workbuf);
 
 // ---------------- VTables
 
@@ -37567,6 +37799,74 @@ wuffs_zlib__decoder__transform_io(
   self->private_impl.active_coroutine = 0;
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
+  wuffs_base__status v_status = wuffs_base__make_status(NULL);
+
+  const uint8_t* iop_a_src = NULL;
+  const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  if (a_src && a_src->data.ptr) {
+    io0_a_src = a_src->data.ptr;
+    io1_a_src = io0_a_src + a_src->meta.ri;
+    iop_a_src = io1_a_src;
+    io2_a_src = io0_a_src + a_src->meta.wi;
+  }
+
+  uint32_t coro_susp_point = self->private_impl.p_transform_io[0];
+  switch (coro_susp_point) {
+    WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
+
+    while (true) {
+      {
+        if (a_src) {
+          a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+        }
+        wuffs_base__status t_0 = wuffs_zlib__decoder__do_transform_io(self, a_dst, a_src, a_workbuf);
+        v_status = t_0;
+        if (a_src) {
+          iop_a_src = a_src->data.ptr + a_src->meta.ri;
+        }
+      }
+      if ((v_status.repr == wuffs_base__suspension__short_read) && (a_src && a_src->meta.closed)) {
+        status = wuffs_base__make_status(wuffs_zlib__error__truncated_input);
+        goto exit;
+      }
+      status = v_status;
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(1);
+    }
+
+    ok:
+    self->private_impl.p_transform_io[0] = 0;
+    goto exit;
+  }
+
+  goto suspend;
+  suspend:
+  self->private_impl.p_transform_io[0] = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
+  self->private_impl.active_coroutine = wuffs_base__status__is_suspension(&status) ? 1 : 0;
+
+  goto exit;
+  exit:
+  if (a_src && a_src->data.ptr) {
+    a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+  }
+
+  if (wuffs_base__status__is_error(&status)) {
+    self->private_impl.magic = WUFFS_BASE__DISABLED;
+  }
+  return status;
+}
+
+// -------- func zlib.decoder.do_transform_io
+
+static wuffs_base__status
+wuffs_zlib__decoder__do_transform_io(
+    wuffs_zlib__decoder* self,
+    wuffs_base__io_buffer* a_dst,
+    wuffs_base__io_buffer* a_src,
+    wuffs_base__slice_u8 a_workbuf) {
+  wuffs_base__status status = wuffs_base__make_status(NULL);
+
   uint16_t v_x = 0;
   uint32_t v_checksum_got = 0;
   wuffs_base__status v_status = wuffs_base__make_status(NULL);
@@ -37597,9 +37897,9 @@ wuffs_zlib__decoder__transform_io(
     io2_a_src = io0_a_src + a_src->meta.wi;
   }
 
-  uint32_t coro_susp_point = self->private_impl.p_transform_io[0];
+  uint32_t coro_susp_point = self->private_impl.p_do_transform_io[0];
   if (coro_susp_point) {
-    v_checksum_got = self->private_data.s_transform_io[0].v_checksum_got;
+    v_checksum_got = self->private_data.s_do_transform_io[0].v_checksum_got;
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
@@ -37616,14 +37916,14 @@ wuffs_zlib__decoder__transform_io(
           t_0 = wuffs_base__peek_u16be__no_bounds_check(iop_a_src);
           iop_a_src += 2;
         } else {
-          self->private_data.s_transform_io[0].scratch = 0;
+          self->private_data.s_do_transform_io[0].scratch = 0;
           WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
           while (true) {
             if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
               status = wuffs_base__make_status(wuffs_base__suspension__short_read);
               goto suspend;
             }
-            uint64_t* scratch = &self->private_data.s_transform_io[0].scratch;
+            uint64_t* scratch = &self->private_data.s_do_transform_io[0].scratch;
             uint32_t num_bits_0 = ((uint32_t)(*scratch & 0xFF));
             *scratch >>= 8;
             *scratch <<= 8;
@@ -37660,14 +37960,14 @@ wuffs_zlib__decoder__transform_io(
             t_1 = wuffs_base__peek_u32be__no_bounds_check(iop_a_src);
             iop_a_src += 4;
           } else {
-            self->private_data.s_transform_io[0].scratch = 0;
+            self->private_data.s_do_transform_io[0].scratch = 0;
             WUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
             while (true) {
               if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
                 status = wuffs_base__make_status(wuffs_base__suspension__short_read);
                 goto suspend;
               }
-              uint64_t* scratch = &self->private_data.s_transform_io[0].scratch;
+              uint64_t* scratch = &self->private_data.s_do_transform_io[0].scratch;
               uint32_t num_bits_1 = ((uint32_t)(*scratch & 0xFF));
               *scratch >>= 8;
               *scratch <<= 8;
@@ -37733,14 +38033,14 @@ wuffs_zlib__decoder__transform_io(
           t_3 = wuffs_base__peek_u32be__no_bounds_check(iop_a_src);
           iop_a_src += 4;
         } else {
-          self->private_data.s_transform_io[0].scratch = 0;
+          self->private_data.s_do_transform_io[0].scratch = 0;
           WUFFS_BASE__COROUTINE_SUSPENSION_POINT(7);
           while (true) {
             if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
               status = wuffs_base__make_status(wuffs_base__suspension__short_read);
               goto suspend;
             }
-            uint64_t* scratch = &self->private_data.s_transform_io[0].scratch;
+            uint64_t* scratch = &self->private_data.s_do_transform_io[0].scratch;
             uint32_t num_bits_3 = ((uint32_t)(*scratch & 0xFF));
             *scratch >>= 8;
             *scratch <<= 8;
@@ -37762,15 +38062,14 @@ wuffs_zlib__decoder__transform_io(
     }
 
     ok:
-    self->private_impl.p_transform_io[0] = 0;
+    self->private_impl.p_do_transform_io[0] = 0;
     goto exit;
   }
 
   goto suspend;
   suspend:
-  self->private_impl.p_transform_io[0] = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
-  self->private_impl.active_coroutine = wuffs_base__status__is_suspension(&status) ? 1 : 0;
-  self->private_data.s_transform_io[0].v_checksum_got = v_checksum_got;
+  self->private_impl.p_do_transform_io[0] = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
+  self->private_data.s_do_transform_io[0].v_checksum_got = v_checksum_got;
 
   goto exit;
   exit:
@@ -37781,9 +38080,6 @@ wuffs_zlib__decoder__transform_io(
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
-  if (wuffs_base__status__is_error(&status)) {
-    self->private_impl.magic = WUFFS_BASE__DISABLED;
-  }
   return status;
 }
 

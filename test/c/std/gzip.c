@@ -97,6 +97,36 @@ test_wuffs_gzip_decode_interface() {
 }
 
 const char*  //
+test_wuffs_gzip_decode_truncated_input() {
+  CHECK_FOCUS(__func__);
+
+  wuffs_base__io_buffer have = wuffs_base__ptr_u8__writer(g_have_array_u8, 1);
+  wuffs_base__io_buffer src =
+      wuffs_base__ptr_u8__reader(g_src_array_u8, 0, false);
+  wuffs_gzip__decoder dec;
+  CHECK_STATUS("initialize",
+               wuffs_gzip__decoder__initialize(
+                   &dec, sizeof dec, WUFFS_VERSION,
+                   WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+
+  wuffs_base__status status =
+      wuffs_gzip__decoder__transform_io(&dec, &have, &src, g_work_slice_u8);
+  if (status.repr != wuffs_base__suspension__short_read) {
+    RETURN_FAIL("closed=false: have \"%s\", want \"%s\"", status.repr,
+                wuffs_base__suspension__short_read);
+  }
+
+  src.meta.closed = true;
+  status =
+      wuffs_gzip__decoder__transform_io(&dec, &have, &src, g_work_slice_u8);
+  if (status.repr != wuffs_gzip__error__truncated_input) {
+    RETURN_FAIL("closed=true: have \"%s\", want \"%s\"", status.repr,
+                wuffs_gzip__error__truncated_input);
+  }
+  return NULL;
+}
+
+const char*  //
 wuffs_gzip_decode(wuffs_base__io_buffer* dst,
                   wuffs_base__io_buffer* src,
                   uint32_t wuffs_initialize_flags,
@@ -255,6 +285,7 @@ test_wuffs_gzip_decode_infrequent_compaction() {
   // Decode 5 source bytes at a time. Compact every 15 source bytes.
   for (size_t i = 0; i < src.data.len; i += 5) {
     src.meta.wi = i;
+    src.meta.closed = false;
     wuffs_base__status status =
         wuffs_gzip__decoder__transform_io(&dec, &dst, &src, g_work_slice_u8);
     if (status.repr != wuffs_base__suspension__short_read) {
@@ -361,6 +392,7 @@ proc g_tests[] = {
     test_wuffs_gzip_decode_interface,
     test_wuffs_gzip_decode_midsummer,
     test_wuffs_gzip_decode_pi,
+    test_wuffs_gzip_decode_truncated_input,
 
 #ifdef WUFFS_MIMIC
 

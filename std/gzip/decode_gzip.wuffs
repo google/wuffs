@@ -19,6 +19,7 @@ pub status "#bad checksum"
 pub status "#bad compression method"
 pub status "#bad encoding flags"
 pub status "#bad header"
+pub status "#truncated input"
 
 // TODO: reference deflate.DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE.
 pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 1
@@ -45,6 +46,18 @@ pub func decoder.workbuf_len() base.range_ii_u64 {
 }
 
 pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf: slice base.u8) {
+	var status : base.status
+
+	while true {
+		status =? this.do_transform_io?(dst: args.dst, src: args.src, workbuf: args.workbuf)
+		if (status == base."$short read") and args.src.is_closed() {
+			return "#truncated input"
+		}
+		yield? status
+	} endwhile
+}
+
+pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, workbuf: slice base.u8) {
 	var c                   : base.u8
 	var flags               : base.u8
 	var xlen                : base.u16
