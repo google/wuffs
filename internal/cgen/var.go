@@ -50,6 +50,9 @@ func (g *gen) needDerivedVar(name t.ID) bool {
 					return nil
 				}
 				if recv.IsArgsDotFoo() == name {
+					if meth == t.IDIsClosed {
+						return nil
+					}
 					return errNeedDerivedVar
 				}
 				// Some built-in methods will also need a derived var for their

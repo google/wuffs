@@ -25243,31 +25243,14 @@ wuffs_bzip2__decoder__transform_io(
 
   wuffs_base__status v_status = wuffs_base__make_status(NULL);
 
-  const uint8_t* iop_a_src = NULL;
-  const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src && a_src->data.ptr) {
-    io0_a_src = a_src->data.ptr;
-    io1_a_src = io0_a_src + a_src->meta.ri;
-    iop_a_src = io1_a_src;
-    io2_a_src = io0_a_src + a_src->meta.wi;
-  }
-
   uint32_t coro_susp_point = self->private_impl.p_transform_io[0];
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
     while (true) {
       {
-        if (a_src) {
-          a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
-        }
         wuffs_base__status t_0 = wuffs_bzip2__decoder__do_transform_io(self, a_dst, a_src, a_workbuf);
         v_status = t_0;
-        if (a_src) {
-          iop_a_src = a_src->data.ptr + a_src->meta.ri;
-        }
       }
       if ((v_status.repr == wuffs_base__suspension__short_read) && (a_src && a_src->meta.closed)) {
         status = wuffs_base__make_status(wuffs_bzip2__error__truncated_input);
@@ -25289,10 +25272,6 @@ wuffs_bzip2__decoder__transform_io(
 
   goto exit;
   exit:
-  if (a_src && a_src->data.ptr) {
-    a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
-  }
-
   if (wuffs_base__status__is_error(&status)) {
     self->private_impl.magic = WUFFS_BASE__DISABLED;
   }
@@ -28825,31 +28804,14 @@ wuffs_deflate__decoder__transform_io(
 
   wuffs_base__status v_status = wuffs_base__make_status(NULL);
 
-  const uint8_t* iop_a_src = NULL;
-  const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src && a_src->data.ptr) {
-    io0_a_src = a_src->data.ptr;
-    io1_a_src = io0_a_src + a_src->meta.ri;
-    iop_a_src = io1_a_src;
-    io2_a_src = io0_a_src + a_src->meta.wi;
-  }
-
   uint32_t coro_susp_point = self->private_impl.p_transform_io[0];
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
     while (true) {
       {
-        if (a_src) {
-          a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
-        }
         wuffs_base__status t_0 = wuffs_deflate__decoder__do_transform_io(self, a_dst, a_src, a_workbuf);
         v_status = t_0;
-        if (a_src) {
-          iop_a_src = a_src->data.ptr + a_src->meta.ri;
-        }
       }
       if ((v_status.repr == wuffs_base__suspension__short_read) && (a_src && a_src->meta.closed)) {
         status = wuffs_base__make_status(wuffs_deflate__error__truncated_input);
@@ -28871,10 +28833,6 @@ wuffs_deflate__decoder__transform_io(
 
   goto exit;
   exit:
-  if (a_src && a_src->data.ptr) {
-    a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
-  }
-
   if (wuffs_base__status__is_error(&status)) {
     self->private_impl.magic = WUFFS_BASE__DISABLED;
   }
@@ -34141,31 +34099,14 @@ wuffs_gzip__decoder__transform_io(
 
   wuffs_base__status v_status = wuffs_base__make_status(NULL);
 
-  const uint8_t* iop_a_src = NULL;
-  const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src && a_src->data.ptr) {
-    io0_a_src = a_src->data.ptr;
-    io1_a_src = io0_a_src + a_src->meta.ri;
-    iop_a_src = io1_a_src;
-    io2_a_src = io0_a_src + a_src->meta.wi;
-  }
-
   uint32_t coro_susp_point = self->private_impl.p_transform_io[0];
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
     while (true) {
       {
-        if (a_src) {
-          a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
-        }
         wuffs_base__status t_0 = wuffs_gzip__decoder__do_transform_io(self, a_dst, a_src, a_workbuf);
         v_status = t_0;
-        if (a_src) {
-          iop_a_src = a_src->data.ptr + a_src->meta.ri;
-        }
       }
       if ((v_status.repr == wuffs_base__suspension__short_read) && (a_src && a_src->meta.closed)) {
         status = wuffs_base__make_status(wuffs_gzip__error__truncated_input);
@@ -34187,10 +34128,6 @@ wuffs_gzip__decoder__transform_io(
 
   goto exit;
   exit:
-  if (a_src && a_src->data.ptr) {
-    a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
-  }
-
   if (wuffs_base__status__is_error(&status)) {
     self->private_impl.magic = WUFFS_BASE__DISABLED;
   }
@@ -37801,31 +37738,14 @@ wuffs_zlib__decoder__transform_io(
 
   wuffs_base__status v_status = wuffs_base__make_status(NULL);
 
-  const uint8_t* iop_a_src = NULL;
-  const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
-  if (a_src && a_src->data.ptr) {
-    io0_a_src = a_src->data.ptr;
-    io1_a_src = io0_a_src + a_src->meta.ri;
-    iop_a_src = io1_a_src;
-    io2_a_src = io0_a_src + a_src->meta.wi;
-  }
-
   uint32_t coro_susp_point = self->private_impl.p_transform_io[0];
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
     while (true) {
       {
-        if (a_src) {
-          a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
-        }
         wuffs_base__status t_0 = wuffs_zlib__decoder__do_transform_io(self, a_dst, a_src, a_workbuf);
         v_status = t_0;
-        if (a_src) {
-          iop_a_src = a_src->data.ptr + a_src->meta.ri;
-        }
       }
       if ((v_status.repr == wuffs_base__suspension__short_read) && (a_src && a_src->meta.closed)) {
         status = wuffs_base__make_status(wuffs_zlib__error__truncated_input);
@@ -37847,10 +37767,6 @@ wuffs_zlib__decoder__transform_io(
 
   goto exit;
   exit:
-  if (a_src && a_src->data.ptr) {
-    a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
-  }
-
   if (wuffs_base__status__is_error(&status)) {
     self->private_impl.magic = WUFFS_BASE__DISABLED;
   }
