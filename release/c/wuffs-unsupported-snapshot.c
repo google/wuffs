@@ -42688,11 +42688,14 @@ wuffs_png__decoder__decode_pass(
             self->private_impl.f_pass_workbuf_length),
             ((uint64_t)(self->private_impl.f_workbuf_hist_pos_base + self->private_impl.f_workbuf_wi)));
         {
+          const bool o_1_closed_a_src = a_src->meta.closed;
           const uint8_t *o_1_io2_a_src = io2_a_src;
           wuffs_base__io_reader__limit(&io2_a_src, iop_a_src,
               ((uint64_t)(self->private_impl.f_chunk_length)));
           if (a_src) {
-            a_src->meta.wi = ((size_t)(io2_a_src - a_src->data.ptr));
+            size_t n = ((size_t)(io2_a_src - a_src->data.ptr));
+            a_src->meta.closed = a_src->meta.closed && (a_src->meta.wi <= n);
+            a_src->meta.wi = n;
           }
           v_w_mark = ((uint64_t)(iop_v_w - io0_v_w));
           v_r_mark = ((uint64_t)(iop_a_src - io0_a_src));
@@ -42715,6 +42718,7 @@ wuffs_png__decoder__decode_pass(
           wuffs_base__u64__sat_add_indirect(&self->private_impl.f_workbuf_wi, wuffs_base__io__count_since(v_w_mark, ((uint64_t)(iop_v_w - io0_v_w))));
           io2_a_src = o_1_io2_a_src;
           if (a_src) {
+            a_src->meta.closed = o_1_closed_a_src;
             a_src->meta.wi = ((size_t)(io2_a_src - a_src->data.ptr));
           }
         }
@@ -43226,11 +43230,14 @@ wuffs_png__decoder__tell_me_more(
         if (self->private_impl.f_metadata_is_zlib_compressed) {
           if (self->private_impl.f_chunk_type == 1346585449) {
             {
+              const bool o_0_closed_a_src = a_src->meta.closed;
               const uint8_t *o_0_io2_a_src = io2_a_src;
               wuffs_base__io_reader__limit(&io2_a_src, iop_a_src,
                   ((uint64_t)(self->private_impl.f_chunk_length)));
               if (a_src) {
-                a_src->meta.wi = ((size_t)(io2_a_src - a_src->data.ptr));
+                size_t n = ((size_t)(io2_a_src - a_src->data.ptr));
+                a_src->meta.closed = a_src->meta.closed && (a_src->meta.wi <= n);
+                a_src->meta.wi = n;
               }
               v_r_mark = ((uint64_t)(iop_a_src - io0_a_src));
               {
@@ -43252,6 +43259,7 @@ wuffs_png__decoder__tell_me_more(
               wuffs_base__u32__sat_sub_indirect(&self->private_impl.f_chunk_length, ((uint32_t)((wuffs_base__io__count_since(v_r_mark, ((uint64_t)(iop_a_src - io0_a_src))) & 4294967295))));
               io2_a_src = o_0_io2_a_src;
               if (a_src) {
+                a_src->meta.closed = o_0_closed_a_src;
                 a_src->meta.wi = ((size_t)(io2_a_src - a_src->data.ptr));
               }
             }
@@ -43272,11 +43280,14 @@ wuffs_png__decoder__tell_me_more(
             WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(2);
           } else if (self->private_impl.f_chunk_type == 1951945833) {
             {
+              const bool o_1_closed_a_src = a_src->meta.closed;
               const uint8_t *o_1_io2_a_src = io2_a_src;
               wuffs_base__io_reader__limit(&io2_a_src, iop_a_src,
                   ((uint64_t)(self->private_impl.f_chunk_length)));
               if (a_src) {
-                a_src->meta.wi = ((size_t)(io2_a_src - a_src->data.ptr));
+                size_t n = ((size_t)(io2_a_src - a_src->data.ptr));
+                a_src->meta.closed = a_src->meta.closed && (a_src->meta.wi <= n);
+                a_src->meta.wi = n;
               }
               v_r_mark = ((uint64_t)(iop_a_src - io0_a_src));
               {
@@ -43298,6 +43309,7 @@ wuffs_png__decoder__tell_me_more(
               wuffs_base__u32__sat_sub_indirect(&self->private_impl.f_chunk_length, ((uint32_t)((wuffs_base__io__count_since(v_r_mark, ((uint64_t)(iop_a_src - io0_a_src))) & 4294967295))));
               io2_a_src = o_1_io2_a_src;
               if (a_src) {
+                a_src->meta.closed = o_1_closed_a_src;
                 a_src->meta.wi = ((size_t)(io2_a_src - a_src->data.ptr));
               }
             }
@@ -43333,11 +43345,14 @@ wuffs_png__decoder__tell_me_more(
                     wuffs_base__make_slice_u8(self->private_data.f_dst_palette, 1024),
                     self->private_impl.f_ztxt_hist_pos);
                 {
+                  const bool o_3_closed_a_src = a_src->meta.closed;
                   const uint8_t *o_3_io2_a_src = io2_a_src;
                   wuffs_base__io_reader__limit(&io2_a_src, iop_a_src,
                       ((uint64_t)(self->private_impl.f_chunk_length)));
                   if (a_src) {
-                    a_src->meta.wi = ((size_t)(io2_a_src - a_src->data.ptr));
+                    size_t n = ((size_t)(io2_a_src - a_src->data.ptr));
+                    a_src->meta.closed = a_src->meta.closed && (a_src->meta.wi <= n);
+                    a_src->meta.wi = n;
                   }
                   v_w_mark = ((uint64_t)(iop_v_w - io0_v_w));
                   v_r_mark = ((uint64_t)(iop_a_src - io0_a_src));
@@ -43357,6 +43372,7 @@ wuffs_png__decoder__tell_me_more(
                   v_num_written = wuffs_base__io__count_since(v_w_mark, ((uint64_t)(iop_v_w - io0_v_w)));
                   io2_a_src = o_3_io2_a_src;
                   if (a_src) {
+                    a_src->meta.closed = o_3_closed_a_src;
                     a_src->meta.wi = ((size_t)(io2_a_src - a_src->data.ptr));
                   }
                 }

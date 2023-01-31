@@ -305,9 +305,9 @@ func (g *gen) writeStatementIOManip(b *buffer, n *a.IOManip, depth uint32) error
 	if e.Operator() != 0 {
 		prefix = aPrefix
 	}
-	cTyp, end, qualifier := "reader", "meta.wi", "const "
+	cTyp, end, qualifier, isWriter := "reader", "meta.wi", "const ", false
 	if e.MType().QID()[1] == t.IDIOWriter {
-		cTyp, end, qualifier = "writer", "data.len", ""
+		cTyp, end, qualifier, isWriter = "writer", "data.len", "", true
 	}
 	name := e.Ident().Str(g.tm)
 
@@ -350,6 +350,10 @@ func (g *gen) writeStatementIOManip(b *buffer, n *a.IOManip, depth uint32) error
 			b.writes(");\n")
 
 		} else {
+			if !isWriter {
+				b.printf("const bool %s%d_closed_%s%s = %s%s->meta.closed;\n",
+					oPrefix, ioBindNum, prefix, name, prefix, name)
+			}
 			b.printf("%suint8_t *%s%d_%s%s%s = %s%s%s;\n",
 				qualifier, oPrefix, ioBindNum, io2Prefix, prefix, name, io2Prefix, prefix, name)
 			b.printf("wuffs_base__io_%s__limit(&%s%s%s, %s%s%s,\n",
@@ -360,11 +364,16 @@ func (g *gen) writeStatementIOManip(b *buffer, n *a.IOManip, depth uint32) error
 				return err
 			}
 			b.writes(");\n")
-			b.printf("if (%s%s) {\n%s%s->%s = ((size_t)(%s%s%s - %s%s->data.ptr));\n}\n",
-				prefix, name,
-				prefix, name, end,
-				io2Prefix, prefix, name,
-				prefix, name)
+			b.printf("if (%s%s) {\n", prefix, name)
+			b.printf("size_t n = ((size_t)(%s%s%s - %s%s->data.ptr));\n",
+				io2Prefix, prefix, name, prefix, name)
+			if !isWriter {
+				b.printf("%s%s->meta.closed = %s%s->meta.closed && (%s%s->%s <= n);\n",
+					prefix, name, prefix, name, prefix, name, end)
+			}
+			b.printf("%s%s->%s = n;\n",
+				prefix, name, end)
+			b.printf("}\n")
 		}
 	}
 
@@ -393,11 +402,14 @@ func (g *gen) writeStatementIOManip(b *buffer, n *a.IOManip, depth uint32) error
 			io2Prefix, prefix, name,
 			oPrefix, ioBindNum, io2Prefix, prefix, name)
 		if n.Keyword() == t.IDIOLimit {
-			b.printf("if (%s%s) {\n%s%s->%s = ((size_t)(%s%s%s - %s%s->data.ptr));\n}\n",
-				prefix, name,
+			b.printf("if (%s%s) {\n", prefix, name)
+			b.printf("%s%s->meta.closed = %s%d_closed_%s%s;\n",
+				prefix, name, oPrefix, ioBindNum, prefix, name)
+			b.printf("%s%s->%s = ((size_t)(%s%s%s - %s%s->data.ptr));\n",
 				prefix, name, end,
 				io2Prefix, prefix, name,
 				prefix, name)
+			b.printf("}\n")
 		}
 	}
 	b.writes("}\n")
