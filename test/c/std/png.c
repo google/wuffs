@@ -195,6 +195,19 @@ test_wuffs_png_decode_interface() {
 }
 
 const char*  //
+test_wuffs_png_decode_multiple_idats() {
+  CHECK_FOCUS(__func__);
+  wuffs_png__decoder dec;
+  CHECK_STATUS("initialize",
+               wuffs_png__decoder__initialize(
+                   &dec, sizeof dec, WUFFS_VERSION,
+                   WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+  return do_test__wuffs_base__image_decoder(
+      wuffs_png__decoder__upcast_as__wuffs_base__image_decoder(&dec),
+      "test/data/bricks-color.png", 0, SIZE_MAX, 160, 120, 0xFF022460);
+}
+
+const char*  //
 test_wuffs_png_decode_bad_crc32_checksum_critical() {
   CHECK_FOCUS(__func__);
   return do_test_xxxxx_png_decode_bad_crc32_checksum_critical(
@@ -1273,6 +1286,7 @@ proc g_tests[] = {
     test_wuffs_png_decode_metadata_exif,
     test_wuffs_png_decode_metadata_iccp,
     test_wuffs_png_decode_metadata_kvp,
+    test_wuffs_png_decode_multiple_idats,
     test_wuffs_png_decode_restart_frame,
 
 #ifdef WUFFS_MIMIC
