@@ -7843,6 +7843,7 @@ struct wuffs_deflate__decoder__struct {
 // ---------------- Status Codes
 
 extern const char wuffs_lzw__error__bad_code[];
+extern const char wuffs_lzw__error__truncated_input[];
 
 // ---------------- Public Consts
 
@@ -30680,6 +30681,7 @@ wuffs_deflate__decoder__decode_huffman_slow(
 // ---------------- Status Codes Implementations
 
 const char wuffs_lzw__error__bad_code[] = "#lzw: bad code";
+const char wuffs_lzw__error__truncated_input[] = "#lzw: truncated input";
 const char wuffs_lzw__error__internal_error_inconsistent_i_o[] = "#lzw: internal error: inconsistent I/O";
 
 // ---------------- Private Consts
@@ -30902,6 +30904,9 @@ wuffs_lzw__decoder__transform_io(
         status = wuffs_base__make_status(wuffs_base__suspension__short_read);
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(2);
       } else if (self->private_impl.f_read_from_return_value == 3) {
+        status = wuffs_base__make_status(wuffs_lzw__error__truncated_input);
+        goto exit;
+      } else if (self->private_impl.f_read_from_return_value == 4) {
         status = wuffs_base__make_status(wuffs_lzw__error__bad_code);
         goto exit;
       } else {
@@ -30977,7 +30982,11 @@ wuffs_lzw__decoder__read_from(
         iop_a_src += ((31 - v_n_bits) >> 3);
         v_n_bits |= 24;
       } else if (((uint64_t)(io2_a_src - iop_a_src)) <= 0) {
-        self->private_impl.f_read_from_return_value = 2;
+        if (a_src && a_src->meta.closed) {
+          self->private_impl.f_read_from_return_value = 3;
+        } else {
+          self->private_impl.f_read_from_return_value = 2;
+        }
         goto label__0__break;
       } else {
         v_bits |= (((uint32_t)(wuffs_base__peek_u8be__no_bounds_check(iop_a_src))) << v_n_bits);
@@ -30985,14 +30994,18 @@ wuffs_lzw__decoder__read_from(
         v_n_bits += 8;
         if (v_n_bits >= v_width) {
         } else if (((uint64_t)(io2_a_src - iop_a_src)) <= 0) {
-          self->private_impl.f_read_from_return_value = 2;
+          if (a_src && a_src->meta.closed) {
+            self->private_impl.f_read_from_return_value = 3;
+          } else {
+            self->private_impl.f_read_from_return_value = 2;
+          }
           goto label__0__break;
         } else {
           v_bits |= (((uint32_t)(wuffs_base__peek_u8be__no_bounds_check(iop_a_src))) << v_n_bits);
           iop_a_src += 1;
           v_n_bits += 8;
           if (v_n_bits < v_width) {
-            self->private_impl.f_read_from_return_value = 4;
+            self->private_impl.f_read_from_return_value = 5;
             goto label__0__break;
           }
         }
@@ -31070,7 +31083,7 @@ wuffs_lzw__decoder__read_from(
         v_prev_code = v_code;
       }
     } else {
-      self->private_impl.f_read_from_return_value = 3;
+      self->private_impl.f_read_from_return_value = 4;
       goto label__0__break;
     }
     if (v_output_wi > 4095) {
@@ -31085,7 +31098,7 @@ wuffs_lzw__decoder__read_from(
       if (iop_a_src > io1_a_src) {
         iop_a_src--;
       } else {
-        self->private_impl.f_read_from_return_value = 4;
+        self->private_impl.f_read_from_return_value = 5;
         goto label__2__break;
       }
     }

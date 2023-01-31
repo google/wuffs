@@ -1,6 +1,13 @@
 # Changelog
 
 
+## Work In Progress
+
+For a *closed* `io_reader`, the standard library now returns `"#truncated
+input"` instead of `"$short read"`. Importantly, this is an error, not a
+suspension.
+
+
 ## 2023-01-26 version 0.3.0
 
 The headline feature is that we have a production quality PNG decoder. It's

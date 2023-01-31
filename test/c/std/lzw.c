@@ -80,6 +80,35 @@ test_wuffs_lzw_decode_interface() {
 }
 
 const char*  //
+test_wuffs_lzw_decode_truncated_input() {
+  CHECK_FOCUS(__func__);
+
+  wuffs_base__io_buffer have = wuffs_base__ptr_u8__writer(g_have_array_u8, 1);
+  wuffs_base__io_buffer src =
+      wuffs_base__ptr_u8__reader(g_src_array_u8, 0, false);
+  wuffs_lzw__decoder dec;
+  CHECK_STATUS("initialize",
+               wuffs_lzw__decoder__initialize(
+                   &dec, sizeof dec, WUFFS_VERSION,
+                   WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+
+  wuffs_base__status status =
+      wuffs_lzw__decoder__transform_io(&dec, &have, &src, g_work_slice_u8);
+  if (status.repr != wuffs_base__suspension__short_read) {
+    RETURN_FAIL("closed=false: have \"%s\", want \"%s\"", status.repr,
+                wuffs_base__suspension__short_read);
+  }
+
+  src.meta.closed = true;
+  status = wuffs_lzw__decoder__transform_io(&dec, &have, &src, g_work_slice_u8);
+  if (status.repr != wuffs_lzw__error__truncated_input) {
+    RETURN_FAIL("closed=true: have \"%s\", want \"%s\"", status.repr,
+                wuffs_lzw__error__truncated_input);
+  }
+  return NULL;
+}
+
+const char*  //
 do_test_wuffs_lzw_decode(const char* src_filename,
                          uint64_t src_size,
                          const char* want_filename,
@@ -444,6 +473,7 @@ proc g_tests[] = {
     test_wuffs_lzw_decode_output_bad,
     test_wuffs_lzw_decode_output_empty,
     test_wuffs_lzw_decode_pi,
+    test_wuffs_lzw_decode_truncated_input,
     test_wuffs_lzw_decode_width_0,
     test_wuffs_lzw_decode_width_1,
 

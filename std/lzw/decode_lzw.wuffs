@@ -13,6 +13,7 @@
 // limitations under the License.
 
 pub status "#bad code"
+pub status "#truncated input"
 
 pri status "#internal error: inconsistent I/O"
 
@@ -119,6 +120,8 @@ pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf
 		} else if this.read_from_return_value == 2 {
 			yield? base."$short read"
 		} else if this.read_from_return_value == 3 {
+			return "#truncated input"
+		} else if this.read_from_return_value == 4 {
 			return "#bad code"
 		} else {
 			return "#internal error: inconsistent I/O"
@@ -167,7 +170,11 @@ pri func decoder.read_from!(src: base.io_reader) {
 				assert width <= n_bits via "a <= b: a <= c; c <= b"(c: 12)
 				assert n_bits >= width via "a >= b: b <= a"()
 			} else if args.src.length() <= 0 {
-				this.read_from_return_value = 2
+				if args.src.is_closed() {
+					this.read_from_return_value = 3
+				} else {
+					this.read_from_return_value = 2
+				}
 				break
 			} else {
 				bits |= args.src.peek_u8_as_u32() << n_bits
@@ -176,7 +183,11 @@ pri func decoder.read_from!(src: base.io_reader) {
 				if n_bits >= width {
 					// No-op.
 				} else if args.src.length() <= 0 {
-					this.read_from_return_value = 2
+					if args.src.is_closed() {
+						this.read_from_return_value = 3
+					} else {
+						this.read_from_return_value = 2
+					}
 					break
 				} else {
 					bits |= args.src.peek_u8_as_u32() << n_bits
@@ -188,7 +199,7 @@ pri func decoder.read_from!(src: base.io_reader) {
 					// This if condition is always false, but for some unknown
 					// reason, removing it worsens the benchmarks slightly.
 					if n_bits < width {
-						this.read_from_return_value = 4
+						this.read_from_return_value = 5
 						break
 					}
 				}
@@ -297,7 +308,7 @@ pri func decoder.read_from!(src: base.io_reader) {
 			}
 
 		} else {
-			this.read_from_return_value = 3
+			this.read_from_return_value = 4
 			break
 		}
 
@@ -319,7 +330,7 @@ pri func decoder.read_from!(src: base.io_reader) {
 			if args.src.can_undo_byte() {
 				args.src.undo_byte!()
 			} else {
-				this.read_from_return_value = 4
+				this.read_from_return_value = 5
 				break
 			}
 		} endwhile
