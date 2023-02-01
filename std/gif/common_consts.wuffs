@@ -20,6 +20,7 @@ pub status "#bad graphic control"
 pub status "#bad header"
 pub status "#bad literal width"
 pub status "#bad palette"
+pub status "#truncated input"
 
 pri status "#internal error: inconsistent ri/wi"
 

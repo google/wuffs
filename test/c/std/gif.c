@@ -183,6 +183,34 @@ test_wuffs_gif_decode_interface_image_decoder() {
 }
 
 const char*  //
+test_wuffs_gif_decode_truncated_input() {
+  CHECK_FOCUS(__func__);
+
+  wuffs_base__io_buffer src =
+      wuffs_base__ptr_u8__reader(g_src_array_u8, 0, false);
+  wuffs_gif__decoder dec;
+  CHECK_STATUS("initialize",
+               wuffs_gif__decoder__initialize(
+                   &dec, sizeof dec, WUFFS_VERSION,
+                   WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+
+  wuffs_base__status status =
+      wuffs_gif__decoder__decode_image_config(&dec, NULL, &src);
+  if (status.repr != wuffs_base__suspension__short_read) {
+    RETURN_FAIL("closed=false: have \"%s\", want \"%s\"", status.repr,
+                wuffs_base__suspension__short_read);
+  }
+
+  src.meta.closed = true;
+  status = wuffs_gif__decoder__decode_image_config(&dec, NULL, &src);
+  if (status.repr != wuffs_gif__error__truncated_input) {
+    RETURN_FAIL("closed=true: have \"%s\", want \"%s\"", status.repr,
+                wuffs_gif__error__truncated_input);
+  }
+  return NULL;
+}
+
+const char*  //
 wuffs_gif_decode(uint64_t* n_bytes_out,
                  wuffs_base__io_buffer* dst,
                  uint32_t wuffs_initialize_flags,
@@ -1238,9 +1266,9 @@ test_wuffs_gif_decode_interlaced_truncated() {
 
   wuffs_base__status status = wuffs_gif__decoder__decode_frame(
       &dec, &pb, &src, WUFFS_BASE__PIXEL_BLEND__SRC, g_work_slice_u8, NULL);
-  if (status.repr != wuffs_base__suspension__short_read) {
+  if (status.repr != wuffs_gif__error__truncated_input) {
     RETURN_FAIL("decode_frame: have \"%s\", want \"%s\"", status.repr,
-                wuffs_base__suspension__short_read);
+                wuffs_gif__error__truncated_input);
   }
 
   // Even though the source GIF data was truncated, replicating the interlaced
@@ -1462,7 +1490,7 @@ test_wuffs_gif_decode_missing_two_src_bytes() {
   src.meta.wi -= 2;
 
   return do_test_wuffs_gif_decode_expecting(
-      src, 0, wuffs_base__suspension__short_read, false);
+      src, 0, wuffs_gif__error__truncated_input, false);
 }
 
 const char*  //
@@ -2356,6 +2384,7 @@ proc g_tests[] = {
     test_wuffs_gif_decode_pixfmt_bgra_nonpremul,
     test_wuffs_gif_decode_pixfmt_rgb,
     test_wuffs_gif_decode_pixfmt_rgba_nonpremul,
+    test_wuffs_gif_decode_truncated_input,
     test_wuffs_gif_decode_zero_width_frame,
     test_wuffs_gif_frame_dirty_rect,
     test_wuffs_gif_num_decoded_frame_configs,

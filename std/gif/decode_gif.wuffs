@@ -98,6 +98,18 @@ pub func decoder.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
 }
 
 pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_reader) {
+	var status : base.status
+
+	while true {
+		status =? this.do_decode_image_config?(dst: args.dst, src: args.src)
+		if (status == base."$short read") and args.src.is_closed() {
+			return "#truncated input"
+		}
+		yield? status
+	} endwhile
+}
+
+pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.io_reader) {
 	var ffio : base.bool
 
 	if this.call_sequence <> 0x00 {
@@ -150,6 +162,18 @@ pub func decoder.set_report_metadata!(fourcc: base.u32, report: base.bool) {
 }
 
 pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_information, src: base.io_reader) {
+	var status : base.status
+
+	while true {
+		status =? this.do_tell_me_more?(dst: args.dst, minfo: args.minfo, src: args.src)
+		if (status == base."$short read") and args.src.is_closed() {
+			return "#truncated input"
+		}
+		yield? status
+	} endwhile
+}
+
+pri func decoder.do_tell_me_more?(dst: base.io_writer, minfo: nptr base.more_information, src: base.io_reader) {
 	var chunk_length : base.u64
 
 	if (this.call_sequence & 0x10) == 0 {
@@ -296,6 +320,18 @@ pub func decoder.restart_frame!(index: base.u64, io_position: base.u64) base.sta
 }
 
 pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_reader) {
+	var status : base.status
+
+	while true {
+		status =? this.do_decode_frame_config?(dst: args.dst, src: args.src)
+		if (status == base."$short read") and args.src.is_closed() {
+			return "#truncated input"
+		}
+		yield? status
+	} endwhile
+}
+
+pri func decoder.do_decode_frame_config?(dst: nptr base.frame_config, src: base.io_reader) {
 	var background_color : base.u32
 	var flags            : base.u8
 
@@ -306,7 +342,7 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
 	} else if this.call_sequence == 0x20 {
 		// No-op.
 	} else if this.call_sequence < 0x20 {
-		this.decode_image_config?(dst: nullptr, src: args.src)
+		this.do_decode_image_config?(dst: nullptr, src: args.src)
 	} else if this.call_sequence == 0x28 {
 		if this.frame_config_io_position <> args.src.position() {
 			return base."#bad restart"
@@ -397,12 +433,24 @@ pri func decoder.skip_frame?(src: base.io_reader) {
 	this.call_sequence = 0x20
 }
 
-// TODO: honor args.opts.
 pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, blend: base.pixel_blend, workbuf: slice base.u8, opts: nptr base.decode_frame_options) {
+	var status : base.status
+
+	while true {
+		status =? this.do_decode_frame?(dst: args.dst, src: args.src, blend: args.blend, workbuf: args.workbuf, opts: args.opts)
+		if (status == base."$short read") and args.src.is_closed() {
+			return "#truncated input"
+		}
+		yield? status
+	} endwhile
+}
+
+// TODO: honor args.opts.
+pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, blend: base.pixel_blend, workbuf: slice base.u8, opts: nptr base.decode_frame_options) {
 	if this.call_sequence == 0x40 {
 		// No-op.
 	} else if this.call_sequence < 0x40 {
-		this.decode_frame_config?(dst: nullptr, src: args.src)
+		this.do_decode_frame_config?(dst: nullptr, src: args.src)
 	} else {
 		return base."@end of data"
 	}

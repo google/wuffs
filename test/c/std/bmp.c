@@ -102,6 +102,34 @@ test_wuffs_bmp_decode_interface() {
 }
 
 const char*  //
+test_wuffs_bmp_decode_truncated_input() {
+  CHECK_FOCUS(__func__);
+
+  wuffs_base__io_buffer src =
+      wuffs_base__ptr_u8__reader(g_src_array_u8, 0, false);
+  wuffs_bmp__decoder dec;
+  CHECK_STATUS("initialize",
+               wuffs_bmp__decoder__initialize(
+                   &dec, sizeof dec, WUFFS_VERSION,
+                   WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+
+  wuffs_base__status status =
+      wuffs_bmp__decoder__decode_image_config(&dec, NULL, &src);
+  if (status.repr != wuffs_base__suspension__short_read) {
+    RETURN_FAIL("closed=false: have \"%s\", want \"%s\"", status.repr,
+                wuffs_base__suspension__short_read);
+  }
+
+  src.meta.closed = true;
+  status = wuffs_bmp__decoder__decode_image_config(&dec, NULL, &src);
+  if (status.repr != wuffs_bmp__error__truncated_input) {
+    RETURN_FAIL("closed=true: have \"%s\", want \"%s\"", status.repr,
+                wuffs_bmp__error__truncated_input);
+  }
+  return NULL;
+}
+
+const char*  //
 test_wuffs_bmp_decode_frame_config() {
   CHECK_FOCUS(__func__);
   wuffs_bmp__decoder dec;
@@ -213,6 +241,7 @@ proc g_tests[] = {
     test_wuffs_bmp_decode_frame_config,
     test_wuffs_bmp_decode_interface,
     test_wuffs_bmp_decode_io_redirect,
+    test_wuffs_bmp_decode_truncated_input,
 
 #ifdef WUFFS_MIMIC
 
