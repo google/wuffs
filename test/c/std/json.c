@@ -2580,6 +2580,37 @@ test_wuffs_json_decode_interface() {
 }
 
 const char*  //
+test_wuffs_json_decode_empty_input() {
+  CHECK_FOCUS(__func__);
+
+  wuffs_base__token_buffer tok =
+      wuffs_base__slice_token__writer(g_have_slice_token);
+  wuffs_base__io_buffer src =
+      wuffs_base__ptr_u8__reader(g_src_array_u8, 0, false);
+  wuffs_json__decoder dec;
+  CHECK_STATUS("initialize",
+               wuffs_json__decoder__initialize(
+                   &dec, sizeof dec, WUFFS_VERSION,
+                   WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+
+  wuffs_base__status status =
+      wuffs_json__decoder__decode_tokens(&dec, &tok, &src, g_work_slice_u8);
+  if (status.repr != wuffs_base__suspension__short_read) {
+    RETURN_FAIL("closed=false: have \"%s\", want \"%s\"", status.repr,
+                wuffs_base__suspension__short_read);
+  }
+
+  src.meta.closed = true;
+  status =
+      wuffs_json__decoder__decode_tokens(&dec, &tok, &src, g_work_slice_u8);
+  if (status.repr != wuffs_json__error__bad_input) {
+    RETURN_FAIL("closed=true: have \"%s\", want \"%s\"", status.repr,
+                wuffs_json__error__bad_input);
+  }
+  return NULL;
+}
+
+const char*  //
 wuffs_json_decode(wuffs_base__token_buffer* tok,
                   wuffs_base__io_buffer* src,
                   uint32_t wuffs_initialize_flags,
@@ -4198,6 +4229,7 @@ proc g_tests[] = {
     test_wuffs_strconv_render_number_u64,
     test_wuffs_strconv_utf_8_next,
 
+    test_wuffs_json_decode_empty_input,
     test_wuffs_json_decode_end_of_data,
     test_wuffs_json_decode_interface,
     test_wuffs_json_decode_long_numbers,

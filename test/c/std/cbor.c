@@ -93,6 +93,37 @@ test_wuffs_cbor_decode_interface() {
 }
 
 const char*  //
+test_wuffs_cbor_decode_empty_input() {
+  CHECK_FOCUS(__func__);
+
+  wuffs_base__token_buffer tok =
+      wuffs_base__slice_token__writer(g_have_slice_token);
+  wuffs_base__io_buffer src =
+      wuffs_base__ptr_u8__reader(g_src_array_u8, 0, false);
+  wuffs_cbor__decoder dec;
+  CHECK_STATUS("initialize",
+               wuffs_cbor__decoder__initialize(
+                   &dec, sizeof dec, WUFFS_VERSION,
+                   WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+
+  wuffs_base__status status =
+      wuffs_cbor__decoder__decode_tokens(&dec, &tok, &src, g_work_slice_u8);
+  if (status.repr != wuffs_base__suspension__short_read) {
+    RETURN_FAIL("closed=false: have \"%s\", want \"%s\"", status.repr,
+                wuffs_base__suspension__short_read);
+  }
+
+  src.meta.closed = true;
+  status =
+      wuffs_cbor__decoder__decode_tokens(&dec, &tok, &src, g_work_slice_u8);
+  if (status.repr != wuffs_cbor__error__bad_input) {
+    RETURN_FAIL("closed=true: have \"%s\", want \"%s\"", status.repr,
+                wuffs_cbor__error__bad_input);
+  }
+  return NULL;
+}
+
+const char*  //
 test_wuffs_cbor_decode_invalid() {
   CHECK_FOCUS(__func__);
 
@@ -208,6 +239,7 @@ test_wuffs_cbor_decode_valid() {
 
 proc g_tests[] = {
 
+    test_wuffs_cbor_decode_empty_input,
     test_wuffs_cbor_decode_interface,
     test_wuffs_cbor_decode_invalid,
     test_wuffs_cbor_decode_valid,
