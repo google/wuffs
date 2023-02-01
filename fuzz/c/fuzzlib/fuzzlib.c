@@ -27,6 +27,30 @@ intentional_segfault() {
   *ptr = 0;
 }
 
+static uint32_t  //
+popcount32(uint32_t x) {
+  static const uint8_t table[256] = {
+      0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,  //
+      1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,  //
+      1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,  //
+      2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,  //
+      1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,  //
+      2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,  //
+      2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,  //
+      3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,  //
+      1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,  //
+      2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,  //
+      2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,  //
+      3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,  //
+      2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,  //
+      3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,  //
+      3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,  //
+      4, 5, 5, 6, 5, 6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 8,  //
+  };
+  return table[0xFF & (x >> 0)] + table[0xFF & (x >> 8)] +
+         table[0xFF & (x >> 16)] + table[0xFF & (x >> 24)];
+}
+
 // jenkins_hash_u32 implements
 // https://en.wikipedia.org/wiki/Jenkins_hash_function
 static uint32_t  //
@@ -68,15 +92,21 @@ llvmFuzzerTestOneInput(const uint8_t* data, size_t size) {
   uint32_t hash1 = jenkins_hash_u32(data + s2, size - s2);
   uint64_t hash = (((uint64_t)hash0) << 32) | ((uint64_t)hash1);
 
+  // The ! means that closed will be true for (size == 0).
+  const bool closed = !(1 & popcount32(hash0));
+
   wuffs_base__io_buffer src =
-      wuffs_base__ptr_u8__reader((uint8_t*)data, size, true);
+      wuffs_base__ptr_u8__reader((uint8_t*)data, size, closed);
 
   const char* msg = fuzz(&src, hash);
   if (msg) {
     if (strnlen(msg, 2047) >= 2047) {
       msg = "fuzzlib: internal error: error message is too long";
     }
-    if (strstr(msg, "internal error:")) {
+    if (closed && strstr(msg, "base: short read")) {
+      fprintf(stderr, "short read on a closed io_reader\n");
+      intentional_segfault();
+    } else if (strstr(msg, "internal error:")) {
       fprintf(stderr, "internal errors shouldn't occur: \"%s\"\n", msg);
       intentional_segfault();
     }

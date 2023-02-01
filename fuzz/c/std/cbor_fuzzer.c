@@ -317,6 +317,9 @@ fuzz_complex(wuffs_base__io_buffer* full_src, uint64_t hash) {
       no_progress_count = 0;
     } else if (no_progress_count < 999) {
       no_progress_count++;
+    } else if (!full_src->meta.closed &&
+               (status.repr == wuffs_base__suspension__short_read)) {
+      return wuffs_base__status__message(&status);
     } else {
       return "fuzz: internal error: no progress";
     }
@@ -345,8 +348,6 @@ fuzz_complex(wuffs_base__io_buffer* full_src, uint64_t hash) {
       break;
 
     } else if (status.repr == wuffs_base__suspension__short_read) {
-      // Some Wuffs packages can yield "$short read" for a closed io_reader,
-      // but Wuffs' cbor package does not.
       if (src.meta.closed) {
         return "fuzz: internal error: short read on a closed io_reader";
       }
