@@ -14781,6 +14781,27 @@ wuffs_base__private_implementation__high_prec_dec__to_f64(
     // powers converts decimal powers of 10 to binary powers of 2. For example,
     // (10000 >> 13) is 1. It stops before the elements exceed 60, also known
     // as WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__SHIFT__MAX_INCL.
+    //
+    // This rounds down (1<<13 is a lower bound for 1e4). Adding 1 to the array
+    // element value rounds up (1<<14 is an upper bound for 1e4) while staying
+    // at or below WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__SHIFT__MAX_INCL.
+    //
+    // When starting in the range [1e+1 .. 1e+2] (i.e. h->decimal_point == +2),
+    // powers[2] == 6 and so:
+    //  - Right shifting by 6+0 produces the range [10/64 .. 100/64] =
+    //    [0.156250 .. 1.56250]. The resultant h->decimal_point is +0 or +1.
+    //  - Right shifting by 6+1 produces the range [10/128 .. 100/128] =
+    //    [0.078125 .. 0.78125]. The resultant h->decimal_point is -1 or -0.
+    //
+    // When starting in the range [1e-3 .. 1e-2] (i.e. h->decimal_point == -2),
+    // powers[2] == 6 and so:
+    //  - Left shifting by 6+0 produces the range [0.001*64 .. 0.01*64] =
+    //    [0.064 .. 0.64]. The resultant h->decimal_point is -1 or -0.
+    //  - Left shifting by 6+1 produces the range [0.001*128 .. 0.01*128] =
+    //    [0.128 .. 1.28]. The resultant h->decimal_point is +0 or +1.
+    //
+    // Thus, when targeting h->decimal_point being +0 or +1, use (powers[n]+0)
+    // when right shifting but (powers[n]+1) when left shifting.
     static const uint32_t num_powers = 19;
     static const uint8_t powers[19] = {
         0,  3,  6,  9,  13, 16, 19, 23, 26, 29,  //
@@ -14824,9 +14845,10 @@ wuffs_base__private_implementation__high_prec_dec__to_f64(
     // When Eisel-Lemire fails, fall back to Simple Decimal Conversion. See
     // https://nigeltao.github.io/blog/2020/parse-number-f64-simple.html
     //
-    // Scale by powers of 2 until we're in the range [1 .. 2]. First we shift
-    // right, possibly a little too far, ending with a value certainly below
-    // 10 ...
+    // Scale by powers of 2 until we're in the range [0.1 .. 10]. Equivalently,
+    // that h->decimal_point is +0 or +1.
+    //
+    // First we shift right while at or above 10...
     const int32_t f64_bias = -1023;
     int32_t exp2 = 0;
     while (h->decimal_point > 1) {
@@ -14843,13 +14865,15 @@ wuffs_base__private_implementation__high_prec_dec__to_f64(
       }
       exp2 += (int32_t)shift;
     }
-    // ... then we shift left, putting us in [0.1 .. 10].
+    // ...then we shift left while below 0.1.
     while (h->decimal_point < 0) {
       uint32_t shift;
-        uint32_t n = (uint32_t)(-h->decimal_point);
-        shift = (n < num_powers)
-                    ? powers[n] + 1 // shift 1 extra since we're now multiplying
-                    : WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__SHIFT__MAX_INCL;
+      uint32_t n = (uint32_t)(-h->decimal_point);
+      shift = (n < num_powers)
+                  // The +1 is per "when targeting h->decimal_point being +0 or
+                  // +1... when left shifting" in the powers comment above.
+                  ? (powers[n] + 1)
+                  : WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__SHIFT__MAX_INCL;
 
       wuffs_base__private_implementation__high_prec_dec__small_lshift(h, shift);
       if (h->decimal_point >
@@ -14859,40 +14883,38 @@ wuffs_base__private_implementation__high_prec_dec__to_f64(
       exp2 -= (int32_t)shift;
     }
 
-    // To get into the range [1 .. 2] we need to look at the first 3 digits of
-    // the mantisse to determine the final left shift. If we are already between 1
-    // and 2 then just shift left by 52.
-    uint64_t man = 0;
-    uint32_t i;
-    for (i = 0; i < 3; i++) {
-        man = (10 * man) + ((i < h->num_digits) ? h->digits[i] : 0);
+    // To get from "in the range [0.1 .. 10]" to "in the range [1 .. 2]" (which
+    // will give us our exponent in base-2), the mantissa's first 3 digits will
+    // determine the final left shift, equal to 52 (the number of explicit f64
+    // bits) plus an additional adjustment.
+    int man3 = (100 * h->digits[0]) +
+               ((h->num_digits > 1) ? (10 * h->digits[1]) : 0) +
+               ((h->num_digits > 2) ? h->digits[2] : 0);
+    int32_t additional_lshift = 0;
+    if (h->decimal_point == 0) {  // The value is in [0.1 .. 1].
+      if (man3 < 125) {
+        additional_lshift = +4;
+      } else if (man3 < 250) {
+        additional_lshift = +3;
+      } else if (man3 < 500) {
+        additional_lshift = +2;
+      } else {
+        additional_lshift = +1;
+      }
+    } else {  // The value is in [1 .. 10].
+      if (man3 < 200) {
+        additional_lshift = -0;
+      } else if (man3 < 400) {
+        additional_lshift = -1;
+      } else if (man3 < 800) {
+        additional_lshift = -2;
+      } else {
+        additional_lshift = -3;
+      }
     }
-    int32_t final_lshift = 52;
-    int32_t additional_shift = 0;
-    if (h->decimal_point == 0) { // value is in [0.1 .. 1]
-        if (man < 125) {
-            additional_shift = -4;
-        } else if (man < 250) {
-            additional_shift = -3;
-        } else if (man < 500) {
-            additional_shift = -2;
-        } else {
-            additional_shift = -1;
-        }
-    } else { // value is in [1 .. 10]
-        if (man < 200) {
-            additional_shift = 0;
-        } else if (man < 400) {
-            additional_shift = 1;
-        } else if (man < 800) {
-            additional_shift = 2;
-        } else {
-            additional_shift = 3;
-        }
-    }
-    exp2 += additional_shift;
-    final_lshift -= additional_shift;
-    
+    exp2 -= additional_lshift;
+    uint32_t final_lshift = (uint32_t)(52 + additional_lshift);
+
     // The minimum normal exponent is (f64_bias + 1).
     while ((f64_bias + 1) > exp2) {
       uint32_t n = (uint32_t)((f64_bias + 1) - exp2);
@@ -14909,7 +14931,8 @@ wuffs_base__private_implementation__high_prec_dec__to_f64(
     }
 
     // Extract 53 bits for the mantissa (in base-2).
-    wuffs_base__private_implementation__high_prec_dec__small_lshift(h, final_lshift);
+    wuffs_base__private_implementation__high_prec_dec__small_lshift(
+        h, final_lshift);
     uint64_t man2 =
         wuffs_base__private_implementation__high_prec_dec__rounded_integer(h);
 

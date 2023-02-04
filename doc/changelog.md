@@ -7,6 +7,9 @@ For a *closed* `io_reader`, the standard library now returns `"#truncated
 input"` instead of `"$short read"`. Importantly, this is an error, not a
 suspension.
 
+The `wuffs_base__parse_number_f64` function's Simple Decimal Conversion
+fallback algorithm has been optimized.
+
 
 ## 2023-01-26 version 0.3.0
 
