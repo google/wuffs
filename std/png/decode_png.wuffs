@@ -241,14 +241,10 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
 	// IDAT chunk breaks the loop. The only other possible critical chunk is a
 	// PLTE chunk. We verify PLTE checksums here but ignore other checksums.
 	while true {
-		while args.src.length() < 8,
-			post args.src.length() >= 8,
-		{
-			if args.src.is_closed() {
-				return "#bad chunk"
-			}
+		if args.src.length() < 8 {
 			yield? base."$short read"
-		} endwhile
+			continue
+		}
 
 		this.chunk_length = args.src.peek_u32be()
 		this.chunk_type = (args.src.peek_u64le() >> 32) as base.u32
@@ -1053,14 +1049,10 @@ pri func decoder.skip_frame?(src: base.io_reader) {
 	this.chunk_type_array[3] = 0
 
 	while true {
-		while args.src.length() < 8,
-			post args.src.length() >= 8,
-		{
-			if args.src.is_closed() {
-				return "#bad chunk"
-			}
+		if args.src.length() < 8 {
 			yield? base."$short read"
-		} endwhile
+			continue
+		}
 
 		this.chunk_length = args.src.peek_u32be()
 		this.chunk_type = (args.src.peek_u64le() >> 32) as base.u32
@@ -1141,14 +1133,10 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
 	}
 
 	while true {
-		while args.src.length() < 8,
-			post args.src.length() >= 8,
-		{
-			if args.src.is_closed() {
-				return "#bad chunk"
-			}
+		if args.src.length() < 8 {
 			yield? base."$short read"
-		} endwhile
+			continue
+		}
 
 		this.chunk_length = args.src.peek_u32be()
 		this.chunk_type = (args.src.peek_u64le() >> 32) as base.u32
@@ -1234,9 +1222,8 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
 					break
 				} else if status.is_error() or
 					((status == base."$short read") and args.src.is_closed()) {
-					// The input was truncated or invalid. Produce whatever
-					// pixels we can and then, if truncated, generate "$short
-					// read" forever.
+					// The input was invalid or truncated. Produce whatever
+					// pixels we can.
 					if this.workbuf_wi <= args.workbuf.length() {
 						// This might return "#internal error: inconsistent
 						// workbuf length" because of the ".. this.workbuf_wi".
@@ -1244,9 +1231,7 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
 						this.filter_and_swizzle!(dst: args.dst, workbuf: args.workbuf[.. this.workbuf_wi])
 					}
 					if status == base."$short read" {
-						while true {
-							yield? base."$short read"
-						} endwhile
+						return "#truncated input"
 					}
 				}
 				yield? status
