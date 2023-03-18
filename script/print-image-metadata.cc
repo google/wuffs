@@ -229,6 +229,10 @@ print_raw_passthrough(wuffs_base__io_buffer* src,
       break;
     }
     uint64_t n1 = src->reader_length();
+    while (n1 == 0) {
+      TRY(read_buffer_from_file(src, f));
+      n1 = src->reader_length();
+    }
     uint64_t n = wuffs_base__u64__min(n0, n1);
     print_hex_dump(src->reader_pointer(), n);
     src->meta.ri += n;
