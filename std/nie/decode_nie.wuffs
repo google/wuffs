@@ -201,9 +201,11 @@ pri func decoder.swizzle!(dst: ptr base.pixel_buffer, src: base.io_reader) base.
 	var dst_bits_per_pixel  : base.u32[..= 256]
 	var dst_bytes_per_pixel : base.u64[..= 32]
 	var dst_bytes_per_row   : base.u64
+	var src_bytes_per_pixel : base.u32[..= 8]
 	var tab                 : table base.u8
 	var dst                 : slice base.u8
 	var i                   : base.u64
+	var j                   : base.u64
 	var n                   : base.u64
 
 	// TODO: the dst_pixfmt variable shouldn't be necessary. We should be able
@@ -232,14 +234,37 @@ pri func decoder.swizzle!(dst: ptr base.pixel_buffer, src: base.io_reader) base.
 		}
 		i = (this.dst_x as base.u64) * dst_bytes_per_pixel
 		if i >= dst.length() {
-			// TODO: advance args.src if the dst pixel_buffer bounds is
-			// smaller than this NIE's image bounds?
-			continue
+			src_bytes_per_pixel = 4
+			assert src_bytes_per_pixel > 0
+			if this.pixfmt == base.PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE {
+				src_bytes_per_pixel = 8
+				assert src_bytes_per_pixel > 0
+			}
+			n = args.src.length() / (src_bytes_per_pixel as base.u64)
+			n = n.min(a: (this.width ~mod- this.dst_x) as base.u64)
+			j = n
+			while j >= 8 {
+				if args.src.length() >= ((src_bytes_per_pixel * 8) as base.u64) {
+					args.src.skip_u32_fast!(
+						actual: src_bytes_per_pixel * 8,
+						worst_case: src_bytes_per_pixel * 8)
+				}
+				j -= 8
+			} endwhile
+			while j > 0 {
+				if args.src.length() >= ((src_bytes_per_pixel * 1) as base.u64) {
+					args.src.skip_u32_fast!(
+						actual: src_bytes_per_pixel * 1,
+						worst_case: src_bytes_per_pixel * 1)
+				}
+				j -= 1
+			} endwhile
+		} else {
+			n = this.swizzler.swizzle_interleaved_from_reader!(
+				dst: dst[i ..],
+				dst_palette: args.dst.palette(),
+				src: args.src)
 		}
-		n = this.swizzler.swizzle_interleaved_from_reader!(
-			dst: dst[i ..],
-			dst_palette: args.dst.palette(),
-			src: args.src)
 		if n == 0 {
 			return "@internal note: short read"
 		}
