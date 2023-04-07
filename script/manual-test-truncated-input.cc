@@ -69,6 +69,7 @@
 #define WUFFS_CONFIG__MODULE__NIE
 #define WUFFS_CONFIG__MODULE__PNG
 #define WUFFS_CONFIG__MODULE__TGA
+#define WUFFS_CONFIG__MODULE__WBMP
 #define WUFFS_CONFIG__MODULE__ZLIB
 
 // If building this program in an environment that doesn't easily accommodate
@@ -123,10 +124,8 @@ handle_image_decoder(wuffs_base__io_buffer src,
       dec = wuffs_tga__decoder::alloc_as__wuffs_base__image_decoder();
       break;
     case WUFFS_BASE__FOURCC__WBMP:
-      // Unsupported. wuffs_base__magic_number_guess_fourcc can sometimes
-      // return false positives for WBMP. The WBMP file format doesn't
-      // start with a "magic" identifier.
-      return unsupported_file_format;
+      dec = wuffs_wbmp__decoder::alloc_as__wuffs_base__image_decoder();
+      break;
     default:
       return unsupported_file_format;
   }
@@ -168,6 +167,9 @@ handle_image_decoder(wuffs_base__io_buffer src,
     } else {
       return df_status.message();
     }
+  }
+  if (src.meta.ri != src.meta.wi) {
+    return skipped;
   }
   return nullptr;
 }
