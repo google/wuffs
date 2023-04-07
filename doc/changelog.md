@@ -1,7 +1,14 @@
 # Changelog
 
 
-## Work In Progress
+## 2023-04-07 version 0.3.2
+
+The `std/bmp` and `std/nie` image decoders' `decode_frame` method now allow
+decoding to a pixel buffer that's smaller than the source image. This makes
+these two image decoders consistent with the other ones in `std`.
+
+
+## 2023-03-04 version 0.3.1
 
 For a *closed* `io_reader`, the standard library now returns `"#truncated
 input"` instead of `"$short read"`. Importantly, this is an error, not a
@@ -175,4 +182,4 @@ Wuffs version 0.1.
 
 ---
 
-Updated on January 2023.
+Updated on April 2023.
