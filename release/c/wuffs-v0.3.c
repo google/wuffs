@@ -85,15 +85,15 @@ extern "C" {
 // each major.minor branch, the commit count should increase monotonically.
 //
 // WUFFS_VERSION was overridden by "wuffs gen -version" based on revision
-// 67d9a68c49c01319baf3590b5695cb954a09c2c6 committed on 2023-04-07.
-#define WUFFS_VERSION 0x000030002
+// 00d5e35865a2f2718f4bb2596adaaa54bd639bbe committed on 2023-04-08.
+#define WUFFS_VERSION 0x000030003
 #define WUFFS_VERSION_MAJOR 0
 #define WUFFS_VERSION_MINOR 3
-#define WUFFS_VERSION_PATCH 2
+#define WUFFS_VERSION_PATCH 3
 #define WUFFS_VERSION_PRE_RELEASE_LABEL ""
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 3396
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20230407
-#define WUFFS_VERSION_STRING "0.3.2+3396.20230407"
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 3399
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20230408
+#define WUFFS_VERSION_STRING "0.3.3+3399.20230408"
 
 // ---------------- Configuration
 
@@ -14822,24 +14822,41 @@ wuffs_base__private_implementation__high_prec_dec__to_f64(
     // approach taken in wuffs_base__parse_number_f64. The latter is optimized
     // for the common cases (e.g. assuming no underscores or a leading '+'
     // sign) rather than the full set of cases allowed by the Wuffs API.
-    if (h->num_digits <= 19) {
+    //
+    // When we have 19 or fewer mantissa digits, run Eisel-Lemire once (trying
+    // for an exact result). When we have more than 19 mantissa digits, run it
+    // twice to get a lower and upper bound. We still have an exact result
+    // (within f64's rounding margin) if both bounds are equal (and valid).
+    uint32_t i_max = h->num_digits;
+    if (i_max > 19) {
+      i_max = 19;
+    }
+    int32_t exp10 = h->decimal_point - ((int32_t)i_max);
+    if ((-307 <= exp10) && (exp10 <= 288)) {
       uint64_t man = 0;
       uint32_t i;
-      for (i = 0; i < h->num_digits; i++) {
+      for (i = 0; i < i_max; i++) {
         man = (10 * man) + h->digits[i];
       }
-      int32_t exp10 = h->decimal_point - ((int32_t)(h->num_digits));
-      if ((man != 0) && (-307 <= exp10) && (exp10 <= 288)) {
-        int64_t r =
+      while (man != 0) {  // The 'while' is just an 'if' that we can 'break'.
+        int64_t r0 =
             wuffs_base__private_implementation__parse_number_f64_eisel_lemire(
-                man, exp10);
-        if (r >= 0) {
-          wuffs_base__result_f64 ret;
-          ret.status.repr = NULL;
-          ret.value = wuffs_base__ieee_754_bit_representation__from_u64_to_f64(
-              ((uint64_t)r) | (((uint64_t)(h->negative)) << 63));
-          return ret;
+                man + 0, exp10);
+        if (r0 < 0) {
+          break;
+        } else if (h->num_digits > 19) {
+          int64_t r1 =
+              wuffs_base__private_implementation__parse_number_f64_eisel_lemire(
+                  man + 1, exp10);
+          if (r1 != r0) {
+            break;
+          }
         }
+        wuffs_base__result_f64 ret;
+        ret.status.repr = NULL;
+        ret.value = wuffs_base__ieee_754_bit_representation__from_u64_to_f64(
+            ((uint64_t)r0) | (((uint64_t)(h->negative)) << 63));
+        return ret;
       }
     }
 

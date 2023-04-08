@@ -1,7 +1,7 @@
 # Changelog
 
 
-## Work In Progress
+## 2023-04-08 version 0.3.3
 
 The `wuffs_base__parse_number_f64` function has been further optimized.
 
