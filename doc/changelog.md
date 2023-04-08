@@ -1,6 +1,11 @@
 # Changelog
 
 
+## Work In Progress
+
+The `wuffs_base__parse_number_f64` function has been further optimized.
+
+
 ## 2023-04-07 version 0.3.2
 
 The `std/bmp` and `std/nie` image decoders' `decode_frame` method now allow
