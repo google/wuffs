@@ -294,13 +294,18 @@ func appendNum(buf []byte, s string) []byte {
 	return buf
 }
 
-func appendTabs(buf []byte, n int) []byte {
-	if n > 0 {
-		const tabs = "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t"
-		for ; n > len(tabs); n -= len(tabs) {
-			buf = append(buf, tabs...)
+func appendTabs(buf []byte, nTabs int) []byte {
+	nSpaces := 4 * nTabs // Hard-code 4 spaces per tab.
+	if nSpaces > 0 {
+		const spaces = "" + // 256 spaces.
+			"                                                                " +
+			"                                                                " +
+			"                                                                " +
+			"                                                                "
+		for ; nSpaces > len(spaces); nSpaces -= len(spaces) {
+			buf = append(buf, spaces...)
 		}
-		buf = append(buf, tabs[:n]...)
+		buf = append(buf, spaces[:nSpaces]...)
 	}
 	return buf
 }

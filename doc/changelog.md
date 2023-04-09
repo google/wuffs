@@ -6,7 +6,8 @@
 The dot points below probably aren't of interest unless you're _writing_ Wuffs
 code (instead of writing C/C++ code that _uses_ Wuffs' standard library).
 
-- `wuffsfmt` double-indents hanging lines.
+- `wuffsfmt` double-indents hanging lines and each indent is now 4 spaces (not
+  a tab).
 
 
 ## 2023-04-08 version 0.3.3

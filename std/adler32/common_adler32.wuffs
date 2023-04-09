@@ -14,58 +14,58 @@
 
 // TODO: drop the '?' but still generate wuffs_adler32__hasher__initialize?
 pub struct hasher? implements base.hasher_u32(
-		state   : base.u32,
-		started : base.bool,
+        state   : base.u32,
+        started : base.bool,
 )
 
 pub func hasher.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
 }
 
 pub func hasher.update_u32!(x: slice base.u8) base.u32 {
-	if not this.started {
-		this.started = true
-		this.state = 1
-		// There used to be an up_x86_avx2 implementation too, but while it
-		// made the std/adler32 micro-benchmarks better, it also made the
-		// std/zlib and std/png micro-benchmarks worse. See commit baec831f
-		// "Add std/adler32 hasher.up_x86_avx2".
-		choose up = [
-				up_arm_neon,
-				up_x86_sse42]
-	}
-	this.up!(x: args.x)
-	return this.state
+    if not this.started {
+        this.started = true
+        this.state = 1
+        // There used to be an up_x86_avx2 implementation too, but while it
+        // made the std/adler32 micro-benchmarks better, it also made the
+        // std/zlib and std/png micro-benchmarks worse. See commit baec831f
+        // "Add std/adler32 hasher.up_x86_avx2".
+        choose up = [
+                up_arm_neon,
+                up_x86_sse42]
+    }
+    this.up!(x: args.x)
+    return this.state
 }
 
 pri func hasher.up!(x: slice base.u8),
-		choosy,
+        choosy,
 {
-	// The Adler-32 checksum's magic 65521 and 5552 numbers are discussed in
-	// this package's README.md.
+    // The Adler-32 checksum's magic 65521 and 5552 numbers are discussed in
+    // this package's README.md.
 
-	var s1        : base.u32
-	var s2        : base.u32
-	var remaining : slice base.u8
-	var p         : slice base.u8
+    var s1        : base.u32
+    var s2        : base.u32
+    var remaining : slice base.u8
+    var p         : slice base.u8
 
-	s1 = this.state.low_bits(n: 16)
-	s2 = this.state.high_bits(n: 16)
-	while args.x.length() > 0 {
-		remaining = args.x[.. 0]
-		if args.x.length() > 5552 {
-			remaining = args.x[5552 ..]
-			args.x = args.x[.. 5552]
-		}
+    s1 = this.state.low_bits(n: 16)
+    s2 = this.state.high_bits(n: 16)
+    while args.x.length() > 0 {
+        remaining = args.x[.. 0]
+        if args.x.length() > 5552 {
+            remaining = args.x[5552 ..]
+            args.x = args.x[.. 5552]
+        }
 
-		// The SIMD versions of this function replace this simple iterate loop.
-		iterate (p = args.x)(length: 1, advance: 1, unroll: 8) {
-			s1 ~mod+= p[0] as base.u32
-			s2 ~mod+= s1
-		}
+        // The SIMD versions of this function replace this simple iterate loop.
+        iterate (p = args.x)(length: 1, advance: 1, unroll: 8) {
+            s1 ~mod+= p[0] as base.u32
+            s2 ~mod+= s1
+        }
 
-		s1 %= 65521
-		s2 %= 65521
-		args.x = remaining
-	} endwhile
-	this.state = ((s2 & 0xFFFF) << 16) | (s1 & 0xFFFF)
+        s1 %= 65521
+        s2 %= 65521
+        args.x = remaining
+    } endwhile
+    this.state = ((s2 & 0xFFFF) << 16) | (s1 & 0xFFFF)
 }
