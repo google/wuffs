@@ -46,7 +46,7 @@ pub struct decoder? implements base.image_decoder(
 
         swizzler : base.pixel_swizzler,
         util     : base.utility,
-)(
+) + (
         dst_palette : array[4 * 256] base.u8,
         src_palette : array[4 * 256] base.u8,
         scratch     : array[4] base.u8,

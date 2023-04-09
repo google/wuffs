@@ -344,7 +344,12 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			if err != nil {
 				return nil, err
 			}
-			if x := p.peek1(); x == t.IDOpenParen {
+			if x := p.peek1(); x == t.IDPlus {
+				p.src = p.src[1:]
+				if x := p.peek1(); x != t.IDOpenParen {
+					return nil, fmt.Errorf(`parse: expected "(", got %q at %s:%d`,
+						p.tm.ByID(x), p.filename, p.line())
+				}
 				extraFields, err := p.parseList(t.IDCloseParen, (*parser).parseExtraFieldNode)
 				if err != nil {
 					return nil, err

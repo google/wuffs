@@ -72,7 +72,7 @@ pub struct decoder? implements base.image_decoder(
 
         swizzler : base.pixel_swizzler,
         util     : base.utility,
-)(
+) + (
         // scratch is one of:
         //  - 2048 bytes = 256  * (8 bytes per BGRA_NONPREMUL_4X16LE).
         //  - 1024 bytes = 1024 * (1 byte  per INDEXED__BGRA_BINARY), plus

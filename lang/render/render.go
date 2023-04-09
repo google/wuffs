@@ -120,7 +120,7 @@ func Render(w io.Writer, tm *t.Map, src []t.Token, comments []string) (err error
 		buf = appendTabs(buf, indent+indentAdjustment)
 
 		// Apply or update varNameLength.
-		if len(lineTokens) < 3 {
+		if len(lineTokens) < 4 {
 			varNameLength = 0
 		} else {
 			id0 := lineTokens[0].ID

@@ -94,7 +94,7 @@ pub struct decoder? implements base.token_decoder(
         end_of_data : base.bool,
 
         util : base.utility,
-)(
+) + (
         // stack is conceptually an array of 2-bit integers, implemented as an
         // array of u32. The N'th 2-bit pair is whether we're in an array or
         // object, where N is the recursion depth:

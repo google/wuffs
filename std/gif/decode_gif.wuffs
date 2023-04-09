@@ -77,7 +77,7 @@ pub struct decoder? implements base.image_decoder(
         swizzler : base.pixel_swizzler,
 
         util : base.utility,
-)(
+) + (
         compressed : array[4096] base.u8,
 
         // palettes[0] and palettes[1] are the Global and Local Color Table.

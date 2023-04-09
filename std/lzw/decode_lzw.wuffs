@@ -58,7 +58,7 @@ pub struct decoder? implements base.io_transformer(
         prefixes : array[4096] base.u16[..= 4095],
 
         util : base.utility,
-)(
+) + (
         // read_from per-code state.
         suffixes : array[4096] array[8] base.u8,
         // lm1s is the "length minus 1"s of the values for the implicit key-value

@@ -29,7 +29,7 @@ pub struct decoder? implements base.token_decoder(
         comment_type : base.u8,
 
         util : base.utility,
-)(
+) + (
         // stack is conceptually an array of bits, implemented as an array of u32.
         // The N'th bit being 0 or 1 means that we're in an array or object, where
         // N is the recursion depth.

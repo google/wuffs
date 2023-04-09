@@ -49,7 +49,7 @@ to a 100-element array of unsigned 32-bit integers. Types can also be
 ## Structs
 
 Structs are a list of fields, enclosed in parentheses: `struct foo(x: base.u32,
-y: base.u32)`, possibly extended with a second list of [optionally
+y: base.u32)`, possibly extended (by a `+`) with a second list of [optionally
 initialized](/doc/note/initialization.md#partial-zero-initialization) fields.
 The struct name, `foo`, may be followed by a question mark `?`, which means
 that its methods may be [coroutines](/doc/note/coroutines.md).

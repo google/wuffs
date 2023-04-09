@@ -91,7 +91,7 @@ pub struct decoder? implements base.io_transformer(
         end_of_block : base.bool,
 
         util : base.utility,
-)(
+) + (
         // huffs and n_huffs_bits are the lookup tables for Huffman decodings.
         //
         // There are up to 2 Huffman decoders active at any one time. As per this

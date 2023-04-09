@@ -57,7 +57,7 @@ pub struct decoder? implements base.io_transformer(
         code_lengths_bitmask : base.u32,
 
         util : base.utility,
-)(
+) + (
         scratch : base.u32,
 
         letter_counts : array[256] base.u32,
