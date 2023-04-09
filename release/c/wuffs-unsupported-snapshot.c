@@ -1379,72 +1379,6 @@ wuffs_base__poke_u64le__no_bounds_check(uint8_t* p, uint64_t x) {
 #endif
 }
 
-// --------
-
-// Load and Store functions are deprecated. Use Peek and Poke instead.
-
-#define wuffs_base__load_u8__no_bounds_check \
-  wuffs_base__peek_u8__no_bounds_check
-#define wuffs_base__load_u16be__no_bounds_check \
-  wuffs_base__peek_u16be__no_bounds_check
-#define wuffs_base__load_u16le__no_bounds_check \
-  wuffs_base__peek_u16le__no_bounds_check
-#define wuffs_base__load_u24be__no_bounds_check \
-  wuffs_base__peek_u24be__no_bounds_check
-#define wuffs_base__load_u24le__no_bounds_check \
-  wuffs_base__peek_u24le__no_bounds_check
-#define wuffs_base__load_u32be__no_bounds_check \
-  wuffs_base__peek_u32be__no_bounds_check
-#define wuffs_base__load_u32le__no_bounds_check \
-  wuffs_base__peek_u32le__no_bounds_check
-#define wuffs_base__load_u40be__no_bounds_check \
-  wuffs_base__peek_u40be__no_bounds_check
-#define wuffs_base__load_u40le__no_bounds_check \
-  wuffs_base__peek_u40le__no_bounds_check
-#define wuffs_base__load_u48be__no_bounds_check \
-  wuffs_base__peek_u48be__no_bounds_check
-#define wuffs_base__load_u48le__no_bounds_check \
-  wuffs_base__peek_u48le__no_bounds_check
-#define wuffs_base__load_u56be__no_bounds_check \
-  wuffs_base__peek_u56be__no_bounds_check
-#define wuffs_base__load_u56le__no_bounds_check \
-  wuffs_base__peek_u56le__no_bounds_check
-#define wuffs_base__load_u64be__no_bounds_check \
-  wuffs_base__peek_u64be__no_bounds_check
-#define wuffs_base__load_u64le__no_bounds_check \
-  wuffs_base__peek_u64le__no_bounds_check
-
-#define wuffs_base__store_u8__no_bounds_check \
-  wuffs_base__poke_u8__no_bounds_check
-#define wuffs_base__store_u16be__no_bounds_check \
-  wuffs_base__poke_u16be__no_bounds_check
-#define wuffs_base__store_u16le__no_bounds_check \
-  wuffs_base__poke_u16le__no_bounds_check
-#define wuffs_base__store_u24be__no_bounds_check \
-  wuffs_base__poke_u24be__no_bounds_check
-#define wuffs_base__store_u24le__no_bounds_check \
-  wuffs_base__poke_u24le__no_bounds_check
-#define wuffs_base__store_u32be__no_bounds_check \
-  wuffs_base__poke_u32be__no_bounds_check
-#define wuffs_base__store_u32le__no_bounds_check \
-  wuffs_base__poke_u32le__no_bounds_check
-#define wuffs_base__store_u40be__no_bounds_check \
-  wuffs_base__poke_u40be__no_bounds_check
-#define wuffs_base__store_u40le__no_bounds_check \
-  wuffs_base__poke_u40le__no_bounds_check
-#define wuffs_base__store_u48be__no_bounds_check \
-  wuffs_base__poke_u48be__no_bounds_check
-#define wuffs_base__store_u48le__no_bounds_check \
-  wuffs_base__poke_u48le__no_bounds_check
-#define wuffs_base__store_u56be__no_bounds_check \
-  wuffs_base__poke_u56be__no_bounds_check
-#define wuffs_base__store_u56le__no_bounds_check \
-  wuffs_base__poke_u56le__no_bounds_check
-#define wuffs_base__store_u64be__no_bounds_check \
-  wuffs_base__poke_u64be__no_bounds_check
-#define wuffs_base__store_u64le__no_bounds_check \
-  wuffs_base__poke_u64le__no_bounds_check
-
 // ---------------- Slices and Tables
 
 // WUFFS_BASE__SLICE is a 1-dimensional buffer.
@@ -2619,8 +2553,6 @@ typedef struct wuffs_base__more_information__struct {
   inline wuffs_base__range_ie_u64 io_redirect__range() const;
   inline uint64_t io_seek__position() const;
   inline uint32_t metadata__fourcc() const;
-  // Deprecated: use metadata_raw_passthrough__range.
-  inline wuffs_base__range_ie_u64 metadata__range() const;
   inline wuffs_base__range_ie_u64 metadata_raw_passthrough__range() const;
   inline int32_t metadata_parsed__chrm(uint32_t component) const;
   inline uint32_t metadata_parsed__gama() const;
@@ -2631,9 +2563,6 @@ typedef struct wuffs_base__more_information__struct {
 
 #define WUFFS_BASE__MORE_INFORMATION__FLAVOR__IO_REDIRECT 1
 #define WUFFS_BASE__MORE_INFORMATION__FLAVOR__IO_SEEK 2
-// Deprecated: use
-// WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA_RAW_PASSTHROUGH.
-#define WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA 3
 #define WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA_RAW_PASSTHROUGH 3
 #define WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA_RAW_TRANSFORM 4
 #define WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA_PARSED 5
@@ -2691,17 +2620,6 @@ static inline uint32_t  //
 wuffs_base__more_information__metadata__fourcc(
     const wuffs_base__more_information* m) {
   return m->w;
-}
-
-// Deprecated: use
-// wuffs_base__more_information__metadata_raw_passthrough__range.
-static inline wuffs_base__range_ie_u64  //
-wuffs_base__more_information__metadata__range(
-    const wuffs_base__more_information* m) {
-  wuffs_base__range_ie_u64 ret;
-  ret.min_incl = m->y;
-  ret.max_excl = m->z;
-  return ret;
 }
 
 static inline wuffs_base__range_ie_u64  //
@@ -2834,11 +2752,6 @@ wuffs_base__more_information::metadata__fourcc() const {
 }
 
 inline wuffs_base__range_ie_u64  //
-wuffs_base__more_information::metadata__range() const {
-  return wuffs_base__more_information__metadata__range(this);
-}
-
-inline wuffs_base__range_ie_u64  //
 wuffs_base__more_information::metadata_raw_passthrough__range() const {
   return wuffs_base__more_information__metadata_raw_passthrough__range(this);
 }
@@ -2892,11 +2805,6 @@ typedef struct wuffs_base__io_buffer__struct {
   inline uint8_t* writer_pointer() const;
   inline uint64_t writer_position() const;
   inline wuffs_base__slice_u8 writer_slice() const;
-
-  // Deprecated: use reader_position.
-  inline uint64_t reader_io_position() const;
-  // Deprecated: use writer_position.
-  inline uint64_t writer_io_position() const;
 #endif  // __cplusplus
 
 } wuffs_base__io_buffer;
@@ -3021,12 +2929,6 @@ wuffs_base__io_buffer__compact(wuffs_base__io_buffer* buf) {
   buf->meta.ri = 0;
 }
 
-// Deprecated. Use wuffs_base__io_buffer__reader_position.
-static inline uint64_t  //
-wuffs_base__io_buffer__reader_io_position(const wuffs_base__io_buffer* buf) {
-  return buf ? wuffs_base__u64__sat_add(buf->meta.pos, buf->meta.ri) : 0;
-}
-
 static inline size_t  //
 wuffs_base__io_buffer__reader_length(const wuffs_base__io_buffer* buf) {
   return buf ? buf->meta.wi - buf->meta.ri : 0;
@@ -3047,12 +2949,6 @@ wuffs_base__io_buffer__reader_slice(const wuffs_base__io_buffer* buf) {
   return buf ? wuffs_base__make_slice_u8(buf->data.ptr + buf->meta.ri,
                                          buf->meta.wi - buf->meta.ri)
              : wuffs_base__empty_slice_u8();
-}
-
-// Deprecated. Use wuffs_base__io_buffer__writer_position.
-static inline uint64_t  //
-wuffs_base__io_buffer__writer_io_position(const wuffs_base__io_buffer* buf) {
-  return buf ? wuffs_base__u64__sat_add(buf->meta.pos, buf->meta.wi) : 0;
 }
 
 static inline size_t  //
@@ -3089,11 +2985,6 @@ wuffs_base__io_buffer::compact() {
   wuffs_base__io_buffer__compact(this);
 }
 
-inline uint64_t  //
-wuffs_base__io_buffer::reader_io_position() const {
-  return wuffs_base__io_buffer__reader_io_position(this);
-}
-
 inline size_t  //
 wuffs_base__io_buffer::reader_length() const {
   return wuffs_base__io_buffer__reader_length(this);
@@ -3112,11 +3003,6 @@ wuffs_base__io_buffer::reader_position() const {
 inline wuffs_base__slice_u8  //
 wuffs_base__io_buffer::reader_slice() const {
   return wuffs_base__io_buffer__reader_slice(this);
-}
-
-inline uint64_t  //
-wuffs_base__io_buffer::writer_io_position() const {
-  return wuffs_base__io_buffer__writer_io_position(this);
 }
 
 inline size_t  //
@@ -3928,10 +3814,6 @@ typedef uint32_t wuffs_base__pixel_alpha_transparency;
 #define WUFFS_BASE__PIXEL_ALPHA_TRANSPARENCY__NONPREMULTIPLIED_ALPHA 1
 #define WUFFS_BASE__PIXEL_ALPHA_TRANSPARENCY__PREMULTIPLIED_ALPHA 2
 #define WUFFS_BASE__PIXEL_ALPHA_TRANSPARENCY__BINARY_ALPHA 3
-
-// Deprecated: use WUFFS_BASE__PIXEL_ALPHA_TRANSPARENCY__NONPREMULTIPLIED_ALPHA
-// instead.
-#define WUFFS_BASE__PIXEL_ALPHA_TRANSPARENCY__NON_PREMULTIPLIED_ALPHA 1
 
 // --------
 
@@ -4816,9 +4698,6 @@ typedef struct wuffs_base__pixel_buffer__struct {
   inline wuffs_base__status set_from_slice(
       const wuffs_base__pixel_config* pixcfg,
       wuffs_base__slice_u8 pixbuf_memory);
-  inline wuffs_base__status set_from_table(
-      const wuffs_base__pixel_config* pixcfg,
-      wuffs_base__table_u8 primary_memory);
   inline wuffs_base__slice_u8 palette();
   inline wuffs_base__slice_u8 palette_or_else(wuffs_base__slice_u8 fallback);
   inline wuffs_base__pixel_format pixel_format() const;
@@ -4965,41 +4844,6 @@ wuffs_base__pixel_buffer__set_from_slice(wuffs_base__pixel_buffer* pb,
   return wuffs_base__make_status(NULL);
 }
 
-// Deprecated: does not handle indexed pixel configurations. Use
-// wuffs_base__pixel_buffer__set_interleaved instead.
-static inline wuffs_base__status  //
-wuffs_base__pixel_buffer__set_from_table(wuffs_base__pixel_buffer* pb,
-                                         const wuffs_base__pixel_config* pixcfg,
-                                         wuffs_base__table_u8 primary_memory) {
-  if (!pb) {
-    return wuffs_base__make_status(wuffs_base__error__bad_receiver);
-  }
-  memset(pb, 0, sizeof(*pb));
-  if (!pixcfg ||
-      wuffs_base__pixel_format__is_indexed(&pixcfg->private_impl.pixfmt) ||
-      wuffs_base__pixel_format__is_planar(&pixcfg->private_impl.pixfmt)) {
-    return wuffs_base__make_status(wuffs_base__error__bad_argument);
-  }
-  uint32_t bits_per_pixel =
-      wuffs_base__pixel_format__bits_per_pixel(&pixcfg->private_impl.pixfmt);
-  if ((bits_per_pixel == 0) || ((bits_per_pixel % 8) != 0)) {
-    // TODO: support fraction-of-byte pixels, e.g. 1 bit per pixel?
-    return wuffs_base__make_status(wuffs_base__error__unsupported_option);
-  }
-  uint64_t bytes_per_pixel = bits_per_pixel / 8;
-
-  uint64_t width_in_bytes =
-      ((uint64_t)pixcfg->private_impl.width) * bytes_per_pixel;
-  if ((width_in_bytes > primary_memory.width) ||
-      (pixcfg->private_impl.height > primary_memory.height)) {
-    return wuffs_base__make_status(wuffs_base__error__bad_argument);
-  }
-
-  pb->pixcfg = *pixcfg;
-  pb->private_impl.planes[0] = primary_memory;
-  return wuffs_base__make_status(NULL);
-}
-
 // wuffs_base__pixel_buffer__palette returns the palette color data. If
 // non-empty, it will have length
 // WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH.
@@ -5095,14 +4939,6 @@ wuffs_base__pixel_buffer::set_from_slice(
     wuffs_base__slice_u8 pixbuf_memory) {
   return wuffs_base__pixel_buffer__set_from_slice(this, pixcfg_arg,
                                                   pixbuf_memory);
-}
-
-inline wuffs_base__status  //
-wuffs_base__pixel_buffer::set_from_table(
-    const wuffs_base__pixel_config* pixcfg_arg,
-    wuffs_base__table_u8 primary_memory) {
-  return wuffs_base__pixel_buffer__set_from_table(this, pixcfg_arg,
-                                                  primary_memory);
 }
 
 inline wuffs_base__slice_u8  //

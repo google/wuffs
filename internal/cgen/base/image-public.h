@@ -223,10 +223,6 @@ typedef uint32_t wuffs_base__pixel_alpha_transparency;
 #define WUFFS_BASE__PIXEL_ALPHA_TRANSPARENCY__PREMULTIPLIED_ALPHA 2
 #define WUFFS_BASE__PIXEL_ALPHA_TRANSPARENCY__BINARY_ALPHA 3
 
-// Deprecated: use WUFFS_BASE__PIXEL_ALPHA_TRANSPARENCY__NONPREMULTIPLIED_ALPHA
-// instead.
-#define WUFFS_BASE__PIXEL_ALPHA_TRANSPARENCY__NON_PREMULTIPLIED_ALPHA 1
-
 // --------
 
 #define WUFFS_BASE__PIXEL_FORMAT__NUM_PLANES_MAX 4
@@ -1110,9 +1106,6 @@ typedef struct wuffs_base__pixel_buffer__struct {
   inline wuffs_base__status set_from_slice(
       const wuffs_base__pixel_config* pixcfg,
       wuffs_base__slice_u8 pixbuf_memory);
-  inline wuffs_base__status set_from_table(
-      const wuffs_base__pixel_config* pixcfg,
-      wuffs_base__table_u8 primary_memory);
   inline wuffs_base__slice_u8 palette();
   inline wuffs_base__slice_u8 palette_or_else(wuffs_base__slice_u8 fallback);
   inline wuffs_base__pixel_format pixel_format() const;
@@ -1259,41 +1252,6 @@ wuffs_base__pixel_buffer__set_from_slice(wuffs_base__pixel_buffer* pb,
   return wuffs_base__make_status(NULL);
 }
 
-// Deprecated: does not handle indexed pixel configurations. Use
-// wuffs_base__pixel_buffer__set_interleaved instead.
-static inline wuffs_base__status  //
-wuffs_base__pixel_buffer__set_from_table(wuffs_base__pixel_buffer* pb,
-                                         const wuffs_base__pixel_config* pixcfg,
-                                         wuffs_base__table_u8 primary_memory) {
-  if (!pb) {
-    return wuffs_base__make_status(wuffs_base__error__bad_receiver);
-  }
-  memset(pb, 0, sizeof(*pb));
-  if (!pixcfg ||
-      wuffs_base__pixel_format__is_indexed(&pixcfg->private_impl.pixfmt) ||
-      wuffs_base__pixel_format__is_planar(&pixcfg->private_impl.pixfmt)) {
-    return wuffs_base__make_status(wuffs_base__error__bad_argument);
-  }
-  uint32_t bits_per_pixel =
-      wuffs_base__pixel_format__bits_per_pixel(&pixcfg->private_impl.pixfmt);
-  if ((bits_per_pixel == 0) || ((bits_per_pixel % 8) != 0)) {
-    // TODO: support fraction-of-byte pixels, e.g. 1 bit per pixel?
-    return wuffs_base__make_status(wuffs_base__error__unsupported_option);
-  }
-  uint64_t bytes_per_pixel = bits_per_pixel / 8;
-
-  uint64_t width_in_bytes =
-      ((uint64_t)pixcfg->private_impl.width) * bytes_per_pixel;
-  if ((width_in_bytes > primary_memory.width) ||
-      (pixcfg->private_impl.height > primary_memory.height)) {
-    return wuffs_base__make_status(wuffs_base__error__bad_argument);
-  }
-
-  pb->pixcfg = *pixcfg;
-  pb->private_impl.planes[0] = primary_memory;
-  return wuffs_base__make_status(NULL);
-}
-
 // wuffs_base__pixel_buffer__palette returns the palette color data. If
 // non-empty, it will have length
 // WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH.
@@ -1389,14 +1347,6 @@ wuffs_base__pixel_buffer::set_from_slice(
     wuffs_base__slice_u8 pixbuf_memory) {
   return wuffs_base__pixel_buffer__set_from_slice(this, pixcfg_arg,
                                                   pixbuf_memory);
-}
-
-inline wuffs_base__status  //
-wuffs_base__pixel_buffer::set_from_table(
-    const wuffs_base__pixel_config* pixcfg_arg,
-    wuffs_base__table_u8 primary_memory) {
-  return wuffs_base__pixel_buffer__set_from_table(this, pixcfg_arg,
-                                                  primary_memory);
 }
 
 inline wuffs_base__slice_u8  //

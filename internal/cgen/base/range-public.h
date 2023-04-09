@@ -829,8 +829,6 @@ typedef struct wuffs_base__more_information__struct {
   inline wuffs_base__range_ie_u64 io_redirect__range() const;
   inline uint64_t io_seek__position() const;
   inline uint32_t metadata__fourcc() const;
-  // Deprecated: use metadata_raw_passthrough__range.
-  inline wuffs_base__range_ie_u64 metadata__range() const;
   inline wuffs_base__range_ie_u64 metadata_raw_passthrough__range() const;
   inline int32_t metadata_parsed__chrm(uint32_t component) const;
   inline uint32_t metadata_parsed__gama() const;
@@ -841,9 +839,6 @@ typedef struct wuffs_base__more_information__struct {
 
 #define WUFFS_BASE__MORE_INFORMATION__FLAVOR__IO_REDIRECT 1
 #define WUFFS_BASE__MORE_INFORMATION__FLAVOR__IO_SEEK 2
-// Deprecated: use
-// WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA_RAW_PASSTHROUGH.
-#define WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA 3
 #define WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA_RAW_PASSTHROUGH 3
 #define WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA_RAW_TRANSFORM 4
 #define WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA_PARSED 5
@@ -901,17 +896,6 @@ static inline uint32_t  //
 wuffs_base__more_information__metadata__fourcc(
     const wuffs_base__more_information* m) {
   return m->w;
-}
-
-// Deprecated: use
-// wuffs_base__more_information__metadata_raw_passthrough__range.
-static inline wuffs_base__range_ie_u64  //
-wuffs_base__more_information__metadata__range(
-    const wuffs_base__more_information* m) {
-  wuffs_base__range_ie_u64 ret;
-  ret.min_incl = m->y;
-  ret.max_excl = m->z;
-  return ret;
 }
 
 static inline wuffs_base__range_ie_u64  //
@@ -1041,11 +1025,6 @@ wuffs_base__more_information::io_seek__position() const {
 inline uint32_t  //
 wuffs_base__more_information::metadata__fourcc() const {
   return wuffs_base__more_information__metadata__fourcc(this);
-}
-
-inline wuffs_base__range_ie_u64  //
-wuffs_base__more_information::metadata__range() const {
-  return wuffs_base__more_information__metadata__range(this);
 }
 
 inline wuffs_base__range_ie_u64  //

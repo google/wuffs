@@ -1373,7 +1373,8 @@ do_test_wuffs_gif_decode_metadata(bool full) {
           }
 
           wuffs_base__range_ie_u64 r =
-              wuffs_base__more_information__metadata__range(&minfo);
+              wuffs_base__more_information__metadata_raw_passthrough__range(
+                  &minfo);
           uint64_t n = wuffs_base__range_ie_u64__length(&r);
           if ((n > 100) || (n + have_length > 100)) {
             RETURN_FAIL(
