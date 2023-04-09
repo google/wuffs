@@ -298,7 +298,7 @@ pri func decoder.decode_huffman_fast32!(dst: base.io_writer, src: base.io_reader
 		// its presence minimizes the diff between decode_huffman_fastxx and
 		// decode_huffman_slow.
 		while true,
-			pre args.dst.length() >= 266,
+				pre args.dst.length() >= 266,
 		{
 			// We can therefore prove:
 			assert (length as base.u64) <= args.dst.length() via "a <= b: a <= c; c <= b"(c: 266)
@@ -331,15 +331,15 @@ pri func decoder.decode_huffman_fast32!(dst: base.io_writer, src: base.io_reader
 				// because it cannot yield. We have already checked that
 				// args.dst.length() is large enough.
 				args.dst.limited_copy_u32_from_slice!(
-					up_to: hlen, s: this.history[(this.history_index - hdist) & 0x7FFF ..])
+						up_to: hlen, s: this.history[(this.history_index - hdist) & 0x7FFF ..])
 				if length == 0 {
 					// No need to copy from args.dst.
 					continue.loop
 				}
 
 				if (((dist_minus_1 + 1) as base.u64) > args.dst.history_length()) or
-					((length as base.u64) > args.dst.length()) or
-					(((length + 8) as base.u64) > args.dst.length()) {
+						((length as base.u64) > args.dst.length()) or
+						(((length + 8) as base.u64) > args.dst.length()) {
 					return "#internal error: inconsistent distance"
 				}
 			}
@@ -360,10 +360,10 @@ pri func decoder.decode_huffman_fast32!(dst: base.io_writer, src: base.io_reader
 			// what was previously in the writer buffer.
 			if (dist_minus_1 + 1) >= 8 {
 				args.dst.limited_copy_u32_from_history_8_byte_chunks_fast!(
-					up_to: length, distance: (dist_minus_1 + 1))
+						up_to: length, distance: (dist_minus_1 + 1))
 			} else {
 				args.dst.limited_copy_u32_from_history_fast!(
-					up_to: length, distance: (dist_minus_1 + 1))
+						up_to: length, distance: (dist_minus_1 + 1))
 			}
 			break
 		} endwhile
@@ -380,7 +380,7 @@ pri func decoder.decode_huffman_fast32!(dst: base.io_writer, src: base.io_reader
 	// even if conceptually, this function was responsible for reading the
 	// bytes we want to rewind.
 	while n_bits >= 8,
-		post n_bits < 8,
+			post n_bits < 8,
 	{
 		n_bits -= 8
 		if args.src.can_undo_byte() {

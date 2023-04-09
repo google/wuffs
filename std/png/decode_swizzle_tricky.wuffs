@@ -52,7 +52,7 @@ pri func decoder.filter_and_swizzle_tricky!(dst: ptr base.pixel_buffer, workbuf:
 	src_bytes_per_pixel = 1
 	if this.depth >= 8 {
 		src_bytes_per_pixel = (NUM_CHANNELS[this.color_type] as base.u64) *
-			((this.depth >> 3) as base.u64)
+				((this.depth >> 3) as base.u64)
 	}
 
 	if (this.chunk_type_array[0] == 'I') {
@@ -100,7 +100,7 @@ pri func decoder.filter_and_swizzle_tricky!(dst: ptr base.pixel_buffer, workbuf:
 		}
 		if this.depth == 8 {
 			while x < this.frame_rect_x1,
-				inv y < 0x00FF_FFFF,
+					inv y < 0x00FF_FFFF,
 			{
 				assert x < 0x00FF_FFFF via "a < b: a < c; c <= b"(c: this.frame_rect_x1)
 				i = (x as base.u64) * dst_bytes_per_pixel
@@ -113,9 +113,9 @@ pri func decoder.filter_and_swizzle_tricky!(dst: ptr base.pixel_buffer, workbuf:
 							bits_unpacked[3] = s[1]
 							s = s[2 ..]
 							this.swizzler.swizzle_interleaved_from_slice!(
-								dst: dst[i ..],
-								dst_palette: dst_palette,
-								src: bits_unpacked[.. 4])
+									dst: dst[i ..],
+									dst_palette: dst_palette,
+									src: bits_unpacked[.. 4])
 						}
 
 					} else if ((this.remap_transparency & 0xFFFF_FFFF) as base.u32) <> 0 {
@@ -127,19 +127,19 @@ pri func decoder.filter_and_swizzle_tricky!(dst: ptr base.pixel_buffer, workbuf:
 								bits_unpacked[3] = 0xFF
 								s = s[1 ..]
 								if ((this.remap_transparency & 0xFFFF_FFFF) as base.u32) == (
-									((bits_unpacked[0] as base.u32) << 0) |
-									((bits_unpacked[1] as base.u32) << 8) |
-									((bits_unpacked[2] as base.u32) << 16) |
-									((bits_unpacked[3] as base.u32) << 24)) {
+										((bits_unpacked[0] as base.u32) << 0) |
+										((bits_unpacked[1] as base.u32) << 8) |
+										((bits_unpacked[2] as base.u32) << 16) |
+										((bits_unpacked[3] as base.u32) << 24)) {
 									bits_unpacked[0] = 0
 									bits_unpacked[1] = 0
 									bits_unpacked[2] = 0
 									bits_unpacked[3] = 0
 								}
 								this.swizzler.swizzle_interleaved_from_slice!(
-									dst: dst[i ..],
-									dst_palette: dst_palette,
-									src: bits_unpacked[.. 4])
+										dst: dst[i ..],
+										dst_palette: dst_palette,
+										src: bits_unpacked[.. 4])
 							}
 						} else {
 							if 3 <= s.length() {
@@ -149,27 +149,27 @@ pri func decoder.filter_and_swizzle_tricky!(dst: ptr base.pixel_buffer, workbuf:
 								bits_unpacked[3] = 0xFF
 								s = s[3 ..]
 								if ((this.remap_transparency & 0xFFFF_FFFF) as base.u32) == (
-									((bits_unpacked[0] as base.u32) << 0) |
-									((bits_unpacked[1] as base.u32) << 8) |
-									((bits_unpacked[2] as base.u32) << 16) |
-									((bits_unpacked[3] as base.u32) << 24)) {
+										((bits_unpacked[0] as base.u32) << 0) |
+										((bits_unpacked[1] as base.u32) << 8) |
+										((bits_unpacked[2] as base.u32) << 16) |
+										((bits_unpacked[3] as base.u32) << 24)) {
 									bits_unpacked[0] = 0
 									bits_unpacked[1] = 0
 									bits_unpacked[2] = 0
 									bits_unpacked[3] = 0
 								}
 								this.swizzler.swizzle_interleaved_from_slice!(
-									dst: dst[i ..],
-									dst_palette: dst_palette,
-									src: bits_unpacked[.. 4])
+										dst: dst[i ..],
+										dst_palette: dst_palette,
+										src: bits_unpacked[.. 4])
 							}
 						}
 
 					} else if src_bytes_per_pixel <= s.length() {
 						this.swizzler.swizzle_interleaved_from_slice!(
-							dst: dst[i ..],
-							dst_palette: dst_palette,
-							src: s[.. src_bytes_per_pixel])
+								dst: dst[i ..],
+								dst_palette: dst_palette,
+								src: s[.. src_bytes_per_pixel])
 						s = s[src_bytes_per_pixel ..]
 					}
 				}
@@ -185,8 +185,8 @@ pri func decoder.filter_and_swizzle_tricky!(dst: ptr base.pixel_buffer, workbuf:
 			packs_remaining = 0
 
 			while x < this.frame_rect_x1,
-				inv y < 0x00FF_FFFF,
-				inv this.depth < 8,
+					inv y < 0x00FF_FFFF,
+					inv this.depth < 8,
 			{
 				assert x < 0x00FF_FFFF via "a < b: a < c; c <= b"(c: this.frame_rect_x1)
 				i = (x as base.u64) * dst_bytes_per_pixel
@@ -205,25 +205,25 @@ pri func decoder.filter_and_swizzle_tricky!(dst: ptr base.pixel_buffer, workbuf:
 						bits_unpacked[2] = bits_unpacked[0]
 						bits_unpacked[3] = 0xFF
 						if ((this.remap_transparency & 0xFFFF_FFFF) as base.u32) == (
-							((bits_unpacked[0] as base.u32) << 0) |
-							((bits_unpacked[1] as base.u32) << 8) |
-							((bits_unpacked[2] as base.u32) << 16) |
-							((bits_unpacked[3] as base.u32) << 24)) {
+								((bits_unpacked[0] as base.u32) << 0) |
+								((bits_unpacked[1] as base.u32) << 8) |
+								((bits_unpacked[2] as base.u32) << 16) |
+								((bits_unpacked[3] as base.u32) << 24)) {
 							bits_unpacked[0] = 0
 							bits_unpacked[1] = 0
 							bits_unpacked[2] = 0
 							bits_unpacked[3] = 0
 						}
 						this.swizzler.swizzle_interleaved_from_slice!(
-							dst: dst[i ..],
-							dst_palette: dst_palette,
-							src: bits_unpacked[.. 4])
+								dst: dst[i ..],
+								dst_palette: dst_palette,
+								src: bits_unpacked[.. 4])
 
 					} else {
 						this.swizzler.swizzle_interleaved_from_slice!(
-							dst: dst[i ..],
-							dst_palette: dst_palette,
-							src: bits_unpacked[.. 1])
+								dst: dst[i ..],
+								dst_palette: dst_palette,
+								src: bits_unpacked[.. 1])
 					}
 				}
 				x += (1 as base.u32) << INTERLACING[this.interlace_pass][0]
@@ -231,7 +231,7 @@ pri func decoder.filter_and_swizzle_tricky!(dst: ptr base.pixel_buffer, workbuf:
 
 		} else {
 			while x < this.frame_rect_x1,
-				inv y < 0x00FF_FFFF,
+					inv y < 0x00FF_FFFF,
 			{
 				assert x < 0x00FF_FFFF via "a < b: a < c; c <= b"(c: this.frame_rect_x1)
 				i = (x as base.u64) * dst_bytes_per_pixel
@@ -248,14 +248,14 @@ pri func decoder.filter_and_swizzle_tricky!(dst: ptr base.pixel_buffer, workbuf:
 							bits_unpacked[7] = 0xFF
 							s = s[2 ..]
 							if this.remap_transparency == (
-								((bits_unpacked[0] as base.u64) << 0) |
-								((bits_unpacked[1] as base.u64) << 8) |
-								((bits_unpacked[2] as base.u64) << 16) |
-								((bits_unpacked[3] as base.u64) << 24) |
-								((bits_unpacked[4] as base.u64) << 32) |
-								((bits_unpacked[5] as base.u64) << 40) |
-								((bits_unpacked[6] as base.u64) << 48) |
-								((bits_unpacked[7] as base.u64) << 56)) {
+									((bits_unpacked[0] as base.u64) << 0) |
+									((bits_unpacked[1] as base.u64) << 8) |
+									((bits_unpacked[2] as base.u64) << 16) |
+									((bits_unpacked[3] as base.u64) << 24) |
+									((bits_unpacked[4] as base.u64) << 32) |
+									((bits_unpacked[5] as base.u64) << 40) |
+									((bits_unpacked[6] as base.u64) << 48) |
+									((bits_unpacked[7] as base.u64) << 56)) {
 								bits_unpacked[0] = 0
 								bits_unpacked[1] = 0
 								bits_unpacked[2] = 0
@@ -279,14 +279,14 @@ pri func decoder.filter_and_swizzle_tricky!(dst: ptr base.pixel_buffer, workbuf:
 							bits_unpacked[7] = 0xFF
 							s = s[6 ..]
 							if this.remap_transparency == (
-								((bits_unpacked[0] as base.u64) << 0) |
-								((bits_unpacked[1] as base.u64) << 8) |
-								((bits_unpacked[2] as base.u64) << 16) |
-								((bits_unpacked[3] as base.u64) << 24) |
-								((bits_unpacked[4] as base.u64) << 32) |
-								((bits_unpacked[5] as base.u64) << 40) |
-								((bits_unpacked[6] as base.u64) << 48) |
-								((bits_unpacked[7] as base.u64) << 56)) {
+									((bits_unpacked[0] as base.u64) << 0) |
+									((bits_unpacked[1] as base.u64) << 8) |
+									((bits_unpacked[2] as base.u64) << 16) |
+									((bits_unpacked[3] as base.u64) << 24) |
+									((bits_unpacked[4] as base.u64) << 32) |
+									((bits_unpacked[5] as base.u64) << 40) |
+									((bits_unpacked[6] as base.u64) << 48) |
+									((bits_unpacked[7] as base.u64) << 56)) {
 								bits_unpacked[0] = 0
 								bits_unpacked[1] = 0
 								bits_unpacked[2] = 0
@@ -326,9 +326,9 @@ pri func decoder.filter_and_swizzle_tricky!(dst: ptr base.pixel_buffer, workbuf:
 					}
 
 					this.swizzler.swizzle_interleaved_from_slice!(
-						dst: dst[i ..],
-						dst_palette: dst_palette,
-						src: bits_unpacked[.. 8])
+							dst: dst[i ..],
+							dst_palette: dst_palette,
+							src: bits_unpacked[.. 8])
 				}
 				x += (1 as base.u32) << INTERLACING[this.interlace_pass][0]
 			} endwhile

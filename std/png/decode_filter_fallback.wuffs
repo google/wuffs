@@ -17,7 +17,7 @@
 // Filter 1: Sub.
 
 pri func decoder.filter_1!(curr: slice base.u8),
-	choosy,
+		choosy,
 {
 	var filter_distance : base.u64[..= 8]
 	var fa              : base.u8
@@ -31,7 +31,7 @@ pri func decoder.filter_1!(curr: slice base.u8),
 		fa = 0
 		i = i_start
 		while i < args.curr.length(),
-			inv i_start < 8,
+				inv i_start < 8,
 		{
 			args.curr[i] = args.curr[i] ~mod+ fa
 			fa = args.curr[i]
@@ -87,8 +87,8 @@ pri func decoder.filter_2!(curr: slice base.u8, prev: slice base.u8) {
 	n = args.curr.length().min(a: args.prev.length())
 	i = 0
 	while i < n,
-		inv n <= args.curr.length(),
-		inv n <= args.prev.length(),
+			inv n <= args.curr.length(),
+			inv n <= args.prev.length(),
 	{
 		assert i < 0xFFFF_FFFF_FFFF_FFFF via "a < b: a < c; c <= b"(c: n)
 		assert i < args.curr.length() via "a < b: a < c; c <= b"(c: n)
@@ -101,7 +101,7 @@ pri func decoder.filter_2!(curr: slice base.u8, prev: slice base.u8) {
 // Filter 3: Average.
 
 pri func decoder.filter_3!(curr: slice base.u8, prev: slice base.u8),
-	choosy,
+		choosy,
 {
 	var filter_distance : base.u64[..= 8]
 	var n               : base.u64
@@ -112,7 +112,7 @@ pri func decoder.filter_3!(curr: slice base.u8, prev: slice base.u8),
 		i = filter_distance
 		assert i >= filter_distance via "a >= b: a == b"()
 		while i < args.curr.length(),
-			inv i >= filter_distance,
+				inv i >= filter_distance,
 		{
 			assert i < 0xFFFF_FFFF_FFFF_FFFF via "a < b: a < c; c <= b"(c: args.curr.length())
 			assert (i - filter_distance) < args.curr.length() via "(a - b) < c: a < c; 0 <= b"()
@@ -125,8 +125,8 @@ pri func decoder.filter_3!(curr: slice base.u8, prev: slice base.u8),
 		n = args.curr.length().min(a: args.prev.length())
 		i = 0
 		while (i < n) and (i < filter_distance),
-			inv n <= args.curr.length(),
-			inv n <= args.prev.length(),
+				inv n <= args.curr.length(),
+				inv n <= args.prev.length(),
 		{
 			assert i < 0xFFFF_FFFF_FFFF_FFFF via "a < b: a < c; c <= b"(c: n)
 			assert i < args.curr.length() via "a < b: a < c; c <= b"(c: n)
@@ -138,17 +138,17 @@ pri func decoder.filter_3!(curr: slice base.u8, prev: slice base.u8),
 		i = filter_distance
 		assert i >= filter_distance via "a >= b: a == b"()
 		while i < n,
-			inv i >= filter_distance,
-			inv n <= args.curr.length(),
-			inv n <= args.prev.length(),
+				inv i >= filter_distance,
+				inv n <= args.curr.length(),
+				inv n <= args.prev.length(),
 		{
 			assert i < 0xFFFF_FFFF_FFFF_FFFF via "a < b: a < c; c <= b"(c: n)
 			assert i < args.curr.length() via "a < b: a < c; c <= b"(c: n)
 			assert i < args.prev.length() via "a < b: a < c; c <= b"(c: n)
 			assert (i - filter_distance) < args.curr.length() via "(a - b) < c: a < c; 0 <= b"()
 			args.curr[i] = args.curr[i] ~mod+ (((
-				(args.curr[i - filter_distance] as base.u32) +
-				(args.prev[i] as base.u32)) / 2) as base.u8)
+					(args.curr[i - filter_distance] as base.u32) +
+					(args.prev[i] as base.u32)) / 2) as base.u8)
 			i += 1
 			assert i >= filter_distance via "a >= b: a >= (b + c); 0 <= c"(c: 1)
 		} endwhile
@@ -223,7 +223,7 @@ pri func decoder.filter_3_distance_4_fallback!(curr: slice base.u8, prev: slice 
 // Filter 4: Paeth.
 
 pri func decoder.filter_4!(curr: slice base.u8, prev: slice base.u8),
-	choosy,
+		choosy,
 {
 	var filter_distance : base.u64[..= 8]
 	var n               : base.u64
@@ -241,8 +241,8 @@ pri func decoder.filter_4!(curr: slice base.u8, prev: slice base.u8),
 	n = args.curr.length().min(a: args.prev.length())
 	i = 0
 	while (i < n) and (i < filter_distance),
-		inv n <= args.curr.length(),
-		inv n <= args.prev.length(),
+			inv n <= args.curr.length(),
+			inv n <= args.prev.length(),
 	{
 		assert i < 0xFFFF_FFFF_FFFF_FFFF via "a < b: a < c; c <= b"(c: n)
 		assert i < args.curr.length() via "a < b: a < c; c <= b"(c: n)
@@ -254,9 +254,9 @@ pri func decoder.filter_4!(curr: slice base.u8, prev: slice base.u8),
 	i = filter_distance
 	assert i >= filter_distance via "a >= b: a == b"()
 	while i < n,
-		inv i >= filter_distance,
-		inv n <= args.curr.length(),
-		inv n <= args.prev.length(),
+			inv i >= filter_distance,
+			inv n <= args.curr.length(),
+			inv n <= args.prev.length(),
 	{
 		assert i < 0xFFFF_FFFF_FFFF_FFFF via "a < b: a < c; c <= b"(c: n)
 		assert i < args.curr.length() via "a < b: a < c; c <= b"(c: n)

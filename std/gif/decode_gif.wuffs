@@ -13,79 +13,79 @@
 // limitations under the License.
 
 pub struct decoder? implements base.image_decoder(
-	width  : base.u32,
-	height : base.u32,
+		width  : base.u32,
+		height : base.u32,
 
-	// The call sequence state machine is discussed in
-	// (/doc/std/image-decoders-call-sequence.md).
-	//
-	// A GIF's first frame's bounds affects the overall image bounds (per
-	// test/data/artificial/gif-frame-out-of-bounds.gif.make-artificial.txt).
-	// Decoding the first frame's bounds is part of decode_image_config even
-	// though it's conceptually part of the first decode_frame_config.
-	call_sequence : base.u8,
+		// The call sequence state machine is discussed in
+		// (/doc/std/image-decoders-call-sequence.md).
+		//
+		// A GIF's first frame's bounds affects the overall image bounds (per
+		// test/data/artificial/gif-frame-out-of-bounds.gif.make-artificial.txt).
+		// Decoding the first frame's bounds is part of decode_image_config even
+		// though it's conceptually part of the first decode_frame_config.
+		call_sequence : base.u8,
 
-	report_metadata_iccp : base.bool,
-	report_metadata_xmp  : base.bool,
-	metadata_fourcc      : base.u32,
-	metadata_io_position : base.u64,
+		report_metadata_iccp : base.bool,
+		report_metadata_xmp  : base.bool,
+		metadata_fourcc      : base.u32,
+		metadata_io_position : base.u64,
 
-	quirks : array[QUIRKS_COUNT] base.bool,
+		quirks : array[QUIRKS_COUNT] base.bool,
 
-	delayed_num_decoded_frames         : base.bool,
-	previous_lzw_decode_ended_abruptly : base.bool,
-	seen_header                        : base.bool,
+		delayed_num_decoded_frames         : base.bool,
+		previous_lzw_decode_ended_abruptly : base.bool,
+		seen_header                        : base.bool,
 
-	has_global_palette : base.bool,
+		has_global_palette : base.bool,
 
-	// interlace indexes the INTERLACE_START and INTERLACE_DELTA arrays.
-	interlace : base.u8[..= 4],
+		// interlace indexes the INTERLACE_START and INTERLACE_DELTA arrays.
+		interlace : base.u8[..= 4],
 
-	// Absent an ANIMEXTS1.0 or NETSCAPE2.0 extension, the implicit number of
-	// animation loops is 1.
-	seen_num_animation_loops_value : base.bool,
-	num_animation_loops_value      : base.u32,
+		// Absent an ANIMEXTS1.0 or NETSCAPE2.0 extension, the implicit number of
+		// animation loops is 1.
+		seen_num_animation_loops_value : base.bool,
+		num_animation_loops_value      : base.u32,
 
-	background_color_u32_argb_premul : base.u32,
-	black_color_u32_argb_premul      : base.u32,
+		background_color_u32_argb_premul : base.u32,
+		black_color_u32_argb_premul      : base.u32,
 
-	gc_has_transparent_index : base.bool,
-	gc_transparent_index     : base.u8,
-	gc_disposal              : base.u8,
-	// There are 7_056000 flicks per centisecond.
-	gc_duration : base.u64[..= 0xFFFF * 7_056000],
+		gc_has_transparent_index : base.bool,
+		gc_transparent_index     : base.u8,
+		gc_disposal              : base.u8,
+		// There are 7_056000 flicks per centisecond.
+		gc_duration : base.u64[..= 0xFFFF * 7_056000],
 
-	frame_config_io_position : base.u64,
+		frame_config_io_position : base.u64,
 
-	num_decoded_frame_configs_value : base.u64,
-	num_decoded_frames_value        : base.u64,
+		num_decoded_frame_configs_value : base.u64,
+		num_decoded_frames_value        : base.u64,
 
-	frame_rect_x0 : base.u32,
-	frame_rect_y0 : base.u32,
-	frame_rect_x1 : base.u32,
-	frame_rect_y1 : base.u32,
+		frame_rect_x0 : base.u32,
+		frame_rect_y0 : base.u32,
+		frame_rect_x1 : base.u32,
+		frame_rect_y1 : base.u32,
 
-	// The dst_etc fields are the output cursor during copy_to_image_buffer.
-	dst_x            : base.u32,
-	dst_y            : base.u32,
-	dirty_max_excl_y : base.u32,
+		// The dst_etc fields are the output cursor during copy_to_image_buffer.
+		dst_x            : base.u32,
+		dst_y            : base.u32,
+		dirty_max_excl_y : base.u32,
 
-	// Indexes into the compressed array, defined below.
-	compressed_ri : base.u64,
-	compressed_wi : base.u64,
+		// Indexes into the compressed array, defined below.
+		compressed_ri : base.u64,
+		compressed_wi : base.u64,
 
-	swizzler : base.pixel_swizzler,
+		swizzler : base.pixel_swizzler,
 
-	util : base.utility,
+		util : base.utility,
 )(
-	compressed : array[4096] base.u8,
+		compressed : array[4096] base.u8,
 
-	// palettes[0] and palettes[1] are the Global and Local Color Table.
-	palettes : array[2] array[4 * 256] base.u8,
-	// dst_palette is the swizzled color table.
-	dst_palette : array[4 * 256] base.u8,
+		// palettes[0] and palettes[1] are the Global and Local Color Table.
+		palettes : array[2] array[4 * 256] base.u8,
+		// dst_palette is the swizzled color table.
+		dst_palette : array[4 * 256] base.u8,
 
-	lzw : lzw.decoder,
+		lzw : lzw.decoder,
 )
 
 pub func decoder.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
@@ -125,10 +125,10 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
 	ffio = not this.gc_has_transparent_index
 	if not this.quirks[QUIRK_HONOR_BACKGROUND_COLOR - QUIRKS_BASE] {
 		ffio = ffio and
-			(this.frame_rect_x0 == 0) and
-			(this.frame_rect_y0 == 0) and
-			(this.frame_rect_x1 == this.width) and
-			(this.frame_rect_y1 == this.height)
+				(this.frame_rect_x0 == 0) and
+				(this.frame_rect_y0 == 0) and
+				(this.frame_rect_x1 == this.width) and
+				(this.frame_rect_y1 == this.height)
 	} else if ffio {
 		// Use opaque black, not transparent black.
 		this.black_color_u32_argb_premul = 0xFF00_0000
@@ -140,12 +140,12 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
 
 	if args.dst <> nullptr {
 		args.dst.set!(
-			pixfmt: base.PIXEL_FORMAT__INDEXED__BGRA_BINARY,
-			pixsub: 0,
-			width: this.width,
-			height: this.height,
-			first_frame_io_position: this.frame_config_io_position,
-			first_frame_is_opaque: ffio)
+				pixfmt: base.PIXEL_FORMAT__INDEXED__BGRA_BINARY,
+				pixsub: 0,
+				width: this.width,
+				height: this.height,
+				first_frame_io_position: this.frame_config_io_position,
+				first_frame_is_opaque: ffio)
 	}
 
 	if this.call_sequence == 0x00 {
@@ -185,16 +185,16 @@ pri func decoder.do_tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inf
 
 	while true {
 		while true,
-			post args.src.length() > 0,
+				post args.src.length() > 0,
 		{
 			if args.src.position() <> this.metadata_io_position {
 				if args.minfo <> nullptr {
 					args.minfo.set!(
-						flavor: base.MORE_INFORMATION__FLAVOR__IO_SEEK,
-						w: 0,
-						x: this.metadata_io_position,
-						y: 0,
-						z: 0)
+							flavor: base.MORE_INFORMATION__FLAVOR__IO_SEEK,
+							w: 0,
+							x: this.metadata_io_position,
+							y: 0,
+							z: 0)
 				}
 				yield? base."$mispositioned read"
 				continue
@@ -203,11 +203,11 @@ pri func decoder.do_tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inf
 			if args.src.length() <= 0 {
 				if args.minfo <> nullptr {
 					args.minfo.set!(
-						flavor: 0,
-						w: 0,
-						x: 0,
-						y: 0,
-						z: 0)
+							flavor: 0,
+							w: 0,
+							x: 0,
+							y: 0,
+							z: 0)
 				}
 				yield? base."$short read"
 				continue
@@ -235,11 +235,11 @@ pri func decoder.do_tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inf
 
 		if args.minfo <> nullptr {
 			args.minfo.set!(
-				flavor: base.MORE_INFORMATION__FLAVOR__METADATA_RAW_PASSTHROUGH,
-				w: this.metadata_fourcc,
-				x: 0,
-				y: args.src.position(),
-				z: this.metadata_io_position)
+					flavor: base.MORE_INFORMATION__FLAVOR__METADATA_RAW_PASSTHROUGH,
+					w: this.metadata_fourcc,
+					x: 0,
+					y: args.src.position(),
+					z: this.metadata_io_position)
 		}
 
 		yield? base."$even more information"
@@ -247,11 +247,11 @@ pri func decoder.do_tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inf
 
 	if args.minfo <> nullptr {
 		args.minfo.set!(
-			flavor: base.MORE_INFORMATION__FLAVOR__METADATA_RAW_PASSTHROUGH,
-			w: this.metadata_fourcc,
-			x: 0,
-			y: this.metadata_io_position,
-			z: this.metadata_io_position)
+				flavor: base.MORE_INFORMATION__FLAVOR__METADATA_RAW_PASSTHROUGH,
+				w: this.metadata_fourcc,
+				x: 0,
+				y: this.metadata_io_position,
+				z: this.metadata_io_position)
 	}
 	this.call_sequence &= 0xEF
 	this.metadata_fourcc = 0
@@ -292,16 +292,16 @@ pub func decoder.frame_dirty_rect() base.rect_ie_u32 {
 	// The "foo.min(a:this.width_or_height)" calls clip the nominal frame_rect
 	// to the image_rect.
 	return this.util.make_rect_ie_u32(
-		min_incl_x: this.frame_rect_x0.min(a: this.width),
-		min_incl_y: this.frame_rect_y0.min(a: this.height),
-		max_excl_x: this.frame_rect_x1.min(a: this.width),
-		max_excl_y: this.dirty_max_excl_y.min(a: this.height))
+			min_incl_x: this.frame_rect_x0.min(a: this.width),
+			min_incl_y: this.frame_rect_y0.min(a: this.height),
+			max_excl_x: this.frame_rect_x1.min(a: this.width),
+			max_excl_y: this.dirty_max_excl_y.min(a: this.height))
 }
 
 pub func decoder.workbuf_len() base.range_ii_u64 {
 	return this.util.make_range_ii_u64(
-		min_incl: DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE,
-		max_incl: DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE)
+			min_incl: DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE,
+			max_incl: DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE)
 }
 
 pub func decoder.restart_frame!(index: base.u64, io_position: base.u64) base.status {
@@ -370,10 +370,10 @@ pri func decoder.do_decode_frame_config?(dst: nptr base.frame_config, src: base.
 		// If the quirk is enabled and the first frame has a local color
 		// palette, its background color is black.
 		if this.quirks[QUIRK_FIRST_FRAME_LOCAL_PALETTE_MEANS_BLACK_BACKGROUND - QUIRKS_BASE] and
-			(this.num_decoded_frame_configs_value == 0) {
+				(this.num_decoded_frame_configs_value == 0) {
 
 			while args.src.length() <= 0,
-				post args.src.length() > 0,
+					post args.src.length() > 0,
 			{
 				yield? base."$short read"
 			} endwhile
@@ -388,17 +388,17 @@ pri func decoder.do_decode_frame_config?(dst: nptr base.frame_config, src: base.
 		// The "foo.min(a:this.width_or_height)" calls clip the nominal
 		// frame_rect to the image_rect.
 		args.dst.set!(bounds: this.util.make_rect_ie_u32(
-			min_incl_x: this.frame_rect_x0.min(a: this.width),
-			min_incl_y: this.frame_rect_y0.min(a: this.height),
-			max_excl_x: this.frame_rect_x1.min(a: this.width),
-			max_excl_y: this.frame_rect_y1.min(a: this.height)),
-			duration: this.gc_duration,
-			index: this.num_decoded_frame_configs_value,
-			io_position: this.frame_config_io_position,
-			disposal: this.gc_disposal,
-			opaque_within_bounds: not this.gc_has_transparent_index,
-			overwrite_instead_of_blend: false,
-			background_color: background_color)
+				min_incl_x: this.frame_rect_x0.min(a: this.width),
+				min_incl_y: this.frame_rect_y0.min(a: this.height),
+				max_excl_x: this.frame_rect_x1.min(a: this.width),
+				max_excl_y: this.frame_rect_y1.min(a: this.height)),
+				duration: this.gc_duration,
+				index: this.num_decoded_frame_configs_value,
+				io_position: this.frame_config_io_position,
+				disposal: this.gc_disposal,
+				opaque_within_bounds: not this.gc_has_transparent_index,
+				overwrite_instead_of_blend: false,
+				background_color: background_color)
 	}
 
 	this.num_decoded_frame_configs_value ~sat+= 1
@@ -455,7 +455,7 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
 		return base."@end of data"
 	}
 	if this.quirks[QUIRK_REJECT_EMPTY_FRAME - QUIRKS_BASE] and
-		((this.frame_rect_x0 == this.frame_rect_x1) or (this.frame_rect_y0 == this.frame_rect_y1)) {
+			((this.frame_rect_x0 == this.frame_rect_x1) or (this.frame_rect_y0 == this.frame_rect_y1)) {
 		return "#bad frame size"
 	}
 	this.decode_id_part1?(dst: args.dst, src: args.src, blend: args.blend)
@@ -528,7 +528,7 @@ pri func decoder.decode_header?(src: base.io_reader) {
 		i += 1
 	} endwhile
 	if (c[0] <> 'G') or (c[1] <> 'I') or (c[2] <> 'F') or (c[3] <> '8') or
-		((c[4] <> '7') and (c[4] <> '9')) or (c[5] <> 'a') {
+			((c[4] <> '7') and (c[4] <> '9')) or (c[5] <> 'a') {
 		return "#bad header"
 	}
 }
@@ -571,14 +571,14 @@ pri func decoder.decode_lsd?(src: base.io_reader) {
 
 		if this.quirks[QUIRK_HONOR_BACKGROUND_COLOR - QUIRKS_BASE] {
 			if (background_color_index <> 0) and
-				((background_color_index as base.u32) < num_palette_entries) {
+					((background_color_index as base.u32) < num_palette_entries) {
 
 				j = 4 * (background_color_index as base.u32)
 				this.background_color_u32_argb_premul =
-					((this.palettes[0][j + 0] as base.u32) << 0) |
-					((this.palettes[0][j + 1] as base.u32) << 8) |
-					((this.palettes[0][j + 2] as base.u32) << 16) |
-					((this.palettes[0][j + 3] as base.u32) << 24)
+						((this.palettes[0][j + 0] as base.u32) << 0) |
+						((this.palettes[0][j + 1] as base.u32) << 8) |
+						((this.palettes[0][j + 2] as base.u32) << 16) |
+						((this.palettes[0][j + 3] as base.u32) << 24)
 			} else {
 				// The background color is either opaque black or transparent
 				// black. We set it to an arbitrary nonsense value (77) for
@@ -862,11 +862,11 @@ pri func decoder.decode_id_part1?(dst: ptr base.pixel_buffer, src: base.io_reade
 	}
 
 	status = this.swizzler.prepare!(
-		dst_pixfmt: args.dst.pixel_format(),
-		dst_palette: args.dst.palette_or_else(fallback: this.dst_palette[..]),
-		src_pixfmt: this.util.make_pixel_format(repr: base.PIXEL_FORMAT__INDEXED__BGRA_BINARY),
-		src_palette: this.palettes[which_palette][..],
-		blend: args.blend)
+			dst_pixfmt: args.dst.pixel_format(),
+			dst_palette: args.dst.palette_or_else(fallback: this.dst_palette[..]),
+			src_pixfmt: this.util.make_pixel_format(repr: base.PIXEL_FORMAT__INDEXED__BGRA_BINARY),
+			src_palette: this.palettes[which_palette][..],
+			blend: args.blend)
 	if not status.is_ok() {
 		return status
 	}
@@ -936,8 +936,8 @@ pri func decoder.decode_id_part2?(dst: ptr base.pixel_buffer, src: base.io_reade
 				break
 			}
 			n_copied = args.src.limited_copy_u32_to_slice!(
-				up_to: (n_compressed & 0xFFFF_FFFF) as base.u32,
-				s: this.compressed[this.compressed_wi ..])
+					up_to: (n_compressed & 0xFFFF_FFFF) as base.u32,
+					s: this.compressed[this.compressed_wi ..])
 			this.compressed_wi ~sat+= n_copied as base.u64
 			block_size ~sat-= n_copied as base.u64
 			if block_size > 0 {
@@ -958,7 +958,7 @@ pri func decoder.decode_id_part2?(dst: ptr base.pixel_buffer, src: base.io_reade
 			io_bind (io: r, data: this.compressed[this.compressed_ri .. this.compressed_wi], history_position: 0) {
 				mark = r.mark()
 				lzw_status =? this.lzw.transform_io?(
-					dst: this.util.empty_io_writer(), src: r, workbuf: this.util.empty_slice_u8())
+						dst: this.util.empty_io_writer(), src: r, workbuf: this.util.empty_slice_u8())
 				this.compressed_ri ~sat+= r.count_since(mark: mark)
 			}
 
@@ -985,7 +985,7 @@ pri func decoder.decode_id_part2?(dst: ptr base.pixel_buffer, src: base.io_reade
 			} else if lzw_status == base."$short write" {
 				continue.inner
 			} else if this.quirks[QUIRK_IGNORE_TOO_MUCH_PIXEL_DATA - QUIRKS_BASE] and
-				(this.dst_y >= this.frame_rect_y1) and (this.interlace == 0) {
+					(this.dst_y >= this.frame_rect_y1) and (this.interlace == 0) {
 				// It's invalid LZW-compressed data, but we still have a full
 				// frame and have opted in to QUIRK_IGNORE_TOO_MUCH_PIXEL_DATA,
 				// so treat it like the lzw_status.is_ok() case, other than not
@@ -1004,8 +1004,8 @@ pri func decoder.decode_id_part2?(dst: ptr base.pixel_buffer, src: base.io_reade
 	this.compressed_wi = 0
 
 	if (this.dst_y < this.frame_rect_y1) and
-		(this.frame_rect_x0 <> this.frame_rect_x1) and
-		(this.frame_rect_y0 <> this.frame_rect_y1) {
+			(this.frame_rect_x0 <> this.frame_rect_x1) and
+			(this.frame_rect_y0 <> this.frame_rect_y1) {
 		return base."#not enough data"
 	}
 }
@@ -1068,7 +1068,7 @@ pri func decoder.copy_to_image_buffer!(pb: ptr base.pixel_buffer, src: slice bas
 				dst = dst[i ..]
 			}
 			n = this.swizzler.swizzle_interleaved_from_slice!(
-				dst: dst, dst_palette: this.dst_palette[..], src: src)
+					dst: dst, dst_palette: this.dst_palette[..], src: src)
 
 			src_ri ~sat+= n
 			this.dst_x ~sat+= (n & 0xFFFF_FFFF) as base.u32
@@ -1091,8 +1091,8 @@ pri func decoder.copy_to_image_buffer!(pb: ptr base.pixel_buffer, src: slice bas
 			// Some other GIF implementations call this progressive display or
 			// a "Haeberli inspired" technique.
 			if (this.num_decoded_frames_value == 0) and
-				(not this.gc_has_transparent_index) and
-				(this.interlace > 1) {
+					(not this.gc_has_transparent_index) and
+					(this.interlace > 1) {
 
 				replicate_src = tab.row_u32(y: this.dst_y)
 				replicate_y0 = this.dst_y ~sat+ 1

@@ -1,6 +1,14 @@
 # Changelog
 
 
+## Work In Progress
+
+The dot points below probably aren't of interest unless you're _writing_ Wuffs
+code (instead of writing C/C++ code that _uses_ Wuffs' standard library).
+
+- `wuffsfmt` double-indents hanging lines.
+
+
 ## 2023-04-08 version 0.3.3
 
 The `wuffs_base__parse_number_f64` function has been further optimized.

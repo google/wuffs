@@ -28,46 +28,46 @@ pri status "#internal error: inconsistent I/O"
 pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0
 
 pub struct decoder? implements base.io_transformer(
-	// set_literal_width_arg is 1 plus the saved argument passed to
-	// set_literal_width. This is assigned to the literal_width field at the
-	// start of transform_io. During that method, calling set_literal_width
-	// will change set_literal_width_arg but not literal_width.
-	set_literal_width_arg : base.u32[..= 9],
+		// set_literal_width_arg is 1 plus the saved argument passed to
+		// set_literal_width. This is assigned to the literal_width field at the
+		// start of transform_io. During that method, calling set_literal_width
+		// will change set_literal_width_arg but not literal_width.
+		set_literal_width_arg : base.u32[..= 9],
 
-	// read_from state that does not change during a decode call.
-	literal_width : base.u32[..= 8],
-	clear_code    : base.u32[..= 256],
-	end_code      : base.u32[..= 257],
+		// read_from state that does not change during a decode call.
+		literal_width : base.u32[..= 8],
+		clear_code    : base.u32[..= 256],
+		end_code      : base.u32[..= 257],
 
-	// read_from state that does change during a decode call.
-	save_code : base.u32[..= 4096],
-	prev_code : base.u32[..= 4095],
-	width     : base.u32[..= 12],
-	bits      : base.u32,
-	n_bits    : base.u32[..= 31],
-	output_ri : base.u32[..= 8191],
-	output_wi : base.u32[..= 8191],
+		// read_from state that does change during a decode call.
+		save_code : base.u32[..= 4096],
+		prev_code : base.u32[..= 4095],
+		width     : base.u32[..= 12],
+		bits      : base.u32,
+		n_bits    : base.u32[..= 31],
+		output_ri : base.u32[..= 8191],
+		output_wi : base.u32[..= 8191],
 
-	// read_from return value. The read_from method effectively returns a
-	// base.u32 to show how decode should continue after calling write_to. That
-	// value needs to be saved across write_to's possible suspension, so we
-	// might as well save it explicitly as a decoder field.
-	read_from_return_value : base.u32,
+		// read_from return value. The read_from method effectively returns a
+		// base.u32 to show how decode should continue after calling write_to. That
+		// value needs to be saved across write_to's possible suspension, so we
+		// might as well save it explicitly as a decoder field.
+		read_from_return_value : base.u32,
 
-	// read_from per-code state.
-	prefixes : array[4096] base.u16[..= 4095],
+		// read_from per-code state.
+		prefixes : array[4096] base.u16[..= 4095],
 
-	util : base.utility,
+		util : base.utility,
 )(
-	// read_from per-code state.
-	suffixes : array[4096] array[8] base.u8,
-	// lm1s is the "length minus 1"s of the values for the implicit key-value
-	// table in this decoder. See std/lzw/README.md for more detail.
-	lm1s : array[4096] base.u16,
+		// read_from per-code state.
+		suffixes : array[4096] array[8] base.u8,
+		// lm1s is the "length minus 1"s of the values for the implicit key-value
+		// table in this decoder. See std/lzw/README.md for more detail.
+		lm1s : array[4096] base.u16,
 
-	// output[output_ri:output_wi] is the buffered output, connecting read_from
-	// with write_to and flush.
-	output : array[8192 + 7] base.u8,
+		// output[output_ri:output_wi] is the buffered output, connecting read_from
+		// with write_to and flush.
+		output : array[8192 + 7] base.u8,
 )
 
 pub func decoder.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {

@@ -16,7 +16,7 @@ pri status "#not a digit"
 pri status "#too large"
 
 pub struct parser?(
-	val : base.u32,
+		val : base.u32,
 )
 
 pub func parser.parse?(src: base.io_reader) {

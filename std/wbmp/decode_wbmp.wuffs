@@ -18,17 +18,17 @@ pub status "#truncated input"
 pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0
 
 pub struct decoder? implements base.image_decoder(
-	width  : base.u32,
-	height : base.u32,
+		width  : base.u32,
+		height : base.u32,
 
-	// The call sequence state machine is discussed in
-	// (/doc/std/image-decoders-call-sequence.md).
-	call_sequence : base.u8,
+		// The call sequence state machine is discussed in
+		// (/doc/std/image-decoders-call-sequence.md).
+		call_sequence : base.u8,
 
-	frame_config_io_position : base.u64,
+		frame_config_io_position : base.u64,
 
-	swizzler : base.pixel_swizzler,
-	util     : base.utility,
+		swizzler : base.pixel_swizzler,
+		util     : base.utility,
 )
 
 pub func decoder.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
@@ -72,7 +72,7 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
 		x32 = 0
 
 		while true,
-			inv i < 2,
+				inv i < 2,
 		{
 			c = args.src.read_u8?()
 			x32 |= (c & 0x7F) as base.u32
@@ -98,12 +98,12 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
 
 	if args.dst <> nullptr {
 		args.dst.set!(
-			pixfmt: base.PIXEL_FORMAT__INDEXED__BGRA_BINARY,
-			pixsub: 0,
-			width: this.width,
-			height: this.height,
-			first_frame_io_position: this.frame_config_io_position,
-			first_frame_is_opaque: true)
+				pixfmt: base.PIXEL_FORMAT__INDEXED__BGRA_BINARY,
+				pixsub: 0,
+				width: this.width,
+				height: this.height,
+				first_frame_io_position: this.frame_config_io_position,
+				first_frame_is_opaque: true)
 	}
 
 	this.call_sequence = 0x20
@@ -139,17 +139,17 @@ pri func decoder.do_decode_frame_config?(dst: nptr base.frame_config, src: base.
 
 	if args.dst <> nullptr {
 		args.dst.set!(bounds: this.util.make_rect_ie_u32(
-			min_incl_x: 0,
-			min_incl_y: 0,
-			max_excl_x: this.width,
-			max_excl_y: this.height),
-			duration: 0,
-			index: 0,
-			io_position: this.frame_config_io_position,
-			disposal: 0,
-			opaque_within_bounds: true,
-			overwrite_instead_of_blend: false,
-			background_color: 0xFF00_0000)
+				min_incl_x: 0,
+				min_incl_y: 0,
+				max_excl_x: this.width,
+				max_excl_y: this.height),
+				duration: 0,
+				index: 0,
+				io_position: this.frame_config_io_position,
+				disposal: 0,
+				opaque_within_bounds: true,
+				overwrite_instead_of_blend: false,
+				background_color: 0xFF00_0000)
 	}
 
 	this.call_sequence = 0x40
@@ -189,11 +189,11 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
 	}
 
 	status = this.swizzler.prepare!(
-		dst_pixfmt: args.dst.pixel_format(),
-		dst_palette: args.dst.palette(),
-		src_pixfmt: this.util.make_pixel_format(repr: base.PIXEL_FORMAT__Y),
-		src_palette: this.util.empty_slice_u8(),
-		blend: args.blend)
+			dst_pixfmt: args.dst.pixel_format(),
+			dst_palette: args.dst.palette(),
+			src_pixfmt: this.util.make_pixel_format(repr: base.PIXEL_FORMAT__Y),
+			src_palette: this.util.empty_slice_u8(),
+			blend: args.blend)
 	if not status.is_ok() {
 		return status
 	}
@@ -216,15 +216,15 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
 			dst_x = 0
 
 			while dst_x < this.width,
-				inv dst_y < 0xFFFF_FFFF,
+					inv dst_y < 0xFFFF_FFFF,
 			{
 				assert dst_x < 0xFFFF_FFFF via "a < b: a < c; c <= b"(c: this.width)
 
 				if (dst_x & 7) == 0 {
 					while args.src.length() <= 0,
-						inv dst_x < 0xFFFF_FFFF,
-						inv dst_y < 0xFFFF_FFFF,
-						post args.src.length() > 0,
+							inv dst_x < 0xFFFF_FFFF,
+							inv dst_y < 0xFFFF_FFFF,
+							post args.src.length() > 0,
 					{
 						yield? base."$short read"
 						tab = args.dst.plane(p: 0)
@@ -250,7 +250,7 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
 				c = (((c as base.u32) << 1) & 0xFF) as base.u8
 
 				this.swizzler.swizzle_interleaved_from_slice!(
-					dst: dst, dst_palette: this.util.empty_slice_u8(), src: src[..])
+						dst: dst, dst_palette: this.util.empty_slice_u8(), src: src[..])
 
 				if dst_bytes_per_pixel <= dst.length() {
 					dst = dst[dst_bytes_per_pixel ..]
@@ -267,10 +267,10 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
 
 pub func decoder.frame_dirty_rect() base.rect_ie_u32 {
 	return this.util.make_rect_ie_u32(
-		min_incl_x: 0,
-		min_incl_y: 0,
-		max_excl_x: this.width,
-		max_excl_y: this.height)
+			min_incl_x: 0,
+			min_incl_y: 0,
+			max_excl_x: this.width,
+			max_excl_y: this.height)
 }
 
 pub func decoder.num_animation_loops() base.u32 {

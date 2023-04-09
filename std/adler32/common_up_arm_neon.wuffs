@@ -13,7 +13,7 @@
 // limitations under the License.
 
 pri func hasher.up_arm_neon!(x: slice base.u8),
-	choose cpu_arch >= arm_neon,
+		choose cpu_arch >= arm_neon,
 {
 	// These variables are the same as the non-SIMD version.
 	var s1        : base.u32
@@ -141,29 +141,29 @@ pri func hasher.up_arm_neon!(x: slice base.u8),
 		//   ...
 		//   [u32×4: 0x04 * (Σ p28), 0x03 * (Σ p29), ..., 0x01 * (Σ p31)]
 		v2 = v2.vmlal_u16(
-			b: col0.vget_low_u16(),
-			c: util.make_u16x4_multiple(a00: 0x20, a01: 0x1F, a02: 0x1E, a03: 0x1D))
+				b: col0.vget_low_u16(),
+				c: util.make_u16x4_multiple(a00: 0x20, a01: 0x1F, a02: 0x1E, a03: 0x1D))
 		v2 = v2.vmlal_u16(
-			b: col0.vget_high_u16(),
-			c: util.make_u16x4_multiple(a00: 0x1C, a01: 0x1B, a02: 0x1A, a03: 0x19))
+				b: col0.vget_high_u16(),
+				c: util.make_u16x4_multiple(a00: 0x1C, a01: 0x1B, a02: 0x1A, a03: 0x19))
 		v2 = v2.vmlal_u16(
-			b: col1.vget_low_u16(),
-			c: util.make_u16x4_multiple(a00: 0x18, a01: 0x17, a02: 0x16, a03: 0x15))
+				b: col1.vget_low_u16(),
+				c: util.make_u16x4_multiple(a00: 0x18, a01: 0x17, a02: 0x16, a03: 0x15))
 		v2 = v2.vmlal_u16(
-			b: col1.vget_high_u16(),
-			c: util.make_u16x4_multiple(a00: 0x14, a01: 0x13, a02: 0x12, a03: 0x11))
+				b: col1.vget_high_u16(),
+				c: util.make_u16x4_multiple(a00: 0x14, a01: 0x13, a02: 0x12, a03: 0x11))
 		v2 = v2.vmlal_u16(
-			b: col2.vget_low_u16(),
-			c: util.make_u16x4_multiple(a00: 0x10, a01: 0x0F, a02: 0x0E, a03: 0x0D))
+				b: col2.vget_low_u16(),
+				c: util.make_u16x4_multiple(a00: 0x10, a01: 0x0F, a02: 0x0E, a03: 0x0D))
 		v2 = v2.vmlal_u16(
-			b: col2.vget_high_u16(),
-			c: util.make_u16x4_multiple(a00: 0x0C, a01: 0x0B, a02: 0x0A, a03: 0x09))
+				b: col2.vget_high_u16(),
+				c: util.make_u16x4_multiple(a00: 0x0C, a01: 0x0B, a02: 0x0A, a03: 0x09))
 		v2 = v2.vmlal_u16(
-			b: col3.vget_low_u16(),
-			c: util.make_u16x4_multiple(a00: 0x08, a01: 0x07, a02: 0x06, a03: 0x05))
+				b: col3.vget_low_u16(),
+				c: util.make_u16x4_multiple(a00: 0x08, a01: 0x07, a02: 0x06, a03: 0x05))
 		v2 = v2.vmlal_u16(
-			b: col3.vget_high_u16(),
-			c: util.make_u16x4_multiple(a00: 0x04, a01: 0x03, a02: 0x02, a03: 0x01))
+				b: col3.vget_high_u16(),
+				c: util.make_u16x4_multiple(a00: 0x04, a01: 0x03, a02: 0x02, a03: 0x01))
 
 		// Merge the four parallel u32 sums (v1) into the single u32 sum (s1)
 		// and ditto for v2. Starting with [u32×4: xx_0, xx_1, xx_2, xx_3]:

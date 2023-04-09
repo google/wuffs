@@ -21,7 +21,7 @@
 // cpu_arch >= x86_avx2". With AVX, PCLMULQDQ has a three-operand form, not
 // just a two-operand form: https://www.felixcloutier.com/x86/pclmulqdq
 pri func ieee_hasher.up_x86_avx2!(x: slice base.u8),
-	choose cpu_arch >= x86_avx2,
+		choose cpu_arch >= x86_avx2,
 {
 	var s : base.u32
 	var p : slice base.u8
@@ -102,10 +102,10 @@ pri func ieee_hasher.up_x86_avx2!(x: slice base.u8),
 	// Reduce 128 bits to 64 bits.
 	x1 = x0._mm_clmulepi64_si128(b: k, imm8: 0x10)
 	x2 = util.make_m128i_multiple_u32(
-		a00: 0xFFFF_FFFF,
-		a01: 0x0000_0000,
-		a02: 0xFFFF_FFFF,
-		a03: 0x0000_0000)
+			a00: 0xFFFF_FFFF,
+			a01: 0x0000_0000,
+			a02: 0xFFFF_FFFF,
+			a03: 0x0000_0000)
 	x0 = x0._mm_srli_si128(imm8: 8)
 	x0 = x0._mm_xor_si128(b: x1)
 	k = util.make_m128i_slice128(a: IEEE_X86_SSE42_K5ZZ[.. 16])

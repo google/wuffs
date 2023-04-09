@@ -28,24 +28,24 @@ pub status "#truncated input"
 pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 1
 
 pub struct decoder? implements base.io_transformer(
-	bad_call_sequence : base.bool,
-	header_complete   : base.bool,
+		bad_call_sequence : base.bool,
+		header_complete   : base.bool,
 
-	got_dictionary  : base.bool,
-	want_dictionary : base.bool,
+		got_dictionary  : base.bool,
+		want_dictionary : base.bool,
 
-	quirks : array[QUIRKS_COUNT] base.bool,
+		quirks : array[QUIRKS_COUNT] base.bool,
 
-	ignore_checksum : base.bool,
-	checksum        : adler32.hasher,
+		ignore_checksum : base.bool,
+		checksum        : adler32.hasher,
 
-	dict_id_hasher : adler32.hasher,
-	dict_id_got    : base.u32,
-	dict_id_want   : base.u32,
+		dict_id_hasher : adler32.hasher,
+		dict_id_got    : base.u32,
+		dict_id_want   : base.u32,
 
-	flate : deflate.decoder,
+		flate : deflate.decoder,
 
-	util : base.utility,
+		util : base.utility,
 )
 
 pub func decoder.dictionary_id() base.u32 {
@@ -77,8 +77,8 @@ pub func decoder.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
 
 pub func decoder.workbuf_len() base.range_ii_u64 {
 	return this.util.make_range_ii_u64(
-		min_incl: DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE,
-		max_incl: DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE)
+			min_incl: DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE,
+			max_incl: DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE)
 }
 
 pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf: slice base.u8) {

@@ -29,7 +29,7 @@
 // Filter 1: Sub.
 
 pri func decoder.filter_1_distance_4_arm_neon!(curr: slice base.u8),
-	choose cpu_arch >= arm_neon,
+		choose cpu_arch >= arm_neon,
 {
 	var curr : slice base.u8
 
@@ -50,7 +50,7 @@ pri func decoder.filter_1_distance_4_arm_neon!(curr: slice base.u8),
 // Filter 3: Average.
 
 pri func decoder.filter_3_distance_4_arm_neon!(curr: slice base.u8, prev: slice base.u8),
-	choose cpu_arch >= arm_neon,
+		choose cpu_arch >= arm_neon,
 {
 	var curr : slice base.u8
 	var prev : slice base.u8
@@ -84,7 +84,7 @@ pri func decoder.filter_3_distance_4_arm_neon!(curr: slice base.u8, prev: slice 
 // Filter 4: Paeth.
 
 pri func decoder.filter_4_distance_3_arm_neon!(curr: slice base.u8, prev: slice base.u8),
-	choose cpu_arch >= arm_neon,
+		choose cpu_arch >= arm_neon,
 {
 	// See the comments in filter_4_distance_4_arm_neon for an explanation of
 	// how this works. That function's single loop is copied twice here, once
@@ -125,8 +125,8 @@ pri func decoder.filter_4_distance_3_arm_neon!(curr: slice base.u8, prev: slice 
 		picka = cmpab.vandq_u16(b: cmpac).vmovn_u16()
 		pickb = pb.vcleq_u16(b: pc).vmovn_u16()
 		fx = fx.vadd_u8(
-			b: picka.vbsl_u8(b: fa,
-			c: pickb.vbsl_u8(b: fb, c: fc)))
+				b: picka.vbsl_u8(b: fa,
+				c: pickb.vbsl_u8(b: fb, c: fc)))
 		// § poke_u24le replaces poke_u32le.
 		curr.poke_u24le!(a: fx.as_u32x2().vget_lane_u32(b: 0))
 		fc = fb
@@ -146,8 +146,8 @@ pri func decoder.filter_4_distance_3_arm_neon!(curr: slice base.u8, prev: slice 
 		picka = cmpab.vandq_u16(b: cmpac).vmovn_u16()
 		pickb = pb.vcleq_u16(b: pc).vmovn_u16()
 		fx = fx.vadd_u8(
-			b: picka.vbsl_u8(b: fa,
-			c: pickb.vbsl_u8(b: fb, c: fc)))
+				b: picka.vbsl_u8(b: fa,
+				c: pickb.vbsl_u8(b: fb, c: fc)))
 		// § poke_u24le replaces poke_u32le.
 		curr.poke_u24le!(a: fx.as_u32x2().vget_lane_u32(b: 0))
 		// § These assignments are unnecessary; this is the last iteration.
@@ -157,7 +157,7 @@ pri func decoder.filter_4_distance_3_arm_neon!(curr: slice base.u8, prev: slice 
 }
 
 pri func decoder.filter_4_distance_4_arm_neon!(curr: slice base.u8, prev: slice base.u8),
-	choose cpu_arch >= arm_neon,
+		choose cpu_arch >= arm_neon,
 {
 	var curr : slice base.u8
 	var prev : slice base.u8
@@ -196,8 +196,8 @@ pri func decoder.filter_4_distance_4_arm_neon!(curr: slice base.u8, prev: slice 
 
 		// Add the predictor to the residual.
 		fx = fx.vadd_u8(
-			b: picka.vbsl_u8(b: fa,
-			c: pickb.vbsl_u8(b: fb, c: fc)))
+				b: picka.vbsl_u8(b: fa,
+				c: pickb.vbsl_u8(b: fb, c: fc)))
 
 		curr.poke_u32le!(a: fx.as_u32x2().vget_lane_u32(b: 0))
 		fc = fb

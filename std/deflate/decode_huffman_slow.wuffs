@@ -124,7 +124,7 @@ pri func decoder.decode_huffman_slow?(dst: base.io_writer, src: base.io_reader) 
 		table_entry_n_bits = (table_entry >> 4) & 0x0F
 		if table_entry_n_bits > 0 {
 			while n_bits < table_entry_n_bits,
-				post n_bits >= table_entry_n_bits,
+					post n_bits >= table_entry_n_bits,
 			{
 				assert n_bits < 15 via "a < b: a < c; c <= b"(c: table_entry_n_bits)
 				b2 = args.src.read_u8_as_u32?()
@@ -189,7 +189,7 @@ pri func decoder.decode_huffman_slow?(dst: base.io_writer, src: base.io_reader) 
 		table_entry_n_bits = (table_entry >> 4) & 0x0F
 		if table_entry_n_bits > 0 {
 			while n_bits < table_entry_n_bits,
-				post n_bits >= table_entry_n_bits,
+					post n_bits >= table_entry_n_bits,
 			{
 				assert n_bits < 15 via "a < b: a < c; c <= b"(c: table_entry_n_bits)
 				b5 = args.src.read_u8_as_u32?()
@@ -223,7 +223,7 @@ pri func decoder.decode_huffman_slow?(dst: base.io_writer, src: base.io_reader) 
 
 				// Copy from this.history[(this.history_index - hdist) ..].
 				n_copied = args.dst.limited_copy_u32_from_slice!(
-					up_to: hlen, s: this.history[(this.history_index - hdist) & 0x7FFF ..])
+						up_to: hlen, s: this.history[(this.history_index - hdist) & 0x7FFF ..])
 				if n_copied < hlen {
 					assert n_copied < length via "a < b: a < c; c <= b"(c: hlen)
 					assert length > n_copied via "a > b: b < a"()
@@ -241,7 +241,7 @@ pri func decoder.decode_huffman_slow?(dst: base.io_writer, src: base.io_reader) 
 
 			// Copy from args.dst.
 			n_copied = args.dst.limited_copy_u32_from_history!(
-				up_to: length, distance: (dist_minus_1 + 1))
+					up_to: length, distance: (dist_minus_1 + 1))
 			if length <= n_copied {
 				continue.loop
 			}

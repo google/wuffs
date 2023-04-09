@@ -31,55 +31,55 @@ pri const COMPRESSION_ALPHABITFIELDS : base.u32 = 6
 pri const COMPRESSION_LOW_BIT_DEPTH  : base.u32 = 0x100
 
 pub struct decoder? implements base.image_decoder(
-	width  : base.u32[..= 0x7FFF_FFFF],
-	height : base.u32[..= 0x7FFF_FFFF],
+		width  : base.u32[..= 0x7FFF_FFFF],
+		height : base.u32[..= 0x7FFF_FFFF],
 
-	// The call sequence state machine is discussed in
-	// (/doc/std/image-decoders-call-sequence.md).
-	call_sequence : base.u8,
+		// The call sequence state machine is discussed in
+		// (/doc/std/image-decoders-call-sequence.md).
+		call_sequence : base.u8,
 
-	top_down    : base.bool,
-	pad_per_row : base.u32[..= 3],
-	src_pixfmt  : base.u32,
+		top_down    : base.bool,
+		pad_per_row : base.u32[..= 3],
+		src_pixfmt  : base.u32,
 
-	io_redirect_fourcc : base.u32,
-	io_redirect_pos    : base.u64,
+		io_redirect_fourcc : base.u32,
+		io_redirect_pos    : base.u64,
 
-	frame_config_io_position : base.u64,
+		frame_config_io_position : base.u64,
 
-	bitmap_info_len : base.u32,
-	padding         : base.u32,
+		bitmap_info_len : base.u32,
+		padding         : base.u32,
 
-	bits_per_pixel : base.u32[..= 0xFFFF],
-	compression    : base.u32,
+		bits_per_pixel : base.u32[..= 0xFFFF],
+		compression    : base.u32,
 
-	// channel_etc's indexes are: B, G, R, A. This is in Wuffs' default order,
-	// which isn't the RGBA order they're listed in the wire format.
-	channel_masks    : array[4] base.u32,
-	channel_shifts   : array[4] base.u8[..= 31],
-	channel_num_bits : array[4] base.u8[..= 32],
+		// channel_etc's indexes are: B, G, R, A. This is in Wuffs' default order,
+		// which isn't the RGBA order they're listed in the wire format.
+		channel_masks    : array[4] base.u32,
+		channel_shifts   : array[4] base.u8[..= 31],
+		channel_num_bits : array[4] base.u8[..= 32],
 
-	dst_x     : base.u32,
-	dst_y     : base.u32,
-	dst_y_inc : base.u32,
+		dst_x     : base.u32,
+		dst_y     : base.u32,
+		dst_y_inc : base.u32,
 
-	pending_pad : base.u32[..= 3],
+		pending_pad : base.u32[..= 3],
 
-	rle_state   : base.u32,
-	rle_length  : base.u32[..= 0xFF],
-	rle_delta_x : base.u8,
-	rle_padded  : base.bool,
+		rle_state   : base.u32,
+		rle_length  : base.u32[..= 0xFF],
+		rle_delta_x : base.u8,
+		rle_padded  : base.bool,
 
-	swizzler : base.pixel_swizzler,
-	util     : base.utility,
+		swizzler : base.pixel_swizzler,
+		util     : base.utility,
 )(
-	// scratch is one of:
-	//  - 2048 bytes = 256  * (8 bytes per BGRA_NONPREMUL_4X16LE).
-	//  - 1024 bytes = 1024 * (1 byte  per INDEXED__BGRA_BINARY), plus
-	//    1024 bytes = 256  * (4 bytes per dst_palette entry).
-	scratch : array[2048] base.u8,
+		// scratch is one of:
+		//  - 2048 bytes = 256  * (8 bytes per BGRA_NONPREMUL_4X16LE).
+		//  - 1024 bytes = 1024 * (1 byte  per INDEXED__BGRA_BINARY), plus
+		//    1024 bytes = 256  * (4 bytes per dst_palette entry).
+		scratch : array[2048] base.u8,
 
-	src_palette : array[4 * 256] base.u8,
+		src_palette : array[4 * 256] base.u8,
 )
 
 pub func decoder.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
@@ -218,10 +218,10 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
 				}
 			}
 		} else if (this.bitmap_info_len <> 52) and
-			(this.bitmap_info_len <> 56) and
-			(this.bitmap_info_len <> 64) and
-			(this.bitmap_info_len <> 108) and
-			(this.bitmap_info_len <> 124) {
+				(this.bitmap_info_len <> 56) and
+				(this.bitmap_info_len <> 64) and
+				(this.bitmap_info_len <> 108) and
+				(this.bitmap_info_len <> 124) {
 			return "#unsupported BMP file"
 		}
 
@@ -245,13 +245,13 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
 				// If the explicit channel_masks are what the implicit ones
 				// would be for no compression, treat it as no compression.
 				if (this.channel_masks[0] == 0x0000_00FF) and
-					(this.channel_masks[1] == 0x0000_FF00) and
-					(this.channel_masks[2] == 0x00FF_0000) {
+						(this.channel_masks[1] == 0x0000_FF00) and
+						(this.channel_masks[2] == 0x00FF_0000) {
 					if this.bits_per_pixel == 24 {
 						this.compression = COMPRESSION_NONE
 					} else if this.bits_per_pixel == 32 {
 						if (this.channel_masks[3] == 0) or
-							(this.channel_masks[3] == 0xFF00_0000) {
+								(this.channel_masks[3] == 0xFF00_0000) {
 							this.compression = COMPRESSION_NONE
 						}
 					}
@@ -275,8 +275,8 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
 
 	if this.compression == COMPRESSION_NONE {
 		if (this.bits_per_pixel == 1) or
-			(this.bits_per_pixel == 2) or
-			(this.bits_per_pixel == 4) {
+				(this.bits_per_pixel == 2) or
+				(this.bits_per_pixel == 4) {
 			this.src_pixfmt = base.PIXEL_FORMAT__INDEXED__BGRA_BINARY
 			this.compression = COMPRESSION_LOW_BIT_DEPTH
 		} else if this.bits_per_pixel == 8 {
@@ -329,10 +329,10 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
 
 	// OS/2 BMP files have fewer valid bits_per_pixel values.
 	if ((this.bitmap_info_len < 40) or (this.bitmap_info_len == 64)) and
-		(this.bits_per_pixel <> 1) and
-		(this.bits_per_pixel <> 4) and
-		(this.bits_per_pixel <> 8) and
-		(this.bits_per_pixel <> 24) {
+			(this.bits_per_pixel <> 1) and
+			(this.bits_per_pixel <> 4) and
+			(this.bits_per_pixel <> 8) and
+			(this.bits_per_pixel <> 24) {
 		return "#bad header"
 	}
 
@@ -364,19 +364,19 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
 	if args.dst <> nullptr {
 		dst_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL
 		if (this.channel_num_bits[0] > 8) or
-			(this.channel_num_bits[1] > 8) or
-			(this.channel_num_bits[2] > 8) or
-			(this.channel_num_bits[3] > 8) {
+				(this.channel_num_bits[1] > 8) or
+				(this.channel_num_bits[2] > 8) or
+				(this.channel_num_bits[3] > 8) {
 			dst_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE
 		}
 
 		args.dst.set!(
-			pixfmt: dst_pixfmt,
-			pixsub: 0,
-			width: this.width,
-			height: this.height,
-			first_frame_io_position: this.frame_config_io_position,
-			first_frame_is_opaque: this.channel_masks[3] == 0)
+				pixfmt: dst_pixfmt,
+				pixsub: 0,
+				width: this.width,
+				height: this.height,
+				first_frame_io_position: this.frame_config_io_position,
+				first_frame_is_opaque: this.channel_masks[3] == 0)
 	}
 
 	this.call_sequence = 0x20
@@ -412,17 +412,17 @@ pri func decoder.do_decode_frame_config?(dst: nptr base.frame_config, src: base.
 
 	if args.dst <> nullptr {
 		args.dst.set!(bounds: this.util.make_rect_ie_u32(
-			min_incl_x: 0,
-			min_incl_y: 0,
-			max_excl_x: this.width,
-			max_excl_y: this.height),
-			duration: 0,
-			index: 0,
-			io_position: this.frame_config_io_position,
-			disposal: 0,
-			opaque_within_bounds: true,
-			overwrite_instead_of_blend: false,
-			background_color: 0xFF00_0000)
+				min_incl_x: 0,
+				min_incl_y: 0,
+				max_excl_x: this.width,
+				max_excl_y: this.height),
+				duration: 0,
+				index: 0,
+				io_position: this.frame_config_io_position,
+				disposal: 0,
+				opaque_within_bounds: true,
+				overwrite_instead_of_blend: false,
+				background_color: 0xFF00_0000)
 	}
 
 	this.call_sequence = 0x40
@@ -464,11 +464,11 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
 		}
 
 		status = this.swizzler.prepare!(
-			dst_pixfmt: args.dst.pixel_format(),
-			dst_palette: args.dst.palette_or_else(fallback: this.scratch[1024 ..]),
-			src_pixfmt: this.util.make_pixel_format(repr: this.src_pixfmt),
-			src_palette: this.src_palette[..],
-			blend: args.blend)
+				dst_pixfmt: args.dst.pixel_format(),
+				dst_palette: args.dst.palette_or_else(fallback: this.scratch[1024 ..]),
+				src_pixfmt: this.util.make_pixel_format(repr: this.src_pixfmt),
+				src_palette: this.src_palette[..],
+				blend: args.blend)
 		if not status.is_ok() {
 			return status
 		}
@@ -567,24 +567,24 @@ pri func decoder.swizzle_none!(dst: ptr base.pixel_buffer, src: base.io_reader) 
 				while j >= 8 {
 					if args.src.length() >= ((src_bytes_per_pixel * 8) as base.u64) {
 						args.src.skip_u32_fast!(
-							actual: src_bytes_per_pixel * 8,
-							worst_case: src_bytes_per_pixel * 8)
+								actual: src_bytes_per_pixel * 8,
+								worst_case: src_bytes_per_pixel * 8)
 					}
 					j -= 8
 				} endwhile
 				while j > 0 {
 					if args.src.length() >= ((src_bytes_per_pixel * 1) as base.u64) {
 						args.src.skip_u32_fast!(
-							actual: src_bytes_per_pixel * 1,
-							worst_case: src_bytes_per_pixel * 1)
+								actual: src_bytes_per_pixel * 1,
+								worst_case: src_bytes_per_pixel * 1)
 					}
 					j -= 1
 				} endwhile
 			} else {
 				n = this.swizzler.swizzle_interleaved_from_reader!(
-					dst: dst[i ..],
-					dst_palette: dst_palette,
-					src: args.src)
+						dst: dst[i ..],
+						dst_palette: dst_palette,
+						src: args.src)
 			}
 			if n == 0 {
 				return "@internal note: short read"
@@ -693,9 +693,9 @@ pri func decoder.swizzle_rle!(dst: ptr base.pixel_buffer, src: base.io_reader) b
 						} endwhile
 					}
 					this.swizzler.swizzle_interleaved_from_slice!(
-						dst: dst,
-						dst_palette: dst_palette,
-						src: this.scratch[.. this.rle_length])
+							dst: dst,
+							dst_palette: dst_palette,
+							src: this.scratch[.. this.rle_length])
 					this.dst_x ~sat+= this.rle_length
 					rle_state = RLE_STATE_NEUTRAL
 					continue.middle
@@ -711,9 +711,9 @@ pri func decoder.swizzle_rle!(dst: ptr base.pixel_buffer, src: base.io_reader) b
 							return "#bad RLE compression"
 						}
 						this.swizzler.swizzle_interleaved_transparent_black!(
-							dst: dst,
-							dst_palette: dst_palette,
-							num_pixels: 0xFFFF_FFFF_FFFF_FFFF)
+								dst: dst,
+								dst_palette: dst_palette,
+								num_pixels: 0xFFFF_FFFF_FFFF_FFFF)
 						this.dst_x = 0
 						this.dst_y ~mod+= this.dst_y_inc
 						if code > 0 {
@@ -733,10 +733,10 @@ pri func decoder.swizzle_rle!(dst: ptr base.pixel_buffer, src: base.io_reader) b
 				} else if rle_state == RLE_STATE_LITERAL {
 					if this.bits_per_pixel == 8 {
 						n = this.swizzler.limited_swizzle_u32_interleaved_from_reader!(
-							up_to_num_pixels: this.rle_length,
-							dst: dst,
-							dst_palette: dst_palette,
-							src: args.src)
+								up_to_num_pixels: this.rle_length,
+								dst: dst,
+								dst_palette: dst_palette,
+								src: args.src)
 						this.dst_x ~sat+= (n & 0xFFFF_FFFF) as base.u32
 						this.rle_length ~sat-= (n & 0xFFFF_FFFF) as base.u32
 					} else {
@@ -757,9 +757,9 @@ pri func decoder.swizzle_rle!(dst: ptr base.pixel_buffer, src: base.io_reader) b
 						} endwhile
 						p0 = p0.min(a: this.rle_length)
 						this.swizzler.swizzle_interleaved_from_slice!(
-							dst: dst,
-							dst_palette: dst_palette,
-							src: this.scratch[.. p0])
+								dst: dst,
+								dst_palette: dst_palette,
+								src: this.scratch[.. p0])
 						this.dst_x ~sat+= p0
 						this.rle_length ~sat-= p0
 					}
@@ -794,9 +794,9 @@ pri func decoder.swizzle_rle!(dst: ptr base.pixel_buffer, src: base.io_reader) b
 				args.src.skip_u32_fast!(actual: 1, worst_case: 1)
 				if this.rle_delta_x > 0 {
 					this.swizzler.swizzle_interleaved_transparent_black!(
-						dst: dst,
-						dst_palette: dst_palette,
-						num_pixels: this.rle_delta_x as base.u64)
+							dst: dst,
+							dst_palette: dst_palette,
+							num_pixels: this.rle_delta_x as base.u64)
 					this.dst_x ~sat+= this.rle_delta_x as base.u32
 					this.rle_delta_x = 0
 					if this.dst_x > this.width {
@@ -819,15 +819,15 @@ pri func decoder.swizzle_rle!(dst: ptr base.pixel_buffer, src: base.io_reader) b
 						}
 						if code <= 0 {
 							this.swizzler.swizzle_interleaved_transparent_black!(
-								dst: row,
-								dst_palette: dst_palette,
-								num_pixels: this.dst_x as base.u64)
+									dst: row,
+									dst_palette: dst_palette,
+									num_pixels: this.dst_x as base.u64)
 							break
 						}
 						this.swizzler.swizzle_interleaved_transparent_black!(
-							dst: row,
-							dst_palette: dst_palette,
-							num_pixels: 0xFFFF_FFFF_FFFF_FFFF)
+								dst: row,
+								dst_palette: dst_palette,
+								num_pixels: 0xFFFF_FFFF_FFFF_FFFF)
 						code -= 1
 					} endwhile
 				}
@@ -848,9 +848,9 @@ pri func decoder.swizzle_rle!(dst: ptr base.pixel_buffer, src: base.io_reader) b
 			row = row[.. dst_bytes_per_row]
 		}
 		this.swizzler.swizzle_interleaved_transparent_black!(
-			dst: row,
-			dst_palette: dst_palette,
-			num_pixels: 0xFFFF_FFFF_FFFF_FFFF)
+				dst: row,
+				dst_palette: dst_palette,
+				num_pixels: 0xFFFF_FFFF_FFFF_FFFF)
 		this.dst_y ~mod+= this.dst_y_inc
 	} endwhile
 
@@ -935,7 +935,7 @@ pri func decoder.swizzle_bitfields!(dst: ptr base.pixel_buffer, src: base.io_rea
 
 				channel = 0
 				while channel < 4,
-					inv p0 < 256,
+						inv p0 < 256,
 				{
 					if this.channel_num_bits[channel] == 0 {
 						this.scratch[(8 * p0) + (2 * channel) + 0] = 0xFF
@@ -944,9 +944,9 @@ pri func decoder.swizzle_bitfields!(dst: ptr base.pixel_buffer, src: base.io_rea
 						c = (c32 & this.channel_masks[channel]) >> this.channel_shifts[channel]
 						num_bits = this.channel_num_bits[channel] as base.u32
 						while num_bits < 16,
-							inv p0 < 256,
-							inv channel < 4,
-							post num_bits >= 16,
+								inv p0 < 256,
+								inv channel < 4,
+								post num_bits >= 16,
 						{
 							c |= c ~mod<< num_bits
 							num_bits *= 2
@@ -972,9 +972,9 @@ pri func decoder.swizzle_bitfields!(dst: ptr base.pixel_buffer, src: base.io_rea
 				n = p0 as base.u64
 			} else {
 				n = this.swizzler.swizzle_interleaved_from_slice!(
-					dst: dst[i ..],
-					dst_palette: dst_palette,
-					src: this.scratch[.. 8 * p0])
+						dst: dst[i ..],
+						dst_palette: dst_palette,
+						src: this.scratch[.. 8 * p0])
 			}
 			if n == 0 {
 				return "@internal note: short read"
@@ -1158,9 +1158,9 @@ pri func decoder.swizzle_low_bit_depth!(dst: ptr base.pixel_buffer, src: base.io
 
 		p0 = p0.min(a: this.width ~sat- this.dst_x)
 		n = this.swizzler.swizzle_interleaved_from_slice!(
-			dst: dst,
-			dst_palette: dst_palette,
-			src: this.scratch[.. p0])
+				dst: dst,
+				dst_palette: dst_palette,
+				src: this.scratch[.. p0])
 		if n == 0 {
 			return "@internal note: short read"
 		}
@@ -1172,10 +1172,10 @@ pri func decoder.swizzle_low_bit_depth!(dst: ptr base.pixel_buffer, src: base.io
 
 pub func decoder.frame_dirty_rect() base.rect_ie_u32 {
 	return this.util.make_rect_ie_u32(
-		min_incl_x: 0,
-		min_incl_y: 0,
-		max_excl_x: this.width,
-		max_excl_y: this.height)
+			min_incl_x: 0,
+			min_incl_y: 0,
+			max_excl_x: this.width,
+			max_excl_y: this.height)
 }
 
 pub func decoder.num_animation_loops() base.u32 {
@@ -1230,11 +1230,11 @@ pri func decoder.do_tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inf
 	}
 	if args.minfo <> nullptr {
 		args.minfo.set!(
-			flavor: base.MORE_INFORMATION__FLAVOR__IO_REDIRECT,
-			w: this.io_redirect_fourcc,
-			x: 0,
-			y: this.io_redirect_pos,
-			z: 0xFFFF_FFFF_FFFF_FFFF)
+				flavor: base.MORE_INFORMATION__FLAVOR__IO_REDIRECT,
+				w: this.io_redirect_fourcc,
+				x: 0,
+				y: this.io_redirect_pos,
+				z: 0xFFFF_FFFF_FFFF_FFFF)
 	}
 	// Setting io_redirect_fourcc to a placeholder value of 1 will cause future
 	// calls to return an error.
@@ -1292,7 +1292,7 @@ pri func decoder.process_masks?() {
 		if mask <> 0 {
 			n = 0
 			while (mask & 1) == 0,
-				inv i < 4,
+					inv i < 4,
 			{
 				n ~mod+= 1
 				mask >>= 1
@@ -1301,7 +1301,7 @@ pri func decoder.process_masks?() {
 
 			n = 0
 			while (mask & 1) == 1,
-				inv i < 4,
+					inv i < 4,
 			{
 				n ~mod+= 1
 				mask >>= 1

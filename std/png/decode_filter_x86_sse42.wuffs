@@ -45,7 +45,7 @@
 // "Have std/png filter_1_distance_? use more SIMD" for a pessimizing example.
 
 pri func decoder.filter_1_distance_4_x86_sse42!(curr: slice base.u8),
-	choose cpu_arch >= x86_sse42,
+		choose cpu_arch >= x86_sse42,
 {
 	var curr : slice base.u8
 
@@ -75,7 +75,7 @@ pri func decoder.filter_1_distance_4_x86_sse42!(curr: slice base.u8),
 // }
 
 pri func decoder.filter_3_distance_4_x86_sse42!(curr: slice base.u8, prev: slice base.u8),
-	choose cpu_arch >= x86_sse42,
+		choose cpu_arch >= x86_sse42,
 {
 	var curr : slice base.u8
 	var prev : slice base.u8
@@ -134,7 +134,7 @@ pri func decoder.filter_3_distance_4_x86_sse42!(curr: slice base.u8, prev: slice
 // Filter 4: Paeth.
 
 pri func decoder.filter_4_distance_3_x86_sse42!(curr: slice base.u8, prev: slice base.u8),
-	choose cpu_arch >= x86_sse42,
+		choose cpu_arch >= x86_sse42,
 {
 	// See the comments in filter_4_distance_4_x86_sse42 for an explanation of
 	// how this works. That function's single loop is copied twice here, once
@@ -170,10 +170,10 @@ pri func decoder.filter_4_distance_3_x86_sse42!(curr: slice base.u8, prev: slice
 		pc128 = pc128._mm_abs_epi16()
 		smallest128 = pc128._mm_min_epi16(b: pb128._mm_min_epi16(b: pa128))
 		p128 = c128._mm_blendv_epi8(
-			b: b128,
-			mask: smallest128._mm_cmpeq_epi16(b: pb128))._mm_blendv_epi8(
-			b: a128,
-			mask: smallest128._mm_cmpeq_epi16(b: pa128))
+				b: b128,
+				mask: smallest128._mm_cmpeq_epi16(b: pb128))._mm_blendv_epi8(
+				b: a128,
+				mask: smallest128._mm_cmpeq_epi16(b: pa128))
 		x128 = util.make_m128i_single_u32(a: curr.peek_u32le())
 		x128 = x128._mm_unpacklo_epi8(b: z128)
 		x128 = x128._mm_add_epi8(b: p128)
@@ -196,10 +196,10 @@ pri func decoder.filter_4_distance_3_x86_sse42!(curr: slice base.u8, prev: slice
 		pc128 = pc128._mm_abs_epi16()
 		smallest128 = pc128._mm_min_epi16(b: pb128._mm_min_epi16(b: pa128))
 		p128 = c128._mm_blendv_epi8(
-			b: b128,
-			mask: smallest128._mm_cmpeq_epi16(b: pb128))._mm_blendv_epi8(
-			b: a128,
-			mask: smallest128._mm_cmpeq_epi16(b: pa128))
+				b: b128,
+				mask: smallest128._mm_cmpeq_epi16(b: pb128))._mm_blendv_epi8(
+				b: a128,
+				mask: smallest128._mm_cmpeq_epi16(b: pa128))
 		// § peek_u24le_as_u32 replaces peek_u32le.
 		x128 = util.make_m128i_single_u32(a: curr.peek_u24le_as_u32())
 		x128 = x128._mm_unpacklo_epi8(b: z128)
@@ -214,7 +214,7 @@ pri func decoder.filter_4_distance_3_x86_sse42!(curr: slice base.u8, prev: slice
 }
 
 pri func decoder.filter_4_distance_4_x86_sse42!(curr: slice base.u8, prev: slice base.u8),
-	choose cpu_arch >= x86_sse42,
+		choose cpu_arch >= x86_sse42,
 {
 	var curr : slice base.u8
 	var prev : slice base.u8
@@ -259,10 +259,10 @@ pri func decoder.filter_4_distance_4_x86_sse42!(curr: slice base.u8, prev: slice
 		//
 		// The a._mm_blendv_epi8(b, mask) method picks b when mask is true.
 		p128 = c128._mm_blendv_epi8(
-			b: b128,
-			mask: smallest128._mm_cmpeq_epi16(b: pb128))._mm_blendv_epi8(
-			b: a128,
-			mask: smallest128._mm_cmpeq_epi16(b: pa128))
+				b: b128,
+				mask: smallest128._mm_cmpeq_epi16(b: pb128))._mm_blendv_epi8(
+				b: a128,
+				mask: smallest128._mm_cmpeq_epi16(b: pa128))
 
 		// Add the predictor to the residual and, for the next iteration, set
 		// its previous pixels, a128 and c128, to x128 and b128.

@@ -65,7 +65,7 @@ func Render(w io.Writer, tm *t.Map, src []t.Token, comments []string) (err error
 		// Print any previous comments.
 		commentIndent := indent
 		if prevLineHanging {
-			commentIndent++
+			commentIndent += 2
 		}
 		for ; commentLine < line; commentLine++ {
 			buf = buf[:0]
@@ -115,7 +115,7 @@ func Render(w io.Writer, tm *t.Map, src []t.Token, comments []string) (err error
 		} else if id.IsClose() {
 			indentAdjustment--
 		} else if hanging && ((id != t.IDOpenCurly) && (id != t.IDOpenDoubleCurly)) {
-			indentAdjustment++
+			indentAdjustment += 2
 		}
 		buf = appendTabs(buf, indent+indentAdjustment)
 

@@ -58,7 +58,7 @@ pri func decoder.decode_huffman_slow?(src: base.io_reader) {
 				child_ff = (child & 0xFF) as base.u32
 				output = this.mtft[child_ff] as base.u32
 				this.mtft[1 .. 1 + child_ff].copy_from_slice!(
-					s: this.mtft[.. child_ff])
+						s: this.mtft[.. child_ff])
 				this.mtft[0] = output as base.u8
 
 				this.letter_counts[output] ~mod+= 1
@@ -93,7 +93,7 @@ pri func decoder.decode_huffman_slow?(src: base.io_reader) {
 			mtft0 = this.mtft[0] as base.u32
 			this.letter_counts[mtft0] ~mod+= run
 			while i < j,
-				pre j <= 900000,
+					pre j <= 900000,
 			{
 				assert i < 900000 via "a < b: a < c; c <= b"(c: j)
 				this.bwt[i] = mtft0

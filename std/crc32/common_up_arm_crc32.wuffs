@@ -13,7 +13,7 @@
 // limitations under the License.
 
 pri func ieee_hasher.up_arm_crc32!(x: slice base.u8),
-	choose cpu_arch >= arm_crc32,
+		choose cpu_arch >= arm_crc32,
 {
 	var p : slice base.u8
 

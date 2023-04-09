@@ -13,7 +13,7 @@
 // limitations under the License.
 
 pri func decoder.filter_and_swizzle!(dst: ptr base.pixel_buffer, workbuf: slice base.u8) base.status,
-	choosy,
+		choosy,
 {
 	var dst_pixfmt          : base.pixel_format
 	var dst_bits_per_pixel  : base.u32[..= 256]
@@ -44,24 +44,24 @@ pri func decoder.filter_and_swizzle!(dst: ptr base.pixel_buffer, workbuf: slice 
 
 	if dst_bytes_per_row1 < tab.width() {
 		tab = tab.subtable(
-			min_incl_x: 0,
-			min_incl_y: 0,
-			max_incl_x: dst_bytes_per_row1,
-			max_incl_y: tab.height())
+				min_incl_x: 0,
+				min_incl_y: 0,
+				max_incl_x: dst_bytes_per_row1,
+				max_incl_y: tab.height())
 	}
 
 	if dst_bytes_per_row0 < tab.width() {
 		tab = tab.subtable(
-			min_incl_x: dst_bytes_per_row0,
-			min_incl_y: 0,
-			max_incl_x: tab.width(),
-			max_incl_y: tab.height())
+				min_incl_x: dst_bytes_per_row0,
+				min_incl_y: 0,
+				max_incl_x: tab.width(),
+				max_incl_y: tab.height())
 	} else {
 		tab = tab.subtable(
-			min_incl_x: 0,
-			min_incl_y: 0,
-			max_incl_x: 0,
-			max_incl_y: 0)
+				min_incl_x: 0,
+				min_incl_y: 0,
+				max_incl_x: 0,
+				max_incl_y: 0)
 	}
 
 	y = this.frame_rect_y0
@@ -95,9 +95,9 @@ pri func decoder.filter_and_swizzle!(dst: ptr base.pixel_buffer, workbuf: slice 
 		}
 
 		this.swizzler.swizzle_interleaved_from_slice!(
-			dst: dst,
-			dst_palette: dst_palette,
-			src: curr_row)
+				dst: dst,
+				dst_palette: dst_palette,
+				src: curr_row)
 
 		prev_row = curr_row
 		y += 1

@@ -16,143 +16,143 @@ use "std/crc32"
 use "std/zlib"
 
 pub struct decoder? implements base.image_decoder(
-	// The 0x00FF_FFFF limit is arbitrary (the PNG spec says 0x7FFF_FFFF) but
-	// it means that (width * height * bytes_per_pixel) doesn't overflow a u64.
-	width  : base.u32[..= 0x00FF_FFFF],
-	height : base.u32[..= 0x00FF_FFFF],
+		// The 0x00FF_FFFF limit is arbitrary (the PNG spec says 0x7FFF_FFFF) but
+		// it means that (width * height * bytes_per_pixel) doesn't overflow a u64.
+		width  : base.u32[..= 0x00FF_FFFF],
+		height : base.u32[..= 0x00FF_FFFF],
 
-	// pass_bytes_per_row doesn't include the 1 byte for the per-row filter.
-	pass_bytes_per_row : base.u64[..= 0x07FF_FFF8],
+		// pass_bytes_per_row doesn't include the 1 byte for the per-row filter.
+		pass_bytes_per_row : base.u64[..= 0x07FF_FFF8],
 
-	workbuf_wi            : base.u64,
-	workbuf_hist_pos_base : base.u64,
+		workbuf_wi            : base.u64,
+		workbuf_hist_pos_base : base.u64,
 
-	// The inclusive upper bound, DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE, is
-	// derived from the width and height upper bounds at up to 8 bytes per
-	// pixel. It equals (((8 * M) + 1) * M), where M is 0x00FF_FFFF.
-	overall_workbuf_length : base.u64[..= 0x0007_FFFF_F100_0007],
-	pass_workbuf_length    : base.u64[..= 0x0007_FFFF_F100_0007],
+		// The inclusive upper bound, DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE, is
+		// derived from the width and height upper bounds at up to 8 bytes per
+		// pixel. It equals (((8 * M) + 1) * M), where M is 0x00FF_FFFF.
+		overall_workbuf_length : base.u64[..= 0x0007_FFFF_F100_0007],
+		pass_workbuf_length    : base.u64[..= 0x0007_FFFF_F100_0007],
 
-	// The call sequence state machine is discussed in
-	// (/doc/std/image-decoders-call-sequence.md).
-	call_sequence : base.u8,
+		// The call sequence state machine is discussed in
+		// (/doc/std/image-decoders-call-sequence.md).
+		call_sequence : base.u8,
 
-	report_metadata_chrm : base.bool,
-	report_metadata_exif : base.bool,
-	report_metadata_gama : base.bool,
-	report_metadata_iccp : base.bool,
-	report_metadata_kvp  : base.bool,
-	report_metadata_srgb : base.bool,
+		report_metadata_chrm : base.bool,
+		report_metadata_exif : base.bool,
+		report_metadata_gama : base.bool,
+		report_metadata_iccp : base.bool,
+		report_metadata_kvp  : base.bool,
+		report_metadata_srgb : base.bool,
 
-	ignore_checksum : base.bool,
+		ignore_checksum : base.bool,
 
-	depth           : base.u8[..= 16],
-	color_type      : base.u8[..= 6],
-	filter_distance : base.u8[..= 8],
-	interlace_pass  : base.u8[..= 7],
+		depth           : base.u8[..= 16],
+		color_type      : base.u8[..= 6],
+		filter_distance : base.u8[..= 8],
+		interlace_pass  : base.u8[..= 7],
 
-	seen_actl : base.bool,
-	seen_chrm : base.bool,
-	seen_fctl : base.bool,
-	seen_exif : base.bool,
-	seen_gama : base.bool,
-	seen_iccp : base.bool,
-	seen_idat : base.bool,
-	seen_ihdr : base.bool,
-	seen_plte : base.bool,
-	seen_srgb : base.bool,
-	seen_trns : base.bool,
+		seen_actl : base.bool,
+		seen_chrm : base.bool,
+		seen_fctl : base.bool,
+		seen_exif : base.bool,
+		seen_gama : base.bool,
+		seen_iccp : base.bool,
+		seen_idat : base.bool,
+		seen_ihdr : base.bool,
+		seen_plte : base.bool,
+		seen_srgb : base.bool,
+		seen_trns : base.bool,
 
-	metadata_is_zlib_compressed : base.bool,
+		metadata_is_zlib_compressed : base.bool,
 
-	zlib_is_dirty : base.bool,
+		zlib_is_dirty : base.bool,
 
-	chunk_type       : base.u32,
-	chunk_type_array : array[4] base.u8,
-	chunk_length     : base.u32,
+		chunk_type       : base.u32,
+		chunk_type_array : array[4] base.u8,
+		chunk_length     : base.u32,
 
-	// remap_transparency, if non-zero, is the 32-bit or 64-bit (depending on
-	// this.depth) argb_nonpremul color that is nominally opaque but remapped
-	// to transparent black.
-	//
-	// "Remapped" is an unofficial term. This is where the IHDR color type is 0
-	// (Y) or 2 (RGB) but there's also a tRNS chunk.
-	//
-	// PNG transparency that isn't "remapped" is color type 3 (indexed) with
-	// tRNS, color type 4 (YA) or color type 6 (RGBA).
-	remap_transparency : base.u64,
+		// remap_transparency, if non-zero, is the 32-bit or 64-bit (depending on
+		// this.depth) argb_nonpremul color that is nominally opaque but remapped
+		// to transparent black.
+		//
+		// "Remapped" is an unofficial term. This is where the IHDR color type is 0
+		// (Y) or 2 (RGB) but there's also a tRNS chunk.
+		//
+		// PNG transparency that isn't "remapped" is color type 3 (indexed) with
+		// tRNS, color type 4 (YA) or color type 6 (RGBA).
+		remap_transparency : base.u64,
 
-	dst_pixfmt : base.u32,
-	src_pixfmt : base.u32,
+		dst_pixfmt : base.u32,
+		src_pixfmt : base.u32,
 
-	num_animation_frames_value      : base.u32,
-	num_animation_loops_value       : base.u32,
-	num_decoded_frame_configs_value : base.u32,
-	num_decoded_frames_value        : base.u32,
+		num_animation_frames_value      : base.u32,
+		num_animation_loops_value       : base.u32,
+		num_decoded_frame_configs_value : base.u32,
+		num_decoded_frames_value        : base.u32,
 
-	// The frame_etc fields correspond to the base.frame_config argument passed
-	// to decode_frame_config. For animated APNG, these are explicitly given in
-	// the file's fcTL chunks. For still PNG, these are implicitly given in the
-	// file's IHDR chunk.
-	//
-	// Either way, decode_image_config has to read all the way to the start of
-	// the first IDAT / fdAT chunk (e.g. to see if there's a PLTE chunk). While
-	// later frame's restart io_positions are located just before fcTL chunks,
-	// the first frame's restart io_position is located just before the IDAT /
-	// fdAT chunk, so we also have to cache the first frame's configuration as
-	// we cannot re-read the first fcTL. Hence, there are first_etc fields for
-	// every frame_etc field.
-	//
-	// For the etc_duration fields, there are 705_600000 flicks per second and
-	// the maximum frame duration is 65535 seconds.
-	//
-	// The fields are ordered to minimize alignment wastage.
-	frame_rect_x0                    : base.u32[..= 0x00FF_FFFF],
-	frame_rect_y0                    : base.u32[..= 0x00FF_FFFF],
-	frame_rect_x1                    : base.u32[..= 0x00FF_FFFF],
-	frame_rect_y1                    : base.u32[..= 0x00FF_FFFF],
-	first_rect_x0                    : base.u32[..= 0x00FF_FFFF],
-	first_rect_y0                    : base.u32[..= 0x00FF_FFFF],
-	first_rect_x1                    : base.u32[..= 0x00FF_FFFF],
-	first_rect_y1                    : base.u32[..= 0x00FF_FFFF],
-	frame_config_io_position         : base.u64,
-	first_config_io_position         : base.u64,
-	frame_duration                   : base.u64[..= 0x2A0E_6FF1_6600],
-	first_duration                   : base.u64[..= 0x2A0E_6FF1_6600],
-	frame_disposal                   : base.u8,
-	first_disposal                   : base.u8,
-	frame_overwrite_instead_of_blend : base.bool,
-	first_overwrite_instead_of_blend : base.bool,
+		// The frame_etc fields correspond to the base.frame_config argument passed
+		// to decode_frame_config. For animated APNG, these are explicitly given in
+		// the file's fcTL chunks. For still PNG, these are implicitly given in the
+		// file's IHDR chunk.
+		//
+		// Either way, decode_image_config has to read all the way to the start of
+		// the first IDAT / fdAT chunk (e.g. to see if there's a PLTE chunk). While
+		// later frame's restart io_positions are located just before fcTL chunks,
+		// the first frame's restart io_position is located just before the IDAT /
+		// fdAT chunk, so we also have to cache the first frame's configuration as
+		// we cannot re-read the first fcTL. Hence, there are first_etc fields for
+		// every frame_etc field.
+		//
+		// For the etc_duration fields, there are 705_600000 flicks per second and
+		// the maximum frame duration is 65535 seconds.
+		//
+		// The fields are ordered to minimize alignment wastage.
+		frame_rect_x0                    : base.u32[..= 0x00FF_FFFF],
+		frame_rect_y0                    : base.u32[..= 0x00FF_FFFF],
+		frame_rect_x1                    : base.u32[..= 0x00FF_FFFF],
+		frame_rect_y1                    : base.u32[..= 0x00FF_FFFF],
+		first_rect_x0                    : base.u32[..= 0x00FF_FFFF],
+		first_rect_y0                    : base.u32[..= 0x00FF_FFFF],
+		first_rect_x1                    : base.u32[..= 0x00FF_FFFF],
+		first_rect_y1                    : base.u32[..= 0x00FF_FFFF],
+		frame_config_io_position         : base.u64,
+		first_config_io_position         : base.u64,
+		frame_duration                   : base.u64[..= 0x2A0E_6FF1_6600],
+		first_duration                   : base.u64[..= 0x2A0E_6FF1_6600],
+		frame_disposal                   : base.u8,
+		first_disposal                   : base.u8,
+		frame_overwrite_instead_of_blend : base.bool,
+		first_overwrite_instead_of_blend : base.bool,
 
-	next_animation_seq_num : base.u32,
+		next_animation_seq_num : base.u32,
 
-	metadata_flavor : base.u32,
-	metadata_fourcc : base.u32,
-	metadata_x      : base.u64,
-	metadata_y      : base.u64,
-	metadata_z      : base.u64,
+		metadata_flavor : base.u32,
+		metadata_fourcc : base.u32,
+		metadata_x      : base.u64,
+		metadata_y      : base.u64,
+		metadata_z      : base.u64,
 
-	// ztxt_ri and ztxt_wi are read and write indexes into the dst_palette
-	// buffer, re-purposed as a zlib uncompression buffer for zTXt chunks. The
-	// upper bound, 1024, is the same as the dst_palette length.
-	ztxt_ri : base.u32[..= 1024],
-	ztxt_wi : base.u32[..= 1024],
-	// ztxt_hist_pos is the history position: how many uncompressed bytes have
-	// been generated.
-	ztxt_hist_pos : base.u64,
+		// ztxt_ri and ztxt_wi are read and write indexes into the dst_palette
+		// buffer, re-purposed as a zlib uncompression buffer for zTXt chunks. The
+		// upper bound, 1024, is the same as the dst_palette length.
+		ztxt_ri : base.u32[..= 1024],
+		ztxt_wi : base.u32[..= 1024],
+		// ztxt_hist_pos is the history position: how many uncompressed bytes have
+		// been generated.
+		ztxt_hist_pos : base.u64,
 
-	swizzler : base.pixel_swizzler,
-	util     : base.utility,
+		swizzler : base.pixel_swizzler,
+		util     : base.utility,
 )(
-	crc32 : crc32.ieee_hasher,
-	zlib  : zlib.decoder,
+		crc32 : crc32.ieee_hasher,
+		zlib  : zlib.decoder,
 
-	// dst_palette and src_palette are used by the swizzler, during
-	// decode_frame. src_palette is initialized by processing the PLTE chunk.
-	// dst_palette is also re-purposed as a zlib uncompression buffer for zTXt
-	// chunks, during decode_image_config.
-	dst_palette : array[4 * 256] base.u8,
-	src_palette : array[4 * 256] base.u8,
+		// dst_palette and src_palette are used by the swizzler, during
+		// decode_frame. src_palette is initialized by processing the PLTE chunk.
+		// dst_palette is also re-purposed as a zlib uncompression buffer for zTXt
+		// chunks, during decode_image_config.
+		dst_palette : array[4 * 256] base.u8,
+		src_palette : array[4 * 256] base.u8,
 )
 
 pub func decoder.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
@@ -291,7 +291,7 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
 
 		checksum_want = args.src.read_u32be?()
 		if (not this.ignore_checksum) and ((this.chunk_type & ANCILLARY_BIT) == 0) and
-			(checksum_have <> checksum_want) {
+				(checksum_have <> checksum_want) {
 			return "#bad checksum"
 		}
 	} endwhile
@@ -305,12 +305,12 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
 
 	if args.dst <> nullptr {
 		args.dst.set!(
-			pixfmt: this.dst_pixfmt,
-			pixsub: 0,
-			width: this.width,
-			height: this.height,
-			first_frame_io_position: this.first_config_io_position,
-			first_frame_is_opaque: (this.color_type <= 3) and (not this.seen_trns))
+				pixfmt: this.dst_pixfmt,
+				pixsub: 0,
+				width: this.width,
+				height: this.height,
+				first_frame_io_position: this.first_config_io_position,
+				first_frame_is_opaque: (this.color_type <= 3) and (not this.seen_trns))
 	}
 
 	// For still (non-animated) PNGs, the first and only frame's configuration
@@ -393,7 +393,7 @@ pri func decoder.decode_ihdr?(src: base.io_reader) {
 		return "#bad header"
 	}
 	this.overall_workbuf_length = (this.height as base.u64) *
-		(1 + this.calculate_bytes_per_row(width: this.width))
+			(1 + this.calculate_bytes_per_row(width: this.width))
 	this.choose_filter_implementations!()
 }
 
@@ -489,7 +489,7 @@ pri func decoder.calculate_bytes_per_row(width: base.u32[..= 0x00FF_FFFF]) base.
 	}
 	bytes_per_channel = (this.depth >> 3) as base.u64
 	return (args.width as base.u64) * bytes_per_channel *
-		(NUM_CHANNELS[this.color_type] as base.u64)
+			(NUM_CHANNELS[this.color_type] as base.u64)
 }
 
 pri func decoder.choose_filter_implementations!() {
@@ -499,22 +499,22 @@ pri func decoder.choose_filter_implementations!() {
 		choose filter_1 = [filter_1_distance_3_fallback]
 		choose filter_3 = [filter_3_distance_3_fallback]
 		choose filter_4 = [
-			filter_4_distance_3_arm_neon,
-			filter_4_distance_3_x86_sse42,
-			filter_4_distance_3_fallback]
+				filter_4_distance_3_arm_neon,
+				filter_4_distance_3_x86_sse42,
+				filter_4_distance_3_fallback]
 	} else if this.filter_distance == 4 {
 		choose filter_1 = [
-			filter_1_distance_4_arm_neon,
-			filter_1_distance_4_x86_sse42,
-			filter_1_distance_4_fallback]
+				filter_1_distance_4_arm_neon,
+				filter_1_distance_4_x86_sse42,
+				filter_1_distance_4_fallback]
 		choose filter_3 = [
-			filter_3_distance_4_arm_neon,
-			filter_3_distance_4_x86_sse42,
-			filter_3_distance_4_fallback]
+				filter_3_distance_4_arm_neon,
+				filter_3_distance_4_x86_sse42,
+				filter_3_distance_4_fallback]
 		choose filter_4 = [
-			filter_4_distance_4_arm_neon,
-			filter_4_distance_4_x86_sse42,
-			filter_4_distance_4_fallback]
+				filter_4_distance_4_arm_neon,
+				filter_4_distance_4_x86_sse42,
+				filter_4_distance_4_fallback]
 	}
 }
 
@@ -553,8 +553,8 @@ pri func decoder.decode_other_chunk?(src: base.io_reader, framy: base.bool) {
 		}
 
 	} else if (this.chunk_type == 'iTXt'le) or
-		(this.chunk_type == 'tEXt'le) or
-		(this.chunk_type == 'zTXt'le) {
+			(this.chunk_type == 'tEXt'le) or
+			(this.chunk_type == 'zTXt'le) {
 		if this.report_metadata_kvp {
 			this.metadata_flavor = base.MORE_INFORMATION__FLAVOR__METADATA_RAW_TRANSFORM
 			this.metadata_fourcc = 'KVPK'be
@@ -616,7 +616,7 @@ pri func decoder.decode_other_chunk?(src: base.io_reader, framy: base.bool) {
 
 		} else if this.chunk_type == 'tRNS'le {
 			if this.seen_trns or (this.color_type > 3) or
-				((this.color_type == 3) and (not this.seen_plte)) {
+					((this.color_type == 3) and (not this.seen_plte)) {
 				return "#bad chunk"
 			}
 			this.decode_trns?(src: args.src)
@@ -721,7 +721,7 @@ pri func decoder.decode_fctl?(src: base.io_reader) {
 	x1 ~mod+= x0
 	y1 ~mod+= y0
 	if (x0 >= x1) or (x0 > this.width) or (x1 > this.width) or
-		(y0 >= y1) or (y0 > this.height) or (y1 > this.height) {
+			(y0 >= y1) or (y0 > this.height) or (y1 > this.height) {
 		return "#bad chunk"
 	}
 	assert x1 <= 0x00FF_FFFF via "a <= b: a <= c; c <= b"(c: this.width)
@@ -914,10 +914,10 @@ pri func decoder.decode_trns?(src: base.io_reader) {
 		u = args.src.read_u48be_as_u64?()
 		if this.depth <= 8 {
 			this.remap_transparency =
-				(0x0000_00FF & (u >> 0)) |
-				(0x0000_FF00 & (u >> 8)) |
-				(0x00FF_0000 & (u >> 16)) |
-				0xFF00_0000
+					(0x0000_00FF & (u >> 0)) |
+					(0x0000_FF00 & (u >> 8)) |
+					(0x00FF_0000 & (u >> 16)) |
+					0xFF00_0000
 		} else {
 			this.remap_transparency = u | 0xFFFF_0000_0000_0000
 		}
@@ -1023,17 +1023,17 @@ pri func decoder.do_decode_frame_config?(dst: nptr base.frame_config, src: base.
 
 	if args.dst <> nullptr {
 		args.dst.set!(bounds: this.util.make_rect_ie_u32(
-			min_incl_x: this.frame_rect_x0,
-			min_incl_y: this.frame_rect_y0,
-			max_excl_x: this.frame_rect_x1,
-			max_excl_y: this.frame_rect_y1),
-			duration: this.frame_duration,
-			index: this.num_decoded_frame_configs_value as base.u64,
-			io_position: this.frame_config_io_position,
-			disposal: this.frame_disposal,
-			opaque_within_bounds: (this.color_type <= 3) and (not this.seen_trns),
-			overwrite_instead_of_blend: this.frame_overwrite_instead_of_blend,
-			background_color: 0x0000_0000)
+				min_incl_x: this.frame_rect_x0,
+				min_incl_y: this.frame_rect_y0,
+				max_excl_x: this.frame_rect_x1,
+				max_excl_y: this.frame_rect_y1),
+				duration: this.frame_duration,
+				index: this.num_decoded_frame_configs_value as base.u64,
+				io_position: this.frame_config_io_position,
+				disposal: this.frame_disposal,
+				opaque_within_bounds: (this.color_type <= 3) and (not this.seen_trns),
+				overwrite_instead_of_blend: this.frame_overwrite_instead_of_blend,
+				background_color: 0x0000_0000)
 	}
 
 	this.num_decoded_frame_configs_value ~sat+= 1
@@ -1190,11 +1190,11 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
 	this.zlib_is_dirty = true
 
 	status = this.swizzler.prepare!(
-		dst_pixfmt: args.dst.pixel_format(),
-		dst_palette: args.dst.palette_or_else(fallback: this.dst_palette[..]),
-		src_pixfmt: this.util.make_pixel_format(repr: this.src_pixfmt),
-		src_palette: this.src_palette[..],
-		blend: args.blend)
+			dst_pixfmt: args.dst.pixel_format(),
+			dst_palette: args.dst.palette_or_else(fallback: this.dst_palette[..]),
+			src_pixfmt: this.util.make_pixel_format(repr: this.src_pixfmt),
+			src_palette: this.src_palette[..],
+			blend: args.blend)
 	if not status.is_ok() {
 		return status
 	}
@@ -1203,11 +1203,11 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
 	while true {
 		if (this.chunk_type_array[0] == 'I') {
 			pass_width = 0x00FF_FFFF &
-				(((INTERLACING[this.interlace_pass][1] as base.u32) + this.width) >>
-				INTERLACING[this.interlace_pass][0])
+					(((INTERLACING[this.interlace_pass][1] as base.u32) + this.width) >>
+					INTERLACING[this.interlace_pass][0])
 			pass_height = 0x00FF_FFFF &
-				(((INTERLACING[this.interlace_pass][4] as base.u32) + this.height) >>
-				INTERLACING[this.interlace_pass][3])
+					(((INTERLACING[this.interlace_pass][4] as base.u32) + this.height) >>
+					INTERLACING[this.interlace_pass][3])
 		} else {
 			pass_width = 0x00FF_FFFF & (this.frame_rect_x1 ~mod- this.frame_rect_x0)
 			pass_height = 0x00FF_FFFF & (this.frame_rect_y1 ~mod- this.frame_rect_y0)
@@ -1221,7 +1221,7 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
 				if status.is_ok() {
 					break
 				} else if status.is_error() or
-					((status == base."$short read") and args.src.is_closed()) {
+						((status == base."$short read") and args.src.is_closed()) {
 					// The input was invalid or truncated. Produce whatever
 					// pixels we can.
 					if this.workbuf_wi <= args.workbuf.length() {
@@ -1265,7 +1265,7 @@ pri func decoder.decode_pass?(src: base.io_reader, workbuf: slice base.u8) {
 	this.workbuf_wi = 0
 	while true {
 		if (this.workbuf_wi > this.pass_workbuf_length) or (
-			this.pass_workbuf_length > args.workbuf.length()) {
+				this.pass_workbuf_length > args.workbuf.length()) {
 			return base."#bad workbuf length"
 		}
 		io_bind (io: w, data: args.workbuf[this.workbuf_wi .. this.pass_workbuf_length], history_position: this.workbuf_hist_pos_base ~mod+ this.workbuf_wi) {
@@ -1273,7 +1273,7 @@ pri func decoder.decode_pass?(src: base.io_reader, workbuf: slice base.u8) {
 				w_mark = w.mark()
 				r_mark = args.src.mark()
 				zlib_status =? this.zlib.transform_io?(
-					dst: w, src: args.src, workbuf: this.util.empty_slice_u8())
+						dst: w, src: args.src, workbuf: this.util.empty_slice_u8())
 				if not this.ignore_checksum {
 					this.crc32.update_u32!(x: args.src.since(mark: r_mark))
 				}
@@ -1359,10 +1359,10 @@ pri func decoder.decode_pass?(src: base.io_reader, workbuf: slice base.u8) {
 
 pub func decoder.frame_dirty_rect() base.rect_ie_u32 {
 	return this.util.make_rect_ie_u32(
-		min_incl_x: this.frame_rect_x0,
-		min_incl_y: this.frame_rect_y0,
-		max_excl_x: this.frame_rect_x1,
-		max_excl_y: this.frame_rect_y1)
+			min_incl_x: this.frame_rect_x0,
+			min_incl_y: this.frame_rect_y0,
+			max_excl_x: this.frame_rect_x1,
+			max_excl_y: this.frame_rect_y1)
 }
 
 pub func decoder.num_animation_loops() base.u32 {
@@ -1381,7 +1381,7 @@ pub func decoder.restart_frame!(index: base.u64, io_position: base.u64) base.sta
 	if this.call_sequence < 0x20 {
 		return base."#bad call sequence"
 	} else if (args.index >= (this.num_animation_frames_value as base.u64)) or
-		((args.index == 0) and (args.io_position <> this.first_config_io_position)) {
+			((args.index == 0) and (args.io_position <> this.first_config_io_position)) {
 		return base."#bad argument"
 	}
 	this.call_sequence = 0x28
@@ -1445,11 +1445,11 @@ pri func decoder.do_tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inf
 				return base."#bad I/O position"
 			} else if args.minfo <> nullptr {
 				args.minfo.set!(
-					flavor: this.metadata_flavor,
-					w: this.metadata_fourcc,
-					x: this.metadata_x,
-					y: this.metadata_y,
-					z: this.metadata_z)
+						flavor: this.metadata_flavor,
+						w: this.metadata_fourcc,
+						x: this.metadata_x,
+						y: this.metadata_y,
+						z: this.metadata_z)
 			}
 			if this.metadata_y >= this.metadata_z {
 				break.goto_done
@@ -1473,11 +1473,11 @@ pri func decoder.do_tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inf
 	while.loop true {
 		if args.minfo <> nullptr {
 			args.minfo.set!(
-				flavor: this.metadata_flavor,
-				w: this.metadata_fourcc,
-				x: this.metadata_x,
-				y: this.metadata_y,
-				z: this.metadata_z)
+					flavor: this.metadata_flavor,
+					w: this.metadata_fourcc,
+					x: this.metadata_x,
+					y: this.metadata_y,
+					z: this.metadata_z)
 		}
 
 		if this.metadata_flavor <> base.MORE_INFORMATION__FLAVOR__METADATA_RAW_TRANSFORM {
@@ -1489,9 +1489,9 @@ pri func decoder.do_tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inf
 				io_limit (io: args.src, limit: this.chunk_length as base.u64) {
 					r_mark = args.src.mark()
 					zlib_status =? this.zlib.transform_io?(
-						dst: args.dst, src: args.src, workbuf: this.util.empty_slice_u8())
+							dst: args.dst, src: args.src, workbuf: this.util.empty_slice_u8())
 					this.chunk_length ~sat-=
-						(args.src.count_since(mark: r_mark) & 0xFFFF_FFFF) as base.u32
+							(args.src.count_since(mark: r_mark) & 0xFFFF_FFFF) as base.u32
 				}
 
 				if zlib_status.is_ok() {
@@ -1507,9 +1507,9 @@ pri func decoder.do_tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inf
 				io_limit (io: args.src, limit: this.chunk_length as base.u64) {
 					r_mark = args.src.mark()
 					zlib_status =? this.zlib.transform_io?(
-						dst: args.dst, src: args.src, workbuf: this.util.empty_slice_u8())
+							dst: args.dst, src: args.src, workbuf: this.util.empty_slice_u8())
 					this.chunk_length ~sat-=
-						(args.src.count_since(mark: r_mark) & 0xFFFF_FFFF) as base.u32
+							(args.src.count_since(mark: r_mark) & 0xFFFF_FFFF) as base.u32
 				}
 
 				if zlib_status.is_ok() {
@@ -1528,9 +1528,9 @@ pri func decoder.do_tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inf
 							w_mark = w.mark()
 							r_mark = args.src.mark()
 							zlib_status =? this.zlib.transform_io?(
-								dst: w, src: args.src, workbuf: this.util.empty_slice_u8())
+									dst: w, src: args.src, workbuf: this.util.empty_slice_u8())
 							this.chunk_length ~sat-=
-								(args.src.count_since(mark: r_mark) & 0xFFFF_FFFF) as base.u32
+									(args.src.count_since(mark: r_mark) & 0xFFFF_FFFF) as base.u32
 							num_written = w.count_since(mark: w_mark)
 						}
 					}
@@ -1718,6 +1718,6 @@ pri func decoder.do_tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inf
 
 pub func decoder.workbuf_len() base.range_ii_u64 {
 	return this.util.make_range_ii_u64(
-		min_incl: this.overall_workbuf_length,
-		max_incl: this.overall_workbuf_length)
+			min_incl: this.overall_workbuf_length,
+			max_incl: this.overall_workbuf_length)
 }
