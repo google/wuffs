@@ -294,9 +294,9 @@ func (h *genHelper) genWuffs(dirname string, qualifiedFilenames []string) error 
 				}
 				fmt.Fprintf(out, ") ")
 				if o := n.Out(); o != nil {
-					fmt.Fprintf(out, "%s", o.Str(&h.tm))
+					fmt.Fprintf(out, "%s ", o.Str(&h.tm))
 				}
-				fmt.Fprintf(out, " { }\n")
+				fmt.Fprintf(out, "{ }\n")
 
 			case a.KStatus:
 				n := n.AsStatus()
