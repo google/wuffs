@@ -398,11 +398,14 @@ const (
 	minTypeModifier = 0xD0
 	maxTypeModifier = 0xDF
 
-	IDArray = ID(0xD0)
-	IDNptr  = ID(0xD1)
-	IDPtr   = ID(0xD2)
-	IDSlice = ID(0xD3)
-	IDTable = ID(0xD4)
+	IDArray   = ID(0xD0)
+	IDNptr    = ID(0xD1)
+	IDPtr     = ID(0xD2)
+	IDRoarray = ID(0xD3)
+	IDRoslice = ID(0xD4)
+	IDRotable = ID(0xD5)
+	IDSlice   = ID(0xD6)
+	IDTable   = ID(0xD7)
 )
 
 const (
@@ -820,11 +823,14 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDWhile:      "while",
 	IDYield:      "yield",
 
-	IDArray: "array",
-	IDNptr:  "nptr",
-	IDPtr:   "ptr",
-	IDSlice: "slice",
-	IDTable: "table",
+	IDArray:   "array",
+	IDNptr:    "nptr",
+	IDPtr:     "ptr",
+	IDRoarray: "roarray",
+	IDRoslice: "roslice",
+	IDRotable: "rotable",
+	IDSlice:   "slice",
+	IDTable:   "table",
 
 	IDFalse:   "false",
 	IDTrue:    "true",

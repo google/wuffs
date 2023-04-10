@@ -977,7 +977,7 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (bounds, error) {
 		}
 
 		lengthExpr := (*a.Expr)(nil)
-		if lTyp := lhs.MType(); lTyp.IsArrayType() {
+		if lTyp := lhs.MType(); lTyp.IsEitherArrayType() {
 			lengthExpr = lTyp.ArrayLength()
 		} else {
 			lengthExpr = makeSliceLength(lhs)
@@ -1013,7 +1013,7 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (bounds, error) {
 		}
 
 		lengthExpr := (*a.Expr)(nil)
-		if lTyp := lhs.MType(); lTyp.IsArrayType() {
+		if lTyp := lhs.MType(); lTyp.IsEitherArrayType() {
 			lengthExpr = lTyp.ArrayLength()
 		} else {
 			lengthExpr = makeSliceLength(lhs)
@@ -1770,7 +1770,7 @@ func (q *checker) bcheckTypeExpr1(typ *a.TypeExpr) (bounds, error) {
 	switch typ.Decorator() {
 	case 0:
 		// No-op.
-	case t.IDArray:
+	case t.IDArray, t.IDRoarray:
 		if _, err := q.bcheckExpr(typ.ArrayLength(), 0); err != nil {
 			return bounds{}, err
 		}
@@ -1784,7 +1784,7 @@ func (q *checker) bcheckTypeExpr1(typ *a.TypeExpr) (bounds, error) {
 		return bounds{zero, one}, nil
 	case t.IDPtr:
 		return bounds{one, one}, nil
-	case t.IDSlice, t.IDTable:
+	case t.IDRoslice, t.IDRotable, t.IDSlice, t.IDTable:
 		return bounds{zero, zero}, nil
 	default:
 		return bounds{}, fmt.Errorf("check: internal error: unrecognized decorator")

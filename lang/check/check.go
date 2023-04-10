@@ -375,7 +375,7 @@ func (c *Checker) checkConst(node *a.Node) error {
 
 	nLists := 0
 	for elemTyp := typ; ; {
-		if elemTyp.IsArrayType() {
+		if elemTyp.IsEitherArrayType() {
 			if nLists == a.MaxTypeExprDepth {
 				return fmt.Errorf("check: type expression recursion depth too large")
 			}
@@ -399,7 +399,7 @@ func (c *Checker) checkConst(node *a.Node) error {
 func (c *Checker) checkConstElement(typ *a.TypeExpr, n *a.Expr, nb bounds, nLists int) error {
 	if nLists > 0 {
 		nLists--
-		if !typ.IsArrayType() {
+		if !typ.IsEitherArrayType() {
 			return fmt.Errorf("internal error: inconsistent element type %q", typ.Str(c.tm))
 		}
 		cv := typ.ArrayLength().ConstValue()

@@ -139,7 +139,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, sideEffectsOnly bool, depth u
 		if err := g.writeExpr(b, n.LHS().AsExpr(), false, depth); err != nil {
 			return err
 		}
-		if lTyp := n.LHS().AsExpr().MType(); lTyp.IsSliceType() {
+		if lTyp := n.LHS().AsExpr().MType(); lTyp.IsEitherSliceType() {
 			// TODO: don't assume that the slice is a slice of base.u8.
 			b.writes(".ptr")
 		}
@@ -164,7 +164,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, sideEffectsOnly bool, depth u
 			comma = ",\n"
 		}
 
-		if lhs.MType().IsArrayType() {
+		if lhs.MType().IsEitherArrayType() {
 			if mhs == nil {
 				b.writes("wuffs_base__make_slice_u8(")
 			} else {
@@ -449,7 +449,7 @@ func (g *gen) writeCTypeName(b *buffer, n *a.TypeExpr, varNamePrefix string, var
 
 	// TODO: fix this, allow slices of all types, not just of base.u8's. Also
 	// allow arrays of slices, slices of pointers, etc.
-	if n.IsSliceType() {
+	if n.IsEitherSliceType() {
 		o := n.Inner()
 		if o.Decorator() == 0 && o.QID() == (t.QID{t.IDBase, t.IDU8}) && !o.IsRefined() {
 			b.writes("wuffs_base__slice_u8")
@@ -462,7 +462,7 @@ func (g *gen) writeCTypeName(b *buffer, n *a.TypeExpr, varNamePrefix string, var
 		}
 		return fmt.Errorf("cannot convert Wuffs type %q to C", n.Str(g.tm))
 	}
-	if n.IsTableType() {
+	if n.IsEitherTableType() {
 		o := n.Inner()
 		if o.Decorator() == 0 && o.QID() == (t.QID{t.IDBase, t.IDU8}) && !o.IsRefined() {
 			b.writes("wuffs_base__table_u8")
@@ -480,7 +480,7 @@ func (g *gen) writeCTypeName(b *buffer, n *a.TypeExpr, varNamePrefix string, var
 	const maxNumPointers = 16
 
 	x := n
-	for ; x != nil && x.IsArrayType(); x = x.Inner() {
+	for ; x != nil && x.IsEitherArrayType(); x = x.Inner() {
 	}
 
 	numPointers, innermost := 0, x
@@ -521,7 +521,7 @@ func (g *gen) writeCTypeName(b *buffer, n *a.TypeExpr, varNamePrefix string, var
 	}
 
 	x = n
-	for ; x != nil && x.IsArrayType(); x = x.Inner() {
+	for ; x != nil && x.IsEitherArrayType(); x = x.Inner() {
 		b.writeb('[')
 		b.writes(x.ArrayLength().ConstValue().String())
 		b.writeb(']')

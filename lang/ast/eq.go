@@ -84,16 +84,23 @@ func (n *Expr) Mentions(o *Expr) bool {
 
 // Eq returns whether n and o are equal.
 func (n *TypeExpr) Eq(o *TypeExpr) bool {
-	return n.eq(o, false)
+	return n.eq(o, false, false)
 }
 
 // EqIgnoringRefinements returns whether n and o are equal, ignoring the
 // "[i:j]" in "base.u32[i:j]".
 func (n *TypeExpr) EqIgnoringRefinements(o *TypeExpr) bool {
-	return n.eq(o, true)
+	return n.eq(o, true, false)
 }
 
-func (n *TypeExpr) eq(o *TypeExpr, ignoreRefinements bool) bool {
+// EqIgnoringRefinementsLHSReadOnly returns whether n and o are equal, ignoring
+// the "[i:j]" in "base.u32[i:j]" and allowing n (the Left Hand Side of an
+// assignment) to be read-only when o (the Right Hand Side) is read-write.
+func (n *TypeExpr) EqIgnoringRefinementsLHSReadOnly(o *TypeExpr) bool {
+	return n.eq(o, true, true)
+}
+
+func (n *TypeExpr) eq(o *TypeExpr, ignoreRefinements bool, lhsReadOnly bool) bool {
 	for {
 		if n == o {
 			return true
@@ -101,10 +108,22 @@ func (n *TypeExpr) eq(o *TypeExpr, ignoreRefinements bool) bool {
 		if n == nil || o == nil {
 			return false
 		}
-		if n.id0 != o.id0 || n.id1 != o.id1 || n.id2 != o.id2 {
+		if n.id0 != o.id0 {
+			if !lhsReadOnly {
+				return false
+			}
+			switch {
+			default:
+				return false
+			case (n.id0 == t.IDRoarray) && (o.id0 == t.IDArray):
+			case (n.id0 == t.IDRoslice) && (o.id0 == t.IDSlice):
+			case (n.id0 == t.IDRotable) && (o.id0 == t.IDTable):
+			}
+		}
+		if n.id1 != o.id1 || n.id2 != o.id2 {
 			return false
 		}
-		if n.IsArrayType() || !ignoreRefinements {
+		if !ignoreRefinements || !n.IsNumType() {
 			if !n.lhs.AsExpr().Eq(o.lhs.AsExpr()) || !n.mhs.AsExpr().Eq(o.mhs.AsExpr()) {
 				return false
 			}

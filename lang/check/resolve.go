@@ -182,23 +182,29 @@ func (c *Checker) resolveFunc(typ *a.TypeExpr) (*a.Func, error) {
 	lQID := lTyp.QID()
 	qqid := t.QQID{lQID[0], lQID[1], typ.FuncName()}
 
-	if lTyp.IsSliceType() {
+	if lTyp.IsEitherSliceType() {
 		qqid[0] = t.IDBase
 		qqid[1] = t.IDDagger1
 		if f := c.builtInSliceFuncs[qqid]; f != nil {
-			return f, nil
-		}
-		if lTyp.Eq(typeExprSliceU8) {
-			if f := c.builtInSliceU8Funcs[qqid]; f != nil {
+			if (lTyp.Decorator() == t.IDSlice) || f.Effect().Pure() {
 				return f, nil
 			}
 		}
+		if lTyp.Eq(typeExprSliceU8) {
+			if f := c.builtInSliceU8Funcs[qqid]; f != nil {
+				if (lTyp.Decorator() == t.IDSlice) || f.Effect().Pure() {
+					return f, nil
+				}
+			}
+		}
 
-	} else if lTyp.IsTableType() {
+	} else if lTyp.IsEitherTableType() {
 		qqid[0] = t.IDBase
 		qqid[1] = t.IDDagger2
 		if f := c.builtInTableFuncs[qqid]; f != nil {
-			return f, nil
+			if (lTyp.Decorator() == t.IDTable) || f.Effect().Pure() {
+				return f, nil
+			}
 		}
 
 	} else if f := c.funcs[qqid]; f != nil {

@@ -136,7 +136,7 @@ func (g *gen) writeStatementAssign1(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr
 			return err
 		}
 
-		if lTyp := lhs.MType(); lTyp.IsArrayType() {
+		if lTyp := lhs.MType(); lTyp.IsEitherArrayType() {
 			b.writes("memcpy(")
 			opName, closer = ",", fmt.Sprintf(", sizeof(%s))", lhsBuf)
 

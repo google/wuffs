@@ -80,9 +80,9 @@ func (g *gen) writeBuiltinCall(b *buffer, n *a.Expr, sideEffectsOnly bool, depth
 		b.writeb(')')
 		return nil
 
-	case t.IDSlice:
+	case t.IDRoslice, t.IDSlice:
 		return g.writeBuiltinSlice(b, recv, method.Ident(), n.Args(), sideEffectsOnly, depth)
-	case t.IDTable:
+	case t.IDRotable, t.IDTable:
 		return g.writeBuiltinTable(b, recv, method.Ident(), n.Args(), sideEffectsOnly, depth)
 	default:
 		return errNoSuchBuiltin
@@ -759,7 +759,7 @@ func (g *gen) writeExprDotPtr(b *buffer, n *a.Expr, sideEffectsOnly bool, depth 
 		if err := g.writeExpr(b, arrayOrSlice, sideEffectsOnly, depth); err != nil {
 			return err
 		}
-		if arrayOrSlice.MType().IsSliceType() {
+		if arrayOrSlice.MType().IsEitherSliceType() {
 			b.writes(".ptr")
 		}
 		if lo != nil {
@@ -774,7 +774,7 @@ func (g *gen) writeExprDotPtr(b *buffer, n *a.Expr, sideEffectsOnly bool, depth 
 	if err := g.writeExpr(b, n, sideEffectsOnly, depth); err != nil {
 		return err
 	}
-	if n.MType().IsSliceType() {
+	if n.MType().IsEitherSliceType() {
 		b.writes(".ptr")
 	}
 	return nil
@@ -966,7 +966,7 @@ func (g *gen) writeBuiltinSliceCopyFromSlice8(b *buffer, recv *a.Expr, method t.
 	if err := g.writeExpr(b, foo, false, depth); err != nil {
 		return err
 	}
-	if foo.MType().IsSliceType() {
+	if foo.MType().IsEitherSliceType() {
 		b.writes(".ptr")
 	}
 	if fIndex != nil {
@@ -979,7 +979,7 @@ func (g *gen) writeBuiltinSliceCopyFromSlice8(b *buffer, recv *a.Expr, method t.
 	if err := g.writeExpr(b, bar, false, depth); err != nil {
 		return err
 	}
-	if bar.MType().IsSliceType() {
+	if bar.MType().IsEitherSliceType() {
 		b.writes(".ptr")
 	}
 	if bIndex != nil {

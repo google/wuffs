@@ -510,9 +510,9 @@ func (p *parser) parseTypeExpr() (*a.TypeExpr, error) {
 	}
 
 	decorator, arrayLength := t.ID(0), (*a.Expr)(nil)
-	switch p.peek1() {
-	case t.IDArray:
-		decorator = t.IDArray
+	switch peek1 := p.peek1(); peek1 {
+	case t.IDArray, t.IDRoarray:
+		decorator = peek1
 		p.src = p.src[1:]
 
 		if x := p.peek1(); x != t.IDOpenBracket {
@@ -533,12 +533,8 @@ func (p *parser) parseTypeExpr() (*a.TypeExpr, error) {
 		}
 		p.src = p.src[1:]
 
-	case t.IDSlice:
-		decorator = t.IDSlice
-		p.src = p.src[1:]
-
-	case t.IDTable:
-		decorator = t.IDTable
+	case t.IDRoslice, t.IDRotable, t.IDSlice, t.IDTable:
+		decorator = peek1
 		p.src = p.src[1:]
 	}
 

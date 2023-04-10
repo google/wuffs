@@ -171,7 +171,7 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 		if err := q.tcheckExpr(n.Arg1(), 0); err != nil {
 			return err
 		}
-		if typ := n.Arg1().MType(); !typ.EqIgnoringRefinements(arg1Typ) {
+		if typ := n.Arg1().MType(); !typ.EqIgnoringRefinementsLHSReadOnly(arg1Typ) {
 			return fmt.Errorf("check: %s expression %q, of type %q, does not have type %q",
 				n.Keyword().Str(q.tm), n.Arg1().Str(q.tm), typ.Str(q.tm), arg1Typ.Str(q.tm))
 		}
@@ -204,7 +204,7 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 					return err
 				}
 				o := o.AsAssign()
-				if typ := o.LHS().MType(); !typ.IsSliceType() {
+				if typ := o.LHS().MType(); !typ.IsEitherSliceType() {
 					return fmt.Errorf("check: iterate assignment to %q, of type %q, does not have slice type",
 						o.LHS().Str(q.tm), typ.Str(q.tm))
 				}
@@ -236,7 +236,7 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 			return err
 		}
 		rTyp := value.MType()
-		if !(rTyp.IsIdeal() && lTyp.IsNumType()) && !lTyp.EqIgnoringRefinements(rTyp) {
+		if !(rTyp.IsIdeal() && lTyp.IsNumType()) && !lTyp.EqIgnoringRefinementsLHSReadOnly(rTyp) {
 			return fmt.Errorf("check: cannot return %q (of type %q) as type %q",
 				value.Str(q.tm), rTyp.Str(q.tm), lTyp.Str(q.tm))
 		}
@@ -305,7 +305,7 @@ func (q *checker) tcheckAssert(n *a.Assert) error {
 
 func (q *checker) tcheckEq(lID t.ID, lhs *a.Expr, lTyp *a.TypeExpr, rhs *a.Expr, rTyp *a.TypeExpr) error {
 	if (rTyp.IsIdeal() && lTyp.IsNumType()) ||
-		(rTyp.EqIgnoringRefinements(lTyp)) ||
+		(lTyp.EqIgnoringRefinementsLHSReadOnly(rTyp)) ||
 		(rTyp.IsNullptr() && lTyp.Decorator() == t.IDNptr) {
 		return nil
 	}
@@ -330,6 +330,12 @@ func (q *checker) tcheckAssign(n *a.Assign) error {
 	}
 	if err := q.tcheckExpr(lhs, 0); err != nil {
 		return err
+	}
+	for l := lhs; l != nil; l = l.LHS().AsExpr() {
+		if l.MType().IsReadOnly() {
+			return fmt.Errorf("check: assignment %q: assignee fragment %q, of type %q, has read-only type",
+				n.Operator().Str(q.tm), l.Str(q.tm), l.MType().Str(q.tm))
+		}
 	}
 	lTyp := lhs.MType()
 	rTyp := rhs.MType()
@@ -363,7 +369,7 @@ func (q *checker) tcheckAssign(n *a.Assign) error {
 		}
 	}
 
-	if !(rTyp.IsIdeal() && lTyp.IsNumType()) && !lTyp.EqIgnoringRefinements(rTyp) {
+	if !(rTyp.IsIdeal() && lTyp.IsNumType()) && !lTyp.EqIgnoringRefinementsLHSReadOnly(rTyp) {
 		return fmt.Errorf("check: assignment %q: %q and %q, of types %q and %q, do not have compatible types",
 			n.Operator().Str(q.tm),
 			lhs.Str(q.tm), rhs.Str(q.tm),
@@ -508,7 +514,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			return err
 		}
 		lTyp := lhs.MType()
-		if key := lTyp.Decorator(); key != t.IDArray && key != t.IDSlice {
+		if key := lTyp.Decorator(); key != t.IDArray && key != t.IDRoarray && key != t.IDRoslice && key != t.IDSlice {
 			return fmt.Errorf("check: %s is an index expression but %s has type %s, not an array or slice type",
 				n.Str(q.tm), lhs.Str(q.tm), lTyp.Str(q.tm))
 		}
@@ -555,7 +561,9 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 				n.Str(q.tm), lhs.Str(q.tm), lTyp.Str(q.tm))
 		case t.IDArray:
 			n.SetMType(a.NewTypeExpr(t.IDSlice, 0, 0, nil, nil, lTyp.Inner()))
-		case t.IDSlice:
+		case t.IDRoarray:
+			n.SetMType(a.NewTypeExpr(t.IDRoslice, 0, 0, nil, nil, lTyp.Inner()))
+		case t.IDRoslice, t.IDSlice:
 			n.SetMType(lTyp)
 		}
 		return nil
@@ -621,11 +629,16 @@ func (q *checker) tcheckExprCall(n *a.Expr, depth uint32) error {
 		case t.IDDagger1:
 			genericType1 = lhs.MType().Receiver()
 		case t.IDDagger2:
+			decorator := t.ID(0)
 			genericType2 = lhs.MType().Receiver()
-			if genericType2.Decorator() != t.IDTable {
+			if genericType2.Decorator() == t.IDRotable {
+				decorator = t.IDRoslice
+			} else if genericType2.Decorator() == t.IDTable {
+				decorator = t.IDSlice
+			} else {
 				return fmt.Errorf("check: internal error: %q is not a generic table", genericType2.Str(q.tm))
 			}
-			genericType1 = a.NewTypeExpr(t.IDSlice, 0, 0, nil, nil, genericType2.Inner())
+			genericType1 = a.NewTypeExpr(decorator, 0, 0, nil, nil, genericType2.Inner())
 		}
 	}
 
@@ -687,7 +700,7 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 	lQID := lTyp.QID()
 	qqid := t.QQID{lQID[0], lQID[1], n.Ident()}
 
-	if lTyp.IsSliceType() {
+	if lTyp.IsEitherSliceType() {
 		qqid[0] = t.IDBase
 		qqid[1] = t.IDDagger1
 		if (q.c.builtInSliceFuncs[qqid] != nil) ||
@@ -697,7 +710,7 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 		}
 		return fmt.Errorf("check: no slice method %q", n.Ident().Str(q.tm))
 
-	} else if lTyp.IsTableType() {
+	} else if lTyp.IsEitherTableType() {
 		qqid[0] = t.IDBase
 		qqid[1] = t.IDDagger2
 		if q.c.builtInTableFuncs[qqid] != nil {
@@ -1132,7 +1145,7 @@ swtch:
 		}
 		return fmt.Errorf("check: %q is not a type", typ.Str(q.tm))
 
-	case t.IDArray:
+	case t.IDArray, t.IDRoarray:
 		aLen := typ.ArrayLength()
 		if err := q.tcheckExpr(aLen, 0); err != nil {
 			return err
@@ -1142,7 +1155,7 @@ swtch:
 		}
 		fallthrough
 
-	case t.IDNptr, t.IDPtr, t.IDSlice, t.IDTable:
+	case t.IDNptr, t.IDPtr, t.IDRoslice, t.IDRotable, t.IDSlice, t.IDTable:
 		if err := q.tcheckTypeExpr(typ.Inner(), depth); err != nil {
 			return err
 		}

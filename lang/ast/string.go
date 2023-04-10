@@ -208,7 +208,7 @@ func (n *TypeExpr) appendStr(buf []byte, tm *t.Map, depth uint32) []byte {
 		return append(buf, "!invalid_type!"...)
 	}
 
-	switch n.Decorator() {
+	switch dec := n.Decorator(); dec {
 	case 0:
 		buf = append(buf, n.QID().Str(tm)...)
 	case t.IDNptr:
@@ -217,15 +217,24 @@ func (n *TypeExpr) appendStr(buf []byte, tm *t.Map, depth uint32) []byte {
 	case t.IDPtr:
 		buf = append(buf, "ptr "...)
 		return n.Inner().appendStr(buf, tm, depth)
-	case t.IDArray:
+	case t.IDArray, t.IDRoarray:
+		if dec == t.IDRoarray {
+			buf = append(buf, "ro"...)
+		}
 		buf = append(buf, "array["...)
 		buf = n.ArrayLength().appendStr(buf, tm, false, 0)
 		buf = append(buf, "] "...)
 		return n.Inner().appendStr(buf, tm, depth)
-	case t.IDSlice:
+	case t.IDRoslice, t.IDSlice:
+		if dec == t.IDRoslice {
+			buf = append(buf, "ro"...)
+		}
 		buf = append(buf, "slice "...)
 		return n.Inner().appendStr(buf, tm, depth)
-	case t.IDTable:
+	case t.IDRotable, t.IDTable:
+		if dec == t.IDRotable {
+			buf = append(buf, "ro"...)
+		}
 		buf = append(buf, "table "...)
 		return n.Inner().appendStr(buf, tm, depth)
 	case t.IDFunc:

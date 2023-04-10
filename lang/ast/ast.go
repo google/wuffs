@@ -784,7 +784,8 @@ const MaxTypeExprDepth = 63
 
 // TypeExpr is a type expression, such as "base.u32", "base.u32[..= 8]", "foo",
 // "pkg.bar", "ptr T", "array[8] T", "slice T" or "table T":
-//   - ID0:   <0|IDArray|IDFunc|IDNptr|IDPtr|IDSlice|IDTable>
+//   - ID0:   <0|IDArray|IDFunc|IDNptr|IDPtr|IDRoarray|IDRoslice|IDRotable|
+//     ....      IDSlice|IDTable>
 //   - ID1:   <0|pkg>
 //   - ID2:   <0|type name>
 //   - LHS:   <nil|Expr>
@@ -889,8 +890,16 @@ func (n *TypeExpr) IsStatus() bool {
 	return n.id0 == 0 && n.id1 == t.IDBase && n.id2 == t.IDStatus
 }
 
-func (n *TypeExpr) IsArrayType() bool {
-	return n.id0 == t.IDArray
+func (n *TypeExpr) IsEitherArrayType() bool {
+	return (n.id0 == t.IDArray) || (n.id0 == t.IDRoarray)
+}
+
+func (n *TypeExpr) IsEitherSliceType() bool {
+	return (n.id0 == t.IDSlice) || (n.id0 == t.IDRoslice)
+}
+
+func (n *TypeExpr) IsEitherTableType() bool {
+	return (n.id0 == t.IDTable) || (n.id0 == t.IDRotable)
 }
 
 func (n *TypeExpr) IsFuncType() bool {
@@ -901,12 +910,8 @@ func (n *TypeExpr) IsPointerType() bool {
 	return n.id0 == t.IDNptr || n.id0 == t.IDPtr
 }
 
-func (n *TypeExpr) IsSliceType() bool {
-	return n.id0 == t.IDSlice
-}
-
-func (n *TypeExpr) IsTableType() bool {
-	return n.id0 == t.IDTable
+func (n *TypeExpr) IsReadOnly() bool {
+	return (n.id0 == t.IDRoarray) || (n.id0 == t.IDRoslice) || (n.id0 == t.IDRotable)
 }
 
 func (n *TypeExpr) IsUnsignedInteger() bool {
