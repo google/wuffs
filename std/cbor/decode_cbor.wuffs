@@ -76,14 +76,14 @@ pub const TOKEN_VALUE_MINOR__TAG : base.u32 = 0x040_0000
 
 // --------
 
-pri const LITERALS : array[4] base.u32[..= 0x1FF_FFFF] = [
+pri const LITERALS : roarray[4] base.u32[..= 0x1FF_FFFF] = [
         (base.TOKEN__VBC__LITERAL << 21) | base.TOKEN__VBD__LITERAL__FALSE,
         (base.TOKEN__VBC__LITERAL << 21) | base.TOKEN__VBD__LITERAL__TRUE,
         (base.TOKEN__VBC__LITERAL << 21) | base.TOKEN__VBD__LITERAL__NULL,
         (base.TOKEN__VBC__LITERAL << 21) | base.TOKEN__VBD__LITERAL__UNDEFINED,
 ]
 
-pri const TOKEN_LENGTHS : array[32] base.u8[..= 9] = [
+pri const TOKEN_LENGTHS : roarray[32] base.u8[..= 9] = [
         1, 1, 1, 1, 1, 1, 1, 1,
         1, 1, 1, 1, 1, 1, 1, 1,
         1, 1, 1, 1, 1, 1, 1, 1,

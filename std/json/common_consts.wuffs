@@ -84,7 +84,7 @@ pri const DECODER_NUMBER_LENGTH_MAX_INCL : base.u64 = 99
 //
 // If the element is zero then "\i" is invalid, or it is a special case, the
 // start of "\x12", "\u1234" or "\U12345678".
-pri const LUT_BACKSLASHES : array[256] base.u8 = [
+pri const LUT_BACKSLASHES : roarray[256] base.u8 = [
         // 0     1     2     3     4     5     6     7
         // 8     9     A     B     C     D     E     F
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // 0x00 ..= 0x07.
@@ -129,7 +129,7 @@ pri const LUT_BACKSLASHES : array[256] base.u8 = [
 // LUT_QUIRKY_BACKSLASHES_QUIRKS is discussed in the LUT_BACKSLASHES comment.
 // The first element (index 0) is not used, but 8 is a round power of 2, so
 // enforcing index-in-bounds is a simple "&7" operation.
-pri const LUT_QUIRKY_BACKSLASHES_QUIRKS : array[8] base.u8[..= 0x0A] = [
+pri const LUT_QUIRKY_BACKSLASHES_QUIRKS : roarray[8] base.u8[..= 0x0A] = [
         0,
         // Uncommenting the following lines requires being able to define consts in
         // terms of other consts, which could be non-trivial to specify and
@@ -146,7 +146,7 @@ pri const LUT_QUIRKY_BACKSLASHES_QUIRKS : array[8] base.u8[..= 0x0A] = [
 // LUT_QUIRKY_BACKSLASHES_CHARS is discussed in the LUT_BACKSLASHES comment.
 // The first element (index 0) is not used, but 8 is a round power of 2, so
 // enforcing index-in-bounds is a simple "&7" operation.
-pri const LUT_QUIRKY_BACKSLASHES_CHARS : array[8] base.u8 = [
+pri const LUT_QUIRKY_BACKSLASHES_CHARS : roarray[8] base.u8 = [
         0x00, 0x07, 0x1B, 0x0A, 0x3F, 0x27, 0x0B, 0x00,
 ]
 
@@ -169,7 +169,7 @@ pri const LUT_QUIRKY_BACKSLASHES_CHARS : array[8] base.u8 = [
 //    UTF8-4      = %xF0 %x90-BF 2( UTF8-tail ) / %xF1-F3 3( UTF8-tail ) /
 //                  %xF4 %x80-8F 2( UTF8-tail )
 //    UTF8-tail   = %x80-BF
-pri const LUT_CHARS : array[256] base.u8 = [
+pri const LUT_CHARS : roarray[256] base.u8 = [
         // 0     1     2     3     4     5     6     7
         // 8     9     A     B     C     D     E     F
         0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87,  // 0x00 ..= 0x07. C0 control codes.
@@ -269,7 +269,7 @@ pri const EXPECT_CLOSE_SQUARE_BRACKET : base.u32 = 0x1100
 //
 // The bitmasks are used by the "expect" variable: what the next character
 // class can be. See EXPECT_ETC above.
-pri const LUT_CLASSES : array[256] base.u8[..= 0x0F] = [
+pri const LUT_CLASSES : roarray[256] base.u8[..= 0x0F] = [
         // 0     1     2     3     4     5     6     7
         // 8     9     A     B     C     D     E     F
         0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F,  // 0x00 ..= 0x07.
@@ -311,7 +311,7 @@ pri const LUT_CLASSES : array[256] base.u8[..= 0x0F] = [
         // 8     9     A     B     C     D     E     F
 ]
 
-pri const LUT_DECIMAL_DIGITS : array[256] base.u8 = [
+pri const LUT_DECIMAL_DIGITS : roarray[256] base.u8 = [
         // 0     1     2     3     4     5     6     7
         // 8     9     A     B     C     D     E     F
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // 0x00 ..= 0x07.
@@ -353,7 +353,7 @@ pri const LUT_DECIMAL_DIGITS : array[256] base.u8 = [
         // 8     9     A     B     C     D     E     F
 ]
 
-pri const LUT_HEXADECIMAL_DIGITS : array[256] base.u8 = [
+pri const LUT_HEXADECIMAL_DIGITS : roarray[256] base.u8 = [
         // 0     1     2     3     4     5     6     7
         // 8     9     A     B     C     D     E     F
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // 0x00 ..= 0x07.

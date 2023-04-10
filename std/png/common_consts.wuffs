@@ -57,7 +57,7 @@ pri const ANCILLARY_BIT : base.u32 = 0x0000_0020
 //  3: log2(y_stride)
 //  4: y_stride - y_offset - 1
 //  5: y_offset
-pri const INTERLACING : array[8] array[6] base.u8[..= 7] = [
+pri const INTERLACING : roarray[8] roarray[6] base.u8[..= 7] = [
         [0, 0, 0, 0, 0, 0],  // non-interlaced; xy_stride=1, xy_offset=0
         [3, 7, 0, 3, 7, 0],  // interlace_pass == 1
         [3, 3, 4, 3, 7, 0],  // interlace_pass == 2
@@ -70,7 +70,7 @@ pri const INTERLACING : array[8] array[6] base.u8[..= 7] = [
 
 // LOW_BIT_DEPTH_MULTIPLIERS holds multipliers that convert D-bit values into
 // 8-bit values, for depth D.
-pri const LOW_BIT_DEPTH_MULTIPLIERS : array[8] base.u8 = [
+pri const LOW_BIT_DEPTH_MULTIPLIERS : roarray[8] base.u8 = [
         0,
         0b1111_1111,  // depth == 1
         0b0101_0101,  // depth == 2
@@ -83,7 +83,7 @@ pri const LOW_BIT_DEPTH_MULTIPLIERS : array[8] base.u8 = [
 
 // LOW_BIT_DEPTH_NUM_PACKS holds the number of smaller-than-1-byte units that
 // are packed into each byte.
-pri const LOW_BIT_DEPTH_NUM_PACKS : array[8] base.u8 = [
+pri const LOW_BIT_DEPTH_NUM_PACKS : roarray[8] base.u8 = [
         0,
         8,  // depth == 1
         4,  // depth == 2
@@ -95,7 +95,7 @@ pri const LOW_BIT_DEPTH_NUM_PACKS : array[8] base.u8 = [
 ]
 
 // NUM_CHANNELS holds the number of channels for each valid color type.
-pri const NUM_CHANNELS : array[8] base.u8[..= 4] = [
+pri const NUM_CHANNELS : roarray[8] base.u8[..= 4] = [
         1,  // color_type == 0: Y
         0,
         3,  // color_type == 2: RGB
@@ -108,7 +108,7 @@ pri const NUM_CHANNELS : array[8] base.u8[..= 4] = [
 
 // LATIN_1 converts from printable Latin-1 (ISO/IEC 8859-1) to UTF-8 (encoded
 // as little-endian u16). It was created by script/print-png-latin-1.go.
-pri const LATIN_1 : array[256] base.u16 = [
+pri const LATIN_1 : roarray[256] base.u16 = [
         0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
         0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
         0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,

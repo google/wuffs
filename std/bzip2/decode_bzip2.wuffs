@@ -26,7 +26,7 @@ pri status "#internal error: inconsistent Huffman decoder state"
 
 pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0
 
-pri const CLAMP_TO_5 : array[8] base.u8[..= 5] = [0, 1, 2, 3, 4, 5, 5, 5]
+pri const CLAMP_TO_5 : roarray[8] base.u8[..= 5] = [0, 1, 2, 3, 4, 5, 5, 5]
 
 pub struct decoder? implements base.io_transformer(
         bits   : base.u32,
@@ -755,7 +755,7 @@ pri func decoder.invert_bwt!() {
 // The table below was created by script/print-crc32-magic-numbers.go with the
 // -reverse flag set.
 
-pri const REV_CRC32_TABLE : array[256] base.u32 = [
+pri const REV_CRC32_TABLE : roarray[256] base.u32 = [
         0x0000_0000, 0x04C1_1DB7, 0x0982_3B6E, 0x0D43_26D9, 0x1304_76DC, 0x17C5_6B6B, 0x1A86_4DB2, 0x1E47_5005,
         0x2608_EDB8, 0x22C9_F00F, 0x2F8A_D6D6, 0x2B4B_CB61, 0x350C_9B64, 0x31CD_86D3, 0x3C8E_A00A, 0x384F_BDBD,
         0x4C11_DB70, 0x48D0_C6C7, 0x4593_E01E, 0x4152_FDA9, 0x5F15_ADAC, 0x5BD4_B01B, 0x5697_96C2, 0x5256_8B75,

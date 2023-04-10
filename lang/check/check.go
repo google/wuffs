@@ -375,14 +375,14 @@ func (c *Checker) checkConst(node *a.Node) error {
 
 	nLists := 0
 	for elemTyp := typ; ; {
-		if elemTyp.IsEitherArrayType() {
+		if dec := elemTyp.Decorator(); dec == t.IDRoarray {
 			if nLists == a.MaxTypeExprDepth {
 				return fmt.Errorf("check: type expression recursion depth too large")
 			}
 			nLists++
 			elemTyp = elemTyp.Inner()
 			continue
-		} else if elemTyp.Decorator() != 0 {
+		} else if dec != 0 {
 			return fmt.Errorf("check: invalid const type %q for %s", n.XType().Str(c.tm), qid.Str(c.tm))
 		}
 		break

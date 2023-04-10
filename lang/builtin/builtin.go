@@ -561,10 +561,10 @@ var funcsOther = [...]string{
 	"io_writer.position() u64",
 	"io_writer.since(mark: u64) slice u8",
 
-	"io_writer.copy_from_slice!(s: slice u8) u64",
+	"io_writer.copy_from_slice!(s: roslice u8) u64",
 	"io_writer.limited_copy_u32_from_history!(up_to: u32, distance: u32) u32",
 	"io_writer.limited_copy_u32_from_reader!(up_to: u32, r: io_reader) u32",
-	"io_writer.limited_copy_u32_from_slice!(up_to: u32, s: slice u8) u32",
+	"io_writer.limited_copy_u32_from_slice!(up_to: u32, s: roslice u8) u32",
 
 	// TODO: this should have explicit pre-conditions:
 	//  - up_to <= this.length()
@@ -630,14 +630,14 @@ var funcsOther = [...]string{
 
 	"pixel_swizzler.prepare!(" +
 		"dst_pixfmt: pixel_format, dst_palette: slice u8," +
-		"src_pixfmt: pixel_format, src_palette: slice u8, blend: pixel_blend) status",
+		"src_pixfmt: pixel_format, src_palette: roslice u8, blend: pixel_blend) status",
 
 	"pixel_swizzler.limited_swizzle_u32_interleaved_from_reader!(" +
 		"up_to_num_pixels: u32, dst: slice u8, dst_palette: slice u8, src: io_reader) u64",
 	"pixel_swizzler.swizzle_interleaved_from_reader!(" +
 		"dst: slice u8, dst_palette: slice u8, src: io_reader) u64",
 	"pixel_swizzler.swizzle_interleaved_from_slice!(" +
-		"dst: slice u8, dst_palette: slice u8, src: slice u8) u64",
+		"dst: slice u8, dst_palette: slice u8, src: roslice u8) u64",
 	"pixel_swizzler.swizzle_interleaved_transparent_black!(" +
 		"dst: slice u8, dst_palette: slice u8, num_pixels: u64) u64",
 
@@ -688,8 +688,8 @@ var funcsOther = [...]string{
 	"arm_neon_utility.make_u32x4_repeat(a: u32) arm_neon_u32x4",
 	"arm_neon_utility.make_u64x2_repeat(a: u64) arm_neon_u64x2",
 
-	"arm_neon_utility.make_u8x8_slice64(a: slice base.u8) arm_neon_u8x8",
-	"arm_neon_utility.make_u8x16_slice128(a: slice base.u8) arm_neon_u8x16",
+	"arm_neon_utility.make_u8x8_slice64(a: roslice base.u8) arm_neon_u8x8",
+	"arm_neon_utility.make_u8x16_slice128(a: roslice base.u8) arm_neon_u8x16",
 
 	// ---- arm_neon_uAxB.as_uCxD
 
@@ -732,7 +732,7 @@ var funcsOther = [...]string{
 	"x86_sse42_utility.make_m128i_single_u32(a: u32) x86_m128i",
 	"x86_sse42_utility.make_m128i_single_u64(a: u64) x86_m128i",
 
-	"x86_sse42_utility.make_m128i_slice128(a: slice base.u8) x86_m128i",
+	"x86_sse42_utility.make_m128i_slice128(a: roslice base.u8) x86_m128i",
 
 	"x86_sse42_utility.make_m128i_zeroes() x86_m128i",
 
@@ -832,7 +832,7 @@ var funcsOther = [...]string{
 	"x86_avx2_utility.make_m256i_repeat_u32(a: u32) x86_m256i",
 	"x86_avx2_utility.make_m256i_repeat_u64(a: u64) x86_m256i",
 
-	"x86_avx2_utility.make_m256i_slice256(a: slice base.u8) x86_m256i",
+	"x86_avx2_utility.make_m256i_slice256(a: roslice base.u8) x86_m256i",
 
 	"x86_avx2_utility.make_m256i_zeroes() x86_m256i",
 
