@@ -92,9 +92,12 @@ func Check(tm *t.Map, files []*a.File, resolveUse func(usePath string) ([]byte, 
 		funcs:     map[t.QQID]*a.Func{},
 		localVars: map[t.QQID]typeMap{},
 
-		builtInSliceFuncs:   map[t.QQID]*a.Func{},
-		builtInSliceU8Funcs: map[t.QQID]*a.Func{},
-		builtInTableFuncs:   map[t.QQID]*a.Func{},
+		builtInRosliceFuncs:   map[t.QQID]*a.Func{},
+		builtInRosliceU8Funcs: map[t.QQID]*a.Func{},
+		builtInRotableFuncs:   map[t.QQID]*a.Func{},
+		builtInSliceFuncs:     map[t.QQID]*a.Func{},
+		builtInSliceU8Funcs:   map[t.QQID]*a.Func{},
+		builtInTableFuncs:     map[t.QQID]*a.Func{},
 
 		builtInInterfaces:     map[t.QID][]t.QQID{},
 		builtInInterfaceFuncs: map[t.QQID]*a.Func{},
@@ -102,20 +105,20 @@ func Check(tm *t.Map, files []*a.File, resolveUse func(usePath string) ([]byte, 
 	}
 
 	for _, funcs := range builtin.Funcs {
-		if err := c.parseBuiltInFuncs(nil, funcs); err != nil {
+		if err := c.parseBuiltInFuncs(nil, nil, funcs); err != nil {
 			return nil, err
 		}
 	}
-	if err := c.parseBuiltInFuncs(c.builtInSliceFuncs, builtin.SliceFuncs); err != nil {
+	if err := c.parseBuiltInFuncs(c.builtInSliceFuncs, c.builtInRosliceFuncs, builtin.SliceFuncs); err != nil {
 		return nil, err
 	}
-	if err := c.parseBuiltInFuncs(c.builtInSliceU8Funcs, builtin.SliceU8Funcs); err != nil {
+	if err := c.parseBuiltInFuncs(c.builtInSliceU8Funcs, c.builtInRosliceU8Funcs, builtin.SliceU8Funcs); err != nil {
 		return nil, err
 	}
-	if err := c.parseBuiltInFuncs(c.builtInTableFuncs, builtin.TableFuncs); err != nil {
+	if err := c.parseBuiltInFuncs(c.builtInTableFuncs, c.builtInRotableFuncs, builtin.TableFuncs); err != nil {
 		return nil, err
 	}
-	if err := c.parseBuiltInFuncs(c.builtInInterfaceFuncs, builtin.InterfaceFuncs); err != nil {
+	if err := c.parseBuiltInFuncs(c.builtInInterfaceFuncs, nil, builtin.InterfaceFuncs); err != nil {
 		return nil, err
 	}
 
@@ -232,9 +235,12 @@ type Checker struct {
 	funcs     map[t.QQID]*a.Func
 	localVars map[t.QQID]typeMap
 
-	builtInSliceFuncs   map[t.QQID]*a.Func
-	builtInSliceU8Funcs map[t.QQID]*a.Func
-	builtInTableFuncs   map[t.QQID]*a.Func
+	builtInRosliceFuncs   map[t.QQID]*a.Func
+	builtInRosliceU8Funcs map[t.QQID]*a.Func
+	builtInRotableFuncs   map[t.QQID]*a.Func
+	builtInSliceFuncs     map[t.QQID]*a.Func
+	builtInSliceU8Funcs   map[t.QQID]*a.Func
+	builtInTableFuncs     map[t.QQID]*a.Func
 
 	builtInInterfaces     map[t.QID][]t.QQID
 	builtInInterfaceFuncs map[t.QQID]*a.Func

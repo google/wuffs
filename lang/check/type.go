@@ -332,9 +332,9 @@ func (q *checker) tcheckAssign(n *a.Assign) error {
 		return err
 	}
 	for l := lhs; l != nil; l = l.LHS().AsExpr() {
-		if l.MType().IsReadOnly() {
+		if (l.Operator() == t.IDOpenBracket) && l.LHS().MType().IsReadOnly() {
 			return fmt.Errorf("check: assignment %q: assignee fragment %q, of type %q, has read-only type",
-				n.Operator().Str(q.tm), l.Str(q.tm), l.MType().Str(q.tm))
+				n.Operator().Str(q.tm), l.LHS().AsExpr().Str(q.tm), l.LHS().AsExpr().MType().Str(q.tm))
 		}
 	}
 	lTyp := lhs.MType()
@@ -688,6 +688,22 @@ func (q *checker) tcheckExprCall(n *a.Expr, depth uint32) error {
 	return nil
 }
 
+func (c *Checker) isBuiltInSliceFunc(qqid t.QQID, typ *a.TypeExpr) bool {
+	if typ.Decorator() == t.IDRoslice {
+		return (c.builtInRosliceFuncs[qqid] != nil) ||
+			(typ.Eq(typeExprRosliceU8) && c.builtInRosliceU8Funcs[qqid] != nil)
+	}
+	return (c.builtInSliceFuncs[qqid] != nil) ||
+		(typ.Eq(typeExprSliceU8) && c.builtInSliceU8Funcs[qqid] != nil)
+}
+
+func (c *Checker) isBuiltInTableFunc(qqid t.QQID, typ *a.TypeExpr) bool {
+	if typ.Decorator() == t.IDRotable {
+		return c.builtInRotableFuncs[qqid] != nil
+	}
+	return c.builtInTableFuncs[qqid] != nil
+}
+
 func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 	lhs := n.LHS().AsExpr()
 	if err := q.tcheckExpr(lhs, depth); err != nil {
@@ -703,17 +719,16 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 	if lTyp.IsEitherSliceType() {
 		qqid[0] = t.IDBase
 		qqid[1] = t.IDDagger1
-		if (q.c.builtInSliceFuncs[qqid] != nil) ||
-			((q.c.builtInSliceU8Funcs[qqid] != nil) && lTyp.Eq(typeExprSliceU8)) {
+		if q.c.isBuiltInSliceFunc(qqid, lTyp) {
 			n.SetMType(a.NewTypeExpr(t.IDFunc, 0, n.Ident(), lTyp.AsNode(), nil, nil))
 			return nil
 		}
-		return fmt.Errorf("check: no slice method %q", n.Ident().Str(q.tm))
+		return fmt.Errorf("check: no %s method %q", lTyp.Decorator().Str(q.tm), n.Ident().Str(q.tm))
 
 	} else if lTyp.IsEitherTableType() {
 		qqid[0] = t.IDBase
 		qqid[1] = t.IDDagger2
-		if q.c.builtInTableFuncs[qqid] != nil {
+		if q.c.isBuiltInTableFunc(qqid, lTyp) {
 			n.SetMType(a.NewTypeExpr(t.IDFunc, 0, n.Ident(), lTyp.AsNode(), nil, nil))
 			return nil
 		}

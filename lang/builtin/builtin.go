@@ -501,7 +501,7 @@ var funcsOther = [...]string{
 	"io_reader.mark() u64",
 	"io_reader.match7(a: u64) u32[..= 2]",
 	"io_reader.position() u64",
-	"io_reader.since(mark: u64) slice u8",
+	"io_reader.since(mark: u64) roslice u8",
 	"io_reader.valid_utf_8_length(up_to: u64) u64",
 
 	"io_reader.limited_copy_u32_to_slice!(up_to: u32, s: slice u8) u32",
@@ -876,7 +876,7 @@ var InterfaceFuncs = []string{
 	// ---- hasher_u32
 
 	"hasher_u32.set_quirk_enabled!(quirk: u32, enabled: bool)",
-	"hasher_u32.update_u32!(x: slice u8) u32",
+	"hasher_u32.update_u32!(x: roslice u8) u32",
 
 	// ---- image_decoder
 

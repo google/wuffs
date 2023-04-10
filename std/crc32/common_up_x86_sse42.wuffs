@@ -17,11 +17,11 @@
 // See "SIMD Implementations" in README.md for a link to Gopal et al. "Fast CRC
 // Computation for Generic Polynomials Using PCLMULQDQ Instruction".
 
-pri func ieee_hasher.up_x86_sse42!(x: slice base.u8),
+pri func ieee_hasher.up_x86_sse42!(x: roslice base.u8),
         choose cpu_arch >= x86_sse42,
 {
     var s : base.u32
-    var p : slice base.u8
+    var p : roslice base.u8
 
     var util : base.x86_sse42_utility
     var k    : base.x86_m128i

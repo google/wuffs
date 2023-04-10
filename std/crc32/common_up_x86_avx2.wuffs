@@ -20,11 +20,11 @@
 // up_x86_avx2 is exactly the same as up_x86_sse42 except for the "choose
 // cpu_arch >= x86_avx2". With AVX, PCLMULQDQ has a three-operand form, not
 // just a two-operand form: https://www.felixcloutier.com/x86/pclmulqdq
-pri func ieee_hasher.up_x86_avx2!(x: slice base.u8),
+pri func ieee_hasher.up_x86_avx2!(x: roslice base.u8),
         choose cpu_arch >= x86_avx2,
 {
     var s : base.u32
-    var p : slice base.u8
+    var p : roslice base.u8
 
     var util : base.x86_sse42_utility
     var k    : base.x86_m128i

@@ -94,8 +94,10 @@ var (
 	typeExprX86AVX2Utility = a.NewTypeExpr(0, t.IDBase, t.IDX86AVX2Utility, nil, nil, nil)
 	typeExprX86M256I       = a.NewTypeExpr(0, t.IDBase, t.IDX86M256I, nil, nil, nil)
 
-	typeExprSliceU8 = a.NewTypeExpr(t.IDSlice, 0, 0, nil, nil, typeExprU8)
-	typeExprTableU8 = a.NewTypeExpr(t.IDTable, 0, 0, nil, nil, typeExprU8)
+	typeExprRosliceU8 = a.NewTypeExpr(t.IDRoslice, 0, 0, nil, nil, typeExprU8)
+	typeExprRotableU8 = a.NewTypeExpr(t.IDRotable, 0, 0, nil, nil, typeExprU8)
+	typeExprSliceU8   = a.NewTypeExpr(t.IDSlice, 0, 0, nil, nil, typeExprU8)
+	typeExprTableU8   = a.NewTypeExpr(t.IDTable, 0, 0, nil, nil, typeExprU8)
 )
 
 func setPlaceholderMBoundsMType(n *a.Node) {
@@ -162,13 +164,16 @@ var builtInTypeMap = typeMap{
 	t.IDX86M256I:       typeExprX86M256I,
 }
 
-func (c *Checker) parseBuiltInFuncs(m map[t.QQID]*a.Func, ss []string) error {
+func (c *Checker) parseBuiltInFuncs(m map[t.QQID]*a.Func, mRonly map[t.QQID]*a.Func, ss []string) error {
 	return builtin.ParseFuncs(c.tm, ss, func(f *a.Func) error {
 		if err := c.checkFuncSignature1(f.AsNode(), false); err != nil {
 			return err
 		}
 		if m != nil {
 			m[f.QQID()] = f
+		}
+		if (mRonly != nil) && f.Effect().Pure() {
+			mRonly[f.QQID()] = f
 		}
 		return nil
 	})
@@ -190,7 +195,7 @@ func (c *Checker) resolveFunc(typ *a.TypeExpr) (*a.Func, error) {
 				return f, nil
 			}
 		}
-		if lTyp.Eq(typeExprSliceU8) {
+		if lTyp.Eq(typeExprSliceU8) || lTyp.Eq(typeExprRosliceU8) {
 			if f := c.builtInSliceU8Funcs[qqid]; f != nil {
 				if (lTyp.Decorator() == t.IDSlice) || f.Effect().Pure() {
 					return f, nil

@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pri func ieee_hasher.up_arm_crc32!(x: slice base.u8),
+pri func ieee_hasher.up_arm_crc32!(x: roslice base.u8),
         choose cpu_arch >= arm_crc32,
 {
-    var p : slice base.u8
+    var p : roslice base.u8
 
     var util : base.arm_crc32_utility
     var s    : base.arm_crc32_u32

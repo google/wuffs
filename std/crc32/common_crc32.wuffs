@@ -23,7 +23,7 @@ pub func ieee_hasher.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
 // TODO: should it be ? instead of ! because it's public, and might need a way
 // to signal "initializer not called"? Should the return type, in the generated
 // C code, be "struct{ uint32_t checksum; wuffs_crc32__status status }"?
-pub func ieee_hasher.update_u32!(x: slice base.u8) base.u32 {
+pub func ieee_hasher.update_u32!(x: roslice base.u8) base.u32 {
     if this.state == 0 {
         choose up = [
                 up_arm_crc32,
@@ -34,11 +34,11 @@ pub func ieee_hasher.update_u32!(x: slice base.u8) base.u32 {
     return this.state
 }
 
-pri func ieee_hasher.up!(x: slice base.u8),
+pri func ieee_hasher.up!(x: roslice base.u8),
         choosy,
 {
     var s : base.u32
-    var p : slice base.u8
+    var p : roslice base.u8
 
     s = 0xFFFF_FFFF ^ this.state
 

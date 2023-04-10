@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pri func hasher.up_arm_neon!(x: slice base.u8),
+pri func hasher.up_arm_neon!(x: roslice base.u8),
         choose cpu_arch >= arm_neon,
 {
     // These variables are the same as the non-SIMD version.
     var s1        : base.u32
     var s2        : base.u32
-    var remaining : slice base.u8
-    var p         : slice base.u8
+    var remaining : roslice base.u8
+    var p         : roslice base.u8
 
     // The remaining variables are specific to the SIMD version.
 
