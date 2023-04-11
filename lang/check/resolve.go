@@ -32,6 +32,7 @@ var (
 var (
 	typeExprGeneric1    = a.NewTypeExpr(0, t.IDBase, t.IDDagger1, nil, nil, nil)
 	typeExprGeneric2    = a.NewTypeExpr(0, t.IDBase, t.IDDagger2, nil, nil, nil)
+	typeExprGenericRo1  = a.NewTypeExpr(0, t.IDBase, t.IDRho1, nil, nil, nil)
 	typeExprIdeal       = a.NewTypeExpr(0, t.IDBase, t.IDQIdeal, nil, nil, nil)
 	typeExprList        = a.NewTypeExpr(0, t.IDBase, t.IDComma, nil, nil, nil)
 	typeExprNonNullptr  = a.NewTypeExpr(0, t.IDBase, t.IDQNonNullptr, nil, nil, nil)

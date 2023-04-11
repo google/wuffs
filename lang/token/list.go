@@ -439,10 +439,12 @@ const (
 	IDCoroutineResumed = ID(0x101)
 	IDThis             = ID(0x102)
 
-	IDT1      = ID(0x104)
-	IDT2      = ID(0x105)
-	IDDagger1 = ID(0x106)
-	IDDagger2 = ID(0x107)
+	IDR1      = ID(0x104)
+	IDT1      = ID(0x105)
+	IDT2      = ID(0x106)
+	IDRho1    = ID(0x107)
+	IDDagger1 = ID(0x108)
+	IDDagger2 = ID(0x109)
 
 	IDQNonNullptr  = ID(0x10A)
 	IDQNullptr     = ID(0x10B)
@@ -851,10 +853,13 @@ var builtInsByID = [nBuiltInIDs]string{
 	// specifically non-ASCII so that no user-defined (non built-in) identifier
 	// will conflict with them.
 
-	// IDDaggerN is used by the type checker as a placeholder built-in ID to
-	// represent a generic type.
+	// IDRhoN and IDDaggerN are used by the type checker as placeholder
+	// built-in IDs to represent generic 1-dimensional (slice) or 2-dimensional
+	// (table) types. The Rho flavor is read-only.
+	IDR1:      "R1",
 	IDT1:      "T1",
 	IDT2:      "T2",
+	IDRho1:    "ρ", // U+03C1 GREEK SMALL LETTER RHO
 	IDDagger1: "†", // U+2020 DAGGER
 	IDDagger2: "‡", // U+2021 DOUBLE DAGGER
 

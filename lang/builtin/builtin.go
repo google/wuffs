@@ -912,16 +912,20 @@ var InterfaceFuncs = []string{
 // "table T" types. After tokenizing (but before parsing) these XxxFunc strings
 // (e.g. in the lang/check package), replace "T1" and "T2" with "†" or "‡"
 // daggers, to avoid collision with a user-defined "T1" or "T2" type.
+//
+// Ditto for "R1" / "ρ", for a read-only flavor of "T1" / "†".
 
 const (
-	genericOldName1 = t.IDT1
-	genericOldName2 = t.IDT2
-	genericNewName1 = t.IDDagger1
-	genericNewName2 = t.IDDagger2
+	genericOldName1   = t.IDT1
+	genericOldName2   = t.IDT2
+	genericOldNameRo1 = t.IDR1
+	genericNewName1   = t.IDDagger1
+	genericNewName2   = t.IDDagger2
+	genericNewNameRo1 = t.IDRho1
 )
 
 var SliceFuncs = []string{
-	"GENERIC T1.copy_from_slice!(s: T1) u64",
+	"GENERIC T1.copy_from_slice!(s: R1) u64",
 	"GENERIC T1.length() u64",
 	"GENERIC T1.prefix(up_to: u64) T1",
 	"GENERIC T1.uintptr_low_12_bits() u32[..= 4095]",
@@ -997,10 +1001,13 @@ func ParseFuncs(tm *t.Map, ss []string, callback func(*a.Func) error) error {
 
 	if generic {
 		for i := range tokens {
-			if id := tokens[i].ID; id == genericOldName1 {
-				tokens[i].ID = genericNewName1
+			tok := &tokens[i]
+			if id := tok.ID; id == genericOldName1 {
+				tok.ID = genericNewName1
 			} else if id == genericOldName2 {
-				tokens[i].ID = genericNewName2
+				tok.ID = genericNewName2
+			} else if id == genericOldNameRo1 {
+				tok.ID = genericNewNameRo1
 			}
 		}
 	}

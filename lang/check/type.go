@@ -624,16 +624,24 @@ func (q *checker) tcheckExprCall(n *a.Expr, depth uint32) error {
 
 	genericType1 := (*a.TypeExpr)(nil)
 	genericType2 := (*a.TypeExpr)(nil)
+	genericTypeRo1 := (*a.TypeExpr)(nil)
 	if recv := f.Receiver(); recv[0] == t.IDBase {
 		switch recv[1] {
 		case t.IDDagger1:
+			decorator := t.ID(0)
 			genericType1 = lhs.MType().Receiver()
+			if gt1Dec := genericType1.Decorator(); (gt1Dec == t.IDRoslice) || (gt1Dec == t.IDSlice) {
+				decorator = t.IDRoslice
+			} else {
+				return fmt.Errorf("check: internal error: %q is not a generic slice", genericType1.Str(q.tm))
+			}
+			genericTypeRo1 = a.NewTypeExpr(decorator, 0, 0, nil, nil, genericType1.Inner())
 		case t.IDDagger2:
 			decorator := t.ID(0)
 			genericType2 = lhs.MType().Receiver()
-			if genericType2.Decorator() == t.IDRotable {
+			if gt2Dec := genericType2.Decorator(); gt2Dec == t.IDRotable {
 				decorator = t.IDRoslice
-			} else if genericType2.Decorator() == t.IDTable {
+			} else if gt2Dec == t.IDTable {
 				decorator = t.IDSlice
 			} else {
 				return fmt.Errorf("check: internal error: %q is not a generic table", genericType2.Str(q.tm))
@@ -664,6 +672,8 @@ func (q *checker) tcheckExprCall(n *a.Expr, depth uint32) error {
 			inFieldTyp = genericType1
 		} else if genericType2 != nil && inFieldTyp.Eq(typeExprGeneric2) {
 			inFieldTyp = genericType2
+		} else if genericTypeRo1 != nil && inFieldTyp.Eq(typeExprGenericRo1) {
+			inFieldTyp = genericTypeRo1
 		}
 		if err := q.tcheckEq(inField.Name(), nil, inFieldTyp, o.Value(), o.Value().MType()); err != nil {
 			return err
@@ -1149,7 +1159,8 @@ swtch:
 			// TODO: reject. You can only refine numeric types.
 		}
 		if qid[0] == t.IDBase {
-			if _, ok := builtInTypeMap[qid[1]]; ok || qid[1] == t.IDDagger1 || qid[1] == t.IDDagger2 {
+			if _, ok := builtInTypeMap[qid[1]]; ok ||
+				qid[1] == t.IDDagger1 || qid[1] == t.IDDagger2 || qid[1] == t.IDRho1 {
 				break swtch
 			}
 		}
