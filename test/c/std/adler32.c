@@ -239,7 +239,7 @@ wuffs_bench_adler32(wuffs_base__io_buffer* dst,
   if (rlimit) {
     len = wuffs_base__u64__min(len, rlimit);
   }
-  wuffs_adler32__hasher checksum;
+  wuffs_adler32__hasher checksum = {0};
   CHECK_STATUS("initialize", wuffs_adler32__hasher__initialize(
                                  &checksum, sizeof checksum, WUFFS_VERSION,
                                  wuffs_initialize_flags));

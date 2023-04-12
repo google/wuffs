@@ -276,7 +276,7 @@ wuffs_bench_crc32_ieee(wuffs_base__io_buffer* dst,
   if (rlimit) {
     len = wuffs_base__u64__min(len, rlimit);
   }
-  wuffs_crc32__ieee_hasher checksum;
+  wuffs_crc32__ieee_hasher checksum = {0};
   CHECK_STATUS("initialize", wuffs_crc32__ieee_hasher__initialize(
                                  &checksum, sizeof checksum, WUFFS_VERSION,
                                  wuffs_initialize_flags));
