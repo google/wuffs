@@ -391,7 +391,7 @@ DecodeJson(DecodeJsonCallbacks& callbacks,
     }
     bool allow_tilde_n_tilde_r_tilde_t = false;
     for (size_t i = 0; i < quirks.repr.len; i++) {
-      dec->set_quirk_enabled(quirks.repr.ptr[i], true);
+      dec->set_quirk(quirks.repr.ptr[i], 1);
       if (quirks.repr.ptr[i] ==
           WUFFS_JSON__QUIRK_JSON_POINTER_ALLOW_TILDE_N_TILDE_R_TILDE_T) {
         allow_tilde_n_tilde_r_tilde_t = true;

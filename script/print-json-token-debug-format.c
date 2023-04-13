@@ -313,7 +313,7 @@ main1(int argc, char** argv) {
         0,
     };
     for (uint32_t i = 0; quirks[i]; i++) {
-      wuffs_base__token_decoder__set_quirk_enabled(g_dec, quirks[i], true);
+      wuffs_base__token_decoder__set_quirk(g_dec, quirks[i], 1);
     }
   }
 

@@ -3,6 +3,10 @@
 
 ## Work In Progress
 
+- Changed `set_quirk_enabled!(quirk: u32, enabled: bool)` to `set_quirk!(key:
+  u32, value: u64) status`.
+
+
 The dot points below probably aren't of interest unless you're _writing_ Wuffs
 code (instead of writing C/C++ code that _uses_ Wuffs' standard library).
 

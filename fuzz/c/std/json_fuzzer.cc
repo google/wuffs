@@ -264,7 +264,7 @@ void set_quirks(wuffs_json__decoder* dec, uint64_t hash) {
   for (uint32_t i = 0; g_quirks[i]; i++) {
     uint64_t bit = 1 << (i & 63);
     if (hash & bit) {
-      wuffs_json__decoder__set_quirk_enabled(dec, g_quirks[i], true);
+      wuffs_json__decoder__set_quirk(dec, g_quirks[i], 1);
     }
   }
 }

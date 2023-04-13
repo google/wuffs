@@ -18,7 +18,8 @@ pub struct hasher? implements base.hasher_u32(
         started : base.bool,
 )
 
-pub func hasher.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
+pub func hasher.set_quirk!(key: base.u32, value: base.u64) base.status {
+    return base."#unsupported option"
 }
 
 pub func hasher.update_u32!(x: roslice base.u8) base.u32 {

@@ -80,7 +80,7 @@ DecodeImageCallbacks::SelectDecoder(uint32_t fourcc,
     case WUFFS_BASE__FOURCC__PNG: {
       auto dec = wuffs_png__decoder::alloc_as__wuffs_base__image_decoder();
       // Favor faster decodes over rejecting invalid checksums.
-      dec->set_quirk_enabled(WUFFS_BASE__QUIRK_IGNORE_CHECKSUM, true);
+      dec->set_quirk(WUFFS_BASE__QUIRK_IGNORE_CHECKSUM, 1);
       return dec;
     }
 #endif
@@ -376,7 +376,7 @@ redirect:
 
     // Apply quirks.
     for (size_t i = 0; i < quirks.len; i++) {
-      image_decoder->set_quirk_enabled(quirks.ptr[i], true);
+      image_decoder->set_quirk(quirks.ptr[i], 1);
     }
 
     // Apply flags.

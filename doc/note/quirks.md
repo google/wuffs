@@ -32,7 +32,7 @@ even for malformed input.
 
 Each quirk is assigned a `uint32_t` value, packed using the [base38 namespace
 convention](/doc/note/base38-and-fourcc.md). Decoders and encoders can have a
-`set_quirk_enabled!(quirk base.u32, enabled base.bool)` method whose first
+`set_quirk!(key: base.u32, value: base.u64) base.status` method whose first
 argument is this `uint32_t` value.
 
 For example, the base38 encoding of `"gif "` and `"json"` is `0x0F8586` and

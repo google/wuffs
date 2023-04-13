@@ -1058,7 +1058,7 @@ do_run__wuffs_base__image_decoder(wuffs_base__image_decoder* b,
   wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
 
   for (size_t i = 0; i < quirks_len; i++) {
-    wuffs_base__image_decoder__set_quirk_enabled(b, quirks_ptr[i], true);
+    wuffs_base__image_decoder__set_quirk(b, quirks_ptr[i], 1);
   }
 
   uint32_t bits_per_pixel = wuffs_base__pixel_format__bits_per_pixel(&pixfmt);

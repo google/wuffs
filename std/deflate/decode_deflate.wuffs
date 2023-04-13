@@ -199,7 +199,8 @@ pub func decoder.add_history!(hist: slice base.u8) {
     this.history[0x8000 ..].copy_from_slice!(s: this.history[..])
 }
 
-pub func decoder.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
+pub func decoder.set_quirk!(key: base.u32, value: base.u64) base.status {
+    return base."#unsupported option"
 }
 
 pub func decoder.workbuf_len() base.range_ii_u64 {

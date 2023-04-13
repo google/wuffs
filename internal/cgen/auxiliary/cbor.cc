@@ -70,7 +70,7 @@ DecodeCbor(DecodeCborCallbacks& callbacks,
       goto done;
     }
     for (size_t i = 0; i < quirks.repr.len; i++) {
-      dec->set_quirk_enabled(quirks.repr.ptr[i], true);
+      dec->set_quirk(quirks.repr.ptr[i], 1);
     }
 
     // Prepare the wuffs_base__tok_buffer. 256 tokens is 2KiB.

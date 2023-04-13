@@ -976,21 +976,21 @@ initialize_globals(int argc, char** argv) {
           .message());
 
   if (g_flags.input_allow_comments) {
-    g_dec.set_quirk_enabled(WUFFS_JSON__QUIRK_ALLOW_COMMENT_BLOCK, true);
-    g_dec.set_quirk_enabled(WUFFS_JSON__QUIRK_ALLOW_COMMENT_LINE, true);
+    g_dec.set_quirk(WUFFS_JSON__QUIRK_ALLOW_COMMENT_BLOCK, 1);
+    g_dec.set_quirk(WUFFS_JSON__QUIRK_ALLOW_COMMENT_LINE, 1);
   }
   if (g_flags.input_allow_extra_comma) {
-    g_dec.set_quirk_enabled(WUFFS_JSON__QUIRK_ALLOW_EXTRA_COMMA, true);
+    g_dec.set_quirk(WUFFS_JSON__QUIRK_ALLOW_EXTRA_COMMA, 1);
   }
   if (g_flags.input_allow_inf_nan_numbers) {
-    g_dec.set_quirk_enabled(WUFFS_JSON__QUIRK_ALLOW_INF_NAN_NUMBERS, true);
+    g_dec.set_quirk(WUFFS_JSON__QUIRK_ALLOW_INF_NAN_NUMBERS, 1);
   }
 
   // Consume any optional trailing whitespace and comments. This isn't part of
   // the JSON spec, but it works better with line oriented Unix tools (such as
   // "echo 123 | jsonptr" where it's "echo", not "echo -n") or hand-edited JSON
   // files which can accidentally contain trailing whitespace.
-  g_dec.set_quirk_enabled(WUFFS_JSON__QUIRK_ALLOW_TRAILING_FILLER, true);
+  g_dec.set_quirk(WUFFS_JSON__QUIRK_ALLOW_TRAILING_FILLER, 1);
 
   return nullptr;
 }

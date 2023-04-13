@@ -88,7 +88,7 @@ void set_quirks(wuffs_gif__decoder* dec, uint64_t hash) {
   for (uint32_t i = 0; quirks[i]; i++) {
     uint64_t bit = 1 << (i & 63);
     if (hash & bit) {
-      wuffs_gif__decoder__set_quirk_enabled(dec, quirks[i], true);
+      wuffs_gif__decoder__set_quirk(dec, quirks[i], 1);
     }
   }
 }

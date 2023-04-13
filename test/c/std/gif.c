@@ -469,7 +469,7 @@ do_test_wuffs_gif_decode_expecting(wuffs_base__io_buffer src,
                    &dec, sizeof dec, WUFFS_VERSION,
                    WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
   if (quirk) {
-    wuffs_gif__decoder__set_quirk_enabled(&dec, quirk, true);
+    wuffs_gif__decoder__set_quirk(&dec, quirk, 1);
   }
 
   wuffs_base__image_config ic = ((wuffs_base__image_config){});
@@ -720,8 +720,8 @@ test_wuffs_gif_decode_delay_num_frames_decoded() {
                  wuffs_gif__decoder__initialize(
                      &dec, sizeof dec, WUFFS_VERSION,
                      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
-    wuffs_gif__decoder__set_quirk_enabled(
-        &dec, WUFFS_GIF__QUIRK_DELAY_NUM_DECODED_FRAMES, q);
+    wuffs_gif__decoder__set_quirk(&dec,
+                                  WUFFS_GIF__QUIRK_DELAY_NUM_DECODED_FRAMES, q);
 
     while (true) {
       wuffs_base__status status =
@@ -756,8 +756,8 @@ test_wuffs_gif_decode_empty_palette() {
                  wuffs_gif__decoder__initialize(
                      &dec, sizeof dec, WUFFS_VERSION,
                      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
-    wuffs_gif__decoder__set_quirk_enabled(
-        &dec, WUFFS_GIF__QUIRK_REJECT_EMPTY_PALETTE, q);
+    wuffs_gif__decoder__set_quirk(&dec, WUFFS_GIF__QUIRK_REJECT_EMPTY_PALETTE,
+                                  q);
 
     wuffs_base__image_config ic = ((wuffs_base__image_config){});
     wuffs_base__status status =
@@ -822,8 +822,8 @@ test_wuffs_gif_decode_background_color() {
                  wuffs_gif__decoder__initialize(
                      &dec, sizeof dec, WUFFS_VERSION,
                      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
-    wuffs_gif__decoder__set_quirk_enabled(
-        &dec, WUFFS_GIF__QUIRK_HONOR_BACKGROUND_COLOR, q);
+    wuffs_gif__decoder__set_quirk(&dec, WUFFS_GIF__QUIRK_HONOR_BACKGROUND_COLOR,
+                                  q);
 
     wuffs_base__frame_config fc = ((wuffs_base__frame_config){});
     wuffs_base__status status =
@@ -860,8 +860,8 @@ test_wuffs_gif_decode_first_frame_is_opaque() {
                  wuffs_gif__decoder__initialize(
                      &dec, sizeof dec, WUFFS_VERSION,
                      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
-    wuffs_gif__decoder__set_quirk_enabled(
-        &dec, WUFFS_GIF__QUIRK_HONOR_BACKGROUND_COLOR, q);
+    wuffs_gif__decoder__set_quirk(&dec, WUFFS_GIF__QUIRK_HONOR_BACKGROUND_COLOR,
+                                  q);
 
     wuffs_base__image_config ic = ((wuffs_base__image_config){});
     wuffs_base__status status =
@@ -897,8 +897,8 @@ test_wuffs_gif_decode_frame_out_of_bounds() {
                  wuffs_gif__decoder__initialize(
                      &dec, sizeof dec, WUFFS_VERSION,
                      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
-    wuffs_gif__decoder__set_quirk_enabled(
-        &dec, WUFFS_GIF__QUIRK_IMAGE_BOUNDS_ARE_STRICT, q);
+    wuffs_gif__decoder__set_quirk(&dec,
+                                  WUFFS_GIF__QUIRK_IMAGE_BOUNDS_ARE_STRICT, q);
 
     wuffs_base__image_config ic = ((wuffs_base__image_config){});
     wuffs_base__status status =
@@ -1072,13 +1072,13 @@ test_wuffs_gif_decode_zero_width_frame() {
         break;
       case 1:
         want = NULL;
-        wuffs_gif__decoder__set_quirk_enabled(
-            &dec, WUFFS_GIF__QUIRK_IGNORE_TOO_MUCH_PIXEL_DATA, true);
+        wuffs_gif__decoder__set_quirk(
+            &dec, WUFFS_GIF__QUIRK_IGNORE_TOO_MUCH_PIXEL_DATA, 1);
         break;
       case 2:
         want = wuffs_gif__error__bad_frame_size;
-        wuffs_gif__decoder__set_quirk_enabled(
-            &dec, WUFFS_GIF__QUIRK_REJECT_EMPTY_FRAME, true);
+        wuffs_gif__decoder__set_quirk(&dec, WUFFS_GIF__QUIRK_REJECT_EMPTY_FRAME,
+                                      1);
         break;
     }
 

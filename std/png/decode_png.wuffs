@@ -155,11 +155,13 @@ pub struct decoder? implements base.image_decoder(
         src_palette : array[4 * 256] base.u8,
 )
 
-pub func decoder.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
-    if args.quirk == base.QUIRK_IGNORE_CHECKSUM {
-        this.ignore_checksum = args.enabled
-        this.zlib.set_quirk_enabled!(quirk: args.quirk, enabled: args.enabled)
+pub func decoder.set_quirk!(key: base.u32, value: base.u64) base.status {
+    if args.key == base.QUIRK_IGNORE_CHECKSUM {
+        this.ignore_checksum = args.value > 0
+        this.zlib.set_quirk!(key: args.key, value: args.value)
+        return ok
     }
+    return base."#unsupported option"
 }
 
 pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_reader) {
@@ -1184,7 +1186,7 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
     if this.zlib_is_dirty {
         this.zlib.reset!()
         if this.ignore_checksum {
-            this.zlib.set_quirk_enabled!(quirk: base.QUIRK_IGNORE_CHECKSUM, enabled: true)
+            this.zlib.set_quirk!(key: base.QUIRK_IGNORE_CHECKSUM, value: 1)
         }
     }
     this.zlib_is_dirty = true
@@ -1463,7 +1465,7 @@ pri func decoder.do_tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inf
         if this.zlib_is_dirty {
             this.zlib.reset!()
             if this.ignore_checksum {
-                this.zlib.set_quirk_enabled!(quirk: base.QUIRK_IGNORE_CHECKSUM, enabled: true)
+                this.zlib.set_quirk!(key: base.QUIRK_IGNORE_CHECKSUM, value: 1)
             }
         }
         this.zlib_is_dirty = true

@@ -99,8 +99,8 @@ fuzz(wuffs_base__io_buffer* src, uint64_t hash) {
   // Ignore the checksum for 99.99%-ish of all input. When fuzzers generate
   // random input, the checkum is very unlikely to match. Still, it's useful to
   // verify that checksumming does not lead to e.g. buffer overflows.
-  wuffs_zlib__decoder__set_quirk_enabled(
-      &dec, WUFFS_BASE__QUIRK_IGNORE_CHECKSUM, hash & 0xFFFE);
+  wuffs_zlib__decoder__set_quirk(&dec, WUFFS_BASE__QUIRK_IGNORE_CHECKSUM,
+                                 hash & 0xFFFE);
 
   uint8_t dst_buffer[DST_BUFFER_ARRAY_SIZE];
   wuffs_base__io_buffer dst =

@@ -2583,7 +2583,7 @@ test_wuffs_json_decode_interface() {
                      &dec, sizeof dec, WUFFS_VERSION,
                      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
     for (size_t i = 0; quirks[i]; i++) {
-      wuffs_json__decoder__set_quirk_enabled(&dec, quirks[i], true);
+      wuffs_json__decoder__set_quirk(&dec, quirks[i], 1);
     }
     CHECK_STRING(do_test__wuffs_base__token_decoder(
         wuffs_json__decoder__upcast_as__wuffs_base__token_decoder(&dec),
@@ -3024,7 +3024,7 @@ test_wuffs_json_decode_quirk_allow_backslash_etc() {
       CHECK_STATUS("initialize", wuffs_json__decoder__initialize(
                                      &dec, sizeof dec, WUFFS_VERSION,
                                      WUFFS_INITIALIZE__DEFAULT_OPTIONS));
-      wuffs_json__decoder__set_quirk_enabled(&dec, test_cases[tc].quirk, q);
+      wuffs_json__decoder__set_quirk(&dec, test_cases[tc].quirk, q);
 
       wuffs_base__token_buffer tok =
           wuffs_base__slice_token__writer(g_have_slice_token);
@@ -3106,8 +3106,8 @@ test_wuffs_json_decode_quirk_allow_backslash_x() {
     CHECK_STATUS("initialize", wuffs_json__decoder__initialize(
                                    &dec, sizeof dec, WUFFS_VERSION,
                                    WUFFS_INITIALIZE__DEFAULT_OPTIONS));
-    wuffs_json__decoder__set_quirk_enabled(
-        &dec, WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_X_AS_CODE_POINTS, true);
+    wuffs_json__decoder__set_quirk(
+        &dec, WUFFS_JSON__QUIRK_ALLOW_BACKSLASH_X_AS_CODE_POINTS, 1);
 
     wuffs_base__token_buffer tok =
         wuffs_base__slice_token__writer(g_have_slice_token);
@@ -3184,8 +3184,8 @@ test_wuffs_json_decode_quirk_allow_extra_comma() {
       CHECK_STATUS("initialize", wuffs_json__decoder__initialize(
                                      &dec, sizeof dec, WUFFS_VERSION,
                                      WUFFS_INITIALIZE__DEFAULT_OPTIONS));
-      wuffs_json__decoder__set_quirk_enabled(
-          &dec, WUFFS_JSON__QUIRK_ALLOW_EXTRA_COMMA, q & 1);
+      wuffs_json__decoder__set_quirk(&dec, WUFFS_JSON__QUIRK_ALLOW_EXTRA_COMMA,
+                                     q & 1);
 
       wuffs_base__token_buffer tok =
           wuffs_base__slice_token__writer(g_have_slice_token);
@@ -3257,7 +3257,7 @@ test_wuffs_json_decode_quirk_allow_inf_nan_numbers() {
       CHECK_STATUS("initialize", wuffs_json__decoder__initialize(
                                      &dec, sizeof dec, WUFFS_VERSION,
                                      WUFFS_INITIALIZE__DEFAULT_OPTIONS));
-      wuffs_json__decoder__set_quirk_enabled(
+      wuffs_json__decoder__set_quirk(
           &dec, WUFFS_JSON__QUIRK_ALLOW_INF_NAN_NUMBERS, q & 1);
 
       wuffs_base__token_buffer tok =
@@ -3324,10 +3324,10 @@ test_wuffs_json_decode_quirk_allow_comment_etc() {
       CHECK_STATUS("initialize", wuffs_json__decoder__initialize(
                                      &dec, sizeof dec, WUFFS_VERSION,
                                      WUFFS_INITIALIZE__DEFAULT_OPTIONS));
-      wuffs_json__decoder__set_quirk_enabled(
+      wuffs_json__decoder__set_quirk(
           &dec, WUFFS_JSON__QUIRK_ALLOW_COMMENT_BLOCK, q & 1);
-      wuffs_json__decoder__set_quirk_enabled(
-          &dec, WUFFS_JSON__QUIRK_ALLOW_COMMENT_LINE, q & 2);
+      wuffs_json__decoder__set_quirk(&dec, WUFFS_JSON__QUIRK_ALLOW_COMMENT_LINE,
+                                     q & 2);
 
       wuffs_base__token_buffer tok =
           wuffs_base__slice_token__writer(g_have_slice_token);
@@ -3399,9 +3399,9 @@ test_wuffs_json_decode_quirk_allow_leading_etc() {
       CHECK_STATUS("initialize", wuffs_json__decoder__initialize(
                                      &dec, sizeof dec, WUFFS_VERSION,
                                      WUFFS_INITIALIZE__DEFAULT_OPTIONS));
-      wuffs_json__decoder__set_quirk_enabled(
+      wuffs_json__decoder__set_quirk(
           &dec, WUFFS_JSON__QUIRK_ALLOW_LEADING_ASCII_RECORD_SEPARATOR, q & 1);
-      wuffs_json__decoder__set_quirk_enabled(
+      wuffs_json__decoder__set_quirk(
           &dec, WUFFS_JSON__QUIRK_ALLOW_LEADING_UNICODE_BYTE_ORDER_MARK, q & 2);
 
       wuffs_base__token_buffer tok =
@@ -3500,12 +3500,12 @@ test_wuffs_json_decode_quirk_allow_trailing_comments() {
     CHECK_STATUS("initialize", wuffs_json__decoder__initialize(
                                    &dec, sizeof dec, WUFFS_VERSION,
                                    WUFFS_INITIALIZE__DEFAULT_OPTIONS));
-    wuffs_json__decoder__set_quirk_enabled(
-        &dec, WUFFS_JSON__QUIRK_ALLOW_COMMENT_BLOCK, true);
-    wuffs_json__decoder__set_quirk_enabled(
-        &dec, WUFFS_JSON__QUIRK_ALLOW_COMMENT_LINE, true);
-    wuffs_json__decoder__set_quirk_enabled(
-        &dec, WUFFS_JSON__QUIRK_ALLOW_TRAILING_FILLER, true);
+    wuffs_json__decoder__set_quirk(&dec, WUFFS_JSON__QUIRK_ALLOW_COMMENT_BLOCK,
+                                   1);
+    wuffs_json__decoder__set_quirk(&dec, WUFFS_JSON__QUIRK_ALLOW_COMMENT_LINE,
+                                   1);
+    wuffs_json__decoder__set_quirk(&dec,
+                                   WUFFS_JSON__QUIRK_ALLOW_TRAILING_FILLER, 1);
 
     const char* have_repr =
         wuffs_json__decoder__decode_tokens(&dec, &tok, &src, g_work_slice_u8)
@@ -3544,8 +3544,8 @@ test_wuffs_json_decode_quirk_allow_trailing_comments() {
     CHECK_STATUS("initialize", wuffs_json__decoder__initialize(
                                    &dec, sizeof dec, WUFFS_VERSION,
                                    WUFFS_INITIALIZE__DEFAULT_OPTIONS));
-    wuffs_json__decoder__set_quirk_enabled(
-        &dec, WUFFS_JSON__QUIRK_EXPECT_TRAILING_NEW_LINE_OR_EOF, true);
+    wuffs_json__decoder__set_quirk(
+        &dec, WUFFS_JSON__QUIRK_EXPECT_TRAILING_NEW_LINE_OR_EOF, 1);
 
     const char* have_repr =
         wuffs_json__decoder__decode_tokens(&dec, &tok, &src, g_work_slice_u8)
@@ -3612,9 +3612,9 @@ test_wuffs_json_decode_quirk_allow_trailing_filler() {
       CHECK_STATUS("initialize", wuffs_json__decoder__initialize(
                                      &dec, sizeof dec, WUFFS_VERSION,
                                      WUFFS_INITIALIZE__DEFAULT_OPTIONS));
-      wuffs_json__decoder__set_quirk_enabled(
+      wuffs_json__decoder__set_quirk(
           &dec, WUFFS_JSON__QUIRK_ALLOW_TRAILING_FILLER, q & 1);
-      wuffs_json__decoder__set_quirk_enabled(
+      wuffs_json__decoder__set_quirk(
           &dec, WUFFS_JSON__QUIRK_EXPECT_TRAILING_NEW_LINE_OR_EOF, q & 2);
 
       wuffs_base__token_buffer tok =
@@ -3709,8 +3709,8 @@ test_wuffs_json_decode_quirk_replace_invalid_unicode() {
     CHECK_STATUS("initialize", wuffs_json__decoder__initialize(
                                    &dec, sizeof dec, WUFFS_VERSION,
                                    WUFFS_INITIALIZE__DEFAULT_OPTIONS));
-    wuffs_json__decoder__set_quirk_enabled(
-        &dec, WUFFS_JSON__QUIRK_REPLACE_INVALID_UNICODE, true);
+    wuffs_json__decoder__set_quirk(
+        &dec, WUFFS_JSON__QUIRK_REPLACE_INVALID_UNICODE, 1);
 
     wuffs_base__io_buffer have = wuffs_base__slice_u8__writer(g_have_slice_u8);
     wuffs_base__token_buffer tok =

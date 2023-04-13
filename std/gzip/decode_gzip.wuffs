@@ -33,10 +33,12 @@ pub struct decoder? implements base.io_transformer(
         util : base.utility,
 )
 
-pub func decoder.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
-    if args.quirk == base.QUIRK_IGNORE_CHECKSUM {
-        this.ignore_checksum = args.enabled
+pub func decoder.set_quirk!(key: base.u32, value: base.u64) base.status {
+    if args.key == base.QUIRK_IGNORE_CHECKSUM {
+        this.ignore_checksum = args.value > 0
+        return ok
     }
+    return base."#unsupported option"
 }
 
 pub func decoder.workbuf_len() base.range_ii_u64 {

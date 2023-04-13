@@ -61,13 +61,15 @@ pub struct decoder? implements base.token_decoder(
         stack : array[1024 / 32] base.u32,
 )
 
-pub func decoder.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
-    if args.quirk >= QUIRKS_BASE {
-        args.quirk -= QUIRKS_BASE
-        if args.quirk < QUIRKS_COUNT {
-            this.quirks[args.quirk] = args.enabled
+pub func decoder.set_quirk!(key: base.u32, value: base.u64) base.status {
+    if args.key >= QUIRKS_BASE {
+        args.key -= QUIRKS_BASE
+        if args.key < QUIRKS_COUNT {
+            this.quirks[args.key] = args.value > 0
+            return ok
         }
     }
+    return base."#unsupported option"
 }
 
 pub func decoder.workbuf_len() base.range_ii_u64 {

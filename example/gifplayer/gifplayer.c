@@ -353,8 +353,8 @@ play() {
   }
 
   if (g_flags.quirk_honor_background_color) {
-    wuffs_gif__decoder__set_quirk_enabled(
-        &dec, WUFFS_GIF__QUIRK_HONOR_BACKGROUND_COLOR, true);
+    wuffs_gif__decoder__set_quirk(&dec, WUFFS_GIF__QUIRK_HONOR_BACKGROUND_COLOR,
+                                  1);
   }
 
   wuffs_base__io_buffer src;

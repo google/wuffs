@@ -62,17 +62,21 @@ pub func decoder.add_dictionary!(dict: slice base.u8) {
     this.got_dictionary = true
 }
 
-pub func decoder.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
+pub func decoder.set_quirk!(key: base.u32, value: base.u64) base.status {
     if this.header_complete {
         this.bad_call_sequence = true
-    } else if args.quirk == base.QUIRK_IGNORE_CHECKSUM {
-        this.ignore_checksum = args.enabled
-    } else if args.quirk >= QUIRKS_BASE {
-        args.quirk -= QUIRKS_BASE
-        if args.quirk < QUIRKS_COUNT {
-            this.quirks[args.quirk] = args.enabled
+        return base."#bad call sequence"
+    } else if args.key == base.QUIRK_IGNORE_CHECKSUM {
+        this.ignore_checksum = args.value > 0
+        return ok
+    } else if args.key >= QUIRKS_BASE {
+        args.key -= QUIRKS_BASE
+        if args.key < QUIRKS_COUNT {
+            this.quirks[args.key] = args.value > 0
+            return ok
         }
     }
+    return base."#unsupported option"
 }
 
 pub func decoder.workbuf_len() base.range_ii_u64 {

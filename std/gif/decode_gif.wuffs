@@ -88,13 +88,15 @@ pub struct decoder? implements base.image_decoder(
         lzw : lzw.decoder,
 )
 
-pub func decoder.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
-    if (this.call_sequence == 0x00) and (args.quirk >= QUIRKS_BASE) {
-        args.quirk -= QUIRKS_BASE
-        if args.quirk < QUIRKS_COUNT {
-            this.quirks[args.quirk] = args.enabled
+pub func decoder.set_quirk!(key: base.u32, value: base.u64) base.status {
+    if (this.call_sequence == 0x00) and (args.key >= QUIRKS_BASE) {
+        args.key -= QUIRKS_BASE
+        if args.key < QUIRKS_COUNT {
+            this.quirks[args.key] = args.value > 0
+            return ok
         }
     }
+    return base."#unsupported option"
 }
 
 pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_reader) {

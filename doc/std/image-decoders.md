@@ -107,7 +107,7 @@ In Wuffs syntax, the `base.image_decoder` methods are:
 - `num_decoded_frame_configs() u64`
 - `num_decoded_frames() u64`
 - `restart_frame!(index: u64, io_position: u64) status`
-- `set_quirk_enabled!(quirk: u32, enabled: bool)`
+- `set_quirk!(key: u32, value: u64) status`
 - `set_report_metadata!(fourcc: u32, report: bool)`
 - `tell_me_more?(dst: io_writer, minfo: nptr more_information, src: io_reader)`
 - `workbuf_len() range_ii_u64`
