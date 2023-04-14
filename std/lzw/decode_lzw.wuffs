@@ -28,11 +28,11 @@ pri status "#internal error: inconsistent I/O"
 pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0
 
 pub struct decoder? implements base.io_transformer(
-        // set_literal_width_arg is 1 plus the saved argument passed to
-        // set_literal_width. This is assigned to the literal_width field at the
-        // start of transform_io. During that method, calling set_literal_width
-        // will change set_literal_width_arg but not literal_width.
-        set_literal_width_arg : base.u32[..= 9],
+        // pending_literal_width_plus_one is 1 plus the saved argument passed
+        // to set_quirk. This is assigned to the literal_width field at the
+        // start of transform_io. During that method, calling set_quirk will
+        // change pending_literal_width_plus_one but not literal_width.
+        pending_literal_width_plus_one : base.u32[..= 9],
 
         // read_from state that does not change during a decode call.
         literal_width : base.u32[..= 8],
@@ -71,11 +71,14 @@ pub struct decoder? implements base.io_transformer(
 )
 
 pub func decoder.set_quirk!(key: base.u32, value: base.u64) base.status {
+    if args.key == QUIRK_LITERAL_WIDTH_PLUS_ONE {
+        if args.value > 9 {
+            return base."#bad argument"
+        }
+        this.pending_literal_width_plus_one = args.value as base.u32
+        return ok
+    }
     return base."#unsupported option"
-}
-
-pub func decoder.set_literal_width!(lw: base.u32[..= 8]) {
-    this.set_literal_width_arg = args.lw + 1
 }
 
 pub func decoder.workbuf_len() base.range_ii_u64 {
@@ -87,8 +90,8 @@ pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf
 
     // Initialize read_from state.
     this.literal_width = 8
-    if this.set_literal_width_arg > 0 {
-        this.literal_width = this.set_literal_width_arg - 1
+    if this.pending_literal_width_plus_one > 0 {
+        this.literal_width = this.pending_literal_width_plus_one - 1
     }
     this.clear_code = (1 as base.u32) << this.literal_width
     this.end_code = this.clear_code + 1

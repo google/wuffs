@@ -149,7 +149,8 @@ do_test_wuffs_lzw_decode(const char* src_filename,
                wuffs_lzw__decoder__initialize(
                    &dec, sizeof dec, WUFFS_VERSION,
                    WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
-  wuffs_lzw__decoder__set_literal_width(&dec, literal_width);
+  wuffs_lzw__decoder__set_quirk(&dec, WUFFS_LZW__QUIRK_LITERAL_WIDTH_PLUS_ONE,
+                                literal_width + 1);
   int num_iters = 0;
   while (true) {
     num_iters++;
@@ -267,7 +268,8 @@ test_wuffs_lzw_decode_output_bad() {
                wuffs_lzw__decoder__initialize(
                    &dec, sizeof dec, WUFFS_VERSION,
                    WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
-  wuffs_lzw__decoder__set_literal_width(&dec, 7);
+  wuffs_lzw__decoder__set_quirk(&dec, WUFFS_LZW__QUIRK_LITERAL_WIDTH_PLUS_ONE,
+                                7 + 1);
 
   wuffs_base__status status =
       wuffs_lzw__decoder__transform_io(&dec, &have, &src, g_work_slice_u8);
@@ -310,7 +312,8 @@ test_wuffs_lzw_decode_output_empty() {
                wuffs_lzw__decoder__initialize(
                    &dec, sizeof dec, WUFFS_VERSION,
                    WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
-  wuffs_lzw__decoder__set_literal_width(&dec, 8);
+  wuffs_lzw__decoder__set_quirk(&dec, WUFFS_LZW__QUIRK_LITERAL_WIDTH_PLUS_ONE,
+                                8 + 1);
 
   CHECK_STATUS("transform_io", wuffs_lzw__decoder__transform_io(
                                    &dec, &have, &src, g_work_slice_u8));
@@ -333,7 +336,8 @@ do_test_wuffs_lzw_decode_width(uint32_t width,
                wuffs_lzw__decoder__initialize(
                    &dec, sizeof dec, WUFFS_VERSION,
                    WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
-  wuffs_lzw__decoder__set_literal_width(&dec, width);
+  wuffs_lzw__decoder__set_quirk(&dec, WUFFS_LZW__QUIRK_LITERAL_WIDTH_PLUS_ONE,
+                                width + 1);
 
   wuffs_base__io_buffer have = ((wuffs_base__io_buffer){
       .data = g_have_slice_u8,

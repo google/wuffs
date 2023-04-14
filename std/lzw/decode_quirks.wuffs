@@ -1,0 +1,28 @@
+// Copyright 2023 The Wuffs Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// --------
+
+// Quirks are discussed in (/doc/note/quirks.md).
+//
+// The base38 encoding of "lzw " is 0x1417A8. Left shifting by 10 gives
+// 0x505E_A000.
+pri const QUIRKS_BASE : base.u32 = 0x505E_A000
+
+// --------
+
+// When this quirk is set (to a value in the range 0 ..= 9), a positive value
+// is one more than the initial number of bits of a literal code. Zero means to
+// use the default literal width, 8.
+pub const QUIRK_LITERAL_WIDTH_PLUS_ONE : base.u32 = 0x505E_A000 | 0x00

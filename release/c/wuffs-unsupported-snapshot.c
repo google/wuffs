@@ -7694,6 +7694,8 @@ extern const char wuffs_lzw__error__truncated_input[];
 
 #define WUFFS_LZW__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE 0
 
+#define WUFFS_LZW__QUIRK_LITERAL_WIDTH_PLUS_ONE 1348378624
+
 // ---------------- Struct Declarations
 
 typedef struct wuffs_lzw__decoder__struct wuffs_lzw__decoder;
@@ -7752,11 +7754,6 @@ wuffs_lzw__decoder__set_quirk(
     uint32_t a_key,
     uint64_t a_value);
 
-WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct
-wuffs_lzw__decoder__set_literal_width(
-    wuffs_lzw__decoder* self,
-    uint32_t a_lw);
-
 WUFFS_BASE__MAYBE_STATIC wuffs_base__range_ii_u64
 wuffs_lzw__decoder__workbuf_len(
     const wuffs_lzw__decoder* self);
@@ -7799,7 +7796,7 @@ struct wuffs_lzw__decoder__struct {
     wuffs_base__vtable vtable_for__wuffs_base__io_transformer;
     wuffs_base__vtable null_vtable;
 
-    uint32_t f_set_literal_width_arg;
+    uint32_t f_pending_literal_width_plus_one;
     uint32_t f_literal_width;
     uint32_t f_clear_code;
     uint32_t f_end_code;
@@ -7890,12 +7887,6 @@ struct wuffs_lzw__decoder__struct {
       uint32_t a_key,
       uint64_t a_value) {
     return wuffs_lzw__decoder__set_quirk(this, a_key, a_value);
-  }
-
-  inline wuffs_base__empty_struct
-  set_literal_width(
-      uint32_t a_lw) {
-    return wuffs_lzw__decoder__set_literal_width(this, a_lw);
   }
 
   inline wuffs_base__range_ii_u64
@@ -31051,6 +31042,8 @@ const char wuffs_lzw__error__internal_error_inconsistent_i_o[] = "#lzw: internal
 
 // ---------------- Private Consts
 
+#define WUFFS_LZW__QUIRKS_BASE 1348378624
+
 // ---------------- Private Initializer Prototypes
 
 // ---------------- Private Function Prototypes
@@ -31167,28 +31160,14 @@ wuffs_lzw__decoder__set_quirk(
         : wuffs_base__error__initialize_not_called);
   }
 
+  if (a_key == 1348378624) {
+    if (a_value > 9) {
+      return wuffs_base__make_status(wuffs_base__error__bad_argument);
+    }
+    self->private_impl.f_pending_literal_width_plus_one = ((uint32_t)(a_value));
+    return wuffs_base__make_status(NULL);
+  }
   return wuffs_base__make_status(wuffs_base__error__unsupported_option);
-}
-
-// -------- func lzw.decoder.set_literal_width
-
-WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct
-wuffs_lzw__decoder__set_literal_width(
-    wuffs_lzw__decoder* self,
-    uint32_t a_lw) {
-  if (!self) {
-    return wuffs_base__make_empty_struct();
-  }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    return wuffs_base__make_empty_struct();
-  }
-  if (a_lw > 8) {
-    self->private_impl.magic = WUFFS_BASE__DISABLED;
-    return wuffs_base__make_empty_struct();
-  }
-
-  self->private_impl.f_set_literal_width_arg = (a_lw + 1);
-  return wuffs_base__make_empty_struct();
 }
 
 // -------- func lzw.decoder.workbuf_len
@@ -31243,8 +31222,8 @@ wuffs_lzw__decoder__transform_io(
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
     self->private_impl.f_literal_width = 8;
-    if (self->private_impl.f_set_literal_width_arg > 0) {
-      self->private_impl.f_literal_width = (self->private_impl.f_set_literal_width_arg - 1);
+    if (self->private_impl.f_pending_literal_width_plus_one > 0) {
+      self->private_impl.f_literal_width = (self->private_impl.f_pending_literal_width_plus_one - 1);
     }
     self->private_impl.f_clear_code = (((uint32_t)(1)) << self->private_impl.f_literal_width);
     self->private_impl.f_end_code = (self->private_impl.f_clear_code + 1);
@@ -34006,7 +33985,7 @@ wuffs_gif__decoder__decode_id_part1(
       status = wuffs_base__make_status(wuffs_gif__error__bad_literal_width);
       goto exit;
     }
-    wuffs_lzw__decoder__set_literal_width(&self->private_data.f_lzw, ((uint32_t)(v_lw)));
+    wuffs_lzw__decoder__set_quirk(&self->private_data.f_lzw, 1348378624, ((uint64_t)((1 + v_lw))));
     self->private_impl.f_previous_lzw_decode_ended_abruptly = true;
 
     ok:

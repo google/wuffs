@@ -899,7 +899,7 @@ pri func decoder.decode_id_part1?(dst: ptr base.pixel_buffer, src: base.io_reade
     if lw > 8 {
         return "#bad literal width"
     }
-    this.lzw.set_literal_width!(lw: lw as base.u32)
+    this.lzw.set_quirk!(key: lzw.QUIRK_LITERAL_WIDTH_PLUS_ONE, value: (1 + lw) as base.u64)
 
     this.previous_lzw_decode_ended_abruptly = true
 }

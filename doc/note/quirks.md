@@ -30,20 +30,26 @@ even for malformed input.
 
 ## Wuffs API
 
-Each quirk is assigned a `uint32_t` value, packed using the [base38 namespace
+Each quirk is assigned a `uint32_t` number, packed using the [base38 namespace
 convention](/doc/note/base38-and-fourcc.md). Decoders and encoders can have a
-`set_quirk!(key: base.u32, value: base.u64) base.status` method whose first
-argument is this `uint32_t` value.
+`set_quirk!(key: base.u32, value: base.u64) base.status` method whose key
+argument is this `uint32_t` number.
 
 For example, the base38 encoding of `"gif "` and `"json"` is `0x0F8586` and
-`0x124265` respectively, so that the GIF-specific quirks have a `uint32_t`
-value of `((0x0F8586 << 10) | g)`, and the JSON-specific quirks have a
-`uint32_t` value of `((0x124265 << 10) | j)`, for some small integers `g` and
-`j`. The high bits are a namespace. The overall quirk values are different even
-if `g` and `j` re-use the same 10-bit integer.
+`0x124265` respectively, so that the GIF-specific quirks have a `uint32_t` key
+of `((0x0F8586 << 10) | g)` and the JSON-specific quirks have a `uint32_t` key
+of `((0x124265 << 10) | j)`, for some small integers `g` and `j`. The high bits
+are a namespace. The overall quirk keys are different even if `g` and `j`
+re-use the same 10-bit integer.
 
 The generated `C` language file defines human-readable names for those constant
-values, such as `WUFFS_JSON__QUIRK_ALLOW_LEADING_UNICODE_BYTE_ORDER_MARK`.
+numbers, such as `WUFFS_JSON__QUIRK_ALLOW_LEADING_UNICODE_BYTE_ORDER_MARK`.
+
+The value argument (a `uint64_t` number) is often effectively a boolean: zero
+means to disable and non-zero to enable the quirk. But `set_quirk` is sometimes
+also used to pass out-of-band configuration, and not necessarily due to
+underspecified file formats, such as `WUFFS_LZW__QUIRK_LITERAL_WIDTH_PLUS_ONE`.
+For those cases, zero typically means to use the default configuration.
 
 
 ## Listing
@@ -61,4 +67,5 @@ Package-specific quirks:
 
 - [GIF image decoder quirks](/std/gif/decode_quirks.wuffs)
 - [JSON decoder quirks](/std/json/decode_quirks.wuffs)
+- [LZW decoder quirks](/std/lzw/decode_quirks.wuffs)
 - [ZLIB decoder quirks](/std/zlib/decode_quirks.wuffs)
