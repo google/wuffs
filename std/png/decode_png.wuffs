@@ -16,8 +16,6 @@ use "std/crc32"
 use "std/zlib"
 
 pub struct decoder? implements base.image_decoder(
-        // The 0x00FF_FFFF limit is arbitrary (the PNG spec says 0x7FFF_FFFF) but
-        // it means that (width * height * bytes_per_pixel) doesn't overflow a u64.
         width  : base.u32[..= 0x00FF_FFFF],
         height : base.u32[..= 0x00FF_FFFF],
 
@@ -336,18 +334,18 @@ pri func decoder.decode_ihdr?(src: base.io_reader) {
     var a8  : base.u8
 
     a32 = args.src.read_u32be?()
-    if (a32 == 0) or (a32 >= 0x8000_0000) {
+    if (a32 == 0) or (a32 > 0x7FFF_FFFF) {
         return "#bad header"
-    } else if a32 >= 0x0100_0000 {
-        return "#unsupported PNG file"
+    } else if a32 > 0xFF_FFFF {
+        return base."#unsupported image dimension"
     }
     this.width = a32
 
     a32 = args.src.read_u32be?()
-    if (a32 == 0) or (a32 >= 0x8000_0000) {
+    if (a32 == 0) or (a32 > 0x7FFF_FFFF) {
         return "#bad header"
-    } else if a32 >= 0x0100_0000 {
-        return "#unsupported PNG file"
+    } else if a32 > 0xFF_FFFF {
+        return base."#unsupported image dimension"
     }
     this.height = a32
 

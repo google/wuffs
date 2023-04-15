@@ -18,8 +18,8 @@ pub status "#truncated input"
 pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0
 
 pub struct decoder? implements base.image_decoder(
-        width  : base.u32,
-        height : base.u32,
+        width  : base.u32[..= 0xFF_FFFF],
+        height : base.u32[..= 0xFF_FFFF],
 
         // The call sequence state machine is discussed in
         // (/doc/std/image-decoders-call-sequence.md).
@@ -48,10 +48,9 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 }
 
 pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.io_reader) {
-    var c   : base.u8
-    var i   : base.u32
-    var x32 : base.u32
-    var x64 : base.u64
+    var c : base.u8
+    var i : base.u32
+    var p : base.u32[..= 0xFF_FFFF]
 
     if this.call_sequence <> 0x00 {
         return base."#bad call sequence"
@@ -70,27 +69,25 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
     // Width, height.
     i = 0
     while i < 2 {
-        x32 = 0
+        p = 0
 
         while true,
                 inv i < 2,
         {
             c = args.src.read_u8?()
-            x32 |= (c & 0x7F) as base.u32
+            p |= (c & 0x7F) as base.u32
             if (c >> 7) == 0 {
                 break
+            } else if p > 0x1_FFFF {
+                return base."#unsupported image dimension"
             }
-            x64 = (x32 as base.u64) << 7
-            if x64 > 0xFFFF_FFFF {
-                return "#bad header"
-            }
-            x32 = x64 as base.u32
+            p <<= 7
         } endwhile
 
         if i == 0 {
-            this.width = x32
+            this.width = p
         } else {
-            this.height = x32
+            this.height = p
         }
         i += 1
     } endwhile
@@ -212,19 +209,19 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
     if this.width > 0 {
         tab = args.dst.plane(p: 0)
         while dst_y < this.height {
-            assert dst_y < 0xFFFF_FFFF via "a < b: a < c; c <= b"(c: this.height)
+            assert dst_y < 0xFF_FFFF via "a < b: a < c; c <= b"(c: this.height)
             dst = tab.row_u32(y: dst_y)
             dst_x = 0
 
             while dst_x < this.width,
-                    inv dst_y < 0xFFFF_FFFF,
+                    inv dst_y < 0xFF_FFFF,
             {
-                assert dst_x < 0xFFFF_FFFF via "a < b: a < c; c <= b"(c: this.width)
+                assert dst_x < 0xFF_FFFF via "a < b: a < c; c <= b"(c: this.width)
 
                 if (dst_x & 7) == 0 {
                     while args.src.length() <= 0,
-                            inv dst_x < 0xFFFF_FFFF,
-                            inv dst_y < 0xFFFF_FFFF,
+                            inv dst_x < 0xFF_FFFF,
+                            inv dst_y < 0xFF_FFFF,
                             post args.src.length() > 0,
                     {
                         yield? base."$short read"

@@ -22,8 +22,8 @@ pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0
 
 pub struct decoder? implements base.image_decoder(
         pixfmt : base.u32,
-        width  : base.u32[..= 0x7FFF_FFFF],
-        height : base.u32[..= 0x7FFF_FFFF],
+        width  : base.u32[..= 0xFF_FFFF],
+        height : base.u32[..= 0xFF_FFFF],
 
         // The call sequence state machine is discussed in
         // (/doc/std/image-decoders-call-sequence.md).
@@ -78,14 +78,18 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
     }
 
     a = args.src.read_u32le?()
-    if a >= 0x8000_0000 {
+    if a > 0x7FFF_FFFF {
         return "#bad header"
+    } else if a > 0xFF_FFFF {
+        return base."#unsupported image dimension"
     }
     this.width = a
 
     a = args.src.read_u32le?()
-    if a >= 0x8000_0000 {
+    if a > 0x7FFF_FFFF {
         return "#bad header"
+    } else if a > 0xFF_FFFF {
+        return base."#unsupported image dimension"
     }
     this.height = a
 
@@ -200,7 +204,7 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
 pri func decoder.swizzle!(dst: ptr base.pixel_buffer, src: base.io_reader) base.status {
     var dst_pixfmt          : base.pixel_format
     var dst_bits_per_pixel  : base.u32[..= 256]
-    var dst_bytes_per_pixel : base.u64[..= 32]
+    var dst_bytes_per_pixel : base.u32[..= 32]
     var dst_bytes_per_row   : base.u64
     var src_bytes_per_pixel : base.u32[..= 8]
     var tab                 : table base.u8
@@ -216,8 +220,8 @@ pri func decoder.swizzle!(dst: ptr base.pixel_buffer, src: base.io_reader) base.
     if (dst_bits_per_pixel & 7) <> 0 {
         return base."#unsupported option"
     }
-    dst_bytes_per_pixel = (dst_bits_per_pixel / 8) as base.u64
-    dst_bytes_per_row = (this.width as base.u64) * dst_bytes_per_pixel
+    dst_bytes_per_pixel = dst_bits_per_pixel / 8
+    dst_bytes_per_row = (this.width * dst_bytes_per_pixel) as base.u64
     tab = args.dst.plane(p: 0)
 
     while true {
@@ -233,7 +237,7 @@ pri func decoder.swizzle!(dst: ptr base.pixel_buffer, src: base.io_reader) base.
         if dst_bytes_per_row < dst.length() {
             dst = dst[.. dst_bytes_per_row]
         }
-        i = (this.dst_x as base.u64) * dst_bytes_per_pixel
+        i = (this.dst_x as base.u64) * (dst_bytes_per_pixel as base.u64)
         if i >= dst.length() {
             src_bytes_per_pixel = 4
             assert src_bytes_per_pixel > 0

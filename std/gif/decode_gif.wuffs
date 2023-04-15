@@ -13,8 +13,11 @@
 // limitations under the License.
 
 pub struct decoder? implements base.image_decoder(
-        width  : base.u32,
-        height : base.u32,
+        // These upper bounds should be 0xFFFF, on a strict reading of the GIF
+        // spec, but our looser implementation uses 0x1_FFFE. See
+        // test/data/artificial-gif/frame-out-of-bounds.gif.make-artificial.txt
+        width  : base.u32[..= 0x1_FFFE],
+        height : base.u32[..= 0x1_FFFE],
 
         // The call sequence state machine is discussed in
         // (/doc/std/image-decoders-call-sequence.md).
@@ -60,10 +63,10 @@ pub struct decoder? implements base.image_decoder(
         num_decoded_frame_configs_value : base.u64,
         num_decoded_frames_value        : base.u64,
 
-        frame_rect_x0 : base.u32,
-        frame_rect_y0 : base.u32,
-        frame_rect_x1 : base.u32,
-        frame_rect_y1 : base.u32,
+        frame_rect_x0 : base.u32[..= 0x0_FFFF],
+        frame_rect_y0 : base.u32[..= 0x0_FFFF],
+        frame_rect_x1 : base.u32[..= 0x1_FFFE],
+        frame_rect_y1 : base.u32[..= 0x1_FFFE],
 
         // The dst_etc fields are the output cursor during copy_to_image_buffer.
         dst_x            : base.u32,
@@ -788,9 +791,9 @@ pri func decoder.decode_id_part0?(src: base.io_reader) {
     this.frame_rect_x0 = args.src.read_u16le_as_u32?()
     this.frame_rect_y0 = args.src.read_u16le_as_u32?()
     this.frame_rect_x1 = args.src.read_u16le_as_u32?()
-    this.frame_rect_x1 ~mod+= this.frame_rect_x0
+    this.frame_rect_x1 += this.frame_rect_x0
     this.frame_rect_y1 = args.src.read_u16le_as_u32?()
-    this.frame_rect_y1 ~mod+= this.frame_rect_y0
+    this.frame_rect_y1 += this.frame_rect_y0
 
     this.dst_x = this.frame_rect_x0
     this.dst_y = this.frame_rect_y0
@@ -1039,7 +1042,7 @@ pri func decoder.copy_to_image_buffer!(pb: ptr base.pixel_buffer, src: slice bas
     }
     bytes_per_pixel = bits_per_pixel >> 3
 
-    width_in_bytes = (this.width as base.u64) * (bytes_per_pixel as base.u64)
+    width_in_bytes = (this.width * bytes_per_pixel) as base.u64
     tab = args.pb.plane(p: 0)
     while src_ri < args.src.length() {
         src = args.src[src_ri ..]

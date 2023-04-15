@@ -270,6 +270,7 @@ var Statuses = [...]string{
 	`"#no more information"`,
 	`"#not enough data"`,
 	`"#out of bounds"`,
+	`"#unsupported image dimension"`,
 	`"#unsupported method"`,
 	`"#unsupported option"`,
 	`"#unsupported pixel swizzler option"`,
@@ -612,7 +613,7 @@ var funcsOther = [...]string{
 
 	// ---- image_config
 
-	"image_config.set!(pixfmt: u32, pixsub: u32, width: u32, height: u32," +
+	"image_config.set!(pixfmt: u32, pixsub: u32, width: u32[..= 0xFF_FFFF], height: u32[..= 0xFF_FFFF]," +
 		"first_frame_io_position: u64, first_frame_is_opaque: bool)",
 
 	// ---- pixel_buffer

@@ -31,8 +31,8 @@ pri const COMPRESSION_ALPHABITFIELDS : base.u32 = 6
 pri const COMPRESSION_LOW_BIT_DEPTH  : base.u32 = 0x100
 
 pub struct decoder? implements base.image_decoder(
-        width  : base.u32[..= 0x7FFF_FFFF],
-        height : base.u32[..= 0x7FFF_FFFF],
+        width  : base.u32[..= 0xFF_FFFF],
+        height : base.u32[..= 0xFF_FFFF],
 
         // The call sequence state machine is discussed in
         // (/doc/std/image-decoders-call-sequence.md).
@@ -131,6 +131,10 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
     // Read the BITMAPINFOHEADER:
     //  - OS/2 is 12, 16 or 64 bytes.
     //  - Windows is 40, 108 or 124 bytes.
+    //
+    // https://learn.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
+    // says that width and height are LONG (signed i32) not DWORD (unsigned
+    // u32) and hence values above 0x7FFF_FFFF are invalid.
 
     this.bitmap_info_len = args.src.read_u32le?()
     if this.padding < this.bitmap_info_len {
@@ -149,13 +153,17 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
 
     } else if this.bitmap_info_len == 16 {
         width = args.src.read_u32le?()
-        if width >= 0x8000_0000 {
+        if width > 0x7FFF_FFFF {
             return "#bad header"
+        } else if width > 0xFF_FFFF {
+            return base."#unsupported image dimension"
         }
         this.width = width
         height = args.src.read_u32le?()
-        if height >= 0x8000_0000 {
+        if height > 0x7FFF_FFFF {
             return "#bad header"
+        } else if height > 0xFF_FFFF {
+            return base."#unsupported image dimension"
         }
         this.height = height
         planes = args.src.read_u16le_as_u32?()
@@ -166,19 +174,25 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
 
     } else {
         width = args.src.read_u32le?()
-        if width >= 0x8000_0000 {
+        if width > 0x7FFF_FFFF {
             return "#bad header"
+        } else if width > 0xFF_FFFF {
+            return base."#unsupported image dimension"
         }
         this.width = width
 
         height = args.src.read_u32le?()
         if height == 0x8000_0000 {
             return "#bad header"
-        } else if height >= 0x8000_0000 {
-            // The &0x7FFF_FFFF is redundant, but proves to the compiler that
-            // the result is within this.height's refined bounds.
-            this.height = (0 ~mod- height) & 0x7FFF_FFFF
+        } else if height > 0x8000_0000 {
+            height = 0 ~mod- height
+            if height > 0xFF_FFFF {
+                return base."#unsupported image dimension"
+            }
+            this.height = height
             this.top_down = true
+        } else if height > 0xFF_FFFF {
+            return base."#unsupported image dimension"
         } else {
             this.height = height
         }
@@ -503,7 +517,7 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
 pri func decoder.swizzle_none!(dst: ptr base.pixel_buffer, src: base.io_reader) base.status {
     var dst_pixfmt          : base.pixel_format
     var dst_bits_per_pixel  : base.u32[..= 256]
-    var dst_bytes_per_pixel : base.u64[..= 32]
+    var dst_bytes_per_pixel : base.u32[..= 32]
     var dst_bytes_per_row   : base.u64
     var src_bytes_per_pixel : base.u32[..= 4]
     var dst_palette         : slice base.u8
@@ -520,8 +534,8 @@ pri func decoder.swizzle_none!(dst: ptr base.pixel_buffer, src: base.io_reader) 
     if (dst_bits_per_pixel & 7) <> 0 {
         return base."#unsupported option"
     }
-    dst_bytes_per_pixel = (dst_bits_per_pixel / 8) as base.u64
-    dst_bytes_per_row = (this.width as base.u64) * dst_bytes_per_pixel
+    dst_bytes_per_pixel = dst_bits_per_pixel / 8
+    dst_bytes_per_row = (this.width * dst_bytes_per_pixel) as base.u64
     dst_palette = args.dst.palette_or_else(fallback: this.scratch[1024 ..])
     tab = args.dst.plane(p: 0)
 
@@ -553,7 +567,7 @@ pri func decoder.swizzle_none!(dst: ptr base.pixel_buffer, src: base.io_reader) 
             if dst_bytes_per_row < dst.length() {
                 dst = dst[.. dst_bytes_per_row]
             }
-            i = (this.dst_x as base.u64) * dst_bytes_per_pixel
+            i = (this.dst_x as base.u64) * (dst_bytes_per_pixel as base.u64)
             if i >= dst.length() {
                 if this.bits_per_pixel > 32 {
                     return "#unsupported BMP file"
@@ -607,7 +621,7 @@ pri const RLE_STATE_DELTA_Y : base.u32 = 5
 pri func decoder.swizzle_rle!(dst: ptr base.pixel_buffer, src: base.io_reader) base.status {
     var dst_pixfmt          : base.pixel_format
     var dst_bits_per_pixel  : base.u32[..= 256]
-    var dst_bytes_per_pixel : base.u64[..= 32]
+    var dst_bytes_per_pixel : base.u32[..= 32]
     var dst_bytes_per_row   : base.u64
     var dst_palette         : slice base.u8
     var tab                 : table base.u8
@@ -632,8 +646,8 @@ pri func decoder.swizzle_rle!(dst: ptr base.pixel_buffer, src: base.io_reader) b
     if (dst_bits_per_pixel & 7) <> 0 {
         return base."#unsupported option"
     }
-    dst_bytes_per_pixel = (dst_bits_per_pixel / 8) as base.u64
-    dst_bytes_per_row = (this.width as base.u64) * dst_bytes_per_pixel
+    dst_bytes_per_pixel = dst_bits_per_pixel / 8
+    dst_bytes_per_row = (this.width * dst_bytes_per_pixel) as base.u64
     dst_palette = args.dst.palette_or_else(fallback: this.scratch[1024 ..])
     tab = args.dst.plane(p: 0)
 
@@ -646,7 +660,7 @@ pri func decoder.swizzle_rle!(dst: ptr base.pixel_buffer, src: base.io_reader) b
         }
 
         while.middle true {
-            i = (this.dst_x as base.u64) * dst_bytes_per_pixel
+            i = (this.dst_x as base.u64) * (dst_bytes_per_pixel as base.u64)
             if i <= row.length() {
                 dst = row[i ..]
             } else {
@@ -861,7 +875,7 @@ pri func decoder.swizzle_rle!(dst: ptr base.pixel_buffer, src: base.io_reader) b
 pri func decoder.swizzle_bitfields!(dst: ptr base.pixel_buffer, src: base.io_reader) base.status {
     var dst_pixfmt          : base.pixel_format
     var dst_bits_per_pixel  : base.u32[..= 256]
-    var dst_bytes_per_pixel : base.u64[..= 32]
+    var dst_bytes_per_pixel : base.u32[..= 32]
     var dst_bytes_per_row   : base.u64
     var dst_palette         : slice base.u8
     var tab                 : table base.u8
@@ -885,8 +899,8 @@ pri func decoder.swizzle_bitfields!(dst: ptr base.pixel_buffer, src: base.io_rea
     if (dst_bits_per_pixel & 7) <> 0 {
         return base."#unsupported option"
     }
-    dst_bytes_per_pixel = (dst_bits_per_pixel / 8) as base.u64
-    dst_bytes_per_row = (this.width as base.u64) * dst_bytes_per_pixel
+    dst_bytes_per_pixel = dst_bits_per_pixel / 8
+    dst_bytes_per_row = (this.width * dst_bytes_per_pixel) as base.u64
     dst_palette = args.dst.palette_or_else(fallback: this.scratch[1024 ..])
     tab = args.dst.plane(p: 0)
 
@@ -968,7 +982,7 @@ pri func decoder.swizzle_bitfields!(dst: ptr base.pixel_buffer, src: base.io_rea
             if dst_bytes_per_row < dst.length() {
                 dst = dst[.. dst_bytes_per_row]
             }
-            i = (this.dst_x as base.u64) * dst_bytes_per_pixel
+            i = (this.dst_x as base.u64) * (dst_bytes_per_pixel as base.u64)
             if i >= dst.length() {
                 n = p0 as base.u64
             } else {
@@ -990,7 +1004,7 @@ pri func decoder.swizzle_bitfields!(dst: ptr base.pixel_buffer, src: base.io_rea
 pri func decoder.swizzle_low_bit_depth!(dst: ptr base.pixel_buffer, src: base.io_reader) base.status {
     var dst_pixfmt          : base.pixel_format
     var dst_bits_per_pixel  : base.u32[..= 256]
-    var dst_bytes_per_pixel : base.u64[..= 32]
+    var dst_bytes_per_pixel : base.u32[..= 32]
     var dst_bytes_per_row   : base.u64
     var dst_palette         : slice base.u8
     var tab                 : table base.u8
@@ -1011,8 +1025,8 @@ pri func decoder.swizzle_low_bit_depth!(dst: ptr base.pixel_buffer, src: base.io
     if (dst_bits_per_pixel & 7) <> 0 {
         return base."#unsupported option"
     }
-    dst_bytes_per_pixel = (dst_bits_per_pixel / 8) as base.u64
-    dst_bytes_per_row = (this.width as base.u64) * dst_bytes_per_pixel
+    dst_bytes_per_pixel = dst_bits_per_pixel / 8
+    dst_bytes_per_row = (this.width * dst_bytes_per_pixel) as base.u64
     dst_palette = args.dst.palette_or_else(fallback: this.scratch[1024 ..])
     tab = args.dst.plane(p: 0)
 
@@ -1029,7 +1043,7 @@ pri func decoder.swizzle_low_bit_depth!(dst: ptr base.pixel_buffer, src: base.io
         if dst_bytes_per_row < dst.length() {
             dst = dst[.. dst_bytes_per_row]
         }
-        i = (this.dst_x as base.u64) * dst_bytes_per_pixel
+        i = (this.dst_x as base.u64) * (dst_bytes_per_pixel as base.u64)
         if i >= dst.length() {
             if this.bits_per_pixel == 1 {
                 chunk_count = ((this.width ~sat- this.dst_x) + 31) / 32

@@ -7,12 +7,19 @@ but the `gif` could be replaced by `jpeg`, `png`, etc.
 Some image formats (GIF) are animated, consisting of an image header and then N
 frames. The image header gives e.g. the overall image's width and height. Each
 frame consists of a frame header (e.g. frame rectangle bounds, display
-duration) and a payload (the pixels).
+duration) and a payload (the pixels). Headers are also known as configurations.
+
+Wuffs image decoders will reject an image dimension (width or height) that is
+above `0xFF_FFFF = 16_777215` pixels, even if the underlying image file format
+permits more. This limit simplifies handling potential overflow. For example,
+`width * bytes_per_pixel` will not overflow an `i32` and `width * height *
+bytes_per_pixel` will not overflow an `i64`. Similarly, converting a pixel
+width from integers to 26.6 fixed point units will not overflow an `i32`.
 
 In general, there is one `wuffs_base__image_config` and then N pairs of
-(`wuffs_base__frame_config`, frame). Non-animated (still) image formats are
-treated the same way: that their N is 1 and their single frame's bounds equals
-the overall image bounds.
+(`wuffs_base__frame_config`, frame payload). Non-animated (still) image formats
+are treated the same way: that their N is 1 and their single frame's bounds
+equals the overall image bounds.
 
 To decode everything (without knowing N in advance) sequentially:
 

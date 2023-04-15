@@ -451,6 +451,7 @@ extern const char wuffs_base__error__interleaved_coroutine_calls[];
 extern const char wuffs_base__error__no_more_information[];
 extern const char wuffs_base__error__not_enough_data[];
 extern const char wuffs_base__error__out_of_bounds[];
+extern const char wuffs_base__error__unsupported_image_dimension[];
 extern const char wuffs_base__error__unsupported_method[];
 extern const char wuffs_base__error__unsupported_option[];
 extern const char wuffs_base__error__unsupported_pixel_swizzler_option[];
@@ -3605,6 +3606,8 @@ wuffs_base__malloc_slice_u64(void* (*malloc_func)(size_t), uint64_t num_u64) {
 }
 
 // ---------------- Images
+
+#define WUFFS_BASE__IMAGE__DIMENSION_MAX_INCL 0xFFFFFF
 
 // wuffs_base__color_u32_argb_premul is an 8 bit per channel premultiplied
 // Alpha, Red, Green, Blue color, as a uint32_t value. Its value is always
@@ -10413,7 +10416,7 @@ struct wuffs_wbmp__decoder__struct {
   struct {
     struct {
       uint32_t v_i;
-      uint32_t v_x32;
+      uint32_t v_p;
     } s_do_decode_image_config[1];
     struct {
       uint64_t v_dst_bytes_per_pixel;
@@ -12002,6 +12005,7 @@ const char wuffs_base__error__interleaved_coroutine_calls[] = "#base: interleave
 const char wuffs_base__error__no_more_information[] = "#base: no more information";
 const char wuffs_base__error__not_enough_data[] = "#base: not enough data";
 const char wuffs_base__error__out_of_bounds[] = "#base: out of bounds";
+const char wuffs_base__error__unsupported_image_dimension[] = "#base: unsupported image dimension";
 const char wuffs_base__error__unsupported_method[] = "#base: unsupported method";
 const char wuffs_base__error__unsupported_option[] = "#base: unsupported option";
 const char wuffs_base__error__unsupported_pixel_swizzler_option[] = "#base: unsupported pixel swizzler option";
@@ -23072,8 +23076,11 @@ wuffs_bmp__decoder__do_decode_image_config(
         }
         v_width = t_7;
       }
-      if (v_width >= 2147483648) {
+      if (v_width > 2147483647) {
         status = wuffs_base__make_status(wuffs_bmp__error__bad_header);
+        goto exit;
+      } else if (v_width > 16777215) {
+        status = wuffs_base__make_status(wuffs_base__error__unsupported_image_dimension);
         goto exit;
       }
       self->private_impl.f_width = v_width;
@@ -23106,8 +23113,11 @@ wuffs_bmp__decoder__do_decode_image_config(
         }
         v_height = t_8;
       }
-      if (v_height >= 2147483648) {
+      if (v_height > 2147483647) {
         status = wuffs_base__make_status(wuffs_bmp__error__bad_header);
+        goto exit;
+      } else if (v_height > 16777215) {
+        status = wuffs_base__make_status(wuffs_base__error__unsupported_image_dimension);
         goto exit;
       }
       self->private_impl.f_height = v_height;
@@ -23203,8 +23213,11 @@ wuffs_bmp__decoder__do_decode_image_config(
         }
         v_width = t_11;
       }
-      if (v_width >= 2147483648) {
+      if (v_width > 2147483647) {
         status = wuffs_base__make_status(wuffs_bmp__error__bad_header);
+        goto exit;
+      } else if (v_width > 16777215) {
+        status = wuffs_base__make_status(wuffs_base__error__unsupported_image_dimension);
         goto exit;
       }
       self->private_impl.f_width = v_width;
@@ -23240,9 +23253,17 @@ wuffs_bmp__decoder__do_decode_image_config(
       if (v_height == 2147483648) {
         status = wuffs_base__make_status(wuffs_bmp__error__bad_header);
         goto exit;
-      } else if (v_height >= 2147483648) {
-        self->private_impl.f_height = (((uint32_t)(0 - v_height)) & 2147483647);
+      } else if (v_height > 2147483648) {
+        v_height = ((uint32_t)(0 - v_height));
+        if (v_height > 16777215) {
+          status = wuffs_base__make_status(wuffs_base__error__unsupported_image_dimension);
+          goto exit;
+        }
+        self->private_impl.f_height = v_height;
         self->private_impl.f_top_down = true;
+      } else if (v_height > 16777215) {
+        status = wuffs_base__make_status(wuffs_base__error__unsupported_image_dimension);
+        goto exit;
       } else {
         self->private_impl.f_height = v_height;
       }
@@ -24069,7 +24090,7 @@ wuffs_bmp__decoder__swizzle_none(
 
   wuffs_base__pixel_format v_dst_pixfmt = {0};
   uint32_t v_dst_bits_per_pixel = 0;
-  uint64_t v_dst_bytes_per_pixel = 0;
+  uint32_t v_dst_bytes_per_pixel = 0;
   uint64_t v_dst_bytes_per_row = 0;
   uint32_t v_src_bytes_per_pixel = 0;
   wuffs_base__slice_u8 v_dst_palette = {0};
@@ -24096,8 +24117,8 @@ wuffs_bmp__decoder__swizzle_none(
     status = wuffs_base__make_status(wuffs_base__error__unsupported_option);
     goto exit;
   }
-  v_dst_bytes_per_pixel = ((uint64_t)((v_dst_bits_per_pixel / 8)));
-  v_dst_bytes_per_row = (((uint64_t)(self->private_impl.f_width)) * v_dst_bytes_per_pixel);
+  v_dst_bytes_per_pixel = (v_dst_bits_per_pixel / 8);
+  v_dst_bytes_per_row = ((uint64_t)((self->private_impl.f_width * v_dst_bytes_per_pixel)));
   v_dst_palette = wuffs_base__pixel_buffer__palette_or_else(a_dst, wuffs_base__make_slice_u8_ij(self->private_data.f_scratch, 1024, 2048));
   v_tab = wuffs_base__pixel_buffer__plane(a_dst, 0);
   label__outer__continue:;
@@ -24128,7 +24149,7 @@ wuffs_bmp__decoder__swizzle_none(
       if (v_dst_bytes_per_row < ((uint64_t)(v_dst.len))) {
         v_dst = wuffs_base__slice_u8__subslice_j(v_dst, v_dst_bytes_per_row);
       }
-      v_i = (((uint64_t)(self->private_impl.f_dst_x)) * v_dst_bytes_per_pixel);
+      v_i = (((uint64_t)(self->private_impl.f_dst_x)) * ((uint64_t)(v_dst_bytes_per_pixel)));
       if (v_i >= ((uint64_t)(v_dst.len))) {
         if (self->private_impl.f_bits_per_pixel > 32) {
           status = wuffs_base__make_status(wuffs_bmp__error__unsupported_bmp_file);
@@ -24194,7 +24215,7 @@ wuffs_bmp__decoder__swizzle_rle(
 
   wuffs_base__pixel_format v_dst_pixfmt = {0};
   uint32_t v_dst_bits_per_pixel = 0;
-  uint64_t v_dst_bytes_per_pixel = 0;
+  uint32_t v_dst_bytes_per_pixel = 0;
   uint64_t v_dst_bytes_per_row = 0;
   wuffs_base__slice_u8 v_dst_palette = {0};
   wuffs_base__table_u8 v_tab = {0};
@@ -24226,8 +24247,8 @@ wuffs_bmp__decoder__swizzle_rle(
     status = wuffs_base__make_status(wuffs_base__error__unsupported_option);
     goto exit;
   }
-  v_dst_bytes_per_pixel = ((uint64_t)((v_dst_bits_per_pixel / 8)));
-  v_dst_bytes_per_row = (((uint64_t)(self->private_impl.f_width)) * v_dst_bytes_per_pixel);
+  v_dst_bytes_per_pixel = (v_dst_bits_per_pixel / 8);
+  v_dst_bytes_per_row = ((uint64_t)((self->private_impl.f_width * v_dst_bytes_per_pixel)));
   v_dst_palette = wuffs_base__pixel_buffer__palette_or_else(a_dst, wuffs_base__make_slice_u8_ij(self->private_data.f_scratch, 1024, 2048));
   v_tab = wuffs_base__pixel_buffer__plane(a_dst, 0);
   v_rle_state = self->private_impl.f_rle_state;
@@ -24239,7 +24260,7 @@ wuffs_bmp__decoder__swizzle_rle(
     }
     label__middle__continue:;
     while (true) {
-      v_i = (((uint64_t)(self->private_impl.f_dst_x)) * v_dst_bytes_per_pixel);
+      v_i = (((uint64_t)(self->private_impl.f_dst_x)) * ((uint64_t)(v_dst_bytes_per_pixel)));
       if (v_i <= ((uint64_t)(v_row.len))) {
         v_dst = wuffs_base__slice_u8__subslice_i(v_row, v_i);
       } else {
@@ -24456,7 +24477,7 @@ wuffs_bmp__decoder__swizzle_bitfields(
 
   wuffs_base__pixel_format v_dst_pixfmt = {0};
   uint32_t v_dst_bits_per_pixel = 0;
-  uint64_t v_dst_bytes_per_pixel = 0;
+  uint32_t v_dst_bytes_per_pixel = 0;
   uint64_t v_dst_bytes_per_row = 0;
   wuffs_base__slice_u8 v_dst_palette = {0};
   wuffs_base__table_u8 v_tab = {0};
@@ -24488,8 +24509,8 @@ wuffs_bmp__decoder__swizzle_bitfields(
     status = wuffs_base__make_status(wuffs_base__error__unsupported_option);
     goto exit;
   }
-  v_dst_bytes_per_pixel = ((uint64_t)((v_dst_bits_per_pixel / 8)));
-  v_dst_bytes_per_row = (((uint64_t)(self->private_impl.f_width)) * v_dst_bytes_per_pixel);
+  v_dst_bytes_per_pixel = (v_dst_bits_per_pixel / 8);
+  v_dst_bytes_per_row = ((uint64_t)((self->private_impl.f_width * v_dst_bytes_per_pixel)));
   v_dst_palette = wuffs_base__pixel_buffer__palette_or_else(a_dst, wuffs_base__make_slice_u8_ij(self->private_data.f_scratch, 1024, 2048));
   v_tab = wuffs_base__pixel_buffer__plane(a_dst, 0);
   label__outer__continue:;
@@ -24558,7 +24579,7 @@ wuffs_bmp__decoder__swizzle_bitfields(
       if (v_dst_bytes_per_row < ((uint64_t)(v_dst.len))) {
         v_dst = wuffs_base__slice_u8__subslice_j(v_dst, v_dst_bytes_per_row);
       }
-      v_i = (((uint64_t)(self->private_impl.f_dst_x)) * v_dst_bytes_per_pixel);
+      v_i = (((uint64_t)(self->private_impl.f_dst_x)) * ((uint64_t)(v_dst_bytes_per_pixel)));
       if (v_i >= ((uint64_t)(v_dst.len))) {
         v_n = ((uint64_t)(v_p0));
       } else {
@@ -24596,7 +24617,7 @@ wuffs_bmp__decoder__swizzle_low_bit_depth(
 
   wuffs_base__pixel_format v_dst_pixfmt = {0};
   uint32_t v_dst_bits_per_pixel = 0;
-  uint64_t v_dst_bytes_per_pixel = 0;
+  uint32_t v_dst_bytes_per_pixel = 0;
   uint64_t v_dst_bytes_per_row = 0;
   wuffs_base__slice_u8 v_dst_palette = {0};
   wuffs_base__table_u8 v_tab = {0};
@@ -24625,8 +24646,8 @@ wuffs_bmp__decoder__swizzle_low_bit_depth(
     status = wuffs_base__make_status(wuffs_base__error__unsupported_option);
     goto exit;
   }
-  v_dst_bytes_per_pixel = ((uint64_t)((v_dst_bits_per_pixel / 8)));
-  v_dst_bytes_per_row = (((uint64_t)(self->private_impl.f_width)) * v_dst_bytes_per_pixel);
+  v_dst_bytes_per_pixel = (v_dst_bits_per_pixel / 8);
+  v_dst_bytes_per_row = ((uint64_t)((self->private_impl.f_width * v_dst_bytes_per_pixel)));
   v_dst_palette = wuffs_base__pixel_buffer__palette_or_else(a_dst, wuffs_base__make_slice_u8_ij(self->private_data.f_scratch, 1024, 2048));
   v_tab = wuffs_base__pixel_buffer__plane(a_dst, 0);
   label__loop__continue:;
@@ -24642,7 +24663,7 @@ wuffs_bmp__decoder__swizzle_low_bit_depth(
     if (v_dst_bytes_per_row < ((uint64_t)(v_dst.len))) {
       v_dst = wuffs_base__slice_u8__subslice_j(v_dst, v_dst_bytes_per_row);
     }
-    v_i = (((uint64_t)(self->private_impl.f_dst_x)) * v_dst_bytes_per_pixel);
+    v_i = (((uint64_t)(self->private_impl.f_dst_x)) * ((uint64_t)(v_dst_bytes_per_pixel)));
     if (v_i >= ((uint64_t)(v_dst.len))) {
       if (self->private_impl.f_bits_per_pixel == 1) {
         v_chunk_count = ((wuffs_base__u32__sat_sub(self->private_impl.f_width, self->private_impl.f_dst_x) + 31) / 32);
@@ -34266,7 +34287,7 @@ wuffs_gif__decoder__copy_to_image_buffer(
     return wuffs_base__make_status(wuffs_base__error__unsupported_option);
   }
   v_bytes_per_pixel = (v_bits_per_pixel >> 3);
-  v_width_in_bytes = (((uint64_t)(self->private_impl.f_width)) * ((uint64_t)(v_bytes_per_pixel)));
+  v_width_in_bytes = ((uint64_t)((self->private_impl.f_width * v_bytes_per_pixel)));
   v_tab = wuffs_base__pixel_buffer__plane(a_pb, 0);
   label__0__continue:;
   while (v_src_ri < ((uint64_t)(a_src.len))) {
@@ -37491,8 +37512,11 @@ wuffs_nie__decoder__do_decode_image_config(
       }
       v_a = t_2;
     }
-    if (v_a >= 2147483648) {
+    if (v_a > 2147483647) {
       status = wuffs_base__make_status(wuffs_nie__error__bad_header);
+      goto exit;
+    } else if (v_a > 16777215) {
+      status = wuffs_base__make_status(wuffs_base__error__unsupported_image_dimension);
       goto exit;
     }
     self->private_impl.f_width = v_a;
@@ -37525,8 +37549,11 @@ wuffs_nie__decoder__do_decode_image_config(
       }
       v_a = t_3;
     }
-    if (v_a >= 2147483648) {
+    if (v_a > 2147483647) {
       status = wuffs_base__make_status(wuffs_nie__error__bad_header);
+      goto exit;
+    } else if (v_a > 16777215) {
+      status = wuffs_base__make_status(wuffs_base__error__unsupported_image_dimension);
       goto exit;
     }
     self->private_impl.f_height = v_a;
@@ -37877,7 +37904,7 @@ wuffs_nie__decoder__swizzle(
 
   wuffs_base__pixel_format v_dst_pixfmt = {0};
   uint32_t v_dst_bits_per_pixel = 0;
-  uint64_t v_dst_bytes_per_pixel = 0;
+  uint32_t v_dst_bytes_per_pixel = 0;
   uint64_t v_dst_bytes_per_row = 0;
   uint32_t v_src_bytes_per_pixel = 0;
   wuffs_base__table_u8 v_tab = {0};
@@ -37903,8 +37930,8 @@ wuffs_nie__decoder__swizzle(
     status = wuffs_base__make_status(wuffs_base__error__unsupported_option);
     goto exit;
   }
-  v_dst_bytes_per_pixel = ((uint64_t)((v_dst_bits_per_pixel / 8)));
-  v_dst_bytes_per_row = (((uint64_t)(self->private_impl.f_width)) * v_dst_bytes_per_pixel);
+  v_dst_bytes_per_pixel = (v_dst_bits_per_pixel / 8);
+  v_dst_bytes_per_row = ((uint64_t)((self->private_impl.f_width * v_dst_bytes_per_pixel)));
   v_tab = wuffs_base__pixel_buffer__plane(a_dst, 0);
   while (true) {
     if (self->private_impl.f_dst_x == self->private_impl.f_width) {
@@ -37918,7 +37945,7 @@ wuffs_nie__decoder__swizzle(
     if (v_dst_bytes_per_row < ((uint64_t)(v_dst.len))) {
       v_dst = wuffs_base__slice_u8__subslice_j(v_dst, v_dst_bytes_per_row);
     }
-    v_i = (((uint64_t)(self->private_impl.f_dst_x)) * v_dst_bytes_per_pixel);
+    v_i = (((uint64_t)(self->private_impl.f_dst_x)) * ((uint64_t)(v_dst_bytes_per_pixel)));
     if (v_i >= ((uint64_t)(v_dst.len))) {
       v_src_bytes_per_pixel = 4;
       if (self->private_impl.f_pixfmt == 2164308923) {
@@ -41005,11 +41032,11 @@ wuffs_png__decoder__decode_ihdr(
       }
       v_a32 = t_0;
     }
-    if ((v_a32 == 0) || (v_a32 >= 2147483648)) {
+    if ((v_a32 == 0) || (v_a32 > 2147483647)) {
       status = wuffs_base__make_status(wuffs_png__error__bad_header);
       goto exit;
-    } else if (v_a32 >= 16777216) {
-      status = wuffs_base__make_status(wuffs_png__error__unsupported_png_file);
+    } else if (v_a32 > 16777215) {
+      status = wuffs_base__make_status(wuffs_base__error__unsupported_image_dimension);
       goto exit;
     }
     self->private_impl.f_width = v_a32;
@@ -41042,11 +41069,11 @@ wuffs_png__decoder__decode_ihdr(
       }
       v_a32 = t_1;
     }
-    if ((v_a32 == 0) || (v_a32 >= 2147483648)) {
+    if ((v_a32 == 0) || (v_a32 > 2147483647)) {
       status = wuffs_base__make_status(wuffs_png__error__bad_header);
       goto exit;
-    } else if (v_a32 >= 16777216) {
-      status = wuffs_base__make_status(wuffs_png__error__unsupported_png_file);
+    } else if (v_a32 > 16777215) {
+      status = wuffs_base__make_status(wuffs_base__error__unsupported_image_dimension);
       goto exit;
     }
     self->private_impl.f_height = v_a32;
@@ -46721,8 +46748,7 @@ wuffs_wbmp__decoder__do_decode_image_config(
 
   uint8_t v_c = 0;
   uint32_t v_i = 0;
-  uint32_t v_x32 = 0;
-  uint64_t v_x64 = 0;
+  uint32_t v_p = 0;
 
   const uint8_t* iop_a_src = NULL;
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -46738,7 +46764,7 @@ wuffs_wbmp__decoder__do_decode_image_config(
   uint32_t coro_susp_point = self->private_impl.p_do_decode_image_config[0];
   if (coro_susp_point) {
     v_i = self->private_data.s_do_decode_image_config[0].v_i;
-    v_x32 = self->private_data.s_do_decode_image_config[0].v_x32;
+    v_p = self->private_data.s_do_decode_image_config[0].v_p;
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
@@ -46766,7 +46792,7 @@ wuffs_wbmp__decoder__do_decode_image_config(
     }
     v_i = 0;
     while (v_i < 2) {
-      v_x32 = 0;
+      v_p = 0;
       while (true) {
         {
           WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
@@ -46777,22 +46803,20 @@ wuffs_wbmp__decoder__do_decode_image_config(
           uint8_t t_1 = *iop_a_src++;
           v_c = t_1;
         }
-        v_x32 |= ((uint32_t)((v_c & 127)));
+        v_p |= ((uint32_t)((v_c & 127)));
         if ((v_c >> 7) == 0) {
           goto label__0__break;
-        }
-        v_x64 = (((uint64_t)(v_x32)) << 7);
-        if (v_x64 > 4294967295) {
-          status = wuffs_base__make_status(wuffs_wbmp__error__bad_header);
+        } else if (v_p > 131071) {
+          status = wuffs_base__make_status(wuffs_base__error__unsupported_image_dimension);
           goto exit;
         }
-        v_x32 = ((uint32_t)(v_x64));
+        v_p <<= 7;
       }
       label__0__break:;
       if (v_i == 0) {
-        self->private_impl.f_width = v_x32;
+        self->private_impl.f_width = v_p;
       } else {
-        self->private_impl.f_height = v_x32;
+        self->private_impl.f_height = v_p;
       }
       v_i += 1;
     }
@@ -46819,7 +46843,7 @@ wuffs_wbmp__decoder__do_decode_image_config(
   suspend:
   self->private_impl.p_do_decode_image_config[0] = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
   self->private_data.s_do_decode_image_config[0].v_i = v_i;
-  self->private_data.s_do_decode_image_config[0].v_x32 = v_x32;
+  self->private_data.s_do_decode_image_config[0].v_p = v_p;
 
   goto exit;
   exit:

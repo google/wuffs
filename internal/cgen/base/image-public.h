@@ -14,6 +14,8 @@
 
 // ---------------- Images
 
+#define WUFFS_BASE__IMAGE__DIMENSION_MAX_INCL 0xFFFFFF
+
 // wuffs_base__color_u32_argb_premul is an 8 bit per channel premultiplied
 // Alpha, Red, Green, Blue color, as a uint32_t value. Its value is always
 // 0xAARRGGBB (Alpha most significant, Blue least), regardless of endianness.

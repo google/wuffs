@@ -6,6 +6,8 @@
 - Changed `lzw.set_literal_width` to `lzw.set_quirk`.
 - Changed `set_quirk_enabled!(quirk: u32, enabled: bool)` to `set_quirk!(key:
   u32, value: u64) status`.
+- Set image decoder pixel width and height inclusive maximum to `0xFF_FFFF`,
+  down from `0x7FFF_FFFF`.
 
 The dot points below probably aren't of interest unless you're _writing_ Wuffs
 code (instead of writing C/C++ code that _uses_ Wuffs' standard library).
