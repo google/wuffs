@@ -347,23 +347,23 @@ var Funcs = [][]string{
 var funcsOther = [...]string{
 	"u8.high_bits(n: u32[..= 7]) u8",
 	"u8.low_bits(n: u32[..= 7]) u8",
-	"u8.max(a: u8) u8",
-	"u8.min(a: u8) u8",
+	"u8.max(no_less_than: u8) u8",
+	"u8.min(no_more_than: u8) u8",
 
 	"u16.high_bits(n: u32[..= 15]) u16",
 	"u16.low_bits(n: u32[..= 15]) u16",
-	"u16.max(a: u16) u16",
-	"u16.min(a: u16) u16",
+	"u16.max(no_less_than: u16) u16",
+	"u16.min(no_more_than: u16) u16",
 
 	"u32.high_bits(n: u32[..= 31]) u32",
 	"u32.low_bits(n: u32[..= 31]) u32",
-	"u32.max(a: u32) u32",
-	"u32.min(a: u32) u32",
+	"u32.max(no_less_than: u32) u32",
+	"u32.min(no_more_than: u32) u32",
 
 	"u64.high_bits(n: u32[..= 63]) u64",
 	"u64.low_bits(n: u32[..= 63]) u64",
-	"u64.max(a: u64) u64",
-	"u64.min(a: u64) u64",
+	"u64.max(no_less_than: u64) u64",
+	"u64.min(no_more_than: u64) u64",
 
 	// ---- utility
 

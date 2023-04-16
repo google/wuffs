@@ -330,7 +330,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
                     yield? base."$short write"
                     continue
                 }
-                n64 = string_length.min(a: args.src.length())
+                n64 = string_length.min(no_more_than: args.src.length())
                 token_length = (n64 & 0xFFFF) as base.u32
                 if n64 > 0xFFFF {
                     token_length = 0xFFFF
@@ -413,7 +413,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
                     yield? base."$short write"
                     continue
                 }
-                n64 = string_length.min(a: 0xFFFF)
+                n64 = string_length.min(no_more_than: 0xFFFF)
                 n64 = args.src.valid_utf_8_length(up_to: n64)
                 token_length = (n64 & 0xFFFF) as base.u32
                 if token_length <= 0 {

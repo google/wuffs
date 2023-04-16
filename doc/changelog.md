@@ -13,6 +13,7 @@ The dot points below probably aren't of interest unless you're _writing_ Wuffs
 code (instead of writing C/C++ code that _uses_ Wuffs' standard library).
 
 - Added read-only type decorators: `roarray`, `roslice` and `rotable`.
+- Renamed `base` `min/max` argument from `a` to `no_more/less_than`.
 - Wuffs struct private data now needs a "+" between the "()" pairs.
 - `wuffsfmt` double-indents hanging lines and each indent is now 4 spaces (not
   a tab).

@@ -84,7 +84,7 @@ pri func decoder.filter_2!(curr: slice base.u8, prev: slice base.u8) {
     var n : base.u64
     var i : base.u64
 
-    n = args.curr.length().min(a: args.prev.length())
+    n = args.curr.length().min(no_more_than: args.prev.length())
     i = 0
     while i < n,
             inv n <= args.curr.length(),
@@ -122,7 +122,7 @@ pri func decoder.filter_3!(curr: slice base.u8, prev: slice base.u8),
         } endwhile
 
     } else {
-        n = args.curr.length().min(a: args.prev.length())
+        n = args.curr.length().min(no_more_than: args.prev.length())
         i = 0
         while (i < n) and (i < filter_distance),
                 inv n <= args.curr.length(),
@@ -238,7 +238,7 @@ pri func decoder.filter_4!(curr: slice base.u8, prev: slice base.u8),
     var pc : base.u32
 
     filter_distance = this.filter_distance as base.u64
-    n = args.curr.length().min(a: args.prev.length())
+    n = args.curr.length().min(no_more_than: args.prev.length())
     i = 0
     while (i < n) and (i < filter_distance),
             inv n <= args.curr.length(),

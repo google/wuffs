@@ -577,7 +577,7 @@ pri func decoder.swizzle_none!(dst: ptr base.pixel_buffer, src: base.io_reader) 
                     return "#unsupported BMP file"
                 }
                 n = args.src.length() / (src_bytes_per_pixel as base.u64)
-                n = n.min(a: (this.width ~mod- this.dst_x) as base.u64)
+                n = n.min(no_more_than: (this.width ~mod- this.dst_x) as base.u64)
                 j = n
                 while j >= 8 {
                     if args.src.length() >= ((src_bytes_per_pixel * 8) as base.u64) {
@@ -770,7 +770,7 @@ pri func decoder.swizzle_rle!(dst: ptr base.pixel_buffer, src: base.io_reader) b
                             p0 = (p0 & 255) + 0x04
                             chunk_count -= 1
                         } endwhile
-                        p0 = p0.min(a: this.rle_length)
+                        p0 = p0.min(no_more_than: this.rle_length)
                         this.swizzler.swizzle_interleaved_from_slice!(
                                 dst: dst,
                                 dst_palette: dst_palette,
@@ -930,7 +930,7 @@ pri func decoder.swizzle_bitfields!(dst: ptr base.pixel_buffer, src: base.io_rea
 
             // -------- BEGIN convert to PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE.
             p1_temp = this.width ~mod- this.dst_x
-            p1 = p1_temp.min(a: 256)
+            p1 = p1_temp.min(no_more_than: 256)
             p0 = 0
             while p0 < p1 {
                 assert p0 < 256 via "a < b: a < c; c <= b"(c: p1)
@@ -1057,12 +1057,12 @@ pri func decoder.swizzle_low_bit_depth!(dst: ptr base.pixel_buffer, src: base.io
             }
             while (chunk_count >= 64) and (args.src.length() >= 256) {
                 args.src.skip_u32_fast!(actual: 256, worst_case: 256)
-                this.dst_x = this.width.min(a: this.dst_x ~mod+ (pixels_per_chunk * 64))
+                this.dst_x = this.width.min(no_more_than: this.dst_x ~mod+ (pixels_per_chunk * 64))
                 chunk_count -= 64
             } endwhile
             while (chunk_count >= 8) and (args.src.length() >= 32) {
                 args.src.skip_u32_fast!(actual: 32, worst_case: 32)
-                this.dst_x = this.width.min(a: this.dst_x ~mod+ (pixels_per_chunk * 8))
+                this.dst_x = this.width.min(no_more_than: this.dst_x ~mod+ (pixels_per_chunk * 8))
                 chunk_count -= 8
             } endwhile
             while chunk_count > 0 {
@@ -1070,7 +1070,7 @@ pri func decoder.swizzle_low_bit_depth!(dst: ptr base.pixel_buffer, src: base.io
                     return "@internal note: short read"
                 }
                 args.src.skip_u32_fast!(actual: 4, worst_case: 4)
-                this.dst_x = this.width.min(a: this.dst_x ~mod+ (pixels_per_chunk * 1))
+                this.dst_x = this.width.min(no_more_than: this.dst_x ~mod+ (pixels_per_chunk * 1))
                 chunk_count -= 1
             } endwhile
             continue.loop
@@ -1082,7 +1082,7 @@ pri func decoder.swizzle_low_bit_depth!(dst: ptr base.pixel_buffer, src: base.io
             // Calculate the remaining number of 32-bit chunks. At 1 bit per
             // pixel there are 32 pixels per chunk. Division rounds up.
             chunk_count = ((this.width ~sat- this.dst_x) + 31) / 32
-            chunk_count = chunk_count.min(a: 16)  // Keep p0 <= 512.
+            chunk_count = chunk_count.min(no_more_than: 16)  // Keep p0 <= 512.
             while (chunk_count > 0) and (args.src.length() >= 4) {
                 chunk_bits = args.src.peek_u32be()
                 args.src.skip_u32_fast!(actual: 4, worst_case: 4)
@@ -1126,7 +1126,7 @@ pri func decoder.swizzle_low_bit_depth!(dst: ptr base.pixel_buffer, src: base.io
             // Calculate the remaining number of 32-bit chunks. At 2 bits per
             // pixel there are 16 pixels per chunk. Division rounds up.
             chunk_count = ((this.width ~sat- this.dst_x) + 15) / 16
-            chunk_count = chunk_count.min(a: 32)  // Keep p0 <= 512.
+            chunk_count = chunk_count.min(no_more_than: 32)  // Keep p0 <= 512.
             while (chunk_count > 0) and (args.src.length() >= 4) {
                 chunk_bits = args.src.peek_u32be()
                 args.src.skip_u32_fast!(actual: 4, worst_case: 4)
@@ -1154,7 +1154,7 @@ pri func decoder.swizzle_low_bit_depth!(dst: ptr base.pixel_buffer, src: base.io
             // Calculate the remaining number of 32-bit chunks. At 4 bits per
             // pixel there are 8 pixels per chunk. Division rounds up.
             chunk_count = ((this.width ~sat- this.dst_x) + 7) / 8
-            chunk_count = chunk_count.min(a: 64)  // Keep p0 <= 512.
+            chunk_count = chunk_count.min(no_more_than: 64)  // Keep p0 <= 512.
             while (chunk_count > 0) and (args.src.length() >= 4) {
                 chunk_bits = args.src.peek_u32be()
                 args.src.skip_u32_fast!(actual: 4, worst_case: 4)
@@ -1171,7 +1171,7 @@ pri func decoder.swizzle_low_bit_depth!(dst: ptr base.pixel_buffer, src: base.io
             } endwhile
         }
 
-        p0 = p0.min(a: this.width ~sat- this.dst_x)
+        p0 = p0.min(no_more_than: this.width ~sat- this.dst_x)
         n = this.swizzler.swizzle_interleaved_from_slice!(
                 dst: dst,
                 dst_palette: dst_palette,

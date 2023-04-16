@@ -246,7 +246,7 @@ pri func decoder.swizzle!(dst: ptr base.pixel_buffer, src: base.io_reader) base.
                 assert src_bytes_per_pixel > 0
             }
             n = args.src.length() / (src_bytes_per_pixel as base.u64)
-            n = n.min(a: (this.width ~mod- this.dst_x) as base.u64)
+            n = n.min(no_more_than: (this.width ~mod- this.dst_x) as base.u64)
             j = n
             while j >= 8 {
                 if args.src.length() >= ((src_bytes_per_pixel * 8) as base.u64) {

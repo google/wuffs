@@ -378,7 +378,7 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
                     if lit_length > 0 {
                         mark = args.src.mark()
                         num_pixels64 = args.src.length() / (this.src_bytes_per_pixel as base.u64)
-                        num_pixels32 = num_pixels64.min(a: lit_length as base.u64) as base.u32
+                        num_pixels32 = num_pixels64.min(no_more_than: lit_length as base.u64) as base.u32
                         num_dst_bytes = (num_pixels32 as base.u64) * dst_bytes_per_pixel
                         num_src_bytes = num_pixels32 * this.src_bytes_per_pixel
                         args.src.skip_u32?(n: num_src_bytes)
