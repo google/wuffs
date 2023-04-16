@@ -405,7 +405,7 @@ func (c *Checker) checkConst(node *a.Node) error {
 func (c *Checker) checkConstElement(typ *a.TypeExpr, n *a.Expr, nb bounds, nLists int) error {
 	if nLists > 0 {
 		nLists--
-		if !typ.IsEitherArrayType() {
+		if typ.Decorator() != t.IDRoarray {
 			return fmt.Errorf("internal error: inconsistent element type %q", typ.Str(c.tm))
 		}
 		cv := typ.ArrayLength().ConstValue()
