@@ -3820,7 +3820,10 @@ typedef uint32_t wuffs_base__pixel_alpha_transparency;
 
 // --------
 
+// Deprecated: use WUFFS_BASE__PIXEL_FORMAT__NUM_PLANES_MAX_INCL.
 #define WUFFS_BASE__PIXEL_FORMAT__NUM_PLANES_MAX 4
+
+#define WUFFS_BASE__PIXEL_FORMAT__NUM_PLANES_MAX_INCL 4
 
 #define WUFFS_BASE__PIXEL_FORMAT__INDEXED__INDEX_PLANE 0
 #define WUFFS_BASE__PIXEL_FORMAT__INDEXED__COLOR_PLANE 3
@@ -4689,7 +4692,7 @@ typedef struct wuffs_base__pixel_buffer__struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so.
   struct {
-    wuffs_base__table_u8 planes[WUFFS_BASE__PIXEL_FORMAT__NUM_PLANES_MAX];
+    wuffs_base__table_u8 planes[WUFFS_BASE__PIXEL_FORMAT__NUM_PLANES_MAX_INCL];
     // TODO: color spaces.
   } private_impl;
 
@@ -4895,7 +4898,7 @@ wuffs_base__pixel_buffer__pixel_format(const wuffs_base__pixel_buffer* pb) {
 
 static inline wuffs_base__table_u8  //
 wuffs_base__pixel_buffer__plane(wuffs_base__pixel_buffer* pb, uint32_t p) {
-  if (pb && (p < WUFFS_BASE__PIXEL_FORMAT__NUM_PLANES_MAX)) {
+  if (pb && (p < WUFFS_BASE__PIXEL_FORMAT__NUM_PLANES_MAX_INCL)) {
     return pb->private_impl.planes[p];
   }
 
