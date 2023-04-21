@@ -12,8 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+pub status "#bad DHT marker"
+pub status "#bad DQT marker"
+pub status "#bad DRI marker"
+pub status "#bad SOF marker"
+pub status "#bad SOS marker"
 pub status "#bad header"
+pub status "#bad marker"
 pub status "#truncated input"
+pub status "#unsupported arithmetic coding"
+pub status "#unsupported hierarchical coding"
+pub status "#unsupported lossless coding"
+pub status "#unsupported implicit height"
+pub status "#unsupported marker"
+pub status "#unsupported precision"
+pub status "#unsupported precision (12 bits)"
+pub status "#unsupported precision (16 bits)"
 
 pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0
 
@@ -25,7 +39,23 @@ pub struct decoder? implements base.image_decoder(
         // (/doc/std/image-decoders-call-sequence.md).
         call_sequence : base.u8,
 
+        sof_marker : base.u8,
+
+        num_components : base.u32[..= 4],
+        components_c   : array[4] base.u8,
+        components_h   : array[4] base.u8[..= 4],
+        components_v   : array[4] base.u8[..= 4],
+        components_tq  : array[4] base.u8[..= 4],
+
+        payload_length : base.u32[..= 0xFFFF],
+
+        restart_interval : base.u32[..= 0xFFFF],
+
         frame_config_io_position : base.u64,
+
+        seen_dqt : array[4] base.bool,
+
+        quant_tables : array[4] array[64] base.u8,
 
         swizzler : base.pixel_swizzler,
         util     : base.utility,
@@ -50,7 +80,8 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 }
 
 pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.io_reader) {
-    var c : base.u8
+    var c      : base.u8
+    var marker : base.u8
 
     if this.call_sequence <> 0x00 {
         return base."#bad call sequence"
@@ -61,12 +92,117 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
         return "#bad header"
     }
     c = args.src.read_u8?()
-    if c <> 0xD8 {
+    if c <> 0xD8 {  // SOI (Start Of Image).
         return "#bad header"
     }
 
-    this.width = 1
-    this.height = 1
+    // Process chunks (markers and their payloads).
+    while true {
+        // Read the marker (a two-byte 0xFF 0x?? sequence).
+        while true {
+            c = args.src.read_u8?()
+            if c == 0xFF {
+                break
+            }
+            // Getting here is invalid according to the JPEG spec, but libjpeg
+            // treats this as a warning (JWRN_EXTRANEOUS_DATA), not an error.
+        } endwhile
+        while true {
+            c = args.src.read_u8?()
+            if c <> 0xFF {
+                marker = c
+                break
+            }
+            // Section B.1.1.2: "Any marker may optionally be preceded by any
+            // number of [0xFF] fill bytes".
+        } endwhile
+
+        if marker == 0x00 {
+            // Ignore byte stuffing.
+            continue
+        } else if (0xD0 <= marker) and (marker <= 0xD7) {
+            // RSTn (Restart) markers have no payload.
+            continue
+        }
+
+        // Payload length includes the 2 bytes for the u16be payload length.
+        this.payload_length = args.src.read_u16be_as_u32?()
+        if this.payload_length < 2 {
+            return "#bad marker"
+        }
+        this.payload_length -= 2
+
+        // Switch on the marker.
+        if marker < 0xC0 {
+            return "#unsupported marker"
+
+        } else if marker < 0xD0 {  // SOFn (Start of Frame) and friends.
+            if marker <= 0xC2 {
+                if this.sof_marker <> 0 {
+                    return "#bad SOF marker"
+                }
+                this.sof_marker = marker
+                this.decode_sof?(src: args.src)
+                break
+
+            } else if marker == 0xC3 {
+                return "#unsupported lossless coding"
+
+            } else if marker == 0xC4 {  // DHT (Define Huffman Table).
+                // We shouldn't see DHT before SOF.
+                return "#bad DHT marker"
+
+            } else if (0xC5 <= marker) and (marker <= 0xC7) {
+                return "#unsupported hierarchical coding"
+
+            } else if marker == 0xC8 {  // JPG (JPEG extension).
+                return "#unsupported marker"
+
+            } else {
+                return "#unsupported arithmetic coding"
+            }
+
+        } else if marker < 0xE0 {
+            if marker < 0xDA {
+                // RSTn markers are already handled above. We either have 0xD8
+                // (SOI: Start Of Image) or 0xD9 (EOI: End Of Image), neither
+                // of which are valid here.
+                return "#bad marker"
+
+            } else if marker == 0xDA {  // SOS (Start Of Scan).
+                // We shouldn't see SOS before SOF.
+                return "#bad SOS marker"
+
+            } else if marker == 0xDB {  // DQT (Define Quantization Table).
+                this.decode_dqt?(src: args.src)
+                continue
+
+            } else if marker == 0xDD {  // DRI (Define Restart Interval).
+                this.decode_dri?(src: args.src)
+                continue
+
+            } else {
+                // 0xDC (DNL: Define Number of Lines).
+                // 0xDE (DHP: Define Hierarchical Progression).
+                // 0xDF (EXP: Expand Reference Components).
+                return "#unsupported marker"
+            }
+
+        } else if marker < 0xF0 {  // APPn (Application specific).
+            // No-op.
+
+        } else {
+            if marker == 0xFE {  // COM (Comment).
+                // No-op.
+
+            } else {
+                return "#unsupported marker"
+            }
+        }
+
+        args.src.skip_u32?(n: this.payload_length)
+        this.payload_length = 0
+    } endwhile
 
     this.frame_config_io_position = args.src.position()
 
@@ -83,6 +219,117 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
     }
 
     this.call_sequence = 0x20
+}
+
+pri func decoder.decode_dqt?(src: base.io_reader) {
+    var c : base.u8
+    var q : base.u8[..= 3]
+    var i : base.u32
+
+    while this.payload_length > 0 {
+        this.payload_length -= 1
+        c = args.src.read_u8?()
+        if (c & 0x0F) > 3 {
+            return "#bad DQT marker"
+        }
+        q = c & 0x0F
+        if (c >> 4) == 1 {
+            return "#unsupported precision"
+        } else if ((c >> 4) > 1) or (this.payload_length < 64) {
+            return "#bad DQT marker"
+        }
+        this.payload_length -= 64
+
+        i = 0
+        while i < 64 {
+            this.quant_tables[q][UNZIG[i]] = args.src.read_u8?()
+            i += 1
+        } endwhile
+        this.seen_dqt[q] = true
+    } endwhile
+}
+
+pri func decoder.decode_dri?(src: base.io_reader) {
+    if this.payload_length <> 2 {
+        return "#bad DRI marker"
+    }
+    this.payload_length = 0
+
+    this.restart_interval = args.src.read_u16be_as_u32?()
+}
+
+pri func decoder.decode_sof?(src: base.io_reader) {
+    var c      : base.u8
+    var comp_h : base.u8
+    var comp_v : base.u8
+    var i      : base.u32
+    var j      : base.u32
+
+    if this.payload_length < 6 {
+        return "#bad SOF marker"
+    }
+    this.payload_length -= 6
+    c = args.src.read_u8?()
+    if c == 8 {
+        // No-op.
+    } else if c == 12 {
+        return "#unsupported precision (12 bits)"
+    } else if c == 16 {
+        return "#unsupported precision (16 bits)"
+    } else {
+        return "#unsupported precision"
+    }
+    this.height = args.src.read_u16be_as_u32?()
+    if this.height == 0 {
+        return "#unsupported implicit height"
+    }
+    this.width = args.src.read_u16be_as_u32?()
+    if this.width == 0 {
+        return base."#unsupported image dimension"
+    }
+    c = args.src.read_u8?()
+    if (c == 0) or (c > 4) {
+        return "#bad SOF marker"
+    }
+    this.num_components = c as base.u32
+    if this.payload_length <> (3 * this.num_components) {
+        return "#bad SOF marker"
+    }
+    this.payload_length = 0
+
+    i = 0
+    while i < this.num_components {
+        assert i < 4 via "a < b: a < c; c <= b"(c: this.num_components)
+        this.components_c[i] = args.src.read_u8?()
+        c = args.src.read_u8?()
+        comp_h = c >> 4
+        comp_v = c & 0x0F
+        if (comp_h == 0) or (comp_h > 4) or (comp_v == 0) or (comp_v > 4) {
+            return "#bad SOF marker"
+        }
+        this.components_h[i] = comp_h
+        this.components_v[i] = comp_v
+        c = args.src.read_u8?()
+        if c > 4 {
+            return "#bad SOF marker"
+        }
+        this.components_tq[i] = c
+
+        // Section B.2.2: "the value of C_i shall be different from the values
+        // of C_1 through C_(i-1)".
+        j = 0
+        while j < i,
+                inv i < 4,
+        {
+            assert j < 4 via "a < b: a < c; c < b"(c: i)
+            if this.components_c[j] == this.components_c[i] {
+                return "#bad SOF marker"
+            }
+            j += 1
+        } endwhile
+
+        i += 1
+    } endwhile
 }
 
 pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_reader) {
@@ -144,12 +391,16 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 }
 
 pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, blend: base.pixel_blend, workbuf: slice base.u8, opts: nptr base.decode_frame_options) {
-    var status             : base.status
-    var dst_pixfmt         : base.pixel_format
-    var dst_bits_per_pixel : base.u32[..= 256]
-    var tab                : table base.u8
-    var dst                : slice base.u8
-    var src                : array[4] base.u8
+    var status              : base.status
+    var dst_pixfmt          : base.pixel_format
+    var dst_bits_per_pixel  : base.u32[..= 256]
+    var dst_bytes_per_pixel : base.u32[..= 32]
+    var tab                 : table base.u8
+    var dst                 : slice base.u8
+    var src                 : array[4] base.u8
+    var y                   : base.u32
+    var x                   : base.u32
+    var d                   : base.u64
 
     if this.call_sequence == 0x40 {
         // No-op.
@@ -176,17 +427,34 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
     if (dst_bits_per_pixel & 7) <> 0 {
         return base."#unsupported option"
     }
+    dst_bytes_per_pixel = dst_bits_per_pixel / 8
 
+    // TODO: actually decode the pixels. Until then, fill with gradient tiles.
     tab = args.dst.plane(p: 0)
-    dst = tab.row_u32(y: 0)
-    src[0] = 0x7F
-    src[1] = 0x00
-    src[2] = 0xFF
-    src[3] = 0xFF
-    this.swizzler.swizzle_interleaved_from_slice!(
-            dst: dst,
-            dst_palette: args.dst.palette_or_else(fallback: this.dst_palette[..]),
-            src: src[.. 4])
+    y = 0
+    while y < this.height {
+        assert y < 0xFFFF via "a < b: a < c; c <= b"(c: this.height)
+        x = 0
+        while x < this.width,
+                inv y < 0xFFFF,
+        {
+            assert x < 0xFFFF via "a < b: a < c; c <= b"(c: this.width)
+            dst = tab.row_u32(y: y)
+            d = (x * dst_bytes_per_pixel) as base.u64
+            if d < dst.length() {
+                src[0] = (x & 0xFF) as base.u8
+                src[1] = 0x7F
+                src[2] = (y & 0xFF) as base.u8
+                src[3] = 0xFF
+                this.swizzler.swizzle_interleaved_from_slice!(
+                        dst: dst[d ..],
+                        dst_palette: args.dst.palette_or_else(fallback: this.dst_palette[..]),
+                        src: src[.. 4])
+            }
+            x += 1
+        } endwhile
+        y += 1
+    } endwhile
 
     this.call_sequence = 0x60
 }

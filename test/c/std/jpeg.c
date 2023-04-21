@@ -96,7 +96,7 @@ test_wuffs_jpeg_decode_interface() {
                    WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
   return do_test__wuffs_base__image_decoder(
       wuffs_jpeg__decoder__upcast_as__wuffs_base__image_decoder(&dec),
-      "test/data/bricks-color.jpeg", 0, SIZE_MAX, 1, 1, 0xFFFF007F);
+      "test/data/bricks-color.jpeg", 0, SIZE_MAX, 160, 120, 0xFF777F9F);
 }
 
 const char*  //
