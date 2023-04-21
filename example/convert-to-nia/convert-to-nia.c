@@ -63,6 +63,7 @@ https://skia-review.googlesource.com/c/skia/+/290618
 #define WUFFS_CONFIG__MODULE__CRC32
 #define WUFFS_CONFIG__MODULE__DEFLATE
 #define WUFFS_CONFIG__MODULE__GIF
+#define WUFFS_CONFIG__MODULE__JPEG
 #define WUFFS_CONFIG__MODULE__LZW
 #define WUFFS_CONFIG__MODULE__NIE
 #define WUFFS_CONFIG__MODULE__PNG
@@ -137,6 +138,7 @@ wuffs_base__image_decoder* g_image_decoder = NULL;
 union {
   wuffs_bmp__decoder bmp;
   wuffs_gif__decoder gif;
+  wuffs_jpeg__decoder jpeg;
   wuffs_nie__decoder nie;
   wuffs_png__decoder png;
   wuffs_tga__decoder tga;
@@ -280,6 +282,16 @@ initialize_image_decoder() {
       g_image_decoder =
           wuffs_gif__decoder__upcast_as__wuffs_base__image_decoder(
               &g_potential_decoders.gif);
+      return NULL;
+
+    case WUFFS_BASE__FOURCC__JPEG:
+      status = wuffs_jpeg__decoder__initialize(
+          &g_potential_decoders.jpeg, sizeof g_potential_decoders.jpeg,
+          WUFFS_VERSION, WUFFS_INITIALIZE__DEFAULT_OPTIONS);
+      TRY(wuffs_base__status__message(&status));
+      g_image_decoder =
+          wuffs_jpeg__decoder__upcast_as__wuffs_base__image_decoder(
+              &g_potential_decoders.jpeg);
       return NULL;
 
     case WUFFS_BASE__FOURCC__NIE:

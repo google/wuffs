@@ -77,8 +77,12 @@ isn't otherwise doing anything.
 #define WUFFS_CONFIG__MODULE__CRC32
 #define WUFFS_CONFIG__MODULE__DEFLATE
 #define WUFFS_CONFIG__MODULE__GIF
+#define WUFFS_CONFIG__MODULE__JPEG
 #define WUFFS_CONFIG__MODULE__LZW
+#define WUFFS_CONFIG__MODULE__NIE
 #define WUFFS_CONFIG__MODULE__PNG
+#define WUFFS_CONFIG__MODULE__TGA
+#define WUFFS_CONFIG__MODULE__WBMP
 #define WUFFS_CONFIG__MODULE__ZLIB
 
 // If building this program in an environment that doesn't easily accommodate

@@ -89,6 +89,7 @@ class DecodeImageCallbacks {
   // WUFFS_CONFIG__MODULE__ETC).
   //  - WUFFS_BASE__FOURCC__BMP
   //  - WUFFS_BASE__FOURCC__GIF
+  //  - WUFFS_BASE__FOURCC__JPEG
   //  - WUFFS_BASE__FOURCC__NIE
   //  - WUFFS_BASE__FOURCC__PNG
   //  - WUFFS_BASE__FOURCC__TGA
