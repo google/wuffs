@@ -20,14 +20,15 @@ pub status "#bad SOS marker"
 pub status "#bad header"
 pub status "#bad marker"
 pub status "#truncated input"
+pub status "#unsupported DQT after SOF markers"
 pub status "#unsupported arithmetic coding"
 pub status "#unsupported hierarchical coding"
-pub status "#unsupported lossless coding"
 pub status "#unsupported implicit height"
+pub status "#unsupported lossless coding"
 pub status "#unsupported marker"
-pub status "#unsupported precision"
 pub status "#unsupported precision (12 bits)"
 pub status "#unsupported precision (16 bits)"
+pub status "#unsupported precision"
 
 pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0
 
@@ -49,17 +50,43 @@ pub struct decoder? implements base.image_decoder(
 
         payload_length : base.u32[..= 0xFFFF],
 
-        restart_interval : base.u32[..= 0xFFFF],
+        restart_interval       : base.u32[..= 0xFFFF],
+        saved_restart_interval : base.u32[..= 0xFFFF],
 
         frame_config_io_position : base.u64,
 
         seen_dqt : array[4] base.bool,
+        seen_dht : array[8] base.bool,
 
         quant_tables : array[4] array[64] base.u8,
+
+        // huff_tables_symbols[(tc*4)|th][i] is the i'th Huffman code's symbol.
+        huff_tables_symbols : array[8] array[256] base.u8,
+
+        // huff_tables_slow[(tc*4)|th][n] is a u32 such that:
+        //  - the high 24 bits hold the maximum (exclusive) bit-string of the
+        //    codes of bit-length (n+1).
+        //  - the low 8 bits hold a huff_tables_symbols[(tc*4)|th] index bias.
+        huff_tables_slow : array[8] array[16] base.u32,
+
+        // huff_tables_fast[(tc*4)|th][b] is a u16 that decodes the bit-length
+        // and symbol when the MSB-first bit-stream starts with b.
+        //  - the high 8 bits hold the bit-length. Zero means no fast path.
+        //  - the low 8 bits hold the symbol.
+        huff_tables_fast : array[8] array[256] base.u16,
 
         swizzler : base.pixel_swizzler,
         util     : base.utility,
 ) + (
+        // The dht_temp_etc fields are decode_dht temporary values.
+
+        // dht_temp_counts[n] is the number of codes with bit-length (n+1).
+        dht_temp_counts : array[16] base.u8,
+        // dht_temp_bit_lengths[i] is the bit-length of the i'th code.
+        dht_temp_bit_lengths : array[256] base.u8,
+        // dht_temp_bit_strings[i] is the bit-string of the i'th code.
+        dht_temp_bit_strings : array[256] base.u16,
+
         dst_palette : array[4 * 256] base.u8,
 )
 
@@ -256,6 +283,9 @@ pri func decoder.decode_dri?(src: base.io_reader) {
     this.payload_length = 0
 
     this.restart_interval = args.src.read_u16be_as_u32?()
+    if this.sof_marker == 0 {
+        this.saved_restart_interval = this.restart_interval
+    }
 }
 
 pri func decoder.decode_sof?(src: base.io_reader) {
@@ -391,16 +421,9 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 }
 
 pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, blend: base.pixel_blend, workbuf: slice base.u8, opts: nptr base.decode_frame_options) {
-    var status              : base.status
-    var dst_pixfmt          : base.pixel_format
-    var dst_bits_per_pixel  : base.u32[..= 256]
-    var dst_bytes_per_pixel : base.u32[..= 32]
-    var tab                 : table base.u8
-    var dst                 : slice base.u8
-    var src                 : array[4] base.u8
-    var y                   : base.u32
-    var x                   : base.u32
-    var d                   : base.u64
+    var status : base.status
+    var c      : base.u8
+    var marker : base.u8
 
     if this.call_sequence == 0x40 {
         // No-op.
@@ -419,6 +442,315 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
     if not status.is_ok() {
         return status
     }
+
+    // Process chunks (markers and their payloads).
+    while true {
+        // Read the marker (a two-byte 0xFF 0x?? sequence).
+        while true {
+            c = args.src.read_u8?()
+            if c == 0xFF {
+                break
+            }
+            // Getting here is invalid according to the JPEG spec, but libjpeg
+            // treats this as a warning (JWRN_EXTRANEOUS_DATA), not an error.
+        } endwhile
+        while true {
+            c = args.src.read_u8?()
+            if c <> 0xFF {
+                marker = c
+                break
+            }
+            // Section B.1.1.2: "Any marker may optionally be preceded by any
+            // number of [0xFF] fill bytes".
+        } endwhile
+
+        if marker == 0x00 {
+            // Ignore byte stuffing.
+            continue
+        } else if (0xD0 <= marker) and (marker <= 0xD7) {
+            // RSTn (Restart) markers have no payload.
+            continue
+        }
+
+        // Payload length includes the 2 bytes for the u16be payload length.
+        this.payload_length = args.src.read_u16be_as_u32?()
+        if this.payload_length < 2 {
+            return "#bad marker"
+        }
+        this.payload_length -= 2
+
+        // Switch on the marker.
+        if marker < 0xC0 {
+            return "#unsupported marker"
+
+        } else if marker < 0xD0 {  // SOFn (Start of Frame) and friends.
+            if marker == 0xC4 {  // DHT (Define Huffman Table).
+                this.decode_dht?(src: args.src)
+                continue
+
+            } else if marker == 0xC8 {  // JPG (JPEG extension).
+                return "#unsupported marker"
+            }
+            return "#bad SOF marker"
+
+        } else if marker < 0xE0 {
+            if marker < 0xDA {
+                // RSTn markers are already handled above. We either have 0xD8
+                // (SOI: Start Of Image) or 0xD9 (EOI: End Of Image), neither
+                // of which are valid here.
+                return "#bad marker"
+
+            } else if marker == 0xDA {  // SOS (Start Of Scan).
+                this.decode_sos?(dst: args.dst, src: args.src, workbuf: args.workbuf)
+                break
+
+            } else if marker == 0xDB {  // DQT (Define Quantization Table).
+                return "#unsupported DQT after SOF markers"
+
+            } else if marker == 0xDD {  // DRI (Define Restart Interval).
+                this.decode_dri?(src: args.src)
+                continue
+
+            } else {
+                // 0xDC (DNL: Define Number of Lines).
+                // 0xDE (DHP: Define Hierarchical Progression).
+                // 0xDF (EXP: Expand Reference Components).
+                return "#unsupported marker"
+            }
+
+        } else if marker < 0xF0 {  // APPn (Application specific).
+            // No-op.
+
+        } else {
+            if marker == 0xFE {  // COM (Comment).
+                // No-op.
+
+            } else {
+                return "#unsupported marker"
+            }
+        }
+
+        args.src.skip_u32?(n: this.payload_length)
+        this.payload_length = 0
+    } endwhile
+
+    this.call_sequence = 0x60
+}
+
+pri func decoder.decode_dht?(src: base.io_reader) {
+    var c                   : base.u8
+    var tc                  : base.u8[..= 1]
+    var th                  : base.u8[..= 3]
+    var tc4_th              : base.u8[..= 7]
+    var working_total_count : base.u32[..= 0xFFFF]
+    var total_count         : base.u32[..= 256]
+    var i                   : base.u32
+    var failed              : base.bool
+
+    if this.sof_marker == 0 {
+        return "#bad DHT marker"
+    }
+    while this.payload_length > 0 {
+        if this.payload_length < 17 {
+            return "#bad DHT marker"
+        }
+        this.payload_length -= 17
+        c = args.src.read_u8?()
+        if ((c >> 4) > 1) or ((c & 0x0F) > 3) {
+            return "#bad DHT marker"
+        }
+        tc = c >> 4
+        th = c & 0x0F
+        tc4_th = ((tc * 4) | th) as base.u8
+
+        // SOF0 (which is 0xC0) means a Baseline JPEG. The Baseline (th <= 1)
+        // restriction is specified in table B.5.
+        if (this.sof_marker == 0xC0) and ((tc4_th & 3) > 1) {
+            return "#bad DHT marker"
+        }
+
+        // Read dht_temp_counts.
+        i = 0
+        while i < 16 {
+            this.dht_temp_counts[i] = args.src.read_u8?()
+            i += 1
+        } endwhile
+        working_total_count = 0
+        i = 0
+        while i < 16 {
+            working_total_count =
+                    (working_total_count + (this.dht_temp_counts[i] as base.u32)) & 0xFFFF
+            i += 1
+        } endwhile
+        if (working_total_count <= 0) or (256 < working_total_count) {
+            return "#bad DHT marker"
+        }
+        total_count = working_total_count
+
+        // Read huff_tables_symbols[tc4_th].
+        if this.payload_length < total_count {
+            return "#bad DHT marker"
+        }
+        this.payload_length -= total_count
+        i = 0
+        while i < total_count {
+            assert i < 256 via "a < b: a < c; c <= b"(c: total_count)
+            this.huff_tables_symbols[tc4_th][i] = args.src.read_u8?()
+            i += 1
+        } endwhile
+        while i < 256 {
+            this.huff_tables_symbols[tc4_th][i] = 0
+            i += 1
+        } endwhile
+
+        // For tc == 0 (DC, not AC tables), the symbols must not exceed 15 (for
+        // lossy JPEG) or 16 (for lossless JPEG). We only support lossy.
+        if (tc4_th & 4) == 0 {
+            i = 0
+            while i < total_count {
+                assert i < 256 via "a < b: a < c; c <= b"(c: total_count)
+                if this.huff_tables_symbols[tc4_th][i] > 15 {
+                    return "#bad DHT marker"
+                }
+                i += 1
+            } endwhile
+        }
+
+        failed = this.calculate_huff_tables!(tc4_th: tc4_th, total_count: total_count)
+        if failed {
+            return "#bad DHT marker"
+        }
+
+        this.seen_dht[tc4_th] = true
+    } endwhile
+}
+
+pri func decoder.calculate_huff_tables!(tc4_th: base.u8[..= 7], total_count: base.u32[..= 256]) base.bool {
+    var i                    : base.u32
+    var j                    : base.u8
+    var k                    : base.u8
+    var bit_length_minus_one : base.u32[..= 15]
+    var bit_length           : base.u8[..= 16]
+    var bit_string           : base.u32
+    var slow                 : base.u32
+    var prefix               : base.u8
+    var fast                 : base.u16
+    var reps                 : base.u32
+
+    // Calculate dht_temp_bit_lengths.
+    i = 0
+    k = 0
+    bit_length_minus_one = 0
+    while i < args.total_count {
+        assert i < 256 via "a < b: a < c; c <= b"(c: args.total_count)
+        while k >= this.dht_temp_counts[bit_length_minus_one],
+                inv i < 256,
+                post k < this.dht_temp_counts[bit_length_minus_one],
+        {
+            k = 0
+            bit_length_minus_one = (bit_length_minus_one + 1) & 15
+        } endwhile
+        assert k < 255 via "a < b: a < c; c <= b"(c: this.dht_temp_counts[bit_length_minus_one])
+        k += 1
+        this.dht_temp_bit_lengths[i] = (bit_length_minus_one + 1) as base.u8
+        i += 1
+    } endwhile
+
+    // Calculate dht_temp_bit_strings.
+    bit_length = 0
+    bit_string = 0
+    i = 0
+    while i < args.total_count {
+        assert i < 256 via "a < b: a < c; c <= b"(c: args.total_count)
+        while bit_length < this.dht_temp_bit_lengths[i],
+                inv i < 256,
+        {
+            if bit_length >= 16 {
+                return true
+            }
+            bit_length += 1
+            bit_string ~mod<<= 1
+        } endwhile
+        this.dht_temp_bit_strings[i] = (bit_string & 0xFFFF) as base.u16
+        bit_string ~mod+= 1
+
+        // Check the bit_string just assigned to dht_temp_bit_strings[i].
+        // Section C: "the codes shall be generated such that the
+        // all-1-bits code word of any length is reserved".
+        if (bit_string >> bit_length) > 0 {
+            return true
+        }
+
+        i += 1
+    } endwhile
+
+    // Calculate huff_tables_slow[args.tc4_th].
+    k = 0
+    bit_length_minus_one = 0
+    while true {
+        if this.dht_temp_counts[bit_length_minus_one] == 0 {
+            this.huff_tables_slow[args.tc4_th][bit_length_minus_one] = 0
+        } else {
+            slow = 0xFF & ((k as base.u32) ~mod-
+                    (this.dht_temp_bit_strings[k] as base.u32))
+            k ~mod+= this.dht_temp_counts[bit_length_minus_one]
+            this.huff_tables_slow[args.tc4_th][bit_length_minus_one] = slow |
+                    (((this.dht_temp_bit_strings[k ~mod- 1] as base.u32) + 1) << 8)
+        }
+
+        bit_length_minus_one = (bit_length_minus_one + 1) & 15
+        if bit_length_minus_one == 0 {
+            break
+        }
+    } endwhile
+
+    // Calculate huff_tables_fast[args.tc4_th].
+    i = 0
+    while i < 256 {
+        this.huff_tables_fast[args.tc4_th][i] = 0
+        i += 1
+    } endwhile
+    j = 0
+    bit_length_minus_one = 0
+    while bit_length_minus_one < 8 {
+        k = 0
+        while k < this.dht_temp_counts[bit_length_minus_one],
+                inv bit_length_minus_one < 8,
+        {
+            assert k < 255 via "a < b: a < c; c <= b"(c: this.dht_temp_counts[bit_length_minus_one])
+            prefix = (((this.dht_temp_bit_strings[j] as base.u32) <<
+                    (7 - bit_length_minus_one)) & 0xFF) as base.u8
+            fast = ((((bit_length_minus_one + 1) as base.u32) << 8) |
+                    (this.huff_tables_symbols[args.tc4_th][j] as base.u32)) as base.u16
+            reps = (1 as base.u32) << (7 - bit_length_minus_one)
+            while reps > 0,
+                    inv bit_length_minus_one < 8,
+                    inv k < 255,
+            {
+                this.huff_tables_fast[args.tc4_th][prefix] = fast
+                prefix ~mod+= 1
+                reps -= 1
+            } endwhile
+            k += 1
+            j ~mod+= 1
+        } endwhile
+
+        bit_length_minus_one += 1
+    } endwhile
+
+    return false
+}
+
+pri func decoder.decode_sos?(dst: ptr base.pixel_buffer, src: base.io_reader, workbuf: slice base.u8) {
+    var dst_pixfmt          : base.pixel_format
+    var dst_bits_per_pixel  : base.u32[..= 256]
+    var dst_bytes_per_pixel : base.u32[..= 32]
+    var tab                 : table base.u8
+    var dst                 : slice base.u8
+    var src                 : array[4] base.u8
+    var y                   : base.u32
+    var x                   : base.u32
+    var d                   : base.u64
 
     // TODO: the dst_pixfmt variable shouldn't be necessary. We should be able
     // to chain the two calls: "args.dst.pixel_format().bits_per_pixel()".
@@ -455,8 +787,6 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
         } endwhile
         y += 1
     } endwhile
-
-    this.call_sequence = 0x60
 }
 
 pub func decoder.frame_dirty_rect() base.rect_ie_u32 {
@@ -486,6 +816,8 @@ pub func decoder.num_decoded_frames() base.u64 {
 }
 
 pub func decoder.restart_frame!(index: base.u64, io_position: base.u64) base.status {
+    var i : base.u32
+
     if this.call_sequence < 0x20 {
         return base."#bad call sequence"
     }
@@ -494,6 +826,11 @@ pub func decoder.restart_frame!(index: base.u64, io_position: base.u64) base.sta
     }
     this.call_sequence = 0x28
     this.frame_config_io_position = args.io_position
+    this.restart_interval = this.saved_restart_interval
+    while i < 8 {
+        this.seen_dht[i] = false
+        i += 1
+    } endwhile
     return ok
 }
 
