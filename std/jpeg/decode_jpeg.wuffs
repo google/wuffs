@@ -23,6 +23,7 @@ pub status "#missing Huffman table"
 pub status "#truncated input"
 pub status "#unsupported DQT after SOF markers"
 pub status "#unsupported arithmetic coding"
+pub status "#unsupported fractional sampling"
 pub status "#unsupported hierarchical coding"
 pub status "#unsupported implicit height"
 pub status "#unsupported lossless coding"
@@ -43,11 +44,17 @@ pub struct decoder? implements base.image_decoder(
 
         sof_marker : base.u8,
 
+        max_incl_components_h : base.u8[..= 4],
+        max_incl_components_v : base.u8[..= 4],
+
         num_components : base.u32[..= 4],
         components_c   : array[4] base.u8,
         components_h   : array[4] base.u8[..= 4],
         components_v   : array[4] base.u8[..= 4],
         components_tq  : array[4] base.u8[..= 4],
+
+        components_width_in_blocks  : array[4] base.u32[..= 0x2000],
+        components_height_in_blocks : array[4] base.u32[..= 0x2000],
 
         scan_num_components  : base.u32[..= 4],
         scan_comps_cselector : array[4] base.u8[..= 3],
@@ -59,10 +66,16 @@ pub struct decoder? implements base.image_decoder(
         scan_ah : base.u8[..= 13],
         scan_al : base.u8[..= 13],
 
+        scan_width_in_mcus  : base.u32[..= 0x2000],
+        scan_height_in_mcus : base.u32[..= 0x2000],
+
+        mcu_num_blocks       : base.u32[..= 10],
+        mcu_blocks_sselector : array[16] base.u8[..= 3],
+
         payload_length : base.u32[..= 0xFFFF],
 
-        restart_interval       : base.u32[..= 0xFFFF],
-        saved_restart_interval : base.u32[..= 0xFFFF],
+        restart_interval       : base.u16,
+        saved_restart_interval : base.u16,
 
         frame_config_io_position : base.u64,
 
@@ -293,18 +306,22 @@ pri func decoder.decode_dri?(src: base.io_reader) {
     }
     this.payload_length = 0
 
-    this.restart_interval = args.src.read_u16be_as_u32?()
+    this.restart_interval = args.src.read_u16be?()
     if this.sof_marker == 0 {
         this.saved_restart_interval = this.restart_interval
     }
 }
 
 pri func decoder.decode_sof?(src: base.io_reader) {
-    var c      : base.u8
-    var comp_h : base.u8
-    var comp_v : base.u8
-    var i      : base.u32
-    var j      : base.u32
+    var c       : base.u8
+    var comp_h  : base.u8
+    var comp_v  : base.u8
+    var i       : base.u32
+    var j       : base.u32
+    var has_h24 : base.bool
+    var has_h3  : base.bool
+    var has_v24 : base.bool
+    var has_v3  : base.bool
 
     if this.payload_length < 6 {
         return "#bad SOF marker"
@@ -349,7 +366,13 @@ pri func decoder.decode_sof?(src: base.io_reader) {
             return "#bad SOF marker"
         }
         this.components_h[i] = comp_h
+        if this.max_incl_components_h < this.components_h[i] {
+            this.max_incl_components_h = this.components_h[i]
+        }
         this.components_v[i] = comp_v
+        if this.max_incl_components_v < this.components_v[i] {
+            this.max_incl_components_v = this.components_v[i]
+        }
         c = args.src.read_u8?()
         if c > 4 {
             return "#bad SOF marker"
@@ -368,6 +391,50 @@ pri func decoder.decode_sof?(src: base.io_reader) {
             }
             j += 1
         } endwhile
+
+        i += 1
+    } endwhile
+
+    has_h24 = false
+    has_h3 = false
+    has_v24 = false
+    has_v3 = false
+    i = 0
+    while i < this.num_components {
+        assert i < 4 via "a < b: a < c; c <= b"(c: this.num_components)
+        has_h24 = has_h24 or (this.components_h[i] == 2) or (this.components_h[i] == 4)
+        has_h3 = has_h3 or (this.components_h[i] == 3)
+        has_v24 = has_v24 or (this.components_v[i] == 2) or (this.components_v[i] == 4)
+        has_v3 = has_v3 or (this.components_v[i] == 3)
+        i += 1
+    } endwhile
+    if (has_h24 and has_h3) or (has_v24 and has_v3) {
+        return "#unsupported fractional sampling"
+    }
+
+    i = 0
+    while i < this.num_components {
+        assert i < 4 via "a < b: a < c; c <= b"(c: this.num_components)
+
+        if this.components_h[i] == 1 {
+            this.components_width_in_blocks[i] = (this.width + 0x07) / 0x08
+        } else if this.components_h[i] == 2 {
+            this.components_width_in_blocks[i] = (this.width + 0x0F) / 0x10
+        } else if this.components_h[i] == 3 {
+            this.components_width_in_blocks[i] = (this.width + 0x17) / 0x18
+        } else {
+            this.components_width_in_blocks[i] = (this.width + 0x1F) / 0x20
+        }
+
+        if this.components_v[i] == 1 {
+            this.components_height_in_blocks[i] = (this.height + 0x07) / 0x08
+        } else if this.components_v[i] == 2 {
+            this.components_height_in_blocks[i] = (this.height + 0x0F) / 0x10
+        } else if this.components_v[i] == 3 {
+            this.components_height_in_blocks[i] = (this.height + 0x17) / 0x18
+        } else {
+            this.components_height_in_blocks[i] = (this.height + 0x1F) / 0x20
+        }
 
         i += 1
     } endwhile
@@ -753,11 +820,48 @@ pri func decoder.calculate_huff_tables!(tc4_th: base.u8[..= 7], total_count: bas
 }
 
 pri func decoder.decode_sos?(dst: ptr base.pixel_buffer, src: base.io_reader, workbuf: slice base.u8) {
+    var restarts : base.u32
+    var my       : base.u32
+    var mx       : base.u32
+    var status   : base.status
+
+    this.prepare_scan?(src: args.src)
+
+    restarts = this.restart_interval as base.u32
+    my = 0
+    while my < this.scan_height_in_mcus {
+        assert my < 0x2000 via "a < b: a < c; c <= b"(c: this.scan_height_in_mcus)
+        mx = 0
+        while mx < this.scan_width_in_mcus,
+                inv my < 0x2000,
+        {
+            assert mx < 0x2000 via "a < b: a < c; c <= b"(c: this.scan_width_in_mcus)
+
+            // TODO: decode the MCU.
+
+            if restarts > 0 {
+                restarts -= 1
+                if restarts == 0 {
+                    // TODO.
+                }
+            }
+
+            mx += 1
+        } endwhile
+        my += 1
+    } endwhile
+
+    status = this.swizzle!(dst: args.dst)
+    return status
+}
+
+pri func decoder.prepare_scan?(src: base.io_reader) {
     var c        : base.u8
     var i        : base.u32
     var j        : base.u32
+    var hv       : base.u32[..= 16]
     var total_hv : base.u32
-    var status   : base.status
+    var b        : base.u32
 
     if (this.payload_length < 6) or (this.payload_length > 12) {
         return "#bad SOS marker"
@@ -825,20 +929,6 @@ pri func decoder.decode_sos?(dst: ptr base.pixel_buffer, src: base.io_reader, wo
         i += 1
     } endwhile
 
-    if this.scan_num_components > 1 {
-        total_hv = 0
-        i = 0
-        while i < this.scan_num_components {
-            assert i < 4 via "a < b: a < c; c <= b"(c: this.scan_num_components)
-            total_hv ~mod+= ((this.components_h[this.scan_comps_cselector[i]] as base.u32) *
-                    (this.components_v[this.scan_comps_cselector[i]] as base.u32))
-            i += 1
-        } endwhile
-        if total_hv > 10 {
-            return "#bad SOS marker"
-        }
-    }
-
     c = args.src.read_u8?()
     if c > 63 {
         return "#bad SOS marker"
@@ -862,8 +952,57 @@ pri func decoder.decode_sos?(dst: ptr base.pixel_buffer, src: base.io_reader, wo
     // that (Ss, Se, Ah, Al) is (0, 63, 0, 0) but libjpeg treats otherwise as a
     // warning (JWRN_NOT_SEQUENTIAL), not an error.
 
-    status = this.swizzle!(dst: args.dst)
-    return status
+    if this.scan_num_components == 1 {
+        this.scan_width_in_mcus = this.components_width_in_blocks[this.scan_comps_cselector[0]]
+        this.scan_height_in_mcus = this.components_height_in_blocks[this.scan_comps_cselector[0]]
+        this.mcu_num_blocks = 1
+        this.mcu_blocks_sselector[0] = 0
+
+    } else {
+        if this.max_incl_components_h == 1 {
+            this.scan_width_in_mcus = (this.width + 0x07) / 0x08
+        } else if this.max_incl_components_h == 2 {
+            this.scan_width_in_mcus = (this.width + 0x0F) / 0x10
+        } else if this.max_incl_components_h == 3 {
+            this.scan_width_in_mcus = (this.width + 0x17) / 0x18
+        } else {
+            this.scan_width_in_mcus = (this.width + 0x1F) / 0x20
+        }
+
+        if this.max_incl_components_v == 1 {
+            this.scan_height_in_mcus = (this.height + 0x07) / 0x08
+        } else if this.max_incl_components_v == 2 {
+            this.scan_height_in_mcus = (this.height + 0x0F) / 0x10
+        } else if this.max_incl_components_v == 3 {
+            this.scan_height_in_mcus = (this.height + 0x17) / 0x18
+        } else {
+            this.scan_height_in_mcus = (this.height + 0x1F) / 0x20
+        }
+
+        total_hv = 0
+        i = 0
+        b = 0
+        while i < this.scan_num_components {
+            assert i < 4 via "a < b: a < c; c <= b"(c: this.scan_num_components)
+            hv = ((this.components_h[this.scan_comps_cselector[i]] as base.u32) *
+                    (this.components_v[this.scan_comps_cselector[i]] as base.u32))
+            total_hv ~mod+= hv
+
+            while hv > 0,
+                    inv i < 4,
+            {
+                this.mcu_blocks_sselector[b & 15] = i as base.u8
+                b ~mod+= 1
+                hv -= 1
+            } endwhile
+
+            i += 1
+        } endwhile
+        if total_hv > 10 {
+            return "#bad SOS marker"
+        }
+        this.mcu_num_blocks = total_hv
+    }
 }
 
 pri func decoder.swizzle!(dst: ptr base.pixel_buffer) base.status {
