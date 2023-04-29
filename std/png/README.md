@@ -5,8 +5,6 @@ image compression format for still images. APNG ([Animated
 PNG](https://wiki.mozilla.org/APNG_Specification)) is an unofficial extension
 for animated images.
 
-Wuffs does not currently implement the APNG extension.
-
 
 ## File Structure
 
