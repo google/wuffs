@@ -19,6 +19,7 @@ pub status "#bad SOF marker"
 pub status "#bad SOS marker"
 pub status "#bad header"
 pub status "#bad marker"
+pub status "#missing Huffman table"
 pub status "#truncated input"
 pub status "#unsupported DQT after SOF markers"
 pub status "#unsupported arithmetic coding"
@@ -47,6 +48,16 @@ pub struct decoder? implements base.image_decoder(
         components_h   : array[4] base.u8[..= 4],
         components_v   : array[4] base.u8[..= 4],
         components_tq  : array[4] base.u8[..= 4],
+
+        scan_num_components  : base.u32[..= 4],
+        scan_comps_cselector : array[4] base.u8[..= 3],
+        scan_comps_td        : array[4] base.u8[..= 3],
+        scan_comps_ta        : array[4] base.u8[..= 3],
+
+        scan_ss : base.u8[..= 63],
+        scan_se : base.u8[..= 63],
+        scan_ah : base.u8[..= 13],
+        scan_al : base.u8[..= 13],
 
         payload_length : base.u32[..= 0xFFFF],
 
@@ -742,6 +753,120 @@ pri func decoder.calculate_huff_tables!(tc4_th: base.u8[..= 7], total_count: bas
 }
 
 pri func decoder.decode_sos?(dst: ptr base.pixel_buffer, src: base.io_reader, workbuf: slice base.u8) {
+    var c        : base.u8
+    var i        : base.u32
+    var j        : base.u32
+    var total_hv : base.u32
+    var status   : base.status
+
+    if (this.payload_length < 6) or (this.payload_length > 12) {
+        return "#bad SOS marker"
+    }
+    c = args.src.read_u8?()
+    if (c < 1) or (c > 4) {
+        return "#bad SOS marker"
+    }
+    this.scan_num_components = c as base.u32
+    if (this.scan_num_components > this.num_components) or
+            (this.payload_length <> (4 + (2 * this.scan_num_components))) {
+        return "#bad SOS marker"
+    }
+    this.payload_length = 0
+
+    i = 0
+    while i < this.scan_num_components {
+        assert i < 4 via "a < b: a < c; c <= b"(c: this.scan_num_components)
+        c = args.src.read_u8?()
+
+        j = 0
+        while true,
+                inv i < 4,
+        {
+            if j >= this.num_components {
+                return "#bad SOS marker"
+            }
+            assert j < 4 via "a < b: a < c; c <= b"(c: this.num_components)
+            if c <> this.components_c[j] {
+                j += 1
+                continue
+            }
+            if i > 0 {
+                if j <= (this.scan_comps_cselector[i - 1] as base.u32) {
+                    return "#bad SOS marker"
+                }
+            }
+            this.scan_comps_cselector[i] = j as base.u8
+            break
+        } endwhile
+
+        c = args.src.read_u8?()
+        if ((c >> 4) > 3) or ((c & 0x0F) > 3) {
+            return "#bad SOS marker"
+        }
+        this.scan_comps_td[i] = c >> 4
+        this.scan_comps_ta[i] = c & 0x0F
+        // SOF0 (which is 0xC0) means a Baseline JPEG. The Baseline (tx <= 1)
+        // restriction is specified in table B.5.
+        if this.sof_marker == 0xC0 {
+            if (this.scan_comps_td[i] > 1) or (this.scan_comps_ta[i] > 1) {
+                return "#bad SOS marker"
+            }
+        }
+
+        if (not this.seen_dht[0 | this.scan_comps_td[i]]) or
+                (not this.seen_dht[4 | this.scan_comps_ta[i]]) {
+            // TODO: while not required by the spec, we could fall back to
+            // implicit tables? See section K.3 "Typical Huffman tables for
+            // 8-bit precision luminance and chrominance" and
+            // https://github.com/libjpeg-turbo/libjpeg-turbo/commit/a113506d175d03ae0e40965c3d3d21a5d561e119
+            return "#missing Huffman table"
+        }
+
+        i += 1
+    } endwhile
+
+    if this.scan_num_components > 1 {
+        total_hv = 0
+        i = 0
+        while i < this.scan_num_components {
+            assert i < 4 via "a < b: a < c; c <= b"(c: this.scan_num_components)
+            total_hv ~mod+= ((this.components_h[this.scan_comps_cselector[i]] as base.u32) *
+                    (this.components_v[this.scan_comps_cselector[i]] as base.u32))
+            i += 1
+        } endwhile
+        if total_hv > 10 {
+            return "#bad SOS marker"
+        }
+    }
+
+    c = args.src.read_u8?()
+    if c > 63 {
+        return "#bad SOS marker"
+    }
+    this.scan_ss = c
+
+    c = args.src.read_u8?()
+    if (c > 63) or (c < this.scan_ss) {
+        return "#bad SOS marker"
+    }
+    this.scan_se = c
+
+    c = args.src.read_u8?()
+    if ((c >> 4) > 13) or ((c & 0x0F) > 13) {
+        return "#bad SOS marker"
+    }
+    this.scan_ah = c >> 4
+    this.scan_al = c & 0x0F
+
+    // At this point, for sequential (not progressive) JPEGs, we should check
+    // that (Ss, Se, Ah, Al) is (0, 63, 0, 0) but libjpeg treats otherwise as a
+    // warning (JWRN_NOT_SEQUENTIAL), not an error.
+
+    status = this.swizzle!(dst: args.dst)
+    return status
+}
+
+pri func decoder.swizzle!(dst: ptr base.pixel_buffer) base.status {
     var dst_pixfmt          : base.pixel_format
     var dst_bits_per_pixel  : base.u32[..= 256]
     var dst_bytes_per_pixel : base.u32[..= 32]
@@ -787,6 +912,7 @@ pri func decoder.decode_sos?(dst: ptr base.pixel_buffer, src: base.io_reader, wo
         } endwhile
         y += 1
     } endwhile
+    return ok
 }
 
 pub func decoder.frame_dirty_rect() base.rect_ie_u32 {
