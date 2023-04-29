@@ -230,7 +230,7 @@ compute_exit_code(const char* status_msg) {
   size_t n = strnlen(status_msg, 2047);
   if (n >= 2047) {
     status_msg = "main: internal error: error message is too long";
-    n = strnlen(status_msg, 2047);
+    n = strlen(status_msg);
   }
   const int stderr_fd = 2;
   ignore_return_value(write(stderr_fd, status_msg, n));
