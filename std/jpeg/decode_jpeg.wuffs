@@ -32,6 +32,8 @@ pub status "#unsupported precision (12 bits)"
 pub status "#unsupported precision (16 bits)"
 pub status "#unsupported precision"
 
+pri status "#internal error: inconsistent decoder state"
+
 pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0
 
 pub struct decoder? implements base.image_decoder(
@@ -42,7 +44,8 @@ pub struct decoder? implements base.image_decoder(
         // (/doc/std/image-decoders-call-sequence.md).
         call_sequence : base.u8,
 
-        sof_marker : base.u8,
+        sof_marker          : base.u8,
+        next_restart_marker : base.u8[..= 7],
 
         max_incl_components_h : base.u8[..= 4],
         max_incl_components_v : base.u8[..= 4],
@@ -70,17 +73,28 @@ pub struct decoder? implements base.image_decoder(
         scan_height_in_mcus : base.u32[..= 0x2000],
 
         mcu_num_blocks       : base.u32[..= 10],
+        mcu_current_block    : base.u32[..= 10],
         mcu_blocks_sselector : array[16] base.u8[..= 3],
+        mcu_zig_index        : base.u32[..= 63],
 
-        payload_length : base.u32[..= 0xFFFF],
+        mcu_previous_dc_values : array[4] base.u16,
 
         restart_interval       : base.u16,
         saved_restart_interval : base.u16,
+        restarts_remaining     : base.u16,
 
         frame_config_io_position : base.u64,
 
+        payload_length : base.u32[..= 0xFFFF],
+
         seen_dqt : array[4] base.bool,
         seen_dht : array[8] base.bool,
+
+        // These fields yield bitstream bits in Most Significant Bits order.
+        bitstream_bits   : base.u64,
+        bitstream_n_bits : base.u32,
+        bitstream_ri     : base.u32[..= 0x800],
+        bitstream_wi     : base.u32[..= 0x800],
 
         quant_tables : array[4] array[64] base.u8,
 
@@ -102,6 +116,10 @@ pub struct decoder? implements base.image_decoder(
         swizzler : base.pixel_swizzler,
         util     : base.utility,
 ) + (
+        bitstream_buffer : array[0x800] base.u8,  // 0x800 = 2048.
+
+        mcu_blocks : array[10] array[64] base.u16,
+
         // The dht_temp_etc fields are decode_dht temporary values.
 
         // dht_temp_counts[n] is the number of codes with bit-length (n+1).
@@ -785,7 +803,7 @@ pri func decoder.calculate_huff_tables!(tc4_th: base.u8[..= 7], total_count: bas
     // Calculate huff_tables_fast[args.tc4_th].
     i = 0
     while i < 256 {
-        this.huff_tables_fast[args.tc4_th][i] = 0
+        this.huff_tables_fast[args.tc4_th][i] = 0xFFFF
         i += 1
     } endwhile
     j = 0
@@ -820,14 +838,29 @@ pri func decoder.calculate_huff_tables!(tc4_th: base.u8[..= 7], total_count: bas
 }
 
 pri func decoder.decode_sos?(dst: ptr base.pixel_buffer, src: base.io_reader, workbuf: slice base.u8) {
-    var restarts : base.u32
-    var my       : base.u32
-    var mx       : base.u32
-    var status   : base.status
+    var my                : base.u32
+    var mx                : base.u32
+    var decode_mcu_result : base.u32
+    var bitstream_length  : base.u32
+    var i                 : base.u32
+    var j                 : base.u32
+    var status            : base.status
 
     this.prepare_scan?(src: args.src)
 
-    restarts = this.restart_interval as base.u32
+    // Reset.
+    this.next_restart_marker = 0
+    this.restarts_remaining = this.restart_interval
+    this.mcu_previous_dc_values[0] = 0
+    this.mcu_previous_dc_values[1] = 0
+    this.mcu_previous_dc_values[2] = 0
+    this.mcu_previous_dc_values[3] = 0
+    this.bitstream_bits = 0
+    this.bitstream_n_bits = 0
+    this.bitstream_ri = 0
+    this.bitstream_wi = 0
+    this.fill_bitstream!(src: args.src)
+
     my = 0
     while my < this.scan_height_in_mcus {
         assert my < 0x2000 via "a < b: a < c; c <= b"(c: this.scan_height_in_mcus)
@@ -836,13 +869,69 @@ pri func decoder.decode_sos?(dst: ptr base.pixel_buffer, src: base.io_reader, wo
                 inv my < 0x2000,
         {
             assert mx < 0x2000 via "a < b: a < c; c <= b"(c: this.scan_width_in_mcus)
+            this.mcu_current_block = 0
+            this.mcu_zig_index = 0
 
-            // TODO: decode the MCU.
+            while.decode_mcu true,
+                    inv my < 0x2000,
+                    inv mx < 0x2000,
+            {
+                decode_mcu_result = this.decode_mcu!()
+                if decode_mcu_result == 0 {
+                    break.decode_mcu
+                } else if decode_mcu_result <> 1 {
+                    return "#internal error: inconsistent decoder state"
+                }
 
-            if restarts > 0 {
-                restarts -= 1
-                if restarts == 0 {
-                    // TODO.
+                while.fill_bitstream true,
+                        inv my < 0x2000,
+                        inv mx < 0x2000,
+                {
+                    bitstream_length = this.bitstream_wi ~mod- this.bitstream_ri
+                    this.fill_bitstream!(src: args.src)
+                    if bitstream_length < (this.bitstream_wi ~mod- this.bitstream_ri) {
+                        break.fill_bitstream
+                    }
+                    yield? base."$short read"
+                } endwhile.fill_bitstream
+            } endwhile.decode_mcu
+
+            // TODO: IDCT on this.mcu_blocks.
+
+            // Clear this.mcu_blocks.
+            i = 0
+            j = 0
+            while i < this.mcu_num_blocks,
+                    inv my < 0x2000,
+                    inv mx < 0x2000,
+            {
+                assert i < 10 via "a < b: a < c; c <= b"(c: this.mcu_num_blocks)
+                while j < 64,
+                        inv my < 0x2000,
+                        inv mx < 0x2000,
+                        inv i < 10,
+                {
+                    this.mcu_blocks[i][j] = 0
+                    j += 1
+                } endwhile
+                i += 1
+            } endwhile
+
+            if this.restarts_remaining > 0 {
+                this.restarts_remaining -= 1
+                if this.restarts_remaining == 0 {
+                    this.skip_past_the_next_restart_marker?(src: args.src)
+
+                    // Reset.
+                    this.restarts_remaining = this.restart_interval
+                    this.mcu_previous_dc_values[0] = 0
+                    this.mcu_previous_dc_values[1] = 0
+                    this.mcu_previous_dc_values[2] = 0
+                    this.mcu_previous_dc_values[3] = 0
+                    this.bitstream_bits = 0
+                    this.bitstream_n_bits = 0
+                    this.bitstream_ri = 0
+                    this.bitstream_wi = 0
                 }
             }
 
@@ -1003,6 +1092,122 @@ pri func decoder.prepare_scan?(src: base.io_reader) {
         }
         this.mcu_num_blocks = total_hv
     }
+}
+
+pri func decoder.fill_bitstream!(src: base.io_reader) {
+    var i  : base.u32[..= 0x800]
+    var wi : base.u32[..= 0x800]
+    var c  : base.u8
+    var n  : base.u32[..= 0x800]
+
+    // Compact unread bytes to the start of the buffer.
+    if this.bitstream_ri <= 0 {
+        // No-op.
+    } else if this.bitstream_ri == this.bitstream_wi {
+        this.bitstream_ri = 0
+        this.bitstream_wi = 0
+    } else {
+        // TODO: have a built-in (calling memmove) to compact a slice?
+        i = 0
+        assert i < this.bitstream_ri via "a < b: a == c; c < b"(c: 0)
+        while this.bitstream_ri < this.bitstream_wi,
+                pre i < this.bitstream_ri,
+        {
+            assert this.bitstream_ri < 0x800 via "a < b: a < c; c <= b"(c: this.bitstream_wi)
+            assert i < 0x800 via "a < b: a < c; c < b"(c: this.bitstream_ri)
+            this.bitstream_buffer[i] = this.bitstream_buffer[this.bitstream_ri]
+            this.bitstream_ri += 1
+            i += 1
+            // TODO: this if statement should be unnecessary. Instead, we
+            // should be able to "assert i < this.bitstream_ri".
+            if i >= this.bitstream_ri {
+                break  // Unreachable.
+            }
+        } endwhile
+        this.bitstream_ri = 0
+        this.bitstream_wi = i
+    }
+
+    wi = this.bitstream_wi
+    while (wi < 0x800) and (args.src.length() > 0) {
+        c = args.src.peek_u8()
+        if c < 0xFF {
+            this.bitstream_buffer[wi] = c
+            wi += 1
+            args.src.skip_u32_fast!(actual: 1, worst_case: 1)
+
+        } else if args.src.length() <= 1 {
+            break
+
+        } else if (args.src.peek_u16le() >> 8) > 0 {
+            break
+
+        } else {
+            this.bitstream_buffer[wi] = 0xFF
+            wi += 1
+            args.src.skip_u32_fast!(actual: 2, worst_case: 2)
+        }
+    } endwhile
+
+    // If we hit a "\xFF\x??" marker then pad the bitstream. In this method
+    // invocation, insert up to 32 bytes of implicit zeroes. Repeated calls to
+    // this method can insert even more.
+    if args.src.length() > 1 {
+        if (args.src.peek_u8() >= 0xFF) and ((args.src.peek_u16le() >> 8) > 0) {
+            n = wi.min(no_more_than: 0x800 - 32) + 32
+            while wi < n {
+                assert wi < 0x800 via "a < b: a < c; c <= b"(c: n)
+                this.bitstream_buffer[wi] = 0x00
+                wi += 1
+            } endwhile
+        }
+    }
+
+    this.bitstream_wi = wi
+}
+
+pri func decoder.skip_past_the_next_restart_marker?(src: base.io_reader) {
+    var c : base.u8
+
+    while true {
+        if args.src.length() < 2 {
+            yield? base."$short read"
+            continue
+        } else if args.src.peek_u8() < 0xFF {
+            args.src.skip_u32_fast!(actual: 1, worst_case: 1)
+            continue
+        }
+
+        c = (args.src.peek_u16le() >> 8) as base.u8
+        if c < 0xC0 {
+            // Either a reserved marker or "\xFF\x00" byte stuffing. Consume it
+            // and continue.
+            args.src.skip_u32_fast!(actual: 2, worst_case: 2)
+            continue
+        } else if (c < 0xD0) or (0xD7 < c) {
+            // Not an RSTn (Restart) marker. Leave it and break.
+            break
+        }
+
+        c &= 7
+        if (this.next_restart_marker == ((c + 1) & 7)) or
+                (this.next_restart_marker == ((c + 2) & 7)) {
+            // A leading RSTn marker. Leave it and break.
+            break
+        } else if (this.next_restart_marker == ((c + 7) & 7)) or
+                (this.next_restart_marker == ((c + 6) & 7)) {
+            // A lagging RSTn marker. Consume it and continue.
+            args.src.skip_u32_fast!(actual: 2, worst_case: 2)
+            continue
+        } else {
+            // The RSTn marker is either the expected one or far away from the
+            // expected one (neither leading or lagging). Consume it and break.
+            args.src.skip_u32_fast!(actual: 2, worst_case: 2)
+            break
+        }
+    } endwhile
+
+    this.next_restart_marker = (this.next_restart_marker ~mod+ 1) & 7
 }
 
 pri func decoder.swizzle!(dst: ptr base.pixel_buffer) base.status {
