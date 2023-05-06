@@ -929,7 +929,7 @@ func (n *TypeExpr) HasPointers() bool {
 					return true
 				}
 			}
-		case t.IDNptr, t.IDPtr, t.IDSlice, t.IDTable:
+		case t.IDNptr, t.IDPtr, t.IDRoslice, t.IDRotable, t.IDSlice, t.IDTable:
 			return true
 		}
 	}
