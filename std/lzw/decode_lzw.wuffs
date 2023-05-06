@@ -368,7 +368,7 @@ pri func decoder.write_to?(dst: base.io_writer) {
     } endwhile
 }
 
-pub func decoder.flush!() slice base.u8 {
+pub func decoder.flush!() roslice base.u8 {
     var s : slice base.u8
 
     if this.output_ri <= this.output_wi {

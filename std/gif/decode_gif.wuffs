@@ -916,7 +916,7 @@ pri func decoder.decode_id_part2?(dst: ptr base.pixel_buffer, src: base.io_reade
     var mark            : base.u64
     var lzw_status      : base.status
     var copy_status     : base.status
-    var uncompressed    : slice base.u8
+    var uncompressed    : roslice base.u8
 
     need_block_size = true
     while.outer true {
@@ -1015,10 +1015,10 @@ pri func decoder.decode_id_part2?(dst: ptr base.pixel_buffer, src: base.io_reade
     }
 }
 
-pri func decoder.copy_to_image_buffer!(pb: ptr base.pixel_buffer, src: slice base.u8) base.status {
+pri func decoder.copy_to_image_buffer!(pb: ptr base.pixel_buffer, src: roslice base.u8) base.status {
     // TODO: don't assume an interleaved pixel format.
     var dst             : slice base.u8
-    var src             : slice base.u8
+    var src             : roslice base.u8
     var width_in_bytes  : base.u64
     var n               : base.u64
     var src_ri          : base.u64
@@ -1031,7 +1031,7 @@ pri func decoder.copy_to_image_buffer!(pb: ptr base.pixel_buffer, src: slice bas
     var replicate_y0    : base.u32
     var replicate_y1    : base.u32
     var replicate_dst   : slice base.u8
-    var replicate_src   : slice base.u8
+    var replicate_src   : roslice base.u8
 
     // TODO: the pixfmt variable shouldn't be necessary. We should be able to
     // chain the two calls: "args.pb.pixel_format().bits_per_pixel()".
