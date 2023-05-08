@@ -611,6 +611,10 @@ test_wuffs_jpeg_decode_mcu() {
                                  &dec, sizeof dec, WUFFS_VERSION,
                                  WUFFS_INITIALIZE__DEFAULT_OPTIONS));
 
+  // Bypass the "#missing Quantization table" check.
+  dec.private_impl.f_seen_dqt[0] = true;
+  dec.private_impl.f_seen_dqt[1] = true;
+
   // Decode the 0xC0 SOF marker, four 0xC4 DHT markers and 0xDA SOS marker. The
   // SOS marker is only partially processed, since complete SOS processing
   // would call wuffs_jpeg__decoder__decode_mcu multiple times.

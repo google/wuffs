@@ -34,7 +34,7 @@ f36c2e80 test/data/bricks-dither.no-ancillary.png
 f36c2e80 test/data/bricks-dither.png
 c2bce675 test/data/bricks-gray.bmp
 c2bce675 test/data/bricks-gray.gif
-84e5ba7c test/data/bricks-gray.jpeg
+3a2478ad test/data/bricks-gray.jpeg
 c2bce675 test/data/bricks-gray.no-ancillary.png
 c2bce675 test/data/bricks-gray.png
 c2bce675 test/data/bricks-gray.tga
