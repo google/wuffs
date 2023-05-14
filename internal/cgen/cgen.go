@@ -123,16 +123,17 @@ func Do(args []string) error {
 			}
 			buf := make(buffer, 0, 128*1024)
 			if err := expandBangBangInsert(&buf, embedBaseAllImplC.Trim(), map[string]func(*buffer) error{
-				"// ¡ INSERT InterfaceDeclarations.\n":      insertInterfaceDeclarations,
-				"// ¡ INSERT InterfaceDefinitions.\n":       insertInterfaceDefinitions,
-				"// ¡ INSERT base/all-private.h.\n":         insertBaseAllPrivateH,
-				"// ¡ INSERT base/all-public.h.\n":          insertBaseAllPublicH,
-				"// ¡ INSERT base/copyright\n":              insertBaseCopyright,
-				"// ¡ INSERT base/floatconv-submodule.c.\n": insertBaseFloatConvSubmoduleC,
-				"// ¡ INSERT base/intconv-submodule.c.\n":   insertBaseIntConvSubmoduleC,
-				"// ¡ INSERT base/magic-submodule.c.\n":     insertBaseMagicSubmoduleC,
-				"// ¡ INSERT base/pixconv-submodule.c.\n":   insertBasePixConvSubmoduleC,
-				"// ¡ INSERT base/utf8-submodule.c.\n":      insertBaseUTF8SubmoduleC,
+				"// ¡ INSERT InterfaceDeclarations.\n":            insertInterfaceDeclarations,
+				"// ¡ INSERT InterfaceDefinitions.\n":             insertInterfaceDefinitions,
+				"// ¡ INSERT base/all-private.h.\n":               insertBaseAllPrivateH,
+				"// ¡ INSERT base/all-public.h.\n":                insertBaseAllPublicH,
+				"// ¡ INSERT base/copyright\n":                    insertBaseCopyright,
+				"// ¡ INSERT base/floatconv-submodule.c.\n":       insertBaseFloatConvSubmoduleC,
+				"// ¡ INSERT base/intconv-submodule.c.\n":         insertBaseIntConvSubmoduleC,
+				"// ¡ INSERT base/magic-submodule.c.\n":           insertBaseMagicSubmoduleC,
+				"// ¡ INSERT base/pixconv-submodule-regular.c.\n": insertBasePixConvSubmoduleRegularC,
+				"// ¡ INSERT base/pixconv-submodule-ycck.c.\n":    insertBasePixConvSubmoduleYcckC,
+				"// ¡ INSERT base/utf8-submodule.c.\n":            insertBaseUTF8SubmoduleC,
 				"// ¡ INSERT vtable names.\n": func(b *buffer) error {
 					for _, n := range builtin.Interfaces {
 						buf.printf("const char wuffs_base__%s__vtable_name[] = "+
@@ -379,8 +380,13 @@ func insertBaseMagicSubmoduleC(buf *buffer) error {
 	return nil
 }
 
-func insertBasePixConvSubmoduleC(buf *buffer) error {
-	buf.writes(embedBasePixConvSubmoduleC.Trim())
+func insertBasePixConvSubmoduleRegularC(buf *buffer) error {
+	buf.writes(embedBasePixConvSubmoduleRegularC.Trim())
+	return nil
+}
+
+func insertBasePixConvSubmoduleYcckC(buf *buffer) error {
+	buf.writes(embedBasePixConvSubmoduleYcckC.Trim())
 	return nil
 }
 

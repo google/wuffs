@@ -643,6 +643,36 @@ var funcsOther = [...]string{
 		"dst: slice u8, dst_palette: slice u8, src: roslice u8) u64",
 	"pixel_swizzler.swizzle_interleaved_transparent_black!(" +
 		"dst: slice u8, dst_palette: slice u8, num_pixels: u64) u64",
+	"pixel_swizzler.swizzle_ycck!(" +
+		"dst: ptr pixel_buffer," +
+		"dst_palette: slice u8," +
+		"width: u32[..= 0xFFFF]," +
+		"height: u32[..= 0xFFFF]," +
+		"src0: slice u8," +
+		"src1: slice u8," +
+		"src2: slice u8," +
+		"src3: slice u8," +
+		"width0: u32[..= 0x4_0000]," +
+		"width1: u32[..= 0x4_0000]," +
+		"width2: u32[..= 0x4_0000]," +
+		"width3: u32[..= 0x4_0000]," +
+		"height0: u32[..= 0x4_0000]," +
+		"height1: u32[..= 0x4_0000]," +
+		"height2: u32[..= 0x4_0000]," +
+		"height3: u32[..= 0x4_0000]," +
+		"stride0: u32," +
+		"stride1: u32," +
+		"stride2: u32," +
+		"stride3: u32," +
+		"h0: u8[..= 4]," +
+		"h1: u8[..= 4]," +
+		"h2: u8[..= 4]," +
+		"h3: u8[..= 4]," +
+		"v0: u8[..= 4]," +
+		"v1: u8[..= 4]," +
+		"v2: u8[..= 4]," +
+		"v3: u8[..= 4]," +
+		"triangle_filter_for_2to1: bool) status",
 
 	// ---- arm_crc32_utility
 

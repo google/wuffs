@@ -38,6 +38,38 @@ wuffs_base__pixel_swizzler__swizzle_interleaved_transparent_black(
     wuffs_base__slice_u8 dst_palette,
     uint64_t num_pixels);
 
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
+wuffs_base__pixel_swizzler__swizzle_ycck(const wuffs_base__pixel_swizzler* p,
+                                         wuffs_base__pixel_buffer* dst,
+                                         wuffs_base__slice_u8 dst_palette,
+                                         uint32_t width,
+                                         uint32_t height,
+                                         wuffs_base__slice_u8 src0,
+                                         wuffs_base__slice_u8 src1,
+                                         wuffs_base__slice_u8 src2,
+                                         wuffs_base__slice_u8 src3,
+                                         uint32_t width0,
+                                         uint32_t width1,
+                                         uint32_t width2,
+                                         uint32_t width3,
+                                         uint32_t height0,
+                                         uint32_t height1,
+                                         uint32_t height2,
+                                         uint32_t height3,
+                                         uint32_t stride0,
+                                         uint32_t stride1,
+                                         uint32_t stride2,
+                                         uint32_t stride3,
+                                         uint8_t h0,
+                                         uint8_t h1,
+                                         uint8_t h2,
+                                         uint8_t h3,
+                                         uint8_t v0,
+                                         uint8_t v1,
+                                         uint8_t v2,
+                                         uint8_t v3,
+                                         bool triangle_filter_for_2to1);
+
 // ---------------- Images (Utility)
 
 #define wuffs_base__utility__make_pixel_format wuffs_base__make_pixel_format

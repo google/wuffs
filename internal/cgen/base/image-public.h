@@ -201,6 +201,58 @@ wuffs_base__color_u64__as__color_u32(uint64_t c) {
   return (a << 24) | (r << 16) | (g << 8) | (b << 0);
 }
 
+// wuffs_base__color_ycc__as__color_u32 converts from YCbCr to 0xAARRGGBB. The
+// alpha bits are always 0xFF.
+static inline wuffs_base__color_u32_argb_premul  //
+wuffs_base__color_ycc__as__color_u32(uint8_t yy, uint8_t cb, uint8_t cr) {
+  // Work in 16.16 fixed point arithmetic (so that 'one half' is (1 << 15)) and
+  // bias the chroma values by 0x80.
+  uint32_t yy32 = (((uint32_t)yy) << 16) | (1 << 15);
+  uint32_t cb32 = (((uint32_t)cb) - 0x80);
+  uint32_t cr32 = (((uint32_t)cr) - 0x80);
+
+  // The formulae:
+  //
+  //  R = Y                + 1.40200 * Cr
+  //  G = Y - 0.34414 * Cb - 0.71414 * Cr
+  //  B = Y + 1.77200 * Cb
+  //
+  // When scaled by 1<<16:
+  //
+  //  0.34414 becomes 0x0581A =  22554.
+  //  0.71414 becomes 0x0B6D2 =  46802.
+  //  1.40200 becomes 0x166E9 =  91881.
+  //  1.77200 becomes 0x1C5A2 = 116130.
+  //
+  // Since we're working in 16.16 fixed point arithmetic, masking by 0x00FF0000
+  // (possibly followed by a shift) gives the relevant 8 bits per channel.
+  //
+  // However, we need to saturate for overflow (above 0x00FFFFFF, but not so
+  // high that the MSB Most Significant Bit is set) or for underflow (below
+  // 0x00000000 as int32_t, which means that the MSB is set as uint32_t). In
+  // both cases, some of the high 8 bits (bits 24 ..= 31) will be set.
+  //
+  // "((uint32_t)(((int32_t)x) >> 31))" just replicates x's MSB across all 32
+  // bits. Prepending that with "~" inverts those bits. Thus, "~(etc)" is
+  // either 0xFFFFFFFF (for overflow) or 0x00000000 (for underflow).
+  uint32_t rr32 = yy32 + (0x166E9 * cr32);
+  uint32_t gg32 = yy32 - (0x0581A * cb32) - (0x0B6D2 * cr32);
+  uint32_t bb32 = yy32 + (0x1C5A2 * cb32);
+  if (rr32 >> 24) {
+    rr32 = ~((uint32_t)(((int32_t)rr32) >> 31));
+  }
+  if (gg32 >> 24) {
+    gg32 = ~((uint32_t)(((int32_t)gg32) >> 31));
+  }
+  if (bb32 >> 24) {
+    bb32 = ~((uint32_t)(((int32_t)bb32) >> 31));
+  }
+  return 0xFF000000 |                  //
+         ((0x00FF0000 & rr32) >> 0) |  //
+         ((0x00FF0000 & gg32) >> 8) |  //
+         ((0x00FF0000 & bb32) >> 16);
+}
+
 // --------
 
 typedef uint8_t wuffs_base__pixel_blend;

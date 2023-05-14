@@ -97,8 +97,11 @@ var embedBaseIntConvSubmoduleC EmbeddedString
 //go:embed base/magic-submodule.c
 var embedBaseMagicSubmoduleC EmbeddedString
 
-//go:embed base/pixconv-submodule.c
-var embedBasePixConvSubmoduleC EmbeddedString
+//go:embed base/pixconv-submodule-regular.c
+var embedBasePixConvSubmoduleRegularC EmbeddedString
+
+//go:embed base/pixconv-submodule-ycck.c
+var embedBasePixConvSubmoduleYcckC EmbeddedString
 
 //go:embed base/utf8-submodule.c
 var embedBaseUTF8SubmoduleC EmbeddedString

@@ -3794,6 +3794,58 @@ wuffs_base__color_u64__as__color_u32(uint64_t c) {
   return (a << 24) | (r << 16) | (g << 8) | (b << 0);
 }
 
+// wuffs_base__color_ycc__as__color_u32 converts from YCbCr to 0xAARRGGBB. The
+// alpha bits are always 0xFF.
+static inline wuffs_base__color_u32_argb_premul  //
+wuffs_base__color_ycc__as__color_u32(uint8_t yy, uint8_t cb, uint8_t cr) {
+  // Work in 16.16 fixed point arithmetic (so that 'one half' is (1 << 15)) and
+  // bias the chroma values by 0x80.
+  uint32_t yy32 = (((uint32_t)yy) << 16) | (1 << 15);
+  uint32_t cb32 = (((uint32_t)cb) - 0x80);
+  uint32_t cr32 = (((uint32_t)cr) - 0x80);
+
+  // The formulae:
+  //
+  //  R = Y                + 1.40200 * Cr
+  //  G = Y - 0.34414 * Cb - 0.71414 * Cr
+  //  B = Y + 1.77200 * Cb
+  //
+  // When scaled by 1<<16:
+  //
+  //  0.34414 becomes 0x0581A =  22554.
+  //  0.71414 becomes 0x0B6D2 =  46802.
+  //  1.40200 becomes 0x166E9 =  91881.
+  //  1.77200 becomes 0x1C5A2 = 116130.
+  //
+  // Since we're working in 16.16 fixed point arithmetic, masking by 0x00FF0000
+  // (possibly followed by a shift) gives the relevant 8 bits per channel.
+  //
+  // However, we need to saturate for overflow (above 0x00FFFFFF, but not so
+  // high that the MSB Most Significant Bit is set) or for underflow (below
+  // 0x00000000 as int32_t, which means that the MSB is set as uint32_t). In
+  // both cases, some of the high 8 bits (bits 24 ..= 31) will be set.
+  //
+  // "((uint32_t)(((int32_t)x) >> 31))" just replicates x's MSB across all 32
+  // bits. Prepending that with "~" inverts those bits. Thus, "~(etc)" is
+  // either 0xFFFFFFFF (for overflow) or 0x00000000 (for underflow).
+  uint32_t rr32 = yy32 + (0x166E9 * cr32);
+  uint32_t gg32 = yy32 - (0x0581A * cb32) - (0x0B6D2 * cr32);
+  uint32_t bb32 = yy32 + (0x1C5A2 * cb32);
+  if (rr32 >> 24) {
+    rr32 = ~((uint32_t)(((int32_t)rr32) >> 31));
+  }
+  if (gg32 >> 24) {
+    gg32 = ~((uint32_t)(((int32_t)gg32) >> 31));
+  }
+  if (bb32 >> 24) {
+    bb32 = ~((uint32_t)(((int32_t)bb32) >> 31));
+  }
+  return 0xFF000000 |                  //
+         ((0x00FF0000 & rr32) >> 0) |  //
+         ((0x00FF0000 & gg32) >> 8) |  //
+         ((0x00FF0000 & bb32) >> 16);
+}
+
 // --------
 
 typedef uint8_t wuffs_base__pixel_blend;
@@ -12357,6 +12409,38 @@ wuffs_base__pixel_swizzler__swizzle_interleaved_transparent_black(
     wuffs_base__slice_u8 dst,
     wuffs_base__slice_u8 dst_palette,
     uint64_t num_pixels);
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
+wuffs_base__pixel_swizzler__swizzle_ycck(const wuffs_base__pixel_swizzler* p,
+                                         wuffs_base__pixel_buffer* dst,
+                                         wuffs_base__slice_u8 dst_palette,
+                                         uint32_t width,
+                                         uint32_t height,
+                                         wuffs_base__slice_u8 src0,
+                                         wuffs_base__slice_u8 src1,
+                                         wuffs_base__slice_u8 src2,
+                                         wuffs_base__slice_u8 src3,
+                                         uint32_t width0,
+                                         uint32_t width1,
+                                         uint32_t width2,
+                                         uint32_t width3,
+                                         uint32_t height0,
+                                         uint32_t height1,
+                                         uint32_t height2,
+                                         uint32_t height3,
+                                         uint32_t stride0,
+                                         uint32_t stride1,
+                                         uint32_t stride2,
+                                         uint32_t stride3,
+                                         uint8_t h0,
+                                         uint8_t h1,
+                                         uint8_t h2,
+                                         uint8_t h3,
+                                         uint8_t v0,
+                                         uint8_t v1,
+                                         uint8_t v2,
+                                         uint8_t v3,
+                                         bool triangle_filter_for_2to1);
 
 // ---------------- Images (Utility)
 
@@ -22248,6 +22332,257 @@ wuffs_base__pixel_swizzler__swizzle_interleaved_transparent_black(
         p->private_impl.dst_pixfmt_bytes_per_pixel);
   }
   return 0;
+}
+
+// --------
+
+static inline uint32_t  //
+wuffs_base__u32__max_of_4(uint32_t a, uint32_t b, uint32_t c, uint32_t d) {
+  return wuffs_base__u32__max(     //
+      wuffs_base__u32__max(a, b),  //
+      wuffs_base__u32__max(c, d));
+}
+
+static inline uint32_t  //
+wuffs_base__u32__min_of_5(uint32_t a,
+                          uint32_t b,
+                          uint32_t c,
+                          uint32_t d,
+                          uint32_t e) {
+  return wuffs_base__u32__min(          //
+      wuffs_base__u32__min(             //
+          wuffs_base__u32__min(a, b),   //
+          wuffs_base__u32__min(c, d)),  //
+      e);
+}
+
+// Preconditions: see all the checks made in
+// wuffs_base__pixel_swizzler__swizzle_ycck before calling this function. For
+// example, (width > 0) is a precondition, but there are many more.
+static void  //
+wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter(
+    const wuffs_base__pixel_swizzler* p,
+    wuffs_base__pixel_buffer* dst,
+    wuffs_base__slice_u8 dst_palette,
+    uint32_t width,
+    uint32_t height,
+    const uint8_t* src_ptr0,
+    const uint8_t* src_ptr1,
+    const uint8_t* src_ptr2,
+    uint32_t stride0,
+    uint32_t stride1,
+    uint32_t stride2,
+    uint32_t h0_out_of_12,
+    uint32_t h1_out_of_12,
+    uint32_t h2_out_of_12,
+    uint32_t v0_out_of_12,
+    uint32_t v1_out_of_12,
+    uint32_t v2_out_of_12) {
+  uint32_t iy0 = 0;
+  uint32_t iy1 = 0;
+  uint32_t iy2 = 0;
+  uint32_t y = 0;
+  while (true) {
+    const uint8_t* src_iter0 = src_ptr0;
+    const uint8_t* src_iter1 = src_ptr1;
+    const uint8_t* src_iter2 = src_ptr2;
+
+    uint32_t ix0 = 0;
+    uint32_t ix1 = 0;
+    uint32_t ix2 = 0;
+    uint32_t x = 0;
+    while (true) {
+      wuffs_base__pixel_buffer__set_color_u32_at(
+          dst, x, y,
+          wuffs_base__color_ycc__as__color_u32(*src_iter0, *src_iter1,
+                                               *src_iter2));
+
+      if ((x + 1) == width) {
+        break;
+      }
+      x = x + 1;
+      ix0 += h0_out_of_12;
+      if (ix0 >= 12) {
+        ix0 = 0;
+        src_iter0++;
+      }
+      ix1 += h1_out_of_12;
+      if (ix1 >= 12) {
+        ix1 = 0;
+        src_iter1++;
+      }
+      ix2 += h2_out_of_12;
+      if (ix2 >= 12) {
+        ix2 = 0;
+        src_iter2++;
+      }
+    }
+
+    if ((y + 1) == height) {
+      break;
+    }
+    y = y + 1;
+    iy0 += v0_out_of_12;
+    if (iy0 >= 12) {
+      iy0 = 0;
+      src_ptr0 += stride0;
+    }
+    iy1 += v1_out_of_12;
+    if (iy1 >= 12) {
+      iy1 = 0;
+      src_ptr1 += stride1;
+    }
+    iy2 += v2_out_of_12;
+    if (iy2 >= 12) {
+      iy2 = 0;
+      src_ptr2 += stride2;
+    }
+  }
+}
+
+// wuffs_base__pixel_swizzler__flattened_length is like
+// wuffs_base__table__flattened_length but returns uint64_t (not size_t) and
+// also accounts for subsampling.
+static uint64_t  //
+wuffs_base__pixel_swizzler__flattened_length(uint32_t width,
+                                             uint32_t height,
+                                             uint32_t stride,
+                                             uint32_t inv_h,
+                                             uint32_t inv_v) {
+  uint64_t scaled_width = (((uint64_t)width) + (inv_h - 1)) / inv_h;
+  uint64_t scaled_height = (((uint64_t)height) + (inv_v - 1)) / inv_v;
+  if (scaled_height <= 0) {
+    return 0;
+  }
+  return ((scaled_height - 1) * stride) + scaled_width;
+}
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
+wuffs_base__pixel_swizzler__swizzle_ycck(const wuffs_base__pixel_swizzler* p,
+                                         wuffs_base__pixel_buffer* dst,
+                                         wuffs_base__slice_u8 dst_palette,
+                                         uint32_t width,
+                                         uint32_t height,
+                                         wuffs_base__slice_u8 src0,
+                                         wuffs_base__slice_u8 src1,
+                                         wuffs_base__slice_u8 src2,
+                                         wuffs_base__slice_u8 src3,
+                                         uint32_t width0,
+                                         uint32_t width1,
+                                         uint32_t width2,
+                                         uint32_t width3,
+                                         uint32_t height0,
+                                         uint32_t height1,
+                                         uint32_t height2,
+                                         uint32_t height3,
+                                         uint32_t stride0,
+                                         uint32_t stride1,
+                                         uint32_t stride2,
+                                         uint32_t stride3,
+                                         uint8_t h0,
+                                         uint8_t h1,
+                                         uint8_t h2,
+                                         uint8_t h3,
+                                         uint8_t v0,
+                                         uint8_t v1,
+                                         uint8_t v2,
+                                         uint8_t v3,
+                                         bool triangle_filter_for_2to1) {
+  if (!p) {
+    return wuffs_base__make_status(wuffs_base__error__bad_receiver);
+  } else if ((h3 != 0) || (v3 != 0) || triangle_filter_for_2to1) {
+    // TODO: support the K in YCCK and support triangle_filter_for_2to1.
+    return wuffs_base__make_status(
+        wuffs_base__error__unsupported_pixel_swizzler_option);
+  } else if (!dst || (width > 0xFFFF) || (height > 0xFFFF) ||  //
+             (4 <= (h0 - 1)) || (4 <= (v0 - 1)) ||             //
+             (4 <= (h1 - 1)) || (4 <= (v1 - 1)) ||             //
+             (4 <= (h2 - 1)) || (4 <= (v2 - 1))) {
+    return wuffs_base__make_status(wuffs_base__error__bad_argument);
+  }
+
+  uint32_t max_incl_h = wuffs_base__u32__max_of_4(h0, h1, h2, h3);
+  uint32_t max_incl_v = wuffs_base__u32__max_of_4(v0, v1, v2, v3);
+  uint32_t inv_h0 = max_incl_h / h0;
+  uint32_t inv_h1 = max_incl_h / h1;
+  uint32_t inv_h2 = max_incl_h / h2;
+  uint32_t inv_v0 = max_incl_v / v0;
+  uint32_t inv_v1 = max_incl_v / v1;
+  uint32_t inv_v2 = max_incl_v / v2;
+  width = wuffs_base__u32__min_of_5(  //
+      width,                          //
+      width0 * inv_h0,                //
+      width1 * inv_h1,                //
+      width2 * inv_h2,                //
+      wuffs_base__pixel_config__width(&dst->pixcfg));
+  height = wuffs_base__u32__min_of_5(  //
+      height,                          //
+      height0 * inv_v0,                //
+      height1 * inv_v1,                //
+      height2 * inv_v2,                //
+      wuffs_base__pixel_config__height(&dst->pixcfg));
+
+  if (((h0 * inv_h0) != max_incl_h) ||  //
+      ((h1 * inv_h1) != max_incl_h) ||  //
+      ((h2 * inv_h2) != max_incl_h) ||  //
+      ((v0 * inv_v0) != max_incl_v) ||  //
+      ((v1 * inv_v1) != max_incl_v) ||  //
+      ((v2 * inv_v2) != max_incl_v) ||  //
+      (src0.len < wuffs_base__pixel_swizzler__flattened_length(
+                      width, height, stride0, inv_h0, inv_v0)) ||
+      (src1.len < wuffs_base__pixel_swizzler__flattened_length(
+                      width, height, stride1, inv_h1, inv_v1)) ||
+      (src2.len < wuffs_base__pixel_swizzler__flattened_length(
+                      width, height, stride2, inv_h2, inv_v2))) {
+    return wuffs_base__make_status(wuffs_base__error__bad_argument);
+  }
+
+  if (wuffs_base__pixel_format__is_planar(&dst->pixcfg.private_impl.pixfmt)) {
+    // TODO: see wuffs_base__pixel_buffer__set_color_u32_at's TODO.
+    return wuffs_base__make_status(
+        wuffs_base__error__unsupported_pixel_swizzler_option);
+  }
+
+  switch (dst->pixcfg.private_impl.pixfmt.repr) {
+    case WUFFS_BASE__PIXEL_FORMAT__Y:
+    case WUFFS_BASE__PIXEL_FORMAT__Y_16LE:
+    case WUFFS_BASE__PIXEL_FORMAT__Y_16BE:
+    case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL:
+    case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_PREMUL:
+    case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY:
+    case WUFFS_BASE__PIXEL_FORMAT__BGR_565:
+    case WUFFS_BASE__PIXEL_FORMAT__BGR:
+    case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
+    case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE:
+    case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
+    case WUFFS_BASE__PIXEL_FORMAT__BGRX:
+    case WUFFS_BASE__PIXEL_FORMAT__RGB:
+    case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
+    case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
+    case WUFFS_BASE__PIXEL_FORMAT__RGBX:
+      break;
+
+    default:
+      // TODO: see wuffs_base__pixel_buffer__set_color_u32_at's TODO.
+      return wuffs_base__make_status(
+          wuffs_base__error__unsupported_pixel_swizzler_option);
+  }
+
+  if ((width <= 0) || (height <= 0)) {
+    return wuffs_base__make_status(NULL);
+  }
+
+  wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter(
+      p, dst, dst_palette, width, height,  //
+      src0.ptr, src1.ptr, src2.ptr,        //
+      stride0, stride1, stride2,           //
+      (h0 * 12) / max_incl_h,              //
+      (h1 * 12) / max_incl_h,              //
+      (h2 * 12) / max_incl_h,              //
+      (v0 * 12) / max_incl_v,              //
+      (v1 * 12) / max_incl_v,              //
+      (v2 * 12) / max_incl_v);
+  return wuffs_base__make_status(NULL);
 }
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) ||
@@ -35637,7 +35972,8 @@ wuffs_jpeg__decoder__swizzle_gray(
 static wuffs_base__status
 wuffs_jpeg__decoder__swizzle_colorful(
     wuffs_jpeg__decoder* self,
-    wuffs_base__pixel_buffer* a_dst);
+    wuffs_base__pixel_buffer* a_dst,
+    wuffs_base__slice_u8 a_workbuf);
 
 static uint32_t
 wuffs_jpeg__decoder__decode_mcu(
@@ -38276,7 +38612,7 @@ wuffs_jpeg__decoder__decode_sos(
       }
       goto ok;
     }
-    v_status = wuffs_jpeg__decoder__swizzle_colorful(self, a_dst);
+    v_status = wuffs_jpeg__decoder__swizzle_colorful(self, a_dst, a_workbuf);
     status = v_status;
     if (wuffs_base__status__is_error(&status)) {
       goto exit;
@@ -38728,42 +39064,65 @@ wuffs_jpeg__decoder__swizzle_gray(
 static wuffs_base__status
 wuffs_jpeg__decoder__swizzle_colorful(
     wuffs_jpeg__decoder* self,
-    wuffs_base__pixel_buffer* a_dst) {
-  wuffs_base__pixel_format v_dst_pixfmt = {0};
-  uint32_t v_dst_bits_per_pixel = 0;
-  uint32_t v_dst_bytes_per_pixel = 0;
-  wuffs_base__table_u8 v_tab = {0};
-  wuffs_base__slice_u8 v_dst = {0};
-  uint8_t v_src[4] = {0};
-  uint32_t v_y = 0;
-  uint32_t v_x = 0;
-  uint64_t v_d = 0;
+    wuffs_base__pixel_buffer* a_dst,
+    wuffs_base__slice_u8 a_workbuf) {
+  wuffs_base__slice_u8 v_src0 = {0};
+  wuffs_base__slice_u8 v_src1 = {0};
+  wuffs_base__slice_u8 v_src2 = {0};
+  wuffs_base__slice_u8 v_src3 = {0};
+  wuffs_base__status v_status = wuffs_base__make_status(NULL);
 
-  v_dst_pixfmt = wuffs_base__pixel_buffer__pixel_format(a_dst);
-  v_dst_bits_per_pixel = wuffs_base__pixel_format__bits_per_pixel(&v_dst_pixfmt);
-  if ((v_dst_bits_per_pixel & 7) != 0) {
-    return wuffs_base__make_status(wuffs_base__error__unsupported_option);
+  if ((self->private_impl.f_components_workbuf_offsets[0] <= self->private_impl.f_components_workbuf_offsets[1]) && (self->private_impl.f_components_workbuf_offsets[1] <= ((uint64_t)(a_workbuf.len)))) {
+    v_src0 = wuffs_base__slice_u8__subslice_ij(a_workbuf,
+        self->private_impl.f_components_workbuf_offsets[0],
+        self->private_impl.f_components_workbuf_offsets[1]);
   }
-  v_dst_bytes_per_pixel = (v_dst_bits_per_pixel / 8);
-  v_tab = wuffs_base__pixel_buffer__plane(a_dst, 0);
-  v_y = 0;
-  while (v_y < self->private_impl.f_height) {
-    v_x = 0;
-    while (v_x < self->private_impl.f_width) {
-      v_dst = wuffs_base__table_u8__row_u32(v_tab, v_y);
-      v_d = ((uint64_t)((v_x * v_dst_bytes_per_pixel)));
-      if (v_d < ((uint64_t)(v_dst.len))) {
-        v_src[0] = ((uint8_t)((v_x & 255)));
-        v_src[1] = 127;
-        v_src[2] = ((uint8_t)((v_y & 255)));
-        v_src[3] = 255;
-        wuffs_base__pixel_swizzler__swizzle_interleaved_from_slice(&self->private_impl.f_swizzler, wuffs_base__slice_u8__subslice_i(v_dst, v_d), wuffs_base__pixel_buffer__palette_or_else(a_dst, wuffs_base__make_slice_u8(self->private_data.f_dst_palette, 1024)), wuffs_base__make_slice_u8(v_src, 4));
-      }
-      v_x += 1;
-    }
-    v_y += 1;
+  if ((self->private_impl.f_components_workbuf_offsets[1] <= self->private_impl.f_components_workbuf_offsets[2]) && (self->private_impl.f_components_workbuf_offsets[2] <= ((uint64_t)(a_workbuf.len)))) {
+    v_src1 = wuffs_base__slice_u8__subslice_ij(a_workbuf,
+        self->private_impl.f_components_workbuf_offsets[1],
+        self->private_impl.f_components_workbuf_offsets[2]);
   }
-  return wuffs_base__make_status(NULL);
+  if ((self->private_impl.f_components_workbuf_offsets[2] <= self->private_impl.f_components_workbuf_offsets[3]) && (self->private_impl.f_components_workbuf_offsets[3] <= ((uint64_t)(a_workbuf.len)))) {
+    v_src2 = wuffs_base__slice_u8__subslice_ij(a_workbuf,
+        self->private_impl.f_components_workbuf_offsets[2],
+        self->private_impl.f_components_workbuf_offsets[3]);
+  }
+  if ((self->private_impl.f_components_workbuf_offsets[3] <= self->private_impl.f_components_workbuf_offsets[4]) && (self->private_impl.f_components_workbuf_offsets[4] <= ((uint64_t)(a_workbuf.len)))) {
+    v_src3 = wuffs_base__slice_u8__subslice_ij(a_workbuf,
+        self->private_impl.f_components_workbuf_offsets[3],
+        self->private_impl.f_components_workbuf_offsets[4]);
+  }
+  v_status = wuffs_base__pixel_swizzler__swizzle_ycck(&self->private_impl.f_swizzler,
+      a_dst,
+      wuffs_base__pixel_buffer__palette_or_else(a_dst, wuffs_base__make_slice_u8(self->private_data.f_dst_palette, 1024)),
+      self->private_impl.f_width,
+      self->private_impl.f_height,
+      v_src0,
+      v_src1,
+      v_src2,
+      v_src3,
+      (8 * self->private_impl.f_width_in_mcus * ((uint32_t)(self->private_impl.f_components_h[0]))),
+      (8 * self->private_impl.f_width_in_mcus * ((uint32_t)(self->private_impl.f_components_h[1]))),
+      (8 * self->private_impl.f_width_in_mcus * ((uint32_t)(self->private_impl.f_components_h[2]))),
+      (8 * self->private_impl.f_width_in_mcus * ((uint32_t)(self->private_impl.f_components_h[3]))),
+      (8 * self->private_impl.f_height_in_mcus * ((uint32_t)(self->private_impl.f_components_v[0]))),
+      (8 * self->private_impl.f_height_in_mcus * ((uint32_t)(self->private_impl.f_components_v[1]))),
+      (8 * self->private_impl.f_height_in_mcus * ((uint32_t)(self->private_impl.f_components_v[2]))),
+      (8 * self->private_impl.f_height_in_mcus * ((uint32_t)(self->private_impl.f_components_v[3]))),
+      self->private_impl.f_components_workbuf_strides[0],
+      self->private_impl.f_components_workbuf_strides[1],
+      self->private_impl.f_components_workbuf_strides[2],
+      self->private_impl.f_components_workbuf_strides[3],
+      self->private_impl.f_components_h[0],
+      self->private_impl.f_components_h[1],
+      self->private_impl.f_components_h[2],
+      self->private_impl.f_components_h[3],
+      self->private_impl.f_components_v[0],
+      self->private_impl.f_components_v[1],
+      self->private_impl.f_components_v[2],
+      self->private_impl.f_components_v[3],
+      false);
+  return wuffs_base__status__ensure_not_a_suspension(v_status);
 }
 
 // -------- func jpeg.decoder.frame_dirty_rect

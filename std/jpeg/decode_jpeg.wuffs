@@ -1083,7 +1083,7 @@ pri func decoder.decode_sos?(dst: ptr base.pixel_buffer, src: base.io_reader, wo
         status = this.swizzle_gray!(dst: args.dst, workbuf: args.workbuf)
         return status
     }
-    status = this.swizzle_colorful!(dst: args.dst)
+    status = this.swizzle_colorful!(dst: args.dst, workbuf: args.workbuf)
     return status
 }
 
@@ -1402,53 +1402,64 @@ pri func decoder.swizzle_gray!(dst: ptr base.pixel_buffer, workbuf: slice base.u
     return ok
 }
 
-pri func decoder.swizzle_colorful!(dst: ptr base.pixel_buffer) base.status {
-    var dst_pixfmt          : base.pixel_format
-    var dst_bits_per_pixel  : base.u32[..= 256]
-    var dst_bytes_per_pixel : base.u32[..= 32]
-    var tab                 : table base.u8
-    var dst                 : slice base.u8
-    var src                 : array[4] base.u8
-    var y                   : base.u32
-    var x                   : base.u32
-    var d                   : base.u64
+pri func decoder.swizzle_colorful!(dst: ptr base.pixel_buffer, workbuf: slice base.u8) base.status {
+    var src0   : slice base.u8
+    var src1   : slice base.u8
+    var src2   : slice base.u8
+    var src3   : slice base.u8
+    var status : base.status
 
-    // TODO: the dst_pixfmt variable shouldn't be necessary. We should be able
-    // to chain the two calls: "args.dst.pixel_format().bits_per_pixel()".
-    dst_pixfmt = args.dst.pixel_format()
-    dst_bits_per_pixel = dst_pixfmt.bits_per_pixel()
-    if (dst_bits_per_pixel & 7) <> 0 {
-        return base."#unsupported option"
+    if (this.components_workbuf_offsets[0] <= this.components_workbuf_offsets[1]) and
+            (this.components_workbuf_offsets[1] <= args.workbuf.length()) {
+        src0 = args.workbuf[this.components_workbuf_offsets[0] .. this.components_workbuf_offsets[1]]
     }
-    dst_bytes_per_pixel = dst_bits_per_pixel / 8
 
-    // TODO: actually decode the pixels. Until then, fill with gradient tiles.
-    tab = args.dst.plane(p: 0)
-    y = 0
-    while y < this.height {
-        assert y < 0xFFFF via "a < b: a < c; c <= b"(c: this.height)
-        x = 0
-        while x < this.width,
-                inv y < 0xFFFF,
-        {
-            assert x < 0xFFFF via "a < b: a < c; c <= b"(c: this.width)
-            dst = tab.row_u32(y: y)
-            d = (x * dst_bytes_per_pixel) as base.u64
-            if d < dst.length() {
-                src[0] = (x & 0xFF) as base.u8
-                src[1] = 0x7F
-                src[2] = (y & 0xFF) as base.u8
-                src[3] = 0xFF
-                this.swizzler.swizzle_interleaved_from_slice!(
-                        dst: dst[d ..],
-                        dst_palette: args.dst.palette_or_else(fallback: this.dst_palette[..]),
-                        src: src[.. 4])
-            }
-            x += 1
-        } endwhile
-        y += 1
-    } endwhile
-    return ok
+    if (this.components_workbuf_offsets[1] <= this.components_workbuf_offsets[2]) and
+            (this.components_workbuf_offsets[2] <= args.workbuf.length()) {
+        src1 = args.workbuf[this.components_workbuf_offsets[1] .. this.components_workbuf_offsets[2]]
+    }
+
+    if (this.components_workbuf_offsets[2] <= this.components_workbuf_offsets[3]) and
+            (this.components_workbuf_offsets[3] <= args.workbuf.length()) {
+        src2 = args.workbuf[this.components_workbuf_offsets[2] .. this.components_workbuf_offsets[3]]
+    }
+
+    if (this.components_workbuf_offsets[3] <= this.components_workbuf_offsets[4]) and
+            (this.components_workbuf_offsets[4] <= args.workbuf.length()) {
+        src3 = args.workbuf[this.components_workbuf_offsets[3] .. this.components_workbuf_offsets[4]]
+    }
+
+    status = this.swizzler.swizzle_ycck!(
+            dst: args.dst,
+            dst_palette: args.dst.palette_or_else(fallback: this.dst_palette[..]),
+            width: this.width,
+            height: this.height,
+            src0: src0,
+            src1: src1,
+            src2: src2,
+            src3: src3,
+            width0: 8 * this.width_in_mcus * (this.components_h[0] as base.u32),
+            width1: 8 * this.width_in_mcus * (this.components_h[1] as base.u32),
+            width2: 8 * this.width_in_mcus * (this.components_h[2] as base.u32),
+            width3: 8 * this.width_in_mcus * (this.components_h[3] as base.u32),
+            height0: 8 * this.height_in_mcus * (this.components_v[0] as base.u32),
+            height1: 8 * this.height_in_mcus * (this.components_v[1] as base.u32),
+            height2: 8 * this.height_in_mcus * (this.components_v[2] as base.u32),
+            height3: 8 * this.height_in_mcus * (this.components_v[3] as base.u32),
+            stride0: this.components_workbuf_strides[0],
+            stride1: this.components_workbuf_strides[1],
+            stride2: this.components_workbuf_strides[2],
+            stride3: this.components_workbuf_strides[3],
+            h0: this.components_h[0],
+            h1: this.components_h[1],
+            h2: this.components_h[2],
+            h3: this.components_h[3],
+            v0: this.components_v[0],
+            v1: this.components_v[1],
+            v2: this.components_v[2],
+            v3: this.components_v[3],
+            triangle_filter_for_2to1: false)
+    return status
 }
 
 pub func decoder.frame_dirty_rect() base.rect_ie_u32 {

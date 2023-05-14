@@ -162,7 +162,9 @@ const uint32_t wuffs_base__pixel_format__bits_per_channel[16] = {
 #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BASE) || \
     defined(WUFFS_CONFIG__MODULE__BASE__PIXCONV)
 
-// ¡ INSERT base/pixconv-submodule.c.
+// ¡ INSERT base/pixconv-submodule-regular.c.
+
+// ¡ INSERT base/pixconv-submodule-ycck.c.
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) ||
         // defined(WUFFS_CONFIG__MODULE__BASE) ||
