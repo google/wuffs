@@ -94,28 +94,37 @@ const wuffs_base__pixel_blend blends[] = {
     WUFFS_BASE__PIXEL_BLEND__SRC_OVER,
 };
 
-// allocate_guarded_page allocates (2 * page_size) bytes of memory. The first
-// page has read|write permissions. The second page has no permissions, so that
+size_t  //
+round_up_to_pagesize(size_t n) {
+  size_t ps = getpagesize();
+  if (ps <= 0) {
+    return n;
+  }
+  return ((n + (ps - 1)) / ps) * ps;
+}
+
+// allocate_guarded_pages allocates (2 * len) bytes of memory. The first half
+// has read|write permissions. The second half has no permissions, so that
 // attempting to read or write to it will cause a segmentation fault.
 const char*  //
-allocate_guarded_page(uint8_t** ptr_out, int page_size) {
+allocate_guarded_pages(uint8_t** ptr_out, size_t len) {
   void* ptr =
-      mmap(NULL, 2 * page_size, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+      mmap(NULL, 2 * len, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
   if (ptr == MAP_FAILED) {
     return "fuzz: internal error: mmap failed";
   }
-  if (mprotect(ptr, page_size, PROT_READ | PROT_WRITE)) {
+  if (mprotect(ptr, len, PROT_READ | PROT_WRITE)) {
     return "fuzz: internal error: mprotect failed";
   }
   *ptr_out = ptr;
   return NULL;
 }
 
-// fuzz tests that, regardless of the randomized inputs, calling
-// wuffs_base__pixel_swizzler__swizzle_interleaved_from_slice will not crash
-// the fuzzer (e.g. due to reads or write past buffer bounds).
+// fuzz_swizzle_interleaved_from_slice tests that, regardless of the randomized
+// inputs, calling wuffs_base__pixel_swizzler__swizzle_interleaved_from_slice
+// will not crash the fuzzer (e.g. due to reads or write past buffer bounds).
 const char*  //
-fuzz(wuffs_base__io_buffer* src, uint64_t hash) {
+fuzz_swizzle_interleaved_from_slice(wuffs_base__io_buffer* src, uint64_t hash) {
   uint8_t dst_palette_array[1024];
   uint8_t src_palette_array[1024];
   if ((src->meta.wi - src->meta.ri) < 2048) {
@@ -149,14 +158,14 @@ fuzz(wuffs_base__io_buffer* src, uint64_t hash) {
     return wuffs_base__status__message(&status);
   }
 
-  int page_size = getpagesize();
-  if (page_size < 0x100) {
-    return "fuzz: internal error: page_size is too small";
+  static size_t alloc_size = 0;
+  if (alloc_size == 0) {
+    alloc_size = round_up_to_pagesize(0x100);
   }
 
   static uint8_t* dst_alloc = NULL;
   if (!dst_alloc) {
-    const char* z = allocate_guarded_page(&dst_alloc, page_size);
+    const char* z = allocate_guarded_pages(&dst_alloc, alloc_size);
     if (z != NULL) {
       return z;
     }
@@ -164,7 +173,7 @@ fuzz(wuffs_base__io_buffer* src, uint64_t hash) {
 
   static uint8_t* src_alloc = NULL;
   if (!src_alloc) {
-    const char* z = allocate_guarded_page(&src_alloc, page_size);
+    const char* z = allocate_guarded_pages(&src_alloc, alloc_size);
     if (z != NULL) {
       return z;
     }
@@ -176,13 +185,19 @@ fuzz(wuffs_base__io_buffer* src, uint64_t hash) {
     return "fuzz: not enough data";
   }
   wuffs_base__slice_u8 dst_slice =
-      wuffs_base__make_slice_u8(dst_alloc + page_size - dst_len, dst_len);
+      wuffs_base__make_slice_u8(dst_alloc + alloc_size - dst_len, dst_len);
   memcpy(dst_slice.ptr, src->data.ptr + src->meta.ri, dst_len);
   src->meta.ri += dst_len;
   wuffs_base__slice_u8 src_slice =
-      wuffs_base__make_slice_u8(src_alloc + page_size - src_len, src_len);
+      wuffs_base__make_slice_u8(src_alloc + alloc_size - src_len, src_len);
   memcpy(src_slice.ptr, src->data.ptr + src->meta.ri, src_len);
   src->meta.ri += src_len;
+
+  // When manually testing this program, enabling this code should lead to a
+  // segmentation fault.
+#if 0
+  src_slice.ptr[src_slice.len]++;
+#endif
 
   // Calling etc__swizzle_interleaved_from_slice should not crash, whether for
   // reading/writing out of bounds or for other reasons.
@@ -190,4 +205,165 @@ fuzz(wuffs_base__io_buffer* src, uint64_t hash) {
       &swizzler, dst_slice, dst_palette, src_slice);
 
   return NULL;
+}
+
+const char*  //
+fuzz_swizzle_ycck(wuffs_base__io_buffer* src, uint64_t hash) {
+  uint8_t dst_palette_array[1024] = {0};
+  wuffs_base__slice_u8 dst_palette =
+      wuffs_base__make_slice_u8(&dst_palette_array[0], 1024);
+
+  size_t num_pixfmts = sizeof(pixfmts) / sizeof(pixfmts[0]);
+  wuffs_base__pixel_format dst_pixfmt = wuffs_base__make_pixel_format(
+      pixfmts[(0xFF & (hash >> 0)) % num_pixfmts]);
+
+  uint32_t width = (63 & (hash >> 8)) + 1;
+  uint32_t height = (63 & (hash >> 14)) + 1;
+
+  uint32_t width_in_mcus = (3 & (hash >> 20)) + 1;
+  uint32_t height_in_mcus = (3 & (hash >> 22)) + 1;
+
+  uint32_t allow_hv3 = 1 & (hash >> 23);
+  uint32_t possible_hv_values[2][4] = {
+      {1, 1, 2, 4},
+      {1, 1, 3, 3},
+  };
+  uint32_t h0 = possible_hv_values[allow_hv3][3 & (hash >> 25)];
+  uint32_t h1 = possible_hv_values[allow_hv3][3 & (hash >> 27)];
+  uint32_t h2 = possible_hv_values[allow_hv3][3 & (hash >> 29)];
+  uint32_t v0 = possible_hv_values[allow_hv3][3 & (hash >> 31)];
+  uint32_t v1 = possible_hv_values[allow_hv3][3 & (hash >> 33)];
+  uint32_t v2 = possible_hv_values[allow_hv3][3 & (hash >> 35)];
+  // TODO: spend a hash bit for triangle_filter_for_2to1.
+
+  uint32_t width0 = 8 * width_in_mcus * h0;
+  uint32_t width1 = 8 * width_in_mcus * h1;
+  uint32_t width2 = 8 * width_in_mcus * h2;
+  uint32_t height0 = 8 * height_in_mcus * v0;
+  uint32_t height1 = 8 * height_in_mcus * v1;
+  uint32_t height2 = 8 * height_in_mcus * v2;
+
+  uint32_t hmax = wuffs_base__u32__max(h0, wuffs_base__u32__max(h1, h2));
+  uint32_t vmax = wuffs_base__u32__max(v0, wuffs_base__u32__max(v1, v2));
+  width = wuffs_base__u32__min(width, 8 * width_in_mcus * hmax);
+  height = wuffs_base__u32__min(height, 8 * height_in_mcus * vmax);
+
+  static size_t dst_alloc_size = 0;
+  if (dst_alloc_size == 0) {
+    dst_alloc_size = round_up_to_pagesize(8 * 64 * 64);
+  }
+
+  static uint8_t* dst_alloc = NULL;
+  if (!dst_alloc) {
+    const char* z = allocate_guarded_pages(&dst_alloc, dst_alloc_size);
+    if (z != NULL) {
+      return z;
+    }
+  }
+
+  wuffs_base__pixel_buffer dst_pixbuf;
+  wuffs_base__pixel_config dst_pixcfg;
+  wuffs_base__pixel_config__set(&dst_pixcfg, dst_pixfmt.repr, 0, width, height);
+  uint64_t dst_pixbuf_len = wuffs_base__pixel_config__pixbuf_len(&dst_pixcfg);
+  if (dst_pixbuf_len > dst_alloc_size) {
+    return "fuzz: internal error: dst_alloc_size is too small";
+  } else {
+    wuffs_base__status status = wuffs_base__pixel_buffer__set_from_slice(
+        &dst_pixbuf, &dst_pixcfg,
+        wuffs_base__make_slice_u8(dst_alloc + dst_alloc_size - dst_pixbuf_len,
+                                  dst_pixbuf_len));
+    if (status.repr) {
+      return "fuzz: internal error: wuffs_base__pixel_buffer__set_from_slice "
+             "failed";
+    }
+  }
+
+  static size_t src_alloc_size = 0;
+  if (src_alloc_size == 0) {
+    src_alloc_size = round_up_to_pagesize(8 * 4 * 4 * 8 * 4 * 4);
+  }
+
+  static uint8_t* src_alloc0 = NULL;
+  static uint8_t* src_alloc1 = NULL;
+  static uint8_t* src_alloc2 = NULL;
+  if (!src_alloc0) {
+    const char* z = allocate_guarded_pages(&src_alloc0, src_alloc_size);
+    if (z != NULL) {
+      return z;
+    }
+  }
+  if (!src_alloc1) {
+    const char* z = allocate_guarded_pages(&src_alloc1, src_alloc_size);
+    if (z != NULL) {
+      return z;
+    }
+  }
+  if (!src_alloc2) {
+    const char* z = allocate_guarded_pages(&src_alloc2, src_alloc_size);
+    if (z != NULL) {
+      return z;
+    }
+  }
+
+  uint32_t src_len0 = width0 * height0;
+  uint32_t src_len1 = width1 * height1;
+  uint32_t src_len2 = width2 * height2;
+  if ((src_len0 > src_alloc_size) ||  //
+      (src_len1 > src_alloc_size) ||  //
+      (src_len2 > src_alloc_size)) {
+    return "fuzz: internal error: src_alloc_size is too small";
+  }
+
+  uint8_t s0 = 0x90;
+  if (src->meta.ri < src->meta.wi) {
+    s0 = src->data.ptr[src->meta.ri++];
+  }
+  uint8_t s1 = 0x91;
+  if (src->meta.ri < src->meta.wi) {
+    s1 = src->data.ptr[src->meta.ri++];
+  }
+  uint8_t s2 = 0x92;
+  if (src->meta.ri < src->meta.wi) {
+    s2 = src->data.ptr[src->meta.ri++];
+  }
+
+  wuffs_base__slice_u8 src0 = wuffs_base__make_slice_u8(
+      src_alloc0 + src_alloc_size - src_len0, src_len0);
+  memset(src0.ptr, s0, src0.len);
+  wuffs_base__slice_u8 src1 = wuffs_base__make_slice_u8(
+      src_alloc1 + src_alloc_size - src_len1, src_len1);
+  memset(src1.ptr, s1, src1.len);
+  wuffs_base__slice_u8 src2 = wuffs_base__make_slice_u8(
+      src_alloc2 + src_alloc_size - src_len2, src_len2);
+  memset(src2.ptr, s2, src2.len);
+  wuffs_base__slice_u8 src3 = wuffs_base__empty_slice_u8();
+
+  wuffs_base__pixel_swizzler swizzler = {0};
+  wuffs_base__status status = wuffs_base__pixel_swizzler__swizzle_ycck(
+      &swizzler, &dst_pixbuf, dst_palette,  //
+      width, height,                        //
+      src0, src1, src2, src3,               //
+      width0, width1, width2, 0,            //
+      height0, height1, height2, 0,         //
+      width0, width1, width2, 0,            //
+      h0, h1, h2, 0,                        //
+      v0, v1, v2, 0,                        //
+      false);
+  if (status.repr) {
+    return wuffs_base__status__message(&status);
+  }
+  return NULL;
+}
+
+const char*  //
+fuzz(wuffs_base__io_buffer* src, uint64_t hash) {
+  const char* s0 = fuzz_swizzle_interleaved_from_slice(src, hash);
+  const char* s1 = fuzz_swizzle_ycck(src, hash);
+  if (s0 && strstr(s0, "internal error:")) {
+    return s0;
+  }
+  if (s1 && strstr(s1, "internal error:")) {
+    return s1;
+  }
+  return s0 ? s0 : s1;
 }
