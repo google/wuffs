@@ -81,6 +81,11 @@ DecodeImageCallbacks::SelectDecoder(uint32_t fourcc,
       return wuffs_nie__decoder::alloc_as__wuffs_base__image_decoder();
 #endif
 
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__NETPBM)
+    case WUFFS_BASE__FOURCC__NPBM:
+      return wuffs_netpbm__decoder::alloc_as__wuffs_base__image_decoder();
+#endif
+
 #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__PNG)
     case WUFFS_BASE__FOURCC__PNG: {
       auto dec = wuffs_png__decoder::alloc_as__wuffs_base__image_decoder();

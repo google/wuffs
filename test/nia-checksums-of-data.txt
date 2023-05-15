@@ -73,6 +73,8 @@ c3c4bd65 test/data/hippopotamus.interlaced.truncated.gif
 d3bbed27 test/data/hippopotamus.masked-with-muybridge.gif
 7e6acf01 test/data/hippopotamus.masked-with-muybridge.png
 dcbb225a test/data/hippopotamus.nie
+57d9a4dd test/data/hippopotamus.pgm
+dcbb225a test/data/hippopotamus.ppm
 ed4b78fc test/data/hippopotamus.regular.gif
 dcbb225a test/data/hippopotamus.regular.png
 888b1c04 test/data/hippopotamus.regular.truncated.png

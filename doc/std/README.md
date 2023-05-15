@@ -47,13 +47,16 @@ to enable.
 
 - `ADLER32: BASE`
 - `BMP:     BASE`
+- `BZIP2:   BASE`
 - `CBOR:    BASE`
 - `CRC32:   BASE`
 - `DEFLATE: BASE`
 - `GIF:     BASE, LZW`
 - `GZIP:    BASE, CRC32, DEFLATE`
+- `JPEG:    BASE`
 - `JSON:    BASE`
 - `LZW:     BASE`
+- `NETPBM:  BASE`
 - `NIE:     BASE`
 - `PNG:     BASE, ADLER32, CRC32, DEFLATE, ZLIB`
 - `TGA:     BASE`

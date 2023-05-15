@@ -53,7 +53,9 @@ print-image-metadata prints images' metadata.
 #define WUFFS_CONFIG__MODULE__CRC32
 #define WUFFS_CONFIG__MODULE__DEFLATE
 #define WUFFS_CONFIG__MODULE__GIF
+#define WUFFS_CONFIG__MODULE__JPEG
 #define WUFFS_CONFIG__MODULE__LZW
+#define WUFFS_CONFIG__MODULE__NETPBM
 #define WUFFS_CONFIG__MODULE__NIE
 #define WUFFS_CONFIG__MODULE__PNG
 #define WUFFS_CONFIG__MODULE__TGA
@@ -376,8 +378,14 @@ redirect:
       case WUFFS_BASE__FOURCC__GIF:
         dec = wuffs_gif__decoder::alloc_as__wuffs_base__image_decoder();
         break;
+      case WUFFS_BASE__FOURCC__JPEG:
+        dec = wuffs_jpeg__decoder::alloc_as__wuffs_base__image_decoder();
+        break;
       case WUFFS_BASE__FOURCC__NIE:
         dec = wuffs_nie__decoder::alloc_as__wuffs_base__image_decoder();
+        break;
+      case WUFFS_BASE__FOURCC__NPBM:
+        dec = wuffs_netpbm__decoder::alloc_as__wuffs_base__image_decoder();
         break;
       case WUFFS_BASE__FOURCC__PNG:
         dec = wuffs_png__decoder::alloc_as__wuffs_base__image_decoder();
