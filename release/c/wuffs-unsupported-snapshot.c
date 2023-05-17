@@ -8809,8 +8809,6 @@ struct wuffs_jpeg__decoder__struct {
     uint8_t f_components_h[4];
     uint8_t f_components_v[4];
     uint8_t f_components_tq[4];
-    uint32_t f_components_width_in_blocks[4];
-    uint32_t f_components_height_in_blocks[4];
     uint32_t f_components_workbuf_strides[4];
     uint64_t f_components_workbuf_offsets[5];
     uint32_t f_scan_num_components;
@@ -37975,28 +37973,6 @@ wuffs_jpeg__decoder__decode_sof(
         goto exit;
       }
     }
-    v_i = 0;
-    while (v_i < self->private_impl.f_num_components) {
-      if (self->private_impl.f_components_h[v_i] == 1) {
-        self->private_impl.f_components_width_in_blocks[v_i] = ((self->private_impl.f_width + 7) / 8);
-      } else if (self->private_impl.f_components_h[v_i] == 2) {
-        self->private_impl.f_components_width_in_blocks[v_i] = ((self->private_impl.f_width + 15) / 16);
-      } else if (self->private_impl.f_components_h[v_i] == 3) {
-        self->private_impl.f_components_width_in_blocks[v_i] = ((self->private_impl.f_width + 23) / 24);
-      } else {
-        self->private_impl.f_components_width_in_blocks[v_i] = ((self->private_impl.f_width + 31) / 32);
-      }
-      if (self->private_impl.f_components_v[v_i] == 1) {
-        self->private_impl.f_components_height_in_blocks[v_i] = ((self->private_impl.f_height + 7) / 8);
-      } else if (self->private_impl.f_components_v[v_i] == 2) {
-        self->private_impl.f_components_height_in_blocks[v_i] = ((self->private_impl.f_height + 15) / 16);
-      } else if (self->private_impl.f_components_v[v_i] == 3) {
-        self->private_impl.f_components_height_in_blocks[v_i] = ((self->private_impl.f_height + 23) / 24);
-      } else {
-        self->private_impl.f_components_height_in_blocks[v_i] = ((self->private_impl.f_height + 31) / 32);
-      }
-      v_i += 1;
-    }
     if (self->private_impl.f_max_incl_components_h == 1) {
       self->private_impl.f_width_in_mcus = ((self->private_impl.f_width + 7) / 8);
     } else if (self->private_impl.f_max_incl_components_h == 2) {
@@ -39129,16 +39105,14 @@ wuffs_jpeg__decoder__prepare_scan(
     }
     self->private_impl.f_scan_ah = (v_c >> 4);
     self->private_impl.f_scan_al = (v_c & 15);
+    self->private_impl.f_scan_width_in_mcus = self->private_impl.f_width_in_mcus;
+    self->private_impl.f_scan_height_in_mcus = self->private_impl.f_height_in_mcus;
     if (self->private_impl.f_scan_num_components == 1) {
-      self->private_impl.f_scan_width_in_mcus = self->private_impl.f_components_width_in_blocks[self->private_impl.f_scan_comps_cselector[0]];
-      self->private_impl.f_scan_height_in_mcus = self->private_impl.f_components_height_in_blocks[self->private_impl.f_scan_comps_cselector[0]];
       self->private_impl.f_scan_comps_bx_offset[0] = 0;
       self->private_impl.f_scan_comps_by_offset[0] = 0;
       self->private_impl.f_mcu_num_blocks = 1;
       self->private_impl.f_mcu_blocks_sselector[0] = 0;
     } else {
-      self->private_impl.f_scan_width_in_mcus = self->private_impl.f_width_in_mcus;
-      self->private_impl.f_scan_height_in_mcus = self->private_impl.f_height_in_mcus;
       v_total_hv = 0;
       v_i = 0;
       v_b = 0;

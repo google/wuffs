@@ -60,9 +60,6 @@ pub struct decoder? implements base.image_decoder(
         components_v   : array[4] base.u8[..= 4],
         components_tq  : array[4] base.u8[..= 3],
 
-        components_width_in_blocks  : array[4] base.u32[..= 0x2000],
-        components_height_in_blocks : array[4] base.u32[..= 0x2000],
-
         // components_workbuf_offsets, indexed by (b) and (b + 1), is the i and
         // j bounds in the workbuf[i .. j] slice holding the post-IDCT values.
         // components_workbuf_strides[b] is the stride between its rows.
@@ -483,33 +480,6 @@ pri func decoder.decode_sof?(src: base.io_reader) {
             return "#unsupported fractional sampling"
         }
     }
-
-    i = 0
-    while i < this.num_components {
-        assert i < 4 via "a < b: a < c; c <= b"(c: this.num_components)
-
-        if this.components_h[i] == 1 {
-            this.components_width_in_blocks[i] = (this.width + 0x07) / 0x08
-        } else if this.components_h[i] == 2 {
-            this.components_width_in_blocks[i] = (this.width + 0x0F) / 0x10
-        } else if this.components_h[i] == 3 {
-            this.components_width_in_blocks[i] = (this.width + 0x17) / 0x18
-        } else {
-            this.components_width_in_blocks[i] = (this.width + 0x1F) / 0x20
-        }
-
-        if this.components_v[i] == 1 {
-            this.components_height_in_blocks[i] = (this.height + 0x07) / 0x08
-        } else if this.components_v[i] == 2 {
-            this.components_height_in_blocks[i] = (this.height + 0x0F) / 0x10
-        } else if this.components_v[i] == 3 {
-            this.components_height_in_blocks[i] = (this.height + 0x17) / 0x18
-        } else {
-            this.components_height_in_blocks[i] = (this.height + 0x1F) / 0x20
-        }
-
-        i += 1
-    } endwhile
 
     if this.max_incl_components_h == 1 {
         this.width_in_mcus = (this.width + 0x07) / 0x08
@@ -1192,17 +1162,16 @@ pri func decoder.prepare_scan?(src: base.io_reader) {
     // that (Ss, Se, Ah, Al) is (0, 63, 0, 0) but libjpeg treats otherwise as a
     // warning (JWRN_NOT_SEQUENTIAL), not an error.
 
+    this.scan_width_in_mcus = this.width_in_mcus
+    this.scan_height_in_mcus = this.height_in_mcus
+
     if this.scan_num_components == 1 {
-        this.scan_width_in_mcus = this.components_width_in_blocks[this.scan_comps_cselector[0]]
-        this.scan_height_in_mcus = this.components_height_in_blocks[this.scan_comps_cselector[0]]
         this.scan_comps_bx_offset[0] = 0
         this.scan_comps_by_offset[0] = 0
         this.mcu_num_blocks = 1
         this.mcu_blocks_sselector[0] = 0
 
     } else {
-        this.scan_width_in_mcus = this.width_in_mcus
-        this.scan_height_in_mcus = this.height_in_mcus
         total_hv = 0
         i = 0
         b = 0
