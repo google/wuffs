@@ -35,7 +35,7 @@ pub status "#unsupported precision"
 
 pri status "#internal error: inconsistent decoder state"
 
-pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0x40_0000_0000
+pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0x4_0040_0100
 
 pub struct decoder? implements base.image_decoder(
         width  : base.u32[..= 0xFFFF],
@@ -62,14 +62,15 @@ pub struct decoder? implements base.image_decoder(
 
         // components_workbuf_offsets, indexed by (b) and (b + 1), is the i and
         // j bounds in the workbuf[i .. j] slice holding the post-IDCT values.
-        // components_workbuf_strides[b] is the stride between its rows.
+        // components_workbuf_widths[b] is the row width, which is also the row
+        // stride (there is no slack).
         //
         // For example, a 4:2:0 chroma-subsampled, 36 pixels wide × 28 pixels
         // high image has 6 blocks (4 Y, 1 Cb, 1 Cr; 8×8 samples each) per MCU.
         // Each MCU is 16×16 pixels. The image is 3 MCUs wide × 2 MCUs high.
         // The post-IDCT image dimensions round up to 48 × 32 pixels.
         //
-        // The components_workbuf_strides array is:
+        // The components_workbuf_widths array is:
         //   0: 0x30 = 48  // Y
         //   1: 0x18 = 24  // Cb
         //   2: 0x18 = 24  // Cr
@@ -81,8 +82,9 @@ pub struct decoder? implements base.image_decoder(
         //   2: 0x790 = 1920 = previous + (24 * 16)
         //   3: 0x900 = 2304 = previous + (24 * 16)
         //   4: 0x900 = 2304 = previous + ( 0 *  0)
-        components_workbuf_strides : array[4] base.u32[..= 0x4_0000],
-        components_workbuf_offsets : array[5] base.u64[..= 0x40_0000_0000],
+        components_workbuf_widths  : array[4] base.u32[..= 0x1_0008],
+        components_workbuf_heights : array[4] base.u32[..= 0x1_0008],
+        components_workbuf_offsets : array[5] base.u64[..= 0x4_0040_0100],  // 4 * 0x1_0008 * 0x1_0008.
 
         scan_num_components  : base.u32[..= 4],
         scan_comps_cselector : array[4] base.u8[..= 3],
@@ -374,11 +376,6 @@ pri func decoder.decode_sof?(src: base.io_reader) {
     var has_v24 : base.bool
     var has_v3  : base.bool
 
-    var workbuf_fragment_length0 : base.u64[..= 0x10_0000_0000]
-    var workbuf_fragment_length1 : base.u64[..= 0x10_0000_0000]
-    var workbuf_fragment_length2 : base.u64[..= 0x10_0000_0000]
-    var workbuf_fragment_length3 : base.u64[..= 0x10_0000_0000]
-
     if this.payload_length < 6 {
         return "#bad SOF marker"
     }
@@ -501,29 +498,42 @@ pri func decoder.decode_sof?(src: base.io_reader) {
         this.height_in_mcus = (this.height + 0x1F) / 0x20
     }
 
-    this.components_workbuf_strides[0] = 8 *
-            (this.width_in_mcus as base.u32) * (this.components_h[0] as base.u32)
-    this.components_workbuf_strides[1] = 8 *
-            (this.width_in_mcus as base.u32) * (this.components_h[1] as base.u32)
-    this.components_workbuf_strides[2] = 8 *
-            (this.width_in_mcus as base.u32) * (this.components_h[2] as base.u32)
-    this.components_workbuf_strides[3] = 8 *
-            (this.width_in_mcus as base.u32) * (this.components_h[3] as base.u32)
+    i = 0
+    while i < this.num_components {
+        assert i < 4 via "a < b: a < c; c <= b"(c: this.num_components)
 
-    workbuf_fragment_length0 = 8 * (this.components_workbuf_strides[0] as base.u64) *
-            (this.height_in_mcus as base.u64) * (this.components_v[0] as base.u64)
-    workbuf_fragment_length1 = 8 * (this.components_workbuf_strides[1] as base.u64) *
-            (this.height_in_mcus as base.u64) * (this.components_v[1] as base.u64)
-    workbuf_fragment_length2 = 8 * (this.components_workbuf_strides[2] as base.u64) *
-            (this.height_in_mcus as base.u64) * (this.components_v[2] as base.u64)
-    workbuf_fragment_length3 = 8 * (this.components_workbuf_strides[3] as base.u64) *
-            (this.height_in_mcus as base.u64) * (this.components_v[3] as base.u64)
+        if this.components_h[i] == 1 {
+            this.components_workbuf_widths[i] = ((this.width + 0x07) / 0x08) * 0x08
+        } else if this.components_h[i] == 2 {
+            this.components_workbuf_widths[i] = ((this.width + 0x0F) / 0x10) * 0x10
+        } else if this.components_h[i] == 3 {
+            this.components_workbuf_widths[i] = ((this.width + 0x17) / 0x18) * 0x18
+        } else {
+            this.components_workbuf_widths[i] = ((this.width + 0x1F) / 0x20) * 0x20
+        }
+
+        if this.components_v[i] == 1 {
+            this.components_workbuf_heights[i] = ((this.height + 0x07) / 0x08) * 0x08
+        } else if this.components_v[i] == 2 {
+            this.components_workbuf_heights[i] = ((this.height + 0x0F) / 0x10) * 0x10
+        } else if this.components_v[i] == 3 {
+            this.components_workbuf_heights[i] = ((this.height + 0x17) / 0x18) * 0x18
+        } else {
+            this.components_workbuf_heights[i] = ((this.height + 0x1F) / 0x20) * 0x20
+        }
+
+        i += 1
+    } endwhile
 
     this.components_workbuf_offsets[0] = 0
-    this.components_workbuf_offsets[1] = this.components_workbuf_offsets[0] + workbuf_fragment_length0
-    this.components_workbuf_offsets[2] = this.components_workbuf_offsets[1] + workbuf_fragment_length1
-    this.components_workbuf_offsets[3] = this.components_workbuf_offsets[2] + workbuf_fragment_length2
-    this.components_workbuf_offsets[4] = this.components_workbuf_offsets[3] + workbuf_fragment_length3
+    this.components_workbuf_offsets[1] = this.components_workbuf_offsets[0] +
+            ((this.components_workbuf_widths[0] as base.u64) * (this.components_workbuf_heights[0] as base.u64))
+    this.components_workbuf_offsets[2] = this.components_workbuf_offsets[1] +
+            ((this.components_workbuf_widths[1] as base.u64) * (this.components_workbuf_heights[1] as base.u64))
+    this.components_workbuf_offsets[3] = this.components_workbuf_offsets[2] +
+            ((this.components_workbuf_widths[2] as base.u64) * (this.components_workbuf_heights[2] as base.u64))
+    this.components_workbuf_offsets[4] = this.components_workbuf_offsets[3] +
+            ((this.components_workbuf_widths[3] as base.u64) * (this.components_workbuf_heights[3] as base.u64))
 }
 
 pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_reader) {
@@ -991,7 +1001,7 @@ pri func decoder.decode_sos?(dst: ptr base.pixel_buffer, src: base.io_reader, wo
                 csel = this.scan_comps_cselector[this.mcu_blocks_sselector[b]]
                 h = this.components_h[csel] as base.u64
                 v = this.components_v[csel] as base.u64
-                stride = this.components_workbuf_strides[csel] as base.u64
+                stride = this.components_workbuf_widths[csel] as base.u64
                 offset = this.components_workbuf_offsets[csel] + (8 *
                         ((((h * (mx as base.u64)) + (this.scan_comps_bx_offset[b] as base.u64))) +
                         ((((v * (my as base.u64)) + (this.scan_comps_by_offset[b] as base.u64))) * stride)))
@@ -1360,7 +1370,7 @@ pri func decoder.swizzle_gray!(dst: ptr base.pixel_buffer, workbuf: slice base.u
                 dst: dst,
                 dst_palette: args.dst.palette_or_else(fallback: this.dst_palette[..]),
                 src: args.workbuf)
-        stride = this.components_workbuf_strides[0] as base.u64
+        stride = this.components_workbuf_widths[0] as base.u64
         if stride <= args.workbuf.length() {
             args.workbuf = args.workbuf[stride ..]
         } else {
@@ -1407,18 +1417,18 @@ pri func decoder.swizzle_colorful!(dst: ptr base.pixel_buffer, workbuf: slice ba
             src1: src1,
             src2: src2,
             src3: src3,
-            width0: 8 * this.width_in_mcus * (this.components_h[0] as base.u32),
-            width1: 8 * this.width_in_mcus * (this.components_h[1] as base.u32),
-            width2: 8 * this.width_in_mcus * (this.components_h[2] as base.u32),
-            width3: 8 * this.width_in_mcus * (this.components_h[3] as base.u32),
-            height0: 8 * this.height_in_mcus * (this.components_v[0] as base.u32),
-            height1: 8 * this.height_in_mcus * (this.components_v[1] as base.u32),
-            height2: 8 * this.height_in_mcus * (this.components_v[2] as base.u32),
-            height3: 8 * this.height_in_mcus * (this.components_v[3] as base.u32),
-            stride0: this.components_workbuf_strides[0],
-            stride1: this.components_workbuf_strides[1],
-            stride2: this.components_workbuf_strides[2],
-            stride3: this.components_workbuf_strides[3],
+            width0: this.components_workbuf_widths[0],
+            width1: this.components_workbuf_widths[1],
+            width2: this.components_workbuf_widths[2],
+            width3: this.components_workbuf_widths[3],
+            height0: this.components_workbuf_heights[0],
+            height1: this.components_workbuf_heights[1],
+            height2: this.components_workbuf_heights[2],
+            height3: this.components_workbuf_heights[3],
+            stride0: this.components_workbuf_widths[0],
+            stride1: this.components_workbuf_widths[1],
+            stride2: this.components_workbuf_widths[2],
+            stride3: this.components_workbuf_widths[3],
             h0: this.components_h[0],
             h1: this.components_h[1],
             h2: this.components_h[2],

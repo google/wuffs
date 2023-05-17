@@ -8648,7 +8648,7 @@ extern const char wuffs_jpeg__error__unsupported_precision[];
 
 // ---------------- Public Consts
 
-#define WUFFS_JPEG__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE 274877906944
+#define WUFFS_JPEG__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE 17184063744
 
 // ---------------- Struct Declarations
 
@@ -8809,7 +8809,8 @@ struct wuffs_jpeg__decoder__struct {
     uint8_t f_components_h[4];
     uint8_t f_components_v[4];
     uint8_t f_components_tq[4];
-    uint32_t f_components_workbuf_strides[4];
+    uint32_t f_components_workbuf_widths[4];
+    uint32_t f_components_workbuf_heights[4];
     uint64_t f_components_workbuf_offsets[5];
     uint32_t f_scan_num_components;
     uint8_t f_scan_comps_cselector[4];
@@ -37756,10 +37757,6 @@ wuffs_jpeg__decoder__decode_sof(
   bool v_has_h3 = false;
   bool v_has_v24 = false;
   bool v_has_v3 = false;
-  uint64_t v_workbuf_fragment_length0 = 0;
-  uint64_t v_workbuf_fragment_length1 = 0;
-  uint64_t v_workbuf_fragment_length2 = 0;
-  uint64_t v_workbuf_fragment_length3 = 0;
 
   const uint8_t* iop_a_src = NULL;
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -37991,31 +37988,33 @@ wuffs_jpeg__decoder__decode_sof(
     } else {
       self->private_impl.f_height_in_mcus = ((self->private_impl.f_height + 31) / 32);
     }
-    self->private_impl.f_components_workbuf_strides[0] = (8 * ((uint32_t)(self->private_impl.f_width_in_mcus)) * ((uint32_t)(self->private_impl.f_components_h[0])));
-    self->private_impl.f_components_workbuf_strides[1] = (8 * ((uint32_t)(self->private_impl.f_width_in_mcus)) * ((uint32_t)(self->private_impl.f_components_h[1])));
-    self->private_impl.f_components_workbuf_strides[2] = (8 * ((uint32_t)(self->private_impl.f_width_in_mcus)) * ((uint32_t)(self->private_impl.f_components_h[2])));
-    self->private_impl.f_components_workbuf_strides[3] = (8 * ((uint32_t)(self->private_impl.f_width_in_mcus)) * ((uint32_t)(self->private_impl.f_components_h[3])));
-    v_workbuf_fragment_length0 = (8 *
-        ((uint64_t)(self->private_impl.f_components_workbuf_strides[0])) *
-        ((uint64_t)(self->private_impl.f_height_in_mcus)) *
-        ((uint64_t)(self->private_impl.f_components_v[0])));
-    v_workbuf_fragment_length1 = (8 *
-        ((uint64_t)(self->private_impl.f_components_workbuf_strides[1])) *
-        ((uint64_t)(self->private_impl.f_height_in_mcus)) *
-        ((uint64_t)(self->private_impl.f_components_v[1])));
-    v_workbuf_fragment_length2 = (8 *
-        ((uint64_t)(self->private_impl.f_components_workbuf_strides[2])) *
-        ((uint64_t)(self->private_impl.f_height_in_mcus)) *
-        ((uint64_t)(self->private_impl.f_components_v[2])));
-    v_workbuf_fragment_length3 = (8 *
-        ((uint64_t)(self->private_impl.f_components_workbuf_strides[3])) *
-        ((uint64_t)(self->private_impl.f_height_in_mcus)) *
-        ((uint64_t)(self->private_impl.f_components_v[3])));
+    v_i = 0;
+    while (v_i < self->private_impl.f_num_components) {
+      if (self->private_impl.f_components_h[v_i] == 1) {
+        self->private_impl.f_components_workbuf_widths[v_i] = (((self->private_impl.f_width + 7) / 8) * 8);
+      } else if (self->private_impl.f_components_h[v_i] == 2) {
+        self->private_impl.f_components_workbuf_widths[v_i] = (((self->private_impl.f_width + 15) / 16) * 16);
+      } else if (self->private_impl.f_components_h[v_i] == 3) {
+        self->private_impl.f_components_workbuf_widths[v_i] = (((self->private_impl.f_width + 23) / 24) * 24);
+      } else {
+        self->private_impl.f_components_workbuf_widths[v_i] = (((self->private_impl.f_width + 31) / 32) * 32);
+      }
+      if (self->private_impl.f_components_v[v_i] == 1) {
+        self->private_impl.f_components_workbuf_heights[v_i] = (((self->private_impl.f_height + 7) / 8) * 8);
+      } else if (self->private_impl.f_components_v[v_i] == 2) {
+        self->private_impl.f_components_workbuf_heights[v_i] = (((self->private_impl.f_height + 15) / 16) * 16);
+      } else if (self->private_impl.f_components_v[v_i] == 3) {
+        self->private_impl.f_components_workbuf_heights[v_i] = (((self->private_impl.f_height + 23) / 24) * 24);
+      } else {
+        self->private_impl.f_components_workbuf_heights[v_i] = (((self->private_impl.f_height + 31) / 32) * 32);
+      }
+      v_i += 1;
+    }
     self->private_impl.f_components_workbuf_offsets[0] = 0;
-    self->private_impl.f_components_workbuf_offsets[1] = (self->private_impl.f_components_workbuf_offsets[0] + v_workbuf_fragment_length0);
-    self->private_impl.f_components_workbuf_offsets[2] = (self->private_impl.f_components_workbuf_offsets[1] + v_workbuf_fragment_length1);
-    self->private_impl.f_components_workbuf_offsets[3] = (self->private_impl.f_components_workbuf_offsets[2] + v_workbuf_fragment_length2);
-    self->private_impl.f_components_workbuf_offsets[4] = (self->private_impl.f_components_workbuf_offsets[3] + v_workbuf_fragment_length3);
+    self->private_impl.f_components_workbuf_offsets[1] = (self->private_impl.f_components_workbuf_offsets[0] + (((uint64_t)(self->private_impl.f_components_workbuf_widths[0])) * ((uint64_t)(self->private_impl.f_components_workbuf_heights[0]))));
+    self->private_impl.f_components_workbuf_offsets[2] = (self->private_impl.f_components_workbuf_offsets[1] + (((uint64_t)(self->private_impl.f_components_workbuf_widths[1])) * ((uint64_t)(self->private_impl.f_components_workbuf_heights[1]))));
+    self->private_impl.f_components_workbuf_offsets[3] = (self->private_impl.f_components_workbuf_offsets[2] + (((uint64_t)(self->private_impl.f_components_workbuf_widths[2])) * ((uint64_t)(self->private_impl.f_components_workbuf_heights[2]))));
+    self->private_impl.f_components_workbuf_offsets[4] = (self->private_impl.f_components_workbuf_offsets[3] + (((uint64_t)(self->private_impl.f_components_workbuf_widths[3])) * ((uint64_t)(self->private_impl.f_components_workbuf_heights[3]))));
 
     goto ok;
     ok:
@@ -38852,7 +38851,7 @@ wuffs_jpeg__decoder__decode_sos(
           v_csel = self->private_impl.f_scan_comps_cselector[self->private_impl.f_mcu_blocks_sselector[v_b]];
           v_h = ((uint64_t)(self->private_impl.f_components_h[v_csel]));
           v_v = ((uint64_t)(self->private_impl.f_components_v[v_csel]));
-          v_stride = ((uint64_t)(self->private_impl.f_components_workbuf_strides[v_csel]));
+          v_stride = ((uint64_t)(self->private_impl.f_components_workbuf_widths[v_csel]));
           v_offset = (self->private_impl.f_components_workbuf_offsets[v_csel] + (8 * (((v_h * ((uint64_t)(v_mx))) + ((uint64_t)(self->private_impl.f_scan_comps_bx_offset[v_b]))) + (((v_v * ((uint64_t)(v_my))) + ((uint64_t)(self->private_impl.f_scan_comps_by_offset[v_b]))) * v_stride))));
           if (v_offset <= ((uint64_t)(a_workbuf.len))) {
             wuffs_jpeg__decoder__decode_idct(self,
@@ -39347,7 +39346,7 @@ wuffs_jpeg__decoder__swizzle_gray(
       v_dst = wuffs_base__slice_u8__subslice_j(v_dst, v_dst_length);
     }
     wuffs_base__pixel_swizzler__swizzle_interleaved_from_slice(&self->private_impl.f_swizzler, v_dst, wuffs_base__pixel_buffer__palette_or_else(a_dst, wuffs_base__make_slice_u8(self->private_data.f_dst_palette, 1024)), a_workbuf);
-    v_stride = ((uint64_t)(self->private_impl.f_components_workbuf_strides[0]));
+    v_stride = ((uint64_t)(self->private_impl.f_components_workbuf_widths[0]));
     if (v_stride <= ((uint64_t)(a_workbuf.len))) {
       a_workbuf = wuffs_base__slice_u8__subslice_i(a_workbuf, v_stride);
     } else {
@@ -39400,18 +39399,18 @@ wuffs_jpeg__decoder__swizzle_colorful(
       v_src1,
       v_src2,
       v_src3,
-      (8 * self->private_impl.f_width_in_mcus * ((uint32_t)(self->private_impl.f_components_h[0]))),
-      (8 * self->private_impl.f_width_in_mcus * ((uint32_t)(self->private_impl.f_components_h[1]))),
-      (8 * self->private_impl.f_width_in_mcus * ((uint32_t)(self->private_impl.f_components_h[2]))),
-      (8 * self->private_impl.f_width_in_mcus * ((uint32_t)(self->private_impl.f_components_h[3]))),
-      (8 * self->private_impl.f_height_in_mcus * ((uint32_t)(self->private_impl.f_components_v[0]))),
-      (8 * self->private_impl.f_height_in_mcus * ((uint32_t)(self->private_impl.f_components_v[1]))),
-      (8 * self->private_impl.f_height_in_mcus * ((uint32_t)(self->private_impl.f_components_v[2]))),
-      (8 * self->private_impl.f_height_in_mcus * ((uint32_t)(self->private_impl.f_components_v[3]))),
-      self->private_impl.f_components_workbuf_strides[0],
-      self->private_impl.f_components_workbuf_strides[1],
-      self->private_impl.f_components_workbuf_strides[2],
-      self->private_impl.f_components_workbuf_strides[3],
+      self->private_impl.f_components_workbuf_widths[0],
+      self->private_impl.f_components_workbuf_widths[1],
+      self->private_impl.f_components_workbuf_widths[2],
+      self->private_impl.f_components_workbuf_widths[3],
+      self->private_impl.f_components_workbuf_heights[0],
+      self->private_impl.f_components_workbuf_heights[1],
+      self->private_impl.f_components_workbuf_heights[2],
+      self->private_impl.f_components_workbuf_heights[3],
+      self->private_impl.f_components_workbuf_widths[0],
+      self->private_impl.f_components_workbuf_widths[1],
+      self->private_impl.f_components_workbuf_widths[2],
+      self->private_impl.f_components_workbuf_widths[3],
       self->private_impl.f_components_h[0],
       self->private_impl.f_components_h[1],
       self->private_impl.f_components_h[2],
