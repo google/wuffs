@@ -672,7 +672,8 @@ var funcsOther = [...]string{
 		"v1: u8[..= 4]," +
 		"v2: u8[..= 4]," +
 		"v3: u8[..= 4]," +
-		"triangle_filter_for_2to1: bool) status",
+		"triangle_filter_for_2to1: bool," +
+		"scratch_buffer_2k: slice u8) status",
 
 	// ---- arm_crc32_utility
 

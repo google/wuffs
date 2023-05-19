@@ -366,15 +366,18 @@ pri func decoder.decode_dri?(src: base.io_reader) {
 }
 
 pri func decoder.decode_sof?(src: base.io_reader) {
-    var c       : base.u8
-    var comp_h  : base.u8
-    var comp_v  : base.u8
-    var i       : base.u32
-    var j       : base.u32
+    var c      : base.u8
+    var comp_h : base.u8
+    var comp_v : base.u8
+    var i      : base.u32
+    var j      : base.u32
+
     var has_h24 : base.bool
     var has_h3  : base.bool
     var has_v24 : base.bool
     var has_v3  : base.bool
+
+    var upper_bound : base.u32[..= 0x1_0008]
 
     if this.payload_length < 6 {
         return "#bad SOF marker"
@@ -498,32 +501,25 @@ pri func decoder.decode_sof?(src: base.io_reader) {
         this.height_in_mcus = (this.height + 0x1F) / 0x20
     }
 
-    i = 0
-    while i < this.num_components {
-        assert i < 4 via "a < b: a < c; c <= b"(c: this.num_components)
+    upper_bound = 0x1_0008
 
-        if this.components_h[i] == 1 {
-            this.components_workbuf_widths[i] = ((this.width + 0x07) / 0x08) * 0x08
-        } else if this.components_h[i] == 2 {
-            this.components_workbuf_widths[i] = ((this.width + 0x0F) / 0x10) * 0x10
-        } else if this.components_h[i] == 3 {
-            this.components_workbuf_widths[i] = ((this.width + 0x17) / 0x18) * 0x18
-        } else {
-            this.components_workbuf_widths[i] = ((this.width + 0x1F) / 0x20) * 0x20
-        }
+    this.components_workbuf_widths[0] = upper_bound.min(no_more_than:
+            8 * this.width_in_mcus * (this.components_h[0] as base.u32))
+    this.components_workbuf_widths[1] = upper_bound.min(no_more_than:
+            8 * this.width_in_mcus * (this.components_h[1] as base.u32))
+    this.components_workbuf_widths[2] = upper_bound.min(no_more_than:
+            8 * this.width_in_mcus * (this.components_h[2] as base.u32))
+    this.components_workbuf_widths[3] = upper_bound.min(no_more_than:
+            8 * this.width_in_mcus * (this.components_h[3] as base.u32))
 
-        if this.components_v[i] == 1 {
-            this.components_workbuf_heights[i] = ((this.height + 0x07) / 0x08) * 0x08
-        } else if this.components_v[i] == 2 {
-            this.components_workbuf_heights[i] = ((this.height + 0x0F) / 0x10) * 0x10
-        } else if this.components_v[i] == 3 {
-            this.components_workbuf_heights[i] = ((this.height + 0x17) / 0x18) * 0x18
-        } else {
-            this.components_workbuf_heights[i] = ((this.height + 0x1F) / 0x20) * 0x20
-        }
-
-        i += 1
-    } endwhile
+    this.components_workbuf_heights[0] = upper_bound.min(no_more_than:
+            8 * this.height_in_mcus * (this.components_v[0] as base.u32))
+    this.components_workbuf_heights[1] = upper_bound.min(no_more_than:
+            8 * this.height_in_mcus * (this.components_v[1] as base.u32))
+    this.components_workbuf_heights[2] = upper_bound.min(no_more_than:
+            8 * this.height_in_mcus * (this.components_v[2] as base.u32))
+    this.components_workbuf_heights[3] = upper_bound.min(no_more_than:
+            8 * this.height_in_mcus * (this.components_v[3] as base.u32))
 
     this.components_workbuf_offsets[0] = 0
     this.components_workbuf_offsets[1] = this.components_workbuf_offsets[0] +
@@ -1437,7 +1433,8 @@ pri func decoder.swizzle_colorful!(dst: ptr base.pixel_buffer, workbuf: slice ba
             v1: this.components_v[1],
             v2: this.components_v[2],
             v3: this.components_v[3],
-            triangle_filter_for_2to1: false)
+            triangle_filter_for_2to1: true,
+            scratch_buffer_2k: this.bitstream_buffer[..])
     return status
 }
 

@@ -512,6 +512,36 @@ test_wuffs_pixel_swizzler_swizzle() {
   return NULL;
 }
 
+const char*  //
+test_wuffs_upsample_inv_h2v1() {
+  CHECK_FOCUS(__func__);
+
+  // src_array0 is "A lovely example".
+  const uint8_t src_array0[16] = {
+      0x41, 0x20, 0x6C, 0x6F, 0x76, 0x65, 0x6C, 0x79,  //
+      0x20, 0x65, 0x78, 0x61, 0x6D, 0x70, 0x6C, 0x65,  //
+  };
+
+  const uint8_t want_array[32] = {
+      0x41, 0x41, 0x20, 0x20, 0x6C, 0x6C, 0x6F, 0x6F,  //
+      0x76, 0x76, 0x65, 0x65, 0x6C, 0x6C, 0x79, 0x79,  //
+      0x20, 0x20, 0x65, 0x65, 0x78, 0x78, 0x61, 0x61,  //
+      0x6D, 0x6D, 0x70, 0x70, 0x6C, 0x6C, 0x65, 0x65,  //
+  };
+
+  const uint8_t* have_ptr =
+      wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h2vn_box(
+          g_have_array_u8, src_array0, src_array0, 16, 0, true, true);
+
+  const bool closed = true;
+  wuffs_base__io_buffer have = wuffs_base__ptr_u8__reader(  //
+      (void*)have_ptr, 32, closed);
+  wuffs_base__io_buffer want = wuffs_base__ptr_u8__reader(  //
+      (void*)want_array, 32, closed);
+
+  return check_io_buffers_equal("", &have, &want);
+}
+
 // ---------------- WBMP Tests
 
 const char*  //
@@ -769,6 +799,7 @@ proc g_tests[] = {
     test_wuffs_color_ycc_as_color_u32,
     test_wuffs_pixel_buffer_fill_rect,
     test_wuffs_pixel_swizzler_swizzle,
+    test_wuffs_upsample_inv_h2v1,
 
     test_wuffs_wbmp_decode_frame_config,
     test_wuffs_wbmp_decode_image_config,

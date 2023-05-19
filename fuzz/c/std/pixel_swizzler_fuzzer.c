@@ -234,7 +234,7 @@ fuzz_swizzle_ycck(wuffs_base__io_buffer* src, uint64_t hash) {
   uint32_t v0 = possible_hv_values[allow_hv3][3 & (hash >> 31)];
   uint32_t v1 = possible_hv_values[allow_hv3][3 & (hash >> 33)];
   uint32_t v2 = possible_hv_values[allow_hv3][3 & (hash >> 35)];
-  // TODO: spend a hash bit for triangle_filter_for_2to1.
+  bool triangle_filter_for_2to1 = 1 & (hash >> 37);
 
   uint32_t width0 = 8 * width_in_mcus * h0;
   uint32_t width1 = 8 * width_in_mcus * h1;
@@ -339,6 +339,7 @@ fuzz_swizzle_ycck(wuffs_base__io_buffer* src, uint64_t hash) {
   wuffs_base__slice_u8 src3 = wuffs_base__empty_slice_u8();
 
   wuffs_base__pixel_swizzler swizzler = {0};
+  uint8_t scratch_buffer[2048];
   wuffs_base__status status = wuffs_base__pixel_swizzler__swizzle_ycck(
       &swizzler, &dst_pixbuf, dst_palette,  //
       width, height,                        //
@@ -348,7 +349,8 @@ fuzz_swizzle_ycck(wuffs_base__io_buffer* src, uint64_t hash) {
       width0, width1, width2, 0,            //
       h0, h1, h2, 0,                        //
       v0, v1, v2, 0,                        //
-      false);
+      triangle_filter_for_2to1,             //
+      wuffs_base__make_slice_u8(scratch_buffer, sizeof(scratch_buffer)));
   if (status.repr) {
     return wuffs_base__status__message(&status);
   }
