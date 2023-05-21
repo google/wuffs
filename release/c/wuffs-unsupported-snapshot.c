@@ -8635,7 +8635,6 @@ extern const char wuffs_jpeg__error__bad_marker[];
 extern const char wuffs_jpeg__error__missing_huffman_table[];
 extern const char wuffs_jpeg__error__missing_quantization_table[];
 extern const char wuffs_jpeg__error__truncated_input[];
-extern const char wuffs_jpeg__error__unsupported_dqt_after_sof_markers[];
 extern const char wuffs_jpeg__error__unsupported_arithmetic_coding[];
 extern const char wuffs_jpeg__error__unsupported_fractional_sampling[];
 extern const char wuffs_jpeg__error__unsupported_hierarchical_coding[];
@@ -8835,12 +8834,14 @@ struct wuffs_jpeg__decoder__struct {
     uint64_t f_frame_config_io_position;
     uint32_t f_payload_length;
     bool f_seen_dqt[4];
+    bool f_saved_seen_dqt[4];
     bool f_seen_dht[8];
     uint64_t f_bitstream_bits;
     uint32_t f_bitstream_n_bits;
     uint32_t f_bitstream_ri;
     uint32_t f_bitstream_wi;
     uint8_t f_quant_tables[4][64];
+    uint8_t f_saved_quant_tables[4][64];
     uint8_t f_huff_tables_symbols[8][256];
     uint32_t f_huff_tables_slow[8][16];
     uint16_t f_huff_tables_fast[8][256];
@@ -36591,7 +36592,6 @@ const char wuffs_jpeg__error__bad_marker[] = "#jpeg: bad marker";
 const char wuffs_jpeg__error__missing_huffman_table[] = "#jpeg: missing Huffman table";
 const char wuffs_jpeg__error__missing_quantization_table[] = "#jpeg: missing Quantization table";
 const char wuffs_jpeg__error__truncated_input[] = "#jpeg: truncated input";
-const char wuffs_jpeg__error__unsupported_dqt_after_sof_markers[] = "#jpeg: unsupported DQT after SOF markers";
 const char wuffs_jpeg__error__unsupported_arithmetic_coding[] = "#jpeg: unsupported arithmetic coding";
 const char wuffs_jpeg__error__unsupported_fractional_sampling[] = "#jpeg: unsupported fractional sampling";
 const char wuffs_jpeg__error__unsupported_hierarchical_coding[] = "#jpeg: unsupported hierarchical coding";
@@ -38182,6 +38182,14 @@ wuffs_jpeg__decoder__decode_dqt(
         v_i += 1;
       }
       self->private_impl.f_seen_dqt[v_q] = true;
+      if (self->private_impl.f_sof_marker == 0) {
+        v_i = 0;
+        while (v_i < 64) {
+          self->private_impl.f_saved_quant_tables[v_q][v_i] = self->private_impl.f_quant_tables[v_q][v_i];
+          v_i += 1;
+        }
+        self->private_impl.f_saved_seen_dqt[v_q] = true;
+      }
     }
 
     goto ok;
@@ -38978,13 +38986,23 @@ wuffs_jpeg__decoder__do_decode_frame(
           }
           goto label__0__break;
         } else if (v_marker == 219) {
-          status = wuffs_base__make_status(wuffs_jpeg__error__unsupported_dqt_after_sof_markers);
-          goto exit;
-        } else if (v_marker == 221) {
           if (a_src) {
             a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
           }
           WUFFS_BASE__COROUTINE_SUSPENSION_POINT(8);
+          status = wuffs_jpeg__decoder__decode_dqt(self, a_src);
+          if (a_src) {
+            iop_a_src = a_src->data.ptr + a_src->meta.ri;
+          }
+          if (status.repr) {
+            goto suspend;
+          }
+          goto label__0__continue;
+        } else if (v_marker == 221) {
+          if (a_src) {
+            a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+          }
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(9);
           status = wuffs_jpeg__decoder__decode_dri(self, a_src);
           if (a_src) {
             iop_a_src = a_src->data.ptr + a_src->meta.ri;
@@ -39006,7 +39024,7 @@ wuffs_jpeg__decoder__do_decode_frame(
         }
       }
       self->private_data.s_do_decode_frame[0].scratch = self->private_impl.f_payload_length;
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(9);
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(10);
       if (self->private_data.s_do_decode_frame[0].scratch > ((uint64_t)(io2_a_src - iop_a_src))) {
         self->private_data.s_do_decode_frame[0].scratch -= ((uint64_t)(io2_a_src - iop_a_src));
         iop_a_src = io2_a_src;
@@ -40049,6 +40067,7 @@ wuffs_jpeg__decoder__restart_frame(
   }
 
   uint32_t v_i = 0;
+  uint32_t v_j = 0;
 
   if (self->private_impl.f_call_sequence < 32) {
     return wuffs_base__make_status(wuffs_base__error__bad_call_sequence);
@@ -40059,6 +40078,14 @@ wuffs_jpeg__decoder__restart_frame(
   self->private_impl.f_call_sequence = 40;
   self->private_impl.f_frame_config_io_position = a_io_position;
   self->private_impl.f_restart_interval = self->private_impl.f_saved_restart_interval;
+  while (v_i < 4) {
+    self->private_impl.f_seen_dqt[v_i] = self->private_impl.f_saved_seen_dqt[v_i];
+    while (v_j < 64) {
+      self->private_impl.f_quant_tables[v_i][v_j] = self->private_impl.f_saved_quant_tables[v_i][v_j];
+      v_j += 1;
+    }
+    v_i += 1;
+  }
   while (v_i < 8) {
     self->private_impl.f_seen_dht[v_i] = false;
     v_i += 1;

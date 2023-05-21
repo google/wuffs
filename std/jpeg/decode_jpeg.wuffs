@@ -22,7 +22,6 @@ pub status "#bad marker"
 pub status "#missing Huffman table"
 pub status "#missing Quantization table"
 pub status "#truncated input"
-pub status "#unsupported DQT after SOF markers"
 pub status "#unsupported arithmetic coding"
 pub status "#unsupported fractional sampling"
 pub status "#unsupported hierarchical coding"
@@ -117,8 +116,9 @@ pub struct decoder? implements base.image_decoder(
 
         payload_length : base.u32[..= 0xFFFF],
 
-        seen_dqt : array[4] base.bool,
-        seen_dht : array[8] base.bool,
+        seen_dqt       : array[4] base.bool,
+        saved_seen_dqt : array[4] base.bool,
+        seen_dht       : array[8] base.bool,
 
         // These fields yield bitstream bits in Most Significant Bits order.
         bitstream_bits   : base.u64,
@@ -126,7 +126,8 @@ pub struct decoder? implements base.image_decoder(
         bitstream_ri     : base.u32[..= 0x800],
         bitstream_wi     : base.u32[..= 0x800],
 
-        quant_tables : array[4] array[64] base.u8,
+        quant_tables       : array[4] array[64] base.u8,
+        saved_quant_tables : array[4] array[64] base.u8,
 
         // huff_tables_symbols[(tc*4)|th][i] is the i'th Huffman code's symbol.
         huff_tables_symbols : array[8] array[256] base.u8,
@@ -350,6 +351,15 @@ pri func decoder.decode_dqt?(src: base.io_reader) {
             i += 1
         } endwhile
         this.seen_dqt[q] = true
+
+        if this.sof_marker == 0 {
+            i = 0
+            while i < 64 {
+                this.saved_quant_tables[q][i] = this.quant_tables[q][i]
+                i += 1
+            } endwhile
+            this.saved_seen_dqt[q] = true
+        }
     } endwhile
 }
 
@@ -680,7 +690,8 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
                 break
 
             } else if marker == 0xDB {  // DQT (Define Quantization Table).
-                return "#unsupported DQT after SOF markers"
+                this.decode_dqt?(src: args.src)
+                continue
 
             } else if marker == 0xDD {  // DRI (Define Restart Interval).
                 this.decode_dri?(src: args.src)
@@ -1466,6 +1477,7 @@ pub func decoder.num_decoded_frames() base.u64 {
 
 pub func decoder.restart_frame!(index: base.u64, io_position: base.u64) base.status {
     var i : base.u32
+    var j : base.u32
 
     if this.call_sequence < 0x20 {
         return base."#bad call sequence"
@@ -1476,6 +1488,16 @@ pub func decoder.restart_frame!(index: base.u64, io_position: base.u64) base.sta
     this.call_sequence = 0x28
     this.frame_config_io_position = args.io_position
     this.restart_interval = this.saved_restart_interval
+    while i < 4 {
+        this.seen_dqt[i] = this.saved_seen_dqt[i]
+        while j < 64,
+                inv i < 4,
+        {
+            this.quant_tables[i][j] = this.saved_quant_tables[i][j]
+            j += 1
+        } endwhile
+        i += 1
+    } endwhile
     while i < 8 {
         this.seen_dht[i] = false
         i += 1
