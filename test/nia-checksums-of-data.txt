@@ -25,7 +25,7 @@ f33b9bc1 test/data/artificial-gif/zero-width-frame.gif
 e08a7cc8 test/data/artificial-png/exif.png
 e08a7cc8 test/data/artificial-png/key-value-pairs.png
 076cb375 test/data/bricks-color.bmp
-96a13918 test/data/bricks-color.jpeg
+72a1f9cc test/data/bricks-color.jpeg
 076cb375 test/data/bricks-color.png
 076cb375 test/data/bricks-color.tga
 f36c2e80 test/data/bricks-dither.bmp
@@ -49,11 +49,11 @@ aa3e6c7c test/data/crude-flag.nie
 3014b4c0 test/data/gifplayer-muybridge.gif
 030f5a48 test/data/harvesters.bmp
 c18b3d5a test/data/harvesters.gif
-3f0a404d test/data/harvesters.jpeg
+f217df74 test/data/harvesters.jpeg
 030f5a48 test/data/harvesters.png
 e776c90f test/data/hat.bmp
 6dcba6a4 test/data/hat.gif
-75f4f686 test/data/hat.jpeg
+2298f3ca test/data/hat.jpeg
 e776c90f test/data/hat.png
 d30bfe5d test/data/hat.wbmp
 33a44f22 test/data/hibiscus.primitive.bmp
@@ -62,7 +62,7 @@ d30bfe5d test/data/hat.wbmp
 33a44f22 test/data/hibiscus.primitive.png
 60040742 test/data/hibiscus.regular.bmp
 b727da8b test/data/hibiscus.regular.gif
-886ee1a1 test/data/hibiscus.regular.jpeg
+41e39405 test/data/hibiscus.regular.jpeg
 60040742 test/data/hibiscus.regular.png
 dcbb225a test/data/hippopotamus.bmp
 ed4b78fc test/data/hippopotamus.interlaced.gif

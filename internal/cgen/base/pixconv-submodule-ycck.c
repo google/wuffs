@@ -52,7 +52,14 @@ wuffs_base__u32__min_of_5(uint32_t a,
 // Box filters are equivalent to nearest neighbor upsampling. These ignore the
 // src_ptr_minor, h1v2_bias, first_column and last_column arguments.
 //
-// TODO: triangle filters.
+// Triangle filters use a 3:1 ratio (in 1 dimension), or 9:3:3:1 (in 2
+// dimensions), which is higher quality (less blocky) but also higher
+// computational effort.
+//
+// In theory, we could use triangle filters for any (inv_h, inv_v) combination.
+// In practice, matching libjpeg-turbo, we only implement it for the common
+// chroma subsampling ratios (YCC420, YCC422 or YCC440), corresponding to an
+// (inv_h, inv_v) pair of (2, 2), (2, 1) or (1, 2).
 typedef const uint8_t* (
     *wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func)(
     uint8_t* dst_ptr,
@@ -135,19 +142,159 @@ wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h4vn_box(
   return dst_ptr;
 }
 
+static const uint8_t*  //
+wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h1v2_triangle(
+    uint8_t* dst_ptr,
+    const uint8_t* src_ptr_major,
+    const uint8_t* src_ptr_minor,
+    size_t src_len,
+    uint32_t h1v2_bias,
+    bool first_column,
+    bool last_column) {
+  uint8_t* dp = dst_ptr;
+  const uint8_t* sp_major = src_ptr_major;
+  const uint8_t* sp_minor = src_ptr_minor;
+  while (src_len--) {
+    *dp++ = (uint8_t)(((3u * ((uint32_t)(*sp_major++))) +  //
+                       (1u * ((uint32_t)(*sp_minor++))) +  //
+                       h1v2_bias) >>
+                      2u);
+  }
+  return dst_ptr;
+}
+
+static const uint8_t*  //
+wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h2v1_triangle(
+    uint8_t* dst_ptr,
+    const uint8_t* src_ptr_major,
+    const uint8_t* src_ptr_minor,
+    size_t src_len,
+    uint32_t h1v2_bias_ignored,
+    bool first_column,
+    bool last_column) {
+  uint8_t* dp = dst_ptr;
+  const uint8_t* sp = src_ptr_major;
+
+  if (first_column) {
+    src_len--;
+    if ((src_len <= 0u) && last_column) {
+      uint8_t sv = *sp++;
+      *dp++ = sv;
+      *dp++ = sv;
+      return dst_ptr;
+    }
+    uint32_t svp1 = sp[+1];
+    uint8_t sv = *sp++;
+    *dp++ = sv;
+    *dp++ = (uint8_t)(((3u * (uint32_t)sv) + svp1 + 2u) >> 2u);
+    if (src_len <= 0u) {
+      return dst_ptr;
+    }
+  }
+
+  if (last_column) {
+    src_len--;
+  }
+
+  for (; src_len > 0u; src_len--) {
+    uint32_t svm1 = sp[-1];
+    uint32_t svp1 = sp[+1];
+    uint32_t sv3 = 3u * (uint32_t)(*sp++);
+    *dp++ = (uint8_t)((sv3 + svm1 + 1u) >> 2u);
+    *dp++ = (uint8_t)((sv3 + svp1 + 2u) >> 2u);
+  }
+
+  if (last_column) {
+    uint32_t svm1 = sp[-1];
+    uint8_t sv = *sp++;
+    *dp++ = (uint8_t)(((3u * (uint32_t)sv) + svm1 + 1u) >> 2u);
+    *dp++ = sv;
+  }
+
+  return dst_ptr;
+}
+
+static const uint8_t*  //
+wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h2v2_triangle(
+    uint8_t* dst_ptr,
+    const uint8_t* src_ptr_major,
+    const uint8_t* src_ptr_minor,
+    size_t src_len,
+    uint32_t h1v2_bias_ignored,
+    bool first_column,
+    bool last_column) {
+  uint8_t* dp = dst_ptr;
+  const uint8_t* sp_major = src_ptr_major;
+  const uint8_t* sp_minor = src_ptr_minor;
+
+  if (first_column) {
+    src_len--;
+    if ((src_len <= 0u) && last_column) {
+      uint32_t sv = (12u * ((uint32_t)(*sp_major++))) +  //
+                    (4u * ((uint32_t)(*sp_minor++)));
+      *dp++ = (uint8_t)((sv + 8u) >> 4u);
+      *dp++ = (uint8_t)((sv + 7u) >> 4u);
+      return dst_ptr;
+    }
+
+    uint32_t sv_major_m1 = sp_major[-0];  // Clamp offset to zero.
+    uint32_t sv_minor_m1 = sp_minor[-0];  // Clamp offset to zero.
+    uint32_t sv_major_p1 = sp_major[+1];
+    uint32_t sv_minor_p1 = sp_minor[+1];
+
+    uint32_t sv = (9u * ((uint32_t)(*sp_major++))) +  //
+                  (3u * ((uint32_t)(*sp_minor++)));
+    *dp++ = (uint8_t)((sv + (3u * sv_major_m1) + (sv_minor_m1) + 8u) >> 4u);
+    *dp++ = (uint8_t)((sv + (3u * sv_major_p1) + (sv_minor_p1) + 7u) >> 4u);
+    if (src_len <= 0u) {
+      return dst_ptr;
+    }
+  }
+
+  if (last_column) {
+    src_len--;
+  }
+
+  for (; src_len > 0u; src_len--) {
+    uint32_t sv_major_m1 = sp_major[-1];
+    uint32_t sv_minor_m1 = sp_minor[-1];
+    uint32_t sv_major_p1 = sp_major[+1];
+    uint32_t sv_minor_p1 = sp_minor[+1];
+
+    uint32_t sv = (9u * ((uint32_t)(*sp_major++))) +  //
+                  (3u * ((uint32_t)(*sp_minor++)));
+    *dp++ = (uint8_t)((sv + (3u * sv_major_m1) + (sv_minor_m1) + 8u) >> 4u);
+    *dp++ = (uint8_t)((sv + (3u * sv_major_p1) + (sv_minor_p1) + 7u) >> 4u);
+  }
+
+  if (last_column) {
+    uint32_t sv_major_m1 = sp_major[-1];
+    uint32_t sv_minor_m1 = sp_minor[-1];
+    uint32_t sv_major_p1 = sp_major[+0];  // Clamp offset to zero.
+    uint32_t sv_minor_p1 = sp_minor[+0];  // Clamp offset to zero.
+
+    uint32_t sv = (9u * ((uint32_t)(*sp_major++))) +  //
+                  (3u * ((uint32_t)(*sp_minor++)));
+    *dp++ = (uint8_t)((sv + (3u * sv_major_m1) + (sv_minor_m1) + 8u) >> 4u);
+    *dp++ = (uint8_t)((sv + (3u * sv_major_p1) + (sv_minor_p1) + 7u) >> 4u);
+  }
+
+  return dst_ptr;
+}
+
 // wuffs_base__pixel_swizzler__swizzle_ycc__upsample_funcs is indexed by inv_h
 // and then inv_v.
 static const wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func
     wuffs_base__pixel_swizzler__swizzle_ycc__upsample_funcs[4][4] = {
         {
             wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h1vn_box,
-            wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h1vn_box,
+            wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h1v2_triangle,
             wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h1vn_box,
             wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h1vn_box,
         },
         {
-            wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h2vn_box,
-            wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h2vn_box,
+            wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h2v1_triangle,
+            wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h2v2_triangle,
             wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h2vn_box,
             wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h2vn_box,
         },
@@ -184,7 +331,7 @@ wuffs_base__pixel_swizzler__has_triangle_upsampler(uint32_t inv_h,
 // example, (width > 0) is a precondition, but there are many more.
 
 static void  //
-wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter_single_row(
+wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter_edge_row(
     wuffs_base__pixel_buffer* dst,
     uint32_t width,
     uint32_t y,
@@ -296,16 +443,106 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter(
       wuffs_base__pixel_swizzler__swizzle_ycc__upsample_funcs
           [(inv_h2 - 1u) & 3u][(inv_v2 - 1u) & 3u];
 
+  // First row.
+  uint32_t h1v2_bias = 1u;
+  wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter_edge_row(
+      dst, width, 0u,                //
+      src_ptr0, src_ptr1, src_ptr2,  //
+      stride0, stride1, stride2,     //
+      inv_h0, inv_h1, inv_h2,        //
+      inv_v0, inv_v1, inv_v2,        //
+      half_width_for_2to1,           //
+      h1v2_bias,                     //
+      scratch_buffer_2k_ptr,         //
+      upfunc0, upfunc1, upfunc2);
+  h1v2_bias = 2u;
+
+  // Middle rows.
+  bool last_row = height == 2u * half_height_for_2to1;
+  uint32_t y_max_excl = last_row ? (height - 1u) : height;
   uint32_t y;
-  for (y = 0u; y < height; y++) {
-    wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter_single_row(
-        dst, width, y,                 //
+  for (y = 1u; y < y_max_excl; y++) {
+    const uint8_t* src0_major = src_ptr0 + ((y / inv_v0) * (size_t)stride0);
+    const uint8_t* src0_minor =
+        (inv_v0 != 2u)
+            ? src0_major
+            : ((y & 1u) ? (src0_major + stride0) : (src0_major - stride0));
+    const uint8_t* src1_major = src_ptr1 + ((y / inv_v1) * (size_t)stride1);
+    const uint8_t* src1_minor =
+        (inv_v1 != 2u)
+            ? src1_major
+            : ((y & 1u) ? (src1_major + stride1) : (src1_major - stride1));
+    const uint8_t* src2_major = src_ptr2 + ((y / inv_v2) * (size_t)stride2);
+    const uint8_t* src2_minor =
+        (inv_v2 != 2u)
+            ? src2_major
+            : ((y & 1u) ? (src2_major + stride2) : (src2_major - stride2));
+    uint32_t total_src_len0 = 0u;
+    uint32_t total_src_len1 = 0u;
+    uint32_t total_src_len2 = 0u;
+
+    uint32_t x = 0u;
+    while (x < width) {
+      bool first_column = x == 0u;
+      uint32_t end = x + 672u;
+      if (end > width) {
+        end = width;
+      }
+
+      uint32_t src_len0 = ((end - x) + inv_h0 - 1u) / inv_h0;
+      uint32_t src_len1 = ((end - x) + inv_h1 - 1u) / inv_h1;
+      uint32_t src_len2 = ((end - x) + inv_h2 - 1u) / inv_h2;
+      total_src_len0 += src_len0;
+      total_src_len1 += src_len1;
+      total_src_len2 += src_len2;
+
+      const uint8_t* up0 = (*upfunc0)(          //
+          scratch_buffer_2k_ptr + (0u * 672u),  //
+          src0_major + (x / inv_h0),            //
+          src0_minor + (x / inv_h0),            //
+          src_len0,                             //
+          h1v2_bias,                            //
+          first_column,                         //
+          (total_src_len0 >= half_width_for_2to1));
+
+      const uint8_t* up1 = (*upfunc1)(          //
+          scratch_buffer_2k_ptr + (1u * 672u),  //
+          src1_major + (x / inv_h1),            //
+          src1_minor + (x / inv_h1),            //
+          src_len1,                             //
+          h1v2_bias,                            //
+          first_column,                         //
+          (total_src_len1 >= half_width_for_2to1));
+
+      const uint8_t* up2 = (*upfunc2)(          //
+          scratch_buffer_2k_ptr + (2u * 672u),  //
+          src2_major + (x / inv_h2),            //
+          src2_minor + (x / inv_h2),            //
+          src_len2,                             //
+          h1v2_bias,                            //
+          first_column,                         //
+          (total_src_len2 >= half_width_for_2to1));
+
+      for (; x < end; x++) {
+        wuffs_base__pixel_buffer__set_color_u32_at(
+            dst, x, y,
+            wuffs_base__color_ycc__as__color_u32(*up0++, *up1++, *up2++));
+      }
+    }
+
+    h1v2_bias ^= 3u;
+  }
+
+  // Last row.
+  if (y_max_excl != height) {
+    wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter_edge_row(
+        dst, width, height - 1u,       //
         src_ptr0, src_ptr1, src_ptr2,  //
         stride0, stride1, stride2,     //
         inv_h0, inv_h1, inv_h2,        //
         inv_v0, inv_v1, inv_v2,        //
         half_width_for_2to1,           //
-        0u,                            //
+        h1v2_bias,                     //
         scratch_buffer_2k_ptr,         //
         upfunc0, upfunc1, upfunc2);
   }
