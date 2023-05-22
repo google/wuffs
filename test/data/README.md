@@ -120,6 +120,24 @@ which is in the public domain.
 `nobel-prizes.json` was crawled from
 [api.nobelprize.org](http://api.nobelprize.org/v1/prize.json).
 
+`peacock.*` is derived from this [peacock (pavo cristatus)
+image](https://commons.wikimedia.org/wiki/File:Pavo_Real_Venezolano.jpg),
+"available under the Creative Commons CC0 1.0 Universal Public Domain
+Dedication":
+  - `wget --quiet https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Pavo_Real_Venezolano.jpg/1024px-Pavo_Real_Venezolano.jpg`
+  - `convert 1024px-Pavo_Real_Venezolano.jpg -resize 100x75 peacock.ppm`
+  - `rm 1024px-Pavo_Real_Venezolano.jpg`
+  - `cjpeg peacock.ppm > peacock.default.jpeg`
+  - `cjpeg -optimize peacock.ppm > peacock.optimize.jpeg`
+  - `cjpeg -grayscale peacock.ppm > peacock.grayscale.jpeg`
+  - `cjpeg -progressive peacock.ppm > peacock.progressive.jpeg`
+  - `cjpeg -quality 30 peacock.ppm > peacock.q30.jpeg`
+  - `cjpeg -quality 99 peacock.ppm > peacock.q99.jpeg`
+  - `cjpeg -sample 2x2 peacock.ppm > peacock.s2x2-420.jpeg`
+  - `cjpeg -sample 2x1 peacock.ppm > peacock.s2x1-422.jpeg`
+  - `cjpeg -sample 1x1 peacock.ppm > peacock.s1x1-444.jpeg`
+  - `cjpeg -sample 2x2,2x1,1x1 peacock.ppm > peacock.s-weird.jpeg`
+
 `pi.txt` contains the digits of pi.
 
 `pjw-thumbnail.*` are various encodings of an image derived from an iconic,
