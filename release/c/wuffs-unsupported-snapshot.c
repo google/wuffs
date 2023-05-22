@@ -23343,9 +23343,12 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
     return wuffs_base__make_status(
         wuffs_base__error__unsupported_pixel_swizzler_option);
   } else if (!dst || (width > 0xFFFFu) || (height > 0xFFFFu) ||  //
-             (4u <= (h0 - 1u)) || (4u <= (v0 - 1u)) ||           //
-             (4u <= (h1 - 1u)) || (4u <= (v1 - 1u)) ||           //
-             (4u <= (h2 - 1u)) || (4u <= (v2 - 1u)) ||           //
+             (4u <= ((unsigned int)h0 - 1u)) ||                  //
+             (4u <= ((unsigned int)h1 - 1u)) ||                  //
+             (4u <= ((unsigned int)h2 - 1u)) ||                  //
+             (4u <= ((unsigned int)v0 - 1u)) ||                  //
+             (4u <= ((unsigned int)v1 - 1u)) ||                  //
+             (4u <= ((unsigned int)v2 - 1u)) ||                  //
              (scratch_buffer_2k.len < 2048u)) {
     return wuffs_base__make_status(wuffs_base__error__bad_argument);
   }
