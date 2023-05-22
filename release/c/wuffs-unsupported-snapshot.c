@@ -39731,7 +39731,6 @@ static wuffs_base__empty_struct
 wuffs_jpeg__decoder__fill_bitstream(
     wuffs_jpeg__decoder* self,
     wuffs_base__io_buffer* a_src) {
-  uint32_t v_i = 0;
   uint32_t v_wi = 0;
   uint8_t v_c = 0;
   uint32_t v_n = 0;
@@ -39748,22 +39747,16 @@ wuffs_jpeg__decoder__fill_bitstream(
   }
 
   if (self->private_impl.f_bitstream_ri <= 0) {
-  } else if (self->private_impl.f_bitstream_ri == self->private_impl.f_bitstream_wi) {
+  } else if (self->private_impl.f_bitstream_ri >= self->private_impl.f_bitstream_wi) {
     self->private_impl.f_bitstream_ri = 0;
     self->private_impl.f_bitstream_wi = 0;
   } else {
-    v_i = 0;
-    while (self->private_impl.f_bitstream_ri < self->private_impl.f_bitstream_wi) {
-      self->private_data.f_bitstream_buffer[v_i] = self->private_data.f_bitstream_buffer[self->private_impl.f_bitstream_ri];
-      self->private_impl.f_bitstream_ri += 1;
-      v_i += 1;
-      if (v_i >= self->private_impl.f_bitstream_ri) {
-        goto label__0__break;
-      }
-    }
-    label__0__break:;
+    v_wi = (self->private_impl.f_bitstream_wi - self->private_impl.f_bitstream_ri);
+    wuffs_base__slice_u8__copy_from_slice(wuffs_base__make_slice_u8(self->private_data.f_bitstream_buffer, 2048), wuffs_base__make_slice_u8_ij(self->private_data.f_bitstream_buffer,
+        self->private_impl.f_bitstream_ri,
+        self->private_impl.f_bitstream_wi));
     self->private_impl.f_bitstream_ri = 0;
-    self->private_impl.f_bitstream_wi = v_i;
+    self->private_impl.f_bitstream_wi = v_wi;
   }
   v_wi = self->private_impl.f_bitstream_wi;
   while ((v_wi < 2048) && (((uint64_t)(io2_a_src - iop_a_src)) > 0)) {
@@ -39773,16 +39766,16 @@ wuffs_jpeg__decoder__fill_bitstream(
       v_wi += 1;
       iop_a_src += 1;
     } else if (((uint64_t)(io2_a_src - iop_a_src)) <= 1) {
-      goto label__1__break;
+      goto label__0__break;
     } else if ((wuffs_base__peek_u16le__no_bounds_check(iop_a_src) >> 8) > 0) {
-      goto label__1__break;
+      goto label__0__break;
     } else {
       self->private_data.f_bitstream_buffer[v_wi] = 255;
       v_wi += 1;
       iop_a_src += 2;
     }
   }
-  label__1__break:;
+  label__0__break:;
   if (((uint64_t)(io2_a_src - iop_a_src)) > 1) {
     if ((wuffs_base__peek_u8be__no_bounds_check(iop_a_src) >= 255) && ((wuffs_base__peek_u16le__no_bounds_check(iop_a_src) >> 8) > 0)) {
       v_n = (wuffs_base__u32__min(v_wi, 2016) + 32);

@@ -1233,7 +1233,6 @@ pri func decoder.prepare_scan?(src: base.io_reader) {
 }
 
 pri func decoder.fill_bitstream!(src: base.io_reader) {
-    var i  : base.u32[..= 0x800]
     var wi : base.u32[..= 0x800]
     var c  : base.u8
     var n  : base.u32[..= 0x800]
@@ -1241,29 +1240,15 @@ pri func decoder.fill_bitstream!(src: base.io_reader) {
     // Compact unread bytes to the start of the buffer.
     if this.bitstream_ri <= 0 {
         // No-op.
-    } else if this.bitstream_ri == this.bitstream_wi {
+    } else if this.bitstream_ri >= this.bitstream_wi {
         this.bitstream_ri = 0
         this.bitstream_wi = 0
     } else {
-        // TODO: have a built-in (calling memmove) to compact a slice?
-        i = 0
-        assert i < this.bitstream_ri via "a < b: a == c; c < b"(c: 0)
-        while this.bitstream_ri < this.bitstream_wi,
-                pre i < this.bitstream_ri,
-        {
-            assert this.bitstream_ri < 0x800 via "a < b: a < c; c <= b"(c: this.bitstream_wi)
-            assert i < 0x800 via "a < b: a < c; c < b"(c: this.bitstream_ri)
-            this.bitstream_buffer[i] = this.bitstream_buffer[this.bitstream_ri]
-            this.bitstream_ri += 1
-            i += 1
-            // TODO: this if statement should be unnecessary. Instead, we
-            // should be able to "assert i < this.bitstream_ri".
-            if i >= this.bitstream_ri {
-                break  // Unreachable.
-            }
-        } endwhile
+        assert this.bitstream_wi > this.bitstream_ri via "a > b: b < a"()
+        wi = this.bitstream_wi - this.bitstream_ri
+        this.bitstream_buffer[..].copy_from_slice!(s: this.bitstream_buffer[this.bitstream_ri .. this.bitstream_wi])
         this.bitstream_ri = 0
-        this.bitstream_wi = i
+        this.bitstream_wi = wi
     }
 
     wi = this.bitstream_wi
