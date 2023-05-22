@@ -8636,6 +8636,7 @@ extern const char wuffs_jpeg__error__missing_huffman_table[];
 extern const char wuffs_jpeg__error__missing_quantization_table[];
 extern const char wuffs_jpeg__error__truncated_input[];
 extern const char wuffs_jpeg__error__unsupported_arithmetic_coding[];
+extern const char wuffs_jpeg__error__unsupported_color_model[];
 extern const char wuffs_jpeg__error__unsupported_fractional_sampling[];
 extern const char wuffs_jpeg__error__unsupported_hierarchical_coding[];
 extern const char wuffs_jpeg__error__unsupported_implicit_height[];
@@ -36596,6 +36597,7 @@ const char wuffs_jpeg__error__missing_huffman_table[] = "#jpeg: missing Huffman 
 const char wuffs_jpeg__error__missing_quantization_table[] = "#jpeg: missing Quantization table";
 const char wuffs_jpeg__error__truncated_input[] = "#jpeg: truncated input";
 const char wuffs_jpeg__error__unsupported_arithmetic_coding[] = "#jpeg: unsupported arithmetic coding";
+const char wuffs_jpeg__error__unsupported_color_model[] = "#jpeg: unsupported color model";
 const char wuffs_jpeg__error__unsupported_fractional_sampling[] = "#jpeg: unsupported fractional sampling";
 const char wuffs_jpeg__error__unsupported_hierarchical_coding[] = "#jpeg: unsupported hierarchical coding";
 const char wuffs_jpeg__error__unsupported_implicit_height[] = "#jpeg: unsupported implicit height";
@@ -38435,6 +38437,9 @@ wuffs_jpeg__decoder__decode_sof(
     }
     if ((v_c == 0) || (v_c > 4)) {
       status = wuffs_base__make_status(wuffs_jpeg__error__bad_sof_marker);
+      goto exit;
+    } else if (v_c == 2) {
+      status = wuffs_base__make_status(wuffs_jpeg__error__unsupported_color_model);
       goto exit;
     }
     self->private_impl.f_num_components = ((uint32_t)(v_c));

@@ -23,6 +23,7 @@ pub status "#missing Huffman table"
 pub status "#missing Quantization table"
 pub status "#truncated input"
 pub status "#unsupported arithmetic coding"
+pub status "#unsupported color model"
 pub status "#unsupported fractional sampling"
 pub status "#unsupported hierarchical coding"
 pub status "#unsupported implicit height"
@@ -414,6 +415,8 @@ pri func decoder.decode_sof?(src: base.io_reader) {
     c = args.src.read_u8?()
     if (c == 0) or (c > 4) {
         return "#bad SOF marker"
+    } else if c == 2 {
+        return "#unsupported color model"
     }
     this.num_components = c as base.u32
     if this.payload_length <> (3 * this.num_components) {
