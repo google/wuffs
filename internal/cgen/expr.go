@@ -16,6 +16,7 @@ package cgen
 
 import (
 	"fmt"
+	"math/big"
 	"strings"
 
 	a "github.com/google/wuffs/lang/ast"
@@ -397,6 +398,32 @@ func (g *gen) writeExprRepr(b *buffer, n *a.Expr, depth uint32) error {
 }
 
 func (g *gen) writeExprAs(b *buffer, lhs *a.Expr, rhs *a.TypeExpr, depth uint32) error {
+	// Drop the "& redundantMask" in "(foo & redundantMask) as base.uxx". It's
+	// redundant in C/C++ (but not in Wuffs).
+	if rhs.IsNumType() {
+		redundantMask := (*big.Int)(nil)
+		switch rhs.QID()[1] {
+		case t.IDU8:
+			redundantMask = maxUint8
+		case t.IDU16:
+			redundantMask = maxUint16
+		case t.IDU32:
+			redundantMask = maxUint32
+
+			// We don't have a case for t.IDU64. the "& redundantMask" in Wuffs
+			// is typically for a wide-to-narrow conversion and base.u64 is
+			// already the widest type.
+		}
+
+		if (redundantMask == nil) || (lhs.Operator() != t.IDXBinaryAmp) {
+			// No-op.
+		} else if lcv := lhs.LHS().AsExpr().ConstValue(); (lcv != nil) && (lcv.Cmp(redundantMask) == 0) {
+			lhs = lhs.RHS().AsExpr()
+		} else if rcv := lhs.RHS().AsExpr().ConstValue(); (rcv != nil) && (rcv.Cmp(redundantMask) == 0) {
+			lhs = lhs.LHS().AsExpr()
+		}
+	}
+
 	b.writes("((")
 	// TODO: watch for passing an array type to writeCTypeName? In C, an array
 	// type can decay into a pointer.
