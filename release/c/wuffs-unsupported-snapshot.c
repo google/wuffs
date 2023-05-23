@@ -8901,6 +8901,7 @@ struct wuffs_jpeg__decoder__struct {
     } s_decode_sos[1];
     struct {
       uint32_t v_i;
+      uint64_t scratch;
     } s_prepare_scan[1];
   } private_data;
 
@@ -38316,6 +38317,10 @@ wuffs_jpeg__decoder__decode_sof(
   bool v_has_v24 = false;
   bool v_has_v3 = false;
   uint32_t v_upper_bound = 0;
+  uint64_t v_wh0 = 0;
+  uint64_t v_wh1 = 0;
+  uint64_t v_wh2 = 0;
+  uint64_t v_wh3 = 0;
 
   const uint8_t* iop_a_src = NULL;
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -38559,11 +38564,15 @@ wuffs_jpeg__decoder__decode_sof(
     self->private_impl.f_components_workbuf_heights[1] = wuffs_base__u32__min(v_upper_bound, (8 * self->private_impl.f_height_in_mcus * ((uint32_t)(self->private_impl.f_components_v[1]))));
     self->private_impl.f_components_workbuf_heights[2] = wuffs_base__u32__min(v_upper_bound, (8 * self->private_impl.f_height_in_mcus * ((uint32_t)(self->private_impl.f_components_v[2]))));
     self->private_impl.f_components_workbuf_heights[3] = wuffs_base__u32__min(v_upper_bound, (8 * self->private_impl.f_height_in_mcus * ((uint32_t)(self->private_impl.f_components_v[3]))));
+    v_wh0 = (((uint64_t)(self->private_impl.f_components_workbuf_widths[0])) * ((uint64_t)(self->private_impl.f_components_workbuf_heights[0])));
+    v_wh1 = (((uint64_t)(self->private_impl.f_components_workbuf_widths[1])) * ((uint64_t)(self->private_impl.f_components_workbuf_heights[1])));
+    v_wh2 = (((uint64_t)(self->private_impl.f_components_workbuf_widths[2])) * ((uint64_t)(self->private_impl.f_components_workbuf_heights[2])));
+    v_wh3 = (((uint64_t)(self->private_impl.f_components_workbuf_widths[3])) * ((uint64_t)(self->private_impl.f_components_workbuf_heights[3])));
     self->private_impl.f_components_workbuf_offsets[0] = 0;
-    self->private_impl.f_components_workbuf_offsets[1] = (self->private_impl.f_components_workbuf_offsets[0] + (((uint64_t)(self->private_impl.f_components_workbuf_widths[0])) * ((uint64_t)(self->private_impl.f_components_workbuf_heights[0]))));
-    self->private_impl.f_components_workbuf_offsets[2] = (self->private_impl.f_components_workbuf_offsets[1] + (((uint64_t)(self->private_impl.f_components_workbuf_widths[1])) * ((uint64_t)(self->private_impl.f_components_workbuf_heights[1]))));
-    self->private_impl.f_components_workbuf_offsets[3] = (self->private_impl.f_components_workbuf_offsets[2] + (((uint64_t)(self->private_impl.f_components_workbuf_widths[2])) * ((uint64_t)(self->private_impl.f_components_workbuf_heights[2]))));
-    self->private_impl.f_components_workbuf_offsets[4] = (self->private_impl.f_components_workbuf_offsets[3] + (((uint64_t)(self->private_impl.f_components_workbuf_widths[3])) * ((uint64_t)(self->private_impl.f_components_workbuf_heights[3]))));
+    self->private_impl.f_components_workbuf_offsets[1] = (self->private_impl.f_components_workbuf_offsets[0] + v_wh0);
+    self->private_impl.f_components_workbuf_offsets[2] = (self->private_impl.f_components_workbuf_offsets[1] + v_wh1);
+    self->private_impl.f_components_workbuf_offsets[3] = (self->private_impl.f_components_workbuf_offsets[2] + v_wh2);
+    self->private_impl.f_components_workbuf_offsets[4] = (self->private_impl.f_components_workbuf_offsets[3] + v_wh3);
 
     goto ok;
     ok:
@@ -39614,55 +39623,92 @@ wuffs_jpeg__decoder__prepare_scan(
           goto exit;
         }
       }
-      if ( ! self->private_impl.f_seen_dht[(0 | self->private_impl.f_scan_comps_td[v_i])] ||  ! self->private_impl.f_seen_dht[(4 | self->private_impl.f_scan_comps_ta[v_i])]) {
+      v_i += 1;
+    }
+    if (self->private_impl.f_sof_marker < 194) {
+      self->private_data.s_prepare_scan[0].scratch = 3;
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
+      if (self->private_data.s_prepare_scan[0].scratch > ((uint64_t)(io2_a_src - iop_a_src))) {
+        self->private_data.s_prepare_scan[0].scratch -= ((uint64_t)(io2_a_src - iop_a_src));
+        iop_a_src = io2_a_src;
+        status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+        goto suspend;
+      }
+      iop_a_src += self->private_data.s_prepare_scan[0].scratch;
+      self->private_impl.f_scan_ss = 0;
+      self->private_impl.f_scan_se = 63;
+      self->private_impl.f_scan_ah = 0;
+      self->private_impl.f_scan_al = 0;
+    } else {
+      {
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
+        if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
+          status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+          goto suspend;
+        }
+        uint8_t t_3 = *iop_a_src++;
+        v_c = t_3;
+      }
+      if (v_c > 63) {
+        status = wuffs_base__make_status(wuffs_jpeg__error__bad_sos_marker);
+        goto exit;
+      }
+      self->private_impl.f_scan_ss = v_c;
+      {
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
+        if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
+          status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+          goto suspend;
+        }
+        uint8_t t_4 = *iop_a_src++;
+        v_c = t_4;
+      }
+      if ((v_c > 63) || (v_c < self->private_impl.f_scan_ss)) {
+        status = wuffs_base__make_status(wuffs_jpeg__error__bad_sos_marker);
+        goto exit;
+      }
+      self->private_impl.f_scan_se = v_c;
+      {
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(7);
+        if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
+          status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+          goto suspend;
+        }
+        uint8_t t_5 = *iop_a_src++;
+        v_c = t_5;
+      }
+      if (((v_c >> 4) > 14) || ((v_c & 15) > 13)) {
+        status = wuffs_base__make_status(wuffs_jpeg__error__bad_sos_marker);
+        goto exit;
+      }
+      self->private_impl.f_scan_ah = (v_c >> 4);
+      self->private_impl.f_scan_al = (v_c & 15);
+      if (self->private_impl.f_scan_ah > 0) {
+        if ((self->private_impl.f_scan_ah - 1) != self->private_impl.f_scan_al) {
+          status = wuffs_base__make_status(wuffs_jpeg__error__bad_sos_marker);
+          goto exit;
+        }
+      }
+      if (self->private_impl.f_scan_ss == 0) {
+        if (self->private_impl.f_scan_se != 0) {
+          status = wuffs_base__make_status(wuffs_jpeg__error__bad_sos_marker);
+          goto exit;
+        }
+      } else {
+        if (self->private_impl.f_scan_num_components != 1) {
+          status = wuffs_base__make_status(wuffs_jpeg__error__bad_sos_marker);
+          goto exit;
+        }
+      }
+    }
+    v_i = 0;
+    while (v_i < self->private_impl.f_scan_num_components) {
+      if (((self->private_impl.f_scan_ss == 0) &&  ! self->private_impl.f_seen_dht[(0 | self->private_impl.f_scan_comps_td[v_i])]) || ((self->private_impl.f_scan_se != 0) &&  ! self->private_impl.f_seen_dht[(4 | self->private_impl.f_scan_comps_ta[v_i])])) {
         status = wuffs_base__make_status(wuffs_jpeg__error__missing_huffman_table);
         goto exit;
       }
       v_i += 1;
     }
-    {
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
-      if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
-        status = wuffs_base__make_status(wuffs_base__suspension__short_read);
-        goto suspend;
-      }
-      uint8_t t_3 = *iop_a_src++;
-      v_c = t_3;
-    }
-    if (v_c > 63) {
-      status = wuffs_base__make_status(wuffs_jpeg__error__bad_sos_marker);
-      goto exit;
-    }
-    self->private_impl.f_scan_ss = v_c;
-    {
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
-      if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
-        status = wuffs_base__make_status(wuffs_base__suspension__short_read);
-        goto suspend;
-      }
-      uint8_t t_4 = *iop_a_src++;
-      v_c = t_4;
-    }
-    if ((v_c > 63) || (v_c < self->private_impl.f_scan_ss)) {
-      status = wuffs_base__make_status(wuffs_jpeg__error__bad_sos_marker);
-      goto exit;
-    }
-    self->private_impl.f_scan_se = v_c;
-    {
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
-      if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
-        status = wuffs_base__make_status(wuffs_base__suspension__short_read);
-        goto suspend;
-      }
-      uint8_t t_5 = *iop_a_src++;
-      v_c = t_5;
-    }
-    if (((v_c >> 4) > 13) || ((v_c & 15) > 13)) {
-      status = wuffs_base__make_status(wuffs_jpeg__error__bad_sos_marker);
-      goto exit;
-    }
-    self->private_impl.f_scan_ah = (v_c >> 4);
-    self->private_impl.f_scan_al = (v_c & 15);
     self->private_impl.f_scan_width_in_mcus = self->private_impl.f_width_in_mcus;
     self->private_impl.f_scan_height_in_mcus = self->private_impl.f_height_in_mcus;
     if (self->private_impl.f_scan_num_components == 1) {

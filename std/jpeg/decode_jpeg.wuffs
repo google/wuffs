@@ -91,9 +91,65 @@ pub struct decoder? implements base.image_decoder(
         scan_comps_td        : array[4] base.u8[..= 3],
         scan_comps_ta        : array[4] base.u8[..= 3],
 
+        // Every JPEG has a single SOI (Start Of Image) marker. Hierarchical
+        // JPEG images can have multiple Frames but this decoder does not
+        // support those. We thus expect a single SOF (Start Of Frame) for the
+        // single SOI.
+        //
+        // Sequential JPEGs have a single SOS (Start Of Scan) for the SOF.
+        // Their (Ss, Se, Ah, Al) below are effectively (0, 63, 0, 0).
+        //
+        // Progressive JPEGs have muliple Scans, incrementally building the 64
+        // coefficients (1 DC coefficient and 63 AC coefficients) of each
+        // pre-IDCT block. There are two independent aspects of progression.
+        //
+        // Spectral selection (the Ss and Se parameters) is when a subset of a
+        // 64 coefficients are in the scan. For example, three scans could hold
+        // coefficient 0 (the DC coefficient), coefficients 1 ..= 5 and then
+        // coefficients 6 ..= 63, in zig-zag order.
+        //
+        // Successive approximation (the Ah and Al parameters) is when a subset
+        // of the spectral-selected coefficients' 8 bits are in the scan
+        // (assuming 8-bit and not 12-bit or 16-bit JPEGs). For example, three
+        // scans could hold the 6 most significant bits, the second-least
+        // significant bit and then the least significant bit. A zero Ah value
+        // is a special case, meaning the scan holds (8 - Al) bits.
+        //
+        // The test/data/peacock.progressive.jpeg file has 10 scans:
+        // 1.   Ss = 0   Se =  0   Ah = 0   Al = 1   3 components (Y, Cb, Cr)
+        // 2.   Ss = 1   Se =  5   Ah = 0   Al = 2   1 component  (Y)
+        // 3.   Ss = 1   Se = 63   Ah = 0   Al = 1   1 component  (Cr)
+        // 4.   Ss = 1   Se = 63   Ah = 0   Al = 1   1 component  (Cb)
+        // 5.   Ss = 6   Se = 63   Ah = 0   Al = 2   1 component  (Y)
+        // 6.   Ss = 1   Se = 63   Ah = 2   Al = 1   1 component  (Y)
+        // 7.   Ss = 0   Se =  0   Ah = 1   Al = 0   3 components (Y, Cb, Cr)
+        // 8.   Ss = 1   Se = 63   Ah = 1   Al = 0   1 component  (Cr)
+        // 9.   Ss = 1   Se = 63   Ah = 1   Al = 0   1 component  (Cb)
+        // 10.  Ss = 1   Se = 63   Ah = 1   Al = 0   1 component  (Y)
+        //
+        // The first scan holds the high 7 bits of all components' DC
+        // coefficients.
+        //
+        // The second scan holds the high 6 bits of the 1 ..= 5 AC coefficients
+        // of the Y component.
+        //
+        // The third and fourth scan give the high 7 bits of all of the AC
+        // coefficients of the Cr and Cb components.
+        //
+        // The fifth scan is like the second scan, but for the Y component's
+        // remaining AC coefficients.
+        //
+        // The sixth scan holds the second-least significant bit for the Y
+        // component's AC coefficients.
+        //
+        // The seventh scan holds the least significant bit for all components'
+        // DC coefficients.
+        //
+        // The last three scans hold the least significant bit for components'
+        // AC coefficients.
         scan_ss : base.u8[..= 63],
         scan_se : base.u8[..= 63],
-        scan_ah : base.u8[..= 13],
+        scan_ah : base.u8[..= 14],
         scan_al : base.u8[..= 13],
 
         scan_width_in_mcus  : base.u32[..= 0x2000],
@@ -390,6 +446,11 @@ pri func decoder.decode_sof?(src: base.io_reader) {
 
     var upper_bound : base.u32[..= 0x1_0008]
 
+    var wh0 : base.u64[..= 0x1_0010_0040]  // 0x1_0008 * 0x1_0008.
+    var wh1 : base.u64[..= 0x1_0010_0040]  // 0x1_0008 * 0x1_0008.
+    var wh2 : base.u64[..= 0x1_0010_0040]  // 0x1_0008 * 0x1_0008.
+    var wh3 : base.u64[..= 0x1_0010_0040]  // 0x1_0008 * 0x1_0008.
+
     if this.payload_length < 6 {
         return "#bad SOF marker"
     }
@@ -534,15 +595,16 @@ pri func decoder.decode_sof?(src: base.io_reader) {
     this.components_workbuf_heights[3] = upper_bound.min(no_more_than:
             8 * this.height_in_mcus * (this.components_v[3] as base.u32))
 
+    wh0 = (this.components_workbuf_widths[0] as base.u64) * (this.components_workbuf_heights[0] as base.u64)
+    wh1 = (this.components_workbuf_widths[1] as base.u64) * (this.components_workbuf_heights[1] as base.u64)
+    wh2 = (this.components_workbuf_widths[2] as base.u64) * (this.components_workbuf_heights[2] as base.u64)
+    wh3 = (this.components_workbuf_widths[3] as base.u64) * (this.components_workbuf_heights[3] as base.u64)
+
     this.components_workbuf_offsets[0] = 0
-    this.components_workbuf_offsets[1] = this.components_workbuf_offsets[0] +
-            ((this.components_workbuf_widths[0] as base.u64) * (this.components_workbuf_heights[0] as base.u64))
-    this.components_workbuf_offsets[2] = this.components_workbuf_offsets[1] +
-            ((this.components_workbuf_widths[1] as base.u64) * (this.components_workbuf_heights[1] as base.u64))
-    this.components_workbuf_offsets[3] = this.components_workbuf_offsets[2] +
-            ((this.components_workbuf_widths[2] as base.u64) * (this.components_workbuf_heights[2] as base.u64))
-    this.components_workbuf_offsets[4] = this.components_workbuf_offsets[3] +
-            ((this.components_workbuf_widths[3] as base.u64) * (this.components_workbuf_heights[3] as base.u64))
+    this.components_workbuf_offsets[1] = this.components_workbuf_offsets[0] + wh0
+    this.components_workbuf_offsets[2] = this.components_workbuf_offsets[1] + wh1
+    this.components_workbuf_offsets[3] = this.components_workbuf_offsets[2] + wh2
+    this.components_workbuf_offsets[4] = this.components_workbuf_offsets[3] + wh3
 }
 
 pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_reader) {
@@ -1147,8 +1209,62 @@ pri func decoder.prepare_scan?(src: base.io_reader) {
             }
         }
 
-        if (not this.seen_dht[0 | this.scan_comps_td[i]]) or
-                (not this.seen_dht[4 | this.scan_comps_ta[i]]) {
+        i += 1
+    } endwhile
+
+    if this.sof_marker < 0xC2 {
+        // At this point, for sequential (not progressive) JPEGs, we should
+        // check that (Ss, Se, Ah, Al) is (0, 63, 0, 0) but libjpeg treats
+        // otherwise as a warning (JWRN_NOT_SEQUENTIAL), not an error.
+        args.src.skip_u32?(n: 3)
+        this.scan_ss = 0
+        this.scan_se = 63
+        this.scan_ah = 0
+        this.scan_al = 0
+
+    } else {
+        c = args.src.read_u8?()
+        if c > 63 {
+            return "#bad SOS marker"
+        }
+        this.scan_ss = c
+
+        c = args.src.read_u8?()
+        if (c > 63) or (c < this.scan_ss) {
+            return "#bad SOS marker"
+        }
+        this.scan_se = c
+
+        c = args.src.read_u8?()
+        if ((c >> 4) > 14) or ((c & 0x0F) > 13) {
+            return "#bad SOS marker"
+        }
+        this.scan_ah = c >> 4
+        this.scan_al = c & 0x0F
+        if this.scan_ah > 0 {
+            if (this.scan_ah - 1) <> this.scan_al {
+                return "#bad SOS marker"
+            }
+        }
+
+        if this.scan_ss == 0 {
+            // Progressive DC scans can have only one spectral element.
+            if this.scan_se <> 0 {
+                return "#bad SOS marker"
+            }
+        } else {
+            // Progressive AC scans can have only one component.
+            if this.scan_num_components <> 1 {
+                return "#bad SOS marker"
+            }
+        }
+    }
+
+    i = 0
+    while i < this.scan_num_components {
+        assert i < 4 via "a < b: a < c; c <= b"(c: this.scan_num_components)
+        if ((this.scan_ss == 0) and (not this.seen_dht[0 | this.scan_comps_td[i]])) or
+                ((this.scan_se <> 0) and (not this.seen_dht[4 | this.scan_comps_ta[i]])) {
             // TODO: while not required by the spec, we could fall back to
             // implicit tables? See section K.3 "Typical Huffman tables for
             // 8-bit precision luminance and chrominance" and
@@ -1158,29 +1274,6 @@ pri func decoder.prepare_scan?(src: base.io_reader) {
 
         i += 1
     } endwhile
-
-    c = args.src.read_u8?()
-    if c > 63 {
-        return "#bad SOS marker"
-    }
-    this.scan_ss = c
-
-    c = args.src.read_u8?()
-    if (c > 63) or (c < this.scan_ss) {
-        return "#bad SOS marker"
-    }
-    this.scan_se = c
-
-    c = args.src.read_u8?()
-    if ((c >> 4) > 13) or ((c & 0x0F) > 13) {
-        return "#bad SOS marker"
-    }
-    this.scan_ah = c >> 4
-    this.scan_al = c & 0x0F
-
-    // At this point, for sequential (not progressive) JPEGs, we should check
-    // that (Ss, Se, Ah, Al) is (0, 63, 0, 0) but libjpeg treats otherwise as a
-    // warning (JWRN_NOT_SEQUENTIAL), not an error.
 
     this.scan_width_in_mcus = this.width_in_mcus
     this.scan_height_in_mcus = this.height_in_mcus
