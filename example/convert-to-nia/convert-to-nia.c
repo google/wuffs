@@ -80,7 +80,9 @@ https://skia-review.googlesource.com/c/skia/+/290618
 // ----
 
 #if defined(__linux__)
+#ifdef __GLIBC__
 #include <linux/prctl.h>
+#endif
 #include <linux/seccomp.h>
 #include <sys/prctl.h>
 #include <sys/syscall.h>
