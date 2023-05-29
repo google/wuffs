@@ -64,7 +64,9 @@ for a C compiler $CC, such as clang or gcc.
 #include "../../release/c/wuffs-unsupported-snapshot.c"
 
 #if defined(__linux__)
+#ifdef __GLIBC__
 #include <linux/prctl.h>
+#endif
 #include <linux/seccomp.h>
 #include <sys/prctl.h>
 #include <sys/syscall.h>
