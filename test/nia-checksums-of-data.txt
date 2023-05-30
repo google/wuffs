@@ -85,7 +85,7 @@ d42a13cd test/data/peacock.default.jpeg
 d49bab2d test/data/peacock.grayscale.jpeg
 d42a13cd test/data/peacock.optimize.jpeg
 bdf8cc70 test/data/peacock.ppm
-db9b1efa test/data/peacock.progressive.jpeg
+d42a13cd test/data/peacock.progressive.jpeg
 951676cc test/data/peacock.q30.jpeg
 56835223 test/data/peacock.q99.jpeg
 1543f677 test/data/peacock.s-weird.jpeg
