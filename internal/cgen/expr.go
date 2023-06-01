@@ -45,8 +45,7 @@ func (g *gen) writeExpr(b *buffer, n *a.Expr, sideEffectsOnly bool, depth uint32
 				// https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=59018
 				// but we should generate 123u instead of 123 more broadly.
 				const minIncl = 0xFFFFADFD
-				const maxIncl = 0xFFFFF384
-				if i := cv.Int64(); (minIncl <= i) && (i <= maxIncl) {
+				if i := cv.Int64(); minIncl <= i {
 					b.writeb('u')
 				}
 			}
