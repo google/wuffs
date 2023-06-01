@@ -126,6 +126,7 @@ image](https://commons.wikimedia.org/wiki/File:Pavo_Real_Venezolano.jpg),
 Dedication":
   - `wget --quiet https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Pavo_Real_Venezolano.jpg/1024px-Pavo_Real_Venezolano.jpg`
   - `convert 1024px-Pavo_Real_Venezolano.jpg -resize 100x75 peacock.ppm`
+  - `convert peacock.ppm peacock.png`
   - `rm 1024px-Pavo_Real_Venezolano.jpg`
   - `cjpeg peacock.ppm > peacock.default.jpeg`
   - `cjpeg -optimize peacock.ppm > peacock.optimize.jpeg`
@@ -137,6 +138,7 @@ Dedication":
   - `cjpeg -sample 2x1 peacock.ppm > peacock.s2x1-422.jpeg`
   - `cjpeg -sample 1x1 peacock.ppm > peacock.s1x1-444.jpeg`
   - `cjpeg -sample 2x2,2x1,1x1 peacock.ppm > peacock.s-weird.jpeg`
+  - `go run ../../script/truncate-progressive-jpeg.go peacock.progressive.jpeg`
 
 `pi.txt` contains the digits of pi.
 

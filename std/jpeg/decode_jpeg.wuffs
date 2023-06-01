@@ -146,16 +146,19 @@ pub struct decoder? implements base.image_decoder(
         // is a special case, meaning the scan holds (8 - Al) bits.
         //
         // The test/data/peacock.progressive.jpeg file has 10 scans:
-        // 1.   Ss = 0   Se =  0   Ah = 0   Al = 1   3 components (Y, Cb, Cr)
-        // 2.   Ss = 1   Se =  5   Ah = 0   Al = 2   1 component  (Y)
-        // 3.   Ss = 1   Se = 63   Ah = 0   Al = 1   1 component  (Cr)
-        // 4.   Ss = 1   Se = 63   Ah = 0   Al = 1   1 component  (Cb)
-        // 5.   Ss = 6   Se = 63   Ah = 0   Al = 2   1 component  (Y)
-        // 6.   Ss = 1   Se = 63   Ah = 2   Al = 1   1 component  (Y)
-        // 7.   Ss = 0   Se =  0   Ah = 1   Al = 0   3 components (Y, Cb, Cr)
-        // 8.   Ss = 1   Se = 63   Ah = 1   Al = 0   1 component  (Cr)
-        // 9.   Ss = 1   Se = 63   Ah = 1   Al = 0   1 component  (Cb)
-        // 10.  Ss = 1   Se = 63   Ah = 1   Al = 0   1 component  (Y)
+        //   0: Ss = 0   Se =  0   Ah = 0   Al = 1   3 components (Y, Cb, Cr)
+        //   1: Ss = 1   Se =  5   Ah = 0   Al = 2   1 component  (Y)
+        //   2: Ss = 1   Se = 63   Ah = 0   Al = 1   1 component  (Cr)
+        //   3: Ss = 1   Se = 63   Ah = 0   Al = 1   1 component  (Cb)
+        //   4: Ss = 6   Se = 63   Ah = 0   Al = 2   1 component  (Y)
+        //   5: Ss = 1   Se = 63   Ah = 2   Al = 1   1 component  (Y)
+        //   6: Ss = 0   Se =  0   Ah = 1   Al = 0   3 components (Y, Cb, Cr)
+        //   7: Ss = 1   Se = 63   Ah = 1   Al = 0   1 component  (Cr)
+        //   8: Ss = 1   Se = 63   Ah = 1   Al = 0   1 component  (Cb)
+        //   9: Ss = 1   Se = 63   Ah = 1   Al = 0   1 component  (Y)
+        //
+        // This matches /usr/bin/cjpeg's default script for progressive YCbCr:
+        // https://github.com/libjpeg-turbo/libjpeg-turbo/blob/2192560d74e6e6cf99dd05928885573be00a8208/jcparam.c#L517-L535
         //
         // The first scan holds the high 7 bits of all components' DC
         // coefficients.
