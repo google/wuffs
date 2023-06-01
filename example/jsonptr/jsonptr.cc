@@ -141,7 +141,6 @@ for a C++ compiler $CXX, such as clang++ or g++.
 #include "../../release/c/wuffs-unsupported-snapshot.c"
 
 #if defined(__linux__)
-#include <linux/prctl.h>
 #include <linux/seccomp.h>
 #include <sys/prctl.h>
 #include <sys/syscall.h>

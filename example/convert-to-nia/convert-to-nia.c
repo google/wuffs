@@ -80,7 +80,6 @@ https://skia-review.googlesource.com/c/skia/+/290618
 // ----
 
 #if defined(__linux__)
-#include <linux/prctl.h>
 #include <linux/seccomp.h>
 #include <sys/prctl.h>
 #include <sys/syscall.h>
