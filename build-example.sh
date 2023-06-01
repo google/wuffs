@@ -15,7 +15,7 @@
 
 # ----------------
 
-# See build-all.sh for commentary.
+# See BUILD.md and build-all.sh for more discussion.
 
 if [ ! -e wuffs-root-directory.txt ]; then
   echo "$0 should be run from the Wuffs root directory."

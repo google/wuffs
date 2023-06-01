@@ -36,6 +36,8 @@
 # cd wuffs
 # gcc ./example/zcat/zcat.c
 # ./a.out < ./test/data/romeo.txt.gz
+#
+# See BUILD.md for more discussion.
 
 if [ ! -e wuffs-root-directory.txt ]; then
   echo "$0 should be run from the Wuffs root directory."

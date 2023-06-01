@@ -181,10 +181,15 @@ wuffs test: some tests failed
 - `hello-wuffs-c` holds an example program for Wuffs the Language.
 
 
+# Building
+
+See the [BUILD](/BUILD.md) instructions.
+
+
 # Documentation
 
 - [Getting Started](/doc/getting-started.md). **Start here** if you want to
-  play but aren't sure how.
+  play but aren't sure how (and [BUILD](/BUILD.md) doesn't help).
 - [Background](/doc/background.md).
 - [Benchmarks](/doc/benchmarks.md).
 - [Binary Size](/doc/binary-size.md).
@@ -241,4 +246,4 @@ owned by Google.
 
 ---
 
-Updated on January 2023.
+Updated on June 2023.

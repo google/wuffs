@@ -24,3 +24,5 @@ examples. To check out and build just one, such as `jsonptr`:
 When re-building, you only need the last of those three lines. To run it:
 
     gen/bin/example-jsonptr test/data/json-things.unformatted.json
+
+See also the top-level [BUILD](/BUILD.md) instructions.
