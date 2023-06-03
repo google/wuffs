@@ -3,6 +3,7 @@
 
 ## Work In Progress
 
+- Added `example/toy-aux-image`.
 - Added `std/jpeg`.
 - Added `std/netpbm`.
 - Changed `lzw.set_literal_width` to `lzw.set_quirk`.

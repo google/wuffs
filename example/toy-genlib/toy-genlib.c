@@ -49,12 +49,12 @@ for a C compiler $CC, such as clang or gcc.
 #endif
 uint8_t g_dst_buffer_array[DST_BUFFER_ARRAY_SIZE];
 
-// src_ptr and src_len hold a gzip-encoded "Hello Wuffs."
+// g_src_array and g_src_len hold a gzip-encoded "Hello Wuffs."
 //
 // $ echo "Hello Wuffs." | gzip --no-name | hd
-// 00000000  1f 8b 08 00 00 00 00 00  00 03 f3 48 cd c9 c9 57  |...........H...W|
-// 00000010  08 2f 4d 4b 2b d6 e3 02  00 3c 84 75 bb 0d 00 00  |./MK+....<.u....|
-// 00000020  00                                                |.|
+// 00000000  1f 8b 08 00 00 00 00 00 00 03 f3 48 cd c9 c9 57 |...........H...W|
+// 00000010  08 2f 4d 4b 2b d6 e3 02 00 3c 84 75 bb 0d 00 00 |./MK+....<.u....|
+// 00000020  00                                              |.|
 // 00000021
 //
 // Passing --no-name to the gzip command line also means to skip the timestamp,

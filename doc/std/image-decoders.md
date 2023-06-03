@@ -138,6 +138,8 @@ In Wuffs syntax, the `base.image_decoder` methods are:
 - [example/gifplayer](/example/gifplayer)
 - [example/imageviewer](/example/imageviewer)
 - [example/sdl-imageviewer](/example/sdl-imageviewer)
+- [example/toy-aux-image](/example/toy-aux-image) **start here** if you want
+  just want an easy example of Wuffs' C++ API.
 - [script/print-average-pixel](/script/print-average-pixel.cc)
 - [script/print-image-metadata](/script/print-image-metadata.cc)
 
