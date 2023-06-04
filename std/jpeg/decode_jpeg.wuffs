@@ -1256,17 +1256,10 @@ pri func decoder.decode_sos?(dst: ptr base.pixel_buffer, src: base.io_reader, wo
 }
 
 pri func decoder.prepare_scan?(src: base.io_reader) {
-    var c         : base.u8
-    var i         : base.u32
-    var j         : base.u32
-    var h         : base.u32[..= 4]
-    var v         : base.u32[..= 4]
-    var hv        : base.u32[..= 16]
-    var total_hv  : base.u32
-    var b         : base.u32
-    var bx_offset : base.u32
-    var by_offset : base.u32
-    var csel      : base.u8[..= 3]
+    var c      : base.u8
+    var i      : base.u32
+    var j      : base.u32
+    var failed : base.bool
 
     if (this.payload_length < 6) or (this.payload_length > 12) {
         return "#bad SOS marker"
@@ -1402,60 +1395,11 @@ pri func decoder.prepare_scan?(src: base.io_reader) {
 
     if this.scan_num_components == 1 {
         this.calculate_single_component_scan_fields!()
-
     } else {
-        total_hv = 0
-        i = 0
-        b = 0
-        bx_offset = 0
-        by_offset = 0
-        while i < this.scan_num_components {
-            assert i < 4 via "a < b: a < c; c <= b"(c: this.scan_num_components)
-            h = this.components_h[this.scan_comps_cselector[i]] as base.u32
-            v = this.components_v[this.scan_comps_cselector[i]] as base.u32
-            hv = ((this.components_h[this.scan_comps_cselector[i]] as base.u32) *
-                    (this.components_v[this.scan_comps_cselector[i]] as base.u32))
-            total_hv ~mod+= hv
-
-            while hv > 0,
-                    inv i < 4,
-            {
-                this.scan_comps_bx_offset[b & 15] = (bx_offset & 3) as base.u8
-                this.scan_comps_by_offset[b & 15] = (by_offset & 3) as base.u8
-                this.mcu_blocks_sselector[b & 15] = i as base.u8
-                b ~mod+= 1
-                bx_offset ~mod+= 1
-                if bx_offset == h {
-                    bx_offset = 0
-                    by_offset ~mod+= 1
-                    if by_offset == v {
-                        by_offset = 0
-                    }
-                }
-                hv -= 1
-            } endwhile
-
-            i += 1
-        } endwhile
-        if total_hv > 10 {
+        failed = this.calculate_multiple_component_scan_fields!()
+        if failed {
             return "#bad SOS marker"
         }
-        this.mcu_num_blocks = total_hv
-
-        b = 0
-        while b < this.mcu_num_blocks {
-            assert b < 10 via "a < b: a < c; c <= b"(c: this.mcu_num_blocks)
-            csel = this.scan_comps_cselector[this.mcu_blocks_sselector[b]]
-            this.mcu_blocks_offset[b] = this.components_workbuf_offsets[csel] +
-                    (8 * (this.scan_comps_bx_offset[b] as base.u64)) +
-                    (8 * (this.scan_comps_by_offset[b] as base.u64) * (this.components_workbuf_widths[csel] as base.u64))
-            this.mcu_blocks_mx_mul[b] = 8 * (this.components_h[csel] as base.u32)
-            this.mcu_blocks_my_mul[b] = 8 * (this.components_v[csel] as base.u32) * this.components_workbuf_widths[csel]
-            b += 1
-        } endwhile
-
-        this.scan_width_in_mcus = this.width_in_mcus
-        this.scan_height_in_mcus = this.height_in_mcus
     }
 }
 
@@ -1476,7 +1420,72 @@ pri func decoder.calculate_single_component_scan_fields!() {
             width: this.width, h: this.components_h[csel], max_incl_h: this.max_incl_components_h)
     this.scan_height_in_mcus = this.quantize_dimension(
             width: this.height, h: this.components_v[csel], max_incl_h: this.max_incl_components_v)
+}
 
+pri func decoder.calculate_multiple_component_scan_fields!() base.bool {
+    var i         : base.u32
+    var h         : base.u32[..= 4]
+    var v         : base.u32[..= 4]
+    var hv        : base.u32[..= 16]
+    var total_hv  : base.u32
+    var b         : base.u32
+    var bx_offset : base.u32
+    var by_offset : base.u32
+    var csel      : base.u8[..= 3]
+
+    total_hv = 0
+    i = 0
+    b = 0
+    bx_offset = 0
+    by_offset = 0
+    while i < this.scan_num_components {
+        assert i < 4 via "a < b: a < c; c <= b"(c: this.scan_num_components)
+        h = this.components_h[this.scan_comps_cselector[i]] as base.u32
+        v = this.components_v[this.scan_comps_cselector[i]] as base.u32
+        hv = ((this.components_h[this.scan_comps_cselector[i]] as base.u32) *
+                (this.components_v[this.scan_comps_cselector[i]] as base.u32))
+        total_hv ~mod+= hv
+
+        while hv > 0,
+                inv i < 4,
+        {
+            this.scan_comps_bx_offset[b & 15] = (bx_offset & 3) as base.u8
+            this.scan_comps_by_offset[b & 15] = (by_offset & 3) as base.u8
+            this.mcu_blocks_sselector[b & 15] = i as base.u8
+            b ~mod+= 1
+            bx_offset ~mod+= 1
+            if bx_offset == h {
+                bx_offset = 0
+                by_offset ~mod+= 1
+                if by_offset == v {
+                    by_offset = 0
+                }
+            }
+            hv -= 1
+        } endwhile
+
+        i += 1
+    } endwhile
+    if total_hv > 10 {
+        return true
+    }
+    this.mcu_num_blocks = total_hv
+
+    b = 0
+    while b < this.mcu_num_blocks {
+        assert b < 10 via "a < b: a < c; c <= b"(c: this.mcu_num_blocks)
+        csel = this.scan_comps_cselector[this.mcu_blocks_sselector[b]]
+        this.mcu_blocks_offset[b] = this.components_workbuf_offsets[csel] +
+                (8 * (this.scan_comps_bx_offset[b] as base.u64)) +
+                (8 * (this.scan_comps_by_offset[b] as base.u64) * (this.components_workbuf_widths[csel] as base.u64))
+        this.mcu_blocks_mx_mul[b] = 8 * (this.components_h[csel] as base.u32)
+        this.mcu_blocks_my_mul[b] = 8 * (this.components_v[csel] as base.u32) * this.components_workbuf_widths[csel]
+        b += 1
+    } endwhile
+
+    this.scan_width_in_mcus = this.width_in_mcus
+    this.scan_height_in_mcus = this.height_in_mcus
+    return false
 }
 
 pri func decoder.fill_bitstream!(src: base.io_reader) {
