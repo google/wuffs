@@ -764,6 +764,10 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
             return ddf_status
 
         } else if scan_count < this.scan_count {
+            if this.sof_marker >= 0xC2 {
+                this.apply_progressive_idct!(workbuf: args.workbuf)
+            }
+
             if this.num_components == 1 {
                 swizzle_status = this.swizzle_gray!(dst: args.dst, workbuf: args.workbuf)
             } else {
@@ -1202,30 +1206,30 @@ pri func decoder.decode_sos?(dst: ptr base.pixel_buffer, src: base.io_reader, wo
 
             if this.sof_marker >= 0xC2 {
                 this.save_mcu_blocks!(mx: mx, my: my, workbuf: args.workbuf)
+            } else {
+                // Apply IDCT.
+                b = 0
+                while b < this.mcu_num_blocks,
+                        inv my < 0x2000,
+                        inv mx < 0x2000,
+                {
+                    assert b < 10 via "a < b: a < c; c <= b"(c: this.mcu_num_blocks)
+                    csel = this.scan_comps_cselector[this.mcu_blocks_sselector[b]]
+                    stride = this.components_workbuf_widths[csel] as base.u64
+                    offset = this.mcu_blocks_offset[b] +
+                            ((this.mcu_blocks_mx_mul[b] as base.u64) * (mx as base.u64)) +
+                            ((this.mcu_blocks_my_mul[b] as base.u64) * (my as base.u64))
+                    if offset <= args.workbuf.length() {
+                        this.decode_idct!(
+                                dst_buffer: args.workbuf[offset ..],
+                                dst_stride: stride,
+                                b: b,
+                                q: this.components_tq[csel] as base.u32)
+
+                    }
+                    b += 1
+                } endwhile
             }
-
-            // Apply IDCT.
-            b = 0
-            while b < this.mcu_num_blocks,
-                    inv my < 0x2000,
-                    inv mx < 0x2000,
-            {
-                assert b < 10 via "a < b: a < c; c <= b"(c: this.mcu_num_blocks)
-                csel = this.scan_comps_cselector[this.mcu_blocks_sselector[b]]
-                stride = this.components_workbuf_widths[csel] as base.u64
-                offset = this.mcu_blocks_offset[b] +
-                        ((this.mcu_blocks_mx_mul[b] as base.u64) * (mx as base.u64)) +
-                        ((this.mcu_blocks_my_mul[b] as base.u64) * (my as base.u64))
-                if offset <= args.workbuf.length() {
-                    this.decode_idct!(
-                            dst_buffer: args.workbuf[offset ..],
-                            dst_stride: stride,
-                            b: b,
-                            q: this.components_tq[csel] as base.u32)
-
-                }
-                b += 1
-            } endwhile
 
             // Check for a restart.
             if this.restarts_remaining > 0 {
@@ -1401,20 +1405,7 @@ pri func decoder.prepare_scan?(src: base.io_reader) {
     } endwhile
 
     if this.scan_num_components == 1 {
-        this.scan_comps_bx_offset[0] = 0
-        this.scan_comps_by_offset[0] = 0
-        this.mcu_num_blocks = 1
-        this.mcu_blocks_sselector[0] = 0
-
-        csel = this.scan_comps_cselector[0]
-        this.mcu_blocks_offset[0] = this.components_workbuf_offsets[csel]
-        this.mcu_blocks_mx_mul[0] = 8
-        this.mcu_blocks_my_mul[0] = 8 * this.components_workbuf_widths[csel]
-
-        this.scan_width_in_mcus = this.quantize_dimension(
-                width: this.width, h: this.components_h[csel], max_incl_h: this.max_incl_components_h)
-        this.scan_height_in_mcus = this.quantize_dimension(
-                width: this.height, h: this.components_v[csel], max_incl_h: this.max_incl_components_v)
+        this.calculate_single_component_scan_fields!()
 
     } else {
         total_hv = 0
@@ -1470,6 +1461,26 @@ pri func decoder.prepare_scan?(src: base.io_reader) {
         this.scan_width_in_mcus = this.width_in_mcus
         this.scan_height_in_mcus = this.height_in_mcus
     }
+}
+
+pri func decoder.calculate_single_component_scan_fields!() {
+    var csel : base.u8[..= 3]
+
+    this.scan_comps_bx_offset[0] = 0
+    this.scan_comps_by_offset[0] = 0
+    this.mcu_num_blocks = 1
+    this.mcu_blocks_sselector[0] = 0
+
+    csel = this.scan_comps_cselector[0]
+    this.mcu_blocks_offset[0] = this.components_workbuf_offsets[csel]
+    this.mcu_blocks_mx_mul[0] = 8
+    this.mcu_blocks_my_mul[0] = 8 * this.components_workbuf_widths[csel]
+
+    this.scan_width_in_mcus = this.quantize_dimension(
+            width: this.width, h: this.components_h[csel], max_incl_h: this.max_incl_components_h)
+    this.scan_height_in_mcus = this.quantize_dimension(
+            width: this.height, h: this.components_v[csel], max_incl_h: this.max_incl_components_v)
+
 }
 
 pri func decoder.fill_bitstream!(src: base.io_reader) {
@@ -1676,6 +1687,59 @@ pri func decoder.skip_past_the_next_restart_marker?(src: base.io_reader) {
     } endwhile
 
     this.next_restart_marker = (this.next_restart_marker ~mod+ 1) & 7
+}
+
+pri func decoder.apply_progressive_idct!(workbuf: slice base.u8) {
+    var csel : base.u32
+
+    var my : base.u32
+    var mx : base.u32
+
+    var stride : base.u64[..= 0x1_0008]
+    var offset : base.u64
+
+    csel = 0
+    while csel < this.num_components {
+        assert csel < 4 via "a < b: a < c; c <= b"(c: this.num_components)
+
+        // Fake a single-component scan for load_mcu_blocks and decode_idct.
+        this.scan_num_components = 1
+        this.scan_comps_cselector[0] = csel as base.u8
+        this.calculate_single_component_scan_fields!()
+
+        my = 0
+        while my < this.scan_height_in_mcus,
+                inv csel < 4,
+        {
+            assert my < 0x2000 via "a < b: a < c; c <= b"(c: this.scan_height_in_mcus)
+            mx = 0
+            while mx < this.scan_width_in_mcus,
+                    inv csel < 4,
+                    inv my < 0x2000,
+            {
+                assert mx < 0x2000 via "a < b: a < c; c <= b"(c: this.scan_width_in_mcus)
+                this.load_mcu_blocks!(mx: mx, my: my, workbuf: args.workbuf)
+
+                stride = this.components_workbuf_widths[csel] as base.u64
+                offset = this.mcu_blocks_offset[0] +
+                        ((this.mcu_blocks_mx_mul[0] as base.u64) * (mx as base.u64)) +
+                        ((this.mcu_blocks_my_mul[0] as base.u64) * (my as base.u64))
+                if offset <= args.workbuf.length() {
+                    this.decode_idct!(
+                            dst_buffer: args.workbuf[offset ..],
+                            dst_stride: stride,
+                            b: 0,
+                            q: this.components_tq[csel] as base.u32)
+
+                }
+
+                mx += 1
+            } endwhile
+            my += 1
+        } endwhile
+
+        csel += 1
+    } endwhile
 }
 
 pri func decoder.swizzle_gray!(dst: ptr base.pixel_buffer, workbuf: slice base.u8) base.status {

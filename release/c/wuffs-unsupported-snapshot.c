@@ -36843,6 +36843,10 @@ wuffs_jpeg__decoder__prepare_scan(
     wuffs_base__io_buffer* a_src);
 
 static wuffs_base__empty_struct
+wuffs_jpeg__decoder__calculate_single_component_scan_fields(
+    wuffs_jpeg__decoder* self);
+
+static wuffs_base__empty_struct
 wuffs_jpeg__decoder__fill_bitstream(
     wuffs_jpeg__decoder* self,
     wuffs_base__io_buffer* a_src);
@@ -36869,6 +36873,11 @@ static wuffs_base__status
 wuffs_jpeg__decoder__skip_past_the_next_restart_marker(
     wuffs_jpeg__decoder* self,
     wuffs_base__io_buffer* a_src);
+
+static wuffs_base__empty_struct
+wuffs_jpeg__decoder__apply_progressive_idct(
+    wuffs_jpeg__decoder* self,
+    wuffs_base__slice_u8 a_workbuf);
 
 static wuffs_base__status
 wuffs_jpeg__decoder__swizzle_gray(
@@ -38873,6 +38882,9 @@ wuffs_jpeg__decoder__decode_frame(
         status = v_ddf_status;
         goto exit;
       } else if (v_scan_count < self->private_impl.f_scan_count) {
+        if (self->private_impl.f_sof_marker >= 194) {
+          wuffs_jpeg__decoder__apply_progressive_idct(self, a_workbuf);
+        }
         if (self->private_impl.f_num_components == 1) {
           v_swizzle_status = wuffs_jpeg__decoder__swizzle_gray(self, a_dst, a_workbuf);
         } else {
@@ -39522,20 +39534,21 @@ wuffs_jpeg__decoder__decode_sos(
         label__decode_mcu__break:;
         if (self->private_impl.f_sof_marker >= 194) {
           wuffs_jpeg__decoder__save_mcu_blocks(self, v_mx, v_my, a_workbuf);
-        }
-        v_b = 0;
-        while (v_b < self->private_impl.f_mcu_num_blocks) {
-          v_csel = self->private_impl.f_scan_comps_cselector[self->private_impl.f_mcu_blocks_sselector[v_b]];
-          v_stride = ((uint64_t)(self->private_impl.f_components_workbuf_widths[v_csel]));
-          v_offset = (self->private_impl.f_mcu_blocks_offset[v_b] + (((uint64_t)(self->private_impl.f_mcu_blocks_mx_mul[v_b])) * ((uint64_t)(v_mx))) + (((uint64_t)(self->private_impl.f_mcu_blocks_my_mul[v_b])) * ((uint64_t)(v_my))));
-          if (v_offset <= ((uint64_t)(a_workbuf.len))) {
-            wuffs_jpeg__decoder__decode_idct(self,
-                wuffs_base__slice_u8__subslice_i(a_workbuf, v_offset),
-                v_stride,
-                v_b,
-                ((uint32_t)(self->private_impl.f_components_tq[v_csel])));
+        } else {
+          v_b = 0;
+          while (v_b < self->private_impl.f_mcu_num_blocks) {
+            v_csel = self->private_impl.f_scan_comps_cselector[self->private_impl.f_mcu_blocks_sselector[v_b]];
+            v_stride = ((uint64_t)(self->private_impl.f_components_workbuf_widths[v_csel]));
+            v_offset = (self->private_impl.f_mcu_blocks_offset[v_b] + (((uint64_t)(self->private_impl.f_mcu_blocks_mx_mul[v_b])) * ((uint64_t)(v_mx))) + (((uint64_t)(self->private_impl.f_mcu_blocks_my_mul[v_b])) * ((uint64_t)(v_my))));
+            if (v_offset <= ((uint64_t)(a_workbuf.len))) {
+              wuffs_jpeg__decoder__decode_idct(self,
+                  wuffs_base__slice_u8__subslice_i(a_workbuf, v_offset),
+                  v_stride,
+                  v_b,
+                  ((uint32_t)(self->private_impl.f_components_tq[v_csel])));
+            }
+            v_b += 1;
           }
-          v_b += 1;
         }
         if (self->private_impl.f_restarts_remaining > 0) {
 #if defined(__GNUC__)
@@ -39803,16 +39816,7 @@ wuffs_jpeg__decoder__prepare_scan(
       v_i += 1;
     }
     if (self->private_impl.f_scan_num_components == 1) {
-      self->private_impl.f_scan_comps_bx_offset[0] = 0;
-      self->private_impl.f_scan_comps_by_offset[0] = 0;
-      self->private_impl.f_mcu_num_blocks = 1;
-      self->private_impl.f_mcu_blocks_sselector[0] = 0;
-      v_csel = self->private_impl.f_scan_comps_cselector[0];
-      self->private_impl.f_mcu_blocks_offset[0] = self->private_impl.f_components_workbuf_offsets[v_csel];
-      self->private_impl.f_mcu_blocks_mx_mul[0] = 8;
-      self->private_impl.f_mcu_blocks_my_mul[0] = (8 * self->private_impl.f_components_workbuf_widths[v_csel]);
-      self->private_impl.f_scan_width_in_mcus = wuffs_jpeg__decoder__quantize_dimension(self, self->private_impl.f_width, self->private_impl.f_components_h[v_csel], self->private_impl.f_max_incl_components_h);
-      self->private_impl.f_scan_height_in_mcus = wuffs_jpeg__decoder__quantize_dimension(self, self->private_impl.f_height, self->private_impl.f_components_v[v_csel], self->private_impl.f_max_incl_components_v);
+      wuffs_jpeg__decoder__calculate_single_component_scan_fields(self);
     } else {
       v_total_hv = 0;
       v_i = 0;
@@ -39876,6 +39880,26 @@ wuffs_jpeg__decoder__prepare_scan(
   }
 
   return status;
+}
+
+// -------- func jpeg.decoder.calculate_single_component_scan_fields
+
+static wuffs_base__empty_struct
+wuffs_jpeg__decoder__calculate_single_component_scan_fields(
+    wuffs_jpeg__decoder* self) {
+  uint8_t v_csel = 0;
+
+  self->private_impl.f_scan_comps_bx_offset[0] = 0;
+  self->private_impl.f_scan_comps_by_offset[0] = 0;
+  self->private_impl.f_mcu_num_blocks = 1;
+  self->private_impl.f_mcu_blocks_sselector[0] = 0;
+  v_csel = self->private_impl.f_scan_comps_cselector[0];
+  self->private_impl.f_mcu_blocks_offset[0] = self->private_impl.f_components_workbuf_offsets[v_csel];
+  self->private_impl.f_mcu_blocks_mx_mul[0] = 8;
+  self->private_impl.f_mcu_blocks_my_mul[0] = (8 * self->private_impl.f_components_workbuf_widths[v_csel]);
+  self->private_impl.f_scan_width_in_mcus = wuffs_jpeg__decoder__quantize_dimension(self, self->private_impl.f_width, self->private_impl.f_components_h[v_csel], self->private_impl.f_max_incl_components_h);
+  self->private_impl.f_scan_height_in_mcus = wuffs_jpeg__decoder__quantize_dimension(self, self->private_impl.f_height, self->private_impl.f_components_v[v_csel], self->private_impl.f_max_incl_components_v);
+  return wuffs_base__make_empty_struct();
 }
 
 // -------- func jpeg.decoder.fill_bitstream
@@ -40127,6 +40151,46 @@ wuffs_jpeg__decoder__skip_past_the_next_restart_marker(
   }
 
   return status;
+}
+
+// -------- func jpeg.decoder.apply_progressive_idct
+
+static wuffs_base__empty_struct
+wuffs_jpeg__decoder__apply_progressive_idct(
+    wuffs_jpeg__decoder* self,
+    wuffs_base__slice_u8 a_workbuf) {
+  uint32_t v_csel = 0;
+  uint32_t v_my = 0;
+  uint32_t v_mx = 0;
+  uint64_t v_stride = 0;
+  uint64_t v_offset = 0;
+
+  v_csel = 0;
+  while (v_csel < self->private_impl.f_num_components) {
+    self->private_impl.f_scan_num_components = 1;
+    self->private_impl.f_scan_comps_cselector[0] = ((uint8_t)(v_csel));
+    wuffs_jpeg__decoder__calculate_single_component_scan_fields(self);
+    v_my = 0;
+    while (v_my < self->private_impl.f_scan_height_in_mcus) {
+      v_mx = 0;
+      while (v_mx < self->private_impl.f_scan_width_in_mcus) {
+        wuffs_jpeg__decoder__load_mcu_blocks(self, v_mx, v_my, a_workbuf);
+        v_stride = ((uint64_t)(self->private_impl.f_components_workbuf_widths[v_csel]));
+        v_offset = (self->private_impl.f_mcu_blocks_offset[0] + (((uint64_t)(self->private_impl.f_mcu_blocks_mx_mul[0])) * ((uint64_t)(v_mx))) + (((uint64_t)(self->private_impl.f_mcu_blocks_my_mul[0])) * ((uint64_t)(v_my))));
+        if (v_offset <= ((uint64_t)(a_workbuf.len))) {
+          wuffs_jpeg__decoder__decode_idct(self,
+              wuffs_base__slice_u8__subslice_i(a_workbuf, v_offset),
+              v_stride,
+              0,
+              ((uint32_t)(self->private_impl.f_components_tq[v_csel])));
+        }
+        v_mx += 1;
+      }
+      v_my += 1;
+    }
+    v_csel += 1;
+  }
+  return wuffs_base__make_empty_struct();
 }
 
 // -------- func jpeg.decoder.swizzle_gray
