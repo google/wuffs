@@ -8645,6 +8645,7 @@ extern const char wuffs_jpeg__error__unsupported_marker[];
 extern const char wuffs_jpeg__error__unsupported_precision_12_bits[];
 extern const char wuffs_jpeg__error__unsupported_precision_16_bits[];
 extern const char wuffs_jpeg__error__unsupported_precision[];
+extern const char wuffs_jpeg__error__unsupported_scan_count[];
 
 // ---------------- Public Consts
 
@@ -36614,6 +36615,7 @@ const char wuffs_jpeg__error__unsupported_marker[] = "#jpeg: unsupported marker"
 const char wuffs_jpeg__error__unsupported_precision_12_bits[] = "#jpeg: unsupported precision (12 bits)";
 const char wuffs_jpeg__error__unsupported_precision_16_bits[] = "#jpeg: unsupported precision (16 bits)";
 const char wuffs_jpeg__error__unsupported_precision[] = "#jpeg: unsupported precision";
+const char wuffs_jpeg__error__unsupported_scan_count[] = "#jpeg: unsupported scan count";
 const char wuffs_jpeg__error__internal_error_inconsistent_decoder_state[] = "#jpeg: internal error: inconsistent decoder state";
 
 // ---------------- Private Consts
@@ -39484,6 +39486,10 @@ wuffs_jpeg__decoder__decode_sos(
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
+    if (self->private_impl.f_scan_count >= 64) {
+      status = wuffs_base__make_status(wuffs_jpeg__error__unsupported_scan_count);
+      goto exit;
+    }
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
     status = wuffs_jpeg__decoder__prepare_scan(self, a_src);
     if (status.repr) {

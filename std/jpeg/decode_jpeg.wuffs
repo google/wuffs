@@ -32,6 +32,7 @@ pub status "#unsupported marker"
 pub status "#unsupported precision (12 bits)"
 pub status "#unsupported precision (16 bits)"
 pub status "#unsupported precision"
+pub status "#unsupported scan count"
 
 pri status "#internal error: inconsistent decoder state"
 
@@ -1146,6 +1147,10 @@ pri func decoder.decode_sos?(dst: ptr base.pixel_buffer, src: base.io_reader, wo
     var csel   : base.u8[..= 3]
     var stride : base.u64[..= 0x1_0008]
     var offset : base.u64
+
+    if this.scan_count >= 64 {
+        return "#unsupported scan count"
+    }
 
     this.prepare_scan?(src: args.src)
 
