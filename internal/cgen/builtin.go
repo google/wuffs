@@ -135,7 +135,7 @@ func (g *gen) writeBuiltinCall(b *buffer, n *a.Expr, sideEffectsOnly bool, depth
 		case t.IDUtility:
 			switch method.Ident() {
 			case t.IDCPUArchIs32Bit:
-				b.writes("(sizeof(void*) == 4)")
+				b.writes("(sizeof(void*) == 4u)")
 				return nil
 			case t.IDEmptyIOReader, t.IDEmptyIOWriter:
 				if !g.currFunk.usesEmptyIOBuffer {
@@ -359,11 +359,11 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 		return nil
 
 	case t.IDHistoryPosition:
-		b.printf("(%s ? %s->meta.pos : 0)", recvName, recvName)
+		b.printf("(%s ? %s->meta.pos : 0u)", recvName, recvName)
 		return nil
 
 	case t.IDPosition:
-		b.printf("wuffs_base__u64__sat_add((%s ? %s->meta.pos : 0), ((uint64_t)(%s%s - %s%s)))",
+		b.printf("wuffs_base__u64__sat_add((%s ? %s->meta.pos : 0u), ((uint64_t)(%s%s - %s%s)))",
 			recvName, recvName, iopPrefix, recvName, io0Prefix, recvName)
 		return nil
 
@@ -796,7 +796,7 @@ func (g *gen) writeBuiltinNumType(b *buffer, recv *a.Expr, method t.ID, args []*
 			mask := big.NewInt(0)
 			mask.Lsh(one, uint(cv.Uint64()))
 			mask.Sub(mask, one)
-			b.printf("0x%s", strings.ToUpper(mask.Text(16)))
+			b.printf("0x%su", strings.ToUpper(mask.Text(16)))
 		} else {
 			if sz, err := g.sizeof(recv.MType()); err != nil {
 				return err
@@ -822,13 +822,13 @@ func (g *gen) writeBuiltinNumType(b *buffer, recv *a.Expr, method t.ID, args []*
 		if sz, err := g.sizeof(recv.MType()); err != nil {
 			return err
 		} else {
-			b.printf("%d", 8*sz)
+			b.printf("%du", 8*sz)
 		}
-		b.writes(" - (")
+		b.writes(" - ")
 		if err := g.writeExpr(b, args[0].AsArg().Value(), false, depth); err != nil {
 			return err
 		}
-		b.writes(")))")
+		b.writes("))")
 		return nil
 
 	case t.IDMax:
@@ -957,7 +957,7 @@ func (g *gen) writeBuiltinSlice(b *buffer, recv *a.Expr, method t.ID, args []*a.
 		return nil
 
 	case t.IDUintptrLow12Bits:
-		b.writes("((uint32_t)(0xFFF & (uintptr_t)(")
+		b.writes("((uint32_t)(0xFFFu & (uintptr_t)(")
 		if err := g.writeExpr(b, recv, false, depth); err != nil {
 			return err
 		}
@@ -1052,7 +1052,7 @@ func (g *gen) writeBuiltinSliceCopyFromSlice8(b *buffer, recv *a.Expr, method t.
 		}
 	}
 	// TODO: don't assume that the slice is a slice of base.u8.
-	b.writes("), 8)")
+	b.writes("), 8u)")
 	return nil
 }
 
@@ -1318,7 +1318,7 @@ func (g *gen) writeReadUxxAsUyy(b *buffer, n *a.Expr, preName string, xx uint8, 
 	b.printf("uint32_t num_bits_%d = ((uint32_t)(*scratch", temp)
 	switch endianness {
 	case 'b':
-		b.writes(" & 0xFF));\n*scratch >>= 8;\n*scratch <<= 8;\n")
+		b.writes(" & 0xFFu));\n*scratch >>= 8;\n*scratch <<= 8;\n")
 		b.printf("*scratch |= ((uint64_t)(*%s%s++)) << (56 - num_bits_%d);\n",
 			iopPrefix, preName, temp)
 	case 'l':
@@ -1337,7 +1337,7 @@ func (g *gen) writeReadUxxAsUyy(b *buffer, n *a.Expr, preName string, xx uint8, 
 	b.printf("break;\n")
 	b.printf("}\n")
 
-	b.printf("num_bits_%d += 8;\n", temp)
+	b.printf("num_bits_%d += 8u;\n", temp)
 	switch endianness {
 	case 'b':
 		b.printf("*scratch |= ((uint64_t)(num_bits_%d));\n", temp)

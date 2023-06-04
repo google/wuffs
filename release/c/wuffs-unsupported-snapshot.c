@@ -23890,8 +23890,8 @@ wuffs_adler32__hasher__up__choosy_default(
   wuffs_base__slice_u8 v_remaining = {0};
   wuffs_base__slice_u8 v_p = {0};
 
-  v_s1 = ((self->private_impl.f_state) & 0xFFFF);
-  v_s2 = ((self->private_impl.f_state) >> (32 - (16)));
+  v_s1 = ((self->private_impl.f_state) & 0xFFFFu);
+  v_s2 = ((self->private_impl.f_state) >> (32u - 16));
   while (((uint64_t)(a_x.len)) > 0) {
     v_remaining = wuffs_base__slice_u8__subslice_j(a_x, 0);
     if (((uint64_t)(a_x.len)) > 5552) {
@@ -23972,9 +23972,9 @@ wuffs_adler32__hasher__up_arm_neon(
   uint32_t v_num_iterate_bytes = 0;
   uint64_t v_tail_index = 0;
 
-  v_s1 = ((self->private_impl.f_state) & 0xFFFF);
-  v_s2 = ((self->private_impl.f_state) >> (32 - (16)));
-  while ((((uint64_t)(a_x.len)) > 0) && ((15 & ((uint32_t)(0xFFF & (uintptr_t)(a_x.ptr)))) != 0)) {
+  v_s1 = ((self->private_impl.f_state) & 0xFFFFu);
+  v_s2 = ((self->private_impl.f_state) >> (32u - 16));
+  while ((((uint64_t)(a_x.len)) > 0) && ((15 & ((uint32_t)(0xFFFu & (uintptr_t)(a_x.ptr)))) != 0)) {
     v_s1 += ((uint32_t)(a_x.ptr[0]));
     v_s2 += v_s1;
     a_x = wuffs_base__slice_u8__subslice_i(a_x, 1);
@@ -24082,8 +24082,8 @@ wuffs_adler32__hasher__up_x86_sse42(
   v_ones = _mm_set1_epi16((int16_t)(1));
   v_weights__left = _mm_set_epi8((int8_t)(17), (int8_t)(18), (int8_t)(19), (int8_t)(20), (int8_t)(21), (int8_t)(22), (int8_t)(23), (int8_t)(24), (int8_t)(25), (int8_t)(26), (int8_t)(27), (int8_t)(28), (int8_t)(29), (int8_t)(30), (int8_t)(31), (int8_t)(32));
   v_weights_right = _mm_set_epi8((int8_t)(1), (int8_t)(2), (int8_t)(3), (int8_t)(4), (int8_t)(5), (int8_t)(6), (int8_t)(7), (int8_t)(8), (int8_t)(9), (int8_t)(10), (int8_t)(11), (int8_t)(12), (int8_t)(13), (int8_t)(14), (int8_t)(15), (int8_t)(16));
-  v_s1 = ((self->private_impl.f_state) & 0xFFFF);
-  v_s2 = ((self->private_impl.f_state) >> (32 - (16)));
+  v_s1 = ((self->private_impl.f_state) & 0xFFFFu);
+  v_s2 = ((self->private_impl.f_state) >> (32u - 16));
   while (((uint64_t)(a_x.len)) > 0) {
     v_remaining = wuffs_base__slice_u8__subslice_j(a_x, 0);
     if (((uint64_t)(a_x.len)) > 5536) {
@@ -24504,7 +24504,7 @@ wuffs_bmp__decoder__do_decode_image_config(
             t_0 = ((uint32_t)(*scratch));
             break;
           }
-          num_bits_0 += 8;
+          num_bits_0 += 8u;
           *scratch |= ((uint64_t)(num_bits_0)) << 56;
         }
       }
@@ -24546,7 +24546,7 @@ wuffs_bmp__decoder__do_decode_image_config(
             t_1 = ((uint32_t)(*scratch));
             break;
           }
-          num_bits_1 += 8;
+          num_bits_1 += 8u;
           *scratch |= ((uint64_t)(num_bits_1)) << 56;
         }
       }
@@ -24581,7 +24581,7 @@ wuffs_bmp__decoder__do_decode_image_config(
             t_2 = ((uint32_t)(*scratch));
             break;
           }
-          num_bits_2 += 8;
+          num_bits_2 += 8u;
           *scratch |= ((uint64_t)(num_bits_2)) << 56;
         }
       }
@@ -24616,7 +24616,7 @@ wuffs_bmp__decoder__do_decode_image_config(
               t_3 = ((uint32_t)(*scratch));
               break;
             }
-            num_bits_3 += 8;
+            num_bits_3 += 8u;
             *scratch |= ((uint64_t)(num_bits_3)) << 56;
           }
         }
@@ -24645,7 +24645,7 @@ wuffs_bmp__decoder__do_decode_image_config(
               t_4 = ((uint32_t)(*scratch));
               break;
             }
-            num_bits_4 += 8;
+            num_bits_4 += 8u;
             *scratch |= ((uint64_t)(num_bits_4)) << 56;
           }
         }
@@ -24674,7 +24674,7 @@ wuffs_bmp__decoder__do_decode_image_config(
               t_5 = ((uint32_t)(*scratch));
               break;
             }
-            num_bits_5 += 8;
+            num_bits_5 += 8u;
             *scratch |= ((uint64_t)(num_bits_5)) << 56;
           }
         }
@@ -24707,7 +24707,7 @@ wuffs_bmp__decoder__do_decode_image_config(
               t_6 = ((uint32_t)(*scratch));
               break;
             }
-            num_bits_6 += 8;
+            num_bits_6 += 8u;
             *scratch |= ((uint64_t)(num_bits_6)) << 56;
           }
         }
@@ -24737,7 +24737,7 @@ wuffs_bmp__decoder__do_decode_image_config(
               t_7 = ((uint32_t)(*scratch));
               break;
             }
-            num_bits_7 += 8;
+            num_bits_7 += 8u;
             *scratch |= ((uint64_t)(num_bits_7)) << 56;
           }
         }
@@ -24774,7 +24774,7 @@ wuffs_bmp__decoder__do_decode_image_config(
               t_8 = ((uint32_t)(*scratch));
               break;
             }
-            num_bits_8 += 8;
+            num_bits_8 += 8u;
             *scratch |= ((uint64_t)(num_bits_8)) << 56;
           }
         }
@@ -24811,7 +24811,7 @@ wuffs_bmp__decoder__do_decode_image_config(
               t_9 = ((uint32_t)(*scratch));
               break;
             }
-            num_bits_9 += 8;
+            num_bits_9 += 8u;
             *scratch |= ((uint64_t)(num_bits_9)) << 56;
           }
         }
@@ -24844,7 +24844,7 @@ wuffs_bmp__decoder__do_decode_image_config(
               t_10 = ((uint32_t)(*scratch));
               break;
             }
-            num_bits_10 += 8;
+            num_bits_10 += 8u;
             *scratch |= ((uint64_t)(num_bits_10)) << 56;
           }
         }
@@ -24874,7 +24874,7 @@ wuffs_bmp__decoder__do_decode_image_config(
               t_11 = ((uint32_t)(*scratch));
               break;
             }
-            num_bits_11 += 8;
+            num_bits_11 += 8u;
             *scratch |= ((uint64_t)(num_bits_11)) << 56;
           }
         }
@@ -24911,7 +24911,7 @@ wuffs_bmp__decoder__do_decode_image_config(
               t_12 = ((uint32_t)(*scratch));
               break;
             }
-            num_bits_12 += 8;
+            num_bits_12 += 8u;
             *scratch |= ((uint64_t)(num_bits_12)) << 56;
           }
         }
@@ -24957,7 +24957,7 @@ wuffs_bmp__decoder__do_decode_image_config(
               t_13 = ((uint32_t)(*scratch));
               break;
             }
-            num_bits_13 += 8;
+            num_bits_13 += 8u;
             *scratch |= ((uint64_t)(num_bits_13)) << 56;
           }
         }
@@ -24990,7 +24990,7 @@ wuffs_bmp__decoder__do_decode_image_config(
               t_14 = ((uint32_t)(*scratch));
               break;
             }
-            num_bits_14 += 8;
+            num_bits_14 += 8u;
             *scratch |= ((uint64_t)(num_bits_14)) << 56;
           }
         }
@@ -25019,7 +25019,7 @@ wuffs_bmp__decoder__do_decode_image_config(
               t_15 = ((uint32_t)(*scratch));
               break;
             }
-            num_bits_15 += 8;
+            num_bits_15 += 8u;
             *scratch |= ((uint64_t)(num_bits_15)) << 56;
           }
         }
@@ -25093,7 +25093,7 @@ wuffs_bmp__decoder__do_decode_image_config(
                   t_16 = ((uint32_t)(*scratch));
                   break;
                 }
-                num_bits_16 += 8;
+                num_bits_16 += 8u;
                 *scratch |= ((uint64_t)(num_bits_16)) << 56;
               }
             }
@@ -25122,7 +25122,7 @@ wuffs_bmp__decoder__do_decode_image_config(
                   t_17 = ((uint32_t)(*scratch));
                   break;
                 }
-                num_bits_17 += 8;
+                num_bits_17 += 8u;
                 *scratch |= ((uint64_t)(num_bits_17)) << 56;
               }
             }
@@ -25151,7 +25151,7 @@ wuffs_bmp__decoder__do_decode_image_config(
                   t_18 = ((uint32_t)(*scratch));
                   break;
                 }
-                num_bits_18 += 8;
+                num_bits_18 += 8u;
                 *scratch |= ((uint64_t)(num_bits_18)) << 56;
               }
             }
@@ -25181,7 +25181,7 @@ wuffs_bmp__decoder__do_decode_image_config(
                     t_19 = ((uint32_t)(*scratch));
                     break;
                   }
-                  num_bits_19 += 8;
+                  num_bits_19 += 8u;
                   *scratch |= ((uint64_t)(num_bits_19)) << 56;
                 }
               }
@@ -26751,7 +26751,7 @@ wuffs_bmp__decoder__read_palette(
                 t_0 = ((uint32_t)(*scratch));
                 break;
               }
-              num_bits_0 += 8;
+              num_bits_0 += 8u;
               *scratch |= ((uint64_t)(num_bits_0)) << 56;
             }
           }
@@ -26790,7 +26790,7 @@ wuffs_bmp__decoder__read_palette(
                 t_1 = ((uint32_t)(*scratch));
                 break;
               }
-              num_bits_1 += 8;
+              num_bits_1 += 8u;
               *scratch |= ((uint64_t)(num_bits_1)) << 56;
             }
           }
@@ -30081,7 +30081,7 @@ wuffs_crc32__ieee_hasher__up_arm_crc32(
   uint32_t v_s = 0;
 
   v_s = (4294967295u ^ self->private_impl.f_state);
-  while ((((uint64_t)(a_x.len)) > 0) && ((15 & ((uint32_t)(0xFFF & (uintptr_t)(a_x.ptr)))) != 0)) {
+  while ((((uint64_t)(a_x.len)) > 0) && ((15 & ((uint32_t)(0xFFFu & (uintptr_t)(a_x.ptr)))) != 0)) {
     v_s = __crc32b(v_s, a_x.ptr[0]);
     a_x = wuffs_base__slice_u8__subslice_i(a_x, 1);
   }
@@ -30167,7 +30167,7 @@ wuffs_crc32__ieee_hasher__up_x86_avx2(
   uint64_t v_tail_index = 0;
 
   v_s = (4294967295u ^ self->private_impl.f_state);
-  while ((((uint64_t)(a_x.len)) > 0) && ((15 & ((uint32_t)(0xFFF & (uintptr_t)(a_x.ptr)))) != 0)) {
+  while ((((uint64_t)(a_x.len)) > 0) && ((15 & ((uint32_t)(0xFFFu & (uintptr_t)(a_x.ptr)))) != 0)) {
     v_s = (WUFFS_CRC32__IEEE_TABLE[0][(((uint8_t)(v_s)) ^ a_x.ptr[0])] ^ (v_s >> 8));
     a_x = wuffs_base__slice_u8__subslice_i(a_x, 1);
   }
@@ -30286,7 +30286,7 @@ wuffs_crc32__ieee_hasher__up_x86_sse42(
   uint64_t v_tail_index = 0;
 
   v_s = (4294967295u ^ self->private_impl.f_state);
-  while ((((uint64_t)(a_x.len)) > 0) && ((15 & ((uint32_t)(0xFFF & (uintptr_t)(a_x.ptr)))) != 0)) {
+  while ((((uint64_t)(a_x.len)) > 0) && ((15 & ((uint32_t)(0xFFFu & (uintptr_t)(a_x.ptr)))) != 0)) {
     v_s = (WUFFS_CRC32__IEEE_TABLE[0][(((uint8_t)(v_s)) ^ a_x.ptr[0])] ^ (v_s >> 8));
     a_x = wuffs_base__slice_u8__subslice_i(a_x, 1);
   }
@@ -30949,7 +30949,7 @@ wuffs_deflate__decoder__decode_blocks(
       }
       self->private_impl.f_end_of_block = false;
       while (true) {
-        if (sizeof(void*) == 4) {
+        if (sizeof(void*) == 4u) {
           if (a_src) {
             a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
           }
@@ -31081,17 +31081,17 @@ wuffs_deflate__decoder__decode_uncompressed(
             t_0 = ((uint32_t)(*scratch));
             break;
           }
-          num_bits_0 += 8;
+          num_bits_0 += 8u;
           *scratch |= ((uint64_t)(num_bits_0)) << 56;
         }
       }
       v_length = t_0;
     }
-    if ((((v_length) & 0xFFFF) + ((v_length) >> (32 - (16)))) != 65535) {
+    if ((((v_length) & 0xFFFFu) + ((v_length) >> (32u - 16))) != 65535) {
       status = wuffs_base__make_status(wuffs_deflate__error__inconsistent_stored_block_length);
       goto exit;
     }
-    v_length = ((v_length) & 0xFFFF);
+    v_length = ((v_length) & 0xFFFFu);
     while (true) {
       v_n_copied = wuffs_base__io_writer__limited_copy_u32_from_reader(
           &iop_a_dst, io2_a_dst,v_length, &iop_a_src, io2_a_src);
@@ -31246,19 +31246,19 @@ wuffs_deflate__decoder__init_dynamic_huffman(
       v_bits |= (v_b0 << v_n_bits);
       v_n_bits += 8;
     }
-    v_n_lit = (((v_bits) & 0x1F) + 257);
+    v_n_lit = (((v_bits) & 0x1Fu) + 257);
     if (v_n_lit > 286) {
       status = wuffs_base__make_status(wuffs_deflate__error__bad_literal_length_code_count);
       goto exit;
     }
     v_bits >>= 5;
-    v_n_dist = (((v_bits) & 0x1F) + 1);
+    v_n_dist = (((v_bits) & 0x1Fu) + 1);
     if (v_n_dist > 30) {
       status = wuffs_base__make_status(wuffs_deflate__error__bad_distance_code_count);
       goto exit;
     }
     v_bits >>= 5;
-    v_n_clen = (((v_bits) & 0xF) + 4);
+    v_n_clen = (((v_bits) & 0xFu) + 4);
     v_bits >>= 4;
     v_n_bits -= 14;
     v_i = 0;
@@ -31750,11 +31750,11 @@ wuffs_deflate__decoder__decode_huffman_bmi2(
   v_n_bits = self->private_impl.f_n_bits;
   v_lmask = ((((uint64_t)(1)) << self->private_impl.f_n_huffs_bits[0]) - 1);
   v_dmask = ((((uint64_t)(1)) << self->private_impl.f_n_huffs_bits[1]) - 1);
-  if (self->private_impl.f_transformed_history_count < (a_dst ? a_dst->meta.pos : 0)) {
+  if (self->private_impl.f_transformed_history_count < (a_dst ? a_dst->meta.pos : 0u)) {
     status = wuffs_base__make_status(wuffs_base__error__bad_i_o_position);
     goto exit;
   }
-  v_hdist_adjustment = ((uint32_t)((self->private_impl.f_transformed_history_count - (a_dst ? a_dst->meta.pos : 0))));
+  v_hdist_adjustment = ((uint32_t)((self->private_impl.f_transformed_history_count - (a_dst ? a_dst->meta.pos : 0u))));
   label__loop__continue:;
   while ((((uint64_t)(io2_a_dst - iop_a_dst)) >= 266) && (((uint64_t)(io2_a_src - iop_a_src)) >= 8)) {
     v_bits |= ((uint64_t)(wuffs_base__peek_u64le__no_bounds_check(iop_a_src) << (v_n_bits & 63)));
@@ -31963,11 +31963,11 @@ wuffs_deflate__decoder__decode_huffman_fast32(
   v_n_bits = self->private_impl.f_n_bits;
   v_lmask = ((((uint32_t)(1)) << self->private_impl.f_n_huffs_bits[0]) - 1);
   v_dmask = ((((uint32_t)(1)) << self->private_impl.f_n_huffs_bits[1]) - 1);
-  if (self->private_impl.f_transformed_history_count < (a_dst ? a_dst->meta.pos : 0)) {
+  if (self->private_impl.f_transformed_history_count < (a_dst ? a_dst->meta.pos : 0u)) {
     status = wuffs_base__make_status(wuffs_base__error__bad_i_o_position);
     goto exit;
   }
-  v_hdist_adjustment = ((uint32_t)((self->private_impl.f_transformed_history_count - (a_dst ? a_dst->meta.pos : 0))));
+  v_hdist_adjustment = ((uint32_t)((self->private_impl.f_transformed_history_count - (a_dst ? a_dst->meta.pos : 0u))));
   label__loop__continue:;
   while ((((uint64_t)(io2_a_dst - iop_a_dst)) >= 266) && (((uint64_t)(io2_a_src - iop_a_src)) >= 12)) {
     if (v_n_bits < 15) {
@@ -32227,11 +32227,11 @@ wuffs_deflate__decoder__decode_huffman_fast64__choosy_default(
   v_n_bits = self->private_impl.f_n_bits;
   v_lmask = ((((uint64_t)(1)) << self->private_impl.f_n_huffs_bits[0]) - 1);
   v_dmask = ((((uint64_t)(1)) << self->private_impl.f_n_huffs_bits[1]) - 1);
-  if (self->private_impl.f_transformed_history_count < (a_dst ? a_dst->meta.pos : 0)) {
+  if (self->private_impl.f_transformed_history_count < (a_dst ? a_dst->meta.pos : 0u)) {
     status = wuffs_base__make_status(wuffs_base__error__bad_i_o_position);
     goto exit;
   }
-  v_hdist_adjustment = ((uint32_t)((self->private_impl.f_transformed_history_count - (a_dst ? a_dst->meta.pos : 0))));
+  v_hdist_adjustment = ((uint32_t)((self->private_impl.f_transformed_history_count - (a_dst ? a_dst->meta.pos : 0u))));
   label__loop__continue:;
   while ((((uint64_t)(io2_a_dst - iop_a_dst)) >= 266) && (((uint64_t)(io2_a_src - iop_a_src)) >= 8)) {
     v_bits |= ((uint64_t)(wuffs_base__peek_u64le__no_bounds_check(iop_a_src) << (v_n_bits & 63)));
@@ -32652,7 +32652,7 @@ wuffs_deflate__decoder__decode_huffman_slow(
           } else {
             v_hlen = v_length;
           }
-          v_hdist += ((uint32_t)(((uint64_t)(self->private_impl.f_transformed_history_count - (a_dst ? a_dst->meta.pos : 0)))));
+          v_hdist += ((uint32_t)(((uint64_t)(self->private_impl.f_transformed_history_count - (a_dst ? a_dst->meta.pos : 0u)))));
           if (self->private_impl.f_history_index < v_hdist) {
             status = wuffs_base__make_status(wuffs_deflate__error__bad_distance);
             goto exit;
@@ -33093,7 +33093,7 @@ wuffs_lzw__decoder__read_from(
       v_output_wi = ((v_output_wi + 1 + ((uint32_t)(self->private_data.f_lm1s[v_c]))) & 8191);
       v_steps = (((uint32_t)(self->private_data.f_lm1s[v_c])) >> 3);
       while (true) {
-        memcpy((self->private_data.f_output)+(v_o), (self->private_data.f_suffixes[v_c]), 8);
+        memcpy((self->private_data.f_output)+(v_o), (self->private_data.f_suffixes[v_c]), 8u);
         if (v_steps <= 0) {
           goto label__1__break;
         }
@@ -34702,7 +34702,7 @@ wuffs_gif__decoder__decode_lsd(
             t_0 = ((uint32_t)(*scratch));
             break;
           }
-          num_bits_0 += 8;
+          num_bits_0 += 8u;
           *scratch |= ((uint64_t)(num_bits_0)) << 56;
         }
       }
@@ -34731,7 +34731,7 @@ wuffs_gif__decoder__decode_lsd(
             t_1 = ((uint32_t)(*scratch));
             break;
           }
-          num_bits_1 += 8;
+          num_bits_1 += 8u;
           *scratch |= ((uint64_t)(num_bits_1)) << 56;
         }
       }
@@ -34781,7 +34781,7 @@ wuffs_gif__decoder__decode_lsd(
                 goto suspend;
               }
               uint64_t* scratch = &self->private_data.s_decode_lsd[0].scratch;
-              uint32_t num_bits_4 = ((uint32_t)(*scratch & 0xFF));
+              uint32_t num_bits_4 = ((uint32_t)(*scratch & 0xFFu));
               *scratch >>= 8;
               *scratch <<= 8;
               *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_4);
@@ -34789,7 +34789,7 @@ wuffs_gif__decoder__decode_lsd(
                 t_4 = ((uint32_t)(*scratch >> 40));
                 break;
               }
-              num_bits_4 += 8;
+              num_bits_4 += 8u;
               *scratch |= ((uint64_t)(num_bits_4));
             }
           }
@@ -35167,7 +35167,7 @@ wuffs_gif__decoder__decode_ae(
                 t_4 = ((uint32_t)(*scratch));
                 break;
               }
-              num_bits_4 += 8;
+              num_bits_4 += 8u;
               *scratch |= ((uint64_t)(num_bits_4)) << 56;
             }
           }
@@ -35310,7 +35310,7 @@ wuffs_gif__decoder__decode_gc(
             t_2 = ((uint16_t)(*scratch));
             break;
           }
-          num_bits_2 += 8;
+          num_bits_2 += 8u;
           *scratch |= ((uint64_t)(num_bits_2)) << 56;
         }
       }
@@ -35405,7 +35405,7 @@ wuffs_gif__decoder__decode_id_part0(
             t_0 = ((uint32_t)(*scratch));
             break;
           }
-          num_bits_0 += 8;
+          num_bits_0 += 8u;
           *scratch |= ((uint64_t)(num_bits_0)) << 56;
         }
       }
@@ -35434,7 +35434,7 @@ wuffs_gif__decoder__decode_id_part0(
             t_1 = ((uint32_t)(*scratch));
             break;
           }
-          num_bits_1 += 8;
+          num_bits_1 += 8u;
           *scratch |= ((uint64_t)(num_bits_1)) << 56;
         }
       }
@@ -35463,7 +35463,7 @@ wuffs_gif__decoder__decode_id_part0(
             t_2 = ((uint32_t)(*scratch));
             break;
           }
-          num_bits_2 += 8;
+          num_bits_2 += 8u;
           *scratch |= ((uint64_t)(num_bits_2)) << 56;
         }
       }
@@ -35493,7 +35493,7 @@ wuffs_gif__decoder__decode_id_part0(
             t_3 = ((uint32_t)(*scratch));
             break;
           }
-          num_bits_3 += 8;
+          num_bits_3 += 8u;
           *scratch |= ((uint64_t)(num_bits_3)) << 56;
         }
       }
@@ -35598,7 +35598,7 @@ wuffs_gif__decoder__decode_id_part1(
                 goto suspend;
               }
               uint64_t* scratch = &self->private_data.s_decode_id_part1[0].scratch;
-              uint32_t num_bits_1 = ((uint32_t)(*scratch & 0xFF));
+              uint32_t num_bits_1 = ((uint32_t)(*scratch & 0xFFu));
               *scratch >>= 8;
               *scratch <<= 8;
               *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_1);
@@ -35606,7 +35606,7 @@ wuffs_gif__decoder__decode_id_part1(
                 t_1 = ((uint32_t)(*scratch >> 40));
                 break;
               }
-              num_bits_1 += 8;
+              num_bits_1 += 8u;
               *scratch |= ((uint64_t)(num_bits_1));
             }
           }
@@ -36415,7 +36415,7 @@ wuffs_gzip__decoder__do_transform_io(
               t_4 = ((uint16_t)(*scratch));
               break;
             }
-            num_bits_4 += 8;
+            num_bits_4 += 8u;
             *scratch |= ((uint64_t)(num_bits_4)) << 56;
           }
         }
@@ -36532,7 +36532,7 @@ wuffs_gzip__decoder__do_transform_io(
             t_8 = ((uint32_t)(*scratch));
             break;
           }
-          num_bits_8 += 8;
+          num_bits_8 += 8u;
           *scratch |= ((uint64_t)(num_bits_8)) << 56;
         }
       }
@@ -36561,7 +36561,7 @@ wuffs_gzip__decoder__do_transform_io(
             t_9 = ((uint32_t)(*scratch));
             break;
           }
-          num_bits_9 += 8;
+          num_bits_9 += 8u;
           *scratch |= ((uint64_t)(num_bits_9)) << 56;
         }
       }
@@ -38043,7 +38043,7 @@ wuffs_jpeg__decoder__do_decode_image_config(
                 goto suspend;
               }
               uint64_t* scratch = &self->private_data.s_do_decode_image_config[0].scratch;
-              uint32_t num_bits_4 = ((uint32_t)(*scratch & 0xFF));
+              uint32_t num_bits_4 = ((uint32_t)(*scratch & 0xFFu));
               *scratch >>= 8;
               *scratch <<= 8;
               *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_4);
@@ -38051,7 +38051,7 @@ wuffs_jpeg__decoder__do_decode_image_config(
                 t_4 = ((uint32_t)(*scratch >> 48));
                 break;
               }
-              num_bits_4 += 8;
+              num_bits_4 += 8u;
               *scratch |= ((uint64_t)(num_bits_4));
             }
           }
@@ -38338,7 +38338,7 @@ wuffs_jpeg__decoder__decode_dri(
             goto suspend;
           }
           uint64_t* scratch = &self->private_data.s_decode_dri[0].scratch;
-          uint32_t num_bits_0 = ((uint32_t)(*scratch & 0xFF));
+          uint32_t num_bits_0 = ((uint32_t)(*scratch & 0xFFu));
           *scratch >>= 8;
           *scratch <<= 8;
           *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_0);
@@ -38346,7 +38346,7 @@ wuffs_jpeg__decoder__decode_dri(
             t_0 = ((uint16_t)(*scratch >> 48));
             break;
           }
-          num_bits_0 += 8;
+          num_bits_0 += 8u;
           *scratch |= ((uint64_t)(num_bits_0));
         }
       }
@@ -38457,7 +38457,7 @@ wuffs_jpeg__decoder__decode_sof(
             goto suspend;
           }
           uint64_t* scratch = &self->private_data.s_decode_sof[0].scratch;
-          uint32_t num_bits_1 = ((uint32_t)(*scratch & 0xFF));
+          uint32_t num_bits_1 = ((uint32_t)(*scratch & 0xFFu));
           *scratch >>= 8;
           *scratch <<= 8;
           *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_1);
@@ -38465,7 +38465,7 @@ wuffs_jpeg__decoder__decode_sof(
             t_1 = ((uint32_t)(*scratch >> 48));
             break;
           }
-          num_bits_1 += 8;
+          num_bits_1 += 8u;
           *scratch |= ((uint64_t)(num_bits_1));
         }
       }
@@ -38490,7 +38490,7 @@ wuffs_jpeg__decoder__decode_sof(
             goto suspend;
           }
           uint64_t* scratch = &self->private_data.s_decode_sof[0].scratch;
-          uint32_t num_bits_2 = ((uint32_t)(*scratch & 0xFF));
+          uint32_t num_bits_2 = ((uint32_t)(*scratch & 0xFFu));
           *scratch >>= 8;
           *scratch <<= 8;
           *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_2);
@@ -38498,7 +38498,7 @@ wuffs_jpeg__decoder__decode_sof(
             t_2 = ((uint32_t)(*scratch >> 48));
             break;
           }
-          num_bits_2 += 8;
+          num_bits_2 += 8u;
           *scratch |= ((uint64_t)(num_bits_2));
         }
       }
@@ -39068,7 +39068,7 @@ wuffs_jpeg__decoder__do_decode_frame(
                 goto suspend;
               }
               uint64_t* scratch = &self->private_data.s_do_decode_frame[0].scratch;
-              uint32_t num_bits_2 = ((uint32_t)(*scratch & 0xFF));
+              uint32_t num_bits_2 = ((uint32_t)(*scratch & 0xFFu));
               *scratch >>= 8;
               *scratch <<= 8;
               *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_2);
@@ -39076,7 +39076,7 @@ wuffs_jpeg__decoder__do_decode_frame(
                 t_2 = ((uint32_t)(*scratch >> 48));
                 break;
               }
-              num_bits_2 += 8;
+              num_bits_2 += 8u;
               *scratch |= ((uint64_t)(num_bits_2));
             }
           }
@@ -44914,7 +44914,7 @@ wuffs_nie__decoder__do_decode_image_config(
             t_0 = ((uint32_t)(*scratch));
             break;
           }
-          num_bits_0 += 8;
+          num_bits_0 += 8u;
           *scratch |= ((uint64_t)(num_bits_0)) << 56;
         }
       }
@@ -44947,7 +44947,7 @@ wuffs_nie__decoder__do_decode_image_config(
             t_1 = ((uint32_t)(*scratch));
             break;
           }
-          num_bits_1 += 8;
+          num_bits_1 += 8u;
           *scratch |= ((uint64_t)(num_bits_1)) << 56;
         }
       }
@@ -44990,7 +44990,7 @@ wuffs_nie__decoder__do_decode_image_config(
             t_2 = ((uint32_t)(*scratch));
             break;
           }
-          num_bits_2 += 8;
+          num_bits_2 += 8u;
           *scratch |= ((uint64_t)(num_bits_2)) << 56;
         }
       }
@@ -45027,7 +45027,7 @@ wuffs_nie__decoder__do_decode_image_config(
             t_3 = ((uint32_t)(*scratch));
             break;
           }
-          num_bits_3 += 8;
+          num_bits_3 += 8u;
           *scratch |= ((uint64_t)(num_bits_3)) << 56;
         }
       }
@@ -46005,7 +46005,7 @@ wuffs_zlib__decoder__do_transform_io(
               goto suspend;
             }
             uint64_t* scratch = &self->private_data.s_do_transform_io[0].scratch;
-            uint32_t num_bits_0 = ((uint32_t)(*scratch & 0xFF));
+            uint32_t num_bits_0 = ((uint32_t)(*scratch & 0xFFu));
             *scratch >>= 8;
             *scratch <<= 8;
             *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_0);
@@ -46013,7 +46013,7 @@ wuffs_zlib__decoder__do_transform_io(
               t_0 = ((uint16_t)(*scratch >> 48));
               break;
             }
-            num_bits_0 += 8;
+            num_bits_0 += 8u;
             *scratch |= ((uint64_t)(num_bits_0));
           }
         }
@@ -46049,7 +46049,7 @@ wuffs_zlib__decoder__do_transform_io(
                 goto suspend;
               }
               uint64_t* scratch = &self->private_data.s_do_transform_io[0].scratch;
-              uint32_t num_bits_1 = ((uint32_t)(*scratch & 0xFF));
+              uint32_t num_bits_1 = ((uint32_t)(*scratch & 0xFFu));
               *scratch >>= 8;
               *scratch <<= 8;
               *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_1);
@@ -46057,7 +46057,7 @@ wuffs_zlib__decoder__do_transform_io(
                 t_1 = ((uint32_t)(*scratch >> 32));
                 break;
               }
-              num_bits_1 += 8;
+              num_bits_1 += 8u;
               *scratch |= ((uint64_t)(num_bits_1));
             }
           }
@@ -46122,7 +46122,7 @@ wuffs_zlib__decoder__do_transform_io(
               goto suspend;
             }
             uint64_t* scratch = &self->private_data.s_do_transform_io[0].scratch;
-            uint32_t num_bits_3 = ((uint32_t)(*scratch & 0xFF));
+            uint32_t num_bits_3 = ((uint32_t)(*scratch & 0xFFu));
             *scratch >>= 8;
             *scratch <<= 8;
             *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_3);
@@ -46130,7 +46130,7 @@ wuffs_zlib__decoder__do_transform_io(
               t_3 = ((uint32_t)(*scratch >> 32));
               break;
             }
-            num_bits_3 += 8;
+            num_bits_3 += 8u;
             *scratch |= ((uint64_t)(num_bits_3));
           }
         }
@@ -48206,7 +48206,7 @@ wuffs_png__decoder__do_decode_image_config(
               t_0 = ((uint64_t)(*scratch));
               break;
             }
-            num_bits_0 += 8;
+            num_bits_0 += 8u;
             *scratch |= ((uint64_t)(num_bits_0)) << 56;
           }
         }
@@ -48239,7 +48239,7 @@ wuffs_png__decoder__do_decode_image_config(
               t_1 = ((uint64_t)(*scratch));
               break;
             }
-            num_bits_1 += 8;
+            num_bits_1 += 8u;
             *scratch |= ((uint64_t)(num_bits_1)) << 56;
           }
         }
@@ -48297,7 +48297,7 @@ wuffs_png__decoder__do_decode_image_config(
               goto suspend;
             }
             uint64_t* scratch = &self->private_data.s_do_decode_image_config[0].scratch;
-            uint32_t num_bits_3 = ((uint32_t)(*scratch & 0xFF));
+            uint32_t num_bits_3 = ((uint32_t)(*scratch & 0xFFu));
             *scratch >>= 8;
             *scratch <<= 8;
             *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_3);
@@ -48305,7 +48305,7 @@ wuffs_png__decoder__do_decode_image_config(
               t_3 = ((uint32_t)(*scratch >> 32));
               break;
             }
-            num_bits_3 += 8;
+            num_bits_3 += 8u;
             *scratch |= ((uint64_t)(num_bits_3));
           }
         }
@@ -48394,7 +48394,7 @@ wuffs_png__decoder__do_decode_image_config(
               goto suspend;
             }
             uint64_t* scratch = &self->private_data.s_do_decode_image_config[0].scratch;
-            uint32_t num_bits_5 = ((uint32_t)(*scratch & 0xFF));
+            uint32_t num_bits_5 = ((uint32_t)(*scratch & 0xFFu));
             *scratch >>= 8;
             *scratch <<= 8;
             *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_5);
@@ -48402,7 +48402,7 @@ wuffs_png__decoder__do_decode_image_config(
               t_5 = ((uint32_t)(*scratch >> 32));
               break;
             }
-            num_bits_5 += 8;
+            num_bits_5 += 8u;
             *scratch |= ((uint64_t)(num_bits_5));
           }
         }
@@ -48502,7 +48502,7 @@ wuffs_png__decoder__decode_ihdr(
             goto suspend;
           }
           uint64_t* scratch = &self->private_data.s_decode_ihdr[0].scratch;
-          uint32_t num_bits_0 = ((uint32_t)(*scratch & 0xFF));
+          uint32_t num_bits_0 = ((uint32_t)(*scratch & 0xFFu));
           *scratch >>= 8;
           *scratch <<= 8;
           *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_0);
@@ -48510,7 +48510,7 @@ wuffs_png__decoder__decode_ihdr(
             t_0 = ((uint32_t)(*scratch >> 32));
             break;
           }
-          num_bits_0 += 8;
+          num_bits_0 += 8u;
           *scratch |= ((uint64_t)(num_bits_0));
         }
       }
@@ -48539,7 +48539,7 @@ wuffs_png__decoder__decode_ihdr(
             goto suspend;
           }
           uint64_t* scratch = &self->private_data.s_decode_ihdr[0].scratch;
-          uint32_t num_bits_1 = ((uint32_t)(*scratch & 0xFF));
+          uint32_t num_bits_1 = ((uint32_t)(*scratch & 0xFFu));
           *scratch >>= 8;
           *scratch <<= 8;
           *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_1);
@@ -48547,7 +48547,7 @@ wuffs_png__decoder__decode_ihdr(
             t_1 = ((uint32_t)(*scratch >> 32));
             break;
           }
-          num_bits_1 += 8;
+          num_bits_1 += 8u;
           *scratch |= ((uint64_t)(num_bits_1));
         }
       }
@@ -49097,7 +49097,7 @@ wuffs_png__decoder__decode_actl(
             goto suspend;
           }
           uint64_t* scratch = &self->private_data.s_decode_actl[0].scratch;
-          uint32_t num_bits_0 = ((uint32_t)(*scratch & 0xFF));
+          uint32_t num_bits_0 = ((uint32_t)(*scratch & 0xFFu));
           *scratch >>= 8;
           *scratch <<= 8;
           *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_0);
@@ -49105,7 +49105,7 @@ wuffs_png__decoder__decode_actl(
             t_0 = ((uint32_t)(*scratch >> 32));
             break;
           }
-          num_bits_0 += 8;
+          num_bits_0 += 8u;
           *scratch |= ((uint64_t)(num_bits_0));
         }
       }
@@ -49130,7 +49130,7 @@ wuffs_png__decoder__decode_actl(
             goto suspend;
           }
           uint64_t* scratch = &self->private_data.s_decode_actl[0].scratch;
-          uint32_t num_bits_1 = ((uint32_t)(*scratch & 0xFF));
+          uint32_t num_bits_1 = ((uint32_t)(*scratch & 0xFFu));
           *scratch >>= 8;
           *scratch <<= 8;
           *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_1);
@@ -49138,7 +49138,7 @@ wuffs_png__decoder__decode_actl(
             t_1 = ((uint32_t)(*scratch >> 32));
             break;
           }
-          num_bits_1 += 8;
+          num_bits_1 += 8u;
           *scratch |= ((uint64_t)(num_bits_1));
         }
       }
@@ -49214,7 +49214,7 @@ wuffs_png__decoder__decode_chrm(
             goto suspend;
           }
           uint64_t* scratch = &self->private_data.s_decode_chrm[0].scratch;
-          uint32_t num_bits_0 = ((uint32_t)(*scratch & 0xFF));
+          uint32_t num_bits_0 = ((uint32_t)(*scratch & 0xFFu));
           *scratch >>= 8;
           *scratch <<= 8;
           *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_0);
@@ -49222,7 +49222,7 @@ wuffs_png__decoder__decode_chrm(
             t_0 = ((uint64_t)(*scratch >> 32));
             break;
           }
-          num_bits_0 += 8;
+          num_bits_0 += 8u;
           *scratch |= ((uint64_t)(num_bits_0));
         }
       }
@@ -49244,7 +49244,7 @@ wuffs_png__decoder__decode_chrm(
             goto suspend;
           }
           uint64_t* scratch = &self->private_data.s_decode_chrm[0].scratch;
-          uint32_t num_bits_1 = ((uint32_t)(*scratch & 0xFF));
+          uint32_t num_bits_1 = ((uint32_t)(*scratch & 0xFFu));
           *scratch >>= 8;
           *scratch <<= 8;
           *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_1);
@@ -49252,7 +49252,7 @@ wuffs_png__decoder__decode_chrm(
             t_1 = ((uint64_t)(*scratch >> 32));
             break;
           }
-          num_bits_1 += 8;
+          num_bits_1 += 8u;
           *scratch |= ((uint64_t)(num_bits_1));
         }
       }
@@ -49274,7 +49274,7 @@ wuffs_png__decoder__decode_chrm(
             goto suspend;
           }
           uint64_t* scratch = &self->private_data.s_decode_chrm[0].scratch;
-          uint32_t num_bits_2 = ((uint32_t)(*scratch & 0xFF));
+          uint32_t num_bits_2 = ((uint32_t)(*scratch & 0xFFu));
           *scratch >>= 8;
           *scratch <<= 8;
           *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_2);
@@ -49282,7 +49282,7 @@ wuffs_png__decoder__decode_chrm(
             t_2 = ((uint64_t)(*scratch >> 32));
             break;
           }
-          num_bits_2 += 8;
+          num_bits_2 += 8u;
           *scratch |= ((uint64_t)(num_bits_2));
         }
       }
@@ -49305,7 +49305,7 @@ wuffs_png__decoder__decode_chrm(
             goto suspend;
           }
           uint64_t* scratch = &self->private_data.s_decode_chrm[0].scratch;
-          uint32_t num_bits_3 = ((uint32_t)(*scratch & 0xFF));
+          uint32_t num_bits_3 = ((uint32_t)(*scratch & 0xFFu));
           *scratch >>= 8;
           *scratch <<= 8;
           *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_3);
@@ -49313,7 +49313,7 @@ wuffs_png__decoder__decode_chrm(
             t_3 = ((uint64_t)(*scratch >> 32));
             break;
           }
-          num_bits_3 += 8;
+          num_bits_3 += 8u;
           *scratch |= ((uint64_t)(num_bits_3));
         }
       }
@@ -49335,7 +49335,7 @@ wuffs_png__decoder__decode_chrm(
             goto suspend;
           }
           uint64_t* scratch = &self->private_data.s_decode_chrm[0].scratch;
-          uint32_t num_bits_4 = ((uint32_t)(*scratch & 0xFF));
+          uint32_t num_bits_4 = ((uint32_t)(*scratch & 0xFFu));
           *scratch >>= 8;
           *scratch <<= 8;
           *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_4);
@@ -49343,7 +49343,7 @@ wuffs_png__decoder__decode_chrm(
             t_4 = ((uint64_t)(*scratch >> 32));
             break;
           }
-          num_bits_4 += 8;
+          num_bits_4 += 8u;
           *scratch |= ((uint64_t)(num_bits_4));
         }
       }
@@ -49365,7 +49365,7 @@ wuffs_png__decoder__decode_chrm(
             goto suspend;
           }
           uint64_t* scratch = &self->private_data.s_decode_chrm[0].scratch;
-          uint32_t num_bits_5 = ((uint32_t)(*scratch & 0xFF));
+          uint32_t num_bits_5 = ((uint32_t)(*scratch & 0xFFu));
           *scratch >>= 8;
           *scratch <<= 8;
           *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_5);
@@ -49373,7 +49373,7 @@ wuffs_png__decoder__decode_chrm(
             t_5 = ((uint64_t)(*scratch >> 32));
             break;
           }
-          num_bits_5 += 8;
+          num_bits_5 += 8u;
           *scratch |= ((uint64_t)(num_bits_5));
         }
       }
@@ -49396,7 +49396,7 @@ wuffs_png__decoder__decode_chrm(
             goto suspend;
           }
           uint64_t* scratch = &self->private_data.s_decode_chrm[0].scratch;
-          uint32_t num_bits_6 = ((uint32_t)(*scratch & 0xFF));
+          uint32_t num_bits_6 = ((uint32_t)(*scratch & 0xFFu));
           *scratch >>= 8;
           *scratch <<= 8;
           *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_6);
@@ -49404,7 +49404,7 @@ wuffs_png__decoder__decode_chrm(
             t_6 = ((uint64_t)(*scratch >> 32));
             break;
           }
-          num_bits_6 += 8;
+          num_bits_6 += 8u;
           *scratch |= ((uint64_t)(num_bits_6));
         }
       }
@@ -49426,7 +49426,7 @@ wuffs_png__decoder__decode_chrm(
             goto suspend;
           }
           uint64_t* scratch = &self->private_data.s_decode_chrm[0].scratch;
-          uint32_t num_bits_7 = ((uint32_t)(*scratch & 0xFF));
+          uint32_t num_bits_7 = ((uint32_t)(*scratch & 0xFFu));
           *scratch >>= 8;
           *scratch <<= 8;
           *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_7);
@@ -49434,7 +49434,7 @@ wuffs_png__decoder__decode_chrm(
             t_7 = ((uint64_t)(*scratch >> 32));
             break;
           }
-          num_bits_7 += 8;
+          num_bits_7 += 8u;
           *scratch |= ((uint64_t)(num_bits_7));
         }
       }
@@ -49555,7 +49555,7 @@ wuffs_png__decoder__decode_fctl(
             goto suspend;
           }
           uint64_t* scratch = &self->private_data.s_decode_fctl[0].scratch;
-          uint32_t num_bits_0 = ((uint32_t)(*scratch & 0xFF));
+          uint32_t num_bits_0 = ((uint32_t)(*scratch & 0xFFu));
           *scratch >>= 8;
           *scratch <<= 8;
           *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_0);
@@ -49563,7 +49563,7 @@ wuffs_png__decoder__decode_fctl(
             t_0 = ((uint32_t)(*scratch >> 32));
             break;
           }
-          num_bits_0 += 8;
+          num_bits_0 += 8u;
           *scratch |= ((uint64_t)(num_bits_0));
         }
       }
@@ -49592,7 +49592,7 @@ wuffs_png__decoder__decode_fctl(
             goto suspend;
           }
           uint64_t* scratch = &self->private_data.s_decode_fctl[0].scratch;
-          uint32_t num_bits_1 = ((uint32_t)(*scratch & 0xFF));
+          uint32_t num_bits_1 = ((uint32_t)(*scratch & 0xFFu));
           *scratch >>= 8;
           *scratch <<= 8;
           *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_1);
@@ -49600,7 +49600,7 @@ wuffs_png__decoder__decode_fctl(
             t_1 = ((uint32_t)(*scratch >> 32));
             break;
           }
-          num_bits_1 += 8;
+          num_bits_1 += 8u;
           *scratch |= ((uint64_t)(num_bits_1));
         }
       }
@@ -49621,7 +49621,7 @@ wuffs_png__decoder__decode_fctl(
             goto suspend;
           }
           uint64_t* scratch = &self->private_data.s_decode_fctl[0].scratch;
-          uint32_t num_bits_2 = ((uint32_t)(*scratch & 0xFF));
+          uint32_t num_bits_2 = ((uint32_t)(*scratch & 0xFFu));
           *scratch >>= 8;
           *scratch <<= 8;
           *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_2);
@@ -49629,7 +49629,7 @@ wuffs_png__decoder__decode_fctl(
             t_2 = ((uint32_t)(*scratch >> 32));
             break;
           }
-          num_bits_2 += 8;
+          num_bits_2 += 8u;
           *scratch |= ((uint64_t)(num_bits_2));
         }
       }
@@ -49650,7 +49650,7 @@ wuffs_png__decoder__decode_fctl(
             goto suspend;
           }
           uint64_t* scratch = &self->private_data.s_decode_fctl[0].scratch;
-          uint32_t num_bits_3 = ((uint32_t)(*scratch & 0xFF));
+          uint32_t num_bits_3 = ((uint32_t)(*scratch & 0xFFu));
           *scratch >>= 8;
           *scratch <<= 8;
           *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_3);
@@ -49658,7 +49658,7 @@ wuffs_png__decoder__decode_fctl(
             t_3 = ((uint32_t)(*scratch >> 32));
             break;
           }
-          num_bits_3 += 8;
+          num_bits_3 += 8u;
           *scratch |= ((uint64_t)(num_bits_3));
         }
       }
@@ -49679,7 +49679,7 @@ wuffs_png__decoder__decode_fctl(
             goto suspend;
           }
           uint64_t* scratch = &self->private_data.s_decode_fctl[0].scratch;
-          uint32_t num_bits_4 = ((uint32_t)(*scratch & 0xFF));
+          uint32_t num_bits_4 = ((uint32_t)(*scratch & 0xFFu));
           *scratch >>= 8;
           *scratch <<= 8;
           *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_4);
@@ -49687,7 +49687,7 @@ wuffs_png__decoder__decode_fctl(
             t_4 = ((uint32_t)(*scratch >> 32));
             break;
           }
-          num_bits_4 += 8;
+          num_bits_4 += 8u;
           *scratch |= ((uint64_t)(num_bits_4));
         }
       }
@@ -49723,7 +49723,7 @@ wuffs_png__decoder__decode_fctl(
             goto suspend;
           }
           uint64_t* scratch = &self->private_data.s_decode_fctl[0].scratch;
-          uint32_t num_bits_5 = ((uint32_t)(*scratch & 0xFF));
+          uint32_t num_bits_5 = ((uint32_t)(*scratch & 0xFFu));
           *scratch >>= 8;
           *scratch <<= 8;
           *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_5);
@@ -49731,7 +49731,7 @@ wuffs_png__decoder__decode_fctl(
             t_5 = ((uint32_t)(*scratch >> 48));
             break;
           }
-          num_bits_5 += 8;
+          num_bits_5 += 8u;
           *scratch |= ((uint64_t)(num_bits_5));
         }
       }
@@ -49752,7 +49752,7 @@ wuffs_png__decoder__decode_fctl(
             goto suspend;
           }
           uint64_t* scratch = &self->private_data.s_decode_fctl[0].scratch;
-          uint32_t num_bits_6 = ((uint32_t)(*scratch & 0xFF));
+          uint32_t num_bits_6 = ((uint32_t)(*scratch & 0xFFu));
           *scratch >>= 8;
           *scratch <<= 8;
           *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_6);
@@ -49760,7 +49760,7 @@ wuffs_png__decoder__decode_fctl(
             t_6 = ((uint32_t)(*scratch >> 48));
             break;
           }
-          num_bits_6 += 8;
+          num_bits_6 += 8u;
           *scratch |= ((uint64_t)(num_bits_6));
         }
       }
@@ -49884,7 +49884,7 @@ wuffs_png__decoder__decode_gama(
             goto suspend;
           }
           uint64_t* scratch = &self->private_data.s_decode_gama[0].scratch;
-          uint32_t num_bits_0 = ((uint32_t)(*scratch & 0xFF));
+          uint32_t num_bits_0 = ((uint32_t)(*scratch & 0xFFu));
           *scratch >>= 8;
           *scratch <<= 8;
           *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_0);
@@ -49892,7 +49892,7 @@ wuffs_png__decoder__decode_gama(
             t_0 = ((uint64_t)(*scratch >> 32));
             break;
           }
-          num_bits_0 += 8;
+          num_bits_0 += 8u;
           *scratch |= ((uint64_t)(num_bits_0));
         }
       }
@@ -50062,7 +50062,7 @@ wuffs_png__decoder__decode_plte(
               goto suspend;
             }
             uint64_t* scratch = &self->private_data.s_decode_plte[0].scratch;
-            uint32_t num_bits_0 = ((uint32_t)(*scratch & 0xFF));
+            uint32_t num_bits_0 = ((uint32_t)(*scratch & 0xFFu));
             *scratch >>= 8;
             *scratch <<= 8;
             *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_0);
@@ -50070,7 +50070,7 @@ wuffs_png__decoder__decode_plte(
               t_0 = ((uint32_t)(*scratch >> 40));
               break;
             }
-            num_bits_0 += 8;
+            num_bits_0 += 8u;
             *scratch |= ((uint64_t)(num_bits_0));
           }
         }
@@ -50234,7 +50234,7 @@ wuffs_png__decoder__decode_trns(
               goto suspend;
             }
             uint64_t* scratch = &self->private_data.s_decode_trns[0].scratch;
-            uint32_t num_bits_0 = ((uint32_t)(*scratch & 0xFF));
+            uint32_t num_bits_0 = ((uint32_t)(*scratch & 0xFFu));
             *scratch >>= 8;
             *scratch <<= 8;
             *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_0);
@@ -50242,7 +50242,7 @@ wuffs_png__decoder__decode_trns(
               t_0 = ((uint64_t)(*scratch >> 48));
               break;
             }
-            num_bits_0 += 8;
+            num_bits_0 += 8u;
             *scratch |= ((uint64_t)(num_bits_0));
           }
         }
@@ -50289,7 +50289,7 @@ wuffs_png__decoder__decode_trns(
               goto suspend;
             }
             uint64_t* scratch = &self->private_data.s_decode_trns[0].scratch;
-            uint32_t num_bits_1 = ((uint32_t)(*scratch & 0xFF));
+            uint32_t num_bits_1 = ((uint32_t)(*scratch & 0xFFu));
             *scratch >>= 8;
             *scratch <<= 8;
             *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_1);
@@ -50297,7 +50297,7 @@ wuffs_png__decoder__decode_trns(
               t_1 = ((uint64_t)(*scratch >> 16));
               break;
             }
-            num_bits_1 += 8;
+            num_bits_1 += 8u;
             *scratch |= ((uint64_t)(num_bits_1));
           }
         }
@@ -50517,7 +50517,7 @@ wuffs_png__decoder__do_decode_frame_config(
                 goto suspend;
               }
               uint64_t* scratch = &self->private_data.s_do_decode_frame_config[0].scratch;
-              uint32_t num_bits_0 = ((uint32_t)(*scratch & 0xFF));
+              uint32_t num_bits_0 = ((uint32_t)(*scratch & 0xFFu));
               *scratch >>= 8;
               *scratch <<= 8;
               *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_0);
@@ -50525,7 +50525,7 @@ wuffs_png__decoder__do_decode_frame_config(
                 t_0 = ((uint32_t)(*scratch >> 32));
                 break;
               }
-              num_bits_0 += 8;
+              num_bits_0 += 8u;
               *scratch |= ((uint64_t)(num_bits_0));
             }
           }
@@ -50554,7 +50554,7 @@ wuffs_png__decoder__do_decode_frame_config(
                 t_1 = ((uint32_t)(*scratch));
                 break;
               }
-              num_bits_1 += 8;
+              num_bits_1 += 8u;
               *scratch |= ((uint64_t)(num_bits_1)) << 56;
             }
           }
@@ -50588,7 +50588,7 @@ wuffs_png__decoder__do_decode_frame_config(
                   t_2 = ((uint32_t)(*scratch));
                   break;
                 }
-                num_bits_2 += 8;
+                num_bits_2 += 8u;
                 *scratch |= ((uint64_t)(num_bits_2)) << 56;
               }
             }
@@ -50771,7 +50771,7 @@ wuffs_png__decoder__skip_frame(
                 goto suspend;
               }
               uint64_t* scratch = &self->private_data.s_skip_frame[0].scratch;
-              uint32_t num_bits_0 = ((uint32_t)(*scratch & 0xFF));
+              uint32_t num_bits_0 = ((uint32_t)(*scratch & 0xFFu));
               *scratch >>= 8;
               *scratch <<= 8;
               *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_0);
@@ -50779,7 +50779,7 @@ wuffs_png__decoder__skip_frame(
                 t_0 = ((uint32_t)(*scratch >> 32));
                 break;
               }
-              num_bits_0 += 8;
+              num_bits_0 += 8u;
               *scratch |= ((uint64_t)(num_bits_0));
             }
           }
@@ -51014,7 +51014,7 @@ wuffs_png__decoder__do_decode_frame(
                 goto suspend;
               }
               uint64_t* scratch = &self->private_data.s_do_decode_frame[0].scratch;
-              uint32_t num_bits_0 = ((uint32_t)(*scratch & 0xFF));
+              uint32_t num_bits_0 = ((uint32_t)(*scratch & 0xFFu));
               *scratch >>= 8;
               *scratch <<= 8;
               *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_0);
@@ -51022,7 +51022,7 @@ wuffs_png__decoder__do_decode_frame(
                 t_0 = ((uint32_t)(*scratch >> 32));
                 break;
               }
-              num_bits_0 += 8;
+              num_bits_0 += 8u;
               *scratch |= ((uint64_t)(num_bits_0));
             }
           }
@@ -51283,7 +51283,7 @@ wuffs_png__decoder__decode_pass(
                 goto suspend;
               }
               uint64_t* scratch = &self->private_data.s_decode_pass[0].scratch;
-              uint32_t num_bits_1 = ((uint32_t)(*scratch & 0xFF));
+              uint32_t num_bits_1 = ((uint32_t)(*scratch & 0xFFu));
               *scratch >>= 8;
               *scratch <<= 8;
               *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_1);
@@ -51291,7 +51291,7 @@ wuffs_png__decoder__decode_pass(
                 t_1 = ((uint32_t)(*scratch >> 32));
                 break;
               }
-              num_bits_1 += 8;
+              num_bits_1 += 8u;
               *scratch |= ((uint64_t)(num_bits_1));
             }
           }
@@ -51336,7 +51336,7 @@ wuffs_png__decoder__decode_pass(
                 goto suspend;
               }
               uint64_t* scratch = &self->private_data.s_decode_pass[0].scratch;
-              uint32_t num_bits_2 = ((uint32_t)(*scratch & 0xFF));
+              uint32_t num_bits_2 = ((uint32_t)(*scratch & 0xFFu));
               *scratch >>= 8;
               *scratch <<= 8;
               *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_2);
@@ -51344,7 +51344,7 @@ wuffs_png__decoder__decode_pass(
                 t_2 = ((uint32_t)(*scratch >> 32));
                 break;
               }
-              num_bits_2 += 8;
+              num_bits_2 += 8u;
               *scratch |= ((uint64_t)(num_bits_2));
             }
           }
@@ -51372,7 +51372,7 @@ wuffs_png__decoder__decode_pass(
                 goto suspend;
               }
               uint64_t* scratch = &self->private_data.s_decode_pass[0].scratch;
-              uint32_t num_bits_3 = ((uint32_t)(*scratch & 0xFF));
+              uint32_t num_bits_3 = ((uint32_t)(*scratch & 0xFFu));
               *scratch >>= 8;
               *scratch <<= 8;
               *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_3);
@@ -51380,7 +51380,7 @@ wuffs_png__decoder__decode_pass(
                 t_3 = ((uint32_t)(*scratch >> 32));
                 break;
               }
-              num_bits_3 += 8;
+              num_bits_3 += 8u;
               *scratch |= ((uint64_t)(num_bits_3));
             }
           }
@@ -51409,7 +51409,7 @@ wuffs_png__decoder__decode_pass(
                 t_4 = ((uint32_t)(*scratch));
                 break;
               }
-              num_bits_4 += 8;
+              num_bits_4 += 8u;
               *scratch |= ((uint64_t)(num_bits_4)) << 56;
             }
           }
@@ -51446,7 +51446,7 @@ wuffs_png__decoder__decode_pass(
                   goto suspend;
                 }
                 uint64_t* scratch = &self->private_data.s_decode_pass[0].scratch;
-                uint32_t num_bits_5 = ((uint32_t)(*scratch & 0xFF));
+                uint32_t num_bits_5 = ((uint32_t)(*scratch & 0xFFu));
                 *scratch >>= 8;
                 *scratch <<= 8;
                 *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_5);
@@ -51454,7 +51454,7 @@ wuffs_png__decoder__decode_pass(
                   t_5 = ((uint32_t)(*scratch >> 32));
                   break;
                 }
-                num_bits_5 += 8;
+                num_bits_5 += 8u;
                 *scratch |= ((uint64_t)(num_bits_5));
               }
             }
@@ -52921,7 +52921,7 @@ wuffs_tga__decoder__do_decode_image_config(
             t_3 = ((uint16_t)(*scratch));
             break;
           }
-          num_bits_3 += 8;
+          num_bits_3 += 8u;
           *scratch |= ((uint64_t)(num_bits_3)) << 56;
         }
       }
@@ -52950,7 +52950,7 @@ wuffs_tga__decoder__do_decode_image_config(
             t_4 = ((uint16_t)(*scratch));
             break;
           }
-          num_bits_4 += 8;
+          num_bits_4 += 8u;
           *scratch |= ((uint64_t)(num_bits_4)) << 56;
         }
       }
@@ -53014,7 +53014,7 @@ wuffs_tga__decoder__do_decode_image_config(
             t_6 = ((uint32_t)(*scratch));
             break;
           }
-          num_bits_6 += 8;
+          num_bits_6 += 8u;
           *scratch |= ((uint64_t)(num_bits_6)) << 56;
         }
       }
@@ -53043,7 +53043,7 @@ wuffs_tga__decoder__do_decode_image_config(
             t_7 = ((uint32_t)(*scratch));
             break;
           }
-          num_bits_7 += 8;
+          num_bits_7 += 8u;
           *scratch |= ((uint64_t)(num_bits_7)) << 56;
         }
       }
@@ -53149,7 +53149,7 @@ wuffs_tga__decoder__do_decode_image_config(
                   t_10 = ((uint32_t)(*scratch));
                   break;
                 }
-                num_bits_10 += 8;
+                num_bits_10 += 8u;
                 *scratch |= ((uint64_t)(num_bits_10)) << 56;
               }
             }
@@ -53183,7 +53183,7 @@ wuffs_tga__decoder__do_decode_image_config(
                   t_11 = ((uint32_t)(*scratch));
                   break;
                 }
-                num_bits_11 += 8;
+                num_bits_11 += 8u;
                 *scratch |= ((uint64_t)(num_bits_11)) << 56;
               }
             }
@@ -53217,7 +53217,7 @@ wuffs_tga__decoder__do_decode_image_config(
                   t_12 = ((uint32_t)(*scratch));
                   break;
                 }
-                num_bits_12 += 8;
+                num_bits_12 += 8u;
                 *scratch |= ((uint64_t)(num_bits_12)) << 56;
               }
             }
