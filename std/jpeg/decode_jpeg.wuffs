@@ -1544,6 +1544,36 @@ pri func decoder.fill_bitstream!(src: base.io_reader) {
     this.bitstream_wi = wi
 }
 
+pri func decoder.load_mcu_blocks_for_single_component!(mx: base.u32[..= 0x2000], my: base.u32[..= 0x2000], workbuf: slice base.u8, csel: base.u32[..= 3]) {
+    var stride16 : base.u64[..= 0x10_0080]
+    var offset   : base.u64
+    var s        : slice base.u8
+    var i        : base.u32
+
+    // "while true" is redundant but minimizes the diff with load_mcu_blocks.
+    while true {
+        stride16 = (this.components_workbuf_widths[args.csel] * 16) as base.u64
+        offset = this.components_workbuf_offsets[args.csel | 4] +
+                ((args.mx as base.u64) * 128) +
+                ((args.my as base.u64) * stride16)
+        if offset <= args.workbuf.length() {
+            s = args.workbuf[offset ..]
+            if s.length() >= 128 {
+                i = 0
+                while i < 64,
+                        inv s.length() >= 128,
+                {
+                    this.mcu_blocks[0][i] = (
+                            ((s[(2 * i) + 0] as base.u16) << 0) |
+                            ((s[(2 * i) + 1] as base.u16) << 8)) as base.u16
+                    i += 1
+                } endwhile
+            }
+        }
+        break
+    } endwhile
+}
+
 pri func decoder.load_mcu_blocks!(mx: base.u32[..= 0x2000], my: base.u32[..= 0x2000], workbuf: slice base.u8) {
     var b        : base.u32
     var csel     : base.u8[..= 3]
@@ -1678,6 +1708,11 @@ pri func decoder.skip_past_the_next_restart_marker?(src: base.io_reader) {
 pri func decoder.apply_progressive_idct!(workbuf: slice base.u8) {
     var csel : base.u32
 
+    var scan_width_in_mcus  : base.u32[..= 0x2000]
+    var scan_height_in_mcus : base.u32[..= 0x2000]
+    var mcu_blocks_mx_mul_0 : base.u32[..= 0x00_0020]
+    var mcu_blocks_my_mul_0 : base.u32[..= 0x20_0100]
+
     var my : base.u32
     var mx : base.u32
 
@@ -1688,28 +1723,32 @@ pri func decoder.apply_progressive_idct!(workbuf: slice base.u8) {
     while csel < this.num_components {
         assert csel < 4 via "a < b: a < c; c <= b"(c: this.num_components)
 
-        // Fake a single-component scan for load_mcu_blocks and decode_idct.
-        this.scan_num_components = 1
-        this.scan_comps_cselector[0] = csel as base.u8
-        this.calculate_single_component_scan_fields!()
+        // Fake a single-component scan.
+        scan_width_in_mcus = this.quantize_dimension(
+                width: this.width, h: this.components_h[csel], max_incl_h: this.max_incl_components_h)
+        scan_height_in_mcus = this.quantize_dimension(
+                width: this.height, h: this.components_v[csel], max_incl_h: this.max_incl_components_v)
+        mcu_blocks_mx_mul_0 = 8
+        mcu_blocks_my_mul_0 = 8 * this.components_workbuf_widths[csel]
 
+        // Apply IDCT to the MCU blocks in the csel'th component.
         my = 0
-        while my < this.scan_height_in_mcus,
+        while my < scan_height_in_mcus,
                 inv csel < 4,
         {
-            assert my < 0x2000 via "a < b: a < c; c <= b"(c: this.scan_height_in_mcus)
+            assert my < 0x2000 via "a < b: a < c; c <= b"(c: scan_height_in_mcus)
             mx = 0
-            while mx < this.scan_width_in_mcus,
+            while mx < scan_width_in_mcus,
                     inv csel < 4,
                     inv my < 0x2000,
             {
-                assert mx < 0x2000 via "a < b: a < c; c <= b"(c: this.scan_width_in_mcus)
-                this.load_mcu_blocks!(mx: mx, my: my, workbuf: args.workbuf)
+                assert mx < 0x2000 via "a < b: a < c; c <= b"(c: scan_width_in_mcus)
+                this.load_mcu_blocks_for_single_component!(mx: mx, my: my, workbuf: args.workbuf, csel: csel)
 
                 stride = this.components_workbuf_widths[csel] as base.u64
-                offset = this.mcu_blocks_offset[0] +
-                        ((this.mcu_blocks_mx_mul[0] as base.u64) * (mx as base.u64)) +
-                        ((this.mcu_blocks_my_mul[0] as base.u64) * (my as base.u64))
+                offset = this.components_workbuf_offsets[csel] +
+                        ((mcu_blocks_mx_mul_0 as base.u64) * (mx as base.u64)) +
+                        ((mcu_blocks_my_mul_0 as base.u64) * (my as base.u64))
                 if offset <= args.workbuf.length() {
                     this.decode_idct!(
                             dst_buffer: args.workbuf[offset ..],

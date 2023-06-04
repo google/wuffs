@@ -36866,6 +36866,14 @@ wuffs_jpeg__decoder__fill_bitstream(
     wuffs_base__io_buffer* a_src);
 
 static wuffs_base__empty_struct
+wuffs_jpeg__decoder__load_mcu_blocks_for_single_component(
+    wuffs_jpeg__decoder* self,
+    uint32_t a_mx,
+    uint32_t a_my,
+    wuffs_base__slice_u8 a_workbuf,
+    uint32_t a_csel);
+
+static wuffs_base__empty_struct
 wuffs_jpeg__decoder__load_mcu_blocks(
     wuffs_jpeg__decoder* self,
     uint32_t a_mx,
@@ -39997,6 +40005,39 @@ wuffs_jpeg__decoder__fill_bitstream(
   return wuffs_base__make_empty_struct();
 }
 
+// -------- func jpeg.decoder.load_mcu_blocks_for_single_component
+
+static wuffs_base__empty_struct
+wuffs_jpeg__decoder__load_mcu_blocks_for_single_component(
+    wuffs_jpeg__decoder* self,
+    uint32_t a_mx,
+    uint32_t a_my,
+    wuffs_base__slice_u8 a_workbuf,
+    uint32_t a_csel) {
+  uint64_t v_stride16 = 0;
+  uint64_t v_offset = 0;
+  wuffs_base__slice_u8 v_s = {0};
+  uint32_t v_i = 0;
+
+  while (true) {
+    v_stride16 = ((uint64_t)((self->private_impl.f_components_workbuf_widths[a_csel] * 16u)));
+    v_offset = (self->private_impl.f_components_workbuf_offsets[(a_csel | 4u)] + (((uint64_t)(a_mx)) * 128u) + (((uint64_t)(a_my)) * v_stride16));
+    if (v_offset <= ((uint64_t)(a_workbuf.len))) {
+      v_s = wuffs_base__slice_u8__subslice_i(a_workbuf, v_offset);
+      if (((uint64_t)(v_s.len)) >= 128u) {
+        v_i = 0u;
+        while (v_i < 64u) {
+          self->private_data.f_mcu_blocks[0u][v_i] = ((uint16_t)(((((uint16_t)(v_s.ptr[((2u * v_i) + 0u)])) << 0u) | (((uint16_t)(v_s.ptr[((2u * v_i) + 1u)])) << 8u))));
+          v_i += 1u;
+        }
+      }
+    }
+    goto label__0__break;
+  }
+  label__0__break:;
+  return wuffs_base__make_empty_struct();
+}
+
 // -------- func jpeg.decoder.load_mcu_blocks
 
 static wuffs_base__empty_struct
@@ -40167,6 +40208,10 @@ wuffs_jpeg__decoder__apply_progressive_idct(
     wuffs_jpeg__decoder* self,
     wuffs_base__slice_u8 a_workbuf) {
   uint32_t v_csel = 0;
+  uint32_t v_scan_width_in_mcus = 0;
+  uint32_t v_scan_height_in_mcus = 0;
+  uint32_t v_mcu_blocks_mx_mul_0 = 0;
+  uint32_t v_mcu_blocks_my_mul_0 = 0;
   uint32_t v_my = 0;
   uint32_t v_mx = 0;
   uint64_t v_stride = 0;
@@ -40174,16 +40219,21 @@ wuffs_jpeg__decoder__apply_progressive_idct(
 
   v_csel = 0u;
   while (v_csel < self->private_impl.f_num_components) {
-    self->private_impl.f_scan_num_components = 1u;
-    self->private_impl.f_scan_comps_cselector[0u] = ((uint8_t)(v_csel));
-    wuffs_jpeg__decoder__calculate_single_component_scan_fields(self);
+    v_scan_width_in_mcus = wuffs_jpeg__decoder__quantize_dimension(self, self->private_impl.f_width, self->private_impl.f_components_h[v_csel], self->private_impl.f_max_incl_components_h);
+    v_scan_height_in_mcus = wuffs_jpeg__decoder__quantize_dimension(self, self->private_impl.f_height, self->private_impl.f_components_v[v_csel], self->private_impl.f_max_incl_components_v);
+    v_mcu_blocks_mx_mul_0 = 8u;
+    v_mcu_blocks_my_mul_0 = (8u * self->private_impl.f_components_workbuf_widths[v_csel]);
     v_my = 0u;
-    while (v_my < self->private_impl.f_scan_height_in_mcus) {
+    while (v_my < v_scan_height_in_mcus) {
       v_mx = 0u;
-      while (v_mx < self->private_impl.f_scan_width_in_mcus) {
-        wuffs_jpeg__decoder__load_mcu_blocks(self, v_mx, v_my, a_workbuf);
+      while (v_mx < v_scan_width_in_mcus) {
+        wuffs_jpeg__decoder__load_mcu_blocks_for_single_component(self,
+            v_mx,
+            v_my,
+            a_workbuf,
+            v_csel);
         v_stride = ((uint64_t)(self->private_impl.f_components_workbuf_widths[v_csel]));
-        v_offset = (self->private_impl.f_mcu_blocks_offset[0u] + (((uint64_t)(self->private_impl.f_mcu_blocks_mx_mul[0u])) * ((uint64_t)(v_mx))) + (((uint64_t)(self->private_impl.f_mcu_blocks_my_mul[0u])) * ((uint64_t)(v_my))));
+        v_offset = (self->private_impl.f_components_workbuf_offsets[v_csel] + (((uint64_t)(v_mcu_blocks_mx_mul_0)) * ((uint64_t)(v_mx))) + (((uint64_t)(v_mcu_blocks_my_mul_0)) * ((uint64_t)(v_my))));
         if (v_offset <= ((uint64_t)(a_workbuf.len))) {
           wuffs_jpeg__decoder__decode_idct(self,
               wuffs_base__slice_u8__subslice_i(a_workbuf, v_offset),
