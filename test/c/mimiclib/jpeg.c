@@ -1,0 +1,81 @@
+// Copyright 2023 The Wuffs Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#include "jpeglib.h"
+
+const char*  //
+mimic_jpeg_decode(uint64_t* n_bytes_out,
+                  wuffs_base__io_buffer* dst,
+                  uint32_t wuffs_initialize_flags,
+                  wuffs_base__pixel_format pixfmt,
+                  uint32_t* quirks_ptr,
+                  size_t quirks_len,
+                  wuffs_base__io_buffer* src) {
+  wuffs_base__io_buffer dst_fallback =
+      wuffs_base__slice_u8__writer(g_mimiclib_scratch_slice_u8);
+  if (!dst) {
+    dst = &dst_fallback;
+  }
+
+  const char* ret = NULL;
+
+  struct jpeg_decompress_struct cinfo;
+  struct jpeg_error_mgr jerr;
+
+  cinfo.err = jpeg_std_error(&jerr);
+  jpeg_create_decompress(&cinfo);
+  jpeg_mem_src(&cinfo, wuffs_base__io_buffer__reader_pointer(src),
+               wuffs_base__io_buffer__reader_length(src));
+  if (jpeg_read_header(&cinfo, TRUE) != JPEG_HEADER_OK) {
+    ret = "mimic_jpeg_decode: jpeg_read_header failed";
+    goto cleanup0;
+  }
+
+  switch (pixfmt.repr) {
+    case WUFFS_BASE__PIXEL_FORMAT__Y:
+      cinfo.out_color_space = JCS_GRAYSCALE;
+      break;
+    case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
+      cinfo.out_color_space = JCS_EXT_BGRA;
+      break;
+    default:
+      ret = "mimic_jpeg_decode: unsupported pixfmt";
+      goto cleanup0;
+  }
+
+  jpeg_start_decompress(&cinfo);
+  size_t stride =
+      cinfo.output_width *
+      ((size_t)(wuffs_base__pixel_format__bits_per_pixel(&pixfmt) / 8u));
+
+  while (cinfo.output_scanline < cinfo.output_height) {
+    if (wuffs_base__io_buffer__writer_length(dst) < stride) {
+      ret = "mimic_jpeg_decode: image is too large";
+      goto cleanup0;
+    }
+    JSAMPLE* scanlines[1] = {(void*)wuffs_base__io_buffer__writer_pointer(dst)};
+    if (jpeg_read_scanlines(&cinfo, scanlines, 1)) {
+      dst->meta.wi += stride;
+      if (n_bytes_out) {
+        *n_bytes_out += stride;
+      }
+    }
+  }
+
+  jpeg_finish_decompress(&cinfo);
+
+cleanup0:;
+  jpeg_destroy_decompress(&cinfo);
+  return ret;
+}

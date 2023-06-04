@@ -37,7 +37,7 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 "wuffs mimic cflags" to run the mimic benchmarks.
 */
 
-// ¿ wuffs mimic cflags: -DWUFFS_MIMIC
+// ¿ wuffs mimic cflags: -DWUFFS_MIMIC -ljpeg
 
 // Wuffs ships as a "single file C library" or "header file library" as per
 // https://github.com/nothings/stb/blob/master/docs/stb_howto.txt
@@ -64,7 +64,7 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 #include "../../../release/c/wuffs-unsupported-snapshot.c"
 #include "../testlib/testlib.c"
 #ifdef WUFFS_MIMIC
-// No mimic library.
+#include "../mimiclib/jpeg.c"
 #endif
 
 // ---------------- JPEG Tests
@@ -745,11 +745,91 @@ test_wuffs_jpeg_decode_mcu() {
 
 #ifdef WUFFS_MIMIC
 
-// No mimic tests.
+const char*  //
+do_test_mimic_jpeg_decode(const char* filename) {
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = g_src_slice_u8,
+  });
+  CHECK_STRING(read_file(&src, filename));
+
+  src.meta.ri = 0;
+  wuffs_base__io_buffer have = ((wuffs_base__io_buffer){
+      .data = g_have_slice_u8,
+  });
+  CHECK_STRING(wuffs_jpeg_decode(
+      NULL, &have, WUFFS_INITIALIZE__DEFAULT_OPTIONS,
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
+      NULL, 0, &src));
+
+  src.meta.ri = 0;
+  wuffs_base__io_buffer want = ((wuffs_base__io_buffer){
+      .data = g_want_slice_u8,
+  });
+  CHECK_STRING(mimic_jpeg_decode(
+      NULL, &want, WUFFS_INITIALIZE__DEFAULT_OPTIONS,
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
+      NULL, 0, &src));
+
+  return check_io_buffers_equal("", &have, &want);
+}
+
+const char*  //
+test_mimic_jpeg_decode_19k_8bpp() {
+  CHECK_FOCUS(__func__);
+  return do_test_mimic_jpeg_decode("test/data/bricks-gray.jpeg");
+}
+
+const char*  //
+test_mimic_jpeg_decode_30k_24bpp_progressive() {
+  CHECK_FOCUS(__func__);
+  return do_test_mimic_jpeg_decode("test/data/peacock.progressive.jpeg");
+}
+
+const char*  //
+test_mimic_jpeg_decode_30k_24bpp_sequential() {
+  CHECK_FOCUS(__func__);
+  return do_test_mimic_jpeg_decode("test/data/peacock.default.jpeg");
+}
+
+const char*  //
+test_mimic_jpeg_decode_552k_24bpp() {
+  CHECK_FOCUS(__func__);
+  return do_test_mimic_jpeg_decode("test/data/hibiscus.primitive.jpeg");
+}
 
 #endif  // WUFFS_MIMIC
 
 // ---------------- JPEG Benches
+
+const char*  //
+bench_wuffs_jpeg_decode_19k_8bpp() {
+  CHECK_FOCUS(__func__);
+  return do_bench_image_decode(
+      &wuffs_jpeg_decode,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__Y), NULL, 0,
+      "test/data/bricks-gray.jpeg", 0, SIZE_MAX, 100);
+}
+
+const char*  //
+bench_wuffs_jpeg_decode_30k_24bpp_progressive() {
+  CHECK_FOCUS(__func__);
+  return do_bench_image_decode(
+      &wuffs_jpeg_decode,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
+      NULL, 0, "test/data/peacock.progressive.jpeg", 0, SIZE_MAX, 50);
+}
+
+const char*  //
+bench_wuffs_jpeg_decode_30k_24bpp_sequential() {
+  CHECK_FOCUS(__func__);
+  return do_bench_image_decode(
+      &wuffs_jpeg_decode,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
+      NULL, 0, "test/data/peacock.default.jpeg", 0, SIZE_MAX, 50);
+}
 
 const char*  //
 bench_wuffs_jpeg_decode_77k_24bpp() {
@@ -758,14 +838,92 @@ bench_wuffs_jpeg_decode_77k_24bpp() {
       &wuffs_jpeg_decode,
       WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
       wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
-      NULL, 0, "test/data/bricks-color.jpeg", 0, SIZE_MAX, 1000);
+      NULL, 0, "test/data/bricks-color.jpeg", 0, SIZE_MAX, 30);
+}
+
+const char*  //
+bench_wuffs_jpeg_decode_552k_24bpp() {
+  CHECK_FOCUS(__func__);
+  return do_bench_image_decode(
+      &wuffs_jpeg_decode,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
+      NULL, 0, "test/data/hibiscus.regular.jpeg", 0, SIZE_MAX, 5);
+}
+
+const char*  //
+bench_wuffs_jpeg_decode_4002k_24bpp() {
+  CHECK_FOCUS(__func__);
+  return do_bench_image_decode(
+      &wuffs_jpeg_decode,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
+      NULL, 0, "test/data/harvesters.jpeg", 0, SIZE_MAX, 1);
 }
 
 // ---------------- Mimic Benches
 
 #ifdef WUFFS_MIMIC
 
-// No mimic benches.
+const char*  //
+bench_mimic_jpeg_decode_19k_8bpp() {
+  CHECK_FOCUS(__func__);
+  return do_bench_image_decode(
+      &mimic_jpeg_decode,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__Y), NULL, 0,
+      "test/data/bricks-gray.jpeg", 0, SIZE_MAX, 100);
+}
+
+const char*  //
+bench_mimic_jpeg_decode_30k_24bpp_progressive() {
+  CHECK_FOCUS(__func__);
+  return do_bench_image_decode(
+      &mimic_jpeg_decode,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
+      NULL, 0, "test/data/peacock.progressive.jpeg", 0, SIZE_MAX, 50);
+}
+
+const char*  //
+bench_mimic_jpeg_decode_30k_24bpp_sequential() {
+  CHECK_FOCUS(__func__);
+  return do_bench_image_decode(
+      &mimic_jpeg_decode,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
+      NULL, 0, "test/data/peacock.default.jpeg", 0, SIZE_MAX, 50);
+}
+
+const char*  //
+bench_mimic_jpeg_decode_77k_24bpp() {
+  CHECK_FOCUS(__func__);
+  return do_bench_image_decode(
+      &mimic_jpeg_decode,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
+      NULL, 0, "test/data/bricks-color.jpeg", 0, SIZE_MAX, 30);
+}
+
+const char*  //
+bench_mimic_jpeg_decode_552k_24bpp() {
+  CHECK_FOCUS(__func__);
+  return do_bench_image_decode(
+      &mimic_jpeg_decode,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
+      NULL, 0, "test/data/hibiscus.regular.jpeg", 0, SIZE_MAX, 5);
+}
+
+const char*  //
+bench_mimic_jpeg_decode_4002k_24bpp() {
+  CHECK_FOCUS(__func__);
+  return do_bench_image_decode(
+      &mimic_jpeg_decode,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
+      NULL, 0, "test/data/harvesters.jpeg", 0, SIZE_MAX, 1);
+}
 
 #endif  // WUFFS_MIMIC
 
@@ -782,7 +940,10 @@ proc g_tests[] = {
 
 #ifdef WUFFS_MIMIC
 
-// No mimic tests.
+    test_mimic_jpeg_decode_19k_8bpp,
+    test_mimic_jpeg_decode_30k_24bpp_progressive,
+    test_mimic_jpeg_decode_30k_24bpp_sequential,
+    test_mimic_jpeg_decode_552k_24bpp,
 
 #endif  // WUFFS_MIMIC
 
@@ -791,11 +952,21 @@ proc g_tests[] = {
 
 proc g_benches[] = {
 
+    bench_wuffs_jpeg_decode_19k_8bpp,
+    bench_wuffs_jpeg_decode_30k_24bpp_progressive,
+    bench_wuffs_jpeg_decode_30k_24bpp_sequential,
     bench_wuffs_jpeg_decode_77k_24bpp,
+    bench_wuffs_jpeg_decode_552k_24bpp,
+    bench_wuffs_jpeg_decode_4002k_24bpp,
 
 #ifdef WUFFS_MIMIC
 
-// No mimic benches.
+    bench_mimic_jpeg_decode_19k_8bpp,
+    bench_mimic_jpeg_decode_30k_24bpp_progressive,
+    bench_mimic_jpeg_decode_30k_24bpp_sequential,
+    bench_mimic_jpeg_decode_77k_24bpp,
+    bench_mimic_jpeg_decode_552k_24bpp,
+    bench_mimic_jpeg_decode_4002k_24bpp,
 
 #endif  // WUFFS_MIMIC
 
