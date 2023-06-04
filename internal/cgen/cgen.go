@@ -40,8 +40,6 @@ var (
 
 	mibi = big.NewInt(1 << 20)
 
-	maxInt64 = big.NewInt((1 << 63) - 1)
-
 	maxUint8  = big.NewInt((1 << 8) - 1)
 	maxUint16 = big.NewInt((1 << 16) - 1)
 	maxUint32 = big.NewInt((1 << 32) - 1)

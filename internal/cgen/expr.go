@@ -32,22 +32,8 @@ func (g *gen) writeExpr(b *buffer, n *a.Expr, sideEffectsOnly bool, depth uint32
 	if cv := n.ConstValue(); cv != nil {
 		if typ := n.MType(); typ.IsNumTypeOrIdeal() {
 			b.writes(cv.String())
-			if cv.Sign() < 0 {
-				// No-op.
-			} else if cv.Cmp(maxInt64) > 0 {
+			if cv.Sign() >= 0 {
 				b.writeb('u')
-			} else {
-				// Appending a 'u' is currently targeted to only those
-				// constants used by std/jpeg/decode_idct_default.wuffs
-				//
-				// TODO: don't be so shy about it. It's narrow for now, to make
-				// only the smallest generated-code change that fixes
-				// https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=59018
-				// but we should generate 123u instead of 123 more broadly.
-				const minIncl = 0xFFFFADFD
-				if i := cv.Int64(); minIncl <= i {
-					b.writeb('u')
-				}
 			}
 		} else if typ.IsNullptr() {
 			b.writes("NULL")
