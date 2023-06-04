@@ -116,6 +116,7 @@ pub struct decoder? implements base.image_decoder(
         components_workbuf_heights : array[4] base.u32[..= 0x1_0008],
         components_workbuf_offsets : array[9] base.u64[..= 0xC_00C0_0300],  // 12 * 0x1_0008 * 0x1_0008.
 
+        scan_count           : base.u32,
         scan_num_components  : base.u32[..= 4],
         scan_comps_cselector : array[4] base.u8[..= 3],
         scan_comps_td        : array[4] base.u8[..= 3],
@@ -752,14 +753,31 @@ pri func decoder.do_decode_frame_config?(dst: nptr base.frame_config, src: base.
 }
 
 pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, blend: base.pixel_blend, workbuf: slice base.u8, opts: nptr base.decode_frame_options) {
-    var status : base.status
+    var ddf_status     : base.status
+    var swizzle_status : base.status
+    var scan_count     : base.u32
 
     while true {
-        status =? this.do_decode_frame?(dst: args.dst, src: args.src, blend: args.blend, workbuf: args.workbuf, opts: args.opts)
-        if (status == base."$short read") and args.src.is_closed() {
+        scan_count = this.scan_count
+        ddf_status =? this.do_decode_frame?(dst: args.dst, src: args.src, blend: args.blend, workbuf: args.workbuf, opts: args.opts)
+        if ddf_status.is_error() {
+            return ddf_status
+
+        } else if scan_count < this.scan_count {
+            if this.num_components == 1 {
+                swizzle_status = this.swizzle_gray!(dst: args.dst, workbuf: args.workbuf)
+            } else {
+                swizzle_status = this.swizzle_colorful!(dst: args.dst, workbuf: args.workbuf)
+            }
+            if swizzle_status.is_error() {
+                return swizzle_status
+            }
+        }
+
+        if (ddf_status == base."$short read") and args.src.is_closed() {
             return "#truncated input"
         }
-        yield? status
+        yield? ddf_status
     } endwhile
 }
 
@@ -1125,8 +1143,6 @@ pri func decoder.decode_sos?(dst: ptr base.pixel_buffer, src: base.io_reader, wo
     var stride : base.u64[..= 0x1_0008]
     var offset : base.u64
 
-    var status : base.status
-
     this.prepare_scan?(src: args.src)
 
     // Reset.
@@ -1236,12 +1252,7 @@ pri func decoder.decode_sos?(dst: ptr base.pixel_buffer, src: base.io_reader, wo
         my += 1
     } endwhile
 
-    if this.num_components == 1 {
-        status = this.swizzle_gray!(dst: args.dst, workbuf: args.workbuf)
-        return status
-    }
-    status = this.swizzle_colorful!(dst: args.dst, workbuf: args.workbuf)
-    return status
+    this.scan_count ~sat+= 1
 }
 
 pri func decoder.prepare_scan?(src: base.io_reader) {
@@ -1809,6 +1820,7 @@ pub func decoder.restart_frame!(index: base.u64, io_position: base.u64) base.sta
     }
     this.call_sequence = 0x28
     this.frame_config_io_position = args.io_position
+    this.scan_count = 0
     this.restart_interval = this.saved_restart_interval
     while i < 4 {
         this.seen_dqt[i] = this.saved_seen_dqt[i]

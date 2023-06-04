@@ -8812,6 +8812,7 @@ struct wuffs_jpeg__decoder__struct {
     uint32_t f_components_workbuf_widths[4];
     uint32_t f_components_workbuf_heights[4];
     uint64_t f_components_workbuf_offsets[9];
+    uint32_t f_scan_count;
     uint32_t f_scan_num_components;
     uint8_t f_scan_comps_cselector[4];
     uint8_t f_scan_comps_td[4];
@@ -38849,13 +38850,16 @@ wuffs_jpeg__decoder__decode_frame(
   self->private_impl.active_coroutine = 0;
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
-  wuffs_base__status v_status = wuffs_base__make_status(NULL);
+  wuffs_base__status v_ddf_status = wuffs_base__make_status(NULL);
+  wuffs_base__status v_swizzle_status = wuffs_base__make_status(NULL);
+  uint32_t v_scan_count = 0;
 
   uint32_t coro_susp_point = self->private_impl.p_decode_frame[0];
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
     while (true) {
+      v_scan_count = self->private_impl.f_scan_count;
       {
         wuffs_base__status t_0 = wuffs_jpeg__decoder__do_decode_frame(self,
             a_dst,
@@ -38863,13 +38867,27 @@ wuffs_jpeg__decoder__decode_frame(
             a_blend,
             a_workbuf,
             a_opts);
-        v_status = t_0;
+        v_ddf_status = t_0;
       }
-      if ((v_status.repr == wuffs_base__suspension__short_read) && (a_src && a_src->meta.closed)) {
+      if (wuffs_base__status__is_error(&v_ddf_status)) {
+        status = v_ddf_status;
+        goto exit;
+      } else if (v_scan_count < self->private_impl.f_scan_count) {
+        if (self->private_impl.f_num_components == 1) {
+          v_swizzle_status = wuffs_jpeg__decoder__swizzle_gray(self, a_dst, a_workbuf);
+        } else {
+          v_swizzle_status = wuffs_jpeg__decoder__swizzle_colorful(self, a_dst, a_workbuf);
+        }
+        if (wuffs_base__status__is_error(&v_swizzle_status)) {
+          status = v_swizzle_status;
+          goto exit;
+        }
+      }
+      if ((v_ddf_status.repr == wuffs_base__suspension__short_read) && (a_src && a_src->meta.closed)) {
         status = wuffs_base__make_status(wuffs_jpeg__error__truncated_input);
         goto exit;
       }
-      status = v_status;
+      status = v_ddf_status;
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(1);
     }
 
@@ -39445,7 +39463,6 @@ wuffs_jpeg__decoder__decode_sos(
   uint8_t v_csel = 0;
   uint64_t v_stride = 0;
   uint64_t v_offset = 0;
-  wuffs_base__status v_status = wuffs_base__make_status(NULL);
 
   uint32_t coro_susp_point = self->private_impl.p_decode_sos[0];
   if (coro_susp_point) {
@@ -39551,26 +39568,7 @@ wuffs_jpeg__decoder__decode_sos(
       }
       v_my += 1;
     }
-    if (self->private_impl.f_num_components == 1) {
-      v_status = wuffs_jpeg__decoder__swizzle_gray(self, a_dst, a_workbuf);
-      status = v_status;
-      if (wuffs_base__status__is_error(&status)) {
-        goto exit;
-      } else if (wuffs_base__status__is_suspension(&status)) {
-        status = wuffs_base__make_status(wuffs_base__error__cannot_return_a_suspension);
-        goto exit;
-      }
-      goto ok;
-    }
-    v_status = wuffs_jpeg__decoder__swizzle_colorful(self, a_dst, a_workbuf);
-    status = v_status;
-    if (wuffs_base__status__is_error(&status)) {
-      goto exit;
-    } else if (wuffs_base__status__is_suspension(&status)) {
-      status = wuffs_base__make_status(wuffs_base__error__cannot_return_a_suspension);
-      goto exit;
-    }
-    goto ok;
+    wuffs_base__u32__sat_add_indirect(&self->private_impl.f_scan_count, 1);
 
     ok:
     self->private_impl.p_decode_sos[0] = 0;
@@ -40342,6 +40340,7 @@ wuffs_jpeg__decoder__restart_frame(
   }
   self->private_impl.f_call_sequence = 40;
   self->private_impl.f_frame_config_io_position = a_io_position;
+  self->private_impl.f_scan_count = 0;
   self->private_impl.f_restart_interval = self->private_impl.f_saved_restart_interval;
   while (v_i < 4) {
     self->private_impl.f_seen_dqt[v_i] = self->private_impl.f_saved_seen_dqt[v_i];
