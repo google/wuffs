@@ -872,6 +872,69 @@ func (g *gen) writeBuiltinNumType(b *buffer, recv *a.Expr, method t.ID, args []*
 
 func (g *gen) writeBuiltinSlice(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, sideEffectsOnly bool, depth uint32) error {
 	switch method {
+	case t.IDBulkMemset:
+		if arrayOrSlice, lo, hi, ok := recv.IsSlice(); !ok {
+			return fmt.Errorf("TODO: bulk_memset for general expressions")
+
+		} else if hi == nil {
+			return fmt.Errorf("TODO: bulk_memset for general expressions")
+
+		} else if arrayOrSlice.MType().IsBulkNumType() {
+			b.writes("wuffs_base__bulk_memset(&")
+			if err := g.writeExpr(b, arrayOrSlice, false, depth); err != nil {
+				return err
+			}
+			if lo == nil {
+				b.writes("[0], ")
+				if err := g.writeExpr(b, hi, false, depth); err != nil {
+					return err
+				}
+			} else {
+				b.writes("[")
+				if err := g.writeExpr(b, lo, false, depth); err != nil {
+					return err
+				}
+				b.writes("], (")
+				if err := g.writeExpr(b, hi, false, depth); err != nil {
+					return err
+				}
+				b.writes(" - ")
+				if err := g.writeExpr(b, lo, false, depth); err != nil {
+					return err
+				}
+				b.writes(")")
+			}
+			if bs := arrayOrSlice.MType().Inner().BulkSize(); (bs != nil) && (bs.Cmp(one) != 0) {
+				b.writes(" * (size_t)")
+				b.writes(bs.String())
+				b.writes("u")
+			}
+			b.writes(", ")
+
+			return g.writeArgs(b, args, depth)
+
+		} else if arrayOrSlice.MType().IsContainerOfSpecificNumType(t.IDSlice, t.IDU8) {
+			b.writes("wuffs_base__bulk_memset(")
+			if err := g.writeExpr(b, recv, false, depth); err != nil {
+				return err
+			}
+			b.writes(".ptr, ")
+			if err := g.writeExpr(b, recv, false, depth); err != nil {
+				return err
+			}
+			b.writes(".len")
+			if bs := arrayOrSlice.MType().Inner().BulkSize(); (bs != nil) && (bs.Cmp(one) != 0) {
+				b.writes(" * (size_t)")
+				b.writes(bs.String())
+				b.writes("u")
+			}
+			b.writes(", ")
+			return g.writeArgs(b, args, depth)
+
+		} else {
+			return fmt.Errorf("TODO: bulk_memset for general expressions")
+		}
+
 	case t.IDCopyFromSlice:
 		if err := g.writeBuiltinSliceCopyFromSlice8(b, recv, method, args, depth); err != errOptimizationNotApplicable {
 			return err

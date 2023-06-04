@@ -789,8 +789,6 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, blend: base.pixel_blend, workbuf: slice base.u8, opts: nptr base.decode_frame_options) {
     var pixfmt : base.u32
     var status : base.status
-    var i      : base.u64
-    var i_end  : base.u64
     var c      : base.u8
     var marker : base.u8
 
@@ -819,19 +817,11 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
     // For progressive JPEGs, zero-initialize the saved pre-IDCT blocks. For
     // sequential JPEGs, this is a no-op, other than checking that args.workbuf
     // is long enough.
-    i = this.components_workbuf_offsets[4]
-    i_end = this.components_workbuf_offsets[8]
-    if i_end > args.workbuf.length() {
+    if this.components_workbuf_offsets[8] > args.workbuf.length() {
         return base."#bad workbuf length"
+    } else if this.components_workbuf_offsets[4] < this.components_workbuf_offsets[8] {
+        args.workbuf[this.components_workbuf_offsets[4] .. this.components_workbuf_offsets[8]].bulk_memset!(byte_value: 0)
     }
-    while i < i_end,
-            inv i_end <= args.workbuf.length(),
-    {
-        assert i < 0xFFFF_FFFF_FFFF_FFFF via "a < b: a < c; c <= b"(c: i_end)
-        assert i < args.workbuf.length() via "a < b: a < c; c <= b"(c: i_end)
-        args.workbuf[i] = 0
-        i += 1
-    } endwhile
 
     // Process chunks (markers and their payloads).
     while true {
@@ -1182,7 +1172,8 @@ pri func decoder.decode_sos?(dst: ptr base.pixel_buffer, src: base.io_reader, wo
             if this.sof_marker >= 0xC2 {
                 this.load_mcu_blocks!(mx: mx, my: my, workbuf: args.workbuf)
             } else {
-                this.clear_mcu_blocks!()
+                // Clear this.mcu_blocks.
+                this.mcu_blocks[.. this.mcu_num_blocks].bulk_memset!(byte_value: 0)
             }
 
             while.decode_mcu true,
@@ -1489,9 +1480,9 @@ pri func decoder.calculate_single_component_scan_fields!() {
 }
 
 pri func decoder.fill_bitstream!(src: base.io_reader) {
-    var wi : base.u32[..= 0x800]
-    var c  : base.u8
-    var n  : base.u32[..= 0x800]
+    var wi     : base.u32[..= 0x800]
+    var c      : base.u8
+    var new_wi : base.u32[..= 0x800]
 
     // Compact unread bytes to the start of the buffer.
     if this.bitstream_ri <= 0 {
@@ -1533,34 +1524,15 @@ pri func decoder.fill_bitstream!(src: base.io_reader) {
     // this method can insert even more.
     if args.src.length() > 1 {
         if (args.src.peek_u8() >= 0xFF) and ((args.src.peek_u16le() >> 8) > 0) {
-            n = wi.min(no_more_than: 0x800 - 32) + 32
-            while wi < n {
-                assert wi < 0x800 via "a < b: a < c; c <= b"(c: n)
-                this.bitstream_buffer[wi] = 0x00
-                wi += 1
-            } endwhile
+            new_wi = wi.min(no_more_than: 0x800 - 32) + 32
+            if wi < new_wi {
+                this.bitstream_buffer[wi .. new_wi].bulk_memset!(byte_value: 0)
+            }
+            wi = new_wi
         }
     }
 
     this.bitstream_wi = wi
-}
-
-pri func decoder.clear_mcu_blocks!() {
-    var b : base.u32
-    var i : base.u32
-
-    b = 0
-    while b < this.mcu_num_blocks {
-        assert b < 10 via "a < b: a < c; c <= b"(c: this.mcu_num_blocks)
-        i = 0
-        while i < 64,
-                inv b < 10,
-        {
-            this.mcu_blocks[b][i] = 0
-            i += 1
-        } endwhile
-        b += 1
-    } endwhile
 }
 
 pri func decoder.load_mcu_blocks!(mx: base.u32[..= 0x2000], my: base.u32[..= 0x2000], workbuf: slice base.u8) {

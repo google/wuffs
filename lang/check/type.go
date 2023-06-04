@@ -730,8 +730,16 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 		qqid[0] = t.IDBase
 		qqid[1] = t.IDDagger1
 		if q.c.isBuiltInSliceFunc(qqid, lTyp) {
-			n.SetMType(a.NewTypeExpr(t.IDFunc, 0, n.Ident(), lTyp.AsNode(), nil, nil))
-			return nil
+			bulky := false
+			switch qqid[2] {
+			case t.IDBulkMemset:
+				bulky = true
+			}
+
+			if !bulky || lTyp.Inner().IsBulkNumType() {
+				n.SetMType(a.NewTypeExpr(t.IDFunc, 0, n.Ident(), lTyp.AsNode(), nil, nil))
+				return nil
+			}
 		}
 		return fmt.Errorf("check: no %s method %q", lTyp.Decorator().Str(q.tm), n.Ident().Str(q.tm))
 

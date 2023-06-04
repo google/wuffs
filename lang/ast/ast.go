@@ -838,6 +838,33 @@ func (n *TypeExpr) Pointee() *TypeExpr {
 	return n
 }
 
+func (n *TypeExpr) BulkSize() *big.Int {
+	if !n.IsBulkNumType() {
+		return nil
+	}
+	ret := big.NewInt(1)
+	for ; n.id0 == t.IDArray; n = n.rhs.AsTypeExpr() {
+		ret = ret.Mul(ret, n.ArrayLength().ConstValue())
+	}
+	switch n.id2 {
+	case t.IDU8:
+		return ret
+	case t.IDU16:
+		return ret.Lsh(ret, 1)
+	case t.IDU32:
+		return ret.Lsh(ret, 2)
+	case t.IDU64:
+		return ret.Lsh(ret, 3)
+	}
+	return nil
+}
+
+func (n *TypeExpr) IsBulkNumType() bool {
+	for ; n.id0 == t.IDArray; n = n.rhs.AsTypeExpr() {
+	}
+	return n.id0 == 0 && n.id1 == t.IDBase && n.id2.IsNumType()
+}
+
 func (n *TypeExpr) IsBool() bool {
 	return n.id0 == 0 && n.id1 == t.IDBase && n.id2 == t.IDBool
 }
@@ -912,6 +939,10 @@ func (n *TypeExpr) IsPointerType() bool {
 
 func (n *TypeExpr) IsReadOnly() bool {
 	return (n.id0 == t.IDRoarray) || (n.id0 == t.IDRoslice) || (n.id0 == t.IDRotable)
+}
+
+func (n *TypeExpr) IsContainerOfSpecificNumType(container t.ID, numType t.ID) bool {
+	return (n.id0 == container) && n.Inner().IsNumType() && (n.Inner().id2 == numType)
 }
 
 func (n *TypeExpr) IsUnsignedInteger() bool {

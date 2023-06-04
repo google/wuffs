@@ -12277,6 +12277,14 @@ wuffs_base__slice_u8__copy_from_slice(wuffs_base__slice_u8 dst,
   return len;
 }
 
+static inline wuffs_base__empty_struct  //
+wuffs_base__bulk_memset(void* ptr, size_t len, uint8_t byte_value) {
+  if (len) {
+    memset(ptr, byte_value, len);
+  }
+  return wuffs_base__make_empty_struct();
+}
+
 // --------
 
 static inline wuffs_base__slice_u8  //
@@ -36854,10 +36862,6 @@ wuffs_jpeg__decoder__fill_bitstream(
     wuffs_base__io_buffer* a_src);
 
 static wuffs_base__empty_struct
-wuffs_jpeg__decoder__clear_mcu_blocks(
-    wuffs_jpeg__decoder* self);
-
-static wuffs_base__empty_struct
 wuffs_jpeg__decoder__load_mcu_blocks(
     wuffs_jpeg__decoder* self,
     uint32_t a_mx,
@@ -38937,8 +38941,6 @@ wuffs_jpeg__decoder__do_decode_frame(
 
   uint32_t v_pixfmt = 0;
   wuffs_base__status v_status = wuffs_base__make_status(NULL);
-  uint64_t v_i = 0;
-  uint64_t v_i_end = 0;
   uint8_t v_c = 0;
   uint8_t v_marker = 0;
 
@@ -38997,15 +38999,15 @@ wuffs_jpeg__decoder__do_decode_frame(
       }
       goto ok;
     }
-    v_i = self->private_impl.f_components_workbuf_offsets[4];
-    v_i_end = self->private_impl.f_components_workbuf_offsets[8];
-    if (v_i_end > ((uint64_t)(a_workbuf.len))) {
+    if (self->private_impl.f_components_workbuf_offsets[8] > ((uint64_t)(a_workbuf.len))) {
       status = wuffs_base__make_status(wuffs_base__error__bad_workbuf_length);
       goto exit;
-    }
-    while (v_i < v_i_end) {
-      a_workbuf.ptr[v_i] = 0;
-      v_i += 1;
+    } else if (self->private_impl.f_components_workbuf_offsets[4] < self->private_impl.f_components_workbuf_offsets[8]) {
+      wuffs_base__bulk_memset(wuffs_base__slice_u8__subslice_ij(a_workbuf,
+          self->private_impl.f_components_workbuf_offsets[4],
+          self->private_impl.f_components_workbuf_offsets[8]).ptr, wuffs_base__slice_u8__subslice_ij(a_workbuf,
+          self->private_impl.f_components_workbuf_offsets[4],
+          self->private_impl.f_components_workbuf_offsets[8]).len, 0);
     }
     label__0__continue:;
     while (true) {
@@ -39516,7 +39518,7 @@ wuffs_jpeg__decoder__decode_sos(
         if (self->private_impl.f_sof_marker >= 194) {
           wuffs_jpeg__decoder__load_mcu_blocks(self, v_mx, v_my, a_workbuf);
         } else {
-          wuffs_jpeg__decoder__clear_mcu_blocks(self);
+          wuffs_base__bulk_memset(&self->private_data.f_mcu_blocks[0], self->private_impl.f_mcu_num_blocks * (size_t)128u, 0);
         }
         while (true) {
           v_decode_mcu_result = wuffs_jpeg__decoder__decode_mcu(self);
@@ -39916,7 +39918,7 @@ wuffs_jpeg__decoder__fill_bitstream(
     wuffs_base__io_buffer* a_src) {
   uint32_t v_wi = 0;
   uint8_t v_c = 0;
-  uint32_t v_n = 0;
+  uint32_t v_new_wi = 0;
 
   const uint8_t* iop_a_src = NULL;
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -39961,11 +39963,11 @@ wuffs_jpeg__decoder__fill_bitstream(
   label__0__break:;
   if (((uint64_t)(io2_a_src - iop_a_src)) > 1) {
     if ((wuffs_base__peek_u8be__no_bounds_check(iop_a_src) >= 255) && ((wuffs_base__peek_u16le__no_bounds_check(iop_a_src) >> 8) > 0)) {
-      v_n = (wuffs_base__u32__min(v_wi, 2016) + 32);
-      while (v_wi < v_n) {
-        self->private_data.f_bitstream_buffer[v_wi] = 0;
-        v_wi += 1;
+      v_new_wi = (wuffs_base__u32__min(v_wi, 2016) + 32);
+      if (v_wi < v_new_wi) {
+        wuffs_base__bulk_memset(&self->private_data.f_bitstream_buffer[v_wi], (v_new_wi - v_wi), 0);
       }
+      v_wi = v_new_wi;
     }
   }
   self->private_impl.f_bitstream_wi = v_wi;
@@ -39973,26 +39975,6 @@ wuffs_jpeg__decoder__fill_bitstream(
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
-  return wuffs_base__make_empty_struct();
-}
-
-// -------- func jpeg.decoder.clear_mcu_blocks
-
-static wuffs_base__empty_struct
-wuffs_jpeg__decoder__clear_mcu_blocks(
-    wuffs_jpeg__decoder* self) {
-  uint32_t v_b = 0;
-  uint32_t v_i = 0;
-
-  v_b = 0;
-  while (v_b < self->private_impl.f_mcu_num_blocks) {
-    v_i = 0;
-    while (v_i < 64) {
-      self->private_data.f_mcu_blocks[v_b][v_i] = 0;
-      v_i += 1;
-    }
-    v_b += 1;
-  }
   return wuffs_base__make_empty_struct();
 }
 

@@ -668,14 +668,14 @@ const (
 	IDIsOK         = ID(0x231)
 	IDIsSuspension = ID(0x232)
 
-	IDData             = ID(0x240)
-	IDHeight           = ID(0x241)
-	IDIO               = ID(0x242)
-	IDLimit            = ID(0x243)
-	IDPrefix           = ID(0x244)
-	IDRowU32           = ID(0x245)
-	IDStride           = ID(0x246)
-	IDSubslice         = ID(0x247)
+	IDBulkMemset       = ID(0x240)
+	IDData             = ID(0x241)
+	IDHeight           = ID(0x242)
+	IDIO               = ID(0x243)
+	IDLimit            = ID(0x244)
+	IDPrefix           = ID(0x245)
+	IDRowU32           = ID(0x246)
+	IDStride           = ID(0x247)
 	IDSubtable         = ID(0x248)
 	IDSuffix           = ID(0x249)
 	IDUintptrLow12Bits = ID(0x24A)
@@ -1100,6 +1100,7 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDIsOK:         "is_ok",
 	IDIsSuspension: "is_suspension",
 
+	IDBulkMemset:       "bulk_memset",
 	IDData:             "data",
 	IDHeight:           "height",
 	IDIO:               "io",
@@ -1107,7 +1108,6 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDPrefix:           "prefix",
 	IDRowU32:           "row_u32",
 	IDStride:           "stride",
-	IDSubslice:         "subslice",
 	IDSubtable:         "subtable",
 	IDSuffix:           "suffix",
 	IDUintptrLow12Bits: "uintptr_low_12_bits",
