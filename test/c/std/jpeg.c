@@ -792,7 +792,13 @@ test_mimic_jpeg_decode_30k_24bpp_sequential() {
 }
 
 const char*  //
-test_mimic_jpeg_decode_552k_24bpp() {
+test_mimic_jpeg_decode_552k_24bpp_420() {
+  CHECK_FOCUS(__func__);
+  return do_test_mimic_jpeg_decode("test/data/hibiscus.regular.jpeg");
+}
+
+const char*  //
+test_mimic_jpeg_decode_552k_24bpp_444() {
   CHECK_FOCUS(__func__);
   return do_test_mimic_jpeg_decode("test/data/hibiscus.primitive.jpeg");
 }
@@ -842,13 +848,23 @@ bench_wuffs_jpeg_decode_77k_24bpp() {
 }
 
 const char*  //
-bench_wuffs_jpeg_decode_552k_24bpp() {
+bench_wuffs_jpeg_decode_552k_24bpp_420() {
   CHECK_FOCUS(__func__);
   return do_bench_image_decode(
       &wuffs_jpeg_decode,
       WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
       wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
       NULL, 0, "test/data/hibiscus.regular.jpeg", 0, SIZE_MAX, 5);
+}
+
+const char*  //
+bench_wuffs_jpeg_decode_552k_24bpp_444() {
+  CHECK_FOCUS(__func__);
+  return do_bench_image_decode(
+      &wuffs_jpeg_decode,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
+      NULL, 0, "test/data/hibiscus.primitive.jpeg", 0, SIZE_MAX, 5);
 }
 
 const char*  //
@@ -906,13 +922,23 @@ bench_mimic_jpeg_decode_77k_24bpp() {
 }
 
 const char*  //
-bench_mimic_jpeg_decode_552k_24bpp() {
+bench_mimic_jpeg_decode_552k_24bpp_420() {
   CHECK_FOCUS(__func__);
   return do_bench_image_decode(
       &mimic_jpeg_decode,
       WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
       wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
       NULL, 0, "test/data/hibiscus.regular.jpeg", 0, SIZE_MAX, 5);
+}
+
+const char*  //
+bench_mimic_jpeg_decode_552k_24bpp_444() {
+  CHECK_FOCUS(__func__);
+  return do_bench_image_decode(
+      &mimic_jpeg_decode,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
+      NULL, 0, "test/data/hibiscus.primitive.jpeg", 0, SIZE_MAX, 5);
 }
 
 const char*  //
@@ -943,7 +969,8 @@ proc g_tests[] = {
     test_mimic_jpeg_decode_19k_8bpp,
     test_mimic_jpeg_decode_30k_24bpp_progressive,
     test_mimic_jpeg_decode_30k_24bpp_sequential,
-    test_mimic_jpeg_decode_552k_24bpp,
+    test_mimic_jpeg_decode_552k_24bpp_420,
+    test_mimic_jpeg_decode_552k_24bpp_444,
 
 #endif  // WUFFS_MIMIC
 
@@ -956,7 +983,8 @@ proc g_benches[] = {
     bench_wuffs_jpeg_decode_30k_24bpp_progressive,
     bench_wuffs_jpeg_decode_30k_24bpp_sequential,
     bench_wuffs_jpeg_decode_77k_24bpp,
-    bench_wuffs_jpeg_decode_552k_24bpp,
+    bench_wuffs_jpeg_decode_552k_24bpp_420,
+    bench_wuffs_jpeg_decode_552k_24bpp_444,
     bench_wuffs_jpeg_decode_4002k_24bpp,
 
 #ifdef WUFFS_MIMIC
@@ -965,7 +993,8 @@ proc g_benches[] = {
     bench_mimic_jpeg_decode_30k_24bpp_progressive,
     bench_mimic_jpeg_decode_30k_24bpp_sequential,
     bench_mimic_jpeg_decode_77k_24bpp,
-    bench_mimic_jpeg_decode_552k_24bpp,
+    bench_mimic_jpeg_decode_552k_24bpp_420,
+    bench_mimic_jpeg_decode_552k_24bpp_444,
     bench_mimic_jpeg_decode_4002k_24bpp,
 
 #endif  // WUFFS_MIMIC

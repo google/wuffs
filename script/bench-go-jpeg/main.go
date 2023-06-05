@@ -64,8 +64,12 @@ var testCases = []testCase{{
 	src:           mustLoad("test/data/bricks-color.jpeg"),
 	itersUnscaled: 30,
 }, {
-	benchname:     "go_jpeg_decode_552k_24bpp",
+	benchname:     "go_jpeg_decode_552k_24bpp_420",
 	src:           mustLoad("test/data/hibiscus.regular.jpeg"),
+	itersUnscaled: 5,
+}, {
+	benchname:     "go_jpeg_decode_552k_24bpp_444",
+	src:           mustLoad("test/data/hibiscus.primitive.jpeg"),
 	itersUnscaled: 5,
 }, {
 	benchname:     "go_jpeg_decode_4002k_24bpp",
