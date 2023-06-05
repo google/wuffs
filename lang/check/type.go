@@ -1186,8 +1186,10 @@ swtch:
 		if err := q.tcheckExpr(aLen, 0); err != nil {
 			return err
 		}
-		if aLen.ConstValue() == nil {
+		if cv := aLen.ConstValue(); cv == nil {
 			return fmt.Errorf("check: %q is not constant", aLen.Str(q.tm))
+		} else if cv.Sign() <= 0 {
+			return fmt.Errorf("check: array length %q is not positive", aLen.Str(q.tm))
 		}
 		fallthrough
 
