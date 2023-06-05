@@ -39041,11 +39041,7 @@ wuffs_jpeg__decoder__do_decode_frame(
       status = wuffs_base__make_status(wuffs_base__error__bad_workbuf_length);
       goto exit;
     } else if (self->private_impl.f_components_workbuf_offsets[4u] < self->private_impl.f_components_workbuf_offsets[8u]) {
-      wuffs_base__bulk_memset(wuffs_base__slice_u8__subslice_ij(a_workbuf,
-          self->private_impl.f_components_workbuf_offsets[4u],
-          self->private_impl.f_components_workbuf_offsets[8u]).ptr, wuffs_base__slice_u8__subslice_ij(a_workbuf,
-          self->private_impl.f_components_workbuf_offsets[4u],
-          self->private_impl.f_components_workbuf_offsets[8u]).len, 0u);
+      wuffs_base__bulk_memset(a_workbuf.ptr + self->private_impl.f_components_workbuf_offsets[4u], (self->private_impl.f_components_workbuf_offsets[8u] - self->private_impl.f_components_workbuf_offsets[4u]), 0u);
     }
     label__0__continue:;
     while (true) {
@@ -40082,7 +40078,7 @@ wuffs_jpeg__decoder__load_mcu_blocks(
     v_stride16 = ((uint64_t)((self->private_impl.f_components_workbuf_widths[v_csel] * 16u)));
     v_offset = (self->private_impl.f_components_workbuf_offsets[(v_csel | 4u)] + (((v_h * ((uint64_t)(a_mx))) + ((uint64_t)(self->private_impl.f_scan_comps_bx_offset[v_b]))) * 128u) + (((v_v * ((uint64_t)(a_my))) + ((uint64_t)(self->private_impl.f_scan_comps_by_offset[v_b]))) * v_stride16));
     if (v_offset <= ((uint64_t)(a_workbuf.len))) {
-      wuffs_base__bulk_load_host_endian(&self->private_data.f_mcu_blocks[v_b], ((v_b + 1u) - v_b) * (size_t)128u, wuffs_base__slice_u8__subslice_i(a_workbuf, v_offset));
+      wuffs_base__bulk_load_host_endian(&self->private_data.f_mcu_blocks[v_b], 1u * (size_t)128u, wuffs_base__slice_u8__subslice_i(a_workbuf, v_offset));
     }
     v_b += 1u;
   }
@@ -40116,7 +40112,7 @@ wuffs_jpeg__decoder__save_mcu_blocks(
     v_stride16 = ((uint64_t)((self->private_impl.f_components_workbuf_widths[v_csel] * 16u)));
     v_offset = (self->private_impl.f_components_workbuf_offsets[(v_csel | 4u)] + (((v_h * ((uint64_t)(a_mx))) + ((uint64_t)(self->private_impl.f_scan_comps_bx_offset[v_b]))) * 128u) + (((v_v * ((uint64_t)(a_my))) + ((uint64_t)(self->private_impl.f_scan_comps_by_offset[v_b]))) * v_stride16));
     if (v_offset <= ((uint64_t)(a_workbuf.len))) {
-      wuffs_base__bulk_save_host_endian(&self->private_data.f_mcu_blocks[v_b], ((v_b + 1u) - v_b) * (size_t)128u, wuffs_base__slice_u8__subslice_i(a_workbuf, v_offset));
+      wuffs_base__bulk_save_host_endian(&self->private_data.f_mcu_blocks[v_b], 1u * (size_t)128u, wuffs_base__slice_u8__subslice_i(a_workbuf, v_offset));
     }
     v_b += 1u;
   }

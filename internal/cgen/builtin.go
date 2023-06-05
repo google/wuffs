@@ -990,15 +990,10 @@ func (g *gen) writeBuiltinSliceBulkMethodRecv(b *buffer, recv *a.Expr, depth uin
 			if err := g.writeExpr(b, lo, false, depth); err != nil {
 				return err
 			}
-			b.writes("], (")
-			if err := g.writeExpr(b, hi, false, depth); err != nil {
+			b.writes("], ")
+			if err := g.writeExprXMinusY(b, hi, lo, depth); err != nil {
 				return err
 			}
-			b.writes(" - ")
-			if err := g.writeExpr(b, lo, false, depth); err != nil {
-				return err
-			}
-			b.writes(")")
 		}
 		if bs := arrayOrSlice.MType().Inner().BulkSize(); (bs != nil) && (bs.Cmp(one) != 0) {
 			b.writes(" * (size_t)")
@@ -1008,19 +1003,39 @@ func (g *gen) writeBuiltinSliceBulkMethodRecv(b *buffer, recv *a.Expr, depth uin
 		b.writes(", ")
 		return nil
 
-	} else if arrayOrSlice.MType().IsContainerOfSpecificNumType(t.IDSlice, t.IDU8) {
-		if err := g.writeExpr(b, recv, false, depth); err != nil {
-			return err
+	} else if recv.MType().IsContainerOfSpecificNumType(t.IDSlice, t.IDU8) {
+		if arrayOrSlice.MType().IsContainerOfSpecificNumType(t.IDSlice, t.IDU8) {
+			if err := g.writeExpr(b, arrayOrSlice, false, depth); err != nil {
+				return err
+			}
+			b.writes(".ptr")
+			if mhs := recv.MHS(); mhs != nil {
+				b.writes(" + ")
+				if err := g.writeExpr(b, mhs.AsExpr(), false, depth); err != nil {
+					return err
+				}
+			}
+			b.writes(", ")
+		} else {
+			if err := g.writeExpr(b, recv, false, depth); err != nil {
+				return err
+			}
+			b.writes(".ptr, ")
 		}
-		b.writes(".ptr, ")
-		if err := g.writeExpr(b, recv, false, depth); err != nil {
-			return err
-		}
-		b.writes(".len")
-		if bs := arrayOrSlice.MType().Inner().BulkSize(); (bs != nil) && (bs.Cmp(one) != 0) {
-			b.writes(" * (size_t)")
-			b.writes(bs.String())
-			b.writes("u")
+
+		if mhs, rhs := recv.MHS(), recv.RHS(); (mhs != nil) && (rhs != nil) {
+			if err := g.writeExprXMinusY(b, rhs.AsExpr(), mhs.AsExpr(), depth); err != nil {
+				return err
+			}
+		} else if rhs := recv.RHS(); rhs != nil {
+			if err := g.writeExpr(b, rhs.AsExpr(), false, depth); err != nil {
+				return err
+			}
+		} else {
+			if err := g.writeExpr(b, recv, false, depth); err != nil {
+				return err
+			}
+			b.writes(".len")
 		}
 		b.writes(", ")
 		return nil

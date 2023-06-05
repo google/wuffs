@@ -382,6 +382,27 @@ func (g *gen) writeExprRepr(b *buffer, n *a.Expr, depth uint32) error {
 	return nil
 }
 
+func (g *gen) writeExprXMinusY(b *buffer, x *a.Expr, y *a.Expr, depth uint32) error {
+	if x.Operator() == t.IDXBinaryPlus {
+		if x.LHS().AsExpr().Eq(y) {
+			return g.writeExpr(b, x.RHS().AsExpr(), false, depth)
+		} else if x.RHS().AsExpr().Eq(y) {
+			return g.writeExpr(b, x.LHS().AsExpr(), false, depth)
+		}
+	}
+
+	b.writes("(")
+	if err := g.writeExpr(b, x, false, depth); err != nil {
+		return err
+	}
+	b.writes(" - ")
+	if err := g.writeExpr(b, y, false, depth); err != nil {
+		return err
+	}
+	b.writes(")")
+	return nil
+}
+
 func (g *gen) writeExprAs(b *buffer, lhs *a.Expr, rhs *a.TypeExpr, depth uint32) error {
 	// Drop the "& redundantMask" in "(foo & redundantMask) as base.uxx". It's
 	// redundant in C/C++ (but not in Wuffs).
