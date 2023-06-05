@@ -215,9 +215,35 @@ wuffs_base__slice_u8__copy_from_slice(wuffs_base__slice_u8 dst,
 }
 
 static inline wuffs_base__empty_struct  //
+wuffs_base__bulk_load_host_endian(void* ptr,
+                                  size_t len,
+                                  wuffs_base__slice_u8 src) {
+  if (len > src.len) {
+    len = src.len;
+  }
+  if (len) {
+    memmove(ptr, src.ptr, len);
+  }
+  return wuffs_base__make_empty_struct();
+}
+
+static inline wuffs_base__empty_struct  //
 wuffs_base__bulk_memset(void* ptr, size_t len, uint8_t byte_value) {
   if (len) {
     memset(ptr, byte_value, len);
+  }
+  return wuffs_base__make_empty_struct();
+}
+
+static inline wuffs_base__empty_struct  //
+wuffs_base__bulk_save_host_endian(void* ptr,
+                                  size_t len,
+                                  wuffs_base__slice_u8 dst) {
+  if (len > dst.len) {
+    len = dst.len;
+  }
+  if (len) {
+    memmove(dst.ptr, ptr, len);
   }
   return wuffs_base__make_empty_struct();
 }

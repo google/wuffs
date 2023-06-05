@@ -965,10 +965,12 @@ var SliceFuncs = []string{
 	"GENERIC T1.uintptr_low_12_bits() u32[..= 4095]",
 	"GENERIC T1.suffix(up_to: u64) T1",
 
-	// The bulk_etc methods are further restricted to those slices whose
+	// The bulk_etc methods are further restricted to those T1 slices whose
 	// elements are bulk-numeric types: numerics (e.g. base.u32), arrays of
 	// numerics, arrays of arrays of numerics, etc.
+	"GENERIC T1.bulk_load_host_endian!(src: slice u8)",
 	"GENERIC T1.bulk_memset!(byte_value: u8)",
+	"GENERIC T1.bulk_save_host_endian!(dst: slice u8)",
 }
 
 var SliceU8Funcs = []string{

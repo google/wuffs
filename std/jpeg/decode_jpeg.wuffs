@@ -1547,8 +1547,6 @@ pri func decoder.fill_bitstream!(src: base.io_reader) {
 pri func decoder.load_mcu_blocks_for_single_component!(mx: base.u32[..= 0x2000], my: base.u32[..= 0x2000], workbuf: slice base.u8, csel: base.u32[..= 3]) {
     var stride16 : base.u64[..= 0x10_0080]
     var offset   : base.u64
-    var s        : slice base.u8
-    var i        : base.u32
 
     // "while true" is redundant but minimizes the diff with load_mcu_blocks.
     while true {
@@ -1557,18 +1555,7 @@ pri func decoder.load_mcu_blocks_for_single_component!(mx: base.u32[..= 0x2000],
                 ((args.mx as base.u64) * 128) +
                 ((args.my as base.u64) * stride16)
         if offset <= args.workbuf.length() {
-            s = args.workbuf[offset ..]
-            if s.length() >= 128 {
-                i = 0
-                while i < 64,
-                        inv s.length() >= 128,
-                {
-                    this.mcu_blocks[0][i] = (
-                            ((s[(2 * i) + 0] as base.u16) << 0) |
-                            ((s[(2 * i) + 1] as base.u16) << 8)) as base.u16
-                    i += 1
-                } endwhile
-            }
+            this.mcu_blocks[.. 1].bulk_load_host_endian!(src: args.workbuf[offset ..])
         }
         break
     } endwhile
@@ -1581,8 +1568,6 @@ pri func decoder.load_mcu_blocks!(mx: base.u32[..= 0x2000], my: base.u32[..= 0x2
     var v        : base.u64[..= 4]
     var stride16 : base.u64[..= 0x10_0080]
     var offset   : base.u64
-    var s        : slice base.u8
-    var i        : base.u32
 
     h = 1
     v = 1
@@ -1599,19 +1584,8 @@ pri func decoder.load_mcu_blocks!(mx: base.u32[..= 0x2000], my: base.u32[..= 0x2
                 (((h * (args.mx as base.u64)) + (this.scan_comps_bx_offset[b] as base.u64)) * 128) +
                 (((v * (args.my as base.u64)) + (this.scan_comps_by_offset[b] as base.u64)) * stride16)
         if offset <= args.workbuf.length() {
-            s = args.workbuf[offset ..]
-            if s.length() >= 128 {
-                i = 0
-                while i < 64,
-                        inv b < 10,
-                        inv s.length() >= 128,
-                {
-                    this.mcu_blocks[b][i] = (
-                            ((s[(2 * i) + 0] as base.u16) << 0) |
-                            ((s[(2 * i) + 1] as base.u16) << 8)) as base.u16
-                    i += 1
-                } endwhile
-            }
+            assert b <= (b + 1) via "a <= (a + b): 0 <= b"()
+            this.mcu_blocks[b .. (b + 1)].bulk_load_host_endian!(src: args.workbuf[offset ..])
         }
         b += 1
     } endwhile
@@ -1624,9 +1598,6 @@ pri func decoder.save_mcu_blocks!(mx: base.u32[..= 0x2000], my: base.u32[..= 0x2
     var v        : base.u64[..= 4]
     var stride16 : base.u64[..= 0x10_0080]
     var offset   : base.u64
-    var s        : slice base.u8
-    var i        : base.u32
-    var m        : base.u16
 
     h = 1
     v = 1
@@ -1643,19 +1614,8 @@ pri func decoder.save_mcu_blocks!(mx: base.u32[..= 0x2000], my: base.u32[..= 0x2
                 (((h * (args.mx as base.u64)) + (this.scan_comps_bx_offset[b] as base.u64)) * 128) +
                 (((v * (args.my as base.u64)) + (this.scan_comps_by_offset[b] as base.u64)) * stride16)
         if offset <= args.workbuf.length() {
-            s = args.workbuf[offset ..]
-            if s.length() >= 128 {
-                i = 0
-                while i < 64,
-                        inv b < 10,
-                        inv s.length() >= 128,
-                {
-                    m = this.mcu_blocks[b][i]
-                    s[(2 * i) + 0] = ((m >> 0) & 0xFF) as base.u8
-                    s[(2 * i) + 1] = ((m >> 8) & 0xFF) as base.u8
-                    i += 1
-                } endwhile
-            }
+            assert b <= (b + 1) via "a <= (a + b): 0 <= b"()
+            this.mcu_blocks[b .. (b + 1)].bulk_save_host_endian!(dst: args.workbuf[offset ..])
         }
         b += 1
     } endwhile

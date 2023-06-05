@@ -668,19 +668,22 @@ const (
 	IDIsOK         = ID(0x231)
 	IDIsSuspension = ID(0x232)
 
-	IDBulkMemset       = ID(0x240)
-	IDData             = ID(0x241)
-	IDHeight           = ID(0x242)
-	IDIO               = ID(0x243)
-	IDLimit            = ID(0x244)
-	IDPrefix           = ID(0x245)
-	IDRowU32           = ID(0x246)
-	IDStride           = ID(0x247)
-	IDSubtable         = ID(0x248)
-	IDSuffix           = ID(0x249)
-	IDUintptrLow12Bits = ID(0x24A)
-	IDValidUTF8Length  = ID(0x24B)
-	IDWidth            = ID(0x24C)
+	IDBulkLoadHostEndian = ID(0x238)
+	IDBulkMemset         = ID(0x239)
+	IDBulkSaveHostEndian = ID(0x23A)
+
+	IDData             = ID(0x240)
+	IDHeight           = ID(0x241)
+	IDIO               = ID(0x242)
+	IDLimit            = ID(0x243)
+	IDPrefix           = ID(0x244)
+	IDRowU32           = ID(0x245)
+	IDStride           = ID(0x246)
+	IDSubtable         = ID(0x247)
+	IDSuffix           = ID(0x248)
+	IDUintptrLow12Bits = ID(0x249)
+	IDValidUTF8Length  = ID(0x24A)
+	IDWidth            = ID(0x24B)
 
 	IDLimitedSwizzleU32InterleavedFromReader = ID(0x280)
 	IDSwizzleInterleavedFromReader           = ID(0x281)
@@ -1100,7 +1103,10 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDIsOK:         "is_ok",
 	IDIsSuspension: "is_suspension",
 
-	IDBulkMemset:       "bulk_memset",
+	IDBulkLoadHostEndian: "bulk_load_host_endian",
+	IDBulkMemset:         "bulk_memset",
+	IDBulkSaveHostEndian: "bulk_save_host_endian",
+
 	IDData:             "data",
 	IDHeight:           "height",
 	IDIO:               "io",

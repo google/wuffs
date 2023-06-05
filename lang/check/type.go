@@ -732,7 +732,9 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 		if q.c.isBuiltInSliceFunc(qqid, lTyp) {
 			bulky := false
 			switch qqid[2] {
+			case t.IDBulkLoadHostEndian:
 			case t.IDBulkMemset:
+			case t.IDBulkSaveHostEndian:
 				bulky = true
 			}
 

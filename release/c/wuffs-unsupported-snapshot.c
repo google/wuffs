@@ -12278,9 +12278,35 @@ wuffs_base__slice_u8__copy_from_slice(wuffs_base__slice_u8 dst,
 }
 
 static inline wuffs_base__empty_struct  //
+wuffs_base__bulk_load_host_endian(void* ptr,
+                                  size_t len,
+                                  wuffs_base__slice_u8 src) {
+  if (len > src.len) {
+    len = src.len;
+  }
+  if (len) {
+    memmove(ptr, src.ptr, len);
+  }
+  return wuffs_base__make_empty_struct();
+}
+
+static inline wuffs_base__empty_struct  //
 wuffs_base__bulk_memset(void* ptr, size_t len, uint8_t byte_value) {
   if (len) {
     memset(ptr, byte_value, len);
+  }
+  return wuffs_base__make_empty_struct();
+}
+
+static inline wuffs_base__empty_struct  //
+wuffs_base__bulk_save_host_endian(void* ptr,
+                                  size_t len,
+                                  wuffs_base__slice_u8 dst) {
+  if (len > dst.len) {
+    len = dst.len;
+  }
+  if (len) {
+    memmove(dst.ptr, ptr, len);
   }
   return wuffs_base__make_empty_struct();
 }
@@ -40016,21 +40042,12 @@ wuffs_jpeg__decoder__load_mcu_blocks_for_single_component(
     uint32_t a_csel) {
   uint64_t v_stride16 = 0;
   uint64_t v_offset = 0;
-  wuffs_base__slice_u8 v_s = {0};
-  uint32_t v_i = 0;
 
   while (true) {
     v_stride16 = ((uint64_t)((self->private_impl.f_components_workbuf_widths[a_csel] * 16u)));
     v_offset = (self->private_impl.f_components_workbuf_offsets[(a_csel | 4u)] + (((uint64_t)(a_mx)) * 128u) + (((uint64_t)(a_my)) * v_stride16));
     if (v_offset <= ((uint64_t)(a_workbuf.len))) {
-      v_s = wuffs_base__slice_u8__subslice_i(a_workbuf, v_offset);
-      if (((uint64_t)(v_s.len)) >= 128u) {
-        v_i = 0u;
-        while (v_i < 64u) {
-          self->private_data.f_mcu_blocks[0u][v_i] = ((uint16_t)(((((uint16_t)(v_s.ptr[((2u * v_i) + 0u)])) << 0u) | (((uint16_t)(v_s.ptr[((2u * v_i) + 1u)])) << 8u))));
-          v_i += 1u;
-        }
-      }
+      wuffs_base__bulk_load_host_endian(&self->private_data.f_mcu_blocks[0], 1u * (size_t)128u, wuffs_base__slice_u8__subslice_i(a_workbuf, v_offset));
     }
     goto label__0__break;
   }
@@ -40052,8 +40069,6 @@ wuffs_jpeg__decoder__load_mcu_blocks(
   uint64_t v_v = 0;
   uint64_t v_stride16 = 0;
   uint64_t v_offset = 0;
-  wuffs_base__slice_u8 v_s = {0};
-  uint32_t v_i = 0;
 
   v_h = 1u;
   v_v = 1u;
@@ -40067,14 +40082,7 @@ wuffs_jpeg__decoder__load_mcu_blocks(
     v_stride16 = ((uint64_t)((self->private_impl.f_components_workbuf_widths[v_csel] * 16u)));
     v_offset = (self->private_impl.f_components_workbuf_offsets[(v_csel | 4u)] + (((v_h * ((uint64_t)(a_mx))) + ((uint64_t)(self->private_impl.f_scan_comps_bx_offset[v_b]))) * 128u) + (((v_v * ((uint64_t)(a_my))) + ((uint64_t)(self->private_impl.f_scan_comps_by_offset[v_b]))) * v_stride16));
     if (v_offset <= ((uint64_t)(a_workbuf.len))) {
-      v_s = wuffs_base__slice_u8__subslice_i(a_workbuf, v_offset);
-      if (((uint64_t)(v_s.len)) >= 128u) {
-        v_i = 0u;
-        while (v_i < 64u) {
-          self->private_data.f_mcu_blocks[v_b][v_i] = ((uint16_t)(((((uint16_t)(v_s.ptr[((2u * v_i) + 0u)])) << 0u) | (((uint16_t)(v_s.ptr[((2u * v_i) + 1u)])) << 8u))));
-          v_i += 1u;
-        }
-      }
+      wuffs_base__bulk_load_host_endian(&self->private_data.f_mcu_blocks[v_b], ((v_b + 1u) - v_b) * (size_t)128u, wuffs_base__slice_u8__subslice_i(a_workbuf, v_offset));
     }
     v_b += 1u;
   }
@@ -40095,9 +40103,6 @@ wuffs_jpeg__decoder__save_mcu_blocks(
   uint64_t v_v = 0;
   uint64_t v_stride16 = 0;
   uint64_t v_offset = 0;
-  wuffs_base__slice_u8 v_s = {0};
-  uint32_t v_i = 0;
-  uint16_t v_m = 0;
 
   v_h = 1u;
   v_v = 1u;
@@ -40111,16 +40116,7 @@ wuffs_jpeg__decoder__save_mcu_blocks(
     v_stride16 = ((uint64_t)((self->private_impl.f_components_workbuf_widths[v_csel] * 16u)));
     v_offset = (self->private_impl.f_components_workbuf_offsets[(v_csel | 4u)] + (((v_h * ((uint64_t)(a_mx))) + ((uint64_t)(self->private_impl.f_scan_comps_bx_offset[v_b]))) * 128u) + (((v_v * ((uint64_t)(a_my))) + ((uint64_t)(self->private_impl.f_scan_comps_by_offset[v_b]))) * v_stride16));
     if (v_offset <= ((uint64_t)(a_workbuf.len))) {
-      v_s = wuffs_base__slice_u8__subslice_i(a_workbuf, v_offset);
-      if (((uint64_t)(v_s.len)) >= 128u) {
-        v_i = 0u;
-        while (v_i < 64u) {
-          v_m = self->private_data.f_mcu_blocks[v_b][v_i];
-          v_s.ptr[((2u * v_i) + 0u)] = ((uint8_t)((v_m >> 0u)));
-          v_s.ptr[((2u * v_i) + 1u)] = ((uint8_t)((v_m >> 8u)));
-          v_i += 1u;
-        }
-      }
+      wuffs_base__bulk_save_host_endian(&self->private_data.f_mcu_blocks[v_b], ((v_b + 1u) - v_b) * (size_t)128u, wuffs_base__slice_u8__subslice_i(a_workbuf, v_offset));
     }
     v_b += 1u;
   }
