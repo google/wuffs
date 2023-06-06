@@ -291,6 +291,8 @@ pub struct decoder? implements base.image_decoder(
 
         mcu_blocks : array[10] array[64] base.u16,
 
+        swizzle_ycck_scratch_buffer_2k : array[2048] base.u8,
+
         // The dht_temp_etc fields are decode_dht temporary values.
 
         // dht_temp_counts[n] is the number of codes with bit-length (n+1).
@@ -1827,7 +1829,7 @@ pri func decoder.swizzle_colorful!(dst: ptr base.pixel_buffer, workbuf: slice ba
             v2: this.components_v[2],
             v3: this.components_v[3],
             triangle_filter_for_2to1: true,
-            scratch_buffer_2k: this.bitstream_buffer[..])
+            scratch_buffer_2k: this.swizzle_ycck_scratch_buffer_2k[..])
     return status
 }
 

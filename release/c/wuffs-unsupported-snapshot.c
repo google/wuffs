@@ -8874,6 +8874,7 @@ struct wuffs_jpeg__decoder__struct {
   struct {
     uint8_t f_bitstream_buffer[2048];
     uint16_t f_mcu_blocks[10][64];
+    uint8_t f_swizzle_ycck_scratch_buffer_2k[2048];
     uint8_t f_dht_temp_counts[16];
     uint8_t f_dht_temp_bit_lengths[256];
     uint16_t f_dht_temp_bit_strings[256];
@@ -40347,7 +40348,7 @@ wuffs_jpeg__decoder__swizzle_colorful(
       self->private_impl.f_components_v[2u],
       self->private_impl.f_components_v[3u],
       true,
-      wuffs_base__make_slice_u8(self->private_data.f_bitstream_buffer, 2048));
+      wuffs_base__make_slice_u8(self->private_data.f_swizzle_ycck_scratch_buffer_2k, 2048));
   return wuffs_base__status__ensure_not_a_suspension(v_status);
 }
 
