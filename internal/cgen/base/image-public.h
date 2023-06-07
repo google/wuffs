@@ -253,6 +253,32 @@ wuffs_base__color_ycc__as__color_u32(uint8_t yy, uint8_t cb, uint8_t cr) {
          ((0x00FF0000 & bb32) >> 16);
 }
 
+// wuffs_base__color_ycc__as__color_u32_abgr is like
+// wuffs_base__color_ycc__as__color_u32 but the uint32_t returned is in
+// 0xAABBGGRR order, not 0xAARRGGBB.
+static inline uint32_t  //
+wuffs_base__color_ycc__as__color_u32_abgr(uint8_t yy, uint8_t cb, uint8_t cr) {
+  uint32_t yy32 = (((uint32_t)yy) << 16) | (1 << 15);
+  uint32_t cb32 = (((uint32_t)cb) - 0x80);
+  uint32_t cr32 = (((uint32_t)cr) - 0x80);
+  uint32_t rr32 = yy32 + (0x166E9 * cr32);
+  uint32_t gg32 = yy32 - (0x0581A * cb32) - (0x0B6D2 * cr32);
+  uint32_t bb32 = yy32 + (0x1C5A2 * cb32);
+  if (rr32 >> 24) {
+    rr32 = ~((uint32_t)(((int32_t)rr32) >> 31));
+  }
+  if (gg32 >> 24) {
+    gg32 = ~((uint32_t)(((int32_t)gg32) >> 31));
+  }
+  if (bb32 >> 24) {
+    bb32 = ~((uint32_t)(((int32_t)bb32) >> 31));
+  }
+  return 0xFF000000 |                  //
+         ((0x00FF0000 & bb32) >> 0) |  //
+         ((0x00FF0000 & gg32) >> 8) |  //
+         ((0x00FF0000 & rr32) >> 16);
+}
+
 // --------
 
 typedef uint8_t wuffs_base__pixel_blend;
