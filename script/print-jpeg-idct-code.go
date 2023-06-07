@@ -186,6 +186,28 @@ const (
 
 const pass0 = `// ==== First pass, column $colX$.
 
+if (0 == (
+        this.mcu_blocks[args.b][$row1colX$] |
+        this.mcu_blocks[args.b][$row2colX$] |
+        this.mcu_blocks[args.b][$row3colX$] |
+        this.mcu_blocks[args.b][$row4colX$] |
+        this.mcu_blocks[args.b][$row5colX$] |
+        this.mcu_blocks[args.b][$row6colX$] |
+        this.mcu_blocks[args.b][$row7colX$])) {
+// Fast path when the 1-dimensional AC terms are all zero.
+
+intermediate[$row0colX$] =
+        (this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][$row0colX$]) ~mod*
+        (this.quant_tables[args.q][$row0colX$] as base.u32)) ~mod<< 2
+intermediate[$row1colX$] = intermediate[$row0colX$]
+intermediate[$row2colX$] = intermediate[$row0colX$]
+intermediate[$row3colX$] = intermediate[$row0colX$]
+intermediate[$row4colX$] = intermediate[$row0colX$]
+intermediate[$row5colX$] = intermediate[$row0colX$]
+intermediate[$row6colX$] = intermediate[$row0colX$]
+intermediate[$row7colX$] = intermediate[$row0colX$]
+
+} else {
 // Even rows.
 
 bq2 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][$row2colX$]) ~mod* (this.quant_tables[args.q][$row2colX$] as base.u32)
@@ -249,10 +271,35 @@ intermediate[$row2colX$] = this.util.sign_extend_rshift_u32(a: (cd2 ~mod+ ck5) ~
 intermediate[$row5colX$] = this.util.sign_extend_rshift_u32(a: (cd2 ~mod- ck5) ~mod+ (1 << 10), n: 11)
 intermediate[$row3colX$] = this.util.sign_extend_rshift_u32(a: (cd3 ~mod+ ck7) ~mod+ (1 << 10), n: 11)
 intermediate[$row4colX$] = this.util.sign_extend_rshift_u32(a: (cd3 ~mod- ck7) ~mod+ (1 << 10), n: 11)
+}
 `
 
 const pass1 = `// ==== Second pass, row $rowY$.
 
+if (0 == (
+        intermediate[$rowYcol1$] |
+        intermediate[$rowYcol2$] |
+        intermediate[$rowYcol3$] |
+        intermediate[$rowYcol4$] |
+        intermediate[$rowYcol5$] |
+        intermediate[$rowYcol6$] |
+        intermediate[$rowYcol7$])) {
+// Fast path when the 1-dimensional AC terms are all zero.
+
+$bounds_check$
+
+args.dst_buffer[0] = BIAS_AND_CLAMP[((intermediate[$rowYcol0$] ~mod+ (1 << 4)) >> 5) & 1023]
+args.dst_buffer[1] = args.dst_buffer[0]
+args.dst_buffer[2] = args.dst_buffer[0]
+args.dst_buffer[3] = args.dst_buffer[0]
+args.dst_buffer[4] = args.dst_buffer[0]
+args.dst_buffer[5] = args.dst_buffer[0]
+args.dst_buffer[6] = args.dst_buffer[0]
+args.dst_buffer[7] = args.dst_buffer[0]
+
+$advance$
+
+} else {
 // Even columns.
 
 in2 = intermediate[$rowYcol2$]
@@ -320,4 +367,5 @@ args.dst_buffer[3] = BIAS_AND_CLAMP[(((rd3 ~mod+ rk7) ~mod+ (1 << 17)) >> 18) & 
 args.dst_buffer[4] = BIAS_AND_CLAMP[(((rd3 ~mod- rk7) ~mod+ (1 << 17)) >> 18) & 1023]
 
 $advance$
+}
 `

@@ -37385,741 +37385,1044 @@ wuffs_jpeg__decoder__decode_idct(
   if (8u > a_dst_stride) {
     return wuffs_base__make_empty_struct();
   }
-  v_bq2 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][16u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][16u]))));
-  v_bq6 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][48u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][48u]))));
-  v_ca = ((uint32_t)(((uint32_t)(v_bq2 + v_bq6)) * 4433u));
-  v_cb2 = ((uint32_t)(v_ca + ((uint32_t)(v_bq2 * 6270u))));
-  v_cb6 = ((uint32_t)(v_ca - ((uint32_t)(v_bq6 * 15137u))));
-  v_bq0 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][0u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][0u]))));
-  v_bq4 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][32u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][32u]))));
-  v_ccp = ((uint32_t)(((uint32_t)(v_bq0 + v_bq4)) << 13u));
-  v_ccm = ((uint32_t)(((uint32_t)(v_bq0 - v_bq4)) << 13u));
-  v_cd0 = ((uint32_t)(v_ccp + v_cb2));
-  v_cd1 = ((uint32_t)(v_ccm + v_cb6));
-  v_cd2 = ((uint32_t)(v_ccm - v_cb6));
-  v_cd3 = ((uint32_t)(v_ccp - v_cb2));
-  v_bq1 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][8u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][8u]))));
-  v_bq3 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][24u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][24u]))));
-  v_bq5 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][40u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][40u]))));
-  v_bq7 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][56u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][56u]))));
-  v_ci51 = ((uint32_t)(v_bq5 + v_bq1));
-  v_ci53 = ((uint32_t)(v_bq5 + v_bq3));
-  v_ci71 = ((uint32_t)(v_bq7 + v_bq1));
-  v_ci73 = ((uint32_t)(v_bq7 + v_bq3));
-  v_cj = ((uint32_t)(((uint32_t)(v_ci73 + v_ci51)) * 9633u));
-  v_ck1 = ((uint32_t)(v_bq1 * 12299u));
-  v_ck3 = ((uint32_t)(v_bq3 * 25172u));
-  v_ck5 = ((uint32_t)(v_bq5 * 16819u));
-  v_ck7 = ((uint32_t)(v_bq7 * 2446u));
-  v_ci51 *= 4294964100u;
-  v_ci53 *= 4294946301u;
-  v_ci71 *= 4294959923u;
-  v_ci73 *= 4294951227u;
-  v_cl51 = ((uint32_t)(v_ci51 + v_cj));
-  v_cl73 = ((uint32_t)(v_ci73 + v_cj));
-  v_ck1 += ((uint32_t)(v_ci71 + v_cl51));
-  v_ck3 += ((uint32_t)(v_ci53 + v_cl73));
-  v_ck5 += ((uint32_t)(v_ci53 + v_cl51));
-  v_ck7 += ((uint32_t)(v_ci71 + v_cl73));
-  v_intermediate[0u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd0 + v_ck1)) + 1024u)), 11u);
-  v_intermediate[56u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd0 - v_ck1)) + 1024u)), 11u);
-  v_intermediate[8u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd1 + v_ck3)) + 1024u)), 11u);
-  v_intermediate[48u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd1 - v_ck3)) + 1024u)), 11u);
-  v_intermediate[16u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd2 + v_ck5)) + 1024u)), 11u);
-  v_intermediate[40u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd2 - v_ck5)) + 1024u)), 11u);
-  v_intermediate[24u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd3 + v_ck7)) + 1024u)), 11u);
-  v_intermediate[32u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd3 - v_ck7)) + 1024u)), 11u);
-  v_bq2 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][17u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][17u]))));
-  v_bq6 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][49u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][49u]))));
-  v_ca = ((uint32_t)(((uint32_t)(v_bq2 + v_bq6)) * 4433u));
-  v_cb2 = ((uint32_t)(v_ca + ((uint32_t)(v_bq2 * 6270u))));
-  v_cb6 = ((uint32_t)(v_ca - ((uint32_t)(v_bq6 * 15137u))));
-  v_bq0 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][1u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][1u]))));
-  v_bq4 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][33u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][33u]))));
-  v_ccp = ((uint32_t)(((uint32_t)(v_bq0 + v_bq4)) << 13u));
-  v_ccm = ((uint32_t)(((uint32_t)(v_bq0 - v_bq4)) << 13u));
-  v_cd0 = ((uint32_t)(v_ccp + v_cb2));
-  v_cd1 = ((uint32_t)(v_ccm + v_cb6));
-  v_cd2 = ((uint32_t)(v_ccm - v_cb6));
-  v_cd3 = ((uint32_t)(v_ccp - v_cb2));
-  v_bq1 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][9u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][9u]))));
-  v_bq3 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][25u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][25u]))));
-  v_bq5 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][41u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][41u]))));
-  v_bq7 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][57u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][57u]))));
-  v_ci51 = ((uint32_t)(v_bq5 + v_bq1));
-  v_ci53 = ((uint32_t)(v_bq5 + v_bq3));
-  v_ci71 = ((uint32_t)(v_bq7 + v_bq1));
-  v_ci73 = ((uint32_t)(v_bq7 + v_bq3));
-  v_cj = ((uint32_t)(((uint32_t)(v_ci73 + v_ci51)) * 9633u));
-  v_ck1 = ((uint32_t)(v_bq1 * 12299u));
-  v_ck3 = ((uint32_t)(v_bq3 * 25172u));
-  v_ck5 = ((uint32_t)(v_bq5 * 16819u));
-  v_ck7 = ((uint32_t)(v_bq7 * 2446u));
-  v_ci51 *= 4294964100u;
-  v_ci53 *= 4294946301u;
-  v_ci71 *= 4294959923u;
-  v_ci73 *= 4294951227u;
-  v_cl51 = ((uint32_t)(v_ci51 + v_cj));
-  v_cl73 = ((uint32_t)(v_ci73 + v_cj));
-  v_ck1 += ((uint32_t)(v_ci71 + v_cl51));
-  v_ck3 += ((uint32_t)(v_ci53 + v_cl73));
-  v_ck5 += ((uint32_t)(v_ci53 + v_cl51));
-  v_ck7 += ((uint32_t)(v_ci71 + v_cl73));
-  v_intermediate[1u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd0 + v_ck1)) + 1024u)), 11u);
-  v_intermediate[57u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd0 - v_ck1)) + 1024u)), 11u);
-  v_intermediate[9u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd1 + v_ck3)) + 1024u)), 11u);
-  v_intermediate[49u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd1 - v_ck3)) + 1024u)), 11u);
-  v_intermediate[17u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd2 + v_ck5)) + 1024u)), 11u);
-  v_intermediate[41u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd2 - v_ck5)) + 1024u)), 11u);
-  v_intermediate[25u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd3 + v_ck7)) + 1024u)), 11u);
-  v_intermediate[33u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd3 - v_ck7)) + 1024u)), 11u);
-  v_bq2 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][18u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][18u]))));
-  v_bq6 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][50u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][50u]))));
-  v_ca = ((uint32_t)(((uint32_t)(v_bq2 + v_bq6)) * 4433u));
-  v_cb2 = ((uint32_t)(v_ca + ((uint32_t)(v_bq2 * 6270u))));
-  v_cb6 = ((uint32_t)(v_ca - ((uint32_t)(v_bq6 * 15137u))));
-  v_bq0 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][2u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][2u]))));
-  v_bq4 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][34u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][34u]))));
-  v_ccp = ((uint32_t)(((uint32_t)(v_bq0 + v_bq4)) << 13u));
-  v_ccm = ((uint32_t)(((uint32_t)(v_bq0 - v_bq4)) << 13u));
-  v_cd0 = ((uint32_t)(v_ccp + v_cb2));
-  v_cd1 = ((uint32_t)(v_ccm + v_cb6));
-  v_cd2 = ((uint32_t)(v_ccm - v_cb6));
-  v_cd3 = ((uint32_t)(v_ccp - v_cb2));
-  v_bq1 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][10u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][10u]))));
-  v_bq3 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][26u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][26u]))));
-  v_bq5 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][42u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][42u]))));
-  v_bq7 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][58u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][58u]))));
-  v_ci51 = ((uint32_t)(v_bq5 + v_bq1));
-  v_ci53 = ((uint32_t)(v_bq5 + v_bq3));
-  v_ci71 = ((uint32_t)(v_bq7 + v_bq1));
-  v_ci73 = ((uint32_t)(v_bq7 + v_bq3));
-  v_cj = ((uint32_t)(((uint32_t)(v_ci73 + v_ci51)) * 9633u));
-  v_ck1 = ((uint32_t)(v_bq1 * 12299u));
-  v_ck3 = ((uint32_t)(v_bq3 * 25172u));
-  v_ck5 = ((uint32_t)(v_bq5 * 16819u));
-  v_ck7 = ((uint32_t)(v_bq7 * 2446u));
-  v_ci51 *= 4294964100u;
-  v_ci53 *= 4294946301u;
-  v_ci71 *= 4294959923u;
-  v_ci73 *= 4294951227u;
-  v_cl51 = ((uint32_t)(v_ci51 + v_cj));
-  v_cl73 = ((uint32_t)(v_ci73 + v_cj));
-  v_ck1 += ((uint32_t)(v_ci71 + v_cl51));
-  v_ck3 += ((uint32_t)(v_ci53 + v_cl73));
-  v_ck5 += ((uint32_t)(v_ci53 + v_cl51));
-  v_ck7 += ((uint32_t)(v_ci71 + v_cl73));
-  v_intermediate[2u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd0 + v_ck1)) + 1024u)), 11u);
-  v_intermediate[58u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd0 - v_ck1)) + 1024u)), 11u);
-  v_intermediate[10u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd1 + v_ck3)) + 1024u)), 11u);
-  v_intermediate[50u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd1 - v_ck3)) + 1024u)), 11u);
-  v_intermediate[18u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd2 + v_ck5)) + 1024u)), 11u);
-  v_intermediate[42u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd2 - v_ck5)) + 1024u)), 11u);
-  v_intermediate[26u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd3 + v_ck7)) + 1024u)), 11u);
-  v_intermediate[34u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd3 - v_ck7)) + 1024u)), 11u);
-  v_bq2 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][19u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][19u]))));
-  v_bq6 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][51u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][51u]))));
-  v_ca = ((uint32_t)(((uint32_t)(v_bq2 + v_bq6)) * 4433u));
-  v_cb2 = ((uint32_t)(v_ca + ((uint32_t)(v_bq2 * 6270u))));
-  v_cb6 = ((uint32_t)(v_ca - ((uint32_t)(v_bq6 * 15137u))));
-  v_bq0 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][3u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][3u]))));
-  v_bq4 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][35u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][35u]))));
-  v_ccp = ((uint32_t)(((uint32_t)(v_bq0 + v_bq4)) << 13u));
-  v_ccm = ((uint32_t)(((uint32_t)(v_bq0 - v_bq4)) << 13u));
-  v_cd0 = ((uint32_t)(v_ccp + v_cb2));
-  v_cd1 = ((uint32_t)(v_ccm + v_cb6));
-  v_cd2 = ((uint32_t)(v_ccm - v_cb6));
-  v_cd3 = ((uint32_t)(v_ccp - v_cb2));
-  v_bq1 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][11u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][11u]))));
-  v_bq3 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][27u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][27u]))));
-  v_bq5 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][43u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][43u]))));
-  v_bq7 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][59u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][59u]))));
-  v_ci51 = ((uint32_t)(v_bq5 + v_bq1));
-  v_ci53 = ((uint32_t)(v_bq5 + v_bq3));
-  v_ci71 = ((uint32_t)(v_bq7 + v_bq1));
-  v_ci73 = ((uint32_t)(v_bq7 + v_bq3));
-  v_cj = ((uint32_t)(((uint32_t)(v_ci73 + v_ci51)) * 9633u));
-  v_ck1 = ((uint32_t)(v_bq1 * 12299u));
-  v_ck3 = ((uint32_t)(v_bq3 * 25172u));
-  v_ck5 = ((uint32_t)(v_bq5 * 16819u));
-  v_ck7 = ((uint32_t)(v_bq7 * 2446u));
-  v_ci51 *= 4294964100u;
-  v_ci53 *= 4294946301u;
-  v_ci71 *= 4294959923u;
-  v_ci73 *= 4294951227u;
-  v_cl51 = ((uint32_t)(v_ci51 + v_cj));
-  v_cl73 = ((uint32_t)(v_ci73 + v_cj));
-  v_ck1 += ((uint32_t)(v_ci71 + v_cl51));
-  v_ck3 += ((uint32_t)(v_ci53 + v_cl73));
-  v_ck5 += ((uint32_t)(v_ci53 + v_cl51));
-  v_ck7 += ((uint32_t)(v_ci71 + v_cl73));
-  v_intermediate[3u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd0 + v_ck1)) + 1024u)), 11u);
-  v_intermediate[59u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd0 - v_ck1)) + 1024u)), 11u);
-  v_intermediate[11u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd1 + v_ck3)) + 1024u)), 11u);
-  v_intermediate[51u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd1 - v_ck3)) + 1024u)), 11u);
-  v_intermediate[19u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd2 + v_ck5)) + 1024u)), 11u);
-  v_intermediate[43u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd2 - v_ck5)) + 1024u)), 11u);
-  v_intermediate[27u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd3 + v_ck7)) + 1024u)), 11u);
-  v_intermediate[35u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd3 - v_ck7)) + 1024u)), 11u);
-  v_bq2 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][20u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][20u]))));
-  v_bq6 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][52u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][52u]))));
-  v_ca = ((uint32_t)(((uint32_t)(v_bq2 + v_bq6)) * 4433u));
-  v_cb2 = ((uint32_t)(v_ca + ((uint32_t)(v_bq2 * 6270u))));
-  v_cb6 = ((uint32_t)(v_ca - ((uint32_t)(v_bq6 * 15137u))));
-  v_bq0 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][4u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][4u]))));
-  v_bq4 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][36u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][36u]))));
-  v_ccp = ((uint32_t)(((uint32_t)(v_bq0 + v_bq4)) << 13u));
-  v_ccm = ((uint32_t)(((uint32_t)(v_bq0 - v_bq4)) << 13u));
-  v_cd0 = ((uint32_t)(v_ccp + v_cb2));
-  v_cd1 = ((uint32_t)(v_ccm + v_cb6));
-  v_cd2 = ((uint32_t)(v_ccm - v_cb6));
-  v_cd3 = ((uint32_t)(v_ccp - v_cb2));
-  v_bq1 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][12u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][12u]))));
-  v_bq3 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][28u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][28u]))));
-  v_bq5 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][44u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][44u]))));
-  v_bq7 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][60u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][60u]))));
-  v_ci51 = ((uint32_t)(v_bq5 + v_bq1));
-  v_ci53 = ((uint32_t)(v_bq5 + v_bq3));
-  v_ci71 = ((uint32_t)(v_bq7 + v_bq1));
-  v_ci73 = ((uint32_t)(v_bq7 + v_bq3));
-  v_cj = ((uint32_t)(((uint32_t)(v_ci73 + v_ci51)) * 9633u));
-  v_ck1 = ((uint32_t)(v_bq1 * 12299u));
-  v_ck3 = ((uint32_t)(v_bq3 * 25172u));
-  v_ck5 = ((uint32_t)(v_bq5 * 16819u));
-  v_ck7 = ((uint32_t)(v_bq7 * 2446u));
-  v_ci51 *= 4294964100u;
-  v_ci53 *= 4294946301u;
-  v_ci71 *= 4294959923u;
-  v_ci73 *= 4294951227u;
-  v_cl51 = ((uint32_t)(v_ci51 + v_cj));
-  v_cl73 = ((uint32_t)(v_ci73 + v_cj));
-  v_ck1 += ((uint32_t)(v_ci71 + v_cl51));
-  v_ck3 += ((uint32_t)(v_ci53 + v_cl73));
-  v_ck5 += ((uint32_t)(v_ci53 + v_cl51));
-  v_ck7 += ((uint32_t)(v_ci71 + v_cl73));
-  v_intermediate[4u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd0 + v_ck1)) + 1024u)), 11u);
-  v_intermediate[60u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd0 - v_ck1)) + 1024u)), 11u);
-  v_intermediate[12u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd1 + v_ck3)) + 1024u)), 11u);
-  v_intermediate[52u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd1 - v_ck3)) + 1024u)), 11u);
-  v_intermediate[20u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd2 + v_ck5)) + 1024u)), 11u);
-  v_intermediate[44u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd2 - v_ck5)) + 1024u)), 11u);
-  v_intermediate[28u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd3 + v_ck7)) + 1024u)), 11u);
-  v_intermediate[36u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd3 - v_ck7)) + 1024u)), 11u);
-  v_bq2 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][21u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][21u]))));
-  v_bq6 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][53u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][53u]))));
-  v_ca = ((uint32_t)(((uint32_t)(v_bq2 + v_bq6)) * 4433u));
-  v_cb2 = ((uint32_t)(v_ca + ((uint32_t)(v_bq2 * 6270u))));
-  v_cb6 = ((uint32_t)(v_ca - ((uint32_t)(v_bq6 * 15137u))));
-  v_bq0 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][5u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][5u]))));
-  v_bq4 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][37u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][37u]))));
-  v_ccp = ((uint32_t)(((uint32_t)(v_bq0 + v_bq4)) << 13u));
-  v_ccm = ((uint32_t)(((uint32_t)(v_bq0 - v_bq4)) << 13u));
-  v_cd0 = ((uint32_t)(v_ccp + v_cb2));
-  v_cd1 = ((uint32_t)(v_ccm + v_cb6));
-  v_cd2 = ((uint32_t)(v_ccm - v_cb6));
-  v_cd3 = ((uint32_t)(v_ccp - v_cb2));
-  v_bq1 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][13u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][13u]))));
-  v_bq3 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][29u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][29u]))));
-  v_bq5 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][45u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][45u]))));
-  v_bq7 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][61u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][61u]))));
-  v_ci51 = ((uint32_t)(v_bq5 + v_bq1));
-  v_ci53 = ((uint32_t)(v_bq5 + v_bq3));
-  v_ci71 = ((uint32_t)(v_bq7 + v_bq1));
-  v_ci73 = ((uint32_t)(v_bq7 + v_bq3));
-  v_cj = ((uint32_t)(((uint32_t)(v_ci73 + v_ci51)) * 9633u));
-  v_ck1 = ((uint32_t)(v_bq1 * 12299u));
-  v_ck3 = ((uint32_t)(v_bq3 * 25172u));
-  v_ck5 = ((uint32_t)(v_bq5 * 16819u));
-  v_ck7 = ((uint32_t)(v_bq7 * 2446u));
-  v_ci51 *= 4294964100u;
-  v_ci53 *= 4294946301u;
-  v_ci71 *= 4294959923u;
-  v_ci73 *= 4294951227u;
-  v_cl51 = ((uint32_t)(v_ci51 + v_cj));
-  v_cl73 = ((uint32_t)(v_ci73 + v_cj));
-  v_ck1 += ((uint32_t)(v_ci71 + v_cl51));
-  v_ck3 += ((uint32_t)(v_ci53 + v_cl73));
-  v_ck5 += ((uint32_t)(v_ci53 + v_cl51));
-  v_ck7 += ((uint32_t)(v_ci71 + v_cl73));
-  v_intermediate[5u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd0 + v_ck1)) + 1024u)), 11u);
-  v_intermediate[61u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd0 - v_ck1)) + 1024u)), 11u);
-  v_intermediate[13u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd1 + v_ck3)) + 1024u)), 11u);
-  v_intermediate[53u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd1 - v_ck3)) + 1024u)), 11u);
-  v_intermediate[21u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd2 + v_ck5)) + 1024u)), 11u);
-  v_intermediate[45u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd2 - v_ck5)) + 1024u)), 11u);
-  v_intermediate[29u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd3 + v_ck7)) + 1024u)), 11u);
-  v_intermediate[37u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd3 - v_ck7)) + 1024u)), 11u);
-  v_bq2 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][22u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][22u]))));
-  v_bq6 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][54u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][54u]))));
-  v_ca = ((uint32_t)(((uint32_t)(v_bq2 + v_bq6)) * 4433u));
-  v_cb2 = ((uint32_t)(v_ca + ((uint32_t)(v_bq2 * 6270u))));
-  v_cb6 = ((uint32_t)(v_ca - ((uint32_t)(v_bq6 * 15137u))));
-  v_bq0 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][6u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][6u]))));
-  v_bq4 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][38u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][38u]))));
-  v_ccp = ((uint32_t)(((uint32_t)(v_bq0 + v_bq4)) << 13u));
-  v_ccm = ((uint32_t)(((uint32_t)(v_bq0 - v_bq4)) << 13u));
-  v_cd0 = ((uint32_t)(v_ccp + v_cb2));
-  v_cd1 = ((uint32_t)(v_ccm + v_cb6));
-  v_cd2 = ((uint32_t)(v_ccm - v_cb6));
-  v_cd3 = ((uint32_t)(v_ccp - v_cb2));
-  v_bq1 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][14u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][14u]))));
-  v_bq3 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][30u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][30u]))));
-  v_bq5 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][46u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][46u]))));
-  v_bq7 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][62u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][62u]))));
-  v_ci51 = ((uint32_t)(v_bq5 + v_bq1));
-  v_ci53 = ((uint32_t)(v_bq5 + v_bq3));
-  v_ci71 = ((uint32_t)(v_bq7 + v_bq1));
-  v_ci73 = ((uint32_t)(v_bq7 + v_bq3));
-  v_cj = ((uint32_t)(((uint32_t)(v_ci73 + v_ci51)) * 9633u));
-  v_ck1 = ((uint32_t)(v_bq1 * 12299u));
-  v_ck3 = ((uint32_t)(v_bq3 * 25172u));
-  v_ck5 = ((uint32_t)(v_bq5 * 16819u));
-  v_ck7 = ((uint32_t)(v_bq7 * 2446u));
-  v_ci51 *= 4294964100u;
-  v_ci53 *= 4294946301u;
-  v_ci71 *= 4294959923u;
-  v_ci73 *= 4294951227u;
-  v_cl51 = ((uint32_t)(v_ci51 + v_cj));
-  v_cl73 = ((uint32_t)(v_ci73 + v_cj));
-  v_ck1 += ((uint32_t)(v_ci71 + v_cl51));
-  v_ck3 += ((uint32_t)(v_ci53 + v_cl73));
-  v_ck5 += ((uint32_t)(v_ci53 + v_cl51));
-  v_ck7 += ((uint32_t)(v_ci71 + v_cl73));
-  v_intermediate[6u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd0 + v_ck1)) + 1024u)), 11u);
-  v_intermediate[62u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd0 - v_ck1)) + 1024u)), 11u);
-  v_intermediate[14u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd1 + v_ck3)) + 1024u)), 11u);
-  v_intermediate[54u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd1 - v_ck3)) + 1024u)), 11u);
-  v_intermediate[22u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd2 + v_ck5)) + 1024u)), 11u);
-  v_intermediate[46u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd2 - v_ck5)) + 1024u)), 11u);
-  v_intermediate[30u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd3 + v_ck7)) + 1024u)), 11u);
-  v_intermediate[38u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd3 - v_ck7)) + 1024u)), 11u);
-  v_bq2 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][23u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][23u]))));
-  v_bq6 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][55u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][55u]))));
-  v_ca = ((uint32_t)(((uint32_t)(v_bq2 + v_bq6)) * 4433u));
-  v_cb2 = ((uint32_t)(v_ca + ((uint32_t)(v_bq2 * 6270u))));
-  v_cb6 = ((uint32_t)(v_ca - ((uint32_t)(v_bq6 * 15137u))));
-  v_bq0 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][7u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][7u]))));
-  v_bq4 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][39u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][39u]))));
-  v_ccp = ((uint32_t)(((uint32_t)(v_bq0 + v_bq4)) << 13u));
-  v_ccm = ((uint32_t)(((uint32_t)(v_bq0 - v_bq4)) << 13u));
-  v_cd0 = ((uint32_t)(v_ccp + v_cb2));
-  v_cd1 = ((uint32_t)(v_ccm + v_cb6));
-  v_cd2 = ((uint32_t)(v_ccm - v_cb6));
-  v_cd3 = ((uint32_t)(v_ccp - v_cb2));
-  v_bq1 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][15u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][15u]))));
-  v_bq3 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][31u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][31u]))));
-  v_bq5 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][47u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][47u]))));
-  v_bq7 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][63u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][63u]))));
-  v_ci51 = ((uint32_t)(v_bq5 + v_bq1));
-  v_ci53 = ((uint32_t)(v_bq5 + v_bq3));
-  v_ci71 = ((uint32_t)(v_bq7 + v_bq1));
-  v_ci73 = ((uint32_t)(v_bq7 + v_bq3));
-  v_cj = ((uint32_t)(((uint32_t)(v_ci73 + v_ci51)) * 9633u));
-  v_ck1 = ((uint32_t)(v_bq1 * 12299u));
-  v_ck3 = ((uint32_t)(v_bq3 * 25172u));
-  v_ck5 = ((uint32_t)(v_bq5 * 16819u));
-  v_ck7 = ((uint32_t)(v_bq7 * 2446u));
-  v_ci51 *= 4294964100u;
-  v_ci53 *= 4294946301u;
-  v_ci71 *= 4294959923u;
-  v_ci73 *= 4294951227u;
-  v_cl51 = ((uint32_t)(v_ci51 + v_cj));
-  v_cl73 = ((uint32_t)(v_ci73 + v_cj));
-  v_ck1 += ((uint32_t)(v_ci71 + v_cl51));
-  v_ck3 += ((uint32_t)(v_ci53 + v_cl73));
-  v_ck5 += ((uint32_t)(v_ci53 + v_cl51));
-  v_ck7 += ((uint32_t)(v_ci71 + v_cl73));
-  v_intermediate[7u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd0 + v_ck1)) + 1024u)), 11u);
-  v_intermediate[63u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd0 - v_ck1)) + 1024u)), 11u);
-  v_intermediate[15u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd1 + v_ck3)) + 1024u)), 11u);
-  v_intermediate[55u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd1 - v_ck3)) + 1024u)), 11u);
-  v_intermediate[23u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd2 + v_ck5)) + 1024u)), 11u);
-  v_intermediate[47u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd2 - v_ck5)) + 1024u)), 11u);
-  v_intermediate[31u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd3 + v_ck7)) + 1024u)), 11u);
-  v_intermediate[39u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd3 - v_ck7)) + 1024u)), 11u);
-  v_in2 = v_intermediate[2u];
-  v_in6 = v_intermediate[6u];
-  v_ra = ((uint32_t)(((uint32_t)(v_in2 + v_in6)) * 4433u));
-  v_rb2 = ((uint32_t)(v_ra + ((uint32_t)(v_in2 * 6270u))));
-  v_rb6 = ((uint32_t)(v_ra - ((uint32_t)(v_in6 * 15137u))));
-  v_in0 = v_intermediate[0u];
-  v_in4 = v_intermediate[4u];
-  v_rcp = ((uint32_t)(((uint32_t)(v_in0 + v_in4)) << 13u));
-  v_rcm = ((uint32_t)(((uint32_t)(v_in0 - v_in4)) << 13u));
-  v_rd0 = ((uint32_t)(v_rcp + v_rb2));
-  v_rd1 = ((uint32_t)(v_rcm + v_rb6));
-  v_rd2 = ((uint32_t)(v_rcm - v_rb6));
-  v_rd3 = ((uint32_t)(v_rcp - v_rb2));
-  v_in1 = v_intermediate[1u];
-  v_in3 = v_intermediate[3u];
-  v_in5 = v_intermediate[5u];
-  v_in7 = v_intermediate[7u];
-  v_ri51 = ((uint32_t)(v_in5 + v_in1));
-  v_ri53 = ((uint32_t)(v_in5 + v_in3));
-  v_ri71 = ((uint32_t)(v_in7 + v_in1));
-  v_ri73 = ((uint32_t)(v_in7 + v_in3));
-  v_rj = ((uint32_t)(((uint32_t)(v_ri73 + v_ri51)) * 9633u));
-  v_rk1 = ((uint32_t)(v_in1 * 12299u));
-  v_rk3 = ((uint32_t)(v_in3 * 25172u));
-  v_rk5 = ((uint32_t)(v_in5 * 16819u));
-  v_rk7 = ((uint32_t)(v_in7 * 2446u));
-  v_ri51 *= 4294964100u;
-  v_ri53 *= 4294946301u;
-  v_ri71 *= 4294959923u;
-  v_ri73 *= 4294951227u;
-  v_rl51 = ((uint32_t)(v_ri51 + v_rj));
-  v_rl73 = ((uint32_t)(v_ri73 + v_rj));
-  v_rk1 += ((uint32_t)(v_ri71 + v_rl51));
-  v_rk3 += ((uint32_t)(v_ri53 + v_rl73));
-  v_rk5 += ((uint32_t)(v_ri53 + v_rl51));
-  v_rk7 += ((uint32_t)(v_ri71 + v_rl73));
-  if (a_dst_stride > ((uint64_t)(a_dst_buffer.len))) {
-    return wuffs_base__make_empty_struct();
+  if (0u == (self->private_data.f_mcu_blocks[a_b][8u] |
+      self->private_data.f_mcu_blocks[a_b][16u] |
+      self->private_data.f_mcu_blocks[a_b][24u] |
+      self->private_data.f_mcu_blocks[a_b][32u] |
+      self->private_data.f_mcu_blocks[a_b][40u] |
+      self->private_data.f_mcu_blocks[a_b][48u] |
+      self->private_data.f_mcu_blocks[a_b][56u])) {
+    v_intermediate[0u] = ((uint32_t)(((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][0u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][0u])))) << 2u));
+    v_intermediate[8u] = v_intermediate[0u];
+    v_intermediate[16u] = v_intermediate[0u];
+    v_intermediate[24u] = v_intermediate[0u];
+    v_intermediate[32u] = v_intermediate[0u];
+    v_intermediate[40u] = v_intermediate[0u];
+    v_intermediate[48u] = v_intermediate[0u];
+    v_intermediate[56u] = v_intermediate[0u];
+  } else {
+    v_bq2 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][16u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][16u]))));
+    v_bq6 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][48u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][48u]))));
+    v_ca = ((uint32_t)(((uint32_t)(v_bq2 + v_bq6)) * 4433u));
+    v_cb2 = ((uint32_t)(v_ca + ((uint32_t)(v_bq2 * 6270u))));
+    v_cb6 = ((uint32_t)(v_ca - ((uint32_t)(v_bq6 * 15137u))));
+    v_bq0 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][0u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][0u]))));
+    v_bq4 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][32u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][32u]))));
+    v_ccp = ((uint32_t)(((uint32_t)(v_bq0 + v_bq4)) << 13u));
+    v_ccm = ((uint32_t)(((uint32_t)(v_bq0 - v_bq4)) << 13u));
+    v_cd0 = ((uint32_t)(v_ccp + v_cb2));
+    v_cd1 = ((uint32_t)(v_ccm + v_cb6));
+    v_cd2 = ((uint32_t)(v_ccm - v_cb6));
+    v_cd3 = ((uint32_t)(v_ccp - v_cb2));
+    v_bq1 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][8u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][8u]))));
+    v_bq3 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][24u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][24u]))));
+    v_bq5 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][40u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][40u]))));
+    v_bq7 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][56u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][56u]))));
+    v_ci51 = ((uint32_t)(v_bq5 + v_bq1));
+    v_ci53 = ((uint32_t)(v_bq5 + v_bq3));
+    v_ci71 = ((uint32_t)(v_bq7 + v_bq1));
+    v_ci73 = ((uint32_t)(v_bq7 + v_bq3));
+    v_cj = ((uint32_t)(((uint32_t)(v_ci73 + v_ci51)) * 9633u));
+    v_ck1 = ((uint32_t)(v_bq1 * 12299u));
+    v_ck3 = ((uint32_t)(v_bq3 * 25172u));
+    v_ck5 = ((uint32_t)(v_bq5 * 16819u));
+    v_ck7 = ((uint32_t)(v_bq7 * 2446u));
+    v_ci51 *= 4294964100u;
+    v_ci53 *= 4294946301u;
+    v_ci71 *= 4294959923u;
+    v_ci73 *= 4294951227u;
+    v_cl51 = ((uint32_t)(v_ci51 + v_cj));
+    v_cl73 = ((uint32_t)(v_ci73 + v_cj));
+    v_ck1 += ((uint32_t)(v_ci71 + v_cl51));
+    v_ck3 += ((uint32_t)(v_ci53 + v_cl73));
+    v_ck5 += ((uint32_t)(v_ci53 + v_cl51));
+    v_ck7 += ((uint32_t)(v_ci71 + v_cl73));
+    v_intermediate[0u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd0 + v_ck1)) + 1024u)), 11u);
+    v_intermediate[56u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd0 - v_ck1)) + 1024u)), 11u);
+    v_intermediate[8u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd1 + v_ck3)) + 1024u)), 11u);
+    v_intermediate[48u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd1 - v_ck3)) + 1024u)), 11u);
+    v_intermediate[16u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd2 + v_ck5)) + 1024u)), 11u);
+    v_intermediate[40u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd2 - v_ck5)) + 1024u)), 11u);
+    v_intermediate[24u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd3 + v_ck7)) + 1024u)), 11u);
+    v_intermediate[32u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd3 - v_ck7)) + 1024u)), 11u);
   }
-  a_dst_buffer.ptr[0u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd0 + v_rk1)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[7u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd0 - v_rk1)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[1u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd1 + v_rk3)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[6u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd1 - v_rk3)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[2u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd2 + v_rk5)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[5u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd2 - v_rk5)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[3u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd3 + v_rk7)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[4u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd3 - v_rk7)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer = wuffs_base__slice_u8__subslice_i(a_dst_buffer, a_dst_stride);
-  v_in2 = v_intermediate[10u];
-  v_in6 = v_intermediate[14u];
-  v_ra = ((uint32_t)(((uint32_t)(v_in2 + v_in6)) * 4433u));
-  v_rb2 = ((uint32_t)(v_ra + ((uint32_t)(v_in2 * 6270u))));
-  v_rb6 = ((uint32_t)(v_ra - ((uint32_t)(v_in6 * 15137u))));
-  v_in0 = v_intermediate[8u];
-  v_in4 = v_intermediate[12u];
-  v_rcp = ((uint32_t)(((uint32_t)(v_in0 + v_in4)) << 13u));
-  v_rcm = ((uint32_t)(((uint32_t)(v_in0 - v_in4)) << 13u));
-  v_rd0 = ((uint32_t)(v_rcp + v_rb2));
-  v_rd1 = ((uint32_t)(v_rcm + v_rb6));
-  v_rd2 = ((uint32_t)(v_rcm - v_rb6));
-  v_rd3 = ((uint32_t)(v_rcp - v_rb2));
-  v_in1 = v_intermediate[9u];
-  v_in3 = v_intermediate[11u];
-  v_in5 = v_intermediate[13u];
-  v_in7 = v_intermediate[15u];
-  v_ri51 = ((uint32_t)(v_in5 + v_in1));
-  v_ri53 = ((uint32_t)(v_in5 + v_in3));
-  v_ri71 = ((uint32_t)(v_in7 + v_in1));
-  v_ri73 = ((uint32_t)(v_in7 + v_in3));
-  v_rj = ((uint32_t)(((uint32_t)(v_ri73 + v_ri51)) * 9633u));
-  v_rk1 = ((uint32_t)(v_in1 * 12299u));
-  v_rk3 = ((uint32_t)(v_in3 * 25172u));
-  v_rk5 = ((uint32_t)(v_in5 * 16819u));
-  v_rk7 = ((uint32_t)(v_in7 * 2446u));
-  v_ri51 *= 4294964100u;
-  v_ri53 *= 4294946301u;
-  v_ri71 *= 4294959923u;
-  v_ri73 *= 4294951227u;
-  v_rl51 = ((uint32_t)(v_ri51 + v_rj));
-  v_rl73 = ((uint32_t)(v_ri73 + v_rj));
-  v_rk1 += ((uint32_t)(v_ri71 + v_rl51));
-  v_rk3 += ((uint32_t)(v_ri53 + v_rl73));
-  v_rk5 += ((uint32_t)(v_ri53 + v_rl51));
-  v_rk7 += ((uint32_t)(v_ri71 + v_rl73));
-  if (a_dst_stride > ((uint64_t)(a_dst_buffer.len))) {
-    return wuffs_base__make_empty_struct();
+  if (0u == (self->private_data.f_mcu_blocks[a_b][9u] |
+      self->private_data.f_mcu_blocks[a_b][17u] |
+      self->private_data.f_mcu_blocks[a_b][25u] |
+      self->private_data.f_mcu_blocks[a_b][33u] |
+      self->private_data.f_mcu_blocks[a_b][41u] |
+      self->private_data.f_mcu_blocks[a_b][49u] |
+      self->private_data.f_mcu_blocks[a_b][57u])) {
+    v_intermediate[1u] = ((uint32_t)(((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][1u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][1u])))) << 2u));
+    v_intermediate[9u] = v_intermediate[1u];
+    v_intermediate[17u] = v_intermediate[1u];
+    v_intermediate[25u] = v_intermediate[1u];
+    v_intermediate[33u] = v_intermediate[1u];
+    v_intermediate[41u] = v_intermediate[1u];
+    v_intermediate[49u] = v_intermediate[1u];
+    v_intermediate[57u] = v_intermediate[1u];
+  } else {
+    v_bq2 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][17u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][17u]))));
+    v_bq6 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][49u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][49u]))));
+    v_ca = ((uint32_t)(((uint32_t)(v_bq2 + v_bq6)) * 4433u));
+    v_cb2 = ((uint32_t)(v_ca + ((uint32_t)(v_bq2 * 6270u))));
+    v_cb6 = ((uint32_t)(v_ca - ((uint32_t)(v_bq6 * 15137u))));
+    v_bq0 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][1u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][1u]))));
+    v_bq4 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][33u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][33u]))));
+    v_ccp = ((uint32_t)(((uint32_t)(v_bq0 + v_bq4)) << 13u));
+    v_ccm = ((uint32_t)(((uint32_t)(v_bq0 - v_bq4)) << 13u));
+    v_cd0 = ((uint32_t)(v_ccp + v_cb2));
+    v_cd1 = ((uint32_t)(v_ccm + v_cb6));
+    v_cd2 = ((uint32_t)(v_ccm - v_cb6));
+    v_cd3 = ((uint32_t)(v_ccp - v_cb2));
+    v_bq1 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][9u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][9u]))));
+    v_bq3 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][25u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][25u]))));
+    v_bq5 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][41u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][41u]))));
+    v_bq7 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][57u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][57u]))));
+    v_ci51 = ((uint32_t)(v_bq5 + v_bq1));
+    v_ci53 = ((uint32_t)(v_bq5 + v_bq3));
+    v_ci71 = ((uint32_t)(v_bq7 + v_bq1));
+    v_ci73 = ((uint32_t)(v_bq7 + v_bq3));
+    v_cj = ((uint32_t)(((uint32_t)(v_ci73 + v_ci51)) * 9633u));
+    v_ck1 = ((uint32_t)(v_bq1 * 12299u));
+    v_ck3 = ((uint32_t)(v_bq3 * 25172u));
+    v_ck5 = ((uint32_t)(v_bq5 * 16819u));
+    v_ck7 = ((uint32_t)(v_bq7 * 2446u));
+    v_ci51 *= 4294964100u;
+    v_ci53 *= 4294946301u;
+    v_ci71 *= 4294959923u;
+    v_ci73 *= 4294951227u;
+    v_cl51 = ((uint32_t)(v_ci51 + v_cj));
+    v_cl73 = ((uint32_t)(v_ci73 + v_cj));
+    v_ck1 += ((uint32_t)(v_ci71 + v_cl51));
+    v_ck3 += ((uint32_t)(v_ci53 + v_cl73));
+    v_ck5 += ((uint32_t)(v_ci53 + v_cl51));
+    v_ck7 += ((uint32_t)(v_ci71 + v_cl73));
+    v_intermediate[1u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd0 + v_ck1)) + 1024u)), 11u);
+    v_intermediate[57u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd0 - v_ck1)) + 1024u)), 11u);
+    v_intermediate[9u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd1 + v_ck3)) + 1024u)), 11u);
+    v_intermediate[49u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd1 - v_ck3)) + 1024u)), 11u);
+    v_intermediate[17u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd2 + v_ck5)) + 1024u)), 11u);
+    v_intermediate[41u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd2 - v_ck5)) + 1024u)), 11u);
+    v_intermediate[25u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd3 + v_ck7)) + 1024u)), 11u);
+    v_intermediate[33u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd3 - v_ck7)) + 1024u)), 11u);
   }
-  a_dst_buffer.ptr[0u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd0 + v_rk1)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[7u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd0 - v_rk1)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[1u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd1 + v_rk3)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[6u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd1 - v_rk3)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[2u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd2 + v_rk5)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[5u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd2 - v_rk5)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[3u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd3 + v_rk7)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[4u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd3 - v_rk7)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer = wuffs_base__slice_u8__subslice_i(a_dst_buffer, a_dst_stride);
-  v_in2 = v_intermediate[18u];
-  v_in6 = v_intermediate[22u];
-  v_ra = ((uint32_t)(((uint32_t)(v_in2 + v_in6)) * 4433u));
-  v_rb2 = ((uint32_t)(v_ra + ((uint32_t)(v_in2 * 6270u))));
-  v_rb6 = ((uint32_t)(v_ra - ((uint32_t)(v_in6 * 15137u))));
-  v_in0 = v_intermediate[16u];
-  v_in4 = v_intermediate[20u];
-  v_rcp = ((uint32_t)(((uint32_t)(v_in0 + v_in4)) << 13u));
-  v_rcm = ((uint32_t)(((uint32_t)(v_in0 - v_in4)) << 13u));
-  v_rd0 = ((uint32_t)(v_rcp + v_rb2));
-  v_rd1 = ((uint32_t)(v_rcm + v_rb6));
-  v_rd2 = ((uint32_t)(v_rcm - v_rb6));
-  v_rd3 = ((uint32_t)(v_rcp - v_rb2));
-  v_in1 = v_intermediate[17u];
-  v_in3 = v_intermediate[19u];
-  v_in5 = v_intermediate[21u];
-  v_in7 = v_intermediate[23u];
-  v_ri51 = ((uint32_t)(v_in5 + v_in1));
-  v_ri53 = ((uint32_t)(v_in5 + v_in3));
-  v_ri71 = ((uint32_t)(v_in7 + v_in1));
-  v_ri73 = ((uint32_t)(v_in7 + v_in3));
-  v_rj = ((uint32_t)(((uint32_t)(v_ri73 + v_ri51)) * 9633u));
-  v_rk1 = ((uint32_t)(v_in1 * 12299u));
-  v_rk3 = ((uint32_t)(v_in3 * 25172u));
-  v_rk5 = ((uint32_t)(v_in5 * 16819u));
-  v_rk7 = ((uint32_t)(v_in7 * 2446u));
-  v_ri51 *= 4294964100u;
-  v_ri53 *= 4294946301u;
-  v_ri71 *= 4294959923u;
-  v_ri73 *= 4294951227u;
-  v_rl51 = ((uint32_t)(v_ri51 + v_rj));
-  v_rl73 = ((uint32_t)(v_ri73 + v_rj));
-  v_rk1 += ((uint32_t)(v_ri71 + v_rl51));
-  v_rk3 += ((uint32_t)(v_ri53 + v_rl73));
-  v_rk5 += ((uint32_t)(v_ri53 + v_rl51));
-  v_rk7 += ((uint32_t)(v_ri71 + v_rl73));
-  if (a_dst_stride > ((uint64_t)(a_dst_buffer.len))) {
-    return wuffs_base__make_empty_struct();
+  if (0u == (self->private_data.f_mcu_blocks[a_b][10u] |
+      self->private_data.f_mcu_blocks[a_b][18u] |
+      self->private_data.f_mcu_blocks[a_b][26u] |
+      self->private_data.f_mcu_blocks[a_b][34u] |
+      self->private_data.f_mcu_blocks[a_b][42u] |
+      self->private_data.f_mcu_blocks[a_b][50u] |
+      self->private_data.f_mcu_blocks[a_b][58u])) {
+    v_intermediate[2u] = ((uint32_t)(((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][2u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][2u])))) << 2u));
+    v_intermediate[10u] = v_intermediate[2u];
+    v_intermediate[18u] = v_intermediate[2u];
+    v_intermediate[26u] = v_intermediate[2u];
+    v_intermediate[34u] = v_intermediate[2u];
+    v_intermediate[42u] = v_intermediate[2u];
+    v_intermediate[50u] = v_intermediate[2u];
+    v_intermediate[58u] = v_intermediate[2u];
+  } else {
+    v_bq2 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][18u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][18u]))));
+    v_bq6 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][50u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][50u]))));
+    v_ca = ((uint32_t)(((uint32_t)(v_bq2 + v_bq6)) * 4433u));
+    v_cb2 = ((uint32_t)(v_ca + ((uint32_t)(v_bq2 * 6270u))));
+    v_cb6 = ((uint32_t)(v_ca - ((uint32_t)(v_bq6 * 15137u))));
+    v_bq0 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][2u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][2u]))));
+    v_bq4 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][34u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][34u]))));
+    v_ccp = ((uint32_t)(((uint32_t)(v_bq0 + v_bq4)) << 13u));
+    v_ccm = ((uint32_t)(((uint32_t)(v_bq0 - v_bq4)) << 13u));
+    v_cd0 = ((uint32_t)(v_ccp + v_cb2));
+    v_cd1 = ((uint32_t)(v_ccm + v_cb6));
+    v_cd2 = ((uint32_t)(v_ccm - v_cb6));
+    v_cd3 = ((uint32_t)(v_ccp - v_cb2));
+    v_bq1 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][10u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][10u]))));
+    v_bq3 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][26u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][26u]))));
+    v_bq5 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][42u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][42u]))));
+    v_bq7 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][58u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][58u]))));
+    v_ci51 = ((uint32_t)(v_bq5 + v_bq1));
+    v_ci53 = ((uint32_t)(v_bq5 + v_bq3));
+    v_ci71 = ((uint32_t)(v_bq7 + v_bq1));
+    v_ci73 = ((uint32_t)(v_bq7 + v_bq3));
+    v_cj = ((uint32_t)(((uint32_t)(v_ci73 + v_ci51)) * 9633u));
+    v_ck1 = ((uint32_t)(v_bq1 * 12299u));
+    v_ck3 = ((uint32_t)(v_bq3 * 25172u));
+    v_ck5 = ((uint32_t)(v_bq5 * 16819u));
+    v_ck7 = ((uint32_t)(v_bq7 * 2446u));
+    v_ci51 *= 4294964100u;
+    v_ci53 *= 4294946301u;
+    v_ci71 *= 4294959923u;
+    v_ci73 *= 4294951227u;
+    v_cl51 = ((uint32_t)(v_ci51 + v_cj));
+    v_cl73 = ((uint32_t)(v_ci73 + v_cj));
+    v_ck1 += ((uint32_t)(v_ci71 + v_cl51));
+    v_ck3 += ((uint32_t)(v_ci53 + v_cl73));
+    v_ck5 += ((uint32_t)(v_ci53 + v_cl51));
+    v_ck7 += ((uint32_t)(v_ci71 + v_cl73));
+    v_intermediate[2u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd0 + v_ck1)) + 1024u)), 11u);
+    v_intermediate[58u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd0 - v_ck1)) + 1024u)), 11u);
+    v_intermediate[10u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd1 + v_ck3)) + 1024u)), 11u);
+    v_intermediate[50u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd1 - v_ck3)) + 1024u)), 11u);
+    v_intermediate[18u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd2 + v_ck5)) + 1024u)), 11u);
+    v_intermediate[42u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd2 - v_ck5)) + 1024u)), 11u);
+    v_intermediate[26u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd3 + v_ck7)) + 1024u)), 11u);
+    v_intermediate[34u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd3 - v_ck7)) + 1024u)), 11u);
   }
-  a_dst_buffer.ptr[0u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd0 + v_rk1)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[7u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd0 - v_rk1)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[1u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd1 + v_rk3)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[6u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd1 - v_rk3)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[2u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd2 + v_rk5)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[5u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd2 - v_rk5)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[3u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd3 + v_rk7)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[4u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd3 - v_rk7)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer = wuffs_base__slice_u8__subslice_i(a_dst_buffer, a_dst_stride);
-  v_in2 = v_intermediate[26u];
-  v_in6 = v_intermediate[30u];
-  v_ra = ((uint32_t)(((uint32_t)(v_in2 + v_in6)) * 4433u));
-  v_rb2 = ((uint32_t)(v_ra + ((uint32_t)(v_in2 * 6270u))));
-  v_rb6 = ((uint32_t)(v_ra - ((uint32_t)(v_in6 * 15137u))));
-  v_in0 = v_intermediate[24u];
-  v_in4 = v_intermediate[28u];
-  v_rcp = ((uint32_t)(((uint32_t)(v_in0 + v_in4)) << 13u));
-  v_rcm = ((uint32_t)(((uint32_t)(v_in0 - v_in4)) << 13u));
-  v_rd0 = ((uint32_t)(v_rcp + v_rb2));
-  v_rd1 = ((uint32_t)(v_rcm + v_rb6));
-  v_rd2 = ((uint32_t)(v_rcm - v_rb6));
-  v_rd3 = ((uint32_t)(v_rcp - v_rb2));
-  v_in1 = v_intermediate[25u];
-  v_in3 = v_intermediate[27u];
-  v_in5 = v_intermediate[29u];
-  v_in7 = v_intermediate[31u];
-  v_ri51 = ((uint32_t)(v_in5 + v_in1));
-  v_ri53 = ((uint32_t)(v_in5 + v_in3));
-  v_ri71 = ((uint32_t)(v_in7 + v_in1));
-  v_ri73 = ((uint32_t)(v_in7 + v_in3));
-  v_rj = ((uint32_t)(((uint32_t)(v_ri73 + v_ri51)) * 9633u));
-  v_rk1 = ((uint32_t)(v_in1 * 12299u));
-  v_rk3 = ((uint32_t)(v_in3 * 25172u));
-  v_rk5 = ((uint32_t)(v_in5 * 16819u));
-  v_rk7 = ((uint32_t)(v_in7 * 2446u));
-  v_ri51 *= 4294964100u;
-  v_ri53 *= 4294946301u;
-  v_ri71 *= 4294959923u;
-  v_ri73 *= 4294951227u;
-  v_rl51 = ((uint32_t)(v_ri51 + v_rj));
-  v_rl73 = ((uint32_t)(v_ri73 + v_rj));
-  v_rk1 += ((uint32_t)(v_ri71 + v_rl51));
-  v_rk3 += ((uint32_t)(v_ri53 + v_rl73));
-  v_rk5 += ((uint32_t)(v_ri53 + v_rl51));
-  v_rk7 += ((uint32_t)(v_ri71 + v_rl73));
-  if (a_dst_stride > ((uint64_t)(a_dst_buffer.len))) {
-    return wuffs_base__make_empty_struct();
+  if (0u == (self->private_data.f_mcu_blocks[a_b][11u] |
+      self->private_data.f_mcu_blocks[a_b][19u] |
+      self->private_data.f_mcu_blocks[a_b][27u] |
+      self->private_data.f_mcu_blocks[a_b][35u] |
+      self->private_data.f_mcu_blocks[a_b][43u] |
+      self->private_data.f_mcu_blocks[a_b][51u] |
+      self->private_data.f_mcu_blocks[a_b][59u])) {
+    v_intermediate[3u] = ((uint32_t)(((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][3u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][3u])))) << 2u));
+    v_intermediate[11u] = v_intermediate[3u];
+    v_intermediate[19u] = v_intermediate[3u];
+    v_intermediate[27u] = v_intermediate[3u];
+    v_intermediate[35u] = v_intermediate[3u];
+    v_intermediate[43u] = v_intermediate[3u];
+    v_intermediate[51u] = v_intermediate[3u];
+    v_intermediate[59u] = v_intermediate[3u];
+  } else {
+    v_bq2 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][19u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][19u]))));
+    v_bq6 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][51u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][51u]))));
+    v_ca = ((uint32_t)(((uint32_t)(v_bq2 + v_bq6)) * 4433u));
+    v_cb2 = ((uint32_t)(v_ca + ((uint32_t)(v_bq2 * 6270u))));
+    v_cb6 = ((uint32_t)(v_ca - ((uint32_t)(v_bq6 * 15137u))));
+    v_bq0 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][3u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][3u]))));
+    v_bq4 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][35u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][35u]))));
+    v_ccp = ((uint32_t)(((uint32_t)(v_bq0 + v_bq4)) << 13u));
+    v_ccm = ((uint32_t)(((uint32_t)(v_bq0 - v_bq4)) << 13u));
+    v_cd0 = ((uint32_t)(v_ccp + v_cb2));
+    v_cd1 = ((uint32_t)(v_ccm + v_cb6));
+    v_cd2 = ((uint32_t)(v_ccm - v_cb6));
+    v_cd3 = ((uint32_t)(v_ccp - v_cb2));
+    v_bq1 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][11u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][11u]))));
+    v_bq3 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][27u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][27u]))));
+    v_bq5 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][43u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][43u]))));
+    v_bq7 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][59u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][59u]))));
+    v_ci51 = ((uint32_t)(v_bq5 + v_bq1));
+    v_ci53 = ((uint32_t)(v_bq5 + v_bq3));
+    v_ci71 = ((uint32_t)(v_bq7 + v_bq1));
+    v_ci73 = ((uint32_t)(v_bq7 + v_bq3));
+    v_cj = ((uint32_t)(((uint32_t)(v_ci73 + v_ci51)) * 9633u));
+    v_ck1 = ((uint32_t)(v_bq1 * 12299u));
+    v_ck3 = ((uint32_t)(v_bq3 * 25172u));
+    v_ck5 = ((uint32_t)(v_bq5 * 16819u));
+    v_ck7 = ((uint32_t)(v_bq7 * 2446u));
+    v_ci51 *= 4294964100u;
+    v_ci53 *= 4294946301u;
+    v_ci71 *= 4294959923u;
+    v_ci73 *= 4294951227u;
+    v_cl51 = ((uint32_t)(v_ci51 + v_cj));
+    v_cl73 = ((uint32_t)(v_ci73 + v_cj));
+    v_ck1 += ((uint32_t)(v_ci71 + v_cl51));
+    v_ck3 += ((uint32_t)(v_ci53 + v_cl73));
+    v_ck5 += ((uint32_t)(v_ci53 + v_cl51));
+    v_ck7 += ((uint32_t)(v_ci71 + v_cl73));
+    v_intermediate[3u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd0 + v_ck1)) + 1024u)), 11u);
+    v_intermediate[59u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd0 - v_ck1)) + 1024u)), 11u);
+    v_intermediate[11u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd1 + v_ck3)) + 1024u)), 11u);
+    v_intermediate[51u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd1 - v_ck3)) + 1024u)), 11u);
+    v_intermediate[19u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd2 + v_ck5)) + 1024u)), 11u);
+    v_intermediate[43u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd2 - v_ck5)) + 1024u)), 11u);
+    v_intermediate[27u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd3 + v_ck7)) + 1024u)), 11u);
+    v_intermediate[35u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd3 - v_ck7)) + 1024u)), 11u);
   }
-  a_dst_buffer.ptr[0u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd0 + v_rk1)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[7u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd0 - v_rk1)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[1u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd1 + v_rk3)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[6u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd1 - v_rk3)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[2u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd2 + v_rk5)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[5u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd2 - v_rk5)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[3u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd3 + v_rk7)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[4u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd3 - v_rk7)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer = wuffs_base__slice_u8__subslice_i(a_dst_buffer, a_dst_stride);
-  v_in2 = v_intermediate[34u];
-  v_in6 = v_intermediate[38u];
-  v_ra = ((uint32_t)(((uint32_t)(v_in2 + v_in6)) * 4433u));
-  v_rb2 = ((uint32_t)(v_ra + ((uint32_t)(v_in2 * 6270u))));
-  v_rb6 = ((uint32_t)(v_ra - ((uint32_t)(v_in6 * 15137u))));
-  v_in0 = v_intermediate[32u];
-  v_in4 = v_intermediate[36u];
-  v_rcp = ((uint32_t)(((uint32_t)(v_in0 + v_in4)) << 13u));
-  v_rcm = ((uint32_t)(((uint32_t)(v_in0 - v_in4)) << 13u));
-  v_rd0 = ((uint32_t)(v_rcp + v_rb2));
-  v_rd1 = ((uint32_t)(v_rcm + v_rb6));
-  v_rd2 = ((uint32_t)(v_rcm - v_rb6));
-  v_rd3 = ((uint32_t)(v_rcp - v_rb2));
-  v_in1 = v_intermediate[33u];
-  v_in3 = v_intermediate[35u];
-  v_in5 = v_intermediate[37u];
-  v_in7 = v_intermediate[39u];
-  v_ri51 = ((uint32_t)(v_in5 + v_in1));
-  v_ri53 = ((uint32_t)(v_in5 + v_in3));
-  v_ri71 = ((uint32_t)(v_in7 + v_in1));
-  v_ri73 = ((uint32_t)(v_in7 + v_in3));
-  v_rj = ((uint32_t)(((uint32_t)(v_ri73 + v_ri51)) * 9633u));
-  v_rk1 = ((uint32_t)(v_in1 * 12299u));
-  v_rk3 = ((uint32_t)(v_in3 * 25172u));
-  v_rk5 = ((uint32_t)(v_in5 * 16819u));
-  v_rk7 = ((uint32_t)(v_in7 * 2446u));
-  v_ri51 *= 4294964100u;
-  v_ri53 *= 4294946301u;
-  v_ri71 *= 4294959923u;
-  v_ri73 *= 4294951227u;
-  v_rl51 = ((uint32_t)(v_ri51 + v_rj));
-  v_rl73 = ((uint32_t)(v_ri73 + v_rj));
-  v_rk1 += ((uint32_t)(v_ri71 + v_rl51));
-  v_rk3 += ((uint32_t)(v_ri53 + v_rl73));
-  v_rk5 += ((uint32_t)(v_ri53 + v_rl51));
-  v_rk7 += ((uint32_t)(v_ri71 + v_rl73));
-  if (a_dst_stride > ((uint64_t)(a_dst_buffer.len))) {
-    return wuffs_base__make_empty_struct();
+  if (0u == (self->private_data.f_mcu_blocks[a_b][12u] |
+      self->private_data.f_mcu_blocks[a_b][20u] |
+      self->private_data.f_mcu_blocks[a_b][28u] |
+      self->private_data.f_mcu_blocks[a_b][36u] |
+      self->private_data.f_mcu_blocks[a_b][44u] |
+      self->private_data.f_mcu_blocks[a_b][52u] |
+      self->private_data.f_mcu_blocks[a_b][60u])) {
+    v_intermediate[4u] = ((uint32_t)(((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][4u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][4u])))) << 2u));
+    v_intermediate[12u] = v_intermediate[4u];
+    v_intermediate[20u] = v_intermediate[4u];
+    v_intermediate[28u] = v_intermediate[4u];
+    v_intermediate[36u] = v_intermediate[4u];
+    v_intermediate[44u] = v_intermediate[4u];
+    v_intermediate[52u] = v_intermediate[4u];
+    v_intermediate[60u] = v_intermediate[4u];
+  } else {
+    v_bq2 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][20u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][20u]))));
+    v_bq6 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][52u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][52u]))));
+    v_ca = ((uint32_t)(((uint32_t)(v_bq2 + v_bq6)) * 4433u));
+    v_cb2 = ((uint32_t)(v_ca + ((uint32_t)(v_bq2 * 6270u))));
+    v_cb6 = ((uint32_t)(v_ca - ((uint32_t)(v_bq6 * 15137u))));
+    v_bq0 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][4u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][4u]))));
+    v_bq4 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][36u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][36u]))));
+    v_ccp = ((uint32_t)(((uint32_t)(v_bq0 + v_bq4)) << 13u));
+    v_ccm = ((uint32_t)(((uint32_t)(v_bq0 - v_bq4)) << 13u));
+    v_cd0 = ((uint32_t)(v_ccp + v_cb2));
+    v_cd1 = ((uint32_t)(v_ccm + v_cb6));
+    v_cd2 = ((uint32_t)(v_ccm - v_cb6));
+    v_cd3 = ((uint32_t)(v_ccp - v_cb2));
+    v_bq1 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][12u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][12u]))));
+    v_bq3 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][28u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][28u]))));
+    v_bq5 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][44u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][44u]))));
+    v_bq7 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][60u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][60u]))));
+    v_ci51 = ((uint32_t)(v_bq5 + v_bq1));
+    v_ci53 = ((uint32_t)(v_bq5 + v_bq3));
+    v_ci71 = ((uint32_t)(v_bq7 + v_bq1));
+    v_ci73 = ((uint32_t)(v_bq7 + v_bq3));
+    v_cj = ((uint32_t)(((uint32_t)(v_ci73 + v_ci51)) * 9633u));
+    v_ck1 = ((uint32_t)(v_bq1 * 12299u));
+    v_ck3 = ((uint32_t)(v_bq3 * 25172u));
+    v_ck5 = ((uint32_t)(v_bq5 * 16819u));
+    v_ck7 = ((uint32_t)(v_bq7 * 2446u));
+    v_ci51 *= 4294964100u;
+    v_ci53 *= 4294946301u;
+    v_ci71 *= 4294959923u;
+    v_ci73 *= 4294951227u;
+    v_cl51 = ((uint32_t)(v_ci51 + v_cj));
+    v_cl73 = ((uint32_t)(v_ci73 + v_cj));
+    v_ck1 += ((uint32_t)(v_ci71 + v_cl51));
+    v_ck3 += ((uint32_t)(v_ci53 + v_cl73));
+    v_ck5 += ((uint32_t)(v_ci53 + v_cl51));
+    v_ck7 += ((uint32_t)(v_ci71 + v_cl73));
+    v_intermediate[4u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd0 + v_ck1)) + 1024u)), 11u);
+    v_intermediate[60u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd0 - v_ck1)) + 1024u)), 11u);
+    v_intermediate[12u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd1 + v_ck3)) + 1024u)), 11u);
+    v_intermediate[52u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd1 - v_ck3)) + 1024u)), 11u);
+    v_intermediate[20u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd2 + v_ck5)) + 1024u)), 11u);
+    v_intermediate[44u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd2 - v_ck5)) + 1024u)), 11u);
+    v_intermediate[28u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd3 + v_ck7)) + 1024u)), 11u);
+    v_intermediate[36u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd3 - v_ck7)) + 1024u)), 11u);
   }
-  a_dst_buffer.ptr[0u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd0 + v_rk1)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[7u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd0 - v_rk1)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[1u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd1 + v_rk3)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[6u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd1 - v_rk3)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[2u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd2 + v_rk5)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[5u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd2 - v_rk5)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[3u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd3 + v_rk7)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[4u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd3 - v_rk7)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer = wuffs_base__slice_u8__subslice_i(a_dst_buffer, a_dst_stride);
-  v_in2 = v_intermediate[42u];
-  v_in6 = v_intermediate[46u];
-  v_ra = ((uint32_t)(((uint32_t)(v_in2 + v_in6)) * 4433u));
-  v_rb2 = ((uint32_t)(v_ra + ((uint32_t)(v_in2 * 6270u))));
-  v_rb6 = ((uint32_t)(v_ra - ((uint32_t)(v_in6 * 15137u))));
-  v_in0 = v_intermediate[40u];
-  v_in4 = v_intermediate[44u];
-  v_rcp = ((uint32_t)(((uint32_t)(v_in0 + v_in4)) << 13u));
-  v_rcm = ((uint32_t)(((uint32_t)(v_in0 - v_in4)) << 13u));
-  v_rd0 = ((uint32_t)(v_rcp + v_rb2));
-  v_rd1 = ((uint32_t)(v_rcm + v_rb6));
-  v_rd2 = ((uint32_t)(v_rcm - v_rb6));
-  v_rd3 = ((uint32_t)(v_rcp - v_rb2));
-  v_in1 = v_intermediate[41u];
-  v_in3 = v_intermediate[43u];
-  v_in5 = v_intermediate[45u];
-  v_in7 = v_intermediate[47u];
-  v_ri51 = ((uint32_t)(v_in5 + v_in1));
-  v_ri53 = ((uint32_t)(v_in5 + v_in3));
-  v_ri71 = ((uint32_t)(v_in7 + v_in1));
-  v_ri73 = ((uint32_t)(v_in7 + v_in3));
-  v_rj = ((uint32_t)(((uint32_t)(v_ri73 + v_ri51)) * 9633u));
-  v_rk1 = ((uint32_t)(v_in1 * 12299u));
-  v_rk3 = ((uint32_t)(v_in3 * 25172u));
-  v_rk5 = ((uint32_t)(v_in5 * 16819u));
-  v_rk7 = ((uint32_t)(v_in7 * 2446u));
-  v_ri51 *= 4294964100u;
-  v_ri53 *= 4294946301u;
-  v_ri71 *= 4294959923u;
-  v_ri73 *= 4294951227u;
-  v_rl51 = ((uint32_t)(v_ri51 + v_rj));
-  v_rl73 = ((uint32_t)(v_ri73 + v_rj));
-  v_rk1 += ((uint32_t)(v_ri71 + v_rl51));
-  v_rk3 += ((uint32_t)(v_ri53 + v_rl73));
-  v_rk5 += ((uint32_t)(v_ri53 + v_rl51));
-  v_rk7 += ((uint32_t)(v_ri71 + v_rl73));
-  if (a_dst_stride > ((uint64_t)(a_dst_buffer.len))) {
-    return wuffs_base__make_empty_struct();
+  if (0u == (self->private_data.f_mcu_blocks[a_b][13u] |
+      self->private_data.f_mcu_blocks[a_b][21u] |
+      self->private_data.f_mcu_blocks[a_b][29u] |
+      self->private_data.f_mcu_blocks[a_b][37u] |
+      self->private_data.f_mcu_blocks[a_b][45u] |
+      self->private_data.f_mcu_blocks[a_b][53u] |
+      self->private_data.f_mcu_blocks[a_b][61u])) {
+    v_intermediate[5u] = ((uint32_t)(((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][5u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][5u])))) << 2u));
+    v_intermediate[13u] = v_intermediate[5u];
+    v_intermediate[21u] = v_intermediate[5u];
+    v_intermediate[29u] = v_intermediate[5u];
+    v_intermediate[37u] = v_intermediate[5u];
+    v_intermediate[45u] = v_intermediate[5u];
+    v_intermediate[53u] = v_intermediate[5u];
+    v_intermediate[61u] = v_intermediate[5u];
+  } else {
+    v_bq2 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][21u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][21u]))));
+    v_bq6 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][53u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][53u]))));
+    v_ca = ((uint32_t)(((uint32_t)(v_bq2 + v_bq6)) * 4433u));
+    v_cb2 = ((uint32_t)(v_ca + ((uint32_t)(v_bq2 * 6270u))));
+    v_cb6 = ((uint32_t)(v_ca - ((uint32_t)(v_bq6 * 15137u))));
+    v_bq0 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][5u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][5u]))));
+    v_bq4 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][37u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][37u]))));
+    v_ccp = ((uint32_t)(((uint32_t)(v_bq0 + v_bq4)) << 13u));
+    v_ccm = ((uint32_t)(((uint32_t)(v_bq0 - v_bq4)) << 13u));
+    v_cd0 = ((uint32_t)(v_ccp + v_cb2));
+    v_cd1 = ((uint32_t)(v_ccm + v_cb6));
+    v_cd2 = ((uint32_t)(v_ccm - v_cb6));
+    v_cd3 = ((uint32_t)(v_ccp - v_cb2));
+    v_bq1 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][13u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][13u]))));
+    v_bq3 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][29u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][29u]))));
+    v_bq5 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][45u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][45u]))));
+    v_bq7 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][61u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][61u]))));
+    v_ci51 = ((uint32_t)(v_bq5 + v_bq1));
+    v_ci53 = ((uint32_t)(v_bq5 + v_bq3));
+    v_ci71 = ((uint32_t)(v_bq7 + v_bq1));
+    v_ci73 = ((uint32_t)(v_bq7 + v_bq3));
+    v_cj = ((uint32_t)(((uint32_t)(v_ci73 + v_ci51)) * 9633u));
+    v_ck1 = ((uint32_t)(v_bq1 * 12299u));
+    v_ck3 = ((uint32_t)(v_bq3 * 25172u));
+    v_ck5 = ((uint32_t)(v_bq5 * 16819u));
+    v_ck7 = ((uint32_t)(v_bq7 * 2446u));
+    v_ci51 *= 4294964100u;
+    v_ci53 *= 4294946301u;
+    v_ci71 *= 4294959923u;
+    v_ci73 *= 4294951227u;
+    v_cl51 = ((uint32_t)(v_ci51 + v_cj));
+    v_cl73 = ((uint32_t)(v_ci73 + v_cj));
+    v_ck1 += ((uint32_t)(v_ci71 + v_cl51));
+    v_ck3 += ((uint32_t)(v_ci53 + v_cl73));
+    v_ck5 += ((uint32_t)(v_ci53 + v_cl51));
+    v_ck7 += ((uint32_t)(v_ci71 + v_cl73));
+    v_intermediate[5u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd0 + v_ck1)) + 1024u)), 11u);
+    v_intermediate[61u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd0 - v_ck1)) + 1024u)), 11u);
+    v_intermediate[13u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd1 + v_ck3)) + 1024u)), 11u);
+    v_intermediate[53u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd1 - v_ck3)) + 1024u)), 11u);
+    v_intermediate[21u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd2 + v_ck5)) + 1024u)), 11u);
+    v_intermediate[45u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd2 - v_ck5)) + 1024u)), 11u);
+    v_intermediate[29u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd3 + v_ck7)) + 1024u)), 11u);
+    v_intermediate[37u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd3 - v_ck7)) + 1024u)), 11u);
   }
-  a_dst_buffer.ptr[0u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd0 + v_rk1)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[7u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd0 - v_rk1)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[1u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd1 + v_rk3)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[6u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd1 - v_rk3)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[2u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd2 + v_rk5)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[5u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd2 - v_rk5)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[3u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd3 + v_rk7)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[4u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd3 - v_rk7)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer = wuffs_base__slice_u8__subslice_i(a_dst_buffer, a_dst_stride);
-  v_in2 = v_intermediate[50u];
-  v_in6 = v_intermediate[54u];
-  v_ra = ((uint32_t)(((uint32_t)(v_in2 + v_in6)) * 4433u));
-  v_rb2 = ((uint32_t)(v_ra + ((uint32_t)(v_in2 * 6270u))));
-  v_rb6 = ((uint32_t)(v_ra - ((uint32_t)(v_in6 * 15137u))));
-  v_in0 = v_intermediate[48u];
-  v_in4 = v_intermediate[52u];
-  v_rcp = ((uint32_t)(((uint32_t)(v_in0 + v_in4)) << 13u));
-  v_rcm = ((uint32_t)(((uint32_t)(v_in0 - v_in4)) << 13u));
-  v_rd0 = ((uint32_t)(v_rcp + v_rb2));
-  v_rd1 = ((uint32_t)(v_rcm + v_rb6));
-  v_rd2 = ((uint32_t)(v_rcm - v_rb6));
-  v_rd3 = ((uint32_t)(v_rcp - v_rb2));
-  v_in1 = v_intermediate[49u];
-  v_in3 = v_intermediate[51u];
-  v_in5 = v_intermediate[53u];
-  v_in7 = v_intermediate[55u];
-  v_ri51 = ((uint32_t)(v_in5 + v_in1));
-  v_ri53 = ((uint32_t)(v_in5 + v_in3));
-  v_ri71 = ((uint32_t)(v_in7 + v_in1));
-  v_ri73 = ((uint32_t)(v_in7 + v_in3));
-  v_rj = ((uint32_t)(((uint32_t)(v_ri73 + v_ri51)) * 9633u));
-  v_rk1 = ((uint32_t)(v_in1 * 12299u));
-  v_rk3 = ((uint32_t)(v_in3 * 25172u));
-  v_rk5 = ((uint32_t)(v_in5 * 16819u));
-  v_rk7 = ((uint32_t)(v_in7 * 2446u));
-  v_ri51 *= 4294964100u;
-  v_ri53 *= 4294946301u;
-  v_ri71 *= 4294959923u;
-  v_ri73 *= 4294951227u;
-  v_rl51 = ((uint32_t)(v_ri51 + v_rj));
-  v_rl73 = ((uint32_t)(v_ri73 + v_rj));
-  v_rk1 += ((uint32_t)(v_ri71 + v_rl51));
-  v_rk3 += ((uint32_t)(v_ri53 + v_rl73));
-  v_rk5 += ((uint32_t)(v_ri53 + v_rl51));
-  v_rk7 += ((uint32_t)(v_ri71 + v_rl73));
-  if (a_dst_stride > ((uint64_t)(a_dst_buffer.len))) {
-    return wuffs_base__make_empty_struct();
+  if (0u == (self->private_data.f_mcu_blocks[a_b][14u] |
+      self->private_data.f_mcu_blocks[a_b][22u] |
+      self->private_data.f_mcu_blocks[a_b][30u] |
+      self->private_data.f_mcu_blocks[a_b][38u] |
+      self->private_data.f_mcu_blocks[a_b][46u] |
+      self->private_data.f_mcu_blocks[a_b][54u] |
+      self->private_data.f_mcu_blocks[a_b][62u])) {
+    v_intermediate[6u] = ((uint32_t)(((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][6u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][6u])))) << 2u));
+    v_intermediate[14u] = v_intermediate[6u];
+    v_intermediate[22u] = v_intermediate[6u];
+    v_intermediate[30u] = v_intermediate[6u];
+    v_intermediate[38u] = v_intermediate[6u];
+    v_intermediate[46u] = v_intermediate[6u];
+    v_intermediate[54u] = v_intermediate[6u];
+    v_intermediate[62u] = v_intermediate[6u];
+  } else {
+    v_bq2 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][22u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][22u]))));
+    v_bq6 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][54u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][54u]))));
+    v_ca = ((uint32_t)(((uint32_t)(v_bq2 + v_bq6)) * 4433u));
+    v_cb2 = ((uint32_t)(v_ca + ((uint32_t)(v_bq2 * 6270u))));
+    v_cb6 = ((uint32_t)(v_ca - ((uint32_t)(v_bq6 * 15137u))));
+    v_bq0 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][6u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][6u]))));
+    v_bq4 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][38u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][38u]))));
+    v_ccp = ((uint32_t)(((uint32_t)(v_bq0 + v_bq4)) << 13u));
+    v_ccm = ((uint32_t)(((uint32_t)(v_bq0 - v_bq4)) << 13u));
+    v_cd0 = ((uint32_t)(v_ccp + v_cb2));
+    v_cd1 = ((uint32_t)(v_ccm + v_cb6));
+    v_cd2 = ((uint32_t)(v_ccm - v_cb6));
+    v_cd3 = ((uint32_t)(v_ccp - v_cb2));
+    v_bq1 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][14u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][14u]))));
+    v_bq3 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][30u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][30u]))));
+    v_bq5 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][46u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][46u]))));
+    v_bq7 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][62u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][62u]))));
+    v_ci51 = ((uint32_t)(v_bq5 + v_bq1));
+    v_ci53 = ((uint32_t)(v_bq5 + v_bq3));
+    v_ci71 = ((uint32_t)(v_bq7 + v_bq1));
+    v_ci73 = ((uint32_t)(v_bq7 + v_bq3));
+    v_cj = ((uint32_t)(((uint32_t)(v_ci73 + v_ci51)) * 9633u));
+    v_ck1 = ((uint32_t)(v_bq1 * 12299u));
+    v_ck3 = ((uint32_t)(v_bq3 * 25172u));
+    v_ck5 = ((uint32_t)(v_bq5 * 16819u));
+    v_ck7 = ((uint32_t)(v_bq7 * 2446u));
+    v_ci51 *= 4294964100u;
+    v_ci53 *= 4294946301u;
+    v_ci71 *= 4294959923u;
+    v_ci73 *= 4294951227u;
+    v_cl51 = ((uint32_t)(v_ci51 + v_cj));
+    v_cl73 = ((uint32_t)(v_ci73 + v_cj));
+    v_ck1 += ((uint32_t)(v_ci71 + v_cl51));
+    v_ck3 += ((uint32_t)(v_ci53 + v_cl73));
+    v_ck5 += ((uint32_t)(v_ci53 + v_cl51));
+    v_ck7 += ((uint32_t)(v_ci71 + v_cl73));
+    v_intermediate[6u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd0 + v_ck1)) + 1024u)), 11u);
+    v_intermediate[62u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd0 - v_ck1)) + 1024u)), 11u);
+    v_intermediate[14u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd1 + v_ck3)) + 1024u)), 11u);
+    v_intermediate[54u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd1 - v_ck3)) + 1024u)), 11u);
+    v_intermediate[22u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd2 + v_ck5)) + 1024u)), 11u);
+    v_intermediate[46u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd2 - v_ck5)) + 1024u)), 11u);
+    v_intermediate[30u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd3 + v_ck7)) + 1024u)), 11u);
+    v_intermediate[38u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd3 - v_ck7)) + 1024u)), 11u);
   }
-  a_dst_buffer.ptr[0u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd0 + v_rk1)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[7u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd0 - v_rk1)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[1u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd1 + v_rk3)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[6u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd1 - v_rk3)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[2u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd2 + v_rk5)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[5u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd2 - v_rk5)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[3u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd3 + v_rk7)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[4u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd3 - v_rk7)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer = wuffs_base__slice_u8__subslice_i(a_dst_buffer, a_dst_stride);
-  v_in2 = v_intermediate[58u];
-  v_in6 = v_intermediate[62u];
-  v_ra = ((uint32_t)(((uint32_t)(v_in2 + v_in6)) * 4433u));
-  v_rb2 = ((uint32_t)(v_ra + ((uint32_t)(v_in2 * 6270u))));
-  v_rb6 = ((uint32_t)(v_ra - ((uint32_t)(v_in6 * 15137u))));
-  v_in0 = v_intermediate[56u];
-  v_in4 = v_intermediate[60u];
-  v_rcp = ((uint32_t)(((uint32_t)(v_in0 + v_in4)) << 13u));
-  v_rcm = ((uint32_t)(((uint32_t)(v_in0 - v_in4)) << 13u));
-  v_rd0 = ((uint32_t)(v_rcp + v_rb2));
-  v_rd1 = ((uint32_t)(v_rcm + v_rb6));
-  v_rd2 = ((uint32_t)(v_rcm - v_rb6));
-  v_rd3 = ((uint32_t)(v_rcp - v_rb2));
-  v_in1 = v_intermediate[57u];
-  v_in3 = v_intermediate[59u];
-  v_in5 = v_intermediate[61u];
-  v_in7 = v_intermediate[63u];
-  v_ri51 = ((uint32_t)(v_in5 + v_in1));
-  v_ri53 = ((uint32_t)(v_in5 + v_in3));
-  v_ri71 = ((uint32_t)(v_in7 + v_in1));
-  v_ri73 = ((uint32_t)(v_in7 + v_in3));
-  v_rj = ((uint32_t)(((uint32_t)(v_ri73 + v_ri51)) * 9633u));
-  v_rk1 = ((uint32_t)(v_in1 * 12299u));
-  v_rk3 = ((uint32_t)(v_in3 * 25172u));
-  v_rk5 = ((uint32_t)(v_in5 * 16819u));
-  v_rk7 = ((uint32_t)(v_in7 * 2446u));
-  v_ri51 *= 4294964100u;
-  v_ri53 *= 4294946301u;
-  v_ri71 *= 4294959923u;
-  v_ri73 *= 4294951227u;
-  v_rl51 = ((uint32_t)(v_ri51 + v_rj));
-  v_rl73 = ((uint32_t)(v_ri73 + v_rj));
-  v_rk1 += ((uint32_t)(v_ri71 + v_rl51));
-  v_rk3 += ((uint32_t)(v_ri53 + v_rl73));
-  v_rk5 += ((uint32_t)(v_ri53 + v_rl51));
-  v_rk7 += ((uint32_t)(v_ri71 + v_rl73));
-  if (8u > ((uint64_t)(a_dst_buffer.len))) {
-    return wuffs_base__make_empty_struct();
+  if (0u == (self->private_data.f_mcu_blocks[a_b][15u] |
+      self->private_data.f_mcu_blocks[a_b][23u] |
+      self->private_data.f_mcu_blocks[a_b][31u] |
+      self->private_data.f_mcu_blocks[a_b][39u] |
+      self->private_data.f_mcu_blocks[a_b][47u] |
+      self->private_data.f_mcu_blocks[a_b][55u] |
+      self->private_data.f_mcu_blocks[a_b][63u])) {
+    v_intermediate[7u] = ((uint32_t)(((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][7u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][7u])))) << 2u));
+    v_intermediate[15u] = v_intermediate[7u];
+    v_intermediate[23u] = v_intermediate[7u];
+    v_intermediate[31u] = v_intermediate[7u];
+    v_intermediate[39u] = v_intermediate[7u];
+    v_intermediate[47u] = v_intermediate[7u];
+    v_intermediate[55u] = v_intermediate[7u];
+    v_intermediate[63u] = v_intermediate[7u];
+  } else {
+    v_bq2 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][23u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][23u]))));
+    v_bq6 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][55u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][55u]))));
+    v_ca = ((uint32_t)(((uint32_t)(v_bq2 + v_bq6)) * 4433u));
+    v_cb2 = ((uint32_t)(v_ca + ((uint32_t)(v_bq2 * 6270u))));
+    v_cb6 = ((uint32_t)(v_ca - ((uint32_t)(v_bq6 * 15137u))));
+    v_bq0 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][7u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][7u]))));
+    v_bq4 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][39u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][39u]))));
+    v_ccp = ((uint32_t)(((uint32_t)(v_bq0 + v_bq4)) << 13u));
+    v_ccm = ((uint32_t)(((uint32_t)(v_bq0 - v_bq4)) << 13u));
+    v_cd0 = ((uint32_t)(v_ccp + v_cb2));
+    v_cd1 = ((uint32_t)(v_ccm + v_cb6));
+    v_cd2 = ((uint32_t)(v_ccm - v_cb6));
+    v_cd3 = ((uint32_t)(v_ccp - v_cb2));
+    v_bq1 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][15u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][15u]))));
+    v_bq3 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][31u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][31u]))));
+    v_bq5 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][47u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][47u]))));
+    v_bq7 = ((uint32_t)(wuffs_base__utility__sign_extend_convert_u16_u32(self->private_data.f_mcu_blocks[a_b][63u]) * ((uint32_t)(self->private_impl.f_quant_tables[a_q][63u]))));
+    v_ci51 = ((uint32_t)(v_bq5 + v_bq1));
+    v_ci53 = ((uint32_t)(v_bq5 + v_bq3));
+    v_ci71 = ((uint32_t)(v_bq7 + v_bq1));
+    v_ci73 = ((uint32_t)(v_bq7 + v_bq3));
+    v_cj = ((uint32_t)(((uint32_t)(v_ci73 + v_ci51)) * 9633u));
+    v_ck1 = ((uint32_t)(v_bq1 * 12299u));
+    v_ck3 = ((uint32_t)(v_bq3 * 25172u));
+    v_ck5 = ((uint32_t)(v_bq5 * 16819u));
+    v_ck7 = ((uint32_t)(v_bq7 * 2446u));
+    v_ci51 *= 4294964100u;
+    v_ci53 *= 4294946301u;
+    v_ci71 *= 4294959923u;
+    v_ci73 *= 4294951227u;
+    v_cl51 = ((uint32_t)(v_ci51 + v_cj));
+    v_cl73 = ((uint32_t)(v_ci73 + v_cj));
+    v_ck1 += ((uint32_t)(v_ci71 + v_cl51));
+    v_ck3 += ((uint32_t)(v_ci53 + v_cl73));
+    v_ck5 += ((uint32_t)(v_ci53 + v_cl51));
+    v_ck7 += ((uint32_t)(v_ci71 + v_cl73));
+    v_intermediate[7u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd0 + v_ck1)) + 1024u)), 11u);
+    v_intermediate[63u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd0 - v_ck1)) + 1024u)), 11u);
+    v_intermediate[15u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd1 + v_ck3)) + 1024u)), 11u);
+    v_intermediate[55u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd1 - v_ck3)) + 1024u)), 11u);
+    v_intermediate[23u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd2 + v_ck5)) + 1024u)), 11u);
+    v_intermediate[47u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd2 - v_ck5)) + 1024u)), 11u);
+    v_intermediate[31u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd3 + v_ck7)) + 1024u)), 11u);
+    v_intermediate[39u] = wuffs_base__utility__sign_extend_rshift_u32(((uint32_t)(((uint32_t)(v_cd3 - v_ck7)) + 1024u)), 11u);
   }
-  a_dst_buffer.ptr[0u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd0 + v_rk1)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[7u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd0 - v_rk1)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[1u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd1 + v_rk3)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[6u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd1 - v_rk3)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[2u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd2 + v_rk5)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[5u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd2 - v_rk5)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[3u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd3 + v_rk7)) + 131072u)) >> 18u) & 1023u)];
-  a_dst_buffer.ptr[4u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd3 - v_rk7)) + 131072u)) >> 18u) & 1023u)];
+  if (0u == (v_intermediate[1u] |
+      v_intermediate[2u] |
+      v_intermediate[3u] |
+      v_intermediate[4u] |
+      v_intermediate[5u] |
+      v_intermediate[6u] |
+      v_intermediate[7u])) {
+    if (a_dst_stride > ((uint64_t)(a_dst_buffer.len))) {
+      return wuffs_base__make_empty_struct();
+    }
+    a_dst_buffer.ptr[0u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(v_intermediate[0u] + 16u)) >> 5u) & 1023u)];
+    a_dst_buffer.ptr[1u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[2u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[3u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[4u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[5u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[6u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[7u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer = wuffs_base__slice_u8__subslice_i(a_dst_buffer, a_dst_stride);
+  } else {
+    v_in2 = v_intermediate[2u];
+    v_in6 = v_intermediate[6u];
+    v_ra = ((uint32_t)(((uint32_t)(v_in2 + v_in6)) * 4433u));
+    v_rb2 = ((uint32_t)(v_ra + ((uint32_t)(v_in2 * 6270u))));
+    v_rb6 = ((uint32_t)(v_ra - ((uint32_t)(v_in6 * 15137u))));
+    v_in0 = v_intermediate[0u];
+    v_in4 = v_intermediate[4u];
+    v_rcp = ((uint32_t)(((uint32_t)(v_in0 + v_in4)) << 13u));
+    v_rcm = ((uint32_t)(((uint32_t)(v_in0 - v_in4)) << 13u));
+    v_rd0 = ((uint32_t)(v_rcp + v_rb2));
+    v_rd1 = ((uint32_t)(v_rcm + v_rb6));
+    v_rd2 = ((uint32_t)(v_rcm - v_rb6));
+    v_rd3 = ((uint32_t)(v_rcp - v_rb2));
+    v_in1 = v_intermediate[1u];
+    v_in3 = v_intermediate[3u];
+    v_in5 = v_intermediate[5u];
+    v_in7 = v_intermediate[7u];
+    v_ri51 = ((uint32_t)(v_in5 + v_in1));
+    v_ri53 = ((uint32_t)(v_in5 + v_in3));
+    v_ri71 = ((uint32_t)(v_in7 + v_in1));
+    v_ri73 = ((uint32_t)(v_in7 + v_in3));
+    v_rj = ((uint32_t)(((uint32_t)(v_ri73 + v_ri51)) * 9633u));
+    v_rk1 = ((uint32_t)(v_in1 * 12299u));
+    v_rk3 = ((uint32_t)(v_in3 * 25172u));
+    v_rk5 = ((uint32_t)(v_in5 * 16819u));
+    v_rk7 = ((uint32_t)(v_in7 * 2446u));
+    v_ri51 *= 4294964100u;
+    v_ri53 *= 4294946301u;
+    v_ri71 *= 4294959923u;
+    v_ri73 *= 4294951227u;
+    v_rl51 = ((uint32_t)(v_ri51 + v_rj));
+    v_rl73 = ((uint32_t)(v_ri73 + v_rj));
+    v_rk1 += ((uint32_t)(v_ri71 + v_rl51));
+    v_rk3 += ((uint32_t)(v_ri53 + v_rl73));
+    v_rk5 += ((uint32_t)(v_ri53 + v_rl51));
+    v_rk7 += ((uint32_t)(v_ri71 + v_rl73));
+    if (a_dst_stride > ((uint64_t)(a_dst_buffer.len))) {
+      return wuffs_base__make_empty_struct();
+    }
+    a_dst_buffer.ptr[0u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd0 + v_rk1)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[7u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd0 - v_rk1)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[1u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd1 + v_rk3)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[6u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd1 - v_rk3)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[2u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd2 + v_rk5)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[5u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd2 - v_rk5)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[3u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd3 + v_rk7)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[4u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd3 - v_rk7)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer = wuffs_base__slice_u8__subslice_i(a_dst_buffer, a_dst_stride);
+  }
+  if (0u == (v_intermediate[9u] |
+      v_intermediate[10u] |
+      v_intermediate[11u] |
+      v_intermediate[12u] |
+      v_intermediate[13u] |
+      v_intermediate[14u] |
+      v_intermediate[15u])) {
+    if (a_dst_stride > ((uint64_t)(a_dst_buffer.len))) {
+      return wuffs_base__make_empty_struct();
+    }
+    a_dst_buffer.ptr[0u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(v_intermediate[8u] + 16u)) >> 5u) & 1023u)];
+    a_dst_buffer.ptr[1u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[2u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[3u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[4u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[5u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[6u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[7u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer = wuffs_base__slice_u8__subslice_i(a_dst_buffer, a_dst_stride);
+  } else {
+    v_in2 = v_intermediate[10u];
+    v_in6 = v_intermediate[14u];
+    v_ra = ((uint32_t)(((uint32_t)(v_in2 + v_in6)) * 4433u));
+    v_rb2 = ((uint32_t)(v_ra + ((uint32_t)(v_in2 * 6270u))));
+    v_rb6 = ((uint32_t)(v_ra - ((uint32_t)(v_in6 * 15137u))));
+    v_in0 = v_intermediate[8u];
+    v_in4 = v_intermediate[12u];
+    v_rcp = ((uint32_t)(((uint32_t)(v_in0 + v_in4)) << 13u));
+    v_rcm = ((uint32_t)(((uint32_t)(v_in0 - v_in4)) << 13u));
+    v_rd0 = ((uint32_t)(v_rcp + v_rb2));
+    v_rd1 = ((uint32_t)(v_rcm + v_rb6));
+    v_rd2 = ((uint32_t)(v_rcm - v_rb6));
+    v_rd3 = ((uint32_t)(v_rcp - v_rb2));
+    v_in1 = v_intermediate[9u];
+    v_in3 = v_intermediate[11u];
+    v_in5 = v_intermediate[13u];
+    v_in7 = v_intermediate[15u];
+    v_ri51 = ((uint32_t)(v_in5 + v_in1));
+    v_ri53 = ((uint32_t)(v_in5 + v_in3));
+    v_ri71 = ((uint32_t)(v_in7 + v_in1));
+    v_ri73 = ((uint32_t)(v_in7 + v_in3));
+    v_rj = ((uint32_t)(((uint32_t)(v_ri73 + v_ri51)) * 9633u));
+    v_rk1 = ((uint32_t)(v_in1 * 12299u));
+    v_rk3 = ((uint32_t)(v_in3 * 25172u));
+    v_rk5 = ((uint32_t)(v_in5 * 16819u));
+    v_rk7 = ((uint32_t)(v_in7 * 2446u));
+    v_ri51 *= 4294964100u;
+    v_ri53 *= 4294946301u;
+    v_ri71 *= 4294959923u;
+    v_ri73 *= 4294951227u;
+    v_rl51 = ((uint32_t)(v_ri51 + v_rj));
+    v_rl73 = ((uint32_t)(v_ri73 + v_rj));
+    v_rk1 += ((uint32_t)(v_ri71 + v_rl51));
+    v_rk3 += ((uint32_t)(v_ri53 + v_rl73));
+    v_rk5 += ((uint32_t)(v_ri53 + v_rl51));
+    v_rk7 += ((uint32_t)(v_ri71 + v_rl73));
+    if (a_dst_stride > ((uint64_t)(a_dst_buffer.len))) {
+      return wuffs_base__make_empty_struct();
+    }
+    a_dst_buffer.ptr[0u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd0 + v_rk1)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[7u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd0 - v_rk1)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[1u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd1 + v_rk3)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[6u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd1 - v_rk3)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[2u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd2 + v_rk5)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[5u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd2 - v_rk5)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[3u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd3 + v_rk7)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[4u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd3 - v_rk7)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer = wuffs_base__slice_u8__subslice_i(a_dst_buffer, a_dst_stride);
+  }
+  if (0u == (v_intermediate[17u] |
+      v_intermediate[18u] |
+      v_intermediate[19u] |
+      v_intermediate[20u] |
+      v_intermediate[21u] |
+      v_intermediate[22u] |
+      v_intermediate[23u])) {
+    if (a_dst_stride > ((uint64_t)(a_dst_buffer.len))) {
+      return wuffs_base__make_empty_struct();
+    }
+    a_dst_buffer.ptr[0u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(v_intermediate[16u] + 16u)) >> 5u) & 1023u)];
+    a_dst_buffer.ptr[1u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[2u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[3u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[4u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[5u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[6u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[7u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer = wuffs_base__slice_u8__subslice_i(a_dst_buffer, a_dst_stride);
+  } else {
+    v_in2 = v_intermediate[18u];
+    v_in6 = v_intermediate[22u];
+    v_ra = ((uint32_t)(((uint32_t)(v_in2 + v_in6)) * 4433u));
+    v_rb2 = ((uint32_t)(v_ra + ((uint32_t)(v_in2 * 6270u))));
+    v_rb6 = ((uint32_t)(v_ra - ((uint32_t)(v_in6 * 15137u))));
+    v_in0 = v_intermediate[16u];
+    v_in4 = v_intermediate[20u];
+    v_rcp = ((uint32_t)(((uint32_t)(v_in0 + v_in4)) << 13u));
+    v_rcm = ((uint32_t)(((uint32_t)(v_in0 - v_in4)) << 13u));
+    v_rd0 = ((uint32_t)(v_rcp + v_rb2));
+    v_rd1 = ((uint32_t)(v_rcm + v_rb6));
+    v_rd2 = ((uint32_t)(v_rcm - v_rb6));
+    v_rd3 = ((uint32_t)(v_rcp - v_rb2));
+    v_in1 = v_intermediate[17u];
+    v_in3 = v_intermediate[19u];
+    v_in5 = v_intermediate[21u];
+    v_in7 = v_intermediate[23u];
+    v_ri51 = ((uint32_t)(v_in5 + v_in1));
+    v_ri53 = ((uint32_t)(v_in5 + v_in3));
+    v_ri71 = ((uint32_t)(v_in7 + v_in1));
+    v_ri73 = ((uint32_t)(v_in7 + v_in3));
+    v_rj = ((uint32_t)(((uint32_t)(v_ri73 + v_ri51)) * 9633u));
+    v_rk1 = ((uint32_t)(v_in1 * 12299u));
+    v_rk3 = ((uint32_t)(v_in3 * 25172u));
+    v_rk5 = ((uint32_t)(v_in5 * 16819u));
+    v_rk7 = ((uint32_t)(v_in7 * 2446u));
+    v_ri51 *= 4294964100u;
+    v_ri53 *= 4294946301u;
+    v_ri71 *= 4294959923u;
+    v_ri73 *= 4294951227u;
+    v_rl51 = ((uint32_t)(v_ri51 + v_rj));
+    v_rl73 = ((uint32_t)(v_ri73 + v_rj));
+    v_rk1 += ((uint32_t)(v_ri71 + v_rl51));
+    v_rk3 += ((uint32_t)(v_ri53 + v_rl73));
+    v_rk5 += ((uint32_t)(v_ri53 + v_rl51));
+    v_rk7 += ((uint32_t)(v_ri71 + v_rl73));
+    if (a_dst_stride > ((uint64_t)(a_dst_buffer.len))) {
+      return wuffs_base__make_empty_struct();
+    }
+    a_dst_buffer.ptr[0u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd0 + v_rk1)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[7u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd0 - v_rk1)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[1u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd1 + v_rk3)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[6u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd1 - v_rk3)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[2u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd2 + v_rk5)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[5u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd2 - v_rk5)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[3u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd3 + v_rk7)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[4u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd3 - v_rk7)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer = wuffs_base__slice_u8__subslice_i(a_dst_buffer, a_dst_stride);
+  }
+  if (0u == (v_intermediate[25u] |
+      v_intermediate[26u] |
+      v_intermediate[27u] |
+      v_intermediate[28u] |
+      v_intermediate[29u] |
+      v_intermediate[30u] |
+      v_intermediate[31u])) {
+    if (a_dst_stride > ((uint64_t)(a_dst_buffer.len))) {
+      return wuffs_base__make_empty_struct();
+    }
+    a_dst_buffer.ptr[0u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(v_intermediate[24u] + 16u)) >> 5u) & 1023u)];
+    a_dst_buffer.ptr[1u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[2u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[3u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[4u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[5u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[6u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[7u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer = wuffs_base__slice_u8__subslice_i(a_dst_buffer, a_dst_stride);
+  } else {
+    v_in2 = v_intermediate[26u];
+    v_in6 = v_intermediate[30u];
+    v_ra = ((uint32_t)(((uint32_t)(v_in2 + v_in6)) * 4433u));
+    v_rb2 = ((uint32_t)(v_ra + ((uint32_t)(v_in2 * 6270u))));
+    v_rb6 = ((uint32_t)(v_ra - ((uint32_t)(v_in6 * 15137u))));
+    v_in0 = v_intermediate[24u];
+    v_in4 = v_intermediate[28u];
+    v_rcp = ((uint32_t)(((uint32_t)(v_in0 + v_in4)) << 13u));
+    v_rcm = ((uint32_t)(((uint32_t)(v_in0 - v_in4)) << 13u));
+    v_rd0 = ((uint32_t)(v_rcp + v_rb2));
+    v_rd1 = ((uint32_t)(v_rcm + v_rb6));
+    v_rd2 = ((uint32_t)(v_rcm - v_rb6));
+    v_rd3 = ((uint32_t)(v_rcp - v_rb2));
+    v_in1 = v_intermediate[25u];
+    v_in3 = v_intermediate[27u];
+    v_in5 = v_intermediate[29u];
+    v_in7 = v_intermediate[31u];
+    v_ri51 = ((uint32_t)(v_in5 + v_in1));
+    v_ri53 = ((uint32_t)(v_in5 + v_in3));
+    v_ri71 = ((uint32_t)(v_in7 + v_in1));
+    v_ri73 = ((uint32_t)(v_in7 + v_in3));
+    v_rj = ((uint32_t)(((uint32_t)(v_ri73 + v_ri51)) * 9633u));
+    v_rk1 = ((uint32_t)(v_in1 * 12299u));
+    v_rk3 = ((uint32_t)(v_in3 * 25172u));
+    v_rk5 = ((uint32_t)(v_in5 * 16819u));
+    v_rk7 = ((uint32_t)(v_in7 * 2446u));
+    v_ri51 *= 4294964100u;
+    v_ri53 *= 4294946301u;
+    v_ri71 *= 4294959923u;
+    v_ri73 *= 4294951227u;
+    v_rl51 = ((uint32_t)(v_ri51 + v_rj));
+    v_rl73 = ((uint32_t)(v_ri73 + v_rj));
+    v_rk1 += ((uint32_t)(v_ri71 + v_rl51));
+    v_rk3 += ((uint32_t)(v_ri53 + v_rl73));
+    v_rk5 += ((uint32_t)(v_ri53 + v_rl51));
+    v_rk7 += ((uint32_t)(v_ri71 + v_rl73));
+    if (a_dst_stride > ((uint64_t)(a_dst_buffer.len))) {
+      return wuffs_base__make_empty_struct();
+    }
+    a_dst_buffer.ptr[0u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd0 + v_rk1)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[7u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd0 - v_rk1)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[1u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd1 + v_rk3)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[6u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd1 - v_rk3)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[2u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd2 + v_rk5)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[5u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd2 - v_rk5)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[3u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd3 + v_rk7)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[4u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd3 - v_rk7)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer = wuffs_base__slice_u8__subslice_i(a_dst_buffer, a_dst_stride);
+  }
+  if (0u == (v_intermediate[33u] |
+      v_intermediate[34u] |
+      v_intermediate[35u] |
+      v_intermediate[36u] |
+      v_intermediate[37u] |
+      v_intermediate[38u] |
+      v_intermediate[39u])) {
+    if (a_dst_stride > ((uint64_t)(a_dst_buffer.len))) {
+      return wuffs_base__make_empty_struct();
+    }
+    a_dst_buffer.ptr[0u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(v_intermediate[32u] + 16u)) >> 5u) & 1023u)];
+    a_dst_buffer.ptr[1u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[2u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[3u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[4u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[5u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[6u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[7u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer = wuffs_base__slice_u8__subslice_i(a_dst_buffer, a_dst_stride);
+  } else {
+    v_in2 = v_intermediate[34u];
+    v_in6 = v_intermediate[38u];
+    v_ra = ((uint32_t)(((uint32_t)(v_in2 + v_in6)) * 4433u));
+    v_rb2 = ((uint32_t)(v_ra + ((uint32_t)(v_in2 * 6270u))));
+    v_rb6 = ((uint32_t)(v_ra - ((uint32_t)(v_in6 * 15137u))));
+    v_in0 = v_intermediate[32u];
+    v_in4 = v_intermediate[36u];
+    v_rcp = ((uint32_t)(((uint32_t)(v_in0 + v_in4)) << 13u));
+    v_rcm = ((uint32_t)(((uint32_t)(v_in0 - v_in4)) << 13u));
+    v_rd0 = ((uint32_t)(v_rcp + v_rb2));
+    v_rd1 = ((uint32_t)(v_rcm + v_rb6));
+    v_rd2 = ((uint32_t)(v_rcm - v_rb6));
+    v_rd3 = ((uint32_t)(v_rcp - v_rb2));
+    v_in1 = v_intermediate[33u];
+    v_in3 = v_intermediate[35u];
+    v_in5 = v_intermediate[37u];
+    v_in7 = v_intermediate[39u];
+    v_ri51 = ((uint32_t)(v_in5 + v_in1));
+    v_ri53 = ((uint32_t)(v_in5 + v_in3));
+    v_ri71 = ((uint32_t)(v_in7 + v_in1));
+    v_ri73 = ((uint32_t)(v_in7 + v_in3));
+    v_rj = ((uint32_t)(((uint32_t)(v_ri73 + v_ri51)) * 9633u));
+    v_rk1 = ((uint32_t)(v_in1 * 12299u));
+    v_rk3 = ((uint32_t)(v_in3 * 25172u));
+    v_rk5 = ((uint32_t)(v_in5 * 16819u));
+    v_rk7 = ((uint32_t)(v_in7 * 2446u));
+    v_ri51 *= 4294964100u;
+    v_ri53 *= 4294946301u;
+    v_ri71 *= 4294959923u;
+    v_ri73 *= 4294951227u;
+    v_rl51 = ((uint32_t)(v_ri51 + v_rj));
+    v_rl73 = ((uint32_t)(v_ri73 + v_rj));
+    v_rk1 += ((uint32_t)(v_ri71 + v_rl51));
+    v_rk3 += ((uint32_t)(v_ri53 + v_rl73));
+    v_rk5 += ((uint32_t)(v_ri53 + v_rl51));
+    v_rk7 += ((uint32_t)(v_ri71 + v_rl73));
+    if (a_dst_stride > ((uint64_t)(a_dst_buffer.len))) {
+      return wuffs_base__make_empty_struct();
+    }
+    a_dst_buffer.ptr[0u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd0 + v_rk1)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[7u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd0 - v_rk1)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[1u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd1 + v_rk3)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[6u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd1 - v_rk3)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[2u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd2 + v_rk5)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[5u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd2 - v_rk5)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[3u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd3 + v_rk7)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[4u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd3 - v_rk7)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer = wuffs_base__slice_u8__subslice_i(a_dst_buffer, a_dst_stride);
+  }
+  if (0u == (v_intermediate[41u] |
+      v_intermediate[42u] |
+      v_intermediate[43u] |
+      v_intermediate[44u] |
+      v_intermediate[45u] |
+      v_intermediate[46u] |
+      v_intermediate[47u])) {
+    if (a_dst_stride > ((uint64_t)(a_dst_buffer.len))) {
+      return wuffs_base__make_empty_struct();
+    }
+    a_dst_buffer.ptr[0u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(v_intermediate[40u] + 16u)) >> 5u) & 1023u)];
+    a_dst_buffer.ptr[1u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[2u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[3u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[4u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[5u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[6u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[7u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer = wuffs_base__slice_u8__subslice_i(a_dst_buffer, a_dst_stride);
+  } else {
+    v_in2 = v_intermediate[42u];
+    v_in6 = v_intermediate[46u];
+    v_ra = ((uint32_t)(((uint32_t)(v_in2 + v_in6)) * 4433u));
+    v_rb2 = ((uint32_t)(v_ra + ((uint32_t)(v_in2 * 6270u))));
+    v_rb6 = ((uint32_t)(v_ra - ((uint32_t)(v_in6 * 15137u))));
+    v_in0 = v_intermediate[40u];
+    v_in4 = v_intermediate[44u];
+    v_rcp = ((uint32_t)(((uint32_t)(v_in0 + v_in4)) << 13u));
+    v_rcm = ((uint32_t)(((uint32_t)(v_in0 - v_in4)) << 13u));
+    v_rd0 = ((uint32_t)(v_rcp + v_rb2));
+    v_rd1 = ((uint32_t)(v_rcm + v_rb6));
+    v_rd2 = ((uint32_t)(v_rcm - v_rb6));
+    v_rd3 = ((uint32_t)(v_rcp - v_rb2));
+    v_in1 = v_intermediate[41u];
+    v_in3 = v_intermediate[43u];
+    v_in5 = v_intermediate[45u];
+    v_in7 = v_intermediate[47u];
+    v_ri51 = ((uint32_t)(v_in5 + v_in1));
+    v_ri53 = ((uint32_t)(v_in5 + v_in3));
+    v_ri71 = ((uint32_t)(v_in7 + v_in1));
+    v_ri73 = ((uint32_t)(v_in7 + v_in3));
+    v_rj = ((uint32_t)(((uint32_t)(v_ri73 + v_ri51)) * 9633u));
+    v_rk1 = ((uint32_t)(v_in1 * 12299u));
+    v_rk3 = ((uint32_t)(v_in3 * 25172u));
+    v_rk5 = ((uint32_t)(v_in5 * 16819u));
+    v_rk7 = ((uint32_t)(v_in7 * 2446u));
+    v_ri51 *= 4294964100u;
+    v_ri53 *= 4294946301u;
+    v_ri71 *= 4294959923u;
+    v_ri73 *= 4294951227u;
+    v_rl51 = ((uint32_t)(v_ri51 + v_rj));
+    v_rl73 = ((uint32_t)(v_ri73 + v_rj));
+    v_rk1 += ((uint32_t)(v_ri71 + v_rl51));
+    v_rk3 += ((uint32_t)(v_ri53 + v_rl73));
+    v_rk5 += ((uint32_t)(v_ri53 + v_rl51));
+    v_rk7 += ((uint32_t)(v_ri71 + v_rl73));
+    if (a_dst_stride > ((uint64_t)(a_dst_buffer.len))) {
+      return wuffs_base__make_empty_struct();
+    }
+    a_dst_buffer.ptr[0u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd0 + v_rk1)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[7u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd0 - v_rk1)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[1u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd1 + v_rk3)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[6u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd1 - v_rk3)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[2u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd2 + v_rk5)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[5u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd2 - v_rk5)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[3u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd3 + v_rk7)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[4u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd3 - v_rk7)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer = wuffs_base__slice_u8__subslice_i(a_dst_buffer, a_dst_stride);
+  }
+  if (0u == (v_intermediate[49u] |
+      v_intermediate[50u] |
+      v_intermediate[51u] |
+      v_intermediate[52u] |
+      v_intermediate[53u] |
+      v_intermediate[54u] |
+      v_intermediate[55u])) {
+    if (a_dst_stride > ((uint64_t)(a_dst_buffer.len))) {
+      return wuffs_base__make_empty_struct();
+    }
+    a_dst_buffer.ptr[0u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(v_intermediate[48u] + 16u)) >> 5u) & 1023u)];
+    a_dst_buffer.ptr[1u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[2u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[3u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[4u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[5u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[6u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[7u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer = wuffs_base__slice_u8__subslice_i(a_dst_buffer, a_dst_stride);
+  } else {
+    v_in2 = v_intermediate[50u];
+    v_in6 = v_intermediate[54u];
+    v_ra = ((uint32_t)(((uint32_t)(v_in2 + v_in6)) * 4433u));
+    v_rb2 = ((uint32_t)(v_ra + ((uint32_t)(v_in2 * 6270u))));
+    v_rb6 = ((uint32_t)(v_ra - ((uint32_t)(v_in6 * 15137u))));
+    v_in0 = v_intermediate[48u];
+    v_in4 = v_intermediate[52u];
+    v_rcp = ((uint32_t)(((uint32_t)(v_in0 + v_in4)) << 13u));
+    v_rcm = ((uint32_t)(((uint32_t)(v_in0 - v_in4)) << 13u));
+    v_rd0 = ((uint32_t)(v_rcp + v_rb2));
+    v_rd1 = ((uint32_t)(v_rcm + v_rb6));
+    v_rd2 = ((uint32_t)(v_rcm - v_rb6));
+    v_rd3 = ((uint32_t)(v_rcp - v_rb2));
+    v_in1 = v_intermediate[49u];
+    v_in3 = v_intermediate[51u];
+    v_in5 = v_intermediate[53u];
+    v_in7 = v_intermediate[55u];
+    v_ri51 = ((uint32_t)(v_in5 + v_in1));
+    v_ri53 = ((uint32_t)(v_in5 + v_in3));
+    v_ri71 = ((uint32_t)(v_in7 + v_in1));
+    v_ri73 = ((uint32_t)(v_in7 + v_in3));
+    v_rj = ((uint32_t)(((uint32_t)(v_ri73 + v_ri51)) * 9633u));
+    v_rk1 = ((uint32_t)(v_in1 * 12299u));
+    v_rk3 = ((uint32_t)(v_in3 * 25172u));
+    v_rk5 = ((uint32_t)(v_in5 * 16819u));
+    v_rk7 = ((uint32_t)(v_in7 * 2446u));
+    v_ri51 *= 4294964100u;
+    v_ri53 *= 4294946301u;
+    v_ri71 *= 4294959923u;
+    v_ri73 *= 4294951227u;
+    v_rl51 = ((uint32_t)(v_ri51 + v_rj));
+    v_rl73 = ((uint32_t)(v_ri73 + v_rj));
+    v_rk1 += ((uint32_t)(v_ri71 + v_rl51));
+    v_rk3 += ((uint32_t)(v_ri53 + v_rl73));
+    v_rk5 += ((uint32_t)(v_ri53 + v_rl51));
+    v_rk7 += ((uint32_t)(v_ri71 + v_rl73));
+    if (a_dst_stride > ((uint64_t)(a_dst_buffer.len))) {
+      return wuffs_base__make_empty_struct();
+    }
+    a_dst_buffer.ptr[0u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd0 + v_rk1)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[7u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd0 - v_rk1)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[1u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd1 + v_rk3)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[6u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd1 - v_rk3)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[2u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd2 + v_rk5)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[5u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd2 - v_rk5)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[3u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd3 + v_rk7)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[4u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd3 - v_rk7)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer = wuffs_base__slice_u8__subslice_i(a_dst_buffer, a_dst_stride);
+  }
+  if (0u == (v_intermediate[57u] |
+      v_intermediate[58u] |
+      v_intermediate[59u] |
+      v_intermediate[60u] |
+      v_intermediate[61u] |
+      v_intermediate[62u] |
+      v_intermediate[63u])) {
+    if (8u > ((uint64_t)(a_dst_buffer.len))) {
+      return wuffs_base__make_empty_struct();
+    }
+    a_dst_buffer.ptr[0u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(v_intermediate[56u] + 16u)) >> 5u) & 1023u)];
+    a_dst_buffer.ptr[1u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[2u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[3u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[4u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[5u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[6u] = a_dst_buffer.ptr[0u];
+    a_dst_buffer.ptr[7u] = a_dst_buffer.ptr[0u];
+  } else {
+    v_in2 = v_intermediate[58u];
+    v_in6 = v_intermediate[62u];
+    v_ra = ((uint32_t)(((uint32_t)(v_in2 + v_in6)) * 4433u));
+    v_rb2 = ((uint32_t)(v_ra + ((uint32_t)(v_in2 * 6270u))));
+    v_rb6 = ((uint32_t)(v_ra - ((uint32_t)(v_in6 * 15137u))));
+    v_in0 = v_intermediate[56u];
+    v_in4 = v_intermediate[60u];
+    v_rcp = ((uint32_t)(((uint32_t)(v_in0 + v_in4)) << 13u));
+    v_rcm = ((uint32_t)(((uint32_t)(v_in0 - v_in4)) << 13u));
+    v_rd0 = ((uint32_t)(v_rcp + v_rb2));
+    v_rd1 = ((uint32_t)(v_rcm + v_rb6));
+    v_rd2 = ((uint32_t)(v_rcm - v_rb6));
+    v_rd3 = ((uint32_t)(v_rcp - v_rb2));
+    v_in1 = v_intermediate[57u];
+    v_in3 = v_intermediate[59u];
+    v_in5 = v_intermediate[61u];
+    v_in7 = v_intermediate[63u];
+    v_ri51 = ((uint32_t)(v_in5 + v_in1));
+    v_ri53 = ((uint32_t)(v_in5 + v_in3));
+    v_ri71 = ((uint32_t)(v_in7 + v_in1));
+    v_ri73 = ((uint32_t)(v_in7 + v_in3));
+    v_rj = ((uint32_t)(((uint32_t)(v_ri73 + v_ri51)) * 9633u));
+    v_rk1 = ((uint32_t)(v_in1 * 12299u));
+    v_rk3 = ((uint32_t)(v_in3 * 25172u));
+    v_rk5 = ((uint32_t)(v_in5 * 16819u));
+    v_rk7 = ((uint32_t)(v_in7 * 2446u));
+    v_ri51 *= 4294964100u;
+    v_ri53 *= 4294946301u;
+    v_ri71 *= 4294959923u;
+    v_ri73 *= 4294951227u;
+    v_rl51 = ((uint32_t)(v_ri51 + v_rj));
+    v_rl73 = ((uint32_t)(v_ri73 + v_rj));
+    v_rk1 += ((uint32_t)(v_ri71 + v_rl51));
+    v_rk3 += ((uint32_t)(v_ri53 + v_rl73));
+    v_rk5 += ((uint32_t)(v_ri53 + v_rl51));
+    v_rk7 += ((uint32_t)(v_ri71 + v_rl73));
+    if (8u > ((uint64_t)(a_dst_buffer.len))) {
+      return wuffs_base__make_empty_struct();
+    }
+    a_dst_buffer.ptr[0u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd0 + v_rk1)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[7u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd0 - v_rk1)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[1u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd1 + v_rk3)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[6u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd1 - v_rk3)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[2u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd2 + v_rk5)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[5u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd2 - v_rk5)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[3u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd3 + v_rk7)) + 131072u)) >> 18u) & 1023u)];
+    a_dst_buffer.ptr[4u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd3 - v_rk7)) + 131072u)) >> 18u) & 1023u)];
+  }
   return wuffs_base__make_empty_struct();
 }
 
