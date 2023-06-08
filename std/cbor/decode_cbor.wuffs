@@ -259,7 +259,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
             // -------- END   Major type 0: an unsigned integer.
 
         } else if c_major == 1 {
-            // -------- END   Major type 1: a negative integer.
+            // -------- BEGIN Major type 1: a negative integer.
             if c_minor < 0x1A {
                 args.dst.write_simple_token_fast!(
                         value_major: 0,
