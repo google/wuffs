@@ -23406,8 +23406,8 @@ wuffs_base__pixel_swizzler__swizzle_ycc__bgrx__box_filter(
     uint32_t ix2 = 0u;
     uint32_t x = 0u;
     while (true) {
-      wuffs_base__poke_u32le__no_bounds_check(             //
-          dst_iter, wuffs_base__color_ycc__as__color_u32(  //
+      wuffs_base__poke_u32le__no_bounds_check(
+          dst_iter, wuffs_base__color_ycc__as__color_u32(
                         *src_iter0, *src_iter1, *src_iter2));
       dst_iter += 4;
 
@@ -23500,8 +23500,8 @@ wuffs_base__pixel_swizzler__swizzle_ycc__rgbx__box_filter(
     uint32_t ix2 = 0u;
     uint32_t x = 0u;
     while (true) {
-      wuffs_base__poke_u32le__no_bounds_check(                  //
-          dst_iter, wuffs_base__color_ycc__as__color_u32_abgr(  //
+      wuffs_base__poke_u32le__no_bounds_check(
+          dst_iter, wuffs_base__color_ycc__as__color_u32_abgr(
                         *src_iter0, *src_iter1, *src_iter2));
       dst_iter += 4;
 

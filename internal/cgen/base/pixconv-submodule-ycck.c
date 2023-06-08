@@ -585,15 +585,19 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter(
     const uint8_t* src_iter1 = src_ptr1;
     const uint8_t* src_iter2 = src_ptr2;
 
+    // ¡ dst_iter = etc
+
     uint32_t ix0 = 0u;
     uint32_t ix1 = 0u;
     uint32_t ix2 = 0u;
     uint32_t x = 0u;
     while (true) {
+      // ¡ BEGIN set_color_u32_at
       wuffs_base__pixel_buffer__set_color_u32_at(
           dst, x, y,
           wuffs_base__color_ycc__as__color_u32(*src_iter0, *src_iter1,
                                                *src_iter2));
+      // ¡ END   set_color_u32_at
 
       if ((x + 1u) == width) {
         break;
@@ -640,193 +644,7 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter(
 
 // --------
 
-// Specializes wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter.
-static void  //
-wuffs_base__pixel_swizzler__swizzle_ycc__bgrx__box_filter(
-    wuffs_base__pixel_buffer* dst,
-    uint32_t width,
-    uint32_t height,
-    const uint8_t* src_ptr0,
-    const uint8_t* src_ptr1,
-    const uint8_t* src_ptr2,
-    uint32_t stride0,
-    uint32_t stride1,
-    uint32_t stride2,
-    uint32_t inv_h0,
-    uint32_t inv_h1,
-    uint32_t inv_h2,
-    uint32_t inv_v0,
-    uint32_t inv_v1,
-    uint32_t inv_v2,
-    uint32_t half_width_for_2to1,
-    uint32_t half_height_for_2to1,
-    uint8_t* scratch_buffer_2k_ptr) {
-  uint32_t h0_out_of_12 = 12u / inv_h0;
-  uint32_t h1_out_of_12 = 12u / inv_h1;
-  uint32_t h2_out_of_12 = 12u / inv_h2;
-  uint32_t v0_out_of_12 = 12u / inv_v0;
-  uint32_t v1_out_of_12 = 12u / inv_v1;
-  uint32_t v2_out_of_12 = 12u / inv_v2;
-
-  uint32_t iy0 = 0u;
-  uint32_t iy1 = 0u;
-  uint32_t iy2 = 0u;
-  uint32_t y = 0u;
-  while (true) {
-    const uint8_t* src_iter0 = src_ptr0;
-    const uint8_t* src_iter1 = src_ptr1;
-    const uint8_t* src_iter2 = src_ptr2;
-
-    size_t dst_stride = dst->private_impl.planes[0].stride;
-    uint8_t* dst_iter =
-        dst->private_impl.planes[0].ptr + (dst_stride * ((size_t)y));
-
-    uint32_t ix0 = 0u;
-    uint32_t ix1 = 0u;
-    uint32_t ix2 = 0u;
-    uint32_t x = 0u;
-    while (true) {
-      wuffs_base__poke_u32le__no_bounds_check(             //
-          dst_iter, wuffs_base__color_ycc__as__color_u32(  //
-                        *src_iter0, *src_iter1, *src_iter2));
-      dst_iter += 4;
-
-      if ((x + 1u) == width) {
-        break;
-      }
-      x = x + 1u;
-      ix0 += h0_out_of_12;
-      if (ix0 >= 12u) {
-        ix0 = 0u;
-        src_iter0++;
-      }
-      ix1 += h1_out_of_12;
-      if (ix1 >= 12u) {
-        ix1 = 0u;
-        src_iter1++;
-      }
-      ix2 += h2_out_of_12;
-      if (ix2 >= 12u) {
-        ix2 = 0u;
-        src_iter2++;
-      }
-    }
-
-    if ((y + 1u) == height) {
-      break;
-    }
-    y = y + 1u;
-    iy0 += v0_out_of_12;
-    if (iy0 >= 12u) {
-      iy0 = 0u;
-      src_ptr0 += stride0;
-    }
-    iy1 += v1_out_of_12;
-    if (iy1 >= 12u) {
-      iy1 = 0u;
-      src_ptr1 += stride1;
-    }
-    iy2 += v2_out_of_12;
-    if (iy2 >= 12u) {
-      iy2 = 0u;
-      src_ptr2 += stride2;
-    }
-  }
-}
-
-// Specializes wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter.
-static void  //
-wuffs_base__pixel_swizzler__swizzle_ycc__rgbx__box_filter(
-    wuffs_base__pixel_buffer* dst,
-    uint32_t width,
-    uint32_t height,
-    const uint8_t* src_ptr0,
-    const uint8_t* src_ptr1,
-    const uint8_t* src_ptr2,
-    uint32_t stride0,
-    uint32_t stride1,
-    uint32_t stride2,
-    uint32_t inv_h0,
-    uint32_t inv_h1,
-    uint32_t inv_h2,
-    uint32_t inv_v0,
-    uint32_t inv_v1,
-    uint32_t inv_v2,
-    uint32_t half_width_for_2to1,
-    uint32_t half_height_for_2to1,
-    uint8_t* scratch_buffer_2k_ptr) {
-  uint32_t h0_out_of_12 = 12u / inv_h0;
-  uint32_t h1_out_of_12 = 12u / inv_h1;
-  uint32_t h2_out_of_12 = 12u / inv_h2;
-  uint32_t v0_out_of_12 = 12u / inv_v0;
-  uint32_t v1_out_of_12 = 12u / inv_v1;
-  uint32_t v2_out_of_12 = 12u / inv_v2;
-
-  uint32_t iy0 = 0u;
-  uint32_t iy1 = 0u;
-  uint32_t iy2 = 0u;
-  uint32_t y = 0u;
-  while (true) {
-    const uint8_t* src_iter0 = src_ptr0;
-    const uint8_t* src_iter1 = src_ptr1;
-    const uint8_t* src_iter2 = src_ptr2;
-
-    size_t dst_stride = dst->private_impl.planes[0].stride;
-    uint8_t* dst_iter =
-        dst->private_impl.planes[0].ptr + (dst_stride * ((size_t)y));
-
-    uint32_t ix0 = 0u;
-    uint32_t ix1 = 0u;
-    uint32_t ix2 = 0u;
-    uint32_t x = 0u;
-    while (true) {
-      wuffs_base__poke_u32le__no_bounds_check(                  //
-          dst_iter, wuffs_base__color_ycc__as__color_u32_abgr(  //
-                        *src_iter0, *src_iter1, *src_iter2));
-      dst_iter += 4;
-
-      if ((x + 1u) == width) {
-        break;
-      }
-      x = x + 1u;
-      ix0 += h0_out_of_12;
-      if (ix0 >= 12u) {
-        ix0 = 0u;
-        src_iter0++;
-      }
-      ix1 += h1_out_of_12;
-      if (ix1 >= 12u) {
-        ix1 = 0u;
-        src_iter1++;
-      }
-      ix2 += h2_out_of_12;
-      if (ix2 >= 12u) {
-        ix2 = 0u;
-        src_iter2++;
-      }
-    }
-
-    if ((y + 1u) == height) {
-      break;
-    }
-    y = y + 1u;
-    iy0 += v0_out_of_12;
-    if (iy0 >= 12u) {
-      iy0 = 0u;
-      src_ptr0 += stride0;
-    }
-    iy1 += v1_out_of_12;
-    if (iy1 >= 12u) {
-      iy1 = 0u;
-      src_ptr1 += stride1;
-    }
-    iy2 += v2_out_of_12;
-    if (iy2 >= 12u) {
-      iy2 = 0u;
-      src_ptr2 += stride2;
-    }
-  }
-}
+// ¡ INSERT patch_pixconv
 
 // --------
 

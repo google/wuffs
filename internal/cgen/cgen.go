@@ -124,7 +124,7 @@ func Do(args []string) error {
 				return nil, fmt.Errorf("base package shouldn't have any .wuffs files")
 			}
 			buf := make(buffer, 0, 128*1024)
-			if err := expandBangBangInsert(&buf, embedBaseAllImplC.Trim(), map[string]func(*buffer) error{
+			if err := expandBangInsert(&buf, embedBaseAllImplC.Trim(), map[string]func(*buffer) error{
 				"// ¡ INSERT InterfaceDeclarations.\n":            insertInterfaceDeclarations,
 				"// ¡ INSERT InterfaceDefinitions.\n":             insertInterfaceDefinitions,
 				"// ¡ INSERT base/all-private.h.\n":               insertBaseAllPrivateH,
@@ -238,7 +238,7 @@ func (b *buffer) writeb(x byte)                             { *b = append(*b, x)
 func (b *buffer) writes(s string)                           { *b = append(*b, s...) }
 func (b *buffer) writex(s []byte)                           { *b = append(*b, s...) }
 
-func expandBangBangInsert(b *buffer, s string, m map[string]func(*buffer) error) error {
+func expandBangInsert(b *buffer, s string, m map[string]func(*buffer) error) error {
 	for {
 		remaining := ""
 		if i := strings.IndexByte(s, '\n'); i >= 0 {
@@ -290,7 +290,7 @@ func insertBaseAllPrivateH(buf *buffer) error {
 }
 
 func insertBaseAllPublicH(buf *buffer) error {
-	if err := expandBangBangInsert(buf, embedBaseFundamentalPublicH.Trim(), map[string]func(*buffer) error{
+	if err := expandBangInsert(buf, embedBaseFundamentalPublicH.Trim(), map[string]func(*buffer) error{
 		"// ¡ INSERT FourCCs.\n": func(b *buffer) error {
 			for i, z := range builtin.FourCCs {
 				if i != 0 {
@@ -384,11 +384,6 @@ func insertBaseMagicSubmoduleC(buf *buffer) error {
 
 func insertBasePixConvSubmoduleRegularC(buf *buffer) error {
 	buf.writes(embedBasePixConvSubmoduleRegularC.Trim())
-	return nil
-}
-
-func insertBasePixConvSubmoduleYcckC(buf *buffer) error {
-	buf.writes(embedBasePixConvSubmoduleYcckC.Trim())
 	return nil
 }
 
