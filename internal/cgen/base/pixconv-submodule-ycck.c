@@ -568,6 +568,7 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter(
     uint32_t half_width_for_2to1,
     uint32_t half_height_for_2to1,
     uint8_t* scratch_buffer_2k_ptr) {
+  // ¡ BEGIN declare iy
   // Convert an inv_h or inv_v value from {1, 2, 3, 4} to {12, 6, 4, 3}.
   uint32_t h0_out_of_12 = 12u / inv_h0;
   uint32_t h1_out_of_12 = 12u / inv_h1;
@@ -579,6 +580,7 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter(
   uint32_t iy0 = 0u;
   uint32_t iy1 = 0u;
   uint32_t iy2 = 0u;
+  // ¡ END   declare iy
   uint32_t y = 0u;
   while (true) {
     const uint8_t* src_iter0 = src_ptr0;
@@ -587,9 +589,11 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter(
 
     // ¡ dst_iter = etc
 
+    // ¡ BEGIN declare ix
     uint32_t ix0 = 0u;
     uint32_t ix1 = 0u;
     uint32_t ix2 = 0u;
+    // ¡ END   declare ix
     uint32_t x = 0u;
     while (true) {
       // ¡ BEGIN set_color_u32_at
@@ -603,6 +607,7 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter(
         break;
       }
       x = x + 1u;
+      // ¡ BEGIN use ix
       ix0 += h0_out_of_12;
       if (ix0 >= 12u) {
         ix0 = 0u;
@@ -618,12 +623,14 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter(
         ix2 = 0u;
         src_iter2++;
       }
+      // ¡ END   use ix
     }
 
     if ((y + 1u) == height) {
       break;
     }
     y = y + 1u;
+    // ¡ BEGIN use iy
     iy0 += v0_out_of_12;
     if (iy0 >= 12u) {
       iy0 = 0u;
@@ -639,6 +646,7 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter(
       iy2 = 0u;
       src_ptr2 += stride2;
     }
+    // ¡ END   use iy
   }
 }
 
@@ -826,12 +834,20 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
       case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
       case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
       case WUFFS_BASE__PIXEL_FORMAT__BGRX:
-        func = &wuffs_base__pixel_swizzler__swizzle_ycc__bgrx__box_filter;
+        if ((max_incl_h | max_incl_v) == 1) {
+          func = &wuffs_base__pixel_swizzler__swizzle_ycc__bgrx__hv11;
+        } else {
+          func = &wuffs_base__pixel_swizzler__swizzle_ycc__bgrx__box_filter;
+        }
         break;
       case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
       case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
       case WUFFS_BASE__PIXEL_FORMAT__RGBX:
-        func = &wuffs_base__pixel_swizzler__swizzle_ycc__rgbx__box_filter;
+        if ((max_incl_h | max_incl_v) == 1) {
+          func = &wuffs_base__pixel_swizzler__swizzle_ycc__rgbx__hv11;
+        } else {
+          func = &wuffs_base__pixel_swizzler__swizzle_ycc__rgbx__box_filter;
+        }
         break;
     }
   }

@@ -23548,6 +23548,120 @@ wuffs_base__pixel_swizzler__swizzle_ycc__rgbx__box_filter(
   }
 }
 
+// Specializes wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter.
+static void  //
+wuffs_base__pixel_swizzler__swizzle_ycc__bgrx__hv11(
+    wuffs_base__pixel_buffer* dst,
+    uint32_t width,
+    uint32_t height,
+    const uint8_t* src_ptr0,
+    const uint8_t* src_ptr1,
+    const uint8_t* src_ptr2,
+    uint32_t stride0,
+    uint32_t stride1,
+    uint32_t stride2,
+    uint32_t inv_h0,
+    uint32_t inv_h1,
+    uint32_t inv_h2,
+    uint32_t inv_v0,
+    uint32_t inv_v1,
+    uint32_t inv_v2,
+    uint32_t half_width_for_2to1,
+    uint32_t half_height_for_2to1,
+    uint8_t* scratch_buffer_2k_ptr) {
+  uint32_t y = 0u;
+  while (true) {
+    const uint8_t* src_iter0 = src_ptr0;
+    const uint8_t* src_iter1 = src_ptr1;
+    const uint8_t* src_iter2 = src_ptr2;
+
+    size_t dst_stride = dst->private_impl.planes[0].stride;
+    uint8_t* dst_iter =
+        dst->private_impl.planes[0].ptr + (dst_stride * ((size_t)y));
+
+    uint32_t x = 0u;
+    while (true) {
+      wuffs_base__poke_u32le__no_bounds_check(
+          dst_iter, wuffs_base__color_ycc__as__color_u32(
+                        *src_iter0, *src_iter1, *src_iter2));
+      dst_iter += 4;
+
+      if ((x + 1u) == width) {
+        break;
+      }
+      x = x + 1u;
+      src_iter0++;
+      src_iter1++;
+      src_iter2++;
+    }
+
+    if ((y + 1u) == height) {
+      break;
+    }
+    y = y + 1u;
+    src_ptr0 += stride0;
+    src_ptr1 += stride1;
+    src_ptr2 += stride2;
+  }
+}
+
+// Specializes wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter.
+static void  //
+wuffs_base__pixel_swizzler__swizzle_ycc__rgbx__hv11(
+    wuffs_base__pixel_buffer* dst,
+    uint32_t width,
+    uint32_t height,
+    const uint8_t* src_ptr0,
+    const uint8_t* src_ptr1,
+    const uint8_t* src_ptr2,
+    uint32_t stride0,
+    uint32_t stride1,
+    uint32_t stride2,
+    uint32_t inv_h0,
+    uint32_t inv_h1,
+    uint32_t inv_h2,
+    uint32_t inv_v0,
+    uint32_t inv_v1,
+    uint32_t inv_v2,
+    uint32_t half_width_for_2to1,
+    uint32_t half_height_for_2to1,
+    uint8_t* scratch_buffer_2k_ptr) {
+  uint32_t y = 0u;
+  while (true) {
+    const uint8_t* src_iter0 = src_ptr0;
+    const uint8_t* src_iter1 = src_ptr1;
+    const uint8_t* src_iter2 = src_ptr2;
+
+    size_t dst_stride = dst->private_impl.planes[0].stride;
+    uint8_t* dst_iter =
+        dst->private_impl.planes[0].ptr + (dst_stride * ((size_t)y));
+
+    uint32_t x = 0u;
+    while (true) {
+      wuffs_base__poke_u32le__no_bounds_check(
+          dst_iter, wuffs_base__color_ycc__as__color_u32_abgr(
+                        *src_iter0, *src_iter1, *src_iter2));
+      dst_iter += 4;
+
+      if ((x + 1u) == width) {
+        break;
+      }
+      x = x + 1u;
+      src_iter0++;
+      src_iter1++;
+      src_iter2++;
+    }
+
+    if ((y + 1u) == height) {
+      break;
+    }
+    y = y + 1u;
+    src_ptr0 += stride0;
+    src_ptr1 += stride1;
+    src_ptr2 += stride2;
+  }
+}
+
 // --------
 
 // wuffs_base__pixel_swizzler__flattened_length is like
@@ -23728,12 +23842,20 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
       case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
       case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
       case WUFFS_BASE__PIXEL_FORMAT__BGRX:
-        func = &wuffs_base__pixel_swizzler__swizzle_ycc__bgrx__box_filter;
+        if ((max_incl_h | max_incl_v) == 1) {
+          func = &wuffs_base__pixel_swizzler__swizzle_ycc__bgrx__hv11;
+        } else {
+          func = &wuffs_base__pixel_swizzler__swizzle_ycc__bgrx__box_filter;
+        }
         break;
       case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
       case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
       case WUFFS_BASE__PIXEL_FORMAT__RGBX:
-        func = &wuffs_base__pixel_swizzler__swizzle_ycc__rgbx__box_filter;
+        if ((max_incl_h | max_incl_v) == 1) {
+          func = &wuffs_base__pixel_swizzler__swizzle_ycc__rgbx__hv11;
+        } else {
+          func = &wuffs_base__pixel_swizzler__swizzle_ycc__rgbx__box_filter;
+        }
         break;
     }
   }

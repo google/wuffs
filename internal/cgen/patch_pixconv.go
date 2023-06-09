@@ -47,6 +47,14 @@ func insertBasePixConvSubmoduleYcckC(buf *buffer) error {
 		"          dst_iter, wuffs_base__color_ycc__as__color_u32_FLAVOR(\n" +
 		"                        *src_iter0, *src_iter1, *src_iter2));\n" +
 		"      dst_iter += 4;\n"
+	const useIxHv11 = "" +
+		"      src_iter0++;\n" +
+		"      src_iter1++;\n" +
+		"      src_iter2++;\n"
+	const useIyHv11 = "" +
+		"    src_ptr0 += stride0;\n" +
+		"    src_ptr1 += stride1;\n" +
+		"    src_ptr2 += stride2;\n"
 
 	// ----
 
@@ -74,6 +82,60 @@ func insertBasePixConvSubmoduleYcckC(buf *buffer) error {
 	}, {
 		"      // ¡ BEGIN set_color_u32_at\n",
 		strings.Replace(setColorU32At, "_FLAVOR", "_abgr", 1),
+	}}); err != nil {
+		return err
+	}
+
+	// ----
+
+	if err := patchCFunc(buf, generalBoxFilter, [][2]string{{
+		"wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter(\n",
+		"wuffs_base__pixel_swizzler__swizzle_ycc__bgrx__hv11(\n",
+	}, {
+		"    // ¡ dst_iter = etc\n",
+		dstIterEtc,
+	}, {
+		"      // ¡ BEGIN set_color_u32_at\n",
+		strings.Replace(setColorU32At, "_FLAVOR", "", 1),
+	}, {
+		"  // ¡ BEGIN declare iy\n",
+		"",
+	}, {
+		"    // ¡ BEGIN declare ix\n",
+		"",
+	}, {
+		"      // ¡ BEGIN use ix\n",
+		useIxHv11,
+	}, {
+		"    // ¡ BEGIN use iy\n",
+		useIyHv11,
+	}}); err != nil {
+		return err
+	}
+
+	// ----
+
+	if err := patchCFunc(buf, generalBoxFilter, [][2]string{{
+		"wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter(\n",
+		"wuffs_base__pixel_swizzler__swizzle_ycc__rgbx__hv11(\n",
+	}, {
+		"    // ¡ dst_iter = etc\n",
+		dstIterEtc,
+	}, {
+		"      // ¡ BEGIN set_color_u32_at\n",
+		strings.Replace(setColorU32At, "_FLAVOR", "_abgr", 1),
+	}, {
+		"  // ¡ BEGIN declare iy\n",
+		"",
+	}, {
+		"    // ¡ BEGIN declare ix\n",
+		"",
+	}, {
+		"      // ¡ BEGIN use ix\n",
+		useIxHv11,
+	}, {
+		"    // ¡ BEGIN use iy\n",
+		useIyHv11,
 	}}); err != nil {
 		return err
 	}
