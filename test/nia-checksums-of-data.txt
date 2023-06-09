@@ -99,8 +99,10 @@ a6727c95 test/data/peacock.progressive.scan007.jpeg
 d42a13cd test/data/peacock.progressive.scan009.jpeg
 951676cc test/data/peacock.q30.jpeg
 56835223 test/data/peacock.q99.jpeg
+7fa9064e test/data/peacock.s-very-weird.jpeg
 1543f677 test/data/peacock.s-weird.jpeg
 5437be55 test/data/peacock.s1x1-444.jpeg
+a9d83d57 test/data/peacock.s1x3.jpeg
 6862951e test/data/peacock.s2x1-422.jpeg
 d42a13cd test/data/peacock.s2x2-420.jpeg
 bf7e8c96 test/data/pjw-thumbnail.bmp

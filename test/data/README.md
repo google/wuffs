@@ -137,7 +137,9 @@ Dedication":
   - `cjpeg -sample 2x2 peacock.ppm > peacock.s2x2-420.jpeg`
   - `cjpeg -sample 2x1 peacock.ppm > peacock.s2x1-422.jpeg`
   - `cjpeg -sample 1x1 peacock.ppm > peacock.s1x1-444.jpeg`
+  - `cjpeg -sample 1x3 peacock.ppm > peacock.s1x3.jpeg`
   - `cjpeg -sample 2x2,2x1,1x1 peacock.ppm > peacock.s-weird.jpeg`
+  - `cjpeg -sample 4x1,2x1,2x2 peacock.ppm > peacock.s-very-weird.jpeg`
   - `go run ../../script/truncate-progressive-jpeg.go peacock.progressive.jpeg`
 
 `pi.txt` contains the digits of pi.
