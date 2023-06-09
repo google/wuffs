@@ -523,10 +523,14 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter(
           first_column,                         //
           (total_src_len2 >= half_width_for_2to1));
 
+      // ¡ dst_iter = etc
+
       for (; x < end; x++) {
+        // ¡ BEGIN set_color_u32_at
         wuffs_base__pixel_buffer__set_color_u32_at(
             dst, x, y,
             wuffs_base__color_ycc__as__color_u32(*up0++, *up1++, *up2++));
+        // ¡ END   set_color_u32_at
       }
     }
 
@@ -827,7 +831,22 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
       (wuffs_base__pixel_swizzler__has_triangle_upsampler(inv_h0, inv_v0) ||
        wuffs_base__pixel_swizzler__has_triangle_upsampler(inv_h1, inv_v1) ||
        wuffs_base__pixel_swizzler__has_triangle_upsampler(inv_h2, inv_v2))) {
-    func = &wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter;
+    switch (dst->pixcfg.private_impl.pixfmt.repr) {
+      case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
+      case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
+      case WUFFS_BASE__PIXEL_FORMAT__BGRX:
+        func = &wuffs_base__pixel_swizzler__swizzle_ycc__bgrx__triangle_filter;
+        break;
+      case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
+      case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
+      case WUFFS_BASE__PIXEL_FORMAT__RGBX:
+        func = &wuffs_base__pixel_swizzler__swizzle_ycc__rgbx__triangle_filter;
+        break;
+      default:
+        func =
+            &wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter;
+        break;
+    }
 
   } else {
     switch (dst->pixcfg.private_impl.pixfmt.repr) {

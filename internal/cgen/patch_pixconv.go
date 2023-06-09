@@ -22,6 +22,13 @@ import (
 func insertBasePixConvSubmoduleYcckC(buf *buffer) error {
 	src := embedBasePixConvSubmoduleYcckC.Trim()
 
+	generalTriangleFilter, err := extractCFunc(src, ""+
+		"static void  //\n"+
+		"wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter(\n")
+	if err != nil {
+		return err
+	}
+
 	generalBoxFilter, err := extractCFunc(src, ""+
 		"static void  //\n"+
 		"wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter(\n")
@@ -40,14 +47,23 @@ func insertBasePixConvSubmoduleYcckC(buf *buffer) error {
 
 	// ----
 
-	const dstIterEtc = "" +
+	const dstIterEtcSansX = "" +
 		"size_t dst_stride = dst->private_impl.planes[0].stride;\n" +
 		"uint8_t* dst_iter =\n" +
 		"    dst->private_impl.planes[0].ptr + (dst_stride * ((size_t)y));\n"
-	const setColorU32At = "" +
+	const dstIterWithX = "" +
+		"size_t dst_stride = dst->private_impl.planes[0].stride;\n" +
+		"uint8_t* dst_iter =\n" +
+		"    dst->private_impl.planes[0].ptr + (dst_stride * ((size_t)y)) + (4 * ((size_t)x));\n"
+	const setColorU32AtSrcIter = "" +
 		"wuffs_base__poke_u32le__no_bounds_check(\n" +
 		"    dst_iter, wuffs_base__color_ycc__as__color_u32_FLAVOR(\n" +
 		"                  *src_iter0, *src_iter1, *src_iter2));\n" +
+		"dst_iter += 4;\n"
+	const setColorU32AtUp = "" +
+		"wuffs_base__poke_u32le__no_bounds_check(\n" +
+		"    dst_iter, wuffs_base__color_ycc__as__color_u32_FLAVOR(\n" +
+		"                  *up0++, *up1++, *up2++));\n" +
 		"dst_iter += 4;\n"
 	const useIxHv11 = "" +
 		"src_iter0++;\n" +
@@ -58,6 +74,37 @@ func insertBasePixConvSubmoduleYcckC(buf *buffer) error {
 		"src_ptr1 += stride1;\n" +
 		"src_ptr2 += stride2;\n"
 
+	// ----
+
+	generalTriangleFilterPatches := []struct {
+		newFuncNameLine string
+		patchMap        map[string]string
+	}{{
+
+		"wuffs_base__pixel_swizzler__swizzle_ycc__bgrx__triangle_filter(\n",
+		map[string]string{
+			"// ¡ dst_iter = etc\n":         dstIterWithX,
+			"// ¡ BEGIN set_color_u32_at\n": strings.Replace(setColorU32AtUp, "_FLAVOR", "", 1),
+		},
+	}, {
+
+		"wuffs_base__pixel_swizzler__swizzle_ycc__rgbx__triangle_filter(\n",
+		map[string]string{
+			"// ¡ dst_iter = etc\n":         dstIterWithX,
+			"// ¡ BEGIN set_color_u32_at\n": strings.Replace(setColorU32AtUp, "_FLAVOR", "_abgr", 1),
+		},
+	}}
+
+	for _, p := range generalTriangleFilterPatches {
+		const oldFuncNameLine = "wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter(\n"
+		p.patchMap[oldFuncNameLine] = p.newFuncNameLine
+		if err := patchCFunc(buf, generalTriangleFilter, oldFuncNameLine, p.patchMap); err != nil {
+			return err
+		}
+	}
+
+	// ----
+
 	generalBoxFilterPatches := []struct {
 		newFuncNameLine string
 		patchMap        map[string]string
@@ -65,22 +112,22 @@ func insertBasePixConvSubmoduleYcckC(buf *buffer) error {
 
 		"wuffs_base__pixel_swizzler__swizzle_ycc__bgrx__box_filter(\n",
 		map[string]string{
-			"// ¡ dst_iter = etc\n":         dstIterEtc,
-			"// ¡ BEGIN set_color_u32_at\n": strings.Replace(setColorU32At, "_FLAVOR", "", 1),
+			"// ¡ dst_iter = etc\n":         dstIterEtcSansX,
+			"// ¡ BEGIN set_color_u32_at\n": strings.Replace(setColorU32AtSrcIter, "_FLAVOR", "", 1),
 		},
 	}, {
 
 		"wuffs_base__pixel_swizzler__swizzle_ycc__rgbx__box_filter(\n",
 		map[string]string{
-			"// ¡ dst_iter = etc\n":         dstIterEtc,
-			"// ¡ BEGIN set_color_u32_at\n": strings.Replace(setColorU32At, "_FLAVOR", "_abgr", 1),
+			"// ¡ dst_iter = etc\n":         dstIterEtcSansX,
+			"// ¡ BEGIN set_color_u32_at\n": strings.Replace(setColorU32AtSrcIter, "_FLAVOR", "_abgr", 1),
 		},
 	}, {
 
 		"wuffs_base__pixel_swizzler__swizzle_ycc__bgrx__hv11(\n",
 		map[string]string{
-			"// ¡ dst_iter = etc\n":         dstIterEtc,
-			"// ¡ BEGIN set_color_u32_at\n": strings.Replace(setColorU32At, "_FLAVOR", "", 1),
+			"// ¡ dst_iter = etc\n":         dstIterEtcSansX,
+			"// ¡ BEGIN set_color_u32_at\n": strings.Replace(setColorU32AtSrcIter, "_FLAVOR", "", 1),
 			"// ¡ BEGIN declare iy\n":       "",
 			"// ¡ BEGIN declare ix\n":       "",
 			"// ¡ BEGIN use ix\n":           useIxHv11,
@@ -90,8 +137,8 @@ func insertBasePixConvSubmoduleYcckC(buf *buffer) error {
 
 		"wuffs_base__pixel_swizzler__swizzle_ycc__rgbx__hv11(\n",
 		map[string]string{
-			"// ¡ dst_iter = etc\n":         dstIterEtc,
-			"// ¡ BEGIN set_color_u32_at\n": strings.Replace(setColorU32At, "_FLAVOR", "_abgr", 1),
+			"// ¡ dst_iter = etc\n":         dstIterEtcSansX,
+			"// ¡ BEGIN set_color_u32_at\n": strings.Replace(setColorU32AtSrcIter, "_FLAVOR", "_abgr", 1),
 			"// ¡ BEGIN declare iy\n":       "",
 			"// ¡ BEGIN declare ix\n":       "",
 			"// ¡ BEGIN use ix\n":           useIxHv11,
