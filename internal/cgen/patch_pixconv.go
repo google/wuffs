@@ -38,106 +38,73 @@ func insertBasePixConvSubmoduleYcckC(buf *buffer) error {
 	}
 	stripCFuncBangComments(buf, prefix)
 
+	// ----
+
 	const dstIterEtc = "" +
-		"    size_t dst_stride = dst->private_impl.planes[0].stride;\n" +
-		"    uint8_t* dst_iter =\n" +
-		"        dst->private_impl.planes[0].ptr + (dst_stride * ((size_t)y));\n"
+		"size_t dst_stride = dst->private_impl.planes[0].stride;\n" +
+		"uint8_t* dst_iter =\n" +
+		"    dst->private_impl.planes[0].ptr + (dst_stride * ((size_t)y));\n"
 	const setColorU32At = "" +
-		"      wuffs_base__poke_u32le__no_bounds_check(\n" +
-		"          dst_iter, wuffs_base__color_ycc__as__color_u32_FLAVOR(\n" +
-		"                        *src_iter0, *src_iter1, *src_iter2));\n" +
-		"      dst_iter += 4;\n"
+		"wuffs_base__poke_u32le__no_bounds_check(\n" +
+		"    dst_iter, wuffs_base__color_ycc__as__color_u32_FLAVOR(\n" +
+		"                  *src_iter0, *src_iter1, *src_iter2));\n" +
+		"dst_iter += 4;\n"
 	const useIxHv11 = "" +
-		"      src_iter0++;\n" +
-		"      src_iter1++;\n" +
-		"      src_iter2++;\n"
+		"src_iter0++;\n" +
+		"src_iter1++;\n" +
+		"src_iter2++;\n"
 	const useIyHv11 = "" +
-		"    src_ptr0 += stride0;\n" +
-		"    src_ptr1 += stride1;\n" +
-		"    src_ptr2 += stride2;\n"
+		"src_ptr0 += stride0;\n" +
+		"src_ptr1 += stride1;\n" +
+		"src_ptr2 += stride2;\n"
 
-	// ----
+	generalBoxFilterPatches := []struct {
+		newFuncNameLine string
+		patchMap        map[string]string
+	}{{
 
-	if err := patchCFunc(buf, generalBoxFilter, [][2]string{{
-		"wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter(\n",
 		"wuffs_base__pixel_swizzler__swizzle_ycc__bgrx__box_filter(\n",
+		map[string]string{
+			"// ¡ dst_iter = etc\n":         dstIterEtc,
+			"// ¡ BEGIN set_color_u32_at\n": strings.Replace(setColorU32At, "_FLAVOR", "", 1),
+		},
 	}, {
-		"    // ¡ dst_iter = etc\n",
-		dstIterEtc,
-	}, {
-		"      // ¡ BEGIN set_color_u32_at\n",
-		strings.Replace(setColorU32At, "_FLAVOR", "", 1),
-	}}); err != nil {
-		return err
-	}
 
-	// ----
-
-	if err := patchCFunc(buf, generalBoxFilter, [][2]string{{
-		"wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter(\n",
 		"wuffs_base__pixel_swizzler__swizzle_ycc__rgbx__box_filter(\n",
+		map[string]string{
+			"// ¡ dst_iter = etc\n":         dstIterEtc,
+			"// ¡ BEGIN set_color_u32_at\n": strings.Replace(setColorU32At, "_FLAVOR", "_abgr", 1),
+		},
 	}, {
-		"    // ¡ dst_iter = etc\n",
-		dstIterEtc,
-	}, {
-		"      // ¡ BEGIN set_color_u32_at\n",
-		strings.Replace(setColorU32At, "_FLAVOR", "_abgr", 1),
-	}}); err != nil {
-		return err
-	}
 
-	// ----
-
-	if err := patchCFunc(buf, generalBoxFilter, [][2]string{{
-		"wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter(\n",
 		"wuffs_base__pixel_swizzler__swizzle_ycc__bgrx__hv11(\n",
+		map[string]string{
+			"// ¡ dst_iter = etc\n":         dstIterEtc,
+			"// ¡ BEGIN set_color_u32_at\n": strings.Replace(setColorU32At, "_FLAVOR", "", 1),
+			"// ¡ BEGIN declare iy\n":       "",
+			"// ¡ BEGIN declare ix\n":       "",
+			"// ¡ BEGIN use ix\n":           useIxHv11,
+			"// ¡ BEGIN use iy\n":           useIyHv11,
+		},
 	}, {
-		"    // ¡ dst_iter = etc\n",
-		dstIterEtc,
-	}, {
-		"      // ¡ BEGIN set_color_u32_at\n",
-		strings.Replace(setColorU32At, "_FLAVOR", "", 1),
-	}, {
-		"  // ¡ BEGIN declare iy\n",
-		"",
-	}, {
-		"    // ¡ BEGIN declare ix\n",
-		"",
-	}, {
-		"      // ¡ BEGIN use ix\n",
-		useIxHv11,
-	}, {
-		"    // ¡ BEGIN use iy\n",
-		useIyHv11,
-	}}); err != nil {
-		return err
-	}
 
-	// ----
-
-	if err := patchCFunc(buf, generalBoxFilter, [][2]string{{
-		"wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter(\n",
 		"wuffs_base__pixel_swizzler__swizzle_ycc__rgbx__hv11(\n",
-	}, {
-		"    // ¡ dst_iter = etc\n",
-		dstIterEtc,
-	}, {
-		"      // ¡ BEGIN set_color_u32_at\n",
-		strings.Replace(setColorU32At, "_FLAVOR", "_abgr", 1),
-	}, {
-		"  // ¡ BEGIN declare iy\n",
-		"",
-	}, {
-		"    // ¡ BEGIN declare ix\n",
-		"",
-	}, {
-		"      // ¡ BEGIN use ix\n",
-		useIxHv11,
-	}, {
-		"    // ¡ BEGIN use iy\n",
-		useIyHv11,
-	}}); err != nil {
-		return err
+		map[string]string{
+			"// ¡ dst_iter = etc\n":         dstIterEtc,
+			"// ¡ BEGIN set_color_u32_at\n": strings.Replace(setColorU32At, "_FLAVOR", "_abgr", 1),
+			"// ¡ BEGIN declare iy\n":       "",
+			"// ¡ BEGIN declare ix\n":       "",
+			"// ¡ BEGIN use ix\n":           useIxHv11,
+			"// ¡ BEGIN use iy\n":           useIyHv11,
+		},
+	}}
+
+	for _, p := range generalBoxFilterPatches {
+		const oldFuncNameLine = "wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter(\n"
+		p.patchMap[oldFuncNameLine] = p.newFuncNameLine
+		if err := patchCFunc(buf, generalBoxFilter, oldFuncNameLine, p.patchMap); err != nil {
+			return err
+		}
 	}
 
 	// ----
@@ -195,13 +162,11 @@ func stripCFuncBangComments(buf *buffer, s string) {
 	buf.writes(s)
 }
 
-func patchCFunc(buf *buffer, src string, patches [][2]string) error {
-	srcFuncNameParenNewline := patches[0][0]
+func patchCFunc(buf *buffer, src string, oldFuncNameLine string, patchMap map[string]string) error {
 	buf.writes("// Specializes ")
-	buf.writes(srcFuncNameParenNewline[:len(srcFuncNameParenNewline)-2])
+	buf.writes(oldFuncNameLine[:len(oldFuncNameLine)-2])
 	buf.writes(".\n")
 
-loop:
 	for src != "" {
 		line := ""
 		if i := strings.IndexByte(src, '\n'); i < 0 {
@@ -210,33 +175,39 @@ loop:
 			line, src = src[:i+1], src[i+1:]
 		}
 
-		for _, patch := range patches {
-			if line != patch[0] {
-				continue
-			} else if !strings.Contains(line, "¡ BEGIN") {
-				buf.writes(patch[1])
-				continue loop
+		key, indent := line, ""
+		for i := 0; ; i++ {
+			if i == len(line) {
+				key, indent = "", line
+				break
+			} else if line[i] != ' ' {
+				key, indent = line[i:], line[:i]
+				break
 			}
-
-			// Extend forwards past (including) the next '\n'.
-			j := strings.Index(src, "¡ END  ")
-			if j < 0 {
-				return fmt.Errorf("internal error: patchCFunc failed to find \"¡ END\"")
+		}
+		val, ok := patchMap[key]
+		if !ok {
+			if !isCFuncComment(line) {
+				buf.writes(line)
 			}
-			for ; (j < len(src)) && (src[j] != '\n'); j++ {
-			}
-			if j < len(src) {
-				j++
-			}
-			src = src[j:]
-
-			buf.writes(patch[1])
-			continue loop
+			continue
+		}
+		indentCFunc(buf, indent, val)
+		if !strings.Contains(key, "¡ BEGIN") {
+			continue
 		}
 
-		if !isCFuncComment(line) {
-			buf.writes(line)
+		// Extend forwards past (including) the next '\n'.
+		j := strings.Index(src, "¡ END  ")
+		if j < 0 {
+			return fmt.Errorf("internal error: patchCFunc failed to find \"¡ END\"")
 		}
+		for ; (j < len(src)) && (src[j] != '\n'); j++ {
+		}
+		if j < len(src) {
+			j++
+		}
+		src = src[j:]
 	}
 	buf.writes("\n")
 	return nil
@@ -246,4 +217,17 @@ func isCFuncComment(s string) bool {
 	for ; (len(s) > 0) && (s[0] <= ' '); s = s[1:] {
 	}
 	return (len(s) >= 2) && (s[0] == '/') && (s[1] == '/')
+}
+
+func indentCFunc(buf *buffer, indent string, s string) {
+	for s != "" {
+		line := ""
+		if i := strings.IndexByte(s, '\n'); i < 0 {
+			line, s = s, ""
+		} else {
+			line, s = s[:i+1], s[i+1:]
+		}
+		buf.writes(indent)
+		buf.writes(line)
+	}
 }
