@@ -579,15 +579,14 @@ test_wuffs_jpeg_decode_idct() {
                                  &dec, sizeof dec, WUFFS_VERSION,
                                  WUFFS_INITIALIZE__DEFAULT_OPTIONS));
 
-  const uint32_t b = 0;
-  memcpy(&dec.private_data.f_mcu_blocks[b], mcu_block, sizeof(mcu_block));
+  memcpy(&dec.private_data.f_mcu_blocks[0], mcu_block, sizeof(mcu_block));
 
   const uint32_t q = 0;
   memcpy(&dec.private_impl.f_quant_tables[q], quant_table, sizeof(quant_table));
 
   uint8_t dst_array[64] = {0};
   wuffs_jpeg__decoder__decode_idct(
-      &dec, wuffs_base__make_slice_u8(&dst_array[0], 64), 8, b, q);
+      &dec, wuffs_base__make_slice_u8(&dst_array[0], 64), 8, q);
 
   wuffs_base__io_buffer have =
       wuffs_base__ptr_u8__reader(&dst_array[0], 64, true);
@@ -651,14 +650,8 @@ test_wuffs_jpeg_decode_mcu() {
     }
   }
 
-  // Decode and compare-to-golden the first MCU (Minimum Coded Unit).
-
-  if (wuffs_jpeg__decoder__decode_mcu(&dec)) {
-    RETURN_FAIL("decode_mcu failed");
-  }
-
   // 4:2:0 chroma subsampling means that the MCU has 4 Y, 1 Cb and 1 Cr blocks.
-  uint16_t wants[10][64] = {
+  uint16_t wants[6][64] = {
       {
           0xFFC9, 0xFFD8, 0x0014, 0xFFF7, 0x0002, 0x0000, 0x0000, 0x0000,  //
           0x006A, 0xFFE3, 0x001C, 0xFFF9, 0x0002, 0x0000, 0x0000, 0x0000,  //
@@ -719,16 +712,21 @@ test_wuffs_jpeg_decode_mcu() {
           0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,  //
           0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,  //
       },
-      {0},  //
-      {0},  //
-      {0},  //
-      {0},  //
   };
 
-  for (int b = 0; b < 10; b++) {
+  // Decode and compare-to-golden the first MCU (Minimum Coded Unit).
+  dec.private_impl.f_test_only_interrupt_decode_mcu = true;
+  for (int b = 0; b < 6; b++) {
+    const uint32_t mx = 0;
+    const uint32_t my = 0;
+    if (wuffs_jpeg__decoder__decode_mcu(&dec, wuffs_base__empty_slice_u8(), mx,
+                                        my)) {
+      RETURN_FAIL("decode_mcu failed");
+    }
+
     wuffs_base__io_buffer have = wuffs_base__ptr_u8__reader(  //
-        (void*)(&dec.private_data.f_mcu_blocks[b]),           //
-        sizeof(dec.private_data.f_mcu_blocks[b]), true);
+        (void*)(&dec.private_data.f_mcu_blocks[0]),           //
+        sizeof(dec.private_data.f_mcu_blocks[0]), true);
     wuffs_base__io_buffer want = wuffs_base__ptr_u8__reader(  //
         (void*)(&wants[b]),                                   //
         sizeof(wants[b]), true);

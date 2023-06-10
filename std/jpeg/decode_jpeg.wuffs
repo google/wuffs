@@ -49,6 +49,8 @@ pub struct decoder? implements base.image_decoder(
         // (/doc/std/image-decoders-call-sequence.md).
         call_sequence : base.u8,
 
+        test_only_interrupt_decode_mcu : base.bool,
+
         sof_marker          : base.u8,
         next_restart_marker : base.u8[..= 7],
 
@@ -289,6 +291,9 @@ pub struct decoder? implements base.image_decoder(
 ) + (
         bitstream_buffer : array[0x800] base.u8,  // 0x800 = 2048.
 
+        // Decoding sequential JPEGs only uses the first element of this array,
+        // since sequential decode_mcu calls decode_idct straight away.
+        // Decoding progressive JPEGs can use all of it.
         mcu_blocks : array[10] array[64] base.u16,
 
         swizzle_ycck_scratch_buffer_2k : array[2048] base.u8,
@@ -1135,11 +1140,6 @@ pri func decoder.decode_sos?(dst: ptr base.pixel_buffer, src: base.io_reader, wo
     var decode_mcu_result : base.u32
     var bitstream_length  : base.u32
 
-    var b      : base.u32
-    var csel   : base.u8[..= 3]
-    var stride : base.u64[..= 0x1_0008]
-    var offset : base.u64
-
     if this.scan_count >= 64 {
         return "#unsupported scan count"
     }
@@ -1173,16 +1173,13 @@ pri func decoder.decode_sos?(dst: ptr base.pixel_buffer, src: base.io_reader, wo
 
             if this.sof_marker >= 0xC2 {
                 this.load_mcu_blocks!(mx: mx, my: my, workbuf: args.workbuf)
-            } else {
-                // Clear this.mcu_blocks.
-                this.mcu_blocks[.. this.mcu_num_blocks].bulk_memset!(byte_value: 0)
             }
 
             while.decode_mcu true,
                     inv my < 0x2000,
                     inv mx < 0x2000,
             {
-                decode_mcu_result = this.decode_mcu!()
+                decode_mcu_result = this.decode_mcu!(workbuf: args.workbuf, mx: mx, my: my)
                 if decode_mcu_result == 0 {
                     break.decode_mcu
                 } else if decode_mcu_result <> 1 {
@@ -1204,29 +1201,6 @@ pri func decoder.decode_sos?(dst: ptr base.pixel_buffer, src: base.io_reader, wo
 
             if this.sof_marker >= 0xC2 {
                 this.save_mcu_blocks!(mx: mx, my: my, workbuf: args.workbuf)
-            } else {
-                // Apply IDCT.
-                b = 0
-                while b < this.mcu_num_blocks,
-                        inv my < 0x2000,
-                        inv mx < 0x2000,
-                {
-                    assert b < 10 via "a < b: a < c; c <= b"(c: this.mcu_num_blocks)
-                    csel = this.scan_comps_cselector[this.mcu_blocks_sselector[b]]
-                    stride = this.components_workbuf_widths[csel] as base.u64
-                    offset = this.mcu_blocks_offset[b] +
-                            ((this.mcu_blocks_mx_mul[b] as base.u64) * (mx as base.u64)) +
-                            ((this.mcu_blocks_my_mul[b] as base.u64) * (my as base.u64))
-                    if offset <= args.workbuf.length() {
-                        this.decode_idct!(
-                                dst_buffer: args.workbuf[offset ..],
-                                dst_stride: stride,
-                                b: b,
-                                q: this.components_tq[csel] as base.u32)
-
-                    }
-                    b += 1
-                } endwhile
             }
 
             // Check for a restart.
@@ -1715,7 +1689,6 @@ pri func decoder.apply_progressive_idct!(workbuf: slice base.u8) {
                     this.decode_idct!(
                             dst_buffer: args.workbuf[offset ..],
                             dst_stride: stride,
-                            b: 0,
                             q: this.components_tq[csel] as base.u32)
 
                 }

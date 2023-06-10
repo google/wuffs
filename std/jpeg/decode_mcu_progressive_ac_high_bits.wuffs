@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pri func decoder.decode_mcu_progressive_ac_high_bits!() base.u32 {
+pri func decoder.decode_mcu_progressive_ac_high_bits!(workbuf: slice base.u8, mx: base.u32[..= 0x1FFF], my: base.u32[..= 0x1FFF]) base.u32 {
     var ret : base.u32
 
     var bits   : base.u64

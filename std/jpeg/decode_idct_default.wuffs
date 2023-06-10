@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, b: base.u32[..= 9], q: base.u32[..= 3]) {
+pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q: base.u32[..= 3]) {
     // This method implements the same algorithm as libjpeg-turbo's jidctint.c.
 
     var bq0 : base.u32
@@ -120,17 +120,17 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, b
     // ==== First pass, column 0.
 
     if (0 == (
-            this.mcu_blocks[args.b][0x08] |
-            this.mcu_blocks[args.b][0x10] |
-            this.mcu_blocks[args.b][0x18] |
-            this.mcu_blocks[args.b][0x20] |
-            this.mcu_blocks[args.b][0x28] |
-            this.mcu_blocks[args.b][0x30] |
-            this.mcu_blocks[args.b][0x38])) {
+            this.mcu_blocks[0][0x08] |
+            this.mcu_blocks[0][0x10] |
+            this.mcu_blocks[0][0x18] |
+            this.mcu_blocks[0][0x20] |
+            this.mcu_blocks[0][0x28] |
+            this.mcu_blocks[0][0x30] |
+            this.mcu_blocks[0][0x38])) {
         // Fast path when the 1-dimensional AC terms are all zero.
 
         intermediate[0x00] =
-                (this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x00]) ~mod*
+                (this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x00]) ~mod*
                 (this.quant_tables[args.q][0x00] as base.u32)) ~mod<< 2
         intermediate[0x08] = intermediate[0x00]
         intermediate[0x10] = intermediate[0x00]
@@ -143,16 +143,16 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, b
     } else {
         // Even rows.
 
-        bq2 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x10]) ~mod* (this.quant_tables[args.q][0x10] as base.u32)
-        bq6 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x30]) ~mod* (this.quant_tables[args.q][0x30] as base.u32)
+        bq2 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x10]) ~mod* (this.quant_tables[args.q][0x10] as base.u32)
+        bq6 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x30]) ~mod* (this.quant_tables[args.q][0x30] as base.u32)
 
         ca = (bq2 ~mod+ bq6) ~mod* 0x1151
 
         cb2 = ca ~mod+ (bq2 ~mod* 0x187E)
         cb6 = ca ~mod- (bq6 ~mod* 0x3B21)
 
-        bq0 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x00]) ~mod* (this.quant_tables[args.q][0x00] as base.u32)
-        bq4 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x20]) ~mod* (this.quant_tables[args.q][0x20] as base.u32)
+        bq0 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x00]) ~mod* (this.quant_tables[args.q][0x00] as base.u32)
+        bq4 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x20]) ~mod* (this.quant_tables[args.q][0x20] as base.u32)
 
         ccp = (bq0 ~mod+ bq4) ~mod<< 13
         ccm = (bq0 ~mod- bq4) ~mod<< 13
@@ -164,10 +164,10 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, b
 
         // Odd rows.
 
-        bq1 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x08]) ~mod* (this.quant_tables[args.q][0x08] as base.u32)
-        bq3 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x18]) ~mod* (this.quant_tables[args.q][0x18] as base.u32)
-        bq5 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x28]) ~mod* (this.quant_tables[args.q][0x28] as base.u32)
-        bq7 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x38]) ~mod* (this.quant_tables[args.q][0x38] as base.u32)
+        bq1 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x08]) ~mod* (this.quant_tables[args.q][0x08] as base.u32)
+        bq3 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x18]) ~mod* (this.quant_tables[args.q][0x18] as base.u32)
+        bq5 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x28]) ~mod* (this.quant_tables[args.q][0x28] as base.u32)
+        bq7 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x38]) ~mod* (this.quant_tables[args.q][0x38] as base.u32)
 
         ci51 = bq5 ~mod+ bq1
         ci53 = bq5 ~mod+ bq3
@@ -209,17 +209,17 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, b
     // ==== First pass, column 1.
 
     if (0 == (
-            this.mcu_blocks[args.b][0x09] |
-            this.mcu_blocks[args.b][0x11] |
-            this.mcu_blocks[args.b][0x19] |
-            this.mcu_blocks[args.b][0x21] |
-            this.mcu_blocks[args.b][0x29] |
-            this.mcu_blocks[args.b][0x31] |
-            this.mcu_blocks[args.b][0x39])) {
+            this.mcu_blocks[0][0x09] |
+            this.mcu_blocks[0][0x11] |
+            this.mcu_blocks[0][0x19] |
+            this.mcu_blocks[0][0x21] |
+            this.mcu_blocks[0][0x29] |
+            this.mcu_blocks[0][0x31] |
+            this.mcu_blocks[0][0x39])) {
         // Fast path when the 1-dimensional AC terms are all zero.
 
         intermediate[0x01] =
-                (this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x01]) ~mod*
+                (this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x01]) ~mod*
                 (this.quant_tables[args.q][0x01] as base.u32)) ~mod<< 2
         intermediate[0x09] = intermediate[0x01]
         intermediate[0x11] = intermediate[0x01]
@@ -232,16 +232,16 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, b
     } else {
         // Even rows.
 
-        bq2 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x11]) ~mod* (this.quant_tables[args.q][0x11] as base.u32)
-        bq6 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x31]) ~mod* (this.quant_tables[args.q][0x31] as base.u32)
+        bq2 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x11]) ~mod* (this.quant_tables[args.q][0x11] as base.u32)
+        bq6 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x31]) ~mod* (this.quant_tables[args.q][0x31] as base.u32)
 
         ca = (bq2 ~mod+ bq6) ~mod* 0x1151
 
         cb2 = ca ~mod+ (bq2 ~mod* 0x187E)
         cb6 = ca ~mod- (bq6 ~mod* 0x3B21)
 
-        bq0 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x01]) ~mod* (this.quant_tables[args.q][0x01] as base.u32)
-        bq4 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x21]) ~mod* (this.quant_tables[args.q][0x21] as base.u32)
+        bq0 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x01]) ~mod* (this.quant_tables[args.q][0x01] as base.u32)
+        bq4 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x21]) ~mod* (this.quant_tables[args.q][0x21] as base.u32)
 
         ccp = (bq0 ~mod+ bq4) ~mod<< 13
         ccm = (bq0 ~mod- bq4) ~mod<< 13
@@ -253,10 +253,10 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, b
 
         // Odd rows.
 
-        bq1 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x09]) ~mod* (this.quant_tables[args.q][0x09] as base.u32)
-        bq3 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x19]) ~mod* (this.quant_tables[args.q][0x19] as base.u32)
-        bq5 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x29]) ~mod* (this.quant_tables[args.q][0x29] as base.u32)
-        bq7 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x39]) ~mod* (this.quant_tables[args.q][0x39] as base.u32)
+        bq1 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x09]) ~mod* (this.quant_tables[args.q][0x09] as base.u32)
+        bq3 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x19]) ~mod* (this.quant_tables[args.q][0x19] as base.u32)
+        bq5 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x29]) ~mod* (this.quant_tables[args.q][0x29] as base.u32)
+        bq7 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x39]) ~mod* (this.quant_tables[args.q][0x39] as base.u32)
 
         ci51 = bq5 ~mod+ bq1
         ci53 = bq5 ~mod+ bq3
@@ -298,17 +298,17 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, b
     // ==== First pass, column 2.
 
     if (0 == (
-            this.mcu_blocks[args.b][0x0A] |
-            this.mcu_blocks[args.b][0x12] |
-            this.mcu_blocks[args.b][0x1A] |
-            this.mcu_blocks[args.b][0x22] |
-            this.mcu_blocks[args.b][0x2A] |
-            this.mcu_blocks[args.b][0x32] |
-            this.mcu_blocks[args.b][0x3A])) {
+            this.mcu_blocks[0][0x0A] |
+            this.mcu_blocks[0][0x12] |
+            this.mcu_blocks[0][0x1A] |
+            this.mcu_blocks[0][0x22] |
+            this.mcu_blocks[0][0x2A] |
+            this.mcu_blocks[0][0x32] |
+            this.mcu_blocks[0][0x3A])) {
         // Fast path when the 1-dimensional AC terms are all zero.
 
         intermediate[0x02] =
-                (this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x02]) ~mod*
+                (this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x02]) ~mod*
                 (this.quant_tables[args.q][0x02] as base.u32)) ~mod<< 2
         intermediate[0x0A] = intermediate[0x02]
         intermediate[0x12] = intermediate[0x02]
@@ -321,16 +321,16 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, b
     } else {
         // Even rows.
 
-        bq2 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x12]) ~mod* (this.quant_tables[args.q][0x12] as base.u32)
-        bq6 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x32]) ~mod* (this.quant_tables[args.q][0x32] as base.u32)
+        bq2 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x12]) ~mod* (this.quant_tables[args.q][0x12] as base.u32)
+        bq6 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x32]) ~mod* (this.quant_tables[args.q][0x32] as base.u32)
 
         ca = (bq2 ~mod+ bq6) ~mod* 0x1151
 
         cb2 = ca ~mod+ (bq2 ~mod* 0x187E)
         cb6 = ca ~mod- (bq6 ~mod* 0x3B21)
 
-        bq0 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x02]) ~mod* (this.quant_tables[args.q][0x02] as base.u32)
-        bq4 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x22]) ~mod* (this.quant_tables[args.q][0x22] as base.u32)
+        bq0 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x02]) ~mod* (this.quant_tables[args.q][0x02] as base.u32)
+        bq4 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x22]) ~mod* (this.quant_tables[args.q][0x22] as base.u32)
 
         ccp = (bq0 ~mod+ bq4) ~mod<< 13
         ccm = (bq0 ~mod- bq4) ~mod<< 13
@@ -342,10 +342,10 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, b
 
         // Odd rows.
 
-        bq1 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x0A]) ~mod* (this.quant_tables[args.q][0x0A] as base.u32)
-        bq3 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x1A]) ~mod* (this.quant_tables[args.q][0x1A] as base.u32)
-        bq5 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x2A]) ~mod* (this.quant_tables[args.q][0x2A] as base.u32)
-        bq7 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x3A]) ~mod* (this.quant_tables[args.q][0x3A] as base.u32)
+        bq1 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x0A]) ~mod* (this.quant_tables[args.q][0x0A] as base.u32)
+        bq3 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x1A]) ~mod* (this.quant_tables[args.q][0x1A] as base.u32)
+        bq5 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x2A]) ~mod* (this.quant_tables[args.q][0x2A] as base.u32)
+        bq7 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x3A]) ~mod* (this.quant_tables[args.q][0x3A] as base.u32)
 
         ci51 = bq5 ~mod+ bq1
         ci53 = bq5 ~mod+ bq3
@@ -387,17 +387,17 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, b
     // ==== First pass, column 3.
 
     if (0 == (
-            this.mcu_blocks[args.b][0x0B] |
-            this.mcu_blocks[args.b][0x13] |
-            this.mcu_blocks[args.b][0x1B] |
-            this.mcu_blocks[args.b][0x23] |
-            this.mcu_blocks[args.b][0x2B] |
-            this.mcu_blocks[args.b][0x33] |
-            this.mcu_blocks[args.b][0x3B])) {
+            this.mcu_blocks[0][0x0B] |
+            this.mcu_blocks[0][0x13] |
+            this.mcu_blocks[0][0x1B] |
+            this.mcu_blocks[0][0x23] |
+            this.mcu_blocks[0][0x2B] |
+            this.mcu_blocks[0][0x33] |
+            this.mcu_blocks[0][0x3B])) {
         // Fast path when the 1-dimensional AC terms are all zero.
 
         intermediate[0x03] =
-                (this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x03]) ~mod*
+                (this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x03]) ~mod*
                 (this.quant_tables[args.q][0x03] as base.u32)) ~mod<< 2
         intermediate[0x0B] = intermediate[0x03]
         intermediate[0x13] = intermediate[0x03]
@@ -410,16 +410,16 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, b
     } else {
         // Even rows.
 
-        bq2 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x13]) ~mod* (this.quant_tables[args.q][0x13] as base.u32)
-        bq6 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x33]) ~mod* (this.quant_tables[args.q][0x33] as base.u32)
+        bq2 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x13]) ~mod* (this.quant_tables[args.q][0x13] as base.u32)
+        bq6 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x33]) ~mod* (this.quant_tables[args.q][0x33] as base.u32)
 
         ca = (bq2 ~mod+ bq6) ~mod* 0x1151
 
         cb2 = ca ~mod+ (bq2 ~mod* 0x187E)
         cb6 = ca ~mod- (bq6 ~mod* 0x3B21)
 
-        bq0 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x03]) ~mod* (this.quant_tables[args.q][0x03] as base.u32)
-        bq4 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x23]) ~mod* (this.quant_tables[args.q][0x23] as base.u32)
+        bq0 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x03]) ~mod* (this.quant_tables[args.q][0x03] as base.u32)
+        bq4 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x23]) ~mod* (this.quant_tables[args.q][0x23] as base.u32)
 
         ccp = (bq0 ~mod+ bq4) ~mod<< 13
         ccm = (bq0 ~mod- bq4) ~mod<< 13
@@ -431,10 +431,10 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, b
 
         // Odd rows.
 
-        bq1 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x0B]) ~mod* (this.quant_tables[args.q][0x0B] as base.u32)
-        bq3 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x1B]) ~mod* (this.quant_tables[args.q][0x1B] as base.u32)
-        bq5 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x2B]) ~mod* (this.quant_tables[args.q][0x2B] as base.u32)
-        bq7 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x3B]) ~mod* (this.quant_tables[args.q][0x3B] as base.u32)
+        bq1 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x0B]) ~mod* (this.quant_tables[args.q][0x0B] as base.u32)
+        bq3 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x1B]) ~mod* (this.quant_tables[args.q][0x1B] as base.u32)
+        bq5 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x2B]) ~mod* (this.quant_tables[args.q][0x2B] as base.u32)
+        bq7 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x3B]) ~mod* (this.quant_tables[args.q][0x3B] as base.u32)
 
         ci51 = bq5 ~mod+ bq1
         ci53 = bq5 ~mod+ bq3
@@ -476,17 +476,17 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, b
     // ==== First pass, column 4.
 
     if (0 == (
-            this.mcu_blocks[args.b][0x0C] |
-            this.mcu_blocks[args.b][0x14] |
-            this.mcu_blocks[args.b][0x1C] |
-            this.mcu_blocks[args.b][0x24] |
-            this.mcu_blocks[args.b][0x2C] |
-            this.mcu_blocks[args.b][0x34] |
-            this.mcu_blocks[args.b][0x3C])) {
+            this.mcu_blocks[0][0x0C] |
+            this.mcu_blocks[0][0x14] |
+            this.mcu_blocks[0][0x1C] |
+            this.mcu_blocks[0][0x24] |
+            this.mcu_blocks[0][0x2C] |
+            this.mcu_blocks[0][0x34] |
+            this.mcu_blocks[0][0x3C])) {
         // Fast path when the 1-dimensional AC terms are all zero.
 
         intermediate[0x04] =
-                (this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x04]) ~mod*
+                (this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x04]) ~mod*
                 (this.quant_tables[args.q][0x04] as base.u32)) ~mod<< 2
         intermediate[0x0C] = intermediate[0x04]
         intermediate[0x14] = intermediate[0x04]
@@ -499,16 +499,16 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, b
     } else {
         // Even rows.
 
-        bq2 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x14]) ~mod* (this.quant_tables[args.q][0x14] as base.u32)
-        bq6 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x34]) ~mod* (this.quant_tables[args.q][0x34] as base.u32)
+        bq2 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x14]) ~mod* (this.quant_tables[args.q][0x14] as base.u32)
+        bq6 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x34]) ~mod* (this.quant_tables[args.q][0x34] as base.u32)
 
         ca = (bq2 ~mod+ bq6) ~mod* 0x1151
 
         cb2 = ca ~mod+ (bq2 ~mod* 0x187E)
         cb6 = ca ~mod- (bq6 ~mod* 0x3B21)
 
-        bq0 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x04]) ~mod* (this.quant_tables[args.q][0x04] as base.u32)
-        bq4 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x24]) ~mod* (this.quant_tables[args.q][0x24] as base.u32)
+        bq0 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x04]) ~mod* (this.quant_tables[args.q][0x04] as base.u32)
+        bq4 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x24]) ~mod* (this.quant_tables[args.q][0x24] as base.u32)
 
         ccp = (bq0 ~mod+ bq4) ~mod<< 13
         ccm = (bq0 ~mod- bq4) ~mod<< 13
@@ -520,10 +520,10 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, b
 
         // Odd rows.
 
-        bq1 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x0C]) ~mod* (this.quant_tables[args.q][0x0C] as base.u32)
-        bq3 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x1C]) ~mod* (this.quant_tables[args.q][0x1C] as base.u32)
-        bq5 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x2C]) ~mod* (this.quant_tables[args.q][0x2C] as base.u32)
-        bq7 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x3C]) ~mod* (this.quant_tables[args.q][0x3C] as base.u32)
+        bq1 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x0C]) ~mod* (this.quant_tables[args.q][0x0C] as base.u32)
+        bq3 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x1C]) ~mod* (this.quant_tables[args.q][0x1C] as base.u32)
+        bq5 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x2C]) ~mod* (this.quant_tables[args.q][0x2C] as base.u32)
+        bq7 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x3C]) ~mod* (this.quant_tables[args.q][0x3C] as base.u32)
 
         ci51 = bq5 ~mod+ bq1
         ci53 = bq5 ~mod+ bq3
@@ -565,17 +565,17 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, b
     // ==== First pass, column 5.
 
     if (0 == (
-            this.mcu_blocks[args.b][0x0D] |
-            this.mcu_blocks[args.b][0x15] |
-            this.mcu_blocks[args.b][0x1D] |
-            this.mcu_blocks[args.b][0x25] |
-            this.mcu_blocks[args.b][0x2D] |
-            this.mcu_blocks[args.b][0x35] |
-            this.mcu_blocks[args.b][0x3D])) {
+            this.mcu_blocks[0][0x0D] |
+            this.mcu_blocks[0][0x15] |
+            this.mcu_blocks[0][0x1D] |
+            this.mcu_blocks[0][0x25] |
+            this.mcu_blocks[0][0x2D] |
+            this.mcu_blocks[0][0x35] |
+            this.mcu_blocks[0][0x3D])) {
         // Fast path when the 1-dimensional AC terms are all zero.
 
         intermediate[0x05] =
-                (this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x05]) ~mod*
+                (this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x05]) ~mod*
                 (this.quant_tables[args.q][0x05] as base.u32)) ~mod<< 2
         intermediate[0x0D] = intermediate[0x05]
         intermediate[0x15] = intermediate[0x05]
@@ -588,16 +588,16 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, b
     } else {
         // Even rows.
 
-        bq2 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x15]) ~mod* (this.quant_tables[args.q][0x15] as base.u32)
-        bq6 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x35]) ~mod* (this.quant_tables[args.q][0x35] as base.u32)
+        bq2 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x15]) ~mod* (this.quant_tables[args.q][0x15] as base.u32)
+        bq6 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x35]) ~mod* (this.quant_tables[args.q][0x35] as base.u32)
 
         ca = (bq2 ~mod+ bq6) ~mod* 0x1151
 
         cb2 = ca ~mod+ (bq2 ~mod* 0x187E)
         cb6 = ca ~mod- (bq6 ~mod* 0x3B21)
 
-        bq0 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x05]) ~mod* (this.quant_tables[args.q][0x05] as base.u32)
-        bq4 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x25]) ~mod* (this.quant_tables[args.q][0x25] as base.u32)
+        bq0 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x05]) ~mod* (this.quant_tables[args.q][0x05] as base.u32)
+        bq4 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x25]) ~mod* (this.quant_tables[args.q][0x25] as base.u32)
 
         ccp = (bq0 ~mod+ bq4) ~mod<< 13
         ccm = (bq0 ~mod- bq4) ~mod<< 13
@@ -609,10 +609,10 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, b
 
         // Odd rows.
 
-        bq1 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x0D]) ~mod* (this.quant_tables[args.q][0x0D] as base.u32)
-        bq3 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x1D]) ~mod* (this.quant_tables[args.q][0x1D] as base.u32)
-        bq5 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x2D]) ~mod* (this.quant_tables[args.q][0x2D] as base.u32)
-        bq7 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x3D]) ~mod* (this.quant_tables[args.q][0x3D] as base.u32)
+        bq1 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x0D]) ~mod* (this.quant_tables[args.q][0x0D] as base.u32)
+        bq3 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x1D]) ~mod* (this.quant_tables[args.q][0x1D] as base.u32)
+        bq5 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x2D]) ~mod* (this.quant_tables[args.q][0x2D] as base.u32)
+        bq7 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x3D]) ~mod* (this.quant_tables[args.q][0x3D] as base.u32)
 
         ci51 = bq5 ~mod+ bq1
         ci53 = bq5 ~mod+ bq3
@@ -654,17 +654,17 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, b
     // ==== First pass, column 6.
 
     if (0 == (
-            this.mcu_blocks[args.b][0x0E] |
-            this.mcu_blocks[args.b][0x16] |
-            this.mcu_blocks[args.b][0x1E] |
-            this.mcu_blocks[args.b][0x26] |
-            this.mcu_blocks[args.b][0x2E] |
-            this.mcu_blocks[args.b][0x36] |
-            this.mcu_blocks[args.b][0x3E])) {
+            this.mcu_blocks[0][0x0E] |
+            this.mcu_blocks[0][0x16] |
+            this.mcu_blocks[0][0x1E] |
+            this.mcu_blocks[0][0x26] |
+            this.mcu_blocks[0][0x2E] |
+            this.mcu_blocks[0][0x36] |
+            this.mcu_blocks[0][0x3E])) {
         // Fast path when the 1-dimensional AC terms are all zero.
 
         intermediate[0x06] =
-                (this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x06]) ~mod*
+                (this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x06]) ~mod*
                 (this.quant_tables[args.q][0x06] as base.u32)) ~mod<< 2
         intermediate[0x0E] = intermediate[0x06]
         intermediate[0x16] = intermediate[0x06]
@@ -677,16 +677,16 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, b
     } else {
         // Even rows.
 
-        bq2 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x16]) ~mod* (this.quant_tables[args.q][0x16] as base.u32)
-        bq6 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x36]) ~mod* (this.quant_tables[args.q][0x36] as base.u32)
+        bq2 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x16]) ~mod* (this.quant_tables[args.q][0x16] as base.u32)
+        bq6 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x36]) ~mod* (this.quant_tables[args.q][0x36] as base.u32)
 
         ca = (bq2 ~mod+ bq6) ~mod* 0x1151
 
         cb2 = ca ~mod+ (bq2 ~mod* 0x187E)
         cb6 = ca ~mod- (bq6 ~mod* 0x3B21)
 
-        bq0 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x06]) ~mod* (this.quant_tables[args.q][0x06] as base.u32)
-        bq4 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x26]) ~mod* (this.quant_tables[args.q][0x26] as base.u32)
+        bq0 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x06]) ~mod* (this.quant_tables[args.q][0x06] as base.u32)
+        bq4 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x26]) ~mod* (this.quant_tables[args.q][0x26] as base.u32)
 
         ccp = (bq0 ~mod+ bq4) ~mod<< 13
         ccm = (bq0 ~mod- bq4) ~mod<< 13
@@ -698,10 +698,10 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, b
 
         // Odd rows.
 
-        bq1 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x0E]) ~mod* (this.quant_tables[args.q][0x0E] as base.u32)
-        bq3 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x1E]) ~mod* (this.quant_tables[args.q][0x1E] as base.u32)
-        bq5 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x2E]) ~mod* (this.quant_tables[args.q][0x2E] as base.u32)
-        bq7 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x3E]) ~mod* (this.quant_tables[args.q][0x3E] as base.u32)
+        bq1 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x0E]) ~mod* (this.quant_tables[args.q][0x0E] as base.u32)
+        bq3 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x1E]) ~mod* (this.quant_tables[args.q][0x1E] as base.u32)
+        bq5 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x2E]) ~mod* (this.quant_tables[args.q][0x2E] as base.u32)
+        bq7 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x3E]) ~mod* (this.quant_tables[args.q][0x3E] as base.u32)
 
         ci51 = bq5 ~mod+ bq1
         ci53 = bq5 ~mod+ bq3
@@ -743,17 +743,17 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, b
     // ==== First pass, column 7.
 
     if (0 == (
-            this.mcu_blocks[args.b][0x0F] |
-            this.mcu_blocks[args.b][0x17] |
-            this.mcu_blocks[args.b][0x1F] |
-            this.mcu_blocks[args.b][0x27] |
-            this.mcu_blocks[args.b][0x2F] |
-            this.mcu_blocks[args.b][0x37] |
-            this.mcu_blocks[args.b][0x3F])) {
+            this.mcu_blocks[0][0x0F] |
+            this.mcu_blocks[0][0x17] |
+            this.mcu_blocks[0][0x1F] |
+            this.mcu_blocks[0][0x27] |
+            this.mcu_blocks[0][0x2F] |
+            this.mcu_blocks[0][0x37] |
+            this.mcu_blocks[0][0x3F])) {
         // Fast path when the 1-dimensional AC terms are all zero.
 
         intermediate[0x07] =
-                (this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x07]) ~mod*
+                (this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x07]) ~mod*
                 (this.quant_tables[args.q][0x07] as base.u32)) ~mod<< 2
         intermediate[0x0F] = intermediate[0x07]
         intermediate[0x17] = intermediate[0x07]
@@ -766,16 +766,16 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, b
     } else {
         // Even rows.
 
-        bq2 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x17]) ~mod* (this.quant_tables[args.q][0x17] as base.u32)
-        bq6 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x37]) ~mod* (this.quant_tables[args.q][0x37] as base.u32)
+        bq2 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x17]) ~mod* (this.quant_tables[args.q][0x17] as base.u32)
+        bq6 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x37]) ~mod* (this.quant_tables[args.q][0x37] as base.u32)
 
         ca = (bq2 ~mod+ bq6) ~mod* 0x1151
 
         cb2 = ca ~mod+ (bq2 ~mod* 0x187E)
         cb6 = ca ~mod- (bq6 ~mod* 0x3B21)
 
-        bq0 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x07]) ~mod* (this.quant_tables[args.q][0x07] as base.u32)
-        bq4 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x27]) ~mod* (this.quant_tables[args.q][0x27] as base.u32)
+        bq0 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x07]) ~mod* (this.quant_tables[args.q][0x07] as base.u32)
+        bq4 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x27]) ~mod* (this.quant_tables[args.q][0x27] as base.u32)
 
         ccp = (bq0 ~mod+ bq4) ~mod<< 13
         ccm = (bq0 ~mod- bq4) ~mod<< 13
@@ -787,10 +787,10 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, b
 
         // Odd rows.
 
-        bq1 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x0F]) ~mod* (this.quant_tables[args.q][0x0F] as base.u32)
-        bq3 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x1F]) ~mod* (this.quant_tables[args.q][0x1F] as base.u32)
-        bq5 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x2F]) ~mod* (this.quant_tables[args.q][0x2F] as base.u32)
-        bq7 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][0x3F]) ~mod* (this.quant_tables[args.q][0x3F] as base.u32)
+        bq1 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x0F]) ~mod* (this.quant_tables[args.q][0x0F] as base.u32)
+        bq3 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x1F]) ~mod* (this.quant_tables[args.q][0x1F] as base.u32)
+        bq5 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x2F]) ~mod* (this.quant_tables[args.q][0x2F] as base.u32)
+        bq7 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x3F]) ~mod* (this.quant_tables[args.q][0x3F] as base.u32)
 
         ci51 = bq5 ~mod+ bq1
         ci53 = bq5 ~mod+ bq3
