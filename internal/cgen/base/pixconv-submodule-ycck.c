@@ -407,8 +407,9 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter_edge_row(
 
     for (; x < end; x++) {
       wuffs_base__pixel_buffer__set_color_u32_at(
-          dst, x, y,
-          wuffs_base__color_ycc__as__color_u32(*up0++, *up1++, *up2++));
+          dst, x, y,                             //
+          wuffs_base__color_ycc__as__color_u32(  //
+              *up0++, *up1++, *up2++));
     }
   }
 }
@@ -528,8 +529,9 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter(
       for (; x < end; x++) {
         // ¡ BEGIN set_color_u32_at
         wuffs_base__pixel_buffer__set_color_u32_at(
-            dst, x, y,
-            wuffs_base__color_ycc__as__color_u32(*up0++, *up1++, *up2++));
+            dst, x, y,                             //
+            wuffs_base__color_ycc__as__color_u32(  //
+                *up0++, *up1++, *up2++));
         // ¡ END   set_color_u32_at
       }
     }
@@ -572,7 +574,6 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter(
     uint32_t half_width_for_2to1,
     uint32_t half_height_for_2to1,
     uint8_t* scratch_buffer_2k_ptr) {
-  // ¡ BEGIN declare iy
   // Convert an inv_h or inv_v value from {1, 2, 3, 4} to {12, 6, 4, 3}.
   uint32_t h0_out_of_12 = 12u / inv_h0;
   uint32_t h1_out_of_12 = 12u / inv_h1;
@@ -584,7 +585,6 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter(
   uint32_t iy0 = 0u;
   uint32_t iy1 = 0u;
   uint32_t iy2 = 0u;
-  // ¡ END   declare iy
   uint32_t y = 0u;
   while (true) {
     const uint8_t* src_iter0 = src_ptr0;
@@ -593,25 +593,22 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter(
 
     // ¡ dst_iter = etc
 
-    // ¡ BEGIN declare ix
     uint32_t ix0 = 0u;
     uint32_t ix1 = 0u;
     uint32_t ix2 = 0u;
-    // ¡ END   declare ix
     uint32_t x = 0u;
     while (true) {
       // ¡ BEGIN set_color_u32_at
       wuffs_base__pixel_buffer__set_color_u32_at(
-          dst, x, y,
-          wuffs_base__color_ycc__as__color_u32(*src_iter0, *src_iter1,
-                                               *src_iter2));
+          dst, x, y,                             //
+          wuffs_base__color_ycc__as__color_u32(  //
+              *src_iter0, *src_iter1, *src_iter2));
       // ¡ END   set_color_u32_at
 
       if ((x + 1u) == width) {
         break;
       }
       x = x + 1u;
-      // ¡ BEGIN use ix
       ix0 += h0_out_of_12;
       if (ix0 >= 12u) {
         ix0 = 0u;
@@ -627,14 +624,12 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter(
         ix2 = 0u;
         src_iter2++;
       }
-      // ¡ END   use ix
     }
 
     if ((y + 1u) == height) {
       break;
     }
     y = y + 1u;
-    // ¡ BEGIN use iy
     iy0 += v0_out_of_12;
     if (iy0 >= 12u) {
       iy0 = 0u;
@@ -650,11 +645,71 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter(
       iy2 = 0u;
       src_ptr2 += stride2;
     }
-    // ¡ END   use iy
   }
 }
 
 // --------
+
+// Specialized forms of:
+//   - wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter
+//   - wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter
+
+static void  //
+wuffs_base__pixel_swizzler__swizzle_ycc__bgrx__hv11(
+    wuffs_base__pixel_buffer* dst,
+    uint32_t width,
+    uint32_t height,
+    const uint8_t* src_ptr0,
+    const uint8_t* src_ptr1,
+    const uint8_t* src_ptr2,
+    uint32_t stride0,
+    uint32_t stride1,
+    uint32_t stride2,
+    uint32_t inv_h0,
+    uint32_t inv_h1,
+    uint32_t inv_h2,
+    uint32_t inv_v0,
+    uint32_t inv_v1,
+    uint32_t inv_v2,
+    uint32_t half_width_for_2to1,
+    uint32_t half_height_for_2to1,
+    uint8_t* scratch_buffer_2k_ptr) {
+  uint32_t y = 0u;
+  while (true) {
+    const uint8_t* src_iter0 = src_ptr0;
+    const uint8_t* src_iter1 = src_ptr1;
+    const uint8_t* src_iter2 = src_ptr2;
+
+    size_t dst_stride = dst->private_impl.planes[0].stride;
+    uint8_t* dst_iter =
+        dst->private_impl.planes[0].ptr + (dst_stride * ((size_t)y));
+
+    uint32_t x = 0u;
+    while (true) {
+      wuffs_base__poke_u32le__no_bounds_check(
+          dst_iter,                              //
+          wuffs_base__color_ycc__as__color_u32(  //
+              *src_iter0, *src_iter1, *src_iter2));
+      dst_iter += 4;
+
+      if ((x + 1u) == width) {
+        break;
+      }
+      x = x + 1u;
+      src_iter0++;
+      src_iter1++;
+      src_iter2++;
+    }
+
+    if ((y + 1u) == height) {
+      break;
+    }
+    y = y + 1u;
+    src_ptr0 += stride0;
+    src_ptr1 += stride1;
+    src_ptr2 += stride2;
+  }
+}
 
 // ¡ INSERT patch_pixconv
 
