@@ -76,6 +76,43 @@ func insertBasePixConvSubmoduleYcckC(buf *buffer) error {
 
 	// ----
 
+	generalHv11Patches := []struct {
+		newFuncNameLine string
+		patchMap        map[string]string
+	}{{
+
+		"wuffs_base__pixel_swizzler__swizzle_ycc__bgrx__hv11(\n",
+		map[string]string{
+			"// ¡ dst_iter = etc\n":         dstIterEtcSansX,
+			"// ¡ BEGIN set_color_u32_at\n": strings.Replace(setColorU32AtSrcIter, "_FLAVOR", "", 1),
+			"// ¡ BEGIN declare iy\n":       "",
+			"// ¡ BEGIN declare ix\n":       "",
+			"// ¡ BEGIN use ix\n":           useIxHv11,
+			"// ¡ BEGIN use iy\n":           useIyHv11,
+		},
+	}, {
+
+		"wuffs_base__pixel_swizzler__swizzle_ycc__rgbx__hv11(\n",
+		map[string]string{
+			"// ¡ dst_iter = etc\n":         dstIterEtcSansX,
+			"// ¡ BEGIN set_color_u32_at\n": strings.Replace(setColorU32AtSrcIter, "_FLAVOR", "_abgr", 1),
+			"// ¡ BEGIN declare iy\n":       "",
+			"// ¡ BEGIN declare ix\n":       "",
+			"// ¡ BEGIN use ix\n":           useIxHv11,
+			"// ¡ BEGIN use iy\n":           useIyHv11,
+		},
+	}}
+
+	for _, p := range generalHv11Patches {
+		const oldFuncNameLine = "wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter(\n"
+		p.patchMap[oldFuncNameLine] = p.newFuncNameLine
+		if err := patchCFunc(buf, generalBoxFilter, oldFuncNameLine, p.patchMap); err != nil {
+			return err
+		}
+	}
+
+	// ----
+
 	generalTriangleFilterPatches := []struct {
 		newFuncNameLine string
 		patchMap        map[string]string
@@ -121,28 +158,6 @@ func insertBasePixConvSubmoduleYcckC(buf *buffer) error {
 		map[string]string{
 			"// ¡ dst_iter = etc\n":         dstIterEtcSansX,
 			"// ¡ BEGIN set_color_u32_at\n": strings.Replace(setColorU32AtSrcIter, "_FLAVOR", "_abgr", 1),
-		},
-	}, {
-
-		"wuffs_base__pixel_swizzler__swizzle_ycc__bgrx__hv11(\n",
-		map[string]string{
-			"// ¡ dst_iter = etc\n":         dstIterEtcSansX,
-			"// ¡ BEGIN set_color_u32_at\n": strings.Replace(setColorU32AtSrcIter, "_FLAVOR", "", 1),
-			"// ¡ BEGIN declare iy\n":       "",
-			"// ¡ BEGIN declare ix\n":       "",
-			"// ¡ BEGIN use ix\n":           useIxHv11,
-			"// ¡ BEGIN use iy\n":           useIyHv11,
-		},
-	}, {
-
-		"wuffs_base__pixel_swizzler__swizzle_ycc__rgbx__hv11(\n",
-		map[string]string{
-			"// ¡ dst_iter = etc\n":         dstIterEtcSansX,
-			"// ¡ BEGIN set_color_u32_at\n": strings.Replace(setColorU32AtSrcIter, "_FLAVOR", "_abgr", 1),
-			"// ¡ BEGIN declare iy\n":       "",
-			"// ¡ BEGIN declare ix\n":       "",
-			"// ¡ BEGIN use ix\n":           useIxHv11,
-			"// ¡ BEGIN use iy\n":           useIyHv11,
 		},
 	}}
 
