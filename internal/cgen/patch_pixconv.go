@@ -22,27 +22,6 @@ import (
 func insertBasePixConvSubmoduleYcckC(buf *buffer) error {
 	src := embedBasePixConvSubmoduleYcckC.Trim()
 
-	bgrxHv11, err := extractCFunc(src, ""+
-		"static void  //\n"+
-		"wuffs_base__pixel_swizzler__swizzle_ycc__bgrx__hv11(\n")
-	if err != nil {
-		return err
-	}
-
-	generalTriangleFilter, err := extractCFunc(src, ""+
-		"static void  //\n"+
-		"wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter(\n")
-	if err != nil {
-		return err
-	}
-
-	generalBoxFilter, err := extractCFunc(src, ""+
-		"static void  //\n"+
-		"wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter(\n")
-	if err != nil {
-		return err
-	}
-
 	prefix, suffix := "", ""
 	const insertPatchPixconv = "// ¡ INSERT patch_pixconv\n\n"
 	if i := strings.Index(src, insertPatchPixconv); i < 0 {
@@ -58,97 +37,71 @@ func insertBasePixConvSubmoduleYcckC(buf *buffer) error {
 		"size_t dst_stride = dst->private_impl.planes[0].stride;\n" +
 		"uint8_t* dst_iter =\n" +
 		"    dst->private_impl.planes[0].ptr + (dst_stride * ((size_t)y));\n"
-	const dstIterWithX = "" +
+	const dstIterEtcWithX = "" +
 		"size_t dst_stride = dst->private_impl.planes[0].stride;\n" +
 		"uint8_t* dst_iter =\n" +
 		"    dst->private_impl.planes[0].ptr + (dst_stride * ((size_t)y)) + (4 * ((size_t)x));\n"
 	const dstIterPlusEq4 = "" +
 		"dst_iter += 4;\n"
-	const setColorU32At = "" +
+	const setColorU32AtOld = "" +
+		"wuffs_base__pixel_buffer__set_color_u32_at(dst, x, y, color);\n"
+	const setColorU32AtNew = "" +
 		"wuffs_base__poke_u32le__no_bounds_check(dst_iter, color);\n"
 
 	// ----
 
-	generalHv11Patches := []struct {
-		newFuncNameLine string
-		patchMap        map[string]string
+	patches := []struct {
+		funcNameLines []string
+		patchMap      map[string]string
 	}{{
 
-		"wuffs_base__pixel_swizzler__swizzle_ycc__rgbx__hv11(\n",
+		[]string{
+			"wuffs_base__pixel_swizzler__swizzle_ycc__bgrx__hv11(\n",
+			"wuffs_base__pixel_swizzler__swizzle_ycc__rgbx__hv11(\n",
+		},
 		map[string]string{},
-	}}
+	}, {
 
-	for _, p := range generalHv11Patches {
-		const oldFuncNameLine = "wuffs_base__pixel_swizzler__swizzle_ycc__bgrx__hv11(\n"
-		p.patchMap[oldFuncNameLine] = p.newFuncNameLine
-		if err := patchCFunc(buf, bgrxHv11, p.newFuncNameLine, p.patchMap); err != nil {
-			return err
-		}
-	}
-
-	// ----
-
-	generalTriangleFilterPatches := []struct {
-		newFuncNameLine string
-		patchMap        map[string]string
-	}{{
-
-		"wuffs_base__pixel_swizzler__swizzle_ycc__bgrx__triangle_filter(\n",
+		[]string{
+			"wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter(\n",
+			"wuffs_base__pixel_swizzler__swizzle_ycc__bgrx__triangle_filter(\n",
+			"wuffs_base__pixel_swizzler__swizzle_ycc__rgbx__triangle_filter(\n",
+		},
 		map[string]string{
-			"// ¡ dst_iter = etc\n":         dstIterWithX,
-			"// ¡ dst_iter += 4\n":          dstIterPlusEq4,
-			"// ¡ BEGIN set_color_u32_at\n": setColorU32At,
+			"// ¡ dst_iter = etc\n": dstIterEtcWithX,
+			"// ¡ dst_iter += 4\n":  dstIterPlusEq4,
+			setColorU32AtOld:        setColorU32AtNew,
 		},
 	}, {
 
-		"wuffs_base__pixel_swizzler__swizzle_ycc__rgbx__triangle_filter(\n",
+		[]string{
+			"wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter(\n",
+			"wuffs_base__pixel_swizzler__swizzle_ycc__bgrx__box_filter(\n",
+			"wuffs_base__pixel_swizzler__swizzle_ycc__rgbx__box_filter(\n",
+		},
 		map[string]string{
-			"// ¡ dst_iter = etc\n":         dstIterWithX,
-			"// ¡ dst_iter += 4\n":          dstIterPlusEq4,
-			"// ¡ BEGIN set_color_u32_at\n": setColorU32At,
+			"// ¡ dst_iter = etc\n": dstIterEtcSansX,
+			"// ¡ dst_iter += 4\n":  dstIterPlusEq4,
+			setColorU32AtOld:        setColorU32AtNew,
 		},
 	}}
 
-	for _, p := range generalTriangleFilterPatches {
-		const oldFuncNameLine = "wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter(\n"
-		p.patchMap[oldFuncNameLine] = p.newFuncNameLine
-		if err := patchCFunc(buf, generalTriangleFilter, p.newFuncNameLine, p.patchMap); err != nil {
-			return err
-		}
-	}
-
 	// ----
 
-	generalBoxFilterPatches := []struct {
-		newFuncNameLine string
-		patchMap        map[string]string
-	}{{
+	for _, p := range patches {
+		oldFuncNameLine := p.funcNameLines[0]
 
-		"wuffs_base__pixel_swizzler__swizzle_ycc__bgrx__box_filter(\n",
-		map[string]string{
-			"// ¡ dst_iter = etc\n":         dstIterEtcSansX,
-			"// ¡ dst_iter += 4\n":          dstIterPlusEq4,
-			"// ¡ BEGIN set_color_u32_at\n": setColorU32At,
-		},
-	}, {
-
-		"wuffs_base__pixel_swizzler__swizzle_ycc__rgbx__box_filter(\n",
-		map[string]string{
-			"// ¡ dst_iter = etc\n":         dstIterEtcSansX,
-			"// ¡ dst_iter += 4\n":          dstIterPlusEq4,
-			"// ¡ BEGIN set_color_u32_at\n": setColorU32At,
-		},
-	}}
-
-	for _, p := range generalBoxFilterPatches {
-		const oldFuncNameLine = "wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter(\n"
-		p.patchMap[oldFuncNameLine] = p.newFuncNameLine
-		if err := patchCFunc(buf, generalBoxFilter, p.newFuncNameLine, p.patchMap); err != nil {
+		funcSrc, err := extractCFunc(src, "static void  //\n"+oldFuncNameLine)
+		if err != nil {
 			return err
 		}
-	}
 
-	// ----
+		for _, newFuncNameLine := range p.funcNameLines[1:] {
+			if err := patchCFunc(buf, funcSrc, oldFuncNameLine, newFuncNameLine, p.patchMap); err != nil {
+				return err
+			}
+		}
+	}
 
 	stripCFuncBangComments(buf, suffix)
 	return nil
@@ -203,9 +156,11 @@ func stripCFuncBangComments(buf *buffer, s string) {
 	buf.writes(s)
 }
 
-func patchCFunc(buf *buffer, src string, newFuncNameLine string, patchMap map[string]string) error {
+func patchCFunc(buf *buffer, src string, oldFuncNameLine string, newFuncNameLine string, patchMap map[string]string) error {
+	m := cloneStringStringMap(patchMap)
+	m[oldFuncNameLine] = newFuncNameLine
 	if strings.Contains(newFuncNameLine, "swizzle_ycc__rgbx__") {
-		patchMap["wuffs_base__color_ycc__as__color_u32(  //\n"] =
+		m["wuffs_base__color_ycc__as__color_u32(  //\n"] =
 			"wuffs_base__color_ycc__as__color_u32_abgr(\n"
 	}
 
@@ -228,7 +183,7 @@ func patchCFunc(buf *buffer, src string, newFuncNameLine string, patchMap map[st
 				break
 			}
 		}
-		val, ok := patchMap[key]
+		val, ok := m[key]
 		if !ok {
 			if !isCFuncComment(line) {
 				buf.writes(line)
@@ -273,4 +228,12 @@ func indentCFunc(buf *buffer, indent string, s string) {
 		buf.writes(indent)
 		buf.writes(line)
 	}
+}
+
+func cloneStringStringMap(m map[string]string) map[string]string {
+	ret := map[string]string{}
+	for k, v := range m {
+		ret[k] = v
+	}
+	return ret
 }

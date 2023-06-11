@@ -530,9 +530,7 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter(
         uint32_t color =                           //
             wuffs_base__color_ycc__as__color_u32(  //
                 *up0++, *up1++, *up2++);
-        // ¡ BEGIN set_color_u32_at
         wuffs_base__pixel_buffer__set_color_u32_at(dst, x, y, color);
-        // ¡ END   set_color_u32_at
         // ¡ dst_iter += 4
       }
     }
@@ -602,9 +600,7 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter(
       uint32_t color =                           //
           wuffs_base__color_ycc__as__color_u32(  //
               *src_iter0, *src_iter1, *src_iter2);
-      // ¡ BEGIN set_color_u32_at
       wuffs_base__pixel_buffer__set_color_u32_at(dst, x, y, color);
-      // ¡ END   set_color_u32_at
       // ¡ dst_iter += 4
 
       if ((x + 1u) == width) {
