@@ -23130,10 +23130,10 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter_edge_row(
         (total_src_len2 >= half_width_for_2to1));
 
     for (; x < end; x++) {
-      wuffs_base__pixel_buffer__set_color_u32_at(
-          dst, x, y,                             //
+      uint32_t color =                           //
           wuffs_base__color_ycc__as__color_u32(  //
-              *up0++, *up1++, *up2++));
+              *up0++, *up1++, *up2++);
+      wuffs_base__pixel_buffer__set_color_u32_at(dst, x, y, color);
     }
   }
 }
@@ -23249,10 +23249,10 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter(
           (total_src_len2 >= half_width_for_2to1));
 
       for (; x < end; x++) {
-        wuffs_base__pixel_buffer__set_color_u32_at(
-            dst, x, y,                             //
+        uint32_t color =                           //
             wuffs_base__color_ycc__as__color_u32(  //
-                *up0++, *up1++, *up2++));
+                *up0++, *up1++, *up2++);
+        wuffs_base__pixel_buffer__set_color_u32_at(dst, x, y, color);
       }
     }
 
@@ -23316,10 +23316,10 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter(
     uint32_t ix2 = 0u;
     uint32_t x = 0u;
     while (true) {
-      wuffs_base__pixel_buffer__set_color_u32_at(
-          dst, x, y,                             //
+      uint32_t color =                           //
           wuffs_base__color_ycc__as__color_u32(  //
-              *src_iter0, *src_iter1, *src_iter2));
+              *src_iter0, *src_iter1, *src_iter2);
+      wuffs_base__pixel_buffer__set_color_u32_at(dst, x, y, color);
 
       if ((x + 1u) == width) {
         break;
@@ -23633,9 +23633,10 @@ wuffs_base__pixel_swizzler__swizzle_ycc__bgrx__triangle_filter(
           dst->private_impl.planes[0].ptr + (dst_stride * ((size_t)y)) + (4 * ((size_t)x));
 
       for (; x < end; x++) {
-        wuffs_base__poke_u32le__no_bounds_check(
-            dst_iter, wuffs_base__color_ycc__as__color_u32(
-                          *up0++, *up1++, *up2++));
+        uint32_t color =                           //
+            wuffs_base__color_ycc__as__color_u32(  //
+                *up0++, *up1++, *up2++);
+        wuffs_base__poke_u32le__no_bounds_check(dst_iter, color);
         dst_iter += 4;
       }
     }
@@ -23771,9 +23772,10 @@ wuffs_base__pixel_swizzler__swizzle_ycc__rgbx__triangle_filter(
           dst->private_impl.planes[0].ptr + (dst_stride * ((size_t)y)) + (4 * ((size_t)x));
 
       for (; x < end; x++) {
-        wuffs_base__poke_u32le__no_bounds_check(
-            dst_iter, wuffs_base__color_ycc__as__color_u32_abgr(
-                          *up0++, *up1++, *up2++));
+        uint32_t color =                           //
+            wuffs_base__color_ycc__as__color_u32_abgr(
+                *up0++, *up1++, *up2++);
+        wuffs_base__poke_u32le__no_bounds_check(dst_iter, color);
         dst_iter += 4;
       }
     }
@@ -23841,9 +23843,10 @@ wuffs_base__pixel_swizzler__swizzle_ycc__bgrx__box_filter(
     uint32_t ix2 = 0u;
     uint32_t x = 0u;
     while (true) {
-      wuffs_base__poke_u32le__no_bounds_check(
-          dst_iter, wuffs_base__color_ycc__as__color_u32(
-                        *src_iter0, *src_iter1, *src_iter2));
+      uint32_t color =                           //
+          wuffs_base__color_ycc__as__color_u32(  //
+              *src_iter0, *src_iter1, *src_iter2);
+      wuffs_base__poke_u32le__no_bounds_check(dst_iter, color);
       dst_iter += 4;
 
       if ((x + 1u) == width) {
@@ -23935,9 +23938,10 @@ wuffs_base__pixel_swizzler__swizzle_ycc__rgbx__box_filter(
     uint32_t ix2 = 0u;
     uint32_t x = 0u;
     while (true) {
-      wuffs_base__poke_u32le__no_bounds_check(
-          dst_iter, wuffs_base__color_ycc__as__color_u32_abgr(
-                        *src_iter0, *src_iter1, *src_iter2));
+      uint32_t color =                           //
+          wuffs_base__color_ycc__as__color_u32_abgr(
+              *src_iter0, *src_iter1, *src_iter2);
+      wuffs_base__poke_u32le__no_bounds_check(dst_iter, color);
       dst_iter += 4;
 
       if ((x + 1u) == width) {

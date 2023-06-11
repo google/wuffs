@@ -406,10 +406,10 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter_edge_row(
         (total_src_len2 >= half_width_for_2to1));
 
     for (; x < end; x++) {
-      wuffs_base__pixel_buffer__set_color_u32_at(
-          dst, x, y,                             //
+      uint32_t color =                           //
           wuffs_base__color_ycc__as__color_u32(  //
-              *up0++, *up1++, *up2++));
+              *up0++, *up1++, *up2++);
+      wuffs_base__pixel_buffer__set_color_u32_at(dst, x, y, color);
     }
   }
 }
@@ -527,12 +527,13 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter(
       // ¡ dst_iter = etc
 
       for (; x < end; x++) {
-        // ¡ BEGIN set_color_u32_at
-        wuffs_base__pixel_buffer__set_color_u32_at(
-            dst, x, y,                             //
+        uint32_t color =                           //
             wuffs_base__color_ycc__as__color_u32(  //
-                *up0++, *up1++, *up2++));
+                *up0++, *up1++, *up2++);
+        // ¡ BEGIN set_color_u32_at
+        wuffs_base__pixel_buffer__set_color_u32_at(dst, x, y, color);
         // ¡ END   set_color_u32_at
+        // ¡ dst_iter += 4
       }
     }
 
@@ -598,12 +599,13 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter(
     uint32_t ix2 = 0u;
     uint32_t x = 0u;
     while (true) {
-      // ¡ BEGIN set_color_u32_at
-      wuffs_base__pixel_buffer__set_color_u32_at(
-          dst, x, y,                             //
+      uint32_t color =                           //
           wuffs_base__color_ycc__as__color_u32(  //
-              *src_iter0, *src_iter1, *src_iter2));
+              *src_iter0, *src_iter1, *src_iter2);
+      // ¡ BEGIN set_color_u32_at
+      wuffs_base__pixel_buffer__set_color_u32_at(dst, x, y, color);
       // ¡ END   set_color_u32_at
+      // ¡ dst_iter += 4
 
       if ((x + 1u) == width) {
         break;
