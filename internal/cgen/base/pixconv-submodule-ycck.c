@@ -675,7 +675,7 @@ wuffs_base__pixel_swizzler__swizzle_ycc__bgrx__hv11(
     uint32_t half_height_for_2to1,
     uint8_t* scratch_buffer_2k_ptr) {
   uint32_t y = 0u;
-  while (true) {
+  for (; y < height; y++) {
     const uint8_t* src_iter0 = src_ptr0;
     const uint8_t* src_iter1 = src_ptr1;
     const uint8_t* src_iter2 = src_ptr2;
@@ -685,26 +685,43 @@ wuffs_base__pixel_swizzler__swizzle_ycc__bgrx__hv11(
         dst->private_impl.planes[0].ptr + (dst_stride * ((size_t)y));
 
     uint32_t x = 0u;
-    while (true) {
-      wuffs_base__poke_u32le__no_bounds_check(
-          dst_iter,                              //
+
+    for (; (x + 4u) <= width; x += 4u) {
+      wuffs_base__poke_u32le__no_bounds_check(   //
+          dst_iter + 0x00,                       //
           wuffs_base__color_ycc__as__color_u32(  //
-              *src_iter0, *src_iter1, *src_iter2));
+              src_iter0[0], src_iter1[0], src_iter2[0]));
+      wuffs_base__poke_u32le__no_bounds_check(   //
+          dst_iter + 0x04,                       //
+          wuffs_base__color_ycc__as__color_u32(  //
+              src_iter0[1], src_iter1[1], src_iter2[1]));
+      wuffs_base__poke_u32le__no_bounds_check(   //
+          dst_iter + 0x08,                       //
+          wuffs_base__color_ycc__as__color_u32(  //
+              src_iter0[2], src_iter1[2], src_iter2[2]));
+      wuffs_base__poke_u32le__no_bounds_check(   //
+          dst_iter + 0x0C,                       //
+          wuffs_base__color_ycc__as__color_u32(  //
+              src_iter0[3], src_iter1[3], src_iter2[3]));
+      dst_iter += 16;
+
+      src_iter0 += 4u;
+      src_iter1 += 4u;
+      src_iter2 += 4u;
+    }
+
+    for (; x < width; x++) {
+      wuffs_base__poke_u32le__no_bounds_check(   //
+          dst_iter + 0x00,                       //
+          wuffs_base__color_ycc__as__color_u32(  //
+              src_iter0[0], src_iter1[0], src_iter2[0]));
       dst_iter += 4;
 
-      if ((x + 1u) == width) {
-        break;
-      }
-      x = x + 1u;
       src_iter0++;
       src_iter1++;
       src_iter2++;
     }
 
-    if ((y + 1u) == height) {
-      break;
-    }
-    y = y + 1u;
     src_ptr0 += stride0;
     src_ptr1 += stride1;
     src_ptr2 += stride2;
