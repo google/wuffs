@@ -12,6 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// ----------------
+
+// Uncomment one of these #define lines to test and bench alternative mimic
+// libraries (stb_image) instead of libjpeg.
+//
+// These are collectively referred to as
+// WUFFS_MIMICLIB_USE_XXX_INSTEAD_OF_LIBJPEG.
+//
+// #define WUFFS_MIMICLIB_USE_STB_IMAGE_INSTEAD_OF_LIBJPEG 1
+
+// -------------------------------- WUFFS_MIMICLIB_USE_XXX_INSTEAD_OF_LIBJPEG
+#if defined(WUFFS_MIMICLIB_USE_STB_IMAGE_INSTEAD_OF_LIBJPEG)
+
+#define WUFFS_MIMICLIB_JPEG_DOES_NOT_EXACTLY_MATCH_LIBJPEG 1
+
+#define mimic_jpeg_decode mimic_stb_decode
+#include "./stb.c"
+
+// -------------------------------- WUFFS_MIMICLIB_USE_XXX_INSTEAD_OF_LIBJPEG
+#else
+
 #include "jpeglib.h"
 
 const char*  //
@@ -79,3 +100,6 @@ cleanup0:;
   jpeg_destroy_decompress(&cinfo);
   return ret;
 }
+
+#endif
+// -------------------------------- WUFFS_MIMICLIB_USE_XXX_INSTEAD_OF_LIBJPEG

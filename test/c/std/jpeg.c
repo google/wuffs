@@ -768,7 +768,15 @@ do_test_mimic_jpeg_decode(const char* filename) {
       wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
       NULL, 0, &src));
 
+#ifdef WUFFS_MIMICLIB_JPEG_DOES_NOT_EXACTLY_MATCH_LIBJPEG
+  if (have.meta.wi != want.meta.wi) {
+    RETURN_FAIL("decoded image size (in bytes): have %zu, want %zu.\n",
+                have.meta.wi, want.meta.wi);
+  }
+  return NULL;
+#else
   return check_io_buffers_equal("", &have, &want);
+#endif  // WUFFS_MIMICLIB_JPEG_DOES_NOT_EXACTLY_MATCH_LIBJPEG
 }
 
 const char*  //
