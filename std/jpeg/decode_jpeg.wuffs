@@ -242,6 +242,9 @@ pub struct decoder? implements base.image_decoder(
         mcu_blocks_mx_mul : array[10] base.u32[..= 0x00_0020],  // 8 * 4.
         mcu_blocks_my_mul : array[10] base.u32[..= 0x20_0100],  // 8 * 4 * 0x1_0008.
 
+        mcu_blocks_dc_hselector : array[10] base.u8[..= 3],
+        mcu_blocks_ac_hselector : array[10] base.u8[..= 7],
+
         mcu_previous_dc_values : array[4] base.u16,
 
         restart_interval       : base.u16,
@@ -1391,6 +1394,8 @@ pri func decoder.calculate_single_component_scan_fields!() {
     this.mcu_blocks_offset[0] = this.components_workbuf_offsets[csel]
     this.mcu_blocks_mx_mul[0] = 8
     this.mcu_blocks_my_mul[0] = 8 * this.components_workbuf_widths[csel]
+    this.mcu_blocks_dc_hselector[0] = 0 | this.scan_comps_td[0]
+    this.mcu_blocks_ac_hselector[0] = 4 | this.scan_comps_ta[0]
 
     this.scan_width_in_mcus = this.quantize_dimension(
             width: this.width, h: this.components_h[csel], max_incl_h: this.max_incl_components_h)
@@ -1407,6 +1412,7 @@ pri func decoder.calculate_multiple_component_scan_fields!() base.bool {
     var b         : base.u32
     var bx_offset : base.u32
     var by_offset : base.u32
+    var ssel      : base.u8[..= 3]
     var csel      : base.u8[..= 3]
 
     total_hv = 0
@@ -1450,12 +1456,15 @@ pri func decoder.calculate_multiple_component_scan_fields!() base.bool {
     b = 0
     while b < this.mcu_num_blocks {
         assert b < 10 via "a < b: a < c; c <= b"(c: this.mcu_num_blocks)
-        csel = this.scan_comps_cselector[this.mcu_blocks_sselector[b]]
+        ssel = this.mcu_blocks_sselector[b]
+        csel = this.scan_comps_cselector[ssel]
         this.mcu_blocks_offset[b] = this.components_workbuf_offsets[csel] +
                 (8 * (this.scan_comps_bx_offset[b] as base.u64)) +
                 (8 * (this.scan_comps_by_offset[b] as base.u64) * (this.components_workbuf_widths[csel] as base.u64))
         this.mcu_blocks_mx_mul[b] = 8 * (this.components_h[csel] as base.u32)
         this.mcu_blocks_my_mul[b] = 8 * (this.components_v[csel] as base.u32) * this.components_workbuf_widths[csel]
+        this.mcu_blocks_dc_hselector[b] = 0 | this.scan_comps_td[ssel]
+        this.mcu_blocks_ac_hselector[b] = 4 | this.scan_comps_ta[ssel]
         b += 1
     } endwhile
 

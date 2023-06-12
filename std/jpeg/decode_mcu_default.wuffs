@@ -28,7 +28,7 @@ pri func decoder.decode_mcu!(workbuf: slice base.u8, mx: base.u32[..= 0x1FFF], m
     // etc_bl and etc_blm1 are the Huffman code's "bit length" and "bit length
     // minus 1" for the DC (first) and AC (later) components.
 
-    var dc_h       : base.u8[..= 7]
+    var dc_h       : base.u8[..= 3]
     var dc_symbol  : base.u32[..= 0x0F]
     var dc_ht_fast : base.u32
     var dc_bl      : base.u32
@@ -81,7 +81,7 @@ pri func decoder.decode_mcu!(workbuf: slice base.u8, mx: base.u32[..= 0x1FFF], m
                 n_bits |= 56
 
                 // Read the Huffman-encoded dc_symbol, up to 16 bits long.
-                dc_h = 0 | this.scan_comps_td[this.mcu_blocks_sselector[this.mcu_current_block]]
+                dc_h = this.mcu_blocks_dc_hselector[this.mcu_current_block]
                 dc_ht_fast = this.huff_tables_fast[dc_h][bits >> 56] as base.u32
                 dc_bl = dc_ht_fast >> 8
                 if n_bits >= dc_bl {
@@ -144,7 +144,7 @@ pri func decoder.decode_mcu!(workbuf: slice base.u8, mx: base.u32[..= 0x1FFF], m
                 n_bits |= 56
 
                 // Read the Huffman-encoded ac_symbol, up to 16 bits long.
-                ac_h = 4 | this.scan_comps_ta[this.mcu_blocks_sselector[this.mcu_current_block]]
+                ac_h = this.mcu_blocks_ac_hselector[this.mcu_current_block]
                 ac_ht_fast = this.huff_tables_fast[ac_h][bits >> 56] as base.u32
                 ac_bl = ac_ht_fast >> 8
                 if n_bits >= ac_bl {

@@ -61,7 +61,7 @@ pri func decoder.decode_mcu_progressive_ac_high_bits!(workbuf: slice base.u8, mx
                 n_bits |= 56
 
                 // Read the Huffman-encoded ac_symbol, up to 16 bits long.
-                ac_h = 4 | this.scan_comps_ta[this.mcu_blocks_sselector[0]]
+                ac_h = this.mcu_blocks_ac_hselector[0]
                 ac_ht_fast = this.huff_tables_fast[ac_h][bits >> 56] as base.u32
                 ac_bl = ac_ht_fast >> 8
                 if n_bits >= ac_bl {

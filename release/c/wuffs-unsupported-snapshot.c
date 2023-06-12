@@ -8860,6 +8860,8 @@ struct wuffs_jpeg__decoder__struct {
     uint64_t f_mcu_blocks_offset[10];
     uint32_t f_mcu_blocks_mx_mul[10];
     uint32_t f_mcu_blocks_my_mul[10];
+    uint8_t f_mcu_blocks_dc_hselector[10];
+    uint8_t f_mcu_blocks_ac_hselector[10];
     uint16_t f_mcu_previous_dc_values[4];
     uint16_t f_restart_interval;
     uint16_t f_saved_restart_interval;
@@ -40902,6 +40904,8 @@ wuffs_jpeg__decoder__calculate_single_component_scan_fields(
   self->private_impl.f_mcu_blocks_offset[0u] = self->private_impl.f_components_workbuf_offsets[v_csel];
   self->private_impl.f_mcu_blocks_mx_mul[0u] = 8u;
   self->private_impl.f_mcu_blocks_my_mul[0u] = (8u * self->private_impl.f_components_workbuf_widths[v_csel]);
+  self->private_impl.f_mcu_blocks_dc_hselector[0u] = (0u | self->private_impl.f_scan_comps_td[0u]);
+  self->private_impl.f_mcu_blocks_ac_hselector[0u] = (4u | self->private_impl.f_scan_comps_ta[0u]);
   self->private_impl.f_scan_width_in_mcus = wuffs_jpeg__decoder__quantize_dimension(self, self->private_impl.f_width, self->private_impl.f_components_h[v_csel], self->private_impl.f_max_incl_components_h);
   self->private_impl.f_scan_height_in_mcus = wuffs_jpeg__decoder__quantize_dimension(self, self->private_impl.f_height, self->private_impl.f_components_v[v_csel], self->private_impl.f_max_incl_components_v);
   return wuffs_base__make_empty_struct();
@@ -40920,6 +40924,7 @@ wuffs_jpeg__decoder__calculate_multiple_component_scan_fields(
   uint32_t v_b = 0;
   uint32_t v_bx_offset = 0;
   uint32_t v_by_offset = 0;
+  uint8_t v_ssel = 0;
   uint8_t v_csel = 0;
 
   v_total_hv = 0u;
@@ -40955,10 +40960,13 @@ wuffs_jpeg__decoder__calculate_multiple_component_scan_fields(
   self->private_impl.f_mcu_num_blocks = v_total_hv;
   v_b = 0u;
   while (v_b < self->private_impl.f_mcu_num_blocks) {
-    v_csel = self->private_impl.f_scan_comps_cselector[self->private_impl.f_mcu_blocks_sselector[v_b]];
+    v_ssel = self->private_impl.f_mcu_blocks_sselector[v_b];
+    v_csel = self->private_impl.f_scan_comps_cselector[v_ssel];
     self->private_impl.f_mcu_blocks_offset[v_b] = (self->private_impl.f_components_workbuf_offsets[v_csel] + (8u * ((uint64_t)(self->private_impl.f_scan_comps_bx_offset[v_b]))) + (8u * ((uint64_t)(self->private_impl.f_scan_comps_by_offset[v_b])) * ((uint64_t)(self->private_impl.f_components_workbuf_widths[v_csel]))));
     self->private_impl.f_mcu_blocks_mx_mul[v_b] = (8u * ((uint32_t)(self->private_impl.f_components_h[v_csel])));
     self->private_impl.f_mcu_blocks_my_mul[v_b] = (8u * ((uint32_t)(self->private_impl.f_components_v[v_csel])) * self->private_impl.f_components_workbuf_widths[v_csel]);
+    self->private_impl.f_mcu_blocks_dc_hselector[v_b] = (0u | self->private_impl.f_scan_comps_td[v_ssel]);
+    self->private_impl.f_mcu_blocks_ac_hselector[v_b] = (4u | self->private_impl.f_scan_comps_ta[v_ssel]);
     v_b += 1u;
   }
   self->private_impl.f_scan_width_in_mcus = self->private_impl.f_width_in_mcus;
@@ -41624,7 +41632,7 @@ wuffs_jpeg__decoder__decode_mcu__choosy_default(
           v_bits |= (wuffs_base__peek_u64be__no_bounds_check(iop_v_r) >> (v_n_bits & 63u));
           iop_v_r += ((63u - (v_n_bits & 63u)) >> 3u);
           v_n_bits |= 56u;
-          v_dc_h = (0u | self->private_impl.f_scan_comps_td[self->private_impl.f_mcu_blocks_sselector[self->private_impl.f_mcu_current_block]]);
+          v_dc_h = self->private_impl.f_mcu_blocks_dc_hselector[self->private_impl.f_mcu_current_block];
           v_dc_ht_fast = ((uint32_t)(self->private_impl.f_huff_tables_fast[v_dc_h][(v_bits >> 56u)]));
           v_dc_bl = (v_dc_ht_fast >> 8u);
           if (v_n_bits >= v_dc_bl) {
@@ -41674,7 +41682,7 @@ wuffs_jpeg__decoder__decode_mcu__choosy_default(
           v_bits |= (wuffs_base__peek_u64be__no_bounds_check(iop_v_r) >> (v_n_bits & 63u));
           iop_v_r += ((63u - (v_n_bits & 63u)) >> 3u);
           v_n_bits |= 56u;
-          v_ac_h = (4u | self->private_impl.f_scan_comps_ta[self->private_impl.f_mcu_blocks_sselector[self->private_impl.f_mcu_current_block]]);
+          v_ac_h = self->private_impl.f_mcu_blocks_ac_hselector[self->private_impl.f_mcu_current_block];
           v_ac_ht_fast = ((uint32_t)(self->private_impl.f_huff_tables_fast[v_ac_h][(v_bits >> 56u)]));
           v_ac_bl = (v_ac_ht_fast >> 8u);
           if (v_n_bits >= v_ac_bl) {
@@ -41833,7 +41841,7 @@ wuffs_jpeg__decoder__decode_mcu_progressive_ac_high_bits(
           v_bits |= (wuffs_base__peek_u64be__no_bounds_check(iop_v_r) >> (v_n_bits & 63u));
           iop_v_r += ((63u - (v_n_bits & 63u)) >> 3u);
           v_n_bits |= 56u;
-          v_ac_h = (4u | self->private_impl.f_scan_comps_ta[self->private_impl.f_mcu_blocks_sselector[0u]]);
+          v_ac_h = self->private_impl.f_mcu_blocks_ac_hselector[0u];
           v_ac_ht_fast = ((uint32_t)(self->private_impl.f_huff_tables_fast[v_ac_h][(v_bits >> 56u)]));
           v_ac_bl = (v_ac_ht_fast >> 8u);
           if (v_n_bits >= v_ac_bl) {
@@ -41984,7 +41992,7 @@ wuffs_jpeg__decoder__decode_mcu_progressive_ac_low_bit(
             v_bits |= (wuffs_base__peek_u64be__no_bounds_check(iop_v_r) >> (v_n_bits & 63u));
             iop_v_r += ((63u - (v_n_bits & 63u)) >> 3u);
             v_n_bits |= 56u;
-            v_ac_h = (4u | self->private_impl.f_scan_comps_ta[self->private_impl.f_mcu_blocks_sselector[0u]]);
+            v_ac_h = self->private_impl.f_mcu_blocks_ac_hselector[0u];
             v_ac_ht_fast = ((uint32_t)(self->private_impl.f_huff_tables_fast[v_ac_h][(v_bits >> 56u)]));
             v_ac_bl = (v_ac_ht_fast >> 8u);
             if (v_n_bits >= v_ac_bl) {
@@ -42228,7 +42236,7 @@ wuffs_jpeg__decoder__decode_mcu_progressive_dc_high_bits(
           v_bits |= (wuffs_base__peek_u64be__no_bounds_check(iop_v_r) >> (v_n_bits & 63u));
           iop_v_r += ((63u - (v_n_bits & 63u)) >> 3u);
           v_n_bits |= 56u;
-          v_dc_h = (0u | self->private_impl.f_scan_comps_td[self->private_impl.f_mcu_blocks_sselector[self->private_impl.f_mcu_current_block]]);
+          v_dc_h = self->private_impl.f_mcu_blocks_dc_hselector[self->private_impl.f_mcu_current_block];
           v_dc_ht_fast = ((uint32_t)(self->private_impl.f_huff_tables_fast[v_dc_h][(v_bits >> 56u)]));
           v_dc_bl = (v_dc_ht_fast >> 8u);
           if (v_n_bits >= v_dc_bl) {
