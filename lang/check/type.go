@@ -514,8 +514,12 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			return err
 		}
 		lTyp := lhs.MType()
-		if key := lTyp.Decorator(); key != t.IDArray && key != t.IDRoarray && key != t.IDRoslice && key != t.IDSlice {
-			return fmt.Errorf("check: %s is an index expression but %s has type %s, not an array or slice type",
+		if lTyp.IsEitherArrayType() || lTyp.IsEitherSliceType() {
+			// No-op.
+		} else if lTyp.IsPointerType() && lTyp.Inner().IsEitherArrayType() {
+			// No-op.
+		} else {
+			return fmt.Errorf("check: %s is an index expression but %s has type %s, not an array, slice or pointer-to-array type",
 				n.Str(q.tm), lhs.Str(q.tm), lTyp.Str(q.tm))
 		}
 		rTyp := rhs.MType()
@@ -523,7 +527,11 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			return fmt.Errorf("check: %s is an index expression but %s has type %s, not a numeric type",
 				n.Str(q.tm), rhs.Str(q.tm), rTyp.Str(q.tm))
 		}
-		n.SetMType(lTyp.Inner())
+		if lTyp.IsPointerType() {
+			n.SetMType(lTyp.Inner().Inner())
+		} else {
+			n.SetMType(lTyp.Inner())
+		}
 		return nil
 
 	case t.IDDotDot:

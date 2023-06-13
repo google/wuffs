@@ -531,17 +531,24 @@ func (g *gen) writeCTypeName(b *buffer, n *a.TypeExpr, varNamePrefix string, var
 	for ; x != nil && x.IsEitherArrayType(); x = x.Inner() {
 	}
 
-	numPointers, innermost := 0, x
-	for ; innermost != nil && innermost.Inner() != nil; innermost = innermost.Inner() {
-		if p := innermost.Decorator(); p == t.IDNptr || p == t.IDPtr {
-			if numPointers == maxNumPointers {
-				return fmt.Errorf("cannot convert Wuffs type %q to C: too many ptr's", n.Str(g.tm))
-			}
-			numPointers++
-			continue
+	numPointers, innermost, isPointerToArray := 0, x, false
+	if x.IsPointerType() && x.Inner().IsEitherArrayType() && x.Inner().IsBulkNumType() {
+		isPointerToArray = true
+		innermost = x.Inner()
+		for ; innermost != nil && innermost.Inner() != nil; innermost = innermost.Inner() {
 		}
-		// TODO: fix this.
-		return fmt.Errorf("cannot convert Wuffs type %q to C", n.Str(g.tm))
+	} else {
+		for ; innermost != nil && innermost.Inner() != nil; innermost = innermost.Inner() {
+			if innermost.IsPointerType() {
+				if numPointers == maxNumPointers {
+					return fmt.Errorf("cannot convert Wuffs type %q to C: too many ptr's", n.Str(g.tm))
+				}
+				numPointers++
+				continue
+			}
+			// TODO: fix this.
+			return fmt.Errorf("cannot convert Wuffs type %q to C", n.Str(g.tm))
+		}
 	}
 
 	fallback := true
@@ -558,8 +565,12 @@ func (g *gen) writeCTypeName(b *buffer, n *a.TypeExpr, varNamePrefix string, var
 		b.printf("%s%s", g.packagePrefix(qid), qid[1].Str(g.tm))
 	}
 
-	for i := 0; i < numPointers; i++ {
-		b.writeb('*')
+	if isPointerToArray {
+		b.writes("(*")
+	} else {
+		for i := 0; i < numPointers; i++ {
+			b.writeb('*')
+		}
 	}
 
 	if varNamePrefix != "" {
@@ -569,6 +580,10 @@ func (g *gen) writeCTypeName(b *buffer, n *a.TypeExpr, varNamePrefix string, var
 	}
 
 	x = n
+	if isPointerToArray {
+		b.writes(")")
+		x = x.Inner().Inner()
+	}
 	for ; x != nil && x.IsEitherArrayType(); x = x.Inner() {
 		b.writeb('[')
 		b.writes(x.ArrayLength().ConstValue().String())

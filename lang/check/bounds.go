@@ -507,7 +507,10 @@ func (q *checker) bcheckAssignment(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 			return err
 		}
 
-		if lhs.MType().IsNumType() && rhs.Effect().Pure() {
+		if !rhs.Effect().Pure() {
+			// No-op.
+
+		} else if lhs.MType().IsNumType() {
 			q.facts.appendBinaryOpFact(t.IDXBinaryEqEq, lhs, rhs)
 
 			if rhs.Operator() == a.ExprOperatorCall {
@@ -518,6 +521,16 @@ func (q *checker) bcheckAssignment(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 							return err
 						}
 					}
+				}
+			}
+
+		} else if lhs.MType().IsPointerType() {
+			if cv := rhs.ConstValue(); (cv != nil) && (cv.Sign() == 0) {
+				q.facts.appendBinaryOpFact(t.IDXBinaryEqEq, lhs, exprNullptr)
+			} else {
+				q.facts.appendBinaryOpFact(t.IDXBinaryEqEq, lhs, rhs)
+				if (lhs.MType().Decorator() == t.IDNptr) && (rhs.MType().Decorator() == t.IDPtr) {
+					q.facts.appendBinaryOpFact(t.IDXBinaryNotEq, lhs, exprNullptr)
 				}
 			}
 		}
@@ -979,6 +992,11 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (bounds, error) {
 		lengthExpr := (*a.Expr)(nil)
 		if lTyp := lhs.MType(); lTyp.IsEitherArrayType() {
 			lengthExpr = lTyp.ArrayLength()
+		} else if lTyp.IsPointerType() && lTyp.Inner().IsEitherArrayType() {
+			lengthExpr = lTyp.Inner().ArrayLength()
+			if err := q.proveRecvNotEqNullptr(lhs); err != nil {
+				return bounds{}, err
+			}
 		} else {
 			lengthExpr = makeSliceLength(lhs)
 		}
@@ -1093,19 +1111,7 @@ func (q *checker) bcheckExprCall(n *a.Expr, depth uint32) error {
 	if recv.MType().Decorator() != t.IDNptr {
 		return nil
 	}
-	// Check that q.facts contain "recv != nullptr".
-	for _, x := range q.facts {
-		if x.Operator() != t.IDXBinaryNotEq {
-			continue
-		}
-		xLHS := x.LHS().AsExpr()
-		xRHS := x.RHS().AsExpr()
-		if (xLHS.Eq(exprNullptr) && xRHS.Eq(recv)) ||
-			(xRHS.Eq(exprNullptr) && xLHS.Eq(recv)) {
-			return nil
-		}
-	}
-	return fmt.Errorf("check: cannot prove %q", recv.Str(q.tm)+" != nullptr")
+	return q.proveRecvNotEqNullptr(recv)
 }
 
 var errNotASpecialCase = errors.New("not a special case")

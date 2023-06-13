@@ -860,7 +860,7 @@ func (n *TypeExpr) BulkSize() *big.Int {
 }
 
 func (n *TypeExpr) IsBulkNumType() bool {
-	for ; n.id0 == t.IDArray; n = n.rhs.AsTypeExpr() {
+	for ; (n.id0 == t.IDArray) || (n.id0 == t.IDRoarray); n = n.rhs.AsTypeExpr() {
 	}
 	return n.id0 == 0 && n.id1 == t.IDBase && n.id2.IsNumType()
 }

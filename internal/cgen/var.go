@@ -358,7 +358,14 @@ func (g *gen) writeVars(b *buffer, f *funk, inStructDecl bool) error {
 		} else if typ.Eq(typeExprARMCRC32U32) {
 			b.writes(" = 0;\n")
 		} else {
-			b.writes(" = {0};\n")
+			switch typ.Decorator() {
+			case t.IDNptr:
+				b.writes(" = NULL;\n")
+			case t.IDPtr:
+				return fmt.Errorf("cannot zero-initialize a non-nullable ptr")
+			default:
+				b.writes(" = {0};\n")
+			}
 		}
 
 		if typ.IsIOType() {

@@ -95,7 +95,8 @@ func (n *TypeExpr) EqIgnoringRefinements(o *TypeExpr) bool {
 
 // EqIgnoringRefinementsLHSReadOnly returns whether n and o are equal, ignoring
 // the "[i:j]" in "base.u32[i:j]" and allowing n (the Left Hand Side of an
-// assignment) to be read-only when o (the Right Hand Side) is read-write.
+// assignment) to be read-only when o (the Right Hand Side) is read-write, or n
+// to be "nptr T" when o is "ptr T".
 func (n *TypeExpr) EqIgnoringRefinementsLHSReadOnly(o *TypeExpr) bool {
 	return n.eq(o, true, true)
 }
@@ -118,6 +119,7 @@ func (n *TypeExpr) eq(o *TypeExpr, ignoreRefinements bool, lhsReadOnly bool) boo
 			case (n.id0 == t.IDRoarray) && (o.id0 == t.IDArray):
 			case (n.id0 == t.IDRoslice) && (o.id0 == t.IDSlice):
 			case (n.id0 == t.IDRotable) && (o.id0 == t.IDTable):
+			case (n.id0 == t.IDNptr) && (o.id0 == t.IDPtr):
 			}
 		}
 		if n.id1 != o.id1 || n.id2 != o.id2 {

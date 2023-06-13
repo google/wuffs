@@ -367,3 +367,18 @@ func proveReasonRequirementForRHSLength(q *checker, op t.ID, lhs *a.Expr, rhs *a
 	}
 	return nil
 }
+
+func (q *checker) proveRecvNotEqNullptr(recv *a.Expr) error {
+	for _, x := range q.facts {
+		if x.Operator() != t.IDXBinaryNotEq {
+			continue
+		}
+		xLHS := x.LHS().AsExpr()
+		xRHS := x.RHS().AsExpr()
+		if (xLHS.Eq(exprNullptr) && xRHS.Eq(recv)) ||
+			(xRHS.Eq(exprNullptr) && xLHS.Eq(recv)) {
+			return nil
+		}
+	}
+	return fmt.Errorf("check: cannot prove %q", recv.Str(q.tm)+" <> nullptr")
+}
