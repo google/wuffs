@@ -37,6 +37,8 @@ pri func decoder.decode_mcu!(workbuf: slice base.u8, mx: base.u32[..= 0x1FFF], m
     var dc_ht_slow : base.u32
     var dc_value   : base.u32
 
+    var ac_huff_table_fast : nptr roarray[256] base.u16
+
     var ac_h       : base.u8[..= 7]
     var ac_symbol  : base.u32[..= 0xFF]
     var ac_ht_fast : base.u32
@@ -131,8 +133,11 @@ pri func decoder.decode_mcu!(workbuf: slice base.u8, mx: base.u32[..= 0x1FFF], m
                 break.dc_component
             } endwhile.dc_component
 
+            ac_h = this.mcu_blocks_ac_hselector[this.mcu_current_block]
+            ac_huff_table_fast = this.huff_tables_fast[ac_h][..] as ptr array[256] base.u16
             while.ac_components true,
                     inv this.mcu_current_block < 10,
+                    inv ac_huff_table_fast <> nullptr,
             {
                 // Load at least 31 bits, by keeping 56 .. 64 loaded.
                 if r.length() < 8 {
@@ -144,8 +149,7 @@ pri func decoder.decode_mcu!(workbuf: slice base.u8, mx: base.u32[..= 0x1FFF], m
                 n_bits |= 56
 
                 // Read the Huffman-encoded ac_symbol, up to 16 bits long.
-                ac_h = this.mcu_blocks_ac_hselector[this.mcu_current_block]
-                ac_ht_fast = this.huff_tables_fast[ac_h][bits >> 56] as base.u32
+                ac_ht_fast = ac_huff_table_fast[bits >> 56] as base.u32
                 ac_bl = ac_ht_fast >> 8
                 if n_bits >= ac_bl {
                     ac_symbol = 0xFF & ac_ht_fast
@@ -158,6 +162,7 @@ pri func decoder.decode_mcu!(workbuf: slice base.u8, mx: base.u32[..= 0x1FFF], m
                     n_bits ~mod-= 9
                     while true,
                             inv this.mcu_current_block < 10,
+                            inv ac_huff_table_fast <> nullptr,
                     {
                         ac_ht_slow = this.huff_tables_slow[ac_h][ac_blm1]
                         if ac_code < (ac_ht_slow >> 8) {

@@ -41585,6 +41585,7 @@ wuffs_jpeg__decoder__decode_mcu__choosy_default(
   uint32_t v_dc_blm1 = 0;
   uint32_t v_dc_ht_slow = 0;
   uint32_t v_dc_value = 0;
+  const uint16_t(* v_ac_huff_table_fast) = NULL;
   uint8_t v_ac_h = 0;
   uint32_t v_ac_symbol = 0;
   uint32_t v_ac_ht_fast = 0;
@@ -41674,6 +41675,8 @@ wuffs_jpeg__decoder__decode_mcu__choosy_default(
           goto label__dc_component__break;
         }
         label__dc_component__break:;
+        v_ac_h = self->private_impl.f_mcu_blocks_ac_hselector[self->private_impl.f_mcu_current_block];
+        v_ac_huff_table_fast = &self->private_impl.f_huff_tables_fast[v_ac_h][0u];
         while (true) {
           if (((uint64_t)(io2_v_r - iop_v_r)) < 8u) {
             v_ret = 1u;
@@ -41682,8 +41685,7 @@ wuffs_jpeg__decoder__decode_mcu__choosy_default(
           v_bits |= (wuffs_base__peek_u64be__no_bounds_check(iop_v_r) >> (v_n_bits & 63u));
           iop_v_r += ((63u - (v_n_bits & 63u)) >> 3u);
           v_n_bits |= 56u;
-          v_ac_h = self->private_impl.f_mcu_blocks_ac_hselector[self->private_impl.f_mcu_current_block];
-          v_ac_ht_fast = ((uint32_t)(self->private_impl.f_huff_tables_fast[v_ac_h][(v_bits >> 56u)]));
+          v_ac_ht_fast = ((uint32_t)(v_ac_huff_table_fast[(v_bits >> 56u)]));
           v_ac_bl = (v_ac_ht_fast >> 8u);
           if (v_n_bits >= v_ac_bl) {
             v_ac_symbol = (255u & v_ac_ht_fast);
@@ -41787,6 +41789,7 @@ wuffs_jpeg__decoder__decode_mcu_progressive_ac_high_bits(
   const uint8_t* io1_v_r WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_v_r WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint32_t v_pos = 0;
+  const uint16_t(* v_ac_huff_table_fast) = NULL;
   uint8_t v_ac_h = 0;
   uint32_t v_ac_symbol = 0;
   uint32_t v_ac_ht_fast = 0;
@@ -41833,6 +41836,8 @@ wuffs_jpeg__decoder__decode_mcu_progressive_ac_high_bits(
         ((uint64_t)(self->private_impl.f_bitstream_ri)));
     while (true) {
       while (true) {
+        v_ac_h = self->private_impl.f_mcu_blocks_ac_hselector[0u];
+        v_ac_huff_table_fast = &self->private_impl.f_huff_tables_fast[v_ac_h][0u];
         while (true) {
           if (((uint64_t)(io2_v_r - iop_v_r)) < 8u) {
             v_ret = 1u;
@@ -41841,8 +41846,7 @@ wuffs_jpeg__decoder__decode_mcu_progressive_ac_high_bits(
           v_bits |= (wuffs_base__peek_u64be__no_bounds_check(iop_v_r) >> (v_n_bits & 63u));
           iop_v_r += ((63u - (v_n_bits & 63u)) >> 3u);
           v_n_bits |= 56u;
-          v_ac_h = self->private_impl.f_mcu_blocks_ac_hselector[0u];
-          v_ac_ht_fast = ((uint32_t)(self->private_impl.f_huff_tables_fast[v_ac_h][(v_bits >> 56u)]));
+          v_ac_ht_fast = ((uint32_t)(v_ac_huff_table_fast[(v_bits >> 56u)]));
           v_ac_bl = (v_ac_ht_fast >> 8u);
           if (v_n_bits >= v_ac_bl) {
             v_ac_symbol = (255u & v_ac_ht_fast);
@@ -41943,6 +41947,7 @@ wuffs_jpeg__decoder__decode_mcu_progressive_ac_low_bit(
   const uint8_t* io1_v_r WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_v_r WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint32_t v_pos = 0;
+  const uint16_t(* v_ac_huff_table_fast) = NULL;
   uint8_t v_ac_h = 0;
   uint32_t v_ac_symbol = 0;
   uint32_t v_ac_ht_fast = 0;
@@ -41984,6 +41989,8 @@ wuffs_jpeg__decoder__decode_mcu_progressive_ac_low_bit(
           if (self->private_impl.f_eob_run > 0u) {
             goto label__goto_do_eob__break;
           }
+          v_ac_h = self->private_impl.f_mcu_blocks_ac_hselector[0u];
+          v_ac_huff_table_fast = &self->private_impl.f_huff_tables_fast[v_ac_h][0u];
           while (true) {
             if (((uint64_t)(io2_v_r - iop_v_r)) < 24u) {
               v_ret = 1u;
@@ -41992,8 +41999,7 @@ wuffs_jpeg__decoder__decode_mcu_progressive_ac_low_bit(
             v_bits |= (wuffs_base__peek_u64be__no_bounds_check(iop_v_r) >> (v_n_bits & 63u));
             iop_v_r += ((63u - (v_n_bits & 63u)) >> 3u);
             v_n_bits |= 56u;
-            v_ac_h = self->private_impl.f_mcu_blocks_ac_hselector[0u];
-            v_ac_ht_fast = ((uint32_t)(self->private_impl.f_huff_tables_fast[v_ac_h][(v_bits >> 56u)]));
+            v_ac_ht_fast = ((uint32_t)(v_ac_huff_table_fast[(v_bits >> 56u)]));
             v_ac_bl = (v_ac_ht_fast >> 8u);
             if (v_n_bits >= v_ac_bl) {
               v_ac_symbol = (255u & v_ac_ht_fast);

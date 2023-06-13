@@ -23,6 +23,8 @@ pri func decoder.decode_mcu_progressive_ac_low_bit!(workbuf: slice base.u8, mx: 
     var r   : base.io_reader
     var pos : base.u32
 
+    var ac_huff_table_fast : nptr roarray[256] base.u16
+
     var ac_h       : base.u8[..= 7]
     var ac_symbol  : base.u32[..= 0xFF]
     var ac_ht_fast : base.u32
@@ -55,7 +57,11 @@ pri func decoder.decode_mcu_progressive_ac_low_bit!(workbuf: slice base.u8, mx: 
                 break.goto_do_eob
             }
 
-            while.ac_components true {
+            ac_h = this.mcu_blocks_ac_hselector[0]
+            ac_huff_table_fast = this.huff_tables_fast[ac_h][..] as ptr array[256] base.u16
+            while.ac_components true,
+                    inv ac_huff_table_fast <> nullptr,
+            {
                 // Load at least 31 bits, by keeping 56 .. 64 loaded (call it 8
                 // bytes). Just like the other decode_mcu_etc functions, this
                 // is enough for the Huffman-encoded ac_symbol (up to 16 bits)
@@ -77,8 +83,7 @@ pri func decoder.decode_mcu_progressive_ac_low_bit!(workbuf: slice base.u8, mx: 
                 n_bits |= 56
 
                 // Read the Huffman-encoded ac_symbol, up to 16 bits long.
-                ac_h = this.mcu_blocks_ac_hselector[0]
-                ac_ht_fast = this.huff_tables_fast[ac_h][bits >> 56] as base.u32
+                ac_ht_fast = ac_huff_table_fast[bits >> 56] as base.u32
                 ac_bl = ac_ht_fast >> 8
                 if n_bits >= ac_bl {
                     ac_symbol = 0xFF & ac_ht_fast
@@ -89,7 +94,9 @@ pri func decoder.decode_mcu_progressive_ac_low_bit!(workbuf: slice base.u8, mx: 
                     ac_blm1 = 8
                     bits ~mod<<= 9
                     n_bits ~mod-= 9
-                    while true {
+                    while true,
+                            inv ac_huff_table_fast <> nullptr,
+                    {
                         ac_ht_slow = this.huff_tables_slow[ac_h][ac_blm1]
                         if ac_code < (ac_ht_slow >> 8) {
                             ac_symbol = this.huff_tables_symbols[ac_h][0xFF & (ac_code ~mod+ ac_ht_slow)] as base.u32
@@ -132,7 +139,9 @@ pri func decoder.decode_mcu_progressive_ac_low_bit!(workbuf: slice base.u8, mx: 
                 }
 
                 // Consume 1 bit per non-zero AC coefficient, up to 63 bits.
-                while.refine_non_zeroes true {
+                while.refine_non_zeroes true,
+                        inv ac_huff_table_fast <> nullptr,
+                {
                     unzig = UNZIG[this.mcu_zig_index]
                     if this.mcu_blocks[0][unzig] <> 0 {
                         if n_bits == 0 {
