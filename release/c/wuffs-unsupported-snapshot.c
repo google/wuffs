@@ -41586,7 +41586,7 @@ wuffs_jpeg__decoder__decode_mcu__choosy_default(
   uint32_t v_dc_blm1 = 0;
   uint32_t v_dc_ht_slow = 0;
   uint32_t v_dc_value = 0;
-  const uint16_t(* v_ac_huff_table_fast) = NULL;
+  const uint16_t* v_ac_huff_table_fast = NULL;
   uint8_t v_ac_h = 0;
   uint32_t v_ac_symbol = 0;
   uint32_t v_ac_ht_fast = 0;
@@ -41790,7 +41790,7 @@ wuffs_jpeg__decoder__decode_mcu_progressive_ac_high_bits(
   const uint8_t* io1_v_r WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_v_r WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint32_t v_pos = 0;
-  const uint16_t(* v_ac_huff_table_fast) = NULL;
+  const uint16_t* v_ac_huff_table_fast = NULL;
   uint8_t v_ac_h = 0;
   uint32_t v_ac_symbol = 0;
   uint32_t v_ac_ht_fast = 0;
@@ -41948,7 +41948,7 @@ wuffs_jpeg__decoder__decode_mcu_progressive_ac_low_bit(
   const uint8_t* io1_v_r WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io2_v_r WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint32_t v_pos = 0;
-  const uint16_t(* v_ac_huff_table_fast) = NULL;
+  const uint16_t* v_ac_huff_table_fast = NULL;
   uint8_t v_ac_h = 0;
   uint32_t v_ac_symbol = 0;
   uint32_t v_ac_ht_fast = 0;

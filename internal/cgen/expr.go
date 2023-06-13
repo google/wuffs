@@ -586,7 +586,11 @@ func (g *gen) writeCTypeName(b *buffer, n *a.TypeExpr, varNamePrefix string, var
 	}
 
 	if isPointerToArray {
-		b.writes("(*")
+		if x.Inner().Inner().IsNumType() {
+			b.writes("*")
+		} else {
+			b.writes("(*")
+		}
 	} else {
 		for i := 0; i < numPointers; i++ {
 			b.writeb('*')
@@ -601,8 +605,10 @@ func (g *gen) writeCTypeName(b *buffer, n *a.TypeExpr, varNamePrefix string, var
 
 	x = n
 	if isPointerToArray {
-		b.writes(")")
 		x = x.Inner().Inner()
+		if !x.IsNumType() {
+			b.writes(")")
+		}
 	}
 	for ; x != nil && x.IsEitherArrayType(); x = x.Inner() {
 		b.writeb('[')
