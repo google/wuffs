@@ -790,7 +790,11 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 	for _, field := range s.Fields() {
 		f := field.AsField()
 		if f.Name() == n.Ident() {
-			n.SetMType(f.XType())
+			if q.astFunc.Effect().Pure() {
+				n.SetMType(f.XType().CloneReadOnly())
+			} else {
+				n.SetMType(f.XType())
+			}
 			return nil
 		}
 	}
@@ -854,11 +858,18 @@ func (q *checker) tcheckExprBinaryOp(n *a.Expr, depth uint32) error {
 			(rhs.Decorator() == t.IDPtr) &&
 			rhs.Inner().IsEitherArrayType() &&
 			lTyp.Inner().Eq(rhs.Inner().Inner()) {
-			if lTyp.IsReadOnly() || rhs.IsRecursivelyReadOnly() {
-				// TODO.
-			} else {
+
+			if !lTyp.IsReadOnly() && rhs.Innermost().IsNumType() {
 				n.SetMType(rhs)
 				return nil
+			}
+			for r := rhs.Inner(); ; r = r.Inner() {
+				if r.IsNumType() {
+					n.SetMType(rhs)
+					return nil
+				} else if r.Decorator() != t.IDRoarray {
+					break
+				}
 			}
 		}
 		return fmt.Errorf("check: cannot convert expression %q, of type %q, as type %q",

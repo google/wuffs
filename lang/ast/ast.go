@@ -826,6 +826,22 @@ func (n *TypeExpr) Min() *Expr          { return n.lhs.AsExpr() }
 func (n *TypeExpr) Max() *Expr          { return n.mhs.AsExpr() }
 func (n *TypeExpr) Inner() *TypeExpr    { return n.rhs.AsTypeExpr() }
 
+func (n *TypeExpr) CloneReadOnly() *TypeExpr {
+	ret := *n
+	switch ret.id0 {
+	case t.IDArray:
+		ret.id0 = t.IDRoarray
+	case t.IDSlice:
+		ret.id0 = t.IDRoslice
+	case t.IDTable:
+		ret.id0 = t.IDRotable
+	}
+	if ret.rhs != nil {
+		ret.rhs = ret.rhs.AsTypeExpr().CloneReadOnly().AsNode()
+	}
+	return &ret
+}
+
 func (n *TypeExpr) Innermost() *TypeExpr {
 	for ; n != nil && n.Inner() != nil; n = n.Inner() {
 	}
