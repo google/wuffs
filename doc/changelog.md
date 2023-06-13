@@ -4,6 +4,7 @@
 ## Work In Progress
 
 - Added `example/toy-aux-image`.
+- Added `slice_var as nptr array[etc] etc` conversion.
 - Added `std/jpeg`.
 - Added `std/netpbm`.
 - Changed `lzw.set_literal_width` to `lzw.set_quirk`.

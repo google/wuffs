@@ -17,6 +17,7 @@ package check
 import (
 	"errors"
 	"fmt"
+	"math/big"
 
 	a "github.com/google/wuffs/lang/ast"
 	t "github.com/google/wuffs/lang/token"
@@ -381,4 +382,16 @@ func (q *checker) proveRecvNotEqNullptr(recv *a.Expr) error {
 		}
 	}
 	return fmt.Errorf("check: cannot prove %q", recv.Str(q.tm)+" <> nullptr")
+}
+
+func (q *checker) proveSliceLengthAtLeast(n *a.Expr, minInclLength *big.Int) error {
+	if (n.Operator() == t.IDDotDot) && (n.MHS() == nil) && (n.RHS() == nil) {
+		if lTyp := n.LHS().AsExpr().MType(); lTyp.IsEitherArrayType() &&
+			lTyp.ArrayLength().ConstValue().Cmp(minInclLength) >= 0 {
+			return nil
+		}
+	}
+	// TODO: the general case, where n isn't "foo[..]" and foo isn't an array
+	// of length >= minInclLength.
+	return fmt.Errorf("check: cannot prove %q", n.Str(q.tm)+".length() >= "+minInclLength.String())
 }

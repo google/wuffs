@@ -342,6 +342,10 @@ func (g *gen) writeVars(b *buffer, f *funk, inStructDecl bool) error {
 			return fmt.Errorf("TODO: support token_{reader,writer} typed variables")
 		}
 
+		if typ.IsPointerType() && typ.IsRecursivelyReadOnly() {
+			b.writes("const ")
+		}
+
 		if err := g.writeCTypeName(b, typ, vPrefix, name); err != nil {
 			return err
 		}

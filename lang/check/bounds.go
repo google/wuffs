@@ -953,10 +953,28 @@ func (q *checker) bcheckExpr1(n *a.Expr, depth uint32) (bounds, error) {
 	case op.IsXUnaryOp():
 		return q.bcheckExprUnaryOp(n, depth)
 	case op.IsXBinaryOp():
-		if op == t.IDXBinaryAs {
-			return q.bcheckExpr(n.LHS().AsExpr(), depth)
+		if op != t.IDXBinaryAs {
+			return q.bcheckExprBinaryOp(op, n.LHS().AsExpr(), n.RHS().AsExpr(), depth)
 		}
-		return q.bcheckExprBinaryOp(op, n.LHS().AsExpr(), n.RHS().AsExpr(), depth)
+		b, err := q.bcheckExpr(n.LHS().AsExpr(), depth)
+		if err != nil {
+			return bounds{}, err
+		} else if lhs := n.LHS().AsExpr(); lhs.MType().IsEitherSliceType() {
+			cv := (*big.Int)(nil)
+			rhs := n.RHS().AsTypeExpr()
+			if (rhs.Decorator() == t.IDPtr) && (rhs.Inner().IsEitherArrayType()) {
+				cv = rhs.Inner().ArrayLength().ConstValue()
+			}
+			if cv == nil {
+				// TODO: fix this.
+				return bounds{}, fmt.Errorf("check: cannot bounds-check conversion to %q", rhs.Str(q.tm))
+			}
+			if err := q.proveSliceLengthAtLeast(lhs, cv); err != nil {
+				return bounds{}, err
+			}
+			b = bounds{one, maxPointerBounds}
+		}
+		return b, nil
 	case op.IsXAssociativeOp():
 		return q.bcheckExprAssociativeOp(n, depth)
 	}

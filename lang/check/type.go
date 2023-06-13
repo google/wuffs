@@ -332,9 +332,11 @@ func (q *checker) tcheckAssign(n *a.Assign) error {
 		return err
 	}
 	for l := lhs; l != nil; l = l.LHS().AsExpr() {
-		if (l.Operator() == t.IDOpenBracket) && l.LHS().MType().IsReadOnly() {
+		if l.Operator() != t.IDOpenBracket {
+			// No-op.
+		} else if lTyp := l.LHS().MType(); lTyp.IsRecursivelyReadOnly() {
 			return fmt.Errorf("check: assignment %q: assignee fragment %q, of type %q, has read-only type",
-				n.Operator().Str(q.tm), l.LHS().AsExpr().Str(q.tm), l.LHS().AsExpr().MType().Str(q.tm))
+				n.Operator().Str(q.tm), l.LHS().AsExpr().Str(q.tm), lTyp.Str(q.tm))
 		}
 	}
 	lTyp := lhs.MType()
@@ -848,6 +850,16 @@ func (q *checker) tcheckExprBinaryOp(n *a.Expr, depth uint32) error {
 		if lTyp.IsNumTypeOrIdeal() && rhs.IsNumType() {
 			n.SetMType(rhs)
 			return nil
+		} else if lTyp.IsEitherSliceType() &&
+			(rhs.Decorator() == t.IDPtr) &&
+			rhs.Inner().IsEitherArrayType() &&
+			lTyp.Inner().Eq(rhs.Inner().Inner()) {
+			if lTyp.IsReadOnly() || rhs.IsRecursivelyReadOnly() {
+				// TODO.
+			} else {
+				n.SetMType(rhs)
+				return nil
+			}
 		}
 		return fmt.Errorf("check: cannot convert expression %q, of type %q, as type %q",
 			lhs.Str(q.tm), lTyp.Str(q.tm), rhs.Str(q.tm))

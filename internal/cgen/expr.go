@@ -404,6 +404,26 @@ func (g *gen) writeExprXMinusY(b *buffer, x *a.Expr, y *a.Expr, depth uint32) er
 }
 
 func (g *gen) writeExprAs(b *buffer, lhs *a.Expr, rhs *a.TypeExpr, depth uint32) error {
+	if rhs.IsPointerType() {
+		if !lhs.MType().IsEitherSliceType() {
+			// TODO: fix this.
+			return fmt.Errorf("cannot convert Wuffs conversion from %q to %q to C", lhs.Str(g.tm), rhs.Str(g.tm))
+		}
+		if (lhs.Operator() == t.IDDotDot) && (lhs.MHS() == nil) && (lhs.RHS() == nil) {
+			b.writes("&")
+			if err := g.writeExpr(b, lhs.LHS().AsExpr(), false, depth); err != nil {
+				return err
+			}
+			b.writes("[0u]")
+			return nil
+		}
+		if err := g.writeExpr(b, lhs, false, depth); err != nil {
+			return err
+		}
+		b.writes(".ptr")
+		return nil
+	}
+
 	// Drop the "& redundantMask" in "(foo & redundantMask) as base.uxx". It's
 	// redundant in C/C++ (but not in Wuffs).
 	if rhs.IsNumType() {

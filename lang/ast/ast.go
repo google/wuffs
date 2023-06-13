@@ -941,6 +941,16 @@ func (n *TypeExpr) IsReadOnly() bool {
 	return (n.id0 == t.IDRoarray) || (n.id0 == t.IDRoslice) || (n.id0 == t.IDRotable)
 }
 
+func (n *TypeExpr) IsRecursivelyReadOnly() bool {
+	for ; n != nil; n = n.Inner() {
+		switch n.id0 {
+		case t.IDRoarray, t.IDRoslice, t.IDRotable:
+			return true
+		}
+	}
+	return false
+}
+
 func (n *TypeExpr) IsContainerOfSpecificNumType(container t.ID, numType t.ID) bool {
 	return (n.id0 == container) && n.Inner().IsNumType() && (n.Inner().id2 == numType)
 }
