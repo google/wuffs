@@ -33975,16 +33975,17 @@ wuffs_lzw__decoder__flush(
     return wuffs_base__make_slice_u8(NULL, 0);
   }
 
-  wuffs_base__slice_u8 v_s = {0};
+  uint32_t v_ri = 0;
+  uint32_t v_wi = 0;
 
-  if (self->private_impl.f_output_ri <= self->private_impl.f_output_wi) {
-    v_s = wuffs_base__make_slice_u8_ij(self->private_data.f_output,
-        self->private_impl.f_output_ri,
-        self->private_impl.f_output_wi);
-  }
+  v_ri = self->private_impl.f_output_ri;
+  v_wi = self->private_impl.f_output_wi;
   self->private_impl.f_output_ri = 0u;
   self->private_impl.f_output_wi = 0u;
-  return v_s;
+  if (v_ri <= v_wi) {
+    return wuffs_base__make_slice_u8_ij(self->private_data.f_output, v_ri, v_wi);
+  }
+  return wuffs_base__make_slice_u8(self->private_data.f_output, 0);
 }
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__LZW)

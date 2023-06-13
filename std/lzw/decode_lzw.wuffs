@@ -369,12 +369,16 @@ pri func decoder.write_to?(dst: base.io_writer) {
 }
 
 pub func decoder.flush!() roslice base.u8 {
-    var s : slice base.u8
+    var ri : base.u32[..= 8191]
+    var wi : base.u32[..= 8191]
 
-    if this.output_ri <= this.output_wi {
-        s = this.output[this.output_ri .. this.output_wi]
-    }
+    ri = this.output_ri
+    wi = this.output_wi
     this.output_ri = 0
     this.output_wi = 0
-    return s
+
+    if ri <= wi {
+        return this.output[ri .. wi]
+    }
+    return this.output[.. 0]
 }

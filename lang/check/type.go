@@ -240,6 +240,20 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 			return fmt.Errorf("check: cannot return %q (of type %q) as type %q",
 				value.Str(q.tm), rTyp.Str(q.tm), lTyp.Str(q.tm))
 		}
+		if rTyp.IsEitherSliceType() {
+			ok := false
+			if value.Operator() != t.IDDotDot {
+				// No-op.
+			} else if lhs := value.LHS().AsExpr(); lhs.Operator() != t.IDDot {
+				// No-op.
+			} else if llhs := lhs.LHS().AsExpr(); true {
+				ok = (llhs.Operator() == 0) && (llhs.Ident() == t.IDThis)
+			}
+			if !ok {
+				return fmt.Errorf("check: cannot return %q, need something of the form this.etc[i .. j]",
+					value.Str(q.tm))
+			}
+		}
 
 	case a.KVar:
 		n := n.AsVar()
