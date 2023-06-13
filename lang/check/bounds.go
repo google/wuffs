@@ -65,6 +65,20 @@ var (
 	oneTwentyEight = big.NewInt(+128)
 	ffff           = big.NewInt(0xFFFF)
 
+	// maxPointerBounds is the artificial value in the [0 ..= maxPointerBounds]
+	// range for bounds-checking pointer-typed values. Its value is arbitrary
+	// (but greater than 1).
+	//
+	// It is positive (not 0) to distinguish nullptr from non-nullptr. More
+	// subtly, it is greater than 1 so that two non-nullptr pointer-typed
+	// values aren't necessarily equal.
+	maxPointerBounds = big.NewInt(1234)
+
+	// funcBounds is the artificial value in the [1 ..= funcBounds] range for
+	// bounds-checking function-typed values. Its value is arbitrary (but
+	// greater than 1) for the same reasons as maxPointerBounds.
+	funcBounds = big.NewInt(5678)
+
 	minIdeal = big.NewInt(0).Lsh(minusOne, 1000)
 	maxIdeal = big.NewInt(0).Lsh(one, 1000)
 
@@ -1507,7 +1521,7 @@ func makeConstValueExpr(tm *t.Map, cv *big.Int) (*a.Expr, error) {
 // makeSliceLength returns "x.length()".
 func makeSliceLength(slice *a.Expr) *a.Expr {
 	x := a.NewExpr(0, t.IDDot, t.IDLength, slice.AsNode(), nil, nil, nil)
-	x.SetMBounds(bounds{one, one})
+	x.SetMBounds(bounds{funcBounds, funcBounds})
 	x.SetMType(a.NewTypeExpr(t.IDFunc, 0, t.IDLength, slice.MType().AsNode(), nil, nil))
 	x = a.NewExpr(0, t.IDOpenParen, 0, x.AsNode(), nil, nil, nil)
 	// TODO: call SetMBounds?
@@ -1785,11 +1799,11 @@ func (q *checker) bcheckTypeExpr1(typ *a.TypeExpr) (bounds, error) {
 		if _, err := q.bcheckTypeExpr(typ.Receiver()); err != nil {
 			return bounds{}, err
 		}
-		return bounds{one, one}, nil
+		return bounds{one, funcBounds}, nil
 	case t.IDNptr:
-		return bounds{zero, one}, nil
+		return bounds{zero, maxPointerBounds}, nil
 	case t.IDPtr:
-		return bounds{one, one}, nil
+		return bounds{one, maxPointerBounds}, nil
 	case t.IDRoslice, t.IDRotable, t.IDSlice, t.IDTable:
 		return bounds{zero, zero}, nil
 	default:

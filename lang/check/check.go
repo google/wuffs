@@ -648,7 +648,7 @@ func (c *Checker) checkFuncSignature1(node *a.Node, banCPUArchTypes bool) error 
 		sTyp.AsNode().SetMType(typeExprTypeExpr)
 
 		pTyp := a.NewTypeExpr(t.IDPtr, 0, 0, nil, nil, sTyp)
-		pTyp.AsNode().SetMBounds(bounds{one, one})
+		pTyp.AsNode().SetMBounds(bounds{one, maxPointerBounds})
 		pTyp.AsNode().SetMType(typeExprTypeExpr)
 
 		localVars[t.IDThis] = pTyp

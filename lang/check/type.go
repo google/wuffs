@@ -1232,7 +1232,7 @@ func (q *checker) tcheckChoose(n *a.Choose) error {
 			return fmt.Errorf("check: incompatible choose functions %q and %q: %v",
 				fQQID.Str(q.tm), gQQID.Str(q.tm), err)
 		}
-		o.SetMBounds(bounds{one, one})
+		o.SetMBounds(bounds{one, maxPointerBounds})
 		o.SetMType(typeExprNonNullptr)
 	}
 	return nil
