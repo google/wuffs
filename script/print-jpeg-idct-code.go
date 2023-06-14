@@ -187,17 +187,17 @@ const (
 const pass0 = `// ==== First pass, column $colX$.
 
 if (0 == (
-        this.mcu_blocks[args.b][$row1colX$] |
-        this.mcu_blocks[args.b][$row2colX$] |
-        this.mcu_blocks[args.b][$row3colX$] |
-        this.mcu_blocks[args.b][$row4colX$] |
-        this.mcu_blocks[args.b][$row5colX$] |
-        this.mcu_blocks[args.b][$row6colX$] |
-        this.mcu_blocks[args.b][$row7colX$])) {
+        this.mcu_blocks[0][$row1colX$] |
+        this.mcu_blocks[0][$row2colX$] |
+        this.mcu_blocks[0][$row3colX$] |
+        this.mcu_blocks[0][$row4colX$] |
+        this.mcu_blocks[0][$row5colX$] |
+        this.mcu_blocks[0][$row6colX$] |
+        this.mcu_blocks[0][$row7colX$])) {
 // Fast path when the 1-dimensional AC terms are all zero.
 
 intermediate[$row0colX$] =
-        (this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][$row0colX$]) ~mod*
+        (this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][$row0colX$]) ~mod*
         (this.quant_tables[args.q][$row0colX$] as base.u32)) ~mod<< 2
 intermediate[$row1colX$] = intermediate[$row0colX$]
 intermediate[$row2colX$] = intermediate[$row0colX$]
@@ -210,16 +210,16 @@ intermediate[$row7colX$] = intermediate[$row0colX$]
 } else {
 // Even rows.
 
-bq2 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][$row2colX$]) ~mod* (this.quant_tables[args.q][$row2colX$] as base.u32)
-bq6 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][$row6colX$]) ~mod* (this.quant_tables[args.q][$row6colX$] as base.u32)
+bq2 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][$row2colX$]) ~mod* (this.quant_tables[args.q][$row2colX$] as base.u32)
+bq6 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][$row6colX$]) ~mod* (this.quant_tables[args.q][$row6colX$] as base.u32)
 
 ca = (bq2 ~mod+ bq6) ~mod* $p0_541196100$
 
 cb2 = ca ~mod+ (bq2 ~mod* $p0_765366865$)
 cb6 = ca ~mod- (bq6 ~mod* $p1_847759065$)
 
-bq0 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][$row0colX$]) ~mod* (this.quant_tables[args.q][$row0colX$] as base.u32)
-bq4 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][$row4colX$]) ~mod* (this.quant_tables[args.q][$row4colX$] as base.u32)
+bq0 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][$row0colX$]) ~mod* (this.quant_tables[args.q][$row0colX$] as base.u32)
+bq4 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][$row4colX$]) ~mod* (this.quant_tables[args.q][$row4colX$] as base.u32)
 
 ccp = (bq0 ~mod+ bq4) ~mod<< 13
 ccm = (bq0 ~mod- bq4) ~mod<< 13
@@ -231,10 +231,10 @@ cd3 = ccp ~mod- cb2
 
 // Odd rows.
 
-bq1 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][$row1colX$]) ~mod* (this.quant_tables[args.q][$row1colX$] as base.u32)
-bq3 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][$row3colX$]) ~mod* (this.quant_tables[args.q][$row3colX$] as base.u32)
-bq5 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][$row5colX$]) ~mod* (this.quant_tables[args.q][$row5colX$] as base.u32)
-bq7 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[args.b][$row7colX$]) ~mod* (this.quant_tables[args.q][$row7colX$] as base.u32)
+bq1 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][$row1colX$]) ~mod* (this.quant_tables[args.q][$row1colX$] as base.u32)
+bq3 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][$row3colX$]) ~mod* (this.quant_tables[args.q][$row3colX$] as base.u32)
+bq5 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][$row5colX$]) ~mod* (this.quant_tables[args.q][$row5colX$] as base.u32)
+bq7 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][$row7colX$]) ~mod* (this.quant_tables[args.q][$row7colX$] as base.u32)
 
 ci51 = bq5 ~mod+ bq1
 ci53 = bq5 ~mod+ bq3
