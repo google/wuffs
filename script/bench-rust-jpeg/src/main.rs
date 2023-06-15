@@ -24,8 +24,8 @@
 //
 // wuffs bench std/jpeg
 //
-// To run this program, do "cargo run --release" from the parent directory (the
-// directory containing the Cargo.toml file).
+// To run this program: "RUSTFLAGS='-C target-cpu=native' cargo run --release"
+// from the parent directory (the directory containing the Cargo.toml file).
 
 extern crate jpeg_decoder;
 extern crate rustc_version_runtime;
