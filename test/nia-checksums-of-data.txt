@@ -115,3 +115,4 @@ bf7e8c96 test/data/pjw-thumbnail.png
 38cb4cbf test/data/red-blue-gradient.gamma2dot2.png
 38cb4cbf test/data/red-blue-gradient.vanilla.png
 75060601 test/data/rgb24png.bmp
+79ab18b6 test/data/ridiculously-fast.png

@@ -1,12 +1,15 @@
-![WUFFS Logo](./doc/logo/wuffs-acronym-logo-1536x1024.png)
-
 Wuffs is a **memory-safe programming language** (and a **standard library**
 written in that language) for **Wrangling Untrusted File Formats Safely**.
 Wrangling includes parsing, decoding and encoding. Example file formats include
 images, audio, video, fonts and compressed archives.
 
-It is **fast**. Per its [benchmarks](/doc/benchmarks.md) and other linked-to
-blog posts:
+It is [**"ridiculously
+fast"**](https://twitter.com/richgel999/status/1481027198530248714).
+
+![Screenshot of a tweet saying "ridiculously
+fast"](./test/data/ridiculously-fast.png)
+
+Per its [benchmarks](/doc/benchmarks.md) and other linked-to blog posts:
 
 - It can decode bzip2 **[1.3x faster than `/usr/bin/bzcat`
   (C)](https://nigeltao.github.io/blog/2022/wuffs-bzip2-decoder.html)**.
@@ -214,7 +217,10 @@ there.
 
 Nonetheless, Wuffs' GIF decoder has shipped in the Google Chrome web browser
 [since June
-2021](https://chromium-review.googlesource.com/c/chromium/src/+/2940044).
+2021](https://chromium-review.googlesource.com/c/chromium/src/+/2940044). See
+also the ["ridiculously
+fast"](https://twitter.com/richgel999/status/1481027198530248714) tweet already
+mentioned above.
 
 
 # Discussion

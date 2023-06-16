@@ -156,6 +156,10 @@ Pointer"](https://tools.ietf.org/rfc/rfc6901.txt) specification.
 `rgb24png.bmp` comes from [BMP Suite](https://github.com/jsummers/bmpsuite),
 which states that its generated images "are in the public domain".
 
+`ridiculously-fast.png` is a screenshot of a [Richard Geldreich
+tweet](https://twitter.com/richgel999/status/1481027198530248714) from January
+2022. It was lightly edited to darken the non-text areas.
+
 `romeo.txt` is an excerpt of Shakespeare's "Romeo and Juliet", copied from
 [shakespeare.mit.edu](http://shakespeare.mit.edu/romeo_juliet/romeo_juliet.2.2.html).
 
