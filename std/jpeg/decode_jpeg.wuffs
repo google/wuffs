@@ -1514,11 +1514,11 @@ pri func decoder.fill_bitstream!(src: base.io_reader) {
     } endwhile
 
     // If we hit a "\xFF\x??" marker then pad the bitstream. In this method
-    // invocation, insert up to 32 bytes of implicit zeroes. Repeated calls to
+    // invocation, insert up to 264 bytes of implicit zeroes. Repeated calls to
     // this method can insert even more.
     if args.src.length() > 1 {
         if (args.src.peek_u8() >= 0xFF) and ((args.src.peek_u16le() >> 8) > 0) {
-            new_wi = wi.min(no_more_than: 0x800 - 32) + 32
+            new_wi = wi.min(no_more_than: 0x800 - 264) + 264
             if wi < new_wi {
                 this.bitstream_buffer[wi .. new_wi].bulk_memset!(byte_value: 0)
             }

@@ -133,6 +133,18 @@ pri func decoder.decode_mcu!(workbuf: slice base.u8, mx: base.u32[..= 0x1FFF], m
                 break.dc_component
             } endwhile.dc_component
 
+            // Ensure that we have enough bits for the entire
+            // while.ac_components loop.
+            //
+            // Worst case, there are 63 AC components (round that up to 64) and
+            // each one needs (16 + 15) bits (round that up to 4 bytes), so we
+            // need (64 * 4) = 256 bytes of buffer. Add 8 bytes slack so that
+            // we can always call peek_u64be.
+            if r.length() < 264 {
+                ret = 1  // Request another fill_bitstream call.
+                break.goto_done
+            }
+
             ac_h = this.mcu_blocks_ac_hselector[this.mcu_current_block]
             ac_huff_table_fast = this.huff_tables_fast[ac_h][..] as ptr array[256] base.u16
             while.ac_components true,
@@ -140,8 +152,10 @@ pri func decoder.decode_mcu!(workbuf: slice base.u8, mx: base.u32[..= 0x1FFF], m
                     inv ac_huff_table_fast <> nullptr,
             {
                 // Load at least 31 bits, by keeping 56 .. 64 loaded.
+                //
+                // TODO: eliminate this bounds check entirely.
                 if r.length() < 8 {
-                    ret = 1  // Request another fill_bitstream call.
+                    ret = 2  // Internal error.
                     break.goto_done
                 }
                 bits |= r.peek_u64be() >> (n_bits & 63)

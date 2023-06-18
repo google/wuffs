@@ -41028,7 +41028,7 @@ wuffs_jpeg__decoder__fill_bitstream(
   label__0__break:;
   if (((uint64_t)(io2_a_src - iop_a_src)) > 1u) {
     if ((wuffs_base__peek_u8be__no_bounds_check(iop_a_src) >= 255u) && ((wuffs_base__peek_u16le__no_bounds_check(iop_a_src) >> 8u) > 0u)) {
-      v_new_wi = (wuffs_base__u32__min(v_wi, 2016u) + 32u);
+      v_new_wi = (wuffs_base__u32__min(v_wi, 1784u) + 264u);
       if (v_wi < v_new_wi) {
         wuffs_base__bulk_memset(&self->private_data.f_bitstream_buffer[v_wi], (v_new_wi - v_wi), 0u);
       }
@@ -41676,11 +41676,15 @@ wuffs_jpeg__decoder__decode_mcu__choosy_default(
           goto label__dc_component__break;
         }
         label__dc_component__break:;
+        if (((uint64_t)(io2_v_r - iop_v_r)) < 264u) {
+          v_ret = 1u;
+          goto label__goto_done__break;
+        }
         v_ac_h = self->private_impl.f_mcu_blocks_ac_hselector[self->private_impl.f_mcu_current_block];
         v_ac_huff_table_fast = &self->private_impl.f_huff_tables_fast[v_ac_h][0u];
         while (true) {
           if (((uint64_t)(io2_v_r - iop_v_r)) < 8u) {
-            v_ret = 1u;
+            v_ret = 2u;
             goto label__goto_done__break;
           }
           v_bits |= (wuffs_base__peek_u64be__no_bounds_check(iop_v_r) >> (v_n_bits & 63u));
@@ -41837,11 +41841,15 @@ wuffs_jpeg__decoder__decode_mcu_progressive_ac_high_bits(
         ((uint64_t)(self->private_impl.f_bitstream_ri)));
     while (true) {
       while (true) {
+        if (((uint64_t)(io2_v_r - iop_v_r)) < 264u) {
+          v_ret = 1u;
+          goto label__goto_done__break;
+        }
         v_ac_h = self->private_impl.f_mcu_blocks_ac_hselector[0u];
         v_ac_huff_table_fast = &self->private_impl.f_huff_tables_fast[v_ac_h][0u];
         while (true) {
           if (((uint64_t)(io2_v_r - iop_v_r)) < 8u) {
-            v_ret = 1u;
+            v_ret = 2u;
             goto label__goto_done__break;
           }
           v_bits |= (wuffs_base__peek_u64be__no_bounds_check(iop_v_r) >> (v_n_bits & 63u));

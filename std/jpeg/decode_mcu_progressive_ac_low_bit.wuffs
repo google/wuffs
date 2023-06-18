@@ -68,7 +68,9 @@ pri func decoder.decode_mcu_progressive_ac_low_bit!(workbuf: slice base.u8, mx: 
                 // and processing the ac_value (up to 15 bits).
                 //
                 // After that, it's simpler for this "AC low bit" flavor if we
-                // never suspend for the rest of the while.ac_components loop.
+                // never suspend for the rest of this iteration of the
+                // while.ac_components loop.
+                //
                 // Specifically, we want to have enough bits in the bitstream
                 // so that we don't suspend inside the while.refine_non_zeroes
                 // loop. In the worst case, we need another 8 bytes for
