@@ -37515,6 +37515,12 @@ WUFFS_JPEG__BIAS_AND_CLAMP[1024] WUFFS_BASE__POTENTIALLY_UNUSED = {
   120, 121, 122, 123, 124, 125, 126, 127,
 };
 
+static const uint32_t
+WUFFS_JPEG__EXTEND[16] WUFFS_BASE__POTENTIALLY_UNUSED = {
+  0, 4294967295, 4294967293, 4294967289, 4294967281, 4294967265, 4294967233, 4294967169,
+  4294967041, 4294966785, 4294966273, 4294965249, 4294963201, 4294959105, 4294950913, 4294934529,
+};
+
 // ---------------- Private Initializer Prototypes
 
 // ---------------- Private Function Prototypes
@@ -41589,6 +41595,7 @@ wuffs_jpeg__decoder__decode_mcu__choosy_default(
   uint32_t v_dc_blm1 = 0;
   uint32_t v_dc_ht_slow = 0;
   uint32_t v_dc_value = 0;
+  uint32_t v_dc_extend = 0;
   const uint16_t* v_ac_huff_table_fast = NULL;
   uint8_t v_ac_h = 0;
   uint32_t v_ac_symbol = 0;
@@ -41598,6 +41605,7 @@ wuffs_jpeg__decoder__decode_mcu__choosy_default(
   uint32_t v_ac_blm1 = 0;
   uint32_t v_ac_ht_slow = 0;
   uint32_t v_ac_value = 0;
+  uint32_t v_ac_extend = 0;
   uint32_t v_ac_rrrr = 0;
   uint32_t v_ac_ssss = 0;
   uint32_t v_z = 0;
@@ -41642,6 +41650,7 @@ wuffs_jpeg__decoder__decode_mcu__choosy_default(
           v_dc_bl = (v_dc_ht_fast >> 8u);
           if (v_n_bits >= v_dc_bl) {
             v_dc_symbol = (15u & v_dc_ht_fast);
+            v_dc_extend = WUFFS_JPEG__EXTEND[v_dc_symbol];
             v_bits <<= (v_dc_bl & 63u);
             v_n_bits -= v_dc_bl;
           } else {
@@ -41653,6 +41662,7 @@ wuffs_jpeg__decoder__decode_mcu__choosy_default(
               v_dc_ht_slow = self->private_impl.f_huff_tables_slow[v_dc_h][v_dc_blm1];
               if (v_dc_code < (v_dc_ht_slow >> 8u)) {
                 v_dc_symbol = (15u & ((uint32_t)(self->private_impl.f_huff_tables_symbols[v_dc_h][(255u & ((uint32_t)(v_dc_code + v_dc_ht_slow)))])));
+                v_dc_extend = WUFFS_JPEG__EXTEND[v_dc_symbol];
                 goto label__0__break;
               }
               v_dc_code = (((uint32_t)(v_dc_code << 1u)) | ((uint32_t)((v_bits >> 63u))));
@@ -41661,13 +41671,14 @@ wuffs_jpeg__decoder__decode_mcu__choosy_default(
               v_dc_blm1 = ((v_dc_blm1 + 1u) & 15u);
               if (v_dc_blm1 == 0u) {
                 v_dc_symbol = 0u;
+                v_dc_extend = WUFFS_JPEG__EXTEND[v_dc_symbol];
                 goto label__0__break;
               }
             }
             label__0__break:;
           }
           v_dc_value = ((uint32_t)(((v_bits >> 32u) >> (32u - v_dc_symbol))));
-          v_dc_value += ((((uint32_t)(wuffs_base__utility__sign_extend_rshift_u64(v_bits, 63u))) ^ 4294967295u) & ((uint32_t)(1u + ((uint32_t)(((uint32_t)(4294967295u)) << v_dc_symbol)))));
+          v_dc_value += (v_dc_extend & (((uint32_t)(wuffs_base__utility__sign_extend_rshift_u64(v_bits, 63u))) ^ 4294967295u));
           v_bits <<= v_dc_symbol;
           v_n_bits -= v_dc_symbol;
           v_csel = self->private_impl.f_scan_comps_cselector[self->private_impl.f_mcu_blocks_sselector[self->private_impl.f_mcu_current_block]];
@@ -41721,9 +41732,10 @@ wuffs_jpeg__decoder__decode_mcu__choosy_default(
           }
           v_ac_rrrr = (v_ac_symbol >> 4u);
           v_ac_ssss = (v_ac_symbol & 15u);
+          v_ac_extend = WUFFS_JPEG__EXTEND[v_ac_ssss];
           if (v_ac_ssss > 0u) {
             v_ac_value = ((uint32_t)((v_bits >> (64u - v_ac_ssss))));
-            v_ac_value += ((((uint32_t)(wuffs_base__utility__sign_extend_rshift_u64(v_bits, 63u))) ^ 4294967295u) & ((uint32_t)(1u + ((uint32_t)(((uint32_t)(4294967295u)) << v_ac_ssss)))));
+            v_ac_value += (v_ac_extend & (((uint32_t)(wuffs_base__utility__sign_extend_rshift_u64(v_bits, 63u))) ^ 4294967295u));
             v_bits <<= v_ac_ssss;
             v_n_bits -= v_ac_ssss;
             v_z = (self->private_impl.f_mcu_zig_index + v_ac_rrrr);
@@ -41802,6 +41814,7 @@ wuffs_jpeg__decoder__decode_mcu_progressive_ac_high_bits(
   uint32_t v_ac_blm1 = 0;
   uint32_t v_ac_ht_slow = 0;
   uint32_t v_ac_value = 0;
+  uint32_t v_ac_extend = 0;
   uint32_t v_ac_rrrr = 0;
   uint32_t v_ac_ssss = 0;
   uint32_t v_z = 0;
@@ -41884,9 +41897,10 @@ wuffs_jpeg__decoder__decode_mcu_progressive_ac_high_bits(
           }
           v_ac_rrrr = (v_ac_symbol >> 4u);
           v_ac_ssss = (v_ac_symbol & 15u);
+          v_ac_extend = WUFFS_JPEG__EXTEND[v_ac_ssss];
           if (v_ac_ssss > 0u) {
             v_ac_value = ((uint32_t)((v_bits >> (64u - v_ac_ssss))));
-            v_ac_value += ((((uint32_t)(wuffs_base__utility__sign_extend_rshift_u64(v_bits, 63u))) ^ 4294967295u) & ((uint32_t)(1u + ((uint32_t)(((uint32_t)(4294967295u)) << v_ac_ssss)))));
+            v_ac_value += (v_ac_extend & (((uint32_t)(wuffs_base__utility__sign_extend_rshift_u64(v_bits, 63u))) ^ 4294967295u));
             v_bits <<= v_ac_ssss;
             v_n_bits -= v_ac_ssss;
             v_z = (self->private_impl.f_mcu_zig_index + v_ac_rrrr);
@@ -42216,6 +42230,7 @@ wuffs_jpeg__decoder__decode_mcu_progressive_dc_high_bits(
   uint32_t v_dc_blm1 = 0;
   uint32_t v_dc_ht_slow = 0;
   uint32_t v_dc_value = 0;
+  uint32_t v_dc_extend = 0;
 
   v_bits = self->private_impl.f_bitstream_bits;
   v_n_bits = self->private_impl.f_bitstream_n_bits;
@@ -42253,6 +42268,7 @@ wuffs_jpeg__decoder__decode_mcu_progressive_dc_high_bits(
           v_dc_bl = (v_dc_ht_fast >> 8u);
           if (v_n_bits >= v_dc_bl) {
             v_dc_symbol = (15u & v_dc_ht_fast);
+            v_dc_extend = WUFFS_JPEG__EXTEND[v_dc_symbol];
             v_bits <<= (v_dc_bl & 63u);
             v_n_bits -= v_dc_bl;
           } else {
@@ -42264,6 +42280,7 @@ wuffs_jpeg__decoder__decode_mcu_progressive_dc_high_bits(
               v_dc_ht_slow = self->private_impl.f_huff_tables_slow[v_dc_h][v_dc_blm1];
               if (v_dc_code < (v_dc_ht_slow >> 8u)) {
                 v_dc_symbol = (15u & ((uint32_t)(self->private_impl.f_huff_tables_symbols[v_dc_h][(255u & ((uint32_t)(v_dc_code + v_dc_ht_slow)))])));
+                v_dc_extend = WUFFS_JPEG__EXTEND[v_dc_symbol];
                 goto label__0__break;
               }
               v_dc_code = (((uint32_t)(v_dc_code << 1u)) | ((uint32_t)((v_bits >> 63u))));
@@ -42272,13 +42289,14 @@ wuffs_jpeg__decoder__decode_mcu_progressive_dc_high_bits(
               v_dc_blm1 = ((v_dc_blm1 + 1u) & 15u);
               if (v_dc_blm1 == 0u) {
                 v_dc_symbol = 0u;
+                v_dc_extend = WUFFS_JPEG__EXTEND[v_dc_symbol];
                 goto label__0__break;
               }
             }
             label__0__break:;
           }
           v_dc_value = ((uint32_t)(((v_bits >> 32u) >> (32u - v_dc_symbol))));
-          v_dc_value += ((((uint32_t)(wuffs_base__utility__sign_extend_rshift_u64(v_bits, 63u))) ^ 4294967295u) & ((uint32_t)(1u + ((uint32_t)(((uint32_t)(4294967295u)) << v_dc_symbol)))));
+          v_dc_value += (v_dc_extend & (((uint32_t)(wuffs_base__utility__sign_extend_rshift_u64(v_bits, 63u))) ^ 4294967295u));
           v_bits <<= v_dc_symbol;
           v_n_bits -= v_dc_symbol;
           v_csel = self->private_impl.f_scan_comps_cselector[self->private_impl.f_mcu_blocks_sselector[self->private_impl.f_mcu_current_block]];

@@ -31,6 +31,7 @@ pri func decoder.decode_mcu_progressive_dc_high_bits!(workbuf: slice base.u8, mx
     var dc_blm1    : base.u32[..= 15]
     var dc_ht_slow : base.u32
     var dc_value   : base.u32
+    var dc_extend  : base.u32
 
     bits = this.bitstream_bits
     n_bits = this.bitstream_n_bits
@@ -61,6 +62,7 @@ pri func decoder.decode_mcu_progressive_dc_high_bits!(workbuf: slice base.u8, mx
                 dc_bl = dc_ht_fast >> 8
                 if n_bits >= dc_bl {
                     dc_symbol = 0x0F & dc_ht_fast
+                    dc_extend = EXTEND[dc_symbol]
                     bits ~mod<<= (dc_bl & 63)
                     n_bits -= dc_bl
                 } else {
@@ -74,6 +76,7 @@ pri func decoder.decode_mcu_progressive_dc_high_bits!(workbuf: slice base.u8, mx
                         dc_ht_slow = this.huff_tables_slow[dc_h][dc_blm1]
                         if dc_code < (dc_ht_slow >> 8) {
                             dc_symbol = 0x0F & (this.huff_tables_symbols[dc_h][0xFF & (dc_code ~mod+ dc_ht_slow)] as base.u32)
+                            dc_extend = EXTEND[dc_symbol]
                             break
                         }
                         dc_code = (dc_code ~mod<< 1) | ((bits >> 63) as base.u32)
@@ -82,6 +85,7 @@ pri func decoder.decode_mcu_progressive_dc_high_bits!(workbuf: slice base.u8, mx
                         dc_blm1 = (dc_blm1 + 1) & 15
                         if dc_blm1 == 0 {
                             dc_symbol = 0
+                            dc_extend = EXTEND[dc_symbol]
                             break
                         }
                     } endwhile
@@ -92,9 +96,8 @@ pri func decoder.decode_mcu_progressive_dc_high_bits!(workbuf: slice base.u8, mx
                 // The dc_value is shifted by (64 - dc_symbol) in two steps,
                 // because we want to shift by 64 (not 0) when dc_symbol is 0.
                 dc_value = (((bits >> 32) >> (32 - dc_symbol)) & 0xFFFF_FFFF) as base.u32
-                dc_value ~mod+=  // EXTEND per section F.2.2.1.
-                        (((this.util.sign_extend_rshift_u64(a: bits, n: 63) & 0xFFFF_FFFF) as base.u32) ^ 0xFFFF_FFFF) &
-                        (1 ~mod+ ((0xFFFF_FFFF as base.u32) ~mod<< dc_symbol))
+                dc_value ~mod+= dc_extend &
+                        (((this.util.sign_extend_rshift_u64(a: bits, n: 63) & 0xFFFF_FFFF) as base.u32) ^ 0xFFFF_FFFF)
                 bits ~mod<<= dc_symbol
                 n_bits ~mod-= dc_symbol
                 csel = this.scan_comps_cselector[this.mcu_blocks_sselector[this.mcu_current_block]]
