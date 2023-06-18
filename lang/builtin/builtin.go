@@ -388,6 +388,7 @@ var funcsOther = [...]string{
 		"min_incl_x: u32, min_incl_y: u32, max_excl_x: u32, max_excl_y: u32) rect_ie_u32",
 	"utility.sign_extend_convert_u16_u32(a: u16) u32",
 	"utility.sign_extend_rshift_u32(a: u32, n: u32[..= 31]) u32",
+	"utility.sign_extend_rshift_u64(a: u64, n: u32[..= 63]) u64",
 
 	// ---- ranges
 

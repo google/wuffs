@@ -120,9 +120,9 @@ pri func decoder.decode_mcu_progressive_ac_high_bits!(workbuf: slice base.u8, mx
                 // the eob_run in the next ac_rrrr (up to 15) bits.
                 if ac_ssss > 0 {
                     ac_value = ((bits >> (64 - ac_ssss)) & 0xFFFF_FFFF) as base.u32
-                    if (bits >> 63) == 0 {  // EXTEND per section F.2.2.1.
-                        ac_value ~mod+= 1 ~mod+ ((0xFFFF_FFFF as base.u32) ~mod<< ac_ssss)
-                    }
+                    ac_value ~mod+=  // EXTEND per section F.2.2.1.
+                            (((this.util.sign_extend_rshift_u64(a: bits, n: 63) & 0xFFFF_FFFF) as base.u32) ^ 0xFFFF_FFFF) &
+                            (1 ~mod+ ((0xFFFF_FFFF as base.u32) ~mod<< ac_ssss))
                     bits ~mod<<= ac_ssss
                     n_bits ~mod-= ac_ssss
                     z = this.mcu_zig_index + ac_rrrr

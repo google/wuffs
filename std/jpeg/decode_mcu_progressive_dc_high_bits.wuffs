@@ -92,9 +92,9 @@ pri func decoder.decode_mcu_progressive_dc_high_bits!(workbuf: slice base.u8, mx
                 // The dc_value is shifted by (64 - dc_symbol) in two steps,
                 // because we want to shift by 64 (not 0) when dc_symbol is 0.
                 dc_value = (((bits >> 32) >> (32 - dc_symbol)) & 0xFFFF_FFFF) as base.u32
-                if (bits >> 63) == 0 {  // EXTEND per section F.2.2.1.
-                    dc_value ~mod+= 1 ~mod+ ((0xFFFF_FFFF as base.u32) ~mod<< dc_symbol)
-                }
+                dc_value ~mod+=  // EXTEND per section F.2.2.1.
+                        (((this.util.sign_extend_rshift_u64(a: bits, n: 63) & 0xFFFF_FFFF) as base.u32) ^ 0xFFFF_FFFF) &
+                        (1 ~mod+ ((0xFFFF_FFFF as base.u32) ~mod<< dc_symbol))
                 bits ~mod<<= dc_symbol
                 n_bits ~mod-= dc_symbol
                 csel = this.scan_comps_cselector[this.mcu_blocks_sselector[this.mcu_current_block]]
