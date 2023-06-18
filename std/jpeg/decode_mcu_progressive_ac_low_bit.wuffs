@@ -144,7 +144,7 @@ pri func decoder.decode_mcu_progressive_ac_low_bit!(workbuf: slice base.u8, mx: 
                 while.refine_non_zeroes true,
                         inv ac_huff_table_fast <> nullptr,
                 {
-                    unzig = UNZIG[this.mcu_zig_index]
+                    unzig = UNZIG[1 + this.mcu_zig_index]
                     if this.mcu_blocks[0][unzig] <> 0 {
                         if n_bits == 0 {
                             if r.length() < 8 {
@@ -179,7 +179,7 @@ pri func decoder.decode_mcu_progressive_ac_low_bit!(workbuf: slice base.u8, mx: 
                 } endwhile.refine_non_zeroes
 
                 if ac_value <> 0 {
-                    this.mcu_blocks[0][UNZIG[this.mcu_zig_index]] = (ac_value & 0xFFFF) as base.u16
+                    this.mcu_blocks[0][UNZIG[1 + this.mcu_zig_index]] = (ac_value & 0xFFFF) as base.u16
                 }
 
                 if this.mcu_zig_index >= (this.scan_se as base.u32) {
@@ -200,7 +200,7 @@ pri func decoder.decode_mcu_progressive_ac_low_bit!(workbuf: slice base.u8, mx: 
             while.refine_eob_non_zeroes true,
                     inv this.eob_run > 0,
             {
-                unzig = UNZIG[this.mcu_zig_index]
+                unzig = UNZIG[1 + this.mcu_zig_index]
                 if this.mcu_blocks[0][unzig] <> 0 {
                     if n_bits == 0 {
                         // Load at least 1 bit, by keeping 56 .. 64 loaded.

@@ -36,7 +36,7 @@ pri func decoder.decode_mcu_progressive_ac_high_bits!(workbuf: slice base.u8, mx
     var ac_rrrr : base.u32[..= 15]
     var ac_ssss : base.u32[..= 15]
 
-    var z : base.u32[..= 78]  // 78 = 63 + 15.
+    var z : base.u32[..= 79]  // 79 = 63 + 15 + 1.
 
     if this.eob_run > 0 {
         this.eob_run -= 1
@@ -126,14 +126,14 @@ pri func decoder.decode_mcu_progressive_ac_high_bits!(workbuf: slice base.u8, mx
                             (((this.util.sign_extend_rshift_u64(a: bits, n: 63) & 0xFFFF_FFFF) as base.u32) ^ 0xFFFF_FFFF)
                     bits ~mod<<= ac_ssss
                     n_bits ~mod-= ac_ssss
-                    z = this.mcu_zig_index + ac_rrrr
+                    z = this.mcu_zig_index + ac_rrrr + 1
                     this.mcu_blocks[0][UNZIG[z]] =
                             ((ac_value ~mod<< this.scan_al) & 0xFFFF) as base.u16
-                    if (z + 1) > (this.scan_se as base.u32) {
+                    if z > (this.scan_se as base.u32) {
                         break.ac_components
                     }
-                    assert (z + 1) <= 63 via "a <= b: a <= c; c <= b"(c: (this.scan_se as base.u32))
-                    this.mcu_zig_index = z + 1
+                    assert z <= 63 via "a <= b: a <= c; c <= b"(c: (this.scan_se as base.u32))
+                    this.mcu_zig_index = z
                 } else if ac_rrrr < 15 {
                     this.eob_run = (((1 as base.u16) << ac_rrrr) - 1) as base.u16
                     if ac_rrrr > 0 {

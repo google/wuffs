@@ -53,7 +53,7 @@ pri func decoder.decode_mcu!(workbuf: slice base.u8, mx: base.u32[..= 0x1FFF], m
     var ac_rrrr : base.u32[..= 15]
     var ac_ssss : base.u32[..= 15]
 
-    var z : base.u32[..= 78]  // 78 = 63 + 15.
+    var z : base.u32[..= 79]  // 79 = 63 + 15 + 1.
 
     var mcb    : base.u32[..= 9]
     var stride : base.u64[..= 0x1_0008]
@@ -211,13 +211,13 @@ pri func decoder.decode_mcu!(workbuf: slice base.u8, mx: base.u32[..= 0x1FFF], m
                             (((this.util.sign_extend_rshift_u64(a: bits, n: 63) & 0xFFFF_FFFF) as base.u32) ^ 0xFFFF_FFFF)
                     bits ~mod<<= ac_ssss
                     n_bits ~mod-= ac_ssss
-                    z = this.mcu_zig_index + ac_rrrr
+                    z = this.mcu_zig_index + ac_rrrr + 1
                     this.mcu_blocks[0][UNZIG[z]] =
                             (ac_value & 0xFFFF) as base.u16
-                    if (z + 1) > 63 {
+                    if z > 63 {
                         break.ac_components
                     }
-                    this.mcu_zig_index = z + 1
+                    this.mcu_zig_index = z
                 } else if ac_rrrr < 15 {
                     break.ac_components
                 } else if (this.mcu_zig_index + 16) > 63 {

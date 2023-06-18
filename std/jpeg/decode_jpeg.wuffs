@@ -499,8 +499,8 @@ pri func decoder.decode_dqt?(src: base.io_reader) {
 
         i = 0
         while i < 64 {
-            this.quant_tables[q][UNZIG[i]] = args.src.read_u8?()
             i += 1
+            this.quant_tables[q][UNZIG[i]] = args.src.read_u8?()
         } endwhile
         this.seen_dqt[q] = true
 
