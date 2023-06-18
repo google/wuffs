@@ -65,11 +65,15 @@ pri func decoder.decode_mcu_progressive_ac_high_bits!(workbuf: slice base.u8, mx
                 break.goto_done
             }
 
+            z = this.mcu_zig_index
+            this.mcu_zig_index = 0
             ac_h = this.mcu_blocks_ac_hselector[0]
             ac_huff_table_fast = this.huff_tables_fast[ac_h][..] as ptr array[256] base.u16
-            while.ac_components true,
+            while.ac_components z <= (this.scan_se as base.u32),
                     inv ac_huff_table_fast <> nullptr,
             {
+                assert z < 64 via "a < b: a <= c; c < b"(c: (this.scan_se as base.u32))
+
                 // Load at least 31 bits, by keeping 56 .. 64 loaded.
                 //
                 // TODO: eliminate this bounds check entirely.
@@ -95,6 +99,7 @@ pri func decoder.decode_mcu_progressive_ac_high_bits!(workbuf: slice base.u8, mx
                     n_bits ~mod-= 9
                     while true,
                             inv ac_huff_table_fast <> nullptr,
+                            inv z < 64,
                     {
                         ac_ht_slow = this.huff_tables_slow[ac_h][ac_blm1]
                         if ac_code < (ac_ht_slow >> 8) {
@@ -126,14 +131,9 @@ pri func decoder.decode_mcu_progressive_ac_high_bits!(workbuf: slice base.u8, mx
                             (((this.util.sign_extend_rshift_u64(a: bits, n: 63) & 0xFFFF_FFFF) as base.u32) ^ 0xFFFF_FFFF)
                     bits ~mod<<= ac_ssss
                     n_bits ~mod-= ac_ssss
-                    z = this.mcu_zig_index + ac_rrrr + 1
+                    z += ac_rrrr + 1
                     this.mcu_blocks[0][UNZIG[z]] =
                             ((ac_value ~mod<< this.scan_al) & 0xFFFF) as base.u16
-                    if z > (this.scan_se as base.u32) {
-                        break.ac_components
-                    }
-                    assert z <= 63 via "a <= b: a <= c; c <= b"(c: (this.scan_se as base.u32))
-                    this.mcu_zig_index = z
                 } else if ac_rrrr < 15 {
                     this.eob_run = (((1 as base.u16) << ac_rrrr) - 1) as base.u16
                     if ac_rrrr > 0 {
@@ -142,15 +142,11 @@ pri func decoder.decode_mcu_progressive_ac_high_bits!(workbuf: slice base.u8, mx
                         n_bits ~mod-= ac_rrrr
                     }
                     break.ac_components
-                } else if (this.mcu_zig_index + 16) > (this.scan_se as base.u32) {
-                    break.ac_components
                 } else {
-                    assert (this.mcu_zig_index + 16) <= 63 via "a <= b: a <= c; c <= b"(c: (this.scan_se as base.u32))
-                    this.mcu_zig_index = this.mcu_zig_index + 16
+                    z += 16
                 }
             } endwhile.ac_components
 
-            this.mcu_zig_index = 0
             break.block
         } endwhile.block
 

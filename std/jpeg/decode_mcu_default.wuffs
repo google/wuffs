@@ -149,9 +149,11 @@ pri func decoder.decode_mcu!(workbuf: slice base.u8, mx: base.u32[..= 0x1FFF], m
                 break.goto_done
             }
 
+            z = 1
+            this.mcu_zig_index = 0
             ac_h = this.mcu_blocks_ac_hselector[this.mcu_current_block]
             ac_huff_table_fast = this.huff_tables_fast[ac_h][..] as ptr array[256] base.u16
-            while.ac_components true,
+            while.ac_components z < 64,
                     inv this.mcu_current_block < 10,
                     inv ac_huff_table_fast <> nullptr,
             {
@@ -181,6 +183,7 @@ pri func decoder.decode_mcu!(workbuf: slice base.u8, mx: base.u32[..= 0x1FFF], m
                     while true,
                             inv this.mcu_current_block < 10,
                             inv ac_huff_table_fast <> nullptr,
+                            inv z < 64,
                     {
                         ac_ht_slow = this.huff_tables_slow[ac_h][ac_blm1]
                         if ac_code < (ac_ht_slow >> 8) {
@@ -211,23 +214,16 @@ pri func decoder.decode_mcu!(workbuf: slice base.u8, mx: base.u32[..= 0x1FFF], m
                             (((this.util.sign_extend_rshift_u64(a: bits, n: 63) & 0xFFFF_FFFF) as base.u32) ^ 0xFFFF_FFFF)
                     bits ~mod<<= ac_ssss
                     n_bits ~mod-= ac_ssss
-                    z = this.mcu_zig_index + ac_rrrr + 1
+                    z += ac_rrrr + 1
                     this.mcu_blocks[0][UNZIG[z]] =
                             (ac_value & 0xFFFF) as base.u16
-                    if z > 63 {
-                        break.ac_components
-                    }
-                    this.mcu_zig_index = z
                 } else if ac_rrrr < 15 {
                     break.ac_components
-                } else if (this.mcu_zig_index + 16) > 63 {
-                    break.ac_components
                 } else {
-                    this.mcu_zig_index = this.mcu_zig_index + 16
+                    z += 16
                 }
             } endwhile.ac_components
 
-            this.mcu_zig_index = 0
             assert this.mcu_current_block < 10
             mcb = this.mcu_current_block
             this.mcu_current_block += 1
