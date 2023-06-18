@@ -123,18 +123,18 @@ pri const BIAS_AND_CLAMP : roarray[1024] base.u8 = [
 // )
 //
 // func main() {
-//     for i := 0; i < 16; i++ {
+//     for t := 0; t < 16; t++ {
 //         // "V = (SLL –1 T) + 1" and SLL is "Shift Left Logical".
-//         v := (uint32(0xFFFF_FFFF) << t) + 1
-//         fmt.Printf("0x%08X,", v)
-//         if (i & 3) == 3 {
+//         v := (uint16(0xFFFF) << t) + 1
+//         fmt.Printf("0x%04X,", v)
+//         if (t & 3) == 3 {
 //             fmt.Println()
 //         }
 //     }
 // }
-pri const EXTEND : roarray[16] base.u32 = [
-        0x0000_0000, 0xFFFF_FFFF, 0xFFFF_FFFD, 0xFFFF_FFF9,
-        0xFFFF_FFF1, 0xFFFF_FFE1, 0xFFFF_FFC1, 0xFFFF_FF81,
-        0xFFFF_FF01, 0xFFFF_FE01, 0xFFFF_FC01, 0xFFFF_F801,
-        0xFFFF_F001, 0xFFFF_E001, 0xFFFF_C001, 0xFFFF_8001,
+pri const EXTEND : roarray[16] base.u16 = [
+        0x0000, 0xFFFF, 0xFFFD, 0xFFF9,
+        0xFFF1, 0xFFE1, 0xFFC1, 0xFF81,
+        0xFF01, 0xFE01, 0xFC01, 0xF801,
+        0xF001, 0xE001, 0xC001, 0x8001,
 ]

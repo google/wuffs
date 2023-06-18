@@ -35,8 +35,8 @@ pri func decoder.decode_mcu!(workbuf: slice base.u8, mx: base.u32[..= 0x1FFF], m
     var dc_code    : base.u32
     var dc_blm1    : base.u32[..= 15]
     var dc_ht_slow : base.u32
-    var dc_value   : base.u32
-    var dc_extend  : base.u32
+    var dc_value   : base.u16
+    var dc_extend  : base.u16
 
     var ac_huff_table_fast : nptr roarray[256] base.u16
 
@@ -47,8 +47,8 @@ pri func decoder.decode_mcu!(workbuf: slice base.u8, mx: base.u32[..= 0x1FFF], m
     var ac_code    : base.u32
     var ac_blm1    : base.u32[..= 15]
     var ac_ht_slow : base.u32
-    var ac_value   : base.u32
-    var ac_extend  : base.u32
+    var ac_value   : base.u16
+    var ac_extend  : base.u16
 
     var ac_rrrr : base.u32[..= 15]
     var ac_ssss : base.u32[..= 15]
@@ -123,13 +123,13 @@ pri func decoder.decode_mcu!(workbuf: slice base.u8, mx: base.u32[..= 0x1FFF], m
                 //
                 // The dc_value is shifted by (64 - dc_symbol) in two steps,
                 // because we want to shift by 64 (not 0) when dc_symbol is 0.
-                dc_value = (((bits >> 32) >> (32 - dc_symbol)) & 0xFFFF_FFFF) as base.u32
+                dc_value = (((bits >> 32) >> (32 - dc_symbol)) & 0xFFFF) as base.u16
                 dc_value ~mod+= dc_extend &
-                        (((this.util.sign_extend_rshift_u64(a: bits, n: 63) & 0xFFFF_FFFF) as base.u32) ^ 0xFFFF_FFFF)
+                        (((this.util.sign_extend_rshift_u64(a: bits, n: 63) & 0xFFFF) as base.u16) ^ 0xFFFF)
                 bits ~mod<<= dc_symbol
                 n_bits ~mod-= dc_symbol
                 csel = this.scan_comps_cselector[this.mcu_blocks_sselector[this.mcu_current_block]]
-                this.mcu_previous_dc_values[csel] ~mod+= (dc_value & 0xFFFF) as base.u16
+                this.mcu_previous_dc_values[csel] ~mod+= dc_value
                 this.mcu_blocks[0][0] =
                         this.mcu_previous_dc_values[csel]
 
@@ -209,14 +209,14 @@ pri func decoder.decode_mcu!(workbuf: slice base.u8, mx: base.u32[..= 0x1FFF], m
 
                 // Process the ac_value in the next ac_ssss (up to 15) bits.
                 if ac_ssss > 0 {
-                    ac_value = ((bits >> (64 - ac_ssss)) & 0xFFFF_FFFF) as base.u32
+                    ac_value = ((bits >> (64 - ac_ssss)) & 0xFFFF) as base.u16
                     ac_value ~mod+= ac_extend &
-                            (((this.util.sign_extend_rshift_u64(a: bits, n: 63) & 0xFFFF_FFFF) as base.u32) ^ 0xFFFF_FFFF)
+                            (((this.util.sign_extend_rshift_u64(a: bits, n: 63) & 0xFFFF) as base.u16) ^ 0xFFFF)
                     bits ~mod<<= ac_ssss
                     n_bits ~mod-= ac_ssss
                     z += ac_rrrr + 1
                     this.mcu_blocks[0][UNZIG[z]] =
-                            (ac_value & 0xFFFF) as base.u16
+                            ac_value
                 } else if ac_rrrr < 15 {
                     break.ac_components
                 } else {

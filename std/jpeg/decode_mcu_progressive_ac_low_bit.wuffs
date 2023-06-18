@@ -32,7 +32,7 @@ pri func decoder.decode_mcu_progressive_ac_low_bit!(workbuf: slice base.u8, mx: 
     var ac_code    : base.u32
     var ac_blm1    : base.u32[..= 15]
     var ac_ht_slow : base.u32
-    var ac_value   : base.u32
+    var ac_value   : base.u16
 
     var ac_rrrr : base.u32[..= 15]
     var ac_ssss : base.u32[..= 15]
@@ -124,9 +124,9 @@ pri func decoder.decode_mcu_progressive_ac_low_bit!(workbuf: slice base.u8, mx: 
                 // the eob_run in the next ac_rrrr (up to 15) bits.
                 ac_value = 0
                 if ac_ssss > 0 {
-                    ac_value = (0x0000_0001 as base.u32) << this.scan_al
+                    ac_value = (0x0001 as base.u16) << this.scan_al
                     if (bits >> 63) == 0 {
-                        ac_value = (0xFFFF_FFFF as base.u32) ~mod<< this.scan_al
+                        ac_value = (0xFFFF as base.u16) ~mod<< this.scan_al
                     }
                     bits ~mod<<= 1
                     n_bits ~mod-= 1
@@ -179,7 +179,7 @@ pri func decoder.decode_mcu_progressive_ac_low_bit!(workbuf: slice base.u8, mx: 
                 } endwhile.refine_non_zeroes
 
                 if ac_value <> 0 {
-                    this.mcu_blocks[0][UNZIG[1 + this.mcu_zig_index]] = (ac_value & 0xFFFF) as base.u16
+                    this.mcu_blocks[0][UNZIG[1 + this.mcu_zig_index]] = ac_value
                 }
 
                 if this.mcu_zig_index >= (this.scan_se as base.u32) {

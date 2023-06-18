@@ -30,8 +30,8 @@ pri func decoder.decode_mcu_progressive_dc_high_bits!(workbuf: slice base.u8, mx
     var dc_code    : base.u32
     var dc_blm1    : base.u32[..= 15]
     var dc_ht_slow : base.u32
-    var dc_value   : base.u32
-    var dc_extend  : base.u32
+    var dc_value   : base.u16
+    var dc_extend  : base.u16
 
     bits = this.bitstream_bits
     n_bits = this.bitstream_n_bits
@@ -95,13 +95,13 @@ pri func decoder.decode_mcu_progressive_dc_high_bits!(workbuf: slice base.u8, mx
                 //
                 // The dc_value is shifted by (64 - dc_symbol) in two steps,
                 // because we want to shift by 64 (not 0) when dc_symbol is 0.
-                dc_value = (((bits >> 32) >> (32 - dc_symbol)) & 0xFFFF_FFFF) as base.u32
+                dc_value = (((bits >> 32) >> (32 - dc_symbol)) & 0xFFFF) as base.u16
                 dc_value ~mod+= dc_extend &
-                        (((this.util.sign_extend_rshift_u64(a: bits, n: 63) & 0xFFFF_FFFF) as base.u32) ^ 0xFFFF_FFFF)
+                        (((this.util.sign_extend_rshift_u64(a: bits, n: 63) & 0xFFFF) as base.u16) ^ 0xFFFF)
                 bits ~mod<<= dc_symbol
                 n_bits ~mod-= dc_symbol
                 csel = this.scan_comps_cselector[this.mcu_blocks_sselector[this.mcu_current_block]]
-                this.mcu_previous_dc_values[csel] ~mod+= (dc_value & 0xFFFF) as base.u16
+                this.mcu_previous_dc_values[csel] ~mod+= dc_value
                 this.mcu_blocks[this.mcu_current_block][0] =
                         this.mcu_previous_dc_values[csel] ~mod<< this.scan_al
 
