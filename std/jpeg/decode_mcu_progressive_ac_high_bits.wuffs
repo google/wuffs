@@ -120,6 +120,7 @@ pri func decoder.decode_mcu_progressive_ac_high_bits!(workbuf: slice base.u8, mx
                 // Split the 8-bit ac_symbol into two 4-bit halves, per section
                 // F.2.2.2 "Decoding procedure for AC coefficients".
                 ac_rrrr = ac_symbol >> 4
+                z += ac_rrrr + 1
                 ac_ssss = ac_symbol & 15
                 ac_extend = EXTEND[ac_ssss]
 
@@ -131,7 +132,6 @@ pri func decoder.decode_mcu_progressive_ac_high_bits!(workbuf: slice base.u8, mx
                             (((this.util.sign_extend_rshift_u64(a: bits, n: 63) & 0xFFFF) as base.u16) ^ 0xFFFF)
                     bits ~mod<<= ac_ssss
                     n_bits ~mod-= ac_ssss
-                    z += ac_rrrr + 1
                     this.mcu_blocks[0][UNZIG[z]] =
                             ((ac_value ~mod<< this.scan_al) & 0xFFFF) as base.u16
                 } else if ac_rrrr < 15 {
@@ -142,8 +142,6 @@ pri func decoder.decode_mcu_progressive_ac_high_bits!(workbuf: slice base.u8, mx
                         n_bits ~mod-= ac_rrrr
                     }
                     break.ac_components
-                } else {
-                    z += 16
                 }
             } endwhile.ac_components
 

@@ -41733,6 +41733,7 @@ wuffs_jpeg__decoder__decode_mcu__choosy_default(
             label__1__break:;
           }
           v_ac_rrrr = (v_ac_symbol >> 4u);
+          v_z += (v_ac_rrrr + 1u);
           v_ac_ssss = (v_ac_symbol & 15u);
           v_ac_extend = WUFFS_JPEG__EXTEND[v_ac_ssss];
           if (v_ac_ssss > 0u) {
@@ -41740,12 +41741,9 @@ wuffs_jpeg__decoder__decode_mcu__choosy_default(
             v_ac_value += (v_ac_extend & (((uint16_t)(wuffs_base__utility__sign_extend_rshift_u64(v_bits, 63u))) ^ 65535u));
             v_bits <<= v_ac_ssss;
             v_n_bits -= v_ac_ssss;
-            v_z += (v_ac_rrrr + 1u);
             self->private_data.f_mcu_blocks[0u][WUFFS_JPEG__UNZIG[v_z]] = v_ac_value;
           } else if (v_ac_rrrr < 15u) {
             goto label__ac_components__break;
-          } else {
-            v_z += 16u;
           }
         }
         label__ac_components__break:;
@@ -41893,6 +41891,7 @@ wuffs_jpeg__decoder__decode_mcu_progressive_ac_high_bits(
             label__0__break:;
           }
           v_ac_rrrr = (v_ac_symbol >> 4u);
+          v_z += (v_ac_rrrr + 1u);
           v_ac_ssss = (v_ac_symbol & 15u);
           v_ac_extend = WUFFS_JPEG__EXTEND[v_ac_ssss];
           if (v_ac_ssss > 0u) {
@@ -41900,7 +41899,6 @@ wuffs_jpeg__decoder__decode_mcu_progressive_ac_high_bits(
             v_ac_value += (v_ac_extend & (((uint16_t)(wuffs_base__utility__sign_extend_rshift_u64(v_bits, 63u))) ^ 65535u));
             v_bits <<= v_ac_ssss;
             v_n_bits -= v_ac_ssss;
-            v_z += (v_ac_rrrr + 1u);
             self->private_data.f_mcu_blocks[0u][WUFFS_JPEG__UNZIG[v_z]] = ((uint16_t)(((uint16_t)(v_ac_value << self->private_impl.f_scan_al))));
           } else if (v_ac_rrrr < 15u) {
             self->private_impl.f_eob_run = ((uint16_t)(((((uint16_t)(1u)) << v_ac_rrrr) - 1u)));
@@ -41910,8 +41908,6 @@ wuffs_jpeg__decoder__decode_mcu_progressive_ac_high_bits(
               v_n_bits -= v_ac_rrrr;
             }
             goto label__ac_components__break;
-          } else {
-            v_z += 16u;
           }
         }
         label__ac_components__break:;
