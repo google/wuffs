@@ -90,6 +90,7 @@ const (
 func (g *gen) writeFuncSignature(b *buffer, n *a.Func, wfs uint32) error {
 	switch wfs {
 	case wfsCDecl:
+		b.writes("WUFFS_BASE__GENERATED_C_CODE\n")
 		if n.Public() {
 			b.writes("WUFFS_BASE__MAYBE_STATIC ")
 		} else {
@@ -97,6 +98,7 @@ func (g *gen) writeFuncSignature(b *buffer, n *a.Func, wfs uint32) error {
 		}
 
 	case wfsCDeclChoosy:
+		b.writes("WUFFS_BASE__GENERATED_C_CODE\n")
 		b.writes("static ")
 
 	case wfsCppDecl:

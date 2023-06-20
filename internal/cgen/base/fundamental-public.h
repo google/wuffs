@@ -284,6 +284,26 @@ wuffs_base__cpu_arch__have_x86_sse42() {
 #define WUFFS_BASE__WARN_UNUSED_RESULT
 #endif
 
+// Clang's "-fsanitize=integer" checks for "unsigned-integer-overflow" even
+// though, for *unsigned* integers, it is *not* undefined behavior. The check
+// is still made because unsigned integer overflow "is often unintentional".
+// https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html
+//
+// However, for Wuffs' generated C code, unsigned overflow is intentional. The
+// programmer has to use "~mod+" instead of a plain "+" operator in Wuffs code.
+// Further runtime checks for unsigned integer overflow can add performance
+// overhead (fuzzers can then time out) and can raise false negatives, without
+// generating much benefits. We disable the "unsigned-integer-overflow" check.
+#if defined(__has_feature)
+#if __has_feature(undefined_behavior_sanitizer)
+#define WUFFS_BASE__GENERATED_C_CODE \
+  __attribute__((no_sanitize("unsigned-integer-overflow")))
+#endif
+#endif
+#if !defined(WUFFS_BASE__GENERATED_C_CODE)
+#define WUFFS_BASE__GENERATED_C_CODE
+#endif
+
 // --------
 
 // Options (bitwise or'ed together) for wuffs_foo__bar__initialize functions.
