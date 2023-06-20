@@ -541,9 +541,9 @@ test_wuffs_upsample_inv_h2v1() {
 
   const bool closed = true;
   wuffs_base__io_buffer have = wuffs_base__ptr_u8__reader(  //
-      (void*)have_ptr, 32, closed);
+      (uint8_t*)(void*)have_ptr, 32, closed);
   wuffs_base__io_buffer want = wuffs_base__ptr_u8__reader(  //
-      (void*)want_array, 32, closed);
+      (uint8_t*)(void*)want_array, 32, closed);
 
   return check_io_buffers_equal("", &have, &want);
 }

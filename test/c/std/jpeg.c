@@ -591,7 +591,7 @@ test_wuffs_jpeg_decode_idct() {
   wuffs_base__io_buffer have =
       wuffs_base__ptr_u8__reader(&dst_array[0], 64, true);
   wuffs_base__io_buffer want =
-      wuffs_base__ptr_u8__reader((void*)(&want_array[0]), 64, true);
+      wuffs_base__ptr_u8__reader((uint8_t*)(&want_array[0]), 64, true);
 
   return check_io_buffers_equal("", &have, &want);
 }
@@ -724,11 +724,11 @@ test_wuffs_jpeg_decode_mcu() {
       RETURN_FAIL("decode_mcu failed");
     }
 
-    wuffs_base__io_buffer have = wuffs_base__ptr_u8__reader(  //
-        (void*)(&dec.private_data.f_mcu_blocks[0]),           //
+    wuffs_base__io_buffer have = wuffs_base__ptr_u8__reader(   //
+        (uint8_t*)(void*)(&dec.private_data.f_mcu_blocks[0]),  //
         sizeof(dec.private_data.f_mcu_blocks[0]), true);
     wuffs_base__io_buffer want = wuffs_base__ptr_u8__reader(  //
-        (void*)(&wants[b]),                                   //
+        (uint8_t*)(void*)(&wants[b]),                         //
         sizeof(wants[b]), true);
 
     char prefix[64];

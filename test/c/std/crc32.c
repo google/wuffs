@@ -208,7 +208,7 @@ do_test_xxxxx_crc32_ieee_pi(bool mimic) {
     uint32_t have;
     wuffs_base__slice_u8 data = ((wuffs_base__slice_u8){
         .ptr = (uint8_t*)(digits),
-        .len = i,
+        .len = (size_t)(i),
     });
 
     if (mimic) {

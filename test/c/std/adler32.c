@@ -215,7 +215,7 @@ test_wuffs_adler32_pi() {
     uint32_t have = wuffs_adler32__hasher__update_u32(
         &checksum, ((wuffs_base__slice_u8){
                        .ptr = (uint8_t*)(digits),
-                       .len = i,
+                       .len = (size_t)(i),
                    }));
     if (have != wants[i]) {
       RETURN_FAIL("i=%d: have 0x%08" PRIX32 ", want 0x%08" PRIX32, i, have,

@@ -131,7 +131,7 @@ test_wuffs_cbor_decode_invalid() {
   // test/data/cbor-rfc-7049-examples.cbor) contain valid examples.
   //
   // This suite contains invalid examples, which should be rejected.
-  char* test_cases[] = {
+  const char* test_cases[] = {
       // Truncated (integer; major type 0) value.
       "\x18",
       // Tag in array, immediately before an 0xFF stop code. Some discussion is
@@ -155,7 +155,7 @@ test_wuffs_cbor_decode_invalid() {
             &tok_array[0], WUFFS_TESTLIB_ARRAY_SIZE(tok_array)));
     const bool closed = true;
     wuffs_base__io_buffer io_buf = wuffs_base__slice_u8__reader(
-        wuffs_base__make_slice_u8((uint8_t*)(test_cases[tc]),
+        wuffs_base__make_slice_u8((uint8_t*)(void*)(test_cases[tc]),
                                   strlen(test_cases[tc])),
         closed);
 
@@ -180,7 +180,7 @@ test_wuffs_cbor_decode_valid() {
 
   // This suite contains valid examples, similar to the
   // test_wuffs_cbor_decode_invalid examples, but they should be accepted.
-  char* test_cases[] = {
+  const char* test_cases[] = {
       // Map with 2 elements (an even number).
       "\xA1\x01\x02",
       // Tag immediately before an empty array.
@@ -196,7 +196,7 @@ test_wuffs_cbor_decode_valid() {
             &tok_array[0], WUFFS_TESTLIB_ARRAY_SIZE(tok_array)));
     const bool closed = true;
     wuffs_base__io_buffer io_buf = wuffs_base__slice_u8__reader(
-        wuffs_base__make_slice_u8((uint8_t*)(test_cases[tc]),
+        wuffs_base__make_slice_u8((uint8_t*)(void*)(test_cases[tc]),
                                   strlen(test_cases[tc])),
         closed);
 

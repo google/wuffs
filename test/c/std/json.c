@@ -343,12 +343,13 @@ test_wuffs_strconv_hpd_rounded_integer() {
 
   for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
     wuffs_base__private_implementation__high_prec_dec hpd;
-    CHECK_STATUS("hpd__parse",
-                 wuffs_base__private_implementation__high_prec_dec__parse(
-                     &hpd,
-                     wuffs_base__make_slice_u8((void*)test_cases[tc].str,
-                                               strlen(test_cases[tc].str)),
-                     WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS));
+    CHECK_STATUS(
+        "hpd__parse",
+        wuffs_base__private_implementation__high_prec_dec__parse(
+            &hpd,
+            wuffs_base__make_slice_u8((uint8_t*)(void*)test_cases[tc].str,
+                                      strlen(test_cases[tc].str)),
+            WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS));
     uint64_t have =
         wuffs_base__private_implementation__high_prec_dec__rounded_integer(
             &hpd);
@@ -388,12 +389,13 @@ test_wuffs_strconv_hpd_shift() {
 
   for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
     wuffs_base__private_implementation__high_prec_dec hpd;
-    CHECK_STATUS("hpd__parse",
-                 wuffs_base__private_implementation__high_prec_dec__parse(
-                     &hpd,
-                     wuffs_base__make_slice_u8((void*)test_cases[tc].str,
-                                               strlen(test_cases[tc].str)),
-                     WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS));
+    CHECK_STATUS(
+        "hpd__parse",
+        wuffs_base__private_implementation__high_prec_dec__parse(
+            &hpd,
+            wuffs_base__make_slice_u8((uint8_t*)(void*)test_cases[tc].str,
+                                      strlen(test_cases[tc].str)),
+            WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS));
     int32_t shift = test_cases[tc].shift;
     if (shift > 0) {
       wuffs_base__private_implementation__high_prec_dec__small_rshift(
@@ -408,7 +410,7 @@ test_wuffs_strconv_hpd_shift() {
         wuffs_base__private_implementation__high_prec_dec__to_debug_string(
             &hpd,
             wuffs_base__make_slice_u8(have, WUFFS_TESTLIB_ARRAY_SIZE(have))));
-    if (strcmp(((void*)(have)), test_cases[tc].want)) {
+    if (strcmp(((const char*)(void*)(have)), test_cases[tc].want)) {
       RETURN_FAIL("\"%s\" %s %" PRId32 ":\n    have: \"%s\"\n    want: \"%s\"",
                   test_cases[tc].str, ((shift > 0) ? ">>" : "<<"),
                   ((shift > 0) ? +shift : -shift), have, test_cases[tc].want);
@@ -672,7 +674,7 @@ test_wuffs_strconv_base_16() {
     const char* str = "6A6b7";  // The "7" should cause "#base: bad data".
     wuffs_base__slice_u8 dst = g_have_slice_u8;
     wuffs_base__slice_u8 src =
-        wuffs_base__make_slice_u8((void*)str, strlen(str));
+        wuffs_base__make_slice_u8((uint8_t*)(void*)str, strlen(str));
     wuffs_base__transform__output have = wuffs_base__base_16__decode2(
         dst, src, src_closed, WUFFS_BASE__BASE_16__DEFAULT_OPTIONS);
     if (have.status.repr != wuffs_base__error__bad_data) {
@@ -699,7 +701,7 @@ test_wuffs_strconv_base_16() {
     const char* str = "\\xa9\\x00\\xFe";
     wuffs_base__slice_u8 dst = g_have_slice_u8;
     wuffs_base__slice_u8 src =
-        wuffs_base__make_slice_u8((void*)str, strlen(str));
+        wuffs_base__make_slice_u8((uint8_t*)(void*)str, strlen(str));
     wuffs_base__transform__output have = wuffs_base__base_16__decode4(
         dst, src, src_closed, WUFFS_BASE__BASE_16__DEFAULT_OPTIONS);
     if (have.status.repr) {
@@ -732,7 +734,7 @@ const char*  //
 test_wuffs_strconv_base_64() {
   CHECK_FOCUS(__func__);
 
-  char* foobar = "foobar";
+  const char* foobar = "foobar";
   const char* wants[] = {
       "",          //
       "Zg==",      //
@@ -747,8 +749,9 @@ test_wuffs_strconv_base_64() {
     const bool src_closed = true;
 
     wuffs_base__transform__output e = wuffs_base__base_64__encode(
-        g_have_slice_u8, wuffs_base__make_slice_u8(((uint8_t*)foobar), tc),
-        src_closed, WUFFS_BASE__BASE_64__ENCODE_EMIT_PADDING);
+        g_have_slice_u8,
+        wuffs_base__make_slice_u8(((uint8_t*)(void*)foobar), tc), src_closed,
+        WUFFS_BASE__BASE_64__ENCODE_EMIT_PADDING);
     if (e.status.repr) {
       RETURN_FAIL("tc=%zu: encode: \"%s\"", tc, e.status.repr);
     }
@@ -824,7 +827,7 @@ test_wuffs_strconv_parse_number_f64_options() {
     for (int o = 0; o < 2; o++) {
       const char* str = "001.25";
       wuffs_base__result_f64 r = wuffs_base__parse_number_f64(
-          wuffs_base__make_slice_u8((void*)str, strlen(str)),
+          wuffs_base__make_slice_u8((uint8_t*)(void*)str, strlen(str)),
           (o ? WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_MULTIPLE_LEADING_ZEROES
              : WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS));
 
@@ -854,7 +857,7 @@ test_wuffs_strconv_parse_number_f64_options() {
     for (int o = 0; o < 2; o++) {
       const char* str = "_1.2__5";
       wuffs_base__result_f64 r = wuffs_base__parse_number_f64(
-          wuffs_base__make_slice_u8((void*)str, strlen(str)),
+          wuffs_base__make_slice_u8((uint8_t*)(void*)str, strlen(str)),
           (o ? WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES
              : WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS));
 
@@ -883,7 +886,7 @@ test_wuffs_strconv_parse_number_f64_options() {
     for (int o = 0; o < 2; o++) {
       const char* str = "1,75";
       wuffs_base__result_f64 r = wuffs_base__parse_number_f64(
-          wuffs_base__make_slice_u8((void*)str, strlen(str)),
+          wuffs_base__make_slice_u8((uint8_t*)(void*)str, strlen(str)),
           (o ? WUFFS_BASE__PARSE_NUMBER_FXX__DECIMAL_SEPARATOR_IS_A_COMMA
              : WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS));
 
@@ -913,7 +916,7 @@ test_wuffs_strconv_parse_number_f64_options() {
     for (int o = 0; o < 4; o++) {
       const char* str = (o & 2) ? "1e999" : "nan";
       wuffs_base__result_f64 r = wuffs_base__parse_number_f64(
-          wuffs_base__make_slice_u8((void*)str, strlen(str)),
+          wuffs_base__make_slice_u8((uint8_t*)(void*)str, strlen(str)),
           ((o & 1) ? WUFFS_BASE__PARSE_NUMBER_FXX__REJECT_INF_AND_NAN
                    : WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS));
 
@@ -1077,7 +1080,7 @@ test_wuffs_strconv_parse_number_f64_regular() {
 
   for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
     wuffs_base__result_f64 r = wuffs_base__parse_number_f64(
-        wuffs_base__make_slice_u8((void*)test_cases[tc].str,
+        wuffs_base__make_slice_u8((uint8_t*)(void*)test_cases[tc].str,
                                   strlen(test_cases[tc].str)),
         WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES);
     uint64_t have =
@@ -1112,7 +1115,7 @@ test_wuffs_strconv_parse_number_i64() {
       {.want = -0x0000000000000002, .str = "-2"},
       {.want = -0x00000000000000AB, .str = "_-_0x_AB"},
       {.want = -0x7FFFFFFFFFFFFFFF, .str = "-9223372036854775807"},
-      {.want = -0x8000000000000000, .str = "-9223372036854775808"},
+      {.want = (int64_t)(-0x8000000000000000), .str = "-9223372036854775808"},
 
       {.want = fail, .str = "+ 1"},
       {.want = fail, .str = "++1"},
@@ -1129,7 +1132,7 @@ test_wuffs_strconv_parse_number_i64() {
 
   for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
     wuffs_base__result_i64 r = wuffs_base__parse_number_i64(
-        wuffs_base__make_slice_u8((void*)test_cases[tc].str,
+        wuffs_base__make_slice_u8((uint8_t*)(void*)test_cases[tc].str,
                                   strlen(test_cases[tc].str)),
         WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES);
     int64_t have = (r.status.repr == NULL) ? r.value : fail;
@@ -1215,7 +1218,7 @@ test_wuffs_strconv_parse_number_u64() {
 
   for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
     wuffs_base__result_u64 r = wuffs_base__parse_number_u64(
-        wuffs_base__make_slice_u8((void*)test_cases[tc].str,
+        wuffs_base__make_slice_u8((uint8_t*)(void*)test_cases[tc].str,
                                   strlen(test_cases[tc].str)),
         WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES);
     uint64_t have = (r.status.repr == NULL) ? r.value : fail;
@@ -1230,7 +1233,7 @@ test_wuffs_strconv_parse_number_u64() {
     for (int o = 0; o < 2; o++) {
       const char* str = "007";
       wuffs_base__result_u64 r = wuffs_base__parse_number_u64(
-          wuffs_base__make_slice_u8((void*)str, strlen(str)),
+          wuffs_base__make_slice_u8((uint8_t*)(void*)str, strlen(str)),
           (o ? WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_MULTIPLE_LEADING_ZEROES
              : WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS));
 
@@ -1258,7 +1261,7 @@ test_wuffs_strconv_parse_number_u64() {
     for (int o = 0; o < 2; o++) {
       const char* str = "56_7__8";
       wuffs_base__result_u64 r = wuffs_base__parse_number_u64(
-          wuffs_base__make_slice_u8((void*)str, strlen(str)),
+          wuffs_base__make_slice_u8((uint8_t*)(void*)str, strlen(str)),
           (o ? WUFFS_BASE__PARSE_NUMBER_XXX__ALLOW_UNDERSCORES
              : WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS));
 
@@ -2251,7 +2254,7 @@ test_wuffs_strconv_render_number_i64() {
       {.x = -0x0000000100000000ll, .want = "-4294967296"},
       {.x = -0x0123456789ABCDEFll, .want = "-81985529216486895"},
       {.x = -0x7FFFFFFFFFFFFFFFll, .want = "-9223372036854775807"},
-      {.x = -0x8000000000000000ll, .want = "-9223372036854775808"},
+      {.x = (int64_t)(-0x8000000000000000ll), .want = "-9223372036854775808"},
   };
 
   if (g_have_slice_u8.len < WUFFS_BASE__I64__BYTE_LENGTH__MAX_INCL) {
@@ -2461,7 +2464,7 @@ test_wuffs_strconv_utf_8_next() {
 
   for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
     wuffs_base__slice_u8 s = wuffs_base__make_slice_u8(
-        (void*)test_cases[tc].str, strlen(test_cases[tc].str));
+        (uint8_t*)(void*)test_cases[tc].str, strlen(test_cases[tc].str));
     // Override "The <NUL> byte" with "\x00".
     if (test_cases[tc].want0 == 0x01000000) {
       s = wuffs_base__make_slice_u8(&the_nul_byte[0], 1);
@@ -2886,7 +2889,7 @@ test_wuffs_json_decode_prior_valid_utf_8() {
     size_t num_preceding = 0;
     while (num_preceding < n) {
       wuffs_base__utf_8__next__output x = wuffs_base__utf_8__next(
-          (void*)(test_cases[tc]) + num_preceding, n - num_preceding);
+          (uint8_t*)(void*)(test_cases[tc]) + num_preceding, n - num_preceding);
       if (!wuffs_base__utf_8__next__output__is_valid(&x) ||
           (x.code_point < 0x20) || (x.code_point == '\\')) {
         break;
@@ -3028,8 +3031,9 @@ test_wuffs_json_decode_quirk_allow_backslash_etc() {
 
       wuffs_base__token_buffer tok =
           wuffs_base__slice_token__writer(g_have_slice_token);
-      wuffs_base__io_buffer src = wuffs_base__ptr_u8__reader(
-          (void*)test_cases[tc].str, strlen(test_cases[tc].str), true);
+      wuffs_base__io_buffer src =
+          wuffs_base__ptr_u8__reader((uint8_t*)(void*)test_cases[tc].str,
+                                     strlen(test_cases[tc].str), true);
 
       const char* have_status_repr =
           wuffs_json__decoder__decode_tokens(&dec, &tok, &src, g_work_slice_u8)
@@ -3112,7 +3116,7 @@ test_wuffs_json_decode_quirk_allow_backslash_x() {
     wuffs_base__token_buffer tok =
         wuffs_base__slice_token__writer(g_have_slice_token);
     wuffs_base__slice_u8 src_slice = wuffs_base__make_slice_u8(
-        (void*)(test_cases[tc].str), strlen(test_cases[tc].str));
+        (uint8_t*)(void*)(test_cases[tc].str), strlen(test_cases[tc].str));
     wuffs_base__io_buffer src = wuffs_base__slice_u8__reader(src_slice, true);
     const char* have_status_repr =
         wuffs_json__decoder__decode_tokens(&dec, &tok, &src, g_work_slice_u8)
@@ -3189,8 +3193,9 @@ test_wuffs_json_decode_quirk_allow_extra_comma() {
 
       wuffs_base__token_buffer tok =
           wuffs_base__slice_token__writer(g_have_slice_token);
-      wuffs_base__io_buffer src = wuffs_base__ptr_u8__reader(
-          (void*)test_cases[tc].str, strlen(test_cases[tc].str), true);
+      wuffs_base__io_buffer src =
+          wuffs_base__ptr_u8__reader((uint8_t*)(void*)test_cases[tc].str,
+                                     strlen(test_cases[tc].str), true);
       const char* have =
           wuffs_json__decoder__decode_tokens(&dec, &tok, &src, g_work_slice_u8)
               .repr;
@@ -3262,8 +3267,9 @@ test_wuffs_json_decode_quirk_allow_inf_nan_numbers() {
 
       wuffs_base__token_buffer tok =
           wuffs_base__slice_token__writer(g_have_slice_token);
-      wuffs_base__io_buffer src = wuffs_base__ptr_u8__reader(
-          (void*)test_cases[tc].str, strlen(test_cases[tc].str), true);
+      wuffs_base__io_buffer src =
+          wuffs_base__ptr_u8__reader((uint8_t*)(void*)test_cases[tc].str,
+                                     strlen(test_cases[tc].str), true);
       const char* have =
           wuffs_json__decoder__decode_tokens(&dec, &tok, &src, g_work_slice_u8)
               .repr;
@@ -3331,8 +3337,9 @@ test_wuffs_json_decode_quirk_allow_comment_etc() {
 
       wuffs_base__token_buffer tok =
           wuffs_base__slice_token__writer(g_have_slice_token);
-      wuffs_base__io_buffer src = wuffs_base__ptr_u8__reader(
-          (void*)test_cases[tc].str, strlen(test_cases[tc].str), true);
+      wuffs_base__io_buffer src =
+          wuffs_base__ptr_u8__reader((uint8_t*)(void*)test_cases[tc].str,
+                                     strlen(test_cases[tc].str), true);
       const char* have =
           wuffs_json__decoder__decode_tokens(&dec, &tok, &src, g_work_slice_u8)
               .repr;
@@ -3406,8 +3413,9 @@ test_wuffs_json_decode_quirk_allow_leading_etc() {
 
       wuffs_base__token_buffer tok =
           wuffs_base__slice_token__writer(g_have_slice_token);
-      wuffs_base__io_buffer src = wuffs_base__ptr_u8__reader(
-          (void*)test_cases[tc].str, strlen(test_cases[tc].str), true);
+      wuffs_base__io_buffer src =
+          wuffs_base__ptr_u8__reader((uint8_t*)(void*)test_cases[tc].str,
+                                     strlen(test_cases[tc].str), true);
       const char* have =
           wuffs_json__decoder__decode_tokens(&dec, &tok, &src, g_work_slice_u8)
               .repr;
@@ -3495,7 +3503,7 @@ test_wuffs_json_decode_quirk_allow_trailing_comments() {
     wuffs_base__token_buffer tok =
         wuffs_base__slice_token__writer(g_have_slice_token);
     wuffs_base__io_buffer src =
-        wuffs_base__ptr_u8__reader(tc_ptr, tc_len, true);
+        wuffs_base__ptr_u8__reader((uint8_t*)tc_ptr, tc_len, true);
     wuffs_json__decoder dec;
     CHECK_STATUS("initialize", wuffs_json__decoder__initialize(
                                    &dec, sizeof dec, WUFFS_VERSION,
@@ -3539,7 +3547,7 @@ test_wuffs_json_decode_quirk_allow_trailing_comments() {
     wuffs_base__token_buffer tok =
         wuffs_base__slice_token__writer(g_have_slice_token);
     wuffs_base__io_buffer src =
-        wuffs_base__ptr_u8__reader(tc_ptr, tc_len, true);
+        wuffs_base__ptr_u8__reader((uint8_t*)tc_ptr, tc_len, true);
     wuffs_json__decoder dec;
     CHECK_STATUS("initialize", wuffs_json__decoder__initialize(
                                    &dec, sizeof dec, WUFFS_VERSION,
@@ -3619,8 +3627,9 @@ test_wuffs_json_decode_quirk_allow_trailing_filler() {
 
       wuffs_base__token_buffer tok =
           wuffs_base__slice_token__writer(g_have_slice_token);
-      wuffs_base__io_buffer src = wuffs_base__ptr_u8__reader(
-          (void*)test_cases[tc].str, strlen(test_cases[tc].str), true);
+      wuffs_base__io_buffer src =
+          wuffs_base__ptr_u8__reader((uint8_t*)(void*)test_cases[tc].str,
+                                     strlen(test_cases[tc].str), true);
       const char* have =
           wuffs_json__decoder__decode_tokens(&dec, &tok, &src, g_work_slice_u8)
               .repr;
@@ -3716,7 +3725,7 @@ test_wuffs_json_decode_quirk_replace_invalid_unicode() {
     wuffs_base__token_buffer tok =
         wuffs_base__slice_token__writer(g_have_slice_token);
     wuffs_base__io_buffer src = wuffs_base__ptr_u8__reader(
-        (void*)test_cases[tc].str, strlen(test_cases[tc].str), true);
+        (uint8_t*)(void*)test_cases[tc].str, strlen(test_cases[tc].str), true);
     CHECK_STATUS("decode_tokens", wuffs_json__decoder__decode_tokens(
                                       &dec, &tok, &src, g_work_slice_u8));
 
@@ -3847,7 +3856,7 @@ test_wuffs_json_decode_unicode4_escapes() {
     wuffs_base__token_buffer tok =
         wuffs_base__slice_token__writer(g_have_slice_token);
     wuffs_base__io_buffer src = wuffs_base__ptr_u8__reader(
-        (void*)test_cases[tc].str, strlen(test_cases[tc].str), true);
+        (uint8_t*)(void*)test_cases[tc].str, strlen(test_cases[tc].str), true);
     wuffs_json__decoder__decode_tokens(&dec, &tok, &src, g_work_slice_u8);
 
     uint32_t have = fail;
@@ -3924,7 +3933,7 @@ test_wuffs_json_decode_src_io_buffer_length() {
 
     wuffs_base__slice_u8 src_data = ((wuffs_base__slice_u8){
         .ptr = &src_array[0],
-        .len = i,
+        .len = (size_t)(i),
     });
 
     int closed;
@@ -4034,7 +4043,7 @@ test_wuffs_json_decode_string() {
     wuffs_base__token_buffer tok =
         wuffs_base__slice_token__writer(g_have_slice_token);
     wuffs_base__io_buffer src = wuffs_base__ptr_u8__reader(
-        (void*)test_cases[tc].str, strlen(test_cases[tc].str), true);
+        (uint8_t*)(void*)test_cases[tc].str, strlen(test_cases[tc].str), true);
     wuffs_base__status have_status =
         wuffs_json__decoder__decode_tokens(&dec, &tok, &src, g_work_slice_u8);
 
@@ -4072,7 +4081,8 @@ test_wuffs_json_decode_string() {
 const char*  //
 do_bench_wuffs_strconv_parse_number_f64(const char* str,
                                         uint64_t iters_unscaled) {
-  wuffs_base__slice_u8 s = wuffs_base__make_slice_u8((void*)str, strlen(str));
+  wuffs_base__slice_u8 s =
+      wuffs_base__make_slice_u8((uint8_t*)(void*)str, strlen(str));
 
   bench_start();
   uint64_t iters = iters_unscaled * g_flags.iterscale;
