@@ -41415,20 +41415,26 @@ wuffs_jpeg__decoder__fill_bitstream(
     self->private_impl.f_bitstream_wi = v_wi;
   }
   v_wi = self->private_impl.f_bitstream_wi;
+  label__0__continue:;
   while ((v_wi < 2048u) && (((uint64_t)(io2_a_src - iop_a_src)) > 0u)) {
     v_c = wuffs_base__peek_u8be__no_bounds_check(iop_a_src);
+    self->private_data.f_bitstream_buffer[v_wi] = v_c;
+    v_wi += 1u;
+    iop_a_src += 1u;
     if (v_c < 255u) {
-      self->private_data.f_bitstream_buffer[v_wi] = v_c;
-      v_wi += 1u;
-      iop_a_src += 1u;
-    } else if (((uint64_t)(io2_a_src - iop_a_src)) <= 1u) {
+      goto label__0__continue;
+    } else if (((uint64_t)(io2_a_src - iop_a_src)) <= 0u) {
+      if (iop_a_src > io1_a_src) {
+        iop_a_src--;
+      }
       goto label__0__break;
-    } else if ((wuffs_base__peek_u16le__no_bounds_check(iop_a_src) >> 8u) > 0u) {
+    } else if (wuffs_base__peek_u8be__no_bounds_check(iop_a_src) > 0u) {
+      if (iop_a_src > io1_a_src) {
+        iop_a_src--;
+      }
       goto label__0__break;
     } else {
-      self->private_data.f_bitstream_buffer[v_wi] = 255u;
-      v_wi += 1u;
-      iop_a_src += 2u;
+      iop_a_src += 1u;
     }
   }
   label__0__break:;
