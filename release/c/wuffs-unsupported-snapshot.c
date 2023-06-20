@@ -41424,14 +41424,10 @@ wuffs_jpeg__decoder__fill_bitstream(
     if (v_c < 255u) {
       goto label__0__continue;
     } else if (((uint64_t)(io2_a_src - iop_a_src)) <= 0u) {
-      if (iop_a_src > io1_a_src) {
-        iop_a_src--;
-      }
+      iop_a_src--;
       goto label__0__break;
     } else if (wuffs_base__peek_u8be__no_bounds_check(iop_a_src) > 0u) {
-      if (iop_a_src > io1_a_src) {
-        iop_a_src--;
-      }
+      iop_a_src--;
       goto label__0__break;
     } else {
       iop_a_src += 1u;

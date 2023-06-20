@@ -1503,15 +1503,11 @@ pri func decoder.fill_bitstream!(src: base.io_reader) {
             continue
 
         } else if args.src.length() <= 0 {
-            if args.src.can_undo_byte() {
-                args.src.undo_byte!()
-            }
+            args.src.undo_byte!()
             break
 
         } else if args.src.peek_u8() > 0 {
-            if args.src.can_undo_byte() {
-                args.src.undo_byte!()
-            }
+            args.src.undo_byte!()
             break
 
         } else {

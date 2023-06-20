@@ -1153,7 +1153,7 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (bounds, e
 	recv := lhs.LHS().AsExpr()
 	method := lhs.Ident()
 
-	advance, advanceExpr, update := (*big.Int)(nil), (*a.Expr)(nil), false
+	actualAdvanceIsAlwaysPositive, advance, advanceExpr, update := false, (*big.Int)(nil), (*a.Expr)(nil), false
 
 	if recvTyp := recv.MType(); recvTyp == nil {
 		return bounds{}, errNotASpecialCase
@@ -1233,6 +1233,9 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (bounds, e
 			} else if err != nil {
 				return bounds{}, err
 			}
+			if cv := actual.ConstValue(); (cv != nil) && (cv.Sign() > 0) {
+				actualAdvanceIsAlwaysPositive = true
+			}
 			if cv := worstCase.ConstValue(); cv != nil {
 				advance, update = cv, true
 			} else {
@@ -1297,6 +1300,9 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (bounds, e
 			}
 			return bounds{}, fmt.Errorf("check: could not prove %s pre-condition: %s.length() >= %s",
 				method.Str(q.tm), subject.Str(q.tm), adv)
+		}
+		if actualAdvanceIsAlwaysPositive {
+			q.facts = append(q.facts, makeCanUndoByte(recv))
 		}
 		// TODO: drop other subject-related facts?
 	}
@@ -1536,15 +1542,26 @@ func makeConstValueExpr(tm *t.Map, cv *big.Int) (*a.Expr, error) {
 	return o, nil
 }
 
-// makeSliceLength returns "x.length()".
-func makeSliceLength(slice *a.Expr) *a.Expr {
-	x := a.NewExpr(0, t.IDDot, t.IDLength, slice.AsNode(), nil, nil, nil)
-	x.SetMBounds(bounds{funcBounds, funcBounds})
-	x.SetMType(a.NewTypeExpr(t.IDFunc, 0, t.IDLength, slice.MType().AsNode(), nil, nil))
-	x = a.NewExpr(0, t.IDOpenParen, 0, x.AsNode(), nil, nil, nil)
+// makeCanUndoByte returns "x.can_undo_byte()".
+func makeCanUndoByte(x *a.Expr) *a.Expr {
+	ret := a.NewExpr(0, t.IDDot, t.IDCanUndoByte, x.AsNode(), nil, nil, nil)
+	ret.SetMBounds(bounds{funcBounds, funcBounds})
+	ret.SetMType(a.NewTypeExpr(t.IDFunc, 0, t.IDCanUndoByte, x.MType().AsNode(), nil, nil))
+	ret = a.NewExpr(0, t.IDOpenParen, 0, ret.AsNode(), nil, nil, nil)
 	// TODO: call SetMBounds?
-	x.SetMType(typeExprU64)
-	return x
+	ret.SetMType(typeExprBool)
+	return ret
+}
+
+// makeSliceLength returns "x.length()".
+func makeSliceLength(x *a.Expr) *a.Expr {
+	ret := a.NewExpr(0, t.IDDot, t.IDLength, x.AsNode(), nil, nil, nil)
+	ret.SetMBounds(bounds{funcBounds, funcBounds})
+	ret.SetMType(a.NewTypeExpr(t.IDFunc, 0, t.IDLength, x.MType().AsNode(), nil, nil))
+	ret = a.NewExpr(0, t.IDOpenParen, 0, ret.AsNode(), nil, nil, nil)
+	// TODO: call SetMBounds?
+	ret.SetMType(typeExprU64)
+	return ret
 }
 
 // makeSliceLengthEqEq returns "x.length() == n".
