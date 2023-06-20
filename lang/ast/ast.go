@@ -170,7 +170,7 @@ type Node struct {
 	// File          .             .             .             File
 	// Func          funcName      receiverPkg   receiverName  Func
 	// IOManip       keyword       .             .             IOManip
-	// If            .             .             .             If
+	// If            .             likelihood    .             If
 	// Iterate       advance       label         length        Iterate
 	// Jump          keyword       label         .             Jump
 	// Ret           keyword       .             .             Ret
@@ -706,14 +706,16 @@ func NewWhile(label t.ID, condition *Expr, asserts []*Node) *While {
 type If Node
 
 func (n *If) AsNode() *Node        { return (*Node)(n) }
+func (n *If) Likelihood() t.ID     { return n.id1 }
 func (n *If) Condition() *Expr     { return n.mhs.AsExpr() }
 func (n *If) ElseIf() *If          { return n.rhs.AsIf() }
 func (n *If) BodyIfTrue() []*Node  { return n.list2 }
 func (n *If) BodyIfFalse() []*Node { return n.list1 }
 
-func NewIf(condition *Expr, bodyIfTrue []*Node, bodyIfFalse []*Node, elseIf *If) *If {
+func NewIf(likelihood t.ID, condition *Expr, bodyIfTrue []*Node, bodyIfFalse []*Node, elseIf *If) *If {
 	return &If{
 		kind:  KIf,
+		id1:   likelihood,
 		mhs:   condition.AsNode(),
 		rhs:   elseIf.AsNode(),
 		list1: bodyIfFalse,

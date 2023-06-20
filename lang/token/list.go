@@ -652,10 +652,12 @@ const (
 	IDCPUArchIs32Bit = ID(0x202)
 	IDInitialize     = ID(0x203)
 	IDLength         = ID(0x204)
-	IDReset          = ID(0x205)
-	IDSet            = ID(0x206)
-	IDUnroll         = ID(0x207)
-	IDUpdate         = ID(0x208)
+	IDLikely         = ID(0x205)
+	IDReset          = ID(0x206)
+	IDSet            = ID(0x207)
+	IDUnlikely       = ID(0x208)
+	IDUnroll         = ID(0x209)
+	IDUpdate         = ID(0x20A)
 
 	// TODO: range/rect methods like intersection and contains?
 
@@ -1089,8 +1091,10 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDCPUArchIs32Bit: "cpu_arch_is_32_bit",
 	IDInitialize:     "initialize",
 	IDLength:         "length",
+	IDLikely:         "likely",
 	IDReset:          "reset",
 	IDSet:            "set",
+	IDUnlikely:       "unlikely",
 	IDUnroll:         "unroll",
 	IDUpdate:         "update",
 

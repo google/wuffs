@@ -430,12 +430,19 @@ func (g *gen) writeStatementIf(b *buffer, n *a.If, depth uint32) error {
 	}
 
 	for {
+		prefix, suffix := "", ""
+		switch n.Likelihood() {
+		case t.IDLikely:
+			prefix, suffix = "WUFFS_BASE__LIKELY(", ")"
+		case t.IDUnlikely:
+			prefix, suffix = "WUFFS_BASE__UNLIKELY(", ")"
+		}
 		condition := buffer(nil)
 		if err := g.writeExpr(&condition, n.Condition(), false, 0); err != nil {
 			return err
 		}
 		// Calling trimParens avoids clang's -Wparentheses-equality warning.
-		b.printf("if (%s) {\n", trimParens(condition))
+		b.printf("if (%s%s%s) {\n", prefix, trimParens(condition), suffix)
 		for _, o := range n.BodyIfTrue() {
 			if err := g.writeStatement(b, o, depth); err != nil {
 				return err

@@ -4,6 +4,7 @@
 ## Work In Progress
 
 - Added `example/toy-aux-image`.
+- Added `if.likely` and `if.unlikely`.
 - Added `slice_var as nptr array[etc] etc` conversion.
 - Added `std/jpeg`.
 - Added `std/netpbm`.

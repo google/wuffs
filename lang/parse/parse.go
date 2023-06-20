@@ -1174,6 +1174,16 @@ func (p *parser) parseIf() (*a.If, error) {
 		return nil, fmt.Errorf(`parse: expected "if", got %q at %s:%d`, got, p.filename, p.line())
 	}
 	p.src = p.src[1:]
+	likelihood, err := p.parseLabel()
+	if err != nil {
+		return nil, err
+	}
+	switch likelihood {
+	case 0, t.IDLikely, t.IDUnlikely:
+	default:
+		got := p.tm.ByID(likelihood)
+		return nil, fmt.Errorf(`parse: expected "if.likely" or "if.unlikely", got %q at %s:%d`, "if."+got, p.filename, p.line())
+	}
 	condition, err := p.parseExpr()
 	if err != nil {
 		return nil, err
@@ -1201,7 +1211,7 @@ func (p *parser) parseIf() (*a.If, error) {
 			}
 		}
 	}
-	return a.NewIf(condition, bodyIfTrue, bodyIfFalse, elseIf), nil
+	return a.NewIf(likelihood, condition, bodyIfTrue, bodyIfFalse, elseIf), nil
 }
 
 func (p *parser) parseIterateNode() (*a.Node, error) {
