@@ -39,7 +39,7 @@ pri func decoder.decode_mcu_progressive_dc_low_bit!(workbuf: slice base.u8, mx: 
             while.dc_component true,
                     inv this.mcu_current_block < 10,
             {
-                // Load at least 31 bits, by keeping 56 .. 64 loaded.
+                // Load at least 47 bits, by keeping 56 .. 64 loaded.
                 if r.length() < 8 {
                     ret = 1  // Request another fill_bitstream call.
                     break.goto_done

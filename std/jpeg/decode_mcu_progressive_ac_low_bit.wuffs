@@ -62,7 +62,7 @@ pri func decoder.decode_mcu_progressive_ac_low_bit!(workbuf: slice base.u8, mx: 
             while.ac_components true,
                     inv ac_huff_table_fast <> nullptr,
             {
-                // Load at least 31 bits, by keeping 56 .. 64 loaded (call it 8
+                // Load at least 47 bits, by keeping 56 .. 64 loaded (call it 8
                 // bytes). Just like the other decode_mcu_etc functions, this
                 // is enough for the Huffman-encoded ac_symbol (up to 16 bits)
                 // and processing the ac_value (up to 15 bits).
