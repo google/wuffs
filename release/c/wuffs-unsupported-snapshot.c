@@ -42108,11 +42108,15 @@ wuffs_jpeg__decoder__decode_mcu__choosy_default(
           v_ret = 1u;
           goto label__goto_done__break;
         }
+        if (v_n_bits < 16u) {
+          v_bits |= (wuffs_base__peek_u64be__no_bounds_check(iop_v_r) >> (v_n_bits & 63u));
+        }
         v_z = 1u;
         self->private_impl.f_mcu_zig_index = 0u;
         v_ac_h = self->private_impl.f_mcu_blocks_ac_hselector[self->private_impl.f_mcu_current_block];
         v_ac_huff_table_fast = &self->private_impl.f_huff_tables_fast[v_ac_h][0u];
         while (v_z < 64u) {
+          v_ac_ht_fast = ((uint32_t)(v_ac_huff_table_fast[(v_bits >> 56u)]));
           if (((uint64_t)(io2_v_r - iop_v_r)) < 8u) {
             v_ret = 2u;
             goto label__goto_done__break;
@@ -42120,7 +42124,6 @@ wuffs_jpeg__decoder__decode_mcu__choosy_default(
           v_bits |= (wuffs_base__peek_u64be__no_bounds_check(iop_v_r) >> (v_n_bits & 63u));
           iop_v_r += ((63u - (v_n_bits & 63u)) >> 3u);
           v_n_bits |= 56u;
-          v_ac_ht_fast = ((uint32_t)(v_ac_huff_table_fast[(v_bits >> 56u)]));
           v_ac_bl = (v_ac_ht_fast >> 8u);
           if (v_n_bits >= v_ac_bl) {
             v_ac_symbol = (255u & v_ac_ht_fast);
@@ -42267,11 +42270,15 @@ wuffs_jpeg__decoder__decode_mcu_progressive_ac_high_bits(
           v_ret = 1u;
           goto label__goto_done__break;
         }
+        if (v_n_bits < 16u) {
+          v_bits |= (wuffs_base__peek_u64be__no_bounds_check(iop_v_r) >> (v_n_bits & 63u));
+        }
         v_z = self->private_impl.f_mcu_zig_index;
         self->private_impl.f_mcu_zig_index = 0u;
         v_ac_h = self->private_impl.f_mcu_blocks_ac_hselector[0u];
         v_ac_huff_table_fast = &self->private_impl.f_huff_tables_fast[v_ac_h][0u];
         while (v_z <= ((uint32_t)(self->private_impl.f_scan_se))) {
+          v_ac_ht_fast = ((uint32_t)(v_ac_huff_table_fast[(v_bits >> 56u)]));
           if (((uint64_t)(io2_v_r - iop_v_r)) < 8u) {
             v_ret = 2u;
             goto label__goto_done__break;
@@ -42279,7 +42286,6 @@ wuffs_jpeg__decoder__decode_mcu_progressive_ac_high_bits(
           v_bits |= (wuffs_base__peek_u64be__no_bounds_check(iop_v_r) >> (v_n_bits & 63u));
           iop_v_r += ((63u - (v_n_bits & 63u)) >> 3u);
           v_n_bits |= 56u;
-          v_ac_ht_fast = ((uint32_t)(v_ac_huff_table_fast[(v_bits >> 56u)]));
           v_ac_bl = (v_ac_ht_fast >> 8u);
           if (v_n_bits >= v_ac_bl) {
             v_ac_symbol = (255u & v_ac_ht_fast);

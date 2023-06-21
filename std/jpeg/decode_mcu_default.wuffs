@@ -149,6 +149,10 @@ pri func decoder.decode_mcu!(workbuf: slice base.u8, mx: base.u32[..= 0x1FFF], m
                 break.goto_done
             }
 
+            if n_bits < 16 {
+                bits |= r.peek_u64be() >> (n_bits & 63)
+            }
+
             z = 1
             this.mcu_zig_index = 0
             ac_h = this.mcu_blocks_ac_hselector[this.mcu_current_block]
@@ -157,6 +161,8 @@ pri func decoder.decode_mcu!(workbuf: slice base.u8, mx: base.u32[..= 0x1FFF], m
                     inv this.mcu_current_block < 10,
                     inv ac_huff_table_fast <> nullptr,
             {
+                ac_ht_fast = ac_huff_table_fast[bits >> 56] as base.u32
+
                 // Load at least 31 bits, by keeping 56 .. 64 loaded.
                 //
                 // TODO: eliminate this bounds check entirely.
@@ -169,7 +175,6 @@ pri func decoder.decode_mcu!(workbuf: slice base.u8, mx: base.u32[..= 0x1FFF], m
                 n_bits |= 56
 
                 // Read the Huffman-encoded ac_symbol, up to 16 bits long.
-                ac_ht_fast = ac_huff_table_fast[bits >> 56] as base.u32
                 ac_bl = ac_ht_fast >> 8
                 if n_bits >= ac_bl {
                     ac_symbol = 0xFF & ac_ht_fast
