@@ -52,6 +52,16 @@ pri func decoder.decode_mcu_progressive_ac_low_bit!(workbuf: slice base.u8, mx: 
         while.goto_done true {{
 
         while.block true {
+            // Ensure that we have enough bits for this iteration of the
+            // while.block loop body. Worst case, there are 64 components and
+            // each one needs (16 + 15) bits (round that up to 4 bytes), so we
+            // need (64 * 4) = 256 bytes available. 8 more bytes of slack means
+            // that we can always call peek_u64be.
+            if r.length() < 264 {
+                ret = 1  // Request another fill_bitstream call.
+                break.goto_done
+            }
+
             while.goto_do_eob true {{
             if this.eob_run > 0 {
                 break.goto_do_eob
@@ -62,22 +72,9 @@ pri func decoder.decode_mcu_progressive_ac_low_bit!(workbuf: slice base.u8, mx: 
             while.ac_components true,
                     inv ac_huff_table_fast <> nullptr,
             {
-                // Load at least 47 bits, by keeping 56 .. 64 loaded (call it 8
-                // bytes). Just like the other decode_mcu_etc functions, this
-                // is enough for the Huffman-encoded ac_symbol (up to 16 bits)
-                // and processing the ac_value (up to 15 bits).
-                //
-                // After that, it's simpler for this "AC low bit" flavor if we
-                // never suspend for the rest of this iteration of the
-                // while.ac_components loop.
-                //
-                // Specifically, we want to have enough bits in the bitstream
-                // so that we don't suspend inside the while.refine_non_zeroes
-                // loop. In the worst case, we need another 8 bytes for
-                // refining non-zero coefficients plus 8 bytes slack so that we
-                // can always call peek_u64be. 8 + 8 + 8 = 24 bytes in total.
-                if r.length() < 24 {
-                    ret = 1  // Request another fill_bitstream call.
+                // Load at least 56 bits.
+                if r.length() < 8 {
+                    ret = 2  // Internal error.
                     break.goto_done
                 }
                 bits |= r.peek_u64be() >> (n_bits & 63)
@@ -203,9 +200,9 @@ pri func decoder.decode_mcu_progressive_ac_low_bit!(workbuf: slice base.u8, mx: 
                 unzig = UNZIG[1 + this.mcu_zig_index]
                 if this.mcu_blocks[0][unzig] <> 0 {
                     if n_bits == 0 {
-                        // Load at least 1 bit, by keeping 56 .. 64 loaded.
+                        // Load at least 56 bits.
                         if r.length() < 8 {
-                            ret = 1  // Request another fill_bitstream call.
+                            ret = 2  // Internal error.
                             break.goto_done
                         }
                         bits |= r.peek_u64be() >> (n_bits & 63)

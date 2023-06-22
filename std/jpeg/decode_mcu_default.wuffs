@@ -75,7 +75,7 @@ pri func decoder.decode_mcu!(workbuf: slice base.u8, mx: base.u32[..= 0x1FFF], m
             {
                 this.mcu_blocks[.. 1].bulk_memset!(byte_value: 0)
 
-                // Load at least 47 bits, by keeping 56 .. 64 loaded.
+                // Load at least 56 bits.
                 if r.length() < 8 {
                     ret = 1  // Request another fill_bitstream call.
                     break.goto_done
@@ -137,13 +137,11 @@ pri func decoder.decode_mcu!(workbuf: slice base.u8, mx: base.u32[..= 0x1FFF], m
                 break.dc_component
             } endwhile.dc_component
 
-            // Ensure that we have enough bits for the entire
-            // while.ac_components loop.
-            //
-            // Worst case, there are 63 AC components (round that up to 64) and
+            // Ensure that we have enough bits for this iteration of the
+            // while.block loop body. Worst case, there are 64 components and
             // each one needs (16 + 15) bits (round that up to 4 bytes), so we
-            // need (64 * 4) = 256 bytes of buffer. Add 8 bytes slack so that
-            // we can always call peek_u64be.
+            // need (64 * 4) = 256 bytes available. 8 more bytes of slack means
+            // that we can always call peek_u64be.
             if r.length() < 264 {
                 ret = 1  // Request another fill_bitstream call.
                 break.goto_done
@@ -171,7 +169,7 @@ pri func decoder.decode_mcu!(workbuf: slice base.u8, mx: base.u32[..= 0x1FFF], m
             {
                 // Use the high bits of the bits variable to look up the
                 // Huffman table. Conceptually, we should do this *after*
-                // "Load at least 47 bits" below (at "LOOK-UP" further below),
+                // "Load at least 56 bits" below (at "LOOK-UP" further below),
                 // but it is noticably faster to do it beforehand:
                 // https://github.com/google/wuffs/commit/d9c7740ea6c4a450401c393787838436895b87bb
                 //
@@ -182,19 +180,19 @@ pri func decoder.decode_mcu!(workbuf: slice base.u8, mx: base.u32[..= 0x1FFF], m
                 // for almost all loop iterations, but it can be higher on the
                 // first iteration, set up by "Ensure the informal" above.
                 //
-                // For subsequent iterations, the "Load at least 47 bits" below
+                // For subsequent iterations, the "Load at least 56 bits" below
                 // does what it says. The Huffman code consumes up to 16 bits
                 // and processing the Huffman symbol's ssss nibble consumes up
-                // to 15 bits. (47 - 16 - 15) = 16 so at the end of the loop
-                // body, (n_bits >= 16).
+                // to 15 bits. (56 - 16 - 15) = 25 >= 16 so at the end of the
+                // loop body, (n_bits >= 16).
                 //
-                // This 16 bound has some slack, as (NB >= (64 - 56)) is all we
-                // need, but a bound of 16 (the longest JPEG Huffman code bit
-                // length) won't need to change even if, in the future, we
-                // enlarge the look-up table size.
+                // This 16 bound has some slack, as (NB >= 8) is all we need
+                // when ac_huff_table_fast has (1 << 8) entries, but a bound of
+                // 16 (the longest JPEG Huffman code bit length) won't need to
+                // change even if, in the future, the look-up table size grows.
                 ac_ht_fast = ac_huff_table_fast[bits >> 56] as base.u32
 
-                // Load at least 47 bits, by keeping 56 .. 64 loaded.
+                // Load at least 56 bits.
                 //
                 // TODO: eliminate this bounds check entirely.
                 if r.length() < 8 {

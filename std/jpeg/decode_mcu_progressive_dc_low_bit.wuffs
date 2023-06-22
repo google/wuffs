@@ -36,12 +36,23 @@ pri func decoder.decode_mcu_progressive_dc_low_bit!(workbuf: slice base.u8, mx: 
 
         while.block this.mcu_current_block < this.mcu_num_blocks {
             assert this.mcu_current_block < 10 via "a < b: a < c; c <= b"(c: this.mcu_num_blocks)
+
+            // Ensure that we have enough bits for this iteration of the
+            // while.block loop body. Worst case, there are 64 components and
+            // each one needs (16 + 15) bits (round that up to 4 bytes), so we
+            // need (64 * 4) = 256 bytes available. 8 more bytes of slack means
+            // that we can always call peek_u64be.
+            if r.length() < 264 {
+                ret = 1  // Request another fill_bitstream call.
+                break.goto_done
+            }
+
             while.dc_component true,
                     inv this.mcu_current_block < 10,
             {
-                // Load at least 47 bits, by keeping 56 .. 64 loaded.
+                // Load at least 56 bits.
                 if r.length() < 8 {
-                    ret = 1  // Request another fill_bitstream call.
+                    ret = 2  // Internal error.
                     break.goto_done
                 }
                 bits |= r.peek_u64be() >> (n_bits & 63)

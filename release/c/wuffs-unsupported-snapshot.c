@@ -42415,6 +42415,10 @@ wuffs_jpeg__decoder__decode_mcu_progressive_ac_low_bit(
         ((uint64_t)(self->private_impl.f_bitstream_ri)));
     while (true) {
       while (true) {
+        if (((uint64_t)(io2_v_r - iop_v_r)) < 264u) {
+          v_ret = 1u;
+          goto label__goto_done__break;
+        }
         while (true) {
           if (self->private_impl.f_eob_run > 0u) {
             goto label__goto_do_eob__break;
@@ -42422,8 +42426,8 @@ wuffs_jpeg__decoder__decode_mcu_progressive_ac_low_bit(
           v_ac_h = self->private_impl.f_mcu_blocks_ac_hselector[0u];
           v_ac_huff_table_fast = &self->private_impl.f_huff_tables_fast[v_ac_h][0u];
           while (true) {
-            if (((uint64_t)(io2_v_r - iop_v_r)) < 24u) {
-              v_ret = 1u;
+            if (((uint64_t)(io2_v_r - iop_v_r)) < 8u) {
+              v_ret = 2u;
               goto label__goto_done__break;
             }
             v_bits |= (wuffs_base__peek_u64be__no_bounds_check(iop_v_r) >> (v_n_bits & 63u));
@@ -42544,7 +42548,7 @@ wuffs_jpeg__decoder__decode_mcu_progressive_ac_low_bit(
           if (self->private_data.f_mcu_blocks[0u][v_unzig] != 0u) {
             if (v_n_bits == 0u) {
               if (((uint64_t)(io2_v_r - iop_v_r)) < 8u) {
-                v_ret = 1u;
+                v_ret = 2u;
                 goto label__goto_done__break;
               }
               v_bits |= (wuffs_base__peek_u64be__no_bounds_check(iop_v_r) >> (v_n_bits & 63u));
@@ -42666,9 +42670,13 @@ wuffs_jpeg__decoder__decode_mcu_progressive_dc_high_bits(
         ((uint64_t)(self->private_impl.f_bitstream_ri)));
     while (true) {
       while (self->private_impl.f_mcu_current_block < self->private_impl.f_mcu_num_blocks) {
+        if (((uint64_t)(io2_v_r - iop_v_r)) < 264u) {
+          v_ret = 1u;
+          goto label__goto_done__break;
+        }
         while (true) {
           if (((uint64_t)(io2_v_r - iop_v_r)) < 8u) {
-            v_ret = 1u;
+            v_ret = 2u;
             goto label__goto_done__break;
           }
           v_bits |= (wuffs_base__peek_u64be__no_bounds_check(iop_v_r) >> (v_n_bits & 63u));
@@ -42784,9 +42792,13 @@ wuffs_jpeg__decoder__decode_mcu_progressive_dc_low_bit(
         ((uint64_t)(self->private_impl.f_bitstream_ri)));
     while (true) {
       while (self->private_impl.f_mcu_current_block < self->private_impl.f_mcu_num_blocks) {
+        if (((uint64_t)(io2_v_r - iop_v_r)) < 264u) {
+          v_ret = 1u;
+          goto label__goto_done__break;
+        }
         while (true) {
           if (((uint64_t)(io2_v_r - iop_v_r)) < 8u) {
-            v_ret = 1u;
+            v_ret = 2u;
             goto label__goto_done__break;
           }
           v_bits |= (wuffs_base__peek_u64be__no_bounds_check(iop_v_r) >> (v_n_bits & 63u));
