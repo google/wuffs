@@ -805,7 +805,7 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 		if len(p.loops) == 0 {
 			// No-op.
 		} else if label == 0 {
-			loop = p.loops[len(p.loops)-1]
+			loop = p.loops.Top()
 			if loop.Label() != 0 {
 				return nil, fmt.Errorf(`parse: unlabeled %s for labeled %s.%s at %s:%d`,
 					x.Str(p.tm), loop.Keyword().Str(p.tm), loop.Label().Str(p.tm), p.filename, p.line())
@@ -827,10 +827,11 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 				x.Str(p.tm), sepStr, labelStr, p.filename, p.line())
 		}
 
+		deep := loop != p.loops.Top()
 		if x == t.IDBreak {
-			loop.SetHasBreak()
+			loop.SetHasBreak(deep)
 		} else {
-			loop.SetHasContinue()
+			loop.SetHasContinue(deep)
 		}
 		n := a.NewJump(x, label)
 		n.SetJumpTarget(loop)

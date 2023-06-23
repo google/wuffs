@@ -100,14 +100,30 @@ const (
 	FlagsPublic           = Flags(0x00000100)
 	FlagsHasBreak         = Flags(0x00000200)
 	FlagsHasContinue      = Flags(0x00000400)
-	FlagsGlobalIdent      = Flags(0x00000800)
-	FlagsClassy           = Flags(0x00001000)
-	FlagsSubExprHasEffect = Flags(0x00002000)
-	FlagsRetsError        = Flags(0x00004000)
-	FlagsPrivateData      = Flags(0x00008000)
-	FlagsChoosy           = Flags(0x00010000)
-	FlagsHasChooseCPUArch = Flags(0x00020000)
+	FlagsHasDeepBreak     = Flags(0x00000800)
+	FlagsHasDeepContinue  = Flags(0x00001000)
+	FlagsGlobalIdent      = Flags(0x00002000)
+	FlagsClassy           = Flags(0x00004000)
+	FlagsSubExprHasEffect = Flags(0x00008000)
+	FlagsRetsError        = Flags(0x00010000)
+	FlagsPrivateData      = Flags(0x00020000)
+	FlagsChoosy           = Flags(0x00040000)
+	FlagsHasChooseCPUArch = Flags(0x00080000)
 )
+
+func breakFlags(deep bool) Flags {
+	if deep {
+		return FlagsHasBreak | FlagsHasDeepBreak
+	}
+	return FlagsHasBreak
+}
+
+func continueFlags(deep bool) Flags {
+	if deep {
+		return FlagsHasContinue | FlagsHasDeepContinue
+	}
+	return FlagsHasContinue
+}
 
 func (f Flags) AsEffect() Effect { return Effect(f) }
 
@@ -253,12 +269,14 @@ type Loop interface {
 	AsNode() *Node
 	HasBreak() bool
 	HasContinue() bool
+	HasDeepBreak() bool
+	HasDeepContinue() bool
 	Keyword() t.ID
 	Label() t.ID
 	Asserts() []*Node
 	Body() []*Node
-	SetHasBreak()
-	SetHasContinue()
+	SetHasBreak(deep bool)
+	SetHasContinue(deep bool)
 }
 
 type LoopStack []Loop
@@ -280,6 +298,10 @@ func (s *LoopStack) Pop() Loop {
 	l := (*s)[len(*s)-1]
 	*s = (*s)[:len(*s)-1]
 	return l
+}
+
+func (s *LoopStack) Top() Loop {
+	return (*s)[len(*s)-1]
 }
 
 type Raw Node
@@ -632,6 +654,8 @@ type Iterate Node
 func (n *Iterate) AsNode() *Node         { return (*Node)(n) }
 func (n *Iterate) HasBreak() bool        { return n.flags&FlagsHasBreak != 0 }
 func (n *Iterate) HasContinue() bool     { return n.flags&FlagsHasContinue != 0 }
+func (n *Iterate) HasDeepBreak() bool    { return n.flags&FlagsHasDeepBreak != 0 }
+func (n *Iterate) HasDeepContinue() bool { return n.flags&FlagsHasDeepContinue != 0 }
 func (n *Iterate) Keyword() t.ID         { return t.IDIterate }
 func (n *Iterate) Advance() t.ID         { return n.id0 }
 func (n *Iterate) Label() t.ID           { return n.id1 }
@@ -645,8 +669,8 @@ func (n *Iterate) Body() []*Node         { return n.list2 }
 
 func (n *Iterate) SetBody(body []*Node)      { n.list2 = body }
 func (n *Iterate) SetElseIterate(o *Iterate) { n.rhs = o.AsNode() }
-func (n *Iterate) SetHasBreak()              { n.flags |= FlagsHasBreak }
-func (n *Iterate) SetHasContinue()           { n.flags |= FlagsHasContinue }
+func (n *Iterate) SetHasBreak(deep bool)     { n.flags |= breakFlags(deep) }
+func (n *Iterate) SetHasContinue(deep bool)  { n.flags |= continueFlags(deep) }
 
 func NewIterate(label t.ID, assigns []*Node, length t.ID, advance t.ID, unroll t.ID, asserts []*Node) *Iterate {
 	return &Iterate{
@@ -671,18 +695,20 @@ func NewIterate(label t.ID, assigns []*Node, length t.ID, advance t.ID, unroll t
 // TODO: should we be able to unroll while loops too?
 type While Node
 
-func (n *While) AsNode() *Node     { return (*Node)(n) }
-func (n *While) HasBreak() bool    { return n.flags&FlagsHasBreak != 0 }
-func (n *While) HasContinue() bool { return n.flags&FlagsHasContinue != 0 }
-func (n *While) Keyword() t.ID     { return t.IDWhile }
-func (n *While) Label() t.ID       { return n.id1 }
-func (n *While) Condition() *Expr  { return n.mhs.AsExpr() }
-func (n *While) Asserts() []*Node  { return n.list1 }
-func (n *While) Body() []*Node     { return n.list2 }
+func (n *While) AsNode() *Node         { return (*Node)(n) }
+func (n *While) HasBreak() bool        { return n.flags&FlagsHasBreak != 0 }
+func (n *While) HasContinue() bool     { return n.flags&FlagsHasContinue != 0 }
+func (n *While) HasDeepBreak() bool    { return n.flags&FlagsHasDeepBreak != 0 }
+func (n *While) HasDeepContinue() bool { return n.flags&FlagsHasDeepContinue != 0 }
+func (n *While) Keyword() t.ID         { return t.IDWhile }
+func (n *While) Label() t.ID           { return n.id1 }
+func (n *While) Condition() *Expr      { return n.mhs.AsExpr() }
+func (n *While) Asserts() []*Node      { return n.list1 }
+func (n *While) Body() []*Node         { return n.list2 }
 
-func (n *While) SetBody(body []*Node) { n.list2 = body }
-func (n *While) SetHasBreak()         { n.flags |= FlagsHasBreak }
-func (n *While) SetHasContinue()      { n.flags |= FlagsHasContinue }
+func (n *While) SetBody(body []*Node)     { n.list2 = body }
+func (n *While) SetHasBreak(deep bool)    { n.flags |= breakFlags(deep) }
+func (n *While) SetHasContinue(deep bool) { n.flags |= continueFlags(deep) }
 
 func (n *While) IsWhileTrue() bool {
 	condition := n.mhs.AsExpr()

@@ -473,6 +473,7 @@ func (g *gen) writeStatementIterate(b *buffer, n *a.Iterate, depth uint32) error
 		return nil
 	}
 	name0 := assigns[0].AsAssign().LHS().Ident().Str(g.tm)
+	g.currFunk.activeLoops.Push(n)
 	b.writes("{\n")
 
 	// TODO: don't assume that the slice is a slice of base.u8. In
@@ -526,6 +527,7 @@ func (g *gen) writeStatementIterate(b *buffer, n *a.Iterate, depth uint32) error
 	}
 
 	b.writes("}\n")
+	g.currFunk.activeLoops.Pop()
 	return nil
 }
 
@@ -537,6 +539,13 @@ func (g *gen) writeStatementJump(b *buffer, n *a.Jump, depth uint32) error {
 	keyword := "continue"
 	if n.Keyword() == t.IDBreak {
 		keyword = "break"
+	}
+	// TODO: apply to all generated code, not just
+	// wuffs_jpeg__decoder__fill_bitstream.
+	if (n.JumpTarget() == g.currFunk.activeLoops.Top()) &&
+		(g.currFunk.cName == "wuffs_jpeg__decoder__fill_bitstream") {
+		b.printf("%s;\n", keyword)
+		return nil
 	}
 	b.printf("goto label__%s__%s;\n", jt, keyword)
 	return nil
@@ -624,13 +633,19 @@ func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 }
 
 func (g *gen) writeStatementWhile(b *buffer, n *a.While, depth uint32) error {
-	if n.HasContinue() {
+	// TODO: apply to all generated code, not just
+	// wuffs_jpeg__decoder__fill_bitstream.
+	stagedRollout := g.currFunk.cName != "wuffs_jpeg__decoder__fill_bitstream"
+
+	if n.HasDeepContinue() || (stagedRollout && n.HasContinue()) {
 		jt, err := g.currFunk.jumpTarget(g.tm, n)
 		if err != nil {
 			return err
 		}
 		b.printf("label__%s__continue:;\n", jt)
 	}
+	g.currFunk.activeLoops.Push(n)
+
 	condition := buffer(nil)
 	if err := g.writeExpr(&condition, n.Condition(), false, 0); err != nil {
 		return err
@@ -643,7 +658,9 @@ func (g *gen) writeStatementWhile(b *buffer, n *a.While, depth uint32) error {
 		}
 	}
 	b.writes("}\n")
-	if n.HasBreak() {
+
+	g.currFunk.activeLoops.Pop()
+	if n.HasDeepBreak() || (stagedRollout && n.HasBreak()) {
 		jt, err := g.currFunk.jumpTarget(g.tm, n)
 		if err != nil {
 			return err

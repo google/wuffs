@@ -39,6 +39,7 @@ type funk struct {
 	varResumables     map[t.ID]bool
 	derivedVars       map[t.ID]struct{}
 	jumpTargets       map[a.Loop]string
+	activeLoops       a.LoopStack
 	coroSuspPoint     uint32
 	ioManips          uint32
 	tempW             uint32
