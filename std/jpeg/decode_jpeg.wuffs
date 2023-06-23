@@ -1499,6 +1499,7 @@ pri func decoder.fill_bitstream!(src: base.io_reader) {
             this.bitstream_buffer[wi] = c
             wi += 1
             args.src.skip_u32_fast!(actual: 1, worst_case: 1)
+            continue
 
         } else if args.src.length() <= 1 {
             break
