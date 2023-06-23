@@ -1495,23 +1495,21 @@ pri func decoder.fill_bitstream!(src: base.io_reader) {
     wi = this.bitstream_wi
     while (wi < 0x800) and (args.src.length() > 0) {
         c = args.src.peek_u8()
-        this.bitstream_buffer[wi] = c
-        wi += 1
-        args.src.skip_u32_fast!(actual: 1, worst_case: 1)
-
         if c < 0xFF {
-            continue
+            this.bitstream_buffer[wi] = c
+            wi += 1
+            args.src.skip_u32_fast!(actual: 1, worst_case: 1)
 
-        } else if args.src.length() <= 0 {
-            args.src.undo_byte!()
+        } else if args.src.length() <= 1 {
             break
 
-        } else if args.src.peek_u8() > 0 {
-            args.src.undo_byte!()
+        } else if (args.src.peek_u16le() >> 8) > 0 {
             break
 
         } else {
-            args.src.skip_u32_fast!(actual: 1, worst_case: 1)
+            this.bitstream_buffer[wi] = 0xFF
+            wi += 1
+            args.src.skip_u32_fast!(actual: 2, worst_case: 2)
         }
     } endwhile
 

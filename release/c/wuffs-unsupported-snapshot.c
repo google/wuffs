@@ -41415,22 +41415,20 @@ wuffs_jpeg__decoder__fill_bitstream(
     self->private_impl.f_bitstream_wi = v_wi;
   }
   v_wi = self->private_impl.f_bitstream_wi;
-  label__0__continue:;
   while ((v_wi < 2048u) && (((uint64_t)(io2_a_src - iop_a_src)) > 0u)) {
     v_c = wuffs_base__peek_u8be__no_bounds_check(iop_a_src);
-    self->private_data.f_bitstream_buffer[v_wi] = v_c;
-    v_wi += 1u;
-    iop_a_src += 1u;
     if (v_c < 255u) {
-      goto label__0__continue;
-    } else if (((uint64_t)(io2_a_src - iop_a_src)) <= 0u) {
-      iop_a_src--;
+      self->private_data.f_bitstream_buffer[v_wi] = v_c;
+      v_wi += 1u;
+      iop_a_src += 1u;
+    } else if (((uint64_t)(io2_a_src - iop_a_src)) <= 1u) {
       goto label__0__break;
-    } else if (wuffs_base__peek_u8be__no_bounds_check(iop_a_src) > 0u) {
-      iop_a_src--;
+    } else if ((wuffs_base__peek_u16le__no_bounds_check(iop_a_src) >> 8u) > 0u) {
       goto label__0__break;
     } else {
-      iop_a_src += 1u;
+      self->private_data.f_bitstream_buffer[v_wi] = 255u;
+      v_wi += 1u;
+      iop_a_src += 2u;
     }
   }
   label__0__break:;
