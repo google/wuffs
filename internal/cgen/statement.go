@@ -532,21 +532,17 @@ func (g *gen) writeStatementIterate(b *buffer, n *a.Iterate, depth uint32) error
 }
 
 func (g *gen) writeStatementJump(b *buffer, n *a.Jump, depth uint32) error {
-	jt, err := g.currFunk.jumpTarget(g.tm, n.JumpTarget())
-	if err != nil {
-		return err
-	}
 	keyword := "continue"
 	if n.Keyword() == t.IDBreak {
 		keyword = "break"
 	}
-	// TODO: apply to all generated code, not just wuffs_jpeg__etc.
-	if (n.JumpTarget() == g.currFunk.activeLoops.Top()) &&
-		(strings.HasPrefix(g.currFunk.cName, "wuffs_jpeg__")) {
+	if n.JumpTarget() == g.currFunk.activeLoops.Top() {
 		b.printf("%s;\n", keyword)
-		return nil
+	} else if jt, err := g.currFunk.jumpTarget(g.tm, n.JumpTarget()); err != nil {
+		return err
+	} else {
+		b.printf("goto label__%s__%s;\n", jt, keyword)
 	}
-	b.printf("goto label__%s__%s;\n", jt, keyword)
 	return nil
 }
 
@@ -632,10 +628,7 @@ func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 }
 
 func (g *gen) writeStatementWhile(b *buffer, n *a.While, depth uint32) error {
-	// TODO: apply to all generated code, not just wuffs_jpeg__etc.
-	stagedRollout := !strings.HasPrefix(g.currFunk.cName, "wuffs_jpeg__")
-
-	if n.HasDeepContinue() || (stagedRollout && n.HasContinue()) {
+	if n.HasDeepContinue() {
 		jt, err := g.currFunk.jumpTarget(g.tm, n)
 		if err != nil {
 			return err
@@ -658,7 +651,7 @@ func (g *gen) writeStatementWhile(b *buffer, n *a.While, depth uint32) error {
 	b.writes("}\n")
 
 	g.currFunk.activeLoops.Pop()
-	if n.HasDeepBreak() || (stagedRollout && n.HasBreak()) {
+	if n.HasDeepBreak() {
 		jt, err := g.currFunk.jumpTarget(g.tm, n)
 		if err != nil {
 			return err
