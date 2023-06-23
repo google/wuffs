@@ -540,10 +540,9 @@ func (g *gen) writeStatementJump(b *buffer, n *a.Jump, depth uint32) error {
 	if n.Keyword() == t.IDBreak {
 		keyword = "break"
 	}
-	// TODO: apply to all generated code, not just
-	// wuffs_jpeg__decoder__fill_bitstream.
+	// TODO: apply to all generated code, not just wuffs_jpeg__etc.
 	if (n.JumpTarget() == g.currFunk.activeLoops.Top()) &&
-		(g.currFunk.cName == "wuffs_jpeg__decoder__fill_bitstream") {
+		(strings.HasPrefix(g.currFunk.cName, "wuffs_jpeg__")) {
 		b.printf("%s;\n", keyword)
 		return nil
 	}
@@ -633,9 +632,8 @@ func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 }
 
 func (g *gen) writeStatementWhile(b *buffer, n *a.While, depth uint32) error {
-	// TODO: apply to all generated code, not just
-	// wuffs_jpeg__decoder__fill_bitstream.
-	stagedRollout := g.currFunk.cName != "wuffs_jpeg__decoder__fill_bitstream"
+	// TODO: apply to all generated code, not just wuffs_jpeg__etc.
+	stagedRollout := !strings.HasPrefix(g.currFunk.cName, "wuffs_jpeg__")
 
 	if n.HasDeepContinue() || (stagedRollout && n.HasContinue()) {
 		jt, err := g.currFunk.jumpTarget(g.tm, n)
