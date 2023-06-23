@@ -8973,6 +8973,7 @@ struct wuffs_jpeg__decoder__struct {
     uint32_t f_bitstream_n_bits;
     uint32_t f_bitstream_ri;
     uint32_t f_bitstream_wi;
+    uint32_t f_bitstream_padding;
     uint8_t f_quant_tables[4][64];
     uint8_t f_saved_quant_tables[4][64];
     uint8_t f_huff_tables_symbols[8][256];
@@ -40900,6 +40901,7 @@ wuffs_jpeg__decoder__decode_sos(
     self->private_impl.f_bitstream_n_bits = 0u;
     self->private_impl.f_bitstream_ri = 0u;
     self->private_impl.f_bitstream_wi = 0u;
+    self->private_impl.f_bitstream_padding = 12345u;
     wuffs_jpeg__decoder__fill_bitstream(self, a_src);
     v_my = 0u;
     while (v_my < self->private_impl.f_scan_height_in_mcus) {
@@ -40923,6 +40925,9 @@ wuffs_jpeg__decoder__decode_sos(
             wuffs_jpeg__decoder__fill_bitstream(self, a_src);
             if (v_bitstream_length < ((uint32_t)(self->private_impl.f_bitstream_wi - self->private_impl.f_bitstream_ri))) {
               break;
+            } else if (self->private_impl.f_bitstream_padding == 0u) {
+              status = wuffs_base__make_status(wuffs_jpeg__error__bad_sos_marker);
+              goto exit;
             }
             status = wuffs_base__make_status(wuffs_base__suspension__short_read);
             WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(2);
@@ -40956,6 +40961,7 @@ wuffs_jpeg__decoder__decode_sos(
             self->private_impl.f_bitstream_n_bits = 0u;
             self->private_impl.f_bitstream_ri = 0u;
             self->private_impl.f_bitstream_wi = 0u;
+            self->private_impl.f_bitstream_padding = 12345u;
           }
         }
         v_mx += 1u;
@@ -41360,10 +41366,12 @@ wuffs_jpeg__decoder__fill_bitstream(
   if (((uint64_t)(io2_a_src - iop_a_src)) > 1u) {
     if ((wuffs_base__peek_u8be__no_bounds_check(iop_a_src) >= 255u) && ((wuffs_base__peek_u16le__no_bounds_check(iop_a_src) >> 8u) > 0u)) {
       v_new_wi = (wuffs_base__u32__min(v_wi, 1784u) + 264u);
+      v_new_wi = wuffs_base__u32__min(v_new_wi, (v_wi + self->private_impl.f_bitstream_padding));
       if (v_wi < v_new_wi) {
+        wuffs_base__u32__sat_sub_indirect(&self->private_impl.f_bitstream_padding, (v_new_wi - v_wi));
         wuffs_base__bulk_memset(&self->private_data.f_bitstream_buffer[v_wi], (v_new_wi - v_wi), 0u);
+        v_wi = v_new_wi;
       }
-      v_wi = v_new_wi;
     }
   }
   self->private_impl.f_bitstream_wi = v_wi;

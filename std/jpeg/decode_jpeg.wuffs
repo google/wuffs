@@ -271,6 +271,11 @@ pub struct decoder? implements base.image_decoder(
         bitstream_ri     : base.u32[..= 0x800],
         bitstream_wi     : base.u32[..= 0x800],
 
+        // bitstream_padding is the number (per restart) of implicit zeroes
+        // remaining at the end of the bitstream. Its initial 12345 value is
+        // arbitrary.
+        bitstream_padding : base.u32[..= 12345],
+
         quant_tables       : array[4] array[64] base.u8,
         saved_quant_tables : array[4] array[64] base.u8,
 
@@ -1161,6 +1166,7 @@ pri func decoder.decode_sos?(dst: ptr base.pixel_buffer, src: base.io_reader, wo
     this.bitstream_n_bits = 0
     this.bitstream_ri = 0
     this.bitstream_wi = 0
+    this.bitstream_padding = 12345
     this.fill_bitstream!(src: args.src)
 
     my = 0
@@ -1197,6 +1203,8 @@ pri func decoder.decode_sos?(dst: ptr base.pixel_buffer, src: base.io_reader, wo
                     this.fill_bitstream!(src: args.src)
                     if bitstream_length < (this.bitstream_wi ~mod- this.bitstream_ri) {
                         break.fill_bitstream
+                    } else if this.bitstream_padding == 0 {
+                        return "#bad SOS marker"
                     }
                     yield? base."$short read"
                 } endwhile.fill_bitstream
@@ -1223,6 +1231,7 @@ pri func decoder.decode_sos?(dst: ptr base.pixel_buffer, src: base.io_reader, wo
                     this.bitstream_n_bits = 0
                     this.bitstream_ri = 0
                     this.bitstream_wi = 0
+                    this.bitstream_padding = 12345
                 }
             }
 
@@ -1520,10 +1529,13 @@ pri func decoder.fill_bitstream!(src: base.io_reader) {
     if args.src.length() > 1 {
         if (args.src.peek_u8() >= 0xFF) and ((args.src.peek_u16le() >> 8) > 0) {
             new_wi = wi.min(no_more_than: 0x800 - 264) + 264
+            new_wi = new_wi.min(no_more_than: wi + this.bitstream_padding)
             if wi < new_wi {
+                assert new_wi > wi via "a > b: b < a"()
+                this.bitstream_padding ~sat-= new_wi - wi
                 this.bitstream_buffer[wi .. new_wi].bulk_memset!(byte_value: 0)
+                wi = new_wi
             }
-            wi = new_wi
         }
     }
 
