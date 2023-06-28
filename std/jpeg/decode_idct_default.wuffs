@@ -101,10 +101,14 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
 
     // p0_298631336 = 0x098E =  2446
     // p0_390180644 = 0x0C7C =  3196
+    // p0_509795579 = 0x1051 =  4177
     // p0_541196100 = 0x1151 =  4433
+    // p0_601344887 = 0x133E =  4926
     // p0_765366865 = 0x187E =  6270
+    // p0_785694958 = 0x1925 =  6437
     // p0_899976223 = 0x1CCD =  7373
     // p1_175875602 = 0x25A1 =  9633
+    // p1_306562965 = 0x29CF = 10703
     // p1_501321110 = 0x300B = 12299
     // p1_847759065 = 0x3B21 = 15137
     // p1_961570560 = 0x3EC5 = 16069
@@ -113,7 +117,11 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
     // p3_072711026 = 0x6254 = 25172
     //
     // m0_390180644 = 0xFFFFF384 = 4294964100
+    // m0_509795579 = 0xFFFFEFB0 = 4294963120
+    // m0_601344887 = 0xFFFFECC1 = 4294962369
+    // m0_785694958 = 0xFFFFE6DC = 4294960860
     // m0_899976223 = 0xFFFFE333 = 4294959923
+    // m1_306562965 = 0xFFFFD630 = 4294956592
     // m1_961570560 = 0xFFFFC13B = 4294951227
     // m2_562915447 = 0xFFFFADFD = 4294946301
 
@@ -146,10 +154,16 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         bq2 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x10]) ~mod* (this.quant_tables[args.q][0x10] as base.u32)
         bq6 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x30]) ~mod* (this.quant_tables[args.q][0x30] as base.u32)
 
+        // This code...
         ca = (bq2 ~mod+ bq6) ~mod* 0x1151
 
         cb2 = ca ~mod+ (bq2 ~mod* 0x187E)
         cb6 = ca ~mod- (bq6 ~mod* 0x3B21)
+
+        // ...is equivalent to this more-SIMD-like code.
+        //
+        // cb2 = (bq2 ~mod* 0x29CF) ~mod+ (bq6 ~mod* 0x1151)
+        // cb6 = (bq2 ~mod* 0x1151) ~mod+ (bq6 ~mod* 0xFFFFD630)
 
         bq0 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x00]) ~mod* (this.quant_tables[args.q][0x00] as base.u32)
         bq4 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x20]) ~mod* (this.quant_tables[args.q][0x20] as base.u32)
@@ -174,6 +188,7 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         ci71 = bq7 ~mod+ bq1
         ci73 = bq7 ~mod+ bq3
 
+        // This code...
         cj = (ci73 ~mod+ ci51) ~mod* 0x25A1
 
         ck1 = bq1 ~mod* 0x300B
@@ -193,6 +208,15 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         ck3 ~mod+= ci53 ~mod+ cl73
         ck5 ~mod+= ci53 ~mod+ cl51
         ck7 ~mod+= ci71 ~mod+ cl73
+
+        // ...is equivalent to this more-SIMD-like code.
+        //
+        // cl73 = (ci73 ~mod* 0xFFFFE6DC) ~mod+ (ci51 ~mod* 0x25A1)
+        // cl51 = (ci73 ~mod* 0x25A1) ~mod+ (ci51 ~mod* 0x1925)
+        // ck1 = cl51 ~mod+ ((bq1 ~mod* 0x133E) ~mod+ (bq7 ~mod* 0xFFFFE333))
+        // ck3 = cl73 ~mod+ ((bq3 ~mod* 0x1051) ~mod+ (bq5 ~mod* 0xFFFFADFD))
+        // ck5 = cl51 ~mod+ ((bq3 ~mod* 0xFFFFADFD) ~mod+ (bq5 ~mod* 0xFFFFEFB0))
+        // ck7 = cl73 ~mod+ ((bq1 ~mod* 0xFFFFE333) ~mod+ (bq7 ~mod* 0xFFFFECC1))
 
         // Combine rows.
 
@@ -235,10 +259,16 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         bq2 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x11]) ~mod* (this.quant_tables[args.q][0x11] as base.u32)
         bq6 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x31]) ~mod* (this.quant_tables[args.q][0x31] as base.u32)
 
+        // This code...
         ca = (bq2 ~mod+ bq6) ~mod* 0x1151
 
         cb2 = ca ~mod+ (bq2 ~mod* 0x187E)
         cb6 = ca ~mod- (bq6 ~mod* 0x3B21)
+
+        // ...is equivalent to this more-SIMD-like code.
+        //
+        // cb2 = (bq2 ~mod* 0x29CF) ~mod+ (bq6 ~mod* 0x1151)
+        // cb6 = (bq2 ~mod* 0x1151) ~mod+ (bq6 ~mod* 0xFFFFD630)
 
         bq0 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x01]) ~mod* (this.quant_tables[args.q][0x01] as base.u32)
         bq4 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x21]) ~mod* (this.quant_tables[args.q][0x21] as base.u32)
@@ -263,6 +293,7 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         ci71 = bq7 ~mod+ bq1
         ci73 = bq7 ~mod+ bq3
 
+        // This code...
         cj = (ci73 ~mod+ ci51) ~mod* 0x25A1
 
         ck1 = bq1 ~mod* 0x300B
@@ -282,6 +313,15 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         ck3 ~mod+= ci53 ~mod+ cl73
         ck5 ~mod+= ci53 ~mod+ cl51
         ck7 ~mod+= ci71 ~mod+ cl73
+
+        // ...is equivalent to this more-SIMD-like code.
+        //
+        // cl73 = (ci73 ~mod* 0xFFFFE6DC) ~mod+ (ci51 ~mod* 0x25A1)
+        // cl51 = (ci73 ~mod* 0x25A1) ~mod+ (ci51 ~mod* 0x1925)
+        // ck1 = cl51 ~mod+ ((bq1 ~mod* 0x133E) ~mod+ (bq7 ~mod* 0xFFFFE333))
+        // ck3 = cl73 ~mod+ ((bq3 ~mod* 0x1051) ~mod+ (bq5 ~mod* 0xFFFFADFD))
+        // ck5 = cl51 ~mod+ ((bq3 ~mod* 0xFFFFADFD) ~mod+ (bq5 ~mod* 0xFFFFEFB0))
+        // ck7 = cl73 ~mod+ ((bq1 ~mod* 0xFFFFE333) ~mod+ (bq7 ~mod* 0xFFFFECC1))
 
         // Combine rows.
 
@@ -324,10 +364,16 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         bq2 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x12]) ~mod* (this.quant_tables[args.q][0x12] as base.u32)
         bq6 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x32]) ~mod* (this.quant_tables[args.q][0x32] as base.u32)
 
+        // This code...
         ca = (bq2 ~mod+ bq6) ~mod* 0x1151
 
         cb2 = ca ~mod+ (bq2 ~mod* 0x187E)
         cb6 = ca ~mod- (bq6 ~mod* 0x3B21)
+
+        // ...is equivalent to this more-SIMD-like code.
+        //
+        // cb2 = (bq2 ~mod* 0x29CF) ~mod+ (bq6 ~mod* 0x1151)
+        // cb6 = (bq2 ~mod* 0x1151) ~mod+ (bq6 ~mod* 0xFFFFD630)
 
         bq0 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x02]) ~mod* (this.quant_tables[args.q][0x02] as base.u32)
         bq4 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x22]) ~mod* (this.quant_tables[args.q][0x22] as base.u32)
@@ -352,6 +398,7 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         ci71 = bq7 ~mod+ bq1
         ci73 = bq7 ~mod+ bq3
 
+        // This code...
         cj = (ci73 ~mod+ ci51) ~mod* 0x25A1
 
         ck1 = bq1 ~mod* 0x300B
@@ -371,6 +418,15 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         ck3 ~mod+= ci53 ~mod+ cl73
         ck5 ~mod+= ci53 ~mod+ cl51
         ck7 ~mod+= ci71 ~mod+ cl73
+
+        // ...is equivalent to this more-SIMD-like code.
+        //
+        // cl73 = (ci73 ~mod* 0xFFFFE6DC) ~mod+ (ci51 ~mod* 0x25A1)
+        // cl51 = (ci73 ~mod* 0x25A1) ~mod+ (ci51 ~mod* 0x1925)
+        // ck1 = cl51 ~mod+ ((bq1 ~mod* 0x133E) ~mod+ (bq7 ~mod* 0xFFFFE333))
+        // ck3 = cl73 ~mod+ ((bq3 ~mod* 0x1051) ~mod+ (bq5 ~mod* 0xFFFFADFD))
+        // ck5 = cl51 ~mod+ ((bq3 ~mod* 0xFFFFADFD) ~mod+ (bq5 ~mod* 0xFFFFEFB0))
+        // ck7 = cl73 ~mod+ ((bq1 ~mod* 0xFFFFE333) ~mod+ (bq7 ~mod* 0xFFFFECC1))
 
         // Combine rows.
 
@@ -413,10 +469,16 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         bq2 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x13]) ~mod* (this.quant_tables[args.q][0x13] as base.u32)
         bq6 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x33]) ~mod* (this.quant_tables[args.q][0x33] as base.u32)
 
+        // This code...
         ca = (bq2 ~mod+ bq6) ~mod* 0x1151
 
         cb2 = ca ~mod+ (bq2 ~mod* 0x187E)
         cb6 = ca ~mod- (bq6 ~mod* 0x3B21)
+
+        // ...is equivalent to this more-SIMD-like code.
+        //
+        // cb2 = (bq2 ~mod* 0x29CF) ~mod+ (bq6 ~mod* 0x1151)
+        // cb6 = (bq2 ~mod* 0x1151) ~mod+ (bq6 ~mod* 0xFFFFD630)
 
         bq0 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x03]) ~mod* (this.quant_tables[args.q][0x03] as base.u32)
         bq4 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x23]) ~mod* (this.quant_tables[args.q][0x23] as base.u32)
@@ -441,6 +503,7 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         ci71 = bq7 ~mod+ bq1
         ci73 = bq7 ~mod+ bq3
 
+        // This code...
         cj = (ci73 ~mod+ ci51) ~mod* 0x25A1
 
         ck1 = bq1 ~mod* 0x300B
@@ -460,6 +523,15 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         ck3 ~mod+= ci53 ~mod+ cl73
         ck5 ~mod+= ci53 ~mod+ cl51
         ck7 ~mod+= ci71 ~mod+ cl73
+
+        // ...is equivalent to this more-SIMD-like code.
+        //
+        // cl73 = (ci73 ~mod* 0xFFFFE6DC) ~mod+ (ci51 ~mod* 0x25A1)
+        // cl51 = (ci73 ~mod* 0x25A1) ~mod+ (ci51 ~mod* 0x1925)
+        // ck1 = cl51 ~mod+ ((bq1 ~mod* 0x133E) ~mod+ (bq7 ~mod* 0xFFFFE333))
+        // ck3 = cl73 ~mod+ ((bq3 ~mod* 0x1051) ~mod+ (bq5 ~mod* 0xFFFFADFD))
+        // ck5 = cl51 ~mod+ ((bq3 ~mod* 0xFFFFADFD) ~mod+ (bq5 ~mod* 0xFFFFEFB0))
+        // ck7 = cl73 ~mod+ ((bq1 ~mod* 0xFFFFE333) ~mod+ (bq7 ~mod* 0xFFFFECC1))
 
         // Combine rows.
 
@@ -502,10 +574,16 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         bq2 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x14]) ~mod* (this.quant_tables[args.q][0x14] as base.u32)
         bq6 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x34]) ~mod* (this.quant_tables[args.q][0x34] as base.u32)
 
+        // This code...
         ca = (bq2 ~mod+ bq6) ~mod* 0x1151
 
         cb2 = ca ~mod+ (bq2 ~mod* 0x187E)
         cb6 = ca ~mod- (bq6 ~mod* 0x3B21)
+
+        // ...is equivalent to this more-SIMD-like code.
+        //
+        // cb2 = (bq2 ~mod* 0x29CF) ~mod+ (bq6 ~mod* 0x1151)
+        // cb6 = (bq2 ~mod* 0x1151) ~mod+ (bq6 ~mod* 0xFFFFD630)
 
         bq0 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x04]) ~mod* (this.quant_tables[args.q][0x04] as base.u32)
         bq4 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x24]) ~mod* (this.quant_tables[args.q][0x24] as base.u32)
@@ -530,6 +608,7 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         ci71 = bq7 ~mod+ bq1
         ci73 = bq7 ~mod+ bq3
 
+        // This code...
         cj = (ci73 ~mod+ ci51) ~mod* 0x25A1
 
         ck1 = bq1 ~mod* 0x300B
@@ -549,6 +628,15 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         ck3 ~mod+= ci53 ~mod+ cl73
         ck5 ~mod+= ci53 ~mod+ cl51
         ck7 ~mod+= ci71 ~mod+ cl73
+
+        // ...is equivalent to this more-SIMD-like code.
+        //
+        // cl73 = (ci73 ~mod* 0xFFFFE6DC) ~mod+ (ci51 ~mod* 0x25A1)
+        // cl51 = (ci73 ~mod* 0x25A1) ~mod+ (ci51 ~mod* 0x1925)
+        // ck1 = cl51 ~mod+ ((bq1 ~mod* 0x133E) ~mod+ (bq7 ~mod* 0xFFFFE333))
+        // ck3 = cl73 ~mod+ ((bq3 ~mod* 0x1051) ~mod+ (bq5 ~mod* 0xFFFFADFD))
+        // ck5 = cl51 ~mod+ ((bq3 ~mod* 0xFFFFADFD) ~mod+ (bq5 ~mod* 0xFFFFEFB0))
+        // ck7 = cl73 ~mod+ ((bq1 ~mod* 0xFFFFE333) ~mod+ (bq7 ~mod* 0xFFFFECC1))
 
         // Combine rows.
 
@@ -591,10 +679,16 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         bq2 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x15]) ~mod* (this.quant_tables[args.q][0x15] as base.u32)
         bq6 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x35]) ~mod* (this.quant_tables[args.q][0x35] as base.u32)
 
+        // This code...
         ca = (bq2 ~mod+ bq6) ~mod* 0x1151
 
         cb2 = ca ~mod+ (bq2 ~mod* 0x187E)
         cb6 = ca ~mod- (bq6 ~mod* 0x3B21)
+
+        // ...is equivalent to this more-SIMD-like code.
+        //
+        // cb2 = (bq2 ~mod* 0x29CF) ~mod+ (bq6 ~mod* 0x1151)
+        // cb6 = (bq2 ~mod* 0x1151) ~mod+ (bq6 ~mod* 0xFFFFD630)
 
         bq0 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x05]) ~mod* (this.quant_tables[args.q][0x05] as base.u32)
         bq4 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x25]) ~mod* (this.quant_tables[args.q][0x25] as base.u32)
@@ -619,6 +713,7 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         ci71 = bq7 ~mod+ bq1
         ci73 = bq7 ~mod+ bq3
 
+        // This code...
         cj = (ci73 ~mod+ ci51) ~mod* 0x25A1
 
         ck1 = bq1 ~mod* 0x300B
@@ -638,6 +733,15 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         ck3 ~mod+= ci53 ~mod+ cl73
         ck5 ~mod+= ci53 ~mod+ cl51
         ck7 ~mod+= ci71 ~mod+ cl73
+
+        // ...is equivalent to this more-SIMD-like code.
+        //
+        // cl73 = (ci73 ~mod* 0xFFFFE6DC) ~mod+ (ci51 ~mod* 0x25A1)
+        // cl51 = (ci73 ~mod* 0x25A1) ~mod+ (ci51 ~mod* 0x1925)
+        // ck1 = cl51 ~mod+ ((bq1 ~mod* 0x133E) ~mod+ (bq7 ~mod* 0xFFFFE333))
+        // ck3 = cl73 ~mod+ ((bq3 ~mod* 0x1051) ~mod+ (bq5 ~mod* 0xFFFFADFD))
+        // ck5 = cl51 ~mod+ ((bq3 ~mod* 0xFFFFADFD) ~mod+ (bq5 ~mod* 0xFFFFEFB0))
+        // ck7 = cl73 ~mod+ ((bq1 ~mod* 0xFFFFE333) ~mod+ (bq7 ~mod* 0xFFFFECC1))
 
         // Combine rows.
 
@@ -680,10 +784,16 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         bq2 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x16]) ~mod* (this.quant_tables[args.q][0x16] as base.u32)
         bq6 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x36]) ~mod* (this.quant_tables[args.q][0x36] as base.u32)
 
+        // This code...
         ca = (bq2 ~mod+ bq6) ~mod* 0x1151
 
         cb2 = ca ~mod+ (bq2 ~mod* 0x187E)
         cb6 = ca ~mod- (bq6 ~mod* 0x3B21)
+
+        // ...is equivalent to this more-SIMD-like code.
+        //
+        // cb2 = (bq2 ~mod* 0x29CF) ~mod+ (bq6 ~mod* 0x1151)
+        // cb6 = (bq2 ~mod* 0x1151) ~mod+ (bq6 ~mod* 0xFFFFD630)
 
         bq0 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x06]) ~mod* (this.quant_tables[args.q][0x06] as base.u32)
         bq4 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x26]) ~mod* (this.quant_tables[args.q][0x26] as base.u32)
@@ -708,6 +818,7 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         ci71 = bq7 ~mod+ bq1
         ci73 = bq7 ~mod+ bq3
 
+        // This code...
         cj = (ci73 ~mod+ ci51) ~mod* 0x25A1
 
         ck1 = bq1 ~mod* 0x300B
@@ -727,6 +838,15 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         ck3 ~mod+= ci53 ~mod+ cl73
         ck5 ~mod+= ci53 ~mod+ cl51
         ck7 ~mod+= ci71 ~mod+ cl73
+
+        // ...is equivalent to this more-SIMD-like code.
+        //
+        // cl73 = (ci73 ~mod* 0xFFFFE6DC) ~mod+ (ci51 ~mod* 0x25A1)
+        // cl51 = (ci73 ~mod* 0x25A1) ~mod+ (ci51 ~mod* 0x1925)
+        // ck1 = cl51 ~mod+ ((bq1 ~mod* 0x133E) ~mod+ (bq7 ~mod* 0xFFFFE333))
+        // ck3 = cl73 ~mod+ ((bq3 ~mod* 0x1051) ~mod+ (bq5 ~mod* 0xFFFFADFD))
+        // ck5 = cl51 ~mod+ ((bq3 ~mod* 0xFFFFADFD) ~mod+ (bq5 ~mod* 0xFFFFEFB0))
+        // ck7 = cl73 ~mod+ ((bq1 ~mod* 0xFFFFE333) ~mod+ (bq7 ~mod* 0xFFFFECC1))
 
         // Combine rows.
 
@@ -769,10 +889,16 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         bq2 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x17]) ~mod* (this.quant_tables[args.q][0x17] as base.u32)
         bq6 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x37]) ~mod* (this.quant_tables[args.q][0x37] as base.u32)
 
+        // This code...
         ca = (bq2 ~mod+ bq6) ~mod* 0x1151
 
         cb2 = ca ~mod+ (bq2 ~mod* 0x187E)
         cb6 = ca ~mod- (bq6 ~mod* 0x3B21)
+
+        // ...is equivalent to this more-SIMD-like code.
+        //
+        // cb2 = (bq2 ~mod* 0x29CF) ~mod+ (bq6 ~mod* 0x1151)
+        // cb6 = (bq2 ~mod* 0x1151) ~mod+ (bq6 ~mod* 0xFFFFD630)
 
         bq0 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x07]) ~mod* (this.quant_tables[args.q][0x07] as base.u32)
         bq4 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][0x27]) ~mod* (this.quant_tables[args.q][0x27] as base.u32)
@@ -797,6 +923,7 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         ci71 = bq7 ~mod+ bq1
         ci73 = bq7 ~mod+ bq3
 
+        // This code...
         cj = (ci73 ~mod+ ci51) ~mod* 0x25A1
 
         ck1 = bq1 ~mod* 0x300B
@@ -816,6 +943,15 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         ck3 ~mod+= ci53 ~mod+ cl73
         ck5 ~mod+= ci53 ~mod+ cl51
         ck7 ~mod+= ci71 ~mod+ cl73
+
+        // ...is equivalent to this more-SIMD-like code.
+        //
+        // cl73 = (ci73 ~mod* 0xFFFFE6DC) ~mod+ (ci51 ~mod* 0x25A1)
+        // cl51 = (ci73 ~mod* 0x25A1) ~mod+ (ci51 ~mod* 0x1925)
+        // ck1 = cl51 ~mod+ ((bq1 ~mod* 0x133E) ~mod+ (bq7 ~mod* 0xFFFFE333))
+        // ck3 = cl73 ~mod+ ((bq3 ~mod* 0x1051) ~mod+ (bq5 ~mod* 0xFFFFADFD))
+        // ck5 = cl51 ~mod+ ((bq3 ~mod* 0xFFFFADFD) ~mod+ (bq5 ~mod* 0xFFFFEFB0))
+        // ck7 = cl73 ~mod+ ((bq1 ~mod* 0xFFFFE333) ~mod+ (bq7 ~mod* 0xFFFFECC1))
 
         // Combine rows.
 
@@ -863,10 +999,16 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         in2 = intermediate[0x02]
         in6 = intermediate[0x06]
 
+        // This code...
         ra = (in2 ~mod+ in6) ~mod* 0x1151
 
         rb2 = ra ~mod+ (in2 ~mod* 0x187E)
         rb6 = ra ~mod- (in6 ~mod* 0x3B21)
+
+        // ...is equivalent to this more-SIMD-like code.
+        //
+        // rb2 = (in2 ~mod* 0x29CF) ~mod+ (in6 ~mod* 0x1151)
+        // rb6 = (in2 ~mod* 0x1151) ~mod+ (in6 ~mod* 0xFFFFD630)
 
         in0 = intermediate[0x00]
         in4 = intermediate[0x04]
@@ -891,6 +1033,7 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         ri71 = in7 ~mod+ in1
         ri73 = in7 ~mod+ in3
 
+        // This code...
         rj = (ri73 ~mod+ ri51) ~mod* 0x25A1
 
         rk1 = in1 ~mod* 0x300B
@@ -910,6 +1053,15 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         rk3 ~mod+= ri53 ~mod+ rl73
         rk5 ~mod+= ri53 ~mod+ rl51
         rk7 ~mod+= ri71 ~mod+ rl73
+
+        // ...is equivalent to this more-SIMD-like code.
+        //
+        // rl73 = (ri73 ~mod* 0xFFFFE6DC) ~mod+ (ri51 ~mod* 0x25A1)
+        // rl51 = (ri73 ~mod* 0x25A1) ~mod+ (ri51 ~mod* 0x1925)
+        // rk1 = rl51 ~mod+ ((in1 ~mod* 0x133E) ~mod+ (in7 ~mod* 0xFFFFE333))
+        // rk3 = rl73 ~mod+ ((in3 ~mod* 0x1051) ~mod+ (in5 ~mod* 0xFFFFADFD))
+        // rk5 = rl51 ~mod+ ((in3 ~mod* 0xFFFFADFD) ~mod+ (in5 ~mod* 0xFFFFEFB0))
+        // rk7 = rl73 ~mod+ ((in1 ~mod* 0xFFFFE333) ~mod+ (in7 ~mod* 0xFFFFECC1))
 
         // Combine columns.
 
@@ -964,10 +1116,16 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         in2 = intermediate[0x0A]
         in6 = intermediate[0x0E]
 
+        // This code...
         ra = (in2 ~mod+ in6) ~mod* 0x1151
 
         rb2 = ra ~mod+ (in2 ~mod* 0x187E)
         rb6 = ra ~mod- (in6 ~mod* 0x3B21)
+
+        // ...is equivalent to this more-SIMD-like code.
+        //
+        // rb2 = (in2 ~mod* 0x29CF) ~mod+ (in6 ~mod* 0x1151)
+        // rb6 = (in2 ~mod* 0x1151) ~mod+ (in6 ~mod* 0xFFFFD630)
 
         in0 = intermediate[0x08]
         in4 = intermediate[0x0C]
@@ -992,6 +1150,7 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         ri71 = in7 ~mod+ in1
         ri73 = in7 ~mod+ in3
 
+        // This code...
         rj = (ri73 ~mod+ ri51) ~mod* 0x25A1
 
         rk1 = in1 ~mod* 0x300B
@@ -1011,6 +1170,15 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         rk3 ~mod+= ri53 ~mod+ rl73
         rk5 ~mod+= ri53 ~mod+ rl51
         rk7 ~mod+= ri71 ~mod+ rl73
+
+        // ...is equivalent to this more-SIMD-like code.
+        //
+        // rl73 = (ri73 ~mod* 0xFFFFE6DC) ~mod+ (ri51 ~mod* 0x25A1)
+        // rl51 = (ri73 ~mod* 0x25A1) ~mod+ (ri51 ~mod* 0x1925)
+        // rk1 = rl51 ~mod+ ((in1 ~mod* 0x133E) ~mod+ (in7 ~mod* 0xFFFFE333))
+        // rk3 = rl73 ~mod+ ((in3 ~mod* 0x1051) ~mod+ (in5 ~mod* 0xFFFFADFD))
+        // rk5 = rl51 ~mod+ ((in3 ~mod* 0xFFFFADFD) ~mod+ (in5 ~mod* 0xFFFFEFB0))
+        // rk7 = rl73 ~mod+ ((in1 ~mod* 0xFFFFE333) ~mod+ (in7 ~mod* 0xFFFFECC1))
 
         // Combine columns.
 
@@ -1065,10 +1233,16 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         in2 = intermediate[0x12]
         in6 = intermediate[0x16]
 
+        // This code...
         ra = (in2 ~mod+ in6) ~mod* 0x1151
 
         rb2 = ra ~mod+ (in2 ~mod* 0x187E)
         rb6 = ra ~mod- (in6 ~mod* 0x3B21)
+
+        // ...is equivalent to this more-SIMD-like code.
+        //
+        // rb2 = (in2 ~mod* 0x29CF) ~mod+ (in6 ~mod* 0x1151)
+        // rb6 = (in2 ~mod* 0x1151) ~mod+ (in6 ~mod* 0xFFFFD630)
 
         in0 = intermediate[0x10]
         in4 = intermediate[0x14]
@@ -1093,6 +1267,7 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         ri71 = in7 ~mod+ in1
         ri73 = in7 ~mod+ in3
 
+        // This code...
         rj = (ri73 ~mod+ ri51) ~mod* 0x25A1
 
         rk1 = in1 ~mod* 0x300B
@@ -1112,6 +1287,15 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         rk3 ~mod+= ri53 ~mod+ rl73
         rk5 ~mod+= ri53 ~mod+ rl51
         rk7 ~mod+= ri71 ~mod+ rl73
+
+        // ...is equivalent to this more-SIMD-like code.
+        //
+        // rl73 = (ri73 ~mod* 0xFFFFE6DC) ~mod+ (ri51 ~mod* 0x25A1)
+        // rl51 = (ri73 ~mod* 0x25A1) ~mod+ (ri51 ~mod* 0x1925)
+        // rk1 = rl51 ~mod+ ((in1 ~mod* 0x133E) ~mod+ (in7 ~mod* 0xFFFFE333))
+        // rk3 = rl73 ~mod+ ((in3 ~mod* 0x1051) ~mod+ (in5 ~mod* 0xFFFFADFD))
+        // rk5 = rl51 ~mod+ ((in3 ~mod* 0xFFFFADFD) ~mod+ (in5 ~mod* 0xFFFFEFB0))
+        // rk7 = rl73 ~mod+ ((in1 ~mod* 0xFFFFE333) ~mod+ (in7 ~mod* 0xFFFFECC1))
 
         // Combine columns.
 
@@ -1166,10 +1350,16 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         in2 = intermediate[0x1A]
         in6 = intermediate[0x1E]
 
+        // This code...
         ra = (in2 ~mod+ in6) ~mod* 0x1151
 
         rb2 = ra ~mod+ (in2 ~mod* 0x187E)
         rb6 = ra ~mod- (in6 ~mod* 0x3B21)
+
+        // ...is equivalent to this more-SIMD-like code.
+        //
+        // rb2 = (in2 ~mod* 0x29CF) ~mod+ (in6 ~mod* 0x1151)
+        // rb6 = (in2 ~mod* 0x1151) ~mod+ (in6 ~mod* 0xFFFFD630)
 
         in0 = intermediate[0x18]
         in4 = intermediate[0x1C]
@@ -1194,6 +1384,7 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         ri71 = in7 ~mod+ in1
         ri73 = in7 ~mod+ in3
 
+        // This code...
         rj = (ri73 ~mod+ ri51) ~mod* 0x25A1
 
         rk1 = in1 ~mod* 0x300B
@@ -1213,6 +1404,15 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         rk3 ~mod+= ri53 ~mod+ rl73
         rk5 ~mod+= ri53 ~mod+ rl51
         rk7 ~mod+= ri71 ~mod+ rl73
+
+        // ...is equivalent to this more-SIMD-like code.
+        //
+        // rl73 = (ri73 ~mod* 0xFFFFE6DC) ~mod+ (ri51 ~mod* 0x25A1)
+        // rl51 = (ri73 ~mod* 0x25A1) ~mod+ (ri51 ~mod* 0x1925)
+        // rk1 = rl51 ~mod+ ((in1 ~mod* 0x133E) ~mod+ (in7 ~mod* 0xFFFFE333))
+        // rk3 = rl73 ~mod+ ((in3 ~mod* 0x1051) ~mod+ (in5 ~mod* 0xFFFFADFD))
+        // rk5 = rl51 ~mod+ ((in3 ~mod* 0xFFFFADFD) ~mod+ (in5 ~mod* 0xFFFFEFB0))
+        // rk7 = rl73 ~mod+ ((in1 ~mod* 0xFFFFE333) ~mod+ (in7 ~mod* 0xFFFFECC1))
 
         // Combine columns.
 
@@ -1267,10 +1467,16 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         in2 = intermediate[0x22]
         in6 = intermediate[0x26]
 
+        // This code...
         ra = (in2 ~mod+ in6) ~mod* 0x1151
 
         rb2 = ra ~mod+ (in2 ~mod* 0x187E)
         rb6 = ra ~mod- (in6 ~mod* 0x3B21)
+
+        // ...is equivalent to this more-SIMD-like code.
+        //
+        // rb2 = (in2 ~mod* 0x29CF) ~mod+ (in6 ~mod* 0x1151)
+        // rb6 = (in2 ~mod* 0x1151) ~mod+ (in6 ~mod* 0xFFFFD630)
 
         in0 = intermediate[0x20]
         in4 = intermediate[0x24]
@@ -1295,6 +1501,7 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         ri71 = in7 ~mod+ in1
         ri73 = in7 ~mod+ in3
 
+        // This code...
         rj = (ri73 ~mod+ ri51) ~mod* 0x25A1
 
         rk1 = in1 ~mod* 0x300B
@@ -1314,6 +1521,15 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         rk3 ~mod+= ri53 ~mod+ rl73
         rk5 ~mod+= ri53 ~mod+ rl51
         rk7 ~mod+= ri71 ~mod+ rl73
+
+        // ...is equivalent to this more-SIMD-like code.
+        //
+        // rl73 = (ri73 ~mod* 0xFFFFE6DC) ~mod+ (ri51 ~mod* 0x25A1)
+        // rl51 = (ri73 ~mod* 0x25A1) ~mod+ (ri51 ~mod* 0x1925)
+        // rk1 = rl51 ~mod+ ((in1 ~mod* 0x133E) ~mod+ (in7 ~mod* 0xFFFFE333))
+        // rk3 = rl73 ~mod+ ((in3 ~mod* 0x1051) ~mod+ (in5 ~mod* 0xFFFFADFD))
+        // rk5 = rl51 ~mod+ ((in3 ~mod* 0xFFFFADFD) ~mod+ (in5 ~mod* 0xFFFFEFB0))
+        // rk7 = rl73 ~mod+ ((in1 ~mod* 0xFFFFE333) ~mod+ (in7 ~mod* 0xFFFFECC1))
 
         // Combine columns.
 
@@ -1368,10 +1584,16 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         in2 = intermediate[0x2A]
         in6 = intermediate[0x2E]
 
+        // This code...
         ra = (in2 ~mod+ in6) ~mod* 0x1151
 
         rb2 = ra ~mod+ (in2 ~mod* 0x187E)
         rb6 = ra ~mod- (in6 ~mod* 0x3B21)
+
+        // ...is equivalent to this more-SIMD-like code.
+        //
+        // rb2 = (in2 ~mod* 0x29CF) ~mod+ (in6 ~mod* 0x1151)
+        // rb6 = (in2 ~mod* 0x1151) ~mod+ (in6 ~mod* 0xFFFFD630)
 
         in0 = intermediate[0x28]
         in4 = intermediate[0x2C]
@@ -1396,6 +1618,7 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         ri71 = in7 ~mod+ in1
         ri73 = in7 ~mod+ in3
 
+        // This code...
         rj = (ri73 ~mod+ ri51) ~mod* 0x25A1
 
         rk1 = in1 ~mod* 0x300B
@@ -1415,6 +1638,15 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         rk3 ~mod+= ri53 ~mod+ rl73
         rk5 ~mod+= ri53 ~mod+ rl51
         rk7 ~mod+= ri71 ~mod+ rl73
+
+        // ...is equivalent to this more-SIMD-like code.
+        //
+        // rl73 = (ri73 ~mod* 0xFFFFE6DC) ~mod+ (ri51 ~mod* 0x25A1)
+        // rl51 = (ri73 ~mod* 0x25A1) ~mod+ (ri51 ~mod* 0x1925)
+        // rk1 = rl51 ~mod+ ((in1 ~mod* 0x133E) ~mod+ (in7 ~mod* 0xFFFFE333))
+        // rk3 = rl73 ~mod+ ((in3 ~mod* 0x1051) ~mod+ (in5 ~mod* 0xFFFFADFD))
+        // rk5 = rl51 ~mod+ ((in3 ~mod* 0xFFFFADFD) ~mod+ (in5 ~mod* 0xFFFFEFB0))
+        // rk7 = rl73 ~mod+ ((in1 ~mod* 0xFFFFE333) ~mod+ (in7 ~mod* 0xFFFFECC1))
 
         // Combine columns.
 
@@ -1469,10 +1701,16 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         in2 = intermediate[0x32]
         in6 = intermediate[0x36]
 
+        // This code...
         ra = (in2 ~mod+ in6) ~mod* 0x1151
 
         rb2 = ra ~mod+ (in2 ~mod* 0x187E)
         rb6 = ra ~mod- (in6 ~mod* 0x3B21)
+
+        // ...is equivalent to this more-SIMD-like code.
+        //
+        // rb2 = (in2 ~mod* 0x29CF) ~mod+ (in6 ~mod* 0x1151)
+        // rb6 = (in2 ~mod* 0x1151) ~mod+ (in6 ~mod* 0xFFFFD630)
 
         in0 = intermediate[0x30]
         in4 = intermediate[0x34]
@@ -1497,6 +1735,7 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         ri71 = in7 ~mod+ in1
         ri73 = in7 ~mod+ in3
 
+        // This code...
         rj = (ri73 ~mod+ ri51) ~mod* 0x25A1
 
         rk1 = in1 ~mod* 0x300B
@@ -1516,6 +1755,15 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         rk3 ~mod+= ri53 ~mod+ rl73
         rk5 ~mod+= ri53 ~mod+ rl51
         rk7 ~mod+= ri71 ~mod+ rl73
+
+        // ...is equivalent to this more-SIMD-like code.
+        //
+        // rl73 = (ri73 ~mod* 0xFFFFE6DC) ~mod+ (ri51 ~mod* 0x25A1)
+        // rl51 = (ri73 ~mod* 0x25A1) ~mod+ (ri51 ~mod* 0x1925)
+        // rk1 = rl51 ~mod+ ((in1 ~mod* 0x133E) ~mod+ (in7 ~mod* 0xFFFFE333))
+        // rk3 = rl73 ~mod+ ((in3 ~mod* 0x1051) ~mod+ (in5 ~mod* 0xFFFFADFD))
+        // rk5 = rl51 ~mod+ ((in3 ~mod* 0xFFFFADFD) ~mod+ (in5 ~mod* 0xFFFFEFB0))
+        // rk7 = rl73 ~mod+ ((in1 ~mod* 0xFFFFE333) ~mod+ (in7 ~mod* 0xFFFFECC1))
 
         // Combine columns.
 
@@ -1567,10 +1815,16 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         in2 = intermediate[0x3A]
         in6 = intermediate[0x3E]
 
+        // This code...
         ra = (in2 ~mod+ in6) ~mod* 0x1151
 
         rb2 = ra ~mod+ (in2 ~mod* 0x187E)
         rb6 = ra ~mod- (in6 ~mod* 0x3B21)
+
+        // ...is equivalent to this more-SIMD-like code.
+        //
+        // rb2 = (in2 ~mod* 0x29CF) ~mod+ (in6 ~mod* 0x1151)
+        // rb6 = (in2 ~mod* 0x1151) ~mod+ (in6 ~mod* 0xFFFFD630)
 
         in0 = intermediate[0x38]
         in4 = intermediate[0x3C]
@@ -1595,6 +1849,7 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         ri71 = in7 ~mod+ in1
         ri73 = in7 ~mod+ in3
 
+        // This code...
         rj = (ri73 ~mod+ ri51) ~mod* 0x25A1
 
         rk1 = in1 ~mod* 0x300B
@@ -1614,6 +1869,15 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         rk3 ~mod+= ri53 ~mod+ rl73
         rk5 ~mod+= ri53 ~mod+ rl51
         rk7 ~mod+= ri71 ~mod+ rl73
+
+        // ...is equivalent to this more-SIMD-like code.
+        //
+        // rl73 = (ri73 ~mod* 0xFFFFE6DC) ~mod+ (ri51 ~mod* 0x25A1)
+        // rl51 = (ri73 ~mod* 0x25A1) ~mod+ (ri51 ~mod* 0x1925)
+        // rk1 = rl51 ~mod+ ((in1 ~mod* 0x133E) ~mod+ (in7 ~mod* 0xFFFFE333))
+        // rk3 = rl73 ~mod+ ((in3 ~mod* 0x1051) ~mod+ (in5 ~mod* 0xFFFFADFD))
+        // rk5 = rl51 ~mod+ ((in3 ~mod* 0xFFFFADFD) ~mod+ (in5 ~mod* 0xFFFFEFB0))
+        // rk7 = rl73 ~mod+ ((in1 ~mod* 0xFFFFE333) ~mod+ (in7 ~mod* 0xFFFFECC1))
 
         // Combine columns.
 

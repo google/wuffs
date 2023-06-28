@@ -40,10 +40,14 @@ func main1() error {
 
 	fmt.Printf("// p0_298631336 = 0x%04X = %5d\n", round(p0_298631336), round(p0_298631336))
 	fmt.Printf("// p0_390180644 = 0x%04X = %5d\n", round(p0_390180644), round(p0_390180644))
+	fmt.Printf("// p0_509795579 = 0x%04X = %5d\n", round(p0_509795579), round(p0_509795579))
 	fmt.Printf("// p0_541196100 = 0x%04X = %5d\n", round(p0_541196100), round(p0_541196100))
+	fmt.Printf("// p0_601344887 = 0x%04X = %5d\n", round(p0_601344887), round(p0_601344887))
 	fmt.Printf("// p0_765366865 = 0x%04X = %5d\n", round(p0_765366865), round(p0_765366865))
+	fmt.Printf("// p0_785694958 = 0x%04X = %5d\n", round(p0_785694958), round(p0_785694958))
 	fmt.Printf("// p0_899976223 = 0x%04X = %5d\n", round(p0_899976223), round(p0_899976223))
 	fmt.Printf("// p1_175875602 = 0x%04X = %5d\n", round(p1_175875602), round(p1_175875602))
+	fmt.Printf("// p1_306562965 = 0x%04X = %5d\n", round(p1_306562965), round(p1_306562965))
 	fmt.Printf("// p1_501321110 = 0x%04X = %5d\n", round(p1_501321110), round(p1_501321110))
 	fmt.Printf("// p1_847759065 = 0x%04X = %5d\n", round(p1_847759065), round(p1_847759065))
 	fmt.Printf("// p1_961570560 = 0x%04X = %5d\n", round(p1_961570560), round(p1_961570560))
@@ -52,40 +56,32 @@ func main1() error {
 	fmt.Printf("// p3_072711026 = 0x%04X = %5d\n", round(p3_072711026), round(p3_072711026))
 	fmt.Printf("//\n")
 	fmt.Printf("// m0_390180644 = 0x%08X = %10d\n", round(m0_390180644), round(m0_390180644))
+	fmt.Printf("// m0_509795579 = 0x%08X = %10d\n", round(m0_509795579), round(m0_509795579))
+	fmt.Printf("// m0_601344887 = 0x%08X = %10d\n", round(m0_601344887), round(m0_601344887))
+	fmt.Printf("// m0_785694958 = 0x%08X = %10d\n", round(m0_785694958), round(m0_785694958))
 	fmt.Printf("// m0_899976223 = 0x%08X = %10d\n", round(m0_899976223), round(m0_899976223))
+	fmt.Printf("// m1_306562965 = 0x%08X = %10d\n", round(m1_306562965), round(m1_306562965))
 	fmt.Printf("// m1_961570560 = 0x%08X = %10d\n", round(m1_961570560), round(m1_961570560))
 	fmt.Printf("// m2_562915447 = 0x%08X = %10d\n", round(m2_562915447), round(m2_562915447))
 	fmt.Println()
 
 	for x := 0; x < 8; x++ {
-		fmt.Println(strings.TrimSpace(replace(pass0, map[string]string{
-			"$colX$":         fmt.Sprint(x),
-			"$row0colX$":     fmt.Sprintf("0x%02X", (8*0)|x),
-			"$row1colX$":     fmt.Sprintf("0x%02X", (8*1)|x),
-			"$row2colX$":     fmt.Sprintf("0x%02X", (8*2)|x),
-			"$row3colX$":     fmt.Sprintf("0x%02X", (8*3)|x),
-			"$row4colX$":     fmt.Sprintf("0x%02X", (8*4)|x),
-			"$row5colX$":     fmt.Sprintf("0x%02X", (8*5)|x),
-			"$row6colX$":     fmt.Sprintf("0x%02X", (8*6)|x),
-			"$row7colX$":     fmt.Sprintf("0x%02X", (8*7)|x),
-			"$p0_298631336$": fmt.Sprintf("0x%04X", round(p0_298631336)),
-			"$p0_541196100$": fmt.Sprintf("0x%04X", round(p0_541196100)),
-			"$p0_765366865$": fmt.Sprintf("0x%04X", round(p0_765366865)),
-			"$p1_175875602$": fmt.Sprintf("0x%04X", round(p1_175875602)),
-			"$p1_501321110$": fmt.Sprintf("0x%04X", round(p1_501321110)),
-			"$p1_847759065$": fmt.Sprintf("0x%04X", round(p1_847759065)),
-			"$p2_053119869$": fmt.Sprintf("0x%04X", round(p2_053119869)),
-			"$p3_072711026$": fmt.Sprintf("0x%04X", round(p3_072711026)),
-			"$m0_390180644$": fmt.Sprintf("0x%08X", round(m0_390180644)),
-			"$m0_899976223$": fmt.Sprintf("0x%08X", round(m0_899976223)),
-			"$m1_961570560$": fmt.Sprintf("0x%08X", round(m1_961570560)),
-			"$m2_562915447$": fmt.Sprintf("0x%08X", round(m2_562915447)),
-		})))
+		fmt.Println(strings.TrimSpace(replace(pass0, addConsts(map[string]string{
+			"$colX$":     fmt.Sprint(x),
+			"$row0colX$": fmt.Sprintf("0x%02X", (8*0)|x),
+			"$row1colX$": fmt.Sprintf("0x%02X", (8*1)|x),
+			"$row2colX$": fmt.Sprintf("0x%02X", (8*2)|x),
+			"$row3colX$": fmt.Sprintf("0x%02X", (8*3)|x),
+			"$row4colX$": fmt.Sprintf("0x%02X", (8*4)|x),
+			"$row5colX$": fmt.Sprintf("0x%02X", (8*5)|x),
+			"$row6colX$": fmt.Sprintf("0x%02X", (8*6)|x),
+			"$row7colX$": fmt.Sprintf("0x%02X", (8*7)|x),
+		}))))
 		fmt.Println()
 	}
 
 	for y := 0; y < 8; y++ {
-		fmt.Println(strings.TrimSpace(replace(pass1, map[string]string{
+		fmt.Println(strings.TrimSpace(replace(pass1, addConsts(map[string]string{
 			"$rowY$":         fmt.Sprint(y),
 			"$rowYcol0$":     fmt.Sprintf("0x%02X", (8*y)|0),
 			"$rowYcol1$":     fmt.Sprintf("0x%02X", (8*y)|1),
@@ -95,21 +91,9 @@ func main1() error {
 			"$rowYcol5$":     fmt.Sprintf("0x%02X", (8*y)|5),
 			"$rowYcol6$":     fmt.Sprintf("0x%02X", (8*y)|6),
 			"$rowYcol7$":     fmt.Sprintf("0x%02X", (8*y)|7),
-			"$p0_298631336$": fmt.Sprintf("0x%04X", round(p0_298631336)),
-			"$p0_541196100$": fmt.Sprintf("0x%04X", round(p0_541196100)),
-			"$p0_765366865$": fmt.Sprintf("0x%04X", round(p0_765366865)),
-			"$p1_175875602$": fmt.Sprintf("0x%04X", round(p1_175875602)),
-			"$p1_501321110$": fmt.Sprintf("0x%04X", round(p1_501321110)),
-			"$p1_847759065$": fmt.Sprintf("0x%04X", round(p1_847759065)),
-			"$p2_053119869$": fmt.Sprintf("0x%04X", round(p2_053119869)),
-			"$p3_072711026$": fmt.Sprintf("0x%04X", round(p3_072711026)),
-			"$m0_390180644$": fmt.Sprintf("0x%08X", round(m0_390180644)),
-			"$m0_899976223$": fmt.Sprintf("0x%08X", round(m0_899976223)),
-			"$m1_961570560$": fmt.Sprintf("0x%08X", round(m1_961570560)),
-			"$m2_562915447$": fmt.Sprintf("0x%08X", round(m2_562915447)),
 			"$bounds_check$": boundsCheck(y == 7),
 			"$advance$":      advance(y == 7),
-		})))
+		}))))
 		fmt.Println()
 	}
 
@@ -124,8 +108,56 @@ func replace(s string, m map[string]string) string {
 	return s
 }
 
+func addConsts(m map[string]string) map[string]string {
+	m["$p0_298631336$"] = fmt.Sprintf("0x%04X", round(p0_298631336))
+	m["$p0_509795579$"] = fmt.Sprintf("0x%04X", round(p0_509795579))
+	m["$p0_541196100$"] = fmt.Sprintf("0x%04X", round(p0_541196100))
+	m["$p0_601344887$"] = fmt.Sprintf("0x%04X", round(p0_601344887))
+	m["$p0_765366865$"] = fmt.Sprintf("0x%04X", round(p0_765366865))
+	m["$p0_785694958$"] = fmt.Sprintf("0x%04X", round(p0_785694958))
+	m["$p1_175875602$"] = fmt.Sprintf("0x%04X", round(p1_175875602))
+	m["$p1_306562965$"] = fmt.Sprintf("0x%04X", round(p1_306562965))
+	m["$p1_501321110$"] = fmt.Sprintf("0x%04X", round(p1_501321110))
+	m["$p1_847759065$"] = fmt.Sprintf("0x%04X", round(p1_847759065))
+	m["$p2_053119869$"] = fmt.Sprintf("0x%04X", round(p2_053119869))
+	m["$p3_072711026$"] = fmt.Sprintf("0x%04X", round(p3_072711026))
+
+	m["$m0_390180644$"] = fmt.Sprintf("0x%08X", round(m0_390180644))
+	m["$m0_509795579$"] = fmt.Sprintf("0x%08X", round(m0_509795579))
+	m["$m0_601344887$"] = fmt.Sprintf("0x%08X", round(m0_601344887))
+	m["$m0_785694958$"] = fmt.Sprintf("0x%08X", round(m0_785694958))
+	m["$m0_899976223$"] = fmt.Sprintf("0x%08X", round(m0_899976223))
+	m["$m1_306562965$"] = fmt.Sprintf("0x%08X", round(m1_306562965))
+	m["$m1_961570560$"] = fmt.Sprintf("0x%08X", round(m1_961570560))
+	m["$m2_562915447$"] = fmt.Sprintf("0x%08X", round(m2_562915447))
+
+	return m
+}
+
 func round(x float64) uint32 {
-	return uint32(0.5 + (x * (1 << 13)))
+	// Hard-code some rounding errors to match libjpeg-turbo exactly.
+	//
+	// For example, p1_306562965 is defined precisely as (sqrt2 * (+cos2pi16)).
+	// Scaling by 8192 gives 10703.36380826727651620162087671551716... which
+	// rounds down (as a fixed precision approximation) to 10703 = 0x29CF.
+	//
+	// Conceptually, m1_306562965 is the negative of that 0x29CF, but it
+	// appears in libjpeg-turbo's algorithm as the negative of (p1_847759065 -
+	// p0_541196100). Those two constants (after scaling by 8192 and rounding
+	// *separately*) fold as (15137 - 4433) = 0x29D0, differing by 1.
+	adjustment := int32(0)
+	switch x {
+	case p0_509795579:
+		adjustment = +1
+	case p0_785694958:
+		adjustment = +1
+	case m0_601344887:
+		adjustment = -1
+	case m1_306562965:
+		adjustment = -1
+	}
+
+	return uint32(adjustment) + uint32(0.5+(x*(1<<13)))
 }
 
 func boundsCheck(final bool) string {
@@ -163,7 +195,11 @@ const (
 
 const (
 	p0_541196100 = sqrt2 * (+cos6pi16)
+	p0_785694958 = sqrt2 * (+cos5pi16)
 	p1_175875602 = sqrt2 * (+cos3pi16)
+	p1_306562965 = sqrt2 * (+cos2pi16)
+
+	p0_601344887 = sqrt2 * (+cos1pi16 - cos5pi16)
 
 	p0_765366865 = sqrt2 * (+cos2pi16 - cos6pi16)
 	p1_847759065 = sqrt2 * (+cos2pi16 + cos6pi16)
@@ -173,13 +209,19 @@ const (
 	p1_961570560 = sqrt2 * (+cos3pi16 + cos5pi16)
 	p2_562915447 = sqrt2 * (+cos3pi16 + cos1pi16)
 
+	p0_509795579 = sqrt2 * (+cos5pi16 - cos7pi16)
+
 	p0_298631336 = sqrt2 * (-cos1pi16 + cos3pi16 + cos5pi16 - cos7pi16)
 	p1_501321110 = sqrt2 * (+cos1pi16 + cos3pi16 - cos5pi16 - cos7pi16)
 	p2_053119869 = sqrt2 * (+cos1pi16 + cos3pi16 - cos5pi16 + cos7pi16)
 	p3_072711026 = sqrt2 * (+cos1pi16 + cos3pi16 + cos5pi16 - cos7pi16)
 
 	m0_390180644 = (1 << (32 - 13)) - p0_390180644
+	m0_509795579 = (1 << (32 - 13)) - p0_509795579
+	m0_601344887 = (1 << (32 - 13)) - p0_601344887
+	m0_785694958 = (1 << (32 - 13)) - p0_785694958
 	m0_899976223 = (1 << (32 - 13)) - p0_899976223
+	m1_306562965 = (1 << (32 - 13)) - p1_306562965
 	m1_961570560 = (1 << (32 - 13)) - p1_961570560
 	m2_562915447 = (1 << (32 - 13)) - p2_562915447
 )
@@ -213,10 +255,16 @@ intermediate[$row7colX$] = intermediate[$row0colX$]
 bq2 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][$row2colX$]) ~mod* (this.quant_tables[args.q][$row2colX$] as base.u32)
 bq6 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][$row6colX$]) ~mod* (this.quant_tables[args.q][$row6colX$] as base.u32)
 
+// This code...
 ca = (bq2 ~mod+ bq6) ~mod* $p0_541196100$
 
 cb2 = ca ~mod+ (bq2 ~mod* $p0_765366865$)
 cb6 = ca ~mod- (bq6 ~mod* $p1_847759065$)
+
+// ...is equivalent to this more-SIMD-like code.
+//
+// cb2 = (bq2 ~mod* $p1_306562965$) ~mod+ (bq6 ~mod* $p0_541196100$)
+// cb6 = (bq2 ~mod* $p0_541196100$) ~mod+ (bq6 ~mod* $m1_306562965$)
 
 bq0 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][$row0colX$]) ~mod* (this.quant_tables[args.q][$row0colX$] as base.u32)
 bq4 = this.util.sign_extend_convert_u16_u32(a: this.mcu_blocks[0][$row4colX$]) ~mod* (this.quant_tables[args.q][$row4colX$] as base.u32)
@@ -241,6 +289,7 @@ ci53 = bq5 ~mod+ bq3
 ci71 = bq7 ~mod+ bq1
 ci73 = bq7 ~mod+ bq3
 
+// This code...
 cj = (ci73 ~mod+ ci51) ~mod* $p1_175875602$
 
 ck1 = bq1 ~mod* $p1_501321110$
@@ -260,6 +309,15 @@ ck1 ~mod+= ci71 ~mod+ cl51
 ck3 ~mod+= ci53 ~mod+ cl73
 ck5 ~mod+= ci53 ~mod+ cl51
 ck7 ~mod+= ci71 ~mod+ cl73
+
+// ...is equivalent to this more-SIMD-like code.
+//
+// cl73 = (ci73 ~mod* $m0_785694958$) ~mod+ (ci51 ~mod* $p1_175875602$)
+// cl51 = (ci73 ~mod* $p1_175875602$) ~mod+ (ci51 ~mod* $p0_785694958$)
+// ck1 = cl51 ~mod+ ((bq1 ~mod* $p0_601344887$) ~mod+ (bq7 ~mod* $m0_899976223$))
+// ck3 = cl73 ~mod+ ((bq3 ~mod* $p0_509795579$) ~mod+ (bq5 ~mod* $m2_562915447$))
+// ck5 = cl51 ~mod+ ((bq3 ~mod* $m2_562915447$) ~mod+ (bq5 ~mod* $m0_509795579$))
+// ck7 = cl73 ~mod+ ((bq1 ~mod* $m0_899976223$) ~mod+ (bq7 ~mod* $m0_601344887$))
 
 // Combine rows.
 
@@ -305,10 +363,16 @@ $advance$
 in2 = intermediate[$rowYcol2$]
 in6 = intermediate[$rowYcol6$]
 
+// This code...
 ra = (in2 ~mod+ in6) ~mod* $p0_541196100$
 
 rb2 = ra ~mod+ (in2 ~mod* $p0_765366865$)
 rb6 = ra ~mod- (in6 ~mod* $p1_847759065$)
+
+// ...is equivalent to this more-SIMD-like code.
+//
+// rb2 = (in2 ~mod* $p1_306562965$) ~mod+ (in6 ~mod* $p0_541196100$)
+// rb6 = (in2 ~mod* $p0_541196100$) ~mod+ (in6 ~mod* $m1_306562965$)
 
 in0 = intermediate[$rowYcol0$]
 in4 = intermediate[$rowYcol4$]
@@ -333,6 +397,7 @@ ri53 = in5 ~mod+ in3
 ri71 = in7 ~mod+ in1
 ri73 = in7 ~mod+ in3
 
+// This code...
 rj = (ri73 ~mod+ ri51) ~mod* $p1_175875602$
 
 rk1 = in1 ~mod* $p1_501321110$
@@ -352,6 +417,15 @@ rk1 ~mod+= ri71 ~mod+ rl51
 rk3 ~mod+= ri53 ~mod+ rl73
 rk5 ~mod+= ri53 ~mod+ rl51
 rk7 ~mod+= ri71 ~mod+ rl73
+
+// ...is equivalent to this more-SIMD-like code.
+//
+// rl73 = (ri73 ~mod* $m0_785694958$) ~mod+ (ri51 ~mod* $p1_175875602$)
+// rl51 = (ri73 ~mod* $p1_175875602$) ~mod+ (ri51 ~mod* $p0_785694958$)
+// rk1 = rl51 ~mod+ ((in1 ~mod* $p0_601344887$) ~mod+ (in7 ~mod* $m0_899976223$))
+// rk3 = rl73 ~mod+ ((in3 ~mod* $p0_509795579$) ~mod+ (in5 ~mod* $m2_562915447$))
+// rk5 = rl51 ~mod+ ((in3 ~mod* $m2_562915447$) ~mod+ (in5 ~mod* $m0_509795579$))
+// rk7 = rl73 ~mod+ ((in1 ~mod* $m0_899976223$) ~mod+ (in7 ~mod* $m0_601344887$))
 
 // Combine columns.
 
