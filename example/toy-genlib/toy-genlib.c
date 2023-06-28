@@ -30,6 +30,10 @@ LD_LIBRARY_PATH=../../gen/lib/c/$CC-dynamic ./a.out
 rm -f a.out
 
 for a C compiler $CC, such as clang or gcc.
+
+The expected output:
+
+Hello Wuffs.
 */
 
 #include <stdio.h>

@@ -24,6 +24,29 @@ To run:
 $CXX toy-aux-image.cc && ./a.out; rm -f a.out
 
 for a C++ compiler $CXX, such as clang++ or g++.
+
+The expected output:
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@X@@@@XX@@@@@@@@@@X
+XXXXX@@XXX@@@@@@@II@@@X@X@@@@@
+XXXXX@@XX@@X@@@XO+XXX@XX@@@X@@
+XXXXXXXX@XX@X@XI=I@@XXI+OXX@XX
+XXXXXXXXXXXXXXX+=+OXO+=::OXX@X
+XXXXXXXXXXXXXXXXXX=+==:::=XXXX
+XXXXXXXXO+:::::+OO+===+OI=+XXX
+XXXO::=++:::==+++XI+++X@XXO@XX
+XXXO=X@X+::=::::+O++=I@XX@XXXX
+XXXXX@XXX=:::::::::=+@XXXX@XXX
+XXXXXXXX@O::IXO=::::O@@XXXXXXX
+XXXXXXXXO=X+X@@XX::O@@XXXXXXXX
+XXXXXXXXXOO=X@X@X+OIXXXXXXXXXX
+XXXXXXXXXXX+IIXX+X@OX@XXXXXXXX
+XXXXXXXXX@XXOI+IIOOOXXXXXXXXXX
+XXXXXXXXXXX@XXXXX@XXXXXXXXXXXX
+XXXXXXXXXXXXXXXXX@XXXXXXXXXXXX
+OOOOXXXXXXXXXXOXXXXXXXXXXXXOOO
+=+++IIIIIIIOOOOOOOOOOIIIIIIII+
 */
 
 // Wuffs ships as a "single file C library" or "header file library" as per
@@ -148,6 +171,13 @@ decode() {
       // the high 8 bits. Since our hard-coded JPEG image is grayscale, this
       // example program just prints an ASCII value based on the high 3 bits of
       // the blue channel value.
+      //
+      // This example program also configures wuffs_aux::DecodeImage to only
+      // support JPEG images (and not BMP, PNG, etc). To add support for other
+      // image file formats, add e.g. "#define WUFFS_CONFIG__MODULE__BMP" (and
+      // any dependencies) next to the "#define WUFFS_CONFIG__MODULE__JPEG"
+      // line above. Dependencies are listed at
+      // https://github.com/google/wuffs/tree/main/doc/std#modules-and-dependencies
       //
       // Calling the color_u32_at method is simple and easy, but like any
       // one-call-per-pixel approach, it has some performance overhead. An
