@@ -29691,7 +29691,7 @@ wuffs_cbor__decoder__decode_tokens(
     label__outer__continue:;
     while (true) {
       while (true) {
-        while (true) {
+        do {
           if (((uint64_t)(io2_a_dst - iop_a_dst)) <= 1u) {
             status = wuffs_base__make_status(wuffs_base__suspension__short_write);
             WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(1);
@@ -30111,8 +30111,7 @@ wuffs_cbor__decoder__decode_tokens(
               goto label__goto_parsed_a_leaf_value__break;
             }
           }
-          break;
-        }
+        } while (0);
         if (iop_a_src > io1_a_src) {
           iop_a_src--;
           status = wuffs_base__make_status(wuffs_cbor__error__bad_input);
@@ -32829,7 +32828,7 @@ wuffs_deflate__decoder__decode_huffman_bmi2(
     v_dist_minus_1 = ((v_dist_minus_1 + ((uint32_t)(((v_bits) & WUFFS_BASE__LOW_BITS_MASK__U64(v_table_entry_n_bits))))) & 32767u);
     v_bits >>= v_table_entry_n_bits;
     v_n_bits -= v_table_entry_n_bits;
-    while (true) {
+    do {
       if (((uint64_t)((v_dist_minus_1 + 1u))) > ((uint64_t)(iop_a_dst - io0_a_dst))) {
         v_hlen = 0u;
         v_hdist = ((uint32_t)((((uint64_t)((v_dist_minus_1 + 1u))) - ((uint64_t)(iop_a_dst - io0_a_dst)))));
@@ -32865,8 +32864,7 @@ wuffs_deflate__decoder__decode_huffman_bmi2(
         wuffs_base__io_writer__limited_copy_u32_from_history_fast(
             &iop_a_dst, io0_a_dst, io2_a_dst, v_length, (v_dist_minus_1 + 1u));
       }
-      break;
-    }
+    } while (0);
   }
   if (v_n_bits > 63u) {
     status = wuffs_base__make_status(wuffs_deflate__error__internal_error_inconsistent_n_bits);
@@ -33093,7 +33091,7 @@ wuffs_deflate__decoder__decode_huffman_fast32(
     v_dist_minus_1 = ((v_dist_minus_1 + ((v_bits) & WUFFS_BASE__LOW_BITS_MASK__U32(v_table_entry_n_bits))) & 32767u);
     v_bits >>= v_table_entry_n_bits;
     v_n_bits -= v_table_entry_n_bits;
-    while (true) {
+    do {
       if (((uint64_t)((v_dist_minus_1 + 1u))) > ((uint64_t)(iop_a_dst - io0_a_dst))) {
         v_hlen = 0u;
         v_hdist = ((uint32_t)((((uint64_t)((v_dist_minus_1 + 1u))) - ((uint64_t)(iop_a_dst - io0_a_dst)))));
@@ -33126,8 +33124,7 @@ wuffs_deflate__decoder__decode_huffman_fast32(
         wuffs_base__io_writer__limited_copy_u32_from_history_fast(
             &iop_a_dst, io0_a_dst, io2_a_dst, v_length, (v_dist_minus_1 + 1u));
       }
-      break;
-    }
+    } while (0);
   }
   while (v_n_bits >= 8u) {
     v_n_bits -= 8u;
@@ -33305,7 +33302,7 @@ wuffs_deflate__decoder__decode_huffman_fast64__choosy_default(
     v_dist_minus_1 = ((v_dist_minus_1 + ((uint32_t)(((v_bits) & WUFFS_BASE__LOW_BITS_MASK__U64(v_table_entry_n_bits))))) & 32767u);
     v_bits >>= v_table_entry_n_bits;
     v_n_bits -= v_table_entry_n_bits;
-    while (true) {
+    do {
       if (((uint64_t)((v_dist_minus_1 + 1u))) > ((uint64_t)(iop_a_dst - io0_a_dst))) {
         v_hlen = 0u;
         v_hdist = ((uint32_t)((((uint64_t)((v_dist_minus_1 + 1u))) - ((uint64_t)(iop_a_dst - io0_a_dst)))));
@@ -33341,8 +33338,7 @@ wuffs_deflate__decoder__decode_huffman_fast64__choosy_default(
         wuffs_base__io_writer__limited_copy_u32_from_history_fast(
             &iop_a_dst, io0_a_dst, io2_a_dst, v_length, (v_dist_minus_1 + 1u));
       }
-      break;
-    }
+    } while (0);
   }
   if (v_n_bits > 63u) {
     status = wuffs_base__make_status(wuffs_deflate__error__internal_error_inconsistent_n_bits);
@@ -36071,7 +36067,7 @@ wuffs_gif__decoder__decode_ae(
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
-    while (true) {
+    do {
       if (self->private_impl.f_metadata_fourcc != 0u) {
         status = wuffs_base__make_status(wuffs_base__note__metadata_reported);
         goto ok;
@@ -36219,8 +36215,7 @@ wuffs_gif__decoder__decode_ae(
         status = wuffs_base__make_status(wuffs_base__note__metadata_reported);
         goto ok;
       }
-      break;
-    }
+    } while (0);
     if (a_src) {
       a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
     }
@@ -41395,14 +41390,13 @@ wuffs_jpeg__decoder__load_mcu_blocks_for_single_component(
   uint64_t v_stride16 = 0;
   uint64_t v_offset = 0;
 
-  while (true) {
+  do {
     v_stride16 = ((uint64_t)((self->private_impl.f_components_workbuf_widths[a_csel] * 16u)));
     v_offset = (self->private_impl.f_components_workbuf_offsets[(a_csel | 4u)] + (((uint64_t)(a_mx)) * 128u) + (((uint64_t)(a_my)) * v_stride16));
     if (v_offset <= ((uint64_t)(a_workbuf.len))) {
       wuffs_base__bulk_load_host_endian(&self->private_data.f_mcu_blocks[0], 1u * (size_t)128u, wuffs_base__slice_u8__subslice_i(a_workbuf, v_offset));
     }
-    break;
-  }
+  } while (0);
   return wuffs_base__make_empty_struct();
 }
 
@@ -41978,7 +41972,7 @@ wuffs_jpeg__decoder__decode_mcu__choosy_default(
         self->private_impl.f_bitstream_ri,
         self->private_impl.f_bitstream_wi),
         ((uint64_t)(self->private_impl.f_bitstream_ri)));
-    while (true) {
+    do {
       while (self->private_impl.f_mcu_current_block < self->private_impl.f_mcu_num_blocks) {
         while (self->private_impl.f_mcu_zig_index <= 0u) {
           wuffs_base__bulk_memset(&self->private_data.f_mcu_blocks[0], 1u * (size_t)128u, 0u);
@@ -42103,8 +42097,7 @@ wuffs_jpeg__decoder__decode_mcu__choosy_default(
         }
       }
       self->private_impl.f_mcu_current_block = 0u;
-      break;
-    }
+    } while (0);
     label__goto_done__break:;
     v_pos = ((uint32_t)(wuffs_base__u64__sat_add((v_r ? v_r->meta.pos : 0), ((uint64_t)(iop_v_r - io0_v_r)))));
     if (v_pos > self->private_impl.f_bitstream_wi) {
@@ -42188,8 +42181,8 @@ wuffs_jpeg__decoder__decode_mcu_progressive_ac_high_bits(
         self->private_impl.f_bitstream_ri,
         self->private_impl.f_bitstream_wi),
         ((uint64_t)(self->private_impl.f_bitstream_ri)));
-    while (true) {
-      while (true) {
+    do {
+      do {
         if (((uint64_t)(io2_v_r - iop_v_r)) < 264u) {
           v_ret = 1u;
           goto label__goto_done__break;
@@ -42256,10 +42249,8 @@ wuffs_jpeg__decoder__decode_mcu_progressive_ac_high_bits(
             break;
           }
         }
-        break;
-      }
-      break;
-    }
+      } while (0);
+    } while (0);
     label__goto_done__break:;
     v_pos = ((uint32_t)(wuffs_base__u64__sat_add((v_r ? v_r->meta.pos : 0), ((uint64_t)(iop_v_r - io0_v_r)))));
     if (v_pos > self->private_impl.f_bitstream_wi) {
@@ -42334,8 +42325,8 @@ wuffs_jpeg__decoder__decode_mcu_progressive_ac_low_bit(
         self->private_impl.f_bitstream_ri,
         self->private_impl.f_bitstream_wi),
         ((uint64_t)(self->private_impl.f_bitstream_ri)));
-    while (true) {
-      while (true) {
+    do {
+      do {
         if (((uint64_t)(io2_v_r - iop_v_r)) < 264u) {
           v_ret = 1u;
           goto label__goto_done__break;
@@ -42511,11 +42502,9 @@ wuffs_jpeg__decoder__decode_mcu_progressive_ac_low_bit(
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop
 #endif
-        break;
-      }
+      } while (0);
       label__block__break:;
-      break;
-    }
+    } while (0);
     label__goto_done__break:;
     v_pos = ((uint32_t)(wuffs_base__u64__sat_add((v_r ? v_r->meta.pos : 0), ((uint64_t)(iop_v_r - io0_v_r)))));
     if (v_pos > self->private_impl.f_bitstream_wi) {
@@ -42585,13 +42574,13 @@ wuffs_jpeg__decoder__decode_mcu_progressive_dc_high_bits(
         self->private_impl.f_bitstream_ri,
         self->private_impl.f_bitstream_wi),
         ((uint64_t)(self->private_impl.f_bitstream_ri)));
-    while (true) {
+    do {
       while (self->private_impl.f_mcu_current_block < self->private_impl.f_mcu_num_blocks) {
         if (((uint64_t)(io2_v_r - iop_v_r)) < 264u) {
           v_ret = 1u;
           goto label__goto_done__break;
         }
-        while (true) {
+        do {
           if (((uint64_t)(io2_v_r - iop_v_r)) < 8u) {
             v_ret = 2u;
             goto label__goto_done__break;
@@ -42637,13 +42626,11 @@ wuffs_jpeg__decoder__decode_mcu_progressive_dc_high_bits(
           v_csel = self->private_impl.f_scan_comps_cselector[self->private_impl.f_mcu_blocks_sselector[self->private_impl.f_mcu_current_block]];
           self->private_impl.f_mcu_previous_dc_values[v_csel] += v_dc_value;
           self->private_data.f_mcu_blocks[self->private_impl.f_mcu_current_block][0u] = ((uint16_t)(self->private_impl.f_mcu_previous_dc_values[v_csel] << self->private_impl.f_scan_al));
-          break;
-        }
+        } while (0);
         self->private_impl.f_mcu_current_block += 1u;
       }
       self->private_impl.f_mcu_current_block = 0u;
-      break;
-    }
+    } while (0);
     label__goto_done__break:;
     v_pos = ((uint32_t)(wuffs_base__u64__sat_add((v_r ? v_r->meta.pos : 0), ((uint64_t)(iop_v_r - io0_v_r)))));
     if (v_pos > self->private_impl.f_bitstream_wi) {
@@ -42705,13 +42692,13 @@ wuffs_jpeg__decoder__decode_mcu_progressive_dc_low_bit(
         self->private_impl.f_bitstream_ri,
         self->private_impl.f_bitstream_wi),
         ((uint64_t)(self->private_impl.f_bitstream_ri)));
-    while (true) {
+    do {
       while (self->private_impl.f_mcu_current_block < self->private_impl.f_mcu_num_blocks) {
         if (((uint64_t)(io2_v_r - iop_v_r)) < 264u) {
           v_ret = 1u;
           goto label__goto_done__break;
         }
-        while (true) {
+        do {
           if (((uint64_t)(io2_v_r - iop_v_r)) < 8u) {
             v_ret = 2u;
             goto label__goto_done__break;
@@ -42724,13 +42711,11 @@ wuffs_jpeg__decoder__decode_mcu_progressive_dc_low_bit(
           }
           v_bits <<= 1u;
           v_n_bits -= 1u;
-          break;
-        }
+        } while (0);
         self->private_impl.f_mcu_current_block += 1u;
       }
       self->private_impl.f_mcu_current_block = 0u;
-      break;
-    }
+    } while (0);
     label__goto_done__break:;
     v_pos = ((uint32_t)(wuffs_base__u64__sat_add((v_r ? v_r->meta.pos : 0), ((uint64_t)(iop_v_r - io0_v_r)))));
     if (v_pos > self->private_impl.f_bitstream_wi) {
@@ -44213,7 +44198,7 @@ wuffs_json__decoder__decode_number(
     io2_a_src = io0_a_src + a_src->meta.wi;
   }
 
-  while (true) {
+  do {
     v_n = 0u;
     if (((uint64_t)(io2_a_src - iop_a_src)) <= 0u) {
       if ( ! (a_src && a_src->meta.closed)) {
@@ -44318,8 +44303,7 @@ wuffs_json__decoder__decode_number(
     if (a_src) {
       iop_a_src = a_src->data.ptr + a_src->meta.ri;
     }
-    break;
-  }
+  } while (0);
   if (a_src && a_src->data.ptr) {
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
@@ -53324,7 +53308,7 @@ wuffs_png__decoder__do_tell_me_more(
       status = wuffs_base__make_status(wuffs_base__error__no_more_information);
       goto exit;
     }
-    while (true) {
+    do {
       if (self->private_impl.f_metadata_flavor == 3u) {
         while (true) {
           if (wuffs_base__u64__sat_add((a_src ? a_src->meta.pos : 0), ((uint64_t)(iop_a_src - io0_a_src))) != self->private_impl.f_metadata_y) {
@@ -53726,8 +53710,7 @@ wuffs_png__decoder__do_tell_me_more(
         status = wuffs_base__make_status(NULL);
         goto ok;
       }
-      break;
-    }
+    } while (0);
     label__goto_done__break:;
     if (self->private_impl.f_chunk_length != 0u) {
       status = wuffs_base__make_status(wuffs_png__error__bad_chunk);

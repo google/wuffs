@@ -628,6 +628,15 @@ func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 }
 
 func (g *gen) writeStatementWhile(b *buffer, n *a.While, depth uint32) error {
+	body, isTrivialLoop := n.Body(), false
+	if n.IsWhileTrue() && !n.HasContinue() && (len(body) > 0) {
+		if finalStatement := body[len(body)-1]; finalStatement.Kind() != a.KJump {
+			// No-op.
+		} else if j := finalStatement.AsJump(); (j.Keyword() == t.IDBreak) && (j.JumpTarget() == n) {
+			body, isTrivialLoop = body[:len(body)-1], true
+		}
+	}
+
 	if n.HasDeepContinue() {
 		jt, err := g.currFunk.jumpTarget(g.tm, n)
 		if err != nil {
@@ -637,18 +646,28 @@ func (g *gen) writeStatementWhile(b *buffer, n *a.While, depth uint32) error {
 	}
 	g.currFunk.activeLoops.Push(n)
 
-	condition := buffer(nil)
-	if err := g.writeExpr(&condition, n.Condition(), false, 0); err != nil {
-		return err
+	if isTrivialLoop {
+		b.writes("do {\n")
+	} else {
+		condition := buffer(nil)
+		if err := g.writeExpr(&condition, n.Condition(), false, 0); err != nil {
+			return err
+		}
+		// Calling trimParens avoids clang's -Wparentheses-equality warning.
+		b.printf("while (%s) {\n", trimParens(condition))
 	}
-	// Calling trimParens avoids clang's -Wparentheses-equality warning.
-	b.printf("while (%s) {\n", trimParens(condition))
-	for _, o := range n.Body() {
+
+	for _, o := range body {
 		if err := g.writeStatement(b, o, depth); err != nil {
 			return err
 		}
 	}
-	b.writes("}\n")
+
+	if isTrivialLoop {
+		b.writes("} while (0);\n")
+	} else {
+		b.writes("}\n")
+	}
 
 	g.currFunk.activeLoops.Pop()
 	if n.HasDeepBreak() {
