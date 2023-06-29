@@ -1026,7 +1026,9 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (bounds, error) {
 			lengthExpr = lTyp.ArrayLength()
 		} else if lTyp.IsPointerType() && lTyp.Inner().IsEitherArrayType() {
 			lengthExpr = lTyp.Inner().ArrayLength()
-			if err := q.proveRecvNotEqNullptr(lhs); err != nil {
+			if lTyp.Decorator() == t.IDPtr {
+				// No-op.
+			} else if err := q.proveRecvNotEqNullptr(lhs); err != nil {
 				return bounds{}, err
 			}
 		} else {
