@@ -123,6 +123,7 @@ class DecodeImageCallbacks {
   //  - WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL
   //  - WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE
   //  - WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL
+  //  - WUFFS_BASE__PIXEL_FORMAT__RGB
   //  - WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL
   //  - WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL
   // or return image_config.pixcfg.pixel_format(). The latter means to use the
