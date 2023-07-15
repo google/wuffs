@@ -207,6 +207,14 @@ See the [BUILD](/BUILD.md) instructions.
 The [Note](/doc/note) directory also contains various short articles.
 
 
+# Non-C/C++ Languages
+
+- [dev0x13/pywuffs](https://github.com/dev0x13/pywuffs) holds Python bindings
+  for Wuffs the Library.
+- Bindings for Go, Rust and other languages are tracked as [issue
+  #38](https://github.com/google/wuffs/issues/38).
+
+
 # Status
 
 Version 0.3. The API and ABI aren't stabilized yet. The compiler undoubtedly

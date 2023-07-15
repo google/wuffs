@@ -17,7 +17,8 @@
 /*
 toy-aux-image demonstrates using the wuffs_aux::DecodeImage C++ function to
 decode an in-memory compressed image. In this example, the compressed image is
-hard-coded to a specific JPEG image.
+hard-coded to a specific image: a JPEG encoding of the first frame of the
+test/data/muybridge.gif animated image.
 
 To run:
 
@@ -149,6 +150,24 @@ size_t g_src_len = 0x224;
 
 static std::string  //
 decode() {
+  // Call wuffs_aux::DecodeImage, which is the entry point to Wuffs' high-level
+  // C++ API for decoding images. This API is easier to use than Wuffs'
+  // low-level C API but the low-level one (1) handles animation, (2) handles
+  // asynchronous I/O, (3) handles metadata and (4) does no dynamic memory
+  // allocation, so it can run under a `SECCOMP_MODE_STRICT` sandbox.
+  // Obviously, if you don't need any of those features, then these simple
+  // lines of code here suffices.
+  //
+  // This example program doesn't explicitly use Wuffs' low-level C API but, if
+  // you're curious to learn more, the wuffs_aux::DecodeImage implementation in
+  // internal/cgen/auxiliary/*.cc uses it, as does the example/convert-to-nia C
+  // program. There's also documentation at doc/std/image-decoders.md
+  //
+  // If you also want metadata like EXIF orientation and ICC color profiles,
+  // script/print-image-metadata.cc has some example code. It uses Wuffs'
+  // low-level API but it's a C++ program to use Wuffs' shorter convenience
+  // methods: `decoder->decode_frame_config(NULL, &src)` instead of C's
+  // `wuffs_base__image_decoder__decode_frame_config(decoder, NULL, &src)`.
   wuffs_aux::DecodeImageCallbacks callbacks;
   wuffs_aux::sync_io::MemoryInput input(&g_src_array[0], g_src_len);
   wuffs_aux::DecodeImageResult result =

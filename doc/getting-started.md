@@ -1,14 +1,38 @@
 # Getting Started
 
+If you just want to **decode an image**:
+
+- [example/toy-aux-image](/example/toy-aux-image/toy-aux-image.cc) demonstrates
+  the high-level `wuffs_aux::DecodeImage` C++ function (for decoding still
+  images, not animated images) and links to more documentation.
+- [example/convert-to-nia](/example/convert-to-nia/convert-to-nia.c)
+  demonstrates the low-level C API, which is more complicated but (1) handles
+  animation, (2) handles asynchronous I/O, (3) handles metadata and (4) does no
+  dynamic memory allocation, so it can run under a `SECCOMP_MODE_STRICT`
+  sandbox. Wuffs is already a memory-safe language, but this provides defense
+  in depth and can make the security audit trivial.
+- [script/print-image-metadata.cc](/script/print-image-metadata.cc)
+  demonstrates extracting image metadata like ICC color profiles (in raw form).
+
+In all of these cases, you don't need to first configure or build any Wuffs
+code. You can just run a C/C++ compiler, like this (for an unoptimized build):
+`g++ example/toy-aux-image/toy-aux-image.cc -o my-toy-aux-image`
+
+If you want a fast (optimized) build, pass `-O3` or equivalent to your C/C++
+compiler, or from the Wuffs root directory, run this:
+`./build-example.sh example/toy-aux-image`
+
+---
+
+If you're looking to **use the Wuffs standard library** generally, e.g. you
+want to safely decode some gzip'ed data in your C program, see the [Wuffs the
+Library](/doc/wuffs-the-library.md) document and the [other examples](/example)
+instead of this document.
+
 If you're looking to **write your own Wuffs code** outside of its standard
 library, e.g. you want to safely decode your own custom file format, see the
 [Wuffs the Language](/doc/wuffs-the-language.md) document and the
 [/hello-wuffs-c](/hello-wuffs-c) example instead of this document.
-
-If you're looking to just **use the Wuffs standard library**, e.g. you want to
-safely decode some gzip'ed data in your C program, see the [Wuffs the
-Library](/doc/wuffs-the-library.md) document and the [other examples](/example)
-instead of this document.
 
 If you're looking to **modify the Wuffs language**, it's probably best to ask
 the [mailing list](https://groups.google.com/forum/#!forum/wuffs).
