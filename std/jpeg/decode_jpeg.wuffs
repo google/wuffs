@@ -318,6 +318,10 @@ pub struct decoder? implements base.image_decoder(
         dst_palette : array[4 * 256] base.u8,
 )
 
+pub func decoder.get_quirk(key: base.u32) base.u64 {
+    return 0
+}
+
 pub func decoder.set_quirk!(key: base.u32, value: base.u64) base.status {
     return base."#unsupported option"
 }

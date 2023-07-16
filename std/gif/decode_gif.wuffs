@@ -91,6 +91,20 @@ pub struct decoder? implements base.image_decoder(
         lzw : lzw.decoder,
 )
 
+pub func decoder.get_quirk(key: base.u32) base.u64 {
+    var key : base.u32
+
+    if args.key >= QUIRKS_BASE {
+        key = args.key - QUIRKS_BASE
+        if key < QUIRKS_COUNT {
+            if this.quirks[key] {
+                return 1
+            }
+        }
+    }
+    return 0
+}
+
 pub func decoder.set_quirk!(key: base.u32, value: base.u64) base.status {
     if (this.call_sequence == 0x00) and (args.key >= QUIRKS_BASE) {
         args.key -= QUIRKS_BASE

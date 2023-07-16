@@ -113,6 +113,10 @@ pub struct decoder? implements base.token_decoder(
         container_num_remaining : array[1024] base.u64,
 )
 
+pub func decoder.get_quirk(key: base.u32) base.u64 {
+    return 0
+}
+
 pub func decoder.set_quirk!(key: base.u32, value: base.u64) base.status {
     return base."#unsupported option"
 }

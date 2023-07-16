@@ -153,6 +153,13 @@ pub struct decoder? implements base.image_decoder(
         src_palette : array[4 * 256] base.u8,
 )
 
+pub func decoder.get_quirk(key: base.u32) base.u64 {
+    if (args.key == base.QUIRK_IGNORE_CHECKSUM) and this.ignore_checksum {
+        return 1
+    }
+    return 0
+}
+
 pub func decoder.set_quirk!(key: base.u32, value: base.u64) base.status {
     if args.key == base.QUIRK_IGNORE_CHECKSUM {
         this.ignore_checksum = args.value > 0

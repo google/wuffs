@@ -109,6 +109,10 @@ pub struct decoder? implements base.io_transformer(
         bwt : array[1_048576] base.u32,
 )
 
+pub func decoder.get_quirk(key: base.u32) base.u64 {
+    return 0
+}
+
 pub func decoder.set_quirk!(key: base.u32, value: base.u64) base.status {
     if args.key == base.QUIRK_IGNORE_CHECKSUM {
         this.ignore_checksum = args.value > 0

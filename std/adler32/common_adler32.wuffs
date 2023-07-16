@@ -18,6 +18,10 @@ pub struct hasher? implements base.hasher_u32(
         started : base.bool,
 )
 
+pub func hasher.get_quirk(key: base.u32) base.u64 {
+    return 0
+}
+
 pub func hasher.set_quirk!(key: base.u32, value: base.u64) base.status {
     return base."#unsupported option"
 }

@@ -70,6 +70,13 @@ pub struct decoder? implements base.io_transformer(
         output : array[8192 + 7] base.u8,
 )
 
+pub func decoder.get_quirk(key: base.u32) base.u64 {
+    if args.key == QUIRK_LITERAL_WIDTH_PLUS_ONE {
+        return this.pending_literal_width_plus_one as base.u64
+    }
+    return 0
+}
+
 pub func decoder.set_quirk!(key: base.u32, value: base.u64) base.status {
     if args.key == QUIRK_LITERAL_WIDTH_PLUS_ONE {
         if args.value > 9 {

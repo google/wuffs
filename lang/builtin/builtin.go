@@ -910,6 +910,7 @@ var InterfacesMap = map[string]bool{
 var InterfaceFuncs = []string{
 	// ---- hasher_u32
 
+	"hasher_u32.get_quirk(key: u32) u64",
 	"hasher_u32.set_quirk!(key: u32, value: u64) status",
 	"hasher_u32.update_u32!(x: roslice u8) u32",
 
@@ -921,6 +922,7 @@ var InterfaceFuncs = []string{
 	"image_decoder.decode_frame_config?(dst: nptr frame_config, src: io_reader)",
 	"image_decoder.decode_image_config?(dst: nptr image_config, src: io_reader)",
 	"image_decoder.frame_dirty_rect() rect_ie_u32",
+	"image_decoder.get_quirk(key: u32) u64",
 	"image_decoder.num_animation_loops() u32",
 	"image_decoder.num_decoded_frame_configs() u64",
 	"image_decoder.num_decoded_frames() u64",
@@ -932,12 +934,14 @@ var InterfaceFuncs = []string{
 
 	// ---- io_transformer
 
+	"io_transformer.get_quirk(key: u32) u64",
 	"io_transformer.set_quirk!(key: u32, value: u64) status",
 	"io_transformer.transform_io?(dst: io_writer, src: io_reader, workbuf: slice u8)",
 	"io_transformer.workbuf_len() range_ii_u64",
 
 	// ---- token_decoder
 
+	"token_decoder.get_quirk(key: u32) u64",
 	"token_decoder.decode_tokens?(dst: token_writer, src: io_reader, workbuf: slice u8)",
 	"token_decoder.set_quirk!(key: u32, value: u64) status",
 	"token_decoder.workbuf_len() range_ii_u64",

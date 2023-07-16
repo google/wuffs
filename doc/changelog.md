@@ -4,6 +4,7 @@
 ## Work In Progress
 
 - Added `example/toy-aux-image`.
+- Added `get_quirk(key: u32) u64`.
 - Added `if.likely` and `if.unlikely`.
 - Added `slice_var as nptr array[etc] etc` conversion.
 - Added `std/jpeg`.

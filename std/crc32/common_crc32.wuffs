@@ -17,6 +17,10 @@ pub struct ieee_hasher? implements base.hasher_u32(
         state : base.u32,
 )
 
+pub func ieee_hasher.get_quirk(key: base.u32) base.u64 {
+    return 0
+}
+
 pub func ieee_hasher.set_quirk!(key: base.u32, value: base.u64) base.status {
     return base."#unsupported option"
 }

@@ -5845,6 +5845,9 @@ wuffs_base__ascii__longest_valid_prefix(const uint8_t* s_ptr, size_t s_len);
 extern const char wuffs_base__hasher_u32__vtable_name[];
 
 typedef struct wuffs_base__hasher_u32__func_ptrs__struct {
+  uint64_t (*get_quirk)(
+    const void* self,
+    uint32_t a_key);
   wuffs_base__status (*set_quirk)(
     void* self,
     uint32_t a_key,
@@ -5855,6 +5858,12 @@ typedef struct wuffs_base__hasher_u32__func_ptrs__struct {
 } wuffs_base__hasher_u32__func_ptrs;
 
 typedef struct wuffs_base__hasher_u32__struct wuffs_base__hasher_u32;
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_base__hasher_u32__get_quirk(
+    const wuffs_base__hasher_u32* self,
+    uint32_t a_key);
 
 WUFFS_BASE__GENERATED_C_CODE
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status
@@ -5882,6 +5891,13 @@ struct wuffs_base__hasher_u32__struct {
 #if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
   using unique_ptr = std::unique_ptr<wuffs_base__hasher_u32, decltype(&free)>;
 #endif
+
+  inline uint64_t
+  get_quirk(
+      uint32_t a_key) const {
+    return wuffs_base__hasher_u32__get_quirk(
+        this, a_key);
+  }
 
   inline wuffs_base__status
   set_quirk(
@@ -5925,6 +5941,9 @@ typedef struct wuffs_base__image_decoder__func_ptrs__struct {
     wuffs_base__io_buffer* a_src);
   wuffs_base__rect_ie_u32 (*frame_dirty_rect)(
     const void* self);
+  uint64_t (*get_quirk)(
+    const void* self,
+    uint32_t a_key);
   uint32_t (*num_animation_loops)(
     const void* self);
   uint64_t (*num_decoded_frame_configs)(
@@ -5982,6 +6001,12 @@ WUFFS_BASE__GENERATED_C_CODE
 WUFFS_BASE__MAYBE_STATIC wuffs_base__rect_ie_u32
 wuffs_base__image_decoder__frame_dirty_rect(
     const wuffs_base__image_decoder* self);
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_base__image_decoder__get_quirk(
+    const wuffs_base__image_decoder* self,
+    uint32_t a_key);
 
 WUFFS_BASE__GENERATED_C_CODE
 WUFFS_BASE__MAYBE_STATIC uint32_t
@@ -6078,6 +6103,13 @@ struct wuffs_base__image_decoder__struct {
     return wuffs_base__image_decoder__frame_dirty_rect(this);
   }
 
+  inline uint64_t
+  get_quirk(
+      uint32_t a_key) const {
+    return wuffs_base__image_decoder__get_quirk(
+        this, a_key);
+  }
+
   inline uint32_t
   num_animation_loops() const {
     return wuffs_base__image_decoder__num_animation_loops(this);
@@ -6141,6 +6173,9 @@ struct wuffs_base__image_decoder__struct {
 extern const char wuffs_base__io_transformer__vtable_name[];
 
 typedef struct wuffs_base__io_transformer__func_ptrs__struct {
+  uint64_t (*get_quirk)(
+    const void* self,
+    uint32_t a_key);
   wuffs_base__status (*set_quirk)(
     void* self,
     uint32_t a_key,
@@ -6155,6 +6190,12 @@ typedef struct wuffs_base__io_transformer__func_ptrs__struct {
 } wuffs_base__io_transformer__func_ptrs;
 
 typedef struct wuffs_base__io_transformer__struct wuffs_base__io_transformer;
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_base__io_transformer__get_quirk(
+    const wuffs_base__io_transformer* self,
+    uint32_t a_key);
 
 WUFFS_BASE__GENERATED_C_CODE
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status
@@ -6190,6 +6231,13 @@ struct wuffs_base__io_transformer__struct {
   using unique_ptr = std::unique_ptr<wuffs_base__io_transformer, decltype(&free)>;
 #endif
 
+  inline uint64_t
+  get_quirk(
+      uint32_t a_key) const {
+    return wuffs_base__io_transformer__get_quirk(
+        this, a_key);
+  }
+
   inline wuffs_base__status
   set_quirk(
       uint32_t a_key,
@@ -6222,6 +6270,9 @@ struct wuffs_base__io_transformer__struct {
 extern const char wuffs_base__token_decoder__vtable_name[];
 
 typedef struct wuffs_base__token_decoder__func_ptrs__struct {
+  uint64_t (*get_quirk)(
+    const void* self,
+    uint32_t a_key);
   wuffs_base__status (*decode_tokens)(
     void* self,
     wuffs_base__token_buffer* a_dst,
@@ -6236,6 +6287,12 @@ typedef struct wuffs_base__token_decoder__func_ptrs__struct {
 } wuffs_base__token_decoder__func_ptrs;
 
 typedef struct wuffs_base__token_decoder__struct wuffs_base__token_decoder;
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_base__token_decoder__get_quirk(
+    const wuffs_base__token_decoder* self,
+    uint32_t a_key);
 
 WUFFS_BASE__GENERATED_C_CODE
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status
@@ -6270,6 +6327,13 @@ struct wuffs_base__token_decoder__struct {
 #if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
   using unique_ptr = std::unique_ptr<wuffs_base__token_decoder, decltype(&free)>;
 #endif
+
+  inline uint64_t
+  get_quirk(
+      uint32_t a_key) const {
+    return wuffs_base__token_decoder__get_quirk(
+        this, a_key);
+  }
 
   inline wuffs_base__status
   decode_tokens(
@@ -6361,6 +6425,12 @@ wuffs_adler32__hasher__upcast_as__wuffs_base__hasher_u32(
 }
 
 // ---------------- Public Function Prototypes
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_adler32__hasher__get_quirk(
+    const wuffs_adler32__hasher* self,
+    uint32_t a_key);
 
 WUFFS_BASE__GENERATED_C_CODE
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status
@@ -6472,6 +6542,12 @@ struct wuffs_adler32__hasher__struct {
     return (wuffs_base__hasher_u32*)this;
   }
 
+  inline uint64_t
+  get_quirk(
+      uint32_t a_key) const {
+    return wuffs_adler32__hasher__get_quirk(this, a_key);
+  }
+
   inline wuffs_base__status
   set_quirk(
       uint32_t a_key,
@@ -6556,6 +6632,12 @@ wuffs_bmp__decoder__upcast_as__wuffs_base__image_decoder(
 }
 
 // ---------------- Public Function Prototypes
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_bmp__decoder__get_quirk(
+    const wuffs_bmp__decoder* self,
+    uint32_t a_key);
 
 WUFFS_BASE__GENERATED_C_CODE
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status
@@ -6776,6 +6858,12 @@ struct wuffs_bmp__decoder__struct {
     return (wuffs_base__image_decoder*)this;
   }
 
+  inline uint64_t
+  get_quirk(
+      uint32_t a_key) const {
+    return wuffs_bmp__decoder__get_quirk(this, a_key);
+  }
+
   inline wuffs_base__status
   set_quirk(
       uint32_t a_key,
@@ -6930,6 +7018,12 @@ wuffs_bzip2__decoder__upcast_as__wuffs_base__io_transformer(
 }
 
 // ---------------- Public Function Prototypes
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_bzip2__decoder__get_quirk(
+    const wuffs_bzip2__decoder* self,
+    uint32_t a_key);
 
 WUFFS_BASE__GENERATED_C_CODE
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status
@@ -7107,6 +7201,12 @@ struct wuffs_bzip2__decoder__struct {
     return (wuffs_base__io_transformer*)this;
   }
 
+  inline uint64_t
+  get_quirk(
+      uint32_t a_key) const {
+    return wuffs_bzip2__decoder__get_quirk(this, a_key);
+  }
+
   inline wuffs_base__status
   set_quirk(
       uint32_t a_key,
@@ -7212,6 +7312,12 @@ wuffs_cbor__decoder__upcast_as__wuffs_base__token_decoder(
 }
 
 // ---------------- Public Function Prototypes
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_cbor__decoder__get_quirk(
+    const wuffs_cbor__decoder* self,
+    uint32_t a_key);
 
 WUFFS_BASE__GENERATED_C_CODE
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status
@@ -7339,6 +7445,12 @@ struct wuffs_cbor__decoder__struct {
     return (wuffs_base__token_decoder*)this;
   }
 
+  inline uint64_t
+  get_quirk(
+      uint32_t a_key) const {
+    return wuffs_cbor__decoder__get_quirk(this, a_key);
+  }
+
   inline wuffs_base__status
   set_quirk(
       uint32_t a_key,
@@ -7423,6 +7535,12 @@ wuffs_crc32__ieee_hasher__upcast_as__wuffs_base__hasher_u32(
 }
 
 // ---------------- Public Function Prototypes
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_crc32__ieee_hasher__get_quirk(
+    const wuffs_crc32__ieee_hasher* self,
+    uint32_t a_key);
 
 WUFFS_BASE__GENERATED_C_CODE
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status
@@ -7533,6 +7651,12 @@ struct wuffs_crc32__ieee_hasher__struct {
     return (wuffs_base__hasher_u32*)this;
   }
 
+  inline uint64_t
+  get_quirk(
+      uint32_t a_key) const {
+    return wuffs_crc32__ieee_hasher__get_quirk(this, a_key);
+  }
+
   inline wuffs_base__status
   set_quirk(
       uint32_t a_key,
@@ -7633,6 +7757,12 @@ WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct
 wuffs_deflate__decoder__add_history(
     wuffs_deflate__decoder* self,
     wuffs_base__slice_u8 a_hist);
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_deflate__decoder__get_quirk(
+    const wuffs_deflate__decoder* self,
+    uint32_t a_key);
 
 WUFFS_BASE__GENERATED_C_CODE
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status
@@ -7806,6 +7936,12 @@ struct wuffs_deflate__decoder__struct {
     return wuffs_deflate__decoder__add_history(this, a_hist);
   }
 
+  inline uint64_t
+  get_quirk(
+      uint32_t a_key) const {
+    return wuffs_deflate__decoder__get_quirk(this, a_key);
+  }
+
   inline wuffs_base__status
   set_quirk(
       uint32_t a_key,
@@ -7897,6 +8033,12 @@ wuffs_lzw__decoder__upcast_as__wuffs_base__io_transformer(
 }
 
 // ---------------- Public Function Prototypes
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_lzw__decoder__get_quirk(
+    const wuffs_lzw__decoder* self,
+    uint32_t a_key);
 
 WUFFS_BASE__GENERATED_C_CODE
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status
@@ -8036,6 +8178,12 @@ struct wuffs_lzw__decoder__struct {
     return (wuffs_base__io_transformer*)this;
   }
 
+  inline uint64_t
+  get_quirk(
+      uint32_t a_key) const {
+    return wuffs_lzw__decoder__get_quirk(this, a_key);
+  }
+
   inline wuffs_base__status
   set_quirk(
       uint32_t a_key,
@@ -8149,6 +8297,12 @@ wuffs_gif__decoder__upcast_as__wuffs_base__image_decoder(
 }
 
 // ---------------- Public Function Prototypes
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_gif__decoder__get_quirk(
+    const wuffs_gif__decoder* self,
+    uint32_t a_key);
 
 WUFFS_BASE__GENERATED_C_CODE
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status
@@ -8426,6 +8580,12 @@ struct wuffs_gif__decoder__struct {
     return (wuffs_base__image_decoder*)this;
   }
 
+  inline uint64_t
+  get_quirk(
+      uint32_t a_key) const {
+    return wuffs_gif__decoder__get_quirk(this, a_key);
+  }
+
   inline wuffs_base__status
   set_quirk(
       uint32_t a_key,
@@ -8578,6 +8738,12 @@ wuffs_gzip__decoder__upcast_as__wuffs_base__io_transformer(
 // ---------------- Public Function Prototypes
 
 WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_gzip__decoder__get_quirk(
+    const wuffs_gzip__decoder* self,
+    uint32_t a_key);
+
+WUFFS_BASE__GENERATED_C_CODE
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status
 wuffs_gzip__decoder__set_quirk(
     wuffs_gzip__decoder* self,
@@ -8705,6 +8871,12 @@ struct wuffs_gzip__decoder__struct {
     return (wuffs_base__io_transformer*)this;
   }
 
+  inline uint64_t
+  get_quirk(
+      uint32_t a_key) const {
+    return wuffs_gzip__decoder__get_quirk(this, a_key);
+  }
+
   inline wuffs_base__status
   set_quirk(
       uint32_t a_key,
@@ -8813,6 +8985,12 @@ wuffs_jpeg__decoder__upcast_as__wuffs_base__image_decoder(
 }
 
 // ---------------- Public Function Prototypes
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_jpeg__decoder__get_quirk(
+    const wuffs_jpeg__decoder* self,
+    uint32_t a_key);
 
 WUFFS_BASE__GENERATED_C_CODE
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status
@@ -9106,6 +9284,12 @@ struct wuffs_jpeg__decoder__struct {
     return (wuffs_base__image_decoder*)this;
   }
 
+  inline uint64_t
+  get_quirk(
+      uint32_t a_key) const {
+    return wuffs_jpeg__decoder__get_quirk(this, a_key);
+  }
+
   inline wuffs_base__status
   set_quirk(
       uint32_t a_key,
@@ -9307,6 +9491,12 @@ wuffs_json__decoder__upcast_as__wuffs_base__token_decoder(
 // ---------------- Public Function Prototypes
 
 WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_json__decoder__get_quirk(
+    const wuffs_json__decoder* self,
+    uint32_t a_key);
+
+WUFFS_BASE__GENERATED_C_CODE
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status
 wuffs_json__decoder__set_quirk(
     wuffs_json__decoder* self,
@@ -9439,6 +9629,12 @@ struct wuffs_json__decoder__struct {
     return (wuffs_base__token_decoder*)this;
   }
 
+  inline uint64_t
+  get_quirk(
+      uint32_t a_key) const {
+    return wuffs_json__decoder__get_quirk(this, a_key);
+  }
+
   inline wuffs_base__status
   set_quirk(
       uint32_t a_key,
@@ -9529,6 +9725,12 @@ wuffs_netpbm__decoder__upcast_as__wuffs_base__image_decoder(
 }
 
 // ---------------- Public Function Prototypes
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_netpbm__decoder__get_quirk(
+    const wuffs_netpbm__decoder* self,
+    uint32_t a_key);
 
 WUFFS_BASE__GENERATED_C_CODE
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status
@@ -9715,6 +9917,12 @@ struct wuffs_netpbm__decoder__struct {
     return (wuffs_base__image_decoder*)this;
   }
 
+  inline uint64_t
+  get_quirk(
+      uint32_t a_key) const {
+    return wuffs_netpbm__decoder__get_quirk(this, a_key);
+  }
+
   inline wuffs_base__status
   set_quirk(
       uint32_t a_key,
@@ -9863,6 +10071,12 @@ wuffs_nie__decoder__upcast_as__wuffs_base__image_decoder(
 }
 
 // ---------------- Public Function Prototypes
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_nie__decoder__get_quirk(
+    const wuffs_nie__decoder* self,
+    uint32_t a_key);
 
 WUFFS_BASE__GENERATED_C_CODE
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status
@@ -10053,6 +10267,12 @@ struct wuffs_nie__decoder__struct {
     return (wuffs_base__image_decoder*)this;
   }
 
+  inline uint64_t
+  get_quirk(
+      uint32_t a_key) const {
+    return wuffs_nie__decoder__get_quirk(this, a_key);
+  }
+
   inline wuffs_base__status
   set_quirk(
       uint32_t a_key,
@@ -10220,6 +10440,12 @@ wuffs_zlib__decoder__add_dictionary(
     wuffs_base__slice_u8 a_dict);
 
 WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_zlib__decoder__get_quirk(
+    const wuffs_zlib__decoder* self,
+    uint32_t a_key);
+
+WUFFS_BASE__GENERATED_C_CODE
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status
 wuffs_zlib__decoder__set_quirk(
     wuffs_zlib__decoder* self,
@@ -10363,6 +10589,12 @@ struct wuffs_zlib__decoder__struct {
     return wuffs_zlib__decoder__add_dictionary(this, a_dict);
   }
 
+  inline uint64_t
+  get_quirk(
+      uint32_t a_key) const {
+    return wuffs_zlib__decoder__get_quirk(this, a_key);
+  }
+
   inline wuffs_base__status
   set_quirk(
       uint32_t a_key,
@@ -10463,6 +10695,12 @@ wuffs_png__decoder__upcast_as__wuffs_base__image_decoder(
 }
 
 // ---------------- Public Function Prototypes
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_png__decoder__get_quirk(
+    const wuffs_png__decoder* self,
+    uint32_t a_key);
 
 WUFFS_BASE__GENERATED_C_CODE
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status
@@ -10796,6 +11034,12 @@ struct wuffs_png__decoder__struct {
     return (wuffs_base__image_decoder*)this;
   }
 
+  inline uint64_t
+  get_quirk(
+      uint32_t a_key) const {
+    return wuffs_png__decoder__get_quirk(this, a_key);
+  }
+
   inline wuffs_base__status
   set_quirk(
       uint32_t a_key,
@@ -10945,6 +11189,12 @@ wuffs_tga__decoder__upcast_as__wuffs_base__image_decoder(
 }
 
 // ---------------- Public Function Prototypes
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_tga__decoder__get_quirk(
+    const wuffs_tga__decoder* self,
+    uint32_t a_key);
 
 WUFFS_BASE__GENERATED_C_CODE
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status
@@ -11161,6 +11411,12 @@ struct wuffs_tga__decoder__struct {
     return (wuffs_base__image_decoder*)this;
   }
 
+  inline uint64_t
+  get_quirk(
+      uint32_t a_key) const {
+    return wuffs_tga__decoder__get_quirk(this, a_key);
+  }
+
   inline wuffs_base__status
   set_quirk(
       uint32_t a_key,
@@ -11308,6 +11564,12 @@ wuffs_wbmp__decoder__upcast_as__wuffs_base__image_decoder(
 }
 
 // ---------------- Public Function Prototypes
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_wbmp__decoder__get_quirk(
+    const wuffs_wbmp__decoder* self,
+    uint32_t a_key);
 
 WUFFS_BASE__GENERATED_C_CODE
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status
@@ -11502,6 +11764,12 @@ struct wuffs_wbmp__decoder__struct {
   inline wuffs_base__image_decoder*
   upcast_as__wuffs_base__image_decoder() {
     return (wuffs_base__image_decoder*)this;
+  }
+
+  inline uint64_t
+  get_quirk(
+      uint32_t a_key) const {
+    return wuffs_wbmp__decoder__get_quirk(this, a_key);
   }
 
   inline wuffs_base__status
@@ -13123,6 +13391,35 @@ const char wuffs_base__token_decoder__vtable_name[] = "{vtable}wuffs_base__token
 // ---------------- Interface Definitions.
 
 WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_base__hasher_u32__get_quirk(
+    const wuffs_base__hasher_u32* self,
+    uint32_t a_key) {
+  if (!self) {
+    return 0;
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return 0;
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__hasher_u32__vtable_name) {
+      const wuffs_base__hasher_u32__func_ptrs* func_ptrs =
+          (const wuffs_base__hasher_u32__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->get_quirk)(self, a_key);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return 0;
+}
+
+WUFFS_BASE__GENERATED_C_CODE
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status
 wuffs_base__hasher_u32__set_quirk(
     wuffs_base__hasher_u32* self,
@@ -13309,6 +13606,35 @@ wuffs_base__image_decoder__frame_dirty_rect(
   }
 
   return wuffs_base__utility__empty_rect_ie_u32();
+}
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_base__image_decoder__get_quirk(
+    const wuffs_base__image_decoder* self,
+    uint32_t a_key) {
+  if (!self) {
+    return 0;
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return 0;
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__image_decoder__vtable_name) {
+      const wuffs_base__image_decoder__func_ptrs* func_ptrs =
+          (const wuffs_base__image_decoder__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->get_quirk)(self, a_key);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return 0;
 }
 
 WUFFS_BASE__GENERATED_C_CODE
@@ -13552,6 +13878,35 @@ wuffs_base__image_decoder__workbuf_len(
 // --------
 
 WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_base__io_transformer__get_quirk(
+    const wuffs_base__io_transformer* self,
+    uint32_t a_key) {
+  if (!self) {
+    return 0;
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return 0;
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__io_transformer__vtable_name) {
+      const wuffs_base__io_transformer__func_ptrs* func_ptrs =
+          (const wuffs_base__io_transformer__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->get_quirk)(self, a_key);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return 0;
+}
+
+WUFFS_BASE__GENERATED_C_CODE
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status
 wuffs_base__io_transformer__set_quirk(
     wuffs_base__io_transformer* self,
@@ -13645,6 +14000,35 @@ wuffs_base__io_transformer__workbuf_len(
 }
 
 // --------
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_base__token_decoder__get_quirk(
+    const wuffs_base__token_decoder* self,
+    uint32_t a_key) {
+  if (!self) {
+    return 0;
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return 0;
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__token_decoder__vtable_name) {
+      const wuffs_base__token_decoder__func_ptrs* func_ptrs =
+          (const wuffs_base__token_decoder__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->get_quirk)(self, a_key);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return 0;
+}
 
 WUFFS_BASE__GENERATED_C_CODE
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status
@@ -24870,6 +25254,8 @@ wuffs_adler32__hasher__up_x86_sse42(
 
 const wuffs_base__hasher_u32__func_ptrs
 wuffs_adler32__hasher__func_ptrs_for__wuffs_base__hasher_u32 = {
+  (uint64_t(*)(const void*,
+      uint32_t))(&wuffs_adler32__hasher__get_quirk),
   (wuffs_base__status(*)(void*,
       uint32_t,
       uint64_t))(&wuffs_adler32__hasher__set_quirk),
@@ -24949,6 +25335,24 @@ sizeof__wuffs_adler32__hasher() {
 }
 
 // ---------------- Function Implementations
+
+// -------- func adler32.hasher.get_quirk
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_adler32__hasher__get_quirk(
+    const wuffs_adler32__hasher* self,
+    uint32_t a_key) {
+  if (!self) {
+    return 0;
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return 0;
+  }
+
+  return 0u;
+}
 
 // -------- func adler32.hasher.set_quirk
 
@@ -25411,6 +25815,8 @@ wuffs_bmp__decoder__func_ptrs_for__wuffs_base__image_decoder = {
       wuffs_base__image_config*,
       wuffs_base__io_buffer*))(&wuffs_bmp__decoder__decode_image_config),
   (wuffs_base__rect_ie_u32(*)(const void*))(&wuffs_bmp__decoder__frame_dirty_rect),
+  (uint64_t(*)(const void*,
+      uint32_t))(&wuffs_bmp__decoder__get_quirk),
   (uint32_t(*)(const void*))(&wuffs_bmp__decoder__num_animation_loops),
   (uint64_t(*)(const void*))(&wuffs_bmp__decoder__num_decoded_frame_configs),
   (uint64_t(*)(const void*))(&wuffs_bmp__decoder__num_decoded_frames),
@@ -25500,6 +25906,24 @@ sizeof__wuffs_bmp__decoder() {
 }
 
 // ---------------- Function Implementations
+
+// -------- func bmp.decoder.get_quirk
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_bmp__decoder__get_quirk(
+    const wuffs_bmp__decoder* self,
+    uint32_t a_key) {
+  if (!self) {
+    return 0;
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return 0;
+  }
+
+  return 0u;
+}
 
 // -------- func bmp.decoder.set_quirk
 
@@ -28164,6 +28588,8 @@ wuffs_bzip2__decoder__decode_huffman_slow(
 
 const wuffs_base__io_transformer__func_ptrs
 wuffs_bzip2__decoder__func_ptrs_for__wuffs_base__io_transformer = {
+  (uint64_t(*)(const void*,
+      uint32_t))(&wuffs_bzip2__decoder__get_quirk),
   (wuffs_base__status(*)(void*,
       uint32_t,
       uint64_t))(&wuffs_bzip2__decoder__set_quirk),
@@ -28244,6 +28670,24 @@ sizeof__wuffs_bzip2__decoder() {
 }
 
 // ---------------- Function Implementations
+
+// -------- func bzip2.decoder.get_quirk
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_bzip2__decoder__get_quirk(
+    const wuffs_bzip2__decoder* self,
+    uint32_t a_key) {
+  if (!self) {
+    return 0;
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return 0;
+  }
+
+  return 0u;
+}
 
 // -------- func bzip2.decoder.set_quirk
 
@@ -29682,6 +30126,8 @@ WUFFS_CBOR__TOKEN_LENGTHS[32] WUFFS_BASE__POTENTIALLY_UNUSED = {
 
 const wuffs_base__token_decoder__func_ptrs
 wuffs_cbor__decoder__func_ptrs_for__wuffs_base__token_decoder = {
+  (uint64_t(*)(const void*,
+      uint32_t))(&wuffs_cbor__decoder__get_quirk),
   (wuffs_base__status(*)(void*,
       wuffs_base__token_buffer*,
       wuffs_base__io_buffer*,
@@ -29762,6 +30208,24 @@ sizeof__wuffs_cbor__decoder() {
 }
 
 // ---------------- Function Implementations
+
+// -------- func cbor.decoder.get_quirk
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_cbor__decoder__get_quirk(
+    const wuffs_cbor__decoder* self,
+    uint32_t a_key) {
+  if (!self) {
+    return 0;
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return 0;
+  }
+
+  return 0u;
+}
 
 // -------- func cbor.decoder.set_quirk
 
@@ -31004,6 +31468,8 @@ wuffs_crc32__ieee_hasher__up_x86_sse42(
 
 const wuffs_base__hasher_u32__func_ptrs
 wuffs_crc32__ieee_hasher__func_ptrs_for__wuffs_base__hasher_u32 = {
+  (uint64_t(*)(const void*,
+      uint32_t))(&wuffs_crc32__ieee_hasher__get_quirk),
   (wuffs_base__status(*)(void*,
       uint32_t,
       uint64_t))(&wuffs_crc32__ieee_hasher__set_quirk),
@@ -31083,6 +31549,24 @@ sizeof__wuffs_crc32__ieee_hasher() {
 }
 
 // ---------------- Function Implementations
+
+// -------- func crc32.ieee_hasher.get_quirk
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_crc32__ieee_hasher__get_quirk(
+    const wuffs_crc32__ieee_hasher* self,
+    uint32_t a_key) {
+  if (!self) {
+    return 0;
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return 0;
+  }
+
+  return 0u;
+}
 
 // -------- func crc32.ieee_hasher.set_quirk
 
@@ -31734,6 +32218,8 @@ wuffs_deflate__decoder__decode_huffman_slow(
 
 const wuffs_base__io_transformer__func_ptrs
 wuffs_deflate__decoder__func_ptrs_for__wuffs_base__io_transformer = {
+  (uint64_t(*)(const void*,
+      uint32_t))(&wuffs_deflate__decoder__get_quirk),
   (wuffs_base__status(*)(void*,
       uint32_t,
       uint64_t))(&wuffs_deflate__decoder__set_quirk),
@@ -31856,6 +32342,24 @@ wuffs_deflate__decoder__add_history(
   }
   wuffs_base__slice_u8__copy_from_slice(wuffs_base__make_slice_u8_ij(self->private_data.f_history, 32768, 33025), wuffs_base__make_slice_u8(self->private_data.f_history, 33025));
   return wuffs_base__make_empty_struct();
+}
+
+// -------- func deflate.decoder.get_quirk
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_deflate__decoder__get_quirk(
+    const wuffs_deflate__decoder* self,
+    uint32_t a_key) {
+  if (!self) {
+    return 0;
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return 0;
+  }
+
+  return 0u;
 }
 
 // -------- func deflate.decoder.set_quirk
@@ -33932,6 +34436,8 @@ wuffs_lzw__decoder__write_to(
 
 const wuffs_base__io_transformer__func_ptrs
 wuffs_lzw__decoder__func_ptrs_for__wuffs_base__io_transformer = {
+  (uint64_t(*)(const void*,
+      uint32_t))(&wuffs_lzw__decoder__get_quirk),
   (wuffs_base__status(*)(void*,
       uint32_t,
       uint64_t))(&wuffs_lzw__decoder__set_quirk),
@@ -34012,6 +34518,27 @@ sizeof__wuffs_lzw__decoder() {
 }
 
 // ---------------- Function Implementations
+
+// -------- func lzw.decoder.get_quirk
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_lzw__decoder__get_quirk(
+    const wuffs_lzw__decoder* self,
+    uint32_t a_key) {
+  if (!self) {
+    return 0;
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return 0;
+  }
+
+  if (a_key == 1348378624u) {
+    return ((uint64_t)(self->private_impl.f_pending_literal_width_plus_one));
+  }
+  return 0u;
+}
 
 // -------- func lzw.decoder.set_quirk
 
@@ -34629,6 +35156,8 @@ wuffs_gif__decoder__func_ptrs_for__wuffs_base__image_decoder = {
       wuffs_base__image_config*,
       wuffs_base__io_buffer*))(&wuffs_gif__decoder__decode_image_config),
   (wuffs_base__rect_ie_u32(*)(const void*))(&wuffs_gif__decoder__frame_dirty_rect),
+  (uint64_t(*)(const void*,
+      uint32_t))(&wuffs_gif__decoder__get_quirk),
   (uint32_t(*)(const void*))(&wuffs_gif__decoder__num_animation_loops),
   (uint64_t(*)(const void*))(&wuffs_gif__decoder__num_decoded_frame_configs),
   (uint64_t(*)(const void*))(&wuffs_gif__decoder__num_decoded_frames),
@@ -34725,6 +35254,34 @@ sizeof__wuffs_gif__decoder() {
 }
 
 // ---------------- Function Implementations
+
+// -------- func gif.decoder.get_quirk
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_gif__decoder__get_quirk(
+    const wuffs_gif__decoder* self,
+    uint32_t a_key) {
+  if (!self) {
+    return 0;
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return 0;
+  }
+
+  uint32_t v_key = 0;
+
+  if (a_key >= 1041635328u) {
+    v_key = (a_key - 1041635328u);
+    if (v_key < 7u) {
+      if (self->private_impl.f_quirks[v_key]) {
+        return 1u;
+      }
+    }
+  }
+  return 0u;
+}
 
 // -------- func gif.decoder.set_quirk
 
@@ -37300,6 +37857,8 @@ wuffs_gzip__decoder__do_transform_io(
 
 const wuffs_base__io_transformer__func_ptrs
 wuffs_gzip__decoder__func_ptrs_for__wuffs_base__io_transformer = {
+  (uint64_t(*)(const void*,
+      uint32_t))(&wuffs_gzip__decoder__get_quirk),
   (wuffs_base__status(*)(void*,
       uint32_t,
       uint64_t))(&wuffs_gzip__decoder__set_quirk),
@@ -37394,6 +37953,27 @@ sizeof__wuffs_gzip__decoder() {
 }
 
 // ---------------- Function Implementations
+
+// -------- func gzip.decoder.get_quirk
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_gzip__decoder__get_quirk(
+    const wuffs_gzip__decoder* self,
+    uint32_t a_key) {
+  if (!self) {
+    return 0;
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return 0;
+  }
+
+  if ((a_key == 1u) && self->private_impl.f_ignore_checksum) {
+    return 1u;
+  }
+  return 0u;
+}
 
 // -------- func gzip.decoder.set_quirk
 
@@ -38223,6 +38803,8 @@ wuffs_jpeg__decoder__func_ptrs_for__wuffs_base__image_decoder = {
       wuffs_base__image_config*,
       wuffs_base__io_buffer*))(&wuffs_jpeg__decoder__decode_image_config),
   (wuffs_base__rect_ie_u32(*)(const void*))(&wuffs_jpeg__decoder__frame_dirty_rect),
+  (uint64_t(*)(const void*,
+      uint32_t))(&wuffs_jpeg__decoder__get_quirk),
   (uint32_t(*)(const void*))(&wuffs_jpeg__decoder__num_animation_loops),
   (uint64_t(*)(const void*))(&wuffs_jpeg__decoder__num_decoded_frame_configs),
   (uint64_t(*)(const void*))(&wuffs_jpeg__decoder__num_decoded_frames),
@@ -39424,6 +40006,24 @@ wuffs_jpeg__decoder__decode_idct(
     a_dst_buffer.ptr[4u] = WUFFS_JPEG__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(v_rd3 - v_rk7)) + 131072u)) >> 18u) & 1023u)];
   }
   return wuffs_base__make_empty_struct();
+}
+
+// -------- func jpeg.decoder.get_quirk
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_jpeg__decoder__get_quirk(
+    const wuffs_jpeg__decoder* self,
+    uint32_t a_key) {
+  if (!self) {
+    return 0;
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return 0;
+  }
+
+  return 0u;
 }
 
 // -------- func jpeg.decoder.set_quirk
@@ -43236,6 +43836,8 @@ wuffs_json__decoder__decode_trailer(
 
 const wuffs_base__token_decoder__func_ptrs
 wuffs_json__decoder__func_ptrs_for__wuffs_base__token_decoder = {
+  (uint64_t(*)(const void*,
+      uint32_t))(&wuffs_json__decoder__get_quirk),
   (wuffs_base__status(*)(void*,
       wuffs_base__token_buffer*,
       wuffs_base__io_buffer*,
@@ -43316,6 +43918,34 @@ sizeof__wuffs_json__decoder() {
 }
 
 // ---------------- Function Implementations
+
+// -------- func json.decoder.get_quirk
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_json__decoder__get_quirk(
+    const wuffs_json__decoder* self,
+    uint32_t a_key) {
+  if (!self) {
+    return 0;
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return 0;
+  }
+
+  uint32_t v_key = 0;
+
+  if (a_key >= 1225364480u) {
+    v_key = (a_key - 1225364480u);
+    if (v_key < 21u) {
+      if (self->private_impl.f_quirks[v_key]) {
+        return 1u;
+      }
+    }
+  }
+  return 0u;
+}
 
 // -------- func json.decoder.set_quirk
 
@@ -45206,6 +45836,8 @@ wuffs_netpbm__decoder__func_ptrs_for__wuffs_base__image_decoder = {
       wuffs_base__image_config*,
       wuffs_base__io_buffer*))(&wuffs_netpbm__decoder__decode_image_config),
   (wuffs_base__rect_ie_u32(*)(const void*))(&wuffs_netpbm__decoder__frame_dirty_rect),
+  (uint64_t(*)(const void*,
+      uint32_t))(&wuffs_netpbm__decoder__get_quirk),
   (uint32_t(*)(const void*))(&wuffs_netpbm__decoder__num_animation_loops),
   (uint64_t(*)(const void*))(&wuffs_netpbm__decoder__num_decoded_frame_configs),
   (uint64_t(*)(const void*))(&wuffs_netpbm__decoder__num_decoded_frames),
@@ -45295,6 +45927,24 @@ sizeof__wuffs_netpbm__decoder() {
 }
 
 // ---------------- Function Implementations
+
+// -------- func netpbm.decoder.get_quirk
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_netpbm__decoder__get_quirk(
+    const wuffs_netpbm__decoder* self,
+    uint32_t a_key) {
+  if (!self) {
+    return 0;
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return 0;
+  }
+
+  return 0u;
+}
 
 // -------- func netpbm.decoder.set_quirk
 
@@ -46326,6 +46976,8 @@ wuffs_nie__decoder__func_ptrs_for__wuffs_base__image_decoder = {
       wuffs_base__image_config*,
       wuffs_base__io_buffer*))(&wuffs_nie__decoder__decode_image_config),
   (wuffs_base__rect_ie_u32(*)(const void*))(&wuffs_nie__decoder__frame_dirty_rect),
+  (uint64_t(*)(const void*,
+      uint32_t))(&wuffs_nie__decoder__get_quirk),
   (uint32_t(*)(const void*))(&wuffs_nie__decoder__num_animation_loops),
   (uint64_t(*)(const void*))(&wuffs_nie__decoder__num_decoded_frame_configs),
   (uint64_t(*)(const void*))(&wuffs_nie__decoder__num_decoded_frames),
@@ -46415,6 +47067,24 @@ sizeof__wuffs_nie__decoder() {
 }
 
 // ---------------- Function Implementations
+
+// -------- func nie.decoder.get_quirk
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_nie__decoder__get_quirk(
+    const wuffs_nie__decoder* self,
+    uint32_t a_key) {
+  if (!self) {
+    return 0;
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return 0;
+  }
+
+  return 0u;
+}
 
 // -------- func nie.decoder.set_quirk
 
@@ -47337,6 +48007,8 @@ wuffs_zlib__decoder__do_transform_io(
 
 const wuffs_base__io_transformer__func_ptrs
 wuffs_zlib__decoder__func_ptrs_for__wuffs_base__io_transformer = {
+  (uint64_t(*)(const void*,
+      uint32_t))(&wuffs_zlib__decoder__get_quirk),
   (wuffs_base__status(*)(void*,
       uint32_t,
       uint64_t))(&wuffs_zlib__decoder__set_quirk),
@@ -47478,6 +48150,36 @@ wuffs_zlib__decoder__add_dictionary(
   }
   self->private_impl.f_got_dictionary = true;
   return wuffs_base__make_empty_struct();
+}
+
+// -------- func zlib.decoder.get_quirk
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_zlib__decoder__get_quirk(
+    const wuffs_zlib__decoder* self,
+    uint32_t a_key) {
+  if (!self) {
+    return 0;
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return 0;
+  }
+
+  uint32_t v_key = 0;
+
+  if ((a_key == 1u) && self->private_impl.f_ignore_checksum) {
+    return 1u;
+  } else if (a_key >= 2113790976u) {
+    v_key = (a_key - 2113790976u);
+    if (v_key < 1u) {
+      if (self->private_impl.f_quirks[v_key]) {
+        return 1u;
+      }
+    }
+  }
+  return 0u;
 }
 
 // -------- func zlib.decoder.set_quirk
@@ -48250,6 +48952,8 @@ wuffs_png__decoder__func_ptrs_for__wuffs_base__image_decoder = {
       wuffs_base__image_config*,
       wuffs_base__io_buffer*))(&wuffs_png__decoder__decode_image_config),
   (wuffs_base__rect_ie_u32(*)(const void*))(&wuffs_png__decoder__frame_dirty_rect),
+  (uint64_t(*)(const void*,
+      uint32_t))(&wuffs_png__decoder__get_quirk),
   (uint32_t(*)(const void*))(&wuffs_png__decoder__num_animation_loops),
   (uint64_t(*)(const void*))(&wuffs_png__decoder__num_decoded_frame_configs),
   (uint64_t(*)(const void*))(&wuffs_png__decoder__num_decoded_frames),
@@ -49780,6 +50484,27 @@ wuffs_png__decoder__filter_4_distance_4_x86_sse42(
 }
 #endif  // defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
 // ‼ WUFFS MULTI-FILE SECTION -x86_sse42
+
+// -------- func png.decoder.get_quirk
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_png__decoder__get_quirk(
+    const wuffs_png__decoder* self,
+    uint32_t a_key) {
+  if (!self) {
+    return 0;
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return 0;
+  }
+
+  if ((a_key == 1u) && self->private_impl.f_ignore_checksum) {
+    return 1u;
+  }
+  return 0u;
+}
 
 // -------- func png.decoder.set_quirk
 
@@ -54394,6 +55119,8 @@ wuffs_tga__decoder__func_ptrs_for__wuffs_base__image_decoder = {
       wuffs_base__image_config*,
       wuffs_base__io_buffer*))(&wuffs_tga__decoder__decode_image_config),
   (wuffs_base__rect_ie_u32(*)(const void*))(&wuffs_tga__decoder__frame_dirty_rect),
+  (uint64_t(*)(const void*,
+      uint32_t))(&wuffs_tga__decoder__get_quirk),
   (uint32_t(*)(const void*))(&wuffs_tga__decoder__num_animation_loops),
   (uint64_t(*)(const void*))(&wuffs_tga__decoder__num_decoded_frame_configs),
   (uint64_t(*)(const void*))(&wuffs_tga__decoder__num_decoded_frames),
@@ -54483,6 +55210,24 @@ sizeof__wuffs_tga__decoder() {
 }
 
 // ---------------- Function Implementations
+
+// -------- func tga.decoder.get_quirk
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_tga__decoder__get_quirk(
+    const wuffs_tga__decoder* self,
+    uint32_t a_key) {
+  if (!self) {
+    return 0;
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return 0;
+  }
+
+  return 0u;
+}
 
 // -------- func tga.decoder.set_quirk
 
@@ -55810,6 +56555,8 @@ wuffs_wbmp__decoder__func_ptrs_for__wuffs_base__image_decoder = {
       wuffs_base__image_config*,
       wuffs_base__io_buffer*))(&wuffs_wbmp__decoder__decode_image_config),
   (wuffs_base__rect_ie_u32(*)(const void*))(&wuffs_wbmp__decoder__frame_dirty_rect),
+  (uint64_t(*)(const void*,
+      uint32_t))(&wuffs_wbmp__decoder__get_quirk),
   (uint32_t(*)(const void*))(&wuffs_wbmp__decoder__num_animation_loops),
   (uint64_t(*)(const void*))(&wuffs_wbmp__decoder__num_decoded_frame_configs),
   (uint64_t(*)(const void*))(&wuffs_wbmp__decoder__num_decoded_frames),
@@ -55899,6 +56646,24 @@ sizeof__wuffs_wbmp__decoder() {
 }
 
 // ---------------- Function Implementations
+
+// -------- func wbmp.decoder.get_quirk
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_wbmp__decoder__get_quirk(
+    const wuffs_wbmp__decoder* self,
+    uint32_t a_key) {
+  if (!self) {
+    return 0;
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return 0;
+  }
+
+  return 0u;
+}
 
 // -------- func wbmp.decoder.set_quirk
 
