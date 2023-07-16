@@ -574,26 +574,50 @@ test_wuffs_jpeg_decode_idct() {
       0x4C, 0x4C, 0x52, 0x4F, 0x4D, 0x40, 0x3A, 0x35,  //
   };
 
-  wuffs_jpeg__decoder dec;
-  CHECK_STATUS("initialize", wuffs_jpeg__decoder__initialize(
-                                 &dec, sizeof dec, WUFFS_VERSION,
-                                 WUFFS_INITIALIZE__DEFAULT_OPTIONS));
+  for (int f = 0; f < 2; f++) {
+    wuffs_jpeg__decoder dec;
+    CHECK_STATUS("initialize", wuffs_jpeg__decoder__initialize(
+                                   &dec, sizeof dec, WUFFS_VERSION,
+                                   WUFFS_INITIALIZE__DEFAULT_OPTIONS));
 
-  memcpy(&dec.private_data.f_mcu_blocks[0], mcu_block, sizeof(mcu_block));
+    memcpy(&dec.private_data.f_mcu_blocks[0], mcu_block, sizeof(mcu_block));
 
-  const uint32_t q = 0;
-  memcpy(&dec.private_impl.f_quant_tables[q], quant_table, sizeof(quant_table));
+    const uint32_t q = 0;
+    memcpy(&dec.private_impl.f_quant_tables[q], quant_table,
+           sizeof(quant_table));
 
-  uint8_t dst_array[64] = {0};
-  wuffs_jpeg__decoder__decode_idct(
-      &dec, wuffs_base__make_slice_u8(&dst_array[0], 64), 8, q);
+    const char* func_name = NULL;
+    wuffs_base__empty_struct (*func)(
+        wuffs_jpeg__decoder * self, wuffs_base__slice_u8 a_dst_buffer,
+        uint64_t a_dst_stride, uint32_t a_q) = NULL;
 
-  wuffs_base__io_buffer have =
-      wuffs_base__ptr_u8__reader(&dst_array[0], 64, true);
-  wuffs_base__io_buffer want =
-      wuffs_base__ptr_u8__reader((uint8_t*)(&want_array[0]), 64, true);
+    if (f == 0) {
+      func_name = "choosy_default";
+      func = &wuffs_jpeg__decoder__decode_idct__choosy_default;
+#if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
+    } else if (wuffs_base__cpu_arch__have_x86_avx2()) {
+      func_name = "x86_avx2";
+      // TODO: func = &wuffs_jpeg__decoder__decode_idct_x86_avx2;
+#endif
+    }
 
-  return check_io_buffers_equal("", &have, &want);
+    if (!func) {
+      continue;
+    }
+    uint8_t dst_array[64] = {0};
+    (*func)(&dec, wuffs_base__make_slice_u8(&dst_array[0], 64), 8, q);
+
+    wuffs_base__io_buffer have =
+        wuffs_base__ptr_u8__reader(&dst_array[0], 64, true);
+    wuffs_base__io_buffer want =
+        wuffs_base__ptr_u8__reader((uint8_t*)(&want_array[0]), 64, true);
+
+    char prefix[256];
+    snprintf(prefix, 256, "f=%d (%s): ", f, func_name);
+    CHECK_STRING(check_io_buffers_equal(prefix, &have, &want));
+  }
+
+  return NULL;
 }
 
 const char*  //

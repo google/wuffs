@@ -9159,6 +9159,11 @@ struct wuffs_jpeg__decoder__struct {
     uint16_t f_huff_tables_fast[8][256];
     wuffs_base__pixel_swizzler f_swizzler;
 
+    wuffs_base__empty_struct (*choosy_decode_idct)(
+        wuffs_jpeg__decoder* self,
+        wuffs_base__slice_u8 a_dst_buffer,
+        uint64_t a_dst_stride,
+        uint32_t a_q);
     uint32_t p_decode_image_config[1];
     uint32_t p_do_decode_image_config[1];
     uint32_t p_decode_dqt[1];
@@ -38595,6 +38600,24 @@ wuffs_jpeg__decoder__decode_idct(
     uint32_t a_q);
 
 WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_jpeg__decoder__decode_idct__choosy_default(
+    wuffs_jpeg__decoder* self,
+    wuffs_base__slice_u8 a_dst_buffer,
+    uint64_t a_dst_stride,
+    uint32_t a_q);
+
+#if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_jpeg__decoder__decode_idct_x86_avx2(
+    wuffs_jpeg__decoder* self,
+    wuffs_base__slice_u8 a_dst_buffer,
+    uint64_t a_dst_stride,
+    uint32_t a_q);
+#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
+
+WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__status
 wuffs_jpeg__decoder__do_decode_image_config(
     wuffs_jpeg__decoder* self,
@@ -38865,6 +38888,7 @@ wuffs_jpeg__decoder__initialize(
     }
   }
 
+  self->private_impl.choosy_decode_idct = &wuffs_jpeg__decoder__decode_idct__choosy_default;
   self->private_impl.choosy_decode_mcu = &wuffs_jpeg__decoder__decode_mcu__choosy_default;
 
   self->private_impl.magic = WUFFS_BASE__MAGIC;
@@ -38902,6 +38926,16 @@ sizeof__wuffs_jpeg__decoder() {
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
 wuffs_jpeg__decoder__decode_idct(
+    wuffs_jpeg__decoder* self,
+    wuffs_base__slice_u8 a_dst_buffer,
+    uint64_t a_dst_stride,
+    uint32_t a_q) {
+  return (*self->private_impl.choosy_decode_idct)(self, a_dst_buffer, a_dst_stride, a_q);
+}
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_jpeg__decoder__decode_idct__choosy_default(
     wuffs_jpeg__decoder* self,
     wuffs_base__slice_u8 a_dst_buffer,
     uint64_t a_dst_stride,
@@ -40007,6 +40041,23 @@ wuffs_jpeg__decoder__decode_idct(
   }
   return wuffs_base__make_empty_struct();
 }
+
+// ‼ WUFFS MULTI-FILE SECTION +x86_avx2
+// -------- func jpeg.decoder.decode_idct_x86_avx2
+
+#if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
+WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2,avx2")
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_jpeg__decoder__decode_idct_x86_avx2(
+    wuffs_jpeg__decoder* self,
+    wuffs_base__slice_u8 a_dst_buffer,
+    uint64_t a_dst_stride,
+    uint32_t a_q) {
+  return wuffs_base__make_empty_struct();
+}
+#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
+// ‼ WUFFS MULTI-FILE SECTION -x86_avx2
 
 // -------- func jpeg.decoder.get_quirk
 
