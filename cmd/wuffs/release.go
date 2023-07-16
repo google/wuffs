@@ -66,7 +66,7 @@ func genreleaseLang(wuffsRoot string, revision string, commitDate, gitRevListCou
 	if err := cmd.Run(); err == nil {
 		// No-op.
 	} else if _, ok := err.(*exec.ExitError); ok {
-		return "", nil, fmt.Errorf("%s: failed", command)
+		return "", nil, fmt.Errorf("%s failed, args=%q", command, args)
 	} else {
 		return "", nil, err
 	}

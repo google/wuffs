@@ -205,7 +205,7 @@ func (h *genHelper) genDir(dirname string, qualFilenames []string) error {
 		if err := cmd.Run(); err == nil {
 			// No-op.
 		} else if _, ok := err.(*exec.ExitError); ok {
-			return fmt.Errorf("%s: failed", command)
+			return fmt.Errorf("%s failed, args=%q", command, cmdArgs)
 		} else {
 			return err
 		}
