@@ -431,6 +431,7 @@ var funcsOther = [...]string{
 
 	"io_reader.read_u8?() u8",
 
+	"io_reader.read_u8_as_u16?() u16[..= 0xFF]",
 	"io_reader.read_u16be?() u16",
 	"io_reader.read_u16le?() u16",
 
@@ -467,6 +468,7 @@ var funcsOther = [...]string{
 
 	"io_reader.peek_u8() u8",
 
+	"io_reader.peek_u8_as_u16() u16[..= 0xFF]",
 	"io_reader.peek_u16be() u16",
 	"io_reader.peek_u16le() u16",
 

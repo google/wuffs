@@ -276,8 +276,8 @@ pub struct decoder? implements base.image_decoder(
         // arbitrary.
         bitstream_padding : base.u32[..= 12345],
 
-        quant_tables       : array[4] array[64] base.u8,
-        saved_quant_tables : array[4] array[64] base.u8,
+        quant_tables       : array[4] array[64] base.u16[..= 0xFF],
+        saved_quant_tables : array[4] array[64] base.u16[..= 0xFF],
 
         // huff_tables_symbols[(tc*4)|th][i] is the i'th Huffman code's symbol.
         huff_tables_symbols : array[8] array[256] base.u8,
@@ -509,7 +509,7 @@ pri func decoder.decode_dqt?(src: base.io_reader) {
         i = 0
         while i < 64 {
             i += 1
-            this.quant_tables[q][UNZIG[i]] = args.src.read_u8?()
+            this.quant_tables[q][UNZIG[i]] = args.src.read_u8_as_u16?()
         } endwhile
         this.seen_dqt[q] = true
 

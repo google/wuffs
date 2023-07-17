@@ -9152,8 +9152,8 @@ struct wuffs_jpeg__decoder__struct {
     uint32_t f_bitstream_ri;
     uint32_t f_bitstream_wi;
     uint32_t f_bitstream_padding;
-    uint8_t f_quant_tables[4][64];
-    uint8_t f_saved_quant_tables[4][64];
+    uint16_t f_quant_tables[4][64];
+    uint16_t f_saved_quant_tables[4][64];
     uint8_t f_huff_tables_symbols[8][256];
     uint32_t f_huff_tables_slow[8][16];
     uint16_t f_huff_tables_fast[8][256];
@@ -40494,7 +40494,7 @@ wuffs_jpeg__decoder__decode_dqt(
             status = wuffs_base__make_status(wuffs_base__suspension__short_read);
             goto suspend;
           }
-          uint8_t t_1 = *iop_a_src++;
+          uint16_t t_1 = *iop_a_src++;
           self->private_impl.f_quant_tables[v_q][WUFFS_JPEG__UNZIG[v_i]] = t_1;
         }
       }

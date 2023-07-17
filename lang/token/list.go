@@ -524,8 +524,9 @@ const (
 	IDUndoByte = ID(0x180)
 	IDReadU8   = ID(0x181)
 
-	IDReadU16BE = ID(0x182)
-	IDReadU16LE = ID(0x183)
+	IDReadU8AsU16 = ID(0x185)
+	IDReadU16BE   = ID(0x186)
+	IDReadU16LE   = ID(0x187)
 
 	IDReadU8AsU32    = ID(0x189)
 	IDReadU16BEAsU32 = ID(0x18A)
@@ -557,8 +558,9 @@ const (
 
 	IDPeekU8 = ID(0x1A1)
 
-	IDPeekU16BE = ID(0x1A2)
-	IDPeekU16LE = ID(0x1A3)
+	IDPeekU8AsU16 = ID(0x1A5)
+	IDPeekU16BE   = ID(0x1A6)
+	IDPeekU16LE   = ID(0x1A7)
 
 	IDPeekU8AsU32    = ID(0x1A9)
 	IDPeekU16BEAsU32 = ID(0x1AA)
@@ -965,8 +967,9 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDUndoByte: "undo_byte",
 	IDReadU8:   "read_u8",
 
-	IDReadU16BE: "read_u16be",
-	IDReadU16LE: "read_u16le",
+	IDReadU8AsU16: "read_u8_as_u16",
+	IDReadU16BE:   "read_u16be",
+	IDReadU16LE:   "read_u16le",
 
 	IDReadU8AsU32:    "read_u8_as_u32",
 	IDReadU16BEAsU32: "read_u16be_as_u32",
@@ -998,8 +1001,9 @@ var builtInsByID = [nBuiltInIDs]string{
 
 	IDPeekU8: "peek_u8",
 
-	IDPeekU16BE: "peek_u16be",
-	IDPeekU16LE: "peek_u16le",
+	IDPeekU8AsU16: "peek_u8_as_u16",
+	IDPeekU16BE:   "peek_u16be",
+	IDPeekU16LE:   "peek_u16le",
 
 	IDPeekU8AsU32:    "peek_u8_as_u32",
 	IDPeekU16BEAsU32: "peek_u16be_as_u32",

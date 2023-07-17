@@ -1190,7 +1190,7 @@ func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error
 	switch recvTyp.QID()[1] {
 	case t.IDIOReader:
 		switch method.Ident() {
-		case t.IDReadU8, t.IDReadU8AsU32, t.IDReadU8AsU64:
+		case t.IDReadU8, t.IDReadU8AsU16, t.IDReadU8AsU32, t.IDReadU8AsU64:
 			if err := g.writeCoroSuspPoint(b, false); err != nil {
 				return err
 			}
@@ -1389,8 +1389,9 @@ var readMethods = [...]struct {
 }{
 	t.IDReadU8 - readMethodsBase: {8, 8, 'b'},
 
-	t.IDReadU16BE - readMethodsBase: {16, 16, 'b'},
-	t.IDReadU16LE - readMethodsBase: {16, 16, 'l'},
+	t.IDReadU8AsU16 - readMethodsBase: {16, 8, 'b'},
+	t.IDReadU16BE - readMethodsBase:   {16, 16, 'b'},
+	t.IDReadU16LE - readMethodsBase:   {16, 16, 'l'},
 
 	t.IDReadU8AsU32 - readMethodsBase:    {32, 8, 'b'},
 	t.IDReadU16BEAsU32 - readMethodsBase: {32, 16, 'b'},
@@ -1426,8 +1427,9 @@ var peekMethods = [...]struct {
 }{
 	t.IDPeekU8 - peekMethodsBase: {8, 8, 'b'},
 
-	t.IDPeekU16BE - peekMethodsBase: {16, 16, 'b'},
-	t.IDPeekU16LE - peekMethodsBase: {16, 16, 'l'},
+	t.IDPeekU8AsU16 - peekMethodsBase: {16, 8, 'b'},
+	t.IDPeekU16BE - peekMethodsBase:   {16, 16, 'b'},
+	t.IDPeekU16LE - peekMethodsBase:   {16, 16, 'l'},
 
 	t.IDPeekU8AsU32 - peekMethodsBase:    {32, 8, 'b'},
 	t.IDPeekU16BEAsU32 - peekMethodsBase: {32, 16, 'b'},
