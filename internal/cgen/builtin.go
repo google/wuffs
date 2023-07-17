@@ -652,7 +652,7 @@ func (g *gen) writeBuiltinCPUArchX86(b *buffer, recv *a.Expr, method t.ID, args 
 			fName, tName = "_mm256_set1_epi32", "int32_t"
 		case "make_m256i_repeat_u64":
 			fName, tName = "_mm256_set1_epi64x", "int64_t"
-		case "make_m256i_slice256":
+		case "make_m256i_slice256", "make_m256i_slice_u16lex16":
 			fName, tName, ptr = "_mm256_lddqu_si256", "const __m256i*)(const void*", true
 		case "make_m256i_zeroes":
 			fName, tName = "_mm256_setzero_si256", ""
@@ -690,18 +690,41 @@ func (g *gen) writeBuiltinCPUArchX86(b *buffer, recv *a.Expr, method t.ID, args 
 			// avoid a "expression result unused" compiler error.
 			b.writes("(")
 		}
-		switch methodStr {
-		case "store_slice64":
-			b.writes("_mm_storeu_si64((void*)(")
-		case "store_slice128":
-			b.writes("_mm_storeu_si128((__m128i*)(void*)(")
+		prefix, cast := "", ""
+		switch recv.MType().QID() {
+		case [2]t.ID{t.IDBase, t.IDX86M128I}:
+			switch methodStr {
+			case "store_slice64":
+				prefix = "_mm_storeu_si64((void*)("
+			case "store_slice128":
+				prefix = "_mm_storeu_si128((__m128i*)(void*)("
+			}
+		case [2]t.ID{t.IDBase, t.IDX86M256I}:
+			switch methodStr {
+			case "store_slice64":
+				prefix = "_mm_storeu_si64((void*)("
+				cast = "_mm256_castsi256_si128("
+			case "store_slice128":
+				prefix = "_mm_storeu_si128((__m128i*)(void*)("
+				cast = "_mm256_castsi256_si128("
+			case "store_slice256":
+				prefix = "_mm256_storeu_si256((__m256i*)(void*)("
+			}
 		}
+		if prefix == "" {
+			return fmt.Errorf("internal error: unsupported cpu_arch method %q", methodStr)
+		}
+		b.writes(prefix)
 		if err := g.writeExprDotPtr(b, args[0].AsArg().Value(), false, depth); err != nil {
 			return err
 		}
 		b.writes("), ")
+		b.writes(cast)
 		if err := g.writeExpr(b, recv, false, depth); err != nil {
 			return err
+		}
+		if cast != "" {
+			b.writes(")")
 		}
 		b.writes(")")
 		if !sideEffectsOnly {

@@ -597,7 +597,7 @@ test_wuffs_jpeg_decode_idct() {
 #if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
     } else if (wuffs_base__cpu_arch__have_x86_avx2()) {
       func_name = "x86_avx2";
-      // TODO: func = &wuffs_jpeg__decoder__decode_idct_x86_avx2;
+      func = &wuffs_jpeg__decoder__decode_idct_x86_avx2;
 #endif
     }
 

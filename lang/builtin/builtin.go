@@ -870,10 +870,15 @@ var funcsOther = [...]string{
 	"x86_avx2_utility.make_m256i_repeat_u64(a: u64) x86_m256i",
 
 	"x86_avx2_utility.make_m256i_slice256(a: roslice base.u8) x86_m256i",
+	"x86_avx2_utility.make_m256i_slice_u16lex16(a: roslice base.u16) x86_m256i",
 
 	"x86_avx2_utility.make_m256i_zeroes() x86_m256i",
 
 	// ---- x86_m256i
+
+	"x86_m256i.store_slice64!(a: slice base.u8)",
+	"x86_m256i.store_slice128!(a: slice base.u8)",
+	"x86_m256i.store_slice256!(a: slice base.u8)",
 
 	// TODO: generate these methods automatically?
 
@@ -881,18 +886,41 @@ var funcsOther = [...]string{
 	"x86_m256i._mm256_add_epi32(b: x86_m256i) x86_m256i",
 	"x86_m256i._mm256_add_epi64(b: x86_m256i) x86_m256i",
 	"x86_m256i._mm256_add_epi8(b: x86_m256i) x86_m256i",
+	"x86_m256i._mm256_extract_epi64(index: u32) u64",
 	"x86_m256i._mm256_extracti128_si256(imm8: u32) x86_m128i",
 	"x86_m256i._mm256_madd_epi16(b: x86_m256i) x86_m256i",
 	"x86_m256i._mm256_maddubs_epi16(b: x86_m256i) x86_m256i",
+	"x86_m256i._mm256_mullo_epi16(b: x86_m256i) x86_m256i",
+	"x86_m256i._mm256_packs_epi16(b: x86_m256i) x86_m256i",
+	"x86_m256i._mm256_packs_epi32(b: x86_m256i) x86_m256i",
+	"x86_m256i._mm256_permute2x128_si256(b: x86_m256i, imm8: u32) x86_m256i",
+	"x86_m256i._mm256_permute4x64_epi64(imm8: u32) x86_m256i",
 	"x86_m256i._mm256_sad_epu8(b: x86_m256i) x86_m256i",
+	"x86_m256i._mm256_sign_epi16(b: x86_m256i) x86_m256i",
 	"x86_m256i._mm256_slli_epi16(imm8: u32) x86_m256i",
 	"x86_m256i._mm256_slli_epi32(imm8: u32) x86_m256i",
 	"x86_m256i._mm256_slli_epi64(imm8: u32) x86_m256i",
 	"x86_m256i._mm256_slli_si256(imm8: u32) x86_m256i",
+	"x86_m256i._mm256_srai_epi16(imm8: u32) x86_m256i",
+	"x86_m256i._mm256_srai_epi32(imm8: u32) x86_m256i",
+	"x86_m256i._mm256_srai_epi64(imm8: u32) x86_m256i",
+	"x86_m256i._mm256_srai_si256(imm8: u32) x86_m256i",
 	"x86_m256i._mm256_srli_epi16(imm8: u32) x86_m256i",
 	"x86_m256i._mm256_srli_epi32(imm8: u32) x86_m256i",
 	"x86_m256i._mm256_srli_epi64(imm8: u32) x86_m256i",
 	"x86_m256i._mm256_srli_si256(imm8: u32) x86_m256i",
+	"x86_m256i._mm256_sub_epi16(b: x86_m256i) x86_m256i",
+	"x86_m256i._mm256_sub_epi32(b: x86_m256i) x86_m256i",
+	"x86_m256i._mm256_sub_epi64(b: x86_m256i) x86_m256i",
+	"x86_m256i._mm256_sub_epi8(b: x86_m256i) x86_m256i",
+	"x86_m256i._mm256_unpackhi_epi16(b: x86_m256i) x86_m256i",
+	"x86_m256i._mm256_unpackhi_epi32(b: x86_m256i) x86_m256i",
+	"x86_m256i._mm256_unpackhi_epi64(b: x86_m256i) x86_m256i",
+	"x86_m256i._mm256_unpackhi_epi8(b: x86_m256i) x86_m256i",
+	"x86_m256i._mm256_unpacklo_epi16(b: x86_m256i) x86_m256i",
+	"x86_m256i._mm256_unpacklo_epi32(b: x86_m256i) x86_m256i",
+	"x86_m256i._mm256_unpacklo_epi64(b: x86_m256i) x86_m256i",
+	"x86_m256i._mm256_unpacklo_epi8(b: x86_m256i) x86_m256i",
 }
 
 var Interfaces = []string{

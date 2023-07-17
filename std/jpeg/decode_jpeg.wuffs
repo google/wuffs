@@ -466,6 +466,10 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
         this.payload_length = 0
     } endwhile
 
+    choose decode_idct = [
+            // TODO: decode_idct_arm_neon,
+            decode_idct_x86_avx2]
+
     this.frame_config_io_position = args.src.position()
 
     if args.dst <> nullptr {
