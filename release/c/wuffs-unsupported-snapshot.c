@@ -40373,14 +40373,14 @@ wuffs_jpeg__decoder__decode_idct_x86_avx2(
   v_finaldh = _mm256_unpackhi_epi64(v_ftc0d0g0h0, v_ftc4d4g4h4);
   v_final0145 = _mm256_add_epi8(_mm256_packs_epi16(v_finalae, v_finalbf), v_k_8080);
   v_final2367 = _mm256_add_epi8(_mm256_packs_epi16(v_finalcg, v_finaldh), v_k_8080);
-  v_final0 = _mm256_extract_epi64(v_final0145, (int32_t)(0u));
-  v_final1 = _mm256_extract_epi64(v_final0145, (int32_t)(1u));
-  v_final2 = _mm256_extract_epi64(v_final2367, (int32_t)(0u));
-  v_final3 = _mm256_extract_epi64(v_final2367, (int32_t)(1u));
-  v_final4 = _mm256_extract_epi64(v_final0145, (int32_t)(2u));
-  v_final5 = _mm256_extract_epi64(v_final0145, (int32_t)(3u));
-  v_final6 = _mm256_extract_epi64(v_final2367, (int32_t)(2u));
-  v_final7 = _mm256_extract_epi64(v_final2367, (int32_t)(3u));
+  v_final0 = ((uint64_t)(_mm256_extract_epi64(v_final0145, (int32_t)(0u))));
+  v_final1 = ((uint64_t)(_mm256_extract_epi64(v_final0145, (int32_t)(1u))));
+  v_final2 = ((uint64_t)(_mm256_extract_epi64(v_final2367, (int32_t)(0u))));
+  v_final3 = ((uint64_t)(_mm256_extract_epi64(v_final2367, (int32_t)(1u))));
+  v_final4 = ((uint64_t)(_mm256_extract_epi64(v_final0145, (int32_t)(2u))));
+  v_final5 = ((uint64_t)(_mm256_extract_epi64(v_final0145, (int32_t)(3u))));
+  v_final6 = ((uint64_t)(_mm256_extract_epi64(v_final2367, (int32_t)(2u))));
+  v_final7 = ((uint64_t)(_mm256_extract_epi64(v_final2367, (int32_t)(3u))));
   if (a_dst_stride > ((uint64_t)(a_dst_buffer.len))) {
     return wuffs_base__make_empty_struct();
   }

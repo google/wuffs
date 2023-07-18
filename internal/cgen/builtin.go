@@ -96,7 +96,7 @@ func (g *gen) writeBuiltinCall(b *buffer, n *a.Expr, sideEffectsOnly bool, depth
 	if qid[1].IsNumType() {
 		return g.writeBuiltinNumType(b, recv, method.Ident(), n.Args(), depth)
 	} else if qid[1].IsBuiltInCPUArch() {
-		return g.writeBuiltinCPUArch(b, recv, method.Ident(), n.Args(), sideEffectsOnly, depth)
+		return g.writeBuiltinCPUArch(b, recv, method.Ident(), n.MType(), n.Args(), sideEffectsOnly, depth)
 	} else {
 		switch qid[1] {
 		case t.IDIOReader:
@@ -450,7 +450,7 @@ func (g *gen) writeBuiltinTokenWriter(b *buffer, recv *a.Expr, method t.ID, args
 	return g.writeBuiltinIO(b, recv, method, args, depth)
 }
 
-func (g *gen) writeBuiltinCPUArch(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, sideEffectsOnly bool, depth uint32) error {
+func (g *gen) writeBuiltinCPUArch(b *buffer, recv *a.Expr, method t.ID, returnType *a.TypeExpr, args []*a.Node, sideEffectsOnly bool, depth uint32) error {
 	switch id := recv.MType().QID()[1]; {
 	case id == t.IDARMCRC32Utility, id == t.IDARMCRC32U32:
 		return g.writeBuiltinCPUArchARMCRC32(b, recv, method, args, sideEffectsOnly, depth)
@@ -458,7 +458,7 @@ func (g *gen) writeBuiltinCPUArch(b *buffer, recv *a.Expr, method t.ID, args []*
 		return g.writeBuiltinCPUArchARMNeon(b, recv, method, args, sideEffectsOnly, depth)
 	case id == t.IDX86SSE42Utility, id == t.IDX86M128I,
 		id == t.IDX86AVX2Utility, id == t.IDX86M256I:
-		return g.writeBuiltinCPUArchX86(b, recv, method, args, sideEffectsOnly, depth)
+		return g.writeBuiltinCPUArchX86(b, recv, method, returnType, args, sideEffectsOnly, depth)
 	}
 	return fmt.Errorf("internal error: unsupported cpu_arch method %s.%s",
 		recv.MType().Str(g.tm), method.Str(g.tm))
@@ -606,7 +606,7 @@ func (g *gen) writeBuiltinCPUArchARMNeon(b *buffer, recv *a.Expr, method t.ID, a
 	return nil
 }
 
-func (g *gen) writeBuiltinCPUArchX86(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, sideEffectsOnly bool, depth uint32) error {
+func (g *gen) writeBuiltinCPUArchX86(b *buffer, recv *a.Expr, method t.ID, returnType *a.TypeExpr, args []*a.Node, sideEffectsOnly bool, depth uint32) error {
 	methodStr := method.Str(g.tm)
 	if strings.HasPrefix(methodStr, "make_") {
 		fName, tName, ptr := "", "", false
@@ -744,19 +744,12 @@ func (g *gen) writeBuiltinCPUArchX86(b *buffer, recv *a.Expr, method t.ID, args 
 		b.writes(")))")
 		return nil
 
-	} else if strings.HasPrefix(methodStr, "_mm_extract_epi") {
-		size := methodStr[len("_mm_extract_epi"):]
-		b.printf("((uint%s_t)(_mm_extract_epi%s(", size, size)
-		if err := g.writeExpr(b, recv, false, depth); err != nil {
-			return err
-		}
-		b.writes(", ")
-		b.writes("(int32_t)(")
-		if err := g.writeExpr(b, args[0].AsArg().Value(), false, depth); err != nil {
-			return err
-		}
-		b.writes("))))")
-		return nil
+	}
+
+	if returnType.IsNumType() {
+		b.writes("((")
+		b.writes(cTypeNames[returnType.QID()[1]])
+		b.writes(")(")
 	}
 
 	b.writes(methodStr)
@@ -777,6 +770,10 @@ func (g *gen) writeBuiltinCPUArchX86(b *buffer, recv *a.Expr, method t.ID, args 
 		b.writes(argAfter)
 	}
 	b.writes(")")
+
+	if returnType.IsNumType() {
+		b.writes("))")
+	}
 	return nil
 }
 
