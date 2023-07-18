@@ -893,6 +893,7 @@ var funcsOther = [...]string{
 	"x86_m256i._mm256_add_epi32(b: x86_m256i) x86_m256i",
 	"x86_m256i._mm256_add_epi64(b: x86_m256i) x86_m256i",
 	"x86_m256i._mm256_add_epi8(b: x86_m256i) x86_m256i",
+	"x86_m256i._mm256_and_si256(b: x86_m256i) x86_m256i",
 	"x86_m256i._mm256_castsi256_si128() x86_m128i",
 	"x86_m256i._mm256_extract_epi64(index: u32) u64",
 	"x86_m256i._mm256_extracti128_si256(imm8: u32) x86_m128i",
@@ -900,6 +901,7 @@ var funcsOther = [...]string{
 	"x86_m256i._mm256_madd_epi16(b: x86_m256i) x86_m256i",
 	"x86_m256i._mm256_maddubs_epi16(b: x86_m256i) x86_m256i",
 	"x86_m256i._mm256_mullo_epi16(b: x86_m256i) x86_m256i",
+	"x86_m256i._mm256_or_si256(b: x86_m256i) x86_m256i",
 	"x86_m256i._mm256_packs_epi16(b: x86_m256i) x86_m256i",
 	"x86_m256i._mm256_packs_epi32(b: x86_m256i) x86_m256i",
 	"x86_m256i._mm256_permute2x128_si256(b: x86_m256i, imm8: u32) x86_m256i",
@@ -923,6 +925,7 @@ var funcsOther = [...]string{
 	"x86_m256i._mm256_sub_epi32(b: x86_m256i) x86_m256i",
 	"x86_m256i._mm256_sub_epi64(b: x86_m256i) x86_m256i",
 	"x86_m256i._mm256_sub_epi8(b: x86_m256i) x86_m256i",
+	"x86_m256i._mm256_testz_si256(b: x86_m256i) u32",
 	"x86_m256i._mm256_unpackhi_epi16(b: x86_m256i) x86_m256i",
 	"x86_m256i._mm256_unpackhi_epi32(b: x86_m256i) x86_m256i",
 	"x86_m256i._mm256_unpackhi_epi64(b: x86_m256i) x86_m256i",
@@ -931,6 +934,7 @@ var funcsOther = [...]string{
 	"x86_m256i._mm256_unpacklo_epi32(b: x86_m256i) x86_m256i",
 	"x86_m256i._mm256_unpacklo_epi64(b: x86_m256i) x86_m256i",
 	"x86_m256i._mm256_unpacklo_epi8(b: x86_m256i) x86_m256i",
+	"x86_m256i._mm256_xor_si256(b: x86_m256i) x86_m256i",
 }
 
 var Interfaces = []string{
