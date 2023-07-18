@@ -40063,6 +40063,11 @@ wuffs_jpeg__decoder__decode_idct_x86_avx2(
   __m256i v_k_E333_133E_ADFD_1051 = {0};
   __m256i v_k_E6DC_25A1_1925_25A1 = {0};
   __m256i v_k_ECC1_E333_EFB0_ADFD = {0};
+  __m128i v_az_coeffs = {0};
+  __m256i v_az_ah00 = {0};
+  __m256i v_az_ad00 = {0};
+  __m256i v_az_eh00 = {0};
+  __m256i v_az_adeh = {0};
   __m256i v_rows01 = {0};
   __m256i v_rows23 = {0};
   __m256i v_rows45 = {0};
@@ -40216,6 +40221,23 @@ wuffs_jpeg__decoder__decode_idct_x86_avx2(
   v_k_E6DC_25A1_1925_25A1 = _mm256_set_epi16((int16_t)(9633u), (int16_t)(6437u), (int16_t)(9633u), (int16_t)(6437u), (int16_t)(9633u), (int16_t)(6437u), (int16_t)(9633u), (int16_t)(6437u), (int16_t)(9633u), (int16_t)(59100u), (int16_t)(9633u), (int16_t)(59100u), (int16_t)(9633u), (int16_t)(59100u), (int16_t)(9633u), (int16_t)(59100u));
   v_k_ECC1_E333_EFB0_ADFD = _mm256_set_epi16((int16_t)(44541u), (int16_t)(61360u), (int16_t)(44541u), (int16_t)(61360u), (int16_t)(44541u), (int16_t)(61360u), (int16_t)(44541u), (int16_t)(61360u), (int16_t)(58163u), (int16_t)(60609u), (int16_t)(58163u), (int16_t)(60609u), (int16_t)(58163u), (int16_t)(60609u), (int16_t)(58163u), (int16_t)(60609u));
   do {
+    if (0u == (wuffs_base__peek_u64le__no_bounds_check((const uint8_t*)(const void*)(self->private_data.f_mcu_blocks[0u] + 8u)) | wuffs_base__peek_u64le__no_bounds_check((const uint8_t*)(const void*)(self->private_data.f_mcu_blocks[0u] + 16u)))) {
+      v_az_coeffs = _mm_or_si128(_mm_or_si128(_mm_or_si128(_mm_or_si128(_mm_or_si128(_mm_or_si128(_mm_lddqu_si128((const __m128i*)(const void*)(self->private_data.f_mcu_blocks[0u] + 8u)), _mm_lddqu_si128((const __m128i*)(const void*)(self->private_data.f_mcu_blocks[0u] + 16u))), _mm_lddqu_si128((const __m128i*)(const void*)(self->private_data.f_mcu_blocks[0u] + 24u))), _mm_lddqu_si128((const __m128i*)(const void*)(self->private_data.f_mcu_blocks[0u] + 32u))), _mm_lddqu_si128((const __m128i*)(const void*)(self->private_data.f_mcu_blocks[0u] + 40u))), _mm_lddqu_si128((const __m128i*)(const void*)(self->private_data.f_mcu_blocks[0u] + 48u))), _mm_lddqu_si128((const __m128i*)(const void*)(self->private_data.f_mcu_blocks[0u] + 56u)));
+      if (0u == ((uint64_t)(_mm_cvtsi128_si64(_mm_packs_epi16(v_az_coeffs, v_az_coeffs))))) {
+        v_rows01 = _mm256_lddqu_si256((const __m256i*)(const void*)(self->private_data.f_mcu_blocks[0u] + 0u));
+        v_quants01 = _mm256_lddqu_si256((const __m256i*)(const void*)(self->private_impl.f_quant_tables[a_q] + 0u));
+        v_rows01 = _mm256_mullo_epi16(v_rows01, v_quants01);
+        v_az_ah00 = _mm256_slli_epi16(v_rows01, (int32_t)(2u));
+        v_az_ad00 = _mm256_unpacklo_epi16(v_az_ah00, v_az_ah00);
+        v_az_eh00 = _mm256_unpackhi_epi16(v_az_ah00, v_az_ah00);
+        v_az_adeh = _mm256_inserti128_si256(v_az_ad00, _mm256_castsi256_si128(v_az_eh00), (int32_t)(1u));
+        v_intermediateae = _mm256_shuffle_epi32(v_az_adeh, (int32_t)(0u));
+        v_intermediatebf = _mm256_shuffle_epi32(v_az_adeh, (int32_t)(85u));
+        v_intermediatecg = _mm256_shuffle_epi32(v_az_adeh, (int32_t)(170u));
+        v_intermediatedh = _mm256_shuffle_epi32(v_az_adeh, (int32_t)(255u));
+        break;
+      }
+    }
     v_rows01 = _mm256_lddqu_si256((const __m256i*)(const void*)(self->private_data.f_mcu_blocks[0u] + 0u));
     v_rows23 = _mm256_lddqu_si256((const __m256i*)(const void*)(self->private_data.f_mcu_blocks[0u] + 16u));
     v_rows45 = _mm256_lddqu_si256((const __m256i*)(const void*)(self->private_data.f_mcu_blocks[0u] + 32u));

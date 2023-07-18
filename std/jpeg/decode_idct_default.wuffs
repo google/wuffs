@@ -16,6 +16,8 @@ pri func decoder.decode_idct!(dst_buffer: slice base.u8, dst_stride: base.u64, q
         choosy,
 {
     // This method implements the same algorithm as libjpeg-turbo's jidctint.c.
+    // It defines CONST_BITS = 13 and PASS1_BITS = 2, so that right-shifting by
+    // 11 is to shift by (CONST_BITS - PASS1_BITS).
 
     var bq0 : base.u32
     var bq2 : base.u32

@@ -15,7 +15,10 @@
 pri func decoder.decode_idct_x86_avx2!(dst_buffer: slice base.u8, dst_stride: base.u64, q: base.u32[..= 3]),
         choose cpu_arch >= x86_avx2,
 {
-    var util : base.x86_avx2_utility
+    var sse42_util : base.x86_sse42_utility
+    var util       : base.x86_avx2_utility
+
+    // SIMD constants.
 
     var k_0000 : base.x86_m256i
     var k_8080 : base.x86_m256i
@@ -28,6 +31,16 @@ pri func decoder.decode_idct_x86_avx2!(dst_buffer: slice base.u8, dst_stride: ba
     var k_E333_133E_ADFD_1051 : base.x86_m256i
     var k_E6DC_25A1_1925_25A1 : base.x86_m256i
     var k_ECC1_E333_EFB0_ADFD : base.x86_m256i
+
+    // "Are the AC terms zero" variable names start with "az_".
+
+    var az_coeffs : base.x86_m128i
+    var az_ah00   : base.x86_m256i
+    var az_ad00   : base.x86_m256i
+    var az_eh00   : base.x86_m256i
+    var az_adeh   : base.x86_m256i
+
+    // Set up variables.
 
     var rows01 : base.x86_m256i
     var rows23 : base.x86_m256i
@@ -261,14 +274,57 @@ pri func decoder.decode_idct_x86_avx2!(dst_buffer: slice base.u8, dst_stride: ba
             inv 8 <= args.dst_stride,
     {{
 
-    // TODO: faster code path (and break.goto_do_second_pass) if the AC terms
-    // are zero.
+    // Name the columns a ..= h and the rows 0 ..= 7.
+    //
+    // Check if the AC terms are zero. First, a relative cheap check of the
+    // (a1, b1, c1, d1, a2, b2, c2, d2) coefficients - two half-rows.
+    if 0 == (util.make_u64_slice_u16lex4(a: this.mcu_blocks[0][0x08 .. 0x0C]) |
+            util.make_u64_slice_u16lex4(a: this.mcu_blocks[0][0x10 .. 0x14])) {
+
+        // A more thorough check of every coefficient in rows 1 ..= 7.
+        az_coeffs = sse42_util.make_m128i_slice_u16lex8(a: this.mcu_blocks[0][0x08 .. 0x10])._mm_or_si128(b:
+                sse42_util.make_m128i_slice_u16lex8(a: this.mcu_blocks[0][0x10 .. 0x18]))._mm_or_si128(b:
+                sse42_util.make_m128i_slice_u16lex8(a: this.mcu_blocks[0][0x18 .. 0x20]))._mm_or_si128(b:
+                sse42_util.make_m128i_slice_u16lex8(a: this.mcu_blocks[0][0x20 .. 0x28]))._mm_or_si128(b:
+                sse42_util.make_m128i_slice_u16lex8(a: this.mcu_blocks[0][0x28 .. 0x30]))._mm_or_si128(b:
+                sse42_util.make_m128i_slice_u16lex8(a: this.mcu_blocks[0][0x30 .. 0x38]))._mm_or_si128(b:
+                sse42_util.make_m128i_slice_u16lex8(a: this.mcu_blocks[0][0x38 .. 0x40]))
+
+        // Pack u16x8 into u8x8 in the low 64 bits (using signed saturation)
+        // and bulk-compare to zero. Only "zero versus non-zero" matters.
+        if 0 == az_coeffs._mm_packs_epi16(b: az_coeffs).truncate_u64() {
+            // Dequantize, similar to the "Set up" code path below.
+            rows01 = util.make_m256i_slice_u16lex16(a: this.mcu_blocks[0][0x00 .. 0x10])
+            quants01 = util.make_m256i_slice_u16lex16(a: this.quant_tables[args.q][0x00 .. 0x10])
+            rows01 = rows01._mm256_mullo_epi16(b: quants01)
+
+            // az_ah00 = i16x16 [a b c d e f g h   0 0 0 0 0 0 0 0]
+            // az_ad00 = i16x16 [a a b b c c d d   0 0 0 0 0 0 0 0]
+            // az_eh00 = i16x16 [e e f f g g h h   0 0 0 0 0 0 0 0]
+            // az_adeh = i16x16 [a a b b c c d d   e e f f g g h h]
+            az_ah00 = rows01._mm256_slli_epi16(imm8: 2)  // PASS1_BITS is 2.
+            az_ad00 = az_ah00._mm256_unpacklo_epi16(b: az_ah00)
+            az_eh00 = az_ah00._mm256_unpackhi_epi16(b: az_ah00)
+            az_adeh = az_ad00._mm256_inserti128_si256(b: az_eh00._mm256_castsi256_si128(), imm8: 1)
+
+            // intermediateae = i16x16 [a a a a a a a a   e e e e e e e e]
+            // intermediatebf = i16x16 [b b b b b b b b   f f f f f f f f]
+            // intermediatecg = i16x16 [c c c c c c c c   g g g g g g g g]
+            // intermediatedh = i16x16 [d d d d d d d d   h h h h h h h h]
+            intermediateae = az_adeh._mm256_shuffle_epi32(imm8: 0x00)
+            intermediatebf = az_adeh._mm256_shuffle_epi32(imm8: 0x55)
+            intermediatecg = az_adeh._mm256_shuffle_epi32(imm8: 0xAA)
+            intermediatedh = az_adeh._mm256_shuffle_epi32(imm8: 0xFF)
+
+            break.goto_do_second_pass
+        }
+    }
 
     // ----
 
     // Set up.
 
-    // Dequantize. Name the columns a ..= h and the rows 0 ..= 7 so we get:
+    // Dequantize:
     //
     // rows01 = i16x16 [a0 b0 .. g0 h0
     //                  a1 b1 .. g1 h1]

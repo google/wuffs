@@ -770,8 +770,11 @@ var funcsOther = [...]string{
 	"x86_sse42_utility.make_m128i_single_u64(a: u64) x86_m128i",
 
 	"x86_sse42_utility.make_m128i_slice128(a: roslice base.u8) x86_m128i",
+	"x86_sse42_utility.make_m128i_slice_u16lex8(a: roslice base.u16) x86_m128i",
 
 	"x86_sse42_utility.make_m128i_zeroes() x86_m128i",
+
+	"x86_sse42_utility.make_u64_slice_u16lex4(a: roslice base.u16) u64",
 
 	// ---- x86_m128i
 
@@ -816,6 +819,8 @@ var funcsOther = [...]string{
 	"x86_m128i._mm_min_epu16(b: x86_m128i) x86_m128i",
 	"x86_m128i._mm_min_epu32(b: x86_m128i) x86_m128i",
 	"x86_m128i._mm_min_epu8(b: x86_m128i) x86_m128i",
+	"x86_m128i._mm_or_si128(b: x86_m128i) x86_m128i",
+	"x86_m128i._mm_packs_epi16(b: x86_m128i) x86_m128i",
 	"x86_m128i._mm_packus_epi16(b: x86_m128i) x86_m128i",
 	"x86_m128i._mm_sad_epu8(b: x86_m128i) x86_m128i",
 	"x86_m128i._mm_shuffle_epi32(imm8: u32) x86_m128i",
@@ -874,6 +879,8 @@ var funcsOther = [...]string{
 
 	"x86_avx2_utility.make_m256i_zeroes() x86_m256i",
 
+	"x86_avx2_utility.make_u64_slice_u16lex4(a: roslice base.u16) u64",
+
 	// ---- x86_m256i
 
 	"x86_m256i.store_slice64!(a: slice base.u8)",
@@ -886,8 +893,10 @@ var funcsOther = [...]string{
 	"x86_m256i._mm256_add_epi32(b: x86_m256i) x86_m256i",
 	"x86_m256i._mm256_add_epi64(b: x86_m256i) x86_m256i",
 	"x86_m256i._mm256_add_epi8(b: x86_m256i) x86_m256i",
+	"x86_m256i._mm256_castsi256_si128() x86_m128i",
 	"x86_m256i._mm256_extract_epi64(index: u32) u64",
 	"x86_m256i._mm256_extracti128_si256(imm8: u32) x86_m128i",
+	"x86_m256i._mm256_inserti128_si256(b: x86_m128i, imm8: u32) x86_m256i",
 	"x86_m256i._mm256_madd_epi16(b: x86_m256i) x86_m256i",
 	"x86_m256i._mm256_maddubs_epi16(b: x86_m256i) x86_m256i",
 	"x86_m256i._mm256_mullo_epi16(b: x86_m256i) x86_m256i",
@@ -896,6 +905,7 @@ var funcsOther = [...]string{
 	"x86_m256i._mm256_permute2x128_si256(b: x86_m256i, imm8: u32) x86_m256i",
 	"x86_m256i._mm256_permute4x64_epi64(imm8: u32) x86_m256i",
 	"x86_m256i._mm256_sad_epu8(b: x86_m256i) x86_m256i",
+	"x86_m256i._mm256_shuffle_epi32(imm8: u32) x86_m256i",
 	"x86_m256i._mm256_sign_epi16(b: x86_m256i) x86_m256i",
 	"x86_m256i._mm256_slli_epi16(imm8: u32) x86_m256i",
 	"x86_m256i._mm256_slli_epi32(imm8: u32) x86_m256i",

@@ -611,6 +611,9 @@ func (g *gen) writeBuiltinCPUArchX86(b *buffer, recv *a.Expr, method t.ID, args 
 	if strings.HasPrefix(methodStr, "make_") {
 		fName, tName, ptr := "", "", false
 		switch methodStr {
+		case "make_u64_slice_u16lex4":
+			fName, tName, ptr = "wuffs_base__peek_u64le__no_bounds_check", "const uint8_t*)(const void*", true
+
 		case "make_m128i_multiple_u8":
 			fName, tName = "_mm_set_epi8", "int8_t"
 		case "make_m128i_multiple_u16":
@@ -631,7 +634,7 @@ func (g *gen) writeBuiltinCPUArchX86(b *buffer, recv *a.Expr, method t.ID, args 
 			fName, tName = "_mm_cvtsi32_si128", "int32_t"
 		case "make_m128i_single_u64":
 			fName, tName = "_mm_cvtsi64x_si128", "int64_t"
-		case "make_m128i_slice128":
+		case "make_m128i_slice128", "make_m128i_slice_u16lex8":
 			fName, tName, ptr = "_mm_lddqu_si128", "const __m128i*)(const void*", true
 		case "make_m128i_zeroes":
 			fName, tName = "_mm_setzero_si128", ""
