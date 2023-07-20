@@ -14,6 +14,21 @@
 
 // --------
 
+#if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
+WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2,avx2")
+static void  //
+wuffs_base__pixel_swizzler__swizzle_ycc__convert_bgrx_x86_avx2(
+    wuffs_base__pixel_buffer* dst,
+    uint32_t x,
+    uint32_t x_end,
+    uint32_t y,
+    const uint8_t* up0,
+    const uint8_t* up1,
+    const uint8_t* up2);
+#endif
+
+// --------
+
 static inline uint32_t  //
 wuffs_base__u32__max_of_4(uint32_t a, uint32_t b, uint32_t c, uint32_t d) {
   return wuffs_base__u32__max(     //
@@ -950,6 +965,13 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__BGRX:
+#if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
+      if (wuffs_base__cpu_arch__have_x86_sse42()) {
+        convfunc =
+            &wuffs_base__pixel_swizzler__swizzle_ycc__convert_bgrx_x86_avx2;
+        break;
+      }
+#endif
       convfunc = &wuffs_base__pixel_swizzler__swizzle_ycc__convert_bgrx;
       break;
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
