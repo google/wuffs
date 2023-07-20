@@ -37,10 +37,6 @@ func insertBasePixConvSubmoduleYcckC(buf *buffer) error {
 		"size_t dst_stride = dst->private_impl.planes[0].stride;\n" +
 		"uint8_t* dst_iter =\n" +
 		"    dst->private_impl.planes[0].ptr + (dst_stride * ((size_t)y));\n"
-	const dstIterEtcWithX = "" +
-		"size_t dst_stride = dst->private_impl.planes[0].stride;\n" +
-		"uint8_t* dst_iter =\n" +
-		"    dst->private_impl.planes[0].ptr + (dst_stride * ((size_t)y)) + (4 * ((size_t)x));\n"
 	const dstIterPlusEq4 = "" +
 		"dst_iter += 4;\n"
 	const setColorU32AtOld = "" +
@@ -60,18 +56,6 @@ func insertBasePixConvSubmoduleYcckC(buf *buffer) error {
 			"wuffs_base__pixel_swizzler__swizzle_ycc__rgbx__hv11(\n",
 		},
 		map[string]string{},
-	}, {
-
-		[]string{
-			"wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter(\n",
-			"wuffs_base__pixel_swizzler__swizzle_ycc__bgrx__triangle_filter(\n",
-			"wuffs_base__pixel_swizzler__swizzle_ycc__rgbx__triangle_filter(\n",
-		},
-		map[string]string{
-			"// ¡ dst_iter = etc\n": dstIterEtcWithX,
-			"// ¡ dst_iter += 4\n":  dstIterPlusEq4,
-			setColorU32AtOld:        setColorU32AtNew,
-		},
 	}, {
 
 		[]string{
