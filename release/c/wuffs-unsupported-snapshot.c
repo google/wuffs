@@ -23568,6 +23568,17 @@ wuffs_base__pixel_swizzler__swizzle_ycc__convert_rgbx_x86_avx2(
     const uint8_t* up0,
     const uint8_t* up1,
     const uint8_t* up2);
+
+WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2,avx2")
+static const uint8_t*  //
+wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h2v2_triangle_x86_avx2(
+    uint8_t* dst_ptr,
+    const uint8_t* src_ptr_major,
+    const uint8_t* src_ptr_minor,
+    size_t src_len,
+    uint32_t h1v2_bias_ignored,
+    bool first_column,
+    bool last_column);
 #endif
 
 // --------
@@ -24061,16 +24072,15 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter(
     uint32_t half_width_for_2to1,
     uint32_t half_height_for_2to1,
     uint8_t* scratch_buffer_2k_ptr,
+    const wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func (
+        *upfuncs)[4][4],
     wuffs_base__pixel_swizzler__swizzle_ycc__convert_func convfunc) {
   wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func upfunc0 =
-      wuffs_base__pixel_swizzler__swizzle_ycc__upsample_funcs
-          [(inv_h0 - 1u) & 3u][(inv_v0 - 1u) & 3u];
+      (*upfuncs)[(inv_h0 - 1u) & 3u][(inv_v0 - 1u) & 3u];
   wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func upfunc1 =
-      wuffs_base__pixel_swizzler__swizzle_ycc__upsample_funcs
-          [(inv_h1 - 1u) & 3u][(inv_v1 - 1u) & 3u];
+      (*upfuncs)[(inv_h1 - 1u) & 3u][(inv_v1 - 1u) & 3u];
   wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func upfunc2 =
-      wuffs_base__pixel_swizzler__swizzle_ycc__upsample_funcs
-          [(inv_h2 - 1u) & 3u][(inv_v2 - 1u) & 3u];
+      (*upfuncs)[(inv_h2 - 1u) & 3u][(inv_v2 - 1u) & 3u];
 
   // First row.
   uint32_t h1v2_bias = 1u;
@@ -24194,6 +24204,8 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter(
     uint32_t half_width_for_2to1,
     uint32_t half_height_for_2to1,
     uint8_t* scratch_buffer_2k_ptr,
+    const wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func (
+        *upfuncs)[4][4],
     wuffs_base__pixel_swizzler__swizzle_ycc__convert_func convfunc) {
   // Convert an inv_h or inv_v value from {1, 2, 3, 4} to {12, 6, 4, 3}.
   uint32_t h0_out_of_12 = 12u / inv_h0;
@@ -24293,6 +24305,8 @@ wuffs_base__pixel_swizzler__swizzle_ycc__bgrx__hv11(
     uint32_t half_width_for_2to1,
     uint32_t half_height_for_2to1,
     uint8_t* scratch_buffer_2k_ptr,
+    const wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func (
+        *upfuncs)[4][4],
     wuffs_base__pixel_swizzler__swizzle_ycc__convert_func convfunc) {
   uint32_t y = 0u;
   for (; y < height; y++) {
@@ -24370,6 +24384,8 @@ wuffs_base__pixel_swizzler__swizzle_ycc__rgbx__hv11(
     uint32_t half_width_for_2to1,
     uint32_t half_height_for_2to1,
     uint8_t* scratch_buffer_2k_ptr,
+    const wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func (
+        *upfuncs)[4][4],
     wuffs_base__pixel_swizzler__swizzle_ycc__convert_func convfunc) {
   uint32_t y = 0u;
   for (; y < height; y++) {
@@ -24446,6 +24462,8 @@ wuffs_base__pixel_swizzler__swizzle_ycc__bgrx__box_filter(
     uint32_t half_width_for_2to1,
     uint32_t half_height_for_2to1,
     uint8_t* scratch_buffer_2k_ptr,
+    const wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func (
+        *upfuncs)[4][4],
     wuffs_base__pixel_swizzler__swizzle_ycc__convert_func convfunc) {
   uint32_t h0_out_of_12 = 12u / inv_h0;
   uint32_t h1_out_of_12 = 12u / inv_h1;
@@ -24542,6 +24560,8 @@ wuffs_base__pixel_swizzler__swizzle_ycc__rgbx__box_filter(
     uint32_t half_width_for_2to1,
     uint32_t half_height_for_2to1,
     uint8_t* scratch_buffer_2k_ptr,
+    const wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func (
+        *upfuncs)[4][4],
     wuffs_base__pixel_swizzler__swizzle_ycc__convert_func convfunc) {
   uint32_t h0_out_of_12 = 12u / inv_h0;
   uint32_t h1_out_of_12 = 12u / inv_h1;
@@ -24816,14 +24836,26 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
                uint32_t half_width_for_2to1,    //
                uint32_t half_height_for_2to1,   //
                uint8_t* scratch_buffer_2k_ptr,  //
+               const wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func(
+                   *upfuncs)[4][4],
                wuffs_base__pixel_swizzler__swizzle_ycc__convert_func convfunc) =
       &wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter;
+
+  wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func upfuncs[4][4];
+  memcpy(&upfuncs, &wuffs_base__pixel_swizzler__swizzle_ycc__upsample_funcs,
+         sizeof upfuncs);
 
   if (triangle_filter_for_2to1 &&
       (wuffs_base__pixel_swizzler__has_triangle_upsampler(inv_h0, inv_v0) ||
        wuffs_base__pixel_swizzler__has_triangle_upsampler(inv_h1, inv_v1) ||
        wuffs_base__pixel_swizzler__has_triangle_upsampler(inv_h2, inv_v2))) {
     func = &wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter;
+#if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
+    if (wuffs_base__cpu_arch__have_x86_sse42()) {
+      upfuncs[1][1] =
+          wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h2v2_triangle_x86_avx2;
+    }
+#endif
 
   } else {
     switch (dst->pixcfg.private_impl.pixfmt.repr) {
@@ -24854,7 +24886,7 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
           inv_h0, inv_h1, inv_h2,                     //
           inv_v0, inv_v1, inv_v2,                     //
           half_width_for_2to1, half_height_for_2to1,  //
-          scratch_buffer_2k.ptr, convfunc);
+          scratch_buffer_2k.ptr, &upfuncs, convfunc);
 
   return wuffs_base__make_status(NULL);
 }
@@ -24881,7 +24913,7 @@ wuffs_base__pixel_swizzler__swizzle_ycc__convert_bgrx_x86_avx2(
 
   size_t dst_stride = dst->private_impl.planes[0].stride;
   uint8_t* dst_iter = dst->private_impl.planes[0].ptr +
-                      (dst_stride * ((size_t)y)) + (4 * ((size_t)x));
+                      (dst_stride * ((size_t)y)) + (4u * ((size_t)x));
 
   // u0001 = u16x16 [0x0001 .. 0x0001]
   // u00FF = u16x16 [0x00FF .. 0x00FF]
@@ -25123,8 +25155,8 @@ wuffs_base__pixel_swizzler__swizzle_ycc__convert_bgrx_x86_avx2(
 
     // Advance by up to 32 pixels. The first iteration might be smaller than 32
     // so that all of the remaining steps are exactly 32.
-    uint32_t n = 32 - (31 & (x - x_end));
-    dst_iter += 4 * n;
+    uint32_t n = 32u - (31u & (x - x_end));
+    dst_iter += 4u * n;
     up0 += n;
     up1 += n;
     up2 += n;
@@ -25152,7 +25184,7 @@ wuffs_base__pixel_swizzler__swizzle_ycc__convert_rgbx_x86_avx2(
 
   size_t dst_stride = dst->private_impl.planes[0].stride;
   uint8_t* dst_iter = dst->private_impl.planes[0].ptr +
-                      (dst_stride * ((size_t)y)) + (4 * ((size_t)x));
+                      (dst_stride * ((size_t)y)) + (4u * ((size_t)x));
 
   const __m256i u0001 = _mm256_set1_epi16(0x0001);
   const __m256i u00FF = _mm256_set1_epi16(0x00FF);
@@ -25271,8 +25303,8 @@ wuffs_base__pixel_swizzler__swizzle_ycc__convert_rgbx_x86_avx2(
     _mm256_storeu_si256((__m256i*)(void*)(dst_iter + 0x40), mix32);
     _mm256_storeu_si256((__m256i*)(void*)(dst_iter + 0x60), mix33);
 
-    uint32_t n = 32 - (31 & (x - x_end));
-    dst_iter += 4 * n;
+    uint32_t n = 32u - (31u & (x - x_end));
+    dst_iter += 4u * n;
     up0 += n;
     up1 += n;
     up2 += n;
@@ -25280,6 +25312,205 @@ wuffs_base__pixel_swizzler__swizzle_ycc__convert_rgbx_x86_avx2(
   }
 }
 
+WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2,avx2")
+static const uint8_t*  //
+wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h2v2_triangle_x86_avx2(
+    uint8_t* dst_ptr,
+    const uint8_t* src_ptr_major,
+    const uint8_t* src_ptr_minor,
+    size_t src_len,
+    uint32_t h1v2_bias_ignored,
+    bool first_column,
+    bool last_column) {
+  uint8_t* dp = dst_ptr;
+  const uint8_t* sp_major = src_ptr_major;
+  const uint8_t* sp_minor = src_ptr_minor;
+
+  if (first_column) {
+    src_len--;
+    if ((src_len <= 0u) && last_column) {
+      uint32_t sv = (12u * ((uint32_t)(*sp_major++))) +  //
+                    (4u * ((uint32_t)(*sp_minor++)));
+      *dp++ = (uint8_t)((sv + 8u) >> 4u);
+      *dp++ = (uint8_t)((sv + 7u) >> 4u);
+      return dst_ptr;
+    }
+
+    uint32_t sv_major_m1 = sp_major[-0];  // Clamp offset to zero.
+    uint32_t sv_minor_m1 = sp_minor[-0];  // Clamp offset to zero.
+    uint32_t sv_major_p1 = sp_major[+1];
+    uint32_t sv_minor_p1 = sp_minor[+1];
+
+    uint32_t sv = (9u * ((uint32_t)(*sp_major++))) +  //
+                  (3u * ((uint32_t)(*sp_minor++)));
+    *dp++ = (uint8_t)((sv + (3u * sv_major_m1) + (sv_minor_m1) + 8u) >> 4u);
+    *dp++ = (uint8_t)((sv + (3u * sv_major_p1) + (sv_minor_p1) + 7u) >> 4u);
+    if (src_len <= 0u) {
+      return dst_ptr;
+    }
+  }
+
+  if (last_column) {
+    src_len--;
+  }
+
+  if (src_len < 32) {
+    // This fallback is the same as the non-SIMD-capable code path.
+    for (; src_len > 0u; src_len--) {
+      uint32_t sv_major_m1 = sp_major[-1];
+      uint32_t sv_minor_m1 = sp_minor[-1];
+      uint32_t sv_major_p1 = sp_major[+1];
+      uint32_t sv_minor_p1 = sp_minor[+1];
+
+      uint32_t sv = (9u * ((uint32_t)(*sp_major++))) +  //
+                    (3u * ((uint32_t)(*sp_minor++)));
+      *dp++ = (uint8_t)((sv + (3u * sv_major_m1) + (sv_minor_m1) + 8u) >> 4u);
+      *dp++ = (uint8_t)((sv + (3u * sv_major_p1) + (sv_minor_p1) + 7u) >> 4u);
+    }
+
+  } else {
+    while (src_len > 0u) {
+      // Load 1+32+1 samples (six u8x32 vectors) from the major (jxx) and minor
+      // (nxx) rows.
+      //
+      // major_p0 = [j00 j01 j02 j03 .. j28 j29 j30 j31]   // p0 = "plus  0"
+      // minor_p0 = [n00 n01 n02 n03 .. n28 n29 n30 n31]   // p0 = "plus  0"
+      // major_m1 = [jm1 j00 j01 j02 .. j27 j28 j29 j30]   // m1 = "minus 1"
+      // minor_m1 = [nm1 n00 n01 n02 .. n27 n28 n29 n30]   // m1 = "minus 1"
+      // major_p1 = [j01 j02 j03 j04 .. j29 j30 j31 j32]   // p1 = "plus  1"
+      // minor_p1 = [n01 n02 n03 n04 .. n29 n30 n31 n32]   // p1 = "plus  1"
+      __m256i major_p0 =
+          _mm256_lddqu_si256((const __m256i*)(const void*)(sp_major + 0));
+      __m256i minor_p0 =
+          _mm256_lddqu_si256((const __m256i*)(const void*)(sp_minor + 0));
+      __m256i major_m1 =
+          _mm256_lddqu_si256((const __m256i*)(const void*)(sp_major - 1));
+      __m256i minor_m1 =
+          _mm256_lddqu_si256((const __m256i*)(const void*)(sp_minor - 1));
+      __m256i major_p1 =
+          _mm256_lddqu_si256((const __m256i*)(const void*)(sp_major + 1));
+      __m256i minor_p1 =
+          _mm256_lddqu_si256((const __m256i*)(const void*)(sp_minor + 1));
+
+      // Unpack, staying with u8x32 vectors.
+      //
+      // step1_p0_lo = [j00 n00 j01 n01 .. j07 n07  j16 n16 j17 n17 .. j23 n23]
+      // step1_p0_hi = [j08 n08 j09 n09 .. j15 n15  j24 n24 j25 n25 .. j31 n31]
+      // step1_m1_lo = [jm1 nm1 j00 n00 .. j06 n06  j15 n15 j16 n16 .. j22 n22]
+      // step1_m1_hi = [j07 n07 j08 n08 .. j14 n14  j23 n23 j24 n24 .. j30 n30]
+      // step1_p1_lo = [j01 n01 j02 n02 .. j08 n08  j17 n17 j18 n18 .. j24 n24]
+      // step1_p1_hi = [j09 n09 j10 n10 .. j16 n16  j25 n25 j26 n26 .. j32 n32]
+      __m256i step1_p0_lo = _mm256_unpacklo_epi8(major_p0, minor_p0);
+      __m256i step1_p0_hi = _mm256_unpackhi_epi8(major_p0, minor_p0);
+      __m256i step1_m1_lo = _mm256_unpacklo_epi8(major_m1, minor_m1);
+      __m256i step1_m1_hi = _mm256_unpackhi_epi8(major_m1, minor_m1);
+      __m256i step1_p1_lo = _mm256_unpacklo_epi8(major_p1, minor_p1);
+      __m256i step1_p1_hi = _mm256_unpackhi_epi8(major_p1, minor_p1);
+
+      // Multiply-add to get u16x16 vectors.
+      //
+      // step2_p0_lo = [9*j00+3*n00 9*j01+3*n01 .. 9*j23+3*n23]
+      // step2_p0_hi = [9*j08+3*n08 9*j09+3*n09 .. 9*j31+3*n31]
+      // step2_m1_lo = [3*jm1+1*nm1 3*j00+1*n00 .. 3*j22+1*n22]
+      // step2_m1_hi = [3*j07+1*n07 3*j08+1*n08 .. 3*j30+1*n30]
+      // step2_p1_lo = [3*j01+1*n01 3*j02+1*n02 .. 3*j24+1*n24]
+      // step2_p1_hi = [3*j09+1*n09 3*j10+1*n10 .. 3*j32+1*n32]
+      const __m256i k0309 = _mm256_set1_epi16(0x0309);
+      const __m256i k0103 = _mm256_set1_epi16(0x0103);
+      __m256i step2_p0_lo = _mm256_maddubs_epi16(step1_p0_lo, k0309);
+      __m256i step2_p0_hi = _mm256_maddubs_epi16(step1_p0_hi, k0309);
+      __m256i step2_m1_lo = _mm256_maddubs_epi16(step1_m1_lo, k0103);
+      __m256i step2_m1_hi = _mm256_maddubs_epi16(step1_m1_hi, k0103);
+      __m256i step2_p1_lo = _mm256_maddubs_epi16(step1_p1_lo, k0103);
+      __m256i step2_p1_hi = _mm256_maddubs_epi16(step1_p1_hi, k0103);
+
+      // Compute the weighted sums of (p0, m1) and (p0, p1). For example:
+      //
+      // step3_m1_lo[00] = ((9*j00) + (3*n00) + (3*jm1) + (1*nm1)) as u16
+      // step3_p1_hi[15] = ((9*j31) + (3*n31) + (3*j32) + (1*n32)) as u16
+      __m256i step3_m1_lo = _mm256_add_epi16(step2_p0_lo, step2_m1_lo);
+      __m256i step3_m1_hi = _mm256_add_epi16(step2_p0_hi, step2_m1_hi);
+      __m256i step3_p1_lo = _mm256_add_epi16(step2_p0_lo, step2_p1_lo);
+      __m256i step3_p1_hi = _mm256_add_epi16(step2_p0_hi, step2_p1_hi);
+
+      // Bias by 8 (on the left) or 7 (on the right) and then divide by 16
+      // (which is 9+3+3+1) to get a weighted average. On the left (m1), shift
+      // the u16 right value by 4. On the right (p1), shift right by 4 and then
+      // shift left by 8 so that, when still in the u16x16 little-endian
+      // interpretation, we have:
+      //  - m1_element =  (etcetera + 8) >> 4
+      //  - p1_element = ((etcetera + 7) >> 4) << 8
+      //
+      // step4_m1_lo = [0x00?? 0x00?? ... 0x00?? 0x00??]
+      // step4_p1_lo = [0x??00 0x??00 ... 0x??00 0x??00]
+      // step4_m1_hi = [0x00?? 0x00?? ... 0x00?? 0x00??]
+      // step4_p1_hi = [0x??00 0x??00 ... 0x??00 0x??00]
+      __m256i step4_m1_lo = _mm256_srli_epi16(
+          _mm256_add_epi16(step3_m1_lo, _mm256_set1_epi16(8)), 4);
+      __m256i step4_p1_lo = _mm256_slli_epi16(
+          _mm256_srli_epi16(_mm256_add_epi16(step3_p1_lo, _mm256_set1_epi16(7)),
+                            4),
+          8);
+      __m256i step4_m1_hi = _mm256_srli_epi16(
+          _mm256_add_epi16(step3_m1_hi, _mm256_set1_epi16(8)), 4);
+      __m256i step4_p1_hi = _mm256_slli_epi16(
+          _mm256_srli_epi16(_mm256_add_epi16(step3_p1_hi, _mm256_set1_epi16(7)),
+                            4),
+          8);
+
+      // Bitwise-or two "0x00"-rich u16x16 vectors to get a u8x32 vector. Do
+      // that twice. Once for the low columns and once for the high columns.
+      //
+      // In terms of jxx (major row) or nxx (minor row) source samples:
+      //  - low  columns means ( 0 ..  8; 16 .. 24).
+      //  - high columns means ( 8 .. 16; 24 .. 32).
+      //
+      // In terms of dxx destination samples (there are twice as many):
+      //  - low  columns means ( 0 .. 16; 32 .. 48).
+      //  - high columns means (16 .. 32; 48 .. 64).
+      //
+      // step5_lo = [d00 d01 .. d14 d15  d32 d33 .. d46 d47]
+      // step5_hi = [d16 d17 .. d30 d31  d48 d49 .. d62 d63]
+      //
+      // The d00, d02 ... d62 even elements come from (p0, m1) weighted sums.
+      // The d01, d03 ... d63 odd  elements come from (p0, p1) weighted sums.
+      __m256i step5_lo = _mm256_or_si256(step4_m1_lo, step4_p1_lo);
+      __m256i step5_hi = _mm256_or_si256(step4_m1_hi, step4_p1_hi);
+
+      // Permute and store.
+      //
+      // step6_00_31 = [d00 d01 .. d14 d15  d16 d17 .. d30 d31]
+      // step6_32_63 = [d32 d33 .. d46 d47  d48 d49 .. d62 d63]
+      __m256i step6_00_31 = _mm256_permute2x128_si256(step5_lo, step5_hi, 0x20);
+      __m256i step6_32_63 = _mm256_permute2x128_si256(step5_lo, step5_hi, 0x31);
+      _mm256_storeu_si256((__m256i*)(void*)(dp + 0x00), step6_00_31);
+      _mm256_storeu_si256((__m256i*)(void*)(dp + 0x20), step6_32_63);
+
+      // Advance by up to 32 source samples (64 destination samples). The first
+      // iteration might be smaller than 32 so that all of the remaining steps
+      // are exactly 32.
+      size_t n = 32u - (31u & (0u - src_len));
+      dp += 2u * n;
+      sp_major += n;
+      sp_minor += n;
+      src_len -= n;
+    }
+  }
+
+  if (last_column) {
+    uint32_t sv_major_m1 = sp_major[-1];
+    uint32_t sv_minor_m1 = sp_minor[-1];
+    uint32_t sv_major_p1 = sp_major[+0];  // Clamp offset to zero.
+    uint32_t sv_minor_p1 = sp_minor[+0];  // Clamp offset to zero.
+
+    uint32_t sv = (9u * ((uint32_t)(*sp_major++))) +  //
+                  (3u * ((uint32_t)(*sp_minor++)));
+    *dp++ = (uint8_t)((sv + (3u * sv_major_m1) + (sv_minor_m1) + 8u) >> 4u);
+    *dp++ = (uint8_t)((sv + (3u * sv_major_p1) + (sv_minor_p1) + 7u) >> 4u);
+  }
+
+  return dst_ptr;
+}
 #endif  // defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
 // ‼ WUFFS MULTI-FILE SECTION -x86_avx2
 

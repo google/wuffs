@@ -36,6 +36,17 @@ wuffs_base__pixel_swizzler__swizzle_ycc__convert_rgbx_x86_avx2(
     const uint8_t* up0,
     const uint8_t* up1,
     const uint8_t* up2);
+
+WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2,avx2")
+static const uint8_t*  //
+wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h2v2_triangle_x86_avx2(
+    uint8_t* dst_ptr,
+    const uint8_t* src_ptr_major,
+    const uint8_t* src_ptr_minor,
+    size_t src_len,
+    uint32_t h1v2_bias_ignored,
+    bool first_column,
+    bool last_column);
 #endif
 
 // --------
@@ -529,16 +540,15 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter(
     uint32_t half_width_for_2to1,
     uint32_t half_height_for_2to1,
     uint8_t* scratch_buffer_2k_ptr,
+    const wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func (
+        *upfuncs)[4][4],
     wuffs_base__pixel_swizzler__swizzle_ycc__convert_func convfunc) {
   wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func upfunc0 =
-      wuffs_base__pixel_swizzler__swizzle_ycc__upsample_funcs
-          [(inv_h0 - 1u) & 3u][(inv_v0 - 1u) & 3u];
+      (*upfuncs)[(inv_h0 - 1u) & 3u][(inv_v0 - 1u) & 3u];
   wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func upfunc1 =
-      wuffs_base__pixel_swizzler__swizzle_ycc__upsample_funcs
-          [(inv_h1 - 1u) & 3u][(inv_v1 - 1u) & 3u];
+      (*upfuncs)[(inv_h1 - 1u) & 3u][(inv_v1 - 1u) & 3u];
   wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func upfunc2 =
-      wuffs_base__pixel_swizzler__swizzle_ycc__upsample_funcs
-          [(inv_h2 - 1u) & 3u][(inv_v2 - 1u) & 3u];
+      (*upfuncs)[(inv_h2 - 1u) & 3u][(inv_v2 - 1u) & 3u];
 
   // First row.
   uint32_t h1v2_bias = 1u;
@@ -662,6 +672,8 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter(
     uint32_t half_width_for_2to1,
     uint32_t half_height_for_2to1,
     uint8_t* scratch_buffer_2k_ptr,
+    const wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func (
+        *upfuncs)[4][4],
     wuffs_base__pixel_swizzler__swizzle_ycc__convert_func convfunc) {
   // Convert an inv_h or inv_v value from {1, 2, 3, 4} to {12, 6, 4, 3}.
   uint32_t h0_out_of_12 = 12u / inv_h0;
@@ -763,6 +775,8 @@ wuffs_base__pixel_swizzler__swizzle_ycc__bgrx__hv11(
     uint32_t half_width_for_2to1,
     uint32_t half_height_for_2to1,
     uint8_t* scratch_buffer_2k_ptr,
+    const wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func (
+        *upfuncs)[4][4],
     wuffs_base__pixel_swizzler__swizzle_ycc__convert_func convfunc) {
   uint32_t y = 0u;
   for (; y < height; y++) {
@@ -1020,14 +1034,26 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
                uint32_t half_width_for_2to1,    //
                uint32_t half_height_for_2to1,   //
                uint8_t* scratch_buffer_2k_ptr,  //
+               const wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func(
+                   *upfuncs)[4][4],
                wuffs_base__pixel_swizzler__swizzle_ycc__convert_func convfunc) =
       &wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter;
+
+  wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func upfuncs[4][4];
+  memcpy(&upfuncs, &wuffs_base__pixel_swizzler__swizzle_ycc__upsample_funcs,
+         sizeof upfuncs);
 
   if (triangle_filter_for_2to1 &&
       (wuffs_base__pixel_swizzler__has_triangle_upsampler(inv_h0, inv_v0) ||
        wuffs_base__pixel_swizzler__has_triangle_upsampler(inv_h1, inv_v1) ||
        wuffs_base__pixel_swizzler__has_triangle_upsampler(inv_h2, inv_v2))) {
     func = &wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter;
+#if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
+    if (wuffs_base__cpu_arch__have_x86_sse42()) {
+      upfuncs[1][1] =
+          wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h2v2_triangle_x86_avx2;
+    }
+#endif
 
   } else {
     switch (dst->pixcfg.private_impl.pixfmt.repr) {
@@ -1058,7 +1084,7 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
           inv_h0, inv_h1, inv_h2,                     //
           inv_v0, inv_v1, inv_v2,                     //
           half_width_for_2to1, half_height_for_2to1,  //
-          scratch_buffer_2k.ptr, convfunc);
+          scratch_buffer_2k.ptr, &upfuncs, convfunc);
 
   return wuffs_base__make_status(NULL);
 }
