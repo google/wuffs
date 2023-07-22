@@ -25,6 +25,17 @@ wuffs_base__pixel_swizzler__swizzle_ycc__convert_bgrx_x86_avx2(
     const uint8_t* up0,
     const uint8_t* up1,
     const uint8_t* up2);
+
+WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2,avx2")
+static void  //
+wuffs_base__pixel_swizzler__swizzle_ycc__convert_rgbx_x86_avx2(
+    wuffs_base__pixel_buffer* dst,
+    uint32_t x,
+    uint32_t x_end,
+    uint32_t y,
+    const uint8_t* up0,
+    const uint8_t* up1,
+    const uint8_t* up2);
 #endif
 
 // --------
@@ -977,6 +988,13 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__RGBX:
+#if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
+      if (wuffs_base__cpu_arch__have_x86_sse42()) {
+        convfunc =
+            &wuffs_base__pixel_swizzler__swizzle_ycc__convert_rgbx_x86_avx2;
+        break;
+      }
+#endif
       convfunc = &wuffs_base__pixel_swizzler__swizzle_ycc__convert_rgbx;
       break;
     default:
