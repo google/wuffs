@@ -14,6 +14,37 @@
 
 // ---------------- Pixel Swizzler
 
+#if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
+WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2")
+static uint64_t  //
+wuffs_base__pixel_swizzler__bgrw__rgb__x86_sse42(uint8_t* dst_ptr,
+                                                 size_t dst_len,
+                                                 uint8_t* dst_palette_ptr,
+                                                 size_t dst_palette_len,
+                                                 const uint8_t* src_ptr,
+                                                 size_t src_len);
+
+WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2")
+static uint64_t  //
+wuffs_base__pixel_swizzler__swap_rgbx_bgrx__x86_sse42(uint8_t* dst_ptr,
+                                                      size_t dst_len,
+                                                      uint8_t* dst_palette_ptr,
+                                                      size_t dst_palette_len,
+                                                      const uint8_t* src_ptr,
+                                                      size_t src_len);
+
+WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2")
+static uint64_t  //
+wuffs_base__pixel_swizzler__xxxx__y__x86_sse42(uint8_t* dst_ptr,
+                                               size_t dst_len,
+                                               uint8_t* dst_palette_ptr,
+                                               size_t dst_palette_len,
+                                               const uint8_t* src_ptr,
+                                               size_t src_len);
+#endif
+
+// --------
+
 static inline uint32_t  //
 wuffs_base__swap_u32_argb_abgr(uint32_t u) {
   uint32_t o = u & 0xFF00FF00ul;
@@ -831,12 +862,12 @@ wuffs_base__pixel_swizzler__swap_rgb_bgr(uint8_t* dst_ptr,
 #if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
 WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2")
 static uint64_t  //
-wuffs_base__pixel_swizzler__swap_rgbx_bgrx__sse42(uint8_t* dst_ptr,
-                                                  size_t dst_len,
-                                                  uint8_t* dst_palette_ptr,
-                                                  size_t dst_palette_len,
-                                                  const uint8_t* src_ptr,
-                                                  size_t src_len) {
+wuffs_base__pixel_swizzler__swap_rgbx_bgrx__x86_sse42(uint8_t* dst_ptr,
+                                                      size_t dst_len,
+                                                      uint8_t* dst_palette_ptr,
+                                                      size_t dst_palette_len,
+                                                      const uint8_t* src_ptr,
+                                                      size_t src_len) {
   size_t len = (dst_len < src_len ? dst_len : src_len) / 4;
   uint8_t* d = dst_ptr;
   const uint8_t* s = src_ptr;
@@ -3265,12 +3296,12 @@ wuffs_base__pixel_swizzler__bgrw__bgrx(uint8_t* dst_ptr,
 #if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
 WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2")
 static uint64_t  //
-wuffs_base__pixel_swizzler__bgrw__rgb__sse42(uint8_t* dst_ptr,
-                                             size_t dst_len,
-                                             uint8_t* dst_palette_ptr,
-                                             size_t dst_palette_len,
-                                             const uint8_t* src_ptr,
-                                             size_t src_len) {
+wuffs_base__pixel_swizzler__bgrw__rgb__x86_sse42(uint8_t* dst_ptr,
+                                                 size_t dst_len,
+                                                 uint8_t* dst_palette_ptr,
+                                                 size_t dst_palette_len,
+                                                 const uint8_t* src_ptr,
+                                                 size_t src_len) {
   size_t dst_len4 = dst_len / 4;
   size_t src_len3 = src_len / 3;
   size_t len = (dst_len4 < src_len3) ? dst_len4 : src_len3;
@@ -4010,12 +4041,12 @@ wuffs_base__pixel_swizzler__xxxx__index_binary_alpha__src_over(
 #if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
 WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2")
 static uint64_t  //
-wuffs_base__pixel_swizzler__xxxx__y__sse42(uint8_t* dst_ptr,
-                                           size_t dst_len,
-                                           uint8_t* dst_palette_ptr,
-                                           size_t dst_palette_len,
-                                           const uint8_t* src_ptr,
-                                           size_t src_len) {
+wuffs_base__pixel_swizzler__xxxx__y__x86_sse42(uint8_t* dst_ptr,
+                                               size_t dst_len,
+                                               uint8_t* dst_palette_ptr,
+                                               size_t dst_palette_len,
+                                               const uint8_t* src_ptr,
+                                               size_t src_len) {
   size_t dst_len4 = dst_len / 4;
   size_t len = (dst_len4 < src_len) ? dst_len4 : src_len;
   uint8_t* d = dst_ptr;
@@ -4344,7 +4375,7 @@ wuffs_base__pixel_swizzler__prepare__y(wuffs_base__pixel_swizzler* p,
     case WUFFS_BASE__PIXEL_FORMAT__RGBX:
 #if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
       if (wuffs_base__cpu_arch__have_x86_sse42()) {
-        return wuffs_base__pixel_swizzler__xxxx__y__sse42;
+        return wuffs_base__pixel_swizzler__xxxx__y__x86_sse42;
       }
 #endif
       return wuffs_base__pixel_swizzler__xxxx__y;
@@ -4747,7 +4778,7 @@ wuffs_base__pixel_swizzler__prepare__bgr(wuffs_base__pixel_swizzler* p,
     case WUFFS_BASE__PIXEL_FORMAT__RGBX:
 #if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
       if (wuffs_base__cpu_arch__have_x86_sse42()) {
-        return wuffs_base__pixel_swizzler__bgrw__rgb__sse42;
+        return wuffs_base__pixel_swizzler__bgrw__rgb__x86_sse42;
       }
 #endif
       return wuffs_base__pixel_swizzler__bgrw__rgb;
@@ -4827,7 +4858,7 @@ wuffs_base__pixel_swizzler__prepare__bgra_nonpremul(
         case WUFFS_BASE__PIXEL_BLEND__SRC:
 #if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
           if (wuffs_base__cpu_arch__have_x86_sse42()) {
-            return wuffs_base__pixel_swizzler__swap_rgbx_bgrx__sse42;
+            return wuffs_base__pixel_swizzler__swap_rgbx_bgrx__x86_sse42;
           }
 #endif
           return wuffs_base__pixel_swizzler__swap_rgbx_bgrx;
@@ -5022,7 +5053,7 @@ wuffs_base__pixel_swizzler__prepare__bgra_premul(
         case WUFFS_BASE__PIXEL_BLEND__SRC:
 #if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
           if (wuffs_base__cpu_arch__have_x86_sse42()) {
-            return wuffs_base__pixel_swizzler__swap_rgbx_bgrx__sse42;
+            return wuffs_base__pixel_swizzler__swap_rgbx_bgrx__x86_sse42;
           }
 #endif
           return wuffs_base__pixel_swizzler__swap_rgbx_bgrx;
@@ -5089,7 +5120,7 @@ wuffs_base__pixel_swizzler__prepare__rgb(wuffs_base__pixel_swizzler* p,
     case WUFFS_BASE__PIXEL_FORMAT__BGRX:
 #if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
       if (wuffs_base__cpu_arch__have_x86_sse42()) {
-        return wuffs_base__pixel_swizzler__bgrw__rgb__sse42;
+        return wuffs_base__pixel_swizzler__bgrw__rgb__x86_sse42;
       }
 #endif
       return wuffs_base__pixel_swizzler__bgrw__rgb;
@@ -5140,7 +5171,7 @@ wuffs_base__pixel_swizzler__prepare__rgba_nonpremul(
         case WUFFS_BASE__PIXEL_BLEND__SRC:
 #if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
           if (wuffs_base__cpu_arch__have_x86_sse42()) {
-            return wuffs_base__pixel_swizzler__swap_rgbx_bgrx__sse42;
+            return wuffs_base__pixel_swizzler__swap_rgbx_bgrx__x86_sse42;
           }
 #endif
           return wuffs_base__pixel_swizzler__swap_rgbx_bgrx;
@@ -5256,7 +5287,7 @@ wuffs_base__pixel_swizzler__prepare__rgba_premul(
         case WUFFS_BASE__PIXEL_BLEND__SRC:
 #if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
           if (wuffs_base__cpu_arch__have_x86_sse42()) {
-            return wuffs_base__pixel_swizzler__swap_rgbx_bgrx__sse42;
+            return wuffs_base__pixel_swizzler__swap_rgbx_bgrx__x86_sse42;
           }
 #endif
           return wuffs_base__pixel_swizzler__swap_rgbx_bgrx;
