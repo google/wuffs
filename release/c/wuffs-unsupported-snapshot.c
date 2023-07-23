@@ -24871,10 +24871,17 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
        wuffs_base__pixel_swizzler__has_triangle_upsampler(inv_h2, inv_v2))) {
     func = &wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter;
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(__GNUC__) && !defined(__clang__)
+    // Don't use our AVX2 implementation for GCC (but do use it for clang). For
+    // some unknown reason, GCC performs noticably better on the non-SIMD
+    // version. Possibly because GCC's auto-vectorizer is smarter (just with
+    // SSE2, not AVX2) than our hand-written code, but that's just a guess.
+#else
     if (wuffs_base__cpu_arch__have_x86_avx2()) {
       upfuncs[1][1] =
           wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h2v2_triangle_x86_avx2;
     }
+#endif
 #endif
 
   } else {
