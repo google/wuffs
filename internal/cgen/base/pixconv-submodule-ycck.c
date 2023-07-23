@@ -540,8 +540,7 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter(
     uint32_t half_width_for_2to1,
     uint32_t half_height_for_2to1,
     uint8_t* scratch_buffer_2k_ptr,
-    const wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func (
-        *upfuncs)[4][4],
+    wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func (*upfuncs)[4][4],
     wuffs_base__pixel_swizzler__swizzle_ycc__convert_func convfunc) {
   wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func upfunc0 =
       (*upfuncs)[(inv_h0 - 1u) & 3u][(inv_v0 - 1u) & 3u];
@@ -672,8 +671,7 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter(
     uint32_t half_width_for_2to1,
     uint32_t half_height_for_2to1,
     uint8_t* scratch_buffer_2k_ptr,
-    const wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func (
-        *upfuncs)[4][4],
+    wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func (*upfuncs)[4][4],
     wuffs_base__pixel_swizzler__swizzle_ycc__convert_func convfunc) {
   // Convert an inv_h or inv_v value from {1, 2, 3, 4} to {12, 6, 4, 3}.
   uint32_t h0_out_of_12 = 12u / inv_h0;
@@ -775,8 +773,7 @@ wuffs_base__pixel_swizzler__swizzle_ycc__bgrx__hv11(
     uint32_t half_width_for_2to1,
     uint32_t half_height_for_2to1,
     uint8_t* scratch_buffer_2k_ptr,
-    const wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func (
-        *upfuncs)[4][4],
+    wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func (*upfuncs)[4][4],
     wuffs_base__pixel_swizzler__swizzle_ycc__convert_func convfunc) {
   uint32_t y = 0u;
   for (; y < height; y++) {
@@ -1016,27 +1013,27 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
       break;
   }
 
-  void (*func)(wuffs_base__pixel_buffer * dst,  //
-               uint32_t width,                  //
-               uint32_t height,                 //
-               const uint8_t* src_ptr0,         //
-               const uint8_t* src_ptr1,         //
-               const uint8_t* src_ptr2,         //
-               uint32_t stride0,                //
-               uint32_t stride1,                //
-               uint32_t stride2,                //
-               uint32_t inv_h0,                 //
-               uint32_t inv_h1,                 //
-               uint32_t inv_h2,                 //
-               uint32_t inv_v0,                 //
-               uint32_t inv_v1,                 //
-               uint32_t inv_v2,                 //
-               uint32_t half_width_for_2to1,    //
-               uint32_t half_height_for_2to1,   //
-               uint8_t* scratch_buffer_2k_ptr,  //
-               const wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func(
-                   *upfuncs)[4][4],
-               wuffs_base__pixel_swizzler__swizzle_ycc__convert_func convfunc) =
+  void (*func)(
+      wuffs_base__pixel_buffer * dst,  //
+      uint32_t width,                  //
+      uint32_t height,                 //
+      const uint8_t* src_ptr0,         //
+      const uint8_t* src_ptr1,         //
+      const uint8_t* src_ptr2,         //
+      uint32_t stride0,                //
+      uint32_t stride1,                //
+      uint32_t stride2,                //
+      uint32_t inv_h0,                 //
+      uint32_t inv_h1,                 //
+      uint32_t inv_h2,                 //
+      uint32_t inv_v0,                 //
+      uint32_t inv_v1,                 //
+      uint32_t inv_v2,                 //
+      uint32_t half_width_for_2to1,    //
+      uint32_t half_height_for_2to1,   //
+      uint8_t* scratch_buffer_2k_ptr,  //
+      wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func(*upfuncs)[4][4],
+      wuffs_base__pixel_swizzler__swizzle_ycc__convert_func convfunc) =
       &wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter;
 
   wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func upfuncs[4][4];

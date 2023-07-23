@@ -40,15 +40,17 @@ wuffs_base__pixel_swizzler__swizzle_ycc__convert_bgrx_x86_avx2(
   // u00FF = u16x16 [0x00FF .. 0x00FF]
   // uFF80 = u16x16 [0xFF80 .. 0xFF80]
   // uFFFF = u16x16 [0xFFFF .. 0xFFFF]
-  const __m256i u0001 = _mm256_set1_epi16(0x0001);
-  const __m256i u00FF = _mm256_set1_epi16(0x00FF);
-  const __m256i uFF80 = _mm256_set1_epi16(0xFF80);
-  const __m256i uFFFF = _mm256_set1_epi16(0xFFFF);
+  const __m256i u0001 = _mm256_set1_epi16(+0x0001);
+  const __m256i u00FF = _mm256_set1_epi16(+0x00FF);
+  const __m256i uFF80 = _mm256_set1_epi16(-0x0080);
+  const __m256i uFFFF = _mm256_set1_epi16(-0x0001);
 
   // p8000_p0000 = u16x16 [0x8000 0x0000 .. 0x8000 0x0000]
-  const __m256i p8000_p0000 = _mm256_set_epi16(                        //
-      0x0000, 0x8000, 0x0000, 0x8000, 0x0000, 0x8000, 0x0000, 0x8000,  //
-      0x0000, 0x8000, 0x0000, 0x8000, 0x0000, 0x8000, 0x0000, 0x8000);
+  const __m256i p8000_p0000 = _mm256_set_epi16(  //
+      +0x0000, -0x8000, +0x0000, -0x8000,        //
+      +0x0000, -0x8000, +0x0000, -0x8000,        //
+      +0x0000, -0x8000, +0x0000, -0x8000,        //
+      +0x0000, -0x8000, +0x0000, -0x8000);
 
   // Per wuffs_base__color_ycc__as__color_u32, the formulae:
   //
@@ -307,14 +309,16 @@ wuffs_base__pixel_swizzler__swizzle_ycc__convert_rgbx_x86_avx2(
   uint8_t* dst_iter = dst->private_impl.planes[0].ptr +
                       (dst_stride * ((size_t)y)) + (4u * ((size_t)x));
 
-  const __m256i u0001 = _mm256_set1_epi16(0x0001);
-  const __m256i u00FF = _mm256_set1_epi16(0x00FF);
-  const __m256i uFF80 = _mm256_set1_epi16(0xFF80);
-  const __m256i uFFFF = _mm256_set1_epi16(0xFFFF);
+  const __m256i u0001 = _mm256_set1_epi16(+0x0001);
+  const __m256i u00FF = _mm256_set1_epi16(+0x00FF);
+  const __m256i uFF80 = _mm256_set1_epi16(-0x0080);
+  const __m256i uFFFF = _mm256_set1_epi16(-0x0001);
 
-  const __m256i p8000_p0000 = _mm256_set_epi16(                        //
-      0x0000, 0x8000, 0x0000, 0x8000, 0x0000, 0x8000, 0x0000, 0x8000,  //
-      0x0000, 0x8000, 0x0000, 0x8000, 0x0000, 0x8000, 0x0000, 0x8000);
+  const __m256i p8000_p0000 = _mm256_set_epi16(  //
+      +0x0000, -0x8000, +0x0000, -0x8000,        //
+      +0x0000, -0x8000, +0x0000, -0x8000,        //
+      +0x0000, -0x8000, +0x0000, -0x8000,        //
+      +0x0000, -0x8000, +0x0000, -0x8000);
 
   const __m256i m3A5E = _mm256_set1_epi16(-0x3A5E);
   const __m256i p66E9 = _mm256_set1_epi16(+0x66E9);
