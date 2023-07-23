@@ -41,7 +41,7 @@ wuffs_base__pixel_swizzler__xxxx__y__x86_sse42(uint8_t* dst_ptr,
                                                size_t dst_palette_len,
                                                const uint8_t* src_ptr,
                                                size_t src_len);
-#endif
+#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
 
 // --------
 

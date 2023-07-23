@@ -14,7 +14,7 @@
 
 // --------
 
-#if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
+#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
 WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2,avx2")
 static void  //
 wuffs_base__pixel_swizzler__swizzle_ycc__convert_bgrx_x86_avx2(
@@ -47,7 +47,7 @@ wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h2v2_triangle_x86_avx2(
     uint32_t h1v2_bias_ignored,
     bool first_column,
     bool last_column);
-#endif
+#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
 
 // --------
 
@@ -990,7 +990,7 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__BGRX:
-#if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
+#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
       if (wuffs_base__cpu_arch__have_x86_avx2()) {
         convfunc =
             &wuffs_base__pixel_swizzler__swizzle_ycc__convert_bgrx_x86_avx2;
@@ -1002,7 +1002,7 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__RGBX:
-#if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
+#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
       if (wuffs_base__cpu_arch__have_x86_avx2()) {
         convfunc =
             &wuffs_base__pixel_swizzler__swizzle_ycc__convert_rgbx_x86_avx2;
@@ -1048,7 +1048,7 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
        wuffs_base__pixel_swizzler__has_triangle_upsampler(inv_h1, inv_v1) ||
        wuffs_base__pixel_swizzler__has_triangle_upsampler(inv_h2, inv_v2))) {
     func = &wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter;
-#if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
+#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
     if (wuffs_base__cpu_arch__have_x86_avx2()) {
       upfuncs[1][1] =
           wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h2v2_triangle_x86_avx2;

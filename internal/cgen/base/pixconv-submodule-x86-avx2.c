@@ -15,7 +15,7 @@
 // --------
 
 // ‼ WUFFS MULTI-FILE SECTION +x86_avx2
-#if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
+#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
 WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2,avx2")
 static void  //
 wuffs_base__pixel_swizzler__swizzle_ycc__convert_bgrx_x86_avx2(
@@ -632,5 +632,5 @@ wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h2v2_triangle_x86_avx2(
 
   return dst_ptr;
 }
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
+#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
 // ‼ WUFFS MULTI-FILE SECTION -x86_avx2

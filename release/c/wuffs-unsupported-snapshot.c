@@ -138,6 +138,9 @@ extern "C" {
 #include <x86intrin.h>
 // X86_FAMILY means X86 (32-bit) or X86_64 (64-bit, obviously).
 #define WUFFS_BASE__CPU_ARCH__X86_FAMILY
+#if defined(__x86_64__)
+#define WUFFS_BASE__CPU_ARCH__X86_64
+#endif  // defined(__x86_64__)
 #endif  // !defined(__native_client__)
 #endif  // defined(__i386__) || defined(__x86_64__)
 
@@ -159,6 +162,9 @@ extern "C" {
 #include <wmmintrin.h>  // AES, PCLMUL
 // X86_FAMILY means X86 (32-bit) or X86_64 (64-bit, obviously).
 #define WUFFS_BASE__CPU_ARCH__X86_FAMILY
+#if defined(_M_X64)
+#define WUFFS_BASE__CPU_ARCH__X86_64
+#endif  // defined(_M_X64)
 
 #else  // defined(__AVX__) || defined(__clang__)
 
@@ -213,7 +219,7 @@ wuffs_base__cpu_arch__have_arm_neon() {
 
 static inline bool  //
 wuffs_base__cpu_arch__have_x86_avx2() {
-#if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
+#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
   // GCC defines these macros but MSVC does not.
   //  - bit_AVX2 = (1 <<  5)
   const unsigned int avx2_ebx7 = 0x00000020;
@@ -253,7 +259,7 @@ wuffs_base__cpu_arch__have_x86_avx2() {
 #else
 #error "WUFFS_BASE__CPU_ARCH__ETC combined with an unsupported compiler"
 #endif  // defined(__GNUC__); defined(_MSC_VER)
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
+#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
   return false;
 }
 
@@ -18064,7 +18070,7 @@ wuffs_base__pixel_swizzler__xxxx__y__x86_sse42(uint8_t* dst_ptr,
                                                size_t dst_palette_len,
                                                const uint8_t* src_ptr,
                                                size_t src_len);
-#endif
+#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
 
 // --------
 
@@ -23546,7 +23552,7 @@ wuffs_base__pixel_swizzler__swizzle_interleaved_transparent_black(
 
 // --------
 
-#if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
+#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
 WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2,avx2")
 static void  //
 wuffs_base__pixel_swizzler__swizzle_ycc__convert_bgrx_x86_avx2(
@@ -23579,7 +23585,7 @@ wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h2v2_triangle_x86_avx2(
     uint32_t h1v2_bias_ignored,
     bool first_column,
     bool last_column);
-#endif
+#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
 
 // --------
 
@@ -24792,7 +24798,7 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__BGRX:
-#if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
+#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
       if (wuffs_base__cpu_arch__have_x86_avx2()) {
         convfunc =
             &wuffs_base__pixel_swizzler__swizzle_ycc__convert_bgrx_x86_avx2;
@@ -24804,7 +24810,7 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__RGBX:
-#if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
+#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
       if (wuffs_base__cpu_arch__have_x86_avx2()) {
         convfunc =
             &wuffs_base__pixel_swizzler__swizzle_ycc__convert_rgbx_x86_avx2;
@@ -24850,7 +24856,7 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
        wuffs_base__pixel_swizzler__has_triangle_upsampler(inv_h1, inv_v1) ||
        wuffs_base__pixel_swizzler__has_triangle_upsampler(inv_h2, inv_v2))) {
     func = &wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter;
-#if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
+#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
     if (wuffs_base__cpu_arch__have_x86_avx2()) {
       upfuncs[1][1] =
           wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h2v2_triangle_x86_avx2;
@@ -24894,7 +24900,7 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
 // --------
 
 // ‼ WUFFS MULTI-FILE SECTION +x86_avx2
-#if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
+#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
 WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2,avx2")
 static void  //
 wuffs_base__pixel_swizzler__swizzle_ycc__convert_bgrx_x86_avx2(
@@ -25511,7 +25517,7 @@ wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h2v2_triangle_x86_avx2(
 
   return dst_ptr;
 }
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
+#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
 // ‼ WUFFS MULTI-FILE SECTION -x86_avx2
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) ||
@@ -31979,13 +31985,13 @@ wuffs_crc32__ieee_hasher__up_arm_crc32(
     wuffs_base__slice_u8 a_x);
 #endif  // defined(WUFFS_BASE__CPU_ARCH__ARM_CRC32)
 
-#if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
+#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
 wuffs_crc32__ieee_hasher__up_x86_avx2(
     wuffs_crc32__ieee_hasher* self,
     wuffs_base__slice_u8 a_x);
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
+#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
 
 #if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
 WUFFS_BASE__GENERATED_C_CODE
@@ -32139,7 +32145,7 @@ wuffs_crc32__ieee_hasher__update_u32(
 #if defined(WUFFS_BASE__CPU_ARCH__ARM_CRC32)
         wuffs_base__cpu_arch__have_arm_crc32() ? &wuffs_crc32__ieee_hasher__up_arm_crc32 :
 #endif
-#if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
+#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
         wuffs_base__cpu_arch__have_x86_avx2() ? &wuffs_crc32__ieee_hasher__up_x86_avx2 :
 #endif
 #if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
@@ -32335,7 +32341,7 @@ wuffs_crc32__ieee_hasher__up_arm_crc32(
 // ‼ WUFFS MULTI-FILE SECTION +x86_avx2
 // -------- func crc32.ieee_hasher.up_x86_avx2
 
-#if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
+#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
 WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2,avx2")
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
@@ -32449,7 +32455,7 @@ wuffs_crc32__ieee_hasher__up_x86_avx2(
   self->private_impl.f_state = (4294967295u ^ v_s);
   return wuffs_base__make_empty_struct();
 }
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
+#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
 // ‼ WUFFS MULTI-FILE SECTION -x86_avx2
 
 // ‼ WUFFS MULTI-FILE SECTION +x86_sse42
@@ -39133,7 +39139,7 @@ wuffs_jpeg__decoder__decode_idct__choosy_default(
     uint64_t a_dst_stride,
     uint32_t a_q);
 
-#if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
+#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
 wuffs_jpeg__decoder__decode_idct_x86_avx2(
@@ -39141,7 +39147,7 @@ wuffs_jpeg__decoder__decode_idct_x86_avx2(
     wuffs_base__slice_u8 a_dst_buffer,
     uint64_t a_dst_stride,
     uint32_t a_q);
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
+#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
 
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__status
@@ -40571,7 +40577,7 @@ wuffs_jpeg__decoder__decode_idct__choosy_default(
 // ‼ WUFFS MULTI-FILE SECTION +x86_avx2
 // -------- func jpeg.decoder.decode_idct_x86_avx2
 
-#if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
+#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
 WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2,avx2")
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
@@ -40955,7 +40961,7 @@ wuffs_jpeg__decoder__decode_idct_x86_avx2(
   wuffs_base__poke_u64le__no_bounds_check(a_dst_buffer.ptr, v_final7);
   return wuffs_base__make_empty_struct();
 }
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
+#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
 // ‼ WUFFS MULTI-FILE SECTION -x86_avx2
 
 // -------- func jpeg.decoder.get_quirk
@@ -41292,7 +41298,7 @@ wuffs_jpeg__decoder__do_decode_image_config(
       self->private_impl.f_payload_length = 0u;
     }
     self->private_impl.choosy_decode_idct = (
-#if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
+#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
         wuffs_base__cpu_arch__have_x86_avx2() ? &wuffs_jpeg__decoder__decode_idct_x86_avx2 :
 #endif
         self->private_impl.choosy_decode_idct);
