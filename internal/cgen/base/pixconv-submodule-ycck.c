@@ -1054,6 +1054,9 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
     // some unknown reason, GCC performs noticably better on the non-SIMD
     // version. Possibly because GCC's auto-vectorizer is smarter (just with
     // SSE2, not AVX2) than our hand-written code, but that's just a guess.
+    //
+    // See commits 51bc60ef9298cb2efc1b29a9681191f66d49820d and
+    // cd769a0cdf1b5affee13f6089b995f3d39569cb4 for benchmark numbers.
 #else
     if (wuffs_base__cpu_arch__have_x86_avx2()) {
       upfuncs[1][1] =
