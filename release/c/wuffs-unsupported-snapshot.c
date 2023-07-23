@@ -219,6 +219,10 @@ wuffs_base__cpu_arch__have_arm_neon() {
 
 static inline bool  //
 wuffs_base__cpu_arch__have_x86_avx2() {
+#if defined(__PCLMUL__) && defined(__POPCNT__) && defined(__SSE4_2__) && \
+    defined(__AVX2__)
+  return true;
+#else
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
   // GCC defines these macros but MSVC does not.
   //  - bit_AVX2 = (1 <<  5)
@@ -261,10 +265,15 @@ wuffs_base__cpu_arch__have_x86_avx2() {
 #endif  // defined(__GNUC__); defined(_MSC_VER)
 #endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
   return false;
+#endif  // defined(__PCLMUL__) && defined(__POPCNT__) && defined(__SSE4_2__) &&
+        // defined(__AVX2__)
 }
 
 static inline bool  //
 wuffs_base__cpu_arch__have_x86_bmi2() {
+#if defined(__BMI2__)
+  return true;
+#else
 #if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
   // GCC defines these macros but MSVC does not.
   //  - bit_BMI2 = (1 <<  8)
@@ -291,10 +300,14 @@ wuffs_base__cpu_arch__have_x86_bmi2() {
 #endif  // defined(__GNUC__); defined(_MSC_VER)
 #endif  // defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
   return false;
+#endif  // defined(__BMI2__)
 }
 
 static inline bool  //
 wuffs_base__cpu_arch__have_x86_sse42() {
+#if defined(__PCLMUL__) && defined(__POPCNT__) && defined(__SSE4_2__)
+  return true;
+#else
 #if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
   // GCC defines these macros but MSVC does not.
   //  - bit_PCLMUL = (1 <<  1)
@@ -323,6 +336,7 @@ wuffs_base__cpu_arch__have_x86_sse42() {
 #endif  // defined(__GNUC__); defined(_MSC_VER)
 #endif  // defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
   return false;
+#endif  // defined(__PCLMUL__) && defined(__POPCNT__) && defined(__SSE4_2__)
 }
 
 // ---------------- Fundamentals
