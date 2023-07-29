@@ -24873,6 +24873,10 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
     //
     // See commits 51bc60ef9298cb2efc1b29a9681191f66d49820d and
     // cd769a0cdf1b5affee13f6089b995f3d39569cb4 for benchmark numbers.
+    //
+    // See also https://godbolt.org/z/MbhbPGEz4 for Debian Bullseye's clang 11
+    // versus gcc 10, where only gcc auto-vectorizes, although later clang
+    // versions will also auto-vectorize.
 #else
     if (wuffs_base__cpu_arch__have_x86_avx2()) {
       upfuncs[1][1] =
