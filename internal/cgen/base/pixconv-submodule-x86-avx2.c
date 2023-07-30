@@ -437,6 +437,9 @@ wuffs_base__pixel_swizzler__swizzle_ycc__convert_rgbx_x86_avx2(
   }
 }
 
+#if defined(__GNUC__) && !defined(__clang__)
+// No-op.
+#else
 WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2,avx2")
 static const uint8_t*  //
 wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h2v2_triangle_x86_avx2(
@@ -636,5 +639,6 @@ wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h2v2_triangle_x86_avx2(
 
   return dst_ptr;
 }
+#endif
 #endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
 // ‼ WUFFS MULTI-FILE SECTION -x86_avx2
