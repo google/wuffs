@@ -393,6 +393,11 @@ func insertBasePixConvSubmoduleX86Avx2C(buf *buffer) error {
 	return nil
 }
 
+func insertBasePixConvSubmoduleYcckC(buf *buffer) error {
+	buf.writes(embedBasePixConvSubmoduleYcckC.Trim())
+	return nil
+}
+
 func insertBaseUTF8SubmoduleC(buf *buffer) error {
 	buf.writes(embedBaseUTF8SubmoduleC.Trim())
 	return nil
