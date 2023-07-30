@@ -23591,7 +23591,7 @@ wuffs_base__pixel_swizzler__swizzle_ycc__convert_rgbx_x86_avx2(
 
 #if defined(__GNUC__) && !defined(__clang__)
 // No-op.
-# else
+#else
 WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2,avx2")
 static const uint8_t*  //
 wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h2v2_triangle_x86_avx2(
@@ -24241,9 +24241,6 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter(
     const uint8_t* src0_major = src_ptr0 + ((y / inv_v0) * (size_t)stride0);
     const uint8_t* src1_major = src_ptr1 + ((y / inv_v1) * (size_t)stride1);
     const uint8_t* src2_major = src_ptr2 + ((y / inv_v2) * (size_t)stride2);
-    uint32_t total_src_len0 = 0u;
-    uint32_t total_src_len1 = 0u;
-    uint32_t total_src_len2 = 0u;
 
     uint32_t x = 0u;
     while (x < width) {
@@ -24255,9 +24252,6 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter(
       uint32_t src_len0 = ((end - x) + inv_h0 - 1u) / inv_h0;
       uint32_t src_len1 = ((end - x) + inv_h1 - 1u) / inv_h1;
       uint32_t src_len2 = ((end - x) + inv_h2 - 1u) / inv_h2;
-      total_src_len0 += src_len0;
-      total_src_len1 += src_len1;
-      total_src_len2 += src_len2;
 
       const uint8_t* up0 = (*upfunc0)(          //
           scratch_buffer_2k_ptr + (0u * 672u),  //
