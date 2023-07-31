@@ -936,7 +936,12 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
   memcpy(&upfuncs, &wuffs_base__pixel_swizzler__swizzle_ycc__upsample_funcs,
          sizeof upfuncs);
 
-  if (triangle_filter_for_2to1) {
+  if (triangle_filter_for_2to1 &&
+      (wuffs_base__pixel_swizzler__has_triangle_upsampler(inv_h0, inv_v0) ||
+       wuffs_base__pixel_swizzler__has_triangle_upsampler(inv_h1, inv_v1) ||
+       wuffs_base__pixel_swizzler__has_triangle_upsampler(inv_h2, inv_v2))) {
+    func = &wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter;
+
     upfuncs[0][1] =
         wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h1v2_triangle;
     upfuncs[1][0] =
@@ -964,13 +969,6 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
     }
 #endif
 #endif
-  }
-
-  if (triangle_filter_for_2to1 &&
-      (wuffs_base__pixel_swizzler__has_triangle_upsampler(inv_h0, inv_v0) ||
-       wuffs_base__pixel_swizzler__has_triangle_upsampler(inv_h1, inv_v1) ||
-       wuffs_base__pixel_swizzler__has_triangle_upsampler(inv_h2, inv_v2))) {
-    func = &wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter;
   }
 
   (*func)(dst, width, height,                         //
