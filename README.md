@@ -225,8 +225,8 @@ there.
 
 Nonetheless, Wuffs' GIF decoder has shipped in the Google Chrome web browser
 [since June
-2021](https://chromium-review.googlesource.com/c/chromium/src/+/2940044). See
-also the ["ridiculously
+2021](https://chromium-review.googlesource.com/c/chromium/src/+/2940044)
+(milestone M93). See also the ["ridiculously
 fast"](https://twitter.com/richgel999/status/1481027198530248714) tweet already
 mentioned above.
 
@@ -260,4 +260,4 @@ owned by Google.
 
 ---
 
-Updated on June 2023.
+Updated on August 2023.

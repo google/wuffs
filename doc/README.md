@@ -9,10 +9,13 @@ new. The [top level README](/README.md) also has some general remarks. Its
 sections include:
 
 - Goals and Non-Goals
+- Hermeticity
 - What Does Wuffs Code Look Like?
 - What Does Compile Time Checking Look Like?
 - Directory Layout
+- Building
 - Documentation
+- Non-C/C++ Languages
 - Status
 - Discussion
 - Contributing
