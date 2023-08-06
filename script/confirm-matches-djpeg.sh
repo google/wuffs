@@ -43,8 +43,8 @@ fi
 result=0
 
 handle() {
-  local have=$(gen/bin/example-convert-to-nia <$1 2>/dev/null | gen/bin/example-crc32)
-  local want=$(djpeg $1 2>/dev/null | gen/bin/example-convert-to-nia 2>/dev/null | gen/bin/example-crc32)
+  local have=$(gen/bin/example-convert-to-nia -output-netpbm <$1 2>/dev/null | gen/bin/example-crc32)
+  local want=$(djpeg $1 2>/dev/null | gen/bin/example-crc32)
   if [ "$want" != "00000000" ]; then
     if [ "$want" == "$have" ]; then
       echo "Match   $1"

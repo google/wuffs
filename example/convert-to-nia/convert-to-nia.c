@@ -29,6 +29,7 @@ https://skia-review.googlesource.com/c/skia/+/290618
 
 #include <errno.h>
 #include <inttypes.h>
+#include <stdio.h>
 #include <unistd.h>
 
 // Wuffs ships as a "single file C library" or "header file library" as per
@@ -99,14 +100,19 @@ static const char* g_usage =
     "\n"
     "Flags:\n"
     "    -1      -first-frame-only\n"
+    "    -p      -output-netpbm\n"
     "            -fail-if-unsandboxed\n"
     "\n"
     "convert-to-nia converts an image from stdin (e.g. in the BMP, GIF, JPEG\n"
-    "or PNG format) to stdout (in the NIA format, or in the NIE format if\n"
-    "the -first-frame-only flag is given).\n"
+    "or PNG format) to stdout (in the NIA format, or in the NIE or PPM/PGM\n"
+    "format if the -1 or -p flag is given; you cannot specify both flags).\n"
     "\n"
     "NIA/NIE is a trivial animated/still image file format, specified at\n"
     "https://github.com/google/wuffs/blob/main/doc/spec/nie-spec.md\n"
+    "\n"
+    "PPM (color) and PGM (gray) are also trivial still image file formats.\n"
+    "They do not support alpha or animation. Using -p means that this program\n"
+    "outputs the same format as /usr/bin/djpeg\n"
     "\n"
     "The -fail-if-unsandboxed flag causes the program to exit if it does not\n"
     "self-impose a sandbox. On Linux, it self-imposes a SECCOMP_MODE_STRICT\n"
@@ -131,6 +137,7 @@ wuffs_base__frame_config g_frame_config = {0};
 int32_t g_fourcc = 0;
 uint32_t g_width = 0;
 uint32_t g_height = 0;
+bool g_pixfmt_is_gray = false;
 uint32_t g_num_animation_loops = 0;
 uint64_t g_num_printed_frames = 0;
 
@@ -178,6 +185,7 @@ struct {
 
   bool fail_if_unsandboxed;
   bool first_frame_only;
+  bool output_netpbm;
 } g_flags = {0};
 
 const char*  //
@@ -210,7 +218,15 @@ parse_flags(int argc, char** argv) {
       g_flags.first_frame_only = true;
       continue;
     }
+    if (!strcmp(arg, "p") || !strcmp(arg, "output-netpbm")) {
+      g_flags.output_netpbm = true;
+      continue;
+    }
 
+    return g_usage;
+  }
+
+  if (g_flags.first_frame_only && g_flags.output_netpbm) {
     return g_usage;
   }
 
@@ -419,6 +435,16 @@ redirect:
   }
   g_width = w;
   g_height = h;
+  switch (wuffs_base__pixel_config__pixel_format(&g_image_config.pixcfg).repr) {
+    case WUFFS_BASE__PIXEL_FORMAT__Y:
+    case WUFFS_BASE__PIXEL_FORMAT__Y_16LE:
+    case WUFFS_BASE__PIXEL_FORMAT__Y_16BE:
+      g_pixfmt_is_gray = true;
+      break;
+    default:
+      g_pixfmt_is_gray = false;
+      break;
+  }
 
   // Override the image's native pixel format to be BGRA_NONPREMUL.
   wuffs_base__pixel_config__set(&g_image_config.pixcfg,
@@ -495,6 +521,14 @@ print_nix_header(uint32_t magic_u32le) {
 }
 
 void  //
+print_netpbm_header() {
+  char data[256];
+  int n = snprintf(data, sizeof(data), "P%c\n%" PRIu32 " %" PRIu32 "\n255\n",
+                   (g_pixfmt_is_gray ? '5' : '6'), g_width, g_height);
+  ignore_return_value(write(STDOUT_FD, &data[0], n));
+}
+
+void  //
 print_nia_duration(wuffs_base__flicks duration) {
   uint8_t data[8];
   wuffs_base__poke_u64le__no_bounds_check(data + 0x00, duration);
@@ -512,8 +546,33 @@ print_nie_frame() {
     for (size_t y = 0; y < tab.height; y++) {
       ignore_return_value(
           write(STDOUT_FD, tab.ptr + (y * tab.stride), tab.width));
-      break;
     }
+  }
+}
+
+void  //
+print_netpbm_frame() {
+  g_num_printed_frames++;
+  uint8_t data[4096];
+  size_t o = 0;
+  const size_t o_increment = g_pixfmt_is_gray ? 1 : 3;
+  wuffs_base__table_u8 tab = wuffs_base__pixel_buffer__plane(&g_pixbuf, 0);
+  for (size_t y = 0; y < tab.height; y++) {
+    const uint8_t* row = tab.ptr + (y * tab.stride);
+    for (size_t x = 0; x < tab.width; x += 4) {
+      data[o + 0] = row[x + 2];
+      data[o + 1] = row[x + 1];
+      data[o + 2] = row[x + 0];
+      o += o_increment;
+      if ((o + 3) > sizeof(data)) {
+        ignore_return_value(write(STDOUT_FD, &data[0], o));
+        o = 0;
+      }
+    }
+  }
+  if (o > 0) {
+    ignore_return_value(write(STDOUT_FD, &data[0], o));
+    o = 0;
   }
 }
 
@@ -640,12 +699,16 @@ convert_frames() {
         wuffs_base__image_decoder__num_animation_loops(g_image_decoder);
 
     // Print a complete NIE frame (and surrounding bytes, for NIA).
-    if (!g_flags.first_frame_only) {
-      print_nia_duration(total_duration);
-    }
-    print_nie_frame();
-    if (!g_flags.first_frame_only) {
-      print_nia_padding();
+    if (g_flags.output_netpbm) {
+      print_netpbm_frame();
+    } else {
+      if (!g_flags.first_frame_only) {
+        print_nia_duration(total_duration);
+      }
+      print_nie_frame();
+      if (!g_flags.first_frame_only) {
+        print_nia_padding();
+      }
     }
 
     // Return early if there was an error decoding the frame.
@@ -653,7 +716,7 @@ convert_frames() {
       return wuffs_base__status__message(&df_status);
     } else if (decode_frame_io_error_message != NULL) {
       return decode_frame_io_error_message;
-    } else if (g_flags.first_frame_only) {
+    } else if (g_flags.first_frame_only || g_flags.output_netpbm) {
       return NULL;
     }
 
@@ -692,11 +755,13 @@ main1(int argc, char** argv) {
 
   TRY(load_image_type());
   TRY(load_image_config());
-  if (!g_flags.first_frame_only) {
+  if (g_flags.output_netpbm) {
+    print_netpbm_header();
+  } else if (!g_flags.first_frame_only) {
     print_nix_header(0x41AFC36E);  // "nïA" as a u32le.
   }
   const char* ret = convert_frames();
-  if (!g_flags.first_frame_only) {
+  if (!g_flags.first_frame_only && !g_flags.output_netpbm) {
     print_nia_footer();
   }
   return ret;
