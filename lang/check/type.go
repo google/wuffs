@@ -756,10 +756,11 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 		if q.c.isBuiltInSliceFunc(qqid, lTyp) {
 			bulky := false
 			switch qqid[2] {
-			case t.IDBulkLoadHostEndian:
-			case t.IDBulkMemset:
-			case t.IDBulkSaveHostEndian:
+			case t.IDBulkLoadHostEndian, t.IDBulkMemset, t.IDBulkSaveHostEndian:
 				bulky = true
+				if lTyp.Innermost().IsRefined() {
+					return fmt.Errorf("check: cannot apply bulk methods to slices of refined numeric types")
+				}
 			}
 
 			if !bulky || lTyp.Inner().IsBulkNumType() {
