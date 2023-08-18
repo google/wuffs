@@ -247,6 +247,11 @@ pub struct decoder? implements base.image_decoder(
 
         mcu_previous_dc_values : array[4] base.u16,
 
+        block_smoothing_lowest_scan_al : array[4] array[10] base.u8[..= 16],
+        block_smoothing_dc_values      : array[5] array[5] base.u16,
+        block_smoothing_mx_max_incl    : base.u32[..= 0x1FFF],
+        block_smoothing_my_max_incl    : base.u32[..= 0x1FFF],
+
         restart_interval       : base.u16,
         saved_restart_interval : base.u16,
         restarts_remaining     : base.u16,
@@ -699,6 +704,18 @@ pri func decoder.decode_sof?(src: base.io_reader) {
     if this.sof_marker >= 0xC2 {
         // Pre-IDCT block coefficients (mcu_blocks elements) are 2 bytes each.
         progressive = 2
+
+        i = 0
+        while i < 4 {
+            j = 0
+            while j < 10,
+                    inv i < 4,
+            {
+                this.block_smoothing_lowest_scan_al[i][j] = 16
+                j += 1
+            } endwhile
+            i += 1
+        } endwhile
     }
 
     this.components_workbuf_offsets[0] = 0
@@ -1252,10 +1269,11 @@ pri func decoder.decode_sos?(dst: ptr base.pixel_buffer, src: base.io_reader, wo
 }
 
 pri func decoder.prepare_scan?(src: base.io_reader) {
-    var c      : base.u8
-    var i      : base.u32
-    var j      : base.u32
-    var failed : base.bool
+    var c          : base.u8
+    var i          : base.u32
+    var j          : base.u32
+    var j_max_incl : base.u32[..= 9]
+    var failed     : base.bool
 
     if (this.payload_length < 6) or (this.payload_length > 12) {
         return "#bad SOS marker"
@@ -1385,6 +1403,16 @@ pri func decoder.prepare_scan?(src: base.io_reader) {
             // https://github.com/libjpeg-turbo/libjpeg-turbo/commit/a113506d175d03ae0e40965c3d3d21a5d561e119
             return "#missing Huffman table"
         }
+
+        j = this.scan_ss as base.u32
+        j_max_incl = (this.scan_se.min(no_more_than: 9)) as base.u32
+        while j <= j_max_incl,
+                inv i < 4,
+        {
+            assert j <= 9 via "a <= b: a <= c; c <= b"(c: j_max_incl)
+            this.block_smoothing_lowest_scan_al[this.scan_comps_cselector[i]][j] = this.scan_al
+            j += 1
+        } endwhile
 
         i += 1
     } endwhile
@@ -1550,21 +1578,19 @@ pri func decoder.fill_bitstream!(src: base.io_reader) {
     this.bitstream_wi = wi
 }
 
-pri func decoder.load_mcu_blocks_for_single_component!(mx: base.u32[..= 0x2000], my: base.u32[..= 0x2000], workbuf: slice base.u8, csel: base.u32[..= 3]) {
+pri func decoder.load_mcu_blocks_for_single_component!(mx: base.u32[..= 0x2000], my: base.u32[..= 0x2000], workbuf: slice base.u8, csel: base.u32[..= 3]),
+        choosy,
+{
     var stride16 : base.u64[..= 0x10_0080]
     var offset   : base.u64
 
-    // "while true" is redundant but minimizes the diff with load_mcu_blocks.
-    while true {
-        stride16 = (this.components_workbuf_widths[args.csel] * 16) as base.u64
-        offset = this.components_workbuf_offsets[args.csel | 4] +
-                ((args.mx as base.u64) * 128) +
-                ((args.my as base.u64) * stride16)
-        if offset <= args.workbuf.length() {
-            this.mcu_blocks[.. 1].bulk_load_host_endian!(src: args.workbuf[offset ..])
-        }
-        break
-    } endwhile
+    stride16 = (this.components_workbuf_widths[args.csel] * 16) as base.u64
+    offset = this.components_workbuf_offsets[args.csel | 4] +
+            ((args.mx as base.u64) * 128) +
+            ((args.my as base.u64) * stride16)
+    if offset <= args.workbuf.length() {
+        this.mcu_blocks[.. 1].bulk_load_host_endian!(src: args.workbuf[offset ..])
+    }
 }
 
 pri func decoder.load_mcu_blocks!(mx: base.u32[..= 0x2000], my: base.u32[..= 0x2000], workbuf: slice base.u8) {
@@ -1674,6 +1700,8 @@ pri func decoder.skip_past_the_next_restart_marker?(src: base.io_reader) {
 pri func decoder.apply_progressive_idct!(workbuf: slice base.u8) {
     var csel : base.u32
 
+    var block_smoothing_applicable : base.bool
+
     var scan_width_in_mcus  : base.u32[..= 0x2000]
     var scan_height_in_mcus : base.u32[..= 0x2000]
     var mcu_blocks_mx_mul_0 : base.u32[..= 0x00_0020]
@@ -1684,6 +1712,17 @@ pri func decoder.apply_progressive_idct!(workbuf: slice base.u8) {
 
     var stride : base.u64[..= 0x1_0008]
     var offset : base.u64
+
+    block_smoothing_applicable = true
+    csel = 0
+    while csel < this.num_components {
+        assert csel < 4 via "a < b: a < c; c <= b"(c: this.num_components)
+        if (this.block_smoothing_lowest_scan_al[csel][0] >= 16) or
+                this.top_left_quants_has_zero(q: this.components_tq[csel] as base.u32) {
+            block_smoothing_applicable = false
+        }
+        csel += 1
+    } endwhile
 
     csel = 0
     while csel < this.num_components {
@@ -1696,6 +1735,25 @@ pri func decoder.apply_progressive_idct!(workbuf: slice base.u8) {
                 width: this.height, h: this.components_v[csel], max_incl_h: this.max_incl_components_v)
         mcu_blocks_mx_mul_0 = 8
         mcu_blocks_my_mul_0 = 8 * this.components_workbuf_widths[csel]
+
+        // For partially loaded progressive JPEGs, apply what libjpeg-turbo
+        // calls "block smoothing".
+        if block_smoothing_applicable and (0 <> (
+                this.block_smoothing_lowest_scan_al[csel][1] |
+                this.block_smoothing_lowest_scan_al[csel][2] |
+                this.block_smoothing_lowest_scan_al[csel][3] |
+                this.block_smoothing_lowest_scan_al[csel][4] |
+                this.block_smoothing_lowest_scan_al[csel][5] |
+                this.block_smoothing_lowest_scan_al[csel][6] |
+                this.block_smoothing_lowest_scan_al[csel][8] |
+                this.block_smoothing_lowest_scan_al[csel][8] |
+                this.block_smoothing_lowest_scan_al[csel][9])) {
+            choose load_mcu_blocks_for_single_component = [load_mcu_blocks_for_single_component_smooth]
+            this.block_smoothing_mx_max_incl = scan_width_in_mcus ~sat- 1
+            this.block_smoothing_my_max_incl = scan_height_in_mcus ~sat- 1
+        } else {
+            choose load_mcu_blocks_for_single_component = [load_mcu_blocks_for_single_component]
+        }
 
         // Apply IDCT to the MCU blocks in the csel'th component.
         my = 0
@@ -1872,12 +1930,16 @@ pub func decoder.restart_frame!(index: base.u64, io_position: base.u64) base.sta
     if args.index <> 0 {
         return base."#bad argument"
     }
+
     this.call_sequence = 0x28
     this.frame_config_io_position = args.io_position
     this.scan_count = 0
     this.restart_interval = this.saved_restart_interval
+
+    i = 0
     while i < 4 {
         this.seen_dqt[i] = this.saved_seen_dqt[i]
+        j = 0
         while j < 64,
                 inv i < 4,
         {
@@ -1886,10 +1948,25 @@ pub func decoder.restart_frame!(index: base.u64, io_position: base.u64) base.sta
         } endwhile
         i += 1
     } endwhile
+
+    i = 0
+    while i < 4 {
+        j = 0
+        while j < 10,
+                inv i < 4,
+        {
+            this.block_smoothing_lowest_scan_al[i][j] = 16
+            j += 1
+        } endwhile
+        i += 1
+    } endwhile
+
+    i = 0
     while i < 8 {
         this.seen_dht[i] = false
         i += 1
     } endwhile
+
     return ok
 }
 

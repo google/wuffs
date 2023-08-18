@@ -9158,6 +9158,10 @@ struct wuffs_jpeg__decoder__struct {
     uint8_t f_mcu_blocks_dc_hselector[10];
     uint8_t f_mcu_blocks_ac_hselector[10];
     uint16_t f_mcu_previous_dc_values[4];
+    uint8_t f_block_smoothing_lowest_scan_al[4][10];
+    uint16_t f_block_smoothing_dc_values[5][5];
+    uint32_t f_block_smoothing_mx_max_incl;
+    uint32_t f_block_smoothing_my_max_incl;
     uint16_t f_restart_interval;
     uint16_t f_saved_restart_interval;
     uint16_t f_restarts_remaining;
@@ -9196,6 +9200,12 @@ struct wuffs_jpeg__decoder__struct {
     uint32_t p_decode_dht[1];
     uint32_t p_decode_sos[1];
     uint32_t p_prepare_scan[1];
+    wuffs_base__empty_struct (*choosy_load_mcu_blocks_for_single_component)(
+        wuffs_jpeg__decoder* self,
+        uint32_t a_mx,
+        uint32_t a_my,
+        wuffs_base__slice_u8 a_workbuf,
+        uint32_t a_csel);
     uint32_t p_skip_past_the_next_restart_marker[1];
     uint32_t (*choosy_decode_mcu)(
         wuffs_jpeg__decoder* self,
@@ -38898,6 +38908,15 @@ wuffs_jpeg__decoder__load_mcu_blocks_for_single_component(
 
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
+wuffs_jpeg__decoder__load_mcu_blocks_for_single_component__choosy_default(
+    wuffs_jpeg__decoder* self,
+    uint32_t a_mx,
+    uint32_t a_my,
+    wuffs_base__slice_u8 a_workbuf,
+    uint32_t a_csel);
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
 wuffs_jpeg__decoder__load_mcu_blocks(
     wuffs_jpeg__decoder* self,
     uint32_t a_mx,
@@ -38937,6 +38956,21 @@ wuffs_jpeg__decoder__swizzle_colorful(
     wuffs_jpeg__decoder* self,
     wuffs_base__pixel_buffer* a_dst,
     wuffs_base__slice_u8 a_workbuf);
+
+WUFFS_BASE__GENERATED_C_CODE
+static bool
+wuffs_jpeg__decoder__top_left_quants_has_zero(
+    const wuffs_jpeg__decoder* self,
+    uint32_t a_q);
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_jpeg__decoder__load_mcu_blocks_for_single_component_smooth(
+    wuffs_jpeg__decoder* self,
+    uint32_t a_mx,
+    uint32_t a_my,
+    wuffs_base__slice_u8 a_workbuf,
+    uint32_t a_csel);
 
 WUFFS_BASE__GENERATED_C_CODE
 static uint32_t
@@ -39066,6 +39100,7 @@ wuffs_jpeg__decoder__initialize(
   }
 
   self->private_impl.choosy_decode_idct = &wuffs_jpeg__decoder__decode_idct__choosy_default;
+  self->private_impl.choosy_load_mcu_blocks_for_single_component = &wuffs_jpeg__decoder__load_mcu_blocks_for_single_component__choosy_default;
   self->private_impl.choosy_decode_mcu = &wuffs_jpeg__decoder__decode_mcu__choosy_default;
 
   self->private_impl.magic = WUFFS_BASE__MAGIC;
@@ -41424,6 +41459,15 @@ wuffs_jpeg__decoder__decode_sof(
     v_progressive = 0u;
     if (self->private_impl.f_sof_marker >= 194u) {
       v_progressive = 2u;
+      v_i = 0u;
+      while (v_i < 4u) {
+        v_j = 0u;
+        while (v_j < 10u) {
+          self->private_impl.f_block_smoothing_lowest_scan_al[v_i][v_j] = 16u;
+          v_j += 1u;
+        }
+        v_i += 1u;
+      }
     }
     self->private_impl.f_components_workbuf_offsets[0u] = 0u;
     self->private_impl.f_components_workbuf_offsets[1u] = (self->private_impl.f_components_workbuf_offsets[0u] + v_wh0);
@@ -42396,6 +42440,7 @@ wuffs_jpeg__decoder__prepare_scan(
   uint8_t v_c = 0;
   uint32_t v_i = 0;
   uint32_t v_j = 0;
+  uint32_t v_j_max_incl = 0;
   bool v_failed = false;
 
   const uint8_t* iop_a_src = NULL;
@@ -42589,6 +42634,12 @@ wuffs_jpeg__decoder__prepare_scan(
       if (((self->private_impl.f_scan_ss == 0u) &&  ! self->private_impl.f_seen_dht[(0u | self->private_impl.f_scan_comps_td[v_i])]) || ((self->private_impl.f_scan_se != 0u) &&  ! self->private_impl.f_seen_dht[(4u | self->private_impl.f_scan_comps_ta[v_i])])) {
         status = wuffs_base__make_status(wuffs_jpeg__error__missing_huffman_table);
         goto exit;
+      }
+      v_j = ((uint32_t)(self->private_impl.f_scan_ss));
+      v_j_max_incl = ((uint32_t)(wuffs_base__u8__min(self->private_impl.f_scan_se, 9u)));
+      while (v_j <= v_j_max_incl) {
+        self->private_impl.f_block_smoothing_lowest_scan_al[self->private_impl.f_scan_comps_cselector[v_i]][v_j] = self->private_impl.f_scan_al;
+        v_j += 1u;
       }
       v_i += 1u;
     }
@@ -42790,16 +42841,25 @@ wuffs_jpeg__decoder__load_mcu_blocks_for_single_component(
     uint32_t a_my,
     wuffs_base__slice_u8 a_workbuf,
     uint32_t a_csel) {
+  return (*self->private_impl.choosy_load_mcu_blocks_for_single_component)(self, a_mx, a_my, a_workbuf, a_csel);
+}
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_jpeg__decoder__load_mcu_blocks_for_single_component__choosy_default(
+    wuffs_jpeg__decoder* self,
+    uint32_t a_mx,
+    uint32_t a_my,
+    wuffs_base__slice_u8 a_workbuf,
+    uint32_t a_csel) {
   uint64_t v_stride16 = 0;
   uint64_t v_offset = 0;
 
-  do {
-    v_stride16 = ((uint64_t)((self->private_impl.f_components_workbuf_widths[a_csel] * 16u)));
-    v_offset = (self->private_impl.f_components_workbuf_offsets[(a_csel | 4u)] + (((uint64_t)(a_mx)) * 128u) + (((uint64_t)(a_my)) * v_stride16));
-    if (v_offset <= ((uint64_t)(a_workbuf.len))) {
-      wuffs_base__bulk_load_host_endian(&self->private_data.f_mcu_blocks[0], 1u * (size_t)128u, wuffs_base__slice_u8__subslice_i(a_workbuf, v_offset));
-    }
-  } while (0);
+  v_stride16 = ((uint64_t)((self->private_impl.f_components_workbuf_widths[a_csel] * 16u)));
+  v_offset = (self->private_impl.f_components_workbuf_offsets[(a_csel | 4u)] + (((uint64_t)(a_mx)) * 128u) + (((uint64_t)(a_my)) * v_stride16));
+  if (v_offset <= ((uint64_t)(a_workbuf.len))) {
+    wuffs_base__bulk_load_host_endian(&self->private_data.f_mcu_blocks[0], 1u * (size_t)128u, wuffs_base__slice_u8__subslice_i(a_workbuf, v_offset));
+  }
   return wuffs_base__make_empty_struct();
 }
 
@@ -42954,6 +43014,7 @@ wuffs_jpeg__decoder__apply_progressive_idct(
     wuffs_jpeg__decoder* self,
     wuffs_base__slice_u8 a_workbuf) {
   uint32_t v_csel = 0;
+  bool v_block_smoothing_applicable = false;
   uint32_t v_scan_width_in_mcus = 0;
   uint32_t v_scan_height_in_mcus = 0;
   uint32_t v_mcu_blocks_mx_mul_0 = 0;
@@ -42963,12 +43024,37 @@ wuffs_jpeg__decoder__apply_progressive_idct(
   uint64_t v_stride = 0;
   uint64_t v_offset = 0;
 
+  v_block_smoothing_applicable = true;
+  v_csel = 0u;
+  while (v_csel < self->private_impl.f_num_components) {
+    if ((self->private_impl.f_block_smoothing_lowest_scan_al[v_csel][0u] >= 16u) || wuffs_jpeg__decoder__top_left_quants_has_zero(self, ((uint32_t)(self->private_impl.f_components_tq[v_csel])))) {
+      v_block_smoothing_applicable = false;
+    }
+    v_csel += 1u;
+  }
   v_csel = 0u;
   while (v_csel < self->private_impl.f_num_components) {
     v_scan_width_in_mcus = wuffs_jpeg__decoder__quantize_dimension(self, self->private_impl.f_width, self->private_impl.f_components_h[v_csel], self->private_impl.f_max_incl_components_h);
     v_scan_height_in_mcus = wuffs_jpeg__decoder__quantize_dimension(self, self->private_impl.f_height, self->private_impl.f_components_v[v_csel], self->private_impl.f_max_incl_components_v);
     v_mcu_blocks_mx_mul_0 = 8u;
     v_mcu_blocks_my_mul_0 = (8u * self->private_impl.f_components_workbuf_widths[v_csel]);
+    if (v_block_smoothing_applicable && (0u != (self->private_impl.f_block_smoothing_lowest_scan_al[v_csel][1u] |
+        self->private_impl.f_block_smoothing_lowest_scan_al[v_csel][2u] |
+        self->private_impl.f_block_smoothing_lowest_scan_al[v_csel][3u] |
+        self->private_impl.f_block_smoothing_lowest_scan_al[v_csel][4u] |
+        self->private_impl.f_block_smoothing_lowest_scan_al[v_csel][5u] |
+        self->private_impl.f_block_smoothing_lowest_scan_al[v_csel][6u] |
+        self->private_impl.f_block_smoothing_lowest_scan_al[v_csel][8u] |
+        self->private_impl.f_block_smoothing_lowest_scan_al[v_csel][8u] |
+        self->private_impl.f_block_smoothing_lowest_scan_al[v_csel][9u]))) {
+      self->private_impl.choosy_load_mcu_blocks_for_single_component = (
+          &wuffs_jpeg__decoder__load_mcu_blocks_for_single_component_smooth);
+      self->private_impl.f_block_smoothing_mx_max_incl = wuffs_base__u32__sat_sub(v_scan_width_in_mcus, 1u);
+      self->private_impl.f_block_smoothing_my_max_incl = wuffs_base__u32__sat_sub(v_scan_height_in_mcus, 1u);
+    } else {
+      self->private_impl.choosy_load_mcu_blocks_for_single_component = (
+          &wuffs_jpeg__decoder__load_mcu_blocks_for_single_component__choosy_default);
+    }
     v_my = 0u;
     while (v_my < v_scan_height_in_mcus) {
       v_mx = 0u;
@@ -43212,14 +43298,26 @@ wuffs_jpeg__decoder__restart_frame(
   self->private_impl.f_frame_config_io_position = a_io_position;
   self->private_impl.f_scan_count = 0u;
   self->private_impl.f_restart_interval = self->private_impl.f_saved_restart_interval;
+  v_i = 0u;
   while (v_i < 4u) {
     self->private_impl.f_seen_dqt[v_i] = self->private_impl.f_saved_seen_dqt[v_i];
+    v_j = 0u;
     while (v_j < 64u) {
       self->private_impl.f_quant_tables[v_i][v_j] = self->private_impl.f_saved_quant_tables[v_i][v_j];
       v_j += 1u;
     }
     v_i += 1u;
   }
+  v_i = 0u;
+  while (v_i < 4u) {
+    v_j = 0u;
+    while (v_j < 10u) {
+      self->private_impl.f_block_smoothing_lowest_scan_al[v_i][v_j] = 16u;
+      v_j += 1u;
+    }
+    v_i += 1u;
+  }
+  v_i = 0u;
   while (v_i < 8u) {
     self->private_impl.f_seen_dht[v_i] = false;
     v_i += 1u;
@@ -43296,6 +43394,633 @@ wuffs_jpeg__decoder__workbuf_len(
   }
 
   return wuffs_base__utility__make_range_ii_u64(self->private_impl.f_components_workbuf_offsets[8u], self->private_impl.f_components_workbuf_offsets[8u]);
+}
+
+// -------- func jpeg.decoder.top_left_quants_has_zero
+
+WUFFS_BASE__GENERATED_C_CODE
+static bool
+wuffs_jpeg__decoder__top_left_quants_has_zero(
+    const wuffs_jpeg__decoder* self,
+    uint32_t a_q) {
+  return ((self->private_impl.f_quant_tables[a_q][0u] == 0u) ||
+      (self->private_impl.f_quant_tables[a_q][1u] == 0u) ||
+      (self->private_impl.f_quant_tables[a_q][2u] == 0u) ||
+      (self->private_impl.f_quant_tables[a_q][3u] == 0u) ||
+      (self->private_impl.f_quant_tables[a_q][8u] == 0u) ||
+      (self->private_impl.f_quant_tables[a_q][9u] == 0u) ||
+      (self->private_impl.f_quant_tables[a_q][10u] == 0u) ||
+      (self->private_impl.f_quant_tables[a_q][16u] == 0u) ||
+      (self->private_impl.f_quant_tables[a_q][17u] == 0u) ||
+      (self->private_impl.f_quant_tables[a_q][24u] == 0u));
+}
+
+// -------- func jpeg.decoder.load_mcu_blocks_for_single_component_smooth
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_jpeg__decoder__load_mcu_blocks_for_single_component_smooth(
+    wuffs_jpeg__decoder* self,
+    uint32_t a_mx,
+    uint32_t a_my,
+    wuffs_base__slice_u8 a_workbuf,
+    uint32_t a_csel) {
+  uint64_t v_stride16 = 0;
+  uint64_t v_offset = 0;
+  uint32_t v_dx = 0;
+  uint32_t v_dy = 0;
+  uint32_t v_mx = 0;
+  uint32_t v_my = 0;
+  uint8_t v_q = 0;
+  uint32_t v_q_00 = 0;
+  uint32_t v_q_xy = 0;
+  uint8_t v_al = 0;
+  uint32_t v_scratch = 0;
+  uint32_t v_limit = 0;
+
+  v_stride16 = ((uint64_t)((self->private_impl.f_components_workbuf_widths[a_csel] * 16u)));
+  v_offset = (self->private_impl.f_components_workbuf_offsets[(a_csel | 4u)] + (((uint64_t)(a_mx)) * 128u) + (((uint64_t)(a_my)) * v_stride16));
+  if (v_offset <= ((uint64_t)(a_workbuf.len))) {
+    wuffs_base__bulk_load_host_endian(&self->private_data.f_mcu_blocks[0], 1u * (size_t)128u, wuffs_base__slice_u8__subslice_i(a_workbuf, v_offset));
+  }
+  v_dy = 0u;
+  while (v_dy < 5u) {
+    v_my = wuffs_base__u32__min(self->private_impl.f_block_smoothing_my_max_incl, wuffs_base__u32__sat_sub((a_my + v_dy), 2u));
+    v_dx = 0u;
+    while (v_dx < 5u) {
+      v_mx = wuffs_base__u32__min(self->private_impl.f_block_smoothing_mx_max_incl, wuffs_base__u32__sat_sub((a_mx + v_dx), 2u));
+      v_offset = (self->private_impl.f_components_workbuf_offsets[(a_csel | 4u)] + (((uint64_t)(v_mx)) * 128u) + (((uint64_t)(v_my)) * v_stride16));
+      if (v_offset <= ((uint64_t)(a_workbuf.len))) {
+        wuffs_base__bulk_load_host_endian(&self->private_impl.f_block_smoothing_dc_values[v_dy][v_dx], 1u * (size_t)2u, wuffs_base__slice_u8__subslice_i(a_workbuf, v_offset));
+      }
+      v_dx += 1u;
+    }
+    v_dy += 1u;
+  }
+  v_q = self->private_impl.f_components_tq[a_csel];
+  v_q_00 = ((uint32_t)(self->private_impl.f_quant_tables[v_q][0u]));
+  if (v_q_00 <= 0u) {
+    return wuffs_base__make_empty_struct();
+  }
+  if (0u != (16u &
+      self->private_impl.f_block_smoothing_lowest_scan_al[a_csel][1u] &
+      self->private_impl.f_block_smoothing_lowest_scan_al[a_csel][2u] &
+      self->private_impl.f_block_smoothing_lowest_scan_al[a_csel][3u] &
+      self->private_impl.f_block_smoothing_lowest_scan_al[a_csel][4u] &
+      self->private_impl.f_block_smoothing_lowest_scan_al[a_csel][5u] &
+      self->private_impl.f_block_smoothing_lowest_scan_al[a_csel][6u] &
+      self->private_impl.f_block_smoothing_lowest_scan_al[a_csel][7u] &
+      self->private_impl.f_block_smoothing_lowest_scan_al[a_csel][8u] &
+      self->private_impl.f_block_smoothing_lowest_scan_al[a_csel][9u])) {
+    v_scratch = 0u;
+    v_scratch += ((uint32_t)(4294967294u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][0u])));
+    v_scratch += ((uint32_t)(4294967290u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][1u])));
+    v_scratch += ((uint32_t)(4294967288u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][2u])));
+    v_scratch += ((uint32_t)(4294967290u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][3u])));
+    v_scratch += ((uint32_t)(4294967294u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][4u])));
+    v_scratch += ((uint32_t)(4294967290u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][0u])));
+    v_scratch += ((uint32_t)(6u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][1u])));
+    v_scratch += ((uint32_t)(42u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][2u])));
+    v_scratch += ((uint32_t)(6u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][3u])));
+    v_scratch += ((uint32_t)(4294967290u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][4u])));
+    v_scratch += ((uint32_t)(4294967288u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][0u])));
+    v_scratch += ((uint32_t)(42u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][1u])));
+    v_scratch += ((uint32_t)(152u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][2u])));
+    v_scratch += ((uint32_t)(42u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][3u])));
+    v_scratch += ((uint32_t)(4294967288u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][4u])));
+    v_scratch += ((uint32_t)(4294967290u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][0u])));
+    v_scratch += ((uint32_t)(6u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][1u])));
+    v_scratch += ((uint32_t)(42u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][2u])));
+    v_scratch += ((uint32_t)(6u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][3u])));
+    v_scratch += ((uint32_t)(4294967290u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][4u])));
+    v_scratch += ((uint32_t)(4294967294u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][0u])));
+    v_scratch += ((uint32_t)(4294967290u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][1u])));
+    v_scratch += ((uint32_t)(4294967288u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][2u])));
+    v_scratch += ((uint32_t)(4294967290u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][3u])));
+    v_scratch += ((uint32_t)(4294967294u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][4u])));
+    if (v_scratch < 2147483648u) {
+      v_scratch = ((uint32_t)(0u + (((uint32_t)(((uint32_t)(0u + v_scratch)) + 128u)) / 256u)));
+    } else {
+      v_scratch = ((uint32_t)(0u - (((uint32_t)(((uint32_t)(0u - v_scratch)) + 128u)) / 256u)));
+    }
+    self->private_data.f_mcu_blocks[0u][0u] = ((uint16_t)(v_scratch));
+    v_q_xy = ((uint32_t)(self->private_impl.f_quant_tables[v_q][1u]));
+    if ((v_q_xy > 0u) && (self->private_data.f_mcu_blocks[0u][1u] == 0u)) {
+      v_scratch = 0u;
+      v_scratch += ((uint32_t)(4294967295u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][0u])));
+      v_scratch += ((uint32_t)(4294967295u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][1u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][2u])));
+      v_scratch += ((uint32_t)(1u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][3u])));
+      v_scratch += ((uint32_t)(1u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][4u])));
+      v_scratch += ((uint32_t)(4294967293u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][0u])));
+      v_scratch += ((uint32_t)(13u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][1u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][2u])));
+      v_scratch += ((uint32_t)(4294967283u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][3u])));
+      v_scratch += ((uint32_t)(3u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][4u])));
+      v_scratch += ((uint32_t)(4294967293u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][0u])));
+      v_scratch += ((uint32_t)(38u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][1u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][2u])));
+      v_scratch += ((uint32_t)(4294967258u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][3u])));
+      v_scratch += ((uint32_t)(3u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][4u])));
+      v_scratch += ((uint32_t)(4294967293u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][0u])));
+      v_scratch += ((uint32_t)(13u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][1u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][2u])));
+      v_scratch += ((uint32_t)(4294967283u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][3u])));
+      v_scratch += ((uint32_t)(3u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][4u])));
+      v_scratch += ((uint32_t)(4294967295u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][0u])));
+      v_scratch += ((uint32_t)(4294967295u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][1u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][2u])));
+      v_scratch += ((uint32_t)(1u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][3u])));
+      v_scratch += ((uint32_t)(1u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][4u])));
+      v_scratch *= v_q_00;
+      if (v_scratch < 2147483648u) {
+        v_scratch = ((uint32_t)(0u + (((uint32_t)(((uint32_t)(0u + v_scratch)) + (v_q_xy << 7u))) / (v_q_xy << 8u))));
+      } else {
+        v_scratch = ((uint32_t)(0u - (((uint32_t)(((uint32_t)(0u - v_scratch)) + (v_q_xy << 7u))) / (v_q_xy << 8u))));
+      }
+      self->private_data.f_mcu_blocks[0u][1u] = ((uint16_t)(v_scratch));
+    }
+    v_q_xy = ((uint32_t)(self->private_impl.f_quant_tables[v_q][2u]));
+    if ((v_q_xy > 0u) && (self->private_data.f_mcu_blocks[0u][2u] == 0u)) {
+      v_scratch = 0u;
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][0u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][1u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][2u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][4u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][0u])));
+      v_scratch += ((uint32_t)(2u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][1u])));
+      v_scratch += ((uint32_t)(4294967291u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][2u])));
+      v_scratch += ((uint32_t)(2u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][4u])));
+      v_scratch += ((uint32_t)(1u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][0u])));
+      v_scratch += ((uint32_t)(7u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][1u])));
+      v_scratch += ((uint32_t)(4294967282u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][2u])));
+      v_scratch += ((uint32_t)(7u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][3u])));
+      v_scratch += ((uint32_t)(1u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][4u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][0u])));
+      v_scratch += ((uint32_t)(2u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][1u])));
+      v_scratch += ((uint32_t)(4294967291u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][2u])));
+      v_scratch += ((uint32_t)(2u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][4u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][0u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][1u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][2u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][4u])));
+      v_scratch *= v_q_00;
+      if (v_scratch < 2147483648u) {
+        v_scratch = ((uint32_t)(0u + (((uint32_t)(((uint32_t)(0u + v_scratch)) + (v_q_xy << 7u))) / (v_q_xy << 8u))));
+      } else {
+        v_scratch = ((uint32_t)(0u - (((uint32_t)(((uint32_t)(0u - v_scratch)) + (v_q_xy << 7u))) / (v_q_xy << 8u))));
+      }
+      self->private_data.f_mcu_blocks[0u][2u] = ((uint16_t)(v_scratch));
+    }
+    v_q_xy = ((uint32_t)(self->private_impl.f_quant_tables[v_q][3u]));
+    if ((v_q_xy > 0u) && (self->private_data.f_mcu_blocks[0u][3u] == 0u)) {
+      v_scratch = 0u;
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][0u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][1u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][2u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][4u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][0u])));
+      v_scratch += ((uint32_t)(1u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][1u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][2u])));
+      v_scratch += ((uint32_t)(4294967295u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][4u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][0u])));
+      v_scratch += ((uint32_t)(2u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][1u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][2u])));
+      v_scratch += ((uint32_t)(4294967294u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][4u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][0u])));
+      v_scratch += ((uint32_t)(1u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][1u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][2u])));
+      v_scratch += ((uint32_t)(4294967295u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][4u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][0u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][1u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][2u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][4u])));
+      v_scratch *= v_q_00;
+      if (v_scratch < 2147483648u) {
+        v_scratch = ((uint32_t)(0u + (((uint32_t)(((uint32_t)(0u + v_scratch)) + (v_q_xy << 7u))) / (v_q_xy << 8u))));
+      } else {
+        v_scratch = ((uint32_t)(0u - (((uint32_t)(((uint32_t)(0u - v_scratch)) + (v_q_xy << 7u))) / (v_q_xy << 8u))));
+      }
+      self->private_data.f_mcu_blocks[0u][3u] = ((uint16_t)(v_scratch));
+    }
+    v_q_xy = ((uint32_t)(self->private_impl.f_quant_tables[v_q][8u]));
+    if ((v_q_xy > 0u) && (self->private_data.f_mcu_blocks[0u][8u] == 0u)) {
+      v_scratch = 0u;
+      v_scratch += ((uint32_t)(4294967295u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][0u])));
+      v_scratch += ((uint32_t)(4294967293u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][1u])));
+      v_scratch += ((uint32_t)(4294967293u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][2u])));
+      v_scratch += ((uint32_t)(4294967293u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][3u])));
+      v_scratch += ((uint32_t)(4294967295u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][4u])));
+      v_scratch += ((uint32_t)(4294967295u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][0u])));
+      v_scratch += ((uint32_t)(13u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][1u])));
+      v_scratch += ((uint32_t)(38u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][2u])));
+      v_scratch += ((uint32_t)(13u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][3u])));
+      v_scratch += ((uint32_t)(4294967295u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][4u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][0u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][1u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][2u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][4u])));
+      v_scratch += ((uint32_t)(1u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][0u])));
+      v_scratch += ((uint32_t)(4294967283u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][1u])));
+      v_scratch += ((uint32_t)(4294967258u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][2u])));
+      v_scratch += ((uint32_t)(4294967283u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][3u])));
+      v_scratch += ((uint32_t)(1u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][4u])));
+      v_scratch += ((uint32_t)(1u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][0u])));
+      v_scratch += ((uint32_t)(3u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][1u])));
+      v_scratch += ((uint32_t)(3u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][2u])));
+      v_scratch += ((uint32_t)(3u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][3u])));
+      v_scratch += ((uint32_t)(1u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][4u])));
+      v_scratch *= v_q_00;
+      if (v_scratch < 2147483648u) {
+        v_scratch = ((uint32_t)(0u + (((uint32_t)(((uint32_t)(0u + v_scratch)) + (v_q_xy << 7u))) / (v_q_xy << 8u))));
+      } else {
+        v_scratch = ((uint32_t)(0u - (((uint32_t)(((uint32_t)(0u - v_scratch)) + (v_q_xy << 7u))) / (v_q_xy << 8u))));
+      }
+      self->private_data.f_mcu_blocks[0u][8u] = ((uint16_t)(v_scratch));
+    }
+    v_q_xy = ((uint32_t)(self->private_impl.f_quant_tables[v_q][9u]));
+    if ((v_q_xy > 0u) && (self->private_data.f_mcu_blocks[0u][9u] == 0u)) {
+      v_scratch = 0u;
+      v_scratch += ((uint32_t)(4294967295u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][0u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][1u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][2u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][3u])));
+      v_scratch += ((uint32_t)(1u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][4u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][0u])));
+      v_scratch += ((uint32_t)(9u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][1u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][2u])));
+      v_scratch += ((uint32_t)(4294967287u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][4u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][0u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][1u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][2u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][4u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][0u])));
+      v_scratch += ((uint32_t)(4294967287u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][1u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][2u])));
+      v_scratch += ((uint32_t)(9u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][4u])));
+      v_scratch += ((uint32_t)(1u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][0u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][1u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][2u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][3u])));
+      v_scratch += ((uint32_t)(4294967295u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][4u])));
+      v_scratch *= v_q_00;
+      if (v_scratch < 2147483648u) {
+        v_scratch = ((uint32_t)(0u + (((uint32_t)(((uint32_t)(0u + v_scratch)) + (v_q_xy << 7u))) / (v_q_xy << 8u))));
+      } else {
+        v_scratch = ((uint32_t)(0u - (((uint32_t)(((uint32_t)(0u - v_scratch)) + (v_q_xy << 7u))) / (v_q_xy << 8u))));
+      }
+      self->private_data.f_mcu_blocks[0u][9u] = ((uint16_t)(v_scratch));
+    }
+    v_q_xy = ((uint32_t)(self->private_impl.f_quant_tables[v_q][10u]));
+    if ((v_q_xy > 0u) && (self->private_data.f_mcu_blocks[0u][10u] == 0u)) {
+      v_scratch = 0u;
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][0u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][1u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][2u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][4u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][0u])));
+      v_scratch += ((uint32_t)(1u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][1u])));
+      v_scratch += ((uint32_t)(4294967293u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][2u])));
+      v_scratch += ((uint32_t)(1u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][4u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][0u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][1u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][2u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][4u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][0u])));
+      v_scratch += ((uint32_t)(4294967295u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][1u])));
+      v_scratch += ((uint32_t)(3u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][2u])));
+      v_scratch += ((uint32_t)(4294967295u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][4u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][0u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][1u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][2u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][4u])));
+      v_scratch *= v_q_00;
+      if (v_scratch < 2147483648u) {
+        v_scratch = ((uint32_t)(0u + (((uint32_t)(((uint32_t)(0u + v_scratch)) + (v_q_xy << 7u))) / (v_q_xy << 8u))));
+      } else {
+        v_scratch = ((uint32_t)(0u - (((uint32_t)(((uint32_t)(0u - v_scratch)) + (v_q_xy << 7u))) / (v_q_xy << 8u))));
+      }
+      self->private_data.f_mcu_blocks[0u][10u] = ((uint16_t)(v_scratch));
+    }
+    v_q_xy = ((uint32_t)(self->private_impl.f_quant_tables[v_q][16u]));
+    if ((v_q_xy > 0u) && (self->private_data.f_mcu_blocks[0u][16u] == 0u)) {
+      v_scratch = 0u;
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][0u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][1u])));
+      v_scratch += ((uint32_t)(1u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][2u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][4u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][0u])));
+      v_scratch += ((uint32_t)(2u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][1u])));
+      v_scratch += ((uint32_t)(7u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][2u])));
+      v_scratch += ((uint32_t)(2u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][4u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][0u])));
+      v_scratch += ((uint32_t)(4294967291u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][1u])));
+      v_scratch += ((uint32_t)(4294967282u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][2u])));
+      v_scratch += ((uint32_t)(4294967291u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][4u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][0u])));
+      v_scratch += ((uint32_t)(2u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][1u])));
+      v_scratch += ((uint32_t)(7u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][2u])));
+      v_scratch += ((uint32_t)(2u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][4u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][0u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][1u])));
+      v_scratch += ((uint32_t)(1u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][2u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][4u])));
+      v_scratch *= v_q_00;
+      if (v_scratch < 2147483648u) {
+        v_scratch = ((uint32_t)(0u + (((uint32_t)(((uint32_t)(0u + v_scratch)) + (v_q_xy << 7u))) / (v_q_xy << 8u))));
+      } else {
+        v_scratch = ((uint32_t)(0u - (((uint32_t)(((uint32_t)(0u - v_scratch)) + (v_q_xy << 7u))) / (v_q_xy << 8u))));
+      }
+      self->private_data.f_mcu_blocks[0u][16u] = ((uint16_t)(v_scratch));
+    }
+    v_q_xy = ((uint32_t)(self->private_impl.f_quant_tables[v_q][17u]));
+    if ((v_q_xy > 0u) && (self->private_data.f_mcu_blocks[0u][17u] == 0u)) {
+      v_scratch = 0u;
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][0u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][1u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][2u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][4u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][0u])));
+      v_scratch += ((uint32_t)(1u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][1u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][2u])));
+      v_scratch += ((uint32_t)(4294967295u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][4u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][0u])));
+      v_scratch += ((uint32_t)(4294967293u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][1u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][2u])));
+      v_scratch += ((uint32_t)(3u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][4u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][0u])));
+      v_scratch += ((uint32_t)(1u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][1u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][2u])));
+      v_scratch += ((uint32_t)(4294967295u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][4u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][0u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][1u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][2u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][4u])));
+      v_scratch *= v_q_00;
+      if (v_scratch < 2147483648u) {
+        v_scratch = ((uint32_t)(0u + (((uint32_t)(((uint32_t)(0u + v_scratch)) + (v_q_xy << 7u))) / (v_q_xy << 8u))));
+      } else {
+        v_scratch = ((uint32_t)(0u - (((uint32_t)(((uint32_t)(0u - v_scratch)) + (v_q_xy << 7u))) / (v_q_xy << 8u))));
+      }
+      self->private_data.f_mcu_blocks[0u][17u] = ((uint16_t)(v_scratch));
+    }
+    v_q_xy = ((uint32_t)(self->private_impl.f_quant_tables[v_q][24u]));
+    if ((v_q_xy > 0u) && (self->private_data.f_mcu_blocks[0u][24u] == 0u)) {
+      v_scratch = 0u;
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][0u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][1u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][2u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][4u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][0u])));
+      v_scratch += ((uint32_t)(1u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][1u])));
+      v_scratch += ((uint32_t)(2u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][2u])));
+      v_scratch += ((uint32_t)(1u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][4u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][0u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][1u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][2u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][4u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][0u])));
+      v_scratch += ((uint32_t)(4294967295u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][1u])));
+      v_scratch += ((uint32_t)(4294967294u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][2u])));
+      v_scratch += ((uint32_t)(4294967295u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][4u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][0u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][1u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][2u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][4u])));
+      v_scratch *= v_q_00;
+      if (v_scratch < 2147483648u) {
+        v_scratch = ((uint32_t)(0u + (((uint32_t)(((uint32_t)(0u + v_scratch)) + (v_q_xy << 7u))) / (v_q_xy << 8u))));
+      } else {
+        v_scratch = ((uint32_t)(0u - (((uint32_t)(((uint32_t)(0u - v_scratch)) + (v_q_xy << 7u))) / (v_q_xy << 8u))));
+      }
+      self->private_data.f_mcu_blocks[0u][24u] = ((uint16_t)(v_scratch));
+    }
+  } else {
+    v_al = self->private_impl.f_block_smoothing_lowest_scan_al[a_csel][1u];
+    v_q_xy = ((uint32_t)(self->private_impl.f_quant_tables[v_q][1u]));
+    if ((v_al > 0u) && (v_q_xy > 0u) && (self->private_data.f_mcu_blocks[0u][1u] == 0u)) {
+      v_limit = ((((uint32_t)(1u)) << v_al) - 1u);
+      v_scratch = 0u;
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][0u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][1u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][2u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][4u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][0u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][1u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][2u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][4u])));
+      v_scratch += ((uint32_t)(4294967289u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][0u])));
+      v_scratch += ((uint32_t)(50u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][1u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][2u])));
+      v_scratch += ((uint32_t)(4294967246u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][3u])));
+      v_scratch += ((uint32_t)(7u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][4u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][0u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][1u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][2u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][4u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][0u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][1u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][2u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][4u])));
+      v_scratch *= v_q_00;
+      if (v_scratch < 2147483648u) {
+        v_scratch = ((uint32_t)(0u + wuffs_base__u32__min(v_limit, (((uint32_t)(((uint32_t)(0u + v_scratch)) + (v_q_xy << 7u))) / (v_q_xy << 8u)))));
+      } else {
+        v_scratch = ((uint32_t)(0u - wuffs_base__u32__min(v_limit, (((uint32_t)(((uint32_t)(0u - v_scratch)) + (v_q_xy << 7u))) / (v_q_xy << 8u)))));
+      }
+      self->private_data.f_mcu_blocks[0u][1u] = ((uint16_t)(v_scratch));
+    }
+    v_al = self->private_impl.f_block_smoothing_lowest_scan_al[a_csel][5u];
+    v_q_xy = ((uint32_t)(self->private_impl.f_quant_tables[v_q][2u]));
+    if ((v_al > 0u) && (v_q_xy > 0u) && (self->private_data.f_mcu_blocks[0u][2u] == 0u)) {
+      v_limit = ((((uint32_t)(1u)) << v_al) - 1u);
+      v_scratch = 0u;
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][0u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][1u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][2u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][4u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][0u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][1u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][2u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][4u])));
+      v_scratch += ((uint32_t)(4294967295u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][0u])));
+      v_scratch += ((uint32_t)(13u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][1u])));
+      v_scratch += ((uint32_t)(4294967272u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][2u])));
+      v_scratch += ((uint32_t)(13u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][3u])));
+      v_scratch += ((uint32_t)(4294967295u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][4u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][0u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][1u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][2u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][4u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][0u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][1u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][2u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][4u])));
+      v_scratch *= v_q_00;
+      if (v_scratch < 2147483648u) {
+        v_scratch = ((uint32_t)(0u + wuffs_base__u32__min(v_limit, (((uint32_t)(((uint32_t)(0u + v_scratch)) + (v_q_xy << 7u))) / (v_q_xy << 8u)))));
+      } else {
+        v_scratch = ((uint32_t)(0u - wuffs_base__u32__min(v_limit, (((uint32_t)(((uint32_t)(0u - v_scratch)) + (v_q_xy << 7u))) / (v_q_xy << 8u)))));
+      }
+      self->private_data.f_mcu_blocks[0u][2u] = ((uint16_t)(v_scratch));
+    }
+    v_al = self->private_impl.f_block_smoothing_lowest_scan_al[a_csel][2u];
+    v_q_xy = ((uint32_t)(self->private_impl.f_quant_tables[v_q][8u]));
+    if ((v_al > 0u) && (v_q_xy > 0u) && (self->private_data.f_mcu_blocks[0u][8u] == 0u)) {
+      v_limit = ((((uint32_t)(1u)) << v_al) - 1u);
+      v_scratch = 0u;
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][0u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][1u])));
+      v_scratch += ((uint32_t)(4294967289u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][2u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][4u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][0u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][1u])));
+      v_scratch += ((uint32_t)(50u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][2u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][4u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][0u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][1u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][2u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][4u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][0u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][1u])));
+      v_scratch += ((uint32_t)(4294967246u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][2u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][4u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][0u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][1u])));
+      v_scratch += ((uint32_t)(7u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][2u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][4u])));
+      v_scratch *= v_q_00;
+      if (v_scratch < 2147483648u) {
+        v_scratch = ((uint32_t)(0u + wuffs_base__u32__min(v_limit, (((uint32_t)(((uint32_t)(0u + v_scratch)) + (v_q_xy << 7u))) / (v_q_xy << 8u)))));
+      } else {
+        v_scratch = ((uint32_t)(0u - wuffs_base__u32__min(v_limit, (((uint32_t)(((uint32_t)(0u - v_scratch)) + (v_q_xy << 7u))) / (v_q_xy << 8u)))));
+      }
+      self->private_data.f_mcu_blocks[0u][8u] = ((uint16_t)(v_scratch));
+    }
+    v_al = self->private_impl.f_block_smoothing_lowest_scan_al[a_csel][4u];
+    v_q_xy = ((uint32_t)(self->private_impl.f_quant_tables[v_q][9u]));
+    if ((v_al > 0u) && (v_q_xy > 0u) && (self->private_data.f_mcu_blocks[0u][9u] == 0u)) {
+      v_limit = ((((uint32_t)(1u)) << v_al) - 1u);
+      v_scratch = 0u;
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][0u])));
+      v_scratch += ((uint32_t)(4294967295u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][1u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][2u])));
+      v_scratch += ((uint32_t)(1u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][4u])));
+      v_scratch += ((uint32_t)(4294967295u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][0u])));
+      v_scratch += ((uint32_t)(10u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][1u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][2u])));
+      v_scratch += ((uint32_t)(4294967286u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][3u])));
+      v_scratch += ((uint32_t)(1u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][4u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][0u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][1u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][2u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][4u])));
+      v_scratch += ((uint32_t)(1u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][0u])));
+      v_scratch += ((uint32_t)(4294967286u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][1u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][2u])));
+      v_scratch += ((uint32_t)(10u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][3u])));
+      v_scratch += ((uint32_t)(4294967295u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][4u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][0u])));
+      v_scratch += ((uint32_t)(1u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][1u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][2u])));
+      v_scratch += ((uint32_t)(4294967295u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][4u])));
+      v_scratch *= v_q_00;
+      if (v_scratch < 2147483648u) {
+        v_scratch = ((uint32_t)(0u + wuffs_base__u32__min(v_limit, (((uint32_t)(((uint32_t)(0u + v_scratch)) + (v_q_xy << 7u))) / (v_q_xy << 8u)))));
+      } else {
+        v_scratch = ((uint32_t)(0u - wuffs_base__u32__min(v_limit, (((uint32_t)(((uint32_t)(0u - v_scratch)) + (v_q_xy << 7u))) / (v_q_xy << 8u)))));
+      }
+      self->private_data.f_mcu_blocks[0u][9u] = ((uint16_t)(v_scratch));
+    }
+    v_al = self->private_impl.f_block_smoothing_lowest_scan_al[a_csel][3u];
+    v_q_xy = ((uint32_t)(self->private_impl.f_quant_tables[v_q][16u]));
+    if ((v_al > 0u) && (v_q_xy > 0u) && (self->private_data.f_mcu_blocks[0u][16u] == 0u)) {
+      v_limit = ((((uint32_t)(1u)) << v_al) - 1u);
+      v_scratch = 0u;
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][0u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][1u])));
+      v_scratch += ((uint32_t)(4294967295u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][2u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[0u][4u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][0u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][1u])));
+      v_scratch += ((uint32_t)(13u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][2u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[1u][4u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][0u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][1u])));
+      v_scratch += ((uint32_t)(4294967272u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][2u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[2u][4u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][0u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][1u])));
+      v_scratch += ((uint32_t)(13u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][2u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[3u][4u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][0u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][1u])));
+      v_scratch += ((uint32_t)(4294967295u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][2u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][3u])));
+      v_scratch += ((uint32_t)(0u * wuffs_base__utility__sign_extend_convert_u16_u32(self->private_impl.f_block_smoothing_dc_values[4u][4u])));
+      v_scratch *= v_q_00;
+      if (v_scratch < 2147483648u) {
+        v_scratch = ((uint32_t)(0u + wuffs_base__u32__min(v_limit, (((uint32_t)(((uint32_t)(0u + v_scratch)) + (v_q_xy << 7u))) / (v_q_xy << 8u)))));
+      } else {
+        v_scratch = ((uint32_t)(0u - wuffs_base__u32__min(v_limit, (((uint32_t)(((uint32_t)(0u - v_scratch)) + (v_q_xy << 7u))) / (v_q_xy << 8u)))));
+      }
+      self->private_data.f_mcu_blocks[0u][16u] = ((uint16_t)(v_scratch));
+    }
+  }
+  return wuffs_base__make_empty_struct();
 }
 
 // -------- func jpeg.decoder.decode_mcu
