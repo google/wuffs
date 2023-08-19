@@ -12787,10 +12787,7 @@ static inline wuffs_base__empty_struct  //
 wuffs_base__bulk_load_host_endian(void* ptr,
                                   size_t len,
                                   wuffs_base__slice_u8 src) {
-  if (len > src.len) {
-    len = src.len;
-  }
-  if (len) {
+  if (len && (len <= src.len)) {
     memmove(ptr, src.ptr, len);
   }
   return wuffs_base__make_empty_struct();
@@ -12808,10 +12805,7 @@ static inline wuffs_base__empty_struct  //
 wuffs_base__bulk_save_host_endian(void* ptr,
                                   size_t len,
                                   wuffs_base__slice_u8 dst) {
-  if (len > dst.len) {
-    len = dst.len;
-  }
-  if (len) {
+  if (len && (len <= dst.len)) {
     memmove(dst.ptr, ptr, len);
   }
   return wuffs_base__make_empty_struct();
