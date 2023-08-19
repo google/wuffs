@@ -157,7 +157,7 @@ f2457b64 test/3pdata/pngsuite/tp0n0g08.png
 05846c5f test/3pdata/pngsuite/tp0n2c08.png
 3d7708a8 test/3pdata/pngsuite/tp0n3p08.png
 46deef3b test/3pdata/pngsuite/tp1n3p08.png
-f286cbfc test/3pdata/pngsuite/xcsn0g01.png
+926d3aa2 test/3pdata/pngsuite/xcsn0g01.png
 9098c4d8 test/3pdata/pngsuite/z00n2c08.png
 9098c4d8 test/3pdata/pngsuite/z03n2c08.png
 9098c4d8 test/3pdata/pngsuite/z06n2c08.png
