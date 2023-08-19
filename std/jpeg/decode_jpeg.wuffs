@@ -862,6 +862,14 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
     } else if this.components_workbuf_offsets[4] < this.components_workbuf_offsets[8] {
         args.workbuf[this.components_workbuf_offsets[4] .. this.components_workbuf_offsets[8]].bulk_memset!(byte_value: 0)
     }
+    // For both sequential and progressive JPEGs, biased-zero-initialize the
+    // samples, in case the scans are incomplete (in terms of covering all
+    // components) or the input is truncated. 0x80 is the same post-IDCT bias
+    // as per BIAS_AND_CLAMP. For YCbCr, (0x80, 0x80, 0x80) is a medium gray
+    // but (0x00, 0x00, 0x00) is a dark green.
+    if this.components_workbuf_offsets[4] <= args.workbuf.length() {
+        args.workbuf[.. this.components_workbuf_offsets[4]].bulk_memset!(byte_value: 0x80)
+    }
 
     // Process chunks (markers and their payloads).
     while true {
@@ -1284,7 +1292,6 @@ pri func decoder.prepare_scan?(src: base.io_reader) {
     }
     this.scan_num_components = c as base.u32
     if (this.scan_num_components > this.num_components) or
-            ((this.scan_num_components < this.num_components) and (this.sof_marker < 0xC2)) or
             (this.payload_length <> (4 + (2 * this.scan_num_components))) {
         return "#bad SOS marker"
     }
@@ -1303,20 +1310,27 @@ pri func decoder.prepare_scan?(src: base.io_reader) {
                 return "#bad SOS marker"
             }
             assert j < 4 via "a < b: a < c; c <= b"(c: this.num_components)
-            if c <> this.components_c[j] {
-                j += 1
-                continue
-            }
-            if i > 0 {
-                if j <= (this.scan_comps_cselector[i - 1] as base.u32) {
-                    return "#bad SOS marker"
+            if c == this.components_c[j] {
+                if not this.seen_dqt[this.components_tq[j]] {
+                    return "#missing Quantization table"
                 }
+                this.scan_comps_cselector[i] = j as base.u8
+                break
             }
-            if not this.seen_dqt[this.components_tq[j]] {
-                return "#missing Quantization table"
+            j += 1
+        } endwhile
+
+        // Section B.2.3: "the value of C_sj shall be different from the values
+        // of C_s1 to C_sj–1".
+        j = 0
+        while j < i,
+                inv i < 4,
+        {
+            assert j < 4 via "a < b: a < c; c < b"(c: i)
+            if this.scan_comps_cselector[i] == this.scan_comps_cselector[j] {
+                return "#bad SOS marker"
             }
-            this.scan_comps_cselector[i] = j as base.u8
-            break
+            j += 1
         } endwhile
 
         c = args.src.read_u8?()

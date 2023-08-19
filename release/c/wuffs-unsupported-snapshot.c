@@ -41850,6 +41850,9 @@ wuffs_jpeg__decoder__do_decode_frame(
     } else if (self->private_impl.f_components_workbuf_offsets[4u] < self->private_impl.f_components_workbuf_offsets[8u]) {
       wuffs_base__bulk_memset(a_workbuf.ptr + self->private_impl.f_components_workbuf_offsets[4u], (self->private_impl.f_components_workbuf_offsets[8u] - self->private_impl.f_components_workbuf_offsets[4u]), 0u);
     }
+    if (self->private_impl.f_components_workbuf_offsets[4u] <= ((uint64_t)(a_workbuf.len))) {
+      wuffs_base__bulk_memset(a_workbuf.ptr, self->private_impl.f_components_workbuf_offsets[4u], 128u);
+    }
     while (true) {
       while (true) {
         {
@@ -42479,7 +42482,7 @@ wuffs_jpeg__decoder__prepare_scan(
       goto exit;
     }
     self->private_impl.f_scan_num_components = ((uint32_t)(v_c));
-    if ((self->private_impl.f_scan_num_components > self->private_impl.f_num_components) || ((self->private_impl.f_scan_num_components < self->private_impl.f_num_components) && (self->private_impl.f_sof_marker < 194u)) || (self->private_impl.f_payload_length != (4u + (2u * self->private_impl.f_scan_num_components)))) {
+    if ((self->private_impl.f_scan_num_components > self->private_impl.f_num_components) || (self->private_impl.f_payload_length != (4u + (2u * self->private_impl.f_scan_num_components)))) {
       status = wuffs_base__make_status(wuffs_jpeg__error__bad_sos_marker);
       goto exit;
     }
@@ -42501,22 +42504,23 @@ wuffs_jpeg__decoder__prepare_scan(
           status = wuffs_base__make_status(wuffs_jpeg__error__bad_sos_marker);
           goto exit;
         }
-        if (v_c != self->private_impl.f_components_c[v_j]) {
-          v_j += 1u;
-          continue;
-        }
-        if (v_i > 0u) {
-          if (v_j <= ((uint32_t)(self->private_impl.f_scan_comps_cselector[(v_i - 1u)]))) {
-            status = wuffs_base__make_status(wuffs_jpeg__error__bad_sos_marker);
+        if (v_c == self->private_impl.f_components_c[v_j]) {
+          if ( ! self->private_impl.f_seen_dqt[self->private_impl.f_components_tq[v_j]]) {
+            status = wuffs_base__make_status(wuffs_jpeg__error__missing_quantization_table);
             goto exit;
           }
+          self->private_impl.f_scan_comps_cselector[v_i] = ((uint8_t)(v_j));
+          break;
         }
-        if ( ! self->private_impl.f_seen_dqt[self->private_impl.f_components_tq[v_j]]) {
-          status = wuffs_base__make_status(wuffs_jpeg__error__missing_quantization_table);
+        v_j += 1u;
+      }
+      v_j = 0u;
+      while (v_j < v_i) {
+        if (self->private_impl.f_scan_comps_cselector[v_i] == self->private_impl.f_scan_comps_cselector[v_j]) {
+          status = wuffs_base__make_status(wuffs_jpeg__error__bad_sos_marker);
           goto exit;
         }
-        self->private_impl.f_scan_comps_cselector[v_i] = ((uint8_t)(v_j));
-        break;
+        v_j += 1u;
       }
       {
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
