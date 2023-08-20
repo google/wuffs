@@ -87,6 +87,24 @@ typedef void (*wuffs_base__pixel_swizzler__swizzle_ycc__convert_func)(
     const uint8_t* up2);
 
 static void  //
+wuffs_base__pixel_swizzler__swizzle_rgb__convert_general(
+    wuffs_base__pixel_buffer* dst,
+    uint32_t x,
+    uint32_t x_end,
+    uint32_t y,
+    const uint8_t* up0,
+    const uint8_t* up1,
+    const uint8_t* up2) {
+  for (; x < x_end; x++) {
+    uint32_t color = 0xFF000000 |                    //
+                     (((uint32_t)(*up0++)) << 16) |  //
+                     (((uint32_t)(*up1++)) << 8) |   //
+                     (((uint32_t)(*up2++)) << 0);
+    wuffs_base__pixel_buffer__set_color_u32_at(dst, x, y, color);
+  }
+}
+
+static void  //
 wuffs_base__pixel_swizzler__swizzle_ycc__convert_general(
     wuffs_base__pixel_buffer* dst,
     uint32_t x,
@@ -778,6 +796,7 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
     uint8_t v1,
     uint8_t v2,
     uint8_t v3,
+    bool is_rgb_or_cmyk,
     bool triangle_filter_for_2to1,
     wuffs_base__slice_u8 scratch_buffer_2k) {
   if (!p) {
@@ -879,34 +898,38 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
 
   wuffs_base__pixel_swizzler__swizzle_ycc__convert_func convfunc = NULL;
 
-  switch (dst->pixcfg.private_impl.pixfmt.repr) {
-    case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
-    case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
-    case WUFFS_BASE__PIXEL_FORMAT__BGRX:
+  if (is_rgb_or_cmyk) {
+    convfunc = &wuffs_base__pixel_swizzler__swizzle_rgb__convert_general;
+  } else {
+    switch (dst->pixcfg.private_impl.pixfmt.repr) {
+      case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
+      case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
+      case WUFFS_BASE__PIXEL_FORMAT__BGRX:
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
-      if (wuffs_base__cpu_arch__have_x86_avx2()) {
-        convfunc =
-            &wuffs_base__pixel_swizzler__swizzle_ycc__convert_bgrx_x86_avx2;
-        break;
-      }
+        if (wuffs_base__cpu_arch__have_x86_avx2()) {
+          convfunc =
+              &wuffs_base__pixel_swizzler__swizzle_ycc__convert_bgrx_x86_avx2;
+          break;
+        }
 #endif
-      convfunc = &wuffs_base__pixel_swizzler__swizzle_ycc__convert_bgrx;
-      break;
-    case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
-    case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
-    case WUFFS_BASE__PIXEL_FORMAT__RGBX:
+        convfunc = &wuffs_base__pixel_swizzler__swizzle_ycc__convert_bgrx;
+        break;
+      case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
+      case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
+      case WUFFS_BASE__PIXEL_FORMAT__RGBX:
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
-      if (wuffs_base__cpu_arch__have_x86_avx2()) {
-        convfunc =
-            &wuffs_base__pixel_swizzler__swizzle_ycc__convert_rgbx_x86_avx2;
-        break;
-      }
+        if (wuffs_base__cpu_arch__have_x86_avx2()) {
+          convfunc =
+              &wuffs_base__pixel_swizzler__swizzle_ycc__convert_rgbx_x86_avx2;
+          break;
+        }
 #endif
-      convfunc = &wuffs_base__pixel_swizzler__swizzle_ycc__convert_rgbx;
-      break;
-    default:
-      convfunc = &wuffs_base__pixel_swizzler__swizzle_ycc__convert_general;
-      break;
+        convfunc = &wuffs_base__pixel_swizzler__swizzle_ycc__convert_rgbx;
+        break;
+      default:
+        convfunc = &wuffs_base__pixel_swizzler__swizzle_ycc__convert_general;
+        break;
+    }
   }
 
   void (*func)(

@@ -24,7 +24,7 @@ d8657741 test/3pdata/golangsuite/video-001.q50.422.progressive.jpeg
 2fdb8a91 test/3pdata/golangsuite/video-001.q50.440.progressive.jpeg
 efee4983 test/3pdata/golangsuite/video-001.q50.444.jpeg
 efee4983 test/3pdata/golangsuite/video-001.q50.444.progressive.jpeg
-253a7c64 test/3pdata/golangsuite/video-001.rgb.jpeg
+27869749 test/3pdata/golangsuite/video-001.rgb.jpeg
 67b4d82f test/3pdata/golangsuite/video-001.rgb.png
 f295069f test/3pdata/golangsuite/video-001.separate.dc.progression.jpeg
 f295069f test/3pdata/golangsuite/video-001.separate.dc.progression.progressive.jpeg

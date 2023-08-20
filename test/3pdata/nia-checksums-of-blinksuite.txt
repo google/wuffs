@@ -51,9 +51,9 @@ e00ca328 test/3pdata/blinksuite/cs-uma-cmyk-no-jfif-or-adobe-markers.jpg
 e00ca328 test/3pdata/blinksuite/cs-uma-cmyk-unknown-transform.jpg
 e00ca328 test/3pdata/blinksuite/cs-uma-cmyk.jpg
 1ec303fd test/3pdata/blinksuite/cs-uma-grayscale.jpg
-76f23a42 test/3pdata/blinksuite/cs-uma-rgb-non-interleaved.jpg
+c9eafb54 test/3pdata/blinksuite/cs-uma-rgb-non-interleaved.jpg
 528a67f1 test/3pdata/blinksuite/cs-uma-rgb-unknown-transform.jpg
-528a67f1 test/3pdata/blinksuite/cs-uma-rgb.jpg
+ebd487c5 test/3pdata/blinksuite/cs-uma-rgb.jpg
 984d8cc3 test/3pdata/blinksuite/cs-uma-ycbcr-410.jpg
 e43a491e test/3pdata/blinksuite/cs-uma-ycbcr-411.jpg
 358209c4 test/3pdata/blinksuite/cs-uma-ycbcr-420-both-jfif-adobe.jpg
@@ -158,7 +158,7 @@ e68e3ee4 test/3pdata/blinksuite/red-half-stripe.png
 aa375741 test/3pdata/blinksuite/rgb-jpeg-blue.jpg
 724437c7 test/3pdata/blinksuite/rgb-jpeg-green.jpg
 bfebcca4 test/3pdata/blinksuite/rgb-jpeg-red.jpg
-a89ddd73 test/3pdata/blinksuite/rgb-jpeg-with-adobe-marker-only.jpg
+6ed3c2e7 test/3pdata/blinksuite/rgb-jpeg-with-adobe-marker-only.jpg
 cfb6f39d test/3pdata/blinksuite/rgb-png-with-cmyk-color-profile.png
 a3454fb7 test/3pdata/blinksuite/short-app-extension-string.gif
 2398258b test/3pdata/blinksuite/size-failure.gif

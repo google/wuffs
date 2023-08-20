@@ -51,6 +51,10 @@ pub struct decoder? implements base.image_decoder(
 
         test_only_interrupt_decode_mcu : base.bool,
 
+        is_jfif        : base.bool,
+        is_adobe       : base.u8,  // 0: no, 1: yes+RGB/CMYK, 2:yes+YCC/YCCK.
+        is_rgb_or_cmyk : base.bool,
+
         sof_marker          : base.u8,
         next_restart_marker : base.u8[..= 7],
 
@@ -456,7 +460,8 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
             }
 
         } else if marker < 0xF0 {  // APPn (Application specific).
-            // No-op.
+            this.decode_appn?(src: args.src, marker: marker)
+            continue
 
         } else {
             if marker == 0xFE {  // COM (Comment).
@@ -543,6 +548,60 @@ pri func decoder.decode_dri?(src: base.io_reader) {
     if this.sof_marker == 0 {
         this.saved_restart_interval = this.restart_interval
     }
+}
+
+// APPn tags are listed at https://exiftool.org/TagNames/JPEG.html
+pri func decoder.decode_appn?(src: base.io_reader, marker: base.u8) {
+    var c8  : base.u8
+    var c32 : base.u32
+
+    while.goto_done true {{
+    if args.marker == 0xE0 {  // APP0.
+        if this.payload_length >= 5 {
+            this.payload_length -= 5
+
+            c32 = args.src.read_u32le?()
+            if c32 <> 'JFIF'le {
+                this.payload_length = 0xFFFF & (this.payload_length + 1)
+                break.goto_done
+            }
+            c8 = args.src.read_u8?()
+            this.is_jfif = (c8 == 0)
+        }
+
+    } else if args.marker == 0xEE {  // APP14.
+        if this.payload_length >= 12 {
+            this.payload_length -= 12
+
+            c32 = args.src.read_u32le?()
+            if c32 <> 'Adob'le {
+                this.payload_length = 0xFFFF & (this.payload_length + 8)
+                break.goto_done
+            }
+            c32 = args.src.read_u32le?()
+            if (0xFF & c32) <> 'e' {
+                this.payload_length = 0xFFFF & (this.payload_length + 4)
+                break.goto_done
+            }
+            // After the 5 bytes of "Adobe" come 2 bytes of DCTEncodeVersion
+            // and 4 bytes of flags. The 12th byte is the color transform.
+            // Technically, 0=Unknown, 1=YCbCr and 2=YCbCrK. In practice, per
+            // libjpeg-turbo, treat 0=RGB/CMYK and NonZero=YCbCr/YCbCrK.
+            //
+            // https://www.sno.phy.queensu.ca/~phil/exiftool/TagNames/JPEG.html#Adobe
+            c32 = args.src.read_u32le?()
+            if (c32 >> 24) == 0 {
+                this.is_adobe = 1
+            } else {
+                this.is_adobe = 2
+            }
+        }
+    }
+    break.goto_done
+    }} endwhile.goto_done
+
+    args.src.skip_u32?(n: this.payload_length)
+    this.payload_length = 0
 }
 
 pri func decoder.decode_sof?(src: base.io_reader) {
@@ -667,6 +726,22 @@ pri func decoder.decode_sof?(src: base.io_reader) {
         } endwhile
         if (has_h24 and has_h3) or (has_v24 and has_v3) {
             return "#unsupported fractional sampling"
+        }
+
+        // Match the behavior of libjpeg-turbo's jdapimin.c.
+        if this.num_components == 4 {
+            this.is_rgb_or_cmyk = this.is_adobe < 2
+        } else {  // this.num_components == 3
+            if this.is_jfif {
+                this.is_rgb_or_cmyk = false
+            } else if this.is_adobe > 0 {
+                this.is_rgb_or_cmyk = this.is_adobe == 1
+            } else {
+                this.is_rgb_or_cmyk =
+                        (this.components_c[0] == 'R') and
+                        (this.components_c[1] == 'G') and
+                        (this.components_c[2] == 'B')
+            }
         }
     }
 
@@ -1903,6 +1978,7 @@ pri func decoder.swizzle_colorful!(dst: ptr base.pixel_buffer, workbuf: slice ba
             v1: this.components_v[1],
             v2: this.components_v[2],
             v3: this.components_v[3],
+            is_rgb_or_cmyk: this.is_rgb_or_cmyk,
             triangle_filter_for_2to1: true,
             scratch_buffer_2k: this.swizzle_ycck_scratch_buffer_2k[..])
     return status

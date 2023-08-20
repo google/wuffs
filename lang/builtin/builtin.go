@@ -675,6 +675,7 @@ var funcsOther = [...]string{
 		"v1: u8[..= 4]," +
 		"v2: u8[..= 4]," +
 		"v3: u8[..= 4]," +
+		"is_rgb_or_cmyk: bool," +
 		"triangle_filter_for_2to1: bool," +
 		"scratch_buffer_2k: slice u8) status",
 

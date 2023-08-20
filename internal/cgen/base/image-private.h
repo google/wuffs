@@ -69,6 +69,7 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
     uint8_t v1,
     uint8_t v2,
     uint8_t v3,
+    bool is_rgb_or_cmyk,
     bool triangle_filter_for_2to1,
     wuffs_base__slice_u8 scratch_buffer_2k);
 
