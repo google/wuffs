@@ -23581,7 +23581,7 @@ wuffs_base__pixel_swizzler__swizzle_interleaved_transparent_black(
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
 WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2,avx2")
 static void  //
-wuffs_base__pixel_swizzler__swizzle_ycc__convert_bgrx_x86_avx2(
+wuffs_base__pixel_swizzler__swizzle_ycc__convert_3_bgrx_x86_avx2(
     wuffs_base__pixel_buffer* dst,
     uint32_t x,
     uint32_t x_end,
@@ -23592,7 +23592,7 @@ wuffs_base__pixel_swizzler__swizzle_ycc__convert_bgrx_x86_avx2(
 
 WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2,avx2")
 static void  //
-wuffs_base__pixel_swizzler__swizzle_ycc__convert_rgbx_x86_avx2(
+wuffs_base__pixel_swizzler__swizzle_ycc__convert_3_rgbx_x86_avx2(
     wuffs_base__pixel_buffer* dst,
     uint32_t x,
     uint32_t x_end,
@@ -23641,7 +23641,7 @@ wuffs_base__u32__min_of_5(uint32_t a,
 
 // --------
 
-typedef void (*wuffs_base__pixel_swizzler__swizzle_ycc__convert_func)(
+typedef void (*wuffs_base__pixel_swizzler__swizzle_ycc__convert_3_func)(
     wuffs_base__pixel_buffer* dst,
     uint32_t x,
     uint32_t x_end,
@@ -23651,7 +23651,7 @@ typedef void (*wuffs_base__pixel_swizzler__swizzle_ycc__convert_func)(
     const uint8_t* up2);
 
 static void  //
-wuffs_base__pixel_swizzler__swizzle_rgb__convert_general(
+wuffs_base__pixel_swizzler__swizzle_rgb__convert_3_general(
     wuffs_base__pixel_buffer* dst,
     uint32_t x,
     uint32_t x_end,
@@ -23669,7 +23669,7 @@ wuffs_base__pixel_swizzler__swizzle_rgb__convert_general(
 }
 
 static void  //
-wuffs_base__pixel_swizzler__swizzle_ycc__convert_general(
+wuffs_base__pixel_swizzler__swizzle_ycc__convert_3_general(
     wuffs_base__pixel_buffer* dst,
     uint32_t x,
     uint32_t x_end,
@@ -23686,7 +23686,7 @@ wuffs_base__pixel_swizzler__swizzle_ycc__convert_general(
 }
 
 static void  //
-wuffs_base__pixel_swizzler__swizzle_ycc__convert_bgrx(
+wuffs_base__pixel_swizzler__swizzle_ycc__convert_3_bgrx(
     wuffs_base__pixel_buffer* dst,
     uint32_t x,
     uint32_t x_end,
@@ -23708,7 +23708,7 @@ wuffs_base__pixel_swizzler__swizzle_ycc__convert_bgrx(
 }
 
 static void  //
-wuffs_base__pixel_swizzler__swizzle_ycc__convert_rgbx(
+wuffs_base__pixel_swizzler__swizzle_ycc__convert_3_rgbx(
     wuffs_base__pixel_buffer* dst,
     uint32_t x,
     uint32_t x_end,
@@ -24048,7 +24048,7 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter_edge_row(
     wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func upfunc0,
     wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func upfunc1,
     wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func upfunc2,
-    wuffs_base__pixel_swizzler__swizzle_ycc__convert_func convfunc) {
+    wuffs_base__pixel_swizzler__swizzle_ycc__convert_3_func conv3func) {
   const uint8_t* src0 = src_ptr0 + ((y / inv_v0) * (size_t)stride0);
   const uint8_t* src1 = src_ptr1 + ((y / inv_v1) * (size_t)stride1);
   const uint8_t* src2 = src_ptr2 + ((y / inv_v2) * (size_t)stride2);
@@ -24101,7 +24101,7 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter_edge_row(
         first_column,                         //
         (total_src_len2 >= half_width_for_2to1));
 
-    (*convfunc)(dst, x, end, y, up0, up1, up2);
+    (*conv3func)(dst, x, end, y, up0, up1, up2);
     x = end;
   }
 }
@@ -24127,7 +24127,7 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter(
     uint32_t half_height_for_2to1,
     uint8_t* scratch_buffer_2k_ptr,
     wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func (*upfuncs)[4][4],
-    wuffs_base__pixel_swizzler__swizzle_ycc__convert_func convfunc) {
+    wuffs_base__pixel_swizzler__swizzle_ycc__convert_3_func conv3func) {
   wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func upfunc0 =
       (*upfuncs)[(inv_h0 - 1u) & 3u][(inv_v0 - 1u) & 3u];
   wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func upfunc1 =
@@ -24146,7 +24146,7 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter(
       half_width_for_2to1,           //
       h1v2_bias,                     //
       scratch_buffer_2k_ptr,         //
-      upfunc0, upfunc1, upfunc2, convfunc);
+      upfunc0, upfunc1, upfunc2, conv3func);
   h1v2_bias = 2u;
 
   // Middle rows.
@@ -24215,7 +24215,7 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter(
           first_column,                         //
           (total_src_len2 >= half_width_for_2to1));
 
-      (*convfunc)(dst, x, end, y, up0, up1, up2);
+      (*conv3func)(dst, x, end, y, up0, up1, up2);
       x = end;
     }
 
@@ -24233,7 +24233,7 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter(
         half_width_for_2to1,           //
         h1v2_bias,                     //
         scratch_buffer_2k_ptr,         //
-        upfunc0, upfunc1, upfunc2, convfunc);
+        upfunc0, upfunc1, upfunc2, conv3func);
   }
 }
 
@@ -24258,7 +24258,7 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter(
     uint32_t half_height_for_2to1,
     uint8_t* scratch_buffer_2k_ptr,
     wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func (*upfuncs)[4][4],
-    wuffs_base__pixel_swizzler__swizzle_ycc__convert_func convfunc) {
+    wuffs_base__pixel_swizzler__swizzle_ycc__convert_3_func conv3func) {
   wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func upfunc0 =
       (*upfuncs)[(inv_h0 - 1u) & 3u][(inv_v0 - 1u) & 3u];
   wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func upfunc1 =
@@ -24304,7 +24304,7 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter(
           src_len2,                             //
           0u, false, false);
 
-      (*convfunc)(dst, x, end, y, up0, up1, up2);
+      (*conv3func)(dst, x, end, y, up0, up1, up2);
       x = end;
     }
   }
@@ -24460,10 +24460,10 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
     return wuffs_base__make_status(NULL);
   }
 
-  wuffs_base__pixel_swizzler__swizzle_ycc__convert_func convfunc = NULL;
+  wuffs_base__pixel_swizzler__swizzle_ycc__convert_3_func conv3func = NULL;
 
   if (is_rgb_or_cmyk) {
-    convfunc = &wuffs_base__pixel_swizzler__swizzle_rgb__convert_general;
+    conv3func = &wuffs_base__pixel_swizzler__swizzle_rgb__convert_3_general;
   } else {
     switch (dst->pixcfg.private_impl.pixfmt.repr) {
       case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
@@ -24471,27 +24471,27 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
       case WUFFS_BASE__PIXEL_FORMAT__BGRX:
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
         if (wuffs_base__cpu_arch__have_x86_avx2()) {
-          convfunc =
-              &wuffs_base__pixel_swizzler__swizzle_ycc__convert_bgrx_x86_avx2;
+          conv3func =
+              &wuffs_base__pixel_swizzler__swizzle_ycc__convert_3_bgrx_x86_avx2;
           break;
         }
 #endif
-        convfunc = &wuffs_base__pixel_swizzler__swizzle_ycc__convert_bgrx;
+        conv3func = &wuffs_base__pixel_swizzler__swizzle_ycc__convert_3_bgrx;
         break;
       case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
       case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
       case WUFFS_BASE__PIXEL_FORMAT__RGBX:
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
         if (wuffs_base__cpu_arch__have_x86_avx2()) {
-          convfunc =
-              &wuffs_base__pixel_swizzler__swizzle_ycc__convert_rgbx_x86_avx2;
+          conv3func =
+              &wuffs_base__pixel_swizzler__swizzle_ycc__convert_3_rgbx_x86_avx2;
           break;
         }
 #endif
-        convfunc = &wuffs_base__pixel_swizzler__swizzle_ycc__convert_rgbx;
+        conv3func = &wuffs_base__pixel_swizzler__swizzle_ycc__convert_3_rgbx;
         break;
       default:
-        convfunc = &wuffs_base__pixel_swizzler__swizzle_ycc__convert_general;
+        conv3func = &wuffs_base__pixel_swizzler__swizzle_ycc__convert_3_general;
         break;
     }
   }
@@ -24516,7 +24516,7 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
       uint32_t half_height_for_2to1,   //
       uint8_t* scratch_buffer_2k_ptr,  //
       wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func(*upfuncs)[4][4],
-      wuffs_base__pixel_swizzler__swizzle_ycc__convert_func convfunc) =
+      wuffs_base__pixel_swizzler__swizzle_ycc__convert_3_func conv3func) =
       &wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter;
 
   wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func upfuncs[4][4];
@@ -24564,7 +24564,7 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
           inv_h0, inv_h1, inv_h2,                     //
           inv_v0, inv_v1, inv_v2,                     //
           half_width_for_2to1, half_height_for_2to1,  //
-          scratch_buffer_2k.ptr, &upfuncs, convfunc);
+          scratch_buffer_2k.ptr, &upfuncs, conv3func);
 
   return wuffs_base__make_status(NULL);
 }
@@ -24575,7 +24575,7 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
 WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2,avx2")
 static void  //
-wuffs_base__pixel_swizzler__swizzle_ycc__convert_bgrx_x86_avx2(
+wuffs_base__pixel_swizzler__swizzle_ycc__convert_3_bgrx_x86_avx2(
     wuffs_base__pixel_buffer* dst,
     uint32_t x,
     uint32_t x_end,
@@ -24584,7 +24584,7 @@ wuffs_base__pixel_swizzler__swizzle_ycc__convert_bgrx_x86_avx2(
     const uint8_t* up1,
     const uint8_t* up2) {
   if ((x + 32u) > x_end) {
-    wuffs_base__pixel_swizzler__swizzle_ycc__convert_bgrx(  //
+    wuffs_base__pixel_swizzler__swizzle_ycc__convert_3_bgrx(  //
         dst, x, x_end, y, up0, up1, up2);
     return;
   }
@@ -24848,7 +24848,7 @@ wuffs_base__pixel_swizzler__swizzle_ycc__convert_bgrx_x86_avx2(
 // except for the lines marked with a § and that comments were stripped.
 WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2,avx2")
 static void  //
-wuffs_base__pixel_swizzler__swizzle_ycc__convert_rgbx_x86_avx2(
+wuffs_base__pixel_swizzler__swizzle_ycc__convert_3_rgbx_x86_avx2(
     wuffs_base__pixel_buffer* dst,
     uint32_t x,
     uint32_t x_end,
@@ -24857,7 +24857,7 @@ wuffs_base__pixel_swizzler__swizzle_ycc__convert_rgbx_x86_avx2(
     const uint8_t* up1,
     const uint8_t* up2) {
   if ((x + 32u) > x_end) {
-    wuffs_base__pixel_swizzler__swizzle_ycc__convert_bgrx(  //
+    wuffs_base__pixel_swizzler__swizzle_ycc__convert_3_bgrx(  //
         dst, x, x_end, y, up0, up1, up2);
     return;
   }

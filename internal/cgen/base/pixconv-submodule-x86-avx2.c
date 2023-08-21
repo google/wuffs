@@ -18,7 +18,7 @@
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
 WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2,avx2")
 static void  //
-wuffs_base__pixel_swizzler__swizzle_ycc__convert_bgrx_x86_avx2(
+wuffs_base__pixel_swizzler__swizzle_ycc__convert_3_bgrx_x86_avx2(
     wuffs_base__pixel_buffer* dst,
     uint32_t x,
     uint32_t x_end,
@@ -27,7 +27,7 @@ wuffs_base__pixel_swizzler__swizzle_ycc__convert_bgrx_x86_avx2(
     const uint8_t* up1,
     const uint8_t* up2) {
   if ((x + 32u) > x_end) {
-    wuffs_base__pixel_swizzler__swizzle_ycc__convert_bgrx(  //
+    wuffs_base__pixel_swizzler__swizzle_ycc__convert_3_bgrx(  //
         dst, x, x_end, y, up0, up1, up2);
     return;
   }
@@ -291,7 +291,7 @@ wuffs_base__pixel_swizzler__swizzle_ycc__convert_bgrx_x86_avx2(
 // except for the lines marked with a § and that comments were stripped.
 WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2,avx2")
 static void  //
-wuffs_base__pixel_swizzler__swizzle_ycc__convert_rgbx_x86_avx2(
+wuffs_base__pixel_swizzler__swizzle_ycc__convert_3_rgbx_x86_avx2(
     wuffs_base__pixel_buffer* dst,
     uint32_t x,
     uint32_t x_end,
@@ -300,7 +300,7 @@ wuffs_base__pixel_swizzler__swizzle_ycc__convert_rgbx_x86_avx2(
     const uint8_t* up1,
     const uint8_t* up2) {
   if ((x + 32u) > x_end) {
-    wuffs_base__pixel_swizzler__swizzle_ycc__convert_bgrx(  //
+    wuffs_base__pixel_swizzler__swizzle_ycc__convert_3_bgrx(  //
         dst, x, x_end, y, up0, up1, up2);
     return;
   }
