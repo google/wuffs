@@ -37,7 +37,7 @@ ffc8a627 test/3pdata/blinksuite/bug106024.jpg
 18cee321 test/3pdata/blinksuite/cHRM_color_spin.png
 3e460fe4 test/3pdata/blinksuite/cat.jpg
 e9151f0e test/3pdata/blinksuite/cicp_pq.png
-e00ca328 test/3pdata/blinksuite/cmyk-jpeg.jpg
+ab6d7d2e test/3pdata/blinksuite/cmyk-jpeg.jpg
 5ec78d7c test/3pdata/blinksuite/color-checker-adobe-color-profile.png
 b3389858 test/3pdata/blinksuite/color-checker-srgb-color-profile.png
 10721531 test/3pdata/blinksuite/count-down-color-test.gif
@@ -46,10 +46,10 @@ b3389858 test/3pdata/blinksuite/color-checker-srgb-color-profile.png
 ae034abe test/3pdata/blinksuite/crbug807324.png
 4f50fdb0 test/3pdata/blinksuite/crbug827754.png
 42e5598b test/3pdata/blinksuite/cropped_mandrill.jpg
-e00ca328 test/3pdata/blinksuite/cs-uma-cmyk-jfif-marker.jpg
-e00ca328 test/3pdata/blinksuite/cs-uma-cmyk-no-jfif-or-adobe-markers.jpg
-e00ca328 test/3pdata/blinksuite/cs-uma-cmyk-unknown-transform.jpg
-e00ca328 test/3pdata/blinksuite/cs-uma-cmyk.jpg
+fe2877fe test/3pdata/blinksuite/cs-uma-cmyk-jfif-marker.jpg
+fe2877fe test/3pdata/blinksuite/cs-uma-cmyk-no-jfif-or-adobe-markers.jpg
+f8341b72 test/3pdata/blinksuite/cs-uma-cmyk-unknown-transform.jpg
+fe2877fe test/3pdata/blinksuite/cs-uma-cmyk.jpg
 1ec303fd test/3pdata/blinksuite/cs-uma-grayscale.jpg
 c9eafb54 test/3pdata/blinksuite/cs-uma-rgb-non-interleaved.jpg
 528a67f1 test/3pdata/blinksuite/cs-uma-rgb-unknown-transform.jpg
@@ -63,7 +63,7 @@ a027c965 test/3pdata/blinksuite/cs-uma-ycbcr-420-non-interleaved.jpg
 8bd535aa test/3pdata/blinksuite/cs-uma-ycbcr-440.jpg
 1bc16d1a test/3pdata/blinksuite/cs-uma-ycbcr-444.jpg
 d97ce4e8 test/3pdata/blinksuite/cs-uma-ycbcr-other.jpg
-e00ca328 test/3pdata/blinksuite/cs-uma-ycck.jpg
+a2a940bc test/3pdata/blinksuite/cs-uma-ycck.jpg
 b6000be6 test/3pdata/blinksuite/dice.png
 1023c20a test/3pdata/blinksuite/empty-frame.png
 32a03152 test/3pdata/blinksuite/flowchart.jpg

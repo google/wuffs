@@ -3,7 +3,7 @@
 f47bba01 test/3pdata/golangsuite/video-001.221212.jpeg
 f887663d test/3pdata/golangsuite/video-001.221212.png
 9db259ab test/3pdata/golangsuite/video-001.5bpp.gif
-1263dc39 test/3pdata/golangsuite/video-001.cmyk.jpeg
+7b281f70 test/3pdata/golangsuite/video-001.cmyk.jpeg
 f543e98a test/3pdata/golangsuite/video-001.cmyk.png
 0548cd56 test/3pdata/golangsuite/video-001.gif
 0548cd56 test/3pdata/golangsuite/video-001.interlaced.gif
