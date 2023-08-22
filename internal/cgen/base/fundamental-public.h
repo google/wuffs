@@ -403,6 +403,7 @@ typedef struct wuffs_base__status__struct {
   inline bool is_note() const;
   inline bool is_ok() const;
   inline bool is_suspension() const;
+  inline bool is_truncated_input_error() const;
   inline const char* message() const;
 #endif  // __cplusplus
 
@@ -442,6 +443,23 @@ wuffs_base__status__is_suspension(const wuffs_base__status* z) {
   return z->repr && (*z->repr == '$');
 }
 
+static inline bool  //
+wuffs_base__status__is_truncated_input_error(const wuffs_base__status* z) {
+  const char* p = z->repr;
+  if (!p || (*p != '#')) {
+    return false;
+  }
+  p++;
+  while (1) {
+    if (*p == 0) {
+      return false;
+    } else if (*p++ == ':') {
+      break;
+    }
+  }
+  return strcmp(p, " truncated input") == 0;
+}
+
 // wuffs_base__status__message strips the leading '$', '#' or '@'.
 static inline const char*  //
 wuffs_base__status__message(const wuffs_base__status* z) {
@@ -478,6 +496,11 @@ wuffs_base__status::is_ok() const {
 inline bool  //
 wuffs_base__status::is_suspension() const {
   return wuffs_base__status__is_suspension(this);
+}
+
+inline bool  //
+wuffs_base__status::is_truncated_input_error() const {
+  return wuffs_base__status__is_truncated_input_error(this);
 }
 
 inline const char*  //

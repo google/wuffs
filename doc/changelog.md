@@ -9,6 +9,7 @@
 - Added `slice_var as nptr array[etc] etc` conversion.
 - Added `std/jpeg`.
 - Added `std/netpbm`.
+- Added `wuffs_base__status__is_truncated_input_error`.
 - Changed `lzw.set_literal_width` to `lzw.set_quirk`.
 - Changed `set_quirk_enabled!(quirk: u32, enabled: bool)` to `set_quirk!(key:
   u32, value: u64) status`.
