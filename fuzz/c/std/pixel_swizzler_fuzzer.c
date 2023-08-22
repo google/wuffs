@@ -223,29 +223,39 @@ fuzz_swizzle_ycck(wuffs_base__io_buffer* src, uint64_t hash) {
   uint32_t width_in_mcus = (3 & (hash >> 20)) + 1;
   uint32_t height_in_mcus = (3 & (hash >> 22)) + 1;
 
-  uint32_t allow_hv3 = 1 & (hash >> 23);
+  uint32_t allow_hv3 = 1 & (hash >> 24);
+  bool is_rgb_or_cmyk = 1 & (hash >> 25);
+  bool triangle_filter_for_2to1 = 1 & (hash >> 26);
+  bool use_4th_component = 1 & (hash >> 27);
+
   uint32_t possible_hv_values[2][4] = {
       {1, 1, 2, 4},
       {1, 1, 3, 3},
   };
-  uint32_t h0 = possible_hv_values[allow_hv3][3 & (hash >> 25)];
-  uint32_t h1 = possible_hv_values[allow_hv3][3 & (hash >> 27)];
-  uint32_t h2 = possible_hv_values[allow_hv3][3 & (hash >> 29)];
-  uint32_t v0 = possible_hv_values[allow_hv3][3 & (hash >> 31)];
-  uint32_t v1 = possible_hv_values[allow_hv3][3 & (hash >> 33)];
-  uint32_t v2 = possible_hv_values[allow_hv3][3 & (hash >> 35)];
-  bool is_rgb_or_cmyk = 1 & (hash >> 37);
-  bool triangle_filter_for_2to1 = 1 & (hash >> 38);
+  uint32_t h0 = possible_hv_values[allow_hv3][3 & (hash >> 28)];
+  uint32_t h1 = possible_hv_values[allow_hv3][3 & (hash >> 30)];
+  uint32_t h2 = possible_hv_values[allow_hv3][3 & (hash >> 32)];
+  uint32_t h3 =
+      use_4th_component ? possible_hv_values[allow_hv3][3 & (hash >> 34)] : 0;
+  uint32_t v0 = possible_hv_values[allow_hv3][3 & (hash >> 36)];
+  uint32_t v1 = possible_hv_values[allow_hv3][3 & (hash >> 38)];
+  uint32_t v2 = possible_hv_values[allow_hv3][3 & (hash >> 40)];
+  uint32_t v3 =
+      use_4th_component ? possible_hv_values[allow_hv3][3 & (hash >> 42)] : 0;
 
   uint32_t width0 = 8 * width_in_mcus * h0;
   uint32_t width1 = 8 * width_in_mcus * h1;
   uint32_t width2 = 8 * width_in_mcus * h2;
+  uint32_t width3 = 8 * width_in_mcus * h3;
   uint32_t height0 = 8 * height_in_mcus * v0;
   uint32_t height1 = 8 * height_in_mcus * v1;
   uint32_t height2 = 8 * height_in_mcus * v2;
+  uint32_t height3 = 8 * height_in_mcus * v3;
 
-  uint32_t hmax = wuffs_base__u32__max(h0, wuffs_base__u32__max(h1, h2));
-  uint32_t vmax = wuffs_base__u32__max(v0, wuffs_base__u32__max(v1, v2));
+  uint32_t hmax = wuffs_base__u32__max(
+      h0, wuffs_base__u32__max(h1, wuffs_base__u32__max(h2, h3)));
+  uint32_t vmax = wuffs_base__u32__max(
+      v0, wuffs_base__u32__max(v1, wuffs_base__u32__max(v2, v3)));
   width = wuffs_base__u32__min(width, 8 * width_in_mcus * hmax);
   height = wuffs_base__u32__min(height, 8 * height_in_mcus * vmax);
 
@@ -287,6 +297,7 @@ fuzz_swizzle_ycck(wuffs_base__io_buffer* src, uint64_t hash) {
   static uint8_t* src_alloc0 = NULL;
   static uint8_t* src_alloc1 = NULL;
   static uint8_t* src_alloc2 = NULL;
+  static uint8_t* src_alloc3 = NULL;
   if (!src_alloc0) {
     const char* z = allocate_guarded_pages(&src_alloc0, src_alloc_size);
     if (z != NULL) {
@@ -305,13 +316,21 @@ fuzz_swizzle_ycck(wuffs_base__io_buffer* src, uint64_t hash) {
       return z;
     }
   }
+  if (!src_alloc3) {
+    const char* z = allocate_guarded_pages(&src_alloc3, src_alloc_size);
+    if (z != NULL) {
+      return z;
+    }
+  }
 
   uint32_t src_len0 = width0 * height0;
   uint32_t src_len1 = width1 * height1;
   uint32_t src_len2 = width2 * height2;
+  uint32_t src_len3 = width3 * height3;
   if ((src_len0 > src_alloc_size) ||  //
       (src_len1 > src_alloc_size) ||  //
-      (src_len2 > src_alloc_size)) {
+      (src_len2 > src_alloc_size) ||  //
+      (src_len3 > src_alloc_size)) {
     return "fuzz: internal error: src_alloc_size is too small";
   }
 
@@ -327,6 +346,10 @@ fuzz_swizzle_ycck(wuffs_base__io_buffer* src, uint64_t hash) {
   if (src->meta.ri < src->meta.wi) {
     s2 = src->data.ptr[src->meta.ri++];
   }
+  uint8_t s3 = 0x93;
+  if (src->meta.ri < src->meta.wi) {
+    s3 = src->data.ptr[src->meta.ri++];
+  }
 
   wuffs_base__slice_u8 src0 = wuffs_base__make_slice_u8(
       src_alloc0 + src_alloc_size - src_len0, src_len0);
@@ -338,6 +361,11 @@ fuzz_swizzle_ycck(wuffs_base__io_buffer* src, uint64_t hash) {
       src_alloc2 + src_alloc_size - src_len2, src_len2);
   memset(src2.ptr, s2, src2.len);
   wuffs_base__slice_u8 src3 = wuffs_base__empty_slice_u8();
+  if (use_4th_component) {
+    wuffs_base__slice_u8 src3 = wuffs_base__make_slice_u8(
+        src_alloc3 + src_alloc_size - src_len3, src_len3);
+    memset(src3.ptr, s3, src3.len);
+  }
 
   wuffs_base__pixel_swizzler swizzler = {0};
   uint8_t scratch_buffer[2048];
@@ -345,11 +373,11 @@ fuzz_swizzle_ycck(wuffs_base__io_buffer* src, uint64_t hash) {
       &swizzler, &dst_pixbuf, dst_palette,  //
       width, height,                        //
       src0, src1, src2, src3,               //
-      width0, width1, width2, 0,            //
-      height0, height1, height2, 0,         //
-      width0, width1, width2, 0,            //
-      h0, h1, h2, 0,                        //
-      v0, v1, v2, 0,                        //
+      width0, width1, width2, width3,       //
+      height0, height1, height2, height3,   //
+      width0, width1, width2, width3,       //
+      h0, h1, h2, h3,                       //
+      v0, v1, v2, v3,                       //
       is_rgb_or_cmyk,                       //
       triangle_filter_for_2to1,             //
       wuffs_base__make_slice_u8(scratch_buffer, sizeof(scratch_buffer)));
