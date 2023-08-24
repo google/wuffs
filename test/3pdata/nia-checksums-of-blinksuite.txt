@@ -92,7 +92,7 @@ f37cea44 test/3pdata/blinksuite/icc-v2-gbr-422-whole-mcus.jpg
 0da5f37e test/3pdata/blinksuite/jpeg-height-exif-orientation.jpg
 4409dca6 test/3pdata/blinksuite/large-gif-checkerboard.gif
 9a1b1c39 test/3pdata/blinksuite/missing-eoi.jpg
-263cb2b3 test/3pdata/blinksuite/motion-jpeg-single-frame.jpg
+72bbe2b6 test/3pdata/blinksuite/motion-jpeg-single-frame.jpg
 0268284a test/3pdata/blinksuite/mu.png
 263cb2b3 test/3pdata/blinksuite/non-interleaved_progressive-1.jpg
 5265140a test/3pdata/blinksuite/non-interleaved_progressive.jpg

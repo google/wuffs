@@ -1484,13 +1484,12 @@ pri func decoder.prepare_scan?(src: base.io_reader) {
     i = 0
     while i < this.scan_num_components {
         assert i < 4 via "a < b: a < c; c <= b"(c: this.scan_num_components)
-        if ((this.scan_ss == 0) and (not this.seen_dht[0 | this.scan_comps_td[i]])) or
-                ((this.scan_se <> 0) and (not this.seen_dht[4 | this.scan_comps_ta[i]])) {
-            // TODO: while not required by the spec, we could fall back to
-            // implicit tables? See section K.3 "Typical Huffman tables for
-            // 8-bit precision luminance and chrominance" and
-            // https://github.com/libjpeg-turbo/libjpeg-turbo/commit/a113506d175d03ae0e40965c3d3d21a5d561e119
-            return "#missing Huffman table"
+
+        if (this.scan_ss == 0) and (not this.seen_dht[0 | this.scan_comps_td[i]]) {
+            this.use_default_huffman_table?(tc4_th: 0 | this.scan_comps_td[i])
+        }
+        if (this.scan_se <> 0) and (not this.seen_dht[4 | this.scan_comps_ta[i]]) {
+            this.use_default_huffman_table?(tc4_th: 4 | this.scan_comps_ta[i])
         }
 
         j = this.scan_ss as base.u32
@@ -1514,6 +1513,30 @@ pri func decoder.prepare_scan?(src: base.io_reader) {
             return "#bad SOS marker"
         }
     }
+}
+
+pri func decoder.use_default_huffman_table?(tc4_th: base.u8[..= 7]) {
+    var data   : roslice base.u8
+    var r      : base.io_reader
+    var status : base.status
+
+    if args.tc4_th == 0 {
+        data = DEFAULT_HUFF_TABLE_DC_LUMA[..]
+    } else if args.tc4_th == 1 {
+        data = DEFAULT_HUFF_TABLE_DC_CHROMA[..]
+    } else if args.tc4_th == 4 {
+        data = DEFAULT_HUFF_TABLE_AC_LUMA[..]
+    } else if args.tc4_th == 5 {
+        data = DEFAULT_HUFF_TABLE_AC_CHROMA[..]
+    } else {
+        return "#missing Huffman table"
+    }
+
+    io_bind (io: r, data: data, history_position: 0) {
+        this.payload_length = (data.length() & 0xFFFF) as base.u32
+        status =? this.decode_dht?(src: r)
+    }
+    return status
 }
 
 pri func decoder.calculate_single_component_scan_fields!() {

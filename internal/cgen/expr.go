@@ -171,6 +171,9 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, sideEffectsOnly bool, depth u
 			} else {
 				b.writes("wuffs_base__make_slice_u8_ij(")
 			}
+			if lhs.MType().IsReadOnly() {
+				b.writes("(uint8_t*)")
+			}
 			if err := g.writeExpr(b, lhs, false, depth); err != nil {
 				return err
 			}
