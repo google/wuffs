@@ -1825,6 +1825,12 @@ pri func decoder.apply_progressive_idct!(workbuf: slice base.u8) {
     var stride : base.u64[..= 0x1_0008]
     var offset : base.u64
 
+    // Copies mcu_blocks[0], which load_mcu_blocks_for_single_component might
+    // overwrite, as decode_mcu may be suspended (due to a "$short read").
+    var stashed_mcu_blocks_0 : array[128] base.u8
+
+    this.mcu_blocks[.. 1].bulk_save_host_endian!(dst: stashed_mcu_blocks_0[..])
+
     block_smoothing_applicable = true
     csel = 0
     while csel < this.num_components {
@@ -1900,6 +1906,8 @@ pri func decoder.apply_progressive_idct!(workbuf: slice base.u8) {
 
         csel += 1
     } endwhile
+
+    this.mcu_blocks[.. 1].bulk_load_host_endian!(src: stashed_mcu_blocks_0[..])
 }
 
 pri func decoder.swizzle_gray!(dst: ptr base.pixel_buffer, workbuf: slice base.u8) base.status {

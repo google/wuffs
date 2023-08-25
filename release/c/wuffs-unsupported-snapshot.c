@@ -43821,7 +43821,9 @@ wuffs_jpeg__decoder__apply_progressive_idct(
   uint32_t v_mx = 0;
   uint64_t v_stride = 0;
   uint64_t v_offset = 0;
+  uint8_t v_stashed_mcu_blocks_0[128] = {0};
 
+  wuffs_base__bulk_save_host_endian(&self->private_data.f_mcu_blocks[0], 1u * (size_t)128u, wuffs_base__make_slice_u8(v_stashed_mcu_blocks_0, 128));
   v_block_smoothing_applicable = true;
   v_csel = 0u;
   while (v_csel < self->private_impl.f_num_components) {
@@ -43873,6 +43875,7 @@ wuffs_jpeg__decoder__apply_progressive_idct(
     }
     v_csel += 1u;
   }
+  wuffs_base__bulk_load_host_endian(&self->private_data.f_mcu_blocks[0], 1u * (size_t)128u, wuffs_base__make_slice_u8(v_stashed_mcu_blocks_0, 128));
   return wuffs_base__make_empty_struct();
 }
 
