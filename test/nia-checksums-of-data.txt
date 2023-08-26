@@ -82,6 +82,7 @@ dcbb225a test/data/hippopotamus.regular.png
 db2733f5 test/data/muybridge.apng
 db2733f5 test/data/muybridge.gif
 d42a13cd test/data/peacock.default.jpeg
+9154cd54 test/data/peacock.default.truncated.jpeg
 d49bab2d test/data/peacock.grayscale.jpeg
 d42a13cd test/data/peacock.optimize.jpeg
 bdf8cc70 test/data/peacock.png
@@ -97,6 +98,7 @@ b12a7c4f test/data/peacock.progressive.scan005.jpeg
 0adacc97 test/data/peacock.progressive.scan007.jpeg
 bc00fee5 test/data/peacock.progressive.scan008.jpeg
 d42a13cd test/data/peacock.progressive.scan009.jpeg
+ec5a371f test/data/peacock.progressive.truncated.jpeg
 951676cc test/data/peacock.q30.jpeg
 56835223 test/data/peacock.q99.jpeg
 7fa9064e test/data/peacock.s-very-weird.jpeg
