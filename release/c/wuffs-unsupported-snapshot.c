@@ -39344,7 +39344,6 @@ WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__status
 wuffs_jpeg__decoder__decode_sos(
     wuffs_jpeg__decoder* self,
-    wuffs_base__pixel_buffer* a_dst,
     wuffs_base__io_buffer* a_src,
     wuffs_base__slice_u8 a_workbuf);
 
@@ -42442,10 +42441,10 @@ wuffs_jpeg__decoder__decode_frame(
             a_opts);
         v_ddf_status = t_0;
       }
-      if (wuffs_base__status__is_error(&v_ddf_status)) {
-        status = v_ddf_status;
-        goto exit;
-      } else if (v_scan_count < self->private_impl.f_scan_count) {
+      if ((v_ddf_status.repr == wuffs_base__suspension__short_read) && (a_src && a_src->meta.closed)) {
+        v_ddf_status = wuffs_base__make_status(wuffs_jpeg__error__truncated_input);
+      }
+      if (wuffs_base__status__is_error(&v_ddf_status) || (v_scan_count < self->private_impl.f_scan_count)) {
         if (self->private_impl.f_sof_marker >= 194u) {
           wuffs_jpeg__decoder__apply_progressive_idct(self, a_workbuf);
         }
@@ -42458,10 +42457,6 @@ wuffs_jpeg__decoder__decode_frame(
           status = v_swizzle_status;
           goto exit;
         }
-      }
-      if ((v_ddf_status.repr == wuffs_base__suspension__short_read) && (a_src && a_src->meta.closed)) {
-        status = wuffs_base__make_status(wuffs_jpeg__error__truncated_input);
-        goto exit;
       }
       status = v_ddf_status;
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(1);
@@ -42673,7 +42668,7 @@ wuffs_jpeg__decoder__do_decode_frame(
             a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
           }
           WUFFS_BASE__COROUTINE_SUSPENSION_POINT(7);
-          status = wuffs_jpeg__decoder__decode_sos(self, a_dst, a_src, a_workbuf);
+          status = wuffs_jpeg__decoder__decode_sos(self, a_src, a_workbuf);
           if (a_src) {
             iop_a_src = a_src->data.ptr + a_src->meta.ri;
           }
@@ -43022,7 +43017,6 @@ WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__status
 wuffs_jpeg__decoder__decode_sos(
     wuffs_jpeg__decoder* self,
-    wuffs_base__pixel_buffer* a_dst,
     wuffs_base__io_buffer* a_src,
     wuffs_base__slice_u8 a_workbuf) {
   wuffs_base__status status = wuffs_base__make_status(NULL);

@@ -876,10 +876,11 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
     while true {
         scan_count = this.scan_count
         ddf_status =? this.do_decode_frame?(dst: args.dst, src: args.src, blend: args.blend, workbuf: args.workbuf, opts: args.opts)
-        if ddf_status.is_error() {
-            return ddf_status
+        if (ddf_status == base."$short read") and args.src.is_closed() {
+            ddf_status = "#truncated input"
+        }
 
-        } else if scan_count < this.scan_count {
+        if ddf_status.is_error() or (scan_count < this.scan_count) {
             if this.sof_marker >= 0xC2 {
                 this.apply_progressive_idct!(workbuf: args.workbuf)
             }
@@ -894,9 +895,6 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
             }
         }
 
-        if (ddf_status == base."$short read") and args.src.is_closed() {
-            return "#truncated input"
-        }
         yield? ddf_status
     } endwhile
 }
@@ -1008,7 +1006,7 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
                 break
 
             } else if marker == 0xDA {  // SOS (Start Of Scan).
-                this.decode_sos?(dst: args.dst, src: args.src, workbuf: args.workbuf)
+                this.decode_sos?(src: args.src, workbuf: args.workbuf)
                 continue
 
             } else if marker == 0xDB {  // DQT (Define Quantization Table).
@@ -1249,7 +1247,7 @@ pri func decoder.calculate_huff_tables!(tc4_th: base.u8[..= 7], total_count: bas
     return false
 }
 
-pri func decoder.decode_sos?(dst: ptr base.pixel_buffer, src: base.io_reader, workbuf: slice base.u8) {
+pri func decoder.decode_sos?(src: base.io_reader, workbuf: slice base.u8) {
     var my : base.u32
     var mx : base.u32
 

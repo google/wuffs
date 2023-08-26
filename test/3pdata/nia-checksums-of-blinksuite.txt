@@ -6,7 +6,7 @@
 1f0a869f test/3pdata/blinksuite/2-dht.jpg
 d7865c25 test/3pdata/blinksuite/23-55.jpg
 361f7557 test/3pdata/blinksuite/5000x5000.png
-73d0d385 test/3pdata/blinksuite/55.jpg
+4920fb2a test/3pdata/blinksuite/55.jpg
 e2c0805a test/3pdata/blinksuite/57.jpg
 1542e2e1 test/3pdata/blinksuite/58.jpg
 da174c34 test/3pdata/blinksuite/59.jpg
@@ -94,7 +94,7 @@ f37cea44 test/3pdata/blinksuite/icc-v2-gbr-422-whole-mcus.jpg
 2f310e57 test/3pdata/blinksuite/missing-eoi.jpg
 72bbe2b6 test/3pdata/blinksuite/motion-jpeg-single-frame.jpg
 0268284a test/3pdata/blinksuite/mu.png
-263cb2b3 test/3pdata/blinksuite/non-interleaved_progressive-1.jpg
+0c20dd5a test/3pdata/blinksuite/non-interleaved_progressive-1.jpg
 5265140a test/3pdata/blinksuite/non-interleaved_progressive.jpg
 96a8bcfd test/3pdata/blinksuite/oval.png
 918aa35f test/3pdata/blinksuite/palatted-color-png-gamma-one-color-profile.png

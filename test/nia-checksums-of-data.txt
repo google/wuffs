@@ -82,7 +82,7 @@ dcbb225a test/data/hippopotamus.regular.png
 db2733f5 test/data/muybridge.apng
 db2733f5 test/data/muybridge.gif
 d42a13cd test/data/peacock.default.jpeg
-9154cd54 test/data/peacock.default.truncated.jpeg
+3fa7f01b test/data/peacock.default.truncated.jpeg
 d49bab2d test/data/peacock.grayscale.jpeg
 d42a13cd test/data/peacock.optimize.jpeg
 bdf8cc70 test/data/peacock.png
