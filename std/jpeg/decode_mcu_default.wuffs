@@ -75,8 +75,11 @@ pri func decoder.decode_mcu!(workbuf: slice base.u8, mx: base.u32[..= 0x1FFF], m
             {
                 this.mcu_blocks[.. 1].bulk_memset!(byte_value: 0)
 
-                // Load at least 56 bits.
-                if r.length() < 8 {
+                // Load at least 56 bits. We only need 8 bytes (for the
+                // peek_u64be call), but ask for 264 to be consistent with the
+                // other "another fill_bitstream call" requests, in this method
+                // (decode_mcu) and its other variants.
+                if r.length() < 264 {
                     ret = 1  // Request another fill_bitstream call.
                     break.goto_done
                 }

@@ -44900,7 +44900,7 @@ wuffs_jpeg__decoder__decode_mcu__choosy_default(
       while (self->private_impl.f_mcu_current_block < self->private_impl.f_mcu_num_blocks) {
         while (self->private_impl.f_mcu_zig_index <= 0u) {
           wuffs_base__bulk_memset(&self->private_data.f_mcu_blocks[0], 1u * (size_t)128u, 0u);
-          if (((uint64_t)(io2_v_r - iop_v_r)) < 8u) {
+          if (((uint64_t)(io2_v_r - iop_v_r)) < 264u) {
             v_ret = 1u;
             goto label__goto_done__break;
           }
