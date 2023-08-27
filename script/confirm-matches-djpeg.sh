@@ -63,15 +63,26 @@ fi
 result=0
 
 handle() {
-  local have=$(gen/bin/example-convert-to-nia -output-netpbm <$1 2>/dev/null | gen/bin/example-crc32)
   local want=$($DJPEG_BINARY $1 2>/dev/null | gen/bin/example-crc32)
-  if [ "$want" != "00000000" ]; then
-    if [ "$want" == "$have" ]; then
-      echo "Match   $1"
-    else
-      echo "Differ  $1"
-      result=1
-    fi
+  if [ "$want" == "00000000" ]; then
+    return
+  fi
+
+  local have=$(gen/bin/example-convert-to-nia -output-netpbm <$1 2>/dev/null | gen/bin/example-crc32)
+  if [ "$want" == "$have" ]; then
+    echo "Match           $1"
+    return
+  fi
+
+  # Image file format specifications cover how to correctly decode complete
+  # input but usually do not mandate exactly how to decode truncated input.
+  # Print "trunc" vs "other" to distinguish these cases.
+  local error=$(gen/bin/example-convert-to-nia -output-netpbm <$1 2>&1 >/dev/null)
+  if [[ $error =~ :\ truncated.input$ ]]; then
+    echo "Differ (trunc)  $1"
+  else
+    echo "Differ (other)  $1"
+    result=1
   fi
 }
 
