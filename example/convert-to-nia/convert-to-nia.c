@@ -30,6 +30,7 @@ https://skia-review.googlesource.com/c/skia/+/290618
 #include <errno.h>
 #include <inttypes.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 // Wuffs ships as a "single file C library" or "header file library" as per
@@ -127,9 +128,10 @@ static const char* g_usage =
 bool g_sandboxed = false;
 
 wuffs_base__pixel_buffer g_pixbuf = {0};
+wuffs_base__io_buffer g_src = {0};
+
 wuffs_base__slice_u8 g_pixbuf_slice = {0};
 wuffs_base__slice_u8 g_pixbuf_backup_slice = {0};
-wuffs_base__io_buffer g_src = {0};
 wuffs_base__slice_u8 g_workbuf_slice = {0};
 
 wuffs_base__image_config g_image_config = {0};
@@ -173,9 +175,21 @@ union {
 #define PIXBUF_ARRAY_SIZE (256 * 1024 * 1024)
 #endif
 
+// Uncomment this #define (or use a C compiler flag) to decode very large
+// images like test/3pdata/blinksuite/large-size-image-crash.jpeg which is
+// 48010 * 16173 = 776_465730 pixels, roughly 2.9 GiB at 4 bytes per pixel.
+//
+// This requires calling malloc (before self-imposing a SECCOMP_MODE_STRICT
+// sandbox). By default (without this #define), the buffers are statically
+// allocated and do not require syscalls.
+//
+// #define ALLOW_GIGABYTES_OF_PIXEL_BUFFERS 1
+
 uint8_t g_src_buffer_array[SRC_BUFFER_ARRAY_SIZE] = {0};
+#if !defined(ALLOW_GIGABYTES_OF_PIXEL_BUFFERS)
 uint8_t g_workbuf_array[WORKBUF_ARRAY_SIZE] = {0};
 uint8_t g_pixbuf_array[PIXBUF_ARRAY_SIZE] = {0};
+#endif
 
 // ----
 
@@ -454,22 +468,21 @@ redirect:
   // Configure the work buffer.
   uint64_t workbuf_len =
       wuffs_base__image_decoder__workbuf_len(g_image_decoder).max_incl;
-  if (workbuf_len > WORKBUF_ARRAY_SIZE) {
+  if (g_workbuf_slice.len < workbuf_len) {
     return "main: image is too large (to configure work buffer)";
   }
-  g_workbuf_slice.ptr = &g_workbuf_array[0];
   g_workbuf_slice.len = workbuf_len;
 
   // Configure the pixel buffer and (if there's capacity) its backup buffer.
   uint64_t num_pixels = ((uint64_t)w) * ((uint64_t)h);
-  if (num_pixels > (PIXBUF_ARRAY_SIZE / BYTES_PER_PIXEL)) {
+  if (g_pixbuf_slice.len < (num_pixels * BYTES_PER_PIXEL)) {
     return "main: image is too large (to configure pixel buffer)";
   }
-  g_pixbuf_slice.ptr = &g_pixbuf_array[0];
+  size_t old_pixbuf_slice_len = g_pixbuf_slice.len;
   g_pixbuf_slice.len = num_pixels * BYTES_PER_PIXEL;
-  size_t pixbuf_array_remaining = PIXBUF_ARRAY_SIZE - g_pixbuf_slice.len;
+  size_t pixbuf_array_remaining = old_pixbuf_slice_len - g_pixbuf_slice.len;
   if (pixbuf_array_remaining >= g_pixbuf_slice.len) {
-    g_pixbuf_backup_slice.ptr = &g_pixbuf_array[g_pixbuf_slice.len];
+    g_pixbuf_backup_slice.ptr = g_pixbuf_slice.ptr + g_pixbuf_slice.len;
     g_pixbuf_backup_slice.len = g_pixbuf_slice.len;
   }
 
@@ -800,6 +813,32 @@ compute_exit_code(const char* status_msg) {
 
 int  //
 main(int argc, char** argv) {
+#if !defined(ALLOW_GIGABYTES_OF_PIXEL_BUFFERS)
+  {
+    g_pixbuf_slice =
+        wuffs_base__make_slice_u8(&g_pixbuf_array[0], sizeof(g_pixbuf_array));
+    g_workbuf_slice =
+        wuffs_base__make_slice_u8(&g_workbuf_array[0], sizeof(g_workbuf_array));
+  }
+#elif !defined(__WORDSIZE) || (__WORDSIZE != 64)
+#error "ALLOW_GIGABYTES_OF_PIXEL_BUFFERS requires a word size of 64 bits"
+#else
+  // Call malloc before we self-impose a SECCOMP_MODE_STRICT sandbox.
+  {
+    static const size_t four_gigabytes = 0x100000000ul;
+    void* p = malloc(four_gigabytes);
+    void* w = malloc(four_gigabytes);
+    if (!p || !w) {
+      return compute_exit_code(
+          "could not allocate ALLOW_GIGABYTES_OF_PIXEL_BUFFERS");
+    }
+    g_pixbuf_slice = wuffs_base__make_slice_u8(p, four_gigabytes);
+    g_workbuf_slice = wuffs_base__make_slice_u8(w, four_gigabytes);
+  }
+#endif  // !defined(ALLOW_GIGABYTES_OF_PIXEL_BUFFERS)
+
+  // ----
+
 #if defined(WUFFS_EXAMPLE_USE_SECCOMP)
   prctl(PR_SET_SECCOMP, SECCOMP_MODE_STRICT);
   g_sandboxed = true;
