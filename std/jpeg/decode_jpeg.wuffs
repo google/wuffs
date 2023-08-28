@@ -280,6 +280,8 @@ pub struct decoder? implements base.image_decoder(
         bitstream_ri     : base.u32[..= 0x800],
         bitstream_wi     : base.u32[..= 0x800],
 
+        bitstream_is_closed : base.bool,
+
         // bitstream_padding is the number (per restart) of implicit zeroes
         // remaining at the end of the bitstream. Its initial 12345 value is
         // arbitrary.
@@ -1311,6 +1313,14 @@ pri func decoder.decode_sos?(src: base.io_reader, workbuf: slice base.u8) {
                         break.fill_bitstream
                     } else if this.bitstream_padding == 0 {
                         return "#bad SOS marker"
+                    } else if args.src.is_closed() and (not this.bitstream_is_closed) {
+                        if this.bitstream_wi < (0x800 / 2) {
+                            assert this.bitstream_wi <= (this.bitstream_wi + 264) via "a <= (a + b): 0 <= b"()
+                            this.bitstream_buffer[this.bitstream_wi .. (this.bitstream_wi + 264)].bulk_memset!(byte_value: 0)
+                            this.bitstream_wi += 264
+                            this.bitstream_is_closed = true
+                        }
+                        break.fill_bitstream
                     }
                     yield? base."$short read"
                 } endwhile.fill_bitstream
@@ -2051,6 +2061,7 @@ pub func decoder.restart_frame!(index: base.u64, io_position: base.u64) base.sta
     }
 
     this.call_sequence = 0x28
+    this.bitstream_is_closed = false
     this.frame_config_io_position = args.io_position
     this.scan_count = 0
     this.restart_interval = this.saved_restart_interval

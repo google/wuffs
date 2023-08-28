@@ -9201,6 +9201,7 @@ struct wuffs_jpeg__decoder__struct {
     uint32_t f_bitstream_n_bits;
     uint32_t f_bitstream_ri;
     uint32_t f_bitstream_wi;
+    bool f_bitstream_is_closed;
     uint32_t f_bitstream_padding;
     uint16_t f_quant_tables[4][64];
     uint16_t f_saved_quant_tables[4][64];
@@ -43081,6 +43082,13 @@ wuffs_jpeg__decoder__decode_sos(
             } else if (self->private_impl.f_bitstream_padding == 0u) {
               status = wuffs_base__make_status(wuffs_jpeg__error__bad_sos_marker);
               goto exit;
+            } else if ((a_src && a_src->meta.closed) &&  ! self->private_impl.f_bitstream_is_closed) {
+              if (self->private_impl.f_bitstream_wi < 1024u) {
+                wuffs_base__bulk_memset(&self->private_data.f_bitstream_buffer[self->private_impl.f_bitstream_wi], 264u, 0u);
+                self->private_impl.f_bitstream_wi += 264u;
+                self->private_impl.f_bitstream_is_closed = true;
+              }
+              break;
             }
             status = wuffs_base__make_status(wuffs_base__suspension__short_read);
             WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(2);
@@ -44091,6 +44099,7 @@ wuffs_jpeg__decoder__restart_frame(
     return wuffs_base__make_status(wuffs_base__error__bad_argument);
   }
   self->private_impl.f_call_sequence = 40u;
+  self->private_impl.f_bitstream_is_closed = false;
   self->private_impl.f_frame_config_io_position = a_io_position;
   self->private_impl.f_scan_count = 0u;
   self->private_impl.f_restart_interval = self->private_impl.f_saved_restart_interval;
