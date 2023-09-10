@@ -17,16 +17,13 @@
 
 package main
 
-// truncate-progressive-jpeg.go saves truncated editions of a JPEG, cutting
-// just after every SOS (Start Of Scan) marker, appending an EOI (End Of Image)
-// marker after the cut.
+// print-jpeg-markers.go prints a JPEG's markers' position and type.
 //
-// Usage: go run truncate-progressive-jpeg.go foo.jpeg
+// Usage: go run print-jpeg-markers.go foo.jpeg
 
 import (
 	"fmt"
 	"os"
-	"strings"
 )
 
 func main() {
@@ -44,24 +41,17 @@ func main1() error {
 	if err != nil {
 		return err
 	}
-	prefix, suffix := os.Args[1], ".jpeg"
-	if strings.HasSuffix(prefix, ".jpg") {
-		prefix = prefix[:len(prefix)-4]
-		suffix = ".jpg"
-	} else if strings.HasSuffix(prefix, ".jpeg") {
-		prefix = prefix[:len(prefix)-5]
-	}
 
 	pos := 0
 	if len(src) < 2 {
 		return posError(pos)
 	}
-	scanNumber := 0
 	for pos <= (len(src) - 2) {
 		if src[pos] != 0xFF {
 			return posError(pos)
 		}
 		marker := src[pos+1]
+		fmt.Printf("pos = 0x%08X = %10d    marker = 0xFF 0x%02X  %s\n", pos, pos, marker, names[marker])
 		pos += 2
 		switch {
 		case (0xD0 <= marker) && (marker < 0xD9):
@@ -95,19 +85,68 @@ func main1() error {
 				pos += 2
 			}
 		}
-		outName := fmt.Sprintf("%s.scan%03d%s", prefix, scanNumber, suffix)
-		scanNumber++
-		data := ([]byte)(nil)
-		data = append(data, src[:pos]...)
-		data = append(data, "\xFF\xD9"...) // Append an EOI marker.
-		if err := os.WriteFile(outName, data, 0666); err != nil {
-			return err
-		}
-		fmt.Printf("Wrote %s (cut at 0x%08X = %6d bytes).\n", outName, pos, pos)
 	}
 	return posError(pos)
 }
 
 func posError(pos int) error {
 	return fmt.Errorf("invalid JPEG at pos = 0x%08X = %10d", pos, pos)
+}
+
+var names = [256]string{
+	0xC0: "SOF0 (Sequential/Baseline)",
+	0xC1: "SOF1 (Sequential/Extended)",
+	0xC2: "SOF2 (Progressive)",
+	0xC3: "SOF3",
+	0xC4: "DHT",
+	0xC5: "SOF5",
+	0xC6: "SOF6",
+	0xC7: "SOF7",
+
+	0xC8: "JPG",
+	0xC9: "SOF9",
+	0xCA: "SOF10",
+	0xCB: "SOF11",
+	0xCC: "DAC",
+	0xCD: "SOF13",
+	0xCE: "SOF14",
+	0xCF: "SOF15",
+
+	0xD0: "RST0",
+	0xD1: "RST1",
+	0xD2: "RST2",
+	0xD3: "RST3",
+	0xD4: "RST4",
+	0xD5: "RST5",
+	0xD6: "RST6",
+	0xD7: "RST7",
+
+	0xD8: "SOI",
+	0xD9: "EOI",
+	0xDA: "SOS",
+	0xDB: "DQT",
+	0xDC: "DNL",
+	0xDD: "DRI",
+	0xDE: "DHP",
+	0xDF: "EXP",
+
+	0xE0: "APP0",
+	0xE1: "APP1",
+	0xE2: "APP2",
+	0xE3: "APP3",
+	0xE4: "APP4",
+	0xE5: "APP5",
+	0xE6: "APP6",
+	0xE7: "APP7",
+
+	0xE8: "APP8",
+	0xE9: "APP9",
+	0xEA: "APP10",
+	0xEB: "APP11",
+	0xEC: "APP12",
+	0xED: "APP13",
+	0xEE: "APP14",
+	0xEF: "APP15",
+
+	0xFE: "COM",
 }
