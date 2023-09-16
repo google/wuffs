@@ -280,6 +280,15 @@ pub struct decoder? implements base.image_decoder(
         bitstream_ri     : base.u32[..= 0x800],
         bitstream_wi     : base.u32[..= 0x800],
 
+        // This is the index (like bitstream_ri and bitstream_wi) where "EOF
+        // means implicit zeroes" kicked in. It only affects truncated
+        // (malformed) JPEGs, and in that case, encourages decoding to finish
+        // on an MCU boundary. This behavior is closer to how libjpeg-turbo
+        // works (again, on truncated JPEGs; well-formed JPEGs are unaffected),
+        // but it does have a performance penalty. It's not clear that it's
+        // worth keeping.
+        bitstream_zi : base.u32[..= 0x800],
+
         bitstream_is_closed : base.bool,
 
         // bitstream_padding is the number (per restart) of implicit zeroes
@@ -1278,7 +1287,7 @@ pri func decoder.decode_sos?(src: base.io_reader, workbuf: slice base.u8) {
     this.fill_bitstream!(src: args.src)
 
     my = 0
-    while my < this.scan_height_in_mcus {
+    while.outer my < this.scan_height_in_mcus {
         assert my < 0x2000 via "a < b: a < c; c <= b"(c: this.scan_height_in_mcus)
         mx = 0
         while mx < this.scan_width_in_mcus,
@@ -1315,9 +1324,11 @@ pri func decoder.decode_sos?(src: base.io_reader, workbuf: slice base.u8) {
                         return "#bad SOS marker"
                     } else if args.src.is_closed() and (not this.bitstream_is_closed) {
                         if this.bitstream_wi < (0x800 / 2) {
-                            assert this.bitstream_wi <= (this.bitstream_wi + 264) via "a <= (a + b): 0 <= b"()
-                            this.bitstream_buffer[this.bitstream_wi .. (this.bitstream_wi + 264)].bulk_memset!(byte_value: 0)
-                            this.bitstream_wi += 264
+                            // 999 is arbitrary, but bigger than (2 * 264).
+                            assert this.bitstream_wi <= (this.bitstream_wi + 999) via "a <= (a + b): 0 <= b"()
+                            this.bitstream_zi = this.bitstream_wi
+                            this.bitstream_buffer[this.bitstream_wi .. (this.bitstream_wi + 999)].bulk_memset!(byte_value: 0)
+                            this.bitstream_wi += 999
                             this.bitstream_is_closed = true
                         }
                         break.fill_bitstream
@@ -1351,10 +1362,14 @@ pri func decoder.decode_sos?(src: base.io_reader, workbuf: slice base.u8) {
                 }
             }
 
+            if this.bitstream_is_closed and (this.bitstream_ri >= (this.bitstream_zi + (this.bitstream_n_bits / 8))) {
+                break.outer
+            }
+
             mx += 1
         } endwhile
         my += 1
-    } endwhile
+    } endwhile.outer
 
     this.scan_count ~sat+= 1
 }
@@ -1642,6 +1657,10 @@ pri func decoder.fill_bitstream!(src: base.io_reader) {
     var wi     : base.u32[..= 0x800]
     var c      : base.u8
     var new_wi : base.u32[..= 0x800]
+
+    if this.bitstream_is_closed {
+        return nothing
+    }
 
     // Compact unread bytes to the start of the buffer.
     if this.bitstream_ri <= 0 {

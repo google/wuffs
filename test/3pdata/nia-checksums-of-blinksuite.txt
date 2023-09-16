@@ -94,8 +94,8 @@ f37cea44 test/3pdata/blinksuite/icc-v2-gbr-422-whole-mcus.jpg
 2f310e57 test/3pdata/blinksuite/missing-eoi.jpg
 72bbe2b6 test/3pdata/blinksuite/motion-jpeg-single-frame.jpg
 0268284a test/3pdata/blinksuite/mu.png
-741da22b test/3pdata/blinksuite/non-interleaved_progressive-1.jpg
-7c1387ad test/3pdata/blinksuite/non-interleaved_progressive.jpg
+3a8f4a53 test/3pdata/blinksuite/non-interleaved_progressive-1.jpg
+595c9d21 test/3pdata/blinksuite/non-interleaved_progressive.jpg
 96a8bcfd test/3pdata/blinksuite/oval.png
 918aa35f test/3pdata/blinksuite/palatted-color-png-gamma-one-color-profile.png
 f5e09699 test/3pdata/blinksuite/pixel-crack-image-background-webkit-transform-scale.png

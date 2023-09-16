@@ -9201,6 +9201,7 @@ struct wuffs_jpeg__decoder__struct {
     uint32_t f_bitstream_n_bits;
     uint32_t f_bitstream_ri;
     uint32_t f_bitstream_wi;
+    uint32_t f_bitstream_zi;
     bool f_bitstream_is_closed;
     uint32_t f_bitstream_padding;
     uint16_t f_quant_tables[4][64];
@@ -43084,8 +43085,9 @@ wuffs_jpeg__decoder__decode_sos(
               goto exit;
             } else if ((a_src && a_src->meta.closed) &&  ! self->private_impl.f_bitstream_is_closed) {
               if (self->private_impl.f_bitstream_wi < 1024u) {
-                wuffs_base__bulk_memset(&self->private_data.f_bitstream_buffer[self->private_impl.f_bitstream_wi], 264u, 0u);
-                self->private_impl.f_bitstream_wi += 264u;
+                self->private_impl.f_bitstream_zi = self->private_impl.f_bitstream_wi;
+                wuffs_base__bulk_memset(&self->private_data.f_bitstream_buffer[self->private_impl.f_bitstream_wi], 999u, 0u);
+                self->private_impl.f_bitstream_wi += 999u;
                 self->private_impl.f_bitstream_is_closed = true;
               }
               break;
@@ -43125,10 +43127,14 @@ wuffs_jpeg__decoder__decode_sos(
             self->private_impl.f_bitstream_padding = 12345u;
           }
         }
+        if (self->private_impl.f_bitstream_is_closed && (self->private_impl.f_bitstream_ri >= (self->private_impl.f_bitstream_zi + (self->private_impl.f_bitstream_n_bits / 8u)))) {
+          goto label__outer__break;
+        }
         v_mx += 1u;
       }
       v_my += 1u;
     }
+    label__outer__break:;
     wuffs_base__u32__sat_add_indirect(&self->private_impl.f_scan_count, 1u);
 
     ok:
@@ -43582,6 +43588,12 @@ wuffs_jpeg__decoder__fill_bitstream(
     io2_a_src = io0_a_src + a_src->meta.wi;
   }
 
+  if (self->private_impl.f_bitstream_is_closed) {
+    if (a_src && a_src->data.ptr) {
+      a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+    }
+    return wuffs_base__make_empty_struct();
+  }
   if (self->private_impl.f_bitstream_ri <= 0u) {
   } else if (self->private_impl.f_bitstream_ri >= self->private_impl.f_bitstream_wi) {
     self->private_impl.f_bitstream_ri = 0u;

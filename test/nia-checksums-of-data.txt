@@ -84,7 +84,7 @@ db2733f5 test/data/muybridge.gif
 d42a13cd test/data/peacock.default.jpeg
 c8a50351 test/data/peacock.default.truncated.decoded-by-djpeg.png
 91b6bebb test/data/peacock.default.truncated.decoded-by-wuffs.png
-91b6bebb test/data/peacock.default.truncated.jpeg
+c8a50351 test/data/peacock.default.truncated.jpeg
 d49bab2d test/data/peacock.grayscale.jpeg
 d42a13cd test/data/peacock.optimize.jpeg
 bdf8cc70 test/data/peacock.png
