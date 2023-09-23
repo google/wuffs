@@ -258,6 +258,15 @@ This is not an official Google product, it is just code that happens to be
 owned by Google.
 
 
+# Mascot
+
+Tony is an arse-kicking wombat who loves playing
+[full-forward](https://en.wikipedia.org/wiki/Full-forward) and hates buffer
+overflows.
+
+![WUFFS Logo](./doc/logo/wuffs-acronym-logo-1536x1024.png)
+
+
 ---
 
-Updated on August 2023.
+Updated on September 2023.
