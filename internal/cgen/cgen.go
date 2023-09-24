@@ -457,7 +457,7 @@ func insertInterfaceDeclarations(buf *buffer) error {
 
 		buf.writes("#ifdef __cplusplus\n")
 		buf.writes("#if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)\n")
-		buf.printf("  using unique_ptr = std::unique_ptr<wuffs_base__%s, decltype(&free)>;\n", n)
+		buf.printf("  using unique_ptr = std::unique_ptr<wuffs_base__%s, wuffs_unique_ptr_deleter>;\n", n)
 		buf.writes("#endif\n\n")
 
 		for _, f := range builtInInterfaceMethods[qid] {
@@ -776,7 +776,7 @@ func (g *gen) genHeader(b *buffer) error {
 	b.writes("// memory allocation fails. If they return non-NULL, there is no need to call\n")
 	b.writes("// wuffs_foo__bar__initialize, but the caller is responsible for eventually\n")
 	b.writes("// calling free on the returned pointer. That pointer is effectively a C++\n")
-	b.writes("// std::unique_ptr<T, decltype(&free)>.\n\n")
+	b.writes("// std::unique_ptr<T, wuffs_unique_ptr_deleter>.\n\n")
 
 	for _, n := range g.structList {
 		if !n.Public() {
@@ -1240,18 +1240,18 @@ func (g *gen) writeCppMethods(b *buffer, n *a.Struct) error {
 	b.writes("#ifdef __cplusplus\n")
 
 	b.writes("#if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)\n")
-	b.printf("using unique_ptr = std::unique_ptr<%s%s, decltype(&free)>;\n\n", g.pkgPrefix, structName)
+	b.printf("using unique_ptr = std::unique_ptr<%s%s, wuffs_unique_ptr_deleter>;\n\n", g.pkgPrefix, structName)
 	b.writes("// On failure, the alloc_etc functions return nullptr. They don't throw.\n\n")
 	b.writes("static inline unique_ptr\n")
 	b.writes("alloc() {\n")
-	b.printf("return unique_ptr(%s%s__alloc(), &free);\n", g.pkgPrefix, structName)
+	b.printf("return unique_ptr(%s%s__alloc());\n", g.pkgPrefix, structName)
 	b.writes("}\n")
 	for _, impl := range n.Implements() {
 		iQID := impl.AsTypeExpr().QID()
 		iName := fmt.Sprintf("wuffs_%s__%s", iQID[0].Str(g.tm), iQID[1].Str(g.tm))
 		b.printf("\nstatic inline %s::unique_ptr\n", iName)
 		b.printf("alloc_as__%s() {\n", iName)
-		b.printf("return %s::unique_ptr(\n%s%s__alloc_as__%s(), &free);\n",
+		b.printf("return %s::unique_ptr(\n%s%s__alloc_as__%s());\n",
 			iName, g.pkgPrefix, structName, iName)
 		b.printf("}\n")
 	}

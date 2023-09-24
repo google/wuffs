@@ -13,6 +13,7 @@
 - Changed `lzw.set_literal_width` to `lzw.set_quirk`.
 - Changed `set_quirk_enabled!(quirk: u32, enabled: bool)` to `set_quirk!(key:
   u32, value: u64) status`.
+- Halve the sizeof `wuffs_foo__bar::unique_ptr`.
 - Set image decoder pixel width and height inclusive maximum to `0xFF_FFFF`,
   down from `0x7FFF_FFFF`.
 

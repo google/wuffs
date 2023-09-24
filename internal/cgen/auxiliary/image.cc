@@ -106,7 +106,7 @@ DecodeImageCallbacks::SelectDecoder(uint32_t fourcc,
 #endif
   }
 
-  return wuffs_base__image_decoder::unique_ptr(nullptr, &free);
+  return wuffs_base__image_decoder::unique_ptr(nullptr);
 }
 
 std::string  //
@@ -612,7 +612,7 @@ DecodeImage(DecodeImageCallbacks& callbacks,
     io_buf = &fallback_io_buf;
   }
 
-  wuffs_base__image_decoder::unique_ptr image_decoder(nullptr, &free);
+  wuffs_base__image_decoder::unique_ptr image_decoder(nullptr);
   DecodeImageResult result =
       DecodeImage0(image_decoder, callbacks, input, *io_buf, quirks.repr,
                    flags.repr, pixel_blend.repr, background_color.repr,

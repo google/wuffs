@@ -404,6 +404,20 @@ wuffs_base__cpu_arch__have_x86_sse42() {
 
 // --------
 
+#ifdef __cplusplus
+// Wuffs structs are just data, not resources (in the RAII sense). They don't
+// subclass anything. They don't have virtual destructors. They don't contain
+// pointers to dynamically allocated memory. They don't contain file
+// descriptors. And so on. Destroying such a struct (e.g. via a
+// wuffs_foo__bar::unique_ptr) can just call free, especially as
+// sizeof(wuffs_foo__bar) isn't supposed to be part of the public (stable) API.
+struct wuffs_unique_ptr_deleter {
+  void operator()(void* p) { free(p); }
+};
+#endif  // __cplusplus
+
+// --------
+
 // wuffs_base__empty_struct is used when a Wuffs function returns an empty
 // struct. In C, if a function f returns void, you can't say "x = f()", but in
 // Wuffs, if a function g returns empty, you can say "y = g()".
@@ -5932,7 +5946,7 @@ struct wuffs_base__hasher_u32__struct {
 
 #ifdef __cplusplus
 #if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
-  using unique_ptr = std::unique_ptr<wuffs_base__hasher_u32, decltype(&free)>;
+  using unique_ptr = std::unique_ptr<wuffs_base__hasher_u32, wuffs_unique_ptr_deleter>;
 #endif
 
   inline uint64_t
@@ -6111,7 +6125,7 @@ struct wuffs_base__image_decoder__struct {
 
 #ifdef __cplusplus
 #if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
-  using unique_ptr = std::unique_ptr<wuffs_base__image_decoder, decltype(&free)>;
+  using unique_ptr = std::unique_ptr<wuffs_base__image_decoder, wuffs_unique_ptr_deleter>;
 #endif
 
   inline wuffs_base__status
@@ -6271,7 +6285,7 @@ struct wuffs_base__io_transformer__struct {
 
 #ifdef __cplusplus
 #if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
-  using unique_ptr = std::unique_ptr<wuffs_base__io_transformer, decltype(&free)>;
+  using unique_ptr = std::unique_ptr<wuffs_base__io_transformer, wuffs_unique_ptr_deleter>;
 #endif
 
   inline uint64_t
@@ -6368,7 +6382,7 @@ struct wuffs_base__token_decoder__struct {
 
 #ifdef __cplusplus
 #if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
-  using unique_ptr = std::unique_ptr<wuffs_base__token_decoder, decltype(&free)>;
+  using unique_ptr = std::unique_ptr<wuffs_base__token_decoder, wuffs_unique_ptr_deleter>;
 #endif
 
   inline uint64_t
@@ -6449,7 +6463,7 @@ sizeof__wuffs_adler32__hasher();
 // memory allocation fails. If they return non-NULL, there is no need to call
 // wuffs_foo__bar__initialize, but the caller is responsible for eventually
 // calling free on the returned pointer. That pointer is effectively a C++
-// std::unique_ptr<T, decltype(&free)>.
+// std::unique_ptr<T, wuffs_unique_ptr_deleter>.
 
 wuffs_adler32__hasher*
 wuffs_adler32__hasher__alloc();
@@ -6525,19 +6539,19 @@ struct wuffs_adler32__hasher__struct {
 
 #ifdef __cplusplus
 #if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
-  using unique_ptr = std::unique_ptr<wuffs_adler32__hasher, decltype(&free)>;
+  using unique_ptr = std::unique_ptr<wuffs_adler32__hasher, wuffs_unique_ptr_deleter>;
 
   // On failure, the alloc_etc functions return nullptr. They don't throw.
 
   static inline unique_ptr
   alloc() {
-    return unique_ptr(wuffs_adler32__hasher__alloc(), &free);
+    return unique_ptr(wuffs_adler32__hasher__alloc());
   }
 
   static inline wuffs_base__hasher_u32::unique_ptr
   alloc_as__wuffs_base__hasher_u32() {
     return wuffs_base__hasher_u32::unique_ptr(
-        wuffs_adler32__hasher__alloc_as__wuffs_base__hasher_u32(), &free);
+        wuffs_adler32__hasher__alloc_as__wuffs_base__hasher_u32());
   }
 #endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
@@ -6656,7 +6670,7 @@ sizeof__wuffs_bmp__decoder();
 // memory allocation fails. If they return non-NULL, there is no need to call
 // wuffs_foo__bar__initialize, but the caller is responsible for eventually
 // calling free on the returned pointer. That pointer is effectively a C++
-// std::unique_ptr<T, decltype(&free)>.
+// std::unique_ptr<T, wuffs_unique_ptr_deleter>.
 
 wuffs_bmp__decoder*
 wuffs_bmp__decoder__alloc();
@@ -6841,19 +6855,19 @@ struct wuffs_bmp__decoder__struct {
 
 #ifdef __cplusplus
 #if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
-  using unique_ptr = std::unique_ptr<wuffs_bmp__decoder, decltype(&free)>;
+  using unique_ptr = std::unique_ptr<wuffs_bmp__decoder, wuffs_unique_ptr_deleter>;
 
   // On failure, the alloc_etc functions return nullptr. They don't throw.
 
   static inline unique_ptr
   alloc() {
-    return unique_ptr(wuffs_bmp__decoder__alloc(), &free);
+    return unique_ptr(wuffs_bmp__decoder__alloc());
   }
 
   static inline wuffs_base__image_decoder::unique_ptr
   alloc_as__wuffs_base__image_decoder() {
     return wuffs_base__image_decoder::unique_ptr(
-        wuffs_bmp__decoder__alloc_as__wuffs_base__image_decoder(), &free);
+        wuffs_bmp__decoder__alloc_as__wuffs_base__image_decoder());
   }
 #endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
@@ -7042,7 +7056,7 @@ sizeof__wuffs_bzip2__decoder();
 // memory allocation fails. If they return non-NULL, there is no need to call
 // wuffs_foo__bar__initialize, but the caller is responsible for eventually
 // calling free on the returned pointer. That pointer is effectively a C++
-// std::unique_ptr<T, decltype(&free)>.
+// std::unique_ptr<T, wuffs_unique_ptr_deleter>.
 
 wuffs_bzip2__decoder*
 wuffs_bzip2__decoder__alloc();
@@ -7184,19 +7198,19 @@ struct wuffs_bzip2__decoder__struct {
 
 #ifdef __cplusplus
 #if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
-  using unique_ptr = std::unique_ptr<wuffs_bzip2__decoder, decltype(&free)>;
+  using unique_ptr = std::unique_ptr<wuffs_bzip2__decoder, wuffs_unique_ptr_deleter>;
 
   // On failure, the alloc_etc functions return nullptr. They don't throw.
 
   static inline unique_ptr
   alloc() {
-    return unique_ptr(wuffs_bzip2__decoder__alloc(), &free);
+    return unique_ptr(wuffs_bzip2__decoder__alloc());
   }
 
   static inline wuffs_base__io_transformer::unique_ptr
   alloc_as__wuffs_base__io_transformer() {
     return wuffs_base__io_transformer::unique_ptr(
-        wuffs_bzip2__decoder__alloc_as__wuffs_base__io_transformer(), &free);
+        wuffs_bzip2__decoder__alloc_as__wuffs_base__io_transformer());
   }
 #endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
@@ -7336,7 +7350,7 @@ sizeof__wuffs_cbor__decoder();
 // memory allocation fails. If they return non-NULL, there is no need to call
 // wuffs_foo__bar__initialize, but the caller is responsible for eventually
 // calling free on the returned pointer. That pointer is effectively a C++
-// std::unique_ptr<T, decltype(&free)>.
+// std::unique_ptr<T, wuffs_unique_ptr_deleter>.
 
 wuffs_cbor__decoder*
 wuffs_cbor__decoder__alloc();
@@ -7428,19 +7442,19 @@ struct wuffs_cbor__decoder__struct {
 
 #ifdef __cplusplus
 #if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
-  using unique_ptr = std::unique_ptr<wuffs_cbor__decoder, decltype(&free)>;
+  using unique_ptr = std::unique_ptr<wuffs_cbor__decoder, wuffs_unique_ptr_deleter>;
 
   // On failure, the alloc_etc functions return nullptr. They don't throw.
 
   static inline unique_ptr
   alloc() {
-    return unique_ptr(wuffs_cbor__decoder__alloc(), &free);
+    return unique_ptr(wuffs_cbor__decoder__alloc());
   }
 
   static inline wuffs_base__token_decoder::unique_ptr
   alloc_as__wuffs_base__token_decoder() {
     return wuffs_base__token_decoder::unique_ptr(
-        wuffs_cbor__decoder__alloc_as__wuffs_base__token_decoder(), &free);
+        wuffs_cbor__decoder__alloc_as__wuffs_base__token_decoder());
   }
 #endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
@@ -7559,7 +7573,7 @@ sizeof__wuffs_crc32__ieee_hasher();
 // memory allocation fails. If they return non-NULL, there is no need to call
 // wuffs_foo__bar__initialize, but the caller is responsible for eventually
 // calling free on the returned pointer. That pointer is effectively a C++
-// std::unique_ptr<T, decltype(&free)>.
+// std::unique_ptr<T, wuffs_unique_ptr_deleter>.
 
 wuffs_crc32__ieee_hasher*
 wuffs_crc32__ieee_hasher__alloc();
@@ -7634,19 +7648,19 @@ struct wuffs_crc32__ieee_hasher__struct {
 
 #ifdef __cplusplus
 #if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
-  using unique_ptr = std::unique_ptr<wuffs_crc32__ieee_hasher, decltype(&free)>;
+  using unique_ptr = std::unique_ptr<wuffs_crc32__ieee_hasher, wuffs_unique_ptr_deleter>;
 
   // On failure, the alloc_etc functions return nullptr. They don't throw.
 
   static inline unique_ptr
   alloc() {
-    return unique_ptr(wuffs_crc32__ieee_hasher__alloc(), &free);
+    return unique_ptr(wuffs_crc32__ieee_hasher__alloc());
   }
 
   static inline wuffs_base__hasher_u32::unique_ptr
   alloc_as__wuffs_base__hasher_u32() {
     return wuffs_base__hasher_u32::unique_ptr(
-        wuffs_crc32__ieee_hasher__alloc_as__wuffs_base__hasher_u32(), &free);
+        wuffs_crc32__ieee_hasher__alloc_as__wuffs_base__hasher_u32());
   }
 #endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
@@ -7775,7 +7789,7 @@ sizeof__wuffs_deflate__decoder();
 // memory allocation fails. If they return non-NULL, there is no need to call
 // wuffs_foo__bar__initialize, but the caller is responsible for eventually
 // calling free on the returned pointer. That pointer is effectively a C++
-// std::unique_ptr<T, decltype(&free)>.
+// std::unique_ptr<T, wuffs_unique_ptr_deleter>.
 
 wuffs_deflate__decoder*
 wuffs_deflate__decoder__alloc();
@@ -7913,19 +7927,19 @@ struct wuffs_deflate__decoder__struct {
 
 #ifdef __cplusplus
 #if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
-  using unique_ptr = std::unique_ptr<wuffs_deflate__decoder, decltype(&free)>;
+  using unique_ptr = std::unique_ptr<wuffs_deflate__decoder, wuffs_unique_ptr_deleter>;
 
   // On failure, the alloc_etc functions return nullptr. They don't throw.
 
   static inline unique_ptr
   alloc() {
-    return unique_ptr(wuffs_deflate__decoder__alloc(), &free);
+    return unique_ptr(wuffs_deflate__decoder__alloc());
   }
 
   static inline wuffs_base__io_transformer::unique_ptr
   alloc_as__wuffs_base__io_transformer() {
     return wuffs_base__io_transformer::unique_ptr(
-        wuffs_deflate__decoder__alloc_as__wuffs_base__io_transformer(), &free);
+        wuffs_deflate__decoder__alloc_as__wuffs_base__io_transformer());
   }
 #endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
@@ -8057,7 +8071,7 @@ sizeof__wuffs_lzw__decoder();
 // memory allocation fails. If they return non-NULL, there is no need to call
 // wuffs_foo__bar__initialize, but the caller is responsible for eventually
 // calling free on the returned pointer. That pointer is effectively a C++
-// std::unique_ptr<T, decltype(&free)>.
+// std::unique_ptr<T, wuffs_unique_ptr_deleter>.
 
 wuffs_lzw__decoder*
 wuffs_lzw__decoder__alloc();
@@ -8161,19 +8175,19 @@ struct wuffs_lzw__decoder__struct {
 
 #ifdef __cplusplus
 #if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
-  using unique_ptr = std::unique_ptr<wuffs_lzw__decoder, decltype(&free)>;
+  using unique_ptr = std::unique_ptr<wuffs_lzw__decoder, wuffs_unique_ptr_deleter>;
 
   // On failure, the alloc_etc functions return nullptr. They don't throw.
 
   static inline unique_ptr
   alloc() {
-    return unique_ptr(wuffs_lzw__decoder__alloc(), &free);
+    return unique_ptr(wuffs_lzw__decoder__alloc());
   }
 
   static inline wuffs_base__io_transformer::unique_ptr
   alloc_as__wuffs_base__io_transformer() {
     return wuffs_base__io_transformer::unique_ptr(
-        wuffs_lzw__decoder__alloc_as__wuffs_base__io_transformer(), &free);
+        wuffs_lzw__decoder__alloc_as__wuffs_base__io_transformer());
   }
 #endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
@@ -8321,7 +8335,7 @@ sizeof__wuffs_gif__decoder();
 // memory allocation fails. If they return non-NULL, there is no need to call
 // wuffs_foo__bar__initialize, but the caller is responsible for eventually
 // calling free on the returned pointer. That pointer is effectively a C++
-// std::unique_ptr<T, decltype(&free)>.
+// std::unique_ptr<T, wuffs_unique_ptr_deleter>.
 
 wuffs_gif__decoder*
 wuffs_gif__decoder__alloc();
@@ -8563,19 +8577,19 @@ struct wuffs_gif__decoder__struct {
 
 #ifdef __cplusplus
 #if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
-  using unique_ptr = std::unique_ptr<wuffs_gif__decoder, decltype(&free)>;
+  using unique_ptr = std::unique_ptr<wuffs_gif__decoder, wuffs_unique_ptr_deleter>;
 
   // On failure, the alloc_etc functions return nullptr. They don't throw.
 
   static inline unique_ptr
   alloc() {
-    return unique_ptr(wuffs_gif__decoder__alloc(), &free);
+    return unique_ptr(wuffs_gif__decoder__alloc());
   }
 
   static inline wuffs_base__image_decoder::unique_ptr
   alloc_as__wuffs_base__image_decoder() {
     return wuffs_base__image_decoder::unique_ptr(
-        wuffs_gif__decoder__alloc_as__wuffs_base__image_decoder(), &free);
+        wuffs_gif__decoder__alloc_as__wuffs_base__image_decoder());
   }
 #endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
@@ -8760,7 +8774,7 @@ sizeof__wuffs_gzip__decoder();
 // memory allocation fails. If they return non-NULL, there is no need to call
 // wuffs_foo__bar__initialize, but the caller is responsible for eventually
 // calling free on the returned pointer. That pointer is effectively a C++
-// std::unique_ptr<T, decltype(&free)>.
+// std::unique_ptr<T, wuffs_unique_ptr_deleter>.
 
 wuffs_gzip__decoder*
 wuffs_gzip__decoder__alloc();
@@ -8854,19 +8868,19 @@ struct wuffs_gzip__decoder__struct {
 
 #ifdef __cplusplus
 #if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
-  using unique_ptr = std::unique_ptr<wuffs_gzip__decoder, decltype(&free)>;
+  using unique_ptr = std::unique_ptr<wuffs_gzip__decoder, wuffs_unique_ptr_deleter>;
 
   // On failure, the alloc_etc functions return nullptr. They don't throw.
 
   static inline unique_ptr
   alloc() {
-    return unique_ptr(wuffs_gzip__decoder__alloc(), &free);
+    return unique_ptr(wuffs_gzip__decoder__alloc());
   }
 
   static inline wuffs_base__io_transformer::unique_ptr
   alloc_as__wuffs_base__io_transformer() {
     return wuffs_base__io_transformer::unique_ptr(
-        wuffs_gzip__decoder__alloc_as__wuffs_base__io_transformer(), &free);
+        wuffs_gzip__decoder__alloc_as__wuffs_base__io_transformer());
   }
 #endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
@@ -9009,7 +9023,7 @@ sizeof__wuffs_jpeg__decoder();
 // memory allocation fails. If they return non-NULL, there is no need to call
 // wuffs_foo__bar__initialize, but the caller is responsible for eventually
 // calling free on the returned pointer. That pointer is effectively a C++
-// std::unique_ptr<T, decltype(&free)>.
+// std::unique_ptr<T, wuffs_unique_ptr_deleter>.
 
 wuffs_jpeg__decoder*
 wuffs_jpeg__decoder__alloc();
@@ -9290,19 +9304,19 @@ struct wuffs_jpeg__decoder__struct {
 
 #ifdef __cplusplus
 #if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
-  using unique_ptr = std::unique_ptr<wuffs_jpeg__decoder, decltype(&free)>;
+  using unique_ptr = std::unique_ptr<wuffs_jpeg__decoder, wuffs_unique_ptr_deleter>;
 
   // On failure, the alloc_etc functions return nullptr. They don't throw.
 
   static inline unique_ptr
   alloc() {
-    return unique_ptr(wuffs_jpeg__decoder__alloc(), &free);
+    return unique_ptr(wuffs_jpeg__decoder__alloc());
   }
 
   static inline wuffs_base__image_decoder::unique_ptr
   alloc_as__wuffs_base__image_decoder() {
     return wuffs_base__image_decoder::unique_ptr(
-        wuffs_jpeg__decoder__alloc_as__wuffs_base__image_decoder(), &free);
+        wuffs_jpeg__decoder__alloc_as__wuffs_base__image_decoder());
   }
 #endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
@@ -9536,7 +9550,7 @@ sizeof__wuffs_json__decoder();
 // memory allocation fails. If they return non-NULL, there is no need to call
 // wuffs_foo__bar__initialize, but the caller is responsible for eventually
 // calling free on the returned pointer. That pointer is effectively a C++
-// std::unique_ptr<T, decltype(&free)>.
+// std::unique_ptr<T, wuffs_unique_ptr_deleter>.
 
 wuffs_json__decoder*
 wuffs_json__decoder__alloc();
@@ -9635,19 +9649,19 @@ struct wuffs_json__decoder__struct {
 
 #ifdef __cplusplus
 #if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
-  using unique_ptr = std::unique_ptr<wuffs_json__decoder, decltype(&free)>;
+  using unique_ptr = std::unique_ptr<wuffs_json__decoder, wuffs_unique_ptr_deleter>;
 
   // On failure, the alloc_etc functions return nullptr. They don't throw.
 
   static inline unique_ptr
   alloc() {
-    return unique_ptr(wuffs_json__decoder__alloc(), &free);
+    return unique_ptr(wuffs_json__decoder__alloc());
   }
 
   static inline wuffs_base__token_decoder::unique_ptr
   alloc_as__wuffs_base__token_decoder() {
     return wuffs_base__token_decoder::unique_ptr(
-        wuffs_json__decoder__alloc_as__wuffs_base__token_decoder(), &free);
+        wuffs_json__decoder__alloc_as__wuffs_base__token_decoder());
   }
 #endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
@@ -9772,7 +9786,7 @@ sizeof__wuffs_netpbm__decoder();
 // memory allocation fails. If they return non-NULL, there is no need to call
 // wuffs_foo__bar__initialize, but the caller is responsible for eventually
 // calling free on the returned pointer. That pointer is effectively a C++
-// std::unique_ptr<T, decltype(&free)>.
+// std::unique_ptr<T, wuffs_unique_ptr_deleter>.
 
 wuffs_netpbm__decoder*
 wuffs_netpbm__decoder__alloc();
@@ -9923,19 +9937,19 @@ struct wuffs_netpbm__decoder__struct {
 
 #ifdef __cplusplus
 #if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
-  using unique_ptr = std::unique_ptr<wuffs_netpbm__decoder, decltype(&free)>;
+  using unique_ptr = std::unique_ptr<wuffs_netpbm__decoder, wuffs_unique_ptr_deleter>;
 
   // On failure, the alloc_etc functions return nullptr. They don't throw.
 
   static inline unique_ptr
   alloc() {
-    return unique_ptr(wuffs_netpbm__decoder__alloc(), &free);
+    return unique_ptr(wuffs_netpbm__decoder__alloc());
   }
 
   static inline wuffs_base__image_decoder::unique_ptr
   alloc_as__wuffs_base__image_decoder() {
     return wuffs_base__image_decoder::unique_ptr(
-        wuffs_netpbm__decoder__alloc_as__wuffs_base__image_decoder(), &free);
+        wuffs_netpbm__decoder__alloc_as__wuffs_base__image_decoder());
   }
 #endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
@@ -10118,7 +10132,7 @@ sizeof__wuffs_nie__decoder();
 // memory allocation fails. If they return non-NULL, there is no need to call
 // wuffs_foo__bar__initialize, but the caller is responsible for eventually
 // calling free on the returned pointer. That pointer is effectively a C++
-// std::unique_ptr<T, decltype(&free)>.
+// std::unique_ptr<T, wuffs_unique_ptr_deleter>.
 
 wuffs_nie__decoder*
 wuffs_nie__decoder__alloc();
@@ -10273,19 +10287,19 @@ struct wuffs_nie__decoder__struct {
 
 #ifdef __cplusplus
 #if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
-  using unique_ptr = std::unique_ptr<wuffs_nie__decoder, decltype(&free)>;
+  using unique_ptr = std::unique_ptr<wuffs_nie__decoder, wuffs_unique_ptr_deleter>;
 
   // On failure, the alloc_etc functions return nullptr. They don't throw.
 
   static inline unique_ptr
   alloc() {
-    return unique_ptr(wuffs_nie__decoder__alloc(), &free);
+    return unique_ptr(wuffs_nie__decoder__alloc());
   }
 
   static inline wuffs_base__image_decoder::unique_ptr
   alloc_as__wuffs_base__image_decoder() {
     return wuffs_base__image_decoder::unique_ptr(
-        wuffs_nie__decoder__alloc_as__wuffs_base__image_decoder(), &free);
+        wuffs_nie__decoder__alloc_as__wuffs_base__image_decoder());
   }
 #endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
@@ -10474,7 +10488,7 @@ sizeof__wuffs_zlib__decoder();
 // memory allocation fails. If they return non-NULL, there is no need to call
 // wuffs_foo__bar__initialize, but the caller is responsible for eventually
 // calling free on the returned pointer. That pointer is effectively a C++
-// std::unique_ptr<T, decltype(&free)>.
+// std::unique_ptr<T, wuffs_unique_ptr_deleter>.
 
 wuffs_zlib__decoder*
 wuffs_zlib__decoder__alloc();
@@ -10584,19 +10598,19 @@ struct wuffs_zlib__decoder__struct {
 
 #ifdef __cplusplus
 #if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
-  using unique_ptr = std::unique_ptr<wuffs_zlib__decoder, decltype(&free)>;
+  using unique_ptr = std::unique_ptr<wuffs_zlib__decoder, wuffs_unique_ptr_deleter>;
 
   // On failure, the alloc_etc functions return nullptr. They don't throw.
 
   static inline unique_ptr
   alloc() {
-    return unique_ptr(wuffs_zlib__decoder__alloc(), &free);
+    return unique_ptr(wuffs_zlib__decoder__alloc());
   }
 
   static inline wuffs_base__io_transformer::unique_ptr
   alloc_as__wuffs_base__io_transformer() {
     return wuffs_base__io_transformer::unique_ptr(
-        wuffs_zlib__decoder__alloc_as__wuffs_base__io_transformer(), &free);
+        wuffs_zlib__decoder__alloc_as__wuffs_base__io_transformer());
   }
 #endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
@@ -10742,7 +10756,7 @@ sizeof__wuffs_png__decoder();
 // memory allocation fails. If they return non-NULL, there is no need to call
 // wuffs_foo__bar__initialize, but the caller is responsible for eventually
 // calling free on the returned pointer. That pointer is effectively a C++
-// std::unique_ptr<T, decltype(&free)>.
+// std::unique_ptr<T, wuffs_unique_ptr_deleter>.
 
 wuffs_png__decoder*
 wuffs_png__decoder__alloc();
@@ -11040,19 +11054,19 @@ struct wuffs_png__decoder__struct {
 
 #ifdef __cplusplus
 #if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
-  using unique_ptr = std::unique_ptr<wuffs_png__decoder, decltype(&free)>;
+  using unique_ptr = std::unique_ptr<wuffs_png__decoder, wuffs_unique_ptr_deleter>;
 
   // On failure, the alloc_etc functions return nullptr. They don't throw.
 
   static inline unique_ptr
   alloc() {
-    return unique_ptr(wuffs_png__decoder__alloc(), &free);
+    return unique_ptr(wuffs_png__decoder__alloc());
   }
 
   static inline wuffs_base__image_decoder::unique_ptr
   alloc_as__wuffs_base__image_decoder() {
     return wuffs_base__image_decoder::unique_ptr(
-        wuffs_png__decoder__alloc_as__wuffs_base__image_decoder(), &free);
+        wuffs_png__decoder__alloc_as__wuffs_base__image_decoder());
   }
 #endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
@@ -11236,7 +11250,7 @@ sizeof__wuffs_tga__decoder();
 // memory allocation fails. If they return non-NULL, there is no need to call
 // wuffs_foo__bar__initialize, but the caller is responsible for eventually
 // calling free on the returned pointer. That pointer is effectively a C++
-// std::unique_ptr<T, decltype(&free)>.
+// std::unique_ptr<T, wuffs_unique_ptr_deleter>.
 
 wuffs_tga__decoder*
 wuffs_tga__decoder__alloc();
@@ -11417,19 +11431,19 @@ struct wuffs_tga__decoder__struct {
 
 #ifdef __cplusplus
 #if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
-  using unique_ptr = std::unique_ptr<wuffs_tga__decoder, decltype(&free)>;
+  using unique_ptr = std::unique_ptr<wuffs_tga__decoder, wuffs_unique_ptr_deleter>;
 
   // On failure, the alloc_etc functions return nullptr. They don't throw.
 
   static inline unique_ptr
   alloc() {
-    return unique_ptr(wuffs_tga__decoder__alloc(), &free);
+    return unique_ptr(wuffs_tga__decoder__alloc());
   }
 
   static inline wuffs_base__image_decoder::unique_ptr
   alloc_as__wuffs_base__image_decoder() {
     return wuffs_base__image_decoder::unique_ptr(
-        wuffs_tga__decoder__alloc_as__wuffs_base__image_decoder(), &free);
+        wuffs_tga__decoder__alloc_as__wuffs_base__image_decoder());
   }
 #endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
@@ -11611,7 +11625,7 @@ sizeof__wuffs_wbmp__decoder();
 // memory allocation fails. If they return non-NULL, there is no need to call
 // wuffs_foo__bar__initialize, but the caller is responsible for eventually
 // calling free on the returned pointer. That pointer is effectively a C++
-// std::unique_ptr<T, decltype(&free)>.
+// std::unique_ptr<T, wuffs_unique_ptr_deleter>.
 
 wuffs_wbmp__decoder*
 wuffs_wbmp__decoder__alloc();
@@ -11772,19 +11786,19 @@ struct wuffs_wbmp__decoder__struct {
 
 #ifdef __cplusplus
 #if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
-  using unique_ptr = std::unique_ptr<wuffs_wbmp__decoder, decltype(&free)>;
+  using unique_ptr = std::unique_ptr<wuffs_wbmp__decoder, wuffs_unique_ptr_deleter>;
 
   // On failure, the alloc_etc functions return nullptr. They don't throw.
 
   static inline unique_ptr
   alloc() {
-    return unique_ptr(wuffs_wbmp__decoder__alloc(), &free);
+    return unique_ptr(wuffs_wbmp__decoder__alloc());
   }
 
   static inline wuffs_base__image_decoder::unique_ptr
   alloc_as__wuffs_base__image_decoder() {
     return wuffs_base__image_decoder::unique_ptr(
-        wuffs_wbmp__decoder__alloc_as__wuffs_base__image_decoder(), &free);
+        wuffs_wbmp__decoder__alloc_as__wuffs_base__image_decoder());
   }
 #endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
@@ -60346,7 +60360,7 @@ DecodeImageCallbacks::SelectDecoder(uint32_t fourcc,
 #endif
   }
 
-  return wuffs_base__image_decoder::unique_ptr(nullptr, &free);
+  return wuffs_base__image_decoder::unique_ptr(nullptr);
 }
 
 std::string  //
@@ -60852,7 +60866,7 @@ DecodeImage(DecodeImageCallbacks& callbacks,
     io_buf = &fallback_io_buf;
   }
 
-  wuffs_base__image_decoder::unique_ptr image_decoder(nullptr, &free);
+  wuffs_base__image_decoder::unique_ptr image_decoder(nullptr);
   DecodeImageResult result =
       DecodeImage0(image_decoder, callbacks, input, *io_buf, quirks.repr,
                    flags.repr, pixel_blend.repr, background_color.repr,

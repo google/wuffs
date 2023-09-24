@@ -348,6 +348,20 @@ wuffs_base__cpu_arch__have_x86_sse42() {
 
 // --------
 
+#ifdef __cplusplus
+// Wuffs structs are just data, not resources (in the RAII sense). They don't
+// subclass anything. They don't have virtual destructors. They don't contain
+// pointers to dynamically allocated memory. They don't contain file
+// descriptors. And so on. Destroying such a struct (e.g. via a
+// wuffs_foo__bar::unique_ptr) can just call free, especially as
+// sizeof(wuffs_foo__bar) isn't supposed to be part of the public (stable) API.
+struct wuffs_unique_ptr_deleter {
+  void operator()(void* p) { free(p); }
+};
+#endif  // __cplusplus
+
+// --------
+
 // wuffs_base__empty_struct is used when a Wuffs function returns an empty
 // struct. In C, if a function f returns void, you can't say "x = f()", but in
 // Wuffs, if a function g returns empty, you can say "y = g()".
