@@ -61,6 +61,20 @@
 
 // --------
 
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-qual"
+#endif
+static inline uint8_t*  //
+wuffs_base__strip_const_from_u8_ptr(const uint8_t* ptr) {
+  return (uint8_t*)ptr;
+}
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
+
+// --------
+
 static inline wuffs_base__empty_struct  //
 wuffs_base__ignore_status(wuffs_base__status z) {
   return wuffs_base__make_empty_struct();

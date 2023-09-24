@@ -12658,6 +12658,20 @@ extern "C" {
 
 // --------
 
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-qual"
+#endif
+static inline uint8_t*  //
+wuffs_base__strip_const_from_u8_ptr(const uint8_t* ptr) {
+  return (uint8_t*)ptr;
+}
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
+
+// --------
+
 static inline wuffs_base__empty_struct  //
 wuffs_base__ignore_status(wuffs_base__status z) {
   return wuffs_base__make_empty_struct();
@@ -43422,13 +43436,13 @@ wuffs_jpeg__decoder__use_default_huffman_table(
   wuffs_base__status v_status = wuffs_base__make_status(NULL);
 
   if (a_tc4_th == 0u) {
-    v_data = wuffs_base__make_slice_u8((uint8_t*)WUFFS_JPEG__DEFAULT_HUFF_TABLE_DC_LUMA, 29);
+    v_data = wuffs_base__make_slice_u8(wuffs_base__strip_const_from_u8_ptr(WUFFS_JPEG__DEFAULT_HUFF_TABLE_DC_LUMA), 29);
   } else if (a_tc4_th == 1u) {
-    v_data = wuffs_base__make_slice_u8((uint8_t*)WUFFS_JPEG__DEFAULT_HUFF_TABLE_DC_CHROMA, 29);
+    v_data = wuffs_base__make_slice_u8(wuffs_base__strip_const_from_u8_ptr(WUFFS_JPEG__DEFAULT_HUFF_TABLE_DC_CHROMA), 29);
   } else if (a_tc4_th == 4u) {
-    v_data = wuffs_base__make_slice_u8((uint8_t*)WUFFS_JPEG__DEFAULT_HUFF_TABLE_AC_LUMA, 179);
+    v_data = wuffs_base__make_slice_u8(wuffs_base__strip_const_from_u8_ptr(WUFFS_JPEG__DEFAULT_HUFF_TABLE_AC_LUMA), 179);
   } else if (a_tc4_th == 5u) {
-    v_data = wuffs_base__make_slice_u8((uint8_t*)WUFFS_JPEG__DEFAULT_HUFF_TABLE_AC_CHROMA, 179);
+    v_data = wuffs_base__make_slice_u8(wuffs_base__strip_const_from_u8_ptr(WUFFS_JPEG__DEFAULT_HUFF_TABLE_AC_CHROMA), 179);
   } else {
     status = wuffs_base__make_status(wuffs_jpeg__error__missing_huffman_table);
     goto exit;
