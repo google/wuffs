@@ -26,6 +26,21 @@ a3cecef6](https://github.com/google/wuffs/commit/a3cecef69aa04f1145f0c84b92481e8
 performance trade-offs if Wuffs were to try to exactly match on all input, not
 just on well-formed JPEGs.
 
+As pointed out by the a3cecef6 commit message, matching libjpeg-turbo exactly
+doesn't necessarily give better output. Here's two decodings of JPEG images
+(one sequential, one progressive, both truncated to 1 KiB) by libjpeg-turbo:
+
+![Decoding by djpeg](../data/peacock.default.truncated.decoded-by-djpeg.png)
+![Decoding by djpeg](../data/peacock.progressive.truncated.decoded-by-djpeg.png)
+
+Here's the decodings on the same input by Wuffs:
+
+![Decoding by Wuffs](../data/peacock.default.truncated.decoded-by-wuffs.png)
+![Decoding by Wuffs](../data/peacock.progressive.truncated.decoded-by-wuffs.png)
+
+Zoom in on all four images (in four different tabs, if viewing in a browser),
+and the first pair isn't obviously better or worse than the second pair.
+
 ---
 
 `test/3pdata/blinksuite/large-size-image-crash.jpeg` is simply a very large
