@@ -149,22 +149,25 @@ wuffs_base__magic_number_guess_fourcc(wuffs_base__slice_u8 prefix_data,
     int32_t fourcc;
     const char* magic;
   } table[] = {
-      {-0x30302020, "\x01\x00\x00"},          // '00  'be
-      {+0x475A2020, "\x02\x1F\x8B\x08"},      // GZ
-      {+0x5A535444, "\x03\x28\xB5\x2F\xFD"},  // ZSTD
-      {+0x425A3220, "\x02\x42\x5A\x68"},      // BZ2
-      {+0x424D5020, "\x01\x42\x4D"},          // BMP
-      {+0x47494620, "\x03\x47\x49\x46\x38"},  // GIF
-      {+0x54494646, "\x03\x49\x49\x2A\x00"},  // TIFF (little-endian)
-      {+0x54494646, "\x03\x4D\x4D\x00\x2A"},  // TIFF (big-endian)
-      {+0x4E50424D, "\x02\x50\x35\x0A"},      // NPBM (P5; *.pgm)
-      {+0x4E50424D, "\x02\x50\x36\x0A"},      // NPBM (P6; *.ppm)
-      {-0x52494646, "\x03\x52\x49\x46\x46"},  // RIFF
-      {+0x4E494520, "\x02\x6E\xC3\xAF"},      // NIE
-      {+0x514F4920, "\x03\x71\x6F\x69\x66"},  // QOI
-      {+0x5A4C4942, "\x01\x78\x9C"},          // ZLIB
-      {+0x504E4720, "\x03\x89\x50\x4E\x47"},  // PNG
-      {+0x4A504547, "\x01\xFF\xD8"},          // JPEG
+      {-0x30302020, "\x01\x00\x00"},              // '00  'be
+      {+0x475A2020, "\x02\x1F\x8B\x08"},          // GZ
+      {+0x5A535444, "\x03\x28\xB5\x2F\xFD"},      // ZSTD
+      {+0x425A3220, "\x02\x42\x5A\x68"},          // BZ2
+      {+0x424D5020, "\x01\x42\x4D"},              // BMP
+      {+0x47494620, "\x03\x47\x49\x46\x38"},      // GIF
+      {+0x54494646, "\x03\x49\x49\x2A\x00"},      // TIFF (little-endian)
+      {+0x54494646, "\x03\x4D\x4D\x00\x2A"},      // TIFF (big-endian)
+      {+0x4E50424D, "\x02\x50\x35\x0A"},          // NPBM (P5; *.pgm)
+      {+0x4E50424D, "\x02\x50\x36\x0A"},          // NPBM (P6; *.ppm)
+      {-0x52494646, "\x03\x52\x49\x46\x46"},      // RIFF
+      {+0x4C5A4D41, "\x04\x5D\x00\x10\x00\x00"},  // LZMA
+      {+0x4C5A4D41, "\x02\x5D\x00\x00"},          // LZMA
+      {+0x4E494520, "\x02\x6E\xC3\xAF"},          // NIE
+      {+0x514F4920, "\x03\x71\x6F\x69\x66"},      // QOI
+      {+0x5A4C4942, "\x01\x78\x9C"},              // ZLIB
+      {+0x504E4720, "\x03\x89\x50\x4E\x47"},      // PNG
+      {+0x585A2020, "\x04\xFD\x37\x7A\x58\x5A"},  // XZ
+      {+0x4A504547, "\x01\xFF\xD8"},              // JPEG
   };
   static const size_t table_len = sizeof(table) / sizeof(table[0]);
 
