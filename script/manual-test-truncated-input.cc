@@ -107,7 +107,7 @@ static const char*  //
 handle_image_decoder(wuffs_base__io_buffer src,
                      int32_t fourcc,
                      bool full_decode) {
-  wuffs_base__image_decoder::unique_ptr dec(nullptr, &free);
+  wuffs_base__image_decoder::unique_ptr dec;
   switch (fourcc) {
     case WUFFS_BASE__FOURCC__BMP:
       dec = wuffs_bmp__decoder::alloc_as__wuffs_base__image_decoder();
@@ -183,7 +183,7 @@ handle_image_decoder(wuffs_base__io_buffer src,
 
 static const char*  //
 handle_io_transformer(wuffs_base__io_buffer src, int32_t fourcc) {
-  wuffs_base__io_transformer::unique_ptr dec(nullptr, &free);
+  wuffs_base__io_transformer::unique_ptr dec;
   switch (fourcc) {
     case WUFFS_BASE__FOURCC__BZ2:
       dec = wuffs_bzip2__decoder::alloc_as__wuffs_base__io_transformer();

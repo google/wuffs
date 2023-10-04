@@ -369,7 +369,7 @@ handle(const char* filename, FILE* f) {
 redirect:
   do {
     print_fourcc(fourcc);
-    wuffs_base__image_decoder::unique_ptr dec(nullptr, &free);
+    wuffs_base__image_decoder::unique_ptr dec;
     switch (fourcc) {
       case WUFFS_BASE__FOURCC__BMP:
         dec = wuffs_bmp__decoder::alloc_as__wuffs_base__image_decoder();
