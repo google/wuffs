@@ -123,6 +123,8 @@ func (x ID) IsClose() bool          { return minClose <= x && x <= maxClose }
 func (x ID) IsKeyword() bool        { return minKeyword <= x && x <= maxKeyword }
 func (x ID) IsNumType() bool        { return minNumType <= x && x <= maxNumType }
 func (x ID) IsNumTypeOrIdeal() bool { return minNumTypeOrIdeal <= x && x <= maxNumTypeOrIdeal }
+func (x ID) IsRangeType() bool      { return minRangeType <= x && x <= maxRangeType }
+func (x ID) IsRectType() bool       { return minRectType <= x && x <= maxRectType }
 func (x ID) IsOpen() bool           { return minOpen <= x && x <= maxOpen }
 
 func (x ID) IsImplicitSemicolon(m *Map) bool {
@@ -431,6 +433,10 @@ const (
 	minNumType        = 0x110
 	maxNumType        = 0x117
 	maxNumTypeOrIdeal = 0x117
+	minRangeType      = 0x130
+	maxRangeType      = 0x133
+	minRectType       = 0x134
+	maxRectType       = 0x135
 	maxBuiltInIdent   = 0x3FF
 
 	// -------- 0x100 block.

@@ -917,6 +917,10 @@ func (n *TypeExpr) IsCPUArchType() bool {
 	return n.id0 == 0 && n.id1 == t.IDBase && n.id2.IsBuiltInCPUArch()
 }
 
+func (n *TypeExpr) IsEmptyStruct() bool {
+	return n.id0 == 0 && n.id1 == t.IDBase && n.id2 == t.IDEmptyStruct
+}
+
 func (n *TypeExpr) IsEtcUtilityType() bool {
 	return n.id0 == 0 && n.id1 == t.IDBase && n.id2.IsEtcUtility()
 }
@@ -951,6 +955,14 @@ func (n *TypeExpr) IsNumType() bool {
 
 func (n *TypeExpr) IsNumTypeOrIdeal() bool {
 	return n.id0 == 0 && n.id1 == t.IDBase && n.id2.IsNumTypeOrIdeal()
+}
+
+func (n *TypeExpr) IsRangeType() bool {
+	return n.id0 == 0 && n.id1 == t.IDBase && n.id2.IsRangeType()
+}
+
+func (n *TypeExpr) IsRectType() bool {
+	return n.id0 == 0 && n.id1 == t.IDBase && n.id2.IsRectType()
 }
 
 func (n *TypeExpr) IsRefined() bool {
