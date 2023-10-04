@@ -35,9 +35,13 @@ pub struct decoder? implements base.image_decoder(
 
         quirks : array[QUIRKS_COUNT] base.bool,
 
-        delayed_num_decoded_frames         : base.bool,
-        previous_lzw_decode_ended_abruptly : base.bool,
-        seen_header                        : base.bool,
+        delayed_num_decoded_frames : base.bool,
+        seen_header                : base.bool,
+
+        // This field used to be called "previous_lzw_decode_ended_abruptly".
+        // It's no longer used, but removing it changes the subsequent field
+        // offsets, which can worsen the benchmarks.
+        ignored_but_affects_benchmarks : base.bool,
 
         has_global_palette : base.bool,
 
@@ -79,6 +83,20 @@ pub struct decoder? implements base.image_decoder(
 
         swizzler : base.pixel_swizzler,
 
+        lzw_pending_literal_width_plus_one : base.u32[..= 9],
+        lzw_literal_width                  : base.u32[..= 8],
+        lzw_clear_code                     : base.u32[..= 256],
+        lzw_end_code                       : base.u32[..= 257],
+        lzw_save_code                      : base.u32[..= 4096],
+        lzw_prev_code                      : base.u32[..= 4095],
+        lzw_width                          : base.u32[..= 12],
+        lzw_bits                           : base.u32,
+        lzw_n_bits                         : base.u32[..= 31],
+        lzw_output_ri                      : base.u32[..= 8191],
+        lzw_output_wi                      : base.u32[..= 8191],
+        lzw_read_from_return_value         : base.u32,
+        lzw_prefixes                       : array[4096] base.u16[..= 4095],
+
         util : base.utility,
 ) + (
         compressed : array[4096] base.u8,
@@ -88,7 +106,9 @@ pub struct decoder? implements base.image_decoder(
         // dst_palette is the swizzled color table.
         dst_palette : array[4 * 256] base.u8,
 
-        lzw : lzw.decoder,
+        lzw_suffixes : array[4096] array[8] base.u8,
+        lzw_lm1s     : array[4096] base.u16,
+        lzw_output   : array[8192 + 7] base.u8,
 )
 
 pub func decoder.get_quirk(key: base.u32) base.u64 {
@@ -905,8 +925,8 @@ pri func decoder.decode_id_part1?(dst: ptr base.pixel_buffer, src: base.io_reade
     // code (i.e. returning the "ok" status code), the LZW decoder is stuck in
     // a coroutine-in-progress lzw_decoder.decode call, still waiting for that
     // end code. To cancel that coroutine, we reset the LZW decoder.
-    if this.previous_lzw_decode_ended_abruptly {
-        this.lzw.reset!()
+    if this.ignored_but_affects_benchmarks {
+        // No-op. This used to be "this.lzw.reset!()".
     }
 
     // Process the LZW literal width. The spec says that "images which have one
@@ -916,9 +936,9 @@ pri func decoder.decode_id_part1?(dst: ptr base.pixel_buffer, src: base.io_reade
     if lw > 8 {
         return "#bad literal width"
     }
-    this.lzw.set_quirk!(key: lzw.QUIRK_LITERAL_WIDTH_PLUS_ONE, value: (1 + lw) as base.u64)
+    this.lzw_pending_literal_width_plus_one = (1 + lw) as base.u32
 
-    this.previous_lzw_decode_ended_abruptly = true
+    this.ignored_but_affects_benchmarks = true
 }
 
 pri func decoder.decode_id_part2?(dst: ptr base.pixel_buffer, src: base.io_reader, workbuf: slice base.u8) {
@@ -928,10 +948,9 @@ pri func decoder.decode_id_part2?(dst: ptr base.pixel_buffer, src: base.io_reade
     var n_compressed    : base.u64
     var r               : base.io_reader
     var mark            : base.u64
-    var lzw_status      : base.status
     var copy_status     : base.status
-    var uncompressed    : roslice base.u8
 
+    this.lzw_init!()
     need_block_size = true
     while.outer true {
         if need_block_size {
@@ -972,50 +991,56 @@ pri func decoder.decode_id_part2?(dst: ptr base.pixel_buffer, src: base.io_reade
 
         while.inner true {
             if (this.compressed_ri > this.compressed_wi) or (this.compressed_wi > 4096) {
-                return "#internal error: inconsistent ri/wi"
+                return "#internal error: inconsistent I/O"
             }
             io_bind (io: r, data: this.compressed[this.compressed_ri .. this.compressed_wi], history_position: 0) {
                 mark = r.mark()
-                lzw_status =? this.lzw.transform_io?(
-                        dst: this.util.empty_io_writer(), src: r, workbuf: this.util.empty_slice_u8())
+                this.lzw_read_from!(src: r)
                 this.compressed_ri ~sat+= r.count_since(mark: mark)
             }
 
-            uncompressed = this.lzw.flush!()
-            if uncompressed.length() > 0 {
-                copy_status = this.copy_to_image_buffer!(pb: args.dst, src: uncompressed)
+            if this.lzw_output_ri < this.lzw_output_wi {
+                copy_status = this.copy_to_image_buffer!(
+                        pb: args.dst, src: this.lzw_output[this.lzw_output_ri .. this.lzw_output_wi])
                 if copy_status.is_error() {
                     return copy_status
                 }
+                this.lzw_output_ri = 0
+                this.lzw_output_wi = 0
             }
 
-            if lzw_status.is_ok() {
-                this.previous_lzw_decode_ended_abruptly = false
+            if this.lzw_read_from_return_value == 0 {
+                this.ignored_but_affects_benchmarks = false
 
                 // Skip any trailing blocks.
                 if need_block_size or (block_size > 0) {
                     args.src.skip_u32?(n: block_size as base.u32)
                     this.skip_blocks?(src: args.src)
                 }
-
                 break.outer
-            } else if lzw_status == base."$short read" {
-                continue.outer
-            } else if lzw_status == base."$short write" {
+            } else if this.lzw_read_from_return_value == 1 {
+                // This is an LZW flush.
                 continue.inner
+            } else if this.lzw_read_from_return_value == 2 {
+                // This is an LZW "$short read" equivalent.
+                continue.outer
             } else if this.quirks[QUIRK_IGNORE_TOO_MUCH_PIXEL_DATA - QUIRKS_BASE] and
                     (this.dst_y >= this.frame_rect_y1) and (this.interlace == 0) {
                 // It's invalid LZW-compressed data, but we still have a full
                 // frame and have opted in to QUIRK_IGNORE_TOO_MUCH_PIXEL_DATA,
-                // so treat it like the lzw_status.is_ok() case, other than not
-                // clearing this.previous_lzw_decode_ended_abruptly.
+                // so treat it like the OK case, other than not clearing
+                // this.ignored_but_affects_benchmarks.
                 if need_block_size or (block_size > 0) {
                     args.src.skip_u32?(n: block_size as base.u32)
                     this.skip_blocks?(src: args.src)
                 }
                 break.outer
+            } else if this.lzw_read_from_return_value == 3 {
+                return "#truncated input"
+            } else if this.lzw_read_from_return_value == 4 {
+                return "#bad LZW code"
             }
-            return lzw_status
+            return "#internal error: inconsistent I/O"
         } endwhile.inner
     } endwhile.outer
 
@@ -1137,7 +1162,7 @@ pri func decoder.copy_to_image_buffer!(pb: ptr base.pixel_buffer, src: roslice b
         if args.src.length() == src_ri {
             break
         } else if args.src.length() < src_ri {
-            return "#internal error: inconsistent ri/wi"
+            return "#internal error: inconsistent I/O"
         }
 
         // Second, skip over src for that part of the frame rect that is
@@ -1161,7 +1186,7 @@ pri func decoder.copy_to_image_buffer!(pb: ptr base.pixel_buffer, src: roslice b
         }
 
         if src_ri <> args.src.length() {
-            return "#internal error: inconsistent ri/wi"
+            return "#internal error: inconsistent I/O"
         }
         break
     } endwhile

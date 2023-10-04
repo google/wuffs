@@ -240,7 +240,9 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 			return fmt.Errorf("check: cannot return %q (of type %q) as type %q",
 				value.Str(q.tm), rTyp.Str(q.tm), lTyp.Str(q.tm))
 		}
-		if rTyp.IsEitherSliceType() {
+		if rTyp.IsEitherSliceType() || rTyp.IsPointerType() {
+			// TODO: just reject all "return x" when x has slice or pointer
+			// type, after removing the (deprecated) lzw.decoder.flush! method.
 			ok := false
 			if value.Operator() != t.IDDotDot {
 				// No-op.

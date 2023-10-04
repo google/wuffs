@@ -12,8 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// TODO: remove this no-longer-used `use` line. That affects the topological
+// sort of std/etc packages, which makes a large diff for the generated C code.
 use "std/lzw"
 
+pub status "#bad LZW code"
 pub status "#bad extension label"
 pub status "#bad frame size"
 pub status "#bad graphic control"
@@ -22,7 +25,7 @@ pub status "#bad literal width"
 pub status "#bad palette"
 pub status "#truncated input"
 
-pri status "#internal error: inconsistent ri/wi"
+pri status "#internal error: inconsistent I/O"
 
 pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0
 

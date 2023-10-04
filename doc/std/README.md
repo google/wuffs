@@ -51,7 +51,7 @@ to enable.
 - `CBOR:    BASE`
 - `CRC32:   BASE`
 - `DEFLATE: BASE`
-- `GIF:     BASE, LZW`
+- `GIF:     BASE`
 - `GZIP:    BASE, CRC32, DEFLATE`
 - `JPEG:    BASE`
 - `JSON:    BASE`

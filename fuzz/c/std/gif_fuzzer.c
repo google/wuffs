@@ -64,7 +64,6 @@ It should print "PASS", amongst other information, and exit(0).
 #define WUFFS_CONFIG__MODULES
 #define WUFFS_CONFIG__MODULE__BASE
 #define WUFFS_CONFIG__MODULE__GIF
-#define WUFFS_CONFIG__MODULE__LZW
 
 // If building this program in an environment that doesn't easily accommodate
 // relative includes, you can use the script/inline-c-relative-includes.go

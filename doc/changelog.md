@@ -13,7 +13,9 @@
 - Changed `lzw.set_literal_width` to `lzw.set_quirk`.
 - Changed `set_quirk_enabled!(quirk: u32, enabled: bool)` to `set_quirk!(key:
   u32, value: u64) status`.
+- Deprecate `std/lzw.decoder.flush`.
 - Halve the sizeof `wuffs_foo__bar::unique_ptr`.
+- Remove the `std/gif -> std/lzw` dependency.
 - Set image decoder pixel width and height inclusive maximum to `0xFF_FFFF`,
   down from `0x7FFF_FFFF`.
 

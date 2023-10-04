@@ -90,7 +90,6 @@ micros_since_start(struct timespec* now) {
 // code simply isn't compiled.
 #define WUFFS_CONFIG__MODULES
 #define WUFFS_CONFIG__MODULE__BASE
-#define WUFFS_CONFIG__MODULE__LZW
 #define WUFFS_CONFIG__MODULE__GIF
 
 // If building this program in an environment that doesn't easily accommodate

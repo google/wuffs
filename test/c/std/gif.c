@@ -57,7 +57,6 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 #define WUFFS_CONFIG__MODULES
 #define WUFFS_CONFIG__MODULE__BASE
 #define WUFFS_CONFIG__MODULE__GIF
-#define WUFFS_CONFIG__MODULE__LZW
 
 // If building this program in an environment that doesn't easily accommodate
 // relative includes, you can use the script/inline-c-relative-includes.go
@@ -144,25 +143,6 @@ test_basic_status_is_error() {
   status.repr = wuffs_gif__error__bad_header;
   if (!wuffs_base__status__is_error(&status)) {
     RETURN_FAIL("is_error(BAD_HEADER) returned false");
-  }
-  return NULL;
-}
-
-const char*  //
-test_basic_sub_struct_initializer() {
-  CHECK_FOCUS(__func__);
-  wuffs_gif__decoder dec;
-  CHECK_STATUS("initialize",
-               wuffs_gif__decoder__initialize(
-                   &dec, sizeof dec, WUFFS_VERSION,
-                   WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
-  if (dec.private_impl.magic != WUFFS_BASE__MAGIC) {
-    RETURN_FAIL("outer magic: have %" PRIu32 ", want %" PRIu32 "",
-                dec.private_impl.magic, WUFFS_BASE__MAGIC);
-  }
-  if (dec.private_data.f_lzw.private_impl.magic != WUFFS_BASE__MAGIC) {
-    RETURN_FAIL("inner magic: have %" PRIu32 ", want %" PRIu32,
-                dec.private_data.f_lzw.private_impl.magic, WUFFS_BASE__MAGIC);
   }
   return NULL;
 }
@@ -1637,7 +1617,7 @@ test_wuffs_gif_decode_pixel_data_too_much_sans_quirk() {
   CHECK_STRING(read_file(
       &src, "test/data/artificial-gif/pixel-data-too-much-bad-lzw.gif"));
   CHECK_STRING(do_test_wuffs_gif_decode_expecting(
-      src, 0, wuffs_lzw__error__bad_code, false));
+      src, 0, wuffs_gif__error__bad_lzw_code, false));
 
   src.meta = wuffs_base__empty_io_buffer_meta();
   CHECK_STRING(read_file(
@@ -2351,7 +2331,6 @@ proc g_tests[] = {
     test_basic_bad_wuffs_version,
     test_basic_initialize_not_called,
     test_basic_status_is_error,
-    test_basic_sub_struct_initializer,
 
     test_wuffs_gif_call_interleaved,
     test_wuffs_gif_call_sequence,
