@@ -892,7 +892,9 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
             } else {
                 swizzle_status = this.swizzle_colorful!(dst: args.dst, workbuf: args.workbuf)
             }
-            if swizzle_status.is_error() {
+            if ddf_status.is_error() {
+                return ddf_status
+            } else if swizzle_status.is_error() {
                 return swizzle_status
             }
         }

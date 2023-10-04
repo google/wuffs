@@ -42156,7 +42156,10 @@ wuffs_jpeg__decoder__decode_frame(
         } else {
           v_swizzle_status = wuffs_jpeg__decoder__swizzle_colorful(self, a_dst, a_workbuf);
         }
-        if (wuffs_base__status__is_error(&v_swizzle_status)) {
+        if (wuffs_base__status__is_error(&v_ddf_status)) {
+          status = v_ddf_status;
+          goto exit;
+        } else if (wuffs_base__status__is_error(&v_swizzle_status)) {
           status = v_swizzle_status;
           goto exit;
         }
