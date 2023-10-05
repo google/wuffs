@@ -249,7 +249,10 @@ Source code is [auto-formatted](/doc/note/auto-formatting.md).
 
 # License
 
-Apache 2. See the LICENSE file for details.
+This software is distributed under the terms of both the MIT license and the
+Apache License (Version 2.0).
+
+See LICENSE for details.
 
 
 # Disclaimer
