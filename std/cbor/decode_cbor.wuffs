@@ -20,6 +20,10 @@ pri status "#internal error: inconsistent token length"
 
 // --------
 
+// DECODER_HISTORY_RETAIN_LENGTH_MAX_INCL_WORST_CASE is the largest
+// history_retain_length (for compact_retaining) that a decoder will request.
+pub const DECODER_HISTORY_RETAIN_LENGTH_MAX_INCL_WORST_CASE : base.u64 = 0
+
 // DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE is the largest workbuf length that a
 // decoder will request.
 pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0
@@ -119,6 +123,10 @@ pub func decoder.get_quirk(key: base.u32) base.u64 {
 
 pub func decoder.set_quirk!(key: base.u32, value: base.u64) base.status {
     return base."#unsupported option"
+}
+
+pub func decoder.history_retain_length() base.u64 {
+    return 0
 }
 
 pub func decoder.workbuf_len() base.range_ii_u64 {

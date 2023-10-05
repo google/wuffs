@@ -212,7 +212,8 @@ main1(int argc, char** argv) {
       return wuffs_base__status__message(&status);
     }
 
-    wuffs_base__io_buffer__compact(&src);
+    wuffs_base__io_buffer__compact_retaining(
+        &src, wuffs_bzip2__decoder__history_retain_length(&dec));
     if (src.meta.wi == src.data.len) {
       return "main: internal error: no I/O progress possible";
     }

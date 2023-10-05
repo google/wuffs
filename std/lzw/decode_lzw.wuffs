@@ -17,6 +17,8 @@ pub status "#truncated input"
 
 pri status "#internal error: inconsistent I/O"
 
+pub const DECODER_HISTORY_RETAIN_LENGTH_MAX_INCL_WORST_CASE : base.u64 = 0
+
 // TODO: move bulk data buffers like decoder.suffixes or decoder.output into
 // the workbuf? The first attempt at this was a performance regression for
 // decoding all but the smallest GIFs. See these git commits for numbers:
@@ -86,6 +88,10 @@ pub func decoder.set_quirk!(key: base.u32, value: base.u64) base.status {
         return ok
     }
     return base."#unsupported option"
+}
+
+pub func decoder.history_retain_length() base.u64 {
+    return 0
 }
 
 pub func decoder.workbuf_len() base.range_ii_u64 {

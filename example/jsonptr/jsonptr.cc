@@ -1001,11 +1001,11 @@ static void  //
 ignore_return_value(int ignored) {}
 
 const char*  //
-read_src() {
+read_src(uint64_t history_retain_length) {
   if (g_src.meta.closed) {
     return "main: internal error: read requested on a closed source";
   }
-  g_src.compact();
+  g_src.compact_retaining(history_retain_length);
   if (g_src.meta.wi >= g_src.data.len) {
     return "main: g_src buffer is full";
   }
@@ -1398,7 +1398,7 @@ main1(int argc, char** argv) {
       }
       // Check that we've exhausted the input.
       if ((g_src.meta.ri == g_src.meta.wi) && !g_src.meta.closed) {
-        TRY(read_src());
+        TRY(read_src(g_dec.history_retain_length()));
       }
       if ((g_src.meta.ri < g_src.meta.wi) || !g_src.meta.closed) {
         return "main: valid JSON followed by further (unexpected) data";
@@ -1409,7 +1409,7 @@ main1(int argc, char** argv) {
       if (g_cursor_index != g_src.meta.ri) {
         return "main: internal error: inconsistent g_src indexes";
       }
-      TRY(read_src());
+      TRY(read_src(g_dec.history_retain_length()));
       g_cursor_index = g_src.meta.ri;
     } else if (status.repr == wuffs_base__suspension__short_write) {
       g_tok.compact();

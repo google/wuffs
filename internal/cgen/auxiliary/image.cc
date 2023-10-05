@@ -344,7 +344,7 @@ redirect:
           fourcc = 0;
           break;
         }
-        std::string error_message = input.CopyIn(&io_buf);
+        std::string error_message = input.CopyIn(&io_buf, 0);
         if (!error_message.empty()) {
           return DecodeImageResult(std::move(error_message));
         }
@@ -440,7 +440,8 @@ redirect:
       } else if (io_buf.meta.closed) {
         return DecodeImageResult(DecodeImage_UnexpectedEndOfFile);
       } else {
-        std::string error_message = input.CopyIn(&io_buf);
+        std::string error_message =
+            input.CopyIn(&io_buf, image_decoder->history_retain_length());
         if (!error_message.empty()) {
           return DecodeImageResult(std::move(error_message));
         }
@@ -522,7 +523,8 @@ redirect:
     } else if (io_buf.meta.closed) {
       return DecodeImageResult(DecodeImage_UnexpectedEndOfFile);
     } else {
-      std::string error_message = input.CopyIn(&io_buf);
+      std::string error_message =
+          input.CopyIn(&io_buf, image_decoder->history_retain_length());
       if (!error_message.empty()) {
         return DecodeImageResult(std::move(error_message));
       }
@@ -551,7 +553,8 @@ redirect:
       message = DecodeImage_UnexpectedEndOfFile;
       break;
     } else {
-      std::string error_message = input.CopyIn(&io_buf);
+      std::string error_message =
+          input.CopyIn(&io_buf, image_decoder->history_retain_length());
       if (!error_message.empty()) {
         message = std::move(error_message);
         break;
@@ -579,7 +582,8 @@ redirect:
       } else if (io_buf.meta.closed) {
         return DecodeImageResult(DecodeImage_UnexpectedEndOfFile);
       } else {
-        std::string error_message = input.CopyIn(&io_buf);
+        std::string error_message =
+            input.CopyIn(&io_buf, image_decoder->history_retain_length());
         if (!error_message.empty()) {
           return DecodeImageResult(std::move(error_message));
         }

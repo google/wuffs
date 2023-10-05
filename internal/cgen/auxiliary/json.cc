@@ -58,58 +58,58 @@ DecodeJsonArgJsonPointer::DefaultValue() {
 
 // --------
 
-#define WUFFS_AUX__DECODE_JSON__GET_THE_NEXT_TOKEN                          \
-  while (tok_buf.meta.ri >= tok_buf.meta.wi) {                              \
-    if (tok_status.repr == nullptr) {                                       \
-      goto done;                                                            \
-    } else if (tok_status.repr == wuffs_base__suspension__short_write) {    \
-      tok_buf.compact();                                                    \
-    } else if (tok_status.repr == wuffs_base__suspension__short_read) {     \
-      if (!io_error_message.empty()) {                                      \
-        ret_error_message = std::move(io_error_message);                    \
-        goto done;                                                          \
-      } else if (cursor_index != io_buf->meta.ri) {                         \
-        ret_error_message =                                                 \
-            "wuffs_aux::DecodeJson: internal error: bad cursor_index";      \
-        goto done;                                                          \
-      } else if (io_buf->meta.closed) {                                     \
-        ret_error_message =                                                 \
-            "wuffs_aux::DecodeJson: internal error: io_buf is closed";      \
-        goto done;                                                          \
-      }                                                                     \
-      io_buf->compact();                                                    \
-      if (io_buf->meta.wi >= io_buf->data.len) {                            \
-        ret_error_message =                                                 \
-            "wuffs_aux::DecodeJson: internal error: io_buf is full";        \
-        goto done;                                                          \
-      }                                                                     \
-      cursor_index = io_buf->meta.ri;                                       \
-      io_error_message = input.CopyIn(io_buf);                              \
-    } else {                                                                \
-      ret_error_message = tok_status.message();                             \
-      goto done;                                                            \
-    }                                                                       \
-    tok_status =                                                            \
-        dec->decode_tokens(&tok_buf, io_buf, wuffs_base__empty_slice_u8()); \
-    if ((tok_buf.meta.ri > tok_buf.meta.wi) ||                              \
-        (tok_buf.meta.wi > tok_buf.data.len) ||                             \
-        (io_buf->meta.ri > io_buf->meta.wi) ||                              \
-        (io_buf->meta.wi > io_buf->data.len)) {                             \
-      ret_error_message =                                                   \
-          "wuffs_aux::DecodeJson: internal error: bad buffer indexes";      \
-      goto done;                                                            \
-    }                                                                       \
-  }                                                                         \
-  wuffs_base__token token = tok_buf.data.ptr[tok_buf.meta.ri++];            \
-  uint64_t token_len = token.length();                                      \
-  if ((io_buf->meta.ri < cursor_index) ||                                   \
-      ((io_buf->meta.ri - cursor_index) < token_len)) {                     \
-    ret_error_message =                                                     \
-        "wuffs_aux::DecodeJson: internal error: bad token indexes";         \
-    goto done;                                                              \
-  }                                                                         \
-  uint8_t* token_ptr = io_buf->data.ptr + cursor_index;                     \
-  (void)(token_ptr);                                                        \
+#define WUFFS_AUX__DECODE_JSON__GET_THE_NEXT_TOKEN                           \
+  while (tok_buf.meta.ri >= tok_buf.meta.wi) {                               \
+    if (tok_status.repr == nullptr) {                                        \
+      goto done;                                                             \
+    } else if (tok_status.repr == wuffs_base__suspension__short_write) {     \
+      tok_buf.compact();                                                     \
+    } else if (tok_status.repr == wuffs_base__suspension__short_read) {      \
+      if (!io_error_message.empty()) {                                       \
+        ret_error_message = std::move(io_error_message);                     \
+        goto done;                                                           \
+      } else if (cursor_index != io_buf->meta.ri) {                          \
+        ret_error_message =                                                  \
+            "wuffs_aux::DecodeJson: internal error: bad cursor_index";       \
+        goto done;                                                           \
+      } else if (io_buf->meta.closed) {                                      \
+        ret_error_message =                                                  \
+            "wuffs_aux::DecodeJson: internal error: io_buf is closed";       \
+        goto done;                                                           \
+      }                                                                      \
+      io_buf->compact_retaining(dec->history_retain_length());               \
+      if (io_buf->meta.wi >= io_buf->data.len) {                             \
+        ret_error_message =                                                  \
+            "wuffs_aux::DecodeJson: internal error: io_buf is full";         \
+        goto done;                                                           \
+      }                                                                      \
+      cursor_index = io_buf->meta.ri;                                        \
+      io_error_message = input.CopyIn(io_buf, dec->history_retain_length()); \
+    } else {                                                                 \
+      ret_error_message = tok_status.message();                              \
+      goto done;                                                             \
+    }                                                                        \
+    tok_status =                                                             \
+        dec->decode_tokens(&tok_buf, io_buf, wuffs_base__empty_slice_u8());  \
+    if ((tok_buf.meta.ri > tok_buf.meta.wi) ||                               \
+        (tok_buf.meta.wi > tok_buf.data.len) ||                              \
+        (io_buf->meta.ri > io_buf->meta.wi) ||                               \
+        (io_buf->meta.wi > io_buf->data.len)) {                              \
+      ret_error_message =                                                    \
+          "wuffs_aux::DecodeJson: internal error: bad buffer indexes";       \
+      goto done;                                                             \
+    }                                                                        \
+  }                                                                          \
+  wuffs_base__token token = tok_buf.data.ptr[tok_buf.meta.ri++];             \
+  uint64_t token_len = token.length();                                       \
+  if ((io_buf->meta.ri < cursor_index) ||                                    \
+      ((io_buf->meta.ri - cursor_index) < token_len)) {                      \
+    ret_error_message =                                                      \
+        "wuffs_aux::DecodeJson: internal error: bad token indexes";          \
+    goto done;                                                               \
+  }                                                                          \
+  uint8_t* token_ptr = io_buf->data.ptr + cursor_index;                      \
+  (void)(token_ptr);                                                         \
   cursor_index += static_cast<size_t>(token_len)
 
 // --------

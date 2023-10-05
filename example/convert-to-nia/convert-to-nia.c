@@ -255,11 +255,11 @@ static void  //
 ignore_return_value(int ignored) {}
 
 const char*  //
-read_more_src() {
+read_more_src(uint64_t history_retain_length) {
   if (g_src.meta.closed) {
     return "main: unexpected end of file";
   }
-  wuffs_base__io_buffer__compact(&g_src);
+  wuffs_base__io_buffer__compact_retaining(&g_src, history_retain_length);
   ssize_t n = read(STDIN_FD, g_src.data.ptr + g_src.meta.wi,
                    g_src.data.len - g_src.meta.wi);
   if (n > 0) {
@@ -285,7 +285,7 @@ load_image_type() {
         (wuffs_base__io_buffer__reader_length(&g_src) == g_src.data.len)) {
       break;
     }
-    TRY(read_more_src());
+    TRY(read_more_src(0));
   }
   return NULL;
 }
@@ -410,7 +410,7 @@ advance_for_redirect() {
       break;
     }
     g_src.meta.ri = g_src.meta.wi;
-    TRY(read_more_src());
+    TRY(read_more_src(0));
   }
   return NULL;
 }
@@ -437,7 +437,8 @@ redirect:
     } else if (status.repr != wuffs_base__suspension__short_read) {
       return wuffs_base__status__message(&status);
     }
-    TRY(read_more_src());
+    TRY(read_more_src(
+        wuffs_base__image_decoder__history_retain_length(g_image_decoder)));
   }
 
   // Read the dimensions.
@@ -636,7 +637,8 @@ convert_frames() {
       } else if (dfc_status.repr != wuffs_base__suspension__short_read) {
         return wuffs_base__status__message(&dfc_status);
       }
-      TRY(read_more_src());
+      TRY(read_more_src(
+          wuffs_base__image_decoder__history_retain_length(g_image_decoder)));
     }
 
     wuffs_base__flicks duration =
@@ -678,7 +680,8 @@ convert_frames() {
       if (df_status.repr != wuffs_base__suspension__short_read) {
         break;
       }
-      decode_frame_io_error_message = read_more_src();
+      decode_frame_io_error_message = read_more_src(
+          wuffs_base__image_decoder__history_retain_length(g_image_decoder));
       if (decode_frame_io_error_message != NULL) {
         // Neuter the "short read" df_status so that convert_frames returns the
         // I/O error message instead.

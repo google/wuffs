@@ -321,6 +321,7 @@ typedef struct wuffs_base__token_buffer__struct {
 #ifdef __cplusplus
   inline bool is_valid() const;
   inline void compact();
+  inline void compact_retaining(uint64_t history_retain_length);
   inline uint64_t reader_length() const;
   inline wuffs_base__token* reader_pointer() const;
   inline wuffs_base__slice_token reader_slice() const;
@@ -421,13 +422,55 @@ wuffs_base__token_buffer__compact(wuffs_base__token_buffer* buf) {
     return;
   }
   buf->meta.pos = wuffs_base__u64__sat_add(buf->meta.pos, buf->meta.ri);
-  size_t n = buf->meta.wi - buf->meta.ri;
-  if (n != 0) {
+  size_t new_wi = buf->meta.wi - buf->meta.ri;
+  if (new_wi != 0) {
     memmove(buf->data.ptr, buf->data.ptr + buf->meta.ri,
-            n * sizeof(wuffs_base__token));
+            new_wi * sizeof(wuffs_base__token));
   }
-  buf->meta.wi = n;
+  buf->meta.wi = new_wi;
   buf->meta.ri = 0;
+}
+
+// wuffs_base__token_buffer__compact_retaining moves any written but unread
+// tokens closer to the start of the buffer. It retains H tokens of history
+// (the most recently read tokens), where H is min(buf->meta.ri,
+// history_retain_length). A postcondition is that buf->meta.ri == H.
+//
+// wuffs_base__token_buffer__compact_retaining(0) is equivalent to
+// wuffs_base__token_buffer__compact().
+//
+// For example, if buf started like this:
+//
+//        +--- ri = 3
+//        v
+//     abcdefgh??    len = 10, pos = 900
+//             ^
+//             +--- wi = 8
+//
+// Then, depending on history_retain_length, the resultant buf would be:
+//
+// HRL = 0     defgh?????    ri = 0    wi = 5    pos = 903
+// HRL = 1     cdefgh????    ri = 1    wi = 6    pos = 902
+// HRL = 2     bcdefgh???    ri = 2    wi = 7    pos = 901
+// HRL = 3     abcdefgh??    ri = 3    wi = 8    pos = 900
+// HRL = 4+    abcdefgh??    ri = 3    wi = 8    pos = 900
+static inline void  //
+wuffs_base__token_buffer__compact_retaining(wuffs_base__token_buffer* buf,
+                                            uint64_t history_retain_length) {
+  if (!buf || (buf->meta.ri == 0)) {
+    return;
+  }
+  size_t old_ri = buf->meta.ri;
+  size_t new_ri = (size_t)(wuffs_base__u64__min(old_ri, history_retain_length));
+  size_t memmove_start = old_ri - new_ri;
+  buf->meta.pos = wuffs_base__u64__sat_add(buf->meta.pos, memmove_start);
+  size_t new_wi = buf->meta.wi - memmove_start;
+  if ((new_wi != 0) && (memmove_start != 0)) {
+    memmove(buf->data.ptr, buf->data.ptr + memmove_start,
+            new_wi * sizeof(wuffs_base__token));
+  }
+  buf->meta.wi = new_wi;
+  buf->meta.ri = new_ri;
 }
 
 static inline uint64_t  //
@@ -486,6 +529,11 @@ wuffs_base__token_buffer::is_valid() const {
 inline void  //
 wuffs_base__token_buffer::compact() {
   wuffs_base__token_buffer__compact(this);
+}
+
+inline void  //
+wuffs_base__token_buffer::compact_retaining(uint64_t history_retain_length) {
+  wuffs_base__token_buffer__compact_retaining(this, history_retain_length);
 }
 
 inline uint64_t  //

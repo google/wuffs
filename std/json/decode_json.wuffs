@@ -86,6 +86,10 @@ pub func decoder.set_quirk!(key: base.u32, value: base.u64) base.status {
     return base."#unsupported option"
 }
 
+pub func decoder.history_retain_length() base.u64 {
+    return 0
+}
+
 pub func decoder.workbuf_len() base.range_ii_u64 {
     return this.util.empty_range_ii_u64()
 }

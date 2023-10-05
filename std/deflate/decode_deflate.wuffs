@@ -32,6 +32,8 @@ pri status "#internal error: inconsistent I/O"
 pri status "#internal error: inconsistent distance"
 pri status "#internal error: inconsistent n_bits"
 
+pub const DECODER_HISTORY_RETAIN_LENGTH_MAX_INCL_WORST_CASE : base.u64 = 0
+
 // TODO: replace the placeholder 1 value with either 0 or (32768 + 512),
 // depending on whether we'll move decoder.history into the workbuf.
 pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 1
@@ -205,6 +207,10 @@ pub func decoder.get_quirk(key: base.u32) base.u64 {
 
 pub func decoder.set_quirk!(key: base.u32, value: base.u64) base.status {
     return base."#unsupported option"
+}
+
+pub func decoder.history_retain_length() base.u64 {
+    return 0
 }
 
 pub func decoder.workbuf_len() base.range_ii_u64 {

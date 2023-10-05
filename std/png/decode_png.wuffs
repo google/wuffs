@@ -1723,6 +1723,10 @@ pri func decoder.do_tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inf
     return ok
 }
 
+pub func decoder.history_retain_length() base.u64 {
+    return 0
+}
+
 pub func decoder.workbuf_len() base.range_ii_u64 {
     return this.util.make_range_ii_u64(
             min_incl: this.overall_workbuf_length,
