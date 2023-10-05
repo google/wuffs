@@ -26,7 +26,7 @@ pub func hasher.set_quirk!(key: base.u32, value: base.u64) base.status {
     return base."#unsupported option"
 }
 
-pub func hasher.update_u32!(x: roslice base.u8) base.u32 {
+pub func hasher.update!(x: roslice base.u8) {
     if not this.started {
         this.started = true
         this.state = 1
@@ -39,6 +39,10 @@ pub func hasher.update_u32!(x: roslice base.u8) base.u32 {
                 up_x86_sse42]
     }
     this.up!(x: args.x)
+}
+
+pub func hasher.update_u32!(x: roslice base.u8) base.u32 {
+    this.update!(x: args.x)
     return this.state
 }
 
@@ -73,4 +77,8 @@ pri func hasher.up!(x: roslice base.u8),
         args.x = remaining
     } endwhile
     this.state = ((s2 & 0xFFFF) << 16) | (s1 & 0xFFFF)
+}
+
+pub func hasher.checksum_u32() base.u32 {
+    return this.state
 }

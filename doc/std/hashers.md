@@ -23,8 +23,10 @@ resist timing attacks.
 
 In Wuffs syntax, the `base.hasher_u32` methods are:
 
+- `checksum_u32() u32`
 - `get_quirk(key: u32) u64`
 - `set_quirk!(key: u32, value: u64) status`
+- `update!(x: slice u8)`
 - `update_u32!(x: slice u8) u32`
 
 

@@ -6000,6 +6000,8 @@ wuffs_base__ascii__longest_valid_prefix(const uint8_t* s_ptr, size_t s_len);
 extern const char wuffs_base__hasher_u32__vtable_name[];
 
 typedef struct wuffs_base__hasher_u32__func_ptrs__struct {
+  uint32_t (*checksum_u32)(
+    const void* self);
   uint64_t (*get_quirk)(
     const void* self,
     uint32_t a_key);
@@ -6007,12 +6009,20 @@ typedef struct wuffs_base__hasher_u32__func_ptrs__struct {
     void* self,
     uint32_t a_key,
     uint64_t a_value);
+  wuffs_base__empty_struct (*update)(
+    void* self,
+    wuffs_base__slice_u8 a_x);
   uint32_t (*update_u32)(
     void* self,
     wuffs_base__slice_u8 a_x);
 } wuffs_base__hasher_u32__func_ptrs;
 
 typedef struct wuffs_base__hasher_u32__struct wuffs_base__hasher_u32;
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint32_t
+wuffs_base__hasher_u32__checksum_u32(
+    const wuffs_base__hasher_u32* self);
 
 WUFFS_BASE__GENERATED_C_CODE
 WUFFS_BASE__MAYBE_STATIC uint64_t
@@ -6026,6 +6036,12 @@ wuffs_base__hasher_u32__set_quirk(
     wuffs_base__hasher_u32* self,
     uint32_t a_key,
     uint64_t a_value);
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct
+wuffs_base__hasher_u32__update(
+    wuffs_base__hasher_u32* self,
+    wuffs_base__slice_u8 a_x);
 
 WUFFS_BASE__GENERATED_C_CODE
 WUFFS_BASE__MAYBE_STATIC uint32_t
@@ -6047,6 +6063,11 @@ struct wuffs_base__hasher_u32__struct {
   using unique_ptr = std::unique_ptr<wuffs_base__hasher_u32, wuffs_unique_ptr_deleter>;
 #endif
 
+  inline uint32_t
+  checksum_u32() const {
+    return wuffs_base__hasher_u32__checksum_u32(this);
+  }
+
   inline uint64_t
   get_quirk(
       uint32_t a_key) const {
@@ -6060,6 +6081,13 @@ struct wuffs_base__hasher_u32__struct {
       uint64_t a_value) {
     return wuffs_base__hasher_u32__set_quirk(
         this, a_key, a_value);
+  }
+
+  inline wuffs_base__empty_struct
+  update(
+      wuffs_base__slice_u8 a_x) {
+    return wuffs_base__hasher_u32__update(
+        this, a_x);
   }
 
   inline uint32_t
@@ -6631,10 +6659,21 @@ wuffs_adler32__hasher__set_quirk(
     uint64_t a_value);
 
 WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct
+wuffs_adler32__hasher__update(
+    wuffs_adler32__hasher* self,
+    wuffs_base__slice_u8 a_x);
+
+WUFFS_BASE__GENERATED_C_CODE
 WUFFS_BASE__MAYBE_STATIC uint32_t
 wuffs_adler32__hasher__update_u32(
     wuffs_adler32__hasher* self,
     wuffs_base__slice_u8 a_x);
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint32_t
+wuffs_adler32__hasher__checksum_u32(
+    const wuffs_adler32__hasher* self);
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -6746,10 +6785,21 @@ struct wuffs_adler32__hasher__struct {
     return wuffs_adler32__hasher__set_quirk(this, a_key, a_value);
   }
 
+  inline wuffs_base__empty_struct
+  update(
+      wuffs_base__slice_u8 a_x) {
+    return wuffs_adler32__hasher__update(this, a_x);
+  }
+
   inline uint32_t
   update_u32(
       wuffs_base__slice_u8 a_x) {
     return wuffs_adler32__hasher__update_u32(this, a_x);
+  }
+
+  inline uint32_t
+  checksum_u32() const {
+    return wuffs_adler32__hasher__checksum_u32(this);
   }
 
 #endif  // __cplusplus
@@ -7777,10 +7827,21 @@ wuffs_crc32__ieee_hasher__set_quirk(
     uint64_t a_value);
 
 WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct
+wuffs_crc32__ieee_hasher__update(
+    wuffs_crc32__ieee_hasher* self,
+    wuffs_base__slice_u8 a_x);
+
+WUFFS_BASE__GENERATED_C_CODE
 WUFFS_BASE__MAYBE_STATIC uint32_t
 wuffs_crc32__ieee_hasher__update_u32(
     wuffs_crc32__ieee_hasher* self,
     wuffs_base__slice_u8 a_x);
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint32_t
+wuffs_crc32__ieee_hasher__checksum_u32(
+    const wuffs_crc32__ieee_hasher* self);
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -7891,10 +7952,21 @@ struct wuffs_crc32__ieee_hasher__struct {
     return wuffs_crc32__ieee_hasher__set_quirk(this, a_key, a_value);
   }
 
+  inline wuffs_base__empty_struct
+  update(
+      wuffs_base__slice_u8 a_x) {
+    return wuffs_crc32__ieee_hasher__update(this, a_x);
+  }
+
   inline uint32_t
   update_u32(
       wuffs_base__slice_u8 a_x) {
     return wuffs_crc32__ieee_hasher__update_u32(this, a_x);
+  }
+
+  inline uint32_t
+  checksum_u32() const {
+    return wuffs_crc32__ieee_hasher__checksum_u32(this);
   }
 
 #endif  // __cplusplus
@@ -12339,10 +12411,21 @@ wuffs_xxhash32__hasher__set_quirk(
     uint64_t a_value);
 
 WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct
+wuffs_xxhash32__hasher__update(
+    wuffs_xxhash32__hasher* self,
+    wuffs_base__slice_u8 a_x);
+
+WUFFS_BASE__GENERATED_C_CODE
 WUFFS_BASE__MAYBE_STATIC uint32_t
 wuffs_xxhash32__hasher__update_u32(
     wuffs_xxhash32__hasher* self,
     wuffs_base__slice_u8 a_x);
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint32_t
+wuffs_xxhash32__hasher__checksum_u32(
+    const wuffs_xxhash32__hasher* self);
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -12458,10 +12541,21 @@ struct wuffs_xxhash32__hasher__struct {
     return wuffs_xxhash32__hasher__set_quirk(this, a_key, a_value);
   }
 
+  inline wuffs_base__empty_struct
+  update(
+      wuffs_base__slice_u8 a_x) {
+    return wuffs_xxhash32__hasher__update(this, a_x);
+  }
+
   inline uint32_t
   update_u32(
       wuffs_base__slice_u8 a_x) {
     return wuffs_xxhash32__hasher__update_u32(this, a_x);
+  }
+
+  inline uint32_t
+  checksum_u32() const {
+    return wuffs_xxhash32__hasher__checksum_u32(this);
   }
 
 #endif  // __cplusplus
@@ -14014,6 +14108,34 @@ const char wuffs_base__token_decoder__vtable_name[] = "{vtable}wuffs_base__token
 // ---------------- Interface Definitions.
 
 WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint32_t
+wuffs_base__hasher_u32__checksum_u32(
+    const wuffs_base__hasher_u32* self) {
+  if (!self) {
+    return 0;
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return 0;
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__hasher_u32__vtable_name) {
+      const wuffs_base__hasher_u32__func_ptrs* func_ptrs =
+          (const wuffs_base__hasher_u32__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->checksum_u32)(self);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return 0;
+}
+
+WUFFS_BASE__GENERATED_C_CODE
 WUFFS_BASE__MAYBE_STATIC uint64_t
 wuffs_base__hasher_u32__get_quirk(
     const wuffs_base__hasher_u32* self,
@@ -14072,6 +14194,34 @@ wuffs_base__hasher_u32__set_quirk(
   }
 
   return wuffs_base__make_status(wuffs_base__error__bad_vtable);
+}
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct
+wuffs_base__hasher_u32__update(
+    wuffs_base__hasher_u32* self,
+    wuffs_base__slice_u8 a_x) {
+  if (!self) {
+    return wuffs_base__make_empty_struct();
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_empty_struct();
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__hasher_u32__vtable_name) {
+      const wuffs_base__hasher_u32__func_ptrs* func_ptrs =
+          (const wuffs_base__hasher_u32__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->update)(self, a_x);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return wuffs_base__make_empty_struct();
 }
 
 WUFFS_BASE__GENERATED_C_CODE
@@ -26492,11 +26642,14 @@ wuffs_adler32__hasher__up_x86_sse42(
 
 const wuffs_base__hasher_u32__func_ptrs
 wuffs_adler32__hasher__func_ptrs_for__wuffs_base__hasher_u32 = {
+  (uint32_t(*)(const void*))(&wuffs_adler32__hasher__checksum_u32),
   (uint64_t(*)(const void*,
       uint32_t))(&wuffs_adler32__hasher__get_quirk),
   (wuffs_base__status(*)(void*,
       uint32_t,
       uint64_t))(&wuffs_adler32__hasher__set_quirk),
+  (wuffs_base__empty_struct(*)(void*,
+      wuffs_base__slice_u8))(&wuffs_adler32__hasher__update),
   (uint32_t(*)(void*,
       wuffs_base__slice_u8))(&wuffs_adler32__hasher__update_u32),
 };
@@ -26613,18 +26766,18 @@ wuffs_adler32__hasher__set_quirk(
   return wuffs_base__make_status(wuffs_base__error__unsupported_option);
 }
 
-// -------- func adler32.hasher.update_u32
+// -------- func adler32.hasher.update
 
 WUFFS_BASE__GENERATED_C_CODE
-WUFFS_BASE__MAYBE_STATIC uint32_t
-wuffs_adler32__hasher__update_u32(
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct
+wuffs_adler32__hasher__update(
     wuffs_adler32__hasher* self,
     wuffs_base__slice_u8 a_x) {
   if (!self) {
-    return 0;
+    return wuffs_base__make_empty_struct();
   }
   if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    return 0;
+    return wuffs_base__make_empty_struct();
   }
 
   if ( ! self->private_impl.f_started) {
@@ -26640,6 +26793,24 @@ wuffs_adler32__hasher__update_u32(
         self->private_impl.choosy_up);
   }
   wuffs_adler32__hasher__up(self, a_x);
+  return wuffs_base__make_empty_struct();
+}
+
+// -------- func adler32.hasher.update_u32
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint32_t
+wuffs_adler32__hasher__update_u32(
+    wuffs_adler32__hasher* self,
+    wuffs_base__slice_u8 a_x) {
+  if (!self) {
+    return 0;
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return 0;
+  }
+
+  wuffs_adler32__hasher__update(self, a_x);
   return self->private_impl.f_state;
 }
 
@@ -26717,6 +26888,23 @@ wuffs_adler32__hasher__up__choosy_default(
   }
   self->private_impl.f_state = (((v_s2 & 65535u) << 16u) | (v_s1 & 65535u));
   return wuffs_base__make_empty_struct();
+}
+
+// -------- func adler32.hasher.checksum_u32
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint32_t
+wuffs_adler32__hasher__checksum_u32(
+    const wuffs_adler32__hasher* self) {
+  if (!self) {
+    return 0;
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return 0;
+  }
+
+  return self->private_impl.f_state;
 }
 
 // ‼ WUFFS MULTI-FILE SECTION +arm_neon
@@ -32760,11 +32948,14 @@ wuffs_crc32__ieee_hasher__up_x86_sse42(
 
 const wuffs_base__hasher_u32__func_ptrs
 wuffs_crc32__ieee_hasher__func_ptrs_for__wuffs_base__hasher_u32 = {
+  (uint32_t(*)(const void*))(&wuffs_crc32__ieee_hasher__checksum_u32),
   (uint64_t(*)(const void*,
       uint32_t))(&wuffs_crc32__ieee_hasher__get_quirk),
   (wuffs_base__status(*)(void*,
       uint32_t,
       uint64_t))(&wuffs_crc32__ieee_hasher__set_quirk),
+  (wuffs_base__empty_struct(*)(void*,
+      wuffs_base__slice_u8))(&wuffs_crc32__ieee_hasher__update),
   (uint32_t(*)(void*,
       wuffs_base__slice_u8))(&wuffs_crc32__ieee_hasher__update_u32),
 };
@@ -32881,18 +33072,18 @@ wuffs_crc32__ieee_hasher__set_quirk(
   return wuffs_base__make_status(wuffs_base__error__unsupported_option);
 }
 
-// -------- func crc32.ieee_hasher.update_u32
+// -------- func crc32.ieee_hasher.update
 
 WUFFS_BASE__GENERATED_C_CODE
-WUFFS_BASE__MAYBE_STATIC uint32_t
-wuffs_crc32__ieee_hasher__update_u32(
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct
+wuffs_crc32__ieee_hasher__update(
     wuffs_crc32__ieee_hasher* self,
     wuffs_base__slice_u8 a_x) {
   if (!self) {
-    return 0;
+    return wuffs_base__make_empty_struct();
   }
   if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    return 0;
+    return wuffs_base__make_empty_struct();
   }
 
   if (self->private_impl.f_state == 0u) {
@@ -32909,6 +33100,24 @@ wuffs_crc32__ieee_hasher__update_u32(
         self->private_impl.choosy_up);
   }
   wuffs_crc32__ieee_hasher__up(self, a_x);
+  return wuffs_base__make_empty_struct();
+}
+
+// -------- func crc32.ieee_hasher.update_u32
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint32_t
+wuffs_crc32__ieee_hasher__update_u32(
+    wuffs_crc32__ieee_hasher* self,
+    wuffs_base__slice_u8 a_x) {
+  if (!self) {
+    return 0;
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return 0;
+  }
+
+  wuffs_crc32__ieee_hasher__update(self, a_x);
   return self->private_impl.f_state;
 }
 
@@ -33015,6 +33224,23 @@ wuffs_crc32__ieee_hasher__up__choosy_default(
   }
   self->private_impl.f_state = (4294967295u ^ v_s);
   return wuffs_base__make_empty_struct();
+}
+
+// -------- func crc32.ieee_hasher.checksum_u32
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint32_t
+wuffs_crc32__ieee_hasher__checksum_u32(
+    const wuffs_crc32__ieee_hasher* self) {
+  if (!self) {
+    return 0;
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return 0;
+  }
+
+  return self->private_impl.f_state;
 }
 
 // ‼ WUFFS MULTI-FILE SECTION +arm_crc32
@@ -60726,20 +60952,18 @@ wuffs_xxhash32__hasher__up(
     wuffs_xxhash32__hasher* self,
     wuffs_base__slice_u8 a_x);
 
-WUFFS_BASE__GENERATED_C_CODE
-static uint32_t
-wuffs_xxhash32__hasher__checksum_u32(
-    const wuffs_xxhash32__hasher* self);
-
 // ---------------- VTables
 
 const wuffs_base__hasher_u32__func_ptrs
 wuffs_xxhash32__hasher__func_ptrs_for__wuffs_base__hasher_u32 = {
+  (uint32_t(*)(const void*))(&wuffs_xxhash32__hasher__checksum_u32),
   (uint64_t(*)(const void*,
       uint32_t))(&wuffs_xxhash32__hasher__get_quirk),
   (wuffs_base__status(*)(void*,
       uint32_t,
       uint64_t))(&wuffs_xxhash32__hasher__set_quirk),
+  (wuffs_base__empty_struct(*)(void*,
+      wuffs_base__slice_u8))(&wuffs_xxhash32__hasher__update),
   (uint32_t(*)(void*,
       wuffs_base__slice_u8))(&wuffs_xxhash32__hasher__update_u32),
 };
@@ -60854,18 +61078,18 @@ wuffs_xxhash32__hasher__set_quirk(
   return wuffs_base__make_status(wuffs_base__error__unsupported_option);
 }
 
-// -------- func xxhash32.hasher.update_u32
+// -------- func xxhash32.hasher.update
 
 WUFFS_BASE__GENERATED_C_CODE
-WUFFS_BASE__MAYBE_STATIC uint32_t
-wuffs_xxhash32__hasher__update_u32(
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct
+wuffs_xxhash32__hasher__update(
     wuffs_xxhash32__hasher* self,
     wuffs_base__slice_u8 a_x) {
   if (!self) {
-    return 0;
+    return wuffs_base__make_empty_struct();
   }
   if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    return 0;
+    return wuffs_base__make_empty_struct();
   }
 
   wuffs_base__slice_u8 v_remaining = {0};
@@ -60885,6 +61109,24 @@ wuffs_xxhash32__hasher__update_u32(
     wuffs_xxhash32__hasher__up(self, a_x);
     a_x = v_remaining;
   }
+  return wuffs_base__make_empty_struct();
+}
+
+// -------- func xxhash32.hasher.update_u32
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint32_t
+wuffs_xxhash32__hasher__update_u32(
+    wuffs_xxhash32__hasher* self,
+    wuffs_base__slice_u8 a_x) {
+  if (!self) {
+    return 0;
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return 0;
+  }
+
+  wuffs_xxhash32__hasher__update(self, a_x);
   return wuffs_xxhash32__hasher__checksum_u32(self);
 }
 
@@ -61015,9 +61257,17 @@ wuffs_xxhash32__hasher__up(
 // -------- func xxhash32.hasher.checksum_u32
 
 WUFFS_BASE__GENERATED_C_CODE
-static uint32_t
+WUFFS_BASE__MAYBE_STATIC uint32_t
 wuffs_xxhash32__hasher__checksum_u32(
     const wuffs_xxhash32__hasher* self) {
+  if (!self) {
+    return 0;
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return 0;
+  }
+
   uint32_t v_ret = 0;
   uint32_t v_i = 0;
   uint32_t v_n = 0;

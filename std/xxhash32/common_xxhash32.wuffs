@@ -47,7 +47,7 @@ pub func hasher.set_quirk!(key: base.u32, value: base.u64) base.status {
     return base."#unsupported option"
 }
 
-pub func hasher.update_u32!(x: roslice base.u8) base.u32 {
+pub func hasher.update!(x: roslice base.u8) {
     var remaining : roslice base.u8
 
     if (this.length_modulo_u32 == 0) and not this.length_overflows_u32 {
@@ -68,7 +68,10 @@ pub func hasher.update_u32!(x: roslice base.u8) base.u32 {
 
         args.x = remaining
     } endwhile
+}
 
+pub func hasher.update_u32!(x: roslice base.u8) base.u32 {
+    this.update!(x: args.x)
     return this.checksum_u32()
 }
 
@@ -183,7 +186,7 @@ pri func hasher.up!(x: roslice base.u8) {
     this.v3 = v3
 }
 
-pri func hasher.checksum_u32() base.u32 {
+pub func hasher.checksum_u32() base.u32 {
     var ret     : base.u32
     var i       : base.u32[..= 16]
     var n       : base.u32[..= 16]

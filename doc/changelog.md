@@ -6,6 +6,7 @@
 - Added `compact_retaining` and `history_retain_length`.
 - Added `example/toy-aux-image`.
 - Added `get_quirk(key: u32) u64`.
+- Added `hasher_u32` `update!` and `checksum_u32` methods
 - Added `if.likely` and `if.unlikely`.
 - Added `slice_var as nptr array[etc] etc` conversion.
 - Added `std/jpeg`.

@@ -28,7 +28,7 @@ pub func ieee_hasher.set_quirk!(key: base.u32, value: base.u64) base.status {
 // TODO: should it be ? instead of ! because it's public, and might need a way
 // to signal "initializer not called"? Should the return type, in the generated
 // C code, be "struct{ uint32_t checksum; wuffs_crc32__status status }"?
-pub func ieee_hasher.update_u32!(x: roslice base.u8) base.u32 {
+pub func ieee_hasher.update!(x: roslice base.u8) {
     if this.state == 0 {
         choose up = [
                 up_arm_crc32,
@@ -36,6 +36,10 @@ pub func ieee_hasher.update_u32!(x: roslice base.u8) base.u32 {
                 up_x86_sse42]
     }
     this.up!(x: args.x)
+}
+
+pub func ieee_hasher.update_u32!(x: roslice base.u8) base.u32 {
+    this.update!(x: args.x)
     return this.state
 }
 
@@ -75,6 +79,10 @@ pri func ieee_hasher.up!(x: roslice base.u8),
     }
 
     this.state = 0xFFFF_FFFF ^ s
+}
+
+pub func ieee_hasher.checksum_u32() base.u32 {
+    return this.state
 }
 
 // The table below was created by script/print-crc32-magic-numbers.go.

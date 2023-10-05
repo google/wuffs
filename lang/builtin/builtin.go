@@ -956,8 +956,10 @@ var InterfacesMap = map[string]bool{
 var InterfaceFuncs = []string{
 	// ---- hasher_u32
 
+	"hasher_u32.checksum_u32() u32",
 	"hasher_u32.get_quirk(key: u32) u64",
 	"hasher_u32.set_quirk!(key: u32, value: u64) status",
+	"hasher_u32.update!(x: roslice u8)",
 	"hasher_u32.update_u32!(x: roslice u8) u32",
 
 	// ---- image_decoder
