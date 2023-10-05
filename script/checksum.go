@@ -18,7 +18,7 @@
 package main
 
 // checksum.go prints a checksum of stdin's bytes, or of the opening digits of
-// π. Checksum algorithms include "adler32" and "crc32/ieee".
+// π. Checksum algorithms include "adler32", "crc32/ieee" and "xxhash32".
 //
 // Usage: go run checksum.go -algorithm=crc32/ieee < foo.bar
 
@@ -31,6 +31,8 @@ import (
 	"io"
 	"os"
 	"strings"
+
+	"github.com/pierrec/xxHash/xxHash32"
 )
 
 var (
@@ -78,6 +80,8 @@ func do(r io.Reader) error {
 		h = adler32.New()
 	case "crc32/ieee":
 		h = crc32.NewIEEE()
+	case "xxhash32":
+		h = xxHash32.New(0)
 	default:
 		return fmt.Errorf("unknown algorithm %q", *algorithm)
 	}

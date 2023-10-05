@@ -12267,6 +12267,210 @@ struct wuffs_wbmp__decoder__struct {
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__WBMP) || defined(WUFFS_NONMONOLITHIC)
 
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__XXHASH32) || defined(WUFFS_NONMONOLITHIC)
+
+// ---------------- Status Codes
+
+// ---------------- Public Consts
+
+// ---------------- Struct Declarations
+
+typedef struct wuffs_xxhash32__hasher__struct wuffs_xxhash32__hasher;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// ---------------- Public Initializer Prototypes
+
+// For any given "wuffs_foo__bar* self", "wuffs_foo__bar__initialize(self,
+// etc)" should be called before any other "wuffs_foo__bar__xxx(self, etc)".
+//
+// Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.
+// Pass 0 (or some combination of WUFFS_INITIALIZE__XXX) for options.
+
+wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
+wuffs_xxhash32__hasher__initialize(
+    wuffs_xxhash32__hasher* self,
+    size_t sizeof_star_self,
+    uint64_t wuffs_version,
+    uint32_t options);
+
+size_t
+sizeof__wuffs_xxhash32__hasher();
+
+// ---------------- Allocs
+
+// These functions allocate and initialize Wuffs structs. They return NULL if
+// memory allocation fails. If they return non-NULL, there is no need to call
+// wuffs_foo__bar__initialize, but the caller is responsible for eventually
+// calling free on the returned pointer. That pointer is effectively a C++
+// std::unique_ptr<T, wuffs_unique_ptr_deleter>.
+
+wuffs_xxhash32__hasher*
+wuffs_xxhash32__hasher__alloc();
+
+static inline wuffs_base__hasher_u32*
+wuffs_xxhash32__hasher__alloc_as__wuffs_base__hasher_u32() {
+  return (wuffs_base__hasher_u32*)(wuffs_xxhash32__hasher__alloc());
+}
+
+// ---------------- Upcasts
+
+static inline wuffs_base__hasher_u32*
+wuffs_xxhash32__hasher__upcast_as__wuffs_base__hasher_u32(
+    wuffs_xxhash32__hasher* p) {
+  return (wuffs_base__hasher_u32*)p;
+}
+
+// ---------------- Public Function Prototypes
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_xxhash32__hasher__get_quirk(
+    const wuffs_xxhash32__hasher* self,
+    uint32_t a_key);
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status
+wuffs_xxhash32__hasher__set_quirk(
+    wuffs_xxhash32__hasher* self,
+    uint32_t a_key,
+    uint64_t a_value);
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint32_t
+wuffs_xxhash32__hasher__update_u32(
+    wuffs_xxhash32__hasher* self,
+    wuffs_base__slice_u8 a_x);
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif
+
+// ---------------- Struct Definitions
+
+// These structs' fields, and the sizeof them, are private implementation
+// details that aren't guaranteed to be stable across Wuffs versions.
+//
+// See https://en.wikipedia.org/wiki/Opaque_pointer#C
+
+#if defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
+
+struct wuffs_xxhash32__hasher__struct {
+  // Do not access the private_impl's or private_data's fields directly. There
+  // is no API/ABI compatibility or safety guarantee if you do so. Instead, use
+  // the wuffs_foo__bar__baz functions.
+  //
+  // It is a struct, not a struct*, so that the outermost wuffs_foo__bar struct
+  // can be stack allocated when WUFFS_IMPLEMENTATION is defined.
+
+  struct {
+    uint32_t magic;
+    uint32_t active_coroutine;
+    wuffs_base__vtable vtable_for__wuffs_base__hasher_u32;
+    wuffs_base__vtable null_vtable;
+
+    uint32_t f_length_modulo_u32;
+    bool f_length_overflows_u32;
+    uint8_t f_padding0;
+    uint8_t f_padding1;
+    uint8_t f_buf_len;
+    uint8_t f_buf_data[16];
+    uint32_t f_v0;
+    uint32_t f_v1;
+    uint32_t f_v2;
+    uint32_t f_v3;
+  } private_impl;
+
+#ifdef __cplusplus
+#if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
+  using unique_ptr = std::unique_ptr<wuffs_xxhash32__hasher, wuffs_unique_ptr_deleter>;
+
+  // On failure, the alloc_etc functions return nullptr. They don't throw.
+
+  static inline unique_ptr
+  alloc() {
+    return unique_ptr(wuffs_xxhash32__hasher__alloc());
+  }
+
+  static inline wuffs_base__hasher_u32::unique_ptr
+  alloc_as__wuffs_base__hasher_u32() {
+    return wuffs_base__hasher_u32::unique_ptr(
+        wuffs_xxhash32__hasher__alloc_as__wuffs_base__hasher_u32());
+  }
+#endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
+
+#if defined(WUFFS_BASE__HAVE_EQ_DELETE) && !defined(WUFFS_IMPLEMENTATION)
+  // Disallow constructing or copying an object via standard C++ mechanisms,
+  // e.g. the "new" operator, as this struct is intentionally opaque. Its total
+  // size and field layout is not part of the public, stable, memory-safe API.
+  // Use malloc or memcpy and the sizeof__wuffs_foo__bar function instead, and
+  // call wuffs_foo__bar__baz methods (which all take a "this"-like pointer as
+  // their first argument) rather than tweaking bar.private_impl.qux fields.
+  //
+  // In C, we can just leave wuffs_foo__bar as an incomplete type (unless
+  // WUFFS_IMPLEMENTATION is #define'd). In C++, we define a complete type in
+  // order to provide convenience methods. These forward on "this", so that you
+  // can write "bar->baz(etc)" instead of "wuffs_foo__bar__baz(bar, etc)".
+  wuffs_xxhash32__hasher__struct() = delete;
+  wuffs_xxhash32__hasher__struct(const wuffs_xxhash32__hasher__struct&) = delete;
+  wuffs_xxhash32__hasher__struct& operator=(
+      const wuffs_xxhash32__hasher__struct&) = delete;
+#endif  // defined(WUFFS_BASE__HAVE_EQ_DELETE) && !defined(WUFFS_IMPLEMENTATION)
+
+#if !defined(WUFFS_IMPLEMENTATION)
+  // As above, the size of the struct is not part of the public API, and unless
+  // WUFFS_IMPLEMENTATION is #define'd, this struct type T should be heap
+  // allocated, not stack allocated. Its size is not intended to be known at
+  // compile time, but it is unfortunately divulged as a side effect of
+  // defining C++ convenience methods. Use "sizeof__T()", calling the function,
+  // instead of "sizeof T", invoking the operator. To make the two values
+  // different, so that passing the latter will be rejected by the initialize
+  // function, we add an arbitrary amount of dead weight.
+  uint8_t dead_weight[123000000];  // 123 MB.
+#endif  // !defined(WUFFS_IMPLEMENTATION)
+
+  inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
+  initialize(
+      size_t sizeof_star_self,
+      uint64_t wuffs_version,
+      uint32_t options) {
+    return wuffs_xxhash32__hasher__initialize(
+        this, sizeof_star_self, wuffs_version, options);
+  }
+
+  inline wuffs_base__hasher_u32*
+  upcast_as__wuffs_base__hasher_u32() {
+    return (wuffs_base__hasher_u32*)this;
+  }
+
+  inline uint64_t
+  get_quirk(
+      uint32_t a_key) const {
+    return wuffs_xxhash32__hasher__get_quirk(this, a_key);
+  }
+
+  inline wuffs_base__status
+  set_quirk(
+      uint32_t a_key,
+      uint64_t a_value) {
+    return wuffs_xxhash32__hasher__set_quirk(this, a_key, a_value);
+  }
+
+  inline uint32_t
+  update_u32(
+      wuffs_base__slice_u8 a_x) {
+    return wuffs_xxhash32__hasher__update_u32(this, a_x);
+  }
+
+#endif  // __cplusplus
+};  // struct wuffs_xxhash32__hasher__struct
+
+#endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
+
+#endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__XXHASH32) || defined(WUFFS_NONMONOLITHIC)
+
 #if defined(__cplusplus) && defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 
 // ---------------- Auxiliary - Base
@@ -60487,6 +60691,394 @@ wuffs_wbmp__decoder__workbuf_len(
 }
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__WBMP)
+
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__XXHASH32)
+
+// ---------------- Status Codes Implementations
+
+// ---------------- Private Consts
+
+#define WUFFS_XXHASH32__XXH_PRIME32_1 2654435761
+
+#define WUFFS_XXHASH32__XXH_PRIME32_2 2246822519
+
+#define WUFFS_XXHASH32__XXH_PRIME32_3 3266489917
+
+#define WUFFS_XXHASH32__XXH_PRIME32_4 668265263
+
+#define WUFFS_XXHASH32__XXH_PRIME32_5 374761393
+
+#define WUFFS_XXHASH32__INITIAL_V0 606290984
+
+#define WUFFS_XXHASH32__INITIAL_V1 2246822519
+
+#define WUFFS_XXHASH32__INITIAL_V2 0
+
+#define WUFFS_XXHASH32__INITIAL_V3 1640531535
+
+// ---------------- Private Initializer Prototypes
+
+// ---------------- Private Function Prototypes
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_xxhash32__hasher__up(
+    wuffs_xxhash32__hasher* self,
+    wuffs_base__slice_u8 a_x);
+
+WUFFS_BASE__GENERATED_C_CODE
+static uint32_t
+wuffs_xxhash32__hasher__checksum_u32(
+    const wuffs_xxhash32__hasher* self);
+
+// ---------------- VTables
+
+const wuffs_base__hasher_u32__func_ptrs
+wuffs_xxhash32__hasher__func_ptrs_for__wuffs_base__hasher_u32 = {
+  (uint64_t(*)(const void*,
+      uint32_t))(&wuffs_xxhash32__hasher__get_quirk),
+  (wuffs_base__status(*)(void*,
+      uint32_t,
+      uint64_t))(&wuffs_xxhash32__hasher__set_quirk),
+  (uint32_t(*)(void*,
+      wuffs_base__slice_u8))(&wuffs_xxhash32__hasher__update_u32),
+};
+
+// ---------------- Initializer Implementations
+
+wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
+wuffs_xxhash32__hasher__initialize(
+    wuffs_xxhash32__hasher* self,
+    size_t sizeof_star_self,
+    uint64_t wuffs_version,
+    uint32_t options){
+  if (!self) {
+    return wuffs_base__make_status(wuffs_base__error__bad_receiver);
+  }
+  if (sizeof(*self) != sizeof_star_self) {
+    return wuffs_base__make_status(wuffs_base__error__bad_sizeof_receiver);
+  }
+  if (((wuffs_version >> 32) != WUFFS_VERSION_MAJOR) ||
+      (((wuffs_version >> 16) & 0xFFFF) > WUFFS_VERSION_MINOR)) {
+    return wuffs_base__make_status(wuffs_base__error__bad_wuffs_version);
+  }
+
+  if ((options & WUFFS_INITIALIZE__ALREADY_ZEROED) != 0) {
+    // The whole point of this if-check is to detect an uninitialized *self.
+    // We disable the warning on GCC. Clang-5.0 does not have this warning.
+#if !defined(__clang__) && defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
+    if (self->private_impl.magic != 0) {
+      return wuffs_base__make_status(wuffs_base__error__initialize_falsely_claimed_already_zeroed);
+    }
+#if !defined(__clang__) && defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
+  } else {
+    if ((options & WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
+      memset(self, 0, sizeof(*self));
+      options |= WUFFS_INITIALIZE__ALREADY_ZEROED;
+    } else {
+      memset(&(self->private_impl), 0, sizeof(self->private_impl));
+    }
+  }
+
+  self->private_impl.magic = WUFFS_BASE__MAGIC;
+  self->private_impl.vtable_for__wuffs_base__hasher_u32.vtable_name =
+      wuffs_base__hasher_u32__vtable_name;
+  self->private_impl.vtable_for__wuffs_base__hasher_u32.function_pointers =
+      (const void*)(&wuffs_xxhash32__hasher__func_ptrs_for__wuffs_base__hasher_u32);
+  return wuffs_base__make_status(NULL);
+}
+
+wuffs_xxhash32__hasher*
+wuffs_xxhash32__hasher__alloc() {
+  wuffs_xxhash32__hasher* x =
+      (wuffs_xxhash32__hasher*)(calloc(sizeof(wuffs_xxhash32__hasher), 1));
+  if (!x) {
+    return NULL;
+  }
+  if (wuffs_xxhash32__hasher__initialize(
+      x, sizeof(wuffs_xxhash32__hasher), WUFFS_VERSION, WUFFS_INITIALIZE__ALREADY_ZEROED).repr) {
+    free(x);
+    return NULL;
+  }
+  return x;
+}
+
+size_t
+sizeof__wuffs_xxhash32__hasher() {
+  return sizeof(wuffs_xxhash32__hasher);
+}
+
+// ---------------- Function Implementations
+
+// -------- func xxhash32.hasher.get_quirk
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_xxhash32__hasher__get_quirk(
+    const wuffs_xxhash32__hasher* self,
+    uint32_t a_key) {
+  if (!self) {
+    return 0;
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return 0;
+  }
+
+  return 0u;
+}
+
+// -------- func xxhash32.hasher.set_quirk
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status
+wuffs_xxhash32__hasher__set_quirk(
+    wuffs_xxhash32__hasher* self,
+    uint32_t a_key,
+    uint64_t a_value) {
+  if (!self) {
+    return wuffs_base__make_status(wuffs_base__error__bad_receiver);
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_status(
+        (self->private_impl.magic == WUFFS_BASE__DISABLED)
+        ? wuffs_base__error__disabled_by_previous_error
+        : wuffs_base__error__initialize_not_called);
+  }
+
+  return wuffs_base__make_status(wuffs_base__error__unsupported_option);
+}
+
+// -------- func xxhash32.hasher.update_u32
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint32_t
+wuffs_xxhash32__hasher__update_u32(
+    wuffs_xxhash32__hasher* self,
+    wuffs_base__slice_u8 a_x) {
+  if (!self) {
+    return 0;
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return 0;
+  }
+
+  wuffs_base__slice_u8 v_remaining = {0};
+
+  if ((self->private_impl.f_length_modulo_u32 == 0u) &&  ! self->private_impl.f_length_overflows_u32) {
+    self->private_impl.f_v0 = 606290984u;
+    self->private_impl.f_v1 = 2246822519u;
+    self->private_impl.f_v2 = 0u;
+    self->private_impl.f_v3 = 1640531535u;
+  }
+  while (((uint64_t)(a_x.len)) > 0u) {
+    v_remaining = wuffs_base__slice_u8__subslice_j(a_x, 0u);
+    if (((uint64_t)(a_x.len)) > 16777216u) {
+      v_remaining = wuffs_base__slice_u8__subslice_i(a_x, 16777216u);
+      a_x = wuffs_base__slice_u8__subslice_j(a_x, 16777216u);
+    }
+    wuffs_xxhash32__hasher__up(self, a_x);
+    a_x = v_remaining;
+  }
+  return wuffs_xxhash32__hasher__checksum_u32(self);
+}
+
+// -------- func xxhash32.hasher.up
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_xxhash32__hasher__up(
+    wuffs_xxhash32__hasher* self,
+    wuffs_base__slice_u8 a_x) {
+  uint32_t v_new_lmu = 0;
+  uint32_t v_buf_u32 = 0;
+  uint32_t v_buf_len = 0;
+  uint32_t v_v0 = 0;
+  uint32_t v_v1 = 0;
+  uint32_t v_v2 = 0;
+  uint32_t v_v3 = 0;
+  wuffs_base__slice_u8 v_p = {0};
+
+  v_new_lmu = ((uint32_t)(self->private_impl.f_length_modulo_u32 + ((uint32_t)(((uint64_t)(a_x.len))))));
+  self->private_impl.f_length_overflows_u32 = ((v_new_lmu < self->private_impl.f_length_modulo_u32) || self->private_impl.f_length_overflows_u32);
+  self->private_impl.f_length_modulo_u32 = v_new_lmu;
+  while (true) {
+    if (self->private_impl.f_buf_len >= 16u) {
+      v_buf_u32 = (((uint32_t)(self->private_impl.f_buf_data[0u])) |
+          (((uint32_t)(self->private_impl.f_buf_data[1u])) << 8u) |
+          (((uint32_t)(self->private_impl.f_buf_data[2u])) << 16u) |
+          (((uint32_t)(self->private_impl.f_buf_data[3u])) << 24u));
+      v_v0 = ((uint32_t)(self->private_impl.f_v0 + ((uint32_t)(v_buf_u32 * 2246822519u))));
+      v_v0 = (((uint32_t)(v_v0 << 13u)) | (v_v0 >> 19u));
+      self->private_impl.f_v0 = ((uint32_t)(v_v0 * 2654435761u));
+      v_buf_u32 = (((uint32_t)(self->private_impl.f_buf_data[4u])) |
+          (((uint32_t)(self->private_impl.f_buf_data[5u])) << 8u) |
+          (((uint32_t)(self->private_impl.f_buf_data[6u])) << 16u) |
+          (((uint32_t)(self->private_impl.f_buf_data[7u])) << 24u));
+      v_v1 = ((uint32_t)(self->private_impl.f_v1 + ((uint32_t)(v_buf_u32 * 2246822519u))));
+      v_v1 = (((uint32_t)(v_v1 << 13u)) | (v_v1 >> 19u));
+      self->private_impl.f_v1 = ((uint32_t)(v_v1 * 2654435761u));
+      v_buf_u32 = (((uint32_t)(self->private_impl.f_buf_data[8u])) |
+          (((uint32_t)(self->private_impl.f_buf_data[9u])) << 8u) |
+          (((uint32_t)(self->private_impl.f_buf_data[10u])) << 16u) |
+          (((uint32_t)(self->private_impl.f_buf_data[11u])) << 24u));
+      v_v2 = ((uint32_t)(self->private_impl.f_v2 + ((uint32_t)(v_buf_u32 * 2246822519u))));
+      v_v2 = (((uint32_t)(v_v2 << 13u)) | (v_v2 >> 19u));
+      self->private_impl.f_v2 = ((uint32_t)(v_v2 * 2654435761u));
+      v_buf_u32 = (((uint32_t)(self->private_impl.f_buf_data[12u])) |
+          (((uint32_t)(self->private_impl.f_buf_data[13u])) << 8u) |
+          (((uint32_t)(self->private_impl.f_buf_data[14u])) << 16u) |
+          (((uint32_t)(self->private_impl.f_buf_data[15u])) << 24u));
+      v_v3 = ((uint32_t)(self->private_impl.f_v3 + ((uint32_t)(v_buf_u32 * 2246822519u))));
+      v_v3 = (((uint32_t)(v_v3 << 13u)) | (v_v3 >> 19u));
+      self->private_impl.f_v3 = ((uint32_t)(v_v3 * 2654435761u));
+      self->private_impl.f_buf_len = 0u;
+      break;
+    }
+    if (((uint64_t)(a_x.len)) <= 0u) {
+      return wuffs_base__make_empty_struct();
+    }
+    self->private_impl.f_buf_data[self->private_impl.f_buf_len] = a_x.ptr[0u];
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
+#endif
+    self->private_impl.f_buf_len += 1u;
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
+    a_x = wuffs_base__slice_u8__subslice_i(a_x, 1u);
+  }
+  v_buf_len = ((uint32_t)((self->private_impl.f_buf_len & 15u)));
+  v_v0 = self->private_impl.f_v0;
+  v_v1 = self->private_impl.f_v1;
+  v_v2 = self->private_impl.f_v2;
+  v_v3 = self->private_impl.f_v3;
+  {
+    wuffs_base__slice_u8 i_slice_p = a_x;
+    v_p.ptr = i_slice_p.ptr;
+    v_p.len = 16;
+    uint8_t* i_end0_p = v_p.ptr + (((i_slice_p.len - (size_t)(v_p.ptr - i_slice_p.ptr)) / 16) * 16);
+    while (v_p.ptr < i_end0_p) {
+      v_buf_u32 = (((uint32_t)(v_p.ptr[0u])) |
+          (((uint32_t)(v_p.ptr[1u])) << 8u) |
+          (((uint32_t)(v_p.ptr[2u])) << 16u) |
+          (((uint32_t)(v_p.ptr[3u])) << 24u));
+      v_v0 = ((uint32_t)(v_v0 + ((uint32_t)(v_buf_u32 * 2246822519u))));
+      v_v0 = (((uint32_t)(v_v0 << 13u)) | (v_v0 >> 19u));
+      v_v0 = ((uint32_t)(v_v0 * 2654435761u));
+      v_buf_u32 = (((uint32_t)(v_p.ptr[4u])) |
+          (((uint32_t)(v_p.ptr[5u])) << 8u) |
+          (((uint32_t)(v_p.ptr[6u])) << 16u) |
+          (((uint32_t)(v_p.ptr[7u])) << 24u));
+      v_v1 = ((uint32_t)(v_v1 + ((uint32_t)(v_buf_u32 * 2246822519u))));
+      v_v1 = (((uint32_t)(v_v1 << 13u)) | (v_v1 >> 19u));
+      v_v1 = ((uint32_t)(v_v1 * 2654435761u));
+      v_buf_u32 = (((uint32_t)(v_p.ptr[8u])) |
+          (((uint32_t)(v_p.ptr[9u])) << 8u) |
+          (((uint32_t)(v_p.ptr[10u])) << 16u) |
+          (((uint32_t)(v_p.ptr[11u])) << 24u));
+      v_v2 = ((uint32_t)(v_v2 + ((uint32_t)(v_buf_u32 * 2246822519u))));
+      v_v2 = (((uint32_t)(v_v2 << 13u)) | (v_v2 >> 19u));
+      v_v2 = ((uint32_t)(v_v2 * 2654435761u));
+      v_buf_u32 = (((uint32_t)(v_p.ptr[12u])) |
+          (((uint32_t)(v_p.ptr[13u])) << 8u) |
+          (((uint32_t)(v_p.ptr[14u])) << 16u) |
+          (((uint32_t)(v_p.ptr[15u])) << 24u));
+      v_v3 = ((uint32_t)(v_v3 + ((uint32_t)(v_buf_u32 * 2246822519u))));
+      v_v3 = (((uint32_t)(v_v3 << 13u)) | (v_v3 >> 19u));
+      v_v3 = ((uint32_t)(v_v3 * 2654435761u));
+      v_p.ptr += 16;
+    }
+    v_p.len = 1;
+    uint8_t* i_end1_p = i_slice_p.ptr + i_slice_p.len;
+    while (v_p.ptr < i_end1_p) {
+      self->private_impl.f_buf_data[v_buf_len] = v_p.ptr[0u];
+      v_buf_len = ((v_buf_len + 1u) & 15u);
+      v_p.ptr += 1;
+    }
+    v_p.len = 0;
+  }
+  self->private_impl.f_buf_len = ((uint8_t)(v_buf_len));
+  self->private_impl.f_v0 = v_v0;
+  self->private_impl.f_v1 = v_v1;
+  self->private_impl.f_v2 = v_v2;
+  self->private_impl.f_v3 = v_v3;
+  return wuffs_base__make_empty_struct();
+}
+
+// -------- func xxhash32.hasher.checksum_u32
+
+WUFFS_BASE__GENERATED_C_CODE
+static uint32_t
+wuffs_xxhash32__hasher__checksum_u32(
+    const wuffs_xxhash32__hasher* self) {
+  uint32_t v_ret = 0;
+  uint32_t v_i = 0;
+  uint32_t v_n = 0;
+  uint32_t v_buf_u32 = 0;
+
+  v_ret = self->private_impl.f_length_modulo_u32;
+  if ((self->private_impl.f_length_modulo_u32 >= 16u) || self->private_impl.f_length_overflows_u32) {
+    v_ret += (((uint32_t)(self->private_impl.f_v0 << 1u)) | (self->private_impl.f_v0 >> 31u));
+    v_ret += (((uint32_t)(self->private_impl.f_v1 << 7u)) | (self->private_impl.f_v1 >> 25u));
+    v_ret += (((uint32_t)(self->private_impl.f_v2 << 12u)) | (self->private_impl.f_v2 >> 20u));
+    v_ret += (((uint32_t)(self->private_impl.f_v3 << 18u)) | (self->private_impl.f_v3 >> 14u));
+  } else {
+    v_ret += 374761393u;
+  }
+  v_n = 16u;
+  v_n = wuffs_base__u32__min(v_n, ((uint32_t)(self->private_impl.f_buf_len)));
+  if (4u <= v_n) {
+    v_buf_u32 = (((uint32_t)(self->private_impl.f_buf_data[0u])) |
+        (((uint32_t)(self->private_impl.f_buf_data[1u])) << 8u) |
+        (((uint32_t)(self->private_impl.f_buf_data[2u])) << 16u) |
+        (((uint32_t)(self->private_impl.f_buf_data[3u])) << 24u));
+    v_ret += ((uint32_t)(v_buf_u32 * 3266489917u));
+    v_ret = (((uint32_t)(v_ret << 17u)) | (v_ret >> 15u));
+    v_ret *= 668265263u;
+    v_i = 4u;
+  }
+  if (8u <= v_n) {
+    v_buf_u32 = (((uint32_t)(self->private_impl.f_buf_data[4u])) |
+        (((uint32_t)(self->private_impl.f_buf_data[5u])) << 8u) |
+        (((uint32_t)(self->private_impl.f_buf_data[6u])) << 16u) |
+        (((uint32_t)(self->private_impl.f_buf_data[7u])) << 24u));
+    v_ret += ((uint32_t)(v_buf_u32 * 3266489917u));
+    v_ret = (((uint32_t)(v_ret << 17u)) | (v_ret >> 15u));
+    v_ret *= 668265263u;
+    v_i = 8u;
+  }
+  if (12u <= v_n) {
+    v_buf_u32 = (((uint32_t)(self->private_impl.f_buf_data[8u])) |
+        (((uint32_t)(self->private_impl.f_buf_data[9u])) << 8u) |
+        (((uint32_t)(self->private_impl.f_buf_data[10u])) << 16u) |
+        (((uint32_t)(self->private_impl.f_buf_data[11u])) << 24u));
+    v_ret += ((uint32_t)(v_buf_u32 * 3266489917u));
+    v_ret = (((uint32_t)(v_ret << 17u)) | (v_ret >> 15u));
+    v_ret *= 668265263u;
+    v_i = 12u;
+  }
+  while (v_i < v_n) {
+    v_ret += ((uint32_t)(((uint32_t)(self->private_impl.f_buf_data[v_i])) * 374761393u));
+    v_ret = (((uint32_t)(v_ret << 11u)) | (v_ret >> 21u));
+    v_ret *= 2654435761u;
+    v_i += 1u;
+  }
+  v_ret ^= (v_ret >> 15u);
+  v_ret *= 2246822519u;
+  v_ret ^= (v_ret >> 13u);
+  v_ret *= 3266489917u;
+  v_ret ^= (v_ret >> 16u);
+  return v_ret;
+}
+
+#endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__XXHASH32)
 
 #if defined(__cplusplus) && defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
 

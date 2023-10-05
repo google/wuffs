@@ -31,6 +31,7 @@ In Wuffs syntax, the `base.hasher_u32` methods are:
 
 - [std/adler32](/std/adler32)
 - [std/crc32](/std/crc32)
+- [std/xxhash32](/std/xxhash32)
 
 
 ## Examples
