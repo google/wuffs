@@ -679,7 +679,7 @@ func (c *Checker) checkFuncImplements(node *a.Node) error {
 		return nil
 	}
 
-	if (n.Effect() != o.Effect()) || !n.Out().Eq(o.Out()) {
+	if !n.Public() || (n.Effect() != o.Effect()) || !n.Out().Eq(o.Out()) {
 		return nil
 	}
 
