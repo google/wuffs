@@ -25,6 +25,8 @@ APIs](https://github.com/google/wuffs/issues/73), after Wuffs v0.2 is released.
 
 In Wuffs syntax, the `base.io_transformer` methods are:
 
+- `get_quirk(key: u32) u64`
+- `history_retain_length() u64`
 - `set_quirk!(key: u32, value: u64) status`
 - `transform_io?(dst: io_writer, src: io_reader, workbuf: slice u8)`
 - `workbuf_len() range_ii_u64`

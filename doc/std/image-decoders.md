@@ -110,6 +110,8 @@ In Wuffs syntax, the `base.image_decoder` methods are:
 - `decode_frame_config?(dst: nptr frame_config, src: io_reader)`
 - `decode_image_config?(dst: nptr image_config, src: io_reader)`
 - `frame_dirty_rect() rect_ie_u32`
+- `get_quirk(key: u32) u64`
+- `history_retain_length() u64`
 - `num_animation_loops() u32`
 - `num_decoded_frame_configs() u64`
 - `num_decoded_frames() u64`
