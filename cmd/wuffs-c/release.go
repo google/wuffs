@@ -170,6 +170,9 @@ const grPragmaPush = `
 #pragma GCC diagnostic ignored "-Wunreachable-code"
 #pragma GCC diagnostic ignored "-Wunused-function"
 #pragma GCC diagnostic ignored "-Wunused-parameter"
+#pragma GCC diagnostic ignored "-Wstrict-prototypes"
+#pragma GCC diagnostic ignored "-Wold-style-definition"
+#pragma GCC diagnostic ignored "-Wredundant-decls"
 #if defined(__cplusplus)
 #pragma GCC diagnostic ignored "-Wold-style-cast"
 #endif
@@ -180,6 +183,9 @@ const grPragmaPush = `
 #pragma clang diagnostic ignored "-Wunreachable-code"
 #pragma clang diagnostic ignored "-Wunused-function"
 #pragma clang diagnostic ignored "-Wunused-parameter"
+#pragma clang diagnostic ignored "-Wstrict-prototypes"
+#pragma clang diagnostic ignored "-Wold-style-definition"
+#pragma clang diagnostic ignored "-Wredundant-decls"
 #if defined(__cplusplus)
 #pragma clang diagnostic ignored "-Wold-style-cast"
 #endif
