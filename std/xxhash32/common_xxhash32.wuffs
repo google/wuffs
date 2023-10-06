@@ -49,9 +49,6 @@ pub func hasher.update!(x: roslice base.u8) {
         this.v1 = INITIAL_V1
         this.v2 = INITIAL_V2
         this.v3 = INITIAL_V3
-
-        choose up = [
-                up_x86_sse42]
     }
 
     while args.x.length() > 0 {
@@ -72,9 +69,7 @@ pub func hasher.update_u32!(x: roslice base.u8) base.u32 {
     return this.checksum_u32()
 }
 
-pri func hasher.up!(x: roslice base.u8),
-        choosy,
-{
+pri func hasher.up!(x: roslice base.u8) {
     var new_lmu : base.u32
     var buf_u32 : base.u32
     var buf_len : base.u32[..= 15]

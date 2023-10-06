@@ -12565,10 +12565,6 @@ struct wuffs_xxhash32__hasher__struct {
     uint32_t f_v1;
     uint32_t f_v2;
     uint32_t f_v3;
-
-    wuffs_base__empty_struct (*choosy_up)(
-        wuffs_xxhash32__hasher* self,
-        wuffs_base__slice_u8 a_x);
   } private_impl;
 
 #ifdef __cplusplus
@@ -61426,23 +61422,9 @@ wuffs_wbmp__decoder__workbuf_len(
 
 // ---------------- Private Function Prototypes
 
-#if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
-WUFFS_BASE__GENERATED_C_CODE
-static wuffs_base__empty_struct
-wuffs_xxhash32__hasher__up_x86_sse42(
-    wuffs_xxhash32__hasher* self,
-    wuffs_base__slice_u8 a_x);
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
-
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
 wuffs_xxhash32__hasher__up(
-    wuffs_xxhash32__hasher* self,
-    wuffs_base__slice_u8 a_x);
-
-WUFFS_BASE__GENERATED_C_CODE
-static wuffs_base__empty_struct
-wuffs_xxhash32__hasher__up__choosy_default(
     wuffs_xxhash32__hasher* self,
     wuffs_base__slice_u8 a_x);
 
@@ -61503,8 +61485,6 @@ wuffs_xxhash32__hasher__initialize(
     }
   }
 
-  self->private_impl.choosy_up = &wuffs_xxhash32__hasher__up__choosy_default;
-
   self->private_impl.magic = WUFFS_BASE__MAGIC;
   self->private_impl.vtable_for__wuffs_base__hasher_u32.vtable_name =
       wuffs_base__hasher_u32__vtable_name;
@@ -61534,121 +61514,6 @@ sizeof__wuffs_xxhash32__hasher() {
 }
 
 // ---------------- Function Implementations
-
-// ‼ WUFFS MULTI-FILE SECTION +x86_sse42
-// -------- func xxhash32.hasher.up_x86_sse42
-
-#if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
-WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2")
-WUFFS_BASE__GENERATED_C_CODE
-static wuffs_base__empty_struct
-wuffs_xxhash32__hasher__up_x86_sse42(
-    wuffs_xxhash32__hasher* self,
-    wuffs_base__slice_u8 a_x) {
-  uint32_t v_new_lmu = 0;
-  uint32_t v_buf_u32 = 0;
-  uint32_t v_buf_len = 0;
-  uint32_t v_v0 = 0;
-  uint32_t v_v1 = 0;
-  uint32_t v_v2 = 0;
-  uint32_t v_v3 = 0;
-  wuffs_base__slice_u8 v_p = {0};
-  __m128i v_v = {0};
-  __m128i v_prime1 = {0};
-  __m128i v_prime2 = {0};
-  uint64_t v_tail = 0;
-
-  v_new_lmu = ((uint32_t)(self->private_impl.f_length_modulo_u32 + ((uint32_t)(((uint64_t)(a_x.len))))));
-  self->private_impl.f_length_overflows_u32 = ((v_new_lmu < self->private_impl.f_length_modulo_u32) || self->private_impl.f_length_overflows_u32);
-  self->private_impl.f_length_modulo_u32 = v_new_lmu;
-  while (true) {
-    if (self->private_impl.f_buf_len >= 16u) {
-      v_buf_u32 = (((uint32_t)(self->private_impl.f_buf_data[0u])) |
-          (((uint32_t)(self->private_impl.f_buf_data[1u])) << 8u) |
-          (((uint32_t)(self->private_impl.f_buf_data[2u])) << 16u) |
-          (((uint32_t)(self->private_impl.f_buf_data[3u])) << 24u));
-      v_v0 = ((uint32_t)(self->private_impl.f_v0 + ((uint32_t)(v_buf_u32 * 2246822519u))));
-      v_v0 = (((uint32_t)(v_v0 << 13u)) | (v_v0 >> 19u));
-      self->private_impl.f_v0 = ((uint32_t)(v_v0 * 2654435761u));
-      v_buf_u32 = (((uint32_t)(self->private_impl.f_buf_data[4u])) |
-          (((uint32_t)(self->private_impl.f_buf_data[5u])) << 8u) |
-          (((uint32_t)(self->private_impl.f_buf_data[6u])) << 16u) |
-          (((uint32_t)(self->private_impl.f_buf_data[7u])) << 24u));
-      v_v1 = ((uint32_t)(self->private_impl.f_v1 + ((uint32_t)(v_buf_u32 * 2246822519u))));
-      v_v1 = (((uint32_t)(v_v1 << 13u)) | (v_v1 >> 19u));
-      self->private_impl.f_v1 = ((uint32_t)(v_v1 * 2654435761u));
-      v_buf_u32 = (((uint32_t)(self->private_impl.f_buf_data[8u])) |
-          (((uint32_t)(self->private_impl.f_buf_data[9u])) << 8u) |
-          (((uint32_t)(self->private_impl.f_buf_data[10u])) << 16u) |
-          (((uint32_t)(self->private_impl.f_buf_data[11u])) << 24u));
-      v_v2 = ((uint32_t)(self->private_impl.f_v2 + ((uint32_t)(v_buf_u32 * 2246822519u))));
-      v_v2 = (((uint32_t)(v_v2 << 13u)) | (v_v2 >> 19u));
-      self->private_impl.f_v2 = ((uint32_t)(v_v2 * 2654435761u));
-      v_buf_u32 = (((uint32_t)(self->private_impl.f_buf_data[12u])) |
-          (((uint32_t)(self->private_impl.f_buf_data[13u])) << 8u) |
-          (((uint32_t)(self->private_impl.f_buf_data[14u])) << 16u) |
-          (((uint32_t)(self->private_impl.f_buf_data[15u])) << 24u));
-      v_v3 = ((uint32_t)(self->private_impl.f_v3 + ((uint32_t)(v_buf_u32 * 2246822519u))));
-      v_v3 = (((uint32_t)(v_v3 << 13u)) | (v_v3 >> 19u));
-      self->private_impl.f_v3 = ((uint32_t)(v_v3 * 2654435761u));
-      self->private_impl.f_buf_len = 0u;
-      break;
-    }
-    if (((uint64_t)(a_x.len)) <= 0u) {
-      return wuffs_base__make_empty_struct();
-    }
-    self->private_impl.f_buf_data[self->private_impl.f_buf_len] = a_x.ptr[0u];
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
-    self->private_impl.f_buf_len += 1u;
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-    a_x = wuffs_base__slice_u8__subslice_i(a_x, 1u);
-  }
-  v_v = _mm_set_epi32((int32_t)(self->private_impl.f_v3), (int32_t)(self->private_impl.f_v2), (int32_t)(self->private_impl.f_v1), (int32_t)(self->private_impl.f_v0));
-  v_prime1 = _mm_set1_epi32((int32_t)(2654435761u));
-  v_prime2 = _mm_set1_epi32((int32_t)(2246822519u));
-  {
-    wuffs_base__slice_u8 i_slice_p = a_x;
-    v_p.ptr = i_slice_p.ptr;
-    v_p.len = 16;
-    uint8_t* i_end0_p = v_p.ptr + (((i_slice_p.len - (size_t)(v_p.ptr - i_slice_p.ptr)) / 16) * 16);
-    while (v_p.ptr < i_end0_p) {
-      v_v = _mm_add_epi32(v_v, _mm_mullo_epi32(_mm_lddqu_si128((const __m128i*)(const void*)(v_p.ptr)), v_prime2));
-      v_v = _mm_or_si128(_mm_slli_epi32(v_v, (int32_t)(13u)), _mm_srli_epi32(v_v, (int32_t)(19u)));
-      v_v = _mm_mullo_epi32(v_v, v_prime1);
-      v_p.ptr += 16;
-    }
-    v_p.len = 0;
-  }
-  self->private_impl.f_v0 = ((uint32_t)(_mm_extract_epi32(v_v, (int32_t)(0u))));
-  self->private_impl.f_v1 = ((uint32_t)(_mm_extract_epi32(v_v, (int32_t)(1u))));
-  self->private_impl.f_v2 = ((uint32_t)(_mm_extract_epi32(v_v, (int32_t)(2u))));
-  self->private_impl.f_v3 = ((uint32_t)(_mm_extract_epi32(v_v, (int32_t)(3u))));
-  v_tail = (((uint64_t)(a_x.len)) & 18446744073709551600u);
-  if (v_tail < ((uint64_t)(a_x.len))) {
-    v_buf_len = ((uint32_t)((self->private_impl.f_buf_len & 15u)));
-    {
-      wuffs_base__slice_u8 i_slice_p = wuffs_base__slice_u8__subslice_i(a_x, v_tail);
-      v_p.ptr = i_slice_p.ptr;
-      v_p.len = 1;
-      uint8_t* i_end0_p = i_slice_p.ptr + i_slice_p.len;
-      while (v_p.ptr < i_end0_p) {
-        self->private_impl.f_buf_data[v_buf_len] = v_p.ptr[0u];
-        v_buf_len = ((v_buf_len + 1u) & 15u);
-        v_p.ptr += 1;
-      }
-      v_p.len = 0;
-    }
-    self->private_impl.f_buf_len = ((uint8_t)(v_buf_len));
-  }
-  return wuffs_base__make_empty_struct();
-}
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
-// ‼ WUFFS MULTI-FILE SECTION -x86_sse42
 
 // -------- func xxhash32.hasher.get_quirk
 
@@ -61710,11 +61575,6 @@ wuffs_xxhash32__hasher__update(
     self->private_impl.f_v1 = 2246822519u;
     self->private_impl.f_v2 = 0u;
     self->private_impl.f_v3 = 1640531535u;
-    self->private_impl.choosy_up = (
-#if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
-        wuffs_base__cpu_arch__have_x86_sse42() ? &wuffs_xxhash32__hasher__up_x86_sse42 :
-#endif
-        self->private_impl.choosy_up);
   }
   while (((uint64_t)(a_x.len)) > 0u) {
     v_remaining = wuffs_base__slice_u8__subslice_j(a_x, 0u);
@@ -61751,14 +61611,6 @@ wuffs_xxhash32__hasher__update_u32(
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
 wuffs_xxhash32__hasher__up(
-    wuffs_xxhash32__hasher* self,
-    wuffs_base__slice_u8 a_x) {
-  return (*self->private_impl.choosy_up)(self, a_x);
-}
-
-WUFFS_BASE__GENERATED_C_CODE
-static wuffs_base__empty_struct
-wuffs_xxhash32__hasher__up__choosy_default(
     wuffs_xxhash32__hasher* self,
     wuffs_base__slice_u8 a_x) {
   uint32_t v_new_lmu = 0;
