@@ -1162,6 +1162,27 @@ do_test__wuffs_base__hasher_u32(wuffs_base__hasher_u32* b,
 }
 
 const char*  //
+do_test__wuffs_base__hasher_u64(wuffs_base__hasher_u64* b,
+                                const char* src_filename,
+                                size_t src_ri,
+                                size_t src_wi,
+                                uint64_t want) {
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = g_src_slice_u8,
+  });
+  CHECK_STRING(read_file_fragment(&src, src_filename, src_ri, src_wi));
+  uint64_t have = wuffs_base__hasher_u64__update_u64(
+      b, ((wuffs_base__slice_u8){
+             .ptr = (uint8_t*)(src.data.ptr + src.meta.ri),
+             .len = (size_t)(src.meta.wi - src.meta.ri),
+         }));
+  if (have != want) {
+    RETURN_FAIL("have 0x%016" PRIX64 ", want 0x%016" PRIX64, have, want);
+  }
+  return NULL;
+}
+
+const char*  //
 do_test__wuffs_base__image_decoder(
     wuffs_base__image_decoder* b,
     const char* src_filename,

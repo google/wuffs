@@ -45,6 +45,7 @@ calculating a 64-bit (not 32-bit) checksum.
 - [std/adler32](/std/adler32)
 - [std/crc32](/std/crc32)
 - [std/xxhash32](/std/xxhash32)
+- [std/xxhash64](/std/xxhash64)
 
 
 ## Examples

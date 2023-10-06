@@ -16,6 +16,7 @@ The LICENSE has changed from a single license (Apache 2) to a dual license
 - Added `std/jpeg`.
 - Added `std/netpbm`.
 - Added `std/xxhash32`.
+- Added `std/xxhash64`.
 - Added `wuffs_base__status__is_truncated_input_error`.
 - Changed `lzw.set_literal_width` to `lzw.set_quirk`.
 - Changed `set_quirk_enabled!(quirk: u32, enabled: bool)` to `set_quirk!(key:

@@ -17,7 +17,7 @@ giflib for GIF, libpng for PNG, etc.
 To manually run this test:
 
 for CC in clang gcc; do
-  $CC -std=c99 -Wall -Werror xxhash32.c && ./a.out
+  $CC -std=c99 -Wall -Werror xxhash64.c && ./a.out
   rm -f a.out
 done
 
@@ -50,7 +50,7 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 // code simply isn't compiled.
 #define WUFFS_CONFIG__MODULES
 #define WUFFS_CONFIG__MODULE__BASE
-#define WUFFS_CONFIG__MODULE__XXHASH32
+#define WUFFS_CONFIG__MODULE__XXHASH64
 
 // If building this program in an environment that doesn't easily accommodate
 // relative includes, you can use the script/inline-c-relative-includes.go
@@ -63,65 +63,65 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 
 // ---------------- Golden Tests
 
-golden_test g_xxhash32_midsummer_gt = {
+golden_test g_xxhash64_midsummer_gt = {
     .src_filename = "test/data/midsummer.txt",
 };
 
-golden_test g_xxhash32_pi_gt = {
+golden_test g_xxhash64_pi_gt = {
     .src_filename = "test/data/pi.txt",
 };
 
-// ---------------- XXHash32 Tests
+// ---------------- XXHash64 Tests
 
 const char*  //
-test_wuffs_xxhash32_interface() {
+test_wuffs_xxhash64_interface() {
   CHECK_FOCUS(__func__);
-  wuffs_xxhash32__hasher h;
+  wuffs_xxhash64__hasher h;
   CHECK_STATUS("initialize",
-               wuffs_xxhash32__hasher__initialize(
+               wuffs_xxhash64__hasher__initialize(
                    &h, sizeof h, WUFFS_VERSION,
                    WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
-  return do_test__wuffs_base__hasher_u32(
-      wuffs_xxhash32__hasher__upcast_as__wuffs_base__hasher_u32(&h),
-      "test/data/hat.lossy.webp", 0, SIZE_MAX, 0x1A54B53D);
+  return do_test__wuffs_base__hasher_u64(
+      wuffs_xxhash64__hasher__upcast_as__wuffs_base__hasher_u64(&h),
+      "test/data/hat.lossy.webp", 0, SIZE_MAX, 0x85D813707FE352B7);
 }
 
 const char*  //
-test_wuffs_xxhash32_golden() {
+test_wuffs_xxhash64_golden() {
   CHECK_FOCUS(__func__);
 
   struct {
     const char* filename;
     // The want values are determined by script/checksum.go.
-    uint32_t want;
+    uint64_t want;
   } test_cases[] = {
       {
           .filename = "test/data/hat.bmp",
-          .want = 0xCAD975D7,
+          .want = 0xA7D576E6A9BAF900,
       },
       {
           .filename = "test/data/hat.gif",
-          .want = 0x27633229,
+          .want = 0x38E8A7CAFE15E5B8,
       },
       {
           .filename = "test/data/hat.jpeg",
-          .want = 0xEEF96C12,
+          .want = 0x6B8E028CE8CC09AD,
       },
       {
           .filename = "test/data/hat.lossless.webp",
-          .want = 0xA731CF6A,
+          .want = 0xCA571B25E75792DA,
       },
       {
           .filename = "test/data/hat.lossy.webp",
-          .want = 0x1A54B53D,
+          .want = 0x85D813707FE352B7,
       },
       {
           .filename = "test/data/hat.png",
-          .want = 0x2EF9D842,
+          .want = 0x6096D53175D9C0B5,
       },
       {
           .filename = "test/data/hat.tiff",
-          .want = 0x244C2A7F,
+          .want = 0x2B7A9E69AEB07DD1,
       },
   };
 
@@ -132,13 +132,13 @@ test_wuffs_xxhash32_golden() {
     CHECK_STRING(read_file(&src, test_cases[tc].filename));
 
     for (int j = 0; j < 2; j++) {
-      wuffs_xxhash32__hasher checksum;
+      wuffs_xxhash64__hasher checksum;
       CHECK_STATUS("initialize",
-                   wuffs_xxhash32__hasher__initialize(
+                   wuffs_xxhash64__hasher__initialize(
                        &checksum, sizeof checksum, WUFFS_VERSION,
                        WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
 
-      uint32_t have = 0;
+      uint64_t have = 0;
       size_t num_fragments = 0;
       size_t num_bytes = 0;
       do {
@@ -150,14 +150,14 @@ test_wuffs_xxhash32_golden() {
         if ((j > 0) && (data.len > limit)) {
           data.len = limit;
         }
-        have = wuffs_xxhash32__hasher__update_u32(&checksum, data);
+        have = wuffs_xxhash64__hasher__update_u64(&checksum, data);
         num_fragments++;
         num_bytes += data.len;
       } while (num_bytes < src.meta.wi);
 
       if (have != test_cases[tc].want) {
-        RETURN_FAIL("tc=%zu, j=%d, filename=\"%s\": have 0x%08" PRIX32
-                    ", want 0x%08" PRIX32 "\n",
+        RETURN_FAIL("tc=%zu, j=%d, filename=\"%s\": have 0x%016" PRIX64
+                    ", want 0x%016" PRIX64 "\n",
                     tc, j, test_cases[tc].filename, have, test_cases[tc].want);
       }
     }
@@ -166,7 +166,7 @@ test_wuffs_xxhash32_golden() {
 }
 
 const char*  //
-do_test_xxxxx_xxhash32_pi(bool mimic) {
+do_test_xxxxx_xxhash64_pi(bool mimic) {
   const char* digits =
       "3."
       "141592653589793238462643383279502884197169399375105820974944592307816406"
@@ -178,28 +178,45 @@ do_test_xxxxx_xxhash32_pi(bool mimic) {
   // The want values are determined by script/checksum.go.
   //
   // wants[i] is the checksum of the first i bytes of the digits string.
-  uint32_t wants[100] = {
-      0x02CC5D05, 0x9CEC73C4, 0x8882F465, 0x76EB9891, 0x65EE94C3, 0x1D582EB0,
-      0x3F23315C, 0xF7876132, 0x5C7905AB, 0xB13CFCB0, 0x249A3696, 0x8DFDDDDE,
-      0x074C32E3, 0x01832398, 0x342CC9FD, 0x27DAF5DF, 0xA724DADF, 0x82C243CD,
-      0x058657E3, 0x7702E9E9, 0x0BB1F08C, 0x8663CF29, 0x9EE80972, 0x8072A394,
-      0x896E216F, 0x2BA14621, 0xC8F505C1, 0xA1E25C52, 0x3775542D, 0x7A89E5C6,
-      0xACD02748, 0x6C4406C8, 0x260382A6, 0x6AD6D4BD, 0xB3CC8788, 0xF8DCB125,
-      0xA5BBCDFB, 0x82CC4E8C, 0xCDF34B78, 0xD8D22CCE, 0x64C57168, 0xA8DE94FF,
-      0x9DD2BAA1, 0x9D44B437, 0x5A136E82, 0x1907E88D, 0x80F7AA44, 0x1DC870E6,
-      0xD300C657, 0xC6F80CA0, 0xECA7845A, 0xEA33A5CA, 0x6113E405, 0x8D952878,
-      0x08853159, 0x83AD2241, 0x0B776C22, 0x17B74D73, 0x0A5503C1, 0x4BB9F48F,
-      0xA044A6F2, 0xC7BD90E6, 0x23B9D53F, 0x512A214F, 0xDA5BF238, 0xCE112793,
-      0xD6833E33, 0x28911D30, 0x588E359B, 0xC161984D, 0xD87050E1, 0xDBF9126A,
-      0x676E7A0D, 0xEA6AAC3D, 0x5392F46E, 0xC3851030, 0x3714254B, 0x7136006D,
-      0xD7683690, 0xDA681B6E, 0x6AE5712A, 0x30CB24D5, 0x9D760EA6, 0x5B0020E6,
-      0xDC118CC1, 0xFC764944, 0x27163F53, 0x91DFA8D9, 0x2D3B63BA, 0x3790770D,
-      0x9012C9F0, 0xF0F5377B, 0x624B4744, 0xF376E821, 0x8900258A, 0x5E01F292,
-      0xE77B80AE, 0x335F4A44, 0x40374C75, 0x7E7BD839,
+  uint64_t wants[100] = {
+      0xEF46DB3751D8E999, 0x26167C2AF5162CA4, 0x05BEDEA4D7DD3935,
+      0x765F8073D4013B31, 0x3E160875545B6BE3, 0x0BC5FB5031C01569,
+      0x7F4E574C0FE47F1B, 0xFD47EAC9931E5611, 0x9ECF69693F684A04,
+      0x71C02736251798B6, 0x6C21272990F120AC, 0xE4727A188A905D0A,
+      0x259CE02196F0FB6C, 0x5E34060EB8B01C23, 0xD13DA3CBF5A601C2,
+      0xF127AEAAA3C7373B, 0xDB620698899E4B6D, 0x6E478EE5FA6DD2E9,
+      0x1AE794F2917D2E95, 0x276ADD06C59EC853, 0x491CE0EDFE9825B0,
+      0x6E74453240292289, 0x22B769287778C836, 0xBF35609B690EC521,
+      0x33C6958E166EF7FB, 0xB68BFC69363BA321, 0xF80FA8B7954AEBFA,
+      0x0BF5ACA4705A6293, 0x0556B78D45BCAAF2, 0xEE2CEF405184E046,
+      0x73227D21D75B5FE8, 0xD0DF37F5BDB842D2, 0x28EE2A083406DB5A,
+      0x374E44E23156B38C, 0x2337A79B3AE153E7, 0xF584A7417BA286F4,
+      0x5E3C84336022F4D8, 0x59399EA49A971651, 0x2B320610ADC6F17F,
+      0xC36EBC282E7312C2, 0x1C81100B2FE75440, 0x1372BAA075FFF382,
+      0xE8937E82A1F75179, 0xBAC1E93B15E462CA, 0x562C0E62274601C0,
+      0x6F4A0CB8ACFF7034, 0xEA51C1C9C8F23049, 0xCA413E3603CBDCCF,
+      0xA7E5B91D287D545F, 0x1C323C89D01E9460, 0xA6DDEB12F0B41B72,
+      0x4C4BD80B6559D8D2, 0x9D84AF3AF8CCF566, 0x1DAE74E2D7F65F4F,
+      0x214AA9F23CF62937, 0xBA95E37E94F03C41, 0x00C40774F9799DE7,
+      0x623CA815A53DC0A0, 0x2B966F603BAA005A, 0x4A7F01729330A03C,
+      0x3AA3C3B6AF1ACE45, 0x8EEDAFF7174EBDC5, 0x78005039F4CEA4AA,
+      0x4D36AAB2FCA2C150, 0xDDE323A66BF337F5, 0x6F7E47861B7A1277,
+      0xB86088670CA3BAA8, 0x218C45C8727FBAA0, 0x76D3167331343EF7,
+      0x78DF6DE9AADD9E63, 0x9DD67E3E0CCF388B, 0xB571630663016120,
+      0x349C904FA4D6AFC9, 0xA4321D9FB73EC5D5, 0xA31CB6B845CF52B1,
+      0xED771A139FE20B86, 0xC05857A1061CE915, 0xE1C69AF2BA7BE706,
+      0x88DF0DDA58781E75, 0xBFE6E4B61B923F50, 0x2D1797888A57F9FC,
+      0x37F0A88CB6BB2317, 0x1E5AF6EBC5D5CD77, 0xBCF0BB798CF609D2,
+      0x6C74415B840C8F42, 0x5F92AC0AEFBB2A2A, 0xAEA80952AC83CDCC,
+      0x148E6336080BC9FC, 0x440A9EAC0572D0BC, 0xBB2DCE23A2FCF164,
+      0xC63F825E6738F990, 0x4F4B89A6AB0C59DF, 0x2B1B23B3AAE125F7,
+      0x02AFCD3AA9D1B454, 0xFCEF5F3517819564, 0x54B73F4D8F06CD33,
+      0x9B59C3BAA7819081, 0xF406BAA777860094, 0xC66B599CB8D22647,
+      0x7DBC5F307AC4DB70,
   };
 
   for (int i = 0; i < 100; i++) {
-    uint32_t have = 0;
+    uint64_t have = 0;
     wuffs_base__slice_u8 data = ((wuffs_base__slice_u8){
         .ptr = (uint8_t*)(digits),
         .len = (size_t)(i),
@@ -207,20 +224,20 @@ do_test_xxxxx_xxhash32_pi(bool mimic) {
 
     if (mimic) {
 #ifdef WUFFS_MIMIC
-      have = mimic_xxhash32_one_shot_checksum_u32(data);
+      have = mimic_xxhash64_one_shot_checksum_u64(data);
 #endif  // WUFFS_MIMIC
 
     } else {
-      wuffs_xxhash32__hasher checksum;
+      wuffs_xxhash64__hasher checksum;
       CHECK_STATUS("initialize",
-                   wuffs_xxhash32__hasher__initialize(
+                   wuffs_xxhash64__hasher__initialize(
                        &checksum, sizeof checksum, WUFFS_VERSION,
                        WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
-      have = wuffs_xxhash32__hasher__update_u32(&checksum, data);
+      have = wuffs_xxhash64__hasher__update_u64(&checksum, data);
     }
 
     if (have != wants[i]) {
-      RETURN_FAIL("i=%d: have 0x%08" PRIX32 ", want 0x%08" PRIX32, i, have,
+      RETURN_FAIL("i=%d: have 0x%016" PRIX64 ", want 0x%016" PRIX64, i, have,
                   wants[i]);
     }
   }
@@ -228,9 +245,9 @@ do_test_xxxxx_xxhash32_pi(bool mimic) {
 }
 
 const char*  //
-test_wuffs_xxhash32_pi() {
+test_wuffs_xxhash64_pi() {
   CHECK_FOCUS(__func__);
-  return do_test_xxxxx_xxhash32_pi(false);
+  return do_test_xxxxx_xxhash64_pi(false);
 }
 
 // ---------------- Mimic Tests
@@ -238,19 +255,19 @@ test_wuffs_xxhash32_pi() {
 #ifdef WUFFS_MIMIC
 
 const char*  //
-test_mimic_xxhash32_pi() {
+test_mimic_xxhash64_pi() {
   CHECK_FOCUS(__func__);
-  return do_test_xxxxx_xxhash32_pi(true);
+  return do_test_xxxxx_xxhash64_pi(true);
 }
 
 #endif  // WUFFS_MIMIC
 
-// ---------------- XXHash32 Benches
+// ---------------- XXHash64 Benches
 
-uint32_t g_wuffs_xxhash32_unused_u32;
+uint64_t g_wuffs_xxhash64_unused_u64;
 
 const char*  //
-wuffs_bench_xxhash32(wuffs_base__io_buffer* dst,
+wuffs_bench_xxhash64(wuffs_base__io_buffer* dst,
                      wuffs_base__io_buffer* src,
                      uint32_t wuffs_initialize_flags,
                      uint64_t wlimit,
@@ -259,11 +276,11 @@ wuffs_bench_xxhash32(wuffs_base__io_buffer* dst,
   if (rlimit) {
     len = wuffs_base__u64__min(len, rlimit);
   }
-  wuffs_xxhash32__hasher checksum = {0};
-  CHECK_STATUS("initialize", wuffs_xxhash32__hasher__initialize(
+  wuffs_xxhash64__hasher checksum = {0};
+  CHECK_STATUS("initialize", wuffs_xxhash64__hasher__initialize(
                                  &checksum, sizeof checksum, WUFFS_VERSION,
                                  wuffs_initialize_flags));
-  g_wuffs_xxhash32_unused_u32 = wuffs_xxhash32__hasher__update_u32(
+  g_wuffs_xxhash64_unused_u64 = wuffs_xxhash64__hasher__update_u64(
       &checksum, ((wuffs_base__slice_u8){
                      .ptr = src->data.ptr + src->meta.ri,
                      .len = len,
@@ -273,21 +290,21 @@ wuffs_bench_xxhash32(wuffs_base__io_buffer* dst,
 }
 
 const char*  //
-bench_wuffs_xxhash32_10k() {
+bench_wuffs_xxhash64_10k() {
   CHECK_FOCUS(__func__);
   return do_bench_io_buffers(
-      wuffs_bench_xxhash32,
+      wuffs_bench_xxhash64,
       WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED, tcounter_src,
-      &g_xxhash32_midsummer_gt, UINT64_MAX, UINT64_MAX, 5000);
+      &g_xxhash64_midsummer_gt, UINT64_MAX, UINT64_MAX, 5000);
 }
 
 const char*  //
-bench_wuffs_xxhash32_100k() {
+bench_wuffs_xxhash64_100k() {
   CHECK_FOCUS(__func__);
   return do_bench_io_buffers(
-      wuffs_bench_xxhash32,
+      wuffs_bench_xxhash64,
       WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED, tcounter_src,
-      &g_xxhash32_pi_gt, UINT64_MAX, UINT64_MAX, 500);
+      &g_xxhash64_pi_gt, UINT64_MAX, UINT64_MAX, 500);
 }
 
 // ---------------- Mimic Benches
@@ -295,18 +312,18 @@ bench_wuffs_xxhash32_100k() {
 #ifdef WUFFS_MIMIC
 
 const char*  //
-bench_mimic_xxhash32_10k() {
+bench_mimic_xxhash64_10k() {
   CHECK_FOCUS(__func__);
-  return do_bench_io_buffers(mimic_bench_xxhash32, 0, tcounter_src,
-                             &g_xxhash32_midsummer_gt, UINT64_MAX, UINT64_MAX,
+  return do_bench_io_buffers(mimic_bench_xxhash64, 0, tcounter_src,
+                             &g_xxhash64_midsummer_gt, UINT64_MAX, UINT64_MAX,
                              5000);
 }
 
 const char*  //
-bench_mimic_xxhash32_100k() {
+bench_mimic_xxhash64_100k() {
   CHECK_FOCUS(__func__);
-  return do_bench_io_buffers(mimic_bench_xxhash32, 0, tcounter_src,
-                             &g_xxhash32_pi_gt, UINT64_MAX, UINT64_MAX, 500);
+  return do_bench_io_buffers(mimic_bench_xxhash64, 0, tcounter_src,
+                             &g_xxhash64_pi_gt, UINT64_MAX, UINT64_MAX, 500);
 }
 
 #endif  // WUFFS_MIMIC
@@ -315,13 +332,13 @@ bench_mimic_xxhash32_100k() {
 
 proc g_tests[] = {
 
-    test_wuffs_xxhash32_golden,
-    test_wuffs_xxhash32_interface,
-    test_wuffs_xxhash32_pi,
+    test_wuffs_xxhash64_golden,
+    test_wuffs_xxhash64_interface,
+    test_wuffs_xxhash64_pi,
 
 #ifdef WUFFS_MIMIC
 
-    test_mimic_xxhash32_pi,
+    test_mimic_xxhash64_pi,
 
 #endif  // WUFFS_MIMIC
 
@@ -330,13 +347,13 @@ proc g_tests[] = {
 
 proc g_benches[] = {
 
-    bench_wuffs_xxhash32_10k,
-    bench_wuffs_xxhash32_100k,
+    bench_wuffs_xxhash64_10k,
+    bench_wuffs_xxhash64_100k,
 
 #ifdef WUFFS_MIMIC
 
-    bench_mimic_xxhash32_10k,
-    bench_mimic_xxhash32_100k,
+    bench_mimic_xxhash64_10k,
+    bench_mimic_xxhash64_100k,
 
 #endif  // WUFFS_MIMIC
 
@@ -345,6 +362,6 @@ proc g_benches[] = {
 
 int  //
 main(int argc, char** argv) {
-  g_proc_package_name = "std/xxhash32";
+  g_proc_package_name = "std/xxhash64";
   return test_main(argc, argv, g_tests, g_benches);
 }

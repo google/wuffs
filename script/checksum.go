@@ -27,6 +27,7 @@ import (
 	"strings"
 
 	"github.com/pierrec/xxHash/xxHash32"
+	"github.com/pierrec/xxHash/xxHash64"
 )
 
 var (
@@ -76,6 +77,8 @@ func do(r io.Reader) error {
 		h = crc32.NewIEEE()
 	case "xxhash32":
 		h = xxHash32.New(0)
+	case "xxhash64":
+		h = xxHash64.New(0)
 	default:
 		return fmt.Errorf("unknown algorithm %q", *algorithm)
 	}

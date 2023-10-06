@@ -186,14 +186,15 @@ pub func hasher.checksum_u32() base.u32 {
     var n       : base.u32[..= 16]
     var buf_u32 : base.u32
 
-    ret = this.length_modulo_u32
     if (this.length_modulo_u32 >= 16) or this.length_overflows_u32 {
         ret ~mod+= (this.v0 ~mod<< 1) | (this.v0 >> 31)
         ret ~mod+= (this.v1 ~mod<< 7) | (this.v1 >> 25)
         ret ~mod+= (this.v2 ~mod<< 12) | (this.v2 >> 20)
         ret ~mod+= (this.v3 ~mod<< 18) | (this.v3 >> 14)
+        ret ~mod+= this.length_modulo_u32
     } else {
         ret ~mod+= XXH_PRIME32_5
+        ret ~mod+= this.length_modulo_u32
     }
 
     n = 16
