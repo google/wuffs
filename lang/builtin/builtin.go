@@ -815,6 +815,7 @@ var funcsOther = [...]string{
 	"x86_m128i._mm_min_epu16(b: x86_m128i) x86_m128i",
 	"x86_m128i._mm_min_epu32(b: x86_m128i) x86_m128i",
 	"x86_m128i._mm_min_epu8(b: x86_m128i) x86_m128i",
+	"x86_m128i._mm_mullo_epi32(b: x86_m128i) x86_m128i",
 	"x86_m128i._mm_or_si128(b: x86_m128i) x86_m128i",
 	"x86_m128i._mm_packs_epi16(b: x86_m128i) x86_m128i",
 	"x86_m128i._mm_packus_epi16(b: x86_m128i) x86_m128i",
