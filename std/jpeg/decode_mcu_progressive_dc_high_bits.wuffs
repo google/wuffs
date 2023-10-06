@@ -5,6 +5,8 @@
 // <LICENSE-MIT or https://opensource.org/licenses/MIT>, at your
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
 
 pri func decoder.decode_mcu_progressive_dc_high_bits!(workbuf: slice base.u8, mx: base.u32[..= 0x1FFF], my: base.u32[..= 0x1FFF]) base.u32 {
     var ret : base.u32

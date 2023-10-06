@@ -5,6 +5,8 @@
 // <LICENSE-MIT or https://opensource.org/licenses/MIT>, at your
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
 
 pri func decoder.flush_fast!(dst: base.io_writer) {
     var flush_pointer       : base.u32[..= 1_048575]

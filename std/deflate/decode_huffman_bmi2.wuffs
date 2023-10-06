@@ -5,6 +5,8 @@
 // <LICENSE-MIT or https://opensource.org/licenses/MIT>, at your
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
 
 // decode_huffman_bmi2 is exactly the same as decode_huffman_fast64 except for
 // the "choose cpu_arch >= x86_bmi2". Unsurprisingly, having Bit Manipulation

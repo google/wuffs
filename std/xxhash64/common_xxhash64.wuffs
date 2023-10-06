@@ -5,6 +5,8 @@
 // <LICENSE-MIT or https://opensource.org/licenses/MIT>, at your
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
 
 pri const XXH_PRIME64_1 : base.u64 = 0x9E37_79B1_85EB_CA87
 pri const XXH_PRIME64_2 : base.u64 = 0xC2B2_AE3D_27D4_EB4F
