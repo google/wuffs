@@ -48,6 +48,10 @@ pub func hasher.update!(x: roslice base.u8) {
         this.v1 = INITIAL_V1
         this.v2 = INITIAL_V2
         this.v3 = INITIAL_V3
+
+        // In theory, we could "choose up" here to pick SIMD versions. In
+        // practice, non-SIMD versions are faster (and simpler). For example,
+        // see commit b9b28dbe "std/xxhash32: add hasher.up_x86_sse42".
     }
 
     this.up!(x: args.x)
