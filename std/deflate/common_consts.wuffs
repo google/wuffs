@@ -5,6 +5,8 @@
 // <LICENSE-MIT or https://opensource.org/licenses/MIT>, at your
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
 
 // CODE_ORDER is defined in the RFC section 3.2.7.
 pri const CODE_ORDER : roarray[19] base.u8[..= 18] = [

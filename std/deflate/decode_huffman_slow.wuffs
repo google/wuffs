@@ -5,6 +5,8 @@
 // <LICENSE-MIT or https://opensource.org/licenses/MIT>, at your
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
 
 pri func decoder.decode_huffman_slow?(dst: base.io_writer, src: base.io_reader) {
     var bits               : base.u32

@@ -5,6 +5,8 @@
 // <LICENSE-MIT or https://opensource.org/licenses/MIT>, at your
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
 
 // TODO: drop the '?' but still generate wuffs_adler32__hasher__initialize?
 pub struct hasher? implements base.hasher_u32(

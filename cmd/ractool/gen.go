@@ -5,6 +5,8 @@
 // <LICENSE-MIT or https://opensource.org/licenses/MIT>, at your
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
 
 //go:build ignore
 // +build ignore
@@ -56,6 +58,8 @@ func main1() error {
 // <LICENSE-MIT or https://opensource.org/licenses/MIT>, at your
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
 
 package main
 

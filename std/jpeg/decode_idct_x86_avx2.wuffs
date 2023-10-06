@@ -5,6 +5,8 @@
 // <LICENSE-MIT or https://opensource.org/licenses/MIT>, at your
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
 
 pri func decoder.decode_idct_x86_avx2!(dst_buffer: slice base.u8, dst_stride: base.u64, q: base.u32[..= 3]),
         choose cpu_arch >= x86_avx2,

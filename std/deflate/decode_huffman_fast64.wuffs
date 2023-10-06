@@ -5,6 +5,8 @@
 // <LICENSE-MIT or https://opensource.org/licenses/MIT>, at your
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
 
 // TODO: describe how the xxx_fastxx version differs from the xxx_slow one, the
 // assumptions that xxx_fastxx makes, and how that makes it fast.
