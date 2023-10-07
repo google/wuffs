@@ -140,7 +140,7 @@
 // ---------------- CPU Architecture
 
 static inline bool  //
-wuffs_base__cpu_arch__have_arm_crc32() {
+wuffs_base__cpu_arch__have_arm_crc32(void) {
 #if defined(WUFFS_BASE__CPU_ARCH__ARM_CRC32)
   return true;
 #else
@@ -149,7 +149,7 @@ wuffs_base__cpu_arch__have_arm_crc32() {
 }
 
 static inline bool  //
-wuffs_base__cpu_arch__have_arm_neon() {
+wuffs_base__cpu_arch__have_arm_neon(void) {
 #if defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
   return true;
 #else
@@ -158,7 +158,7 @@ wuffs_base__cpu_arch__have_arm_neon() {
 }
 
 static inline bool  //
-wuffs_base__cpu_arch__have_x86_avx2() {
+wuffs_base__cpu_arch__have_x86_avx2(void) {
 #if defined(__PCLMUL__) && defined(__POPCNT__) && defined(__SSE4_2__) && \
     defined(__AVX2__)
   return true;
@@ -210,7 +210,7 @@ wuffs_base__cpu_arch__have_x86_avx2() {
 }
 
 static inline bool  //
-wuffs_base__cpu_arch__have_x86_bmi2() {
+wuffs_base__cpu_arch__have_x86_bmi2(void) {
 #if defined(__BMI2__)
   return true;
 #else
@@ -244,7 +244,7 @@ wuffs_base__cpu_arch__have_x86_bmi2() {
 }
 
 static inline bool  //
-wuffs_base__cpu_arch__have_x86_sse42() {
+wuffs_base__cpu_arch__have_x86_sse42(void) {
 #if defined(__PCLMUL__) && defined(__POPCNT__) && defined(__SSE4_2__)
   return true;
 #else
@@ -375,7 +375,7 @@ typedef struct wuffs_base__empty_struct__struct {
 } wuffs_base__empty_struct;
 
 static inline wuffs_base__empty_struct  //
-wuffs_base__make_empty_struct() {
+wuffs_base__make_empty_struct(void) {
   wuffs_base__empty_struct ret;
   ret.private_impl = 0;
   return ret;
@@ -1287,7 +1287,7 @@ wuffs_base__make_slice_u64_ij(uint64_t* ptr, size_t i, size_t j) {
 }
 
 static inline wuffs_base__slice_u8  //
-wuffs_base__empty_slice_u8() {
+wuffs_base__empty_slice_u8(void) {
   wuffs_base__slice_u8 ret;
   ret.ptr = NULL;
   ret.len = 0;
@@ -1295,7 +1295,7 @@ wuffs_base__empty_slice_u8() {
 }
 
 static inline wuffs_base__slice_u16  //
-wuffs_base__empty_slice_u16() {
+wuffs_base__empty_slice_u16(void) {
   wuffs_base__slice_u16 ret;
   ret.ptr = NULL;
   ret.len = 0;
@@ -1303,7 +1303,7 @@ wuffs_base__empty_slice_u16() {
 }
 
 static inline wuffs_base__slice_u32  //
-wuffs_base__empty_slice_u32() {
+wuffs_base__empty_slice_u32(void) {
   wuffs_base__slice_u32 ret;
   ret.ptr = NULL;
   ret.len = 0;
@@ -1311,7 +1311,7 @@ wuffs_base__empty_slice_u32() {
 }
 
 static inline wuffs_base__slice_u64  //
-wuffs_base__empty_slice_u64() {
+wuffs_base__empty_slice_u64(void) {
   wuffs_base__slice_u64 ret;
   ret.ptr = NULL;
   ret.len = 0;
@@ -1371,7 +1371,7 @@ wuffs_base__make_table_u64(uint64_t* ptr,
 }
 
 static inline wuffs_base__table_u8  //
-wuffs_base__empty_table_u8() {
+wuffs_base__empty_table_u8(void) {
   wuffs_base__table_u8 ret;
   ret.ptr = NULL;
   ret.width = 0;
@@ -1381,7 +1381,7 @@ wuffs_base__empty_table_u8() {
 }
 
 static inline wuffs_base__table_u16  //
-wuffs_base__empty_table_u16() {
+wuffs_base__empty_table_u16(void) {
   wuffs_base__table_u16 ret;
   ret.ptr = NULL;
   ret.width = 0;
@@ -1391,7 +1391,7 @@ wuffs_base__empty_table_u16() {
 }
 
 static inline wuffs_base__table_u32  //
-wuffs_base__empty_table_u32() {
+wuffs_base__empty_table_u32(void) {
   wuffs_base__table_u32 ret;
   ret.ptr = NULL;
   ret.width = 0;
@@ -1401,7 +1401,7 @@ wuffs_base__empty_table_u32() {
 }
 
 static inline wuffs_base__table_u64  //
-wuffs_base__empty_table_u64() {
+wuffs_base__empty_table_u64(void) {
   wuffs_base__table_u64 ret;
   ret.ptr = NULL;
   ret.width = 0;

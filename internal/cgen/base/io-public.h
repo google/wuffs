@@ -116,7 +116,7 @@ wuffs_base__slice_u8__writer(wuffs_base__slice_u8 s) {
 }
 
 static inline wuffs_base__io_buffer  //
-wuffs_base__empty_io_buffer() {
+wuffs_base__empty_io_buffer(void) {
   wuffs_base__io_buffer ret;
   ret.data.ptr = NULL;
   ret.data.len = 0;
@@ -128,7 +128,7 @@ wuffs_base__empty_io_buffer() {
 }
 
 static inline wuffs_base__io_buffer_meta  //
-wuffs_base__empty_io_buffer_meta() {
+wuffs_base__empty_io_buffer_meta(void) {
   wuffs_base__io_buffer_meta ret;
   ret.wi = 0;
   ret.ri = 0;

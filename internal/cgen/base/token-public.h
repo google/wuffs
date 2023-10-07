@@ -288,7 +288,7 @@ wuffs_base__make_slice_token(wuffs_base__token* ptr, size_t len) {
 }
 
 static inline wuffs_base__slice_token  //
-wuffs_base__empty_slice_token() {
+wuffs_base__empty_slice_token(void) {
   wuffs_base__slice_token ret;
   ret.ptr = NULL;
   ret.len = 0;
@@ -377,7 +377,7 @@ wuffs_base__slice_token__writer(wuffs_base__slice_token s) {
 }
 
 static inline wuffs_base__token_buffer  //
-wuffs_base__empty_token_buffer() {
+wuffs_base__empty_token_buffer(void) {
   wuffs_base__token_buffer ret;
   ret.data.ptr = NULL;
   ret.data.len = 0;
@@ -389,7 +389,7 @@ wuffs_base__empty_token_buffer() {
 }
 
 static inline wuffs_base__token_buffer_meta  //
-wuffs_base__empty_token_buffer_meta() {
+wuffs_base__empty_token_buffer_meta(void) {
   wuffs_base__token_buffer_meta ret;
   ret.wi = 0;
   ret.ri = 0;

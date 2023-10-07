@@ -30,7 +30,7 @@ typedef struct wuffs_base__range_ii_u32__struct {
 } wuffs_base__range_ii_u32;
 
 static inline wuffs_base__range_ii_u32  //
-wuffs_base__empty_range_ii_u32() {
+wuffs_base__empty_range_ii_u32(void) {
   wuffs_base__range_ii_u32 ret;
   ret.min_incl = 0;
   ret.max_incl = 0;
@@ -150,7 +150,7 @@ typedef struct wuffs_base__range_ie_u32__struct {
 } wuffs_base__range_ie_u32;
 
 static inline wuffs_base__range_ie_u32  //
-wuffs_base__empty_range_ie_u32() {
+wuffs_base__empty_range_ie_u32(void) {
   wuffs_base__range_ie_u32 ret;
   ret.min_incl = 0;
   ret.max_excl = 0;
@@ -279,7 +279,7 @@ typedef struct wuffs_base__range_ii_u64__struct {
 } wuffs_base__range_ii_u64;
 
 static inline wuffs_base__range_ii_u64  //
-wuffs_base__empty_range_ii_u64() {
+wuffs_base__empty_range_ii_u64(void) {
   wuffs_base__range_ii_u64 ret;
   ret.min_incl = 0;
   ret.max_incl = 0;
@@ -399,7 +399,7 @@ typedef struct wuffs_base__range_ie_u64__struct {
 } wuffs_base__range_ie_u64;
 
 static inline wuffs_base__range_ie_u64  //
-wuffs_base__empty_range_ie_u64() {
+wuffs_base__empty_range_ie_u64(void) {
   wuffs_base__range_ie_u64 ret;
   ret.min_incl = 0;
   ret.max_excl = 0;
@@ -530,7 +530,7 @@ typedef struct wuffs_base__rect_ii_u32__struct {
 } wuffs_base__rect_ii_u32;
 
 static inline wuffs_base__rect_ii_u32  //
-wuffs_base__empty_rect_ii_u32() {
+wuffs_base__empty_rect_ii_u32(void) {
   wuffs_base__rect_ii_u32 ret;
   ret.min_incl_x = 0;
   ret.min_incl_y = 0;
@@ -667,7 +667,7 @@ typedef struct wuffs_base__rect_ie_u32__struct {
 } wuffs_base__rect_ie_u32;
 
 static inline wuffs_base__rect_ie_u32  //
-wuffs_base__empty_rect_ie_u32() {
+wuffs_base__empty_rect_ie_u32(void) {
   wuffs_base__rect_ie_u32 ret;
   ret.min_incl_x = 0;
   ret.min_incl_y = 0;
@@ -840,7 +840,7 @@ typedef struct wuffs_base__more_information__struct {
 #define WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA_PARSED 5
 
 static inline wuffs_base__more_information  //
-wuffs_base__empty_more_information() {
+wuffs_base__empty_more_information(void) {
   wuffs_base__more_information ret;
   ret.flavor = 0;
   ret.w = 0;

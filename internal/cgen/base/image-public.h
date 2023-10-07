@@ -602,7 +602,7 @@ typedef struct wuffs_base__pixel_config__struct {
 } wuffs_base__pixel_config;
 
 static inline wuffs_base__pixel_config  //
-wuffs_base__null_pixel_config() {
+wuffs_base__null_pixel_config(void) {
   wuffs_base__pixel_config ret;
   ret.private_impl.pixfmt.repr = 0;
   ret.private_impl.pixsub.repr = 0;
@@ -811,7 +811,7 @@ typedef struct wuffs_base__image_config__struct {
 } wuffs_base__image_config;
 
 static inline wuffs_base__image_config  //
-wuffs_base__null_image_config() {
+wuffs_base__null_image_config(void) {
   wuffs_base__image_config ret;
   ret.pixcfg = wuffs_base__null_pixel_config();
   ret.private_impl.first_frame_io_position = 0;
@@ -971,7 +971,7 @@ typedef struct wuffs_base__frame_config__struct {
 } wuffs_base__frame_config;
 
 static inline wuffs_base__frame_config  //
-wuffs_base__null_frame_config() {
+wuffs_base__null_frame_config(void) {
   wuffs_base__frame_config ret;
   ret.private_impl.bounds = wuffs_base__make_rect_ie_u32(0, 0, 0, 0);
   ret.private_impl.duration = 0;
@@ -1203,7 +1203,7 @@ typedef struct wuffs_base__pixel_buffer__struct {
 } wuffs_base__pixel_buffer;
 
 static inline wuffs_base__pixel_buffer  //
-wuffs_base__null_pixel_buffer() {
+wuffs_base__null_pixel_buffer(void) {
   wuffs_base__pixel_buffer ret;
   ret.pixcfg = wuffs_base__null_pixel_config();
   ret.private_impl.planes[0] = wuffs_base__empty_table_u8();

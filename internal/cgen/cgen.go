@@ -787,7 +787,7 @@ func (g *gen) genHeader(b *buffer) error {
 			iQID := impl.AsTypeExpr().QID()
 			iName := fmt.Sprintf("wuffs_%s__%s", iQID[0].Str(g.tm), iQID[1].Str(g.tm))
 			b.printf("static inline %s*\n", iName)
-			b.printf("%s%s__alloc_as__%s() {\n", g.pkgPrefix, structName, iName)
+			b.printf("%s%s__alloc_as__%s(void) {\n", g.pkgPrefix, structName, iName)
 			b.printf("return (%s*)(%s%s__alloc());\n", iName, g.pkgPrefix, structName)
 			b.printf("}\n\n")
 		}
@@ -1380,13 +1380,13 @@ func (g *gen) writeInitializerSignature(b *buffer, n *a.Struct, public bool) err
 
 func (g *gen) writeAllocSignature(b *buffer, n *a.Struct) error {
 	structName := n.QID().Str(g.tm)
-	b.printf("%s%s*\n%s%s__alloc()", g.pkgPrefix, structName, g.pkgPrefix, structName)
+	b.printf("%s%s*\n%s%s__alloc(void)", g.pkgPrefix, structName, g.pkgPrefix, structName)
 	return nil
 }
 
 func (g *gen) writeSizeofSignature(b *buffer, n *a.Struct) error {
 	structName := n.QID().Str(g.tm)
-	b.printf("size_t\nsizeof__%s%s()", g.pkgPrefix, structName)
+	b.printf("size_t\nsizeof__%s%s(void)", g.pkgPrefix, structName)
 	return nil
 }
 
