@@ -407,7 +407,7 @@ wuffs_base__base_16__encode2(wuffs_base__slice_u8 dst,
 // function requires the WUFFS_CONFIG__MODULE__BASE__INTCONV sub-module, not
 // just WUFFS_CONFIG__MODULE__BASE__CORE.
 WUFFS_BASE__MAYBE_STATIC wuffs_base__transform__output  //
-wuffs_base__base_16__encode2(wuffs_base__slice_u8 dst,
+wuffs_base__base_16__encode4(wuffs_base__slice_u8 dst,
                              wuffs_base__slice_u8 src,
                              bool src_closed,
                              uint32_t options);

@@ -1453,12 +1453,6 @@ wuffs_base__pixel_buffer::color_u32_at(uint32_t x, uint32_t y) const {
   return wuffs_base__pixel_buffer__color_u32_at(this, x, y);
 }
 
-WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
-wuffs_base__pixel_buffer__set_color_u32_fill_rect(
-    wuffs_base__pixel_buffer* pb,
-    wuffs_base__rect_ie_u32 rect,
-    wuffs_base__color_u32_argb_premul color);
-
 inline wuffs_base__status  //
 wuffs_base__pixel_buffer::set_color_u32_at(
     uint32_t x,

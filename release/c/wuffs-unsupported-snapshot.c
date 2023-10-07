@@ -5221,12 +5221,6 @@ wuffs_base__pixel_buffer::color_u32_at(uint32_t x, uint32_t y) const {
   return wuffs_base__pixel_buffer__color_u32_at(this, x, y);
 }
 
-WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
-wuffs_base__pixel_buffer__set_color_u32_fill_rect(
-    wuffs_base__pixel_buffer* pb,
-    wuffs_base__rect_ie_u32 rect,
-    wuffs_base__color_u32_argb_premul color);
-
 inline wuffs_base__status  //
 wuffs_base__pixel_buffer::set_color_u32_at(
     uint32_t x,
@@ -5770,7 +5764,7 @@ wuffs_base__base_16__encode2(wuffs_base__slice_u8 dst,
 // function requires the WUFFS_CONFIG__MODULE__BASE__INTCONV sub-module, not
 // just WUFFS_CONFIG__MODULE__BASE__CORE.
 WUFFS_BASE__MAYBE_STATIC wuffs_base__transform__output  //
-wuffs_base__base_16__encode2(wuffs_base__slice_u8 dst,
+wuffs_base__base_16__encode4(wuffs_base__slice_u8 dst,
                              wuffs_base__slice_u8 src,
                              bool src_closed,
                              uint32_t options);
