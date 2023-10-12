@@ -6,6 +6,7 @@
 The LICENSE has changed from a single license (Apache 2) to a dual license
 (Apache 2 or MIT, at your option).
 
+- Added `base.bitvec256`.
 - Added `compact_retaining` and `history_retain_length`.
 - Added `example/toy-aux-image`.
 - Added `get_quirk(key: u32) u64`.

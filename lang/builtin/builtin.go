@@ -284,6 +284,8 @@ var Types = []string{
 	"u32",
 	"u64",
 
+	"bitvec256",
+
 	"empty_struct",
 	"bool",
 	"utility",
@@ -374,6 +376,7 @@ var funcsOther = [...]string{
 	"utility.empty_rect_ii_u32() rect_ii_u32",
 	"utility.empty_rect_ie_u32() rect_ie_u32",
 	"utility.empty_slice_u8() slice u8",
+	"utility.make_bitvec256(e00: u64, e01: u64, e02: u64, e03: u64) bitvec256",
 	"utility.make_pixel_format(repr: u32) pixel_format",
 	"utility.make_range_ii_u32(min_incl: u32, max_incl: u32) range_ii_u32",
 	"utility.make_range_ie_u32(min_incl: u32, max_excl: u32) range_ie_u32",

@@ -820,6 +820,27 @@ wuffs_base__multiply_u64(uint64_t x, uint64_t y) {
 
 // --------
 
+typedef struct wuffs_base__bitvec256__struct {
+  // elements_u64[0] holds the LSBs (least significant bits) and
+  // elements_u64[3] holds the MSBs (most significant bits).
+  uint64_t elements_u64[4];
+} wuffs_base__bitvec256;
+
+static inline wuffs_base__bitvec256  //
+wuffs_base__make_bitvec256(uint64_t e00,
+                           uint64_t e01,
+                           uint64_t e02,
+                           uint64_t e03) {
+  wuffs_base__bitvec256 res;
+  res.elements_u64[0] = e00;
+  res.elements_u64[1] = e01;
+  res.elements_u64[2] = e02;
+  res.elements_u64[3] = e03;
+  return res;
+}
+
+// --------
+
 // The "defined(__clang__)" isn't redundant. While vanilla clang defines
 // __GNUC__, clang-cl (which mimics MSVC's cl.exe) does not.
 #if (defined(__GNUC__) || defined(__clang__)) && (__SIZEOF_LONG__ == 8)

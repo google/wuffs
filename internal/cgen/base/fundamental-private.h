@@ -191,6 +191,9 @@ wuffs_base__u64__sat_sub_indirect(uint64_t* x, uint64_t y) {
 #define wuffs_base__utility__sign_extend_rshift_u64(a, n) \
   ((uint64_t)(((int64_t)(a)) >> (n)))
 
+#define wuffs_base__utility__make_bitvec256(e00, e01, e02, e03) \
+  wuffs_base__make_bitvec256(e00, e01, e02, e03)
+
 // ---------------- Slices and Tables
 
 // wuffs_base__slice_u8__prefix returns up to the first up_to bytes of s.
