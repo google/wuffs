@@ -6222,6 +6222,113 @@ struct wuffs_base__hasher_u64__struct {
 
 // --------
 
+extern const char wuffs_base__hasher_bitvec256__vtable_name[];
+
+typedef struct wuffs_base__hasher_bitvec256__func_ptrs__struct {
+  wuffs_base__bitvec256 (*checksum_bitvec256)(
+    const void* self);
+  uint64_t (*get_quirk)(
+    const void* self,
+    uint32_t a_key);
+  wuffs_base__status (*set_quirk)(
+    void* self,
+    uint32_t a_key,
+    uint64_t a_value);
+  wuffs_base__empty_struct (*update)(
+    void* self,
+    wuffs_base__slice_u8 a_x);
+  wuffs_base__bitvec256 (*update_bitvec256)(
+    void* self,
+    wuffs_base__slice_u8 a_x);
+} wuffs_base__hasher_bitvec256__func_ptrs;
+
+typedef struct wuffs_base__hasher_bitvec256__struct wuffs_base__hasher_bitvec256;
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC wuffs_base__bitvec256
+wuffs_base__hasher_bitvec256__checksum_bitvec256(
+    const wuffs_base__hasher_bitvec256* self);
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_base__hasher_bitvec256__get_quirk(
+    const wuffs_base__hasher_bitvec256* self,
+    uint32_t a_key);
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status
+wuffs_base__hasher_bitvec256__set_quirk(
+    wuffs_base__hasher_bitvec256* self,
+    uint32_t a_key,
+    uint64_t a_value);
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct
+wuffs_base__hasher_bitvec256__update(
+    wuffs_base__hasher_bitvec256* self,
+    wuffs_base__slice_u8 a_x);
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC wuffs_base__bitvec256
+wuffs_base__hasher_bitvec256__update_bitvec256(
+    wuffs_base__hasher_bitvec256* self,
+    wuffs_base__slice_u8 a_x);
+
+#if defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
+
+struct wuffs_base__hasher_bitvec256__struct {
+  struct {
+    uint32_t magic;
+    uint32_t active_coroutine;
+    wuffs_base__vtable first_vtable;
+  } private_impl;
+
+#ifdef __cplusplus
+#if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
+  using unique_ptr = std::unique_ptr<wuffs_base__hasher_bitvec256, wuffs_unique_ptr_deleter>;
+#endif
+
+  inline wuffs_base__bitvec256
+  checksum_bitvec256() const {
+    return wuffs_base__hasher_bitvec256__checksum_bitvec256(this);
+  }
+
+  inline uint64_t
+  get_quirk(
+      uint32_t a_key) const {
+    return wuffs_base__hasher_bitvec256__get_quirk(
+        this, a_key);
+  }
+
+  inline wuffs_base__status
+  set_quirk(
+      uint32_t a_key,
+      uint64_t a_value) {
+    return wuffs_base__hasher_bitvec256__set_quirk(
+        this, a_key, a_value);
+  }
+
+  inline wuffs_base__empty_struct
+  update(
+      wuffs_base__slice_u8 a_x) {
+    return wuffs_base__hasher_bitvec256__update(
+        this, a_x);
+  }
+
+  inline wuffs_base__bitvec256
+  update_bitvec256(
+      wuffs_base__slice_u8 a_x) {
+    return wuffs_base__hasher_bitvec256__update_bitvec256(
+        this, a_x);
+  }
+
+#endif  // __cplusplus
+};  // struct wuffs_base__hasher_bitvec256__struct
+
+#endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
+
+// --------
+
 extern const char wuffs_base__image_decoder__vtable_name[];
 
 typedef struct wuffs_base__image_decoder__func_ptrs__struct {
@@ -14443,6 +14550,7 @@ const char wuffs_base__error__too_much_data[] = "#base: too much data";
 
 const char wuffs_base__hasher_u32__vtable_name[] = "{vtable}wuffs_base__hasher_u32";
 const char wuffs_base__hasher_u64__vtable_name[] = "{vtable}wuffs_base__hasher_u64";
+const char wuffs_base__hasher_bitvec256__vtable_name[] = "{vtable}wuffs_base__hasher_bitvec256";
 const char wuffs_base__image_decoder__vtable_name[] = "{vtable}wuffs_base__image_decoder";
 const char wuffs_base__io_transformer__vtable_name[] = "{vtable}wuffs_base__io_transformer";
 const char wuffs_base__token_decoder__vtable_name[] = "{vtable}wuffs_base__token_decoder";
@@ -14746,6 +14854,153 @@ wuffs_base__hasher_u64__update_u64(
   }
 
   return 0;
+}
+
+// --------
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC wuffs_base__bitvec256
+wuffs_base__hasher_bitvec256__checksum_bitvec256(
+    const wuffs_base__hasher_bitvec256* self) {
+  if (!self) {
+    return wuffs_base__utility__make_bitvec256(0u, 0u, 0u, 0u);
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return wuffs_base__utility__make_bitvec256(0u, 0u, 0u, 0u);
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__hasher_bitvec256__vtable_name) {
+      const wuffs_base__hasher_bitvec256__func_ptrs* func_ptrs =
+          (const wuffs_base__hasher_bitvec256__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->checksum_bitvec256)(self);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return wuffs_base__utility__make_bitvec256(0u, 0u, 0u, 0u);
+}
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_base__hasher_bitvec256__get_quirk(
+    const wuffs_base__hasher_bitvec256* self,
+    uint32_t a_key) {
+  if (!self) {
+    return 0;
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return 0;
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__hasher_bitvec256__vtable_name) {
+      const wuffs_base__hasher_bitvec256__func_ptrs* func_ptrs =
+          (const wuffs_base__hasher_bitvec256__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->get_quirk)(self, a_key);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return 0;
+}
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status
+wuffs_base__hasher_bitvec256__set_quirk(
+    wuffs_base__hasher_bitvec256* self,
+    uint32_t a_key,
+    uint64_t a_value) {
+  if (!self) {
+    return wuffs_base__make_status(wuffs_base__error__bad_receiver);
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_status(
+        (self->private_impl.magic == WUFFS_BASE__DISABLED)
+            ? wuffs_base__error__disabled_by_previous_error
+            : wuffs_base__error__initialize_not_called);
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__hasher_bitvec256__vtable_name) {
+      const wuffs_base__hasher_bitvec256__func_ptrs* func_ptrs =
+          (const wuffs_base__hasher_bitvec256__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->set_quirk)(self, a_key, a_value);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return wuffs_base__make_status(wuffs_base__error__bad_vtable);
+}
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct
+wuffs_base__hasher_bitvec256__update(
+    wuffs_base__hasher_bitvec256* self,
+    wuffs_base__slice_u8 a_x) {
+  if (!self) {
+    return wuffs_base__make_empty_struct();
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_empty_struct();
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__hasher_bitvec256__vtable_name) {
+      const wuffs_base__hasher_bitvec256__func_ptrs* func_ptrs =
+          (const wuffs_base__hasher_bitvec256__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->update)(self, a_x);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return wuffs_base__make_empty_struct();
+}
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC wuffs_base__bitvec256
+wuffs_base__hasher_bitvec256__update_bitvec256(
+    wuffs_base__hasher_bitvec256* self,
+    wuffs_base__slice_u8 a_x) {
+  if (!self) {
+    return wuffs_base__utility__make_bitvec256(0u, 0u, 0u, 0u);
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__utility__make_bitvec256(0u, 0u, 0u, 0u);
+  }
+
+  const wuffs_base__vtable* v = &self->private_impl.first_vtable;
+  int i;
+  for (i = 0; i < 63; i++) {
+    if (v->vtable_name == wuffs_base__hasher_bitvec256__vtable_name) {
+      const wuffs_base__hasher_bitvec256__func_ptrs* func_ptrs =
+          (const wuffs_base__hasher_bitvec256__func_ptrs*)(v->function_pointers);
+      return (*func_ptrs->update_bitvec256)(self, a_x);
+    } else if (v->vtable_name == NULL) {
+      break;
+    }
+    v++;
+  }
+
+  return wuffs_base__utility__make_bitvec256(0u, 0u, 0u, 0u);
 }
 
 // --------

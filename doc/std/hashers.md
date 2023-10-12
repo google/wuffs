@@ -36,8 +36,9 @@ In Wuffs syntax, the `base.hasher_u32` methods are:
 - `update!(x: slice u8)`
 - `update_u32!(x: slice u8) u32`
 
-The `base.hasher_u64` methods are similar, except for the obvious difference of
-calculating a 64-bit (not 32-bit) checksum.
+The `base.hasher_u64` and `base.hasher_bitvec256` methods are similar, except
+for the obvious difference of calculating a 64-bit or 256-bit (not 32-bit)
+checksum.
 
 
 ## Implementations

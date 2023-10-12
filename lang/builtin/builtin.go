@@ -942,17 +942,19 @@ var funcsOther = [...]string{
 var Interfaces = []string{
 	"hasher_u32",
 	"hasher_u64",
+	"hasher_bitvec256",
 	"image_decoder",
 	"io_transformer",
 	"token_decoder",
 }
 
 var InterfacesMap = map[string]bool{
-	"hasher_u32":     true,
-	"hasher_u64":     true,
-	"image_decoder":  true,
-	"io_transformer": true,
-	"token_decoder":  true,
+	"hasher_u32":       true,
+	"hasher_u64":       true,
+	"hasher_bitvec256": true,
+	"image_decoder":    true,
+	"io_transformer":   true,
+	"token_decoder":    true,
 }
 
 var InterfaceFuncs = []string{
@@ -971,6 +973,14 @@ var InterfaceFuncs = []string{
 	"hasher_u64.set_quirk!(key: u32, value: u64) status",
 	"hasher_u64.update!(x: roslice u8)",
 	"hasher_u64.update_u64!(x: roslice u8) u64",
+
+	// ---- hasher_bitvec256
+
+	"hasher_bitvec256.checksum_bitvec256() bitvec256",
+	"hasher_bitvec256.get_quirk(key: u32) u64",
+	"hasher_bitvec256.set_quirk!(key: u32, value: u64) status",
+	"hasher_bitvec256.update!(x: roslice u8)",
+	"hasher_bitvec256.update_bitvec256!(x: roslice u8) bitvec256",
 
 	// ---- image_decoder
 

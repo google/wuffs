@@ -348,6 +348,9 @@ func writeOutParamZeroValue(b *buffer, tm *t.Map, typ *a.TypeExpr) error {
 		}
 	} else if (typ.Decorator() == 0) && (typ.QID()[0] == t.IDBase) {
 		switch typ.QID()[1] {
+		case t.IDBitvec256:
+			b.writes("wuffs_base__utility__make_bitvec256(0u, 0u, 0u, 0u)")
+			return nil
 		case t.IDRangeIEU32:
 			b.writes("wuffs_base__utility__empty_range_ie_u32()")
 			return nil
