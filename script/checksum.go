@@ -19,6 +19,7 @@ package main
 // Usage: go run checksum.go -algorithm=crc32/ieee < foo.bar
 
 import (
+	"crypto/sha256"
 	"flag"
 	"fmt"
 	"hash"
@@ -77,6 +78,8 @@ func do(r io.Reader) error {
 		h = adler32.New()
 	case "crc32/ieee":
 		h = crc32.NewIEEE()
+	case "sha256":
+		h = sha256.New()
 	case "xxhash32":
 		h = xxHash32.New(0)
 	case "xxhash64":
@@ -94,6 +97,16 @@ func do(r io.Reader) error {
 		fmt.Printf("0x%08X", h.Sum32())
 	case hash.Hash64:
 		fmt.Printf("0x%016X", h.Sum64())
+	case hash.Hash:
+		b := h.Sum(nil)
+		for i, x := range b {
+			if i == 0 {
+				fmt.Printf("0x")
+			} else if (i & 7) == 0 {
+				fmt.Printf("_")
+			}
+			fmt.Printf("%02X", x)
+		}
 	default:
 		return fmt.Errorf("algorithm %q is not a Hash32 or Hash64", *algorithm)
 	}

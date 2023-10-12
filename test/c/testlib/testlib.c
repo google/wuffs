@@ -1185,6 +1185,37 @@ do_test__wuffs_base__hasher_u64(wuffs_base__hasher_u64* b,
 }
 
 const char*  //
+do_test__wuffs_base__hasher_bitvec256(wuffs_base__hasher_bitvec256* b,
+                                      const char* src_filename,
+                                      size_t src_ri,
+                                      size_t src_wi,
+                                      wuffs_base__bitvec256 want) {
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = g_src_slice_u8,
+  });
+  CHECK_STRING(read_file_fragment(&src, src_filename, src_ri, src_wi));
+  wuffs_base__bitvec256 have = wuffs_base__hasher_bitvec256__update_bitvec256(
+      b, ((wuffs_base__slice_u8){
+             .ptr = (uint8_t*)(src.data.ptr + src.meta.ri),
+             .len = (size_t)(src.meta.wi - src.meta.ri),
+         }));
+  if ((have.elements_u64[0] != want.elements_u64[0]) ||
+      (have.elements_u64[1] != want.elements_u64[1]) ||
+      (have.elements_u64[2] != want.elements_u64[2]) ||
+      (have.elements_u64[3] != want.elements_u64[3])) {
+    RETURN_FAIL("have 0x%016" PRIX64 "_%016" PRIX64          //
+                "_%016" PRIX64 "_%016" PRIX64                //
+                ", want 0x%016" PRIX64 "_%016" PRIX64        //
+                "_%016" PRIX64 "_%016" PRIX64,               //
+                have.elements_u64[3], have.elements_u64[2],  //
+                have.elements_u64[1], have.elements_u64[0],  //
+                want.elements_u64[3], want.elements_u64[2],  //
+                want.elements_u64[1], want.elements_u64[0]);
+  }
+  return NULL;
+}
+
+const char*  //
 do_test__wuffs_base__image_decoder(
     wuffs_base__image_decoder* b,
     const char* src_filename,

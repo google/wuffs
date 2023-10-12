@@ -11808,6 +11808,237 @@ struct wuffs_png__decoder__struct {
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__PNG) || defined(WUFFS_NONMONOLITHIC)
 
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__SHA256) || defined(WUFFS_NONMONOLITHIC)
+
+// ---------------- Status Codes
+
+// ---------------- Public Consts
+
+// ---------------- Struct Declarations
+
+typedef struct wuffs_sha256__hasher__struct wuffs_sha256__hasher;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// ---------------- Public Initializer Prototypes
+
+// For any given "wuffs_foo__bar* self", "wuffs_foo__bar__initialize(self,
+// etc)" should be called before any other "wuffs_foo__bar__xxx(self, etc)".
+//
+// Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.
+// Pass 0 (or some combination of WUFFS_INITIALIZE__XXX) for options.
+
+wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
+wuffs_sha256__hasher__initialize(
+    wuffs_sha256__hasher* self,
+    size_t sizeof_star_self,
+    uint64_t wuffs_version,
+    uint32_t options);
+
+size_t
+sizeof__wuffs_sha256__hasher(void);
+
+// ---------------- Allocs
+
+// These functions allocate and initialize Wuffs structs. They return NULL if
+// memory allocation fails. If they return non-NULL, there is no need to call
+// wuffs_foo__bar__initialize, but the caller is responsible for eventually
+// calling free on the returned pointer. That pointer is effectively a C++
+// std::unique_ptr<T, wuffs_unique_ptr_deleter>.
+
+wuffs_sha256__hasher*
+wuffs_sha256__hasher__alloc(void);
+
+static inline wuffs_base__hasher_bitvec256*
+wuffs_sha256__hasher__alloc_as__wuffs_base__hasher_bitvec256(void) {
+  return (wuffs_base__hasher_bitvec256*)(wuffs_sha256__hasher__alloc());
+}
+
+// ---------------- Upcasts
+
+static inline wuffs_base__hasher_bitvec256*
+wuffs_sha256__hasher__upcast_as__wuffs_base__hasher_bitvec256(
+    wuffs_sha256__hasher* p) {
+  return (wuffs_base__hasher_bitvec256*)p;
+}
+
+// ---------------- Public Function Prototypes
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_sha256__hasher__get_quirk(
+    const wuffs_sha256__hasher* self,
+    uint32_t a_key);
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status
+wuffs_sha256__hasher__set_quirk(
+    wuffs_sha256__hasher* self,
+    uint32_t a_key,
+    uint64_t a_value);
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct
+wuffs_sha256__hasher__update(
+    wuffs_sha256__hasher* self,
+    wuffs_base__slice_u8 a_x);
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC wuffs_base__bitvec256
+wuffs_sha256__hasher__update_bitvec256(
+    wuffs_sha256__hasher* self,
+    wuffs_base__slice_u8 a_x);
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC wuffs_base__bitvec256
+wuffs_sha256__hasher__checksum_bitvec256(
+    const wuffs_sha256__hasher* self);
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif
+
+// ---------------- Struct Definitions
+
+// These structs' fields, and the sizeof them, are private implementation
+// details that aren't guaranteed to be stable across Wuffs versions.
+//
+// See https://en.wikipedia.org/wiki/Opaque_pointer#C
+
+#if defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
+
+struct wuffs_sha256__hasher__struct {
+  // Do not access the private_impl's or private_data's fields directly. There
+  // is no API/ABI compatibility or safety guarantee if you do so. Instead, use
+  // the wuffs_foo__bar__baz functions.
+  //
+  // It is a struct, not a struct*, so that the outermost wuffs_foo__bar struct
+  // can be stack allocated when WUFFS_IMPLEMENTATION is defined.
+
+  struct {
+    uint32_t magic;
+    uint32_t active_coroutine;
+    wuffs_base__vtable vtable_for__wuffs_base__hasher_bitvec256;
+    wuffs_base__vtable null_vtable;
+
+    uint64_t f_length_modulo_u64;
+    bool f_length_overflows_u64;
+    uint8_t f_padding0;
+    uint8_t f_padding1;
+    uint8_t f_padding2;
+    uint32_t f_buf_len;
+    uint8_t f_buf_data[64];
+    uint32_t f_h0;
+    uint32_t f_h1;
+    uint32_t f_h2;
+    uint32_t f_h3;
+    uint32_t f_h4;
+    uint32_t f_h5;
+    uint32_t f_h6;
+    uint32_t f_h7;
+  } private_impl;
+
+#ifdef __cplusplus
+#if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
+  using unique_ptr = std::unique_ptr<wuffs_sha256__hasher, wuffs_unique_ptr_deleter>;
+
+  // On failure, the alloc_etc functions return nullptr. They don't throw.
+
+  static inline unique_ptr
+  alloc() {
+    return unique_ptr(wuffs_sha256__hasher__alloc());
+  }
+
+  static inline wuffs_base__hasher_bitvec256::unique_ptr
+  alloc_as__wuffs_base__hasher_bitvec256() {
+    return wuffs_base__hasher_bitvec256::unique_ptr(
+        wuffs_sha256__hasher__alloc_as__wuffs_base__hasher_bitvec256());
+  }
+#endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
+
+#if defined(WUFFS_BASE__HAVE_EQ_DELETE) && !defined(WUFFS_IMPLEMENTATION)
+  // Disallow constructing or copying an object via standard C++ mechanisms,
+  // e.g. the "new" operator, as this struct is intentionally opaque. Its total
+  // size and field layout is not part of the public, stable, memory-safe API.
+  // Use malloc or memcpy and the sizeof__wuffs_foo__bar function instead, and
+  // call wuffs_foo__bar__baz methods (which all take a "this"-like pointer as
+  // their first argument) rather than tweaking bar.private_impl.qux fields.
+  //
+  // In C, we can just leave wuffs_foo__bar as an incomplete type (unless
+  // WUFFS_IMPLEMENTATION is #define'd). In C++, we define a complete type in
+  // order to provide convenience methods. These forward on "this", so that you
+  // can write "bar->baz(etc)" instead of "wuffs_foo__bar__baz(bar, etc)".
+  wuffs_sha256__hasher__struct() = delete;
+  wuffs_sha256__hasher__struct(const wuffs_sha256__hasher__struct&) = delete;
+  wuffs_sha256__hasher__struct& operator=(
+      const wuffs_sha256__hasher__struct&) = delete;
+#endif  // defined(WUFFS_BASE__HAVE_EQ_DELETE) && !defined(WUFFS_IMPLEMENTATION)
+
+#if !defined(WUFFS_IMPLEMENTATION)
+  // As above, the size of the struct is not part of the public API, and unless
+  // WUFFS_IMPLEMENTATION is #define'd, this struct type T should be heap
+  // allocated, not stack allocated. Its size is not intended to be known at
+  // compile time, but it is unfortunately divulged as a side effect of
+  // defining C++ convenience methods. Use "sizeof__T()", calling the function,
+  // instead of "sizeof T", invoking the operator. To make the two values
+  // different, so that passing the latter will be rejected by the initialize
+  // function, we add an arbitrary amount of dead weight.
+  uint8_t dead_weight[123000000];  // 123 MB.
+#endif  // !defined(WUFFS_IMPLEMENTATION)
+
+  inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
+  initialize(
+      size_t sizeof_star_self,
+      uint64_t wuffs_version,
+      uint32_t options) {
+    return wuffs_sha256__hasher__initialize(
+        this, sizeof_star_self, wuffs_version, options);
+  }
+
+  inline wuffs_base__hasher_bitvec256*
+  upcast_as__wuffs_base__hasher_bitvec256() {
+    return (wuffs_base__hasher_bitvec256*)this;
+  }
+
+  inline uint64_t
+  get_quirk(
+      uint32_t a_key) const {
+    return wuffs_sha256__hasher__get_quirk(this, a_key);
+  }
+
+  inline wuffs_base__status
+  set_quirk(
+      uint32_t a_key,
+      uint64_t a_value) {
+    return wuffs_sha256__hasher__set_quirk(this, a_key, a_value);
+  }
+
+  inline wuffs_base__empty_struct
+  update(
+      wuffs_base__slice_u8 a_x) {
+    return wuffs_sha256__hasher__update(this, a_x);
+  }
+
+  inline wuffs_base__bitvec256
+  update_bitvec256(
+      wuffs_base__slice_u8 a_x) {
+    return wuffs_sha256__hasher__update_bitvec256(this, a_x);
+  }
+
+  inline wuffs_base__bitvec256
+  checksum_bitvec256() const {
+    return wuffs_sha256__hasher__checksum_bitvec256(this);
+  }
+
+#endif  // __cplusplus
+};  // struct wuffs_sha256__hasher__struct
+
+#endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
+
+#endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__SHA256) || defined(WUFFS_NONMONOLITHIC)
+
 #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__TGA) || defined(WUFFS_NONMONOLITHIC)
 
 // ---------------- Status Codes
@@ -59272,6 +59503,611 @@ wuffs_png__decoder__filter_and_swizzle_tricky(
 }
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__PNG)
+
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__SHA256)
+
+// ---------------- Status Codes Implementations
+
+// ---------------- Private Consts
+
+static const uint32_t
+WUFFS_SHA256__INITIAL_SHA256_H[8] WUFFS_BASE__POTENTIALLY_UNUSED = {
+  1779033703, 3144134277, 1013904242, 2773480762, 1359893119, 2600822924, 528734635, 1541459225,
+};
+
+static const uint32_t
+WUFFS_SHA256__K[64] WUFFS_BASE__POTENTIALLY_UNUSED = {
+  1116352408, 1899447441, 3049323471, 3921009573, 961987163, 1508970993, 2453635748, 2870763221,
+  3624381080, 310598401, 607225278, 1426881987, 1925078388, 2162078206, 2614888103, 3248222580,
+  3835390401, 4022224774, 264347078, 604807628, 770255983, 1249150122, 1555081692, 1996064986,
+  2554220882, 2821834349, 2952996808, 3210313671, 3336571891, 3584528711, 113926993, 338241895,
+  666307205, 773529912, 1294757372, 1396182291, 1695183700, 1986661051, 2177026350, 2456956037,
+  2730485921, 2820302411, 3259730800, 3345764771, 3516065817, 3600352804, 4094571909, 275423344,
+  430227734, 506948616, 659060556, 883997877, 958139571, 1322822218, 1537002063, 1747873779,
+  1955562222, 2024104815, 2227730452, 2361852424, 2428436474, 2756734187, 3204031479, 3329325298,
+};
+
+// ---------------- Private Initializer Prototypes
+
+// ---------------- Private Function Prototypes
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_sha256__hasher__up(
+    wuffs_sha256__hasher* self,
+    wuffs_base__slice_u8 a_x);
+
+// ---------------- VTables
+
+const wuffs_base__hasher_bitvec256__func_ptrs
+wuffs_sha256__hasher__func_ptrs_for__wuffs_base__hasher_bitvec256 = {
+  (wuffs_base__bitvec256(*)(const void*))(&wuffs_sha256__hasher__checksum_bitvec256),
+  (uint64_t(*)(const void*,
+      uint32_t))(&wuffs_sha256__hasher__get_quirk),
+  (wuffs_base__status(*)(void*,
+      uint32_t,
+      uint64_t))(&wuffs_sha256__hasher__set_quirk),
+  (wuffs_base__empty_struct(*)(void*,
+      wuffs_base__slice_u8))(&wuffs_sha256__hasher__update),
+  (wuffs_base__bitvec256(*)(void*,
+      wuffs_base__slice_u8))(&wuffs_sha256__hasher__update_bitvec256),
+};
+
+// ---------------- Initializer Implementations
+
+wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
+wuffs_sha256__hasher__initialize(
+    wuffs_sha256__hasher* self,
+    size_t sizeof_star_self,
+    uint64_t wuffs_version,
+    uint32_t options){
+  if (!self) {
+    return wuffs_base__make_status(wuffs_base__error__bad_receiver);
+  }
+  if (sizeof(*self) != sizeof_star_self) {
+    return wuffs_base__make_status(wuffs_base__error__bad_sizeof_receiver);
+  }
+  if (((wuffs_version >> 32) != WUFFS_VERSION_MAJOR) ||
+      (((wuffs_version >> 16) & 0xFFFF) > WUFFS_VERSION_MINOR)) {
+    return wuffs_base__make_status(wuffs_base__error__bad_wuffs_version);
+  }
+
+  if ((options & WUFFS_INITIALIZE__ALREADY_ZEROED) != 0) {
+    // The whole point of this if-check is to detect an uninitialized *self.
+    // We disable the warning on GCC. Clang-5.0 does not have this warning.
+#if !defined(__clang__) && defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
+    if (self->private_impl.magic != 0) {
+      return wuffs_base__make_status(wuffs_base__error__initialize_falsely_claimed_already_zeroed);
+    }
+#if !defined(__clang__) && defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
+  } else {
+    if ((options & WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
+      memset(self, 0, sizeof(*self));
+      options |= WUFFS_INITIALIZE__ALREADY_ZEROED;
+    } else {
+      memset(&(self->private_impl), 0, sizeof(self->private_impl));
+    }
+  }
+
+  self->private_impl.magic = WUFFS_BASE__MAGIC;
+  self->private_impl.vtable_for__wuffs_base__hasher_bitvec256.vtable_name =
+      wuffs_base__hasher_bitvec256__vtable_name;
+  self->private_impl.vtable_for__wuffs_base__hasher_bitvec256.function_pointers =
+      (const void*)(&wuffs_sha256__hasher__func_ptrs_for__wuffs_base__hasher_bitvec256);
+  return wuffs_base__make_status(NULL);
+}
+
+wuffs_sha256__hasher*
+wuffs_sha256__hasher__alloc(void) {
+  wuffs_sha256__hasher* x =
+      (wuffs_sha256__hasher*)(calloc(sizeof(wuffs_sha256__hasher), 1));
+  if (!x) {
+    return NULL;
+  }
+  if (wuffs_sha256__hasher__initialize(
+      x, sizeof(wuffs_sha256__hasher), WUFFS_VERSION, WUFFS_INITIALIZE__ALREADY_ZEROED).repr) {
+    free(x);
+    return NULL;
+  }
+  return x;
+}
+
+size_t
+sizeof__wuffs_sha256__hasher(void) {
+  return sizeof(wuffs_sha256__hasher);
+}
+
+// ---------------- Function Implementations
+
+// -------- func sha256.hasher.get_quirk
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_sha256__hasher__get_quirk(
+    const wuffs_sha256__hasher* self,
+    uint32_t a_key) {
+  if (!self) {
+    return 0;
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return 0;
+  }
+
+  return 0u;
+}
+
+// -------- func sha256.hasher.set_quirk
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status
+wuffs_sha256__hasher__set_quirk(
+    wuffs_sha256__hasher* self,
+    uint32_t a_key,
+    uint64_t a_value) {
+  if (!self) {
+    return wuffs_base__make_status(wuffs_base__error__bad_receiver);
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_status(
+        (self->private_impl.magic == WUFFS_BASE__DISABLED)
+        ? wuffs_base__error__disabled_by_previous_error
+        : wuffs_base__error__initialize_not_called);
+  }
+
+  return wuffs_base__make_status(wuffs_base__error__unsupported_option);
+}
+
+// -------- func sha256.hasher.update
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct
+wuffs_sha256__hasher__update(
+    wuffs_sha256__hasher* self,
+    wuffs_base__slice_u8 a_x) {
+  if (!self) {
+    return wuffs_base__make_empty_struct();
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_empty_struct();
+  }
+
+  uint64_t v_new_lmu = 0;
+
+  if ((self->private_impl.f_length_modulo_u64 == 0u) &&  ! self->private_impl.f_length_overflows_u64) {
+    self->private_impl.f_h0 = WUFFS_SHA256__INITIAL_SHA256_H[0u];
+    self->private_impl.f_h1 = WUFFS_SHA256__INITIAL_SHA256_H[1u];
+    self->private_impl.f_h2 = WUFFS_SHA256__INITIAL_SHA256_H[2u];
+    self->private_impl.f_h3 = WUFFS_SHA256__INITIAL_SHA256_H[3u];
+    self->private_impl.f_h4 = WUFFS_SHA256__INITIAL_SHA256_H[4u];
+    self->private_impl.f_h5 = WUFFS_SHA256__INITIAL_SHA256_H[5u];
+    self->private_impl.f_h6 = WUFFS_SHA256__INITIAL_SHA256_H[6u];
+    self->private_impl.f_h7 = WUFFS_SHA256__INITIAL_SHA256_H[7u];
+  }
+  v_new_lmu = ((uint64_t)(self->private_impl.f_length_modulo_u64 + ((uint64_t)(a_x.len))));
+  self->private_impl.f_length_overflows_u64 = ((v_new_lmu < self->private_impl.f_length_modulo_u64) || self->private_impl.f_length_overflows_u64);
+  self->private_impl.f_length_modulo_u64 = v_new_lmu;
+  if (self->private_impl.f_buf_len != 0u) {
+    while (self->private_impl.f_buf_len < 64u) {
+      if (((uint64_t)(a_x.len)) <= 0u) {
+        return wuffs_base__make_empty_struct();
+      }
+      self->private_impl.f_buf_data[self->private_impl.f_buf_len] = a_x.ptr[0u];
+      self->private_impl.f_buf_len += 1u;
+      a_x = wuffs_base__slice_u8__subslice_i(a_x, 1u);
+    }
+    self->private_impl.f_buf_len = 0u;
+    wuffs_sha256__hasher__up(self, wuffs_base__make_slice_u8(self->private_impl.f_buf_data, 64));
+  }
+  wuffs_sha256__hasher__up(self, a_x);
+  return wuffs_base__make_empty_struct();
+}
+
+// -------- func sha256.hasher.update_bitvec256
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC wuffs_base__bitvec256
+wuffs_sha256__hasher__update_bitvec256(
+    wuffs_sha256__hasher* self,
+    wuffs_base__slice_u8 a_x) {
+  if (!self) {
+    return wuffs_base__utility__make_bitvec256(0u, 0u, 0u, 0u);
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__utility__make_bitvec256(0u, 0u, 0u, 0u);
+  }
+
+  wuffs_sha256__hasher__update(self, a_x);
+  return wuffs_sha256__hasher__checksum_bitvec256(self);
+}
+
+// -------- func sha256.hasher.up
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_sha256__hasher__up(
+    wuffs_sha256__hasher* self,
+    wuffs_base__slice_u8 a_x) {
+  wuffs_base__slice_u8 v_p = {0};
+  uint32_t v_w[64] = {0};
+  uint32_t v_w2 = 0;
+  uint32_t v_w15 = 0;
+  uint32_t v_s0 = 0;
+  uint32_t v_s1 = 0;
+  uint32_t v_t1 = 0;
+  uint32_t v_t2 = 0;
+  uint32_t v_a = 0;
+  uint32_t v_b = 0;
+  uint32_t v_c = 0;
+  uint32_t v_d = 0;
+  uint32_t v_e = 0;
+  uint32_t v_f = 0;
+  uint32_t v_g = 0;
+  uint32_t v_h = 0;
+  uint32_t v_i = 0;
+  uint32_t v_buf_len = 0;
+
+  v_a = self->private_impl.f_h0;
+  v_b = self->private_impl.f_h1;
+  v_c = self->private_impl.f_h2;
+  v_d = self->private_impl.f_h3;
+  v_e = self->private_impl.f_h4;
+  v_f = self->private_impl.f_h5;
+  v_g = self->private_impl.f_h6;
+  v_h = self->private_impl.f_h7;
+  {
+    wuffs_base__slice_u8 i_slice_p = a_x;
+    v_p.ptr = i_slice_p.ptr;
+    v_p.len = 64;
+    uint8_t* i_end0_p = v_p.ptr + (((i_slice_p.len - (size_t)(v_p.ptr - i_slice_p.ptr)) / 64) * 64);
+    while (v_p.ptr < i_end0_p) {
+      v_w[0u] = ((((uint32_t)(v_p.ptr[0u])) << 24u) |
+          (((uint32_t)(v_p.ptr[1u])) << 16u) |
+          (((uint32_t)(v_p.ptr[2u])) << 8u) |
+          ((uint32_t)(v_p.ptr[3u])));
+      v_w[1u] = ((((uint32_t)(v_p.ptr[4u])) << 24u) |
+          (((uint32_t)(v_p.ptr[5u])) << 16u) |
+          (((uint32_t)(v_p.ptr[6u])) << 8u) |
+          ((uint32_t)(v_p.ptr[7u])));
+      v_w[2u] = ((((uint32_t)(v_p.ptr[8u])) << 24u) |
+          (((uint32_t)(v_p.ptr[9u])) << 16u) |
+          (((uint32_t)(v_p.ptr[10u])) << 8u) |
+          ((uint32_t)(v_p.ptr[11u])));
+      v_w[3u] = ((((uint32_t)(v_p.ptr[12u])) << 24u) |
+          (((uint32_t)(v_p.ptr[13u])) << 16u) |
+          (((uint32_t)(v_p.ptr[14u])) << 8u) |
+          ((uint32_t)(v_p.ptr[15u])));
+      v_w[4u] = ((((uint32_t)(v_p.ptr[16u])) << 24u) |
+          (((uint32_t)(v_p.ptr[17u])) << 16u) |
+          (((uint32_t)(v_p.ptr[18u])) << 8u) |
+          ((uint32_t)(v_p.ptr[19u])));
+      v_w[5u] = ((((uint32_t)(v_p.ptr[20u])) << 24u) |
+          (((uint32_t)(v_p.ptr[21u])) << 16u) |
+          (((uint32_t)(v_p.ptr[22u])) << 8u) |
+          ((uint32_t)(v_p.ptr[23u])));
+      v_w[6u] = ((((uint32_t)(v_p.ptr[24u])) << 24u) |
+          (((uint32_t)(v_p.ptr[25u])) << 16u) |
+          (((uint32_t)(v_p.ptr[26u])) << 8u) |
+          ((uint32_t)(v_p.ptr[27u])));
+      v_w[7u] = ((((uint32_t)(v_p.ptr[28u])) << 24u) |
+          (((uint32_t)(v_p.ptr[29u])) << 16u) |
+          (((uint32_t)(v_p.ptr[30u])) << 8u) |
+          ((uint32_t)(v_p.ptr[31u])));
+      v_w[8u] = ((((uint32_t)(v_p.ptr[32u])) << 24u) |
+          (((uint32_t)(v_p.ptr[33u])) << 16u) |
+          (((uint32_t)(v_p.ptr[34u])) << 8u) |
+          ((uint32_t)(v_p.ptr[35u])));
+      v_w[9u] = ((((uint32_t)(v_p.ptr[36u])) << 24u) |
+          (((uint32_t)(v_p.ptr[37u])) << 16u) |
+          (((uint32_t)(v_p.ptr[38u])) << 8u) |
+          ((uint32_t)(v_p.ptr[39u])));
+      v_w[10u] = ((((uint32_t)(v_p.ptr[40u])) << 24u) |
+          (((uint32_t)(v_p.ptr[41u])) << 16u) |
+          (((uint32_t)(v_p.ptr[42u])) << 8u) |
+          ((uint32_t)(v_p.ptr[43u])));
+      v_w[11u] = ((((uint32_t)(v_p.ptr[44u])) << 24u) |
+          (((uint32_t)(v_p.ptr[45u])) << 16u) |
+          (((uint32_t)(v_p.ptr[46u])) << 8u) |
+          ((uint32_t)(v_p.ptr[47u])));
+      v_w[12u] = ((((uint32_t)(v_p.ptr[48u])) << 24u) |
+          (((uint32_t)(v_p.ptr[49u])) << 16u) |
+          (((uint32_t)(v_p.ptr[50u])) << 8u) |
+          ((uint32_t)(v_p.ptr[51u])));
+      v_w[13u] = ((((uint32_t)(v_p.ptr[52u])) << 24u) |
+          (((uint32_t)(v_p.ptr[53u])) << 16u) |
+          (((uint32_t)(v_p.ptr[54u])) << 8u) |
+          ((uint32_t)(v_p.ptr[55u])));
+      v_w[14u] = ((((uint32_t)(v_p.ptr[56u])) << 24u) |
+          (((uint32_t)(v_p.ptr[57u])) << 16u) |
+          (((uint32_t)(v_p.ptr[58u])) << 8u) |
+          ((uint32_t)(v_p.ptr[59u])));
+      v_w[15u] = ((((uint32_t)(v_p.ptr[60u])) << 24u) |
+          (((uint32_t)(v_p.ptr[61u])) << 16u) |
+          (((uint32_t)(v_p.ptr[62u])) << 8u) |
+          ((uint32_t)(v_p.ptr[63u])));
+      v_i = 16u;
+      while (v_i < 64u) {
+        v_w2 = v_w[(v_i - 2u)];
+        v_s1 = ((v_w2 >> 10u) ^ (((uint32_t)(v_w2 << 15u)) | (v_w2 >> 17u)) ^ (((uint32_t)(v_w2 << 13u)) | (v_w2 >> 19u)));
+        v_w15 = v_w[(v_i - 15u)];
+        v_s0 = ((v_w15 >> 3u) ^ (((uint32_t)(v_w15 << 25u)) | (v_w15 >> 7u)) ^ (((uint32_t)(v_w15 << 14u)) | (v_w15 >> 18u)));
+        v_w[v_i] = ((uint32_t)(((uint32_t)(((uint32_t)(v_s1 + v_w[(v_i - 7u)])) + v_s0)) + v_w[(v_i - 16u)]));
+        v_i += 1u;
+      }
+      v_i = 0u;
+      while (v_i < 64u) {
+        v_t1 = v_h;
+        v_t1 += ((((uint32_t)(v_e << 26u)) | (v_e >> 6u)) ^ (((uint32_t)(v_e << 21u)) | (v_e >> 11u)) ^ (((uint32_t)(v_e << 7u)) | (v_e >> 25u)));
+        v_t1 += ((v_e & v_f) ^ ((4294967295u ^ v_e) & v_g));
+        v_t1 += WUFFS_SHA256__K[v_i];
+        v_t1 += v_w[v_i];
+        v_t2 = ((((uint32_t)(v_a << 30u)) | (v_a >> 2u)) ^ (((uint32_t)(v_a << 19u)) | (v_a >> 13u)) ^ (((uint32_t)(v_a << 10u)) | (v_a >> 22u)));
+        v_t2 += ((v_a & v_b) ^ (v_a & v_c) ^ (v_b & v_c));
+        v_h = v_g;
+        v_g = v_f;
+        v_f = v_e;
+        v_e = ((uint32_t)(v_d + v_t1));
+        v_d = v_c;
+        v_c = v_b;
+        v_b = v_a;
+        v_a = ((uint32_t)(v_t1 + v_t2));
+        v_i += 1u;
+      }
+      v_a += self->private_impl.f_h0;
+      self->private_impl.f_h0 = v_a;
+      v_b += self->private_impl.f_h1;
+      self->private_impl.f_h1 = v_b;
+      v_c += self->private_impl.f_h2;
+      self->private_impl.f_h2 = v_c;
+      v_d += self->private_impl.f_h3;
+      self->private_impl.f_h3 = v_d;
+      v_e += self->private_impl.f_h4;
+      self->private_impl.f_h4 = v_e;
+      v_f += self->private_impl.f_h5;
+      self->private_impl.f_h5 = v_f;
+      v_g += self->private_impl.f_h6;
+      self->private_impl.f_h6 = v_g;
+      v_h += self->private_impl.f_h7;
+      self->private_impl.f_h7 = v_h;
+      v_p.ptr += 64;
+    }
+    v_p.len = 1;
+    uint8_t* i_end1_p = i_slice_p.ptr + i_slice_p.len;
+    while (v_p.ptr < i_end1_p) {
+      self->private_impl.f_buf_data[v_buf_len] = v_p.ptr[0u];
+      v_buf_len = ((v_buf_len + 1u) & 63u);
+      v_p.ptr += 1;
+    }
+    v_p.len = 0;
+  }
+  self->private_impl.f_buf_len = ((uint32_t)((((uint64_t)(a_x.len)) & 63u)));
+  return wuffs_base__make_empty_struct();
+}
+
+// -------- func sha256.hasher.checksum_bitvec256
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC wuffs_base__bitvec256
+wuffs_sha256__hasher__checksum_bitvec256(
+    const wuffs_sha256__hasher* self) {
+  if (!self) {
+    return wuffs_base__utility__make_bitvec256(0u, 0u, 0u, 0u);
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return wuffs_base__utility__make_bitvec256(0u, 0u, 0u, 0u);
+  }
+
+  uint32_t v_buf_len = 0;
+  uint8_t v_buf_data[64] = {0};
+  uint64_t v_length_in_bits = 0;
+  uint32_t v_w[64] = {0};
+  uint32_t v_w2 = 0;
+  uint32_t v_w15 = 0;
+  uint32_t v_s0 = 0;
+  uint32_t v_s1 = 0;
+  uint32_t v_t1 = 0;
+  uint32_t v_t2 = 0;
+  uint32_t v_h0 = 0;
+  uint32_t v_h1 = 0;
+  uint32_t v_h2 = 0;
+  uint32_t v_h3 = 0;
+  uint32_t v_h4 = 0;
+  uint32_t v_h5 = 0;
+  uint32_t v_h6 = 0;
+  uint32_t v_h7 = 0;
+  uint32_t v_a = 0;
+  uint32_t v_b = 0;
+  uint32_t v_c = 0;
+  uint32_t v_d = 0;
+  uint32_t v_e = 0;
+  uint32_t v_f = 0;
+  uint32_t v_g = 0;
+  uint32_t v_h = 0;
+  uint32_t v_i = 0;
+  bool v_final_block = false;
+
+  v_i = 0u;
+  while (v_i < 64u) {
+    v_buf_data[v_i] = self->private_impl.f_buf_data[v_i];
+    v_i += 1u;
+  }
+  v_buf_len = (self->private_impl.f_buf_len & 63u);
+  if (v_buf_len < 56u) {
+    v_buf_data[v_buf_len] = 128u;
+    v_buf_len += 1u;
+    while (v_buf_len < 56u) {
+      v_buf_data[v_buf_len] = 0u;
+      v_buf_len += 1u;
+    }
+    v_final_block = true;
+  } else {
+    v_buf_data[v_buf_len] = 128u;
+    v_buf_len += 1u;
+    while (v_buf_len < 64u) {
+      v_buf_data[v_buf_len] = 0u;
+      v_buf_len += 1u;
+    }
+  }
+  v_h0 = self->private_impl.f_h0;
+  v_a = v_h0;
+  v_h1 = self->private_impl.f_h1;
+  v_b = v_h1;
+  v_h2 = self->private_impl.f_h2;
+  v_c = v_h2;
+  v_h3 = self->private_impl.f_h3;
+  v_d = v_h3;
+  v_h4 = self->private_impl.f_h4;
+  v_e = v_h4;
+  v_h5 = self->private_impl.f_h5;
+  v_f = v_h5;
+  v_h6 = self->private_impl.f_h6;
+  v_g = v_h6;
+  v_h7 = self->private_impl.f_h7;
+  v_h = v_h7;
+  while (true) {
+    if (v_final_block) {
+      v_length_in_bits = ((uint64_t)(self->private_impl.f_length_modulo_u64 * 8u));
+      v_buf_data[56u] = ((uint8_t)((v_length_in_bits >> 56u)));
+      v_buf_data[57u] = ((uint8_t)((v_length_in_bits >> 48u)));
+      v_buf_data[58u] = ((uint8_t)((v_length_in_bits >> 40u)));
+      v_buf_data[59u] = ((uint8_t)((v_length_in_bits >> 32u)));
+      v_buf_data[60u] = ((uint8_t)((v_length_in_bits >> 24u)));
+      v_buf_data[61u] = ((uint8_t)((v_length_in_bits >> 16u)));
+      v_buf_data[62u] = ((uint8_t)((v_length_in_bits >> 8u)));
+      v_buf_data[63u] = ((uint8_t)(v_length_in_bits));
+    }
+    v_w[0u] = ((((uint32_t)(v_buf_data[0u])) << 24u) |
+        (((uint32_t)(v_buf_data[1u])) << 16u) |
+        (((uint32_t)(v_buf_data[2u])) << 8u) |
+        ((uint32_t)(v_buf_data[3u])));
+    v_w[1u] = ((((uint32_t)(v_buf_data[4u])) << 24u) |
+        (((uint32_t)(v_buf_data[5u])) << 16u) |
+        (((uint32_t)(v_buf_data[6u])) << 8u) |
+        ((uint32_t)(v_buf_data[7u])));
+    v_w[2u] = ((((uint32_t)(v_buf_data[8u])) << 24u) |
+        (((uint32_t)(v_buf_data[9u])) << 16u) |
+        (((uint32_t)(v_buf_data[10u])) << 8u) |
+        ((uint32_t)(v_buf_data[11u])));
+    v_w[3u] = ((((uint32_t)(v_buf_data[12u])) << 24u) |
+        (((uint32_t)(v_buf_data[13u])) << 16u) |
+        (((uint32_t)(v_buf_data[14u])) << 8u) |
+        ((uint32_t)(v_buf_data[15u])));
+    v_w[4u] = ((((uint32_t)(v_buf_data[16u])) << 24u) |
+        (((uint32_t)(v_buf_data[17u])) << 16u) |
+        (((uint32_t)(v_buf_data[18u])) << 8u) |
+        ((uint32_t)(v_buf_data[19u])));
+    v_w[5u] = ((((uint32_t)(v_buf_data[20u])) << 24u) |
+        (((uint32_t)(v_buf_data[21u])) << 16u) |
+        (((uint32_t)(v_buf_data[22u])) << 8u) |
+        ((uint32_t)(v_buf_data[23u])));
+    v_w[6u] = ((((uint32_t)(v_buf_data[24u])) << 24u) |
+        (((uint32_t)(v_buf_data[25u])) << 16u) |
+        (((uint32_t)(v_buf_data[26u])) << 8u) |
+        ((uint32_t)(v_buf_data[27u])));
+    v_w[7u] = ((((uint32_t)(v_buf_data[28u])) << 24u) |
+        (((uint32_t)(v_buf_data[29u])) << 16u) |
+        (((uint32_t)(v_buf_data[30u])) << 8u) |
+        ((uint32_t)(v_buf_data[31u])));
+    v_w[8u] = ((((uint32_t)(v_buf_data[32u])) << 24u) |
+        (((uint32_t)(v_buf_data[33u])) << 16u) |
+        (((uint32_t)(v_buf_data[34u])) << 8u) |
+        ((uint32_t)(v_buf_data[35u])));
+    v_w[9u] = ((((uint32_t)(v_buf_data[36u])) << 24u) |
+        (((uint32_t)(v_buf_data[37u])) << 16u) |
+        (((uint32_t)(v_buf_data[38u])) << 8u) |
+        ((uint32_t)(v_buf_data[39u])));
+    v_w[10u] = ((((uint32_t)(v_buf_data[40u])) << 24u) |
+        (((uint32_t)(v_buf_data[41u])) << 16u) |
+        (((uint32_t)(v_buf_data[42u])) << 8u) |
+        ((uint32_t)(v_buf_data[43u])));
+    v_w[11u] = ((((uint32_t)(v_buf_data[44u])) << 24u) |
+        (((uint32_t)(v_buf_data[45u])) << 16u) |
+        (((uint32_t)(v_buf_data[46u])) << 8u) |
+        ((uint32_t)(v_buf_data[47u])));
+    v_w[12u] = ((((uint32_t)(v_buf_data[48u])) << 24u) |
+        (((uint32_t)(v_buf_data[49u])) << 16u) |
+        (((uint32_t)(v_buf_data[50u])) << 8u) |
+        ((uint32_t)(v_buf_data[51u])));
+    v_w[13u] = ((((uint32_t)(v_buf_data[52u])) << 24u) |
+        (((uint32_t)(v_buf_data[53u])) << 16u) |
+        (((uint32_t)(v_buf_data[54u])) << 8u) |
+        ((uint32_t)(v_buf_data[55u])));
+    v_w[14u] = ((((uint32_t)(v_buf_data[56u])) << 24u) |
+        (((uint32_t)(v_buf_data[57u])) << 16u) |
+        (((uint32_t)(v_buf_data[58u])) << 8u) |
+        ((uint32_t)(v_buf_data[59u])));
+    v_w[15u] = ((((uint32_t)(v_buf_data[60u])) << 24u) |
+        (((uint32_t)(v_buf_data[61u])) << 16u) |
+        (((uint32_t)(v_buf_data[62u])) << 8u) |
+        ((uint32_t)(v_buf_data[63u])));
+    v_i = 16u;
+    while (v_i < 64u) {
+      v_w2 = v_w[(v_i - 2u)];
+      v_s1 = ((v_w2 >> 10u) ^ (((uint32_t)(v_w2 << 15u)) | (v_w2 >> 17u)) ^ (((uint32_t)(v_w2 << 13u)) | (v_w2 >> 19u)));
+      v_w15 = v_w[(v_i - 15u)];
+      v_s0 = ((v_w15 >> 3u) ^ (((uint32_t)(v_w15 << 25u)) | (v_w15 >> 7u)) ^ (((uint32_t)(v_w15 << 14u)) | (v_w15 >> 18u)));
+      v_w[v_i] = ((uint32_t)(((uint32_t)(((uint32_t)(v_s1 + v_w[(v_i - 7u)])) + v_s0)) + v_w[(v_i - 16u)]));
+      v_i += 1u;
+    }
+    v_i = 0u;
+    while (v_i < 64u) {
+      v_t1 = v_h;
+      v_t1 += ((((uint32_t)(v_e << 26u)) | (v_e >> 6u)) ^ (((uint32_t)(v_e << 21u)) | (v_e >> 11u)) ^ (((uint32_t)(v_e << 7u)) | (v_e >> 25u)));
+      v_t1 += ((v_e & v_f) ^ ((4294967295u ^ v_e) & v_g));
+      v_t1 += WUFFS_SHA256__K[v_i];
+      v_t1 += v_w[v_i];
+      v_t2 = ((((uint32_t)(v_a << 30u)) | (v_a >> 2u)) ^ (((uint32_t)(v_a << 19u)) | (v_a >> 13u)) ^ (((uint32_t)(v_a << 10u)) | (v_a >> 22u)));
+      v_t2 += ((v_a & v_b) ^ (v_a & v_c) ^ (v_b & v_c));
+      v_h = v_g;
+      v_g = v_f;
+      v_f = v_e;
+      v_e = ((uint32_t)(v_d + v_t1));
+      v_d = v_c;
+      v_c = v_b;
+      v_b = v_a;
+      v_a = ((uint32_t)(v_t1 + v_t2));
+      v_i += 1u;
+    }
+    v_a += v_h0;
+    v_b += v_h1;
+    v_c += v_h2;
+    v_d += v_h3;
+    v_e += v_h4;
+    v_f += v_h5;
+    v_g += v_h6;
+    v_h += v_h7;
+    if (v_final_block) {
+      break;
+    }
+    v_final_block = true;
+    v_h0 = v_a;
+    v_h1 = v_b;
+    v_h2 = v_c;
+    v_h3 = v_d;
+    v_h4 = v_e;
+    v_h5 = v_f;
+    v_h6 = v_g;
+    v_h7 = v_h;
+    v_buf_len = 0u;
+    while (v_buf_len < 56u) {
+      v_buf_data[v_buf_len] = 0u;
+      v_buf_len += 1u;
+    }
+  }
+  return wuffs_base__utility__make_bitvec256(
+      (((uint64_t)(v_h)) | (((uint64_t)(v_g)) << 32u)),
+      (((uint64_t)(v_f)) | (((uint64_t)(v_e)) << 32u)),
+      (((uint64_t)(v_d)) | (((uint64_t)(v_c)) << 32u)),
+      (((uint64_t)(v_b)) | (((uint64_t)(v_a)) << 32u)));
+}
+
+#endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__SHA256)
 
 #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__TGA)
 
