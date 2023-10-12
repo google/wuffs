@@ -217,11 +217,16 @@ The [Note](/doc/note) directory also contains various short articles.
 
 # Status
 
-Version 0.3. The API and ABI aren't stabilized yet. The compiler undoubtedly
-has bugs. Assertion checking needs more rigor, especially around side effects
-and aliasing, and being sufficiently well specified to allow alternative
-implementations. Lots of detail needs work, but the broad brushstrokes are
-there.
+Version 0.3 (April 2023) is the latest stable version. Stable means that
+its API won't change any further, but being a "version 0.x" means that:
+
+- It will not have long term support.
+- Newer versions make no promises about compatibility.
+
+The compiler undoubtedly has bugs. Assertion checking needs more rigor,
+especially around side effects and aliasing, and being sufficiently well
+specified to allow alternative implementations. Lots of detail needs work, but
+the broad brushstrokes are there.
 
 Nonetheless, Wuffs' GIF decoder has shipped in the Google Chrome web browser
 [since June

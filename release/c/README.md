@@ -16,7 +16,7 @@ compiling it.
 
 # Latest Stable Version
 
-**Version 0.2 (December 2019)** is the latest stable version. Stable means that
+**Version 0.3 (April 2023)** is the latest stable version. Stable means that
 its API won't change any further, but being a "version 0.x" means that:
 
 - It will not have long term support.
