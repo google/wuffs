@@ -37,8 +37,17 @@ func main() {
 
 func main1() error {
 	flag.Parse()
-	tables := [1]crc64.Table{}
+	tables := [8]crc64.Table{}
 	tables[0] = *crc64.MakeTable(crc64.ECMA)
+
+	// Use the same slicing-by-M algorithm as for std/crc32, with M = 8.
+	for i := 0; i < 256; i++ {
+		crc := tables[0][i]
+		for j := 1; j < len(tables); j++ {
+			crc = tables[0][crc&0xFF] ^ (crc >> 8)
+			tables[j][i] = crc
+		}
+	}
 
 	for i, t := range tables {
 		if *reverse {

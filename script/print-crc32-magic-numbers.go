@@ -44,7 +44,7 @@ func main1() error {
 	// the slicing-by-M algorithm. We use an M of 16.
 	for i := 0; i < 256; i++ {
 		crc := tables[0][i]
-		for j := 1; j < 16; j++ {
+		for j := 1; j < len(tables); j++ {
 			crc = tables[0][crc&0xFF] ^ (crc >> 8)
 			tables[j][i] = crc
 		}
