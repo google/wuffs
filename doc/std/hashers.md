@@ -45,6 +45,8 @@ checksum.
 
 - [std/adler32](/std/adler32)
 - [std/crc32](/std/crc32)
+- [std/crc64](/std/crc64)
+- [std/sha256](/std/sha256)
 - [std/xxhash32](/std/xxhash32)
 - [std/xxhash64](/std/xxhash64)
 

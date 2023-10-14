@@ -8201,6 +8201,223 @@ struct wuffs_crc32__ieee_hasher__struct {
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__CRC32) || defined(WUFFS_NONMONOLITHIC)
 
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__CRC64) || defined(WUFFS_NONMONOLITHIC)
+
+// ---------------- Status Codes
+
+// ---------------- Public Consts
+
+// ---------------- Struct Declarations
+
+typedef struct wuffs_crc64__ecma_hasher__struct wuffs_crc64__ecma_hasher;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// ---------------- Public Initializer Prototypes
+
+// For any given "wuffs_foo__bar* self", "wuffs_foo__bar__initialize(self,
+// etc)" should be called before any other "wuffs_foo__bar__xxx(self, etc)".
+//
+// Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.
+// Pass 0 (or some combination of WUFFS_INITIALIZE__XXX) for options.
+
+wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
+wuffs_crc64__ecma_hasher__initialize(
+    wuffs_crc64__ecma_hasher* self,
+    size_t sizeof_star_self,
+    uint64_t wuffs_version,
+    uint32_t options);
+
+size_t
+sizeof__wuffs_crc64__ecma_hasher(void);
+
+// ---------------- Allocs
+
+// These functions allocate and initialize Wuffs structs. They return NULL if
+// memory allocation fails. If they return non-NULL, there is no need to call
+// wuffs_foo__bar__initialize, but the caller is responsible for eventually
+// calling free on the returned pointer. That pointer is effectively a C++
+// std::unique_ptr<T, wuffs_unique_ptr_deleter>.
+
+wuffs_crc64__ecma_hasher*
+wuffs_crc64__ecma_hasher__alloc(void);
+
+static inline wuffs_base__hasher_u64*
+wuffs_crc64__ecma_hasher__alloc_as__wuffs_base__hasher_u64(void) {
+  return (wuffs_base__hasher_u64*)(wuffs_crc64__ecma_hasher__alloc());
+}
+
+// ---------------- Upcasts
+
+static inline wuffs_base__hasher_u64*
+wuffs_crc64__ecma_hasher__upcast_as__wuffs_base__hasher_u64(
+    wuffs_crc64__ecma_hasher* p) {
+  return (wuffs_base__hasher_u64*)p;
+}
+
+// ---------------- Public Function Prototypes
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_crc64__ecma_hasher__get_quirk(
+    const wuffs_crc64__ecma_hasher* self,
+    uint32_t a_key);
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status
+wuffs_crc64__ecma_hasher__set_quirk(
+    wuffs_crc64__ecma_hasher* self,
+    uint32_t a_key,
+    uint64_t a_value);
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct
+wuffs_crc64__ecma_hasher__update(
+    wuffs_crc64__ecma_hasher* self,
+    wuffs_base__slice_u8 a_x);
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_crc64__ecma_hasher__update_u64(
+    wuffs_crc64__ecma_hasher* self,
+    wuffs_base__slice_u8 a_x);
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_crc64__ecma_hasher__checksum_u64(
+    const wuffs_crc64__ecma_hasher* self);
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif
+
+// ---------------- Struct Definitions
+
+// These structs' fields, and the sizeof them, are private implementation
+// details that aren't guaranteed to be stable across Wuffs versions.
+//
+// See https://en.wikipedia.org/wiki/Opaque_pointer#C
+
+#if defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
+
+struct wuffs_crc64__ecma_hasher__struct {
+  // Do not access the private_impl's or private_data's fields directly. There
+  // is no API/ABI compatibility or safety guarantee if you do so. Instead, use
+  // the wuffs_foo__bar__baz functions.
+  //
+  // It is a struct, not a struct*, so that the outermost wuffs_foo__bar struct
+  // can be stack allocated when WUFFS_IMPLEMENTATION is defined.
+
+  struct {
+    uint32_t magic;
+    uint32_t active_coroutine;
+    wuffs_base__vtable vtable_for__wuffs_base__hasher_u64;
+    wuffs_base__vtable null_vtable;
+
+    uint64_t f_state;
+  } private_impl;
+
+#ifdef __cplusplus
+#if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
+  using unique_ptr = std::unique_ptr<wuffs_crc64__ecma_hasher, wuffs_unique_ptr_deleter>;
+
+  // On failure, the alloc_etc functions return nullptr. They don't throw.
+
+  static inline unique_ptr
+  alloc() {
+    return unique_ptr(wuffs_crc64__ecma_hasher__alloc());
+  }
+
+  static inline wuffs_base__hasher_u64::unique_ptr
+  alloc_as__wuffs_base__hasher_u64() {
+    return wuffs_base__hasher_u64::unique_ptr(
+        wuffs_crc64__ecma_hasher__alloc_as__wuffs_base__hasher_u64());
+  }
+#endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
+
+#if defined(WUFFS_BASE__HAVE_EQ_DELETE) && !defined(WUFFS_IMPLEMENTATION)
+  // Disallow constructing or copying an object via standard C++ mechanisms,
+  // e.g. the "new" operator, as this struct is intentionally opaque. Its total
+  // size and field layout is not part of the public, stable, memory-safe API.
+  // Use malloc or memcpy and the sizeof__wuffs_foo__bar function instead, and
+  // call wuffs_foo__bar__baz methods (which all take a "this"-like pointer as
+  // their first argument) rather than tweaking bar.private_impl.qux fields.
+  //
+  // In C, we can just leave wuffs_foo__bar as an incomplete type (unless
+  // WUFFS_IMPLEMENTATION is #define'd). In C++, we define a complete type in
+  // order to provide convenience methods. These forward on "this", so that you
+  // can write "bar->baz(etc)" instead of "wuffs_foo__bar__baz(bar, etc)".
+  wuffs_crc64__ecma_hasher__struct() = delete;
+  wuffs_crc64__ecma_hasher__struct(const wuffs_crc64__ecma_hasher__struct&) = delete;
+  wuffs_crc64__ecma_hasher__struct& operator=(
+      const wuffs_crc64__ecma_hasher__struct&) = delete;
+#endif  // defined(WUFFS_BASE__HAVE_EQ_DELETE) && !defined(WUFFS_IMPLEMENTATION)
+
+#if !defined(WUFFS_IMPLEMENTATION)
+  // As above, the size of the struct is not part of the public API, and unless
+  // WUFFS_IMPLEMENTATION is #define'd, this struct type T should be heap
+  // allocated, not stack allocated. Its size is not intended to be known at
+  // compile time, but it is unfortunately divulged as a side effect of
+  // defining C++ convenience methods. Use "sizeof__T()", calling the function,
+  // instead of "sizeof T", invoking the operator. To make the two values
+  // different, so that passing the latter will be rejected by the initialize
+  // function, we add an arbitrary amount of dead weight.
+  uint8_t dead_weight[123000000];  // 123 MB.
+#endif  // !defined(WUFFS_IMPLEMENTATION)
+
+  inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
+  initialize(
+      size_t sizeof_star_self,
+      uint64_t wuffs_version,
+      uint32_t options) {
+    return wuffs_crc64__ecma_hasher__initialize(
+        this, sizeof_star_self, wuffs_version, options);
+  }
+
+  inline wuffs_base__hasher_u64*
+  upcast_as__wuffs_base__hasher_u64() {
+    return (wuffs_base__hasher_u64*)this;
+  }
+
+  inline uint64_t
+  get_quirk(
+      uint32_t a_key) const {
+    return wuffs_crc64__ecma_hasher__get_quirk(this, a_key);
+  }
+
+  inline wuffs_base__status
+  set_quirk(
+      uint32_t a_key,
+      uint64_t a_value) {
+    return wuffs_crc64__ecma_hasher__set_quirk(this, a_key, a_value);
+  }
+
+  inline wuffs_base__empty_struct
+  update(
+      wuffs_base__slice_u8 a_x) {
+    return wuffs_crc64__ecma_hasher__update(this, a_x);
+  }
+
+  inline uint64_t
+  update_u64(
+      wuffs_base__slice_u8 a_x) {
+    return wuffs_crc64__ecma_hasher__update_u64(this, a_x);
+  }
+
+  inline uint64_t
+  checksum_u64() const {
+    return wuffs_crc64__ecma_hasher__checksum_u64(this);
+  }
+
+#endif  // __cplusplus
+};  // struct wuffs_crc64__ecma_hasher__struct
+
+#endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
+
+#endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__CRC64) || defined(WUFFS_NONMONOLITHIC)
+
 #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__DEFLATE) || defined(WUFFS_NONMONOLITHIC)
 
 // ---------------- Status Codes
@@ -34542,6 +34759,250 @@ wuffs_crc32__ieee_hasher__up_x86_sse42(
 // ‼ WUFFS MULTI-FILE SECTION -x86_sse42
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__CRC32)
+
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__CRC64)
+
+// ---------------- Status Codes Implementations
+
+// ---------------- Private Consts
+
+static const uint64_t
+WUFFS_CRC64__ECMA_TABLE[1][256] WUFFS_BASE__POTENTIALLY_UNUSED = {
+  {
+    0u, 12911341560706588527u, 17619267392293085275u, 5164075066763771700u, 8921845837811637811u, 14483170935171449180u, 10328150133527543400u, 4357999468653093127u,
+    17843691675623275622u, 4940391307328217865u, 226782375002905661u, 12685511915359257426u, 10119945210068853333u, 4566377562367245626u, 8715998937306186254u, 14689403211693301089u,
+    9051005139383707209u, 14895072503764629798u, 9880782614656435730u, 4193374422961527165u, 453564750005811322u, 13070904082541799189u, 17496296445768931361u, 4747102235666401102u,
+    9960315520700766767u, 4113029525020509504u, 9132755124734491252u, 14812441257301386523u, 17431997874612372508u, 4811156168024382323u, 391483189436228679u, 13132671735097031464u,
+    18102010278767414418u, 5195199925788447741u, 1131375642422963401u, 13591081480414639014u, 9288535643022529185u, 3731739485546663374u, 8386748845923054330u, 14361410892855143829u,
+    907129500011622644u, 13814943346342178715u, 17875617253995106479u, 5421418680781082560u, 8594564625313771207u, 14152643483341451688u, 9494204471332802204u, 3525329033817543155u,
+    9704381199536204507u, 3855837706121835956u, 8226059050041019008u, 13908973417437222383u, 18265510249468982504u, 5643692520190618503u, 718348998302913715u, 13463047253836762076u,
+    8146277531524994749u, 13989069943491807698u, 9622312336048764646u, 3938150108875254153u, 782966378872457358u, 13399312233903888353u, 18327840216347633877u, 5582173445676054458u,
+    7257036000092981153u, 15535280666427316430u, 10390399851576895482u, 2529986302517213333u, 2262751284845926802u, 12414353723947190013u, 16997392145760156105u, 6398650419759490726u,
+    10599130201908394951u, 2322133910755632296u, 7463478971093326748u, 15329644185724306675u, 16773497691846108660u, 6622864283287239323u, 2036569382881248687u, 12640783567252986560u,
+    1814259000023245288u, 12250853444207230599u, 17125426475222188467u, 6811676960462675676u, 7132938157145702363u, 15119434731753103540u, 10842837361562165120u, 2690676064372932847u,
+    17189129250627542414u, 6747026957542163169u, 1875814858707893717u, 12188560364711551674u, 10762704257491731389u, 2770420489343360210u, 7050658067635086310u, 15201536148867841161u,
+    11493583972846619443u, 3219832958944941148u, 7711675412243671912u, 15576564987190227975u, 16452118100082038016u, 6305011443818121839u, 1213047649942025563u, 11816267669673208372u,
+    7503259434831574869u, 15784731923736995898u, 11287385040381237006u, 3425713581329221729u, 1436697996605827430u, 11591809733187859977u, 16677985422973077821u, 6078267261889762898u,
+    16292555063049989498u, 5851447209550246421u, 1630020308903038241u, 11939238787801010766u, 11081681957373440841u, 3090674103720225830u, 7876300217750508306u, 16023932746787097725u,
+    1565932757744914716u, 12003503911822413427u, 16230825569204842823u, 5913566482019610152u, 7956607163135676207u, 15944361922680361024u, 11164346891352108916u, 3008957496780927003u,
+    14514072000185962306u, 8809633696146542637u, 4460922918905818905u, 10287960411460399222u, 12879331835779764593u, 113391187501452830u, 5059972605034426666u, 17660565739912801861u,
+    4525502569691853604u, 10224187249629523019u, 14576435430675780479u, 8748148222884465680u, 4980157760350383383u, 17740628527280140920u, 12797300839518981452u, 195741594718114339u,
+    13040162471224305931u, 565687821211481700u, 4644267821511264592u, 17536326748496696895u, 14926957942186653496u, 8937808626997553239u, 4297282312656885603u, 9839608450464401420u,
+    4852190599768102253u, 17327666750234135042u, 13245728566574478646u, 359174499151456857u, 4073138765762497374u, 10063573324157604913u, 14700457781105076997u, 9163920108173816938u,
+    3628518000046490576u, 9328460452529085631u, 14330211790445699979u, 8498696072880078052u, 5299565100954197475u, 18061012165519327884u, 13623353920925351352u, 1018284691440624343u,
+    14265876314291404726u, 8562713237611094233u, 3566469078572851181u, 9390260331795218562u, 13702854325316886917u, 937907429353946858u, 5381352128745865694u, 17978417549248290481u,
+    5746791986423309721u, 18225777846762470134u, 13494053915084326338u, 606523824971012781u, 3751629717415787434u, 9745292510640121029u, 13876787882151992305u, 8338992711486538910u,
+    13285957365033343487u, 815010154451519120u, 5540840978686720420u, 18431906428167644875u, 14101316135270172620u, 8115412784602421411u, 3978303581567838103u, 9519354766961195256u,
+    12527462061959317731u, 2230461459452909452u, 6439665917889882296u, 16893009583564617687u, 15423350824487343824u, 7288217715337890239u, 2490078880175191691u, 10493603952060017124u,
+    6520081235612152965u, 16813546994155744234u, 12610022887636243678u, 2148641156328442801u, 2426095299884051126u, 10557972909709735385u, 15361512820870335213u, 7350228890552538498u,
+    15006518869663149738u, 7165105895222849989u, 2649782550477098737u, 10947027550912647582u, 12362696414880903321u, 1783234539286425590u, 6851427162658443458u, 17022309211647725485u,
+    2873395993211654860u, 10722532847870938531u, 15232418832718623383u, 6938393941075996152u, 6642978682516671743u, 17230443782969840528u, 12156534523779525796u, 1989151790783919051u,
+    6263731030979658865u, 16556202624882645790u, 11702894419100492842u, 1245039440087595845u, 3260040617806076482u, 11390642587947386157u, 15688795063501830681u, 7680756410435167606u,
+    11622868312827688983u, 1324891275238549368u, 6181348207440451660u, 16638201170595874595u, 15752600435501016612u, 7616209416359311691u, 3321489341258335871u, 11328242235714328848u,
+    3131865515489829432u, 10977756817953029463u, 16137146508898304611u, 7844397531750915340u, 5811434156413844491u, 16395372229761246052u, 11827132964039220304u, 1660744670629167935u,
+    15913214326271352414u, 8068573254449152305u, 2905717078206922245u, 11204220263579804010u, 12035829987123708013u, 1452858539103461122u, 6017914993561854006u, 16189773752444600153u,
+  },
+};
+
+// ---------------- Private Initializer Prototypes
+
+// ---------------- Private Function Prototypes
+
+// ---------------- VTables
+
+const wuffs_base__hasher_u64__func_ptrs
+wuffs_crc64__ecma_hasher__func_ptrs_for__wuffs_base__hasher_u64 = {
+  (uint64_t(*)(const void*))(&wuffs_crc64__ecma_hasher__checksum_u64),
+  (uint64_t(*)(const void*,
+      uint32_t))(&wuffs_crc64__ecma_hasher__get_quirk),
+  (wuffs_base__status(*)(void*,
+      uint32_t,
+      uint64_t))(&wuffs_crc64__ecma_hasher__set_quirk),
+  (wuffs_base__empty_struct(*)(void*,
+      wuffs_base__slice_u8))(&wuffs_crc64__ecma_hasher__update),
+  (uint64_t(*)(void*,
+      wuffs_base__slice_u8))(&wuffs_crc64__ecma_hasher__update_u64),
+};
+
+// ---------------- Initializer Implementations
+
+wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
+wuffs_crc64__ecma_hasher__initialize(
+    wuffs_crc64__ecma_hasher* self,
+    size_t sizeof_star_self,
+    uint64_t wuffs_version,
+    uint32_t options){
+  if (!self) {
+    return wuffs_base__make_status(wuffs_base__error__bad_receiver);
+  }
+  if (sizeof(*self) != sizeof_star_self) {
+    return wuffs_base__make_status(wuffs_base__error__bad_sizeof_receiver);
+  }
+  if (((wuffs_version >> 32) != WUFFS_VERSION_MAJOR) ||
+      (((wuffs_version >> 16) & 0xFFFF) > WUFFS_VERSION_MINOR)) {
+    return wuffs_base__make_status(wuffs_base__error__bad_wuffs_version);
+  }
+
+  if ((options & WUFFS_INITIALIZE__ALREADY_ZEROED) != 0) {
+    // The whole point of this if-check is to detect an uninitialized *self.
+    // We disable the warning on GCC. Clang-5.0 does not have this warning.
+#if !defined(__clang__) && defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
+    if (self->private_impl.magic != 0) {
+      return wuffs_base__make_status(wuffs_base__error__initialize_falsely_claimed_already_zeroed);
+    }
+#if !defined(__clang__) && defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
+  } else {
+    if ((options & WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
+      memset(self, 0, sizeof(*self));
+      options |= WUFFS_INITIALIZE__ALREADY_ZEROED;
+    } else {
+      memset(&(self->private_impl), 0, sizeof(self->private_impl));
+    }
+  }
+
+  self->private_impl.magic = WUFFS_BASE__MAGIC;
+  self->private_impl.vtable_for__wuffs_base__hasher_u64.vtable_name =
+      wuffs_base__hasher_u64__vtable_name;
+  self->private_impl.vtable_for__wuffs_base__hasher_u64.function_pointers =
+      (const void*)(&wuffs_crc64__ecma_hasher__func_ptrs_for__wuffs_base__hasher_u64);
+  return wuffs_base__make_status(NULL);
+}
+
+wuffs_crc64__ecma_hasher*
+wuffs_crc64__ecma_hasher__alloc(void) {
+  wuffs_crc64__ecma_hasher* x =
+      (wuffs_crc64__ecma_hasher*)(calloc(sizeof(wuffs_crc64__ecma_hasher), 1));
+  if (!x) {
+    return NULL;
+  }
+  if (wuffs_crc64__ecma_hasher__initialize(
+      x, sizeof(wuffs_crc64__ecma_hasher), WUFFS_VERSION, WUFFS_INITIALIZE__ALREADY_ZEROED).repr) {
+    free(x);
+    return NULL;
+  }
+  return x;
+}
+
+size_t
+sizeof__wuffs_crc64__ecma_hasher(void) {
+  return sizeof(wuffs_crc64__ecma_hasher);
+}
+
+// ---------------- Function Implementations
+
+// -------- func crc64.ecma_hasher.get_quirk
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_crc64__ecma_hasher__get_quirk(
+    const wuffs_crc64__ecma_hasher* self,
+    uint32_t a_key) {
+  if (!self) {
+    return 0;
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return 0;
+  }
+
+  return 0u;
+}
+
+// -------- func crc64.ecma_hasher.set_quirk
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status
+wuffs_crc64__ecma_hasher__set_quirk(
+    wuffs_crc64__ecma_hasher* self,
+    uint32_t a_key,
+    uint64_t a_value) {
+  if (!self) {
+    return wuffs_base__make_status(wuffs_base__error__bad_receiver);
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_status(
+        (self->private_impl.magic == WUFFS_BASE__DISABLED)
+        ? wuffs_base__error__disabled_by_previous_error
+        : wuffs_base__error__initialize_not_called);
+  }
+
+  return wuffs_base__make_status(wuffs_base__error__unsupported_option);
+}
+
+// -------- func crc64.ecma_hasher.update
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct
+wuffs_crc64__ecma_hasher__update(
+    wuffs_crc64__ecma_hasher* self,
+    wuffs_base__slice_u8 a_x) {
+  if (!self) {
+    return wuffs_base__make_empty_struct();
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_empty_struct();
+  }
+
+  uint64_t v_s = 0;
+  wuffs_base__slice_u8 v_p = {0};
+
+  v_s = (18446744073709551615u ^ self->private_impl.f_state);
+  {
+    wuffs_base__slice_u8 i_slice_p = a_x;
+    v_p.ptr = i_slice_p.ptr;
+    v_p.len = 1;
+    uint8_t* i_end0_p = i_slice_p.ptr + i_slice_p.len;
+    while (v_p.ptr < i_end0_p) {
+      v_s = (WUFFS_CRC64__ECMA_TABLE[0u][(((uint8_t)(v_s)) ^ v_p.ptr[0u])] ^ (v_s >> 8u));
+      v_p.ptr += 1;
+    }
+    v_p.len = 0;
+  }
+  self->private_impl.f_state = (18446744073709551615u ^ v_s);
+  return wuffs_base__make_empty_struct();
+}
+
+// -------- func crc64.ecma_hasher.update_u64
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_crc64__ecma_hasher__update_u64(
+    wuffs_crc64__ecma_hasher* self,
+    wuffs_base__slice_u8 a_x) {
+  if (!self) {
+    return 0;
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return 0;
+  }
+
+  wuffs_crc64__ecma_hasher__update(self, a_x);
+  return wuffs_crc64__ecma_hasher__checksum_u64(self);
+}
+
+// -------- func crc64.ecma_hasher.checksum_u64
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_crc64__ecma_hasher__checksum_u64(
+    const wuffs_crc64__ecma_hasher* self) {
+  if (!self) {
+    return 0;
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return 0;
+  }
+
+  return self->private_impl.f_state;
+}
+
+#endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__CRC64)
 
 #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__DEFLATE)
 

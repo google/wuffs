@@ -25,6 +25,7 @@ import (
 	"hash"
 	"hash/adler32"
 	"hash/crc32"
+	"hash/crc64"
 	"io"
 	"os"
 	"strings"
@@ -78,6 +79,8 @@ func do(r io.Reader) error {
 		h = adler32.New()
 	case "crc32/ieee":
 		h = crc32.NewIEEE()
+	case "crc64/ecma":
+		h = crc64.New(crc64.MakeTable(crc64.ECMA))
 	case "sha256":
 		h = sha256.New()
 	case "xxhash32":
