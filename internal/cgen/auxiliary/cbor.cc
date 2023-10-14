@@ -197,7 +197,7 @@ DecodeCbor(DecodeCborCallbacks& callbacks,
               goto done;
             }
             depth++;
-            if (depth > WUFFS_CBOR__DECODER_DEPTH_MAX_INCL) {
+            if (depth > (int32_t)WUFFS_CBOR__DECODER_DEPTH_MAX_INCL) {
               ret_error_message =
                   "wuffs_aux::DecodeCbor: internal error: bad depth";
               goto done;
