@@ -1037,7 +1037,11 @@ func (g *gen) gatherScalarConsts(b *buffer, n *a.Const) error {
 
 func (g *gen) writeConst(b *buffer, n *a.Const) error {
 	if cv := n.Value().ConstValue(); cv != nil {
-		b.printf("#define %s%s %v\n\n", g.PKGPREFIX, n.QID()[1].Str(g.tm), cv)
+		suffix := ""
+		if cv.Sign() >= 0 {
+			suffix = "u"
+		}
+		b.printf("#define %s%s %v%s\n\n", g.PKGPREFIX, n.QID()[1].Str(g.tm), cv, suffix)
 	} else {
 		b.writes("static const ")
 		if err := g.writeCTypeName(b, n.XType(), "\n"+g.PKGPREFIX, n.QID()[1].Str(g.tm)); err != nil {
@@ -1067,6 +1071,9 @@ func (g *gen) writeConstList(b *buffer, n *a.Expr) error {
 		b.writes("\n}")
 	} else if cv := n.ConstValue(); cv != nil {
 		b.writes(cv.String())
+		if cv.Sign() >= 0 {
+			b.writeb('u')
+		}
 	} else {
 		return fmt.Errorf("invalid const value %q", n.Str(g.tm))
 	}
