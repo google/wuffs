@@ -27,6 +27,7 @@ The LICENSE has changed from a single license (Apache 2) to a dual license
 - Changed `set_quirk_enabled!(quirk: u32, enabled: bool)` to `set_quirk!(key:
   u32, value: u64) status`.
 - Deprecate `std/lzw.decoder.flush`.
+- Generated constants now default to unsigned.
 - Halve the sizeof `wuffs_foo__bar::unique_ptr`.
 - Remove the `std/gif -> std/lzw` dependency.
 - Set image decoder pixel width and height inclusive maximum to `0xFF_FFFF`,
