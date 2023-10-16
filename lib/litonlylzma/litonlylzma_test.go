@@ -13,6 +13,7 @@ package litonlylzma
 import (
 	"bytes"
 	"os"
+	"os/exec"
 	"testing"
 )
 
@@ -65,3 +66,56 @@ func TestRoundTripOneThousand0x00s(tt *testing.T) { testRoundTrip(tt, oneThousan
 func TestRoundTripOneThousand0xFFs(tt *testing.T) { testRoundTrip(tt, oneThousand0xFFs) }
 func TestRoundTripPiTxt(tt *testing.T)            { testRoundTrip(tt, "pi.txt") }
 func TestRoundTripRomeoTxt(tt *testing.T)         { testRoundTrip(tt, "romeo.txt") }
+
+func TestUsrBinFoocatCompat(tt *testing.T) {
+	testCases := [...]struct {
+		fileFormat FileFormat
+		command    string
+	}{
+		{FileFormatLZMA, "/usr/bin/lzcat"},
+		{FileFormatXz, "/usr/bin/xzcat"},
+	}
+
+	// Not every system has "/usr/bin/{lzcat,xzcat}" commands.
+	for _, tc := range testCases {
+		if _, err := os.Stat(tc.command); err != nil {
+			tt.Skipf("%v", err)
+		}
+	}
+
+	pi, err := os.ReadFile("../../test/data/pi.txt")
+	if err != nil {
+		tt.Fatalf("ReadFile: %v", err)
+	} else if len(pi) != 100003 {
+		tt.Fatalf("ReadFile: unexpected pi.txt file length")
+	}
+
+	lengths := [...]int{0, 1, 10, 100, 1e3, 1e4, 1e5}
+
+	for _, tc := range testCases {
+		for _, length := range lengths {
+			original := pi[:length]
+
+			compressed, err := tc.fileFormat.Encode(nil, original)
+			if err != nil {
+				tt.Fatalf("%v, length=%d: Encode: %v", tc.fileFormat, length, err)
+			}
+
+			stdout := bytes.Buffer{}
+			stderr := bytes.Buffer{}
+
+			cmd := exec.Command(tc.command)
+			cmd.Stdin = bytes.NewReader(compressed)
+			cmd.Stdout = &stdout
+			cmd.Stderr = &stderr
+			if err := cmd.Run(); err != nil {
+				tt.Fatalf("%v, length=%d: Run: %v\nstderr:\n%s", tc.fileFormat, length, err, stderr.Bytes())
+			}
+
+			recovered := stdout.Bytes()
+			if !bytes.Equal(original, recovered) {
+				tt.Fatalf("%v, length=%d: round trip produced different bytes", tc.fileFormat, length)
+			}
+		}
+	}
+}

@@ -655,6 +655,18 @@ func encodeXz(dst []byte, src []byte) (appendedDst []byte, retErr error) {
 			srcChunk, remaining = remaining, nil
 		}
 
+		// Emit 3 or 6 bytes of LZMA2 header. The LZMA2 file format also allows
+		// for chunks to depend on previous chunks. But, as said above, we
+		// produce independent chunks (favoring simplicity over maximizing
+		// compression ratio). We emit one of:
+		//
+		//  00000001 U U  -  Uncompressed, reset dic, need reset state and set new prop
+		//  111uuuuu U U P P S  -  LZMA, reset state + set new prop, reset dic
+		//
+		// "U U" or "uuuuu U U" is a 16-bit or 21-bit (unpacked_size - 1), "P
+		// P" is a uint16_t (packed_size - 1) and S holds the LZMA properties.
+		//
+		// https://github.com/jljusten/LZMA-SDK/blob/781863cdf592da3e97420f50de5dac056ad352a5/C/Lzma2Dec.c#L17-L23
 		rawLZMA = encodeRaw(rawLZMA[:0], srcChunk)
 		if (len(srcChunk) + 3) <= (len(rawLZMA) + 6) {
 			dst = append(dst,
