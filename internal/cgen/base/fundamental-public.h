@@ -358,6 +358,56 @@ struct wuffs_unique_ptr_deleter {
 
 // --------
 
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-qual"
+#endif
+
+static inline uint8_t*  //
+wuffs_base__strip_const_from_u8_ptr(const uint8_t* ptr) {
+  return (uint8_t*)ptr;
+}
+
+static inline uint16_t*  //
+wuffs_base__strip_const_from_u16_ptr(const uint16_t* ptr) {
+  return (uint16_t*)ptr;
+}
+
+static inline uint32_t*  //
+wuffs_base__strip_const_from_u32_ptr(const uint32_t* ptr) {
+  return (uint32_t*)ptr;
+}
+
+static inline uint64_t*  //
+wuffs_base__strip_const_from_u64_ptr(const uint64_t* ptr) {
+  return (uint64_t*)ptr;
+}
+
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
+
+// --------
+
+typedef struct wuffs_base__int_types__struct {
+  uint8_t u8;
+  uint16_t u16;
+  uint32_t u32;
+  uint64_t u64;
+} wuffs_base__int_types;
+
+// wuffs_base__placeholder_int_types_with_non_null_address provides non-NULL
+// pointers to various integer types. These values aren't intended to ever be
+// modified and their addresses aren't intended to ever be dereferenced.
+//
+// It's just that adding 0 to a NULL pointer can be undefined behavior (and
+// UBSAN will complain), so functions like wuffs_base__empty_slice_u8 need some
+// arbitrary non-NULL placeholder pointer, even though the slice has 0 length.
+extern const wuffs_base__int_types  //
+    wuffs_base__placeholder_int_types_with_non_null_address;
+
+// --------
+
 // wuffs_base__empty_struct is used when a Wuffs function returns an empty
 // struct. In C, if a function f returns void, you can't say "x = f()", but in
 // Wuffs, if a function g returns empty, you can say "y = g()".
@@ -1310,7 +1360,8 @@ wuffs_base__make_slice_u64_ij(uint64_t* ptr, size_t i, size_t j) {
 static inline wuffs_base__slice_u8  //
 wuffs_base__empty_slice_u8(void) {
   wuffs_base__slice_u8 ret;
-  ret.ptr = NULL;
+  ret.ptr = wuffs_base__strip_const_from_u8_ptr(
+      &wuffs_base__placeholder_int_types_with_non_null_address.u8);
   ret.len = 0;
   return ret;
 }
@@ -1318,7 +1369,8 @@ wuffs_base__empty_slice_u8(void) {
 static inline wuffs_base__slice_u16  //
 wuffs_base__empty_slice_u16(void) {
   wuffs_base__slice_u16 ret;
-  ret.ptr = NULL;
+  ret.ptr = wuffs_base__strip_const_from_u16_ptr(
+      &wuffs_base__placeholder_int_types_with_non_null_address.u16);
   ret.len = 0;
   return ret;
 }
@@ -1326,7 +1378,8 @@ wuffs_base__empty_slice_u16(void) {
 static inline wuffs_base__slice_u32  //
 wuffs_base__empty_slice_u32(void) {
   wuffs_base__slice_u32 ret;
-  ret.ptr = NULL;
+  ret.ptr = wuffs_base__strip_const_from_u32_ptr(
+      &wuffs_base__placeholder_int_types_with_non_null_address.u32);
   ret.len = 0;
   return ret;
 }
@@ -1334,7 +1387,8 @@ wuffs_base__empty_slice_u32(void) {
 static inline wuffs_base__slice_u64  //
 wuffs_base__empty_slice_u64(void) {
   wuffs_base__slice_u64 ret;
-  ret.ptr = NULL;
+  ret.ptr = wuffs_base__strip_const_from_u64_ptr(
+      &wuffs_base__placeholder_int_types_with_non_null_address.u64);
   ret.len = 0;
   return ret;
 }
@@ -1394,7 +1448,8 @@ wuffs_base__make_table_u64(uint64_t* ptr,
 static inline wuffs_base__table_u8  //
 wuffs_base__empty_table_u8(void) {
   wuffs_base__table_u8 ret;
-  ret.ptr = NULL;
+  ret.ptr = wuffs_base__strip_const_from_u8_ptr(
+      &wuffs_base__placeholder_int_types_with_non_null_address.u8);
   ret.width = 0;
   ret.height = 0;
   ret.stride = 0;
@@ -1404,7 +1459,8 @@ wuffs_base__empty_table_u8(void) {
 static inline wuffs_base__table_u16  //
 wuffs_base__empty_table_u16(void) {
   wuffs_base__table_u16 ret;
-  ret.ptr = NULL;
+  ret.ptr = wuffs_base__strip_const_from_u16_ptr(
+      &wuffs_base__placeholder_int_types_with_non_null_address.u16);
   ret.width = 0;
   ret.height = 0;
   ret.stride = 0;
@@ -1414,7 +1470,8 @@ wuffs_base__empty_table_u16(void) {
 static inline wuffs_base__table_u32  //
 wuffs_base__empty_table_u32(void) {
   wuffs_base__table_u32 ret;
-  ret.ptr = NULL;
+  ret.ptr = wuffs_base__strip_const_from_u32_ptr(
+      &wuffs_base__placeholder_int_types_with_non_null_address.u32);
   ret.width = 0;
   ret.height = 0;
   ret.stride = 0;
@@ -1424,7 +1481,8 @@ wuffs_base__empty_table_u32(void) {
 static inline wuffs_base__table_u64  //
 wuffs_base__empty_table_u64(void) {
   wuffs_base__table_u64 ret;
-  ret.ptr = NULL;
+  ret.ptr = wuffs_base__strip_const_from_u64_ptr(
+      &wuffs_base__placeholder_int_types_with_non_null_address.u64);
   ret.width = 0;
   ret.height = 0;
   ret.stride = 0;

@@ -118,7 +118,8 @@ wuffs_base__slice_u8__writer(wuffs_base__slice_u8 s) {
 static inline wuffs_base__io_buffer  //
 wuffs_base__empty_io_buffer(void) {
   wuffs_base__io_buffer ret;
-  ret.data.ptr = NULL;
+  ret.data.ptr = wuffs_base__strip_const_from_u8_ptr(
+      &wuffs_base__placeholder_int_types_with_non_null_address.u8);
   ret.data.len = 0;
   ret.meta.wi = 0;
   ret.meta.ri = 0;
