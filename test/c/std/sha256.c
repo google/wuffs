@@ -355,7 +355,9 @@ do_test_xxxxx_sha256_pi(bool mimic) {
     });
 
     if (mimic) {
+#ifdef WUFFS_MIMIC
       have = mimic_sha256_one_shot_checksum_bitvec256(data);
+#endif  // WUFFS_MIMIC
 
     } else {
       wuffs_sha256__hasher checksum;
