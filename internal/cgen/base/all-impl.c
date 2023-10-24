@@ -111,8 +111,17 @@ const uint32_t wuffs_base__pixel_format__bits_per_channel[16] = {
     0x08, 0x0A, 0x0C, 0x10, 0x18, 0x20, 0x30, 0x40,
 };
 
-const wuffs_base__int_types  //
-    wuffs_base__placeholder_int_types_with_non_null_address = {0};
+const uint8_t  //
+    wuffs_base__placeholder_u8_with_non_null_address = 0;
+
+const uint16_t  //
+    wuffs_base__placeholder_u16_with_non_null_address = 0;
+
+const uint32_t  //
+    wuffs_base__placeholder_u32_with_non_null_address = 0;
+
+const uint64_t  //
+    wuffs_base__placeholder_u64_with_non_null_address = 0;
 
 const wuffs_base__token  //
     wuffs_base__placeholder_token_with_non_null_address = {0};

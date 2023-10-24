@@ -445,22 +445,25 @@ wuffs_base__strip_const_from_u64_ptr(const uint64_t* ptr) {
 
 // --------
 
-typedef struct wuffs_base__int_types__struct {
-  uint8_t u8;
-  uint16_t u16;
-  uint32_t u32;
-  uint64_t u64;
-} wuffs_base__int_types;
-
-// wuffs_base__placeholder_int_types_with_non_null_address provides non-NULL
-// pointers to various integer types. These values aren't intended to ever be
-// modified and their addresses aren't intended to ever be dereferenced.
+// wuffs_base__placeholder_etc_with_non_null_address provides non-NULL pointers
+// to various integer types. These values aren't intended to ever be modified
+// and their addresses aren't intended to ever be dereferenced.
 //
 // It's just that adding 0 to a NULL pointer can be undefined behavior (and
 // UBSAN will complain), so functions like wuffs_base__empty_slice_u8 need some
 // arbitrary non-NULL placeholder pointer, even though the slice has 0 length.
-extern const wuffs_base__int_types  //
-    wuffs_base__placeholder_int_types_with_non_null_address;
+
+extern const uint8_t  //
+    wuffs_base__placeholder_u8_with_non_null_address;
+
+extern const uint16_t  //
+    wuffs_base__placeholder_u16_with_non_null_address;
+
+extern const uint32_t  //
+    wuffs_base__placeholder_u32_with_non_null_address;
+
+extern const uint64_t  //
+    wuffs_base__placeholder_u64_with_non_null_address;
 
 // --------
 
@@ -1632,7 +1635,7 @@ static inline wuffs_base__slice_u8  //
 wuffs_base__empty_slice_u8(void) {
   wuffs_base__slice_u8 ret;
   ret.ptr = wuffs_base__strip_const_from_u8_ptr(
-      &wuffs_base__placeholder_int_types_with_non_null_address.u8);
+      &wuffs_base__placeholder_u8_with_non_null_address);
   ret.len = 0;
   return ret;
 }
@@ -1641,7 +1644,7 @@ static inline wuffs_base__slice_u16  //
 wuffs_base__empty_slice_u16(void) {
   wuffs_base__slice_u16 ret;
   ret.ptr = wuffs_base__strip_const_from_u16_ptr(
-      &wuffs_base__placeholder_int_types_with_non_null_address.u16);
+      &wuffs_base__placeholder_u16_with_non_null_address);
   ret.len = 0;
   return ret;
 }
@@ -1650,7 +1653,7 @@ static inline wuffs_base__slice_u32  //
 wuffs_base__empty_slice_u32(void) {
   wuffs_base__slice_u32 ret;
   ret.ptr = wuffs_base__strip_const_from_u32_ptr(
-      &wuffs_base__placeholder_int_types_with_non_null_address.u32);
+      &wuffs_base__placeholder_u32_with_non_null_address);
   ret.len = 0;
   return ret;
 }
@@ -1659,7 +1662,7 @@ static inline wuffs_base__slice_u64  //
 wuffs_base__empty_slice_u64(void) {
   wuffs_base__slice_u64 ret;
   ret.ptr = wuffs_base__strip_const_from_u64_ptr(
-      &wuffs_base__placeholder_int_types_with_non_null_address.u64);
+      &wuffs_base__placeholder_u64_with_non_null_address);
   ret.len = 0;
   return ret;
 }
@@ -1720,7 +1723,7 @@ static inline wuffs_base__table_u8  //
 wuffs_base__empty_table_u8(void) {
   wuffs_base__table_u8 ret;
   ret.ptr = wuffs_base__strip_const_from_u8_ptr(
-      &wuffs_base__placeholder_int_types_with_non_null_address.u8);
+      &wuffs_base__placeholder_u8_with_non_null_address);
   ret.width = 0;
   ret.height = 0;
   ret.stride = 0;
@@ -1731,7 +1734,7 @@ static inline wuffs_base__table_u16  //
 wuffs_base__empty_table_u16(void) {
   wuffs_base__table_u16 ret;
   ret.ptr = wuffs_base__strip_const_from_u16_ptr(
-      &wuffs_base__placeholder_int_types_with_non_null_address.u16);
+      &wuffs_base__placeholder_u16_with_non_null_address);
   ret.width = 0;
   ret.height = 0;
   ret.stride = 0;
@@ -1742,7 +1745,7 @@ static inline wuffs_base__table_u32  //
 wuffs_base__empty_table_u32(void) {
   wuffs_base__table_u32 ret;
   ret.ptr = wuffs_base__strip_const_from_u32_ptr(
-      &wuffs_base__placeholder_int_types_with_non_null_address.u32);
+      &wuffs_base__placeholder_u32_with_non_null_address);
   ret.width = 0;
   ret.height = 0;
   ret.stride = 0;
@@ -1753,7 +1756,7 @@ static inline wuffs_base__table_u64  //
 wuffs_base__empty_table_u64(void) {
   wuffs_base__table_u64 ret;
   ret.ptr = wuffs_base__strip_const_from_u64_ptr(
-      &wuffs_base__placeholder_int_types_with_non_null_address.u64);
+      &wuffs_base__placeholder_u64_with_non_null_address);
   ret.width = 0;
   ret.height = 0;
   ret.stride = 0;
@@ -3040,7 +3043,7 @@ static inline wuffs_base__io_buffer  //
 wuffs_base__empty_io_buffer(void) {
   wuffs_base__io_buffer ret;
   ret.data.ptr = wuffs_base__strip_const_from_u8_ptr(
-      &wuffs_base__placeholder_int_types_with_non_null_address.u8);
+      &wuffs_base__placeholder_u8_with_non_null_address);
   ret.data.len = 0;
   ret.meta.wi = 0;
   ret.meta.ri = 0;
@@ -15029,8 +15032,17 @@ const uint32_t wuffs_base__pixel_format__bits_per_channel[16] = {
     0x08, 0x0A, 0x0C, 0x10, 0x18, 0x20, 0x30, 0x40,
 };
 
-const wuffs_base__int_types  //
-    wuffs_base__placeholder_int_types_with_non_null_address = {0};
+const uint8_t  //
+    wuffs_base__placeholder_u8_with_non_null_address = 0;
+
+const uint16_t  //
+    wuffs_base__placeholder_u16_with_non_null_address = 0;
+
+const uint32_t  //
+    wuffs_base__placeholder_u32_with_non_null_address = 0;
+
+const uint64_t  //
+    wuffs_base__placeholder_u64_with_non_null_address = 0;
 
 const wuffs_base__token  //
     wuffs_base__placeholder_token_with_non_null_address = {0};
