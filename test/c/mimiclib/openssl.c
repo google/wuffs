@@ -8,9 +8,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "openssl/sha.h"
-
-uint8_t global_mimiclib_sha256_unused_bitvec256[SHA256_DIGEST_LENGTH];
+#include "openssl/evp.h"
 
 const char*  //
 mimic_bench_sha256(wuffs_base__io_buffer* dst,
@@ -18,8 +16,12 @@ mimic_bench_sha256(wuffs_base__io_buffer* dst,
                    uint32_t wuffs_initialize_flags,
                    uint64_t wlimit,
                    uint64_t rlimit) {
-  SHA256_CTX ctx;
-  SHA256_Init(&ctx);
+  EVP_MD_CTX* ctx = EVP_MD_CTX_new();
+  if (!ctx) {
+    return "EVP_MD_CTX_new failed";
+  } else if (!EVP_DigestInit_ex(ctx, EVP_sha256(), NULL)) {
+    return "EVP_DigestInit_ex failed";
+  }
 
   while (src->meta.ri < src->meta.wi) {
     uint8_t* ptr = src->data.ptr + src->meta.ri;
@@ -29,21 +31,31 @@ mimic_bench_sha256(wuffs_base__io_buffer* dst,
     } else if (len > rlimit) {
       len = rlimit;
     }
-    SHA256_Update(&ctx, ptr, len);
+    if (!EVP_DigestUpdate(ctx, ptr, len)) {
+      return "EVP_DigestUpdate failed";
+    }
     src->meta.ri += len;
   }
 
-  SHA256_Final(global_mimiclib_sha256_unused_bitvec256, &ctx);
+  uint8_t results[EVP_MAX_MD_SIZE] = {0};
+  if (!EVP_DigestFinal_ex(ctx, results, NULL)) {
+    return "EVP_DigestFinal_ex failed";
+  }
   return NULL;
 }
 
 wuffs_base__bitvec256  //
 mimic_sha256_one_shot_checksum_bitvec256(wuffs_base__slice_u8 data) {
-  SHA256_CTX ctx;
-  uint8_t results[SHA256_DIGEST_LENGTH];
-  SHA256_Init(&ctx);
-  SHA256_Update(&ctx, data.ptr, data.len);
-  SHA256_Final(results, &ctx);
+  uint8_t results[EVP_MAX_MD_SIZE] = {0};
+  EVP_MD_CTX* ctx = EVP_MD_CTX_new();
+  if (ctx) {
+    if (EVP_DigestInit_ex(ctx, EVP_sha256(), NULL) &&  //
+        EVP_DigestUpdate(ctx, data.ptr, data.len) &&   //
+        EVP_DigestFinal_ex(ctx, results, NULL)) {
+      // No-op.
+    }
+    EVP_MD_CTX_free(ctx);
+  }
 
   return wuffs_base__make_bitvec256(
       wuffs_base__peek_u64be__no_bounds_check(results + 0x18),
