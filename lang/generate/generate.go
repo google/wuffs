@@ -88,6 +88,9 @@ func checkPackageName(s string) string {
 		"config", "implementation", "include_guard", "initialize", "private", "version":
 		return ""
 	}
+	if strings.HasPrefix(s, "private_") {
+		return ""
+	}
 	return s
 }
 
