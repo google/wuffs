@@ -13626,6 +13626,8 @@ class DynIOBuffer {
   DynIOBuffer(const DynIOBuffer&) = delete;
   DynIOBuffer& operator=(const DynIOBuffer&) = delete;
 
+  bool allocated();
+
   static uint64_t round_up(uint64_t min_incl, uint64_t max_incl);
 };
 
@@ -64220,14 +64222,14 @@ DynIOBuffer::DynIOBuffer(uint64_t max_incl)
     : m_buf(wuffs_base__empty_io_buffer()), m_max_incl(max_incl) {}
 
 DynIOBuffer::~DynIOBuffer() {
-  if (m_buf.data.ptr) {
+  if (allocated()) {
     free(m_buf.data.ptr);
   }
 }
 
 void  //
 DynIOBuffer::drop() {
-  if (m_buf.data.ptr) {
+  if (allocated()) {
     free(m_buf.data.ptr);
   }
   m_buf = wuffs_base__empty_io_buffer();
@@ -64240,15 +64242,25 @@ DynIOBuffer::grow(uint64_t min_incl) {
     return ((min_incl == 0) && (m_max_incl == 0))
                ? DynIOBuffer::GrowResult::OK
                : DynIOBuffer::GrowResult::FailedMaxInclExceeded;
+  } else if (n > SIZE_MAX) {
+    return DynIOBuffer::GrowResult::FailedOutOfMemory;
   } else if (n > m_buf.data.len) {
-    uint8_t* ptr = static_cast<uint8_t*>(realloc(m_buf.data.ptr, n));
+    uint8_t* ptr = static_cast<uint8_t*>(
+        allocated() ? realloc(m_buf.data.ptr, static_cast<size_t>(n))
+                    : malloc(static_cast<size_t>(n)));
     if (!ptr) {
       return DynIOBuffer::GrowResult::FailedOutOfMemory;
     }
     m_buf.data.ptr = ptr;
-    m_buf.data.len = n;
+    m_buf.data.len = static_cast<size_t>(n);
   }
   return DynIOBuffer::GrowResult::OK;
+}
+
+bool  //
+DynIOBuffer::allocated() {
+  IOBuffer buf = wuffs_base__empty_io_buffer();
+  return buf.data.ptr != m_buf.data.ptr;
 }
 
 // round_up rounds min_incl up, returning the smallest value x satisfying
