@@ -13,7 +13,7 @@
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
 WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2,avx2")
 static void  //
-wuffs_base__pixel_swizzler__swizzle_ycc__convert_3_bgrx_x86_avx2(
+wuffs_private_impl__swizzle_ycc__convert_3_bgrx_x86_avx2(
     wuffs_base__pixel_buffer* dst,
     uint32_t x,
     uint32_t x_end,
@@ -24,7 +24,7 @@ wuffs_base__pixel_swizzler__swizzle_ycc__convert_3_bgrx_x86_avx2(
 
 WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2,avx2")
 static void  //
-wuffs_base__pixel_swizzler__swizzle_ycc__convert_3_rgbx_x86_avx2(
+wuffs_private_impl__swizzle_ycc__convert_3_rgbx_x86_avx2(
     wuffs_base__pixel_buffer* dst,
     uint32_t x,
     uint32_t x_end,
@@ -38,7 +38,7 @@ wuffs_base__pixel_swizzler__swizzle_ycc__convert_3_rgbx_x86_avx2(
 #else
 WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2,avx2")
 static const uint8_t*  //
-wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h2v2_triangle_x86_avx2(
+wuffs_private_impl__swizzle_ycc__upsample_inv_h2v2_triangle_x86_avx2(
     uint8_t* dst_ptr,
     const uint8_t* src_ptr_major,
     const uint8_t* src_ptr_minor,
@@ -52,18 +52,21 @@ wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h2v2_triangle_x86_avx2(
 // --------
 
 static inline uint32_t  //
-wuffs_base__u32__max_of_4(uint32_t a, uint32_t b, uint32_t c, uint32_t d) {
+wuffs_private_impl__u32__max_of_4(uint32_t a,
+                                  uint32_t b,
+                                  uint32_t c,
+                                  uint32_t d) {
   return wuffs_base__u32__max(     //
       wuffs_base__u32__max(a, b),  //
       wuffs_base__u32__max(c, d));
 }
 
 static inline uint32_t  //
-wuffs_base__u32__min_of_5(uint32_t a,
-                          uint32_t b,
-                          uint32_t c,
-                          uint32_t d,
-                          uint32_t e) {
+wuffs_private_impl__u32__min_of_5(uint32_t a,
+                                  uint32_t b,
+                                  uint32_t c,
+                                  uint32_t d,
+                                  uint32_t e) {
   return wuffs_base__u32__min(          //
       wuffs_base__u32__min(             //
           wuffs_base__u32__min(a, b),   //
@@ -73,7 +76,7 @@ wuffs_base__u32__min_of_5(uint32_t a,
 
 // --------
 
-typedef void (*wuffs_base__pixel_swizzler__swizzle_ycc__convert_4_func)(
+typedef void (*wuffs_private_impl__swizzle_ycc__convert_4_func)(
     wuffs_base__pixel_buffer* dst,
     uint32_t x,
     uint32_t x_end,
@@ -84,7 +87,7 @@ typedef void (*wuffs_base__pixel_swizzler__swizzle_ycc__convert_4_func)(
     const uint8_t* up3);
 
 static void  //
-wuffs_base__pixel_swizzler__swizzle_cmyk__convert_4_general(
+wuffs_private_impl__swizzle_cmyk__convert_4_general(
     wuffs_base__pixel_buffer* dst,
     uint32_t x,
     uint32_t x_end,
@@ -110,7 +113,7 @@ wuffs_base__pixel_swizzler__swizzle_cmyk__convert_4_general(
 }
 
 static void  //
-wuffs_base__pixel_swizzler__swizzle_ycck__convert_4_general(
+wuffs_private_impl__swizzle_ycck__convert_4_general(
     wuffs_base__pixel_buffer* dst,
     uint32_t x,
     uint32_t x_end,
@@ -138,7 +141,7 @@ wuffs_base__pixel_swizzler__swizzle_ycck__convert_4_general(
 
 // --------
 
-typedef void (*wuffs_base__pixel_swizzler__swizzle_ycc__convert_3_func)(
+typedef void (*wuffs_private_impl__swizzle_ycc__convert_3_func)(
     wuffs_base__pixel_buffer* dst,
     uint32_t x,
     uint32_t x_end,
@@ -148,7 +151,7 @@ typedef void (*wuffs_base__pixel_swizzler__swizzle_ycc__convert_3_func)(
     const uint8_t* up2);
 
 static void  //
-wuffs_base__pixel_swizzler__swizzle_rgb__convert_3_general(
+wuffs_private_impl__swizzle_rgb__convert_3_general(
     wuffs_base__pixel_buffer* dst,
     uint32_t x,
     uint32_t x_end,
@@ -166,7 +169,7 @@ wuffs_base__pixel_swizzler__swizzle_rgb__convert_3_general(
 }
 
 static void  //
-wuffs_base__pixel_swizzler__swizzle_ycc__convert_3_general(
+wuffs_private_impl__swizzle_ycc__convert_3_general(
     wuffs_base__pixel_buffer* dst,
     uint32_t x,
     uint32_t x_end,
@@ -183,14 +186,13 @@ wuffs_base__pixel_swizzler__swizzle_ycc__convert_3_general(
 }
 
 static void  //
-wuffs_base__pixel_swizzler__swizzle_ycc__convert_3_bgrx(
-    wuffs_base__pixel_buffer* dst,
-    uint32_t x,
-    uint32_t x_end,
-    uint32_t y,
-    const uint8_t* up0,
-    const uint8_t* up1,
-    const uint8_t* up2) {
+wuffs_private_impl__swizzle_ycc__convert_3_bgrx(wuffs_base__pixel_buffer* dst,
+                                                uint32_t x,
+                                                uint32_t x_end,
+                                                uint32_t y,
+                                                const uint8_t* up0,
+                                                const uint8_t* up1,
+                                                const uint8_t* up2) {
   size_t dst_stride = dst->private_impl.planes[0].stride;
   uint8_t* dst_iter = dst->private_impl.planes[0].ptr +
                       (dst_stride * ((size_t)y)) + (4u * ((size_t)x));
@@ -205,14 +207,13 @@ wuffs_base__pixel_swizzler__swizzle_ycc__convert_3_bgrx(
 }
 
 static void  //
-wuffs_base__pixel_swizzler__swizzle_ycc__convert_3_rgbx(
-    wuffs_base__pixel_buffer* dst,
-    uint32_t x,
-    uint32_t x_end,
-    uint32_t y,
-    const uint8_t* up0,
-    const uint8_t* up1,
-    const uint8_t* up2) {
+wuffs_private_impl__swizzle_ycc__convert_3_rgbx(wuffs_base__pixel_buffer* dst,
+                                                uint32_t x,
+                                                uint32_t x_end,
+                                                uint32_t y,
+                                                const uint8_t* up0,
+                                                const uint8_t* up1,
+                                                const uint8_t* up2) {
   size_t dst_stride = dst->private_impl.planes[0].stride;
   uint8_t* dst_iter = dst->private_impl.planes[0].ptr +
                       (dst_stride * ((size_t)y)) + (4u * ((size_t)x));
@@ -228,11 +229,11 @@ wuffs_base__pixel_swizzler__swizzle_ycc__convert_3_rgbx(
 
 // --------
 
-// wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func upsamples to a
-// destination slice at least 480 (YCCK) or 672 (YCC) bytes long and whose
-// src_len (multiplied by 1, 2, 3 or 4) is positive but no more than that. This
-// 480 or 672 length is just under 1/4 or 1/3 of the scratch_buffer_2k slice
-// length. Both (480 * 4) = 1920 and (672 * 3) = 2016 are less than 2048.
+// wuffs_private_impl__swizzle_ycc__upsample_func upsamples to a destination
+// slice at least 480 (YCCK) or 672 (YCC) bytes long and whose src_len
+// (multiplied by 1, 2, 3 or 4) is positive but no more than that. This 480 or
+// 672 length is just under 1/4 or 1/3 of the scratch_buffer_2k slice length.
+// Both (480 * 4) = 1920 and (672 * 3) = 2016 are less than 2048.
 //
 // 480 and 672 are nice round numbers because a JPEG MCU is 1, 2, 3 or 4 blocks
 // wide and each block is 8 pixels wide. We have:
@@ -252,8 +253,7 @@ wuffs_base__pixel_swizzler__swizzle_ycc__convert_3_rgbx(
 // In practice, matching libjpeg-turbo, we only implement it for the common
 // chroma subsampling ratios (YCC420, YCC422 or YCC440), corresponding to an
 // (inv_h, inv_v) pair of (2, 2), (2, 1) or (1, 2).
-typedef const uint8_t* (
-    *wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func)(
+typedef const uint8_t* (*wuffs_private_impl__swizzle_ycc__upsample_func)(
     uint8_t* dst_ptr,
     const uint8_t* src_ptr_major,  // Nearest row.
     const uint8_t* src_ptr_minor,  // Adjacent row, alternating above or below.
@@ -263,7 +263,7 @@ typedef const uint8_t* (
     bool last_column);
 
 static const uint8_t*  //
-wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h1vn_box(
+wuffs_private_impl__swizzle_ycc__upsample_inv_h1vn_box(
     uint8_t* dst_ptr,
     const uint8_t* src_ptr_major,
     const uint8_t* src_ptr_minor_ignored,
@@ -275,7 +275,7 @@ wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h1vn_box(
 }
 
 static const uint8_t*  //
-wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h2vn_box(
+wuffs_private_impl__swizzle_ycc__upsample_inv_h2vn_box(
     uint8_t* dst_ptr,
     const uint8_t* src_ptr_major,
     const uint8_t* src_ptr_minor_ignored,
@@ -294,7 +294,7 @@ wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h2vn_box(
 }
 
 static const uint8_t*  //
-wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h3vn_box(
+wuffs_private_impl__swizzle_ycc__upsample_inv_h3vn_box(
     uint8_t* dst_ptr,
     const uint8_t* src_ptr_major,
     const uint8_t* src_ptr_minor_ignored,
@@ -314,7 +314,7 @@ wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h3vn_box(
 }
 
 static const uint8_t*  //
-wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h4vn_box(
+wuffs_private_impl__swizzle_ycc__upsample_inv_h4vn_box(
     uint8_t* dst_ptr,
     const uint8_t* src_ptr_major,
     const uint8_t* src_ptr_minor_ignored,
@@ -335,7 +335,7 @@ wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h4vn_box(
 }
 
 static const uint8_t*  //
-wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h1v2_triangle(
+wuffs_private_impl__swizzle_ycc__upsample_inv_h1v2_triangle(
     uint8_t* dst_ptr,
     const uint8_t* src_ptr_major,
     const uint8_t* src_ptr_minor,
@@ -356,7 +356,7 @@ wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h1v2_triangle(
 }
 
 static const uint8_t*  //
-wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h2v1_triangle(
+wuffs_private_impl__swizzle_ycc__upsample_inv_h2v1_triangle(
     uint8_t* dst_ptr,
     const uint8_t* src_ptr_major,
     const uint8_t* src_ptr_minor,
@@ -407,7 +407,7 @@ wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h2v1_triangle(
 }
 
 static const uint8_t*  //
-wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h2v2_triangle(
+wuffs_private_impl__swizzle_ycc__upsample_inv_h2v2_triangle(
     uint8_t* dst_ptr,
     const uint8_t* src_ptr_major,
     const uint8_t* src_ptr_minor,
@@ -474,38 +474,38 @@ wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h2v2_triangle(
   return dst_ptr;
 }
 
-// wuffs_base__pixel_swizzler__swizzle_ycc__upsample_funcs is indexed by inv_h
-// and then inv_v.
-static const wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func
-    wuffs_base__pixel_swizzler__swizzle_ycc__upsample_funcs[4][4] = {
+// wuffs_private_impl__swizzle_ycc__upsample_funcs is indexed by inv_h and then
+// inv_v.
+static const wuffs_private_impl__swizzle_ycc__upsample_func
+    wuffs_private_impl__swizzle_ycc__upsample_funcs[4][4] = {
         {
-            wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h1vn_box,
-            wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h1vn_box,
-            wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h1vn_box,
-            wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h1vn_box,
+            wuffs_private_impl__swizzle_ycc__upsample_inv_h1vn_box,
+            wuffs_private_impl__swizzle_ycc__upsample_inv_h1vn_box,
+            wuffs_private_impl__swizzle_ycc__upsample_inv_h1vn_box,
+            wuffs_private_impl__swizzle_ycc__upsample_inv_h1vn_box,
         },
         {
-            wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h2vn_box,
-            wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h2vn_box,
-            wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h2vn_box,
-            wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h2vn_box,
+            wuffs_private_impl__swizzle_ycc__upsample_inv_h2vn_box,
+            wuffs_private_impl__swizzle_ycc__upsample_inv_h2vn_box,
+            wuffs_private_impl__swizzle_ycc__upsample_inv_h2vn_box,
+            wuffs_private_impl__swizzle_ycc__upsample_inv_h2vn_box,
         },
         {
-            wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h3vn_box,
-            wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h3vn_box,
-            wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h3vn_box,
-            wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h3vn_box,
+            wuffs_private_impl__swizzle_ycc__upsample_inv_h3vn_box,
+            wuffs_private_impl__swizzle_ycc__upsample_inv_h3vn_box,
+            wuffs_private_impl__swizzle_ycc__upsample_inv_h3vn_box,
+            wuffs_private_impl__swizzle_ycc__upsample_inv_h3vn_box,
         },
         {
-            wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h4vn_box,
-            wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h4vn_box,
-            wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h4vn_box,
-            wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h4vn_box,
+            wuffs_private_impl__swizzle_ycc__upsample_inv_h4vn_box,
+            wuffs_private_impl__swizzle_ycc__upsample_inv_h4vn_box,
+            wuffs_private_impl__swizzle_ycc__upsample_inv_h4vn_box,
+            wuffs_private_impl__swizzle_ycc__upsample_inv_h4vn_box,
         },
 };
 
 static inline uint32_t  //
-wuffs_base__pixel_swizzler__has_triangle_upsampler(uint32_t inv_h,
+wuffs_private_impl__swizzle_has_triangle_upsampler(uint32_t inv_h,
                                                    uint32_t inv_v) {
   if (inv_h == 1u) {
     return inv_v == 2u;
@@ -517,13 +517,13 @@ wuffs_base__pixel_swizzler__has_triangle_upsampler(uint32_t inv_h,
 
 // --------
 
-// All of the wuffs_base__pixel_swizzler__swizzle_ycc__etc functions have
+// All of the wuffs_private_impl__swizzle_ycc__etc functions have
 // preconditions. See all of the checks made in
 // wuffs_base__pixel_swizzler__swizzle_ycck before calling these functions. For
 // example, (width > 0) is a precondition, but there are many more.
 
 static void  //
-wuffs_base__pixel_swizzler__swizzle_ycck__general__triangle_filter_edge_row(
+wuffs_private_impl__swizzle_ycck__general__triangle_filter_edge_row(
     wuffs_base__pixel_buffer* dst,
     uint32_t width,
     uint32_t y,
@@ -546,11 +546,11 @@ wuffs_base__pixel_swizzler__swizzle_ycck__general__triangle_filter_edge_row(
     uint32_t half_width_for_2to1,
     uint32_t h1v2_bias,
     uint8_t* scratch_buffer_2k_ptr,
-    wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func upfunc0,
-    wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func upfunc1,
-    wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func upfunc2,
-    wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func upfunc3,
-    wuffs_base__pixel_swizzler__swizzle_ycc__convert_4_func conv4func) {
+    wuffs_private_impl__swizzle_ycc__upsample_func upfunc0,
+    wuffs_private_impl__swizzle_ycc__upsample_func upfunc1,
+    wuffs_private_impl__swizzle_ycc__upsample_func upfunc2,
+    wuffs_private_impl__swizzle_ycc__upsample_func upfunc3,
+    wuffs_private_impl__swizzle_ycc__convert_4_func conv4func) {
   const uint8_t* src0 = src_ptr0 + ((y / inv_v0) * (size_t)stride0);
   const uint8_t* src1 = src_ptr1 + ((y / inv_v1) * (size_t)stride1);
   const uint8_t* src2 = src_ptr2 + ((y / inv_v2) * (size_t)stride2);
@@ -623,7 +623,7 @@ wuffs_base__pixel_swizzler__swizzle_ycck__general__triangle_filter_edge_row(
 }
 
 static void  //
-wuffs_base__pixel_swizzler__swizzle_ycck__general__triangle_filter(
+wuffs_private_impl__swizzle_ycck__general__triangle_filter(
     wuffs_base__pixel_buffer* dst,
     uint32_t width,
     uint32_t height,
@@ -646,20 +646,20 @@ wuffs_base__pixel_swizzler__swizzle_ycck__general__triangle_filter(
     uint32_t half_width_for_2to1,
     uint32_t half_height_for_2to1,
     uint8_t* scratch_buffer_2k_ptr,
-    wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func (*upfuncs)[4][4],
-    wuffs_base__pixel_swizzler__swizzle_ycc__convert_4_func conv4func) {
-  wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func upfunc0 =
+    wuffs_private_impl__swizzle_ycc__upsample_func (*upfuncs)[4][4],
+    wuffs_private_impl__swizzle_ycc__convert_4_func conv4func) {
+  wuffs_private_impl__swizzle_ycc__upsample_func upfunc0 =
       (*upfuncs)[(inv_h0 - 1u) & 3u][(inv_v0 - 1u) & 3u];
-  wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func upfunc1 =
+  wuffs_private_impl__swizzle_ycc__upsample_func upfunc1 =
       (*upfuncs)[(inv_h1 - 1u) & 3u][(inv_v1 - 1u) & 3u];
-  wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func upfunc2 =
+  wuffs_private_impl__swizzle_ycc__upsample_func upfunc2 =
       (*upfuncs)[(inv_h2 - 1u) & 3u][(inv_v2 - 1u) & 3u];
-  wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func upfunc3 =
+  wuffs_private_impl__swizzle_ycc__upsample_func upfunc3 =
       (*upfuncs)[(inv_h3 - 1u) & 3u][(inv_v3 - 1u) & 3u];
 
   // First row.
   uint32_t h1v2_bias = 1u;
-  wuffs_base__pixel_swizzler__swizzle_ycck__general__triangle_filter_edge_row(
+  wuffs_private_impl__swizzle_ycck__general__triangle_filter_edge_row(
       dst, width, 0u,                          //
       src_ptr0, src_ptr1, src_ptr2, src_ptr3,  //
       stride0, stride1, stride2, stride3,      //
@@ -763,7 +763,7 @@ wuffs_base__pixel_swizzler__swizzle_ycck__general__triangle_filter(
 
   // Last row.
   if (y_max_excl != height) {
-    wuffs_base__pixel_swizzler__swizzle_ycck__general__triangle_filter_edge_row(
+    wuffs_private_impl__swizzle_ycck__general__triangle_filter_edge_row(
         dst, width, height - 1u,                 //
         src_ptr0, src_ptr1, src_ptr2, src_ptr3,  //
         stride0, stride1, stride2, stride3,      //
@@ -777,7 +777,7 @@ wuffs_base__pixel_swizzler__swizzle_ycck__general__triangle_filter(
 }
 
 static void  //
-wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter_edge_row(
+wuffs_private_impl__swizzle_ycc__general__triangle_filter_edge_row(
     wuffs_base__pixel_buffer* dst,
     uint32_t width,
     uint32_t y,
@@ -796,10 +796,10 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter_edge_row(
     uint32_t half_width_for_2to1,
     uint32_t h1v2_bias,
     uint8_t* scratch_buffer_2k_ptr,
-    wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func upfunc0,
-    wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func upfunc1,
-    wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func upfunc2,
-    wuffs_base__pixel_swizzler__swizzle_ycc__convert_3_func conv3func) {
+    wuffs_private_impl__swizzle_ycc__upsample_func upfunc0,
+    wuffs_private_impl__swizzle_ycc__upsample_func upfunc1,
+    wuffs_private_impl__swizzle_ycc__upsample_func upfunc2,
+    wuffs_private_impl__swizzle_ycc__convert_3_func conv3func) {
   const uint8_t* src0 = src_ptr0 + ((y / inv_v0) * (size_t)stride0);
   const uint8_t* src1 = src_ptr1 + ((y / inv_v1) * (size_t)stride1);
   const uint8_t* src2 = src_ptr2 + ((y / inv_v2) * (size_t)stride2);
@@ -858,7 +858,7 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter_edge_row(
 }
 
 static void  //
-wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter(
+wuffs_private_impl__swizzle_ycc__general__triangle_filter(
     wuffs_base__pixel_buffer* dst,
     uint32_t width,
     uint32_t height,
@@ -877,18 +877,18 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter(
     uint32_t half_width_for_2to1,
     uint32_t half_height_for_2to1,
     uint8_t* scratch_buffer_2k_ptr,
-    wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func (*upfuncs)[4][4],
-    wuffs_base__pixel_swizzler__swizzle_ycc__convert_3_func conv3func) {
-  wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func upfunc0 =
+    wuffs_private_impl__swizzle_ycc__upsample_func (*upfuncs)[4][4],
+    wuffs_private_impl__swizzle_ycc__convert_3_func conv3func) {
+  wuffs_private_impl__swizzle_ycc__upsample_func upfunc0 =
       (*upfuncs)[(inv_h0 - 1u) & 3u][(inv_v0 - 1u) & 3u];
-  wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func upfunc1 =
+  wuffs_private_impl__swizzle_ycc__upsample_func upfunc1 =
       (*upfuncs)[(inv_h1 - 1u) & 3u][(inv_v1 - 1u) & 3u];
-  wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func upfunc2 =
+  wuffs_private_impl__swizzle_ycc__upsample_func upfunc2 =
       (*upfuncs)[(inv_h2 - 1u) & 3u][(inv_v2 - 1u) & 3u];
 
   // First row.
   uint32_t h1v2_bias = 1u;
-  wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter_edge_row(
+  wuffs_private_impl__swizzle_ycc__general__triangle_filter_edge_row(
       dst, width, 0u,                //
       src_ptr0, src_ptr1, src_ptr2,  //
       stride0, stride1, stride2,     //
@@ -975,7 +975,7 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter(
 
   // Last row.
   if (y_max_excl != height) {
-    wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter_edge_row(
+    wuffs_private_impl__swizzle_ycc__general__triangle_filter_edge_row(
         dst, width, height - 1u,       //
         src_ptr0, src_ptr1, src_ptr2,  //
         stride0, stride1, stride2,     //
@@ -989,7 +989,7 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter(
 }
 
 static void  //
-wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter(
+wuffs_private_impl__swizzle_ycc__general__box_filter(
     wuffs_base__pixel_buffer* dst,
     uint32_t width,
     uint32_t height,
@@ -1008,13 +1008,13 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter(
     uint32_t half_width_for_2to1,
     uint32_t half_height_for_2to1,
     uint8_t* scratch_buffer_2k_ptr,
-    wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func (*upfuncs)[4][4],
-    wuffs_base__pixel_swizzler__swizzle_ycc__convert_3_func conv3func) {
-  wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func upfunc0 =
+    wuffs_private_impl__swizzle_ycc__upsample_func (*upfuncs)[4][4],
+    wuffs_private_impl__swizzle_ycc__convert_3_func conv3func) {
+  wuffs_private_impl__swizzle_ycc__upsample_func upfunc0 =
       (*upfuncs)[(inv_h0 - 1u) & 3u][(inv_v0 - 1u) & 3u];
-  wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func upfunc1 =
+  wuffs_private_impl__swizzle_ycc__upsample_func upfunc1 =
       (*upfuncs)[(inv_h1 - 1u) & 3u][(inv_v1 - 1u) & 3u];
-  wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func upfunc2 =
+  wuffs_private_impl__swizzle_ycc__upsample_func upfunc2 =
       (*upfuncs)[(inv_h2 - 1u) & 3u][(inv_v2 - 1u) & 3u];
 
   uint32_t y;
@@ -1063,11 +1063,11 @@ wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter(
 
 // --------
 
-// wuffs_base__pixel_swizzler__flattened_length is like
+// wuffs_private_impl__swizzle_flattened_length is like
 // wuffs_base__table__flattened_length but returns uint64_t (not size_t) and
 // also accounts for subsampling.
 static uint64_t  //
-wuffs_base__pixel_swizzler__flattened_length(uint32_t width,
+wuffs_private_impl__swizzle_flattened_length(uint32_t width,
                                              uint32_t height,
                                              uint32_t stride,
                                              uint32_t inv_h,
@@ -1133,8 +1133,8 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
     }
   }
 
-  uint32_t max_incl_h = wuffs_base__u32__max_of_4(h0, h1, h2, h3);
-  uint32_t max_incl_v = wuffs_base__u32__max_of_4(v0, v1, v2, v3);
+  uint32_t max_incl_h = wuffs_private_impl__u32__max_of_4(h0, h1, h2, h3);
+  uint32_t max_incl_v = wuffs_private_impl__u32__max_of_4(v0, v1, v2, v3);
 
   // Calculate the inverse h and v ratios.
   //
@@ -1152,17 +1152,17 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
   uint32_t half_width_for_2to1 = (width + 1u) / 2u;
   uint32_t half_height_for_2to1 = (height + 1u) / 2u;
 
-  width = wuffs_base__u32__min_of_5(  //
-      width,                          //
-      width0 * inv_h0,                //
-      width1 * inv_h1,                //
-      width2 * inv_h2,                //
+  width = wuffs_private_impl__u32__min_of_5(  //
+      width,                                  //
+      width0 * inv_h0,                        //
+      width1 * inv_h1,                        //
+      width2 * inv_h2,                        //
       wuffs_base__pixel_config__width(&dst->pixcfg));
-  height = wuffs_base__u32__min_of_5(  //
-      height,                          //
-      height0 * inv_v0,                //
-      height1 * inv_v1,                //
-      height2 * inv_v2,                //
+  height = wuffs_private_impl__u32__min_of_5(  //
+      height,                                  //
+      height0 * inv_v0,                        //
+      height1 * inv_v1,                        //
+      height2 * inv_v2,                        //
       wuffs_base__pixel_config__height(&dst->pixcfg));
 
   if (((h0 * inv_h0) != max_incl_h) ||  //
@@ -1171,18 +1171,18 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
       ((v0 * inv_v0) != max_incl_v) ||  //
       ((v1 * inv_v1) != max_incl_v) ||  //
       ((v2 * inv_v2) != max_incl_v) ||  //
-      (src0.len < wuffs_base__pixel_swizzler__flattened_length(
+      (src0.len < wuffs_private_impl__swizzle_flattened_length(
                       width, height, stride0, inv_h0, inv_v0)) ||
-      (src1.len < wuffs_base__pixel_swizzler__flattened_length(
+      (src1.len < wuffs_private_impl__swizzle_flattened_length(
                       width, height, stride1, inv_h1, inv_v1)) ||
-      (src2.len < wuffs_base__pixel_swizzler__flattened_length(
+      (src2.len < wuffs_private_impl__swizzle_flattened_length(
                       width, height, stride2, inv_h2, inv_v2))) {
     return wuffs_base__make_status(wuffs_base__error__bad_argument);
   }
   if ((h3 != 0u) || (v3 != 0u)) {
     if (((h3 * inv_h3) != max_incl_h) ||  //
         ((v3 * inv_v3) != max_incl_v) ||  //
-        (src3.len < wuffs_base__pixel_swizzler__flattened_length(
+        (src3.len < wuffs_private_impl__swizzle_flattened_length(
                         width, height, stride3, inv_h3, inv_v3))) {
       return wuffs_base__make_status(wuffs_base__error__bad_argument);
     }
@@ -1223,10 +1223,10 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
     return wuffs_base__make_status(NULL);
   }
 
-  wuffs_base__pixel_swizzler__swizzle_ycc__convert_3_func conv3func = NULL;
+  wuffs_private_impl__swizzle_ycc__convert_3_func conv3func = NULL;
 
   if (is_rgb_or_cmyk) {
-    conv3func = &wuffs_base__pixel_swizzler__swizzle_rgb__convert_3_general;
+    conv3func = &wuffs_private_impl__swizzle_rgb__convert_3_general;
   } else {
     switch (dst->pixcfg.private_impl.pixfmt.repr) {
       case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
@@ -1234,70 +1234,64 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
       case WUFFS_BASE__PIXEL_FORMAT__BGRX:
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
         if (wuffs_base__cpu_arch__have_x86_avx2()) {
-          conv3func =
-              &wuffs_base__pixel_swizzler__swizzle_ycc__convert_3_bgrx_x86_avx2;
+          conv3func = &wuffs_private_impl__swizzle_ycc__convert_3_bgrx_x86_avx2;
           break;
         }
 #endif
-        conv3func = &wuffs_base__pixel_swizzler__swizzle_ycc__convert_3_bgrx;
+        conv3func = &wuffs_private_impl__swizzle_ycc__convert_3_bgrx;
         break;
       case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
       case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
       case WUFFS_BASE__PIXEL_FORMAT__RGBX:
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
         if (wuffs_base__cpu_arch__have_x86_avx2()) {
-          conv3func =
-              &wuffs_base__pixel_swizzler__swizzle_ycc__convert_3_rgbx_x86_avx2;
+          conv3func = &wuffs_private_impl__swizzle_ycc__convert_3_rgbx_x86_avx2;
           break;
         }
 #endif
-        conv3func = &wuffs_base__pixel_swizzler__swizzle_ycc__convert_3_rgbx;
+        conv3func = &wuffs_private_impl__swizzle_ycc__convert_3_rgbx;
         break;
       default:
-        conv3func = &wuffs_base__pixel_swizzler__swizzle_ycc__convert_3_general;
+        conv3func = &wuffs_private_impl__swizzle_ycc__convert_3_general;
         break;
     }
   }
 
-  void (*func)(
-      wuffs_base__pixel_buffer * dst,  //
-      uint32_t width,                  //
-      uint32_t height,                 //
-      const uint8_t* src_ptr0,         //
-      const uint8_t* src_ptr1,         //
-      const uint8_t* src_ptr2,         //
-      uint32_t stride0,                //
-      uint32_t stride1,                //
-      uint32_t stride2,                //
-      uint32_t inv_h0,                 //
-      uint32_t inv_h1,                 //
-      uint32_t inv_h2,                 //
-      uint32_t inv_v0,                 //
-      uint32_t inv_v1,                 //
-      uint32_t inv_v2,                 //
-      uint32_t half_width_for_2to1,    //
-      uint32_t half_height_for_2to1,   //
-      uint8_t* scratch_buffer_2k_ptr,  //
-      wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func(*upfuncs)[4][4],
-      wuffs_base__pixel_swizzler__swizzle_ycc__convert_3_func conv3func) =
-      &wuffs_base__pixel_swizzler__swizzle_ycc__general__box_filter;
+  void (*func)(wuffs_base__pixel_buffer * dst,  //
+               uint32_t width,                  //
+               uint32_t height,                 //
+               const uint8_t* src_ptr0,         //
+               const uint8_t* src_ptr1,         //
+               const uint8_t* src_ptr2,         //
+               uint32_t stride0,                //
+               uint32_t stride1,                //
+               uint32_t stride2,                //
+               uint32_t inv_h0,                 //
+               uint32_t inv_h1,                 //
+               uint32_t inv_h2,                 //
+               uint32_t inv_v0,                 //
+               uint32_t inv_v1,                 //
+               uint32_t inv_v2,                 //
+               uint32_t half_width_for_2to1,    //
+               uint32_t half_height_for_2to1,   //
+               uint8_t* scratch_buffer_2k_ptr,  //
+               wuffs_private_impl__swizzle_ycc__upsample_func(*upfuncs)[4][4],
+               wuffs_private_impl__swizzle_ycc__convert_3_func conv3func) =
+      &wuffs_private_impl__swizzle_ycc__general__box_filter;
 
-  wuffs_base__pixel_swizzler__swizzle_ycc__upsample_func upfuncs[4][4];
-  memcpy(&upfuncs, &wuffs_base__pixel_swizzler__swizzle_ycc__upsample_funcs,
+  wuffs_private_impl__swizzle_ycc__upsample_func upfuncs[4][4];
+  memcpy(&upfuncs, &wuffs_private_impl__swizzle_ycc__upsample_funcs,
          sizeof upfuncs);
 
   if (triangle_filter_for_2to1 &&
-      (wuffs_base__pixel_swizzler__has_triangle_upsampler(inv_h0, inv_v0) ||
-       wuffs_base__pixel_swizzler__has_triangle_upsampler(inv_h1, inv_v1) ||
-       wuffs_base__pixel_swizzler__has_triangle_upsampler(inv_h2, inv_v2))) {
-    func = &wuffs_base__pixel_swizzler__swizzle_ycc__general__triangle_filter;
+      (wuffs_private_impl__swizzle_has_triangle_upsampler(inv_h0, inv_v0) ||
+       wuffs_private_impl__swizzle_has_triangle_upsampler(inv_h1, inv_v1) ||
+       wuffs_private_impl__swizzle_has_triangle_upsampler(inv_h2, inv_v2))) {
+    func = &wuffs_private_impl__swizzle_ycc__general__triangle_filter;
 
-    upfuncs[0][1] =
-        wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h1v2_triangle;
-    upfuncs[1][0] =
-        wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h2v1_triangle;
-    upfuncs[1][1] =
-        wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h2v2_triangle;
+    upfuncs[0][1] = wuffs_private_impl__swizzle_ycc__upsample_inv_h1v2_triangle;
+    upfuncs[1][0] = wuffs_private_impl__swizzle_ycc__upsample_inv_h2v1_triangle;
+    upfuncs[1][1] = wuffs_private_impl__swizzle_ycc__upsample_inv_h2v2_triangle;
 
 #if defined(WUFFS_BASE__CPU_ARCH__X86_64)
 #if defined(__GNUC__) && !defined(__clang__)
@@ -1315,24 +1309,23 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
 #else
     if (wuffs_base__cpu_arch__have_x86_avx2()) {
       upfuncs[1][1] =
-          wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h2v2_triangle_x86_avx2;
+          wuffs_private_impl__swizzle_ycc__upsample_inv_h2v2_triangle_x86_avx2;
     }
 #endif
 #endif
   }
 
   if ((h3 != 0u) || (v3 != 0u)) {
-    wuffs_base__pixel_swizzler__swizzle_ycc__convert_4_func conv4func =
-        is_rgb_or_cmyk
-            ? &wuffs_base__pixel_swizzler__swizzle_cmyk__convert_4_general
-            : &wuffs_base__pixel_swizzler__swizzle_ycck__convert_4_general;
-    wuffs_base__pixel_swizzler__swizzle_ycck__general__triangle_filter(  //
-        dst, width, height,                                              //
-        src0.ptr, src1.ptr, src2.ptr, src3.ptr,                          //
-        stride0, stride1, stride2, stride3,                              //
-        inv_h0, inv_h1, inv_h2, inv_h3,                                  //
-        inv_v0, inv_v1, inv_v2, inv_v3,                                  //
-        half_width_for_2to1, half_height_for_2to1,                       //
+    wuffs_private_impl__swizzle_ycc__convert_4_func conv4func =
+        is_rgb_or_cmyk ? &wuffs_private_impl__swizzle_cmyk__convert_4_general
+                       : &wuffs_private_impl__swizzle_ycck__convert_4_general;
+    wuffs_private_impl__swizzle_ycck__general__triangle_filter(  //
+        dst, width, height,                                      //
+        src0.ptr, src1.ptr, src2.ptr, src3.ptr,                  //
+        stride0, stride1, stride2, stride3,                      //
+        inv_h0, inv_h1, inv_h2, inv_h3,                          //
+        inv_v0, inv_v1, inv_v2, inv_v3,                          //
+        half_width_for_2to1, half_height_for_2to1,               //
         scratch_buffer_2k.ptr, &upfuncs, conv4func);
 
   } else {

@@ -490,7 +490,7 @@ test_wuffs_pixel_swizzler_swizzle() {
           want_dst_pixel = srcs[s].color;
         } else if (blends[b] == WUFFS_BASE__PIXEL_BLEND__SRC_OVER) {
           tolerance += 1;
-          want_dst_pixel = wuffs_base__composite_premul_premul_u32_axxx(
+          want_dst_pixel = wuffs_private_impl__composite_premul_premul_u32_axxx(
               dsts[d].color, srcs[s].color);
         } else {
           return "unsupported blend";
@@ -536,7 +536,7 @@ test_wuffs_upsample_inv_h2v1() {
   };
 
   const uint8_t* have_ptr =
-      wuffs_base__pixel_swizzler__swizzle_ycc__upsample_inv_h2v1_triangle(
+      wuffs_private_impl__swizzle_ycc__upsample_inv_h2v1_triangle(
           g_have_array_u8, src_array0, src_array0, 16, 0, true, true);
 
   const bool closed = true;
