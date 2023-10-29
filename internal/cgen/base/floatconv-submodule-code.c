@@ -140,27 +140,27 @@ wuffs_base__ieee_754_bit_representation__from_f64_to_u32_truncate(double f) {
 
 // --------
 
-#define WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__DECIMAL_POINT__RANGE 2047
-#define WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__DIGITS_PRECISION 800
+#define WUFFS_PRIVATE_IMPL__HPD__DECIMAL_POINT__RANGE 2047
+#define WUFFS_PRIVATE_IMPL__HPD__DIGITS_PRECISION 800
 
-// WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__SHIFT__MAX_INCL is the largest N
-// such that ((10 << N) < (1 << 64)).
-#define WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__SHIFT__MAX_INCL 60
+// WUFFS_PRIVATE_IMPL__HPD__SHIFT__MAX_INCL is the largest N such that
+// ((10 << N) < (1 << 64)).
+#define WUFFS_PRIVATE_IMPL__HPD__SHIFT__MAX_INCL 60
 
-// wuffs_base__private_implementation__high_prec_dec (abbreviated as HPD) is a
-// fixed precision floating point decimal number, augmented with ±infinity
-// values, but it cannot represent NaN (Not a Number).
+// wuffs_private_impl__high_prec_dec (abbreviated as HPD) is a fixed precision
+// floating point decimal number, augmented with ±infinity values, but it
+// cannot represent NaN (Not a Number).
 //
 // "High precision" means that the mantissa holds 800 decimal digits. 800 is
-// WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__DIGITS_PRECISION.
+// WUFFS_PRIVATE_IMPL__HPD__DIGITS_PRECISION.
 //
 // An HPD isn't for general purpose arithmetic, only for conversions to and
 // from IEEE 754 double-precision floating point, where the largest and
 // smallest positive, finite values are approximately 1.8e+308 and 4.9e-324.
 // HPD exponents above +2047 mean infinity, below -2047 mean zero. The ±2047
 // bounds are further away from zero than ±(324 + 800), where 800 and 2047 is
-// WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__DIGITS_PRECISION and
-// WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__DECIMAL_POINT__RANGE.
+// WUFFS_PRIVATE_IMPL__HPD__DIGITS_PRECISION and
+// WUFFS_PRIVATE_IMPL__HPD__DECIMAL_POINT__RANGE.
 //
 // digits[.. num_digits] are the number's digits in big-endian order. The
 // uint8_t values are in the range [0 ..= 9], not ['0' ..= '9'], where e.g. '7'
@@ -186,43 +186,40 @@ wuffs_base__ieee_754_bit_representation__from_f64_to_u32_truncate(double f) {
 // negative is a sign bit. An HPD can distinguish positive and negative zero.
 //
 // truncated is whether there are more than
-// WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__DIGITS_PRECISION digits, and at
-// least one of those extra digits are non-zero. The existence of long-tail
-// digits can affect rounding.
+// WUFFS_PRIVATE_IMPL__HPD__DIGITS_PRECISION digits, and at least one of those
+// extra digits are non-zero. The existence of long-tail digits can affect
+// rounding.
 //
 // The "all fields are zero" value is valid, and represents the number +0.
-typedef struct wuffs_base__private_implementation__high_prec_dec__struct {
+typedef struct wuffs_private_impl__high_prec_dec__struct {
   uint32_t num_digits;
   int32_t decimal_point;
   bool negative;
   bool truncated;
-  uint8_t digits[WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__DIGITS_PRECISION];
-} wuffs_base__private_implementation__high_prec_dec;
+  uint8_t digits[WUFFS_PRIVATE_IMPL__HPD__DIGITS_PRECISION];
+} wuffs_private_impl__high_prec_dec;
 
-// wuffs_base__private_implementation__high_prec_dec__trim trims trailing
-// zeroes from the h->digits[.. h->num_digits] slice. They have no benefit,
-// since we explicitly track h->decimal_point.
+// wuffs_private_impl__high_prec_dec__trim trims trailing zeroes from the
+// h->digits[.. h->num_digits] slice. They have no benefit, since we explicitly
+// track h->decimal_point.
 //
 // Preconditions:
 //  - h is non-NULL.
 static inline void  //
-wuffs_base__private_implementation__high_prec_dec__trim(
-    wuffs_base__private_implementation__high_prec_dec* h) {
+wuffs_private_impl__high_prec_dec__trim(wuffs_private_impl__high_prec_dec* h) {
   while ((h->num_digits > 0) && (h->digits[h->num_digits - 1] == 0)) {
     h->num_digits--;
   }
 }
 
-// wuffs_base__private_implementation__high_prec_dec__assign sets h to
-// represent the number x.
+// wuffs_private_impl__high_prec_dec__assign sets h to represent the number x.
 //
 // Preconditions:
 //  - h is non-NULL.
 static void  //
-wuffs_base__private_implementation__high_prec_dec__assign(
-    wuffs_base__private_implementation__high_prec_dec* h,
-    uint64_t x,
-    bool negative) {
+wuffs_private_impl__high_prec_dec__assign(wuffs_private_impl__high_prec_dec* h,
+                                          uint64_t x,
+                                          bool negative) {
   uint32_t n = 0;
 
   // Set h->digits.
@@ -252,14 +249,13 @@ wuffs_base__private_implementation__high_prec_dec__assign(
   h->decimal_point = (int32_t)n;
   h->negative = negative;
   h->truncated = false;
-  wuffs_base__private_implementation__high_prec_dec__trim(h);
+  wuffs_private_impl__high_prec_dec__trim(h);
 }
 
 static wuffs_base__status  //
-wuffs_base__private_implementation__high_prec_dec__parse(
-    wuffs_base__private_implementation__high_prec_dec* h,
-    wuffs_base__slice_u8 s,
-    uint32_t options) {
+wuffs_private_impl__high_prec_dec__parse(wuffs_private_impl__high_prec_dec* h,
+                                         wuffs_base__slice_u8 s,
+                                         uint32_t options) {
   if (!h) {
     return wuffs_base__make_status(wuffs_base__error__bad_receiver);
   }
@@ -348,7 +344,7 @@ wuffs_base__private_implementation__high_prec_dec__parse(
       if (p >= q) {
         goto after_all;
       } else if (('0' <= *p) && (*p <= '9')) {
-        if (nd < WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__DIGITS_PRECISION) {
+        if (nd < WUFFS_PRIVATE_IMPL__HPD__DIGITS_PRECISION) {
           h->digits[nd++] = (uint8_t)(*p - '0');
           dp = (int32_t)nd;
         } else if ('0' != *p) {
@@ -390,12 +386,11 @@ after_sep:
       if (nd == 0) {
         // Track leading zeroes implicitly.
         dp--;
-      } else if (nd <
-                 WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__DIGITS_PRECISION) {
+      } else if (nd < WUFFS_PRIVATE_IMPL__HPD__DIGITS_PRECISION) {
         h->digits[nd++] = (uint8_t)(*p - '0');
       }
     } else if (('0' < *p) && (*p <= '9')) {
-      if (nd < WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__DIGITS_PRECISION) {
+      if (nd < WUFFS_PRIVATE_IMPL__HPD__DIGITS_PRECISION) {
         h->digits[nd++] = (uint8_t)(*p - '0');
       } else {
         // Long-tail non-zeroes set the truncated bit.
@@ -431,9 +426,8 @@ after_exp:
     }
 
     int32_t exp = 0;
-    const int32_t exp_large =
-        WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__DECIMAL_POINT__RANGE +
-        WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__DIGITS_PRECISION;
+    const int32_t exp_large = WUFFS_PRIVATE_IMPL__HPD__DECIMAL_POINT__RANGE +
+                              WUFFS_PRIVATE_IMPL__HPD__DIGITS_PRECISION;
     bool saw_exp_digits = false;
     for (; p < q; p++) {
       if ((*p == '_') &&
@@ -464,44 +458,39 @@ after_all:
       return wuffs_base__make_status(wuffs_base__error__bad_argument);
     }
     h->decimal_point = 0;
-  } else if (dp <
-             -WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__DECIMAL_POINT__RANGE) {
-    h->decimal_point =
-        -WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__DECIMAL_POINT__RANGE - 1;
-  } else if (dp >
-             +WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__DECIMAL_POINT__RANGE) {
-    h->decimal_point =
-        +WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__DECIMAL_POINT__RANGE + 1;
+  } else if (dp < -WUFFS_PRIVATE_IMPL__HPD__DECIMAL_POINT__RANGE) {
+    h->decimal_point = -WUFFS_PRIVATE_IMPL__HPD__DECIMAL_POINT__RANGE - 1;
+  } else if (dp > +WUFFS_PRIVATE_IMPL__HPD__DECIMAL_POINT__RANGE) {
+    h->decimal_point = +WUFFS_PRIVATE_IMPL__HPD__DECIMAL_POINT__RANGE + 1;
   } else {
     h->decimal_point = dp;
   }
-  wuffs_base__private_implementation__high_prec_dec__trim(h);
+  wuffs_private_impl__high_prec_dec__trim(h);
   return wuffs_base__make_status(NULL);
 }
 
 // --------
 
-// wuffs_base__private_implementation__high_prec_dec__lshift_num_new_digits
-// returns the number of additional decimal digits when left-shifting by shift.
+// wuffs_private_impl__high_prec_dec__lshift_num_new_digits returns the number
+// of additional decimal digits when left-shifting by shift.
 //
 // See below for preconditions.
 static uint32_t  //
-wuffs_base__private_implementation__high_prec_dec__lshift_num_new_digits(
-    wuffs_base__private_implementation__high_prec_dec* h,
+wuffs_private_impl__high_prec_dec__lshift_num_new_digits(
+    wuffs_private_impl__high_prec_dec* h,
     uint32_t shift) {
   // Masking with 0x3F should be unnecessary (assuming the preconditions) but
   // it's cheap and ensures that we don't overflow the
-  // wuffs_base__private_implementation__hpd_left_shift array.
+  // wuffs_private_impl__hpd_left_shift array.
   shift &= 63;
 
-  uint32_t x_a = wuffs_base__private_implementation__hpd_left_shift[shift];
-  uint32_t x_b = wuffs_base__private_implementation__hpd_left_shift[shift + 1];
+  uint32_t x_a = wuffs_private_impl__hpd_left_shift[shift];
+  uint32_t x_b = wuffs_private_impl__hpd_left_shift[shift + 1];
   uint32_t num_new_digits = x_a >> 11;
   uint32_t pow5_a = 0x7FF & x_a;
   uint32_t pow5_b = 0x7FF & x_b;
 
-  const uint8_t* pow5 =
-      &wuffs_base__private_implementation__powers_of_5[pow5_a];
+  const uint8_t* pow5 = &wuffs_private_impl__powers_of_5[pow5_a];
   uint32_t i = 0;
   uint32_t n = pow5_b - pow5_a;
   for (; i < n; i++) {
@@ -520,9 +509,9 @@ wuffs_base__private_implementation__high_prec_dec__lshift_num_new_digits(
 
 // --------
 
-// wuffs_base__private_implementation__high_prec_dec__rounded_integer returns
-// the integral (non-fractional) part of h, provided that it is 18 or fewer
-// decimal digits. For 19 or more digits, it returns UINT64_MAX. Note that:
+// wuffs_private_impl__high_prec_dec__rounded_integer returns the integral
+// (non-fractional) part of h, provided that it is 18 or fewer decimal digits.
+// For 19 or more digits, it returns UINT64_MAX. Note that:
 //  - (1 << 53) is    9007199254740992, which has 16 decimal digits.
 //  - (1 << 56) is   72057594037927936, which has 17 decimal digits.
 //  - (1 << 59) is  576460752303423488, which has 18 decimal digits.
@@ -535,8 +524,8 @@ wuffs_base__private_implementation__high_prec_dec__lshift_num_new_digits(
 //
 // See below for preconditions.
 static uint64_t  //
-wuffs_base__private_implementation__high_prec_dec__rounded_integer(
-    wuffs_base__private_implementation__high_prec_dec* h) {
+wuffs_private_impl__high_prec_dec__rounded_integer(
+    wuffs_private_impl__high_prec_dec* h) {
   if ((h->num_digits == 0) || (h->decimal_point < 0)) {
     return 0;
   } else if (h->decimal_point > 18) {
@@ -567,8 +556,8 @@ wuffs_base__private_implementation__high_prec_dec__rounded_integer(
   return n;
 }
 
-// wuffs_base__private_implementation__high_prec_dec__small_xshift shifts h's
-// number (where 'x' is 'l' or 'r' for left or right) by a small shift value.
+// wuffs_private_impl__high_prec_dec__small_xshift shifts h's number (where 'x'
+// is 'l' or 'r' for left or right) by a small shift value.
 //
 // Preconditions:
 //  - h is non-NULL.
@@ -576,31 +565,29 @@ wuffs_base__private_implementation__high_prec_dec__rounded_integer(
 //  - shift is non-zero.
 //  - shift is "a small shift".
 //
-// "Not extreme" means within
-// ±WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__DECIMAL_POINT__RANGE.
+// "Not extreme" means within ±WUFFS_PRIVATE_IMPL__HPD__DECIMAL_POINT__RANGE.
 //
 // "A small shift" means not more than
-// WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__SHIFT__MAX_INCL.
+// WUFFS_PRIVATE_IMPL__HPD__SHIFT__MAX_INCL.
 //
-// wuffs_base__private_implementation__high_prec_dec__rounded_integer and
-// wuffs_base__private_implementation__high_prec_dec__lshift_num_new_digits
-// have the same preconditions.
+// wuffs_private_impl__high_prec_dec__rounded_integer and
+// wuffs_private_impl__high_prec_dec__lshift_num_new_digits have the same
+// preconditions.
 //
-// wuffs_base__private_implementation__high_prec_dec__lshift keeps the first
-// two preconditions but not the last two. Its shift argument is signed and
-// does not need to be "small": zero is a no-op, positive means left shift and
-// negative means right shift.
+// wuffs_private_impl__high_prec_dec__lshift keeps the first two preconditions
+// but not the last two. Its shift argument is signed and does not need to be
+// "small": zero is a no-op, positive means left shift and negative means right
+// shift.
 
 static void  //
-wuffs_base__private_implementation__high_prec_dec__small_lshift(
-    wuffs_base__private_implementation__high_prec_dec* h,
+wuffs_private_impl__high_prec_dec__small_lshift(
+    wuffs_private_impl__high_prec_dec* h,
     uint32_t shift) {
   if (h->num_digits == 0) {
     return;
   }
   uint32_t num_new_digits =
-      wuffs_base__private_implementation__high_prec_dec__lshift_num_new_digits(
-          h, shift);
+      wuffs_private_impl__high_prec_dec__lshift_num_new_digits(h, shift);
   uint32_t rx = h->num_digits - 1;                   // Read  index.
   uint32_t wx = h->num_digits - 1 + num_new_digits;  // Write index.
   uint64_t n = 0;
@@ -610,7 +597,7 @@ wuffs_base__private_implementation__high_prec_dec__small_lshift(
     n += ((uint64_t)(h->digits[rx])) << shift;
     uint64_t quo = n / 10;
     uint64_t rem = n - (10 * quo);
-    if (wx < WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__DIGITS_PRECISION) {
+    if (wx < WUFFS_PRIVATE_IMPL__HPD__DIGITS_PRECISION) {
       h->digits[wx] = (uint8_t)rem;
     } else if (rem > 0) {
       h->truncated = true;
@@ -624,7 +611,7 @@ wuffs_base__private_implementation__high_prec_dec__small_lshift(
   while (n > 0) {
     uint64_t quo = n / 10;
     uint64_t rem = n - (10 * quo);
-    if (wx < WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__DIGITS_PRECISION) {
+    if (wx < WUFFS_PRIVATE_IMPL__HPD__DIGITS_PRECISION) {
       h->digits[wx] = (uint8_t)rem;
     } else if (rem > 0) {
       h->truncated = true;
@@ -635,17 +622,16 @@ wuffs_base__private_implementation__high_prec_dec__small_lshift(
 
   // Finish.
   h->num_digits += num_new_digits;
-  if (h->num_digits >
-      WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__DIGITS_PRECISION) {
-    h->num_digits = WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__DIGITS_PRECISION;
+  if (h->num_digits > WUFFS_PRIVATE_IMPL__HPD__DIGITS_PRECISION) {
+    h->num_digits = WUFFS_PRIVATE_IMPL__HPD__DIGITS_PRECISION;
   }
   h->decimal_point += (int32_t)num_new_digits;
-  wuffs_base__private_implementation__high_prec_dec__trim(h);
+  wuffs_private_impl__high_prec_dec__trim(h);
 }
 
 static void  //
-wuffs_base__private_implementation__high_prec_dec__small_rshift(
-    wuffs_base__private_implementation__high_prec_dec* h,
+wuffs_private_impl__high_prec_dec__small_rshift(
+    wuffs_private_impl__high_prec_dec* h,
     uint32_t shift) {
   uint32_t rx = 0;  // Read  index.
   uint32_t wx = 0;  // Write index.
@@ -669,8 +655,7 @@ wuffs_base__private_implementation__high_prec_dec__small_rshift(
     }
   }
   h->decimal_point -= ((int32_t)(rx - 1));
-  if (h->decimal_point <
-      -WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__DECIMAL_POINT__RANGE) {
+  if (h->decimal_point < -WUFFS_PRIVATE_IMPL__HPD__DECIMAL_POINT__RANGE) {
     // After the shift, h's number is effectively zero.
     h->num_digits = 0;
     h->decimal_point = 0;
@@ -690,7 +675,7 @@ wuffs_base__private_implementation__high_prec_dec__small_rshift(
   while (n > 0) {
     uint8_t new_digit = ((uint8_t)(n >> shift));
     n = 10 * (n & mask);
-    if (wx < WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__DIGITS_PRECISION) {
+    if (wx < WUFFS_PRIVATE_IMPL__HPD__DIGITS_PRECISION) {
       h->digits[wx++] = new_digit;
     } else if (new_digit > 0) {
       h->truncated = true;
@@ -699,62 +684,58 @@ wuffs_base__private_implementation__high_prec_dec__small_rshift(
 
   // Finish.
   h->num_digits = wx;
-  wuffs_base__private_implementation__high_prec_dec__trim(h);
+  wuffs_private_impl__high_prec_dec__trim(h);
 }
 
 static void  //
-wuffs_base__private_implementation__high_prec_dec__lshift(
-    wuffs_base__private_implementation__high_prec_dec* h,
-    int32_t shift) {
+wuffs_private_impl__high_prec_dec__lshift(wuffs_private_impl__high_prec_dec* h,
+                                          int32_t shift) {
   if (shift > 0) {
-    while (shift > +WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__SHIFT__MAX_INCL) {
-      wuffs_base__private_implementation__high_prec_dec__small_lshift(
-          h, WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__SHIFT__MAX_INCL);
-      shift -= WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__SHIFT__MAX_INCL;
+    while (shift > +WUFFS_PRIVATE_IMPL__HPD__SHIFT__MAX_INCL) {
+      wuffs_private_impl__high_prec_dec__small_lshift(
+          h, WUFFS_PRIVATE_IMPL__HPD__SHIFT__MAX_INCL);
+      shift -= WUFFS_PRIVATE_IMPL__HPD__SHIFT__MAX_INCL;
     }
-    wuffs_base__private_implementation__high_prec_dec__small_lshift(
-        h, ((uint32_t)(+shift)));
+    wuffs_private_impl__high_prec_dec__small_lshift(h, ((uint32_t)(+shift)));
   } else if (shift < 0) {
-    while (shift < -WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__SHIFT__MAX_INCL) {
-      wuffs_base__private_implementation__high_prec_dec__small_rshift(
-          h, WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__SHIFT__MAX_INCL);
-      shift += WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__SHIFT__MAX_INCL;
+    while (shift < -WUFFS_PRIVATE_IMPL__HPD__SHIFT__MAX_INCL) {
+      wuffs_private_impl__high_prec_dec__small_rshift(
+          h, WUFFS_PRIVATE_IMPL__HPD__SHIFT__MAX_INCL);
+      shift += WUFFS_PRIVATE_IMPL__HPD__SHIFT__MAX_INCL;
     }
-    wuffs_base__private_implementation__high_prec_dec__small_rshift(
-        h, ((uint32_t)(-shift)));
+    wuffs_private_impl__high_prec_dec__small_rshift(h, ((uint32_t)(-shift)));
   }
 }
 
 // --------
 
-// wuffs_base__private_implementation__high_prec_dec__round_etc rounds h's
-// number. For those functions that take an n argument, rounding produces at
-// most n digits (which is not necessarily at most n decimal places). Negative
-// n values are ignored, as well as any n greater than or equal to h's number
-// of digits. The etc__round_just_enough function implicitly chooses an n to
-// implement WUFFS_BASE__RENDER_NUMBER_FXX__JUST_ENOUGH_PRECISION.
+// wuffs_private_impl__high_prec_dec__round_etc rounds h's number. For those
+// functions that take an n argument, rounding produces at most n digits (which
+// is not necessarily at most n decimal places). Negative n values are ignored,
+// as well as any n greater than or equal to h's number of digits. The
+// etc__round_just_enough function implicitly chooses an n to implement
+// WUFFS_BASE__RENDER_NUMBER_FXX__JUST_ENOUGH_PRECISION.
 //
 // Preconditions:
 //  - h is non-NULL.
 //  - h->decimal_point is "not extreme".
 //
-// "Not extreme" means within
-// ±WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__DECIMAL_POINT__RANGE.
+// "Not extreme" means within ±WUFFS_PRIVATE_IMPL__HPD__DECIMAL_POINT__RANGE.
 
 static void  //
-wuffs_base__private_implementation__high_prec_dec__round_down(
-    wuffs_base__private_implementation__high_prec_dec* h,
+wuffs_private_impl__high_prec_dec__round_down(
+    wuffs_private_impl__high_prec_dec* h,
     int32_t n) {
   if ((n < 0) || (h->num_digits <= (uint32_t)n)) {
     return;
   }
   h->num_digits = (uint32_t)(n);
-  wuffs_base__private_implementation__high_prec_dec__trim(h);
+  wuffs_private_impl__high_prec_dec__trim(h);
 }
 
 static void  //
-wuffs_base__private_implementation__high_prec_dec__round_up(
-    wuffs_base__private_implementation__high_prec_dec* h,
+wuffs_private_impl__high_prec_dec__round_up(
+    wuffs_private_impl__high_prec_dec* h,
     int32_t n) {
   if ((n < 0) || (h->num_digits <= (uint32_t)n)) {
     return;
@@ -775,8 +756,8 @@ wuffs_base__private_implementation__high_prec_dec__round_up(
 }
 
 static void  //
-wuffs_base__private_implementation__high_prec_dec__round_nearest(
-    wuffs_base__private_implementation__high_prec_dec* h,
+wuffs_private_impl__high_prec_dec__round_nearest(
+    wuffs_private_impl__high_prec_dec* h,
     int32_t n) {
   if ((n < 0) || (h->num_digits <= (uint32_t)n)) {
     return;
@@ -788,15 +769,15 @@ wuffs_base__private_implementation__high_prec_dec__round_nearest(
   }
 
   if (up) {
-    wuffs_base__private_implementation__high_prec_dec__round_up(h, n);
+    wuffs_private_impl__high_prec_dec__round_up(h, n);
   } else {
-    wuffs_base__private_implementation__high_prec_dec__round_down(h, n);
+    wuffs_private_impl__high_prec_dec__round_down(h, n);
   }
 }
 
 static void  //
-wuffs_base__private_implementation__high_prec_dec__round_just_enough(
-    wuffs_base__private_implementation__high_prec_dec* h,
+wuffs_private_impl__high_prec_dec__round_just_enough(
+    wuffs_private_impl__high_prec_dec* h,
     int32_t exp2,
     uint64_t mantissa) {
   // The magic numbers 52 and 53 in this function are because IEEE 754 double
@@ -834,11 +815,10 @@ wuffs_base__private_implementation__high_prec_dec__round_just_enough(
     l_exp2 = exp2 - 1;
     l_mantissa = (2 * mantissa) - 1;
   }
-  wuffs_base__private_implementation__high_prec_dec lower;
-  wuffs_base__private_implementation__high_prec_dec__assign(
-      &lower, (2 * l_mantissa) + 1, false);
-  wuffs_base__private_implementation__high_prec_dec__lshift(&lower,
-                                                            l_exp2 - 53);
+  wuffs_private_impl__high_prec_dec lower;
+  wuffs_private_impl__high_prec_dec__assign(&lower, (2 * l_mantissa) + 1,
+                                            false);
+  wuffs_private_impl__high_prec_dec__lshift(&lower, l_exp2 - 53);
 
   // Next, the upper bound. Our number f is:
   //   ((mantissa + 0)       * (2 ** (exp2 - 52)))
@@ -848,10 +828,9 @@ wuffs_base__private_implementation__high_prec_dec__round_just_enough(
   //
   // The upper bound is halfway between them (noting that 52 became 53):
   //   (((2 * mantissa) + 1) * (2 ** (exp2 - 53)))
-  wuffs_base__private_implementation__high_prec_dec upper;
-  wuffs_base__private_implementation__high_prec_dec__assign(
-      &upper, (2 * mantissa) + 1, false);
-  wuffs_base__private_implementation__high_prec_dec__lshift(&upper, exp2 - 53);
+  wuffs_private_impl__high_prec_dec upper;
+  wuffs_private_impl__high_prec_dec__assign(&upper, (2 * mantissa) + 1, false);
+  wuffs_private_impl__high_prec_dec__lshift(&upper, exp2 - 53);
 
   // The lower and upper bounds are possible outputs only if the original
   // mantissa is even, so that IEEE round-to-even would round to the original
@@ -934,17 +913,15 @@ wuffs_base__private_implementation__high_prec_dec__round_just_enough(
     // way, do it. If we can't round, continue the loop.
     if (can_round_down) {
       if (can_round_up) {
-        wuffs_base__private_implementation__high_prec_dec__round_nearest(
-            h, hi + 1);
+        wuffs_private_impl__high_prec_dec__round_nearest(h, hi + 1);
         return;
       } else {
-        wuffs_base__private_implementation__high_prec_dec__round_down(h,
-                                                                      hi + 1);
+        wuffs_private_impl__high_prec_dec__round_down(h, hi + 1);
         return;
       }
     } else {
       if (can_round_up) {
-        wuffs_base__private_implementation__high_prec_dec__round_up(h, hi + 1);
+        wuffs_private_impl__high_prec_dec__round_up(h, hi + 1);
         return;
       }
     }
@@ -953,9 +930,9 @@ wuffs_base__private_implementation__high_prec_dec__round_just_enough(
 
 // --------
 
-// wuffs_base__private_implementation__parse_number_f64_eisel_lemire produces
-// the IEEE 754 double-precision value for an exact mantissa and base-10
-// exponent. For example:
+// wuffs_private_impl__parse_number_f64_eisel_lemire produces the IEEE 754
+// double-precision value for an exact mantissa and base-10 exponent. For
+// example:
 //  - when parsing "12345.678e+02", man is 12345678 and exp10 is -1.
 //  - when parsing "-12", man is 12 and exp10 is 0. Processing the leading
 //    minus sign is the responsibility of the caller, not this function.
@@ -974,7 +951,7 @@ wuffs_base__private_implementation__high_prec_dec__round_just_enough(
 // Preconditions:
 //  - man is non-zero.
 //  - exp10 is in the range [-307 ..= 288], the same range of the
-//    wuffs_base__private_implementation__powers_of_10 array.
+//    wuffs_private_impl__powers_of_10 array.
 //
 // The exp10 range (and the fact that man is in the range [1 ..= UINT64_MAX],
 // approximately [1 ..= 1.85e+19]) means that (man * (10 ** exp10)) is in the
@@ -982,14 +959,11 @@ wuffs_base__private_implementation__high_prec_dec__round_just_enough(
 // (neither subnormal nor non-finite) f64 values: DBL_MIN and DBL_MAX are
 // approximately 2.23e–308 and 1.80e+308.
 static int64_t  //
-wuffs_base__private_implementation__parse_number_f64_eisel_lemire(
-    uint64_t man,
-    int32_t exp10) {
+wuffs_private_impl__parse_number_f64_eisel_lemire(uint64_t man, int32_t exp10) {
   // Look up the (possibly truncated) base-2 representation of (10 ** exp10).
   // The look-up table was constructed so that it is already normalized: the
   // table entry's mantissa's MSB (most significant bit) is on.
-  const uint64_t* po10 =
-      &wuffs_base__private_implementation__powers_of_10[exp10 + 307][0];
+  const uint64_t* po10 = &wuffs_private_impl__powers_of_10[exp10 + 307][0];
 
   // Normalize the man argument. The (man != 0) precondition means that a
   // non-zero bit exists.
@@ -1147,9 +1121,8 @@ wuffs_base__private_implementation__parse_number_f64_eisel_lemire(
 // --------
 
 static wuffs_base__result_f64  //
-wuffs_base__private_implementation__parse_number_f64_special(
-    wuffs_base__slice_u8 s,
-    uint32_t options) {
+wuffs_private_impl__parse_number_f64_special(wuffs_base__slice_u8 s,
+                                             uint32_t options) {
   do {
     if (options & WUFFS_BASE__PARSE_NUMBER_FXX__REJECT_INF_AND_NAN) {
       goto fail;
@@ -1253,17 +1226,16 @@ fail:
 }
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__result_f64  //
-wuffs_base__private_implementation__high_prec_dec__to_f64(
-    wuffs_base__private_implementation__high_prec_dec* h,
-    uint32_t options) {
+wuffs_private_impl__high_prec_dec__to_f64(wuffs_private_impl__high_prec_dec* h,
+                                          uint32_t options) {
   do {
     // powers converts decimal powers of 10 to binary powers of 2. For example,
     // (10000 >> 13) is 1. It stops before the elements exceed 60, also known
-    // as WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__SHIFT__MAX_INCL.
+    // as WUFFS_PRIVATE_IMPL__HPD__SHIFT__MAX_INCL.
     //
     // This rounds down (1<<13 is a lower bound for 1e4). Adding 1 to the array
     // element value rounds up (1<<14 is an upper bound for 1e4) while staying
-    // at or below WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__SHIFT__MAX_INCL.
+    // at or below WUFFS_PRIVATE_IMPL__HPD__SHIFT__MAX_INCL.
     //
     // When starting in the range [1e+1 .. 1e+2] (i.e. h->decimal_point == +2),
     // powers[2] == 6 and so:
@@ -1318,14 +1290,12 @@ wuffs_base__private_implementation__high_prec_dec__to_f64(
       }
       while (man != 0) {  // The 'while' is just an 'if' that we can 'break'.
         int64_t r0 =
-            wuffs_base__private_implementation__parse_number_f64_eisel_lemire(
-                man + 0, exp10);
+            wuffs_private_impl__parse_number_f64_eisel_lemire(man + 0, exp10);
         if (r0 < 0) {
           break;
         } else if (h->num_digits > 19) {
           int64_t r1 =
-              wuffs_base__private_implementation__parse_number_f64_eisel_lemire(
-                  man + 1, exp10);
+              wuffs_private_impl__parse_number_f64_eisel_lemire(man + 1, exp10);
           if (r1 != r0) {
             break;
           }
@@ -1349,14 +1319,12 @@ wuffs_base__private_implementation__high_prec_dec__to_f64(
     int32_t exp2 = 0;
     while (h->decimal_point > 1) {
       uint32_t n = (uint32_t)(+h->decimal_point);
-      uint32_t shift =
-          (n < num_powers)
-              ? powers[n]
-              : WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__SHIFT__MAX_INCL;
+      uint32_t shift = (n < num_powers)
+                           ? powers[n]
+                           : WUFFS_PRIVATE_IMPL__HPD__SHIFT__MAX_INCL;
 
-      wuffs_base__private_implementation__high_prec_dec__small_rshift(h, shift);
-      if (h->decimal_point <
-          -WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__DECIMAL_POINT__RANGE) {
+      wuffs_private_impl__high_prec_dec__small_rshift(h, shift);
+      if (h->decimal_point < -WUFFS_PRIVATE_IMPL__HPD__DECIMAL_POINT__RANGE) {
         goto zero;
       }
       exp2 += (int32_t)shift;
@@ -1369,11 +1337,10 @@ wuffs_base__private_implementation__high_prec_dec__to_f64(
                   // The +1 is per "when targeting h->decimal_point being +0 or
                   // +1... when left shifting" in the powers comment above.
                   ? (powers[n] + 1)
-                  : WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__SHIFT__MAX_INCL;
+                  : WUFFS_PRIVATE_IMPL__HPD__SHIFT__MAX_INCL;
 
-      wuffs_base__private_implementation__high_prec_dec__small_lshift(h, shift);
-      if (h->decimal_point >
-          +WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__DECIMAL_POINT__RANGE) {
+      wuffs_private_impl__high_prec_dec__small_lshift(h, shift);
+      if (h->decimal_point > +WUFFS_PRIVATE_IMPL__HPD__DECIMAL_POINT__RANGE) {
         goto infinity;
       }
       exp2 -= (int32_t)shift;
@@ -1414,10 +1381,10 @@ wuffs_base__private_implementation__high_prec_dec__to_f64(
     // The minimum normal exponent is (f64_bias + 1).
     while ((f64_bias + 1) > exp2) {
       uint32_t n = (uint32_t)((f64_bias + 1) - exp2);
-      if (n > WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__SHIFT__MAX_INCL) {
-        n = WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__SHIFT__MAX_INCL;
+      if (n > WUFFS_PRIVATE_IMPL__HPD__SHIFT__MAX_INCL) {
+        n = WUFFS_PRIVATE_IMPL__HPD__SHIFT__MAX_INCL;
       }
-      wuffs_base__private_implementation__high_prec_dec__small_rshift(h, n);
+      wuffs_private_impl__high_prec_dec__small_rshift(h, n);
       exp2 += (int32_t)n;
     }
 
@@ -1427,10 +1394,8 @@ wuffs_base__private_implementation__high_prec_dec__to_f64(
     }
 
     // Extract 53 bits for the mantissa (in base-2).
-    wuffs_base__private_implementation__high_prec_dec__small_lshift(
-        h, final_lshift);
-    uint64_t man2 =
-        wuffs_base__private_implementation__high_prec_dec__rounded_integer(h);
+    wuffs_private_impl__high_prec_dec__small_lshift(h, final_lshift);
+    uint64_t man2 = wuffs_private_impl__high_prec_dec__rounded_integer(h);
 
     // Rounding might have added one bit. If so, shift and re-check overflow.
     if ((man2 >> 53) != 0) {
@@ -1488,7 +1453,7 @@ infinity:
 }
 
 static inline bool  //
-wuffs_base__private_implementation__is_decimal_digit(uint8_t c) {
+wuffs_private_impl__is_decimal_digit(uint8_t c) {
   return ('0' <= c) && (c <= '9');
 }
 
@@ -1549,13 +1514,13 @@ wuffs_base__parse_number_f64(wuffs_base__slice_u8 s, uint32_t options) {
     if (*p == '0') {
       man = 0;
       p++;
-      if (wuffs_base__private_implementation__is_decimal_digit(*p)) {
+      if (wuffs_private_impl__is_decimal_digit(*p)) {
         goto fallback;
       }
-    } else if (wuffs_base__private_implementation__is_decimal_digit(*p)) {
+    } else if (wuffs_private_impl__is_decimal_digit(*p)) {
       man = ((uint8_t)(*p - '0'));
       p++;
-      for (; wuffs_base__private_implementation__is_decimal_digit(*p); p++) {
+      for (; wuffs_private_impl__is_decimal_digit(*p); p++) {
         man = (10 * man) + ((uint8_t)(*p - '0'));
       }
     } else {
@@ -1571,12 +1536,12 @@ wuffs_base__parse_number_f64(wuffs_base__slice_u8 s, uint32_t options) {
              : '.')) {
       p++;
       const uint8_t* first_after_separator_ptr = p;
-      if (!wuffs_base__private_implementation__is_decimal_digit(*p)) {
+      if (!wuffs_private_impl__is_decimal_digit(*p)) {
         goto fallback;
       }
       man = (10 * man) + ((uint8_t)(*p - '0'));
       p++;
-      for (; wuffs_base__private_implementation__is_decimal_digit(*p); p++) {
+      for (; wuffs_private_impl__is_decimal_digit(*p); p++) {
         man = (10 * man) + ((uint8_t)(*p - '0'));
       }
       exp10 = ((int32_t)(first_after_separator_ptr - p));
@@ -1601,7 +1566,7 @@ wuffs_base__parse_number_f64(wuffs_base__slice_u8 s, uint32_t options) {
       } else if (*p == '+') {
         p++;
       }
-      if (!wuffs_base__private_implementation__is_decimal_digit(*p)) {
+      if (!wuffs_private_impl__is_decimal_digit(*p)) {
         goto fallback;
       }
       int32_t exp_num = ((uint8_t)(*p - '0'));
@@ -1609,15 +1574,15 @@ wuffs_base__parse_number_f64(wuffs_base__slice_u8 s, uint32_t options) {
       // The rest of the exp_num walking has a peculiar control flow but, once
       // again, the "script/process-json-numbers.c with -p" benchmark is
       // sensitive to alternative formulations.
-      if (wuffs_base__private_implementation__is_decimal_digit(*p)) {
+      if (wuffs_private_impl__is_decimal_digit(*p)) {
         exp_num = (10 * exp_num) + ((uint8_t)(*p - '0'));
         p++;
       }
-      if (wuffs_base__private_implementation__is_decimal_digit(*p)) {
+      if (wuffs_private_impl__is_decimal_digit(*p)) {
         exp_num = (10 * exp_num) + ((uint8_t)(*p - '0'));
         p++;
       }
-      while (wuffs_base__private_implementation__is_decimal_digit(*p)) {
+      while (wuffs_private_impl__is_decimal_digit(*p)) {
         if (exp_num > 0x1000000) {
           goto fallback;
         }
@@ -1661,8 +1626,8 @@ wuffs_base__parse_number_f64(wuffs_base__slice_u8 s, uint32_t options) {
       }
     }
 
-    // The wuffs_base__private_implementation__parse_number_f64_eisel_lemire
-    // preconditions include that exp10 is in the range [-307 ..= 288].
+    // The wuffs_private_impl__parse_number_f64_eisel_lemire preconditions
+    // include that exp10 is in the range [-307 ..= 288].
     if ((exp10 < -307) || (288 < exp10)) {
       goto fallback;
     }
@@ -1672,9 +1637,9 @@ wuffs_base__parse_number_f64(wuffs_base__slice_u8 s, uint32_t options) {
     if ((-22 <= exp10) && (exp10 <= 22) && ((man >> 53) == 0)) {
       double d = (double)man;
       if (exp10 >= 0) {
-        d *= wuffs_base__private_implementation__f64_powers_of_10[+exp10];
+        d *= wuffs_private_impl__f64_powers_of_10[+exp10];
       } else {
-        d /= wuffs_base__private_implementation__f64_powers_of_10[-exp10];
+        d /= wuffs_private_impl__f64_powers_of_10[-exp10];
       }
       wuffs_base__result_f64 ret;
       ret.status.repr = NULL;
@@ -1682,17 +1647,15 @@ wuffs_base__parse_number_f64(wuffs_base__slice_u8 s, uint32_t options) {
       return ret;
     }
 
-    // The wuffs_base__private_implementation__parse_number_f64_eisel_lemire
-    // preconditions include that man is non-zero. Parsing "0" should be caught
-    // by the "If both man and (10 ** exp10)" above, but "0e99" might not.
+    // The wuffs_private_impl__parse_number_f64_eisel_lemire preconditions
+    // include that man is non-zero. Parsing "0" should be caught by the "If
+    // both man and (10 ** exp10)" above, but "0e99" might not.
     if (man == 0) {
       goto fallback;
     }
 
     // Our man and exp10 are in range. Run the Eisel-Lemire algorithm.
-    int64_t r =
-        wuffs_base__private_implementation__parse_number_f64_eisel_lemire(
-            man, exp10);
+    int64_t r = wuffs_private_impl__parse_number_f64_eisel_lemire(man, exp10);
     if (r < 0) {
       goto fallback;
     }
@@ -1705,25 +1668,22 @@ wuffs_base__parse_number_f64(wuffs_base__slice_u8 s, uint32_t options) {
 
 fallback:
   do {
-    wuffs_base__private_implementation__high_prec_dec h;
+    wuffs_private_impl__high_prec_dec h;
     wuffs_base__status status =
-        wuffs_base__private_implementation__high_prec_dec__parse(&h, s,
-                                                                 options);
+        wuffs_private_impl__high_prec_dec__parse(&h, s, options);
     if (status.repr) {
-      return wuffs_base__private_implementation__parse_number_f64_special(
-          s, options);
+      return wuffs_private_impl__parse_number_f64_special(s, options);
     }
-    return wuffs_base__private_implementation__high_prec_dec__to_f64(&h,
-                                                                     options);
+    return wuffs_private_impl__high_prec_dec__to_f64(&h, options);
   } while (0);
 }
 
 // --------
 
 static inline size_t  //
-wuffs_base__private_implementation__render_inf(wuffs_base__slice_u8 dst,
-                                               bool neg,
-                                               uint32_t options) {
+wuffs_private_impl__render_inf(wuffs_base__slice_u8 dst,
+                               bool neg,
+                               uint32_t options) {
   if (neg) {
     if (dst.len < 4) {
       return 0;
@@ -1748,7 +1708,7 @@ wuffs_base__private_implementation__render_inf(wuffs_base__slice_u8 dst,
 }
 
 static inline size_t  //
-wuffs_base__private_implementation__render_nan(wuffs_base__slice_u8 dst) {
+wuffs_private_impl__render_nan(wuffs_base__slice_u8 dst) {
   if (dst.len < 3) {
     return 0;
   }
@@ -1757,9 +1717,9 @@ wuffs_base__private_implementation__render_nan(wuffs_base__slice_u8 dst) {
 }
 
 static size_t  //
-wuffs_base__private_implementation__high_prec_dec__render_exponent_absent(
+wuffs_private_impl__high_prec_dec__render_exponent_absent(
     wuffs_base__slice_u8 dst,
-    wuffs_base__private_implementation__high_prec_dec* h,
+    wuffs_private_impl__high_prec_dec* h,
     uint32_t precision,
     uint32_t options) {
   size_t n = (h->negative ||
@@ -1824,9 +1784,9 @@ wuffs_base__private_implementation__high_prec_dec__render_exponent_absent(
 }
 
 static size_t  //
-wuffs_base__private_implementation__high_prec_dec__render_exponent_present(
+wuffs_private_impl__high_prec_dec__render_exponent_present(
     wuffs_base__slice_u8 dst,
-    wuffs_base__private_implementation__high_prec_dec* h,
+    wuffs_private_impl__high_prec_dec* h,
     uint32_t precision,
     uint32_t options) {
   int32_t exp = 0;
@@ -1923,9 +1883,9 @@ wuffs_base__render_number_f64(wuffs_base__slice_u8 dst,
   // unless x is subnormal. Also take care of Inf and NaN.
   if (exp2 == 0x7FF) {
     if (man != 0) {
-      return wuffs_base__private_implementation__render_nan(dst);
+      return wuffs_private_impl__render_nan(dst);
     }
-    return wuffs_base__private_implementation__render_inf(dst, neg, options);
+    return wuffs_private_impl__render_inf(dst, neg, options);
   } else if (exp2 == 0) {
     exp2 = -1022;
   } else {
@@ -1939,11 +1899,11 @@ wuffs_base__render_number_f64(wuffs_base__slice_u8 dst,
   }
 
   // Convert from the (neg, exp2, man) tuple to an HPD.
-  wuffs_base__private_implementation__high_prec_dec h;
-  wuffs_base__private_implementation__high_prec_dec__assign(&h, man, neg);
+  wuffs_private_impl__high_prec_dec h;
+  wuffs_private_impl__high_prec_dec__assign(&h, man, neg);
   if (h.num_digits > 0) {
-    wuffs_base__private_implementation__high_prec_dec__lshift(
-        &h, exp2 - 52);  // 52 mantissa bits.
+    wuffs_private_impl__high_prec_dec__lshift(&h,
+                                              exp2 - 52);  // 52 mantissa bits.
   }
 
   // Handle the "%e" and "%f" formats.
@@ -1951,27 +1911,25 @@ wuffs_base__render_number_f64(wuffs_base__slice_u8 dst,
                      WUFFS_BASE__RENDER_NUMBER_FXX__EXPONENT_PRESENT)) {
     case WUFFS_BASE__RENDER_NUMBER_FXX__EXPONENT_ABSENT:  // The "%"f" format.
       if (options & WUFFS_BASE__RENDER_NUMBER_FXX__JUST_ENOUGH_PRECISION) {
-        wuffs_base__private_implementation__high_prec_dec__round_just_enough(
-            &h, exp2, man);
+        wuffs_private_impl__high_prec_dec__round_just_enough(&h, exp2, man);
         int32_t p = ((int32_t)(h.num_digits)) - h.decimal_point;
         precision = ((uint32_t)(wuffs_base__i32__max(0, p)));
       } else {
-        wuffs_base__private_implementation__high_prec_dec__round_nearest(
+        wuffs_private_impl__high_prec_dec__round_nearest(
             &h, ((int32_t)precision) + h.decimal_point);
       }
-      return wuffs_base__private_implementation__high_prec_dec__render_exponent_absent(
+      return wuffs_private_impl__high_prec_dec__render_exponent_absent(
           dst, &h, precision, options);
 
     case WUFFS_BASE__RENDER_NUMBER_FXX__EXPONENT_PRESENT:  // The "%e" format.
       if (options & WUFFS_BASE__RENDER_NUMBER_FXX__JUST_ENOUGH_PRECISION) {
-        wuffs_base__private_implementation__high_prec_dec__round_just_enough(
-            &h, exp2, man);
+        wuffs_private_impl__high_prec_dec__round_just_enough(&h, exp2, man);
         precision = (h.num_digits > 0) ? (h.num_digits - 1) : 0;
       } else {
-        wuffs_base__private_implementation__high_prec_dec__round_nearest(
+        wuffs_private_impl__high_prec_dec__round_nearest(
             &h, ((int32_t)precision) + 1);
       }
-      return wuffs_base__private_implementation__high_prec_dec__render_exponent_present(
+      return wuffs_private_impl__high_prec_dec__render_exponent_present(
           dst, &h, precision, options);
   }
 
@@ -1980,16 +1938,14 @@ wuffs_base__render_number_f64(wuffs_base__slice_u8 dst,
   // rounding and determine whether to use "%e" or "%f".
   int32_t e_threshold = 0;
   if (options & WUFFS_BASE__RENDER_NUMBER_FXX__JUST_ENOUGH_PRECISION) {
-    wuffs_base__private_implementation__high_prec_dec__round_just_enough(
-        &h, exp2, man);
+    wuffs_private_impl__high_prec_dec__round_just_enough(&h, exp2, man);
     precision = h.num_digits;
     e_threshold = 6;
   } else {
     if (precision == 0) {
       precision = 1;
     }
-    wuffs_base__private_implementation__high_prec_dec__round_nearest(
-        &h, ((int32_t)precision));
+    wuffs_private_impl__high_prec_dec__round_nearest(&h, ((int32_t)precision));
     e_threshold = ((int32_t)precision);
     int32_t nd = ((int32_t)(h.num_digits));
     if ((e_threshold > nd) && (nd >= h.decimal_point)) {
@@ -2001,7 +1957,7 @@ wuffs_base__render_number_f64(wuffs_base__slice_u8 dst,
   int32_t e = h.decimal_point - 1;
   if ((e < -4) || (e_threshold <= e)) {
     uint32_t p = wuffs_base__u32__min(precision, h.num_digits);
-    return wuffs_base__private_implementation__high_prec_dec__render_exponent_present(
+    return wuffs_private_impl__high_prec_dec__render_exponent_present(
         dst, &h, (p > 0) ? (p - 1) : 0, options);
   }
 
@@ -2011,6 +1967,6 @@ wuffs_base__render_number_f64(wuffs_base__slice_u8 dst,
     p = ((int32_t)(h.num_digits));
   }
   precision = ((uint32_t)(wuffs_base__i32__max(0, p - h.decimal_point)));
-  return wuffs_base__private_implementation__high_prec_dec__render_exponent_absent(
+  return wuffs_private_impl__high_prec_dec__render_exponent_absent(
       dst, &h, precision, options);
 }

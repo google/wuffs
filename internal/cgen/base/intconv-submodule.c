@@ -97,7 +97,7 @@ static const uint8_t wuffs_base__parse_number__hexadecimal_digits[256] = {
     // 8     9     A     B     C     D     E     F
 };
 
-static const uint8_t wuffs_base__private_implementation__encode_base16[16] = {
+static const uint8_t wuffs_private_impl__encode_base16[16] = {
     0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37,  // 0x00 ..= 0x07.
     0x38, 0x39, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46,  // 0x08 ..= 0x0F.
 };
@@ -350,10 +350,10 @@ static const uint8_t wuffs_base__render_number__first_hundred[200] = {
 };
 
 static size_t  //
-wuffs_base__private_implementation__render_number_u64(wuffs_base__slice_u8 dst,
-                                                      uint64_t x,
-                                                      uint32_t options,
-                                                      bool neg) {
+wuffs_private_impl__render_number_u64(wuffs_base__slice_u8 dst,
+                                      uint64_t x,
+                                      uint32_t options,
+                                      bool neg) {
   uint8_t buf[WUFFS_BASE__U64__BYTE_LENGTH__MAX_INCL];
   uint8_t* ptr = &buf[0] + sizeof(buf);
 
@@ -407,16 +407,14 @@ wuffs_base__render_number_i64(wuffs_base__slice_u8 dst,
   if (neg) {
     u = 1 + ~u;
   }
-  return wuffs_base__private_implementation__render_number_u64(dst, u, options,
-                                                               neg);
+  return wuffs_private_impl__render_number_u64(dst, u, options, neg);
 }
 
 WUFFS_BASE__MAYBE_STATIC size_t  //
 wuffs_base__render_number_u64(wuffs_base__slice_u8 dst,
                               uint64_t x,
                               uint32_t options) {
-  return wuffs_base__private_implementation__render_number_u64(dst, x, options,
-                                                               false);
+  return wuffs_private_impl__render_number_u64(dst, x, options, false);
 }
 
 // ---------------- Base-16
@@ -523,8 +521,8 @@ wuffs_base__base_16__encode2(wuffs_base__slice_u8 dst,
 
   while (n--) {
     uint8_t c = *s;
-    d[0] = wuffs_base__private_implementation__encode_base16[c >> 4];
-    d[1] = wuffs_base__private_implementation__encode_base16[c & 0x0F];
+    d[0] = wuffs_private_impl__encode_base16[c >> 4];
+    d[1] = wuffs_private_impl__encode_base16[c & 0x0F];
     d += 2;
     s += 1;
   }
@@ -562,8 +560,8 @@ wuffs_base__base_16__encode4(wuffs_base__slice_u8 dst,
     uint8_t c = *s;
     d[0] = '\\';
     d[1] = 'x';
-    d[2] = wuffs_base__private_implementation__encode_base16[c >> 4];
-    d[3] = wuffs_base__private_implementation__encode_base16[c & 0x0F];
+    d[2] = wuffs_private_impl__encode_base16[c >> 4];
+    d[3] = wuffs_private_impl__encode_base16[c & 0x0F];
     d += 4;
     s += 1;
   }

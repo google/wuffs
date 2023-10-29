@@ -134,11 +134,11 @@ test_wuffs_core_multiply_u64() {
 
 // ---------------- String Conversions Tests
 
-// wuffs_base__private_implementation__high_prec_dec__to_debug_string converts
-// hpd into a human-readable NUL-terminated C string.
+// wuffs_private_impl__high_prec_dec__to_debug_string converts hpd into a
+// human-readable NUL-terminated C string.
 const char*  //
-wuffs_base__private_implementation__high_prec_dec__to_debug_string(
-    wuffs_base__private_implementation__high_prec_dec* hpd,
+wuffs_private_impl__high_prec_dec__to_debug_string(
+    wuffs_private_impl__high_prec_dec* hpd,
     wuffs_base__slice_u8 dst) {
   if (!hpd) {
     return "high_prec_dec__to_debug_string: invalid hpd";
@@ -153,8 +153,7 @@ wuffs_base__private_implementation__high_prec_dec__to_debug_string(
   *p++ = hpd->negative ? '-' : '+';
 
   // Digits and decimal point.
-  if (hpd->decimal_point >
-      +WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__DECIMAL_POINT__RANGE) {
+  if (hpd->decimal_point > +WUFFS_PRIVATE_IMPL__HPD__DECIMAL_POINT__RANGE) {
     // We have "infinity".
     if ((q - p) < 3) {
       goto too_short;
@@ -165,7 +164,7 @@ wuffs_base__private_implementation__high_prec_dec__to_debug_string(
     goto nul_terminator;
 
   } else if (hpd->decimal_point <
-             -WUFFS_BASE__PRIVATE_IMPLEMENTATION__HPD__DECIMAL_POINT__RANGE) {
+             -WUFFS_PRIVATE_IMPL__HPD__DECIMAL_POINT__RANGE) {
     // We have "epsilon": a very small number, equivalent to zero.
     if ((q - p) < 3) {
       goto too_short;
@@ -184,8 +183,8 @@ wuffs_base__private_implementation__high_prec_dec__to_debug_string(
     goto nul_terminator;
 
   } else if (hpd->decimal_point < 0) {
-    // Referring to the wuffs_base__private_implementation__high_prec_dec
-    // typedef's comment, we have something like ".00789".
+    // Referring to the wuffs_private_impl__high_prec_dec typedef's comment, we
+    // have something like ".00789".
     if ((q - p) < (hpd->num_digits + ((uint32_t)(-hpd->decimal_point)) + 1)) {
       goto too_short;
     }
@@ -208,8 +207,8 @@ wuffs_base__private_implementation__high_prec_dec__to_debug_string(
     }
 
   } else if (((uint32_t)(hpd->decimal_point)) <= hpd->num_digits) {
-    // Referring to the wuffs_base__private_implementation__high_prec_dec
-    // typedef's comment, we have something like "78.9".
+    // Referring to the wuffs_private_impl__high_prec_dec typedef's comment, we
+    // have something like "78.9".
     if ((q - p) < (hpd->num_digits + 1)) {
       goto too_short;
     }
@@ -231,8 +230,8 @@ wuffs_base__private_implementation__high_prec_dec__to_debug_string(
     }
 
   } else {
-    // Referring to the wuffs_base__private_implementation__high_prec_dec
-    // typedef's comment, we have something like "78900.".
+    // Referring to the wuffs_private_impl__high_prec_dec typedef's comment, we
+    // have something like "78900.".
     if ((q - p) < (((uint32_t)(hpd->decimal_point)) + 1)) {
       goto too_short;
     }
@@ -338,17 +337,15 @@ test_wuffs_strconv_hpd_rounded_integer() {
   };
 
   for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
-    wuffs_base__private_implementation__high_prec_dec hpd;
+    wuffs_private_impl__high_prec_dec hpd;
     CHECK_STATUS(
         "hpd__parse",
-        wuffs_base__private_implementation__high_prec_dec__parse(
+        wuffs_private_impl__high_prec_dec__parse(
             &hpd,
             wuffs_base__make_slice_u8((uint8_t*)(void*)test_cases[tc].str,
                                       strlen(test_cases[tc].str)),
             WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS));
-    uint64_t have =
-        wuffs_base__private_implementation__high_prec_dec__rounded_integer(
-            &hpd);
+    uint64_t have = wuffs_private_impl__high_prec_dec__rounded_integer(&hpd);
     if (have != test_cases[tc].want) {
       RETURN_FAIL("\"%s\": have %" PRIu64 ", want %" PRIu64, test_cases[tc].str,
                   have, test_cases[tc].want);
@@ -384,28 +381,24 @@ test_wuffs_strconv_hpd_shift() {
   };
 
   for (size_t tc = 0; tc < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); tc++) {
-    wuffs_base__private_implementation__high_prec_dec hpd;
+    wuffs_private_impl__high_prec_dec hpd;
     CHECK_STATUS(
         "hpd__parse",
-        wuffs_base__private_implementation__high_prec_dec__parse(
+        wuffs_private_impl__high_prec_dec__parse(
             &hpd,
             wuffs_base__make_slice_u8((uint8_t*)(void*)test_cases[tc].str,
                                       strlen(test_cases[tc].str)),
             WUFFS_BASE__PARSE_NUMBER_XXX__DEFAULT_OPTIONS));
     int32_t shift = test_cases[tc].shift;
     if (shift > 0) {
-      wuffs_base__private_implementation__high_prec_dec__small_rshift(
-          &hpd, (uint32_t)(+shift));
+      wuffs_private_impl__high_prec_dec__small_rshift(&hpd, (uint32_t)(+shift));
     } else if (shift < 0) {
-      wuffs_base__private_implementation__high_prec_dec__small_lshift(
-          &hpd, (uint32_t)(-shift));
+      wuffs_private_impl__high_prec_dec__small_lshift(&hpd, (uint32_t)(-shift));
     }
 
     uint8_t have[1024];
-    CHECK_STRING(
-        wuffs_base__private_implementation__high_prec_dec__to_debug_string(
-            &hpd,
-            wuffs_base__make_slice_u8(have, WUFFS_TESTLIB_ARRAY_SIZE(have))));
+    CHECK_STRING(wuffs_private_impl__high_prec_dec__to_debug_string(
+        &hpd, wuffs_base__make_slice_u8(have, WUFFS_TESTLIB_ARRAY_SIZE(have))));
     if (strcmp(((const char*)(void*)(have)), test_cases[tc].want)) {
       RETURN_FAIL("\"%s\" %s %" PRId32 ":\n    have: \"%s\"\n    want: \"%s\"",
                   test_cases[tc].str, ((shift > 0) ? ">>" : "<<"),
