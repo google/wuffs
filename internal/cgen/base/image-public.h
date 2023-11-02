@@ -387,7 +387,7 @@ wuffs_base__make_pixel_format(uint32_t repr) {
 #define WUFFS_BASE__PIXEL_FORMAT__CMY 0xC0020888
 #define WUFFS_BASE__PIXEL_FORMAT__CMYK 0xD0038888
 
-extern const uint32_t wuffs_base__pixel_format__bits_per_channel[16];
+extern const uint32_t wuffs_private_impl__pixel_format__bits_per_channel[16];
 
 static inline bool  //
 wuffs_base__pixel_format__is_valid(const wuffs_base__pixel_format* f) {
@@ -401,10 +401,14 @@ wuffs_base__pixel_format__bits_per_pixel(const wuffs_base__pixel_format* f) {
   if (((f->repr >> 16) & 0x03) != 0) {
     return 0;
   }
-  return wuffs_base__pixel_format__bits_per_channel[0x0F & (f->repr >> 0)] +
-         wuffs_base__pixel_format__bits_per_channel[0x0F & (f->repr >> 4)] +
-         wuffs_base__pixel_format__bits_per_channel[0x0F & (f->repr >> 8)] +
-         wuffs_base__pixel_format__bits_per_channel[0x0F & (f->repr >> 12)];
+  return wuffs_private_impl__pixel_format__bits_per_channel[0x0F &
+                                                            (f->repr >> 0)] +
+         wuffs_private_impl__pixel_format__bits_per_channel[0x0F &
+                                                            (f->repr >> 4)] +
+         wuffs_private_impl__pixel_format__bits_per_channel[0x0F &
+                                                            (f->repr >> 8)] +
+         wuffs_private_impl__pixel_format__bits_per_channel[0x0F &
+                                                            (f->repr >> 12)];
 }
 
 static inline bool  //

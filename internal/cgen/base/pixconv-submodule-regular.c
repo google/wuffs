@@ -4459,7 +4459,8 @@ wuffs_private_impl__pixel_swizzler__prepare__indexed__bgra_nonpremul(
     wuffs_base__pixel_blend blend) {
   switch (dst_pixfmt.repr) {
     case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL:
-      if (wuffs_base__slice_u8__copy_from_slice(dst_palette, src_palette) !=
+      if (wuffs_private_impl__slice_u8__copy_from_slice(dst_palette,
+                                                        src_palette) !=
           WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH) {
         return NULL;
       }
@@ -4480,7 +4481,8 @@ wuffs_private_impl__pixel_swizzler__prepare__indexed__bgra_nonpremul(
           }
           return wuffs_private_impl__swizzle_bgr_565__index__src;
         case WUFFS_BASE__PIXEL_BLEND__SRC_OVER:
-          if (wuffs_base__slice_u8__copy_from_slice(dst_palette, src_palette) !=
+          if (wuffs_private_impl__slice_u8__copy_from_slice(dst_palette,
+                                                            src_palette) !=
               WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH) {
             return NULL;
           }
@@ -4499,7 +4501,8 @@ wuffs_private_impl__pixel_swizzler__prepare__indexed__bgra_nonpremul(
           }
           return wuffs_private_impl__swizzle_xxx__index__src;
         case WUFFS_BASE__PIXEL_BLEND__SRC_OVER:
-          if (wuffs_base__slice_u8__copy_from_slice(dst_palette, src_palette) !=
+          if (wuffs_private_impl__slice_u8__copy_from_slice(dst_palette,
+                                                            src_palette) !=
               WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH) {
             return NULL;
           }
@@ -4508,7 +4511,8 @@ wuffs_private_impl__pixel_swizzler__prepare__indexed__bgra_nonpremul(
       return NULL;
 
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
-      if (wuffs_base__slice_u8__copy_from_slice(dst_palette, src_palette) !=
+      if (wuffs_private_impl__slice_u8__copy_from_slice(dst_palette,
+                                                        src_palette) !=
           WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH) {
         return NULL;
       }
@@ -4521,7 +4525,8 @@ wuffs_private_impl__pixel_swizzler__prepare__indexed__bgra_nonpremul(
       return NULL;
 
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE:
-      if (wuffs_base__slice_u8__copy_from_slice(dst_palette, src_palette) !=
+      if (wuffs_private_impl__slice_u8__copy_from_slice(dst_palette,
+                                                        src_palette) !=
           WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH) {
         return NULL;
       }
@@ -4544,7 +4549,8 @@ wuffs_private_impl__pixel_swizzler__prepare__indexed__bgra_nonpremul(
           }
           return wuffs_private_impl__swizzle_xxxx__index__src;
         case WUFFS_BASE__PIXEL_BLEND__SRC_OVER:
-          if (wuffs_base__slice_u8__copy_from_slice(dst_palette, src_palette) !=
+          if (wuffs_private_impl__slice_u8__copy_from_slice(dst_palette,
+                                                            src_palette) !=
               WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH) {
             return NULL;
           }
@@ -4627,7 +4633,8 @@ wuffs_private_impl__pixel_swizzler__prepare__indexed__bgra_binary(
     case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_PREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY:
-      if (wuffs_base__slice_u8__copy_from_slice(dst_palette, src_palette) !=
+      if (wuffs_private_impl__slice_u8__copy_from_slice(dst_palette,
+                                                        src_palette) !=
           WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH) {
         return NULL;
       }
@@ -4653,7 +4660,8 @@ wuffs_private_impl__pixel_swizzler__prepare__indexed__bgra_binary(
       return NULL;
 
     case WUFFS_BASE__PIXEL_FORMAT__BGR:
-      if (wuffs_base__slice_u8__copy_from_slice(dst_palette, src_palette) !=
+      if (wuffs_private_impl__slice_u8__copy_from_slice(dst_palette,
+                                                        src_palette) !=
           WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH) {
         return NULL;
       }
@@ -4668,7 +4676,8 @@ wuffs_private_impl__pixel_swizzler__prepare__indexed__bgra_binary(
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_BINARY:
-      if (wuffs_base__slice_u8__copy_from_slice(dst_palette, src_palette) !=
+      if (wuffs_private_impl__slice_u8__copy_from_slice(dst_palette,
+                                                        src_palette) !=
           WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH) {
         return NULL;
       }
@@ -4682,7 +4691,8 @@ wuffs_private_impl__pixel_swizzler__prepare__indexed__bgra_binary(
 
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE:
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL_4X16LE:
-      if (wuffs_base__slice_u8__copy_from_slice(dst_palette, src_palette) !=
+      if (wuffs_private_impl__slice_u8__copy_from_slice(dst_palette,
+                                                        src_palette) !=
           WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH) {
         return NULL;
       }

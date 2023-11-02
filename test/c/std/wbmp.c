@@ -476,10 +476,10 @@ test_wuffs_pixel_swizzler_swizzle() {
                 wuffs_base__pixel_buffer__palette(&src_pixbuf), blends[b]));
         wuffs_base__pixel_swizzler__swizzle_interleaved_from_slice(
             &swizzler,
-            wuffs_base__table_u8__row_u32(
+            wuffs_private_impl__table_u8__row_u32(
                 wuffs_base__pixel_buffer__plane(&dst_pixbuf, 0), height / 2),
             dst_palette,
-            wuffs_base__table_u8__row_u32(
+            wuffs_private_impl__table_u8__row_u32(
                 wuffs_base__pixel_buffer__plane(&src_pixbuf, 0), height / 2));
 
         // Check the middle dst pixel.

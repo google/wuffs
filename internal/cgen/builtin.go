@@ -208,12 +208,12 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 		return nil
 
 	case t.IDLimitedCopyU32ToSlice:
-		b.printf("wuffs_base__io_reader__limited_copy_u32_to_slice(\n&%s%s, %s%s,",
+		b.printf("wuffs_private_impl__io_reader__limited_copy_u32_to_slice(\n&%s%s, %s%s,",
 			iopPrefix, recvName, io2Prefix, recvName)
 		return g.writeArgs(b, args, depth)
 
 	case t.IDCountSince:
-		b.printf("wuffs_base__io__count_since(")
+		b.printf("wuffs_private_impl__io__count_since(")
 		if err := g.writeExpr(b, args[0].AsArg().Value(), false, depth); err != nil {
 			return err
 		}
@@ -229,7 +229,7 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 		return nil
 
 	case t.IDMatch7:
-		b.printf("wuffs_base__io_reader__match7(%s%s, %s%s, %s, ",
+		b.printf("wuffs_private_impl__io_reader__match7(%s%s, %s%s, %s, ",
 			iopPrefix, recvName, io2Prefix, recvName, recvName)
 		if err := g.writeExpr(b, args[0].AsArg().Value(), false, depth); err != nil {
 			return err
@@ -251,7 +251,7 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 		return nil
 
 	case t.IDSince:
-		b.printf("wuffs_base__io__since(")
+		b.printf("wuffs_private_impl__io__since(")
 		if err := g.writeExpr(b, args[0].AsArg().Value(), false, depth); err != nil {
 			return err
 		}
@@ -307,7 +307,7 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 		t.IDLimitedCopyU32FromHistory8ByteChunksDistance1Fast,
 		t.IDLimitedCopyU32FromHistory8ByteChunksFast,
 		t.IDLimitedCopyU32FromHistoryFast:
-		b.printf("wuffs_base__io_writer__%s(\n&%s%s, %s%s, %s%s",
+		b.printf("wuffs_private_impl__io_writer__%s(\n&%s%s, %s%s, %s%s",
 			method.Str(g.tm), iopPrefix, recvName, io0Prefix, recvName, io2Prefix, recvName)
 		for _, o := range args {
 			b.writes(", ")
@@ -324,7 +324,7 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 			return err
 		}
 
-		b.printf("wuffs_base__io_writer__limited_copy_u32_from_reader(\n&%s%s, %s%s,",
+		b.printf("wuffs_private_impl__io_writer__limited_copy_u32_from_reader(\n&%s%s, %s%s,",
 			iopPrefix, recvName, io2Prefix, recvName)
 		if err := g.writeExpr(b, args[0].AsArg().Value(), false, depth); err != nil {
 			return err
@@ -333,17 +333,17 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 		return nil
 
 	case t.IDCopyFromSlice:
-		b.printf("wuffs_base__io_writer__copy_from_slice(&%s%s, %s%s,",
+		b.printf("wuffs_private_impl__io_writer__copy_from_slice(&%s%s, %s%s,",
 			iopPrefix, recvName, io2Prefix, recvName)
 		return g.writeArgs(b, args, depth)
 
 	case t.IDLimitedCopyU32FromSlice:
-		b.printf("wuffs_base__io_writer__limited_copy_u32_from_slice(\n&%s%s, %s%s,",
+		b.printf("wuffs_private_impl__io_writer__limited_copy_u32_from_slice(\n&%s%s, %s%s,",
 			iopPrefix, recvName, io2Prefix, recvName)
 		return g.writeArgs(b, args, depth)
 
 	case t.IDCountSince:
-		b.printf("wuffs_base__io__count_since(")
+		b.printf("wuffs_private_impl__io__count_since(")
 		if err := g.writeExpr(b, args[0].AsArg().Value(), false, depth); err != nil {
 			return err
 		}
@@ -364,7 +364,7 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 		return nil
 
 	case t.IDSince:
-		b.printf("wuffs_base__io__since(")
+		b.printf("wuffs_private_impl__io__since(")
 		if err := g.writeExpr(b, args[0].AsArg().Value(), false, depth); err != nil {
 			return err
 		}
@@ -804,7 +804,7 @@ func (g *gen) writeBuiltinNumType(b *buffer, recv *a.Expr, method t.ID, args []*
 	case t.IDLowBits:
 		// "recv.low_bits(n:etc)" in C is one of:
 		//  - "((recv) & constant)"
-		//  - "((recv) & WUFFS_BASE__LOW_BITS_MASK__UXX(n))"
+		//  - "((recv) & WUFFS_PRIVATE_IMPL__LOW_BITS_MASK__UXX(n))"
 		b.writes("((")
 		if err := g.writeExpr(b, recv, false, depth); err != nil {
 			return err
@@ -820,7 +820,7 @@ func (g *gen) writeBuiltinNumType(b *buffer, recv *a.Expr, method t.ID, args []*
 			if sz, err := g.sizeof(recv.MType()); err != nil {
 				return err
 			} else {
-				b.printf("WUFFS_BASE__LOW_BITS_MASK__U%d(", 8*sz)
+				b.printf("WUFFS_PRIVATE_IMPL__LOW_BITS_MASK__U%d(", 8*sz)
 			}
 			if err := g.writeExpr(b, args[0].AsArg().Value(), false, depth); err != nil {
 				return err
@@ -892,21 +892,21 @@ func (g *gen) writeBuiltinNumType(b *buffer, recv *a.Expr, method t.ID, args []*
 func (g *gen) writeBuiltinSlice(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, sideEffectsOnly bool, depth uint32) error {
 	switch method {
 	case t.IDBulkLoadHostEndian:
-		b.writes("wuffs_base__bulk_load_host_endian(")
+		b.writes("wuffs_private_impl__bulk_load_host_endian(")
 		if err := g.writeBuiltinSliceBulkMethodRecv(b, recv, depth); err != nil {
 			return err
 		}
 		return g.writeArgs(b, args, depth)
 
 	case t.IDBulkMemset:
-		b.writes("wuffs_base__bulk_memset(")
+		b.writes("wuffs_private_impl__bulk_memset(")
 		if err := g.writeBuiltinSliceBulkMethodRecv(b, recv, depth); err != nil {
 			return err
 		}
 		return g.writeArgs(b, args, depth)
 
 	case t.IDBulkSaveHostEndian:
-		b.writes("wuffs_base__bulk_save_host_endian(")
+		b.writes("wuffs_private_impl__bulk_save_host_endian(")
 		if err := g.writeBuiltinSliceBulkMethodRecv(b, recv, depth); err != nil {
 			return err
 		}
@@ -918,7 +918,7 @@ func (g *gen) writeBuiltinSlice(b *buffer, recv *a.Expr, method t.ID, args []*a.
 		}
 
 		// TODO: don't assume that the slice is a slice of base.u8.
-		b.writes("wuffs_base__slice_u8__copy_from_slice(")
+		b.writes("wuffs_private_impl__slice_u8__copy_from_slice(")
 		if err := g.writeExpr(b, recv, false, depth); err != nil {
 			return err
 		}
@@ -943,7 +943,7 @@ func (g *gen) writeBuiltinSlice(b *buffer, recv *a.Expr, method t.ID, args []*a.
 
 	case t.IDSuffix:
 		// TODO: don't assume that the slice is a slice of base.u8.
-		b.writes("wuffs_base__slice_u8__suffix(")
+		b.writes("wuffs_private_impl__slice_u8__suffix(")
 		if err := g.writeExpr(b, recv, false, depth); err != nil {
 			return err
 		}
@@ -1141,7 +1141,7 @@ func (g *gen) writeBuiltinTable(b *buffer, recv *a.Expr, method t.ID, args []*a.
 
 	case t.IDRowU32:
 		// TODO: don't assume that the table is a table of base.u8.
-		b.writes("wuffs_base__table_u8__row_u32(")
+		b.writes("wuffs_private_impl__table_u8__row_u32(")
 		if err := g.writeExpr(b, recv, false, depth); err != nil {
 			return err
 		}

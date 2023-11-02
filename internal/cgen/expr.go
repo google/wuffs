@@ -114,7 +114,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, sideEffectsOnly bool, depth u
 			}
 			qid := recvTyp.QID()
 
-			b.printf("wuffs_base__ignore_status("+
+			b.printf("wuffs_private_impl__ignore_status("+
 				"%s%s__initialize(%s", g.packagePrefix(qid), qid[1].Str(g.tm), addr)
 			if err := g.writeExpr(b, recv, false, depth); err != nil {
 				return err

@@ -162,7 +162,7 @@ func (g *gen) writeStatementAssign1(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr
 				if op != t.IDTildeSatPlusEq {
 					uOp = "sub"
 				}
-				b.printf("wuffs_base__u%d__sat_%s_indirect(&", uBits, uOp)
+				b.printf("wuffs_private_impl__u%d__sat_%s_indirect(&", uBits, uOp)
 				opName, closer = ", ", ")"
 
 			case t.IDPlusEq, t.IDMinusEq:
@@ -328,7 +328,7 @@ func (g *gen) writeStatementIOManip(b *buffer, n *a.IOManip, depth uint32) error
 			b.printf("%suint8_t *%s%d_%s%s%s = %s%s%s;\n",
 				qualifier, oPrefix, ioBindNum, io2Prefix, prefix, name,
 				io2Prefix, prefix, name)
-			b.printf("%s%s = wuffs_base__io_%s__set("+
+			b.printf("%s%s = wuffs_private_impl__io_%s__set("+
 				"\n&%s%s,\n&%s%s%s,\n&%s%s%s,\n&%s%s%s,\n&%s%s%s,\n",
 				prefix, name, cTyp,
 				uPrefix, name,
@@ -352,7 +352,7 @@ func (g *gen) writeStatementIOManip(b *buffer, n *a.IOManip, depth uint32) error
 			}
 			b.printf("%suint8_t *%s%d_%s%s%s = %s%s%s;\n",
 				qualifier, oPrefix, ioBindNum, io2Prefix, prefix, name, io2Prefix, prefix, name)
-			b.printf("wuffs_base__io_%s__limit(&%s%s%s, %s%s%s,\n",
+			b.printf("wuffs_private_impl__io_%s__limit(&%s%s%s, %s%s%s,\n",
 				cTyp,
 				io2Prefix, prefix, name,
 				iopPrefix, prefix, name)
@@ -609,7 +609,7 @@ func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 		}
 
 		if couldBeSuspension {
-			b.writes("wuffs_base__status__ensure_not_a_suspension(")
+			b.writes("wuffs_private_impl__status__ensure_not_a_suspension(")
 		}
 		if err := g.writeExpr(b, retExpr, false, depth); err != nil {
 			return err
@@ -692,7 +692,7 @@ func (g *gen) writeIterateRound(b *buffer, assigns []*a.Node, body []*a.Node, ro
 			vPrefix, name0, iPrefix, name0,
 			length*unroll, length*unroll)
 	} else {
-		b.printf("%s%s.ptr + wuffs_base__iterate_total_advance("+
+		b.printf("%s%s.ptr + wuffs_private_impl__iterate_total_advance("+
 			"(%sslice_%s.len - (size_t)(%s%s.ptr - %sslice_%s.ptr)), %d, %d);\n",
 			vPrefix, name0, iPrefix, name0,
 			vPrefix, name0, iPrefix, name0,

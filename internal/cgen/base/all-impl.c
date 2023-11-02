@@ -63,16 +63,16 @@ extern "C" {
 #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BASE) || \
     defined(WUFFS_CONFIG__MODULE__BASE__CORE)
 
-const uint8_t wuffs_base__low_bits_mask__u8[8] = {
+const uint8_t wuffs_private_impl__low_bits_mask__u8[8] = {
     0x00, 0x01, 0x03, 0x07, 0x0F, 0x1F, 0x3F, 0x7F,
 };
 
-const uint16_t wuffs_base__low_bits_mask__u16[16] = {
+const uint16_t wuffs_private_impl__low_bits_mask__u16[16] = {
     0x0000, 0x0001, 0x0003, 0x0007, 0x000F, 0x001F, 0x003F, 0x007F,
     0x00FF, 0x01FF, 0x03FF, 0x07FF, 0x0FFF, 0x1FFF, 0x3FFF, 0x7FFF,
 };
 
-const uint32_t wuffs_base__low_bits_mask__u32[32] = {
+const uint32_t wuffs_private_impl__low_bits_mask__u32[32] = {
     0x00000000, 0x00000001, 0x00000003, 0x00000007, 0x0000000F, 0x0000001F,
     0x0000003F, 0x0000007F, 0x000000FF, 0x000001FF, 0x000003FF, 0x000007FF,
     0x00000FFF, 0x00001FFF, 0x00003FFF, 0x00007FFF, 0x0000FFFF, 0x0001FFFF,
@@ -81,7 +81,7 @@ const uint32_t wuffs_base__low_bits_mask__u32[32] = {
     0x3FFFFFFF, 0x7FFFFFFF,
 };
 
-const uint64_t wuffs_base__low_bits_mask__u64[64] = {
+const uint64_t wuffs_private_impl__low_bits_mask__u64[64] = {
     0x0000000000000000, 0x0000000000000001, 0x0000000000000003,
     0x0000000000000007, 0x000000000000000F, 0x000000000000001F,
     0x000000000000003F, 0x000000000000007F, 0x00000000000000FF,
@@ -106,25 +106,25 @@ const uint64_t wuffs_base__low_bits_mask__u64[64] = {
     0x7FFFFFFFFFFFFFFF,
 };
 
-const uint32_t wuffs_base__pixel_format__bits_per_channel[16] = {
+const uint32_t wuffs_private_impl__pixel_format__bits_per_channel[16] = {
     0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
     0x08, 0x0A, 0x0C, 0x10, 0x18, 0x20, 0x30, 0x40,
 };
 
 const uint8_t  //
-    wuffs_base__placeholder_u8_with_non_null_address = 0;
+    wuffs_private_impl__placeholder_u8_with_non_null_address = 0;
 
 const uint16_t  //
-    wuffs_base__placeholder_u16_with_non_null_address = 0;
+    wuffs_private_impl__placeholder_u16_with_non_null_address = 0;
 
 const uint32_t  //
-    wuffs_base__placeholder_u32_with_non_null_address = 0;
+    wuffs_private_impl__placeholder_u32_with_non_null_address = 0;
 
 const uint64_t  //
-    wuffs_base__placeholder_u64_with_non_null_address = 0;
+    wuffs_private_impl__placeholder_u64_with_non_null_address = 0;
 
 const wuffs_base__token  //
-    wuffs_base__placeholder_token_with_non_null_address = {0};
+    wuffs_private_impl__placeholder_token_with_non_null_address = {0};
 
 // ¡ INSERT wuffs_base__status strings.
 

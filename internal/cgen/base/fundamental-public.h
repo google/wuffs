@@ -389,25 +389,25 @@ wuffs_base__strip_const_from_u64_ptr(const uint64_t* ptr) {
 
 // --------
 
-// wuffs_base__placeholder_etc_with_non_null_address provides non-NULL pointers
-// to various integer types. These values aren't intended to ever be modified
-// and their addresses aren't intended to ever be dereferenced.
+// wuffs_private_impl__placeholder_etc_with_non_null_address provides non-NULL
+// pointers to various integer types. These values aren't intended to ever be
+// modified and their addresses aren't intended to ever be dereferenced.
 //
 // It's just that adding 0 to a NULL pointer can be undefined behavior (and
 // UBSAN will complain), so functions like wuffs_base__empty_slice_u8 need some
 // arbitrary non-NULL placeholder pointer, even though the slice has 0 length.
 
 extern const uint8_t  //
-    wuffs_base__placeholder_u8_with_non_null_address;
+    wuffs_private_impl__placeholder_u8_with_non_null_address;
 
 extern const uint16_t  //
-    wuffs_base__placeholder_u16_with_non_null_address;
+    wuffs_private_impl__placeholder_u16_with_non_null_address;
 
 extern const uint32_t  //
-    wuffs_base__placeholder_u32_with_non_null_address;
+    wuffs_private_impl__placeholder_u32_with_non_null_address;
 
 extern const uint64_t  //
-    wuffs_base__placeholder_u64_with_non_null_address;
+    wuffs_private_impl__placeholder_u64_with_non_null_address;
 
 // --------
 
@@ -1364,7 +1364,7 @@ static inline wuffs_base__slice_u8  //
 wuffs_base__empty_slice_u8(void) {
   wuffs_base__slice_u8 ret;
   ret.ptr = wuffs_base__strip_const_from_u8_ptr(
-      &wuffs_base__placeholder_u8_with_non_null_address);
+      &wuffs_private_impl__placeholder_u8_with_non_null_address);
   ret.len = 0;
   return ret;
 }
@@ -1373,7 +1373,7 @@ static inline wuffs_base__slice_u16  //
 wuffs_base__empty_slice_u16(void) {
   wuffs_base__slice_u16 ret;
   ret.ptr = wuffs_base__strip_const_from_u16_ptr(
-      &wuffs_base__placeholder_u16_with_non_null_address);
+      &wuffs_private_impl__placeholder_u16_with_non_null_address);
   ret.len = 0;
   return ret;
 }
@@ -1382,7 +1382,7 @@ static inline wuffs_base__slice_u32  //
 wuffs_base__empty_slice_u32(void) {
   wuffs_base__slice_u32 ret;
   ret.ptr = wuffs_base__strip_const_from_u32_ptr(
-      &wuffs_base__placeholder_u32_with_non_null_address);
+      &wuffs_private_impl__placeholder_u32_with_non_null_address);
   ret.len = 0;
   return ret;
 }
@@ -1391,7 +1391,7 @@ static inline wuffs_base__slice_u64  //
 wuffs_base__empty_slice_u64(void) {
   wuffs_base__slice_u64 ret;
   ret.ptr = wuffs_base__strip_const_from_u64_ptr(
-      &wuffs_base__placeholder_u64_with_non_null_address);
+      &wuffs_private_impl__placeholder_u64_with_non_null_address);
   ret.len = 0;
   return ret;
 }
@@ -1452,7 +1452,7 @@ static inline wuffs_base__table_u8  //
 wuffs_base__empty_table_u8(void) {
   wuffs_base__table_u8 ret;
   ret.ptr = wuffs_base__strip_const_from_u8_ptr(
-      &wuffs_base__placeholder_u8_with_non_null_address);
+      &wuffs_private_impl__placeholder_u8_with_non_null_address);
   ret.width = 0;
   ret.height = 0;
   ret.stride = 0;
@@ -1463,7 +1463,7 @@ static inline wuffs_base__table_u16  //
 wuffs_base__empty_table_u16(void) {
   wuffs_base__table_u16 ret;
   ret.ptr = wuffs_base__strip_const_from_u16_ptr(
-      &wuffs_base__placeholder_u16_with_non_null_address);
+      &wuffs_private_impl__placeholder_u16_with_non_null_address);
   ret.width = 0;
   ret.height = 0;
   ret.stride = 0;
@@ -1474,7 +1474,7 @@ static inline wuffs_base__table_u32  //
 wuffs_base__empty_table_u32(void) {
   wuffs_base__table_u32 ret;
   ret.ptr = wuffs_base__strip_const_from_u32_ptr(
-      &wuffs_base__placeholder_u32_with_non_null_address);
+      &wuffs_private_impl__placeholder_u32_with_non_null_address);
   ret.width = 0;
   ret.height = 0;
   ret.stride = 0;
@@ -1485,7 +1485,7 @@ static inline wuffs_base__table_u64  //
 wuffs_base__empty_table_u64(void) {
   wuffs_base__table_u64 ret;
   ret.ptr = wuffs_base__strip_const_from_u64_ptr(
-      &wuffs_base__placeholder_u64_with_non_null_address);
+      &wuffs_private_impl__placeholder_u64_with_non_null_address);
   ret.width = 0;
   ret.height = 0;
   ret.stride = 0;

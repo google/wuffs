@@ -58,12 +58,12 @@
 // --------
 
 static inline wuffs_base__empty_struct  //
-wuffs_base__ignore_status(wuffs_base__status z) {
+wuffs_private_impl__ignore_status(wuffs_base__status z) {
   return wuffs_base__make_empty_struct();
 }
 
 static inline wuffs_base__status  //
-wuffs_base__status__ensure_not_a_suspension(wuffs_base__status z) {
+wuffs_private_impl__status__ensure_not_a_suspension(wuffs_base__status z) {
   if (z.repr && (*z.repr == '$')) {
     z.repr = wuffs_base__error__cannot_return_a_suspension;
   }
@@ -72,9 +72,10 @@ wuffs_base__status__ensure_not_a_suspension(wuffs_base__status z) {
 
 // --------
 
-// wuffs_base__iterate_total_advance returns the exclusive pointer-offset at
-// which iteration should stop. The overall slice has length total_len, each
-// iteration's sub-slice has length iter_len and are placed iter_advance apart.
+// wuffs_private_impl__iterate_total_advance returns the exclusive
+// pointer-offset at which iteration should stop. The overall slice has length
+// total_len, each iteration's sub-slice has length iter_len and are placed
+// iter_advance apart.
 //
 // The iter_advance may not be larger than iter_len. The iter_advance may be
 // smaller than iter_len, in which case the sub-slices will overlap.
@@ -102,9 +103,9 @@ wuffs_base__status__ensure_not_a_suspension(wuffs_base__status z) {
 //                $
 // 0123456789012345
 static inline size_t  //
-wuffs_base__iterate_total_advance(size_t total_len,
-                                  size_t iter_len,
-                                  size_t iter_advance) {
+wuffs_private_impl__iterate_total_advance(size_t total_len,
+                                          size_t iter_len,
+                                          size_t iter_advance) {
   if (total_len >= iter_len) {
     size_t n = total_len - iter_len;
     return ((n / iter_advance) * iter_advance) + iter_advance;
@@ -114,55 +115,59 @@ wuffs_base__iterate_total_advance(size_t total_len,
 
 // ---------------- Numeric Types
 
-extern const uint8_t wuffs_base__low_bits_mask__u8[8];
-extern const uint16_t wuffs_base__low_bits_mask__u16[16];
-extern const uint32_t wuffs_base__low_bits_mask__u32[32];
-extern const uint64_t wuffs_base__low_bits_mask__u64[64];
+extern const uint8_t wuffs_private_impl__low_bits_mask__u8[8];
+extern const uint16_t wuffs_private_impl__low_bits_mask__u16[16];
+extern const uint32_t wuffs_private_impl__low_bits_mask__u32[32];
+extern const uint64_t wuffs_private_impl__low_bits_mask__u64[64];
 
-#define WUFFS_BASE__LOW_BITS_MASK__U8(n) (wuffs_base__low_bits_mask__u8[n])
-#define WUFFS_BASE__LOW_BITS_MASK__U16(n) (wuffs_base__low_bits_mask__u16[n])
-#define WUFFS_BASE__LOW_BITS_MASK__U32(n) (wuffs_base__low_bits_mask__u32[n])
-#define WUFFS_BASE__LOW_BITS_MASK__U64(n) (wuffs_base__low_bits_mask__u64[n])
+#define WUFFS_PRIVATE_IMPL__LOW_BITS_MASK__U8(n) \
+  (wuffs_private_impl__low_bits_mask__u8[n])
+#define WUFFS_PRIVATE_IMPL__LOW_BITS_MASK__U16(n) \
+  (wuffs_private_impl__low_bits_mask__u16[n])
+#define WUFFS_PRIVATE_IMPL__LOW_BITS_MASK__U32(n) \
+  (wuffs_private_impl__low_bits_mask__u32[n])
+#define WUFFS_PRIVATE_IMPL__LOW_BITS_MASK__U64(n) \
+  (wuffs_private_impl__low_bits_mask__u64[n])
 
 // --------
 
 static inline void  //
-wuffs_base__u8__sat_add_indirect(uint8_t* x, uint8_t y) {
+wuffs_private_impl__u8__sat_add_indirect(uint8_t* x, uint8_t y) {
   *x = wuffs_base__u8__sat_add(*x, y);
 }
 
 static inline void  //
-wuffs_base__u8__sat_sub_indirect(uint8_t* x, uint8_t y) {
+wuffs_private_impl__u8__sat_sub_indirect(uint8_t* x, uint8_t y) {
   *x = wuffs_base__u8__sat_sub(*x, y);
 }
 
 static inline void  //
-wuffs_base__u16__sat_add_indirect(uint16_t* x, uint16_t y) {
+wuffs_private_impl__u16__sat_add_indirect(uint16_t* x, uint16_t y) {
   *x = wuffs_base__u16__sat_add(*x, y);
 }
 
 static inline void  //
-wuffs_base__u16__sat_sub_indirect(uint16_t* x, uint16_t y) {
+wuffs_private_impl__u16__sat_sub_indirect(uint16_t* x, uint16_t y) {
   *x = wuffs_base__u16__sat_sub(*x, y);
 }
 
 static inline void  //
-wuffs_base__u32__sat_add_indirect(uint32_t* x, uint32_t y) {
+wuffs_private_impl__u32__sat_add_indirect(uint32_t* x, uint32_t y) {
   *x = wuffs_base__u32__sat_add(*x, y);
 }
 
 static inline void  //
-wuffs_base__u32__sat_sub_indirect(uint32_t* x, uint32_t y) {
+wuffs_private_impl__u32__sat_sub_indirect(uint32_t* x, uint32_t y) {
   *x = wuffs_base__u32__sat_sub(*x, y);
 }
 
 static inline void  //
-wuffs_base__u64__sat_add_indirect(uint64_t* x, uint64_t y) {
+wuffs_private_impl__u64__sat_add_indirect(uint64_t* x, uint64_t y) {
   *x = wuffs_base__u64__sat_add(*x, y);
 }
 
 static inline void  //
-wuffs_base__u64__sat_sub_indirect(uint64_t* x, uint64_t y) {
+wuffs_private_impl__u64__sat_sub_indirect(uint64_t* x, uint64_t y) {
   *x = wuffs_base__u64__sat_sub(*x, y);
 }
 
@@ -182,18 +187,20 @@ wuffs_base__u64__sat_sub_indirect(uint64_t* x, uint64_t y) {
 
 // ---------------- Slices and Tables
 
-// wuffs_base__slice_u8__prefix returns up to the first up_to bytes of s.
+// wuffs_private_impl__slice_u8__prefix returns up to the first up_to bytes of
+// s.
 static inline wuffs_base__slice_u8  //
-wuffs_base__slice_u8__prefix(wuffs_base__slice_u8 s, uint64_t up_to) {
+wuffs_private_impl__slice_u8__prefix(wuffs_base__slice_u8 s, uint64_t up_to) {
   if (((uint64_t)(s.len)) > up_to) {
     s.len = ((size_t)up_to);
   }
   return s;
 }
 
-// wuffs_base__slice_u8__suffix returns up to the last up_to bytes of s.
+// wuffs_private_impl__slice_u8__suffix returns up to the last up_to bytes of
+// s.
 static inline wuffs_base__slice_u8  //
-wuffs_base__slice_u8__suffix(wuffs_base__slice_u8 s, uint64_t up_to) {
+wuffs_private_impl__slice_u8__suffix(wuffs_base__slice_u8 s, uint64_t up_to) {
   if (((uint64_t)(s.len)) > up_to) {
     s.ptr += ((uint64_t)(s.len)) - up_to;
     s.len = ((size_t)up_to);
@@ -201,13 +208,13 @@ wuffs_base__slice_u8__suffix(wuffs_base__slice_u8 s, uint64_t up_to) {
   return s;
 }
 
-// wuffs_base__slice_u8__copy_from_slice calls memmove(dst.ptr, src.ptr, len)
-// where len is the minimum of dst.len and src.len.
+// wuffs_private_impl__slice_u8__copy_from_slice calls memmove(dst.ptr,
+// src.ptr, len) where len is the minimum of dst.len and src.len.
 //
 // Passing a wuffs_base__slice_u8 with all fields NULL or zero (a valid, empty
 // slice) is valid and results in a no-op.
 static inline uint64_t  //
-wuffs_base__slice_u8__copy_from_slice(wuffs_base__slice_u8 dst,
+wuffs_private_impl__slice_u8__copy_from_slice(wuffs_base__slice_u8 dst,
                                       wuffs_base__slice_u8 src) {
   size_t len = dst.len < src.len ? dst.len : src.len;
   if (len > 0) {
@@ -217,9 +224,9 @@ wuffs_base__slice_u8__copy_from_slice(wuffs_base__slice_u8 dst,
 }
 
 static inline wuffs_base__empty_struct  //
-wuffs_base__bulk_load_host_endian(void* ptr,
-                                  size_t len,
-                                  wuffs_base__slice_u8 src) {
+wuffs_private_impl__bulk_load_host_endian(void* ptr,
+                                          size_t len,
+                                          wuffs_base__slice_u8 src) {
   if (len && (len <= src.len)) {
     memmove(ptr, src.ptr, len);
   }
@@ -227,7 +234,7 @@ wuffs_base__bulk_load_host_endian(void* ptr,
 }
 
 static inline wuffs_base__empty_struct  //
-wuffs_base__bulk_memset(void* ptr, size_t len, uint8_t byte_value) {
+wuffs_private_impl__bulk_memset(void* ptr, size_t len, uint8_t byte_value) {
   if (len) {
     memset(ptr, byte_value, len);
   }
@@ -235,9 +242,9 @@ wuffs_base__bulk_memset(void* ptr, size_t len, uint8_t byte_value) {
 }
 
 static inline wuffs_base__empty_struct  //
-wuffs_base__bulk_save_host_endian(void* ptr,
-                                  size_t len,
-                                  wuffs_base__slice_u8 dst) {
+wuffs_private_impl__bulk_save_host_endian(void* ptr,
+                                          size_t len,
+                                          wuffs_base__slice_u8 dst) {
   if (len && (len <= dst.len)) {
     memmove(dst.ptr, ptr, len);
   }
@@ -247,7 +254,7 @@ wuffs_base__bulk_save_host_endian(void* ptr,
 // --------
 
 static inline wuffs_base__slice_u8  //
-wuffs_base__table_u8__row_u32(wuffs_base__table_u8 t, uint32_t y) {
+wuffs_private_impl__table_u8__row_u32(wuffs_base__table_u8 t, uint32_t y) {
   if (y < t.height) {
     return wuffs_base__make_slice_u8(t.ptr + (t.stride * y), t.width);
   }
