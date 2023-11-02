@@ -62,6 +62,12 @@ files), implying that it cannot allocate or free memory (and is therefore
 trivially safe against things like memory leaks, use-after-frees and
 double-frees).
 
+It produces [Sans I/O style](https://sans-io.readthedocs.io/) libraries (but C
+libraries, not Python), meaning that they are agnostic to ['function
+colors'](https://journal.stuffwithstuff.com/2015/02/01/what-color-is-your-function/).
+They can be combined with synchronous or asynchronous I/O, as the library
+caller (not library implementation) is responsible for the actual I/O.
+
 The idea isn't to write your whole program in Wuffs, **only the parts that are
 both performance-conscious and security-conscious**. For example, while
 technically possible, it is unlikely that a Wuffs compiler would be worth
@@ -277,4 +283,4 @@ overflows.
 
 ---
 
-Updated on September 2023.
+Updated on November 2023.
