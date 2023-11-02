@@ -305,7 +305,7 @@ try_allocate(wuffs_gif__decoder* dec) {
       return "could not allocate work buffer";
     }
   } else {
-    g_workbuf = wuffs_base__make_slice_u8(NULL, 0);
+    g_workbuf = wuffs_base__empty_slice_u8();
   }
 
   uint64_t plen = 1 + ((uint64_t)(width) + 1) * (uint64_t)(height);
@@ -326,9 +326,9 @@ allocate(wuffs_gif__decoder* dec) {
   const char* status_msg = try_allocate(dec);
   if (status_msg) {
     free(g_printbuf.ptr);
-    g_printbuf = wuffs_base__make_slice_u8(NULL, 0);
+    g_printbuf = wuffs_base__empty_slice_u8();
     free(g_workbuf.ptr);
-    g_workbuf = wuffs_base__make_slice_u8(NULL, 0);
+    g_workbuf = wuffs_base__empty_slice_u8();
     free(g_prev_dst_buffer);
     g_prev_dst_buffer = NULL;
     free(g_curr_dst_buffer);

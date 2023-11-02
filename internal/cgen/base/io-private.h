@@ -32,7 +32,7 @@ wuffs_private_impl__io__since(uint64_t mark,
     return wuffs_base__make_slice_u8(((uint8_t*)ptr) + mark,
                                      ((size_t)(index - mark)));
   }
-  return wuffs_base__make_slice_u8(NULL, 0);
+  return wuffs_base__empty_slice_u8();
 }
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop

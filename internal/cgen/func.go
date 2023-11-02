@@ -343,7 +343,7 @@ func writeOutParamZeroValue(b *buffer, tm *t.Map, typ *a.TypeExpr) error {
 		return nil
 	} else if typ.IsEitherSliceType() {
 		if inner := typ.Inner(); (inner.Decorator() == 0) && (inner.QID() == t.QID{t.IDBase, t.IDU8}) {
-			b.writes("wuffs_base__make_slice_u8(NULL, 0)")
+			b.writes("wuffs_base__empty_slice_u8()")
 			return nil
 		}
 	} else if (typ.Decorator() == 0) && (typ.QID()[0] == t.IDBase) {

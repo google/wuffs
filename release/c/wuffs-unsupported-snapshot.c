@@ -1777,7 +1777,7 @@ wuffs_base__slice_u8__subslice_i(wuffs_base__slice_u8 s, uint64_t i) {
   if ((i <= SIZE_MAX) && (i <= s.len)) {
     return wuffs_base__make_slice_u8(s.ptr + i, ((size_t)(s.len - i)));
   }
-  return wuffs_base__make_slice_u8(NULL, 0);
+  return wuffs_base__empty_slice_u8();
 }
 
 // wuffs_base__slice_u8__subslice_j returns s[:j].
@@ -1788,7 +1788,7 @@ wuffs_base__slice_u8__subslice_j(wuffs_base__slice_u8 s, uint64_t j) {
   if ((j <= SIZE_MAX) && (j <= s.len)) {
     return wuffs_base__make_slice_u8(s.ptr, ((size_t)j));
   }
-  return wuffs_base__make_slice_u8(NULL, 0);
+  return wuffs_base__empty_slice_u8();
 }
 
 // wuffs_base__slice_u8__subslice_ij returns s[i:j].
@@ -1801,7 +1801,7 @@ wuffs_base__slice_u8__subslice_ij(wuffs_base__slice_u8 s,
   if ((i <= j) && (j <= SIZE_MAX) && (j <= s.len)) {
     return wuffs_base__make_slice_u8(s.ptr + i, ((size_t)(j - i)));
   }
-  return wuffs_base__make_slice_u8(NULL, 0);
+  return wuffs_base__empty_slice_u8();
 }
 
 // wuffs_base__table_u8__subtable_ij returns t[ix:jx, iy:jy].
@@ -3844,7 +3844,7 @@ wuffs_base__malloc_slice_u8(void* (*malloc_func)(size_t), uint64_t num_u8) {
       return wuffs_base__make_slice_u8((uint8_t*)(p), (size_t)num_u8);
     }
   }
-  return wuffs_base__make_slice_u8(NULL, 0);
+  return wuffs_base__empty_slice_u8();
 }
 
 static inline wuffs_base__slice_u16  //
@@ -3855,7 +3855,7 @@ wuffs_base__malloc_slice_u16(void* (*malloc_func)(size_t), uint64_t num_u16) {
       return wuffs_base__make_slice_u16((uint16_t*)(p), (size_t)num_u16);
     }
   }
-  return wuffs_base__make_slice_u16(NULL, 0);
+  return wuffs_base__empty_slice_u16();
 }
 
 static inline wuffs_base__slice_u32  //
@@ -3866,7 +3866,7 @@ wuffs_base__malloc_slice_u32(void* (*malloc_func)(size_t), uint64_t num_u32) {
       return wuffs_base__make_slice_u32((uint32_t*)(p), (size_t)num_u32);
     }
   }
-  return wuffs_base__make_slice_u32(NULL, 0);
+  return wuffs_base__empty_slice_u32();
 }
 
 static inline wuffs_base__slice_u64  //
@@ -3877,7 +3877,7 @@ wuffs_base__malloc_slice_u64(void* (*malloc_func)(size_t), uint64_t num_u64) {
       return wuffs_base__make_slice_u64((uint64_t*)(p), (size_t)num_u64);
     }
   }
-  return wuffs_base__make_slice_u64(NULL, 0);
+  return wuffs_base__empty_slice_u64();
 }
 
 // ---------------- Images
@@ -5224,7 +5224,7 @@ wuffs_base__pixel_buffer__palette(wuffs_base__pixel_buffer* pb) {
           tab->ptr, WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH);
     }
   }
-  return wuffs_base__make_slice_u8(NULL, 0);
+  return wuffs_base__empty_slice_u8();
 }
 
 static inline wuffs_base__slice_u8  //
@@ -14447,7 +14447,7 @@ wuffs_private_impl__slice_u8__suffix(wuffs_base__slice_u8 s, uint64_t up_to) {
 // slice) is valid and results in a no-op.
 static inline uint64_t  //
 wuffs_private_impl__slice_u8__copy_from_slice(wuffs_base__slice_u8 dst,
-                                      wuffs_base__slice_u8 src) {
+                                              wuffs_base__slice_u8 src) {
   size_t len = dst.len < src.len ? dst.len : src.len;
   if (len > 0) {
     memmove(dst.ptr, src.ptr, len);
@@ -14490,7 +14490,7 @@ wuffs_private_impl__table_u8__row_u32(wuffs_base__table_u8 t, uint32_t y) {
   if (y < t.height) {
     return wuffs_base__make_slice_u8(t.ptr + (t.stride * y), t.width);
   }
-  return wuffs_base__make_slice_u8(NULL, 0);
+  return wuffs_base__empty_slice_u8();
 }
 
 // ---------------- Slices and Tables (Utility)
@@ -14586,7 +14586,7 @@ wuffs_private_impl__io__since(uint64_t mark,
     return wuffs_base__make_slice_u8(((uint8_t*)ptr) + mark,
                                      ((size_t)(index - mark)));
   }
-  return wuffs_base__make_slice_u8(NULL, 0);
+  return wuffs_base__empty_slice_u8();
 }
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop
@@ -50931,10 +50931,10 @@ WUFFS_BASE__MAYBE_STATIC wuffs_base__slice_u8
 wuffs_lzw__decoder__flush(
     wuffs_lzw__decoder* self) {
   if (!self) {
-    return wuffs_base__make_slice_u8(NULL, 0);
+    return wuffs_base__empty_slice_u8();
   }
   if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    return wuffs_base__make_slice_u8(NULL, 0);
+    return wuffs_base__empty_slice_u8();
   }
 
   uint32_t v_ri = 0;

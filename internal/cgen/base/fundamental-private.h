@@ -215,7 +215,7 @@ wuffs_private_impl__slice_u8__suffix(wuffs_base__slice_u8 s, uint64_t up_to) {
 // slice) is valid and results in a no-op.
 static inline uint64_t  //
 wuffs_private_impl__slice_u8__copy_from_slice(wuffs_base__slice_u8 dst,
-                                      wuffs_base__slice_u8 src) {
+                                              wuffs_base__slice_u8 src) {
   size_t len = dst.len < src.len ? dst.len : src.len;
   if (len > 0) {
     memmove(dst.ptr, src.ptr, len);
@@ -258,7 +258,7 @@ wuffs_private_impl__table_u8__row_u32(wuffs_base__table_u8 t, uint32_t y) {
   if (y < t.height) {
     return wuffs_base__make_slice_u8(t.ptr + (t.stride * y), t.width);
   }
-  return wuffs_base__make_slice_u8(NULL, 0);
+  return wuffs_base__empty_slice_u8();
 }
 
 // ---------------- Slices and Tables (Utility)

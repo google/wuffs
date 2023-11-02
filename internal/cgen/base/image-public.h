@@ -1352,7 +1352,7 @@ wuffs_base__pixel_buffer__palette(wuffs_base__pixel_buffer* pb) {
           tab->ptr, WUFFS_BASE__PIXEL_FORMAT__INDEXED__PALETTE_BYTE_LENGTH);
     }
   }
-  return wuffs_base__make_slice_u8(NULL, 0);
+  return wuffs_base__empty_slice_u8();
 }
 
 static inline wuffs_base__slice_u8  //
