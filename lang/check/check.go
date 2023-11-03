@@ -494,7 +494,7 @@ func (c *Checker) checkStructCycles(_ *a.Node) error {
 
 func (c *Checker) checkStructFields(node *a.Node) error {
 	n := node.AsStruct()
-	if err := c.checkFields(n.Fields(), true, true, true); err != nil {
+	if err := c.checkFields(n.Fields(), true, false, true, true); err != nil {
 		return &Error{
 			Err:      fmt.Errorf("%v in struct %s", err, n.QID().Str(c.tm)),
 			Filename: n.Filename(),
@@ -504,7 +504,7 @@ func (c *Checker) checkStructFields(node *a.Node) error {
 	return nil
 }
 
-func (c *Checker) checkFields(fields []*a.Node, banCPUArchTypes bool, banPtrTypes bool, checkDefaultZeroValue bool) error {
+func (c *Checker) checkFields(fields []*a.Node, banCPUArchTypes bool, banNonBaseTypes bool, banPtrTypes bool, checkDefaultZeroValue bool) error {
 	if len(fields) == 0 {
 		return nil
 	}
@@ -522,8 +522,14 @@ func (c *Checker) checkFields(fields []*a.Node, banCPUArchTypes bool, banPtrType
 		if err := checkTypeExpr(q, f.XType()); err != nil {
 			return fmt.Errorf("%v for field %q", err, f.Name().Str(c.tm))
 		}
-		if banCPUArchTypes && f.XType().Innermost().IsCPUArchType() {
+
+		innermost := f.XType().Innermost()
+		if banCPUArchTypes && innermost.IsCPUArchType() {
 			return fmt.Errorf("check: cpu_arch type %q not allowed for field %q",
+				f.XType().Str(c.tm), f.Name().Str(c.tm))
+		}
+		if banNonBaseTypes && (innermost.QID()[0] != t.IDBase) {
+			return fmt.Errorf("check: non-base type %q not allowed for field %q",
 				f.XType().Str(c.tm), f.Name().Str(c.tm))
 		}
 		if banPtrTypes && f.XType().HasPointers() {
@@ -562,7 +568,7 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 
 func (c *Checker) checkFuncSignature1(node *a.Node, banCPUArchTypes bool) error {
 	n := node.AsFunc()
-	if err := c.checkFields(n.In().Fields(), banCPUArchTypes, false, false); err != nil {
+	if err := c.checkFields(n.In().Fields(), banCPUArchTypes, true, false, false); err != nil {
 		return &Error{
 			Err:      fmt.Errorf("%v in in-params for func %s", err, n.QQID().Str(c.tm)),
 			Filename: n.Filename(),
