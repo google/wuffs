@@ -192,6 +192,10 @@ func (x QQID) Str(m *Map) string {
 	return m.ByID(x[2])
 }
 
+func (x QQID) QIDSuffix() QID {
+	return QID{x[1], x[2]}
+}
+
 // Token combines an ID and the line number it was seen.
 type Token struct {
 	ID   ID

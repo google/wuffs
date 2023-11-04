@@ -98,6 +98,9 @@ func Check(tm *t.Map, files []*a.File, resolveUse func(usePath string) ([]byte, 
 		builtInInterfaces:     map[t.QID][]t.QQID{},
 		builtInInterfaceFuncs: map[t.QQID]*a.Func{},
 		unseenInterfaceImpls:  map[t.QQID]*a.Func{},
+
+		chooseAlternatives: map[t.QID][]t.ID{},
+		noRecursiveMarks:   map[t.QID]uint8{},
 	}
 
 	for _, funcs := range builtin.Funcs {
@@ -199,10 +202,12 @@ var phases = [...]struct {
 	{a.KStruct, (*Checker).checkStructDecl},
 	{a.KInvalid, (*Checker).checkStructCycles},
 	{a.KStruct, (*Checker).checkStructFields},
+	{a.KFunc, (*Checker).gatherChooseAlternatives},
 	{a.KFunc, (*Checker).checkFuncSignature},
 	{a.KFunc, (*Checker).checkFuncContract},
 	{a.KFunc, (*Checker).checkFuncImplements},
 	{a.KFunc, (*Checker).checkFuncBody},
+	{a.KFunc, (*Checker).checkNoRecursiveFuncs},
 	{a.KInvalid, (*Checker).checkInterfacesSatisfied},
 	{a.KStruct, (*Checker).checkFieldMethodCollisions},
 	{a.KInvalid, (*Checker).checkAllTypeChecked},
@@ -242,6 +247,9 @@ type Checker struct {
 	builtInInterfaces     map[t.QID][]t.QQID
 	builtInInterfaceFuncs map[t.QQID]*a.Func
 	unseenInterfaceImpls  map[t.QQID]*a.Func
+
+	chooseAlternatives map[t.QID][]t.ID
+	noRecursiveMarks   map[t.QID]uint8
 
 	unsortedStructs []*a.Struct
 }
@@ -563,6 +571,27 @@ func checkTypeExpr(q *checker, n *a.TypeExpr) error {
 	return nil
 }
 
+func (c *Checker) gatherChooseAlternatives(node *a.Node) error {
+	n := node.AsFunc()
+	return node.Walk(func(innerNode *a.Node) error {
+		if innerNode.Kind() == a.KChoose {
+			o := innerNode.AsChoose()
+			receiverType := n.Receiver()[1]
+			oQID := t.QID{receiverType, o.Name()}
+			chooseAlternatives := c.chooseAlternatives[oQID]
+			for _, p := range o.Args() {
+				p := p.AsExpr()
+				pQID := t.QID{receiverType, p.Ident()}
+				if oQID[1] != pQID[1] {
+					chooseAlternatives = append(chooseAlternatives, pQID[1])
+				}
+			}
+			c.chooseAlternatives[oQID] = chooseAlternatives
+		}
+		return nil
+	})
+}
+
 func (c *Checker) checkFuncSignature(node *a.Node) error {
 	return c.checkFuncSignature1(node, true)
 }
@@ -758,6 +787,81 @@ func (c *Checker) checkFuncBody(node *a.Node) error {
 	}
 
 	return nil
+}
+
+// checkNoRecursiveFuncs essentially performs a topological sort (via a
+// depth-first search), ordering bar and baz functions on whether bar's body
+// (or asserts) calls the this.baz method.
+//
+// https://en.wikipedia.org/wiki/Topological_sorting#Depth-first_search
+func (c *Checker) checkNoRecursiveFuncs(node *a.Node) error {
+	_, err := c.checkNoRecursiveFuncs1(nil, node.AsFunc())
+	return err
+}
+
+func (c *Checker) checkNoRecursiveFuncs1(dst []t.QID, n *a.Func) ([]t.QID, error) {
+	nQID := n.QQID().QIDSuffix()
+	dst = append(dst, nQID)
+
+	const (
+		unmarked  = 0
+		temporary = 1
+		permanent = 2
+	)
+	switch c.noRecursiveMarks[nQID] {
+	case temporary:
+		hidden, names := true, make([]string, 0, len(dst))
+		for _, qid := range dst {
+			if hidden {
+				if qid != nQID {
+					continue
+				}
+				hidden = false
+			}
+			names = append(names, qid.Str(c.tm))
+		}
+		return nil, fmt.Errorf("check: recursive call chain: %s", names)
+	case permanent:
+		return dst, nil
+	}
+	c.noRecursiveMarks[nQID] = temporary
+
+	if err := n.AsNode().Walk(func(innerNode *a.Node) error {
+		if innerNode.Kind() != a.KExpr {
+			return nil
+		}
+		o := innerNode.AsExpr()
+		if o.Operator() != t.IDOpenParen {
+			return nil
+		}
+		foo := o.LHS().AsExpr().IsThisDotFoo()
+		if foo == 0 {
+			return nil
+		}
+		qqid := n.QQID()
+		qqid[2] = foo
+
+		for _, altID := range c.chooseAlternatives[qqid.QIDSuffix()] {
+			altQQID := t.QQID{qqid[0], qqid[1], altID}
+			dst1, err1 := c.checkNoRecursiveFuncs1(dst, c.funcs[altQQID])
+			if err1 != nil {
+				return err1
+			}
+			dst = dst1
+		}
+
+		dst1, err1 := c.checkNoRecursiveFuncs1(dst, c.funcs[qqid])
+		if err1 != nil {
+			return err1
+		}
+		dst = dst1
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	c.noRecursiveMarks[nQID] = permanent
+	return dst[:len(dst)-1], nil
 }
 
 func (c *Checker) checkInterfacesSatisfied(node *a.Node) error {
