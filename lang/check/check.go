@@ -166,13 +166,14 @@ func Check(tm *t.Map, files []*a.File, resolveUse func(usePath string) ([]byte, 
 	}
 
 	for _, phase := range phases {
-		for _, f := range files {
-			if phase.kind == a.KInvalid {
-				if err := phase.check(c, nil); err != nil {
-					return nil, err
-				}
-				continue
+		if phase.kind == a.KInvalid {
+			if err := phase.check(c, nil); err != nil {
+				return nil, err
 			}
+			continue
+		}
+
+		for _, f := range files {
 			for _, n := range f.TopLevelDecls() {
 				if n.Kind() != phase.kind {
 					continue
