@@ -8,7 +8,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-// ----
+// --------
 
 // Consider the 8×8 = 64 coefficients (1 DC, 63 AC) in a block. The low
 // frequency ones are in the top-left corner and their offsets into the
