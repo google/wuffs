@@ -280,8 +280,7 @@ func (g *gen) writeResumeSuspend1(b *buffer, f *funk, n *a.Var, suspend bool) er
 	} else {
 		local := fmt.Sprintf("%s%s", vPrefix, n.Name().Str(g.tm))
 		lhs := local
-		// TODO: don't hard-code [0], and allow recursive coroutines.
-		rhs := fmt.Sprintf("self->private_data.%s%s[0].%s", sPrefix, g.currFunk.astFunc.FuncName().Str(g.tm), lhs)
+		rhs := fmt.Sprintf("self->private_data.%s%s.%s", sPrefix, g.currFunk.astFunc.FuncName().Str(g.tm), lhs)
 		if suspend {
 			lhs, rhs = rhs, lhs
 		}

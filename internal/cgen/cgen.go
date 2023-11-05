@@ -1081,9 +1081,6 @@ func (g *gen) writeConstList(b *buffer, n *a.Expr) error {
 }
 
 func (g *gen) writeStructPrivateImpl(b *buffer, n *a.Struct) error {
-	// TODO: allow max depth > 1 for recursive coroutines.
-	const maxDepth = 1
-
 	b.writes("// Do not access the private_impl's or private_data's fields directly. There\n")
 	b.writes("// is no API/ABI compatibility or safety guarantee if you do so. Instead, use\n")
 	b.writes("// the wuffs_foo__bar__baz functions.\n")
@@ -1135,7 +1132,7 @@ func (g *gen) writeStructPrivateImpl(b *buffer, n *a.Struct) error {
 						needEmptyLine = false
 						b.writeb('\n')
 					}
-					b.printf("uint32_t %s%s[%d];\n", pPrefix, o.FuncName().Str(g.tm), maxDepth)
+					b.printf("uint32_t %s%s;\n", pPrefix, o.FuncName().Str(g.tm))
 
 				} else if o.Choosy() {
 					if needEmptyLine {
@@ -1200,7 +1197,7 @@ func (g *gen) writeStructPrivateImpl(b *buffer, n *a.Struct) error {
 					b.writes("uint64_t scratch;\n")
 				}
 				if oldInnerLenB1 != len(*b) {
-					b.printf("} %s%s[%d];\n", sPrefix, o.FuncName().Str(g.tm), maxDepth)
+					b.printf("} %s%s;\n", sPrefix, o.FuncName().Str(g.tm))
 				} else {
 					*b = (*b)[:oldInnerLenB0]
 					needEmptyLine = oldNeedEmptyLine

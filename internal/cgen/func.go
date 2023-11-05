@@ -470,8 +470,7 @@ func (g *gen) writeFuncImplPrologue(b *buffer) error {
 
 func (g *gen) writeFuncImplBodyResume(b *buffer) error {
 	if g.currFunk.coroSuspPoint > 0 {
-		// TODO: don't hard-code [0], and allow recursive coroutines.
-		b.printf("uint32_t coro_susp_point = self->private_impl.%s%s[0];\n",
+		b.printf("uint32_t coro_susp_point = self->private_impl.%s%s;\n",
 			pPrefix, g.currFunk.astFunc.FuncName().Str(g.tm))
 
 		resumeBuffer := buffer{}
@@ -514,13 +513,13 @@ func (g *gen) writeFuncImplBodySuspend(b *buffer) error {
 		// We've reached the end of the function body. Reset the coroutine
 		// suspension point so that the next call to this function starts at
 		// the top.
-		b.printf("self->private_impl.%s%s[0] = 0;\n",
+		b.printf("self->private_impl.%s%s = 0;\n",
 			pPrefix, g.currFunk.astFunc.FuncName().Str(g.tm))
 		b.writes("goto exit;\n}\n\n") // Close the coroutine switch.
 
 		b.writes("goto suspend;\nsuspend:\n") // The goto avoids the "unused label" warning.
 
-		b.printf("self->private_impl.%s%s[0] = "+
+		b.printf("self->private_impl.%s%s = "+
 			"wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;\n",
 			pPrefix, g.currFunk.astFunc.FuncName().Str(g.tm))
 		if g.currFunk.astFunc.Public() {

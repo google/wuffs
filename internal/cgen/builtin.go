@@ -1247,8 +1247,7 @@ func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error
 			}
 
 			g.currFunk.usesScratch = true
-			// TODO: don't hard-code [0], and allow recursive coroutines.
-			scratchName := fmt.Sprintf("self->private_data.%s%s[0].scratch",
+			scratchName := fmt.Sprintf("self->private_data.%s%s.scratch",
 				sPrefix, g.currFunk.astFunc.FuncName().Str(g.tm))
 
 			b.printf("%s = ", scratchName)
@@ -1285,8 +1284,7 @@ func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error
 		switch method.Ident() {
 		case t.IDWriteU8:
 			g.currFunk.usesScratch = true
-			// TODO: don't hard-code [0], and allow recursive coroutines.
-			scratchName := fmt.Sprintf("self->private_data.%s%s[0].scratch",
+			scratchName := fmt.Sprintf("self->private_data.%s%s.scratch",
 				sPrefix, g.currFunk.astFunc.FuncName().Str(g.tm))
 
 			b.printf("%s = ", scratchName)
@@ -1338,8 +1336,7 @@ func (g *gen) writeReadUxxAsUyy(b *buffer, n *a.Expr, preName string, xx uint8, 
 	}
 
 	g.currFunk.usesScratch = true
-	// TODO: don't hard-code [0], and allow recursive coroutines.
-	scratchName := fmt.Sprintf("self->private_data.%s%s[0].scratch",
+	scratchName := fmt.Sprintf("self->private_data.%s%s.scratch",
 		sPrefix, g.currFunk.astFunc.FuncName().Str(g.tm))
 
 	b.printf("if (WUFFS_BASE__LIKELY(io2_%s - iop_%s >= %d)) {\n", recvName, recvName, xx/8)
