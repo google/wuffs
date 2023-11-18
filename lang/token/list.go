@@ -524,9 +524,10 @@ const (
 	IDLimitedCopyU32FromHistory8ByteChunksDistance1Fast = ID(0x172)
 	IDLimitedCopyU32FromHistory8ByteChunksFast          = ID(0x173)
 	IDLimitedCopyU32FromHistoryFast                     = ID(0x174)
-	IDLimitedCopyU32FromReader                          = ID(0x175)
-	IDLimitedCopyU32FromSlice                           = ID(0x176)
-	IDLimitedCopyU32ToSlice                             = ID(0x177)
+	IDLimitedCopyU32FromHistoryFastReturnCusp           = ID(0x175)
+	IDLimitedCopyU32FromReader                          = ID(0x176)
+	IDLimitedCopyU32FromSlice                           = ID(0x177)
+	IDLimitedCopyU32ToSlice                             = ID(0x178)
 
 	// -------- 0x180 block.
 
@@ -970,6 +971,7 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDLimitedCopyU32FromHistory8ByteChunksDistance1Fast: "limited_copy_u32_from_history_8_byte_chunks_distance_1_fast",
 	IDLimitedCopyU32FromHistory8ByteChunksFast:          "limited_copy_u32_from_history_8_byte_chunks_fast",
 	IDLimitedCopyU32FromHistoryFast:                     "limited_copy_u32_from_history_fast",
+	IDLimitedCopyU32FromHistoryFastReturnCusp:           "limited_copy_u32_from_history_fast_return_cusp",
 	IDLimitedCopyU32FromReader:                          "limited_copy_u32_from_reader",
 	IDLimitedCopyU32FromSlice:                           "limited_copy_u32_from_slice",
 	IDLimitedCopyU32ToSlice:                             "limited_copy_u32_to_slice",

@@ -14783,6 +14783,42 @@ wuffs_private_impl__io_writer__limited_copy_u32_from_history_fast(
   return length;
 }
 
+// wuffs_private_impl__io_writer__limited_copy_u32_from_history_fast_return_cusp
+// is like the
+// wuffs_private_impl__io_writer__limited_copy_u32_from_history_fast function,
+// but also returns the cusp: a byte pair (as a u16le) being the last byte of
+// and next byte after the copied history.
+//
+// For example, if history was [10, 11, 12, 13, 14, 15, 16, 17, 18] then:
+//  - copying l=3, d=8 produces [11, 12, 13] and the cusp is (13, 14).
+//  - copying l=3, d=2 produces [17, 18, 17] and the cusp is (17, 18).
+//
+// The caller needs to prove that:
+//  - length   <= (io2_w      - *ptr_iop_w)
+//  - distance >= 1
+//  - distance <= (*ptr_iop_w - io0_w)
+static inline uint32_t  //
+wuffs_private_impl__io_writer__limited_copy_u32_from_history_fast_return_cusp(
+    uint8_t** ptr_iop_w,
+    uint8_t* io0_w,
+    uint8_t* io2_w,
+    uint32_t length,
+    uint32_t distance) {
+  uint8_t* p = *ptr_iop_w;
+  uint8_t* q = p - distance;
+  uint32_t n = length;
+  for (; n >= 3; n -= 3) {
+    *p++ = *q++;
+    *p++ = *q++;
+    *p++ = *q++;
+  }
+  for (; n; n--) {
+    *p++ = *q++;
+  }
+  *ptr_iop_w = p;
+  return (uint32_t)wuffs_base__peek_u16le__no_bounds_check(q - 1);
+}
+
 // wuffs_private_impl__io_writer__limited_copy_u32_from_history_8_byte_chunks_distance_1_fast
 // copies the previous byte (the one immediately before *ptr_iop_w), copying 8
 // byte chunks at a time. Each chunk contains 8 repetitions of the same byte.

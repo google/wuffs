@@ -1211,7 +1211,8 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (bounds, e
 				return bounds{}, err
 			}
 
-		} else if method == t.IDLimitedCopyU32FromHistoryFast {
+		} else if (method == t.IDLimitedCopyU32FromHistoryFast) ||
+			(method == t.IDLimitedCopyU32FromHistoryFastReturnCusp) {
 			if err := q.canLimitedCopyU32FromHistoryFast(recv, n.Args(), nil, one, nil); err != nil {
 				return bounds{}, err
 			}
