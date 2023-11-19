@@ -1165,6 +1165,70 @@ wuffs_base__make_bitvec256(uint64_t e00,
 
 // --------
 
+// wuffs_base__optional_u63 is like a std::optional<uint64_t>, but for C (not
+// just C++) and the value can only hold 63 bits (not 64).
+//
+// Do not manipulate repr directly; it is a private implementation detail.
+typedef struct wuffs_base__optional_u63__struct {
+  uint64_t repr;
+
+#ifdef __cplusplus
+  inline bool has_value() const;
+  inline uint64_t value() const;
+  inline uint64_t value_or(uint64_t default_value) const;
+#endif  // __cplusplus
+
+} wuffs_base__optional_u63;
+
+// wuffs_base__make_optional_u63 ignores value when has_value is false.
+//
+// Preconditions:
+//  - value < (1 << 63).
+static inline wuffs_base__optional_u63  //
+wuffs_base__make_optional_u63(bool has_value, uint64_t value) {
+  wuffs_base__optional_u63 res;
+  res.repr = has_value ? ((value << 1u) | 1u) : 0u;
+  return res;
+}
+
+static inline bool  //
+wuffs_base__optional_u63__has_value(const wuffs_base__optional_u63* o) {
+  return o->repr;
+}
+
+// wuffs_base__optional_u63__value returns zero when o does not have a value.
+static inline uint64_t  //
+wuffs_base__optional_u63__value(const wuffs_base__optional_u63* o) {
+  return o->repr >> 1u;
+}
+
+static inline uint64_t  //
+wuffs_base__optional_u63__value_or(const wuffs_base__optional_u63* o,
+                                   uint64_t default_value) {
+  return o->repr ? (o->repr >> 1u) : default_value;
+}
+
+#ifdef __cplusplus
+
+inline bool  //
+wuffs_base__optional_u63::has_value() const {
+  return wuffs_base__optional_u63__has_value(this);
+}
+
+inline uint64_t  //
+wuffs_base__optional_u63::value() const {
+  return wuffs_base__optional_u63__value(this);
+}
+
+inline uint64_t  //
+wuffs_base__optional_u63::value_or(uint64_t default_value) const {
+  return wuffs_base__optional_u63__value_or(this, default_value);
+}
+
+#endif  // __cplusplus
+
+// --------
+
 // The "defined(__clang__)" isn't redundant. While vanilla clang defines
 // __GNUC__, clang-cl (which mimics MSVC's cl.exe) does not.
 #if (defined(__GNUC__) || defined(__clang__)) && (__SIZEOF_LONG__ == 8)
@@ -3093,7 +3157,8 @@ wuffs_base__io_buffer__compact(wuffs_base__io_buffer* buf) {
 // wuffs_base__io_buffer__compact_retaining moves any written but unread bytes
 // closer to the start of the buffer. It retains H bytes of history (the most
 // recently read bytes), where H is min(buf->meta.ri, history_retain_length).
-// A postcondition is that buf->meta.ri == H.
+// It is therefore a no-op if history_retain_length is UINT64_MAX. A
+// postcondition is that buf->meta.ri == H.
 //
 // wuffs_base__io_buffer__compact_retaining(0) is equivalent to
 // wuffs_base__io_buffer__compact().
@@ -3677,7 +3742,8 @@ wuffs_base__token_buffer__compact(wuffs_base__token_buffer* buf) {
 // wuffs_base__token_buffer__compact_retaining moves any written but unread
 // tokens closer to the start of the buffer. It retains H tokens of history
 // (the most recently read tokens), where H is min(buf->meta.ri,
-// history_retain_length). A postcondition is that buf->meta.ri == H.
+// history_retain_length). It is therefore a no-op if history_retain_length is
+// UINT64_MAX. A postcondition is that buf->meta.ri == H.
 //
 // wuffs_base__token_buffer__compact_retaining(0) is equivalent to
 // wuffs_base__token_buffer__compact().
@@ -6439,7 +6505,7 @@ typedef struct wuffs_base__image_decoder__func_ptrs__struct {
   uint64_t (*get_quirk)(
     const void* self,
     uint32_t a_key);
-  uint64_t (*history_retain_length)(
+  wuffs_base__optional_u63 (*history_retain_length)(
     const void* self);
   uint32_t (*num_animation_loops)(
     const void* self);
@@ -6506,7 +6572,7 @@ wuffs_base__image_decoder__get_quirk(
     uint32_t a_key);
 
 WUFFS_BASE__GENERATED_C_CODE
-WUFFS_BASE__MAYBE_STATIC uint64_t
+WUFFS_BASE__MAYBE_STATIC wuffs_base__optional_u63
 wuffs_base__image_decoder__history_retain_length(
     const wuffs_base__image_decoder* self);
 
@@ -6612,7 +6678,7 @@ struct wuffs_base__image_decoder__struct {
         this, a_key);
   }
 
-  inline uint64_t
+  inline wuffs_base__optional_u63
   history_retain_length() const {
     return wuffs_base__image_decoder__history_retain_length(this);
   }
@@ -6683,7 +6749,7 @@ typedef struct wuffs_base__io_transformer__func_ptrs__struct {
   uint64_t (*get_quirk)(
     const void* self,
     uint32_t a_key);
-  uint64_t (*history_retain_length)(
+  wuffs_base__optional_u63 (*history_retain_length)(
     const void* self);
   wuffs_base__status (*set_quirk)(
     void* self,
@@ -6707,7 +6773,7 @@ wuffs_base__io_transformer__get_quirk(
     uint32_t a_key);
 
 WUFFS_BASE__GENERATED_C_CODE
-WUFFS_BASE__MAYBE_STATIC uint64_t
+WUFFS_BASE__MAYBE_STATIC wuffs_base__optional_u63
 wuffs_base__io_transformer__history_retain_length(
     const wuffs_base__io_transformer* self);
 
@@ -6752,7 +6818,7 @@ struct wuffs_base__io_transformer__struct {
         this, a_key);
   }
 
-  inline uint64_t
+  inline wuffs_base__optional_u63
   history_retain_length() const {
     return wuffs_base__io_transformer__history_retain_length(this);
   }
@@ -6797,7 +6863,7 @@ typedef struct wuffs_base__token_decoder__func_ptrs__struct {
   uint64_t (*get_quirk)(
     const void* self,
     uint32_t a_key);
-  uint64_t (*history_retain_length)(
+  wuffs_base__optional_u63 (*history_retain_length)(
     const void* self);
   wuffs_base__status (*set_quirk)(
     void* self,
@@ -6824,7 +6890,7 @@ wuffs_base__token_decoder__get_quirk(
     uint32_t a_key);
 
 WUFFS_BASE__GENERATED_C_CODE
-WUFFS_BASE__MAYBE_STATIC uint64_t
+WUFFS_BASE__MAYBE_STATIC wuffs_base__optional_u63
 wuffs_base__token_decoder__history_retain_length(
     const wuffs_base__token_decoder* self);
 
@@ -6870,7 +6936,7 @@ struct wuffs_base__token_decoder__struct {
         this, a_key);
   }
 
-  inline uint64_t
+  inline wuffs_base__optional_u63
   history_retain_length() const {
     return wuffs_base__token_decoder__history_retain_length(this);
   }
@@ -7268,7 +7334,7 @@ wuffs_bmp__decoder__tell_me_more(
     wuffs_base__io_buffer* a_src);
 
 WUFFS_BASE__GENERATED_C_CODE
-WUFFS_BASE__MAYBE_STATIC uint64_t
+WUFFS_BASE__MAYBE_STATIC wuffs_base__optional_u63
 wuffs_bmp__decoder__history_retain_length(
     const wuffs_bmp__decoder* self);
 
@@ -7497,7 +7563,7 @@ struct wuffs_bmp__decoder__struct {
     return wuffs_bmp__decoder__tell_me_more(this, a_dst, a_minfo, a_src);
   }
 
-  inline uint64_t
+  inline wuffs_base__optional_u63
   history_retain_length() const {
     return wuffs_bmp__decoder__history_retain_length(this);
   }
@@ -7600,7 +7666,7 @@ wuffs_bzip2__decoder__set_quirk(
     uint64_t a_value);
 
 WUFFS_BASE__GENERATED_C_CODE
-WUFFS_BASE__MAYBE_STATIC uint64_t
+WUFFS_BASE__MAYBE_STATIC wuffs_base__optional_u63
 wuffs_bzip2__decoder__history_retain_length(
     const wuffs_bzip2__decoder* self);
 
@@ -7786,7 +7852,7 @@ struct wuffs_bzip2__decoder__struct {
     return wuffs_bzip2__decoder__set_quirk(this, a_key, a_value);
   }
 
-  inline uint64_t
+  inline wuffs_base__optional_u63
   history_retain_length() const {
     return wuffs_bzip2__decoder__history_retain_length(this);
   }
@@ -7906,7 +7972,7 @@ wuffs_cbor__decoder__set_quirk(
     uint64_t a_value);
 
 WUFFS_BASE__GENERATED_C_CODE
-WUFFS_BASE__MAYBE_STATIC uint64_t
+WUFFS_BASE__MAYBE_STATIC wuffs_base__optional_u63
 wuffs_cbor__decoder__history_retain_length(
     const wuffs_cbor__decoder* self);
 
@@ -8042,7 +8108,7 @@ struct wuffs_cbor__decoder__struct {
     return wuffs_cbor__decoder__set_quirk(this, a_key, a_value);
   }
 
-  inline uint64_t
+  inline wuffs_base__optional_u63
   history_retain_length() const {
     return wuffs_cbor__decoder__history_retain_length(this);
   }
@@ -8602,7 +8668,7 @@ wuffs_deflate__decoder__set_quirk(
     uint64_t a_value);
 
 WUFFS_BASE__GENERATED_C_CODE
-WUFFS_BASE__MAYBE_STATIC uint64_t
+WUFFS_BASE__MAYBE_STATIC wuffs_base__optional_u63
 wuffs_deflate__decoder__history_retain_length(
     const wuffs_deflate__decoder* self);
 
@@ -8784,7 +8850,7 @@ struct wuffs_deflate__decoder__struct {
     return wuffs_deflate__decoder__set_quirk(this, a_key, a_value);
   }
 
-  inline uint64_t
+  inline wuffs_base__optional_u63
   history_retain_length() const {
     return wuffs_deflate__decoder__history_retain_length(this);
   }
@@ -8950,7 +9016,7 @@ wuffs_gif__decoder__frame_dirty_rect(
     const wuffs_gif__decoder* self);
 
 WUFFS_BASE__GENERATED_C_CODE
-WUFFS_BASE__MAYBE_STATIC uint64_t
+WUFFS_BASE__MAYBE_STATIC wuffs_base__optional_u63
 wuffs_gif__decoder__history_retain_length(
     const wuffs_gif__decoder* self);
 
@@ -9251,7 +9317,7 @@ struct wuffs_gif__decoder__struct {
     return wuffs_gif__decoder__frame_dirty_rect(this);
   }
 
-  inline uint64_t
+  inline wuffs_base__optional_u63
   history_retain_length() const {
     return wuffs_gif__decoder__history_retain_length(this);
   }
@@ -9374,7 +9440,7 @@ wuffs_gzip__decoder__set_quirk(
     uint64_t a_value);
 
 WUFFS_BASE__GENERATED_C_CODE
-WUFFS_BASE__MAYBE_STATIC uint64_t
+WUFFS_BASE__MAYBE_STATIC wuffs_base__optional_u63
 wuffs_gzip__decoder__history_retain_length(
     const wuffs_gzip__decoder* self);
 
@@ -9512,7 +9578,7 @@ struct wuffs_gzip__decoder__struct {
     return wuffs_gzip__decoder__set_quirk(this, a_key, a_value);
   }
 
-  inline uint64_t
+  inline wuffs_base__optional_u63
   history_retain_length() const {
     return wuffs_gzip__decoder__history_retain_length(this);
   }
@@ -9701,7 +9767,7 @@ wuffs_jpeg__decoder__tell_me_more(
     wuffs_base__io_buffer* a_src);
 
 WUFFS_BASE__GENERATED_C_CODE
-WUFFS_BASE__MAYBE_STATIC uint64_t
+WUFFS_BASE__MAYBE_STATIC wuffs_base__optional_u63
 wuffs_jpeg__decoder__history_retain_length(
     const wuffs_jpeg__decoder* self);
 
@@ -10026,7 +10092,7 @@ struct wuffs_jpeg__decoder__struct {
     return wuffs_jpeg__decoder__tell_me_more(this, a_dst, a_minfo, a_src);
   }
 
-  inline uint64_t
+  inline wuffs_base__optional_u63
   history_retain_length() const {
     return wuffs_jpeg__decoder__history_retain_length(this);
   }
@@ -10174,7 +10240,7 @@ wuffs_json__decoder__set_quirk(
     uint64_t a_value);
 
 WUFFS_BASE__GENERATED_C_CODE
-WUFFS_BASE__MAYBE_STATIC uint64_t
+WUFFS_BASE__MAYBE_STATIC wuffs_base__optional_u63
 wuffs_json__decoder__history_retain_length(
     const wuffs_json__decoder* self);
 
@@ -10317,7 +10383,7 @@ struct wuffs_json__decoder__struct {
     return wuffs_json__decoder__set_quirk(this, a_key, a_value);
   }
 
-  inline uint64_t
+  inline wuffs_base__optional_u63
   history_retain_length() const {
     return wuffs_json__decoder__history_retain_length(this);
   }
@@ -10423,7 +10489,7 @@ wuffs_lzw__decoder__set_quirk(
     uint64_t a_value);
 
 WUFFS_BASE__GENERATED_C_CODE
-WUFFS_BASE__MAYBE_STATIC uint64_t
+WUFFS_BASE__MAYBE_STATIC wuffs_base__optional_u63
 wuffs_lzw__decoder__history_retain_length(
     const wuffs_lzw__decoder* self);
 
@@ -10571,7 +10637,7 @@ struct wuffs_lzw__decoder__struct {
     return wuffs_lzw__decoder__set_quirk(this, a_key, a_value);
   }
 
-  inline uint64_t
+  inline wuffs_base__optional_u63
   history_retain_length() const {
     return wuffs_lzw__decoder__history_retain_length(this);
   }
@@ -10747,7 +10813,7 @@ wuffs_netpbm__decoder__tell_me_more(
     wuffs_base__io_buffer* a_src);
 
 WUFFS_BASE__GENERATED_C_CODE
-WUFFS_BASE__MAYBE_STATIC uint64_t
+WUFFS_BASE__MAYBE_STATIC wuffs_base__optional_u63
 wuffs_netpbm__decoder__history_retain_length(
     const wuffs_netpbm__decoder* self);
 
@@ -10942,7 +11008,7 @@ struct wuffs_netpbm__decoder__struct {
     return wuffs_netpbm__decoder__tell_me_more(this, a_dst, a_minfo, a_src);
   }
 
-  inline uint64_t
+  inline wuffs_base__optional_u63
   history_retain_length() const {
     return wuffs_netpbm__decoder__history_retain_length(this);
   }
@@ -11105,7 +11171,7 @@ wuffs_nie__decoder__tell_me_more(
     wuffs_base__io_buffer* a_src);
 
 WUFFS_BASE__GENERATED_C_CODE
-WUFFS_BASE__MAYBE_STATIC uint64_t
+WUFFS_BASE__MAYBE_STATIC wuffs_base__optional_u63
 wuffs_nie__decoder__history_retain_length(
     const wuffs_nie__decoder* self);
 
@@ -11304,7 +11370,7 @@ struct wuffs_nie__decoder__struct {
     return wuffs_nie__decoder__tell_me_more(this, a_dst, a_minfo, a_src);
   }
 
-  inline uint64_t
+  inline wuffs_base__optional_u63
   history_retain_length() const {
     return wuffs_nie__decoder__history_retain_length(this);
   }
@@ -11418,7 +11484,7 @@ wuffs_zlib__decoder__set_quirk(
     uint64_t a_value);
 
 WUFFS_BASE__GENERATED_C_CODE
-WUFFS_BASE__MAYBE_STATIC uint64_t
+WUFFS_BASE__MAYBE_STATIC wuffs_base__optional_u63
 wuffs_zlib__decoder__history_retain_length(
     const wuffs_zlib__decoder* self);
 
@@ -11572,7 +11638,7 @@ struct wuffs_zlib__decoder__struct {
     return wuffs_zlib__decoder__set_quirk(this, a_key, a_value);
   }
 
-  inline uint64_t
+  inline wuffs_base__optional_u63
   history_retain_length() const {
     return wuffs_zlib__decoder__history_retain_length(this);
   }
@@ -11753,7 +11819,7 @@ wuffs_png__decoder__tell_me_more(
     wuffs_base__io_buffer* a_src);
 
 WUFFS_BASE__GENERATED_C_CODE
-WUFFS_BASE__MAYBE_STATIC uint64_t
+WUFFS_BASE__MAYBE_STATIC wuffs_base__optional_u63
 wuffs_png__decoder__history_retain_length(
     const wuffs_png__decoder* self);
 
@@ -12095,7 +12161,7 @@ struct wuffs_png__decoder__struct {
     return wuffs_png__decoder__tell_me_more(this, a_dst, a_minfo, a_src);
   }
 
-  inline uint64_t
+  inline wuffs_base__optional_u63
   history_retain_length() const {
     return wuffs_png__decoder__history_retain_length(this);
   }
@@ -12490,7 +12556,7 @@ wuffs_tga__decoder__tell_me_more(
     wuffs_base__io_buffer* a_src);
 
 WUFFS_BASE__GENERATED_C_CODE
-WUFFS_BASE__MAYBE_STATIC uint64_t
+WUFFS_BASE__MAYBE_STATIC wuffs_base__optional_u63
 wuffs_tga__decoder__history_retain_length(
     const wuffs_tga__decoder* self);
 
@@ -12715,7 +12781,7 @@ struct wuffs_tga__decoder__struct {
     return wuffs_tga__decoder__tell_me_more(this, a_dst, a_minfo, a_src);
   }
 
-  inline uint64_t
+  inline wuffs_base__optional_u63
   history_retain_length() const {
     return wuffs_tga__decoder__history_retain_length(this);
   }
@@ -12877,7 +12943,7 @@ wuffs_wbmp__decoder__tell_me_more(
     wuffs_base__io_buffer* a_src);
 
 WUFFS_BASE__GENERATED_C_CODE
-WUFFS_BASE__MAYBE_STATIC uint64_t
+WUFFS_BASE__MAYBE_STATIC wuffs_base__optional_u63
 wuffs_wbmp__decoder__history_retain_length(
     const wuffs_wbmp__decoder* self);
 
@@ -13082,7 +13148,7 @@ struct wuffs_wbmp__decoder__struct {
     return wuffs_wbmp__decoder__tell_me_more(this, a_dst, a_minfo, a_src);
   }
 
-  inline uint64_t
+  inline wuffs_base__optional_u63
   history_retain_length() const {
     return wuffs_wbmp__decoder__history_retain_length(this);
   }
@@ -14416,6 +14482,9 @@ wuffs_private_impl__u64__sat_sub_indirect(uint64_t* x, uint64_t y) {
 
 #define wuffs_base__utility__make_bitvec256(e00, e01, e02, e03) \
   wuffs_base__make_bitvec256(e00, e01, e02, e03)
+
+#define wuffs_base__utility__make_optional_u63(h, v) \
+  wuffs_base__make_optional_u63(h, v)
 
 // ---------------- Slices and Tables
 
@@ -15760,15 +15829,15 @@ wuffs_base__image_decoder__get_quirk(
 }
 
 WUFFS_BASE__GENERATED_C_CODE
-WUFFS_BASE__MAYBE_STATIC uint64_t
+WUFFS_BASE__MAYBE_STATIC wuffs_base__optional_u63
 wuffs_base__image_decoder__history_retain_length(
     const wuffs_base__image_decoder* self) {
   if (!self) {
-    return 0;
+    return wuffs_base__utility__make_optional_u63(false, 0u);
   }
   if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
       (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
-    return 0;
+    return wuffs_base__utility__make_optional_u63(false, 0u);
   }
 
   const wuffs_base__vtable* v = &self->private_impl.first_vtable;
@@ -15784,7 +15853,7 @@ wuffs_base__image_decoder__history_retain_length(
     v++;
   }
 
-  return 0;
+  return wuffs_base__utility__make_optional_u63(false, 0u);
 }
 
 WUFFS_BASE__GENERATED_C_CODE
@@ -16057,15 +16126,15 @@ wuffs_base__io_transformer__get_quirk(
 }
 
 WUFFS_BASE__GENERATED_C_CODE
-WUFFS_BASE__MAYBE_STATIC uint64_t
+WUFFS_BASE__MAYBE_STATIC wuffs_base__optional_u63
 wuffs_base__io_transformer__history_retain_length(
     const wuffs_base__io_transformer* self) {
   if (!self) {
-    return 0;
+    return wuffs_base__utility__make_optional_u63(false, 0u);
   }
   if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
       (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
-    return 0;
+    return wuffs_base__utility__make_optional_u63(false, 0u);
   }
 
   const wuffs_base__vtable* v = &self->private_impl.first_vtable;
@@ -16081,7 +16150,7 @@ wuffs_base__io_transformer__history_retain_length(
     v++;
   }
 
-  return 0;
+  return wuffs_base__utility__make_optional_u63(false, 0u);
 }
 
 WUFFS_BASE__GENERATED_C_CODE
@@ -16242,15 +16311,15 @@ wuffs_base__token_decoder__get_quirk(
 }
 
 WUFFS_BASE__GENERATED_C_CODE
-WUFFS_BASE__MAYBE_STATIC uint64_t
+WUFFS_BASE__MAYBE_STATIC wuffs_base__optional_u63
 wuffs_base__token_decoder__history_retain_length(
     const wuffs_base__token_decoder* self) {
   if (!self) {
-    return 0;
+    return wuffs_base__utility__make_optional_u63(false, 0u);
   }
   if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
       (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
-    return 0;
+    return wuffs_base__utility__make_optional_u63(false, 0u);
   }
 
   const wuffs_base__vtable* v = &self->private_impl.first_vtable;
@@ -16266,7 +16335,7 @@ wuffs_base__token_decoder__history_retain_length(
     v++;
   }
 
-  return 0;
+  return wuffs_base__utility__make_optional_u63(false, 0u);
 }
 
 WUFFS_BASE__GENERATED_C_CODE
@@ -28575,7 +28644,7 @@ wuffs_bmp__decoder__func_ptrs_for__wuffs_base__image_decoder = {
   (wuffs_base__rect_ie_u32(*)(const void*))(&wuffs_bmp__decoder__frame_dirty_rect),
   (uint64_t(*)(const void*,
       uint32_t))(&wuffs_bmp__decoder__get_quirk),
-  (uint64_t(*)(const void*))(&wuffs_bmp__decoder__history_retain_length),
+  (wuffs_base__optional_u63(*)(const void*))(&wuffs_bmp__decoder__history_retain_length),
   (uint32_t(*)(const void*))(&wuffs_bmp__decoder__num_animation_loops),
   (uint64_t(*)(const void*))(&wuffs_bmp__decoder__num_decoded_frame_configs),
   (uint64_t(*)(const void*))(&wuffs_bmp__decoder__num_decoded_frames),
@@ -31022,18 +31091,18 @@ wuffs_bmp__decoder__do_tell_me_more(
 // -------- func bmp.decoder.history_retain_length
 
 WUFFS_BASE__GENERATED_C_CODE
-WUFFS_BASE__MAYBE_STATIC uint64_t
+WUFFS_BASE__MAYBE_STATIC wuffs_base__optional_u63
 wuffs_bmp__decoder__history_retain_length(
     const wuffs_bmp__decoder* self) {
   if (!self) {
-    return 0;
+    return wuffs_base__utility__make_optional_u63(false, 0u);
   }
   if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
       (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
-    return 0;
+    return wuffs_base__utility__make_optional_u63(false, 0u);
   }
 
-  return 0u;
+  return wuffs_base__utility__make_optional_u63(true, 0u);
 }
 
 // -------- func bmp.decoder.workbuf_len
@@ -31366,7 +31435,7 @@ const wuffs_base__io_transformer__func_ptrs
 wuffs_bzip2__decoder__func_ptrs_for__wuffs_base__io_transformer = {
   (uint64_t(*)(const void*,
       uint32_t))(&wuffs_bzip2__decoder__get_quirk),
-  (uint64_t(*)(const void*))(&wuffs_bzip2__decoder__history_retain_length),
+  (wuffs_base__optional_u63(*)(const void*))(&wuffs_bzip2__decoder__history_retain_length),
   (wuffs_base__status(*)(void*,
       uint32_t,
       uint64_t))(&wuffs_bzip2__decoder__set_quirk),
@@ -31494,18 +31563,18 @@ wuffs_bzip2__decoder__set_quirk(
 // -------- func bzip2.decoder.history_retain_length
 
 WUFFS_BASE__GENERATED_C_CODE
-WUFFS_BASE__MAYBE_STATIC uint64_t
+WUFFS_BASE__MAYBE_STATIC wuffs_base__optional_u63
 wuffs_bzip2__decoder__history_retain_length(
     const wuffs_bzip2__decoder* self) {
   if (!self) {
-    return 0;
+    return wuffs_base__utility__make_optional_u63(false, 0u);
   }
   if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
       (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
-    return 0;
+    return wuffs_base__utility__make_optional_u63(false, 0u);
   }
 
-  return 0u;
+  return wuffs_base__utility__make_optional_u63(true, 0u);
 }
 
 // -------- func bzip2.decoder.workbuf_len
@@ -32926,7 +32995,7 @@ wuffs_cbor__decoder__func_ptrs_for__wuffs_base__token_decoder = {
       wuffs_base__slice_u8))(&wuffs_cbor__decoder__decode_tokens),
   (uint64_t(*)(const void*,
       uint32_t))(&wuffs_cbor__decoder__get_quirk),
-  (uint64_t(*)(const void*))(&wuffs_cbor__decoder__history_retain_length),
+  (wuffs_base__optional_u63(*)(const void*))(&wuffs_cbor__decoder__history_retain_length),
   (wuffs_base__status(*)(void*,
       uint32_t,
       uint64_t))(&wuffs_cbor__decoder__set_quirk),
@@ -33046,18 +33115,18 @@ wuffs_cbor__decoder__set_quirk(
 // -------- func cbor.decoder.history_retain_length
 
 WUFFS_BASE__GENERATED_C_CODE
-WUFFS_BASE__MAYBE_STATIC uint64_t
+WUFFS_BASE__MAYBE_STATIC wuffs_base__optional_u63
 wuffs_cbor__decoder__history_retain_length(
     const wuffs_cbor__decoder* self) {
   if (!self) {
-    return 0;
+    return wuffs_base__utility__make_optional_u63(false, 0u);
   }
   if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
       (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
-    return 0;
+    return wuffs_base__utility__make_optional_u63(false, 0u);
   }
 
-  return 0u;
+  return wuffs_base__utility__make_optional_u63(true, 0u);
 }
 
 // -------- func cbor.decoder.workbuf_len
@@ -35566,7 +35635,7 @@ const wuffs_base__io_transformer__func_ptrs
 wuffs_deflate__decoder__func_ptrs_for__wuffs_base__io_transformer = {
   (uint64_t(*)(const void*,
       uint32_t))(&wuffs_deflate__decoder__get_quirk),
-  (uint64_t(*)(const void*))(&wuffs_deflate__decoder__history_retain_length),
+  (wuffs_base__optional_u63(*)(const void*))(&wuffs_deflate__decoder__history_retain_length),
   (wuffs_base__status(*)(void*,
       uint32_t,
       uint64_t))(&wuffs_deflate__decoder__set_quirk),
@@ -35733,18 +35802,18 @@ wuffs_deflate__decoder__set_quirk(
 // -------- func deflate.decoder.history_retain_length
 
 WUFFS_BASE__GENERATED_C_CODE
-WUFFS_BASE__MAYBE_STATIC uint64_t
+WUFFS_BASE__MAYBE_STATIC wuffs_base__optional_u63
 wuffs_deflate__decoder__history_retain_length(
     const wuffs_deflate__decoder* self) {
   if (!self) {
-    return 0;
+    return wuffs_base__utility__make_optional_u63(false, 0u);
   }
   if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
       (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
-    return 0;
+    return wuffs_base__utility__make_optional_u63(false, 0u);
   }
 
-  return 0u;
+  return wuffs_base__utility__make_optional_u63(true, 0u);
 }
 
 // -------- func deflate.decoder.workbuf_len
@@ -37975,7 +38044,7 @@ wuffs_gif__decoder__func_ptrs_for__wuffs_base__image_decoder = {
   (wuffs_base__rect_ie_u32(*)(const void*))(&wuffs_gif__decoder__frame_dirty_rect),
   (uint64_t(*)(const void*,
       uint32_t))(&wuffs_gif__decoder__get_quirk),
-  (uint64_t(*)(const void*))(&wuffs_gif__decoder__history_retain_length),
+  (wuffs_base__optional_u63(*)(const void*))(&wuffs_gif__decoder__history_retain_length),
   (uint32_t(*)(const void*))(&wuffs_gif__decoder__num_animation_loops),
   (uint64_t(*)(const void*))(&wuffs_gif__decoder__num_decoded_frame_configs),
   (uint64_t(*)(const void*))(&wuffs_gif__decoder__num_decoded_frames),
@@ -38558,18 +38627,18 @@ wuffs_gif__decoder__frame_dirty_rect(
 // -------- func gif.decoder.history_retain_length
 
 WUFFS_BASE__GENERATED_C_CODE
-WUFFS_BASE__MAYBE_STATIC uint64_t
+WUFFS_BASE__MAYBE_STATIC wuffs_base__optional_u63
 wuffs_gif__decoder__history_retain_length(
     const wuffs_gif__decoder* self) {
   if (!self) {
-    return 0;
+    return wuffs_base__utility__make_optional_u63(false, 0u);
   }
   if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
       (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
-    return 0;
+    return wuffs_base__utility__make_optional_u63(false, 0u);
   }
 
-  return 0u;
+  return wuffs_base__utility__make_optional_u63(true, 0u);
 }
 
 // -------- func gif.decoder.workbuf_len
@@ -40893,7 +40962,7 @@ const wuffs_base__io_transformer__func_ptrs
 wuffs_gzip__decoder__func_ptrs_for__wuffs_base__io_transformer = {
   (uint64_t(*)(const void*,
       uint32_t))(&wuffs_gzip__decoder__get_quirk),
-  (uint64_t(*)(const void*))(&wuffs_gzip__decoder__history_retain_length),
+  (wuffs_base__optional_u63(*)(const void*))(&wuffs_gzip__decoder__history_retain_length),
   (wuffs_base__status(*)(void*,
       uint32_t,
       uint64_t))(&wuffs_gzip__decoder__set_quirk),
@@ -41038,18 +41107,18 @@ wuffs_gzip__decoder__set_quirk(
 // -------- func gzip.decoder.history_retain_length
 
 WUFFS_BASE__GENERATED_C_CODE
-WUFFS_BASE__MAYBE_STATIC uint64_t
+WUFFS_BASE__MAYBE_STATIC wuffs_base__optional_u63
 wuffs_gzip__decoder__history_retain_length(
     const wuffs_gzip__decoder* self) {
   if (!self) {
-    return 0;
+    return wuffs_base__utility__make_optional_u63(false, 0u);
   }
   if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
       (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
-    return 0;
+    return wuffs_base__utility__make_optional_u63(false, 0u);
   }
 
-  return 0u;
+  return wuffs_base__utility__make_optional_u63(true, 0u);
 }
 
 // -------- func gzip.decoder.workbuf_len
@@ -41981,7 +42050,7 @@ wuffs_jpeg__decoder__func_ptrs_for__wuffs_base__image_decoder = {
   (wuffs_base__rect_ie_u32(*)(const void*))(&wuffs_jpeg__decoder__frame_dirty_rect),
   (uint64_t(*)(const void*,
       uint32_t))(&wuffs_jpeg__decoder__get_quirk),
-  (uint64_t(*)(const void*))(&wuffs_jpeg__decoder__history_retain_length),
+  (wuffs_base__optional_u63(*)(const void*))(&wuffs_jpeg__decoder__history_retain_length),
   (uint32_t(*)(const void*))(&wuffs_jpeg__decoder__num_animation_loops),
   (uint64_t(*)(const void*))(&wuffs_jpeg__decoder__num_decoded_frame_configs),
   (uint64_t(*)(const void*))(&wuffs_jpeg__decoder__num_decoded_frames),
@@ -46654,18 +46723,18 @@ wuffs_jpeg__decoder__tell_me_more(
 // -------- func jpeg.decoder.history_retain_length
 
 WUFFS_BASE__GENERATED_C_CODE
-WUFFS_BASE__MAYBE_STATIC uint64_t
+WUFFS_BASE__MAYBE_STATIC wuffs_base__optional_u63
 wuffs_jpeg__decoder__history_retain_length(
     const wuffs_jpeg__decoder* self) {
   if (!self) {
-    return 0;
+    return wuffs_base__utility__make_optional_u63(false, 0u);
   }
   if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
       (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
-    return 0;
+    return wuffs_base__utility__make_optional_u63(false, 0u);
   }
 
-  return 0u;
+  return wuffs_base__utility__make_optional_u63(true, 0u);
 }
 
 // -------- func jpeg.decoder.workbuf_len
@@ -48462,7 +48531,7 @@ wuffs_json__decoder__func_ptrs_for__wuffs_base__token_decoder = {
       wuffs_base__slice_u8))(&wuffs_json__decoder__decode_tokens),
   (uint64_t(*)(const void*,
       uint32_t))(&wuffs_json__decoder__get_quirk),
-  (uint64_t(*)(const void*))(&wuffs_json__decoder__history_retain_length),
+  (wuffs_base__optional_u63(*)(const void*))(&wuffs_json__decoder__history_retain_length),
   (wuffs_base__status(*)(void*,
       uint32_t,
       uint64_t))(&wuffs_json__decoder__set_quirk),
@@ -48599,18 +48668,18 @@ wuffs_json__decoder__set_quirk(
 // -------- func json.decoder.history_retain_length
 
 WUFFS_BASE__GENERATED_C_CODE
-WUFFS_BASE__MAYBE_STATIC uint64_t
+WUFFS_BASE__MAYBE_STATIC wuffs_base__optional_u63
 wuffs_json__decoder__history_retain_length(
     const wuffs_json__decoder* self) {
   if (!self) {
-    return 0;
+    return wuffs_base__utility__make_optional_u63(false, 0u);
   }
   if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
       (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
-    return 0;
+    return wuffs_base__utility__make_optional_u63(false, 0u);
   }
 
-  return 0u;
+  return wuffs_base__utility__make_optional_u63(true, 0u);
 }
 
 // -------- func json.decoder.workbuf_len
@@ -50445,7 +50514,7 @@ const wuffs_base__io_transformer__func_ptrs
 wuffs_lzw__decoder__func_ptrs_for__wuffs_base__io_transformer = {
   (uint64_t(*)(const void*,
       uint32_t))(&wuffs_lzw__decoder__get_quirk),
-  (uint64_t(*)(const void*))(&wuffs_lzw__decoder__history_retain_length),
+  (wuffs_base__optional_u63(*)(const void*))(&wuffs_lzw__decoder__history_retain_length),
   (wuffs_base__status(*)(void*,
       uint32_t,
       uint64_t))(&wuffs_lzw__decoder__set_quirk),
@@ -50579,18 +50648,18 @@ wuffs_lzw__decoder__set_quirk(
 // -------- func lzw.decoder.history_retain_length
 
 WUFFS_BASE__GENERATED_C_CODE
-WUFFS_BASE__MAYBE_STATIC uint64_t
+WUFFS_BASE__MAYBE_STATIC wuffs_base__optional_u63
 wuffs_lzw__decoder__history_retain_length(
     const wuffs_lzw__decoder* self) {
   if (!self) {
-    return 0;
+    return wuffs_base__utility__make_optional_u63(false, 0u);
   }
   if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
       (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
-    return 0;
+    return wuffs_base__utility__make_optional_u63(false, 0u);
   }
 
-  return 0u;
+  return wuffs_base__utility__make_optional_u63(true, 0u);
 }
 
 // -------- func lzw.decoder.workbuf_len
@@ -51053,7 +51122,7 @@ wuffs_netpbm__decoder__func_ptrs_for__wuffs_base__image_decoder = {
   (wuffs_base__rect_ie_u32(*)(const void*))(&wuffs_netpbm__decoder__frame_dirty_rect),
   (uint64_t(*)(const void*,
       uint32_t))(&wuffs_netpbm__decoder__get_quirk),
-  (uint64_t(*)(const void*))(&wuffs_netpbm__decoder__history_retain_length),
+  (wuffs_base__optional_u63(*)(const void*))(&wuffs_netpbm__decoder__history_retain_length),
   (uint32_t(*)(const void*))(&wuffs_netpbm__decoder__num_animation_loops),
   (uint64_t(*)(const void*))(&wuffs_netpbm__decoder__num_decoded_frame_configs),
   (uint64_t(*)(const void*))(&wuffs_netpbm__decoder__num_decoded_frames),
@@ -52113,18 +52182,18 @@ wuffs_netpbm__decoder__tell_me_more(
 // -------- func netpbm.decoder.history_retain_length
 
 WUFFS_BASE__GENERATED_C_CODE
-WUFFS_BASE__MAYBE_STATIC uint64_t
+WUFFS_BASE__MAYBE_STATIC wuffs_base__optional_u63
 wuffs_netpbm__decoder__history_retain_length(
     const wuffs_netpbm__decoder* self) {
   if (!self) {
-    return 0;
+    return wuffs_base__utility__make_optional_u63(false, 0u);
   }
   if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
       (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
-    return 0;
+    return wuffs_base__utility__make_optional_u63(false, 0u);
   }
 
-  return 0u;
+  return wuffs_base__utility__make_optional_u63(true, 0u);
 }
 
 // -------- func netpbm.decoder.workbuf_len
@@ -52211,7 +52280,7 @@ wuffs_nie__decoder__func_ptrs_for__wuffs_base__image_decoder = {
   (wuffs_base__rect_ie_u32(*)(const void*))(&wuffs_nie__decoder__frame_dirty_rect),
   (uint64_t(*)(const void*,
       uint32_t))(&wuffs_nie__decoder__get_quirk),
-  (uint64_t(*)(const void*))(&wuffs_nie__decoder__history_retain_length),
+  (wuffs_base__optional_u63(*)(const void*))(&wuffs_nie__decoder__history_retain_length),
   (uint32_t(*)(const void*))(&wuffs_nie__decoder__num_animation_loops),
   (uint64_t(*)(const void*))(&wuffs_nie__decoder__num_decoded_frame_configs),
   (uint64_t(*)(const void*))(&wuffs_nie__decoder__num_decoded_frames),
@@ -53191,18 +53260,18 @@ wuffs_nie__decoder__tell_me_more(
 // -------- func nie.decoder.history_retain_length
 
 WUFFS_BASE__GENERATED_C_CODE
-WUFFS_BASE__MAYBE_STATIC uint64_t
+WUFFS_BASE__MAYBE_STATIC wuffs_base__optional_u63
 wuffs_nie__decoder__history_retain_length(
     const wuffs_nie__decoder* self) {
   if (!self) {
-    return 0;
+    return wuffs_base__utility__make_optional_u63(false, 0u);
   }
   if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
       (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
-    return 0;
+    return wuffs_base__utility__make_optional_u63(false, 0u);
   }
 
-  return 0u;
+  return wuffs_base__utility__make_optional_u63(true, 0u);
 }
 
 // -------- func nie.decoder.workbuf_len
@@ -53260,7 +53329,7 @@ const wuffs_base__io_transformer__func_ptrs
 wuffs_zlib__decoder__func_ptrs_for__wuffs_base__io_transformer = {
   (uint64_t(*)(const void*,
       uint32_t))(&wuffs_zlib__decoder__get_quirk),
-  (uint64_t(*)(const void*))(&wuffs_zlib__decoder__history_retain_length),
+  (wuffs_base__optional_u63(*)(const void*))(&wuffs_zlib__decoder__history_retain_length),
   (wuffs_base__status(*)(void*,
       uint32_t,
       uint64_t))(&wuffs_zlib__decoder__set_quirk),
@@ -53471,18 +53540,18 @@ wuffs_zlib__decoder__set_quirk(
 // -------- func zlib.decoder.history_retain_length
 
 WUFFS_BASE__GENERATED_C_CODE
-WUFFS_BASE__MAYBE_STATIC uint64_t
+WUFFS_BASE__MAYBE_STATIC wuffs_base__optional_u63
 wuffs_zlib__decoder__history_retain_length(
     const wuffs_zlib__decoder* self) {
   if (!self) {
-    return 0;
+    return wuffs_base__utility__make_optional_u63(false, 0u);
   }
   if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
       (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
-    return 0;
+    return wuffs_base__utility__make_optional_u63(false, 0u);
   }
 
-  return 0u;
+  return wuffs_base__utility__make_optional_u63(true, 0u);
 }
 
 // -------- func zlib.decoder.workbuf_len
@@ -54223,7 +54292,7 @@ wuffs_png__decoder__func_ptrs_for__wuffs_base__image_decoder = {
   (wuffs_base__rect_ie_u32(*)(const void*))(&wuffs_png__decoder__frame_dirty_rect),
   (uint64_t(*)(const void*,
       uint32_t))(&wuffs_png__decoder__get_quirk),
-  (uint64_t(*)(const void*))(&wuffs_png__decoder__history_retain_length),
+  (wuffs_base__optional_u63(*)(const void*))(&wuffs_png__decoder__history_retain_length),
   (uint32_t(*)(const void*))(&wuffs_png__decoder__num_animation_loops),
   (uint64_t(*)(const void*))(&wuffs_png__decoder__num_decoded_frame_configs),
   (uint64_t(*)(const void*))(&wuffs_png__decoder__num_decoded_frames),
@@ -59951,18 +60020,18 @@ wuffs_png__decoder__do_tell_me_more(
 // -------- func png.decoder.history_retain_length
 
 WUFFS_BASE__GENERATED_C_CODE
-WUFFS_BASE__MAYBE_STATIC uint64_t
+WUFFS_BASE__MAYBE_STATIC wuffs_base__optional_u63
 wuffs_png__decoder__history_retain_length(
     const wuffs_png__decoder* self) {
   if (!self) {
-    return 0;
+    return wuffs_base__utility__make_optional_u63(false, 0u);
   }
   if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
       (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
-    return 0;
+    return wuffs_base__utility__make_optional_u63(false, 0u);
   }
 
-  return 0u;
+  return wuffs_base__utility__make_optional_u63(true, 0u);
 }
 
 // -------- func png.decoder.workbuf_len
@@ -61013,7 +61082,7 @@ wuffs_tga__decoder__func_ptrs_for__wuffs_base__image_decoder = {
   (wuffs_base__rect_ie_u32(*)(const void*))(&wuffs_tga__decoder__frame_dirty_rect),
   (uint64_t(*)(const void*,
       uint32_t))(&wuffs_tga__decoder__get_quirk),
-  (uint64_t(*)(const void*))(&wuffs_tga__decoder__history_retain_length),
+  (wuffs_base__optional_u63(*)(const void*))(&wuffs_tga__decoder__history_retain_length),
   (uint32_t(*)(const void*))(&wuffs_tga__decoder__num_animation_loops),
   (uint64_t(*)(const void*))(&wuffs_tga__decoder__num_decoded_frame_configs),
   (uint64_t(*)(const void*))(&wuffs_tga__decoder__num_decoded_frames),
@@ -62378,18 +62447,18 @@ wuffs_tga__decoder__tell_me_more(
 // -------- func tga.decoder.history_retain_length
 
 WUFFS_BASE__GENERATED_C_CODE
-WUFFS_BASE__MAYBE_STATIC uint64_t
+WUFFS_BASE__MAYBE_STATIC wuffs_base__optional_u63
 wuffs_tga__decoder__history_retain_length(
     const wuffs_tga__decoder* self) {
   if (!self) {
-    return 0;
+    return wuffs_base__utility__make_optional_u63(false, 0u);
   }
   if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
       (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
-    return 0;
+    return wuffs_base__utility__make_optional_u63(false, 0u);
   }
 
-  return 0u;
+  return wuffs_base__utility__make_optional_u63(true, 0u);
 }
 
 // -------- func tga.decoder.workbuf_len
@@ -62467,7 +62536,7 @@ wuffs_wbmp__decoder__func_ptrs_for__wuffs_base__image_decoder = {
   (wuffs_base__rect_ie_u32(*)(const void*))(&wuffs_wbmp__decoder__frame_dirty_rect),
   (uint64_t(*)(const void*,
       uint32_t))(&wuffs_wbmp__decoder__get_quirk),
-  (uint64_t(*)(const void*))(&wuffs_wbmp__decoder__history_retain_length),
+  (wuffs_base__optional_u63(*)(const void*))(&wuffs_wbmp__decoder__history_retain_length),
   (uint32_t(*)(const void*))(&wuffs_wbmp__decoder__num_animation_loops),
   (uint64_t(*)(const void*))(&wuffs_wbmp__decoder__num_decoded_frame_configs),
   (uint64_t(*)(const void*))(&wuffs_wbmp__decoder__num_decoded_frames),
@@ -63318,18 +63387,18 @@ wuffs_wbmp__decoder__tell_me_more(
 // -------- func wbmp.decoder.history_retain_length
 
 WUFFS_BASE__GENERATED_C_CODE
-WUFFS_BASE__MAYBE_STATIC uint64_t
+WUFFS_BASE__MAYBE_STATIC wuffs_base__optional_u63
 wuffs_wbmp__decoder__history_retain_length(
     const wuffs_wbmp__decoder* self) {
   if (!self) {
-    return 0;
+    return wuffs_base__utility__make_optional_u63(false, 0u);
   }
   if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
       (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
-    return 0;
+    return wuffs_base__utility__make_optional_u63(false, 0u);
   }
 
-  return 0u;
+  return wuffs_base__utility__make_optional_u63(true, 0u);
 }
 
 // -------- func wbmp.decoder.workbuf_len
@@ -64680,14 +64749,16 @@ DecodeCbor(DecodeCborCallbacks& callbacks,
                 "wuffs_aux::DecodeCbor: internal error: io_buf is closed";
             goto done;
           }
-          io_buf->compact_retaining(dec->history_retain_length());
+          io_buf->compact_retaining(
+              dec->history_retain_length().value_or(UINT64_MAX));
           if (io_buf->meta.wi >= io_buf->data.len) {
             ret_error_message =
                 "wuffs_aux::DecodeCbor: internal error: io_buf is full";
             goto done;
           }
           cursor_index = io_buf->meta.ri;
-          io_error_message = input.CopyIn(io_buf, dec->history_retain_length());
+          io_error_message = input.CopyIn(
+              io_buf, dec->history_retain_length().value_or(UINT64_MAX));
         } else {
           ret_error_message = tok_status.message();
           goto done;
@@ -65367,8 +65438,9 @@ redirect:
       } else if (io_buf.meta.closed) {
         return DecodeImageResult(DecodeImage_UnexpectedEndOfFile);
       } else {
-        std::string error_message =
-            input.CopyIn(&io_buf, image_decoder->history_retain_length());
+        std::string error_message = input.CopyIn(
+            &io_buf,
+            image_decoder->history_retain_length().value_or(UINT64_MAX));
         if (!error_message.empty()) {
           return DecodeImageResult(std::move(error_message));
         }
@@ -65450,8 +65522,8 @@ redirect:
     } else if (io_buf.meta.closed) {
       return DecodeImageResult(DecodeImage_UnexpectedEndOfFile);
     } else {
-      std::string error_message =
-          input.CopyIn(&io_buf, image_decoder->history_retain_length());
+      std::string error_message = input.CopyIn(
+          &io_buf, image_decoder->history_retain_length().value_or(UINT64_MAX));
       if (!error_message.empty()) {
         return DecodeImageResult(std::move(error_message));
       }
@@ -65480,8 +65552,8 @@ redirect:
       message = DecodeImage_UnexpectedEndOfFile;
       break;
     } else {
-      std::string error_message =
-          input.CopyIn(&io_buf, image_decoder->history_retain_length());
+      std::string error_message = input.CopyIn(
+          &io_buf, image_decoder->history_retain_length().value_or(UINT64_MAX));
       if (!error_message.empty()) {
         message = std::move(error_message);
         break;
@@ -65509,8 +65581,9 @@ redirect:
       } else if (io_buf.meta.closed) {
         return DecodeImageResult(DecodeImage_UnexpectedEndOfFile);
       } else {
-        std::string error_message =
-            input.CopyIn(&io_buf, image_decoder->history_retain_length());
+        std::string error_message = input.CopyIn(
+            &io_buf,
+            image_decoder->history_retain_length().value_or(UINT64_MAX));
         if (!error_message.empty()) {
           return DecodeImageResult(std::move(error_message));
         }
@@ -65603,58 +65676,60 @@ DecodeJsonArgJsonPointer::DefaultValue() {
 
 // --------
 
-#define WUFFS_AUX__DECODE_JSON__GET_THE_NEXT_TOKEN                           \
-  while (tok_buf.meta.ri >= tok_buf.meta.wi) {                               \
-    if (tok_status.repr == nullptr) {                                        \
-      goto done;                                                             \
-    } else if (tok_status.repr == wuffs_base__suspension__short_write) {     \
-      tok_buf.compact();                                                     \
-    } else if (tok_status.repr == wuffs_base__suspension__short_read) {      \
-      if (!io_error_message.empty()) {                                       \
-        ret_error_message = std::move(io_error_message);                     \
-        goto done;                                                           \
-      } else if (cursor_index != io_buf->meta.ri) {                          \
-        ret_error_message =                                                  \
-            "wuffs_aux::DecodeJson: internal error: bad cursor_index";       \
-        goto done;                                                           \
-      } else if (io_buf->meta.closed) {                                      \
-        ret_error_message =                                                  \
-            "wuffs_aux::DecodeJson: internal error: io_buf is closed";       \
-        goto done;                                                           \
-      }                                                                      \
-      io_buf->compact_retaining(dec->history_retain_length());               \
-      if (io_buf->meta.wi >= io_buf->data.len) {                             \
-        ret_error_message =                                                  \
-            "wuffs_aux::DecodeJson: internal error: io_buf is full";         \
-        goto done;                                                           \
-      }                                                                      \
-      cursor_index = io_buf->meta.ri;                                        \
-      io_error_message = input.CopyIn(io_buf, dec->history_retain_length()); \
-    } else {                                                                 \
-      ret_error_message = tok_status.message();                              \
-      goto done;                                                             \
-    }                                                                        \
-    tok_status =                                                             \
-        dec->decode_tokens(&tok_buf, io_buf, wuffs_base__empty_slice_u8());  \
-    if ((tok_buf.meta.ri > tok_buf.meta.wi) ||                               \
-        (tok_buf.meta.wi > tok_buf.data.len) ||                              \
-        (io_buf->meta.ri > io_buf->meta.wi) ||                               \
-        (io_buf->meta.wi > io_buf->data.len)) {                              \
-      ret_error_message =                                                    \
-          "wuffs_aux::DecodeJson: internal error: bad buffer indexes";       \
-      goto done;                                                             \
-    }                                                                        \
-  }                                                                          \
-  wuffs_base__token token = tok_buf.data.ptr[tok_buf.meta.ri++];             \
-  uint64_t token_len = token.length();                                       \
-  if ((io_buf->meta.ri < cursor_index) ||                                    \
-      ((io_buf->meta.ri - cursor_index) < token_len)) {                      \
-    ret_error_message =                                                      \
-        "wuffs_aux::DecodeJson: internal error: bad token indexes";          \
-    goto done;                                                               \
-  }                                                                          \
-  uint8_t* token_ptr = io_buf->data.ptr + cursor_index;                      \
-  (void)(token_ptr);                                                         \
+#define WUFFS_AUX__DECODE_JSON__GET_THE_NEXT_TOKEN                          \
+  while (tok_buf.meta.ri >= tok_buf.meta.wi) {                              \
+    if (tok_status.repr == nullptr) {                                       \
+      goto done;                                                            \
+    } else if (tok_status.repr == wuffs_base__suspension__short_write) {    \
+      tok_buf.compact();                                                    \
+    } else if (tok_status.repr == wuffs_base__suspension__short_read) {     \
+      if (!io_error_message.empty()) {                                      \
+        ret_error_message = std::move(io_error_message);                    \
+        goto done;                                                          \
+      } else if (cursor_index != io_buf->meta.ri) {                         \
+        ret_error_message =                                                 \
+            "wuffs_aux::DecodeJson: internal error: bad cursor_index";      \
+        goto done;                                                          \
+      } else if (io_buf->meta.closed) {                                     \
+        ret_error_message =                                                 \
+            "wuffs_aux::DecodeJson: internal error: io_buf is closed";      \
+        goto done;                                                          \
+      }                                                                     \
+      io_buf->compact_retaining(                                            \
+          dec->history_retain_length().value_or(UINT64_MAX));               \
+      if (io_buf->meta.wi >= io_buf->data.len) {                            \
+        ret_error_message =                                                 \
+            "wuffs_aux::DecodeJson: internal error: io_buf is full";        \
+        goto done;                                                          \
+      }                                                                     \
+      cursor_index = io_buf->meta.ri;                                       \
+      io_error_message = input.CopyIn(                                      \
+          io_buf, dec->history_retain_length().value_or(UINT64_MAX));       \
+    } else {                                                                \
+      ret_error_message = tok_status.message();                             \
+      goto done;                                                            \
+    }                                                                       \
+    tok_status =                                                            \
+        dec->decode_tokens(&tok_buf, io_buf, wuffs_base__empty_slice_u8()); \
+    if ((tok_buf.meta.ri > tok_buf.meta.wi) ||                              \
+        (tok_buf.meta.wi > tok_buf.data.len) ||                             \
+        (io_buf->meta.ri > io_buf->meta.wi) ||                              \
+        (io_buf->meta.wi > io_buf->data.len)) {                             \
+      ret_error_message =                                                   \
+          "wuffs_aux::DecodeJson: internal error: bad buffer indexes";      \
+      goto done;                                                            \
+    }                                                                       \
+  }                                                                         \
+  wuffs_base__token token = tok_buf.data.ptr[tok_buf.meta.ri++];            \
+  uint64_t token_len = token.length();                                      \
+  if ((io_buf->meta.ri < cursor_index) ||                                   \
+      ((io_buf->meta.ri - cursor_index) < token_len)) {                     \
+    ret_error_message =                                                     \
+        "wuffs_aux::DecodeJson: internal error: bad token indexes";         \
+    goto done;                                                              \
+  }                                                                         \
+  uint8_t* token_ptr = io_buf->data.ptr + cursor_index;                     \
+  (void)(token_ptr);                                                        \
   cursor_index += static_cast<size_t>(token_len)
 
 // --------

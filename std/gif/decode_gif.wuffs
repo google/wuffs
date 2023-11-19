@@ -333,8 +333,8 @@ pub func decoder.frame_dirty_rect() base.rect_ie_u32 {
             max_excl_y: this.dirty_max_excl_y.min(no_more_than: this.height))
 }
 
-pub func decoder.history_retain_length() base.u64 {
-    return 0
+pub func decoder.history_retain_length() base.optional_u63 {
+    return this.util.make_optional_u63(has_value: true, value: 0)
 }
 
 pub func decoder.workbuf_len() base.range_ii_u64 {

@@ -210,8 +210,10 @@ main1(int argc, char** argv) {
       return wuffs_base__status__message(&status);
     }
 
+    wuffs_base__optional_u63 hrl =
+        wuffs_gzip__decoder__history_retain_length(&dec);
     wuffs_base__io_buffer__compact_retaining(
-        &src, wuffs_gzip__decoder__history_retain_length(&dec));
+        &src, wuffs_base__optional_u63__value_or(&hrl, UINT64_MAX));
     if (src.meta.wi == src.data.len) {
       return "main: internal error: no I/O progress possible";
     }

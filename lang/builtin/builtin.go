@@ -286,6 +286,8 @@ var Types = []string{
 
 	"bitvec256",
 
+	"optional_u63",
+
 	"empty_struct",
 	"bool",
 	"utility",
@@ -377,6 +379,7 @@ var funcsOther = [...]string{
 	"utility.empty_rect_ie_u32() rect_ie_u32",
 	"utility.empty_slice_u8() slice u8",
 	"utility.make_bitvec256(e00: u64, e01: u64, e02: u64, e03: u64) bitvec256",
+	"utility.make_optional_u63(has_value: bool, value: u64[..= 0x7FFF_FFFF_FFFF_FFFF]) optional_u63",
 	"utility.make_pixel_format(repr: u32) pixel_format",
 	"utility.make_range_ii_u32(min_incl: u32, max_incl: u32) range_ii_u32",
 	"utility.make_range_ie_u32(min_incl: u32, max_excl: u32) range_ie_u32",
@@ -998,7 +1001,7 @@ var InterfaceFuncs = []string{
 	"image_decoder.decode_image_config?(dst: nptr image_config, src: io_reader)",
 	"image_decoder.frame_dirty_rect() rect_ie_u32",
 	"image_decoder.get_quirk(key: u32) u64",
-	"image_decoder.history_retain_length() u64",
+	"image_decoder.history_retain_length() optional_u63",
 	"image_decoder.num_animation_loops() u32",
 	"image_decoder.num_decoded_frame_configs() u64",
 	"image_decoder.num_decoded_frames() u64",
@@ -1011,7 +1014,7 @@ var InterfaceFuncs = []string{
 	// ---- io_transformer
 
 	"io_transformer.get_quirk(key: u32) u64",
-	"io_transformer.history_retain_length() u64",
+	"io_transformer.history_retain_length() optional_u63",
 	"io_transformer.set_quirk!(key: u32, value: u64) status",
 	"io_transformer.transform_io?(dst: io_writer, src: io_reader, workbuf: slice u8)",
 	"io_transformer.workbuf_len() range_ii_u64",
@@ -1020,7 +1023,7 @@ var InterfaceFuncs = []string{
 
 	"token_decoder.decode_tokens?(dst: token_writer, src: io_reader, workbuf: slice u8)",
 	"token_decoder.get_quirk(key: u32) u64",
-	"token_decoder.history_retain_length() u64",
+	"token_decoder.history_retain_length() optional_u63",
 	"token_decoder.set_quirk!(key: u32, value: u64) status",
 	"token_decoder.workbuf_len() range_ii_u64",
 }

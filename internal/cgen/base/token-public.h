@@ -451,7 +451,8 @@ wuffs_base__token_buffer__compact(wuffs_base__token_buffer* buf) {
 // wuffs_base__token_buffer__compact_retaining moves any written but unread
 // tokens closer to the start of the buffer. It retains H tokens of history
 // (the most recently read tokens), where H is min(buf->meta.ri,
-// history_retain_length). A postcondition is that buf->meta.ri == H.
+// history_retain_length). It is therefore a no-op if history_retain_length is
+// UINT64_MAX. A postcondition is that buf->meta.ri == H.
 //
 // wuffs_base__token_buffer__compact_retaining(0) is equivalent to
 // wuffs_base__token_buffer__compact().

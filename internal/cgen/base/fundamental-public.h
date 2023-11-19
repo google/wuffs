@@ -894,6 +894,70 @@ wuffs_base__make_bitvec256(uint64_t e00,
 
 // --------
 
+// wuffs_base__optional_u63 is like a std::optional<uint64_t>, but for C (not
+// just C++) and the value can only hold 63 bits (not 64).
+//
+// Do not manipulate repr directly; it is a private implementation detail.
+typedef struct wuffs_base__optional_u63__struct {
+  uint64_t repr;
+
+#ifdef __cplusplus
+  inline bool has_value() const;
+  inline uint64_t value() const;
+  inline uint64_t value_or(uint64_t default_value) const;
+#endif  // __cplusplus
+
+} wuffs_base__optional_u63;
+
+// wuffs_base__make_optional_u63 ignores value when has_value is false.
+//
+// Preconditions:
+//  - value < (1 << 63).
+static inline wuffs_base__optional_u63  //
+wuffs_base__make_optional_u63(bool has_value, uint64_t value) {
+  wuffs_base__optional_u63 res;
+  res.repr = has_value ? ((value << 1u) | 1u) : 0u;
+  return res;
+}
+
+static inline bool  //
+wuffs_base__optional_u63__has_value(const wuffs_base__optional_u63* o) {
+  return o->repr;
+}
+
+// wuffs_base__optional_u63__value returns zero when o does not have a value.
+static inline uint64_t  //
+wuffs_base__optional_u63__value(const wuffs_base__optional_u63* o) {
+  return o->repr >> 1u;
+}
+
+static inline uint64_t  //
+wuffs_base__optional_u63__value_or(const wuffs_base__optional_u63* o,
+                                   uint64_t default_value) {
+  return o->repr ? (o->repr >> 1u) : default_value;
+}
+
+#ifdef __cplusplus
+
+inline bool  //
+wuffs_base__optional_u63::has_value() const {
+  return wuffs_base__optional_u63__has_value(this);
+}
+
+inline uint64_t  //
+wuffs_base__optional_u63::value() const {
+  return wuffs_base__optional_u63__value(this);
+}
+
+inline uint64_t  //
+wuffs_base__optional_u63::value_or(uint64_t default_value) const {
+  return wuffs_base__optional_u63__value_or(this, default_value);
+}
+
+#endif  // __cplusplus
+
+// --------
+
 // The "defined(__clang__)" isn't redundant. While vanilla clang defines
 // __GNUC__, clang-cl (which mimics MSVC's cl.exe) does not.
 #if (defined(__GNUC__) || defined(__clang__)) && (__SIZEOF_LONG__ == 8)

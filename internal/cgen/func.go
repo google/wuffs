@@ -351,6 +351,9 @@ func writeOutParamZeroValue(b *buffer, tm *t.Map, typ *a.TypeExpr) error {
 		case t.IDBitvec256:
 			b.writes("wuffs_base__utility__make_bitvec256(0u, 0u, 0u, 0u)")
 			return nil
+		case t.IDOptionalU63:
+			b.writes("wuffs_base__utility__make_optional_u63(false, 0u)")
+			return nil
 		case t.IDRangeIEU32:
 			b.writes("wuffs_base__utility__empty_range_ie_u32()")
 			return nil

@@ -44,6 +44,8 @@ var (
 
 	typeExprBitvec256 = a.NewTypeExpr(0, t.IDBase, t.IDBitvec256, nil, nil, nil)
 
+	typeExprOptionalU63 = a.NewTypeExpr(0, t.IDBase, t.IDOptionalU63, nil, nil, nil)
+
 	typeExprEmptyStruct = a.NewTypeExpr(0, t.IDBase, t.IDEmptyStruct, nil, nil, nil)
 	typeExprBool        = a.NewTypeExpr(0, t.IDBase, t.IDBool, nil, nil, nil)
 	typeExprUtility     = a.NewTypeExpr(0, t.IDBase, t.IDUtility, nil, nil, nil)
@@ -114,6 +116,8 @@ var builtInTypeMap = typeMap{
 	t.IDU64: typeExprU64,
 
 	t.IDBitvec256: typeExprBitvec256,
+
+	t.IDOptionalU63: typeExprOptionalU63,
 
 	t.IDEmptyStruct: typeExprEmptyStruct,
 	t.IDBool:        typeExprBool,

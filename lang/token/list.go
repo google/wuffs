@@ -474,6 +474,8 @@ const (
 	IDBitvec128 = ID(0x118)
 	IDBitvec256 = ID(0x119)
 
+	IDOptionalU63 = ID(0x11C)
+
 	IDBase            = ID(0x120)
 	IDBool            = ID(0x121)
 	IDEmptyIOReader   = ID(0x122)
@@ -920,6 +922,8 @@ var builtInsByID = [nBuiltInIDs]string{
 
 	IDBitvec128: "bitvec128",
 	IDBitvec256: "bitvec256",
+
+	IDOptionalU63: "optional_u63",
 
 	IDBase:            "base",
 	IDBool:            "bool",

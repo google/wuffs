@@ -169,7 +169,8 @@ wuffs_base__io_buffer__compact(wuffs_base__io_buffer* buf) {
 // wuffs_base__io_buffer__compact_retaining moves any written but unread bytes
 // closer to the start of the buffer. It retains H bytes of history (the most
 // recently read bytes), where H is min(buf->meta.ri, history_retain_length).
-// A postcondition is that buf->meta.ri == H.
+// It is therefore a no-op if history_retain_length is UINT64_MAX. A
+// postcondition is that buf->meta.ri == H.
 //
 // wuffs_base__io_buffer__compact_retaining(0) is equivalent to
 // wuffs_base__io_buffer__compact().

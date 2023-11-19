@@ -251,11 +251,17 @@ static void  //
 ignore_return_value(int ignored) {}
 
 const char*  //
-read_more_src(uint64_t history_retain_length) {
+read_more_src(wuffs_base__optional_u63 history_retain_length) {
   if (g_src.meta.closed) {
     return "main: unexpected end of file";
   }
-  wuffs_base__io_buffer__compact_retaining(&g_src, history_retain_length);
+  if (wuffs_base__optional_u63__has_value(&history_retain_length)) {
+    wuffs_base__io_buffer__compact_retaining(
+        &g_src, wuffs_base__optional_u63__value(&history_retain_length));
+  }
+  if (g_src.meta.wi == g_src.data.len) {
+    return "main: internal error: no I/O progress possible";
+  }
   ssize_t n = read(STDIN_FD, g_src.data.ptr + g_src.meta.wi,
                    g_src.data.len - g_src.meta.wi);
   if (n > 0) {
@@ -281,7 +287,7 @@ load_image_type() {
         (wuffs_base__io_buffer__reader_length(&g_src) == g_src.data.len)) {
       break;
     }
-    TRY(read_more_src(0));
+    TRY(read_more_src(wuffs_base__make_optional_u63(true, 0)));
   }
   return NULL;
 }
@@ -406,7 +412,7 @@ advance_for_redirect() {
       break;
     }
     g_src.meta.ri = g_src.meta.wi;
-    TRY(read_more_src(0));
+    TRY(read_more_src(wuffs_base__make_optional_u63(true, 0)));
   }
   return NULL;
 }

@@ -185,6 +185,9 @@ wuffs_private_impl__u64__sat_sub_indirect(uint64_t* x, uint64_t y) {
 #define wuffs_base__utility__make_bitvec256(e00, e01, e02, e03) \
   wuffs_base__make_bitvec256(e00, e01, e02, e03)
 
+#define wuffs_base__utility__make_optional_u63(h, v) \
+  wuffs_base__make_optional_u63(h, v)
+
 // ---------------- Slices and Tables
 
 // wuffs_private_impl__slice_u8__prefix returns up to the first up_to bytes of
