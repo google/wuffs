@@ -31532,6 +31532,9 @@ wuffs_bzip2__decoder__get_quirk(
     return 0;
   }
 
+  if ((a_key == 1u) && self->private_impl.f_ignore_checksum) {
+    return 1u;
+  }
   return 0u;
 }
 
