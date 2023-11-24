@@ -1352,7 +1352,7 @@ func (q *checker) canLimitedCopyU32FromHistoryFast(recv *a.Expr, args []*a.Node,
 	distance := args[1].AsArg().Value()
 
 	// Check "upto >= one".
-check9: // TODO: renumber.
+check0:
 	for {
 		for _, x := range q.facts {
 			if x.Operator() != t.IDXBinaryGreaterEq {
@@ -1364,13 +1364,13 @@ check9: // TODO: renumber.
 			if rcv := x.RHS().AsExpr().ConstValue(); (rcv == nil) || (rcv.Sign() <= 0) {
 				continue
 			}
-			break check9
+			break check0
 		}
 		return fmt.Errorf("check: could not prove %s >= 1", upTo.Str(q.tm))
 	}
 
 	// Check "upTo <= this.length()".
-check0:
+check1:
 	for {
 		for _, x := range q.facts {
 			if x.Operator() != t.IDXBinaryLessEq {
@@ -1407,7 +1407,7 @@ check0:
 				continue
 			}
 
-			break check0
+			break check1
 		}
 		if adj == nil {
 			return fmt.Errorf("check: could not prove (%s as base.u64) <= %s.length()",
@@ -1418,7 +1418,7 @@ check0:
 	}
 
 	// Check "distance >= minDistance".
-check1a:
+check2a:
 	for minDistance != nil {
 		for _, x := range q.facts {
 			if x.Operator() != t.IDXBinaryGreaterEq {
@@ -1430,13 +1430,13 @@ check1a:
 			if rcv := x.RHS().AsExpr().ConstValue(); (rcv == nil) || (rcv.Cmp(minDistance) < 0) {
 				continue
 			}
-			break check1a
+			break check2a
 		}
 		return fmt.Errorf("check: could not prove %s >= %v", distance.Str(q.tm), minDistance)
 	}
 
 	// Check "distance == exactDistance".
-check1b:
+check2b:
 	for exactDistance != nil {
 		for _, x := range q.facts {
 			if x.Operator() != t.IDXBinaryEqEq {
@@ -1448,13 +1448,13 @@ check1b:
 			if rcv := x.RHS().AsExpr().ConstValue(); (rcv == nil) || (rcv.Cmp(exactDistance) != 0) {
 				continue
 			}
-			break check1b
+			break check2b
 		}
 		return fmt.Errorf("check: could not prove %s == %v", distance.Str(q.tm), exactDistance)
 	}
 
 	// Check "distance <= this.history_length()".
-check2:
+check3:
 	for {
 		for _, x := range q.facts {
 			if x.Operator() != t.IDXBinaryLessEq {
@@ -1480,7 +1480,7 @@ check2:
 				continue
 			}
 
-			break check2
+			break check3
 		}
 		return fmt.Errorf("check: could not prove %s <= %s.history_length()",
 			distance.Str(q.tm), recv.Str(q.tm))
