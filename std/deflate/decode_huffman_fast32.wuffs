@@ -201,6 +201,7 @@ pri func decoder.decode_huffman_fast32!(dst: base.io_writer, src: base.io_reader
         } else {
             assert args.src.length() >= 6
         }
+        assert length >= 1
 
         // Ensure that we have at least 15 bits of input.
         if n_bits < 15 {
@@ -295,6 +296,7 @@ pri func decoder.decode_huffman_fast32!(dst: base.io_writer, src: base.io_reader
         // decode_huffman_slow.
         while true,
                 pre args.dst.length() >= 266,
+                pre length >= 1,
         {
             // We can therefore prove:
             assert (length as base.u64) <= args.dst.length() via "a <= b: a <= c; c <= b"(c: 266)
@@ -332,6 +334,7 @@ pri func decoder.decode_huffman_fast32!(dst: base.io_writer, src: base.io_reader
                     // No need to copy from args.dst.
                     continue.loop
                 }
+                assert length >= 1
 
                 if (((dist_minus_1 + 1) as base.u64) > args.dst.history_length()) or
                         ((length as base.u64) > args.dst.length()) or
@@ -342,6 +345,7 @@ pri func decoder.decode_huffman_fast32!(dst: base.io_writer, src: base.io_reader
             // Once again, redundant but explicit assertions.
             assert (dist_minus_1 + 1) >= 1
             assert ((dist_minus_1 + 1) as base.u64) <= args.dst.history_length()
+            assert length >= 1
             assert (length as base.u64) <= args.dst.length()
             assert ((length + 8) as base.u64) <= args.dst.length()
 

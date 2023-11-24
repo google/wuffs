@@ -576,6 +576,7 @@ var funcsOther = [...]string{
 	"io_writer.limited_copy_u32_from_slice!(up_to: u32, s: roslice u8) u32",
 
 	// TODO: this should have explicit pre-conditions:
+	//  - up_to >= 1
 	//  - up_to <= this.length()
 	//  - distance >= 1
 	//  - distance <= this.history_length()
@@ -583,6 +584,7 @@ var funcsOther = [...]string{
 	"io_writer.limited_copy_u32_from_history_fast!(up_to: u32, distance: u32) u32",
 
 	// TODO: this should have explicit pre-conditions:
+	//  - up_to >= 1
 	//  - up_to <= this.length()
 	//  - distance >= 1
 	//  - distance <= this.history_length()
@@ -590,6 +592,7 @@ var funcsOther = [...]string{
 	"io_writer.limited_copy_u32_from_history_fast_return_cusp!(up_to: u32, distance: u32) u32[..= 0xFFFF]",
 
 	// TODO: this should have explicit pre-conditions:
+	//  - up_to >= 1
 	//  - (up_to + 8) <= this.length()
 	//  - distance >= 8
 	//  - distance <= this.history_length()
@@ -597,6 +600,7 @@ var funcsOther = [...]string{
 	"io_writer.limited_copy_u32_from_history_8_byte_chunks_fast!(up_to: u32, distance: u32) u32",
 
 	// TODO: this should have explicit pre-conditions:
+	//  - up_to >= 1
 	//  - (up_to + 8) <= this.length()
 	//  - distance == 1
 	//  - distance <= this.history_length()

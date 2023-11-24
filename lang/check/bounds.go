@@ -1337,6 +1337,7 @@ func (q *checker) canUndoByte(recv *a.Expr) error {
 
 func (q *checker) canLimitedCopyU32FromHistoryFast(recv *a.Expr, args []*a.Node, adj *big.Int, minDistance *big.Int, exactDistance *big.Int) error {
 	// As per cgen's io-private.h, there are three pre-conditions:
+	//  - upTo >= one
 	//  - (upTo + adj) <= this.length()
 	//  - either (distance >= minDistance) or (distance == exactDistance),
 	//    depending on which of minDistance and exactDistance is non-nil.
@@ -1349,6 +1350,24 @@ func (q *checker) canLimitedCopyU32FromHistoryFast(recv *a.Expr, args []*a.Node,
 	}
 	upTo := args[0].AsArg().Value()
 	distance := args[1].AsArg().Value()
+
+	// Check "upto >= one".
+check9: // TODO: renumber.
+	for {
+		for _, x := range q.facts {
+			if x.Operator() != t.IDXBinaryGreaterEq {
+				continue
+			}
+			if lhs := x.LHS().AsExpr(); !lhs.Eq(upTo) {
+				continue
+			}
+			if rcv := x.RHS().AsExpr().ConstValue(); (rcv == nil) || (rcv.Sign() <= 0) {
+				continue
+			}
+			break check9
+		}
+		return fmt.Errorf("check: could not prove %s >= 1", upTo.Str(q.tm))
+	}
 
 	// Check "upTo <= this.length()".
 check0:

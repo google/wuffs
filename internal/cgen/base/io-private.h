@@ -204,6 +204,7 @@ wuffs_private_impl__io_writer__limited_copy_u32_from_history(
 // above, but has stronger pre-conditions.
 //
 // The caller needs to prove that:
+//  - length   >= 1
 //  - length   <= (io2_w      - *ptr_iop_w)
 //  - distance >= 1
 //  - distance <= (*ptr_iop_w - io0_w)
@@ -240,6 +241,7 @@ wuffs_private_impl__io_writer__limited_copy_u32_from_history_fast(
 //  - copying l=3, d=2 produces [17, 18, 17] and the cusp is (17, 18).
 //
 // The caller needs to prove that:
+//  - length   >= 1
 //  - length   <= (io2_w      - *ptr_iop_w)
 //  - distance >= 1
 //  - distance <= (*ptr_iop_w - io0_w)
@@ -276,6 +278,7 @@ wuffs_private_impl__io_writer__limited_copy_u32_from_history_fast_return_cusp(
 // In terms of advancing *ptr_iop_w, length is not rounded up.
 //
 // The caller needs to prove that:
+//  - length       >= 1
 //  - (length + 8) <= (io2_w      - *ptr_iop_w)
 //  - distance     == 1
 //  - distance     <= (*ptr_iop_w - io0_w)
@@ -317,6 +320,7 @@ wuffs_private_impl__io_writer__limited_copy_u32_from_history_8_byte_chunks_dista
 // In terms of advancing *ptr_iop_w, length is not rounded up.
 //
 // The caller needs to prove that:
+//  - length       >= 1
 //  - (length + 8) <= (io2_w      - *ptr_iop_w)
 //  - distance     >= 8
 //  - distance     <= (*ptr_iop_w - io0_w)
