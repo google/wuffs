@@ -68,6 +68,14 @@ func TestRoundTripPiTxt(tt *testing.T)            { testRoundTrip(tt, "pi.txt") 
 func TestRoundTripRomeoTxt(tt *testing.T)         { testRoundTrip(tt, "romeo.txt") }
 
 func TestUsrBinFoocatCompat(tt *testing.T) {
+	// Set "allowTestsToExecOtherPrograms = true" for more test coverage,
+	// checking compatibility with third-party decompression tools that are
+	// often available (at a well known location) on Linux.
+	const allowTestsToExecOtherPrograms = false
+	if !allowTestsToExecOtherPrograms {
+		tt.Skip("not configured to exec third-party programs")
+	}
+
 	testCases := [...]struct {
 		fileFormat FileFormat
 		command    string

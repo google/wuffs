@@ -26,7 +26,8 @@
 //     back-references.
 //
 // The main benefit, compared to full LZMA/Xz, is that this implementation is
-// much simpler and hence easier to study. It is around 800 lines of code.
+// much simpler and hence easier to study. It is around 800 lines of code,
+// about a third of which are comments.
 //
 // Example compression numbers on a small English text file (at
 // https://github.com/google/wuffs/blob/main/test/data/romeo.txt):
@@ -54,6 +55,9 @@
 // default settings, not their "maximum compression" settings. This is why the
 // linux-5.0.1.tar.xz file size above differs from what cdn.kernel.org served.
 package litonlylzma
+
+// When editing this file, consider setting "allowTestsToExecOtherPrograms =
+// true" in the test code.
 
 import (
 	"errors"
