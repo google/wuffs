@@ -37,6 +37,7 @@ In Wuffs syntax, the `base.io_transformer` methods are:
 - [std/bzip2](/std/bzip2)
 - [std/deflate](/std/deflate)
 - [std/gzip](/std/gzip)
+- [std/lzma](/std/lzma)
 - [std/lzw](/std/lzw)
 - [std/zlib](/std/zlib)
 

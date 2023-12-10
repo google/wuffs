@@ -19,6 +19,7 @@ The LICENSE has changed from a single license (Apache 2) to a dual license
 - Added `slice_var as nptr array[etc] etc` conversion.
 - Added `std/crc64`.
 - Added `std/jpeg`.
+- Added `std/lzma`.
 - Added `std/netpbm`.
 - Added `std/sha256`.
 - Added `std/xxhash32`.

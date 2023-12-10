@@ -263,6 +263,7 @@ var Statuses = [...]string{
 	`"#disabled by previous error"`,
 	`"#initialize falsely claimed already zeroed"`,
 	`"#initialize not called"`,
+	`"#insufficient history"`,
 	`"#interleaved coroutine calls"`,
 	`"#no more information"`,
 	`"#not enough data"`,

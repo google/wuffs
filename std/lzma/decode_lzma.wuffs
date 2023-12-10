@@ -1,0 +1,324 @@
+// Copyright 2023 The Wuffs Authors.
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// https://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or https://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+pub status "#bad bitstream trailer"
+pub status "#bad code"
+pub status "#bad decoded length"
+pub status "#bad distance"
+pub status "#bad header"
+pub status "#truncated input"
+pub status "#unsupported decoded length"
+pub status "#unsupported properties"
+
+pub const DECODER_HISTORY_RETAIN_LENGTH_MAX_INCL_WORST_CASE : base.u64 = 0xFFFF_FFFF
+
+pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0
+
+pub struct decoder? implements base.io_transformer(
+        // In theory, lc ranges in [0 ..= 8]. In practice, to keep the
+        // worst-case size of the statically allocated probs_lit array
+        // managable, we only support configurations where ((lc + lp) <= 4) and
+        // otherwise return "#unsupported properties".
+        //
+        // This matches "LZMA2's limited property condition" described at:
+        // https://github.com/jljusten/LZMA-SDK/blob/781863cdf592da3e97420f50de5dac056ad352a5/DOC/lzma-specification.txt#L192
+        lc : base.u32[..= 4],  // The number of Literal Context bits.  Default: 3.
+        lp : base.u32[..= 4],  // The number of Literal Position bits. Default: 0.
+        pb : base.u32[..= 4],  // The number of Position Bits.         Default: 2.
+
+        dict_size : base.u32,
+
+        decoded_length : base.u64,
+
+        util : base.utility,
+) + (
+        // 12 is the number of states. 4 is the pb inclusive maximum.
+        //
+        // The AlgOveNN line numbers refer to the ./README.md file.
+        probs_ao00 : array[12 << 4] base.u16,  // AlgOve00.
+        probs_ao20 : array[12] base.u16,  //      AlgOve20.
+        probs_ao40 : array[12] base.u16,  //      AlgOve40.
+        probs_ao41 : array[12 << 4] base.u16,  // AlgOve41.
+        probs_ao60 : array[12] base.u16,  //      AlgOve60.
+        probs_ao63 : array[12] base.u16,  //      AlgOve63.
+
+        // AlgOve22 and what "decodeLen expands to".
+        probs_match_len_low  : array[1 << 4] array[1 << 3] base.u16,
+        probs_match_len_mid  : array[1 << 4] array[1 << 3] base.u16,
+        probs_match_len_high : array[1 << 0] array[1 << 8] base.u16,
+
+        // AlgOve80 and what "decodeLen expands to".
+        probs_longrep_len_low  : array[1 << 4] array[1 << 3] base.u16,
+        probs_longrep_len_mid  : array[1 << 4] array[1 << 3] base.u16,
+        probs_longrep_len_high : array[1 << 0] array[1 << 8] base.u16,
+
+        // AlgOve23. The first index is min(len-2, 3). There are then 64
+        // possible slots, so a 6-bit binary tree.
+        probs_slot : array[4] array[1 << 6] base.u16,
+
+        // This holds the "xxxx" binary trees, packed per below. The first
+        // element and last 13 elements are unused. The index_small_dist_base
+        // constant is set to (Low - 1) and index_small_dist_extra variable
+        // starts at 1. (index_small_dist_base + index_small_dist_extra) ranges
+        // in Low .. High during the "decode a binary tree" loop.
+        //
+        // Slot Low .. High  H-L  NumberOfXByms
+        //  4     1 ..    2    1  1
+        //  5     2 ..    3    1  1
+        //  6     3 ..    6    3  2
+        //  7     6 ..    9    3  2
+        //  8     9 ..   16    7  3
+        //  9    16 ..   23    7  3
+        // 10    23 ..   38   15  4
+        // 11    38 ..   53   15  4
+        // 12    53 ..   84   31  5
+        // 13    84 ..  115   31  5
+        probs_small_dist : array[128] base.u16,
+
+        // This holds the "zzzz" binary tree.
+        probs_large_dist : array[1 << 4] base.u16,
+
+        // 4 is the (lc + lp) inclusive maximum. The 0x300 holds three 8-bit
+        // binary trees. The first is for (state < 7), when the previous packet
+        // was a LITERAL. The other two trees are for (state >= 7), when it was
+        // an LZ-copy. Which tree gets used depends on the bits in the next
+        // historical byte after the LZ-copy-source, up until the point where
+        // those bits don't match the currently decoded literal byte, when it
+        // drops back to the first tree.
+        probs_lit : array[1 << 4] array[0x300] base.u16,
+)
+
+pub func decoder.get_quirk(key: base.u32) base.u64 {
+    return 0
+}
+
+pub func decoder.set_quirk!(key: base.u32, value: base.u64) base.status {
+    return base."#unsupported option"
+}
+
+pub func decoder.history_retain_length() base.optional_u63 {
+    if this.dict_size == 0 {
+        return this.util.make_optional_u63(has_value: false, value: 0)
+    }
+    return this.util.make_optional_u63(has_value: true, value: this.dict_size as base.u64)
+}
+
+pub func decoder.workbuf_len() base.range_ii_u64 {
+    return this.util.make_range_ii_u64(min_incl: 0, max_incl: 0)
+}
+
+pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf: slice base.u8) {
+    var status : base.status
+
+    while true {
+        status =? this.do_transform_io?(dst: args.dst, src: args.src, workbuf: args.workbuf)
+        if (status == base."$short read") and args.src.is_closed() {
+            return "#truncated input"
+        }
+        yield? status
+    } endwhile
+}
+
+pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, workbuf: slice base.u8) {
+    this.decode_properties?(src: args.src)
+    this.initialize_probs!()
+    this.decode_bitstream_slow?(dst: args.dst, src: args.src)
+}
+
+pri func decoder.decode_properties?(src: base.io_reader) {
+    var c8  : base.u8
+    var c32 : base.u32
+
+    var lc : base.u32[..= 8]
+    var lp : base.u32[..= 4]
+    var pb : base.u32[..= 4]
+
+    c8 = args.src.read_u8?()
+    if c8 >= 225 {
+        return "#bad header"
+    }
+    lc = (c8 % 9) as base.u32
+    c8 /= 9
+    lp = (c8 % 5) as base.u32
+    pb = (c8 / 5) as base.u32
+    if (lc + lp) > 4 {
+        return "#unsupported properties"
+    }
+    this.lc = lc.min(no_more_than: 4)
+    this.lp = lp
+    this.pb = pb
+
+    c32 = args.src.read_u32le?()
+    this.dict_size = c32.max(no_less_than: 4096)
+
+    this.decoded_length = args.src.read_u64le?()
+    if (this.decoded_length >= 0x8000_0000_0000_0000) and
+            (this.decoded_length <> 0xFFFF_FFFF_FFFF_FFFF) {
+        return "#unsupported decoded length"
+    }
+}
+
+// initialize_probs sets all of the probs_foo[i][j] values to 1024.
+pri func decoder.initialize_probs!() {
+    var i : base.u32
+    var j : base.u32
+
+    i = 0
+    while i < (12 << 4) {
+        this.probs_ao00[i] = 1024
+        i += 1
+    } endwhile
+
+    i = 0
+    while i < 12 {
+        this.probs_ao20[i] = 1024
+        i += 1
+    } endwhile
+
+    i = 0
+    while i < 12 {
+        this.probs_ao40[i] = 1024
+        i += 1
+    } endwhile
+
+    i = 0
+    while i < (12 << 4) {
+        this.probs_ao41[i] = 1024
+        i += 1
+    } endwhile
+
+    i = 0
+    while i < 12 {
+        this.probs_ao60[i] = 1024
+        i += 1
+    } endwhile
+
+    i = 0
+    while i < 12 {
+        this.probs_ao63[i] = 1024
+        i += 1
+    } endwhile
+
+    i = 0
+    while i < 16 {
+        j = 0
+        while j < 8,
+                inv i < 16,
+        {
+            this.probs_match_len_low[i][j] = 1024
+            j += 1
+        } endwhile
+        i += 1
+    } endwhile
+
+    i = 0
+    while i < 16 {
+        j = 0
+        while j < 8,
+                inv i < 16,
+        {
+            this.probs_match_len_mid[i][j] = 1024
+            j += 1
+        } endwhile
+        i += 1
+    } endwhile
+
+    i = 0
+    while i < 256 {
+        this.probs_match_len_high[0][i] = 1024
+        i += 1
+    } endwhile
+
+    i = 0
+    while i < 16 {
+        j = 0
+        while j < 8,
+                inv i < 16,
+        {
+            this.probs_longrep_len_low[i][j] = 1024
+            j += 1
+        } endwhile
+        i += 1
+    } endwhile
+
+    i = 0
+    while i < 16 {
+        j = 0
+        while j < 8,
+                inv i < 16,
+        {
+            this.probs_longrep_len_mid[i][j] = 1024
+            j += 1
+        } endwhile
+        i += 1
+    } endwhile
+
+    i = 0
+    while i < 256 {
+        this.probs_longrep_len_high[0][i] = 1024
+        i += 1
+    } endwhile
+
+    i = 0
+    while i < 4 {
+        j = 0
+        while j < 64,
+                inv i < 4,
+        {
+            this.probs_slot[i][j] = 1024
+            j += 1
+        } endwhile
+        i += 1
+    } endwhile
+
+    i = 0
+    while i < 128 {
+        this.probs_small_dist[i] = 1024
+        i += 1
+    } endwhile
+
+    i = 0
+    while i < 16 {
+        this.probs_large_dist[i] = 1024
+        i += 1
+    } endwhile
+
+    i = 0
+    while i < 16 {
+        j = 0
+        while j < 0x300,
+                inv i < 16,
+        {
+            this.probs_lit[i][j] = 1024
+            j += 1
+        } endwhile
+        i += 1
+    } endwhile
+}
+
+pri const STATE_TRANSITION_LITERAL : roarray[12] base.u8[..= 11] = [
+        0x0, 0x0, 0x0, 0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x4, 0x5,
+]
+
+pri const STATE_TRANSITION_MATCH : roarray[12] base.u8[..= 11] = [
+        0x7, 0x7, 0x7, 0x7, 0x7, 0x7, 0x7, 0xA, 0xA, 0xA, 0xA, 0xA,
+]
+
+pri const STATE_TRANSITION_LONGREP : roarray[12] base.u8[..= 11] = [
+        0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0xB, 0xB, 0xB, 0xB, 0xB,
+]
+
+pri const STATE_TRANSITION_SHORTREP : roarray[12] base.u8[..= 11] = [
+        0x9, 0x9, 0x9, 0x9, 0x9, 0x9, 0x9, 0xB, 0xB, 0xB, 0xB, 0xB,
+]
+
+pri const CLAMP_NO_MORE_THAN_3 : roarray[8] base.u8[..= 3] = [
+        0, 1, 2, 3, 3, 3, 3, 3,
+]
