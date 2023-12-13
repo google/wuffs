@@ -1336,7 +1336,7 @@ wuffs_private_impl__high_prec_dec__to_f64(wuffs_private_impl__high_prec_dec* h,
       shift = (n < num_powers)
                   // The +1 is per "when targeting h->decimal_point being +0 or
                   // +1... when left shifting" in the powers comment above.
-                  ? (powers[n] + 1)
+                  ? (powers[n] + 1u)
                   : WUFFS_PRIVATE_IMPL__HPD__SHIFT__MAX_INCL;
 
       wuffs_private_impl__high_prec_dec__small_lshift(h, shift);
