@@ -171,17 +171,13 @@ func (g *gen) writeStatementAssign1(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr
 					return fmt.Errorf("unrecognized operator %q", op.AmbiguousForm().Str(g.tm))
 				}
 
-				if op.IsAssign() {
+				if op.IsAssign() && lTyp.IsSmallInteger() {
 					switch op {
 					case t.IDAmpEq, t.IDPipeEq, t.IDHatEq, t.IDEq, t.IDEqQuestion:
 						// No-op.
 
 					default:
-						if lTyp.IsNumType() {
-							if u := lTyp.QID()[1]; u == t.IDU8 || u == t.IDU16 {
-								disableWconversion = true
-							}
-						}
+						disableWconversion = true
 					}
 				}
 			}

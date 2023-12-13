@@ -1007,6 +1007,11 @@ func (n *TypeExpr) IsContainerOfSpecificNumType(container t.ID, numType t.ID) bo
 	return (n.id0 == container) && n.Inner().IsNumType() && (n.Inner().id2 == numType)
 }
 
+func (n *TypeExpr) IsSmallInteger() bool {
+	return n.id0 == 0 && n.id1 == t.IDBase &&
+		(n.id2 == t.IDU8 || n.id2 == t.IDU16)
+}
+
 func (n *TypeExpr) IsUnsignedInteger() bool {
 	return n.id0 == 0 && n.id1 == t.IDBase &&
 		(n.id2 == t.IDU8 || n.id2 == t.IDU16 || n.id2 == t.IDU32 || n.id2 == t.IDU64)

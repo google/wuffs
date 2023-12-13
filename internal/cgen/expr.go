@@ -286,13 +286,7 @@ func (g *gen) writeExprUnaryOp(b *buffer, n *a.Expr, depth uint32) error {
 }
 
 func (g *gen) writeExprBinaryOp(b *buffer, n *a.Expr, depth uint32) error {
-	opName, lhsCast, overallCast := "", false, false
-
-	if typ := n.MType(); typ.IsNumType() {
-		if u := typ.QID()[1]; u == t.IDU8 || u == t.IDU16 {
-			overallCast = true
-		}
-	}
+	opName, lhsCast, overallCast := "", false, n.MType().IsSmallInteger()
 
 	op := n.Operator()
 	switch op {
