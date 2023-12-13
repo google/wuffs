@@ -165,19 +165,24 @@ func (g *gen) writeStatementAssign1(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr
 				b.printf("wuffs_private_impl__u%d__sat_%s_indirect(&", uBits, uOp)
 				opName, closer = ", ", ")"
 
-			case t.IDPlusEq, t.IDMinusEq, t.IDStarEq, t.IDShiftLEq,
-				t.IDTildeModPlusEq, t.IDTildeModMinusEq, t.IDTildeModStarEq, t.IDTildeModShiftLEq:
-				if lTyp.IsNumType() {
-					if u := lTyp.QID()[1]; u == t.IDU8 || u == t.IDU16 {
-						disableWconversion = true
-					}
-				}
-				fallthrough
-
 			default:
 				opName = cOpName(op)
 				if opName == "" {
 					return fmt.Errorf("unrecognized operator %q", op.AmbiguousForm().Str(g.tm))
+				}
+
+				if op.IsAssign() {
+					switch op {
+					case t.IDAmpEq, t.IDPipeEq, t.IDHatEq, t.IDEq, t.IDEqQuestion:
+						// No-op.
+
+					default:
+						if lTyp.IsNumType() {
+							if u := lTyp.QID()[1]; u == t.IDU8 || u == t.IDU16 {
+								disableWconversion = true
+							}
+						}
+					}
 				}
 			}
 		}

@@ -52324,7 +52324,14 @@ wuffs_lzma__decoder__decode_properties(
       goto exit;
     }
     v_lc = ((uint32_t)(((uint8_t)(v_c8 % 9u))));
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
+#endif
     v_c8 /= 9u;
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
     v_lp = ((uint32_t)(((uint8_t)(v_c8 % 5u))));
     v_pb = ((uint32_t)(((uint8_t)(v_c8 / 5u))));
     if ((v_lc + v_lp) > 4u) {
