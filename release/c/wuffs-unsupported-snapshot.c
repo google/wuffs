@@ -45809,7 +45809,14 @@ wuffs_jpeg__decoder__calculate_huff_tables(
       self->private_impl.f_huff_tables_slow[a_tc4_th][v_bit_length_minus_one] = 0u;
     } else {
       v_slow = (255u & ((uint32_t)(((uint32_t)(v_k)) - ((uint32_t)(self->private_data.f_dht_temp_bit_strings[v_k])))));
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
+#endif
       v_k += self->private_data.f_dht_temp_counts[v_bit_length_minus_one];
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
       self->private_impl.f_huff_tables_slow[a_tc4_th][v_bit_length_minus_one] = (v_slow | ((((uint32_t)(self->private_data.f_dht_temp_bit_strings[((uint8_t)(v_k - 1u))])) + 1u) << 8u));
     }
     v_bit_length_minus_one = ((v_bit_length_minus_one + 1u) & 15u);
@@ -45832,7 +45839,14 @@ wuffs_jpeg__decoder__calculate_huff_tables(
       v_reps = (((uint32_t)(1u)) << (7u - v_bit_length_minus_one));
       while (v_reps > 0u) {
         self->private_impl.f_huff_tables_fast[a_tc4_th][v_prefix] = v_fast;
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
+#endif
         v_prefix += 1u;
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
         v_reps -= 1u;
       }
 #if defined(__GNUC__)
@@ -45843,7 +45857,14 @@ wuffs_jpeg__decoder__calculate_huff_tables(
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop
 #endif
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
+#endif
       v_j += 1u;
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
     }
     v_bit_length_minus_one += 1u;
   }
@@ -47803,11 +47824,25 @@ wuffs_jpeg__decoder__decode_mcu__choosy_default(
             }
           }
           v_dc_value = ((uint16_t)(((v_bits >> 32u) >> (32u - v_dc_symbol))));
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
+#endif
           v_dc_value += ((uint16_t)(v_dc_extend & ((uint16_t)(((uint16_t)(wuffs_base__utility__sign_extend_rshift_u64(v_bits, 63u))) ^ 65535u))));
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
           v_bits <<= v_dc_symbol;
           v_n_bits -= v_dc_symbol;
           v_csel = self->private_impl.f_scan_comps_cselector[self->private_impl.f_mcu_blocks_sselector[self->private_impl.f_mcu_current_block]];
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
+#endif
           self->private_impl.f_mcu_previous_dc_values[v_csel] += v_dc_value;
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
           self->private_data.f_mcu_blocks[0u][0u] = self->private_impl.f_mcu_previous_dc_values[v_csel];
           self->private_impl.f_mcu_zig_index = 1u;
           break;
@@ -47864,7 +47899,14 @@ wuffs_jpeg__decoder__decode_mcu__choosy_default(
           v_ac_extend = WUFFS_JPEG__EXTEND[v_ac_ssss];
           if (v_ac_ssss > 0u) {
             v_ac_value = ((uint16_t)((v_bits >> (64u - v_ac_ssss))));
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
+#endif
             v_ac_value += ((uint16_t)(v_ac_extend & ((uint16_t)(((uint16_t)(wuffs_base__utility__sign_extend_rshift_u64(v_bits, 63u))) ^ 65535u))));
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
             v_bits <<= v_ac_ssss;
             v_n_bits -= v_ac_ssss;
             self->private_data.f_mcu_blocks[0u][WUFFS_JPEG__UNZIG[v_z]] = v_ac_value;
@@ -48023,14 +48065,28 @@ wuffs_jpeg__decoder__decode_mcu_progressive_ac_high_bits(
           v_ac_extend = WUFFS_JPEG__EXTEND[v_ac_ssss];
           if (v_ac_ssss > 0u) {
             v_ac_value = ((uint16_t)((v_bits >> (64u - v_ac_ssss))));
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
+#endif
             v_ac_value += ((uint16_t)(v_ac_extend & ((uint16_t)(((uint16_t)(wuffs_base__utility__sign_extend_rshift_u64(v_bits, 63u))) ^ 65535u))));
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
             v_bits <<= v_ac_ssss;
             v_n_bits -= v_ac_ssss;
             self->private_data.f_mcu_blocks[0u][WUFFS_JPEG__UNZIG[v_z]] = ((uint16_t)(((uint16_t)(v_ac_value << self->private_impl.f_scan_al))));
           } else if (v_ac_rrrr < 15u) {
             self->private_impl.f_eob_run = ((uint16_t)(((uint16_t)(((uint16_t)(((uint16_t)(1u)) << v_ac_rrrr)) - 1u))));
             if (v_ac_rrrr > 0u) {
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
+#endif
               self->private_impl.f_eob_run += ((uint16_t)((v_bits >> (64u - v_ac_rrrr))));
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
               v_bits <<= v_ac_rrrr;
               v_n_bits -= v_ac_rrrr;
             }
@@ -48173,7 +48229,14 @@ wuffs_jpeg__decoder__decode_mcu_progressive_ac_low_bit(
             } else if (v_ac_rrrr < 15u) {
               self->private_impl.f_eob_run = ((uint16_t)(((uint16_t)(1u)) << v_ac_rrrr));
               if (v_ac_rrrr > 0u) {
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
+#endif
                 self->private_impl.f_eob_run += ((uint16_t)((v_bits >> (64u - v_ac_rrrr))));
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
                 v_bits <<= v_ac_rrrr;
                 v_n_bits -= v_ac_rrrr;
               }
@@ -48408,11 +48471,25 @@ wuffs_jpeg__decoder__decode_mcu_progressive_dc_high_bits(
             }
           }
           v_dc_value = ((uint16_t)(((v_bits >> 32u) >> (32u - v_dc_symbol))));
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
+#endif
           v_dc_value += ((uint16_t)(v_dc_extend & ((uint16_t)(((uint16_t)(wuffs_base__utility__sign_extend_rshift_u64(v_bits, 63u))) ^ 65535u))));
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
           v_bits <<= v_dc_symbol;
           v_n_bits -= v_dc_symbol;
           v_csel = self->private_impl.f_scan_comps_cselector[self->private_impl.f_mcu_blocks_sselector[self->private_impl.f_mcu_current_block]];
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
+#endif
           self->private_impl.f_mcu_previous_dc_values[v_csel] += v_dc_value;
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
           self->private_data.f_mcu_blocks[self->private_impl.f_mcu_current_block][0u] = ((uint16_t)(self->private_impl.f_mcu_previous_dc_values[v_csel] << self->private_impl.f_scan_al));
         } while (0);
         self->private_impl.f_mcu_current_block += 1u;
@@ -51123,7 +51200,14 @@ wuffs_lzma__decoder__decode_bitstream_slow(
         if (v_state >= 7u) {
           while (true) {
             v_match_bit = ((uint32_t)(((uint8_t)(v_match_byte >> 7u))));
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
+#endif
             v_match_byte <<= 1u;
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
             v_prob = ((uint32_t)(self->private_data.f_probs_lit[v_index_lit][(256u + (v_match_bit << 8u) + v_tree_node)]));
             v_threshold = ((uint32_t)((v_range >> 11u) * v_prob));
             if (v_bits < v_threshold) {
