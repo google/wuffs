@@ -286,7 +286,13 @@ func (g *gen) writeExprUnaryOp(b *buffer, n *a.Expr, depth uint32) error {
 }
 
 func (g *gen) writeExprBinaryOp(b *buffer, n *a.Expr, depth uint32) error {
-	opName, lhsCast, tildeMod := "", false, false
+	opName, lhsCast, overallCast := "", false, false
+
+	if typ := n.MType(); typ.IsNumType() {
+		if u := typ.QID()[1]; u == t.IDU8 || u == t.IDU16 {
+			overallCast = true
+		}
+	}
 
 	op := n.Operator()
 	switch op {
@@ -306,10 +312,10 @@ func (g *gen) writeExprBinaryOp(b *buffer, n *a.Expr, depth uint32) error {
 		return g.writeExprAs(b, n.LHS().AsExpr(), n.RHS().AsTypeExpr(), depth)
 
 	case t.IDXBinaryTildeModPlus, t.IDXBinaryTildeModMinus, t.IDXBinaryTildeModStar:
-		tildeMod = true
+		overallCast = true
 
 	case t.IDXBinaryTildeModShiftL:
-		tildeMod = true
+		overallCast = true
 		fallthrough
 
 	case t.IDXBinaryShiftL, t.IDXBinaryShiftR:
@@ -326,7 +332,7 @@ func (g *gen) writeExprBinaryOp(b *buffer, n *a.Expr, depth uint32) error {
 	}
 
 	b.writeb('(')
-	if tildeMod {
+	if overallCast {
 		b.writeb('(')
 		if err := g.writeCTypeName(b, n.MType(), "", ""); err != nil {
 			return err
@@ -354,7 +360,7 @@ func (g *gen) writeExprBinaryOp(b *buffer, n *a.Expr, depth uint32) error {
 		return err
 	}
 
-	if tildeMod {
+	if overallCast {
 		b.writeb(')')
 	}
 	b.writeb(')')
