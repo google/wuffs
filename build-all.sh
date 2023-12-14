@@ -51,7 +51,7 @@ wuffs gen
 # http://fastcompression.blogspot.com/2019/01/compiler-warnings.html
 # with some further flags from
 # https://review.coreboot.org/plugins/gitiles/coreboot/+/17848b65c38c32fa9630925ca8a15203a0617788/Makefile.inc#480
-WARNING_FLAGS="-Wall -Werror -Wpedantic -Wcast-qual -Wcast-align -Wpointer-arith -Wfloat-equal -Wundef -Wvla -Wconversion -Wshadow -Wredundant-decls"
+WARNING_FLAGS="-Wall -Werror -Wpedantic -Wcast-qual -Wcast-align -Wpointer-arith -Wfloat-equal -Wundef -Wvla -Wconversion -Wshadow -Wredundant-decls -Wunused-const-variable"
 C_WARNING_FLAGS="$WARNING_FLAGS -Wstrict-prototypes -Wold-style-definition"
 CXX_WARNING_FLAGS="$WARNING_FLAGS"
 

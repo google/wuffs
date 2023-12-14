@@ -22,7 +22,6 @@ pub status "#unsupported PNG file"
 
 pri status "#internal error: inconsistent I/O"
 pri status "#internal error: inconsistent chunk type"
-pri status "#internal error: inconsistent frame bounds"
 pri status "#internal error: inconsistent workbuf length"
 pri status "#internal error: zlib decoder did not exhaust its input"
 
