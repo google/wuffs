@@ -21588,9 +21588,9 @@ wuffs_private_impl__swizzle_bgr_565__bgr(uint8_t* dst_ptr,
   // TODO: unroll.
 
   while (n >= 1) {
-    uint32_t b5 = s[0] >> 3;
-    uint32_t g6 = s[1] >> 2;
-    uint32_t r5 = s[2] >> 3;
+    uint32_t b5 = (uint32_t)(s[0] >> 3);
+    uint32_t g6 = (uint32_t)(s[1] >> 2);
+    uint32_t r5 = (uint32_t)(s[2] >> 3);
     uint32_t rgb_565 = (r5 << 11) | (g6 << 5) | (b5 << 0);
     wuffs_base__poke_u16le__no_bounds_check(d + (0 * 2), (uint16_t)rgb_565);
 
@@ -21619,9 +21619,9 @@ wuffs_private_impl__swizzle_bgr_565__bgrx(uint8_t* dst_ptr,
   // TODO: unroll.
 
   while (n >= 1) {
-    uint32_t b5 = s[0] >> 3;
-    uint32_t g6 = s[1] >> 2;
-    uint32_t r5 = s[2] >> 3;
+    uint32_t b5 = (uint32_t)(s[0] >> 3);
+    uint32_t g6 = (uint32_t)(s[1] >> 2);
+    uint32_t r5 = (uint32_t)(s[2] >> 3);
     uint32_t rgb_565 = (r5 << 11) | (g6 << 5) | (b5 << 0);
     wuffs_base__poke_u16le__no_bounds_check(d + (0 * 2), (uint16_t)rgb_565);
 
@@ -21911,9 +21911,9 @@ wuffs_private_impl__swizzle_bgr_565__rgb(uint8_t* dst_ptr,
   // TODO: unroll.
 
   while (n >= 1) {
-    uint32_t r5 = s[0] >> 3;
-    uint32_t g6 = s[1] >> 2;
-    uint32_t b5 = s[2] >> 3;
+    uint32_t r5 = (uint32_t)(s[0] >> 3);
+    uint32_t g6 = (uint32_t)(s[1] >> 2);
+    uint32_t b5 = (uint32_t)(s[2] >> 3);
     uint32_t rgb_565 = (r5 << 11) | (g6 << 5) | (b5 << 0);
     wuffs_base__poke_u16le__no_bounds_check(d + (0 * 2), (uint16_t)rgb_565);
 
@@ -22117,8 +22117,8 @@ wuffs_private_impl__swizzle_bgr_565__y(uint8_t* dst_ptr,
   // TODO: unroll.
 
   while (n >= 1) {
-    uint32_t y5 = s[0] >> 3;
-    uint32_t y6 = s[0] >> 2;
+    uint32_t y5 = (uint32_t)(s[0] >> 3);
+    uint32_t y6 = (uint32_t)(s[0] >> 2);
     uint32_t rgb_565 = (y5 << 11) | (y6 << 5) | (y5 << 0);
     wuffs_base__poke_u16le__no_bounds_check(d + (0 * 2), (uint16_t)rgb_565);
 
@@ -22147,8 +22147,8 @@ wuffs_private_impl__swizzle_bgr_565__y_16be(uint8_t* dst_ptr,
   // TODO: unroll.
 
   while (n >= 1) {
-    uint32_t y5 = s[0] >> 3;
-    uint32_t y6 = s[0] >> 2;
+    uint32_t y5 = (uint32_t)(s[0] >> 3);
+    uint32_t y6 = (uint32_t)(s[0] >> 2);
     uint32_t rgb_565 = (y5 << 11) | (y6 << 5) | (y5 << 0);
     wuffs_base__poke_u16le__no_bounds_check(d + (0 * 2), (uint16_t)rgb_565);
 
