@@ -45,23 +45,28 @@ compiles. Opt in by also defining `WUFFS_CONFIG__MODULES` and then also
 `WUFFS_CONFIG__MODULE__ETC` for each `ETC` (and its dependencies, listed below)
 to enable.
 
-- `ADLER32: BASE`
-- `BMP:     BASE`
-- `BZIP2:   BASE`
-- `CBOR:    BASE`
-- `CRC32:   BASE`
-- `DEFLATE: BASE`
-- `GIF:     BASE`
-- `GZIP:    BASE, CRC32, DEFLATE`
-- `JPEG:    BASE`
-- `JSON:    BASE`
-- `LZW:     BASE`
-- `NETPBM:  BASE`
-- `NIE:     BASE`
-- `PNG:     BASE, ADLER32, CRC32, DEFLATE, ZLIB`
-- `TGA:     BASE`
-- `WBMP:    BASE`
-- `ZLIB:    BASE, ADLER32, DEFLATE`
+- `ADLER32:   BASE`
+- `BMP:       BASE`
+- `BZIP2:     BASE`
+- `CBOR:      BASE`
+- `CRC32:     BASE`
+- `CRC64:     BASE`
+- `DEFLATE:   BASE`
+- `GIF:       BASE`
+- `GZIP:      BASE, CRC32, DEFLATE`
+- `JPEG:      BASE`
+- `JSON:      BASE`
+- `LZMA:      BASE`
+- `LZW:       BASE`
+- `NETPBM:    BASE`
+- `NIE:       BASE`
+- `PNG:       BASE, ADLER32, CRC32, DEFLATE, ZLIB`
+- `SHA256:    BASE`
+- `TGA:       BASE`
+- `WBMP:      BASE`
+- `XXHASH32:  BASE`
+- `XXHASH64:  BASE`
+- `ZLIB:      BASE, ADLER32, DEFLATE`
 
 For the [auxiliary modules](/doc/note/auxiliary-code.md):
 
