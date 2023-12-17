@@ -25,8 +25,7 @@ pri status "#internal error: inconsistent chunk type"
 pri status "#internal error: inconsistent workbuf length"
 pri status "#internal error: zlib decoder did not exhaust its input"
 
-pub const DECODER_HISTORY_RETAIN_LENGTH_MAX_INCL_WORST_CASE : base.u64 = 0
-pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE           : base.u64 = 0x0007_FFFF_F100_0007
+pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0x0007_FFFF_F100_0007
 
 // DECODER_SRC_IO_BUFFER_LENGTH_MIN_INCL is the minimum length of the src
 // wuffs_base__io_buffer passed to the decoder.

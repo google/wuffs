@@ -21,10 +21,6 @@ pri status "#internal error: inconsistent I/O"
 
 // --------
 
-// DECODER_HISTORY_RETAIN_LENGTH_MAX_INCL_WORST_CASE is the largest
-// history_retain_length (for compact_retaining) that a decoder will request.
-pub const DECODER_HISTORY_RETAIN_LENGTH_MAX_INCL_WORST_CASE : base.u64 = 0
-
 // DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE is the largest workbuf length that a
 // decoder will request.
 pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0

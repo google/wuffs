@@ -20,7 +20,7 @@ pub status "#bad parity check"
 pub status "#incorrect dictionary"
 pub status "#truncated input"
 
-pub const DECODER_HISTORY_RETAIN_LENGTH_MAX_INCL_WORST_CASE : base.u64 = 0
+pub const DECODER_DST_HISTORY_RETAIN_LENGTH_MAX_INCL_WORST_CASE : base.u64 = 0
 
 // TODO: reference deflate.DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE.
 pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 1
@@ -93,7 +93,7 @@ pub func decoder.set_quirk!(key: base.u32, value: base.u64) base.status {
     return base."#unsupported option"
 }
 
-pub func decoder.history_retain_length() base.optional_u63 {
+pub func decoder.dst_history_retain_length() base.optional_u63 {
     return this.util.make_optional_u63(has_value: true, value: 0)
 }
 

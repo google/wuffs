@@ -13,8 +13,7 @@ pub status "#bad run length encoding"
 pub status "#truncated input"
 pub status "#unsupported TGA file"
 
-pub const DECODER_HISTORY_RETAIN_LENGTH_MAX_INCL_WORST_CASE : base.u64 = 0
-pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE           : base.u64 = 0
+pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0
 
 pub struct decoder? implements base.image_decoder(
         width  : base.u32[..= 0xFFFF],
@@ -610,10 +609,6 @@ pub func decoder.set_report_metadata!(fourcc: base.u32, report: base.bool) {
 
 pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_information, src: base.io_reader) {
     return base."#no more information"
-}
-
-pub func decoder.history_retain_length() base.optional_u63 {
-    return this.util.make_optional_u63(has_value: true, value: 0)
 }
 
 pub func decoder.workbuf_len() base.range_ii_u64 {

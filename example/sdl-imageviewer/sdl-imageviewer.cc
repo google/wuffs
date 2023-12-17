@@ -189,7 +189,7 @@ class Wuffs_Load_RW_Input : public wuffs_aux::sync_io::Input {
 
  private:
   std::string  //
-  CopyIn(wuffs_aux::IOBuffer* dst, uint64_t history_retain_length) override {
+  CopyIn(wuffs_aux::IOBuffer* dst) override {
     if (!m_rw) {
       return "Wuffs_Load_RW_Input: NULL SDL_RWops";
     } else if (!dst) {
@@ -197,7 +197,7 @@ class Wuffs_Load_RW_Input : public wuffs_aux::sync_io::Input {
     } else if (dst->meta.closed) {
       return "Wuffs_Load_RW_Input: end of file";
     }
-    dst->compact_retaining(history_retain_length);
+    dst->compact();
     if (dst->writer_length() == 0) {
       return "Wuffs_Load_RW_Input: full IOBuffer";
     }

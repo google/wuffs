@@ -193,12 +193,20 @@ main1(int argc, char** argv) {
           wuffs_base__make_slice_u8(g_work_buffer_array,
                                     WORK_BUFFER_ARRAY_SIZE));
 
-      if (dst.meta.wi) {
+      if (dst.meta.ri < dst.meta.wi) {
         // TODO: handle EINTR and other write errors; see "man 2 write".
         const int stdout_fd = 1;
-        ignore_return_value(write(stdout_fd, g_dst_buffer_array, dst.meta.wi));
+        ignore_return_value(write(stdout_fd, g_dst_buffer_array + dst.meta.ri,
+                                  dst.meta.wi - dst.meta.ri));
         dst.meta.ri = dst.meta.wi;
-        wuffs_base__io_buffer__compact(&dst);
+
+        wuffs_base__optional_u63 hrl =
+            wuffs_gzip__decoder__dst_history_retain_length(&dec);
+        wuffs_base__io_buffer__compact_retaining(
+            &dst, wuffs_base__optional_u63__value_or(&hrl, UINT64_MAX));
+        if (dst.meta.wi == dst.data.len) {
+          return "main: unsupported history length (a.k.a. dictionary size)";
+        }
       }
 
       if (status.repr == wuffs_base__suspension__short_read) {
@@ -210,13 +218,7 @@ main1(int argc, char** argv) {
       return wuffs_base__status__message(&status);
     }
 
-    wuffs_base__optional_u63 hrl =
-        wuffs_gzip__decoder__history_retain_length(&dec);
-    wuffs_base__io_buffer__compact_retaining(
-        &src, wuffs_base__optional_u63__value_or(&hrl, UINT64_MAX));
-    if (src.meta.wi == src.data.len) {
-      return "main: internal error: no I/O progress possible";
-    }
+    wuffs_base__io_buffer__compact(&src);
   }
 }
 

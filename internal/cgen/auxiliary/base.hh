@@ -96,7 +96,7 @@ class Input {
   virtual ~Input();
 
   virtual IOBuffer* BringsItsOwnIOBuffer();
-  virtual std::string CopyIn(IOBuffer* dst, uint64_t history_retain_length) = 0;
+  virtual std::string CopyIn(IOBuffer* dst) = 0;
 };
 
 // --------
@@ -108,7 +108,7 @@ class FileInput : public Input {
  public:
   FileInput(FILE* f);
 
-  virtual std::string CopyIn(IOBuffer* dst, uint64_t history_retain_length);
+  virtual std::string CopyIn(IOBuffer* dst);
 
  private:
   FILE* m_f;
@@ -129,7 +129,7 @@ class MemoryInput : public Input {
   MemoryInput(const uint8_t* ptr, size_t len);
 
   virtual IOBuffer* BringsItsOwnIOBuffer();
-  virtual std::string CopyIn(IOBuffer* dst, uint64_t history_retain_length);
+  virtual std::string CopyIn(IOBuffer* dst);
 
  private:
   IOBuffer m_io;

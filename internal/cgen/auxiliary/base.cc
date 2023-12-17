@@ -108,7 +108,7 @@ Input::BringsItsOwnIOBuffer() {
 FileInput::FileInput(FILE* f) : m_f(f) {}
 
 std::string  //
-FileInput::CopyIn(IOBuffer* dst, uint64_t history_retain_length) {
+FileInput::CopyIn(IOBuffer* dst) {
   if (!m_f) {
     return "wuffs_aux::sync_io::FileInput: nullptr file";
   } else if (!dst) {
@@ -116,7 +116,7 @@ FileInput::CopyIn(IOBuffer* dst, uint64_t history_retain_length) {
   } else if (dst->meta.closed) {
     return "wuffs_aux::sync_io::FileInput: end of file";
   } else {
-    dst->compact_retaining(history_retain_length);
+    dst->compact();
     size_t n = fread(dst->writer_pointer(), 1, dst->writer_length(), m_f);
     dst->meta.wi += n;
     dst->meta.closed = feof(m_f);
@@ -144,7 +144,7 @@ MemoryInput::BringsItsOwnIOBuffer() {
 }
 
 std::string  //
-MemoryInput::CopyIn(IOBuffer* dst, uint64_t history_retain_length) {
+MemoryInput::CopyIn(IOBuffer* dst) {
   if (!dst) {
     return "wuffs_aux::sync_io::MemoryInput: nullptr IOBuffer";
   } else if (dst->meta.closed) {
@@ -154,7 +154,7 @@ MemoryInput::CopyIn(IOBuffer* dst, uint64_t history_retain_length) {
     // to it.
     return "wuffs_aux::sync_io::MemoryInput: overlapping buffers";
   } else {
-    dst->compact_retaining(history_retain_length);
+    dst->compact();
     size_t nd = dst->writer_length();
     size_t ns = m_io.reader_length();
     size_t n = (nd < ns) ? nd : ns;
@@ -209,7 +209,7 @@ AdvanceIOBufferTo(const ErrorMessages& error_messages,
     if (!input.BringsItsOwnIOBuffer()) {
       io_buf.compact();
     }
-    std::string error_message = input.CopyIn(&io_buf, 0);
+    std::string error_message = input.CopyIn(&io_buf);
     if (!error_message.empty()) {
       return error_message;
     }
@@ -292,7 +292,7 @@ HandleMetadata(
           } else if (!input.BringsItsOwnIOBuffer()) {
             io_buf.compact();
           }
-          std::string error_message = input.CopyIn(&io_buf, 0);
+          std::string error_message = input.CopyIn(&io_buf);
           if (!error_message.empty()) {
             return error_message;
           }

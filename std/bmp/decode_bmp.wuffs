@@ -15,8 +15,7 @@ pub status "#unsupported BMP file"
 
 pri status "@internal note: short read"
 
-pub const DECODER_HISTORY_RETAIN_LENGTH_MAX_INCL_WORST_CASE : base.u64 = 0
-pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE           : base.u64 = 0
+pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0
 
 pri const COMPRESSION_NONE           : base.u32 = 0
 pri const COMPRESSION_RLE8           : base.u32 = 1
@@ -1255,10 +1254,6 @@ pri func decoder.do_tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inf
     // Setting io_redirect_fourcc to a placeholder value of 1 will cause future
     // calls to return an error.
     this.io_redirect_fourcc = 1
-}
-
-pub func decoder.history_retain_length() base.optional_u63 {
-    return this.util.make_optional_u63(has_value: true, value: 0)
 }
 
 pub func decoder.workbuf_len() base.range_ii_u64 {

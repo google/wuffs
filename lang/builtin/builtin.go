@@ -1006,7 +1006,6 @@ var InterfaceFuncs = []string{
 	"image_decoder.decode_image_config?(dst: nptr image_config, src: io_reader)",
 	"image_decoder.frame_dirty_rect() rect_ie_u32",
 	"image_decoder.get_quirk(key: u32) u64",
-	"image_decoder.history_retain_length() optional_u63",
 	"image_decoder.num_animation_loops() u32",
 	"image_decoder.num_decoded_frame_configs() u64",
 	"image_decoder.num_decoded_frames() u64",
@@ -1018,8 +1017,8 @@ var InterfaceFuncs = []string{
 
 	// ---- io_transformer
 
+	"io_transformer.dst_history_retain_length() optional_u63",
 	"io_transformer.get_quirk(key: u32) u64",
-	"io_transformer.history_retain_length() optional_u63",
 	"io_transformer.set_quirk!(key: u32, value: u64) status",
 	"io_transformer.transform_io?(dst: io_writer, src: io_reader, workbuf: slice u8)",
 	"io_transformer.workbuf_len() range_ii_u64",
@@ -1028,7 +1027,6 @@ var InterfaceFuncs = []string{
 
 	"token_decoder.decode_tokens?(dst: token_writer, src: io_reader, workbuf: slice u8)",
 	"token_decoder.get_quirk(key: u32) u64",
-	"token_decoder.history_retain_length() optional_u63",
 	"token_decoder.set_quirk!(key: u32, value: u64) status",
 	"token_decoder.workbuf_len() range_ii_u64",
 }

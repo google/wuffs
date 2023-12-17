@@ -251,14 +251,11 @@ static void  //
 ignore_return_value(int ignored) {}
 
 const char*  //
-read_more_src(wuffs_base__optional_u63 history_retain_length) {
+read_more_src() {
   if (g_src.meta.closed) {
     return "main: unexpected end of file";
   }
-  if (wuffs_base__optional_u63__has_value(&history_retain_length)) {
-    wuffs_base__io_buffer__compact_retaining(
-        &g_src, wuffs_base__optional_u63__value(&history_retain_length));
-  }
+  wuffs_base__io_buffer__compact(&g_src);
   if (g_src.meta.wi == g_src.data.len) {
     return "main: internal error: no I/O progress possible";
   }
@@ -287,7 +284,7 @@ load_image_type() {
         (wuffs_base__io_buffer__reader_length(&g_src) == g_src.data.len)) {
       break;
     }
-    TRY(read_more_src(wuffs_base__make_optional_u63(true, 0)));
+    TRY(read_more_src());
   }
   return NULL;
 }
@@ -412,7 +409,7 @@ advance_for_redirect() {
       break;
     }
     g_src.meta.ri = g_src.meta.wi;
-    TRY(read_more_src(wuffs_base__make_optional_u63(true, 0)));
+    TRY(read_more_src());
   }
   return NULL;
 }
@@ -439,8 +436,7 @@ redirect:
     } else if (status.repr != wuffs_base__suspension__short_read) {
       return wuffs_base__status__message(&status);
     }
-    TRY(read_more_src(
-        wuffs_base__image_decoder__history_retain_length(g_image_decoder)));
+    TRY(read_more_src());
   }
 
   // Read the dimensions.
@@ -639,8 +635,7 @@ convert_frames() {
       } else if (dfc_status.repr != wuffs_base__suspension__short_read) {
         return wuffs_base__status__message(&dfc_status);
       }
-      TRY(read_more_src(
-          wuffs_base__image_decoder__history_retain_length(g_image_decoder)));
+      TRY(read_more_src());
     }
 
     wuffs_base__flicks duration =
@@ -682,8 +677,7 @@ convert_frames() {
       if (df_status.repr != wuffs_base__suspension__short_read) {
         break;
       }
-      decode_frame_io_error_message = read_more_src(
-          wuffs_base__image_decoder__history_retain_length(g_image_decoder));
+      decode_frame_io_error_message = read_more_src();
       if (decode_frame_io_error_message != NULL) {
         // Neuter the "short read" df_status so that convert_frames returns the
         // I/O error message instead.

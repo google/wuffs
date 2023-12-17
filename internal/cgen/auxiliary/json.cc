@@ -73,16 +73,14 @@ DecodeJsonArgJsonPointer::DefaultValue() {
             "wuffs_aux::DecodeJson: internal error: io_buf is closed";      \
         goto done;                                                          \
       }                                                                     \
-      io_buf->compact_retaining(                                            \
-          dec->history_retain_length().value_or(UINT64_MAX));               \
+      io_buf->compact();                                                    \
       if (io_buf->meta.wi >= io_buf->data.len) {                            \
         ret_error_message =                                                 \
             "wuffs_aux::DecodeJson: internal error: io_buf is full";        \
         goto done;                                                          \
       }                                                                     \
       cursor_index = io_buf->meta.ri;                                       \
-      io_error_message = input.CopyIn(                                      \
-          io_buf, dec->history_retain_length().value_or(UINT64_MAX));       \
+      io_error_message = input.CopyIn(io_buf);                              \
     } else {                                                                \
       ret_error_message = tok_status.message();                             \
       goto done;                                                            \
