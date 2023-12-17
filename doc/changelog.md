@@ -12,6 +12,7 @@ The LICENSE has changed from a single license (Apache 2) to a dual license
 - Added `base.hasher_u64`.
 - Added `compact_retaining` and `dst_history_retain_length`.
 - Added `example/toy-aux-image`.
+- Added `example/mzcat`.
 - Added `get_quirk(key: u32) u64`.
 - Added `hasher_u32` `update!` and `checksum_u32` methods.
 - Added `hasher_u64`.
@@ -34,6 +35,7 @@ The LICENSE has changed from a single license (Apache 2) to a dual license
 - Generated constants now default to unsigned.
 - Halve the sizeof `wuffs_foo__bar::unique_ptr`.
 - Remove the `std/gif -> std/lzw` dependency.
+- Removed `example/bzcat`.
 - Set image decoder pixel width and height inclusive maximum to `0xFF_FFFF`,
   down from `0x7FFF_FFFF`.
 

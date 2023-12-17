@@ -11,13 +11,19 @@
 // ----------------
 
 /*
-bzcat decodes bzip2'ed data to stdout. It is similar to the standard /bin/bzcat
-program, except that this example program only reads from stdin. On Linux, it
-also self-imposes a SECCOMP_MODE_STRICT sandbox. To run:
+mzcat decompresses stdin to stdout. It is similar to the standard /bin/bzcat,
+/bin/lzcat or /bin/zcat programs but the single program speaks multiple file
+formats (listed below). On Linux, it also self-imposes a SECCOMP_MODE_STRICT
+sandbox. To run:
 
-$CC bzcat.c && ./a.out < ../../test/data/romeo.txt.bz2; rm -f a.out
+$CC mzcat.c && ./a.out < ../../test/data/romeo.txt.bz2; rm -f a.out
 
 for a C compiler $CC, such as clang or gcc.
+
+Supported compression formats:
+- bzip2
+- gzip
+- lzma
 */
 
 #include <errno.h>
@@ -51,6 +57,10 @@ for a C compiler $CC, such as clang or gcc.
 #define WUFFS_CONFIG__MODULES
 #define WUFFS_CONFIG__MODULE__BASE
 #define WUFFS_CONFIG__MODULE__BZIP2
+#define WUFFS_CONFIG__MODULE__CRC32
+#define WUFFS_CONFIG__MODULE__DEFLATE
+#define WUFFS_CONFIG__MODULE__GZIP
+#define WUFFS_CONFIG__MODULE__LZMA
 
 // If building this program in an environment that doesn't easily accommodate
 // relative includes, you can use the script/inline-c-relative-includes.go
@@ -64,29 +74,33 @@ for a C compiler $CC, such as clang or gcc.
 #define WUFFS_EXAMPLE_USE_SECCOMP
 #endif
 
+// LZMA's default dictionary size is 16 MiB. This program's destination-buffer
+// size defaults to twice that.
 #ifndef DST_BUFFER_ARRAY_SIZE
-#define DST_BUFFER_ARRAY_SIZE (128 * 1024)
+#define DST_BUFFER_ARRAY_SIZE (32 * 1024 * 1024)
 #endif
 
 #ifndef SRC_BUFFER_ARRAY_SIZE
 #define SRC_BUFFER_ARRAY_SIZE (128 * 1024)
 #endif
 
-#define WORK_BUFFER_ARRAY_SIZE \
-  WUFFS_BZIP2__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE
-
 uint8_t g_dst_buffer_array[DST_BUFFER_ARRAY_SIZE];
 uint8_t g_src_buffer_array[SRC_BUFFER_ARRAY_SIZE];
-#if WORK_BUFFER_ARRAY_SIZE > 0
-uint8_t g_work_buffer_array[WORK_BUFFER_ARRAY_SIZE];
-#else
-// Not all C/C++ compilers support 0-length arrays.
-uint8_t g_work_buffer_array[1];
-#endif
 
 // ----
 
 static bool g_sandboxed = false;
+
+int32_t g_fourcc = 0;
+
+wuffs_base__io_transformer* g_io_transformer = NULL;
+union {
+  wuffs_bzip2__decoder bzip2;
+  wuffs_gzip__decoder gzip;
+  wuffs_lzma__decoder lzma;
+} g_potential_decoders;
+
+// ----
 
 struct {
   int remaining_argc;
@@ -137,6 +151,48 @@ static void  //
 ignore_return_value(int ignored) {}
 
 const char*  //
+initialize_io_transformer(uint8_t input_first_byte) {
+  wuffs_base__status status =
+      wuffs_base__make_status("main: unrecognized input compression format");
+  wuffs_base__io_transformer* io_transformer = NULL;
+
+  switch (input_first_byte) {
+    case 0x1F:
+      status = wuffs_gzip__decoder__initialize(
+          &g_potential_decoders.gzip, sizeof g_potential_decoders.gzip,
+          WUFFS_VERSION, WUFFS_INITIALIZE__DEFAULT_OPTIONS);
+      io_transformer =
+          wuffs_gzip__decoder__upcast_as__wuffs_base__io_transformer(
+              &g_potential_decoders.gzip);
+      break;
+
+    case 0x42:
+      status = wuffs_bzip2__decoder__initialize(
+          &g_potential_decoders.bzip2, sizeof g_potential_decoders.bzip2,
+          WUFFS_VERSION, WUFFS_INITIALIZE__DEFAULT_OPTIONS);
+      io_transformer =
+          wuffs_bzip2__decoder__upcast_as__wuffs_base__io_transformer(
+              &g_potential_decoders.bzip2);
+      break;
+
+    case 0x5D:
+      status = wuffs_lzma__decoder__initialize(
+          &g_potential_decoders.lzma, sizeof g_potential_decoders.lzma,
+          WUFFS_VERSION, WUFFS_INITIALIZE__DEFAULT_OPTIONS);
+      io_transformer =
+          wuffs_lzma__decoder__upcast_as__wuffs_base__io_transformer(
+              &g_potential_decoders.lzma);
+      break;
+  }
+
+  if (!wuffs_base__status__is_ok(&status)) {
+    return wuffs_base__status__message(&status);
+  }
+  g_io_transformer = io_transformer;
+  return NULL;
+}
+
+const char*  //
 main1(int argc, char** argv) {
   const char* z = parse_flags(argc, argv);
   if (z) {
@@ -145,13 +201,6 @@ main1(int argc, char** argv) {
     return "main: bad argument: use \"program < input\", not \"program input\"";
   } else if (g_flags.fail_if_unsandboxed && !g_sandboxed) {
     return "main: unsandboxed";
-  }
-
-  wuffs_bzip2__decoder dec;
-  wuffs_base__status status =
-      wuffs_bzip2__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
-  if (!wuffs_base__status__is_ok(&status)) {
-    return wuffs_base__status__message(&status);
   }
 
   wuffs_base__io_buffer dst;
@@ -185,11 +234,20 @@ main1(int argc, char** argv) {
       src.meta.closed = true;
     }
 
+    if (g_io_transformer) {
+      // No-op.
+    } else if (src.meta.ri == src.meta.wi) {
+      return "main: invalid empty input";
+    } else {
+      const char* z = initialize_io_transformer(src.data.ptr[src.meta.ri]);
+      if (z) {
+        return z;
+      }
+    }
+
     while (true) {
-      status = wuffs_bzip2__decoder__transform_io(
-          &dec, &dst, &src,
-          wuffs_base__make_slice_u8(g_work_buffer_array,
-                                    WORK_BUFFER_ARRAY_SIZE));
+      wuffs_base__status status = wuffs_base__io_transformer__transform_io(
+          g_io_transformer, &dst, &src, wuffs_base__empty_slice_u8());
 
       if (dst.meta.ri < dst.meta.wi) {
         // TODO: handle EINTR and other write errors; see "man 2 write".
@@ -197,9 +255,9 @@ main1(int argc, char** argv) {
         ignore_return_value(write(stdout_fd, g_dst_buffer_array + dst.meta.ri,
                                   dst.meta.wi - dst.meta.ri));
         dst.meta.ri = dst.meta.wi;
-
         wuffs_base__optional_u63 hrl =
-            wuffs_bzip2__decoder__dst_history_retain_length(&dec);
+            wuffs_base__io_transformer__dst_history_retain_length(
+                g_io_transformer);
         wuffs_base__io_buffer__compact_retaining(
             &dst, wuffs_base__optional_u63__value_or(&hrl, UINT64_MAX));
         if (dst.meta.wi == dst.data.len) {
