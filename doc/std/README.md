@@ -66,6 +66,7 @@ to enable.
 - `WBMP:      BASE`
 - `XXHASH32:  BASE`
 - `XXHASH64:  BASE`
+- `XZ:        BASE, CRC32, CRC64, LZMA, SHA256`
 - `ZLIB:      BASE, ADLER32, DEFLATE`
 
 For the [auxiliary modules](/doc/note/auxiliary-code.md):

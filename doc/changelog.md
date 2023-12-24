@@ -25,6 +25,7 @@ The LICENSE has changed from a single license (Apache 2) to a dual license
 - Added `std/sha256`.
 - Added `std/xxhash32`.
 - Added `std/xxhash64`.
+- Added `std/xz`.
 - Added `wuffs_base__status__is_truncated_input_error`.
 - Ban recursive function calls.
 - Changed `lzw.set_literal_width` to `lzw.set_quirk`.

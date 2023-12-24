@@ -24,6 +24,7 @@ Supported compression formats:
 - bzip2
 - gzip
 - lzma
+- xz
 */
 
 #include <errno.h>
@@ -58,9 +59,12 @@ Supported compression formats:
 #define WUFFS_CONFIG__MODULE__BASE
 #define WUFFS_CONFIG__MODULE__BZIP2
 #define WUFFS_CONFIG__MODULE__CRC32
+#define WUFFS_CONFIG__MODULE__CRC64
 #define WUFFS_CONFIG__MODULE__DEFLATE
 #define WUFFS_CONFIG__MODULE__GZIP
 #define WUFFS_CONFIG__MODULE__LZMA
+#define WUFFS_CONFIG__MODULE__SHA256
+#define WUFFS_CONFIG__MODULE__XZ
 
 // If building this program in an environment that doesn't easily accommodate
 // relative includes, you can use the script/inline-c-relative-includes.go
@@ -98,6 +102,7 @@ union {
   wuffs_bzip2__decoder bzip2;
   wuffs_gzip__decoder gzip;
   wuffs_lzma__decoder lzma;
+  wuffs_xz__decoder xz;
 } g_potential_decoders;
 
 // ----
@@ -182,6 +187,14 @@ initialize_io_transformer(uint8_t input_first_byte) {
       io_transformer =
           wuffs_lzma__decoder__upcast_as__wuffs_base__io_transformer(
               &g_potential_decoders.lzma);
+      break;
+
+    case 0xFD:
+      status = wuffs_xz__decoder__initialize(
+          &g_potential_decoders.xz, sizeof g_potential_decoders.xz,
+          WUFFS_VERSION, WUFFS_INITIALIZE__DEFAULT_OPTIONS);
+      io_transformer = wuffs_xz__decoder__upcast_as__wuffs_base__io_transformer(
+          &g_potential_decoders.xz);
       break;
   }
 

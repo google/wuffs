@@ -26,9 +26,9 @@ mimic_lzma_decode(wuffs_base__io_buffer* dst,
   }
   lzma_stream z = LZMA_STREAM_INIT;
 
-  lzma_ret ret = lzma_alone_decoder(&z, UINT64_MAX);
+  lzma_ret ret = lzma_auto_decoder(&z, UINT64_MAX, 0);
   if (ret != LZMA_OK) {
-    return "liblzma: lzma_alone_decoder failed";
+    return "liblzma: lzma_auto_decoder failed";
   }
   z.next_out = wuffs_base__io_buffer__writer_pointer(dst);
   z.avail_out = wuffs_base__io_buffer__writer_length(dst);

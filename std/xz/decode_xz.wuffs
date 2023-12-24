@@ -1,0 +1,305 @@
+// Copyright 2023 The Wuffs Authors.
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// https://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or https://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+// --------
+
+// See https://tukaani.org/xz/xz-file-format.txt
+
+use "std/crc32"
+use "std/crc64"
+use "std/lzma"
+use "std/sha256"
+
+pub status "#bad block header"
+pub status "#bad checksum"
+pub status "#bad header"
+pub status "#bad padding"
+pub status "#truncated input"
+pub status "#unsupported checksum algorithm"
+pub status "#unsupported filter"
+pub status "#unsupported number of filters"
+
+pri status "#TODO"
+
+pub const DECODER_DST_HISTORY_RETAIN_LENGTH_MAX_INCL_WORST_CASE : base.u64 = 0xFFFF_FFFF
+
+pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0
+
+pub struct decoder? implements base.io_transformer(
+        placeholder : base.u32,
+
+        // 0: None.
+        // 1: CRC-32.
+        // 2: CRC-64.
+        // 3: SHA-256.
+        checksummer : base.u32[..= 3],
+
+        ignore_checksum : base.bool,
+
+        block_has_compressed_size   : base.bool,
+        block_has_uncompressed_size : base.bool,
+
+        block_compressed_size   : base.u64,
+        block_uncompressed_size : base.u64,
+
+        util : base.utility,
+) + (
+        crc32  : crc32.ieee_hasher,
+        crc64  : crc64.ecma_hasher,
+        sha256 : sha256.hasher,
+
+        lzma : lzma.decoder,
+)
+
+pub func decoder.get_quirk(key: base.u32) base.u64 {
+    if (args.key == base.QUIRK_IGNORE_CHECKSUM) and this.ignore_checksum {
+        return 1
+    }
+    return 0
+}
+
+pub func decoder.set_quirk!(key: base.u32, value: base.u64) base.status {
+    if args.key == base.QUIRK_IGNORE_CHECKSUM {
+        this.ignore_checksum = args.value > 0
+        return ok
+    }
+    return base."#unsupported option"
+}
+
+pub func decoder.dst_history_retain_length() base.optional_u63 {
+    return this.lzma.dst_history_retain_length()
+}
+
+pub func decoder.workbuf_len() base.range_ii_u64 {
+    return this.util.make_range_ii_u64(min_incl: 0, max_incl: 0)
+}
+
+pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf: slice base.u8) {
+    var status : base.status
+
+    while true {
+        status =? this.do_transform_io?(dst: args.dst, src: args.src, workbuf: args.workbuf)
+        if (status == base."$short read") and args.src.is_closed() {
+            return "#truncated input"
+        }
+        yield? status
+    } endwhile
+}
+
+pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, workbuf: slice base.u8) {
+    var magic           : base.u64
+    var dmark           : base.u64
+    var smark           : base.u64
+    var status          : base.status
+    var checksum32_have : base.u32
+    var checksum32_want : base.u32
+    var checksum64_have : base.u64
+    var checksum64_want : base.u64
+    var padding         : base.u32
+    var c8              : base.u8
+
+    magic = args.src.read_u48le_as_u64?()
+    if magic <> '\xFD\x37\x7A\x58\x5A\x00'le {
+        return "#bad header"
+    }
+
+    // Read the 2-byte flags and the 4-byte CRC-32 checksum of those 2 bytes.
+    magic = args.src.read_u48le_as_u64?()
+    if magic == '\x00\x00\xFF\x12\xD9\x41'le {
+        this.checksummer = 0  // None.
+    } else if magic == '\x00\x01\x69\x22\xDE\x36'le {
+        this.checksummer = 1  // CRC-32.
+    } else if magic == '\x00\x04\xE6\xD6\xB4\x46'le {
+        this.checksummer = 2  // CRC-64.
+    } else if magic == '\x00\x0A\xE1\xFB\x0C\xA1'le {
+        this.checksummer = 3  // SHA-256.
+    } else if (magic & 0xF0FF) <> 0 {
+        // Section 2.1.1.2. Stream Flags: "If any reserved bit is set, the
+        // decoder MUST indicate an error."
+        return "#bad header"
+    } else {
+        magic = 0xF & (magic >> 8)
+        if (magic <> 0x0) and (magic <> 0x1) and (magic <> 0x4) and (magic <> 0xA) {
+            return "#unsupported checksum algorithm"
+        }
+        return "#bad checksum"
+    }
+
+    while true {
+        if args.src.length() <= 0 {
+            yield? base."$short read"
+            continue
+        } else if args.src.peek_u8() == 0x00 {
+            // We've hit the Index instead of a Block.
+            args.src.skip_u32_fast!(actual: 1, worst_case: 1)
+            break
+        }
+
+        if not this.ignore_checksum {
+            this.crc32.reset!()
+        }
+
+        while true {
+            smark = args.src.mark()
+            status =? this.decode_block_header_with_padding?(src: args.src)
+            if not this.ignore_checksum {
+                checksum32_have = this.crc32.update_u32!(x: args.src.since(mark: smark))
+            }
+            if status.is_ok() {
+                break
+            }
+            yield? status
+        } endwhile
+
+        checksum32_want = args.src.read_u32le?()
+        if this.ignore_checksum {
+            // No-op.
+        } else if checksum32_have <> checksum32_want {
+            return "#bad checksum"
+        } else {
+            this.crc32.reset!()
+            this.crc64.reset!()
+            this.sha256.reset!()
+        }
+
+        while true {
+            dmark = args.dst.mark()
+            smark = args.src.mark()
+            status =? this.lzma.transform_io?(dst: args.dst, src: args.src, workbuf: this.util.empty_slice_u8())
+            padding ~mod+= (args.src.count_since(mark: smark) & 0xFFFF_FFFF) as base.u32
+
+            // TODO: apply any filters that aren't LZMA2.
+
+            if this.ignore_checksum {
+                // No-op.
+            } else if this.checksummer == 1 {
+                this.crc32.update!(x: args.dst.since(mark: dmark))
+            } else if this.checksummer == 2 {
+                this.crc64.update!(x: args.dst.since(mark: dmark))
+            } else if this.checksummer == 3 {
+                this.sha256.update!(x: args.dst.since(mark: dmark))
+            }
+            if status.is_ok() {
+                break
+            }
+            yield? status
+        } endwhile
+
+        while (padding & 3) <> 0 {
+            c8 = args.src.read_u8?()
+            if c8 <> 0x00 {
+                return "#bad padding"
+            }
+            padding ~mod+= 1
+        } endwhile
+
+        if this.ignore_checksum {
+            // No-op.
+        } else if this.checksummer == 1 {
+            checksum32_want = args.src.read_u32le?()
+            checksum32_have = this.crc32.checksum_u32()
+            if checksum32_have <> checksum32_want {
+                return "#bad checksum"
+            }
+        } else if this.checksummer == 2 {
+            checksum64_want = args.src.read_u64le?()
+            checksum64_have = this.crc64.checksum_u64()
+            if checksum64_have <> checksum64_want {
+                return "#bad checksum"
+            }
+        } else if this.checksummer == 3 {
+            return "#TODO"
+        }
+    } endwhile
+}
+
+pri func decoder.decode_block_header_with_padding?(src: base.io_reader) {
+    var c8               : base.u8
+    var padded_size_have : base.u64
+    var padded_size_want : base.u64
+    var smark            : base.u64
+    var status           : base.status
+
+    c8 = args.src.read_u8?()
+    padded_size_want = ((c8 as base.u64) * 4) ~mod- 1
+
+    while true {
+        smark = args.src.mark()
+        status =? this.decode_block_header_sans_padding?(src: args.src)
+        padded_size_have ~sat+= args.src.count_since(mark: smark)
+        if status.is_ok() {
+            break
+        }
+        yield? status
+    } endwhile
+
+    if padded_size_have > padded_size_want {
+        return "#bad block header"
+    }
+    while padded_size_have < padded_size_want {
+        assert padded_size_have < 0xFFFF_FFFF_FFFF_FFFF via "a < b: a < c; c <= b"(c: padded_size_want)
+
+        c8 = args.src.read_u8?()
+        if c8 <> 0x00 {
+            return "#bad block header"
+        }
+
+        padded_size_have += 1
+    } endwhile
+}
+
+pri func decoder.decode_block_header_sans_padding?(src: base.io_reader) {
+    var c8        : base.u8
+    var flags     : base.u8
+    var filter_id : base.u8
+    var status    : base.status
+
+    flags = args.src.read_u8?()
+    if (flags & 0x03) <> 0 {
+        return "#unsupported number of filters"
+    }
+
+    if (flags & 0x3C) <> 0 {
+        return "#bad block header"
+    }
+
+    this.block_has_compressed_size = (flags & 0x40) <> 0
+    if this.block_has_compressed_size {
+        this.block_compressed_size = 0
+        return "#TODO"
+    }
+
+    this.block_has_uncompressed_size = (flags & 0x80) <> 0
+    if this.block_has_uncompressed_size {
+        this.block_uncompressed_size = 0
+        return "#TODO"
+    }
+
+    while true {
+        filter_id = args.src.read_u8?()
+        if filter_id == 0x21 {  // LZMA2
+            // LZMA2's "Size of Properties" should be 1.
+            c8 = args.src.read_u8?()
+            if c8 <> 0x01 {
+                return "#bad block header"
+            }
+            // Pass that 1 Properties byte on to the LZMA decoder.
+            c8 = args.src.read_u8?()
+            status = this.lzma.set_quirk!(
+                    key: lzma.QUIRK_FORMAT_EXTENSION,
+                    value: 0x02 | ((c8 as base.u64) << 8))
+            if not status.is_ok() {
+                return "#bad block header"
+            }
+            break
+        }
+        return "#unsupported filter"
+    } endwhile
+}
