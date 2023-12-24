@@ -8,6 +8,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+pub status "#bad LZMA2 header"
 pub status "#bad bitstream trailer"
 pub status "#bad code"
 pub status "#bad decoded length"
@@ -16,6 +17,8 @@ pub status "#bad header"
 pub status "#truncated input"
 pub status "#unsupported decoded length"
 pub status "#unsupported properties"
+
+pri status "#TODO"
 
 pub const DECODER_DST_HISTORY_RETAIN_LENGTH_MAX_INCL_WORST_CASE : base.u64 = 0xFFFF_FFFF
 
@@ -33,9 +36,16 @@ pub struct decoder? implements base.io_transformer(
         lp : base.u32[..= 4],  // The number of Literal Position bits. Default: 0.
         pb : base.u32[..= 4],  // The number of Position Bits.         Default: 2.
 
+        format_extension : base.u32,
+
         dict_size : base.u32,
 
         decoded_length : base.u64,
+
+        lzma2_encoded_length_have : base.u64,
+        lzma2_encoded_length_want : base.u64,
+        lzma2_need_prob_reset     : base.bool,
+        lzma2_need_properties     : base.bool,
 
         util : base.utility,
 ) + (
@@ -96,10 +106,31 @@ pub struct decoder? implements base.io_transformer(
 )
 
 pub func decoder.get_quirk(key: base.u32) base.u64 {
+    if args.key == QUIRK_FORMAT_EXTENSION {
+        return this.format_extension as base.u64
+    }
     return 0
 }
 
 pub func decoder.set_quirk!(key: base.u32, value: base.u64) base.status {
+    var v : base.u32
+
+    if args.key == QUIRK_FORMAT_EXTENSION {
+        if args.value == 0 {
+            // No-op.
+        } else if ((args.value & 0xFF) <> 0x02) or ((args.value >> 8) > 40) {
+            return base."#bad argument"
+        }
+        this.format_extension = (args.value & 0xFFFF_FFFF) as base.u32
+
+        v = this.format_extension >> 8
+        if v < 40 {
+            this.dict_size = (2 | (v & 1)) << ((v >> 1) + 11)
+        } else {
+            this.dict_size = 0xFFFF_FFFF
+        }
+        return ok
+    }
     return base."#unsupported option"
 }
 
@@ -118,7 +149,7 @@ pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf
     var status : base.status
 
     while true {
-        status =? this.do_transform_io?(dst: args.dst, src: args.src, workbuf: args.workbuf)
+        status =? this.do_transform_io?(dst: args.dst, src: args.src)
         if (status == base."$short read") and args.src.is_closed() {
             return "#truncated input"
         }
@@ -126,43 +157,126 @@ pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf
     } endwhile
 }
 
-pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, workbuf: slice base.u8) {
-    this.decode_properties?(src: args.src)
-    this.initialize_probs!()
-    this.decode_bitstream_slow?(dst: args.dst, src: args.src)
-}
-
-pri func decoder.decode_properties?(src: base.io_reader) {
-    var c8  : base.u8
-    var c32 : base.u32
+pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader) {
+    var header_byte : base.u8
+    var c32         : base.u32
+    var prop_byte   : base.u8
 
     var lc : base.u32[..= 8]
     var lp : base.u32[..= 4]
     var pb : base.u32[..= 4]
 
-    c8 = args.src.read_u8?()
-    if c8 >= 225 {
-        return "#bad header"
-    }
-    lc = (c8 % 9) as base.u32
-    c8 /= 9
-    lp = (c8 % 5) as base.u32
-    pb = (c8 / 5) as base.u32
-    if (lc + lp) > 4 {
-        return "#unsupported properties"
-    }
-    this.lc = lc.min(no_more_than: 4)
-    this.lp = lp
-    this.pb = pb
+    var smark  : base.u64
+    var status : base.status
 
-    c32 = args.src.read_u32le?()
-    this.dict_size = c32.max(no_less_than: 4096)
+    this.lzma2_need_prob_reset = true
+    this.lzma2_need_properties = true
 
-    this.decoded_length = args.src.read_u64le?()
-    if (this.decoded_length >= 0x8000_0000_0000_0000) and
-            (this.decoded_length <> 0xFFFF_FFFF_FFFF_FFFF) {
-        return "#unsupported decoded length"
-    }
+    // Loop over chunks. LZMA1 has only one (implicit) chunk. For LZMA2's chunk
+    // header, see
+    // https://github.com/jljusten/LZMA-SDK/blob/781863cdf592da3e97420f50de5dac056ad352a5/C/Lzma2Dec.c#L17-L23
+    while true {
+        if this.format_extension == 0 {  // LZMA1.
+            prop_byte = args.src.read_u8?()
+            if prop_byte >= 225 {
+                return "#bad header"
+            }
+            lc = (prop_byte % 9) as base.u32
+            prop_byte /= 9
+            lp = (prop_byte % 5) as base.u32
+            pb = (prop_byte / 5) as base.u32
+            if (lc + lp) > 4 {
+                return "#unsupported properties"
+            }
+            this.lc = lc.min(no_more_than: 4)
+            this.lp = lp
+            this.pb = pb
+
+            c32 = args.src.read_u32le?()
+            this.dict_size = c32.max(no_less_than: 4096)
+
+            this.decoded_length = args.src.read_u64le?()
+            if (this.decoded_length >= 0x8000_0000_0000_0000) and
+                    (this.decoded_length <> 0xFFFF_FFFF_FFFF_FFFF) {
+                return "#unsupported decoded length"
+            }
+
+            this.initialize_probs!()
+
+        } else {  // LZMA2.
+            if args.src.length() <= 0 {
+                yield? base."$short read"
+                continue
+            } else if args.src.peek_u8() == 0x00 {
+                args.src.skip_u32_fast!(actual: 1, worst_case: 1)
+                break
+            }
+
+            header_byte = args.src.read_u8?()
+            if header_byte < 0x80 {
+                return "#TODO"
+            }
+            this.decoded_length = header_byte as base.u64
+
+            c32 = args.src.read_u16be_as_u32?()
+            this.decoded_length = ((this.decoded_length & 0x1F) << 16) + ((1 + c32) as base.u64)
+
+            c32 = args.src.read_u16be_as_u32?()
+            this.lzma2_encoded_length_want = (1 + c32) as base.u64
+
+            if header_byte >= 0xA0 {
+                this.initialize_probs!()
+                this.lzma2_need_prob_reset = false
+            }
+
+            if header_byte >= 0xC0 {
+                prop_byte = args.src.read_u8?()
+                if prop_byte >= 225 {
+                    return "#bad LZMA2 header"
+                }
+                lc = (prop_byte % 9) as base.u32
+                prop_byte /= 9
+                lp = (prop_byte % 5) as base.u32
+                pb = (prop_byte / 5) as base.u32
+                if (lc + lp) > 4 {
+                    return "#bad LZMA2 header"
+                }
+                this.lc = lc.min(no_more_than: 4)
+                this.lp = lp
+                this.pb = pb
+                this.lzma2_need_properties = false
+            }
+
+            if header_byte >= 0xE0 {
+                // TODO: enforce "reset dictionary".
+            }
+
+            if this.lzma2_need_prob_reset or this.lzma2_need_properties {
+                return "#bad LZMA2 header"
+            }
+        }
+
+        this.lzma2_encoded_length_have = 0
+        while true {
+            smark = args.src.mark()
+            status =? this.decode_bitstream?(dst: args.dst, src: args.src)
+            this.lzma2_encoded_length_have ~sat+= args.src.count_since(mark: smark)
+            if status.is_ok() {
+                break
+            }
+            yield? status
+        } endwhile
+
+        if this.format_extension == 0 {
+            break
+        } else if this.lzma2_encoded_length_have <> this.lzma2_encoded_length_want {
+            return "#bad LZMA2 header"
+        }
+    } endwhile
+}
+
+pri func decoder.decode_bitstream?(dst: base.io_writer, src: base.io_reader) {
+    this.decode_bitstream_slow?(dst: args.dst, src: args.src)
 }
 
 // initialize_probs sets all of the probs_foo[i][j] values to 1024.

@@ -10329,6 +10329,7 @@ struct wuffs_json__decoder__struct {
 
 // ---------------- Status Codes
 
+extern const char wuffs_lzma__error__bad_lzma2_header[];
 extern const char wuffs_lzma__error__bad_bitstream_trailer[];
 extern const char wuffs_lzma__error__bad_code[];
 extern const char wuffs_lzma__error__bad_decoded_length[];
@@ -10343,6 +10344,8 @@ extern const char wuffs_lzma__error__unsupported_properties[];
 #define WUFFS_LZMA__DECODER_DST_HISTORY_RETAIN_LENGTH_MAX_INCL_WORST_CASE 4294967295u
 
 #define WUFFS_LZMA__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE 0u
+
+#define WUFFS_LZMA__QUIRK_FORMAT_EXTENSION 1348001792u
 
 // ---------------- Struct Declarations
 
@@ -10457,13 +10460,18 @@ struct wuffs_lzma__decoder__struct {
     uint32_t f_lc;
     uint32_t f_lp;
     uint32_t f_pb;
+    uint32_t f_format_extension;
     uint32_t f_dict_size;
     uint64_t f_decoded_length;
+    uint64_t f_lzma2_encoded_length_have;
+    uint64_t f_lzma2_encoded_length_want;
+    bool f_lzma2_need_prob_reset;
+    bool f_lzma2_need_properties;
 
     uint32_t p_decode_bitstream_slow;
     uint32_t p_transform_io;
     uint32_t p_do_transform_io;
-    uint32_t p_decode_properties;
+    uint32_t p_decode_bitstream;
   } private_impl;
 
   struct {
@@ -10514,8 +10522,9 @@ struct wuffs_lzma__decoder__struct {
       uint64_t scratch;
     } s_decode_bitstream_slow;
     struct {
+      uint8_t v_header_byte;
       uint64_t scratch;
-    } s_decode_properties;
+    } s_do_transform_io;
   } private_data;
 
 #ifdef __cplusplus
@@ -50573,6 +50582,7 @@ wuffs_json__decoder__decode_trailer(
 
 // ---------------- Status Codes Implementations
 
+const char wuffs_lzma__error__bad_lzma2_header[] = "#lzma: bad LZMA2 header";
 const char wuffs_lzma__error__bad_bitstream_trailer[] = "#lzma: bad bitstream trailer";
 const char wuffs_lzma__error__bad_code[] = "#lzma: bad code";
 const char wuffs_lzma__error__bad_decoded_length[] = "#lzma: bad decoded length";
@@ -50581,6 +50591,7 @@ const char wuffs_lzma__error__bad_header[] = "#lzma: bad header";
 const char wuffs_lzma__error__truncated_input[] = "#lzma: truncated input";
 const char wuffs_lzma__error__unsupported_decoded_length[] = "#lzma: unsupported decoded length";
 const char wuffs_lzma__error__unsupported_properties[] = "#lzma: unsupported properties";
+const char wuffs_lzma__error__todo[] = "#lzma: TODO";
 
 // ---------------- Private Consts
 
@@ -50613,6 +50624,8 @@ WUFFS_LZMA__CLAMP_NO_MORE_THAN_3[8] WUFFS_BASE__POTENTIALLY_UNUSED = {
   0u, 1u, 2u, 3u, 3u, 3u, 3u, 3u,
 };
 
+#define WUFFS_LZMA__QUIRKS_BASE 1348001792u
+
 // ---------------- Private Initializer Prototypes
 
 // ---------------- Private Function Prototypes
@@ -50629,13 +50642,13 @@ static wuffs_base__status
 wuffs_lzma__decoder__do_transform_io(
     wuffs_lzma__decoder* self,
     wuffs_base__io_buffer* a_dst,
-    wuffs_base__io_buffer* a_src,
-    wuffs_base__slice_u8 a_workbuf);
+    wuffs_base__io_buffer* a_src);
 
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__status
-wuffs_lzma__decoder__decode_properties(
+wuffs_lzma__decoder__decode_bitstream(
     wuffs_lzma__decoder* self,
+    wuffs_base__io_buffer* a_dst,
     wuffs_base__io_buffer* a_src);
 
 WUFFS_BASE__GENERATED_C_CODE
@@ -51820,6 +51833,9 @@ wuffs_lzma__decoder__get_quirk(
     return 0;
   }
 
+  if (a_key == 1348001792u) {
+    return ((uint64_t)(self->private_impl.f_format_extension));
+  }
   return 0u;
 }
 
@@ -51841,6 +51857,22 @@ wuffs_lzma__decoder__set_quirk(
         : wuffs_base__error__initialize_not_called);
   }
 
+  uint32_t v_v = 0;
+
+  if (a_key == 1348001792u) {
+    if (a_value == 0u) {
+    } else if (((a_value & 255u) != 2u) || ((a_value >> 8u) > 40u)) {
+      return wuffs_base__make_status(wuffs_base__error__bad_argument);
+    }
+    self->private_impl.f_format_extension = ((uint32_t)(a_value));
+    v_v = (self->private_impl.f_format_extension >> 8u);
+    if (v_v < 40u) {
+      self->private_impl.f_dict_size = ((2u | (v_v & 1u)) << ((v_v >> 1u) + 11u));
+    } else {
+      self->private_impl.f_dict_size = 4294967295u;
+    }
+    return wuffs_base__make_status(NULL);
+  }
   return wuffs_base__make_status(wuffs_base__error__unsupported_option);
 }
 
@@ -51919,7 +51951,7 @@ wuffs_lzma__decoder__transform_io(
 
     while (true) {
       {
-        wuffs_base__status t_0 = wuffs_lzma__decoder__do_transform_io(self, a_dst, a_src, a_workbuf);
+        wuffs_base__status t_0 = wuffs_lzma__decoder__do_transform_io(self, a_dst, a_src);
         v_status = t_0;
       }
       if ((v_status.repr == wuffs_base__suspension__short_read) && (a_src && a_src->meta.closed)) {
@@ -51955,55 +51987,17 @@ static wuffs_base__status
 wuffs_lzma__decoder__do_transform_io(
     wuffs_lzma__decoder* self,
     wuffs_base__io_buffer* a_dst,
-    wuffs_base__io_buffer* a_src,
-    wuffs_base__slice_u8 a_workbuf) {
-  wuffs_base__status status = wuffs_base__make_status(NULL);
-
-  uint32_t coro_susp_point = self->private_impl.p_do_transform_io;
-  switch (coro_susp_point) {
-    WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
-
-    WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
-    status = wuffs_lzma__decoder__decode_properties(self, a_src);
-    if (status.repr) {
-      goto suspend;
-    }
-    wuffs_lzma__decoder__initialize_probs(self);
-    WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
-    status = wuffs_lzma__decoder__decode_bitstream_slow(self, a_dst, a_src);
-    if (status.repr) {
-      goto suspend;
-    }
-
-    goto ok;
-    ok:
-    self->private_impl.p_do_transform_io = 0;
-    goto exit;
-  }
-
-  goto suspend;
-  suspend:
-  self->private_impl.p_do_transform_io = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
-
-  goto exit;
-  exit:
-  return status;
-}
-
-// -------- func lzma.decoder.decode_properties
-
-WUFFS_BASE__GENERATED_C_CODE
-static wuffs_base__status
-wuffs_lzma__decoder__decode_properties(
-    wuffs_lzma__decoder* self,
     wuffs_base__io_buffer* a_src) {
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
-  uint8_t v_c8 = 0;
+  uint8_t v_header_byte = 0;
   uint32_t v_c32 = 0;
+  uint8_t v_prop_byte = 0;
   uint32_t v_lc = 0;
   uint32_t v_lp = 0;
   uint32_t v_pb = 0;
+  uint64_t v_smark = 0;
+  wuffs_base__status v_status = wuffs_base__make_status(NULL);
 
   const uint8_t* iop_a_src = NULL;
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -52016,114 +52010,277 @@ wuffs_lzma__decoder__decode_properties(
     io2_a_src = io0_a_src + a_src->meta.wi;
   }
 
-  uint32_t coro_susp_point = self->private_impl.p_decode_properties;
+  uint32_t coro_susp_point = self->private_impl.p_do_transform_io;
+  if (coro_susp_point) {
+    v_header_byte = self->private_data.s_do_transform_io.v_header_byte;
+  }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
-    {
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
-      if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
-        status = wuffs_base__make_status(wuffs_base__suspension__short_read);
-        goto suspend;
-      }
-      uint8_t t_0 = *iop_a_src++;
-      v_c8 = t_0;
-    }
-    if (v_c8 >= 225u) {
-      status = wuffs_base__make_status(wuffs_lzma__error__bad_header);
-      goto exit;
-    }
-    v_lc = ((uint32_t)(((uint8_t)(v_c8 % 9u))));
+    self->private_impl.f_lzma2_need_prob_reset = true;
+    self->private_impl.f_lzma2_need_properties = true;
+    while (true) {
+      if (self->private_impl.f_format_extension == 0u) {
+        {
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
+          if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
+            status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+            goto suspend;
+          }
+          uint8_t t_0 = *iop_a_src++;
+          v_prop_byte = t_0;
+        }
+        if (v_prop_byte >= 225u) {
+          status = wuffs_base__make_status(wuffs_lzma__error__bad_header);
+          goto exit;
+        }
+        v_lc = ((uint32_t)(((uint8_t)(v_prop_byte % 9u))));
 #if defined(__GNUC__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wconversion"
 #endif
-    v_c8 /= 9u;
+        v_prop_byte /= 9u;
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop
 #endif
-    v_lp = ((uint32_t)(((uint8_t)(v_c8 % 5u))));
-    v_pb = ((uint32_t)(((uint8_t)(v_c8 / 5u))));
-    if ((v_lc + v_lp) > 4u) {
-      status = wuffs_base__make_status(wuffs_lzma__error__unsupported_properties);
-      goto exit;
-    }
-    self->private_impl.f_lc = wuffs_base__u32__min(v_lc, 4u);
-    self->private_impl.f_lp = v_lp;
-    self->private_impl.f_pb = v_pb;
-    {
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
-      uint32_t t_1;
-      if (WUFFS_BASE__LIKELY(io2_a_src - iop_a_src >= 4)) {
-        t_1 = wuffs_base__peek_u32le__no_bounds_check(iop_a_src);
-        iop_a_src += 4;
+        v_lp = ((uint32_t)(((uint8_t)(v_prop_byte % 5u))));
+        v_pb = ((uint32_t)(((uint8_t)(v_prop_byte / 5u))));
+        if ((v_lc + v_lp) > 4u) {
+          status = wuffs_base__make_status(wuffs_lzma__error__unsupported_properties);
+          goto exit;
+        }
+        self->private_impl.f_lc = wuffs_base__u32__min(v_lc, 4u);
+        self->private_impl.f_lp = v_lp;
+        self->private_impl.f_pb = v_pb;
+        {
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
+          uint32_t t_1;
+          if (WUFFS_BASE__LIKELY(io2_a_src - iop_a_src >= 4)) {
+            t_1 = wuffs_base__peek_u32le__no_bounds_check(iop_a_src);
+            iop_a_src += 4;
+          } else {
+            self->private_data.s_do_transform_io.scratch = 0;
+            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
+            while (true) {
+              if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
+                status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+                goto suspend;
+              }
+              uint64_t* scratch = &self->private_data.s_do_transform_io.scratch;
+              uint32_t num_bits_1 = ((uint32_t)(*scratch >> 56));
+              *scratch <<= 8;
+              *scratch >>= 8;
+              *scratch |= ((uint64_t)(*iop_a_src++)) << num_bits_1;
+              if (num_bits_1 == 24) {
+                t_1 = ((uint32_t)(*scratch));
+                break;
+              }
+              num_bits_1 += 8u;
+              *scratch |= ((uint64_t)(num_bits_1)) << 56;
+            }
+          }
+          v_c32 = t_1;
+        }
+        self->private_impl.f_dict_size = wuffs_base__u32__max(v_c32, 4096u);
+        {
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
+          uint64_t t_2;
+          if (WUFFS_BASE__LIKELY(io2_a_src - iop_a_src >= 8)) {
+            t_2 = wuffs_base__peek_u64le__no_bounds_check(iop_a_src);
+            iop_a_src += 8;
+          } else {
+            self->private_data.s_do_transform_io.scratch = 0;
+            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
+            while (true) {
+              if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
+                status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+                goto suspend;
+              }
+              uint64_t* scratch = &self->private_data.s_do_transform_io.scratch;
+              uint32_t num_bits_2 = ((uint32_t)(*scratch >> 56));
+              *scratch <<= 8;
+              *scratch >>= 8;
+              *scratch |= ((uint64_t)(*iop_a_src++)) << num_bits_2;
+              if (num_bits_2 == 56) {
+                t_2 = ((uint64_t)(*scratch));
+                break;
+              }
+              num_bits_2 += 8u;
+              *scratch |= ((uint64_t)(num_bits_2)) << 56;
+            }
+          }
+          self->private_impl.f_decoded_length = t_2;
+        }
+        if ((self->private_impl.f_decoded_length >= 9223372036854775808u) && (self->private_impl.f_decoded_length != 18446744073709551615u)) {
+          status = wuffs_base__make_status(wuffs_lzma__error__unsupported_decoded_length);
+          goto exit;
+        }
+        wuffs_lzma__decoder__initialize_probs(self);
       } else {
-        self->private_data.s_decode_properties.scratch = 0;
-        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
-        while (true) {
+        if (((uint64_t)(io2_a_src - iop_a_src)) <= 0u) {
+          status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(6);
+          continue;
+        } else if (wuffs_base__peek_u8be__no_bounds_check(iop_a_src) == 0u) {
+          iop_a_src += 1u;
+          break;
+        }
+        {
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(7);
           if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
             status = wuffs_base__make_status(wuffs_base__suspension__short_read);
             goto suspend;
           }
-          uint64_t* scratch = &self->private_data.s_decode_properties.scratch;
-          uint32_t num_bits_1 = ((uint32_t)(*scratch >> 56));
-          *scratch <<= 8;
-          *scratch >>= 8;
-          *scratch |= ((uint64_t)(*iop_a_src++)) << num_bits_1;
-          if (num_bits_1 == 24) {
-            t_1 = ((uint32_t)(*scratch));
-            break;
+          uint8_t t_3 = *iop_a_src++;
+          v_header_byte = t_3;
+        }
+        if (v_header_byte < 128u) {
+          status = wuffs_base__make_status(wuffs_lzma__error__todo);
+          goto exit;
+        }
+        self->private_impl.f_decoded_length = ((uint64_t)(v_header_byte));
+        {
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(8);
+          uint32_t t_4;
+          if (WUFFS_BASE__LIKELY(io2_a_src - iop_a_src >= 2)) {
+            t_4 = ((uint32_t)(wuffs_base__peek_u16be__no_bounds_check(iop_a_src)));
+            iop_a_src += 2;
+          } else {
+            self->private_data.s_do_transform_io.scratch = 0;
+            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(9);
+            while (true) {
+              if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
+                status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+                goto suspend;
+              }
+              uint64_t* scratch = &self->private_data.s_do_transform_io.scratch;
+              uint32_t num_bits_4 = ((uint32_t)(*scratch & 0xFFu));
+              *scratch >>= 8;
+              *scratch <<= 8;
+              *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_4);
+              if (num_bits_4 == 8) {
+                t_4 = ((uint32_t)(*scratch >> 48));
+                break;
+              }
+              num_bits_4 += 8u;
+              *scratch |= ((uint64_t)(num_bits_4));
+            }
           }
-          num_bits_1 += 8u;
-          *scratch |= ((uint64_t)(num_bits_1)) << 56;
+          v_c32 = t_4;
+        }
+        self->private_impl.f_decoded_length = (((self->private_impl.f_decoded_length & 31u) << 16u) + ((uint64_t)((1u + v_c32))));
+        {
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(10);
+          uint32_t t_5;
+          if (WUFFS_BASE__LIKELY(io2_a_src - iop_a_src >= 2)) {
+            t_5 = ((uint32_t)(wuffs_base__peek_u16be__no_bounds_check(iop_a_src)));
+            iop_a_src += 2;
+          } else {
+            self->private_data.s_do_transform_io.scratch = 0;
+            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(11);
+            while (true) {
+              if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
+                status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+                goto suspend;
+              }
+              uint64_t* scratch = &self->private_data.s_do_transform_io.scratch;
+              uint32_t num_bits_5 = ((uint32_t)(*scratch & 0xFFu));
+              *scratch >>= 8;
+              *scratch <<= 8;
+              *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_5);
+              if (num_bits_5 == 8) {
+                t_5 = ((uint32_t)(*scratch >> 48));
+                break;
+              }
+              num_bits_5 += 8u;
+              *scratch |= ((uint64_t)(num_bits_5));
+            }
+          }
+          v_c32 = t_5;
+        }
+        self->private_impl.f_lzma2_encoded_length_want = ((uint64_t)((1u + v_c32)));
+        if (v_header_byte >= 160u) {
+          wuffs_lzma__decoder__initialize_probs(self);
+          self->private_impl.f_lzma2_need_prob_reset = false;
+        }
+        if (v_header_byte >= 192u) {
+          {
+            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(12);
+            if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
+              status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+              goto suspend;
+            }
+            uint8_t t_6 = *iop_a_src++;
+            v_prop_byte = t_6;
+          }
+          if (v_prop_byte >= 225u) {
+            status = wuffs_base__make_status(wuffs_lzma__error__bad_lzma2_header);
+            goto exit;
+          }
+          v_lc = ((uint32_t)(((uint8_t)(v_prop_byte % 9u))));
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
+#endif
+          v_prop_byte /= 9u;
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
+          v_lp = ((uint32_t)(((uint8_t)(v_prop_byte % 5u))));
+          v_pb = ((uint32_t)(((uint8_t)(v_prop_byte / 5u))));
+          if ((v_lc + v_lp) > 4u) {
+            status = wuffs_base__make_status(wuffs_lzma__error__bad_lzma2_header);
+            goto exit;
+          }
+          self->private_impl.f_lc = wuffs_base__u32__min(v_lc, 4u);
+          self->private_impl.f_lp = v_lp;
+          self->private_impl.f_pb = v_pb;
+          self->private_impl.f_lzma2_need_properties = false;
+        }
+        if (v_header_byte >= 224u) {
+        }
+        if (self->private_impl.f_lzma2_need_prob_reset || self->private_impl.f_lzma2_need_properties) {
+          status = wuffs_base__make_status(wuffs_lzma__error__bad_lzma2_header);
+          goto exit;
         }
       }
-      v_c32 = t_1;
-    }
-    self->private_impl.f_dict_size = wuffs_base__u32__max(v_c32, 4096u);
-    {
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
-      uint64_t t_2;
-      if (WUFFS_BASE__LIKELY(io2_a_src - iop_a_src >= 8)) {
-        t_2 = wuffs_base__peek_u64le__no_bounds_check(iop_a_src);
-        iop_a_src += 8;
-      } else {
-        self->private_data.s_decode_properties.scratch = 0;
-        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
-        while (true) {
-          if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
-            status = wuffs_base__make_status(wuffs_base__suspension__short_read);
-            goto suspend;
+      self->private_impl.f_lzma2_encoded_length_have = 0u;
+      while (true) {
+        v_smark = ((uint64_t)(iop_a_src - io0_a_src));
+        {
+          if (a_src) {
+            a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
           }
-          uint64_t* scratch = &self->private_data.s_decode_properties.scratch;
-          uint32_t num_bits_2 = ((uint32_t)(*scratch >> 56));
-          *scratch <<= 8;
-          *scratch >>= 8;
-          *scratch |= ((uint64_t)(*iop_a_src++)) << num_bits_2;
-          if (num_bits_2 == 56) {
-            t_2 = ((uint64_t)(*scratch));
-            break;
+          wuffs_base__status t_7 = wuffs_lzma__decoder__decode_bitstream(self, a_dst, a_src);
+          v_status = t_7;
+          if (a_src) {
+            iop_a_src = a_src->data.ptr + a_src->meta.ri;
           }
-          num_bits_2 += 8u;
-          *scratch |= ((uint64_t)(num_bits_2)) << 56;
         }
+        wuffs_private_impl__u64__sat_add_indirect(&self->private_impl.f_lzma2_encoded_length_have, wuffs_private_impl__io__count_since(v_smark, ((uint64_t)(iop_a_src - io0_a_src))));
+        if (wuffs_base__status__is_ok(&v_status)) {
+          break;
+        }
+        status = v_status;
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(13);
       }
-      self->private_impl.f_decoded_length = t_2;
-    }
-    if ((self->private_impl.f_decoded_length >= 9223372036854775808u) && (self->private_impl.f_decoded_length != 18446744073709551615u)) {
-      status = wuffs_base__make_status(wuffs_lzma__error__unsupported_decoded_length);
-      goto exit;
+      if (self->private_impl.f_format_extension == 0u) {
+        break;
+      } else if (self->private_impl.f_lzma2_encoded_length_have != self->private_impl.f_lzma2_encoded_length_want) {
+        status = wuffs_base__make_status(wuffs_lzma__error__bad_lzma2_header);
+        goto exit;
+      }
     }
 
-    goto ok;
     ok:
-    self->private_impl.p_decode_properties = 0;
+    self->private_impl.p_do_transform_io = 0;
     goto exit;
   }
 
   goto suspend;
   suspend:
-  self->private_impl.p_decode_properties = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
+  self->private_impl.p_do_transform_io = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
+  self->private_data.s_do_transform_io.v_header_byte = v_header_byte;
 
   goto exit;
   exit:
@@ -52131,6 +52288,41 @@ wuffs_lzma__decoder__decode_properties(
     a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
   }
 
+  return status;
+}
+
+// -------- func lzma.decoder.decode_bitstream
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__status
+wuffs_lzma__decoder__decode_bitstream(
+    wuffs_lzma__decoder* self,
+    wuffs_base__io_buffer* a_dst,
+    wuffs_base__io_buffer* a_src) {
+  wuffs_base__status status = wuffs_base__make_status(NULL);
+
+  uint32_t coro_susp_point = self->private_impl.p_decode_bitstream;
+  switch (coro_susp_point) {
+    WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
+
+    WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
+    status = wuffs_lzma__decoder__decode_bitstream_slow(self, a_dst, a_src);
+    if (status.repr) {
+      goto suspend;
+    }
+
+    goto ok;
+    ok:
+    self->private_impl.p_decode_bitstream = 0;
+    goto exit;
+  }
+
+  goto suspend;
+  suspend:
+  self->private_impl.p_decode_bitstream = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
+
+  goto exit;
+  exit:
   return status;
 }
 

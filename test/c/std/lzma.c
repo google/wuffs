@@ -129,10 +129,47 @@ test_wuffs_lzma_decode_enwik5() {
 }
 
 const char*  //
-test_wuffs_lzma_decode_romeo() {
+test_wuffs_lzma_decode_romeo_lzma1() {
   CHECK_FOCUS(__func__);
   return do_test_io_buffers(wuffs_lzma_decode, &g_lzma_romeo_gt, UINT64_MAX,
                             UINT64_MAX);
+}
+
+const char*  //
+test_wuffs_lzma_decode_romeo_lzma2() {
+  CHECK_FOCUS(__func__);
+
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = g_src_slice_u8,
+  });
+  wuffs_base__io_buffer have = ((wuffs_base__io_buffer){
+      .data = g_have_slice_u8,
+  });
+  wuffs_base__io_buffer want = ((wuffs_base__io_buffer){
+      .data = g_want_slice_u8,
+  });
+
+  CHECK_STRING(read_file(&src, "test/data/romeo.txt.xz"));
+  if (src.meta.wi < 0x263) {
+    RETURN_FAIL("source file was too short");
+  }
+  src.meta.ri = 0x018;
+  src.meta.wi = 0x263;
+
+  wuffs_lzma__decoder dec;
+  CHECK_STATUS("initialize", wuffs_lzma__decoder__initialize(
+                                 &dec, sizeof dec, WUFFS_VERSION,
+                                 WUFFS_INITIALIZE__DEFAULT_OPTIONS));
+  wuffs_lzma__decoder__set_quirk(&dec, WUFFS_LZMA__QUIRK_FORMAT_EXTENSION, 2);
+  CHECK_STATUS("transform_io", wuffs_lzma__decoder__transform_io(
+                                   &dec, &have, &src, g_work_slice_u8));
+
+  CHECK_STRING(read_file(&want, "test/data/romeo.txt"));
+  CHECK_STRING(check_io_buffers_equal("", &have, &want));
+  if (src.meta.ri != src.meta.wi) {
+    RETURN_FAIL("ri=0x%zX is not equal to wi=0x%zX", src.meta.ri, src.meta.wi);
+  }
+  return NULL;
 }
 
 // ---------------- Mimic Tests
@@ -147,7 +184,7 @@ test_mimic_lzma_decode_enwik5() {
 }
 
 const char*  //
-test_mimic_lzma_decode_romeo() {
+test_mimic_lzma_decode_romeo_lzma1() {
   CHECK_FOCUS(__func__);
   return do_test_io_buffers(mimic_lzma_decode, &g_lzma_romeo_gt, UINT64_MAX,
                             UINT64_MAX);
@@ -185,12 +222,13 @@ proc g_tests[] = {
 
     test_wuffs_lzma_decode_enwik5,
     test_wuffs_lzma_decode_interface,
-    test_wuffs_lzma_decode_romeo,
+    test_wuffs_lzma_decode_romeo_lzma1,
+    test_wuffs_lzma_decode_romeo_lzma2,
 
 #ifdef WUFFS_MIMIC
 
     test_mimic_lzma_decode_enwik5,
-    test_mimic_lzma_decode_romeo,
+    test_mimic_lzma_decode_romeo_lzma1,
 
 #endif  // WUFFS_MIMIC
 
