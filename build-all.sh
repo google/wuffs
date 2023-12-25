@@ -106,6 +106,18 @@ set -e
 
 # ----
 
+echo "Running  gen/bin/example-mzcat"
+set +e
+script/print-mzcat-checksums.sh | \
+    diff --unified test/mzcat-checksums-of-data.txt /dev/stdin
+if [ $? != 0 ]; then
+  echo "Unexpected change in test/mzcat-checksums-of-data.txt"
+  exit 1
+fi
+set -e
+
+# ----
+
 for f in gen/bin/fuzz-*; do
   echo "Running  $f"
   $f test/data > /dev/null
