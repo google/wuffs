@@ -11,20 +11,20 @@
 
 # ----------------
 
-# This script fetches golang/go's src/image/testdata suite.
+# This script fetches xz's tests/files suite.
 
 if [ ! -e ../../wuffs-root-directory.txt ]; then
   echo "$0 should be run from the Wuffs test/3pdata directory."
   exit 1
 fi
 
-# Check out a specific commit (from May 2023).
-git clone --quiet https://github.com/nigeltao/golang-go-src-image-testdata.git
-cd golang-go-src-image-testdata
-git reset --quiet --hard f2f7970f9054b910148be4e0dbda94b392c58700
+# Check out a specific commit (from December 2023).
+git clone --quiet https://github.com/nigeltao/xz-tests-files.git
+cd xz-tests-files
+git reset --quiet --hard 6c3e22469300d284182159b5ae7db9e959dfe62e
 cd ..
 
-# Copy out the testdata directory.
-rm -rf golangsuite
-mv golang-go-src-image-testdata/testdata golangsuite
-rm -rf golang-go-src-image-testdata
+# Trim the git metadata.
+rm -rf xzsuite
+rm -rf xz-tests-files/.git
+mv xz-tests-files xzsuite

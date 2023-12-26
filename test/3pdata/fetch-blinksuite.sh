@@ -18,8 +18,8 @@ if [ ! -e ../../wuffs-root-directory.txt ]; then
   exit 1
 fi
 
-# Check out a specific commit (from June 2023).
-git clone --quiet --depth=1 https://github.com/nigeltao/blink-web-tests-images-resources.git
+# Check out a specific commit (from May 2023).
+git clone --quiet https://github.com/nigeltao/blink-web-tests-images-resources.git
 cd blink-web-tests-images-resources
 git reset --quiet --hard 9c5a6768184e5b45eaddad8f83ffd87dc5dc8f15
 cd ..
