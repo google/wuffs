@@ -18,8 +18,6 @@ pub status "#truncated input"
 pub status "#unsupported decoded length"
 pub status "#unsupported properties"
 
-pri status "#TODO"
-
 pub const DECODER_DST_HISTORY_RETAIN_LENGTH_MAX_INCL_WORST_CASE : base.u64 = 0xFFFF_FFFF
 
 pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0
@@ -166,6 +164,9 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader) {
     var lp : base.u32[..= 4]
     var pb : base.u32[..= 4]
 
+    var length   : base.u32
+    var n_copied : base.u32
+
     var smark  : base.u64
     var status : base.status
 
@@ -204,17 +205,43 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader) {
             this.initialize_probs!()
 
         } else {  // LZMA2.
-            if args.src.length() <= 0 {
+            while args.src.length() <= 0,
+                    post args.src.length() > 0,
+            {
                 yield? base."$short read"
-                continue
-            } else if args.src.peek_u8() == 0x00 {
+            } endwhile
+
+            if args.src.peek_u8() == 0x00 {
                 args.src.skip_u32_fast!(actual: 1, worst_case: 1)
                 break
             }
 
             header_byte = args.src.read_u8?()
             if header_byte < 0x80 {
-                return "#TODO"
+                if header_byte < 0x02 {
+                    // TODO: enforce "reset dictionary".
+                    this.lzma2_need_prob_reset = true
+                    this.lzma2_need_properties = true
+                } else if header_byte > 0x02 {
+                    return "#bad LZMA2 header"
+                }
+
+                c32 = args.src.read_u16be_as_u32?()
+                length = 1 + c32
+
+                while true {
+                    n_copied = args.dst.limited_copy_u32_from_reader!(up_to: length, r: args.src)
+                    if length <= n_copied {
+                        break
+                    }
+                    length -= n_copied
+                    if args.dst.length() == 0 {
+                        yield? base."$short write"
+                    } else {
+                        yield? base."$short read"
+                    }
+                } endwhile
+                continue
             }
             this.decoded_length = header_byte as base.u64
 
