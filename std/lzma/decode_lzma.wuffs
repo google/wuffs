@@ -40,10 +40,11 @@ pub struct decoder? implements base.io_transformer(
 
         decoded_length : base.u64,
 
-        lzma2_encoded_length_have : base.u64,
-        lzma2_encoded_length_want : base.u64,
-        lzma2_need_prob_reset     : base.bool,
-        lzma2_need_properties     : base.bool,
+        lzma2_prior_decoded_length : base.u64,
+        lzma2_encoded_length_have  : base.u64,
+        lzma2_encoded_length_want  : base.u64,
+        lzma2_need_prob_reset      : base.bool,
+        lzma2_need_properties      : base.bool,
 
         util : base.utility,
 ) + (
@@ -167,6 +168,7 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader) {
     var length   : base.u32
     var n_copied : base.u32
 
+    var dmark  : base.u64
     var smark  : base.u64
     var status : base.status
 
@@ -219,7 +221,7 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader) {
             header_byte = args.src.read_u8?()
             if header_byte < 0x80 {
                 if header_byte < 0x02 {
-                    // TODO: enforce "reset dictionary".
+                    this.lzma2_prior_decoded_length = 0
                     this.lzma2_need_prob_reset = true
                     this.lzma2_need_properties = true
                 } else if header_byte > 0x02 {
@@ -234,6 +236,7 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader) {
                     if length <= n_copied {
                         break
                     }
+                    this.lzma2_prior_decoded_length ~sat+= n_copied as base.u64
                     length -= n_copied
                     if args.dst.length() == 0 {
                         yield? base."$short write"
@@ -275,7 +278,7 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader) {
             }
 
             if header_byte >= 0xE0 {
-                // TODO: enforce "reset dictionary".
+                this.lzma2_prior_decoded_length = 0
             }
 
             if this.lzma2_need_prob_reset or this.lzma2_need_properties {
@@ -285,9 +288,11 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader) {
 
         this.lzma2_encoded_length_have = 0
         while true {
+            dmark = args.dst.mark()
             smark = args.src.mark()
             status =? this.decode_bitstream?(dst: args.dst, src: args.src)
             this.lzma2_encoded_length_have ~sat+= args.src.count_since(mark: smark)
+            this.lzma2_prior_decoded_length ~sat+= args.dst.count_since(mark: dmark)
             if status.is_ok() {
                 break
             }

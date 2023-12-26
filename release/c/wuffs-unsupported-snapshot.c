@@ -10468,6 +10468,7 @@ struct wuffs_lzma__decoder__struct {
     uint32_t f_format_extension;
     uint32_t f_dict_size;
     uint64_t f_decoded_length;
+    uint64_t f_lzma2_prior_decoded_length;
     uint64_t f_lzma2_encoded_length_have;
     uint64_t f_lzma2_encoded_length_want;
     bool f_lzma2_need_prob_reset;
@@ -52015,7 +52016,7 @@ wuffs_lzma__decoder__decode_bitstream_slow(
           v_state = ((uint32_t)(WUFFS_LZMA__STATE_TRANSITION_LONGREP[v_state]));
         } while (0);
       } while (0);
-      if ((((uint64_t)((v_rep0 + 1u))) > v_pos) || (((uint64_t)((v_rep0 + 1u))) > ((uint64_t)(self->private_impl.f_dict_size)))) {
+      if ((((uint64_t)((v_rep0 + 1u))) > ((uint64_t)(v_pos + self->private_impl.f_lzma2_prior_decoded_length))) || (((uint64_t)((v_rep0 + 1u))) > ((uint64_t)(self->private_impl.f_dict_size)))) {
         status = wuffs_base__make_status(wuffs_lzma__error__bad_distance);
         goto exit;
       }
@@ -52269,6 +52270,7 @@ wuffs_lzma__decoder__do_transform_io(
   uint32_t v_pb = 0;
   uint32_t v_length = 0;
   uint32_t v_n_copied = 0;
+  uint64_t v_dmark = 0;
   uint64_t v_smark = 0;
   wuffs_base__status v_status = wuffs_base__make_status(NULL);
 
@@ -52423,6 +52425,7 @@ wuffs_lzma__decoder__do_transform_io(
         }
         if (v_header_byte < 128u) {
           if (v_header_byte < 2u) {
+            self->private_impl.f_lzma2_prior_decoded_length = 0u;
             self->private_impl.f_lzma2_need_prob_reset = true;
             self->private_impl.f_lzma2_need_properties = true;
           } else if (v_header_byte > 2u) {
@@ -52465,6 +52468,7 @@ wuffs_lzma__decoder__do_transform_io(
             if (v_length <= v_n_copied) {
               break;
             }
+            wuffs_private_impl__u64__sat_add_indirect(&self->private_impl.f_lzma2_prior_decoded_length, ((uint64_t)(v_n_copied)));
             v_length -= v_n_copied;
             if (((uint64_t)(io2_a_dst - iop_a_dst)) == 0u) {
               status = wuffs_base__make_status(wuffs_base__suspension__short_write);
@@ -52576,6 +52580,7 @@ wuffs_lzma__decoder__do_transform_io(
           self->private_impl.f_lzma2_need_properties = false;
         }
         if (v_header_byte >= 224u) {
+          self->private_impl.f_lzma2_prior_decoded_length = 0u;
         }
         if (self->private_impl.f_lzma2_need_prob_reset || self->private_impl.f_lzma2_need_properties) {
           status = wuffs_base__make_status(wuffs_lzma__error__bad_lzma2_header);
@@ -52584,6 +52589,7 @@ wuffs_lzma__decoder__do_transform_io(
       }
       self->private_impl.f_lzma2_encoded_length_have = 0u;
       while (true) {
+        v_dmark = ((uint64_t)(iop_a_dst - io0_a_dst));
         v_smark = ((uint64_t)(iop_a_src - io0_a_src));
         {
           if (a_dst) {
@@ -52602,6 +52608,7 @@ wuffs_lzma__decoder__do_transform_io(
           }
         }
         wuffs_private_impl__u64__sat_add_indirect(&self->private_impl.f_lzma2_encoded_length_have, wuffs_private_impl__io__count_since(v_smark, ((uint64_t)(iop_a_src - io0_a_src))));
+        wuffs_private_impl__u64__sat_add_indirect(&self->private_impl.f_lzma2_prior_decoded_length, wuffs_private_impl__io__count_since(v_dmark, ((uint64_t)(iop_a_dst - io0_a_dst))));
         if (wuffs_base__status__is_ok(&v_status)) {
           break;
         }

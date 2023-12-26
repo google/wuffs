@@ -805,7 +805,7 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
         // AlgOve90  labelDoTheLZCopy:
         // AlgOve94  emitCopy(len, mrud[0])
         assert len >= 1
-        if (((rep0 + 1) as base.u64) > pos) or
+        if (((rep0 + 1) as base.u64) > (pos ~mod+ this.lzma2_prior_decoded_length)) or
                 (((rep0 + 1) as base.u64) > (this.dict_size as base.u64)) {
             return "#bad distance"
         }
