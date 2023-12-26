@@ -1164,6 +1164,11 @@ wuffs_base__make_bitvec256(uint64_t e00,
   return res;
 }
 
+static inline uint64_t  //
+wuffs_base__bitvec256__get(const wuffs_base__bitvec256* b, uint32_t i) {
+  return b->elements_u64[i & 3];
+}
+
 // --------
 
 // wuffs_base__optional_u63 is like a std::optional<uint64_t>, but for C (not
@@ -13929,6 +13934,7 @@ struct wuffs_xz__decoder__struct {
 
     struct {
       uint32_t v_checksum32_have;
+      wuffs_base__bitvec256 v_checksum256_have;
       uint32_t v_padding;
       uint64_t scratch;
     } s_do_transform_io;
@@ -66851,6 +66857,7 @@ wuffs_xz__decoder__do_transform_io(
   uint32_t v_checksum32_want = 0;
   uint64_t v_checksum64_have = 0;
   uint64_t v_checksum64_want = 0;
+  wuffs_base__bitvec256 v_checksum256_have = {0};
   uint32_t v_padding = 0;
   uint8_t v_c8 = 0;
 
@@ -66881,6 +66888,7 @@ wuffs_xz__decoder__do_transform_io(
   uint32_t coro_susp_point = self->private_impl.p_do_transform_io;
   if (coro_susp_point) {
     v_checksum32_have = self->private_data.s_do_transform_io.v_checksum32_have;
+    v_checksum256_have = self->private_data.s_do_transform_io.v_checksum256_have;
     v_padding = self->private_data.s_do_transform_io.v_padding;
   }
   switch (coro_susp_point) {
@@ -67168,8 +67176,139 @@ wuffs_xz__decoder__do_transform_io(
           goto exit;
         }
       } else if (self->private_impl.f_checksummer == 3u) {
-        status = wuffs_base__make_status(wuffs_xz__error__todo);
-        goto exit;
+        v_checksum256_have = wuffs_sha256__hasher__checksum_bitvec256(&self->private_data.f_sha256);
+        {
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(15);
+          uint64_t t_8;
+          if (WUFFS_BASE__LIKELY(io2_a_src - iop_a_src >= 8)) {
+            t_8 = wuffs_base__peek_u64be__no_bounds_check(iop_a_src);
+            iop_a_src += 8;
+          } else {
+            self->private_data.s_do_transform_io.scratch = 0;
+            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(16);
+            while (true) {
+              if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
+                status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+                goto suspend;
+              }
+              uint64_t* scratch = &self->private_data.s_do_transform_io.scratch;
+              uint32_t num_bits_8 = ((uint32_t)(*scratch & 0xFFu));
+              *scratch >>= 8;
+              *scratch <<= 8;
+              *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_8);
+              if (num_bits_8 == 56) {
+                t_8 = ((uint64_t)(*scratch >> 0));
+                break;
+              }
+              num_bits_8 += 8u;
+              *scratch |= ((uint64_t)(num_bits_8));
+            }
+          }
+          v_checksum64_want = t_8;
+        }
+        if (wuffs_base__bitvec256__get(&v_checksum256_have, 3u) != v_checksum64_want) {
+          status = wuffs_base__make_status(wuffs_xz__error__bad_checksum);
+          goto exit;
+        }
+        {
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(17);
+          uint64_t t_9;
+          if (WUFFS_BASE__LIKELY(io2_a_src - iop_a_src >= 8)) {
+            t_9 = wuffs_base__peek_u64be__no_bounds_check(iop_a_src);
+            iop_a_src += 8;
+          } else {
+            self->private_data.s_do_transform_io.scratch = 0;
+            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(18);
+            while (true) {
+              if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
+                status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+                goto suspend;
+              }
+              uint64_t* scratch = &self->private_data.s_do_transform_io.scratch;
+              uint32_t num_bits_9 = ((uint32_t)(*scratch & 0xFFu));
+              *scratch >>= 8;
+              *scratch <<= 8;
+              *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_9);
+              if (num_bits_9 == 56) {
+                t_9 = ((uint64_t)(*scratch >> 0));
+                break;
+              }
+              num_bits_9 += 8u;
+              *scratch |= ((uint64_t)(num_bits_9));
+            }
+          }
+          v_checksum64_want = t_9;
+        }
+        if (wuffs_base__bitvec256__get(&v_checksum256_have, 2u) != v_checksum64_want) {
+          status = wuffs_base__make_status(wuffs_xz__error__bad_checksum);
+          goto exit;
+        }
+        {
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(19);
+          uint64_t t_10;
+          if (WUFFS_BASE__LIKELY(io2_a_src - iop_a_src >= 8)) {
+            t_10 = wuffs_base__peek_u64be__no_bounds_check(iop_a_src);
+            iop_a_src += 8;
+          } else {
+            self->private_data.s_do_transform_io.scratch = 0;
+            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(20);
+            while (true) {
+              if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
+                status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+                goto suspend;
+              }
+              uint64_t* scratch = &self->private_data.s_do_transform_io.scratch;
+              uint32_t num_bits_10 = ((uint32_t)(*scratch & 0xFFu));
+              *scratch >>= 8;
+              *scratch <<= 8;
+              *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_10);
+              if (num_bits_10 == 56) {
+                t_10 = ((uint64_t)(*scratch >> 0));
+                break;
+              }
+              num_bits_10 += 8u;
+              *scratch |= ((uint64_t)(num_bits_10));
+            }
+          }
+          v_checksum64_want = t_10;
+        }
+        if (wuffs_base__bitvec256__get(&v_checksum256_have, 1u) != v_checksum64_want) {
+          status = wuffs_base__make_status(wuffs_xz__error__bad_checksum);
+          goto exit;
+        }
+        {
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(21);
+          uint64_t t_11;
+          if (WUFFS_BASE__LIKELY(io2_a_src - iop_a_src >= 8)) {
+            t_11 = wuffs_base__peek_u64be__no_bounds_check(iop_a_src);
+            iop_a_src += 8;
+          } else {
+            self->private_data.s_do_transform_io.scratch = 0;
+            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(22);
+            while (true) {
+              if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
+                status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+                goto suspend;
+              }
+              uint64_t* scratch = &self->private_data.s_do_transform_io.scratch;
+              uint32_t num_bits_11 = ((uint32_t)(*scratch & 0xFFu));
+              *scratch >>= 8;
+              *scratch <<= 8;
+              *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_11);
+              if (num_bits_11 == 56) {
+                t_11 = ((uint64_t)(*scratch >> 0));
+                break;
+              }
+              num_bits_11 += 8u;
+              *scratch |= ((uint64_t)(num_bits_11));
+            }
+          }
+          v_checksum64_want = t_11;
+        }
+        if (wuffs_base__bitvec256__get(&v_checksum256_have, 0u) != v_checksum64_want) {
+          status = wuffs_base__make_status(wuffs_xz__error__bad_checksum);
+          goto exit;
+        }
       }
     }
 
@@ -67182,6 +67321,7 @@ wuffs_xz__decoder__do_transform_io(
   suspend:
   self->private_impl.p_do_transform_io = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
   self->private_data.s_do_transform_io.v_checksum32_have = v_checksum32_have;
+  self->private_data.s_do_transform_io.v_checksum256_have = v_checksum256_have;
   self->private_data.s_do_transform_io.v_padding = v_padding;
 
   goto exit;

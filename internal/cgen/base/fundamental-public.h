@@ -892,6 +892,11 @@ wuffs_base__make_bitvec256(uint64_t e00,
   return res;
 }
 
+static inline uint64_t  //
+wuffs_base__bitvec256__get(const wuffs_base__bitvec256* b, uint32_t i) {
+  return b->elements_u64[i & 3];
+}
+
 // --------
 
 // wuffs_base__optional_u63 is like a std::optional<uint64_t>, but for C (not

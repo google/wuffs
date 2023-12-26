@@ -94,16 +94,17 @@ pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf
 }
 
 pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, workbuf: slice base.u8) {
-    var magic           : base.u64
-    var dmark           : base.u64
-    var smark           : base.u64
-    var status          : base.status
-    var checksum32_have : base.u32
-    var checksum32_want : base.u32
-    var checksum64_have : base.u64
-    var checksum64_want : base.u64
-    var padding         : base.u32
-    var c8              : base.u8
+    var magic            : base.u64
+    var dmark            : base.u64
+    var smark            : base.u64
+    var status           : base.status
+    var checksum32_have  : base.u32
+    var checksum32_want  : base.u32
+    var checksum64_have  : base.u64
+    var checksum64_want  : base.u64
+    var checksum256_have : base.bitvec256
+    var padding          : base.u32
+    var c8               : base.u8
 
     magic = args.src.read_u48le_as_u64?()
     if magic <> '\xFD\x37\x7A\x58\x5A\x00'le {
@@ -215,7 +216,23 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
                 return "#bad checksum"
             }
         } else if this.checksummer == 3 {
-            return "#TODO"
+            checksum256_have = this.sha256.checksum_bitvec256()
+            checksum64_want = args.src.read_u64be?()
+            if checksum256_have.get(i: 3) <> checksum64_want {
+                return "#bad checksum"
+            }
+            checksum64_want = args.src.read_u64be?()
+            if checksum256_have.get(i: 2) <> checksum64_want {
+                return "#bad checksum"
+            }
+            checksum64_want = args.src.read_u64be?()
+            if checksum256_have.get(i: 1) <> checksum64_want {
+                return "#bad checksum"
+            }
+            checksum64_want = args.src.read_u64be?()
+            if checksum256_have.get(i: 0) <> checksum64_want {
+                return "#bad checksum"
+            }
         }
     } endwhile
 }
