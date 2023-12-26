@@ -26,8 +26,6 @@ pub status "#unsupported checksum algorithm"
 pub status "#unsupported filter"
 pub status "#unsupported number of filters"
 
-pri status "#TODO"
-
 pub const DECODER_DST_HISTORY_RETAIN_LENGTH_MAX_INCL_WORST_CASE : base.u64 = 0xFFFF_FFFF
 
 pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0
@@ -94,17 +92,18 @@ pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf
 }
 
 pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, workbuf: slice base.u8) {
-    var magic            : base.u64
-    var dmark            : base.u64
-    var smark            : base.u64
-    var status           : base.status
-    var checksum32_have  : base.u32
-    var checksum32_want  : base.u32
-    var checksum64_have  : base.u64
-    var checksum64_want  : base.u64
-    var checksum256_have : base.bitvec256
-    var padding          : base.u32
-    var c8               : base.u8
+    var magic             : base.u64
+    var dmark             : base.u64
+    var smark             : base.u64
+    var status            : base.status
+    var checksum32_have   : base.u32
+    var checksum32_want   : base.u32
+    var checksum64_have   : base.u64
+    var checksum64_want   : base.u64
+    var checksum256_have  : base.bitvec256
+    var compressed_size   : base.u64
+    var uncompressed_size : base.u64
+    var c8                : base.u8
 
     magic = args.src.read_u48le_as_u64?()
     if magic <> '\xFD\x37\x7A\x58\x5A\x00'le {
@@ -170,11 +169,14 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
             this.sha256.reset!()
         }
 
+        compressed_size = 0
+        uncompressed_size = 0
         while true {
             dmark = args.dst.mark()
             smark = args.src.mark()
             status =? this.lzma.transform_io?(dst: args.dst, src: args.src, workbuf: this.util.empty_slice_u8())
-            padding ~mod+= (args.src.count_since(mark: smark) & 0xFFFF_FFFF) as base.u32
+            compressed_size ~mod+= args.src.count_since(mark: smark)
+            uncompressed_size ~mod+= args.dst.count_since(mark: dmark)
 
             // TODO: apply any filters that aren't LZMA2.
 
@@ -193,12 +195,17 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
             yield? status
         } endwhile
 
-        while (padding & 3) <> 0 {
+        if (this.block_has_compressed_size and (this.block_compressed_size <> compressed_size)) or
+                (this.block_has_uncompressed_size and (this.block_uncompressed_size <> uncompressed_size)) {
+            return "#bad block header"
+        }
+
+        while (compressed_size & 3) <> 0 {
             c8 = args.src.read_u8?()
             if c8 <> 0x00 {
                 return "#bad padding"
             }
-            padding ~mod+= 1
+            compressed_size ~mod+= 1
         } endwhile
 
         if this.ignore_checksum {
@@ -277,6 +284,7 @@ pri func decoder.decode_block_header_sans_padding?(src: base.io_reader) {
     var flags     : base.u8
     var filter_id : base.u8
     var status    : base.status
+    var shift     : base.u32
 
     flags = args.src.read_u8?()
     if (flags & 0x03) <> 0 {
@@ -289,14 +297,46 @@ pri func decoder.decode_block_header_sans_padding?(src: base.io_reader) {
 
     this.block_has_compressed_size = (flags & 0x40) <> 0
     if this.block_has_compressed_size {
+        // Read a uvarint (Unsigned LEB128) as this.block_compressed_size.
         this.block_compressed_size = 0
-        return "#TODO"
+        shift = 0
+        while true {
+            c8 = args.src.read_u8?()
+            if shift <= 56 {
+                this.block_compressed_size |= ((c8 & 0x7F) as base.u64) << shift
+                if c8 < 0x80 {
+                    break
+                }
+                shift += 7
+                continue
+            } else if c8 > 1 {
+                return "#bad block header"
+            }
+            this.block_compressed_size |= (c8 as base.u64) << 63
+            break
+        } endwhile
     }
 
     this.block_has_uncompressed_size = (flags & 0x80) <> 0
     if this.block_has_uncompressed_size {
+        // Read a uvarint (Unsigned LEB128) as this.block_uncompressed_size.
         this.block_uncompressed_size = 0
-        return "#TODO"
+        shift = 0
+        while true {
+            c8 = args.src.read_u8?()
+            if shift <= 56 {
+                this.block_uncompressed_size |= ((c8 & 0x7F) as base.u64) << shift
+                if c8 < 0x80 {
+                    break
+                }
+                shift += 7
+                continue
+            } else if c8 > 1 {
+                return "#bad block header"
+            }
+            this.block_uncompressed_size |= (c8 as base.u64) << 63
+            break
+        } endwhile
     }
 
     while true {

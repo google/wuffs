@@ -13935,13 +13935,18 @@ struct wuffs_xz__decoder__struct {
     struct {
       uint32_t v_checksum32_have;
       wuffs_base__bitvec256 v_checksum256_have;
-      uint32_t v_padding;
+      uint64_t v_compressed_size;
+      uint64_t v_uncompressed_size;
       uint64_t scratch;
     } s_do_transform_io;
     struct {
       uint64_t v_padded_size_have;
       uint64_t v_padded_size_want;
     } s_decode_block_header_with_padding;
+    struct {
+      uint8_t v_flags;
+      uint32_t v_shift;
+    } s_decode_block_header_sans_padding;
   } private_data;
 
 #ifdef __cplusplus
@@ -66547,7 +66552,6 @@ const char wuffs_xz__error__truncated_input[] = "#xz: truncated input";
 const char wuffs_xz__error__unsupported_checksum_algorithm[] = "#xz: unsupported checksum algorithm";
 const char wuffs_xz__error__unsupported_filter[] = "#xz: unsupported filter";
 const char wuffs_xz__error__unsupported_number_of_filters[] = "#xz: unsupported number of filters";
-const char wuffs_xz__error__todo[] = "#xz: TODO";
 
 // ---------------- Private Consts
 
@@ -66858,7 +66862,8 @@ wuffs_xz__decoder__do_transform_io(
   uint64_t v_checksum64_have = 0;
   uint64_t v_checksum64_want = 0;
   wuffs_base__bitvec256 v_checksum256_have = {0};
-  uint32_t v_padding = 0;
+  uint64_t v_compressed_size = 0;
+  uint64_t v_uncompressed_size = 0;
   uint8_t v_c8 = 0;
 
   uint8_t* iop_a_dst = NULL;
@@ -66889,7 +66894,8 @@ wuffs_xz__decoder__do_transform_io(
   if (coro_susp_point) {
     v_checksum32_have = self->private_data.s_do_transform_io.v_checksum32_have;
     v_checksum256_have = self->private_data.s_do_transform_io.v_checksum256_have;
-    v_padding = self->private_data.s_do_transform_io.v_padding;
+    v_compressed_size = self->private_data.s_do_transform_io.v_compressed_size;
+    v_uncompressed_size = self->private_data.s_do_transform_io.v_uncompressed_size;
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
@@ -67054,6 +67060,8 @@ wuffs_xz__decoder__do_transform_io(
         wuffs_private_impl__ignore_status(wuffs_sha256__hasher__initialize(&self->private_data.f_sha256,
             sizeof (wuffs_sha256__hasher), WUFFS_VERSION, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
       }
+      v_compressed_size = 0u;
+      v_uncompressed_size = 0u;
       while (true) {
         v_dmark = ((uint64_t)(iop_a_dst - io0_a_dst));
         v_smark = ((uint64_t)(iop_a_src - io0_a_src));
@@ -67073,7 +67081,8 @@ wuffs_xz__decoder__do_transform_io(
             iop_a_src = a_src->data.ptr + a_src->meta.ri;
           }
         }
-        v_padding += ((uint32_t)(wuffs_private_impl__io__count_since(v_smark, ((uint64_t)(iop_a_src - io0_a_src)))));
+        v_compressed_size += wuffs_private_impl__io__count_since(v_smark, ((uint64_t)(iop_a_src - io0_a_src)));
+        v_uncompressed_size += wuffs_private_impl__io__count_since(v_dmark, ((uint64_t)(iop_a_dst - io0_a_dst)));
         if (self->private_impl.f_ignore_checksum) {
         } else if (self->private_impl.f_checksummer == 1u) {
           wuffs_crc32__ieee_hasher__update(&self->private_data.f_crc32, wuffs_private_impl__io__since(v_dmark, ((uint64_t)(iop_a_dst - io0_a_dst)), io0_a_dst));
@@ -67088,7 +67097,11 @@ wuffs_xz__decoder__do_transform_io(
         status = v_status;
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(9);
       }
-      while ((v_padding & 3u) != 0u) {
+      if ((self->private_impl.f_block_has_compressed_size && (self->private_impl.f_block_compressed_size != v_compressed_size)) || (self->private_impl.f_block_has_uncompressed_size && (self->private_impl.f_block_uncompressed_size != v_uncompressed_size))) {
+        status = wuffs_base__make_status(wuffs_xz__error__bad_block_header);
+        goto exit;
+      }
+      while ((v_compressed_size & 3u) != 0u) {
         {
           WUFFS_BASE__COROUTINE_SUSPENSION_POINT(10);
           if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
@@ -67102,7 +67115,7 @@ wuffs_xz__decoder__do_transform_io(
           status = wuffs_base__make_status(wuffs_xz__error__bad_padding);
           goto exit;
         }
-        v_padding += 1u;
+        v_compressed_size += 1u;
       }
       if (self->private_impl.f_ignore_checksum) {
       } else if (self->private_impl.f_checksummer == 1u) {
@@ -67322,7 +67335,8 @@ wuffs_xz__decoder__do_transform_io(
   self->private_impl.p_do_transform_io = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
   self->private_data.s_do_transform_io.v_checksum32_have = v_checksum32_have;
   self->private_data.s_do_transform_io.v_checksum256_have = v_checksum256_have;
-  self->private_data.s_do_transform_io.v_padding = v_padding;
+  self->private_data.s_do_transform_io.v_compressed_size = v_compressed_size;
+  self->private_data.s_do_transform_io.v_uncompressed_size = v_uncompressed_size;
 
   goto exit;
   exit:
@@ -67453,6 +67467,7 @@ wuffs_xz__decoder__decode_block_header_sans_padding(
   uint8_t v_flags = 0;
   uint8_t v_filter_id = 0;
   wuffs_base__status v_status = wuffs_base__make_status(NULL);
+  uint32_t v_shift = 0;
 
   const uint8_t* iop_a_src = NULL;
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -67466,6 +67481,10 @@ wuffs_xz__decoder__decode_block_header_sans_padding(
   }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_block_header_sans_padding;
+  if (coro_susp_point) {
+    v_flags = self->private_data.s_decode_block_header_sans_padding.v_flags;
+    v_shift = self->private_data.s_decode_block_header_sans_padding.v_shift;
+  }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
@@ -67489,26 +67508,37 @@ wuffs_xz__decoder__decode_block_header_sans_padding(
     self->private_impl.f_block_has_compressed_size = (((uint8_t)(v_flags & 64u)) != 0u);
     if (self->private_impl.f_block_has_compressed_size) {
       self->private_impl.f_block_compressed_size = 0u;
-      status = wuffs_base__make_status(wuffs_xz__error__todo);
-      goto exit;
+      v_shift = 0u;
+      while (true) {
+        {
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
+          if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
+            status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+            goto suspend;
+          }
+          uint8_t t_1 = *iop_a_src++;
+          v_c8 = t_1;
+        }
+        if (v_shift <= 56u) {
+          self->private_impl.f_block_compressed_size |= (((uint64_t)(((uint8_t)(v_c8 & 127u)))) << v_shift);
+          if (v_c8 < 128u) {
+            break;
+          }
+          v_shift += 7u;
+          continue;
+        } else if (v_c8 > 1u) {
+          status = wuffs_base__make_status(wuffs_xz__error__bad_block_header);
+          goto exit;
+        }
+        self->private_impl.f_block_compressed_size |= (((uint64_t)(v_c8)) << 63u);
+        break;
+      }
     }
     self->private_impl.f_block_has_uncompressed_size = (((uint8_t)(v_flags & 128u)) != 0u);
     if (self->private_impl.f_block_has_uncompressed_size) {
       self->private_impl.f_block_uncompressed_size = 0u;
-      status = wuffs_base__make_status(wuffs_xz__error__todo);
-      goto exit;
-    }
-    while (true) {
-      {
-        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
-        if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
-          status = wuffs_base__make_status(wuffs_base__suspension__short_read);
-          goto suspend;
-        }
-        uint8_t t_1 = *iop_a_src++;
-        v_filter_id = t_1;
-      }
-      if (v_filter_id == 33u) {
+      v_shift = 0u;
+      while (true) {
         {
           WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
           if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
@@ -67518,18 +67548,53 @@ wuffs_xz__decoder__decode_block_header_sans_padding(
           uint8_t t_2 = *iop_a_src++;
           v_c8 = t_2;
         }
+        if (v_shift <= 56u) {
+          self->private_impl.f_block_uncompressed_size |= (((uint64_t)(((uint8_t)(v_c8 & 127u)))) << v_shift);
+          if (v_c8 < 128u) {
+            break;
+          }
+          v_shift += 7u;
+          continue;
+        } else if (v_c8 > 1u) {
+          status = wuffs_base__make_status(wuffs_xz__error__bad_block_header);
+          goto exit;
+        }
+        self->private_impl.f_block_uncompressed_size |= (((uint64_t)(v_c8)) << 63u);
+        break;
+      }
+    }
+    while (true) {
+      {
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
+        if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
+          status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+          goto suspend;
+        }
+        uint8_t t_3 = *iop_a_src++;
+        v_filter_id = t_3;
+      }
+      if (v_filter_id == 33u) {
+        {
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
+          if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
+            status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+            goto suspend;
+          }
+          uint8_t t_4 = *iop_a_src++;
+          v_c8 = t_4;
+        }
         if (v_c8 != 1u) {
           status = wuffs_base__make_status(wuffs_xz__error__bad_block_header);
           goto exit;
         }
         {
-          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
           if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
             status = wuffs_base__make_status(wuffs_base__suspension__short_read);
             goto suspend;
           }
-          uint8_t t_3 = *iop_a_src++;
-          v_c8 = t_3;
+          uint8_t t_5 = *iop_a_src++;
+          v_c8 = t_5;
         }
         v_status = wuffs_lzma__decoder__set_quirk(&self->private_data.f_lzma, 1348001792u, (2u | (((uint64_t)(v_c8)) << 8u)));
         if ( ! wuffs_base__status__is_ok(&v_status)) {
@@ -67551,6 +67616,8 @@ wuffs_xz__decoder__decode_block_header_sans_padding(
   goto suspend;
   suspend:
   self->private_impl.p_decode_block_header_sans_padding = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
+  self->private_data.s_decode_block_header_sans_padding.v_flags = v_flags;
+  self->private_data.s_decode_block_header_sans_padding.v_shift = v_shift;
 
   goto exit;
   exit:
