@@ -52469,10 +52469,10 @@ wuffs_lzma__decoder__do_transform_io(
           while (true) {
             v_n_copied = wuffs_private_impl__io_writer__limited_copy_u32_from_reader(
                 &iop_a_dst, io2_a_dst,v_length, &iop_a_src, io2_a_src);
+            wuffs_private_impl__u64__sat_add_indirect(&self->private_impl.f_lzma2_prior_decoded_length, ((uint64_t)(v_n_copied)));
             if (v_length <= v_n_copied) {
               break;
             }
-            wuffs_private_impl__u64__sat_add_indirect(&self->private_impl.f_lzma2_prior_decoded_length, ((uint64_t)(v_n_copied)));
             v_length -= v_n_copied;
             if (((uint64_t)(io2_a_dst - iop_a_dst)) == 0u) {
               status = wuffs_base__make_status(wuffs_base__suspension__short_write);

@@ -233,10 +233,10 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader) {
 
                 while true {
                     n_copied = args.dst.limited_copy_u32_from_reader!(up_to: length, r: args.src)
+                    this.lzma2_prior_decoded_length ~sat+= n_copied as base.u64
                     if length <= n_copied {
                         break
                     }
-                    this.lzma2_prior_decoded_length ~sat+= n_copied as base.u64
                     length -= n_copied
                     if args.dst.length() == 0 {
                         yield? base."$short write"
