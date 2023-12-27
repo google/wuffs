@@ -9,15 +9,12 @@ The LICENSE has changed from a single license (Apache 2) to a dual license
 - Added `base.bitvec256`.
 - Added `base.optional_u63`.
 - Added `base.hasher_bitvec256`.
+- Added `base.hasher_u32` `update!` and `checksum_u32` methods.
 - Added `base.hasher_u64`.
 - Added `compact_retaining` and `dst_history_retain_length`.
 - Added `example/toy-aux-image`.
 - Added `example/mzcat`.
 - Added `get_quirk(key: u32) u64`.
-- Added `hasher_u32` `update!` and `checksum_u32` methods.
-- Added `hasher_u64`.
-- Added `if.likely` and `if.unlikely`.
-- Added `slice_var as nptr array[etc] etc` conversion.
 - Added `std/crc64`.
 - Added `std/jpeg`.
 - Added `std/lzma`.
@@ -27,7 +24,6 @@ The LICENSE has changed from a single license (Apache 2) to a dual license
 - Added `std/xxhash64`.
 - Added `std/xz`.
 - Added `wuffs_base__status__is_truncated_input_error`.
-- Ban recursive function calls.
 - Changed `lzw.set_literal_width` to `lzw.set_quirk`.
 - Changed `set_quirk_enabled!(quirk: u32, enabled: bool)` to `set_quirk!(key:
   u32, value: u64) status`.
@@ -43,7 +39,10 @@ The LICENSE has changed from a single license (Apache 2) to a dual license
 The dot points below probably aren't of interest unless you're _writing_ Wuffs
 code (instead of writing C/C++ code that _uses_ Wuffs' standard library).
 
+- Added `if.likely` and `if.unlikely`.
+- Added `slice_var as nptr array[etc] etc` conversion.
 - Added read-only type decorators: `roarray`, `roslice` and `rotable`.
+- Ban recursive function calls.
 - Renamed `base` `min/max` argument from `a` to `no_more/less_than`.
 - Wuffs struct private data now needs a "+" between the "()" pairs.
 - `wuffsfmt` double-indents hanging lines and each indent is now 4 spaces (not
