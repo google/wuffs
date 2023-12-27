@@ -103,8 +103,8 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
     var stack_byte        : base.u32[..= (1024 / 32) - 1]
     var stack_bit         : base.u32[..= 31]
     var match             : base.u32[..= 2]
-    var c4                : base.u32
-    var c                 : base.u8
+    var c32               : base.u32
+    var c8                : base.u8
     var backslash         : base.u8
     var char              : base.u8
     var class             : base.u8[..= 0x0F]
@@ -160,7 +160,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 
         // Consume whitespace.
         whitespace_length = 0
-        c = 0
+        c8 = 0
         class = 0
         while.ws true,
                 inv args.dst.length() > 0,
@@ -182,8 +182,8 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
                 continue.outer
             }
 
-            c = args.src.peek_u8()
-            class = LUT_CLASSES[c]
+            c8 = args.src.peek_u8()
+            class = LUT_CLASSES[c8]
             if class <> CLASS_WHITESPACE {
                 break.ws
             }
@@ -275,11 +275,11 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
                             inv args.dst.length() > 0,
                             inv args.src.length() > 0,
                     {
-                        c4 = args.src.peek_u32le()
-                        if 0x00 <> (LUT_CHARS[0xFF & (c4 >> 0)] |
-                                LUT_CHARS[0xFF & (c4 >> 8)] |
-                                LUT_CHARS[0xFF & (c4 >> 16)] |
-                                LUT_CHARS[0xFF & (c4 >> 24)]) {
+                        c32 = args.src.peek_u32le()
+                        if 0x00 <> (LUT_CHARS[0xFF & (c32 >> 0)] |
+                                LUT_CHARS[0xFF & (c32 >> 8)] |
+                                LUT_CHARS[0xFF & (c32 >> 16)] |
+                                LUT_CHARS[0xFF & (c32 >> 24)]) {
                             break
                         }
                         args.src.skip_u32_fast!(actual: 4, worst_case: 4)
@@ -298,8 +298,8 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
                         string_length += 4
                     } endwhile
 
-                    c = args.src.peek_u8()
-                    char = LUT_CHARS[c]
+                    c8 = args.src.peek_u8()
+                    char = LUT_CHARS[c8]
 
                     if char == 0x00 {  // Non-special ASCII.
                         args.src.skip_u32_fast!(actual: 1, worst_case: 1)
@@ -356,8 +356,8 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
                             yield? base."$short read"
                             continue.string_loop_outer
                         }
-                        c = (args.src.peek_u16le() >> 8) as base.u8
-                        backslash = LUT_BACKSLASHES[c]
+                        c8 = (args.src.peek_u16le() >> 8) as base.u8
+                        backslash = LUT_BACKSLASHES[c8]
                         if (backslash & 0x80) <> 0 {
                             args.src.skip_u32_fast!(actual: 2, worst_case: 2)
                             args.dst.write_simple_token_fast!(
@@ -380,7 +380,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
                                 continue.string_loop_outer
                             }
 
-                        } else if c == 'u' {
+                        } else if c8 == 'u' {
                             // -------- BEGIN backslash-u.
                             if args.src.length() < 6 {
                                 if args.src.is_closed() {
@@ -394,18 +394,18 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
                             uni4_value = 0
                             uni4_ok = 0x80
 
-                            c = LUT_HEXADECIMAL_DIGITS[0xFF & (uni4_string >> 0)]
-                            uni4_ok &= c
-                            uni4_value |= ((c & 0x0F) as base.u32) << 12
-                            c = LUT_HEXADECIMAL_DIGITS[0xFF & (uni4_string >> 8)]
-                            uni4_ok &= c
-                            uni4_value |= ((c & 0x0F) as base.u32) << 8
-                            c = LUT_HEXADECIMAL_DIGITS[0xFF & (uni4_string >> 16)]
-                            uni4_ok &= c
-                            uni4_value |= ((c & 0x0F) as base.u32) << 4
-                            c = LUT_HEXADECIMAL_DIGITS[0xFF & (uni4_string >> 24)]
-                            uni4_ok &= c
-                            uni4_value |= ((c & 0x0F) as base.u32) << 0
+                            c8 = LUT_HEXADECIMAL_DIGITS[0xFF & (uni4_string >> 0)]
+                            uni4_ok &= c8
+                            uni4_value |= ((c8 & 0x0F) as base.u32) << 12
+                            c8 = LUT_HEXADECIMAL_DIGITS[0xFF & (uni4_string >> 8)]
+                            uni4_ok &= c8
+                            uni4_value |= ((c8 & 0x0F) as base.u32) << 8
+                            c8 = LUT_HEXADECIMAL_DIGITS[0xFF & (uni4_string >> 16)]
+                            uni4_ok &= c8
+                            uni4_value |= ((c8 & 0x0F) as base.u32) << 4
+                            c8 = LUT_HEXADECIMAL_DIGITS[0xFF & (uni4_string >> 24)]
+                            uni4_ok &= c8
+                            uni4_value |= ((c8 & 0x0F) as base.u32) << 0
 
                             if uni4_ok == 0 {
                                 // It wasn't 4 hexadecimal digits. No-op (and
@@ -464,18 +464,18 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
                                     uni4_ok = 0x80
                                     uni4_string >>= 16
 
-                                    c = LUT_HEXADECIMAL_DIGITS[0xFF & (uni4_string >> 0)]
-                                    uni4_ok &= c
-                                    uni4_value |= ((c & 0x0F) as base.u32) << 12
-                                    c = LUT_HEXADECIMAL_DIGITS[0xFF & (uni4_string >> 8)]
-                                    uni4_ok &= c
-                                    uni4_value |= ((c & 0x0F) as base.u32) << 8
-                                    c = LUT_HEXADECIMAL_DIGITS[0xFF & (uni4_string >> 16)]
-                                    uni4_ok &= c
-                                    uni4_value |= ((c & 0x0F) as base.u32) << 4
-                                    c = LUT_HEXADECIMAL_DIGITS[0xFF & (uni4_string >> 24)]
-                                    uni4_ok &= c
-                                    uni4_value |= ((c & 0x0F) as base.u32) << 0
+                                    c8 = LUT_HEXADECIMAL_DIGITS[0xFF & (uni4_string >> 0)]
+                                    uni4_ok &= c8
+                                    uni4_value |= ((c8 & 0x0F) as base.u32) << 12
+                                    c8 = LUT_HEXADECIMAL_DIGITS[0xFF & (uni4_string >> 8)]
+                                    uni4_ok &= c8
+                                    uni4_value |= ((c8 & 0x0F) as base.u32) << 8
+                                    c8 = LUT_HEXADECIMAL_DIGITS[0xFF & (uni4_string >> 16)]
+                                    uni4_ok &= c8
+                                    uni4_value |= ((c8 & 0x0F) as base.u32) << 4
+                                    c8 = LUT_HEXADECIMAL_DIGITS[0xFF & (uni4_string >> 24)]
+                                    uni4_ok &= c8
+                                    uni4_value |= ((c8 & 0x0F) as base.u32) << 0
                                 }
 
                                 if (uni4_ok <> 0) and
@@ -510,7 +510,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
                             }
                             // -------- END   backslash-u.
 
-                        } else if (c == 'U') and
+                        } else if (c8 == 'U') and
                                 this.quirks[QUIRK_ALLOW_BACKSLASH_CAPITAL_U - QUIRKS_BASE] {
                             // -------- BEGIN backslash-capital-u.
                             if args.src.length() < 10 {
@@ -524,30 +524,30 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
                             uni8_value = 0
                             uni8_ok = 0x80
 
-                            c = LUT_HEXADECIMAL_DIGITS[0xFF & (uni8_string >> 0)]
-                            uni8_ok &= c
-                            uni8_value |= ((c & 0x0F) as base.u32) << 28
-                            c = LUT_HEXADECIMAL_DIGITS[0xFF & (uni8_string >> 8)]
-                            uni8_ok &= c
-                            uni8_value |= ((c & 0x0F) as base.u32) << 24
-                            c = LUT_HEXADECIMAL_DIGITS[0xFF & (uni8_string >> 16)]
-                            uni8_ok &= c
-                            uni8_value |= ((c & 0x0F) as base.u32) << 20
-                            c = LUT_HEXADECIMAL_DIGITS[0xFF & (uni8_string >> 24)]
-                            uni8_ok &= c
-                            uni8_value |= ((c & 0x0F) as base.u32) << 16
-                            c = LUT_HEXADECIMAL_DIGITS[0xFF & (uni8_string >> 32)]
-                            uni8_ok &= c
-                            uni8_value |= ((c & 0x0F) as base.u32) << 12
-                            c = LUT_HEXADECIMAL_DIGITS[0xFF & (uni8_string >> 40)]
-                            uni8_ok &= c
-                            uni8_value |= ((c & 0x0F) as base.u32) << 8
-                            c = LUT_HEXADECIMAL_DIGITS[0xFF & (uni8_string >> 48)]
-                            uni8_ok &= c
-                            uni8_value |= ((c & 0x0F) as base.u32) << 4
-                            c = LUT_HEXADECIMAL_DIGITS[0xFF & (uni8_string >> 56)]
-                            uni8_ok &= c
-                            uni8_value |= ((c & 0x0F) as base.u32) << 0
+                            c8 = LUT_HEXADECIMAL_DIGITS[0xFF & (uni8_string >> 0)]
+                            uni8_ok &= c8
+                            uni8_value |= ((c8 & 0x0F) as base.u32) << 28
+                            c8 = LUT_HEXADECIMAL_DIGITS[0xFF & (uni8_string >> 8)]
+                            uni8_ok &= c8
+                            uni8_value |= ((c8 & 0x0F) as base.u32) << 24
+                            c8 = LUT_HEXADECIMAL_DIGITS[0xFF & (uni8_string >> 16)]
+                            uni8_ok &= c8
+                            uni8_value |= ((c8 & 0x0F) as base.u32) << 20
+                            c8 = LUT_HEXADECIMAL_DIGITS[0xFF & (uni8_string >> 24)]
+                            uni8_ok &= c8
+                            uni8_value |= ((c8 & 0x0F) as base.u32) << 16
+                            c8 = LUT_HEXADECIMAL_DIGITS[0xFF & (uni8_string >> 32)]
+                            uni8_ok &= c8
+                            uni8_value |= ((c8 & 0x0F) as base.u32) << 12
+                            c8 = LUT_HEXADECIMAL_DIGITS[0xFF & (uni8_string >> 40)]
+                            uni8_ok &= c8
+                            uni8_value |= ((c8 & 0x0F) as base.u32) << 8
+                            c8 = LUT_HEXADECIMAL_DIGITS[0xFF & (uni8_string >> 48)]
+                            uni8_ok &= c8
+                            uni8_value |= ((c8 & 0x0F) as base.u32) << 4
+                            c8 = LUT_HEXADECIMAL_DIGITS[0xFF & (uni8_string >> 56)]
+                            uni8_ok &= c8
+                            uni8_value |= ((c8 & 0x0F) as base.u32) << 0
 
                             if uni8_ok == 0 {
                                 // It wasn't 8 hexadecimal digits. No-op (and
@@ -576,7 +576,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
                             }
                             // -------- END   backslash-capital-u.
 
-                        } else if (c == 'x') and
+                        } else if (c8 == 'x') and
                                 this.quirks[QUIRK_ALLOW_BACKSLASH_X_AS_CODE_POINTS - QUIRKS_BASE] {
                             // -------- BEGIN backslash-x
                             if args.src.length() < 4 {
@@ -590,12 +590,12 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
                             backslash_x_string = args.src.peek_u32le()
                             backslash_x_ok = 0x80
 
-                            c = LUT_HEXADECIMAL_DIGITS[0xFF & (backslash_x_string >> 16)]
-                            backslash_x_ok &= c
-                            backslash_x_value = ((c & 0x0F) << 4) as base.u8
-                            c = LUT_HEXADECIMAL_DIGITS[0xFF & (backslash_x_string >> 24)]
-                            backslash_x_ok &= c
-                            backslash_x_value = (backslash_x_value | (c & 0x0F)) as base.u8
+                            c8 = LUT_HEXADECIMAL_DIGITS[0xFF & (backslash_x_string >> 16)]
+                            backslash_x_ok &= c8
+                            backslash_x_value = ((c8 & 0x0F) << 4) as base.u8
+                            c8 = LUT_HEXADECIMAL_DIGITS[0xFF & (backslash_x_string >> 24)]
+                            backslash_x_ok &= c8
+                            backslash_x_value = (backslash_x_value | (c8 & 0x0F)) as base.u8
 
                             if (backslash_x_ok == 0) or
                                     ((backslash_x_string & 0xFFFF) <> 0x785C) {
@@ -1204,7 +1204,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
 }
 
 pri func decoder.decode_number!(src: base.io_reader) base.u32[..= 0x3FF] {
-    var c              : base.u8
+    var c8             : base.u8
     var n              : base.u32[..= 0x3FF]
     var floating_point : base.u32[..= 0x80]
 
@@ -1218,10 +1218,10 @@ pri func decoder.decode_number!(src: base.io_reader) base.u32[..= 0x3FF] {
         }
         break.goto_done
     }
-    c = args.src.peek_u8()
+    c8 = args.src.peek_u8()
 
     // Scan the optional minus sign.
-    if c <> '-' {
+    if c8 <> '-' {
         assert args.src.length() > 0
         assert n <= 1
     } else {
@@ -1236,14 +1236,14 @@ pri func decoder.decode_number!(src: base.io_reader) base.u32[..= 0x3FF] {
             n |= 0x100  // A '-' without digits is invalid.
             break.goto_done
         }
-        c = args.src.peek_u8()
+        c8 = args.src.peek_u8()
 
         assert args.src.length() > 0
         assert n <= 1
     }
 
     // Scan the opening digits.
-    if c == '0' {
+    if c8 == '0' {
         n += 1
         args.src.skip_u32_fast!(actual: 1, worst_case: 1)
         assert n <= 99
@@ -1262,10 +1262,10 @@ pri func decoder.decode_number!(src: base.io_reader) base.u32[..= 0x3FF] {
         }
         break.goto_done
     }
-    c = args.src.peek_u8()
+    c8 = args.src.peek_u8()
 
     // Scan the optional fraction.
-    if c <> '.' {
+    if c8 <> '.' {
         assert args.src.length() > 0
         assert n <= 99
     } else {
@@ -1289,14 +1289,14 @@ pri func decoder.decode_number!(src: base.io_reader) base.u32[..= 0x3FF] {
             }
             break.goto_done
         }
-        c = args.src.peek_u8()
+        c8 = args.src.peek_u8()
 
         assert args.src.length() > 0
         assert n <= 99
     }
 
     // Scan the optional 'E' or 'e'.
-    if (c <> 'E') and (c <> 'e') {
+    if (c8 <> 'E') and (c8 <> 'e') {
         break.goto_done
     }
     if n >= 99 {
@@ -1316,10 +1316,10 @@ pri func decoder.decode_number!(src: base.io_reader) base.u32[..= 0x3FF] {
         n |= 0x100  // An 'E' or 'e' without digits is invalid.
         break.goto_done
     }
-    c = args.src.peek_u8()
+    c8 = args.src.peek_u8()
 
     // Scan the optional '+' or '-'.
-    if (c <> '+') and (c <> '-') {
+    if (c8 <> '+') and (c8 <> '-') {
         assert n <= 99
     } else {
         if n >= 99 {
@@ -1341,8 +1341,8 @@ pri func decoder.decode_number!(src: base.io_reader) base.u32[..= 0x3FF] {
 }
 
 pri func decoder.decode_digits!(src: base.io_reader, n: base.u32[..= 99]) base.u32[..= 0x3FF] {
-    var c : base.u8
-    var n : base.u32[..= 0x3FF]
+    var c8 : base.u8
+    var n  : base.u32[..= 0x3FF]
 
     n = args.n
     while true {
@@ -1352,8 +1352,8 @@ pri func decoder.decode_digits!(src: base.io_reader, n: base.u32[..= 99]) base.u
             }
             break
         }
-        c = args.src.peek_u8()
-        if 0x00 == LUT_DECIMAL_DIGITS[c] {
+        c8 = args.src.peek_u8()
+        if 0x00 == LUT_DECIMAL_DIGITS[c8] {
             break
         }
         // Cap DECODER_NUMBER_LENGTH_MAX_INCL at an arbitrary value, 99. The
@@ -1379,8 +1379,8 @@ pri func decoder.decode_digits!(src: base.io_reader, n: base.u32[..= 99]) base.u
 }
 
 pri func decoder.decode_leading?(dst: base.token_writer, src: base.io_reader) {
-    var c : base.u8
-    var u : base.u32
+    var c8 : base.u8
+    var u  : base.u32
 
     this.allow_leading_ars =
             this.quirks[QUIRK_ALLOW_LEADING_ASCII_RECORD_SEPARATOR - QUIRKS_BASE]
@@ -1399,14 +1399,14 @@ pri func decoder.decode_leading?(dst: base.token_writer, src: base.io_reader) {
             yield? base."$short read"
             continue
         }
-        c = args.src.peek_u8()
-        if (c == 0x1E) and this.allow_leading_ars {
+        c8 = args.src.peek_u8()
+        if (c8 == 0x1E) and this.allow_leading_ars {
             this.allow_leading_ars = false
             args.src.skip_u32_fast!(actual: 1, worst_case: 1)
             args.dst.write_simple_token_fast!(
                     value_major: 0, value_minor: 0, continued: 0, length: 1)
             continue
-        } else if (c == 0xEF) and this.allow_leading_ubom {
+        } else if (c8 == 0xEF) and this.allow_leading_ubom {
             if args.src.length() < 3 {
                 if args.src.is_closed() {
                     break
@@ -1428,8 +1428,8 @@ pri func decoder.decode_leading?(dst: base.token_writer, src: base.io_reader) {
 }
 
 pri func decoder.decode_comment?(dst: base.token_writer, src: base.io_reader) {
-    var c      : base.u8
-    var c2     : base.u16
+    var c8     : base.u8
+    var c16    : base.u16
     var length : base.u32[..= 0xFFFD]
 
     this.comment_type = 0
@@ -1447,9 +1447,9 @@ pri func decoder.decode_comment?(dst: base.token_writer, src: base.io_reader) {
         }
         yield? base."$short read"
     } endwhile
-    c2 = args.src.peek_u16le()
+    c16 = args.src.peek_u16le()
 
-    if (c2 == '/*'le) and this.quirks[QUIRK_ALLOW_COMMENT_BLOCK - QUIRKS_BASE] {
+    if (c16 == '/*'le) and this.quirks[QUIRK_ALLOW_COMMENT_BLOCK - QUIRKS_BASE] {
         args.src.skip_u32_fast!(actual: 2, worst_case: 2)
         length = 2
 
@@ -1478,8 +1478,8 @@ pri func decoder.decode_comment?(dst: base.token_writer, src: base.io_reader) {
                 continue.comment_block
             }
 
-            c2 = args.src.peek_u16le()
-            if c2 == '*/'le {
+            c16 = args.src.peek_u16le()
+            if c16 == '*/'le {
                 args.src.skip_u32_fast!(actual: 2, worst_case: 2)
                 args.dst.write_simple_token_fast!(
                         value_major: 0,
@@ -1510,7 +1510,7 @@ pri func decoder.decode_comment?(dst: base.token_writer, src: base.io_reader) {
             length += 1
         } endwhile.comment_block
 
-    } else if (c2 == '//'le) and this.quirks[QUIRK_ALLOW_COMMENT_LINE - QUIRKS_BASE] {
+    } else if (c16 == '//'le) and this.quirks[QUIRK_ALLOW_COMMENT_LINE - QUIRKS_BASE] {
         args.src.skip_u32_fast!(actual: 2, worst_case: 2)
         length = 2
 
@@ -1545,8 +1545,8 @@ pri func decoder.decode_comment?(dst: base.token_writer, src: base.io_reader) {
                 continue.comment_line
             }
 
-            c = args.src.peek_u8()
-            if c == '\n' {
+            c8 = args.src.peek_u8()
+            if c8 == '\n' {
                 args.dst.write_simple_token_fast!(
                         value_major: 0,
                         value_minor: (base.TOKEN__VBC__FILLER << 21) |
@@ -1579,7 +1579,7 @@ pri func decoder.decode_comment?(dst: base.token_writer, src: base.io_reader) {
 }
 
 pri func decoder.decode_inf_nan?(dst: base.token_writer, src: base.io_reader) {
-    var c4  : base.u32
+    var c32 : base.u32
     var neg : base.u32[..= 1]
 
     while true {
@@ -1597,8 +1597,8 @@ pri func decoder.decode_inf_nan?(dst: base.token_writer, src: base.io_reader) {
 
         // Bitwise or'ing with 0x20 converts upper case ASCII to lower case.
 
-        c4 = args.src.peek_u24le_as_u32()
-        if (c4 | 0x20_2020) == 'inf'le {
+        c32 = args.src.peek_u24le_as_u32()
+        if (c32 | 0x20_2020) == 'inf'le {
             if args.src.length() > 7 {
                 if (args.src.peek_u64le() | 0x2020_2020_2020_2020) == 'infinity'le {
                     args.dst.write_simple_token_fast!(
@@ -1623,7 +1623,7 @@ pri func decoder.decode_inf_nan?(dst: base.token_writer, src: base.io_reader) {
             args.src.skip_u32_fast!(actual: 3, worst_case: 3)
             return ok
 
-        } else if (c4 | 0x20_2020) == 'nan'le {
+        } else if (c32 | 0x20_2020) == 'nan'le {
             args.dst.write_simple_token_fast!(
                     value_major: 0,
                     value_minor: (base.TOKEN__VBC__NUMBER << 21) |
@@ -1632,9 +1632,9 @@ pri func decoder.decode_inf_nan?(dst: base.token_writer, src: base.io_reader) {
                     length: 3)
             args.src.skip_u32_fast!(actual: 3, worst_case: 3)
             return ok
-        } else if (c4 & 0xFF) == '+' {
+        } else if (c32 & 0xFF) == '+' {
             neg = 0
-        } else if (c4 & 0xFF) == '-' {
+        } else if (c32 & 0xFF) == '-' {
             neg = 1
         } else {
             return "#bad input"
@@ -1648,8 +1648,8 @@ pri func decoder.decode_inf_nan?(dst: base.token_writer, src: base.io_reader) {
             continue
         }
 
-        c4 = args.src.peek_u32le() >> 8
-        if (c4 | 0x20_2020) == 'inf'le {
+        c32 = args.src.peek_u32le() >> 8
+        if (c32 | 0x20_2020) == 'inf'le {
             if args.src.length() > 8 {
                 if (args.src.peek_u64le_at(offset: 1) | 0x2020_2020_2020_2020) == 'infinity'le {
                     args.dst.write_simple_token_fast!(
@@ -1674,7 +1674,7 @@ pri func decoder.decode_inf_nan?(dst: base.token_writer, src: base.io_reader) {
             args.src.skip_u32_fast!(actual: 4, worst_case: 4)
             return ok
 
-        } else if (c4 | 0x20_2020) == 'nan'le {
+        } else if (c32 | 0x20_2020) == 'nan'le {
             args.dst.write_simple_token_fast!(
                     value_major: 0,
                     value_minor: (base.TOKEN__VBC__NUMBER << 21) |
@@ -1690,7 +1690,7 @@ pri func decoder.decode_inf_nan?(dst: base.token_writer, src: base.io_reader) {
 }
 
 pri func decoder.decode_trailer?(dst: base.token_writer, src: base.io_reader) {
-    var c                 : base.u8
+    var c8                : base.u8
     var whitespace_length : base.u32[..= 0xFFFE]
 
     if this.quirks[QUIRK_EXPECT_TRAILING_NEW_LINE_OR_EOF - QUIRKS_BASE] {
@@ -1721,8 +1721,8 @@ pri func decoder.decode_trailer?(dst: base.token_writer, src: base.io_reader) {
                 continue.outer
             }
 
-            c = args.src.peek_u8()
-            if LUT_CLASSES[c] <> CLASS_WHITESPACE {
+            c8 = args.src.peek_u8()
+            if LUT_CLASSES[c8] <> CLASS_WHITESPACE {
                 if whitespace_length > 0 {
                     args.dst.write_simple_token_fast!(
                             value_major: 0, value_minor: 0, continued: 0, length: whitespace_length)
@@ -1738,10 +1738,10 @@ pri func decoder.decode_trailer?(dst: base.token_writer, src: base.io_reader) {
             }
 
             args.src.skip_u32_fast!(actual: 1, worst_case: 1)
-            if (whitespace_length >= 0xFFFE) or (c == this.trailer_stop) {
+            if (whitespace_length >= 0xFFFE) or (c8 == this.trailer_stop) {
                 args.dst.write_simple_token_fast!(
                         value_major: 0, value_minor: 0, continued: 0, length: whitespace_length + 1)
-                if c == this.trailer_stop {
+                if c8 == this.trailer_stop {
                     return ok
                 }
                 continue.outer

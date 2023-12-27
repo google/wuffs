@@ -672,7 +672,7 @@ pri func decoder.skip_blocks?(src: base.io_reader) {
 
 // decode_ae reads an Application Extension.
 pri func decoder.decode_ae?(src: base.io_reader) {
-    var c           : base.u8
+    var c8          : base.u8
     var block_size  : base.u8
     var is_animexts : base.bool
     var is_netscape : base.bool
@@ -705,11 +705,11 @@ pri func decoder.decode_ae?(src: base.io_reader) {
     is_xmp = true
     block_size = 0  // Re-purpose the block_size variable as a counter.
     while block_size < 11 {
-        c = args.src.read_u8?()
-        is_animexts = is_animexts and (c == ANIMEXTS1DOT0[block_size])
-        is_netscape = is_netscape and (c == NETSCAPE2DOT0[block_size])
-        is_iccp = is_iccp and (c == ICCRGBG1012[block_size])
-        is_xmp = is_xmp and (c == XMPDATAXMP[block_size])
+        c8 = args.src.read_u8?()
+        is_animexts = is_animexts and (c8 == ANIMEXTS1DOT0[block_size])
+        is_netscape = is_netscape and (c8 == NETSCAPE2DOT0[block_size])
+        is_iccp = is_iccp and (c8 == ICCRGBG1012[block_size])
+        is_xmp = is_xmp and (c8 == XMPDATAXMP[block_size])
         block_size += 1
     } endwhile
 
@@ -721,8 +721,8 @@ pri func decoder.decode_ae?(src: base.io_reader) {
             args.src.skip_u32?(n: block_size as base.u32)
             break.goto_done
         }
-        c = args.src.read_u8?()
-        if c <> 0x01 {
+        c8 = args.src.read_u8?()
+        if c8 <> 0x01 {
             args.src.skip_u32?(n: 2)
             break.goto_done
         }
@@ -767,12 +767,12 @@ pri func decoder.decode_ae?(src: base.io_reader) {
 
 // decode_gc reads a Graphic Control.
 pri func decoder.decode_gc?(src: base.io_reader) {
-    var c                        : base.u8
+    var c8                       : base.u8
     var flags                    : base.u8
     var gc_duration_centiseconds : base.u16
 
-    c = args.src.read_u8?()
-    if c <> 4 {
+    c8 = args.src.read_u8?()
+    if c8 <> 4 {
         return "#bad graphic control"
     }
 
@@ -799,8 +799,8 @@ pri func decoder.decode_gc?(src: base.io_reader) {
     this.gc_duration = (gc_duration_centiseconds as base.u64) * 7_056000
     this.gc_transparent_index = args.src.read_u8?()
 
-    c = args.src.read_u8?()
-    if c <> 0 {
+    c8 = args.src.read_u8?()
+    if c8 <> 0 {
         return "#bad graphic control"
     }
 }

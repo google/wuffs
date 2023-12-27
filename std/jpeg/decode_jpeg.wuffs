@@ -346,7 +346,7 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 }
 
 pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.io_reader) {
-    var c      : base.u8
+    var c8     : base.u8
     var marker : base.u8
     var pixfmt : base.u32
 
@@ -354,12 +354,12 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
         return base."#bad call sequence"
     }
 
-    c = args.src.read_u8?()
-    if c <> 0xFF {
+    c8 = args.src.read_u8?()
+    if c8 <> 0xFF {
         return "#bad header"
     }
-    c = args.src.read_u8?()
-    if c <> 0xD8 {  // SOI (Start Of Image).
+    c8 = args.src.read_u8?()
+    if c8 <> 0xD8 {  // SOI (Start Of Image).
         return "#bad header"
     }
 
@@ -367,17 +367,17 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
     while true {
         // Read the marker (a two-byte 0xFF 0x?? sequence).
         while true {
-            c = args.src.read_u8?()
-            if c == 0xFF {
+            c8 = args.src.read_u8?()
+            if c8 == 0xFF {
                 break
             }
             // Getting here is invalid according to the JPEG spec, but libjpeg
             // treats this as a warning (JWRN_EXTRANEOUS_DATA), not an error.
         } endwhile
         while true {
-            c = args.src.read_u8?()
-            if c <> 0xFF {
-                marker = c
+            c8 = args.src.read_u8?()
+            if c8 <> 0xFF {
+                marker = c8
                 break
             }
             // Section B.1.1.2: "Any marker may optionally be preceded by any
@@ -500,20 +500,20 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
 }
 
 pri func decoder.decode_dqt?(src: base.io_reader) {
-    var c : base.u8
-    var q : base.u8[..= 3]
-    var i : base.u32
+    var c8 : base.u8
+    var q  : base.u8[..= 3]
+    var i  : base.u32
 
     while this.payload_length > 0 {
         this.payload_length -= 1
-        c = args.src.read_u8?()
-        if (c & 0x0F) > 3 {
+        c8 = args.src.read_u8?()
+        if (c8 & 0x0F) > 3 {
             return "#bad DQT marker"
         }
-        q = c & 0x0F
-        if (c >> 4) == 1 {
+        q = c8 & 0x0F
+        if (c8 >> 4) == 1 {
             return "#unsupported precision"
-        } else if ((c >> 4) > 1) or (this.payload_length < 64) {
+        } else if ((c8 >> 4) > 1) or (this.payload_length < 64) {
             return "#bad DQT marker"
         }
         this.payload_length -= 64
@@ -603,7 +603,7 @@ pri func decoder.decode_appn?(src: base.io_reader, marker: base.u8) {
 }
 
 pri func decoder.decode_sof?(src: base.io_reader) {
-    var c      : base.u8
+    var c8     : base.u8
     var comp_h : base.u8
     var comp_v : base.u8
     var i      : base.u32
@@ -627,12 +627,12 @@ pri func decoder.decode_sof?(src: base.io_reader) {
         return "#bad SOF marker"
     }
     this.payload_length -= 6
-    c = args.src.read_u8?()
-    if c == 8 {
+    c8 = args.src.read_u8?()
+    if c8 == 8 {
         // No-op.
-    } else if c == 12 {
+    } else if c8 == 12 {
         return "#unsupported precision (12 bits)"
-    } else if c == 16 {
+    } else if c8 == 16 {
         return "#unsupported precision (16 bits)"
     } else {
         return "#unsupported precision"
@@ -645,13 +645,13 @@ pri func decoder.decode_sof?(src: base.io_reader) {
     if this.width == 0 {
         return base."#unsupported image dimension"
     }
-    c = args.src.read_u8?()
-    if (c == 0) or (c > 4) {
+    c8 = args.src.read_u8?()
+    if (c8 == 0) or (c8 > 4) {
         return "#bad SOF marker"
-    } else if c == 2 {
+    } else if c8 == 2 {
         return "#unsupported color model"
     }
-    this.num_components = c as base.u32
+    this.num_components = c8 as base.u32
     if this.payload_length <> (3 * this.num_components) {
         return "#bad SOF marker"
     }
@@ -661,9 +661,9 @@ pri func decoder.decode_sof?(src: base.io_reader) {
     while i < this.num_components {
         assert i < 4 via "a < b: a < c; c <= b"(c: this.num_components)
         this.components_c[i] = args.src.read_u8?()
-        c = args.src.read_u8?()
-        comp_h = c >> 4
-        comp_v = c & 0x0F
+        c8 = args.src.read_u8?()
+        comp_h = c8 >> 4
+        comp_v = c8 & 0x0F
         if (comp_h == 0) or (comp_h > 4) or (comp_v == 0) or (comp_v > 4) {
             return "#bad SOF marker"
         }
@@ -675,11 +675,11 @@ pri func decoder.decode_sof?(src: base.io_reader) {
         if this.max_incl_components_v < this.components_v[i] {
             this.max_incl_components_v = this.components_v[i]
         }
-        c = args.src.read_u8?()
-        if c >= 4 {
+        c8 = args.src.read_u8?()
+        if c8 >= 4 {
             return "#bad SOF marker"
         }
-        this.components_tq[i] = c
+        this.components_tq[i] = c8
 
         // Section B.2.2: "the value of C_i shall be different from the values
         // of C_1 through C_(i-1)".
@@ -902,7 +902,7 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, blend: base.pixel_blend, workbuf: slice base.u8, opts: nptr base.decode_frame_options) {
     var pixfmt : base.u32
     var status : base.status
-    var c      : base.u8
+    var c8     : base.u8
     var marker : base.u8
 
     if this.call_sequence == 0x40 {
@@ -948,17 +948,17 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
     while true {
         // Read the marker (a two-byte 0xFF 0x?? sequence).
         while true {
-            c = args.src.read_u8?()
-            if c == 0xFF {
+            c8 = args.src.read_u8?()
+            if c8 == 0xFF {
                 break
             }
             // Getting here is invalid according to the JPEG spec, but libjpeg
             // treats this as a warning (JWRN_EXTRANEOUS_DATA), not an error.
         } endwhile
         while true {
-            c = args.src.read_u8?()
-            if c <> 0xFF {
-                marker = c
+            c8 = args.src.read_u8?()
+            if c8 <> 0xFF {
+                marker = c8
                 break
             }
             // Section B.1.1.2: "Any marker may optionally be preceded by any
@@ -1044,7 +1044,7 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
 }
 
 pri func decoder.decode_dht?(src: base.io_reader) {
-    var c                   : base.u8
+    var c8                  : base.u8
     var tc                  : base.u8[..= 1]
     var th                  : base.u8[..= 3]
     var tc4_th              : base.u8[..= 7]
@@ -1061,12 +1061,12 @@ pri func decoder.decode_dht?(src: base.io_reader) {
             return "#bad DHT marker"
         }
         this.payload_length -= 17
-        c = args.src.read_u8?()
-        if ((c >> 4) > 1) or ((c & 0x0F) > 3) {
+        c8 = args.src.read_u8?()
+        if ((c8 >> 4) > 1) or ((c8 & 0x0F) > 3) {
             return "#bad DHT marker"
         }
-        tc = c >> 4
-        th = c & 0x0F
+        tc = c8 >> 4
+        th = c8 & 0x0F
         tc4_th = ((tc * 4) | th) as base.u8
 
         // SOF0 (which is 0xC0) means a baseline JPEG. The baseline (th <= 1)
@@ -1358,7 +1358,7 @@ pri func decoder.decode_sos?(src: base.io_reader, workbuf: slice base.u8) {
 }
 
 pri func decoder.prepare_scan?(src: base.io_reader) {
-    var c          : base.u8
+    var c8         : base.u8
     var i          : base.u32
     var j          : base.u32
     var j_max_incl : base.u32[..= 9]
@@ -1367,11 +1367,11 @@ pri func decoder.prepare_scan?(src: base.io_reader) {
     if (this.payload_length < 6) or (this.payload_length > 12) {
         return "#bad SOS marker"
     }
-    c = args.src.read_u8?()
-    if (c < 1) or (c > 4) {
+    c8 = args.src.read_u8?()
+    if (c8 < 1) or (c8 > 4) {
         return "#bad SOS marker"
     }
-    this.scan_num_components = c as base.u32
+    this.scan_num_components = c8 as base.u32
     if (this.scan_num_components > this.num_components) or
             (this.payload_length <> (4 + (2 * this.scan_num_components))) {
         return "#bad SOS marker"
@@ -1381,7 +1381,7 @@ pri func decoder.prepare_scan?(src: base.io_reader) {
     i = 0
     while i < this.scan_num_components {
         assert i < 4 via "a < b: a < c; c <= b"(c: this.scan_num_components)
-        c = args.src.read_u8?()
+        c8 = args.src.read_u8?()
 
         j = 0
         while true,
@@ -1391,7 +1391,7 @@ pri func decoder.prepare_scan?(src: base.io_reader) {
                 return "#bad SOS marker"
             }
             assert j < 4 via "a < b: a < c; c <= b"(c: this.num_components)
-            if c == this.components_c[j] {
+            if c8 == this.components_c[j] {
                 if not this.seen_dqt[this.components_tq[j]] {
                     return "#missing Quantization table"
                 }
@@ -1414,12 +1414,12 @@ pri func decoder.prepare_scan?(src: base.io_reader) {
             j += 1
         } endwhile
 
-        c = args.src.read_u8?()
-        if ((c >> 4) > 3) or ((c & 0x0F) > 3) {
+        c8 = args.src.read_u8?()
+        if ((c8 >> 4) > 3) or ((c8 & 0x0F) > 3) {
             return "#bad SOS marker"
         }
-        this.scan_comps_td[i] = c >> 4
-        this.scan_comps_ta[i] = c & 0x0F
+        this.scan_comps_td[i] = c8 >> 4
+        this.scan_comps_ta[i] = c8 & 0x0F
         // SOF0 (which is 0xC0) means a baseline JPEG. The baseline (tx <= 1)
         // restriction is specified in table B.5.
         if this.sof_marker == 0xC0 {
@@ -1442,24 +1442,24 @@ pri func decoder.prepare_scan?(src: base.io_reader) {
         this.scan_al = 0
 
     } else {
-        c = args.src.read_u8?()
-        if c > 63 {
+        c8 = args.src.read_u8?()
+        if c8 > 63 {
             return "#bad SOS marker"
         }
-        this.scan_ss = c
+        this.scan_ss = c8
 
-        c = args.src.read_u8?()
-        if (c > 63) or (c < this.scan_ss) {
+        c8 = args.src.read_u8?()
+        if (c8 > 63) or (c8 < this.scan_ss) {
             return "#bad SOS marker"
         }
-        this.scan_se = c
+        this.scan_se = c8
 
-        c = args.src.read_u8?()
-        if ((c >> 4) > 14) or ((c & 0x0F) > 13) {
+        c8 = args.src.read_u8?()
+        if ((c8 >> 4) > 14) or ((c8 & 0x0F) > 13) {
             return "#bad SOS marker"
         }
-        this.scan_ah = c >> 4
-        this.scan_al = c & 0x0F
+        this.scan_ah = c8 >> 4
+        this.scan_al = c8 & 0x0F
         if this.scan_ah > 0 {
             if (this.scan_ah - 1) <> this.scan_al {
                 return "#bad SOS marker"
@@ -1638,7 +1638,7 @@ pri func decoder.calculate_multiple_component_scan_fields!() base.bool {
 
 pri func decoder.fill_bitstream!(src: base.io_reader) {
     var wi     : base.u32[..= 0x800]
-    var c      : base.u8
+    var c8     : base.u8
     var new_wi : base.u32[..= 0x800]
 
     // Compact unread bytes to the start of the buffer.
@@ -1657,9 +1657,9 @@ pri func decoder.fill_bitstream!(src: base.io_reader) {
 
     wi = this.bitstream_wi
     while (wi < 0x800) and (args.src.length() > 0) {
-        c = args.src.peek_u8()
-        if c < 0xFF {
-            this.bitstream_buffer[wi] = c
+        c8 = args.src.peek_u8()
+        if c8 < 0xFF {
+            this.bitstream_buffer[wi] = c8
             wi += 1
             args.src.skip_u32_fast!(actual: 1, worst_case: 1)
             continue
@@ -1772,7 +1772,7 @@ pri func decoder.save_mcu_blocks!(mx: base.u32[..= 0x2000], my: base.u32[..= 0x2
 }
 
 pri func decoder.skip_past_the_next_restart_marker?(src: base.io_reader) {
-    var c : base.u8
+    var c8 : base.u8
 
     while true {
         if args.src.length() < 2 {
@@ -1783,24 +1783,24 @@ pri func decoder.skip_past_the_next_restart_marker?(src: base.io_reader) {
             continue
         }
 
-        c = (args.src.peek_u16le() >> 8) as base.u8
-        if c < 0xC0 {
+        c8 = (args.src.peek_u16le() >> 8) as base.u8
+        if c8 < 0xC0 {
             // Either a reserved marker or "\xFF\x00" byte stuffing. Consume it
             // and continue.
             args.src.skip_u32_fast!(actual: 2, worst_case: 2)
             continue
-        } else if (c < 0xD0) or (0xD7 < c) {
+        } else if (c8 < 0xD0) or (0xD7 < c8) {
             // Not an RSTn (Restart) marker. Leave it and break.
             break
         }
 
-        c &= 7
-        if (this.next_restart_marker == ((c + 1) & 7)) or
-                (this.next_restart_marker == ((c + 2) & 7)) {
+        c8 &= 7
+        if (this.next_restart_marker == ((c8 + 1) & 7)) or
+                (this.next_restart_marker == ((c8 + 2) & 7)) {
             // A leading RSTn marker. Leave it and break.
             break
-        } else if (this.next_restart_marker == ((c + 7) & 7)) or
-                (this.next_restart_marker == ((c + 6) & 7)) {
+        } else if (this.next_restart_marker == ((c8 + 7) & 7)) or
+                (this.next_restart_marker == ((c8 + 6) & 7)) {
             // A lagging RSTn marker. Consume it and continue.
             args.src.skip_u32_fast!(actual: 2, worst_case: 2)
             continue

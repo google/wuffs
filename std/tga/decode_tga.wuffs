@@ -69,9 +69,9 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 }
 
 pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.io_reader) {
-    var c  : base.u32
-    var c5 : base.u32[..= 0x1F]
-    var i  : base.u32
+    var c32 : base.u32
+    var c5  : base.u32[..= 0x1F]
+    var i   : base.u32
 
     if this.call_sequence <> 0x00 {
         return base."#bad call sequence"
@@ -190,25 +190,25 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
         while i < (this.header_color_map_length as base.u32) {
             assert i <= 0xFFFF via "a <= b: a <= c; c <= b"(c: this.header_color_map_length as base.u32)
             if this.header_color_map_entry_size == 0x18 {
-                c = args.src.read_u24le_as_u32?()
-                this.src_palette[((i & 0xFF) * 4) + 0] = ((c >> 0x00) & 0xFF) as base.u8
-                this.src_palette[((i & 0xFF) * 4) + 1] = ((c >> 0x08) & 0xFF) as base.u8
-                this.src_palette[((i & 0xFF) * 4) + 2] = ((c >> 0x10) & 0xFF) as base.u8
+                c32 = args.src.read_u24le_as_u32?()
+                this.src_palette[((i & 0xFF) * 4) + 0] = ((c32 >> 0x00) & 0xFF) as base.u8
+                this.src_palette[((i & 0xFF) * 4) + 1] = ((c32 >> 0x08) & 0xFF) as base.u8
+                this.src_palette[((i & 0xFF) * 4) + 2] = ((c32 >> 0x10) & 0xFF) as base.u8
                 this.src_palette[((i & 0xFF) * 4) + 3] = 0xFF
             } else if this.header_color_map_entry_size == 0x20 {
-                c = args.src.read_u32le?()
-                this.src_palette[((i & 0xFF) * 4) + 0] = ((c >> 0x00) & 0xFF) as base.u8
-                this.src_palette[((i & 0xFF) * 4) + 1] = ((c >> 0x08) & 0xFF) as base.u8
-                this.src_palette[((i & 0xFF) * 4) + 2] = ((c >> 0x10) & 0xFF) as base.u8
-                this.src_palette[((i & 0xFF) * 4) + 3] = ((c >> 0x18) & 0xFF) as base.u8
+                c32 = args.src.read_u32le?()
+                this.src_palette[((i & 0xFF) * 4) + 0] = ((c32 >> 0x00) & 0xFF) as base.u8
+                this.src_palette[((i & 0xFF) * 4) + 1] = ((c32 >> 0x08) & 0xFF) as base.u8
+                this.src_palette[((i & 0xFF) * 4) + 2] = ((c32 >> 0x10) & 0xFF) as base.u8
+                this.src_palette[((i & 0xFF) * 4) + 3] = ((c32 >> 0x18) & 0xFF) as base.u8
             } else {
                 // Expand 15-bit or 16-bit color map entries.
-                c = args.src.read_u16le_as_u32?()
-                c5 = 0x1F & (c >> 0)
+                c32 = args.src.read_u16le_as_u32?()
+                c5 = 0x1F & (c32 >> 0)
                 this.src_palette[((i & 0xFF) * 4) + 0] = ((c5 << 3) | (c5 >> 2)) as base.u8
-                c5 = 0x1F & (c >> 5)
+                c5 = 0x1F & (c32 >> 5)
                 this.src_palette[((i & 0xFF) * 4) + 1] = ((c5 << 3) | (c5 >> 2)) as base.u8
-                c5 = 0x1F & (c >> 10)
+                c5 = 0x1F & (c32 >> 10)
                 this.src_palette[((i & 0xFF) * 4) + 2] = ((c5 << 3) | (c5 >> 2)) as base.u8
                 // TODO: can the alpha value be zero (BGRA5551 not BGRX5551)?
                 this.src_palette[((i & 0xFF) * 4) + 3] = 0xFF
@@ -316,7 +316,7 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
     var run_length          : base.u32[..= 0xFFFF]
     var num_dst_bytes       : base.u64[..= 0x1F_FFE0]
     var num_src_bytes       : base.u32[..= 0x3_FFFC]
-    var c                   : base.u32
+    var c32                 : base.u32
     var c5                  : base.u32[..= 0x1F]
 
     if this.call_sequence == 0x40 {
@@ -477,13 +477,13 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
                             yield? base."$short read"
                             continue.resume
                         }
-                        c = args.src.peek_u16le_as_u32()
+                        c32 = args.src.peek_u16le_as_u32()
                         args.src.skip_u32_fast!(actual: 2, worst_case: 2)
-                        c5 = 0x1F & (c >> 0)
+                        c5 = 0x1F & (c32 >> 0)
                         this.scratch[0] = ((c5 << 3) | (c5 >> 2)) as base.u8
-                        c5 = 0x1F & (c >> 5)
+                        c5 = 0x1F & (c32 >> 5)
                         this.scratch[1] = ((c5 << 3) | (c5 >> 2)) as base.u8
-                        c5 = 0x1F & (c >> 10)
+                        c5 = 0x1F & (c32 >> 10)
                         this.scratch[2] = ((c5 << 3) | (c5 >> 2)) as base.u8
                         // TODO: can the alpha value be zero (BGRA5551 not BGRX5551)?
                         this.scratch[3] = 0xFF
@@ -528,13 +528,13 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
                             }
                             run_length = (args.src.peek_u8_as_u32() & 0x7F) + 1
                             args.src.skip_u32_fast!(actual: 1, worst_case: 1)
-                            c = args.src.peek_u16le_as_u32()
+                            c32 = args.src.peek_u16le_as_u32()
                             args.src.skip_u32_fast!(actual: 2, worst_case: 2)
-                            c5 = 0x1F & (c >> 0)
+                            c5 = 0x1F & (c32 >> 0)
                             this.scratch[0] = ((c5 << 3) | (c5 >> 2)) as base.u8
-                            c5 = 0x1F & (c >> 5)
+                            c5 = 0x1F & (c32 >> 5)
                             this.scratch[1] = ((c5 << 3) | (c5 >> 2)) as base.u8
-                            c5 = 0x1F & (c >> 10)
+                            c5 = 0x1F & (c32 >> 10)
                             this.scratch[2] = ((c5 << 3) | (c5 >> 2)) as base.u8
                             // TODO: can the alpha value be zero (BGRA5551 not BGRX5551)?
                             this.scratch[3] = 0xFF

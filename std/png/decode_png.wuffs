@@ -790,7 +790,7 @@ pri func decoder.decode_gama?(src: base.io_reader) {
 }
 
 pri func decoder.decode_iccp?(src: base.io_reader) {
-    var c : base.u8
+    var c8 : base.u8
 
     // Skip the NUL-terminated color profile name.
     while true {
@@ -798,8 +798,8 @@ pri func decoder.decode_iccp?(src: base.io_reader) {
             return "#bad chunk"
         }
         this.chunk_length -= 1
-        c = args.src.read_u8?()
-        if c == 0 {
+        c8 = args.src.read_u8?()
+        if c8 == 0 {
             break
         }
     } endwhile
@@ -809,8 +809,8 @@ pri func decoder.decode_iccp?(src: base.io_reader) {
         return "#bad chunk"
     }
     this.chunk_length -= 1
-    c = args.src.read_u8?()
-    if c <> 0 {
+    c8 = args.src.read_u8?()
+    if c8 <> 0 {
         return "#unsupported PNG compression method"
     }
 
@@ -1426,8 +1426,8 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 }
 
 pri func decoder.do_tell_me_more?(dst: base.io_writer, minfo: nptr base.more_information, src: base.io_reader) {
-    var c           : base.u8
-    var c2          : base.u16
+    var c8          : base.u8
+    var c16         : base.u16
     var w           : base.io_writer
     var num_written : base.u64
     var w_mark      : base.u64
@@ -1548,23 +1548,23 @@ pri func decoder.do_tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inf
                 // Drain this.dst_palette, converting from Latin-1 to UTF-8.
                 while this.ztxt_ri < this.ztxt_wi {
                     assert this.ztxt_ri < 1024 via "a < b: a < c; c <= b"(c: this.ztxt_wi)
-                    c2 = LATIN_1[this.dst_palette[this.ztxt_ri]]
-                    if c2 == 0 {
+                    c16 = LATIN_1[this.dst_palette[this.ztxt_ri]]
+                    if c16 == 0 {
                         return "#bad text chunk (not Latin-1)"
-                    } else if c2 <= 0x7F {
+                    } else if c16 <= 0x7F {
                         if args.dst.length() <= 0 {
                             yield? base."$short write"
                             continue.loop
                         }
                         this.ztxt_ri += 1
-                        args.dst.write_u8_fast!(a: c2 as base.u8)
+                        args.dst.write_u8_fast!(a: c16 as base.u8)
                     } else {
                         if args.dst.length() <= 1 {
                             yield? base."$short write"
                             continue.loop
                         }
                         this.ztxt_ri += 1
-                        args.dst.write_u16le_fast!(a: c2)
+                        args.dst.write_u16le_fast!(a: c16)
                     }
                 } endwhile
 
@@ -1596,9 +1596,9 @@ pri func decoder.do_tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inf
                     continue.loop
                 }
                 this.chunk_length -= 1
-                c = args.src.peek_u8()
+                c8 = args.src.peek_u8()
                 args.src.skip_u32_fast!(actual: 1, worst_case: 1)
-                args.dst.write_u8_fast!(a: c)
+                args.dst.write_u8_fast!(a: c8)
             } endwhile
 
         } else {
@@ -1614,23 +1614,23 @@ pri func decoder.do_tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inf
                     yield? base."$short read"
                     continue.loop
                 }
-                c = args.src.peek_u8()
-                if c == 0 {
+                c8 = args.src.peek_u8()
+                if c8 == 0 {
                     this.chunk_length -= 1
                     args.src.skip_u32_fast!(actual: 1, worst_case: 1)
                     break.loop
                 }
-                c2 = LATIN_1[c]
-                if c2 == 0 {
+                c16 = LATIN_1[c8]
+                if c16 == 0 {
                     return "#bad text chunk (not Latin-1)"
-                } else if c2 <= 0x7F {
+                } else if c16 <= 0x7F {
                     if args.dst.length() <= 0 {
                         yield? base."$short write"
                         continue.loop
                     }
                     this.chunk_length -= 1
                     args.src.skip_u32_fast!(actual: 1, worst_case: 1)
-                    args.dst.write_u8_fast!(a: c2 as base.u8)
+                    args.dst.write_u8_fast!(a: c16 as base.u8)
                 } else {
                     if args.dst.length() <= 1 {
                         yield? base."$short write"
@@ -1638,7 +1638,7 @@ pri func decoder.do_tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inf
                     }
                     this.chunk_length -= 1
                     args.src.skip_u32_fast!(actual: 1, worst_case: 1)
-                    args.dst.write_u16le_fast!(a: c2)
+                    args.dst.write_u16le_fast!(a: c16)
                 }
             } endwhile
         }
@@ -1653,16 +1653,16 @@ pri func decoder.do_tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inf
                 return "#bad chunk"
             }
             this.chunk_length -= 2
-            c = args.src.read_u8?()
-            if c == 0 {
+            c8 = args.src.read_u8?()
+            if c8 == 0 {
                 this.metadata_is_zlib_compressed = false
-            } else if c == 1 {
+            } else if c8 == 1 {
                 this.metadata_is_zlib_compressed = true
             } else {
                 return "#bad chunk"
             }
-            c = args.src.read_u8?()
-            if (c <> 0) and this.metadata_is_zlib_compressed {
+            c8 = args.src.read_u8?()
+            if (c8 <> 0) and this.metadata_is_zlib_compressed {
                 return "#unsupported PNG compression method"
             }
 
@@ -1676,8 +1676,8 @@ pri func decoder.do_tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inf
                         return "#bad chunk"
                     }
                     this.chunk_length -= 1
-                    c = args.src.read_u8?()
-                    if c == 0 {
+                    c8 = args.src.read_u8?()
+                    if c8 == 0 {
                         break
                     }
                 } endwhile
@@ -1689,8 +1689,8 @@ pri func decoder.do_tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inf
                 return "#bad chunk"
             }
             this.chunk_length -= 1
-            c = args.src.read_u8?()
-            if c <> 0 {
+            c8 = args.src.read_u8?()
+            if c8 <> 0 {
                 return "#unsupported PNG compression method"
             }
             this.metadata_is_zlib_compressed = true

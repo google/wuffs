@@ -69,7 +69,7 @@ pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf
 }
 
 pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, workbuf: slice base.u8) {
-    var c                   : base.u8
+    var c8                  : base.u8
     var flags               : base.u8
     var xlen                : base.u16
     var mark                : base.u64
@@ -80,16 +80,16 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
     var decoded_length_want : base.u32
 
     // Read the header.
-    c = args.src.read_u8?()
-    if c <> 0x1F {
+    c8 = args.src.read_u8?()
+    if c8 <> 0x1F {
         return "#bad header"
     }
-    c = args.src.read_u8?()
-    if c <> 0x8B {
+    c8 = args.src.read_u8?()
+    if c8 <> 0x8B {
         return "#bad header"
     }
-    c = args.src.read_u8?()
-    if c <> 0x08 {
+    c8 = args.src.read_u8?()
+    if c8 <> 0x08 {
         return "#bad compression method"
     }
     flags = args.src.read_u8?()
@@ -109,8 +109,8 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
     // filename length to NAME_MAX, which is 255.
     if (flags & 0x08) <> 0 {
         while true {
-            c = args.src.read_u8?()
-            if c == 0 {
+            c8 = args.src.read_u8?()
+            if c8 == 0 {
                 break
             }
         } endwhile
@@ -119,8 +119,8 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
     // Handle FCOMMENT.
     if (flags & 0x10) <> 0 {
         while true {
-            c = args.src.read_u8?()
-            if c == 0 {
+            c8 = args.src.read_u8?()
+            if c8 == 0 {
                 break
             }
         } endwhile

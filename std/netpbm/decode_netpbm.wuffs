@@ -57,62 +57,62 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
 }
 
 pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.io_reader) {
-    var c : base.u8
-    var n : base.u32
+    var c8 : base.u8
+    var n  : base.u32
 
     if this.call_sequence <> 0x00 {
         return base."#bad call sequence"
     }
 
-    c = args.src.read_u8?()
-    if c <> 'P' {
+    c8 = args.src.read_u8?()
+    if c8 <> 'P' {
         return "#bad header"
     }
 
-    c = args.src.read_u8?()
-    if (c < '1') or ('7' < c) {
+    c8 = args.src.read_u8?()
+    if (c8 < '1') or ('7' < c8) {
         return "#bad header"
-    } else if c == '5' {
+    } else if c8 == '5' {
         this.pixfmt = base.PIXEL_FORMAT__Y
-    } else if c == '6' {
+    } else if c8 == '6' {
         this.pixfmt = base.PIXEL_FORMAT__RGB
     } else {
         return "#unsupported Netpbm file"
     }
 
-    c = args.src.read_u8?()
-    if c <> 0x0A {
+    c8 = args.src.read_u8?()
+    if c8 <> 0x0A {
         return "#bad header"
     }
 
     // Decode width.
     while true {
-        c = args.src.read_u8?()
-        if (c == ' ') or (c == 0x09) {
+        c8 = args.src.read_u8?()
+        if (c8 == ' ') or (c8 == 0x09) {
             continue
-        } else if c == '#' {
+        } else if c8 == '#' {
             // Consume a "#...\n" comment.
             while true {
-                c = args.src.read_u8?()
-                if c == 0x0A {
+                c8 = args.src.read_u8?()
+                if c8 == 0x0A {
                     break
                 }
             } endwhile
             continue
-        } else if (c < '0') or ('9' < c) {
+        } else if (c8 < '0') or ('9' < c8) {
             return "#bad header"
         }
-        this.width = ((c - '0') as base.u32)
+        this.width = ((c8 - '0') as base.u32)
         break
     } endwhile
     while true {
-        c = args.src.read_u8?()
-        if (c == ' ') or (c == 0x09) {
+        c8 = args.src.read_u8?()
+        if (c8 == ' ') or (c8 == 0x09) {
             break
-        } else if (c < '0') or ('9' < c) {
+        } else if (c8 < '0') or ('9' < c8) {
             return "#bad header"
         }
-        n = (10 * this.width) + ((c - '0') as base.u32)
+        n = (10 * this.width) + ((c8 - '0') as base.u32)
         if n > 0xFF_FFFF {
             return "#unsupported Netpbm file"
         }
@@ -121,34 +121,34 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
 
     // Decode height.
     while true {
-        c = args.src.read_u8?()
-        if (c == ' ') or (c == 0x09) {
+        c8 = args.src.read_u8?()
+        if (c8 == ' ') or (c8 == 0x09) {
             continue
-        } else if c == '#' {
+        } else if c8 == '#' {
             // Consume a "#...\n" comment.
             while true {
-                c = args.src.read_u8?()
-                if c == 0x0A {
+                c8 = args.src.read_u8?()
+                if c8 == 0x0A {
                     break
                 }
             } endwhile
             continue
-        } else if (c < '0') or ('9' < c) {
+        } else if (c8 < '0') or ('9' < c8) {
             return "#bad header"
         }
-        this.height = ((c - '0') as base.u32)
+        this.height = ((c8 - '0') as base.u32)
         break
     } endwhile
     while true {
-        c = args.src.read_u8?()
-        if (c == ' ') or (c == 0x09) or (c == 0x0D) {
+        c8 = args.src.read_u8?()
+        if (c8 == ' ') or (c8 == 0x09) or (c8 == 0x0D) {
             continue
-        } else if c == 0x0A {
+        } else if c8 == 0x0A {
             break
-        } else if (c < '0') or ('9' < c) {
+        } else if (c8 < '0') or ('9' < c8) {
             return "#bad header"
         }
-        n = (10 * this.height) + ((c - '0') as base.u32)
+        n = (10 * this.height) + ((c8 - '0') as base.u32)
         if n > 0xFF_FFFF {
             return "#unsupported Netpbm file"
         }
@@ -157,34 +157,34 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
 
     // Decode max_value.
     while true {
-        c = args.src.read_u8?()
-        if (c == ' ') or (c == 0x09) {
+        c8 = args.src.read_u8?()
+        if (c8 == ' ') or (c8 == 0x09) {
             continue
-        } else if c == '#' {
+        } else if c8 == '#' {
             // Consume a "#...\n" comment.
             while true {
-                c = args.src.read_u8?()
-                if c == 0x0A {
+                c8 = args.src.read_u8?()
+                if c8 == 0x0A {
                     break
                 }
             } endwhile
             continue
-        } else if (c < '0') or ('9' < c) {
+        } else if (c8 < '0') or ('9' < c8) {
             return "#bad header"
         }
-        this.max_value = ((c - '0') as base.u32)
+        this.max_value = ((c8 - '0') as base.u32)
         break
     } endwhile
     while true {
-        c = args.src.read_u8?()
-        if (c == ' ') or (c == 0x09) or (c == 0x0D) {
+        c8 = args.src.read_u8?()
+        if (c8 == ' ') or (c8 == 0x09) or (c8 == 0x0D) {
             continue
-        } else if c == 0x0A {
+        } else if c8 == 0x0A {
             break
-        } else if (c < '0') or ('9' < c) {
+        } else if (c8 < '0') or ('9' < c8) {
             return "#bad header"
         }
-        n = (10 * this.max_value) + ((c - '0') as base.u32)
+        n = (10 * this.max_value) + ((c8 - '0') as base.u32)
         if n > 0xFF_FFFF {
             return "#unsupported Netpbm file"
         }

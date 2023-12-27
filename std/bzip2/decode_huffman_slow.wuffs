@@ -9,7 +9,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 pri func decoder.decode_huffman_slow?(src: base.io_reader) {
-    var c          : base.u8
+    var c8         : base.u8
     var node_index : base.u32[..= 256]
 
     var child    : base.u16
@@ -36,8 +36,8 @@ pri func decoder.decode_huffman_slow?(src: base.io_reader) {
         node_index = 0
         while true {
             if this.n_bits <= 0 {
-                c = args.src.read_u8?()
-                this.bits = (c as base.u32) << 24
+                c8 = args.src.read_u8?()
+                this.bits = (c8 as base.u32) << 24
                 this.n_bits = 8
                 assert this.n_bits > 0
             }

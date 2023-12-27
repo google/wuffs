@@ -144,30 +144,30 @@ pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf
 }
 
 pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, workbuf: slice base.u8) {
-    var c                   : base.u8
+    var c8                  : base.u8
     var i                   : base.u32
     var tag                 : base.u64
     var status              : base.status
     var final_checksum_want : base.u32
 
     // Read the header.
-    c = args.src.read_u8?()
-    if c <> 0x42 {
+    c8 = args.src.read_u8?()
+    if c8 <> 0x42 {
         return "#bad header"
     }
-    c = args.src.read_u8?()
-    if c <> 0x5A {
+    c8 = args.src.read_u8?()
+    if c8 <> 0x5A {
         return "#bad header"
     }
-    c = args.src.read_u8?()
-    if c <> 0x68 {
+    c8 = args.src.read_u8?()
+    if c8 <> 0x68 {
         return "#bad header"
     }
-    c = args.src.read_u8?()
-    if (c < '1') or ('9' < c) {
+    c8 = args.src.read_u8?()
+    if (c8 < '1') or ('9' < c8) {
         return "#bad header"
     }
-    this.max_incl_block_size = ((c - '0') as base.u32) * 100000
+    this.max_incl_block_size = ((c8 - '0') as base.u32) * 100000
 
     while true {
         // Read the 48-bit tag.
@@ -175,8 +175,8 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
         i = 0
         while i < 48 {
             if this.n_bits <= 0 {
-                c = args.src.read_u8?()
-                this.bits = (c as base.u32) << 24
+                c8 = args.src.read_u8?()
+                this.bits = (c8 as base.u32) << 24
                 this.n_bits = 8
                 assert this.n_bits > 0
             }
@@ -244,8 +244,8 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
     i = 0
     while i < 32 {
         if this.n_bits <= 0 {
-            c = args.src.read_u8?()
-            this.bits = (c as base.u32) << 24
+            c8 = args.src.read_u8?()
+            this.bits = (c8 as base.u32) << 24
             this.n_bits = 8
             assert this.n_bits > 0
         }
@@ -261,7 +261,7 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
 }
 
 pri func decoder.prepare_block?(src: base.io_reader) {
-    var c        : base.u8
+    var c8       : base.u8
     var i        : base.u32
     var j        : base.u32
     var selector : base.u32
@@ -274,8 +274,8 @@ pri func decoder.prepare_block?(src: base.io_reader) {
     i = 0
     while i < 32 {
         if this.n_bits <= 0 {
-            c = args.src.read_u8?()
-            this.bits = (c as base.u32) << 24
+            c8 = args.src.read_u8?()
+            this.bits = (c8 as base.u32) << 24
             this.n_bits = 8
             assert this.n_bits > 0
         }
@@ -288,8 +288,8 @@ pri func decoder.prepare_block?(src: base.io_reader) {
 
     // Read the "block randomized" bit.
     if this.n_bits <= 0 {
-        c = args.src.read_u8?()
-        this.bits = (c as base.u32) << 24
+        c8 = args.src.read_u8?()
+        this.bits = (c8 as base.u32) << 24
         this.n_bits = 8
         assert this.n_bits > 0
     }
@@ -304,8 +304,8 @@ pri func decoder.prepare_block?(src: base.io_reader) {
     i = 0
     while i < 24 {
         if this.n_bits <= 0 {
-            c = args.src.read_u8?()
-            this.bits = (c as base.u32) << 24
+            c8 = args.src.read_u8?()
+            this.bits = (c8 as base.u32) << 24
             this.n_bits = 8
             assert this.n_bits > 0
         }
@@ -327,8 +327,8 @@ pri func decoder.prepare_block?(src: base.io_reader) {
     i = 0
     while i < 256 {
         if this.n_bits <= 0 {
-            c = args.src.read_u8?()
-            this.bits = (c as base.u32) << 24
+            c8 = args.src.read_u8?()
+            this.bits = (c8 as base.u32) << 24
             this.n_bits = 8
             assert this.n_bits > 0
         }
@@ -350,8 +350,8 @@ pri func decoder.prepare_block?(src: base.io_reader) {
         }
         while true {
             if this.n_bits <= 0 {
-                c = args.src.read_u8?()
-                this.bits = (c as base.u32) << 24
+                c8 = args.src.read_u8?()
+                this.bits = (c8 as base.u32) << 24
                 this.n_bits = 8
                 assert this.n_bits > 0
             }
@@ -375,8 +375,8 @@ pri func decoder.prepare_block?(src: base.io_reader) {
     i = 0
     while i < 3 {
         if this.n_bits <= 0 {
-            c = args.src.read_u8?()
-            this.bits = (c as base.u32) << 24
+            c8 = args.src.read_u8?()
+            this.bits = (c8 as base.u32) << 24
             this.n_bits = 8
             assert this.n_bits > 0
         }
@@ -396,8 +396,8 @@ pri func decoder.prepare_block?(src: base.io_reader) {
     i = 0
     while i < 15 {
         if this.n_bits <= 0 {
-            c = args.src.read_u8?()
-            this.bits = (c as base.u32) << 24
+            c8 = args.src.read_u8?()
+            this.bits = (c8 as base.u32) << 24
             this.n_bits = 8
             assert this.n_bits > 0
         }
@@ -431,8 +431,8 @@ pri func decoder.prepare_block?(src: base.io_reader) {
                 inv i < 18001,
         {
             if this.n_bits <= 0 {
-                c = args.src.read_u8?()
-                this.bits = (c as base.u32) << 24
+                c8 = args.src.read_u8?()
+                this.bits = (c8 as base.u32) << 24
                 this.n_bits = 8
                 assert this.n_bits > 0
             }
@@ -497,7 +497,7 @@ pri func decoder.prepare_block?(src: base.io_reader) {
 }
 
 pri func decoder.read_code_lengths?(src: base.io_reader) {
-    var c           : base.u8
+    var c8          : base.u8
     var i           : base.u32
     var code_length : base.u32
 
@@ -507,8 +507,8 @@ pri func decoder.read_code_lengths?(src: base.io_reader) {
     i = 0
     while i < 5 {
         if this.n_bits <= 0 {
-            c = args.src.read_u8?()
-            this.bits = (c as base.u32) << 24
+            c8 = args.src.read_u8?()
+            this.bits = (c8 as base.u32) << 24
             this.n_bits = 8
             assert this.n_bits > 0
         }
@@ -531,8 +531,8 @@ pri func decoder.read_code_lengths?(src: base.io_reader) {
             }
 
             if this.n_bits <= 0 {
-                c = args.src.read_u8?()
-                this.bits = (c as base.u32) << 24
+                c8 = args.src.read_u8?()
+                this.bits = (c8 as base.u32) << 24
                 this.n_bits = 8
                 assert this.n_bits > 0
             }
@@ -545,8 +545,8 @@ pri func decoder.read_code_lengths?(src: base.io_reader) {
             this.n_bits -= 1
 
             if this.n_bits <= 0 {
-                c = args.src.read_u8?()
-                this.bits = (c as base.u32) << 24
+                c8 = args.src.read_u8?()
+                this.bits = (c8 as base.u32) << 24
                 this.n_bits = 8
                 assert this.n_bits > 0
             }

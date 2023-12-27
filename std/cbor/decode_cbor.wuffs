@@ -133,7 +133,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
     var vminor       : base.u32[..= 0x1FF_FFFF]
     var vminor_alt   : base.u32[..= 0x1FF_FFFF]
     var continued    : base.u32[..= 1]
-    var c            : base.u8
+    var c8           : base.u8
     var c_major      : base.u8[..= 0x07]
     var c_minor      : base.u8[..= 0x1F]
     var tagged       : base.bool
@@ -160,10 +160,10 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
             yield? base."$short read"
             continue.outer
         }
-        c = args.src.peek_u8()
+        c8 = args.src.peek_u8()
 
-        if (indefinite_string_major_type <> 0) and (indefinite_string_major_type <> (c >> 5)) {
-            if c <> 0xFF {
+        if (indefinite_string_major_type <> 0) and (indefinite_string_major_type <> (c8 >> 5)) {
+            if c8 <> 0xFF {
                 return "#bad input"
             }
             vminor = (base.TOKEN__VBC__STRING << 21) |
@@ -184,8 +184,8 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
         }
 
         args.src.skip_u32_fast!(actual: 1, worst_case: 1)
-        c_major = (c >> 5) as base.u8
-        c_minor = c & 0x1F
+        c_major = (c8 >> 5) as base.u8
+        c_minor = c8 & 0x1F
         if c_minor < 0x18 {
             string_length = c_minor as base.u64
         } else {
