@@ -367,7 +367,7 @@ var funcsOther = [...]string{
 	"u64.max(no_less_than: u64) u64",
 	"u64.min(no_more_than: u64) u64",
 
-	"bitvec256.get(i: u32[..=3]) u64",
+	"bitvec256.get_u64(i: u32[..=3]) u64",
 
 	// ---- utility
 

@@ -1165,7 +1165,7 @@ wuffs_base__make_bitvec256(uint64_t e00,
 }
 
 static inline uint64_t  //
-wuffs_base__bitvec256__get(const wuffs_base__bitvec256* b, uint32_t i) {
+wuffs_base__bitvec256__get_u64(const wuffs_base__bitvec256* b, uint32_t i) {
   return b->elements_u64[i & 3];
 }
 
@@ -67230,7 +67230,7 @@ wuffs_xz__decoder__do_transform_io(
           }
           v_checksum64_want = t_8;
         }
-        if (wuffs_base__bitvec256__get(&v_checksum256_have, 3u) != v_checksum64_want) {
+        if (wuffs_base__bitvec256__get_u64(&v_checksum256_have, 3u) != v_checksum64_want) {
           status = wuffs_base__make_status(wuffs_xz__error__bad_checksum);
           goto exit;
         }
@@ -67263,7 +67263,7 @@ wuffs_xz__decoder__do_transform_io(
           }
           v_checksum64_want = t_9;
         }
-        if (wuffs_base__bitvec256__get(&v_checksum256_have, 2u) != v_checksum64_want) {
+        if (wuffs_base__bitvec256__get_u64(&v_checksum256_have, 2u) != v_checksum64_want) {
           status = wuffs_base__make_status(wuffs_xz__error__bad_checksum);
           goto exit;
         }
@@ -67296,7 +67296,7 @@ wuffs_xz__decoder__do_transform_io(
           }
           v_checksum64_want = t_10;
         }
-        if (wuffs_base__bitvec256__get(&v_checksum256_have, 1u) != v_checksum64_want) {
+        if (wuffs_base__bitvec256__get_u64(&v_checksum256_have, 1u) != v_checksum64_want) {
           status = wuffs_base__make_status(wuffs_xz__error__bad_checksum);
           goto exit;
         }
@@ -67329,7 +67329,7 @@ wuffs_xz__decoder__do_transform_io(
           }
           v_checksum64_want = t_11;
         }
-        if (wuffs_base__bitvec256__get(&v_checksum256_have, 0u) != v_checksum64_want) {
+        if (wuffs_base__bitvec256__get_u64(&v_checksum256_have, 0u) != v_checksum64_want) {
           status = wuffs_base__make_status(wuffs_xz__error__bad_checksum);
           goto exit;
         }

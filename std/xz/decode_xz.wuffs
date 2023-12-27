@@ -225,19 +225,19 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
         } else if this.checksummer == 3 {
             checksum256_have = this.sha256.checksum_bitvec256()
             checksum64_want = args.src.read_u64be?()
-            if checksum256_have.get(i: 3) <> checksum64_want {
+            if checksum256_have.get_u64(i: 3) <> checksum64_want {
                 return "#bad checksum"
             }
             checksum64_want = args.src.read_u64be?()
-            if checksum256_have.get(i: 2) <> checksum64_want {
+            if checksum256_have.get_u64(i: 2) <> checksum64_want {
                 return "#bad checksum"
             }
             checksum64_want = args.src.read_u64be?()
-            if checksum256_have.get(i: 1) <> checksum64_want {
+            if checksum256_have.get_u64(i: 1) <> checksum64_want {
                 return "#bad checksum"
             }
             checksum64_want = args.src.read_u64be?()
-            if checksum256_have.get(i: 0) <> checksum64_want {
+            if checksum256_have.get_u64(i: 0) <> checksum64_want {
                 return "#bad checksum"
             }
         }
