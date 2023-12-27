@@ -38,7 +38,7 @@ pub struct decoder? implements base.io_transformer(
         checksum        : adler32.hasher,
 
         dict_id_hasher : adler32.hasher,
-        dict_id_got    : base.u32,
+        dict_id_have   : base.u32,
         dict_id_want   : base.u32,
 
         flate : deflate.decoder,
@@ -54,7 +54,7 @@ pub func decoder.add_dictionary!(dict: slice base.u8) {
     if this.header_complete {
         this.bad_call_sequence = true
     } else {
-        this.dict_id_got = this.dict_id_hasher.update_u32!(x: args.dict)
+        this.dict_id_have = this.dict_id_hasher.update_u32!(x: args.dict)
         this.flate.add_history!(hist: args.dict)
     }
     this.got_dictionary = true
@@ -117,7 +117,7 @@ pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf
 
 pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, workbuf: slice base.u8) {
     var x             : base.u16
-    var checksum_got  : base.u32
+    var checksum_have : base.u32
     var status        : base.status
     var checksum_want : base.u32
     var mark          : base.u64
@@ -139,13 +139,13 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
         }
         this.want_dictionary = (x & 0x20) <> 0
         if this.want_dictionary {
-            this.dict_id_got = 1  // Adler-32 initial value.
+            this.dict_id_have = 1  // Adler-32 initial value.
             this.dict_id_want = args.src.read_u32be?()
             return "@dictionary required"
         } else if this.got_dictionary {
             return "#incorrect dictionary"
         }
-    } else if this.dict_id_got <> this.dict_id_want {
+    } else if this.dict_id_have <> this.dict_id_want {
         if this.got_dictionary {
             return "#incorrect dictionary"
         }
@@ -159,7 +159,7 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
         mark = args.dst.mark()
         status =? this.flate.transform_io?(dst: args.dst, src: args.src, workbuf: args.workbuf)
         if (not this.ignore_checksum) and (not this.quirks[QUIRK_JUST_RAW_DEFLATE - QUIRKS_BASE]) {
-            checksum_got = this.checksum.update_u32!(x: args.dst.since(mark: mark))
+            checksum_have = this.checksum.update_u32!(x: args.dst.since(mark: mark))
         }
         if status.is_ok() {
             break
@@ -169,7 +169,7 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
 
     if not this.quirks[QUIRK_JUST_RAW_DEFLATE - QUIRKS_BASE] {
         checksum_want = args.src.read_u32be?()
-        if (not this.ignore_checksum) and (checksum_got <> checksum_want) {
+        if (not this.ignore_checksum) and (checksum_have <> checksum_want) {
             return "#bad checksum"
         }
     }

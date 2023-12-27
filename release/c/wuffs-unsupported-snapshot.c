@@ -9442,8 +9442,8 @@ struct wuffs_gzip__decoder__struct {
 
     struct {
       uint8_t v_flags;
-      uint32_t v_checksum_got;
-      uint32_t v_decoded_length_got;
+      uint32_t v_checksum_have;
+      uint32_t v_decoded_length_have;
       uint32_t v_checksum_want;
       uint64_t scratch;
     } s_do_transform_io;
@@ -11736,7 +11736,7 @@ struct wuffs_zlib__decoder__struct {
     bool f_want_dictionary;
     bool f_quirks[1];
     bool f_ignore_checksum;
-    uint32_t f_dict_id_got;
+    uint32_t f_dict_id_have;
     uint32_t f_dict_id_want;
 
     uint32_t p_transform_io;
@@ -11749,7 +11749,7 @@ struct wuffs_zlib__decoder__struct {
     wuffs_deflate__decoder f_flate;
 
     struct {
-      uint32_t v_checksum_got;
+      uint32_t v_checksum_have;
       uint64_t scratch;
     } s_do_transform_io;
   } private_data;
@@ -41550,8 +41550,8 @@ wuffs_gzip__decoder__do_transform_io(
   uint8_t v_flags = 0;
   uint16_t v_xlen = 0;
   uint64_t v_mark = 0;
-  uint32_t v_checksum_got = 0;
-  uint32_t v_decoded_length_got = 0;
+  uint32_t v_checksum_have = 0;
+  uint32_t v_decoded_length_have = 0;
   wuffs_base__status v_status = wuffs_base__make_status(NULL);
   uint32_t v_checksum_want = 0;
   uint32_t v_decoded_length_want = 0;
@@ -41583,8 +41583,8 @@ wuffs_gzip__decoder__do_transform_io(
   uint32_t coro_susp_point = self->private_impl.p_do_transform_io;
   if (coro_susp_point) {
     v_flags = self->private_data.s_do_transform_io.v_flags;
-    v_checksum_got = self->private_data.s_do_transform_io.v_checksum_got;
-    v_decoded_length_got = self->private_data.s_do_transform_io.v_decoded_length_got;
+    v_checksum_have = self->private_data.s_do_transform_io.v_checksum_have;
+    v_decoded_length_have = self->private_data.s_do_transform_io.v_decoded_length_have;
     v_checksum_want = self->private_data.s_do_transform_io.v_checksum_want;
   }
   switch (coro_susp_point) {
@@ -41753,8 +41753,8 @@ wuffs_gzip__decoder__do_transform_io(
         }
       }
       if ( ! self->private_impl.f_ignore_checksum) {
-        v_checksum_got = wuffs_crc32__ieee_hasher__update_u32(&self->private_data.f_checksum, wuffs_private_impl__io__since(v_mark, ((uint64_t)(iop_a_dst - io0_a_dst)), io0_a_dst));
-        v_decoded_length_got += ((uint32_t)(wuffs_private_impl__io__count_since(v_mark, ((uint64_t)(iop_a_dst - io0_a_dst)))));
+        v_checksum_have = wuffs_crc32__ieee_hasher__update_u32(&self->private_data.f_checksum, wuffs_private_impl__io__since(v_mark, ((uint64_t)(iop_a_dst - io0_a_dst)), io0_a_dst));
+        v_decoded_length_have += ((uint32_t)(wuffs_private_impl__io__count_since(v_mark, ((uint64_t)(iop_a_dst - io0_a_dst)))));
       }
       if (wuffs_base__status__is_ok(&v_status)) {
         break;
@@ -41820,7 +41820,7 @@ wuffs_gzip__decoder__do_transform_io(
       }
       v_decoded_length_want = t_9;
     }
-    if ( ! self->private_impl.f_ignore_checksum && ((v_checksum_got != v_checksum_want) || (v_decoded_length_got != v_decoded_length_want))) {
+    if ( ! self->private_impl.f_ignore_checksum && ((v_checksum_have != v_checksum_want) || (v_decoded_length_have != v_decoded_length_want))) {
       status = wuffs_base__make_status(wuffs_gzip__error__bad_checksum);
       goto exit;
     }
@@ -41834,8 +41834,8 @@ wuffs_gzip__decoder__do_transform_io(
   suspend:
   self->private_impl.p_do_transform_io = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
   self->private_data.s_do_transform_io.v_flags = v_flags;
-  self->private_data.s_do_transform_io.v_checksum_got = v_checksum_got;
-  self->private_data.s_do_transform_io.v_decoded_length_got = v_decoded_length_got;
+  self->private_data.s_do_transform_io.v_checksum_have = v_checksum_have;
+  self->private_data.s_do_transform_io.v_decoded_length_have = v_decoded_length_have;
   self->private_data.s_do_transform_io.v_checksum_want = v_checksum_want;
 
   goto exit;
@@ -55749,7 +55749,7 @@ wuffs_zlib__decoder__add_dictionary(
   if (self->private_impl.f_header_complete) {
     self->private_impl.f_bad_call_sequence = true;
   } else {
-    self->private_impl.f_dict_id_got = wuffs_adler32__hasher__update_u32(&self->private_data.f_dict_id_hasher, a_dict);
+    self->private_impl.f_dict_id_have = wuffs_adler32__hasher__update_u32(&self->private_data.f_dict_id_hasher, a_dict);
     wuffs_deflate__decoder__add_history(&self->private_data.f_flate, a_dict);
   }
   self->private_impl.f_got_dictionary = true;
@@ -55933,7 +55933,7 @@ wuffs_zlib__decoder__do_transform_io(
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
   uint16_t v_x = 0;
-  uint32_t v_checksum_got = 0;
+  uint32_t v_checksum_have = 0;
   wuffs_base__status v_status = wuffs_base__make_status(NULL);
   uint32_t v_checksum_want = 0;
   uint64_t v_mark = 0;
@@ -55964,7 +55964,7 @@ wuffs_zlib__decoder__do_transform_io(
 
   uint32_t coro_susp_point = self->private_impl.p_do_transform_io;
   if (coro_susp_point) {
-    v_checksum_got = self->private_data.s_do_transform_io.v_checksum_got;
+    v_checksum_have = self->private_data.s_do_transform_io.v_checksum_have;
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
@@ -56017,7 +56017,7 @@ wuffs_zlib__decoder__do_transform_io(
       }
       self->private_impl.f_want_dictionary = (((uint16_t)(v_x & 32u)) != 0u);
       if (self->private_impl.f_want_dictionary) {
-        self->private_impl.f_dict_id_got = 1u;
+        self->private_impl.f_dict_id_have = 1u;
         {
           WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
           uint32_t t_1;
@@ -56053,7 +56053,7 @@ wuffs_zlib__decoder__do_transform_io(
         status = wuffs_base__make_status(wuffs_zlib__error__incorrect_dictionary);
         goto exit;
       }
-    } else if (self->private_impl.f_dict_id_got != self->private_impl.f_dict_id_want) {
+    } else if (self->private_impl.f_dict_id_have != self->private_impl.f_dict_id_want) {
       if (self->private_impl.f_got_dictionary) {
         status = wuffs_base__make_status(wuffs_zlib__error__incorrect_dictionary);
         goto exit;
@@ -56081,7 +56081,7 @@ wuffs_zlib__decoder__do_transform_io(
         }
       }
       if ( ! self->private_impl.f_ignore_checksum &&  ! self->private_impl.f_quirks[0u]) {
-        v_checksum_got = wuffs_adler32__hasher__update_u32(&self->private_data.f_checksum, wuffs_private_impl__io__since(v_mark, ((uint64_t)(iop_a_dst - io0_a_dst)), io0_a_dst));
+        v_checksum_have = wuffs_adler32__hasher__update_u32(&self->private_data.f_checksum, wuffs_private_impl__io__since(v_mark, ((uint64_t)(iop_a_dst - io0_a_dst)), io0_a_dst));
       }
       if (wuffs_base__status__is_ok(&v_status)) {
         break;
@@ -56119,7 +56119,7 @@ wuffs_zlib__decoder__do_transform_io(
         }
         v_checksum_want = t_3;
       }
-      if ( ! self->private_impl.f_ignore_checksum && (v_checksum_got != v_checksum_want)) {
+      if ( ! self->private_impl.f_ignore_checksum && (v_checksum_have != v_checksum_want)) {
         status = wuffs_base__make_status(wuffs_zlib__error__bad_checksum);
         goto exit;
       }
@@ -56133,7 +56133,7 @@ wuffs_zlib__decoder__do_transform_io(
   goto suspend;
   suspend:
   self->private_impl.p_do_transform_io = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
-  self->private_data.s_do_transform_io.v_checksum_got = v_checksum_got;
+  self->private_data.s_do_transform_io.v_checksum_have = v_checksum_have;
 
   goto exit;
   exit:

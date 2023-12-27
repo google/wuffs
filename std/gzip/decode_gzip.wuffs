@@ -73,8 +73,8 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
     var flags               : base.u8
     var xlen                : base.u16
     var mark                : base.u64
-    var checksum_got        : base.u32
-    var decoded_length_got  : base.u32
+    var checksum_have       : base.u32
+    var decoded_length_have : base.u32
     var status              : base.status
     var checksum_want       : base.u32
     var decoded_length_want : base.u32
@@ -141,8 +141,8 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
         mark = args.dst.mark()
         status =? this.flate.transform_io?(dst: args.dst, src: args.src, workbuf: args.workbuf)
         if not this.ignore_checksum {
-            checksum_got = this.checksum.update_u32!(x: args.dst.since(mark: mark))
-            decoded_length_got ~mod+= (args.dst.count_since(mark: mark) & 0xFFFF_FFFF) as base.u32
+            checksum_have = this.checksum.update_u32!(x: args.dst.since(mark: mark))
+            decoded_length_have ~mod+= (args.dst.count_since(mark: mark) & 0xFFFF_FFFF) as base.u32
         }
         if status.is_ok() {
             break
@@ -152,7 +152,7 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
     checksum_want = args.src.read_u32le?()
     decoded_length_want = args.src.read_u32le?()
     if (not this.ignore_checksum) and
-            ((checksum_got <> checksum_want) or (decoded_length_got <> decoded_length_want)) {
+            ((checksum_have <> checksum_want) or (decoded_length_have <> decoded_length_want)) {
         return "#bad checksum"
     }
 }
