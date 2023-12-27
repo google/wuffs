@@ -9111,8 +9111,7 @@ struct wuffs_gif__decoder__struct {
       uint64_t scratch;
     } s_skip_frame;
     struct {
-      uint8_t v_c[6];
-      uint32_t v_i;
+      uint64_t scratch;
     } s_decode_header;
     struct {
       uint8_t v_flags;
@@ -39579,8 +39578,7 @@ wuffs_gif__decoder__decode_header(
     wuffs_base__io_buffer* a_src) {
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
-  uint8_t v_c[6] = {0};
-  uint32_t v_i = 0;
+  uint64_t v_c48 = 0;
 
   const uint8_t* iop_a_src = NULL;
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -39594,31 +39592,39 @@ wuffs_gif__decoder__decode_header(
   }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_header;
-  if (coro_susp_point) {
-    memcpy(v_c, self->private_data.s_decode_header.v_c, sizeof(v_c));
-    v_i = self->private_data.s_decode_header.v_i;
-  }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
-    while (v_i < 6u) {
-      {
-        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
-        if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
-          status = wuffs_base__make_status(wuffs_base__suspension__short_read);
-          goto suspend;
+    {
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
+      uint64_t t_0;
+      if (WUFFS_BASE__LIKELY(io2_a_src - iop_a_src >= 6)) {
+        t_0 = ((uint64_t)(wuffs_base__peek_u48le__no_bounds_check(iop_a_src)));
+        iop_a_src += 6;
+      } else {
+        self->private_data.s_decode_header.scratch = 0;
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
+        while (true) {
+          if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
+            status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+            goto suspend;
+          }
+          uint64_t* scratch = &self->private_data.s_decode_header.scratch;
+          uint32_t num_bits_0 = ((uint32_t)(*scratch >> 56));
+          *scratch <<= 8;
+          *scratch >>= 8;
+          *scratch |= ((uint64_t)(*iop_a_src++)) << num_bits_0;
+          if (num_bits_0 == 40) {
+            t_0 = ((uint64_t)(*scratch));
+            break;
+          }
+          num_bits_0 += 8u;
+          *scratch |= ((uint64_t)(num_bits_0)) << 56;
         }
-        uint8_t t_0 = *iop_a_src++;
-        v_c[v_i] = t_0;
       }
-      v_i += 1u;
+      v_c48 = t_0;
     }
-    if ((v_c[0u] != 71u) ||
-        (v_c[1u] != 73u) ||
-        (v_c[2u] != 70u) ||
-        (v_c[3u] != 56u) ||
-        ((v_c[4u] != 55u) && (v_c[4u] != 57u)) ||
-        (v_c[5u] != 97u)) {
+    if ((v_c48 != 106889795225927u) && (v_c48 != 106898385160519u)) {
       status = wuffs_base__make_status(wuffs_gif__error__bad_header);
       goto exit;
     }
@@ -39632,8 +39638,6 @@ wuffs_gif__decoder__decode_header(
   goto suspend;
   suspend:
   self->private_impl.p_decode_header = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
-  memcpy(self->private_data.s_decode_header.v_c, v_c, sizeof(v_c));
-  self->private_data.s_decode_header.v_i = v_i;
 
   goto exit;
   exit:

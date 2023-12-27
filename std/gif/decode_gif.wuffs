@@ -555,15 +555,10 @@ pri func decoder.decode_up_to_id_part1?(src: base.io_reader) {
 //
 // See the spec section 17 "Header" on page 7.
 pri func decoder.decode_header?(src: base.io_reader) {
-    var c : array[6] base.u8
-    var i : base.u32
+    var c48 : base.u64
 
-    while i < 6 {
-        c[i] = args.src.read_u8?()
-        i += 1
-    } endwhile
-    if (c[0] <> 'G') or (c[1] <> 'I') or (c[2] <> 'F') or (c[3] <> '8') or
-            ((c[4] <> '7') and (c[4] <> '9')) or (c[5] <> 'a') {
+    c48 = args.src.read_u48le_as_u64?()
+    if (c48 <> 'GIF87a'le) and (c48 <> 'GIF89a'le) {
         return "#bad header"
     }
 }
