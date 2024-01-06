@@ -19,12 +19,12 @@ use "std/sha256"
 
 pub status "#bad block header"
 pub status "#bad checksum"
+pub status "#bad filter"
 pub status "#bad header"
 pub status "#bad padding"
 pub status "#truncated input"
 pub status "#unsupported checksum algorithm"
 pub status "#unsupported filter"
-pub status "#unsupported number of filters"
 
 pub const DECODER_DST_HISTORY_RETAIN_LENGTH_MAX_INCL_WORST_CASE : base.u64 = 0xFFFF_FFFF
 
@@ -32,6 +32,9 @@ pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0
 
 pub struct decoder? implements base.io_transformer(
         placeholder : base.u32,
+
+        filters               : array[3] base.u32,
+        num_non_final_filters : base.u32[..= 3],
 
         // 0: None.
         // 1: CRC-32.
@@ -49,6 +52,8 @@ pub struct decoder? implements base.io_transformer(
 
         util : base.utility,
 ) + (
+        filter_data : array[3] array[256] base.u8,
+
         crc32  : crc32.ieee_hasher,
         crc64  : crc64.ecma_hasher,
         sha256 : sha256.hasher,
@@ -178,7 +183,9 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
             compressed_size ~mod+= args.src.count_since(mark: smark)
             uncompressed_size ~mod+= args.dst.count_since(mark: dmark)
 
-            // TODO: apply any filters that aren't LZMA2.
+            if this.num_non_final_filters <> 0 {
+                this.apply_non_final_filters!(dst_slice: args.dst.since(mark: dmark))
+            }
 
             if this.ignore_checksum {
                 // No-op.
@@ -285,12 +292,11 @@ pri func decoder.decode_block_header_sans_padding?(src: base.io_reader) {
     var filter_id : base.u8
     var status    : base.status
     var shift     : base.u32
+    var f         : base.u32
+    var k         : base.u32
 
     flags = args.src.read_u8?()
-    if (flags & 0x03) <> 0 {
-        return "#unsupported number of filters"
-    }
-
+    this.num_non_final_filters = (flags & 0x03) as base.u32
     if (flags & 0x3C) <> 0 {
         return "#bad block header"
     }
@@ -339,24 +345,101 @@ pri func decoder.decode_block_header_sans_padding?(src: base.io_reader) {
         } endwhile
     }
 
-    while true {
+    // Configure the non-final filters.
+
+    f = 0
+    while f < this.num_non_final_filters {
+        assert f < 3 via "a < b: a < c; c <= b"(c: this.num_non_final_filters)
         filter_id = args.src.read_u8?()
         if filter_id == 0x21 {  // LZMA2
-            // LZMA2's "Size of Properties" should be 1.
+            return "#bad filter"
+
+        } else if filter_id == 0x03 {  // Delta.
+            // Delta's "Size of Properties" should be 1.
             c8 = args.src.read_u8?()
             if c8 <> 0x01 {
-                return "#bad block header"
+                return "#bad filter"
             }
-            // Pass that 1 Properties byte on to the LZMA decoder.
+            // Stash that 1 Properties byte on to the LZMA decoder.
             c8 = args.src.read_u8?()
-            status = this.lzma.set_quirk!(
-                    key: lzma.QUIRK_FORMAT_EXTENSION,
-                    value: 0x02 | ((c8 as base.u64) << 8))
-            if not status.is_ok() {
-                return "#bad block header"
-            }
+            this.filters[f] = ((c8 as base.u32) << 8) | 0x03
+
+            k = 0
+            while k < 0x100,
+                    inv f < 3,
+            {
+                this.filter_data[f][k] = 0x00
+                k += 1
+            } endwhile
+
+        } else {
+            return "#unsupported filter"
+        }
+
+        f += 1
+    } endwhile
+
+    // Configure the final filter (which must be LZMA2).
+
+    filter_id = args.src.read_u8?()
+    if filter_id == 0x21 {  // LZMA2
+        // LZMA2's "Size of Properties" should be 1.
+        c8 = args.src.read_u8?()
+        if c8 <> 0x01 {
+            return "#bad filter"
+        }
+        // Pass that 1 Properties byte on to the LZMA decoder.
+        c8 = args.src.read_u8?()
+        status = this.lzma.set_quirk!(
+                key: lzma.QUIRK_FORMAT_EXTENSION,
+                value: 0x02 | ((c8 as base.u64) << 8))
+        if not status.is_ok() {
+            return "#bad filter"
+        }
+
+    } else if filter_id == 0x03 {  // Delta.
+        return "#bad filter"
+
+    } else {
+        return "#unsupported filter"
+    }
+}
+
+pri func decoder.apply_non_final_filters!(dst_slice: slice base.u8) {
+    var f          : base.u32[..= 2]
+    var i          : base.u64
+    var filter_id  : base.u32[..= 0x7F]
+    var delta_dist : base.u32[..= 0x100]
+    var delta_pos  : base.u32
+    var c8         : base.u8
+
+    if this.num_non_final_filters <= 0 {
+        return nothing
+    }
+    f = this.num_non_final_filters - 1
+
+    while true {
+        filter_id = this.filters[f] & 0x7F
+        if filter_id == 0x03 {  // Delta.
+            delta_dist = ((this.filters[f] >> 8) & 0xFF) + 1
+            delta_pos = this.filters[f] >> 24
+            i = 0
+            while i < args.dst_slice.length() {
+                assert i < 0xFFFF_FFFF_FFFF_FFFF via "a < b: a < c; c <= b"(c: args.dst_slice.length())
+                c8 = args.dst_slice[i]
+                c8 ~mod+= this.filter_data[f][(delta_dist ~mod+ delta_pos) & 0xFF]
+                this.filter_data[f][delta_pos & 0xFF] = c8
+                delta_pos ~mod-= 1
+                args.dst_slice[i] = c8
+                i += 1
+            } endwhile
+            this.filters[f] &= 0xFFFF
+            this.filters[f] |= (delta_pos ~mod<< 24)
+        }
+
+        if f <= 0 {
             break
         }
-        return "#unsupported filter"
+        f -= 1
     } endwhile
 }

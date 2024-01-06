@@ -13789,12 +13789,12 @@ struct wuffs_xxhash64__hasher__struct {
 
 extern const char wuffs_xz__error__bad_block_header[];
 extern const char wuffs_xz__error__bad_checksum[];
+extern const char wuffs_xz__error__bad_filter[];
 extern const char wuffs_xz__error__bad_header[];
 extern const char wuffs_xz__error__bad_padding[];
 extern const char wuffs_xz__error__truncated_input[];
 extern const char wuffs_xz__error__unsupported_checksum_algorithm[];
 extern const char wuffs_xz__error__unsupported_filter[];
-extern const char wuffs_xz__error__unsupported_number_of_filters[];
 
 // ---------------- Public Consts
 
@@ -13913,6 +13913,8 @@ struct wuffs_xz__decoder__struct {
     wuffs_base__vtable null_vtable;
 
     uint32_t f_placeholder;
+    uint32_t f_filters[3];
+    uint32_t f_num_non_final_filters;
     uint32_t f_checksummer;
     bool f_ignore_checksum;
     bool f_block_has_compressed_size;
@@ -13927,6 +13929,7 @@ struct wuffs_xz__decoder__struct {
   } private_impl;
 
   struct {
+    uint8_t f_filter_data[3][256];
     wuffs_crc32__ieee_hasher f_crc32;
     wuffs_crc64__ecma_hasher f_crc64;
     wuffs_sha256__hasher f_sha256;
@@ -13946,6 +13949,7 @@ struct wuffs_xz__decoder__struct {
     struct {
       uint8_t v_flags;
       uint32_t v_shift;
+      uint32_t v_f;
     } s_decode_block_header_sans_padding;
   } private_data;
 
@@ -66557,12 +66561,12 @@ wuffs_xxhash64__hasher__checksum_u64(
 
 const char wuffs_xz__error__bad_block_header[] = "#xz: bad block header";
 const char wuffs_xz__error__bad_checksum[] = "#xz: bad checksum";
+const char wuffs_xz__error__bad_filter[] = "#xz: bad filter";
 const char wuffs_xz__error__bad_header[] = "#xz: bad header";
 const char wuffs_xz__error__bad_padding[] = "#xz: bad padding";
 const char wuffs_xz__error__truncated_input[] = "#xz: truncated input";
 const char wuffs_xz__error__unsupported_checksum_algorithm[] = "#xz: unsupported checksum algorithm";
 const char wuffs_xz__error__unsupported_filter[] = "#xz: unsupported filter";
-const char wuffs_xz__error__unsupported_number_of_filters[] = "#xz: unsupported number of filters";
 
 // ---------------- Private Consts
 
@@ -66589,6 +66593,12 @@ static wuffs_base__status
 wuffs_xz__decoder__decode_block_header_sans_padding(
     wuffs_xz__decoder* self,
     wuffs_base__io_buffer* a_src);
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_xz__decoder__apply_non_final_filters(
+    wuffs_xz__decoder* self,
+    wuffs_base__slice_u8 a_dst_slice);
 
 // ---------------- VTables
 
@@ -67094,6 +67104,9 @@ wuffs_xz__decoder__do_transform_io(
         }
         v_compressed_size += wuffs_private_impl__io__count_since(v_smark, ((uint64_t)(iop_a_src - io0_a_src)));
         v_uncompressed_size += wuffs_private_impl__io__count_since(v_dmark, ((uint64_t)(iop_a_dst - io0_a_dst)));
+        if (self->private_impl.f_num_non_final_filters != 0u) {
+          wuffs_xz__decoder__apply_non_final_filters(self, wuffs_private_impl__io__since(v_dmark, ((uint64_t)(iop_a_dst - io0_a_dst)), io0_a_dst));
+        }
         if (self->private_impl.f_ignore_checksum) {
         } else if (self->private_impl.f_checksummer == 1u) {
           wuffs_crc32__ieee_hasher__update(&self->private_data.f_crc32, wuffs_private_impl__io__since(v_dmark, ((uint64_t)(iop_a_dst - io0_a_dst)), io0_a_dst));
@@ -67479,6 +67492,8 @@ wuffs_xz__decoder__decode_block_header_sans_padding(
   uint8_t v_filter_id = 0;
   wuffs_base__status v_status = wuffs_base__make_status(NULL);
   uint32_t v_shift = 0;
+  uint32_t v_f = 0;
+  uint32_t v_k = 0;
 
   const uint8_t* iop_a_src = NULL;
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -67495,6 +67510,7 @@ wuffs_xz__decoder__decode_block_header_sans_padding(
   if (coro_susp_point) {
     v_flags = self->private_data.s_decode_block_header_sans_padding.v_flags;
     v_shift = self->private_data.s_decode_block_header_sans_padding.v_shift;
+    v_f = self->private_data.s_decode_block_header_sans_padding.v_f;
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
@@ -67508,10 +67524,7 @@ wuffs_xz__decoder__decode_block_header_sans_padding(
       uint8_t t_0 = *iop_a_src++;
       v_flags = t_0;
     }
-    if (((uint8_t)(v_flags & 3u)) != 0u) {
-      status = wuffs_base__make_status(wuffs_xz__error__unsupported_number_of_filters);
-      goto exit;
-    }
+    self->private_impl.f_num_non_final_filters = ((uint32_t)(((uint8_t)(v_flags & 3u))));
     if (((uint8_t)(v_flags & 60u)) != 0u) {
       status = wuffs_base__make_status(wuffs_xz__error__bad_block_header);
       goto exit;
@@ -67574,7 +67587,8 @@ wuffs_xz__decoder__decode_block_header_sans_padding(
         break;
       }
     }
-    while (true) {
+    v_f = 0u;
+    while (v_f < self->private_impl.f_num_non_final_filters) {
       {
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
         if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
@@ -67585,6 +67599,9 @@ wuffs_xz__decoder__decode_block_header_sans_padding(
         v_filter_id = t_3;
       }
       if (v_filter_id == 33u) {
+        status = wuffs_base__make_status(wuffs_xz__error__bad_filter);
+        goto exit;
+      } else if (v_filter_id == 3u) {
         {
           WUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
           if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
@@ -67595,7 +67612,7 @@ wuffs_xz__decoder__decode_block_header_sans_padding(
           v_c8 = t_4;
         }
         if (v_c8 != 1u) {
-          status = wuffs_base__make_status(wuffs_xz__error__bad_block_header);
+          status = wuffs_base__make_status(wuffs_xz__error__bad_filter);
           goto exit;
         }
         {
@@ -67607,13 +67624,59 @@ wuffs_xz__decoder__decode_block_header_sans_padding(
           uint8_t t_5 = *iop_a_src++;
           v_c8 = t_5;
         }
-        v_status = wuffs_lzma__decoder__set_quirk(&self->private_data.f_lzma, 1348001792u, (2u | (((uint64_t)(v_c8)) << 8u)));
-        if ( ! wuffs_base__status__is_ok(&v_status)) {
-          status = wuffs_base__make_status(wuffs_xz__error__bad_block_header);
-          goto exit;
+        self->private_impl.f_filters[v_f] = ((((uint32_t)(v_c8)) << 8u) | 3u);
+        v_k = 0u;
+        while (v_k < 256u) {
+          self->private_data.f_filter_data[v_f][v_k] = 0u;
+          v_k += 1u;
         }
-        break;
+      } else {
+        status = wuffs_base__make_status(wuffs_xz__error__unsupported_filter);
+        goto exit;
       }
+      v_f += 1u;
+    }
+    {
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(7);
+      if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
+        status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+        goto suspend;
+      }
+      uint8_t t_6 = *iop_a_src++;
+      v_filter_id = t_6;
+    }
+    if (v_filter_id == 33u) {
+      {
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(8);
+        if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
+          status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+          goto suspend;
+        }
+        uint8_t t_7 = *iop_a_src++;
+        v_c8 = t_7;
+      }
+      if (v_c8 != 1u) {
+        status = wuffs_base__make_status(wuffs_xz__error__bad_filter);
+        goto exit;
+      }
+      {
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(9);
+        if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
+          status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+          goto suspend;
+        }
+        uint8_t t_8 = *iop_a_src++;
+        v_c8 = t_8;
+      }
+      v_status = wuffs_lzma__decoder__set_quirk(&self->private_data.f_lzma, 1348001792u, (2u | (((uint64_t)(v_c8)) << 8u)));
+      if ( ! wuffs_base__status__is_ok(&v_status)) {
+        status = wuffs_base__make_status(wuffs_xz__error__bad_filter);
+        goto exit;
+      }
+    } else if (v_filter_id == 3u) {
+      status = wuffs_base__make_status(wuffs_xz__error__bad_filter);
+      goto exit;
+    } else {
       status = wuffs_base__make_status(wuffs_xz__error__unsupported_filter);
       goto exit;
     }
@@ -67629,6 +67692,7 @@ wuffs_xz__decoder__decode_block_header_sans_padding(
   self->private_impl.p_decode_block_header_sans_padding = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
   self->private_data.s_decode_block_header_sans_padding.v_flags = v_flags;
   self->private_data.s_decode_block_header_sans_padding.v_shift = v_shift;
+  self->private_data.s_decode_block_header_sans_padding.v_f = v_f;
 
   goto exit;
   exit:
@@ -67637,6 +67701,56 @@ wuffs_xz__decoder__decode_block_header_sans_padding(
   }
 
   return status;
+}
+
+// -------- func xz.decoder.apply_non_final_filters
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_xz__decoder__apply_non_final_filters(
+    wuffs_xz__decoder* self,
+    wuffs_base__slice_u8 a_dst_slice) {
+  uint32_t v_f = 0;
+  uint64_t v_i = 0;
+  uint32_t v_filter_id = 0;
+  uint32_t v_delta_dist = 0;
+  uint32_t v_delta_pos = 0;
+  uint8_t v_c8 = 0;
+
+  if (self->private_impl.f_num_non_final_filters <= 0u) {
+    return wuffs_base__make_empty_struct();
+  }
+  v_f = (self->private_impl.f_num_non_final_filters - 1u);
+  while (true) {
+    v_filter_id = (self->private_impl.f_filters[v_f] & 127u);
+    if (v_filter_id == 3u) {
+      v_delta_dist = (((self->private_impl.f_filters[v_f] >> 8u) & 255u) + 1u);
+      v_delta_pos = (self->private_impl.f_filters[v_f] >> 24u);
+      v_i = 0u;
+      while (v_i < ((uint64_t)(a_dst_slice.len))) {
+        v_c8 = a_dst_slice.ptr[v_i];
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
+#endif
+        v_c8 += self->private_data.f_filter_data[v_f][(((uint32_t)(v_delta_dist + v_delta_pos)) & 255u)];
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
+        self->private_data.f_filter_data[v_f][(v_delta_pos & 255u)] = v_c8;
+        v_delta_pos -= 1u;
+        a_dst_slice.ptr[v_i] = v_c8;
+        v_i += 1u;
+      }
+      self->private_impl.f_filters[v_f] &= 65535u;
+      self->private_impl.f_filters[v_f] |= ((uint32_t)(v_delta_pos << 24u));
+    }
+    if (v_f <= 0u) {
+      break;
+    }
+    v_f -= 1u;
+  }
+  return wuffs_base__make_empty_struct();
 }
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__XZ)
