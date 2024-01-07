@@ -24,6 +24,7 @@ json:   test/data/*.json  ../rapidjson_corpus/*  ../simdjson_corpus/*  ../JSONTe
 png:    test/data/*.png   test/data/artificial-png/*.png  ../pngsuite_corpus/*.png
 tga:    test/data/*.tga
 wbmp:   test/data/*.wbmp
+xz:     test/data/*.xz    ../xzsuite_corpus/*.xz
 zlib:   test/data/*.zlib
 
 # Wuffs' pixel_swizzler doesn't process any particular file format. We just

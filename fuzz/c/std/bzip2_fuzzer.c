@@ -67,6 +67,7 @@ It should print "PASS", amongst other information, and exit(0).
 #include "../../../release/c/wuffs-unsupported-snapshot.c"
 #include "../fuzzlib/fuzzlib.c"
 
+// 64 KiB.
 #define DST_BUFFER_ARRAY_SIZE 65536
 
 // Wuffs allows either statically or dynamically allocated work buffers. This
@@ -96,7 +97,7 @@ fuzz(wuffs_base__io_buffer* src, uint64_t hash) {
   wuffs_bzip2__decoder__set_quirk(&dec, WUFFS_BASE__QUIRK_IGNORE_CHECKSUM,
                                   hash & 0xFFFE);
 
-  uint8_t dst_buffer[DST_BUFFER_ARRAY_SIZE];
+  static uint8_t dst_buffer[DST_BUFFER_ARRAY_SIZE];
   wuffs_base__io_buffer dst =
       wuffs_base__ptr_u8__writer(&dst_buffer[0], DST_BUFFER_ARRAY_SIZE);
 
