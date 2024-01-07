@@ -112,6 +112,7 @@ struct {
   char** remaining_argv;
 
   bool fail_if_unsandboxed;
+  bool ignore_checksum;
 } g_flags = {0};
 
 const char*  //
@@ -138,6 +139,9 @@ parse_flags(int argc, char** argv) {
 
     if (!strcmp(arg, "fail-if-unsandboxed")) {
       g_flags.fail_if_unsandboxed = true;
+      continue;
+    } else if (!strcmp(arg, "ignore-checksum")) {
+      g_flags.ignore_checksum = true;
       continue;
     }
 
@@ -196,6 +200,11 @@ initialize_io_transformer(uint8_t input_first_byte) {
       io_transformer = wuffs_xz__decoder__upcast_as__wuffs_base__io_transformer(
           &g_potential_decoders.xz);
       break;
+  }
+
+  if (g_flags.ignore_checksum) {
+    wuffs_base__io_transformer__set_quirk(io_transformer,
+                                          WUFFS_BASE__QUIRK_IGNORE_CHECKSUM, 1);
   }
 
   if (!wuffs_base__status__is_ok(&status)) {

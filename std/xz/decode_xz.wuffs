@@ -216,19 +216,22 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
         } endwhile
 
         if this.ignore_checksum {
-            // No-op.
+            args.src.skip_u32?(n: CHECKSUM_LENGTH[this.checksummer] as base.u32)
+
         } else if this.checksummer == 1 {
             checksum32_want = args.src.read_u32le?()
             checksum32_have = this.crc32.checksum_u32()
             if checksum32_have <> checksum32_want {
                 return "#bad checksum"
             }
+
         } else if this.checksummer == 2 {
             checksum64_want = args.src.read_u64le?()
             checksum64_have = this.crc64.checksum_u64()
             if checksum64_have <> checksum64_want {
                 return "#bad checksum"
             }
+
         } else if this.checksummer == 3 {
             checksum256_have = this.sha256.checksum_bitvec256()
             checksum64_want = args.src.read_u64be?()
@@ -443,3 +446,10 @@ pri func decoder.apply_non_final_filters!(dst_slice: slice base.u8) {
         f -= 1
     } endwhile
 }
+
+pri const CHECKSUM_LENGTH : roarray[4] base.u8 = [
+        0x00,  // 0: None.
+        0x04,  // 1: CRC-32.
+        0x08,  // 2: CRC-64.
+        0x20,  // 3: SHA-256.
+]

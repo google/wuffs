@@ -66570,6 +66570,11 @@ const char wuffs_xz__error__unsupported_filter[] = "#xz: unsupported filter";
 
 // ---------------- Private Consts
 
+static const uint8_t
+WUFFS_XZ__CHECKSUM_LENGTH[4] WUFFS_BASE__POTENTIALLY_UNUSED = {
+  0u, 4u, 8u, 32u,
+};
+
 // ---------------- Private Initializer Prototypes
 
 // ---------------- Private Function Prototypes
@@ -67142,16 +67147,25 @@ wuffs_xz__decoder__do_transform_io(
         v_compressed_size += 1u;
       }
       if (self->private_impl.f_ignore_checksum) {
+        self->private_data.s_do_transform_io.scratch = ((uint32_t)(WUFFS_XZ__CHECKSUM_LENGTH[self->private_impl.f_checksummer]));
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(11);
+        if (self->private_data.s_do_transform_io.scratch > ((uint64_t)(io2_a_src - iop_a_src))) {
+          self->private_data.s_do_transform_io.scratch -= ((uint64_t)(io2_a_src - iop_a_src));
+          iop_a_src = io2_a_src;
+          status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+          goto suspend;
+        }
+        iop_a_src += self->private_data.s_do_transform_io.scratch;
       } else if (self->private_impl.f_checksummer == 1u) {
         {
-          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(11);
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(12);
           uint32_t t_6;
           if (WUFFS_BASE__LIKELY(io2_a_src - iop_a_src >= 4)) {
             t_6 = wuffs_base__peek_u32le__no_bounds_check(iop_a_src);
             iop_a_src += 4;
           } else {
             self->private_data.s_do_transform_io.scratch = 0;
-            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(12);
+            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(13);
             while (true) {
               if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
                 status = wuffs_base__make_status(wuffs_base__suspension__short_read);
@@ -67179,14 +67193,14 @@ wuffs_xz__decoder__do_transform_io(
         }
       } else if (self->private_impl.f_checksummer == 2u) {
         {
-          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(13);
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(14);
           uint64_t t_7;
           if (WUFFS_BASE__LIKELY(io2_a_src - iop_a_src >= 8)) {
             t_7 = wuffs_base__peek_u64le__no_bounds_check(iop_a_src);
             iop_a_src += 8;
           } else {
             self->private_data.s_do_transform_io.scratch = 0;
-            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(14);
+            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(15);
             while (true) {
               if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
                 status = wuffs_base__make_status(wuffs_base__suspension__short_read);
@@ -67215,14 +67229,14 @@ wuffs_xz__decoder__do_transform_io(
       } else if (self->private_impl.f_checksummer == 3u) {
         v_checksum256_have = wuffs_sha256__hasher__checksum_bitvec256(&self->private_data.f_sha256);
         {
-          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(15);
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(16);
           uint64_t t_8;
           if (WUFFS_BASE__LIKELY(io2_a_src - iop_a_src >= 8)) {
             t_8 = wuffs_base__peek_u64be__no_bounds_check(iop_a_src);
             iop_a_src += 8;
           } else {
             self->private_data.s_do_transform_io.scratch = 0;
-            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(16);
+            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(17);
             while (true) {
               if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
                 status = wuffs_base__make_status(wuffs_base__suspension__short_read);
@@ -67248,14 +67262,14 @@ wuffs_xz__decoder__do_transform_io(
           goto exit;
         }
         {
-          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(17);
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(18);
           uint64_t t_9;
           if (WUFFS_BASE__LIKELY(io2_a_src - iop_a_src >= 8)) {
             t_9 = wuffs_base__peek_u64be__no_bounds_check(iop_a_src);
             iop_a_src += 8;
           } else {
             self->private_data.s_do_transform_io.scratch = 0;
-            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(18);
+            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(19);
             while (true) {
               if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
                 status = wuffs_base__make_status(wuffs_base__suspension__short_read);
@@ -67281,14 +67295,14 @@ wuffs_xz__decoder__do_transform_io(
           goto exit;
         }
         {
-          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(19);
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(20);
           uint64_t t_10;
           if (WUFFS_BASE__LIKELY(io2_a_src - iop_a_src >= 8)) {
             t_10 = wuffs_base__peek_u64be__no_bounds_check(iop_a_src);
             iop_a_src += 8;
           } else {
             self->private_data.s_do_transform_io.scratch = 0;
-            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(20);
+            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(21);
             while (true) {
               if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
                 status = wuffs_base__make_status(wuffs_base__suspension__short_read);
@@ -67314,14 +67328,14 @@ wuffs_xz__decoder__do_transform_io(
           goto exit;
         }
         {
-          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(21);
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(22);
           uint64_t t_11;
           if (WUFFS_BASE__LIKELY(io2_a_src - iop_a_src >= 8)) {
             t_11 = wuffs_base__peek_u64be__no_bounds_check(iop_a_src);
             iop_a_src += 8;
           } else {
             self->private_data.s_do_transform_io.scratch = 0;
-            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(22);
+            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(23);
             while (true) {
               if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
                 status = wuffs_base__make_status(wuffs_base__suspension__short_read);

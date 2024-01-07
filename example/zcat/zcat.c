@@ -95,6 +95,7 @@ struct {
   char** remaining_argv;
 
   bool fail_if_unsandboxed;
+  bool ignore_checksum;
 } g_flags = {0};
 
 const char*  //
@@ -121,6 +122,9 @@ parse_flags(int argc, char** argv) {
 
     if (!strcmp(arg, "fail-if-unsandboxed")) {
       g_flags.fail_if_unsandboxed = true;
+      continue;
+    } else if (!strcmp(arg, "ignore-checksum")) {
+      g_flags.ignore_checksum = true;
       continue;
     }
 
@@ -154,6 +158,10 @@ main1(int argc, char** argv) {
       wuffs_gzip__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
   if (!wuffs_base__status__is_ok(&status)) {
     return wuffs_base__status__message(&status);
+  }
+
+  if (g_flags.ignore_checksum) {
+    wuffs_gzip__decoder__set_quirk(&dec, WUFFS_BASE__QUIRK_IGNORE_CHECKSUM, 1);
   }
 
   wuffs_base__io_buffer dst;
