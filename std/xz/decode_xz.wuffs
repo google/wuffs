@@ -31,8 +31,6 @@ pub const DECODER_DST_HISTORY_RETAIN_LENGTH_MAX_INCL_WORST_CASE : base.u64 = 0xF
 pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0
 
 pub struct decoder? implements base.io_transformer(
-        placeholder : base.u32,
-
         filters               : array[3] base.u32,
         num_non_final_filters : base.u32[..= 3],
 

@@ -13912,7 +13912,6 @@ struct wuffs_xz__decoder__struct {
     wuffs_base__vtable vtable_for__wuffs_base__io_transformer;
     wuffs_base__vtable null_vtable;
 
-    uint32_t f_placeholder;
     uint32_t f_filters[3];
     uint32_t f_num_non_final_filters;
     uint32_t f_checksummer;
