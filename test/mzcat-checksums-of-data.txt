@@ -13,6 +13,7 @@ OK. 3db2cdc6 test/data/midsummer.txt.gz
 OK. 519e8b87 test/data/pi.txt.bz2
 OK. 519e8b87 test/data/pi.txt.gz
 OK. abe507ef test/data/romeo.txt.bz2
+OK. abe507ef test/data/romeo.txt.delta1.xz
 OK. abe507ef test/data/romeo.txt.gz
 OK. abe507ef test/data/romeo.txt.litonlylzma
 OK. abe507ef test/data/romeo.txt.lzma

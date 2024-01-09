@@ -74,6 +74,11 @@ golden_test g_xz_enwik5_gt = {
     .src_filename = "test/data/enwik5.xz",
 };
 
+golden_test g_xz_romeo_delta1_gt = {
+    .want_filename = "test/data/romeo.txt",
+    .src_filename = "test/data/romeo.txt.delta1.xz",
+};
+
 golden_test g_xz_romeo_gt = {
     .want_filename = "test/data/romeo.txt",
     .src_filename = "test/data/romeo.txt.xz",
@@ -91,7 +96,7 @@ test_wuffs_xz_decode_interface() {
                    WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
   return do_test__wuffs_base__io_transformer(
       wuffs_xz__decoder__upcast_as__wuffs_base__io_transformer(&dec),
-      "test/data/romeo.txt.xz", 0, SIZE_MAX, 942, 0x0A);
+      "test/data/romeo.txt.delta1.xz", 0, SIZE_MAX, 942, 0x0A);
 }
 
 const char*  //
@@ -131,6 +136,15 @@ test_wuffs_xz_decode_enwik5() {
   return do_test_io_buffers(wuffs_xz_decode, &g_xz_enwik5_gt, UINT64_MAX,
                             UINT64_MAX);
 }
+
+/* TODO
+const char*  //
+test_wuffs_xz_decode_one_byte_reads() {
+  CHECK_FOCUS(__func__);
+  return do_test_io_buffers(wuffs_xz_decode, &g_xz_romeo_delta1_gt, UINT64_MAX,
+                            1);
+}
+*/
 
 const char*  //
 test_wuffs_xz_decode_romeo() {
@@ -189,6 +203,7 @@ proc g_tests[] = {
 
     test_wuffs_xz_decode_enwik5,
     test_wuffs_xz_decode_interface,
+    // TODO test_wuffs_xz_decode_one_byte_reads,
     test_wuffs_xz_decode_romeo,
 
 #ifdef WUFFS_MIMIC
