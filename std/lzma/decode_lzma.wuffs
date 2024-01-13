@@ -102,6 +102,68 @@ pub struct decoder? implements base.io_transformer(
         // those bits don't match the currently decoded literal byte, when it
         // drops back to the first tree.
         probs_lit : array[1 << 4] array[0x300] base.u16,
+
+        // Here's the size (and cumulative size) of each probs_etc array. This
+        // is in number of u16 elements, so multiply by 2 for byte size:
+        //
+        //   probs_ao00                192     192
+        //   probs_ao20                 12     204
+        //   probs_ao40                 12     216
+        //   probs_ao41                192     408
+        //   probs_ao60                 12     420
+        //   probs_ao63                 12     432
+        //   probs_match_len_low       128     560
+        //   probs_match_len_mid       128     688
+        //   probs_match_len_high      256     944
+        //   probs_longrep_len_low     128    1072
+        //   probs_longrep_len_mid     128    1200
+        //   probs_longrep_len_high    256    1456
+        //   probs_slot                256    1712
+        //   probs_small_dist          128    1840
+        //   probs_large_dist           16    1856
+        //   probs_lit               12288   14144
+        //
+        // 1856 is the properties-independent portion of "the number of
+        // probabilities we need to track". The properties-dependent
+        // proportion, the probs_lit array, could in theory be dynamically
+        // sized, depending on (lc + lp). For simplicity, it's statically sized
+        // here, large enough for the worst case, subject to ((lc + lp) <= 4)
+        // per the "LZMA2's limited property condition" comment above. Static
+        // (worst case) allocation is also what XZ-embedded does [Ref0].
+        //
+        // 1856 is slightly smaller than the 1984 (also called NUM_BASE_PROBS)
+        // used in the current (as of 2024; version 18.05) version of the LZMA
+        // SDK [Ref1]. The difference of (2 * ((16 - 12) << 4)) is because the
+        // LZMA SDK uses what it calls (kNumStates2 << kNumPosBitsMax) instead
+        // of (kNumStates << kNumPosBitsMax) for its IsMatch and IsRep0Long
+        // portions (what Wuffs calls probs_ao00 and probs_ao41), and
+        // (kNumStates2 - kNumStates) = (16 - 12). LZMA (the file format) only
+        // has 12 states, so enlarging to 16 is redundant (and consumes more
+        // memory). It's not immediately obvious why the memory layout was
+        // re-arranged, but the layout is shared with LZMA SDK asm code.
+        //
+        // 1856 is slightly larger than the 1846 mentioned in both the current
+        // (2024) version of the LZMA SDK spec [Ref2] and as what an old (2004)
+        // version of the LZMA SDK code calls LZMA_BASE_SIZE [Ref3]. The
+        // difference of (14 - (2 * 2)) has two parts. 14 comes from the "first
+        // element and last 13 elements are unused" probs_small_dist comment
+        // above, so that the LZMA SDK code can pack their probs array tighter.
+        // 2 (twice, for AlgOve22 'match' and AlgOve80 'longrep') comes from
+        // moving what the LZMA SDK calls "Choice" and "Choice2" probabilties,
+        // repurposing what this decoder calls the otherwise-unused
+        // probs_etc_len_low[0][0] and probs_etc_len_mid[0][0] elements.
+        //
+        // [Ref0]
+        // https://github.com/torvalds/linux/blob/052d534373b7ed33712a63d5e17b2b6cdbce84fd/lib/xz/xz_dec_lzma2.c#L211
+        //
+        // [Ref1]
+        // https://github.com/jljusten/LZMA-SDK/blob/781863cdf592da3e97420f50de5dac056ad352a5/C/LzmaDec.c#L151
+        //
+        // [Ref2]
+        // https://raw.githubusercontent.com/jljusten/LZMA-SDK/781863cdf592da3e97420f50de5dac056ad352a5/DOC/lzma-specification.txt
+        //
+        // [Ref3]
+        // https://github.com/jljusten/LZMA-SDK/blob/f287b63f6bb8b88e281f18a9295340c732245167/Source/LzmaDecode.h#L48
 )
 
 pub func decoder.get_quirk(key: base.u32) base.u64 {
