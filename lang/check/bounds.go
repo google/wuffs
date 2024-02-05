@@ -1196,8 +1196,8 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (bounds, e
 		}
 
 	} else if recvTyp.IsIOTokenType() {
-		if method == t.IDUndoByte {
-			if err := q.canUndoByte(recv); err != nil {
+		if (method == t.IDUndoByte) || (method == t.IDPeekUndoByte) {
+			if err := q.canUndoByte(recv, method == t.IDPeekUndoByte); err != nil {
 				return bounds{}, err
 			}
 
@@ -1319,11 +1319,13 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (bounds, e
 	return bounds{}, errNotASpecialCase
 }
 
-func (q *checker) canUndoByte(recv *a.Expr) error {
+func (q *checker) canUndoByte(recv *a.Expr, justPeeking bool) error {
 	for _, x := range q.facts {
 		if lhs, meth, args, _ := x.IsMethodCall(); (meth != t.IDCanUndoByte) || (len(args) != 0) ||
 			!lhs.Eq(recv) {
 			continue
+		} else if justPeeking {
+			return nil
 		}
 		return q.facts.update(func(o *a.Expr) (*a.Expr, error) {
 			if o.Mentions(recv) {

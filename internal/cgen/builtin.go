@@ -127,7 +127,7 @@ func (g *gen) writeBuiltinCall(b *buffer, n *a.Expr, sideEffectsOnly bool, depth
 				return nil
 			}
 		case t.IDTokenWriter:
-			return g.writeBuiltinTokenWriter(b, recv, method.Ident(), n.Args(), depth)
+			return g.writeBuiltinTokenWriter(b, recv, method.Ident(), n.Args(), sideEffectsOnly, depth)
 		case t.IDUtility:
 			switch method.Ident() {
 			case t.IDCPUArchIs32Bit:
@@ -159,7 +159,7 @@ func (g *gen) recvName(recv *a.Expr) (string, error) {
 	return "", fmt.Errorf("recvName: cannot cgen a %q expression", recv.Str(g.tm))
 }
 
-func (g *gen) writeBuiltinIO(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, depth uint32) error {
+func (g *gen) writeBuiltinIO(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, sideEffectsOnly bool, depth uint32) error {
 	switch method {
 	case t.IDLength:
 		recvName, err := g.recvName(recv)
@@ -167,6 +167,40 @@ func (g *gen) writeBuiltinIO(b *buffer, recv *a.Expr, method t.ID, args []*a.Nod
 			return err
 		}
 		b.printf("((uint64_t)(%s%s - %s%s))", io2Prefix, recvName, iopPrefix, recvName)
+		return nil
+
+	case t.IDPeekUndoByte:
+		recvName, err := g.recvName(recv)
+		if err != nil {
+			return err
+		}
+		b.printf("%s%s[-1]", iopPrefix, recvName)
+		return nil
+
+	case t.IDUndoByte:
+		recvName, err := g.recvName(recv)
+		if err != nil {
+			return err
+		}
+		if !sideEffectsOnly {
+			// Generate a two part expression using the comma operator: "(etc,
+			// return_empty_struct call)". The final part is a function call
+			// (to a static inline function) instead of a struct literal, to
+			// avoid a "expression result unused" compiler error.
+			b.writes("(")
+		}
+		b.printf("%s%s--", iopPrefix, recvName)
+		if !sideEffectsOnly {
+			b.writes(", wuffs_base__make_empty_struct())")
+		}
+		return nil
+
+	case t.IDCanUndoByte:
+		recvName, err := g.recvName(recv)
+		if err != nil {
+			return err
+		}
+		b.printf("(%s%s > %s%s)", iopPrefix, recvName, io1Prefix, recvName)
 		return nil
 	}
 	return errNoSuchBuiltin
@@ -187,24 +221,6 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 			return err
 		}
 		b.writes("))))))")
-		return nil
-
-	case t.IDUndoByte:
-		if !sideEffectsOnly {
-			// Generate a two part expression using the comma operator: "(etc,
-			// return_empty_struct call)". The final part is a function call
-			// (to a static inline function) instead of a struct literal, to
-			// avoid a "expression result unused" compiler error.
-			b.writes("(")
-		}
-		b.printf("%s%s--", iopPrefix, recvName)
-		if !sideEffectsOnly {
-			b.writes(", wuffs_base__make_empty_struct())")
-		}
-		return nil
-
-	case t.IDCanUndoByte:
-		b.printf("(%s%s > %s%s)", iopPrefix, recvName, io1Prefix, recvName)
 		return nil
 
 	case t.IDLimitedCopyU32ToSlice:
@@ -293,7 +309,7 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 		}
 	}
 
-	return g.writeBuiltinIO(b, recv, method, args, depth)
+	return g.writeBuiltinIO(b, recv, method, args, sideEffectsOnly, depth)
 }
 
 func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, sideEffectsOnly bool, depth uint32) error {
@@ -397,10 +413,10 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 		}
 	}
 
-	return g.writeBuiltinIO(b, recv, method, args, depth)
+	return g.writeBuiltinIO(b, recv, method, args, sideEffectsOnly, depth)
 }
 
-func (g *gen) writeBuiltinTokenWriter(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, depth uint32) error {
+func (g *gen) writeBuiltinTokenWriter(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, sideEffectsOnly bool, depth uint32) error {
 	switch method {
 	case t.IDWriteSimpleTokenFast, t.IDWriteExtendedTokenFast:
 		recvName, err := g.recvName(recv)
@@ -444,7 +460,7 @@ func (g *gen) writeBuiltinTokenWriter(b *buffer, recv *a.Expr, method t.ID, args
 		return nil
 	}
 
-	return g.writeBuiltinIO(b, recv, method, args, depth)
+	return g.writeBuiltinIO(b, recv, method, args, sideEffectsOnly, depth)
 }
 
 func (g *gen) writeBuiltinCPUArch(b *buffer, recv *a.Expr, method t.ID, returnType *a.TypeExpr, args []*a.Node, sideEffectsOnly bool, depth uint32) error {

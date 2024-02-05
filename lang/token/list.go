@@ -566,9 +566,8 @@ const (
 
 	// --------
 
-	IDPeekU64LEAt = ID(0x1A0)
-
-	IDPeekU8 = ID(0x1A1)
+	IDPeekUndoByte = ID(0x1A0)
+	IDPeekU8       = ID(0x1A1)
 
 	IDPeekU8AsU16 = ID(0x1A5)
 	IDPeekU16BE   = ID(0x1A6)
@@ -598,9 +597,9 @@ const (
 	IDPeekU64BE      = ID(0x1BE)
 	IDPeekU64LE      = ID(0x1BF)
 
-	// --------
+	IDPeekU64LEAt = ID(0x1C0)
 
-	// TODO: IDUnwriteU8?
+	// --------
 
 	IDWriteU8    = ID(0x1C1)
 	IDWriteU16BE = ID(0x1C2)
@@ -1015,9 +1014,8 @@ var builtInsByID = [nBuiltInIDs]string{
 
 	// --------
 
-	IDPeekU64LEAt: "peek_u64le_at",
-
-	IDPeekU8: "peek_u8",
+	IDPeekUndoByte: "peek_undo_byte",
+	IDPeekU8:       "peek_u8",
 
 	IDPeekU8AsU16: "peek_u8_as_u16",
 	IDPeekU16BE:   "peek_u16be",
@@ -1046,6 +1044,8 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDPeekU56LEAsU64: "peek_u56le_as_u64",
 	IDPeekU64BE:      "peek_u64be",
 	IDPeekU64LE:      "peek_u64le",
+
+	IDPeekU64LEAt: "peek_u64le_at",
 
 	// --------
 

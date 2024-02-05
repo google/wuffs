@@ -433,6 +433,7 @@ var funcsOther = [...]string{
 	// ---- io_reader
 
 	"io_reader.can_undo_byte() bool",
+	"io_reader.peek_undo_byte() u8",
 	"io_reader.undo_byte!()",
 
 	"io_reader.read_u8?() u8",
@@ -527,6 +528,10 @@ var funcsOther = [...]string{
 	"io_reader.skip_u32_fast!(actual: u32, worst_case: u32)",
 
 	// ---- io_writer
+
+	"io_writer.can_undo_byte() bool",
+	"io_writer.peek_undo_byte() u8",
+	"io_writer.undo_byte!()",
 
 	"io_writer.write_u8?(a: u8)",
 	"io_writer.write_u16be?(a: u16)",
