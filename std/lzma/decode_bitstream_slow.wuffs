@@ -18,7 +18,7 @@
 // its LZMA implementation looks relatively verbose and repetitive (even though
 // it's equivalent to the C/C++ code, at the machine code level).
 
-pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader) {
+pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader, workbuf: roslice base.u8) {
     var c8 : base.u8
 
     var bits  : base.u32
@@ -67,6 +67,17 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
     var index_small_dist       : base.u32[..= 127]
 
     var index_large_dist : base.u32[..= 15]
+
+    // dist is part of the Lempel-Ziv (length, distance) pair. When dist is at
+    // or below the args.dst history length then the LZ copy can be resolved
+    // just from args.dst (and adj_dist and wb_index are unused). Otherwise, if
+    // e.g. dist was 100 and args.dst.history_length() was 40 then adj_dist
+    // would be 60: the LZ copy starts 60 bytes before the end of the
+    // args.workbuf ringbuffer. wb_index is that start index, equal to
+    // ((this.dict_workbuf_index ~mod- adj_dist) modulo this.dict_size).
+    var dist     : base.u32
+    var adj_dist : base.u32
+    var wb_index : base.u64
 
     // Initialize the bitstream.
     c8 = args.src.read_u8?()
@@ -804,24 +815,89 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
 
         // AlgOve90  labelDoTheLZCopy:
         // AlgOve94  emitCopy(len, mrud[0])
+
         assert len >= 1
-        if (((rep0 + 1) as base.u64) > (pos ~mod+ this.lzma2_prior_decoded_length)) or
-                (((rep0 + 1) as base.u64) > (this.dict_size as base.u64)) {
+        dist = rep0 + 1
+        assert dist >= 1
+        if ((dist as base.u64) > (pos ~mod+ this.lzma2_prior_decoded_length)) or
+                ((dist as base.u64) > (this.dict_size as base.u64)) {
             return "#bad distance"
         }
         pos ~mod+= len as base.u64
-        while (len as base.u64) > args.dst.length(),
+        // 274 is at least (len + 1). A limited_copy_u32_from_slice call below
+        // passes "up_to: len + 1". It's simpler if it's always a full copy.
+        while 274 > args.dst.length(),
                 inv len >= 1,
-                post (len as base.u64) <= args.dst.length(),
+                inv dist >= 1,
+                post 274 <= args.dst.length(),
         {
             yield? base."$short write"
         } endwhile
-        if ((rep0 + 1) as base.u64) > args.dst.history_length() {
-            return base."#insufficient history"
+        assert (len as base.u64) <= args.dst.length() via "a <= b: a <= c; c <= b"(c: 274)
+
+        // Copy from the args.workbuf history, if necessary.
+        if (dist as base.u64) > args.dst.history_length() {
+            adj_dist = (((dist as base.u64) - args.dst.history_length()) & 0xFFFF_FFFF) as base.u32
+            if adj_dist > this.dict_seen {
+                return "#bad distance"
+            }
+            wb_index = (this.dict_workbuf_index as base.u64) ~mod- (adj_dist as base.u64)
+            while wb_index >= 0x8000_0000_0000_0000,
+                    inv dist >= 1,
+            {
+                wb_index ~mod+= this.dict_size as base.u64
+            } endwhile
+            if wb_index > args.workbuf.length() {
+                return "#internal error: inconsistent dictionary state"
+            }
+
+            if len < adj_dist {
+                // Copy len bytes of history and one more byte for the later
+                // half of the two-byte cusp, all from args.workbuf.
+                args.dst.limited_copy_u32_from_slice!(up_to: len + 1, s: args.workbuf[wb_index ..])
+                if not args.dst.can_undo_byte() {
+                    return "#internal error: inconsistent dictionary state"
+                }
+                match_byte = args.dst.peek_undo_byte()
+                args.dst.undo_byte!()
+                if not args.dst.can_undo_byte() {
+                    return "#internal error: inconsistent dictionary state"
+                }
+                prev_byte = args.dst.peek_undo_byte()
+                continue.outer
+            } else if len == adj_dist {
+                // Like above, copy len bytes of history and one more byte for
+                // the later half of the two-byte cusp, but the copy-source
+                // crosses over from args.workbuf to args.dst.
+                args.dst.limited_copy_u32_from_slice!(up_to: len, s: args.workbuf[wb_index ..])
+                args.dst.limited_copy_u32_from_history!(up_to: 1, distance: dist)
+                if not args.dst.can_undo_byte() {
+                    return "#internal error: inconsistent dictionary state"
+                }
+                match_byte = args.dst.peek_undo_byte()
+                args.dst.undo_byte!()
+                if not args.dst.can_undo_byte() {
+                    return "#internal error: inconsistent dictionary state"
+                }
+                prev_byte = args.dst.peek_undo_byte()
+                continue.outer
+            }
+            args.dst.limited_copy_u32_from_slice!(up_to: adj_dist, s: args.workbuf[wb_index ..])
+            len -= adj_dist
+            assert len >= 1
+            if ((len as base.u64) > args.dst.length()) or
+                    ((dist as base.u64) > args.dst.history_length()) {
+                return "#internal error: inconsistent dictionary state"
+            }
         }
-        assert (rep0 + 1) >= 1
+
+        // Copy from the args.dst history.
+        assert len >= 1
+        assert dist >= 1
+        assert (len as base.u64) <= args.dst.length()
+        assert (dist as base.u64) <= args.dst.history_length()
         match_cusp = args.dst.limited_copy_u32_from_history_fast_return_cusp!(
-                up_to: len, distance: (rep0 + 1))
+                up_to: len, distance: dist)
         match_byte = (match_cusp >> 8) as base.u8
         prev_byte = (match_cusp & 0xFF) as base.u8
     } endwhile.outer

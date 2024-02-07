@@ -535,6 +535,7 @@ extern const char wuffs_base__suspension__even_more_information[];
 extern const char wuffs_base__suspension__mispositioned_read[];
 extern const char wuffs_base__suspension__mispositioned_write[];
 extern const char wuffs_base__suspension__short_read[];
+extern const char wuffs_base__suspension__short_workbuf[];
 extern const char wuffs_base__suspension__short_write[];
 extern const char wuffs_base__error__bad_i_o_position[];
 extern const char wuffs_base__error__bad_argument_length_too_short[];
@@ -10345,9 +10346,9 @@ extern const char wuffs_lzma__error__unsupported_properties[];
 
 // ---------------- Public Consts
 
-#define WUFFS_LZMA__DECODER_DST_HISTORY_RETAIN_LENGTH_MAX_INCL_WORST_CASE 4294967295u
+#define WUFFS_LZMA__DECODER_DST_HISTORY_RETAIN_LENGTH_MAX_INCL_WORST_CASE 0u
 
-#define WUFFS_LZMA__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE 0u
+#define WUFFS_LZMA__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE 4294967568u
 
 #define WUFFS_LZMA__QUIRK_FORMAT_EXTENSION 1348001792u
 
@@ -10466,6 +10467,8 @@ struct wuffs_lzma__decoder__struct {
     uint32_t f_pb;
     uint32_t f_format_extension;
     uint32_t f_dict_size;
+    uint32_t f_dict_workbuf_index;
+    uint32_t f_dict_seen;
     uint64_t f_decoded_length;
     uint64_t f_lzma2_prior_decoded_length;
     uint64_t f_lzma2_encoded_length_have;
@@ -10524,6 +10527,7 @@ struct wuffs_lzma__decoder__struct {
       uint32_t v_index_small_dist_base;
       uint32_t v_index_small_dist_extra;
       uint32_t v_index_large_dist;
+      uint32_t v_dist;
       uint64_t scratch;
     } s_decode_bitstream_slow;
     struct {
@@ -13798,9 +13802,9 @@ extern const char wuffs_xz__error__unsupported_filter[];
 
 // ---------------- Public Consts
 
-#define WUFFS_XZ__DECODER_DST_HISTORY_RETAIN_LENGTH_MAX_INCL_WORST_CASE 4294967295u
+#define WUFFS_XZ__DECODER_DST_HISTORY_RETAIN_LENGTH_MAX_INCL_WORST_CASE 0u
 
-#define WUFFS_XZ__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE 0u
+#define WUFFS_XZ__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE 4294967568u
 
 // ---------------- Struct Declarations
 
@@ -15627,6 +15631,7 @@ const char wuffs_base__suspension__even_more_information[] = "$base: even more i
 const char wuffs_base__suspension__mispositioned_read[] = "$base: mispositioned read";
 const char wuffs_base__suspension__mispositioned_write[] = "$base: mispositioned write";
 const char wuffs_base__suspension__short_read[] = "$base: short read";
+const char wuffs_base__suspension__short_workbuf[] = "$base: short workbuf";
 const char wuffs_base__suspension__short_write[] = "$base: short write";
 const char wuffs_base__error__bad_i_o_position[] = "#base: bad I/O position";
 const char wuffs_base__error__bad_argument_length_too_short[] = "#base: bad argument (length too short)";
@@ -50871,6 +50876,7 @@ const char wuffs_lzma__error__bad_header[] = "#lzma: bad header";
 const char wuffs_lzma__error__truncated_input[] = "#lzma: truncated input";
 const char wuffs_lzma__error__unsupported_decoded_length[] = "#lzma: unsupported decoded length";
 const char wuffs_lzma__error__unsupported_properties[] = "#lzma: unsupported properties";
+const char wuffs_lzma__error__internal_error_inconsistent_dictionary_state[] = "#lzma: internal error: inconsistent dictionary state";
 
 // ---------------- Private Consts
 
@@ -50914,21 +50920,31 @@ static wuffs_base__status
 wuffs_lzma__decoder__decode_bitstream_slow(
     wuffs_lzma__decoder* self,
     wuffs_base__io_buffer* a_dst,
-    wuffs_base__io_buffer* a_src);
+    wuffs_base__io_buffer* a_src,
+    wuffs_base__slice_u8 a_workbuf);
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__status
+wuffs_lzma__decoder__add_history(
+    wuffs_lzma__decoder* self,
+    wuffs_base__slice_u8 a_hist,
+    wuffs_base__slice_u8 a_workbuf);
 
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__status
 wuffs_lzma__decoder__do_transform_io(
     wuffs_lzma__decoder* self,
     wuffs_base__io_buffer* a_dst,
-    wuffs_base__io_buffer* a_src);
+    wuffs_base__io_buffer* a_src,
+    wuffs_base__slice_u8 a_workbuf);
 
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__status
 wuffs_lzma__decoder__decode_bitstream(
     wuffs_lzma__decoder* self,
     wuffs_base__io_buffer* a_dst,
-    wuffs_base__io_buffer* a_src);
+    wuffs_base__io_buffer* a_src,
+    wuffs_base__slice_u8 a_workbuf);
 
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
@@ -51030,7 +51046,8 @@ static wuffs_base__status
 wuffs_lzma__decoder__decode_bitstream_slow(
     wuffs_lzma__decoder* self,
     wuffs_base__io_buffer* a_dst,
-    wuffs_base__io_buffer* a_src) {
+    wuffs_base__io_buffer* a_src,
+    wuffs_base__slice_u8 a_workbuf) {
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
   uint8_t v_c8 = 0;
@@ -51069,6 +51086,9 @@ wuffs_lzma__decoder__decode_bitstream_slow(
   uint32_t v_index_small_dist_extra = 0;
   uint32_t v_index_small_dist = 0;
   uint32_t v_index_large_dist = 0;
+  uint32_t v_dist = 0;
+  uint32_t v_adj_dist = 0;
+  uint64_t v_wb_index = 0;
 
   uint8_t* iop_a_dst = NULL;
   uint8_t* io0_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -51122,6 +51142,7 @@ wuffs_lzma__decoder__decode_bitstream_slow(
     v_index_small_dist_base = self->private_data.s_decode_bitstream_slow.v_index_small_dist_base;
     v_index_small_dist_extra = self->private_data.s_decode_bitstream_slow.v_index_small_dist_extra;
     v_index_large_dist = self->private_data.s_decode_bitstream_slow.v_index_large_dist;
+    v_dist = self->private_data.s_decode_bitstream_slow.v_dist;
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
@@ -52023,21 +52044,73 @@ wuffs_lzma__decoder__decode_bitstream_slow(
           v_state = ((uint32_t)(WUFFS_LZMA__STATE_TRANSITION_LONGREP[v_state]));
         } while (0);
       } while (0);
-      if ((((uint64_t)((v_rep0 + 1u))) > ((uint64_t)(v_pos + self->private_impl.f_lzma2_prior_decoded_length))) || (((uint64_t)((v_rep0 + 1u))) > ((uint64_t)(self->private_impl.f_dict_size)))) {
+      v_dist = (v_rep0 + 1u);
+      if ((((uint64_t)(v_dist)) > ((uint64_t)(v_pos + self->private_impl.f_lzma2_prior_decoded_length))) || (((uint64_t)(v_dist)) > ((uint64_t)(self->private_impl.f_dict_size)))) {
         status = wuffs_base__make_status(wuffs_lzma__error__bad_distance);
         goto exit;
       }
       v_pos += ((uint64_t)(v_len));
-      while (((uint64_t)(v_len)) > ((uint64_t)(io2_a_dst - iop_a_dst))) {
+      while (274u > ((uint64_t)(io2_a_dst - iop_a_dst))) {
         status = wuffs_base__make_status(wuffs_base__suspension__short_write);
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(38);
       }
-      if (((uint64_t)((v_rep0 + 1u))) > ((uint64_t)(iop_a_dst - io0_a_dst))) {
-        status = wuffs_base__make_status(wuffs_base__error__insufficient_history);
-        goto exit;
+      if (((uint64_t)(v_dist)) > ((uint64_t)(iop_a_dst - io0_a_dst))) {
+        v_adj_dist = ((uint32_t)((((uint64_t)(v_dist)) - ((uint64_t)(iop_a_dst - io0_a_dst)))));
+        if (v_adj_dist > self->private_impl.f_dict_seen) {
+          status = wuffs_base__make_status(wuffs_lzma__error__bad_distance);
+          goto exit;
+        }
+        v_wb_index = ((uint64_t)(((uint64_t)(self->private_impl.f_dict_workbuf_index)) - ((uint64_t)(v_adj_dist))));
+        while (v_wb_index >= 9223372036854775808u) {
+          v_wb_index += ((uint64_t)(self->private_impl.f_dict_size));
+        }
+        if (v_wb_index > ((uint64_t)(a_workbuf.len))) {
+          status = wuffs_base__make_status(wuffs_lzma__error__internal_error_inconsistent_dictionary_state);
+          goto exit;
+        }
+        if (v_len < v_adj_dist) {
+          wuffs_private_impl__io_writer__limited_copy_u32_from_slice(
+              &iop_a_dst, io2_a_dst,(v_len + 1u), wuffs_base__slice_u8__subslice_i(a_workbuf, v_wb_index));
+          if ( ! (iop_a_dst > io1_a_dst)) {
+            status = wuffs_base__make_status(wuffs_lzma__error__internal_error_inconsistent_dictionary_state);
+            goto exit;
+          }
+          v_match_byte = iop_a_dst[-1];
+          iop_a_dst--;
+          if ( ! (iop_a_dst > io1_a_dst)) {
+            status = wuffs_base__make_status(wuffs_lzma__error__internal_error_inconsistent_dictionary_state);
+            goto exit;
+          }
+          v_prev_byte = iop_a_dst[-1];
+          continue;
+        } else if (v_len == v_adj_dist) {
+          wuffs_private_impl__io_writer__limited_copy_u32_from_slice(
+              &iop_a_dst, io2_a_dst,v_len, wuffs_base__slice_u8__subslice_i(a_workbuf, v_wb_index));
+          wuffs_private_impl__io_writer__limited_copy_u32_from_history(
+              &iop_a_dst, io0_a_dst, io2_a_dst, 1u, v_dist);
+          if ( ! (iop_a_dst > io1_a_dst)) {
+            status = wuffs_base__make_status(wuffs_lzma__error__internal_error_inconsistent_dictionary_state);
+            goto exit;
+          }
+          v_match_byte = iop_a_dst[-1];
+          iop_a_dst--;
+          if ( ! (iop_a_dst > io1_a_dst)) {
+            status = wuffs_base__make_status(wuffs_lzma__error__internal_error_inconsistent_dictionary_state);
+            goto exit;
+          }
+          v_prev_byte = iop_a_dst[-1];
+          continue;
+        }
+        wuffs_private_impl__io_writer__limited_copy_u32_from_slice(
+            &iop_a_dst, io2_a_dst,v_adj_dist, wuffs_base__slice_u8__subslice_i(a_workbuf, v_wb_index));
+        v_len -= v_adj_dist;
+        if ((((uint64_t)(v_len)) > ((uint64_t)(io2_a_dst - iop_a_dst))) || (((uint64_t)(v_dist)) > ((uint64_t)(iop_a_dst - io0_a_dst)))) {
+          status = wuffs_base__make_status(wuffs_lzma__error__internal_error_inconsistent_dictionary_state);
+          goto exit;
+        }
       }
       v_match_cusp = wuffs_private_impl__io_writer__limited_copy_u32_from_history_fast_return_cusp(
-          &iop_a_dst, io0_a_dst, io2_a_dst, v_len, (v_rep0 + 1u));
+          &iop_a_dst, io0_a_dst, io2_a_dst, v_len, v_dist);
       v_match_byte = ((uint8_t)((v_match_cusp >> 8u)));
       v_prev_byte = ((uint8_t)(v_match_cusp));
     }
@@ -52084,6 +52157,7 @@ wuffs_lzma__decoder__decode_bitstream_slow(
   self->private_data.s_decode_bitstream_slow.v_index_small_dist_base = v_index_small_dist_base;
   self->private_data.s_decode_bitstream_slow.v_index_small_dist_extra = v_index_small_dist_extra;
   self->private_data.s_decode_bitstream_slow.v_index_large_dist = v_index_large_dist;
+  self->private_data.s_decode_bitstream_slow.v_dist = v_dist;
 
   goto exit;
   exit:
@@ -52095,6 +52169,63 @@ wuffs_lzma__decoder__decode_bitstream_slow(
   }
 
   return status;
+}
+
+// -------- func lzma.decoder.add_history
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__status
+wuffs_lzma__decoder__add_history(
+    wuffs_lzma__decoder* self,
+    wuffs_base__slice_u8 a_hist,
+    wuffs_base__slice_u8 a_workbuf) {
+  uint64_t v_dict_workbuf_index = 0;
+  uint64_t v_dict_size = 0;
+  uint64_t v_hist_length = 0;
+  wuffs_base__slice_u8 v_s = {0};
+  uint64_t v_n_copied = 0;
+  uint64_t v_n = 0;
+
+  v_dict_workbuf_index = ((uint64_t)(self->private_impl.f_dict_workbuf_index));
+  v_dict_size = ((uint64_t)(self->private_impl.f_dict_size));
+  if (((uint64_t)(a_hist.len)) == 0u) {
+    return wuffs_base__make_status(NULL);
+  }
+  if (((uint64_t)(a_workbuf.len)) < (v_dict_size + 273u)) {
+    return wuffs_base__make_status(wuffs_base__error__bad_workbuf_length);
+  }
+  v_hist_length = ((uint64_t)(a_hist.len));
+  if (v_hist_length > 4294967295u) {
+    self->private_impl.f_dict_seen = 4294967295u;
+  } else {
+    wuffs_private_impl__u32__sat_add_indirect(&self->private_impl.f_dict_seen, ((uint32_t)(v_hist_length)));
+  }
+  v_s = a_hist;
+  if (((uint64_t)(v_s.len)) >= v_dict_size) {
+    v_s = wuffs_private_impl__slice_u8__suffix(v_s, v_dict_size);
+    wuffs_private_impl__slice_u8__copy_from_slice(a_workbuf, v_s);
+    self->private_impl.f_dict_workbuf_index = 0u;
+  } else if (v_dict_workbuf_index > v_dict_size) {
+    return wuffs_base__make_status(wuffs_lzma__error__internal_error_inconsistent_dictionary_state);
+  } else {
+    v_n_copied = wuffs_private_impl__slice_u8__copy_from_slice(wuffs_base__slice_u8__subslice_ij(a_workbuf, v_dict_workbuf_index, v_dict_size), v_s);
+    if (v_n_copied < ((uint64_t)(v_s.len))) {
+      v_n = wuffs_private_impl__slice_u8__copy_from_slice(a_workbuf, wuffs_base__slice_u8__subslice_i(v_s, v_n_copied));
+      self->private_impl.f_dict_workbuf_index = ((uint32_t)(v_n));
+    } else {
+      v_n = ((uint64_t)(v_dict_workbuf_index + v_n_copied));
+      if (v_n < v_dict_size) {
+        self->private_impl.f_dict_workbuf_index = ((uint32_t)(v_n));
+      } else {
+        self->private_impl.f_dict_workbuf_index = 0u;
+      }
+    }
+  }
+  if ((273u > v_dict_size) || (v_dict_size > ((uint64_t)(a_workbuf.len)))) {
+    return wuffs_base__make_status(wuffs_lzma__error__internal_error_inconsistent_dictionary_state);
+  }
+  wuffs_private_impl__slice_u8__copy_from_slice(wuffs_base__slice_u8__subslice_i(a_workbuf, v_dict_size), wuffs_base__slice_u8__subslice_j(a_workbuf, 273u));
+  return wuffs_base__make_status(NULL);
 }
 
 // -------- func lzma.decoder.get_quirk
@@ -52169,10 +52300,7 @@ wuffs_lzma__decoder__dst_history_retain_length(
     return wuffs_base__utility__make_optional_u63(false, 0u);
   }
 
-  if (self->private_impl.f_dict_size == 0u) {
-    return wuffs_base__utility__make_optional_u63(false, 0u);
-  }
-  return wuffs_base__utility__make_optional_u63(true, ((uint64_t)(self->private_impl.f_dict_size)));
+  return wuffs_base__utility__make_optional_u63(true, 0u);
 }
 
 // -------- func lzma.decoder.workbuf_len
@@ -52189,7 +52317,13 @@ wuffs_lzma__decoder__workbuf_len(
     return wuffs_base__utility__empty_range_ii_u64();
   }
 
-  return wuffs_base__utility__make_range_ii_u64(0u, 0u);
+  uint64_t v_m = 0;
+
+  if (self->private_impl.f_dict_size == 0u) {
+    return wuffs_base__utility__make_range_ii_u64(0u, 0u);
+  }
+  v_m = (((uint64_t)(self->private_impl.f_dict_size)) + 273u);
+  return wuffs_base__utility__make_range_ii_u64(v_m, v_m);
 }
 
 // -------- func lzma.decoder.transform_io
@@ -52222,22 +52356,59 @@ wuffs_lzma__decoder__transform_io(
   self->private_impl.active_coroutine = 0;
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
-  wuffs_base__status v_status = wuffs_base__make_status(NULL);
+  uint64_t v_mark = 0;
+  wuffs_base__status v_dti_status = wuffs_base__make_status(NULL);
+  wuffs_base__status v_ah_status = wuffs_base__make_status(NULL);
+
+  uint8_t* iop_a_dst = NULL;
+  uint8_t* io0_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  uint8_t* io1_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  uint8_t* io2_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  if (a_dst && a_dst->data.ptr) {
+    io0_a_dst = a_dst->data.ptr;
+    io1_a_dst = io0_a_dst + a_dst->meta.wi;
+    iop_a_dst = io1_a_dst;
+    io2_a_dst = io0_a_dst + a_dst->data.len;
+    if (a_dst->meta.closed) {
+      io2_a_dst = iop_a_dst;
+    }
+  }
 
   uint32_t coro_susp_point = self->private_impl.p_transform_io;
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
     while (true) {
+      v_mark = ((uint64_t)(iop_a_dst - io0_a_dst));
       {
-        wuffs_base__status t_0 = wuffs_lzma__decoder__do_transform_io(self, a_dst, a_src);
-        v_status = t_0;
+        if (a_dst) {
+          a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
+        }
+        wuffs_base__status t_0 = wuffs_lzma__decoder__do_transform_io(self, a_dst, a_src, a_workbuf);
+        v_dti_status = t_0;
+        if (a_dst) {
+          iop_a_dst = a_dst->data.ptr + a_dst->meta.wi;
+        }
       }
-      if ((v_status.repr == wuffs_base__suspension__short_read) && (a_src && a_src->meta.closed)) {
+      if ( ! wuffs_base__status__is_suspension(&v_dti_status)) {
+        status = v_dti_status;
+        if (wuffs_base__status__is_error(&status)) {
+          goto exit;
+        } else if (wuffs_base__status__is_suspension(&status)) {
+          status = wuffs_base__make_status(wuffs_base__error__cannot_return_a_suspension);
+          goto exit;
+        }
+        goto ok;
+      } else if ((v_dti_status.repr == wuffs_base__suspension__short_read) && (a_src && a_src->meta.closed)) {
         status = wuffs_base__make_status(wuffs_lzma__error__truncated_input);
         goto exit;
       }
-      status = v_status;
+      v_ah_status = wuffs_lzma__decoder__add_history(self, wuffs_private_impl__io__since(v_mark, ((uint64_t)(iop_a_dst - io0_a_dst)), io0_a_dst), a_workbuf);
+      if (wuffs_base__status__is_error(&v_ah_status)) {
+        status = v_ah_status;
+        goto exit;
+      }
+      status = v_dti_status;
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(1);
     }
 
@@ -52253,6 +52424,10 @@ wuffs_lzma__decoder__transform_io(
 
   goto exit;
   exit:
+  if (a_dst && a_dst->data.ptr) {
+    a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
+  }
+
   if (wuffs_base__status__is_error(&status)) {
     self->private_impl.magic = WUFFS_BASE__DISABLED;
   }
@@ -52266,7 +52441,8 @@ static wuffs_base__status
 wuffs_lzma__decoder__do_transform_io(
     wuffs_lzma__decoder* self,
     wuffs_base__io_buffer* a_dst,
-    wuffs_base__io_buffer* a_src) {
+    wuffs_base__io_buffer* a_src,
+    wuffs_base__slice_u8 a_workbuf) {
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
   uint8_t v_header_byte = 0;
@@ -52594,6 +52770,10 @@ wuffs_lzma__decoder__do_transform_io(
           goto exit;
         }
       }
+      while (((uint64_t)(a_workbuf.len)) < (((uint64_t)(self->private_impl.f_dict_size)) + 273u)) {
+        status = wuffs_base__make_status(wuffs_base__suspension__short_workbuf);
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(17);
+      }
       self->private_impl.f_lzma2_encoded_length_have = 0u;
       while (true) {
         v_dmark = ((uint64_t)(iop_a_dst - io0_a_dst));
@@ -52605,7 +52785,7 @@ wuffs_lzma__decoder__do_transform_io(
           if (a_src) {
             a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
           }
-          wuffs_base__status t_8 = wuffs_lzma__decoder__decode_bitstream(self, a_dst, a_src);
+          wuffs_base__status t_8 = wuffs_lzma__decoder__decode_bitstream(self, a_dst, a_src, a_workbuf);
           v_status = t_8;
           if (a_dst) {
             iop_a_dst = a_dst->data.ptr + a_dst->meta.wi;
@@ -52620,7 +52800,7 @@ wuffs_lzma__decoder__do_transform_io(
           break;
         }
         status = v_status;
-        WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(17);
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(18);
       }
       if (self->private_impl.f_format_extension == 0u) {
         break;
@@ -52660,7 +52840,8 @@ static wuffs_base__status
 wuffs_lzma__decoder__decode_bitstream(
     wuffs_lzma__decoder* self,
     wuffs_base__io_buffer* a_dst,
-    wuffs_base__io_buffer* a_src) {
+    wuffs_base__io_buffer* a_src,
+    wuffs_base__slice_u8 a_workbuf) {
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
   uint32_t coro_susp_point = self->private_impl.p_decode_bitstream;
@@ -52668,7 +52849,7 @@ wuffs_lzma__decoder__decode_bitstream(
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
-    status = wuffs_lzma__decoder__decode_bitstream_slow(self, a_dst, a_src);
+    status = wuffs_lzma__decoder__decode_bitstream_slow(self, a_dst, a_src, a_workbuf);
     if (status.repr) {
       goto suspend;
     }
@@ -66797,7 +66978,7 @@ wuffs_xz__decoder__workbuf_len(
     return wuffs_base__utility__empty_range_ii_u64();
   }
 
-  return wuffs_base__utility__make_range_ii_u64(0u, 0u);
+  return wuffs_lzma__decoder__workbuf_len(&self->private_data.f_lzma);
 }
 
 // -------- func xz.decoder.transform_io
@@ -67097,7 +67278,7 @@ wuffs_xz__decoder__do_transform_io(
           if (a_src) {
             a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
           }
-          wuffs_base__status t_4 = wuffs_lzma__decoder__transform_io(&self->private_data.f_lzma, a_dst, a_src, wuffs_base__utility__empty_slice_u8());
+          wuffs_base__status t_4 = wuffs_lzma__decoder__transform_io(&self->private_data.f_lzma, a_dst, a_src, a_workbuf);
           v_status = t_4;
           if (a_dst) {
             iop_a_dst = a_dst->data.ptr + a_dst->meta.wi;

@@ -78,18 +78,21 @@ Supported compression formats:
 #define WUFFS_EXAMPLE_USE_SECCOMP
 #endif
 
-// LZMA's default dictionary size is 16 MiB. This program's destination-buffer
-// size defaults to twice that.
 #ifndef DST_BUFFER_ARRAY_SIZE
-#define DST_BUFFER_ARRAY_SIZE (32 * 1024 * 1024)
+#define DST_BUFFER_ARRAY_SIZE (128 * 1024)
 #endif
 
 #ifndef SRC_BUFFER_ARRAY_SIZE
 #define SRC_BUFFER_ARRAY_SIZE (128 * 1024)
 #endif
 
+#ifndef WORKBUF_ARRAY_SIZE
+#define WORKBUF_ARRAY_SIZE (64 * 1024 * 1024)
+#endif
+
 uint8_t g_dst_buffer_array[DST_BUFFER_ARRAY_SIZE];
 uint8_t g_src_buffer_array[SRC_BUFFER_ARRAY_SIZE];
+uint8_t g_workbuf_array[WORKBUF_ARRAY_SIZE];
 
 // ----
 
@@ -269,7 +272,9 @@ main1(int argc, char** argv) {
 
     while (true) {
       wuffs_base__status status = wuffs_base__io_transformer__transform_io(
-          g_io_transformer, &dst, &src, wuffs_base__empty_slice_u8());
+          g_io_transformer, &dst, &src,
+          wuffs_base__make_slice_u8(&g_workbuf_array[0],
+                                    sizeof(g_workbuf_array)));
 
       if (dst.meta.ri < dst.meta.wi) {
         // TODO: handle EINTR and other write errors; see "man 2 write".

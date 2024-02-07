@@ -245,6 +245,7 @@ var Statuses = [...]string{
 	`"$mispositioned read"`,
 	`"$mispositioned write"`,
 	`"$short read"`,
+	`"$short workbuf"`,
 	`"$short write"`,
 
 	// Errors.
@@ -1024,6 +1025,7 @@ var InterfaceFuncs = []string{
 
 	// ---- io_transformer
 
+	// TODO: "io_transformer.add_history!(hist: slice u8)"? Should it take a workbuf arg?
 	"io_transformer.dst_history_retain_length() optional_u63",
 	"io_transformer.get_quirk(key: u32) u64",
 	"io_transformer.set_quirk!(key: u32, value: u64) status",

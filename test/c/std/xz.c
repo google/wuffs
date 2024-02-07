@@ -137,14 +137,12 @@ test_wuffs_xz_decode_enwik5() {
                             UINT64_MAX);
 }
 
-/* TODO
 const char*  //
 test_wuffs_xz_decode_one_byte_reads() {
   CHECK_FOCUS(__func__);
   return do_test_io_buffers(wuffs_xz_decode, &g_xz_romeo_delta1_gt, UINT64_MAX,
                             1);
 }
-*/
 
 const char*  //
 test_wuffs_xz_decode_romeo() {
@@ -203,7 +201,7 @@ proc g_tests[] = {
 
     test_wuffs_xz_decode_enwik5,
     test_wuffs_xz_decode_interface,
-    // TODO test_wuffs_xz_decode_one_byte_reads,
+    test_wuffs_xz_decode_one_byte_reads,
     test_wuffs_xz_decode_romeo,
 
 #ifdef WUFFS_MIMIC

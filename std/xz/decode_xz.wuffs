@@ -26,9 +26,8 @@ pub status "#truncated input"
 pub status "#unsupported checksum algorithm"
 pub status "#unsupported filter"
 
-pub const DECODER_DST_HISTORY_RETAIN_LENGTH_MAX_INCL_WORST_CASE : base.u64 = 0xFFFF_FFFF
-
-pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0
+pub const DECODER_DST_HISTORY_RETAIN_LENGTH_MAX_INCL_WORST_CASE : base.u64 = 0
+pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE               : base.u64 = 0xFFFF_FFFF + 273
 
 pub struct decoder? implements base.io_transformer(
         filters               : array[3] base.u32,
@@ -79,7 +78,7 @@ pub func decoder.dst_history_retain_length() base.optional_u63 {
 }
 
 pub func decoder.workbuf_len() base.range_ii_u64 {
-    return this.util.make_range_ii_u64(min_incl: 0, max_incl: 0)
+    return this.lzma.workbuf_len()
 }
 
 pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf: slice base.u8) {
@@ -177,7 +176,7 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
         while true {
             dmark = args.dst.mark()
             smark = args.src.mark()
-            status =? this.lzma.transform_io?(dst: args.dst, src: args.src, workbuf: this.util.empty_slice_u8())
+            status =? this.lzma.transform_io?(dst: args.dst, src: args.src, workbuf: args.workbuf)
             compressed_size ~mod+= args.src.count_since(mark: smark)
             uncompressed_size ~mod+= args.dst.count_since(mark: dmark)
 
