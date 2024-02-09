@@ -318,16 +318,16 @@ func (g *gen) writeStatementIOManip(b *buffer, n *a.IOManip, depth uint32) error
 			b.printf("wuffs_base__io_buffer* %s%d_%s%s = %s%s;\n",
 				oPrefix, ioBindNum, prefix, name,
 				prefix, name)
-			b.printf("%suint8_t *%s%d_%s%s%s = %s%s%s;\n",
+			b.printf("%suint8_t* %s%d_%s%s%s = %s%s%s;\n",
 				qualifier, oPrefix, ioBindNum, iopPrefix, prefix, name,
 				iopPrefix, prefix, name)
-			b.printf("%suint8_t *%s%d_%s%s%s = %s%s%s;\n",
+			b.printf("%suint8_t* %s%d_%s%s%s = %s%s%s;\n",
 				qualifier, oPrefix, ioBindNum, io0Prefix, prefix, name,
 				io0Prefix, prefix, name)
-			b.printf("%suint8_t *%s%d_%s%s%s = %s%s%s;\n",
+			b.printf("%suint8_t* %s%d_%s%s%s = %s%s%s;\n",
 				qualifier, oPrefix, ioBindNum, io1Prefix, prefix, name,
 				io1Prefix, prefix, name)
-			b.printf("%suint8_t *%s%d_%s%s%s = %s%s%s;\n",
+			b.printf("%suint8_t* %s%d_%s%s%s = %s%s%s;\n",
 				qualifier, oPrefix, ioBindNum, io2Prefix, prefix, name,
 				io2Prefix, prefix, name)
 			b.printf("%s%s = wuffs_private_impl__io_%s__set("+
@@ -392,7 +392,7 @@ func (g *gen) writeStatementIOManip(b *buffer, n *a.IOManip, depth uint32) error
 				b.printf("const bool %s%d_closed_%s%s = %s%s->meta.closed;\n",
 					oPrefix, ioBindNum, prefix, name, prefix, name)
 			}
-			b.printf("%suint8_t *%s%d_%s%s%s = %s%s%s;\n",
+			b.printf("%suint8_t* %s%d_%s%s%s = %s%s%s;\n",
 				qualifier, oPrefix, ioBindNum, io2Prefix, prefix, name, io2Prefix, prefix, name)
 			b.printf("wuffs_private_impl__io_%s__limit(&%s%s%s, %s%s%s,\n",
 				cTyp,

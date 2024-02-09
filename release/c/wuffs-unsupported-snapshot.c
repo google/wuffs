@@ -40809,10 +40809,10 @@ wuffs_gif__decoder__decode_id_part2(
         }
         {
           wuffs_base__io_buffer* o_0_v_r = v_r;
-          const uint8_t *o_0_iop_v_r = iop_v_r;
-          const uint8_t *o_0_io0_v_r = io0_v_r;
-          const uint8_t *o_0_io1_v_r = io1_v_r;
-          const uint8_t *o_0_io2_v_r = io2_v_r;
+          const uint8_t* o_0_iop_v_r = iop_v_r;
+          const uint8_t* o_0_io0_v_r = io0_v_r;
+          const uint8_t* o_0_io1_v_r = io1_v_r;
+          const uint8_t* o_0_io2_v_r = io2_v_r;
           v_r = wuffs_private_impl__io_reader__set(
               &u_r,
               &iop_v_r,
@@ -46333,10 +46333,10 @@ wuffs_jpeg__decoder__use_default_huffman_table(
   }
   {
     wuffs_base__io_buffer* o_0_v_r = v_r;
-    const uint8_t *o_0_iop_v_r = iop_v_r;
-    const uint8_t *o_0_io0_v_r = io0_v_r;
-    const uint8_t *o_0_io1_v_r = io1_v_r;
-    const uint8_t *o_0_io2_v_r = io2_v_r;
+    const uint8_t* o_0_iop_v_r = iop_v_r;
+    const uint8_t* o_0_io0_v_r = io0_v_r;
+    const uint8_t* o_0_io1_v_r = io1_v_r;
+    const uint8_t* o_0_io2_v_r = io2_v_r;
     v_r = wuffs_private_impl__io_reader__set(
         &u_r,
         &iop_v_r,
@@ -47789,10 +47789,10 @@ wuffs_jpeg__decoder__decode_mcu__choosy_default(
   }
   {
     wuffs_base__io_buffer* o_0_v_r = v_r;
-    const uint8_t *o_0_iop_v_r = iop_v_r;
-    const uint8_t *o_0_io0_v_r = io0_v_r;
-    const uint8_t *o_0_io1_v_r = io1_v_r;
-    const uint8_t *o_0_io2_v_r = io2_v_r;
+    const uint8_t* o_0_iop_v_r = iop_v_r;
+    const uint8_t* o_0_io0_v_r = io0_v_r;
+    const uint8_t* o_0_io1_v_r = io1_v_r;
+    const uint8_t* o_0_io2_v_r = io2_v_r;
     v_r = wuffs_private_impl__io_reader__set(
         &u_r,
         &iop_v_r,
@@ -48019,10 +48019,10 @@ wuffs_jpeg__decoder__decode_mcu_progressive_ac_high_bits(
   }
   {
     wuffs_base__io_buffer* o_0_v_r = v_r;
-    const uint8_t *o_0_iop_v_r = iop_v_r;
-    const uint8_t *o_0_io0_v_r = io0_v_r;
-    const uint8_t *o_0_io1_v_r = io1_v_r;
-    const uint8_t *o_0_io2_v_r = io2_v_r;
+    const uint8_t* o_0_iop_v_r = iop_v_r;
+    const uint8_t* o_0_io0_v_r = io0_v_r;
+    const uint8_t* o_0_io1_v_r = io1_v_r;
+    const uint8_t* o_0_io2_v_r = io2_v_r;
     v_r = wuffs_private_impl__io_reader__set(
         &u_r,
         &iop_v_r,
@@ -48177,10 +48177,10 @@ wuffs_jpeg__decoder__decode_mcu_progressive_ac_low_bit(
   }
   {
     wuffs_base__io_buffer* o_0_v_r = v_r;
-    const uint8_t *o_0_iop_v_r = iop_v_r;
-    const uint8_t *o_0_io0_v_r = io0_v_r;
-    const uint8_t *o_0_io1_v_r = io1_v_r;
-    const uint8_t *o_0_io2_v_r = io2_v_r;
+    const uint8_t* o_0_iop_v_r = iop_v_r;
+    const uint8_t* o_0_io0_v_r = io0_v_r;
+    const uint8_t* o_0_io1_v_r = io1_v_r;
+    const uint8_t* o_0_io2_v_r = io2_v_r;
     v_r = wuffs_private_impl__io_reader__set(
         &u_r,
         &iop_v_r,
@@ -48433,10 +48433,10 @@ wuffs_jpeg__decoder__decode_mcu_progressive_dc_high_bits(
   }
   {
     wuffs_base__io_buffer* o_0_v_r = v_r;
-    const uint8_t *o_0_iop_v_r = iop_v_r;
-    const uint8_t *o_0_io0_v_r = io0_v_r;
-    const uint8_t *o_0_io1_v_r = io1_v_r;
-    const uint8_t *o_0_io2_v_r = io2_v_r;
+    const uint8_t* o_0_iop_v_r = iop_v_r;
+    const uint8_t* o_0_io0_v_r = io0_v_r;
+    const uint8_t* o_0_io1_v_r = io1_v_r;
+    const uint8_t* o_0_io2_v_r = io2_v_r;
     v_r = wuffs_private_impl__io_reader__set(
         &u_r,
         &iop_v_r,
@@ -48565,10 +48565,10 @@ wuffs_jpeg__decoder__decode_mcu_progressive_dc_low_bit(
   }
   {
     wuffs_base__io_buffer* o_0_v_r = v_r;
-    const uint8_t *o_0_iop_v_r = iop_v_r;
-    const uint8_t *o_0_io0_v_r = io0_v_r;
-    const uint8_t *o_0_io1_v_r = io1_v_r;
-    const uint8_t *o_0_io2_v_r = io2_v_r;
+    const uint8_t* o_0_iop_v_r = iop_v_r;
+    const uint8_t* o_0_io0_v_r = io0_v_r;
+    const uint8_t* o_0_io1_v_r = io1_v_r;
+    const uint8_t* o_0_io2_v_r = io2_v_r;
     v_r = wuffs_private_impl__io_reader__set(
         &u_r,
         &iop_v_r,
@@ -61476,10 +61476,10 @@ wuffs_png__decoder__decode_pass(
       }
       {
         wuffs_base__io_buffer* o_0_v_w = v_w;
-        uint8_t *o_0_iop_v_w = iop_v_w;
-        uint8_t *o_0_io0_v_w = io0_v_w;
-        uint8_t *o_0_io1_v_w = io1_v_w;
-        uint8_t *o_0_io2_v_w = io2_v_w;
+        uint8_t* o_0_iop_v_w = iop_v_w;
+        uint8_t* o_0_io0_v_w = io0_v_w;
+        uint8_t* o_0_io1_v_w = io1_v_w;
+        uint8_t* o_0_io2_v_w = io2_v_w;
         v_w = wuffs_private_impl__io_writer__set(
             &u_w,
             &iop_v_w,
@@ -61492,7 +61492,7 @@ wuffs_png__decoder__decode_pass(
             ((uint64_t)(self->private_impl.f_workbuf_hist_pos_base + self->private_impl.f_workbuf_wi)));
         {
           const bool o_1_closed_a_src = a_src->meta.closed;
-          const uint8_t *o_1_io2_a_src = io2_a_src;
+          const uint8_t* o_1_io2_a_src = io2_a_src;
           wuffs_private_impl__io_reader__limit(&io2_a_src, iop_a_src,
               ((uint64_t)(self->private_impl.f_chunk_length)));
           if (a_src) {
@@ -62088,7 +62088,7 @@ wuffs_png__decoder__do_tell_me_more(
           if (self->private_impl.f_chunk_type == 1346585449u) {
             {
               const bool o_0_closed_a_src = a_src->meta.closed;
-              const uint8_t *o_0_io2_a_src = io2_a_src;
+              const uint8_t* o_0_io2_a_src = io2_a_src;
               wuffs_private_impl__io_reader__limit(&io2_a_src, iop_a_src,
                   ((uint64_t)(self->private_impl.f_chunk_length)));
               if (a_src) {
@@ -62138,7 +62138,7 @@ wuffs_png__decoder__do_tell_me_more(
           } else if (self->private_impl.f_chunk_type == 1951945833u) {
             {
               const bool o_1_closed_a_src = a_src->meta.closed;
-              const uint8_t *o_1_io2_a_src = io2_a_src;
+              const uint8_t* o_1_io2_a_src = io2_a_src;
               wuffs_private_impl__io_reader__limit(&io2_a_src, iop_a_src,
                   ((uint64_t)(self->private_impl.f_chunk_length)));
               if (a_src) {
@@ -62189,10 +62189,10 @@ wuffs_png__decoder__do_tell_me_more(
             if (self->private_impl.f_ztxt_ri == self->private_impl.f_ztxt_wi) {
               {
                 wuffs_base__io_buffer* o_2_v_w = v_w;
-                uint8_t *o_2_iop_v_w = iop_v_w;
-                uint8_t *o_2_io0_v_w = io0_v_w;
-                uint8_t *o_2_io1_v_w = io1_v_w;
-                uint8_t *o_2_io2_v_w = io2_v_w;
+                uint8_t* o_2_iop_v_w = iop_v_w;
+                uint8_t* o_2_io0_v_w = io0_v_w;
+                uint8_t* o_2_io1_v_w = io1_v_w;
+                uint8_t* o_2_io2_v_w = io2_v_w;
                 v_w = wuffs_private_impl__io_writer__set(
                     &u_w,
                     &iop_v_w,
@@ -62203,7 +62203,7 @@ wuffs_png__decoder__do_tell_me_more(
                     self->private_impl.f_ztxt_hist_pos);
                 {
                   const bool o_3_closed_a_src = a_src->meta.closed;
-                  const uint8_t *o_3_io2_a_src = io2_a_src;
+                  const uint8_t* o_3_io2_a_src = io2_a_src;
                   wuffs_private_impl__io_reader__limit(&io2_a_src, iop_a_src,
                       ((uint64_t)(self->private_impl.f_chunk_length)));
                   if (a_src) {
