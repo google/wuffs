@@ -131,6 +131,39 @@ wuffs_xz_decode(wuffs_base__io_buffer* dst,
 }
 
 const char*  //
+wuffs_xz_decode_with_history(wuffs_base__io_buffer* dst,
+                             wuffs_base__io_buffer* src,
+                             uint32_t wuffs_initialize_flags,
+                             uint64_t wlimit,
+                             uint64_t rlimit) {
+  if (wlimit != UINT64_MAX) {
+    return "wuffs_xz_decode_with_history assumes wlimit == UINT64_MAX";
+  }
+
+  wuffs_xz__decoder dec;
+  CHECK_STATUS("initialize",
+               wuffs_xz__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION,
+                                             wuffs_initialize_flags));
+
+  while (true) {
+    wuffs_base__io_buffer limited_src = make_limited_reader(*src, rlimit);
+
+    // Compared to wuffs_xz_decode, wuffs_xz_decode_with_history passes dst
+    // directly, not limited_dst (which has no history).
+    wuffs_base__status status = wuffs_xz__decoder__transform_io(
+        &dec, dst, &limited_src, g_work_slice_u8);
+
+    src->meta.ri += limited_src.meta.ri;
+
+    if (((rlimit < UINT64_MAX) &&
+         (status.repr == wuffs_base__suspension__short_read))) {
+      continue;
+    }
+    return status.repr;
+  }
+}
+
+const char*  //
 test_wuffs_xz_decode_enwik5() {
   CHECK_FOCUS(__func__);
   return do_test_io_buffers(wuffs_xz_decode, &g_xz_enwik5_gt, UINT64_MAX,
@@ -138,10 +171,17 @@ test_wuffs_xz_decode_enwik5() {
 }
 
 const char*  //
-test_wuffs_xz_decode_one_byte_reads() {
+test_wuffs_xz_decode_one_byte_reads_sans_history() {
   CHECK_FOCUS(__func__);
   return do_test_io_buffers(wuffs_xz_decode, &g_xz_romeo_delta1_gt, UINT64_MAX,
                             1);
+}
+
+const char*  //
+test_wuffs_xz_decode_one_byte_reads_with_history() {
+  CHECK_FOCUS(__func__);
+  return do_test_io_buffers(wuffs_xz_decode_with_history, &g_xz_romeo_delta1_gt,
+                            UINT64_MAX, 1);
 }
 
 const char*  //
@@ -201,7 +241,8 @@ proc g_tests[] = {
 
     test_wuffs_xz_decode_enwik5,
     test_wuffs_xz_decode_interface,
-    test_wuffs_xz_decode_one_byte_reads,
+    test_wuffs_xz_decode_one_byte_reads_sans_history,
+    test_wuffs_xz_decode_one_byte_reads_with_history,
     test_wuffs_xz_decode_romeo,
 
 #ifdef WUFFS_MIMIC

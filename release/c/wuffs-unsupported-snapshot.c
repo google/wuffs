@@ -67290,19 +67290,41 @@ wuffs_xz__decoder__do_transform_io(
           }
         } else {
           {
+            uint8_t* o_0_io0_a_dst = io0_a_dst;
+            uint8_t* o_0_io1_a_dst = io1_a_dst;
+            io0_a_dst = iop_a_dst;
+            io1_a_dst = iop_a_dst;
+            wuffs_base__io_buffer o_0_a_dst;
             if (a_dst) {
+              memcpy(&o_0_a_dst, a_dst, sizeof(*a_dst));
+              size_t wi0 = a_dst->meta.wi;
+              a_dst->data.ptr += wi0;
+              a_dst->data.len -= wi0;
+              a_dst->meta.ri = 0;
+              a_dst->meta.wi = 0;
+              a_dst->meta.pos = wuffs_base__u64__sat_add(a_dst->meta.pos, wi0);
+            }
+            {
+              if (a_dst) {
+                a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
+              }
+              if (a_src) {
+                a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+              }
+              wuffs_base__status t_5 = wuffs_lzma__decoder__transform_io(&self->private_data.f_lzma, a_dst, a_src, a_workbuf);
+              v_status = t_5;
+              if (a_dst) {
+                iop_a_dst = a_dst->data.ptr + a_dst->meta.wi;
+              }
+              if (a_src) {
+                iop_a_src = a_src->data.ptr + a_src->meta.ri;
+              }
+            }
+            if (a_dst) {
+              memcpy(a_dst, &o_0_a_dst, sizeof(*a_dst));
               a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
-            }
-            if (a_src) {
-              a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
-            }
-            wuffs_base__status t_5 = wuffs_lzma__decoder__transform_io(&self->private_data.f_lzma, a_dst, a_src, a_workbuf);
-            v_status = t_5;
-            if (a_dst) {
-              iop_a_dst = a_dst->data.ptr + a_dst->meta.wi;
-            }
-            if (a_src) {
-              iop_a_src = a_src->data.ptr + a_src->meta.ri;
+              io0_a_dst = o_0_io0_a_dst;
+              io1_a_dst = o_0_io1_a_dst;
             }
           }
           wuffs_xz__decoder__apply_non_final_filters(self, wuffs_private_impl__io__since(v_dmark, ((uint64_t)(iop_a_dst - io0_a_dst)), io0_a_dst));

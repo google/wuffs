@@ -347,6 +347,46 @@ func (g *gen) writeStatementIOManip(b *buffer, n *a.IOManip, depth uint32) error
 			}
 			b.writes(");\n")
 
+		} else if keyword == t.IDIOForgetHistory {
+			if !isWriter {
+				return fmt.Errorf("unsupported io_forget_history for an io_reader")
+			}
+			b.printf("%suint8_t* %s%d_%s%s%s = %s%s%s;\n",
+				qualifier, oPrefix, ioBindNum, io0Prefix, prefix, name,
+				io0Prefix, prefix, name)
+			b.printf("%suint8_t* %s%d_%s%s%s = %s%s%s;\n",
+				qualifier, oPrefix, ioBindNum, io1Prefix, prefix, name,
+				io1Prefix, prefix, name)
+			b.printf("%s%s%s = %s%s%s;\n",
+				io0Prefix, prefix, name, iopPrefix, prefix, name)
+			b.printf("%s%s%s = %s%s%s;\n",
+				io1Prefix, prefix, name, iopPrefix, prefix, name)
+			b.printf("wuffs_base__io_buffer %s%d_%s%s;\n",
+				oPrefix, ioBindNum, prefix, name)
+			b.printf("if (%s%s) {\n",
+				prefix, name)
+			if isWriter {
+				b.printf("memcpy(&%s%d_%s%s, %s%s, sizeof(*%s%s));\n",
+					oPrefix, ioBindNum, prefix, name,
+					prefix, name,
+					prefix, name)
+				b.printf("size_t wi%d = %s%s->meta.wi;\n",
+					ioBindNum, prefix, name)
+				b.printf("%s%s->data.ptr += wi%d;\n",
+					prefix, name, ioBindNum)
+				b.printf("%s%s->data.len -= wi%d;\n",
+					prefix, name, ioBindNum)
+				b.printf("%s%s->meta.ri = 0;\n",
+					prefix, name)
+				b.printf("%s%s->meta.wi = 0;\n",
+					prefix, name)
+				b.printf("%s%s->meta.pos = wuffs_base__u64__sat_add(%s%s->meta.pos, wi%d);\n",
+					prefix, name, prefix, name, ioBindNum)
+			} else {
+				// TODO.
+			}
+			b.printf("}\n")
+
 		} else {
 			if !isWriter {
 				b.printf("const bool %s%d_closed_%s%s = %s%s->meta.closed;\n",
@@ -399,13 +439,36 @@ func (g *gen) writeStatementIOManip(b *buffer, n *a.IOManip, depth uint32) error
 				io2Prefix, prefix, name,
 				oPrefix, ioBindNum, io2Prefix, prefix, name)
 
+		} else if keyword == t.IDIOForgetHistory {
+			b.printf("if (%s%s) {\n",
+				prefix, name)
+			if isWriter {
+				b.printf("memcpy(%s%s, &%s%d_%s%s, sizeof(*%s%s));\n",
+					prefix, name,
+					oPrefix, ioBindNum, prefix, name,
+					prefix, name)
+				b.printf("%s%s->meta.wi = ((size_t)(%s%s%s - %s%s->data.ptr));\n",
+					prefix, name, iopPrefix, prefix, name, prefix, name)
+				b.printf("%s%s%s = %s%d_%s%s%s;\n",
+					io0Prefix, prefix, name,
+					oPrefix, ioBindNum, io0Prefix, prefix, name)
+				b.printf("%s%s%s = %s%d_%s%s%s;\n",
+					io1Prefix, prefix, name,
+					oPrefix, ioBindNum, io1Prefix, prefix, name)
+			} else {
+				// TODO.
+			}
+			b.printf("}\n")
+
 		} else {
 			b.printf("%s%s%s = %s%d_%s%s%s;\n",
 				io2Prefix, prefix, name,
 				oPrefix, ioBindNum, io2Prefix, prefix, name)
 			b.printf("if (%s%s) {\n", prefix, name)
-			b.printf("%s%s->meta.closed = %s%d_closed_%s%s;\n",
-				prefix, name, oPrefix, ioBindNum, prefix, name)
+			if !isWriter {
+				b.printf("%s%s->meta.closed = %s%d_closed_%s%s;\n",
+					prefix, name, oPrefix, ioBindNum, prefix, name)
+			}
 			b.printf("%s%s->%s = ((size_t)(%s%s%s - %s%s->data.ptr));\n",
 				prefix, name, end,
 				io2Prefix, prefix, name,

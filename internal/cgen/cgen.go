@@ -50,7 +50,7 @@ const (
 	aPrefix = "a_" // Function argument.
 	fPrefix = "f_" // Struct field.
 	iPrefix = "i_" // Iterate variable.
-	oPrefix = "o_" // Temporary io_bind variable.
+	oPrefix = "o_" // Temporary IOManip variable.
 	pPrefix = "p_" // Coroutine suspension point (program counter).
 	sPrefix = "s_" // Coroutine stack (saved local variables).
 	tPrefix = "t_" // Temporary local variable.
@@ -67,10 +67,12 @@ const (
 // The other two prefixes, giving names like io1_etc and io2_etc, are auxiliary
 // pointers: lower and upper inclusive bounds. As an iop_etc pointer advances,
 // it cannot advance past io2_etc. In the rarer case that an iop_etc pointer
-// retreats, undoing a read or write, it cannot retreat past io1_etc.
+// retreats, undoing a read or write, it cannot retreat past io1_etc. The
+// io0_etc pointer is used to calculate the history_length and is the base that
+// marks are relative to.
 //
 // The iop_etc pointer can change over the lifetime of a function. The ioN_etc
-// pointers, for numeric N, cannot.
+// pointers, for numeric N, cannot (except by IOManip blocks).
 //
 // At the start of a function, these pointers are initialized from an
 // io_buffer's fields (ptr, ri, wi, len). For an io_reader:
