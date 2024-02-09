@@ -8,7 +8,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pri func decoder.apply_non_final_filters!(dst_slice: slice base.u8) {
+pri func decoder.apply_non_final_filters!(dst_slice: slice base.u8) base.u8,
+        choosy,
+{
     var f          : base.u32[..= 2]
     var i          : base.u64
     var filter_id  : base.u32[..= 0x7F]
@@ -17,7 +19,7 @@ pri func decoder.apply_non_final_filters!(dst_slice: slice base.u8) {
     var c8         : base.u8
 
     if this.num_non_final_filters <= 0 {
-        return nothing
+        return 0
     }
     f = this.num_non_final_filters - 1
 
@@ -45,4 +47,9 @@ pri func decoder.apply_non_final_filters!(dst_slice: slice base.u8) {
         }
         f -= 1
     } endwhile
+    return 0
+}
+
+pri func decoder.apply_filter_07_arm!(dst_slice: slice base.u8) base.u8 {
+    return 0
 }

@@ -25,6 +25,9 @@ pub status "#bad padding"
 pub status "#truncated input"
 pub status "#unsupported checksum algorithm"
 pub status "#unsupported filter"
+pub status "#unsupported filter combination"
+
+pri status "#internal error: inconsistent BCJ filter state"
 
 pub const DECODER_DST_HISTORY_RETAIN_LENGTH_MAX_INCL_WORST_CASE : base.u64 = 0
 pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE               : base.u64 = 0xFFFF_FFFF + 273
@@ -40,6 +43,8 @@ pub struct decoder? implements base.io_transformer(
         checksummer : base.u32[..= 3],
 
         ignore_checksum : base.bool,
+
+        bcj_undo_index : base.u8,
 
         block_has_compressed_size   : base.bool,
         block_has_uncompressed_size : base.bool,
@@ -97,6 +102,7 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
     var magic             : base.u64
     var dmark             : base.u64
     var smark             : base.u64
+    var i8                : base.u8
     var status            : base.status
     var checksum32_have   : base.u32
     var checksum32_want   : base.u32
@@ -174,18 +180,43 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
         compressed_size = 0
         uncompressed_size = 0
         while true {
+            if (this.bcj_undo_index as base.u64) > args.dst.length() {
+                yield? base."$short write"
+                continue
+            }
+
             dmark = args.dst.mark()
             smark = args.src.mark()
             if this.num_non_final_filters == 0 {
                 status =? this.lzma.transform_io?(dst: args.dst, src: args.src, workbuf: args.workbuf)
             } else {
+                if this.bcj_undo_index > 0 {
+                    args.dst.copy_from_slice!(s: this.filter_data[0][.. this.bcj_undo_index])
+                    this.bcj_undo_index = 0
+                }
+
                 // The non-final filters will modify the args.dst contents so
                 // that its history isn't what this.lzma considers its
                 // (unfiltered) history.
                 io_forget_history (io: args.dst) {
                     status =? this.lzma.transform_io?(dst: args.dst, src: args.src, workbuf: args.workbuf)
                 }
-                this.apply_non_final_filters!(dst_slice: args.dst.since(mark: dmark))
+
+                this.bcj_undo_index = this.apply_non_final_filters!(dst_slice: args.dst.since(mark: dmark))
+                if (this.bcj_undo_index > 0) and (not status.is_ok()) {
+                    i8 = this.bcj_undo_index - 1
+                    while true {
+                        if not args.dst.can_undo_byte() {
+                            return "#internal error: inconsistent BCJ filter state"
+                        }
+                        this.filter_data[0][i8] = args.dst.peek_undo_byte()
+                        args.dst.undo_byte!()
+                        if i8 <= 0 {
+                            break
+                        }
+                        i8 -= 1
+                    } endwhile
+                }
             }
             compressed_size ~mod+= args.src.count_since(mark: smark)
             uncompressed_size ~mod+= args.dst.count_since(mark: dmark)
@@ -353,6 +384,7 @@ pri func decoder.decode_block_header_sans_padding?(src: base.io_reader) {
 
     // Configure the non-final filters.
 
+    choose apply_non_final_filters = [apply_non_final_filters]
     f = 0
     while f < this.num_non_final_filters {
         assert f < 3 via "a < b: a < c; c <= b"(c: this.num_non_final_filters)
@@ -378,8 +410,25 @@ pri func decoder.decode_block_header_sans_padding?(src: base.io_reader) {
                 k += 1
             } endwhile
 
-        } else {
+        } else if (filter_id < 0x03) or (0x0A < filter_id) {
             return "#unsupported filter"
+        } else if f <> 0 {
+            // We only support BCJ (Branch, Call, Jump) filters if they're the
+            // only filter (other than LZMA2). This simplifies their undo_byte
+            // interaction with I/O suspension.
+            return "#unsupported filter combination"
+        } else {
+            this.filters[f] = filter_id as base.u32
+            if filter_id == 0x07 {
+                choose apply_non_final_filters = [apply_filter_07_arm]
+            } else {
+                return "#unsupported filter"
+            }
+            // We only support a zero BCJ offset.
+            c8 = args.src.read_u8?()
+            if c8 <> 0x00 {
+                return "#unsupported filter"
+            }
         }
 
         f += 1

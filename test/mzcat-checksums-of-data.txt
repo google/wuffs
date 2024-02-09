@@ -7,6 +7,7 @@ OK. b19df306 test/data/archive.tar.bz2
 OK. b19df306 test/data/archive.tar.gz
 OK. 6ddef9db test/data/artificial-bzip2/abraca.txt.bz2
 OK. 6ddef9db test/data/artificial-bzip2/huffman-258.bz2
+BAD 07100884 test/data/artificial-xz-filter/xz-filter-07-9a3fb8ae-arm.dat.xz
 OK. acef87f1 test/data/enwik5.lzma
 OK. acef87f1 test/data/enwik5.xz
 OK. 3db2cdc6 test/data/midsummer.txt.bz2
