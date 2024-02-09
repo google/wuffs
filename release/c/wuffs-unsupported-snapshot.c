@@ -66760,6 +66760,12 @@ WUFFS_XZ__CHECKSUM_LENGTH[4] WUFFS_BASE__POTENTIALLY_UNUSED = {
 // ---------------- Private Function Prototypes
 
 WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_xz__decoder__apply_non_final_filters(
+    wuffs_xz__decoder* self,
+    wuffs_base__slice_u8 a_dst_slice);
+
+WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__status
 wuffs_xz__decoder__do_transform_io(
     wuffs_xz__decoder* self,
@@ -66778,12 +66784,6 @@ static wuffs_base__status
 wuffs_xz__decoder__decode_block_header_sans_padding(
     wuffs_xz__decoder* self,
     wuffs_base__io_buffer* a_src);
-
-WUFFS_BASE__GENERATED_C_CODE
-static wuffs_base__empty_struct
-wuffs_xz__decoder__apply_non_final_filters(
-    wuffs_xz__decoder* self,
-    wuffs_base__slice_u8 a_dst_slice);
 
 // ---------------- VTables
 
@@ -66900,6 +66900,56 @@ sizeof__wuffs_xz__decoder(void) {
 }
 
 // ---------------- Function Implementations
+
+// -------- func xz.decoder.apply_non_final_filters
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_xz__decoder__apply_non_final_filters(
+    wuffs_xz__decoder* self,
+    wuffs_base__slice_u8 a_dst_slice) {
+  uint32_t v_f = 0;
+  uint64_t v_i = 0;
+  uint32_t v_filter_id = 0;
+  uint32_t v_delta_dist = 0;
+  uint32_t v_delta_pos = 0;
+  uint8_t v_c8 = 0;
+
+  if (self->private_impl.f_num_non_final_filters <= 0u) {
+    return wuffs_base__make_empty_struct();
+  }
+  v_f = (self->private_impl.f_num_non_final_filters - 1u);
+  while (true) {
+    v_filter_id = (self->private_impl.f_filters[v_f] & 127u);
+    if (v_filter_id == 3u) {
+      v_delta_dist = (((self->private_impl.f_filters[v_f] >> 8u) & 255u) + 1u);
+      v_delta_pos = (self->private_impl.f_filters[v_f] >> 24u);
+      v_i = 0u;
+      while (v_i < ((uint64_t)(a_dst_slice.len))) {
+        v_c8 = a_dst_slice.ptr[v_i];
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
+#endif
+        v_c8 += self->private_data.f_filter_data[v_f][(((uint32_t)(v_delta_dist + v_delta_pos)) & 255u)];
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
+        self->private_data.f_filter_data[v_f][(v_delta_pos & 255u)] = v_c8;
+        v_delta_pos -= 1u;
+        a_dst_slice.ptr[v_i] = v_c8;
+        v_i += 1u;
+      }
+      self->private_impl.f_filters[v_f] &= 65535u;
+      self->private_impl.f_filters[v_f] |= ((uint32_t)(v_delta_pos << 24u));
+    }
+    if (v_f <= 0u) {
+      break;
+    }
+    v_f -= 1u;
+  }
+  return wuffs_base__make_empty_struct();
+}
 
 // -------- func xz.decoder.get_quirk
 
@@ -67934,56 +67984,6 @@ wuffs_xz__decoder__decode_block_header_sans_padding(
   }
 
   return status;
-}
-
-// -------- func xz.decoder.apply_non_final_filters
-
-WUFFS_BASE__GENERATED_C_CODE
-static wuffs_base__empty_struct
-wuffs_xz__decoder__apply_non_final_filters(
-    wuffs_xz__decoder* self,
-    wuffs_base__slice_u8 a_dst_slice) {
-  uint32_t v_f = 0;
-  uint64_t v_i = 0;
-  uint32_t v_filter_id = 0;
-  uint32_t v_delta_dist = 0;
-  uint32_t v_delta_pos = 0;
-  uint8_t v_c8 = 0;
-
-  if (self->private_impl.f_num_non_final_filters <= 0u) {
-    return wuffs_base__make_empty_struct();
-  }
-  v_f = (self->private_impl.f_num_non_final_filters - 1u);
-  while (true) {
-    v_filter_id = (self->private_impl.f_filters[v_f] & 127u);
-    if (v_filter_id == 3u) {
-      v_delta_dist = (((self->private_impl.f_filters[v_f] >> 8u) & 255u) + 1u);
-      v_delta_pos = (self->private_impl.f_filters[v_f] >> 24u);
-      v_i = 0u;
-      while (v_i < ((uint64_t)(a_dst_slice.len))) {
-        v_c8 = a_dst_slice.ptr[v_i];
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
-        v_c8 += self->private_data.f_filter_data[v_f][(((uint32_t)(v_delta_dist + v_delta_pos)) & 255u)];
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-        self->private_data.f_filter_data[v_f][(v_delta_pos & 255u)] = v_c8;
-        v_delta_pos -= 1u;
-        a_dst_slice.ptr[v_i] = v_c8;
-        v_i += 1u;
-      }
-      self->private_impl.f_filters[v_f] &= 65535u;
-      self->private_impl.f_filters[v_f] |= ((uint32_t)(v_delta_pos << 24u));
-    }
-    if (v_f <= 0u) {
-      break;
-    }
-    v_f -= 1u;
-  }
-  return wuffs_base__make_empty_struct();
 }
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__XZ)

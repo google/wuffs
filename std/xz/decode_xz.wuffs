@@ -411,45 +411,6 @@ pri func decoder.decode_block_header_sans_padding?(src: base.io_reader) {
     }
 }
 
-pri func decoder.apply_non_final_filters!(dst_slice: slice base.u8) {
-    var f          : base.u32[..= 2]
-    var i          : base.u64
-    var filter_id  : base.u32[..= 0x7F]
-    var delta_dist : base.u32[..= 0x100]
-    var delta_pos  : base.u32
-    var c8         : base.u8
-
-    if this.num_non_final_filters <= 0 {
-        return nothing
-    }
-    f = this.num_non_final_filters - 1
-
-    while true {
-        filter_id = this.filters[f] & 0x7F
-        if filter_id == 0x03 {  // Delta.
-            delta_dist = ((this.filters[f] >> 8) & 0xFF) + 1
-            delta_pos = this.filters[f] >> 24
-            i = 0
-            while i < args.dst_slice.length() {
-                assert i < 0xFFFF_FFFF_FFFF_FFFF via "a < b: a < c; c <= b"(c: args.dst_slice.length())
-                c8 = args.dst_slice[i]
-                c8 ~mod+= this.filter_data[f][(delta_dist ~mod+ delta_pos) & 0xFF]
-                this.filter_data[f][delta_pos & 0xFF] = c8
-                delta_pos ~mod-= 1
-                args.dst_slice[i] = c8
-                i += 1
-            } endwhile
-            this.filters[f] &= 0xFFFF
-            this.filters[f] |= (delta_pos ~mod<< 24)
-        }
-
-        if f <= 0 {
-            break
-        }
-        f -= 1
-    } endwhile
-}
-
 pri const CHECKSUM_LENGTH : roarray[4] base.u8 = [
         0x00,  // 0: None.
         0x04,  // 1: CRC-32.
