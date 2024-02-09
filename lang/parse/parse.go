@@ -858,7 +858,7 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 		}
 		return a.NewChoose(name, args).AsNode(), nil
 
-	case t.IDIOBind, t.IDIOLimit:
+	case t.IDIOBind, t.IDIOForgetHistory, t.IDIOLimit:
 		return p.parseIOManipNode()
 
 	case t.IDIf:
@@ -1087,6 +1087,8 @@ func (p *parser) parseIOManipNode() (*a.Node, error) {
 			return nil, fmt.Errorf(`parse: invalid %s argument %q at %s:%d`,
 				keyword.Str(p.tm), io.Str(p.tm), p.filename, p.line())
 		}
+	case t.IDIOForgetHistory:
+		// No-op.
 	case t.IDIOLimit:
 		arg1Name = t.IDLimit
 		if (io.Operator() != 0) && (io.IsArgsDotFoo() == 0) {

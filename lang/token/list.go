@@ -368,32 +368,33 @@ const (
 	minKeyword = 0xB0
 	maxKeyword = 0xCF
 
-	IDAssert     = ID(0xB0)
-	IDBreak      = ID(0xB1)
-	IDChoose     = ID(0xB2)
-	IDChoosy     = ID(0xB3)
-	IDConst      = ID(0xB4)
-	IDContinue   = ID(0xB5)
-	IDElse       = ID(0xB6)
-	IDEndwhile   = ID(0xB7)
-	IDFunc       = ID(0xB8)
-	IDIOBind     = ID(0xB9)
-	IDIOLimit    = ID(0xBA)
-	IDIf         = ID(0xBB)
-	IDImplements = ID(0xBC)
-	IDInv        = ID(0xBD)
-	IDIterate    = ID(0xBE)
-	IDPost       = ID(0xBF)
-	IDPre        = ID(0xC0)
-	IDPri        = ID(0xC1)
-	IDPub        = ID(0xC2)
-	IDReturn     = ID(0xC3)
-	IDStruct     = ID(0xC4)
-	IDUse        = ID(0xC5)
-	IDVar        = ID(0xC6)
-	IDVia        = ID(0xC7)
-	IDWhile      = ID(0xC8)
-	IDYield      = ID(0xC9)
+	IDAssert          = ID(0xB0)
+	IDBreak           = ID(0xB1)
+	IDChoose          = ID(0xB2)
+	IDChoosy          = ID(0xB3)
+	IDConst           = ID(0xB4)
+	IDContinue        = ID(0xB5)
+	IDElse            = ID(0xB6)
+	IDEndwhile        = ID(0xB7)
+	IDFunc            = ID(0xB8)
+	IDIOBind          = ID(0xB9)
+	IDIOForgetHistory = ID(0xBA)
+	IDIOLimit         = ID(0xBB)
+	IDIf              = ID(0xBC)
+	IDImplements      = ID(0xBD)
+	IDInv             = ID(0xBE)
+	IDIterate         = ID(0xBF)
+	IDPost            = ID(0xC0)
+	IDPre             = ID(0xC1)
+	IDPri             = ID(0xC2)
+	IDPub             = ID(0xC3)
+	IDReturn          = ID(0xC4)
+	IDStruct          = ID(0xC5)
+	IDUse             = ID(0xC6)
+	IDVar             = ID(0xC7)
+	IDVia             = ID(0xC8)
+	IDWhile           = ID(0xC9)
+	IDYield           = ID(0xCA)
 )
 
 const (
@@ -816,32 +817,33 @@ var builtInsByID = [nBuiltInIDs]string{
 
 	IDNot: "not",
 
-	IDAssert:     "assert",
-	IDBreak:      "break",
-	IDChoose:     "choose",
-	IDChoosy:     "choosy",
-	IDConst:      "const",
-	IDContinue:   "continue",
-	IDElse:       "else",
-	IDEndwhile:   "endwhile",
-	IDFunc:       "func",
-	IDIOBind:     "io_bind",
-	IDIOLimit:    "io_limit",
-	IDIf:         "if",
-	IDImplements: "implements",
-	IDInv:        "inv",
-	IDIterate:    "iterate",
-	IDPost:       "post",
-	IDPre:        "pre",
-	IDPri:        "pri",
-	IDPub:        "pub",
-	IDReturn:     "return",
-	IDStruct:     "struct",
-	IDUse:        "use",
-	IDVar:        "var",
-	IDVia:        "via",
-	IDWhile:      "while",
-	IDYield:      "yield",
+	IDAssert:          "assert",
+	IDBreak:           "break",
+	IDChoose:          "choose",
+	IDChoosy:          "choosy",
+	IDConst:           "const",
+	IDContinue:        "continue",
+	IDElse:            "else",
+	IDEndwhile:        "endwhile",
+	IDFunc:            "func",
+	IDIOBind:          "io_bind",
+	IDIOForgetHistory: "io_forget_history",
+	IDIOLimit:         "io_limit",
+	IDIf:              "if",
+	IDImplements:      "implements",
+	IDInv:             "inv",
+	IDIterate:         "iterate",
+	IDPost:            "post",
+	IDPre:             "pre",
+	IDPri:             "pri",
+	IDPub:             "pub",
+	IDReturn:          "return",
+	IDStruct:          "struct",
+	IDUse:             "use",
+	IDVar:             "var",
+	IDVia:             "via",
+	IDWhile:           "while",
+	IDYield:           "yield",
 
 	IDArray:   "array",
 	IDNptr:    "nptr",

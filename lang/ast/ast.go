@@ -607,8 +607,9 @@ func NewField(flags Flags, name t.ID, xType *TypeExpr) *Field {
 }
 
 // IOManip is "io_bind (io:LHS, data:MHS, history_position:RHS) { List2 }" or
-// "io_limit (io:LHS, limit:MHS) { List2 }":
-//   - ID0:   <IDIOBind|IDIOLimit>
+// "io_forget_history (io:LHS) { List2 }" or "io_limit (io:LHS, limit:MHS) {
+// List2 }":
+//   - ID0:   <IDIOBind|IDIOForgetHistory|IDIOLimit>
 //   - LHS:   <Expr>
 //   - MHS:   <Expr>
 //   - RHS:   <Expr>

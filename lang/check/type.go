@@ -164,6 +164,8 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 		switch n.Keyword() {
 		case t.IDIOBind:
 			arg1Typ = typeExprSliceU8
+		case t.IDIOForgetHistory:
+			// No-op.
 		case t.IDIOLimit:
 			arg1Typ = typeExprU64
 		}

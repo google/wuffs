@@ -40,6 +40,7 @@ The dot points below probably aren't of interest unless you're _writing_ Wuffs
 code (instead of writing C/C++ code that _uses_ Wuffs' standard library).
 
 - Added `if.likely` and `if.unlikely`.
+- Added `io_forget_history`.
 - Added `slice_var as nptr array[etc] etc` conversion.
 - Added read-only type decorators: `roarray`, `roslice` and `rotable`.
 - Ban recursive function calls.
