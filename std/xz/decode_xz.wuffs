@@ -176,13 +176,14 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
         while true {
             dmark = args.dst.mark()
             smark = args.src.mark()
-            status =? this.lzma.transform_io?(dst: args.dst, src: args.src, workbuf: args.workbuf)
-            compressed_size ~mod+= args.src.count_since(mark: smark)
-            uncompressed_size ~mod+= args.dst.count_since(mark: dmark)
-
-            if this.num_non_final_filters <> 0 {
+            if this.num_non_final_filters == 0 {
+                status =? this.lzma.transform_io?(dst: args.dst, src: args.src, workbuf: args.workbuf)
+            } else {
+                status =? this.lzma.transform_io?(dst: args.dst, src: args.src, workbuf: args.workbuf)
                 this.apply_non_final_filters!(dst_slice: args.dst.since(mark: dmark))
             }
+            compressed_size ~mod+= args.src.count_since(mark: smark)
+            uncompressed_size ~mod+= args.dst.count_since(mark: dmark)
 
             if this.ignore_checksum {
                 // No-op.
