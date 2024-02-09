@@ -71,12 +71,16 @@ It should print "PASS", amongst other information, and exit(0).
 #include "../../../release/c/wuffs-unsupported-snapshot.c"
 #include "../fuzzlib/fuzzlib.c"
 
-// 4 MiB.
-#define DST_BUFFER_ARRAY_SIZE 4194304
+// 64 KiB.
+#define DST_BUFFER_ARRAY_SIZE 65536
 
 // Wuffs allows either statically or dynamically allocated work buffers. This
 // program exercises static allocation.
-#define WORK_BUFFER_ARRAY_SIZE WUFFS_XZ__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE
+//
+// We hard-code 64 MiB, as WUFFS_XZ__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE
+// can be over 4 GiB. Using it can cause "relocation truncated to fit:
+// R_X86_64_PC32 against symbol etc" compiler errors.
+#define WORK_BUFFER_ARRAY_SIZE 67108864
 #if WORK_BUFFER_ARRAY_SIZE > 0
 uint8_t g_work_buffer_array[WORK_BUFFER_ARRAY_SIZE];
 #else
