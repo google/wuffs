@@ -84,6 +84,15 @@ func (z *facts) appendFact(fact *a.Expr) {
 	*z = append(*z, fact)
 }
 
+func (z *facts) dropAnyFactsMentioning(n *a.Expr) error {
+	return z.update(func(x *a.Expr) (*a.Expr, error) {
+		if x.Mentions(n) {
+			return nil, nil
+		}
+		return x, nil
+	})
+}
+
 // update applies f to each fact, replacing the slice element with the result
 // of the function call. The slice is then compacted to remove all nils.
 func (z *facts) update(f func(*a.Expr) (*a.Expr, error)) error {

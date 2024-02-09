@@ -275,10 +275,11 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 				return err
 			}
 		}
+		q.facts.dropAnyFactsMentioning(n.IO())
 		if err := q.bcheckBlock(n.Body()); err != nil {
 			return err
 		}
-		// TODO: invalidate any facts regarding the io_bind expressions.
+		q.facts.dropAnyFactsMentioning(n.IO())
 
 	case a.KIf:
 		if err := q.bcheckIf(n.AsIf()); err != nil {
@@ -509,13 +510,7 @@ func (q *checker) bcheckAssignment(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 	}
 
 	if op == t.IDEq {
-		// Drop any facts involving lhs.
-		if err := q.facts.update(func(x *a.Expr) (*a.Expr, error) {
-			if x.Mentions(lhs) {
-				return nil, nil
-			}
-			return x, nil
-		}); err != nil {
+		if err := q.facts.dropAnyFactsMentioning(lhs); err != nil {
 			return err
 		}
 
