@@ -25,6 +25,7 @@ Supported compression formats:
 - gzip
 - lzma
 - xz
+- zlib
 */
 
 #include <errno.h>
@@ -56,6 +57,7 @@ Supported compression formats:
 // modules we use makes that process explicit. Preprocessing means that such
 // code simply isn't compiled.
 #define WUFFS_CONFIG__MODULES
+#define WUFFS_CONFIG__MODULE__ADLER32
 #define WUFFS_CONFIG__MODULE__BASE
 #define WUFFS_CONFIG__MODULE__BZIP2
 #define WUFFS_CONFIG__MODULE__CRC32
@@ -65,6 +67,7 @@ Supported compression formats:
 #define WUFFS_CONFIG__MODULE__LZMA
 #define WUFFS_CONFIG__MODULE__SHA256
 #define WUFFS_CONFIG__MODULE__XZ
+#define WUFFS_CONFIG__MODULE__ZLIB
 
 // If building this program in an environment that doesn't easily accommodate
 // relative includes, you can use the script/inline-c-relative-includes.go
@@ -106,6 +109,7 @@ union {
   wuffs_gzip__decoder gzip;
   wuffs_lzma__decoder lzma;
   wuffs_xz__decoder xz;
+  wuffs_zlib__decoder zlib;
 } g_potential_decoders;
 
 // ----
@@ -194,6 +198,15 @@ initialize_io_transformer(uint8_t input_first_byte) {
       io_transformer =
           wuffs_lzma__decoder__upcast_as__wuffs_base__io_transformer(
               &g_potential_decoders.lzma);
+      break;
+
+    case 0x78:
+      status = wuffs_zlib__decoder__initialize(
+          &g_potential_decoders.zlib, sizeof g_potential_decoders.zlib,
+          WUFFS_VERSION, WUFFS_INITIALIZE__DEFAULT_OPTIONS);
+      io_transformer =
+          wuffs_zlib__decoder__upcast_as__wuffs_base__io_transformer(
+              &g_potential_decoders.zlib);
       break;
 
     case 0xFD:
