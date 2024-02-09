@@ -96,7 +96,7 @@ func main1() error {
 		data := ([]byte)(nil)
 		data = append(data, src[:pos]...)
 		data = append(data, "\xFF\xD9"...) // Append an EOI marker.
-		if err := os.WriteFile(outName, data, 0666); err != nil {
+		if err := os.WriteFile(outName, data, 0644); err != nil {
 			return err
 		}
 		fmt.Printf("Wrote %s (cut at 0x%08X = %6d bytes).\n", outName, pos, pos)

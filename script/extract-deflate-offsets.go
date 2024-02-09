@@ -127,7 +127,7 @@ func doWriteDeflate(deflateCompressed []byte, uncompressed []byte, filename stri
 		filename = filename[:len(filename)-3]
 	}
 	filename += ".deflate"
-	if err := os.WriteFile(filename, deflateCompressed, 0666); err != nil {
+	if err := os.WriteFile(filename, deflateCompressed, 0644); err != nil {
 		return err
 	}
 	fmt.Printf("wrote %s\n", filename)
@@ -167,7 +167,7 @@ func doWriteZlib(deflateCompressed []byte, uncompressed []byte, filename string)
 		filename = filename[:len(filename)-3]
 	}
 	filename += ".zlib"
-	if err := os.WriteFile(filename, asZlib, 0666); err != nil {
+	if err := os.WriteFile(filename, asZlib, 0644); err != nil {
 		return err
 	}
 	fmt.Printf("wrote %s\n", filename)
