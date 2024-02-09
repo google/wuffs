@@ -265,8 +265,10 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 		if _, err := q.bcheckExpr(n.IO(), 0); err != nil {
 			return err
 		}
-		if _, err := q.bcheckExpr(n.Arg1(), 0); err != nil {
-			return err
+		if arg1 := n.Arg1(); arg1 != nil {
+			if _, err := q.bcheckExpr(arg1, 0); err != nil {
+				return err
+			}
 		}
 		if histPos := n.HistoryPosition(); histPos != nil {
 			if _, err := q.bcheckExpr(histPos, 0); err != nil {

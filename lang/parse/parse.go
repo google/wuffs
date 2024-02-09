@@ -1080,13 +1080,14 @@ func (p *parser) parseIOManipNode() (*a.Node, error) {
 	}
 
 	arg1Name := t.ID(0)
-	if keyword == t.IDIOBind {
+	switch keyword {
+	case t.IDIOBind:
 		arg1Name = t.IDData
 		if io.Operator() != 0 {
 			return nil, fmt.Errorf(`parse: invalid %s argument %q at %s:%d`,
 				keyword.Str(p.tm), io.Str(p.tm), p.filename, p.line())
 		}
-	} else {
+	case t.IDIOLimit:
 		arg1Name = t.IDLimit
 		if (io.Operator() != 0) && (io.IsArgsDotFoo() == 0) {
 			return nil, fmt.Errorf(`parse: invalid %s argument %q at %s:%d`,
@@ -1094,31 +1095,34 @@ func (p *parser) parseIOManipNode() (*a.Node, error) {
 		}
 	}
 
-	if x := p.peek1(); x != t.IDComma {
-		got := p.tm.ByID(x)
-		return nil, fmt.Errorf(`parse: expected ",", got %q at %s:%d`, got, p.filename, p.line())
-	}
-	p.src = p.src[1:]
+	arg1 := (*a.Expr)(nil)
+	if arg1Name != 0 {
+		if x := p.peek1(); x != t.IDComma {
+			got := p.tm.ByID(x)
+			return nil, fmt.Errorf(`parse: expected ",", got %q at %s:%d`, got, p.filename, p.line())
+		}
+		p.src = p.src[1:]
 
-	if x := p.peek1(); x != arg1Name {
-		got := p.tm.ByID(x)
-		return nil, fmt.Errorf(`parse: expected %q, got %q at %s:%d`, arg1Name.Str(p.tm), got, p.filename, p.line())
-	}
-	p.src = p.src[1:]
+		if x := p.peek1(); x != arg1Name {
+			got := p.tm.ByID(x)
+			return nil, fmt.Errorf(`parse: expected %q, got %q at %s:%d`, arg1Name.Str(p.tm), got, p.filename, p.line())
+		}
+		p.src = p.src[1:]
 
-	if x := p.peek1(); x != t.IDColon {
-		got := p.tm.ByID(x)
-		return nil, fmt.Errorf(`parse: expected ":", got %q at %s:%d`, got, p.filename, p.line())
-	}
-	p.src = p.src[1:]
+		if x := p.peek1(); x != t.IDColon {
+			got := p.tm.ByID(x)
+			return nil, fmt.Errorf(`parse: expected ":", got %q at %s:%d`, got, p.filename, p.line())
+		}
+		p.src = p.src[1:]
 
-	arg1, err := p.parseExpr()
-	if err != nil {
-		return nil, err
-	}
-	if arg1.Effect() != 0 {
-		return nil, fmt.Errorf(`parse: argument %q is not effect-free at %s:%d`,
-			io.Str(p.tm), p.filename, p.line())
+		arg1, err = p.parseExpr()
+		if err != nil {
+			return nil, err
+		}
+		if arg1.Effect() != 0 {
+			return nil, fmt.Errorf(`parse: argument %q is not effect-free at %s:%d`,
+				io.Str(p.tm), p.filename, p.line())
+		}
 	}
 
 	histPos := (*a.Expr)(nil)

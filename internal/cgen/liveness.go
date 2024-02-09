@@ -331,11 +331,13 @@ func (h *livenessHelper) doIOManip(r livenesses, n *a.IOManip, depth uint32) err
 	if err := h.doExpr(r, n.IO()); err != nil {
 		return err
 	}
-	if err := h.doExpr(r, n.Arg1()); err != nil {
-		return err
+	if arg1 := n.Arg1(); arg1 != nil {
+		if err := h.doExpr(r, arg1); err != nil {
+			return err
+		}
 	}
 	if histPos := n.HistoryPosition(); histPos != nil {
-		if err := h.doExpr(r, n.HistoryPosition()); err != nil {
+		if err := h.doExpr(r, histPos); err != nil {
 			return err
 		}
 	}

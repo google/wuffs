@@ -314,7 +314,7 @@ func (g *gen) writeStatementIOManip(b *buffer, n *a.IOManip, depth uint32) error
 	// switch can jump past this initialization??
 	b.writes("{\n")
 	{
-		if n.Keyword() == t.IDIOBind {
+		if keyword := n.Keyword(); keyword == t.IDIOBind {
 			b.printf("wuffs_base__io_buffer* %s%d_%s%s = %s%s;\n",
 				oPrefix, ioBindNum, prefix, name,
 				prefix, name)
@@ -382,7 +382,7 @@ func (g *gen) writeStatementIOManip(b *buffer, n *a.IOManip, depth uint32) error
 	}
 
 	{
-		if n.Keyword() == t.IDIOBind {
+		if keyword := n.Keyword(); keyword == t.IDIOBind {
 			b.printf("%s%s = %s%d_%s%s;\n",
 				prefix, name,
 				oPrefix, ioBindNum, prefix, name)
@@ -395,11 +395,14 @@ func (g *gen) writeStatementIOManip(b *buffer, n *a.IOManip, depth uint32) error
 			b.printf("%s%s%s = %s%d_%s%s%s;\n",
 				io1Prefix, prefix, name,
 				oPrefix, ioBindNum, io1Prefix, prefix, name)
-		}
-		b.printf("%s%s%s = %s%d_%s%s%s;\n",
-			io2Prefix, prefix, name,
-			oPrefix, ioBindNum, io2Prefix, prefix, name)
-		if n.Keyword() == t.IDIOLimit {
+			b.printf("%s%s%s = %s%d_%s%s%s;\n",
+				io2Prefix, prefix, name,
+				oPrefix, ioBindNum, io2Prefix, prefix, name)
+
+		} else {
+			b.printf("%s%s%s = %s%d_%s%s%s;\n",
+				io2Prefix, prefix, name,
+				oPrefix, ioBindNum, io2Prefix, prefix, name)
 			b.printf("if (%s%s) {\n", prefix, name)
 			b.printf("%s%s->meta.closed = %s%d_closed_%s%s;\n",
 				prefix, name, oPrefix, ioBindNum, prefix, name)
