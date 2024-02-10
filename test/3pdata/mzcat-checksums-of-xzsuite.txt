@@ -59,6 +59,7 @@ OK. db4847fb test/3pdata/xzsuite/good-1-lzma2-2.xz
 OK. db4847fb test/3pdata/xzsuite/good-1-lzma2-3.xz
 OK. db4847fb test/3pdata/xzsuite/good-1-lzma2-4.xz
 OK. 00000000 test/3pdata/xzsuite/good-1-lzma2-5.xz
+OK. cc270da1 test/3pdata/xzsuite/good-1-sparc-lzma2.xz
 OK. 15a2a343 test/3pdata/xzsuite/good-2-lzma2.xz
 BAD 15a2a343 test/3pdata/xzsuite/good-known_size-with_eopm.lzma
 OK. 15a2a343 test/3pdata/xzsuite/good-known_size-without_eopm.lzma

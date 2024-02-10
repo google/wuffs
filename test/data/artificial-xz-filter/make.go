@@ -36,6 +36,7 @@ func main1() error {
 		generator  func() []byte
 	}{
 		{"07", "arm", genArm},
+		{"09", "sparc", genSparc},
 	}
 
 	for _, recipe := range recipes {
@@ -76,4 +77,38 @@ func genArm() []byte {
 		}
 	}
 	return b
+}
+
+func genSparc() []byte {
+	b := make([]byte, 256)
+	for i := range b {
+		b[i] = byte(i)
+	}
+	for i := 0; (i + 4) <= len(b); i += 4 {
+		x := peekU32BE(b[i:])
+		switch pi[i>>2] & 3 {
+		case 0:
+			x = (x & 0x003F_FFFF) | 0x4000_0000
+		case 1:
+			x = (x & 0x003F_FFFF) | 0x7FC0_0000
+		default:
+			// No-op.
+		}
+		pokeU32BE(b[i:], x)
+	}
+	return b
+}
+
+func peekU32BE(b []byte) uint32 {
+	return (uint32(b[0]) << 0x18) |
+		(uint32(b[1]) << 0x10) |
+		(uint32(b[2]) << 0x08) |
+		(uint32(b[3]) << 0x00)
+}
+
+func pokeU32BE(b []byte, x uint32) {
+	b[0] = uint8(x >> 0x18)
+	b[1] = uint8(x >> 0x10)
+	b[2] = uint8(x >> 0x08)
+	b[3] = uint8(x >> 0x00)
 }

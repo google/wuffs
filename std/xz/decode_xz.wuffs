@@ -423,6 +423,8 @@ pri func decoder.decode_block_header_sans_padding?(src: base.io_reader) {
             this.filters[f] = filter_id as base.u32
             if filter_id == 0x07 {
                 choose apply_non_final_filters = [apply_filter_07_arm]
+            } else if filter_id == 0x09 {
+                choose apply_non_final_filters = [apply_filter_09_sparc]
             } else {
                 return "#unsupported filter"
             }

@@ -66786,6 +66786,12 @@ wuffs_xz__decoder__apply_filter_07_arm(
     wuffs_base__slice_u8 a_dst_slice);
 
 WUFFS_BASE__GENERATED_C_CODE
+static uint8_t
+wuffs_xz__decoder__apply_filter_09_sparc(
+    wuffs_xz__decoder* self,
+    wuffs_base__slice_u8 a_dst_slice);
+
+WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__status
 wuffs_xz__decoder__do_transform_io(
     wuffs_xz__decoder* self,
@@ -67009,6 +67015,39 @@ wuffs_xz__decoder__apply_filter_07_arm(
     v_s = wuffs_base__slice_u8__subslice_i(v_s, 4u);
   }
   self->private_impl.f_bcj_pos = ((uint32_t)(v_p - 8u));
+  return ((uint8_t)(((uint64_t)(v_s.len))));
+}
+
+// -------- func xz.decoder.apply_filter_09_sparc
+
+WUFFS_BASE__GENERATED_C_CODE
+static uint8_t
+wuffs_xz__decoder__apply_filter_09_sparc(
+    wuffs_xz__decoder* self,
+    wuffs_base__slice_u8 a_dst_slice) {
+  wuffs_base__slice_u8 v_s = {0};
+  uint32_t v_p = 0;
+  uint32_t v_x = 0;
+
+  v_s = a_dst_slice;
+  v_p = self->private_impl.f_bcj_pos;
+  while (((uint64_t)(v_s.len)) >= 4u) {
+    v_x = ((((uint32_t)(v_s.ptr[0u])) << 24u) |
+        (((uint32_t)(v_s.ptr[1u])) << 16u) |
+        (((uint32_t)(v_s.ptr[2u])) << 8u) |
+        (((uint32_t)(v_s.ptr[3u])) << 0u));
+    if (((v_x >> 22u) == 256u) || ((v_x >> 22u) == 511u)) {
+      v_x = (((uint32_t)(((uint32_t)(v_x << 2u)) - v_p)) >> 2u);
+      v_x = ((1073741824u - (v_x & 4194304u)) | 1073741824u | (v_x & 4194303u));
+      v_s.ptr[0u] = ((uint8_t)((v_x >> 24u)));
+      v_s.ptr[1u] = ((uint8_t)((v_x >> 16u)));
+      v_s.ptr[2u] = ((uint8_t)((v_x >> 8u)));
+      v_s.ptr[3u] = ((uint8_t)((v_x >> 0u)));
+    }
+    v_p += 4u;
+    v_s = wuffs_base__slice_u8__subslice_i(v_s, 4u);
+  }
+  self->private_impl.f_bcj_pos = v_p;
   return ((uint8_t)(((uint64_t)(v_s.len))));
 }
 
@@ -68020,6 +68059,9 @@ wuffs_xz__decoder__decode_block_header_sans_padding(
         if (v_filter_id == 7u) {
           self->private_impl.choosy_apply_non_final_filters = (
               &wuffs_xz__decoder__apply_filter_07_arm);
+        } else if (v_filter_id == 9u) {
+          self->private_impl.choosy_apply_non_final_filters = (
+              &wuffs_xz__decoder__apply_filter_09_sparc);
         } else {
           status = wuffs_base__make_status(wuffs_xz__error__unsupported_filter);
           goto exit;
