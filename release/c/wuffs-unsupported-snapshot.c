@@ -13921,9 +13921,10 @@ struct wuffs_xz__decoder__struct {
     uint32_t f_num_non_final_filters;
     uint32_t f_checksummer;
     bool f_ignore_checksum;
-    uint8_t f_bcj_undo_index;
     bool f_block_has_compressed_size;
     bool f_block_has_uncompressed_size;
+    uint8_t f_bcj_undo_index;
+    uint32_t f_bcj_pos;
     uint64_t f_block_compressed_size;
     uint64_t f_block_uncompressed_size;
 
@@ -66987,7 +66988,28 @@ static uint8_t
 wuffs_xz__decoder__apply_filter_07_arm(
     wuffs_xz__decoder* self,
     wuffs_base__slice_u8 a_dst_slice) {
-  return 0u;
+  wuffs_base__slice_u8 v_s = {0};
+  uint32_t v_p = 0;
+  uint32_t v_x = 0;
+
+  v_s = a_dst_slice;
+  v_p = ((uint32_t)(self->private_impl.f_bcj_pos + 8u));
+  while (((uint64_t)(v_s.len)) >= 4u) {
+    if (v_s.ptr[3u] == 235u) {
+      v_x = ((((uint32_t)(v_s.ptr[0u])) << 0u) |
+          (((uint32_t)(v_s.ptr[1u])) << 8u) |
+          (((uint32_t)(v_s.ptr[2u])) << 16u) |
+          (((uint32_t)(v_s.ptr[3u])) << 24u));
+      v_x = (((uint32_t)(((v_x & 16777215u) << 2u) - v_p)) >> 2u);
+      v_s.ptr[0u] = ((uint8_t)((v_x >> 0u)));
+      v_s.ptr[1u] = ((uint8_t)((v_x >> 8u)));
+      v_s.ptr[2u] = ((uint8_t)((v_x >> 16u)));
+    }
+    v_p += 4u;
+    v_s = wuffs_base__slice_u8__subslice_i(v_s, 4u);
+  }
+  self->private_impl.f_bcj_pos = ((uint32_t)(v_p - 8u));
+  return ((uint8_t)(((uint64_t)(v_s.len))));
 }
 
 // -------- func xz.decoder.get_quirk
@@ -67941,6 +67963,7 @@ wuffs_xz__decoder__decode_block_header_sans_padding(
         break;
       }
     }
+    self->private_impl.f_bcj_pos = 0u;
     self->private_impl.choosy_apply_non_final_filters = (
         &wuffs_xz__decoder__apply_non_final_filters__choosy_default);
     v_f = 0u;

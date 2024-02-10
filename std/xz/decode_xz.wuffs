@@ -44,10 +44,11 @@ pub struct decoder? implements base.io_transformer(
 
         ignore_checksum : base.bool,
 
-        bcj_undo_index : base.u8,
-
         block_has_compressed_size   : base.bool,
         block_has_uncompressed_size : base.bool,
+
+        bcj_undo_index : base.u8,
+        bcj_pos        : base.u32,
 
         block_compressed_size   : base.u64,
         block_uncompressed_size : base.u64,
@@ -384,6 +385,7 @@ pri func decoder.decode_block_header_sans_padding?(src: base.io_reader) {
 
     // Configure the non-final filters.
 
+    this.bcj_pos = 0
     choose apply_non_final_filters = [apply_non_final_filters]
     f = 0
     while f < this.num_non_final_filters {
