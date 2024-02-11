@@ -50,6 +50,126 @@ pri func decoder.apply_non_final_filters!(dst_slice: slice base.u8) base.u8,
     return 0
 }
 
+pri const FILTER_04_X86_MASK_TO_ALLOWED_STATUS : roarray[8] base.bool = [
+        true, true, true, false, true, false, false, false,
+]
+
+pri const FILTER_04_X86_MASK_TO_BIT_NUM : roarray[8] base.u8[..= 3] = [
+        0, 1, 2, 2, 3, 3, 3, 3,
+]
+
+pri const FILTER_04_X86_MASK_TO_XOR_OPERAND : roarray[8] base.u32 = [
+        0xFFFF_FFFF,
+        0x00FF_FFFF,
+        0x0000_FFFF,
+        0x0000_FFFF,
+        0x0000_00FF,
+        0x0000_00FF,
+        0x0000_00FF,
+        0x0000_00FF,
+]
+
+pri func decoder.apply_filter_04_x86!(dst_slice: slice base.u8) base.u8 {
+    var s : slice base.u8
+    var p : base.u32
+
+    var i         : base.u64
+    var prev_pos  : base.u64
+    var prev_mask : base.u32
+    var c8        : base.u8
+    var src       : base.u32
+    var dst       : base.u32
+    var bit_num   : base.u32[..= 3]
+
+    s = args.dst_slice
+    p = this.bcj_pos ~mod+ 5
+
+    prev_pos = 0xFFFF_FFFF_FFFF_FFFF
+    prev_mask = this.bcj_x86_prev_mask
+
+    while s.length() >= 5,
+            post s.length() < 5,
+    {
+        if (s[0] & 0xFE) <> 0xE8 {
+            i ~mod+= 1
+            p ~mod+= 1
+            s = s[1 ..]
+            continue
+        }
+
+        prev_pos = i ~mod- prev_pos
+        if prev_pos > 3 {
+            prev_mask = 0
+        } else if prev_pos > 0 {
+            prev_mask = (prev_mask ~mod<< (prev_pos - 1)) & 7
+            if prev_mask <> 0 {
+                c8 = s[4 - FILTER_04_X86_MASK_TO_BIT_NUM[prev_mask & 7]]
+                if (not FILTER_04_X86_MASK_TO_ALLOWED_STATUS[prev_mask & 7]) or
+                        (c8 == 0x00) or (c8 == 0xFF) {
+                    prev_pos = i
+                    prev_mask = (prev_mask ~mod<< 1) | 1
+                    i ~mod+= 1
+                    p ~mod+= 1
+                    s = s[1 ..]
+                    continue
+                }
+            }
+        }
+
+        prev_pos = i
+
+        c8 = s[4]
+        if (c8 <> 0x00) and (c8 <> 0xFF) {
+            prev_mask = (prev_mask ~mod<< 1) | 1
+            i ~mod+= 1
+            p ~mod+= 1
+            s = s[1 ..]
+            continue
+        }
+
+        src = ((s[1] as base.u32) << 0x00) |
+                ((s[2] as base.u32) << 0x08) |
+                ((s[3] as base.u32) << 0x10) |
+                ((s[4] as base.u32) << 0x18)
+
+        while true,
+                inv s.length() >= 5,
+        {
+            dst = src ~mod- p
+            if prev_mask == 0 {
+                break
+            }
+            bit_num = FILTER_04_X86_MASK_TO_BIT_NUM[prev_mask & 7] as base.u32
+            c8 = ((dst >> (24 - (bit_num * 8))) & 0xFF) as base.u8
+            if (c8 <> 0x00) and (c8 <> 0xFF) {
+                break
+            }
+            src = dst ^ FILTER_04_X86_MASK_TO_XOR_OPERAND[prev_mask & 7]
+        } endwhile
+
+        dst &= 0x01FF_FFFF
+        dst |= 0 ~mod- (dst & 0x0100_0000)
+        s[1] = ((dst >> 0x00) & 0xFF) as base.u8
+        s[2] = ((dst >> 0x08) & 0xFF) as base.u8
+        s[3] = ((dst >> 0x10) & 0xFF) as base.u8
+        s[4] = ((dst >> 0x18) & 0xFF) as base.u8
+
+        i ~mod+= 5
+        p ~mod+= 5
+        s = s[5 ..]
+    } endwhile
+
+    prev_pos = i ~mod- prev_pos
+    if prev_pos > 3 {
+        this.bcj_x86_prev_mask = 0
+    } else if prev_pos > 0 {
+        this.bcj_x86_prev_mask = prev_mask ~mod<< (prev_pos - 1)
+    }
+
+    this.bcj_pos = p ~mod- 5
+    return s.length() as base.u8
+}
+
 pri func decoder.apply_filter_07_arm!(dst_slice: slice base.u8) base.u8 {
     var s : slice base.u8
     var p : base.u32

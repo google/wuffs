@@ -35,6 +35,9 @@ func main1() error {
 		filterName string
 		generator  func() []byte
 	}{
+		// No test case generated for 04/x86, as the x86 CPU bytecode format is
+		// complicated (variable length instructions). Test coverage is instead
+		// provided by xz-tests-files's good-1-x86-lzma2.xz file.
 		{"07", "arm", genArm},
 		{"08", "armthumb", genArmthumb},
 		{"09", "sparc", genSparc},

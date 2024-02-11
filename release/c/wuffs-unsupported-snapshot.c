@@ -13925,6 +13925,7 @@ struct wuffs_xz__decoder__struct {
     bool f_block_has_uncompressed_size;
     uint8_t f_bcj_undo_index;
     uint32_t f_bcj_pos;
+    uint32_t f_bcj_x86_prev_mask;
     uint64_t f_block_compressed_size;
     uint64_t f_block_uncompressed_size;
 
@@ -66758,6 +66759,21 @@ const char wuffs_xz__error__internal_error_inconsistent_bcj_filter_state[] = "#x
 
 // ---------------- Private Consts
 
+static const bool
+WUFFS_XZ__FILTER_04_X86_MASK_TO_ALLOWED_STATUS[8] WUFFS_BASE__POTENTIALLY_UNUSED = {
+  1u, 1u, 1u, 0u, 1u, 0u, 0u, 0u,
+};
+
+static const uint8_t
+WUFFS_XZ__FILTER_04_X86_MASK_TO_BIT_NUM[8] WUFFS_BASE__POTENTIALLY_UNUSED = {
+  0u, 1u, 2u, 2u, 3u, 3u, 3u, 3u,
+};
+
+static const uint32_t
+WUFFS_XZ__FILTER_04_X86_MASK_TO_XOR_OPERAND[8] WUFFS_BASE__POTENTIALLY_UNUSED = {
+  4294967295u, 16777215u, 65535u, 65535u, 255u, 255u, 255u, 255u,
+};
+
 static const uint8_t
 WUFFS_XZ__CHECKSUM_LENGTH[4] WUFFS_BASE__POTENTIALLY_UNUSED = {
   0u, 4u, 8u, 32u,
@@ -66776,6 +66792,12 @@ wuffs_xz__decoder__apply_non_final_filters(
 WUFFS_BASE__GENERATED_C_CODE
 static uint8_t
 wuffs_xz__decoder__apply_non_final_filters__choosy_default(
+    wuffs_xz__decoder* self,
+    wuffs_base__slice_u8 a_dst_slice);
+
+WUFFS_BASE__GENERATED_C_CODE
+static uint8_t
+wuffs_xz__decoder__apply_filter_04_x86(
     wuffs_xz__decoder* self,
     wuffs_base__slice_u8 a_dst_slice);
 
@@ -66997,6 +67019,96 @@ wuffs_xz__decoder__apply_non_final_filters__choosy_default(
     v_f -= 1u;
   }
   return 0u;
+}
+
+// -------- func xz.decoder.apply_filter_04_x86
+
+WUFFS_BASE__GENERATED_C_CODE
+static uint8_t
+wuffs_xz__decoder__apply_filter_04_x86(
+    wuffs_xz__decoder* self,
+    wuffs_base__slice_u8 a_dst_slice) {
+  wuffs_base__slice_u8 v_s = {0};
+  uint32_t v_p = 0;
+  uint64_t v_i = 0;
+  uint64_t v_prev_pos = 0;
+  uint32_t v_prev_mask = 0;
+  uint8_t v_c8 = 0;
+  uint32_t v_src = 0;
+  uint32_t v_dst = 0;
+  uint32_t v_bit_num = 0;
+
+  v_s = a_dst_slice;
+  v_p = ((uint32_t)(self->private_impl.f_bcj_pos + 5u));
+  v_prev_pos = 18446744073709551615u;
+  v_prev_mask = self->private_impl.f_bcj_x86_prev_mask;
+  while (((uint64_t)(v_s.len)) >= 5u) {
+    if (((uint8_t)(v_s.ptr[0u] & 254u)) != 232u) {
+      v_i += 1u;
+      v_p += 1u;
+      v_s = wuffs_base__slice_u8__subslice_i(v_s, 1u);
+      continue;
+    }
+    v_prev_pos = ((uint64_t)(v_i - v_prev_pos));
+    if (v_prev_pos > 3u) {
+      v_prev_mask = 0u;
+    } else if (v_prev_pos > 0u) {
+      v_prev_mask = (((uint32_t)(v_prev_mask << (v_prev_pos - 1u))) & 7u);
+      if (v_prev_mask != 0u) {
+        v_c8 = v_s.ptr[((uint8_t)(4u - WUFFS_XZ__FILTER_04_X86_MASK_TO_BIT_NUM[(v_prev_mask & 7u)]))];
+        if ( ! WUFFS_XZ__FILTER_04_X86_MASK_TO_ALLOWED_STATUS[(v_prev_mask & 7u)] || (v_c8 == 0u) || (v_c8 == 255u)) {
+          v_prev_pos = v_i;
+          v_prev_mask = (((uint32_t)(v_prev_mask << 1u)) | 1u);
+          v_i += 1u;
+          v_p += 1u;
+          v_s = wuffs_base__slice_u8__subslice_i(v_s, 1u);
+          continue;
+        }
+      }
+    }
+    v_prev_pos = v_i;
+    v_c8 = v_s.ptr[4u];
+    if ((v_c8 != 0u) && (v_c8 != 255u)) {
+      v_prev_mask = (((uint32_t)(v_prev_mask << 1u)) | 1u);
+      v_i += 1u;
+      v_p += 1u;
+      v_s = wuffs_base__slice_u8__subslice_i(v_s, 1u);
+      continue;
+    }
+    v_src = ((((uint32_t)(v_s.ptr[1u])) << 0u) |
+        (((uint32_t)(v_s.ptr[2u])) << 8u) |
+        (((uint32_t)(v_s.ptr[3u])) << 16u) |
+        (((uint32_t)(v_s.ptr[4u])) << 24u));
+    while (true) {
+      v_dst = ((uint32_t)(v_src - v_p));
+      if (v_prev_mask == 0u) {
+        break;
+      }
+      v_bit_num = ((uint32_t)(WUFFS_XZ__FILTER_04_X86_MASK_TO_BIT_NUM[(v_prev_mask & 7u)]));
+      v_c8 = ((uint8_t)((v_dst >> (24u - (v_bit_num * 8u)))));
+      if ((v_c8 != 0u) && (v_c8 != 255u)) {
+        break;
+      }
+      v_src = (v_dst ^ WUFFS_XZ__FILTER_04_X86_MASK_TO_XOR_OPERAND[(v_prev_mask & 7u)]);
+    }
+    v_dst &= 33554431u;
+    v_dst |= ((uint32_t)(0u - (v_dst & 16777216u)));
+    v_s.ptr[1u] = ((uint8_t)((v_dst >> 0u)));
+    v_s.ptr[2u] = ((uint8_t)((v_dst >> 8u)));
+    v_s.ptr[3u] = ((uint8_t)((v_dst >> 16u)));
+    v_s.ptr[4u] = ((uint8_t)((v_dst >> 24u)));
+    v_i += 5u;
+    v_p += 5u;
+    v_s = wuffs_base__slice_u8__subslice_i(v_s, 5u);
+  }
+  v_prev_pos = ((uint64_t)(v_i - v_prev_pos));
+  if (v_prev_pos > 3u) {
+    self->private_impl.f_bcj_x86_prev_mask = 0u;
+  } else if (v_prev_pos > 0u) {
+    self->private_impl.f_bcj_x86_prev_mask = ((uint32_t)(v_prev_mask << (v_prev_pos - 1u)));
+  }
+  self->private_impl.f_bcj_pos = ((uint32_t)(v_p - 5u));
+  return ((uint8_t)(((uint64_t)(v_s.len))));
 }
 
 // -------- func xz.decoder.apply_filter_07_arm
@@ -68102,6 +68214,7 @@ wuffs_xz__decoder__decode_block_header_sans_padding(
       }
     }
     self->private_impl.f_bcj_pos = 0u;
+    self->private_impl.f_bcj_x86_prev_mask = 0u;
     self->private_impl.choosy_apply_non_final_filters = (
         &wuffs_xz__decoder__apply_non_final_filters__choosy_default);
     v_f = 0u;
@@ -68155,7 +68268,10 @@ wuffs_xz__decoder__decode_block_header_sans_padding(
         goto exit;
       } else {
         self->private_impl.f_filters[v_f] = ((uint32_t)(v_filter_id));
-        if (v_filter_id == 7u) {
+        if (v_filter_id == 4u) {
+          self->private_impl.choosy_apply_non_final_filters = (
+              &wuffs_xz__decoder__apply_filter_04_x86);
+        } else if (v_filter_id == 7u) {
           self->private_impl.choosy_apply_non_final_filters = (
               &wuffs_xz__decoder__apply_filter_07_arm);
         } else if (v_filter_id == 8u) {
