@@ -79,6 +79,44 @@ pri func decoder.apply_filter_07_arm!(dst_slice: slice base.u8) base.u8 {
     return s.length() as base.u8
 }
 
+pri func decoder.apply_filter_08_armthumb!(dst_slice: slice base.u8) base.u8 {
+    var s : slice base.u8
+    var p : base.u32
+    var x : base.u32
+    var y : base.u32
+
+    s = args.dst_slice
+    p = this.bcj_pos ~mod+ 4
+
+    while s.length() >= 4,
+            post s.length() < 4,
+    {
+        x = ((s[0] as base.u32) << 0x00) |
+                ((s[1] as base.u32) << 0x08) |
+                ((s[2] as base.u32) << 0x10) |
+                ((s[3] as base.u32) << 0x18)
+        if (x & 0xF800_F800) <> 0xF800_F000 {
+            p ~mod+= 2
+            s = s[2 ..]
+            continue
+        }
+        y = (((s[0] & 0xFF) as base.u32) << 0x0B) |
+                (((s[1] & 0x07) as base.u32) << 0x13) |
+                (((s[2] & 0xFF) as base.u32) << 0x00) |
+                (((s[3] & 0x07) as base.u32) << 0x08)
+        y = ((y ~mod<< 1) ~mod- p) >> 1
+        s[0] = (((y >> 0x0B) & 0xFF)) as base.u8
+        s[1] = (((y >> 0x13) & 0x07) | 0xF0) as base.u8
+        s[2] = (((y >> 0x00) & 0xFF)) as base.u8
+        s[3] = (((y >> 0x08) & 0x07) | 0xF8) as base.u8
+        p ~mod+= 4
+        s = s[4 ..]
+    } endwhile
+
+    this.bcj_pos = p ~mod- 4
+    return s.length() as base.u8
+}
+
 pri func decoder.apply_filter_09_sparc!(dst_slice: slice base.u8) base.u8 {
     var s : slice base.u8
     var p : base.u32

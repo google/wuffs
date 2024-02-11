@@ -36,6 +36,7 @@ func main1() error {
 		generator  func() []byte
 	}{
 		{"07", "arm", genArm},
+		{"08", "armthumb", genArmthumb},
 		{"09", "sparc", genSparc},
 	}
 
@@ -79,6 +80,25 @@ func genArm() []byte {
 	return b
 }
 
+func genArmthumb() []byte {
+	b := make([]byte, 256)
+	for i := range b {
+		b[i] = byte(i)
+	}
+	for i := 0; (i + 4) <= len(b); {
+		x := peekU32LE(b[i:])
+		switch pi[i>>2] & 1 {
+		case 0:
+			i += 2
+		case 1:
+			x = (x & 0x07FF_07FF) | 0xF800_F000
+			pokeU32LE(b[i:], x)
+			i += 4
+		}
+	}
+	return b
+}
+
 func genSparc() []byte {
 	b := make([]byte, 256)
 	for i := range b {
@@ -106,9 +126,23 @@ func peekU32BE(b []byte) uint32 {
 		(uint32(b[3]) << 0x00)
 }
 
+func peekU32LE(b []byte) uint32 {
+	return (uint32(b[0]) << 0x00) |
+		(uint32(b[1]) << 0x08) |
+		(uint32(b[2]) << 0x10) |
+		(uint32(b[3]) << 0x18)
+}
+
 func pokeU32BE(b []byte, x uint32) {
 	b[0] = uint8(x >> 0x18)
 	b[1] = uint8(x >> 0x10)
 	b[2] = uint8(x >> 0x08)
 	b[3] = uint8(x >> 0x00)
+}
+
+func pokeU32LE(b []byte, x uint32) {
+	b[0] = uint8(x >> 0x00)
+	b[1] = uint8(x >> 0x08)
+	b[2] = uint8(x >> 0x10)
+	b[3] = uint8(x >> 0x18)
 }

@@ -66787,6 +66787,12 @@ wuffs_xz__decoder__apply_filter_07_arm(
 
 WUFFS_BASE__GENERATED_C_CODE
 static uint8_t
+wuffs_xz__decoder__apply_filter_08_armthumb(
+    wuffs_xz__decoder* self,
+    wuffs_base__slice_u8 a_dst_slice);
+
+WUFFS_BASE__GENERATED_C_CODE
+static uint8_t
 wuffs_xz__decoder__apply_filter_09_sparc(
     wuffs_xz__decoder* self,
     wuffs_base__slice_u8 a_dst_slice);
@@ -67015,6 +67021,46 @@ wuffs_xz__decoder__apply_filter_07_arm(
     v_s = wuffs_base__slice_u8__subslice_i(v_s, 4u);
   }
   self->private_impl.f_bcj_pos = ((uint32_t)(v_p - 8u));
+  return ((uint8_t)(((uint64_t)(v_s.len))));
+}
+
+// -------- func xz.decoder.apply_filter_08_armthumb
+
+WUFFS_BASE__GENERATED_C_CODE
+static uint8_t
+wuffs_xz__decoder__apply_filter_08_armthumb(
+    wuffs_xz__decoder* self,
+    wuffs_base__slice_u8 a_dst_slice) {
+  wuffs_base__slice_u8 v_s = {0};
+  uint32_t v_p = 0;
+  uint32_t v_x = 0;
+  uint32_t v_y = 0;
+
+  v_s = a_dst_slice;
+  v_p = ((uint32_t)(self->private_impl.f_bcj_pos + 4u));
+  while (((uint64_t)(v_s.len)) >= 4u) {
+    v_x = ((((uint32_t)(v_s.ptr[0u])) << 0u) |
+        (((uint32_t)(v_s.ptr[1u])) << 8u) |
+        (((uint32_t)(v_s.ptr[2u])) << 16u) |
+        (((uint32_t)(v_s.ptr[3u])) << 24u));
+    if ((v_x & 4160813056u) != 4160811008u) {
+      v_p += 2u;
+      v_s = wuffs_base__slice_u8__subslice_i(v_s, 2u);
+      continue;
+    }
+    v_y = ((((uint32_t)(((uint8_t)(v_s.ptr[0u] & 255u)))) << 11u) |
+        (((uint32_t)(((uint8_t)(v_s.ptr[1u] & 7u)))) << 19u) |
+        (((uint32_t)(((uint8_t)(v_s.ptr[2u] & 255u)))) << 0u) |
+        (((uint32_t)(((uint8_t)(v_s.ptr[3u] & 7u)))) << 8u));
+    v_y = (((uint32_t)(((uint32_t)(v_y << 1u)) - v_p)) >> 1u);
+    v_s.ptr[0u] = ((uint8_t)((v_y >> 11u)));
+    v_s.ptr[1u] = ((uint8_t)((((v_y >> 19u) & 7u) | 240u)));
+    v_s.ptr[2u] = ((uint8_t)((v_y >> 0u)));
+    v_s.ptr[3u] = ((uint8_t)((((v_y >> 8u) & 7u) | 248u)));
+    v_p += 4u;
+    v_s = wuffs_base__slice_u8__subslice_i(v_s, 4u);
+  }
+  self->private_impl.f_bcj_pos = ((uint32_t)(v_p - 4u));
   return ((uint8_t)(((uint64_t)(v_s.len))));
 }
 
@@ -68059,6 +68105,9 @@ wuffs_xz__decoder__decode_block_header_sans_padding(
         if (v_filter_id == 7u) {
           self->private_impl.choosy_apply_non_final_filters = (
               &wuffs_xz__decoder__apply_filter_07_arm);
+        } else if (v_filter_id == 8u) {
+          self->private_impl.choosy_apply_non_final_filters = (
+              &wuffs_xz__decoder__apply_filter_08_armthumb);
         } else if (v_filter_id == 9u) {
           self->private_impl.choosy_apply_non_final_filters = (
               &wuffs_xz__decoder__apply_filter_09_sparc);
