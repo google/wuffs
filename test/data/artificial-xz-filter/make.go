@@ -38,6 +38,7 @@ func main1() error {
 		{"07", "arm", genArm},
 		{"08", "armthumb", genArmthumb},
 		{"09", "sparc", genSparc},
+		{"0a", "arm64", genArm64},
 	}
 
 	for _, recipe := range recipes {
@@ -69,9 +70,8 @@ const pi = "3.141592653589793238462643383279502884197169399375105820974944592307
 // implementations.
 
 func genArm() []byte {
-	b := make([]byte, 256)
+	b := make256Bytes()
 	for i := range b {
-		b[i] = byte(i)
 		if ((i & 3) == 3) &&
 			((pi[i>>2] & 1) != 0) {
 			b[i] = 0xEB
@@ -81,10 +81,7 @@ func genArm() []byte {
 }
 
 func genArmthumb() []byte {
-	b := make([]byte, 256)
-	for i := range b {
-		b[i] = byte(i)
-	}
+	b := make256Bytes()
 	for i := 0; (i + 4) <= len(b); {
 		x := peekU32LE(b[i:])
 		switch pi[i>>2] & 1 {
@@ -100,10 +97,7 @@ func genArmthumb() []byte {
 }
 
 func genSparc() []byte {
-	b := make([]byte, 256)
-	for i := range b {
-		b[i] = byte(i)
-	}
+	b := make256Bytes()
 	for i := 0; (i + 4) <= len(b); i += 4 {
 		x := peekU32BE(b[i:])
 		switch pi[i>>2] & 3 {
@@ -112,9 +106,34 @@ func genSparc() []byte {
 		case 1:
 			x = (x & 0x003F_FFFF) | 0x7FC0_0000
 		default:
-			// No-op.
+			continue
 		}
 		pokeU32BE(b[i:], x)
+	}
+	return b
+}
+
+func genArm64() []byte {
+	b := make256Bytes()
+	for i := 0; (i + 4) <= len(b); i += 4 {
+		x := peekU32LE(b[i:])
+		switch pi[i>>2] & 3 {
+		case 0:
+			x = (x & 0x03FF_FFFF) | 0x9400_0000
+		case 1:
+			x = (x & 0x60FF_FFFF) | 0x90C0_0000
+		default:
+			continue
+		}
+		pokeU32LE(b[i:], x)
+	}
+	return b
+}
+
+func make256Bytes() []byte {
+	b := make([]byte, 256)
+	for i := range b {
+		b[i] = byte(i)
 	}
 	return b
 }

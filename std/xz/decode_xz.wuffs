@@ -427,6 +427,8 @@ pri func decoder.decode_block_header_sans_padding?(src: base.io_reader) {
                 choose apply_non_final_filters = [apply_filter_08_armthumb]
             } else if filter_id == 0x09 {
                 choose apply_non_final_filters = [apply_filter_09_sparc]
+            } else if filter_id == 0x0A {
+                choose apply_non_final_filters = [apply_filter_0a_arm64]
             } else {
                 return "#unsupported filter"
             }
