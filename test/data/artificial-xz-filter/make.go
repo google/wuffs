@@ -38,6 +38,7 @@ func main1() error {
 		// No test case generated for 04/x86, as the x86 CPU bytecode format is
 		// complicated (variable length instructions). Test coverage is instead
 		// provided by xz-tests-files's good-1-x86-lzma2.xz file.
+		{"05", "powerpc", genPowerpc},
 		{"07", "arm", genArm},
 		{"08", "armthumb", genArmthumb},
 		{"09", "sparc", genSparc},
@@ -71,6 +72,21 @@ const pi = "3.141592653589793238462643383279502884197169399375105820974944592307
 // The artificial data generated below is designed to tickle XZ's BCJ (Branch,
 // Call, Jump) filters. See xz-embedded's linux/lib/xz/xz_dec_bcj.c for C code
 // implementations.
+
+func genPowerpc() []byte {
+	b := make256Bytes()
+	for i := 0; (i + 4) <= len(b); i += 4 {
+		x := peekU32BE(b[i:])
+		switch pi[i>>2] & 1 {
+		case 0:
+			x = (x & 0x03FF_FFFC) | 0x4800_0001
+		default:
+			continue
+		}
+		pokeU32BE(b[i:], x)
+	}
+	return b
+}
 
 func genArm() []byte {
 	b := make256Bytes()

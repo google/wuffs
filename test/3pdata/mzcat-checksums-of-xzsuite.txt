@@ -55,6 +55,7 @@ OK. 15a2a343 test/3pdata/xzsuite/good-1-check-crc64.xz
 OK. 15a2a343 test/3pdata/xzsuite/good-1-check-none.xz
 OK. 15a2a343 test/3pdata/xzsuite/good-1-check-sha256.xz
 OK. f7c66eb5 test/3pdata/xzsuite/good-1-delta-lzma2.tiff.xz
+OK. 00000000 test/3pdata/xzsuite/good-1-empty-bcj-lzma2.xz
 OK. db4847fb test/3pdata/xzsuite/good-1-lzma2-1.xz
 OK. db4847fb test/3pdata/xzsuite/good-1-lzma2-2.xz
 OK. db4847fb test/3pdata/xzsuite/good-1-lzma2-3.xz

@@ -66803,6 +66803,12 @@ wuffs_xz__decoder__apply_filter_04_x86(
 
 WUFFS_BASE__GENERATED_C_CODE
 static uint8_t
+wuffs_xz__decoder__apply_filter_05_powerpc(
+    wuffs_xz__decoder* self,
+    wuffs_base__slice_u8 a_dst_slice);
+
+WUFFS_BASE__GENERATED_C_CODE
+static uint8_t
 wuffs_xz__decoder__apply_filter_07_arm(
     wuffs_xz__decoder* self,
     wuffs_base__slice_u8 a_dst_slice);
@@ -67108,6 +67114,38 @@ wuffs_xz__decoder__apply_filter_04_x86(
     self->private_impl.f_bcj_x86_prev_mask = ((uint32_t)(v_prev_mask << (v_prev_pos - 1u)));
   }
   self->private_impl.f_bcj_pos = ((uint32_t)(v_p - 5u));
+  return ((uint8_t)(((uint64_t)(v_s.len))));
+}
+
+// -------- func xz.decoder.apply_filter_05_powerpc
+
+WUFFS_BASE__GENERATED_C_CODE
+static uint8_t
+wuffs_xz__decoder__apply_filter_05_powerpc(
+    wuffs_xz__decoder* self,
+    wuffs_base__slice_u8 a_dst_slice) {
+  wuffs_base__slice_u8 v_s = {0};
+  uint32_t v_p = 0;
+  uint32_t v_x = 0;
+
+  v_s = a_dst_slice;
+  v_p = self->private_impl.f_bcj_pos;
+  while (((uint64_t)(v_s.len)) >= 4u) {
+    v_x = ((((uint32_t)(v_s.ptr[0u])) << 24u) |
+        (((uint32_t)(v_s.ptr[1u])) << 16u) |
+        (((uint32_t)(v_s.ptr[2u])) << 8u) |
+        (((uint32_t)(v_s.ptr[3u])) << 0u));
+    if ((v_x & 4227858435u) == 1207959553u) {
+      v_x = ((((uint32_t)((v_x & 67108860u) - v_p)) & 67108860u) | 1207959553u);
+      v_s.ptr[0u] = ((uint8_t)((v_x >> 24u)));
+      v_s.ptr[1u] = ((uint8_t)((v_x >> 16u)));
+      v_s.ptr[2u] = ((uint8_t)((v_x >> 8u)));
+      v_s.ptr[3u] = ((uint8_t)((v_x >> 0u)));
+    }
+    v_p += 4u;
+    v_s = wuffs_base__slice_u8__subslice_i(v_s, 4u);
+  }
+  self->private_impl.f_bcj_pos = v_p;
   return ((uint8_t)(((uint64_t)(v_s.len))));
 }
 
@@ -68271,6 +68309,9 @@ wuffs_xz__decoder__decode_block_header_sans_padding(
         if (v_filter_id == 4u) {
           self->private_impl.choosy_apply_non_final_filters = (
               &wuffs_xz__decoder__apply_filter_04_x86);
+        } else if (v_filter_id == 5u) {
+          self->private_impl.choosy_apply_non_final_filters = (
+              &wuffs_xz__decoder__apply_filter_05_powerpc);
         } else if (v_filter_id == 7u) {
           self->private_impl.choosy_apply_non_final_filters = (
               &wuffs_xz__decoder__apply_filter_07_arm);

@@ -425,6 +425,8 @@ pri func decoder.decode_block_header_sans_padding?(src: base.io_reader) {
             this.filters[f] = filter_id as base.u32
             if filter_id == 0x04 {
                 choose apply_non_final_filters = [apply_filter_04_x86]
+            } else if filter_id == 0x05 {
+                choose apply_non_final_filters = [apply_filter_05_powerpc]
             } else if filter_id == 0x07 {
                 choose apply_non_final_filters = [apply_filter_07_arm]
             } else if filter_id == 0x08 {
