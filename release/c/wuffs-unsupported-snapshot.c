@@ -66775,6 +66775,14 @@ WUFFS_XZ__FILTER_04_X86_MASK_TO_XOR_OPERAND[8] WUFFS_BASE__POTENTIALLY_UNUSED = 
 };
 
 static const uint8_t
+WUFFS_XZ__FILTER_06_IA64_BRANCH_TABLE[32] WUFFS_BASE__POTENTIALLY_UNUSED = {
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  4u, 4u, 6u, 6u, 0u, 0u, 7u, 7u,
+  4u, 4u, 0u, 0u, 4u, 4u, 0u, 0u,
+};
+
+static const uint8_t
 WUFFS_XZ__CHECKSUM_LENGTH[4] WUFFS_BASE__POTENTIALLY_UNUSED = {
   0u, 4u, 8u, 32u,
 };
@@ -66804,6 +66812,12 @@ wuffs_xz__decoder__apply_filter_04_x86(
 WUFFS_BASE__GENERATED_C_CODE
 static uint8_t
 wuffs_xz__decoder__apply_filter_05_powerpc(
+    wuffs_xz__decoder* self,
+    wuffs_base__slice_u8 a_dst_slice);
+
+WUFFS_BASE__GENERATED_C_CODE
+static uint8_t
+wuffs_xz__decoder__apply_filter_06_ia64(
     wuffs_xz__decoder* self,
     wuffs_base__slice_u8 a_dst_slice);
 
@@ -67144,6 +67158,76 @@ wuffs_xz__decoder__apply_filter_05_powerpc(
     }
     v_p += 4u;
     v_s = wuffs_base__slice_u8__subslice_i(v_s, 4u);
+  }
+  self->private_impl.f_bcj_pos = v_p;
+  return ((uint8_t)(((uint64_t)(v_s.len))));
+}
+
+// -------- func xz.decoder.apply_filter_06_ia64
+
+WUFFS_BASE__GENERATED_C_CODE
+static uint8_t
+wuffs_xz__decoder__apply_filter_06_ia64(
+    wuffs_xz__decoder* self,
+    wuffs_base__slice_u8 a_dst_slice) {
+  wuffs_base__slice_u8 v_s = {0};
+  uint32_t v_p = 0;
+  uint32_t v_mask = 0;
+  uint32_t v_slot = 0;
+  uint32_t v_bit_pos = 0;
+  uint32_t v_byte_pos = 0;
+  uint32_t v_bit_res = 0;
+  uint64_t v_x = 0;
+  uint32_t v_j = 0;
+  uint64_t v_norm = 0;
+  uint32_t v_addr = 0;
+
+  v_s = a_dst_slice;
+  v_p = self->private_impl.f_bcj_pos;
+  while (((uint64_t)(v_s.len)) >= 16u) {
+    v_mask = ((uint32_t)(WUFFS_XZ__FILTER_06_IA64_BRANCH_TABLE[((uint8_t)(v_s.ptr[0u] & 31u))]));
+    v_slot = 0u;
+    while (true) {
+      do {
+        if (((v_mask >> v_slot) & 1u) == 0u) {
+          break;
+        }
+        v_bit_pos = ((v_slot * 41u) + 5u);
+        v_byte_pos = (v_bit_pos >> 3u);
+        v_bit_res = (v_bit_pos & 7u);
+        v_x = 0u;
+        v_j = 0u;
+        while (v_j < 6u) {
+          v_x |= (((uint64_t)(v_s.ptr[(v_j + v_byte_pos)])) << (8u * v_j));
+          v_j += 1u;
+        }
+        v_norm = (v_x >> v_bit_res);
+        if ((((v_norm >> 37u) & 15u) != 5u) || (((v_norm >> 9u) & 7u) != 0u)) {
+          break;
+        }
+        v_addr = ((uint32_t)(((v_norm >> 13u) & 1048575u)));
+        v_addr |= (((uint32_t)(((v_norm >> 36u) & 1u))) << 20u);
+        v_addr <<= 4u;
+        v_addr -= v_p;
+        v_addr >>= 4u;
+        v_norm &= 18446743996400148479u;
+        v_norm |= (((uint64_t)((v_addr & 1048575u))) << 13u);
+        v_norm |= (((uint64_t)((v_addr & 1048576u))) << 16u);
+        v_x &= ((((uint64_t)(1u)) << v_bit_res) - 1u);
+        v_x |= ((uint64_t)(v_norm << v_bit_res));
+        v_j = 0u;
+        while (v_j < 6u) {
+          v_s.ptr[(v_j + v_byte_pos)] = ((uint8_t)((v_x >> (8u * v_j))));
+          v_j += 1u;
+        }
+      } while (0);
+      if (v_slot >= 2u) {
+        break;
+      }
+      v_slot += 1u;
+    }
+    v_p += 16u;
+    v_s = wuffs_base__slice_u8__subslice_i(v_s, 16u);
   }
   self->private_impl.f_bcj_pos = v_p;
   return ((uint8_t)(((uint64_t)(v_s.len))));
@@ -68312,6 +68396,9 @@ wuffs_xz__decoder__decode_block_header_sans_padding(
         } else if (v_filter_id == 5u) {
           self->private_impl.choosy_apply_non_final_filters = (
               &wuffs_xz__decoder__apply_filter_05_powerpc);
+        } else if (v_filter_id == 6u) {
+          self->private_impl.choosy_apply_non_final_filters = (
+              &wuffs_xz__decoder__apply_filter_06_ia64);
         } else if (v_filter_id == 7u) {
           self->private_impl.choosy_apply_non_final_filters = (
               &wuffs_xz__decoder__apply_filter_07_arm);
@@ -68321,12 +68408,9 @@ wuffs_xz__decoder__decode_block_header_sans_padding(
         } else if (v_filter_id == 9u) {
           self->private_impl.choosy_apply_non_final_filters = (
               &wuffs_xz__decoder__apply_filter_09_sparc);
-        } else if (v_filter_id == 10u) {
+        } else {
           self->private_impl.choosy_apply_non_final_filters = (
               &wuffs_xz__decoder__apply_filter_0a_arm64);
-        } else {
-          status = wuffs_base__make_status(wuffs_xz__error__unsupported_filter);
-          goto exit;
         }
         {
           WUFFS_BASE__COROUTINE_SUSPENSION_POINT(7);

@@ -200,6 +200,101 @@ pri func decoder.apply_filter_05_powerpc!(dst_slice: slice base.u8) base.u8 {
     return s.length() as base.u8
 }
 
+pri const FILTER_06_IA64_BRANCH_TABLE : roarray[32] base.u8[..= 7] = [
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        4, 4, 6, 6, 0, 0, 7, 7,
+        4, 4, 0, 0, 4, 4, 0, 0,
+]
+
+pri func decoder.apply_filter_06_ia64!(dst_slice: slice base.u8) base.u8 {
+    var s        : slice base.u8
+    var p        : base.u32
+    var mask     : base.u32[..= 7]
+    var slot     : base.u32[..= 2]
+    var bit_pos  : base.u32[..= 87]
+    var byte_pos : base.u32[..= 10]
+    var bit_res  : base.u32[..= 7]
+    var x        : base.u64
+    var j        : base.u32
+    var norm     : base.u64
+    var addr     : base.u32
+
+    s = args.dst_slice
+    p = this.bcj_pos
+
+    while s.length() >= 16,
+            post s.length() < 16,
+    {
+        mask = FILTER_06_IA64_BRANCH_TABLE[s[0] & 0x1F] as base.u32
+
+        slot = 0
+        while true,
+                inv s.length() >= 16,
+        {
+            while.goto_done true,
+                    inv s.length() >= 16,
+            {{
+            if ((mask >> slot) & 1) == 0 {
+                break.goto_done
+            }
+
+            bit_pos = (slot * 41) + 5
+            byte_pos = bit_pos >> 3
+            bit_res = bit_pos & 7
+
+            x = 0
+            j = 0
+            while j < 6,
+                    inv s.length() >= 16,
+            {
+                x |= (s[j + byte_pos] as base.u64) << (8 * j)
+                j += 1
+            } endwhile
+
+            norm = x >> bit_res
+            if (((norm >> 37) & 0x0F) <> 0x05) or
+                    (((norm >> 9) & 0x07) <> 0x00) {
+                break.goto_done
+            }
+
+            addr = ((norm >> 13) & 0x0F_FFFF) as base.u32
+            addr |= (((norm >> 36) & 1) as base.u32) << 20
+            addr <<= 4
+            addr ~mod-= p
+            addr >>= 4
+
+            norm &= 0xFFFF_FFEE_0000_1FFF
+            norm |= ((addr & 0x0F_FFFF) as base.u64) << 13
+            norm |= ((addr & 0x10_0000) as base.u64) << (36 - 20)
+
+            x &= ((1 as base.u64) << bit_res) - 1
+            x |= norm ~mod<< bit_res
+            j = 0
+            while j < 6,
+                    inv s.length() >= 16,
+            {
+                s[j + byte_pos] = ((x >> (8 * j)) & 0xFF) as base.u8
+                j += 1
+            } endwhile
+
+            break.goto_done
+            }} endwhile.goto_done
+
+            if slot >= 2 {
+                break
+            }
+            slot += 1
+        } endwhile
+
+        p ~mod+= 16
+        s = s[16 ..]
+    } endwhile
+
+    this.bcj_pos = p
+    return s.length() as base.u8
+}
+
 pri func decoder.apply_filter_07_arm!(dst_slice: slice base.u8) base.u8 {
     var s : slice base.u8
     var p : base.u32

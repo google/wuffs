@@ -39,6 +39,7 @@ func main1() error {
 		// complicated (variable length instructions). Test coverage is instead
 		// provided by xz-tests-files's good-1-x86-lzma2.xz file.
 		{"05", "powerpc", genPowerpc},
+		{"06", "ia64", genIa64},
 		{"07", "arm", genArm},
 		{"08", "armthumb", genArmthumb},
 		{"09", "sparc", genSparc},
@@ -84,6 +85,65 @@ func genPowerpc() []byte {
 			continue
 		}
 		pokeU32BE(b[i:], x)
+	}
+	return b
+}
+
+func genIa64() []byte {
+	var bitMasks = [8]uint64{0x00, 0x01, 0x03, 0x07, 0x0F, 0x1F, 0x3F, 0x7F}
+	interveneIndex := 0
+
+	b := make256Bytes()
+	for i := 0; (i + 16) <= len(b); i += 16 {
+		mask := 0
+		switch pi[i>>2] & 3 {
+		case 0:
+			continue
+		case 1:
+			b[i], mask = 0x10, 4
+		case 2:
+			b[i], mask = 0x12, 6
+		case 3:
+			b[i], mask = 0x16, 7
+		}
+
+	loopUntilIntervention:
+		for true {
+			for slot, bitPos := 0, 5; slot < 3; slot, bitPos = slot+1, bitPos+41 {
+				if ((mask >> slot) & 1) == 0 {
+					continue
+				}
+				bytePos := bitPos >> 3
+				bitRes := bitPos & 7
+				instr := uint64(0)
+				for j := 0; j < 6; j++ {
+					instr |= uint64(b[i+j+bytePos]) << (8 * j)
+				}
+
+				intervene := (pi[interveneIndex%len(pi)] & 3) == 0
+				interveneIndex++
+				if !intervene {
+					continue
+				}
+				norm := instr >> bitRes
+				norm = (norm &^ 0x01E0_0000_0000) | 0x00A0_0000_0000
+				norm = (norm &^ 0x0E00) | 0x0000
+				newInstr := (instr & bitMasks[bitRes]) | (norm << bitRes)
+				for j := 0; j < 6; j++ {
+					b[i+j+bytePos] = uint8(newInstr >> (8 * j))
+				}
+
+				instr = uint64(0)
+				for j := 0; j < 6; j++ {
+					instr |= uint64(b[i+j+bytePos]) << (8 * j)
+				}
+				norm = instr >> bitRes
+				if ((norm>>37)&0x0F) == 0x05 && ((norm>>9)&0x07) == 0x00 {
+					break loopUntilIntervention
+				}
+				panic("intervention failed")
+			}
+		}
 	}
 	return b
 }

@@ -427,16 +427,16 @@ pri func decoder.decode_block_header_sans_padding?(src: base.io_reader) {
                 choose apply_non_final_filters = [apply_filter_04_x86]
             } else if filter_id == 0x05 {
                 choose apply_non_final_filters = [apply_filter_05_powerpc]
+            } else if filter_id == 0x06 {
+                choose apply_non_final_filters = [apply_filter_06_ia64]
             } else if filter_id == 0x07 {
                 choose apply_non_final_filters = [apply_filter_07_arm]
             } else if filter_id == 0x08 {
                 choose apply_non_final_filters = [apply_filter_08_armthumb]
             } else if filter_id == 0x09 {
                 choose apply_non_final_filters = [apply_filter_09_sparc]
-            } else if filter_id == 0x0A {
-                choose apply_non_final_filters = [apply_filter_0a_arm64]
             } else {
-                return "#unsupported filter"
+                choose apply_non_final_filters = [apply_filter_0a_arm64]
             }
             // We only support a zero BCJ offset.
             c8 = args.src.read_u8?()
