@@ -13960,6 +13960,7 @@ struct wuffs_xz__decoder__struct {
       uint8_t v_flags;
       uint32_t v_shift;
       uint32_t v_f;
+      uint64_t scratch;
     } s_decode_block_header_sans_padding;
   } private_data;
 
@@ -68335,7 +68336,6 @@ wuffs_xz__decoder__decode_block_header_sans_padding(
         break;
       }
     }
-    self->private_impl.f_bcj_pos = 0u;
     self->private_impl.f_bcj_x86_prev_mask = 0u;
     self->private_impl.choosy_apply_non_final_filters = (
         &wuffs_xz__decoder__apply_non_final_filters__choosy_default);
@@ -68421,7 +68421,39 @@ wuffs_xz__decoder__decode_block_header_sans_padding(
           uint8_t t_6 = *iop_a_src++;
           v_c8 = t_6;
         }
-        if (v_c8 != 0u) {
+        if (v_c8 == 0u) {
+          self->private_impl.f_bcj_pos = 0u;
+        } else if (v_c8 == 4u) {
+          {
+            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(8);
+            uint32_t t_7;
+            if (WUFFS_BASE__LIKELY(io2_a_src - iop_a_src >= 4)) {
+              t_7 = wuffs_base__peek_u32le__no_bounds_check(iop_a_src);
+              iop_a_src += 4;
+            } else {
+              self->private_data.s_decode_block_header_sans_padding.scratch = 0;
+              WUFFS_BASE__COROUTINE_SUSPENSION_POINT(9);
+              while (true) {
+                if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
+                  status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+                  goto suspend;
+                }
+                uint64_t* scratch = &self->private_data.s_decode_block_header_sans_padding.scratch;
+                uint32_t num_bits_7 = ((uint32_t)(*scratch >> 56));
+                *scratch <<= 8;
+                *scratch >>= 8;
+                *scratch |= ((uint64_t)(*iop_a_src++)) << num_bits_7;
+                if (num_bits_7 == 24) {
+                  t_7 = ((uint32_t)(*scratch));
+                  break;
+                }
+                num_bits_7 += 8u;
+                *scratch |= ((uint64_t)(num_bits_7)) << 56;
+              }
+            }
+            self->private_impl.f_bcj_pos = t_7;
+          }
+        } else {
           status = wuffs_base__make_status(wuffs_xz__error__unsupported_filter);
           goto exit;
         }
@@ -68429,36 +68461,36 @@ wuffs_xz__decoder__decode_block_header_sans_padding(
       v_f += 1u;
     }
     {
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(8);
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(10);
       if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
         status = wuffs_base__make_status(wuffs_base__suspension__short_read);
         goto suspend;
       }
-      uint8_t t_7 = *iop_a_src++;
-      v_filter_id = t_7;
+      uint8_t t_8 = *iop_a_src++;
+      v_filter_id = t_8;
     }
     if (v_filter_id == 33u) {
       {
-        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(9);
-        if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
-          status = wuffs_base__make_status(wuffs_base__suspension__short_read);
-          goto suspend;
-        }
-        uint8_t t_8 = *iop_a_src++;
-        v_c8 = t_8;
-      }
-      if (v_c8 != 1u) {
-        status = wuffs_base__make_status(wuffs_xz__error__bad_filter);
-        goto exit;
-      }
-      {
-        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(10);
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(11);
         if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
           status = wuffs_base__make_status(wuffs_base__suspension__short_read);
           goto suspend;
         }
         uint8_t t_9 = *iop_a_src++;
         v_c8 = t_9;
+      }
+      if (v_c8 != 1u) {
+        status = wuffs_base__make_status(wuffs_xz__error__bad_filter);
+        goto exit;
+      }
+      {
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(12);
+        if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
+          status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+          goto suspend;
+        }
+        uint8_t t_10 = *iop_a_src++;
+        v_c8 = t_10;
       }
       v_status = wuffs_lzma__decoder__set_quirk(&self->private_data.f_lzma, 1348001792u, (2u | (((uint64_t)(v_c8)) << 8u)));
       if ( ! wuffs_base__status__is_ok(&v_status)) {

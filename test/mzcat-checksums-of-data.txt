@@ -10,6 +10,7 @@ OK. 6ddef9db test/data/artificial-bzip2/huffman-258.bz2
 OK. fa3907fb test/data/artificial-xz-filter/xz-filter-05-fa3907fb-powerpc.dat.xz
 OK. e147593e test/data/artificial-xz-filter/xz-filter-06-e147593e-ia64.dat.xz
 OK. 9a3fb8ae test/data/artificial-xz-filter/xz-filter-07-9a3fb8ae-arm.dat.xz
+OK. 9a3fb8ae test/data/artificial-xz-filter/xz-filter-07-9a3fb8ae-arm_start_1000.dat.xz
 OK. 84e8999d test/data/artificial-xz-filter/xz-filter-08-84e8999d-armthumb.dat.xz
 OK. 0353bd24 test/data/artificial-xz-filter/xz-filter-09-0353bd24-sparc.dat.xz
 OK. dfdb871b test/data/artificial-xz-filter/xz-filter-0a-dfdb871b-arm64.dat.xz

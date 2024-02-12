@@ -20,6 +20,7 @@ import (
 	"hash/crc32"
 	"os"
 	"os/exec"
+	"strings"
 )
 
 func main() {
@@ -41,6 +42,7 @@ func main1() error {
 		{"05", "powerpc", genPowerpc},
 		{"06", "ia64", genIa64},
 		{"07", "arm", genArm},
+		{"07", "arm=start=1000", genArm},
 		{"08", "armthumb", genArmthumb},
 		{"09", "sparc", genSparc},
 		{"0a", "arm64", genArm64},
@@ -51,7 +53,7 @@ func main1() error {
 		filename := fmt.Sprintf("xz-filter-%s-%08x-%s.dat",
 			recipe.filterID,
 			crc32.ChecksumIEEE(contents),
-			recipe.filterName)
+			strings.Replace(recipe.filterName, "=", "_", -1))
 		if err := os.WriteFile(filename, contents, 0644); err != nil {
 			return err
 		}

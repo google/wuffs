@@ -47,6 +47,7 @@ OK. 00000000 test/3pdata/xzsuite/good-0catpad-empty.xz
 OK. 00000000 test/3pdata/xzsuite/good-0pad-empty.xz
 OK. db4847fb test/3pdata/xzsuite/good-1-3delta-lzma2.xz
 OK. d4e17ca0 test/3pdata/xzsuite/good-1-arm64-lzma2-1.xz
+OK. d4e17ca0 test/3pdata/xzsuite/good-1-arm64-lzma2-2.xz
 OK. 15a2a343 test/3pdata/xzsuite/good-1-block_header-1.xz
 OK. 15a2a343 test/3pdata/xzsuite/good-1-block_header-2.xz
 OK. 15a2a343 test/3pdata/xzsuite/good-1-block_header-3.xz
