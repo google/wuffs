@@ -15,6 +15,7 @@ OK. 84e8999d test/data/artificial-xz-filter/xz-filter-08-84e8999d-armthumb.dat.x
 OK. 0353bd24 test/data/artificial-xz-filter/xz-filter-09-0353bd24-sparc.dat.xz
 OK. dfdb871b test/data/artificial-xz-filter/xz-filter-0a-dfdb871b-arm64.dat.xz
 OK. acef87f1 test/data/enwik5.lzma
+BAD 3506b4c3 test/data/enwik5.lzma2-chunk-max-1-13.xz
 OK. acef87f1 test/data/enwik5.xz
 OK. 3db2cdc6 test/data/midsummer.txt.bz2
 OK. 3db2cdc6 test/data/midsummer.txt.gz
