@@ -18,10 +18,10 @@ if [ ! -e ../../wuffs-root-directory.txt ]; then
   exit 1
 fi
 
-# Check out a specific commit (from December 2023).
+# Check out a specific commit (from February 2024).
 git clone --quiet https://github.com/nigeltao/xz-tests-files.git
 cd xz-tests-files
-git reset --quiet --hard 6c3e22469300d284182159b5ae7db9e959dfe62e
+git reset --quiet --hard d082a076f3e1da05aa478eac4bbba24744b3a1c0
 cd ..
 
 # Trim the git metadata.
