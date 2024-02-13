@@ -413,7 +413,7 @@ pri func decoder.decode_block_header_sans_padding?(src: base.io_reader) {
                 k += 1
             } endwhile
 
-        } else if (filter_id < 0x03) or (0x0A < filter_id) {
+        } else if (filter_id < 0x03) or (0x0B < filter_id) {
             return "#unsupported filter"
         } else if f <> 0 {
             // We only support BCJ (Branch, Call, Jump) filters if they're the
@@ -434,8 +434,10 @@ pri func decoder.decode_block_header_sans_padding?(src: base.io_reader) {
                 choose apply_non_final_filters = [apply_filter_08_armthumb]
             } else if filter_id == 0x09 {
                 choose apply_non_final_filters = [apply_filter_09_sparc]
-            } else {
+            } else if filter_id == 0x0A {
                 choose apply_non_final_filters = [apply_filter_0a_arm64]
+            } else {
+                choose apply_non_final_filters = [apply_filter_0b_riscv]
             }
 
             c8 = args.src.read_u8?()

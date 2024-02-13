@@ -39,6 +39,9 @@ func main1() error {
 		// No test case generated for 04/x86, as the x86 CPU bytecode format is
 		// complicated (variable length instructions). Test coverage is instead
 		// provided by xz-tests-files's good-1-x86-lzma2.xz file.
+		//
+		// Similarly, no test case here for 0b/riscv. It's covered by the
+		// good-1-riscv-lzma2-*.xz files.
 		{"05", "powerpc", genPowerpc},
 		{"06", "ia64", genIa64},
 		{"07", "arm", genArm},

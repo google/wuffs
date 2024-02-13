@@ -66847,6 +66847,12 @@ wuffs_xz__decoder__apply_filter_0a_arm64(
     wuffs_base__slice_u8 a_dst_slice);
 
 WUFFS_BASE__GENERATED_C_CODE
+static uint8_t
+wuffs_xz__decoder__apply_filter_0b_riscv(
+    wuffs_xz__decoder* self,
+    wuffs_base__slice_u8 a_dst_slice);
+
+WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__status
 wuffs_xz__decoder__do_transform_io(
     wuffs_xz__decoder* self,
@@ -67380,6 +67386,98 @@ wuffs_xz__decoder__apply_filter_0a_arm64(
     }
     v_p += 4u;
     v_s = wuffs_base__slice_u8__subslice_i(v_s, 4u);
+  }
+  self->private_impl.f_bcj_pos = v_p;
+  return ((uint8_t)(((uint64_t)(v_s.len))));
+}
+
+// -------- func xz.decoder.apply_filter_0b_riscv
+
+WUFFS_BASE__GENERATED_C_CODE
+static uint8_t
+wuffs_xz__decoder__apply_filter_0b_riscv(
+    wuffs_xz__decoder* self,
+    wuffs_base__slice_u8 a_dst_slice) {
+  wuffs_base__slice_u8 v_s = {0};
+  uint32_t v_p = 0;
+  uint32_t v_x = 0;
+  uint32_t v_x27 = 0;
+  uint32_t v_y = 0;
+  uint32_t v_addr = 0;
+
+  v_s = a_dst_slice;
+  v_p = self->private_impl.f_bcj_pos;
+  while (((uint64_t)(v_s.len)) >= 8u) {
+    if (v_s.ptr[0u] == 239u) {
+      if (((uint8_t)(v_s.ptr[1u] & 13u)) != 0u) {
+        v_p += 2u;
+        v_s = wuffs_base__slice_u8__subslice_i(v_s, 2u);
+        continue;
+      }
+      v_addr = ((((uint32_t)(((uint8_t)(v_s.ptr[1u] & 240u)))) << 13u) | (((uint32_t)(v_s.ptr[2u])) << 9u) | (((uint32_t)(v_s.ptr[3u])) << 1u));
+      v_addr -= v_p;
+      v_s.ptr[1u] = ((uint8_t)(((uint8_t)(v_s.ptr[1u] & 15u)) | ((uint8_t)(((v_addr >> 8u) & 240u)))));
+      v_s.ptr[2u] = ((uint8_t)((((v_addr >> 16u) & 15u) | ((v_addr >> 7u) & 16u) | (((uint32_t)(v_addr << 4u)) & 224u))));
+      v_s.ptr[3u] = ((uint8_t)((((v_addr >> 4u) & 127u) | ((v_addr >> 13u) & 128u))));
+      v_p += 4u;
+      v_s = wuffs_base__slice_u8__subslice_i(v_s, 4u);
+      continue;
+    } else if (((uint8_t)(v_s.ptr[0u] & 127u)) == 23u) {
+      v_x = ((((uint32_t)(v_s.ptr[0u])) << 0u) |
+          (((uint32_t)(v_s.ptr[1u])) << 8u) |
+          (((uint32_t)(v_s.ptr[2u])) << 16u) |
+          (((uint32_t)(v_s.ptr[3u])) << 24u));
+      if ((v_x & 3712u) != 0u) {
+        v_y = ((((uint32_t)(v_s.ptr[4u])) << 0u) |
+            (((uint32_t)(v_s.ptr[5u])) << 8u) |
+            (((uint32_t)(v_s.ptr[6u])) << 16u) |
+            (((uint32_t)(v_s.ptr[7u])) << 24u));
+        if (((((uint32_t)(v_x << 8u)) ^ ((uint32_t)(v_y - 3u))) & 1015811u) != 0u) {
+          v_p += 6u;
+          v_s = wuffs_base__slice_u8__subslice_i(v_s, 6u);
+          continue;
+        }
+        v_addr = ((v_x & 4294963200u) | (v_y >> 20u));
+        v_x = (279u | ((uint32_t)(v_y << 12u)));
+        v_s.ptr[0u] = ((uint8_t)((v_x >> 0u)));
+        v_s.ptr[1u] = ((uint8_t)((v_x >> 8u)));
+        v_s.ptr[2u] = ((uint8_t)((v_x >> 16u)));
+        v_s.ptr[3u] = ((uint8_t)((v_x >> 24u)));
+        v_s.ptr[4u] = ((uint8_t)((v_addr >> 0u)));
+        v_s.ptr[5u] = ((uint8_t)((v_addr >> 8u)));
+        v_s.ptr[6u] = ((uint8_t)((v_addr >> 16u)));
+        v_s.ptr[7u] = ((uint8_t)((v_addr >> 24u)));
+        v_p += 8u;
+        v_s = wuffs_base__slice_u8__subslice_i(v_s, 8u);
+        continue;
+      }
+      v_x27 = (v_x >> 27u);
+      if (((uint32_t)(((uint32_t)(v_x - 12567u)) << 18u)) >= (v_x27 & 29u)) {
+        v_p += 4u;
+        v_s = wuffs_base__slice_u8__subslice_i(v_s, 4u);
+        continue;
+      }
+      v_addr = ((((uint32_t)(v_s.ptr[4u])) << 24u) |
+          (((uint32_t)(v_s.ptr[5u])) << 16u) |
+          (((uint32_t)(v_s.ptr[6u])) << 8u) |
+          (((uint32_t)(v_s.ptr[7u])) << 0u));
+      v_addr -= v_p;
+      v_y = ((v_x >> 12u) | ((uint32_t)(v_addr << 20u)));
+      v_x = (23u | (v_x27 << 7u) | (((uint32_t)(v_addr + 2048u)) & 4294963200u));
+      v_s.ptr[0u] = ((uint8_t)((v_x >> 0u)));
+      v_s.ptr[1u] = ((uint8_t)((v_x >> 8u)));
+      v_s.ptr[2u] = ((uint8_t)((v_x >> 16u)));
+      v_s.ptr[3u] = ((uint8_t)((v_x >> 24u)));
+      v_s.ptr[4u] = ((uint8_t)((v_y >> 0u)));
+      v_s.ptr[5u] = ((uint8_t)((v_y >> 8u)));
+      v_s.ptr[6u] = ((uint8_t)((v_y >> 16u)));
+      v_s.ptr[7u] = ((uint8_t)((v_y >> 24u)));
+      v_p += 8u;
+      v_s = wuffs_base__slice_u8__subslice_i(v_s, 8u);
+      continue;
+    }
+    v_p += 2u;
+    v_s = wuffs_base__slice_u8__subslice_i(v_s, 2u);
   }
   self->private_impl.f_bcj_pos = v_p;
   return ((uint8_t)(((uint64_t)(v_s.len))));
@@ -68382,7 +68480,7 @@ wuffs_xz__decoder__decode_block_header_sans_padding(
           self->private_data.f_filter_data[v_f][v_k] = 0u;
           v_k += 1u;
         }
-      } else if ((v_filter_id < 3u) || (10u < v_filter_id)) {
+      } else if ((v_filter_id < 3u) || (11u < v_filter_id)) {
         status = wuffs_base__make_status(wuffs_xz__error__unsupported_filter);
         goto exit;
       } else if (v_f != 0u) {
@@ -68408,9 +68506,12 @@ wuffs_xz__decoder__decode_block_header_sans_padding(
         } else if (v_filter_id == 9u) {
           self->private_impl.choosy_apply_non_final_filters = (
               &wuffs_xz__decoder__apply_filter_09_sparc);
-        } else {
+        } else if (v_filter_id == 10u) {
           self->private_impl.choosy_apply_non_final_filters = (
               &wuffs_xz__decoder__apply_filter_0a_arm64);
+        } else {
+          self->private_impl.choosy_apply_non_final_filters = (
+              &wuffs_xz__decoder__apply_filter_0b_riscv);
         }
         {
           WUFFS_BASE__COROUTINE_SUSPENSION_POINT(7);

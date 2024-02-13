@@ -440,3 +440,105 @@ pri func decoder.apply_filter_0a_arm64!(dst_slice: slice base.u8) base.u8 {
     this.bcj_pos = p
     return s.length() as base.u8
 }
+
+pri func decoder.apply_filter_0b_riscv!(dst_slice: slice base.u8) base.u8 {
+    var s    : slice base.u8
+    var p    : base.u32
+    var x    : base.u32
+    var x27  : base.u32[..= 31]
+    var y    : base.u32
+    var addr : base.u32
+
+    s = args.dst_slice
+    p = this.bcj_pos
+
+    while s.length() >= 8,
+            post s.length() < 8,
+    {
+        if s[0] == 0xEF {
+            // RISC-V JAL instruction.
+            if (s[1] & 0x0D) <> 0x00 {
+                p ~mod+= 2
+                s = s[2 ..]
+                continue
+            }
+            addr = (((s[1] & 0xF0) as base.u32) << 13) |
+                    ((s[2] as base.u32) << 9) |
+                    ((s[3] as base.u32) << 1)
+            addr ~mod-= p
+            s[1] = (s[1] & 0x0F) |
+                    (((addr >> 8) & 0xF0) as base.u8)
+            s[2] = (((addr >> 16) & 0x0F) |
+                    ((addr >> 7) & 0x10) |
+                    ((addr ~mod<< 4) & 0xE0)) as base.u8
+            s[3] = (((addr >> 4) & 0x7F) |
+                    ((addr >> 13) & 0x80)) as base.u8
+            p ~mod+= 4
+            s = s[4 ..]
+            continue
+
+        } else if (s[0] & 0x7F) == 0x17 {
+            // RISC-V AUIPC instruction.
+            x = ((s[0] as base.u32) << 0x00) |
+                    ((s[1] as base.u32) << 0x08) |
+                    ((s[2] as base.u32) << 0x10) |
+                    ((s[3] as base.u32) << 0x18)
+
+            if (x & 0xE80) <> 0 {
+                y = ((s[4] as base.u32) << 0x00) |
+                        ((s[5] as base.u32) << 0x08) |
+                        ((s[6] as base.u32) << 0x10) |
+                        ((s[7] as base.u32) << 0x18)
+                if (((x ~mod<< 8) ^ (y ~mod- 3)) & 0x000F_8003) <> 0 {
+                    p ~mod+= 6
+                    s = s[6 ..]
+                    continue
+                }
+                addr = (x & 0xFFFF_F000) | (y >> 20)
+                x = 0x117 | (y ~mod<< 12)
+                s[0] = ((x >> 0x00) & 0xFF) as base.u8
+                s[1] = ((x >> 0x08) & 0xFF) as base.u8
+                s[2] = ((x >> 0x10) & 0xFF) as base.u8
+                s[3] = ((x >> 0x18) & 0xFF) as base.u8
+                s[4] = ((addr >> 0x00) & 0xFF) as base.u8
+                s[5] = ((addr >> 0x08) & 0xFF) as base.u8
+                s[6] = ((addr >> 0x10) & 0xFF) as base.u8
+                s[7] = ((addr >> 0x18) & 0xFF) as base.u8
+                p ~mod+= 8
+                s = s[8 ..]
+                continue
+            }
+
+            x27 = x >> 27
+            if ((x ~mod- 0x3117) ~mod<< 18) >= (x27 & 0x1D) {
+                p ~mod+= 4
+                s = s[4 ..]
+                continue
+            }
+            addr = ((s[4] as base.u32) << 0x18) |
+                    ((s[5] as base.u32) << 0x10) |
+                    ((s[6] as base.u32) << 0x08) |
+                    ((s[7] as base.u32) << 0x00)
+            addr ~mod-= p
+            y = (x >> 12) | (addr ~mod<< 20)
+            x = 0x17 | (x27 << 7) | ((addr ~mod+ 0x800) & 0xFFFF_F000)
+            s[0] = ((x >> 0x00) & 0xFF) as base.u8
+            s[1] = ((x >> 0x08) & 0xFF) as base.u8
+            s[2] = ((x >> 0x10) & 0xFF) as base.u8
+            s[3] = ((x >> 0x18) & 0xFF) as base.u8
+            s[4] = ((y >> 0x00) & 0xFF) as base.u8
+            s[5] = ((y >> 0x08) & 0xFF) as base.u8
+            s[6] = ((y >> 0x10) & 0xFF) as base.u8
+            s[7] = ((y >> 0x18) & 0xFF) as base.u8
+            p ~mod+= 8
+            s = s[8 ..]
+            continue
+        }
+
+        p ~mod+= 2
+        s = s[2 ..]
+    } endwhile
+
+    this.bcj_pos = p
+    return s.length() as base.u8
+}
