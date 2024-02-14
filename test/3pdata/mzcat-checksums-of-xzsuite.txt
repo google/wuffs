@@ -14,7 +14,6 @@ BAD 15a2a343 test/3pdata/xzsuite/bad-1-check-crc32-2.xz
 BAD 15a2a343 test/3pdata/xzsuite/bad-1-check-crc32.xz
 BAD 15a2a343 test/3pdata/xzsuite/bad-1-check-crc64.xz
 BAD 15a2a343 test/3pdata/xzsuite/bad-1-check-sha256.xz
-OK. 15a2a343 test/3pdata/xzsuite/bad-1-lzma2-1.xz
 BAD a3de2f0d test/3pdata/xzsuite/bad-1-lzma2-10.xz
 BAD 7d14dddd test/3pdata/xzsuite/bad-1-lzma2-11.xz
 BAD 7759aecd test/3pdata/xzsuite/bad-1-lzma2-2.xz

@@ -35,7 +35,8 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
     var reptmp : base.u32[..= 0xFFFF_FFFE]
     var rep    : base.u32
 
-    var pos : base.u64
+    var pos     : base.u64
+    var pos_end : base.u64
 
     var lc      : base.u32[..= 8]
     var lp_mask : base.u64[..= 15]
@@ -79,23 +80,24 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
     var adj_dist : base.u32
     var wb_index : base.u64
 
-    // Initialize the bitstream.
-    c8 = args.src.read_u8?()
-    if c8 <> 0x00 {
-        return "#bad code"
-    }
-    bits = args.src.read_u32be?()
-    if bits == 0xFFFF_FFFF {
-        return "#bad code"
-    }
-    range = 0xFFFF_FFFF
+    prev_byte = this.stashed_bytes[0]
+    match_byte = this.stashed_bytes[1]
+    bits = this.stashed_bits
+    range = this.stashed_range
+    state = this.stashed_state
+    rep0 = this.stashed_rep0
+    rep1 = this.stashed_rep1
+    rep2 = this.stashed_rep2
+    rep3 = this.stashed_rep3
+    pos = this.stashed_pos
 
     lc = this.lc
     lp_mask = ((1 as base.u64) << this.lp) - 1
     pb_mask = ((1 as base.u64) << this.pb) - 1
 
     // "outer" is the core loop discussed in README.md's "Algorithm Overview".
-    while.outer pos < this.decoded_length {
+    pos_end = pos ~sat+ this.decoded_length
+    while.outer pos < pos_end {
         // AlgOve00  if decodeTheNextBym() == 0
         index_ao00 = (state << 4) | ((pos & pb_mask) as base.u32)
         prob = this.probs_ao00[index_ao00] as base.u32
@@ -819,7 +821,7 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
         assert len >= 1
         dist = rep0 + 1
         assert dist >= 1
-        if ((dist as base.u64) > (pos ~mod+ this.lzma2_prior_decoded_length)) or
+        if ((dist as base.u64) > pos) or
                 ((dist as base.u64) > (this.dict_size as base.u64)) {
             return "#bad distance"
         }
@@ -847,7 +849,7 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
             {
                 wb_index ~mod+= this.dict_size as base.u64
             } endwhile
-            if wb_index > args.workbuf.length() {
+            if wb_index >= args.workbuf.length() {
                 return "#internal error: inconsistent dictionary state"
             }
 
@@ -904,8 +906,18 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
 
     if bits <> 0 {
         return "#bad bitstream trailer"
-    } else if (this.decoded_length <> 0xFFFF_FFFF_FFFF_FFFF) and
-            (this.decoded_length <> pos) {
+    } else if (this.decoded_length <> 0xFFFF_FFFF_FFFF_FFFF) and (pos <> pos_end) {
         return "#bad decoded length"
     }
+
+    this.stashed_bytes[0] = prev_byte
+    this.stashed_bytes[1] = match_byte
+    this.stashed_bits = bits
+    this.stashed_range = range
+    this.stashed_state = state
+    this.stashed_rep0 = rep0
+    this.stashed_rep1 = rep1
+    this.stashed_rep2 = rep2
+    this.stashed_rep3 = rep3
+    this.stashed_pos = pos
 }

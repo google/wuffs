@@ -52,11 +52,23 @@ pub struct decoder? implements base.io_transformer(
 
         decoded_length : base.u64,
 
-        lzma2_prior_decoded_length : base.u64,
-        lzma2_encoded_length_have  : base.u64,
-        lzma2_encoded_length_want  : base.u64,
-        lzma2_need_prob_reset      : base.bool,
-        lzma2_need_properties      : base.bool,
+        lzma2_encoded_length_have : base.u64,
+        lzma2_encoded_length_want : base.u64,
+        lzma2_need_prob_reset     : base.bool,
+        lzma2_need_properties     : base.bool,
+        lzma2_need_dict_reset     : base.bool,
+
+        prev_lzma2_chunk_was_uncompressed : base.bool,
+
+        stashed_bytes : array[2] base.u8,  // 0 is prev_byte, 1 is match_byte.
+        stashed_bits  : base.u32,
+        stashed_range : base.u32,
+        stashed_state : base.u32[..= 11],
+        stashed_rep0  : base.u32[..= 0xFFFF_FFFE],
+        stashed_rep1  : base.u32[..= 0xFFFF_FFFE],
+        stashed_rep2  : base.u32[..= 0xFFFF_FFFE],
+        stashed_rep3  : base.u32[..= 0xFFFF_FFFE],
+        stashed_pos   : base.u64,
 
         util : base.utility,
 ) + (
@@ -317,6 +329,7 @@ pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf
 
 pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, workbuf: roslice base.u8) {
     var header_byte : base.u8
+    var c8          : base.u8
     var c32         : base.u32
     var prop_byte   : base.u8
 
@@ -327,12 +340,12 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
     var length   : base.u32
     var n_copied : base.u32
 
-    var dmark  : base.u64
     var smark  : base.u64
     var status : base.status
 
     this.lzma2_need_prob_reset = true
     this.lzma2_need_properties = true
+    this.lzma2_need_dict_reset = true
 
     // Loop over chunks. LZMA1 has only one (implicit) chunk. For LZMA2's chunk
     // header, see
@@ -380,19 +393,21 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
             header_byte = args.src.read_u8?()
             if header_byte < 0x80 {
                 if header_byte < 0x02 {
-                    this.lzma2_prior_decoded_length = 0
                     this.lzma2_need_prob_reset = true
                     this.lzma2_need_properties = true
-                } else if header_byte > 0x02 {
+                    this.lzma2_need_dict_reset = false
+                    this.initialize_dict!()
+                } else if (header_byte > 0x02) or this.lzma2_need_dict_reset {
                     return "#bad LZMA2 header"
                 }
+                this.prev_lzma2_chunk_was_uncompressed = true
 
                 c32 = args.src.read_u16be_as_u32?()
                 length = 1 + c32
 
                 while true {
                     n_copied = args.dst.limited_copy_u32_from_reader!(up_to: length, r: args.src)
-                    this.lzma2_prior_decoded_length ~sat+= n_copied as base.u64
+                    this.stashed_pos ~sat+= n_copied as base.u64
                     if length <= n_copied {
                         break
                     }
@@ -437,25 +452,39 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
             }
 
             if header_byte >= 0xE0 {
-                this.lzma2_prior_decoded_length = 0
+                this.lzma2_need_dict_reset = false
+                this.initialize_dict!()
+            } else if this.prev_lzma2_chunk_was_uncompressed {
+                // Update the stashed prev_byte and matched_byte. We've copied
+                // an uncompressed chunk since the last compressed chunk.
+                this.update_stashed_bytes?(dst: args.dst, workbuf: args.workbuf)
             }
+            this.prev_lzma2_chunk_was_uncompressed = false
 
-            if this.lzma2_need_prob_reset or this.lzma2_need_properties {
+            if this.lzma2_need_prob_reset or this.lzma2_need_properties or this.lzma2_need_dict_reset {
                 return "#bad LZMA2 header"
             }
         }
+
+        c8 = args.src.read_u8?()
+        if c8 <> 0x00 {
+            return "#bad code"
+        }
+        this.stashed_bits = args.src.read_u32be?()
+        if this.stashed_bits == 0xFFFF_FFFF {
+            return "#bad code"
+        }
+        this.stashed_range = 0xFFFF_FFFF
+        this.lzma2_encoded_length_have = 5
 
         while args.workbuf.length() < ((this.dict_size as base.u64) + 273) {
             yield? base."$short workbuf"
         } endwhile
 
-        this.lzma2_encoded_length_have = 0
         while true {
-            dmark = args.dst.mark()
             smark = args.src.mark()
             status =? this.decode_bitstream?(dst: args.dst, src: args.src, workbuf: args.workbuf)
             this.lzma2_encoded_length_have ~sat+= args.src.count_since(mark: smark)
-            this.lzma2_prior_decoded_length ~sat+= args.dst.count_since(mark: dmark)
             if status.is_ok() {
                 break
             }
@@ -472,6 +501,54 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
 
 pri func decoder.decode_bitstream?(dst: base.io_writer, src: base.io_reader, workbuf: roslice base.u8) {
     this.decode_bitstream_slow?(dst: args.dst, src: args.src, workbuf: args.workbuf)
+}
+
+pri func decoder.update_stashed_bytes?(dst: base.io_writer, workbuf: roslice base.u8) {
+    var dist     : base.u32
+    var which    : base.u32
+    var adj_dist : base.u32
+    var wb_index : base.u64
+
+    while args.dst.length() <= 0 {
+        yield? base."$short write"
+    } endwhile
+
+    dist = 1
+    which = 0
+    while which < 2 {
+        if (dist as base.u64) <= args.dst.history_length() {
+            args.dst.limited_copy_u32_from_history!(up_to: 1, distance: dist)
+            if not args.dst.can_undo_byte() {
+                return "#internal error: inconsistent dictionary state"
+            }
+            this.stashed_bytes[which] = args.dst.peek_undo_byte()
+            args.dst.undo_byte!()
+
+        } else {
+            adj_dist = (((dist as base.u64) - args.dst.history_length()) & 0xFFFF_FFFF) as base.u32
+            wb_index = (this.dict_workbuf_index as base.u64) ~mod- (adj_dist as base.u64)
+            while wb_index >= 0x8000_0000_0000_0000,
+                    inv which < 2,
+            {
+                wb_index ~mod+= this.dict_size as base.u64
+            } endwhile
+            if wb_index >= args.workbuf.length() {
+                return "#internal error: inconsistent dictionary state"
+            }
+            this.stashed_bytes[which] = args.workbuf[wb_index]
+        }
+
+        dist = 1 + this.stashed_rep0
+        which += 1
+    } endwhile
+}
+
+pri func decoder.initialize_dict!() {
+    this.dict_workbuf_index = 0
+    this.dict_seen = 0
+    this.stashed_bytes[0] = 0
+    this.stashed_bytes[1] = 0
+    this.stashed_pos = 0
 }
 
 // initialize_probs sets all of the probs_foo[i][j] values to 1024.
@@ -610,6 +687,14 @@ pri func decoder.initialize_probs!() {
         } endwhile
         i += 1
     } endwhile
+
+    // Reset some other LZMA state too. They're not probabilities, but they
+    // need resetting whenever the probabilities do.
+    this.stashed_state = 0
+    this.stashed_rep0 = 0
+    this.stashed_rep1 = 0
+    this.stashed_rep2 = 0
+    this.stashed_rep3 = 0
 }
 
 pri const STATE_TRANSITION_LITERAL : roarray[12] base.u8[..= 11] = [
