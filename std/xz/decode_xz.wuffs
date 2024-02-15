@@ -20,7 +20,9 @@ use "std/sha256"
 pub status "#bad block header"
 pub status "#bad checksum"
 pub status "#bad filter"
+pub status "#bad footer"
 pub status "#bad header"
+pub status "#bad index"
 pub status "#bad padding"
 pub status "#truncated input"
 pub status "#unsupported checksum algorithm"
@@ -53,6 +55,18 @@ pub struct decoder? implements base.io_transformer(
 
         block_compressed_size   : base.u64,
         block_uncompressed_size : base.u64,
+
+        num_actual_blocks : base.u64,
+        num_index_blocks  : base.u64,
+
+        index_block_compressed_size   : base.u64,
+        index_block_uncompressed_size : base.u64,
+
+        backwards_size : base.u64,
+
+        started_verify_index : base.bool,
+
+        flags : base.u16,
 
         util : base.utility,
 ) + (
@@ -101,7 +115,7 @@ pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf
 }
 
 pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, workbuf: slice base.u8) {
-    var magic             : base.u64
+    var header_magic      : base.u64
     var dmark             : base.u64
     var smark             : base.u64
     var i8                : base.u8
@@ -114,33 +128,35 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
     var compressed_size   : base.u64
     var uncompressed_size : base.u64
     var c8                : base.u8
+    var footer_magic      : base.u16
 
-    magic = args.src.read_u48le_as_u64?()
-    if magic <> '\xFD\x37\x7A\x58\x5A\x00'le {
+    header_magic = args.src.read_u48le_as_u64?()
+    if header_magic <> '\xFD\x37\x7A\x58\x5A\x00'le {
         return "#bad header"
     }
 
     // Read the 2-byte flags and the 4-byte CRC-32 checksum of those 2 bytes.
-    magic = args.src.read_u48le_as_u64?()
-    if magic == '\x00\x00\xFF\x12\xD9\x41'le {
+    header_magic = args.src.read_u48le_as_u64?()
+    if header_magic == '\x00\x00\xFF\x12\xD9\x41'le {
         this.checksummer = 0  // None.
-    } else if magic == '\x00\x01\x69\x22\xDE\x36'le {
+    } else if header_magic == '\x00\x01\x69\x22\xDE\x36'le {
         this.checksummer = 1  // CRC-32.
-    } else if magic == '\x00\x04\xE6\xD6\xB4\x46'le {
+    } else if header_magic == '\x00\x04\xE6\xD6\xB4\x46'le {
         this.checksummer = 2  // CRC-64.
-    } else if magic == '\x00\x0A\xE1\xFB\x0C\xA1'le {
+    } else if header_magic == '\x00\x0A\xE1\xFB\x0C\xA1'le {
         this.checksummer = 3  // SHA-256.
-    } else if (magic & 0xF0FF) <> 0 {
+    } else if (header_magic & 0xF0FF) <> 0 {
         // Section 2.1.1.2. Stream Flags: "If any reserved bit is set, the
         // decoder MUST indicate an error."
         return "#bad header"
     } else {
-        magic = 0xF & (magic >> 8)
-        if (magic <> 0x0) and (magic <> 0x1) and (magic <> 0x4) and (magic <> 0xA) {
+        header_magic = 0xF & (header_magic >> 8)
+        if (header_magic <> 0x0) and (header_magic <> 0x1) and (header_magic <> 0x4) and (header_magic <> 0xA) {
             return "#unsupported checksum algorithm"
         }
         return "#bad checksum"
     }
+    this.flags = (header_magic & 0xFFFF) as base.u16
 
     while true {
         if args.src.length() <= 0 {
@@ -148,9 +164,9 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
             continue
         } else if args.src.peek_u8() == 0x00 {
             // We've hit the Index instead of a Block.
-            args.src.skip_u32_fast!(actual: 1, worst_case: 1)
             break
         }
+        this.num_actual_blocks ~mod+= 1
 
         if not this.ignore_checksum {
             this.crc32.reset!()
@@ -288,6 +304,67 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
             }
         }
     } endwhile
+
+    // Verify the index.
+    this.backwards_size = 0
+    if not this.ignore_checksum {
+        this.crc32.reset!()
+    }
+    while true {
+        smark = args.src.mark()
+        status =? this.verify_index?(src: args.src)
+        this.backwards_size ~sat+= args.src.count_since(mark: smark)
+        if not this.ignore_checksum {
+            this.crc32.update!(x: args.src.since(mark: smark))
+        }
+        if status.is_ok() {
+            break
+        }
+        yield? status
+    } endwhile
+    if not this.ignore_checksum {
+        this.crc32.update!(x: ZEROES[.. 3 & (0 ~mod- (3 & this.backwards_size))])
+    }
+    while (this.backwards_size & 3) <> 0 {
+        c8 = args.src.read_u8?()
+        if c8 <> 0x00 {
+            return "#bad index"
+        }
+        this.backwards_size ~mod+= 1
+    } endwhile
+    this.backwards_size >>= 2
+    if (this.backwards_size == 0) or (this.backwards_size > 0xFFFF_FFFF) {
+        return "#bad index"
+    }
+    checksum32_want = args.src.read_u32le?()
+    if this.ignore_checksum {
+        // No-op.
+    } else if checksum32_want <> this.crc32.checksum_u32() {
+        return "#bad checksum"
+    } else {
+        this.crc32.reset!()
+    }
+
+    // Verify the footer.
+    checksum32_want = args.src.read_u32le?()
+    while true {
+        smark = args.src.mark()
+        status =? this.verify_footer?(src: args.src)
+        if not this.ignore_checksum {
+            this.crc32.update!(x: args.src.since(mark: smark))
+        }
+        if status.is_ok() {
+            break
+        }
+        yield? status
+    } endwhile
+    if (not this.ignore_checksum) and (checksum32_want <> this.crc32.checksum_u32()) {
+        return "#bad checksum"
+    }
+    footer_magic = args.src.read_u16le?()
+    if footer_magic <> '\x59\x5A'le {
+        return "#bad footer"
+    }
 }
 
 pri func decoder.decode_block_header_with_padding?(src: base.io_reader) {
@@ -483,9 +560,104 @@ pri func decoder.decode_block_header_sans_padding?(src: base.io_reader) {
     }
 }
 
+pri func decoder.verify_index?(src: base.io_reader) {
+    var c8    : base.u8
+    var shift : base.u32
+
+    if not this.started_verify_index {
+        this.started_verify_index = true
+        c8 = args.src.read_u8?()
+        if c8 <> 0 {
+            return "#bad index"
+        }
+
+        shift = 0
+        while true {
+            c8 = args.src.read_u8?()
+            if shift <= 56 {
+                this.num_index_blocks |= ((c8 & 0x7F) as base.u64) << shift
+                if c8 >= 0x80 {
+                    shift += 7
+                    continue
+                } else if (c8 == 0x00) and (shift > 0) {
+                    return "#bad block header"
+                }
+                break
+            } else if c8 <> 1 {
+                return "#bad block header"
+            }
+            this.num_index_blocks |= (1 as base.u64) << 63
+            break
+        } endwhile
+        if this.num_index_blocks <> this.num_actual_blocks {
+            return "#bad index"
+        }
+    }
+
+    while this.num_index_blocks > 0 {
+        this.num_index_blocks -= 1
+
+        this.index_block_compressed_size = 0
+        shift = 0
+        while true {
+            c8 = args.src.read_u8?()
+            if shift <= 56 {
+                this.index_block_compressed_size |= ((c8 & 0x7F) as base.u64) << shift
+                if c8 >= 0x80 {
+                    shift += 7
+                    continue
+                } else if (c8 == 0x00) and (shift > 0) {
+                    return "#bad block header"
+                }
+                break
+            } else if c8 <> 1 {
+                return "#bad block header"
+            }
+            this.index_block_compressed_size |= (1 as base.u64) << 63
+            break
+        } endwhile
+
+        this.index_block_uncompressed_size = 0
+        shift = 0
+        while true {
+            c8 = args.src.read_u8?()
+            if shift <= 56 {
+                this.index_block_uncompressed_size |= ((c8 & 0x7F) as base.u64) << shift
+                if c8 >= 0x80 {
+                    shift += 7
+                    continue
+                } else if (c8 == 0x00) and (shift > 0) {
+                    return "#bad block header"
+                }
+                break
+            } else if c8 <> 1 {
+                return "#bad block header"
+            }
+            this.index_block_uncompressed_size |= (1 as base.u64) << 63
+            break
+        } endwhile
+    } endwhile
+}
+
+pri func decoder.verify_footer?(src: base.io_reader) {
+    var c32 : base.u32
+
+    c32 = args.src.read_u32le?()
+    if c32 <> ((this.backwards_size & 0xFFFF_FFFF) as base.u32) {
+        return "#bad footer"
+    }
+
+    c32 = args.src.read_u16le_as_u32?()
+    if c32 <> (this.flags as base.u32) {
+        return "#bad footer"
+    }
+}
+
 pri const CHECKSUM_LENGTH : roarray[4] base.u8 = [
         0x00,  // 0: None.
         0x04,  // 1: CRC-32.
         0x08,  // 2: CRC-64.
         0x20,  // 3: SHA-256.
 ]
+
+pri const ZEROES : roarray[3] base.u8 = [0, 0, 0]
