@@ -112,6 +112,8 @@ union {
   wuffs_zlib__decoder zlib;
 } g_potential_decoders;
 
+wuffs_crc32__ieee_hasher g_digest_hasher;
+
 // ----
 
 struct {
@@ -120,6 +122,7 @@ struct {
 
   bool fail_if_unsandboxed;
   bool ignore_checksum;
+  bool output_crc32_digest;
 } g_flags = {0};
 
 const char*  //
@@ -149,6 +152,9 @@ parse_flags(int argc, char** argv) {
       continue;
     } else if (!strcmp(arg, "ignore-checksum")) {
       g_flags.ignore_checksum = true;
+      continue;
+    } else if (!strcmp(arg, "output-crc32-digest")) {
+      g_flags.output_crc32_digest = true;
       continue;
     }
 
@@ -280,6 +286,13 @@ main1(int argc, char** argv) {
       const char* z = initialize_io_transformer(src.data.ptr[src.meta.ri]);
       if (z) {
         return z;
+      } else if (g_flags.output_crc32_digest) {
+        wuffs_base__status status = wuffs_crc32__ieee_hasher__initialize(
+            &g_digest_hasher, sizeof g_digest_hasher, WUFFS_VERSION,
+            WUFFS_INITIALIZE__DEFAULT_OPTIONS);
+        if (status.repr) {
+          return wuffs_base__status__message(&status);
+        }
       }
     }
 
@@ -290,10 +303,15 @@ main1(int argc, char** argv) {
                                     sizeof(g_workbuf_array)));
 
       if (dst.meta.ri < dst.meta.wi) {
-        // TODO: handle EINTR and other write errors; see "man 2 write".
-        const int stdout_fd = 1;
-        ignore_return_value(write(stdout_fd, g_dst_buffer_array + dst.meta.ri,
-                                  dst.meta.wi - dst.meta.ri));
+        if (g_flags.output_crc32_digest) {
+          wuffs_crc32__ieee_hasher__update(
+              &g_digest_hasher, wuffs_base__io_buffer__reader_slice(&dst));
+        } else {
+          // TODO: handle EINTR and other write errors; see "man 2 write".
+          const int stdout_fd = 1;
+          ignore_return_value(write(stdout_fd, g_dst_buffer_array + dst.meta.ri,
+                                    dst.meta.wi - dst.meta.ri));
+        }
         dst.meta.ri = dst.meta.wi;
         wuffs_base__optional_u63 hrl =
             wuffs_base__io_transformer__dst_history_retain_length(
@@ -345,6 +363,21 @@ compute_exit_code(const char* status_msg) {
   return strstr(status_msg, "internal error:") ? 2 : 1;
 }
 
+void  //
+print_crc32_digest(bool bad) {
+  const char* hex = "0123456789abcdef";
+  uint32_t hash = wuffs_crc32__ieee_hasher__checksum_u32(&g_digest_hasher);
+  char buf[13];
+  memcpy(buf + 0, bad ? "BAD " : "OK. ", 4);
+  for (int i = 0; i < 8; i++) {
+    buf[4 + i] = hex[hash >> 28];
+    hash <<= 4;
+  }
+  buf[12] = '\n';
+  const int stdout_fd = 1;
+  ignore_return_value(write(stdout_fd, buf, 13));
+}
+
 int  //
 main(int argc, char** argv) {
 #if defined(WUFFS_EXAMPLE_USE_SECCOMP)
@@ -353,6 +386,9 @@ main(int argc, char** argv) {
 #endif
 
   int exit_code = compute_exit_code(main1(argc, argv));
+  if (g_flags.output_crc32_digest) {
+    print_crc32_digest(exit_code != 0);
+  }
 
 #if defined(WUFFS_EXAMPLE_USE_SECCOMP)
   // Call SYS_exit explicitly, instead of calling SYS_exit_group implicitly by

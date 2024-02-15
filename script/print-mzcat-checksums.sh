@@ -39,19 +39,9 @@ fi
 # ----
 
 handle() {
-  # "Use $x for the exit code" is loosely based on
-  # https://stackoverflow.com/a/16530815
-  local x
-  local o=$(((((gen/bin/example-mzcat <$1 2>/dev/null; echo $? >&3) |\
-      gen/bin/example-crc32 >&4) 3>&1) | (read x; echo $x)) 4>&1)
-  local a=($o)
-  # ${a[0]} holds the exit code   of gen/bin/example-etc.
-  # ${a[1]} holds the CRC-32 hash of gen/bin/example-etc's output.
-
-  if [ ${a[0]} == 0 ]; then
-    echo OK. ${a[1]} $1
-  elif [ ${a[1]} != "00000000" ]; then
-    echo BAD ${a[1]} $1
+  local c=$(gen/bin/example-mzcat --output-crc32-digest <$1 2>/dev/null)
+  if [ "$c" != "BAD 00000000" ]; then
+    echo $c $1
   fi
 }
 

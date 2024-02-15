@@ -25,6 +25,7 @@ https://skia-review.googlesource.com/c/skia/+/290618
 
 #include <errno.h>
 #include <inttypes.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -150,6 +151,8 @@ union {
   wuffs_wbmp__decoder wbmp;
 } g_potential_decoders;
 
+wuffs_crc32__ieee_hasher g_digest_hasher;
+
 // ----
 
 #define BYTES_PER_PIXEL 4
@@ -194,6 +197,7 @@ struct {
 
   bool fail_if_unsandboxed;
   bool first_frame_only;
+  bool output_crc32_digest;
   bool output_netpbm;
 } g_flags = {0};
 
@@ -227,7 +231,17 @@ parse_flags(int argc, char** argv) {
       g_flags.first_frame_only = true;
       continue;
     }
+    if (!strcmp(arg, "output-crc32-digest")) {
+      if (g_flags.output_crc32_digest || g_flags.output_netpbm) {
+        return "main: multiple --output-etc flags";
+      }
+      g_flags.output_crc32_digest = true;
+      continue;
+    }
     if (!strcmp(arg, "p") || !strcmp(arg, "output-netpbm")) {
+      if (g_flags.output_crc32_digest || g_flags.output_netpbm) {
+        return "main: multiple --output-etc flags";
+      }
       g_flags.output_netpbm = true;
       continue;
     }
@@ -249,6 +263,18 @@ parse_flags(int argc, char** argv) {
 // ignore_return_value suppresses errors from -Wall -Werror.
 static void  //
 ignore_return_value(int ignored) {}
+
+ssize_t  //
+write_to_stdout(const void* ptr, size_t len) {
+  if (!g_flags.output_crc32_digest) {
+    return write(STDOUT_FD, ptr, len);
+  } else if (len > SSIZE_MAX) {
+    return -EFBIG;
+  }
+  wuffs_crc32__ieee_hasher__update(
+      &g_digest_hasher, wuffs_base__make_slice_u8((uint8_t*)ptr, len));
+  return (ssize_t)len;
+}
 
 const char*  //
 read_more_src() {
@@ -528,7 +554,7 @@ print_nix_header(uint32_t magic_u32le) {
   wuffs_base__poke_u32le__no_bounds_check(data + 0x04, version1_bn4_u32le);
   wuffs_base__poke_u32le__no_bounds_check(data + 0x08, g_width);
   wuffs_base__poke_u32le__no_bounds_check(data + 0x0C, g_height);
-  ignore_return_value(write(STDOUT_FD, &data[0], 16));
+  ignore_return_value(write_to_stdout(&data[0], 16));
 }
 
 void  //
@@ -536,14 +562,14 @@ print_netpbm_header() {
   char data[256];
   int n = snprintf(data, sizeof(data), "P%c\n%" PRIu32 " %" PRIu32 "\n255\n",
                    (g_pixfmt_is_gray ? '5' : '6'), g_width, g_height);
-  ignore_return_value(write(STDOUT_FD, &data[0], n));
+  ignore_return_value(write_to_stdout(&data[0], n));
 }
 
 void  //
 print_nia_duration(wuffs_base__flicks duration) {
   uint8_t data[8];
   wuffs_base__poke_u64le__no_bounds_check(data + 0x00, duration);
-  ignore_return_value(write(STDOUT_FD, &data[0], 8));
+  ignore_return_value(write_to_stdout(&data[0], 8));
 }
 
 void  //
@@ -552,11 +578,11 @@ print_nie_frame() {
   print_nix_header(0x45AFC36E);  // "nïE" as a u32le.
   wuffs_base__table_u8 tab = wuffs_base__pixel_buffer__plane(&g_pixbuf, 0);
   if (tab.width == tab.stride) {
-    ignore_return_value(write(STDOUT_FD, tab.ptr, tab.width * tab.height));
+    ignore_return_value(write_to_stdout(tab.ptr, tab.width * tab.height));
   } else {
     for (size_t y = 0; y < tab.height; y++) {
       ignore_return_value(
-          write(STDOUT_FD, tab.ptr + (y * tab.stride), tab.width));
+          write_to_stdout(tab.ptr + (y * tab.stride), tab.width));
     }
   }
 }
@@ -576,13 +602,13 @@ print_netpbm_frame() {
       data[o + 2] = row[x + 0];
       o += o_increment;
       if ((o + 3) > sizeof(data)) {
-        ignore_return_value(write(STDOUT_FD, &data[0], o));
+        ignore_return_value(write_to_stdout(&data[0], o));
         o = 0;
       }
     }
   }
   if (o > 0) {
-    ignore_return_value(write(STDOUT_FD, &data[0], o));
+    ignore_return_value(write_to_stdout(&data[0], o));
     o = 0;
   }
 }
@@ -592,7 +618,7 @@ print_nia_padding() {
   if (g_width & g_height & 1) {
     uint8_t data[4];
     wuffs_base__poke_u32le__no_bounds_check(data + 0x00, 0);
-    ignore_return_value(write(STDOUT_FD, &data[0], 4));
+    ignore_return_value(write_to_stdout(&data[0], 4));
   }
 }
 
@@ -616,7 +642,7 @@ print_nia_footer() {
   uint8_t data[8];
   wuffs_base__poke_u32le__no_bounds_check(data + 0x00, n);
   wuffs_base__poke_u32le__no_bounds_check(data + 0x04, 0x80000000);
-  ignore_return_value(write(STDOUT_FD, &data[0], 8));
+  ignore_return_value(write_to_stdout(&data[0], 8));
 }
 
 const char*  //
@@ -761,6 +787,15 @@ main1(int argc, char** argv) {
     return "main: unsandboxed";
   }
 
+  if (g_flags.output_crc32_digest) {
+    wuffs_base__status status = wuffs_crc32__ieee_hasher__initialize(
+        &g_digest_hasher, sizeof g_digest_hasher, WUFFS_VERSION,
+        WUFFS_INITIALIZE__DEFAULT_OPTIONS);
+    if (status.repr) {
+      return wuffs_base__status__message(&status);
+    }
+  }
+
   g_src.data.ptr = g_src_buffer_array;
   g_src.data.len = SRC_BUFFER_ARRAY_SIZE;
 
@@ -809,6 +844,21 @@ compute_exit_code(const char* status_msg) {
   return strstr(status_msg, "internal error:") ? 2 : 1;
 }
 
+void  //
+print_crc32_digest(bool bad) {
+  const char* hex = "0123456789abcdef";
+  uint32_t hash = wuffs_crc32__ieee_hasher__checksum_u32(&g_digest_hasher);
+  char buf[13];
+  memcpy(buf + 0, bad ? "BAD " : "OK. ", 4);
+  for (int i = 0; i < 8; i++) {
+    buf[4 + i] = hex[hash >> 28];
+    hash <<= 4;
+  }
+  buf[12] = '\n';
+  const int stdout_fd = 1;
+  ignore_return_value(write(stdout_fd, buf, 13));
+}
+
 int  //
 main(int argc, char** argv) {
 #if !defined(ALLOW_GIGABYTES_OF_PIXEL_BUFFERS)
@@ -843,6 +893,9 @@ main(int argc, char** argv) {
 #endif
 
   int exit_code = compute_exit_code(main1(argc, argv));
+  if (g_flags.output_crc32_digest) {
+    print_crc32_digest(exit_code != 0);
+  }
 
 #if defined(WUFFS_EXAMPLE_USE_SECCOMP)
   // Call SYS_exit explicitly, instead of calling SYS_exit_group implicitly by
