@@ -349,15 +349,17 @@ pri func decoder.decode_block_header_sans_padding?(src: base.io_reader) {
             c8 = args.src.read_u8?()
             if shift <= 56 {
                 this.block_compressed_size |= ((c8 & 0x7F) as base.u64) << shift
-                if c8 < 0x80 {
-                    break
+                if c8 >= 0x80 {
+                    shift += 7
+                    continue
+                } else if (c8 == 0x00) and (shift > 0) {
+                    return "#bad block header"
                 }
-                shift += 7
-                continue
-            } else if c8 > 1 {
+                break
+            } else if c8 <> 1 {
                 return "#bad block header"
             }
-            this.block_compressed_size |= (c8 as base.u64) << 63
+            this.block_compressed_size |= (1 as base.u64) << 63
             break
         } endwhile
     }
@@ -371,15 +373,17 @@ pri func decoder.decode_block_header_sans_padding?(src: base.io_reader) {
             c8 = args.src.read_u8?()
             if shift <= 56 {
                 this.block_uncompressed_size |= ((c8 & 0x7F) as base.u64) << shift
-                if c8 < 0x80 {
-                    break
+                if c8 >= 0x80 {
+                    shift += 7
+                    continue
+                } else if (c8 == 0x00) and (shift > 0) {
+                    return "#bad block header"
                 }
-                shift += 7
-                continue
-            } else if c8 > 1 {
+                break
+            } else if c8 <> 1 {
                 return "#bad block header"
             }
-            this.block_uncompressed_size |= (c8 as base.u64) << 63
+            this.block_uncompressed_size |= (1 as base.u64) << 63
             break
         } endwhile
     }

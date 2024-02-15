@@ -68557,16 +68557,19 @@ wuffs_xz__decoder__decode_block_header_sans_padding(
         }
         if (v_shift <= 56u) {
           self->private_impl.f_block_compressed_size |= (((uint64_t)(((uint8_t)(v_c8 & 127u)))) << v_shift);
-          if (v_c8 < 128u) {
-            break;
+          if (v_c8 >= 128u) {
+            v_shift += 7u;
+            continue;
+          } else if ((v_c8 == 0u) && (v_shift > 0u)) {
+            status = wuffs_base__make_status(wuffs_xz__error__bad_block_header);
+            goto exit;
           }
-          v_shift += 7u;
-          continue;
-        } else if (v_c8 > 1u) {
+          break;
+        } else if (v_c8 != 1u) {
           status = wuffs_base__make_status(wuffs_xz__error__bad_block_header);
           goto exit;
         }
-        self->private_impl.f_block_compressed_size |= (((uint64_t)(v_c8)) << 63u);
+        self->private_impl.f_block_compressed_size |= (((uint64_t)(1u)) << 63u);
         break;
       }
     }
@@ -68586,16 +68589,19 @@ wuffs_xz__decoder__decode_block_header_sans_padding(
         }
         if (v_shift <= 56u) {
           self->private_impl.f_block_uncompressed_size |= (((uint64_t)(((uint8_t)(v_c8 & 127u)))) << v_shift);
-          if (v_c8 < 128u) {
-            break;
+          if (v_c8 >= 128u) {
+            v_shift += 7u;
+            continue;
+          } else if ((v_c8 == 0u) && (v_shift > 0u)) {
+            status = wuffs_base__make_status(wuffs_xz__error__bad_block_header);
+            goto exit;
           }
-          v_shift += 7u;
-          continue;
-        } else if (v_c8 > 1u) {
+          break;
+        } else if (v_c8 != 1u) {
           status = wuffs_base__make_status(wuffs_xz__error__bad_block_header);
           goto exit;
         }
-        self->private_impl.f_block_uncompressed_size |= (((uint64_t)(v_c8)) << 63u);
+        self->private_impl.f_block_uncompressed_size |= (((uint64_t)(1u)) << 63u);
         break;
       }
     }

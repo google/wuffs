@@ -26,7 +26,6 @@ BAD 7759aecd test/3pdata/xzsuite/bad-1-lzma2-8.xz
 BAD 3b80e9ac test/3pdata/xzsuite/bad-1-lzma2-9.xz
 OK. 15a2a343 test/3pdata/xzsuite/bad-1-stream_flags-1.xz
 OK. 15a2a343 test/3pdata/xzsuite/bad-1-stream_flags-3.xz
-OK. 15a2a343 test/3pdata/xzsuite/bad-1-vli-1.xz
 BAD 15a2a343 test/3pdata/xzsuite/bad-1-vli-2.xz
 BAD 31963516 test/3pdata/xzsuite/bad-2-compressed_data_padding.xz
 OK. 15a2a343 test/3pdata/xzsuite/bad-2-index-1.xz
