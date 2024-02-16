@@ -13942,6 +13942,11 @@ struct wuffs_xz__decoder__struct {
     uint32_t f_bcj_x86_prev_mask;
     uint64_t f_block_compressed_size;
     uint64_t f_block_uncompressed_size;
+    uint64_t f_compressed_size_for_index;
+    uint32_t f_verification_have_hashed_sizes[2];
+    uint32_t f_verification_want_hashed_sizes[2];
+    uint64_t f_verification_have_total_sizes[2];
+    uint64_t f_verification_want_total_sizes[2];
     uint64_t f_num_actual_blocks;
     uint64_t f_num_index_blocks;
     uint64_t f_index_block_compressed_size;
@@ -67855,6 +67860,7 @@ wuffs_xz__decoder__do_transform_io(
   wuffs_base__bitvec256 v_checksum256_have = {0};
   uint64_t v_compressed_size = 0;
   uint64_t v_uncompressed_size = 0;
+  uint32_t v_hash = 0;
   uint8_t v_c8 = 0;
   uint16_t v_footer_magic = 0;
 
@@ -67992,6 +67998,7 @@ wuffs_xz__decoder__do_transform_io(
         wuffs_private_impl__ignore_status(wuffs_crc32__ieee_hasher__initialize(&self->private_data.f_crc32,
             sizeof (wuffs_crc32__ieee_hasher), WUFFS_VERSION, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
       }
+      self->private_impl.f_compressed_size_for_index = 4u;
       while (true) {
         v_smark = ((uint64_t)(iop_a_src - io0_a_src));
         {
@@ -68004,6 +68011,7 @@ wuffs_xz__decoder__do_transform_io(
             iop_a_src = a_src->data.ptr + a_src->meta.ri;
           }
         }
+        wuffs_private_impl__u64__sat_add_indirect(&self->private_impl.f_compressed_size_for_index, wuffs_private_impl__io__count_since(v_smark, ((uint64_t)(iop_a_src - io0_a_src))));
         if ( ! self->private_impl.f_ignore_checksum) {
           v_checksum32_have = wuffs_crc32__ieee_hasher__update_u32(&self->private_data.f_crc32, wuffs_private_impl__io__since(v_smark, ((uint64_t)(iop_a_src - io0_a_src)), io0_a_src));
         }
@@ -68168,6 +68176,24 @@ wuffs_xz__decoder__do_transform_io(
         status = wuffs_base__make_status(wuffs_xz__error__bad_block_header);
         goto exit;
       }
+      wuffs_private_impl__u64__sat_add_indirect(&self->private_impl.f_compressed_size_for_index, v_compressed_size);
+      wuffs_private_impl__u64__sat_add_indirect(&self->private_impl.f_compressed_size_for_index, ((uint64_t)(WUFFS_XZ__CHECKSUM_LENGTH[self->private_impl.f_checksummer])));
+      self->private_impl.f_verification_have_total_sizes[0u] += self->private_impl.f_compressed_size_for_index;
+      v_hash = ((uint32_t)((self->private_impl.f_compressed_size_for_index ^ (self->private_impl.f_compressed_size_for_index >> 32u))));
+      v_hash *= 3432918353u;
+      v_hash = (((uint32_t)(v_hash << 15u)) | (v_hash >> 17u));
+      v_hash *= 461845907u;
+      v_hash ^= self->private_impl.f_verification_have_hashed_sizes[0u];
+      v_hash = (((uint32_t)(v_hash << 13u)) | (v_hash >> 19u));
+      self->private_impl.f_verification_have_hashed_sizes[0u] = ((uint32_t)(((uint32_t)(v_hash * 5u)) + 3864292196u));
+      self->private_impl.f_verification_have_total_sizes[1u] += v_uncompressed_size;
+      v_hash = ((uint32_t)((v_uncompressed_size ^ (v_uncompressed_size >> 32u))));
+      v_hash *= 3432918353u;
+      v_hash = (((uint32_t)(v_hash << 15u)) | (v_hash >> 17u));
+      v_hash *= 461845907u;
+      v_hash ^= self->private_impl.f_verification_have_hashed_sizes[1u];
+      v_hash = (((uint32_t)(v_hash << 13u)) | (v_hash >> 19u));
+      self->private_impl.f_verification_have_hashed_sizes[1u] = ((uint32_t)(((uint32_t)(v_hash * 5u)) + 3864292196u));
       while ((v_compressed_size & 3u) != 0u) {
         {
           WUFFS_BASE__COROUTINE_SUSPENSION_POINT(11);
@@ -69026,6 +69052,7 @@ wuffs_xz__decoder__verify_index(
 
   uint8_t v_c8 = 0;
   uint32_t v_shift = 0;
+  uint32_t v_hash = 0;
 
   const uint8_t* iop_a_src = NULL;
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -69077,12 +69104,12 @@ wuffs_xz__decoder__verify_index(
             v_shift += 7u;
             continue;
           } else if ((v_c8 == 0u) && (v_shift > 0u)) {
-            status = wuffs_base__make_status(wuffs_xz__error__bad_block_header);
+            status = wuffs_base__make_status(wuffs_xz__error__bad_index);
             goto exit;
           }
           break;
         } else if (v_c8 != 1u) {
-          status = wuffs_base__make_status(wuffs_xz__error__bad_block_header);
+          status = wuffs_base__make_status(wuffs_xz__error__bad_index);
           goto exit;
         }
         self->private_impl.f_num_index_blocks |= (((uint64_t)(1u)) << 63u);
@@ -69113,12 +69140,12 @@ wuffs_xz__decoder__verify_index(
             v_shift += 7u;
             continue;
           } else if ((v_c8 == 0u) && (v_shift > 0u)) {
-            status = wuffs_base__make_status(wuffs_xz__error__bad_block_header);
+            status = wuffs_base__make_status(wuffs_xz__error__bad_index);
             goto exit;
           }
           break;
         } else if (v_c8 != 1u) {
-          status = wuffs_base__make_status(wuffs_xz__error__bad_block_header);
+          status = wuffs_base__make_status(wuffs_xz__error__bad_index);
           goto exit;
         }
         self->private_impl.f_index_block_compressed_size |= (((uint64_t)(1u)) << 63u);
@@ -69142,17 +69169,40 @@ wuffs_xz__decoder__verify_index(
             v_shift += 7u;
             continue;
           } else if ((v_c8 == 0u) && (v_shift > 0u)) {
-            status = wuffs_base__make_status(wuffs_xz__error__bad_block_header);
+            status = wuffs_base__make_status(wuffs_xz__error__bad_index);
             goto exit;
           }
           break;
         } else if (v_c8 != 1u) {
-          status = wuffs_base__make_status(wuffs_xz__error__bad_block_header);
+          status = wuffs_base__make_status(wuffs_xz__error__bad_index);
           goto exit;
         }
         self->private_impl.f_index_block_uncompressed_size |= (((uint64_t)(1u)) << 63u);
         break;
       }
+      self->private_impl.f_verification_want_total_sizes[0u] += self->private_impl.f_index_block_compressed_size;
+      v_hash = ((uint32_t)((self->private_impl.f_index_block_compressed_size ^ (self->private_impl.f_index_block_compressed_size >> 32u))));
+      v_hash *= 3432918353u;
+      v_hash = (((uint32_t)(v_hash << 15u)) | (v_hash >> 17u));
+      v_hash *= 461845907u;
+      v_hash ^= self->private_impl.f_verification_want_hashed_sizes[0u];
+      v_hash = (((uint32_t)(v_hash << 13u)) | (v_hash >> 19u));
+      self->private_impl.f_verification_want_hashed_sizes[0u] = ((uint32_t)(((uint32_t)(v_hash * 5u)) + 3864292196u));
+      self->private_impl.f_verification_want_total_sizes[1u] += self->private_impl.f_index_block_uncompressed_size;
+      v_hash = ((uint32_t)((self->private_impl.f_index_block_uncompressed_size ^ (self->private_impl.f_index_block_uncompressed_size >> 32u))));
+      v_hash *= 3432918353u;
+      v_hash = (((uint32_t)(v_hash << 15u)) | (v_hash >> 17u));
+      v_hash *= 461845907u;
+      v_hash ^= self->private_impl.f_verification_want_hashed_sizes[1u];
+      v_hash = (((uint32_t)(v_hash << 13u)) | (v_hash >> 19u));
+      self->private_impl.f_verification_want_hashed_sizes[1u] = ((uint32_t)(((uint32_t)(v_hash * 5u)) + 3864292196u));
+    }
+    if ((self->private_impl.f_verification_have_hashed_sizes[0u] != self->private_impl.f_verification_want_hashed_sizes[0u]) ||
+        (self->private_impl.f_verification_have_hashed_sizes[1u] != self->private_impl.f_verification_want_hashed_sizes[1u]) ||
+        (self->private_impl.f_verification_have_total_sizes[0u] != self->private_impl.f_verification_want_total_sizes[0u]) ||
+        (self->private_impl.f_verification_have_total_sizes[1u] != self->private_impl.f_verification_want_total_sizes[1u])) {
+      status = wuffs_base__make_status(wuffs_xz__error__bad_index);
+      goto exit;
     }
 
     goto ok;

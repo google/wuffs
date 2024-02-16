@@ -23,12 +23,12 @@ BAD 15a2a343 test/3pdata/xzsuite/bad-1-stream_flags-1.xz
 BAD 15a2a343 test/3pdata/xzsuite/bad-1-stream_flags-3.xz
 BAD 15a2a343 test/3pdata/xzsuite/bad-1-vli-2.xz
 BAD 31963516 test/3pdata/xzsuite/bad-2-compressed_data_padding.xz
-OK. 15a2a343 test/3pdata/xzsuite/bad-2-index-1.xz
-OK. 15a2a343 test/3pdata/xzsuite/bad-2-index-2.xz
+BAD 15a2a343 test/3pdata/xzsuite/bad-2-index-1.xz
+BAD 15a2a343 test/3pdata/xzsuite/bad-2-index-2.xz
 BAD 15a2a343 test/3pdata/xzsuite/bad-2-index-3.xz
 BAD 15a2a343 test/3pdata/xzsuite/bad-2-index-4.xz
-OK. 15a2a343 test/3pdata/xzsuite/bad-2-index-5.xz
-OK. 15a2a343 test/3pdata/xzsuite/bad-3-index-uncomp-overflow.xz
+BAD 15a2a343 test/3pdata/xzsuite/bad-2-index-5.xz
+BAD 15a2a343 test/3pdata/xzsuite/bad-3-index-uncomp-overflow.xz
 BAD 15a2a343 test/3pdata/xzsuite/bad-too_big_size-with_eopm.lzma
 BAD 77e47a71 test/3pdata/xzsuite/bad-too_small_size-without_eopm-1.lzma
 BAD dd46b7fb test/3pdata/xzsuite/bad-too_small_size-without_eopm-2.lzma

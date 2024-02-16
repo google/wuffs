@@ -53,8 +53,28 @@ pub struct decoder? implements base.io_transformer(
         bcj_pos           : base.u32,
         bcj_x86_prev_mask : base.u32,
 
-        block_compressed_size   : base.u64,
-        block_uncompressed_size : base.u64,
+        block_compressed_size     : base.u64,
+        block_uncompressed_size   : base.u64,
+        compressed_size_for_index : base.u64,
+
+        // Strictly speaking, we should verify that each block's compressed and
+        // uncompressed sizes (as it is encountered during decoding the stream)
+        // equals the per-block pair of sizes listed in the index at the end of
+        // the file.
+        //
+        // This requires O(N) memory, where N is the number of blocks. Instead
+        // (and the spec's "4.3. List of Records" suggests doing this), we can
+        // use O(1) memory by just comparing a hash (and a total) of the
+        // compressed and uncompressed sizes.
+        //
+        // This implementation uses a Murmur inspired hash function. It's given
+        // u64 values (not u8) and the final mixing step is not required.
+        //
+        // For the array indexes: 0 is compressed, 1 is uncompressed.
+        verification_have_hashed_sizes : array[2] base.u32,
+        verification_want_hashed_sizes : array[2] base.u32,
+        verification_have_total_sizes  : array[2] base.u64,
+        verification_want_total_sizes  : array[2] base.u64,
 
         num_actual_blocks : base.u64,
         num_index_blocks  : base.u64,
@@ -127,6 +147,7 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
     var checksum256_have  : base.bitvec256
     var compressed_size   : base.u64
     var uncompressed_size : base.u64
+    var hash              : base.u32
     var c8                : base.u8
     var footer_magic      : base.u16
 
@@ -172,9 +193,11 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
             this.crc32.reset!()
         }
 
+        this.compressed_size_for_index = 4  // For the upcoming 4-byte CRC-32.
         while true {
             smark = args.src.mark()
             status =? this.decode_block_header_with_padding?(src: args.src)
+            this.compressed_size_for_index ~sat+= args.src.count_since(mark: smark)
             if not this.ignore_checksum {
                 checksum32_have = this.crc32.update_u32!(x: args.src.since(mark: smark))
             }
@@ -259,6 +282,43 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
             return "#bad block header"
         }
 
+        // A block's 'compressed size' (as measured here) needs to match what's
+        // listed in the index at the end of the XZ file. Per the XZ file
+        // format specification, a block is:
+        //
+        // +==============+=================+===============+=======+
+        // | Block Header | Compressed Data | Block Padding | Check |
+        // +==============+=================+===============+=======+
+        //
+        // The compressed_size variable only measures the "Compressed Data"
+        // portion. The 'compressed size for indexing purposes' needs to add
+        // the size of the Block Header and the Check (but not the Block
+        // Padding). this.compressed_size_for_index was initialized and
+        // accumulated above to, at this point in time, hold the size of the
+        // Block Header. We need to add the other two parts.
+        this.compressed_size_for_index ~sat+= compressed_size
+        this.compressed_size_for_index ~sat+= CHECKSUM_LENGTH[this.checksummer] as base.u64
+
+        // Update the verification_have_etc values. The hash function is
+        // loosely based on https://en.wikipedia.org/wiki/MurmurHash#Algorithm
+        this.verification_have_total_sizes[0] ~mod+= this.compressed_size_for_index
+        hash = ((this.compressed_size_for_index ^ (this.compressed_size_for_index >> 32)) & 0xFFFF_FFFF) as base.u32
+        hash ~mod*= 0xCC9E_2D51
+        hash = (hash ~mod<< 15) | (hash >> 17)
+        hash ~mod*= 0x1B87_3593
+        hash ^= this.verification_have_hashed_sizes[0]
+        hash = (hash ~mod<< 13) | (hash >> 19)
+        this.verification_have_hashed_sizes[0] = (hash ~mod* 5) ~mod+ 0xE654_6B64
+        this.verification_have_total_sizes[1] ~mod+= uncompressed_size
+        hash = ((uncompressed_size ^ (uncompressed_size >> 32)) & 0xFFFF_FFFF) as base.u32
+        hash ~mod*= 0xCC9E_2D51
+        hash = (hash ~mod<< 15) | (hash >> 17)
+        hash ~mod*= 0x1B87_3593
+        hash ^= this.verification_have_hashed_sizes[1]
+        hash = (hash ~mod<< 13) | (hash >> 19)
+        this.verification_have_hashed_sizes[1] = (hash ~mod* 5) ~mod+ 0xE654_6B64
+
+        // Consume the "Block Padding".
         while (compressed_size & 3) <> 0 {
             c8 = args.src.read_u8?()
             if c8 <> 0x00 {
@@ -563,6 +623,7 @@ pri func decoder.decode_block_header_sans_padding?(src: base.io_reader) {
 pri func decoder.verify_index?(src: base.io_reader) {
     var c8    : base.u8
     var shift : base.u32
+    var hash  : base.u32
 
     if not this.started_verify_index {
         this.started_verify_index = true
@@ -580,11 +641,11 @@ pri func decoder.verify_index?(src: base.io_reader) {
                     shift += 7
                     continue
                 } else if (c8 == 0x00) and (shift > 0) {
-                    return "#bad block header"
+                    return "#bad index"
                 }
                 break
             } else if c8 <> 1 {
-                return "#bad block header"
+                return "#bad index"
             }
             this.num_index_blocks |= (1 as base.u64) << 63
             break
@@ -607,11 +668,11 @@ pri func decoder.verify_index?(src: base.io_reader) {
                     shift += 7
                     continue
                 } else if (c8 == 0x00) and (shift > 0) {
-                    return "#bad block header"
+                    return "#bad index"
                 }
                 break
             } else if c8 <> 1 {
-                return "#bad block header"
+                return "#bad index"
             }
             this.index_block_compressed_size |= (1 as base.u64) << 63
             break
@@ -627,16 +688,42 @@ pri func decoder.verify_index?(src: base.io_reader) {
                     shift += 7
                     continue
                 } else if (c8 == 0x00) and (shift > 0) {
-                    return "#bad block header"
+                    return "#bad index"
                 }
                 break
             } else if c8 <> 1 {
-                return "#bad block header"
+                return "#bad index"
             }
             this.index_block_uncompressed_size |= (1 as base.u64) << 63
             break
         } endwhile
+
+        // Update the verification_want_etc values. The hash function is
+        // loosely based on https://en.wikipedia.org/wiki/MurmurHash#Algorithm
+        this.verification_want_total_sizes[0] ~mod+= this.index_block_compressed_size
+        hash = ((this.index_block_compressed_size ^ (this.index_block_compressed_size >> 32)) & 0xFFFF_FFFF) as base.u32
+        hash ~mod*= 0xCC9E_2D51
+        hash = (hash ~mod<< 15) | (hash >> 17)
+        hash ~mod*= 0x1B87_3593
+        hash ^= this.verification_want_hashed_sizes[0]
+        hash = (hash ~mod<< 13) | (hash >> 19)
+        this.verification_want_hashed_sizes[0] = (hash ~mod* 5) ~mod+ 0xE654_6B64
+        this.verification_want_total_sizes[1] ~mod+= this.index_block_uncompressed_size
+        hash = ((this.index_block_uncompressed_size ^ (this.index_block_uncompressed_size >> 32)) & 0xFFFF_FFFF) as base.u32
+        hash ~mod*= 0xCC9E_2D51
+        hash = (hash ~mod<< 15) | (hash >> 17)
+        hash ~mod*= 0x1B87_3593
+        hash ^= this.verification_want_hashed_sizes[1]
+        hash = (hash ~mod<< 13) | (hash >> 19)
+        this.verification_want_hashed_sizes[1] = (hash ~mod* 5) ~mod+ 0xE654_6B64
     } endwhile
+
+    if (this.verification_have_hashed_sizes[0] <> this.verification_want_hashed_sizes[0]) or
+            (this.verification_have_hashed_sizes[1] <> this.verification_want_hashed_sizes[1]) or
+            (this.verification_have_total_sizes[0] <> this.verification_want_total_sizes[0]) or
+            (this.verification_have_total_sizes[1] <> this.verification_want_total_sizes[1]) {
+        return "#bad index"
+    }
 }
 
 pri func decoder.verify_footer?(src: base.io_reader) {
