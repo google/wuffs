@@ -42,9 +42,11 @@ pub struct decoder? implements base.io_transformer(
         // 1: CRC-32.
         // 2: CRC-64.
         // 3: SHA-256.
-        checksummer : base.u32[..= 3],
+        checksummer : base.u8[..= 3],
 
         ignore_checksum : base.bool,
+
+        lzma_needs_reset : base.bool,
 
         block_has_compressed_size   : base.bool,
         block_has_uncompressed_size : base.bool,
@@ -327,6 +329,8 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
             compressed_size ~mod+= 1
         } endwhile
 
+        this.lzma_needs_reset = true
+
         if this.ignore_checksum {
             args.src.skip_u32?(n: CHECKSUM_LENGTH[this.checksummer] as base.u32)
 
@@ -598,6 +602,9 @@ pri func decoder.decode_block_header_sans_padding?(src: base.io_reader) {
 
     filter_id = args.src.read_u8?()
     if filter_id == 0x21 {  // LZMA2
+        if this.lzma_needs_reset {
+            this.lzma.reset!()
+        }
         // LZMA2's "Size of Properties" should be 1.
         c8 = args.src.read_u8?()
         if c8 <> 0x01 {

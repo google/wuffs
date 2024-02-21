@@ -13933,8 +13933,9 @@ struct wuffs_xz__decoder__struct {
 
     uint32_t f_filters[3];
     uint32_t f_num_non_final_filters;
-    uint32_t f_checksummer;
+    uint8_t f_checksummer;
     bool f_ignore_checksum;
+    bool f_lzma_needs_reset;
     bool f_block_has_compressed_size;
     bool f_block_has_uncompressed_size;
     uint8_t f_bcj_undo_index;
@@ -68210,6 +68211,7 @@ wuffs_xz__decoder__do_transform_io(
         }
         v_compressed_size += 1u;
       }
+      self->private_impl.f_lzma_needs_reset = true;
       if (self->private_impl.f_ignore_checksum) {
         self->private_data.s_do_transform_io.scratch = ((uint32_t)(WUFFS_XZ__CHECKSUM_LENGTH[self->private_impl.f_checksummer]));
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(12);
@@ -68984,6 +68986,10 @@ wuffs_xz__decoder__decode_block_header_sans_padding(
       v_filter_id = t_8;
     }
     if (v_filter_id == 33u) {
+      if (self->private_impl.f_lzma_needs_reset) {
+        wuffs_private_impl__ignore_status(wuffs_lzma__decoder__initialize(&self->private_data.f_lzma,
+            sizeof (wuffs_lzma__decoder), WUFFS_VERSION, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+      }
       {
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(11);
         if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
