@@ -619,11 +619,11 @@ pri func decoder.decode_block_header_sans_padding?(src: base.io_reader) {
             return "#bad filter"
         }
 
-    } else if filter_id == 0x03 {  // Delta.
-        return "#bad filter"
+    } else if (filter_id < 0x03) or (0x0B < filter_id) {
+        return "#unsupported filter"
 
     } else {
-        return "#unsupported filter"
+        return "#bad filter"
     }
 }
 

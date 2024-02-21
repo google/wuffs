@@ -69017,11 +69017,11 @@ wuffs_xz__decoder__decode_block_header_sans_padding(
         status = wuffs_base__make_status(wuffs_xz__error__bad_filter);
         goto exit;
       }
-    } else if (v_filter_id == 3u) {
-      status = wuffs_base__make_status(wuffs_xz__error__bad_filter);
+    } else if ((v_filter_id < 3u) || (11u < v_filter_id)) {
+      status = wuffs_base__make_status(wuffs_xz__error__unsupported_filter);
       goto exit;
     } else {
-      status = wuffs_base__make_status(wuffs_xz__error__unsupported_filter);
+      status = wuffs_base__make_status(wuffs_xz__error__bad_filter);
       goto exit;
     }
 
