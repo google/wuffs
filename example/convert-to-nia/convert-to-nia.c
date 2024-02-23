@@ -266,10 +266,10 @@ ignore_return_value(int ignored) {}
 
 ssize_t  //
 write_to_stdout(const void* ptr, size_t len) {
-  if (!g_flags.output_crc32_digest) {
-    return write(STDOUT_FD, ptr, len);
-  } else if (len > SSIZE_MAX) {
+  if (len > SSIZE_MAX) {
     return -EFBIG;
+  } else if (!g_flags.output_crc32_digest) {
+    return write(STDOUT_FD, ptr, len);
   }
   wuffs_crc32__ieee_hasher__update(
       &g_digest_hasher, wuffs_base__make_slice_u8((uint8_t*)ptr, len));
