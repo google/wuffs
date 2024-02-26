@@ -221,6 +221,9 @@ initialize_io_transformer(uint8_t input_first_byte) {
           WUFFS_VERSION, WUFFS_INITIALIZE__DEFAULT_OPTIONS);
       io_transformer = wuffs_xz__decoder__upcast_as__wuffs_base__io_transformer(
           &g_potential_decoders.xz);
+      wuffs_base__io_transformer__set_quirk(
+          io_transformer,
+          WUFFS_XZ__QUIRK_DECODE_STANDALONE_CONCATENATED_STREAMS, 1);
       break;
   }
 

@@ -13808,6 +13808,7 @@ extern const char wuffs_xz__error__bad_checksum[];
 extern const char wuffs_xz__error__bad_filter[];
 extern const char wuffs_xz__error__bad_footer[];
 extern const char wuffs_xz__error__bad_header[];
+extern const char wuffs_xz__error__bad_header_concatenated_stream[];
 extern const char wuffs_xz__error__bad_index[];
 extern const char wuffs_xz__error__bad_padding[];
 extern const char wuffs_xz__error__truncated_input[];
@@ -13816,6 +13817,8 @@ extern const char wuffs_xz__error__unsupported_filter[];
 extern const char wuffs_xz__error__unsupported_filter_combination[];
 
 // ---------------- Public Consts
+
+#define WUFFS_XZ__QUIRK_DECODE_STANDALONE_CONCATENATED_STREAMS 2021322752u
 
 #define WUFFS_XZ__DECODER_DST_HISTORY_RETAIN_LENGTH_MAX_INCL_WORST_CASE 0u
 
@@ -13935,6 +13938,7 @@ struct wuffs_xz__decoder__struct {
     uint32_t f_num_non_final_filters;
     uint8_t f_checksummer;
     bool f_ignore_checksum;
+    bool f_standalone_format;
     bool f_lzma_needs_reset;
     bool f_block_has_compressed_size;
     bool f_block_has_uncompressed_size;
@@ -66941,6 +66945,7 @@ const char wuffs_xz__error__bad_checksum[] = "#xz: bad checksum";
 const char wuffs_xz__error__bad_filter[] = "#xz: bad filter";
 const char wuffs_xz__error__bad_footer[] = "#xz: bad footer";
 const char wuffs_xz__error__bad_header[] = "#xz: bad header";
+const char wuffs_xz__error__bad_header_concatenated_stream[] = "#xz: bad header (concatenated stream)";
 const char wuffs_xz__error__bad_index[] = "#xz: bad index";
 const char wuffs_xz__error__bad_padding[] = "#xz: bad padding";
 const char wuffs_xz__error__truncated_input[] = "#xz: truncated input";
@@ -66973,6 +66978,8 @@ WUFFS_XZ__FILTER_06_IA64_BRANCH_TABLE[32] WUFFS_BASE__POTENTIALLY_UNUSED = {
   4u, 4u, 6u, 6u, 0u, 0u, 7u, 7u,
   4u, 4u, 0u, 0u, 4u, 4u, 0u, 0u,
 };
+
+#define WUFFS_XZ__QUIRKS_BASE 2021322752u
 
 static const uint8_t
 WUFFS_XZ__CHECKSUM_LENGTH[4] WUFFS_BASE__POTENTIALLY_UNUSED = {
@@ -67706,8 +67713,14 @@ wuffs_xz__decoder__get_quirk(
     return 0;
   }
 
-  if ((a_key == 1u) && self->private_impl.f_ignore_checksum) {
-    return 1u;
+  if (a_key == 1u) {
+    if (self->private_impl.f_ignore_checksum) {
+      return 1u;
+    }
+  } else if (a_key == 2021322752u) {
+    if (self->private_impl.f_standalone_format) {
+      return 1u;
+    }
   }
   return 0u;
 }
@@ -67732,6 +67745,9 @@ wuffs_xz__decoder__set_quirk(
 
   if (a_key == 1u) {
     self->private_impl.f_ignore_checksum = (a_value > 0u);
+    return wuffs_base__make_status(NULL);
+  } else if (a_key == 2021322752u) {
+    self->private_impl.f_standalone_format = (a_value > 0u);
     return wuffs_base__make_status(NULL);
   }
   return wuffs_base__make_status(wuffs_base__error__unsupported_option);
@@ -67863,6 +67879,7 @@ wuffs_xz__decoder__do_transform_io(
   uint64_t v_uncompressed_size = 0;
   uint32_t v_hash = 0;
   uint8_t v_c8 = 0;
+  uint32_t v_c32 = 0;
   uint16_t v_footer_magic = 0;
 
   uint8_t* iop_a_dst = NULL;
@@ -67900,7 +67917,7 @@ wuffs_xz__decoder__do_transform_io(
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
-    do {
+    while (true) {
       {
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
         uint64_t t_0;
@@ -67987,6 +68004,7 @@ wuffs_xz__decoder__do_transform_io(
         goto exit;
       }
       self->private_impl.f_flags = ((uint16_t)(v_header_magic));
+      self->private_impl.f_num_actual_blocks = 0u;
       while (true) {
         if (((uint64_t)(io2_a_src - iop_a_src)) <= 0u) {
           status = wuffs_base__make_status(wuffs_base__suspension__short_read);
@@ -68604,7 +68622,34 @@ wuffs_xz__decoder__do_transform_io(
         status = wuffs_base__make_status(wuffs_xz__error__bad_footer);
         goto exit;
       }
-    } while (0);
+      if ( ! self->private_impl.f_standalone_format) {
+        break;
+      }
+      while (true) {
+        while (((uint64_t)(io2_a_src - iop_a_src)) < 4u) {
+          if (a_src && a_src->meta.closed) {
+            if (((uint64_t)(io2_a_src - iop_a_src)) == 0u) {
+              goto label__streams__break;
+            } else {
+              status = wuffs_base__make_status(wuffs_xz__error__truncated_input);
+              goto exit;
+            }
+          }
+          status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(34);
+        }
+        v_c32 = wuffs_base__peek_u32le__no_bounds_check(iop_a_src);
+        if (v_c32 == 1484404733u) {
+          break;
+        } else if (v_c32 != 0u) {
+          status = wuffs_base__make_status(wuffs_xz__error__bad_header_concatenated_stream);
+          goto exit;
+        }
+        iop_a_src += 4u;
+      }
+      self->private_impl.f_started_verify_index = false;
+    }
+    label__streams__break:;
 
     ok:
     self->private_impl.p_do_transform_io = 0;
@@ -69095,6 +69140,7 @@ wuffs_xz__decoder__verify_index(
         status = wuffs_base__make_status(wuffs_xz__error__bad_index);
         goto exit;
       }
+      self->private_impl.f_num_index_blocks = 0u;
       v_shift = 0u;
       while (true) {
         {
