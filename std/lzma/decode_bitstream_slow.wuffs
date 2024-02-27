@@ -90,13 +90,13 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
     rep2 = this.stashed_rep2
     rep3 = this.stashed_rep3
     pos = this.stashed_pos
+    pos_end = this.stashed_pos_end
 
     lc = this.lc
     lp_mask = ((1 as base.u64) << this.lp) - 1
     pb_mask = ((1 as base.u64) << this.pb) - 1
 
     // "outer" is the core loop discussed in README.md's "Algorithm Overview".
-    pos_end = pos ~sat+ this.decoded_length
     while.outer pos < pos_end {
         // AlgOve00  if decodeTheNextBym() == 0
         index_ao00 = (state << 4) | ((pos & pb_mask) as base.u32)
@@ -904,12 +904,6 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
         prev_byte = (match_cusp & 0xFF) as base.u8
     } endwhile.outer
 
-    if bits <> 0 {
-        return "#bad bitstream trailer"
-    } else if (this.decoded_length <> 0xFFFF_FFFF_FFFF_FFFF) and (pos <> pos_end) {
-        return "#bad decoded length"
-    }
-
     this.stashed_bytes[0] = prev_byte
     this.stashed_bytes[1] = match_byte
     this.stashed_bits = bits
@@ -920,4 +914,5 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
     this.stashed_rep2 = rep2
     this.stashed_rep3 = rep3
     this.stashed_pos = pos
+    this.stashed_pos_end = pos_end
 }

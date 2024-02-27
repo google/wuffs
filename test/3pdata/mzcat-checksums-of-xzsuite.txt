@@ -56,6 +56,6 @@ OK. 8d115715 test/3pdata/xzsuite/good-1-riscv-lzma2-2.xz
 OK. cc270da1 test/3pdata/xzsuite/good-1-sparc-lzma2.xz
 OK. a3679091 test/3pdata/xzsuite/good-1-x86-lzma2.xz
 OK. 15a2a343 test/3pdata/xzsuite/good-2-lzma2.xz
-BAD 15a2a343 test/3pdata/xzsuite/good-known_size-with_eopm.lzma
+OK. 15a2a343 test/3pdata/xzsuite/good-known_size-with_eopm.lzma
 OK. 15a2a343 test/3pdata/xzsuite/good-known_size-without_eopm.lzma
 OK. 15a2a343 test/3pdata/xzsuite/good-unknown_size-with_eopm.lzma

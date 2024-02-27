@@ -160,7 +160,7 @@ conceptually like this:
     AlgOve23        slot = decodeSlot(min(len-2, 3))
     AlgOve24        distBiasedBy1 = decodeDistBiasedBy1(slot)
     AlgOve25        if distBiasedBy1 == 0xFFFF_FFFF {
-    AlgOve26            break
+    AlgOve26            break  // End of Stream.
     AlgOve27        }
     AlgOve28        mrud = (1 + distBiasedBy1, mrud[0], mrud[1], mrud[2])
     AlgOve29        goto labelDoTheLZCopy

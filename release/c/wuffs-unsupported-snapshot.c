@@ -10485,12 +10485,14 @@ struct wuffs_lzma__decoder__struct {
     uint32_t f_stashed_rep2;
     uint32_t f_stashed_rep3;
     uint64_t f_stashed_pos;
+    uint64_t f_stashed_pos_end;
 
     uint32_t p_decode_bitstream_slow;
     uint32_t p_transform_io;
     uint32_t p_do_transform_io;
     uint32_t p_decode_bitstream;
     uint32_t p_update_stashed_bytes;
+    uint32_t p_decode_optional_end_of_stream;
   } private_impl;
 
   struct {
@@ -51002,6 +51004,13 @@ wuffs_lzma__decoder__update_stashed_bytes(
     wuffs_base__slice_u8 a_workbuf);
 
 WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__status
+wuffs_lzma__decoder__decode_optional_end_of_stream(
+    wuffs_lzma__decoder* self,
+    wuffs_base__io_buffer* a_src,
+    wuffs_base__slice_u8 a_workbuf);
+
+WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
 wuffs_lzma__decoder__initialize_dict(
     wuffs_lzma__decoder* self);
@@ -51219,10 +51228,10 @@ wuffs_lzma__decoder__decode_bitstream_slow(
     v_rep2 = self->private_impl.f_stashed_rep2;
     v_rep3 = self->private_impl.f_stashed_rep3;
     v_pos = self->private_impl.f_stashed_pos;
+    v_pos_end = self->private_impl.f_stashed_pos_end;
     v_lc = self->private_impl.f_lc;
     v_lp_mask = ((((uint64_t)(1u)) << self->private_impl.f_lp) - 1u);
     v_pb_mask = ((((uint64_t)(1u)) << self->private_impl.f_pb) - 1u);
-    v_pos_end = wuffs_base__u64__sat_add(v_pos, self->private_impl.f_decoded_length);
     while (v_pos < v_pos_end) {
       v_index_ao00 = ((v_state << 4u) | ((uint32_t)((v_pos & v_pb_mask))));
       v_prob = ((uint32_t)(self->private_data.f_probs_ao00[v_index_ao00]));
@@ -52141,13 +52150,6 @@ wuffs_lzma__decoder__decode_bitstream_slow(
       v_prev_byte = ((uint8_t)(v_match_cusp));
     }
     label__outer__break:;
-    if (v_bits != 0u) {
-      status = wuffs_base__make_status(wuffs_lzma__error__bad_bitstream_trailer);
-      goto exit;
-    } else if ((self->private_impl.f_decoded_length != 18446744073709551615u) && (v_pos != v_pos_end)) {
-      status = wuffs_base__make_status(wuffs_lzma__error__bad_decoded_length);
-      goto exit;
-    }
     self->private_impl.f_stashed_bytes[0u] = v_prev_byte;
     self->private_impl.f_stashed_bytes[1u] = v_match_byte;
     self->private_impl.f_stashed_bits = v_bits;
@@ -52158,6 +52160,7 @@ wuffs_lzma__decoder__decode_bitstream_slow(
     self->private_impl.f_stashed_rep2 = v_rep2;
     self->private_impl.f_stashed_rep3 = v_rep3;
     self->private_impl.f_stashed_pos = v_pos;
+    self->private_impl.f_stashed_pos_end = v_pos_end;
 
     ok:
     self->private_impl.p_decode_bitstream_slow = 0;
@@ -52871,6 +52874,11 @@ wuffs_lzma__decoder__do_transform_io(
         goto exit;
       }
       self->private_impl.f_stashed_range = 4294967295u;
+      self->private_impl.f_stashed_pos_end = wuffs_base__u64__sat_add(self->private_impl.f_stashed_pos, self->private_impl.f_decoded_length);
+      if ((self->private_impl.f_stashed_pos_end == 18446744073709551615u) && (self->private_impl.f_decoded_length != 18446744073709551615u)) {
+        status = wuffs_base__make_status(wuffs_lzma__error__unsupported_decoded_length);
+        goto exit;
+      }
       self->private_impl.f_lzma2_encoded_length_have = 5u;
       while (((uint64_t)(a_workbuf.len)) < (((uint64_t)(self->private_impl.f_dict_size)) + 273u)) {
         status = wuffs_base__make_status(wuffs_base__suspension__short_workbuf);
@@ -52900,6 +52908,31 @@ wuffs_lzma__decoder__do_transform_io(
         }
         status = v_status;
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(22);
+      }
+      if (self->private_impl.f_decoded_length == 18446744073709551615u) {
+        if (self->private_impl.f_stashed_bits != 0u) {
+          status = wuffs_base__make_status(wuffs_lzma__error__bad_bitstream_trailer);
+          goto exit;
+        }
+      } else if (self->private_impl.f_stashed_pos != self->private_impl.f_stashed_pos_end) {
+        status = wuffs_base__make_status(wuffs_lzma__error__bad_decoded_length);
+        goto exit;
+      } else if (self->private_impl.f_stashed_bits != 0u) {
+        if (a_src) {
+          a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+        }
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(23);
+        status = wuffs_lzma__decoder__decode_optional_end_of_stream(self, a_src, a_workbuf);
+        if (a_src) {
+          iop_a_src = a_src->data.ptr + a_src->meta.ri;
+        }
+        if (status.repr) {
+          goto suspend;
+        }
+        if (self->private_impl.f_stashed_bits != 0u) {
+          status = wuffs_base__make_status(wuffs_lzma__error__bad_bitstream_trailer);
+          goto exit;
+        }
       }
       if (self->private_impl.f_format_extension == 0u) {
         break;
@@ -53048,6 +53081,79 @@ wuffs_lzma__decoder__update_stashed_bytes(
     a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
   }
 
+  return status;
+}
+
+// -------- func lzma.decoder.decode_optional_end_of_stream
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__status
+wuffs_lzma__decoder__decode_optional_end_of_stream(
+    wuffs_lzma__decoder* self,
+    wuffs_base__io_buffer* a_src,
+    wuffs_base__slice_u8 a_workbuf) {
+  wuffs_base__status status = wuffs_base__make_status(NULL);
+
+  wuffs_base__io_buffer u_w = wuffs_base__empty_io_buffer();
+  wuffs_base__io_buffer* v_w = &u_w;
+  uint8_t* iop_v_w WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  uint8_t* io0_v_w WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  uint8_t* io1_v_w WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  uint8_t* io2_v_w WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  wuffs_base__status v_status = wuffs_base__make_status(NULL);
+
+  uint32_t coro_susp_point = self->private_impl.p_decode_optional_end_of_stream;
+  switch (coro_susp_point) {
+    WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
+
+    self->private_impl.f_stashed_pos_end = 18446744073709551615u;
+    while (true) {
+      {
+        wuffs_base__io_buffer* o_0_v_w = v_w;
+        uint8_t* o_0_iop_v_w = iop_v_w;
+        uint8_t* o_0_io0_v_w = io0_v_w;
+        uint8_t* o_0_io1_v_w = io1_v_w;
+        uint8_t* o_0_io2_v_w = io2_v_w;
+        v_w = wuffs_private_impl__io_writer__set(
+            &u_w,
+            &iop_v_w,
+            &io0_v_w,
+            &io1_v_w,
+            &io2_v_w,
+            wuffs_base__utility__empty_slice_u8(),
+            0u);
+        {
+          wuffs_base__status t_0 = wuffs_lzma__decoder__decode_bitstream_slow(self, v_w, a_src, a_workbuf);
+          v_status = t_0;
+        }
+        v_w = o_0_v_w;
+        iop_v_w = o_0_iop_v_w;
+        io0_v_w = o_0_io0_v_w;
+        io1_v_w = o_0_io1_v_w;
+        io2_v_w = o_0_io2_v_w;
+      }
+      if (wuffs_base__status__is_ok(&v_status)) {
+        break;
+      } else if (v_status.repr == wuffs_base__suspension__short_write) {
+        status = wuffs_base__make_status(wuffs_lzma__error__bad_bitstream_trailer);
+        goto exit;
+      }
+      status = v_status;
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(1);
+    }
+    self->private_impl.f_stashed_pos_end = self->private_impl.f_stashed_pos;
+
+    ok:
+    self->private_impl.p_decode_optional_end_of_stream = 0;
+    goto exit;
+  }
+
+  goto suspend;
+  suspend:
+  self->private_impl.p_decode_optional_end_of_stream = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
+
+  goto exit;
+  exit:
   return status;
 }
 

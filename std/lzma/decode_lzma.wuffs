@@ -60,15 +60,16 @@ pub struct decoder? implements base.io_transformer(
 
         prev_lzma2_chunk_was_uncompressed : base.bool,
 
-        stashed_bytes : array[2] base.u8,  // 0 is prev_byte, 1 is match_byte.
-        stashed_bits  : base.u32,
-        stashed_range : base.u32,
-        stashed_state : base.u32[..= 11],
-        stashed_rep0  : base.u32[..= 0xFFFF_FFFE],
-        stashed_rep1  : base.u32[..= 0xFFFF_FFFE],
-        stashed_rep2  : base.u32[..= 0xFFFF_FFFE],
-        stashed_rep3  : base.u32[..= 0xFFFF_FFFE],
-        stashed_pos   : base.u64,
+        stashed_bytes   : array[2] base.u8,  // 0 is prev_byte, 1 is match_byte.
+        stashed_bits    : base.u32,
+        stashed_range   : base.u32,
+        stashed_state   : base.u32[..= 11],
+        stashed_rep0    : base.u32[..= 0xFFFF_FFFE],
+        stashed_rep1    : base.u32[..= 0xFFFF_FFFE],
+        stashed_rep2    : base.u32[..= 0xFFFF_FFFE],
+        stashed_rep3    : base.u32[..= 0xFFFF_FFFE],
+        stashed_pos     : base.u64,
+        stashed_pos_end : base.u64,
 
         util : base.utility,
 ) + (
@@ -475,6 +476,11 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
             return "#bad code"
         }
         this.stashed_range = 0xFFFF_FFFF
+        this.stashed_pos_end = this.stashed_pos ~sat+ this.decoded_length
+        if (this.stashed_pos_end == 0xFFFF_FFFF_FFFF_FFFF) and
+                (this.decoded_length <> 0xFFFF_FFFF_FFFF_FFFF) {
+            return "#unsupported decoded length"
+        }
         this.lzma2_encoded_length_have = 5
 
         while args.workbuf.length() < ((this.dict_size as base.u64) + 273) {
@@ -490,6 +496,23 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
             }
             yield? status
         } endwhile
+
+        if this.decoded_length == 0xFFFF_FFFF_FFFF_FFFF {
+            if this.stashed_bits <> 0 {
+                return "#bad bitstream trailer"
+            }
+        } else if this.stashed_pos <> this.stashed_pos_end {
+            return "#bad decoded length"
+        } else if this.stashed_bits <> 0 {
+            // Almost all LZMA chunks have either an explicit decoded_length or
+            // an End of Stream marker. It is legitimate, though, for a chunk
+            // to have both. We cater for that here.
+            this.decode_optional_end_of_stream?(src: args.src, workbuf: args.workbuf)
+
+            if this.stashed_bits <> 0 {
+                return "#bad bitstream trailer"
+            }
+        }
 
         if this.format_extension == 0 {
             break
@@ -541,6 +564,28 @@ pri func decoder.update_stashed_bytes?(dst: base.io_writer, workbuf: roslice bas
         dist = 1 + this.stashed_rep0
         which += 1
     } endwhile
+}
+
+// Preconditions:
+//  - this.stashed_pos == this.stashed_pos_end
+//  - this.stashed_pos_end < 0xFFFF_FFFF_FFFF_FFFF
+pri func decoder.decode_optional_end_of_stream?(src: base.io_reader, workbuf: roslice base.u8) {
+    var w      : base.io_writer
+    var status : base.status
+
+    this.stashed_pos_end = 0xFFFF_FFFF_FFFF_FFFF
+    while true {
+        io_bind (io: w, data: this.util.empty_slice_u8(), history_position: 0) {
+            status =? this.decode_bitstream_slow?(dst: w, src: args.src, workbuf: args.workbuf)
+        }
+        if status.is_ok() {
+            break
+        } else if status == base."$short write" {
+            return "#bad bitstream trailer"
+        }
+        yield? status
+    } endwhile
+    this.stashed_pos_end = this.stashed_pos
 }
 
 pri func decoder.initialize_dict!() {
