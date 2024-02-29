@@ -782,6 +782,9 @@ typedef struct wuffs_base__transform__output__struct {
 // Lempel–Ziv 4.
 #define WUFFS_BASE__FOURCC__LZ4 0x4C5A3420
 
+// Lzip.
+#define WUFFS_BASE__FOURCC__LZIP 0x4C5A4950
+
 // Lempel–Ziv Markov-chain Algorithm.
 #define WUFFS_BASE__FOURCC__LZMA 0x4C5A4D41
 
@@ -10650,6 +10653,240 @@ struct wuffs_lzma__decoder__struct {
 #endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__LZMA) || defined(WUFFS_NONMONOLITHIC)
+
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__LZIP) || defined(WUFFS_NONMONOLITHIC)
+
+// ---------------- Status Codes
+
+extern const char wuffs_lzip__error__truncated_input[];
+
+// ---------------- Public Consts
+
+#define WUFFS_LZIP__DECODER_DST_HISTORY_RETAIN_LENGTH_MAX_INCL_WORST_CASE 0u
+
+#define WUFFS_LZIP__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE 1u
+
+// ---------------- Struct Declarations
+
+typedef struct wuffs_lzip__decoder__struct wuffs_lzip__decoder;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// ---------------- Public Initializer Prototypes
+
+// For any given "wuffs_foo__bar* self", "wuffs_foo__bar__initialize(self,
+// etc)" should be called before any other "wuffs_foo__bar__xxx(self, etc)".
+//
+// Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.
+// Pass 0 (or some combination of WUFFS_INITIALIZE__XXX) for options.
+
+wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
+wuffs_lzip__decoder__initialize(
+    wuffs_lzip__decoder* self,
+    size_t sizeof_star_self,
+    uint64_t wuffs_version,
+    uint32_t options);
+
+size_t
+sizeof__wuffs_lzip__decoder(void);
+
+// ---------------- Allocs
+
+// These functions allocate and initialize Wuffs structs. They return NULL if
+// memory allocation fails. If they return non-NULL, there is no need to call
+// wuffs_foo__bar__initialize, but the caller is responsible for eventually
+// calling free on the returned pointer. That pointer is effectively a C++
+// std::unique_ptr<T, wuffs_unique_ptr_deleter>.
+
+wuffs_lzip__decoder*
+wuffs_lzip__decoder__alloc(void);
+
+static inline wuffs_base__io_transformer*
+wuffs_lzip__decoder__alloc_as__wuffs_base__io_transformer(void) {
+  return (wuffs_base__io_transformer*)(wuffs_lzip__decoder__alloc());
+}
+
+// ---------------- Upcasts
+
+static inline wuffs_base__io_transformer*
+wuffs_lzip__decoder__upcast_as__wuffs_base__io_transformer(
+    wuffs_lzip__decoder* p) {
+  return (wuffs_base__io_transformer*)p;
+}
+
+// ---------------- Public Function Prototypes
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_lzip__decoder__get_quirk(
+    const wuffs_lzip__decoder* self,
+    uint32_t a_key);
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status
+wuffs_lzip__decoder__set_quirk(
+    wuffs_lzip__decoder* self,
+    uint32_t a_key,
+    uint64_t a_value);
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC wuffs_base__optional_u63
+wuffs_lzip__decoder__dst_history_retain_length(
+    const wuffs_lzip__decoder* self);
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC wuffs_base__range_ii_u64
+wuffs_lzip__decoder__workbuf_len(
+    const wuffs_lzip__decoder* self);
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status
+wuffs_lzip__decoder__transform_io(
+    wuffs_lzip__decoder* self,
+    wuffs_base__io_buffer* a_dst,
+    wuffs_base__io_buffer* a_src,
+    wuffs_base__slice_u8 a_workbuf);
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif
+
+// ---------------- Struct Definitions
+
+// These structs' fields, and the sizeof them, are private implementation
+// details that aren't guaranteed to be stable across Wuffs versions.
+//
+// See https://en.wikipedia.org/wiki/Opaque_pointer#C
+
+#if defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
+
+struct wuffs_lzip__decoder__struct {
+  // Do not access the private_impl's or private_data's fields directly. There
+  // is no API/ABI compatibility or safety guarantee if you do so. Instead, use
+  // the wuffs_foo__bar__baz functions.
+  //
+  // It is a struct, not a struct*, so that the outermost wuffs_foo__bar struct
+  // can be stack allocated when WUFFS_IMPLEMENTATION is defined.
+
+  struct {
+    uint32_t magic;
+    uint32_t active_coroutine;
+    wuffs_base__vtable vtable_for__wuffs_base__io_transformer;
+    wuffs_base__vtable null_vtable;
+
+    bool f_ignore_checksum;
+
+    uint32_t p_transform_io;
+    uint32_t p_do_transform_io;
+  } private_impl;
+
+  struct {
+    struct {
+      uint64_t scratch;
+    } s_do_transform_io;
+  } private_data;
+
+#ifdef __cplusplus
+#if defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
+  using unique_ptr = std::unique_ptr<wuffs_lzip__decoder, wuffs_unique_ptr_deleter>;
+
+  // On failure, the alloc_etc functions return nullptr. They don't throw.
+
+  static inline unique_ptr
+  alloc() {
+    return unique_ptr(wuffs_lzip__decoder__alloc());
+  }
+
+  static inline wuffs_base__io_transformer::unique_ptr
+  alloc_as__wuffs_base__io_transformer() {
+    return wuffs_base__io_transformer::unique_ptr(
+        wuffs_lzip__decoder__alloc_as__wuffs_base__io_transformer());
+  }
+#endif  // defined(WUFFS_BASE__HAVE_UNIQUE_PTR)
+
+#if defined(WUFFS_BASE__HAVE_EQ_DELETE) && !defined(WUFFS_IMPLEMENTATION)
+  // Disallow constructing or copying an object via standard C++ mechanisms,
+  // e.g. the "new" operator, as this struct is intentionally opaque. Its total
+  // size and field layout is not part of the public, stable, memory-safe API.
+  // Use malloc or memcpy and the sizeof__wuffs_foo__bar function instead, and
+  // call wuffs_foo__bar__baz methods (which all take a "this"-like pointer as
+  // their first argument) rather than tweaking bar.private_impl.qux fields.
+  //
+  // In C, we can just leave wuffs_foo__bar as an incomplete type (unless
+  // WUFFS_IMPLEMENTATION is #define'd). In C++, we define a complete type in
+  // order to provide convenience methods. These forward on "this", so that you
+  // can write "bar->baz(etc)" instead of "wuffs_foo__bar__baz(bar, etc)".
+  wuffs_lzip__decoder__struct() = delete;
+  wuffs_lzip__decoder__struct(const wuffs_lzip__decoder__struct&) = delete;
+  wuffs_lzip__decoder__struct& operator=(
+      const wuffs_lzip__decoder__struct&) = delete;
+#endif  // defined(WUFFS_BASE__HAVE_EQ_DELETE) && !defined(WUFFS_IMPLEMENTATION)
+
+#if !defined(WUFFS_IMPLEMENTATION)
+  // As above, the size of the struct is not part of the public API, and unless
+  // WUFFS_IMPLEMENTATION is #define'd, this struct type T should be heap
+  // allocated, not stack allocated. Its size is not intended to be known at
+  // compile time, but it is unfortunately divulged as a side effect of
+  // defining C++ convenience methods. Use "sizeof__T()", calling the function,
+  // instead of "sizeof T", invoking the operator. To make the two values
+  // different, so that passing the latter will be rejected by the initialize
+  // function, we add an arbitrary amount of dead weight.
+  uint8_t dead_weight[123000000];  // 123 MB.
+#endif  // !defined(WUFFS_IMPLEMENTATION)
+
+  inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
+  initialize(
+      size_t sizeof_star_self,
+      uint64_t wuffs_version,
+      uint32_t options) {
+    return wuffs_lzip__decoder__initialize(
+        this, sizeof_star_self, wuffs_version, options);
+  }
+
+  inline wuffs_base__io_transformer*
+  upcast_as__wuffs_base__io_transformer() {
+    return (wuffs_base__io_transformer*)this;
+  }
+
+  inline uint64_t
+  get_quirk(
+      uint32_t a_key) const {
+    return wuffs_lzip__decoder__get_quirk(this, a_key);
+  }
+
+  inline wuffs_base__status
+  set_quirk(
+      uint32_t a_key,
+      uint64_t a_value) {
+    return wuffs_lzip__decoder__set_quirk(this, a_key, a_value);
+  }
+
+  inline wuffs_base__optional_u63
+  dst_history_retain_length() const {
+    return wuffs_lzip__decoder__dst_history_retain_length(this);
+  }
+
+  inline wuffs_base__range_ii_u64
+  workbuf_len() const {
+    return wuffs_lzip__decoder__workbuf_len(this);
+  }
+
+  inline wuffs_base__status
+  transform_io(
+      wuffs_base__io_buffer* a_dst,
+      wuffs_base__io_buffer* a_src,
+      wuffs_base__slice_u8 a_workbuf) {
+    return wuffs_lzip__decoder__transform_io(this, a_dst, a_src, a_workbuf);
+  }
+
+#endif  // __cplusplus
+};  // struct wuffs_lzip__decoder__struct
+
+#endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
+
+#endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__LZIP) || defined(WUFFS_NONMONOLITHIC)
 
 #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__LZW) || defined(WUFFS_NONMONOLITHIC)
 
@@ -20588,6 +20825,7 @@ wuffs_base__magic_number_guess_fourcc(wuffs_base__slice_u8 prefix_data,
       {+0x424D5020, "\x01\x42\x4D"},              // BMP
       {+0x47494620, "\x03\x47\x49\x46\x38"},      // GIF
       {+0x54494646, "\x03\x49\x49\x2A\x00"},      // TIFF (little-endian)
+      {+0x4C5A4950, "\x04\x4C\x5A\x49\x50\x01"},  // LZIP
       {+0x54494646, "\x03\x4D\x4D\x00\x2A"},      // TIFF (big-endian)
       {+0x4E50424D, "\x02\x50\x35\x0A"},          // NPBM (P5; *.pgm)
       {+0x4E50424D, "\x02\x50\x36\x0A"},          // NPBM (P6; *.ppm)
@@ -53293,6 +53531,319 @@ wuffs_lzma__decoder__initialize_probs(
 }
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__LZMA)
+
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__LZIP)
+
+// ---------------- Status Codes Implementations
+
+const char wuffs_lzip__error__truncated_input[] = "#lzip: truncated input";
+
+// ---------------- Private Consts
+
+// ---------------- Private Initializer Prototypes
+
+// ---------------- Private Function Prototypes
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__status
+wuffs_lzip__decoder__do_transform_io(
+    wuffs_lzip__decoder* self,
+    wuffs_base__io_buffer* a_dst,
+    wuffs_base__io_buffer* a_src,
+    wuffs_base__slice_u8 a_workbuf);
+
+// ---------------- VTables
+
+const wuffs_base__io_transformer__func_ptrs
+wuffs_lzip__decoder__func_ptrs_for__wuffs_base__io_transformer = {
+  (wuffs_base__optional_u63(*)(const void*))(&wuffs_lzip__decoder__dst_history_retain_length),
+  (uint64_t(*)(const void*,
+      uint32_t))(&wuffs_lzip__decoder__get_quirk),
+  (wuffs_base__status(*)(void*,
+      uint32_t,
+      uint64_t))(&wuffs_lzip__decoder__set_quirk),
+  (wuffs_base__status(*)(void*,
+      wuffs_base__io_buffer*,
+      wuffs_base__io_buffer*,
+      wuffs_base__slice_u8))(&wuffs_lzip__decoder__transform_io),
+  (wuffs_base__range_ii_u64(*)(const void*))(&wuffs_lzip__decoder__workbuf_len),
+};
+
+// ---------------- Initializer Implementations
+
+wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT
+wuffs_lzip__decoder__initialize(
+    wuffs_lzip__decoder* self,
+    size_t sizeof_star_self,
+    uint64_t wuffs_version,
+    uint32_t options){
+  if (!self) {
+    return wuffs_base__make_status(wuffs_base__error__bad_receiver);
+  }
+  if (sizeof(*self) != sizeof_star_self) {
+    return wuffs_base__make_status(wuffs_base__error__bad_sizeof_receiver);
+  }
+  if (((wuffs_version >> 32) != WUFFS_VERSION_MAJOR) ||
+      (((wuffs_version >> 16) & 0xFFFF) > WUFFS_VERSION_MINOR)) {
+    return wuffs_base__make_status(wuffs_base__error__bad_wuffs_version);
+  }
+
+  if ((options & WUFFS_INITIALIZE__ALREADY_ZEROED) != 0) {
+    // The whole point of this if-check is to detect an uninitialized *self.
+    // We disable the warning on GCC. Clang-5.0 does not have this warning.
+#if !defined(__clang__) && defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
+    if (self->private_impl.magic != 0) {
+      return wuffs_base__make_status(wuffs_base__error__initialize_falsely_claimed_already_zeroed);
+    }
+#if !defined(__clang__) && defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
+  } else {
+    if ((options & WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
+      memset(self, 0, sizeof(*self));
+      options |= WUFFS_INITIALIZE__ALREADY_ZEROED;
+    } else {
+      memset(&(self->private_impl), 0, sizeof(self->private_impl));
+    }
+  }
+
+  self->private_impl.magic = WUFFS_BASE__MAGIC;
+  self->private_impl.vtable_for__wuffs_base__io_transformer.vtable_name =
+      wuffs_base__io_transformer__vtable_name;
+  self->private_impl.vtable_for__wuffs_base__io_transformer.function_pointers =
+      (const void*)(&wuffs_lzip__decoder__func_ptrs_for__wuffs_base__io_transformer);
+  return wuffs_base__make_status(NULL);
+}
+
+wuffs_lzip__decoder*
+wuffs_lzip__decoder__alloc(void) {
+  wuffs_lzip__decoder* x =
+      (wuffs_lzip__decoder*)(calloc(sizeof(wuffs_lzip__decoder), 1));
+  if (!x) {
+    return NULL;
+  }
+  if (wuffs_lzip__decoder__initialize(
+      x, sizeof(wuffs_lzip__decoder), WUFFS_VERSION, WUFFS_INITIALIZE__ALREADY_ZEROED).repr) {
+    free(x);
+    return NULL;
+  }
+  return x;
+}
+
+size_t
+sizeof__wuffs_lzip__decoder(void) {
+  return sizeof(wuffs_lzip__decoder);
+}
+
+// ---------------- Function Implementations
+
+// -------- func lzip.decoder.get_quirk
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_lzip__decoder__get_quirk(
+    const wuffs_lzip__decoder* self,
+    uint32_t a_key) {
+  if (!self) {
+    return 0;
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return 0;
+  }
+
+  if ((a_key == 1u) && self->private_impl.f_ignore_checksum) {
+    return 1u;
+  }
+  return 0u;
+}
+
+// -------- func lzip.decoder.set_quirk
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status
+wuffs_lzip__decoder__set_quirk(
+    wuffs_lzip__decoder* self,
+    uint32_t a_key,
+    uint64_t a_value) {
+  if (!self) {
+    return wuffs_base__make_status(wuffs_base__error__bad_receiver);
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_status(
+        (self->private_impl.magic == WUFFS_BASE__DISABLED)
+        ? wuffs_base__error__disabled_by_previous_error
+        : wuffs_base__error__initialize_not_called);
+  }
+
+  if (a_key == 1u) {
+    self->private_impl.f_ignore_checksum = (a_value > 0u);
+    return wuffs_base__make_status(NULL);
+  }
+  return wuffs_base__make_status(wuffs_base__error__unsupported_option);
+}
+
+// -------- func lzip.decoder.dst_history_retain_length
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC wuffs_base__optional_u63
+wuffs_lzip__decoder__dst_history_retain_length(
+    const wuffs_lzip__decoder* self) {
+  if (!self) {
+    return wuffs_base__utility__make_optional_u63(false, 0u);
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return wuffs_base__utility__make_optional_u63(false, 0u);
+  }
+
+  return wuffs_base__utility__make_optional_u63(true, 0u);
+}
+
+// -------- func lzip.decoder.workbuf_len
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC wuffs_base__range_ii_u64
+wuffs_lzip__decoder__workbuf_len(
+    const wuffs_lzip__decoder* self) {
+  if (!self) {
+    return wuffs_base__utility__empty_range_ii_u64();
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return wuffs_base__utility__empty_range_ii_u64();
+  }
+
+  return wuffs_base__utility__make_range_ii_u64(1u, 1u);
+}
+
+// -------- func lzip.decoder.transform_io
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status
+wuffs_lzip__decoder__transform_io(
+    wuffs_lzip__decoder* self,
+    wuffs_base__io_buffer* a_dst,
+    wuffs_base__io_buffer* a_src,
+    wuffs_base__slice_u8 a_workbuf) {
+  if (!self) {
+    return wuffs_base__make_status(wuffs_base__error__bad_receiver);
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_status(
+        (self->private_impl.magic == WUFFS_BASE__DISABLED)
+        ? wuffs_base__error__disabled_by_previous_error
+        : wuffs_base__error__initialize_not_called);
+  }
+  if (!a_dst || !a_src) {
+    self->private_impl.magic = WUFFS_BASE__DISABLED;
+    return wuffs_base__make_status(wuffs_base__error__bad_argument);
+  }
+  if ((self->private_impl.active_coroutine != 0) &&
+      (self->private_impl.active_coroutine != 1)) {
+    self->private_impl.magic = WUFFS_BASE__DISABLED;
+    return wuffs_base__make_status(wuffs_base__error__interleaved_coroutine_calls);
+  }
+  self->private_impl.active_coroutine = 0;
+  wuffs_base__status status = wuffs_base__make_status(NULL);
+
+  wuffs_base__status v_status = wuffs_base__make_status(NULL);
+
+  uint32_t coro_susp_point = self->private_impl.p_transform_io;
+  switch (coro_susp_point) {
+    WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
+
+    while (true) {
+      {
+        wuffs_base__status t_0 = wuffs_lzip__decoder__do_transform_io(self, a_dst, a_src, a_workbuf);
+        v_status = t_0;
+      }
+      if ((v_status.repr == wuffs_base__suspension__short_read) && (a_src && a_src->meta.closed)) {
+        status = wuffs_base__make_status(wuffs_lzip__error__truncated_input);
+        goto exit;
+      }
+      status = v_status;
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(1);
+    }
+
+    ok:
+    self->private_impl.p_transform_io = 0;
+    goto exit;
+  }
+
+  goto suspend;
+  suspend:
+  self->private_impl.p_transform_io = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
+  self->private_impl.active_coroutine = wuffs_base__status__is_suspension(&status) ? 1 : 0;
+
+  goto exit;
+  exit:
+  if (wuffs_base__status__is_error(&status)) {
+    self->private_impl.magic = WUFFS_BASE__DISABLED;
+  }
+  return status;
+}
+
+// -------- func lzip.decoder.do_transform_io
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__status
+wuffs_lzip__decoder__do_transform_io(
+    wuffs_lzip__decoder* self,
+    wuffs_base__io_buffer* a_dst,
+    wuffs_base__io_buffer* a_src,
+    wuffs_base__slice_u8 a_workbuf) {
+  wuffs_base__status status = wuffs_base__make_status(NULL);
+
+  uint8_t* iop_a_dst = NULL;
+  uint8_t* io0_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  uint8_t* io1_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  uint8_t* io2_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  if (a_dst && a_dst->data.ptr) {
+    io0_a_dst = a_dst->data.ptr;
+    io1_a_dst = io0_a_dst + a_dst->meta.wi;
+    iop_a_dst = io1_a_dst;
+    io2_a_dst = io0_a_dst + a_dst->data.len;
+    if (a_dst->meta.closed) {
+      io2_a_dst = iop_a_dst;
+    }
+  }
+
+  uint32_t coro_susp_point = self->private_impl.p_do_transform_io;
+  switch (coro_susp_point) {
+    WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
+
+    self->private_data.s_do_transform_io.scratch = 120u;
+    WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
+    if (iop_a_dst == io2_a_dst) {
+      status = wuffs_base__make_status(wuffs_base__suspension__short_write);
+      goto suspend;
+    }
+    *iop_a_dst++ = ((uint8_t)(self->private_data.s_do_transform_io.scratch));
+
+    goto ok;
+    ok:
+    self->private_impl.p_do_transform_io = 0;
+    goto exit;
+  }
+
+  goto suspend;
+  suspend:
+  self->private_impl.p_do_transform_io = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
+
+  goto exit;
+  exit:
+  if (a_dst && a_dst->data.ptr) {
+    a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
+  }
+
+  return status;
+}
+
+#endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__LZIP)
 
 #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__LZW)
 

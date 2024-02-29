@@ -23,6 +23,7 @@ for a C compiler $CC, such as clang or gcc.
 Supported compression formats:
 - bzip2
 - gzip
+- lzip
 - lzma
 - xz
 - zlib
@@ -64,6 +65,7 @@ Supported compression formats:
 #define WUFFS_CONFIG__MODULE__CRC64
 #define WUFFS_CONFIG__MODULE__DEFLATE
 #define WUFFS_CONFIG__MODULE__GZIP
+#define WUFFS_CONFIG__MODULE__LZIP
 #define WUFFS_CONFIG__MODULE__LZMA
 #define WUFFS_CONFIG__MODULE__SHA256
 #define WUFFS_CONFIG__MODULE__XZ
@@ -107,6 +109,7 @@ wuffs_base__io_transformer* g_io_transformer = NULL;
 union {
   wuffs_bzip2__decoder bzip2;
   wuffs_gzip__decoder gzip;
+  wuffs_lzip__decoder lzip;
   wuffs_lzma__decoder lzma;
   wuffs_xz__decoder xz;
   wuffs_zlib__decoder zlib;
@@ -195,6 +198,15 @@ initialize_io_transformer(uint8_t input_first_byte) {
       io_transformer =
           wuffs_bzip2__decoder__upcast_as__wuffs_base__io_transformer(
               &g_potential_decoders.bzip2);
+      break;
+
+    case 0x4C:
+      status = wuffs_lzip__decoder__initialize(
+          &g_potential_decoders.lzip, sizeof g_potential_decoders.lzip,
+          WUFFS_VERSION, WUFFS_INITIALIZE__DEFAULT_OPTIONS);
+      io_transformer =
+          wuffs_lzip__decoder__upcast_as__wuffs_base__io_transformer(
+              &g_potential_decoders.lzip);
       break;
 
     case 0x5D:

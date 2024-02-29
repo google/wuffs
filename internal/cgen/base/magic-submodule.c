@@ -152,6 +152,7 @@ wuffs_base__magic_number_guess_fourcc(wuffs_base__slice_u8 prefix_data,
       {+0x424D5020, "\x01\x42\x4D"},              // BMP
       {+0x47494620, "\x03\x47\x49\x46\x38"},      // GIF
       {+0x54494646, "\x03\x49\x49\x2A\x00"},      // TIFF (little-endian)
+      {+0x4C5A4950, "\x04\x4C\x5A\x49\x50\x01"},  // LZIP
       {+0x54494646, "\x03\x4D\x4D\x00\x2A"},      // TIFF (big-endian)
       {+0x4E50424D, "\x02\x50\x35\x0A"},          // NPBM (P5; *.pgm)
       {+0x4E50424D, "\x02\x50\x36\x0A"},          // NPBM (P6; *.ppm)

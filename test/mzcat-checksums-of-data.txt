@@ -29,6 +29,7 @@ OK. abe507ef test/data/romeo.txt.bz2
 OK. abe507ef test/data/romeo.txt.delta1.xz
 OK. abe507ef test/data/romeo.txt.gz
 OK. abe507ef test/data/romeo.txt.litonlylzma
+OK. 8cdc1683 test/data/romeo.txt.lz
 OK. abe507ef test/data/romeo.txt.lzma
 OK. abe507ef test/data/romeo.txt.xz
 OK. abe507ef test/data/romeo.txt.zlib

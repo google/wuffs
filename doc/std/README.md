@@ -56,6 +56,7 @@ to enable.
 - `GZIP:      BASE, CRC32, DEFLATE`
 - `JPEG:      BASE`
 - `JSON:      BASE`
+- `LZIP:      BASE, CRC32, LZMA`
 - `LZMA:      BASE`
 - `LZW:       BASE`
 - `NETPBM:    BASE`

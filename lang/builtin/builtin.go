@@ -51,6 +51,7 @@ var FourCCs = [...][2]string{
 	{"KVPK", "Key-Value Pair (Key)"},
 	{"KVPV", "Key-Value Pair (Value)"},
 	{"LZ4 ", "Lempel–Ziv 4"},
+	{"LZIP", "Lzip"},
 	{"LZMA", "Lempel–Ziv Markov-chain Algorithm"},
 	{"MD  ", "Markdown"},
 	{"MTIM", "Modification Time"},

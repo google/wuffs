@@ -37,6 +37,7 @@ In Wuffs syntax, the `base.io_transformer` methods are:
 - [std/bzip2](/std/bzip2)
 - [std/deflate](/std/deflate)
 - [std/gzip](/std/gzip)
+- [std/lzip](/std/lzip)
 - [std/lzma](/std/lzma)
 - [std/lzw](/std/lzw)
 - [std/xz](/std/xz)
@@ -45,13 +46,16 @@ In Wuffs syntax, the `base.io_transformer` methods are:
 
 ## Examples
 
-- [example/bzcat](/example/bzcat)
+- [example/mzcat](/example/mzcat)
 - [example/toy-genlib](/example/toy-genlib)
 - [example/zcat](/example/zcat)
 
 
 ## [Quirks](/doc/note/quirks.md)
 
+- [LZMA decoder quirks](/std/lzma/decode_quirks.wuffs)
+- [LZW decoder quirks](/std/lzw/decode_quirks.wuffs)
+- [XZ decoder quirks](/std/xz/decode_quirks.wuffs)
 - [Zlib decoder quirks](/std/zlib/decode_quirks.wuffs)
 
 
