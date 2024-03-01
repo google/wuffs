@@ -21,7 +21,7 @@ fi
 # Check out a specific commit (from February 2024).
 git clone --quiet https://github.com/nigeltao/xz-tests-files.git
 cd xz-tests-files
-git reset --quiet --hard d082a076f3e1da05aa478eac4bbba24744b3a1c0
+git reset --quiet --hard 6e0194063a6dc205d4db35e307778efe1c9f1875
 cd ..
 
 # Trim the git metadata.

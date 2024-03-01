@@ -68,3 +68,13 @@ OK. 15a2a343 test/3pdata/xzsuite/good-2-v1-v1.lz
 OK. 15a2a343 test/3pdata/xzsuite/good-known_size-with_eopm.lzma
 OK. 15a2a343 test/3pdata/xzsuite/good-known_size-without_eopm.lzma
 OK. 15a2a343 test/3pdata/xzsuite/good-unknown_size-with_eopm.lzma
+OK. eb50cc6a test/3pdata/xzsuite/lzip-testsuite/fox.lz
+OK. 889dda54 test/3pdata/xzsuite/lzip-testsuite/fox6.lz
+BAD 340878c7 test/3pdata/xzsuite/lzip-testsuite/fox6_mark.lz
+BAD eb50cc6a test/3pdata/xzsuite/lzip-testsuite/fox_bcrc.lz
+BAD eb50cc6a test/3pdata/xzsuite/lzip-testsuite/fox_crc0.lz
+BAD eb50cc6a test/3pdata/xzsuite/lzip-testsuite/fox_das46.lz
+BAD 284fd1b0 test/3pdata/xzsuite/lzip-testsuite/fox_de20.lz
+BAD eb50cc6a test/3pdata/xzsuite/lzip-testsuite/fox_mes81.lz
+OK. a2930e54 test/3pdata/xzsuite/lzip-testsuite/test.txt.lz
+OK. a2930e54 test/3pdata/xzsuite/lzip-testsuite/test_em.txt.lz
