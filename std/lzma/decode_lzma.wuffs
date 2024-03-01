@@ -60,6 +60,8 @@ pub struct decoder? implements base.io_transformer(
 
         prev_lzma2_chunk_was_uncompressed : base.bool,
 
+        allow_non_zero_initial_byte : base.bool,
+
         stashed_bytes   : array[2] base.u8,  // 0 is prev_byte, 1 is match_byte.
         stashed_bits    : base.u32,
         stashed_range   : base.u32,
@@ -265,7 +267,12 @@ pri func decoder.add_history!(hist: slice base.u8, workbuf: slice base.u8) base.
 }
 
 pub func decoder.get_quirk(key: base.u32) base.u64 {
-    if args.key == QUIRK_FORMAT_EXTENSION {
+    if args.key == QUIRK_ALLOW_NON_ZERO_INITIAL_BYTE {
+        if this.allow_non_zero_initial_byte {
+            return 1
+        }
+
+    } else if args.key == QUIRK_FORMAT_EXTENSION {
         return this.format_extension as base.u64
     }
     return 0
@@ -275,7 +282,10 @@ pub func decoder.set_quirk!(key: base.u32, value: base.u64) base.status {
     var v : base.u32
     var n : base.u32
 
-    if args.key == QUIRK_FORMAT_EXTENSION {
+    if args.key == QUIRK_ALLOW_NON_ZERO_INITIAL_BYTE {
+        this.allow_non_zero_initial_byte = args.value > 0
+
+    } else if args.key == QUIRK_FORMAT_EXTENSION {
         if args.value == 0 {
             this.format_extension = 0
             return ok
@@ -493,7 +503,7 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
         }
 
         c8 = args.src.read_u8?()
-        if c8 <> 0x00 {
+        if (c8 <> 0x00) and not this.allow_non_zero_initial_byte {
             return "#bad code"
         }
         this.stashed_bits = args.src.read_u32be?()

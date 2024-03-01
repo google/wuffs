@@ -106,8 +106,14 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
         }
 
         // Decode LZMA.
+        //
+        // Re lzma.QUIRK_ALLOW_NON_ZERO_INITIAL_BYTE, as exercised by
+        // test/3pdata/xzsuite/lzip-testsuite/fox6_mark.lz, the LZMA spec says
+        // that the decoder must check that the byte is zero, but the Lzip spec
+        // says that the byte "must be ignored by the range decoder".
         this.ssize_have = 0
         this.dsize_have = 0
+        this.lzma.set_quirk!(key: lzma.QUIRK_ALLOW_NON_ZERO_INITIAL_BYTE, value: 1)
         while true {
             dmark = args.dst.mark()
             smark = args.src.mark()

@@ -18,6 +18,12 @@ pri const QUIRKS_BASE : base.u32 = 0x5058_E000
 
 // --------
 
+// When this quirk is set, a positive or zero value ignores or enforces the "If
+// initial byte [after properties or other headers] is not equal to ZERO, the
+// LZMA Decoder must stop decoding and report error" from the spec
+// https://raw.githubusercontent.com/jljusten/LZMA-SDK/781863cdf592da3e97420f50de5dac056ad352a5/DOC/lzma-specification.txt
+pub const QUIRK_ALLOW_NON_ZERO_INITIAL_BYTE : base.u32 = 0x5058_E000 | 0x00
+
 // When this quirk is set, a positive value indicates an extension to the LZMA
 // format. Zero means to use the default LZMA format.
 //
@@ -33,4 +39,4 @@ pri const QUIRKS_BASE : base.u32 = 0x5058_E000
 // For LZMA2, the high 7 bytes (shifted right by 8) must be less than or equal
 // to 40 and indicates the dictionary size. See section "5.3.1. LZMA2" of
 // https://tukaani.org/xz/xz-file-format.txt
-pub const QUIRK_FORMAT_EXTENSION : base.u32 = 0x5058_E000 | 0x00
+pub const QUIRK_FORMAT_EXTENSION : base.u32 = 0x5058_E000 | 0x01

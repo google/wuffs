@@ -10353,7 +10353,9 @@ extern const char wuffs_lzma__error__unsupported_properties[];
 
 #define WUFFS_LZMA__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE 4294967568u
 
-#define WUFFS_LZMA__QUIRK_FORMAT_EXTENSION 1348001792u
+#define WUFFS_LZMA__QUIRK_ALLOW_NON_ZERO_INITIAL_BYTE 1348001792u
+
+#define WUFFS_LZMA__QUIRK_FORMAT_EXTENSION 1348001793u
 
 // ---------------- Struct Declarations
 
@@ -10479,6 +10481,7 @@ struct wuffs_lzma__decoder__struct {
     bool f_lzma2_need_properties;
     bool f_lzma2_need_dict_reset;
     bool f_prev_lzma2_chunk_was_uncompressed;
+    bool f_allow_non_zero_initial_byte;
     uint8_t f_stashed_bytes[2];
     uint32_t f_stashed_bits;
     uint32_t f_stashed_range;
@@ -52530,6 +52533,10 @@ wuffs_lzma__decoder__get_quirk(
   }
 
   if (a_key == 1348001792u) {
+    if (self->private_impl.f_allow_non_zero_initial_byte) {
+      return 1u;
+    }
+  } else if (a_key == 1348001793u) {
     return ((uint64_t)(self->private_impl.f_format_extension));
   }
   return 0u;
@@ -52557,6 +52564,8 @@ wuffs_lzma__decoder__set_quirk(
   uint32_t v_n = 0;
 
   if (a_key == 1348001792u) {
+    self->private_impl.f_allow_non_zero_initial_byte = (a_value > 0u);
+  } else if (a_key == 1348001793u) {
     if (a_value == 0u) {
       self->private_impl.f_format_extension = 0u;
       return wuffs_base__make_status(NULL);
@@ -53105,7 +53114,7 @@ wuffs_lzma__decoder__do_transform_io(
         uint8_t t_8 = *iop_a_src++;
         v_c8 = t_8;
       }
-      if (v_c8 != 0u) {
+      if ((v_c8 != 0u) &&  ! self->private_impl.f_allow_non_zero_initial_byte) {
         status = wuffs_base__make_status(wuffs_lzma__error__bad_code);
         goto exit;
       }
@@ -53927,7 +53936,7 @@ wuffs_lzip__decoder__do_transform_io(
         uint8_t t_1 = *iop_a_src++;
         v_c8 = t_1;
       }
-      v_status = wuffs_lzma__decoder__set_quirk(&self->private_data.f_lzma, 1348001792u, (1u | (((uint64_t)(v_c8)) << 8u)));
+      v_status = wuffs_lzma__decoder__set_quirk(&self->private_data.f_lzma, 1348001793u, (1u | (((uint64_t)(v_c8)) << 8u)));
       if ( ! wuffs_base__status__is_ok(&v_status)) {
         if (v_status.repr == wuffs_base__error__bad_argument) {
           status = wuffs_base__make_status(wuffs_lzip__error__bad_header);
@@ -53944,6 +53953,7 @@ wuffs_lzip__decoder__do_transform_io(
       }
       self->private_impl.f_ssize_have = 0u;
       self->private_impl.f_dsize_have = 0u;
+      wuffs_lzma__decoder__set_quirk(&self->private_data.f_lzma, 1348001792u, 1u);
       while (true) {
         v_dmark = ((uint64_t)(iop_a_dst - io0_a_dst));
         v_smark = ((uint64_t)(iop_a_src - io0_a_src));
@@ -69991,7 +70001,7 @@ wuffs_xz__decoder__decode_block_header_sans_padding(
         uint8_t t_10 = *iop_a_src++;
         v_c8 = t_10;
       }
-      v_status = wuffs_lzma__decoder__set_quirk(&self->private_data.f_lzma, 1348001792u, (2u | (((uint64_t)(v_c8)) << 8u)));
+      v_status = wuffs_lzma__decoder__set_quirk(&self->private_data.f_lzma, 1348001793u, (2u | (((uint64_t)(v_c8)) << 8u)));
       if ( ! wuffs_base__status__is_ok(&v_status)) {
         status = wuffs_base__make_status(wuffs_xz__error__bad_filter);
         goto exit;
