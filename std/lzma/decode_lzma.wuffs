@@ -273,22 +273,40 @@ pub func decoder.get_quirk(key: base.u32) base.u64 {
 
 pub func decoder.set_quirk!(key: base.u32, value: base.u64) base.status {
     var v : base.u32
+    var n : base.u32
 
     if args.key == QUIRK_FORMAT_EXTENSION {
         if args.value == 0 {
-            // No-op.
-        } else if ((args.value & 0xFF) <> 0x02) or ((args.value >> 8) > 40) {
-            return base."#bad argument"
-        }
-        this.format_extension = (args.value & 0xFFFF_FFFF) as base.u32
+            this.format_extension = 0
+            return ok
 
-        v = this.format_extension >> 8
-        if v < 40 {
-            this.dict_size = (2 | (v & 1)) << ((v >> 1) + 11)
-        } else {
-            this.dict_size = 0xFFFF_FFFF
+        } else if (args.value & 0xFF) == 1 {
+            if (args.value >> 8) <= 0xFF {
+                this.format_extension = (args.value & 0xFFFF_FFFF) as base.u32
+                v = this.format_extension >> 8
+                n = (1 as base.u32) << (v & 0x1F)
+                n ~sat-= (n >> 4) * ((v >> 5) & 7)
+                if (n < (1 << 12)) or ((1 << 29) < n) {
+                    return base."#bad argument"
+                }
+                this.dict_size = n
+                return ok
+            }
+
+        } else if (args.value & 0xFF) == 2 {
+            if (args.value >> 8) <= 40 {
+                this.format_extension = (args.value & 0xFFFF_FFFF) as base.u32
+                v = this.format_extension >> 8
+                if v < 40 {
+                    this.dict_size = (2 | (v & 1)) << ((v >> 1) + 11)
+                } else {
+                    this.dict_size = 0xFFFF_FFFF
+                }
+                return ok
+            }
         }
-        return ok
+
+        return base."#bad argument"
     }
     return base."#unsupported option"
 }
@@ -352,7 +370,7 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
     // header, see
     // https://github.com/jljusten/LZMA-SDK/blob/781863cdf592da3e97420f50de5dac056ad352a5/C/Lzma2Dec.c#L17-L23
     while true {
-        if this.format_extension == 0 {  // LZMA1.
+        if (this.format_extension & 0xFF) == 0 {  // LZMA1.
             prop_byte = args.src.read_u8?()
             if prop_byte >= 225 {
                 return "#bad header"
@@ -377,6 +395,13 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
                 return "#unsupported decoded length"
             }
 
+            this.initialize_probs!()
+
+        } else if (this.format_extension & 0xFF) == 1 {  // Lzip.
+            this.lc = 3
+            this.lp = 0
+            this.pb = 2
+            this.decoded_length = 0xFFFF_FFFF_FFFF_FFFF
             this.initialize_probs!()
 
         } else {  // LZMA2.
@@ -514,7 +539,7 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
             }
         }
 
-        if this.format_extension == 0 {
+        if (this.format_extension & 0xFF) < 2 {
             break
         } else if this.lzma2_encoded_length_have <> this.lzma2_encoded_length_want {
             return "#bad LZMA2 header"

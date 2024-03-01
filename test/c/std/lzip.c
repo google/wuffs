@@ -77,7 +77,7 @@ test_wuffs_lzip_decode_interface() {
                    WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
   return do_test__wuffs_base__io_transformer(
       wuffs_lzip__decoder__upcast_as__wuffs_base__io_transformer(&dec),
-      "test/data/romeo.txt.lz", 0, SIZE_MAX, 1, 0x78);
+      "test/data/romeo.txt.lz", 0, SIZE_MAX, 942, 0x0A);
 }
 
 // ---------------- Mimic Tests
