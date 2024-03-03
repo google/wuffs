@@ -46,12 +46,17 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
     var threshold  : base.u32
     var tree_node  : base.u32[..= 0x1FF]
     var prev_byte  : base.u8
-    var match_byte : base.u8
+    var match_byte : base.u32
     var match_cusp : base.u32[..= 0xFFFF]
-    var match_bit  : base.u32[..= 1]
     var len_state  : base.u32[..= 3]  // Equals min(len-2, 3) when in a MATCH.
     var slot       : base.u32[..= 0x7F]
     var len        : base.u32[..= 273]
+
+    // LANL stands for Literal After Non-Literal. These variables are used when
+    // decoding a LITERAL and state >= 7.
+    var lanl_offset     : base.u32[..= 0x100]
+    var lanl_old_offset : base.u32[..= 0x100]
+    var lanl_index      : base.u32[..= 0x2FF]
 
     var num_extra_bits  : base.u32[..= 30]
     var dist_extra_bits : base.u32
@@ -81,7 +86,7 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
     var wb_index : base.u64
 
     prev_byte = this.stashed_bytes[0]
-    match_byte = this.stashed_bytes[1]
+    match_byte = this.stashed_bytes[1] as base.u32
     bits = this.stashed_bits
     range = this.stashed_range
     state = this.stashed_state
@@ -118,70 +123,91 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
             index_lit = 15 & (
                     (((pos & lp_mask) as base.u32) << lc) |
                     ((prev_byte as base.u32) >> (8 - lc)))
-            tree_node = 1
 
             if state >= 7 {
-                assert tree_node < 0x100
+                // We are decoding an 8-bit LITERAL, and (state >= 7) means
+                // that we most recently decoded a NON-LITERAL. The
+                // this.probs_lit[index_lit] array has 0x300 elements: three
+                // banks of 0x100.
+                //
+                // For (state < 7), we only use the first bank (and we run the
+                // while.low_state loop instead). This is equivalent to running
+                // the while.high_state loop where lanl_offset starts at and
+                // stays at zero for the entire loop. match_byte is ignored.
+                //
+                // For (state >= 7), we start by using the two later banks, but
+                // as we are decoding those 8 bits (from MSB to LSB order), we
+                // drop down to the first bank (and stay there) if and when the
+                // decoded bit doesn't equal the corresponding bit (in the same
+                // MSB to LSB order) in the match_byte variable.
+                //
+                // lanl_offset stays at 0x100 until that "if and when" point
+                // (which typically happens; if all 8 bits were equal then the
+                // previous NON-LITERAL copy could often just have been
+                // longer), when lanl_offset then drops down to zero. We then
+                // effectively run the remaining (8 - I) iterations in the
+                // while.low_state loop, where I is the iteration count.
+                //
+                // Whether we use the 0x100 or 0x200 bank, out of the two later
+                // banks, depends on the match_byte's I'th bit (MSB to LSB).
+                // match_byte is conceptually a base.u8 (it is <= 0xFF outside
+                // of this code fragment) but the intermediate computation is
+                // simpler as a base.u32 (ignoring the high 23 bits).
+                lanl_offset = 0x100
 
-                while true,
-                        pre tree_node < 0x100,
-                {
-                    match_bit = (match_byte >> 7) as base.u32
+                tree_node = 1
+                while.high_state tree_node < 0x100 {
                     match_byte ~mod<<= 1
-                    prob = this.probs_lit[index_lit][0x100 + (match_bit << 8) + tree_node] as base.u32
+                    lanl_old_offset = lanl_offset
+                    lanl_offset &= match_byte
+                    lanl_index = lanl_offset + lanl_old_offset + tree_node
+
+                    prob = this.probs_lit[index_lit][lanl_index] as base.u32
                     threshold = (range >> 11) ~mod* prob
                     if bits < threshold {
+                        lanl_offset = (lanl_offset ^ lanl_old_offset) & 0x100
                         range = threshold
                         prob ~mod+= (2048 ~mod- prob) >> 5
-                        this.probs_lit[index_lit][0x100 + (match_bit << 8) + tree_node] = (prob & 0xFFFF) as base.u16
+                        this.probs_lit[index_lit][lanl_index] = (prob & 0xFFFF) as base.u16
                         tree_node = (tree_node << 1)
-                        if (tree_node >= 0x100) or (match_bit <> 0) {
-                            break
-                        }
                     } else {
                         bits ~mod-= threshold
                         range ~mod-= threshold
                         prob ~mod-= prob >> 5
-                        this.probs_lit[index_lit][0x100 + (match_bit << 8) + tree_node] = (prob & 0xFFFF) as base.u16
+                        this.probs_lit[index_lit][lanl_index] = (prob & 0xFFFF) as base.u16
                         tree_node = (tree_node << 1) | 1
-                        if (tree_node >= 0x100) or (match_bit == 0) {
-                            break
-                        }
                     }
                     if (range >> 24) == 0 {
                         c8 = args.src.read_u8?()
                         bits = (bits ~mod<< 8) | (c8 as base.u32)
                         range ~mod<<= 8
                     }
-                } endwhile
-                if (range >> 24) == 0 {
-                    c8 = args.src.read_u8?()
-                    bits = (bits ~mod<< 8) | (c8 as base.u32)
-                    range ~mod<<= 8
-                }
-            }
+                } endwhile.high_state
 
-            while tree_node < 0x100 {
-                prob = this.probs_lit[index_lit][tree_node] as base.u32
-                threshold = (range >> 11) ~mod* prob
-                if bits < threshold {
-                    range = threshold
-                    prob ~mod+= (2048 ~mod- prob) >> 5
-                    this.probs_lit[index_lit][tree_node] = (prob & 0xFFFF) as base.u16
-                    tree_node = (tree_node << 1)
-                } else {
-                    bits ~mod-= threshold
-                    range ~mod-= threshold
-                    prob ~mod-= prob >> 5
-                    this.probs_lit[index_lit][tree_node] = (prob & 0xFFFF) as base.u16
-                    tree_node = (tree_node << 1) | 1
-                }
-                if (range >> 24) == 0 {
-                    c8 = args.src.read_u8?()
-                    bits = (bits ~mod<< 8) | (c8 as base.u32)
-                    range ~mod<<= 8
-                }
-            } endwhile
+            } else {
+                tree_node = 1
+                while.low_state tree_node < 0x100 {
+                    prob = this.probs_lit[index_lit][tree_node] as base.u32
+                    threshold = (range >> 11) ~mod* prob
+                    if bits < threshold {
+                        range = threshold
+                        prob ~mod+= (2048 ~mod- prob) >> 5
+                        this.probs_lit[index_lit][tree_node] = (prob & 0xFFFF) as base.u16
+                        tree_node = (tree_node << 1)
+                    } else {
+                        bits ~mod-= threshold
+                        range ~mod-= threshold
+                        prob ~mod-= prob >> 5
+                        this.probs_lit[index_lit][tree_node] = (prob & 0xFFFF) as base.u16
+                        tree_node = (tree_node << 1) | 1
+                    }
+                    if (range >> 24) == 0 {
+                        c8 = args.src.read_u8?()
+                        bits = (bits ~mod<< 8) | (c8 as base.u32)
+                        range ~mod<<= 8
+                    }
+                } endwhile.low_state
+            }
 
             // AlgOve03  emitLiteral(literal)
             // AlgOve04  continue
@@ -860,7 +886,7 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
                 if not args.dst.can_undo_byte() {
                     return "#internal error: inconsistent dictionary state"
                 }
-                match_byte = args.dst.peek_undo_byte()
+                match_byte = args.dst.peek_undo_byte() as base.u32
                 args.dst.undo_byte!()
                 if not args.dst.can_undo_byte() {
                     return "#internal error: inconsistent dictionary state"
@@ -876,7 +902,7 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
                 if not args.dst.can_undo_byte() {
                     return "#internal error: inconsistent dictionary state"
                 }
-                match_byte = args.dst.peek_undo_byte()
+                match_byte = args.dst.peek_undo_byte() as base.u32
                 args.dst.undo_byte!()
                 if not args.dst.can_undo_byte() {
                     return "#internal error: inconsistent dictionary state"
@@ -900,12 +926,12 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
         assert (dist as base.u64) <= args.dst.history_length()
         match_cusp = args.dst.limited_copy_u32_from_history_fast_return_cusp!(
                 up_to: len, distance: dist)
-        match_byte = (match_cusp >> 8) as base.u8
+        match_byte = match_cusp >> 8
         prev_byte = (match_cusp & 0xFF) as base.u8
     } endwhile.outer
 
     this.stashed_bytes[0] = prev_byte
-    this.stashed_bytes[1] = match_byte
+    this.stashed_bytes[1] = (match_byte & 0xFF) as base.u8
     this.stashed_bits = bits
     this.stashed_range = range
     this.stashed_state = state
