@@ -58,8 +58,8 @@ Just run your favorite C/C++ compiler (e.g. `gcc` or `g++`) on the
 `example/foo/*.{c,cc}` file. Pass `-O3` or equivalent for an optimized build:
 
 ```
-gcc -O3 example/bzcat/bzcat.c -o my-bzcat
-./my-bzcat < test/data/romeo.txt.bz2
+gcc -O3 example/mzcat/mzcat.c -o my-mzcat
+./my-mzcat < test/data/romeo.txt.bz2
 ```
 
 Some example programs require additional libraries:
