@@ -13,6 +13,14 @@
 #if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
 WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2")
 static uint64_t  //
+wuffs_private_impl__swizzle_bgrw__bgr__x86_sse42(uint8_t* dst_ptr,
+                                                 size_t dst_len,
+                                                 uint8_t* dst_palette_ptr,
+                                                 size_t dst_palette_len,
+                                                 const uint8_t* src_ptr,
+                                                 size_t src_len);
+
+static uint64_t  //
 wuffs_private_impl__swizzle_bgrw__rgb__x86_sse42(uint8_t* dst_ptr,
                                                  size_t dst_len,
                                                  uint8_t* dst_palette_ptr,
@@ -3310,6 +3318,59 @@ wuffs_private_impl__swizzle_bgrw__bgrx(uint8_t* dst_ptr,
 #if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
 WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2")
 static uint64_t  //
+wuffs_private_impl__swizzle_bgrw__bgr__x86_sse42(uint8_t* dst_ptr,
+                                                 size_t dst_len,
+                                                 uint8_t* dst_palette_ptr,
+                                                 size_t dst_palette_len,
+                                                 const uint8_t* src_ptr,
+                                                 size_t src_len) {
+  size_t dst_len4 = dst_len / 4;
+  size_t src_len3 = src_len / 3;
+  size_t len = (dst_len4 < src_len3) ? dst_len4 : src_len3;
+  uint8_t* d = dst_ptr;
+  const uint8_t* s = src_ptr;
+  size_t n = len;
+
+  __m128i shuffle = _mm_set_epi8(+0x00, +0x0B, +0x0A, +0x09,  //
+                                 +0x00, +0x08, +0x07, +0x06,  //
+                                 +0x00, +0x05, +0x04, +0x03,  //
+                                 +0x00, +0x02, +0x01, +0x00);
+  __m128i or_ff = _mm_set_epi8(-0x01, +0x00, +0x00, +0x00,  //
+                               -0x01, +0x00, +0x00, +0x00,  //
+                               -0x01, +0x00, +0x00, +0x00,  //
+                               -0x01, +0x00, +0x00, +0x00);
+
+  while (n >= 6) {
+    __m128i x;
+    x = _mm_lddqu_si128((const __m128i*)(const void*)s);
+    x = _mm_shuffle_epi8(x, shuffle);
+    x = _mm_or_si128(x, or_ff);
+    _mm_storeu_si128((__m128i*)(void*)d, x);
+
+    s += 4 * 3;
+    d += 4 * 4;
+    n -= 4;
+  }
+
+  while (n >= 1) {
+    uint8_t b0 = s[0];
+    uint8_t b1 = s[1];
+    uint8_t b2 = s[2];
+    d[0] = b0;
+    d[1] = b1;
+    d[2] = b2;
+    d[3] = 0xFF;
+
+    s += 1 * 3;
+    d += 1 * 4;
+    n -= 1;
+  }
+
+  return len;
+}
+
+WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2")
+static uint64_t  //
 wuffs_private_impl__swizzle_bgrw__rgb__x86_sse42(uint8_t* dst_ptr,
                                                  size_t dst_len,
                                                  uint8_t* dst_palette_ptr,
@@ -4793,6 +4854,11 @@ wuffs_private_impl__pixel_swizzler__prepare__bgr(
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_BINARY:
     case WUFFS_BASE__PIXEL_FORMAT__BGRX:
+#if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
+      if (wuffs_base__cpu_arch__have_x86_sse42()) {
+        return wuffs_private_impl__swizzle_bgrw__bgr__x86_sse42;
+      }
+#endif
       return wuffs_private_impl__swizzle_bgrw__bgr;
 
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE:
@@ -5167,6 +5233,11 @@ wuffs_private_impl__pixel_swizzler__prepare__rgb(
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_BINARY:
     case WUFFS_BASE__PIXEL_FORMAT__RGBX:
+#if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
+      if (wuffs_base__cpu_arch__have_x86_sse42()) {
+        return wuffs_private_impl__swizzle_bgrw__bgr__x86_sse42;
+      }
+#endif
       return wuffs_private_impl__swizzle_bgrw__bgr;
   }
   return NULL;
