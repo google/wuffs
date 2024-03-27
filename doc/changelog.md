@@ -29,10 +29,11 @@ The LICENSE has changed from a single license (Apache 2) to a dual license
 - Changed `set_quirk_enabled!(quirk: u32, enabled: bool)` to `set_quirk!(key:
   u32, value: u64) status`.
 - Changed `wuffs_base__empty_foo` to return non-NULL ptr.
-- Deprecate `std/lzw.decoder.flush`.
+- Deprecated `std/lzw.decoder.flush`.
+- Fixed `PIXEL_FORMAT__YA_{NON,}PREMUL` constant values.
 - Generated constants now default to unsigned.
-- Halve the sizeof `wuffs_foo__bar::unique_ptr`.
-- Remove the `std/gif -> std/lzw` dependency.
+- Halved the sizeof `wuffs_foo__bar::unique_ptr`.
+- Removed the `std/gif -> std/lzw` dependency.
 - Removed `example/bzcat`.
 - Set image decoder pixel width and height inclusive maximum to `0xFF_FFFF`,
   down from `0x7FFF_FFFF`.
@@ -44,7 +45,7 @@ code (instead of writing C/C++ code that _uses_ Wuffs' standard library).
 - Added `io_forget_history`.
 - Added `slice_var as nptr array[etc] etc` conversion.
 - Added read-only type decorators: `roarray`, `roslice` and `rotable`.
-- Ban recursive function calls.
+- Banned recursive function calls.
 - Renamed `base` `min/max` argument from `a` to `no_more/less_than`.
 - Wuffs struct private data now needs a "+" between the "()" pairs.
 - `wuffsfmt` double-indents hanging lines and each indent is now 4 spaces (not
