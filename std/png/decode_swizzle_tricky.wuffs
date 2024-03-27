@@ -101,20 +101,7 @@ pri func decoder.filter_and_swizzle_tricky!(dst: ptr base.pixel_buffer, workbuf:
                 assert x < 0x00FF_FFFF via "a < b: a < c; c <= b"(c: this.frame_rect_x1)
                 i = (x as base.u64) * dst_bytes_per_pixel
                 if i <= dst.length() {
-                    if this.color_type == 4 {
-                        if 2 <= s.length() {
-                            bits_unpacked[0] = s[0]
-                            bits_unpacked[1] = s[0]
-                            bits_unpacked[2] = s[0]
-                            bits_unpacked[3] = s[1]
-                            s = s[2 ..]
-                            this.swizzler.swizzle_interleaved_from_slice!(
-                                    dst: dst[i ..],
-                                    dst_palette: dst_palette,
-                                    src: bits_unpacked[.. 4])
-                        }
-
-                    } else if ((this.remap_transparency & 0xFFFF_FFFF) as base.u32) <> 0 {
+                    if ((this.remap_transparency & 0xFFFF_FFFF) as base.u32) <> 0 {
                         if this.color_type == 0 {
                             if 1 <= s.length() {
                                 bits_unpacked[0] = s[0]

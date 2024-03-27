@@ -455,10 +455,9 @@ pri func decoder.assign_filter_distance!() {
 
     } else if this.color_type == 4 {
         if this.depth == 8 {
-            this.dst_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL
-            this.src_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL
+            this.dst_pixfmt = base.PIXEL_FORMAT__YA_NONPREMUL
+            this.src_pixfmt = base.PIXEL_FORMAT__YA_NONPREMUL
             this.filter_distance = 2
-            choose filter_and_swizzle = [filter_and_swizzle_tricky]
         } else if this.depth == 16 {
             this.dst_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE
             this.src_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE

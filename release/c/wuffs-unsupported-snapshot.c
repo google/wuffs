@@ -60644,11 +60644,9 @@ wuffs_png__decoder__assign_filter_distance(
     }
   } else if (self->private_impl.f_color_type == 4u) {
     if (self->private_impl.f_depth == 8u) {
-      self->private_impl.f_dst_pixfmt = 2164295816u;
-      self->private_impl.f_src_pixfmt = 2164295816u;
+      self->private_impl.f_dst_pixfmt = 553648264u;
+      self->private_impl.f_src_pixfmt = 553648264u;
       self->private_impl.f_filter_distance = 2u;
-      self->private_impl.choosy_filter_and_swizzle = (
-          &wuffs_png__decoder__filter_and_swizzle_tricky);
     } else if (self->private_impl.f_depth == 16u) {
       self->private_impl.f_dst_pixfmt = 2164308923u;
       self->private_impl.f_src_pixfmt = 2164308923u;
@@ -64347,16 +64345,7 @@ wuffs_png__decoder__filter_and_swizzle_tricky(
       while (v_x < self->private_impl.f_frame_rect_x1) {
         v_i = (((uint64_t)(v_x)) * v_dst_bytes_per_pixel);
         if (v_i <= ((uint64_t)(v_dst.len))) {
-          if (self->private_impl.f_color_type == 4u) {
-            if (2u <= ((uint64_t)(v_s.len))) {
-              v_bits_unpacked[0u] = v_s.ptr[0u];
-              v_bits_unpacked[1u] = v_s.ptr[0u];
-              v_bits_unpacked[2u] = v_s.ptr[0u];
-              v_bits_unpacked[3u] = v_s.ptr[1u];
-              v_s = wuffs_base__slice_u8__subslice_i(v_s, 2u);
-              wuffs_base__pixel_swizzler__swizzle_interleaved_from_slice(&self->private_impl.f_swizzler, wuffs_base__slice_u8__subslice_i(v_dst, v_i), v_dst_palette, wuffs_base__make_slice_u8(v_bits_unpacked, 4));
-            }
-          } else if (((uint32_t)(self->private_impl.f_remap_transparency)) != 0u) {
+          if (((uint32_t)(self->private_impl.f_remap_transparency)) != 0u) {
             if (self->private_impl.f_color_type == 0u) {
               if (1u <= ((uint64_t)(v_s.len))) {
                 v_bits_unpacked[0u] = v_s.ptr[0u];
