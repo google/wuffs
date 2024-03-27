@@ -70,6 +70,26 @@ wuffs_base__color_u32_argb_premul__as__color_u8_gray(
 }
 
 static inline uint16_t  //
+wuffs_base__color_u32_argb_premul__as__color_u16_alpha_gray_nonpremul(
+    wuffs_base__color_u32_argb_premul c) {
+  uint32_t a = 0xFF & (c >> 24);
+  if (a == 0) {
+    return 0;
+  }
+  uint32_t a16 = a * 0x101;
+
+  uint32_t cr = 0xFF & (c >> 16);
+  cr = (cr * (0x101 * 0xFFFF)) / a16;
+  uint32_t cg = 0xFF & (c >> 8);
+  cg = (cg * (0x101 * 0xFFFF)) / a16;
+  uint32_t cb = 0xFF & (c >> 0);
+  cb = (cb * (0x101 * 0xFFFF)) / a16;
+
+  uint32_t weighted_average = (19595 * cr) + (38470 * cg) + (7471 * cb) + 32768;
+  return (uint16_t)((a16 & 0xFF00) | (weighted_average >> 24));
+}
+
+static inline uint16_t  //
 wuffs_base__color_u32_argb_premul__as__color_u16_gray(
     wuffs_base__color_u32_argb_premul c) {
   // Work in 16-bit color.
