@@ -25717,10 +25717,9 @@ wuffs_private_impl__swizzle_ya_nonpremul__ya_nonpremul__src_over(
   while (n >= 1) {
     uint32_t d0 = ((uint32_t)(d[1]) << 24) | ((uint32_t)(d[0]) * 0x010101);
     uint32_t s0 = ((uint32_t)(s[1]) << 24) | ((uint32_t)(s[0]) * 0x010101);
-    wuffs_base__poke_u16le__no_bounds_check(
-        d + (0 * 2),
-        wuffs_private_impl__composite_nonpremul_nonpremul_u32_axxx(d0, s0) >>
-            16);
+    uint32_t c0 =
+        wuffs_private_impl__composite_nonpremul_nonpremul_u32_axxx(d0, s0);
+    wuffs_base__poke_u16le__no_bounds_check(d + (0 * 2), (uint16_t)(c0 >> 16));
 
     s += 1 * 2;
     d += 1 * 2;
