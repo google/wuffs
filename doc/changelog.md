@@ -33,6 +33,8 @@ The LICENSE has changed from a single license (Apache 2) to a dual license
 - Fixed `PIXEL_FORMAT__YA_{NON,}PREMUL` constant values.
 - Generated constants now default to unsigned.
 - Halved the sizeof `wuffs_foo__bar::unique_ptr`.
+- Let `std/png` decode PNG color type 4 to `PIXEL_FORMAT__YA_NONPREMUL` (two
+  channels) instead of `PIXEL_FORMAT__BGRA_NONPREMUL` (four channels).
 - Removed the `std/gif -> std/lzw` dependency.
 - Removed `example/bzcat`.
 - Set image decoder pixel width and height inclusive maximum to `0xFF_FFFF`,
