@@ -650,15 +650,20 @@ wuffs_base__pixel_config__set(wuffs_base__pixel_config* c,
     return;
   }
   if (pixfmt_repr) {
-    uint64_t wh = ((uint64_t)width) * ((uint64_t)height);
-    // TODO: handle things other than 1 byte per pixel.
-    if (wh <= ((uint64_t)SIZE_MAX)) {
+    do {
+#if SIZE_MAX < UINT64_MAX
+      uint64_t wh = ((uint64_t)width) * ((uint64_t)height);
+      // TODO: handle things other than 1 byte per pixel.
+      if (wh > ((uint64_t)SIZE_MAX)) {
+        break;
+      }
+#endif
       c->private_impl.pixfmt.repr = pixfmt_repr;
       c->private_impl.pixsub.repr = pixsub_repr;
       c->private_impl.width = width;
       c->private_impl.height = height;
       return;
-    }
+    } while (0);
   }
 
   c->private_impl.pixfmt.repr = 0;
