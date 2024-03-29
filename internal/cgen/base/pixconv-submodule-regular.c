@@ -4799,7 +4799,7 @@ wuffs_private_impl__swizzle_transparent_black_src_over(
 
 // --------
 
-static wuffs_base__pixel_swizzler__func  //
+static inline WUFFS_BASE__FORCE_INLINE wuffs_base__pixel_swizzler__func  //
 wuffs_private_impl__pixel_swizzler__prepare__y(
     wuffs_base__pixel_swizzler* p,
     wuffs_base__pixel_format dst_pixfmt,
@@ -4841,7 +4841,7 @@ wuffs_private_impl__pixel_swizzler__prepare__y(
   return NULL;
 }
 
-static wuffs_base__pixel_swizzler__func  //
+static inline WUFFS_BASE__FORCE_INLINE wuffs_base__pixel_swizzler__func  //
 wuffs_private_impl__pixel_swizzler__prepare__y_16be(
     wuffs_base__pixel_swizzler* p,
     wuffs_base__pixel_format dst_pixfmt,
@@ -4884,7 +4884,7 @@ wuffs_private_impl__pixel_swizzler__prepare__y_16be(
   return NULL;
 }
 
-static wuffs_base__pixel_swizzler__func  //
+static inline WUFFS_BASE__FORCE_INLINE wuffs_base__pixel_swizzler__func  //
 wuffs_private_impl__pixel_swizzler__prepare__ya_nonpremul(
     wuffs_base__pixel_swizzler* p,
     wuffs_base__pixel_format dst_pixfmt,
@@ -4953,7 +4953,7 @@ wuffs_private_impl__pixel_swizzler__prepare__ya_nonpremul(
   return NULL;
 }
 
-static wuffs_base__pixel_swizzler__func  //
+static inline WUFFS_BASE__FORCE_INLINE wuffs_base__pixel_swizzler__func  //
 wuffs_private_impl__pixel_swizzler__prepare__indexed__bgra_nonpremul(
     wuffs_base__pixel_swizzler* p,
     wuffs_base__pixel_format dst_pixfmt,
@@ -5125,7 +5125,7 @@ wuffs_private_impl__pixel_swizzler__prepare__indexed__bgra_nonpremul(
   return NULL;
 }
 
-static wuffs_base__pixel_swizzler__func  //
+static inline WUFFS_BASE__FORCE_INLINE wuffs_base__pixel_swizzler__func  //
 wuffs_private_impl__pixel_swizzler__prepare__indexed__bgra_binary(
     wuffs_base__pixel_swizzler* p,
     wuffs_base__pixel_format dst_pixfmt,
@@ -5242,7 +5242,7 @@ wuffs_private_impl__pixel_swizzler__prepare__indexed__bgra_binary(
   return NULL;
 }
 
-static wuffs_base__pixel_swizzler__func  //
+static inline WUFFS_BASE__FORCE_INLINE wuffs_base__pixel_swizzler__func  //
 wuffs_private_impl__pixel_swizzler__prepare__bgr_565(
     wuffs_base__pixel_swizzler* p,
     wuffs_base__pixel_format dst_pixfmt,
@@ -5278,7 +5278,7 @@ wuffs_private_impl__pixel_swizzler__prepare__bgr_565(
   return NULL;
 }
 
-static wuffs_base__pixel_swizzler__func  //
+static inline WUFFS_BASE__FORCE_INLINE wuffs_base__pixel_swizzler__func  //
 wuffs_private_impl__pixel_swizzler__prepare__bgr(
     wuffs_base__pixel_swizzler* p,
     wuffs_base__pixel_format dst_pixfmt,
@@ -5324,7 +5324,7 @@ wuffs_private_impl__pixel_swizzler__prepare__bgr(
   return NULL;
 }
 
-static wuffs_base__pixel_swizzler__func  //
+static inline WUFFS_BASE__FORCE_INLINE wuffs_base__pixel_swizzler__func  //
 wuffs_private_impl__pixel_swizzler__prepare__bgra_nonpremul(
     wuffs_base__pixel_swizzler* p,
     wuffs_base__pixel_format dst_pixfmt,
@@ -5422,7 +5422,7 @@ wuffs_private_impl__pixel_swizzler__prepare__bgra_nonpremul(
   return NULL;
 }
 
-static wuffs_base__pixel_swizzler__func  //
+static inline WUFFS_BASE__FORCE_INLINE wuffs_base__pixel_swizzler__func  //
 wuffs_private_impl__pixel_swizzler__prepare__bgra_nonpremul_4x16le(
     wuffs_base__pixel_swizzler* p,
     wuffs_base__pixel_format dst_pixfmt,
@@ -5515,7 +5515,7 @@ wuffs_private_impl__pixel_swizzler__prepare__bgra_nonpremul_4x16le(
   return NULL;
 }
 
-static wuffs_base__pixel_swizzler__func  //
+static inline WUFFS_BASE__FORCE_INLINE wuffs_base__pixel_swizzler__func  //
 wuffs_private_impl__pixel_swizzler__prepare__bgra_premul(
     wuffs_base__pixel_swizzler* p,
     wuffs_base__pixel_format dst_pixfmt,
@@ -5603,7 +5603,7 @@ wuffs_private_impl__pixel_swizzler__prepare__bgra_premul(
   return NULL;
 }
 
-static wuffs_base__pixel_swizzler__func  //
+static inline WUFFS_BASE__FORCE_INLINE wuffs_base__pixel_swizzler__func  //
 wuffs_private_impl__pixel_swizzler__prepare__bgrx(
     wuffs_base__pixel_swizzler* p,
     wuffs_base__pixel_format dst_pixfmt,
@@ -5640,7 +5640,7 @@ wuffs_private_impl__pixel_swizzler__prepare__bgrx(
   return NULL;
 }
 
-static wuffs_base__pixel_swizzler__func  //
+static inline WUFFS_BASE__FORCE_INLINE wuffs_base__pixel_swizzler__func  //
 wuffs_private_impl__pixel_swizzler__prepare__rgb(
     wuffs_base__pixel_swizzler* p,
     wuffs_base__pixel_format dst_pixfmt,
@@ -5685,7 +5685,7 @@ wuffs_private_impl__pixel_swizzler__prepare__rgb(
   return NULL;
 }
 
-static wuffs_base__pixel_swizzler__func  //
+static inline WUFFS_BASE__FORCE_INLINE wuffs_base__pixel_swizzler__func  //
 wuffs_private_impl__pixel_swizzler__prepare__rgba_nonpremul(
     wuffs_base__pixel_swizzler* p,
     wuffs_base__pixel_format dst_pixfmt,
@@ -5783,7 +5783,7 @@ wuffs_private_impl__pixel_swizzler__prepare__rgba_nonpremul(
   return NULL;
 }
 
-static wuffs_base__pixel_swizzler__func  //
+static inline WUFFS_BASE__FORCE_INLINE wuffs_base__pixel_swizzler__func  //
 wuffs_private_impl__pixel_swizzler__prepare__rgba_premul(
     wuffs_base__pixel_swizzler* p,
     wuffs_base__pixel_format dst_pixfmt,

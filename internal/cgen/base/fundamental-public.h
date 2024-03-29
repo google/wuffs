@@ -293,9 +293,15 @@ wuffs_base__cpu_arch__have_x86_sse42(void) {
 // The "defined(__clang__)" isn't redundant. While vanilla clang defines
 // __GNUC__, clang-cl (which mimics MSVC's cl.exe) does not.
 #if defined(__GNUC__) || defined(__clang__)
+#define WUFFS_BASE__FORCE_INLINE __attribute__((__always_inline__))
 #define WUFFS_BASE__POTENTIALLY_UNUSED __attribute__((unused))
 #define WUFFS_BASE__WARN_UNUSED_RESULT __attribute__((warn_unused_result))
+#elif defined(_MSC_VER)
+#define WUFFS_BASE__FORCE_INLINE __forceinline
+#define WUFFS_BASE__POTENTIALLY_UNUSED
+#define WUFFS_BASE__WARN_UNUSED_RESULT
 #else
+#define WUFFS_BASE__FORCE_INLINE
 #define WUFFS_BASE__POTENTIALLY_UNUSED
 #define WUFFS_BASE__WARN_UNUSED_RESULT
 #endif
