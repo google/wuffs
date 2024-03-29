@@ -77,6 +77,21 @@ OOOOXXXXXXXXXXOXXXXXXXXXXXXOOO
 #define WUFFS_CONFIG__MODULE__BASE
 #define WUFFS_CONFIG__MODULE__JPEG
 
+// Defining the WUFFS_CONFIG__DST_PIXEL_FORMAT__ENABLE_ALLOWLIST (and the
+// associated ETC__ALLOW_FOO) macros are optional, but can lead to smaller
+// programs (in terms of binary size). By default (without these macros),
+// Wuffs' standard library can decode images to a variety of pixel formats,
+// such as BGR_565, BGRA_PREMUL or RGBA_NONPREMUL. The destination pixel format
+// is selectable at runtime. Using these macros essentially makes the selection
+// at compile time, by narrowing the list of supported destination pixel
+// formats. The FOO in ETC__ALLOW_FOO should match the pixel format passed (as
+// part of the wuffs_base__image_config argument) to the decode_frame method.
+//
+// If using the wuffs_aux C++ API, without overriding the SelectPixfmt method,
+// the implicit destination pixel format is BGRA_PREMUL.
+#define WUFFS_CONFIG__DST_PIXEL_FORMAT__ENABLE_ALLOWLIST
+#define WUFFS_CONFIG__DST_PIXEL_FORMAT__ALLOW_BGRA_PREMUL
+
 // If building this program in an environment that doesn't easily accommodate
 // relative includes, you can use the script/inline-c-relative-includes.go
 // program to generate a stand-alone C file.

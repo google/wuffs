@@ -555,6 +555,7 @@ extern const char wuffs_base__error__bad_vtable[];
 extern const char wuffs_base__error__bad_workbuf_length[];
 extern const char wuffs_base__error__bad_wuffs_version[];
 extern const char wuffs_base__error__cannot_return_a_suspension[];
+extern const char wuffs_base__error__disabled_by_wuffs_config_dst_pixel_format_enable_allowlist[];
 extern const char wuffs_base__error__disabled_by_previous_error[];
 extern const char wuffs_base__error__initialize_falsely_claimed_already_zeroed[];
 extern const char wuffs_base__error__initialize_not_called[];
@@ -15979,6 +15980,7 @@ const char wuffs_base__error__bad_vtable[] = "#base: bad vtable";
 const char wuffs_base__error__bad_workbuf_length[] = "#base: bad workbuf length";
 const char wuffs_base__error__bad_wuffs_version[] = "#base: bad wuffs version";
 const char wuffs_base__error__cannot_return_a_suspension[] = "#base: cannot return a suspension";
+const char wuffs_base__error__disabled_by_wuffs_config_dst_pixel_format_enable_allowlist[] = "#base: disabled by WUFFS_CONFIG__DST_PIXEL_FORMAT__ENABLE_ALLOWLIST";
 const char wuffs_base__error__disabled_by_previous_error[] = "#base: disabled by previous error";
 const char wuffs_base__error__initialize_falsely_claimed_already_zeroed[] = "#base: initialize falsely claimed already zeroed";
 const char wuffs_base__error__initialize_not_called[] = "#base: initialize not called";
@@ -26864,6 +26866,50 @@ wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
   p->private_impl.dst_pixfmt_bytes_per_pixel = 0;
   p->private_impl.src_pixfmt_bytes_per_pixel = 0;
 
+  // ----
+
+#if defined(WUFFS_CONFIG__DST_PIXEL_FORMAT__ENABLE_ALLOWLIST)
+  switch (dst_pixfmt.repr) {
+#if defined(WUFFS_CONFIG__DST_PIXEL_FORMAT__ALLOW_BGR_565)
+    case WUFFS_BASE__PIXEL_FORMAT__BGR_565:
+      break;
+#endif
+#if defined(WUFFS_CONFIG__DST_PIXEL_FORMAT__ALLOW_BGR)
+    case WUFFS_BASE__PIXEL_FORMAT__BGR:
+      break;
+#endif
+#if defined(WUFFS_CONFIG__DST_PIXEL_FORMAT__ALLOW_BGRA_NONPREMUL)
+    case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
+      break;
+#endif
+#if defined(WUFFS_CONFIG__DST_PIXEL_FORMAT__ALLOW_BGRA_NONPREMUL_4X16LE)
+    case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE:
+      break;
+#endif
+#if defined(WUFFS_CONFIG__DST_PIXEL_FORMAT__ALLOW_BGRA_PREMUL)
+    case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
+      break;
+#endif
+#if defined(WUFFS_CONFIG__DST_PIXEL_FORMAT__ALLOW_RGB)
+    case WUFFS_BASE__PIXEL_FORMAT__RGB:
+      break;
+#endif
+#if defined(WUFFS_CONFIG__DST_PIXEL_FORMAT__ALLOW_RGBA_NONPREMUL)
+    case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
+      break;
+#endif
+#if defined(WUFFS_CONFIG__DST_PIXEL_FORMAT__ALLOW_RGBA_PREMUL)
+    case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
+      break;
+#endif
+    default:
+      return wuffs_base__make_status(
+          wuffs_base__error__disabled_by_wuffs_config_dst_pixel_format_enable_allowlist);
+  }
+#endif  // defined(WUFFS_CONFIG__DST_PIXEL_FORMAT__ENABLE_ALLOWLIST)
+
+  // ----
+
   wuffs_base__pixel_swizzler__func func = NULL;
   wuffs_base__pixel_swizzler__transparent_black_func transparent_black_func =
       NULL;
@@ -28234,6 +28280,47 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
         wuffs_base__error__unsupported_pixel_swizzler_option);
   }
 
+  // ----
+
+#if defined(WUFFS_CONFIG__DST_PIXEL_FORMAT__ENABLE_ALLOWLIST)
+  switch (dst->pixcfg.private_impl.pixfmt.repr) {
+#if defined(WUFFS_CONFIG__DST_PIXEL_FORMAT__ALLOW_BGR_565)
+    case WUFFS_BASE__PIXEL_FORMAT__BGR_565:
+      break;
+#endif
+#if defined(WUFFS_CONFIG__DST_PIXEL_FORMAT__ALLOW_BGR)
+    case WUFFS_BASE__PIXEL_FORMAT__BGR:
+      break;
+#endif
+#if defined(WUFFS_CONFIG__DST_PIXEL_FORMAT__ALLOW_BGRA_NONPREMUL)
+    case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
+      break;
+#endif
+#if defined(WUFFS_CONFIG__DST_PIXEL_FORMAT__ALLOW_BGRA_NONPREMUL_4X16LE)
+    case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE:
+      break;
+#endif
+#if defined(WUFFS_CONFIG__DST_PIXEL_FORMAT__ALLOW_BGRA_PREMUL)
+    case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
+      break;
+#endif
+#if defined(WUFFS_CONFIG__DST_PIXEL_FORMAT__ALLOW_RGB)
+    case WUFFS_BASE__PIXEL_FORMAT__RGB:
+      break;
+#endif
+#if defined(WUFFS_CONFIG__DST_PIXEL_FORMAT__ALLOW_RGBA_NONPREMUL)
+    case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
+      break;
+#endif
+#if defined(WUFFS_CONFIG__DST_PIXEL_FORMAT__ALLOW_RGBA_PREMUL)
+    case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
+      break;
+#endif
+    default:
+      return wuffs_base__make_status(
+          wuffs_base__error__disabled_by_wuffs_config_dst_pixel_format_enable_allowlist);
+  }
+#else   // defined(WUFFS_CONFIG__DST_PIXEL_FORMAT__ENABLE_ALLOWLIST)
   switch (dst->pixcfg.private_impl.pixfmt.repr) {
     case WUFFS_BASE__PIXEL_FORMAT__Y:
     case WUFFS_BASE__PIXEL_FORMAT__Y_16LE:
@@ -28259,6 +28346,9 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
       return wuffs_base__make_status(
           wuffs_base__error__unsupported_pixel_swizzler_option);
   }
+#endif  // defined(WUFFS_CONFIG__DST_PIXEL_FORMAT__ENABLE_ALLOWLIST)
+
+  // ----
 
   if ((width <= 0u) || (height <= 0u)) {
     return wuffs_base__make_status(NULL);

@@ -262,6 +262,7 @@ var Statuses = [...]string{
 	`"#bad workbuf length"`,
 	`"#bad wuffs version"`,
 	`"#cannot return a suspension"`,
+	`"#disabled by WUFFS_CONFIG__DST_PIXEL_FORMAT__ENABLE_ALLOWLIST"`,
 	`"#disabled by previous error"`,
 	`"#initialize falsely claimed already zeroed"`,
 	`"#initialize not called"`,

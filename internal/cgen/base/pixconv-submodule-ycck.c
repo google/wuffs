@@ -1194,6 +1194,47 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
         wuffs_base__error__unsupported_pixel_swizzler_option);
   }
 
+  // ----
+
+#if defined(WUFFS_CONFIG__DST_PIXEL_FORMAT__ENABLE_ALLOWLIST)
+  switch (dst->pixcfg.private_impl.pixfmt.repr) {
+#if defined(WUFFS_CONFIG__DST_PIXEL_FORMAT__ALLOW_BGR_565)
+    case WUFFS_BASE__PIXEL_FORMAT__BGR_565:
+      break;
+#endif
+#if defined(WUFFS_CONFIG__DST_PIXEL_FORMAT__ALLOW_BGR)
+    case WUFFS_BASE__PIXEL_FORMAT__BGR:
+      break;
+#endif
+#if defined(WUFFS_CONFIG__DST_PIXEL_FORMAT__ALLOW_BGRA_NONPREMUL)
+    case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
+      break;
+#endif
+#if defined(WUFFS_CONFIG__DST_PIXEL_FORMAT__ALLOW_BGRA_NONPREMUL_4X16LE)
+    case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE:
+      break;
+#endif
+#if defined(WUFFS_CONFIG__DST_PIXEL_FORMAT__ALLOW_BGRA_PREMUL)
+    case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
+      break;
+#endif
+#if defined(WUFFS_CONFIG__DST_PIXEL_FORMAT__ALLOW_RGB)
+    case WUFFS_BASE__PIXEL_FORMAT__RGB:
+      break;
+#endif
+#if defined(WUFFS_CONFIG__DST_PIXEL_FORMAT__ALLOW_RGBA_NONPREMUL)
+    case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
+      break;
+#endif
+#if defined(WUFFS_CONFIG__DST_PIXEL_FORMAT__ALLOW_RGBA_PREMUL)
+    case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
+      break;
+#endif
+    default:
+      return wuffs_base__make_status(
+          wuffs_base__error__disabled_by_wuffs_config_dst_pixel_format_enable_allowlist);
+  }
+#else   // defined(WUFFS_CONFIG__DST_PIXEL_FORMAT__ENABLE_ALLOWLIST)
   switch (dst->pixcfg.private_impl.pixfmt.repr) {
     case WUFFS_BASE__PIXEL_FORMAT__Y:
     case WUFFS_BASE__PIXEL_FORMAT__Y_16LE:
@@ -1219,6 +1260,9 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
       return wuffs_base__make_status(
           wuffs_base__error__unsupported_pixel_swizzler_option);
   }
+#endif  // defined(WUFFS_CONFIG__DST_PIXEL_FORMAT__ENABLE_ALLOWLIST)
+
+  // ----
 
   if ((width <= 0u) || (height <= 0u)) {
     return wuffs_base__make_status(NULL);
