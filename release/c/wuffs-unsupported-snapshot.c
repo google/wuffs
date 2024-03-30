@@ -52123,67 +52123,40 @@ wuffs_lzma__decoder__decode_bitstream_fast(
         v_range <<= 8u;
       }
       v_index_lit = (15u & ((((uint32_t)((v_pos & v_lp_mask))) << v_lc) | (((uint32_t)(v_prev_byte)) >> (8u - v_lc))));
+      v_lanl_offset = 0u;
       if (v_state >= 7u) {
         v_lanl_offset = 256u;
-        v_tree_node = 1u;
-        while (v_tree_node < 256u) {
-          v_match_byte <<= 1u;
-          v_lanl_old_offset = v_lanl_offset;
-          v_lanl_offset &= v_match_byte;
-          v_lanl_index = (v_lanl_offset + v_lanl_old_offset + v_tree_node);
-          v_prob = ((uint32_t)(self->private_data.f_probs_lit[v_index_lit][v_lanl_index]));
-          v_threshold = ((uint32_t)((v_range >> 11u) * v_prob));
-          if (v_bits < v_threshold) {
-            v_lanl_offset = ((v_lanl_offset ^ v_lanl_old_offset) & 256u);
-            v_range = v_threshold;
-            v_prob += (((uint32_t)(2048u - v_prob)) >> 5u);
-            self->private_data.f_probs_lit[v_index_lit][v_lanl_index] = ((uint16_t)(v_prob));
-            v_tree_node = (v_tree_node << 1u);
-          } else {
-            v_bits -= v_threshold;
-            v_range -= v_threshold;
-            v_prob -= (v_prob >> 5u);
-            self->private_data.f_probs_lit[v_index_lit][v_lanl_index] = ((uint16_t)(v_prob));
-            v_tree_node = ((v_tree_node << 1u) | 1u);
-          }
-          if ((v_range >> 24u) == 0u) {
-            if (((uint64_t)(io2_a_src - iop_a_src)) <= 0u) {
-              status = wuffs_base__make_status(wuffs_lzma__error__internal_error_inconsistent_i_o);
-              goto exit;
-            }
-            v_c8 = wuffs_base__peek_u8be__no_bounds_check(iop_a_src);
-            iop_a_src += 1u;
-            v_bits = (((uint32_t)(v_bits << 8u)) | ((uint32_t)(v_c8)));
-            v_range <<= 8u;
-          }
+      }
+      v_tree_node = 1u;
+      while (v_tree_node < 256u) {
+        v_match_byte <<= 1u;
+        v_lanl_old_offset = v_lanl_offset;
+        v_lanl_offset &= v_match_byte;
+        v_lanl_index = (v_lanl_offset + v_lanl_old_offset + v_tree_node);
+        v_prob = ((uint32_t)(self->private_data.f_probs_lit[v_index_lit][v_lanl_index]));
+        v_threshold = ((uint32_t)((v_range >> 11u) * v_prob));
+        if (v_bits < v_threshold) {
+          v_lanl_offset = ((v_lanl_offset ^ v_lanl_old_offset) & 256u);
+          v_range = v_threshold;
+          v_prob += (((uint32_t)(2048u - v_prob)) >> 5u);
+          self->private_data.f_probs_lit[v_index_lit][v_lanl_index] = ((uint16_t)(v_prob));
+          v_tree_node = (v_tree_node << 1u);
+        } else {
+          v_bits -= v_threshold;
+          v_range -= v_threshold;
+          v_prob -= (v_prob >> 5u);
+          self->private_data.f_probs_lit[v_index_lit][v_lanl_index] = ((uint16_t)(v_prob));
+          v_tree_node = ((v_tree_node << 1u) | 1u);
         }
-      } else {
-        v_tree_node = 1u;
-        while (v_tree_node < 256u) {
-          v_prob = ((uint32_t)(self->private_data.f_probs_lit[v_index_lit][v_tree_node]));
-          v_threshold = ((uint32_t)((v_range >> 11u) * v_prob));
-          if (v_bits < v_threshold) {
-            v_range = v_threshold;
-            v_prob += (((uint32_t)(2048u - v_prob)) >> 5u);
-            self->private_data.f_probs_lit[v_index_lit][v_tree_node] = ((uint16_t)(v_prob));
-            v_tree_node = (v_tree_node << 1u);
-          } else {
-            v_bits -= v_threshold;
-            v_range -= v_threshold;
-            v_prob -= (v_prob >> 5u);
-            self->private_data.f_probs_lit[v_index_lit][v_tree_node] = ((uint16_t)(v_prob));
-            v_tree_node = ((v_tree_node << 1u) | 1u);
+        if ((v_range >> 24u) == 0u) {
+          if (((uint64_t)(io2_a_src - iop_a_src)) <= 0u) {
+            status = wuffs_base__make_status(wuffs_lzma__error__internal_error_inconsistent_i_o);
+            goto exit;
           }
-          if ((v_range >> 24u) == 0u) {
-            if (((uint64_t)(io2_a_src - iop_a_src)) <= 0u) {
-              status = wuffs_base__make_status(wuffs_lzma__error__internal_error_inconsistent_i_o);
-              goto exit;
-            }
-            v_c8 = wuffs_base__peek_u8be__no_bounds_check(iop_a_src);
-            iop_a_src += 1u;
-            v_bits = (((uint32_t)(v_bits << 8u)) | ((uint32_t)(v_c8)));
-            v_range <<= 8u;
-          }
+          v_c8 = wuffs_base__peek_u8be__no_bounds_check(iop_a_src);
+          iop_a_src += 1u;
+          v_bits = (((uint32_t)(v_bits << 8u)) | ((uint32_t)(v_c8)));
+          v_range <<= 8u;
         }
       }
       v_prev_byte = ((uint8_t)(v_tree_node));

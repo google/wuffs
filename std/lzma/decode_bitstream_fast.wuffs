@@ -130,102 +130,46 @@ pri func decoder.decode_bitstream_fast!(dst: base.io_writer, src: base.io_reader
                     (((pos & lp_mask) as base.u32) << lc) |
                     ((prev_byte as base.u32) >> (8 - lc)))
 
+            lanl_offset = 0
             if state >= 7 {
-                // We are decoding an 8-bit LITERAL, and (state >= 7) means
-                // that we most recently decoded a NON-LITERAL. The
-                // this.probs_lit[index_lit] array has 0x300 elements: three
-                // banks of 0x100.
-                //
-                // For (state < 7), we only use the first bank (and we run the
-                // while.low_state loop instead). This is equivalent to running
-                // the while.high_state loop where lanl_offset starts at and
-                // stays at zero for the entire loop. match_byte is ignored.
-                //
-                // For (state >= 7), we start by using the two later banks, but
-                // as we are decoding those 8 bits (from MSB to LSB order), we
-                // drop down to the first bank (and stay there) if and when the
-                // decoded bit doesn't equal the corresponding bit (in the same
-                // MSB to LSB order) in the match_byte variable.
-                //
-                // lanl_offset stays at 0x100 until that "if and when" point
-                // (which typically happens; if all 8 bits were equal then the
-                // previous NON-LITERAL copy could often just have been
-                // longer), when lanl_offset then drops down to zero. We then
-                // effectively run the remaining (8 - I) iterations in the
-                // while.low_state loop, where I is the iteration count.
-                //
-                // Whether we use the 0x100 or 0x200 bank, out of the two later
-                // banks, depends on the match_byte's I'th bit (MSB to LSB).
-                // match_byte is conceptually a base.u8 (it is <= 0xFF outside
-                // of this code fragment) but the intermediate computation is
-                // simpler as a base.u32 (ignoring the high 23 bits).
                 lanl_offset = 0x100
-
-                tree_node = 1
-                while.high_state tree_node < 0x100,
-                        inv args.dst.length() >= 282,
-                {
-                    match_byte ~mod<<= 1
-                    lanl_old_offset = lanl_offset
-                    lanl_offset &= match_byte
-                    lanl_index = lanl_offset + lanl_old_offset + tree_node
-
-                    prob = this.probs_lit[index_lit][lanl_index] as base.u32
-                    threshold = (range >> 11) ~mod* prob
-                    if bits < threshold {
-                        lanl_offset = (lanl_offset ^ lanl_old_offset) & 0x100
-                        range = threshold
-                        prob ~mod+= (2048 ~mod- prob) >> 5
-                        this.probs_lit[index_lit][lanl_index] = (prob & 0xFFFF) as base.u16
-                        tree_node = (tree_node << 1)
-                    } else {
-                        bits ~mod-= threshold
-                        range ~mod-= threshold
-                        prob ~mod-= prob >> 5
-                        this.probs_lit[index_lit][lanl_index] = (prob & 0xFFFF) as base.u16
-                        tree_node = (tree_node << 1) | 1
-                    }
-                    if (range >> 24) == 0 {
-                        if args.src.length() <= 0 {
-                            return "#internal error: inconsistent I/O"
-                        }
-                        c8 = args.src.peek_u8()
-                        args.src.skip_u32_fast!(actual: 1, worst_case: 1)
-                        bits = (bits ~mod<< 8) | (c8 as base.u32)
-                        range ~mod<<= 8
-                    }
-                } endwhile.high_state
-
-            } else {
-                tree_node = 1
-                while.low_state tree_node < 0x100,
-                        inv args.dst.length() >= 282,
-                {
-                    prob = this.probs_lit[index_lit][tree_node] as base.u32
-                    threshold = (range >> 11) ~mod* prob
-                    if bits < threshold {
-                        range = threshold
-                        prob ~mod+= (2048 ~mod- prob) >> 5
-                        this.probs_lit[index_lit][tree_node] = (prob & 0xFFFF) as base.u16
-                        tree_node = (tree_node << 1)
-                    } else {
-                        bits ~mod-= threshold
-                        range ~mod-= threshold
-                        prob ~mod-= prob >> 5
-                        this.probs_lit[index_lit][tree_node] = (prob & 0xFFFF) as base.u16
-                        tree_node = (tree_node << 1) | 1
-                    }
-                    if (range >> 24) == 0 {
-                        if args.src.length() <= 0 {
-                            return "#internal error: inconsistent I/O"
-                        }
-                        c8 = args.src.peek_u8()
-                        args.src.skip_u32_fast!(actual: 1, worst_case: 1)
-                        bits = (bits ~mod<< 8) | (c8 as base.u32)
-                        range ~mod<<= 8
-                    }
-                } endwhile.low_state
             }
+
+            tree_node = 1
+            while tree_node < 0x100,
+                    inv args.dst.length() >= 282,
+            {
+                match_byte ~mod<<= 1
+                lanl_old_offset = lanl_offset
+                lanl_offset &= match_byte
+                lanl_index = lanl_offset + lanl_old_offset + tree_node
+
+                prob = this.probs_lit[index_lit][lanl_index] as base.u32
+                threshold = (range >> 11) ~mod* prob
+                if bits < threshold {
+                    lanl_offset = (lanl_offset ^ lanl_old_offset) & 0x100
+                    range = threshold
+                    prob ~mod+= (2048 ~mod- prob) >> 5
+                    this.probs_lit[index_lit][lanl_index] = (prob & 0xFFFF) as base.u16
+                    tree_node = (tree_node << 1)
+                } else {
+                    bits ~mod-= threshold
+                    range ~mod-= threshold
+                    prob ~mod-= prob >> 5
+                    this.probs_lit[index_lit][lanl_index] = (prob & 0xFFFF) as base.u16
+                    tree_node = (tree_node << 1) | 1
+                }
+                if (range >> 24) == 0 {
+                    if args.src.length() <= 0 {
+                        return "#internal error: inconsistent I/O"
+                    }
+                    c8 = args.src.peek_u8()
+                    args.src.skip_u32_fast!(actual: 1, worst_case: 1)
+                    bits = (bits ~mod<< 8) | (c8 as base.u32)
+                    range ~mod<<= 8
+                }
+            } endwhile
+
             assert args.dst.length() >= 282
 
             // AlgOve03  emitLiteral(literal)
