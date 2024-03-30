@@ -18,6 +18,7 @@ pub status "#truncated input"
 pub status "#unsupported decoded length"
 pub status "#unsupported properties"
 
+pri status "#internal error: inconsistent I/O"
 pri status "#internal error: inconsistent dictionary state"
 
 pub const DECODER_DST_HISTORY_RETAIN_LENGTH_MAX_INCL_WORST_CASE : base.u64 = 0
@@ -61,6 +62,8 @@ pub struct decoder? implements base.io_transformer(
         prev_lzma2_chunk_was_uncompressed : base.bool,
 
         allow_non_zero_initial_byte : base.bool,
+
+        end_of_chunk : base.bool,
 
         stashed_bytes   : array[2] base.u8,  // 0 is prev_byte, 1 is match_byte.
         stashed_bits    : base.u32,
@@ -558,7 +561,22 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
 }
 
 pri func decoder.decode_bitstream?(dst: base.io_writer, src: base.io_reader, workbuf: roslice base.u8) {
-    this.decode_bitstream_slow?(dst: args.dst, src: args.src, workbuf: args.workbuf)
+    var status : base.status
+
+    this.end_of_chunk = false
+    while true {
+        status = this.decode_bitstream_fast!(dst: args.dst, src: args.src, workbuf: args.workbuf)
+        if status.is_error() {
+            return status
+        }
+        if this.end_of_chunk {
+            break
+        }
+        this.decode_bitstream_slow?(dst: args.dst, src: args.src, workbuf: args.workbuf)
+        if this.end_of_chunk {
+            break
+        }
+    } endwhile
 }
 
 pri func decoder.update_stashed_bytes?(dst: base.io_writer, workbuf: roslice base.u8) {

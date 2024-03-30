@@ -18,7 +18,7 @@
 // its LZMA implementation looks relatively verbose and repetitive (even though
 // it's equivalent to the C/C++ code, at the machine code level).
 
-pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader, workbuf: roslice base.u8) {
+pri func decoder.decode_bitstream_fast!(dst: base.io_writer, src: base.io_reader, workbuf: roslice base.u8) base.status {
     var c8 : base.u8
 
     var bits  : base.u32
@@ -102,7 +102,7 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
     pb_mask = ((1 as base.u64) << this.pb) - 1
 
     // "outer" is the core loop discussed in README.md's "Algorithm Overview".
-    while.outer not coroutine_resumed {
+    while.outer(args.dst.length() >= 282) and (args.src.length() >= 48) {
         if pos >= pos_end {
             this.end_of_chunk = true
             break.outer
@@ -117,7 +117,8 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
             prob ~mod+= (2048 ~mod- prob) >> 5
             this.probs_ao00[index_ao00] = (prob & 0xFFFF) as base.u16
             if (range >> 24) == 0 {
-                c8 = args.src.read_u8?()
+                c8 = args.src.peek_u8()
+                args.src.skip_u32_fast!(actual: 1, worst_case: 1)
                 bits = (bits ~mod<< 8) | (c8 as base.u32)
                 range ~mod<<= 8
             }
@@ -161,7 +162,9 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
                 lanl_offset = 0x100
 
                 tree_node = 1
-                while.high_state tree_node < 0x100 {
+                while.high_state tree_node < 0x100,
+                        inv args.dst.length() >= 282,
+                {
                     match_byte ~mod<<= 1
                     lanl_old_offset = lanl_offset
                     lanl_offset &= match_byte
@@ -183,7 +186,11 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
                         tree_node = (tree_node << 1) | 1
                     }
                     if (range >> 24) == 0 {
-                        c8 = args.src.read_u8?()
+                        if args.src.length() <= 0 {
+                            return "#internal error: inconsistent I/O"
+                        }
+                        c8 = args.src.peek_u8()
+                        args.src.skip_u32_fast!(actual: 1, worst_case: 1)
                         bits = (bits ~mod<< 8) | (c8 as base.u32)
                         range ~mod<<= 8
                     }
@@ -191,7 +198,9 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
 
             } else {
                 tree_node = 1
-                while.low_state tree_node < 0x100 {
+                while.low_state tree_node < 0x100,
+                        inv args.dst.length() >= 282,
+                {
                     prob = this.probs_lit[index_lit][tree_node] as base.u32
                     threshold = (range >> 11) ~mod* prob
                     if bits < threshold {
@@ -207,17 +216,22 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
                         tree_node = (tree_node << 1) | 1
                     }
                     if (range >> 24) == 0 {
-                        c8 = args.src.read_u8?()
+                        if args.src.length() <= 0 {
+                            return "#internal error: inconsistent I/O"
+                        }
+                        c8 = args.src.peek_u8()
+                        args.src.skip_u32_fast!(actual: 1, worst_case: 1)
                         bits = (bits ~mod<< 8) | (c8 as base.u32)
                         range ~mod<<= 8
                     }
                 } endwhile.low_state
             }
+            assert args.dst.length() >= 282
 
             // AlgOve03  emitLiteral(literal)
             // AlgOve04  continue
             prev_byte = (tree_node & 0xFF) as base.u8
-            args.dst.write_u8?(a: prev_byte)
+            args.dst.write_u8_fast!(a: prev_byte)
             pos ~mod+= 1
             state = STATE_TRANSITION_LITERAL[state] as base.u32
             continue.outer
@@ -229,12 +243,17 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
         prob ~mod-= prob >> 5
         this.probs_ao00[index_ao00] = (prob & 0xFFFF) as base.u16
         if (range >> 24) == 0 {
-            c8 = args.src.read_u8?()
+            c8 = args.src.peek_u8()
+            args.src.skip_u32_fast!(actual: 1, worst_case: 1)
             bits = (bits ~mod<< 8) | (c8 as base.u32)
             range ~mod<<= 8
+        } else {
+            assert args.src.length() >= 47
         }
 
         while.goto_do_the_lz_copy true,
+                pre args.src.length() >= 47,
+                inv args.dst.length() >= 282,
                 post len >= 1,
         {{
         // AlgOve20  if decodeTheNextBym() == 0
@@ -245,14 +264,19 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
             prob ~mod+= (2048 ~mod- prob) >> 5
             this.probs_ao20[state] = (prob & 0xFFFF) as base.u16
             if (range >> 24) == 0 {
-                c8 = args.src.read_u8?()
+                c8 = args.src.peek_u8()
+                args.src.skip_u32_fast!(actual: 1, worst_case: 1)
                 bits = (bits ~mod<< 8) | (c8 as base.u32)
                 range ~mod<<= 8
+            } else {
+                assert args.src.length() >= 46
             }
 
             // AlgOve21  // Decode a MATCH.
 
             while.goto_have_len true,
+                    pre args.src.length() >= 46,
+                    inv args.dst.length() >= 282,
                     post len >= 1,
             {{
             // AlgOve22  len = decodeLen()
@@ -265,7 +289,8 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
                 prob ~mod+= (2048 ~mod- prob) >> 5
                 this.probs_match_len_low[0][0] = (prob & 0xFFFF) as base.u16
                 if (range >> 24) == 0 {
-                    c8 = args.src.read_u8?()
+                    c8 = args.src.peek_u8()
+                    args.src.skip_u32_fast!(actual: 1, worst_case: 1)
                     bits = (bits ~mod<< 8) | (c8 as base.u32)
                     range ~mod<<= 8
                 }
@@ -274,7 +299,9 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
                 // AlgOve22.2  len = decodeMultipleByms(3) + 2
                 index_len = (pos & pb_mask) as base.u32
                 tree_node = 1
-                while tree_node < 0x08 {
+                while tree_node < 0x08,
+                        inv args.dst.length() >= 282,
+                {
                     prob = this.probs_match_len_low[index_len][tree_node] as base.u32
                     threshold = (range >> 11) ~mod* prob
                     if bits < threshold {
@@ -290,7 +317,11 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
                         tree_node = (tree_node << 1) | 1
                     }
                     if (range >> 24) == 0 {
-                        c8 = args.src.read_u8?()
+                        if args.src.length() <= 0 {
+                            return "#internal error: inconsistent I/O"
+                        }
+                        c8 = args.src.peek_u8()
+                        args.src.skip_u32_fast!(actual: 1, worst_case: 1)
                         bits = (bits ~mod<< 8) | (c8 as base.u32)
                         range ~mod<<= 8
                     }
@@ -307,7 +338,11 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
             prob ~mod-= prob >> 5
             this.probs_match_len_low[0][0] = (prob & 0xFFFF) as base.u16
             if (range >> 24) == 0 {
-                c8 = args.src.read_u8?()
+                if args.src.length() <= 0 {
+                    return "#internal error: inconsistent I/O"
+                }
+                c8 = args.src.peek_u8()
+                args.src.skip_u32_fast!(actual: 1, worst_case: 1)
                 bits = (bits ~mod<< 8) | (c8 as base.u32)
                 range ~mod<<= 8
             }
@@ -320,7 +355,11 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
                 prob ~mod+= (2048 ~mod- prob) >> 5
                 this.probs_match_len_mid[0][0] = (prob & 0xFFFF) as base.u16
                 if (range >> 24) == 0 {
-                    c8 = args.src.read_u8?()
+                    if args.src.length() <= 0 {
+                        return "#internal error: inconsistent I/O"
+                    }
+                    c8 = args.src.peek_u8()
+                    args.src.skip_u32_fast!(actual: 1, worst_case: 1)
                     bits = (bits ~mod<< 8) | (c8 as base.u32)
                     range ~mod<<= 8
                 }
@@ -329,7 +368,9 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
                 // AlgOve22.5  len = decodeMultipleByms(3) + 10
                 index_len = (pos & pb_mask) as base.u32
                 tree_node = 1
-                while tree_node < 0x08 {
+                while tree_node < 0x08,
+                        inv args.dst.length() >= 282,
+                {
                     prob = this.probs_match_len_mid[index_len][tree_node] as base.u32
                     threshold = (range >> 11) ~mod* prob
                     if bits < threshold {
@@ -345,7 +386,11 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
                         tree_node = (tree_node << 1) | 1
                     }
                     if (range >> 24) == 0 {
-                        c8 = args.src.read_u8?()
+                        if args.src.length() <= 0 {
+                            return "#internal error: inconsistent I/O"
+                        }
+                        c8 = args.src.peek_u8()
+                        args.src.skip_u32_fast!(actual: 1, worst_case: 1)
                         bits = (bits ~mod<< 8) | (c8 as base.u32)
                         range ~mod<<= 8
                     }
@@ -362,7 +407,11 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
             prob ~mod-= prob >> 5
             this.probs_match_len_mid[0][0] = (prob & 0xFFFF) as base.u16
             if (range >> 24) == 0 {
-                c8 = args.src.read_u8?()
+                if args.src.length() <= 0 {
+                    return "#internal error: inconsistent I/O"
+                }
+                c8 = args.src.peek_u8()
+                args.src.skip_u32_fast!(actual: 1, worst_case: 1)
                 bits = (bits ~mod<< 8) | (c8 as base.u32)
                 range ~mod<<= 8
             }
@@ -370,7 +419,9 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
             // AlgOve22.7  // Decode a high length.
             // AlgOve22.8  len = decodeMultipleByms(8) + 18
             tree_node = 1
-            while tree_node < 0x100 {
+            while tree_node < 0x100,
+                    inv args.dst.length() >= 282,
+            {
                 prob = this.probs_match_len_high[0][tree_node] as base.u32
                 threshold = (range >> 11) ~mod* prob
                 if bits < threshold {
@@ -386,7 +437,11 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
                     tree_node = (tree_node << 1) | 1
                 }
                 if (range >> 24) == 0 {
-                    c8 = args.src.read_u8?()
+                    if args.src.length() <= 0 {
+                        return "#internal error: inconsistent I/O"
+                    }
+                    c8 = args.src.peek_u8()
+                    args.src.skip_u32_fast!(actual: 1, worst_case: 1)
                     bits = (bits ~mod<< 8) | (c8 as base.u32)
                     range ~mod<<= 8
                 }
@@ -400,6 +455,7 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
             // AlgOve23  slot = decodeSlot(min(len-2, 3))
             slot = 1
             while slot < 0x40,
+                    inv args.dst.length() >= 282,
                     inv len >= 1,
             {
                 prob = this.probs_slot[len_state][slot] as base.u32
@@ -417,7 +473,11 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
                     slot = (slot << 1) | 1
                 }
                 if (range >> 24) == 0 {
-                    c8 = args.src.read_u8?()
+                    if args.src.length() <= 0 {
+                        return "#internal error: inconsistent I/O"
+                    }
+                    c8 = args.src.peek_u8()
+                    args.src.skip_u32_fast!(actual: 1, worst_case: 1)
                     bits = (bits ~mod<< 8) | (c8 as base.u32)
                     range ~mod<<= 8
                 }
@@ -439,6 +499,7 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
                 dist_extra_bits = 0
                 i = 0
                 while i < num_extra_bits,
+                        inv args.dst.length() >= 282,
                         inv len >= 1,
                 {
                     assert i < 30 via "a < b: a < c; c <= b"(c: num_extra_bits)
@@ -461,7 +522,11 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
                         i += 1
                     }
                     if (range >> 24) == 0 {
-                        c8 = args.src.read_u8?()
+                        if args.src.length() <= 0 {
+                            return "#internal error: inconsistent I/O"
+                        }
+                        c8 = args.src.peek_u8()
+                        args.src.skip_u32_fast!(actual: 1, worst_case: 1)
                         bits = (bits ~mod<< 8) | (c8 as base.u32)
                         range ~mod<<= 8
                     }
@@ -478,6 +543,7 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
                 dist_extra_bits = 0
                 while true,
                         pre num_extra_bits > 4,
+                        inv args.dst.length() >= 282,
                         inv len >= 1,
                         post num_extra_bits > 0,
                         post num_extra_bits <= 4,
@@ -488,7 +554,11 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
                     bits ~mod+= range & high_bit_was_on
                     dist_extra_bits = (dist_extra_bits ~mod<< 1) | ((high_bit_was_on ~mod+ 1) & 1)
                     if (range >> 24) == 0 {
-                        c8 = args.src.read_u8?()
+                        if args.src.length() <= 0 {
+                            return "#internal error: inconsistent I/O"
+                        }
+                        c8 = args.src.peek_u8()
+                        args.src.skip_u32_fast!(actual: 1, worst_case: 1)
                         bits = (bits ~mod<< 8) | (c8 as base.u32)
                         range ~mod<<= 8
                     }
@@ -505,6 +575,7 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
                 while true,
                         pre num_extra_bits > 0,
                         pre num_extra_bits <= 4,
+                        inv args.dst.length() >= 282,
                         inv len >= 1,
                 {
                     prob = this.probs_large_dist[index_large_dist] as base.u32
@@ -523,7 +594,11 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
                         dist_extra_bits |= (1 as base.u32) << (4 - num_extra_bits)
                     }
                     if (range >> 24) == 0 {
-                        c8 = args.src.read_u8?()
+                        if args.src.length() <= 0 {
+                            return "#internal error: inconsistent I/O"
+                        }
+                        c8 = args.src.peek_u8()
+                        args.src.skip_u32_fast!(actual: 1, worst_case: 1)
                         bits = (bits ~mod<< 8) | (c8 as base.u32)
                         range ~mod<<= 8
                     }
@@ -553,6 +628,7 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
             state = STATE_TRANSITION_MATCH[state] as base.u32
             break.goto_do_the_lz_copy  // goto AlgOve90.
         }
+        assert args.src.length() >= 47
 
         // AlgOve20a if decodeTheNextBym() == 0  // If-false branch.
         bits ~mod-= threshold
@@ -560,9 +636,12 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
         prob ~mod-= prob >> 5
         this.probs_ao20[state] = (prob & 0xFFFF) as base.u16
         if (range >> 24) == 0 {
-            c8 = args.src.read_u8?()
+            c8 = args.src.peek_u8()
+            args.src.skip_u32_fast!(actual: 1, worst_case: 1)
             bits = (bits ~mod<< 8) | (c8 as base.u32)
             range ~mod<<= 8
+        } else {
+            assert args.src.length() >= 46
         }
 
         // AlgOve40  if decodeTheNextBym() == 0
@@ -573,9 +652,12 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
             prob ~mod+= (2048 ~mod- prob) >> 5
             this.probs_ao40[state] = (prob & 0xFFFF) as base.u16
             if (range >> 24) == 0 {
-                c8 = args.src.read_u8?()
+                c8 = args.src.peek_u8()
+                args.src.skip_u32_fast!(actual: 1, worst_case: 1)
                 bits = (bits ~mod<< 8) | (c8 as base.u32)
                 range ~mod<<= 8
+            } else {
+                assert args.src.length() >= 45
             }
 
             // AlgOve41  if decodeTheNextBym() == 0
@@ -587,7 +669,8 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
                 prob ~mod+= (2048 ~mod- prob) >> 5
                 this.probs_ao41[index_ao41] = (prob & 0xFFFF) as base.u16
                 if (range >> 24) == 0 {
-                    c8 = args.src.read_u8?()
+                    c8 = args.src.peek_u8()
+                    args.src.skip_u32_fast!(actual: 1, worst_case: 1)
                     bits = (bits ~mod<< 8) | (c8 as base.u32)
                     range ~mod<<= 8
                 }
@@ -607,7 +690,8 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
             prob ~mod-= prob >> 5
             this.probs_ao41[index_ao41] = (prob & 0xFFFF) as base.u16
             if (range >> 24) == 0 {
-                c8 = args.src.read_u8?()
+                c8 = args.src.peek_u8()
+                args.src.skip_u32_fast!(actual: 1, worst_case: 1)
                 bits = (bits ~mod<< 8) | (c8 as base.u32)
                 range ~mod<<= 8
             }
@@ -621,9 +705,12 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
             prob ~mod-= prob >> 5
             this.probs_ao40[state] = (prob & 0xFFFF) as base.u16
             if (range >> 24) == 0 {
-                c8 = args.src.read_u8?()
+                c8 = args.src.peek_u8()
+                args.src.skip_u32_fast!(actual: 1, worst_case: 1)
                 bits = (bits ~mod<< 8) | (c8 as base.u32)
                 range ~mod<<= 8
+            } else {
+                assert args.src.length() >= 45
             }
 
             // AlgOve60  if decodeTheNextBym() == 0
@@ -634,7 +721,8 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
                 prob ~mod+= (2048 ~mod- prob) >> 5
                 this.probs_ao60[state] = (prob & 0xFFFF) as base.u16
                 if (range >> 24) == 0 {
-                    c8 = args.src.read_u8?()
+                    c8 = args.src.peek_u8()
+                    args.src.skip_u32_fast!(actual: 1, worst_case: 1)
                     bits = (bits ~mod<< 8) | (c8 as base.u32)
                     range ~mod<<= 8
                 }
@@ -652,9 +740,12 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
                 prob ~mod-= prob >> 5
                 this.probs_ao60[state] = (prob & 0xFFFF) as base.u16
                 if (range >> 24) == 0 {
-                    c8 = args.src.read_u8?()
+                    c8 = args.src.peek_u8()
+                    args.src.skip_u32_fast!(actual: 1, worst_case: 1)
                     bits = (bits ~mod<< 8) | (c8 as base.u32)
                     range ~mod<<= 8
+                } else {
+                    assert args.src.length() >= 44
                 }
 
                 // AlgOve63  if decodeTheNextBym() == 0
@@ -665,7 +756,8 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
                     prob ~mod+= (2048 ~mod- prob) >> 5
                     this.probs_ao63[state] = (prob & 0xFFFF) as base.u16
                     if (range >> 24) == 0 {
-                        c8 = args.src.read_u8?()
+                        c8 = args.src.peek_u8()
+                        args.src.skip_u32_fast!(actual: 1, worst_case: 1)
                         bits = (bits ~mod<< 8) | (c8 as base.u32)
                         range ~mod<<= 8
                     }
@@ -684,7 +776,8 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
                     prob ~mod-= prob >> 5
                     this.probs_ao63[state] = (prob & 0xFFFF) as base.u16
                     if (range >> 24) == 0 {
-                        c8 = args.src.read_u8?()
+                        c8 = args.src.peek_u8()
+                        args.src.skip_u32_fast!(actual: 1, worst_case: 1)
                         bits = (bits ~mod<< 8) | (c8 as base.u32)
                         range ~mod<<= 8
                     }
@@ -702,6 +795,7 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
 
         // AlgOve80  len = decodeLen()
         while.goto_after_decode_len true,
+                inv args.dst.length() >= 282,
                 post len >= 1,
         {{
         // AlgOve80.0  if decodeTheNextBym() == 0
@@ -712,7 +806,11 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
             prob ~mod+= (2048 ~mod- prob) >> 5
             this.probs_longrep_len_low[0][0] = (prob & 0xFFFF) as base.u16
             if (range >> 24) == 0 {
-                c8 = args.src.read_u8?()
+                if args.src.length() <= 0 {
+                    return "#internal error: inconsistent I/O"
+                }
+                c8 = args.src.peek_u8()
+                args.src.skip_u32_fast!(actual: 1, worst_case: 1)
                 bits = (bits ~mod<< 8) | (c8 as base.u32)
                 range ~mod<<= 8
             }
@@ -721,7 +819,9 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
             // AlgOve80.2  len = decodeMultipleByms(3) + 2
             index_len = (pos & pb_mask) as base.u32
             tree_node = 1
-            while tree_node < 0x08 {
+            while tree_node < 0x08,
+                    inv args.dst.length() >= 282,
+            {
                 prob = this.probs_longrep_len_low[index_len][tree_node] as base.u32
                 threshold = (range >> 11) ~mod* prob
                 if bits < threshold {
@@ -737,7 +837,11 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
                     tree_node = (tree_node << 1) | 1
                 }
                 if (range >> 24) == 0 {
-                    c8 = args.src.read_u8?()
+                    if args.src.length() <= 0 {
+                        return "#internal error: inconsistent I/O"
+                    }
+                    c8 = args.src.peek_u8()
+                    args.src.skip_u32_fast!(actual: 1, worst_case: 1)
                     bits = (bits ~mod<< 8) | (c8 as base.u32)
                     range ~mod<<= 8
                 }
@@ -754,7 +858,11 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
         prob ~mod-= prob >> 5
         this.probs_longrep_len_low[0][0] = (prob & 0xFFFF) as base.u16
         if (range >> 24) == 0 {
-            c8 = args.src.read_u8?()
+            if args.src.length() <= 0 {
+                return "#internal error: inconsistent I/O"
+            }
+            c8 = args.src.peek_u8()
+            args.src.skip_u32_fast!(actual: 1, worst_case: 1)
             bits = (bits ~mod<< 8) | (c8 as base.u32)
             range ~mod<<= 8
         }
@@ -767,7 +875,11 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
             prob ~mod+= (2048 ~mod- prob) >> 5
             this.probs_longrep_len_mid[0][0] = (prob & 0xFFFF) as base.u16
             if (range >> 24) == 0 {
-                c8 = args.src.read_u8?()
+                if args.src.length() <= 0 {
+                    return "#internal error: inconsistent I/O"
+                }
+                c8 = args.src.peek_u8()
+                args.src.skip_u32_fast!(actual: 1, worst_case: 1)
                 bits = (bits ~mod<< 8) | (c8 as base.u32)
                 range ~mod<<= 8
             }
@@ -776,7 +888,9 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
             // AlgOve80.5  len = decodeMultipleByms(3) + 10
             index_len = (pos & pb_mask) as base.u32
             tree_node = 1
-            while tree_node < 0x08 {
+            while tree_node < 0x08,
+                    inv args.dst.length() >= 282,
+            {
                 prob = this.probs_longrep_len_mid[index_len][tree_node] as base.u32
                 threshold = (range >> 11) ~mod* prob
                 if bits < threshold {
@@ -792,7 +906,11 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
                     tree_node = (tree_node << 1) | 1
                 }
                 if (range >> 24) == 0 {
-                    c8 = args.src.read_u8?()
+                    if args.src.length() <= 0 {
+                        return "#internal error: inconsistent I/O"
+                    }
+                    c8 = args.src.peek_u8()
+                    args.src.skip_u32_fast!(actual: 1, worst_case: 1)
                     bits = (bits ~mod<< 8) | (c8 as base.u32)
                     range ~mod<<= 8
                 }
@@ -809,7 +927,11 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
         prob ~mod-= prob >> 5
         this.probs_longrep_len_mid[0][0] = (prob & 0xFFFF) as base.u16
         if (range >> 24) == 0 {
-            c8 = args.src.read_u8?()
+            if args.src.length() <= 0 {
+                return "#internal error: inconsistent I/O"
+            }
+            c8 = args.src.peek_u8()
+            args.src.skip_u32_fast!(actual: 1, worst_case: 1)
             bits = (bits ~mod<< 8) | (c8 as base.u32)
             range ~mod<<= 8
         }
@@ -817,7 +939,9 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
         // AlgOve80.7  // Decode a high length.
         // AlgOve80.8  len = decodeMultipleByms(8) + 18
         tree_node = 1
-        while tree_node < 0x100 {
+        while tree_node < 0x100,
+                inv args.dst.length() >= 282,
+        {
             prob = this.probs_longrep_len_high[0][tree_node] as base.u32
             threshold = (range >> 11) ~mod* prob
             if bits < threshold {
@@ -833,7 +957,11 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
                 tree_node = (tree_node << 1) | 1
             }
             if (range >> 24) == 0 {
-                c8 = args.src.read_u8?()
+                if args.src.length() <= 0 {
+                    return "#internal error: inconsistent I/O"
+                }
+                c8 = args.src.peek_u8()
+                args.src.skip_u32_fast!(actual: 1, worst_case: 1)
                 bits = (bits ~mod<< 8) | (c8 as base.u32)
                 range ~mod<<= 8
             }
@@ -846,6 +974,7 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
         }} endwhile.goto_after_decode_len
         break.goto_do_the_lz_copy
         }} endwhile.goto_do_the_lz_copy
+        assert args.dst.length() >= 282
 
         // AlgOve90  labelDoTheLZCopy:
         // AlgOve94  emitCopy(len, mrud[0])
@@ -858,16 +987,7 @@ pri func decoder.decode_bitstream_slow?(dst: base.io_writer, src: base.io_reader
             return "#bad distance"
         }
         pos ~mod+= len as base.u64
-        // 274 is at least (len + 1). A limited_copy_u32_from_slice call below
-        // passes "up_to: len + 1". It's simpler if it's always a full copy.
-        while 274 > args.dst.length(),
-                inv len >= 1,
-                inv dist >= 1,
-                post 274 <= args.dst.length(),
-        {
-            yield? base."$short write"
-        } endwhile
-        assert (len as base.u64) <= args.dst.length() via "a <= b: a <= c; c <= b"(c: 274)
+        assert (len as base.u64) <= args.dst.length() via "a <= b: a <= c; c <= b"(c: 282)
 
         // Copy from the args.workbuf history, if necessary.
         if (dist as base.u64) > args.dst.history_length() {
