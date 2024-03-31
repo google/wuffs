@@ -932,6 +932,7 @@ pri func decoder.decode_bitstream_fast!(dst: base.io_writer, src: base.io_reader
         }
         pos ~mod+= len as base.u64
         assert (len as base.u64) <= args.dst.length() via "a <= b: a <= c; c <= b"(c: 282)
+        assert ((len + 8) as base.u64) <= args.dst.length() via "a <= b: a <= c; c <= b"(c: 282)
 
         // Copy from the args.workbuf history, if necessary.
         if (dist as base.u64) > args.dst.history_length() {
@@ -984,6 +985,7 @@ pri func decoder.decode_bitstream_fast!(dst: base.io_writer, src: base.io_reader
             len -= adj_dist
             assert len >= 1
             if ((len as base.u64) > args.dst.length()) or
+                    (((len + 8) as base.u64) > args.dst.length()) or
                     ((dist as base.u64) > args.dst.history_length()) {
                 return "#internal error: inconsistent dictionary state"
             }
@@ -993,11 +995,19 @@ pri func decoder.decode_bitstream_fast!(dst: base.io_writer, src: base.io_reader
         assert len >= 1
         assert dist >= 1
         assert (len as base.u64) <= args.dst.length()
+        assert ((len + 8) as base.u64) <= args.dst.length()
         assert (dist as base.u64) <= args.dst.history_length()
-        match_cusp = args.dst.limited_copy_u32_from_history_fast_return_cusp!(
-                up_to: len, distance: dist)
-        match_byte = match_cusp >> 8
-        prev_byte = (match_cusp & 0xFF) as base.u8
+        if dist >= 8 {
+            match_cusp = args.dst.limited_copy_u32_from_history_8_byte_chunks_fast_return_cusp!(
+                    up_to: len, distance: dist)
+            match_byte = match_cusp >> 8
+            prev_byte = (match_cusp & 0xFF) as base.u8
+        } else {
+            match_cusp = args.dst.limited_copy_u32_from_history_fast_return_cusp!(
+                    up_to: len, distance: dist)
+            match_byte = match_cusp >> 8
+            prev_byte = (match_cusp & 0xFF) as base.u8
+        }
     } endwhile.outer
 
     this.stashed_bytes[0] = prev_byte

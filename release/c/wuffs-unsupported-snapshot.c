@@ -15705,6 +15705,52 @@ wuffs_private_impl__io_writer__limited_copy_u32_from_history_8_byte_chunks_dista
   return length;
 }
 
+// wuffs_private_impl__io_writer__limited_copy_u32_from_history_8_byte_chunks_distance_1_fast_return_cusp
+// copies the previous byte (the one immediately before *ptr_iop_w), copying 8
+// byte chunks at a time. Each chunk contains 8 repetitions of the same byte.
+// It also returns the cusp: a byte pair (as a u16le) being the last byte of
+// and next byte after the copied history.
+//
+// In terms of number of bytes copied, length is rounded up to a multiple of 8.
+// As a special case, a zero length rounds up to 8 (even though 0 is already a
+// multiple of 8), since there is always at least one 8 byte chunk copied.
+//
+// In terms of advancing *ptr_iop_w, length is not rounded up.
+//
+// The caller needs to prove that:
+//  - length       >= 1
+//  - (length + 8) <= (io2_w      - *ptr_iop_w)
+//  - distance     == 1
+//  - distance     <= (*ptr_iop_w - io0_w)
+static inline uint32_t  //
+wuffs_private_impl__io_writer__limited_copy_u32_from_history_8_byte_chunks_distance_1_fast_return_cusp(
+    uint8_t** ptr_iop_w,
+    uint8_t* io0_w,
+    uint8_t* io2_w,
+    uint32_t length,
+    uint32_t distance) {
+  uint8_t* p = *ptr_iop_w;
+  uint8_t* q = p - distance;
+  uint64_t x = p[-1];
+  x |= x << 8;
+  x |= x << 16;
+  x |= x << 32;
+  uint32_t n = length;
+  while (1) {
+    wuffs_base__poke_u64le__no_bounds_check(p, x);
+    if (n <= 8) {
+      p += n;
+      q += n;
+      break;
+    }
+    p += 8;
+    q += 8;
+    n -= 8;
+  }
+  *ptr_iop_w = p;
+  return (uint32_t)wuffs_base__peek_u16le__no_bounds_check(q - 1);
+}
+
 // wuffs_private_impl__io_writer__limited_copy_u32_from_history_8_byte_chunks_fast
 // is like the
 // wuffs_private_impl__io_writer__limited_copy_u32_from_history_fast function
@@ -15743,6 +15789,49 @@ wuffs_private_impl__io_writer__limited_copy_u32_from_history_8_byte_chunks_fast(
   }
   *ptr_iop_w = p;
   return length;
+}
+
+// wuffs_private_impl__io_writer__limited_copy_u32_from_history_8_byte_chunks_fast_return_cusp
+// is like the
+// wuffs_private_impl__io_writer__limited_copy_u32_from_history_fast function
+// above, but copies 8 byte chunks at a time. It also returns the cusp: a byte
+// pair (as a u16le) being the last byte of and next byte after the copied
+// history.
+//
+// In terms of number of bytes copied, length is rounded up to a multiple of 8.
+// As a special case, a zero length rounds up to 8 (even though 0 is already a
+// multiple of 8), since there is always at least one 8 byte chunk copied.
+//
+// In terms of advancing *ptr_iop_w, length is not rounded up.
+//
+// The caller needs to prove that:
+//  - length       >= 1
+//  - (length + 8) <= (io2_w      - *ptr_iop_w)
+//  - distance     >= 8
+//  - distance     <= (*ptr_iop_w - io0_w)
+static inline uint32_t  //
+wuffs_private_impl__io_writer__limited_copy_u32_from_history_8_byte_chunks_fast_return_cusp(
+    uint8_t** ptr_iop_w,
+    uint8_t* io0_w,
+    uint8_t* io2_w,
+    uint32_t length,
+    uint32_t distance) {
+  uint8_t* p = *ptr_iop_w;
+  uint8_t* q = p - distance;
+  uint32_t n = length;
+  while (1) {
+    memcpy(p, q, 8);
+    if (n <= 8) {
+      p += n;
+      q += n;
+      break;
+    }
+    p += 8;
+    q += 8;
+    n -= 8;
+  }
+  *ptr_iop_w = p;
+  return (uint32_t)wuffs_base__peek_u16le__no_bounds_check(q - 1);
 }
 
 static inline uint32_t  //
@@ -52817,15 +52906,22 @@ wuffs_lzma__decoder__decode_bitstream_fast(
       wuffs_private_impl__io_writer__limited_copy_u32_from_slice(
           &iop_a_dst, io2_a_dst,v_adj_dist, wuffs_base__slice_u8__subslice_i(a_workbuf, v_wb_index));
       v_len -= v_adj_dist;
-      if ((((uint64_t)(v_len)) > ((uint64_t)(io2_a_dst - iop_a_dst))) || (((uint64_t)(v_dist)) > ((uint64_t)(iop_a_dst - io0_a_dst)))) {
+      if ((((uint64_t)(v_len)) > ((uint64_t)(io2_a_dst - iop_a_dst))) || (((uint64_t)((v_len + 8u))) > ((uint64_t)(io2_a_dst - iop_a_dst))) || (((uint64_t)(v_dist)) > ((uint64_t)(iop_a_dst - io0_a_dst)))) {
         status = wuffs_base__make_status(wuffs_lzma__error__internal_error_inconsistent_dictionary_state);
         goto exit;
       }
     }
-    v_match_cusp = wuffs_private_impl__io_writer__limited_copy_u32_from_history_fast_return_cusp(
-        &iop_a_dst, io0_a_dst, io2_a_dst, v_len, v_dist);
-    v_match_byte = (v_match_cusp >> 8u);
-    v_prev_byte = ((uint8_t)(v_match_cusp));
+    if (v_dist >= 8u) {
+      v_match_cusp = wuffs_private_impl__io_writer__limited_copy_u32_from_history_8_byte_chunks_fast_return_cusp(
+          &iop_a_dst, io0_a_dst, io2_a_dst, v_len, v_dist);
+      v_match_byte = (v_match_cusp >> 8u);
+      v_prev_byte = ((uint8_t)(v_match_cusp));
+    } else {
+      v_match_cusp = wuffs_private_impl__io_writer__limited_copy_u32_from_history_fast_return_cusp(
+          &iop_a_dst, io0_a_dst, io2_a_dst, v_len, v_dist);
+      v_match_byte = (v_match_cusp >> 8u);
+      v_prev_byte = ((uint8_t)(v_match_cusp));
+    }
   }
   label__outer__break:;
   self->private_impl.f_stashed_bytes[0u] = v_prev_byte;

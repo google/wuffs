@@ -1198,12 +1198,14 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (bounds, e
 				return bounds{}, err
 			}
 
-		} else if method == t.IDLimitedCopyU32FromHistory8ByteChunksDistance1Fast {
+		} else if (method == t.IDLimitedCopyU32FromHistory8ByteChunksDistance1Fast) ||
+			(method == t.IDLimitedCopyU32FromHistory8ByteChunksDistance1FastReturnCusp) {
 			if err := q.canLimitedCopyU32FromHistoryFast(recv, n.Args(), eight, nil, one); err != nil {
 				return bounds{}, err
 			}
 
-		} else if method == t.IDLimitedCopyU32FromHistory8ByteChunksFast {
+		} else if (method == t.IDLimitedCopyU32FromHistory8ByteChunksFast) ||
+			(method == t.IDLimitedCopyU32FromHistory8ByteChunksFastReturnCusp) {
 			if err := q.canLimitedCopyU32FromHistoryFast(recv, n.Args(), eight, eight, nil); err != nil {
 				return bounds{}, err
 			}
