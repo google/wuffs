@@ -84,15 +84,16 @@ Supported compression formats:
 #endif
 
 #ifndef DST_BUFFER_ARRAY_SIZE
-#define DST_BUFFER_ARRAY_SIZE (128 * 1024)
+#define DST_BUFFER_ARRAY_SIZE (64 * 1024 * 1024)
 #endif
 
 #ifndef SRC_BUFFER_ARRAY_SIZE
-#define SRC_BUFFER_ARRAY_SIZE (128 * 1024)
+#define SRC_BUFFER_ARRAY_SIZE (64 * 1024 * 1024)
 #endif
 
+// 80 MiB is big enough to decode files encoded with "xz -9".
 #ifndef WORKBUF_ARRAY_SIZE
-#define WORKBUF_ARRAY_SIZE (64 * 1024 * 1024)
+#define WORKBUF_ARRAY_SIZE (80 * 1024 * 1024)
 #endif
 
 uint8_t g_dst_buffer_array[DST_BUFFER_ARRAY_SIZE];
