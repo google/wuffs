@@ -1,0 +1,145 @@
+// Copyright 2024 The Wuffs Authors.
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// https://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or https://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+// --------
+
+// Like std/crc32's x86 SIMD implementation, this is based on Gopal et al.
+// "Fast CRC Computation for Generic Polynomials Using PCLMULQDQ Instruction".
+
+pri func ecma_hasher.up_x86_sse42!(x: roslice base.u8),
+        choose cpu_arch >= x86_sse42,
+{
+    var s : base.u64
+    var p : roslice base.u8
+
+    var util    : base.x86_sse42_utility
+    var s0      : base.x86_m128i
+    var s0_707F : base.x86_m128i
+    var s0_8F80 : base.x86_m128i
+    var x0      : base.x86_m128i
+    var aa      : base.x86_m128i
+    var k1k2    : base.x86_m128i
+    var t0      : base.x86_m128i
+    var t1      : base.x86_m128i
+    var t2      : base.x86_m128i
+    var u0      : base.x86_m128i
+    var u1      : base.x86_m128i
+    var u2      : base.x86_m128i
+    var v0      : base.x86_m128i
+    var v1      : base.x86_m128i
+    var pxmu    : base.x86_m128i
+    var w1      : base.x86_m128i
+    var w2      : base.x86_m128i
+
+    var tail_index : base.u64
+
+    s = 0xFFFF_FFFF_FFFF_FFFF ^ this.state
+
+    // Align to a 16-byte boundary.
+    while (args.x.length() > 0) and ((15 & args.x.uintptr_low_12_bits()) <> 0) {
+        s = ECMA_TABLE[0][((s & 0xFF) as base.u8) ^ args.x[0]] ^ (s >> 8)
+        args.x = args.x[1 ..]
+    } endwhile
+
+    // For short inputs, just do a simple loop.
+    if args.x.length() < 0x20 {
+        iterate (p = args.x)(length: 1, advance: 1, unroll: 1) {
+            s = ECMA_TABLE[0][((s & 0xFF) as base.u8) ^ p[0]] ^ (s >> 8)
+        }
+        this.state = 0xFFFF_FFFF_FFFF_FFFF ^ s
+        return nothing
+    }
+
+    // Process N 16-byte chunks (1 on ramp, N-2 main loop, 1 off ramp). The
+    // algorithm is loosely based on https://github.com/rawrunprotected/crc but
+    // modified to always start and end on 16-byte alignment boundaries. It
+    // also doesn't crash on zero-length input.
+
+    // On ramp.
+
+    s0 = util.make_m128i_single_u64(a: s)
+    s0_707F = s0._mm_shuffle_epi8(b: util.make_m128i_slice128(a: SHUFFLE_707F[.. 16]))
+    s0_8F80 = s0._mm_shuffle_epi8(b: util.make_m128i_slice128(a: SHUFFLE_8F80[.. 16]))
+
+    x0 = util.make_m128i_slice128(a: args.x[0x00 .. 0x10])
+    args.x = args.x[0x10 ..]
+
+    k1k2 = util.make_m128i_slice128(a: ECMA_X86_SSE42_K1K2[.. 16])
+    t0 = s0_707F._mm_xor_si128(b: x0)
+    t1 = t0._mm_clmulepi64_si128(b: k1k2, imm8: 0x00)
+    t2 = t0._mm_clmulepi64_si128(b: k1k2, imm8: 0x11)
+    aa = t1._mm_xor_si128(b: t2)._mm_xor_si128(b: s0_8F80)
+
+    // Main loop.
+
+    while args.x.length() >= 0x20 {
+        x0 = util.make_m128i_slice128(a: args.x[0x00 .. 0x10])
+        args.x = args.x[0x10 ..]
+
+        u0 = aa._mm_xor_si128(b: x0)
+        u1 = u0._mm_clmulepi64_si128(b: k1k2, imm8: 0x00)
+        u2 = u0._mm_clmulepi64_si128(b: k1k2, imm8: 0x11)
+        aa = u1._mm_xor_si128(b: u2)
+    } endwhile
+
+    // Off ramp.
+
+    if args.x.length() < 0x10 {
+        // Unreachable, but the "if" is needed by the bounds checker.
+        return nothing
+    }
+    x0 = util.make_m128i_slice128(a: args.x[0x00 .. 0x10])
+    args.x = args.x[0x10 ..]
+
+    v0 = aa._mm_xor_si128(b: x0)
+    v1 = v0._mm_clmulepi64_si128(b: k1k2, imm8: 0x10)
+    aa = v1._mm_xor_si128(b: v0._mm_srli_si128(imm8: 8))
+
+    // Barrett reduction.
+    pxmu = util.make_m128i_slice128(a: ECMA_X86_SSE42_PXMU[.. 16])
+    w1 = aa._mm_clmulepi64_si128(b: pxmu, imm8: 0x10)
+    w2 = w1._mm_clmulepi64_si128(b: pxmu, imm8: 0x00)
+    s = aa._mm_xor_si128(b:
+            w2._mm_xor_si128(b:
+            w1._mm_slli_si128(imm8: 8)))._mm_extract_epi64(imm8: 1)
+
+    // Handle the tail of args.x that wasn't a complete 16-byte chunk.
+    tail_index = args.x.length() & 0xFFFF_FFFF_FFFF_FFF0  // And-not 16.
+    if tail_index < args.x.length() {
+        iterate (p = args.x[tail_index ..])(length: 1, advance: 1, unroll: 1) {
+            s = ECMA_TABLE[0][((s & 0xFF) as base.u8) ^ p[0]] ^ (s >> 8)
+        }
+    }
+
+    this.state = 0xFFFF_FFFF_FFFF_FFFF ^ s
+}
+
+pri const SHUFFLE_707F : roarray[16] base.u8 = [
+        0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77,
+        0x78, 0x79, 0x7A, 0x7B, 0x7C, 0x7D, 0x7E, 0x7F,
+]
+
+pri const SHUFFLE_8F80 : roarray[16] base.u8 = [
+        0x8F, 0x8E, 0x8D, 0x8C, 0x8B, 0x8A, 0x89, 0x88,
+        0x87, 0x86, 0x85, 0x84, 0x83, 0x82, 0x81, 0x80,
+]
+
+// These constants are reproduced by
+// script/print-crc64-x86-sse42-magic-numbers.go
+
+pri const ECMA_X86_SSE42_K1K2 : roarray[16] base.u8 = [
+        0xE4, 0x3A, 0x39, 0xCA, 0x97, 0xD4, 0x5D, 0xE0,  // k1' = 0xE05D_D497_CA39_3AE4
+        0x40, 0x5F, 0x87, 0xC7, 0xAF, 0x95, 0xBE, 0xDA,  // k2' = 0xDABE_95AF_C787_5F40
+]
+
+pri const ECMA_X86_SSE42_PXMU : roarray[16] base.u8 = [
+        0x85, 0x1E, 0x0E, 0xAF, 0x2B, 0xAF, 0xD8, 0x92,  // Px' = 0x92D8_AF2B_AF0E_1E85
+        0xD5, 0x63, 0x29, 0x17, 0x6C, 0x46, 0x3E, 0x9C,  // μ'  = 0x9C3E_466C_1729_63D5
+]

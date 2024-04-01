@@ -8468,6 +8468,10 @@ struct wuffs_crc64__ecma_hasher__struct {
     wuffs_base__vtable null_vtable;
 
     uint64_t f_state;
+
+    wuffs_base__empty_struct (*choosy_up)(
+        wuffs_crc64__ecma_hasher* self,
+        wuffs_base__slice_u8 a_x);
   } private_impl;
 
 #ifdef __cplusplus
@@ -36626,9 +36630,53 @@ WUFFS_CRC64__ECMA_TABLE[8][256] WUFFS_BASE__POTENTIALLY_UNUSED = {
   },
 };
 
+static const uint8_t
+WUFFS_CRC64__SHUFFLE_707F[16] WUFFS_BASE__POTENTIALLY_UNUSED = {
+  112u, 113u, 114u, 115u, 116u, 117u, 118u, 119u,
+  120u, 121u, 122u, 123u, 124u, 125u, 126u, 127u,
+};
+
+static const uint8_t
+WUFFS_CRC64__SHUFFLE_8F80[16] WUFFS_BASE__POTENTIALLY_UNUSED = {
+  143u, 142u, 141u, 140u, 139u, 138u, 137u, 136u,
+  135u, 134u, 133u, 132u, 131u, 130u, 129u, 128u,
+};
+
+static const uint8_t
+WUFFS_CRC64__ECMA_X86_SSE42_K1K2[16] WUFFS_BASE__POTENTIALLY_UNUSED = {
+  228u, 58u, 57u, 202u, 151u, 212u, 93u, 224u,
+  64u, 95u, 135u, 199u, 175u, 149u, 190u, 218u,
+};
+
+static const uint8_t
+WUFFS_CRC64__ECMA_X86_SSE42_PXMU[16] WUFFS_BASE__POTENTIALLY_UNUSED = {
+  133u, 30u, 14u, 175u, 43u, 175u, 216u, 146u,
+  213u, 99u, 41u, 23u, 108u, 70u, 62u, 156u,
+};
+
 // ---------------- Private Initializer Prototypes
 
 // ---------------- Private Function Prototypes
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_crc64__ecma_hasher__up(
+    wuffs_crc64__ecma_hasher* self,
+    wuffs_base__slice_u8 a_x);
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_crc64__ecma_hasher__up__choosy_default(
+    wuffs_crc64__ecma_hasher* self,
+    wuffs_base__slice_u8 a_x);
+
+#if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_crc64__ecma_hasher__up_x86_sse42(
+    wuffs_crc64__ecma_hasher* self,
+    wuffs_base__slice_u8 a_x);
+#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
 
 // ---------------- VTables
 
@@ -36686,6 +36734,8 @@ wuffs_crc64__ecma_hasher__initialize(
       memset(&(self->private_impl), 0, sizeof(self->private_impl));
     }
   }
+
+  self->private_impl.choosy_up = &wuffs_crc64__ecma_hasher__up__choosy_default;
 
   self->private_impl.magic = WUFFS_BASE__MAGIC;
   self->private_impl.vtable_for__wuffs_base__hasher_u64.vtable_name =
@@ -36770,6 +36820,50 @@ wuffs_crc64__ecma_hasher__update(
     return wuffs_base__make_empty_struct();
   }
 
+  if (self->private_impl.f_state == 0u) {
+    self->private_impl.choosy_up = (
+#if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
+        wuffs_base__cpu_arch__have_x86_sse42() ? &wuffs_crc64__ecma_hasher__up_x86_sse42 :
+#endif
+        self->private_impl.choosy_up);
+  }
+  wuffs_crc64__ecma_hasher__up(self, a_x);
+  return wuffs_base__make_empty_struct();
+}
+
+// -------- func crc64.ecma_hasher.update_u64
+
+WUFFS_BASE__GENERATED_C_CODE
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_crc64__ecma_hasher__update_u64(
+    wuffs_crc64__ecma_hasher* self,
+    wuffs_base__slice_u8 a_x) {
+  if (!self) {
+    return 0;
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return 0;
+  }
+
+  wuffs_crc64__ecma_hasher__update(self, a_x);
+  return wuffs_crc64__ecma_hasher__checksum_u64(self);
+}
+
+// -------- func crc64.ecma_hasher.up
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_crc64__ecma_hasher__up(
+    wuffs_crc64__ecma_hasher* self,
+    wuffs_base__slice_u8 a_x) {
+  return (*self->private_impl.choosy_up)(self, a_x);
+}
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_crc64__ecma_hasher__up__choosy_default(
+    wuffs_crc64__ecma_hasher* self,
+    wuffs_base__slice_u8 a_x) {
   uint64_t v_s = 0;
   wuffs_base__slice_u8 v_p = {0};
 
@@ -36810,24 +36904,6 @@ wuffs_crc64__ecma_hasher__update(
   return wuffs_base__make_empty_struct();
 }
 
-// -------- func crc64.ecma_hasher.update_u64
-
-WUFFS_BASE__GENERATED_C_CODE
-WUFFS_BASE__MAYBE_STATIC uint64_t
-wuffs_crc64__ecma_hasher__update_u64(
-    wuffs_crc64__ecma_hasher* self,
-    wuffs_base__slice_u8 a_x) {
-  if (!self) {
-    return 0;
-  }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    return 0;
-  }
-
-  wuffs_crc64__ecma_hasher__update(self, a_x);
-  return wuffs_crc64__ecma_hasher__checksum_u64(self);
-}
-
 // -------- func crc64.ecma_hasher.checksum_u64
 
 WUFFS_BASE__GENERATED_C_CODE
@@ -36844,6 +36920,107 @@ wuffs_crc64__ecma_hasher__checksum_u64(
 
   return self->private_impl.f_state;
 }
+
+// ‼ WUFFS MULTI-FILE SECTION +x86_sse42
+// -------- func crc64.ecma_hasher.up_x86_sse42
+
+#if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
+WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2")
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_crc64__ecma_hasher__up_x86_sse42(
+    wuffs_crc64__ecma_hasher* self,
+    wuffs_base__slice_u8 a_x) {
+  uint64_t v_s = 0;
+  wuffs_base__slice_u8 v_p = {0};
+  __m128i v_s0 = {0};
+  __m128i v_s0_707F = {0};
+  __m128i v_s0_8F80 = {0};
+  __m128i v_x0 = {0};
+  __m128i v_aa = {0};
+  __m128i v_k1k2 = {0};
+  __m128i v_t0 = {0};
+  __m128i v_t1 = {0};
+  __m128i v_t2 = {0};
+  __m128i v_u0 = {0};
+  __m128i v_u1 = {0};
+  __m128i v_u2 = {0};
+  __m128i v_v0 = {0};
+  __m128i v_v1 = {0};
+  __m128i v_pxmu = {0};
+  __m128i v_w1 = {0};
+  __m128i v_w2 = {0};
+  uint64_t v_tail_index = 0;
+
+  v_s = (18446744073709551615u ^ self->private_impl.f_state);
+  while ((((uint64_t)(a_x.len)) > 0u) && ((15u & ((uint32_t)(0xFFFu & (uintptr_t)(a_x.ptr)))) != 0u)) {
+    v_s = (WUFFS_CRC64__ECMA_TABLE[0u][((uint8_t)(((uint8_t)(v_s)) ^ a_x.ptr[0u]))] ^ (v_s >> 8u));
+    a_x = wuffs_base__slice_u8__subslice_i(a_x, 1u);
+  }
+  if (((uint64_t)(a_x.len)) < 32u) {
+    {
+      wuffs_base__slice_u8 i_slice_p = a_x;
+      v_p.ptr = i_slice_p.ptr;
+      v_p.len = 1;
+      uint8_t* i_end0_p = i_slice_p.ptr + i_slice_p.len;
+      while (v_p.ptr < i_end0_p) {
+        v_s = (WUFFS_CRC64__ECMA_TABLE[0u][((uint8_t)(((uint8_t)(v_s)) ^ v_p.ptr[0u]))] ^ (v_s >> 8u));
+        v_p.ptr += 1;
+      }
+      v_p.len = 0;
+    }
+    self->private_impl.f_state = (18446744073709551615u ^ v_s);
+    return wuffs_base__make_empty_struct();
+  }
+  v_s0 = _mm_cvtsi64_si128((int64_t)(v_s));
+  v_s0_707F = _mm_shuffle_epi8(v_s0, _mm_lddqu_si128((const __m128i*)(const void*)(WUFFS_CRC64__SHUFFLE_707F)));
+  v_s0_8F80 = _mm_shuffle_epi8(v_s0, _mm_lddqu_si128((const __m128i*)(const void*)(WUFFS_CRC64__SHUFFLE_8F80)));
+  v_x0 = _mm_lddqu_si128((const __m128i*)(const void*)(a_x.ptr + 0u));
+  a_x = wuffs_base__slice_u8__subslice_i(a_x, 16u);
+  v_k1k2 = _mm_lddqu_si128((const __m128i*)(const void*)(WUFFS_CRC64__ECMA_X86_SSE42_K1K2));
+  v_t0 = _mm_xor_si128(v_s0_707F, v_x0);
+  v_t1 = _mm_clmulepi64_si128(v_t0, v_k1k2, (int32_t)(0u));
+  v_t2 = _mm_clmulepi64_si128(v_t0, v_k1k2, (int32_t)(17u));
+  v_aa = _mm_xor_si128(_mm_xor_si128(v_t1, v_t2), v_s0_8F80);
+  while (((uint64_t)(a_x.len)) >= 32u) {
+    v_x0 = _mm_lddqu_si128((const __m128i*)(const void*)(a_x.ptr + 0u));
+    a_x = wuffs_base__slice_u8__subslice_i(a_x, 16u);
+    v_u0 = _mm_xor_si128(v_aa, v_x0);
+    v_u1 = _mm_clmulepi64_si128(v_u0, v_k1k2, (int32_t)(0u));
+    v_u2 = _mm_clmulepi64_si128(v_u0, v_k1k2, (int32_t)(17u));
+    v_aa = _mm_xor_si128(v_u1, v_u2);
+  }
+  if (((uint64_t)(a_x.len)) < 16u) {
+    return wuffs_base__make_empty_struct();
+  }
+  v_x0 = _mm_lddqu_si128((const __m128i*)(const void*)(a_x.ptr + 0u));
+  a_x = wuffs_base__slice_u8__subslice_i(a_x, 16u);
+  v_v0 = _mm_xor_si128(v_aa, v_x0);
+  v_v1 = _mm_clmulepi64_si128(v_v0, v_k1k2, (int32_t)(16u));
+  v_aa = _mm_xor_si128(v_v1, _mm_srli_si128(v_v0, (int32_t)(8u)));
+  v_pxmu = _mm_lddqu_si128((const __m128i*)(const void*)(WUFFS_CRC64__ECMA_X86_SSE42_PXMU));
+  v_w1 = _mm_clmulepi64_si128(v_aa, v_pxmu, (int32_t)(16u));
+  v_w2 = _mm_clmulepi64_si128(v_w1, v_pxmu, (int32_t)(0u));
+  v_s = ((uint64_t)(_mm_extract_epi64(_mm_xor_si128(v_aa, _mm_xor_si128(v_w2, _mm_slli_si128(v_w1, (int32_t)(8u)))), (int32_t)(1u))));
+  v_tail_index = (((uint64_t)(a_x.len)) & 18446744073709551600u);
+  if (v_tail_index < ((uint64_t)(a_x.len))) {
+    {
+      wuffs_base__slice_u8 i_slice_p = wuffs_base__slice_u8__subslice_i(a_x, v_tail_index);
+      v_p.ptr = i_slice_p.ptr;
+      v_p.len = 1;
+      uint8_t* i_end0_p = i_slice_p.ptr + i_slice_p.len;
+      while (v_p.ptr < i_end0_p) {
+        v_s = (WUFFS_CRC64__ECMA_TABLE[0u][((uint8_t)(((uint8_t)(v_s)) ^ v_p.ptr[0u]))] ^ (v_s >> 8u));
+        v_p.ptr += 1;
+      }
+      v_p.len = 0;
+    }
+  }
+  self->private_impl.f_state = (18446744073709551615u ^ v_s);
+  return wuffs_base__make_empty_struct();
+}
+#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
+// ‼ WUFFS MULTI-FILE SECTION -x86_sse42
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__CRC64)
 

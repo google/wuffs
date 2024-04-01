@@ -21,6 +21,21 @@ pub func ecma_hasher.set_quirk!(key: base.u32, value: base.u64) base.status {
 }
 
 pub func ecma_hasher.update!(x: roslice base.u8) {
+    if this.state == 0 {
+        choose up = [
+                up_x86_sse42]
+    }
+    this.up!(x: args.x)
+}
+
+pub func ecma_hasher.update_u64!(x: roslice base.u8) base.u64 {
+    this.update!(x: args.x)
+    return this.checksum_u64()
+}
+
+pri func ecma_hasher.up!(x: roslice base.u8),
+        choosy,
+{
     var s : base.u64
     var p : roslice base.u8
 
@@ -49,11 +64,6 @@ pub func ecma_hasher.update!(x: roslice base.u8) {
     }
 
     this.state = 0xFFFF_FFFF_FFFF_FFFF ^ s
-}
-
-pub func ecma_hasher.update_u64!(x: roslice base.u8) base.u64 {
-    this.update!(x: args.x)
-    return this.checksum_u64()
 }
 
 pub func ecma_hasher.checksum_u64() base.u64 {
