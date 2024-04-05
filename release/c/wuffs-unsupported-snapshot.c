@@ -1661,7 +1661,7 @@ wuffs_base__make_slice_u64(uint64_t* ptr, size_t len) {
 static inline wuffs_base__slice_u8  //
 wuffs_base__make_slice_u8_ij(uint8_t* ptr, size_t i, size_t j) {
   wuffs_base__slice_u8 ret;
-  ret.ptr = ptr + i;
+  ret.ptr = ptr ? (ptr + i) : NULL;
   ret.len = (j >= i) ? (j - i) : 0;
   return ret;
 }
@@ -1669,7 +1669,7 @@ wuffs_base__make_slice_u8_ij(uint8_t* ptr, size_t i, size_t j) {
 static inline wuffs_base__slice_u16  //
 wuffs_base__make_slice_u16_ij(uint16_t* ptr, size_t i, size_t j) {
   wuffs_base__slice_u16 ret;
-  ret.ptr = ptr + i;
+  ret.ptr = ptr ? (ptr + i) : NULL;
   ret.len = (j >= i) ? (j - i) : 0;
   return ret;
 }
@@ -1677,7 +1677,7 @@ wuffs_base__make_slice_u16_ij(uint16_t* ptr, size_t i, size_t j) {
 static inline wuffs_base__slice_u32  //
 wuffs_base__make_slice_u32_ij(uint32_t* ptr, size_t i, size_t j) {
   wuffs_base__slice_u32 ret;
-  ret.ptr = ptr + i;
+  ret.ptr = ptr ? (ptr + i) : NULL;
   ret.len = (j >= i) ? (j - i) : 0;
   return ret;
 }
@@ -1685,7 +1685,7 @@ wuffs_base__make_slice_u32_ij(uint32_t* ptr, size_t i, size_t j) {
 static inline wuffs_base__slice_u64  //
 wuffs_base__make_slice_u64_ij(uint64_t* ptr, size_t i, size_t j) {
   wuffs_base__slice_u64 ret;
-  ret.ptr = ptr + i;
+  ret.ptr = ptr ? (ptr + i) : NULL;
   ret.len = (j >= i) ? (j - i) : 0;
   return ret;
 }
@@ -3189,7 +3189,7 @@ wuffs_base__io_buffer__reader_length(const wuffs_base__io_buffer* buf) {
 
 static inline uint8_t*  //
 wuffs_base__io_buffer__reader_pointer(const wuffs_base__io_buffer* buf) {
-  return buf ? (buf->data.ptr + buf->meta.ri) : NULL;
+  return (buf && buf->data.ptr) ? (buf->data.ptr + buf->meta.ri) : NULL;
 }
 
 static inline uint64_t  //
@@ -3199,7 +3199,8 @@ wuffs_base__io_buffer__reader_position(const wuffs_base__io_buffer* buf) {
 
 static inline wuffs_base__slice_u8  //
 wuffs_base__io_buffer__reader_slice(const wuffs_base__io_buffer* buf) {
-  return buf ? wuffs_base__make_slice_u8(buf->data.ptr + buf->meta.ri,
+  return (buf && buf->data.ptr)
+             ? wuffs_base__make_slice_u8(buf->data.ptr + buf->meta.ri,
                                          buf->meta.wi - buf->meta.ri)
              : wuffs_base__empty_slice_u8();
 }
@@ -3211,7 +3212,7 @@ wuffs_base__io_buffer__writer_length(const wuffs_base__io_buffer* buf) {
 
 static inline uint8_t*  //
 wuffs_base__io_buffer__writer_pointer(const wuffs_base__io_buffer* buf) {
-  return buf ? (buf->data.ptr + buf->meta.wi) : NULL;
+  return (buf && buf->data.ptr) ? (buf->data.ptr + buf->meta.wi) : NULL;
 }
 
 static inline uint64_t  //
@@ -3221,7 +3222,8 @@ wuffs_base__io_buffer__writer_position(const wuffs_base__io_buffer* buf) {
 
 static inline wuffs_base__slice_u8  //
 wuffs_base__io_buffer__writer_slice(const wuffs_base__io_buffer* buf) {
-  return buf ? wuffs_base__make_slice_u8(buf->data.ptr + buf->meta.wi,
+  return (buf && buf->data.ptr)
+             ? wuffs_base__make_slice_u8(buf->data.ptr + buf->meta.wi,
                                          buf->data.len - buf->meta.wi)
              : wuffs_base__empty_slice_u8();
 }
@@ -15309,7 +15311,7 @@ wuffs_private_impl__bulk_save_host_endian(void* ptr,
 
 static inline wuffs_base__slice_u8  //
 wuffs_private_impl__table_u8__row_u32(wuffs_base__table_u8 t, uint32_t y) {
-  if (y < t.height) {
+  if (t.ptr && (y < t.height)) {
     return wuffs_base__make_slice_u8(t.ptr + (t.stride * y), t.width);
   }
   return wuffs_base__empty_slice_u8();

@@ -214,7 +214,7 @@ wuffs_base__io_buffer__reader_length(const wuffs_base__io_buffer* buf) {
 
 static inline uint8_t*  //
 wuffs_base__io_buffer__reader_pointer(const wuffs_base__io_buffer* buf) {
-  return buf ? (buf->data.ptr + buf->meta.ri) : NULL;
+  return (buf && buf->data.ptr) ? (buf->data.ptr + buf->meta.ri) : NULL;
 }
 
 static inline uint64_t  //
@@ -224,7 +224,8 @@ wuffs_base__io_buffer__reader_position(const wuffs_base__io_buffer* buf) {
 
 static inline wuffs_base__slice_u8  //
 wuffs_base__io_buffer__reader_slice(const wuffs_base__io_buffer* buf) {
-  return buf ? wuffs_base__make_slice_u8(buf->data.ptr + buf->meta.ri,
+  return (buf && buf->data.ptr)
+             ? wuffs_base__make_slice_u8(buf->data.ptr + buf->meta.ri,
                                          buf->meta.wi - buf->meta.ri)
              : wuffs_base__empty_slice_u8();
 }
@@ -236,7 +237,7 @@ wuffs_base__io_buffer__writer_length(const wuffs_base__io_buffer* buf) {
 
 static inline uint8_t*  //
 wuffs_base__io_buffer__writer_pointer(const wuffs_base__io_buffer* buf) {
-  return buf ? (buf->data.ptr + buf->meta.wi) : NULL;
+  return (buf && buf->data.ptr) ? (buf->data.ptr + buf->meta.wi) : NULL;
 }
 
 static inline uint64_t  //
@@ -246,7 +247,8 @@ wuffs_base__io_buffer__writer_position(const wuffs_base__io_buffer* buf) {
 
 static inline wuffs_base__slice_u8  //
 wuffs_base__io_buffer__writer_slice(const wuffs_base__io_buffer* buf) {
-  return buf ? wuffs_base__make_slice_u8(buf->data.ptr + buf->meta.wi,
+  return (buf && buf->data.ptr)
+             ? wuffs_base__make_slice_u8(buf->data.ptr + buf->meta.wi,
                                          buf->data.len - buf->meta.wi)
              : wuffs_base__empty_slice_u8();
 }

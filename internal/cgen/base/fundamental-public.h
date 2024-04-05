@@ -1384,7 +1384,7 @@ wuffs_base__make_slice_u64(uint64_t* ptr, size_t len) {
 static inline wuffs_base__slice_u8  //
 wuffs_base__make_slice_u8_ij(uint8_t* ptr, size_t i, size_t j) {
   wuffs_base__slice_u8 ret;
-  ret.ptr = ptr + i;
+  ret.ptr = ptr ? (ptr + i) : NULL;
   ret.len = (j >= i) ? (j - i) : 0;
   return ret;
 }
@@ -1392,7 +1392,7 @@ wuffs_base__make_slice_u8_ij(uint8_t* ptr, size_t i, size_t j) {
 static inline wuffs_base__slice_u16  //
 wuffs_base__make_slice_u16_ij(uint16_t* ptr, size_t i, size_t j) {
   wuffs_base__slice_u16 ret;
-  ret.ptr = ptr + i;
+  ret.ptr = ptr ? (ptr + i) : NULL;
   ret.len = (j >= i) ? (j - i) : 0;
   return ret;
 }
@@ -1400,7 +1400,7 @@ wuffs_base__make_slice_u16_ij(uint16_t* ptr, size_t i, size_t j) {
 static inline wuffs_base__slice_u32  //
 wuffs_base__make_slice_u32_ij(uint32_t* ptr, size_t i, size_t j) {
   wuffs_base__slice_u32 ret;
-  ret.ptr = ptr + i;
+  ret.ptr = ptr ? (ptr + i) : NULL;
   ret.len = (j >= i) ? (j - i) : 0;
   return ret;
 }
@@ -1408,7 +1408,7 @@ wuffs_base__make_slice_u32_ij(uint32_t* ptr, size_t i, size_t j) {
 static inline wuffs_base__slice_u64  //
 wuffs_base__make_slice_u64_ij(uint64_t* ptr, size_t i, size_t j) {
   wuffs_base__slice_u64 ret;
-  ret.ptr = ptr + i;
+  ret.ptr = ptr ? (ptr + i) : NULL;
   ret.len = (j >= i) ? (j - i) : 0;
   return ret;
 }

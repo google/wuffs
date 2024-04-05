@@ -269,7 +269,7 @@ wuffs_private_impl__bulk_save_host_endian(void* ptr,
 
 static inline wuffs_base__slice_u8  //
 wuffs_private_impl__table_u8__row_u32(wuffs_base__table_u8 t, uint32_t y) {
-  if (y < t.height) {
+  if (t.ptr && (y < t.height)) {
     return wuffs_base__make_slice_u8(t.ptr + (t.stride * y), t.width);
   }
   return wuffs_base__empty_slice_u8();
