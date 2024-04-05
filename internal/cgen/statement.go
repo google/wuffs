@@ -748,18 +748,18 @@ func (g *gen) writeIterateRound(b *buffer, assigns []*a.Node, body []*a.Node, ro
 		b.printf("%s%s.len = %d;\n", vPrefix, name, length)
 	}
 	name0 := assigns[0].AsAssign().LHS().Ident().Str(g.tm)
-	b.printf("uint8_t* %send%d_%s = ", iPrefix, round, name0)
+	b.printf("const uint8_t* %send%d_%s = wuffs_private_impl__ptr_u8_plus_len(", iPrefix, round, name0)
 	if (length == 1) && (advance == 1) && (unroll == 1) {
-		b.printf("%sslice_%s.ptr + %sslice_%s.len;\n",
+		b.printf("%sslice_%s.ptr, %sslice_%s.len);\n",
 			iPrefix, name0, iPrefix, name0)
 	} else if length == advance {
-		b.printf("%s%s.ptr + (((%sslice_%s.len - (size_t)(%s%s.ptr - %sslice_%s.ptr)) / %d) * %d);\n",
+		b.printf("%s%s.ptr, (((%sslice_%s.len - (size_t)(%s%s.ptr - %sslice_%s.ptr)) / %d) * %d));\n",
 			vPrefix, name0, iPrefix, name0,
 			vPrefix, name0, iPrefix, name0,
 			length*unroll, length*unroll)
 	} else {
-		b.printf("%s%s.ptr + wuffs_private_impl__iterate_total_advance("+
-			"(%sslice_%s.len - (size_t)(%s%s.ptr - %sslice_%s.ptr)), %d, %d);\n",
+		b.printf("%s%s.ptr, wuffs_private_impl__iterate_total_advance("+
+			"(%sslice_%s.len - (size_t)(%s%s.ptr - %sslice_%s.ptr)), %d, %d));\n",
 			vPrefix, name0, iPrefix, name0,
 			vPrefix, name0, iPrefix, name0,
 			length+(advance*(unroll-1)), advance*unroll)

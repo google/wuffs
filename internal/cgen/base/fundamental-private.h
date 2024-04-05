@@ -190,6 +190,17 @@ wuffs_private_impl__u64__sat_sub_indirect(uint64_t* x, uint64_t y) {
 
 // ---------------- Slices and Tables
 
+// This function basically returns (ptr + len), except that that expression is
+// Undefined Behavior in C (but not C++) when ptr is NULL, even if len is zero.
+//
+// Precondition: (ptr != NULL) || (len == 0).
+static inline const uint8_t*  //
+wuffs_private_impl__ptr_u8_plus_len(const uint8_t* ptr, size_t len) {
+  return ptr ? (ptr + len) : NULL;
+}
+
+// --------
+
 // wuffs_private_impl__slice_u8__prefix returns up to the first up_to bytes of
 // s.
 static inline wuffs_base__slice_u8  //

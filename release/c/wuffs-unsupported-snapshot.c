@@ -15266,6 +15266,17 @@ wuffs_private_impl__u64__sat_sub_indirect(uint64_t* x, uint64_t y) {
 
 // ---------------- Slices and Tables
 
+// This function basically returns (ptr + len), except that that expression is
+// Undefined Behavior in C (but not C++) when ptr is NULL, even if len is zero.
+//
+// Precondition: (ptr != NULL) || (len == 0).
+static inline const uint8_t*  //
+wuffs_private_impl__ptr_u8_plus_len(const uint8_t* ptr, size_t len) {
+  return ptr ? (ptr + len) : NULL;
+}
+
+// --------
+
 // wuffs_private_impl__slice_u8__prefix returns up to the first up_to bytes of
 // s.
 static inline wuffs_base__slice_u8  //
@@ -29673,7 +29684,7 @@ wuffs_adler32__hasher__up__choosy_default(
       wuffs_base__slice_u8 i_slice_p = a_x;
       v_p.ptr = i_slice_p.ptr;
       v_p.len = 1;
-      uint8_t* i_end0_p = v_p.ptr + (((i_slice_p.len - (size_t)(v_p.ptr - i_slice_p.ptr)) / 8) * 8);
+      const uint8_t* i_end0_p = wuffs_private_impl__ptr_u8_plus_len(v_p.ptr, (((i_slice_p.len - (size_t)(v_p.ptr - i_slice_p.ptr)) / 8) * 8));
       while (v_p.ptr < i_end0_p) {
         v_s1 += ((uint32_t)(v_p.ptr[0u]));
         v_s2 += v_s1;
@@ -29701,7 +29712,7 @@ wuffs_adler32__hasher__up__choosy_default(
         v_p.ptr += 1;
       }
       v_p.len = 1;
-      uint8_t* i_end1_p = i_slice_p.ptr + i_slice_p.len;
+      const uint8_t* i_end1_p = wuffs_private_impl__ptr_u8_plus_len(i_slice_p.ptr, i_slice_p.len);
       while (v_p.ptr < i_end1_p) {
         v_s1 += ((uint32_t)(v_p.ptr[0u]));
         v_s2 += v_s1;
@@ -29788,7 +29799,7 @@ wuffs_adler32__hasher__up_arm_neon(
       wuffs_base__slice_u8 i_slice_p = a_x;
       v_p.ptr = i_slice_p.ptr;
       v_p.len = 32;
-      uint8_t* i_end0_p = v_p.ptr + (((i_slice_p.len - (size_t)(v_p.ptr - i_slice_p.ptr)) / 32) * 32);
+      const uint8_t* i_end0_p = wuffs_private_impl__ptr_u8_plus_len(v_p.ptr, (((i_slice_p.len - (size_t)(v_p.ptr - i_slice_p.ptr)) / 32) * 32));
       while (v_p.ptr < i_end0_p) {
         v_p__left = vld1q_u8(v_p.ptr);
         v_p_right = vld1q_u8(v_p.ptr + 16u);
@@ -29822,7 +29833,7 @@ wuffs_adler32__hasher__up_arm_neon(
         wuffs_base__slice_u8 i_slice_p = wuffs_base__slice_u8__subslice_i(a_x, v_tail_index);
         v_p.ptr = i_slice_p.ptr;
         v_p.len = 1;
-        uint8_t* i_end0_p = i_slice_p.ptr + i_slice_p.len;
+        const uint8_t* i_end0_p = wuffs_private_impl__ptr_u8_plus_len(i_slice_p.ptr, i_slice_p.len);
         while (v_p.ptr < i_end0_p) {
           v_s1 += ((uint32_t)(v_p.ptr[0u]));
           v_s2 += v_s1;
@@ -29889,7 +29900,7 @@ wuffs_adler32__hasher__up_x86_sse42(
       wuffs_base__slice_u8 i_slice_p = a_x;
       v_p.ptr = i_slice_p.ptr;
       v_p.len = 32;
-      uint8_t* i_end0_p = v_p.ptr + (((i_slice_p.len - (size_t)(v_p.ptr - i_slice_p.ptr)) / 32) * 32);
+      const uint8_t* i_end0_p = wuffs_private_impl__ptr_u8_plus_len(v_p.ptr, (((i_slice_p.len - (size_t)(v_p.ptr - i_slice_p.ptr)) / 32) * 32));
       while (v_p.ptr < i_end0_p) {
         v_q__left = _mm_lddqu_si128((const __m128i*)(const void*)(v_p.ptr));
         v_q_right = _mm_lddqu_si128((const __m128i*)(const void*)(v_p.ptr + 16u));
@@ -29915,7 +29926,7 @@ wuffs_adler32__hasher__up_x86_sse42(
         wuffs_base__slice_u8 i_slice_p = wuffs_base__slice_u8__subslice_i(a_x, v_tail_index);
         v_p.ptr = i_slice_p.ptr;
         v_p.len = 1;
-        uint8_t* i_end0_p = i_slice_p.ptr + i_slice_p.len;
+        const uint8_t* i_end0_p = wuffs_private_impl__ptr_u8_plus_len(i_slice_p.ptr, i_slice_p.len);
         while (v_p.ptr < i_end0_p) {
           v_s1 += ((uint32_t)(v_p.ptr[0u]));
           v_s2 += v_s1;
@@ -35938,7 +35949,7 @@ wuffs_crc32__ieee_hasher__up__choosy_default(
     wuffs_base__slice_u8 i_slice_p = a_x;
     v_p.ptr = i_slice_p.ptr;
     v_p.len = 16;
-    uint8_t* i_end0_p = v_p.ptr + (((i_slice_p.len - (size_t)(v_p.ptr - i_slice_p.ptr)) / 32) * 32);
+    const uint8_t* i_end0_p = wuffs_private_impl__ptr_u8_plus_len(v_p.ptr, (((i_slice_p.len - (size_t)(v_p.ptr - i_slice_p.ptr)) / 32) * 32));
     while (v_p.ptr < i_end0_p) {
       v_s ^= ((((uint32_t)(v_p.ptr[0u])) << 0u) |
           (((uint32_t)(v_p.ptr[1u])) << 8u) |
@@ -35984,7 +35995,7 @@ wuffs_crc32__ieee_hasher__up__choosy_default(
       v_p.ptr += 16;
     }
     v_p.len = 16;
-    uint8_t* i_end1_p = v_p.ptr + (((i_slice_p.len - (size_t)(v_p.ptr - i_slice_p.ptr)) / 16) * 16);
+    const uint8_t* i_end1_p = wuffs_private_impl__ptr_u8_plus_len(v_p.ptr, (((i_slice_p.len - (size_t)(v_p.ptr - i_slice_p.ptr)) / 16) * 16));
     while (v_p.ptr < i_end1_p) {
       v_s ^= ((((uint32_t)(v_p.ptr[0u])) << 0u) |
           (((uint32_t)(v_p.ptr[1u])) << 8u) |
@@ -36009,7 +36020,7 @@ wuffs_crc32__ieee_hasher__up__choosy_default(
       v_p.ptr += 16;
     }
     v_p.len = 1;
-    uint8_t* i_end2_p = i_slice_p.ptr + i_slice_p.len;
+    const uint8_t* i_end2_p = wuffs_private_impl__ptr_u8_plus_len(i_slice_p.ptr, i_slice_p.len);
     while (v_p.ptr < i_end2_p) {
       v_s = (WUFFS_CRC32__IEEE_TABLE[0u][((uint8_t)(((uint8_t)(v_s)) ^ v_p.ptr[0u]))] ^ (v_s >> 8u));
       v_p.ptr += 1;
@@ -36058,7 +36069,7 @@ wuffs_crc32__ieee_hasher__up_arm_crc32(
     wuffs_base__slice_u8 i_slice_p = a_x;
     v_p.ptr = i_slice_p.ptr;
     v_p.len = 8;
-    uint8_t* i_end0_p = v_p.ptr + (((i_slice_p.len - (size_t)(v_p.ptr - i_slice_p.ptr)) / 128) * 128);
+    const uint8_t* i_end0_p = wuffs_private_impl__ptr_u8_plus_len(v_p.ptr, (((i_slice_p.len - (size_t)(v_p.ptr - i_slice_p.ptr)) / 128) * 128));
     while (v_p.ptr < i_end0_p) {
       v_s = __crc32d(v_s, wuffs_base__peek_u64le__no_bounds_check(v_p.ptr));
       v_p.ptr += 8;
@@ -36094,13 +36105,13 @@ wuffs_crc32__ieee_hasher__up_arm_crc32(
       v_p.ptr += 8;
     }
     v_p.len = 8;
-    uint8_t* i_end1_p = v_p.ptr + (((i_slice_p.len - (size_t)(v_p.ptr - i_slice_p.ptr)) / 8) * 8);
+    const uint8_t* i_end1_p = wuffs_private_impl__ptr_u8_plus_len(v_p.ptr, (((i_slice_p.len - (size_t)(v_p.ptr - i_slice_p.ptr)) / 8) * 8));
     while (v_p.ptr < i_end1_p) {
       v_s = __crc32d(v_s, wuffs_base__peek_u64le__no_bounds_check(v_p.ptr));
       v_p.ptr += 8;
     }
     v_p.len = 1;
-    uint8_t* i_end2_p = i_slice_p.ptr + i_slice_p.len;
+    const uint8_t* i_end2_p = wuffs_private_impl__ptr_u8_plus_len(i_slice_p.ptr, i_slice_p.len);
     while (v_p.ptr < i_end2_p) {
       v_s = __crc32b(v_s, v_p.ptr[0u]);
       v_p.ptr += 1;
@@ -36146,7 +36157,7 @@ wuffs_crc32__ieee_hasher__up_x86_avx2(
       wuffs_base__slice_u8 i_slice_p = a_x;
       v_p.ptr = i_slice_p.ptr;
       v_p.len = 1;
-      uint8_t* i_end0_p = i_slice_p.ptr + i_slice_p.len;
+      const uint8_t* i_end0_p = wuffs_private_impl__ptr_u8_plus_len(i_slice_p.ptr, i_slice_p.len);
       while (v_p.ptr < i_end0_p) {
         v_s = (WUFFS_CRC32__IEEE_TABLE[0u][((uint8_t)(((uint8_t)(v_s)) ^ v_p.ptr[0u]))] ^ (v_s >> 8u));
         v_p.ptr += 1;
@@ -36166,7 +36177,7 @@ wuffs_crc32__ieee_hasher__up_x86_avx2(
     wuffs_base__slice_u8 i_slice_p = wuffs_base__slice_u8__subslice_i(a_x, 64u);
     v_p.ptr = i_slice_p.ptr;
     v_p.len = 64;
-    uint8_t* i_end0_p = v_p.ptr + (((i_slice_p.len - (size_t)(v_p.ptr - i_slice_p.ptr)) / 64) * 64);
+    const uint8_t* i_end0_p = wuffs_private_impl__ptr_u8_plus_len(v_p.ptr, (((i_slice_p.len - (size_t)(v_p.ptr - i_slice_p.ptr)) / 64) * 64));
     while (v_p.ptr < i_end0_p) {
       v_y0 = _mm_clmulepi64_si128(v_x0, v_k, (int32_t)(0u));
       v_y1 = _mm_clmulepi64_si128(v_x1, v_k, (int32_t)(0u));
@@ -36219,7 +36230,7 @@ wuffs_crc32__ieee_hasher__up_x86_avx2(
       wuffs_base__slice_u8 i_slice_p = wuffs_base__slice_u8__subslice_i(a_x, v_tail_index);
       v_p.ptr = i_slice_p.ptr;
       v_p.len = 1;
-      uint8_t* i_end0_p = i_slice_p.ptr + i_slice_p.len;
+      const uint8_t* i_end0_p = wuffs_private_impl__ptr_u8_plus_len(i_slice_p.ptr, i_slice_p.len);
       while (v_p.ptr < i_end0_p) {
         v_s = (WUFFS_CRC32__IEEE_TABLE[0u][((uint8_t)(((uint8_t)(v_s)) ^ v_p.ptr[0u]))] ^ (v_s >> 8u));
         v_p.ptr += 1;
@@ -36266,7 +36277,7 @@ wuffs_crc32__ieee_hasher__up_x86_sse42(
       wuffs_base__slice_u8 i_slice_p = a_x;
       v_p.ptr = i_slice_p.ptr;
       v_p.len = 1;
-      uint8_t* i_end0_p = i_slice_p.ptr + i_slice_p.len;
+      const uint8_t* i_end0_p = wuffs_private_impl__ptr_u8_plus_len(i_slice_p.ptr, i_slice_p.len);
       while (v_p.ptr < i_end0_p) {
         v_s = (WUFFS_CRC32__IEEE_TABLE[0u][((uint8_t)(((uint8_t)(v_s)) ^ v_p.ptr[0u]))] ^ (v_s >> 8u));
         v_p.ptr += 1;
@@ -36286,7 +36297,7 @@ wuffs_crc32__ieee_hasher__up_x86_sse42(
     wuffs_base__slice_u8 i_slice_p = wuffs_base__slice_u8__subslice_i(a_x, 64u);
     v_p.ptr = i_slice_p.ptr;
     v_p.len = 64;
-    uint8_t* i_end0_p = v_p.ptr + (((i_slice_p.len - (size_t)(v_p.ptr - i_slice_p.ptr)) / 64) * 64);
+    const uint8_t* i_end0_p = wuffs_private_impl__ptr_u8_plus_len(v_p.ptr, (((i_slice_p.len - (size_t)(v_p.ptr - i_slice_p.ptr)) / 64) * 64));
     while (v_p.ptr < i_end0_p) {
       v_y0 = _mm_clmulepi64_si128(v_x0, v_k, (int32_t)(0u));
       v_y1 = _mm_clmulepi64_si128(v_x1, v_k, (int32_t)(0u));
@@ -36339,7 +36350,7 @@ wuffs_crc32__ieee_hasher__up_x86_sse42(
       wuffs_base__slice_u8 i_slice_p = wuffs_base__slice_u8__subslice_i(a_x, v_tail_index);
       v_p.ptr = i_slice_p.ptr;
       v_p.len = 1;
-      uint8_t* i_end0_p = i_slice_p.ptr + i_slice_p.len;
+      const uint8_t* i_end0_p = wuffs_private_impl__ptr_u8_plus_len(i_slice_p.ptr, i_slice_p.len);
       while (v_p.ptr < i_end0_p) {
         v_s = (WUFFS_CRC32__IEEE_TABLE[0u][((uint8_t)(((uint8_t)(v_s)) ^ v_p.ptr[0u]))] ^ (v_s >> 8u));
         v_p.ptr += 1;
@@ -36872,7 +36883,7 @@ wuffs_crc64__ecma_hasher__up__choosy_default(
     wuffs_base__slice_u8 i_slice_p = a_x;
     v_p.ptr = i_slice_p.ptr;
     v_p.len = 8;
-    uint8_t* i_end0_p = v_p.ptr + (((i_slice_p.len - (size_t)(v_p.ptr - i_slice_p.ptr)) / 8) * 8);
+    const uint8_t* i_end0_p = wuffs_private_impl__ptr_u8_plus_len(v_p.ptr, (((i_slice_p.len - (size_t)(v_p.ptr - i_slice_p.ptr)) / 8) * 8));
     while (v_p.ptr < i_end0_p) {
       v_s ^= ((((uint64_t)(v_p.ptr[0u])) << 0u) |
           (((uint64_t)(v_p.ptr[1u])) << 8u) |
@@ -36893,7 +36904,7 @@ wuffs_crc64__ecma_hasher__up__choosy_default(
       v_p.ptr += 8;
     }
     v_p.len = 1;
-    uint8_t* i_end1_p = i_slice_p.ptr + i_slice_p.len;
+    const uint8_t* i_end1_p = wuffs_private_impl__ptr_u8_plus_len(i_slice_p.ptr, i_slice_p.len);
     while (v_p.ptr < i_end1_p) {
       v_s = (WUFFS_CRC64__ECMA_TABLE[0u][((uint8_t)(((uint8_t)(v_s)) ^ v_p.ptr[0u]))] ^ (v_s >> 8u));
       v_p.ptr += 1;
@@ -36962,7 +36973,7 @@ wuffs_crc64__ecma_hasher__up_x86_sse42(
       wuffs_base__slice_u8 i_slice_p = a_x;
       v_p.ptr = i_slice_p.ptr;
       v_p.len = 1;
-      uint8_t* i_end0_p = i_slice_p.ptr + i_slice_p.len;
+      const uint8_t* i_end0_p = wuffs_private_impl__ptr_u8_plus_len(i_slice_p.ptr, i_slice_p.len);
       while (v_p.ptr < i_end0_p) {
         v_s = (WUFFS_CRC64__ECMA_TABLE[0u][((uint8_t)(((uint8_t)(v_s)) ^ v_p.ptr[0u]))] ^ (v_s >> 8u));
         v_p.ptr += 1;
@@ -37008,7 +37019,7 @@ wuffs_crc64__ecma_hasher__up_x86_sse42(
       wuffs_base__slice_u8 i_slice_p = wuffs_base__slice_u8__subslice_i(a_x, v_tail_index);
       v_p.ptr = i_slice_p.ptr;
       v_p.len = 1;
-      uint8_t* i_end0_p = i_slice_p.ptr + i_slice_p.len;
+      const uint8_t* i_end0_p = wuffs_private_impl__ptr_u8_plus_len(i_slice_p.ptr, i_slice_p.len);
       while (v_p.ptr < i_end0_p) {
         v_s = (WUFFS_CRC64__ECMA_TABLE[0u][((uint8_t)(((uint8_t)(v_s)) ^ v_p.ptr[0u]))] ^ (v_s >> 8u));
         v_p.ptr += 1;
@@ -59803,7 +59814,7 @@ wuffs_png__decoder__filter_1_distance_4_arm_neon(
     wuffs_base__slice_u8 i_slice_curr = a_curr;
     v_curr.ptr = i_slice_curr.ptr;
     v_curr.len = 4;
-    uint8_t* i_end0_curr = v_curr.ptr + (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 8) * 8);
+    const uint8_t* i_end0_curr = wuffs_private_impl__ptr_u8_plus_len(v_curr.ptr, (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 8) * 8));
     while (v_curr.ptr < i_end0_curr) {
       v_fx = vreinterpret_u8_u32(vdup_n_u32(wuffs_base__peek_u32le__no_bounds_check(v_curr.ptr)));
       v_fx = vadd_u8(v_fx, v_fa);
@@ -59817,7 +59828,7 @@ wuffs_png__decoder__filter_1_distance_4_arm_neon(
       v_curr.ptr += 4;
     }
     v_curr.len = 4;
-    uint8_t* i_end1_curr = v_curr.ptr + (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 4) * 4);
+    const uint8_t* i_end1_curr = wuffs_private_impl__ptr_u8_plus_len(v_curr.ptr, (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 4) * 4));
     while (v_curr.ptr < i_end1_curr) {
       v_fx = vreinterpret_u8_u32(vdup_n_u32(wuffs_base__peek_u32le__no_bounds_check(v_curr.ptr)));
       v_fx = vadd_u8(v_fx, v_fa);
@@ -59853,7 +59864,7 @@ wuffs_png__decoder__filter_3_distance_4_arm_neon(
       wuffs_base__slice_u8 i_slice_curr = a_curr;
       v_curr.ptr = i_slice_curr.ptr;
       v_curr.len = 4;
-      uint8_t* i_end0_curr = v_curr.ptr + (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 8) * 8);
+      const uint8_t* i_end0_curr = wuffs_private_impl__ptr_u8_plus_len(v_curr.ptr, (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 8) * 8));
       while (v_curr.ptr < i_end0_curr) {
         v_fx = vreinterpret_u8_u32(vdup_n_u32(wuffs_base__peek_u32le__no_bounds_check(v_curr.ptr)));
         v_fx = vadd_u8(v_fx, vhadd_u8(v_fa, v_fb));
@@ -59867,7 +59878,7 @@ wuffs_png__decoder__filter_3_distance_4_arm_neon(
         v_curr.ptr += 4;
       }
       v_curr.len = 4;
-      uint8_t* i_end1_curr = v_curr.ptr + (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 4) * 4);
+      const uint8_t* i_end1_curr = wuffs_private_impl__ptr_u8_plus_len(v_curr.ptr, (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 4) * 4));
       while (v_curr.ptr < i_end1_curr) {
         v_fx = vreinterpret_u8_u32(vdup_n_u32(wuffs_base__peek_u32le__no_bounds_check(v_curr.ptr)));
         v_fx = vadd_u8(v_fx, vhadd_u8(v_fa, v_fb));
@@ -59886,7 +59897,7 @@ wuffs_png__decoder__filter_3_distance_4_arm_neon(
       i_slice_curr.len = ((size_t)(wuffs_base__u64__min(i_slice_curr.len, i_slice_prev.len)));
       v_curr.len = 4;
       v_prev.len = 4;
-      uint8_t* i_end0_curr = v_curr.ptr + (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 8) * 8);
+      const uint8_t* i_end0_curr = wuffs_private_impl__ptr_u8_plus_len(v_curr.ptr, (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 8) * 8));
       while (v_curr.ptr < i_end0_curr) {
         v_fb = vreinterpret_u8_u32(vdup_n_u32(wuffs_base__peek_u32le__no_bounds_check(v_prev.ptr)));
         v_fx = vreinterpret_u8_u32(vdup_n_u32(wuffs_base__peek_u32le__no_bounds_check(v_curr.ptr)));
@@ -59905,7 +59916,7 @@ wuffs_png__decoder__filter_3_distance_4_arm_neon(
       }
       v_curr.len = 4;
       v_prev.len = 4;
-      uint8_t* i_end1_curr = v_curr.ptr + (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 4) * 4);
+      const uint8_t* i_end1_curr = wuffs_private_impl__ptr_u8_plus_len(v_curr.ptr, (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 4) * 4));
       while (v_curr.ptr < i_end1_curr) {
         v_fb = vreinterpret_u8_u32(vdup_n_u32(wuffs_base__peek_u32le__no_bounds_check(v_prev.ptr)));
         v_fx = vreinterpret_u8_u32(vdup_n_u32(wuffs_base__peek_u32le__no_bounds_check(v_curr.ptr)));
@@ -59958,7 +59969,7 @@ wuffs_png__decoder__filter_4_distance_3_arm_neon(
     i_slice_curr.len = ((size_t)(wuffs_base__u64__min(i_slice_curr.len, i_slice_prev.len)));
     v_curr.len = 4;
     v_prev.len = 4;
-    uint8_t* i_end0_curr = v_curr.ptr + wuffs_private_impl__iterate_total_advance((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)), 7, 6);
+    const uint8_t* i_end0_curr = wuffs_private_impl__ptr_u8_plus_len(v_curr.ptr, wuffs_private_impl__iterate_total_advance((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)), 7, 6));
     while (v_curr.ptr < i_end0_curr) {
       v_fb = vreinterpret_u8_u32(vdup_n_u32(wuffs_base__peek_u32le__no_bounds_check(v_prev.ptr)));
       v_fx = vreinterpret_u8_u32(vdup_n_u32(wuffs_base__peek_u32le__no_bounds_check(v_curr.ptr)));
@@ -59997,7 +60008,7 @@ wuffs_png__decoder__filter_4_distance_3_arm_neon(
     }
     v_curr.len = 4;
     v_prev.len = 4;
-    uint8_t* i_end1_curr = v_curr.ptr + wuffs_private_impl__iterate_total_advance((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)), 4, 3);
+    const uint8_t* i_end1_curr = wuffs_private_impl__ptr_u8_plus_len(v_curr.ptr, wuffs_private_impl__iterate_total_advance((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)), 4, 3));
     while (v_curr.ptr < i_end1_curr) {
       v_fb = vreinterpret_u8_u32(vdup_n_u32(wuffs_base__peek_u32le__no_bounds_check(v_prev.ptr)));
       v_fx = vreinterpret_u8_u32(vdup_n_u32(wuffs_base__peek_u32le__no_bounds_check(v_curr.ptr)));
@@ -60019,7 +60030,7 @@ wuffs_png__decoder__filter_4_distance_3_arm_neon(
     }
     v_curr.len = 3;
     v_prev.len = 3;
-    uint8_t* i_end2_curr = v_curr.ptr + (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 3) * 3);
+    const uint8_t* i_end2_curr = wuffs_private_impl__ptr_u8_plus_len(v_curr.ptr, (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 3) * 3));
     while (v_curr.ptr < i_end2_curr) {
       v_fb = vreinterpret_u8_u32(vdup_n_u32(wuffs_base__peek_u24le__no_bounds_check(v_prev.ptr)));
       v_fx = vreinterpret_u8_u32(vdup_n_u32(wuffs_base__peek_u24le__no_bounds_check(v_curr.ptr)));
@@ -60079,7 +60090,7 @@ wuffs_png__decoder__filter_4_distance_4_arm_neon(
     i_slice_curr.len = ((size_t)(wuffs_base__u64__min(i_slice_curr.len, i_slice_prev.len)));
     v_curr.len = 4;
     v_prev.len = 4;
-    uint8_t* i_end0_curr = v_curr.ptr + (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 8) * 8);
+    const uint8_t* i_end0_curr = wuffs_private_impl__ptr_u8_plus_len(v_curr.ptr, (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 8) * 8));
     while (v_curr.ptr < i_end0_curr) {
       v_fb = vreinterpret_u8_u32(vdup_n_u32(wuffs_base__peek_u32le__no_bounds_check(v_prev.ptr)));
       v_fx = vreinterpret_u8_u32(vdup_n_u32(wuffs_base__peek_u32le__no_bounds_check(v_curr.ptr)));
@@ -60118,7 +60129,7 @@ wuffs_png__decoder__filter_4_distance_4_arm_neon(
     }
     v_curr.len = 4;
     v_prev.len = 4;
-    uint8_t* i_end1_curr = v_curr.ptr + (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 4) * 4);
+    const uint8_t* i_end1_curr = wuffs_private_impl__ptr_u8_plus_len(v_curr.ptr, (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 4) * 4));
     while (v_curr.ptr < i_end1_curr) {
       v_fb = vreinterpret_u8_u32(vdup_n_u32(wuffs_base__peek_u32le__no_bounds_check(v_prev.ptr)));
       v_fx = vreinterpret_u8_u32(vdup_n_u32(wuffs_base__peek_u32le__no_bounds_check(v_curr.ptr)));
@@ -60197,7 +60208,7 @@ wuffs_png__decoder__filter_1_distance_3_fallback(
     wuffs_base__slice_u8 i_slice_curr = a_curr;
     v_curr.ptr = i_slice_curr.ptr;
     v_curr.len = 3;
-    uint8_t* i_end0_curr = v_curr.ptr + (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 6) * 6);
+    const uint8_t* i_end0_curr = wuffs_private_impl__ptr_u8_plus_len(v_curr.ptr, (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 6) * 6));
     while (v_curr.ptr < i_end0_curr) {
       v_fa0 = ((uint8_t)(v_fa0 + v_curr.ptr[0u]));
       v_curr.ptr[0u] = v_fa0;
@@ -60215,7 +60226,7 @@ wuffs_png__decoder__filter_1_distance_3_fallback(
       v_curr.ptr += 3;
     }
     v_curr.len = 3;
-    uint8_t* i_end1_curr = v_curr.ptr + (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 3) * 3);
+    const uint8_t* i_end1_curr = wuffs_private_impl__ptr_u8_plus_len(v_curr.ptr, (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 3) * 3));
     while (v_curr.ptr < i_end1_curr) {
       v_fa0 = ((uint8_t)(v_fa0 + v_curr.ptr[0u]));
       v_curr.ptr[0u] = v_fa0;
@@ -60247,7 +60258,7 @@ wuffs_png__decoder__filter_1_distance_4_fallback(
     wuffs_base__slice_u8 i_slice_curr = a_curr;
     v_curr.ptr = i_slice_curr.ptr;
     v_curr.len = 4;
-    uint8_t* i_end0_curr = v_curr.ptr + (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 4) * 4);
+    const uint8_t* i_end0_curr = wuffs_private_impl__ptr_u8_plus_len(v_curr.ptr, (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 4) * 4));
     while (v_curr.ptr < i_end0_curr) {
       v_fa0 = ((uint8_t)(v_fa0 + v_curr.ptr[0u]));
       v_curr.ptr[0u] = v_fa0;
@@ -60347,7 +60358,7 @@ wuffs_png__decoder__filter_3_distance_3_fallback(
       wuffs_base__slice_u8 i_slice_curr = a_curr;
       v_curr.ptr = i_slice_curr.ptr;
       v_curr.len = 3;
-      uint8_t* i_end0_curr = v_curr.ptr + (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 6) * 6);
+      const uint8_t* i_end0_curr = wuffs_private_impl__ptr_u8_plus_len(v_curr.ptr, (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 6) * 6));
       while (v_curr.ptr < i_end0_curr) {
         v_fa0 = ((uint8_t)(((uint8_t)(v_fa0 / 2u)) + v_curr.ptr[0u]));
         v_curr.ptr[0u] = v_fa0;
@@ -60365,7 +60376,7 @@ wuffs_png__decoder__filter_3_distance_3_fallback(
         v_curr.ptr += 3;
       }
       v_curr.len = 3;
-      uint8_t* i_end1_curr = v_curr.ptr + (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 3) * 3);
+      const uint8_t* i_end1_curr = wuffs_private_impl__ptr_u8_plus_len(v_curr.ptr, (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 3) * 3));
       while (v_curr.ptr < i_end1_curr) {
         v_fa0 = ((uint8_t)(((uint8_t)(v_fa0 / 2u)) + v_curr.ptr[0u]));
         v_curr.ptr[0u] = v_fa0;
@@ -60386,7 +60397,7 @@ wuffs_png__decoder__filter_3_distance_3_fallback(
       i_slice_curr.len = ((size_t)(wuffs_base__u64__min(i_slice_curr.len, i_slice_prev.len)));
       v_curr.len = 3;
       v_prev.len = 3;
-      uint8_t* i_end0_curr = v_curr.ptr + (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 6) * 6);
+      const uint8_t* i_end0_curr = wuffs_private_impl__ptr_u8_plus_len(v_curr.ptr, (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 6) * 6));
       while (v_curr.ptr < i_end0_curr) {
         v_fa0 = ((uint8_t)(((uint8_t)(((((uint32_t)(v_fa0)) + ((uint32_t)(v_prev.ptr[0u]))) / 2u))) + v_curr.ptr[0u]));
         v_curr.ptr[0u] = v_fa0;
@@ -60407,7 +60418,7 @@ wuffs_png__decoder__filter_3_distance_3_fallback(
       }
       v_curr.len = 3;
       v_prev.len = 3;
-      uint8_t* i_end1_curr = v_curr.ptr + (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 3) * 3);
+      const uint8_t* i_end1_curr = wuffs_private_impl__ptr_u8_plus_len(v_curr.ptr, (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 3) * 3));
       while (v_curr.ptr < i_end1_curr) {
         v_fa0 = ((uint8_t)(((uint8_t)(((((uint32_t)(v_fa0)) + ((uint32_t)(v_prev.ptr[0u]))) / 2u))) + v_curr.ptr[0u]));
         v_curr.ptr[0u] = v_fa0;
@@ -60445,7 +60456,7 @@ wuffs_png__decoder__filter_3_distance_4_fallback(
       wuffs_base__slice_u8 i_slice_curr = a_curr;
       v_curr.ptr = i_slice_curr.ptr;
       v_curr.len = 4;
-      uint8_t* i_end0_curr = v_curr.ptr + (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 4) * 4);
+      const uint8_t* i_end0_curr = wuffs_private_impl__ptr_u8_plus_len(v_curr.ptr, (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 4) * 4));
       while (v_curr.ptr < i_end0_curr) {
         v_fa0 = ((uint8_t)(((uint8_t)(v_fa0 / 2u)) + v_curr.ptr[0u]));
         v_curr.ptr[0u] = v_fa0;
@@ -60468,7 +60479,7 @@ wuffs_png__decoder__filter_3_distance_4_fallback(
       i_slice_curr.len = ((size_t)(wuffs_base__u64__min(i_slice_curr.len, i_slice_prev.len)));
       v_curr.len = 4;
       v_prev.len = 4;
-      uint8_t* i_end0_curr = v_curr.ptr + (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 4) * 4);
+      const uint8_t* i_end0_curr = wuffs_private_impl__ptr_u8_plus_len(v_curr.ptr, (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 4) * 4));
       while (v_curr.ptr < i_end0_curr) {
         v_fa0 = ((uint8_t)(((uint8_t)(((((uint32_t)(v_fa0)) + ((uint32_t)(v_prev.ptr[0u]))) / 2u))) + v_curr.ptr[0u]));
         v_curr.ptr[0u] = v_fa0;
@@ -60593,7 +60604,7 @@ wuffs_png__decoder__filter_4_distance_3_fallback(
     i_slice_curr.len = ((size_t)(wuffs_base__u64__min(i_slice_curr.len, i_slice_prev.len)));
     v_curr.len = 3;
     v_prev.len = 3;
-    uint8_t* i_end0_curr = v_curr.ptr + (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 3) * 3);
+    const uint8_t* i_end0_curr = wuffs_private_impl__ptr_u8_plus_len(v_curr.ptr, (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 3) * 3));
     while (v_curr.ptr < i_end0_curr) {
       v_fb0 = ((uint32_t)(v_prev.ptr[0u]));
       v_pp0 = ((uint32_t)(((uint32_t)(v_fa0 + v_fb0)) - v_fc0));
@@ -60720,7 +60731,7 @@ wuffs_png__decoder__filter_4_distance_4_fallback(
     i_slice_curr.len = ((size_t)(wuffs_base__u64__min(i_slice_curr.len, i_slice_prev.len)));
     v_curr.len = 4;
     v_prev.len = 4;
-    uint8_t* i_end0_curr = v_curr.ptr + (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 4) * 4);
+    const uint8_t* i_end0_curr = wuffs_private_impl__ptr_u8_plus_len(v_curr.ptr, (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 4) * 4));
     while (v_curr.ptr < i_end0_curr) {
       v_fb0 = ((uint32_t)(v_prev.ptr[0u]));
       v_pp0 = ((uint32_t)(((uint32_t)(v_fa0 + v_fb0)) - v_fc0));
@@ -60841,7 +60852,7 @@ wuffs_png__decoder__filter_1_distance_4_x86_sse42(
     wuffs_base__slice_u8 i_slice_curr = a_curr;
     v_curr.ptr = i_slice_curr.ptr;
     v_curr.len = 4;
-    uint8_t* i_end0_curr = v_curr.ptr + (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 8) * 8);
+    const uint8_t* i_end0_curr = wuffs_private_impl__ptr_u8_plus_len(v_curr.ptr, (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 8) * 8));
     while (v_curr.ptr < i_end0_curr) {
       v_x128 = _mm_cvtsi32_si128((int32_t)(wuffs_base__peek_u32le__no_bounds_check(v_curr.ptr)));
       v_x128 = _mm_add_epi8(v_x128, v_a128);
@@ -60855,7 +60866,7 @@ wuffs_png__decoder__filter_1_distance_4_x86_sse42(
       v_curr.ptr += 4;
     }
     v_curr.len = 4;
-    uint8_t* i_end1_curr = v_curr.ptr + (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 4) * 4);
+    const uint8_t* i_end1_curr = wuffs_private_impl__ptr_u8_plus_len(v_curr.ptr, (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 4) * 4));
     while (v_curr.ptr < i_end1_curr) {
       v_x128 = _mm_cvtsi32_si128((int32_t)(wuffs_base__peek_u32le__no_bounds_check(v_curr.ptr)));
       v_x128 = _mm_add_epi8(v_x128, v_a128);
@@ -60895,7 +60906,7 @@ wuffs_png__decoder__filter_3_distance_4_x86_sse42(
       wuffs_base__slice_u8 i_slice_curr = a_curr;
       v_curr.ptr = i_slice_curr.ptr;
       v_curr.len = 4;
-      uint8_t* i_end0_curr = v_curr.ptr + (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 8) * 8);
+      const uint8_t* i_end0_curr = wuffs_private_impl__ptr_u8_plus_len(v_curr.ptr, (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 8) * 8));
       while (v_curr.ptr < i_end0_curr) {
         v_p128 = _mm_avg_epu8(_mm_and_si128(v_a128, v_k128), v_b128);
         v_x128 = _mm_cvtsi32_si128((int32_t)(wuffs_base__peek_u32le__no_bounds_check(v_curr.ptr)));
@@ -60911,7 +60922,7 @@ wuffs_png__decoder__filter_3_distance_4_x86_sse42(
         v_curr.ptr += 4;
       }
       v_curr.len = 4;
-      uint8_t* i_end1_curr = v_curr.ptr + (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 4) * 4);
+      const uint8_t* i_end1_curr = wuffs_private_impl__ptr_u8_plus_len(v_curr.ptr, (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 4) * 4));
       while (v_curr.ptr < i_end1_curr) {
         v_p128 = _mm_avg_epu8(_mm_and_si128(v_a128, v_k128), v_b128);
         v_x128 = _mm_cvtsi32_si128((int32_t)(wuffs_base__peek_u32le__no_bounds_check(v_curr.ptr)));
@@ -60932,7 +60943,7 @@ wuffs_png__decoder__filter_3_distance_4_x86_sse42(
       i_slice_curr.len = ((size_t)(wuffs_base__u64__min(i_slice_curr.len, i_slice_prev.len)));
       v_curr.len = 4;
       v_prev.len = 4;
-      uint8_t* i_end0_curr = v_curr.ptr + (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 8) * 8);
+      const uint8_t* i_end0_curr = wuffs_private_impl__ptr_u8_plus_len(v_curr.ptr, (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 8) * 8));
       while (v_curr.ptr < i_end0_curr) {
         v_b128 = _mm_cvtsi32_si128((int32_t)(wuffs_base__peek_u32le__no_bounds_check(v_prev.ptr)));
         v_p128 = _mm_avg_epu8(v_a128, v_b128);
@@ -60955,7 +60966,7 @@ wuffs_png__decoder__filter_3_distance_4_x86_sse42(
       }
       v_curr.len = 4;
       v_prev.len = 4;
-      uint8_t* i_end1_curr = v_curr.ptr + (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 4) * 4);
+      const uint8_t* i_end1_curr = wuffs_private_impl__ptr_u8_plus_len(v_curr.ptr, (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 4) * 4));
       while (v_curr.ptr < i_end1_curr) {
         v_b128 = _mm_cvtsi32_si128((int32_t)(wuffs_base__peek_u32le__no_bounds_check(v_prev.ptr)));
         v_p128 = _mm_avg_epu8(v_a128, v_b128);
@@ -61008,7 +61019,7 @@ wuffs_png__decoder__filter_4_distance_3_x86_sse42(
     i_slice_curr.len = ((size_t)(wuffs_base__u64__min(i_slice_curr.len, i_slice_prev.len)));
     v_curr.len = 4;
     v_prev.len = 4;
-    uint8_t* i_end0_curr = v_curr.ptr + wuffs_private_impl__iterate_total_advance((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)), 7, 6);
+    const uint8_t* i_end0_curr = wuffs_private_impl__ptr_u8_plus_len(v_curr.ptr, wuffs_private_impl__iterate_total_advance((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)), 7, 6));
     while (v_curr.ptr < i_end0_curr) {
       v_b128 = _mm_cvtsi32_si128((int32_t)(wuffs_base__peek_u32le__no_bounds_check(v_prev.ptr)));
       v_b128 = _mm_unpacklo_epi8(v_b128, v_z128);
@@ -61051,7 +61062,7 @@ wuffs_png__decoder__filter_4_distance_3_x86_sse42(
     }
     v_curr.len = 4;
     v_prev.len = 4;
-    uint8_t* i_end1_curr = v_curr.ptr + wuffs_private_impl__iterate_total_advance((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)), 4, 3);
+    const uint8_t* i_end1_curr = wuffs_private_impl__ptr_u8_plus_len(v_curr.ptr, wuffs_private_impl__iterate_total_advance((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)), 4, 3));
     while (v_curr.ptr < i_end1_curr) {
       v_b128 = _mm_cvtsi32_si128((int32_t)(wuffs_base__peek_u32le__no_bounds_check(v_prev.ptr)));
       v_b128 = _mm_unpacklo_epi8(v_b128, v_z128);
@@ -61075,7 +61086,7 @@ wuffs_png__decoder__filter_4_distance_3_x86_sse42(
     }
     v_curr.len = 3;
     v_prev.len = 3;
-    uint8_t* i_end2_curr = v_curr.ptr + (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 3) * 3);
+    const uint8_t* i_end2_curr = wuffs_private_impl__ptr_u8_plus_len(v_curr.ptr, (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 3) * 3));
     while (v_curr.ptr < i_end2_curr) {
       v_b128 = _mm_cvtsi32_si128((int32_t)(wuffs_base__peek_u24le__no_bounds_check(v_prev.ptr)));
       v_b128 = _mm_unpacklo_epi8(v_b128, v_z128);
@@ -61135,7 +61146,7 @@ wuffs_png__decoder__filter_4_distance_4_x86_sse42(
     i_slice_curr.len = ((size_t)(wuffs_base__u64__min(i_slice_curr.len, i_slice_prev.len)));
     v_curr.len = 4;
     v_prev.len = 4;
-    uint8_t* i_end0_curr = v_curr.ptr + (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 8) * 8);
+    const uint8_t* i_end0_curr = wuffs_private_impl__ptr_u8_plus_len(v_curr.ptr, (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 8) * 8));
     while (v_curr.ptr < i_end0_curr) {
       v_b128 = _mm_cvtsi32_si128((int32_t)(wuffs_base__peek_u32le__no_bounds_check(v_prev.ptr)));
       v_b128 = _mm_unpacklo_epi8(v_b128, v_z128);
@@ -61178,7 +61189,7 @@ wuffs_png__decoder__filter_4_distance_4_x86_sse42(
     }
     v_curr.len = 4;
     v_prev.len = 4;
-    uint8_t* i_end1_curr = v_curr.ptr + (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 4) * 4);
+    const uint8_t* i_end1_curr = wuffs_private_impl__ptr_u8_plus_len(v_curr.ptr, (((i_slice_curr.len - (size_t)(v_curr.ptr - i_slice_curr.ptr)) / 4) * 4));
     while (v_curr.ptr < i_end1_curr) {
       v_b128 = _mm_cvtsi32_si128((int32_t)(wuffs_base__peek_u32le__no_bounds_check(v_prev.ptr)));
       v_b128 = _mm_unpacklo_epi8(v_b128, v_z128);
@@ -66035,7 +66046,7 @@ wuffs_sha256__hasher__up(
     wuffs_base__slice_u8 i_slice_p = a_x;
     v_p.ptr = i_slice_p.ptr;
     v_p.len = 64;
-    uint8_t* i_end0_p = v_p.ptr + (((i_slice_p.len - (size_t)(v_p.ptr - i_slice_p.ptr)) / 64) * 64);
+    const uint8_t* i_end0_p = wuffs_private_impl__ptr_u8_plus_len(v_p.ptr, (((i_slice_p.len - (size_t)(v_p.ptr - i_slice_p.ptr)) / 64) * 64));
     while (v_p.ptr < i_end0_p) {
       v_w[0u] = ((((uint32_t)(v_p.ptr[0u])) << 24u) |
           (((uint32_t)(v_p.ptr[1u])) << 16u) |
@@ -66148,7 +66159,7 @@ wuffs_sha256__hasher__up(
       v_p.ptr += 64;
     }
     v_p.len = 1;
-    uint8_t* i_end1_p = i_slice_p.ptr + i_slice_p.len;
+    const uint8_t* i_end1_p = wuffs_private_impl__ptr_u8_plus_len(i_slice_p.ptr, i_slice_p.len);
     while (v_p.ptr < i_end1_p) {
       self->private_impl.f_buf_data[v_buf_len] = v_p.ptr[0u];
       v_buf_len = ((v_buf_len + 1u) & 63u);
@@ -69027,7 +69038,7 @@ wuffs_xxhash32__hasher__up(
     wuffs_base__slice_u8 i_slice_p = a_x;
     v_p.ptr = i_slice_p.ptr;
     v_p.len = 16;
-    uint8_t* i_end0_p = v_p.ptr + (((i_slice_p.len - (size_t)(v_p.ptr - i_slice_p.ptr)) / 16) * 16);
+    const uint8_t* i_end0_p = wuffs_private_impl__ptr_u8_plus_len(v_p.ptr, (((i_slice_p.len - (size_t)(v_p.ptr - i_slice_p.ptr)) / 16) * 16));
     while (v_p.ptr < i_end0_p) {
       v_buf_u32 = (((uint32_t)(v_p.ptr[0u])) |
           (((uint32_t)(v_p.ptr[1u])) << 8u) |
@@ -69060,7 +69071,7 @@ wuffs_xxhash32__hasher__up(
       v_p.ptr += 16;
     }
     v_p.len = 1;
-    uint8_t* i_end1_p = i_slice_p.ptr + i_slice_p.len;
+    const uint8_t* i_end1_p = wuffs_private_impl__ptr_u8_plus_len(i_slice_p.ptr, i_slice_p.len);
     while (v_p.ptr < i_end1_p) {
       self->private_impl.f_buf_data[v_buf_len] = v_p.ptr[0u];
       v_buf_len = ((v_buf_len + 1u) & 15u);
@@ -69439,7 +69450,7 @@ wuffs_xxhash64__hasher__up(
     wuffs_base__slice_u8 i_slice_p = a_x;
     v_p.ptr = i_slice_p.ptr;
     v_p.len = 32;
-    uint8_t* i_end0_p = v_p.ptr + (((i_slice_p.len - (size_t)(v_p.ptr - i_slice_p.ptr)) / 32) * 32);
+    const uint8_t* i_end0_p = wuffs_private_impl__ptr_u8_plus_len(v_p.ptr, (((i_slice_p.len - (size_t)(v_p.ptr - i_slice_p.ptr)) / 32) * 32));
     while (v_p.ptr < i_end0_p) {
       v_buf_u64 = (((uint64_t)(v_p.ptr[0u])) |
           (((uint64_t)(v_p.ptr[1u])) << 8u) |
@@ -69488,7 +69499,7 @@ wuffs_xxhash64__hasher__up(
       v_p.ptr += 32;
     }
     v_p.len = 1;
-    uint8_t* i_end1_p = i_slice_p.ptr + i_slice_p.len;
+    const uint8_t* i_end1_p = wuffs_private_impl__ptr_u8_plus_len(i_slice_p.ptr, i_slice_p.len);
     while (v_p.ptr < i_end1_p) {
       self->private_impl.f_buf_data[v_buf_len] = v_p.ptr[0u];
       v_buf_len = ((v_buf_len + 1u) & 31u);
