@@ -84,8 +84,6 @@ class DynIOBuffer {
   DynIOBuffer(const DynIOBuffer&) = delete;
   DynIOBuffer& operator=(const DynIOBuffer&) = delete;
 
-  bool allocated();
-
   static uint64_t round_up(uint64_t min_incl, uint64_t max_incl);
 };
 
