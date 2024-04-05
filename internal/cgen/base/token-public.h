@@ -277,9 +277,6 @@ wuffs_base__token::length() const {
 
 // --------
 
-extern const wuffs_base__token  //
-    wuffs_private_impl__placeholder_token_with_non_null_address;
-
 #if defined(__GNUC__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wcast-qual"
@@ -309,8 +306,7 @@ wuffs_base__make_slice_token(wuffs_base__token* ptr, size_t len) {
 static inline wuffs_base__slice_token  //
 wuffs_base__empty_slice_token(void) {
   wuffs_base__slice_token ret;
-  ret.ptr = wuffs_base__strip_const_from_token_ptr(
-      &wuffs_private_impl__placeholder_token_with_non_null_address);
+  ret.ptr = NULL;
   ret.len = 0;
   return ret;
 }
@@ -399,8 +395,7 @@ wuffs_base__slice_token__writer(wuffs_base__slice_token s) {
 static inline wuffs_base__token_buffer  //
 wuffs_base__empty_token_buffer(void) {
   wuffs_base__token_buffer ret;
-  ret.data.ptr = wuffs_base__strip_const_from_token_ptr(
-      &wuffs_private_impl__placeholder_token_with_non_null_address);
+  ret.data.ptr = NULL;
   ret.data.len = 0;
   ret.meta.wi = 0;
   ret.meta.ri = 0;

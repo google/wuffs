@@ -29,7 +29,6 @@ The LICENSE has changed from a single license (Apache 2) to a dual license
 - Changed `lzw.set_literal_width` to `lzw.set_quirk`.
 - Changed `set_quirk_enabled!(quirk: u32, enabled: bool)` to `set_quirk!(key:
   u32, value: u64) status`.
-- Changed `wuffs_base__empty_foo` to return non-NULL ptr.
 - Deprecated `std/lzw.decoder.flush`.
 - Fixed `PIXEL_FORMAT__YA_{NON,}PREMUL` constant values.
 - Generated constants now default to unsigned.
