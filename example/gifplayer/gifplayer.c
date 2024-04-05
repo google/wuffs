@@ -314,8 +314,7 @@ try_allocate(wuffs_gif__decoder* dec) {
 
   uint64_t workbuf_len_max_incl = wuffs_gif__decoder__workbuf_len(dec).max_incl;
   if (workbuf_len_max_incl > 0) {
-    g_workbuf = wuffs_base__malloc_slice_u8(
-        malloc, wuffs_gif__decoder__workbuf_len(dec).max_incl);
+    g_workbuf = wuffs_base__malloc_slice_u8(malloc, workbuf_len_max_incl);
     if (!g_workbuf.ptr) {
       return "could not allocate work buffer";
     }
