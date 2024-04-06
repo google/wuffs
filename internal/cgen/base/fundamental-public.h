@@ -214,7 +214,7 @@ wuffs_base__cpu_arch__have_x86_bmi2(void) {
 #if defined(__BMI2__)
   return true;
 #else
-#if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
+#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
   // GCC defines these macros but MSVC does not.
   //  - bit_BMI2 = (1 <<  8)
   const unsigned int bmi2_ebx7 = 0x00000100;
@@ -238,7 +238,7 @@ wuffs_base__cpu_arch__have_x86_bmi2(void) {
 #else
 #error "WUFFS_BASE__CPU_ARCH__ETC combined with an unsupported compiler"
 #endif  // defined(__GNUC__); defined(_MSC_VER)
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
+#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
   return false;
 #endif  // defined(__BMI2__)
 }
@@ -248,7 +248,7 @@ wuffs_base__cpu_arch__have_x86_sse42(void) {
 #if defined(__PCLMUL__) && defined(__POPCNT__) && defined(__SSE4_2__)
   return true;
 #else
-#if defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
+#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
   // GCC defines these macros but MSVC does not.
   //  - bit_PCLMUL = (1 <<  1)
   //  - bit_POPCNT = (1 << 23)
@@ -274,7 +274,7 @@ wuffs_base__cpu_arch__have_x86_sse42(void) {
 #else
 #error "WUFFS_BASE__CPU_ARCH__ETC combined with an unsupported compiler"
 #endif  // defined(__GNUC__); defined(_MSC_VER)
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_FAMILY)
+#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
   return false;
 #endif  // defined(__PCLMUL__) && defined(__POPCNT__) && defined(__SSE4_2__)
 }
