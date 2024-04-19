@@ -617,11 +617,20 @@ pri func decoder.decode_other_chunk?(src: base.io_reader, framy: base.bool) {
             }
 
         } else if this.chunk_type == 'tRNS'le {
-            if this.seen_trns or (this.color_type > 3) or
+            if this.seen_trns or
                     ((this.color_type == 3) and (not this.seen_plte)) {
                 return "#bad chunk"
+            } else if this.color_type > 3 {
+                // No-op, ignoring the chunk. The PNG spec section "11.3.2.1
+                // tRNS Transparency" says that "A tRNS chunk shall not appear
+                // for colour types 4 and 6, since a full alpha channel is
+                // already present in those cases." However, some real-world
+                // PNG images (incorrectly) have these. libpng treats this as a
+                // "benign error", not a fatal one. See
+                // https://github.com/google/wuffs/issues/146
+            } else {
+                this.decode_trns?(src: args.src)
             }
-            this.decode_trns?(src: args.src)
             this.seen_trns = true
         }
     }
