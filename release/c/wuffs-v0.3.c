@@ -85,15 +85,15 @@ extern "C" {
 // each major.minor branch, the commit count should increase monotonically.
 //
 // WUFFS_VERSION was overridden by "wuffs gen -version" based on revision
-// 00d5e35865a2f2718f4bb2596adaaa54bd639bbe committed on 2023-04-08.
-#define WUFFS_VERSION 0x000030003
+// a138188d5742c0469de983878a430bdbe7e50e77 committed on 2024-04-19.
+#define WUFFS_VERSION 0x000030004
 #define WUFFS_VERSION_MAJOR 0
 #define WUFFS_VERSION_MINOR 3
-#define WUFFS_VERSION_PATCH 3
+#define WUFFS_VERSION_PATCH 4
 #define WUFFS_VERSION_PRE_RELEASE_LABEL ""
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 3399
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20230408
-#define WUFFS_VERSION_STRING "0.3.3+3399.20230408"
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 3401
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20240419
+#define WUFFS_VERSION_STRING "0.3.4+3401.20240419"
 
 // ---------------- Configuration
 
@@ -41569,20 +41569,22 @@ wuffs_png__decoder__decode_other_chunk(
           self->private_impl.f_seen_srgb = true;
         }
       } else if (self->private_impl.f_chunk_type == 1397641844) {
-        if (self->private_impl.f_seen_trns || (self->private_impl.f_color_type > 3) || ((self->private_impl.f_color_type == 3) &&  ! self->private_impl.f_seen_plte)) {
+        if (self->private_impl.f_seen_trns || ((self->private_impl.f_color_type == 3) &&  ! self->private_impl.f_seen_plte)) {
           status = wuffs_base__make_status(wuffs_png__error__bad_chunk);
           goto exit;
-        }
-        if (a_src) {
-          a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
-        }
-        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(9);
-        status = wuffs_png__decoder__decode_trns(self, a_src);
-        if (a_src) {
-          iop_a_src = a_src->data.ptr + a_src->meta.ri;
-        }
-        if (status.repr) {
-          goto suspend;
+        } else if (self->private_impl.f_color_type > 3) {
+        } else {
+          if (a_src) {
+            a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+          }
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(9);
+          status = wuffs_png__decoder__decode_trns(self, a_src);
+          if (a_src) {
+            iop_a_src = a_src->data.ptr + a_src->meta.ri;
+          }
+          if (status.repr) {
+            goto suspend;
+          }
         }
         self->private_impl.f_seen_trns = true;
       }
