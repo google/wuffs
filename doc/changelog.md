@@ -1,6 +1,11 @@
 # Changelog
 
 
+## 2024-04-19 version 0.3.4
+
+- Have `std/png` ignore tRNS chunks for color types 4 (YA) and 6 (RGBA).
+
+
 ## 2023-04-08 version 0.3.3
 
 The `wuffs_base__parse_number_f64` function has been further optimized.
