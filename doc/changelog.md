@@ -33,7 +33,6 @@ The LICENSE has changed from a single license (Apache 2) to a dual license
 - Fixed `PIXEL_FORMAT__YA_{NON,}PREMUL` constant values.
 - Generated constants now default to unsigned.
 - Halved the sizeof `wuffs_foo__bar::unique_ptr`.
-- Have `std/png` ignore tRNS chunks for color types 4 (YA) and 6 (RGBA).
 - Let `std/png` decode PNG color type 4 to `PIXEL_FORMAT__YA_NONPREMUL` (two
   channels) instead of `PIXEL_FORMAT__BGRA_NONPREMUL` (four channels).
 - Removed the `std/gif -> std/lzw` dependency.
@@ -53,6 +52,11 @@ code (instead of writing C/C++ code that _uses_ Wuffs' standard library).
 - Wuffs struct private data now needs a "+" between the "()" pairs.
 - `wuffsfmt` double-indents hanging lines and each indent is now 4 spaces (not
   a tab).
+
+
+## 2024-04-19 version 0.3.4
+
+- Have `std/png` ignore tRNS chunks for color types 4 (YA) and 6 (RGBA).
 
 
 ## 2023-04-08 version 0.3.3
