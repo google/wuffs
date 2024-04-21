@@ -23,8 +23,10 @@ package main
 //
 // Output:
 // Px' = 0x92D8_AF2B_AF0E_1E85
-// k1' = 0xE05D_D497_CA39_3AE4
-// k2' = 0xDABE_95AF_C787_5F40
+// k1' = 0xF83B_4090_32DA_5F76
+// k2' = 0x081F_6054_A784_2DF4
+// k3' = 0xE05D_D497_CA39_3AE4
+// k4' = 0xDABE_95AF_C787_5F40
 // μ'  = 0x9C3E_466C_1729_63D5
 
 import (
@@ -104,7 +106,9 @@ func calcMu(name string) {
 
 func main() {
 	show("Px'", px)
-	calcKn("k1'", 128+64)
-	calcKn("k2'", 128)
+	calcKn("k1'", 512+64)
+	calcKn("k2'", 512)
+	calcKn("k3'", 128+64)
+	calcKn("k4'", 128)
 	calcMu("μ' ")
 }

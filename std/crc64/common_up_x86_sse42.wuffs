@@ -25,7 +25,7 @@ pri func ecma_hasher.up_x86_sse42!(x: roslice base.u8),
     var s0_8F80 : base.x86_m128i
     var x0      : base.x86_m128i
     var aa      : base.x86_m128i
-    var k1k2    : base.x86_m128i
+    var k3k4    : base.x86_m128i
     var t0      : base.x86_m128i
     var t1      : base.x86_m128i
     var t2      : base.x86_m128i
@@ -71,10 +71,10 @@ pri func ecma_hasher.up_x86_sse42!(x: roslice base.u8),
     x0 = util.make_m128i_slice128(a: args.x[0x00 .. 0x10])
     args.x = args.x[0x10 ..]
 
-    k1k2 = util.make_m128i_slice128(a: ECMA_X86_SSE42_K1K2[.. 16])
+    k3k4 = util.make_m128i_slice128(a: ECMA_X86_SSE42_K3K4[.. 16])
     t0 = s0_707F._mm_xor_si128(b: x0)
-    t1 = t0._mm_clmulepi64_si128(b: k1k2, imm8: 0x00)
-    t2 = t0._mm_clmulepi64_si128(b: k1k2, imm8: 0x11)
+    t1 = t0._mm_clmulepi64_si128(b: k3k4, imm8: 0x00)
+    t2 = t0._mm_clmulepi64_si128(b: k3k4, imm8: 0x11)
     aa = t1._mm_xor_si128(b: t2)._mm_xor_si128(b: s0_8F80)
 
     // Main loop.
@@ -84,8 +84,8 @@ pri func ecma_hasher.up_x86_sse42!(x: roslice base.u8),
         args.x = args.x[0x10 ..]
 
         u0 = aa._mm_xor_si128(b: x0)
-        u1 = u0._mm_clmulepi64_si128(b: k1k2, imm8: 0x00)
-        u2 = u0._mm_clmulepi64_si128(b: k1k2, imm8: 0x11)
+        u1 = u0._mm_clmulepi64_si128(b: k3k4, imm8: 0x00)
+        u2 = u0._mm_clmulepi64_si128(b: k3k4, imm8: 0x11)
         aa = u1._mm_xor_si128(b: u2)
     } endwhile
 
@@ -99,7 +99,7 @@ pri func ecma_hasher.up_x86_sse42!(x: roslice base.u8),
     args.x = args.x[0x10 ..]
 
     v0 = aa._mm_xor_si128(b: x0)
-    v1 = v0._mm_clmulepi64_si128(b: k1k2, imm8: 0x10)
+    v1 = v0._mm_clmulepi64_si128(b: k3k4, imm8: 0x10)
     aa = v1._mm_xor_si128(b: v0._mm_srli_si128(imm8: 8))
 
     // Barrett reduction.
@@ -134,9 +134,14 @@ pri const SHUFFLE_8F80 : roarray[16] base.u8 = [
 // These constants are reproduced by
 // script/print-crc64-x86-sse42-magic-numbers.go
 
-pri const ECMA_X86_SSE42_K1K2 : roarray[16] base.u8 = [
-        0xE4, 0x3A, 0x39, 0xCA, 0x97, 0xD4, 0x5D, 0xE0,  // k1' = 0xE05D_D497_CA39_3AE4
-        0x40, 0x5F, 0x87, 0xC7, 0xAF, 0x95, 0xBE, 0xDA,  // k2' = 0xDABE_95AF_C787_5F40
+// pri const ECMA_X86_SSE42_K1K2 : roarray[16] base.u8 = [
+//         0x76, 0x5F, 0xDA, 0x32, 0x90, 0x40, 0x3B, 0xF8,  // k1' = 0xF83B_4090_32DA_5F76
+//         0xF4, 0x2D, 0x84, 0xA7, 0x54, 0x60, 0x1F, 0x08,  // k2' = 0x081F_6054_A784_2DF4
+// ]
+
+pri const ECMA_X86_SSE42_K3K4 : roarray[16] base.u8 = [
+        0xE4, 0x3A, 0x39, 0xCA, 0x97, 0xD4, 0x5D, 0xE0,  // k3' = 0xE05D_D497_CA39_3AE4
+        0x40, 0x5F, 0x87, 0xC7, 0xAF, 0x95, 0xBE, 0xDA,  // k4' = 0xDABE_95AF_C787_5F40
 ]
 
 pri const ECMA_X86_SSE42_PXMU : roarray[16] base.u8 = [

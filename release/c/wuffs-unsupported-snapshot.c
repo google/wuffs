@@ -36609,7 +36609,7 @@ WUFFS_CRC64__SHUFFLE_8F80[16] WUFFS_BASE__POTENTIALLY_UNUSED = {
 };
 
 static const uint8_t
-WUFFS_CRC64__ECMA_X86_SSE42_K1K2[16] WUFFS_BASE__POTENTIALLY_UNUSED = {
+WUFFS_CRC64__ECMA_X86_SSE42_K3K4[16] WUFFS_BASE__POTENTIALLY_UNUSED = {
   228u, 58u, 57u, 202u, 151u, 212u, 93u, 224u,
   64u, 95u, 135u, 199u, 175u, 149u, 190u, 218u,
 };
@@ -36904,7 +36904,7 @@ wuffs_crc64__ecma_hasher__up_x86_sse42(
   __m128i v_s0_8F80 = {0};
   __m128i v_x0 = {0};
   __m128i v_aa = {0};
-  __m128i v_k1k2 = {0};
+  __m128i v_k3k4 = {0};
   __m128i v_t0 = {0};
   __m128i v_t1 = {0};
   __m128i v_t2 = {0};
@@ -36943,17 +36943,17 @@ wuffs_crc64__ecma_hasher__up_x86_sse42(
   v_s0_8F80 = _mm_shuffle_epi8(v_s0, _mm_lddqu_si128((const __m128i*)(const void*)(WUFFS_CRC64__SHUFFLE_8F80)));
   v_x0 = _mm_lddqu_si128((const __m128i*)(const void*)(a_x.ptr + 0u));
   a_x = wuffs_base__slice_u8__subslice_i(a_x, 16u);
-  v_k1k2 = _mm_lddqu_si128((const __m128i*)(const void*)(WUFFS_CRC64__ECMA_X86_SSE42_K1K2));
+  v_k3k4 = _mm_lddqu_si128((const __m128i*)(const void*)(WUFFS_CRC64__ECMA_X86_SSE42_K3K4));
   v_t0 = _mm_xor_si128(v_s0_707F, v_x0);
-  v_t1 = _mm_clmulepi64_si128(v_t0, v_k1k2, (int32_t)(0u));
-  v_t2 = _mm_clmulepi64_si128(v_t0, v_k1k2, (int32_t)(17u));
+  v_t1 = _mm_clmulepi64_si128(v_t0, v_k3k4, (int32_t)(0u));
+  v_t2 = _mm_clmulepi64_si128(v_t0, v_k3k4, (int32_t)(17u));
   v_aa = _mm_xor_si128(_mm_xor_si128(v_t1, v_t2), v_s0_8F80);
   while (((uint64_t)(a_x.len)) >= 32u) {
     v_x0 = _mm_lddqu_si128((const __m128i*)(const void*)(a_x.ptr + 0u));
     a_x = wuffs_base__slice_u8__subslice_i(a_x, 16u);
     v_u0 = _mm_xor_si128(v_aa, v_x0);
-    v_u1 = _mm_clmulepi64_si128(v_u0, v_k1k2, (int32_t)(0u));
-    v_u2 = _mm_clmulepi64_si128(v_u0, v_k1k2, (int32_t)(17u));
+    v_u1 = _mm_clmulepi64_si128(v_u0, v_k3k4, (int32_t)(0u));
+    v_u2 = _mm_clmulepi64_si128(v_u0, v_k3k4, (int32_t)(17u));
     v_aa = _mm_xor_si128(v_u1, v_u2);
   }
   if (((uint64_t)(a_x.len)) < 16u) {
@@ -36962,7 +36962,7 @@ wuffs_crc64__ecma_hasher__up_x86_sse42(
   v_x0 = _mm_lddqu_si128((const __m128i*)(const void*)(a_x.ptr + 0u));
   a_x = wuffs_base__slice_u8__subslice_i(a_x, 16u);
   v_v0 = _mm_xor_si128(v_aa, v_x0);
-  v_v1 = _mm_clmulepi64_si128(v_v0, v_k1k2, (int32_t)(16u));
+  v_v1 = _mm_clmulepi64_si128(v_v0, v_k3k4, (int32_t)(16u));
   v_aa = _mm_xor_si128(v_v1, _mm_srli_si128(v_v0, (int32_t)(8u)));
   v_pxmu = _mm_lddqu_si128((const __m128i*)(const void*)(WUFFS_CRC64__ECMA_X86_SSE42_PXMU));
   v_w1 = _mm_clmulepi64_si128(v_aa, v_pxmu, (int32_t)(16u));
