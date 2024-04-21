@@ -23,7 +23,7 @@ package main
 //
 // Output:
 // Px' = 0x92D8_AF2B_AF0E_1E85
-// k1' = 0xF83B_4090_32DA_5F76
+// k1' = 0x6AE3_EFBB_9DD4_41F3
 // k2' = 0x081F_6054_A784_2DF4
 // k3' = 0xE05D_D497_CA39_3AE4
 // k4' = 0xDABE_95AF_C787_5F40
@@ -40,7 +40,7 @@ import (
 // P(x)  = 0b1_01000010_11110000_11100001_11101011_10101001_11101010_00110110_10010011
 const px = "10100001011110000111000011110101110101001111010100011011010010011"
 
-var spaces = strings.Repeat(" ", 1024)
+var spaces = strings.Repeat(" ", 9999)
 
 func debugf(format string, a ...interface{}) {
 	if false { // Change false to true to show the long divisions.
@@ -68,7 +68,7 @@ func calcKn(name string, power int) {
 	b := []byte(numerator)
 	i := 0
 	debugf("      %s\n", numerator)
-	for i+len(px) <= len(numerator) {
+	for i+len(px) < len(numerator) {
 		for j := 0; j < len(px); j++ {
 			b[i+j] ^= 1 & px[j]
 		}
@@ -87,7 +87,7 @@ func calcMu(name string) {
 	b := []byte(numerator)
 	i := 0
 	debugf("      %s\n", numerator)
-	for i+len(px) <= len(numerator) {
+	for i+len(px) < len(numerator) {
 		for j := 0; j < len(px); j++ {
 			b[i+j] ^= 1 & px[j]
 		}

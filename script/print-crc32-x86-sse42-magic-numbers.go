@@ -60,7 +60,7 @@ const px = "100000100110000010001110110110111"
 // P(x)' = 0x1_11011011_01110001_00000110_01000001
 const pxdash = "111011011011100010000011001000001"
 
-var spaces = strings.Repeat(" ", 1024)
+var spaces = strings.Repeat(" ", 9999)
 
 func debugf(format string, a ...interface{}) {
 	if false { // Change false to true to show the long divisions.
