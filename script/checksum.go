@@ -36,6 +36,7 @@ import (
 
 var (
 	algorithm = flag.String("algorithm", "adler32", "checksum algorithm")
+	count     = flag.Int("count", 300, "number of cases (max 300), needs -pi flag")
 	pi        = flag.Bool("pi", false, "checksum the digits of pi instead of stdin")
 )
 
@@ -50,19 +51,32 @@ func main1() error {
 	flag.Parse()
 
 	if *pi {
-		const digits = "3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170"
-		if len(digits) != 99 {
+		const digits = "3." +
+			"141592653589793238462643383279502884197169399375105820974944592307816406" +
+			"286208998628034825342117067982148086513282306647093844609550582231725359" +
+			"408128481117450284102701938521105559644622948954930381964428810975665933" +
+			"446128475648233786783165271201909145648566923460348610454326648213393607" +
+			"260249141"
+		if len(digits) != 299 {
 			panic("bad len(digits)")
+		} else if (*count < 0) || (len(digits) < (*count - 1)) {
+			return fmt.Errorf("invalid count: %d", *count)
 		}
-		for i := 0; i < 100; i++ {
+		newLine := false
+		for i := 0; i < *count; i++ {
 			if err := do(strings.NewReader(digits[:i])); err != nil {
 				return err
 			}
 			fmt.Print(",")
-			if i&7 == 7 {
+			newLine = i&7 == 7
+			if newLine {
 				fmt.Println()
 			}
 		}
+		if !newLine {
+			fmt.Println()
+		}
+
 	} else {
 		if err := do(os.Stdin); err != nil {
 			return err
