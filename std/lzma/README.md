@@ -329,3 +329,10 @@ mask or, equivalently, a subtraction):
 
 That's a "forward" binary tree, where the bits occur in MSB to LSB order. A
 "reverse" binary tree uses the opposite order.
+
+
+## Further Reading
+
+A longer discussion of LZMA compression, including range coding and the XZ
+container format, is at [XZ/LZMA Worked
+Example](https://nigeltao.github.io/blog/2024/xz-lzma-part-1-range-coding.html).
