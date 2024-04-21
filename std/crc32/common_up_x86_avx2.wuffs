@@ -23,7 +23,10 @@ pri func ieee_hasher.up_x86_avx2!(x: roslice base.u8),
     var p : roslice base.u8
 
     var util : base.x86_sse42_utility
-    var k    : base.x86_m128i
+    var k1k2 : base.x86_m128i
+    var k3k4 : base.x86_m128i
+    var k5zz : base.x86_m128i
+    var pxmu : base.x86_m128i
     var x0   : base.x86_m128i
     var x1   : base.x86_m128i
     var x2   : base.x86_m128i
@@ -62,17 +65,17 @@ pri func ieee_hasher.up_x86_avx2!(x: roslice base.u8),
     x0 = x0._mm_xor_si128(b: util.make_m128i_single_u32(a: s))
 
     // Process the remaining 64-byte chunks.
-    k = util.make_m128i_slice128(a: IEEE_X86_SSE42_K1K2[.. 16])
+    k1k2 = util.make_m128i_slice128(a: IEEE_X86_SSE42_K1K2[.. 16])
     iterate (p = args.x[64 ..])(length: 64, advance: 64, unroll: 1) {
-        y0 = x0._mm_clmulepi64_si128(b: k, imm8: 0x00)
-        y1 = x1._mm_clmulepi64_si128(b: k, imm8: 0x00)
-        y2 = x2._mm_clmulepi64_si128(b: k, imm8: 0x00)
-        y3 = x3._mm_clmulepi64_si128(b: k, imm8: 0x00)
+        y0 = x0._mm_clmulepi64_si128(b: k1k2, imm8: 0x00)
+        y1 = x1._mm_clmulepi64_si128(b: k1k2, imm8: 0x00)
+        y2 = x2._mm_clmulepi64_si128(b: k1k2, imm8: 0x00)
+        y3 = x3._mm_clmulepi64_si128(b: k1k2, imm8: 0x00)
 
-        x0 = x0._mm_clmulepi64_si128(b: k, imm8: 0x11)
-        x1 = x1._mm_clmulepi64_si128(b: k, imm8: 0x11)
-        x2 = x2._mm_clmulepi64_si128(b: k, imm8: 0x11)
-        x3 = x3._mm_clmulepi64_si128(b: k, imm8: 0x11)
+        x0 = x0._mm_clmulepi64_si128(b: k1k2, imm8: 0x11)
+        x1 = x1._mm_clmulepi64_si128(b: k1k2, imm8: 0x11)
+        x2 = x2._mm_clmulepi64_si128(b: k1k2, imm8: 0x11)
+        x3 = x3._mm_clmulepi64_si128(b: k1k2, imm8: 0x11)
 
         x0 = x0._mm_xor_si128(b: y0)._mm_xor_si128(b: util.make_m128i_slice128(a: p[0x00 .. 0x10]))
         x1 = x1._mm_xor_si128(b: y1)._mm_xor_si128(b: util.make_m128i_slice128(a: p[0x10 .. 0x20]))
@@ -81,22 +84,22 @@ pri func ieee_hasher.up_x86_avx2!(x: roslice base.u8),
     }
 
     // Reduce 128×4 = 512 bits to 128 bits.
-    k = util.make_m128i_slice128(a: IEEE_X86_SSE42_K3K4[.. 16])
-    y0 = x0._mm_clmulepi64_si128(b: k, imm8: 0x00)
-    x0 = x0._mm_clmulepi64_si128(b: k, imm8: 0x11)
+    k3k4 = util.make_m128i_slice128(a: IEEE_X86_SSE42_K3K4[.. 16])
+    y0 = x0._mm_clmulepi64_si128(b: k3k4, imm8: 0x00)
+    x0 = x0._mm_clmulepi64_si128(b: k3k4, imm8: 0x11)
     x0 = x0._mm_xor_si128(b: x1)
     x0 = x0._mm_xor_si128(b: y0)
-    y0 = x0._mm_clmulepi64_si128(b: k, imm8: 0x00)
-    x0 = x0._mm_clmulepi64_si128(b: k, imm8: 0x11)
+    y0 = x0._mm_clmulepi64_si128(b: k3k4, imm8: 0x00)
+    x0 = x0._mm_clmulepi64_si128(b: k3k4, imm8: 0x11)
     x0 = x0._mm_xor_si128(b: x2)
     x0 = x0._mm_xor_si128(b: y0)
-    y0 = x0._mm_clmulepi64_si128(b: k, imm8: 0x00)
-    x0 = x0._mm_clmulepi64_si128(b: k, imm8: 0x11)
+    y0 = x0._mm_clmulepi64_si128(b: k3k4, imm8: 0x00)
+    x0 = x0._mm_clmulepi64_si128(b: k3k4, imm8: 0x11)
     x0 = x0._mm_xor_si128(b: x3)
     x0 = x0._mm_xor_si128(b: y0)
 
     // Reduce 128 bits to 64 bits.
-    x1 = x0._mm_clmulepi64_si128(b: k, imm8: 0x10)
+    x1 = x0._mm_clmulepi64_si128(b: k3k4, imm8: 0x10)
     x2 = util.make_m128i_multiple_u32(
             a00: 0xFFFF_FFFF,
             a01: 0x0000_0000,
@@ -104,23 +107,23 @@ pri func ieee_hasher.up_x86_avx2!(x: roslice base.u8),
             a03: 0x0000_0000)
     x0 = x0._mm_srli_si128(imm8: 8)
     x0 = x0._mm_xor_si128(b: x1)
-    k = util.make_m128i_slice128(a: IEEE_X86_SSE42_K5ZZ[.. 16])
+    k5zz = util.make_m128i_slice128(a: IEEE_X86_SSE42_K5ZZ[.. 16])
     x1 = x0._mm_srli_si128(imm8: 4)
     x0 = x0._mm_and_si128(b: x2)
-    x0 = x0._mm_clmulepi64_si128(b: k, imm8: 0x00)
+    x0 = x0._mm_clmulepi64_si128(b: k5zz, imm8: 0x00)
     x0 = x0._mm_xor_si128(b: x1)
 
     // Reduce 64 bits to 32 bits (Barrett Reduction) and extract.
     //
     // Barrett Reduction is Algorithm 1 (page 14) of Gopal et al., after
     // adjusting for bit-reflection as per Figure 12 (page 21).
-    k = util.make_m128i_slice128(a: IEEE_X86_SSE42_PXMU[.. 16])
+    pxmu = util.make_m128i_slice128(a: IEEE_X86_SSE42_PXMU[.. 16])
     x1 = x0._mm_and_si128(b: x2)
-    x1 = x1._mm_clmulepi64_si128(b: k, imm8: 0x10)
+    x1 = x1._mm_clmulepi64_si128(b: pxmu, imm8: 0x10)
     x1 = x1._mm_and_si128(b: x2)
-    x1 = x1._mm_clmulepi64_si128(b: k, imm8: 0x00)
-    x0 = x0._mm_xor_si128(b: x1)
-    s = x0._mm_extract_epi32(imm8: 1)
+    x1 = x1._mm_clmulepi64_si128(b: pxmu, imm8: 0x00)
+    x1 = x1._mm_xor_si128(b: x0)
+    s = x1._mm_extract_epi32(imm8: 1)
 
     // Handle the tail of args.x that wasn't a complete 64-byte chunk.
     tail_index = args.x.length() & 0xFFFF_FFFF_FFFF_FFC0  // And-not 64.

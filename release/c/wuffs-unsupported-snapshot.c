@@ -36085,7 +36085,10 @@ wuffs_crc32__ieee_hasher__up_x86_avx2(
     wuffs_base__slice_u8 a_x) {
   uint32_t v_s = 0;
   wuffs_base__slice_u8 v_p = {0};
-  __m128i v_k = {0};
+  __m128i v_k1k2 = {0};
+  __m128i v_k3k4 = {0};
+  __m128i v_k5zz = {0};
+  __m128i v_pxmu = {0};
   __m128i v_x0 = {0};
   __m128i v_x1 = {0};
   __m128i v_x2 = {0};
@@ -36121,21 +36124,21 @@ wuffs_crc32__ieee_hasher__up_x86_avx2(
   v_x2 = _mm_lddqu_si128((const __m128i*)(const void*)(a_x.ptr + 32u));
   v_x3 = _mm_lddqu_si128((const __m128i*)(const void*)(a_x.ptr + 48u));
   v_x0 = _mm_xor_si128(v_x0, _mm_cvtsi32_si128((int32_t)(v_s)));
-  v_k = _mm_lddqu_si128((const __m128i*)(const void*)(WUFFS_CRC32__IEEE_X86_SSE42_K1K2));
+  v_k1k2 = _mm_lddqu_si128((const __m128i*)(const void*)(WUFFS_CRC32__IEEE_X86_SSE42_K1K2));
   {
     wuffs_base__slice_u8 i_slice_p = wuffs_base__slice_u8__subslice_i(a_x, 64u);
     v_p.ptr = i_slice_p.ptr;
     v_p.len = 64;
     const uint8_t* i_end0_p = wuffs_private_impl__ptr_u8_plus_len(v_p.ptr, (((i_slice_p.len - (size_t)(v_p.ptr - i_slice_p.ptr)) / 64) * 64));
     while (v_p.ptr < i_end0_p) {
-      v_y0 = _mm_clmulepi64_si128(v_x0, v_k, (int32_t)(0u));
-      v_y1 = _mm_clmulepi64_si128(v_x1, v_k, (int32_t)(0u));
-      v_y2 = _mm_clmulepi64_si128(v_x2, v_k, (int32_t)(0u));
-      v_y3 = _mm_clmulepi64_si128(v_x3, v_k, (int32_t)(0u));
-      v_x0 = _mm_clmulepi64_si128(v_x0, v_k, (int32_t)(17u));
-      v_x1 = _mm_clmulepi64_si128(v_x1, v_k, (int32_t)(17u));
-      v_x2 = _mm_clmulepi64_si128(v_x2, v_k, (int32_t)(17u));
-      v_x3 = _mm_clmulepi64_si128(v_x3, v_k, (int32_t)(17u));
+      v_y0 = _mm_clmulepi64_si128(v_x0, v_k1k2, (int32_t)(0u));
+      v_y1 = _mm_clmulepi64_si128(v_x1, v_k1k2, (int32_t)(0u));
+      v_y2 = _mm_clmulepi64_si128(v_x2, v_k1k2, (int32_t)(0u));
+      v_y3 = _mm_clmulepi64_si128(v_x3, v_k1k2, (int32_t)(0u));
+      v_x0 = _mm_clmulepi64_si128(v_x0, v_k1k2, (int32_t)(17u));
+      v_x1 = _mm_clmulepi64_si128(v_x1, v_k1k2, (int32_t)(17u));
+      v_x2 = _mm_clmulepi64_si128(v_x2, v_k1k2, (int32_t)(17u));
+      v_x3 = _mm_clmulepi64_si128(v_x3, v_k1k2, (int32_t)(17u));
       v_x0 = _mm_xor_si128(_mm_xor_si128(v_x0, v_y0), _mm_lddqu_si128((const __m128i*)(const void*)(v_p.ptr + 0u)));
       v_x1 = _mm_xor_si128(_mm_xor_si128(v_x1, v_y1), _mm_lddqu_si128((const __m128i*)(const void*)(v_p.ptr + 16u)));
       v_x2 = _mm_xor_si128(_mm_xor_si128(v_x2, v_y2), _mm_lddqu_si128((const __m128i*)(const void*)(v_p.ptr + 32u)));
@@ -36144,35 +36147,35 @@ wuffs_crc32__ieee_hasher__up_x86_avx2(
     }
     v_p.len = 0;
   }
-  v_k = _mm_lddqu_si128((const __m128i*)(const void*)(WUFFS_CRC32__IEEE_X86_SSE42_K3K4));
-  v_y0 = _mm_clmulepi64_si128(v_x0, v_k, (int32_t)(0u));
-  v_x0 = _mm_clmulepi64_si128(v_x0, v_k, (int32_t)(17u));
+  v_k3k4 = _mm_lddqu_si128((const __m128i*)(const void*)(WUFFS_CRC32__IEEE_X86_SSE42_K3K4));
+  v_y0 = _mm_clmulepi64_si128(v_x0, v_k3k4, (int32_t)(0u));
+  v_x0 = _mm_clmulepi64_si128(v_x0, v_k3k4, (int32_t)(17u));
   v_x0 = _mm_xor_si128(v_x0, v_x1);
   v_x0 = _mm_xor_si128(v_x0, v_y0);
-  v_y0 = _mm_clmulepi64_si128(v_x0, v_k, (int32_t)(0u));
-  v_x0 = _mm_clmulepi64_si128(v_x0, v_k, (int32_t)(17u));
+  v_y0 = _mm_clmulepi64_si128(v_x0, v_k3k4, (int32_t)(0u));
+  v_x0 = _mm_clmulepi64_si128(v_x0, v_k3k4, (int32_t)(17u));
   v_x0 = _mm_xor_si128(v_x0, v_x2);
   v_x0 = _mm_xor_si128(v_x0, v_y0);
-  v_y0 = _mm_clmulepi64_si128(v_x0, v_k, (int32_t)(0u));
-  v_x0 = _mm_clmulepi64_si128(v_x0, v_k, (int32_t)(17u));
+  v_y0 = _mm_clmulepi64_si128(v_x0, v_k3k4, (int32_t)(0u));
+  v_x0 = _mm_clmulepi64_si128(v_x0, v_k3k4, (int32_t)(17u));
   v_x0 = _mm_xor_si128(v_x0, v_x3);
   v_x0 = _mm_xor_si128(v_x0, v_y0);
-  v_x1 = _mm_clmulepi64_si128(v_x0, v_k, (int32_t)(16u));
+  v_x1 = _mm_clmulepi64_si128(v_x0, v_k3k4, (int32_t)(16u));
   v_x2 = _mm_set_epi32((int32_t)(0u), (int32_t)(4294967295u), (int32_t)(0u), (int32_t)(4294967295u));
   v_x0 = _mm_srli_si128(v_x0, (int32_t)(8u));
   v_x0 = _mm_xor_si128(v_x0, v_x1);
-  v_k = _mm_lddqu_si128((const __m128i*)(const void*)(WUFFS_CRC32__IEEE_X86_SSE42_K5ZZ));
+  v_k5zz = _mm_lddqu_si128((const __m128i*)(const void*)(WUFFS_CRC32__IEEE_X86_SSE42_K5ZZ));
   v_x1 = _mm_srli_si128(v_x0, (int32_t)(4u));
   v_x0 = _mm_and_si128(v_x0, v_x2);
-  v_x0 = _mm_clmulepi64_si128(v_x0, v_k, (int32_t)(0u));
+  v_x0 = _mm_clmulepi64_si128(v_x0, v_k5zz, (int32_t)(0u));
   v_x0 = _mm_xor_si128(v_x0, v_x1);
-  v_k = _mm_lddqu_si128((const __m128i*)(const void*)(WUFFS_CRC32__IEEE_X86_SSE42_PXMU));
+  v_pxmu = _mm_lddqu_si128((const __m128i*)(const void*)(WUFFS_CRC32__IEEE_X86_SSE42_PXMU));
   v_x1 = _mm_and_si128(v_x0, v_x2);
-  v_x1 = _mm_clmulepi64_si128(v_x1, v_k, (int32_t)(16u));
+  v_x1 = _mm_clmulepi64_si128(v_x1, v_pxmu, (int32_t)(16u));
   v_x1 = _mm_and_si128(v_x1, v_x2);
-  v_x1 = _mm_clmulepi64_si128(v_x1, v_k, (int32_t)(0u));
-  v_x0 = _mm_xor_si128(v_x0, v_x1);
-  v_s = ((uint32_t)(_mm_extract_epi32(v_x0, (int32_t)(1u))));
+  v_x1 = _mm_clmulepi64_si128(v_x1, v_pxmu, (int32_t)(0u));
+  v_x1 = _mm_xor_si128(v_x1, v_x0);
+  v_s = ((uint32_t)(_mm_extract_epi32(v_x1, (int32_t)(1u))));
   v_tail_index = (((uint64_t)(a_x.len)) & 18446744073709551552u);
   if (v_tail_index < ((uint64_t)(a_x.len))) {
     {
@@ -36205,7 +36208,10 @@ wuffs_crc32__ieee_hasher__up_x86_sse42(
     wuffs_base__slice_u8 a_x) {
   uint32_t v_s = 0;
   wuffs_base__slice_u8 v_p = {0};
-  __m128i v_k = {0};
+  __m128i v_k1k2 = {0};
+  __m128i v_k3k4 = {0};
+  __m128i v_k5zz = {0};
+  __m128i v_pxmu = {0};
   __m128i v_x0 = {0};
   __m128i v_x1 = {0};
   __m128i v_x2 = {0};
@@ -36241,21 +36247,21 @@ wuffs_crc32__ieee_hasher__up_x86_sse42(
   v_x2 = _mm_lddqu_si128((const __m128i*)(const void*)(a_x.ptr + 32u));
   v_x3 = _mm_lddqu_si128((const __m128i*)(const void*)(a_x.ptr + 48u));
   v_x0 = _mm_xor_si128(v_x0, _mm_cvtsi32_si128((int32_t)(v_s)));
-  v_k = _mm_lddqu_si128((const __m128i*)(const void*)(WUFFS_CRC32__IEEE_X86_SSE42_K1K2));
+  v_k1k2 = _mm_lddqu_si128((const __m128i*)(const void*)(WUFFS_CRC32__IEEE_X86_SSE42_K1K2));
   {
     wuffs_base__slice_u8 i_slice_p = wuffs_base__slice_u8__subslice_i(a_x, 64u);
     v_p.ptr = i_slice_p.ptr;
     v_p.len = 64;
     const uint8_t* i_end0_p = wuffs_private_impl__ptr_u8_plus_len(v_p.ptr, (((i_slice_p.len - (size_t)(v_p.ptr - i_slice_p.ptr)) / 64) * 64));
     while (v_p.ptr < i_end0_p) {
-      v_y0 = _mm_clmulepi64_si128(v_x0, v_k, (int32_t)(0u));
-      v_y1 = _mm_clmulepi64_si128(v_x1, v_k, (int32_t)(0u));
-      v_y2 = _mm_clmulepi64_si128(v_x2, v_k, (int32_t)(0u));
-      v_y3 = _mm_clmulepi64_si128(v_x3, v_k, (int32_t)(0u));
-      v_x0 = _mm_clmulepi64_si128(v_x0, v_k, (int32_t)(17u));
-      v_x1 = _mm_clmulepi64_si128(v_x1, v_k, (int32_t)(17u));
-      v_x2 = _mm_clmulepi64_si128(v_x2, v_k, (int32_t)(17u));
-      v_x3 = _mm_clmulepi64_si128(v_x3, v_k, (int32_t)(17u));
+      v_y0 = _mm_clmulepi64_si128(v_x0, v_k1k2, (int32_t)(0u));
+      v_y1 = _mm_clmulepi64_si128(v_x1, v_k1k2, (int32_t)(0u));
+      v_y2 = _mm_clmulepi64_si128(v_x2, v_k1k2, (int32_t)(0u));
+      v_y3 = _mm_clmulepi64_si128(v_x3, v_k1k2, (int32_t)(0u));
+      v_x0 = _mm_clmulepi64_si128(v_x0, v_k1k2, (int32_t)(17u));
+      v_x1 = _mm_clmulepi64_si128(v_x1, v_k1k2, (int32_t)(17u));
+      v_x2 = _mm_clmulepi64_si128(v_x2, v_k1k2, (int32_t)(17u));
+      v_x3 = _mm_clmulepi64_si128(v_x3, v_k1k2, (int32_t)(17u));
       v_x0 = _mm_xor_si128(_mm_xor_si128(v_x0, v_y0), _mm_lddqu_si128((const __m128i*)(const void*)(v_p.ptr + 0u)));
       v_x1 = _mm_xor_si128(_mm_xor_si128(v_x1, v_y1), _mm_lddqu_si128((const __m128i*)(const void*)(v_p.ptr + 16u)));
       v_x2 = _mm_xor_si128(_mm_xor_si128(v_x2, v_y2), _mm_lddqu_si128((const __m128i*)(const void*)(v_p.ptr + 32u)));
@@ -36264,35 +36270,35 @@ wuffs_crc32__ieee_hasher__up_x86_sse42(
     }
     v_p.len = 0;
   }
-  v_k = _mm_lddqu_si128((const __m128i*)(const void*)(WUFFS_CRC32__IEEE_X86_SSE42_K3K4));
-  v_y0 = _mm_clmulepi64_si128(v_x0, v_k, (int32_t)(0u));
-  v_x0 = _mm_clmulepi64_si128(v_x0, v_k, (int32_t)(17u));
+  v_k3k4 = _mm_lddqu_si128((const __m128i*)(const void*)(WUFFS_CRC32__IEEE_X86_SSE42_K3K4));
+  v_y0 = _mm_clmulepi64_si128(v_x0, v_k3k4, (int32_t)(0u));
+  v_x0 = _mm_clmulepi64_si128(v_x0, v_k3k4, (int32_t)(17u));
   v_x0 = _mm_xor_si128(v_x0, v_x1);
   v_x0 = _mm_xor_si128(v_x0, v_y0);
-  v_y0 = _mm_clmulepi64_si128(v_x0, v_k, (int32_t)(0u));
-  v_x0 = _mm_clmulepi64_si128(v_x0, v_k, (int32_t)(17u));
+  v_y0 = _mm_clmulepi64_si128(v_x0, v_k3k4, (int32_t)(0u));
+  v_x0 = _mm_clmulepi64_si128(v_x0, v_k3k4, (int32_t)(17u));
   v_x0 = _mm_xor_si128(v_x0, v_x2);
   v_x0 = _mm_xor_si128(v_x0, v_y0);
-  v_y0 = _mm_clmulepi64_si128(v_x0, v_k, (int32_t)(0u));
-  v_x0 = _mm_clmulepi64_si128(v_x0, v_k, (int32_t)(17u));
+  v_y0 = _mm_clmulepi64_si128(v_x0, v_k3k4, (int32_t)(0u));
+  v_x0 = _mm_clmulepi64_si128(v_x0, v_k3k4, (int32_t)(17u));
   v_x0 = _mm_xor_si128(v_x0, v_x3);
   v_x0 = _mm_xor_si128(v_x0, v_y0);
-  v_x1 = _mm_clmulepi64_si128(v_x0, v_k, (int32_t)(16u));
+  v_x1 = _mm_clmulepi64_si128(v_x0, v_k3k4, (int32_t)(16u));
   v_x2 = _mm_set_epi32((int32_t)(0u), (int32_t)(4294967295u), (int32_t)(0u), (int32_t)(4294967295u));
   v_x0 = _mm_srli_si128(v_x0, (int32_t)(8u));
   v_x0 = _mm_xor_si128(v_x0, v_x1);
-  v_k = _mm_lddqu_si128((const __m128i*)(const void*)(WUFFS_CRC32__IEEE_X86_SSE42_K5ZZ));
+  v_k5zz = _mm_lddqu_si128((const __m128i*)(const void*)(WUFFS_CRC32__IEEE_X86_SSE42_K5ZZ));
   v_x1 = _mm_srli_si128(v_x0, (int32_t)(4u));
   v_x0 = _mm_and_si128(v_x0, v_x2);
-  v_x0 = _mm_clmulepi64_si128(v_x0, v_k, (int32_t)(0u));
+  v_x0 = _mm_clmulepi64_si128(v_x0, v_k5zz, (int32_t)(0u));
   v_x0 = _mm_xor_si128(v_x0, v_x1);
-  v_k = _mm_lddqu_si128((const __m128i*)(const void*)(WUFFS_CRC32__IEEE_X86_SSE42_PXMU));
+  v_pxmu = _mm_lddqu_si128((const __m128i*)(const void*)(WUFFS_CRC32__IEEE_X86_SSE42_PXMU));
   v_x1 = _mm_and_si128(v_x0, v_x2);
-  v_x1 = _mm_clmulepi64_si128(v_x1, v_k, (int32_t)(16u));
+  v_x1 = _mm_clmulepi64_si128(v_x1, v_pxmu, (int32_t)(16u));
   v_x1 = _mm_and_si128(v_x1, v_x2);
-  v_x1 = _mm_clmulepi64_si128(v_x1, v_k, (int32_t)(0u));
-  v_x0 = _mm_xor_si128(v_x0, v_x1);
-  v_s = ((uint32_t)(_mm_extract_epi32(v_x0, (int32_t)(1u))));
+  v_x1 = _mm_clmulepi64_si128(v_x1, v_pxmu, (int32_t)(0u));
+  v_x1 = _mm_xor_si128(v_x1, v_x0);
+  v_s = ((uint32_t)(_mm_extract_epi32(v_x1, (int32_t)(1u))));
   v_tail_index = (((uint64_t)(a_x.len)) & 18446744073709551552u);
   if (v_tail_index < ((uint64_t)(a_x.len))) {
     {
