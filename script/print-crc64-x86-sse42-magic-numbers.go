@@ -105,10 +105,14 @@ func calcMu(name string) {
 }
 
 func main() {
-	show("Px'", px)
-	calcKn("k1'", 512+64)
-	calcKn("k2'", 512)
-	calcKn("k3'", 128+64)
-	calcKn("k4'", 128)
+	calcKn("fold1a'", 128+64)
+	calcKn("fold1b'", 128)
+	calcKn("fold2a'", 256+64)
+	calcKn("fold2b'", 256)
+	calcKn("fold4a'", 512+64)
+	calcKn("fold4b'", 512)
+	calcKn("fold8a'", 1024+64)
+	calcKn("fold8b'", 1024)
 	calcMu("μ' ")
+	show("Px'", px)
 }

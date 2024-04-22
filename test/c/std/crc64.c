@@ -377,7 +377,7 @@ bench_wuffs_crc64_ecma_10k() {
   return do_bench_io_buffers(
       wuffs_bench_crc64_ecma,
       WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED, tcounter_src,
-      &g_crc64_midsummer_gt, UINT64_MAX, UINT64_MAX, 200);
+      &g_crc64_midsummer_gt, UINT64_MAX, UINT64_MAX, 2000);
 }
 
 const char*  //
@@ -386,7 +386,7 @@ bench_wuffs_crc64_ecma_100k() {
   return do_bench_io_buffers(
       wuffs_bench_crc64_ecma,
       WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED, tcounter_src,
-      &g_crc64_pi_gt, UINT64_MAX, UINT64_MAX, 20);
+      &g_crc64_pi_gt, UINT64_MAX, UINT64_MAX, 200);
 }
 
 // ---------------- Mimic Benches

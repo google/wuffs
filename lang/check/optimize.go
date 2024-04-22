@@ -49,8 +49,7 @@ func (q *checker) optimizeIOMethodAdvance(receiver *a.Expr, advance *big.Int, ad
 		return q.optimizeIOMethodAdvanceExpr(receiver, advanceExpr, update)
 	}
 
-	// Check if receiver looks like "a[i .. j]" where i and j are constants and
-	// ((j - i) >= advance).
+	// Check if the receiver looks like "a[i .. j]".
 	if _, i, j, ok := receiver.IsSlice(); ok {
 		icv := (*big.Int)(nil)
 		if i == nil {
@@ -64,9 +63,23 @@ func (q *checker) optimizeIOMethodAdvance(receiver *a.Expr, advance *big.Int, ad
 			jcv = j.ConstValue()
 		}
 
-		if (icv != nil) && (jcv != nil) {
+		switch {
+		case (icv != nil) && (jcv != nil):
+			// OK if i and j are constants and ((j - i) >= advance).
 			n := big.NewInt(0).Sub(jcv, icv)
 			if n.Cmp(advance) >= 0 {
+				retOK = true
+			}
+
+		case (i != nil) && (j != nil) && (j.Operator() == t.IDXBinaryPlus):
+			// OK if j is (i + constant) and (constant >= advance).
+			n := (*big.Int)(nil)
+			if j.LHS().AsExpr().Eq(i) {
+				n = j.RHS().AsExpr().ConstValue()
+			} else if j.RHS().AsExpr().Eq(i) {
+				n = j.LHS().AsExpr().ConstValue()
+			}
+			if n != nil && (n.Cmp(advance) >= 0) {
 				retOK = true
 			}
 		}

@@ -36597,27 +36597,33 @@ WUFFS_CRC64__ECMA_TABLE[8][256] WUFFS_BASE__POTENTIALLY_UNUSED = {
 };
 
 static const uint8_t
-WUFFS_CRC64__SHUFFLE_707F[16] WUFFS_BASE__POTENTIALLY_UNUSED = {
-  112u, 113u, 114u, 115u, 116u, 117u, 118u, 119u,
-  120u, 121u, 122u, 123u, 124u, 125u, 126u, 127u,
-};
-
-static const uint8_t
-WUFFS_CRC64__SHUFFLE_8F80[16] WUFFS_BASE__POTENTIALLY_UNUSED = {
-  143u, 142u, 141u, 140u, 139u, 138u, 137u, 136u,
-  135u, 134u, 133u, 132u, 131u, 130u, 129u, 128u,
-};
-
-static const uint8_t
-WUFFS_CRC64__ECMA_X86_SSE42_K3K4[16] WUFFS_BASE__POTENTIALLY_UNUSED = {
+WUFFS_CRC64__ECMA_X86_SSE42_FOLD1[16] WUFFS_BASE__POTENTIALLY_UNUSED = {
   228u, 58u, 57u, 202u, 151u, 212u, 93u, 224u,
   64u, 95u, 135u, 199u, 175u, 149u, 190u, 218u,
 };
 
 static const uint8_t
-WUFFS_CRC64__ECMA_X86_SSE42_PXMU[16] WUFFS_BASE__POTENTIALLY_UNUSED = {
-  133u, 30u, 14u, 175u, 43u, 175u, 216u, 146u,
+WUFFS_CRC64__ECMA_X86_SSE42_FOLD2[16] WUFFS_BASE__POTENTIALLY_UNUSED = {
+  68u, 250u, 158u, 138u, 0u, 91u, 9u, 96u,
+  81u, 175u, 225u, 15u, 163u, 83u, 230u, 59u,
+};
+
+static const uint8_t
+WUFFS_CRC64__ECMA_X86_SSE42_FOLD4[16] WUFFS_BASE__POTENTIALLY_UNUSED = {
+  243u, 65u, 212u, 157u, 187u, 239u, 227u, 106u,
+  244u, 45u, 132u, 167u, 84u, 96u, 31u, 8u,
+};
+
+static const uint8_t
+WUFFS_CRC64__ECMA_X86_SSE42_FOLD8[16] WUFFS_BASE__POTENTIALLY_UNUSED = {
+  0u, 16u, 204u, 79u, 29u, 215u, 87u, 135u,
+  64u, 231u, 61u, 247u, 42u, 107u, 216u, 215u,
+};
+
+static const uint8_t
+WUFFS_CRC64__ECMA_X86_SSE42_MUPX[16] WUFFS_BASE__POTENTIALLY_UNUSED = {
   213u, 99u, 41u, 23u, 108u, 70u, 62u, 156u,
+  133u, 30u, 14u, 175u, 43u, 175u, 216u, 146u,
 };
 
 // ---------------- Private Initializer Prototypes
@@ -36899,89 +36905,122 @@ wuffs_crc64__ecma_hasher__up_x86_sse42(
     wuffs_base__slice_u8 a_x) {
   uint64_t v_s = 0;
   wuffs_base__slice_u8 v_p = {0};
-  __m128i v_s0 = {0};
-  __m128i v_s0_707F = {0};
-  __m128i v_s0_8F80 = {0};
-  __m128i v_x0 = {0};
-  __m128i v_aa = {0};
-  __m128i v_k3k4 = {0};
-  __m128i v_t0 = {0};
-  __m128i v_t1 = {0};
-  __m128i v_t2 = {0};
-  __m128i v_u0 = {0};
-  __m128i v_u1 = {0};
-  __m128i v_u2 = {0};
-  __m128i v_v0 = {0};
-  __m128i v_v1 = {0};
-  __m128i v_pxmu = {0};
-  __m128i v_w1 = {0};
-  __m128i v_w2 = {0};
-  uint64_t v_tail_index = 0;
+  uint8_t v_buf[48] = {0};
+  __m128i v_xa = {0};
+  __m128i v_xb = {0};
+  __m128i v_xc = {0};
+  __m128i v_xd = {0};
+  __m128i v_xe = {0};
+  __m128i v_xf = {0};
+  __m128i v_xg = {0};
+  __m128i v_xh = {0};
+  __m128i v_mu1 = {0};
+  __m128i v_mu2 = {0};
+  __m128i v_mu4 = {0};
+  __m128i v_mu8 = {0};
+  __m128i v_mupx = {0};
 
   v_s = (18446744073709551615u ^ self->private_impl.f_state);
   while ((((uint64_t)(a_x.len)) > 0u) && ((15u & ((uint32_t)(0xFFFu & (uintptr_t)(a_x.ptr)))) != 0u)) {
     v_s = (WUFFS_CRC64__ECMA_TABLE[0u][((uint8_t)(((uint8_t)(v_s)) ^ a_x.ptr[0u]))] ^ (v_s >> 8u));
     a_x = wuffs_base__slice_u8__subslice_i(a_x, 1u);
   }
-  if (((uint64_t)(a_x.len)) < 32u) {
-    {
-      wuffs_base__slice_u8 i_slice_p = a_x;
-      v_p.ptr = i_slice_p.ptr;
-      v_p.len = 1;
-      const uint8_t* i_end0_p = wuffs_private_impl__ptr_u8_plus_len(i_slice_p.ptr, i_slice_p.len);
-      while (v_p.ptr < i_end0_p) {
-        v_s = (WUFFS_CRC64__ECMA_TABLE[0u][((uint8_t)(((uint8_t)(v_s)) ^ v_p.ptr[0u]))] ^ (v_s >> 8u));
-        v_p.ptr += 1;
+  do {
+    do {
+      if (((uint64_t)(a_x.len)) >= 128u) {
+      } else if (((uint64_t)(a_x.len)) >= 64u) {
+        v_xa = _mm_xor_si128(_mm_lddqu_si128((const __m128i*)(const void*)(a_x.ptr + 0u)), _mm_cvtsi64_si128((int64_t)(v_s)));
+        v_xb = _mm_lddqu_si128((const __m128i*)(const void*)(a_x.ptr + 16u));
+        v_xc = _mm_lddqu_si128((const __m128i*)(const void*)(a_x.ptr + 32u));
+        v_xd = _mm_lddqu_si128((const __m128i*)(const void*)(a_x.ptr + 48u));
+        a_x = wuffs_base__slice_u8__subslice_i(a_x, 64u);
+        break;
+      } else if (((uint64_t)(a_x.len)) >= 32u) {
+        v_xa = _mm_xor_si128(_mm_lddqu_si128((const __m128i*)(const void*)(a_x.ptr + 0u)), _mm_cvtsi64_si128((int64_t)(v_s)));
+        v_xb = _mm_lddqu_si128((const __m128i*)(const void*)(a_x.ptr + 16u));
+        a_x = wuffs_base__slice_u8__subslice_i(a_x, 32u);
+        goto label__chain2__break;
+      } else {
+        {
+          wuffs_base__slice_u8 i_slice_p = a_x;
+          v_p.ptr = i_slice_p.ptr;
+          v_p.len = 1;
+          const uint8_t* i_end0_p = wuffs_private_impl__ptr_u8_plus_len(i_slice_p.ptr, i_slice_p.len);
+          while (v_p.ptr < i_end0_p) {
+            v_s = (WUFFS_CRC64__ECMA_TABLE[0u][((uint8_t)(((uint8_t)(v_s)) ^ v_p.ptr[0u]))] ^ (v_s >> 8u));
+            v_p.ptr += 1;
+          }
+          v_p.len = 0;
+        }
+        self->private_impl.f_state = (18446744073709551615u ^ v_s);
+        return wuffs_base__make_empty_struct();
       }
-      v_p.len = 0;
+      v_xa = _mm_xor_si128(_mm_lddqu_si128((const __m128i*)(const void*)(a_x.ptr + 0u)), _mm_cvtsi64_si128((int64_t)(v_s)));
+      v_xb = _mm_lddqu_si128((const __m128i*)(const void*)(a_x.ptr + 16u));
+      v_xc = _mm_lddqu_si128((const __m128i*)(const void*)(a_x.ptr + 32u));
+      v_xd = _mm_lddqu_si128((const __m128i*)(const void*)(a_x.ptr + 48u));
+      v_xe = _mm_lddqu_si128((const __m128i*)(const void*)(a_x.ptr + 64u));
+      v_xf = _mm_lddqu_si128((const __m128i*)(const void*)(a_x.ptr + 80u));
+      v_xg = _mm_lddqu_si128((const __m128i*)(const void*)(a_x.ptr + 96u));
+      v_xh = _mm_lddqu_si128((const __m128i*)(const void*)(a_x.ptr + 112u));
+      a_x = wuffs_base__slice_u8__subslice_i(a_x, 128u);
+      v_mu8 = _mm_lddqu_si128((const __m128i*)(const void*)(WUFFS_CRC64__ECMA_X86_SSE42_FOLD8));
+      while (((uint64_t)(a_x.len)) >= 128u) {
+        v_xa = _mm_xor_si128(_mm_xor_si128(_mm_clmulepi64_si128(v_xa, v_mu8, (int32_t)(0u)), _mm_clmulepi64_si128(v_xa, v_mu8, (int32_t)(17u))), _mm_lddqu_si128((const __m128i*)(const void*)(a_x.ptr + 0u)));
+        v_xb = _mm_xor_si128(_mm_xor_si128(_mm_clmulepi64_si128(v_xb, v_mu8, (int32_t)(0u)), _mm_clmulepi64_si128(v_xb, v_mu8, (int32_t)(17u))), _mm_lddqu_si128((const __m128i*)(const void*)(a_x.ptr + 16u)));
+        v_xc = _mm_xor_si128(_mm_xor_si128(_mm_clmulepi64_si128(v_xc, v_mu8, (int32_t)(0u)), _mm_clmulepi64_si128(v_xc, v_mu8, (int32_t)(17u))), _mm_lddqu_si128((const __m128i*)(const void*)(a_x.ptr + 32u)));
+        v_xd = _mm_xor_si128(_mm_xor_si128(_mm_clmulepi64_si128(v_xd, v_mu8, (int32_t)(0u)), _mm_clmulepi64_si128(v_xd, v_mu8, (int32_t)(17u))), _mm_lddqu_si128((const __m128i*)(const void*)(a_x.ptr + 48u)));
+        v_xe = _mm_xor_si128(_mm_xor_si128(_mm_clmulepi64_si128(v_xe, v_mu8, (int32_t)(0u)), _mm_clmulepi64_si128(v_xe, v_mu8, (int32_t)(17u))), _mm_lddqu_si128((const __m128i*)(const void*)(a_x.ptr + 64u)));
+        v_xf = _mm_xor_si128(_mm_xor_si128(_mm_clmulepi64_si128(v_xf, v_mu8, (int32_t)(0u)), _mm_clmulepi64_si128(v_xf, v_mu8, (int32_t)(17u))), _mm_lddqu_si128((const __m128i*)(const void*)(a_x.ptr + 80u)));
+        v_xg = _mm_xor_si128(_mm_xor_si128(_mm_clmulepi64_si128(v_xg, v_mu8, (int32_t)(0u)), _mm_clmulepi64_si128(v_xg, v_mu8, (int32_t)(17u))), _mm_lddqu_si128((const __m128i*)(const void*)(a_x.ptr + 96u)));
+        v_xh = _mm_xor_si128(_mm_xor_si128(_mm_clmulepi64_si128(v_xh, v_mu8, (int32_t)(0u)), _mm_clmulepi64_si128(v_xh, v_mu8, (int32_t)(17u))), _mm_lddqu_si128((const __m128i*)(const void*)(a_x.ptr + 112u)));
+        a_x = wuffs_base__slice_u8__subslice_i(a_x, 128u);
+      }
+      v_mu4 = _mm_lddqu_si128((const __m128i*)(const void*)(WUFFS_CRC64__ECMA_X86_SSE42_FOLD4));
+      v_xa = _mm_xor_si128(_mm_xor_si128(_mm_clmulepi64_si128(v_xa, v_mu4, (int32_t)(0u)), _mm_clmulepi64_si128(v_xa, v_mu4, (int32_t)(17u))), v_xe);
+      v_xb = _mm_xor_si128(_mm_xor_si128(_mm_clmulepi64_si128(v_xb, v_mu4, (int32_t)(0u)), _mm_clmulepi64_si128(v_xb, v_mu4, (int32_t)(17u))), v_xf);
+      v_xc = _mm_xor_si128(_mm_xor_si128(_mm_clmulepi64_si128(v_xc, v_mu4, (int32_t)(0u)), _mm_clmulepi64_si128(v_xc, v_mu4, (int32_t)(17u))), v_xg);
+      v_xd = _mm_xor_si128(_mm_xor_si128(_mm_clmulepi64_si128(v_xd, v_mu4, (int32_t)(0u)), _mm_clmulepi64_si128(v_xd, v_mu4, (int32_t)(17u))), v_xh);
+      if (((uint64_t)(a_x.len)) > 64u) {
+        v_xa = _mm_xor_si128(_mm_xor_si128(_mm_clmulepi64_si128(v_xa, v_mu4, (int32_t)(0u)), _mm_clmulepi64_si128(v_xa, v_mu4, (int32_t)(17u))), _mm_lddqu_si128((const __m128i*)(const void*)(a_x.ptr + 0u)));
+        v_xb = _mm_xor_si128(_mm_xor_si128(_mm_clmulepi64_si128(v_xb, v_mu4, (int32_t)(0u)), _mm_clmulepi64_si128(v_xb, v_mu4, (int32_t)(17u))), _mm_lddqu_si128((const __m128i*)(const void*)(a_x.ptr + 16u)));
+        v_xc = _mm_xor_si128(_mm_xor_si128(_mm_clmulepi64_si128(v_xc, v_mu4, (int32_t)(0u)), _mm_clmulepi64_si128(v_xc, v_mu4, (int32_t)(17u))), _mm_lddqu_si128((const __m128i*)(const void*)(a_x.ptr + 32u)));
+        v_xd = _mm_xor_si128(_mm_xor_si128(_mm_clmulepi64_si128(v_xd, v_mu4, (int32_t)(0u)), _mm_clmulepi64_si128(v_xd, v_mu4, (int32_t)(17u))), _mm_lddqu_si128((const __m128i*)(const void*)(a_x.ptr + 48u)));
+        a_x = wuffs_base__slice_u8__subslice_i(a_x, 64u);
+      }
+    } while (0);
+    v_mu2 = _mm_lddqu_si128((const __m128i*)(const void*)(WUFFS_CRC64__ECMA_X86_SSE42_FOLD2));
+    v_xa = _mm_xor_si128(_mm_xor_si128(_mm_clmulepi64_si128(v_xa, v_mu2, (int32_t)(0u)), _mm_clmulepi64_si128(v_xa, v_mu2, (int32_t)(17u))), v_xc);
+    v_xb = _mm_xor_si128(_mm_xor_si128(_mm_clmulepi64_si128(v_xb, v_mu2, (int32_t)(0u)), _mm_clmulepi64_si128(v_xb, v_mu2, (int32_t)(17u))), v_xd);
+    if (((uint64_t)(a_x.len)) > 32u) {
+      v_xa = _mm_xor_si128(_mm_xor_si128(_mm_clmulepi64_si128(v_xa, v_mu2, (int32_t)(0u)), _mm_clmulepi64_si128(v_xa, v_mu2, (int32_t)(17u))), _mm_lddqu_si128((const __m128i*)(const void*)(a_x.ptr + 0u)));
+      v_xb = _mm_xor_si128(_mm_xor_si128(_mm_clmulepi64_si128(v_xb, v_mu2, (int32_t)(0u)), _mm_clmulepi64_si128(v_xb, v_mu2, (int32_t)(17u))), _mm_lddqu_si128((const __m128i*)(const void*)(a_x.ptr + 16u)));
+      a_x = wuffs_base__slice_u8__subslice_i(a_x, 32u);
     }
-    self->private_impl.f_state = (18446744073709551615u ^ v_s);
-    return wuffs_base__make_empty_struct();
-  }
-  v_s0 = _mm_cvtsi64_si128((int64_t)(v_s));
-  v_s0_707F = _mm_shuffle_epi8(v_s0, _mm_lddqu_si128((const __m128i*)(const void*)(WUFFS_CRC64__SHUFFLE_707F)));
-  v_s0_8F80 = _mm_shuffle_epi8(v_s0, _mm_lddqu_si128((const __m128i*)(const void*)(WUFFS_CRC64__SHUFFLE_8F80)));
-  v_x0 = _mm_lddqu_si128((const __m128i*)(const void*)(a_x.ptr + 0u));
-  a_x = wuffs_base__slice_u8__subslice_i(a_x, 16u);
-  v_k3k4 = _mm_lddqu_si128((const __m128i*)(const void*)(WUFFS_CRC64__ECMA_X86_SSE42_K3K4));
-  v_t0 = _mm_xor_si128(v_s0_707F, v_x0);
-  v_t1 = _mm_clmulepi64_si128(v_t0, v_k3k4, (int32_t)(0u));
-  v_t2 = _mm_clmulepi64_si128(v_t0, v_k3k4, (int32_t)(17u));
-  v_aa = _mm_xor_si128(_mm_xor_si128(v_t1, v_t2), v_s0_8F80);
-  while (((uint64_t)(a_x.len)) >= 32u) {
-    v_x0 = _mm_lddqu_si128((const __m128i*)(const void*)(a_x.ptr + 0u));
+  } while (0);
+  label__chain2__break:;
+  v_mu1 = _mm_lddqu_si128((const __m128i*)(const void*)(WUFFS_CRC64__ECMA_X86_SSE42_FOLD1));
+  v_xa = _mm_xor_si128(_mm_xor_si128(_mm_clmulepi64_si128(v_xa, v_mu1, (int32_t)(0u)), _mm_clmulepi64_si128(v_xa, v_mu1, (int32_t)(17u))), v_xb);
+  if (((uint64_t)(a_x.len)) > 24u) {
+    v_xa = _mm_xor_si128(_mm_xor_si128(_mm_clmulepi64_si128(v_xa, v_mu1, (int32_t)(0u)), _mm_clmulepi64_si128(v_xa, v_mu1, (int32_t)(17u))), _mm_lddqu_si128((const __m128i*)(const void*)(a_x.ptr + 0u)));
     a_x = wuffs_base__slice_u8__subslice_i(a_x, 16u);
-    v_u0 = _mm_xor_si128(v_aa, v_x0);
-    v_u1 = _mm_clmulepi64_si128(v_u0, v_k3k4, (int32_t)(0u));
-    v_u2 = _mm_clmulepi64_si128(v_u0, v_k3k4, (int32_t)(17u));
-    v_aa = _mm_xor_si128(v_u1, v_u2);
-  }
-  if (((uint64_t)(a_x.len)) < 16u) {
-    return wuffs_base__make_empty_struct();
-  }
-  v_x0 = _mm_lddqu_si128((const __m128i*)(const void*)(a_x.ptr + 0u));
-  a_x = wuffs_base__slice_u8__subslice_i(a_x, 16u);
-  v_v0 = _mm_xor_si128(v_aa, v_x0);
-  v_v1 = _mm_clmulepi64_si128(v_v0, v_k3k4, (int32_t)(16u));
-  v_aa = _mm_xor_si128(v_v1, _mm_srli_si128(v_v0, (int32_t)(8u)));
-  v_pxmu = _mm_lddqu_si128((const __m128i*)(const void*)(WUFFS_CRC64__ECMA_X86_SSE42_PXMU));
-  v_w1 = _mm_clmulepi64_si128(v_aa, v_pxmu, (int32_t)(16u));
-  v_w2 = _mm_clmulepi64_si128(v_w1, v_pxmu, (int32_t)(0u));
-  v_s = ((uint64_t)(_mm_extract_epi64(_mm_xor_si128(v_aa, _mm_xor_si128(v_w2, _mm_slli_si128(v_w1, (int32_t)(8u)))), (int32_t)(1u))));
-  v_tail_index = (((uint64_t)(a_x.len)) & 18446744073709551600u);
-  if (v_tail_index < ((uint64_t)(a_x.len))) {
-    {
-      wuffs_base__slice_u8 i_slice_p = wuffs_base__slice_u8__subslice_i(a_x, v_tail_index);
-      v_p.ptr = i_slice_p.ptr;
-      v_p.len = 1;
-      const uint8_t* i_end0_p = wuffs_private_impl__ptr_u8_plus_len(i_slice_p.ptr, i_slice_p.len);
-      while (v_p.ptr < i_end0_p) {
-        v_s = (WUFFS_CRC64__ECMA_TABLE[0u][((uint8_t)(((uint8_t)(v_s)) ^ v_p.ptr[0u]))] ^ (v_s >> 8u));
-        v_p.ptr += 1;
-      }
-      v_p.len = 0;
+    if (((uint64_t)(a_x.len)) > 24u) {
+      return wuffs_base__make_empty_struct();
     }
   }
+  _mm_storeu_si128((__m128i*)(void*)(v_buf + (24u - ((uint64_t)(a_x.len)))), v_xa);
+  wuffs_private_impl__slice_u8__copy_from_slice(wuffs_base__make_slice_u8_ij(v_buf, ((24u - ((uint64_t)(a_x.len))) + 16u), 48), a_x);
+  v_mu2 = _mm_lddqu_si128((const __m128i*)(const void*)(WUFFS_CRC64__ECMA_X86_SSE42_FOLD2));
+  v_xa = _mm_lddqu_si128((const __m128i*)(const void*)(v_buf + 0u));
+  v_xb = _mm_lddqu_si128((const __m128i*)(const void*)(v_buf + 16u));
+  v_xc = _mm_lddqu_si128((const __m128i*)(const void*)(v_buf + 32u));
+  v_xd = _mm_xor_si128(_mm_clmulepi64_si128(v_xa, v_mu2, (int32_t)(0u)), _mm_clmulepi64_si128(v_xa, v_mu2, (int32_t)(17u)));
+  v_xe = _mm_xor_si128(_mm_clmulepi64_si128(v_xb, v_mu1, (int32_t)(0u)), _mm_clmulepi64_si128(v_xb, v_mu1, (int32_t)(17u)));
+  v_xa = _mm_xor_si128(v_xd, _mm_xor_si128(v_xe, v_xc));
+  v_mupx = _mm_lddqu_si128((const __m128i*)(const void*)(WUFFS_CRC64__ECMA_X86_SSE42_MUPX));
+  v_xb = _mm_clmulepi64_si128(v_xa, v_mupx, (int32_t)(0u));
+  v_xc = _mm_clmulepi64_si128(v_xb, v_mupx, (int32_t)(16u));
+  v_s = ((uint64_t)(_mm_extract_epi64(_mm_xor_si128(_mm_xor_si128(v_xc, _mm_slli_si128(v_xb, (int32_t)(8u))), v_xa), (int32_t)(1u))));
   self->private_impl.f_state = (18446744073709551615u ^ v_s);
   return wuffs_base__make_empty_struct();
 }
