@@ -1259,7 +1259,7 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (bounds, e
 			}
 		}
 
-	} else if recvTyp.Eq(typeExprSliceU8) {
+	} else if recvTyp.Eq(typeExprSliceU8) || recvTyp.Eq(typeExprRosliceU8) {
 		if method >= t.IDPeekU8 {
 			if m := method - t.IDPeekU8; m < t.ID(len(ioMethodAdvances)) {
 				au := ioMethodAdvances[m]
