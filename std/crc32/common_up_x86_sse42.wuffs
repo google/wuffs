@@ -8,32 +8,29 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-// --------
-
-// See "SIMD Implementations" in README.md for a link to Gopal et al. "Fast CRC
-// Computation for Generic Polynomials Using PCLMULQDQ Instruction".
-
 pri func ieee_hasher.up_x86_sse42!(x: roslice base.u8),
         choose cpu_arch >= x86_sse42,
 {
     var s : base.u32
-    var p : roslice base.u8
 
     var util : base.x86_sse42_utility
-    var k1k2 : base.x86_m128i
-    var k3k4 : base.x86_m128i
-    var k5zz : base.x86_m128i
-    var pxmu : base.x86_m128i
+    var kk   : base.x86_m128i
     var x0   : base.x86_m128i
     var x1   : base.x86_m128i
     var x2   : base.x86_m128i
     var x3   : base.x86_m128i
+    var x4   : base.x86_m128i
+    var x5   : base.x86_m128i
+    var x6   : base.x86_m128i
+    var x7   : base.x86_m128i
     var y0   : base.x86_m128i
     var y1   : base.x86_m128i
     var y2   : base.x86_m128i
     var y3   : base.x86_m128i
-
-    var tail_index : base.u64
+    var y4   : base.x86_m128i
+    var y5   : base.x86_m128i
+    var y6   : base.x86_m128i
+    var y7   : base.x86_m128i
 
     s = 0xFFFF_FFFF ^ this.state
 
@@ -43,125 +40,111 @@ pri func ieee_hasher.up_x86_sse42!(x: roslice base.u8),
         args.x = args.x[1 ..]
     } endwhile
 
-    // For short inputs, just do a simple loop.
-    if args.x.length() < 64 {
-        iterate (p = args.x)(length: 1, advance: 1, unroll: 1) {
-            s = IEEE_TABLE[0][((s & 0xFF) as base.u8) ^ p[0]] ^ (s >> 8)
-        }
-        this.state = 0xFFFF_FFFF ^ s
-        return nothing
+    if args.x.length() >= 128 {
+        // BEGIN script/print-crc32-x86-sse42-code.go generated code.
+        x0 = util.make_m128i_slice128(a: args.x[0x00 .. 0x10])
+        x1 = util.make_m128i_slice128(a: args.x[0x10 .. 0x20])
+        x2 = util.make_m128i_slice128(a: args.x[0x20 .. 0x30])
+        x3 = util.make_m128i_slice128(a: args.x[0x30 .. 0x40])
+        x4 = util.make_m128i_slice128(a: args.x[0x40 .. 0x50])
+        x5 = util.make_m128i_slice128(a: args.x[0x50 .. 0x60])
+        x6 = util.make_m128i_slice128(a: args.x[0x60 .. 0x70])
+        x7 = util.make_m128i_slice128(a: args.x[0x70 .. 0x80])
+        kk = util.make_m128i_multiple_u32(a00: 0x33FF_F533, a01: 0, a02: 0x910E_EEC1, a03: 0)
+        x0 = x0._mm_xor_si128(b: util.make_m128i_single_u32(a: s))
+        args.x = args.x[128 ..]
+        while args.x.length() >= 128 {
+            y0 = x0._mm_clmulepi64_si128(b: kk, imm8: 0x00)
+            x0 = x0._mm_clmulepi64_si128(b: kk, imm8: 0x11)
+            y1 = x1._mm_clmulepi64_si128(b: kk, imm8: 0x00)
+            x1 = x1._mm_clmulepi64_si128(b: kk, imm8: 0x11)
+            y2 = x2._mm_clmulepi64_si128(b: kk, imm8: 0x00)
+            x2 = x2._mm_clmulepi64_si128(b: kk, imm8: 0x11)
+            y3 = x3._mm_clmulepi64_si128(b: kk, imm8: 0x00)
+            x3 = x3._mm_clmulepi64_si128(b: kk, imm8: 0x11)
+            y4 = x4._mm_clmulepi64_si128(b: kk, imm8: 0x00)
+            x4 = x4._mm_clmulepi64_si128(b: kk, imm8: 0x11)
+            y5 = x5._mm_clmulepi64_si128(b: kk, imm8: 0x00)
+            x5 = x5._mm_clmulepi64_si128(b: kk, imm8: 0x11)
+            y6 = x6._mm_clmulepi64_si128(b: kk, imm8: 0x00)
+            x6 = x6._mm_clmulepi64_si128(b: kk, imm8: 0x11)
+            y7 = x7._mm_clmulepi64_si128(b: kk, imm8: 0x00)
+            x7 = x7._mm_clmulepi64_si128(b: kk, imm8: 0x11)
+            y0 = y0._mm_xor_si128(b: util.make_m128i_slice128(a: args.x[0x00 .. 0x10]))
+            x0 = x0._mm_xor_si128(b: y0)
+            y1 = y1._mm_xor_si128(b: util.make_m128i_slice128(a: args.x[0x10 .. 0x20]))
+            x1 = x1._mm_xor_si128(b: y1)
+            y2 = y2._mm_xor_si128(b: util.make_m128i_slice128(a: args.x[0x20 .. 0x30]))
+            x2 = x2._mm_xor_si128(b: y2)
+            y3 = y3._mm_xor_si128(b: util.make_m128i_slice128(a: args.x[0x30 .. 0x40]))
+            x3 = x3._mm_xor_si128(b: y3)
+            y4 = y4._mm_xor_si128(b: util.make_m128i_slice128(a: args.x[0x40 .. 0x50]))
+            x4 = x4._mm_xor_si128(b: y4)
+            y5 = y5._mm_xor_si128(b: util.make_m128i_slice128(a: args.x[0x50 .. 0x60]))
+            x5 = x5._mm_xor_si128(b: y5)
+            y6 = y6._mm_xor_si128(b: util.make_m128i_slice128(a: args.x[0x60 .. 0x70]))
+            x6 = x6._mm_xor_si128(b: y6)
+            y7 = y7._mm_xor_si128(b: util.make_m128i_slice128(a: args.x[0x70 .. 0x80]))
+            x7 = x7._mm_xor_si128(b: y7)
+            args.x = args.x[128 ..]
+        } endwhile
+        kk = util.make_m128i_multiple_u32(a00: 0xAE68_9191, a01: 0, a02: 0xCCAA_009E, a03: 0)
+        y0 = x0._mm_clmulepi64_si128(b: kk, imm8: 0x00)
+        x0 = x0._mm_clmulepi64_si128(b: kk, imm8: 0x11)
+        y2 = x2._mm_clmulepi64_si128(b: kk, imm8: 0x00)
+        x2 = x2._mm_clmulepi64_si128(b: kk, imm8: 0x11)
+        y4 = x4._mm_clmulepi64_si128(b: kk, imm8: 0x00)
+        x4 = x4._mm_clmulepi64_si128(b: kk, imm8: 0x11)
+        y6 = x6._mm_clmulepi64_si128(b: kk, imm8: 0x00)
+        x6 = x6._mm_clmulepi64_si128(b: kk, imm8: 0x11)
+        y0 = y0._mm_xor_si128(b: x1)
+        x0 = x0._mm_xor_si128(b: y0)
+        y2 = y2._mm_xor_si128(b: x3)
+        x2 = x2._mm_xor_si128(b: y2)
+        y4 = y4._mm_xor_si128(b: x5)
+        x4 = x4._mm_xor_si128(b: y4)
+        y6 = y6._mm_xor_si128(b: x7)
+        x6 = x6._mm_xor_si128(b: y6)
+        kk = util.make_m128i_multiple_u32(a00: 0xF1DA_05AA, a01: 0, a02: 0x8125_6527, a03: 0)
+        y0 = x0._mm_clmulepi64_si128(b: kk, imm8: 0x00)
+        x0 = x0._mm_clmulepi64_si128(b: kk, imm8: 0x11)
+        y4 = x4._mm_clmulepi64_si128(b: kk, imm8: 0x00)
+        x4 = x4._mm_clmulepi64_si128(b: kk, imm8: 0x11)
+        y0 = y0._mm_xor_si128(b: x2)
+        x0 = x0._mm_xor_si128(b: y0)
+        y4 = y4._mm_xor_si128(b: x6)
+        x4 = x4._mm_xor_si128(b: y4)
+        kk = util.make_m128i_multiple_u32(a00: 0x8F35_2D95, a01: 0, a02: 0x1D95_13D7, a03: 0)
+        y0 = x0._mm_clmulepi64_si128(b: kk, imm8: 0x00)
+        x0 = x0._mm_clmulepi64_si128(b: kk, imm8: 0x11)
+        y0 = y0._mm_xor_si128(b: x4)
+        x0 = x0._mm_xor_si128(b: y0)
+        kk = util.make_m128i_multiple_u32(a00: 0xF701_1641, a01: 0xB4E5_B025, a02: 0xDB71_0641, a03: 1)
+        s = util.make_m128i_single_u64(a: x0._mm_extract_epi64(imm8: 0)).
+                _mm_clmulepi64_si128(b: kk, imm8: 0x00).
+                _mm_clmulepi64_si128(b: kk, imm8: 0x10).
+                _mm_extract_epi32(imm8: 2)
+        kk = util.make_m128i_multiple_u32(a00: 0xF701_1641, a01: 0xB4E5_B025, a02: 0xDB71_0641, a03: 1)
+        s = util.make_m128i_single_u64(a: x0._mm_extract_epi64(imm8: 1) ^ (s as base.u64)).
+                _mm_clmulepi64_si128(b: kk, imm8: 0x00).
+                _mm_clmulepi64_si128(b: kk, imm8: 0x10).
+                _mm_extract_epi32(imm8: 2)
+        // END   script/print-crc32-x86-sse42-code.go generated code.
     }
 
-    // Load 128×4 = 512 bits from the first 64-byte chunk.
-    x0 = util.make_m128i_slice128(a: args.x[0x00 .. 0x10])
-    x1 = util.make_m128i_slice128(a: args.x[0x10 .. 0x20])
-    x2 = util.make_m128i_slice128(a: args.x[0x20 .. 0x30])
-    x3 = util.make_m128i_slice128(a: args.x[0x30 .. 0x40])
+    while args.x.length() >= 8 {
+        kk = util.make_m128i_multiple_u32(a00: 0xF701_1641, a01: 0xB4E5_B025, a02: 0xDB71_0641, a03: 1)
+        s = util.make_m128i_single_u64(a: args.x.peek_u64le() ^ (s as base.u64)).
+                _mm_clmulepi64_si128(b: kk, imm8: 0x00).
+                _mm_clmulepi64_si128(b: kk, imm8: 0x10).
+                _mm_extract_epi32(imm8: 2)
+        args.x = args.x[8 ..]
+    } endwhile
 
-    // Combine with the initial state.
-    x0 = x0._mm_xor_si128(b: util.make_m128i_single_u32(a: s))
-
-    // Process the remaining 64-byte chunks.
-    k1k2 = util.make_m128i_slice128(a: IEEE_X86_SSE42_K1K2[.. 16])
-    iterate (p = args.x[64 ..])(length: 64, advance: 64, unroll: 1) {
-        y0 = x0._mm_clmulepi64_si128(b: k1k2, imm8: 0x00)
-        y1 = x1._mm_clmulepi64_si128(b: k1k2, imm8: 0x00)
-        y2 = x2._mm_clmulepi64_si128(b: k1k2, imm8: 0x00)
-        y3 = x3._mm_clmulepi64_si128(b: k1k2, imm8: 0x00)
-
-        x0 = x0._mm_clmulepi64_si128(b: k1k2, imm8: 0x11)
-        x1 = x1._mm_clmulepi64_si128(b: k1k2, imm8: 0x11)
-        x2 = x2._mm_clmulepi64_si128(b: k1k2, imm8: 0x11)
-        x3 = x3._mm_clmulepi64_si128(b: k1k2, imm8: 0x11)
-
-        x0 = x0._mm_xor_si128(b: y0)._mm_xor_si128(b: util.make_m128i_slice128(a: p[0x00 .. 0x10]))
-        x1 = x1._mm_xor_si128(b: y1)._mm_xor_si128(b: util.make_m128i_slice128(a: p[0x10 .. 0x20]))
-        x2 = x2._mm_xor_si128(b: y2)._mm_xor_si128(b: util.make_m128i_slice128(a: p[0x20 .. 0x30]))
-        x3 = x3._mm_xor_si128(b: y3)._mm_xor_si128(b: util.make_m128i_slice128(a: p[0x30 .. 0x40]))
-    }
-
-    // Reduce 128×4 = 512 bits to 128 bits.
-    k3k4 = util.make_m128i_slice128(a: IEEE_X86_SSE42_K3K4[.. 16])
-    y0 = x0._mm_clmulepi64_si128(b: k3k4, imm8: 0x00)
-    x0 = x0._mm_clmulepi64_si128(b: k3k4, imm8: 0x11)
-    x0 = x0._mm_xor_si128(b: x1)
-    x0 = x0._mm_xor_si128(b: y0)
-    y0 = x0._mm_clmulepi64_si128(b: k3k4, imm8: 0x00)
-    x0 = x0._mm_clmulepi64_si128(b: k3k4, imm8: 0x11)
-    x0 = x0._mm_xor_si128(b: x2)
-    x0 = x0._mm_xor_si128(b: y0)
-    y0 = x0._mm_clmulepi64_si128(b: k3k4, imm8: 0x00)
-    x0 = x0._mm_clmulepi64_si128(b: k3k4, imm8: 0x11)
-    x0 = x0._mm_xor_si128(b: x3)
-    x0 = x0._mm_xor_si128(b: y0)
-
-    // Reduce 128 bits to 64 bits.
-    x1 = x0._mm_clmulepi64_si128(b: k3k4, imm8: 0x10)
-    x2 = util.make_m128i_multiple_u32(
-            a00: 0xFFFF_FFFF,
-            a01: 0x0000_0000,
-            a02: 0xFFFF_FFFF,
-            a03: 0x0000_0000)
-    x0 = x0._mm_srli_si128(imm8: 8)
-    x0 = x0._mm_xor_si128(b: x1)
-    k5zz = util.make_m128i_slice128(a: IEEE_X86_SSE42_K5ZZ[.. 16])
-    x1 = x0._mm_srli_si128(imm8: 4)
-    x0 = x0._mm_and_si128(b: x2)
-    x0 = x0._mm_clmulepi64_si128(b: k5zz, imm8: 0x00)
-    x0 = x0._mm_xor_si128(b: x1)
-
-    // Reduce 64 bits to 32 bits (Barrett Reduction) and extract.
-    //
-    // Barrett Reduction is Algorithm 1 (page 14) of Gopal et al., after
-    // adjusting for bit-reflection as per Figure 12 (page 21).
-    pxmu = util.make_m128i_slice128(a: IEEE_X86_SSE42_PXMU[.. 16])
-    x1 = x0._mm_and_si128(b: x2)
-    x1 = x1._mm_clmulepi64_si128(b: pxmu, imm8: 0x10)
-    x1 = x1._mm_and_si128(b: x2)
-    x1 = x1._mm_clmulepi64_si128(b: pxmu, imm8: 0x00)
-    x1 = x1._mm_xor_si128(b: x0)
-    s = x1._mm_extract_epi32(imm8: 1)
-
-    // Handle the tail of args.x that wasn't a complete 64-byte chunk.
-    tail_index = args.x.length() & 0xFFFF_FFFF_FFFF_FFC0  // And-not 64.
-    if tail_index < args.x.length() {
-        iterate (p = args.x[tail_index ..])(length: 1, advance: 1, unroll: 1) {
-            s = IEEE_TABLE[0][((s & 0xFF) as base.u8) ^ p[0]] ^ (s >> 8)
-        }
-    }
+    while args.x.length() > 0 {
+        s = IEEE_TABLE[0][((s & 0xFF) as base.u8) ^ args.x[0]] ^ (s >> 8)
+        args.x = args.x[1 ..]
+    } endwhile
 
     this.state = 0xFFFF_FFFF ^ s
 }
-
-// These constants come from page 22 of Gopal et al. They are also reproduced
-// by script/print-crc32-x86-sse42-magic-numbers.go which is runnable online at
-// https://play.golang.org/p/wH1q6GfhKOE
-//
-// The k6' constant from the Gopal paper is unused.
-//
-// The rkN names match the numbers at
-// https://github.com/intel/isa-l/blob/7b30857e20b84e5afab1a28291189b9dc571110d/crc/crc32_gzip_refl_by16_10.asm#L475-L499
-//
-// The "+§" means a harmless off-by-one difference compared to Intel's numbers.
-// https://danlark.org/2021/03/08/how-a-bug-in-the-linux-crc-32-checksum-turned-out-not-to-be-a-bug/
-// https://github.com/google/wuffs/commit/b24e046670396d7ef22ccf499051340b9288419b
-
-pri const IEEE_X86_SSE42_K1K2 : roarray[16] base.u8 = [
-        0xD4, 0x2B, 0x44, 0x54, 0x01, 0x00, 0x00, 0x00,  // k1' = 0x1_5444_2BD4 = rk16
-        0x96, 0x15, 0xE4, 0xC6, 0x01, 0x00, 0x00, 0x00,  // k2' = 0x1_C6E4_1596 = rk15
-]
-
-pri const IEEE_X86_SSE42_K3K4 : roarray[16] base.u8 = [
-        0xD0, 0x97, 0x19, 0x75, 0x01, 0x00, 0x00, 0x00,  // k3' = 0x1_7519_97D0 = rk2
-        0x9E, 0x00, 0xAA, 0xCC, 0x00, 0x00, 0x00, 0x00,  // k4' = 0x0_CCAA_009E = rk1
-]
-
-pri const IEEE_X86_SSE42_K5ZZ : roarray[16] base.u8 = [
-        0x24, 0x61, 0xCD, 0x63, 0x01, 0x00, 0x00, 0x00,  // k5' = 0x1_63CD_6124 = rk6
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // Unused
-]
-
-pri const IEEE_X86_SSE42_PXMU : roarray[16] base.u8 = [
-        0x41, 0x06, 0x71, 0xDB, 0x01, 0x00, 0x00, 0x00,  // Px' = 0x1_DB71_0641 = rk8+§
-        0x41, 0x16, 0x01, 0xF7, 0x01, 0x00, 0x00, 0x00,  // μ'  = 0x1_F701_1641 = rk7+§
-]

@@ -13,6 +13,8 @@
 
 package main
 
+// This program is obsolete.
+//
 // print-crc32-x86-sse42-magic-numbers.go prints the std/crc32
 // IEEE_X86_SSE42_ETC magic number tables.
 //
