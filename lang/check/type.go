@@ -163,7 +163,10 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 		arg1Typ := (*a.TypeExpr)(nil)
 		switch n.Keyword() {
 		case t.IDIOBind:
-			arg1Typ = typeExprSliceU8
+			arg1Typ = typeExprRosliceU8
+			if n.IO().MType().Eq(typeExprIOWriter) {
+				arg1Typ = typeExprSliceU8
+			}
 		case t.IDIOForgetHistory:
 			// No-op.
 		case t.IDIOLimit:
@@ -173,7 +176,7 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 			if err := q.tcheckExpr(n.Arg1(), 0); err != nil {
 				return err
 			}
-			if typ := n.Arg1().MType(); !typ.EqIgnoringRefinementsLHSReadOnly(arg1Typ) {
+			if typ := n.Arg1().MType(); !arg1Typ.EqIgnoringRefinementsLHSReadOnly(typ) {
 				return fmt.Errorf("check: %s expression %q, of type %q, does not have type %q",
 					n.Keyword().Str(q.tm), n.Arg1().Str(q.tm), typ.Str(q.tm), arg1Typ.Str(q.tm))
 			}
