@@ -14061,6 +14061,7 @@ struct wuffs_xxhash64__hasher__struct {
 
 // ---------------- Status Codes
 
+extern const char wuffs_xz__error__bad_bcj_offset[];
 extern const char wuffs_xz__error__bad_block_header[];
 extern const char wuffs_xz__error__bad_checksum[];
 extern const char wuffs_xz__error__bad_filter[];
@@ -14250,6 +14251,7 @@ struct wuffs_xz__decoder__struct {
     } s_decode_block_header_with_padding;
     struct {
       uint8_t v_flags;
+      uint8_t v_filter_id;
       uint32_t v_shift;
       uint32_t v_f;
       uint64_t scratch;
@@ -69501,6 +69503,7 @@ wuffs_xxhash64__hasher__checksum_u64(
 
 // ---------------- Status Codes Implementations
 
+const char wuffs_xz__error__bad_bcj_offset[] = "#xz: bad BCJ offset";
 const char wuffs_xz__error__bad_block_header[] = "#xz: bad block header";
 const char wuffs_xz__error__bad_checksum[] = "#xz: bad checksum";
 const char wuffs_xz__error__bad_filter[] = "#xz: bad filter";
@@ -69550,6 +69553,12 @@ WUFFS_XZ__CHECKSUM_LENGTH[4] WUFFS_BASE__POTENTIALLY_UNUSED = {
 static const uint8_t
 WUFFS_XZ__ZEROES[3] WUFFS_BASE__POTENTIALLY_UNUSED = {
   0u, 0u, 0u,
+};
+
+static const uint8_t
+WUFFS_XZ__BCJ_OFFSET_ALIGNMENT[12] WUFFS_BASE__POTENTIALLY_UNUSED = {
+  0u, 0u, 0u, 0u, 1u, 4u, 16u, 4u,
+  2u, 4u, 4u, 2u,
 };
 
 // ---------------- Private Initializer Prototypes
@@ -71352,6 +71361,8 @@ wuffs_xz__decoder__decode_block_header_sans_padding(
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
   uint8_t v_c8 = 0;
+  uint32_t v_c32 = 0;
+  uint32_t v_alignment = 0;
   uint8_t v_flags = 0;
   uint8_t v_filter_id = 0;
   wuffs_base__status v_status = wuffs_base__make_status(NULL);
@@ -71373,6 +71384,7 @@ wuffs_xz__decoder__decode_block_header_sans_padding(
   uint32_t coro_susp_point = self->private_impl.p_decode_block_header_sans_padding;
   if (coro_susp_point) {
     v_flags = self->private_data.s_decode_block_header_sans_padding.v_flags;
+    v_filter_id = self->private_data.s_decode_block_header_sans_padding.v_filter_id;
     v_shift = self->private_data.s_decode_block_header_sans_padding.v_shift;
     v_f = self->private_data.s_decode_block_header_sans_padding.v_f;
   }
@@ -71575,8 +71587,16 @@ wuffs_xz__decoder__decode_block_header_sans_padding(
                 *scratch |= ((uint64_t)(num_bits_7)) << 56;
               }
             }
-            self->private_impl.f_bcj_pos = t_7;
+            v_c32 = t_7;
           }
+          v_alignment = ((uint32_t)(WUFFS_XZ__BCJ_OFFSET_ALIGNMENT[v_filter_id]));
+          if (v_alignment > 0u) {
+            if ((v_c32 % v_alignment) != 0u) {
+              status = wuffs_base__make_status(wuffs_xz__error__bad_bcj_offset);
+              goto exit;
+            }
+          }
+          self->private_impl.f_bcj_pos = v_c32;
         } else {
           status = wuffs_base__make_status(wuffs_xz__error__unsupported_filter);
           goto exit;
@@ -71643,6 +71663,7 @@ wuffs_xz__decoder__decode_block_header_sans_padding(
   suspend:
   self->private_impl.p_decode_block_header_sans_padding = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
   self->private_data.s_decode_block_header_sans_padding.v_flags = v_flags;
+  self->private_data.s_decode_block_header_sans_padding.v_filter_id = v_filter_id;
   self->private_data.s_decode_block_header_sans_padding.v_shift = v_shift;
   self->private_data.s_decode_block_header_sans_padding.v_f = v_f;
 

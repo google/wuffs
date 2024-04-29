@@ -17,6 +17,7 @@ use "std/crc64"
 use "std/lzma"
 use "std/sha256"
 
+pub status "#bad BCJ offset"
 pub status "#bad block header"
 pub status "#bad checksum"
 pub status "#bad filter"
@@ -512,6 +513,8 @@ pri func decoder.decode_block_header_with_padding?(src: base.io_reader) {
 
 pri func decoder.decode_block_header_sans_padding?(src: base.io_reader) {
     var c8        : base.u8
+    var c32       : base.u32
+    var alignment : base.u32
     var flags     : base.u8
     var filter_id : base.u8
     var status    : base.status
@@ -633,7 +636,14 @@ pri func decoder.decode_block_header_sans_padding?(src: base.io_reader) {
             if c8 == 0x00 {
                 this.bcj_pos = 0
             } else if c8 == 0x04 {
-                this.bcj_pos = args.src.read_u32le?()
+                c32 = args.src.read_u32le?()
+                alignment = BCJ_OFFSET_ALIGNMENT[filter_id] as base.u32
+                if alignment > 0 {
+                    if (c32 % alignment) <> 0 {
+                        return "#bad BCJ offset"
+                    }
+                }
+                this.bcj_pos = c32
             } else {
                 return "#unsupported filter"
             }
@@ -800,3 +810,20 @@ pri const CHECKSUM_LENGTH : roarray[4] base.u8 = [
 ]
 
 pri const ZEROES : roarray[3] base.u8 = [0, 0, 0]
+
+// See https://tukaani.org/xz/xz-file-format.txt section 5.3.2.
+// Branch/Call/Jump Filters for Executables.
+pri const BCJ_OFFSET_ALIGNMENT : roarray[12] base.u8 = [
+        0x00,  // 0x00: Unused.
+        0x00,  // 0x01: Unused.
+        0x00,  // 0x02: Unused.
+        0x00,  // 0x03: Unused.
+        0x01,  // 0x04: x86.
+        0x04,  // 0x05: powerpc.
+        0x10,  // 0x06: ia64.
+        0x04,  // 0x07: arm.
+        0x02,  // 0x08: armthumb.
+        0x04,  // 0x09: sparc.
+        0x04,  // 0x0A: arm64.
+        0x02,  // 0x0B: riscv.
+]
