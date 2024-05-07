@@ -31116,6 +31116,8 @@ wuffs_bmp__decoder__do_decode_image_config(
           (self->private_impl.f_channel_num_bits[2u] > 8u) ||
           (self->private_impl.f_channel_num_bits[3u] > 8u)) {
         v_dst_pixfmt = 2164308923u;
+      } else if (((self->private_impl.f_src_pixfmt == 2198077448u) || (self->private_impl.f_src_pixfmt == 2147485832u) || (self->private_impl.f_src_pixfmt == 2415954056u)) || ((self->private_impl.f_src_pixfmt == 2164308923u) && (self->private_impl.f_channel_masks[3u] == 0u))) {
+        v_dst_pixfmt = 2415954056u;
       }
       wuffs_base__image_config__set(
           a_dst,

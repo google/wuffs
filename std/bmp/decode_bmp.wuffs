@@ -383,6 +383,11 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
                 (this.channel_num_bits[2] > 8) or
                 (this.channel_num_bits[3] > 8) {
             dst_pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE
+        } else if ((this.src_pixfmt == base.PIXEL_FORMAT__INDEXED__BGRA_BINARY) or
+                (this.src_pixfmt == base.PIXEL_FORMAT__BGR) or
+                (this.src_pixfmt == base.PIXEL_FORMAT__BGRX)) or
+                ((this.src_pixfmt == base.PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE) and (this.channel_masks[3] == 0)) {
+            dst_pixfmt = base.PIXEL_FORMAT__BGRX
         }
 
         args.dst.set!(
