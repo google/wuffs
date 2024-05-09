@@ -64,7 +64,9 @@ to enable.
 - `PNG:       BASE, ADLER32, CRC32, DEFLATE, ZLIB`
 - `SHA256:    BASE`
 - `TGA:       BASE`
+- `VP8:       BASE`
 - `WBMP:      BASE`
+- `WEBP:      BASE, VP8`
 - `XXHASH32:  BASE`
 - `XXHASH64:  BASE`
 - `XZ:        BASE, CRC32, CRC64, LZMA, SHA256`

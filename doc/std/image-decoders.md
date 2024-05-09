@@ -131,6 +131,7 @@ In Wuffs syntax, the `base.image_decoder` methods are:
 - [std/png](/std/png)
 - [std/tga](/std/tga)
 - [std/wbmp](/std/wbmp)
+- [std/webp](/std/webp)
 
 
 ## Examples

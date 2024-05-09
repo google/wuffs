@@ -67,7 +67,9 @@ https://skia-review.googlesource.com/c/skia/+/290618
 #define WUFFS_CONFIG__MODULE__NIE
 #define WUFFS_CONFIG__MODULE__PNG
 #define WUFFS_CONFIG__MODULE__TGA
+#define WUFFS_CONFIG__MODULE__VP8
 #define WUFFS_CONFIG__MODULE__WBMP
+#define WUFFS_CONFIG__MODULE__WEBP
 #define WUFFS_CONFIG__MODULE__ZLIB
 
 // Defining the WUFFS_CONFIG__DST_PIXEL_FORMAT__ENABLE_ALLOWLIST (and the
@@ -164,6 +166,7 @@ union {
   wuffs_png__decoder png;
   wuffs_tga__decoder tga;
   wuffs_wbmp__decoder wbmp;
+  wuffs_webp__decoder webp;
 } g_potential_decoders;
 
 wuffs_crc32__ieee_hasher g_digest_hasher;
@@ -412,6 +415,16 @@ initialize_image_decoder() {
       g_image_decoder =
           wuffs_wbmp__decoder__upcast_as__wuffs_base__image_decoder(
               &g_potential_decoders.wbmp);
+      return NULL;
+
+    case WUFFS_BASE__FOURCC__WEBP:
+      status = wuffs_webp__decoder__initialize(
+          &g_potential_decoders.webp, sizeof g_potential_decoders.webp,
+          WUFFS_VERSION, WUFFS_INITIALIZE__DEFAULT_OPTIONS);
+      TRY(wuffs_base__status__message(&status));
+      g_image_decoder =
+          wuffs_webp__decoder__upcast_as__wuffs_base__image_decoder(
+              &g_potential_decoders.webp);
       return NULL;
   }
   return "main: unsupported file format";

@@ -54,7 +54,9 @@ print-image-metadata prints images' metadata.
 #define WUFFS_CONFIG__MODULE__NIE
 #define WUFFS_CONFIG__MODULE__PNG
 #define WUFFS_CONFIG__MODULE__TGA
+#define WUFFS_CONFIG__MODULE__VP8
 #define WUFFS_CONFIG__MODULE__WBMP
+#define WUFFS_CONFIG__MODULE__WEBP
 #define WUFFS_CONFIG__MODULE__ZLIB
 
 // If building this program in an environment that doesn't easily accommodate
@@ -390,6 +392,9 @@ redirect:
         break;
       case WUFFS_BASE__FOURCC__WBMP:
         dec = wuffs_wbmp__decoder::alloc_as__wuffs_base__image_decoder();
+        break;
+      case WUFFS_BASE__FOURCC__WEBP:
+        dec = wuffs_webp__decoder::alloc_as__wuffs_base__image_decoder();
         break;
       default:
         return "main: unsupported file format";

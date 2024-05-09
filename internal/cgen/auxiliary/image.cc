@@ -100,6 +100,11 @@ DecodeImageCallbacks::SelectDecoder(uint32_t fourcc,
     case WUFFS_BASE__FOURCC__WBMP:
       return wuffs_wbmp__decoder::alloc_as__wuffs_base__image_decoder();
 #endif
+
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__WEBP)
+    case WUFFS_BASE__FOURCC__WEBP:
+      return wuffs_webp__decoder::alloc_as__wuffs_base__image_decoder();
+#endif
   }
 
   return wuffs_base__image_decoder::unique_ptr(nullptr);
