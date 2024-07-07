@@ -64,6 +64,8 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 // No mimic library.
 #endif
 
+static wuffs_webp__decoder g_webp_decoder;
+
 // ---------------- WebP Tests
 
 const char*  //
@@ -74,12 +76,12 @@ wuffs_webp_decode(uint64_t* n_bytes_out,
                   uint32_t* quirks_ptr,
                   size_t quirks_len,
                   wuffs_base__io_buffer* src) {
-  wuffs_webp__decoder dec;
+  wuffs_webp__decoder* dec = &g_webp_decoder;
   CHECK_STATUS("initialize",
-               wuffs_webp__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION,
+               wuffs_webp__decoder__initialize(dec, sizeof *dec, WUFFS_VERSION,
                                                wuffs_initialize_flags));
   return do_run__wuffs_base__image_decoder(
-      wuffs_webp__decoder__upcast_as__wuffs_base__image_decoder(&dec),
+      wuffs_webp__decoder__upcast_as__wuffs_base__image_decoder(dec),
       n_bytes_out, dst, pixfmt, quirks_ptr, quirks_len, src);
 }
 
@@ -88,15 +90,15 @@ wuffs_webp_decode(uint64_t* n_bytes_out,
 const char*  //
 test_wuffs_webp_decode_interface() {
   CHECK_FOCUS(__func__);
-  wuffs_webp__decoder dec;
+  wuffs_webp__decoder* dec = &g_webp_decoder;
   CHECK_STATUS("initialize",
                wuffs_webp__decoder__initialize(
-                   &dec, sizeof dec, WUFFS_VERSION,
+                   dec, sizeof *dec, WUFFS_VERSION,
                    WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
   return do_test__wuffs_base__image_decoder(
-      wuffs_webp__decoder__upcast_as__wuffs_base__image_decoder(&dec),
+      wuffs_webp__decoder__upcast_as__wuffs_base__image_decoder(dec),
       "test/data/bricks-color.lossless.webp", 0, SIZE_MAX, 160, 120,
-      0x00000000);
+      0xFF022460);
 }
 
 // ---------------- Mimic Tests
