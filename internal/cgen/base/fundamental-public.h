@@ -34,6 +34,33 @@
 #define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 0
 #define WUFFS_VERSION_STRING "0.0.0+0.00000000"
 
+// ---------------- Private Implementation Macros Re-definition Check
+
+// Users (those who #include the "wuffs-vM.N.c" file) should not define any
+// WUFFS_PRIVATE_IMPL__ETC macros, only WUFFS_CONFIG__ETC macros (and
+// WUFFS_IMPLEMENTATION). Mucking about with the private implementation macros
+// is not supported and may break when upgrading to newer Wuffs versions.
+
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_CRC32) ||       \
+    defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_NEON) ||        \
+    defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64) ||          \
+    defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_FAMILY) ||      \
+    defined(WUFFS_PRIVATE_IMPL__HPD__DECIMAL_POINT__RANGE) || \
+    defined(WUFFS_PRIVATE_IMPL__HPD__DIGITS_PRECISION) ||     \
+    defined(WUFFS_PRIVATE_IMPL__HPD__SHIFT__MAX_INCL) ||      \
+    defined(WUFFS_PRIVATE_IMPL__LOW_BITS_MASK__U16) ||        \
+    defined(WUFFS_PRIVATE_IMPL__LOW_BITS_MASK__U32) ||        \
+    defined(WUFFS_PRIVATE_IMPL__LOW_BITS_MASK__U64) ||        \
+    defined(WUFFS_PRIVATE_IMPL__LOW_BITS_MASK__U8)
+
+#if defined(__GNUC__) || defined(__clang__)
+#warning "Defining WUFFS_PRIVATE_IMPL__ETC yourself is not supported"
+#elif defined(_MSC_VER)
+#pragma message("Defining WUFFS_PRIVATE_IMPL__ETC yourself is not supported")
+#endif
+
+#endif
+
 // ---------------- Configuration
 
 // Define WUFFS_CONFIG__AVOID_CPU_ARCH to avoid any code tied to a specific CPU
