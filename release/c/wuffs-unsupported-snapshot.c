@@ -174,7 +174,7 @@ extern "C" {
 #elif defined(_MSC_VER)  // (#if-chain ref AVOID_CPU_ARCH_1)
 
 #if defined(_M_IX86) || defined(_M_X64)
-#if defined(__AVX__) || defined(__clang__)
+#if defined(__AVX2__) || defined(__clang__)
 
 // We need <intrin.h> for the __cpuid function.
 #include <intrin.h>
@@ -195,17 +195,17 @@ extern "C" {
 #define WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64_V3
 #endif  // defined(_M_X64)
 
-#else  // defined(__AVX__) || defined(__clang__)
+#else  // defined(__AVX2__) || defined(__clang__)
 
 // clang-cl (which defines both __clang__ and _MSC_VER) supports
 // "__attribute__((target(arg)))".
 //
 // For MSVC's cl.exe (unlike clang or gcc), SIMD capability is a compile-time
-// property of the source file (e.g. a /arch:AVX or -mavx compiler flag), not
+// property of the source file (e.g. a /arch:AVX2 or -mavx2 compiler flag), not
 // of individual functions (that can be conditionally selected at runtime).
-#pragma message("Wuffs with MSVC+IX86/X64 needs /arch:AVX for best performance")
+#pragma message("Wuffs with MSVC+IX86/X64 performs best with /arch:AVX2")
 
-#endif  // defined(__AVX__) || defined(__clang__)
+#endif  // defined(__AVX2__) || defined(__clang__)
 #endif  // defined(_M_IX86) || defined(_M_X64)
 
 #endif  // (#if-chain ref AVOID_CPU_ARCH_1)
