@@ -206,14 +206,14 @@ func (g *gen) writeFuncPrototype(b *buffer, n *a.Func) error {
 		return err
 	}
 	if caMacro != "" {
-		b.printf("#if defined(WUFFS_BASE__CPU_ARCH__%s)\n", caMacro)
+		b.printf("#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__%s)\n", caMacro)
 	}
 	if err := g.writeFuncSignature(b, n, wfsCDecl); err != nil {
 		return err
 	}
 	b.writes(";\n")
 	if caMacro != "" {
-		b.printf("#endif  // defined(WUFFS_BASE__CPU_ARCH__%s)\n", caMacro)
+		b.printf("#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__%s)\n", caMacro)
 	}
 	b.writes("\n")
 	if n.Choosy() {
@@ -237,7 +237,7 @@ func (g *gen) writeFuncImpl(b *buffer, n *a.Func) error {
 	}
 	b.printf("// -------- func %s.%s\n\n", g.pkgName, n.QQID().Str(g.tm))
 	if caMacro != "" {
-		b.printf("#if defined(WUFFS_BASE__CPU_ARCH__%s)\n", caMacro)
+		b.printf("#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__%s)\n", caMacro)
 	}
 	if caAttribute != "" {
 		b.printf("%s\n", caAttribute)
@@ -277,7 +277,7 @@ func (g *gen) writeFuncImpl(b *buffer, n *a.Func) error {
 	b.writex(k.bEpilogue)
 	b.writes("}\n")
 	if caMacro != "" {
-		b.printf("#endif  // defined(WUFFS_BASE__CPU_ARCH__%s)\n", caMacro)
+		b.printf("#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__%s)\n", caMacro)
 	}
 	if caName != "" {
 		b.printf("// ‼ WUFFS MULTI-FILE SECTION -%s\n", caName)

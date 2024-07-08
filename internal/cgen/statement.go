@@ -245,7 +245,7 @@ func (g *gen) writeStatementChoose(b *buffer, n *a.Choose, depth uint32) error {
 			conclusive = true
 			break
 		}
-		b.printf("#if defined(WUFFS_BASE__CPU_ARCH__%s)\n"+
+		b.printf("#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__%s)\n"+
 			"wuffs_base__cpu_arch__have_%s() ? &%s%s__%s%s :\n"+
 			"#endif\n",
 			caMacro, caName, g.pkgPrefix, recv.Str(g.tm), id.Str(g.tm), suffix)

@@ -60,11 +60,11 @@
 // intrinsics. Look for __ARM_FEATURE_CRC32 instead.
 #if defined(__ARM_FEATURE_CRC32)
 #include <arm_acle.h>
-#define WUFFS_BASE__CPU_ARCH__ARM_CRC32
+#define WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_CRC32
 #endif  // defined(__ARM_FEATURE_CRC32)
 #if defined(__ARM_NEON)
 #include <arm_neon.h>
-#define WUFFS_BASE__CPU_ARCH__ARM_NEON
+#define WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_NEON
 #endif  // defined(__ARM_NEON)
 #endif  // defined(__ARM_FEATURE_UNALIGNED) etc
 
@@ -77,9 +77,9 @@
 #include <cpuid.h>
 #include <x86intrin.h>
 // X86_FAMILY means X86 (32-bit) or X86_64 (64-bit, obviously).
-#define WUFFS_BASE__CPU_ARCH__X86_FAMILY
+#define WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_FAMILY
 #if defined(__x86_64__)
-#define WUFFS_BASE__CPU_ARCH__X86_64
+#define WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64
 #endif  // defined(__x86_64__)
 #endif  // !defined(__native_client__)
 #endif  // defined(__i386__) || defined(__x86_64__)
@@ -101,9 +101,9 @@
 #include <nmmintrin.h>  // SSE4.2
 #include <wmmintrin.h>  // AES, PCLMUL
 // X86_FAMILY means X86 (32-bit) or X86_64 (64-bit, obviously).
-#define WUFFS_BASE__CPU_ARCH__X86_FAMILY
+#define WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_FAMILY
 #if defined(_M_X64)
-#define WUFFS_BASE__CPU_ARCH__X86_64
+#define WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64
 #endif  // defined(_M_X64)
 
 #else  // defined(__AVX__) || defined(__clang__)
@@ -141,20 +141,20 @@
 
 static inline bool  //
 wuffs_base__cpu_arch__have_arm_crc32(void) {
-#if defined(WUFFS_BASE__CPU_ARCH__ARM_CRC32)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_CRC32)
   return true;
 #else
   return false;
-#endif  // defined(WUFFS_BASE__CPU_ARCH__ARM_CRC32)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_CRC32)
 }
 
 static inline bool  //
 wuffs_base__cpu_arch__have_arm_neon(void) {
-#if defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_NEON)
   return true;
 #else
   return false;
-#endif  // defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_NEON)
 }
 
 static inline bool  //
@@ -163,7 +163,7 @@ wuffs_base__cpu_arch__have_x86_avx2(void) {
     defined(__AVX2__)
   return true;
 #else
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
   // GCC defines these macros but MSVC does not.
   //  - bit_AVX2 = (1 <<  5)
   const unsigned int avx2_ebx7 = 0x00000020;
@@ -201,9 +201,9 @@ wuffs_base__cpu_arch__have_x86_avx2(void) {
     }
   }
 #else
-#error "WUFFS_BASE__CPU_ARCH__ETC combined with an unsupported compiler"
+#error "WUFFS_PRIVATE_IMPL__CPU_ARCH__ETC combined with an unsupported compiler"
 #endif  // defined(__GNUC__); defined(_MSC_VER)
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
   return false;
 #endif  // defined(__PCLMUL__) && defined(__POPCNT__) && defined(__SSE4_2__) &&
         // defined(__AVX2__)
@@ -214,7 +214,7 @@ wuffs_base__cpu_arch__have_x86_bmi2(void) {
 #if defined(__BMI2__)
   return true;
 #else
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
   // GCC defines these macros but MSVC does not.
   //  - bit_BMI2 = (1 <<  8)
   const unsigned int bmi2_ebx7 = 0x00000100;
@@ -236,9 +236,9 @@ wuffs_base__cpu_arch__have_x86_bmi2(void) {
     return true;
   }
 #else
-#error "WUFFS_BASE__CPU_ARCH__ETC combined with an unsupported compiler"
+#error "WUFFS_PRIVATE_IMPL__CPU_ARCH__ETC combined with an unsupported compiler"
 #endif  // defined(__GNUC__); defined(_MSC_VER)
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
   return false;
 #endif  // defined(__BMI2__)
 }
@@ -248,7 +248,7 @@ wuffs_base__cpu_arch__have_x86_sse42(void) {
 #if defined(__PCLMUL__) && defined(__POPCNT__) && defined(__SSE4_2__)
   return true;
 #else
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
   // GCC defines these macros but MSVC does not.
   //  - bit_PCLMUL = (1 <<  1)
   //  - bit_POPCNT = (1 << 23)
@@ -272,9 +272,9 @@ wuffs_base__cpu_arch__have_x86_sse42(void) {
     return true;
   }
 #else
-#error "WUFFS_BASE__CPU_ARCH__ETC combined with an unsupported compiler"
+#error "WUFFS_PRIVATE_IMPL__CPU_ARCH__ETC combined with an unsupported compiler"
 #endif  // defined(__GNUC__); defined(_MSC_VER)
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
   return false;
 #endif  // defined(__PCLMUL__) && defined(__POPCNT__) && defined(__SSE4_2__)
 }

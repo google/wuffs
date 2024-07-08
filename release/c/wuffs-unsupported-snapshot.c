@@ -116,11 +116,11 @@ extern "C" {
 // intrinsics. Look for __ARM_FEATURE_CRC32 instead.
 #if defined(__ARM_FEATURE_CRC32)
 #include <arm_acle.h>
-#define WUFFS_BASE__CPU_ARCH__ARM_CRC32
+#define WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_CRC32
 #endif  // defined(__ARM_FEATURE_CRC32)
 #if defined(__ARM_NEON)
 #include <arm_neon.h>
-#define WUFFS_BASE__CPU_ARCH__ARM_NEON
+#define WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_NEON
 #endif  // defined(__ARM_NEON)
 #endif  // defined(__ARM_FEATURE_UNALIGNED) etc
 
@@ -133,9 +133,9 @@ extern "C" {
 #include <cpuid.h>
 #include <x86intrin.h>
 // X86_FAMILY means X86 (32-bit) or X86_64 (64-bit, obviously).
-#define WUFFS_BASE__CPU_ARCH__X86_FAMILY
+#define WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_FAMILY
 #if defined(__x86_64__)
-#define WUFFS_BASE__CPU_ARCH__X86_64
+#define WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64
 #endif  // defined(__x86_64__)
 #endif  // !defined(__native_client__)
 #endif  // defined(__i386__) || defined(__x86_64__)
@@ -157,9 +157,9 @@ extern "C" {
 #include <nmmintrin.h>  // SSE4.2
 #include <wmmintrin.h>  // AES, PCLMUL
 // X86_FAMILY means X86 (32-bit) or X86_64 (64-bit, obviously).
-#define WUFFS_BASE__CPU_ARCH__X86_FAMILY
+#define WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_FAMILY
 #if defined(_M_X64)
-#define WUFFS_BASE__CPU_ARCH__X86_64
+#define WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64
 #endif  // defined(_M_X64)
 
 #else  // defined(__AVX__) || defined(__clang__)
@@ -197,20 +197,20 @@ extern "C" {
 
 static inline bool  //
 wuffs_base__cpu_arch__have_arm_crc32(void) {
-#if defined(WUFFS_BASE__CPU_ARCH__ARM_CRC32)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_CRC32)
   return true;
 #else
   return false;
-#endif  // defined(WUFFS_BASE__CPU_ARCH__ARM_CRC32)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_CRC32)
 }
 
 static inline bool  //
 wuffs_base__cpu_arch__have_arm_neon(void) {
-#if defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_NEON)
   return true;
 #else
   return false;
-#endif  // defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_NEON)
 }
 
 static inline bool  //
@@ -219,7 +219,7 @@ wuffs_base__cpu_arch__have_x86_avx2(void) {
     defined(__AVX2__)
   return true;
 #else
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
   // GCC defines these macros but MSVC does not.
   //  - bit_AVX2 = (1 <<  5)
   const unsigned int avx2_ebx7 = 0x00000020;
@@ -257,9 +257,9 @@ wuffs_base__cpu_arch__have_x86_avx2(void) {
     }
   }
 #else
-#error "WUFFS_BASE__CPU_ARCH__ETC combined with an unsupported compiler"
+#error "WUFFS_PRIVATE_IMPL__CPU_ARCH__ETC combined with an unsupported compiler"
 #endif  // defined(__GNUC__); defined(_MSC_VER)
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
   return false;
 #endif  // defined(__PCLMUL__) && defined(__POPCNT__) && defined(__SSE4_2__) &&
         // defined(__AVX2__)
@@ -270,7 +270,7 @@ wuffs_base__cpu_arch__have_x86_bmi2(void) {
 #if defined(__BMI2__)
   return true;
 #else
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
   // GCC defines these macros but MSVC does not.
   //  - bit_BMI2 = (1 <<  8)
   const unsigned int bmi2_ebx7 = 0x00000100;
@@ -292,9 +292,9 @@ wuffs_base__cpu_arch__have_x86_bmi2(void) {
     return true;
   }
 #else
-#error "WUFFS_BASE__CPU_ARCH__ETC combined with an unsupported compiler"
+#error "WUFFS_PRIVATE_IMPL__CPU_ARCH__ETC combined with an unsupported compiler"
 #endif  // defined(__GNUC__); defined(_MSC_VER)
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
   return false;
 #endif  // defined(__BMI2__)
 }
@@ -304,7 +304,7 @@ wuffs_base__cpu_arch__have_x86_sse42(void) {
 #if defined(__PCLMUL__) && defined(__POPCNT__) && defined(__SSE4_2__)
   return true;
 #else
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
   // GCC defines these macros but MSVC does not.
   //  - bit_PCLMUL = (1 <<  1)
   //  - bit_POPCNT = (1 << 23)
@@ -328,9 +328,9 @@ wuffs_base__cpu_arch__have_x86_sse42(void) {
     return true;
   }
 #else
-#error "WUFFS_BASE__CPU_ARCH__ETC combined with an unsupported compiler"
+#error "WUFFS_PRIVATE_IMPL__CPU_ARCH__ETC combined with an unsupported compiler"
 #endif  // defined(__GNUC__); defined(_MSC_VER)
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
   return false;
 #endif  // defined(__PCLMUL__) && defined(__POPCNT__) && defined(__SSE4_2__)
 }
@@ -21631,7 +21631,7 @@ match:
 
 // ---------------- Pixel Swizzler
 
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2")
 static uint64_t  //
 wuffs_private_impl__swizzle_bgrw__bgr__x86_sse42(uint8_t* dst_ptr,
@@ -21666,7 +21666,7 @@ wuffs_private_impl__swizzle_xxxx__y__x86_sse42(uint8_t* dst_ptr,
                                                size_t dst_palette_len,
                                                const uint8_t* src_ptr,
                                                size_t src_len);
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 
 // --------
 
@@ -22502,7 +22502,7 @@ wuffs_private_impl__swizzle_swap_rgb_bgr(uint8_t* dst_ptr,
 }
 
 // ‼ WUFFS MULTI-FILE SECTION +x86_sse42
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2")
 static uint64_t  //
 wuffs_private_impl__swizzle_swap_rgbx_bgrx__x86_sse42(uint8_t* dst_ptr,
@@ -22546,7 +22546,7 @@ wuffs_private_impl__swizzle_swap_rgbx_bgrx__x86_sse42(uint8_t* dst_ptr,
   }
   return len;
 }
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 // ‼ WUFFS MULTI-FILE SECTION -x86_sse42
 
 static uint64_t  //
@@ -25214,7 +25214,7 @@ wuffs_private_impl__swizzle_bgrw__bgrx(uint8_t* dst_ptr,
 }
 
 // ‼ WUFFS MULTI-FILE SECTION +x86_sse42
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2")
 static uint64_t  //
 wuffs_private_impl__swizzle_bgrw__bgr__x86_sse42(uint8_t* dst_ptr,
@@ -25320,7 +25320,7 @@ wuffs_private_impl__swizzle_bgrw__rgb__x86_sse42(uint8_t* dst_ptr,
 
   return len;
 }
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 // ‼ WUFFS MULTI-FILE SECTION -x86_sse42
 
 static uint64_t  //
@@ -26078,7 +26078,7 @@ wuffs_private_impl__swizzle_xxxx__index_binary_alpha__src_over(
 }
 
 // ‼ WUFFS MULTI-FILE SECTION +x86_sse42
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2")
 static uint64_t  //
 wuffs_private_impl__swizzle_xxxx__y__x86_sse42(uint8_t* dst_ptr,
@@ -26125,7 +26125,7 @@ wuffs_private_impl__swizzle_xxxx__y__x86_sse42(uint8_t* dst_ptr,
 
   return len;
 }
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 // ‼ WUFFS MULTI-FILE SECTION -x86_sse42
 
 static uint64_t  //
@@ -26527,7 +26527,7 @@ wuffs_private_impl__pixel_swizzler__prepare__y(
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_BINARY:
     case WUFFS_BASE__PIXEL_FORMAT__RGBX:
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
       if (wuffs_base__cpu_arch__have_x86_sse42()) {
         return wuffs_private_impl__swizzle_xxxx__y__x86_sse42;
       }
@@ -26998,7 +26998,7 @@ wuffs_private_impl__pixel_swizzler__prepare__bgr(
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_BINARY:
     case WUFFS_BASE__PIXEL_FORMAT__BGRX:
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
       if (wuffs_base__cpu_arch__have_x86_sse42()) {
         return wuffs_private_impl__swizzle_bgrw__bgr__x86_sse42;
       }
@@ -27016,7 +27016,7 @@ wuffs_private_impl__pixel_swizzler__prepare__bgr(
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_BINARY:
     case WUFFS_BASE__PIXEL_FORMAT__RGBX:
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
       if (wuffs_base__cpu_arch__have_x86_sse42()) {
         return wuffs_private_impl__swizzle_bgrw__rgb__x86_sse42;
       }
@@ -27105,7 +27105,7 @@ wuffs_private_impl__pixel_swizzler__prepare__bgra_nonpremul(
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
       switch (blend) {
         case WUFFS_BASE__PIXEL_BLEND__SRC:
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
           if (wuffs_base__cpu_arch__have_x86_sse42()) {
             return wuffs_private_impl__swizzle_swap_rgbx_bgrx__x86_sse42;
           }
@@ -27300,7 +27300,7 @@ wuffs_private_impl__pixel_swizzler__prepare__bgra_premul(
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
       switch (blend) {
         case WUFFS_BASE__PIXEL_BLEND__SRC:
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
           if (wuffs_base__cpu_arch__have_x86_sse42()) {
             return wuffs_private_impl__swizzle_swap_rgbx_bgrx__x86_sse42;
           }
@@ -27372,7 +27372,7 @@ wuffs_private_impl__pixel_swizzler__prepare__rgb(
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_BINARY:
     case WUFFS_BASE__PIXEL_FORMAT__BGRX:
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
       if (wuffs_base__cpu_arch__have_x86_sse42()) {
         return wuffs_private_impl__swizzle_bgrw__rgb__x86_sse42;
       }
@@ -27389,7 +27389,7 @@ wuffs_private_impl__pixel_swizzler__prepare__rgb(
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_BINARY:
     case WUFFS_BASE__PIXEL_FORMAT__RGBX:
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
       if (wuffs_base__cpu_arch__have_x86_sse42()) {
         return wuffs_private_impl__swizzle_bgrw__bgr__x86_sse42;
       }
@@ -27428,7 +27428,7 @@ wuffs_private_impl__pixel_swizzler__prepare__rgba_nonpremul(
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
       switch (blend) {
         case WUFFS_BASE__PIXEL_BLEND__SRC:
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
           if (wuffs_base__cpu_arch__have_x86_sse42()) {
             return wuffs_private_impl__swizzle_swap_rgbx_bgrx__x86_sse42;
           }
@@ -27544,7 +27544,7 @@ wuffs_private_impl__pixel_swizzler__prepare__rgba_premul(
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
       switch (blend) {
         case WUFFS_BASE__PIXEL_BLEND__SRC:
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
           if (wuffs_base__cpu_arch__have_x86_sse42()) {
             return wuffs_private_impl__swizzle_swap_rgbx_bgrx__x86_sse42;
           }
@@ -27832,7 +27832,7 @@ wuffs_base__pixel_swizzler__swizzle_interleaved_transparent_black(
 
 // --------
 
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2,avx2")
 static void  //
 wuffs_private_impl__swizzle_ycc__convert_3_bgrx_x86_avx2(
@@ -27869,7 +27869,7 @@ wuffs_private_impl__swizzle_ycc__upsample_inv_h2v2_triangle_x86_avx2(
     bool first_column,
     bool last_column);
 #endif
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 
 // --------
 
@@ -29099,7 +29099,7 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
       case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
       case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
       case WUFFS_BASE__PIXEL_FORMAT__BGRX:
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
         if (wuffs_base__cpu_arch__have_x86_avx2()) {
           conv3func = &wuffs_private_impl__swizzle_ycc__convert_3_bgrx_x86_avx2;
           break;
@@ -29110,7 +29110,7 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
       case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
       case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
       case WUFFS_BASE__PIXEL_FORMAT__RGBX:
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
         if (wuffs_base__cpu_arch__have_x86_avx2()) {
           conv3func = &wuffs_private_impl__swizzle_ycc__convert_3_rgbx_x86_avx2;
           break;
@@ -29160,7 +29160,7 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
     upfuncs[1][0] = wuffs_private_impl__swizzle_ycc__upsample_inv_h2v1_triangle;
     upfuncs[1][1] = wuffs_private_impl__swizzle_ycc__upsample_inv_h2v2_triangle;
 
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 #if defined(__GNUC__) && !defined(__clang__)
     // Don't use our AVX2 implementation for GCC (but do use it for clang). For
     // some unknown reason, GCC performs noticably better on the non-SIMD
@@ -29212,7 +29212,7 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
 // --------
 
 // ‼ WUFFS MULTI-FILE SECTION +x86_avx2
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2,avx2")
 static void  //
 wuffs_private_impl__swizzle_ycc__convert_3_bgrx_x86_avx2(
@@ -29837,7 +29837,7 @@ wuffs_private_impl__swizzle_ycc__upsample_inv_h2v2_triangle_x86_avx2(
   return dst_ptr;
 }
 #endif
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 // ‼ WUFFS MULTI-FILE SECTION -x86_avx2
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) ||
@@ -30091,21 +30091,21 @@ wuffs_adler32__hasher__up__choosy_default(
     wuffs_adler32__hasher* self,
     wuffs_base__slice_u8 a_x);
 
-#if defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_NEON)
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
 wuffs_adler32__hasher__up_arm_neon(
     wuffs_adler32__hasher* self,
     wuffs_base__slice_u8 a_x);
-#endif  // defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_NEON)
 
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
 wuffs_adler32__hasher__up_x86_sse42(
     wuffs_adler32__hasher* self,
     wuffs_base__slice_u8 a_x);
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 
 // ---------------- VTables
 
@@ -30253,10 +30253,10 @@ wuffs_adler32__hasher__update(
     self->private_impl.f_started = true;
     self->private_impl.f_state = 1u;
     self->private_impl.choosy_up = (
-#if defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_NEON)
         wuffs_base__cpu_arch__have_arm_neon() ? &wuffs_adler32__hasher__up_arm_neon :
 #endif
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
         wuffs_base__cpu_arch__have_x86_sse42() ? &wuffs_adler32__hasher__up_x86_sse42 :
 #endif
         self->private_impl.choosy_up);
@@ -30379,7 +30379,7 @@ wuffs_adler32__hasher__checksum_u32(
 // ‼ WUFFS MULTI-FILE SECTION +arm_neon
 // -------- func adler32.hasher.up_arm_neon
 
-#if defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_NEON)
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
 wuffs_adler32__hasher__up_arm_neon(
@@ -30480,13 +30480,13 @@ wuffs_adler32__hasher__up_arm_neon(
   self->private_impl.f_state = (((v_s2 & 65535u) << 16u) | (v_s1 & 65535u));
   return wuffs_base__make_empty_struct();
 }
-#endif  // defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_NEON)
 // ‼ WUFFS MULTI-FILE SECTION -arm_neon
 
 // ‼ WUFFS MULTI-FILE SECTION +x86_sse42
 // -------- func adler32.hasher.up_x86_sse42
 
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2")
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
@@ -30573,7 +30573,7 @@ wuffs_adler32__hasher__up_x86_sse42(
   self->private_impl.f_state = (((v_s2 & 65535u) << 16u) | (v_s1 & 65535u));
   return wuffs_base__make_empty_struct();
 }
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 // ‼ WUFFS MULTI-FILE SECTION -x86_sse42
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__ADLER32)
@@ -36331,21 +36331,21 @@ wuffs_crc32__ieee_hasher__up__choosy_default(
     wuffs_crc32__ieee_hasher* self,
     wuffs_base__slice_u8 a_x);
 
-#if defined(WUFFS_BASE__CPU_ARCH__ARM_CRC32)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_CRC32)
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
 wuffs_crc32__ieee_hasher__up_arm_crc32(
     wuffs_crc32__ieee_hasher* self,
     wuffs_base__slice_u8 a_x);
-#endif  // defined(WUFFS_BASE__CPU_ARCH__ARM_CRC32)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_CRC32)
 
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
 wuffs_crc32__ieee_hasher__up_x86_sse42(
     wuffs_crc32__ieee_hasher* self,
     wuffs_base__slice_u8 a_x);
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 
 // ---------------- VTables
 
@@ -36491,10 +36491,10 @@ wuffs_crc32__ieee_hasher__update(
 
   if (self->private_impl.f_state == 0u) {
     self->private_impl.choosy_up = (
-#if defined(WUFFS_BASE__CPU_ARCH__ARM_CRC32)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_CRC32)
         wuffs_base__cpu_arch__have_arm_crc32() ? &wuffs_crc32__ieee_hasher__up_arm_crc32 :
 #endif
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
         wuffs_base__cpu_arch__have_x86_sse42() ? &wuffs_crc32__ieee_hasher__up_x86_sse42 :
 #endif
         self->private_impl.choosy_up);
@@ -36646,7 +36646,7 @@ wuffs_crc32__ieee_hasher__checksum_u32(
 // ‼ WUFFS MULTI-FILE SECTION +arm_crc32
 // -------- func crc32.ieee_hasher.up_arm_crc32
 
-#if defined(WUFFS_BASE__CPU_ARCH__ARM_CRC32)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_CRC32)
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
 wuffs_crc32__ieee_hasher__up_arm_crc32(
@@ -36716,13 +36716,13 @@ wuffs_crc32__ieee_hasher__up_arm_crc32(
   self->private_impl.f_state = (4294967295u ^ v_s);
   return wuffs_base__make_empty_struct();
 }
-#endif  // defined(WUFFS_BASE__CPU_ARCH__ARM_CRC32)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_CRC32)
 // ‼ WUFFS MULTI-FILE SECTION -arm_crc32
 
 // ‼ WUFFS MULTI-FILE SECTION +x86_sse42
 // -------- func crc32.ieee_hasher.up_x86_sse42
 
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2")
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
@@ -36848,7 +36848,7 @@ wuffs_crc32__ieee_hasher__up_x86_sse42(
   self->private_impl.f_state = (4294967295u ^ v_s);
   return wuffs_base__make_empty_struct();
 }
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 // ‼ WUFFS MULTI-FILE SECTION -x86_sse42
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__CRC32)
@@ -37174,13 +37174,13 @@ wuffs_crc64__ecma_hasher__up__choosy_default(
     wuffs_crc64__ecma_hasher* self,
     wuffs_base__slice_u8 a_x);
 
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
 wuffs_crc64__ecma_hasher__up_x86_sse42(
     wuffs_crc64__ecma_hasher* self,
     wuffs_base__slice_u8 a_x);
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 
 // ---------------- VTables
 
@@ -37326,7 +37326,7 @@ wuffs_crc64__ecma_hasher__update(
 
   if (self->private_impl.f_state == 0u) {
     self->private_impl.choosy_up = (
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
         wuffs_base__cpu_arch__have_x86_sse42() ? &wuffs_crc64__ecma_hasher__up_x86_sse42 :
 #endif
         self->private_impl.choosy_up);
@@ -37428,7 +37428,7 @@ wuffs_crc64__ecma_hasher__checksum_u64(
 // ‼ WUFFS MULTI-FILE SECTION +x86_sse42
 // -------- func crc64.ecma_hasher.up_x86_sse42
 
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2")
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
@@ -37556,7 +37556,7 @@ wuffs_crc64__ecma_hasher__up_x86_sse42(
   self->private_impl.f_state = (18446744073709551615u ^ v_s);
   return wuffs_base__make_empty_struct();
 }
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 // ‼ WUFFS MULTI-FILE SECTION -x86_sse42
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__CRC64)
@@ -37695,14 +37695,14 @@ wuffs_deflate__decoder__init_huff(
     uint32_t a_n_codes1,
     uint32_t a_base_symbol);
 
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__status
 wuffs_deflate__decoder__decode_huffman_bmi2(
     wuffs_deflate__decoder* self,
     wuffs_base__io_buffer* a_dst,
     wuffs_base__io_buffer* a_src);
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__status
@@ -38036,7 +38036,7 @@ wuffs_deflate__decoder__do_transform_io(
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
     self->private_impl.choosy_decode_huffman_fast64 = (
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
         wuffs_base__cpu_arch__have_x86_bmi2() ? &wuffs_deflate__decoder__decode_huffman_bmi2 :
 #endif
         self->private_impl.choosy_decode_huffman_fast64);
@@ -38925,7 +38925,7 @@ wuffs_deflate__decoder__init_huff(
 // ‼ WUFFS MULTI-FILE SECTION +x86_bmi2
 // -------- func deflate.decoder.decode_huffman_bmi2
 
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("bmi2")
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__status
@@ -39133,7 +39133,7 @@ wuffs_deflate__decoder__decode_huffman_bmi2(
 
   return status;
 }
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 // ‼ WUFFS MULTI-FILE SECTION -x86_bmi2
 
 // -------- func deflate.decoder.decode_huffman_fast32
@@ -43883,7 +43883,7 @@ wuffs_jpeg__decoder__decode_idct__choosy_default(
     uint64_t a_dst_stride,
     uint32_t a_q);
 
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
 wuffs_jpeg__decoder__decode_idct_x86_avx2(
@@ -43891,7 +43891,7 @@ wuffs_jpeg__decoder__decode_idct_x86_avx2(
     wuffs_base__slice_u8 a_dst_buffer,
     uint64_t a_dst_stride,
     uint32_t a_q);
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__status
@@ -45358,7 +45358,7 @@ wuffs_jpeg__decoder__decode_idct__choosy_default(
 // ‼ WUFFS MULTI-FILE SECTION +x86_avx2
 // -------- func jpeg.decoder.decode_idct_x86_avx2
 
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2,avx2")
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
@@ -45742,7 +45742,7 @@ wuffs_jpeg__decoder__decode_idct_x86_avx2(
   wuffs_base__poke_u64le__no_bounds_check(a_dst_buffer.ptr, v_final7);
   return wuffs_base__make_empty_struct();
 }
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 // ‼ WUFFS MULTI-FILE SECTION -x86_avx2
 
 // -------- func jpeg.decoder.get_quirk
@@ -46091,7 +46091,7 @@ wuffs_jpeg__decoder__do_decode_image_config(
       self->private_impl.f_payload_length = 0u;
     }
     self->private_impl.choosy_decode_idct = (
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
         wuffs_base__cpu_arch__have_x86_avx2() ? &wuffs_jpeg__decoder__decode_idct_x86_avx2 :
 #endif
         self->private_impl.choosy_decode_idct);
@@ -59889,40 +59889,40 @@ WUFFS_PNG__LATIN_1[256] WUFFS_BASE__POTENTIALLY_UNUSED = {
 
 // ---------------- Private Function Prototypes
 
-#if defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_NEON)
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
 wuffs_png__decoder__filter_1_distance_4_arm_neon(
     wuffs_png__decoder* self,
     wuffs_base__slice_u8 a_curr);
-#endif  // defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_NEON)
 
-#if defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_NEON)
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
 wuffs_png__decoder__filter_3_distance_4_arm_neon(
     wuffs_png__decoder* self,
     wuffs_base__slice_u8 a_curr,
     wuffs_base__slice_u8 a_prev);
-#endif  // defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_NEON)
 
-#if defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_NEON)
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
 wuffs_png__decoder__filter_4_distance_3_arm_neon(
     wuffs_png__decoder* self,
     wuffs_base__slice_u8 a_curr,
     wuffs_base__slice_u8 a_prev);
-#endif  // defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_NEON)
 
-#if defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_NEON)
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
 wuffs_png__decoder__filter_4_distance_4_arm_neon(
     wuffs_png__decoder* self,
     wuffs_base__slice_u8 a_curr,
     wuffs_base__slice_u8 a_prev);
-#endif  // defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_NEON)
 
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
@@ -60011,40 +60011,40 @@ wuffs_png__decoder__filter_4_distance_4_fallback(
     wuffs_base__slice_u8 a_curr,
     wuffs_base__slice_u8 a_prev);
 
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
 wuffs_png__decoder__filter_1_distance_4_x86_sse42(
     wuffs_png__decoder* self,
     wuffs_base__slice_u8 a_curr);
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
 wuffs_png__decoder__filter_3_distance_4_x86_sse42(
     wuffs_png__decoder* self,
     wuffs_base__slice_u8 a_curr,
     wuffs_base__slice_u8 a_prev);
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
 wuffs_png__decoder__filter_4_distance_3_x86_sse42(
     wuffs_png__decoder* self,
     wuffs_base__slice_u8 a_curr,
     wuffs_base__slice_u8 a_prev);
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
 wuffs_png__decoder__filter_4_distance_4_x86_sse42(
     wuffs_png__decoder* self,
     wuffs_base__slice_u8 a_curr,
     wuffs_base__slice_u8 a_prev);
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__status
@@ -60326,7 +60326,7 @@ sizeof__wuffs_png__decoder(void) {
 // ‼ WUFFS MULTI-FILE SECTION +arm_neon
 // -------- func png.decoder.filter_1_distance_4_arm_neon
 
-#if defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_NEON)
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
 wuffs_png__decoder__filter_1_distance_4_arm_neon(
@@ -60366,13 +60366,13 @@ wuffs_png__decoder__filter_1_distance_4_arm_neon(
   }
   return wuffs_base__make_empty_struct();
 }
-#endif  // defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_NEON)
 // ‼ WUFFS MULTI-FILE SECTION -arm_neon
 
 // ‼ WUFFS MULTI-FILE SECTION +arm_neon
 // -------- func png.decoder.filter_3_distance_4_arm_neon
 
-#if defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_NEON)
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
 wuffs_png__decoder__filter_3_distance_4_arm_neon(
@@ -60458,13 +60458,13 @@ wuffs_png__decoder__filter_3_distance_4_arm_neon(
   }
   return wuffs_base__make_empty_struct();
 }
-#endif  // defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_NEON)
 // ‼ WUFFS MULTI-FILE SECTION -arm_neon
 
 // ‼ WUFFS MULTI-FILE SECTION +arm_neon
 // -------- func png.decoder.filter_4_distance_3_arm_neon
 
-#if defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_NEON)
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
 wuffs_png__decoder__filter_4_distance_3_arm_neon(
@@ -60579,13 +60579,13 @@ wuffs_png__decoder__filter_4_distance_3_arm_neon(
   }
   return wuffs_base__make_empty_struct();
 }
-#endif  // defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_NEON)
 // ‼ WUFFS MULTI-FILE SECTION -arm_neon
 
 // ‼ WUFFS MULTI-FILE SECTION +arm_neon
 // -------- func png.decoder.filter_4_distance_4_arm_neon
 
-#if defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_NEON)
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
 wuffs_png__decoder__filter_4_distance_4_arm_neon(
@@ -60680,7 +60680,7 @@ wuffs_png__decoder__filter_4_distance_4_arm_neon(
   }
   return wuffs_base__make_empty_struct();
 }
-#endif  // defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_NEON)
 // ‼ WUFFS MULTI-FILE SECTION -arm_neon
 
 // -------- func png.decoder.filter_1
@@ -61363,7 +61363,7 @@ wuffs_png__decoder__filter_4_distance_4_fallback(
 // ‼ WUFFS MULTI-FILE SECTION +x86_sse42
 // -------- func png.decoder.filter_1_distance_4_x86_sse42
 
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2")
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
@@ -61404,13 +61404,13 @@ wuffs_png__decoder__filter_1_distance_4_x86_sse42(
   }
   return wuffs_base__make_empty_struct();
 }
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 // ‼ WUFFS MULTI-FILE SECTION -x86_sse42
 
 // ‼ WUFFS MULTI-FILE SECTION +x86_sse42
 // -------- func png.decoder.filter_3_distance_4_x86_sse42
 
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2")
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
@@ -61510,13 +61510,13 @@ wuffs_png__decoder__filter_3_distance_4_x86_sse42(
   }
   return wuffs_base__make_empty_struct();
 }
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 // ‼ WUFFS MULTI-FILE SECTION -x86_sse42
 
 // ‼ WUFFS MULTI-FILE SECTION +x86_sse42
 // -------- func png.decoder.filter_4_distance_3_x86_sse42
 
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2")
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
@@ -61637,13 +61637,13 @@ wuffs_png__decoder__filter_4_distance_3_x86_sse42(
   }
   return wuffs_base__make_empty_struct();
 }
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 // ‼ WUFFS MULTI-FILE SECTION -x86_sse42
 
 // ‼ WUFFS MULTI-FILE SECTION +x86_sse42
 // -------- func png.decoder.filter_4_distance_4_x86_sse42
 
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2")
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
@@ -61742,7 +61742,7 @@ wuffs_png__decoder__filter_4_distance_4_x86_sse42(
   }
   return wuffs_base__make_empty_struct();
 }
-#endif  // defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 // ‼ WUFFS MULTI-FILE SECTION -x86_sse42
 
 // -------- func png.decoder.get_quirk
@@ -62486,35 +62486,35 @@ wuffs_png__decoder__choose_filter_implementations(
     self->private_impl.choosy_filter_3 = (
         &wuffs_png__decoder__filter_3_distance_3_fallback);
     self->private_impl.choosy_filter_4 = (
-#if defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_NEON)
         wuffs_base__cpu_arch__have_arm_neon() ? &wuffs_png__decoder__filter_4_distance_3_arm_neon :
 #endif
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
         wuffs_base__cpu_arch__have_x86_sse42() ? &wuffs_png__decoder__filter_4_distance_3_x86_sse42 :
 #endif
         &wuffs_png__decoder__filter_4_distance_3_fallback);
   } else if (self->private_impl.f_filter_distance == 4u) {
     self->private_impl.choosy_filter_1 = (
-#if defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_NEON)
         wuffs_base__cpu_arch__have_arm_neon() ? &wuffs_png__decoder__filter_1_distance_4_arm_neon :
 #endif
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
         wuffs_base__cpu_arch__have_x86_sse42() ? &wuffs_png__decoder__filter_1_distance_4_x86_sse42 :
 #endif
         &wuffs_png__decoder__filter_1_distance_4_fallback);
     self->private_impl.choosy_filter_3 = (
-#if defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_NEON)
         wuffs_base__cpu_arch__have_arm_neon() ? &wuffs_png__decoder__filter_3_distance_4_arm_neon :
 #endif
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
         wuffs_base__cpu_arch__have_x86_sse42() ? &wuffs_png__decoder__filter_3_distance_4_x86_sse42 :
 #endif
         &wuffs_png__decoder__filter_3_distance_4_fallback);
     self->private_impl.choosy_filter_4 = (
-#if defined(WUFFS_BASE__CPU_ARCH__ARM_NEON)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_NEON)
         wuffs_base__cpu_arch__have_arm_neon() ? &wuffs_png__decoder__filter_4_distance_4_arm_neon :
 #endif
-#if defined(WUFFS_BASE__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
         wuffs_base__cpu_arch__have_x86_sse42() ? &wuffs_png__decoder__filter_4_distance_4_x86_sse42 :
 #endif
         &wuffs_png__decoder__filter_4_distance_4_fallback);
