@@ -275,27 +275,20 @@ func cpuArchCNames(asserts []*a.Node) (caMacro string, caName string, caAttribut
 				caMacro, caName, caAttribute = "ARM_NEON", "arm_neon", ""
 			case t.IDX86SSE42:
 				caMacro, caName, caAttribute =
-					"X86_64", // See the "X86_FAMILY" comment, below.
+					"X86_64_V2",
 					"x86_sse42",
 					"WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET(\"pclmul,popcnt,sse4.2\")"
 			case t.IDX86AVX2:
 				caMacro, caName, caAttribute =
-					"X86_64",
+					"X86_64_V3",
 					"x86_avx2",
 					"WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET(\"pclmul,popcnt,sse4.2,avx2\")"
 			case t.IDX86BMI2:
 				caMacro, caName, caAttribute =
-					"X86_64", // See the "X86_FAMILY" comment, below.
+					"X86_64_V3",
 					"x86_bmi2",
 					"WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET(\"bmi2\")"
 			}
-
-			// "X86_FAMILY" (which covers both 32-bit and 64-bit x86) is
-			// technically correct, instead of "X86_64". But some intrinsics
-			// don't compile in 32-bit mode. It's not worth the hassle to
-			// support 32-bit x86 SIMD, so we gate on "X86_64" instead.
-			//
-			// https://github.com/google/wuffs/issues/145
 		}
 	}
 	return caMacro, caName, caAttribute, nil

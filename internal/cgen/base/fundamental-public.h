@@ -44,6 +44,8 @@
 #if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_CRC32) ||       \
     defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__ARM_NEON) ||        \
     defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64) ||          \
+    defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64_V2) ||       \
+    defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64_V3) ||       \
     defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_FAMILY) ||      \
     defined(WUFFS_PRIVATE_IMPL__HPD__DECIMAL_POINT__RANGE) || \
     defined(WUFFS_PRIVATE_IMPL__HPD__DIGITS_PRECISION) ||     \
@@ -107,6 +109,8 @@
 #define WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_FAMILY
 #if defined(__x86_64__)
 #define WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64
+#define WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64_V2
+#define WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64_V3
 #endif  // defined(__x86_64__)
 #endif  // !defined(__native_client__)
 #endif  // defined(__i386__) || defined(__x86_64__)
@@ -131,6 +135,8 @@
 #define WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_FAMILY
 #if defined(_M_X64)
 #define WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64
+#define WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64_V2
+#define WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64_V3
 #endif  // defined(_M_X64)
 
 #else  // defined(__AVX__) || defined(__clang__)

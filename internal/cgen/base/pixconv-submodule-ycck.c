@@ -10,7 +10,7 @@
 
 // --------
 
-#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64_V3)
 WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2,avx2")
 static void  //
 wuffs_private_impl__swizzle_ycc__convert_3_bgrx_x86_avx2(
@@ -47,7 +47,7 @@ wuffs_private_impl__swizzle_ycc__upsample_inv_h2v2_triangle_x86_avx2(
     bool first_column,
     bool last_column);
 #endif
-#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64_V3)
 
 // --------
 
@@ -1277,7 +1277,7 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
       case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
       case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
       case WUFFS_BASE__PIXEL_FORMAT__BGRX:
-#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64_V3)
         if (wuffs_base__cpu_arch__have_x86_avx2()) {
           conv3func = &wuffs_private_impl__swizzle_ycc__convert_3_bgrx_x86_avx2;
           break;
@@ -1288,7 +1288,7 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
       case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
       case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
       case WUFFS_BASE__PIXEL_FORMAT__RGBX:
-#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64_V3)
         if (wuffs_base__cpu_arch__have_x86_avx2()) {
           conv3func = &wuffs_private_impl__swizzle_ycc__convert_3_rgbx_x86_avx2;
           break;
@@ -1338,7 +1338,7 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
     upfuncs[1][0] = wuffs_private_impl__swizzle_ycc__upsample_inv_h2v1_triangle;
     upfuncs[1][1] = wuffs_private_impl__swizzle_ycc__upsample_inv_h2v2_triangle;
 
-#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64_V3)
 #if defined(__GNUC__) && !defined(__clang__)
     // Don't use our AVX2 implementation for GCC (but do use it for clang). For
     // some unknown reason, GCC performs noticably better on the non-SIMD
