@@ -374,6 +374,10 @@ test_wuffs_pixel_swizzler_swizzle() {
       // When updating this list, also consider updating the pixel formats that
       // fuzz/c/std/pixel_swizzler_fuzzer.c exercises and those that
       // wuffs_aux::DecodeImageCallbacks::SelectPixfmt accepts.
+      //
+      // SelectPixfmt excludes WUFFS_BASE__PIXEL_FORMAT__Y, even though we test
+      // it here, since it doesn't support every source pixel format in the
+      // srcs array. See "dst WUFFS_BASE__PIXEL_FORMAT__Y allow-list" below.
       {
           .color = 0xFF000010,
           .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__BGR_565,
@@ -405,6 +409,10 @@ test_wuffs_pixel_swizzler_swizzle() {
       {
           .color = 0x33002233,
           .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL,
+      },
+      {
+          .color = 0xFF999999,
+          .pixfmt_repr = WUFFS_BASE__PIXEL_FORMAT__Y,
       },
   };
 
@@ -443,6 +451,19 @@ test_wuffs_pixel_swizzler_swizzle() {
     }
 
     for (size_t d = 0; d < WUFFS_TESTLIB_ARRAY_SIZE(dsts); d++) {
+      // See "dst WUFFS_BASE__PIXEL_FORMAT__Y allow-list" above.
+      if (dsts[d].pixfmt_repr == WUFFS_BASE__PIXEL_FORMAT__Y) {
+        switch (srcs[s].pixfmt_repr) {
+          case WUFFS_BASE__PIXEL_FORMAT__Y:
+          case WUFFS_BASE__PIXEL_FORMAT__Y_16BE:
+          case WUFFS_BASE__PIXEL_FORMAT__BGRX:
+          case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
+            break;
+          default:
+            continue;
+        }
+      }
+
       // Allocate the dst_pixbuf.
       wuffs_base__pixel_config dst_pixcfg = ((wuffs_base__pixel_config){});
       wuffs_base__pixel_config__set(&dst_pixcfg, dsts[d].pixfmt_repr,
@@ -501,6 +522,13 @@ test_wuffs_pixel_swizzler_swizzle() {
         }
         if (dst_transparency == WUFFS_BASE__PIXEL_ALPHA_TRANSPARENCY__OPAQUE) {
           want_dst_pixel |= 0xFF000000;
+        }
+        if (dsts[d].pixfmt_repr == WUFFS_BASE__PIXEL_FORMAT__Y) {
+          want_dst_pixel =
+              0xFF000000 |
+              (0x00010101 *
+               wuffs_base__color_u32_argb_premul__as__color_u8_gray(
+                   want_dst_pixel));
         }
         wuffs_base__color_u32_argb_premul have_dst_pixel =
             wuffs_base__pixel_buffer__color_u32_at(&dst_pixbuf, width / 2,

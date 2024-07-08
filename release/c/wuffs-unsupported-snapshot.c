@@ -26302,6 +26302,87 @@ wuffs_private_impl__swizzle_xxxxxxxx__y_16be(uint8_t* dst_ptr,
 // --------
 
 static uint64_t  //
+wuffs_private_impl__swizzle_y__bgra_nonpremul__src(uint8_t* dst_ptr,
+                                                   size_t dst_len,
+                                                   uint8_t* dst_palette_ptr,
+                                                   size_t dst_palette_len,
+                                                   const uint8_t* src_ptr,
+                                                   size_t src_len) {
+  size_t src_len4 = src_len / 4;
+  size_t len = (dst_len < src_len4) ? dst_len : src_len4;
+  uint8_t* d = dst_ptr;
+  const uint8_t* s = src_ptr;
+  size_t n = len;
+
+  while (n >= 1) {
+    uint32_t s0 =
+        wuffs_base__color_u32_argb_nonpremul__as__color_u32_argb_premul(
+            wuffs_base__peek_u32le__no_bounds_check(s + (0 * 4)));
+    d[0] = wuffs_base__color_u32_argb_premul__as__color_u8_gray(s0);
+
+    s += 1 * 4;
+    d += 1 * 1;
+    n -= 1;
+  }
+
+  return len;
+}
+
+static uint64_t  //
+wuffs_private_impl__swizzle_y__bgra_nonpremul__src_over(
+    uint8_t* dst_ptr,
+    size_t dst_len,
+    uint8_t* dst_palette_ptr,
+    size_t dst_palette_len,
+    const uint8_t* src_ptr,
+    size_t src_len) {
+  size_t src_len4 = src_len / 4;
+  size_t len = (dst_len < src_len4) ? dst_len : src_len4;
+  uint8_t* d = dst_ptr;
+  const uint8_t* s = src_ptr;
+  size_t n = len;
+
+  while (n >= 1) {
+    uint32_t d0 = 0xFF000000 | (0x00010101 * ((uint32_t)(d[0])));
+    uint32_t s0 = wuffs_base__peek_u32le__no_bounds_check(s + (0 * 4));
+    d[0] = wuffs_base__color_u32_argb_premul__as__color_u8_gray(
+        wuffs_private_impl__composite_premul_nonpremul_u32_axxx(d0, s0));
+
+    s += 1 * 4;
+    d += 1 * 1;
+    n -= 1;
+  }
+
+  return len;
+}
+
+static uint64_t  //
+wuffs_private_impl__swizzle_y__bgrx(uint8_t* dst_ptr,
+                                    size_t dst_len,
+                                    uint8_t* dst_palette_ptr,
+                                    size_t dst_palette_len,
+                                    const uint8_t* src_ptr,
+                                    size_t src_len) {
+  size_t src_len4 = src_len / 4;
+  size_t len = (dst_len < src_len4) ? dst_len : src_len4;
+  uint8_t* d = dst_ptr;
+  const uint8_t* s = src_ptr;
+  size_t n = len;
+
+  while (n >= 1) {
+    uint32_t s0 =
+        0xFF000000 | wuffs_base__peek_u32le__no_bounds_check(s + (0 * 4));
+    d[0] = wuffs_base__color_u32_argb_premul__as__color_u8_gray(s0);
+
+    s += 1 * 4;
+    d += 1 * 1;
+    n -= 1;
+  }
+
+  return len;
+}
+
+static uint64_t  //
 wuffs_private_impl__swizzle_y__y_16be(uint8_t* dst_ptr,
                                       size_t dst_len,
                                       uint8_t* dst_palette_ptr,
@@ -26953,6 +27034,15 @@ wuffs_private_impl__pixel_swizzler__prepare__bgra_nonpremul(
     wuffs_base__slice_u8 src_palette,
     wuffs_base__pixel_blend blend) {
   switch (dst_pixfmt.repr) {
+    case WUFFS_BASE__PIXEL_FORMAT__Y:
+      switch (blend) {
+        case WUFFS_BASE__PIXEL_BLEND__SRC:
+          return wuffs_private_impl__swizzle_y__bgra_nonpremul__src;
+        case WUFFS_BASE__PIXEL_BLEND__SRC_OVER:
+          return wuffs_private_impl__swizzle_y__bgra_nonpremul__src_over;
+      }
+      return NULL;
+
     case WUFFS_BASE__PIXEL_FORMAT__BGR_565:
       switch (blend) {
         case WUFFS_BASE__PIXEL_BLEND__SRC:
@@ -27232,6 +27322,9 @@ wuffs_private_impl__pixel_swizzler__prepare__bgrx(
     wuffs_base__slice_u8 src_palette,
     wuffs_base__pixel_blend blend) {
   switch (dst_pixfmt.repr) {
+    case WUFFS_BASE__PIXEL_FORMAT__Y:
+      return wuffs_private_impl__swizzle_y__bgrx;
+
     case WUFFS_BASE__PIXEL_FORMAT__BGR_565:
       return wuffs_private_impl__swizzle_bgr_565__bgrx;
 
