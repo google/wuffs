@@ -756,24 +756,6 @@ func (p *parser) parseLabel() (t.ID, error) {
 	return 0, nil
 }
 
-func (p *parser) parseEndwhile(label t.ID) bool {
-	if p.peek1() != t.IDEndwhile {
-		return false
-	}
-	p.src = p.src[1:]
-	if label != 0 {
-		if p.peek1() != t.IDDot {
-			return false
-		}
-		p.src = p.src[1:]
-		if p.peek1() != label {
-			return false
-		}
-		p.src = p.src[1:]
-	}
-	return true
-}
-
 func (p *parser) parseStatement1() (*a.Node, error) {
 	x := p.peek1()
 	if x == t.IDVar {
@@ -930,14 +912,21 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 		n.SetBody(body)
 		p.loops.Pop()
 
-		if !p.parseEndwhile(label) {
-			dotLabel := ""
-			if label != 0 {
-				dotLabel = "." + label.Str(p.tm)
+		if label != 0 {
+			seenDotLabel := false
+			if p.peek1() == t.IDDot {
+				p.src = p.src[1:]
+				if p.peek1() == label {
+					p.src = p.src[1:]
+					seenDotLabel = true
+				}
 			}
-			return nil, fmt.Errorf(`parse: expected endwhile%s at %s:%d`,
-				dotLabel, p.filename, p.line())
+			if !seenDotLabel {
+				return nil, fmt.Errorf(`parse: expected .%s at %s:%d`,
+					label.Str(p.tm), p.filename, p.line())
+			}
 		}
+
 		if !doubleCurly {
 			// No-op.
 		} else if n.HasContinue() {

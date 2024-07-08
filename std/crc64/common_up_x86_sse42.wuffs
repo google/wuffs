@@ -44,7 +44,7 @@ pri func ecma_hasher.up_x86_sse42!(x: roslice base.u8),
     while (args.x.length() > 0) and ((15 & args.x.uintptr_low_12_bits()) <> 0) {
         s = ECMA_TABLE[0][((s & 0xFF) as base.u8) ^ args.x[0]] ^ (s >> 8)
         args.x = args.x[1 ..]
-    } endwhile
+    }
 
     while.chain2 true {{
     while.chain4 true {{
@@ -118,7 +118,7 @@ pri func ecma_hasher.up_x86_sse42!(x: roslice base.u8),
                 xh._mm_clmulepi64_si128(b: mu8, imm8: 0x11))._mm_xor_si128(b:
                 util.make_m128i_slice128(a: args.x[0x70 .. 0x80]))
         args.x = args.x[0x80 ..]
-    } endwhile
+    }
 
     // Reduce 8 chains down to 4.
     mu4 = util.make_m128i_slice128(a: ECMA_X86_SSE42_FOLD4[.. 16])
@@ -151,7 +151,7 @@ pri func ecma_hasher.up_x86_sse42!(x: roslice base.u8),
     }
 
     break.chain4
-    }} endwhile.chain4
+    }}.chain4
     // Reduce 4 chains down to 2.
     mu2 = util.make_m128i_slice128(a: ECMA_X86_SSE42_FOLD2[.. 16])
     xa = xa._mm_clmulepi64_si128(b: mu2, imm8: 0x00)._mm_xor_si128(b:
@@ -171,7 +171,7 @@ pri func ecma_hasher.up_x86_sse42!(x: roslice base.u8),
     }
 
     break.chain2
-    }} endwhile.chain2
+    }}.chain2
     // Reduce 2 chains down to 1.
     mu1 = util.make_m128i_slice128(a: ECMA_X86_SSE42_FOLD1[.. 16])
     xa = xa._mm_clmulepi64_si128(b: mu1, imm8: 0x00)._mm_xor_si128(b:

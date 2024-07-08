@@ -115,7 +115,7 @@ pri func decoder.decode_mcu!(workbuf: slice base.u8, mx: base.u32[..= 0x1FFF], m
                             dc_extend = EXTEND[dc_symbol]
                             break
                         }
-                    } endwhile
+                    }
                 }
 
                 // Process the dc_value in the next dc_symbol (up to 15) bits.
@@ -134,7 +134,7 @@ pri func decoder.decode_mcu!(workbuf: slice base.u8, mx: base.u32[..= 0x1FFF], m
 
                 this.mcu_zig_index = 1
                 break.dc_component
-            } endwhile.dc_component
+            }.dc_component
 
             // Ensure that we have enough bits for this iteration of the
             // while.block loop body. Worst case, there are 64 components and
@@ -234,7 +234,7 @@ pri func decoder.decode_mcu!(workbuf: slice base.u8, mx: base.u32[..= 0x1FFF], m
                             ac_symbol = 0
                             break
                         }
-                    } endwhile
+                    }
                 }
 
                 // Split the 8-bit ac_symbol into two 4-bit halves, per section
@@ -256,7 +256,7 @@ pri func decoder.decode_mcu!(workbuf: slice base.u8, mx: base.u32[..= 0x1FFF], m
                 } else if ac_rrrr < 15 {
                     break.ac_components
                 }
-            } endwhile.ac_components
+            }.ac_components
 
             assert this.mcu_current_block < 10
             mcb = this.mcu_current_block
@@ -278,11 +278,11 @@ pri func decoder.decode_mcu!(workbuf: slice base.u8, mx: base.u32[..= 0x1FFF], m
                         q: this.components_tq[csel] as base.u32)
 
             }
-        } endwhile.block
+        }.block
         this.mcu_current_block = 0
 
         break.goto_done
-        }} endwhile.goto_done
+        }}.goto_done
 
         pos = (r.position() & 0xFFFF_FFFF) as base.u32
         if pos > this.bitstream_wi {

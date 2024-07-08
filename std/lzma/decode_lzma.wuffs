@@ -356,7 +356,7 @@ pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf
             return ah_status
         }
         yield? dti_status
-    } endwhile
+    }
 }
 
 pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, workbuf: roslice base.u8) {
@@ -422,7 +422,7 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
                     post args.src.length() > 0,
             {
                 yield? base."$short read"
-            } endwhile
+            }
 
             if args.src.peek_u8() == 0x00 {
                 args.src.skip_u32_fast!(actual: 1, worst_case: 1)
@@ -456,7 +456,7 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
                     } else {
                         yield? base."$short read"
                     }
-                } endwhile
+                }
                 continue
             }
             this.decoded_length = header_byte as base.u64
@@ -523,7 +523,7 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
 
         while args.workbuf.length() < ((this.dict_size as base.u64) + 273) {
             yield? base."$short workbuf"
-        } endwhile
+        }
 
         while true {
             smark = args.src.mark()
@@ -533,7 +533,7 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
                 break
             }
             yield? status
-        } endwhile
+        }
 
         if this.decoded_length == 0xFFFF_FFFF_FFFF_FFFF {
             if this.stashed_bits <> 0 {
@@ -557,7 +557,7 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
         } else if this.lzma2_encoded_length_have <> this.lzma2_encoded_length_want {
             return "#bad LZMA2 header"
         }
-    } endwhile
+    }
 }
 
 pri func decoder.decode_bitstream?(dst: base.io_writer, src: base.io_reader, workbuf: roslice base.u8) {
@@ -576,7 +576,7 @@ pri func decoder.decode_bitstream?(dst: base.io_writer, src: base.io_reader, wor
         if this.end_of_chunk {
             break
         }
-    } endwhile
+    }
 }
 
 pri func decoder.update_stashed_bytes?(dst: base.io_writer, workbuf: roslice base.u8) {
@@ -587,7 +587,7 @@ pri func decoder.update_stashed_bytes?(dst: base.io_writer, workbuf: roslice bas
 
     while args.dst.length() <= 0 {
         yield? base."$short write"
-    } endwhile
+    }
 
     dist = 1
     which = 0
@@ -607,7 +607,7 @@ pri func decoder.update_stashed_bytes?(dst: base.io_writer, workbuf: roslice bas
                     inv which < 2,
             {
                 wb_index ~mod+= this.dict_size as base.u64
-            } endwhile
+            }
             if wb_index >= args.workbuf.length() {
                 return "#internal error: inconsistent dictionary state"
             }
@@ -616,7 +616,7 @@ pri func decoder.update_stashed_bytes?(dst: base.io_writer, workbuf: roslice bas
 
         dist = 1 + this.stashed_rep0
         which += 1
-    } endwhile
+    }
 }
 
 // Preconditions:
@@ -637,7 +637,7 @@ pri func decoder.decode_optional_end_of_stream?(src: base.io_reader, workbuf: ro
             return "#bad bitstream trailer"
         }
         yield? status
-    } endwhile
+    }
     this.stashed_pos_end = this.stashed_pos
 }
 
@@ -658,37 +658,37 @@ pri func decoder.initialize_probs!() {
     while i < (12 << 4) {
         this.probs_ao00[i] = 1024
         i += 1
-    } endwhile
+    }
 
     i = 0
     while i < 12 {
         this.probs_ao20[i] = 1024
         i += 1
-    } endwhile
+    }
 
     i = 0
     while i < 12 {
         this.probs_ao40[i] = 1024
         i += 1
-    } endwhile
+    }
 
     i = 0
     while i < (12 << 4) {
         this.probs_ao41[i] = 1024
         i += 1
-    } endwhile
+    }
 
     i = 0
     while i < 12 {
         this.probs_ao60[i] = 1024
         i += 1
-    } endwhile
+    }
 
     i = 0
     while i < 12 {
         this.probs_ao63[i] = 1024
         i += 1
-    } endwhile
+    }
 
     i = 0
     while i < 16 {
@@ -698,9 +698,9 @@ pri func decoder.initialize_probs!() {
         {
             this.probs_match_len_low[i][j] = 1024
             j += 1
-        } endwhile
+        }
         i += 1
-    } endwhile
+    }
 
     i = 0
     while i < 16 {
@@ -710,15 +710,15 @@ pri func decoder.initialize_probs!() {
         {
             this.probs_match_len_mid[i][j] = 1024
             j += 1
-        } endwhile
+        }
         i += 1
-    } endwhile
+    }
 
     i = 0
     while i < 256 {
         this.probs_match_len_high[0][i] = 1024
         i += 1
-    } endwhile
+    }
 
     i = 0
     while i < 16 {
@@ -728,9 +728,9 @@ pri func decoder.initialize_probs!() {
         {
             this.probs_longrep_len_low[i][j] = 1024
             j += 1
-        } endwhile
+        }
         i += 1
-    } endwhile
+    }
 
     i = 0
     while i < 16 {
@@ -740,15 +740,15 @@ pri func decoder.initialize_probs!() {
         {
             this.probs_longrep_len_mid[i][j] = 1024
             j += 1
-        } endwhile
+        }
         i += 1
-    } endwhile
+    }
 
     i = 0
     while i < 256 {
         this.probs_longrep_len_high[0][i] = 1024
         i += 1
-    } endwhile
+    }
 
     i = 0
     while i < 4 {
@@ -758,21 +758,21 @@ pri func decoder.initialize_probs!() {
         {
             this.probs_slot[i][j] = 1024
             j += 1
-        } endwhile
+        }
         i += 1
-    } endwhile
+    }
 
     i = 0
     while i < 128 {
         this.probs_small_dist[i] = 1024
         i += 1
-    } endwhile
+    }
 
     i = 0
     while i < 16 {
         this.probs_large_dist[i] = 1024
         i += 1
-    } endwhile
+    }
 
     i = 0
     while i < 16 {
@@ -782,9 +782,9 @@ pri func decoder.initialize_probs!() {
         {
             this.probs_lit[i][j] = 1024
             j += 1
-        } endwhile
+        }
         i += 1
-    } endwhile
+    }
 
     // Reset some other LZMA state too. They're not probabilities, but they
     // need resetting whenever the probabilities do.

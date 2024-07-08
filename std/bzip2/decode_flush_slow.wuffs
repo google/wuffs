@@ -54,12 +54,12 @@ pri func decoder.flush_slow?(dst: base.io_writer) {
                         (block_checksum_have ~mod<< 8)
                 args.dst.write_u8?(a: flush_prev)
                 flush_repeat_count -= 1
-            } endwhile
+            }
             flush_repeat_count = 0
             flush_prev = curr
             block_size -= 1
         }
-    } endwhile
+    }
 
     this.flush_pointer = flush_pointer
     this.flush_repeat_count = flush_repeat_count

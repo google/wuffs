@@ -92,9 +92,9 @@ pri func decoder.load_mcu_blocks_for_single_component_smooth!(mx: base.u32[..= 0
             }
 
             dx += 1
-        } endwhile
+        }
         dy += 1
-    } endwhile
+    }
 
     q = this.components_tq[args.csel]
     q_00 = this.quant_tables[q][0x00] as base.u32

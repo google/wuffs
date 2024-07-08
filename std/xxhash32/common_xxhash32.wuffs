@@ -69,7 +69,7 @@ pub func hasher.update!(x: roslice base.u8) {
         this.up!(x: args.x)
 
         args.x = remaining
-    } endwhile
+    }
 }
 
 pub func hasher.update_u32!(x: roslice base.u8) base.u32 {
@@ -135,7 +135,7 @@ pri func hasher.up!(x: roslice base.u8) {
         this.buf_data[this.buf_len] = args.x[0]
         this.buf_len += 1
         args.x = args.x[1 ..]
-    } endwhile
+    }
 
     buf_len = (this.buf_len & 15) as base.u32
     v0 = this.v0
@@ -249,7 +249,7 @@ pub func hasher.checksum_u32() base.u32 {
         ret ~mod*= XXH_PRIME32_1
 
         i += 1
-    } endwhile
+    }
 
     ret ^= ret >> 15
     ret ~mod*= XXH_PRIME32_2

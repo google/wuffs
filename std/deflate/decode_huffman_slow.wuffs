@@ -58,7 +58,7 @@ pri func decoder.decode_huffman_slow?(dst: base.io_writer, src: base.io_reader) 
             b0 = args.src.read_u8_as_u32?()
             bits |= b0 << n_bits
             n_bits += 8
-        } endwhile
+        }
 
         if (table_entry >> 31) <> 0 {
             // Literal.
@@ -86,7 +86,7 @@ pri func decoder.decode_huffman_slow?(dst: base.io_writer, src: base.io_reader) 
                 b1 = args.src.read_u8_as_u32?()
                 bits |= b1 << n_bits
                 n_bits += 8
-            } endwhile
+            }
 
             if (table_entry >> 31) <> 0 {
                 // Literal.
@@ -126,7 +126,7 @@ pri func decoder.decode_huffman_slow?(dst: base.io_writer, src: base.io_reader) 
                 b2 = args.src.read_u8_as_u32?()
                 bits |= b2 << n_bits
                 n_bits += 8
-            } endwhile
+            }
             // The "+ 253" is the same as "- 3", after the "& 0xFF", but the
             // plus form won't require an underflow check.
             length = ((length + 253 + bits.low_bits(n: table_entry_n_bits)) & 0xFF) + 3
@@ -147,7 +147,7 @@ pri func decoder.decode_huffman_slow?(dst: base.io_writer, src: base.io_reader) 
             b3 = args.src.read_u8_as_u32?()
             bits |= b3 << n_bits
             n_bits += 8
-        } endwhile
+        }
         // Check for a redirect.
         if (table_entry >> 28) == 1 {
             redir_top = (table_entry >> 8) & 0xFFFF
@@ -164,7 +164,7 @@ pri func decoder.decode_huffman_slow?(dst: base.io_writer, src: base.io_reader) 
                 b4 = args.src.read_u8_as_u32?()
                 bits |= b4 << n_bits
                 n_bits += 8
-            } endwhile
+            }
         }
 
         // For H-D, all symbols should be base_number + extra_bits.
@@ -191,7 +191,7 @@ pri func decoder.decode_huffman_slow?(dst: base.io_writer, src: base.io_reader) 
                 b5 = args.src.read_u8_as_u32?()
                 bits |= b5 << n_bits
                 n_bits += 8
-            } endwhile
+            }
             dist_minus_1 = (dist_minus_1 + bits.low_bits(n: table_entry_n_bits)) & 0x7FFF
             bits >>= table_entry_n_bits
             n_bits -= table_entry_n_bits
@@ -243,8 +243,8 @@ pri func decoder.decode_huffman_slow?(dst: base.io_writer, src: base.io_reader) 
             }
             length -= n_copied
             yield? base."$short write"
-        } endwhile.inner
-    } endwhile.loop
+        }.inner
+    }.loop
 
     // TODO: "assert n_bits < 8"? What about (bits >> n_bits)?
 

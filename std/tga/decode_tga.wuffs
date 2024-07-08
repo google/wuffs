@@ -65,7 +65,7 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
             return "#truncated input"
         }
         yield? status
-    } endwhile
+    }
 }
 
 pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.io_reader) {
@@ -214,14 +214,14 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
                 this.src_palette[((i & 0xFF) * 4) + 3] = 0xFF
             }
             i += 1
-        } endwhile
+        }
         while i < 0x100 {
             this.src_palette[(i * 4) + 0] = 0x00
             this.src_palette[(i * 4) + 1] = 0x00
             this.src_palette[(i * 4) + 2] = 0x00
             this.src_palette[(i * 4) + 3] = 0xFF
             i += 1
-        } endwhile
+        }
     }
 
     this.frame_config_io_position = args.src.position()
@@ -248,7 +248,7 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
             return "#truncated input"
         }
         yield? status
-    } endwhile
+    }
 }
 
 pri func decoder.do_decode_frame_config?(dst: nptr base.frame_config, src: base.io_reader) {
@@ -294,7 +294,7 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
             return "#truncated input"
         }
         yield? status
-    } endwhile
+    }
 }
 
 pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, blend: base.pixel_blend, workbuf: slice base.u8, opts: nptr base.decode_frame_options) {
@@ -545,7 +545,7 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
                         }
                     }
                 }
-            } endwhile
+            }
             dst_x = 0
 
             if (this.header_image_descriptor & 0x20) == 0 {  // Bottom-to-top.
@@ -558,9 +558,9 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
                 // effectively literals.
                 lit_length = this.width
             }
-        } endwhile
+        }
         break.resume
-    } endwhile.resume
+    }.resume
 
     this.call_sequence = 0x60
 }

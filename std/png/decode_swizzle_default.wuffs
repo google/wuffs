@@ -97,7 +97,7 @@ pri func decoder.filter_and_swizzle!(dst: ptr base.pixel_buffer, workbuf: slice 
 
         prev_row = curr_row
         y += 1
-    } endwhile
+    }
 
     return ok
 }

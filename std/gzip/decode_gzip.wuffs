@@ -65,7 +65,7 @@ pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf
             return "#truncated input"
         }
         yield? status
-    } endwhile
+    }
 }
 
 pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, workbuf: slice base.u8) {
@@ -113,7 +113,7 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
             if c8 == 0 {
                 break
             }
-        } endwhile
+        }
     }
 
     // Handle FCOMMENT.
@@ -123,7 +123,7 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
             if c8 == 0 {
                 break
             }
-        } endwhile
+        }
     }
 
     // Handle FHCRC.
@@ -148,7 +148,7 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
             break
         }
         yield? status
-    } endwhile
+    }
     checksum_want = args.src.read_u32le?()
     decoded_length_want = args.src.read_u32le?()
     if (not this.ignore_checksum) and

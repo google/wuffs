@@ -38,7 +38,7 @@ pri func ieee_hasher.up_x86_sse42!(x: roslice base.u8),
     while (args.x.length() > 0) and ((15 & args.x.uintptr_low_12_bits()) <> 0) {
         s = IEEE_TABLE[0][((s & 0xFF) as base.u8) ^ args.x[0]] ^ (s >> 8)
         args.x = args.x[1 ..]
-    } endwhile
+    }
 
     if args.x.length() >= 128 {
         // BEGIN script/print-crc32-x86-sse42-code.go generated code.
@@ -87,7 +87,7 @@ pri func ieee_hasher.up_x86_sse42!(x: roslice base.u8),
             y7 = y7._mm_xor_si128(b: util.make_m128i_slice128(a: args.x[0x70 .. 0x80]))
             x7 = x7._mm_xor_si128(b: y7)
             args.x = args.x[128 ..]
-        } endwhile
+        }
         kk = util.make_m128i_multiple_u32(a00: 0xAE68_9191, a01: 0, a02: 0xCCAA_009E, a03: 0)
         y0 = x0._mm_clmulepi64_si128(b: kk, imm8: 0x00)
         x0 = x0._mm_clmulepi64_si128(b: kk, imm8: 0x11)
@@ -139,12 +139,12 @@ pri func ieee_hasher.up_x86_sse42!(x: roslice base.u8),
                 _mm_clmulepi64_si128(b: kk, imm8: 0x10).
                 _mm_extract_epi32(imm8: 2)
         args.x = args.x[8 ..]
-    } endwhile
+    }
 
     while args.x.length() > 0 {
         s = IEEE_TABLE[0][((s & 0xFF) as base.u8) ^ args.x[0]] ^ (s >> 8)
         args.x = args.x[1 ..]
-    } endwhile
+    }
 
     this.state = 0xFFFF_FFFF ^ s
 }

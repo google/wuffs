@@ -174,7 +174,7 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
             return "#truncated input"
         }
         yield? status
-    } endwhile
+    }
 }
 
 pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.io_reader) {
@@ -218,7 +218,7 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
                 break
             }
             yield? status
-        } endwhile
+        }
 
         // Verify CRC-32 checksum.
         checksum_want = args.src.read_u32be?()
@@ -283,7 +283,7 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
                 break
             }
             yield? status
-        } endwhile
+        }
 
         // If we have metadata, delay reading (skipping) the ancillary chunk's
         // CRC-32 checksum until the end of tell_me_more.
@@ -297,7 +297,7 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
                 (checksum_have <> checksum_want) {
             return "#bad checksum"
         }
-    } endwhile
+    }
 
     if (this.color_type == 3) and (not this.seen_plte) {
         return "#missing palette"
@@ -810,7 +810,7 @@ pri func decoder.decode_iccp?(src: base.io_reader) {
         if c8 == 0 {
             break
         }
-    } endwhile
+    }
 
     // Compression method.
     if this.chunk_length <= 0 {
@@ -852,7 +852,7 @@ pri func decoder.decode_plte?(src: base.io_reader) {
         this.src_palette[(4 * i) + 2] = ((argb >> 16) & 0xFF) as base.u8
         this.src_palette[(4 * i) + 3] = ((argb >> 24) & 0xFF) as base.u8
         i += 1
-    } endwhile
+    }
 
     // Set the remaining palette entries to opaque black.
     while i < 256 {
@@ -861,7 +861,7 @@ pri func decoder.decode_plte?(src: base.io_reader) {
         this.src_palette[(4 * i) + 2] = 0x00
         this.src_palette[(4 * i) + 3] = 0xFF
         i += 1
-    } endwhile
+    }
 }
 
 pri func decoder.decode_srgb?(src: base.io_reader) {
@@ -945,7 +945,7 @@ pri func decoder.decode_trns?(src: base.io_reader) {
             assert i < 256 via "a < b: a < c; c <= b"(c: n)
             this.src_palette[(4 * i) + 3] = args.src.read_u8?()
             i += 1
-        } endwhile
+        }
 
     } else {
         return "#bad chunk"
@@ -961,7 +961,7 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
             return "#truncated input"
         }
         yield? status
-    } endwhile
+    }
 }
 
 pri func decoder.do_decode_frame_config?(dst: nptr base.frame_config, src: base.io_reader) {
@@ -1029,7 +1029,7 @@ pri func decoder.do_decode_frame_config?(dst: nptr base.frame_config, src: base.
             }
             args.src.skip_u32?(n: 4)  // Skip the checksum.
             this.chunk_length = 0
-        } endwhile
+        }
     }
 
     if args.dst <> nullptr {
@@ -1111,7 +1111,7 @@ pri func decoder.skip_frame?(src: base.io_reader) {
         // +12 for chunk length, chunk type and checksum.
         args.src.skip?(n: (this.chunk_length as base.u64) + 12)
         this.chunk_length = 0
-    } endwhile
+    }
 
     this.num_decoded_frames_value ~sat+= 1
     this.call_sequence = 0x20
@@ -1126,7 +1126,7 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
             return "#truncated input"
         }
         yield? status
-    } endwhile
+    }
 }
 
 pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, blend: base.pixel_blend, workbuf: slice base.u8, opts: nptr base.decode_frame_options) {
@@ -1190,7 +1190,7 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
         // +12 for chunk length, chunk type and checksum.
         args.src.skip?(n: (this.chunk_length as base.u64) + 12)
         this.chunk_length = 0
-    } endwhile
+    }
 
     if this.zlib_is_dirty {
         this.zlib.reset!()
@@ -1246,7 +1246,7 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
                     }
                 }
                 yield? status
-            } endwhile
+            }
             status = this.filter_and_swizzle!(dst: args.dst, workbuf: args.workbuf)
             if not status.is_ok() {
                 return status
@@ -1258,7 +1258,7 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
             break
         }
         this.interlace_pass += 1
-    } endwhile
+    }
 
     this.num_decoded_frames_value ~sat+= 1
     this.call_sequence = 0x20
@@ -1354,7 +1354,7 @@ pri func decoder.decode_pass?(src: base.io_reader, workbuf: slice base.u8) {
             return "#internal error: zlib decoder did not exhaust its input"
         }
         yield? base."$short read"
-    } endwhile
+    }
 
     if this.workbuf_wi <> this.pass_workbuf_length {
         return base."#not enough data"
@@ -1430,7 +1430,7 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
             return "#truncated input"
         }
         yield? status
-    } endwhile
+    }
 }
 
 pri func decoder.do_tell_me_more?(dst: base.io_writer, minfo: nptr base.more_information, src: base.io_reader) {
@@ -1467,7 +1467,7 @@ pri func decoder.do_tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inf
             }
             this.metadata_y = this.metadata_z
             yield? base."$even more information"
-        } endwhile
+        }
     }
 
     if this.metadata_is_zlib_compressed {
@@ -1574,7 +1574,7 @@ pri func decoder.do_tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inf
                         this.ztxt_ri += 1
                         args.dst.write_u16le_fast!(a: c16)
                     }
-                } endwhile
+                }
 
                 if zlib_status.is_ok() {
                     this.metadata_is_zlib_compressed = false
@@ -1607,7 +1607,7 @@ pri func decoder.do_tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inf
                 c8 = args.src.peek_u8()
                 args.src.skip_u32_fast!(actual: 1, worst_case: 1)
                 args.dst.write_u8_fast!(a: c8)
-            } endwhile
+            }
 
         } else {
             // Other uncompressed keys and values are Latin-1.
@@ -1648,9 +1648,9 @@ pri func decoder.do_tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inf
                     args.src.skip_u32_fast!(actual: 1, worst_case: 1)
                     args.dst.write_u16le_fast!(a: c16)
                 }
-            } endwhile
+            }
         }
-    } endwhile.loop
+    }.loop
 
     // Key-value pairs come in... pairs.
     if this.metadata_fourcc == 'KVPK'be {
@@ -1688,8 +1688,8 @@ pri func decoder.do_tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inf
                     if c8 == 0 {
                         break
                     }
-                } endwhile
-            } endwhile
+                }
+            }
 
         } else if this.chunk_type == 'zTXt'le {
             // Compression method.
@@ -1708,7 +1708,7 @@ pri func decoder.do_tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inf
         return ok
     }
     break.goto_done
-    }} endwhile.goto_done
+    }}.goto_done
 
     if this.chunk_length <> 0 {
         return "#bad chunk"

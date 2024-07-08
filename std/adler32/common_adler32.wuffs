@@ -71,7 +71,7 @@ pri func hasher.up!(x: roslice base.u8),
         s1 %= 65521
         s2 %= 65521
         args.x = remaining
-    } endwhile
+    }
     this.state = ((s2 & 0xFFFF) << 16) | (s1 & 0xFFFF)
 }
 

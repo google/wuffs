@@ -95,7 +95,7 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
             return "#truncated input"
         }
         yield? status
-    } endwhile
+    }
 }
 
 pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.io_reader) {
@@ -411,7 +411,7 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
             return "#truncated input"
         }
         yield? status
-    } endwhile
+    }
 }
 
 pri func decoder.do_decode_frame_config?(dst: nptr base.frame_config, src: base.io_reader) {
@@ -457,7 +457,7 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
             return "#truncated input"
         }
         yield? status
-    } endwhile
+    }
 }
 
 pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, blend: base.pixel_blend, workbuf: slice base.u8, opts: nptr base.decode_frame_options) {
@@ -510,7 +510,7 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
                 return status
             }
             yield? base."$short read"
-        } endwhile
+        }
 
         args.src.skip_u32?(n: this.pending_pad)
         this.pending_pad = 0
@@ -551,7 +551,7 @@ pri func decoder.swizzle_none!(dst: ptr base.pixel_buffer, src: base.io_reader) 
             }
             this.pending_pad -= 1
             args.src.skip_u32_fast!(actual: 1, worst_case: 1)
-        } endwhile
+        }
 
         while.inner true {
             if this.dst_x == this.width {
@@ -591,7 +591,7 @@ pri func decoder.swizzle_none!(dst: ptr base.pixel_buffer, src: base.io_reader) 
                                 worst_case: src_bytes_per_pixel * 8)
                     }
                     j -= 8
-                } endwhile
+                }
                 while j > 0 {
                     if args.src.length() >= ((src_bytes_per_pixel * 1) as base.u64) {
                         args.src.skip_u32_fast!(
@@ -599,7 +599,7 @@ pri func decoder.swizzle_none!(dst: ptr base.pixel_buffer, src: base.io_reader) 
                                 worst_case: src_bytes_per_pixel * 1)
                     }
                     j -= 1
-                } endwhile
+                }
             } else {
                 n = this.swizzler.swizzle_interleaved_from_reader!(
                         dst: dst[i ..],
@@ -610,8 +610,8 @@ pri func decoder.swizzle_none!(dst: ptr base.pixel_buffer, src: base.io_reader) 
                 return "@internal note: short read"
             }
             this.dst_x ~sat+= (n & 0xFFFF_FFFF) as base.u32
-        } endwhile.inner
-    } endwhile.outer
+        }.inner
+    }.outer
 
     return ok
 }
@@ -700,7 +700,7 @@ pri func decoder.swizzle_rle!(dst: ptr base.pixel_buffer, src: base.io_reader) b
                             assert p0 < 255 via "a < b: a < c; c <= b"(c: this.rle_length)
                             this.scratch[p0] = code
                             p0 += 1
-                        } endwhile
+                        }
                     } else {
                         indexes[0] = (code >> 4) as base.u8
                         indexes[1] = code & 0x0F
@@ -710,7 +710,7 @@ pri func decoder.swizzle_rle!(dst: ptr base.pixel_buffer, src: base.io_reader) b
                             this.scratch[p0 + 0] = indexes[0]
                             this.scratch[p0 + 1] = indexes[1]
                             p0 += 2
-                        } endwhile
+                        }
                     }
                     this.swizzler.swizzle_interleaved_from_slice!(
                             dst: dst,
@@ -774,7 +774,7 @@ pri func decoder.swizzle_rle!(dst: ptr base.pixel_buffer, src: base.io_reader) b
                             this.scratch[p0 + 0x03] = (0x0F & (chunk_bits >> 0x00)) as base.u8
                             p0 = (p0 & 255) + 0x04
                             chunk_count -= 1
-                        } endwhile
+                        }
                         p0 = p0.min(no_more_than: this.rle_length)
                         this.swizzler.swizzle_interleaved_from_slice!(
                                 dst: dst,
@@ -849,18 +849,18 @@ pri func decoder.swizzle_rle!(dst: ptr base.pixel_buffer, src: base.io_reader) b
                                 dst_palette: dst_palette,
                                 num_pixels: 0xFFFF_FFFF_FFFF_FFFF)
                         code -= 1
-                    } endwhile
+                    }
                 }
 
                 rle_state = RLE_STATE_NEUTRAL
                 continue.middle
 
-            } endwhile.inner
-            }} endwhile.goto_suspend
+            }.inner
+            }}.goto_suspend
             this.rle_state = rle_state
             return "@internal note: short read"
-        } endwhile.middle
-    } endwhile.outer
+        }.middle
+    }.outer
 
     while this.dst_y < this.height {
         row = tab.row_u32(y: this.dst_y)
@@ -872,7 +872,7 @@ pri func decoder.swizzle_rle!(dst: ptr base.pixel_buffer, src: base.io_reader) b
                 dst_palette: dst_palette,
                 num_pixels: 0xFFFF_FFFF_FFFF_FFFF)
         this.dst_y ~mod+= this.dst_y_inc
-    } endwhile
+    }
 
     return ok
 }
@@ -916,7 +916,7 @@ pri func decoder.swizzle_bitfields!(dst: ptr base.pixel_buffer, src: base.io_rea
             }
             this.pending_pad -= 1
             args.src.skip_u32_fast!(actual: 1, worst_case: 1)
-        } endwhile
+        }
 
         while.inner true {
             if this.dst_x == this.width {
@@ -970,17 +970,17 @@ pri func decoder.swizzle_bitfields!(dst: ptr base.pixel_buffer, src: base.io_rea
                         {
                             c |= c ~mod<< num_bits
                             num_bits *= 2
-                        } endwhile
+                        }
                         c >>= num_bits - 16
                         this.scratch[(8 * p0) + (2 * channel) + 0] = (0xFF & (c >> 0)) as base.u8
                         this.scratch[(8 * p0) + (2 * channel) + 1] = (0xFF & (c >> 8)) as base.u8
                     }
 
                     channel += 1
-                } endwhile
+                }
 
                 p0 += 1
-            } endwhile
+            }
             // -------- END   convert to PIXEL_FORMAT__BGRA_NONPREMUL_4X16LE.
 
             dst = tab.row_u32(y: this.dst_y)
@@ -1000,8 +1000,8 @@ pri func decoder.swizzle_bitfields!(dst: ptr base.pixel_buffer, src: base.io_rea
                 return "@internal note: short read"
             }
             this.dst_x ~sat+= (n & 0xFFFF_FFFF) as base.u32
-        } endwhile.inner
-    } endwhile.outer
+        }.inner
+    }.outer
 
     return ok
 }
@@ -1064,12 +1064,12 @@ pri func decoder.swizzle_low_bit_depth!(dst: ptr base.pixel_buffer, src: base.io
                 args.src.skip_u32_fast!(actual: 256, worst_case: 256)
                 this.dst_x = this.width.min(no_more_than: this.dst_x ~mod+ (pixels_per_chunk * 64))
                 chunk_count -= 64
-            } endwhile
+            }
             while (chunk_count >= 8) and (args.src.length() >= 32) {
                 args.src.skip_u32_fast!(actual: 32, worst_case: 32)
                 this.dst_x = this.width.min(no_more_than: this.dst_x ~mod+ (pixels_per_chunk * 8))
                 chunk_count -= 8
-            } endwhile
+            }
             while chunk_count > 0 {
                 if args.src.length() < 4 {
                     return "@internal note: short read"
@@ -1077,7 +1077,7 @@ pri func decoder.swizzle_low_bit_depth!(dst: ptr base.pixel_buffer, src: base.io
                 args.src.skip_u32_fast!(actual: 4, worst_case: 4)
                 this.dst_x = this.width.min(no_more_than: this.dst_x ~mod+ (pixels_per_chunk * 1))
                 chunk_count -= 1
-            } endwhile
+            }
             continue.loop
         }
         dst = dst[i ..]
@@ -1125,7 +1125,7 @@ pri func decoder.swizzle_low_bit_depth!(dst: ptr base.pixel_buffer, src: base.io
                 this.scratch[p0 + 0x1F] = (0x01 & (chunk_bits >> 0x00)) as base.u8
                 p0 = (p0 & 511) + 0x20
                 chunk_count -= 1
-            } endwhile
+            }
 
         } else if this.bits_per_pixel == 2 {
             // Calculate the remaining number of 32-bit chunks. At 2 bits per
@@ -1153,7 +1153,7 @@ pri func decoder.swizzle_low_bit_depth!(dst: ptr base.pixel_buffer, src: base.io
                 this.scratch[p0 + 0x0F] = (0x03 & (chunk_bits >> 0x00)) as base.u8
                 p0 = (p0 & 511) + 0x10
                 chunk_count -= 1
-            } endwhile
+            }
 
         } else {
             // Calculate the remaining number of 32-bit chunks. At 4 bits per
@@ -1173,7 +1173,7 @@ pri func decoder.swizzle_low_bit_depth!(dst: ptr base.pixel_buffer, src: base.io
                 this.scratch[p0 + 0x07] = (0x0F & (chunk_bits >> 0x00)) as base.u8
                 p0 = (p0 & 511) + 0x08
                 chunk_count -= 1
-            } endwhile
+            }
         }
 
         p0 = p0.min(no_more_than: this.width ~sat- this.dst_x)
@@ -1185,7 +1185,7 @@ pri func decoder.swizzle_low_bit_depth!(dst: ptr base.pixel_buffer, src: base.io
             return "@internal note: short read"
         }
         this.dst_x ~sat+= (n & 0xFFFF_FFFF) as base.u32
-    } endwhile.loop
+    }.loop
 
     return ok
 }
@@ -1241,7 +1241,7 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
             return "#truncated input"
         }
         yield? status
-    } endwhile
+    }
 }
 
 pri func decoder.do_tell_me_more?(dst: base.io_writer, minfo: nptr base.more_information, src: base.io_reader) {
@@ -1279,7 +1279,7 @@ pri func decoder.read_palette?(src: base.io_reader) {
             this.src_palette[(4 * i) + 2] = ((argb >> 16) & 0xFF) as base.u8
             this.src_palette[(4 * i) + 3] = ((argb >> 24) & 0xFF) as base.u8
             i += 1
-        } endwhile
+        }
     } else {
         while (i < 256) and (this.padding >= 4) {
             this.padding -= 4
@@ -1290,7 +1290,7 @@ pri func decoder.read_palette?(src: base.io_reader) {
             this.src_palette[(4 * i) + 2] = ((argb >> 16) & 0xFF) as base.u8
             this.src_palette[(4 * i) + 3] = ((argb >> 24) & 0xFF) as base.u8
             i += 1
-        } endwhile
+        }
     }
 
     while i < 256 {
@@ -1299,7 +1299,7 @@ pri func decoder.read_palette?(src: base.io_reader) {
         this.src_palette[(4 * i) + 2] = 0x00
         this.src_palette[(4 * i) + 3] = 0xFF
         i += 1
-    } endwhile
+    }
 }
 
 pri func decoder.process_masks?() {
@@ -1316,7 +1316,7 @@ pri func decoder.process_masks?() {
             {
                 n ~mod+= 1
                 mask >>= 1
-            } endwhile
+            }
             this.channel_shifts[i] = (n & 31) as base.u8
 
             n = 0
@@ -1325,7 +1325,7 @@ pri func decoder.process_masks?() {
             {
                 n ~mod+= 1
                 mask >>= 1
-            } endwhile
+            }
             if (mask <> 0) or (n > 32) {
                 return "#bad header"
             }
@@ -1335,5 +1335,5 @@ pri func decoder.process_masks?() {
         }
 
         i += 1
-    } endwhile
+    }
 }

@@ -53,7 +53,7 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
             return "#truncated input"
         }
         yield? status
-    } endwhile
+    }
 }
 
 pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.io_reader) {
@@ -97,14 +97,14 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
                 if c8 == 0x0A {
                     break
                 }
-            } endwhile
+            }
             continue
         } else if (c8 < '0') or ('9' < c8) {
             return "#bad header"
         }
         this.width = ((c8 - '0') as base.u32)
         break
-    } endwhile
+    }
     while true {
         c8 = args.src.read_u8?()
         if (c8 == ' ') or (c8 == 0x09) {
@@ -117,7 +117,7 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
             return "#unsupported Netpbm file"
         }
         this.width = n
-    } endwhile
+    }
 
     // Decode height.
     while true {
@@ -131,14 +131,14 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
                 if c8 == 0x0A {
                     break
                 }
-            } endwhile
+            }
             continue
         } else if (c8 < '0') or ('9' < c8) {
             return "#bad header"
         }
         this.height = ((c8 - '0') as base.u32)
         break
-    } endwhile
+    }
     while true {
         c8 = args.src.read_u8?()
         if (c8 == ' ') or (c8 == 0x09) or (c8 == 0x0D) {
@@ -153,7 +153,7 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
             return "#unsupported Netpbm file"
         }
         this.height = n
-    } endwhile
+    }
 
     // Decode max_value.
     while true {
@@ -167,14 +167,14 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
                 if c8 == 0x0A {
                     break
                 }
-            } endwhile
+            }
             continue
         } else if (c8 < '0') or ('9' < c8) {
             return "#bad header"
         }
         this.max_value = ((c8 - '0') as base.u32)
         break
-    } endwhile
+    }
     while true {
         c8 = args.src.read_u8?()
         if (c8 == ' ') or (c8 == 0x09) or (c8 == 0x0D) {
@@ -189,7 +189,7 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
             return "#unsupported Netpbm file"
         }
         this.max_value = n
-    } endwhile
+    }
 
     if this.max_value <> 255 {
         return "#unsupported Netpbm file"
@@ -219,7 +219,7 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
             return "#truncated input"
         }
         yield? status
-    } endwhile
+    }
 }
 
 pri func decoder.do_decode_frame_config?(dst: nptr base.frame_config, src: base.io_reader) {
@@ -265,7 +265,7 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
             return "#truncated input"
         }
         yield? status
-    } endwhile
+    }
 }
 
 pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, blend: base.pixel_blend, workbuf: slice base.u8, opts: nptr base.decode_frame_options) {
@@ -300,7 +300,7 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
             return status
         }
         yield? base."$short read"
-    } endwhile
+    }
 
     this.call_sequence = 0x60
 }
@@ -359,7 +359,7 @@ pri func decoder.swizzle!(dst: ptr base.pixel_buffer, src: base.io_reader) base.
                             worst_case: src_bytes_per_pixel * 8)
                 }
                 j -= 8
-            } endwhile
+            }
             while j > 0 {
                 if args.src.length() >= ((src_bytes_per_pixel * 1) as base.u64) {
                     args.src.skip_u32_fast!(
@@ -367,7 +367,7 @@ pri func decoder.swizzle!(dst: ptr base.pixel_buffer, src: base.io_reader) base.
                             worst_case: src_bytes_per_pixel * 1)
                 }
                 j -= 1
-            } endwhile
+            }
         } else {
             n = this.swizzler.swizzle_interleaved_from_reader!(
                     dst: dst[i ..],
@@ -378,7 +378,7 @@ pri func decoder.swizzle!(dst: ptr base.pixel_buffer, src: base.io_reader) base.
             return "@internal note: short read"
         }
         this.dst_x ~sat+= (n & 0xFFFF_FFFF) as base.u32
-    } endwhile
+    }
 
     return ok
 }

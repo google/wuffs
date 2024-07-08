@@ -94,7 +94,7 @@ pub func hasher.update!(x: roslice base.u8) {
             this.buf_data[this.buf_len] = args.x[0]
             this.buf_len += 1
             args.x = args.x[1 ..]
-        } endwhile
+        }
         this.buf_len = 0
         this.up!(x: this.buf_data[..])
     }
@@ -189,7 +189,7 @@ pri func hasher.up!(x: roslice base.u8) {
                     ((w15 ~mod<< 14) | (w15 >> 18))
             w[i] = ((s1 ~mod+ w[i - 7]) ~mod+ s0) ~mod+ w[i - 16]
             i += 1
-        } endwhile
+        }
 
         i = 0
         while i < 64 {
@@ -216,7 +216,7 @@ pri func hasher.up!(x: roslice base.u8) {
             a = t1 ~mod+ t2
 
             i += 1
-        } endwhile
+        }
 
         a ~mod+= this.h0
         this.h0 = a
@@ -283,7 +283,7 @@ pub func hasher.checksum_bitvec256() base.bitvec256 {
     while i < 64 {
         buf_data[i] = this.buf_data[i]
         i += 1
-    } endwhile
+    }
 
     // Pad with a 1 bit and then zero or more 0 bits, until we're at 56 bytes
     // (448 bits), modulo 64 bytes (512 bits).
@@ -294,7 +294,7 @@ pub func hasher.checksum_bitvec256() base.bitvec256 {
         while buf_len < 56 {
             buf_data[buf_len] = 0x00
             buf_len += 1
-        } endwhile
+        }
         final_block = true
 
     } else {
@@ -304,7 +304,7 @@ pub func hasher.checksum_bitvec256() base.bitvec256 {
         while buf_len < 64 {
             buf_data[buf_len] = 0x00
             buf_len += 1
-        } endwhile
+        }
     }
 
     h0 = this.h0
@@ -385,7 +385,7 @@ pub func hasher.checksum_bitvec256() base.bitvec256 {
                     ((w15 ~mod<< 14) | (w15 >> 18))
             w[i] = ((s1 ~mod+ w[i - 7]) ~mod+ s0) ~mod+ w[i - 16]
             i += 1
-        } endwhile
+        }
 
         i = 0
         while i < 64 {
@@ -412,7 +412,7 @@ pub func hasher.checksum_bitvec256() base.bitvec256 {
             a = t1 ~mod+ t2
 
             i += 1
-        } endwhile
+        }
 
         a ~mod+= h0
         b ~mod+= h1
@@ -441,8 +441,8 @@ pub func hasher.checksum_bitvec256() base.bitvec256 {
         while buf_len < 56 {
             buf_data[buf_len] = 0x00
             buf_len += 1
-        } endwhile
-    } endwhile
+        }
+    }
 
     return this.util.make_bitvec256(
             e00: (h as base.u64) | ((g as base.u64) << 32),

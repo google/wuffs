@@ -44,7 +44,7 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
             return "#truncated input"
         }
         yield? status
-    } endwhile
+    }
 }
 
 pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.io_reader) {
@@ -64,7 +64,7 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
             return "#bad header"
         }
         i += 1
-    } endwhile
+    }
 
     // Width, height.
     i = 0
@@ -82,7 +82,7 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
                 return base."#unsupported image dimension"
             }
             p <<= 7
-        } endwhile
+        }
 
         if i == 0 {
             this.width = p
@@ -90,7 +90,7 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
             this.height = p
         }
         i += 1
-    } endwhile
+    }
 
     this.frame_config_io_position = args.src.position()
 
@@ -116,7 +116,7 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
             return "#truncated input"
         }
         yield? status
-    } endwhile
+    }
 }
 
 pri func decoder.do_decode_frame_config?(dst: nptr base.frame_config, src: base.io_reader) {
@@ -162,7 +162,7 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
             return "#truncated input"
         }
         yield? status
-    } endwhile
+    }
 }
 
 pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, blend: base.pixel_blend, workbuf: slice base.u8, opts: nptr base.decode_frame_options) {
@@ -231,7 +231,7 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
                         if dst_x_in_bytes <= dst.length() {
                             dst = dst[dst_x_in_bytes ..]
                         }
-                    } endwhile
+                    }
                     c8 = args.src.peek_u8()
                     args.src.skip_u32_fast!(actual: 1, worst_case: 1)
                 }
@@ -255,9 +255,9 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
                 }
 
                 dst_x += 1
-            } endwhile
+            }
             dst_y += 1
-        } endwhile
+        }
     }
 
     this.call_sequence = 0x60

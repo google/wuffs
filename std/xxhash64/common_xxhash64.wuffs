@@ -138,7 +138,7 @@ pri func hasher.up!(x: roslice base.u8) {
         this.buf_data[this.buf_len] = args.x[0]
         this.buf_len += 1
         args.x = args.x[1 ..]
-    } endwhile
+    }
 
     buf_len = this.buf_len & 31
     v0 = this.v0
@@ -330,7 +330,7 @@ pub func hasher.checksum_u64() base.u64 {
         ret ~mod*= XXH_PRIME64_1
 
         i += 1
-    } endwhile
+    }
 
     ret ^= ret >> 33
     ret ~mod*= XXH_PRIME64_2

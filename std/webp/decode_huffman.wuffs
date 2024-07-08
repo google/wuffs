@@ -21,9 +21,9 @@ pri func decoder.decode_huffman_groups?(src: base.io_reader, n_huffman_groups: b
         {
             this.decode_huffman_tree?(src: args.src, hg: hg, ht: ht)
             ht += 1
-        } endwhile
+        }
         hg += 1
-    } endwhile
+    }
 }
 
 pri func decoder.decode_huffman_tree?(src: base.io_reader, hg: base.u32[..= 255], ht: base.u32[..= 4]) {
@@ -170,11 +170,11 @@ pri func decoder.decode_code_length_code_lengths?(src: base.io_reader) {
         this.n_bits -= 3
 
         i += 1
-    } endwhile
+    }
     while i < 19 {
         this.code_length_code_lengths[CODE_LENGTH_CODE_ORDER[i]] = 0
         i += 1
-    } endwhile
+    }
 }
 
 pri func decoder.build_code_lengths_huffman_nodes!() base.status {
@@ -205,7 +205,7 @@ pri func decoder.build_code_lengths_huffman_nodes!() base.status {
             last_used_symbol = symbol
         }
         symbol += 1
-    } endwhile
+    }
 
     if n_used_symbols < 1 {
         return "#bad Huffman code"
@@ -225,7 +225,7 @@ pri func decoder.build_code_lengths_huffman_nodes!() base.status {
             break
         }
         code_len += 1
-    } endwhile
+    }
 
     if subscription_total > (1 << 15) {
         return "#bad Huffman code (over-subscribed)"
@@ -262,11 +262,11 @@ pri func decoder.build_code_lengths_huffman_nodes!() base.status {
                 }
                 code_bits ~mod<<= 1
                 code_len -= 1
-            } endwhile
+            }
             this.code_lengths_huffman_nodes[h] = (symbol | 0x8000) as base.u16
         }
         symbol += 1
-    } endwhile
+    }
     return ok
 }
 
@@ -303,7 +303,7 @@ pri func decoder.build_huffman_nodes!(hg: base.u32[..= 255], ht: base.u32[..= 4]
             last_used_symbol = symbol
         }
         symbol += 1
-    } endwhile
+    }
 
     if n_used_symbols < 1 {
         return "#bad Huffman code"
@@ -323,7 +323,7 @@ pri func decoder.build_huffman_nodes!(hg: base.u32[..= 255], ht: base.u32[..= 4]
             break
         }
         code_len += 1
-    } endwhile
+    }
 
     if subscription_total > (1 << 15) {
         return "#bad Huffman code (over-subscribed)"
@@ -361,11 +361,11 @@ pri func decoder.build_huffman_nodes!(hg: base.u32[..= 255], ht: base.u32[..= 4]
                 }
                 code_bits ~mod<<= 1
                 code_len -= 1
-            } endwhile
+            }
             this.huffman_nodes[args.hg][h] = (symbol | 0x8000) as base.u16
         }
         symbol += 1
-    } endwhile
+    }
     return ok
 }
 
@@ -418,7 +418,7 @@ pri func decoder.build_code_lengths?(src: base.io_reader) {
             assert this.n_bits < 16 via "a < b: a < c; c <= b"(c: length_n_bits)
             this.bits |= (c8 as base.u32) << this.n_bits
             this.n_bits += 8
-        } endwhile
+        }
         length = (this.bits & (((1 as base.u32) << length_n_bits) - 1)) + 2
         this.bits >>= length_n_bits
         this.n_bits -= length_n_bits
@@ -438,7 +438,7 @@ pri func decoder.build_code_lengths?(src: base.io_reader) {
                 assert s < 2328 via "a < b: a < c; c <= b"(c: this.ht_n_symbols)
                 this.code_lengths[s] = 0
                 s += 1
-            } endwhile
+            }
             break
         }
         this.ht_code_lengths_remaining -= 1
@@ -462,7 +462,7 @@ pri func decoder.build_code_lengths?(src: base.io_reader) {
             h = (node as base.u32) + (this.bits & 1)
             this.bits >>= 1
             this.n_bits -= 1
-        } endwhile
+        }
 
         symbol = (node & 0x7FFF) as base.u32
         if symbol == 0 {
@@ -509,8 +509,8 @@ pri func decoder.build_code_lengths?(src: base.io_reader) {
             assert s < 2328 via "a < b: a < c; c <= b"(c: s_max)
             this.code_lengths[s] = repeat_value
             s += 1
-        } endwhile
-    } endwhile
+        }
+    }
 }
 
 pri const CODE_LENGTH_CODE_ORDER : roarray[19] base.u8[..= 18] = [

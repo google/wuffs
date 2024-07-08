@@ -147,7 +147,7 @@ pri func decoder.decode_mcu_progressive_ac_high_bits!(workbuf: slice base.u8, mx
                             ac_symbol = 0
                             break
                         }
-                    } endwhile
+                    }
                 }
 
                 // Split the 8-bit ac_symbol into two 4-bit halves, per section
@@ -176,13 +176,13 @@ pri func decoder.decode_mcu_progressive_ac_high_bits!(workbuf: slice base.u8, mx
                     }
                     break.ac_components
                 }
-            } endwhile.ac_components
+            }.ac_components
 
             break.block
-        } endwhile.block
+        }.block
 
         break.goto_done
-        }} endwhile.goto_done
+        }}.goto_done
 
         pos = (r.position() & 0xFFFF_FFFF) as base.u32
         if pos > this.bitstream_wi {

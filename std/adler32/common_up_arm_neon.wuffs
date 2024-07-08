@@ -44,7 +44,7 @@ pri func hasher.up_arm_neon!(x: roslice base.u8),
         s1 ~mod+= args.x[0] as base.u32
         s2 ~mod+= s1
         args.x = args.x[1 ..]
-    } endwhile
+    }
     s1 %= 65521
     s2 %= 65521
 
@@ -186,6 +186,6 @@ pri func hasher.up_arm_neon!(x: roslice base.u8),
         s1 %= 65521
         s2 %= 65521
         args.x = remaining
-    } endwhile
+    }
     this.state = ((s2 & 0xFFFF) << 16) | (s1 & 0xFFFF)
 }

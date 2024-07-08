@@ -140,7 +140,7 @@ pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf
             return "#truncated input"
         }
         yield? status
-    } endwhile
+    }
 }
 
 pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, workbuf: slice base.u8) {
@@ -185,7 +185,7 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
             this.bits ~mod<<= 1
             this.n_bits -= 1
             i += 1
-        } endwhile
+        }
 
         if tag == 0x1772_4538_5090 {
             break
@@ -209,7 +209,7 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
                 break
             }
             this.decode_huffman_slow?(src: args.src)
-        } endwhile
+        }
 
         this.invert_bwt!()
 
@@ -228,7 +228,7 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
                 break
             }
             this.flush_slow?(dst: args.dst)
-        } endwhile
+        }
 
         this.block_checksum_have ^= 0xFFFF_FFFF
         if (not this.ignore_checksum) and (this.block_checksum_have <> this.block_checksum_want) {
@@ -237,7 +237,7 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
         this.final_checksum_have = this.block_checksum_have ^ (
                 (this.final_checksum_have >> 31) |
                 (this.final_checksum_have ~mod<< 1))
-    } endwhile
+    }
 
     // Read the 32-bit final checksum.
     final_checksum_want = 0
@@ -254,7 +254,7 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
         this.bits ~mod<<= 1
         this.n_bits -= 1
         i += 1
-    } endwhile
+    }
     if (not this.ignore_checksum) and (this.final_checksum_have <> final_checksum_want) {
         return "#bad checksum"
     }
@@ -284,7 +284,7 @@ pri func decoder.prepare_block?(src: base.io_reader) {
         this.bits ~mod<<= 1
         this.n_bits -= 1
         i += 1
-    } endwhile
+    }
 
     // Read the "block randomized" bit.
     if this.n_bits <= 0 {
@@ -314,14 +314,14 @@ pri func decoder.prepare_block?(src: base.io_reader) {
         this.bits ~mod<<= 1
         this.n_bits -= 1
         i += 1
-    } endwhile
+    }
 
     // Reset the presence bitmap.
     i = 0
     while i < 256 {
         this.presence[i] = 0
         i += 1
-    } endwhile
+    }
 
     // Read the 16-bit high-level presence bitmap.
     i = 0
@@ -338,7 +338,7 @@ pri func decoder.prepare_block?(src: base.io_reader) {
         this.bits ~mod<<= 1
         this.n_bits -= 1
         i += 16
-    } endwhile
+    }
 
     // Read the 16-bit low-level presence bitmaps.
     this.scratch = 0
@@ -363,8 +363,8 @@ pri func decoder.prepare_block?(src: base.io_reader) {
             if (i & 15) == 0 {
                 break
             }
-        } endwhile
-    } endwhile
+        }
+    }
     if (this.scratch < 1) or (256 < this.scratch) {
         return "#bad block header"
     }
@@ -385,7 +385,7 @@ pri func decoder.prepare_block?(src: base.io_reader) {
         this.bits ~mod<<= 1
         this.n_bits -= 1
         i += 1
-    } endwhile
+    }
     if (this.scratch < 2) or (6 < this.scratch) {
         return "#bad block header"
     }
@@ -406,7 +406,7 @@ pri func decoder.prepare_block?(src: base.io_reader) {
         this.bits ~mod<<= 1
         this.n_bits -= 1
         i += 1
-    } endwhile
+    }
     if (this.scratch < 1) or (18001 < this.scratch) {
         return "#bad block header"
     }
@@ -418,7 +418,7 @@ pri func decoder.prepare_block?(src: base.io_reader) {
         assert i < 6 via "a < b: a < c; c <= b"(c: this.num_huffman_codes)
         this.mtft[i] = i as base.u8
         i += 1
-    } endwhile
+    }
 
     // Read each section's Huffman code selector, applying the MTFT.
     i = 0
@@ -447,7 +447,7 @@ pri func decoder.prepare_block?(src: base.io_reader) {
             if selector >= this.num_huffman_codes {
                 return "#bad block header"
             }
-        } endwhile
+        }
 
         // Move to front.
         if selector == 0 {
@@ -462,7 +462,7 @@ pri func decoder.prepare_block?(src: base.io_reader) {
         }
 
         i += 1
-    } endwhile
+    }
 
     // Read the Huffman codes.
     i = 0
@@ -475,7 +475,7 @@ pri func decoder.prepare_block?(src: base.io_reader) {
         }
         this.build_huffman_table!(which: i)
         i += 1
-    } endwhile
+    }
 
     // Initialize the MTFT state.
     i = 0
@@ -486,14 +486,14 @@ pri func decoder.prepare_block?(src: base.io_reader) {
             j ~mod+= 1
         }
         i += 1
-    } endwhile
+    }
 
     // Initialize the letter counts.
     i = 0
     while i < 256 {
         this.letter_counts[i] = 0
         i += 1
-    } endwhile
+    }
 }
 
 pri func decoder.read_code_lengths?(src: base.io_reader) {
@@ -517,7 +517,7 @@ pri func decoder.read_code_lengths?(src: base.io_reader) {
         this.bits ~mod<<= 1
         this.n_bits -= 1
         i += 1
-    } endwhile
+    }
 
     // Read the code lengths.
     i = 0
@@ -557,12 +557,12 @@ pri func decoder.read_code_lengths?(src: base.io_reader) {
             }
             this.bits ~mod<<= 1
             this.n_bits -= 1
-        } endwhile
+        }
 
         this.code_lengths_bitmask |= (1 as base.u32) << (code_length & 31)
         this.bwt[i] = code_length
         i += 1
-    } endwhile
+    }
 }
 
 // build_huffman_tree builds a canonical Huffman tree given the symbols' code
@@ -669,7 +669,7 @@ pri func decoder.build_huffman_tree!(which: base.u32[..= 5]) base.status {
                 this.huffman_trees[args.which][num_branch_nodes][1] = 0
                 num_branch_nodes += 1
                 stack_height += 1
-            } endwhile
+            }
 
             node_index = stack_values[stack_height - 1]
             if symbol_index < 2 {
@@ -694,13 +694,13 @@ pri func decoder.build_huffman_tree!(which: base.u32[..= 5]) base.status {
                         break
                     }
                     stack_height -= 1
-                } endwhile
+                }
             }
 
             symbol_index += 1
-        } endwhile
+        }
         code_length += 1
-    } endwhile
+    }
 
     if stack_height <> 0 {
         return "#bad Huffman code (under-subscribed)"
@@ -724,10 +724,10 @@ pri func decoder.build_huffman_table!(which: base.u32[..= 5]) {
             child = this.huffman_trees[args.which][child][bits >> 31]
             bits ~mod<<= 1
             n_bits += 1
-        } endwhile
+        }
         this.huffman_tables[args.which][i] = (child | (n_bits << 12)) as base.u16
         i += 1
-    } endwhile
+    }
 }
 
 // invert_bwt performs "two passes over the data, and one pass over the
@@ -748,7 +748,7 @@ pri func decoder.invert_bwt!() {
         sum ~mod+= this.letter_counts[i]
         this.letter_counts[i] = old_sum
         i += 1
-    } endwhile
+    }
 
     // Second data pass, but per the README.md file, calculate the U column
     // instead of the BWT technical report's T column.
@@ -759,7 +759,7 @@ pri func decoder.invert_bwt!() {
         this.bwt[this.letter_counts[letter] & 1_048575] |= i << 12
         this.letter_counts[letter] ~mod+= 1
         i += 1
-    } endwhile
+    }
 }
 
 // The table below was created by script/print-crc32-magic-numbers.go with the

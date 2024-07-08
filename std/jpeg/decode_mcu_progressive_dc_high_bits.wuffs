@@ -95,7 +95,7 @@ pri func decoder.decode_mcu_progressive_dc_high_bits!(workbuf: slice base.u8, mx
                             dc_extend = EXTEND[dc_symbol]
                             break
                         }
-                    } endwhile
+                    }
                 }
 
                 // Process the dc_value in the next dc_symbol (up to 15) bits.
@@ -113,15 +113,15 @@ pri func decoder.decode_mcu_progressive_dc_high_bits!(workbuf: slice base.u8, mx
                         this.mcu_previous_dc_values[csel] ~mod<< this.scan_al
 
                 break.dc_component
-            } endwhile.dc_component
+            }.dc_component
 
             assert this.mcu_current_block < 10
             this.mcu_current_block += 1
-        } endwhile.block
+        }.block
         this.mcu_current_block = 0
 
         break.goto_done
-        }} endwhile.goto_done
+        }}.goto_done
 
         pos = (r.position() & 0xFFFF_FFFF) as base.u32
         if pos > this.bitstream_wi {

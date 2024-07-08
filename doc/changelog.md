@@ -38,6 +38,7 @@ The LICENSE has changed from a single license (Apache 2) to a dual license
 - Let `std/png` decode PNG color type 4 to `PIXEL_FORMAT__YA_NONPREMUL` (two
   channels) instead of `PIXEL_FORMAT__BGRA_NONPREMUL` (four channels).
 - Removed the `std/gif -> std/lzw` dependency.
+- Removed `endwhile` keyword.
 - Removed `example/bzcat`.
 - Set image decoder pixel width and height inclusive maximum to `0xFF_FFFF`,
   down from `0x7FFF_FFFF`.

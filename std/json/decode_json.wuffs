@@ -199,7 +199,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
                 continue.outer
             }
             whitespace_length += 1
-        } endwhile.ws
+        }.ws
 
         // Emit whitespace.
         if whitespace_length > 0 {
@@ -296,7 +296,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
                             continue.string_loop_outer
                         }
                         string_length += 4
-                    } endwhile
+                    }
 
                     c8 = args.src.peek_u8()
                     char = LUT_CHARS[c8]
@@ -826,8 +826,8 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
                         continue.string_loop_outer
                     }
                     return "#bad UTF-8"
-                } endwhile.string_loop_inner
-            } endwhile.string_loop_outer
+                }.string_loop_inner
+            }.string_loop_outer
 
             // Emit the trailing '"'.
             while true {
@@ -853,7 +853,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
                         continued: 0,
                         length: 1)
                 break
-            } endwhile
+            }
 
             // As above, expect must have contained EXPECT_STRING. If it didn't
             // also contain EXPECT_NUMBER (excluding EXPECT_COMMENT) then we
@@ -936,7 +936,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
                     } else {
                         return "#internal error: inconsistent I/O"
                     }
-                } endwhile
+                }
 
                 if number_status == 1 {
                     if this.quirks[QUIRK_ALLOW_INF_NAN_NUMBERS - QUIRKS_BASE] {
@@ -952,9 +952,9 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
                             post args.dst.length() > 0,
                     {
                         yield? base."$short write"
-                    } endwhile
+                    }
                 }
-            } endwhile
+            }
             break.goto_parsed_a_leaf_value
             // -------- END   parse numbers.
 
@@ -1185,7 +1185,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
         }
 
         return "#bad input"
-        }} endwhile.goto_parsed_a_leaf_value
+        }}.goto_parsed_a_leaf_value
 
         // We've just parsed a leaf (non-container) value: literal (null,
         // false, true), number or string.
@@ -1193,7 +1193,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
             break.outer
         }
         expect = expect_after_value
-    } endwhile.outer
+    }.outer
 
     if this.quirks[QUIRK_ALLOW_TRAILING_FILLER - QUIRKS_BASE] or
             this.quirks[QUIRK_EXPECT_TRAILING_NEW_LINE_OR_EOF - QUIRKS_BASE] {
@@ -1335,7 +1335,7 @@ pri func decoder.decode_number!(src: base.io_reader) base.u32[..= 0x3FF] {
     n = this.decode_digits!(src: args.src, n: n)
 
     break.goto_done
-    }} endwhile.goto_done
+    }}.goto_done
 
     return n | floating_point
 }
@@ -1371,7 +1371,7 @@ pri func decoder.decode_digits!(src: base.io_reader, n: base.u32[..= 99]) base.u
         }
         n += 1
         args.src.skip_u32_fast!(actual: 1, worst_case: 1)
-    } endwhile
+    }
     if n == args.n {
         n |= 0x100
     }
@@ -1424,7 +1424,7 @@ pri func decoder.decode_leading?(dst: base.token_writer, src: base.io_reader) {
             }
         }
         break
-    } endwhile
+    }
 }
 
 pri func decoder.decode_comment?(dst: base.token_writer, src: base.io_reader) {
@@ -1446,7 +1446,7 @@ pri func decoder.decode_comment?(dst: base.token_writer, src: base.io_reader) {
             return ok
         }
         yield? base."$short read"
-    } endwhile
+    }
     c16 = args.src.peek_u16le()
 
     if (c16 == '/*'le) and this.quirks[QUIRK_ALLOW_COMMENT_BLOCK - QUIRKS_BASE] {
@@ -1473,7 +1473,7 @@ pri func decoder.decode_comment?(dst: base.token_writer, src: base.io_reader) {
                         post args.dst.length() > 0,
                 {
                     yield? base."$short write"
-                } endwhile
+                }
                 length = 0
                 continue.comment_block
             }
@@ -1503,12 +1503,12 @@ pri func decoder.decode_comment?(dst: base.token_writer, src: base.io_reader) {
                         post args.dst.length() > 0,
                 {
                     yield? base."$short write"
-                } endwhile
+                }
                 length = 0
                 continue.comment_block
             }
             length += 1
-        } endwhile.comment_block
+        }.comment_block
 
     } else if (c16 == '//'le) and this.quirks[QUIRK_ALLOW_COMMENT_LINE - QUIRKS_BASE] {
         args.src.skip_u32_fast!(actual: 2, worst_case: 2)
@@ -1540,7 +1540,7 @@ pri func decoder.decode_comment?(dst: base.token_writer, src: base.io_reader) {
                         post args.dst.length() > 0,
                 {
                     yield? base."$short write"
-                } endwhile
+                }
                 length = 0
                 continue.comment_line
             }
@@ -1569,12 +1569,12 @@ pri func decoder.decode_comment?(dst: base.token_writer, src: base.io_reader) {
                         post args.dst.length() > 0,
                 {
                     yield? base."$short write"
-                } endwhile
+                }
                 length = 0
                 continue.comment_line
             }
             length += 1
-        } endwhile.comment_line
+        }.comment_line
     }
 }
 
@@ -1686,7 +1686,7 @@ pri func decoder.decode_inf_nan?(dst: base.token_writer, src: base.io_reader) {
         }
 
         return "#bad input"
-    } endwhile
+    }
 }
 
 pri func decoder.decode_trailer?(dst: base.token_writer, src: base.io_reader) {
@@ -1747,6 +1747,6 @@ pri func decoder.decode_trailer?(dst: base.token_writer, src: base.io_reader) {
                 continue.outer
             }
             whitespace_length += 1
-        } endwhile.inner
-    } endwhile.outer
+        }.inner
+    }.outer
 }

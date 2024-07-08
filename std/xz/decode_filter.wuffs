@@ -37,7 +37,7 @@ pri func decoder.apply_non_final_filters!(dst_slice: slice base.u8) base.u8,
                 delta_pos ~mod-= 1
                 args.dst_slice[i] = c8
                 i += 1
-            } endwhile
+            }
             this.filters[f] &= 0xFFFF
             this.filters[f] |= (delta_pos ~mod<< 24)
         }
@@ -46,7 +46,7 @@ pri func decoder.apply_non_final_filters!(dst_slice: slice base.u8) base.u8,
             break
         }
         f -= 1
-    } endwhile
+    }
     return 0
 }
 
@@ -145,7 +145,7 @@ pri func decoder.apply_filter_04_x86!(dst_slice: slice base.u8) base.u8 {
                 break
             }
             src = dst ^ FILTER_04_X86_MASK_TO_XOR_OPERAND[prev_mask & 7]
-        } endwhile
+        }
 
         dst &= 0x01FF_FFFF
         dst |= 0 ~mod- (dst & 0x0100_0000)
@@ -157,7 +157,7 @@ pri func decoder.apply_filter_04_x86!(dst_slice: slice base.u8) base.u8 {
         i ~mod+= 5
         p ~mod+= 5
         s = s[5 ..]
-    } endwhile
+    }
 
     prev_pos = i ~mod- prev_pos
     if prev_pos > 3 {
@@ -194,7 +194,7 @@ pri func decoder.apply_filter_05_powerpc!(dst_slice: slice base.u8) base.u8 {
         }
         p ~mod+= 4
         s = s[4 ..]
-    } endwhile
+    }
 
     this.bcj_pos = p
     return s.length() as base.u8
@@ -250,7 +250,7 @@ pri func decoder.apply_filter_06_ia64!(dst_slice: slice base.u8) base.u8 {
             {
                 x |= (s[j + byte_pos] as base.u64) << (8 * j)
                 j += 1
-            } endwhile
+            }
 
             norm = x >> bit_res
             if (((norm >> 37) & 0x0F) <> 0x05) or
@@ -276,20 +276,20 @@ pri func decoder.apply_filter_06_ia64!(dst_slice: slice base.u8) base.u8 {
             {
                 s[j + byte_pos] = ((x >> (8 * j)) & 0xFF) as base.u8
                 j += 1
-            } endwhile
+            }
 
             break.goto_done
-            }} endwhile.goto_done
+            }}.goto_done
 
             if slot >= 2 {
                 break
             }
             slot += 1
-        } endwhile
+        }
 
         p ~mod+= 16
         s = s[16 ..]
-    } endwhile
+    }
 
     this.bcj_pos = p
     return s.length() as base.u8
@@ -318,7 +318,7 @@ pri func decoder.apply_filter_07_arm!(dst_slice: slice base.u8) base.u8 {
         }
         p ~mod+= 4
         s = s[4 ..]
-    } endwhile
+    }
 
     this.bcj_pos = p ~mod- 8
     return s.length() as base.u8
@@ -356,7 +356,7 @@ pri func decoder.apply_filter_08_armthumb!(dst_slice: slice base.u8) base.u8 {
         s[3] = (((y >> 0x08) & 0x07) | 0xF8) as base.u8
         p ~mod+= 4
         s = s[4 ..]
-    } endwhile
+    }
 
     this.bcj_pos = p ~mod- 4
     return s.length() as base.u8
@@ -387,7 +387,7 @@ pri func decoder.apply_filter_09_sparc!(dst_slice: slice base.u8) base.u8 {
         }
         p ~mod+= 4
         s = s[4 ..]
-    } endwhile
+    }
 
     this.bcj_pos = p
     return s.length() as base.u8
@@ -435,7 +435,7 @@ pri func decoder.apply_filter_0a_arm64!(dst_slice: slice base.u8) base.u8 {
         }
         p ~mod+= 4
         s = s[4 ..]
-    } endwhile
+    }
 
     this.bcj_pos = p
     return s.length() as base.u8
@@ -537,7 +537,7 @@ pri func decoder.apply_filter_0b_riscv!(dst_slice: slice base.u8) base.u8 {
 
         p ~mod+= 2
         s = s[2 ..]
-    } endwhile
+    }
 
     this.bcj_pos = p
     return s.length() as base.u8

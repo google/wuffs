@@ -366,8 +366,8 @@ pri func decoder.decode_huffman_fast32!(dst: base.io_writer, src: base.io_reader
                         up_to: length, distance: (dist_minus_1 + 1))
             }
             break
-        } endwhile
-    } endwhile.loop
+        }
+    }.loop
 
     // Ensure n_bits < 8 by rewindng args.src, if we loaded too many of its
     // bytes into the bits variable.
@@ -388,7 +388,7 @@ pri func decoder.decode_huffman_fast32!(dst: base.io_writer, src: base.io_reader
         } else {
             return "#internal error: inconsistent I/O"
         }
-    } endwhile
+    }
 
     this.bits = bits & (((1 as base.u32) << n_bits) - 1)
     this.n_bits = n_bits

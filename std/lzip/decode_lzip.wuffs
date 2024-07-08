@@ -68,7 +68,7 @@ pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf
             return "#truncated input"
         }
         yield? status
-    } endwhile
+    }
 }
 
 pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, workbuf: slice base.u8) {
@@ -129,7 +129,7 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
                 break
             }
             yield? status
-        } endwhile
+        }
 
         // Check the checksum.
         checksum_want = args.src.read_u32le?()
@@ -164,12 +164,12 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
                 break.outer
             }
             yield? base."$short read"
-        } endwhile
+        }
         c32 = args.src.peek_u32le()
         if c32 <> 'LZIP'le {
             break.outer
         }
         this.crc32.reset!()
         this.lzma.reset!()
-    } endwhile.outer
+    }.outer
 }

@@ -63,15 +63,15 @@ pri func decoder.decode_mcu_progressive_dc_low_bit!(workbuf: slice base.u8, mx: 
                 n_bits ~mod-= 1
 
                 break.dc_component
-            } endwhile.dc_component
+            }.dc_component
 
             assert this.mcu_current_block < 10
             this.mcu_current_block += 1
-        } endwhile.block
+        }.block
         this.mcu_current_block = 0
 
         break.goto_done
-        }} endwhile.goto_done
+        }}.goto_done
 
         pos = (r.position() & 0xFFFF_FFFF) as base.u32
         if pos > this.bitstream_wi {

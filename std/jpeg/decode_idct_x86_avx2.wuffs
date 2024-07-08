@@ -628,7 +628,7 @@ pri func decoder.decode_idct_x86_avx2!(dst_buffer: slice base.u8, dst_stride: ba
     // intermediatedh = i16x16 [in.d0 .. in.d3   in.d4 .. in.d7   in.h0 .. in.h4   in.h5 .. in.h7]
 
     break.goto_do_second_pass
-    }} endwhile.goto_do_second_pass
+    }}.goto_do_second_pass
 
     // ----
 

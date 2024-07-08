@@ -141,7 +141,7 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
             return "#truncated input"
         }
         yield? status
-    } endwhile
+    }
 }
 
 pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.io_reader) {
@@ -205,7 +205,7 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
             return "#truncated input"
         }
         yield? status
-    } endwhile
+    }
 }
 
 pri func decoder.do_tell_me_more?(dst: base.io_writer, minfo: nptr base.more_information, src: base.io_reader) {
@@ -249,7 +249,7 @@ pri func decoder.do_tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inf
             }
 
             break
-        } endwhile
+        }
 
         chunk_length = args.src.peek_u8_as_u64()
         if chunk_length <= 0 {
@@ -278,7 +278,7 @@ pri func decoder.do_tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inf
         }
 
         yield? base."$even more information"
-    } endwhile
+    }
 
     if args.minfo <> nullptr {
         args.minfo.set!(
@@ -363,7 +363,7 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
             return "#truncated input"
         }
         yield? status
-    } endwhile
+    }
 }
 
 pri func decoder.do_decode_frame_config?(dst: nptr base.frame_config, src: base.io_reader) {
@@ -411,7 +411,7 @@ pri func decoder.do_decode_frame_config?(dst: nptr base.frame_config, src: base.
                     post args.src.length() > 0,
             {
                 yield? base."$short read"
-            } endwhile
+            }
             flags = args.src.peek_u8()
             if (flags & 0x80) <> 0 {
                 background_color = this.black_color_u32_argb_premul
@@ -477,7 +477,7 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
             return "#truncated input"
         }
         yield? status
-    } endwhile
+    }
 }
 
 // TODO: honor args.opts.
@@ -548,7 +548,7 @@ pri func decoder.decode_up_to_id_part1?(src: base.io_reader) {
             this.call_sequence = 0x60
             break
         }
-    } endwhile
+    }
 }
 
 // decode_header reads either "GIF87a" or "GIF89a".
@@ -597,7 +597,7 @@ pri func decoder.decode_lsd?(src: base.io_reader) {
             this.palettes[0][(4 * i) + 2] = ((argb >> 16) & 0xFF) as base.u8
             this.palettes[0][(4 * i) + 3] = ((argb >> 24) & 0xFF) as base.u8
             i += 1
-        } endwhile
+        }
 
         if this.quirks[QUIRK_HONOR_BACKGROUND_COLOR - QUIRKS_BASE] {
             if (background_color_index <> 0) and
@@ -626,7 +626,7 @@ pri func decoder.decode_lsd?(src: base.io_reader) {
         this.palettes[0][(4 * i) + 2] = 0x00
         this.palettes[0][(4 * i) + 3] = 0xFF
         i += 1
-    } endwhile
+    }
 }
 
 // decode_extension reads an extension. The Extension Introducer byte has
@@ -662,7 +662,7 @@ pri func decoder.skip_blocks?(src: base.io_reader) {
             return ok
         }
         args.src.skip_u32?(n: block_size as base.u32)
-    } endwhile
+    }
 }
 
 // decode_ae reads an Application Extension.
@@ -706,7 +706,7 @@ pri func decoder.decode_ae?(src: base.io_reader) {
         is_iccp = is_iccp and (c8 == ICCRGBG1012[block_size])
         is_xmp = is_xmp and (c8 == XMPDATAXMP[block_size])
         block_size += 1
-    } endwhile
+    }
 
     if is_animexts or is_netscape {
         // Those 11 bytes should be followed by 0x03, 0x01 and then the loop
@@ -755,7 +755,7 @@ pri func decoder.decode_ae?(src: base.io_reader) {
     }
 
     break.goto_done
-    }} endwhile.goto_done
+    }}.goto_done
 
     this.skip_blocks?(src: args.src)
 }
@@ -866,7 +866,7 @@ pri func decoder.decode_id_part1?(dst: ptr base.pixel_buffer, src: base.io_reade
             this.palettes[1][(4 * i) + 2] = ((argb >> 16) & 0xFF) as base.u8
             this.palettes[1][(4 * i) + 3] = ((argb >> 24) & 0xFF) as base.u8
             i += 1
-        } endwhile
+        }
         // Set the remaining palette entries to opaque black.
         while i < 256 {
             this.palettes[1][(4 * i) + 0] = 0x00
@@ -874,7 +874,7 @@ pri func decoder.decode_id_part1?(dst: ptr base.pixel_buffer, src: base.io_reade
             this.palettes[1][(4 * i) + 2] = 0x00
             this.palettes[1][(4 * i) + 3] = 0xFF
             i += 1
-        } endwhile
+        }
     } else if this.quirks[QUIRK_REJECT_EMPTY_PALETTE - QUIRKS_BASE] and (not this.has_global_palette) {
         return "#bad palette"
     } else if this.gc_has_transparent_index {
@@ -953,7 +953,7 @@ pri func decoder.decode_id_part2?(dst: ptr base.pixel_buffer, src: base.io_reade
         }
         while args.src.length() == 0 {
             yield? base."$short read"
-        } endwhile
+        }
 
         if this.compressed_ri == this.compressed_wi {
             this.compressed_ri = 0
@@ -978,7 +978,7 @@ pri func decoder.decode_id_part2?(dst: ptr base.pixel_buffer, src: base.io_reade
             }
             block_size = args.src.peek_u8_as_u64()
             args.src.skip_u32_fast!(actual: 1, worst_case: 1)
-        } endwhile
+        }
 
         while.inner true {
             if (this.compressed_ri > this.compressed_wi) or (this.compressed_wi > 4096) {
@@ -1032,8 +1032,8 @@ pri func decoder.decode_id_part2?(dst: ptr base.pixel_buffer, src: base.io_reade
                 return "#bad LZW code"
             }
             return "#internal error: inconsistent I/O"
-        } endwhile.inner
-    } endwhile.outer
+        }.inner
+    }.outer
 
     this.compressed_ri = 0
     this.compressed_wi = 0
@@ -1138,7 +1138,7 @@ pri func decoder.copy_to_image_buffer!(pb: ptr base.pixel_buffer, src: roslice b
                     replicate_dst = tab.row_u32(y: replicate_y0)
                     replicate_dst.copy_from_slice!(s: replicate_src)
                     replicate_y0 += 1
-                } endwhile
+                }
                 this.dirty_max_excl_y = this.dirty_max_excl_y.max(no_less_than: replicate_y1)
             }
 
@@ -1146,7 +1146,7 @@ pri func decoder.copy_to_image_buffer!(pb: ptr base.pixel_buffer, src: roslice b
             while (this.interlace > 0) and (this.dst_y >= this.frame_rect_y1) {
                 this.interlace -= 1
                 this.dst_y = this.frame_rect_y0 ~sat+ INTERLACE_START[this.interlace]
-            } endwhile
+            }
             continue
         }
 
@@ -1172,7 +1172,7 @@ pri func decoder.copy_to_image_buffer!(pb: ptr base.pixel_buffer, src: roslice b
             while (this.interlace > 0) and (this.dst_y >= this.frame_rect_y1) {
                 this.interlace -= 1
                 this.dst_y = this.frame_rect_y0 ~sat+ INTERLACE_START[this.interlace]
-            } endwhile
+            }
             continue
         }
 
@@ -1180,6 +1180,6 @@ pri func decoder.copy_to_image_buffer!(pb: ptr base.pixel_buffer, src: roslice b
             return "#internal error: inconsistent I/O"
         }
         break
-    } endwhile
+    }
     return ok
 }

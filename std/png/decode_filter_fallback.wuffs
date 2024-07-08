@@ -32,9 +32,9 @@ pri func decoder.filter_1!(curr: slice base.u8),
             args.curr[i] = args.curr[i] ~mod+ fa
             fa = args.curr[i]
             i ~mod+= filter_distance
-        } endwhile
+        }
         i_start += 1
-    } endwhile
+    }
 }
 
 pri func decoder.filter_1_distance_3_fallback!(curr: slice base.u8) {
@@ -91,7 +91,7 @@ pri func decoder.filter_2!(curr: slice base.u8, prev: slice base.u8) {
         assert i < args.prev.length() via "a < b: a < c; c <= b"(c: n)
         args.curr[i] = args.curr[i] ~mod+ (args.prev[i])
         i += 1
-    } endwhile
+    }
 }
 
 // Filter 3: Average.
@@ -115,7 +115,7 @@ pri func decoder.filter_3!(curr: slice base.u8, prev: slice base.u8),
             args.curr[i] = args.curr[i] ~mod+ (args.curr[i - filter_distance] / 2)
             i += 1
             assert i >= filter_distance via "a >= b: a >= (b + c); 0 <= c"(c: 1)
-        } endwhile
+        }
 
     } else {
         n = args.curr.length().min(no_more_than: args.prev.length())
@@ -129,7 +129,7 @@ pri func decoder.filter_3!(curr: slice base.u8, prev: slice base.u8),
             assert i < args.prev.length() via "a < b: a < c; c <= b"(c: n)
             args.curr[i] = args.curr[i] ~mod+ (args.prev[i] / 2)
             i += 1
-        } endwhile
+        }
 
         i = filter_distance
         assert i >= filter_distance via "a >= b: a == b"()
@@ -147,7 +147,7 @@ pri func decoder.filter_3!(curr: slice base.u8, prev: slice base.u8),
                     (args.prev[i] as base.u32)) / 2) as base.u8)
             i += 1
             assert i >= filter_distance via "a >= b: a >= (b + c); 0 <= c"(c: 1)
-        } endwhile
+        }
     }
 }
 
@@ -245,7 +245,7 @@ pri func decoder.filter_4!(curr: slice base.u8, prev: slice base.u8),
         assert i < args.prev.length() via "a < b: a < c; c <= b"(c: n)
         args.curr[i] = args.curr[i] ~mod+ args.prev[i]
         i += 1
-    } endwhile
+    }
 
     i = filter_distance
     assert i >= filter_distance via "a >= b: a == b"()
@@ -285,7 +285,7 @@ pri func decoder.filter_4!(curr: slice base.u8, prev: slice base.u8),
         args.curr[i] = args.curr[i] ~mod+ ((fa & 0xFF) as base.u8)
         i += 1
         assert i >= filter_distance via "a >= b: a >= (b + c); 0 <= c"(c: 1)
-    } endwhile
+    }
 }
 
 pri func decoder.filter_4_distance_3_fallback!(curr: slice base.u8, prev: slice base.u8) {

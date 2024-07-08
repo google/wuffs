@@ -88,7 +88,7 @@ pri func decoder.decode_pixels_slow?(dst: slice base.u8, src: base.io_reader, wi
             h = (node as base.u32) + (this.bits & 1)
             this.bits >>= 1
             this.n_bits -= 1
-        } endwhile
+        }
         pixel_g = (node & 0x7FFF) as base.u32
 
         if pixel_g < 0x100 {  // Literal pixel.
@@ -112,7 +112,7 @@ pri func decoder.decode_pixels_slow?(dst: slice base.u8, src: base.io_reader, wi
                 h = ((node as base.u32) & 0xFFF) + (this.bits & 1)
                 this.bits >>= 1
                 this.n_bits -= 1
-            } endwhile
+            }
             color |= ((node & 0xFF) as base.u32) << 16
 
             // Decode the Blue symbol.
@@ -133,7 +133,7 @@ pri func decoder.decode_pixels_slow?(dst: slice base.u8, src: base.io_reader, wi
                 h = ((node as base.u32) & 0xFFF) + (this.bits & 1)
                 this.bits >>= 1
                 this.n_bits -= 1
-            } endwhile
+            }
             color |= ((node & 0xFF) as base.u32) << 0
 
             // Decode the Alpha symbol.
@@ -154,7 +154,7 @@ pri func decoder.decode_pixels_slow?(dst: slice base.u8, src: base.io_reader, wi
                 h = ((node as base.u32) & 0xFFF) + (this.bits & 1)
                 this.bits >>= 1
                 this.n_bits -= 1
-            } endwhile
+            }
             color |= ((node & 0xFF) as base.u32) << 24
 
         } else if pixel_g < 0x118 {  // Back-ref pixel.
@@ -177,7 +177,7 @@ pri func decoder.decode_pixels_slow?(dst: slice base.u8, src: base.io_reader, wi
                     assert this.n_bits < 12 via "a < b: a < c; c <= b"(c: back_ref_len_n_bits)
                     this.bits |= (c8 as base.u32) << this.n_bits
                     this.n_bits += 8
-                } endwhile
+                }
                 back_ref_len_minus_1 += this.bits & (((1 as base.u32) << back_ref_len_n_bits) - 1)
                 this.bits >>= back_ref_len_n_bits
                 this.n_bits -= back_ref_len_n_bits
@@ -202,7 +202,7 @@ pri func decoder.decode_pixels_slow?(dst: slice base.u8, src: base.io_reader, wi
                 h = ((node as base.u32) & 0xFFF) + (this.bits & 1)
                 this.bits >>= 1
                 this.n_bits -= 1
-            } endwhile
+            }
             back_ref_dist_sym = (node & 0x7FFF) as base.u32
 
             if back_ref_dist_sym < 4 {
@@ -223,7 +223,7 @@ pri func decoder.decode_pixels_slow?(dst: slice base.u8, src: base.io_reader, wi
                     assert this.n_bits < 24 via "a < b: a < c; c <= b"(c: back_ref_dist_n_bits)
                     this.bits |= (c8 as base.u32) << this.n_bits
                     this.n_bits += 8
-                } endwhile
+                }
                 back_ref_dist_premap_minus_1 += this.bits & (((1 as base.u32) << back_ref_dist_n_bits) - 1)
                 this.bits >>= back_ref_dist_n_bits
                 this.n_bits -= back_ref_dist_n_bits
@@ -257,14 +257,14 @@ pri func decoder.decode_pixels_slow?(dst: slice base.u8, src: base.io_reader, wi
                 args.dst[p] = args.dst[q]
                 p += 1
                 q += 1
-            } endwhile
+            }
 
             // Update (x, y).
             x ~mod+= back_ref_len_minus_1 + 1
             while x >= args.width {
                 x -= args.width
                 y ~mod+= 1
-            } endwhile
+            }
             continue
 
         } else {  // Color cache pixel.
@@ -281,7 +281,7 @@ pri func decoder.decode_pixels_slow?(dst: slice base.u8, src: base.io_reader, wi
                 color = color_cache_pixels.peek_u32le()
                 this.color_cache[((color ~mod* 0x1E35_A7BD) >> color_cache_shift) & 2047] = color
                 color_cache_pixels = color_cache_pixels[4 ..]
-            } endwhile
+            }
 
             // Look up this.color_cache.
             color = this.color_cache[(pixel_g - 0x118) & 2047]
@@ -304,5 +304,5 @@ pri func decoder.decode_pixels_slow?(dst: slice base.u8, src: base.io_reader, wi
             x = 0
             y ~mod+= 1
         }
-    } endwhile
+    }
 }

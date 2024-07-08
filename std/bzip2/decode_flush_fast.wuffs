@@ -56,12 +56,12 @@ pri func decoder.flush_fast!(dst: base.io_writer) {
                     args.dst.write_u8_fast!(a: flush_prev)
                 }
                 flush_repeat_count -= 1
-            } endwhile
+            }
             flush_repeat_count = 0
             flush_prev = curr
             block_size -= 1
         }
-    } endwhile
+    }
 
     this.flush_pointer = flush_pointer
     this.flush_repeat_count = flush_repeat_count

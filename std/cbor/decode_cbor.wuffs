@@ -230,7 +230,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
                 continue.outer
             }
             return "#internal error: inconsistent I/O"
-            }} endwhile.goto_have_string_length
+            }}.goto_have_string_length
         }
 
         if c_major == 0 {
@@ -362,7 +362,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
                     continue.outer
                 }
                 break.goto_parsed_a_leaf_value
-            } endwhile
+            }
             // -------- END   Major type 2: a byte string.
 
         } else if c_major == 3 {
@@ -447,7 +447,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
                     continue.outer
                 }
                 break.goto_parsed_a_leaf_value
-            } endwhile
+            }
             // -------- END   Major type 3: a text string.
 
         } else if c_major == 4 {
@@ -459,7 +459,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
                 while (token_length > 0) and (args.src.can_undo_byte()) {
                     args.src.undo_byte!()
                     token_length -= 1
-                } endwhile
+                }
                 return "#unsupported recursion depth"
             }
 
@@ -526,7 +526,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
                 while (token_length > 0) and (args.src.can_undo_byte()) {
                     args.src.undo_byte!()
                     token_length -= 1
-                } endwhile
+                }
                 return "#unsupported recursion depth"
             }
 
@@ -713,14 +713,14 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
             // -------- END   Major type 7: miscellaneous.
         }
         break.goto_fail
-        }} endwhile.goto_fail
+        }}.goto_fail
 
         if args.src.can_undo_byte() {
             args.src.undo_byte!()
             return "#bad input"
         }
         return "#internal error: inconsistent I/O"
-        }} endwhile.goto_parsed_a_leaf_value
+        }}.goto_parsed_a_leaf_value
 
         // We've just parsed a leaf (non-container) value, or the (explicit or
         // implicit) close of a container (array or object).
@@ -753,7 +753,7 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
             {
                 yield? base."$short write"
                 continue
-            } endwhile
+            }
             depth -= 1
 
             // Fill in FROM_ETC.
@@ -787,11 +787,11 @@ pub func decoder.decode_tokens?(dst: base.token_writer, src: base.io_reader, wor
                     value_minor: vminor_alt,
                     continued: 0,
                     length: 0)
-        } endwhile
+        }
 
         // We've parsed the top-level value and we're therefore done overall.
         break.outer
-    } endwhile.outer
+    }.outer
 
     this.end_of_data = true
 }

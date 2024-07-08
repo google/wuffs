@@ -41,7 +41,7 @@ pri func decoder.lzw_init!() {
         this.lzw_lm1s[i] = 0
         this.lzw_suffixes[i][0] = i as base.u8
         i += 1
-    } endwhile
+    }
 }
 
 pri func decoder.lzw_read_from!(src: base.io_reader) {
@@ -194,7 +194,7 @@ pri func decoder.lzw_read_from!(src: base.io_reader) {
                 // in practice, but is necessary for the overflow checker.
                 o = (o ~mod- 8) & 8191
                 c = this.lzw_prefixes[c] as base.u32
-            } endwhile
+            }
             first_byte = this.lzw_suffixes[c][0]
 
             if code == save_code {
@@ -235,7 +235,7 @@ pri func decoder.lzw_read_from!(src: base.io_reader) {
             this.lzw_read_from_return_value = 1
             break
         }
-    } endwhile
+    }
 
     // Rewind args.src, if we're not in "$short read" and we've read too many
     // bits.
@@ -248,7 +248,7 @@ pri func decoder.lzw_read_from!(src: base.io_reader) {
                 this.lzw_read_from_return_value = 5
                 break
             }
-        } endwhile
+        }
     }
 
     this.lzw_save_code = save_code

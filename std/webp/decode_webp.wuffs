@@ -154,7 +154,7 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
             return "#truncated input"
         }
         yield? status
-    } endwhile
+    }
 }
 
 pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.io_reader) {
@@ -191,7 +191,7 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
             return "#short chunk"
         }
         yield? status
-    } endwhile
+    }
 
     this.frame_config_io_position = args.src.position()
 
@@ -245,7 +245,7 @@ pri func decoder.do_decode_image_config_limited?(src: base.io_reader) {
                 return "#short chunk"
             }
             yield? status
-        } endwhile
+        }
 
     } else if c32 == 'VP8X'le {
         return "#unsupported WebP file"
@@ -293,7 +293,7 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
             return "#truncated input"
         }
         yield? status
-    } endwhile
+    }
 }
 
 pri func decoder.do_decode_frame_config?(dst: nptr base.frame_config, src: base.io_reader) {
@@ -339,7 +339,7 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
             return "#truncated input"
         }
         yield? status
-    } endwhile
+    }
 }
 
 pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, blend: base.pixel_blend, workbuf: slice base.u8, opts: nptr base.decode_frame_options) {
@@ -384,7 +384,7 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
             break
         }
         this.decode_transform?(src: args.src, workbuf: args.workbuf)
-    } endwhile
+    }
 
     width = this.width
     if this.seen_transform[3] {
@@ -421,7 +421,7 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
             break
         }
         yield? status
-    } endwhile
+    }
 
     if (this.workbuf_offset_for_transform[0] as base.u64) > args.workbuf.length() {
         return base."#bad workbuf length"
@@ -452,7 +452,7 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
             this.apply_transform_color_indexing!(pix: pix)
             width = this.width
         }
-    } endwhile
+    }
 
     status = this.swizzle!(
             dst: args.dst,
@@ -578,7 +578,7 @@ pri func decoder.decode_transform?(src: base.io_reader, workbuf: slice base.u8) 
             p[6] ~mod+= p[2]
             p[7] ~mod+= p[3]
             p = p[4 ..]
-        } endwhile
+        }
     }
 }
 
@@ -712,7 +712,7 @@ pri func decoder.decode_hg_table?(src: base.io_reader, width: base.u32[..= 0x400
             this.overall_n_huffman_groups = hg_plus_1
         }
         p = p[4 ..]
-    } endwhile
+    }
 }
 
 pri func decoder.decode_pixels?(dst: slice base.u8, src: base.io_reader, width: base.u32[..= 0x4000], height: base.u32[..= 0x4000], tile_data: roslice base.u8, tile_size_log2: base.u32[..= 9]) {
@@ -725,7 +725,7 @@ pri func decoder.decode_pixels?(dst: slice base.u8, src: base.io_reader, width: 
         assert i < 2048 via "a < b: a < c; c <= b"(c: n)
         this.color_cache[i] = 0
         i += 1
-    } endwhile
+    }
 
     this.decode_pixels_slow?(
             dst: args.dst,
@@ -771,7 +771,7 @@ pri func decoder.swizzle!(dst: ptr base.pixel_buffer, src: roslice base.u8, blen
     tab = args.dst.plane(p: 0)
     src_bytes_per_row = (this.width * 4) as base.u64
 
-    while.outer src_bytes_per_row <= args.src.length() {
+    while src_bytes_per_row <= args.src.length() {
         dst = tab.row_u32(y: y)
         if dst_bytes_per_row < dst.length() {
             dst = dst[.. dst_bytes_per_row]
@@ -784,7 +784,7 @@ pri func decoder.swizzle!(dst: ptr base.pixel_buffer, src: roslice base.u8, blen
 
         args.src = args.src[src_bytes_per_row ..]
         y ~mod+= 1
-    } endwhile.outer
+    }
 
     return ok
 }

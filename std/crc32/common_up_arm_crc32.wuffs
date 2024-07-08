@@ -22,7 +22,7 @@ pri func ieee_hasher.up_arm_crc32!(x: roslice base.u8),
     while (args.x.length() > 0) and ((15 & args.x.uintptr_low_12_bits()) <> 0) {
         s = s.crc32b(b: args.x[0])
         args.x = args.x[1 ..]
-    } endwhile
+    }
 
     iterate (p = args.x)(length: 8, advance: 8, unroll: 16) {
         s = s.crc32d(b: p.peek_u64le())

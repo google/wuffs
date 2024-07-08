@@ -94,8 +94,8 @@ pri func decoder.decode_huffman_slow?(src: base.io_reader) {
                 assert i < 900000 via "a < b: a < c; c <= b"(c: j)
                 this.bwt[i] = mtft0
                 i += 1
-            } endwhile
+            }
             break
-        } endwhile
-    } endwhile.outer
+        }
+    }.outer
 }

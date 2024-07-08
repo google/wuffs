@@ -145,7 +145,7 @@ pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf
             return "#truncated input"
         }
         yield? status
-    } endwhile
+    }
 }
 
 pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, workbuf: slice base.u8) {
@@ -222,7 +222,7 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
                     break
                 }
                 yield? status
-            } endwhile
+            }
 
             checksum32_want = args.src.read_u32le?()
             if this.ignore_checksum {
@@ -273,7 +273,7 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
                                 break
                             }
                             i8 -= 1
-                        } endwhile
+                        }
                     }
                 }
                 compressed_size ~mod+= args.src.count_since(mark: smark)
@@ -292,7 +292,7 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
                     break
                 }
                 yield? status
-            } endwhile
+            }
 
             if (this.block_has_compressed_size and (this.block_compressed_size <> compressed_size)) or
                     (this.block_has_uncompressed_size and (this.block_uncompressed_size <> uncompressed_size)) {
@@ -342,7 +342,7 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
                     return "#bad padding"
                 }
                 compressed_size ~mod+= 1
-            } endwhile
+            }
 
             this.lzma_needs_reset = true
 
@@ -382,7 +382,7 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
                     return "#bad checksum"
                 }
             }
-        } endwhile.blocks
+        }.blocks
 
         // Verify the index.
         this.backwards_size = 0
@@ -400,7 +400,7 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
                 break
             }
             yield? status
-        } endwhile
+        }
         if not this.ignore_checksum {
             this.crc32.update!(x: ZEROES[.. 3 & (0 ~mod- (3 & this.backwards_size))])
         }
@@ -410,7 +410,7 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
                 return "#bad index"
             }
             this.backwards_size ~mod+= 1
-        } endwhile
+        }
         this.backwards_size >>= 2
         if (this.backwards_size == 0) or (this.backwards_size > 0xFFFF_FFFF) {
             return "#bad index"
@@ -436,7 +436,7 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
                 break
             }
             yield? status
-        } endwhile
+        }
         if (not this.ignore_checksum) and (checksum32_want <> this.crc32.checksum_u32()) {
             return "#bad checksum"
         }
@@ -462,7 +462,7 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
                     }
                 }
                 yield? base."$short read"
-            } endwhile
+            }
 
             c32 = args.src.peek_u32le()
             if c32 == '\xFD\x37\x7A\x58'le {
@@ -471,9 +471,9 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
                 return "#bad header (concatenated stream)"
             }
             args.src.skip_u32_fast!(actual: 4, worst_case: 4)
-        } endwhile.stream_padding
+        }.stream_padding
         this.started_verify_index = false
-    } endwhile.streams
+    }.streams
 }
 
 pri func decoder.decode_block_header_with_padding?(src: base.io_reader) {
@@ -494,7 +494,7 @@ pri func decoder.decode_block_header_with_padding?(src: base.io_reader) {
             break
         }
         yield? status
-    } endwhile
+    }
 
     if padded_size_have > padded_size_want {
         return "#bad block header"
@@ -508,7 +508,7 @@ pri func decoder.decode_block_header_with_padding?(src: base.io_reader) {
         }
 
         padded_size_have += 1
-    } endwhile
+    }
 }
 
 pri func decoder.decode_block_header_sans_padding?(src: base.io_reader) {
@@ -549,7 +549,7 @@ pri func decoder.decode_block_header_sans_padding?(src: base.io_reader) {
             }
             this.block_compressed_size |= (1 as base.u64) << 63
             break
-        } endwhile
+        }
     }
 
     this.block_has_uncompressed_size = (flags & 0x80) <> 0
@@ -573,7 +573,7 @@ pri func decoder.decode_block_header_sans_padding?(src: base.io_reader) {
             }
             this.block_uncompressed_size |= (1 as base.u64) << 63
             break
-        } endwhile
+        }
     }
 
     // Configure the non-final filters.
@@ -603,7 +603,7 @@ pri func decoder.decode_block_header_sans_padding?(src: base.io_reader) {
             {
                 this.filter_data[f][k] = 0x00
                 k += 1
-            } endwhile
+            }
 
         } else if (filter_id < 0x03) or (0x0B < filter_id) {
             return "#unsupported filter"
@@ -650,7 +650,7 @@ pri func decoder.decode_block_header_sans_padding?(src: base.io_reader) {
         }
 
         f += 1
-    } endwhile
+    }
 
     // Configure the final filter (which must be LZMA2).
 
@@ -711,7 +711,7 @@ pri func decoder.verify_index?(src: base.io_reader) {
             }
             this.num_index_blocks |= (1 as base.u64) << 63
             break
-        } endwhile
+        }
         if this.num_index_blocks <> this.num_actual_blocks {
             return "#bad index"
         }
@@ -738,7 +738,7 @@ pri func decoder.verify_index?(src: base.io_reader) {
             }
             this.index_block_compressed_size |= (1 as base.u64) << 63
             break
-        } endwhile
+        }
 
         this.index_block_uncompressed_size = 0
         shift = 0
@@ -758,7 +758,7 @@ pri func decoder.verify_index?(src: base.io_reader) {
             }
             this.index_block_uncompressed_size |= (1 as base.u64) << 63
             break
-        } endwhile
+        }
 
         // Update the verification_want_etc values. The hash function is
         // loosely based on https://en.wikipedia.org/wiki/MurmurHash#Algorithm
@@ -778,7 +778,7 @@ pri func decoder.verify_index?(src: base.io_reader) {
         hash ^= this.verification_want_hashed_sizes[1]
         hash = (hash ~mod<< 13) | (hash >> 19)
         this.verification_want_hashed_sizes[1] = (hash ~mod* 5) ~mod+ 0xE654_6B64
-    } endwhile
+    }
 
     if (this.verification_have_hashed_sizes[0] <> this.verification_want_hashed_sizes[0]) or
             (this.verification_have_hashed_sizes[1] <> this.verification_want_hashed_sizes[1]) or

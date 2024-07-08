@@ -157,7 +157,7 @@ pri func decoder.filter_and_swizzle_tricky!(dst: ptr base.pixel_buffer, workbuf:
                     }
                 }
                 x += (1 as base.u32) << INTERLACING[this.interlace_pass][0]
-            } endwhile
+            }
 
         } else if this.depth < 8 {
             multiplier = 1
@@ -210,7 +210,7 @@ pri func decoder.filter_and_swizzle_tricky!(dst: ptr base.pixel_buffer, workbuf:
                     }
                 }
                 x += (1 as base.u32) << INTERLACING[this.interlace_pass][0]
-            } endwhile
+            }
 
         } else {
             while x < this.frame_rect_x1,
@@ -314,12 +314,12 @@ pri func decoder.filter_and_swizzle_tricky!(dst: ptr base.pixel_buffer, workbuf:
                             src: bits_unpacked[.. 8])
                 }
                 x += (1 as base.u32) << INTERLACING[this.interlace_pass][0]
-            } endwhile
+            }
         }
 
         prev_row = curr_row
         y += (1 as base.u32) << INTERLACING[this.interlace_pass][3]
-    } endwhile
+    }
 
     return ok
 }

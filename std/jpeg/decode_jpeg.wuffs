@@ -342,7 +342,7 @@ pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_
             return "#truncated input"
         }
         yield? status
-    } endwhile
+    }
 }
 
 pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.io_reader) {
@@ -373,7 +373,7 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
             }
             // Getting here is invalid according to the JPEG spec, but libjpeg
             // treats this as a warning (JWRN_EXTRANEOUS_DATA), not an error.
-        } endwhile
+        }
         while true {
             c8 = args.src.read_u8?()
             if c8 <> 0xFF {
@@ -382,7 +382,7 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
             }
             // Section B.1.1.2: "Any marker may optionally be preceded by any
             // number of [0xFF] fill bytes".
-        } endwhile
+        }
 
         if marker == 0x00 {
             // Ignore byte stuffing.
@@ -472,7 +472,7 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
 
         args.src.skip_u32?(n: this.payload_length)
         this.payload_length = 0
-    } endwhile
+    }
 
     choose decode_idct = [
             // TODO: decode_idct_arm_neon,
@@ -522,7 +522,7 @@ pri func decoder.decode_dqt?(src: base.io_reader) {
         while i < 64 {
             i += 1
             this.quant_tables[q][UNZIG[i]] = args.src.read_u8_as_u16?()
-        } endwhile
+        }
         this.seen_dqt[q] = true
 
         if this.sof_marker == 0 {
@@ -530,10 +530,10 @@ pri func decoder.decode_dqt?(src: base.io_reader) {
             while i < 64 {
                 this.saved_quant_tables[q][i] = this.quant_tables[q][i]
                 i += 1
-            } endwhile
+            }
             this.saved_seen_dqt[q] = true
         }
-    } endwhile
+    }
 }
 
 pri func decoder.decode_dri?(src: base.io_reader) {
@@ -596,7 +596,7 @@ pri func decoder.decode_appn?(src: base.io_reader, marker: base.u8) {
         }
     }
     break.goto_done
-    }} endwhile.goto_done
+    }}.goto_done
 
     args.src.skip_u32?(n: this.payload_length)
     this.payload_length = 0
@@ -692,10 +692,10 @@ pri func decoder.decode_sof?(src: base.io_reader) {
                 return "#bad SOF marker"
             }
             j += 1
-        } endwhile
+        }
 
         i += 1
-    } endwhile
+    }
 
     if this.num_components == 1 {
         // The first (and only) component's H and V factors are effectively
@@ -721,7 +721,7 @@ pri func decoder.decode_sof?(src: base.io_reader) {
             has_v24 = has_v24 or (this.components_v[i] == 2) or (this.components_v[i] == 4)
             has_v3 = has_v3 or (this.components_v[i] == 3)
             i += 1
-        } endwhile
+        }
         if (has_h24 and has_h3) or (has_v24 and has_v3) {
             return "#unsupported fractional sampling"
         }
@@ -786,9 +786,9 @@ pri func decoder.decode_sof?(src: base.io_reader) {
             {
                 this.block_smoothing_lowest_scan_al[i][j] = 16
                 j += 1
-            } endwhile
+            }
             i += 1
-        } endwhile
+        }
     }
 
     this.components_workbuf_offsets[0] = 0
@@ -829,7 +829,7 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
             return "#truncated input"
         }
         yield? status
-    } endwhile
+    }
 }
 
 pri func decoder.do_decode_frame_config?(dst: nptr base.frame_config, src: base.io_reader) {
@@ -896,7 +896,7 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
         }
 
         yield? ddf_status
-    } endwhile
+    }
 }
 
 pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, blend: base.pixel_blend, workbuf: slice base.u8, opts: nptr base.decode_frame_options) {
@@ -954,7 +954,7 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
             }
             // Getting here is invalid according to the JPEG spec, but libjpeg
             // treats this as a warning (JWRN_EXTRANEOUS_DATA), not an error.
-        } endwhile
+        }
         while true {
             c8 = args.src.read_u8?()
             if c8 <> 0xFF {
@@ -963,7 +963,7 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
             }
             // Section B.1.1.2: "Any marker may optionally be preceded by any
             // number of [0xFF] fill bytes".
-        } endwhile
+        }
 
         if marker == 0x00 {
             // Ignore byte stuffing.
@@ -1038,7 +1038,7 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
 
         args.src.skip_u32?(n: this.payload_length)
         this.payload_length = 0
-    } endwhile
+    }
 
     this.call_sequence = 0x60
 }
@@ -1080,14 +1080,14 @@ pri func decoder.decode_dht?(src: base.io_reader) {
         while i < 16 {
             this.dht_temp_counts[i] = args.src.read_u8?()
             i += 1
-        } endwhile
+        }
         working_total_count = 0
         i = 0
         while i < 16 {
             working_total_count =
                     (working_total_count + (this.dht_temp_counts[i] as base.u32)) & 0xFFFF
             i += 1
-        } endwhile
+        }
         if (working_total_count <= 0) or (256 < working_total_count) {
             return "#bad DHT marker"
         }
@@ -1103,11 +1103,11 @@ pri func decoder.decode_dht?(src: base.io_reader) {
             assert i < 256 via "a < b: a < c; c <= b"(c: total_count)
             this.huff_tables_symbols[tc4_th][i] = args.src.read_u8?()
             i += 1
-        } endwhile
+        }
         while i < 256 {
             this.huff_tables_symbols[tc4_th][i] = 0
             i += 1
-        } endwhile
+        }
 
         // For tc == 0 (DC, not AC tables), the symbols must not exceed 15 (for
         // lossy JPEG) or 16 (for lossless JPEG). We only support lossy.
@@ -1119,7 +1119,7 @@ pri func decoder.decode_dht?(src: base.io_reader) {
                     return "#bad DHT marker"
                 }
                 i += 1
-            } endwhile
+            }
         }
 
         failed = this.calculate_huff_tables!(tc4_th: tc4_th, total_count: total_count)
@@ -1128,7 +1128,7 @@ pri func decoder.decode_dht?(src: base.io_reader) {
         }
 
         this.seen_dht[tc4_th] = true
-    } endwhile
+    }
 }
 
 pri func decoder.calculate_huff_tables!(tc4_th: base.u8[..= 7], total_count: base.u32[..= 256]) base.bool {
@@ -1155,12 +1155,12 @@ pri func decoder.calculate_huff_tables!(tc4_th: base.u8[..= 7], total_count: bas
         {
             k = 0
             bit_length_minus_one = (bit_length_minus_one + 1) & 15
-        } endwhile
+        }
         assert k < 255 via "a < b: a < c; c <= b"(c: this.dht_temp_counts[bit_length_minus_one])
         k += 1
         this.dht_temp_bit_lengths[i] = (bit_length_minus_one + 1) as base.u8
         i += 1
-    } endwhile
+    }
 
     // Calculate dht_temp_bit_strings.
     bit_length = 0
@@ -1176,7 +1176,7 @@ pri func decoder.calculate_huff_tables!(tc4_th: base.u8[..= 7], total_count: bas
             }
             bit_length += 1
             bit_string ~mod<<= 1
-        } endwhile
+        }
         this.dht_temp_bit_strings[i] = (bit_string & 0xFFFF) as base.u16
         bit_string ~mod+= 1
 
@@ -1188,7 +1188,7 @@ pri func decoder.calculate_huff_tables!(tc4_th: base.u8[..= 7], total_count: bas
         }
 
         i += 1
-    } endwhile
+    }
 
     // Calculate huff_tables_slow[args.tc4_th].
     k = 0
@@ -1208,14 +1208,14 @@ pri func decoder.calculate_huff_tables!(tc4_th: base.u8[..= 7], total_count: bas
         if bit_length_minus_one == 0 {
             break
         }
-    } endwhile
+    }
 
     // Calculate huff_tables_fast[args.tc4_th].
     i = 0
     while i < 256 {
         this.huff_tables_fast[args.tc4_th][i] = 0xFFFF
         i += 1
-    } endwhile
+    }
     j = 0
     bit_length_minus_one = 0
     while bit_length_minus_one < 8 {
@@ -1236,13 +1236,13 @@ pri func decoder.calculate_huff_tables!(tc4_th: base.u8[..= 7], total_count: bas
                 this.huff_tables_fast[args.tc4_th][prefix] = fast
                 prefix ~mod+= 1
                 reps -= 1
-            } endwhile
+            }
             k += 1
             j ~mod+= 1
-        } endwhile
+        }
 
         bit_length_minus_one += 1
-    } endwhile
+    }
 
     return false
 }
@@ -1321,8 +1321,8 @@ pri func decoder.decode_sos?(src: base.io_reader, workbuf: slice base.u8) {
                         break.fill_bitstream
                     }
                     yield? base."$short read"
-                } endwhile.fill_bitstream
-            } endwhile.decode_mcu
+                }.fill_bitstream
+            }.decode_mcu
 
             if this.sof_marker >= 0xC2 {
                 this.save_mcu_blocks!(mx: mx, my: my, workbuf: args.workbuf)
@@ -1350,9 +1350,9 @@ pri func decoder.decode_sos?(src: base.io_reader, workbuf: slice base.u8) {
             }
 
             mx += 1
-        } endwhile
+        }
         my += 1
-    } endwhile
+    }
 
     this.scan_count ~sat+= 1
 }
@@ -1399,7 +1399,7 @@ pri func decoder.prepare_scan?(src: base.io_reader) {
                 break
             }
             j += 1
-        } endwhile
+        }
 
         // Section B.2.3: "the value of C_sj shall be different from the values
         // of C_s1 to C_sj–1".
@@ -1412,7 +1412,7 @@ pri func decoder.prepare_scan?(src: base.io_reader) {
                 return "#bad SOS marker"
             }
             j += 1
-        } endwhile
+        }
 
         c8 = args.src.read_u8?()
         if ((c8 >> 4) > 3) or ((c8 & 0x0F) > 3) {
@@ -1429,7 +1429,7 @@ pri func decoder.prepare_scan?(src: base.io_reader) {
         }
 
         i += 1
-    } endwhile
+    }
 
     if this.sof_marker < 0xC2 {
         // At this point, for sequential (not progressive) JPEGs, we should
@@ -1506,10 +1506,10 @@ pri func decoder.prepare_scan?(src: base.io_reader) {
             assert j <= 9 via "a <= b: a <= c; c <= b"(c: j_max_incl)
             this.block_smoothing_lowest_scan_al[this.scan_comps_cselector[i]][j] = this.scan_al
             j += 1
-        } endwhile
+        }
 
         i += 1
-    } endwhile
+    }
 
     if this.scan_num_components == 1 {
         this.calculate_single_component_scan_fields!()
@@ -1607,10 +1607,10 @@ pri func decoder.calculate_multiple_component_scan_fields!() base.bool {
                 }
             }
             hv -= 1
-        } endwhile
+        }
 
         i += 1
-    } endwhile
+    }
     if total_hv > 10 {
         return true
     }
@@ -1629,7 +1629,7 @@ pri func decoder.calculate_multiple_component_scan_fields!() base.bool {
         this.mcu_blocks_dc_hselector[b] = 0 | this.scan_comps_td[ssel]
         this.mcu_blocks_ac_hselector[b] = 4 | this.scan_comps_ta[ssel]
         b += 1
-    } endwhile
+    }
 
     this.scan_width_in_mcus = this.width_in_mcus
     this.scan_height_in_mcus = this.height_in_mcus
@@ -1675,7 +1675,7 @@ pri func decoder.fill_bitstream!(src: base.io_reader) {
             wi += 1
             args.src.skip_u32_fast!(actual: 2, worst_case: 2)
         }
-    } endwhile
+    }
 
     // If we hit a "\xFF\x??" marker then pad the bitstream. In this method
     // invocation, insert up to 264 bytes of implicit zeroes. Repeated calls to
@@ -1738,7 +1738,7 @@ pri func decoder.load_mcu_blocks!(mx: base.u32[..= 0x2000], my: base.u32[..= 0x2
             this.mcu_blocks[b .. (b + 1)].bulk_load_host_endian!(src: args.workbuf[offset ..])
         }
         b += 1
-    } endwhile
+    }
 }
 
 pri func decoder.save_mcu_blocks!(mx: base.u32[..= 0x2000], my: base.u32[..= 0x2000], workbuf: slice base.u8) {
@@ -1768,7 +1768,7 @@ pri func decoder.save_mcu_blocks!(mx: base.u32[..= 0x2000], my: base.u32[..= 0x2
             this.mcu_blocks[b .. (b + 1)].bulk_save_host_endian!(dst: args.workbuf[offset ..])
         }
         b += 1
-    } endwhile
+    }
 }
 
 pri func decoder.skip_past_the_next_restart_marker?(src: base.io_reader) {
@@ -1810,7 +1810,7 @@ pri func decoder.skip_past_the_next_restart_marker?(src: base.io_reader) {
             args.src.skip_u32_fast!(actual: 2, worst_case: 2)
             break
         }
-    } endwhile
+    }
 
     this.next_restart_marker = (this.next_restart_marker ~mod+ 1) & 7
 }
@@ -1846,7 +1846,7 @@ pri func decoder.apply_progressive_idct!(workbuf: slice base.u8) {
             block_smoothing_applicable = false
         }
         csel += 1
-    } endwhile
+    }
 
     csel = 0
     while csel < this.num_components {
@@ -1906,12 +1906,12 @@ pri func decoder.apply_progressive_idct!(workbuf: slice base.u8) {
                 }
 
                 mx += 1
-            } endwhile
+            }
             my += 1
-        } endwhile
+        }
 
         csel += 1
-    } endwhile
+    }
 
     this.mcu_blocks[.. 1].bulk_load_host_endian!(src: stashed_mcu_blocks_0[..])
 }
@@ -1955,7 +1955,7 @@ pri func decoder.swizzle_gray!(dst: ptr base.pixel_buffer, workbuf: slice base.u
             args.workbuf = this.util.empty_slice_u8()
         }
         y += 1
-    } endwhile
+    }
     return ok
 }
 
@@ -2073,9 +2073,9 @@ pub func decoder.restart_frame!(index: base.u64, io_position: base.u64) base.sta
         {
             this.quant_tables[i][j] = this.saved_quant_tables[i][j]
             j += 1
-        } endwhile
+        }
         i += 1
-    } endwhile
+    }
 
     i = 0
     while i < 4 {
@@ -2085,15 +2085,15 @@ pub func decoder.restart_frame!(index: base.u64, io_position: base.u64) base.sta
         {
             this.block_smoothing_lowest_scan_al[i][j] = 16
             j += 1
-        } endwhile
+        }
         i += 1
-    } endwhile
+    }
 
     i = 0
     while i < 8 {
         this.seen_dht[i] = false
         i += 1
-    } endwhile
+    }
 
     return ok
 }

@@ -112,7 +112,7 @@ pub func decoder.transform_io?(dst: base.io_writer, src: base.io_reader, workbuf
             return "#truncated input"
         }
         yield? status
-    } endwhile
+    }
 }
 
 pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, workbuf: slice base.u8) {
@@ -165,7 +165,7 @@ pri func decoder.do_transform_io?(dst: base.io_writer, src: base.io_reader, work
             break
         }
         yield? status
-    } endwhile
+    }
 
     if not this.quirks[QUIRK_JUST_RAW_DEFLATE - QUIRKS_BASE] {
         checksum_want = args.src.read_u32be?()

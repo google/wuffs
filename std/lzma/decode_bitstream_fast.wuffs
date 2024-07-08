@@ -168,7 +168,7 @@ pri func decoder.decode_bitstream_fast!(dst: base.io_writer, src: base.io_reader
                     bits = (bits ~mod<< 8) | (c8 as base.u32)
                     range ~mod<<= 8
                 }
-            } endwhile
+            }
 
             assert args.dst.length() >= 282
 
@@ -269,7 +269,7 @@ pri func decoder.decode_bitstream_fast!(dst: base.io_writer, src: base.io_reader
                         bits = (bits ~mod<< 8) | (c8 as base.u32)
                         range ~mod<<= 8
                     }
-                } endwhile
+                }
                 len_state = CLAMP_NO_MORE_THAN_3[tree_node & 0x07] as base.u32
                 len = (tree_node & 0x07) + 2
                 assert len >= 1
@@ -338,7 +338,7 @@ pri func decoder.decode_bitstream_fast!(dst: base.io_writer, src: base.io_reader
                         bits = (bits ~mod<< 8) | (c8 as base.u32)
                         range ~mod<<= 8
                     }
-                } endwhile
+                }
                 len = (tree_node & 0x07) + 10
                 assert len >= 1
                 len_state = 3
@@ -389,12 +389,12 @@ pri func decoder.decode_bitstream_fast!(dst: base.io_writer, src: base.io_reader
                     bits = (bits ~mod<< 8) | (c8 as base.u32)
                     range ~mod<<= 8
                 }
-            } endwhile
+            }
             len = (tree_node & 0xFF) + 18
             assert len >= 1
             len_state = 3
             break.goto_have_len
-            }} endwhile.goto_have_len
+            }}.goto_have_len
 
             // AlgOve23  slot = decodeSlot(min(len-2, 3))
             slot = 1
@@ -425,7 +425,7 @@ pri func decoder.decode_bitstream_fast!(dst: base.io_writer, src: base.io_reader
                     bits = (bits ~mod<< 8) | (c8 as base.u32)
                     range ~mod<<= 8
                 }
-            } endwhile
+            }
             slot &= 0x3F
 
             // AlgOve24  distBiasedBy1 = decodeDistBiasedBy1(slot)
@@ -474,7 +474,7 @@ pri func decoder.decode_bitstream_fast!(dst: base.io_writer, src: base.io_reader
                         bits = (bits ~mod<< 8) | (c8 as base.u32)
                         range ~mod<<= 8
                     }
-                } endwhile
+                }
                 rep ~mod+= dist_extra_bits
 
             } else {
@@ -511,7 +511,7 @@ pri func decoder.decode_bitstream_fast!(dst: base.io_writer, src: base.io_reader
                     if num_extra_bits <= 4 {
                         break
                     }
-                } endwhile
+                }
                 dist_extra_bits ~mod<<= 4
 
                 // Read 4 "zzzz" bits.
@@ -551,7 +551,7 @@ pri func decoder.decode_bitstream_fast!(dst: base.io_writer, src: base.io_reader
                     if num_extra_bits <= 0 {
                         break
                     }
-                } endwhile
+                }
                 rep ~mod+= dist_extra_bits
             }
 
@@ -789,7 +789,7 @@ pri func decoder.decode_bitstream_fast!(dst: base.io_writer, src: base.io_reader
                     bits = (bits ~mod<< 8) | (c8 as base.u32)
                     range ~mod<<= 8
                 }
-            } endwhile
+            }
             len = (tree_node & 0x07) + 2
             assert len >= 1
             state = STATE_TRANSITION_LONGREP[state] as base.u32
@@ -858,7 +858,7 @@ pri func decoder.decode_bitstream_fast!(dst: base.io_writer, src: base.io_reader
                     bits = (bits ~mod<< 8) | (c8 as base.u32)
                     range ~mod<<= 8
                 }
-            } endwhile
+            }
             len = (tree_node & 0x07) + 10
             assert len >= 1
             state = STATE_TRANSITION_LONGREP[state] as base.u32
@@ -909,15 +909,15 @@ pri func decoder.decode_bitstream_fast!(dst: base.io_writer, src: base.io_reader
                 bits = (bits ~mod<< 8) | (c8 as base.u32)
                 range ~mod<<= 8
             }
-        } endwhile
+        }
         len = (tree_node & 0xFF) + 18
         assert len >= 1
         state = STATE_TRANSITION_LONGREP[state] as base.u32
 
         break.goto_after_decode_len
-        }} endwhile.goto_after_decode_len
+        }}.goto_after_decode_len
         break.goto_do_the_lz_copy
-        }} endwhile.goto_do_the_lz_copy
+        }}.goto_do_the_lz_copy
         assert args.dst.length() >= 282
 
         // AlgOve90  labelDoTheLZCopy:
@@ -945,7 +945,7 @@ pri func decoder.decode_bitstream_fast!(dst: base.io_writer, src: base.io_reader
                     inv dist >= 1,
             {
                 wb_index ~mod+= this.dict_size as base.u64
-            } endwhile
+            }
             if wb_index >= args.workbuf.length() {
                 return "#internal error: inconsistent dictionary state"
             }
@@ -1008,7 +1008,7 @@ pri func decoder.decode_bitstream_fast!(dst: base.io_writer, src: base.io_reader
             match_byte = match_cusp >> 8
             prev_byte = (match_cusp & 0xFF) as base.u8
         }
-    } endwhile.outer
+    }.outer
 
     this.stashed_bytes[0] = prev_byte
     this.stashed_bytes[1] = (match_byte & 0xFF) as base.u8
