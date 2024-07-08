@@ -46,7 +46,6 @@
     defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64) ||          \
     defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64_V2) ||       \
     defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64_V3) ||       \
-    defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_FAMILY) ||      \
     defined(WUFFS_PRIVATE_IMPL__HPD__DECIMAL_POINT__RANGE) || \
     defined(WUFFS_PRIVATE_IMPL__HPD__DIGITS_PRECISION) ||     \
     defined(WUFFS_PRIVATE_IMPL__HPD__SHIFT__MAX_INCL) ||      \
@@ -101,23 +100,25 @@
 // POPCNT. This is checked at runtime via cpuid, not at compile time.
 //
 // Likewise, "cpu_arch >= x86_avx2" also requires PCLMUL, POPCNT and SSE4.2.
-#if defined(__i386__) || defined(__x86_64__)
+//
+// ----
+//
+// Technically, we could use the SSE family on 32-bit x86, not just 64-bit x86.
+// But some intrinsics don't compile in 32-bit mode. It's not worth the hassle.
+// https://github.com/google/wuffs/issues/145
+#if defined(__x86_64__)
 #if !defined(__native_client__)
 #include <cpuid.h>
 #include <x86intrin.h>
-// X86_FAMILY means X86 (32-bit) or X86_64 (64-bit, obviously).
-#define WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_FAMILY
-#if defined(__x86_64__)
 #define WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64
 #define WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64_V2
 #define WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64_V3
-#endif  // defined(__x86_64__)
 #endif  // !defined(__native_client__)
-#endif  // defined(__i386__) || defined(__x86_64__)
+#endif  // defined(__x86_64__)
 
 #elif defined(_MSC_VER)  // (#if-chain ref AVOID_CPU_ARCH_1)
 
-#if defined(_M_IX86) || defined(_M_X64)
+#if defined(_M_X64)
 #if defined(__AVX2__) || defined(__clang__)
 
 // We need <intrin.h> for the __cpuid function.
@@ -131,13 +132,9 @@
 #include <immintrin.h>  // AVX, AVX2, FMA, POPCNT
 #include <nmmintrin.h>  // SSE4.2
 #include <wmmintrin.h>  // AES, PCLMUL
-// X86_FAMILY means X86 (32-bit) or X86_64 (64-bit, obviously).
-#define WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_FAMILY
-#if defined(_M_X64)
 #define WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64
 #define WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64_V2
 #define WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64_V3
-#endif  // defined(_M_X64)
 
 #else  // defined(__AVX2__) || defined(__clang__)
 
@@ -150,7 +147,7 @@
 #pragma message("Wuffs with MSVC+IX86/X64 performs best with /arch:AVX2")
 
 #endif  // defined(__AVX2__) || defined(__clang__)
-#endif  // defined(_M_IX86) || defined(_M_X64)
+#endif  // defined(_M_X64)
 
 #endif  // (#if-chain ref AVOID_CPU_ARCH_1)
 #endif  // (#if-chain ref AVOID_CPU_ARCH_0)
