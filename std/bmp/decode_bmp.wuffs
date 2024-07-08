@@ -672,11 +672,10 @@ pri func decoder.swizzle_rle!(dst: ptr base.pixel_buffer, src: base.io_reader) b
                 dst = this.util.empty_slice_u8()
             }
 
-            while.goto_suspend true {{
             while.inner true {
                 if rle_state == RLE_STATE_NEUTRAL {
                     if args.src.length() < 1 {
-                        break.goto_suspend
+                        break.inner
                     }
                     code = args.src.peek_u8()
                     args.src.skip_u32_fast!(actual: 1, worst_case: 1)
@@ -690,7 +689,7 @@ pri func decoder.swizzle_rle!(dst: ptr base.pixel_buffer, src: base.io_reader) b
 
                 } else if rle_state == RLE_STATE_RUN {
                     if args.src.length() < 1 {
-                        break.goto_suspend
+                        break.inner
                     }
                     code = args.src.peek_u8()
                     args.src.skip_u32_fast!(actual: 1, worst_case: 1)
@@ -722,7 +721,7 @@ pri func decoder.swizzle_rle!(dst: ptr base.pixel_buffer, src: base.io_reader) b
 
                 } else if rle_state == RLE_STATE_ESCAPE {
                     if args.src.length() < 1 {
-                        break.goto_suspend
+                        break.inner
                     }
                     code = args.src.peek_u8()
                     args.src.skip_u32_fast!(actual: 1, worst_case: 1)
@@ -785,11 +784,11 @@ pri func decoder.swizzle_rle!(dst: ptr base.pixel_buffer, src: base.io_reader) b
                     }
 
                     if this.rle_length > 0 {
-                        break.goto_suspend
+                        break.inner
                     }
                     if this.rle_padded {
                         if args.src.length() < 1 {
-                            break.goto_suspend
+                            break.inner
                         }
                         args.src.skip_u32_fast!(actual: 1, worst_case: 1)
                         this.rle_padded = false
@@ -799,7 +798,7 @@ pri func decoder.swizzle_rle!(dst: ptr base.pixel_buffer, src: base.io_reader) b
 
                 } else if rle_state == RLE_STATE_DELTA_X {
                     if args.src.length() < 1 {
-                        break.goto_suspend
+                        break.inner
                     }
                     this.rle_delta_x = args.src.peek_u8()
                     args.src.skip_u32_fast!(actual: 1, worst_case: 1)
@@ -808,7 +807,7 @@ pri func decoder.swizzle_rle!(dst: ptr base.pixel_buffer, src: base.io_reader) b
 
                 }  // else (rle_state == RLE_STATE_DELTA_Y).
                 if args.src.length() < 1 {
-                    break.goto_suspend
+                    break.inner
                 }
                 code = args.src.peek_u8()
                 args.src.skip_u32_fast!(actual: 1, worst_case: 1)
@@ -854,9 +853,7 @@ pri func decoder.swizzle_rle!(dst: ptr base.pixel_buffer, src: base.io_reader) b
 
                 rle_state = RLE_STATE_NEUTRAL
                 continue.middle
-
             }.inner
-            }}.goto_suspend
             this.rle_state = rle_state
             return "@internal note: short read"
         }.middle

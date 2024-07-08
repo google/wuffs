@@ -32406,138 +32406,160 @@ wuffs_bmp__decoder__swizzle_rle(
         v_dst = wuffs_base__utility__empty_slice_u8();
       }
       while (true) {
-        while (true) {
-          if (v_rle_state == 0u) {
-            if (((uint64_t)(io2_a_src - iop_a_src)) < 1u) {
-              goto label__goto_suspend__break;
-            }
-            v_code = wuffs_base__peek_u8be__no_bounds_check(iop_a_src);
-            iop_a_src += 1u;
-            if (v_code == 0u) {
-              v_rle_state = 2u;
-              continue;
-            }
-            self->private_impl.f_rle_length = ((uint32_t)(v_code));
-            v_rle_state = 1u;
-            continue;
-          } else if (v_rle_state == 1u) {
-            if (((uint64_t)(io2_a_src - iop_a_src)) < 1u) {
-              goto label__goto_suspend__break;
-            }
-            v_code = wuffs_base__peek_u8be__no_bounds_check(iop_a_src);
-            iop_a_src += 1u;
-            if (self->private_impl.f_bits_per_pixel == 8u) {
-              v_p0 = 0u;
-              while (v_p0 < self->private_impl.f_rle_length) {
-                self->private_data.f_scratch[v_p0] = v_code;
-                v_p0 += 1u;
-              }
-            } else {
-              v_indexes[0u] = ((uint8_t)(((uint8_t)(v_code >> 4u))));
-              v_indexes[1u] = ((uint8_t)(v_code & 15u));
-              v_p0 = 0u;
-              while (v_p0 < self->private_impl.f_rle_length) {
-                self->private_data.f_scratch[(v_p0 + 0u)] = v_indexes[0u];
-                self->private_data.f_scratch[(v_p0 + 1u)] = v_indexes[1u];
-                v_p0 += 2u;
-              }
-            }
-            wuffs_base__pixel_swizzler__swizzle_interleaved_from_slice(&self->private_impl.f_swizzler, v_dst, v_dst_palette, wuffs_base__make_slice_u8(self->private_data.f_scratch, self->private_impl.f_rle_length));
-            wuffs_private_impl__u32__sat_add_indirect(&self->private_impl.f_dst_x, self->private_impl.f_rle_length);
-            v_rle_state = 0u;
-            goto label__middle__continue;
-          } else if (v_rle_state == 2u) {
-            if (((uint64_t)(io2_a_src - iop_a_src)) < 1u) {
-              goto label__goto_suspend__break;
-            }
-            v_code = wuffs_base__peek_u8be__no_bounds_check(iop_a_src);
-            iop_a_src += 1u;
-            if (v_code < 2u) {
-              if ((self->private_impl.f_dst_y >= self->private_impl.f_height) && (v_code == 0u)) {
-                status = wuffs_base__make_status(wuffs_bmp__error__bad_rle_compression);
-                goto exit;
-              }
-              wuffs_base__pixel_swizzler__swizzle_interleaved_transparent_black(&self->private_impl.f_swizzler, v_dst, v_dst_palette, 18446744073709551615u);
-              self->private_impl.f_dst_x = 0u;
-              self->private_impl.f_dst_y += self->private_impl.f_dst_y_inc;
-              if (v_code > 0u) {
-                goto label__outer__break;
-              }
-              v_rle_state = 0u;
-              goto label__outer__continue;
-            } else if (v_code == 2u) {
-              v_rle_state = 4u;
-              continue;
-            }
-            self->private_impl.f_rle_length = ((uint32_t)(v_code));
-            self->private_impl.f_rle_padded = ((self->private_impl.f_bits_per_pixel == 8u) && (((uint8_t)(v_code & 1u)) != 0u));
-            v_rle_state = 3u;
-            continue;
-          } else if (v_rle_state == 3u) {
-            if (self->private_impl.f_bits_per_pixel == 8u) {
-              v_n = wuffs_base__pixel_swizzler__limited_swizzle_u32_interleaved_from_reader(
-                  &self->private_impl.f_swizzler,
-                  self->private_impl.f_rle_length,
-                  v_dst,
-                  v_dst_palette,
-                  &iop_a_src,
-                  io2_a_src);
-              wuffs_private_impl__u32__sat_add_indirect(&self->private_impl.f_dst_x, ((uint32_t)(v_n)));
-              wuffs_private_impl__u32__sat_sub_indirect(&self->private_impl.f_rle_length, ((uint32_t)(v_n)));
-            } else {
-              v_chunk_count = ((self->private_impl.f_rle_length + 3u) / 4u);
-              v_p0 = 0u;
-              while ((v_chunk_count > 0u) && (((uint64_t)(io2_a_src - iop_a_src)) >= 2u)) {
-                v_chunk_bits = ((uint32_t)(wuffs_base__peek_u16be__no_bounds_check(iop_a_src)));
-                iop_a_src += 2u;
-                self->private_data.f_scratch[(v_p0 + 0u)] = ((uint8_t)((15u & (v_chunk_bits >> 12u))));
-                self->private_data.f_scratch[(v_p0 + 1u)] = ((uint8_t)((15u & (v_chunk_bits >> 8u))));
-                self->private_data.f_scratch[(v_p0 + 2u)] = ((uint8_t)((15u & (v_chunk_bits >> 4u))));
-                self->private_data.f_scratch[(v_p0 + 3u)] = ((uint8_t)((15u & (v_chunk_bits >> 0u))));
-                v_p0 = ((v_p0 & 255u) + 4u);
-                v_chunk_count -= 1u;
-              }
-              v_p0 = wuffs_base__u32__min(v_p0, self->private_impl.f_rle_length);
-              wuffs_base__pixel_swizzler__swizzle_interleaved_from_slice(&self->private_impl.f_swizzler, v_dst, v_dst_palette, wuffs_base__make_slice_u8(self->private_data.f_scratch, v_p0));
-              wuffs_private_impl__u32__sat_add_indirect(&self->private_impl.f_dst_x, v_p0);
-              wuffs_private_impl__u32__sat_sub_indirect(&self->private_impl.f_rle_length, v_p0);
-            }
-            if (self->private_impl.f_rle_length > 0u) {
-              goto label__goto_suspend__break;
-            }
-            if (self->private_impl.f_rle_padded) {
-              if (((uint64_t)(io2_a_src - iop_a_src)) < 1u) {
-                goto label__goto_suspend__break;
-              }
-              iop_a_src += 1u;
-              self->private_impl.f_rle_padded = false;
-            }
-            v_rle_state = 0u;
-            goto label__middle__continue;
-          } else if (v_rle_state == 4u) {
-            if (((uint64_t)(io2_a_src - iop_a_src)) < 1u) {
-              goto label__goto_suspend__break;
-            }
-            self->private_impl.f_rle_delta_x = wuffs_base__peek_u8be__no_bounds_check(iop_a_src);
-            iop_a_src += 1u;
-            v_rle_state = 5u;
-            continue;
-          }
+        if (v_rle_state == 0u) {
           if (((uint64_t)(io2_a_src - iop_a_src)) < 1u) {
-            goto label__goto_suspend__break;
+            break;
           }
           v_code = wuffs_base__peek_u8be__no_bounds_check(iop_a_src);
           iop_a_src += 1u;
-          if (self->private_impl.f_rle_delta_x > 0u) {
-            wuffs_base__pixel_swizzler__swizzle_interleaved_transparent_black(&self->private_impl.f_swizzler, v_dst, v_dst_palette, ((uint64_t)(self->private_impl.f_rle_delta_x)));
-            wuffs_private_impl__u32__sat_add_indirect(&self->private_impl.f_dst_x, ((uint32_t)(self->private_impl.f_rle_delta_x)));
-            self->private_impl.f_rle_delta_x = 0u;
-            if (self->private_impl.f_dst_x > self->private_impl.f_width) {
+          if (v_code == 0u) {
+            v_rle_state = 2u;
+            continue;
+          }
+          self->private_impl.f_rle_length = ((uint32_t)(v_code));
+          v_rle_state = 1u;
+          continue;
+        } else if (v_rle_state == 1u) {
+          if (((uint64_t)(io2_a_src - iop_a_src)) < 1u) {
+            break;
+          }
+          v_code = wuffs_base__peek_u8be__no_bounds_check(iop_a_src);
+          iop_a_src += 1u;
+          if (self->private_impl.f_bits_per_pixel == 8u) {
+            v_p0 = 0u;
+            while (v_p0 < self->private_impl.f_rle_length) {
+              self->private_data.f_scratch[v_p0] = v_code;
+              v_p0 += 1u;
+            }
+          } else {
+            v_indexes[0u] = ((uint8_t)(((uint8_t)(v_code >> 4u))));
+            v_indexes[1u] = ((uint8_t)(v_code & 15u));
+            v_p0 = 0u;
+            while (v_p0 < self->private_impl.f_rle_length) {
+              self->private_data.f_scratch[(v_p0 + 0u)] = v_indexes[0u];
+              self->private_data.f_scratch[(v_p0 + 1u)] = v_indexes[1u];
+              v_p0 += 2u;
+            }
+          }
+          wuffs_base__pixel_swizzler__swizzle_interleaved_from_slice(&self->private_impl.f_swizzler, v_dst, v_dst_palette, wuffs_base__make_slice_u8(self->private_data.f_scratch, self->private_impl.f_rle_length));
+          wuffs_private_impl__u32__sat_add_indirect(&self->private_impl.f_dst_x, self->private_impl.f_rle_length);
+          v_rle_state = 0u;
+          goto label__middle__continue;
+        } else if (v_rle_state == 2u) {
+          if (((uint64_t)(io2_a_src - iop_a_src)) < 1u) {
+            break;
+          }
+          v_code = wuffs_base__peek_u8be__no_bounds_check(iop_a_src);
+          iop_a_src += 1u;
+          if (v_code < 2u) {
+            if ((self->private_impl.f_dst_y >= self->private_impl.f_height) && (v_code == 0u)) {
               status = wuffs_base__make_status(wuffs_bmp__error__bad_rle_compression);
               goto exit;
             }
+            wuffs_base__pixel_swizzler__swizzle_interleaved_transparent_black(&self->private_impl.f_swizzler, v_dst, v_dst_palette, 18446744073709551615u);
+            self->private_impl.f_dst_x = 0u;
+            self->private_impl.f_dst_y += self->private_impl.f_dst_y_inc;
+            if (v_code > 0u) {
+              goto label__outer__break;
+            }
+            v_rle_state = 0u;
+            goto label__outer__continue;
+          } else if (v_code == 2u) {
+            v_rle_state = 4u;
+            continue;
           }
-          if (v_code > 0u) {
+          self->private_impl.f_rle_length = ((uint32_t)(v_code));
+          self->private_impl.f_rle_padded = ((self->private_impl.f_bits_per_pixel == 8u) && (((uint8_t)(v_code & 1u)) != 0u));
+          v_rle_state = 3u;
+          continue;
+        } else if (v_rle_state == 3u) {
+          if (self->private_impl.f_bits_per_pixel == 8u) {
+            v_n = wuffs_base__pixel_swizzler__limited_swizzle_u32_interleaved_from_reader(
+                &self->private_impl.f_swizzler,
+                self->private_impl.f_rle_length,
+                v_dst,
+                v_dst_palette,
+                &iop_a_src,
+                io2_a_src);
+            wuffs_private_impl__u32__sat_add_indirect(&self->private_impl.f_dst_x, ((uint32_t)(v_n)));
+            wuffs_private_impl__u32__sat_sub_indirect(&self->private_impl.f_rle_length, ((uint32_t)(v_n)));
+          } else {
+            v_chunk_count = ((self->private_impl.f_rle_length + 3u) / 4u);
+            v_p0 = 0u;
+            while ((v_chunk_count > 0u) && (((uint64_t)(io2_a_src - iop_a_src)) >= 2u)) {
+              v_chunk_bits = ((uint32_t)(wuffs_base__peek_u16be__no_bounds_check(iop_a_src)));
+              iop_a_src += 2u;
+              self->private_data.f_scratch[(v_p0 + 0u)] = ((uint8_t)((15u & (v_chunk_bits >> 12u))));
+              self->private_data.f_scratch[(v_p0 + 1u)] = ((uint8_t)((15u & (v_chunk_bits >> 8u))));
+              self->private_data.f_scratch[(v_p0 + 2u)] = ((uint8_t)((15u & (v_chunk_bits >> 4u))));
+              self->private_data.f_scratch[(v_p0 + 3u)] = ((uint8_t)((15u & (v_chunk_bits >> 0u))));
+              v_p0 = ((v_p0 & 255u) + 4u);
+              v_chunk_count -= 1u;
+            }
+            v_p0 = wuffs_base__u32__min(v_p0, self->private_impl.f_rle_length);
+            wuffs_base__pixel_swizzler__swizzle_interleaved_from_slice(&self->private_impl.f_swizzler, v_dst, v_dst_palette, wuffs_base__make_slice_u8(self->private_data.f_scratch, v_p0));
+            wuffs_private_impl__u32__sat_add_indirect(&self->private_impl.f_dst_x, v_p0);
+            wuffs_private_impl__u32__sat_sub_indirect(&self->private_impl.f_rle_length, v_p0);
+          }
+          if (self->private_impl.f_rle_length > 0u) {
+            break;
+          }
+          if (self->private_impl.f_rle_padded) {
+            if (((uint64_t)(io2_a_src - iop_a_src)) < 1u) {
+              break;
+            }
+            iop_a_src += 1u;
+            self->private_impl.f_rle_padded = false;
+          }
+          v_rle_state = 0u;
+          goto label__middle__continue;
+        } else if (v_rle_state == 4u) {
+          if (((uint64_t)(io2_a_src - iop_a_src)) < 1u) {
+            break;
+          }
+          self->private_impl.f_rle_delta_x = wuffs_base__peek_u8be__no_bounds_check(iop_a_src);
+          iop_a_src += 1u;
+          v_rle_state = 5u;
+          continue;
+        }
+        if (((uint64_t)(io2_a_src - iop_a_src)) < 1u) {
+          break;
+        }
+        v_code = wuffs_base__peek_u8be__no_bounds_check(iop_a_src);
+        iop_a_src += 1u;
+        if (self->private_impl.f_rle_delta_x > 0u) {
+          wuffs_base__pixel_swizzler__swizzle_interleaved_transparent_black(&self->private_impl.f_swizzler, v_dst, v_dst_palette, ((uint64_t)(self->private_impl.f_rle_delta_x)));
+          wuffs_private_impl__u32__sat_add_indirect(&self->private_impl.f_dst_x, ((uint32_t)(self->private_impl.f_rle_delta_x)));
+          self->private_impl.f_rle_delta_x = 0u;
+          if (self->private_impl.f_dst_x > self->private_impl.f_width) {
+            status = wuffs_base__make_status(wuffs_bmp__error__bad_rle_compression);
+            goto exit;
+          }
+        }
+        if (v_code > 0u) {
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
+#endif
+          v_code -= 1u;
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
+          while (true) {
+            self->private_impl.f_dst_y += self->private_impl.f_dst_y_inc;
+            if (self->private_impl.f_dst_y >= self->private_impl.f_height) {
+              status = wuffs_base__make_status(wuffs_bmp__error__bad_rle_compression);
+              goto exit;
+            }
+            v_row = wuffs_private_impl__table_u8__row_u32(v_tab, self->private_impl.f_dst_y);
+            if (v_dst_bytes_per_row < ((uint64_t)(v_row.len))) {
+              v_row = wuffs_base__slice_u8__subslice_j(v_row, v_dst_bytes_per_row);
+            }
+            if (v_code <= 0u) {
+              wuffs_base__pixel_swizzler__swizzle_interleaved_transparent_black(&self->private_impl.f_swizzler, v_row, v_dst_palette, ((uint64_t)(self->private_impl.f_dst_x)));
+              break;
+            }
+            wuffs_base__pixel_swizzler__swizzle_interleaved_transparent_black(&self->private_impl.f_swizzler, v_row, v_dst_palette, 18446744073709551615u);
 #if defined(__GNUC__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wconversion"
@@ -32546,36 +32568,11 @@ wuffs_bmp__decoder__swizzle_rle(
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop
 #endif
-            while (true) {
-              self->private_impl.f_dst_y += self->private_impl.f_dst_y_inc;
-              if (self->private_impl.f_dst_y >= self->private_impl.f_height) {
-                status = wuffs_base__make_status(wuffs_bmp__error__bad_rle_compression);
-                goto exit;
-              }
-              v_row = wuffs_private_impl__table_u8__row_u32(v_tab, self->private_impl.f_dst_y);
-              if (v_dst_bytes_per_row < ((uint64_t)(v_row.len))) {
-                v_row = wuffs_base__slice_u8__subslice_j(v_row, v_dst_bytes_per_row);
-              }
-              if (v_code <= 0u) {
-                wuffs_base__pixel_swizzler__swizzle_interleaved_transparent_black(&self->private_impl.f_swizzler, v_row, v_dst_palette, ((uint64_t)(self->private_impl.f_dst_x)));
-                break;
-              }
-              wuffs_base__pixel_swizzler__swizzle_interleaved_transparent_black(&self->private_impl.f_swizzler, v_row, v_dst_palette, 18446744073709551615u);
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
-              v_code -= 1u;
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-            }
           }
-          v_rle_state = 0u;
-          goto label__middle__continue;
         }
+        v_rle_state = 0u;
+        goto label__middle__continue;
       }
-      label__goto_suspend__break:;
       self->private_impl.f_rle_state = v_rle_state;
       status = wuffs_base__make_status(wuffs_bmp__note__internal_note_short_read);
       goto ok;
