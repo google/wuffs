@@ -175,11 +175,13 @@ extern "C" {
 #elif defined(_MSC_VER)  // (#if-chain ref AVOID_CPU_ARCH_1)
 
 #if defined(_M_X64)
-#if defined(__AVX2__) || defined(__clang__)
-
 // We need <intrin.h> for the __cpuid function.
 #include <intrin.h>
-// That's not enough for X64 SIMD, with clang-cl, if we want to use
+#define WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64
+#define WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64_V2
+#if defined(__AVX2__) || defined(__clang__)
+
+// intrin.h isn't enough for X64 SIMD, with clang-cl, if we want to use
 // "__attribute__((target(arg)))" without e.g. "/arch:AVX".
 //
 // Some web pages suggest that <immintrin.h> is all you need, as it pulls in
@@ -188,8 +190,6 @@ extern "C" {
 #include <immintrin.h>  // AVX, AVX2, FMA, POPCNT
 #include <nmmintrin.h>  // SSE4.2
 #include <wmmintrin.h>  // AES, PCLMUL
-#define WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64
-#define WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64_V2
 #define WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64_V3
 
 #else  // defined(__AVX2__) || defined(__clang__)
