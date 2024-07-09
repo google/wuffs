@@ -71438,6 +71438,26 @@ wuffs_webp__decoder__apply_transform_color_indexing(
 
   v_tile_size_log2 = ((uint32_t)(self->private_impl.f_transform_tile_size_log2[3u]));
   if (v_tile_size_log2 == 0u) {
+    {
+      wuffs_base__slice_u8 i_slice_dst = a_pix;
+      v_dst.ptr = i_slice_dst.ptr;
+      v_dst.len = 4;
+      const uint8_t* i_end0_dst = wuffs_private_impl__ptr_u8_plus_len(v_dst.ptr, (((i_slice_dst.len - (size_t)(v_dst.ptr - i_slice_dst.ptr)) / 4) * 4));
+      while (v_dst.ptr < i_end0_dst) {
+        v_p = (((uint32_t)(v_dst.ptr[1u])) * 4u);
+        v_p0 = self->private_data.f_palette[(v_p + 0u)];
+        v_p1 = self->private_data.f_palette[(v_p + 1u)];
+        v_p2 = self->private_data.f_palette[(v_p + 2u)];
+        v_p3 = self->private_data.f_palette[(v_p + 3u)];
+        v_dst.ptr[0u] = v_p0;
+        v_dst.ptr[1u] = v_p1;
+        v_dst.ptr[2u] = v_p2;
+        v_dst.ptr[3u] = v_p3;
+        v_dst.ptr += 4;
+      }
+      v_dst.len = 0;
+    }
+    return wuffs_base__make_empty_struct();
   }
   v_bits_per_pixel = (((uint32_t)(8u)) >> v_tile_size_log2);
   v_x_mask = ((((uint32_t)(1u)) << v_tile_size_log2) - 1u);

@@ -379,8 +379,18 @@ pri func decoder.apply_transform_color_indexing!(pix: slice base.u8) {
 
     tile_size_log2 = this.transform_tile_size_log2[3] as base.u32
     if tile_size_log2 == 0 {
-        // TODO: the code below is correct, but we could possibly simplify the
-        // case where the src and dst pixel counts are 1:1.
+        iterate (dst = args.pix)(length: 4, advance: 4, unroll: 1) {
+            p = (dst[1] as base.u32) * 4
+            p0 = this.palette[p + 0]
+            p1 = this.palette[p + 1]
+            p2 = this.palette[p + 2]
+            p3 = this.palette[p + 3]
+            dst[0] = p0
+            dst[1] = p1
+            dst[2] = p2
+            dst[3] = p3
+        }
+        return nothing
     }
 
     bits_per_pixel = (8 as base.u32) >> tile_size_log2
