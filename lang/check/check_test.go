@@ -86,7 +86,7 @@ func TestCheck(tt *testing.T) {
 			{
 				// Redundant, but shows the labeled jump syntax.
 				continue.label
-			} endwhile.label
+			}.label
 		}
 	`) + "\n"
 

@@ -37,7 +37,7 @@ pub func parser.parse?(src: base.io_reader) {
         // Uncomment this assertion to see what facts are known here.
         // assert false
         this.val = (10 * this.val) + (c as base.u32)
-    } endwhile
+    }
 }
 
 pub func parser.value() base.u32 {
