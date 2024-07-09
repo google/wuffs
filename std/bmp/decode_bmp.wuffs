@@ -103,6 +103,7 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
     var width      : base.u32
     var height     : base.u32
     var planes     : base.u32
+    var n          : base.u32
     var dst_pixfmt : base.u32
     var byte_width : base.u32
 
@@ -275,7 +276,8 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
             }
         } else if this.bitmap_info_len >= 40 {
             // Skip the rest of the BITMAPINFOHEADER.
-            args.src.skip_u32?(n: this.bitmap_info_len - 40)
+            n = this.bitmap_info_len - 40
+            args.src.skip_u32?(n: n)
         } else {
             return "#unsupported BMP file"
         }

@@ -463,18 +463,18 @@ func (q *checker) bcheckAssignment(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 		lTyp = lhs.MType()
 	}
 
+	if (rhs.Operator() == a.ExprOperatorCall) && rhs.Effect().Coroutine() && (op != t.IDEqQuestion) {
+		if err := q.facts.update(updateFactsForSuspension); err != nil {
+			return err
+		}
+	}
+
 	nb, err := q.bcheckAssignment1(lhs, lTyp, op, rhs)
 	if err != nil {
 		return err
 	}
 
 	if (rhs.Operator() == a.ExprOperatorCall) && rhs.Effect().Impure() {
-		if rhs.Effect().Coroutine() && (op != t.IDEqQuestion) {
-			if err := q.facts.update(updateFactsForSuspension); err != nil {
-				return err
-			}
-		}
-
 		recv := rhs.LHS().AsExpr().LHS().AsExpr()
 		if err := q.facts.update(func(x *a.Expr) (*a.Expr, error) {
 			if _, ok := oldFacts[x]; !ok {

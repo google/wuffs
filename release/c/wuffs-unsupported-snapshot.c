@@ -30953,6 +30953,7 @@ wuffs_bmp__decoder__do_decode_image_config(
   uint32_t v_width = 0;
   uint32_t v_height = 0;
   uint32_t v_planes = 0;
+  uint32_t v_n = 0;
   uint32_t v_dst_pixfmt = 0;
   uint32_t v_byte_width = 0;
 
@@ -31710,7 +31711,8 @@ wuffs_bmp__decoder__do_decode_image_config(
           }
         }
       } else if (self->private_impl.f_bitmap_info_len >= 40u) {
-        self->private_data.s_do_decode_image_config.scratch = (self->private_impl.f_bitmap_info_len - 40u);
+        v_n = (self->private_impl.f_bitmap_info_len - 40u);
+        self->private_data.s_do_decode_image_config.scratch = v_n;
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(45);
         if (self->private_data.s_do_decode_image_config.scratch > ((uint64_t)(io2_a_src - iop_a_src))) {
           self->private_data.s_do_decode_image_config.scratch -= ((uint64_t)(io2_a_src - iop_a_src));
@@ -72565,6 +72567,7 @@ wuffs_webp__decoder__decode_transform(
     wuffs_base__slice_u8 a_workbuf) {
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
+  wuffs_base__status v_status = wuffs_base__make_status(NULL);
   uint8_t v_c8 = 0;
   uint32_t v_transform_type = 0;
   uint32_t v_tile_size_log2 = 0;
@@ -72663,28 +72666,34 @@ wuffs_webp__decoder__decode_transform(
       if (status.repr) {
         goto suspend;
       }
-      if ((((uint64_t)(self->private_impl.f_workbuf_offset_for_transform[(v_transform_type + 1u)])) > ((uint64_t)(self->private_impl.f_workbuf_offset_for_transform[(v_transform_type + 2u)]))) || (((uint64_t)(self->private_impl.f_workbuf_offset_for_transform[(v_transform_type + 2u)])) > ((uint64_t)(a_workbuf.len)))) {
-        status = wuffs_base__make_status(wuffs_base__error__bad_workbuf_length);
-        goto exit;
-      }
-      if (a_src) {
-        a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
-      }
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
-      status = wuffs_webp__decoder__decode_pixels(self,
-          wuffs_base__slice_u8__subslice_ij(a_workbuf,
-          ((uint64_t)(self->private_impl.f_workbuf_offset_for_transform[(v_transform_type + 1u)])),
-          ((uint64_t)(self->private_impl.f_workbuf_offset_for_transform[(v_transform_type + 2u)]))),
-          a_src,
-          ((self->private_impl.f_width + ((((uint32_t)(1u)) << v_tile_size_log2) - 1u)) >> v_tile_size_log2),
-          ((self->private_impl.f_height + ((((uint32_t)(1u)) << v_tile_size_log2) - 1u)) >> v_tile_size_log2),
-          wuffs_base__utility__empty_slice_u8(),
-          0u);
-      if (a_src) {
-        iop_a_src = a_src->data.ptr + a_src->meta.ri;
-      }
-      if (status.repr) {
-        goto suspend;
+      while (true) {
+        if ((((uint64_t)(self->private_impl.f_workbuf_offset_for_transform[(v_transform_type + 1u)])) > ((uint64_t)(self->private_impl.f_workbuf_offset_for_transform[(v_transform_type + 2u)]))) || (((uint64_t)(self->private_impl.f_workbuf_offset_for_transform[(v_transform_type + 2u)])) > ((uint64_t)(a_workbuf.len)))) {
+          status = wuffs_base__make_status(wuffs_base__error__bad_workbuf_length);
+          goto exit;
+        }
+        {
+          if (a_src) {
+            a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+          }
+          wuffs_base__status t_2 = wuffs_webp__decoder__decode_pixels(self,
+              wuffs_base__slice_u8__subslice_ij(a_workbuf,
+              ((uint64_t)(self->private_impl.f_workbuf_offset_for_transform[(v_transform_type + 1u)])),
+              ((uint64_t)(self->private_impl.f_workbuf_offset_for_transform[(v_transform_type + 2u)]))),
+              a_src,
+              ((self->private_impl.f_width + ((((uint32_t)(1u)) << v_tile_size_log2) - 1u)) >> v_tile_size_log2),
+              ((self->private_impl.f_height + ((((uint32_t)(1u)) << v_tile_size_log2) - 1u)) >> v_tile_size_log2),
+              wuffs_base__utility__empty_slice_u8(),
+              0u);
+          v_status = t_2;
+          if (a_src) {
+            iop_a_src = a_src->data.ptr + a_src->meta.ri;
+          }
+        }
+        if (wuffs_base__status__is_ok(&v_status)) {
+          break;
+        }
+        status = v_status;
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(5);
       }
     } else if (v_transform_type == 2u) {
     } else {
@@ -72695,8 +72704,8 @@ wuffs_webp__decoder__decode_transform(
             status = wuffs_base__make_status(wuffs_base__suspension__short_read);
             goto suspend;
           }
-          uint8_t t_2 = *iop_a_src++;
-          v_c8 = t_2;
+          uint8_t t_3 = *iop_a_src++;
+          v_c8 = t_3;
         }
         if (self->private_impl.f_n_bits >= 8u) {
           status = wuffs_base__make_status(wuffs_webp__error__internal_error_inconsistent_n_bits);
@@ -72781,7 +72790,6 @@ wuffs_webp__decoder__decode_transform(
       }
     }
 
-    goto ok;
     ok:
     self->private_impl.p_decode_transform = 0;
     goto exit;
@@ -72905,6 +72913,7 @@ wuffs_webp__decoder__decode_hg_table(
     wuffs_base__slice_u8 a_workbuf) {
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
+  wuffs_base__status v_status = wuffs_base__make_status(NULL);
   uint8_t v_c8 = 0;
   uint32_t v_use_hg_table = 0;
   uint32_t v_tile_size_log2 = 0;
@@ -73009,28 +73018,34 @@ wuffs_webp__decoder__decode_hg_table(
     if (status.repr) {
       goto suspend;
     }
-    if ((((uint64_t)(self->private_impl.f_workbuf_offset_for_transform[0u])) > ((uint64_t)(self->private_impl.f_workbuf_offset_for_transform[1u]))) || (((uint64_t)(self->private_impl.f_workbuf_offset_for_transform[1u])) > ((uint64_t)(a_workbuf.len)))) {
-      status = wuffs_base__make_status(wuffs_base__error__bad_workbuf_length);
-      goto exit;
-    }
-    if (a_src) {
-      a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
-    }
-    WUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
-    status = wuffs_webp__decoder__decode_pixels(self,
-        wuffs_base__slice_u8__subslice_ij(a_workbuf,
-        ((uint64_t)(self->private_impl.f_workbuf_offset_for_transform[0u])),
-        ((uint64_t)(self->private_impl.f_workbuf_offset_for_transform[1u]))),
-        a_src,
-        ((a_width + ((((uint32_t)(1u)) << v_tile_size_log2) - 1u)) >> v_tile_size_log2),
-        ((self->private_impl.f_height + ((((uint32_t)(1u)) << v_tile_size_log2) - 1u)) >> v_tile_size_log2),
-        wuffs_base__utility__empty_slice_u8(),
-        0u);
-    if (a_src) {
-      iop_a_src = a_src->data.ptr + a_src->meta.ri;
-    }
-    if (status.repr) {
-      goto suspend;
+    while (true) {
+      if ((((uint64_t)(self->private_impl.f_workbuf_offset_for_transform[0u])) > ((uint64_t)(self->private_impl.f_workbuf_offset_for_transform[1u]))) || (((uint64_t)(self->private_impl.f_workbuf_offset_for_transform[1u])) > ((uint64_t)(a_workbuf.len)))) {
+        status = wuffs_base__make_status(wuffs_base__error__bad_workbuf_length);
+        goto exit;
+      }
+      {
+        if (a_src) {
+          a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+        }
+        wuffs_base__status t_2 = wuffs_webp__decoder__decode_pixels(self,
+            wuffs_base__slice_u8__subslice_ij(a_workbuf,
+            ((uint64_t)(self->private_impl.f_workbuf_offset_for_transform[0u])),
+            ((uint64_t)(self->private_impl.f_workbuf_offset_for_transform[1u]))),
+            a_src,
+            ((a_width + ((((uint32_t)(1u)) << v_tile_size_log2) - 1u)) >> v_tile_size_log2),
+            ((self->private_impl.f_height + ((((uint32_t)(1u)) << v_tile_size_log2) - 1u)) >> v_tile_size_log2),
+            wuffs_base__utility__empty_slice_u8(),
+            0u);
+        v_status = t_2;
+        if (a_src) {
+          iop_a_src = a_src->data.ptr + a_src->meta.ri;
+        }
+      }
+      if (wuffs_base__status__is_ok(&v_status)) {
+        break;
+      }
+      status = v_status;
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(5);
     }
     self->private_impl.f_overall_n_huffman_groups = 1u;
     if ((((uint64_t)(self->private_impl.f_workbuf_offset_for_transform[0u])) > ((uint64_t)(self->private_impl.f_workbuf_offset_for_transform[1u]))) || (((uint64_t)(self->private_impl.f_workbuf_offset_for_transform[1u])) > ((uint64_t)(a_workbuf.len)))) {

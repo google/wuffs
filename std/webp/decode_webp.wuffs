@@ -466,6 +466,7 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
 }
 
 pri func decoder.decode_transform?(src: base.io_reader, workbuf: slice base.u8) {
+    var status         : base.status
     var c8             : base.u8
     var transform_type : base.u32[..= 3]
     var tile_size_log2 : base.u32[..= 9]
@@ -510,19 +511,29 @@ pri func decoder.decode_transform?(src: base.io_reader, workbuf: slice base.u8) 
 
         this.decode_color_cache_parameters?(src: args.src)
         this.decode_huffman_groups?(src: args.src, n_huffman_groups: 1)
-        if ((this.workbuf_offset_for_transform[transform_type + 1] as base.u64) > (this.workbuf_offset_for_transform[transform_type + 2] as base.u64)) or
-                ((this.workbuf_offset_for_transform[transform_type + 2] as base.u64) > args.workbuf.length()) {
-            return base."#bad workbuf length"
+
+        while true,
+                inv transform_type < 2,
+                inv tile_size_log2 >= 2,
+        {
+            if ((this.workbuf_offset_for_transform[transform_type + 1] as base.u64) > (this.workbuf_offset_for_transform[transform_type + 2] as base.u64)) or
+                    ((this.workbuf_offset_for_transform[transform_type + 2] as base.u64) > args.workbuf.length()) {
+                return base."#bad workbuf length"
+            }
+            status =? this.decode_pixels?(
+                    dst: args.workbuf[
+                    (this.workbuf_offset_for_transform[transform_type + 1] as base.u64) ..
+                    (this.workbuf_offset_for_transform[transform_type + 2] as base.u64)],
+                    src: args.src,
+                    width: (this.width + (((1 as base.u32) << tile_size_log2) - 1)) >> tile_size_log2,
+                    height: (this.height + (((1 as base.u32) << tile_size_log2) - 1)) >> tile_size_log2,
+                    tile_data: this.util.empty_slice_u8(),
+                    tile_size_log2: 0)
+            if status.is_ok() {
+                break
+            }
+            yield? status
         }
-        this.decode_pixels?(
-                dst: args.workbuf[
-                (this.workbuf_offset_for_transform[transform_type + 1] as base.u64) ..
-                (this.workbuf_offset_for_transform[transform_type + 2] as base.u64)],
-                src: args.src,
-                width: (this.width + (((1 as base.u32) << tile_size_log2) - 1)) >> tile_size_log2,
-                height: (this.height + (((1 as base.u32) << tile_size_log2) - 1)) >> tile_size_log2,
-                tile_data: this.util.empty_slice_u8(),
-                tile_size_log2: 0)
 
     } else if transform_type == 2 {  // Subtract Green transform.
         // No-op.
@@ -620,6 +631,7 @@ pri func decoder.decode_color_cache_parameters?(src: base.io_reader) {
 }
 
 pri func decoder.decode_hg_table?(src: base.io_reader, width: base.u32[..= 0x4000], workbuf: slice base.u8) {
+    var status         : base.status
     var c8             : base.u8
     var use_hg_table   : base.u32[..= 1]
     var tile_size_log2 : base.u32[..= 9]
@@ -674,19 +686,27 @@ pri func decoder.decode_hg_table?(src: base.io_reader, width: base.u32[..= 0x400
 
     this.decode_color_cache_parameters?(src: args.src)
     this.decode_huffman_groups?(src: args.src, n_huffman_groups: 1)
-    if ((this.workbuf_offset_for_transform[0] as base.u64) > (this.workbuf_offset_for_transform[1] as base.u64)) or
-            ((this.workbuf_offset_for_transform[1] as base.u64) > args.workbuf.length()) {
-        return base."#bad workbuf length"
+    while true,
+            inv tile_size_log2 >= 2,
+    {
+        if ((this.workbuf_offset_for_transform[0] as base.u64) > (this.workbuf_offset_for_transform[1] as base.u64)) or
+                ((this.workbuf_offset_for_transform[1] as base.u64) > args.workbuf.length()) {
+            return base."#bad workbuf length"
+        }
+        status =? this.decode_pixels?(
+                dst: args.workbuf[
+                (this.workbuf_offset_for_transform[0] as base.u64) ..
+                (this.workbuf_offset_for_transform[1] as base.u64)],
+                src: args.src,
+                width: (args.width + (((1 as base.u32) << tile_size_log2) - 1)) >> tile_size_log2,
+                height: (this.height + (((1 as base.u32) << tile_size_log2) - 1)) >> tile_size_log2,
+                tile_data: this.util.empty_slice_u8(),
+                tile_size_log2: 0)
+        if status.is_ok() {
+            break
+        }
+        yield? status
     }
-    this.decode_pixels?(
-            dst: args.workbuf[
-            (this.workbuf_offset_for_transform[0] as base.u64) ..
-            (this.workbuf_offset_for_transform[1] as base.u64)],
-            src: args.src,
-            width: (args.width + (((1 as base.u32) << tile_size_log2) - 1)) >> tile_size_log2,
-            height: (this.height + (((1 as base.u32) << tile_size_log2) - 1)) >> tile_size_log2,
-            tile_data: this.util.empty_slice_u8(),
-            tile_size_log2: 0)
 
     this.overall_n_huffman_groups = 1
     if ((this.workbuf_offset_for_transform[0] as base.u64) > (this.workbuf_offset_for_transform[1] as base.u64)) or
