@@ -207,11 +207,30 @@ func invert(tm *t.Map, n *a.Expr) (*a.Expr, error) {
 	return o, nil
 }
 
+var errUpdateReturnsNil = errors.New("update returns nil")
+
 func updateFactsForSuspension(x *a.Expr) (*a.Expr, error) {
-	if x.Mentions(exprArgs) || x.Mentions(exprThis) {
+	// Drop any facts involving args, this or ptr-typed local variables.
+	if err := x.AsNode().Walk(func(innerNode *a.Node) error {
+		if innerNode.Kind() != a.KExpr {
+			return nil
+		}
+		n := innerNode.AsExpr()
+		if n.MType().HasPointers() {
+			return errUpdateReturnsNil
+		} else if n.Operator() == 0 {
+			switch n.Ident() {
+			case t.IDArgs, t.IDThis:
+				return errUpdateReturnsNil
+			}
+		}
+		return nil
+	}); err == errUpdateReturnsNil {
 		return nil, nil
+	} else if err != nil {
+		return nil, err
 	}
-	// TODO: drop any facts involving ptr-typed local variables?
+
 	return x, nil
 }
 
