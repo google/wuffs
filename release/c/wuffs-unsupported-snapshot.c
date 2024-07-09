@@ -47673,13 +47673,6 @@ wuffs_jpeg__decoder__calculate_huff_tables(
 #pragma GCC diagnostic ignored "-Wconversion"
 #endif
       v_k += 1u;
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
       v_j += 1u;
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop
@@ -71022,29 +71015,8 @@ wuffs_webp__decoder__apply_transform_predictor(
 #pragma GCC diagnostic ignored "-Wconversion"
 #endif
     v_curr_row.ptr[4u] += v_curr_row.ptr[0u];
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
     v_curr_row.ptr[5u] += v_curr_row.ptr[1u];
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
     v_curr_row.ptr[6u] += v_curr_row.ptr[2u];
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
     v_curr_row.ptr[7u] += v_curr_row.ptr[3u];
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop
@@ -71076,29 +71048,8 @@ wuffs_webp__decoder__apply_transform_predictor(
 #pragma GCC diagnostic ignored "-Wconversion"
 #endif
       v_curr_row.ptr[0u] += v_prev_row.ptr[0u];
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
       v_curr_row.ptr[1u] += v_prev_row.ptr[1u];
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
       v_curr_row.ptr[2u] += v_prev_row.ptr[2u];
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
       v_curr_row.ptr[3u] += v_prev_row.ptr[3u];
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop
@@ -71128,29 +71079,8 @@ wuffs_webp__decoder__apply_transform_predictor(
 #pragma GCC diagnostic ignored "-Wconversion"
 #endif
         v_curr_row.ptr[4u] += v_curr_row.ptr[0u];
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
         v_curr_row.ptr[5u] += v_curr_row.ptr[1u];
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
         v_curr_row.ptr[6u] += v_curr_row.ptr[2u];
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
         v_curr_row.ptr[7u] += v_curr_row.ptr[3u];
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop
@@ -71161,29 +71091,8 @@ wuffs_webp__decoder__apply_transform_predictor(
 #pragma GCC diagnostic ignored "-Wconversion"
 #endif
         v_curr_row.ptr[4u] += v_prev_row.ptr[4u];
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
         v_curr_row.ptr[5u] += v_prev_row.ptr[5u];
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
         v_curr_row.ptr[6u] += v_prev_row.ptr[6u];
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
         v_curr_row.ptr[7u] += v_prev_row.ptr[7u];
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop
@@ -71194,29 +71103,8 @@ wuffs_webp__decoder__apply_transform_predictor(
 #pragma GCC diagnostic ignored "-Wconversion"
 #endif
         v_curr_row.ptr[4u] += v_prev_row.ptr[8u];
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
         v_curr_row.ptr[5u] += v_prev_row.ptr[9u];
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
         v_curr_row.ptr[6u] += v_prev_row.ptr[10u];
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
         v_curr_row.ptr[7u] += v_prev_row.ptr[11u];
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop
@@ -71227,29 +71115,8 @@ wuffs_webp__decoder__apply_transform_predictor(
 #pragma GCC diagnostic ignored "-Wconversion"
 #endif
         v_curr_row.ptr[4u] += v_prev_row.ptr[0u];
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
         v_curr_row.ptr[5u] += v_prev_row.ptr[1u];
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
         v_curr_row.ptr[6u] += v_prev_row.ptr[2u];
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
         v_curr_row.ptr[7u] += v_prev_row.ptr[3u];
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop
@@ -71264,29 +71131,8 @@ wuffs_webp__decoder__apply_transform_predictor(
 #pragma GCC diagnostic ignored "-Wconversion"
 #endif
         v_curr_row.ptr[4u] += ((uint8_t)(((v_l0 + ((uint32_t)(v_prev_row.ptr[4u]))) / 2u)));
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
         v_curr_row.ptr[5u] += ((uint8_t)(((v_l1 + ((uint32_t)(v_prev_row.ptr[5u]))) / 2u)));
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
         v_curr_row.ptr[6u] += ((uint8_t)(((v_l2 + ((uint32_t)(v_prev_row.ptr[6u]))) / 2u)));
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
         v_curr_row.ptr[7u] += ((uint8_t)(((v_l3 + ((uint32_t)(v_prev_row.ptr[7u]))) / 2u)));
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop
@@ -71297,29 +71143,8 @@ wuffs_webp__decoder__apply_transform_predictor(
 #pragma GCC diagnostic ignored "-Wconversion"
 #endif
         v_curr_row.ptr[4u] += ((uint8_t)(((((uint32_t)(v_curr_row.ptr[0u])) + ((uint32_t)(v_prev_row.ptr[0u]))) / 2u)));
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
         v_curr_row.ptr[5u] += ((uint8_t)(((((uint32_t)(v_curr_row.ptr[1u])) + ((uint32_t)(v_prev_row.ptr[1u]))) / 2u)));
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
         v_curr_row.ptr[6u] += ((uint8_t)(((((uint32_t)(v_curr_row.ptr[2u])) + ((uint32_t)(v_prev_row.ptr[2u]))) / 2u)));
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
         v_curr_row.ptr[7u] += ((uint8_t)(((((uint32_t)(v_curr_row.ptr[3u])) + ((uint32_t)(v_prev_row.ptr[3u]))) / 2u)));
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop
@@ -71330,29 +71155,8 @@ wuffs_webp__decoder__apply_transform_predictor(
 #pragma GCC diagnostic ignored "-Wconversion"
 #endif
         v_curr_row.ptr[4u] += ((uint8_t)(((((uint32_t)(v_curr_row.ptr[0u])) + ((uint32_t)(v_prev_row.ptr[4u]))) / 2u)));
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
         v_curr_row.ptr[5u] += ((uint8_t)(((((uint32_t)(v_curr_row.ptr[1u])) + ((uint32_t)(v_prev_row.ptr[5u]))) / 2u)));
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
         v_curr_row.ptr[6u] += ((uint8_t)(((((uint32_t)(v_curr_row.ptr[2u])) + ((uint32_t)(v_prev_row.ptr[6u]))) / 2u)));
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
         v_curr_row.ptr[7u] += ((uint8_t)(((((uint32_t)(v_curr_row.ptr[3u])) + ((uint32_t)(v_prev_row.ptr[7u]))) / 2u)));
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop
@@ -71363,29 +71167,8 @@ wuffs_webp__decoder__apply_transform_predictor(
 #pragma GCC diagnostic ignored "-Wconversion"
 #endif
         v_curr_row.ptr[4u] += ((uint8_t)(((((uint32_t)(v_prev_row.ptr[0u])) + ((uint32_t)(v_prev_row.ptr[4u]))) / 2u)));
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
         v_curr_row.ptr[5u] += ((uint8_t)(((((uint32_t)(v_prev_row.ptr[1u])) + ((uint32_t)(v_prev_row.ptr[5u]))) / 2u)));
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
         v_curr_row.ptr[6u] += ((uint8_t)(((((uint32_t)(v_prev_row.ptr[2u])) + ((uint32_t)(v_prev_row.ptr[6u]))) / 2u)));
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
         v_curr_row.ptr[7u] += ((uint8_t)(((((uint32_t)(v_prev_row.ptr[3u])) + ((uint32_t)(v_prev_row.ptr[7u]))) / 2u)));
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop
@@ -71396,29 +71179,8 @@ wuffs_webp__decoder__apply_transform_predictor(
 #pragma GCC diagnostic ignored "-Wconversion"
 #endif
         v_curr_row.ptr[4u] += ((uint8_t)(((((uint32_t)(v_prev_row.ptr[4u])) + ((uint32_t)(v_prev_row.ptr[8u]))) / 2u)));
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
         v_curr_row.ptr[5u] += ((uint8_t)(((((uint32_t)(v_prev_row.ptr[5u])) + ((uint32_t)(v_prev_row.ptr[9u]))) / 2u)));
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
         v_curr_row.ptr[6u] += ((uint8_t)(((((uint32_t)(v_prev_row.ptr[6u])) + ((uint32_t)(v_prev_row.ptr[10u]))) / 2u)));
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
         v_curr_row.ptr[7u] += ((uint8_t)(((((uint32_t)(v_prev_row.ptr[7u])) + ((uint32_t)(v_prev_row.ptr[11u]))) / 2u)));
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop
@@ -71437,29 +71199,8 @@ wuffs_webp__decoder__apply_transform_predictor(
 #pragma GCC diagnostic ignored "-Wconversion"
 #endif
         v_curr_row.ptr[4u] += ((uint8_t)(((v_l0 + v_t0) / 2u)));
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
         v_curr_row.ptr[5u] += ((uint8_t)(((v_l1 + v_t1) / 2u)));
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
         v_curr_row.ptr[6u] += ((uint8_t)(((v_l2 + v_t2) / 2u)));
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
         v_curr_row.ptr[7u] += ((uint8_t)(((v_l3 + v_t3) / 2u)));
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop
@@ -71491,29 +71232,8 @@ wuffs_webp__decoder__apply_transform_predictor(
 #pragma GCC diagnostic ignored "-Wconversion"
 #endif
           v_curr_row.ptr[4u] += ((uint8_t)(v_l0));
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
           v_curr_row.ptr[5u] += ((uint8_t)(v_l1));
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
           v_curr_row.ptr[6u] += ((uint8_t)(v_l2));
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
           v_curr_row.ptr[7u] += ((uint8_t)(v_l3));
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop
@@ -71524,29 +71244,8 @@ wuffs_webp__decoder__apply_transform_predictor(
 #pragma GCC diagnostic ignored "-Wconversion"
 #endif
           v_curr_row.ptr[4u] += ((uint8_t)(v_t0));
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
           v_curr_row.ptr[5u] += ((uint8_t)(v_t1));
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
           v_curr_row.ptr[6u] += ((uint8_t)(v_t2));
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
           v_curr_row.ptr[7u] += ((uint8_t)(v_t3));
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop
@@ -71558,29 +71257,8 @@ wuffs_webp__decoder__apply_transform_predictor(
 #pragma GCC diagnostic ignored "-Wconversion"
 #endif
         v_curr_row.ptr[4u] += wuffs_webp__decoder__mode12(self, v_curr_row.ptr[0u], v_prev_row.ptr[4u], v_prev_row.ptr[0u]);
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
         v_curr_row.ptr[5u] += wuffs_webp__decoder__mode12(self, v_curr_row.ptr[1u], v_prev_row.ptr[5u], v_prev_row.ptr[1u]);
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
         v_curr_row.ptr[6u] += wuffs_webp__decoder__mode12(self, v_curr_row.ptr[2u], v_prev_row.ptr[6u], v_prev_row.ptr[2u]);
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
         v_curr_row.ptr[7u] += wuffs_webp__decoder__mode12(self, v_curr_row.ptr[3u], v_prev_row.ptr[7u], v_prev_row.ptr[3u]);
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop
@@ -71591,29 +71269,8 @@ wuffs_webp__decoder__apply_transform_predictor(
 #pragma GCC diagnostic ignored "-Wconversion"
 #endif
         v_curr_row.ptr[4u] += wuffs_webp__decoder__mode13(self, v_curr_row.ptr[0u], v_prev_row.ptr[4u], v_prev_row.ptr[0u]);
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
         v_curr_row.ptr[5u] += wuffs_webp__decoder__mode13(self, v_curr_row.ptr[1u], v_prev_row.ptr[5u], v_prev_row.ptr[1u]);
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
         v_curr_row.ptr[6u] += wuffs_webp__decoder__mode13(self, v_curr_row.ptr[2u], v_prev_row.ptr[6u], v_prev_row.ptr[2u]);
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
         v_curr_row.ptr[7u] += wuffs_webp__decoder__mode13(self, v_curr_row.ptr[3u], v_prev_row.ptr[7u], v_prev_row.ptr[3u]);
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop
@@ -71737,21 +71394,7 @@ wuffs_webp__decoder__apply_transform_cross_color(
 #pragma GCC diagnostic ignored "-Wconversion"
 #endif
         v_r += ((uint8_t)((((uint32_t)(WUFFS_WEBP__SIGN_EXTEND_I8_I32[v_g] * v_g2r)) >> 5u)));
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
         v_b += ((uint8_t)((((uint32_t)(WUFFS_WEBP__SIGN_EXTEND_I8_I32[v_g] * v_g2b)) >> 5u)));
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
         v_b += ((uint8_t)((((uint32_t)(WUFFS_WEBP__SIGN_EXTEND_I8_I32[v_r] * v_r2b)) >> 5u)));
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop
@@ -71789,13 +71432,6 @@ wuffs_webp__decoder__apply_transform_subtract_green(
 #pragma GCC diagnostic ignored "-Wconversion"
 #endif
       v_p.ptr[0u] += v_g;
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
       v_p.ptr[2u] += v_g;
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop
@@ -73135,29 +72771,8 @@ wuffs_webp__decoder__decode_transform(
 #pragma GCC diagnostic ignored "-Wconversion"
 #endif
         v_p.ptr[4u] += v_p.ptr[0u];
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
         v_p.ptr[5u] += v_p.ptr[1u];
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
         v_p.ptr[6u] += v_p.ptr[2u];
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
         v_p.ptr[7u] += v_p.ptr[3u];
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop

@@ -183,14 +183,23 @@ func (g *gen) writeStatementAssign1(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr
 			}
 		}
 	}
+
+	const disableWconversion0 = "" +
+		"#if defined(__GNUC__)\n" +
+		"#pragma GCC diagnostic push\n" +
+		"#pragma GCC diagnostic ignored \"-Wconversion\"\n" +
+		"#endif\n"
+
+	const disableWconversion1 = "" +
+		"#if defined(__GNUC__)\n" +
+		"#pragma GCC diagnostic pop\n" +
+		"#endif\n"
+
 	// "x += 1" triggers -Wconversion, if x is smaller than an int (i.e. a
 	// uint8_t or a uint16_t). This is arguably a clang/gcc bug, but in any
 	// case, we work around it in Wuffs.
-	if disableWconversion {
-		b.writes("#if defined(__GNUC__)\n")
-		b.writes("#pragma GCC diagnostic push\n")
-		b.writes("#pragma GCC diagnostic ignored \"-Wconversion\"\n")
-		b.writes("#endif\n")
+	if disableWconversion && !b.undoWrites(disableWconversion1) {
+		b.writes(disableWconversion0)
 	}
 
 	n := len(*b)
@@ -213,9 +222,7 @@ func (g *gen) writeStatementAssign1(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr
 	}
 
 	if disableWconversion {
-		b.writes("#if defined(__GNUC__)\n")
-		b.writes("#pragma GCC diagnostic pop\n")
-		b.writes("#endif\n")
+		b.writes(disableWconversion1)
 	}
 
 	return nil

@@ -237,6 +237,16 @@ func (b *buffer) writeb(x byte)                             { *b = append(*b, x)
 func (b *buffer) writes(s string)                           { *b = append(*b, s...) }
 func (b *buffer) writex(s []byte)                           { *b = append(*b, s...) }
 
+func (b *buffer) undoWrites(s string) bool {
+	nb := len(*b)
+	ns := len(s)
+	if (nb < ns) || (string((*b)[nb-ns:]) != s) {
+		return false
+	}
+	*b = (*b)[:nb-ns]
+	return true
+}
+
 func expandBangInsert(b *buffer, s string, m map[string]func(*buffer) error) error {
 	for {
 		remaining := ""
