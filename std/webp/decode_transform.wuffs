@@ -321,9 +321,9 @@ pri func decoder.apply_transform_cross_color!(pix: slice base.u8, tile_data: ros
             assert x < 0x4000 via "a < b: a < c; c <= b"(c: this.width)
 
             if ((x & mask) == 0) and (tile_data.length() >= 4) {
-                g2r = SIGN_EXTEND_I8_I32[tile_data[0]]
-                g2b = SIGN_EXTEND_I8_I32[tile_data[1]]
-                r2b = SIGN_EXTEND_I8_I32[tile_data[2]]
+                g2r = this.util.sign_extend_convert_u8_u32(a: tile_data[0])
+                g2b = this.util.sign_extend_convert_u8_u32(a: tile_data[1])
+                r2b = this.util.sign_extend_convert_u8_u32(a: tile_data[2])
                 tile_data = tile_data[4 ..]
             }
 
@@ -331,9 +331,9 @@ pri func decoder.apply_transform_cross_color!(pix: slice base.u8, tile_data: ros
                 b = args.pix[0]
                 g = args.pix[1]
                 r = args.pix[2]
-                r ~mod+= (((SIGN_EXTEND_I8_I32[g] ~mod* g2r) >> 5) & 0xFF) as base.u8
-                b ~mod+= (((SIGN_EXTEND_I8_I32[g] ~mod* g2b) >> 5) & 0xFF) as base.u8
-                b ~mod+= (((SIGN_EXTEND_I8_I32[r] ~mod* r2b) >> 5) & 0xFF) as base.u8
+                r ~mod+= (((this.util.sign_extend_convert_u8_u32(a: g) ~mod* g2r) >> 5) & 0xFF) as base.u8
+                b ~mod+= (((this.util.sign_extend_convert_u8_u32(a: g) ~mod* g2b) >> 5) & 0xFF) as base.u8
+                b ~mod+= (((this.util.sign_extend_convert_u8_u32(a: r) ~mod* r2b) >> 5) & 0xFF) as base.u8
                 args.pix[0] = b
                 args.pix[2] = r
                 args.pix = args.pix[4 ..]
@@ -426,39 +426,3 @@ pri func decoder.apply_transform_color_indexing!(pix: slice base.u8) {
         y += 1
     }
 }
-
-// TODO: we shouldn't need a lookup table for converting i8 to i32.
-pri const SIGN_EXTEND_I8_I32 : roarray[256] base.u32 = [
-        0x0000_0000, 0x0000_0001, 0x0000_0002, 0x0000_0003, 0x0000_0004, 0x0000_0005, 0x0000_0006, 0x0000_0007,
-        0x0000_0008, 0x0000_0009, 0x0000_000A, 0x0000_000B, 0x0000_000C, 0x0000_000D, 0x0000_000E, 0x0000_000F,
-        0x0000_0010, 0x0000_0011, 0x0000_0012, 0x0000_0013, 0x0000_0014, 0x0000_0015, 0x0000_0016, 0x0000_0017,
-        0x0000_0018, 0x0000_0019, 0x0000_001A, 0x0000_001B, 0x0000_001C, 0x0000_001D, 0x0000_001E, 0x0000_001F,
-        0x0000_0020, 0x0000_0021, 0x0000_0022, 0x0000_0023, 0x0000_0024, 0x0000_0025, 0x0000_0026, 0x0000_0027,
-        0x0000_0028, 0x0000_0029, 0x0000_002A, 0x0000_002B, 0x0000_002C, 0x0000_002D, 0x0000_002E, 0x0000_002F,
-        0x0000_0030, 0x0000_0031, 0x0000_0032, 0x0000_0033, 0x0000_0034, 0x0000_0035, 0x0000_0036, 0x0000_0037,
-        0x0000_0038, 0x0000_0039, 0x0000_003A, 0x0000_003B, 0x0000_003C, 0x0000_003D, 0x0000_003E, 0x0000_003F,
-        0x0000_0040, 0x0000_0041, 0x0000_0042, 0x0000_0043, 0x0000_0044, 0x0000_0045, 0x0000_0046, 0x0000_0047,
-        0x0000_0048, 0x0000_0049, 0x0000_004A, 0x0000_004B, 0x0000_004C, 0x0000_004D, 0x0000_004E, 0x0000_004F,
-        0x0000_0050, 0x0000_0051, 0x0000_0052, 0x0000_0053, 0x0000_0054, 0x0000_0055, 0x0000_0056, 0x0000_0057,
-        0x0000_0058, 0x0000_0059, 0x0000_005A, 0x0000_005B, 0x0000_005C, 0x0000_005D, 0x0000_005E, 0x0000_005F,
-        0x0000_0060, 0x0000_0061, 0x0000_0062, 0x0000_0063, 0x0000_0064, 0x0000_0065, 0x0000_0066, 0x0000_0067,
-        0x0000_0068, 0x0000_0069, 0x0000_006A, 0x0000_006B, 0x0000_006C, 0x0000_006D, 0x0000_006E, 0x0000_006F,
-        0x0000_0070, 0x0000_0071, 0x0000_0072, 0x0000_0073, 0x0000_0074, 0x0000_0075, 0x0000_0076, 0x0000_0077,
-        0x0000_0078, 0x0000_0079, 0x0000_007A, 0x0000_007B, 0x0000_007C, 0x0000_007D, 0x0000_007E, 0x0000_007F,
-        0xFFFF_FF80, 0xFFFF_FF81, 0xFFFF_FF82, 0xFFFF_FF83, 0xFFFF_FF84, 0xFFFF_FF85, 0xFFFF_FF86, 0xFFFF_FF87,
-        0xFFFF_FF88, 0xFFFF_FF89, 0xFFFF_FF8A, 0xFFFF_FF8B, 0xFFFF_FF8C, 0xFFFF_FF8D, 0xFFFF_FF8E, 0xFFFF_FF8F,
-        0xFFFF_FF90, 0xFFFF_FF91, 0xFFFF_FF92, 0xFFFF_FF93, 0xFFFF_FF94, 0xFFFF_FF95, 0xFFFF_FF96, 0xFFFF_FF97,
-        0xFFFF_FF98, 0xFFFF_FF99, 0xFFFF_FF9A, 0xFFFF_FF9B, 0xFFFF_FF9C, 0xFFFF_FF9D, 0xFFFF_FF9E, 0xFFFF_FF9F,
-        0xFFFF_FFA0, 0xFFFF_FFA1, 0xFFFF_FFA2, 0xFFFF_FFA3, 0xFFFF_FFA4, 0xFFFF_FFA5, 0xFFFF_FFA6, 0xFFFF_FFA7,
-        0xFFFF_FFA8, 0xFFFF_FFA9, 0xFFFF_FFAA, 0xFFFF_FFAB, 0xFFFF_FFAC, 0xFFFF_FFAD, 0xFFFF_FFAE, 0xFFFF_FFAF,
-        0xFFFF_FFB0, 0xFFFF_FFB1, 0xFFFF_FFB2, 0xFFFF_FFB3, 0xFFFF_FFB4, 0xFFFF_FFB5, 0xFFFF_FFB6, 0xFFFF_FFB7,
-        0xFFFF_FFB8, 0xFFFF_FFB9, 0xFFFF_FFBA, 0xFFFF_FFBB, 0xFFFF_FFBC, 0xFFFF_FFBD, 0xFFFF_FFBE, 0xFFFF_FFBF,
-        0xFFFF_FFC0, 0xFFFF_FFC1, 0xFFFF_FFC2, 0xFFFF_FFC3, 0xFFFF_FFC4, 0xFFFF_FFC5, 0xFFFF_FFC6, 0xFFFF_FFC7,
-        0xFFFF_FFC8, 0xFFFF_FFC9, 0xFFFF_FFCA, 0xFFFF_FFCB, 0xFFFF_FFCC, 0xFFFF_FFCD, 0xFFFF_FFCE, 0xFFFF_FFCF,
-        0xFFFF_FFD0, 0xFFFF_FFD1, 0xFFFF_FFD2, 0xFFFF_FFD3, 0xFFFF_FFD4, 0xFFFF_FFD5, 0xFFFF_FFD6, 0xFFFF_FFD7,
-        0xFFFF_FFD8, 0xFFFF_FFD9, 0xFFFF_FFDA, 0xFFFF_FFDB, 0xFFFF_FFDC, 0xFFFF_FFDD, 0xFFFF_FFDE, 0xFFFF_FFDF,
-        0xFFFF_FFE0, 0xFFFF_FFE1, 0xFFFF_FFE2, 0xFFFF_FFE3, 0xFFFF_FFE4, 0xFFFF_FFE5, 0xFFFF_FFE6, 0xFFFF_FFE7,
-        0xFFFF_FFE8, 0xFFFF_FFE9, 0xFFFF_FFEA, 0xFFFF_FFEB, 0xFFFF_FFEC, 0xFFFF_FFED, 0xFFFF_FFEE, 0xFFFF_FFEF,
-        0xFFFF_FFF0, 0xFFFF_FFF1, 0xFFFF_FFF2, 0xFFFF_FFF3, 0xFFFF_FFF4, 0xFFFF_FFF5, 0xFFFF_FFF6, 0xFFFF_FFF7,
-        0xFFFF_FFF8, 0xFFFF_FFF9, 0xFFFF_FFFA, 0xFFFF_FFFB, 0xFFFF_FFFC, 0xFFFF_FFFD, 0xFFFF_FFFE, 0xFFFF_FFFF,
-]

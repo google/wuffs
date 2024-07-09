@@ -173,6 +173,9 @@ wuffs_private_impl__u64__sat_sub_indirect(uint64_t* x, uint64_t y) {
 
 // ---------------- Numeric Types (Utility)
 
+#define wuffs_base__utility__sign_extend_convert_u8_u32(a) \
+  ((uint32_t)(int32_t)(int8_t)(a))
+
 #define wuffs_base__utility__sign_extend_convert_u16_u32(a) \
   ((uint32_t)(int32_t)(int16_t)(a))
 

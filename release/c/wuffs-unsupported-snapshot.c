@@ -15834,6 +15834,9 @@ wuffs_private_impl__u64__sat_sub_indirect(uint64_t* x, uint64_t y) {
 
 // ---------------- Numeric Types (Utility)
 
+#define wuffs_base__utility__sign_extend_convert_u8_u32(a) \
+  ((uint32_t)(int32_t)(int8_t)(a))
+
 #define wuffs_base__utility__sign_extend_convert_u16_u32(a) \
   ((uint32_t)(int32_t)(int16_t)(a))
 
@@ -69431,42 +69434,6 @@ WUFFS_WEBP__HUFFMAN_TABLE_BASE_OFFSETS[5] WUFFS_BASE__POTENTIALLY_UNUSED = {
   1612u, 0u, 511u, 1022u, 1533u,
 };
 
-static const uint32_t
-WUFFS_WEBP__SIGN_EXTEND_I8_I32[256] WUFFS_BASE__POTENTIALLY_UNUSED = {
-  0u, 1u, 2u, 3u, 4u, 5u, 6u, 7u,
-  8u, 9u, 10u, 11u, 12u, 13u, 14u, 15u,
-  16u, 17u, 18u, 19u, 20u, 21u, 22u, 23u,
-  24u, 25u, 26u, 27u, 28u, 29u, 30u, 31u,
-  32u, 33u, 34u, 35u, 36u, 37u, 38u, 39u,
-  40u, 41u, 42u, 43u, 44u, 45u, 46u, 47u,
-  48u, 49u, 50u, 51u, 52u, 53u, 54u, 55u,
-  56u, 57u, 58u, 59u, 60u, 61u, 62u, 63u,
-  64u, 65u, 66u, 67u, 68u, 69u, 70u, 71u,
-  72u, 73u, 74u, 75u, 76u, 77u, 78u, 79u,
-  80u, 81u, 82u, 83u, 84u, 85u, 86u, 87u,
-  88u, 89u, 90u, 91u, 92u, 93u, 94u, 95u,
-  96u, 97u, 98u, 99u, 100u, 101u, 102u, 103u,
-  104u, 105u, 106u, 107u, 108u, 109u, 110u, 111u,
-  112u, 113u, 114u, 115u, 116u, 117u, 118u, 119u,
-  120u, 121u, 122u, 123u, 124u, 125u, 126u, 127u,
-  4294967168u, 4294967169u, 4294967170u, 4294967171u, 4294967172u, 4294967173u, 4294967174u, 4294967175u,
-  4294967176u, 4294967177u, 4294967178u, 4294967179u, 4294967180u, 4294967181u, 4294967182u, 4294967183u,
-  4294967184u, 4294967185u, 4294967186u, 4294967187u, 4294967188u, 4294967189u, 4294967190u, 4294967191u,
-  4294967192u, 4294967193u, 4294967194u, 4294967195u, 4294967196u, 4294967197u, 4294967198u, 4294967199u,
-  4294967200u, 4294967201u, 4294967202u, 4294967203u, 4294967204u, 4294967205u, 4294967206u, 4294967207u,
-  4294967208u, 4294967209u, 4294967210u, 4294967211u, 4294967212u, 4294967213u, 4294967214u, 4294967215u,
-  4294967216u, 4294967217u, 4294967218u, 4294967219u, 4294967220u, 4294967221u, 4294967222u, 4294967223u,
-  4294967224u, 4294967225u, 4294967226u, 4294967227u, 4294967228u, 4294967229u, 4294967230u, 4294967231u,
-  4294967232u, 4294967233u, 4294967234u, 4294967235u, 4294967236u, 4294967237u, 4294967238u, 4294967239u,
-  4294967240u, 4294967241u, 4294967242u, 4294967243u, 4294967244u, 4294967245u, 4294967246u, 4294967247u,
-  4294967248u, 4294967249u, 4294967250u, 4294967251u, 4294967252u, 4294967253u, 4294967254u, 4294967255u,
-  4294967256u, 4294967257u, 4294967258u, 4294967259u, 4294967260u, 4294967261u, 4294967262u, 4294967263u,
-  4294967264u, 4294967265u, 4294967266u, 4294967267u, 4294967268u, 4294967269u, 4294967270u, 4294967271u,
-  4294967272u, 4294967273u, 4294967274u, 4294967275u, 4294967276u, 4294967277u, 4294967278u, 4294967279u,
-  4294967280u, 4294967281u, 4294967282u, 4294967283u, 4294967284u, 4294967285u, 4294967286u, 4294967287u,
-  4294967288u, 4294967289u, 4294967290u, 4294967291u, 4294967292u, 4294967293u, 4294967294u, 4294967295u,
-};
-
 static const uint8_t
 WUFFS_WEBP__DISTANCE_MAP[120] WUFFS_BASE__POTENTIALLY_UNUSED = {
   24u, 7u, 23u, 25u, 40u, 6u, 39u, 41u,
@@ -71382,9 +71349,9 @@ wuffs_webp__decoder__apply_transform_cross_color(
     v_x = 0u;
     while (v_x < self->private_impl.f_width) {
       if (((v_x & v_mask) == 0u) && (((uint64_t)(v_tile_data.len)) >= 4u)) {
-        v_g2r = WUFFS_WEBP__SIGN_EXTEND_I8_I32[v_tile_data.ptr[0u]];
-        v_g2b = WUFFS_WEBP__SIGN_EXTEND_I8_I32[v_tile_data.ptr[1u]];
-        v_r2b = WUFFS_WEBP__SIGN_EXTEND_I8_I32[v_tile_data.ptr[2u]];
+        v_g2r = wuffs_base__utility__sign_extend_convert_u8_u32(v_tile_data.ptr[0u]);
+        v_g2b = wuffs_base__utility__sign_extend_convert_u8_u32(v_tile_data.ptr[1u]);
+        v_r2b = wuffs_base__utility__sign_extend_convert_u8_u32(v_tile_data.ptr[2u]);
         v_tile_data = wuffs_base__slice_u8__subslice_i(v_tile_data, 4u);
       }
       if (((uint64_t)(a_pix.len)) >= 4u) {
@@ -71395,9 +71362,9 @@ wuffs_webp__decoder__apply_transform_cross_color(
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wconversion"
 #endif
-        v_r += ((uint8_t)((((uint32_t)(WUFFS_WEBP__SIGN_EXTEND_I8_I32[v_g] * v_g2r)) >> 5u)));
-        v_b += ((uint8_t)((((uint32_t)(WUFFS_WEBP__SIGN_EXTEND_I8_I32[v_g] * v_g2b)) >> 5u)));
-        v_b += ((uint8_t)((((uint32_t)(WUFFS_WEBP__SIGN_EXTEND_I8_I32[v_r] * v_r2b)) >> 5u)));
+        v_r += ((uint8_t)((((uint32_t)(wuffs_base__utility__sign_extend_convert_u8_u32(v_g) * v_g2r)) >> 5u)));
+        v_b += ((uint8_t)((((uint32_t)(wuffs_base__utility__sign_extend_convert_u8_u32(v_g) * v_g2b)) >> 5u)));
+        v_b += ((uint8_t)((((uint32_t)(wuffs_base__utility__sign_extend_convert_u8_u32(v_r) * v_r2b)) >> 5u)));
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop
 #endif
