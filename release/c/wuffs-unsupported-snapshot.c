@@ -200,7 +200,9 @@ extern "C" {
 // For MSVC's cl.exe (unlike clang or gcc), SIMD capability is a compile-time
 // property of the source file (e.g. a /arch:AVX2 or -mavx2 compiler flag), not
 // of individual functions (that can be conditionally selected at runtime).
+#if !defined(WUFFS_CONFIG__I_KNOW_THAT_WUFFS_MSVC_PERFORMS_BEST_WITH_ARCH_AVX2)
 #pragma message("Wuffs with MSVC+IX86/X64 performs best with /arch:AVX2")
+#endif
 
 #endif  // defined(__AVX2__) || defined(__clang__)
 #endif  // defined(_M_X64)
