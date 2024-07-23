@@ -15,6 +15,7 @@ pub status "#bad SOF marker"
 pub status "#bad SOS marker"
 pub status "#bad header"
 pub status "#bad marker"
+pub status "#bad scan count"
 pub status "#missing Huffman table"
 pub status "#missing Quantization table"
 pub status "#truncated input"
@@ -277,6 +278,8 @@ pub struct decoder? implements base.image_decoder(
         bitstream_wi     : base.u32[..= 0x800],
 
         bitstream_is_closed : base.bool,
+
+        expect_multiple_scans : base.bool,
 
         // bitstream_padding is the number (per restart) of implicit zeroes
         // remaining at the end of the bitstream. Its initial 12345 value is
@@ -1256,6 +1259,8 @@ pri func decoder.decode_sos?(src: base.io_reader, workbuf: slice base.u8) {
 
     if this.scan_count >= 64 {
         return "#unsupported scan count"
+    } else if (this.scan_count > 0) and (not this.expect_multiple_scans) {
+        return "#bad scan count"
     }
 
     this.prepare_scan?(src: args.src)
@@ -1429,6 +1434,12 @@ pri func decoder.prepare_scan?(src: base.io_reader) {
         }
 
         i += 1
+    }
+
+    if this.scan_count == 0 {
+        this.expect_multiple_scans =
+                (this.sof_marker >= 0xC2) or
+                (this.scan_num_components < this.num_components)
     }
 
     if this.sof_marker < 0xC2 {
@@ -2060,6 +2071,7 @@ pub func decoder.restart_frame!(index: base.u64, io_position: base.u64) base.sta
 
     this.call_sequence = 0x28
     this.bitstream_is_closed = false
+    this.expect_multiple_scans = false
     this.frame_config_io_position = args.io_position
     this.scan_count = 0
     this.restart_interval = this.saved_restart_interval

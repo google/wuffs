@@ -9601,6 +9601,7 @@ extern const char wuffs_jpeg__error__bad_sof_marker[];
 extern const char wuffs_jpeg__error__bad_sos_marker[];
 extern const char wuffs_jpeg__error__bad_header[];
 extern const char wuffs_jpeg__error__bad_marker[];
+extern const char wuffs_jpeg__error__bad_scan_count[];
 extern const char wuffs_jpeg__error__missing_huffman_table[];
 extern const char wuffs_jpeg__error__missing_quantization_table[];
 extern const char wuffs_jpeg__error__truncated_input[];
@@ -9845,6 +9846,7 @@ struct wuffs_jpeg__decoder__struct {
     uint32_t f_bitstream_ri;
     uint32_t f_bitstream_wi;
     bool f_bitstream_is_closed;
+    bool f_expect_multiple_scans;
     uint32_t f_bitstream_padding;
     uint16_t f_quant_tables[4][64];
     uint16_t f_saved_quant_tables[4][64];
@@ -43660,6 +43662,7 @@ const char wuffs_jpeg__error__bad_sof_marker[] = "#jpeg: bad SOF marker";
 const char wuffs_jpeg__error__bad_sos_marker[] = "#jpeg: bad SOS marker";
 const char wuffs_jpeg__error__bad_header[] = "#jpeg: bad header";
 const char wuffs_jpeg__error__bad_marker[] = "#jpeg: bad marker";
+const char wuffs_jpeg__error__bad_scan_count[] = "#jpeg: bad scan count";
 const char wuffs_jpeg__error__missing_huffman_table[] = "#jpeg: missing Huffman table";
 const char wuffs_jpeg__error__missing_quantization_table[] = "#jpeg: missing Quantization table";
 const char wuffs_jpeg__error__truncated_input[] = "#jpeg: truncated input";
@@ -47714,6 +47717,9 @@ wuffs_jpeg__decoder__decode_sos(
     if (self->private_impl.f_scan_count >= 64u) {
       status = wuffs_base__make_status(wuffs_jpeg__error__unsupported_scan_count);
       goto exit;
+    } else if ((self->private_impl.f_scan_count > 0u) &&  ! self->private_impl.f_expect_multiple_scans) {
+      status = wuffs_base__make_status(wuffs_jpeg__error__bad_scan_count);
+      goto exit;
     }
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
     status = wuffs_jpeg__decoder__prepare_scan(self, a_src);
@@ -47936,6 +47942,9 @@ wuffs_jpeg__decoder__prepare_scan(
         }
       }
       v_i += 1u;
+    }
+    if (self->private_impl.f_scan_count == 0u) {
+      self->private_impl.f_expect_multiple_scans = ((self->private_impl.f_sof_marker >= 194u) || (self->private_impl.f_scan_num_components < self->private_impl.f_num_components));
     }
     if (self->private_impl.f_sof_marker < 194u) {
       self->private_data.s_prepare_scan.scratch = 3u;
@@ -48776,6 +48785,7 @@ wuffs_jpeg__decoder__restart_frame(
   }
   self->private_impl.f_call_sequence = 40u;
   self->private_impl.f_bitstream_is_closed = false;
+  self->private_impl.f_expect_multiple_scans = false;
   self->private_impl.f_frame_config_io_position = a_io_position;
   self->private_impl.f_scan_count = 0u;
   self->private_impl.f_restart_interval = self->private_impl.f_saved_restart_interval;
