@@ -1257,7 +1257,7 @@ pri func decoder.decode_sos?(src: base.io_reader, workbuf: slice base.u8) {
     var decode_mcu_result : base.u32
     var bitstream_length  : base.u32
 
-    if this.scan_count >= 64 {
+    if this.scan_count >= 32 {
         return "#unsupported scan count"
     } else if (this.scan_count > 0) and (not this.expect_multiple_scans) {
         return "#bad scan count"

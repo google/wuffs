@@ -47714,7 +47714,7 @@ wuffs_jpeg__decoder__decode_sos(
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
-    if (self->private_impl.f_scan_count >= 64u) {
+    if (self->private_impl.f_scan_count >= 32u) {
       status = wuffs_base__make_status(wuffs_jpeg__error__unsupported_scan_count);
       goto exit;
     } else if ((self->private_impl.f_scan_count > 0u) &&  ! self->private_impl.f_expect_multiple_scans) {
