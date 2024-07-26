@@ -418,7 +418,7 @@ compute_exit_code(const char* status_msg) {
   size_t n = strnlen(status_msg, 2047);
   if (n >= 2047) {
     status_msg = "main: internal error: error message is too long";
-    n = strnlen(status_msg, 2047);
+    n = strlen(status_msg);
   }
   fprintf(stderr, "%s\n", status_msg);
   // Return an exit code of 1 for regular (foreseen) errors, e.g. badly
