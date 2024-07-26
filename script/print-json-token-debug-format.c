@@ -46,6 +46,11 @@
 //
 // Pass -a (--all-tokens) to print all tokens, including whitespace.
 //
+// Pass -i=cbor (--input-format=cbor) to parse CBOR instead of JSON.
+//
+// Pass -q (--quirks) to enable all of a pre-defined set of various parser
+// quirks. For example, allowing JSON comments or JSON "inf" numbers.
+//
 // If the input or output is larger than the program's buffers (64 MiB and
 // 131072 tokens by default), there may be multiple valid tokenizations of any
 // given input. For example, if a source string "abcde" straddles an I/O
