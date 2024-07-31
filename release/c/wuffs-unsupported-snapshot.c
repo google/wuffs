@@ -175,12 +175,62 @@ extern "C" {
 #elif defined(_MSC_VER)  // (#if-chain ref AVOID_CPU_ARCH_1)
 
 #if defined(_M_X64)
-// We need <intrin.h> for the __cpuid function.
-#include <intrin.h>
+
+// On X86_64, Microsoft Visual C/C++ (MSVC) only supports SSE2 by default.
+// There are /arch:SSE2, /arch:AVX and /arch:AVX2 compiler flags (the AVX2 one
+// is roughly equivalent to X86_64_V3), but there is no /arch:SSE42 compiler
+// flag that's equivalent to X86_64_V2.
+//
+// For getting maximum performance with X86_64 MSVC and Wuffs, pass /arch:AVX2
+// (and then test on the oldest hardware you intend to support).
+//
+// Absent that compiler flag, either define one of the three macros listed
+// below or else the X86_64 SIMD code will be disabled and you'll get a #pragma
+// message stating this library "performs best with /arch:AVX2". This message
+// is harmless and ignorable, in that the non-SIMD code is still correct and
+// reasonably performant, but is a reminder that when combining Wuffs and MSVC,
+// some compiler configuration is required for maximum performance.
+//
+//  - WUFFS_CONFIG__DISABLE_MSVC_CPU_ARCH__X86_64_FAMILY
+//  - WUFFS_CONFIG__ENABLE_MSVC_CPU_ARCH__X86_64_V2 (enables SSE4.2 and below)
+//  - WUFFS_CONFIG__ENABLE_MSVC_CPU_ARCH__X86_64_V3 (enables AVX2 and below)
+//
+// Defining the first one (WUFFS_CONFIG__DISABLE_MSVC_CPU_ARCH__X86_64_FAMILY)
+// or defining none of those three (the default state) are equivalent (in that
+// both disable the SIMD code paths), other than that pragma message.
+//
+// When defining these WUFFS_CONFIG__ENABLE_ETC macros with MSVC, be aware that
+// some users report it leading to ICEs (Internal Compiler Errors), but other
+// users report no problems at all (and improved performance). It's unclear
+// exactly what combination of SIMD code and MSVC configuration lead to ICEs.
+// Do your own testing with your own MSVC version and configuration.
+//
+// https://github.com/google/wuffs/issues/148
+// https://github.com/google/wuffs/issues/151
+// https://developercommunity.visualstudio.com/t/fatal--error-C1001:-Internal-compiler-er/10703305
+//
+// Clang (including clang-cl) and GCC don't need this WUFFS_CONFIG__ETC macro
+// machinery, or having the Wuffs-the-library user to fiddle with compiler
+// flags, because they support "__attribute__((target(arg)))".
+#if defined(__AVX2__) || defined(__clang__) || \
+    defined(WUFFS_CONFIG__ENABLE_MSVC_CPU_ARCH__X86_64_V3)
 #define WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64
 #define WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64_V2
-#if defined(__AVX2__) || defined(__clang__)
+#define WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64_V3
+#elif defined(WUFFS_CONFIG__ENABLE_MSVC_CPU_ARCH__X86_64_V2)
+#define WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64
+#define WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64_V2
+#elif !defined(WUFFS_CONFIG__DISABLE_MSVC_CPU_ARCH__X86_64_FAMILY)
+#pragma message("Wuffs with MSVC+X64 performs best with /arch:AVX2")
+#endif  // defined(__AVX2__) || defined(__clang__) || etc
 
+#if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
+
+#if defined(WUFFS_CONFIG__DISABLE_MSVC_CPU_ARCH__X86_64_FAMILY)
+#error "MSVC_CPU_ARCH simultaneously enabled and disabled"
+#endif
+
+#include <intrin.h>
 // intrin.h isn't enough for X64 SIMD, with clang-cl, if we want to use
 // "__attribute__((target(arg)))" without e.g. "/arch:AVX".
 //
@@ -190,23 +240,9 @@ extern "C" {
 #include <immintrin.h>  // AVX, AVX2, FMA, POPCNT
 #include <nmmintrin.h>  // SSE4.2
 #include <wmmintrin.h>  // AES, PCLMUL
-#define WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64_V3
 
-#else  // defined(__AVX2__) || defined(__clang__)
-
-// clang-cl (which defines both __clang__ and _MSC_VER) supports
-// "__attribute__((target(arg)))".
-//
-// For MSVC's cl.exe (unlike clang or gcc), SIMD capability is a compile-time
-// property of the source file (e.g. a /arch:AVX2 or -mavx2 compiler flag), not
-// of individual functions (that can be conditionally selected at runtime).
-#if !defined(WUFFS_CONFIG__I_KNOW_THAT_WUFFS_MSVC_PERFORMS_BEST_WITH_ARCH_AVX2)
-#pragma message("Wuffs with MSVC+IX86/X64 performs best with /arch:AVX2")
-#endif
-
-#endif  // defined(__AVX2__) || defined(__clang__)
+#endif  // defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64)
 #endif  // defined(_M_X64)
-
 #endif  // (#if-chain ref AVOID_CPU_ARCH_1)
 #endif  // (#if-chain ref AVOID_CPU_ARCH_0)
 
