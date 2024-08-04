@@ -8,7 +8,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pri func decoder.decode_mcu!(workbuf: slice base.u8, mx: base.u32[..= 0x1FFF], my: base.u32[..= 0x1FFF]) base.u32,
+pri func decoder.decode_mcu!(dst: ptr base.pixel_buffer, workbuf: slice base.u8, mx: base.u32[..= 0x1FFF], my: base.u32[..= 0x1FFF]) base.u32,
         choosy,
 {
     var ret : base.u32
@@ -266,17 +266,62 @@ pri func decoder.decode_mcu!(workbuf: slice base.u8, mx: base.u32[..= 0x1FFF], m
             }
 
             // Apply IDCT.
-            csel = this.scan_comps_cselector[this.mcu_blocks_sselector[mcb]]
-            stride = this.components_workbuf_widths[csel] as base.u64
-            offset = this.mcu_blocks_offset[mcb] +
-                    ((this.mcu_blocks_mx_mul[mcb] as base.u64) * (args.mx as base.u64)) +
-                    ((this.mcu_blocks_my_mul[mcb] as base.u64) * (args.my as base.u64))
-            if offset <= args.workbuf.length() {
+
+            if not this.swizzle_immediately {
+                csel = this.scan_comps_cselector[this.mcu_blocks_sselector[mcb]]
+                stride = this.components_workbuf_widths[csel] as base.u64
+                offset = this.mcu_blocks_offset[mcb] +
+                        ((this.mcu_blocks_mx_mul[mcb] as base.u64) * (args.mx as base.u64)) +
+                        ((this.mcu_blocks_my_mul[mcb] as base.u64) * (args.my as base.u64))
+                if offset <= args.workbuf.length() {
+                    this.decode_idct!(
+                            dst_buffer: args.workbuf[offset ..],
+                            dst_stride: stride,
+                            q: this.components_tq[csel] as base.u32)
+
+                }
+
+            } else if this.num_components == 1 {
                 this.decode_idct!(
-                        dst_buffer: args.workbuf[offset ..],
+                        dst_buffer: this.swizzle_immediately_buffer[.. 64],
+                        dst_stride: 8,
+                        q: this.components_tq[csel] as base.u32)
+                this.swizzle_immediately_status = this.swizzle_gray!(
+                        dst: args.dst,
+                        workbuf: this.swizzle_immediately_buffer[.. 64],
+                        x0: (args.mx + 0) * 8,
+                        x1: (args.mx + 1) * 8,
+                        y0: (args.my + 0) * 8,
+                        y1: (args.my + 1) * 8,
+                        stride: 8)
+                if not this.swizzle_immediately_status.is_ok() {
+                    ret = 3  // Swizzling failure.
+                    break.goto_done
+                }
+                break.block
+
+            } else {
+                csel = this.scan_comps_cselector[this.mcu_blocks_sselector[mcb]]
+                stride = 8 * (this.components_h[csel] as base.u64)
+                this.decode_idct!(
+                        dst_buffer: this.swizzle_immediately_buffer[this.swizzle_immediately_b_offsets[mcb] ..],
                         dst_stride: stride,
                         q: this.components_tq[csel] as base.u32)
-
+                if this.mcu_current_block < this.mcu_num_blocks {
+                    continue.block
+                }
+                this.swizzle_immediately_status = this.swizzle_colorful!(
+                        dst: args.dst,
+                        workbuf: this.util.empty_slice_u8(),
+                        x0: (args.mx + 0) * 8 * (this.max_incl_components_h as base.u32),
+                        x1: (args.mx + 1) * 8 * (this.max_incl_components_h as base.u32),
+                        y0: (args.my + 0) * 8 * (this.max_incl_components_v as base.u32),
+                        y1: (args.my + 1) * 8 * (this.max_incl_components_v as base.u32))
+                if not this.swizzle_immediately_status.is_ok() {
+                    ret = 3  // Swizzling failure.
+                    break.goto_done
+                }
+                break.block
             }
         }.block
         this.mcu_current_block = 0

@@ -132,6 +132,7 @@ struct {
   int remaining_argc;
   char** remaining_argv;
 
+  bool lower_quality;
   double screen_gamma;
 } g_flags = {0};
 
@@ -139,6 +140,7 @@ static const char* g_usage =
     "Usage: imageviewer -flags input0.gif input1.png\n"
     "\n"
     "Flags:\n"
+    "    -lower-quality (exercise lower-image-quality code paths)\n"
     "    -screen_gamma=N.N (default 2.2; 0 disables gamma correction)";
 
 const char*  //
@@ -165,6 +167,10 @@ parse_flags(int argc, char** argv) {
       }
     }
 
+    if (!strcmp(arg, "lower-quality")) {
+      g_flags.lower_quality = true;
+      continue;
+    }
     if (!strncmp(arg, "screen_gamma=", 13)) {
       g_flags.screen_gamma = atof(arg + 13);
       continue;
@@ -265,10 +271,14 @@ load_image(const char* filename) {
     dia_flags |= wuffs_aux::DecodeImageArgFlags::REPORT_METADATA_GAMA;
   }
 
+  uint32_t wuffs_base__quirk_quality = WUFFS_BASE__QUIRK_QUALITY;
+
   MyDecodeImageCallbacks callbacks;
   wuffs_aux::sync_io::FileInput input(file);
   wuffs_aux::DecodeImageResult res = wuffs_aux::DecodeImage(
-      callbacks, input, wuffs_aux::DecodeImageArgQuirks::DefaultValue(),
+      callbacks, input,
+      wuffs_aux::DecodeImageArgQuirks(&wuffs_base__quirk_quality,
+                                      g_flags.lower_quality ? 1 : 0),
       wuffs_aux::DecodeImageArgFlags(dia_flags),
       // Use PIXEL_BLEND__SRC_OVER, not the default PIXEL_BLEND__SRC, because
       // we also pass a background color.

@@ -8,7 +8,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pri func decoder.decode_mcu_progressive_ac_low_bit!(workbuf: slice base.u8, mx: base.u32[..= 0x1FFF], my: base.u32[..= 0x1FFF]) base.u32 {
+pri func decoder.decode_mcu_progressive_ac_low_bit!(dst: ptr base.pixel_buffer, workbuf: slice base.u8, mx: base.u32[..= 0x1FFF], my: base.u32[..= 0x1FFF]) base.u32 {
     var ret : base.u32
 
     var bits   : base.u64

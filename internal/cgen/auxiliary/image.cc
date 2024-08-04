@@ -387,6 +387,13 @@ redirect:
 
     // Apply quirks.
     for (size_t i = 0; i < quirks.len; i++) {
+      // TODO: don't special-case this.
+      if (quirks.ptr[i] == WUFFS_BASE__QUIRK_QUALITY) {
+        image_decoder->set_quirk(
+            WUFFS_BASE__QUIRK_QUALITY,
+            WUFFS_BASE__QUIRK_QUALITY__VALUE__LOWER_QUALITY);
+        continue;
+      }
       image_decoder->set_quirk(quirks.ptr[i], 1);
     }
 

@@ -96,6 +96,48 @@ test_wuffs_jpeg_decode_interface() {
 }
 
 const char*  //
+test_wuffs_jpeg_decode_lower_quality() {
+  CHECK_FOCUS(__func__);
+  wuffs_jpeg__decoder dec;
+  CHECK_STATUS("initialize",
+               wuffs_jpeg__decoder__initialize(
+                   &dec, sizeof dec, WUFFS_VERSION,
+                   WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+  wuffs_jpeg__decoder__set_quirk(
+      &dec, WUFFS_BASE__QUIRK_QUALITY,
+      WUFFS_BASE__QUIRK_QUALITY__VALUE__LOWER_QUALITY);
+  CHECK_STRING(do_test__wuffs_base__image_decoder(
+      wuffs_jpeg__decoder__upcast_as__wuffs_base__image_decoder(&dec),
+      "test/data/bricks-color.jpeg", 0, SIZE_MAX, 160, 120, 0xFF012466));
+
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = g_src_slice_u8,
+  });
+  CHECK_STRING(read_file(&src, "test/data/bricks-color.jpeg"));
+  CHECK_STATUS("initialize", wuffs_jpeg__decoder__initialize(
+                                 &dec, sizeof dec, WUFFS_VERSION,
+                                 WUFFS_INITIALIZE__DEFAULT_OPTIONS));
+  CHECK_STATUS("decode_image_config",
+               wuffs_jpeg__decoder__decode_image_config(&dec, NULL, &src));
+
+  for (int q = 0; q < 2; q++) {
+    if (q) {
+      wuffs_jpeg__decoder__set_quirk(
+          &dec, WUFFS_BASE__QUIRK_QUALITY,
+          WUFFS_BASE__QUIRK_QUALITY__VALUE__LOWER_QUALITY);
+    }
+    uint64_t m = wuffs_jpeg__decoder__workbuf_len(&dec).min_incl;
+    if ((q == 0) && (m == 0)) {
+      RETURN_FAIL("q=%d: have %" PRIu64 ", want non-zero", q, m);
+    } else if ((q != 0) && (m != 0)) {
+      RETURN_FAIL("q=%d: have %" PRIu64 ", want zero", q, m);
+    }
+  }
+
+  return NULL;
+}
+
+const char*  //
 test_wuffs_jpeg_decode_truncated_input() {
   CHECK_FOCUS(__func__);
 
@@ -739,8 +781,9 @@ test_wuffs_jpeg_decode_mcu() {
   for (int b = 0; b < 6; b++) {
     const uint32_t mx = 0;
     const uint32_t my = 0;
-    if (wuffs_jpeg__decoder__decode_mcu(&dec, wuffs_base__empty_slice_u8(), mx,
-                                        my)) {
+    wuffs_base__pixel_buffer dst = {0};
+    if (wuffs_jpeg__decoder__decode_mcu(&dec, &dst,
+                                        wuffs_base__empty_slice_u8(), mx, my)) {
       RETURN_FAIL("decode_mcu failed");
     }
 
@@ -988,6 +1031,7 @@ proc g_tests[] = {
     test_wuffs_jpeg_decode_idct,
     test_wuffs_jpeg_decode_mcu,
     test_wuffs_jpeg_decode_interface,
+    test_wuffs_jpeg_decode_lower_quality,
     test_wuffs_jpeg_decode_truncated_input,
 
 #ifdef WUFFS_MIMIC

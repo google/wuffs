@@ -281,6 +281,13 @@ pub struct decoder? implements base.image_decoder(
 
         expect_multiple_scans : base.bool,
 
+        use_lower_quality : base.bool,
+
+        swizzle_immediately           : base.bool,
+        swizzle_immediately_status    : base.status,
+        swizzle_immediately_b_offsets : array[10] base.u32[..= 576],
+        swizzle_immediately_c_offsets : array[5] base.u32,
+
         // bitstream_padding is the number (per restart) of implicit zeroes
         // remaining at the end of the bitstream. Its initial 12345 value is
         // arbitrary.
@@ -314,6 +321,8 @@ pub struct decoder? implements base.image_decoder(
         // Decoding progressive JPEGs can use all of it.
         mcu_blocks : array[10] array[64] base.u16,
 
+        swizzle_immediately_buffer : array[640] base.u8,
+
         swizzle_ycck_scratch_buffer_2k : array[2048] base.u8,
 
         // The dht_temp_etc fields are decode_dht temporary values.
@@ -329,10 +338,45 @@ pub struct decoder? implements base.image_decoder(
 )
 
 pub func decoder.get_quirk(key: base.u32) base.u64 {
+    if args.key == base.QUIRK_QUALITY {
+        if this.use_lower_quality {
+            return 0xFFFF_FFFF_FFFF_FFFF
+        }
+    }
     return 0
 }
 
+// If key is base.QUIRK_QUALITY then, when re-interpreting the value as a
+// signed i64 value, a negative quirk value opts the decoder in to a slightly
+// worse quality but leaner (less memory required) chroma upsampling algorithm.
+//
+// Negative (in i64 space) means >= 0x8000_0000_0000_0000 (in u64 space).
+//
+// Specifically, a negative quirk value uses a box filter. A non-negative quirk
+// value (including the default value, zero) uses the same triangle filter that
+// libjpeg-turbo also uses by default, which requires chroma upsampling on the
+// edges of a MCU (Minimum Coded Unit) to remember adjacent MCU's values.
+//
+// Leaner means that for common (but not all) JPEG images, the range returned
+// by decoder.workbuf_len can have a minimum value of zero, meaning that no
+// work buffer memory needs to be allocated. "Common" includes sequential (not
+// progressive) JPEGs that have either 1 component (gray) or 3 components (RGB
+// or YCbCr). Decoding rarer JPEGs will still require a positive amount of work
+// buffer memory. The exact amount required depends on factors like the JPEG
+// image's width, height, component count and subsampling ratios.
+//
+// Regardless of the quirk value, as always, the workbuf_len method returns a
+// range, whose min and max can be different. The caller is able to choose
+// between providing the minimal amount of work buffer memory (for slightly
+// slower decoding) or the maximal amount (for slightly faster decoding).
+//
+// Callers that never wish to allocate work buffer memory can simply reject
+// these rarer JPEGs as unsupported.
 pub func decoder.set_quirk!(key: base.u32, value: base.u64) base.status {
+    if args.key == base.QUIRK_QUALITY {
+        this.use_lower_quality = args.value >= 0x8000_0000_0000_0000
+        return ok
+    }
     return base."#unsupported option"
 }
 
@@ -881,15 +925,29 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
             ddf_status = "#truncated input"
         }
 
-        if ddf_status.is_error() or (scan_count < this.scan_count) {
+        if (not this.swizzle_immediately) and
+                (ddf_status.is_error() or (scan_count < this.scan_count)) {
             if this.sof_marker >= 0xC2 {
                 this.apply_progressive_idct!(workbuf: args.workbuf)
             }
 
             if this.num_components == 1 {
-                swizzle_status = this.swizzle_gray!(dst: args.dst, workbuf: args.workbuf)
+                swizzle_status = this.swizzle_gray!(
+                        dst: args.dst,
+                        workbuf: args.workbuf,
+                        x0: 0,
+                        x1: 0xFFFF_FFFF,
+                        y0: 0,
+                        y1: 0xFFFF_FFFF,
+                        stride: this.components_workbuf_widths[0] as base.u64)
             } else {
-                swizzle_status = this.swizzle_colorful!(dst: args.dst, workbuf: args.workbuf)
+                swizzle_status = this.swizzle_colorful!(
+                        dst: args.dst,
+                        workbuf: args.workbuf,
+                        x0: 0,
+                        x1: 0xFFFF_FFFF,
+                        y0: 0,
+                        y1: 0xFFFF_FFFF)
             }
             if ddf_status.is_error() {
                 return ddf_status
@@ -932,9 +990,14 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
 
     // For progressive JPEGs, zero-initialize the saved pre-IDCT blocks. For
     // sequential JPEGs, this is a no-op, other than checking that args.workbuf
-    // is long enough.
+    // is long enough and setting this.swizzle_immediately.
+    this.swizzle_immediately = false
     if this.components_workbuf_offsets[8] > args.workbuf.length() {
-        return base."#bad workbuf length"
+        if this.sof_marker >= 0xC2 {
+            return base."#bad workbuf length"
+        }
+        this.swizzle_immediately = this.use_lower_quality and (this.num_components < 4)
+        this.swizzle_immediately_status = ok
     } else if this.components_workbuf_offsets[4] < this.components_workbuf_offsets[8] {
         args.workbuf[this.components_workbuf_offsets[4] .. this.components_workbuf_offsets[8]].bulk_memset!(byte_value: 0)
     }
@@ -1009,7 +1072,7 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
                 break
 
             } else if marker == 0xDA {  // SOS (Start Of Scan).
-                this.decode_sos?(src: args.src, workbuf: args.workbuf)
+                this.decode_sos?(dst: args.dst, src: args.src, workbuf: args.workbuf)
                 continue
 
             } else if marker == 0xDB {  // DQT (Define Quantization Table).
@@ -1250,7 +1313,7 @@ pri func decoder.calculate_huff_tables!(tc4_th: base.u8[..= 7], total_count: bas
     return false
 }
 
-pri func decoder.decode_sos?(src: base.io_reader, workbuf: slice base.u8) {
+pri func decoder.decode_sos?(dst: ptr base.pixel_buffer, src: base.io_reader, workbuf: slice base.u8) {
     var my : base.u32
     var mx : base.u32
 
@@ -1299,11 +1362,15 @@ pri func decoder.decode_sos?(src: base.io_reader, workbuf: slice base.u8) {
                     inv my < 0x2000,
                     inv mx < 0x2000,
             {
-                decode_mcu_result = this.decode_mcu!(workbuf: args.workbuf, mx: mx, my: my)
+                decode_mcu_result = this.decode_mcu!(dst: args.dst, workbuf: args.workbuf, mx: mx, my: my)
                 if decode_mcu_result == 0 {
                     break.decode_mcu
-                } else if decode_mcu_result <> 1 {
+                } else if decode_mcu_result == 1 {
+                    // No-op.
+                } else if decode_mcu_result == 2 {
                     return "#internal error: inconsistent decoder state"
+                } else {
+                    return this.swizzle_immediately_status
                 }
 
                 while.fill_bitstream true,
@@ -1586,6 +1653,7 @@ pri func decoder.calculate_multiple_component_scan_fields!() base.bool {
     var b         : base.u32
     var bx_offset : base.u32
     var by_offset : base.u32
+    var sibo      : base.u32
     var ssel      : base.u8[..= 3]
     var csel      : base.u8[..= 3]
 
@@ -1600,6 +1668,7 @@ pri func decoder.calculate_multiple_component_scan_fields!() base.bool {
         v = this.components_v[this.scan_comps_cselector[i]] as base.u32
         hv = ((this.components_h[this.scan_comps_cselector[i]] as base.u32) *
                 (this.components_v[this.scan_comps_cselector[i]] as base.u32))
+        this.swizzle_immediately_c_offsets[i] = 64 ~mod* total_hv
         total_hv ~mod+= hv
 
         while hv > 0,
@@ -1626,6 +1695,7 @@ pri func decoder.calculate_multiple_component_scan_fields!() base.bool {
         return true
     }
     this.mcu_num_blocks = total_hv
+    this.swizzle_immediately_c_offsets[this.scan_num_components] = 64 ~mod* total_hv
 
     b = 0
     while b < this.mcu_num_blocks {
@@ -1639,6 +1709,10 @@ pri func decoder.calculate_multiple_component_scan_fields!() base.bool {
         this.mcu_blocks_my_mul[b] = 8 * (this.components_v[csel] as base.u32) * this.components_workbuf_widths[csel]
         this.mcu_blocks_dc_hselector[b] = 0 | this.scan_comps_td[ssel]
         this.mcu_blocks_ac_hselector[b] = 4 | this.scan_comps_ta[ssel]
+        sibo = this.swizzle_immediately_c_offsets[csel] ~mod+ (
+                (8 * (this.scan_comps_bx_offset[b] as base.u32)) +
+                (64 * (this.scan_comps_by_offset[b] as base.u32) * (this.components_h[csel] as base.u32)))
+        this.swizzle_immediately_b_offsets[b] = sibo.min(no_more_than: 576)
         b += 1
     }
 
@@ -1927,15 +2001,16 @@ pri func decoder.apply_progressive_idct!(workbuf: slice base.u8) {
     this.mcu_blocks[.. 1].bulk_load_host_endian!(src: stashed_mcu_blocks_0[..])
 }
 
-pri func decoder.swizzle_gray!(dst: ptr base.pixel_buffer, workbuf: slice base.u8) base.status {
+pri func decoder.swizzle_gray!(dst: ptr base.pixel_buffer, workbuf: slice base.u8, x0: base.u32, x1: base.u32, y0: base.u32, y1: base.u32, stride: base.u64) base.status {
     var dst_pixfmt          : base.pixel_format
     var dst_bits_per_pixel  : base.u32[..= 256]
     var dst_bytes_per_pixel : base.u32[..= 32]
-    var dst_length          : base.u64
+    var x0                  : base.u64
+    var x1                  : base.u64
     var tab                 : table base.u8
     var dst                 : slice base.u8
     var y                   : base.u32
-    var stride              : base.u64[..= 0x4_0000]
+    var y1                  : base.u32[..= 0xFFFF]
 
     // TODO: the dst_pixfmt variable shouldn't be necessary. We should be able
     // to chain the two calls: "args.dst.pixel_format().bits_per_pixel()".
@@ -1945,79 +2020,143 @@ pri func decoder.swizzle_gray!(dst: ptr base.pixel_buffer, workbuf: slice base.u
         return base."#unsupported option"
     }
     dst_bytes_per_pixel = dst_bits_per_pixel / 8
-    dst_length = (dst_bytes_per_pixel * this.width) as base.u64
+    x0 = (dst_bytes_per_pixel * args.x0.min(no_more_than: this.width)) as base.u64
+    x1 = (dst_bytes_per_pixel * args.x1.min(no_more_than: this.width)) as base.u64
 
     tab = args.dst.plane(p: 0)
-    y = 0
-    while y < this.height {
-        assert y < 0xFFFF via "a < b: a < c; c <= b"(c: this.height)
+    y = args.y0
+    y1 = args.y1.min(no_more_than: this.height)
+    while y < y1 {
+        assert y < 0xFFFF via "a < b: a < c; c <= b"(c: y1)
         dst = tab.row_u32(y: y)
-        if dst_length < dst.length() {
-            dst = dst[.. dst_length]
+        if x1 < dst.length() {
+            dst = dst[.. x1]
         }
+        if x0 < dst.length() {
+            dst = dst[x0 ..]
+        } else {
+            dst = this.util.empty_slice_u8()
+        }
+
         this.swizzler.swizzle_interleaved_from_slice!(
                 dst: dst,
                 dst_palette: args.dst.palette_or_else(fallback: this.dst_palette[..]),
                 src: args.workbuf)
-        stride = this.components_workbuf_widths[0] as base.u64
-        if stride <= args.workbuf.length() {
-            args.workbuf = args.workbuf[stride ..]
+
+        if args.stride <= args.workbuf.length() {
+            args.workbuf = args.workbuf[args.stride ..]
         } else {
             args.workbuf = this.util.empty_slice_u8()
         }
+
         y += 1
     }
     return ok
 }
 
-pri func decoder.swizzle_colorful!(dst: ptr base.pixel_buffer, workbuf: slice base.u8) base.status {
-    var src0   : slice base.u8
-    var src1   : slice base.u8
-    var src2   : slice base.u8
-    var src3   : slice base.u8
-    var status : base.status
+pri func decoder.swizzle_colorful!(dst: ptr base.pixel_buffer, workbuf: slice base.u8, x0: base.u32, x1: base.u32, y0: base.u32, y1: base.u32) base.status {
+    var i       : base.u64
+    var j       : base.u64
+    var src0    : slice base.u8
+    var src1    : slice base.u8
+    var src2    : slice base.u8
+    var src3    : slice base.u8
+    var width0  : base.u32[..= 0x1_0008]
+    var width1  : base.u32[..= 0x1_0008]
+    var width2  : base.u32[..= 0x1_0008]
+    var width3  : base.u32[..= 0x1_0008]
+    var height0 : base.u32[..= 0x1_0008]
+    var height1 : base.u32[..= 0x1_0008]
+    var height2 : base.u32[..= 0x1_0008]
+    var height3 : base.u32[..= 0x1_0008]
+    var status  : base.status
 
-    if (this.components_workbuf_offsets[0] <= this.components_workbuf_offsets[1]) and
-            (this.components_workbuf_offsets[1] <= args.workbuf.length()) {
-        src0 = args.workbuf[this.components_workbuf_offsets[0] .. this.components_workbuf_offsets[1]]
-    }
+    if this.swizzle_immediately {
+        i = this.swizzle_immediately_c_offsets[0] as base.u64
+        j = this.swizzle_immediately_c_offsets[1] as base.u64
+        if (i <= j) and (j <= 640) {
+            src0 = this.swizzle_immediately_buffer[i .. j]
+            width0 = 8 * (this.components_h[0] as base.u32)
+            height0 = 8 * (this.components_v[0] as base.u32)
+        }
 
-    if (this.components_workbuf_offsets[1] <= this.components_workbuf_offsets[2]) and
-            (this.components_workbuf_offsets[2] <= args.workbuf.length()) {
-        src1 = args.workbuf[this.components_workbuf_offsets[1] .. this.components_workbuf_offsets[2]]
-    }
+        i = this.swizzle_immediately_c_offsets[1] as base.u64
+        j = this.swizzle_immediately_c_offsets[2] as base.u64
+        if (i <= j) and (j <= 640) {
+            src1 = this.swizzle_immediately_buffer[i .. j]
+            width1 = 8 * (this.components_h[1] as base.u32)
+            height1 = 8 * (this.components_v[1] as base.u32)
+        }
 
-    if (this.components_workbuf_offsets[2] <= this.components_workbuf_offsets[3]) and
-            (this.components_workbuf_offsets[3] <= args.workbuf.length()) {
-        src2 = args.workbuf[this.components_workbuf_offsets[2] .. this.components_workbuf_offsets[3]]
-    }
+        i = this.swizzle_immediately_c_offsets[2] as base.u64
+        j = this.swizzle_immediately_c_offsets[3] as base.u64
+        if (i <= j) and (j <= 640) {
+            src2 = this.swizzle_immediately_buffer[i .. j]
+            width2 = 8 * (this.components_h[2] as base.u32)
+            height2 = 8 * (this.components_v[2] as base.u32)
+        }
 
-    if (this.components_workbuf_offsets[3] <= this.components_workbuf_offsets[4]) and
-            (this.components_workbuf_offsets[4] <= args.workbuf.length()) {
-        src3 = args.workbuf[this.components_workbuf_offsets[3] .. this.components_workbuf_offsets[4]]
+        i = this.swizzle_immediately_c_offsets[3] as base.u64
+        j = this.swizzle_immediately_c_offsets[4] as base.u64
+        if (i <= j) and (j <= 640) {
+            src3 = this.swizzle_immediately_buffer[i .. j]
+            width3 = 8 * (this.components_h[3] as base.u32)
+            height3 = 8 * (this.components_v[3] as base.u32)
+        }
+
+    } else {
+        if (this.components_workbuf_offsets[0] <= this.components_workbuf_offsets[1]) and
+                (this.components_workbuf_offsets[1] <= args.workbuf.length()) {
+            src0 = args.workbuf[this.components_workbuf_offsets[0] .. this.components_workbuf_offsets[1]]
+            width0 = this.components_workbuf_widths[0]
+            height0 = this.components_workbuf_heights[0]
+        }
+
+        if (this.components_workbuf_offsets[1] <= this.components_workbuf_offsets[2]) and
+                (this.components_workbuf_offsets[2] <= args.workbuf.length()) {
+            src1 = args.workbuf[this.components_workbuf_offsets[1] .. this.components_workbuf_offsets[2]]
+            width1 = this.components_workbuf_widths[1]
+            height1 = this.components_workbuf_heights[1]
+        }
+
+        if (this.components_workbuf_offsets[2] <= this.components_workbuf_offsets[3]) and
+                (this.components_workbuf_offsets[3] <= args.workbuf.length()) {
+            src2 = args.workbuf[this.components_workbuf_offsets[2] .. this.components_workbuf_offsets[3]]
+            width2 = this.components_workbuf_widths[2]
+            height2 = this.components_workbuf_heights[2]
+        }
+
+        if (this.components_workbuf_offsets[3] <= this.components_workbuf_offsets[4]) and
+                (this.components_workbuf_offsets[4] <= args.workbuf.length()) {
+            src3 = args.workbuf[this.components_workbuf_offsets[3] .. this.components_workbuf_offsets[4]]
+            width3 = this.components_workbuf_widths[3]
+            height3 = this.components_workbuf_heights[3]
+        }
     }
 
     status = this.swizzler.swizzle_ycck!(
             dst: args.dst,
             dst_palette: args.dst.palette_or_else(fallback: this.dst_palette[..]),
-            width: this.width,
-            height: this.height,
+            x_min_incl: args.x0 & 0xFFFF,
+            x_max_excl: args.x1.min(no_more_than: this.width),
+            y_min_incl: args.y0 & 0xFFFF,
+            y_max_excl: args.y1.min(no_more_than: this.height),
             src0: src0,
             src1: src1,
             src2: src2,
             src3: src3,
-            width0: this.components_workbuf_widths[0],
-            width1: this.components_workbuf_widths[1],
-            width2: this.components_workbuf_widths[2],
-            width3: this.components_workbuf_widths[3],
-            height0: this.components_workbuf_heights[0],
-            height1: this.components_workbuf_heights[1],
-            height2: this.components_workbuf_heights[2],
-            height3: this.components_workbuf_heights[3],
-            stride0: this.components_workbuf_widths[0],
-            stride1: this.components_workbuf_widths[1],
-            stride2: this.components_workbuf_widths[2],
-            stride3: this.components_workbuf_widths[3],
+            width0: width0,
+            width1: width1,
+            width2: width2,
+            width3: width3,
+            height0: height0,
+            height1: height1,
+            height2: height2,
+            height3: height3,
+            stride0: width0,
+            stride1: width1,
+            stride2: width2,
+            stride3: width3,
             h0: this.components_h[0],
             h1: this.components_h[1],
             h2: this.components_h[2],
@@ -2027,7 +2166,7 @@ pri func decoder.swizzle_colorful!(dst: ptr base.pixel_buffer, workbuf: slice ba
             v2: this.components_v[2],
             v3: this.components_v[3],
             is_rgb_or_cmyk: this.is_rgb_or_cmyk,
-            triangle_filter_for_2to1: true,
+            triangle_filter_for_2to1: not (this.use_lower_quality and (this.num_components < 4)),
             scratch_buffer_2k: this.swizzle_ycck_scratch_buffer_2k[..])
     return status
 }
@@ -2119,6 +2258,11 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 }
 
 pub func decoder.workbuf_len() base.range_ii_u64 {
+    if this.use_lower_quality and (this.num_components < 4) and (this.sof_marker < 0xC2) {
+        return this.util.make_range_ii_u64(
+                min_incl: 0,
+                max_incl: this.components_workbuf_offsets[8])
+    }
     return this.util.make_range_ii_u64(
             min_incl: this.components_workbuf_offsets[8],
             max_incl: this.components_workbuf_offsets[8])

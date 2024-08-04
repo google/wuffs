@@ -153,6 +153,7 @@ var Consts = [...]struct {
 	// ----
 
 	{t.IDU32, "1", "QUIRK_IGNORE_CHECKSUM"},
+	{t.IDU32, "2", "QUIRK_QUALITY"},
 
 	// ----
 
@@ -691,8 +692,10 @@ var funcsOther = [...]string{
 	"pixel_swizzler.swizzle_ycck!(" +
 		"dst: ptr pixel_buffer," +
 		"dst_palette: slice u8," +
-		"width: u32[..= 0xFFFF]," +
-		"height: u32[..= 0xFFFF]," +
+		"x_min_incl: u32[..= 0xFFFF]," +
+		"x_max_excl: u32[..= 0xFFFF]," +
+		"y_min_incl: u32[..= 0xFFFF]," +
+		"y_max_excl: u32[..= 0xFFFF]," +
 		"src0: slice u8," +
 		"src1: slice u8," +
 		"src2: slice u8," +

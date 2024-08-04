@@ -1736,3 +1736,17 @@ wuffs_base__table__flattened_length(size_t width,
 WUFFS_BASE__MAYBE_STATIC int32_t  //
 wuffs_base__magic_number_guess_fourcc(wuffs_base__slice_u8 prefix_data,
                                       bool prefix_closed);
+
+// ---------------- Quirk Values
+
+// These constants are the value half of a key-value pair, where the key is
+// WUFFS_BASE__QUIRK_QUALITY.
+//
+// In the Wuffs API, set_quirk takes a u64 value. These macro definitions are
+// likewise unsigned values (uint64_t) but for this particular key, they are
+// best interpreted as signed values (int64_t). "Lower-than-default quality"
+// and "higher-than-default quality", as signed values, are -1 and +1.
+//
+// See doc/note/quirks.md for some more discussion about trade-offs.
+#define WUFFS_BASE__QUIRK_QUALITY__VALUE__LOWER_QUALITY UINT64_MAX
+#define WUFFS_BASE__QUIRK_QUALITY__VALUE__HIGHER_QUALITY ((uint64_t)1)

@@ -62,6 +62,16 @@ Common quirks:
   at a cost of being less able to detect data corruption and to deviate from a
   strict reading of the relevant file format specifications, accepting some
   inputs that are technically invalid (but otherwise decode fine).
+- `WUFFS_BASE__QUIRK_QUALITY` configures decoders (for a lossy format, where
+  there is some leeway in "a/the correct decoding") or encoders to use lower
+  than, equal to or higher than the default quality setting. Lower-than-default
+  obviously produces a worse result on some measure. But, if the codec behavior
+  depends on the quirk value, lowering quality can improve other measures:
+  being faster (less time taken), lighter (less "work buffer" memory required),
+  etc. Conversely, asking for higher quality might be a no-op (depending on the
+  codec) but, if it does affect behavior, it typically trades off in the other
+  direction: higher quality and/or tighter (smaller output) but also slower,
+  heavier, etc.
 
 Package-specific quirks:
 

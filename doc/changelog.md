@@ -26,6 +26,7 @@ The LICENSE has changed from a single license (Apache 2) to a dual license
 - Added `std/xxhash32`.
 - Added `std/xxhash64`.
 - Added `std/xz`.
+- Added `WUFFS_BASE__QUIRK_QUALITY`.
 - Added `WUFFS_CONFIG__DISABLE_MSVC_CPU_ARCH__X86_64_FAMILY`.
 - Added `WUFFS_CONFIG__DST_PIXEL_FORMAT__ENABLE_ALLOWLIST`.
 - Added `WUFFS_CONFIG__ENABLE_MSVC_CPU_ARCH__X86_64_V2`.
