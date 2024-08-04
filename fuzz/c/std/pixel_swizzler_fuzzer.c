@@ -124,13 +124,17 @@ const char*  //
 fuzz_swizzle_interleaved_from_slice(wuffs_base__io_buffer* src, uint64_t hash) {
   uint8_t dst_palette_array[1024];
   uint8_t src_palette_array[1024];
-  if ((src->meta.wi - src->meta.ri) < 2048) {
-    return "fuzz: not enough data";
+  if ((src->meta.wi - src->meta.ri) >= 2048) {
+    memcpy(dst_palette_array, src->data.ptr + src->meta.ri, 1024);
+    src->meta.ri += 1024;
+    memcpy(src_palette_array, src->data.ptr + src->meta.ri, 1024);
+    src->meta.ri += 1024;
+  } else {
+    for (uint32_t i = 0; i < 1024; i++) {
+      dst_palette_array[i] = (uint8_t)i;
+      src_palette_array[i] = (uint8_t)i;
+    }
   }
-  memcpy(dst_palette_array, src->data.ptr + src->meta.ri, 1024);
-  src->meta.ri += 1024;
-  memcpy(src_palette_array, src->data.ptr + src->meta.ri, 1024);
-  src->meta.ri += 1024;
   wuffs_base__slice_u8 dst_palette =
       wuffs_base__make_slice_u8(&dst_palette_array[0], 1024);
   wuffs_base__slice_u8 src_palette =
@@ -178,17 +182,25 @@ fuzz_swizzle_interleaved_from_slice(wuffs_base__io_buffer* src, uint64_t hash) {
 
   // Position dst_slice and src_slice so that reading or writing one byte past
   // their end will cause a segmentation fault.
-  if ((src->meta.wi - src->meta.ri) < (dst_len + src_len)) {
-    return "fuzz: not enough data";
-  }
   wuffs_base__slice_u8 dst_slice =
       wuffs_base__make_slice_u8(dst_alloc + alloc_size - dst_len, dst_len);
-  memcpy(dst_slice.ptr, src->data.ptr + src->meta.ri, dst_len);
-  src->meta.ri += dst_len;
   wuffs_base__slice_u8 src_slice =
       wuffs_base__make_slice_u8(src_alloc + alloc_size - src_len, src_len);
-  memcpy(src_slice.ptr, src->data.ptr + src->meta.ri, src_len);
-  src->meta.ri += src_len;
+
+  // Fill in dst_slice and src_slice.
+  if ((src->meta.wi - src->meta.ri) >= (dst_len + src_len)) {
+    memcpy(dst_slice.ptr, src->data.ptr + src->meta.ri, dst_len);
+    src->meta.ri += dst_len;
+    memcpy(src_slice.ptr, src->data.ptr + src->meta.ri, src_len);
+    src->meta.ri += src_len;
+  } else {
+    for (size_t i = 0; i < dst_len; i++) {
+      dst_slice.ptr[i] = (uint8_t)i;
+    }
+    for (size_t i = 0; i < src_len; i++) {
+      src_slice.ptr[i] = (uint8_t)i;
+    }
+  }
 
   // When manually testing this program, enabling this code should lead to a
   // segmentation fault.
