@@ -499,11 +499,11 @@ fuzz_cpp(const uint8_t* in_ptr, size_t in_len, uint64_t hash) {
   const char* json_pointer = json_pointers[hash & 15];
   hash = wuffs_base__u64__rotate_right(hash, 4);
 
-  std::vector<uint32_t> quirks;
+  std::vector<wuffs_aux::QuirkKeyValuePair> quirks;
   for (uint32_t i = 0; g_quirks[i]; i++) {
     uint64_t bit = 1 << (i & 63);
     if (hash & bit) {
-      quirks.push_back(g_quirks[i]);
+      quirks.push_back({g_quirks[i], 1});
     }
   }
 

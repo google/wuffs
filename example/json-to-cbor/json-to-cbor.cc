@@ -139,7 +139,7 @@ static const char* g_usage =
 uint8_t g_dst_array[DST_BUFFER_ARRAY_SIZE];
 wuffs_base__io_buffer g_dst;
 
-std::vector<uint32_t> g_quirks;
+std::vector<wuffs_aux::QuirkKeyValuePair> g_quirks;
 
 struct {
   int remaining_argc;
@@ -149,9 +149,9 @@ struct {
 std::string  //
 parse_flags(int argc, char** argv) {
 #if defined(WUFFS_EXAMPLE_SPEAK_JWCC_NOT_JSON)
-  g_quirks.push_back(WUFFS_JSON__QUIRK_ALLOW_COMMENT_BLOCK);
-  g_quirks.push_back(WUFFS_JSON__QUIRK_ALLOW_COMMENT_LINE);
-  g_quirks.push_back(WUFFS_JSON__QUIRK_ALLOW_EXTRA_COMMA);
+  g_quirks.push_back({WUFFS_JSON__QUIRK_ALLOW_COMMENT_BLOCK, 1});
+  g_quirks.push_back({WUFFS_JSON__QUIRK_ALLOW_COMMENT_LINE, 1});
+  g_quirks.push_back({WUFFS_JSON__QUIRK_ALLOW_EXTRA_COMMA, 1});
 #endif
 
   int c = (argc > 0) ? 1 : 0;  // Skip argv[0], the program name.
@@ -175,22 +175,22 @@ parse_flags(int argc, char** argv) {
     }
 
     if (!strcmp(arg, "input-allow-comments")) {
-      g_quirks.push_back(WUFFS_JSON__QUIRK_ALLOW_COMMENT_BLOCK);
-      g_quirks.push_back(WUFFS_JSON__QUIRK_ALLOW_COMMENT_LINE);
+      g_quirks.push_back({WUFFS_JSON__QUIRK_ALLOW_COMMENT_BLOCK, 1});
+      g_quirks.push_back({WUFFS_JSON__QUIRK_ALLOW_COMMENT_LINE, 1});
       continue;
     }
     if (!strcmp(arg, "input-allow-extra-comma")) {
-      g_quirks.push_back(WUFFS_JSON__QUIRK_ALLOW_EXTRA_COMMA);
+      g_quirks.push_back({WUFFS_JSON__QUIRK_ALLOW_EXTRA_COMMA, 1});
       continue;
     }
     if (!strcmp(arg, "input-allow-inf-nan-numbers")) {
-      g_quirks.push_back(WUFFS_JSON__QUIRK_ALLOW_INF_NAN_NUMBERS);
+      g_quirks.push_back({WUFFS_JSON__QUIRK_ALLOW_INF_NAN_NUMBERS, 1});
       continue;
     }
     if (!strcmp(arg, "input-jwcc") || !strcmp(arg, "jwcc")) {
-      g_quirks.push_back(WUFFS_JSON__QUIRK_ALLOW_COMMENT_BLOCK);
-      g_quirks.push_back(WUFFS_JSON__QUIRK_ALLOW_COMMENT_LINE);
-      g_quirks.push_back(WUFFS_JSON__QUIRK_ALLOW_EXTRA_COMMA);
+      g_quirks.push_back({WUFFS_JSON__QUIRK_ALLOW_COMMENT_BLOCK, 1});
+      g_quirks.push_back({WUFFS_JSON__QUIRK_ALLOW_COMMENT_LINE, 1});
+      g_quirks.push_back({WUFFS_JSON__QUIRK_ALLOW_EXTRA_COMMA, 1});
       continue;
     }
 

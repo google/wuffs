@@ -200,13 +200,14 @@ extern const char DecodeImage_UnsupportedPixelFormat[];
 
 // DecodeImageArgQuirks wraps an optional argument to DecodeImage.
 struct DecodeImageArgQuirks {
-  explicit DecodeImageArgQuirks(wuffs_base__slice_u32 repr0);
-  explicit DecodeImageArgQuirks(uint32_t* ptr, size_t len);
+  explicit DecodeImageArgQuirks(const QuirkKeyValuePair* ptr0,
+                                const size_t len0);
 
   // DefaultValue returns an empty slice.
   static DecodeImageArgQuirks DefaultValue();
 
-  wuffs_base__slice_u32 repr;
+  const QuirkKeyValuePair* ptr;
+  const size_t len;
 };
 
 // DecodeImageArgFlags wraps an optional argument to DecodeImage.

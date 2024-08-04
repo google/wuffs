@@ -75,13 +75,14 @@ class DecodeCborCallbacks {
 
 // DecodeCborArgQuirks wraps an optional argument to DecodeCbor.
 struct DecodeCborArgQuirks {
-  explicit DecodeCborArgQuirks(wuffs_base__slice_u32 repr0);
-  explicit DecodeCborArgQuirks(uint32_t* ptr, size_t len);
+  explicit DecodeCborArgQuirks(const QuirkKeyValuePair* ptr0,
+                               const size_t len0);
 
   // DefaultValue returns an empty slice.
   static DecodeCborArgQuirks DefaultValue();
 
-  wuffs_base__slice_u32 repr;
+  const QuirkKeyValuePair* ptr;
+  const size_t len;
 };
 
 // DecodeCbor calls callbacks based on the CBOR-formatted data in input.

@@ -215,7 +215,7 @@ static const char* g_usage =
 
 // ----
 
-std::vector<uint32_t> g_quirks;
+std::vector<wuffs_aux::QuirkKeyValuePair> g_quirks;
 
 std::string g_dst;
 
@@ -239,9 +239,9 @@ parse_flags(int argc, char** argv) {
   g_flags.max_output_depth = 0xFFFFFFFF;
 
 #if defined(WUFFS_EXAMPLE_SPEAK_JWCC_NOT_JSON)
-  g_quirks.push_back(WUFFS_JSON__QUIRK_ALLOW_COMMENT_BLOCK);
-  g_quirks.push_back(WUFFS_JSON__QUIRK_ALLOW_COMMENT_LINE);
-  g_quirks.push_back(WUFFS_JSON__QUIRK_ALLOW_EXTRA_COMMA);
+  g_quirks.push_back({WUFFS_JSON__QUIRK_ALLOW_COMMENT_BLOCK, 1});
+  g_quirks.push_back({WUFFS_JSON__QUIRK_ALLOW_COMMENT_LINE, 1});
+  g_quirks.push_back({WUFFS_JSON__QUIRK_ALLOW_EXTRA_COMMA, 1});
 #endif
 
   int c = (argc > 0) ? 1 : 0;  // Skip argv[0], the program name.
@@ -281,22 +281,22 @@ parse_flags(int argc, char** argv) {
       return g_usage;
     }
     if (!strcmp(arg, "input-allow-comments")) {
-      g_quirks.push_back(WUFFS_JSON__QUIRK_ALLOW_COMMENT_BLOCK);
-      g_quirks.push_back(WUFFS_JSON__QUIRK_ALLOW_COMMENT_LINE);
+      g_quirks.push_back({WUFFS_JSON__QUIRK_ALLOW_COMMENT_BLOCK, 1});
+      g_quirks.push_back({WUFFS_JSON__QUIRK_ALLOW_COMMENT_LINE, 1});
       continue;
     }
     if (!strcmp(arg, "input-allow-extra-comma")) {
-      g_quirks.push_back(WUFFS_JSON__QUIRK_ALLOW_EXTRA_COMMA);
+      g_quirks.push_back({WUFFS_JSON__QUIRK_ALLOW_EXTRA_COMMA, 1});
       continue;
     }
     if (!strcmp(arg, "input-allow-inf-nan-numbers")) {
-      g_quirks.push_back(WUFFS_JSON__QUIRK_ALLOW_INF_NAN_NUMBERS);
+      g_quirks.push_back({WUFFS_JSON__QUIRK_ALLOW_INF_NAN_NUMBERS, 1});
       continue;
     }
     if (!strcmp(arg, "input-jwcc") || !strcmp(arg, "jwcc")) {
-      g_quirks.push_back(WUFFS_JSON__QUIRK_ALLOW_COMMENT_BLOCK);
-      g_quirks.push_back(WUFFS_JSON__QUIRK_ALLOW_COMMENT_LINE);
-      g_quirks.push_back(WUFFS_JSON__QUIRK_ALLOW_EXTRA_COMMA);
+      g_quirks.push_back({WUFFS_JSON__QUIRK_ALLOW_COMMENT_BLOCK, 1});
+      g_quirks.push_back({WUFFS_JSON__QUIRK_ALLOW_COMMENT_LINE, 1});
+      g_quirks.push_back({WUFFS_JSON__QUIRK_ALLOW_EXTRA_COMMA, 1});
       continue;
     }
     if (!strncmp(arg, "q=", 2) || !strncmp(arg, "query=", 6)) {
@@ -547,7 +547,7 @@ main1(int argc, char** argv) {
   TRY(parse_flags(argc, argv));
   if (!g_flags.strict_json_pointer_syntax) {
     g_quirks.push_back(
-        WUFFS_JSON__QUIRK_JSON_POINTER_ALLOW_TILDE_N_TILDE_R_TILDE_T);
+        {WUFFS_JSON__QUIRK_JSON_POINTER_ALLOW_TILDE_N_TILDE_R_TILDE_T, 1});
   }
 
   FILE* in = stdin;

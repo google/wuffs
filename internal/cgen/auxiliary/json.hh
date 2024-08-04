@@ -76,13 +76,14 @@ extern const char DecodeJson_NoMatch[];
 
 // DecodeJsonArgQuirks wraps an optional argument to DecodeJson.
 struct DecodeJsonArgQuirks {
-  explicit DecodeJsonArgQuirks(wuffs_base__slice_u32 repr0);
-  explicit DecodeJsonArgQuirks(uint32_t* ptr, size_t len);
+  explicit DecodeJsonArgQuirks(const QuirkKeyValuePair* ptr0,
+                               const size_t len0);
 
   // DefaultValue returns an empty slice.
   static DecodeJsonArgQuirks DefaultValue();
 
-  wuffs_base__slice_u32 repr;
+  const QuirkKeyValuePair* ptr;
+  const size_t len;
 };
 
 // DecodeJsonArgJsonPointer wraps an optional argument to DecodeJson.

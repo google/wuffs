@@ -16,6 +16,7 @@
 #include <stdio.h>
 
 #include <string>
+#include <utility>
 
 namespace wuffs_aux {
 
@@ -27,6 +28,8 @@ using IOBuffer = wuffs_base__io_buffer;
 // MemOwner(nullptr, &free), even if that statically allocated memory is not
 // nullptr, since calling free(nullptr) is a no-op.
 using MemOwner = std::unique_ptr<void, decltype(&free)>;
+
+using QuirkKeyValuePair = std::pair<uint32_t, uint64_t>;
 
 namespace sync_io {
 

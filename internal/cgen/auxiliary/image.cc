@@ -197,15 +197,13 @@ const char DecodeImage_UnsupportedPixelConfiguration[] =  //
 const char DecodeImage_UnsupportedPixelFormat[] =  //
     "wuffs_aux::DecodeImage: unsupported pixel format";
 
-DecodeImageArgQuirks::DecodeImageArgQuirks(wuffs_base__slice_u32 repr0)
-    : repr(repr0) {}
-
-DecodeImageArgQuirks::DecodeImageArgQuirks(uint32_t* ptr0, size_t len0)
-    : repr(wuffs_base__make_slice_u32(ptr0, len0)) {}
+DecodeImageArgQuirks::DecodeImageArgQuirks(const QuirkKeyValuePair* ptr0,
+                                           const size_t len0)
+    : ptr(ptr0), len(len0) {}
 
 DecodeImageArgQuirks  //
 DecodeImageArgQuirks::DefaultValue() {
-  return DecodeImageArgQuirks(wuffs_base__empty_slice_u32());
+  return DecodeImageArgQuirks(nullptr, 0);
 }
 
 DecodeImageArgFlags::DecodeImageArgFlags(uint64_t repr0) : repr(repr0) {}
@@ -303,7 +301,8 @@ DecodeImage0(wuffs_base__image_decoder::unique_ptr& image_decoder,
              DecodeImageCallbacks& callbacks,
              sync_io::Input& input,
              wuffs_base__io_buffer& io_buf,
-             wuffs_base__slice_u32 quirks,
+             const QuirkKeyValuePair* quirks_ptr,
+             const size_t quirks_len,
              uint64_t flags,
              wuffs_base__pixel_blend pixel_blend,
              wuffs_base__color_u32_argb_premul background_color,
@@ -386,15 +385,8 @@ redirect:
     }
 
     // Apply quirks.
-    for (size_t i = 0; i < quirks.len; i++) {
-      // TODO: don't special-case this.
-      if (quirks.ptr[i] == WUFFS_BASE__QUIRK_QUALITY) {
-        image_decoder->set_quirk(
-            WUFFS_BASE__QUIRK_QUALITY,
-            WUFFS_BASE__QUIRK_QUALITY__VALUE__LOWER_QUALITY);
-        continue;
-      }
-      image_decoder->set_quirk(quirks.ptr[i], 1);
+    for (size_t i = 0; i < quirks_len; i++) {
+      image_decoder->set_quirk(quirks_ptr[i].first, quirks_ptr[i].second);
     }
 
     // Apply flags.
@@ -621,10 +613,10 @@ DecodeImage(DecodeImageCallbacks& callbacks,
   }
 
   wuffs_base__image_decoder::unique_ptr image_decoder(nullptr);
-  DecodeImageResult result =
-      DecodeImage0(image_decoder, callbacks, input, *io_buf, quirks.repr,
-                   flags.repr, pixel_blend.repr, background_color.repr,
-                   max_incl_dimension.repr, max_incl_metadata_length.repr);
+  DecodeImageResult result = DecodeImage0(
+      image_decoder, callbacks, input, *io_buf, quirks.ptr, quirks.len,
+      flags.repr, pixel_blend.repr, background_color.repr,
+      max_incl_dimension.repr, max_incl_metadata_length.repr);
   callbacks.Done(result, input, *io_buf, std::move(image_decoder));
   return result;
 }

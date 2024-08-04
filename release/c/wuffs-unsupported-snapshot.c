@@ -15061,6 +15061,7 @@ struct wuffs_xz__decoder__struct {
 #include <stdio.h>
 
 #include <string>
+#include <utility>
 
 namespace wuffs_aux {
 
@@ -15072,6 +15073,8 @@ using IOBuffer = wuffs_base__io_buffer;
 // MemOwner(nullptr, &free), even if that statically allocated memory is not
 // nullptr, since calling free(nullptr) is a no-op.
 using MemOwner = std::unique_ptr<void, decltype(&free)>;
+
+using QuirkKeyValuePair = std::pair<uint32_t, uint64_t>;
 
 namespace sync_io {
 
@@ -15255,13 +15258,14 @@ class DecodeCborCallbacks {
 
 // DecodeCborArgQuirks wraps an optional argument to DecodeCbor.
 struct DecodeCborArgQuirks {
-  explicit DecodeCborArgQuirks(wuffs_base__slice_u32 repr0);
-  explicit DecodeCborArgQuirks(uint32_t* ptr, size_t len);
+  explicit DecodeCborArgQuirks(const QuirkKeyValuePair* ptr0,
+                               const size_t len0);
 
   // DefaultValue returns an empty slice.
   static DecodeCborArgQuirks DefaultValue();
 
-  wuffs_base__slice_u32 repr;
+  const QuirkKeyValuePair* ptr;
+  const size_t len;
 };
 
 // DecodeCbor calls callbacks based on the CBOR-formatted data in input.
@@ -15469,13 +15473,14 @@ extern const char DecodeImage_UnsupportedPixelFormat[];
 
 // DecodeImageArgQuirks wraps an optional argument to DecodeImage.
 struct DecodeImageArgQuirks {
-  explicit DecodeImageArgQuirks(wuffs_base__slice_u32 repr0);
-  explicit DecodeImageArgQuirks(uint32_t* ptr, size_t len);
+  explicit DecodeImageArgQuirks(const QuirkKeyValuePair* ptr0,
+                                const size_t len0);
 
   // DefaultValue returns an empty slice.
   static DecodeImageArgQuirks DefaultValue();
 
-  wuffs_base__slice_u32 repr;
+  const QuirkKeyValuePair* ptr;
+  const size_t len;
 };
 
 // DecodeImageArgFlags wraps an optional argument to DecodeImage.
@@ -15687,13 +15692,14 @@ extern const char DecodeJson_NoMatch[];
 
 // DecodeJsonArgQuirks wraps an optional argument to DecodeJson.
 struct DecodeJsonArgQuirks {
-  explicit DecodeJsonArgQuirks(wuffs_base__slice_u32 repr0);
-  explicit DecodeJsonArgQuirks(uint32_t* ptr, size_t len);
+  explicit DecodeJsonArgQuirks(const QuirkKeyValuePair* ptr0,
+                               const size_t len0);
 
   // DefaultValue returns an empty slice.
   static DecodeJsonArgQuirks DefaultValue();
 
-  wuffs_base__slice_u32 repr;
+  const QuirkKeyValuePair* ptr;
+  const size_t len;
 };
 
 // DecodeJsonArgJsonPointer wraps an optional argument to DecodeJson.
@@ -77522,15 +77528,13 @@ DecodeCborCallbacks::Done(DecodeCborResult& result,
                           sync_io::Input& input,
                           IOBuffer& buffer) {}
 
-DecodeCborArgQuirks::DecodeCborArgQuirks(wuffs_base__slice_u32 repr0)
-    : repr(repr0) {}
-
-DecodeCborArgQuirks::DecodeCborArgQuirks(uint32_t* ptr0, size_t len0)
-    : repr(wuffs_base__make_slice_u32(ptr0, len0)) {}
+DecodeCborArgQuirks::DecodeCborArgQuirks(const QuirkKeyValuePair* ptr0,
+                                         const size_t len0)
+    : ptr(ptr0), len(len0) {}
 
 DecodeCborArgQuirks  //
 DecodeCborArgQuirks::DefaultValue() {
-  return DecodeCborArgQuirks(wuffs_base__empty_slice_u32());
+  return DecodeCborArgQuirks(nullptr, 0);
 }
 
 DecodeCborResult  //
@@ -77559,8 +77563,8 @@ DecodeCbor(DecodeCborCallbacks& callbacks,
       ret_error_message = "wuffs_aux::DecodeCbor: out of memory";
       goto done;
     }
-    for (size_t i = 0; i < quirks.repr.len; i++) {
-      dec->set_quirk(quirks.repr.ptr[i], 1);
+    for (size_t i = 0; i < quirks.len; i++) {
+      dec->set_quirk(quirks.ptr[i].first, quirks.ptr[i].second);
     }
 
     // Prepare the wuffs_base__tok_buffer. 256 tokens is 2KiB.
@@ -78053,15 +78057,13 @@ const char DecodeImage_UnsupportedPixelConfiguration[] =  //
 const char DecodeImage_UnsupportedPixelFormat[] =  //
     "wuffs_aux::DecodeImage: unsupported pixel format";
 
-DecodeImageArgQuirks::DecodeImageArgQuirks(wuffs_base__slice_u32 repr0)
-    : repr(repr0) {}
-
-DecodeImageArgQuirks::DecodeImageArgQuirks(uint32_t* ptr0, size_t len0)
-    : repr(wuffs_base__make_slice_u32(ptr0, len0)) {}
+DecodeImageArgQuirks::DecodeImageArgQuirks(const QuirkKeyValuePair* ptr0,
+                                           const size_t len0)
+    : ptr(ptr0), len(len0) {}
 
 DecodeImageArgQuirks  //
 DecodeImageArgQuirks::DefaultValue() {
-  return DecodeImageArgQuirks(wuffs_base__empty_slice_u32());
+  return DecodeImageArgQuirks(nullptr, 0);
 }
 
 DecodeImageArgFlags::DecodeImageArgFlags(uint64_t repr0) : repr(repr0) {}
@@ -78159,7 +78161,8 @@ DecodeImage0(wuffs_base__image_decoder::unique_ptr& image_decoder,
              DecodeImageCallbacks& callbacks,
              sync_io::Input& input,
              wuffs_base__io_buffer& io_buf,
-             wuffs_base__slice_u32 quirks,
+             const QuirkKeyValuePair* quirks_ptr,
+             const size_t quirks_len,
              uint64_t flags,
              wuffs_base__pixel_blend pixel_blend,
              wuffs_base__color_u32_argb_premul background_color,
@@ -78242,15 +78245,8 @@ redirect:
     }
 
     // Apply quirks.
-    for (size_t i = 0; i < quirks.len; i++) {
-      // TODO: don't special-case this.
-      if (quirks.ptr[i] == WUFFS_BASE__QUIRK_QUALITY) {
-        image_decoder->set_quirk(
-            WUFFS_BASE__QUIRK_QUALITY,
-            WUFFS_BASE__QUIRK_QUALITY__VALUE__LOWER_QUALITY);
-        continue;
-      }
-      image_decoder->set_quirk(quirks.ptr[i], 1);
+    for (size_t i = 0; i < quirks_len; i++) {
+      image_decoder->set_quirk(quirks_ptr[i].first, quirks_ptr[i].second);
     }
 
     // Apply flags.
@@ -78477,10 +78473,10 @@ DecodeImage(DecodeImageCallbacks& callbacks,
   }
 
   wuffs_base__image_decoder::unique_ptr image_decoder(nullptr);
-  DecodeImageResult result =
-      DecodeImage0(image_decoder, callbacks, input, *io_buf, quirks.repr,
-                   flags.repr, pixel_blend.repr, background_color.repr,
-                   max_incl_dimension.repr, max_incl_metadata_length.repr);
+  DecodeImageResult result = DecodeImage0(
+      image_decoder, callbacks, input, *io_buf, quirks.ptr, quirks.len,
+      flags.repr, pixel_blend.repr, background_color.repr,
+      max_incl_dimension.repr, max_incl_metadata_length.repr);
   callbacks.Done(result, input, *io_buf, std::move(image_decoder));
   return result;
 }
@@ -78515,15 +78511,13 @@ const char DecodeJson_BadJsonPointer[] =  //
 const char DecodeJson_NoMatch[] =  //
     "wuffs_aux::DecodeJson: no match";
 
-DecodeJsonArgQuirks::DecodeJsonArgQuirks(wuffs_base__slice_u32 repr0)
-    : repr(repr0) {}
-
-DecodeJsonArgQuirks::DecodeJsonArgQuirks(uint32_t* ptr0, size_t len0)
-    : repr(wuffs_base__make_slice_u32(ptr0, len0)) {}
+DecodeJsonArgQuirks::DecodeJsonArgQuirks(const QuirkKeyValuePair* ptr0,
+                                         const size_t len0)
+    : ptr(ptr0), len(len0) {}
 
 DecodeJsonArgQuirks  //
 DecodeJsonArgQuirks::DefaultValue() {
-  return DecodeJsonArgQuirks(wuffs_base__empty_slice_u32());
+  return DecodeJsonArgQuirks(nullptr, 0);
 }
 
 DecodeJsonArgJsonPointer::DecodeJsonArgJsonPointer(std::string repr0)
@@ -78868,11 +78862,11 @@ DecodeJson(DecodeJsonCallbacks& callbacks,
       goto done;
     }
     bool allow_tilde_n_tilde_r_tilde_t = false;
-    for (size_t i = 0; i < quirks.repr.len; i++) {
-      dec->set_quirk(quirks.repr.ptr[i], 1);
-      if (quirks.repr.ptr[i] ==
+    for (size_t i = 0; i < quirks.len; i++) {
+      dec->set_quirk(quirks.ptr[i].first, quirks.ptr[i].second);
+      if (quirks.ptr[i].first ==
           WUFFS_JSON__QUIRK_JSON_POINTER_ALLOW_TILDE_N_TILDE_R_TILDE_T) {
-        allow_tilde_n_tilde_r_tilde_t = true;
+        allow_tilde_n_tilde_r_tilde_t = (quirks.ptr[i].second != 0);
       }
     }
 

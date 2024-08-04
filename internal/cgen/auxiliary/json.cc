@@ -33,15 +33,13 @@ const char DecodeJson_BadJsonPointer[] =  //
 const char DecodeJson_NoMatch[] =  //
     "wuffs_aux::DecodeJson: no match";
 
-DecodeJsonArgQuirks::DecodeJsonArgQuirks(wuffs_base__slice_u32 repr0)
-    : repr(repr0) {}
-
-DecodeJsonArgQuirks::DecodeJsonArgQuirks(uint32_t* ptr0, size_t len0)
-    : repr(wuffs_base__make_slice_u32(ptr0, len0)) {}
+DecodeJsonArgQuirks::DecodeJsonArgQuirks(const QuirkKeyValuePair* ptr0,
+                                         const size_t len0)
+    : ptr(ptr0), len(len0) {}
 
 DecodeJsonArgQuirks  //
 DecodeJsonArgQuirks::DefaultValue() {
-  return DecodeJsonArgQuirks(wuffs_base__empty_slice_u32());
+  return DecodeJsonArgQuirks(nullptr, 0);
 }
 
 DecodeJsonArgJsonPointer::DecodeJsonArgJsonPointer(std::string repr0)
@@ -386,11 +384,11 @@ DecodeJson(DecodeJsonCallbacks& callbacks,
       goto done;
     }
     bool allow_tilde_n_tilde_r_tilde_t = false;
-    for (size_t i = 0; i < quirks.repr.len; i++) {
-      dec->set_quirk(quirks.repr.ptr[i], 1);
-      if (quirks.repr.ptr[i] ==
+    for (size_t i = 0; i < quirks.len; i++) {
+      dec->set_quirk(quirks.ptr[i].first, quirks.ptr[i].second);
+      if (quirks.ptr[i].first ==
           WUFFS_JSON__QUIRK_JSON_POINTER_ALLOW_TILDE_N_TILDE_R_TILDE_T) {
-        allow_tilde_n_tilde_r_tilde_t = true;
+        allow_tilde_n_tilde_r_tilde_t = (quirks.ptr[i].second != 0);
       }
     }
 

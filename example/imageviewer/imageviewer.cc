@@ -271,7 +271,10 @@ load_image(const char* filename) {
     dia_flags |= wuffs_aux::DecodeImageArgFlags::REPORT_METADATA_GAMA;
   }
 
-  uint32_t wuffs_base__quirk_quality = WUFFS_BASE__QUIRK_QUALITY;
+  const wuffs_aux::QuirkKeyValuePair wuffs_base__quirk_quality = {
+      WUFFS_BASE__QUIRK_QUALITY,
+      WUFFS_BASE__QUIRK_QUALITY__VALUE__LOWER_QUALITY,
+  };
 
   MyDecodeImageCallbacks callbacks;
   wuffs_aux::sync_io::FileInput input(file);
