@@ -357,13 +357,12 @@ pub func decoder.get_quirk(key: base.u32) base.u64 {
 // libjpeg-turbo also uses by default, which requires chroma upsampling on the
 // edges of a MCU (Minimum Coded Unit) to remember adjacent MCU's values.
 //
-// Leaner means that for common (but not all) JPEG images, the range returned
-// by decoder.workbuf_len can have a minimum value of zero, meaning that no
-// work buffer memory needs to be allocated. "Common" includes sequential (not
-// progressive) JPEGs that have either 1 component (gray) or 3 components (RGB
-// or YCbCr). Decoding rarer JPEGs will still require a positive amount of work
-// buffer memory. The exact amount required depends on factors like the JPEG
-// image's width, height, component count and subsampling ratios.
+// Leaner means that for common (sequential) JPEG images, the range returned by
+// decoder.workbuf_len can have a minimum value of zero, meaning that no work
+// buffer memory needs to be allocated. Decoding rarer (progressive) JPEGs will
+// still require a positive amount of work buffer memory. The exact amount
+// required depends on factors like the JPEG image's width, height, component
+// count and subsampling ratios.
 //
 // Regardless of the quirk value, as always, the workbuf_len method returns a
 // range, whose min and max can be different. The caller is able to choose
@@ -371,7 +370,8 @@ pub func decoder.get_quirk(key: base.u32) base.u64 {
 // slower decoding) or the maximal amount (for slightly faster decoding).
 //
 // Callers that never wish to allocate work buffer memory can simply reject
-// these rarer JPEGs as unsupported.
+// progressive JPEGs (where workbuf_len().min_incl > 0 despite setting the
+// base.QUIRK_QUALITY key to a negative quirk value) as unsupported.
 pub func decoder.set_quirk!(key: base.u32, value: base.u64) base.status {
     if args.key == base.QUIRK_QUALITY {
         this.use_lower_quality = args.value >= 0x8000_0000_0000_0000
@@ -996,7 +996,7 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
         if this.sof_marker >= 0xC2 {
             return base."#bad workbuf length"
         }
-        this.swizzle_immediately = this.use_lower_quality and (this.num_components < 4)
+        this.swizzle_immediately = this.use_lower_quality
         this.swizzle_immediately_status = ok
     } else if this.components_workbuf_offsets[4] < this.components_workbuf_offsets[8] {
         args.workbuf[this.components_workbuf_offsets[4] .. this.components_workbuf_offsets[8]].bulk_memset!(byte_value: 0)
@@ -2166,7 +2166,7 @@ pri func decoder.swizzle_colorful!(dst: ptr base.pixel_buffer, workbuf: slice ba
             v2: this.components_v[2],
             v3: this.components_v[3],
             is_rgb_or_cmyk: this.is_rgb_or_cmyk,
-            triangle_filter_for_2to1: not (this.use_lower_quality and (this.num_components < 4)),
+            triangle_filter_for_2to1: not this.use_lower_quality,
             scratch_buffer_2k: this.swizzle_ycck_scratch_buffer_2k[..])
     return status
 }
@@ -2258,7 +2258,7 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 }
 
 pub func decoder.workbuf_len() base.range_ii_u64 {
-    if this.use_lower_quality and (this.num_components < 4) and (this.sof_marker < 0xC2) {
+    if this.use_lower_quality and (this.sof_marker < 0xC2) {
         return this.util.make_range_ii_u64(
                 min_incl: 0,
                 max_incl: this.components_workbuf_offsets[8])
