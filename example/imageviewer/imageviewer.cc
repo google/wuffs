@@ -141,7 +141,7 @@ static const char* g_usage =
     "\n"
     "Flags:\n"
     "    -lower-quality (exercise lower-image-quality code paths)\n"
-    "    -screen_gamma=N.N (default 2.2; 0 disables gamma correction)";
+    "    -screen-gamma=N.N (default 2.2; 0 disables gamma correction)";
 
 const char*  //
 parse_flags(int argc, char** argv) {
@@ -171,7 +171,7 @@ parse_flags(int argc, char** argv) {
       g_flags.lower_quality = true;
       continue;
     }
-    if (!strncmp(arg, "screen_gamma=", 13)) {
+    if (!strncmp(arg, "screen-gamma=", 13)) {
       g_flags.screen_gamma = atof(arg + 13);
       continue;
     }
