@@ -57,6 +57,7 @@ to use the wuffs_aux C++ API to decode an image and iterate over its pixels.
 #define WUFFS_CONFIG__MODULE__NETPBM
 #define WUFFS_CONFIG__MODULE__NIE
 #define WUFFS_CONFIG__MODULE__PNG
+#define WUFFS_CONFIG__MODULE__QOI
 #define WUFFS_CONFIG__MODULE__TGA
 #define WUFFS_CONFIG__MODULE__WBMP
 #define WUFFS_CONFIG__MODULE__ZLIB

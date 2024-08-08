@@ -28,6 +28,7 @@ OK. 076cb375 test/data/bricks-color.bmp
 OK. 72a1f9cc test/data/bricks-color.jpeg
 OK. 076cb375 test/data/bricks-color.lossless.webp
 OK. 076cb375 test/data/bricks-color.png
+OK. 076cb375 test/data/bricks-color.qoi
 OK. 076cb375 test/data/bricks-color.tga
 OK. f36c2e80 test/data/bricks-dither.bmp
 OK. f36c2e80 test/data/bricks-dither.gif

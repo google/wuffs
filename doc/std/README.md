@@ -62,6 +62,7 @@ to enable.
 - `NETPBM:    BASE`
 - `NIE:       BASE`
 - `PNG:       BASE, ADLER32, CRC32, DEFLATE, ZLIB`
+- `QOI:       BASE`
 - `SHA256:    BASE`
 - `TGA:       BASE`
 - `VP8:       BASE`

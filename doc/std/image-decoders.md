@@ -129,6 +129,7 @@ In Wuffs syntax, the `base.image_decoder` methods are:
 - [std/netpbm](/std/netpbm)
 - [std/nie](/std/nie)
 - [std/png](/std/png)
+- [std/qoi](/std/qoi)
 - [std/tga](/std/tga)
 - [std/wbmp](/std/wbmp)
 - [std/webp](/std/webp)

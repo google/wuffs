@@ -20,6 +20,7 @@ The LICENSE has changed from a single license (Apache 2) to a dual license
 - Added `std/lzip`.
 - Added `std/lzma`.
 - Added `std/netpbm`.
+- Added `std/qoi`.
 - Added `std/sha256`.
 - Added `std/vp8`.
 - Added `std/webp`.
