@@ -15,12 +15,11 @@ pub status "#truncated input"
 pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0
 
 pub struct decoder? implements base.image_decoder(
+        pixfmt : base.u32,
         width  : base.u32[..= 0xFF_FFFF],
         height : base.u32[..= 0xFF_FFFF],
 
         remaining_pixels_times_4 : base.u64,
-
-        is_opaque : base.bool,
 
         // The call sequence state machine is discussed in
         // (/doc/std/image-decoders-call-sequence.md).
@@ -85,9 +84,9 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
 
     a = args.src.read_u8_as_u32?()
     if a == 3 {
-        this.is_opaque = true
+        this.pixfmt = base.PIXEL_FORMAT__BGRX
     } else if a == 4 {
-        this.is_opaque = false
+        this.pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL
     } else {
         return "#bad header"
     }
@@ -96,12 +95,12 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
 
     if args.dst <> nullptr {
         args.dst.set!(
-                pixfmt: base.PIXEL_FORMAT__RGBA_NONPREMUL,
+                pixfmt: this.pixfmt,
                 pixsub: 0,
                 width: this.width,
                 height: this.height,
                 first_frame_io_position: 14,
-                first_frame_is_opaque: this.is_opaque)
+                first_frame_is_opaque: this.pixfmt == base.PIXEL_FORMAT__BGRX)
     }
 
     this.call_sequence = 0x20
@@ -145,7 +144,7 @@ pri func decoder.do_decode_frame_config?(dst: nptr base.frame_config, src: base.
                 index: 0,
                 io_position: 14,
                 disposal: 0,
-                opaque_within_bounds: this.is_opaque,
+                opaque_within_bounds: this.pixfmt == base.PIXEL_FORMAT__BGRX,
                 overwrite_instead_of_blend: false,
                 background_color: 0x0000_0000)
     }
@@ -180,7 +179,7 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
     status = this.swizzler.prepare!(
             dst_pixfmt: args.dst.pixel_format(),
             dst_palette: args.dst.palette(),
-            src_pixfmt: this.util.make_pixel_format(repr: base.PIXEL_FORMAT__RGBA_NONPREMUL),
+            src_pixfmt: this.util.make_pixel_format(repr: this.pixfmt),
             src_palette: this.util.empty_slice_u8(),
             blend: args.blend)
     if not status.is_ok() {
@@ -234,14 +233,14 @@ pri func decoder.from_src_to_buffer?(src: base.io_reader) {
         assert bi < 7936 via "a < b: a < c; c <= b"(c: bk)
         c8 = args.src.read_u8?()
         if c8 == 0xFE {  // QOI_OP_RGB.
-            this.pixel[0] = args.src.read_u8?()
-            this.pixel[1] = args.src.read_u8?()
             this.pixel[2] = args.src.read_u8?()
+            this.pixel[1] = args.src.read_u8?()
+            this.pixel[0] = args.src.read_u8?()
 
         } else if c8 == 0xFF {  // QOI_OP_RGBA.
-            this.pixel[0] = args.src.read_u8?()
-            this.pixel[1] = args.src.read_u8?()
             this.pixel[2] = args.src.read_u8?()
+            this.pixel[1] = args.src.read_u8?()
+            this.pixel[0] = args.src.read_u8?()
             this.pixel[3] = args.src.read_u8?()
 
         } else if (c8 >> 6) == 0 {  // QOI_OP_INDEX.
@@ -258,16 +257,16 @@ pri func decoder.from_src_to_buffer?(src: base.io_reader) {
             continue
 
         } else if (c8 >> 6) == 1 {  // QOI_OP_DIFF.
-            this.pixel[0] ~mod+= ((c8 >> 4) & 0x03) ~mod+ 0xFE
+            this.pixel[2] ~mod+= ((c8 >> 4) & 0x03) ~mod+ 0xFE
             this.pixel[1] ~mod+= ((c8 >> 2) & 0x03) ~mod+ 0xFE
-            this.pixel[2] ~mod+= ((c8 >> 0) & 0x03) ~mod+ 0xFE
+            this.pixel[0] ~mod+= ((c8 >> 0) & 0x03) ~mod+ 0xFE
 
         } else if (c8 >> 6) == 2 {  // QOI_OP_LUMA.
             dg = (c8 & 0x3F) ~mod+ 0xE0
             c8 = args.src.read_u8?()
-            this.pixel[0] ~mod+= (dg ~mod+ 0xF8) ~mod+ (0x0F & (c8 >> 4))
+            this.pixel[2] ~mod+= (dg ~mod+ 0xF8) ~mod+ (0x0F & (c8 >> 4))
             this.pixel[1] ~mod+= dg
-            this.pixel[2] ~mod+= (dg ~mod+ 0xF8) ~mod+ (0x0F & (c8 >> 0))
+            this.pixel[0] ~mod+= (dg ~mod+ 0xF8) ~mod+ (0x0F & (c8 >> 0))
 
         } else {  // QOI_OP_RUN.
             bj = bi + (4 * (0x3F & (1 + (c8 as base.u32))))
@@ -283,9 +282,9 @@ pri func decoder.from_src_to_buffer?(src: base.io_reader) {
         }
 
         hash4 = 4 * (63 & (
-                ((this.pixel[0] as base.u32) * 3) +
+                ((this.pixel[2] as base.u32) * 3) +
                 ((this.pixel[1] as base.u32) * 5) +
-                ((this.pixel[2] as base.u32) * 7) +
+                ((this.pixel[0] as base.u32) * 7) +
                 ((this.pixel[3] as base.u32) * 11)))
         this.cache[hash4 + 0] = this.pixel[0]
         this.cache[hash4 + 1] = this.pixel[1]

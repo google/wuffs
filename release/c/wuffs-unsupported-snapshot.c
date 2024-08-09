@@ -12917,10 +12917,10 @@ struct wuffs_qoi__decoder__struct {
     wuffs_base__vtable vtable_for__wuffs_base__image_decoder;
     wuffs_base__vtable null_vtable;
 
+    uint32_t f_pixfmt;
     uint32_t f_width;
     uint32_t f_height;
     uint64_t f_remaining_pixels_times_4;
-    bool f_is_opaque;
     uint8_t f_call_sequence;
     uint32_t f_buffer_index;
     uint32_t f_dst_x;
@@ -67570,9 +67570,9 @@ wuffs_qoi__decoder__do_decode_image_config(
       v_a = t_3;
     }
     if (v_a == 3u) {
-      self->private_impl.f_is_opaque = true;
+      self->private_impl.f_pixfmt = 2415954056u;
     } else if (v_a == 4u) {
-      self->private_impl.f_is_opaque = false;
+      self->private_impl.f_pixfmt = 2164295816u;
     } else {
       status = wuffs_base__make_status(wuffs_qoi__error__bad_header);
       goto exit;
@@ -67586,12 +67586,12 @@ wuffs_qoi__decoder__do_decode_image_config(
     if (a_dst != NULL) {
       wuffs_base__image_config__set(
           a_dst,
-          2701166728u,
+          self->private_impl.f_pixfmt,
           0u,
           self->private_impl.f_width,
           self->private_impl.f_height,
           14u,
-          self->private_impl.f_is_opaque);
+          (self->private_impl.f_pixfmt == 2415954056u));
     }
     self->private_impl.f_call_sequence = 32u;
 
@@ -67743,7 +67743,7 @@ wuffs_qoi__decoder__do_decode_frame_config(
           0u,
           14u,
           0u,
-          self->private_impl.f_is_opaque,
+          (self->private_impl.f_pixfmt == 2415954056u),
           false,
           0u);
     }
@@ -67892,7 +67892,7 @@ wuffs_qoi__decoder__do_decode_frame(
     v_status = wuffs_base__pixel_swizzler__prepare(&self->private_impl.f_swizzler,
         wuffs_base__pixel_buffer__pixel_format(a_dst),
         wuffs_base__pixel_buffer__palette(a_dst),
-        wuffs_base__utility__make_pixel_format(2701166728u),
+        wuffs_base__utility__make_pixel_format(self->private_impl.f_pixfmt),
         wuffs_base__utility__empty_slice_u8(),
         a_blend);
     if ( ! wuffs_base__status__is_ok(&v_status)) {
@@ -68054,7 +68054,7 @@ wuffs_qoi__decoder__from_src_to_buffer(
             goto suspend;
           }
           uint8_t t_1 = *iop_a_src++;
-          self->private_data.f_pixel[0u] = t_1;
+          self->private_data.f_pixel[2u] = t_1;
         }
         {
           WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
@@ -68072,7 +68072,7 @@ wuffs_qoi__decoder__from_src_to_buffer(
             goto suspend;
           }
           uint8_t t_3 = *iop_a_src++;
-          self->private_data.f_pixel[2u] = t_3;
+          self->private_data.f_pixel[0u] = t_3;
         }
       } else if (v_c8 == 255u) {
         {
@@ -68082,7 +68082,7 @@ wuffs_qoi__decoder__from_src_to_buffer(
             goto suspend;
           }
           uint8_t t_4 = *iop_a_src++;
-          self->private_data.f_pixel[0u] = t_4;
+          self->private_data.f_pixel[2u] = t_4;
         }
         {
           WUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
@@ -68100,7 +68100,7 @@ wuffs_qoi__decoder__from_src_to_buffer(
             goto suspend;
           }
           uint8_t t_6 = *iop_a_src++;
-          self->private_data.f_pixel[2u] = t_6;
+          self->private_data.f_pixel[0u] = t_6;
         }
         {
           WUFFS_BASE__COROUTINE_SUSPENSION_POINT(8);
@@ -68128,9 +68128,9 @@ wuffs_qoi__decoder__from_src_to_buffer(
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wconversion"
 #endif
-        self->private_data.f_pixel[0u] += ((uint8_t)(((uint8_t)(((uint8_t)(v_c8 >> 4u)) & 3u)) + 254u));
+        self->private_data.f_pixel[2u] += ((uint8_t)(((uint8_t)(((uint8_t)(v_c8 >> 4u)) & 3u)) + 254u));
         self->private_data.f_pixel[1u] += ((uint8_t)(((uint8_t)(((uint8_t)(v_c8 >> 2u)) & 3u)) + 254u));
-        self->private_data.f_pixel[2u] += ((uint8_t)(((uint8_t)(((uint8_t)(v_c8 >> 0u)) & 3u)) + 254u));
+        self->private_data.f_pixel[0u] += ((uint8_t)(((uint8_t)(((uint8_t)(v_c8 >> 0u)) & 3u)) + 254u));
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop
 #endif
@@ -68149,9 +68149,9 @@ wuffs_qoi__decoder__from_src_to_buffer(
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wconversion"
 #endif
-        self->private_data.f_pixel[0u] += ((uint8_t)(((uint8_t)(v_dg + 248u)) + ((uint8_t)(15u & ((uint8_t)(v_c8 >> 4u))))));
+        self->private_data.f_pixel[2u] += ((uint8_t)(((uint8_t)(v_dg + 248u)) + ((uint8_t)(15u & ((uint8_t)(v_c8 >> 4u))))));
         self->private_data.f_pixel[1u] += v_dg;
-        self->private_data.f_pixel[2u] += ((uint8_t)(((uint8_t)(v_dg + 248u)) + ((uint8_t)(15u & ((uint8_t)(v_c8 >> 0u))))));
+        self->private_data.f_pixel[0u] += ((uint8_t)(((uint8_t)(v_dg + 248u)) + ((uint8_t)(15u & ((uint8_t)(v_c8 >> 0u))))));
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop
 #endif
@@ -68166,9 +68166,9 @@ wuffs_qoi__decoder__from_src_to_buffer(
         }
         continue;
       }
-      v_hash4 = (4u * (63u & ((((uint32_t)(self->private_data.f_pixel[0u])) * 3u) +
+      v_hash4 = (4u * (63u & ((((uint32_t)(self->private_data.f_pixel[2u])) * 3u) +
           (((uint32_t)(self->private_data.f_pixel[1u])) * 5u) +
-          (((uint32_t)(self->private_data.f_pixel[2u])) * 7u) +
+          (((uint32_t)(self->private_data.f_pixel[0u])) * 7u) +
           (((uint32_t)(self->private_data.f_pixel[3u])) * 11u))));
       self->private_data.f_cache[(v_hash4 + 0u)] = self->private_data.f_pixel[0u];
       self->private_data.f_cache[(v_hash4 + 1u)] = self->private_data.f_pixel[1u];
