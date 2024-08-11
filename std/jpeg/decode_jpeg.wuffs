@@ -18,6 +18,7 @@ pub status "#bad marker"
 pub status "#bad scan count"
 pub status "#missing Huffman table"
 pub status "#missing Quantization table"
+pub status "#rejected progressive JPEG"
 pub status "#truncated input"
 pub status "#unsupported arithmetic coding"
 pub status "#unsupported color model"
@@ -281,7 +282,8 @@ pub struct decoder? implements base.image_decoder(
 
         expect_multiple_scans : base.bool,
 
-        use_lower_quality : base.bool,
+        use_lower_quality        : base.bool,
+        reject_progressive_jpegs : base.bool,
 
         swizzle_immediately           : base.bool,
         swizzle_immediately_status    : base.status,
@@ -342,39 +344,20 @@ pub func decoder.get_quirk(key: base.u32) base.u64 {
         if this.use_lower_quality {
             return 0xFFFF_FFFF_FFFF_FFFF
         }
+    } else if args.key == QUIRK_REJECT_PROGRESSIVE_JPEGS {
+        if this.reject_progressive_jpegs {
+            return 1
+        }
     }
     return 0
 }
 
-// If key is base.QUIRK_QUALITY then, when re-interpreting the value as a
-// signed i64 value, a negative quirk value opts the decoder in to a slightly
-// worse quality but leaner (less memory required) chroma upsampling algorithm.
-//
-// Negative (in i64 space) means >= 0x8000_0000_0000_0000 (in u64 space).
-//
-// Specifically, a negative quirk value uses a box filter. A non-negative quirk
-// value (including the default value, zero) uses the same triangle filter that
-// libjpeg-turbo also uses by default, which requires chroma upsampling on the
-// edges of a MCU (Minimum Coded Unit) to remember adjacent MCU's values.
-//
-// Leaner means that for common (sequential) JPEG images, the range returned by
-// decoder.workbuf_len can have a minimum value of zero, meaning that no work
-// buffer memory needs to be allocated. Decoding rarer (progressive) JPEGs will
-// still require a positive amount of work buffer memory. The exact amount
-// required depends on factors like the JPEG image's width, height, component
-// count and subsampling ratios.
-//
-// Regardless of the quirk value, as always, the workbuf_len method returns a
-// range, whose min and max can be different. The caller is able to choose
-// between providing the minimal amount of work buffer memory (for slightly
-// slower decoding) or the maximal amount (for slightly faster decoding).
-//
-// Callers that never wish to allocate work buffer memory can simply reject
-// progressive JPEGs (where workbuf_len().min_incl > 0 despite setting the
-// base.QUIRK_QUALITY key to a negative quirk value) as unsupported.
 pub func decoder.set_quirk!(key: base.u32, value: base.u64) base.status {
     if args.key == base.QUIRK_QUALITY {
         this.use_lower_quality = args.value >= 0x8000_0000_0000_0000
+        return ok
+    } else if args.key == QUIRK_REJECT_PROGRESSIVE_JPEGS {
+        this.reject_progressive_jpegs = args.value <> 0
         return ok
     }
     return base."#unsupported option"
@@ -454,7 +437,9 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
 
         } else if marker < 0xD0 {  // SOFn (Start of Frame) and friends.
             if marker <= 0xC2 {
-                if this.sof_marker <> 0 {
+                if (marker == 0xC2) and this.reject_progressive_jpegs {
+                    return "#rejected progressive JPEG"
+                } else if this.sof_marker <> 0 {
                     return "#bad SOF marker"
                 }
                 this.sof_marker = marker

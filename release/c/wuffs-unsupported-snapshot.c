@@ -9664,6 +9664,7 @@ extern const char wuffs_jpeg__error__bad_marker[];
 extern const char wuffs_jpeg__error__bad_scan_count[];
 extern const char wuffs_jpeg__error__missing_huffman_table[];
 extern const char wuffs_jpeg__error__missing_quantization_table[];
+extern const char wuffs_jpeg__error__rejected_progressive_jpeg[];
 extern const char wuffs_jpeg__error__truncated_input[];
 extern const char wuffs_jpeg__error__unsupported_arithmetic_coding[];
 extern const char wuffs_jpeg__error__unsupported_color_model[];
@@ -9680,6 +9681,8 @@ extern const char wuffs_jpeg__error__unsupported_scan_count[];
 // ---------------- Public Consts
 
 #define WUFFS_JPEG__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE 51552191232u
+
+#define WUFFS_JPEG__QUIRK_REJECT_PROGRESSIVE_JPEGS 1220532224u
 
 // ---------------- Struct Declarations
 
@@ -9908,6 +9911,7 @@ struct wuffs_jpeg__decoder__struct {
     bool f_bitstream_is_closed;
     bool f_expect_multiple_scans;
     bool f_use_lower_quality;
+    bool f_reject_progressive_jpegs;
     bool f_swizzle_immediately;
     wuffs_base__status f_swizzle_immediately_status;
     uint32_t f_swizzle_immediately_b_offsets[10];
@@ -44300,6 +44304,7 @@ const char wuffs_jpeg__error__bad_marker[] = "#jpeg: bad marker";
 const char wuffs_jpeg__error__bad_scan_count[] = "#jpeg: bad scan count";
 const char wuffs_jpeg__error__missing_huffman_table[] = "#jpeg: missing Huffman table";
 const char wuffs_jpeg__error__missing_quantization_table[] = "#jpeg: missing Quantization table";
+const char wuffs_jpeg__error__rejected_progressive_jpeg[] = "#jpeg: rejected progressive JPEG";
 const char wuffs_jpeg__error__truncated_input[] = "#jpeg: truncated input";
 const char wuffs_jpeg__error__unsupported_arithmetic_coding[] = "#jpeg: unsupported arithmetic coding";
 const char wuffs_jpeg__error__unsupported_color_model[] = "#jpeg: unsupported color model";
@@ -44537,6 +44542,8 @@ WUFFS_JPEG__DEFAULT_HUFF_TABLE_AC_CHROMA[179] WUFFS_BASE__POTENTIALLY_UNUSED = {
   233u, 234u, 242u, 243u, 244u, 245u, 246u, 247u,
   248u, 249u, 250u,
 };
+
+#define WUFFS_JPEG__QUIRKS_BASE 1220532224u
 
 // ---------------- Private Initializer Prototypes
 
@@ -46455,6 +46462,10 @@ wuffs_jpeg__decoder__get_quirk(
     if (self->private_impl.f_use_lower_quality) {
       return 18446744073709551615u;
     }
+  } else if (a_key == 1220532224u) {
+    if (self->private_impl.f_reject_progressive_jpegs) {
+      return 1u;
+    }
   }
   return 0u;
 }
@@ -46479,6 +46490,9 @@ wuffs_jpeg__decoder__set_quirk(
 
   if (a_key == 2u) {
     self->private_impl.f_use_lower_quality = (a_value >= 9223372036854775808u);
+    return wuffs_base__make_status(NULL);
+  } else if (a_key == 1220532224u) {
+    self->private_impl.f_reject_progressive_jpegs = (a_value != 0u);
     return wuffs_base__make_status(NULL);
   }
   return wuffs_base__make_status(wuffs_base__error__unsupported_option);
@@ -46689,7 +46703,10 @@ wuffs_jpeg__decoder__do_decode_image_config(
         goto exit;
       } else if (v_marker < 208u) {
         if (v_marker <= 194u) {
-          if (self->private_impl.f_sof_marker != 0u) {
+          if ((v_marker == 194u) && self->private_impl.f_reject_progressive_jpegs) {
+            status = wuffs_base__make_status(wuffs_jpeg__error__rejected_progressive_jpeg);
+            goto exit;
+          } else if (self->private_impl.f_sof_marker != 0u) {
             status = wuffs_base__make_status(wuffs_jpeg__error__bad_sof_marker);
             goto exit;
           }
