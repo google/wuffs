@@ -140,7 +140,7 @@ DecodeImageCallbacks::AllocPixbuf(const wuffs_base__image_config& image_config,
     return AllocPixbufResult(DecodeImage_UnsupportedPixelConfiguration);
   }
   void* ptr =
-      allow_uninitialized_memory ? malloc((size_t)len) : calloc((size_t)len, 1);
+      allow_uninitialized_memory ? malloc((size_t)len) : calloc(1, (size_t)len);
   if (!ptr) {
     return AllocPixbufResult(DecodeImage_OutOfMemory);
   }
@@ -165,7 +165,7 @@ DecodeImageCallbacks::AllocWorkbuf(wuffs_base__range_ii_u64 len_range,
     return AllocWorkbufResult(DecodeImage_OutOfMemory);
   }
   void* ptr =
-      allow_uninitialized_memory ? malloc((size_t)len) : calloc((size_t)len, 1);
+      allow_uninitialized_memory ? malloc((size_t)len) : calloc(1, (size_t)len);
   if (!ptr) {
     return AllocWorkbufResult(DecodeImage_OutOfMemory);
   }

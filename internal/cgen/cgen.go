@@ -1535,7 +1535,7 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 			return err
 		}
 		b.writes(" {\n")
-		b.printf("%s%s* x =\n(%s%s*)(calloc(sizeof(%s%s), 1));\n",
+		b.printf("%s%s* x =\n(%s%s*)(calloc(1, sizeof(%s%s)));\n",
 			g.pkgPrefix, structName, g.pkgPrefix, structName, g.pkgPrefix, structName)
 		b.writes("if (!x) {\nreturn NULL;\n}\n")
 		b.printf("if (%s%s__initialize(\nx, sizeof(%s%s), "+
