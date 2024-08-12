@@ -651,7 +651,7 @@ wuffs_base__pixel_config__set(wuffs_base__pixel_config* c,
   }
   if (pixfmt_repr) {
     do {
-#if SIZE_MAX < UINT64_MAX
+#if SIZE_MAX < 0xFFFFFFFFFFFFFFFFull
       uint64_t wh = ((uint64_t)width) * ((uint64_t)height);
       // TODO: handle things other than 1 byte per pixel.
       if (wh > ((uint64_t)SIZE_MAX)) {
