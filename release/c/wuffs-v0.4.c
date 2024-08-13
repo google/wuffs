@@ -81,15 +81,15 @@ extern "C" {
 // each major.minor branch, the commit count should increase monotonically.
 //
 // WUFFS_VERSION was overridden by "wuffs gen -version" based on revision
-// a07eb7704bdb65ea131495c866a4ef3d2c4e7b22 committed on 2024-08-11.
+// 5d69840f8e7ca481551b02c7e8d4c5fb69521bb9 committed on 2024-08-12.
 #define WUFFS_VERSION 0x000040000
 #define WUFFS_VERSION_MAJOR 0
 #define WUFFS_VERSION_MINOR 4
 #define WUFFS_VERSION_PATCH 0
-#define WUFFS_VERSION_PRE_RELEASE_LABEL "alpha.7"
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 3793
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20240811
-#define WUFFS_VERSION_STRING "0.4.0-alpha.7+3793.20240811"
+#define WUFFS_VERSION_PRE_RELEASE_LABEL "alpha.8"
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 3796
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20240812
+#define WUFFS_VERSION_STRING "0.4.0-alpha.8+3796.20240812"
 
 // ---------------- Private Implementation Macros Re-definition Check
 
@@ -4665,7 +4665,7 @@ wuffs_base__pixel_config__set(wuffs_base__pixel_config* c,
   }
   if (pixfmt_repr) {
     do {
-#if SIZE_MAX < UINT64_MAX
+#if SIZE_MAX < 0xFFFFFFFFFFFFFFFFull
       uint64_t wh = ((uint64_t)width) * ((uint64_t)height);
       // TODO: handle things other than 1 byte per pixel.
       if (wh > ((uint64_t)SIZE_MAX)) {
@@ -30854,7 +30854,7 @@ wuffs_adler32__hasher__initialize(
 wuffs_adler32__hasher*
 wuffs_adler32__hasher__alloc(void) {
   wuffs_adler32__hasher* x =
-      (wuffs_adler32__hasher*)(calloc(sizeof(wuffs_adler32__hasher), 1));
+      (wuffs_adler32__hasher*)(calloc(1, sizeof(wuffs_adler32__hasher)));
   if (!x) {
     return NULL;
   }
@@ -31460,7 +31460,7 @@ wuffs_bmp__decoder__initialize(
 wuffs_bmp__decoder*
 wuffs_bmp__decoder__alloc(void) {
   wuffs_bmp__decoder* x =
-      (wuffs_bmp__decoder*)(calloc(sizeof(wuffs_bmp__decoder), 1));
+      (wuffs_bmp__decoder*)(calloc(1, sizeof(wuffs_bmp__decoder)));
   if (!x) {
     return NULL;
   }
@@ -34226,7 +34226,7 @@ wuffs_bzip2__decoder__initialize(
 wuffs_bzip2__decoder*
 wuffs_bzip2__decoder__alloc(void) {
   wuffs_bzip2__decoder* x =
-      (wuffs_bzip2__decoder*)(calloc(sizeof(wuffs_bzip2__decoder), 1));
+      (wuffs_bzip2__decoder*)(calloc(1, sizeof(wuffs_bzip2__decoder)));
   if (!x) {
     return NULL;
   }
@@ -35784,7 +35784,7 @@ wuffs_cbor__decoder__initialize(
 wuffs_cbor__decoder*
 wuffs_cbor__decoder__alloc(void) {
   wuffs_cbor__decoder* x =
-      (wuffs_cbor__decoder*)(calloc(sizeof(wuffs_cbor__decoder), 1));
+      (wuffs_cbor__decoder*)(calloc(1, sizeof(wuffs_cbor__decoder)));
   if (!x) {
     return NULL;
   }
@@ -37096,7 +37096,7 @@ wuffs_crc32__ieee_hasher__initialize(
 wuffs_crc32__ieee_hasher*
 wuffs_crc32__ieee_hasher__alloc(void) {
   wuffs_crc32__ieee_hasher* x =
-      (wuffs_crc32__ieee_hasher*)(calloc(sizeof(wuffs_crc32__ieee_hasher), 1));
+      (wuffs_crc32__ieee_hasher*)(calloc(1, sizeof(wuffs_crc32__ieee_hasher)));
   if (!x) {
     return NULL;
   }
@@ -37931,7 +37931,7 @@ wuffs_crc64__ecma_hasher__initialize(
 wuffs_crc64__ecma_hasher*
 wuffs_crc64__ecma_hasher__alloc(void) {
   wuffs_crc64__ecma_hasher* x =
-      (wuffs_crc64__ecma_hasher*)(calloc(sizeof(wuffs_crc64__ecma_hasher), 1));
+      (wuffs_crc64__ecma_hasher*)(calloc(1, sizeof(wuffs_crc64__ecma_hasher)));
   if (!x) {
     return NULL;
   }
@@ -38482,7 +38482,7 @@ wuffs_deflate__decoder__initialize(
 wuffs_deflate__decoder*
 wuffs_deflate__decoder__alloc(void) {
   wuffs_deflate__decoder* x =
-      (wuffs_deflate__decoder*)(calloc(sizeof(wuffs_deflate__decoder), 1));
+      (wuffs_deflate__decoder*)(calloc(1, sizeof(wuffs_deflate__decoder)));
   if (!x) {
     return NULL;
   }
@@ -40897,7 +40897,7 @@ wuffs_gif__decoder__initialize(
 wuffs_gif__decoder*
 wuffs_gif__decoder__alloc(void) {
   wuffs_gif__decoder* x =
-      (wuffs_gif__decoder*)(calloc(sizeof(wuffs_gif__decoder), 1));
+      (wuffs_gif__decoder*)(calloc(1, sizeof(wuffs_gif__decoder)));
   if (!x) {
     return NULL;
   }
@@ -43808,7 +43808,7 @@ wuffs_gzip__decoder__initialize(
 wuffs_gzip__decoder*
 wuffs_gzip__decoder__alloc(void) {
   wuffs_gzip__decoder* x =
-      (wuffs_gzip__decoder*)(calloc(sizeof(wuffs_gzip__decoder), 1));
+      (wuffs_gzip__decoder*)(calloc(1, sizeof(wuffs_gzip__decoder)));
   if (!x) {
     return NULL;
   }
@@ -44914,7 +44914,7 @@ wuffs_jpeg__decoder__initialize(
 wuffs_jpeg__decoder*
 wuffs_jpeg__decoder__alloc(void) {
   wuffs_jpeg__decoder* x =
-      (wuffs_jpeg__decoder*)(calloc(sizeof(wuffs_jpeg__decoder), 1));
+      (wuffs_jpeg__decoder*)(calloc(1, sizeof(wuffs_jpeg__decoder)));
   if (!x) {
     return NULL;
   }
@@ -51606,7 +51606,7 @@ wuffs_json__decoder__initialize(
 wuffs_json__decoder*
 wuffs_json__decoder__alloc(void) {
   wuffs_json__decoder* x =
-      (wuffs_json__decoder*)(calloc(sizeof(wuffs_json__decoder), 1));
+      (wuffs_json__decoder*)(calloc(1, sizeof(wuffs_json__decoder)));
   if (!x) {
     return NULL;
   }
@@ -53664,7 +53664,7 @@ wuffs_lzma__decoder__initialize(
 wuffs_lzma__decoder*
 wuffs_lzma__decoder__alloc(void) {
   wuffs_lzma__decoder* x =
-      (wuffs_lzma__decoder*)(calloc(sizeof(wuffs_lzma__decoder), 1));
+      (wuffs_lzma__decoder*)(calloc(1, sizeof(wuffs_lzma__decoder)));
   if (!x) {
     return NULL;
   }
@@ -56855,7 +56855,7 @@ wuffs_lzip__decoder__initialize(
 wuffs_lzip__decoder*
 wuffs_lzip__decoder__alloc(void) {
   wuffs_lzip__decoder* x =
-      (wuffs_lzip__decoder*)(calloc(sizeof(wuffs_lzip__decoder), 1));
+      (wuffs_lzip__decoder*)(calloc(1, sizeof(wuffs_lzip__decoder)));
   if (!x) {
     return NULL;
   }
@@ -57404,7 +57404,7 @@ wuffs_lzw__decoder__initialize(
 wuffs_lzw__decoder*
 wuffs_lzw__decoder__alloc(void) {
   wuffs_lzw__decoder* x =
-      (wuffs_lzw__decoder*)(calloc(sizeof(wuffs_lzw__decoder), 1));
+      (wuffs_lzw__decoder*)(calloc(1, sizeof(wuffs_lzw__decoder)));
   if (!x) {
     return NULL;
   }
@@ -58020,7 +58020,7 @@ wuffs_netpbm__decoder__initialize(
 wuffs_netpbm__decoder*
 wuffs_netpbm__decoder__alloc(void) {
   wuffs_netpbm__decoder* x =
-      (wuffs_netpbm__decoder*)(calloc(sizeof(wuffs_netpbm__decoder), 1));
+      (wuffs_netpbm__decoder*)(calloc(1, sizeof(wuffs_netpbm__decoder)));
   if (!x) {
     return NULL;
   }
@@ -59160,7 +59160,7 @@ wuffs_nie__decoder__initialize(
 wuffs_nie__decoder*
 wuffs_nie__decoder__alloc(void) {
   wuffs_nie__decoder* x =
-      (wuffs_nie__decoder*)(calloc(sizeof(wuffs_nie__decoder), 1));
+      (wuffs_nie__decoder*)(calloc(1, sizeof(wuffs_nie__decoder)));
   if (!x) {
     return NULL;
   }
@@ -60204,7 +60204,7 @@ wuffs_zlib__decoder__initialize(
 wuffs_zlib__decoder*
 wuffs_zlib__decoder__alloc(void) {
   wuffs_zlib__decoder* x =
-      (wuffs_zlib__decoder*)(calloc(sizeof(wuffs_zlib__decoder), 1));
+      (wuffs_zlib__decoder*)(calloc(1, sizeof(wuffs_zlib__decoder)));
   if (!x) {
     return NULL;
   }
@@ -61172,7 +61172,7 @@ wuffs_png__decoder__initialize(
 wuffs_png__decoder*
 wuffs_png__decoder__alloc(void) {
   wuffs_png__decoder* x =
-      (wuffs_png__decoder*)(calloc(sizeof(wuffs_png__decoder), 1));
+      (wuffs_png__decoder*)(calloc(1, sizeof(wuffs_png__decoder)));
   if (!x) {
     return NULL;
   }
@@ -67322,7 +67322,7 @@ wuffs_qoi__decoder__initialize(
 wuffs_qoi__decoder*
 wuffs_qoi__decoder__alloc(void) {
   wuffs_qoi__decoder* x =
-      (wuffs_qoi__decoder*)(calloc(sizeof(wuffs_qoi__decoder), 1));
+      (wuffs_qoi__decoder*)(calloc(1, sizeof(wuffs_qoi__decoder)));
   if (!x) {
     return NULL;
   }
@@ -68559,7 +68559,7 @@ wuffs_sha256__hasher__initialize(
 wuffs_sha256__hasher*
 wuffs_sha256__hasher__alloc(void) {
   wuffs_sha256__hasher* x =
-      (wuffs_sha256__hasher*)(calloc(sizeof(wuffs_sha256__hasher), 1));
+      (wuffs_sha256__hasher*)(calloc(1, sizeof(wuffs_sha256__hasher)));
   if (!x) {
     return NULL;
   }
@@ -69192,7 +69192,7 @@ wuffs_tga__decoder__initialize(
 wuffs_tga__decoder*
 wuffs_tga__decoder__alloc(void) {
   wuffs_tga__decoder* x =
-      (wuffs_tga__decoder*)(calloc(sizeof(wuffs_tga__decoder), 1));
+      (wuffs_tga__decoder*)(calloc(1, sizeof(wuffs_tga__decoder)));
   if (!x) {
     return NULL;
   }
@@ -70561,7 +70561,7 @@ wuffs_vp8__placeholder__initialize(
 wuffs_vp8__placeholder*
 wuffs_vp8__placeholder__alloc(void) {
   wuffs_vp8__placeholder* x =
-      (wuffs_vp8__placeholder*)(calloc(sizeof(wuffs_vp8__placeholder), 1));
+      (wuffs_vp8__placeholder*)(calloc(1, sizeof(wuffs_vp8__placeholder)));
   if (!x) {
     return NULL;
   }
@@ -70709,7 +70709,7 @@ wuffs_wbmp__decoder__initialize(
 wuffs_wbmp__decoder*
 wuffs_wbmp__decoder__alloc(void) {
   wuffs_wbmp__decoder* x =
-      (wuffs_wbmp__decoder*)(calloc(sizeof(wuffs_wbmp__decoder), 1));
+      (wuffs_wbmp__decoder*)(calloc(1, sizeof(wuffs_wbmp__decoder)));
   if (!x) {
     return NULL;
   }
@@ -71844,7 +71844,7 @@ wuffs_webp__decoder__initialize(
 wuffs_webp__decoder*
 wuffs_webp__decoder__alloc(void) {
   wuffs_webp__decoder* x =
-      (wuffs_webp__decoder*)(calloc(sizeof(wuffs_webp__decoder), 1));
+      (wuffs_webp__decoder*)(calloc(1, sizeof(wuffs_webp__decoder)));
   if (!x) {
     return NULL;
   }
@@ -75579,7 +75579,7 @@ wuffs_xxhash32__hasher__initialize(
 wuffs_xxhash32__hasher*
 wuffs_xxhash32__hasher__alloc(void) {
   wuffs_xxhash32__hasher* x =
-      (wuffs_xxhash32__hasher*)(calloc(sizeof(wuffs_xxhash32__hasher), 1));
+      (wuffs_xxhash32__hasher*)(calloc(1, sizeof(wuffs_xxhash32__hasher)));
   if (!x) {
     return NULL;
   }
@@ -75992,7 +75992,7 @@ wuffs_xxhash64__hasher__initialize(
 wuffs_xxhash64__hasher*
 wuffs_xxhash64__hasher__alloc(void) {
   wuffs_xxhash64__hasher* x =
-      (wuffs_xxhash64__hasher*)(calloc(sizeof(wuffs_xxhash64__hasher), 1));
+      (wuffs_xxhash64__hasher*)(calloc(1, sizeof(wuffs_xxhash64__hasher)));
   if (!x) {
     return NULL;
   }
@@ -76633,7 +76633,7 @@ wuffs_xz__decoder__initialize(
 wuffs_xz__decoder*
 wuffs_xz__decoder__alloc(void) {
   wuffs_xz__decoder* x =
-      (wuffs_xz__decoder*)(calloc(sizeof(wuffs_xz__decoder), 1));
+      (wuffs_xz__decoder*)(calloc(1, sizeof(wuffs_xz__decoder)));
   if (!x) {
     return NULL;
   }
@@ -79660,7 +79660,7 @@ DecodeImageCallbacks::AllocPixbuf(const wuffs_base__image_config& image_config,
     return AllocPixbufResult(DecodeImage_UnsupportedPixelConfiguration);
   }
   void* ptr =
-      allow_uninitialized_memory ? malloc((size_t)len) : calloc((size_t)len, 1);
+      allow_uninitialized_memory ? malloc((size_t)len) : calloc(1, (size_t)len);
   if (!ptr) {
     return AllocPixbufResult(DecodeImage_OutOfMemory);
   }
@@ -79685,7 +79685,7 @@ DecodeImageCallbacks::AllocWorkbuf(wuffs_base__range_ii_u64 len_range,
     return AllocWorkbufResult(DecodeImage_OutOfMemory);
   }
   void* ptr =
-      allow_uninitialized_memory ? malloc((size_t)len) : calloc((size_t)len, 1);
+      allow_uninitialized_memory ? malloc((size_t)len) : calloc(1, (size_t)len);
   if (!ptr) {
     return AllocWorkbufResult(DecodeImage_OutOfMemory);
   }
