@@ -32,6 +32,7 @@ var FourCCs = [...][2]string{
 	{"CHRM", "Primary Chromaticities and White Point"},
 	{"CSS ", "Cascading Style Sheets"},
 	{"EPS ", "Encapsulated PostScript"},
+	{"ETC2", "Ericsson Texture Compression 2 (iPACKMAN)"},
 	{"EXIF", "Exchangeable Image File Format"},
 	{"FLAC", "Free Lossless Audio Codec"},
 	{"GAMA", "Gamma Correction"},
