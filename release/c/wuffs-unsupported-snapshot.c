@@ -9118,6 +9118,7 @@ struct wuffs_etc2__decoder__struct {
     uint32_t f_height;
     uint32_t f_remaining_blocks;
     uint8_t f_call_sequence;
+    bool f_srgb;
     uint32_t f_buffer_index;
     uint32_t f_dst_x;
     uint32_t f_dst_y;
@@ -41022,6 +41023,11 @@ WUFFS_ETC2__MODIFIERS[8][4] WUFFS_BASE__POTENTIALLY_UNUSED = {
 };
 
 static const uint8_t
+WUFFS_ETC2__T_H_MODIFIERS[8] WUFFS_BASE__POTENTIALLY_UNUSED = {
+  3u, 6u, 11u, 16u, 23u, 32u, 41u, 64u,
+};
+
+static const uint8_t
 WUFFS_ETC2__CLAMP[1024] WUFFS_BASE__POTENTIALLY_UNUSED = {
   0u, 1u, 2u, 3u, 4u, 5u, 6u, 7u,
   8u, 9u, 10u, 11u, 12u, 13u, 14u, 15u,
@@ -41186,6 +41192,27 @@ static wuffs_base__status
 wuffs_etc2__decoder__from_src_to_buffer(
     wuffs_etc2__decoder* self,
     wuffs_base__io_buffer* a_src);
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_etc2__decoder__decode_t_mode(
+    wuffs_etc2__decoder* self,
+    uint64_t a_bits,
+    uint32_t a_offset);
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_etc2__decoder__decode_h_mode(
+    wuffs_etc2__decoder* self,
+    uint64_t a_bits,
+    uint32_t a_offset);
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_etc2__decoder__decode_planar_mode(
+    wuffs_etc2__decoder* self,
+    uint64_t a_bits,
+    uint32_t a_offset);
 
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
@@ -41519,7 +41546,7 @@ wuffs_etc2__decoder__do_decode_image_config(
       }
       v_c32 = t_1;
     }
-    if (v_c32 == 12337u) {
+    if ((v_c32 == 12337u) || (v_c32 == 16789554u) || (v_c32 == 151007282u)) {
       self->private_impl.f_pixfmt = 2415954056u;
     } else if ((v_c32 & 65535u) == 12338u) {
       status = wuffs_base__make_status(wuffs_etc2__error__unsupported_etc2_file);
@@ -41528,6 +41555,7 @@ wuffs_etc2__decoder__do_decode_image_config(
       status = wuffs_base__make_status(wuffs_etc2__error__bad_header);
       goto exit;
     }
+    self->private_impl.f_srgb = ((v_c32 >> 24u) >= 9u);
     {
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
       uint16_t t_2;
@@ -42088,15 +42116,30 @@ wuffs_etc2__decoder__from_src_to_buffer(
         v_b1 = ((v_b1 << 4u) | v_b1);
       } else {
         v_r0 = ((uint32_t)((31u & (v_c64 >> 59u))));
-        v_r1 = (31u & ((uint32_t)(v_r0 + WUFFS_ETC2__DIFFS[(7u & (v_c64 >> 56u))])));
+        v_r1 = ((uint32_t)(v_r0 + WUFFS_ETC2__DIFFS[(7u & (v_c64 >> 56u))]));
+        if ((v_r1 >> 5u) != 0u) {
+          wuffs_etc2__decoder__decode_t_mode(self, v_c64, (16u * v_bi));
+          v_bi += 1u;
+          continue;
+        }
         v_r0 = (((uint32_t)(v_r0 << 3u)) | (v_r0 >> 2u));
         v_r1 = (((uint32_t)(v_r1 << 3u)) | (v_r1 >> 2u));
         v_g0 = ((uint32_t)((31u & (v_c64 >> 51u))));
-        v_g1 = (31u & ((uint32_t)(v_g0 + WUFFS_ETC2__DIFFS[(7u & (v_c64 >> 48u))])));
+        v_g1 = ((uint32_t)(v_g0 + WUFFS_ETC2__DIFFS[(7u & (v_c64 >> 48u))]));
+        if ((v_g1 >> 5u) != 0u) {
+          wuffs_etc2__decoder__decode_h_mode(self, v_c64, (16u * v_bi));
+          v_bi += 1u;
+          continue;
+        }
         v_g0 = (((uint32_t)(v_g0 << 3u)) | (v_g0 >> 2u));
         v_g1 = (((uint32_t)(v_g1 << 3u)) | (v_g1 >> 2u));
         v_b0 = ((uint32_t)((31u & (v_c64 >> 43u))));
-        v_b1 = (31u & ((uint32_t)(v_b0 + WUFFS_ETC2__DIFFS[(7u & (v_c64 >> 40u))])));
+        v_b1 = ((uint32_t)(v_b0 + WUFFS_ETC2__DIFFS[(7u & (v_c64 >> 40u))]));
+        if ((v_b1 >> 5u) != 0u) {
+          wuffs_etc2__decoder__decode_planar_mode(self, v_c64, (16u * v_bi));
+          v_bi += 1u;
+          continue;
+        }
         v_b0 = (((uint32_t)(v_b0 << 3u)) | (v_b0 >> 2u));
         v_b1 = (((uint32_t)(v_b1 << 3u)) | (v_b1 >> 2u));
       }
@@ -42142,6 +42185,197 @@ wuffs_etc2__decoder__from_src_to_buffer(
   }
 
   return status;
+}
+
+// -------- func etc2.decoder.decode_t_mode
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_etc2__decoder__decode_t_mode(
+    wuffs_etc2__decoder* self,
+    uint64_t a_bits,
+    uint32_t a_offset) {
+  uint8_t v_r[4] = {0};
+  uint8_t v_g[4] = {0};
+  uint8_t v_b[4] = {0};
+  uint32_t v_which = 0;
+  uint32_t v_delta = 0;
+  uint32_t v_y = 0;
+  uint32_t v_x = 0;
+  uint32_t v_x4y = 0;
+  uint32_t v_i = 0;
+  uint32_t v_o = 0;
+
+  v_r[0u] = ((uint8_t)(((uint8_t)((12u & (a_bits >> 57u)))) | ((uint8_t)((3u & (a_bits >> 56u))))));
+  v_r[0u] = ((uint8_t)(((uint8_t)(v_r[0u] << 4u)) | v_r[0u]));
+  v_g[0u] = ((uint8_t)((15u & (a_bits >> 52u))));
+  v_g[0u] = ((uint8_t)(((uint8_t)(v_g[0u] << 4u)) | v_g[0u]));
+  v_b[0u] = ((uint8_t)((15u & (a_bits >> 48u))));
+  v_b[0u] = ((uint8_t)(((uint8_t)(v_b[0u] << 4u)) | v_b[0u]));
+  v_r[2u] = ((uint8_t)((15u & (a_bits >> 44u))));
+  v_r[2u] = ((uint8_t)(((uint8_t)(v_r[2u] << 4u)) | v_r[2u]));
+  v_g[2u] = ((uint8_t)((15u & (a_bits >> 40u))));
+  v_g[2u] = ((uint8_t)(((uint8_t)(v_g[2u] << 4u)) | v_g[2u]));
+  v_b[2u] = ((uint8_t)((15u & (a_bits >> 36u))));
+  v_b[2u] = ((uint8_t)(((uint8_t)(v_b[2u] << 4u)) | v_b[2u]));
+  v_which = (((uint32_t)((6u & (a_bits >> 33u)))) | ((uint32_t)((1u & (a_bits >> 32u)))));
+  v_delta = ((uint32_t)(WUFFS_ETC2__T_H_MODIFIERS[v_which]));
+  v_r[1u] = WUFFS_ETC2__CLAMP[(((uint32_t)(((uint32_t)(v_r[2u])) + v_delta)) & 1023u)];
+  v_g[1u] = WUFFS_ETC2__CLAMP[(((uint32_t)(((uint32_t)(v_g[2u])) + v_delta)) & 1023u)];
+  v_b[1u] = WUFFS_ETC2__CLAMP[(((uint32_t)(((uint32_t)(v_b[2u])) + v_delta)) & 1023u)];
+  v_r[3u] = WUFFS_ETC2__CLAMP[(((uint32_t)(((uint32_t)(v_r[2u])) - v_delta)) & 1023u)];
+  v_g[3u] = WUFFS_ETC2__CLAMP[(((uint32_t)(((uint32_t)(v_g[2u])) - v_delta)) & 1023u)];
+  v_b[3u] = WUFFS_ETC2__CLAMP[(((uint32_t)(((uint32_t)(v_b[2u])) - v_delta)) & 1023u)];
+  while (v_y < 4u) {
+    v_x = 0u;
+    while (v_x < 4u) {
+      v_x4y = ((v_x * 4u) | v_y);
+      v_i = (((uint32_t)(((a_bits >> v_x4y) & 1u))) | ((uint32_t)(((a_bits >> (v_x4y + 15u)) & 2u))));
+      v_o = (a_offset + (v_x * 4u) + (v_y * 1024u));
+      self->private_data.f_buffer[(v_o + 0u)] = v_b[v_i];
+      self->private_data.f_buffer[(v_o + 1u)] = v_g[v_i];
+      self->private_data.f_buffer[(v_o + 2u)] = v_r[v_i];
+      v_x += 1u;
+    }
+    v_y += 1u;
+  }
+  return wuffs_base__make_empty_struct();
+}
+
+// -------- func etc2.decoder.decode_h_mode
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_etc2__decoder__decode_h_mode(
+    wuffs_etc2__decoder* self,
+    uint64_t a_bits,
+    uint32_t a_offset) {
+  uint8_t v_r[4] = {0};
+  uint8_t v_g[4] = {0};
+  uint8_t v_b[4] = {0};
+  uint32_t v_rgb0 = 0;
+  uint32_t v_rgb2 = 0;
+  uint32_t v_which = 0;
+  uint32_t v_delta = 0;
+  uint32_t v_y = 0;
+  uint32_t v_x = 0;
+  uint32_t v_x4y = 0;
+  uint32_t v_i = 0;
+  uint32_t v_o = 0;
+
+  v_r[0u] = ((uint8_t)((15u & (a_bits >> 59u))));
+  v_r[0u] = ((uint8_t)(((uint8_t)(v_r[0u] << 4u)) | v_r[0u]));
+  v_g[0u] = ((uint8_t)(((uint8_t)((14u & (a_bits >> 55u)))) | ((uint8_t)((1u & (a_bits >> 52u))))));
+  v_g[0u] = ((uint8_t)(((uint8_t)(v_g[0u] << 4u)) | v_g[0u]));
+  v_b[0u] = ((uint8_t)(((uint8_t)((8u & (a_bits >> 48u)))) | ((uint8_t)((7u & (a_bits >> 47u))))));
+  v_b[0u] = ((uint8_t)(((uint8_t)(v_b[0u] << 4u)) | v_b[0u]));
+  v_r[2u] = ((uint8_t)((15u & (a_bits >> 43u))));
+  v_r[2u] = ((uint8_t)(((uint8_t)(v_r[2u] << 4u)) | v_r[2u]));
+  v_g[2u] = ((uint8_t)((15u & (a_bits >> 39u))));
+  v_g[2u] = ((uint8_t)(((uint8_t)(v_g[2u] << 4u)) | v_g[2u]));
+  v_b[2u] = ((uint8_t)((15u & (a_bits >> 35u))));
+  v_b[2u] = ((uint8_t)(((uint8_t)(v_b[2u] << 4u)) | v_b[2u]));
+  v_rgb0 = ((((uint32_t)(v_r[0u])) << 16u) | (((uint32_t)(v_g[0u])) << 8u) | (((uint32_t)(v_b[0u])) << 0u));
+  v_rgb2 = ((((uint32_t)(v_r[2u])) << 16u) | (((uint32_t)(v_g[2u])) << 8u) | (((uint32_t)(v_b[2u])) << 0u));
+  v_which = (((uint32_t)((4u & (a_bits >> 32u)))) | ((uint32_t)((2u & (a_bits >> 31u)))));
+  if (v_rgb0 >= v_rgb2) {
+    v_which |= 1u;
+  }
+  v_delta = ((uint32_t)(WUFFS_ETC2__T_H_MODIFIERS[v_which]));
+  v_r[1u] = WUFFS_ETC2__CLAMP[(((uint32_t)(((uint32_t)(v_r[0u])) - v_delta)) & 1023u)];
+  v_g[1u] = WUFFS_ETC2__CLAMP[(((uint32_t)(((uint32_t)(v_g[0u])) - v_delta)) & 1023u)];
+  v_b[1u] = WUFFS_ETC2__CLAMP[(((uint32_t)(((uint32_t)(v_b[0u])) - v_delta)) & 1023u)];
+  v_r[0u] = WUFFS_ETC2__CLAMP[(((uint32_t)(((uint32_t)(v_r[0u])) + v_delta)) & 1023u)];
+  v_g[0u] = WUFFS_ETC2__CLAMP[(((uint32_t)(((uint32_t)(v_g[0u])) + v_delta)) & 1023u)];
+  v_b[0u] = WUFFS_ETC2__CLAMP[(((uint32_t)(((uint32_t)(v_b[0u])) + v_delta)) & 1023u)];
+  v_r[3u] = WUFFS_ETC2__CLAMP[(((uint32_t)(((uint32_t)(v_r[2u])) - v_delta)) & 1023u)];
+  v_g[3u] = WUFFS_ETC2__CLAMP[(((uint32_t)(((uint32_t)(v_g[2u])) - v_delta)) & 1023u)];
+  v_b[3u] = WUFFS_ETC2__CLAMP[(((uint32_t)(((uint32_t)(v_b[2u])) - v_delta)) & 1023u)];
+  v_r[2u] = WUFFS_ETC2__CLAMP[(((uint32_t)(((uint32_t)(v_r[2u])) + v_delta)) & 1023u)];
+  v_g[2u] = WUFFS_ETC2__CLAMP[(((uint32_t)(((uint32_t)(v_g[2u])) + v_delta)) & 1023u)];
+  v_b[2u] = WUFFS_ETC2__CLAMP[(((uint32_t)(((uint32_t)(v_b[2u])) + v_delta)) & 1023u)];
+  while (v_y < 4u) {
+    v_x = 0u;
+    while (v_x < 4u) {
+      v_x4y = ((v_x * 4u) | v_y);
+      v_i = (((uint32_t)(((a_bits >> v_x4y) & 1u))) | ((uint32_t)(((a_bits >> (v_x4y + 15u)) & 2u))));
+      v_o = (a_offset + (v_x * 4u) + (v_y * 1024u));
+      self->private_data.f_buffer[(v_o + 0u)] = v_b[v_i];
+      self->private_data.f_buffer[(v_o + 1u)] = v_g[v_i];
+      self->private_data.f_buffer[(v_o + 2u)] = v_r[v_i];
+      v_x += 1u;
+    }
+    v_y += 1u;
+  }
+  return wuffs_base__make_empty_struct();
+}
+
+// -------- func etc2.decoder.decode_planar_mode
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_etc2__decoder__decode_planar_mode(
+    wuffs_etc2__decoder* self,
+    uint64_t a_bits,
+    uint32_t a_offset) {
+  uint32_t v_ro = 0;
+  uint32_t v_go = 0;
+  uint32_t v_bo = 0;
+  uint32_t v_rh = 0;
+  uint32_t v_gh = 0;
+  uint32_t v_bh = 0;
+  uint32_t v_rv = 0;
+  uint32_t v_gv = 0;
+  uint32_t v_bv = 0;
+  uint32_t v_y = 0;
+  uint32_t v_x = 0;
+  uint32_t v_o = 0;
+  uint32_t v_rp = 0;
+  uint32_t v_gp = 0;
+  uint32_t v_bp = 0;
+
+  v_ro = ((uint32_t)((63u & (a_bits >> 57u))));
+  v_ro = (((uint32_t)(v_ro << 2u)) | (v_ro >> 4u));
+  v_go = (((uint32_t)((64u & (a_bits >> 50u)))) | ((uint32_t)((63u & (a_bits >> 49u)))));
+  v_go = (((uint32_t)(v_go << 1u)) | (v_go >> 6u));
+  v_bo = (((uint32_t)((32u & (a_bits >> 43u)))) | ((uint32_t)((24u & (a_bits >> 40u)))) | ((uint32_t)((7u & (a_bits >> 39u)))));
+  v_bo = (((uint32_t)(v_bo << 2u)) | (v_bo >> 4u));
+  v_rh = (((uint32_t)((62u & (a_bits >> 33u)))) | ((uint32_t)((1u & (a_bits >> 32u)))));
+  v_rh = (((uint32_t)(v_rh << 2u)) | (v_rh >> 4u));
+  v_gh = ((uint32_t)((127u & (a_bits >> 25u))));
+  v_gh = (((uint32_t)(v_gh << 1u)) | (v_gh >> 6u));
+  v_bh = ((uint32_t)((63u & (a_bits >> 19u))));
+  v_bh = (((uint32_t)(v_bh << 2u)) | (v_bh >> 4u));
+  v_rv = ((uint32_t)((63u & (a_bits >> 13u))));
+  v_rv = (((uint32_t)(v_rv << 2u)) | (v_rv >> 4u));
+  v_gv = ((uint32_t)((127u & (a_bits >> 6u))));
+  v_gv = (((uint32_t)(v_gv << 1u)) | (v_gv >> 6u));
+  v_bv = ((uint32_t)((63u & (a_bits >> 0u))));
+  v_bv = (((uint32_t)(v_bv << 2u)) | (v_bv >> 4u));
+  v_rh -= v_ro;
+  v_gh -= v_go;
+  v_bh -= v_bo;
+  v_rv -= v_ro;
+  v_gv -= v_go;
+  v_bv -= v_bo;
+  v_ro *= 4u;
+  v_go *= 4u;
+  v_bo *= 4u;
+  while (v_y < 4u) {
+    v_x = 0u;
+    while (v_x < 4u) {
+      v_o = (a_offset + (v_x * 4u) + (v_y * 1024u));
+      v_bp = ((uint32_t)(((uint32_t)(((uint32_t)(v_x * v_bh)) + ((uint32_t)(v_y * v_bv)))) + v_bo));
+      self->private_data.f_buffer[(v_o + 0u)] = WUFFS_ETC2__CLAMP[((((uint32_t)(v_bp + 2u)) / 4u) & 1023u)];
+      v_gp = ((uint32_t)(((uint32_t)(((uint32_t)(v_x * v_gh)) + ((uint32_t)(v_y * v_gv)))) + v_go));
+      self->private_data.f_buffer[(v_o + 1u)] = WUFFS_ETC2__CLAMP[((((uint32_t)(v_gp + 2u)) / 4u) & 1023u)];
+      v_rp = ((uint32_t)(((uint32_t)(((uint32_t)(v_x * v_rh)) + ((uint32_t)(v_y * v_rv)))) + v_ro));
+      self->private_data.f_buffer[(v_o + 2u)] = WUFFS_ETC2__CLAMP[((((uint32_t)(v_rp + 2u)) / 4u) & 1023u)];
+      v_x += 1u;
+    }
+    v_y += 1u;
+  }
+  return wuffs_base__make_empty_struct();
 }
 
 // -------- func etc2.decoder.decode_half_block
