@@ -62,6 +62,11 @@ DecodeImageCallbacks::SelectDecoder(uint32_t fourcc,
       return wuffs_bmp__decoder::alloc_as__wuffs_base__image_decoder();
 #endif
 
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__ETC2)
+    case WUFFS_BASE__FOURCC__ETC2:
+      return wuffs_etc2__decoder::alloc_as__wuffs_base__image_decoder();
+#endif
+
 #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__GIF)
     case WUFFS_BASE__FOURCC__GIF:
       return wuffs_gif__decoder::alloc_as__wuffs_base__image_decoder();

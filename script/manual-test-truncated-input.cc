@@ -59,6 +59,7 @@
 #define WUFFS_CONFIG__MODULE__BZIP2
 #define WUFFS_CONFIG__MODULE__CRC32
 #define WUFFS_CONFIG__MODULE__DEFLATE
+#define WUFFS_CONFIG__MODULE__ETC2
 #define WUFFS_CONFIG__MODULE__GIF
 #define WUFFS_CONFIG__MODULE__GZIP
 #define WUFFS_CONFIG__MODULE__JPEG
@@ -110,6 +111,9 @@ handle_image_decoder(wuffs_base__io_buffer src,
   switch (fourcc) {
     case WUFFS_BASE__FOURCC__BMP:
       dec = wuffs_bmp__decoder::alloc_as__wuffs_base__image_decoder();
+      break;
+    case WUFFS_BASE__FOURCC__ETC2:
+      dec = wuffs_etc2__decoder::alloc_as__wuffs_base__image_decoder();
       break;
     case WUFFS_BASE__FOURCC__GIF:
       dec = wuffs_gif__decoder::alloc_as__wuffs_base__image_decoder();

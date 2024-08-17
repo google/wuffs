@@ -25,6 +25,7 @@ OK. 0564b364 test/data/artificial-png/apng-skip-idat.png
 OK. e08a7cc8 test/data/artificial-png/exif.png
 OK. e08a7cc8 test/data/artificial-png/key-value-pairs.png
 OK. 076cb375 test/data/bricks-color.bmp
+OK. bdbbfadb test/data/bricks-color.etc1.pkm
 OK. 72a1f9cc test/data/bricks-color.jpeg
 OK. 076cb375 test/data/bricks-color.lossless.webp
 OK. 076cb375 test/data/bricks-color.png

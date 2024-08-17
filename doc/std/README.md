@@ -52,6 +52,7 @@ to enable.
 - `CRC32:     BASE`
 - `CRC64:     BASE`
 - `DEFLATE:   BASE`
+- `ETC2:      BASE`
 - `GIF:       BASE`
 - `GZIP:      BASE, CRC32, DEFLATE`
 - `JPEG:      BASE`

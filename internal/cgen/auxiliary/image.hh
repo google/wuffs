@@ -80,10 +80,11 @@ class DecodeImageCallbacks {
   //
   // The default SelectDecoder accepts the FOURCC codes listed below. For
   // modular builds (i.e. when #define'ing WUFFS_CONFIG__MODULES), acceptance
-  // of the ETC file format is optional (for each value of ETC) and depends on
+  // of the FOO file format is optional (for each value of FOO) and depends on
   // the corresponding module to be enabled at compile time (i.e. #define'ing
-  // WUFFS_CONFIG__MODULE__ETC).
+  // WUFFS_CONFIG__MODULE__FOO).
   //  - WUFFS_BASE__FOURCC__BMP
+  //  - WUFFS_BASE__FOURCC__ETC
   //  - WUFFS_BASE__FOURCC__GIF
   //  - WUFFS_BASE__FOURCC__JPEG
   //  - WUFFS_BASE__FOURCC__NIE
@@ -101,8 +102,8 @@ class DecodeImageCallbacks {
   // HandleMetadata acknowledges image metadata. minfo.flavor will be one of:
   //  - WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA_RAW_PASSTHROUGH
   //  - WUFFS_BASE__MORE_INFORMATION__FLAVOR__METADATA_PARSED
-  // If it is ETC__METADATA_RAW_ETC then raw contains the metadata bytes. Those
-  // bytes should not be retained beyond the the HandleMetadata call.
+  // If it is METADATA_RAW_PASSTHROUGH then raw contains the metadata bytes.
+  // Those bytes should not be retained beyond the the HandleMetadata call.
   //
   // minfo.metadata__fourcc() will typically match one of the
   // DecodeImageArgFlags bits. For example, if (REPORT_METADATA_CHRM |
@@ -218,7 +219,7 @@ struct DecodeImageArgFlags {
   // DefaultValue returns 0.
   static DecodeImageArgFlags DefaultValue();
 
-  // TODO: support all of the REPORT_METADATA_ETC flags, not just CHRM, EXIF,
+  // TODO: support all of the REPORT_METADATA_FOO flags, not just CHRM, EXIF,
   // GAMA, ICCP, KVP, SRGB and XMP.
 
   // Background Color.
